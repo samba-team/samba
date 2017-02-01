@@ -3,6 +3,7 @@
 # This is a port of the original in testprogs/ejs/ldap.js
 
 # Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2008-2011
+# Copyright (C) Catalyst.Net Ltd 2017
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -815,6 +816,290 @@ attributeId: """ + attributeID + """
             self.fail("Should have failed to modify schema to have the same attributeID")
         except LdbError, (enum, estr):
             self.assertEquals(enum, ERR_CONSTRAINT_VIOLATION)
+
+
+    def test_generated_linkID(self):
+        """
+        Test that we automatically generate a linkID if the
+        OID "1.2.840.113556.1.2.50" is given as the linkID
+        of a new attribute, and that we don't get/can't add
+        duplicate linkIDs. Also test that we can add a backlink
+        by providing the attributeID or ldapDisplayName of
+        a forwards link in the linkID attribute.
+        """
+
+        # linkID generation isn't available before 2003
+        res = self.ldb.search(base="", expression="", scope=SCOPE_BASE,
+                         attrs=["domainControllerFunctionality"])
+        self.assertEquals(len(res), 1)
+        dc_level = int(res[0]["domainControllerFunctionality"][0])
+        if dc_level < DS_DOMAIN_FUNCTION_2003:
+            return
+
+        rand = str(random.randint(1,100000))
+
+        attr_name_1 = "test-generated-linkID" + time.strftime("%s", time.gmtime()) + "-" + rand
+        attr_ldap_display_name_1 = attr_name_1.replace("-", "")
+        attributeID_1 = "1.3.6.1.4.1.7165.4.6.1.6.16." + rand
+        ldif = """
+dn: CN=%s,%s""" % (attr_name_1, self.schema_dn) + """
+objectClass: top
+objectClass: attributeSchema
+adminDescription: """ + attr_name_1 + """
+adminDisplayName: """ + attr_name_1 + """
+cn: """ + attr_name_1 + """
+attributeId: """ + attributeID_1 + """
+linkID: 1.2.840.113556.1.2.50
+attributeSyntax: 2.5.5.1
+ldapDisplayName: """ + attr_ldap_display_name_1 + """
+omSyntax: 127
+instanceType: 4
+isSingleValued: TRUE
+systemOnly: FALSE
+"""
+
+        try:
+            self.ldb.add_ldif(ldif)
+        except LdbError, (enum, estr):
+            self.fail(estr)
+
+        attr_name_2 = "test-generated-linkID-2" + time.strftime("%s", time.gmtime()) + "-" + rand
+        attr_ldap_display_name_2 = attr_name_2.replace("-", "")
+        attributeID_2 = "1.3.6.1.4.1.7165.4.6.1.6.17." + rand
+        ldif = """
+dn: CN=%s,%s""" % (attr_name_2, self.schema_dn) + """
+objectClass: top
+objectClass: attributeSchema
+adminDescription: """ + attr_name_2 + """
+adminDisplayName: """ + attr_name_2 + """
+cn: """ + attr_name_2 + """
+attributeId: """ + attributeID_2 + """
+linkID: 1.2.840.113556.1.2.50
+attributeSyntax: 2.5.5.1
+ldapDisplayName: """ + attr_ldap_display_name_2 + """
+omSyntax: 127
+instanceType: 4
+isSingleValued: TRUE
+systemOnly: FALSE
+"""
+
+        try:
+            self.ldb.add_ldif(ldif)
+        except LdbError, (enum, estr):
+            self.fail(estr)
+
+        res = self.ldb.search("CN=%s,%s" % (attr_name_1, self.schema_dn),
+                              scope=SCOPE_BASE,
+                              attrs=["linkID"])
+        self.assertEquals(len(res), 1)
+        linkID_1 = int(res[0]["linkID"][0])
+
+        res = self.ldb.search("CN=%s,%s" % (attr_name_2, self.schema_dn),
+                              scope=SCOPE_BASE,
+                              attrs=["linkID"])
+        self.assertEquals(len(res), 1)
+        linkID_2 = int(res[0]["linkID"][0])
+
+        # 0 should never be generated as a linkID
+        self.assertFalse(linkID_1 == 0)
+        self.assertFalse(linkID_2 == 0)
+
+        # The generated linkID should always be even, because
+        # it should assume we're adding a forward link.
+        self.assertTrue(linkID_1 % 2 == 0)
+        self.assertTrue(linkID_2 % 2 == 0)
+
+        self.assertFalse(linkID_1 == linkID_2)
+
+        # This is only necessary against Windows, since we depend
+        # on the previously added links in the next ones and Windows
+        # won't refresh the schema as we add them.
+        ldif = """
+dn:
+changetype: modify
+replace: schemaupdatenow
+schemaupdatenow: 1
+"""
+        self.ldb.modify_ldif(ldif)
+
+        # If we add a new link with the same linkID, it should fail
+        attr_name = "test-generated-linkID-duplicate" + time.strftime("%s", time.gmtime()) + "-" + rand
+        attr_ldap_display_name = attr_name.replace("-", "")
+        attributeID = "1.3.6.1.4.1.7165.4.6.1.6.18." + rand
+        ldif = """
+dn: CN=%s,%s""" % (attr_name, self.schema_dn) + """
+objectClass: top
+objectClass: attributeSchema
+adminDescription: """ + attr_name + """
+adminDisplayName: """ + attr_name + """
+cn: """ + attr_name + """
+attributeId: """ + attributeID + """
+linkID: """ + str(linkID_1) + """
+attributeSyntax: 2.5.5.1
+ldapDisplayName: """ + attr_ldap_display_name + """
+omSyntax: 127
+instanceType: 4
+isSingleValued: TRUE
+systemOnly: FALSE
+"""
+
+        try:
+            self.ldb.add_ldif(ldif)
+            self.fail("Should have failed to add duplicate linkID value")
+        except LdbError, (enum, estr):
+            self.assertEquals(enum, ERR_UNWILLING_TO_PERFORM)
+
+        # If we add another attribute with the attributeID or lDAPDisplayName
+        # of a forward link in its linkID field, it should add as a backlink
+
+        attr_name_3 = "test-generated-linkID-backlink" + time.strftime("%s", time.gmtime()) + "-" + rand
+        attr_ldap_display_name_3 = attr_name_3.replace("-", "")
+        attributeID_3 = "1.3.6.1.4.1.7165.4.6.1.6.19." + rand
+        ldif = """
+dn: CN=%s,%s""" % (attr_name_3, self.schema_dn) + """
+objectClass: top
+objectClass: attributeSchema
+adminDescription: """ + attr_name_3 + """
+adminDisplayName: """ + attr_name_3 + """
+cn: """ + attr_name_3 + """
+attributeId: """ + attributeID_3 + """
+linkID: """ + str(linkID_1+1) + """
+attributeSyntax: 2.5.5.1
+ldapDisplayName: """ + attr_ldap_display_name_3 + """
+omSyntax: 127
+instanceType: 4
+isSingleValued: TRUE
+systemOnly: FALSE
+"""
+
+        try:
+            self.ldb.add_ldif(ldif)
+        except LdbError, (enum, estr):
+            self.fail(estr)
+
+        res = self.ldb.search("CN=%s,%s" % (attr_name_3, self.schema_dn),
+                              scope=SCOPE_BASE,
+                              attrs=["linkID"])
+        self.assertEquals(len(res), 1)
+        linkID = int(res[0]["linkID"][0])
+        self.assertEquals(linkID, linkID_1 + 1)
+
+        attr_name_4 = "test-generated-linkID-backlink-2" + time.strftime("%s", time.gmtime()) + "-" + rand
+        attr_ldap_display_name_4 = attr_name_4.replace("-", "")
+        attributeID_4 = "1.3.6.1.4.1.7165.4.6.1.6.20." + rand
+        ldif = """
+dn: CN=%s,%s""" % (attr_name_4, self.schema_dn) + """
+objectClass: top
+objectClass: attributeSchema
+adminDescription: """ + attr_name_4 + """
+adminDisplayName: """ + attr_name_4 + """
+cn: """ + attr_name_4 + """
+attributeId: """ + attributeID_4 + """
+linkID: """ + attr_ldap_display_name_2 + """
+attributeSyntax: 2.5.5.1
+ldapDisplayName: """ + attr_ldap_display_name_4 + """
+omSyntax: 127
+instanceType: 4
+isSingleValued: TRUE
+systemOnly: FALSE
+"""
+
+        try:
+            self.ldb.add_ldif(ldif)
+        except LdbError, (enum, estr):
+            self.fail(estr)
+
+        res = self.ldb.search("CN=%s,%s" % (attr_name_4, self.schema_dn),
+                              scope=SCOPE_BASE,
+                              attrs=["linkID"])
+        self.assertEquals(len(res), 1)
+        linkID = int(res[0]["linkID"][0])
+        self.assertEquals(linkID, linkID_2 + 1)
+
+        # If we then try to add another backlink in the same way
+        # for the same forwards link, we should fail.
+
+        attr_name = "test-generated-linkID-backlink-duplicate" + time.strftime("%s", time.gmtime()) + "-" + rand
+        attr_ldap_display_name = attr_name.replace("-", "")
+        attributeID = "1.3.6.1.4.1.7165.4.6.1.6.21." + rand
+        ldif = """
+dn: CN=%s,%s""" % (attr_name, self.schema_dn) + """
+objectClass: top
+objectClass: attributeSchema
+adminDescription: """ + attr_name + """
+adminDisplayName: """ + attr_name + """
+cn: """ + attr_name + """
+attributeId: """ + attributeID + """
+linkID: """ + attributeID_1 + """
+attributeSyntax: 2.5.5.1
+ldapDisplayName: """ + attr_ldap_display_name + """
+omSyntax: 127
+instanceType: 4
+isSingleValued: TRUE
+systemOnly: FALSE
+"""
+
+        try:
+            self.ldb.add_ldif(ldif)
+            self.fail("Should have failed to add duplicate backlink")
+        except LdbError, (enum, estr):
+            self.assertEquals(enum, ERR_UNWILLING_TO_PERFORM)
+
+        # If we try to supply the attributeID or ldapDisplayName
+        # of an existing backlink in the linkID field of a new link,
+        # it should fail.
+
+        attr_name = "test-generated-linkID-backlink-invalid" + time.strftime("%s", time.gmtime()) + "-" + rand
+        attr_ldap_display_name = attr_name.replace("-", "")
+        attributeID = "1.3.6.1.4.1.7165.4.6.1.6.22." + rand
+        ldif = """
+dn: CN=%s,%s""" % (attr_name, self.schema_dn) + """
+objectClass: top
+objectClass: attributeSchema
+adminDescription: """ + attr_name + """
+adminDisplayName: """ + attr_name + """
+cn: """ + attr_name + """
+attributeId: """ + attributeID + """
+linkID: """ + attributeID_3 + """
+attributeSyntax: 2.5.5.1
+ldapDisplayName: """ + attr_ldap_display_name + """
+omSyntax: 127
+instanceType: 4
+isSingleValued: TRUE
+systemOnly: FALSE
+"""
+
+        try:
+            self.ldb.add_ldif(ldif)
+            self.fail("Should have failed to add backlink of backlink")
+        except LdbError, (enum, estr):
+            self.assertEquals(enum, ERR_UNWILLING_TO_PERFORM)
+
+        attr_name = "test-generated-linkID-backlink-invalid-2" + time.strftime("%s", time.gmtime()) + "-" + rand
+        attr_ldap_display_name = attr_name.replace("-", "")
+        attributeID = "1.3.6.1.4.1.7165.4.6.1.6.23." + rand
+        ldif = """
+dn: CN=%s,%s""" % (attr_name, self.schema_dn) + """
+objectClass: top
+objectClass: attributeSchema
+adminDescription: """ + attr_name + """
+adminDisplayName: """ + attr_name + """
+cn: """ + attr_name + """
+attributeId: """ + attributeID + """
+linkID: """ + attr_ldap_display_name_4 + """
+attributeSyntax: 2.5.5.1
+ldapDisplayName: """ + attr_ldap_display_name + """
+omSyntax: 127
+instanceType: 4
+isSingleValued: TRUE
+systemOnly: FALSE
+"""
+
+        try:
+            self.ldb.add_ldif(ldif)
+            self.fail("Should have failed to add backlink of backlink")
+        except LdbError, (enum, estr):
+            self.assertEquals(enum, ERR_UNWILLING_TO_PERFORM)
 
 
     def test_change_governsID(self):
