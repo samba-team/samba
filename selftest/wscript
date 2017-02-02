@@ -82,7 +82,6 @@ def set_options(opt):
     gr.add_option('--perf-test', dest='PERF_TEST', default=False,
                   action="store_true", help="run performance tests only")
     gr.add_option('--test-list', dest='TEST_LIST', default='',
-                  action="store_true",
                   help=("use tests listed here, not defaults "
                         "(--test-list='FOO|' will execute FOO; "
                         "--test-list='FOO' will read it)"))
