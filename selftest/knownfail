@@ -312,3 +312,5 @@
 ^samba.tests.dcerpc.dnsserver.samba.tests.dcerpc.dnsserver.DnsserverTests.test_add_duplicate_different_type.*
 ^samba.tests.dcerpc.dnsserver.samba.tests.dcerpc.dnsserver.DnsserverTests.test_rank_none.*
 ^samba.tests.dcerpc.dnsserver.samba.tests.dcerpc.dnsserver.DnsserverTests.test_security_descriptor.*
+#we don't properly handle deleting dn+binary linked attributes
+^samba4.drs.repl_schema.python.*repl_schema.DrsReplSchemaTestCase.test_classWithCustomBinaryDNLinkAttribute.*
