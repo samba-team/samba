@@ -65,8 +65,10 @@ testrenamedc2() {
 }
 
 dbcheck_fix() {
+        # Unlike most calls to dbcheck --fix, this will not trigger an error, as
+        # we do not flag an error count for this old DN string case.
 	$BINDIR/samba-tool dbcheck --cross-ncs -s $PREFIX/renamedc_test/etc/smb.conf --fix \
-		--quiet --yes fix_all_string_dn_component_mismatch \
+		--quiet --yes fix_all_old_dn_string_component_mismatch \
 		--attrs="fsmoRoleOwner interSiteTopologyGenerator msDS-NC-Replica-Locations"
 }
 
@@ -83,7 +85,7 @@ testit "confirmrenamedc_sAMAccountName" confirmrenamedc_sAMAccountName || failed
 testit "confirmrenamedc_dNSHostName" confirmrenamedc_dNSHostName || failed=`expr $failed + 1`
 testit "confirmrenamedc_rootdse_dnsHostName" confirmrenamedc_rootdse_dnsHostName || failed=`expr $failed + 1`
 testit "confirmrenamedc_rootdse_dsServiceName" confirmrenamedc_rootdse_dsServiceName || failed=`expr $failed + 1`
-testit_expect_failure "dbcheck_fix" dbcheck_fix || failed=`expr $failed + 1`
+testit "dbcheck_fix" dbcheck_fix || failed=`expr $failed + 1`
 testit "dbcheck" dbcheck || failed=`expr $failed + 1`
 testit "renamedc2" testrenamedc2 || failed=`expr $failed + 1`
 
