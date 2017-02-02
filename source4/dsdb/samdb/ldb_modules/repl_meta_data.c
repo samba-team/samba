@@ -2012,7 +2012,8 @@ static int get_parsed_dns(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 		dn = p->dsdb_dn->dn;
 
 		status = dsdb_get_extended_dn_guid(dn, &p->guid, "GUID");
-		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND) ||
+		    unlikely(GUID_all_zero(&p->guid))) {
 			/* we got a DN without a GUID - go find the GUID */
 			int ret = dsdb_module_guid_by_dn(module, dn, &p->guid, parent);
 			if (ret != LDB_SUCCESS) {
