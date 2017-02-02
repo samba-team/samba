@@ -43,6 +43,7 @@ import ldb
 import drs_base
 from samba.dcerpc import drsuapi, misc
 from samba.drs_utils import drs_DsBind
+from samba import dsdb
 
 class DrsReplSchemaTestCase(drs_base.DrsBaseTestCase):
 
@@ -262,14 +263,19 @@ class DrsReplSchemaTestCase(drs_base.DrsBaseTestCase):
         self._check_object(c_dn)
         self._check_object(a_dn)
 
-        res = self.ldb_dc1.search(base=a_dn,
+        res = self.ldb_dc1.search(base="",
                                   scope=SCOPE_BASE,
-                                  attrs=["msDS-IntId"])
-        self.assertEqual(1, len(res))
-        self.assertTrue("msDS-IntId" in res[0])
-        int_id = int(res[0]["msDS-IntId"][0])
-        if int_id < 0:
-            int_id += (1 << 32)
+                                  attrs=["domainFunctionality"])
+
+        if int(res[0]["domainFunctionality"][0]) > dsdb.DS_DOMAIN_FUNCTION_2000:
+            res = self.ldb_dc1.search(base=a_dn,
+                                      scope=SCOPE_BASE,
+                                      attrs=["msDS-IntId"])
+            self.assertEqual(1, len(res))
+            self.assertTrue("msDS-IntId" in res[0])
+            int_id = int(res[0]["msDS-IntId"][0])
+            if int_id < 0:
+                int_id += (1 << 32)
 
         dc_guid_1 = self.ldb_dc1.get_invocation_id()
 
