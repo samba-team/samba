@@ -74,25 +74,24 @@ class LATests(samba.tests.TestCase):
         if not opts.no_cleanup:
             self.samdb.delete(self.ou, ['tree_delete:1'])
 
-    def delete_user(self, user):
-        self.samdb.delete(user['dn'])
-        del self.users[self.users.index(user)]
-
-    def add_object(self, cn, objectclass):
+    def add_object(self, cn, objectclass, more_attrs={}):
         dn = "CN=%s,%s" % (cn, self.ou)
-        self.samdb.add({'cn': cn,
-                        'objectclass': objectclass,
-                        'dn': dn})
+        attrs = {'cn': cn,
+                 'objectclass': objectclass,
+                 'dn': dn}
+        attrs.update(more_attrs)
+        self.samdb.add(attrs)
 
         return dn
 
-    def add_objects(self, n, objectclass, prefix=None):
+    def add_objects(self, n, objectclass, prefix=None, more_attrs={}):
         if prefix is None:
             prefix = objectclass
         dns = []
         for i in range(n):
             dns.append(self.add_object("%s%d" % (prefix, i + 1),
-                                       objectclass))
+                                       objectclass,
+                                       more_attrs=more_attrs))
         return dns
 
     def add_linked_attribute(self, src, dest, attr='member',
@@ -511,16 +510,17 @@ class LATests(samba.tests.TestCase):
         relax_control = ['relax:0']
 
         users = self.add_objects(10, 'user', 'u_relax')
-        groups = self.add_objects(3, 'group', 'g_relax')
+        groups = self.add_objects(3, 'group', 'g_relax',
+                                  more_attrs={'member': users[:2]})
         g_relax1, g_relax2, g_uptight = groups
 
         # g_relax1 has all users added at once
         # g_relax2 gets them one at a time in reverse order
         # g_uptight never relaxes
 
-        self.add_linked_attribute(g_relax1, users[:5], controls=relax_control)
+        self.add_linked_attribute(g_relax1, users[2:5], controls=relax_control)
 
-        for u in reversed(users[:5]):
+        for u in reversed(users[2:5]):
             self.add_linked_attribute(g_relax2, u, controls=relax_control)
             self.add_linked_attribute(g_uptight, u)
 
@@ -571,6 +571,44 @@ class LATests(samba.tests.TestCase):
         for u in users:
             self.assert_back_links(u, groups)
 
+    def test_add_all_at_once(self):
+        """All these other tests are creating linked attributes after the
+        objects are there. We want to test creating them all at once
+        using LDIF.
+        """
+        users = self.add_objects(7, 'user', 'u_all_at_once')
+        g1, g3 = self.add_objects(2, 'group', 'g_all_at_once',
+                                  more_attrs={'member': users})
+        (g2,) = self.add_objects(1, 'group', 'g_all_at_once2',
+                                 more_attrs={'member': users[:5]})
+
+        self.assert_forward_links(g1, users)
+        self.assert_forward_links(g2, users[:5])
+        self.assert_forward_links(g3, users)
+        for u in users[:5]:
+            self.assert_back_links(u, [g1, g2, g3])
+        for u in users[5:]:
+            self.assert_back_links(u, [g1, g3])
+
+        self.remove_linked_attribute(g2, users[0])
+        self.remove_linked_attribute(g2, users[1])
+        self.add_linked_attribute(g2, users[1])
+        self.add_linked_attribute(g2, users[5])
+        self.add_linked_attribute(g2, users[6])
+
+        self.assert_forward_links(g1, users)
+        self.assert_forward_links(g2, users[1:])
+
+        for u in users[1:]:
+            self.remove_linked_attribute(g2, u)
+        self.remove_linked_attribute(g1, users)
+
+        for u in users:
+            self.samdb.delete(u)
+
+        self.assert_forward_links(g1, [])
+        self.assert_forward_links(g2, [])
+        self.assert_forward_links(g3, [])
 
     def test_one_way_attributes(self):
         e1, e2 = self.add_objects(2, 'msExchConfigurationContainer',
