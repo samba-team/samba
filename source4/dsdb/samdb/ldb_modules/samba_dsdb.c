@@ -388,6 +388,26 @@ static int samba_dsdb_init(struct ldb_module *module)
 		if (old_compatibleFeatures) {
 			struct ldb_message *features_msg;
 			struct ldb_message_element *features_el;
+			int samba_options_supported = 0;
+			ret = dsdb_module_search_dn(module, tmp_ctx, &res,
+						    indexlist_dn,
+						    indexlist_attrs,
+						    DSDB_FLAG_NEXT_MODULE, NULL);
+			if (ret == LDB_SUCCESS) {
+				samba_options_supported
+					= ldb_msg_find_attr_as_int(res->msgs[0],
+								   SAMBA_FEATURES_SUPPORTED_FLAG,
+								   0);
+
+			} else if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+				/*
+				 * If we don't have @INDEXLIST yet, then we
+				 * are so early in set-up that we know this is
+				 * a blank DB, so no need to wripe out old
+				 * features
+				 */
+				samba_options_supported = 1;
+			}
 
 			features_msg = ldb_msg_new(res);
 			if (features_msg == NULL) {
@@ -398,31 +418,49 @@ static int samba_dsdb_init(struct ldb_module *module)
 			ldb_msg_add_empty(features_msg, SAMBA_COMPATIBLE_FEATURES_ATTR,
 					  LDB_FLAG_MOD_DELETE, &features_el);
 
-			for (i = 0;
-			     old_compatibleFeatures && i < old_compatibleFeatures->num_values;
-			     i++) {
-				for (j = 0;
-				     j < ARRAY_SIZE(current_supportedFeatures); j++) {
-					if (strcmp((char *)old_compatibleFeatures->values[i].data,
-						   current_supportedFeatures[j]) == 0) {
-						break;
+			if (samba_options_supported == 1) {
+				for (i = 0;
+				     old_compatibleFeatures && i < old_compatibleFeatures->num_values;
+				     i++) {
+					for (j = 0;
+					     j < ARRAY_SIZE(current_supportedFeatures); j++) {
+						if (strcmp((char *)old_compatibleFeatures->values[i].data,
+							   current_supportedFeatures[j]) == 0) {
+							break;
+						}
+					}
+					if (j == ARRAY_SIZE(current_supportedFeatures)) {
+						/*
+						 * Add to list of features to remove
+						 * (rather than all features)
+						 */
+						ret = ldb_msg_add_value(features_msg, SAMBA_COMPATIBLE_FEATURES_ATTR,
+									&old_compatibleFeatures->values[i],
+									NULL);
+						if (ret != LDB_SUCCESS) {
+							return ret;
+						}
 					}
 				}
-				if (j == ARRAY_SIZE(current_supportedFeatures)) {
-					/*
-					 * Add to list of features to remove
-					 * (rather than all features)
-					 */
-					ret = ldb_msg_add_value(features_msg, SAMBA_COMPATIBLE_FEATURES_ATTR,
-								&old_compatibleFeatures->values[i],
-								NULL);
+
+				if (features_el->num_values > 0) {
+					/* Delete by list */
+					ret = ldb_next_start_trans(module);
+					if (ret != LDB_SUCCESS) {
+						return ret;
+					}
+					ret = dsdb_module_modify(module, features_msg, DSDB_FLAG_NEXT_MODULE, NULL);
+					if (ret != LDB_SUCCESS) {
+						ldb_next_del_trans(module);
+						return ret;
+					}
+					ret = ldb_next_end_trans(module);
 					if (ret != LDB_SUCCESS) {
 						return ret;
 					}
 				}
-			}
-			if (features_el->num_values > 0) {
-				/* Delete by list */
+			} else {
+				/* Delete all */
 				ret = ldb_next_start_trans(module);
 				if (ret != LDB_SUCCESS) {
 					return ret;
