@@ -317,4 +317,7 @@ struct dsdb_extended_sec_desc_propagation_op {
 #define SAMBA_COMPATIBLE_FEATURES_ATTR "compatibleFeatures"
 #define SAMBA_REQUIRED_FEATURES_ATTR "requiredFeatures"
 #define SAMBA_FEATURES_SUPPORTED_FLAG "@SAMBA_FEATURES_SUPPORTED"
+
+#define SAMBA_SORTED_LINKS_FEATURE "sortedLinks"
+
 #endif /* __SAMDB_H__ */

@@ -325,7 +325,7 @@ static int samba_dsdb_init(struct ldb_module *module)
 	const char *backendType, *backendUrl;
 	bool use_sasl_external = false;
 
-	const char *current_supportedFeatures[] = {};
+	const char *current_supportedFeatures[] = {SAMBA_SORTED_LINKS_FEATURE};
 
 	if (!tmp_ctx) {
 		return ldb_oom(ldb);

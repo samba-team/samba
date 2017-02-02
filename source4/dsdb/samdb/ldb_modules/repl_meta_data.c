@@ -237,15 +237,36 @@ static int replmd_init(struct ldb_module *module)
 {
 	struct replmd_private *replmd_private;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
-
+	static const char *samba_dsdb_attrs[] = { SAMBA_COMPATIBLE_FEATURES_ATTR, NULL };
+	struct ldb_dn *samba_dsdb_dn;
+	struct ldb_result *res;
+	int ret;
+	TALLOC_CTX *frame = talloc_stackframe();
 	replmd_private = talloc_zero(module, struct replmd_private);
 	if (replmd_private == NULL) {
 		ldb_oom(ldb);
+		TALLOC_FREE(frame);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	ldb_module_set_private(module, replmd_private);
 
 	replmd_private->schema_dn = ldb_get_schema_basedn(ldb);
+
+	samba_dsdb_dn = ldb_dn_new(frame, ldb, "@SAMBA_DSDB");
+	if (!samba_dsdb_dn) {
+		TALLOC_FREE(frame);
+		return ldb_oom(ldb);
+	}
+
+	ret = dsdb_module_search_dn(module, frame, &res, samba_dsdb_dn,
+	                            samba_dsdb_attrs, DSDB_FLAG_NEXT_MODULE, NULL);
+	if (ret == LDB_SUCCESS) {
+		replmd_private->sorted_links
+			= ldb_msg_check_string_attribute(res->msgs[0],
+							 SAMBA_COMPATIBLE_FEATURES_ATTR,
+							 SAMBA_SORTED_LINKS_FEATURE);
+	}
+	TALLOC_FREE(frame);
 
 	return ldb_next_init(module);
 }
