@@ -69,6 +69,7 @@ struct replmd_private {
 	} *ncs;
 	struct ldb_dn *schema_dn;
 	bool originating_updates;
+	bool sorted_links;
 };
 
 struct la_entry {
