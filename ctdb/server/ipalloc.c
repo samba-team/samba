@@ -52,10 +52,8 @@ ipalloc_state_init(TALLOC_CTX *mem_ctx,
 
 	ipalloc_state->num = num_nodes;
 
-	ipalloc_state->noiphost =
-		talloc_zero_array(ipalloc_state,
-				  bool,
-				  ipalloc_state->num);
+	ipalloc_state->noiphost = bitmap_talloc(ipalloc_state,
+						ipalloc_state->num);
 	if (ipalloc_state->noiphost == NULL) {
 		DEBUG(DEBUG_ERR, (__location__ " Out of memory\n"));
 		goto fail;
@@ -220,7 +218,7 @@ void ipalloc_set_node_flags(struct ipalloc_state *ipalloc_state,
 	for (i=0;i<nodemap->num;i++) {
 		/* Can not host IPs on INACTIVE node */
 		if (nodemap->node[i].flags & NODE_FLAGS_INACTIVE) {
-			ipalloc_state->noiphost[i] = true;
+			bitmap_set(ipalloc_state->noiphost, i);
 		}
 
 		/* If node is disabled then it can only host IPs if
@@ -231,7 +229,7 @@ void ipalloc_set_node_flags(struct ipalloc_state *ipalloc_state,
 			if (!(all_disabled &&
 			      ipalloc_state->no_ip_host_on_all_disabled == 0)) {
 
-				ipalloc_state->noiphost[i] = true;
+				bitmap_set(ipalloc_state->noiphost, i);
 			}
 		}
 	}

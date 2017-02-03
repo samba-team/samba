@@ -32,7 +32,7 @@ struct ipalloc_state {
 	/* Arrays with data for each node */
 	struct ctdb_public_ip_list *available_public_ips;
 	struct ctdb_public_ip_list *known_public_ips;
-	bool *noiphost;
+	struct bitmap *noiphost;
 
 	struct public_ip_list *all_ips;
 	enum ipalloc_algorithm algorithm;

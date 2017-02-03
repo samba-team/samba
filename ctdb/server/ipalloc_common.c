@@ -61,7 +61,7 @@ static bool can_node_host_ip(struct ipalloc_state *ipalloc_state,
 			     int32_t pnn,
 			     struct public_ip_list *ip)
 {
-	if (ipalloc_state->noiphost[pnn]) {
+	if (bitmap_query(ipalloc_state->noiphost, pnn)) {
 		return false;
 	}
 
