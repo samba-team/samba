@@ -1820,10 +1820,22 @@ static int la_guid_compare_with_trusted_dn(struct compare_ctx *ctx,
 	 *
 	 * That is, if (as is expected in most cases) you get a non-zero
 	 * result, you don't need to check for errors.
+	 *
+	 * We assume the second argument refers to a DN is from the database
+	 * and has a GUID -- but this GUID might not have been parsed out yet.
 	 */
 	NTSTATUS status;
 
 	if (GUID_all_zero(&p->guid)) {
+
+		if (p->dsdb_dn == NULL) {
+			p->dsdb_dn = dsdb_dn_parse_trusted(ctx->mem_ctx, ctx->ldb, p->v,
+							  ctx->ldap_oid);
+			if (p->dsdb_dn == NULL) {
+				ctx->err = LDB_ERR_INVALID_DN_SYNTAX;
+				return 0;
+			}
+		}
 
 		status = dsdb_get_extended_dn_guid(p->dsdb_dn->dn, &p->guid, "GUID");
 		if (!NT_STATUS_IS_OK(status)) {
@@ -1885,6 +1897,13 @@ static int parsed_dn_find(struct ldb_context *ldb, struct parsed_dn *pdn,
 		for (i = 0; i < count; i++) {
 			int cmp;
 			p = &pdn[i];
+			if (p->dsdb_dn == NULL) {
+				p->dsdb_dn = dsdb_dn_parse_trusted(pdn, ldb,
+								   p->v, ldap_oid);
+				if (p->dsdb_dn == NULL) {
+					return LDB_ERR_OPERATIONS_ERROR;
+				}
+			}
 			cmp = ldb_dn_compare(p->dsdb_dn->dn, target_dn);
 			if (cmp == 0) {
 				dsdb_get_extended_dn_guid(p->dsdb_dn->dn,
@@ -1996,6 +2015,49 @@ static int get_parsed_dns(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 	if (! values_are_sorted) {
 		TYPESAFE_QSORT(*pdn, el->num_values, parsed_dn_compare);
 	}
+	return LDB_SUCCESS;
+}
+
+/*
+ * Get a series of trusted message element values. The result is sorted by
+ * GUID, even though the GUIDs might not be known. That works because we trust
+ * the database to give us the elements like that if the
+ * replmd_private->sorted_links flag is set.
+ */
+static int get_parsed_dns_trusted(struct ldb_module *module,
+				  struct replmd_private *replmd_private,
+				  TALLOC_CTX *mem_ctx,
+				  struct ldb_message_element *el,
+				  struct parsed_dn **pdn,
+				  const char *ldap_oid,
+				  struct ldb_request *parent)
+{
+	unsigned int i;
+
+	if (el == NULL) {
+		*pdn = NULL;
+		return LDB_SUCCESS;
+	}
+
+	if (!replmd_private->sorted_links) {
+		/* We need to sort the list. This is the slow old path we want
+		   to avoid.
+		 */
+		return get_parsed_dns(module, mem_ctx, el, pdn, ldap_oid,
+				      parent);
+	}
+	/* Here we get a list of 'struct parsed_dns' without the parsing */
+	*pdn = talloc_zero_array(mem_ctx, struct parsed_dn,
+				 el->num_values);
+	if (!*pdn) {
+		ldb_module_oom(module);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	for (i = 0; i < el->num_values; i++) {
+		(*pdn)[i].v = &el->values[i];
+	}
+
 	return LDB_SUCCESS;
 }
 
@@ -2271,13 +2333,24 @@ static int replmd_modify_la_add(struct ldb_module *module,
 
 	unix_to_nt_time(&now, t);
 
-	ret = get_parsed_dns(module, tmp_ctx, el, &dns, schema_attr->syntax->ldap_oid, parent);
+	/* get the DNs to be added, fully parsed.
+	 *
+	 * We need full parsing because they came off the wire and we don't
+	 * trust them, besides which we need their details to know where to put
+	 * them.
+	 */
+	ret = get_parsed_dns(module, tmp_ctx, el, &dns,
+			     schema_attr->syntax->ldap_oid, parent);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
 	}
 
-	ret = get_parsed_dns(module, tmp_ctx, old_el, &old_dns, schema_attr->syntax->ldap_oid, parent);
+	/* get the existing DNs, lazily parsed */
+	ret = get_parsed_dns_trusted(module, replmd_private,
+				     tmp_ctx, old_el, &old_dns,
+				     schema_attr->syntax->ldap_oid, parent);
+
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
