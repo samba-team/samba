@@ -1804,6 +1804,25 @@ struct compare_ctx {
 	const struct GUID *invocation_id;
 };
 
+/* When a parsed_dn comes from the database, sometimes it is not really parsed. */
+
+static int really_parse_trusted_dn(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
+				   struct parsed_dn *pdn, const char *ldap_oid)
+{
+	NTSTATUS status;
+	struct dsdb_dn *dsdb_dn = dsdb_dn_parse_trusted(mem_ctx, ldb, pdn->v,
+							ldap_oid);
+	if (dsdb_dn == NULL) {
+		return LDB_ERR_INVALID_DN_SYNTAX;
+	}
+
+	status = dsdb_get_extended_dn_guid(dsdb_dn->dn, &pdn->guid, "GUID");
+	if (!NT_STATUS_IS_OK(status)) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	pdn->dsdb_dn = dsdb_dn;
+	return LDB_SUCCESS;
+}
 
 static int parsed_dn_compare(struct parsed_dn *pdn1, struct parsed_dn *pdn2)
 {
@@ -2167,9 +2186,9 @@ static int replmd_check_upgrade_links(struct ldb_context *ldb,
 		uint32_t version;
 		int ret;
 		if (dns[i].dsdb_dn == NULL) {
-			dns[i].dsdb_dn = dsdb_dn_parse(dns, ldb, dns[i].v,
-						       ldap_oid);
-			if (dns[i].dsdb_dn == NULL) {
+			ret = really_parse_trusted_dn(dns, ldb, &dns[i],
+						      ldap_oid);
+			if (ret != LDB_SUCCESS) {
 				return LDB_ERR_INVALID_DN_SYNTAX;
 			}
 		}
