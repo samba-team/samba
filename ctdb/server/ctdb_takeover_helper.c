@@ -866,6 +866,8 @@ static void takeover_known_ips_done(struct tevent_req *subreq)
 		req, struct takeover_state);
 	int ret;
 	bool status;
+	uint32_t *pnns = NULL;
+	int count, i;
 
 	status = get_public_ips_recv(subreq, &ret, state, &state->known_ips);
 	TALLOC_FREE(subreq);
@@ -876,8 +878,26 @@ static void takeover_known_ips_done(struct tevent_req *subreq)
 		return;
 	}
 
+	/* Get available IPs from active nodes that actually have known IPs */
+
+	pnns = talloc_zero_array(state, uint32_t, state->num_active);
+	if (tevent_req_nomem(pnns, req)) {
+		return;
+	}
+
+	count = 0;
+	for (i = 0; i < state->num_active; i++) {
+		uint32_t pnn = state->pnns_active[i];
+
+		/* If pnn has IPs then fetch available IPs from it */
+		if (state->known_ips[pnn].num > 0) {
+			pnns[count] = pnn;
+			count++;
+		}
+	}
+
 	subreq = get_public_ips_send(state, state->ev, state->client,
-				     state->pnns_active, state->num_active,
+				     pnns, count,
 				     state->num_nodes, true);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
