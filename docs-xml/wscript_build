@@ -18,6 +18,7 @@ manpages='''
          manpages/idmap_script.8
          manpages/idmap_tdb.8
          manpages/idmap_tdb2.8
+         manpages/mvxattr.1
          manpages/net.8
          manpages/nmbd.8
          manpages/nmblookup.1

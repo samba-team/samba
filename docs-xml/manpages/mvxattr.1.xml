@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE refentry PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
+<refentry id="mvxattr.1">
+
+<refmeta>
+	<refentrytitle>mvxattr</refentrytitle>
+	<manvolnum>1</manvolnum>
+	<refmiscinfo class="source">Samba</refmiscinfo>
+	<refmiscinfo class="manual">User Commands</refmiscinfo>
+	<refmiscinfo class="version">4.7</refmiscinfo>
+</refmeta>
+
+
+<refnamediv>
+	<refname>mvxattr</refname>
+	<refpurpose>Recursively rename extended attributes</refpurpose>
+</refnamediv>
+
+<refsynopsisdiv>
+	<cmdsynopsis>
+		<command>mvxattr</command>
+		<arg choice="req">-s STRING, --from=STRING</arg>
+		<arg choice="req">-d STRING, --to=STRING</arg>
+		<arg choice="opt">-l, --follow-symlinks</arg>
+		<arg choice="opt">-p, --print</arg>
+		<arg choice="opt">-v, --verbose</arg>
+		<arg choice="opt">-f, --force</arg>
+		<arg choice="req">PATH [PATH ...]</arg>
+	</cmdsynopsis>
+</refsynopsisdiv>
+
+<refsect1>
+	<title>DESCRIPTION</title>
+
+	<para>This tool is part of the <citerefentry><refentrytitle>samba</refentrytitle>
+	<manvolnum>1</manvolnum></citerefentry> suite.</para>
+
+	<para>mvxattr is a simple utility to recursively rename extended
+	attributes.</para>
+
+	<para>By default all symlinks are ignored, use <option>-l</option> to
+	follow them.</para>
+</refsect1>
+
+<refsect1>
+	<title>OPTIONS</title>
+
+	<variablelist>
+	<varlistentry>
+		<term>-s STRING, --from=STRING</term>
+		<listitem><para>Source xattr name</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+		<term>-d STRING, --to=STRING</term>
+		<listitem><para>Destination xattr name</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+		<term>-l, --follow-symlinks</term>
+		<listitem><para>Follow symlinks, the default is to ignore
+		them.</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+		<term>-p, --print</term>
+		<listitem><para>Print files where the xattr got renamed.</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+		<term>-v, --verbose</term>
+		<listitem><para>Print files as they are checked.</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+		<term>-f, --force</term>
+		<listitem><para>Force overwriting of destination xattr.</para></listitem>
+	</varlistentry>
+	</variablelist>
+
+</refsect1>
+
+<refsect1>
+	<title>VERSION</title>
+
+	<para>This man page is correct for version 4 of the Samba suite.</para>
+</refsect1>
+
+<refsect1>
+	<title>AUTHOR</title>
+
+	<para>The original Samba software and related utilities were created by
+	Andrew Tridgell. Samba is now developed by the Samba Team as an Open
+	Source project similar to the way the Linux kernel is developed.</para>
+
+	<para>The mvxattr manpage was written by Ralph Boehme.</para>
+
+</refsect1>
+
+</refentry>
