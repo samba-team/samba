@@ -235,7 +235,7 @@ static int samba_dsdb_init(struct ldb_module *module)
 	TALLOC_CTX *tmp_ctx = talloc_new(module);
 	struct ldb_result *res;
 	struct ldb_message *rootdse_msg = NULL, *partition_msg;
-	struct ldb_dn *samba_dsdb_dn, *partition_dn;
+	struct ldb_dn *samba_dsdb_dn, *partition_dn, *indexlist_dn;
 	struct ldb_module *backend_module, *module_chain;
 	const char **final_module_list, **reverse_module_list;
 	/*
@@ -320,6 +320,7 @@ static int samba_dsdb_init(struct ldb_module *module)
 	static const char *samba_dsdb_attrs[] = { "backendType",
 						  SAMBA_COMPATIBLE_FEATURES_ATTR,
 						  SAMBA_REQUIRED_FEATURES_ATTR, NULL };
+	static const char *indexlist_attrs[] = { SAMBA_FEATURES_SUPPORTED_FLAG, NULL };
 	static const char *partition_attrs[] = { "ldapBackend", NULL };
 	const char *backendType, *backendUrl;
 	bool use_sasl_external = false;
@@ -337,6 +338,12 @@ static int samba_dsdb_init(struct ldb_module *module)
 	}
 
 	samba_dsdb_dn = ldb_dn_new(tmp_ctx, ldb, "@SAMBA_DSDB");
+	if (!samba_dsdb_dn) {
+		talloc_free(tmp_ctx);
+		return ldb_oom(ldb);
+	}
+
+	indexlist_dn = ldb_dn_new(tmp_ctx, ldb, "@INDEXLIST");
 	if (!samba_dsdb_dn) {
 		talloc_free(tmp_ctx);
 		return ldb_oom(ldb);

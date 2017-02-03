@@ -111,6 +111,11 @@ static int dsdb_schema_set_indices_and_attributes(struct ldb_context *ldb, struc
 		goto op_error;
 	}
 
+	ret = ldb_msg_add_string(msg_idx, SAMBA_FEATURES_SUPPORTED_FLAG, "1");
+	if (ret != LDB_SUCCESS) {
+		goto op_error;
+	}
+
 	for (attr = schema->attributes; attr; attr = attr->next) {
 		const char *syntax = attr->syntax->ldb_syntax;
 
