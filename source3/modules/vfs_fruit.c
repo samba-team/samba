@@ -100,17 +100,15 @@ static int vfs_fruit_debug_level = DBGC_VFS;
 #define FRUIT_PARAM_TYPE_NAME "fruit"
 #define ADOUBLE_NAME_PREFIX "._"
 
-/*
- * REVIEW:
- * This is hokey, but what else can we do?
- */
 #define NETATALK_META_XATTR "org.netatalk.Metadata"
+#define NETATALK_RSRC_XATTR "org.netatalk.Metadata"
+
 #if defined(HAVE_ATTROPEN)
 #define AFPINFO_EA_NETATALK NETATALK_META_XATTR
-#define AFPRESOURCE_EA_NETATALK "org.netatalk.ResourceFork"
+#define AFPRESOURCE_EA_NETATALK NETATALK_RSRC_XATTR
 #else
 #define AFPINFO_EA_NETATALK "user." NETATALK_META_XATTR
-#define AFPRESOURCE_EA_NETATALK "user.org.netatalk.ResourceFork"
+#define AFPRESOURCE_EA_NETATALK "user." NETATALK_RSRC_XATTR
 #endif
 
 enum apple_fork {APPLE_FORK_DATA, APPLE_FORK_RSRC};
