@@ -53,6 +53,7 @@ static bool add_ip(TALLOC_CTX *mem_ctx,
 /* Format of each line is "IP CURRENT_PNN [ALLOWED_PNN,...]".
  * If multi is true then ALLOWED_PNNs are not allowed.  */
 static bool read_ctdb_public_ip_info_node(bool multi,
+					  int numnodes,
 					  struct ctdb_public_ip_list **k,
 					  struct ctdb_public_ip_list *known)
 {
@@ -104,6 +105,14 @@ static bool read_ctdb_public_ip_info_node(bool multi,
 
 		tok = strtok(NULL, " \t#");
 		if (tok == NULL) {
+			if (! multi) {
+				for (n = 0; n < numnodes; n++) {
+					if (! add_ip(known, &known[n],
+						     &addr, pnn)) {
+						goto fail;
+					}
+				}
+			}
 			continue;
 		}
 
@@ -146,30 +155,17 @@ struct ctdb_public_ip_list * ipalloc_read_known_ips(TALLOC_CTX *ctx,
 
 	if (multi) {
 		for (n = 0; n < numnodes; n++) {
-			if (! read_ctdb_public_ip_info_node(multi, &k, known)) {
+			if (! read_ctdb_public_ip_info_node(multi, numnodes,
+							    &k, known)) {
 				goto fail;
 			}
 
 			known[n] = *k;
 		}
 	} else {
-		if (! read_ctdb_public_ip_info_node(multi, &k, known)) {
+		if (! read_ctdb_public_ip_info_node(multi, numnodes,
+						    &k, known)) {
 			goto fail;
-		}
-
-		/* Copy it to any nodes that don't have a
-		 * list assigned
-		 */
-		for (n = 0; n < numnodes; n++) {
-			if (known[n].num == 0) {
-				known[n].num = k->num;
-				known[n].ip = talloc_memdup(
-					known, k->ip,
-					k->num * sizeof(struct ctdb_public_ip));
-				if (known[n].ip == NULL) {
-					goto fail;
-				}
-			}
 		}
 	}
 
