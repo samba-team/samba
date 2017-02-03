@@ -186,6 +186,8 @@ static void get_public_ips_done(struct tevent_req *subreq)
 			tevent_req_error(req, EIO);
 			return;
 		}
+
+		D_INFO("Fetched public IPs from node %u\n", pnn);
 		state->ips[pnn] = *ips;
 	}
 
