@@ -150,29 +150,29 @@ static void get_public_ips_done(struct tevent_req *subreq)
 	struct ctdb_reply_control **reply;
 	int *err_list;
 	int ret, i;
-	bool status;
+	bool status, found_errors;
 
 	status = ctdb_client_control_multi_recv(subreq, &ret, state, &err_list,
 						&reply);
 	TALLOC_FREE(subreq);
 	if (! status) {
-		int ret2;
-		uint32_t pnn;
+		found_errors = false;
+		for (i = 0; i < state->count; i++) {
+			if (err_list[i] != 0) {
+				uint32_t pnn = state->pnns[i];
 
-		ret2 = ctdb_client_control_multi_error(state->pnns,
-						       state->count,
-						       err_list, &pnn);
-		if (ret2 != 0) {
-			D_ERR("control GET_PUBLIC_IPS failed on "
-			      "node %u, ret=%d\n", pnn, ret2);
-		} else {
-			D_ERR("control GET_PUBLIC_IPS failed, "
-			      "ret=%d\n", ret);
+				D_ERR("control GET_PUBLIC_IPS failed on "
+				      "node %u, ret=%d\n", pnn, err_list[i]);
+
+				found_errors = true;
+			}
 		}
+
 		tevent_req_error(req, ret);
 		return;
 	}
 
+	found_errors = false;
 	for (i = 0; i < state->count; i++) {
 		uint32_t pnn;
 		struct ctdb_public_ip_list *ips;
@@ -183,12 +183,17 @@ static void get_public_ips_done(struct tevent_req *subreq)
 		if (ret != 0) {
 			D_ERR("control GET_PUBLIC_IPS failed on "
 			      "node %u\n", pnn);
-			tevent_req_error(req, EIO);
-			return;
+			found_errors = true;
+			continue;
 		}
 
 		D_INFO("Fetched public IPs from node %u\n", pnn);
 		state->ips[pnn] = *ips;
+	}
+
+	if (found_errors) {
+		tevent_req_error(req, EIO);
+		return;
 	}
 
 	talloc_free(reply);
