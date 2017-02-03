@@ -20,7 +20,7 @@
 #include "includes.h"
 #include "../lib/util/tevent_unix.h"
 
-#include "lib/pthreadpool/pthreadpool_pipe.h"
+#include "../lib/pthreadpool/pthreadpool_pipe.h"
 
 struct fncall_state {
 	struct fncall_context *ctx;

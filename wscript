@@ -9,6 +9,7 @@ VERSION=None
 import sys, os, tempfile
 sys.path.insert(0, srcdir+"/buildtools/wafsamba")
 import wafsamba, Options, samba_dist, samba_git, Scripting, Utils, samba_version
+import Logs, samba_utils
 
 
 samba_dist.DIST_DIRS('.')
@@ -44,6 +45,7 @@ def set_options(opt):
     opt.RECURSE('source3')
     opt.RECURSE('lib/util')
     opt.RECURSE('ctdb')
+    opt.samba_add_onoff_option('pthreadpool', with_name="enable", without_name="disable", default=True)
 
     opt.add_option('--with-system-mitkrb5',
                    help='enable system MIT krb5 build (includes Samba 4 client and Samba 3 code base).'+
@@ -183,6 +185,14 @@ def configure(conf):
         if Options.options.with_system_mitkrb5:
             raise Utils.WafError('--with-ntvfs-fileserver conflicts with --with-system-mitkrb5')
         conf.DEFINE('WITH_NTVFS_FILESERVER', 1)
+
+    if Options.options.with_pthreadpool:
+        if conf.CONFIG_SET('HAVE_PTHREAD'):
+            conf.DEFINE('WITH_PTHREADPOOL', '1')
+        else:
+            Logs.warn("pthreadpool support cannot be enabled when pthread support was not found")
+            conf.undefine('WITH_PTHREADPOOL')
+
     conf.RECURSE('source3')
     conf.RECURSE('lib/texpect')
     if conf.env.with_ctdb:

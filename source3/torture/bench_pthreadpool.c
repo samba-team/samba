@@ -19,7 +19,7 @@
  */
 
 #include "includes.h"
-#include "lib/pthreadpool/pthreadpool_pipe.h"
+#include "../lib/pthreadpool/pthreadpool_pipe.h"
 #include "proto.h"
 
 extern int torture_numops;

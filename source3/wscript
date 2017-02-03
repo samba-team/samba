@@ -46,7 +46,6 @@ def set_options(opt):
     opt.SAMBA3_ADD_OPTION('quotas')
     opt.SAMBA3_ADD_OPTION('sendfile-support')
     opt.SAMBA3_ADD_OPTION('utmp')
-    opt.SAMBA3_ADD_OPTION('pthreadpool', with_name="enable", without_name="disable", default=True)
     opt.SAMBA3_ADD_OPTION('avahi', with_name="enable", without_name="disable")
     opt.SAMBA3_ADD_OPTION('iconv')
     opt.SAMBA3_ADD_OPTION('acl-support')
@@ -1563,13 +1562,6 @@ main() {
     if Options.options.with_profiling_data:
         conf.DEFINE('WITH_PROFILE', 1);
         conf.CHECK_FUNCS('getrusage', headers="sys/time.h sys/resource.h")
-
-    if Options.options.with_pthreadpool:
-        if conf.CONFIG_SET('HAVE_PTHREAD'):
-            conf.DEFINE('WITH_PTHREADPOOL', '1')
-        else:
-            Logs.warn("pthreadpool support cannot be enabled when pthread support was not found")
-            conf.undefine('WITH_PTHREADPOOL')
 
     if (conf.CHECK_HEADERS('linux/ioctl.h sys/ioctl.h linux/fs.h') and
         conf.CHECK_DECLS('FS_IOC_GETFLAGS FS_COMPR_FL', headers='linux/fs.h')):
