@@ -1632,6 +1632,9 @@ main() {
         else:
             Logs.info("ncurses not available, not building regedit")
 
+    if conf.CHECK_HEADERS('ftw.h') and conf.CHECK_FUNCS('nftw'):
+        conf.env.build_mvxattr = True
+
     conf.CHECK_FUNCS_IN('DES_pcbc_encrypt', 'crypto')
     if Options.options.with_fake_kaserver == True:
         conf.CHECK_HEADERS('afs/param.h afs/stds.h', together=True)

@@ -249,3 +249,11 @@ bld.SAMBA3_BINARY('net',
                  trusts_util
                  IDMAP_AUTORID_TDB
                  ''')
+
+bld.SAMBA3_BINARY('mvxattr',
+                 source='mvxattr.c',
+                 deps='''
+                 talloc
+                 popt_samba3
+                 ''',
+                 enabled=bld.env.build_mvxattr)
