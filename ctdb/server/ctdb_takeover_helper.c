@@ -879,7 +879,7 @@ static void takeover_known_ips_done(struct tevent_req *subreq)
 
 	if (! status) {
 		D_ERR("Failed to fetch known public IPs\n");
-		tevent_req_error(req, ret);
+		takeover_failed(req, ret);
 		return;
 	}
 
@@ -926,7 +926,7 @@ static void takeover_avail_ips_done(struct tevent_req *subreq)
 
 	if (! status) {
 		D_ERR("Failed to fetch available public IPs\n");
-		tevent_req_error(req, ret);
+		takeover_failed(req, ret);
 		return;
 	}
 
