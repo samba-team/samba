@@ -27,6 +27,7 @@ EOF
 required_result 255 <<EOF
 control GET_PUBLIC_IPS failed on node 2, ret=-1
 Failed to fetch known public IPs
+Assigning banning credits to node 2
 takeover run failed, ret=-1
 EOF
 test_takeover_helper

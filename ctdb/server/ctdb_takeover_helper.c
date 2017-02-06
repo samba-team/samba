@@ -91,6 +91,7 @@ struct get_public_ips_state {
 	uint32_t *pnns;
 	int count;
 	struct ctdb_public_ip_list *ips;
+	uint32_t *ban_credits;
 };
 
 static void get_public_ips_done(struct tevent_req *subreq);
@@ -101,6 +102,7 @@ static struct tevent_req *get_public_ips_send(
 				struct ctdb_client_context *client,
 				uint32_t *pnns,
 				int count, int num_nodes,
+				uint32_t *ban_credits,
 				bool available_only)
 {
 	struct tevent_req *req, *subreq;
@@ -114,6 +116,7 @@ static struct tevent_req *get_public_ips_send(
 
 	state->pnns = pnns;
 	state->count = count;
+	state->ban_credits = ban_credits;
 
 	state->ips  = talloc_zero_array(state,
 					struct ctdb_public_ip_list,
@@ -164,6 +167,7 @@ static void get_public_ips_done(struct tevent_req *subreq)
 				D_ERR("control GET_PUBLIC_IPS failed on "
 				      "node %u, ret=%d\n", pnn, err_list[i]);
 
+				state->ban_credits[pnn]++;
 				found_errors = true;
 			}
 		}
@@ -183,6 +187,7 @@ static void get_public_ips_done(struct tevent_req *subreq)
 		if (ret != 0) {
 			D_ERR("control GET_PUBLIC_IPS failed on "
 			      "node %u\n", pnn);
+			state->ban_credits[pnn]++;
 			found_errors = true;
 			continue;
 		}
@@ -855,7 +860,8 @@ static void takeover_nodemap_done(struct tevent_req *subreq)
 
 	subreq = get_public_ips_send(state, state->ev, state->client,
 				     state->pnns_active, state->num_active,
-				     state->num_nodes, false);
+				     state->num_nodes, state->ban_credits,
+				     false);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -903,7 +909,8 @@ static void takeover_known_ips_done(struct tevent_req *subreq)
 
 	subreq = get_public_ips_send(state, state->ev, state->client,
 				     pnns, count,
-				     state->num_nodes, true);
+				     state->num_nodes, state->ban_credits,
+				     true);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
