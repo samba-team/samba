@@ -251,14 +251,22 @@ static void comm_read_failed(struct tevent_req *req)
  * Write packets
  */
 
+struct comm_write_entry {
+	struct comm_context *comm;
+	struct tevent_queue_entry *qentry;
+	struct tevent_req *req;
+};
+
 struct comm_write_state {
 	struct tevent_context *ev;
 	struct comm_context *comm;
+	struct comm_write_entry *entry;
 	struct tevent_req *subreq;
 	uint8_t *buf;
 	size_t buflen, nwritten;
 };
 
+static int comm_write_entry_destructor(struct comm_write_entry *entry);
 static void comm_write_trigger(struct tevent_req *req, void *private_data);
 static void comm_write_done(struct tevent_req *subreq);
 
@@ -269,6 +277,7 @@ struct tevent_req *comm_write_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req;
 	struct comm_write_state *state;
+	struct comm_write_entry *entry;
 
 	req = tevent_req_create(mem_ctx, &state, struct comm_write_state);
 	if (req == NULL) {
@@ -280,13 +289,36 @@ struct tevent_req *comm_write_send(TALLOC_CTX *mem_ctx,
 	state->buf = buf;
 	state->buflen = buflen;
 
-	if (!tevent_queue_add_entry(comm->queue, ev, req,
-				    comm_write_trigger, NULL)) {
-		talloc_free(req);
-		return NULL;
+	entry = talloc_zero(state, struct comm_write_entry);
+	if (tevent_req_nomem(entry, req)) {
+		return tevent_req_post(req, ev);
 	}
 
+	entry->comm = comm;
+	entry->req = req;
+	entry->qentry = tevent_queue_add_entry(comm->queue, ev, req,
+					       comm_write_trigger, NULL);
+	if (tevent_req_nomem(entry->qentry, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	state->entry = entry;
+	talloc_set_destructor(entry, comm_write_entry_destructor);
+
 	return req;
+}
+
+static int comm_write_entry_destructor(struct comm_write_entry *entry)
+{
+	struct comm_context *comm = entry->comm;
+
+	if (comm->write_req == entry->req) {
+		comm->write_req = NULL;
+		TEVENT_FD_NOT_WRITEABLE(comm->fde);
+	}
+
+	TALLOC_FREE(entry->qentry);
+	return 0;
 }
 
 static void comm_write_trigger(struct tevent_req *req, void *private_data)
@@ -333,6 +365,8 @@ static void comm_write_done(struct tevent_req *subreq)
 	}
 
 	state->nwritten = nwritten;
+	state->entry->qentry = NULL;
+	TALLOC_FREE(state->entry);
 	tevent_req_done(req);
 }
 
@@ -382,8 +416,8 @@ static void comm_fd_handler(struct tevent_context *ev,
 		struct comm_write_state *write_state;
 
 		if (comm->write_req == NULL) {
-			/* This should never happen */
-			abort();
+			TEVENT_FD_NOT_WRITEABLE(comm->fde);
+			return;
 		}
 
 		write_state = tevent_req_data(comm->write_req,
