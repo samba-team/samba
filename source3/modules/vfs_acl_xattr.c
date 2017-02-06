@@ -243,12 +243,30 @@ static int connect_acl_xattr(struct vfs_handle_struct *handle,
 				return -1);
 
 	if (config->ignore_system_acls) {
-		DBG_NOTICE("setting 'create mask = 0666', "
-			   "'directory mask = 0777', "
+		mode_t create_mask = lp_create_mask(SNUM(handle->conn));
+		char *create_mask_str = NULL;
+
+		if ((create_mask & 0666) != 0666) {
+			create_mask |= 0666;
+			create_mask_str = talloc_asprintf(handle, "0%o",
+							  create_mask);
+			if (create_mask_str == NULL) {
+				DBG_ERR("talloc_asprintf failed\n");
+				return -1;
+			}
+
+			DBG_NOTICE("setting 'create mask = %s'\n", create_mask_str);
+
+			lp_do_parameter (SNUM(handle->conn),
+					"create mask", create_mask_str);
+
+			TALLOC_FREE(create_mask_str);
+		}
+
+		DBG_NOTICE("setting 'directory mask = 0777', "
 			   "'store dos attributes = yes' and all "
 			   "'map ...' options to 'no'\n");
 
-		lp_do_parameter(SNUM(handle->conn), "create mask", "0666");
 		lp_do_parameter(SNUM(handle->conn), "directory mask", "0777");
 		lp_do_parameter(SNUM(handle->conn), "map archive", "no");
 		lp_do_parameter(SNUM(handle->conn), "map hidden", "no");
