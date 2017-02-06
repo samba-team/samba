@@ -55,11 +55,14 @@ static bool gencache_init(void)
 {
 	char* cache_fname = NULL;
 	int open_flags = O_RDWR|O_CREAT;
+	int hash_size;
 
 	/* skip file open if it's already opened */
 	if (cache) {
 		return true;
 	}
+
+	hash_size = lp_parm_int(-1, "gencache", "hash_size", 10000);
 
 	cache_fname = cache_path("gencache.tdb");
 	if (cache_fname == NULL) {
@@ -68,7 +71,7 @@ static bool gencache_init(void)
 
 	DEBUG(5, ("Opening cache file at %s\n", cache_fname));
 
-	cache = tdb_wrap_open(NULL, cache_fname, 0,
+	cache = tdb_wrap_open(NULL, cache_fname, hash_size,
 			      TDB_DEFAULT|TDB_INCOMPATIBLE_HASH,
 			      open_flags, 0644);
 	if (cache) {
@@ -87,7 +90,7 @@ static bool gencache_init(void)
 			 * CLEAR_IF_FIRST databases, so lets use it here to
 			 * clean up a broken database.
 			 */
-			cache = tdb_wrap_open(NULL, cache_fname, 0,
+			cache = tdb_wrap_open(NULL, cache_fname, hash_size,
 					      TDB_DEFAULT|
 					      TDB_INCOMPATIBLE_HASH|
 					      TDB_CLEAR_IF_FIRST,
@@ -97,7 +100,7 @@ static bool gencache_init(void)
 
 	if (!cache && (errno == EACCES)) {
 		open_flags = O_RDONLY;
-		cache = tdb_wrap_open(NULL, cache_fname, 0,
+		cache = tdb_wrap_open(NULL, cache_fname, hash_size,
 				      TDB_DEFAULT|TDB_INCOMPATIBLE_HASH,
 				      open_flags, 0644);
 		if (cache) {
@@ -119,7 +122,7 @@ static bool gencache_init(void)
 
 	DEBUG(5, ("Opening cache file at %s\n", cache_fname));
 
-	cache_notrans = tdb_wrap_open(NULL, cache_fname, 0,
+	cache_notrans = tdb_wrap_open(NULL, cache_fname, hash_size,
 				      TDB_CLEAR_IF_FIRST|
 				      TDB_INCOMPATIBLE_HASH|
 				      TDB_NOSYNC|
