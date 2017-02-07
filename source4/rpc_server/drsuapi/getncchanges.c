@@ -646,7 +646,7 @@ static WERROR get_nc_changes_add_links(struct ldb_context *sam_ctx,
 				return WERR_DS_DRA_INTERNAL_ERROR;
 			}
 
-			if (local_usn < highest_usn) {
+			if (local_usn <= highest_usn) {
 				continue;
 			}
 
