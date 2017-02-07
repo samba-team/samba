@@ -1246,15 +1246,20 @@ sub provision_promoted_dc($$$)
 
 sub provision_vampire_dc($$$)
 {
-	my ($self, $prefix, $dcvars) = @_;
-	print "PROVISIONING VAMPIRE DC...\n";
+	my ($self, $prefix, $dcvars, $fl) = @_;
+	print "PROVISIONING VAMPIRE DC @ FL $fl...\n";
+	my $name = "localvampiredc";
+
+	if ($fl == "2000") {
+	    $name = "vampire2000dc";
+	}
 
 	# We do this so that we don't run the provision.  That's the job of 'net vampire'.
 	my $ctx = $self->provision_raw_prepare($prefix, "domain controller",
-					       "localvampiredc",
-					       "SAMBADOMAIN",
-					       "samba.example.com",
-					       "2008",
+					       $name,
+					       $dcvars->{DOMAIN},
+					       $dcvars->{REALM},
+					       $fl,
 					       $dcvars->{PASSWORD},
 					       $dcvars->{SERVER_IP},
 					       $dcvars->{SERVER_IPV6});
@@ -1299,11 +1304,17 @@ sub provision_vampire_dc($$$)
 		return undef;
 	}
 
-	$ret->{VAMPIRE_DC_SERVER} = $ret->{SERVER};
-	$ret->{VAMPIRE_DC_SERVER_IP} = $ret->{SERVER_IP};
-	$ret->{VAMPIRE_DC_SERVER_IPV6} = $ret->{SERVER_IPV6};
-	$ret->{VAMPIRE_DC_NETBIOSNAME} = $ret->{NETBIOSNAME};
-
+        if ($fl == "2000") {
+		$ret->{VAMPIRE_2000_DC_SERVER} = $ret->{SERVER};
+		$ret->{VAMPIRE_2000_DC_SERVER_IP} = $ret->{SERVER_IP};
+		$ret->{VAMPIRE_2000_DC_SERVER_IPV6} = $ret->{SERVER_IPV6};
+		$ret->{VAMPIRE_2000_DC_NETBIOSNAME} = $ret->{NETBIOSNAME};
+        } else {
+		$ret->{VAMPIRE_DC_SERVER} = $ret->{SERVER};
+		$ret->{VAMPIRE_DC_SERVER_IP} = $ret->{SERVER_IP};
+		$ret->{VAMPIRE_DC_SERVER_IPV6} = $ret->{SERVER_IPV6};
+		$ret->{VAMPIRE_DC_NETBIOSNAME} = $ret->{NETBIOSNAME};
+        }
 	$ret->{DC_SERVER} = $dcvars->{DC_SERVER};
 	$ret->{DC_SERVER_IP} = $dcvars->{DC_SERVER_IP};
 	$ret->{DC_SERVER_IPV6} = $dcvars->{DC_SERVER_IPV6};
@@ -2002,6 +2013,11 @@ sub setup_env($$$)
 		return $self->setup_ad_dc_ntvfs("$path/ad_dc_ntvfs");
 	} elsif ($envname eq "fl2000dc") {
 		return $self->setup_fl2000dc("$path/fl2000dc");
+	} elsif ($envname eq "vampire_2000_dc") {
+		if (not defined($self->{vars}->{fl2000dc})) {
+			$self->setup_fl2000dc("$path/fl2000dc");
+		}
+		return $self->setup_vampire_dc("$path/vampire_2000_dc", $self->{vars}->{fl2000dc}, "2000");
 	} elsif ($envname eq "fl2003dc") {
 		if (not defined($self->{vars}->{ad_dc})) {
 			$self->setup_ad_dc("$path/ad_dc");
@@ -2021,7 +2037,7 @@ sub setup_env($$$)
 		if (not defined($self->{vars}->{ad_dc_ntvfs})) {
 			$self->setup_ad_dc_ntvfs("$path/ad_dc_ntvfs");
 		}
-		return $self->setup_vampire_dc("$path/vampire_dc", $self->{vars}->{ad_dc_ntvfs});
+		return $self->setup_vampire_dc("$path/vampire_dc", $self->{vars}->{ad_dc_ntvfs}, "2008");
 	} elsif ($envname eq "promoted_dc") {
 		if (not defined($self->{vars}->{ad_dc_ntvfs})) {
 			$self->setup_ad_dc_ntvfs("$path/ad_dc_ntvfs");
@@ -2211,11 +2227,11 @@ sub setup_fl2008r2dc($$$)
 	return $env;
 }
 
-sub setup_vampire_dc($$$)
+sub setup_vampire_dc($$$$)
 {
-	my ($self, $path, $dc_vars) = @_;
+	my ($self, $path, $dc_vars, $fl) = @_;
 
-	my $env = $self->provision_vampire_dc($path, $dc_vars);
+	my $env = $self->provision_vampire_dc($path, $dc_vars, $fl);
 
 	if (defined $env) {
 	        if (not defined($self->check_or_start($env, "single"))) {
