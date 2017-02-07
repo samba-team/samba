@@ -590,13 +590,17 @@ static WERROR get_nc_changes_add_links(struct ldb_context *sam_ctx,
 {
 	unsigned int i;
 	TALLOC_CTX *tmp_ctx = NULL;
-	uint64_t uSNChanged = ldb_msg_find_attr_as_int(msg, "uSNChanged", -1);
+	uint64_t uSNChanged = ldb_msg_find_attr_as_uint64(msg, "uSNChanged", 0);
 	bool is_critical = ldb_msg_find_attr_as_bool(msg, "isCriticalSystemObject", false);
 
 	if (replica_flags & DRSUAPI_DRS_CRITICAL_ONLY) {
 		if (!is_critical) {
 			return WERR_OK;
 		}
+	}
+
+	if (uSNChanged <= highest_usn) {
+		return WERR_OK;
 	}
 
 	tmp_ctx = talloc_new(mem_ctx);
