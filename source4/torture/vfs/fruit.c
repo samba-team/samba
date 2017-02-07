@@ -1814,6 +1814,77 @@ done:
 	return ret;
 }
 
+static bool test_rfork_create_ro(struct torture_context *tctx,
+				 struct smb2_tree *tree)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	const char *fname = BASEDIR "\\torture_rfork_create";
+	const char *rfork = BASEDIR "\\torture_rfork_create" AFPRESOURCE_STREAM;
+	NTSTATUS status;
+	struct smb2_handle testdirh;
+	bool ret = true;
+	struct smb2_create create;
+
+	smb2_util_unlink(tree, fname);
+	status = torture_smb2_testdir(tree, BASEDIR, &testdirh);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+		"torture_smb2_testdir\n");
+	smb2_util_close(tree, testdirh);
+
+	ret = torture_setup_file(mem_ctx, tree, fname, false);
+	if (ret == false) {
+		goto done;
+	}
+
+	torture_comment(tctx, "(%s) Try opening read-only with "
+			"open_if create disposition, should return ENOENT\n",
+			__location__);
+
+	ZERO_STRUCT(create);
+	create.in.fname = rfork;
+	create.in.create_disposition = NTCREATEX_DISP_OPEN_IF;
+	create.in.desired_access = SEC_FILE_READ_DATA | SEC_STD_READ_CONTROL;
+	create.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	create.in.share_access = FILE_SHARE_READ | FILE_SHARE_DELETE;
+	status = smb2_create(tree, mem_ctx, &(create));
+	torture_assert_ntstatus_equal_goto(tctx, status,
+					NT_STATUS_OBJECT_NAME_NOT_FOUND,
+					ret, done, "smb2_create failed\n");
+
+	torture_comment(tctx, "(%s) Now write something to the "
+			"rsrc stream, then the same open should succeed\n",
+			__location__);
+
+	ret = write_stream(tree, __location__, tctx, mem_ctx,
+			   fname, AFPRESOURCE_STREAM_NAME,
+			   0, 3, "foo");
+	torture_assert_goto(tctx, ret == true, ret, done,
+			"write_stream failed\n");
+
+	ret = check_stream(tree, __location__, tctx, mem_ctx,
+			   fname, AFPRESOURCE_STREAM,
+			   0, 3, 0, 3, "foo");
+	torture_assert_goto(tctx, ret == true, ret, done, "check_stream");
+
+	ZERO_STRUCT(create);
+	create.in.fname = rfork;
+	create.in.create_disposition = NTCREATEX_DISP_OPEN_IF;
+	create.in.desired_access = SEC_FILE_READ_DATA | SEC_STD_READ_CONTROL;
+	create.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	create.in.share_access = FILE_SHARE_READ | FILE_SHARE_DELETE;
+	status = smb2_create(tree, mem_ctx, &(create));
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+		"smb2_create failed\n");
+
+	smb2_util_close(tree, create.out.file.handle);
+
+done:
+	smb2_util_unlink(tree, fname);
+	smb2_deltree(tree, BASEDIR);
+	talloc_free(mem_ctx);
+	return ret;
+}
+
 static bool test_adouble_conversion(struct torture_context *tctx,
 				    struct smb2_tree *tree)
 {
@@ -4007,8 +4078,8 @@ struct torture_suite *torture_vfs_fruit(void)
 	torture_suite_add_1smb2_test(suite, "delete", test_delete_file_with_rfork);
 	torture_suite_add_1smb2_test(suite, "read open rsrc after rename", test_rename_and_read_rsrc);
 	torture_suite_add_1smb2_test(suite, "readdir_attr with names with illegal ntfs characters", test_readdir_attr_illegal_ntfs);
-
 	torture_suite_add_2ns_smb2_test(suite, "invalid AFP_AfpInfo", test_invalid_afpinfo);
+	torture_suite_add_1smb2_test(suite, "creating rsrc with read-only access", test_rfork_create_ro);
 
 	return suite;
 }
