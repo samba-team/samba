@@ -212,6 +212,7 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 	uint32_t *attids;
 	const char *rdn;
 	const struct dsdb_attribute *rdn_sa;
+	uint64_t uSNChanged;
 	unsigned int instanceType;
 	struct dsdb_syntax_ctx syntax_ctx;
 
@@ -219,6 +220,7 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 	dsdb_syntax_ctx_init(&syntax_ctx, sam_ctx, schema);
 	syntax_ctx.is_schema_nc = is_schema_nc;
 
+	uSNChanged = ldb_msg_find_attr_as_uint64(msg, "uSNChanged", 0);
 	instanceType = ldb_msg_find_attr_as_uint(msg, "instanceType", 0);
 	if (instanceType & INSTANCE_TYPE_IS_NC_HEAD) {
 		obj->is_nc_prefix = true;
@@ -246,6 +248,11 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 
 	if (instanceType & INSTANCE_TYPE_UNINSTANT) {
 		/* don't send uninstantiated objects */
+		return WERR_OK;
+	}
+
+	if (uSNChanged <= highest_usn) {
+		/* nothing to send */
 		return WERR_OK;
 	}
 
