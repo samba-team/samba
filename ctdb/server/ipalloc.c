@@ -163,12 +163,19 @@ static bool populate_bitmap(struct ipalloc_state *ipalloc_state)
 
 	for (ip = ipalloc_state->all_ips; ip != NULL; ip = ip->next) {
 
+		ip->known_on = bitmap_talloc(ip, ipalloc_state->num);
+		if (ip->known_on == NULL) {
+			return false;
+		}
+
 		ip->available_on = bitmap_talloc(ip, ipalloc_state->num);
 		if (ip->available_on == NULL) {
 			return false;
 		}
 
 		for (i = 0; i < ipalloc_state->num; i++) {
+			struct ctdb_public_ip_list *known =
+				&ipalloc_state->known_public_ips[i];
 			struct ctdb_public_ip_list *avail =
 				&ipalloc_state->available_public_ips[i];
 
@@ -177,6 +184,21 @@ static bool populate_bitmap(struct ipalloc_state *ipalloc_state)
 				if (ctdb_sock_addr_same_ip(
 					    &ip->addr, &avail->ip[j].addr)) {
 					bitmap_set(ip->available_on, i);
+					break;
+				}
+			}
+
+			/* Optimisation: available => known */
+			if (bitmap_query(ip->available_on, i)) {
+				bitmap_set(ip->known_on, i);
+				continue;
+			}
+
+			/* Check to see if "ip" is known on node "i" */
+			for (j = 0; j < known->num; j++) {
+				if (ctdb_sock_addr_same_ip(
+					    &ip->addr, &known->ip[j].addr)) {
+					bitmap_set(ip->known_on, i);
 					break;
 				}
 			}

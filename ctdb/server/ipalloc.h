@@ -33,6 +33,7 @@ struct public_ip_list {
 	struct public_ip_list *next;
 	uint32_t pnn;
 	ctdb_sock_addr addr;
+	struct bitmap *known_on;
 	struct bitmap *available_on;
 };
 
