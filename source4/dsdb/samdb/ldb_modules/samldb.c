@@ -439,8 +439,120 @@ static int samldb_schema_add_handle_linkid(struct samldb_ctx *ac)
 	}
 }
 
-/* sAMAccountName handling */
+static int samldb_check_mapiid_used(struct samldb_ctx *ac,
+				    struct dsdb_schema *schema,
+				    struct ldb_dn *schema_dn,
+				    struct ldb_context *ldb,
+				    int32_t mapiid,
+				    bool *found)
+{
+	int ret;
+	struct ldb_result *ldb_res;
 
+	ret = dsdb_module_search(ac->module, ac,
+				 &ldb_res,
+				 schema_dn, LDB_SCOPE_ONELEVEL, NULL,
+				 DSDB_FLAG_NEXT_MODULE,
+				 ac->req,
+				 "(mAPIID=%d)", mapiid);
+	if (ret != LDB_SUCCESS) {
+		ldb_debug_set(ldb, LDB_DEBUG_ERROR,
+			      __location__": Searching for mAPIID=%d failed - %s\n",
+			      mapiid,
+			      ldb_errstring(ldb));
+		return ldb_operr(ldb);
+	}
+
+	*found = (ldb_res->count != 0);
+	talloc_free(ldb_res);
+
+	return LDB_SUCCESS;
+}
+
+static int samldb_generate_next_mapiid(struct samldb_ctx *ac,
+				       struct dsdb_schema *schema,
+				       int32_t *next_mapiid)
+{
+	int ret;
+	struct ldb_context *ldb;
+	struct ldb_dn *schema_dn;
+	bool mapiid_used = true;
+
+	/* Windows' generation seems to start about here */
+	*next_mapiid = 60000;
+
+	ldb = ldb_module_get_ctx(ac->module);
+	schema_dn = ldb_get_schema_basedn(ldb);
+
+	while (mapiid_used) {
+		*next_mapiid += 1;
+		ret = samldb_check_mapiid_used(ac, schema,
+					       schema_dn, ldb,
+					       *next_mapiid, &mapiid_used);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+
+	return LDB_SUCCESS;
+}
+
+static int samldb_schema_add_handle_mapiid(struct samldb_ctx *ac)
+{
+	int ret;
+	bool ok;
+	struct ldb_message_element *el;
+	const char *enc_str;
+	struct ldb_context *ldb;
+	struct ldb_dn *schema_dn;
+	struct dsdb_schema *schema;
+	int32_t new_mapiid = 0;
+
+	/*
+	 * The mAPIID of a new attribute should be automatically generated
+	 * if a specific OID is put as the mAPIID, as according to
+	 * [MS-ADTS] 3.1.1.2.3.2.
+	 */
+
+	ldb = ldb_module_get_ctx(ac->module);
+	schema = dsdb_get_schema(ldb, ac);
+	schema_dn = ldb_get_schema_basedn(ldb);
+
+	el = dsdb_get_single_valued_attr(ac->msg, "mAPIID",
+					 ac->req->operation);
+	if (el == NULL) {
+		return LDB_SUCCESS;
+	}
+
+	enc_str = ldb_binary_encode(ac, el->values[0]);
+	if (enc_str == NULL) {
+		return ldb_module_oom(ac->module);
+	}
+
+	ok = (strcmp(enc_str, "1.2.840.113556.1.2.49") == 0);
+	if (ok) {
+		ret = samldb_generate_next_mapiid(ac, schema,
+						  &new_mapiid);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+
+		ldb_msg_remove_element(ac->msg, el);
+		ret = samdb_msg_add_int(ldb, ac->msg, ac->msg,
+					"mAPIID", new_mapiid);
+		return ret;
+	}
+
+	schema_dn = ldb_get_schema_basedn(ldb_module_get_ctx(ac->module));
+	ret = samldb_unique_attr_check(ac, "mAPIID", NULL, schema_dn);
+	if (ret == LDB_ERR_ENTRY_ALREADY_EXISTS) {
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	} else {
+		return ret;
+	}
+}
+
+/* sAMAccountName handling */
 static int samldb_generate_sAMAccountName(struct ldb_context *ldb,
 					  struct ldb_message *msg)
 {
@@ -3395,6 +3507,11 @@ static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 			}
 
 			ret = samldb_schema_add_handle_linkid(ac);
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
+
+			ret = samldb_schema_add_handle_mapiid(ac);
 			if (ret != LDB_SUCCESS) {
 				return ret;
 			}
