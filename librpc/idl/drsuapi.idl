@@ -577,7 +577,7 @@ interface drsuapi
 		drsuapi_DsReplicaOIDMapping_Ctr mapping_ctr;
 	} drsuapi_DsGetNCChangesRequest8;
 
-	typedef struct {
+	typedef [public] struct {
 		GUID destination_dsa_guid;
 		GUID source_dsa_invocation_id; /* the 'invocationId' field of the CN=NTDS Settings object */
 		[ref] drsuapi_DsReplicaObjectIdentifier *naming_context;
