@@ -171,8 +171,7 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
 
         (hwm0, utdv0) = self._check_replication([ou2,dc3,cn3,ou1],
                             drsuapi.DRSUAPI_DRS_WRIT_REP,
-                            expected_links=[ou1_managedBy_dc3],
-                            nc_object_count=4)
+                            expected_links=[ou1_managedBy_dc3])
 
         m = ldb.Message()
         m.dn = ldb.Dn(self.ldb_dc1, dc3)
@@ -185,54 +184,46 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
         self._check_replication([],
             drsuapi.DRSUAPI_DRS_WRIT_REP,
             expected_links=[dc3_managedBy_ou2],
-            highwatermark=hwm0,
-            nc_object_count=1)
+            highwatermark=hwm0)
 
         self._check_replication([],
             drsuapi.DRSUAPI_DRS_WRIT_REP|
             drsuapi.DRSUAPI_DRS_GET_ANC,
             expected_links=[dc3_managedBy_ou2],
-            highwatermark=hwm0,
-            nc_object_count=1)
+            highwatermark=hwm0)
 
         self._check_replication([],
             drsuapi.DRSUAPI_DRS_CRITICAL_ONLY,
             expected_links=[dc3_managedBy_ou2],
-            highwatermark=hwm0,
-            nc_object_count=1)
+            highwatermark=hwm0)
 
         self._check_replication([],
             drsuapi.DRSUAPI_DRS_CRITICAL_ONLY|
             drsuapi.DRSUAPI_DRS_GET_ANC,
             expected_links=[dc3_managedBy_ou2],
-            highwatermark=hwm0,
-            nc_object_count=1)
+            highwatermark=hwm0)
 
         self._check_replication([],
             drsuapi.DRSUAPI_DRS_WRIT_REP,
             expected_links=[dc3_managedBy_ou2],
-            uptodateness_vector=utdv0,
-            nc_object_count=4)
+            uptodateness_vector=utdv0)
 
         self._check_replication([],
             drsuapi.DRSUAPI_DRS_WRIT_REP|
             drsuapi.DRSUAPI_DRS_GET_ANC,
             expected_links=[dc3_managedBy_ou2],
-            uptodateness_vector=utdv0,
-            nc_object_count=4)
+            uptodateness_vector=utdv0)
 
         self._check_replication([],
             drsuapi.DRSUAPI_DRS_CRITICAL_ONLY,
             expected_links=[dc3_managedBy_ou2],
-            uptodateness_vector=utdv0,
-            nc_object_count=1)
+            uptodateness_vector=utdv0)
 
         self._check_replication([],
             drsuapi.DRSUAPI_DRS_CRITICAL_ONLY|
             drsuapi.DRSUAPI_DRS_GET_ANC,
             expected_links=[dc3_managedBy_ou2],
-            uptodateness_vector=utdv0,
-            nc_object_count=1)
+            uptodateness_vector=utdv0)
 
     def test_FSMONotOwner(self):
         """Test role transfer with against DC not owner of the role"""

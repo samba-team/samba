@@ -312,3 +312,5 @@
 ^samba.tests.dcerpc.dnsserver.samba.tests.dcerpc.dnsserver.DnsserverTests.test_add_duplicate_different_type.*
 ^samba.tests.dcerpc.dnsserver.samba.tests.dcerpc.dnsserver.DnsserverTests.test_rank_none.*
 ^samba.tests.dcerpc.dnsserver.samba.tests.dcerpc.dnsserver.DnsserverTests.test_security_descriptor.*
+# nc_object_count is updated without GET_NC_SIZE
+^samba4.drs.getnc_exop.python.*getnc_exop.DrsReplicaSyncTestCase.test_link_utdv_hwm.*
