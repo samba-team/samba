@@ -1101,6 +1101,82 @@ systemOnly: FALSE
         except LdbError, (enum, estr):
             self.assertEquals(enum, ERR_UNWILLING_TO_PERFORM)
 
+    def test_generated_mAPIID(self):
+        """
+        Test that we automatically generate a mAPIID if the
+        OID "1.2.840.113556.1.2.49" is given as the mAPIID
+        of a new attribute, and that we don't get/can't add
+        duplicate mAPIIDs.
+        """
+
+        rand = str(random.randint(1,100000))
+
+        attr_name_1 = "test-generated-mAPIID" + time.strftime("%s", time.gmtime()) + "-" + rand
+        attr_ldap_display_name_1 = attr_name_1.replace("-", "")
+        attributeID_1 = "1.3.6.1.4.1.7165.4.6.1.6.24." + rand
+        ldif = """
+dn: CN=%s,%s""" % (attr_name_1, self.schema_dn) + """
+objectClass: top
+objectClass: attributeSchema
+adminDescription: """ + attr_name_1 + """
+adminDisplayName: """ + attr_name_1 + """
+cn: """ + attr_name_1 + """
+attributeId: """ + attributeID_1 + """
+mAPIID: 1.2.840.113556.1.2.49
+attributeSyntax: 2.5.5.1
+ldapDisplayName: """ + attr_ldap_display_name_1 + """
+omSyntax: 127
+instanceType: 4
+isSingleValued: TRUE
+systemOnly: FALSE
+"""
+
+        try:
+            self.ldb.add_ldif(ldif)
+        except LdbError, (enum, estr):
+            self.fail(estr)
+
+        res = self.ldb.search("CN=%s,%s" % (attr_name_1, self.schema_dn),
+                              scope=SCOPE_BASE,
+                              attrs=["mAPIID"])
+        self.assertEquals(len(res), 1)
+        mAPIID_1 = int(res[0]["mAPIID"][0])
+
+        ldif = """
+dn:
+changetype: modify
+replace: schemaupdatenow
+schemaupdatenow: 1
+"""
+        self.ldb.modify_ldif(ldif)
+
+        # If we add a new attribute with the same mAPIID, it should fail
+        attr_name = "test-generated-mAPIID-duplicate" + time.strftime("%s", time.gmtime()) + "-" + rand
+        attr_ldap_display_name = attr_name.replace("-", "")
+        attributeID = "1.3.6.1.4.1.7165.4.6.1.6.25." + rand
+        ldif = """
+dn: CN=%s,%s""" % (attr_name, self.schema_dn) + """
+objectClass: top
+objectClass: attributeSchema
+adminDescription: """ + attr_name + """
+adminDisplayName: """ + attr_name + """
+cn: """ + attr_name + """
+attributeId: """ + attributeID + """
+mAPIID: """ + str(mAPIID_1) + """
+attributeSyntax: 2.5.5.1
+ldapDisplayName: """ + attr_ldap_display_name + """
+omSyntax: 127
+instanceType: 4
+isSingleValued: TRUE
+systemOnly: FALSE
+"""
+
+        try:
+            self.ldb.add_ldif(ldif)
+            self.fail("Should have failed to add duplicate mAPIID value")
+        except LdbError, (enum, estr):
+            self.assertEquals(enum, ERR_UNWILLING_TO_PERFORM)
+
 
     def test_change_governsID(self):
         """Testing change the governsID"""
