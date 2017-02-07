@@ -2063,10 +2063,33 @@ allowed:
 	if (getnc_state->guids == NULL) {
 		const char *extra_filter;
 		struct ldb_result *search_res = NULL;
+		static const struct drsuapi_DsReplicaCursorCtrEx empty_udv;
+		const struct drsuapi_DsReplicaCursorCtrEx *udv = NULL;
 
 		extra_filter = lpcfg_parm_string(dce_call->conn->dce_ctx->lp_ctx, NULL, "drs", "object filter");
 
+		if (req10->uptodateness_vector != NULL) {
+			udv = req10->uptodateness_vector;
+		} else {
+			udv = &empty_udv;
+		}
+
 		getnc_state->min_usn = req10->highwatermark.highest_usn;
+		for (i = 0; i < udv->count; i++) {
+			bool match;
+			const struct drsuapi_DsReplicaCursor *cur =
+				&udv->cursors[i];
+
+			match = GUID_equal(&invocation_id,
+					   &cur->source_dsa_invocation_id);
+			if (!match) {
+				continue;
+			}
+			if (cur->highest_usn > getnc_state->min_usn) {
+				getnc_state->min_usn = cur->highest_usn;
+			}
+			break;
+		}
 		getnc_state->max_usn = getnc_state->min_usn;
 
 		getnc_state->final_udv = talloc_zero(getnc_state,
