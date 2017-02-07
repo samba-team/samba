@@ -113,7 +113,7 @@ struct DsIntIdTestCtx {
 		"instanceType: 4\n" \
 		"isSingleValued: TRUE\n" \
 		"systemOnly: FALSE\n" \
-		"linkID: 88880\n" \
+		"linkID: 1.2.840.113556.1.2.50\n" \
 		"\n" \
 		"# schemaUpdateNow\n" \
 		"DN:\n" \

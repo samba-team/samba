@@ -242,7 +242,7 @@ class DrsReplSchemaTestCase(drs_base.DrsBaseTestCase):
            AttributeID_id in Schema cache"""
         # add new attributeSchema object
         (a_ldn, a_dn) = self._schema_new_attr(self.ldb_dc1, "attr-Link-X", 10,
-                                              attrs={'linkID':"99990",
+                                              attrs={'linkID':"1.2.840.113556.1.2.50",
                                                      "attributeSyntax": "2.5.5.1",
                                                      "omSyntax": "127"})
         # add a base classSchema class so we can use our new
