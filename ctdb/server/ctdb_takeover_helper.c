@@ -301,6 +301,12 @@ static struct tevent_req *release_ip_send(TALLOC_CTX *mem_ctx,
 
 		for (i = 0; i < count; i++) {
 			uint32_t pnn = pnns[i];
+
+			/* Skip this node if IP is not known */
+			if (! bitmap_query(tmp_ip->known_on, pnn)) {
+				continue;
+			}
+
 			/* If pnn is not the node that should be
 			 * hosting the IP then add it to the list of
 			 * nodes that need to do a release. */

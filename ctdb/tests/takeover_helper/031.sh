@@ -33,10 +33,10 @@ Fetched public IPs from node 2
  10.0.0.33 -> 2 [+0]
  10.0.0.31 -> 0 [+14884]
  10.0.0.32 -> 2 [+16129]
-RELEASE_IP 10.0.0.34 succeeded on 2 nodes
-RELEASE_IP 10.0.0.33 succeeded on 2 nodes
-RELEASE_IP 10.0.0.32 succeeded on 2 nodes
-RELEASE_IP 10.0.0.31 succeeded on 2 nodes
+RELEASE_IP 10.0.0.34 succeeded on 1 nodes
+RELEASE_IP 10.0.0.33 succeeded on 1 nodes
+RELEASE_IP 10.0.0.32 succeeded on 1 nodes
+RELEASE_IP 10.0.0.31 succeeded on 1 nodes
 TAKEOVER_IP 10.0.0.34 succeeded on node 0
 TAKEOVER_IP 10.0.0.33 succeeded on node 2
 TAKEOVER_IP 10.0.0.32 succeeded on node 2
