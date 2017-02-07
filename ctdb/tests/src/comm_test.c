@@ -26,7 +26,218 @@
 #include "common/pkt_write.c"
 #include "common/comm.c"
 
-static void dead_handler(void *private_data)
+/*
+ * Test read_handler and dead_handler
+ */
+
+static void test1_read_handler(uint8_t *buf, size_t buflen,
+			       void *private_data)
+{
+	int *result = (int *)private_data;
+
+	*result = -1;
+}
+
+static void test1_dead_handler(void *private_data)
+{
+	int *result = (int *)private_data;
+
+	*result = 1;
+}
+
+static void test1(void)
+{
+	TALLOC_CTX *mem_ctx;
+	struct tevent_context *ev;
+	struct comm_context *comm;
+	int fd[2];
+	int result = 0;
+	uint32_t data[2];
+	int ret;
+	ssize_t n;
+
+	mem_ctx = talloc_new(NULL);
+	assert(mem_ctx != NULL);
+
+	ev = tevent_context_init(mem_ctx);
+	assert(ev != NULL);
+
+	ret = pipe(fd);
+	assert(ret == 0);
+
+	ret = comm_setup(ev, ev, fd[0], test1_read_handler, &result,
+			 test1_dead_handler, &result, &comm);
+	assert(ret == 0);
+
+	data[0] = 2 * sizeof(uint32_t);
+	data[1] = 0;
+
+	n = write(fd[1], (void *)&data, data[0]);
+	assert(n == data[0]);
+
+	while (result == 0) {
+		tevent_loop_once(ev);
+	}
+
+	assert(result == -1);
+
+	result = 0;
+	close(fd[1]);
+
+	while (result == 0) {
+		tevent_loop_once(ev);
+	}
+
+	assert(result == 1);
+
+	talloc_free(mem_ctx);
+}
+
+/*
+ * Test that the tevent_req returned by comm_write_send() can be free'd.
+ */
+
+struct test2_state {
+	TALLOC_CTX *mem_ctx;
+	bool done;
+};
+
+static void test2_read_handler(uint8_t *buf, size_t buflen,
+			       void *private_data)
+{
+	struct test2_state *state = (struct test2_state *)private_data;
+
+	TALLOC_FREE(state->mem_ctx);
+}
+
+static void test2_dead_handler(void *private_data)
+{
+	abort();
+}
+
+struct test2_write_state {
+	int count;
+};
+
+static void test2_write_done(struct tevent_req *subreq);
+
+static struct tevent_req *test2_write_send(TALLOC_CTX *mem_ctx,
+					   struct tevent_context *ev,
+					   struct comm_context *comm,
+					   uint8_t *buf, size_t buflen)
+{
+	struct tevent_req *req, *subreq;
+	struct test2_write_state *state;
+	int i;
+
+	req = tevent_req_create(mem_ctx, &state, struct test2_write_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	state->count = 0;
+
+	for (i=0; i<10; i++) {
+		subreq = comm_write_send(state, ev, comm, buf, buflen);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(subreq, test2_write_done, req);
+	}
+
+	return req;
+}
+
+static void test2_write_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct test2_write_state *state = tevent_req_data(
+		req, struct test2_write_state);
+	bool status;
+	int ret;
+
+	status = comm_write_recv(subreq, &ret);
+	TALLOC_FREE(subreq);
+	if (! status) {
+		tevent_req_error(req, ret);
+		return;
+	}
+
+	state->count += 1;
+
+	if (state->count == 10) {
+		tevent_req_done(req);
+	}
+}
+
+static void test2_timer_handler(struct tevent_context *ev,
+				struct tevent_timer *te,
+				struct timeval cur_time,
+				void *private_data)
+{
+	struct test2_state *state = (struct test2_state *)private_data;
+
+	state->done = true;
+}
+
+static void test2(void)
+{
+	TALLOC_CTX *mem_ctx;
+	struct tevent_context *ev;
+	struct comm_context *comm_reader, *comm_writer;
+	struct test2_state test2_state;
+	struct tevent_req *req;
+	struct tevent_timer *te;
+	int fd[2];
+	uint32_t data[2];
+	int ret;
+
+	mem_ctx = talloc_new(NULL);
+	assert(mem_ctx != NULL);
+
+	test2_state.mem_ctx = talloc_new(mem_ctx);
+	assert(test2_state.mem_ctx != NULL);
+
+	test2_state.done = false;
+
+	ev = tevent_context_init(mem_ctx);
+	assert(ev != NULL);
+
+	ret = pipe(fd);
+	assert(ret == 0);
+
+	ret = comm_setup(ev, ev, fd[0], test2_read_handler, &test2_state,
+			 test2_dead_handler, NULL, &comm_reader);
+	assert(ret == 0);
+
+	ret = comm_setup(ev, ev, fd[1], NULL, NULL, test2_dead_handler, NULL,
+			 &comm_writer);
+	assert(ret == 0);
+
+	data[0] = 2 * sizeof(uint32_t);
+	data[1] = 0;
+
+	req = test2_write_send(test2_state.mem_ctx, ev, comm_writer,
+			       (uint8_t *)data, data[0]);
+	assert(req != NULL);
+
+	te = tevent_add_timer(ev, ev, tevent_timeval_current_ofs(5,0),
+			      test2_timer_handler, &test2_state);
+	assert(te != NULL);
+
+	while (! test2_state.done) {
+		tevent_loop_once(ev);
+	}
+
+	talloc_free(mem_ctx);
+}
+
+/*
+ * Test that data is written and read correctly.
+ */
+
+static void test3_dead_handler(void *private_data)
 {
 	int dead_data = *(int *)private_data;
 
@@ -34,14 +245,14 @@ static void dead_handler(void *private_data)
 
 	if (dead_data == 1) {
 		/* reader */
-		printf("writer closed pipe\n");
+		fprintf(stderr, "writer closed pipe\n");
 	} else {
 		/* writer */
-		printf("reader closed pipe\n");
+		fprintf(stderr, "reader closed pipe\n");
 	}
 }
 
-struct writer_state {
+struct test3_writer_state {
 	struct tevent_context *ev;
 	struct comm_context *comm;
 	uint8_t *buf;
@@ -49,15 +260,15 @@ struct writer_state {
 	int count, id;
 };
 
-static void writer_next(struct tevent_req *subreq);
+static void test3_writer_next(struct tevent_req *subreq);
 
-static struct tevent_req *writer_send(TALLOC_CTX *mem_ctx,
-				      struct tevent_context *ev,
-				      struct comm_context *comm,
-				      size_t *pkt_size, int count)
+static struct tevent_req *test3_writer_send(TALLOC_CTX *mem_ctx,
+					    struct tevent_context *ev,
+					    struct comm_context *comm,
+					    size_t *pkt_size, int count)
 {
 	struct tevent_req *req, *subreq;
-	struct writer_state *state;
+	struct test3_writer_state *state;
 	size_t max_size = 0, buflen;
 	int i;
 
@@ -67,7 +278,7 @@ static struct tevent_req *writer_send(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	req = tevent_req_create(mem_ctx, &state, struct writer_state);
+	req = tevent_req_create(mem_ctx, &state, struct test3_writer_state);
 	if (req == NULL) {
 		return NULL;
 	}
@@ -95,16 +306,16 @@ static struct tevent_req *writer_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	tevent_req_set_callback(subreq, writer_next, req);
+	tevent_req_set_callback(subreq, test3_writer_next, req);
 	return req;
 }
 
-static void writer_next(struct tevent_req *subreq)
+static void test3_writer_next(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
-	struct writer_state *state = tevent_req_data(
-		req, struct writer_state);
+	struct test3_writer_state *state = tevent_req_data(
+		req, struct test3_writer_state);
 	bool ret;
 	int err;
 	size_t buflen;
@@ -130,10 +341,10 @@ static void writer_next(struct tevent_req *subreq)
 		return;
 	}
 
-	tevent_req_set_callback(subreq, writer_next, req);
+	tevent_req_set_callback(subreq, test3_writer_next, req);
 }
 
-static void writer_recv(struct tevent_req *req, int *perr)
+static void test3_writer_recv(struct tevent_req *req, int *perr)
 {
 	if (tevent_req_is_unix_error(req, perr)) {
 		return;
@@ -141,7 +352,7 @@ static void writer_recv(struct tevent_req *req, int *perr)
 	*perr = 0;
 }
 
-static void writer(int fd, size_t *pkt_size, int count)
+static void test3_writer(int fd, size_t *pkt_size, int count)
 {
 	TALLOC_CTX *mem_ctx;
 	struct tevent_context *ev;
@@ -157,31 +368,32 @@ static void writer(int fd, size_t *pkt_size, int count)
 	assert(ev != NULL);
 
 	err = comm_setup(mem_ctx, ev, fd, NULL, NULL,
-			 dead_handler, &dead_data, &comm);
+			 test3_dead_handler, &dead_data, &comm);
 	assert(err == 0);
 	assert(comm != NULL);
 
-	req = writer_send(mem_ctx, ev, comm, pkt_size, count);
+	req = test3_writer_send(mem_ctx, ev, comm, pkt_size, count);
 	assert(req != NULL);
 
 	tevent_req_poll(req, ev);
 
-	writer_recv(req, &err);
+	test3_writer_recv(req, &err);
 	assert(err == 0);
 
 	talloc_free(mem_ctx);
 }
 
-struct reader_state {
+struct test3_reader_state {
 	size_t *pkt_size;
 	int count, received;
 	bool done;
 };
 
-static void reader_handler(uint8_t *buf, size_t buflen, void *private_data)
+static void test3_reader_handler(uint8_t *buf, size_t buflen,
+				 void *private_data)
 {
-	struct reader_state *state = talloc_get_type_abort(
-		private_data, struct reader_state);
+	struct test3_reader_state *state = talloc_get_type_abort(
+		private_data, struct test3_reader_state);
 
 	assert(buflen == state->pkt_size[state->received]);
 	printf("%zi ", buflen);
@@ -193,12 +405,12 @@ static void reader_handler(uint8_t *buf, size_t buflen, void *private_data)
 	}
 }
 
-static void reader(int fd, size_t *pkt_size, int count)
+static void test3_reader(int fd, size_t *pkt_size, int count)
 {
 	TALLOC_CTX *mem_ctx;
 	struct tevent_context *ev;
 	struct comm_context *comm;
-	struct reader_state *state;
+	struct test3_reader_state *state;
 	int dead_data = 1;
 	int err;
 
@@ -208,7 +420,7 @@ static void reader(int fd, size_t *pkt_size, int count)
 	ev = tevent_context_init(mem_ctx);
 	assert(ev != NULL);
 
-	state = talloc_zero(mem_ctx, struct reader_state);
+	state = talloc_zero(mem_ctx, struct test3_reader_state);
 	assert(state != NULL);
 
 	state->pkt_size = pkt_size;
@@ -216,8 +428,8 @@ static void reader(int fd, size_t *pkt_size, int count)
 	state->received = 0;
 	state->done = false;
 
-	err = comm_setup(mem_ctx, ev, fd, reader_handler, state,
-			 dead_handler, &dead_data, &comm);
+	err = comm_setup(mem_ctx, ev, fd, test3_reader_handler, state,
+			 test3_dead_handler, &dead_data, &comm);
 	assert(err == 0);
 	assert(comm != NULL);
 
@@ -228,7 +440,7 @@ static void reader(int fd, size_t *pkt_size, int count)
 	talloc_free(mem_ctx);
 }
 
-int main(void)
+static void test3(void)
 {
 	int fd[2];
 	int ret;
@@ -236,7 +448,6 @@ int main(void)
 	size_t pkt_size[13] = { 100, 2048, 500, 4096, 1024, 8192,
 			      200, 16384, 300, 32768, 400, 65536,
 			      1024*1024 };
-
 
 	ret = pipe(fd);
 	assert(ret == 0);
@@ -247,14 +458,44 @@ int main(void)
 	if (pid == 0) {
 		/* Child process */
 		close(fd[0]);
-		writer(fd[1], pkt_size, 13);
+		test3_writer(fd[1], pkt_size, 13);
 		close(fd[1]);
 		exit(0);
 	}
 
 	close(fd[1]);
-	reader(fd[0], pkt_size, 13);
+	test3_reader(fd[0], pkt_size, 13);
 	close(fd[0]);
+}
+
+
+int main(int argc, const char **argv)
+{
+	int num;
+
+	if (argc != 2) {
+		fprintf(stderr, "%s <testnum>\n", argv[0]);
+		exit(1);
+	}
+
+	num = atoi(argv[1]);
+
+	switch (num) {
+	case 1:
+		test1();
+		break;
+
+	case 2:
+		test2();
+		break;
+
+	case 3:
+		test3();
+		break;
+
+	default:
+		fprintf(stderr, "Unknown test number %s\n", argv[1]);
+	}
 
 	return 0;
 }
