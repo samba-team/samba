@@ -2838,15 +2838,9 @@ static int fruit_open_rsrc_adouble(vfs_handle_struct *handle,
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
 				struct fruit_config_data, return -1);
 
-	if (!(flags & O_CREAT) && !VALID_STAT(smb_fname->st)) {
-		rc = SMB_VFS_NEXT_STAT(handle, smb_fname);
-		if (rc != 0) {
-			rc = -1;
-			goto exit;
-		}
-	}
-
-	if (VALID_STAT(smb_fname->st) && S_ISDIR(smb_fname->st.st_ex_mode)) {
+	if ((!(flags & O_CREAT)) &&
+	    S_ISDIR(fsp->base_fsp->fsp_name->st.st_ex_mode))
+	{
 		/* sorry, but directories don't habe a resource fork */
 		rc = -1;
 		goto exit;
