@@ -2,6 +2,7 @@
 # and for SAMBA_ macros for building libraries, binaries etc
 
 import os, sys, re, fnmatch, shlex
+from optparse import SUPPRESS_HELP
 import Build, Options, Utils, Task, Logs, Configure
 from TaskGen import feature, before, after
 from Configure import conf, ConfigurationContext
@@ -669,3 +670,29 @@ def samba_before_apply_obj_vars(self):
         if is_standard_libpath(v, i):
             v['LIBPATH'].remove(i)
 
+def samba_add_onoff_option(opt, option, help=(), dest=None, default=True,
+                           with_name="with", without_name="without"):
+    if default is None:
+        default_str = "auto"
+    elif default is True:
+        default_str = "yes"
+    elif default is False:
+        default_str = "no"
+    else:
+        default_str = str(default)
+
+    if help == ():
+        help = ("Build with %s support (default=%s)" % (option, default_str))
+    if dest is None:
+        dest = "with_%s" % option.replace('-', '_')
+
+    with_val = "--%s-%s" % (with_name, option)
+    without_val = "--%s-%s" % (without_name, option)
+
+    #FIXME: This is broken and will always default to "default" no matter if
+    # --with or --without is chosen.
+    opt.add_option(with_val, help=help, action="store_true", dest=dest,
+                   default=default)
+    opt.add_option(without_val, help=SUPPRESS_HELP, action="store_false",
+                   dest=dest)
+Options.Handler.samba_add_onoff_option = samba_add_onoff_option

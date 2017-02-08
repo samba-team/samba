@@ -2,37 +2,10 @@
 # and for SAMBA_ macros for building libraries, binaries etc
 
 import Options, Build, os
-from optparse import SUPPRESS_HELP
-from samba_utils import os_path_relpath, TO_LIST
+from samba_utils import os_path_relpath, TO_LIST, samba_add_onoff_option
 from samba_autoconf import library_flags
 
-
-def SAMBA3_ADD_OPTION(opt, option, help=(), dest=None, default=True,
-                      with_name="with", without_name="without"):
-    if default is None:
-        default_str = "auto"
-    elif default is True:
-        default_str = "yes"
-    elif default is False:
-        default_str = "no"
-    else:
-        default_str = str(default)
-
-    if help == ():
-        help = ("Build with %s support (default=%s)" % (option, default_str))
-    if dest is None:
-        dest = "with_%s" % option.replace('-', '_')
-
-    with_val = "--%s-%s" % (with_name, option)
-    without_val = "--%s-%s" % (without_name, option)
-
-    #FIXME: This is broken and will always default to "default" no matter if
-    # --with or --without is chosen.
-    opt.add_option(with_val, help=help, action="store_true", dest=dest,
-                   default=default)
-    opt.add_option(without_val, help=SUPPRESS_HELP, action="store_false",
-                   dest=dest)
-Options.Handler.SAMBA3_ADD_OPTION = SAMBA3_ADD_OPTION
+Options.Handler.SAMBA3_ADD_OPTION = samba_add_onoff_option
 
 def SAMBA3_IS_STATIC_MODULE(bld, module):
     '''Check whether module is in static list'''
