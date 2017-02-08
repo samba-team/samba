@@ -83,6 +83,20 @@
 		</listitem>
 		</varlistentry>
 
+		<varlistentry>
+		<term>ceph:user_id = name</term>
+		<listitem>
+		<para>
+			Allows one to explicitly set the client ID used for the
+			CephFS mount handle. Empty by default (CephFS uses the
+			process id).
+		</para>
+		<para>
+			Example: ceph:user_id = samba
+		</para>
+		</listitem>
+		</varlistentry>
+
 	</variablelist>
 
 </refsect1>
