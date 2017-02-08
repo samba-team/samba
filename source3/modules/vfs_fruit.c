@@ -2529,8 +2529,8 @@ static int fruit_open_meta_netatalk(vfs_handle_struct *handle,
 	baseflags &= ~O_EXCL;
 	baseflags &= ~O_CREAT;
 
-	hostfd = SMB_VFS_OPEN(handle->conn, smb_fname_base, fsp,
-			      baseflags, mode);
+	hostfd = SMB_VFS_NEXT_OPEN(handle, smb_fname_base, fsp,
+				   baseflags, mode);
 
 	/*
 	 * It is legit to open a stream on a directory, but the base
@@ -2539,8 +2539,8 @@ static int fruit_open_meta_netatalk(vfs_handle_struct *handle,
 	if ((hostfd == -1) && (errno == EISDIR)) {
 		baseflags &= ~O_ACCMODE;
 		baseflags |= O_RDONLY;
-		hostfd = SMB_VFS_OPEN(handle->conn, smb_fname_base, fsp,
-				      baseflags, mode);
+		hostfd = SMB_VFS_NEXT_OPEN(handle, smb_fname_base, fsp,
+					   baseflags, mode);
 	}
 
 	TALLOC_FREE(smb_fname_base);
@@ -2591,7 +2591,7 @@ exit:
 			 * full fsp yet
 			 */
 			fsp->fh->fd = hostfd;
-			SMB_VFS_CLOSE(fsp);
+			SMB_VFS_NEXT_CLOSE(handle, fsp);
 		}
 		hostfd = -1;
 		errno = saved_errno;
@@ -2681,8 +2681,8 @@ static int fruit_open_rsrc_adouble(vfs_handle_struct *handle,
 		flags |= O_RDWR;
 	}
 
-	hostfd = SMB_VFS_OPEN(handle->conn, smb_fname_base, fsp,
-			      flags, mode);
+	hostfd = SMB_VFS_NEXT_OPEN(handle, smb_fname_base, fsp,
+				   flags, mode);
 	if (hostfd == -1) {
 		rc = -1;
 		goto exit;
