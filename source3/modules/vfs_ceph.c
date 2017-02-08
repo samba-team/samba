@@ -85,8 +85,9 @@ static int cephwrap_connect(struct vfs_handle_struct *handle,  const char *servi
 {
 	int ret;
 	char buf[256];
-
-	const char * conf_file;
+	int snum = SNUM(handle->conn);
+	const char *conf_file;
+	const char *user_id;
 
 	if (cmount) {
 		handle->data = cmount; /* We have been here before */
@@ -94,28 +95,24 @@ static int cephwrap_connect(struct vfs_handle_struct *handle,  const char *servi
 		return 0;
 	}
 
-	conf_file = lp_parm_const_string(SNUM(handle->conn), "ceph", "config_file", NULL);
+	/* if config_file and/or user_id are NULL, ceph will use defaults */
+	conf_file = lp_parm_const_string(snum, "ceph", "config_file", NULL);
+	user_id = lp_parm_const_string(snum, "ceph", "user_id", NULL);
 
-	DBG_DEBUG( "[CEPH] calling: ceph_create\n" );
-	ret = ceph_create(&cmount, NULL);
-	if (ret)
+	DBG_DEBUG("[CEPH] calling: ceph_create\n");
+	ret = ceph_create(&cmount, user_id);
+	if (ret) {
 		goto err_out;
-
-	if (conf_file) {
-		/* Override the config file */
-		DBG_DEBUG( "[CEPH] calling: ceph_conf_read_file\n" );
-		ret = ceph_conf_read_file(cmount, conf_file);
-	} else {
-
-		DBG_DEBUG( "[CEPH] calling: ceph_conf_read_file with %s\n", conf_file);
-		ret = ceph_conf_read_file(cmount, NULL);
 	}
 
+	DBG_DEBUG("[CEPH] calling: ceph_conf_read_file with %s\n",
+		  (conf_file == NULL ? "default path" : conf_file));
+	ret = ceph_conf_read_file(cmount, conf_file);
 	if (ret) {
 		goto err_cm_release;
 	}
 
-	DBG_DEBUG( "[CEPH] calling: ceph_conf_get\n" );
+	DBG_DEBUG("[CEPH] calling: ceph_conf_get\n");
 	ret = ceph_conf_get(cmount, "log file", buf, sizeof(buf));
 	if (ret < 0) {
 		goto err_cm_release;
