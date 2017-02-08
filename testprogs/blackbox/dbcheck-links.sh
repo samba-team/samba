@@ -157,6 +157,14 @@ check_expected_after_objects() {
     fi
 }
 
+dangling_one_way() {
+    ldif=$release_dir/dangling-one-way-link.ldif
+    TZ=UTC $ldbmodify -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb $ldif
+    if [ "$?" != "0" ]; then
+        return 1
+    fi
+}
+
 if [ -d $release_dir ]; then
     testit $RELEASE undump
     testit "add_two_more_users" add_two_more_users
@@ -169,6 +177,8 @@ if [ -d $release_dir ]; then
     testit "check_expected_after_deleted_links" check_expected_after_deleted_links
     testit "check_expected_after_links" check_expected_after_links
     testit "check_expected_after_objects" check_expected_after_objects
+    testit "dangling_one_way" dangling_one_way
+    testit "dbcheck_clean" dbcheck_clean
 else
     subunit_start_test $RELEASE
     subunit_skip_test $RELEASE <<EOF
