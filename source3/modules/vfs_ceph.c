@@ -111,19 +111,21 @@ static int cephwrap_connect(struct vfs_handle_struct *handle,  const char *servi
 		ret = ceph_conf_read_file(cmount, NULL);
 	}
 
-	if (ret)
-		goto err_out;
+	if (ret) {
+		goto err_cm_release;
+	}
 
 	DBG_DEBUG( "[CEPH] calling: ceph_conf_get\n" );
 	ret = ceph_conf_get(cmount, "log file", buf, sizeof(buf));
-	if (ret < 0)
-		goto err_out;
+	if (ret < 0) {
+		goto err_cm_release;
+	}
 
 	DBG_DEBUG("[CEPH] calling: ceph_mount\n");
 	ret = ceph_mount(cmount, NULL);
-	if (ret < 0)
-		goto err_out;
-
+	if (ret < 0) {
+		goto err_cm_release;
+	}
 
 	/*
 	 * encode mount context/state into our vfs/connection holding structure
@@ -134,6 +136,9 @@ static int cephwrap_connect(struct vfs_handle_struct *handle,  const char *servi
 
 	return 0;
 
+err_cm_release:
+	ceph_release(cmount);
+	cmount = NULL;
 err_out:
 	/*
 	 * Handle the error correctly. Ceph returns -errno.
