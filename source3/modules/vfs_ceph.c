@@ -149,6 +149,8 @@ err_out:
 
 static void cephwrap_disconnect(struct vfs_handle_struct *handle)
 {
+	int ret;
+
 	if (!cmount) {
 		DBG_ERR("[CEPH] Error, ceph not mounted\n");
 		return;
@@ -160,7 +162,15 @@ static void cephwrap_disconnect(struct vfs_handle_struct *handle)
 		return;
 	}
 
-	ceph_shutdown(cmount);
+	ret = ceph_unmount(cmount);
+	if (ret < 0) {
+		DBG_ERR("[CEPH] failed to unmount: %s\n", strerror(-ret));
+	}
+
+	ret = ceph_release(cmount);
+	if (ret < 0) {
+		DBG_ERR("[CEPH] failed to release: %s\n", strerror(-ret));
+	}
 
 	cmount = NULL;  /* Make it safe */
 }
