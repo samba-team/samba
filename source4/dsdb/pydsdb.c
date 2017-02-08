@@ -1244,6 +1244,72 @@ static PyObject *py_dsdb_garbage_collect_tombstones(PyObject *self, PyObject *ar
 			    num_links_removed);
 }
 
+static PyObject *py_dsdb_load_udv_v2(PyObject *self, PyObject *args)
+{
+	uint32_t count;
+	int ret, i;
+	bool ok;
+	PyObject *py_ldb = NULL, *py_dn = NULL, *pylist = NULL;
+	struct ldb_context *samdb = NULL;
+	struct ldb_dn *dn = NULL;
+	struct drsuapi_DsReplicaCursor2 *cursors = NULL;
+	TALLOC_CTX *tmp_ctx = NULL;
+
+	if (!PyArg_ParseTuple(args, "OO", &py_ldb, &py_dn)) {
+		return NULL;
+	}
+
+	PyErr_LDB_OR_RAISE(py_ldb, samdb);
+
+	tmp_ctx = talloc_new(samdb);
+	if (tmp_ctx == NULL) {
+		return PyErr_NoMemory();
+	}
+
+	ok = pyldb_Object_AsDn(tmp_ctx, py_dn, samdb, &dn);
+	if (!ok) {
+		TALLOC_FREE(tmp_ctx);
+		return NULL;
+	}
+
+	ret = dsdb_load_udv_v2(samdb, dn, tmp_ctx, &cursors, &count);
+	if (ret != LDB_SUCCESS) {
+		TALLOC_FREE(tmp_ctx);
+		PyErr_SetString(PyExc_RuntimeError,
+				"Failed to load udv from ldb");
+		return NULL;
+	}
+
+	pylist = PyList_New(count);
+	if (pylist == NULL) {
+		TALLOC_FREE(tmp_ctx);
+		return PyErr_NoMemory();
+	}
+
+	for (i = 0; i < count; i++) {
+		PyObject *py_cursor;
+		struct drsuapi_DsReplicaCursor2 *cursor;
+		cursor = talloc(tmp_ctx, struct drsuapi_DsReplicaCursor2);
+		if (cursor == NULL) {
+			TALLOC_FREE(tmp_ctx);
+			return PyErr_NoMemory();
+		}
+		*cursor = cursors[i];
+
+		py_cursor = py_return_ndr_struct("samba.dcerpc.drsuapi",
+						 "DsReplicaCursor2",
+						 cursor, cursor);
+		if (py_cursor == NULL) {
+			TALLOC_FREE(tmp_ctx);
+			return PyErr_NoMemory();
+		}
+
+		PyList_SetItem(pylist, i, py_cursor);
+	}
+
+	TALLOC_FREE(tmp_ctx);
+	return pylist;
+}
 
 static PyMethodDef py_dsdb_methods[] = {
 	{ "_samdb_server_site_name", (PyCFunction)py_samdb_server_site_name,
@@ -1319,6 +1385,7 @@ static PyMethodDef py_dsdb_methods[] = {
 	{ "_dsdb_allocate_rid", (PyCFunction)py_dsdb_allocate_rid, METH_VARARGS,
 		"_dsdb_allocate_rid(samdb)"
 		" -> RID" },
+	{ "_dsdb_load_udv_v2", (PyCFunction)py_dsdb_load_udv_v2, METH_VARARGS, NULL },
 	{ NULL }
 };
 
