@@ -689,8 +689,6 @@ def samba_add_onoff_option(opt, option, help=(), dest=None, default=True,
     with_val = "--%s-%s" % (with_name, option)
     without_val = "--%s-%s" % (without_name, option)
 
-    #FIXME: This is broken and will always default to "default" no matter if
-    # --with or --without is chosen.
     opt.add_option(with_val, help=help, action="store_true", dest=dest,
                    default=default)
     opt.add_option(without_val, help=SUPPRESS_HELP, action="store_false",
