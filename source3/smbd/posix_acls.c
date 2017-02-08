@@ -911,7 +911,9 @@ static int map_acl_perms_to_permset(connection_struct *conn, mode_t mode, SMB_AC
  Function to create owner and group SIDs from a SMB_STRUCT_STAT.
 ****************************************************************************/
 
-void create_file_sids(const SMB_STRUCT_STAT *psbuf, struct dom_sid *powner_sid, struct dom_sid *pgroup_sid)
+static void create_file_sids(const SMB_STRUCT_STAT *psbuf,
+			     struct dom_sid *powner_sid,
+			     struct dom_sid *pgroup_sid)
 {
 	uid_to_sid( powner_sid, psbuf->st_ex_uid );
 	gid_to_sid( pgroup_sid, psbuf->st_ex_gid );
