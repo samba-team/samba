@@ -1481,7 +1481,6 @@ static WERROR getncchanges_collect_objects(struct drsuapi_bind_state *b_state,
 	int ret;
 	char* search_filter;
 	enum ldb_scope scope = LDB_SCOPE_SUBTREE;
-	//const char *extra_filter;
 	struct drsuapi_getncchanges_state *getnc_state = b_state->getncchanges_state;
 	bool critical_only = false;
 
@@ -1494,10 +1493,6 @@ static WERROR getncchanges_collect_objects(struct drsuapi_bind_state *b_state,
 		scope = LDB_SCOPE_BASE;
 		critical_only = false;
 	}
-
-	//extra_filter = lpcfg_parm_string(dce_call->conn->dce_ctx->lp_ctx, NULL, "drs", "object filter");
-
-	//getnc_state->min_usn = req10->highwatermark.highest_usn;
 
 	/* Construct response. */
 	search_filter = talloc_asprintf(mem_ctx,
