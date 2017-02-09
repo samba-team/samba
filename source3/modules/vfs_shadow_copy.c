@@ -252,6 +252,7 @@ static int shadow_copy_get_shadow_copy_data(vfs_handle_struct *handle,
 	while (True) {
 		SHADOW_COPY_LABEL *tlabels;
 		struct dirent *d;
+		int ret;
 
 		d = SMB_VFS_NEXT_READDIR(handle, p, NULL);
 		if (d == NULL) {
@@ -280,7 +281,15 @@ static int shadow_copy_get_shadow_copy_data(vfs_handle_struct *handle,
 			return -1;
 		}
 
-		snprintf(tlabels[shadow_copy_data->num_volumes++], sizeof(*tlabels), "%s",d->d_name);
+		ret = strlcpy(tlabels[shadow_copy_data->num_volumes], d->d_name,
+			      sizeof(tlabels[shadow_copy_data->num_volumes]));
+		if (ret != sizeof(tlabels[shadow_copy_data->num_volumes]) - 1) {
+			DEBUG(0,("shadow_copy_get_shadow_copy_data: malformed label %s\n",
+				 d->d_name));
+			SMB_VFS_NEXT_CLOSEDIR(handle, p);
+			return -1;
+		}
+		shadow_copy_data->num_volumes++;
 
 		shadow_copy_data->labels = tlabels;
 	}
