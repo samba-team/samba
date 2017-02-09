@@ -3359,7 +3359,7 @@ static NTSTATUS posix_get_nt_acl_common(struct connection_struct *conn,
 			num_acls = count_canon_ace_list(file_ace);
 			num_def_acls = count_canon_ace_list(dir_ace);
 
-			nt_ace_list = talloc_array(
+			nt_ace_list = talloc_zero_array(
 				talloc_tos(), struct security_ace,
 				num_acls + num_profile_acls + num_def_acls);
 
@@ -3367,8 +3367,6 @@ static NTSTATUS posix_get_nt_acl_common(struct connection_struct *conn,
 				DEBUG(0,("get_nt_acl: Unable to malloc space for nt_ace_list.\n"));
 				goto done;
 			}
-
-			memset(nt_ace_list, '\0', (num_acls + num_def_acls) * sizeof(struct security_ace) );
 
 			/*
 			 * Create the NT ACE list from the canonical ace lists.
