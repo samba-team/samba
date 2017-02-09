@@ -212,6 +212,7 @@ static int messaging_dgm_out_create(TALLOC_CTX *mem_ctx,
 	struct sockaddr_un addr = { .sun_family = AF_UNIX };
 	int ret = ENOMEM;
 	int out_pathlen;
+	char addr_buf[sizeof(addr.sun_path) + (3 * sizeof(unsigned) + 2)];
 
 	out = talloc(mem_ctx, struct messaging_dgm_out);
 	if (out == NULL) {
@@ -224,7 +225,7 @@ static int messaging_dgm_out_create(TALLOC_CTX *mem_ctx,
 		.cookie = 1
 	};
 
-	out_pathlen = snprintf(addr.sun_path, sizeof(addr.sun_path),
+	out_pathlen = snprintf(addr_buf, sizeof(addr_buf),
 			       "%s/%u", ctx->socket_dir.buf, (unsigned)pid);
 	if (out_pathlen < 0) {
 		goto errno_fail;
@@ -233,6 +234,8 @@ static int messaging_dgm_out_create(TALLOC_CTX *mem_ctx,
 		ret = ENAMETOOLONG;
 		goto fail;
 	}
+
+	memcpy(addr.sun_path, addr_buf, out_pathlen + 1);
 
 	out->queue = tevent_queue_create(out, addr.sun_path);
 	if (out->queue == NULL) {
