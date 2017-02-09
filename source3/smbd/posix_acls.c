@@ -3325,7 +3325,7 @@ static NTSTATUS posix_get_nt_acl_common(struct connection_struct *conn,
 		 * would lead to usability problems under Windows: The Creator entries
 		 * are only available in browse lists of directories and not for files;
 		 * additionally the identity of the owning group couldn't be determined.
-		 * We therefore use those identities only for Default ACLs. 
+		 * We therefore use those identities only for Default ACLs.
 		 */
 
 		/* Create the canon_ace lists. */
@@ -3334,7 +3334,7 @@ static NTSTATUS posix_get_nt_acl_common(struct connection_struct *conn,
 					    SMB_ACL_TYPE_ACCESS);
 
 		/* We must have *some* ACLS. */
-	
+
 		if (count_canon_ace_list(file_ace) == 0) {
 			DEBUG(0,("get_nt_acl : No ACLs on file (%s) !\n", name));
 			goto done;
