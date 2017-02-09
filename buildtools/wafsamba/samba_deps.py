@@ -229,6 +229,7 @@ def add_init_functions(self):
 
     if modules == []:
         sname = sname.replace('-','_')
+        sname = sname.replace('.','_')
         sname = sname.replace('/','_')
         cflags.append('-DSTATIC_%s_MODULES=%s' % (sname, sentinel))
         if sentinel == 'NULL':
