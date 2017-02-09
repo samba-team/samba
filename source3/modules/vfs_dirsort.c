@@ -65,8 +65,10 @@ static bool get_sorted_dir_mtime(vfs_handle_struct *handle,
 static bool open_and_sort_dir(vfs_handle_struct *handle,
 				struct dirsort_privates *data)
 {
-	unsigned int i = 0;
-	unsigned int total_count = 0;
+	uint32_t total_count = 0;
+	/* This should be enough for most use cases */
+	uint32_t dirent_allocated = 64;
+	struct dirent *dp;
 
 	data->number_of_entries = 0;
 
@@ -74,38 +76,51 @@ static bool open_and_sort_dir(vfs_handle_struct *handle,
 		return false;
 	}
 
-	while (SMB_VFS_NEXT_READDIR(handle, data->source_directory, NULL)
-	       != NULL) {
-		total_count++;
-	}
-
-	if (total_count == 0) {
+	dp = SMB_VFS_NEXT_READDIR(handle, data->source_directory, NULL);
+	if (dp == NULL) {
 		return false;
 	}
-
-	/* Open the underlying directory and count the number of entries
-	   Skip back to the beginning as we'll read it again */
-	SMB_VFS_NEXT_REWINDDIR(handle, data->source_directory);
 
 	/* Set up an array and read the directory entries into it */
 	TALLOC_FREE(data->directory_list); /* destroy previous cache if needed */
 	data->directory_list = talloc_zero_array(data,
-					struct dirent,
-					total_count);
-	if (!data->directory_list) {
+						 struct dirent,
+						 dirent_allocated);
+	if (data->directory_list == NULL) {
 		return false;
 	}
-	for (i = 0; i < total_count; i++) {
-		struct dirent *dp = SMB_VFS_NEXT_READDIR(handle,
-						data->source_directory,
-						NULL);
-		if (dp == NULL) {
-			break;
-		}
-		data->directory_list[i] = *dp;
-	}
 
-	data->number_of_entries = i;
+	do {
+		if (total_count >= dirent_allocated) {
+			struct dirent *dlist;
+
+			/*
+			 * Be memory friendly.
+			 *
+			 * We should not double the amount of memory. With a lot
+			 * of files we reach easily 50MB, and doubling will
+			 * get much bigger just for a few files more.
+			 *
+			 * For 200k files this means 50 memory reallocations.
+			 */
+			dirent_allocated += 4096;
+
+			dlist = talloc_realloc(data,
+					       data->directory_list,
+					       struct dirent,
+					       dirent_allocated);
+			if (dlist == NULL) {
+				break;
+			}
+			data->directory_list = dlist;
+		}
+		data->directory_list[total_count] = *dp;
+
+		total_count++;
+		dp = SMB_VFS_NEXT_READDIR(handle, data->source_directory, NULL);
+	} while (dp != NULL);
+
+	data->number_of_entries = total_count;
 
 	/* Sort the directory entries by name */
 	TYPESAFE_QSORT(data->directory_list, data->number_of_entries, compare_dirent);
