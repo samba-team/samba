@@ -12,6 +12,8 @@ shift 1
 
 DBPATH=$PREFIX/supported-features
 
+mkdir -p $DBPATH
+
 . `dirname $0`/../../../testprogs/blackbox/subunit.sh
 
 ldbmodify="ldbmodify"
