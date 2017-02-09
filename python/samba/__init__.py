@@ -26,7 +26,6 @@ import os
 import sys
 import time
 import ldb
-from samba.compat import PY3
 import samba.param
 from samba import _glue
 from samba._ldb import Ldb as _Ldb
