@@ -187,7 +187,7 @@ static bool smb_ace_to_internal(acl_entry_t posix_ace,
 		acl_free(puid);
 		break;
 	}
-		
+
 	case SMB_ACL_GROUP: {
 		gid_t *pgid = (uid_t *)acl_get_qualifier(posix_ace);
 		if (pgid == NULL) {
@@ -230,7 +230,7 @@ static struct smb_acl_t *smb_acl_to_internal(acl_t acl, TALLOC_CTX *mem_ctx)
 
 		entry_id = ACL_NEXT_ENTRY;
 
-		result->acl = talloc_realloc(result, result->acl, 
+		result->acl = talloc_realloc(result, result->acl,
 					     struct smb_acl_entry, result->count+1);
 		if (result->acl == NULL) {
 			TALLOC_FREE(result);
