@@ -290,6 +290,39 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 		 current_timestring(talloc_tos(), false),
 		 __func__, domain, context_name));
 
+	ok = cli_credentials_set_password(creds, new_trust_passwd, CRED_SPECIFIED);
+	if (!ok) {
+		DEBUG(0, ("cli_credentials_set_password failed for domain %s!\n",
+			  domain));
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	current_nt_hash = cli_credentials_get_nt_hash(creds, frame);
+	if (current_nt_hash == NULL) {
+		DEBUG(0, ("cli_credentials_get_nt_hash failed for domain %s!\n",
+			  domain));
+		TALLOC_FREE(frame);
+		return NT_STATUS_TRUSTED_RELATIONSHIP_FAILURE;
+	}
+
+	/*
+	 * Now we verify the new password.
+	 */
+	status = netlogon_creds_cli_auth(context, b,
+					 *current_nt_hash,
+					 NULL); /* previous_nt_hash */
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("netlogon_creds_cli_auth(%s) failed for new password - %s!\n",
+			  context_name, nt_errstr(status)));
+		TALLOC_FREE(frame);
+		return status;
+	}
+
+	DEBUG(0,("%s : %s(%s): Verified new password remotely using %s\n",
+		 current_timestring(talloc_tos(), false),
+		 __func__, domain, context_name));
+
 	TALLOC_FREE(frame);
 	return NT_STATUS_OK;
 }
