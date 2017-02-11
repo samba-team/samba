@@ -229,7 +229,7 @@ NTSTATUS auth_check_ntlm_password(TALLOC_CTX *mem_ctx,
 					   &server_info);
 
 		/* check if the module did anything */
-		if ( NT_STATUS_V(result) == NT_STATUS_V(NT_STATUS_NOT_IMPLEMENTED) ) {
+		if (NT_STATUS_EQUAL(result, NT_STATUS_NOT_IMPLEMENTED)) {
 			DEBUG(10,("check_ntlm_password: %s had nothing to say\n", auth_method->name));
 			TALLOC_FREE(tmp_ctx);
 			if (user_info->flags & USER_INFO_LOCAL_SAM_ONLY) {
