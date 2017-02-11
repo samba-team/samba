@@ -250,9 +250,7 @@ NTSTATUS auth_check_ntlm_password(TALLOC_CTX *mem_ctx,
 				  auth_method->name, user_info->client.account_name, nt_errstr(nt_status)));
 		}
 
-		if (NT_STATUS_IS_OK(nt_status)) {
-			break;
-		}
+		break;
 	}
 
 	/* successful authentication */
