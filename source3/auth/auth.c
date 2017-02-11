@@ -166,6 +166,7 @@ NTSTATUS auth_check_ntlm_password(TALLOC_CTX *mem_ctx,
 				  struct auth_serversupplied_info **pserver_info)
 {
 	TALLOC_CTX *frame;
+	const char *auth_method_name = "";
 	/* if all the modules say 'not for me' this is reasonable */
 	NTSTATUS nt_status = NT_STATUS_NO_SUCH_USER;
 	const char *unix_username;
@@ -214,50 +215,49 @@ NTSTATUS auth_check_ntlm_password(TALLOC_CTX *mem_ctx,
 	}
 
 	for (auth_method = auth_context->auth_method_list;auth_method; auth_method = auth_method->next) {
-		NTSTATUS result;
+
+		auth_method_name = auth_method->name;
 
 		if (user_info->flags & USER_INFO_LOCAL_SAM_ONLY
 		    && !(auth_method->flags & AUTH_METHOD_LOCAL_SAM)) {
 			continue;
 		}
 
-		result = auth_method->auth(auth_context,
-					   auth_method->private_data,
-					   talloc_tos(),
-					   user_info,
-					   &server_info);
+		nt_status = auth_method->auth(auth_context,
+					      auth_method->private_data,
+					      talloc_tos(),
+					      user_info,
+					      &server_info);
 
-		/* check if the module did anything */
-		if (NT_STATUS_EQUAL(result, NT_STATUS_NOT_IMPLEMENTED)) {
-			DEBUG(10,("check_ntlm_password: %s had nothing to say\n", auth_method->name));
-			if (user_info->flags & USER_INFO_LOCAL_SAM_ONLY) {
-				/* we don't expose the NT_STATUS_NOT_IMPLEMENTED
-				 * internals, except when the caller is only probing
-				 * one method, as they may do the fallback 
-				 */
-				nt_status = result;
-			}
-			continue;
+		if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_NOT_IMPLEMENTED)) {
+			break;
 		}
 
-		nt_status = result;
-
-		if (NT_STATUS_IS_OK(nt_status)) {
-			DEBUG(3, ("check_ntlm_password: %s authentication for user [%s] succeeded\n", 
-				  auth_method->name, user_info->client.account_name));
-		} else {
-			DEBUG(5, ("check_ntlm_password: %s authentication for user [%s] FAILED with error %s\n", 
-				  auth_method->name, user_info->client.account_name, nt_errstr(nt_status)));
-		}
-
-		break;
+		DBG_DEBUG("%s had nothing to say\n", auth_method->name);
 	}
 
-	/* successful authentication */
+	/* check if the module did anything */
+	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NOT_IMPLEMENTED) &&
+	    ((user_info->flags & USER_INFO_LOCAL_SAM_ONLY) == 0)) {
+		/*
+		 * we don't expose the NT_STATUS_NOT_IMPLEMENTED
+		 * internals, except when the caller is only probing
+		 * one method, as they may do the fallback
+		 */
+		nt_status = NT_STATUS_NO_SUCH_USER;
+	}
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
+		DBG_INFO("%s authentication for user [%s] FAILED with "
+			 "error %s\n",
+			 auth_method_name,
+			 user_info->client.account_name,
+			 nt_errstr(nt_status));
 		goto fail;
 	}
+
+	DBG_NOTICE("%s authentication for user [%s] succeeded\n",
+		   auth_method_name, user_info->client.account_name);
 
 	unix_username = server_info->unix_name;
 
