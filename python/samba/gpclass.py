@@ -27,6 +27,8 @@ from samba.samdb import SamDB
 from samba.netcmd import gpo as gpo_user
 import codecs
 from samba import NTSTATUSError
+from ConfigParser import ConfigParser
+from StringIO import StringIO
 
 class gp_ext(object):
     def list(self, rootpath):
@@ -42,22 +44,27 @@ class inf_to_ldb(object):
     parameter to Samba4. Not registry oriented whatsoever.
     '''
 
-    def __init__(self, ldb, dn, attribute, val):
+    def __init__(self, logger, ldb, dn, attribute, val):
+        self.logger = logger
         self.ldb = ldb
         self.dn = dn
         self.attribute = attribute
         self.val = val
 
     def ch_minPwdAge(self, val):
+        self.logger.info('KDC Minimum Password age was changed from %s to %s' % (self.ldb.get_minPwdAge(), val))
         self.ldb.set_minPwdAge(val)
 
     def ch_maxPwdAge(self, val):
+        self.logger.info('KDC Maximum Password age was changed from %s to %s' % (self.ldb.get_maxPwdAge(), val))
         self.ldb.set_maxPwdAge(val)
 
     def ch_minPwdLength(self, val):
+        self.logger.info('KDC Minimum Password length was changed from %s to %s' % (self.ldb.get_minPwdLength(), val))
         self.ldb.set_minPwdLength(val)
 
     def ch_pwdProperties(self, val):
+        self.logger.info('KDC Password Properties were changed from %s to %s' % (self.ldb.get_pwdProperties(), val))
         self.ldb.set_pwdProperties(val)
 
     def explicit(self):
@@ -95,6 +102,9 @@ class gp_sec_ext(gp_ext):
 
     count = 0
 
+    def __init__(self, logger):
+        self.logger = logger
+
     def __str__(self):
         return "Security GPO extension"
 
@@ -122,7 +132,7 @@ class gp_sec_ext(gp_ext):
         ret = False
         inftable = self.populate_inf()
 
-        policy = conn.loadfile(path).decode('utf-16')
+        policy = conn.loadfile(path.replace('/', '\\')).decode('utf-16')
         current_section = None
         LOG = open(attr_log, "a")
         LOG.write(str(path.split('/')[2]) + '\n')
@@ -133,23 +143,20 @@ class gp_sec_ext(gp_ext):
         # If at any point in time a GPO was applied,
         # then we return that boolean at the end.
 
-        for line in policy.splitlines():
-            line = line.strip()
-            if line[0] == '[':
-                section = line[1: -1]
-                current_section = inftable.get(section.encode('ascii', 'ignore'))
+        inf_conf = ConfigParser()
+        inf_conf.optionxform=str
+        inf_conf.readfp(StringIO(policy))
 
-            else:
-                # We must be in a section
-                if not current_section:
-                    continue
-                (key, value) = line.split("=")
-                key = key.strip()
+        for section in inf_conf.sections():
+            current_section = inftable.get(section)
+            if not current_section:
+                continue
+            for key, value in inf_conf.items(section):
                 if current_section.get(key):
                     (att, setter) = current_section.get(key)
                     value = value.encode('ascii', 'ignore')
                     ret = True
-                    setter(self.ldb, self.dn, att, value).update_samba()
+                    setter(self.logger, self.ldb, self.dn, att, value).update_samba()
         return ret
 
     def parse(self, afile, ldb, conn, attr_log):
@@ -174,13 +181,10 @@ class gp_sec_ext(gp_ext):
                     return None
 
 
-def scan_log(sysvol_path):
-    a = open(sysvol_path, "r")
+def scan_log(sysvol_tdb):
     data = {}
-    for line in a.readlines():
-        line = line.strip()
-        (guid, version) = line.split(" ")
-        data[guid] = int(version)
+    for key in sysvol_tdb.iterkeys():
+        data[key] = sysvol_tdb.get(key)
     return data
 
 

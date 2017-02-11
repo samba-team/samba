@@ -26,6 +26,7 @@ import fcntl
 import sys
 import tempfile
 import subprocess
+import tdb
 
 sys.path.insert(0, "bin/python")
 
@@ -36,6 +37,7 @@ from samba.gpclass import *
 from samba.net import Net
 from samba.dcerpc import nbt
 from samba import smb
+import logging
 
 
 # Finds all GPO Files ending in inf
@@ -140,19 +142,6 @@ class GPOServiceSetup:
         return self.creds
 
 
-def GetBackLog(sys_log):
-    """Reads BackLog and makes thread aware of which GPO are unchanged or empty
-    :param String sys_log: path to backLog
-    :return Dictionary previous_scanned_version: {Unedited GPO: Version Number}
-    *NOTE on Version below
-    """
-    previous_scanned_version = {}
-    if os.path.isfile(sys_log):
-        previous_scanned_version = scan_log(sys_log)
-        return previous_scanned_version
-    else:
-        return None
-
 # Set up the GPO service
 GPOService = GPOServiceSetup()
 GPOService.InitializeService()
@@ -163,18 +152,35 @@ test_ldb = GPOService.Get_LDB()
 # Get The lp context
 lp = GPOService.Get_lp_Content()
 
+# Set up logging
+logger = logging.getLogger('samba_gpoupdate')
+logger.addHandler(logging.StreamHandler(sys.stdout))
+logger.setLevel(logging.CRITICAL)
+log_level = lp.log_level()
+if log_level == 1:
+    logger.setLevel(logging.ERROR)
+elif log_level == 2:
+    logger.setLevel(logging.WARNING)
+elif log_level == 3:
+    logger.setLevel(logging.INFO)
+elif log_level >= 4:
+    logger.setLevel(logging.DEBUG)
+
 # Get the CREDS
 creds = GPOService.Get_Creds()
 
 # Read the readable backLog into a hashmap
 # then open writable backLog in same location
 BackLoggedGPO = None
-sys_log = '%s/%s' % (lp.get("path", "sysvol"), 'syslog.txt')
+sys_log = '%s/%s' % (lp.get("path", "sysvol"), 'gpo.tdb')
 attr_log = '%s/%s' % (lp.get("path", "sysvol"), 'attrlog.txt')
-BackLoggedGPO = GetBackLog(sys_log)
 
 
-BackLog = open(sys_log, "w")
+if os.path.isfile(sys_log):
+    BackLog = tdb.open(sys_log)
+else:
+    BackLog = tdb.Tdb(sys_log, 0, tdb.DEFAULT, os.O_CREAT|os.O_RDWR)
+BackLoggedGPO = scan_log(BackLog)
 
 
 # We need to know writable DC to setup SMB connection
@@ -215,13 +221,18 @@ if (GPO_Deleted):
     Reset_Defaults(test_ldb)
     GPO_Changed = False
 
+BackLog.transaction_start()
 for guid_eval in hierarchy_gpos:
     guid = guid_eval[0]
-    gp_extensions = [gp_sec_ext()]
+    gp_extensions = [gp_sec_ext(logger)]
     local_path = '%s/Policies' % lp.get("realm").lower() + '/' + guid + '/'
-    version = gpo.gpo_get_sysvol_gpt_version(lp.get("path", "sysvol") + '/' + local_path)[1]
+    version = int(gpo.gpo_get_sysvol_gpt_version(lp.get("path", "sysvol") + '/' + local_path)[1])
+    try:
+        old_version = int(BackLoggedGPO.get(guid))
+    except:
+        old_version = -1
     gpolist = gp_path_list(local_path)
-    if(version != BackLoggedGPO.get(guid)):
+    if version != old_version:
         GPO_Changed = True
     # If the GPO has a dn that is applicable to Samba
     if guid_eval[1]:
@@ -230,6 +241,13 @@ for guid_eval in hierarchy_gpos:
             # If it we have not read it before and is not empty
             # Rewrite entire logfile here
             if  (version != 0) and GPO_Changed == True:
-                change_backlog = gpo_parser(gpolist, test_ldb, conn, attr_log)
+                logger.info('GPO %s has changed' % guid)
+                try:
+                    change_backlog = gpo_parser(gpolist, test_ldb, conn, attr_log)
+                except:
+                    logger.error('Failed to parse gpo %s' % guid)
+                    continue
+    BackLog.store(guid, '%i' % version)
+BackLog.transaction_commit()
+BackLog.close()
 
-    BackLog.write('%s %i\n' % (guid, version))
