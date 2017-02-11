@@ -182,7 +182,8 @@ NTSTATUS auth_check_ntlm_password(TALLOC_CTX *mem_ctx,
 
 	if (auth_context->challenge.length != 8) {
 		DEBUG(0, ("check_ntlm_password:  Invalid challenge stored for this auth context - cannot continue\n"));
-		return NT_STATUS_LOGON_FAILURE;
+		nt_status = NT_STATUS_LOGON_FAILURE;
+		goto fail;
 	}
 
 	if (auth_context->challenge_set_by)
@@ -202,8 +203,11 @@ NTSTATUS auth_check_ntlm_password(TALLOC_CTX *mem_ctx,
 #endif
 
 	/* This needs to be sorted:  If it doesn't match, what should we do? */
-	if (!check_domain_match(user_info->client.account_name, user_info->mapped.domain_name))
-		return NT_STATUS_LOGON_FAILURE;
+	if (!check_domain_match(user_info->client.account_name,
+				user_info->mapped.domain_name)) {
+		nt_status = NT_STATUS_LOGON_FAILURE;
+		goto fail;
+	}
 
 	for (auth_method = auth_context->auth_method_list;auth_method; auth_method = auth_method->next) {
 		struct auth_serversupplied_info *server_info;
@@ -275,7 +279,8 @@ NTSTATUS auth_check_ntlm_password(TALLOC_CTX *mem_ctx,
 				rhost = tsocket_address_inet_addr_string(user_info->remote_host,
 									 talloc_tos());
 				if (rhost == NULL) {
-					return NT_STATUS_NO_MEMORY;
+					nt_status = NT_STATUS_NO_MEMORY;
+					goto fail;
 				}
 			} else {
 				rhost = "127.0.0.1";
@@ -307,6 +312,8 @@ NTSTATUS auth_check_ntlm_password(TALLOC_CTX *mem_ctx,
 
 		return nt_status;
 	}
+
+fail:
 
 	/* failed authentication; check for guest lapping */
 
