@@ -40,66 +40,53 @@ NTSTATUS rpc_query_user_list(TALLOC_CTX *mem_ctx,
 			     const struct dom_sid *domain_sid,
 			     uint32_t **prids)
 {
+	struct dcerpc_binding_handle *b = samr_pipe->binding_handle;
 	uint32_t *rids = NULL;
 	uint32_t num_rids = 0;
-	uint32_t loop_count = 0;
-	uint32_t start_idx = 0;
 	uint32_t i = 0;
-	NTSTATUS status, result;
-	struct dcerpc_binding_handle *b = samr_pipe->binding_handle;
+	uint32_t resume_handle = 0;
+	NTSTATUS result;
 
 	*prids = NULL;
 
 	do {
-		uint32_t j;
-		uint32_t num_dom_users;
-		uint32_t max_entries, max_size;
-		uint32_t total_size, returned_size;
-		union samr_DispInfo disp_info;
+		struct samr_SamArray *sam_array = NULL;
+		uint32_t count = 0;
+		NTSTATUS status;
+		uint32_t *tmp;
 
-		dcerpc_get_query_dispinfo_params(loop_count,
-						 &max_entries,
-						 &max_size);
-
-		status = dcerpc_samr_QueryDisplayInfo(b,
-						      mem_ctx,
-						      samr_policy,
-						      1, /* level */
-						      start_idx,
-						      max_entries,
-						      max_size,
-						      &total_size,
-						      &returned_size,
-						      &disp_info,
-						      &result);
+		status = dcerpc_samr_EnumDomainUsers(
+			b, mem_ctx, samr_policy, &resume_handle,
+			ACB_NORMAL, &sam_array, 0xffff, &count, &result);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
 		if (!NT_STATUS_IS_OK(result)) {
 			if (!NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES)) {
+				DBG_WARNING("EnumDomainUsers failed: %s\n",
+					    nt_errstr(result));
 				TALLOC_FREE(rids);
+				TALLOC_FREE(sam_array);
 				return result;
 			}
 		}
 
-		/* increment required start query values */
-		start_idx += disp_info.info1.count;
-		loop_count++;
-		num_dom_users = disp_info.info1.count;
-
-		num_rids += num_dom_users;
-		/* If there are no user to enumerate we're done */
-		if (num_rids == 0) {
-			return NT_STATUS_OK;
+		if (num_rids + count < num_rids) {
+			TALLOC_FREE(sam_array);
+			TALLOC_FREE(rids);
+			return NT_STATUS_INTEGER_OVERFLOW;
 		}
 
-		rids = talloc_realloc(mem_ctx, rids, uint32_t, num_rids);
-		if (rids == NULL) {
+		tmp = talloc_realloc(mem_ctx, rids, uint32_t, num_rids+count);
+		if (tmp == NULL) {
+			TALLOC_FREE(sam_array);
+			TALLOC_FREE(rids);
 			return NT_STATUS_NO_MEMORY;
 		}
+		rids = tmp;
 
-		for (j = 0; j < num_dom_users; j++) {
-			rids[i++] = disp_info.info1.entries[j].rid;
+		for (i=0; i<count; i++) {
+			rids[num_rids++] = sam_array->entries[i].idx;
 		}
 	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
 
