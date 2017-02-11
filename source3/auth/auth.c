@@ -170,6 +170,7 @@ NTSTATUS auth_check_ntlm_password(TALLOC_CTX *mem_ctx,
 	NTSTATUS nt_status = NT_STATUS_NO_SUCH_USER;
 	const char *unix_username;
 	auth_methods *auth_method;
+	struct auth_serversupplied_info *server_info;
 
 	if (user_info == NULL || auth_context == NULL || pserver_info == NULL) {
 		return NT_STATUS_LOGON_FAILURE;
@@ -213,7 +214,6 @@ NTSTATUS auth_check_ntlm_password(TALLOC_CTX *mem_ctx,
 	}
 
 	for (auth_method = auth_context->auth_method_list;auth_method; auth_method = auth_method->next) {
-		struct auth_serversupplied_info *server_info;
 		NTSTATUS result;
 
 		if (user_info->flags & USER_INFO_LOCAL_SAM_ONLY
@@ -251,7 +251,6 @@ NTSTATUS auth_check_ntlm_password(TALLOC_CTX *mem_ctx,
 		}
 
 		if (NT_STATUS_IS_OK(nt_status)) {
-			*pserver_info = talloc_move(mem_ctx, &server_info);
 			break;
 		}
 	}
@@ -259,11 +258,11 @@ NTSTATUS auth_check_ntlm_password(TALLOC_CTX *mem_ctx,
 	/* successful authentication */
 
 	if (NT_STATUS_IS_OK(nt_status)) {
-		unix_username = (*pserver_info)->unix_name;
+		unix_username = server_info->unix_name;
 
 		/* We skip doing this step if the caller asked us not to */
 		if (!(user_info->flags & USER_INFO_INFO3_AND_NO_AUTHZ)
-		    && !(*pserver_info)->guest) {
+		    && !(server_info->guest)) {
 			const char *rhost;
 
 			if (tsocket_address_is_inet(user_info->remote_host, "ip")) {
@@ -293,12 +292,14 @@ NTSTATUS auth_check_ntlm_password(TALLOC_CTX *mem_ctx,
 		}
 
 		if (NT_STATUS_IS_OK(nt_status)) {
-			DEBUG((*pserver_info)->guest ? 5 : 2,
+			DEBUG(server_info->guest ? 5 : 2,
 			      ("check_ntlm_password:  %sauthentication for user [%s] -> [%s] -> [%s] succeeded\n",
-			       (*pserver_info)->guest ? "guest " : "",
+			       server_info->guest ? "guest " : "",
 			       user_info->client.account_name,
 			       user_info->mapped.account_name,
 			       unix_username));
+
+			*pserver_info = talloc_move(mem_ctx, &server_info);
 		}
 
 		TALLOC_FREE(frame);
