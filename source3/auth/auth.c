@@ -294,20 +294,22 @@ NTSTATUS auth_check_ntlm_password(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	if (NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(server_info->guest ? 5 : 2,
-		      ("check_ntlm_password:  %sauthentication for user "
-		       "[%s] -> [%s] -> [%s] succeeded\n",
-		       server_info->guest ? "guest " : "",
-		       user_info->client.account_name,
-		       user_info->mapped.account_name,
-		       unix_username));
-
-		*pserver_info = talloc_move(mem_ctx, &server_info);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		goto fail;
 	}
 
+	DEBUG(server_info->guest ? 5 : 2,
+	      ("check_ntlm_password:  %sauthentication for user "
+	       "[%s] -> [%s] -> [%s] succeeded\n",
+	       server_info->guest ? "guest " : "",
+	       user_info->client.account_name,
+	       user_info->mapped.account_name,
+	       unix_username));
+
+	*pserver_info = talloc_move(mem_ctx, &server_info);
+
 	TALLOC_FREE(frame);
-	return nt_status;
+	return NT_STATUS_OK;
 
 fail:
 
