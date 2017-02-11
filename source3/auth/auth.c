@@ -165,6 +165,7 @@ NTSTATUS auth_check_ntlm_password(TALLOC_CTX *mem_ctx,
 				  const struct auth_usersupplied_info *user_info,
 				  struct auth_serversupplied_info **pserver_info)
 {
+	TALLOC_CTX *frame;
 	/* if all the modules say 'not for me' this is reasonable */
 	NTSTATUS nt_status = NT_STATUS_NO_SUCH_USER;
 	const char *unix_username;
@@ -173,6 +174,8 @@ NTSTATUS auth_check_ntlm_password(TALLOC_CTX *mem_ctx,
 	if (user_info == NULL || auth_context == NULL || pserver_info == NULL) {
 		return NT_STATUS_LOGON_FAILURE;
 	}
+
+	frame = talloc_stackframe();
 
 	DEBUG(3, ("check_ntlm_password:  Checking password for unmapped user [%s]\\[%s]@[%s] with the new password interface\n", 
 		  user_info->client.domain_name, user_info->client.account_name, user_info->workstation_name));
@@ -211,7 +214,6 @@ NTSTATUS auth_check_ntlm_password(TALLOC_CTX *mem_ctx,
 
 	for (auth_method = auth_context->auth_method_list;auth_method; auth_method = auth_method->next) {
 		struct auth_serversupplied_info *server_info;
-		TALLOC_CTX *tmp_ctx;
 		NTSTATUS result;
 
 		if (user_info->flags & USER_INFO_LOCAL_SAM_ONLY
@@ -219,23 +221,15 @@ NTSTATUS auth_check_ntlm_password(TALLOC_CTX *mem_ctx,
 			continue;
 		}
 
-		tmp_ctx = talloc_named(mem_ctx,
-				       0,
-				       "%s authentication for user %s\\%s",
-				       auth_method->name,
-				       user_info->mapped.domain_name,
-				       user_info->client.account_name);
-
 		result = auth_method->auth(auth_context,
 					   auth_method->private_data,
-					   tmp_ctx,
+					   talloc_tos(),
 					   user_info,
 					   &server_info);
 
 		/* check if the module did anything */
 		if (NT_STATUS_EQUAL(result, NT_STATUS_NOT_IMPLEMENTED)) {
 			DEBUG(10,("check_ntlm_password: %s had nothing to say\n", auth_method->name));
-			TALLOC_FREE(tmp_ctx);
 			if (user_info->flags & USER_INFO_LOCAL_SAM_ONLY) {
 				/* we don't expose the NT_STATUS_NOT_IMPLEMENTED
 				 * internals, except when the caller is only probing
@@ -258,11 +252,8 @@ NTSTATUS auth_check_ntlm_password(TALLOC_CTX *mem_ctx,
 
 		if (NT_STATUS_IS_OK(nt_status)) {
 			*pserver_info = talloc_move(mem_ctx, &server_info);
-			TALLOC_FREE(tmp_ctx);
 			break;
 		}
-
-		TALLOC_FREE(tmp_ctx);
 	}
 
 	/* successful authentication */
@@ -310,6 +301,7 @@ NTSTATUS auth_check_ntlm_password(TALLOC_CTX *mem_ctx,
 			       unix_username));
 		}
 
+		TALLOC_FREE(frame);
 		return nt_status;
 	}
 
@@ -321,6 +313,8 @@ fail:
 		  user_info->client.account_name, user_info->mapped.account_name,
 		  nt_errstr(nt_status)));
 	ZERO_STRUCTP(pserver_info);
+
+	TALLOC_FREE(frame);
 
 	return nt_status;
 }
