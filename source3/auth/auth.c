@@ -257,54 +257,57 @@ NTSTATUS auth_check_ntlm_password(TALLOC_CTX *mem_ctx,
 
 	/* successful authentication */
 
-	if (NT_STATUS_IS_OK(nt_status)) {
-		unix_username = server_info->unix_name;
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		goto fail;
+	}
 
-		/* We skip doing this step if the caller asked us not to */
-		if (!(user_info->flags & USER_INFO_INFO3_AND_NO_AUTHZ)
-		    && !(server_info->guest)) {
-			const char *rhost;
+	unix_username = server_info->unix_name;
 
-			if (tsocket_address_is_inet(user_info->remote_host, "ip")) {
-				rhost = tsocket_address_inet_addr_string(user_info->remote_host,
-									 talloc_tos());
-				if (rhost == NULL) {
-					nt_status = NT_STATUS_NO_MEMORY;
-					goto fail;
-				}
-			} else {
-				rhost = "127.0.0.1";
+	/* We skip doing this step if the caller asked us not to */
+	if (!(user_info->flags & USER_INFO_INFO3_AND_NO_AUTHZ)
+	    && !(server_info->guest)) {
+		const char *rhost;
+
+		if (tsocket_address_is_inet(user_info->remote_host, "ip")) {
+			rhost = tsocket_address_inet_addr_string(
+				user_info->remote_host, talloc_tos());
+			if (rhost == NULL) {
+				nt_status = NT_STATUS_NO_MEMORY;
+				goto fail;
 			}
-
-			/* We might not be root if we are an RPC call */
-			become_root();
-			nt_status = smb_pam_accountcheck(unix_username,
-							 rhost);
-			unbecome_root();
-
-			if (NT_STATUS_IS_OK(nt_status)) {
-				DEBUG(5, ("check_ntlm_password:  PAM Account for user [%s] succeeded\n", 
-					  unix_username));
-			} else {
-				DEBUG(3, ("check_ntlm_password:  PAM Account for user [%s] FAILED with error %s\n", 
-					  unix_username, nt_errstr(nt_status)));
-			} 
+		} else {
+			rhost = "127.0.0.1";
 		}
+
+		/* We might not be root if we are an RPC call */
+		become_root();
+		nt_status = smb_pam_accountcheck(unix_username, rhost);
+		unbecome_root();
 
 		if (NT_STATUS_IS_OK(nt_status)) {
-			DEBUG(server_info->guest ? 5 : 2,
-			      ("check_ntlm_password:  %sauthentication for user [%s] -> [%s] -> [%s] succeeded\n",
-			       server_info->guest ? "guest " : "",
-			       user_info->client.account_name,
-			       user_info->mapped.account_name,
-			       unix_username));
-
-			*pserver_info = talloc_move(mem_ctx, &server_info);
+			DEBUG(5, ("check_ntlm_password:  PAM Account for user [%s] "
+				  "succeeded\n", unix_username));
+		} else {
+			DEBUG(3, ("check_ntlm_password:  PAM Account for user [%s] "
+				  "FAILED with error %s\n",
+				  unix_username, nt_errstr(nt_status)));
 		}
-
-		TALLOC_FREE(frame);
-		return nt_status;
 	}
+
+	if (NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(server_info->guest ? 5 : 2,
+		      ("check_ntlm_password:  %sauthentication for user "
+		       "[%s] -> [%s] -> [%s] succeeded\n",
+		       server_info->guest ? "guest " : "",
+		       user_info->client.account_name,
+		       user_info->mapped.account_name,
+		       unix_username));
+
+		*pserver_info = talloc_move(mem_ctx, &server_info);
+	}
+
+	TALLOC_FREE(frame);
+	return nt_status;
 
 fail:
 
