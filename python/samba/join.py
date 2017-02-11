@@ -492,8 +492,11 @@ class dc_join(object):
             if ctr.err_ver != 1:
                 raise RuntimeError("expected err_ver 1, got %u" % ctr.err_ver)
             if ctr.err_data.status[0] != werror.WERR_SUCCESS:
-                print("DsAddEntry failed with status %s info %s" % (ctr.err_data.status,
-                                                                    ctr.err_data.info.extended_err))
+                if ctr.err_data.info is None:
+                    print("DsAddEntry failed with status %s, info omitted" % (ctr.err_data.status[1]))
+                else:
+                    print("DsAddEntry failed with status %s info %s" % (ctr.err_data.status[1],
+                                                                        ctr.err_data.info.extended_err))
                 raise RuntimeError("DsAddEntry failed")
             if ctr.err_data.dir_err != drsuapi.DRSUAPI_DIRERR_OK:
                 print("DsAddEntry failed with dir_err %u" % ctr.err_data.dir_err)
