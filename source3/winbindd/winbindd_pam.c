@@ -2113,6 +2113,7 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 				       &flags,
 				       &info3);
 	if (!NT_STATUS_IS_OK(result)) {
+		state->response->data.auth.authoritative = authoritative;
 		goto done;
 	}
 
