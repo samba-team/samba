@@ -229,6 +229,10 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_UNSUCCESSFUL)) {
 			nt_status = NT_STATUS_NO_LOGON_SERVERS;
 		}
+		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_SUCH_USER) &&
+		    (authoritative == 0)) {
+			nt_status = NT_STATUS_NOT_IMPLEMENTED;
+		}
 	} else {
 		nt_status = make_server_info_info3(mem_ctx,
 						   user_info->client.account_name,
