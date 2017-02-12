@@ -18,6 +18,7 @@
 
 import samba.getopt as options
 from samba import WERRORError
+from samba import werror
 from struct import pack
 from socket import inet_ntoa
 from socket import inet_ntop
@@ -624,7 +625,7 @@ def dns_record_match(dns_conn, server, zone, name, record_type, data):
             dnsserver.DNS_CLIENT_VERSION_LONGHORN, 0, server, zone, name, None,
             record_type, select_flags, None, None)
     except WERRORError as e:
-        if e.args[1] == 'WERR_DNS_ERROR_NAME_DOES_NOT_EXIST':
+        if e.args[0] == werror.WERR_DNS_ERROR_NAME_DOES_NOT_EXIST:
             # Either the zone doesn't exist, or there were no records.
             # We can't differentiate the two.
             return None
@@ -900,7 +901,7 @@ class cmd_zonecreate(Command):
                                             0, 'ResetDwordProperty', typeid,
                                             name_and_param)
         except WERRORError as e:
-            if e.args[1] == 'WERR_DNS_ERROR_ZONE_ALREADY_EXISTS':
+            if e.args[0] == werror.WERR_DNS_ERROR_ZONE_ALREADY_EXISTS:
                 self.outf.write('Zone already exists.')
             raise e
 
@@ -934,7 +935,7 @@ class cmd_zonedelete(Command):
                                             dnsserver.DNSSRV_TYPEID_NULL,
                                             None)
         except WERRORError as e:
-            if e.args[1] == 'WERR_DNS_ERROR_ZONE_DOES_NOT_EXIST':
+            if e.args[0] == werror.WERR_DNS_ERROR_ZONE_DOES_NOT_EXIST:
                 self.outf.write('Zone does not exist and so could not be deleted.')
             raise e
 
@@ -1013,7 +1014,7 @@ class cmd_query(Command):
                 dnsserver.DNS_CLIENT_VERSION_LONGHORN, 0, server, zone, name,
                 None, record_type, select_flags, None, None)
         except WERRORError as e:
-            if e.args[1] == 'WERR_DNS_ERROR_NAME_DOES_NOT_EXIST':
+            if e.args[0] == werror.WERR_DNS_ERROR_NAME_DOES_NOT_EXIST:
                 self.outf.write('Record or zone does not exist.')
             raise e
 
@@ -1093,7 +1094,7 @@ class cmd_add_record(Command):
             dns_conn.DnssrvUpdateRecord2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
                                          0, server, zone, name, add_rec_buf, None)
         except WERRORError as e:
-            if e.args[1] == 'WERR_DNS_ERROR_NAME_DOES_NOT_EXIST':
+            if e.args[0] == werror.WERR_DNS_ERROR_NAME_DOES_NOT_EXIST:
                 self.outf.write('Zone does not exist; record could not be added.\n')
             raise e
 
@@ -1164,7 +1165,7 @@ class cmd_update_record(Command):
                                          add_rec_buf,
                                          del_rec_buf)
         except WERRORError as e:
-            if e.args[1] == 'WERR_DNS_ERROR_NAME_DOES_NOT_EXIST':
+            if e.args[0] == werror.WERR_DNS_ERROR_NAME_DOES_NOT_EXIST:
                 self.outf.write('Zone does not exist; record could not be updated.\n')
             raise e
 
@@ -1219,7 +1220,7 @@ class cmd_delete_record(Command):
                                          None,
                                          del_rec_buf)
         except WERRORError as e:
-            if e.args[1] == 'WERR_DNS_ERROR_NAME_DOES_NOT_EXIST':
+            if e.args[0] == werror.WERR_DNS_ERROR_NAME_DOES_NOT_EXIST:
                 self.outf.write('Zone does not exist; record could not be deleted.\n')
             raise e
 

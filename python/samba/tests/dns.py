@@ -26,6 +26,7 @@ from samba.tests import TestCase
 from samba.dcerpc import dns, dnsp, dnsserver
 from samba.netcmd.dns import TXTRecord, dns_record_match, data_to_dns_record
 from samba.tests.subunitrun import SubunitOptions, TestProgram
+from samba import werror
 import samba.getopt as options
 import optparse
 
@@ -983,7 +984,7 @@ class TestZones(DNSTest):
         try:
             self.delete_zone(self.zone)
         except RuntimeError, (num, string):
-            if num != 9601: #WERR_DNS_ERROR_ZONE_DOES_NOT_EXIST
+            if num != werror.WERR_DNS_ERROR_ZONE_DOES_NOT_EXIST:
                 raise
 
     def create_zone(self, zone):

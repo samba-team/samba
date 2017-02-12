@@ -33,6 +33,7 @@ from samba import descriptor
 from samba.net import Net
 from samba.provision.sambadns import setup_bind9_dns
 from samba import read_and_sub_file
+from samba import werror
 from base64 import b64encode
 import logging
 import talloc
@@ -484,13 +485,13 @@ class dc_join(object):
             if ctr.dir_err != drsuapi.DRSUAPI_DIRERR_OK:
                 print("DsAddEntry failed with dir_err %u" % ctr.dir_err)
                 raise RuntimeError("DsAddEntry failed")
-            if ctr.extended_err != (0, 'WERR_OK'):
+            if ctr.extended_err[0] != werror.WERR_SUCCESS:
                 print("DsAddEntry failed with status %s info %s" % (ctr.extended_err))
                 raise RuntimeError("DsAddEntry failed")
         if level == 3:
             if ctr.err_ver != 1:
                 raise RuntimeError("expected err_ver 1, got %u" % ctr.err_ver)
-            if ctr.err_data.status != (0, 'WERR_OK'):
+            if ctr.err_data.status[0] != werror.WERR_SUCCESS:
                 print("DsAddEntry failed with status %s info %s" % (ctr.err_data.status,
                                                                     ctr.err_data.info.extended_err))
                 raise RuntimeError("DsAddEntry failed")

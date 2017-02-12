@@ -35,6 +35,7 @@ import subprocess
 import time
 from samba import ntstatus
 from samba import NTSTATUSError
+from samba import werror
 from getpass import getpass
 from samba.net import Net, LIBNET_JOIN_AUTOMATIC
 import samba.ntacls
@@ -797,7 +798,7 @@ class cmd_domain_demote(Command):
                 try:
                     drsuapiBind.DsReplicaSync(drsuapi_handle, 1, req1)
                 except RuntimeError as (werr, string):
-                    if werr == 8452: #WERR_DS_DRA_NO_REPLICA
+                    if werr == werror.WERR_DS_DRA_NO_REPLICA:
                         pass
                     else:
                         self.errf.write(
@@ -947,7 +948,7 @@ class cmd_domain_demote(Command):
                                                            "userAccountControl")
             remote_samdb.modify(msg)
             remote_samdb.rename(newdn, dc_dn)
-            if werr == 8452: #WERR_DS_DRA_NO_REPLICA
+            if werr == werror.WERR_DS_DRA_NO_REPLICA:
                 raise CommandError("The DC %s is not present on (already removed from) the remote server: " % server_dsa_dn, e)
             else:
                 raise CommandError("Error while sending a removeDsServer of %s: " % server_dsa_dn, e)
@@ -1613,11 +1614,6 @@ class DomainTrustCommand(Command):
         self.remote_binding_string = None
         self.remote_creds = None
 
-    WERR_OK = 0x00000000
-    WERR_INVALID_FUNCTION = 0x00000001
-    WERR_NERR_ACFNOTLOADED = 0x000008B3
-    WERR_RPC_S_PROCNUM_OUT_OF_RANGE = 0x000006D1
-
     def _uint32(self, v):
         return ctypes.c_uint32(v).value
 
@@ -2006,7 +2002,7 @@ class cmd_domain_trust_list(DomainTrustCommand):
                                     netlogon.NETR_TRUST_FLAG_OUTBOUND |
                                     netlogon.NETR_TRUST_FLAG_INBOUND)
         except RuntimeError as error:
-            if self.check_runtime_error(error, self.WERR_RPC_S_PROCNUM_OUT_OF_RANGE):
+            if self.check_runtime_error(error, werror.WERR_RPC_S_PROCNUM_OUT_OF_RANGE):
                 # TODO: we could implement a fallback to lsa.EnumTrustDom()
                 raise CommandError("LOCAL_DC[%s]: netr_DsrEnumerateDomainTrusts not supported." % (
                                    self.local_server))
@@ -2623,7 +2619,7 @@ class cmd_domain_trust_create(DomainTrustCommand):
                                        local_trust_verify.tc_connection_status[1],
                                        local_trust_verify.pdc_connection_status[1])
 
-                if local_trust_status != self.WERR_OK or local_conn_status != self.WERR_OK:
+                if local_trust_status != werror.WERR_SUCCESS or local_conn_status != werror.WERR_SUCCESS:
                     raise CommandError(local_validation)
                 else:
                     self.outf.write("OK: %s\n" % local_validation)
@@ -2653,7 +2649,7 @@ class cmd_domain_trust_create(DomainTrustCommand):
                                            remote_trust_verify.tc_connection_status[1],
                                            remote_trust_verify.pdc_connection_status[1])
 
-                    if remote_trust_status != self.WERR_OK or remote_conn_status != self.WERR_OK:
+                    if remote_trust_status != werror.WERR_SUCCESS or remote_conn_status != werror.WERR_SUCCESS:
                         raise CommandError(remote_validation)
                     else:
                         self.outf.write("OK: %s\n" % remote_validation)
@@ -2917,7 +2913,7 @@ class cmd_domain_trust_validate(DomainTrustCommand):
                                local_trust_verify.tc_connection_status[1],
                                local_trust_verify.pdc_connection_status[1])
 
-        if local_trust_status != self.WERR_OK or local_conn_status != self.WERR_OK:
+        if local_trust_status != werror.WERR_SUCCESS or local_conn_status != werror.WERR_SUCCESS:
             raise CommandError(local_validation)
         else:
             self.outf.write("OK: %s\n" % local_validation)
@@ -2937,7 +2933,7 @@ class cmd_domain_trust_validate(DomainTrustCommand):
                                local_trust_rediscover.trusted_dc_name,
                                local_trust_rediscover.tc_connection_status[1])
 
-        if local_conn_status != self.WERR_OK:
+        if local_conn_status != werror.WERR_SUCCESS:
             raise CommandError(local_rediscover)
         else:
             self.outf.write("OK: %s\n" % local_rediscover)
@@ -2975,7 +2971,7 @@ class cmd_domain_trust_validate(DomainTrustCommand):
                                    remote_trust_verify.tc_connection_status[1],
                                    remote_trust_verify.pdc_connection_status[1])
 
-            if remote_trust_status != self.WERR_OK or remote_conn_status != self.WERR_OK:
+            if remote_trust_status != werror.WERR_SUCCESS or remote_conn_status != werror.WERR_SUCCESS:
                 raise CommandError(remote_validation)
             else:
                 self.outf.write("OK: %s\n" % remote_validation)
@@ -2996,7 +2992,7 @@ class cmd_domain_trust_validate(DomainTrustCommand):
                                    remote_trust_rediscover.trusted_dc_name,
                                    remote_trust_rediscover.tc_connection_status[1])
 
-            if remote_conn_status != self.WERR_OK:
+            if remote_conn_status != werror.WERR_SUCCESS:
                 raise CommandError(remote_rediscover)
             else:
                 self.outf.write("OK: %s\n" % remote_rediscover)
@@ -3298,15 +3294,15 @@ class cmd_domain_trust_namespaces(DomainTrustCommand):
                 own_forest_info = local_netlogon.netr_DsRGetForestTrustInformation(local_netlogon_info.dc_unc,
                                                                                    None, 0)
             except RuntimeError as error:
-                if self.check_runtime_error(error, self.WERR_RPC_S_PROCNUM_OUT_OF_RANGE):
+                if self.check_runtime_error(error, werror.WERR_RPC_S_PROCNUM_OUT_OF_RANGE):
                     raise CommandError("LOCAL_DC[%s]: netr_DsRGetForestTrustInformation() not supported." % (
                                        self.local_server))
 
-                if self.check_runtime_error(error, self.WERR_INVALID_FUNCTION):
+                if self.check_runtime_error(error, werror.WERR_INVALID_FUNCTION):
                     raise CommandError("LOCAL_DC[%s]: netr_DsRGetForestTrustInformation() not supported." % (
                                        self.local_server))
 
-                if self.check_runtime_error(error, self.WERR_NERR_ACFNOTLOADED):
+                if self.check_runtime_error(error, werror.WERR_NERR_ACFNOTLOADED):
                     raise CommandError("LOCAL_DC[%s]: netr_DsRGetForestTrustInformation() not supported." % (
                                        self.local_server))
 

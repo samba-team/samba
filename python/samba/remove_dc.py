@@ -19,6 +19,7 @@
 import uuid
 import ldb
 from ldb import LdbError
+from samba import werror
 from samba.ndr import ndr_unpack
 from samba.dcerpc import misc, dnsp
 from samba.dcerpc.dnsp import DNS_TYPE_NS, DNS_TYPE_A, DNS_TYPE_AAAA, \
@@ -98,7 +99,7 @@ def remove_dns_references(samdb, logger, dnsHostName):
     try:
         primary_recs = samdb.dns_lookup(dnsHostName)
     except RuntimeError as (enum, estr):
-        if enum == 0x000025F2: #WERR_DNS_ERROR_NAME_DOES_NOT_EXIST
+        if enum == werror.WERR_DNS_ERROR_NAME_DOES_NOT_EXIST:
               return
         raise DemoteException("lookup of %s failed: %s" % (dnsHostName, estr))
     samdb.dns_replace(dnsHostName, [])
@@ -141,7 +142,7 @@ def remove_dns_references(samdb, logger, dnsHostName):
             logger.debug("checking for DNS records to remove on %s" % a_name)
             a_recs = samdb.dns_lookup(a_name)
         except RuntimeError as (enum, estr):
-            if enum == 0x000025F2: #WERR_DNS_ERROR_NAME_DOES_NOT_EXIST
+            if enum == werror.WERR_DNS_ERROR_NAME_DOES_NOT_EXIST:
                 return
             raise DemoteException("lookup of %s failed: %s" % (a_name, estr))
 
