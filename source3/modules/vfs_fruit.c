@@ -101,7 +101,7 @@ static int vfs_fruit_debug_level = DBGC_VFS;
 #define ADOUBLE_NAME_PREFIX "._"
 
 #define NETATALK_META_XATTR "org.netatalk.Metadata"
-#define NETATALK_RSRC_XATTR "org.netatalk.Metadata"
+#define NETATALK_RSRC_XATTR "org.netatalk.ResourceFork"
 
 #if defined(HAVE_ATTROPEN)
 #define AFPINFO_EA_NETATALK NETATALK_META_XATTR
