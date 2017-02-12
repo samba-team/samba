@@ -302,27 +302,17 @@ static int cmd_cd(struct smbclient_context *ctx, const char **args)
 static bool mask_match(struct smbcli_state *c, const char *string, 
 		const char *pattern, bool is_case_sensitive)
 {
-	char *p2, *s2;
-	bool ret;
+	int ret;
 
 	if (ISDOTDOT(string))
 		string = ".";
 	if (ISDOT(pattern))
 		return false;
-	
-	if (is_case_sensitive)
-		return ms_fnmatch_protocol(
-			pattern, string, c->transport->negotiate.protocol,
-			true) == 0;
 
-	p2 = strlower_talloc(NULL, pattern);
-	s2 = strlower_talloc(NULL, string);
-	ret = ms_fnmatch_protocol(p2, s2, c->transport->negotiate.protocol,
-				  true) == 0;
-	talloc_free(p2);
-	talloc_free(s2);
-
-	return ret;
+	ret = ms_fnmatch_protocol(pattern, string,
+				  c->transport->negotiate.protocol,
+				  is_case_sensitive);
+	return (ret == 0);
 }
 
 
