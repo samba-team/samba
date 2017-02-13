@@ -2278,6 +2278,19 @@ static int replmd_check_upgrade_links(struct ldb_context *ldb,
 			return ret;
 		}
 	}
+
+	/*
+	 * This sort() is critical for the operation of
+	 * get_parsed_dns_trusted() because callers of this function
+	 * expect a sorted list, and FL2000 style links are not
+	 * sorted.  In particular, as well as the upgrade case,
+	 * get_parsed_dns_trusted() is called from
+	 * replmd_delete_remove_link() even in FL2000 mode
+	 *
+	 * We do not normally pay the cost of the qsort() due to the
+	 * early return in the RMD_VERSION found case.
+	 */
+	TYPESAFE_QSORT(dns, count, parsed_dn_compare);
 	return LDB_SUCCESS;
 }
 
