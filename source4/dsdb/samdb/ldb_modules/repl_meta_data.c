@@ -2119,6 +2119,16 @@ static int get_parsed_dns_trusted(struct ldb_module *module,
 		}
 	}
 
+	/*
+	 * This upgrades links to FL2003 style, and sorts the result
+	 * if that was needed.
+	 *
+	 * TODO: Add a database feature that asserts we have no FL2000
+	 *       style links to avoid this check or add a feature that
+	 *       uses a similar check to find sorted/unsorted links
+	 *       for an on-the-fly upgrade.
+	 */
+
 	ret = replmd_check_upgrade_links(ldb_module_get_ctx(module),
 					 *pdn, el->num_values,
 					 el,
