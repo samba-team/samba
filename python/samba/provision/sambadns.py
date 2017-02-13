@@ -661,7 +661,7 @@ def secretsdb_setup_dns(secretsdb, names, private_dir, realm,
             "REALM": realm,
             "DNSDOMAIN": dnsdomain,
             "DNS_KEYTAB": dns_keytab_path,
-            "DNSPASS_B64": b64encode(dnspass),
+            "DNSPASS_B64": b64encode(dnspass.encode('utf-8')),
             "KEY_VERSION_NUMBER": str(key_version_number),
             "HOSTNAME": names.hostname,
             "DNSNAME" : '%s.%s' % (
