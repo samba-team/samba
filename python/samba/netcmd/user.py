@@ -670,7 +670,7 @@ class cmd_user_password(Command):
                 self.outf.write("Sorry, passwords do not match.\n")
 
         try:
-            net.change_password(password)
+            net.change_password(password.encode('utf-8'))
         except Exception, msg:
             # FIXME: catch more specific exception
             raise CommandError("Failed to change password : %s" % msg)
