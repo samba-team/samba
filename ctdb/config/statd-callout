@@ -128,6 +128,7 @@ case "$1" in
 	# where the lock manager will respond "strangely" immediately
 	# after restarting it, which causes clients to fail to reclaim
 	# their locks.
+	nfs_callout_init
 	"$CTDB_NFS_CALLOUT" "stop" "nlockmgr" >/dev/null 2>&1
         sleep 2
 	"$CTDB_NFS_CALLOUT" "start" "nlockmgr" >/dev/null 2>&1
