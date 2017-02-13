@@ -718,7 +718,6 @@ static NTSTATUS get_system_info3(TALLOC_CTX *mem_ctx,
 				 struct netr_SamInfo3 *info3)
 {
 	NTSTATUS status;
-	struct dom_sid *system_sid;
 
 	/* Set account name */
 	init_lsa_String(&info3->base.account_name, "SYSTEM");
@@ -727,17 +726,9 @@ static NTSTATUS get_system_info3(TALLOC_CTX *mem_ctx,
 	init_lsa_StringLarge(&info3->base.logon_domain, "NT AUTHORITY");
 
 
-	/* The SID set here will be overwirtten anyway, but try and make it SID_NT_SYSTEM anyway */
-	/* Domain sid is NT_AUTHORITY */
-
-	system_sid = dom_sid_parse_talloc(mem_ctx, SID_NT_SYSTEM);
-	if (system_sid == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	status = dom_sid_split_rid(mem_ctx, system_sid, &info3->base.domain_sid, 
+	status = dom_sid_split_rid(mem_ctx, &global_sid_System,
+				   &info3->base.domain_sid,
 				   &info3->base.rid);
-	TALLOC_FREE(system_sid);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
