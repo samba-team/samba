@@ -729,19 +729,19 @@ static NTSTATUS get_system_info3(TALLOC_CTX *mem_ctx,
 
 	/* The SID set here will be overwirtten anyway, but try and make it SID_NT_SYSTEM anyway */
 	/* Domain sid is NT_AUTHORITY */
-	
+
 	system_sid = dom_sid_parse_talloc(mem_ctx, SID_NT_SYSTEM);
 	if (system_sid == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	
+
 	status = dom_sid_split_rid(mem_ctx, system_sid, &info3->base.domain_sid, 
 				   &info3->base.rid);
 	TALLOC_FREE(system_sid);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	/* Primary gid is the same */
 	info3->base.primary_gid = info3->base.rid;
 
