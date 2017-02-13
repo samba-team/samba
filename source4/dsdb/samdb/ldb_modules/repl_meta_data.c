@@ -101,8 +101,18 @@ struct replmd_replicated_request {
 	bool isDeleted;
 };
 
+struct parsed_dn {
+	struct dsdb_dn *dsdb_dn;
+	struct GUID guid;
+	struct ldb_val *v;
+};
+
 static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar);
 static int replmd_delete_internals(struct ldb_module *module, struct ldb_request *req, bool re_delete);
+static int replmd_check_upgrade_links(struct ldb_context *ldb,
+				      struct parsed_dn *dns, uint32_t count,
+				      struct ldb_message_element *el,
+				      const char *ldap_oid);
 
 enum urgent_situation {
 	REPL_URGENT_ON_CREATE = 1,
@@ -861,12 +871,6 @@ static void replmd_ldb_message_sort(struct ldb_message *msg,
 static int replmd_build_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct dsdb_dn *dsdb_dn,
 			       const struct GUID *invocation_id, uint64_t seq_num,
 			       uint64_t local_usn, NTTIME nttime, uint32_t version, bool deleted);
-
-struct parsed_dn {
-	struct dsdb_dn *dsdb_dn;
-	struct GUID guid;
-	struct ldb_val *v;
-};
 
 static int get_parsed_dns(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 			  struct ldb_message_element *el, struct parsed_dn **pdn,
@@ -2073,6 +2077,9 @@ static int get_parsed_dns(struct ldb_module *module, TALLOC_CTX *mem_ctx,
  * GUID, even though the GUIDs might not be known. That works because we trust
  * the database to give us the elements like that if the
  * replmd_private->sorted_links flag is set.
+ *
+ * We also ensure that the links are in the Functional Level 2003
+ * linked attributes format.
  */
 static int get_parsed_dns_trusted(struct ldb_module *module,
 				  struct replmd_private *replmd_private,
@@ -2083,7 +2090,7 @@ static int get_parsed_dns_trusted(struct ldb_module *module,
 				  struct ldb_request *parent)
 {
 	unsigned int i;
-
+	int ret;
 	if (el == NULL) {
 		*pdn = NULL;
 		return LDB_SUCCESS;
@@ -2093,19 +2100,31 @@ static int get_parsed_dns_trusted(struct ldb_module *module,
 		/* We need to sort the list. This is the slow old path we want
 		   to avoid.
 		 */
-		return get_parsed_dns(module, mem_ctx, el, pdn, ldap_oid,
+		ret = get_parsed_dns(module, mem_ctx, el, pdn, ldap_oid,
 				      parent);
-	}
-	/* Here we get a list of 'struct parsed_dns' without the parsing */
-	*pdn = talloc_zero_array(mem_ctx, struct parsed_dn,
-				 el->num_values);
-	if (!*pdn) {
-		ldb_module_oom(module);
-		return LDB_ERR_OPERATIONS_ERROR;
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	} else {
+		/* Here we get a list of 'struct parsed_dns' without the parsing */
+		*pdn = talloc_zero_array(mem_ctx, struct parsed_dn,
+					 el->num_values);
+		if (!*pdn) {
+			ldb_module_oom(module);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+		for (i = 0; i < el->num_values; i++) {
+			(*pdn)[i].v = &el->values[i];
+		}
 	}
 
-	for (i = 0; i < el->num_values; i++) {
-		(*pdn)[i].v = &el->values[i];
+	ret = replmd_check_upgrade_links(ldb_module_get_ctx(module),
+					 *pdn, el->num_values,
+					 el,
+					 ldap_oid);
+	if (ret != LDB_SUCCESS) {
+		return ret;
 	}
 
 	return LDB_SUCCESS;
@@ -2208,10 +2227,10 @@ static int replmd_update_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct d
 static int replmd_check_upgrade_links(struct ldb_context *ldb,
 				      struct parsed_dn *dns, uint32_t count,
 				      struct ldb_message_element *el,
-				      const struct GUID *invocation_id,
 				      const char *ldap_oid)
 {
 	uint32_t i;
+	const struct GUID *invocation_id = NULL;
 	for (i=0; i<count; i++) {
 		NTSTATUS status;
 		uint32_t version;
@@ -2242,6 +2261,14 @@ static int replmd_check_upgrade_links(struct ldb_context *ldb,
 				  "linked attributes\n"));
 			continue;
 		}
+
+		if (invocation_id == NULL) {
+			invocation_id = samdb_ntds_invocation_id(ldb);
+			if (invocation_id == NULL) {
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
+		}
+
 
 		/* it's an old one that needs upgrading */
 		ret = replmd_update_la_val(el->values, dns[i].v,
@@ -2381,8 +2408,13 @@ static int replmd_modify_la_add(struct ldb_module *module,
 	const struct GUID *invocation_id;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	NTTIME now;
-
 	unix_to_nt_time(&now, t);
+
+	invocation_id = samdb_ntds_invocation_id(ldb);
+	if (!invocation_id) {
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
 	/* get the DNs to be added, fully parsed.
 	 *
@@ -2402,20 +2434,6 @@ static int replmd_modify_la_add(struct ldb_module *module,
 				     tmp_ctx, old_el, &old_dns,
 				     schema_attr->syntax->ldap_oid, parent);
 
-	if (ret != LDB_SUCCESS) {
-		talloc_free(tmp_ctx);
-		return ret;
-	}
-
-	invocation_id = samdb_ntds_invocation_id(ldb);
-	if (!invocation_id) {
-		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	ret = replmd_check_upgrade_links(ldb, old_dns, old_num_values,
-					 old_el, invocation_id,
-					 schema_attr->syntax->ldap_oid);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
@@ -2597,15 +2615,20 @@ static int replmd_modify_la_delete(struct ldb_module *module,
 	struct parsed_dn *dns, *old_dns;
 	TALLOC_CTX *tmp_ctx = NULL;
 	int ret;
-	const struct GUID *invocation_id;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct ldb_control *vanish_links_ctrl = NULL;
 	bool vanish_links = false;
 	unsigned int num_to_delete = el->num_values;
 	uint32_t rmd_flags;
+	const struct GUID *invocation_id;
 	NTTIME now;
 
 	unix_to_nt_time(&now, t);
+
+	invocation_id = samdb_ntds_invocation_id(ldb);
+	if (!invocation_id) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
 	if (old_el == NULL || old_el->num_values == 0) {
 		/* there is nothing to delete... */
@@ -2632,20 +2655,6 @@ static int replmd_modify_la_delete(struct ldb_module *module,
 				     tmp_ctx, old_el, &old_dns,
 				     schema_attr->syntax->ldap_oid, parent);
 
-	if (ret != LDB_SUCCESS) {
-		talloc_free(tmp_ctx);
-		return ret;
-	}
-
-	invocation_id = samdb_ntds_invocation_id(ldb);
-	if (!invocation_id) {
-		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	ret = replmd_check_upgrade_links(ldb, old_dns, old_el->num_values,
-					 old_el, invocation_id,
-					 schema_attr->syntax->ldap_oid);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
@@ -2863,6 +2872,11 @@ static int replmd_modify_la_replace(struct ldb_module *module,
 
 	unix_to_nt_time(&now, t);
 
+	invocation_id = samdb_ntds_invocation_id(ldb);
+	if (!invocation_id) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
 	/*
 	 * The replace operation is unlike the replace and delete cases in that
 	 * we need to look at every existing link to see whether it is being
@@ -2908,13 +2922,8 @@ static int replmd_modify_la_replace(struct ldb_module *module,
 		return ret;
 	}
 
-	invocation_id = samdb_ntds_invocation_id(ldb);
-	if (!invocation_id) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
 	ret = replmd_check_upgrade_links(ldb, old_dns, old_num_values,
-					 old_el, invocation_id, ldap_oid);
+					 old_el, ldap_oid);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
@@ -6556,7 +6565,6 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 	struct GUID guid = GUID_zero();
 	NTSTATUS ntstatus;
 	bool active = (la->flags & DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE)?true:false;
-	const struct GUID *our_invocation_id;
 
 	enum deletion_state deletion_state = OBJECT_NOT_DELETED;
 	enum deletion_state target_deletion_state = OBJECT_NOT_DELETED;
@@ -6667,22 +6675,6 @@ linked_attributes[0]:
 	ret = get_parsed_dns_trusted(module, replmd_private, tmp_ctx, old_el, &pdn_list,
 				     attr->syntax->ldap_oid, parent);
 
-	if (ret != LDB_SUCCESS) {
-		talloc_free(tmp_ctx);
-		return ret;
-	}
-
-	/* get our invocationId */
-	our_invocation_id = samdb_ntds_invocation_id(ldb);
-	if (!our_invocation_id) {
-		ldb_debug_set(ldb, LDB_DEBUG_ERROR, __location__ ": unable to find invocationId\n");
-		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	ret = replmd_check_upgrade_links(ldb, pdn_list, old_el->num_values,
-					 old_el, our_invocation_id,
-					 attr->syntax->ldap_oid);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
