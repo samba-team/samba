@@ -96,7 +96,7 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, off_t offset
 
 ssize_t sys_sendfile_native(int tofd, int fromfd, off_t offset, size_t count, struct iovec *hv)
 {
-	ssize_t nwritten;
+	ssize_t nwritten = 0;
 	int total = 0;
 
 	/*
