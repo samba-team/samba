@@ -35,6 +35,7 @@
 #include "includes.h"
 #include "ldb_module.h"
 #include "libcli/auth/libcli_auth.h"
+#include "libcli/security/dom_sid.h"
 #include "system/kerberos.h"
 #include "auth/kerberos/kerberos.h"
 #include "dsdb/samdb/samdb.h"
@@ -125,6 +126,7 @@ struct setup_password_fields_io {
 		const char *sAMAccountName;
 		const char *user_principal_name;
 		bool is_computer;
+		bool is_krbtgt;
 		uint32_t restrictions;
 	} u;
 
@@ -2793,6 +2795,8 @@ static int setup_io(struct ph_context *ac,
 		ldb_get_opaque(ldb, "loadparm"), struct loadparm_context);
 	int ret;
 	const struct ldb_message *info_msg = NULL;
+	struct dom_sid *account_sid = NULL;
+	int rodc_krbtgt = 0;
 
 	ZERO_STRUCTP(io);
 
@@ -2837,6 +2841,26 @@ static int setup_io(struct ph_context *ac,
 								      "userPrincipalName", NULL);
 	io->u.is_computer		= ldb_msg_check_string_attribute(info_msg, "objectClass", "computer");
 
+	/* Ensure it has an objectSID too */
+	account_sid = samdb_result_dom_sid(ac, info_msg, "objectSid");
+	if (account_sid != NULL) {
+		NTSTATUS status;
+		uint32_t rid = 0;
+
+		status = dom_sid_split_rid(account_sid, account_sid, NULL, &rid);
+		if (NT_STATUS_IS_OK(status)) {
+			if (rid == DOMAIN_RID_KRBTGT) {
+				io->u.is_krbtgt = true;
+			}
+		}
+	}
+
+	rodc_krbtgt = ldb_msg_find_attr_as_int(info_msg,
+			"msDS-SecondaryKrbTgtNumber", 0);
+	if (rodc_krbtgt != 0) {
+		io->u.is_krbtgt = true;
+	}
+
 	if (io->u.sAMAccountName == NULL) {
 		ldb_asprintf_errstring(ldb,
 				       "setup_io: sAMAccountName attribute is missing on %s for attempted password set/change",
@@ -2866,6 +2890,12 @@ static int setup_io(struct ph_context *ac,
 	io->u.restrictions = !(io->u.userAccountControl
 		& (UF_INTERDOMAIN_TRUST_ACCOUNT | UF_WORKSTATION_TRUST_ACCOUNT
 			| UF_SERVER_TRUST_ACCOUNT));
+
+	if (io->u.is_krbtgt) {
+		io->u.restrictions = 0;
+		io->ac->status->domain_data.pwdHistoryLength =
+			MAX(io->ac->status->domain_data.pwdHistoryLength, 3);
+	}
 
 	if (ac->userPassword) {
 		ret = msg_find_old_and_new_pwd_val(client_msg, "userPassword",
@@ -3170,6 +3200,59 @@ static int setup_io(struct ph_context *ac,
 	} else {
 		/* this shouldn't happen */
 		return ldb_operr(ldb);
+	}
+
+	if (io->u.is_krbtgt) {
+		size_t min = 196;
+		size_t max = 255;
+		size_t diff = max - min;
+		size_t len = max;
+		struct ldb_val *krbtgt_utf16 = NULL;
+
+		if (!ac->pwd_reset) {
+			return dsdb_module_werror(ac->module,
+					LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS,
+					WERR_DS_ATT_ALREADY_EXISTS,
+					"Password change on krbtgt not permitted!");
+		}
+
+		if (io->n.cleartext_utf16 == NULL) {
+			return dsdb_module_werror(ac->module,
+					LDB_ERR_UNWILLING_TO_PERFORM,
+					WERR_DS_INVALID_ATTRIBUTE_SYNTAX,
+					"Password reset on krbtgt requires UTF16!");
+		}
+
+		/*
+		 * Instead of taking the callers value,
+		 * we just generate a new random value here.
+		 *
+		 * Include null termination in the array.
+		 */
+		if (diff > 0) {
+			size_t tmp;
+
+			generate_random_buffer((uint8_t *)&tmp, sizeof(tmp));
+
+			tmp %= diff;
+
+			len = min + tmp;
+		}
+
+		krbtgt_utf16 = talloc_zero(io->ac, struct ldb_val);
+		if (krbtgt_utf16 == NULL) {
+			return ldb_oom(ldb);
+		}
+
+		*krbtgt_utf16 = data_blob_talloc_zero(krbtgt_utf16,
+						      (len+1)*2);
+		if (krbtgt_utf16->data == NULL) {
+			return ldb_oom(ldb);
+		}
+		krbtgt_utf16->length = len * 2;
+		generate_secret_buffer(krbtgt_utf16->data,
+				       krbtgt_utf16->length);
+		io->n.cleartext_utf16 = krbtgt_utf16;
 	}
 
 	if (existing_msg != NULL) {
@@ -4055,6 +4138,7 @@ static int password_hash_mod_search_self(struct ph_context *ac)
 					      "badPasswordTime",
 					      "badPwdCount",
 					      "lockoutTime",
+					      "msDS-SecondaryKrbTgtNumber",
 					      NULL };
 	struct ldb_request *search_req;
 	int ret;

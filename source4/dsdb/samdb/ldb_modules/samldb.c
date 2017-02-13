@@ -386,7 +386,6 @@ static int samldb_rodc_add(struct samldb_ctx *ac)
 	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
 	uint32_t krbtgt_number, i_start, i;
 	int ret;
-	char *newpass;
 	struct ldb_val newpass_utf16;
 
 	/* find a unused msDC-SecondaryKrbTgtNumber */
@@ -432,21 +431,17 @@ found:
 		return ldb_operr(ldb);
 	}
 
-	newpass = generate_random_password(ac->msg, 128, 255);
-	if (newpass == NULL) {
-		return ldb_operr(ldb);
+	newpass_utf16 = data_blob_talloc_zero(ac->module, 256);
+	if (newpass_utf16.data == NULL) {
+		return ldb_oom(ldb);
 	}
-
-	if (!convert_string_talloc(ac,
-				   CH_UNIX, CH_UTF16,
-				   newpass, strlen(newpass),
-				   (void *)&newpass_utf16.data,
-				   &newpass_utf16.length)) {
-		ldb_asprintf_errstring(ldb,
-				       "samldb_rodc_add: "
-				       "failed to generate UTF16 password from random password");
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
+	/*
+	 * Note that the password_hash module will ignore
+	 * this value and use it's own generate_secret_buffer()
+	 * that's why we can just use generate_random_buffer()
+	 * here.
+	 */
+	generate_random_buffer(newpass_utf16.data, newpass_utf16.length);
 	ret = ldb_msg_add_steal_value(ac->msg, "clearTextPassword", &newpass_utf16);
 	if (ret != LDB_SUCCESS) {
 		return ldb_operr(ldb);
