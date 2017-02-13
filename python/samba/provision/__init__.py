@@ -877,7 +877,7 @@ def secretsdb_self_join(secretsdb, domain,
         msg["msDS-KeyVersionNumber"] = [str(key_version_number)]
         msg["privateKeytab"] = ["secrets.keytab"]
 
-    msg["secret"] = [machinepass]
+    msg["secret"] = [machinepass.encode('utf-8')]
     msg["samAccountName"] = ["%s$" % netbiosname]
     msg["secureChannelType"] = [str(secure_channel_type)]
     if domainsid is not None:

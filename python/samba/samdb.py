@@ -503,7 +503,7 @@ member: %s
             if len(res) > 1:
                 raise Exception('Matched %u multiple users with filter "%s"' % (len(res), search_filter))
             user_dn = res[0].dn
-            pw = unicode('"' + password + '"', 'utf-8').encode('utf-16-le')
+            pw = unicode('"' + password.encode('utf-8') + '"', 'utf-8').encode('utf-16-le')
             setpw = """
 dn: %s
 changetype: modify
