@@ -37,16 +37,12 @@
 #include <sys/auxv.h>
 #endif
 
-#ifdef TALLOC_BUILD_VERSION_MAJOR
 #if (TALLOC_VERSION_MAJOR != TALLOC_BUILD_VERSION_MAJOR)
 #error "TALLOC_VERSION_MAJOR != TALLOC_BUILD_VERSION_MAJOR"
 #endif
-#endif
 
-#ifdef TALLOC_BUILD_VERSION_MINOR
 #if (TALLOC_VERSION_MINOR != TALLOC_BUILD_VERSION_MINOR)
 #error "TALLOC_VERSION_MINOR != TALLOC_BUILD_VERSION_MINOR"
-#endif
 #endif
 
 /* Special macros that are no-ops except when run under Valgrind on
@@ -82,8 +78,9 @@
 static unsigned int talloc_magic = (
 	~TALLOC_FLAG_MASK & (
 		TALLOC_MAGIC_BASE +
-		(TALLOC_VERSION_MAJOR << 12) +
-		(TALLOC_VERSION_MINOR << 4)));
+		(TALLOC_BUILD_VERSION_MAJOR << 24) +
+		(TALLOC_BUILD_VERSION_MINOR << 16) +
+		(TALLOC_BUILD_VERSION_RELEASE << 8)));
 
 /* by default we abort when given a bad pointer (such as when talloc_free() is called
    on a pointer that came from malloc() */
@@ -453,7 +450,7 @@ static inline struct talloc_chunk *talloc_chunk_from_ptr(const void *ptr)
 	const char *pp = (const char *)ptr;
 	struct talloc_chunk *tc = discard_const_p(struct talloc_chunk, pp - TC_HDR_SIZE);
 	if (unlikely((tc->flags & (TALLOC_FLAG_FREE | ~TALLOC_FLAG_MASK)) != talloc_magic)) {
-		if ((tc->flags & (~0xF)) == talloc_magic) {
+		if ((tc->flags & (~TALLOC_FLAG_MASK)) == talloc_magic) {
 			talloc_abort_magic(tc->flags & (~TALLOC_FLAG_MASK));
 			return NULL;
 		}
