@@ -9497,6 +9497,106 @@ static bool run_pidhigh(int dummy)
 	return success;
 }
 
+/*
+  Test Windows open on a bad POSIX symlink.
+ */
+static bool run_symlink_open_test(int dummy)
+{
+	static struct cli_state *cli;
+	const char *fname = "non_existant_file";
+	const char *sname = "dangling_symlink";
+	uint16_t fnum = (uint16_t)-1;
+	bool correct = false;
+	NTSTATUS status;
+	TALLOC_CTX *frame = NULL;
+
+	frame = talloc_stackframe();
+
+	printf("Starting Windows bad symlink open test\n");
+
+	if (!torture_open_connection(&cli, 0)) {
+		TALLOC_FREE(frame);
+		return false;
+	}
+
+	smbXcli_conn_set_sockopt(cli->conn, sockops);
+
+	status = torture_setup_unix_extensions(cli);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return false;
+	}
+
+	/* Ensure nothing exists. */
+	cli_setatr(cli, fname, 0, 0);
+	cli_posix_unlink(cli, fname);
+	cli_setatr(cli, sname, 0, 0);
+	cli_posix_unlink(cli, sname);
+
+	/* Create a symlink pointing nowhere. */
+	status = cli_posix_symlink(cli, fname, sname);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_posix_symlink of %s -> %s failed (%s)\n",
+			sname,
+			fname,
+			nt_errstr(status));
+		goto out;
+	}
+
+	/* Now ensure that a Windows open doesn't hang. */
+	status = cli_ntcreate(cli,
+			sname,
+			0,
+			FILE_READ_DATA|FILE_WRITE_DATA,
+			0,
+			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
+			FILE_OPEN_IF,
+			0x0,
+			0x0,
+			&fnum,
+			NULL);
+
+	/*
+	 * We get either NT_STATUS_OBJECT_NAME_NOT_FOUND or
+	 * NT_STATUS_OBJECT_PATH_NOT_FOUND depending on if
+	 * we use O_NOFOLLOW on the server or not.
+	 */
+	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND) ||
+	    NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_PATH_NOT_FOUND))
+	{
+		correct = true;
+	} else {
+		printf("cli_ntcreate of %s returned %s - should return"
+				" either (%s) or (%s)\n",
+			sname,
+			nt_errstr(status),
+			nt_errstr(NT_STATUS_OBJECT_NAME_NOT_FOUND),
+			nt_errstr(NT_STATUS_OBJECT_PATH_NOT_FOUND));
+		goto out;
+	}
+
+	correct = true;
+
+  out:
+
+	if (fnum != (uint16_t)-1) {
+		cli_close(cli, fnum);
+		fnum = (uint16_t)-1;
+	}
+
+	cli_setatr(cli, sname, 0, 0);
+	cli_posix_unlink(cli, sname);
+	cli_setatr(cli, fname, 0, 0);
+	cli_posix_unlink(cli, fname);
+
+	if (!torture_close_connection(cli)) {
+		correct = false;
+	}
+
+	TALLOC_FREE(frame);
+	return correct;
+}
+
 static bool run_local_substitute(int dummy)
 {
 	bool ok = true;
@@ -11059,6 +11159,7 @@ static struct {
 	{"POSIX-SYMLINK-EA", run_ea_symlink_test, 0},
 	{"POSIX-STREAM-DELETE", run_posix_stream_delete, 0},
 	{"POSIX-OFD-LOCK", run_posix_ofd_lock_test, 0},
+	{"WINDOWS-BAD-SYMLINK", run_symlink_open_test, 0},
 	{"CASE-INSENSITIVE-CREATE", run_case_insensitive_create, 0},
 	{"ASYNC-ECHO", run_async_echo, 0},
 	{ "UID-REGRESSION-TEST", run_uid_regression_test, 0},
