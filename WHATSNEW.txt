@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the second release candidate of Samba 4.6.  This is *not*
+This is the third release candidate of Samba 4.6.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -238,6 +238,58 @@ KNOWN ISSUES
 ============
 
 Currently none.
+
+
+CHANGES SINCE 4.5.0rc2
+======================
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 12499: s3: vfs: dirsort doesn't handle opendir of "." correctly.
+   * BUG 12546: s3: VFS: vfs_streams_xattr.c: Make streams_xattr_open() store
+     the same path as streams_xattr_recheck().
+   * BUG 12531: Make vfs_shadow_copy2 cope with server changing directories.
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 12543: samba-tool: Correct handling of default value for use_ntvfs and
+     use_xattrs.
+   * BUG 12573: Samba < 4.7 does not know about compatibleFeatures and
+     requiredFeatures.
+   * BUG 12577: 'samba-tool dbcheck' gives errors on one-way links after a
+     rename.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 12184: s3/rpc_server: Shared rpc modules loading.
+   * BUG 12520: Ensure global "smb encrypt = off" is effective.
+   * BUG 12524: s3/rpc_server: Move rpc_modules.c to its own subsystem.
+   * BUG 12541: vfs_fruit: checks wrong AAPL config state and so always uses
+     readdirattr.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 12551: smbd: Fix "map acl inherit" = yes.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 12398: Replication with DRSUAPI_DRS_CRITICAL_ONLY and
+     DRSUAPI_DRS_GET_ANC results in WERR_DS_DRA_MISSING_PARENT S
+   * BUG 12540: s3:smbd: allow "server min protocol = SMB3_00" to go via "SMB
+     2.???" negprot.
+
+o  John Mulligan <jmulligan@nasuni.com>
+   * BUG 12542: docs: Improve description of "unix_primary_group" parameter in
+     idmap_ad manpage.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 12552: waf: Do not install the unit test binary for krb5samba.
+
+o  Amitay Isaacs <amitay@gmail.com>
+   * BUG 12547: ctdb-build: Install CTDB tests correctly from toplevel.
+   * BUG 12549: ctdb-common: ioctl(.. FIONREAD ..) returns an int value.
+
+o  Garming Sam <garming@catalyst.net.nz>
+   * BUG 12577: 'samba-tool dbcheck' gives errors on one-way links after a
+     rename.
+
+o  Uri Simchoni <uri@samba.org>
+   * BUG 12529: waf: Backport finding of pkg-config.
 
 
 CHANGES SINCE 4.5.0rc1
