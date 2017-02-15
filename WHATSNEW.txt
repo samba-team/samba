@@ -44,6 +44,26 @@ configured as the default backend.
 To avoid problems in future we advise all users to run 'testparm' after
 changing the smb.conf file!
 
+vfs_fruit Netatalk metadata xattr name on *BSD
+----------------------------------------------
+
+Users on *BSD must rename the metadata xattr used by vfs_fruit when
+using the default setting "fruit:metadata = netatalk".
+
+Due to a glitch in the Samba xattr API compatibility layer for FreeBSD and a
+mistake in vfs_fruit, vfs_fruit ended up using the wrong xattr name when
+configured with "fruit:metadata = netatalk" (default). Instead of the correct
+
+  org.netatalk.Metadata
+
+it used
+
+  netatalk.Metadata
+
+Starting with Samba 4.6 vfs_fruit will use the correct "org.netatalk.Metadata"
+which means existing installations must rename this xattrs. For this purpose
+Samba now includes a new tool `mvxattr`. See below for further details.
+
 
 NEW FEATURES/CHANGES
 ====================
@@ -221,6 +241,23 @@ to retrieve the home directory and login shell from the "Unix
 Attributes" of the user. This supersedes the "winbind nss info"
 parameter with a per-domain configuration option.
 
+mvxattr
+-------
+
+mvxattr is a simple utility to recursively rename extended attributes of all
+files and directories in a directory tree.
+
+  Usage: mvxattr -s STRING -d STRING PATH [PATH ...]
+    -s, --from=STRING         xattr source name
+    -d, --to=STRING           xattr destination name
+    -l, --follow-symlinks     follow symlinks, the default is to ignore them
+    -p, --print               print files where the xattr got renamed
+    -v, --verbose             print files as they are checked
+    -f, --force               force overwriting of destination xattr
+
+  Help options:
+    -?, --help                Show this help message
+    --usage                   Display brief usage message
 
 smb.conf changes
 ================
