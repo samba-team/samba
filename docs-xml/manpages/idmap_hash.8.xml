@@ -13,17 +13,35 @@
 
 <refnamediv>
 	<refname>idmap_hash</refname>
-	<refpurpose>Samba's idmap_hash Backend for Winbind</refpurpose>
+	<refpurpose>DO NOT USE THIS BACKEND</refpurpose>
 </refnamediv>
 
 <refsynopsisdiv>
 	<title>DESCRIPTION</title>
-	<para>The idmap_hash plugin implements a hashing algorithm used to map
+	<para>DO NOT USE THIS PLUGIN
+
+	  The idmap_hash plugin implements a hashing algorithm used to map
 	  SIDs for domain users and groups to 31-bit uids and gids, respectively.
 	  This plugin also implements the nss_info API and can be used
 	  to support a local name mapping files if enabled via the
 	  &quot;winbind normalize names&quot; and &quot;winbind nss info&quot;
 	  parameters in smb.conf.
+	  The module divides the range into subranges for each domain that is being
+	  handled by the idmap config.
+
+	  The module needs the complete UID and GID range to be able to map all
+	  SIDs.  The lowest value for the range should be the smallest ID
+	  available in the system. This is normally 1000. The highest ID should
+	  be set to 2147483647.
+
+	  A smaller range will lead to issues because of the hashing algorithm
+	  used. The overall range to map all SIDs is 0 - 2147483647. Any range
+	  smaller than 0 - 2147483647 will filter some SIDs. As we can normally
+	  only start with 1000, we are not able to map 1000 SIDs. This already
+	  can lead to issues. The smaller the range the less SIDs can be mapped.
+
+	  We do not recommend to use this plugin. It will be removed in a future
+	  release of Samba.
 	</para>
 </refsynopsisdiv>
 
@@ -53,7 +71,7 @@
 	<programlisting>
 	[global]
 	idmap config * : backend = hash
-	idmap config * : range = 1000-4000000000
+	idmap config * : range = 1000-2147483647
 
 	winbind nss info = hash
 	winbind normalize names = yes
