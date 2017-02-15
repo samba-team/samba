@@ -174,18 +174,23 @@ bld.SAMBA_LIBRARY('dcerpc',
 	vnum='0.0.1'
 	)
 
-bld.SAMBA_SUBSYSTEM('pyrpc_util',
-	source='rpc/pyrpc_util.c',
-	public_deps='pytalloc-util pyparam_util dcerpc MESSAGING',
-	pyext=True,
-	)
+for env in bld.gen_python_environments():
+    pyrpc_util = bld.pyembed_libname('pyrpc_util')
+    pytalloc_util = bld.pyembed_libname('pytalloc-util')
+    pyparam_util = bld.pyembed_libname('pyparam_util')
 
+    bld.SAMBA_SUBSYSTEM(pyrpc_util,
+        source='rpc/pyrpc_util.c',
+        public_deps='%s %s dcerpc MESSAGING' % (pytalloc_util, pyparam_util),
+        pyext=True,
+        )
 
-bld.SAMBA_PYTHON('python_dcerpc',
-	source='rpc/pyrpc.c',
-	public_deps='LIBCLI_SMB samba-util samba-hostconfig dcerpc-samr RPC_NDR_LSA DYNCONFIG pyrpc_util gensec',
-	realname='samba/dcerpc/base.so'
-	)
+    bld.SAMBA_PYTHON('python_dcerpc',
+        source='rpc/pyrpc.c',
+        public_deps='LIBCLI_SMB samba-util samba-hostconfig dcerpc-samr RPC_NDR_LSA DYNCONFIG %s gensec' % (pyrpc_util),
+        realname='samba/dcerpc/base.so'
+        )
+
 
 bld.SAMBA_PYTHON('python_srvsvc',
     source='../../librpc/gen_ndr/py_srvsvc.c',
@@ -224,11 +229,14 @@ bld.SAMBA_PYTHON('python_winreg',
 	)
 
 
-bld.SAMBA_PYTHON('python_dcerpc_misc',
-	source='../../librpc/gen_ndr/py_misc.c',
-	deps='pytalloc-util pyrpc_util ndr-krb5pac',
-	realname='samba/dcerpc/misc.so'
-	)
+for env in bld.gen_python_environments():
+	pytalloc_util = bld.pyembed_libname('pytalloc-util')
+	pyrpc_util = bld.pyembed_libname('pyrpc_util')
+	bld.SAMBA_PYTHON('python_dcerpc_misc',
+		source='../../librpc/gen_ndr/py_misc.c',
+		deps='%s %s ndr-krb5pac' % (pytalloc_util, pyrpc_util),
+		realname='samba/dcerpc/misc.so'
+		)
 
 
 bld.SAMBA_PYTHON('python_initshutdown',

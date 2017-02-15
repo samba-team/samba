@@ -18,6 +18,7 @@
 */
 
 #include <Python.h>
+#include "python/py3compat.h"
 #include "includes.h"
 #include <structmember.h>
 #include "librpc/rpc/pyrpc.h"
@@ -37,7 +38,7 @@ static PyTypeObject *ndr_syntax_id_Type;
 static bool PyString_AsGUID(PyObject *object, struct GUID *uuid)
 {
 	NTSTATUS status;
-	status = GUID_from_string(PyString_AsString(object), uuid);
+	status = GUID_from_string(PyStr_AsString(object), uuid);
 	if (NT_STATUS_IS_ERR(status)) {
 		PyErr_SetNTSTATUS(status);
 		return false;
@@ -49,7 +50,7 @@ static bool ndr_syntax_from_py_object(PyObject *object, struct ndr_syntax_id *sy
 {
 	ZERO_STRUCTP(syntax_id);
 
-	if (PyString_Check(object)) {
+	if (PyStr_Check(object)) {
 		return PyString_AsGUID(object, &syntax_id->uuid);
 	} else if (PyTuple_Check(object)) {
 		if (PyTuple_Size(object) < 1 || PyTuple_Size(object) > 2) {
@@ -57,7 +58,7 @@ static bool ndr_syntax_from_py_object(PyObject *object, struct ndr_syntax_id *sy
 			return false;
 		}
 
-		if (!PyString_Check(PyTuple_GetItem(object, 0))) {
+		if (!PyStr_Check(PyTuple_GetItem(object, 0))) {
 			PyErr_SetString(PyExc_ValueError, "Expected GUID as first element in tuple");
 			return false;
 		}
@@ -87,7 +88,7 @@ static PyObject *py_iface_server_name(PyObject *obj, void *closure)
 	if (server_name == NULL)
 		Py_RETURN_NONE;
 
-	return PyString_FromString(server_name);
+	return PyStr_FromString(server_name);
 }
 
 static PyObject *py_ndr_syntax_id(struct ndr_syntax_id *syntax_id)
@@ -128,7 +129,7 @@ static PyObject *py_iface_session_key(PyObject *obj, void *closure)
 	NTSTATUS status = dcerpc_fetch_session_key(iface->pipe, &session_key);
 	PyErr_NTSTATUS_IS_ERR_RAISE(status);
 
-	return PyString_FromStringAndSize((const char *)session_key.data, session_key.length);
+	return PyBytes_FromStringAndSize((const char *)session_key.data, session_key.length);
 }
 
 static PyObject *py_iface_user_session_key(PyObject *obj, void *closure)
@@ -166,7 +167,7 @@ static PyObject *py_iface_user_session_key(PyObject *obj, void *closure)
 		return NULL;
 	}
 
-	session_key_obj = PyString_FromStringAndSize((const char *)session_key.data,
+	session_key_obj = PyBytes_FromStringAndSize((const char *)session_key.data,
 						     session_key.length);
 	talloc_free(mem_ctx);
 	return session_key_obj;
@@ -260,7 +261,7 @@ static PyObject *py_iface_request(PyObject *self, PyObject *args, PyObject *kwar
 		return NULL;
 	}
 
-	ret = PyString_FromStringAndSize((char *)data_out.data, data_out.length);
+	ret = PyBytes_FromStringAndSize((char *)data_out.data, data_out.length);
 
 	talloc_free(mem_ctx);
 	return ret;
@@ -337,7 +338,7 @@ static PyObject *dcerpc_interface_new(PyTypeObject *type, PyObject *args, PyObje
 }
 
 static PyTypeObject dcerpc_InterfaceType = {
-	PyObject_HEAD_INIT(NULL) 0,
+	PyVarObject_HEAD_INIT(NULL, 0)
 	.tp_name = "dcerpc.ClientConnection",
 	.tp_basicsize = sizeof(dcerpc_InterfaceObject),
 	.tp_dealloc = dcerpc_interface_dealloc,
@@ -359,7 +360,7 @@ static PyObject *py_transfer_syntax_ndr_new(PyTypeObject *type, PyObject *args, 
 }
 
 static PyTypeObject py_transfer_syntax_ndr_SyntaxType = {
-	PyObject_HEAD_INIT(NULL) 0,
+	PyVarObject_HEAD_INIT(NULL, 0)
 	.tp_name = "base.transfer_syntax_ndr",
 	.tp_doc = "transfer_syntax_ndr()\n",
 	.tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
@@ -372,7 +373,7 @@ static PyObject *py_transfer_syntax_ndr64_new(PyTypeObject *type, PyObject *args
 }
 
 static PyTypeObject py_transfer_syntax_ndr64_SyntaxType = {
-	PyObject_HEAD_INIT(NULL) 0,
+	PyVarObject_HEAD_INIT(NULL, 0)
 	.tp_name = "base.transfer_syntax_ndr64",
 	.tp_doc = "transfer_syntax_ndr64()\n",
 	.tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
@@ -410,25 +411,32 @@ static PyObject *py_bind_time_features_syntax_new(PyTypeObject *type, PyObject *
 }
 
 static PyTypeObject py_bind_time_features_syntax_SyntaxType = {
-	PyObject_HEAD_INIT(NULL) 0,
+	PyVarObject_HEAD_INIT(NULL, 0)
 	.tp_name = "base.bind_time_features_syntax",
 	.tp_doc = "bind_time_features_syntax(features)\n",
 	.tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 	.tp_new = py_bind_time_features_syntax_new,
 };
 
-void initbase(void)
+static struct PyModuleDef moduledef = {
+    PyModuleDef_HEAD_INIT,
+    .m_name = "base",
+    .m_doc = "DCE/RPC protocol implementation",
+    .m_size = -1,
+};
+
+MODULE_INIT_FUNC(base)
 {
 	PyObject *m;
 	PyObject *dep_samba_dcerpc_misc;
 
 	dep_samba_dcerpc_misc = PyImport_ImportModule("samba.dcerpc.misc");
 	if (dep_samba_dcerpc_misc == NULL)
-		return;
+		return NULL;
 
 	ndr_syntax_id_Type = (PyTypeObject *)PyObject_GetAttrString(dep_samba_dcerpc_misc, "ndr_syntax_id");
 	if (ndr_syntax_id_Type == NULL)
-		return;
+		return NULL;
 
 	py_transfer_syntax_ndr_SyntaxType.tp_base = ndr_syntax_id_Type;
 	py_transfer_syntax_ndr_SyntaxType.tp_basicsize = pytalloc_BaseObject_size();
@@ -438,18 +446,18 @@ void initbase(void)
 	py_bind_time_features_syntax_SyntaxType.tp_basicsize = pytalloc_BaseObject_size();
 
 	if (PyType_Ready(&dcerpc_InterfaceType) < 0)
-		return;
+		return NULL;
 
 	if (PyType_Ready(&py_transfer_syntax_ndr_SyntaxType) < 0)
-		return;
+		return NULL;
 	if (PyType_Ready(&py_transfer_syntax_ndr64_SyntaxType) < 0)
-		return;
+		return NULL;
 	if (PyType_Ready(&py_bind_time_features_syntax_SyntaxType) < 0)
-		return;
+		return NULL;
 
-	m = Py_InitModule3("base", NULL, "DCE/RPC protocol implementation");
+	m = PyModule_Create(&moduledef);
 	if (m == NULL)
-		return;
+		return NULL;
 
 	Py_INCREF((PyObject *)&dcerpc_InterfaceType);
 	PyModule_AddObject(m, "ClientConnection", (PyObject *)&dcerpc_InterfaceType);
@@ -460,4 +468,5 @@ void initbase(void)
 	PyModule_AddObject(m, "transfer_syntax_ndr64", (PyObject *)(void *)&py_transfer_syntax_ndr64_SyntaxType);
 	Py_INCREF((PyObject *)(void *)&py_bind_time_features_syntax_SyntaxType);
 	PyModule_AddObject(m, "bind_time_features_syntax", (PyObject *)(void *)&py_bind_time_features_syntax_SyntaxType);
+	return m;
 }
