@@ -17,6 +17,9 @@ interface drsblobs {
 	 * replPropertyMetaData
 	 * w2k  uses version 1
 	 * w2k3 uses version 1
+	 *
+	 * Also equivalent to
+	 * MS-DRSR 4.1.10.2.22 PROPERTY_META_DATA
 	 */
 	typedef [public] struct {
 		drsuapi_DsAttributeId attid;
@@ -26,6 +29,10 @@ interface drsblobs {
 		hyper originating_usn;
 		hyper local_usn;
 	} replPropertyMetaData1;
+
+	void decode_replPropertyMetaData1(
+		[in] replPropertyMetaData1 blob
+		);
 
 	typedef struct {
 		uint32 count;
