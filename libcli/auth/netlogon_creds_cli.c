@@ -2075,11 +2075,24 @@ struct netlogon_creds_cli_LogonSamLogon_state {
 
 	/*
 	 * the read only credentials before we started the operation
+	 * used for netr_LogonSamLogonEx() if required (validation_level = 3).
 	 */
 	struct netlogon_creds_CredentialState *ro_creds;
 
+	/*
+	 * The (locked) credentials used for the credential chain
+	 * used for netr_LogonSamLogonWithFlags() or
+	 * netr_LogonSamLogonWith().
+	 */
 	struct netlogon_creds_CredentialState *lk_creds;
 
+	/*
+	 * While we have locked the global credentials (lk_creds above)
+	 * we operate an a temporary copy, because a server
+	 * may not support netr_LogonSamLogonWithFlags() and
+	 * didn't process our netr_Authenticator, so we need to
+	 * restart from lk_creds.
+	 */
 	struct netlogon_creds_CredentialState tmp_creds;
 	struct netr_Authenticator req_auth;
 	struct netr_Authenticator rep_auth;
@@ -2311,7 +2324,7 @@ static void netlogon_creds_cli_LogonSamLogon_start(struct tevent_req *req)
 		return;
 	}
 
-	netlogon_creds_encrypt_samlogon_logon(state->ro_creds,
+	netlogon_creds_encrypt_samlogon_logon(&state->tmp_creds,
 					      state->logon_level,
 					      state->logon);
 
@@ -2414,8 +2427,10 @@ static void netlogon_creds_cli_LogonSamLogon_done(struct tevent_req *subreq)
 			/*
 			 * We got a race, lets retry with on authenticator
 			 * protection.
+			 *
+			 * netlogon_creds_cli_LogonSamLogon_start()
+			 * will TALLOC_FREE(state->ro_creds);
 			 */
-			TALLOC_FREE(state->ro_creds);
 			state->try_logon_ex = false;
 			netlogon_creds_cli_LogonSamLogon_start(req);
 			return;
