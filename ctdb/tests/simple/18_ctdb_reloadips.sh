@@ -61,6 +61,8 @@ fi
 
 echo "GOOD: no IPs left on node $test_node"
 
+try_command_on_node any $CTDB sync
+
 echo "Restoring addresses"
 restore_public_addresses
 
