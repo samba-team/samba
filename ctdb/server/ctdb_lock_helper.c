@@ -33,7 +33,6 @@
 
 #include "common/system.h"
 
-static char *progname = NULL;
 static bool realtime = true;
 
 struct lock_state {
@@ -77,7 +76,7 @@ static void send_result(int fd, char result)
 }
 
 
-static void usage(void)
+static void usage(const char *progname)
 {
 	fprintf(stderr, "\n");
 	fprintf(stderr, "Usage: %s <ctdbd-pid> <output-fd> RECORD <db-path> <db-flags> <db-key>\n", progname);
@@ -276,10 +275,8 @@ int main(int argc, char *argv[])
 
 	reset_scheduler();
 
-	progname = argv[0];
-
 	if (argc < 4) {
-		usage();
+		usage(argv[0]);
 		exit(1);
 	}
 
@@ -306,7 +303,7 @@ int main(int argc, char *argv[])
 			fprintf(stderr,
 				"locking: Invalid number of arguments (%d)\n",
 				argc);
-			usage();
+			usage(argv[0]);
 			exit(1);
 		}
 		result = lock_record(argv[4], argv[5], argv[6], &state);
@@ -316,14 +313,14 @@ int main(int argc, char *argv[])
 			fprintf(stderr,
 				"locking: Invalid number of arguments (%d)\n",
 				argc);
-			usage();
+			usage(argv[0]);
 			exit(1);
 		}
 		result = lock_db(argv[4], argv[5], &state);
 
 	} else {
 		fprintf(stderr, "locking: Invalid lock-type '%s'\n", lock_type);
-		usage();
+		usage(argv[0]);
 		exit(1);
 	}
 
