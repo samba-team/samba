@@ -21,6 +21,7 @@
 */
 
 #include <Python.h>
+#include "python/py3compat.h"
 #include "includes.h"
 #include "librpc/rpc/pyrpc_util.h"
 #include "librpc/rpc/dcerpc.h"
@@ -388,7 +389,7 @@ PyObject *PyString_FromStringOrNULL(const char *str)
 	if (str == NULL) {
 		Py_RETURN_NONE;
 	}
-	return PyString_FromString(str);
+	return PyStr_FromString(str);
 }
 
 PyObject *pyrpc_import_union(PyTypeObject *type, TALLOC_CTX *mem_ctx, int level,
