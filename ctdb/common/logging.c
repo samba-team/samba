@@ -521,7 +521,14 @@ int logging_init(TALLOC_CTX *mem_ctx, const char *logging,
 	}
 
 	name = strtok(str, ":");
+	if (name == NULL) {
+		return EINVAL;
+	}
 	option = strtok(NULL, ":");
+	/*
+	 * option can be NULL here, both setup()
+	 * backends handle this.
+	 */
 
 	for (i=0; i<ARRAY_SIZE(log_backend); i++) {
 		if (strcmp(log_backend[i].name, name) == 0) {
