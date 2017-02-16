@@ -456,6 +456,7 @@ struct ctdb_dbid {
 #define CTDB_DB_FLAGS_PERSISTENT	0x01
 #define CTDB_DB_FLAGS_READONLY		0x02
 #define CTDB_DB_FLAGS_STICKY		0x04
+#define CTDB_DB_FLAGS_REPLICATED	0x08
 	uint8_t flags;
 };
 
