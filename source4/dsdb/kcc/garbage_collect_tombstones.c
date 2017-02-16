@@ -137,7 +137,9 @@ static NTSTATUS garbage_collect_tombstones_part(TALLOC_CTX *mem_ctx,
 								   element->name);
 
 			/* This avoids parsing isDeleted as a link */
-			if (attrib->linkID == 0 || ((attrib->linkID & 1) == 1)) {
+			if (attrib == NULL ||
+			    attrib->linkID == 0 ||
+			    ((attrib->linkID & 1) == 1)) {
 				continue;
 			}
 
