@@ -57,6 +57,8 @@ static bool torture_smb2_rename_simple(struct torture_context *torture,
 	union smb_fileinfo fi;
 	struct smb2_handle h1;
 
+	ZERO_STRUCT(h1);
+
 	smb2_deltree(tree1, BASEDIR);
 	smb2_util_rmdir(tree1, BASEDIR);
 
@@ -145,6 +147,8 @@ static bool torture_smb2_rename_simple2(struct torture_context *torture,
 	union smb_setfileinfo sinfo;
 	struct smb2_handle h1;
 
+	ZERO_STRUCT(h1);
+
 	smb2_deltree(tree1, BASEDIR);
 	smb2_util_rmdir(tree1, BASEDIR);
 
@@ -225,6 +229,8 @@ static bool torture_smb2_rename_no_sharemode(struct torture_context *torture,
 	union smb_setfileinfo sinfo;
 	union smb_fileinfo fi;
 	struct smb2_handle h1;
+
+	ZERO_STRUCT(h1);
 
 	smb2_deltree(tree1, BASEDIR);
 	smb2_util_rmdir(tree1, BASEDIR);
@@ -313,6 +319,9 @@ static bool torture_smb2_rename_with_delete_access(struct torture_context *tortu
 	union smb_close cl;
 	union smb_setfileinfo sinfo;
 	struct smb2_handle fh, dh;
+
+	ZERO_STRUCT(fh);
+	ZERO_STRUCT(dh);
 
 	smb2_deltree(tree1, BASEDIR);
 	smb2_util_rmdir(tree1, BASEDIR);
@@ -439,6 +448,9 @@ static bool torture_smb2_rename_with_delete_access2(struct torture_context *tort
 	union smb_setfileinfo sinfo;
 	struct smb2_handle fh, dh;
 
+	ZERO_STRUCT(fh);
+	ZERO_STRUCT(dh);
+
 	smb2_deltree(tree1, BASEDIR);
 	smb2_util_rmdir(tree1, BASEDIR);
 
@@ -562,6 +574,9 @@ static bool torture_smb2_rename_no_delete_access(struct torture_context *torture
 	union smb_setfileinfo sinfo;
 	union smb_fileinfo fi;
 	struct smb2_handle fh, dh;
+
+	ZERO_STRUCT(fh);
+	ZERO_STRUCT(dh);
 
 	smb2_deltree(tree1, BASEDIR);
 	smb2_util_rmdir(tree1, BASEDIR);
@@ -697,6 +712,9 @@ static bool torture_smb2_rename_no_delete_access2(struct torture_context *tortur
 	union smb_setfileinfo sinfo;
 	struct smb2_handle fh, dh;
 
+	ZERO_STRUCT(fh);
+	ZERO_STRUCT(dh);
+
 	smb2_deltree(tree1, BASEDIR);
 	smb2_util_rmdir(tree1, BASEDIR);
 
@@ -820,6 +838,9 @@ static bool torture_smb2_rename_msword(struct torture_context *torture,
 	union smb_fileinfo fi;
 	struct smb2_handle fh, dh;
 
+	ZERO_STRUCT(fh);
+	ZERO_STRUCT(dh);
+
 	smb2_deltree(tree1, BASEDIR);
 	smb2_util_rmdir(tree1, BASEDIR);
 
@@ -937,6 +958,9 @@ static bool torture_smb2_rename_dir_openfile(struct torture_context *torture,
 	union smb_close cl;
 	union smb_setfileinfo sinfo;
 	struct smb2_handle d1, h1;
+
+	ZERO_STRUCT(d1);
+	ZERO_STRUCT(h1);
 
 	smb2_deltree(tree1, BASEDIR);
 	smb2_util_rmdir(tree1, BASEDIR);
