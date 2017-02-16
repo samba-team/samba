@@ -32,7 +32,7 @@ bool torture_smb2_maxfid(struct torture_context *tctx)
 	NTSTATUS status;
 	struct smb2_tree *tree = NULL;
 	const char *dname = "smb2_maxfid";
-	int i, maxfid;
+	size_t i, maxfid;
 	struct smb2_handle *handles,  dir_handle = { };
 	size_t max_handles;
 
@@ -62,7 +62,7 @@ bool torture_smb2_maxfid(struct torture_context *tctx)
 		struct smb2_create create = { };
 		struct smb2_close close = { };
 
-		name = talloc_asprintf(tctx, "%s\\%d", dname, i / 1000);
+		name = talloc_asprintf(tctx, "%s\\%zu", dname, i / 1000);
 		torture_assert_goto(tctx, (name != NULL), ret, done,
 				    "no memory for directory name\n");
 
@@ -93,7 +93,7 @@ bool torture_smb2_maxfid(struct torture_context *tctx)
 		char *name;
 		struct smb2_create create = { };
 
-		name = talloc_asprintf(tctx, "%s\\%d\\%d", dname, i / 1000, i);
+		name = talloc_asprintf(tctx, "%s\\%zu\\%zu", dname, i / 1000, i);
 		torture_assert_goto(tctx, (name != NULL), ret, done,
 				    "no memory for file name\n");
 
@@ -120,7 +120,7 @@ bool torture_smb2_maxfid(struct torture_context *tctx)
 
 	maxfid = i;
 	if (maxfid == max_handles) {
-		torture_comment(tctx, "Reached test limit of %d open files. "
+		torture_comment(tctx, "Reached test limit of %zu open files. "
 				"Adjust to higher test with "
 				"--option=torture:maxopenfiles=NNN\n", maxfid);
 	}
