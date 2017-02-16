@@ -205,6 +205,7 @@ bld.SAMBA3_BINARY('net',
                  net_rpc_conf.c
                  net_afs.c
                  net_notify.c
+                 net_tdb.c
                  ../registry/reg_parse.c
                  ../registry/reg_format.c
                  ../registry/reg_import.c

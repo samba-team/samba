@@ -751,6 +751,14 @@ static struct functable net_func[] = {
 		   "'net notify' commands.")
 	},
 
+	{	"tdb",
+		net_tdb,
+		NET_TRANSPORT_LOCAL,
+		N_("Show information from tdb records"),
+		N_("  Use 'net help tdb' to get more information about "
+		   "'net tdb' commands.")
+	},
+
 #ifdef WITH_FAKE_KASERVER
 	{	"afs",
 		net_afs,
