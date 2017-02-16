@@ -708,7 +708,7 @@ class dc_join(object):
                                                                 {"DNSDOMAIN": ctx.dnsdomain,
                                                                  "DOMAINDN": ctx.base_dn,
                                                                  "HOSTNAME" : ctx.myname,
-                                                                 "DNSPASS_B64": b64encode(ctx.dnspass),
+                                                                 "DNSPASS_B64": b64encode(ctx.dnspass.encode('utf-16-le')),
                                                                  "DNSNAME" : ctx.dnshostname}))
             for changetype, msg in recs:
                 assert changetype == ldb.CHANGETYPE_NONE
