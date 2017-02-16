@@ -237,7 +237,7 @@ smb.conf changes
 KNOWN ISSUES
 ============
 
-Currently none.
+https://wiki.samba.org/index.php/Release_Planning_for_Samba_4.6#Release_blocking_bugs
 
 
 CHANGES SINCE 4.5.0rc2
