@@ -502,6 +502,10 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 		bool differ;
 
 		ndr_v_push = ndr_push_init_ctx(mem_ctx);
+		if (ndr_v_push == NULL) {
+			printf("No memory\n");
+			exit(1);
+		}
 
 		if (assume_ndr64) {
 			ndr_v_push->flags |= LIBNDR_FLAG_NDR64;
