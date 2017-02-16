@@ -359,8 +359,8 @@ static krb5_error_code fill_mem_keytab_from_system_keytab(krb5_context krbctx,
 {
 	krb5_error_code ret = 0;
 	krb5_keytab keytab = NULL;
-	krb5_kt_cursor kt_cursor;
-	krb5_keytab_entry kt_entry;
+	krb5_kt_cursor kt_cursor = { 0, };
+	krb5_keytab_entry kt_entry = { 0, };
 	char *valid_princ_formats[7] = { NULL, NULL, NULL,
 					 NULL, NULL, NULL, NULL };
 	char *entry_princ_s = NULL;
@@ -419,9 +419,6 @@ static krb5_error_code fill_mem_keytab_from_system_keytab(krb5_context krbctx,
 		ret = ENOMEM;
 		goto out;
 	}
-
-	ZERO_STRUCT(kt_entry);
-	ZERO_STRUCT(kt_cursor);
 
 	ret = smb_krb5_kt_open_relative(krbctx, NULL, false, &keytab);
 	if (ret) {
