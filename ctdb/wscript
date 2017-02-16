@@ -868,6 +868,13 @@ def build(bld):
     for d in ['volatile', 'persistent', 'state']:
         bld.INSTALL_DIR(os.path.join(bld.env.CTDB_VARDIR, d))
 
+    #
+    # Test-only below this point
+    #
+
+    if not bld.env.standalone_ctdb and not bld.CONFIG_GET('ENABLE_SELFTEST'):
+        return
+
     bld.SAMBA_BINARY('errcode',
                      source='tests/src/errcode.c',
                      deps='replace',
