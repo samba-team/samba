@@ -1,0 +1,29 @@
+1486690576.530451000	11	0	1	2	nbns	0	query
+1486690578.137335000	06	0	3	3	kerberos	10	krb-as-req	machine
+1486690578.141276000	06	0	3	3	kerberos	11	krb-as-rep	
+1486690584.104038000	06	49	4	3	kerberos	10	krb-as-req	user
+1486690584.108221000	06	49	3	4	kerberos	11	krb-as-rep	
+1486690584.139378000	06	50	4	3	kerberos	14	krb-ap-req	
+1486690584.143220000	06	50	3	4	kerberos	13	krb-tgs-rep	
+1486690584.770344000	06	60	4	3	ldap	0	bindRequest					3	sasl	1.3.6.1.5.5.2
+1486690584.774978000	06	60	3	4	ldap	1	bindResponse							
+1486690584.775218000	06	60	4	3	ldap	3	searchRequest			(objectClass=*)	rootDomainNamingContext,configurationNamingContext,schemaNamingContext,defaultNamingContext			
+1486690584.775574000	06	60	4	3	ldap	3	searchRequest		DC,DC,DC	(objectSid)	objectSid			
+1486690586.238734000	06	92	4	3	ldap	3	searchRequest	2	WKGUID,DC,DC,DC	(objectClass=*)				
+1486934236.150107000		6	5	6	smb	255	No further commands (0xff)
+1486934236.150278000		6	6	5	dcerpc	11	Bind
+1486934236.201029000		6	6	5	srvsvc	15	NetShareEnumAll
+1486934237.552194000	11	30	7	3	browser	0x00000008	Browser Election Request (0x08)
+1486690678.178692000	06	1177	8	9	lsarpc	27	lsa_SetInformationTrustedDomain
+1486690679.853951000	06	1183	9	8	epm	3	Map
+1486690679.854842000	06	1184	9	8	rpc_netlogon	4	NetrServerReqChallenge
+1487197586.858394000	11	66	10	8	cldap	3	searchRequest			(&(&(NtVer)(DnsDomain))(AAC))	NetLogon			
+1487197586.864862000	06	12	10	8	smb2	0	Negotiate Protocol
+1487197588.515337000	11	76	10	11	dns	0	query
+1487197588.911149000	11	76	11	10	dns	1	response
+1487197589.619792000	06	29	10	10	dnsserver	9	DnssrvUpdateRecord2
+1487200690.757022000	06	10	4	3	samr	0	Connect
+1487200691.039416000	06	14	4	3	drsuapi	0	DsBind
+1486934584.809271000	11	322	12	7	smb_netlogon	0x00000012	SAM LOGON request from client (0x12)
+1486690719.940434000	06	1400	4	3	ldap	6	modifyRequest				servicePrincipalName	2	replace	
+1486690682.579057000	06	1207	4	3	ldap	0	bindRequest					0	simple	
