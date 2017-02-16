@@ -1873,6 +1873,9 @@ static bool shadow_copy2_snapshot_to_gmt(vfs_handle_struct *handle,
 		}
 		/* Extract the prefix */
 		tmp = strstr(tmpstr, priv->config->delimiter);
+		if (tmp == NULL) {
+			goto done;
+		}
 		*tmp = '\0';
 
 		/* Parse regex */
