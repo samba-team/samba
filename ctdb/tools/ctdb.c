@@ -4403,6 +4403,7 @@ static int control_restoredb(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	}
 
 	printf("Database %s restored\n", db_name);
+	close(fd);
 	return 0;
 
 
