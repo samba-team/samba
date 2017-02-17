@@ -128,7 +128,7 @@ int create_named_pipe_socket(const char *pipe_name)
 		goto out;
 	}
 
-	DEBUG(10, ("Openened pipe socket fd %d for %s\n", fd, pipe_name));
+	DEBUG(10, ("Opened pipe socket fd %d for %s\n", fd, pipe_name));
 
 out:
 	talloc_free(np_dir);
@@ -168,7 +168,7 @@ bool setup_named_pipe_socket(const char *pipe_name,
 	state->ev_ctx = ev_ctx;
 	state->msg_ctx = msg_ctx;
 
-	DEBUG(10, ("Openened pipe socket fd %d for %s\n",
+	DEBUG(10, ("Opened pipe socket fd %d for %s\n",
 		   state->fd, pipe_name));
 
 	fde = tevent_add_fd(ev_ctx,
@@ -789,7 +789,7 @@ int create_dcerpc_ncalrpc_socket(const char *name)
 		return -1;
 	}
 
-	DEBUG(10, ("Openened ncalrpc socket fd %d for %s\n", fd, name));
+	DEBUG(10, ("Opened ncalrpc socket fd %d for %s\n", fd, name));
 
 	return fd;
 }
