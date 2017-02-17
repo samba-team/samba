@@ -340,7 +340,7 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 		}
 
 		/* filter by partial_attribute_set */
-		if (partial_attribute_set) {
+		if (partial_attribute_set && !force_attribute) {
 			uint32_t *result = NULL;
 			BINARY_ARRAY_SEARCH_V(local_pas, partial_attribute_set->num_attids, sa->attributeID_id,
 					      uint32_t_cmp, result);
