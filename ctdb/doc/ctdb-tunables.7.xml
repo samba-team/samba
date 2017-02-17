@@ -636,7 +636,7 @@
       <title>TDBMutexEnabled</title>
       <para>Default: 0</para>
       <para>
-	This paramter enables TDB_MUTEX_LOCKING feature on volatile
+	This parameter enables TDB_MUTEX_LOCKING feature on volatile
 	databases if the robust mutexes are supported. This optimizes the
 	record locking using robust mutexes and is much more efficient
 	that using posix locks.
