@@ -347,7 +347,7 @@ static NTSTATUS gse_get_client_auth_token(TALLOC_CTX *mem_ctx,
 		break;
 	default:
 		if ((gss_maj == GSS_S_FAILURE) &&
-		    (gss_min == KRB5KRB_AP_ERR_TKT_EXPIRED)) {
+		    (gss_min == (OM_uint32)KRB5KRB_AP_ERR_TKT_EXPIRED)) {
 			DBG_NOTICE("Ticket expired\n");
 		} else {
 			DBG_ERR("gss_init_sec_context failed with [%s]\n",
