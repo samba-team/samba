@@ -299,7 +299,7 @@ err_out:
 
 /*
  * request printer list from cups, send result back to up parent via fd.
- * returns true if the (possibly failed) result was successfuly sent to parent.
+ * returns true if the (possibly failed) result was successfully sent to parent.
  */
 static bool cups_cache_reload_async(int fd)
 {
