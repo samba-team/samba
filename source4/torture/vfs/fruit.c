@@ -2451,6 +2451,7 @@ static bool test_copyfile(struct torture_context *torture,
 	struct srv_copychunk_rsp cc_rsp;
 	enum ndr_err_code ndr_ret;
 	bool ok;
+	const char *sname = ":foo" "\xef\x80\xa2" "bar:$DATA";
 
 	/*
 	 * First test a copy_chunk with a 0 chunk count without having
@@ -2521,6 +2522,11 @@ static bool test_copyfile(struct torture_context *torture,
 		torture_fail(torture, "setup stream error");
 	}
 
+	ok = write_stream(tree, __location__, torture, tmp_ctx,
+			    FNAME_CC_SRC, sname,
+			    10, 10, "abcdefghij");
+	torture_assert_goto(torture, ok == true, ok, done, "write_stream failed\n");
+
 	ok = test_setup_copy_chunk(torture, tree, tmp_ctx,
 				   0, /* 0 chunks, copyfile semantics */
 				   &src_h, 4096, /* fill 4096 byte src file */
@@ -2572,6 +2578,11 @@ static bool test_copyfile(struct torture_context *torture,
 	if (!ok) {
 		torture_fail_goto(torture, done, "inconsistent stream data");
 	}
+
+	ok = check_stream(tree, __location__, torture, tmp_ctx,
+			    FNAME_CC_DST, sname,
+			    0, 20, 10, 10, "abcdefghij");
+	torture_assert_goto(torture, ok == true, ok, done, "check_stream failed\n");
 
 done:
 	smb2_util_close(tree, src_h);
