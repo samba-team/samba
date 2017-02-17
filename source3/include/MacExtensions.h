@@ -80,7 +80,7 @@ typedef struct _SambaAfpInfo
 */
 
 /*
-** These extensions are only supported with the NT LM 0.12 Dialect. These extentions
+** These extensions are only supported with the NT LM 0.12 Dialect. These extensions
 ** will be process on a share by share bases.
 */
 
