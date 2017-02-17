@@ -132,7 +132,7 @@
 		<para>
 			Defines which volfile server to use, defaults to
 			localhost. It could be list of white space
-			seperated elements where each element could be
+			separated elements where each element could be
 		</para>
 		<para>
 			1. unix+/path/to/socket/file

@@ -376,7 +376,7 @@ removeea setea
         if conf.CHECK_FUNCS_IN('dgettext gettext', '', checklibc=True, headers='libintl.h'):
             # save for dependency definitions
             conf.env.intl_libs=''
-        # others (e.g. FreeBSD) have seperate libintl
+        # others (e.g. FreeBSD) have separate libintl
         elif conf.CHECK_FUNCS_IN('dgettext gettext', 'intl', checklibc=False, headers='libintl.h'):
             # save for dependency definitions
             conf.env.intl_libs='intl'
