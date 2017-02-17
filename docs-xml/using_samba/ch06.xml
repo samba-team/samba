@@ -2322,7 +2322,7 @@ local group map</title>
 
 
 <para>One warning: because these scripts are loaded by Windows and executed on the Windows side, they must consist of DOS formatted <indexterm id="ch06-idx-968122-0"><primary>carriage-returns for scripts</primary></indexterm>
-<indexterm id="ch06-idx-968122-1"><primary>DOS-formated carriage returns</primary></indexterm>
+<indexterm id="ch06-idx-968122-1"><primary>DOS-formatted carriage returns</primary></indexterm>
 <indexterm id="ch06-idx-968122-2"><primary>Unix</primary><secondary> carriage returns</secondary></indexterm>carriage-return/linefeed characters instead of Unix carriage returns. It's best to use a DOS- or Windows-based editor to create them.</para>
 
 
