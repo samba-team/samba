@@ -1362,7 +1362,7 @@ writeable = yes</programlisting>
 <indexterm id="ch04-idx-967307-0"><primary>hosts</primary><secondary>subnets and,
 caution with</secondary></indexterm>
 <indexterm id="ch04-idx-967307-1"><primary>subnets</primary><secondary>hosts and,
-caution with</secondary></indexterm>Take care that you don't explicity
+caution with</secondary></indexterm>Take care that you don't explicitly
 allow a host to access a share, but then deny access to the entire
 subnet of which the host is part.</para>
 
