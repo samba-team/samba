@@ -2094,7 +2094,7 @@ int net_rpc_registry(struct net_context *c, int argc, const char **argv)
 			NET_TRANSPORT_RPC,
 			N_("Get security descriptor"),
 			N_("net rpc registry getsd\n"
-			   "    Get security descriptior")
+			   "    Get security descriptor")
 		},
 		{
 			"import",

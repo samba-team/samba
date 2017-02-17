@@ -6630,7 +6630,7 @@ msgstr ""
 #: ../../utils/net_rpc_registry.c:1368
 msgid ""
 "net rpc registry getsd\n"
-"    Get security descriptior"
+"    Get security descriptor"
 msgstr ""
 
 #: ../../utils/net_rpc_rights.c:203
