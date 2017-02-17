@@ -31,7 +31,7 @@
     encryption types are allowed.
     </para>
 
-    <para>When set to <constant>strong</constant>, only AES-based encyption
+    <para>When set to <constant>strong</constant>, only AES-based encryption
     types are offered. This can be used in hardened environments to prevent
     downgrade attacks.
     </para>
