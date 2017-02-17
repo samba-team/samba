@@ -87,7 +87,7 @@ foreach $ip (@ipaddrs)		# loop through each IP address found
 			}
 		} else {
 			# The Netbios name can contain lot of characters also '<' '>'
-			# and spaces. The follwing cure inside name space but not
+			# and spaces. The following cure inside name space but not
 			# names starting or ending with spaces
 			/(.{1,15})\s+<00>\s+/;
 			$name = $1;

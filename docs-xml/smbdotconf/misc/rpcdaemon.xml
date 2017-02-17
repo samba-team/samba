@@ -48,7 +48,7 @@
 		prefork_child_min_life
 	</programlisting>
 
-	To set one of these options use the follwing syntax:
+	To set one of these options use the following syntax:
 	<programlisting>
 	daemonname:prefork_min_children = 5
 	</programlisting>
