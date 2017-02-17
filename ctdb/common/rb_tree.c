@@ -543,7 +543,7 @@ delete_node(trbt_node_t *node, bool from_destructor)
 	   This is simple since this dummy node originally had no children
 	   and we are guaranteed that it will also not have any children 
 	   after the node has been deleted and any possible rotations 
-	   have occured.
+	   have occurred.
 
 	   The only special case is if this was the last node of the tree
 	   in which case we have to reset the root to NULL as well.

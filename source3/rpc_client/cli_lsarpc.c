@@ -429,7 +429,7 @@ NTSTATUS dcerpc_lsa_lookup_sids_generic(struct dcerpc_binding_handle *h,
 		    !NT_STATUS_EQUAL(hunk_result, STATUS_SOME_UNMAPPED) &&
 		    !NT_STATUS_EQUAL(hunk_result, NT_STATUS_NONE_MAPPED))
 		{
-			/* An actual error occured */
+			/* An actual error occurred */
 			*presult = hunk_result;
 			goto fail;
 		}
@@ -618,7 +618,7 @@ NTSTATUS dcerpc_lsa_lookup_names_generic(struct dcerpc_binding_handle *h,
 
 	if (!NT_STATUS_IS_OK(*presult) &&
 	    !NT_STATUS_EQUAL(*presult, STATUS_SOME_UNMAPPED)) {
-		/* An actual error occured */
+		/* An actual error occurred */
 		goto done;
 	}
 

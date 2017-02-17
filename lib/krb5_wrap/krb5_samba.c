@@ -144,7 +144,7 @@ const krb5_data *krb5_princ_component(krb5_context context,
  *
  * @param[out] pkaddr   A Kerberos address to store tha address in.
  *
- * @return True on success, false if an error occured.
+ * @return True on success, false if an error occurred.
  */
 bool smb_krb5_sockaddr_to_kaddr(struct sockaddr_storage *paddr,
 				krb5_address *pkaddr)
@@ -177,7 +177,7 @@ bool smb_krb5_sockaddr_to_kaddr(struct sockaddr_storage *paddr,
  *
  * @param[in]  pkaddr A Kerberos address to store tha address in.
  *
- * @return True on success, false if an error occured.
+ * @return True on success, false if an error occurred.
  */
 bool smb_krb5_sockaddr_to_kaddr(struct sockaddr_storage *paddr,
 				krb5_address *pkaddr)
@@ -2566,7 +2566,7 @@ krb5_error_code smb_krb5_make_pac_checksum(TALLOC_CTX *mem_ctx,
  *
  * @param[in] principal The principal to get the realm from.
  *
- * @return An allocated string with the realm or NULL if an error occured.
+ * @return An allocated string with the realm or NULL if an error occurred.
  *
  * The caller must free the realm string with free() if not needed anymore.
  */
@@ -2744,7 +2744,7 @@ static char *smb_krb5_get_realm_from_hostname(TALLOC_CTX *mem_ctx,
  * @param[in]  default_realm The default_realm if we cannot get it from the
  *                           hostname or netbios name.
  *
- * @return A talloc'ed principal string or NULL if an error occured.
+ * @return A talloc'ed principal string or NULL if an error occurred.
  *
  * The caller needs to free the principal with talloc_free() if it isn't needed
  * anymore.
@@ -2796,7 +2796,7 @@ char *smb_krb5_get_principal_from_service_hostname(TALLOC_CTX *mem_ctx,
  *
  * @param[in]  mem_ctx  The talloc context to allocate the error string on.
  *
- * @return A talloc'ed error string or NULL if an error occured.
+ * @return A talloc'ed error string or NULL if an error occurred.
  *
  * The caller must free the returned error string with talloc_free() if not
  * needed anymore

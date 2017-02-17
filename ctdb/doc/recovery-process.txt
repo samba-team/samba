@@ -221,7 +221,7 @@ Make sure to find which node is the recovery master and check the log for that n
 
 Example log entries that start in column 1 are expected to be present in the
 log. Example log entries that are indented 3 columns are optional and might
-only be present if an error occured.
+only be present if an error occurred.
 
 
 1, Log that recovery has been initiated.

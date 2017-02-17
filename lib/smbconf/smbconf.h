@@ -137,7 +137,7 @@ bool smbconf_changed(struct smbconf_ctx *ctx, struct smbconf_csn *csn,
  * @param[in] ctx       The smbconf context to drop the config.
  *
  * @return              SBC_ERR_OK on success, a corresponding sbcErr if an
- *                      error occured.
+ *                      error occurred.
  */
 sbcErr smbconf_drop(struct smbconf_ctx *ctx);
 
@@ -153,7 +153,7 @@ sbcErr smbconf_drop(struct smbconf_ctx *ctx);
  * @param[out] services  A pointer to store the services.
  *
  * @return              SBC_ERR_OK on success, a corresponding sbcErr if an
- *                      error occured.
+ *                      error occurred.
  *
  * @see smbconf_service
  */
@@ -174,7 +174,7 @@ sbcErr smbconf_get_config(struct smbconf_ctx *ctx,
  * @param[in] share_names A pointer to store the share names.
  *
  * @return              SBC_ERR_OK on success, a corresponding sbcErr if an
- *                      error occured.
+ *                      error occurred.
  */
 sbcErr smbconf_get_share_names(struct smbconf_ctx *ctx,
 			       TALLOC_CTX *mem_ctx,
@@ -200,7 +200,7 @@ bool smbconf_share_exists(struct smbconf_ctx *ctx, const char *servicename);
  * @param[in] servicename The name of the service to add.
  *
  * @return              SBC_ERR_OK on success, a corresponding sbcErr if an
- *                      error occured.
+ *                      error occurred.
  */
 sbcErr smbconf_create_share(struct smbconf_ctx *ctx, const char *servicename);
 
@@ -212,7 +212,7 @@ sbcErr smbconf_create_share(struct smbconf_ctx *ctx, const char *servicename);
  * @param[in] service   The definition for the added service.
  *
  * @return              SBC_ERR_OK on success, a corresponding sbcErr if an
- *                      error occured.
+ *                      error occurred.
  */
 sbcErr smbconf_create_set_share(struct smbconf_ctx *ctx,
 				struct smbconf_service *service);
@@ -230,7 +230,7 @@ sbcErr smbconf_create_set_share(struct smbconf_ctx *ctx,
  *                      share.
  *
  * @return              SBC_ERR_OK on success, a corresponding sbcErr if an
- *                      error occured.
+ *                      error occurred.
  *
  * @see smbconf_service
  */
@@ -247,7 +247,7 @@ sbcErr smbconf_get_share(struct smbconf_ctx *ctx,
  * @param[in] servicename The service name to delete.
  *
  * @return              SBC_ERR_OK on success, a corresponding sbcErr if an
- *                      error occured.
+ *                      error occurred.
  */
 sbcErr smbconf_delete_share(struct smbconf_ctx *ctx,
 			    const char *servicename);
@@ -264,7 +264,7 @@ sbcErr smbconf_delete_share(struct smbconf_ctx *ctx,
  * @param[in] valstr    The value to set.
  *
  * @return              SBC_ERR_OK on success, a corresponding sbcErr if an
- *                      error occured.
+ *                      error occurred.
  */
 sbcErr smbconf_set_parameter(struct smbconf_ctx *ctx,
 			     const char *service,
@@ -284,7 +284,7 @@ sbcErr smbconf_set_parameter(struct smbconf_ctx *ctx,
  * @param[in] val       The value to set.
  *
  * @return              SBC_ERR_OK on success, a corresponding sbcErr if an
- *                      error occured.
+ *                      error occurred.
  */
 sbcErr smbconf_set_global_parameter(struct smbconf_ctx *ctx,
 				    const char *param, const char *val);
@@ -303,7 +303,7 @@ sbcErr smbconf_set_global_parameter(struct smbconf_ctx *ctx,
  * @param[out] valstr   A pointer to store the value as a string.
  *
  * @return              SBC_ERR_OK on success, a corresponding sbcErr if an
- *                      error occured.
+ *                      error occurred.
  */
 sbcErr smbconf_get_parameter(struct smbconf_ctx *ctx,
 			     TALLOC_CTX *mem_ctx,
@@ -325,7 +325,7 @@ sbcErr smbconf_get_parameter(struct smbconf_ctx *ctx,
  * @param[out] valstr   A pointer to store the value as a string.
  *
  * @return              SBC_ERR_OK on success, a corresponding sbcErr if an
- *                      error occured.
+ *                      error occurred.
  */
 sbcErr smbconf_get_global_parameter(struct smbconf_ctx *ctx,
 				    TALLOC_CTX *mem_ctx,
@@ -342,7 +342,7 @@ sbcErr smbconf_get_global_parameter(struct smbconf_ctx *ctx,
  * @param[in] param     The name of the parameter to delete.
  *
  * @return              SBC_ERR_OK on success, a corresponding sbcErr if an
- *                      error occured.
+ *                      error occurred.
  */
 sbcErr smbconf_delete_parameter(struct smbconf_ctx *ctx,
 				const char *service, const char *param);
@@ -357,7 +357,7 @@ sbcErr smbconf_delete_parameter(struct smbconf_ctx *ctx,
  * @param[in] param     The name of the parameter to delete.
  *
  * @return              SBC_ERR_OK on success, a corresponding sbcErr if an
- *                      error occured.
+ *                      error occurred.
  */
 sbcErr smbconf_delete_global_parameter(struct smbconf_ctx *ctx,
 				       const char *param);
@@ -376,7 +376,7 @@ sbcErr smbconf_delete_global_parameter(struct smbconf_ctx *ctx,
  * @param[out] includes A pointer to store the paths of the included files.
  *
  * @return              SBC_ERR_OK on success, a corresponding sbcErr if an
- *                      error occured.
+ *                      error occurred.
  */
 sbcErr smbconf_get_includes(struct smbconf_ctx *ctx,
 			    TALLOC_CTX *mem_ctx,
@@ -395,7 +395,7 @@ sbcErr smbconf_get_includes(struct smbconf_ctx *ctx,
  * @param[out] includes A pointer to store the paths of the included files.
  *
  * @return              SBC_ERR_OK on success, a corresponding sbcErr if an
- *                      error occured.
+ *                      error occurred.
  */
 sbcErr smbconf_get_global_includes(struct smbconf_ctx *ctx,
 				   TALLOC_CTX *mem_ctx,
@@ -413,7 +413,7 @@ sbcErr smbconf_get_global_includes(struct smbconf_ctx *ctx,
  * @param[in]  includes A list of paths to include.
  *
  * @return              SBC_ERR_OK on success, a corresponding sbcErr if an
- *                      error occured.
+ *                      error occurred.
  */
 sbcErr smbconf_set_includes(struct smbconf_ctx *ctx,
 			    const char *service,
@@ -429,7 +429,7 @@ sbcErr smbconf_set_includes(struct smbconf_ctx *ctx,
  * @param[in]  includes A list of paths to include.
  *
  * @return              SBC_ERR_OK on success, a corresponding sbcErr if an
- *                      error occured.
+ *                      error occurred.
  */
 sbcErr smbconf_set_global_includes(struct smbconf_ctx *ctx,
 				   uint32_t num_includes,
@@ -443,7 +443,7 @@ sbcErr smbconf_set_global_includes(struct smbconf_ctx *ctx,
  * @param[in]  service  The name of the service to delete the includes from.
  *
  * @return              SBC_ERR_OK on success, a corresponding sbcErr if an
- *                      error occured.
+ *                      error occurred.
  */
 sbcErr smbconf_delete_includes(struct smbconf_ctx *ctx, const char *service);
 
@@ -453,7 +453,7 @@ sbcErr smbconf_delete_includes(struct smbconf_ctx *ctx, const char *service);
  * @param[in]  ctx      The smbconf context to use.
  *
  * @return              SBC_ERR_OK on success, a corresponding sbcErr if an
- *                      error occured.
+ *                      error occurred.
  */
 sbcErr smbconf_delete_global_includes(struct smbconf_ctx *ctx);
 
@@ -466,7 +466,7 @@ sbcErr smbconf_delete_global_includes(struct smbconf_ctx *ctx);
  * @param[in] ctx       The smbconf context to start the transaction.
  *
  * @return              SBC_ERR_OK on success, a corresponding sbcErr if an
- *                      error occured.
+ *                      error occurred.
  */
 sbcErr smbconf_transaction_start(struct smbconf_ctx *ctx);
 
@@ -479,7 +479,7 @@ sbcErr smbconf_transaction_start(struct smbconf_ctx *ctx);
  * @param[in] ctx       The smbconf context to commit the transaction.
  *
  * @return              SBC_ERR_OK on success, a corresponding sbcErr if an
- *                      error occured.
+ *                      error occurred.
  *
  * @see smbconf_transaction_start()
  */
@@ -494,7 +494,7 @@ sbcErr smbconf_transaction_commit(struct smbconf_ctx *ctx);
  * @param[in] ctx       The smbconf context to cancel the transaction.
  *
  * @return              SBC_ERR_OK on success, a corresponding sbcErr if an
- *                      error occured.
+ *                      error occurred.
  *
  * @see smbconf_transaction_start()
  */

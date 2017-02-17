@@ -1590,7 +1590,7 @@ RUNNING
       </para>
       <para>
 	TCP tickles are useful to "tickle" clients after a IP failover has
-	occured since this will make the client immediately recognize the
+	occurred since this will make the client immediately recognize the
 	TCP connection has been disrupted and that the client will need
 	to reestablish. This greatly speeds up the time it takes for a client
 	to detect and reestablish after an IP failover in the ctdb cluster.

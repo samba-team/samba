@@ -10,7 +10,7 @@ proc setup_test { remote_prompt sharepath sharename username local_hostname \
 	set err_str [create_directory $remote_prompt $sharepath]
 	if { $err_str != "OK" } {
 		if { $err_str != "Directory already exists" } {
-			puts stderr "\nUnexpected error occured in setup_test.\n"
+			puts stderr "\nUnexpected error occurred in setup_test.\n"
 			puts stderr "Function create_directory returned $err_str."
 		} else {
 			puts stdout "\nDirectory $sharepath exists."
@@ -33,7 +33,7 @@ proc setup_test { remote_prompt sharepath sharename username local_hostname \
 			$sharename]
 	if { $err_str != "OK" } {
 		if { $err_str != "The name has already been shared" } {
-			puts stderr "\nUnexpected error occured in setup_test."
+			puts stderr "\nUnexpected error occurred in setup_test."
 			puts stderr "Function create_share returned $err_str."
 		} else {
 			puts stdout "\nShare $sharename exists."
