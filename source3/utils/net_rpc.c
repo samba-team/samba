@@ -5112,7 +5112,7 @@ static void show_userlist(struct rpc_pipe_client *pipe_hnd,
 					       &result);
 
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result)) {
-		DEBUG(1, ("Coult not query secdesc for share %s\n",
+		DEBUG(1, ("Could not query secdesc for share %s\n",
 			  netname));
 		return;
 	}
