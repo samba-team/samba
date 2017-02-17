@@ -240,7 +240,7 @@ KNOWN ISSUES
 https://wiki.samba.org/index.php/Release_Planning_for_Samba_4.6#Release_blocking_bugs
 
 
-CHANGES SINCE 4.5.0rc2
+CHANGES SINCE 4.6.0rc2
 ======================
 
 o  Jeremy Allison <jra@samba.org>
@@ -292,7 +292,7 @@ o  Uri Simchoni <uri@samba.org>
    * BUG 12529: waf: Backport finding of pkg-config.
 
 
-CHANGES SINCE 4.5.0rc1
+CHANGES SINCE 4.6.0rc1
 ======================
 
 o  Amitay Isaacs <amitay@gmail.com>
