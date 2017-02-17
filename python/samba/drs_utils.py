@@ -17,8 +17,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from samba.dcerpc import drsuapi, misc
+from samba.dcerpc import drsuapi, misc, drsblobs
 from samba.net import Net
+from samba.ndr import ndr_unpack
+from samba import dsdb
 import samba, ldb
 
 
@@ -198,7 +200,7 @@ class drs_Replicate(object):
 
     def replicate(self, dn, source_dsa_invocation_id, destination_dsa_guid,
                   schema=False, exop=drsuapi.DRSUAPI_EXOP_NONE, rodc=False,
-                  replica_flags=None, highwatermark=None, udv=None):
+                  replica_flags=None, full_sync=True):
         '''replicate a single DN'''
 
         # setup for a GetNCChanges call
@@ -209,14 +211,40 @@ class drs_Replicate(object):
         req8.naming_context = drsuapi.DsReplicaObjectIdentifier()
         req8.naming_context.dn = dn
 
-        if highwatermark is not None:
-            req8.highwatermark = highwatermark
-        else:
-            req8.highwatermark = drsuapi.DsReplicaHighWaterMark()
-            req8.highwatermark.tmp_highest_usn = 0
-            req8.highwatermark.reserved_usn = 0
-            req8.highwatermark.highest_usn = 0
+        udv = None
+        if not full_sync:
+            res = self.samdb.search(base=dn, scope=ldb.SCOPE_BASE,
+                                    attrs=["repsFrom"])
+            if "repsFrom" in res[0]:
+                for reps_from_packed in res[0]["repsFrom"]:
+                    reps_from_obj = ndr_unpack(drsblobs.repsFromToBlob, reps_from_packed)
+                    if reps_from_obj.ctr.source_dsa_invocation_id == source_dsa_invocation_id:
+                        hwm = reps_from_obj.ctr.highwatermark
 
+            udv = drsuapi.DsReplicaCursorCtrEx()
+            udv.version = 1
+            udv.reserved1 = 0
+            udv.reserved2 = 0
+
+            cursors_v1 = []
+            cursors_v2 = dsdb._dsdb_load_udv_v2(self.samdb,
+                                                self.samdb.get_default_basedn())
+            for cursor_v2 in cursors_v2:
+                cursor_v1 = drsuapi.DsReplicaCursor()
+                cursor_v1.source_dsa_invocation_id = cursor_v2.source_dsa_invocation_id
+                cursor_v1.highest_usn = cursor_v2.highest_usn
+                cursors_v1.append(cursor_v1)
+
+            udv.cursors = cursors_v1
+            udv.count = len(cursors_v1)
+
+        # If we can't find an upToDateVector, or where told not to, replicate fully
+        hwm = drsuapi.DsReplicaHighWaterMark()
+        hwm.tmp_highest_usn = 0
+        hwm.reserved_usn = 0
+        hwm.highest_usn = 0
+
+        req8.highwatermark = hwm
         req8.uptodateness_vector = udv
 
         if replica_flags is not None:

@@ -267,39 +267,6 @@ def drs_local_replicate(self, SOURCE_DC, NC, full_sync=False):
     dest_dsa_invocation_id = misc.GUID(self.local_samdb.get_invocation_id())
     destination_dsa_guid = self.ntds_guid
 
-    # If we can't find an upToDateVector, replicate fully
-    hwm = drsuapi.DsReplicaHighWaterMark()
-    hwm.tmp_highest_usn = 0
-    hwm.reserved_usn = 0
-    hwm.highest_usn = 0
-
-    udv = None
-    if not full_sync:
-        res = self.local_samdb.search(base=NC, scope=ldb.SCOPE_BASE,
-                                      attrs=["repsFrom"])
-        if "repsFrom" in res[0]:
-            for reps_from_packed in res[0]["repsFrom"]:
-                reps_from_obj = ndr_unpack(drsblobs.repsFromToBlob, reps_from_packed)
-                if reps_from_obj.ctr.source_dsa_invocation_id == source_dsa_invocation_id:
-                    hwm = reps_from_obj.ctr.highwatermark
-
-        udv = drsuapi.DsReplicaCursorCtrEx()
-        udv.version = 1
-        udv.reserved1 = 0
-        udv.reserved2 = 0
-
-        cursors_v1 = []
-        cursors_v2 = dsdb._dsdb_load_udv_v2(self.local_samdb,
-                                            self.local_samdb.get_default_basedn())
-        for cursor_v2 in cursors_v2:
-            cursor_v1 = drsuapi.DsReplicaCursor()
-            cursor_v1.source_dsa_invocation_id = cursor_v2.source_dsa_invocation_id
-            cursor_v1.highest_usn = cursor_v2.highest_usn
-            cursors_v1.append(cursor_v1)
-
-        udv.cursors = cursors_v1
-        udv.count = len(cursors_v1)
-
     self.samdb.transaction_start()
     repl = drs_utils.drs_Replicate("ncacn_ip_tcp:%s[seal]" % self.server, self.lp,
                                    self.creds, self.local_samdb, dest_dsa_invocation_id)
@@ -310,7 +277,7 @@ def drs_local_replicate(self, SOURCE_DC, NC, full_sync=False):
     try:
         (num_objects, num_links) = repl.replicate(NC,
                                                   source_dsa_invocation_id, destination_dsa_guid,
-                                                  rodc=rodc, highwatermark=hwm, udv=udv)
+                                                  rodc=rodc, full_sync=full_sync)
     except Exception, e:
         raise CommandError("Error replicating DN %s" % NC, e)
     self.samdb.transaction_commit()
