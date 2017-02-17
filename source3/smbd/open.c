@@ -1480,7 +1480,7 @@ static bool delay_for_oplock(files_struct *fsp,
 			/*
 			 * we'll decide about SMB2_LEASE_READ later.
 			 *
-			 * Maybe the break will be defered
+			 * Maybe the break will be deferred
 			 */
 			break_to &= ~SMB2_LEASE_HANDLE;
 		}
