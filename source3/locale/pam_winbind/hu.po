@@ -19,7 +19,7 @@ msgid "Success"
 msgstr "Sikeres"
 
 #: ../../../nsswitch/pam_winbind.c:585
-msgid "No primary Domain Controler available"
+msgid "No primary Domain Controller available"
 msgstr "Az elsődleges tartományvezérlő nem érhető el"
 
 #: ../../../nsswitch/pam_winbind.c:587

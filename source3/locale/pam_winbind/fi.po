@@ -21,7 +21,7 @@ msgid "Success"
 msgstr "Onnistui"
 
 #: ../../../nsswitch/pam_winbind.c:585
-msgid "No primary Domain Controler available"
+msgid "No primary Domain Controller available"
 msgstr "Ensisijaista toimialueen ohjainta ei käytettävissä"
 
 #: ../../../nsswitch/pam_winbind.c:587

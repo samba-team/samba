@@ -610,7 +610,7 @@ static const struct ntstatus_errors {
 	{"NT_STATUS_OK",
 		N_("Success")},
 	{"NT_STATUS_BACKUP_CONTROLLER",
-		N_("No primary Domain Controler available")},
+		N_("No primary Domain Controller available")},
 	{"NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND",
 		N_("No domain controllers found")},
 	{"NT_STATUS_NO_LOGON_SERVERS",
