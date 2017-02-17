@@ -1025,7 +1025,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 
 			DEBUG(10, ("smb2_create_send: %s to recreate the "
 				   "smb2srv_open struct for a durable handle.\n",
-				   op->global->durable ? "succeded" : "failed"));
+				   op->global->durable ? "succeeded" : "failed"));
 
 			if (!op->global->durable) {
 				talloc_free(op);
