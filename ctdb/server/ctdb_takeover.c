@@ -1578,7 +1578,7 @@ void ctdb_release_all_ips(struct ctdb_context *ctdb)
 		if (vnn->update_in_flight) {
 			DEBUG(DEBUG_WARNING,
 			      (__location__
-			       " Not releasing IP %s/%u on interface %s, an update is already in progess\n",
+			       " Not releasing IP %s/%u on interface %s, an update is already in progress\n",
 				    ctdb_addr_to_str(&vnn->public_address),
 				    vnn->public_netmask_bits,
 				    ctdb_vnn_iface_string(vnn)));
