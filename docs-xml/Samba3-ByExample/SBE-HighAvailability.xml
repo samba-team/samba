@@ -640,7 +640,7 @@ cannot be set in the smb.conf file. nmbd will abort with this setting.
 	</para>
 
 	<para>
-	Samba-3.0.12 and later, includes new code that radically improves Samba perfomance. The secret to this is
+	Samba-3.0.12 and later, includes new code that radically improves Samba performance. The secret to this is
 	really in the <smbconfoption name="case sensitive">True</smbconfoption> line. This tells smbd never to scan
 	for case-insensitive versions of names. So if an application asks for a file called <filename>FOO</filename>,
 	and it can not be found by a simple stat call, then smbd will return "file not found" immediately without

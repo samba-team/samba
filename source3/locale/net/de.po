@@ -1613,7 +1613,7 @@ msgid ""
 msgstr ""
 
 #: ../../utils/net_ads.c:2636
-msgid "Perfom CLDAP query on DC"
+msgid "Perform CLDAP query on DC"
 msgstr ""
 
 #: ../../utils/net_ads.c:2637

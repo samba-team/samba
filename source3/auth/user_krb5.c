@@ -134,7 +134,7 @@ NTSTATUS get_user_from_kerberos_info(TALLOC_CTX *mem_ctx,
 			return NT_STATUS_NO_MEMORY;
 		}
 		/* if a real user check pam account restrictions */
-		/* only really perfomed if "obey pam restriction" is true */
+		/* only really performed if "obey pam restriction" is true */
 		/* do this before an eventual mapping to guest occurs */
 		status = smb_pam_accountcheck(pw->pw_name, cli_name);
 		if (!NT_STATUS_IS_OK(status)) {
