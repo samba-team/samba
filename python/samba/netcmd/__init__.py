@@ -179,7 +179,7 @@ class Command(object):
             return -1
 
     def run(self):
-        """Run the command. This should be overriden by all subclasses."""
+        """Run the command. This should be overridden by all subclasses."""
         raise NotImplementedError(self.run)
 
     def get_logger(self, name="netcmd"):
