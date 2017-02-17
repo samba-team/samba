@@ -373,7 +373,7 @@ def libname_msvc(self, libname, is_static=False, mandatory=False):
 
 	if lt_path != None and lt_libname != None:
 		if lt_static == True:
-			# file existance check has been made by find_lt_names
+			# file existence check has been made by find_lt_names
 			return os.path.join(lt_path,lt_libname)
 
 	if lt_path != None:

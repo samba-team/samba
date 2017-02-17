@@ -270,7 +270,7 @@ def find_objectclass_auto(ldb, o):
 
 
 def expand_objectclass(ldb, o):
-    """look at auxiliary information from a class to intuit the existance of 
+    """look at auxiliary information from a class to intuit the existence of 
     more classes needed for a minimal schema"""
     attrs = ["auxiliaryClass", "systemAuxiliaryClass",
                   "possSuperiors", "systemPossSuperiors",

@@ -49,7 +49,7 @@ static void trans2_check_hit(const char *format, int op, int level, NTSTATUS sta
 }
 
 /****************************************************************************
-check for existance of a trans2 call
+check for existence of a trans2 call
 ****************************************************************************/
 static NTSTATUS try_trans2(struct cli_state *cli, 
 			 int op,
@@ -114,7 +114,7 @@ static NTSTATUS try_trans2_len(struct cli_state *cli,
 }
 
 /****************************************************************************
-check for existance of a trans2 call
+check for existence of a trans2 call
 ****************************************************************************/
 static bool scan_trans2(struct cli_state *cli, int op, int level, 
 			int fnum, int dnum, const char *fname)
@@ -297,7 +297,7 @@ static void nttrans_check_hit(const char *format, int op, int level, NTSTATUS st
 }
 
 /****************************************************************************
-check for existance of a nttrans call
+check for existence of a nttrans call
 ****************************************************************************/
 static NTSTATUS try_nttrans(struct cli_state *cli, 
 			    int op,
@@ -359,7 +359,7 @@ static NTSTATUS try_nttrans_len(struct cli_state *cli,
 }
 
 /****************************************************************************
-check for existance of a nttrans call
+check for existence of a nttrans call
 ****************************************************************************/
 static bool scan_nttrans(struct cli_state *cli, int op, int level, 
 			int fnum, int dnum, const char *fname)

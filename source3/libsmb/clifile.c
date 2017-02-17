@@ -4020,7 +4020,7 @@ NTSTATUS cli_setatr(struct cli_state *cli,
 }
 
 /****************************************************************************
- Check for existance of a dir.
+ Check for existence of a dir.
 ****************************************************************************/
 
 static void cli_chkpath_done(struct tevent_req *subreq);
