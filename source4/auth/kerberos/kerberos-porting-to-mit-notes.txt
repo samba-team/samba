@@ -631,7 +631,7 @@ Appendix 1: Keytab Requirements
        * Because the number of U/L case combinations got 'too hard' to put into
          a keytab in the traditional way (with the client to specify the name),
          we either pre-compute the keys into a traditional keytab or make an
-         in-MEMORY keytab at run time.  In both cases we specifiy the principal
+         in-MEMORY keytab at run time.  In both cases we specify the principal
          name to GSSAPI, which avoids the need to store duplicate principals.
        * We use a 'private' keytab in our private dir, referenced from the
          secrets.ldb by default.
