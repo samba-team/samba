@@ -5066,7 +5066,7 @@ static bool run_rename_access(int dummy)
 	}
 
 	if (cli) {
-		if (fnum != -1) {
+		if (fnum != (uint64_t)-1) {
 			cli_close(cli, fnum);
 		}
 		cli_unlink(cli, src,
@@ -5457,7 +5457,7 @@ static bool run_owner_rights(int dummy)
   fail:
 
 	if (cli) {
-		if (fnum != -1) {
+		if (fnum != (uint16_t)-1) {
 			cli_close(cli, fnum);
 		}
 		cli_unlink(cli, fname,
