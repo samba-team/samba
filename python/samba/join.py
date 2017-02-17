@@ -22,8 +22,8 @@ from samba.auth import system_session
 from samba.samdb import SamDB
 from samba import gensec, Ldb, drs_utils, arcfour_encrypt, string_to_byte_array
 import ldb, samba, sys, uuid
-from samba.ndr import ndr_pack
-from samba.dcerpc import security, drsuapi, misc, nbt, lsa, drsblobs
+from samba.ndr import ndr_pack, ndr_unpack
+from samba.dcerpc import security, drsuapi, misc, nbt, lsa, drsblobs, dnsserver, dnsp
 from samba.dsdb import DS_DOMAIN_FUNCTION_2003
 from samba.credentials import Credentials, DONT_USE_KERBEROS
 from samba.provision import secretsdb_self_join, provision, provision_fill, FILL_DRS, FILL_SUBDOMAIN
@@ -35,6 +35,9 @@ from samba.provision.sambadns import setup_bind9_dns
 from samba import read_and_sub_file
 from samba import werror
 from base64 import b64encode
+from samba import WERRORError
+from samba.dnsserver import ARecord, AAAARecord, PTRRecord, CNameRecord, NSRecord, MXRecord, SOARecord, SRVRecord, TXTRecord
+from samba import sd_utils
 import logging
 import talloc
 import random
@@ -187,6 +190,12 @@ class dc_join(object):
         ctx.adminpass = None
         ctx.partition_dn = None
 
+        ctx.dns_a_dn = None
+        ctx.dns_cname_dn = None
+
+        # Do not normally register 127. addresses but allow override for selftest
+        ctx.force_all_ips = False
+
     def del_noerror(ctx, dn, recursive=False):
         if recursive:
             try:
@@ -293,6 +302,13 @@ class dc_join(object):
             info = lsaconn.QueryTrustedDomainInfoByName(pol_handle, name, lsa.LSA_TRUSTED_DOMAIN_INFO_FULL_INFO)
 
             lsaconn.DeleteTrustedDomain(pol_handle, info.info_ex.sid)
+
+        if ctx.dns_a_dn:
+            ctx.del_noerror(ctx.dns_a_dn)
+
+        if ctx.dns_cname_dn:
+            ctx.del_noerror(ctx.dns_cname_dn)
+
 
 
     def promote_possible(ctx):
@@ -692,11 +708,15 @@ class dc_join(object):
                                      newpassword=ctx.acct_pass.encode('utf-8'))
 
             res = ctx.samdb.search(base=ctx.acct_dn, scope=ldb.SCOPE_BASE,
-                                   attrs=["msDS-KeyVersionNumber"])
+                                   attrs=["msDS-KeyVersionNumber",
+                                          "objectSID"])
             if "msDS-KeyVersionNumber" in res[0]:
                 ctx.key_version_number = int(res[0]["msDS-KeyVersionNumber"][0])
             else:
                 ctx.key_version_number = None
+
+            ctx.new_dc_account_sid = ndr_unpack(security.dom_sid,
+                                                res[0]["objectSid"][0])
 
             print("Enabling account")
             m = ldb.Message()
@@ -974,6 +994,175 @@ class dc_join(object):
 
         ctx.drsuapi.DsReplicaUpdateRefs(ctx.drsuapi_handle, 1, r)
 
+    def join_add_dns_records(ctx):
+        """Remotely Add a DNS record to the target DC.  We assume that if we
+           replicate DNS that the server holds the DNS roles and can accept
+           updates.
+
+           This avoids issues getting replication going after the DC
+           first starts as the rest of the domain does not have to
+           wait for samba_dnsupdate to run successfully.
+
+           Specifically, we add the records implied by the DsReplicaUpdateRefs
+           call above.
+
+           We do not just run samba_dnsupdate as we want to strictly
+           operate against the DC we just joined:
+            - We do not want to query another DNS server
+            - We do not want to obtain a Kerberos ticket
+              (as the KDC we select may not be the DC we just joined,
+              and so may not be in sync with the password we just set)
+            - We do not wish to set the _ldap records until we have started
+            - We do not wish to use NTLM (the --use-samba-tool mode forces
+              NTLM)
+
+        """
+
+        client_version = dnsserver.DNS_CLIENT_VERSION_LONGHORN
+        record_type = dnsp.DNS_TYPE_A
+        select_flags = dnsserver.DNS_RPC_VIEW_AUTHORITY_DATA |\
+                       dnsserver.DNS_RPC_VIEW_NO_CHILDREN
+
+        zone = ctx.dnsdomain
+        msdcs_zone = "_msdcs.%s" % ctx.dnsforest
+        name = ctx.myname
+        msdcs_cname = str(ctx.ntds_guid)
+        cname_target = "%s.%s" % (name, zone)
+        IPs = samba.interface_ips(ctx.lp, ctx.force_all_ips)
+
+        ctx.logger.info("Adding %d remote DNS records for %s.%s" % \
+                        (len(IPs), name, zone))
+
+        binding_options = "sign"
+        dns_conn = dnsserver.dnsserver("ncacn_ip_tcp:%s[%s]" % (ctx.server, binding_options),
+                                      ctx.lp, ctx.creds)
+
+
+        name_found = True
+
+        sd_helper = samba.sd_utils.SDUtils(ctx.samdb)
+
+        change_owner_sd = security.descriptor()
+        change_owner_sd.owner_sid = ctx.new_dc_account_sid
+        change_owner_sd.group_sid = security.dom_sid("%s-%d" %
+                                                     (str(ctx.domsid),
+                                                      security.DOMAIN_RID_DCS))
+
+        # TODO: Remove any old records from the primary DNS name
+        try:
+            (buflen, res) \
+                = dns_conn.DnssrvEnumRecords2(client_version,
+                                              0,
+                                              ctx.server,
+                                              zone,
+                                              name,
+                                              None,
+                                              dnsp.DNS_TYPE_ALL,
+                                              select_flags,
+                                              None,
+                                              None)
+        except WERRORError as e:
+            if e.args[0] == werror.WERR_DNS_ERROR_NAME_DOES_NOT_EXIST:
+                name_found = False
+                pass
+
+        if name_found:
+            for rec in res.rec:
+                for record in rec.records:
+                    if record.wType == dnsp.DNS_TYPE_A or \
+                       record.wType == dnsp.DNS_TYPE_AAAA:
+                        # delete record
+                        del_rec_buf = dnsserver.DNS_RPC_RECORD_BUF()
+                        del_rec_buf.rec = record
+                        try:
+                            dns_conn.DnssrvUpdateRecord2(client_version,
+                                                         0,
+                                                         ctx.server,
+                                                         zone,
+                                                         name,
+                                                         None,
+                                                         del_rec_buf)
+                        except WERRORError as e:
+                            if e.args[0] == werror.WERR_DNS_ERROR_NAME_DOES_NOT_EXIST:
+                                pass
+                            else:
+                                raise
+
+        for IP in IPs:
+            if IP.find(':') != -1:
+                ctx.logger.info("Adding DNS AAAA record %s.%s for IPv6 IP: %s"
+                                % (name, zone, IP))
+                rec = AAAARecord(IP)
+            else:
+                ctx.logger.info("Adding DNS A record %s.%s for IPv4 IP: %s"
+                                % (name, zone, IP))
+                rec = ARecord(IP)
+
+            # Add record
+            add_rec_buf = dnsserver.DNS_RPC_RECORD_BUF()
+            add_rec_buf.rec = rec
+            dns_conn.DnssrvUpdateRecord2(client_version,
+                                         0,
+                                         ctx.server,
+                                         zone,
+                                         name,
+                                         add_rec_buf,
+                                         None)
+
+        if (len(IPs) > 0):
+            domaindns_zone_dn = ldb.Dn(ctx.samdb, ctx.domaindns_zone)
+            (ctx.dns_a_dn, ldap_record) \
+                = ctx.samdb.dns_lookup("%s.%s" % (name, zone),
+                                       dns_partition=domaindns_zone_dn)
+
+            # Make the DC own the DNS record, not the administrator
+            sd_helper.modify_sd_on_dn(ctx.dns_a_dn, change_owner_sd,
+                                      controls=["sd_flags:1:%d"
+                                                % (security.SECINFO_OWNER
+                                                   | security.SECINFO_GROUP)])
+
+
+            # Add record
+            ctx.logger.info("Adding DNS CNAME record %s.%s for %s"
+                            % (msdcs_cname, msdcs_zone, cname_target))
+
+            add_rec_buf = dnsserver.DNS_RPC_RECORD_BUF()
+            rec = CNameRecord(cname_target)
+            add_rec_buf.rec = rec
+            dns_conn.DnssrvUpdateRecord2(client_version,
+                                         0,
+                                         ctx.server,
+                                         msdcs_zone,
+                                         msdcs_cname,
+                                         add_rec_buf,
+                                         None)
+
+            forestdns_zone_dn = ldb.Dn(ctx.samdb, ctx.forestdns_zone)
+            (ctx.dns_cname_dn, ldap_record) \
+                = ctx.samdb.dns_lookup("%s.%s" % (msdcs_cname, msdcs_zone),
+                                       dns_partition=forestdns_zone_dn)
+
+            # Make the DC own the DNS record, not the administrator
+            sd_helper.modify_sd_on_dn(ctx.dns_cname_dn, change_owner_sd,
+                                      controls=["sd_flags:1:%d"
+                                                % (security.SECINFO_OWNER
+                                                   | security.SECINFO_GROUP)])
+
+        ctx.logger.info("All other DNS records (like _ldap SRV records) " +
+                        "will be created samba_dnsupdate on first startup")
+
+
+    def join_replicate_new_dns_records(ctx):
+        for nc in (ctx.domaindns_zone, ctx.forestdns_zone):
+            if nc in ctx.nc_list:
+                ctx.logger.info("Replicating new DNS records in %s" % (str(nc)))
+                ctx.repl.replicate(nc, ctx.source_dsa_invocation_id,
+                                   ctx.ntds_guid, rodc=ctx.RODC,
+                                   replica_flags=ctx.replica_flags,
+                                   full_sync=False)
+
+
+
     def join_finalise(ctx):
         """Finalise the join, mark us synchronised and setup secrets db."""
 
@@ -1190,6 +1379,11 @@ class dc_join(object):
                 ctx.join_add_objects2()
                 ctx.join_provision_own_domain()
                 ctx.join_setup_trusts()
+
+            if not ctx.clone_only and ctx.dns_backend != "NONE":
+                ctx.join_add_dns_records()
+                ctx.join_replicate_new_dns_records()
+
             ctx.join_finalise()
         except:
             try:
