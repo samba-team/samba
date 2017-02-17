@@ -593,7 +593,7 @@ netbios aliases = sales accounting payroll</programlisting>
 
 <varlistentry><term>Numerical</term>
 <listitem><para>
-<indexterm id="ch04-idx-967220-0"><primary>numerical type</primary></indexterm>An integer, hexidecimal, or octal number. The standard <literal>0x</literal><emphasis>nn</emphasis> syntax is used for hexadecimal and <literal>0</literal><emphasis>nnn</emphasis> for octal.</para></listitem>
+<indexterm id="ch04-idx-967220-0"><primary>numerical type</primary></indexterm>An integer, hexadecimal, or octal number. The standard <literal>0x</literal><emphasis>nn</emphasis> syntax is used for hexadecimal and <literal>0</literal><emphasis>nnn</emphasis> for octal.</para></listitem>
 </varlistentry>
 
 

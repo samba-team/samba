@@ -860,7 +860,7 @@ client code page</title>
 
 <entry colname="col1"><para><literal>HEX</literal></para></entry>
 
-<entry colname="col2"><para>Three-byte hexidecimal code</para></entry>
+<entry colname="col2"><para>Three-byte hexadecimal code</para></entry>
 
 </row>
 
@@ -868,7 +868,7 @@ client code page</title>
 
 <entry colname="col1"><para><literal>CAP</literal></para></entry>
 
-<entry colname="col2"><para>Three-byte hexidecimal code (Columbia Appletalk Program)</para></entry>
+<entry colname="col2"><para>Three-byte hexadecimal code (Columbia Appletalk Program)</para></entry>
 
 </row>
 
@@ -894,7 +894,7 @@ valid chars = 0450:0420 0x0A20:0x0A00
 valid chars = A:a</programlisting>
 
 
-<para>Each of the characters in the list specified should be separated by spaces. If there is a colon between two characters or their numerical equivalents, the data to the left of the colon is considered an uppercase character, while the data to the right is considered the lowercase character. You can represent characters both by literals (if you can type them) and by octal, hexidecimal, or decimal Unicode equivalents.</para>
+<para>Each of the characters in the list specified should be separated by spaces. If there is a colon between two characters or their numerical equivalents, the data to the left of the colon is considered an uppercase character, while the data to the right is considered the lowercase character. You can represent characters both by literals (if you can type them) and by octal, hexadecimal, or decimal Unicode equivalents.</para>
 
 
 <para>We recommend against using this option. Instead, go with one of the standard code pages listed earlier in this section. If you do use this option, however, it must be listed after the <literal>client</literal> <literal>code</literal> <literal>page</literal> to which you wish to add the character. Otherwise, the characters will not be added.<indexterm id="ch08-idx-965533-0" class="endofrange" startref="ch08-idx-965219-0"/>

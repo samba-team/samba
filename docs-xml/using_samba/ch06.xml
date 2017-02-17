@@ -1210,7 +1210,7 @@ username</title>
 
 
 <varlistentry><term>Last Change Time</term>
-<listitem><para>This code consists of the characters <literal>LCT-</literal> followed by a hexidecimal representation of the amount of seconds since the epoch (midnight on January 1, 1970) that the entry was last changed.</para></listitem>
+<listitem><para>This code consists of the characters <literal>LCT-</literal> followed by a hexadecimal representation of the amount of seconds since the epoch (midnight on January 1, 1970) that the entry was last changed.</para></listitem>
 </varlistentry>
 </variablelist>
 
