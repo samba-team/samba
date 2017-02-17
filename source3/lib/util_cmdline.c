@@ -112,11 +112,14 @@ void set_cmdline_auth_info_username(struct user_auth_info *auth_info,
 {
 	const char *new_val = NULL;
 
+	if (username == NULL) {
+		return;
+	}
 	cli_credentials_parse_string(auth_info->creds,
 				     username,
 				     CRED_SPECIFIED);
 	new_val = cli_credentials_get_username(auth_info->creds);
-	if (username != NULL && new_val == NULL) {
+	if (new_val == NULL) {
 		exit(ENOMEM);
 	}
 
