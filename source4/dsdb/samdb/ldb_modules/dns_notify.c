@@ -63,7 +63,7 @@ static void dns_notify_dnssrv_done(struct tevent_req *req)
 
 	status = dcerpc_dnssrv_reload_dns_zones_r_recv(req, state);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("%s: Error notifiying dns server: %s\n",
+		DEBUG(1, ("%s: Error notifying dns server: %s\n",
 		      __func__, nt_errstr(status)));
 	}
 	imessaging_cleanup(state->msg_ctx);
