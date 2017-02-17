@@ -1424,7 +1424,7 @@ static void ctdb_remove_connection(struct ctdb_vnn *vnn, struct ctdb_connection 
 	   and we don't need to do anything
 	 */
 	if (vnn->tcp_array == NULL) {
-		DEBUG(DEBUG_INFO,("Trying to remove tickle that doesnt exist (array is empty) %s:%u\n",
+		DEBUG(DEBUG_INFO,("Trying to remove tickle that doesn't exist (array is empty) %s:%u\n",
 			ctdb_addr_to_str(&conn->dst),
 			ntohs(conn->dst.ip.sin_port)));
 		return;
@@ -1436,7 +1436,7 @@ static void ctdb_remove_connection(struct ctdb_vnn *vnn, struct ctdb_connection 
 	 */
 	tcpp = ctdb_tcp_find(vnn->tcp_array, conn);
 	if (tcpp == NULL) {
-		DEBUG(DEBUG_INFO,("Trying to remove tickle that doesnt exist %s:%u\n",
+		DEBUG(DEBUG_INFO,("Trying to remove tickle that doesn't exist %s:%u\n",
 			ctdb_addr_to_str(&conn->dst),
 			ntohs(conn->dst.ip.sin_port)));
 		return;

@@ -1723,14 +1723,14 @@ sub do_bind($$) {
 		$mesg = $async_ldap_hd->bind( 
 			sasl => $sasl_hd, 
 			callback => \&error_callback 
-		) || die "doesnt work"; 
+		) || die "doesn't work"; 
 	} else {
 		$sasl_mech = "";
 		$mesg = $async_ldap_hd->bind( 
 			$binddn, 
 			password => $password, 
 			callback => $opt_fastbind ? undef : \&error_callback
-		) || die "doesnt work";
+		) || die "doesn't work";
 	};
 	if ($mesg->code) { 
 		display_ldap_err($mesg) if (!$opt_fastbind);
