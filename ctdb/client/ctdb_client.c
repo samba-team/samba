@@ -4050,7 +4050,7 @@ static int ctdb_fetch_db_seqnum(struct ctdb_db_context *ctdb_db, uint64_t *seqnu
 	}
 
 	if (data.dsize != sizeof(*seqnum)) {
-		DEBUG(DEBUG_ERR, (__location__ " Invalid data recived len=%zi\n",
+		DEBUG(DEBUG_ERR, (__location__ " Invalid data received len=%zi\n",
 				  data.dsize));
 		talloc_free(data.dptr);
 		return -1;
