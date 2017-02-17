@@ -1649,7 +1649,7 @@ received for name %s from IP %s on subnet %s. Error - should not be sent to WINS
 
 	if(group) {
 		DEBUG(0,("wins_process_multihomed_name_registration_request: group name registration request \
-received for name %s from IP %s on subnet %s. Errror - group names should not be multihomed.\n",
+received for name %s from IP %s on subnet %s. Error - group names should not be multihomed.\n",
 			nmb_namestr(question), inet_ntoa(from_ip), subrec->subnet_name));
 		return;
 	}

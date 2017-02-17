@@ -1049,7 +1049,7 @@ static int convert_ldb_record(TDB_CONTEXT *ltdb, TDB_DATA key,
 	}
 
 	if (remaining != 0) {
-		DEBUG(0, ("Errror: %d bytes unread in ltdb_unpack_data\n",
+		DEBUG(0, ("Error: %d bytes unread in ltdb_unpack_data\n",
 			  remaining));
 	}
 
