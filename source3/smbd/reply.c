@@ -867,7 +867,7 @@ void reply_tcon_and_X(struct smb_request *req)
 	connection_struct *conn = req->conn;
 	const char *service = NULL;
 	TALLOC_CTX *ctx = talloc_tos();
-	/* what the cleint thinks the device is */
+	/* what the client thinks the device is */
 	char *client_devicetype = NULL;
 	/* what the server tells the client the share represents */
 	const char *server_devicetype;
