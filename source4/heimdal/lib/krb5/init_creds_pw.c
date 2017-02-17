@@ -1777,7 +1777,7 @@ krb5_init_creds_step(krb5_context context,
 		if (context->kdc_sec_offset)
 		    ret = 0;
 
-		_krb5_debug(context, 10, "init_creds: err skew updateing kdc offset to %d",
+		_krb5_debug(context, 10, "init_creds: err skew updating kdc offset to %d",
 			    context->kdc_sec_offset);
 
 		ctx->used_pa_types = 0;
