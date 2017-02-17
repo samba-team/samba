@@ -130,6 +130,10 @@ planpythontestsuite("none", "samba.tests.kcc.graph_utils")
 planpythontestsuite("none", "samba.tests.kcc.kcc_utils")
 planpythontestsuite("none", "samba.tests.kcc.ldif_import_export")
 plantestsuite("wafsamba.duplicate_symbols", "none", [os.path.join(srcdir(), "buildtools/wafsamba/test_duplicate_symbol.sh")])
+plantestsuite(
+    "script.traffic_summary", "none",
+    [os.path.join(srcdir(), "script/tests/test_traffic_summary.sh"),
+     configuration])
 
 if with_cmocka:
     plantestsuite("samba.unittests.krb5samba", "none",
