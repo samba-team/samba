@@ -308,7 +308,7 @@ SSVAL().  I do not know where these numbers are described.
 <listitem><para>
 An ASCIIZ string describing the parameters to the API function as defined
 in the LAN Manager documentation.  The first parameter, which is the server
-name, is ommited.  This string is based uppon the API function as described
+name, is omitted.  This string is based uppon the API function as described
 in the manual, not the data which is actually passed.
 </para></listitem>
 

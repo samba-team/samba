@@ -58,7 +58,7 @@ void ndr_print_ads_struct(struct ndr_print *ndr, const char *name, const struct 
 #ifdef DEBUG_PASSWORD
 	ndr_print_string(ndr, "password", r->auth.password);
 #else
-	ndr_print_string(ndr, "password", "(PASSWORD ommited)");
+	ndr_print_string(ndr, "password", "(PASSWORD omitted)");
 #endif
 	ndr_print_string(ndr, "user_name", r->auth.user_name);
 	ndr_print_string(ndr, "kdc_server", r->auth.kdc_server);

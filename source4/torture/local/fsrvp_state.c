@@ -97,7 +97,7 @@ static bool test_fsrvp_state_sc(struct torture_context *tctx,
 	sc->id = GUID_random();
 	sc->id_str = GUID_string(sc, &sc->id);
 	sc->volume_name = talloc_strdup(sc, "/this/is/a/path");
-	/* keep snap path NULL, i.e. not yet commited */
+	/* keep snap path NULL, i.e. not yet committed */
 	sc->create_ts = time(NULL);
 	*sc_out = sc;
 
