@@ -543,7 +543,7 @@ Node 3:/usr/local/etc/ctdb/public_addresses
       requests are going through the LVSMASTER bottleneck and the
       majority of the traffic volume (the data in the read replies)
       goes straight from the processing node back to the clients. For
-      read-intensive i/o patterns you can acheive very high throughput
+      read-intensive i/o patterns you can achieve very high throughput
       rates in this mode.
     </para>
 
