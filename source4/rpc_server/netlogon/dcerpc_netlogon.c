@@ -867,6 +867,8 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 	case NetlogonServiceInformation:
 	case NetlogonInteractiveTransitiveInformation:
 	case NetlogonServiceTransitiveInformation:
+	case NetlogonNetworkInformation:
+	case NetlogonNetworkTransitiveInformation:
 
 		nt_status = auth_context_create_for_netlogon(mem_ctx,
 					dce_call->event_ctx, dce_call->msg_ctx,
@@ -874,11 +876,46 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 					&auth_context);
 		NT_STATUS_NOT_OK_RETURN(nt_status);
 
-		user_info->logon_parameters = r->in.logon->password->identity_info.parameter_control;
-		user_info->client.account_name = r->in.logon->password->identity_info.account_name.string;
-		user_info->client.domain_name = r->in.logon->password->identity_info.domain_name.string;
-		user_info->workstation_name = r->in.logon->password->identity_info.workstation.string;
+		user_info->remote_host = dce_call->conn->remote_address;
+		user_info->local_host = dce_call->conn->local_address;
 
+		user_info->netlogon_trust_account.secure_channel_type
+			= creds->secure_channel_type;
+		user_info->netlogon_trust_account.negotiate_flags
+			= creds->negotiate_flags;
+
+		/*
+		 * These two can be unrelated when the account is
+		 * actually that of a trusted domain, so we want to
+		 * know which DC in that trusted domain contacted
+		 * us
+		 */
+		user_info->netlogon_trust_account.computer_name
+			= creds->computer_name;
+		user_info->netlogon_trust_account.account_name
+			= creds->account_name;
+		user_info->netlogon_trust_account.sid
+			= creds->sid;
+
+	default:
+		/* We do not need to set up the user_info in this case */
+		break;
+	}
+
+	switch (r->in.logon_level) {
+	case NetlogonInteractiveInformation:
+	case NetlogonServiceInformation:
+	case NetlogonInteractiveTransitiveInformation:
+	case NetlogonServiceTransitiveInformation:
+
+		user_info->logon_parameters
+			= r->in.logon->password->identity_info.parameter_control;
+		user_info->client.account_name
+			= r->in.logon->password->identity_info.account_name.string;
+		user_info->client.domain_name
+			= r->in.logon->password->identity_info.domain_name.string;
+		user_info->workstation_name
+			= r->in.logon->password->identity_info.workstation.string;
 		user_info->flags |= USER_INFO_INTERACTIVE_LOGON;
 		user_info->password_state = AUTH_PASSWORD_HASH;
 
@@ -894,19 +931,20 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 	case NetlogonNetworkInformation:
 	case NetlogonNetworkTransitiveInformation:
 
-		nt_status = auth_context_create_for_netlogon(mem_ctx,
-					dce_call->event_ctx, dce_call->msg_ctx,
-					dce_call->conn->dce_ctx->lp_ctx,
-					&auth_context);
+		nt_status = auth_context_set_challenge(
+			auth_context,
+			r->in.logon->network->challenge,
+			"netr_LogonSamLogonWithFlags");
 		NT_STATUS_NOT_OK_RETURN(nt_status);
 
-		nt_status = auth_context_set_challenge(auth_context, r->in.logon->network->challenge, "netr_LogonSamLogonWithFlags");
-		NT_STATUS_NOT_OK_RETURN(nt_status);
-
-		user_info->logon_parameters = r->in.logon->network->identity_info.parameter_control;
-		user_info->client.account_name = r->in.logon->network->identity_info.account_name.string;
-		user_info->client.domain_name = r->in.logon->network->identity_info.domain_name.string;
-		user_info->workstation_name = r->in.logon->network->identity_info.workstation.string;
+		user_info->logon_parameters
+			= r->in.logon->network->identity_info.parameter_control;
+		user_info->client.account_name
+			= r->in.logon->network->identity_info.account_name.string;
+		user_info->client.domain_name
+			= r->in.logon->network->identity_info.domain_name.string;
+		user_info->workstation_name
+			= r->in.logon->network->identity_info.workstation.string;
 
 		user_info->password_state = AUTH_PASSWORD_RESPONSE;
 		user_info->password.response.lanman = data_blob_talloc(mem_ctx, r->in.logon->network->lm.data, r->in.logon->network->lm.length);

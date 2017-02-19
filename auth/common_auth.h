@@ -45,6 +45,7 @@ struct auth_usersupplied_info
 {
 	const char *workstation_name;
 	const struct tsocket_address *remote_host;
+	const struct tsocket_address *local_host;
 
 	uint32_t logon_parameters;
 
@@ -71,6 +72,14 @@ struct auth_usersupplied_info
 		char *plaintext;
 	} password;
 	uint32_t flags;
+
+	struct {
+		uint32_t negotiate_flags;
+		enum netr_SchannelType secure_channel_type;
+		const char *computer_name; /* [charset(UTF8)] */
+		const char *account_name; /* [charset(UTF8)] */
+		struct dom_sid *sid; /* [unique] */
+	} netlogon_trust_account;
 };
 
 struct auth_method_context;
