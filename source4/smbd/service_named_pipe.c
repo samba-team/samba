@@ -119,6 +119,9 @@ static void named_pipe_accept_done(struct tevent_req *subreq)
 		goto out;
 	}
 
+	conn->local_address = talloc_move(conn, &server);
+	conn->remote_address = talloc_move(conn, &client);
+
 	DEBUG(10, ("Accepted npa connection from %s. "
 		   "Client: %s (%s). Server: %s (%s)\n",
 		   tsocket_address_string(conn->remote_address, tmp_ctx),
