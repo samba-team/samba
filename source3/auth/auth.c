@@ -257,7 +257,7 @@ NTSTATUS auth_check_ntlm_password(TALLOC_CTX *mem_ctx,
 		}
 
 		if (NT_STATUS_IS_OK(nt_status)) {
-			*pserver_info = talloc_steal(mem_ctx, server_info);
+			*pserver_info = talloc_move(mem_ctx, &server_info);
 			TALLOC_FREE(tmp_ctx);
 			break;
 		}
