@@ -537,6 +537,7 @@ static const char *default_classname_table[] = {
 	[DBGC_DNS] =		"dns",
 	[DBGC_LDB] =		"ldb",
 	[DBGC_TEVENT] =		"tevent",
+	[DBGC_AUTH_AUDIT] =	"auth_audit",
 };
 
 /*

@@ -89,6 +89,7 @@ bool dbghdr( int level, const char *location, const char *func);
 #define DBGC_DNS		21
 #define DBGC_LDB		22
 #define DBGC_TEVENT		23
+#define DBGC_AUTH_AUDIT		24
 
 /* So you can define DBGC_CLASS before including debug.h */
 #ifndef DBGC_CLASS
