@@ -24,7 +24,7 @@ def check(self, *k, **kw):
     if not 'env' in kw:
         kw['env'] = self.env.copy()
 
-    # match the configuration test with speficic options, for example:
+    # match the configuration test with specific options, for example:
     # --with-libiconv -> Options.options.iconv_open -> "Checking for library iconv"
     additional_dirs = []
     if 'msg' in kw:
