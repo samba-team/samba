@@ -62,6 +62,16 @@ authentication, SMB and RPC authorization is covered, however password
 changes are not at this stage, and this support is not currently
 backed by a testsuite.
 
+
+Query record for open file or directory
+---------------------------------------
+
+The record attached to an open file or directory in Samba can be
+queried through the 'net tdb locking' command. In clustered Samba this
+can be useful to determine the file or directory triggering
+corresponding "hot" record warnings in ctdb.
+
+
 Parameter changes
 -----------------
 
