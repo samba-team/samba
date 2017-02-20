@@ -97,6 +97,7 @@ NTSTATUS make_user_info_map(TALLOC_CTX *mem_ctx,
 			    const char *client_domain,
 			    const char *workstation_name,
 			    const struct tsocket_address *remote_address,
+			    const char *service_description,
 			    const DATA_BLOB *lm_pwd,
 			    const DATA_BLOB *nt_pwd,
 			    const struct samr_Password *lm_interactive_pwd,
@@ -149,10 +150,11 @@ NTSTATUS make_user_info_map(TALLOC_CTX *mem_ctx,
 	 * primary domain name */
 
 	result = make_user_info(mem_ctx, user_info, smb_name, internal_username,
-			      client_domain, domain, workstation_name,
-			      remote_address, lm_pwd, nt_pwd,
-			      lm_interactive_pwd, nt_interactive_pwd,
-			      plaintext, password_state);
+				client_domain, domain, workstation_name,
+				remote_address, service_description,
+				lm_pwd, nt_pwd,
+				lm_interactive_pwd, nt_interactive_pwd,
+				plaintext, password_state);
 	if (NT_STATUS_IS_OK(result)) {
 		/* We have tried mapping */
 		(*user_info)->mapped_state = true;
@@ -188,6 +190,7 @@ bool make_user_info_netlogon_network(TALLOC_CTX *mem_ctx,
 				    smb_name, client_domain, 
 				    workstation_name,
 				    remote_address,
+				    "SamLogon",
 				    lm_pwd_len ? &lm_blob : NULL, 
 				    nt_pwd_len ? &nt_blob : NULL,
 				    NULL, NULL, NULL,
@@ -259,6 +262,7 @@ bool make_user_info_netlogon_interactive(TALLOC_CTX *mem_ctx,
 			user_info, 
 			smb_name, client_domain, workstation_name,
 			remote_address,
+			"SamLogon",
 			lm_interactive_pwd ? &local_lm_blob : NULL,
 			nt_interactive_pwd ? &local_nt_blob : NULL,
 			lm_interactive_pwd ? &lm_pwd : NULL,
@@ -286,6 +290,7 @@ bool make_user_info_for_reply(TALLOC_CTX *mem_ctx,
 			      const char *smb_name, 
 			      const char *client_domain,
 			      const struct tsocket_address *remote_address,
+			      const char *service_description,
 			      const uint8_t chal[8],
 			      DATA_BLOB plaintext_password)
 {
@@ -333,6 +338,7 @@ bool make_user_info_for_reply(TALLOC_CTX *mem_ctx,
 		user_info, smb_name, smb_name, client_domain, client_domain, 
 		get_remote_machine_name(),
 		remote_address,
+	        service_description,
 		local_lm_blob.data ? &local_lm_blob : NULL,
 		local_nt_blob.data ? &local_nt_blob : NULL,
 		NULL, NULL,
@@ -357,7 +363,8 @@ NTSTATUS make_user_info_for_reply_enc(TALLOC_CTX *mem_ctx,
                                       const char *smb_name,
                                       const char *client_domain,
 				      const struct tsocket_address *remote_address,
-                                      DATA_BLOB lm_resp, DATA_BLOB nt_resp)
+				      const char *service_description,
+				      DATA_BLOB lm_resp, DATA_BLOB nt_resp)
 {
 	bool allow_raw = lp_raw_ntlmv2_auth();
 
@@ -378,6 +385,7 @@ NTSTATUS make_user_info_for_reply_enc(TALLOC_CTX *mem_ctx,
 			      client_domain, client_domain, 
 			      get_remote_machine_name(),
 			      remote_address,
+			      service_description,
 			      lm_resp.data && (lm_resp.length > 0) ? &lm_resp : NULL,
 			      nt_resp.data && (nt_resp.length > 0) ? &nt_resp : NULL,
 			      NULL, NULL, NULL,
@@ -390,6 +398,7 @@ NTSTATUS make_user_info_for_reply_enc(TALLOC_CTX *mem_ctx,
 
 bool make_user_info_guest(TALLOC_CTX *mem_ctx,
 			  const struct tsocket_address *remote_address,
+			  const char *service_description,
 			  struct auth_usersupplied_info **user_info)
 {
 	NTSTATUS nt_status;
@@ -400,6 +409,7 @@ bool make_user_info_guest(TALLOC_CTX *mem_ctx,
 				   "","", 
 				   "", 
 				   remote_address,
+				   service_description,
 				   NULL, NULL, 
 				   NULL, NULL, 
 				   NULL,

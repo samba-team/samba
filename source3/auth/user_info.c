@@ -49,6 +49,7 @@ NTSTATUS make_user_info(TALLOC_CTX *mem_ctx,
 			const char *domain,
 			const char *workstation_name,
 			const struct tsocket_address *remote_address,
+			const char *service_description,
 			const DATA_BLOB *lm_pwd,
 			const DATA_BLOB *nt_pwd,
 			const struct samr_Password *lm_interactive_pwd,
@@ -101,6 +102,12 @@ NTSTATUS make_user_info(TALLOC_CTX *mem_ctx,
 
 	user_info->remote_host = tsocket_address_copy(remote_address, user_info);
 	if (user_info->remote_host == NULL) {
+		TALLOC_FREE(user_info);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	user_info->service_description = talloc_strdup(user_info, service_description);
+	if (user_info->service_description == NULL) {
 		TALLOC_FREE(user_info);
 		return NT_STATUS_NO_MEMORY;
 	}

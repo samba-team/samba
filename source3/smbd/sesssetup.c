@@ -97,7 +97,8 @@ static NTSTATUS check_guest_password(const struct tsocket_address *remote_addres
 	auth_context->get_ntlm_challenge(auth_context,
 					 chal);
 
-	if (!make_user_info_guest(talloc_tos(), remote_address, &user_info)) {
+	if (!make_user_info_guest(talloc_tos(), remote_address, "SMB",
+				  &user_info)) {
 		TALLOC_FREE(auth_context);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -896,6 +897,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 							 &user_info, user,
 							 domain,
 							 sconn->remote_address,
+							 "SMB",
 							 lm_resp, nt_resp);
 		if (NT_STATUS_IS_OK(nt_status)) {
 			nt_status = auth_check_password_session_info(negprot_auth_context, 
@@ -917,6 +919,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 						      &user_info,
 						      user, domain,
 						      sconn->remote_address,
+						      "SMB",
 						      chal,
 						      plaintext_password)) {
 				nt_status = NT_STATUS_NO_MEMORY;

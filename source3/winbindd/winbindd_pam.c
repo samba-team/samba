@@ -1254,8 +1254,16 @@ static NTSTATUS winbindd_dual_auth_passdb(TALLOC_CTX *mem_ctx,
 		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
+
+	/*
+	 * TODO: We should get the service description passed in from
+	 * the winbind client, so we can have "smb2", "squid" or "samr" logged
+	 * here.
+	 */
 	status = make_user_info(frame, &user_info, user, user, domain, domain,
-				lp_netbios_name(), local, lm_resp, nt_resp, NULL, NULL,
+				lp_netbios_name(), local,
+				"winbind",
+				lm_resp, nt_resp, NULL, NULL,
 				NULL, AUTH_PASSWORD_RESPONSE);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("make_user_info failed: %s\n", nt_errstr(status)));

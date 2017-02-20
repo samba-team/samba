@@ -282,7 +282,8 @@ static bool test_auth(TALLOC_CTX *mem_ctx, struct samu *pdb_entry)
 	status = make_user_info(mem_ctx,
 				&user_info, pdb_get_username(pdb_entry), pdb_get_username(pdb_entry),
 				pdb_get_domain(pdb_entry), pdb_get_domain(pdb_entry), lp_netbios_name(), 
-				tsocket_address, NULL, &nt_resp, NULL, NULL, NULL, 
+				tsocket_address, "pdbtest",
+				NULL, &nt_resp, NULL, NULL, NULL,
 				AUTH_PASSWORD_RESPONSE);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to test authentication with check_sam_security_info3: %s\n", nt_errstr(status)));

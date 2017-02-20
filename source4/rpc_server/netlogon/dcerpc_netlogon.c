@@ -858,6 +858,8 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 	user_info = talloc_zero(mem_ctx, struct auth_usersupplied_info);
 	NT_STATUS_HAVE_NO_MEMORY(user_info);
 
+	user_info->service_description = "SamLogon";
+
 	netlogon_creds_decrypt_samlogon_logon(creds,
 					      r->in.logon_level,
 					      r->in.logon);
