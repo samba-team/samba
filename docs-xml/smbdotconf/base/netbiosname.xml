@@ -10,7 +10,7 @@
 		the hosts DNS name) will be the name that these services are advertised under.
 		</para>
 
-		<para>Note that the maximum length for a NetBIOS name is 15 charactars.</para>
+		<para>Note that the maximum length for a NetBIOS name is 15 characters.</para>
 
 		<para>
 		There is a bug in Samba that breaks operation of browsing and access to shares if the netbios name
