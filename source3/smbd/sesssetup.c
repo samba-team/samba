@@ -103,6 +103,8 @@ static NTSTATUS check_guest_password(const struct tsocket_address *remote_addres
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	user_info->auth_description = "guest";
+
 	nt_status = auth_check_password_session_info(auth_context, 
 						     mem_ctx, user_info, session_info);
 	TALLOC_FREE(user_info);
@@ -899,6 +901,8 @@ void reply_sesssetup_and_X(struct smb_request *req)
 							 sconn->remote_address,
 							 "SMB",
 							 lm_resp, nt_resp);
+		user_info->auth_description = "bare-NTLM";
+
 		if (NT_STATUS_IS_OK(nt_status)) {
 			nt_status = auth_check_password_session_info(negprot_auth_context, 
 								     req, user_info, &session_info);
@@ -924,6 +928,8 @@ void reply_sesssetup_and_X(struct smb_request *req)
 						      plaintext_password)) {
 				nt_status = NT_STATUS_NO_MEMORY;
 			}
+
+			user_info->auth_description = "plaintext";
 
 			if (NT_STATUS_IS_OK(nt_status)) {
 				nt_status = auth_check_password_session_info(plaintext_auth_context, 

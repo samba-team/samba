@@ -909,6 +909,7 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 	case NetlogonServiceInformation:
 	case NetlogonInteractiveTransitiveInformation:
 	case NetlogonServiceTransitiveInformation:
+		user_info->auth_description = "interactive";
 
 		user_info->logon_parameters
 			= r->in.logon->password->identity_info.parameter_control;
@@ -932,6 +933,7 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 		break;
 	case NetlogonNetworkInformation:
 	case NetlogonNetworkTransitiveInformation:
+		user_info->auth_description = "network";
 
 		nt_status = auth_context_set_challenge(
 			auth_context,

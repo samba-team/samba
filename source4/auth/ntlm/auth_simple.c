@@ -86,7 +86,9 @@ _PUBLIC_ NTSTATUS authenticate_ldap_simple_bind(TALLOC_CTX *mem_ctx,
 	user_info->remote_host = remote_address;
 	user_info->local_host = local_address;
 
-	user_info->service_description = "ldap simple bind";
+	user_info->service_description = "ldap";
+
+	user_info->auth_description = "simple bind";
 
 	user_info->password_state = AUTH_PASSWORD_PLAIN;
 	user_info->password.plaintext = talloc_strdup(user_info, password);

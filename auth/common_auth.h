@@ -82,6 +82,7 @@ struct auth_usersupplied_info
 	} netlogon_trust_account;
 
 	const char *service_description;
+	const char *auth_description;
 };
 
 struct auth_method_context;

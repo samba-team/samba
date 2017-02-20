@@ -720,6 +720,7 @@ static NTSTATUS ntlmssp_server_check_password(struct gensec_security *gensec_sec
 	user_info->remote_host = gensec_get_remote_address(gensec_security);
 	user_info->service_description
 		= gensec_get_target_service_description(gensec_security);
+	user_info->auth_description = "NTLMSSP";
 
 	user_info->password_state = AUTH_PASSWORD_RESPONSE;
 	user_info->password.response.lanman = ntlmssp_state->lm_resp;
