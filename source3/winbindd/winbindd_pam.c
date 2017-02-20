@@ -1413,7 +1413,7 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 			DBG_NOTICE("No security credentials available for "
 				  "domain [%s]\n", domainname);
 			result = NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
-		} else if (interactive && username != NULL && password != NULL) {
+		} else if (interactive) {
 			result = rpccli_netlogon_password_logon(domain->conn.netlogon_creds,
 								netlogon_pipe->binding_handle,
 								mem_ctx,
@@ -1535,43 +1535,43 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(TALLOC_CTX *mem_ctx,
 
 	parse_domain_user(user, name_domain, name_user);
 
-	/* do password magic */
-
-	generate_random_buffer(chal, sizeof(chal));
-
-	if (lp_client_ntlmv2_auth()) {
-		DATA_BLOB server_chal;
-		DATA_BLOB names_blob;
-		server_chal = data_blob_const(chal, 8);
-
-		/* note that the 'workgroup' here is for the local
-		   machine.  The 'server name' must match the
-		   'workstation' passed to the actual SamLogon call.
-		*/
-		names_blob = NTLMv2_generate_names_blob(
-			mem_ctx, lp_netbios_name(), lp_workgroup());
-
-		if (!SMBNTLMv2encrypt(mem_ctx, name_user, name_domain,
-				      pass,
-				      &server_chal,
-				      &names_blob,
-				      &lm_resp, &nt_resp, NULL, NULL)) {
-			data_blob_free(&names_blob);
-			DEBUG(0, ("winbindd_pam_auth: SMBNTLMv2encrypt() failed!\n"));
-			result = NT_STATUS_NO_MEMORY;
-			goto done;
-		}
-		data_blob_free(&names_blob);
-	} else {
-		lm_resp = data_blob_null;
-		SMBNTencrypt(pass, chal, local_nt_response);
-
-		nt_resp = data_blob_talloc(mem_ctx, local_nt_response,
-					   sizeof(local_nt_response));
-	}
-
 	if (strequal(name_domain, get_global_sam_name())) {
 		DATA_BLOB chal_blob = data_blob_const(chal, sizeof(chal));
+
+		/* do password magic */
+
+		generate_random_buffer(chal, sizeof(chal));
+
+		if (lp_client_ntlmv2_auth()) {
+			DATA_BLOB server_chal;
+			DATA_BLOB names_blob;
+			server_chal = data_blob_const(chal, 8);
+
+			/* note that the 'workgroup' here is for the local
+			   machine.  The 'server name' must match the
+			   'workstation' passed to the actual SamLogon call.
+			*/
+			names_blob = NTLMv2_generate_names_blob(
+				mem_ctx, lp_netbios_name(), lp_workgroup());
+
+			if (!SMBNTLMv2encrypt(mem_ctx, name_user, name_domain,
+					      pass,
+					      &server_chal,
+					      &names_blob,
+					      &lm_resp, &nt_resp, NULL, NULL)) {
+				data_blob_free(&names_blob);
+				DEBUG(0, ("winbindd_pam_auth: SMBNTLMv2encrypt() failed!\n"));
+				result = NT_STATUS_NO_MEMORY;
+				goto done;
+			}
+			data_blob_free(&names_blob);
+		} else {
+			lm_resp = data_blob_null;
+			SMBNTencrypt(pass, chal, local_nt_response);
+
+			nt_resp = data_blob_talloc(mem_ctx, local_nt_response,
+						   sizeof(local_nt_response));
+		}
 
 		result = winbindd_dual_auth_passdb(
 			mem_ctx, 0, name_domain, name_user,
@@ -1582,7 +1582,7 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(TALLOC_CTX *mem_ctx,
 
 		/* 
 		 * We need to try the remote NETLOGON server if this is
-		 * not authoritative.
+		 * not authoritative (for example on the RODC).
 		 */
 		if (authoritative != 0) {
 			goto done;
@@ -1598,9 +1598,8 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(TALLOC_CTX *mem_ctx,
 					     pass,
 					     name_domain,
 					     lp_netbios_name(),
-					     chal,
-					     lm_resp,
-					     nt_resp,
+					     NULL,
+					     data_blob_null, data_blob_null,
 					     true, /* interactive */
 					     &authoritative,
 					     &flags,
