@@ -64,6 +64,26 @@ _PUBLIC_ PyTypeObject *pytalloc_GetBaseObjectType(void)
 	return type;
 }
 
+static PyTypeObject *pytalloc_GetGenericObjectType(void)
+{
+	static PyTypeObject *type = NULL;
+	PyObject *mod;
+
+	if (type != NULL) {
+		return type;
+	}
+
+	mod = PyImport_ImportModule("talloc");
+	if (mod == NULL) {
+		return NULL;
+	}
+
+	type = (PyTypeObject *)PyObject_GetAttrString(mod, "GenericObject");
+	Py_DECREF(mod);
+
+	return type;
+}
+
 /**
  * Import an existing talloc pointer into a Python object.
  */
@@ -204,6 +224,26 @@ _PUBLIC_ PyObject *pytalloc_CObject_FromTallocPtr(void *ptr)
 
 #endif
 
+/*
+ * Wrap a generic talloc pointer into a talloc.GenericObject,
+ * this is a subclass of talloc.BaseObject.
+ */
+_PUBLIC_ PyObject *pytalloc_GenericObject_steal_ex(TALLOC_CTX *mem_ctx, void *ptr)
+{
+	PyTypeObject *tp = pytalloc_GetGenericObjectType();
+	return pytalloc_steal_ex(tp, mem_ctx, ptr);
+}
+
+/*
+ * Wrap a generic talloc pointer into a talloc.GenericObject,
+ * this is a subclass of talloc.BaseObject.
+ */
+_PUBLIC_ PyObject *pytalloc_GenericObject_reference_ex(TALLOC_CTX *mem_ctx, void *ptr)
+{
+	PyTypeObject *tp = pytalloc_GetGenericObjectType();
+	return pytalloc_reference_ex(tp, mem_ctx, ptr);
+}
+
 _PUBLIC_ int pytalloc_Check(PyObject *obj)
 {
 	PyTypeObject *tp = pytalloc_GetObjectType();
@@ -223,19 +263,64 @@ _PUBLIC_ size_t pytalloc_BaseObject_size(void)
 	return sizeof(pytalloc_BaseObject);
 }
 
-_PUBLIC_ void *_pytalloc_get_type(PyObject *py_obj, const char *type_name)
+static void *_pytalloc_get_checked_type(PyObject *py_obj, const char *type_name,
+					bool check_only, const char *function)
 {
-	void *ptr = _pytalloc_get_ptr(py_obj);
+	TALLOC_CTX *mem_ctx;
+	void *ptr = NULL;
 	void *type_obj = talloc_check_name(ptr, type_name);
 
+	mem_ctx = _pytalloc_get_mem_ctx(py_obj);
+	ptr = _pytalloc_get_ptr(py_obj);
+
+	if (mem_ctx != ptr) {
+		if (check_only) {
+			return NULL;
+		}
+
+		PyErr_Format(PyExc_TypeError, "%s: expected %s, "
+			     "but the pointer is no talloc pointer, "
+			     "pytalloc_get_ptr() would get the raw pointer.",
+			     function, type_name);
+		return NULL;
+	}
+
+	type_obj = talloc_check_name(ptr, type_name);
 	if (type_obj == NULL) {
-		const char *name = talloc_get_name(ptr);
-		PyErr_Format(PyExc_TypeError, "pytalloc: expected %s, got %s",
-			     type_name, name);
+		const char *name = NULL;
+
+		if (check_only) {
+			return NULL;
+		}
+
+		name = talloc_get_name(ptr);
+		PyErr_Format(PyExc_TypeError, "%s: expected %s, got %s",
+			     function, type_name, name);
 		return NULL;
 	}
 
 	return ptr;
+}
+
+_PUBLIC_ int _pytalloc_check_type(PyObject *py_obj, const char *type_name)
+{
+	void *ptr = NULL;
+
+	ptr = _pytalloc_get_checked_type(py_obj, type_name,
+					 true, /* check_only */
+					 "pytalloc_check_type");
+	if (ptr == NULL) {
+		return 0;
+	}
+
+	return 1;
+}
+
+_PUBLIC_ void *_pytalloc_get_type(PyObject *py_obj, const char *type_name)
+{
+	return _pytalloc_get_checked_type(py_obj, type_name,
+					  false, /* not check_only */
+					  "pytalloc_get_type");
 }
 
 _PUBLIC_ void *_pytalloc_get_ptr(PyObject *py_obj)
