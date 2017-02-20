@@ -180,6 +180,38 @@ static NTSTATUS ldapsrv_sasl_postprocess_recv(struct tevent_req *req)
 	return tevent_req_simple_recv_ntstatus(req);
 }
 
+static NTSTATUS ldapsrv_setup_gensec(struct ldapsrv_connection *conn,
+				     const char *sasl_mech,
+				     struct gensec_security **_gensec_security)
+{
+	NTSTATUS status;
+
+	struct gensec_security *gensec_security;
+
+	status = samba_server_gensec_start(conn,
+					   conn->connection->event.ctx,
+					   conn->connection->msg_ctx,
+					   conn->lp_ctx,
+					   conn->server_credentials,
+					   "ldap",
+					   &gensec_security);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	gensec_want_feature(gensec_security, GENSEC_FEATURE_ASYNC_REPLIES);
+	gensec_want_feature(gensec_security, GENSEC_FEATURE_LDAP_STYLE);
+
+	status = gensec_start_mech_by_sasl_name(gensec_security, sasl_mech);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	*_gensec_security = gensec_security;
+	return status;
+}
+
 static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 {
 	struct ldap_BindRequest *req = &call->request->r.BindRequest;
@@ -209,32 +241,15 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 	if (!conn->gensec) {
 		conn->session_info = NULL;
 
-		status = samba_server_gensec_start(conn,
-						   conn->connection->event.ctx,
-						   conn->connection->msg_ctx,
-						   conn->lp_ctx,
-						   conn->server_credentials,
-						   "ldap",
-						   &conn->gensec);
+		status = ldapsrv_setup_gensec(conn, req->creds.SASL.mechanism,
+					      &conn->gensec);
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(1, ("Failed to start GENSEC server code: %s\n", nt_errstr(status)));
+			DEBUG(1, ("Failed to start GENSEC server for [%s] code: %s\n",
+				  ldb_binary_encode_string(call, req->creds.SASL.mechanism),
+				  nt_errstr(status)));
 			result = LDAP_OPERATIONS_ERROR;
 			errstr = talloc_asprintf(reply, "SASL: Failed to start authentication system: %s", 
 						 nt_errstr(status));
-		} else {
-
-			gensec_want_feature(conn->gensec, GENSEC_FEATURE_ASYNC_REPLIES);
-			gensec_want_feature(conn->gensec, GENSEC_FEATURE_LDAP_STYLE);
-			
-			status = gensec_start_mech_by_sasl_name(conn->gensec, req->creds.SASL.mechanism);
-			
-			if (!NT_STATUS_IS_OK(status)) {
-				DEBUG(1, ("Failed to start GENSEC SASL[%s] server code: %s\n", 
-					  req->creds.SASL.mechanism, nt_errstr(status)));
-				result = LDAP_OPERATIONS_ERROR;
-				errstr = talloc_asprintf(reply, "SASL:[%s]: Failed to start authentication backend: %s", 
-							 req->creds.SASL.mechanism, nt_errstr(status));
-			}
 		}
 	}
 
