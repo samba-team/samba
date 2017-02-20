@@ -1223,6 +1223,17 @@ static NTSTATUS ntlm_auth_prepare_gensec_server(TALLOC_CTX *mem_ctx,
 	
 	gensec_set_credentials(gensec_security, server_credentials);
 
+	/*
+	 * TODO: Allow the caller to pass their own description here
+	 * via a command-line option
+	 */
+	nt_status = gensec_set_target_service_description(gensec_security,
+							  "ntlm_auth");
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		TALLOC_FREE(tmp_ctx);
+		return nt_status;
+	}
+
 	talloc_unlink(tmp_ctx, lp_ctx);
 	talloc_unlink(tmp_ctx, server_credentials);
 	talloc_unlink(tmp_ctx, gensec_settings);
