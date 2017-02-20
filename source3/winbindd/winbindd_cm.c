@@ -3224,8 +3224,8 @@ static NTSTATUS cm_connect_netlogon_transport(struct winbindd_domain *domain,
 
 	result = get_trust_credentials(domain, talloc_tos(), true, &creds);
 	if (!NT_STATUS_IS_OK(result)) {
-		DEBUG(10, ("cm_connect_sam: No user available for "
-			   "domain %s when trying schannel\n", domain->name));
+		DBG_DEBUG("No user available for domain %s when trying "
+			  "schannel\n", domain->name);
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
 
