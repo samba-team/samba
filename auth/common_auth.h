@@ -80,6 +80,8 @@ struct auth_usersupplied_info
 		const char *account_name; /* [charset(UTF8)] */
 		struct dom_sid *sid; /* [unique] */
 	} netlogon_trust_account;
+
+	const char *service_description;
 };
 
 struct auth_method_context;
