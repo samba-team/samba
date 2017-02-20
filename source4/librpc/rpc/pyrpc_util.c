@@ -394,21 +394,16 @@ PyObject *PyString_FromStringOrNULL(const char *str)
 PyObject *pyrpc_import_union(PyTypeObject *type, TALLOC_CTX *mem_ctx, int level,
 			     const void *in, const char *typename)
 {
-	static const char *mem_ctx_type = "TALLOC_CTX";
 	PyObject *mem_ctx_obj = NULL;
 	PyObject *in_obj = NULL;
 	PyObject *ret = NULL;
 
-	mem_ctx_obj = PyCObject_FromVoidPtrAndDesc(mem_ctx,
-					discard_const_p(char, mem_ctx_type),
-					NULL);
+	mem_ctx_obj = pytalloc_GenericObject_reference(mem_ctx);
 	if (mem_ctx_obj == NULL) {
 		return NULL;
 	}
 
-	in_obj = PyCObject_FromVoidPtrAndDesc(discard_const(in),
-					discard_const_p(char, typename),
-					NULL);
+	in_obj = pytalloc_GenericObject_reference_ex(mem_ctx, discard_const(in));
 	if (in_obj == NULL) {
 		Py_XDECREF(mem_ctx_obj);
 		return NULL;
@@ -430,16 +425,11 @@ PyObject *pyrpc_import_union(PyTypeObject *type, TALLOC_CTX *mem_ctx, int level,
 void *pyrpc_export_union(PyTypeObject *type, TALLOC_CTX *mem_ctx, int level,
 			 PyObject *in, const char *typename)
 {
-	static const char *mem_ctx_type = "TALLOC_CTX";
 	PyObject *mem_ctx_obj = NULL;
 	PyObject *ret_obj = NULL;
-	const char *ret_desc = NULL;
 	void *ret = NULL;
-	int cmp;
 
-	mem_ctx_obj = PyCObject_FromVoidPtrAndDesc(mem_ctx,
-					discard_const_p(char, mem_ctx_type),
-					NULL);
+	mem_ctx_obj = pytalloc_GenericObject_reference(mem_ctx);
 	if (mem_ctx_obj == NULL) {
 		return NULL;
 	}
@@ -453,33 +443,7 @@ void *pyrpc_export_union(PyTypeObject *type, TALLOC_CTX *mem_ctx, int level,
 		return NULL;
 	}
 
-	if (!PyCObject_Check(ret_obj)) {
-		Py_XDECREF(ret_obj);
-		PyErr_Format(PyExc_TypeError,
-			     "New %s.__export__() returned no PyCObject!",
-			     type->tp_name);
-		return NULL;
-	}
-
-	ret_desc = (const char *)PyCObject_GetDesc(ret_obj);
-	if (ret_desc == NULL) {
-		Py_XDECREF(ret_obj);
-		PyErr_Format(PyExc_TypeError,
-			     "New %s.__export__() returned no PyCObject_GetDesc()!",
-			     type->tp_name);
-		return NULL;
-	}
-
-	cmp = strncmp(typename, ret_desc, strlen(typename) + 1);
-	if (cmp != 0) {
-		Py_XDECREF(ret_obj);
-		PyErr_Format(PyExc_TypeError,
-			     "New %s.__export__() returned PyCObject_GetDesc() != %s!",
-			     type->tp_name, typename);
-		return NULL;
-	}
-
-	ret = PyCObject_AsVoidPtr(ret_obj);
+	ret = _pytalloc_get_type(ret_obj, typename);
 	Py_XDECREF(ret_obj);
 	return ret;
 }
