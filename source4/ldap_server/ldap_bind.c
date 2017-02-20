@@ -68,7 +68,6 @@ static NTSTATUS ldapsrv_BindSimple(struct ldapsrv_call *call)
 
 	int result;
 	const char *errstr;
-	const char *nt4_domain, *nt4_account;
 
 	struct auth_session_info *session_info;
 
@@ -93,18 +92,15 @@ static NTSTATUS ldapsrv_BindSimple(struct ldapsrv_call *call)
 		goto do_reply;
 	}
 
-	status = crack_auto_name_to_nt4_name(call, call->conn->connection->event.ctx, call->conn->lp_ctx, req->dn, &nt4_domain, &nt4_account);
-	if (NT_STATUS_IS_OK(status)) {
-		status = authenticate_username_pw(call,
-						  call->conn->connection->event.ctx,
-						  call->conn->connection->msg_ctx,
-						  call->conn->lp_ctx,
-						  nt4_domain, nt4_account, 
-						  req->creds.password,
-						  MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT |
-						  MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT,
-						  &session_info);
-	}
+	status = authenticate_ldap_simple_bind(call,
+					       call->conn->connection->event.ctx,
+					       call->conn->connection->msg_ctx,
+					       call->conn->lp_ctx,
+					       call->conn->connection->remote_address,
+					       call->conn->connection->local_address,
+					       req->dn,
+					       req->creds.password,
+					       &session_info);
 
 	if (NT_STATUS_IS_OK(status)) {
 		result = LDAP_SUCCESS;
