@@ -574,6 +574,7 @@ _PUBLIC_ struct cli_credentials *gensec_get_credentials(struct gensec_security *
 /**
  * Set the target service (such as 'http' or 'host') on a GENSEC context - ensures it is talloc()ed
  *
+ * This is used for Kerberos service principal name resolution.
  */
 
 _PUBLIC_ NTSTATUS gensec_set_target_service(struct gensec_security *gensec_security, const char *service)
@@ -592,6 +593,34 @@ _PUBLIC_ const char *gensec_get_target_service(struct gensec_security *gensec_se
 	}
 
 	return "host";
+}
+
+/**
+ * Set the target service (such as 'samr') on an GENSEC context - ensures it is talloc()ed.
+ *
+ * This is not the Kerberos service principal, instead this is a
+ * constant value that can be logged as part of authentication and
+ * authorization logging
+ */
+_PUBLIC_ NTSTATUS gensec_set_target_service_description(struct gensec_security *gensec_security,
+							const char *service)
+{
+	gensec_security->target.service_description = talloc_strdup(gensec_security, service);
+	if (!gensec_security->target.service_description) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	return NT_STATUS_OK;
+}
+
+_PUBLIC_ const char *gensec_get_target_service_description(struct gensec_security *gensec_security)
+{
+	if (gensec_security->target.service_description) {
+		return gensec_security->target.service_description;
+	} else if (gensec_security->target.service) {
+		return gensec_security->target.service;
+	}
+
+	return NULL;
 }
 
 /**

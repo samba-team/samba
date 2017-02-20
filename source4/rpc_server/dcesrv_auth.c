@@ -125,6 +125,20 @@ bool dcesrv_auth_bind(struct dcesrv_call_state *call)
 		return false;
 	}
 
+	/*
+	 * We have to call this because we set the target_service for
+	 * Kerberos to NULL above, and in any case we wish to log a
+	 * more specific service target.
+	 *
+	 */
+	status = gensec_set_target_service_description(auth->gensec_security,
+						       "DCE/RPC");
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to call gensec_set_target_service_description %s\n",
+			  nt_errstr(status)));
+		return false;
+	}
+
 	if (call->conn->remote_address != NULL) {
 		status = gensec_set_remote_address(auth->gensec_security,
 						call->conn->remote_address);

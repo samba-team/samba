@@ -50,6 +50,7 @@ struct gensec_target {
 	const char *principal;
 	const char *hostname;
 	const char *service;
+	const char *service_description;
 };
 
 #define GENSEC_FEATURE_SESSION_KEY	0x00000001
@@ -145,10 +146,26 @@ bool gensec_have_feature(struct gensec_security *gensec_security,
 			 uint32_t feature);
 NTTIME gensec_expire_time(struct gensec_security *gensec_security);
 NTSTATUS gensec_set_credentials(struct gensec_security *gensec_security, struct cli_credentials *credentials);
+/**
+ * Set the target service (such as 'http' or 'host') on a GENSEC context - ensures it is talloc()ed
+ *
+ * This is used for Kerberos service principal name resolution.
+ */
+
 NTSTATUS gensec_set_target_service(struct gensec_security *gensec_security, const char *service);
 const char *gensec_get_target_service(struct gensec_security *gensec_security);
 NTSTATUS gensec_set_target_hostname(struct gensec_security *gensec_security, const char *hostname);
 const char *gensec_get_target_hostname(struct gensec_security *gensec_security);
+/**
+ * Set the target service (such as 'samr') on an GENSEC context - ensures it is talloc()ed.
+ *
+ * This is not the Kerberos service principal, instead this is a
+ * constant value that can be logged as part of authentication and
+ * authorization logging
+ */
+const char *gensec_get_target_service_description(struct gensec_security *gensec_security);
+NTSTATUS gensec_set_target_service_description(struct gensec_security *gensec_security,
+					       const char *service);
 NTSTATUS gensec_session_key(struct gensec_security *gensec_security,
 			    TALLOC_CTX *mem_ctx,
 			    DATA_BLOB *session_key);

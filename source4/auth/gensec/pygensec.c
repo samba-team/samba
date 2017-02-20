@@ -241,6 +241,25 @@ static PyObject *py_gensec_set_target_service(PyObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
+static PyObject *py_gensec_set_target_service_description(PyObject *self, PyObject *args)
+{
+	struct gensec_security *security = pytalloc_get_type(self, struct gensec_security);
+	char *target_service_description;
+	NTSTATUS status;
+
+	if (!PyArg_ParseTuple(args, "s", &target_service_description))
+		return NULL;
+
+	status = gensec_set_target_service_description(security,
+						       target_service_description);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_SetNTSTATUS(status);
+		return NULL;
+	}
+
+	Py_RETURN_NONE;
+}
+
 static PyObject *py_gensec_set_credentials(PyObject *self, PyObject *args)
 {
 	PyObject *py_creds = Py_None;
@@ -617,9 +636,11 @@ static PyMethodDef py_gensec_security_methods[] = {
 	{ "set_credentials", (PyCFunction)py_gensec_set_credentials, METH_VARARGS, 
 		"S.start_client(credentials)" },
 	{ "set_target_hostname", (PyCFunction)py_gensec_set_target_hostname, METH_VARARGS, 
-		"S.start_target_hostname(target_hostname)" },
+		"S.start_target_hostname(target_hostname) \n This sets the Kerberos target hostname to obtain a ticket for." },
 	{ "set_target_service", (PyCFunction)py_gensec_set_target_service, METH_VARARGS, 
-		"S.start_target_service(target_service)" },
+		"S.start_target_service(target_service) \n This sets the Kerberos target service to obtain a ticket for.  The default value is 'host'" },
+	{ "set_target_service_description", (PyCFunction)py_gensec_set_target_service_description, METH_VARARGS,
+		"S.start_target_service_description(target_service_description) \n This description is set server-side and used in authentication and authorization logs.  The default value is that provided to set_target_service() or None."},
 	{ "session_info", (PyCFunction)py_gensec_session_info, METH_NOARGS,
 		"S.session_info() -> info" },
 	{ "session_key", (PyCFunction)py_gensec_session_key, METH_NOARGS,
