@@ -308,6 +308,10 @@ fail:
 
 	/* failed authentication; check for guest lapping */
 
+	/*
+	 * Please try not to change this string, it is probably in use
+	 * in audit logging tools
+	 */
 	DEBUG(2, ("check_ntlm_password:  Authentication for user "
 		  "[%s] -> [%s] FAILED with error %s, authoritative=%u\n",
 		  user_info->client.account_name, user_info->mapped.account_name,

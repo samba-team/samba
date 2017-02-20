@@ -437,6 +437,10 @@ _PUBLIC_ NTSTATUS auth_check_password_recv(struct tevent_req *req,
 	*pauthoritative = state->authoritative;
 
 	if (tevent_req_is_nterror(req, &status)) {
+		/*
+		 * Please try not to change this string, it is probably in use
+		 * in audit logging tools
+		 */
 		DEBUG(2,("auth_check_password_recv: "
 			 "%s authentication for user [%s\\%s] "
 			 "FAILED with error %s, authoritative=%u\n",
