@@ -106,6 +106,7 @@ NTSTATUS auth_domain_init(void);
 
 NTSTATUS make_auth4_context(TALLOC_CTX *mem_ctx, struct auth4_context **auth4_context_out);
 NTSTATUS auth_generic_prepare(TALLOC_CTX *mem_ctx, const struct tsocket_address *remote_address,
+			      const char *service_description,
 			      struct gensec_security **gensec_security_out);
 
 NTSTATUS auth_check_password_session_info(struct auth4_context *auth_context,

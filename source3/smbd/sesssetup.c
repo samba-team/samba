@@ -247,6 +247,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 
 	if (auth->gensec == NULL) {
 		status = auth_generic_prepare(session, xconn->remote_address,
+					      "SMB",
 					      &auth->gensec);
 		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(session);

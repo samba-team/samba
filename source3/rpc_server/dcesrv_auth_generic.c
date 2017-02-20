@@ -29,12 +29,15 @@ static NTSTATUS auth_generic_server_authtype_start_as_root(TALLOC_CTX *mem_ctx,
 							   DATA_BLOB *token_in,
 							   DATA_BLOB *token_out,
 							   const struct tsocket_address *remote_address,
+							   const char *service_description,
 							   struct gensec_security **ctx)
 {
 	struct gensec_security *gensec_security = NULL;
 	NTSTATUS status;
 
-	status = auth_generic_prepare(talloc_tos(), remote_address, &gensec_security);
+	status = auth_generic_prepare(talloc_tos(), remote_address,
+				      service_description,
+				      &gensec_security);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, (__location__ ": auth_generic_prepare failed: %s\n",
 			  nt_errstr(status)));
@@ -67,6 +70,7 @@ NTSTATUS auth_generic_server_authtype_start(TALLOC_CTX *mem_ctx,
 					    DATA_BLOB *token_in,
 					    DATA_BLOB *token_out,
 					    const struct tsocket_address *remote_address,
+					    const char *service_description,
 					    struct gensec_security **ctx)
 {
 	NTSTATUS status;
@@ -78,6 +82,7 @@ NTSTATUS auth_generic_server_authtype_start(TALLOC_CTX *mem_ctx,
 							    token_in,
 							    token_out,
 							    remote_address,
+							    service_description,
 							    ctx);
 	unbecome_root();
 	return status;

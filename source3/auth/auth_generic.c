@@ -233,6 +233,7 @@ NTSTATUS make_auth4_context(TALLOC_CTX *mem_ctx, struct auth4_context **auth4_co
 
 NTSTATUS auth_generic_prepare(TALLOC_CTX *mem_ctx,
 			      const struct tsocket_address *remote_address,
+			      const char *service_description,
 			      struct gensec_security **gensec_security_out)
 {
 	struct gensec_security *gensec_security;
@@ -372,6 +373,14 @@ NTSTATUS auth_generic_prepare(TALLOC_CTX *mem_ctx,
 
 	nt_status = gensec_set_remote_address(gensec_security,
 					      remote_address);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		TALLOC_FREE(tmp_ctx);
+		return nt_status;
+	}
+
+	nt_status = gensec_set_target_service_description(gensec_security,
+							  service_description);
+
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		TALLOC_FREE(tmp_ctx);
 		return nt_status;

@@ -77,6 +77,7 @@ static NTSTATUS make_auth_gensec(const struct tsocket_address *remote_address,
 	NTSTATUS status;
 
 	status = auth_generic_prepare(es, remote_address,
+				      "SMB encryption",
 				      &es->gensec_security);
 	if (!NT_STATUS_IS_OK(status)) {
 		return nt_status_squash(status);

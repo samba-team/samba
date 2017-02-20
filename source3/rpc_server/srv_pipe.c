@@ -517,6 +517,7 @@ bool is_known_pipename(const char *pipename, struct ndr_syntax_id *syntax)
 static bool pipe_auth_generic_bind(struct pipes_struct *p,
 				   struct ncacn_packet *pkt,
 				   struct dcerpc_auth *auth_info,
+				   const char *service_description,
 				   DATA_BLOB *response)
 {
 	TALLOC_CTX *mem_ctx = pkt;
@@ -529,6 +530,7 @@ static bool pipe_auth_generic_bind(struct pipes_struct *p,
 						    &auth_info->credentials,
 						    response,
 						    p->remote_address,
+						    service_description,
 						    &gensec_security);
 	if (!NT_STATUS_IS_OK(status) &&
 	    !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED))
@@ -813,7 +815,9 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 		}
 
 		if (!pipe_auth_generic_bind(p, pkt,
-					    &auth_info, &auth_resp)) {
+					    &auth_info,
+					    table->name,
+					    &auth_resp)) {
 			goto err_exit;
 		}
 	} else {
