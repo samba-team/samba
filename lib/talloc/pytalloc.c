@@ -238,6 +238,14 @@ static PyTypeObject TallocBaseObject_Type = {
 #endif
 };
 
+static PyTypeObject TallocGenericObject_Type = {
+	.tp_name = "talloc.GenericObject",
+	.tp_doc = "Python wrapper for a talloc-maintained object.",
+	.tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+	.tp_base = &TallocBaseObject_Type,
+	.tp_basicsize = sizeof(pytalloc_BaseObject),
+};
+
 #define MODULE_DOC PyDoc_STR("Python wrapping of talloc-maintained objects.")
 
 #if PY_MAJOR_VERSION >= 3
@@ -261,6 +269,9 @@ static PyObject *module_init(void)
 	if (PyType_Ready(&TallocBaseObject_Type) < 0)
 		return NULL;
 
+	if (PyType_Ready(&TallocGenericObject_Type) < 0)
+		return NULL;
+
 #if PY_MAJOR_VERSION >= 3
 	m = PyModule_Create(&moduledef);
 #else
@@ -273,6 +284,8 @@ static PyObject *module_init(void)
 	PyModule_AddObject(m, "Object", (PyObject *)&TallocObject_Type);
 	Py_INCREF(&TallocBaseObject_Type);
 	PyModule_AddObject(m, "BaseObject", (PyObject *)&TallocBaseObject_Type);
+	Py_INCREF(&TallocGenericObject_Type);
+	PyModule_AddObject(m, "GenericObject", (PyObject *)&TallocGenericObject_Type);
 	return m;
 }
 

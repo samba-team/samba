@@ -40,6 +40,10 @@ int pytalloc_Check(PyObject *);
 
 int pytalloc_BaseObject_check(PyObject *);
 
+int _pytalloc_check_type(PyObject *py_obj, const char *type_name);
+#define pytalloc_check_type(py_obj, type) \
+	_pytalloc_check_type((PyObject *)(py_obj), #type)
+
 /* Retrieve the pointer for a pytalloc_object. Like talloc_get_type() 
  * but for pytalloc_Objects. */
 void *_pytalloc_get_type(PyObject *py_obj, const char *type_name);
@@ -58,8 +62,30 @@ PyObject *pytalloc_reference_ex(PyTypeObject *py_type, TALLOC_CTX *mem_ctx, void
 #define pytalloc_new(type, typeobj) pytalloc_steal(typeobj, talloc_zero(NULL, type))
 
 #if PY_MAJOR_VERSION < 3
-PyObject *pytalloc_CObject_FromTallocPtr(void *);
+/*
+ * Don't use this anymore! Use pytalloc_GenericObject_steal()
+ * or pytalloc_GenericObject_reference().
+ */
+#ifndef _DEPRECATED_
+#ifdef HAVE___ATTRIBUTE__
+#define _DEPRECATED_ __attribute__ ((deprecated))
+#else
+#define _DEPRECATED_
 #endif
+#endif
+PyObject *pytalloc_CObject_FromTallocPtr(void *) _DEPRECATED_;
+#endif
+
+/*
+ * Wrap a generic talloc pointer into a talloc.GenericObject,
+ * this is a subclass of talloc.BaseObject.
+ */
+PyObject *pytalloc_GenericObject_steal_ex(TALLOC_CTX *mem_ctx, void *ptr);
+#define pytalloc_GenericObject_steal(talloc_ptr) \
+	pytalloc_GenericObject_steal_ex(talloc_ptr, talloc_ptr)
+PyObject *pytalloc_GenericObject_reference_ex(TALLOC_CTX *mem_ctx, void *ptr);
+#define pytalloc_GenericObject_reference(talloc_ptr) \
+	pytalloc_GenericObject_reference_ex(talloc_ptr, talloc_ptr)
 
 size_t pytalloc_BaseObject_size(void);
 
