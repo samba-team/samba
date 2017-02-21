@@ -199,6 +199,18 @@ static NTSTATUS ldapsrv_setup_gensec(struct ldapsrv_connection *conn,
 		return status;
 	}
 
+	status = gensec_set_remote_address(gensec_security,
+					   conn->connection->remote_address);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = gensec_set_local_address(gensec_security,
+					  conn->connection->local_address);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
 	gensec_want_feature(gensec_security, GENSEC_FEATURE_ASYNC_REPLIES);
 	gensec_want_feature(gensec_security, GENSEC_FEATURE_LDAP_STYLE);
 
