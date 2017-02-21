@@ -939,9 +939,12 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	}
 
 	/*
-	 * At this point we know which interface (eg netlogon, lsa,
-	 * drsuapi) the caller requested.  This is available on
-	 * call->conntext->iface.
+	 * At this point we still don't know which interface (eg
+	 * netlogon, lsa, drsuapi) the caller requested in this bind!
+	 * The most recently added context is available as the first
+	 * element in the linked list at call->conn->contexts, that is
+	 * call->conn->contexts->iface, but they may not have
+	 * requested one at all!
 	 */
 
 	if ((call->pkt.pfc_flags & DCERPC_PFC_FLAG_CONC_MPX) &&
