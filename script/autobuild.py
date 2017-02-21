@@ -454,7 +454,7 @@ class buildlist(object):
 def cleanup():
     if options.nocleanup:
         return
-    run_cmd("stat %s" % test_tmpdir, show=True)
+    run_cmd("stat %s || true" % test_tmpdir, show=True)
     run_cmd("stat %s" % testbase, show=True)
     do_print("Cleaning up ....")
     for d in cleanup_list:
