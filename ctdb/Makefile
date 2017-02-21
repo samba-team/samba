@@ -27,6 +27,9 @@ show_version:
 	@touch .tmplock
 	@WAFLOCK=.tmplock $(WAF) show_version
 
+manpages:
+	$(WAF) manpages
+
 dist:
 	touch .tmplock
 	WAFLOCK=.tmplock $(WAF) dist
