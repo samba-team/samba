@@ -637,9 +637,11 @@ static const char* get_password_type(const struct auth_usersupplied_info *ui)
 
 	const char *password_type = NULL;
 
-	if (ui->password_state == AUTH_PASSWORD_RESPONSE &&
-	    (ui->logon_parameters & MSV1_0_ALLOW_MSVCHAPV2) &&
-	    ui->password.response.nt.length == 24) {
+	if (ui->password_type != NULL) {
+		password_type = ui->password_type;
+	} else if (ui->password_state == AUTH_PASSWORD_RESPONSE &&
+		   (ui->logon_parameters & MSV1_0_ALLOW_MSVCHAPV2) &&
+		   ui->password.response.nt.length == 24) {
 		password_type = "MSCHAPv2";
 	} else if ((ui->logon_parameters & MSV1_0_CLEARTEXT_PASSWORD_SUPPLIED)
 		   || (ui->password_state == AUTH_PASSWORD_PLAIN)) {

@@ -1090,6 +1090,13 @@ _kdc_as_rep(krb5_context context,
 	kdc_log(context, config, 0, "UNKNOWN -- %s: %s", client_name, msg);
 	krb5_free_error_message(context, msg);
 	ret = KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
+
+	if (config->db[0] && config->db[0]->hdb_auth_status)
+		(config->db[0]->hdb_auth_status)(context, config->db[0], NULL,
+						 from_addr,
+						 client_name,
+						 NULL,
+						 HDB_AUTH_CLIENT_UNKNOWN);
 	goto out;
     }
     ret = _kdc_db_fetch(context, config, server_princ,
@@ -1194,6 +1201,12 @@ _kdc_as_rep(krb5_context context,
 	    kdc_log(context, config, 0,
 		    "PKINIT pre-authentication succeeded -- %s using %s",
 		    client_name, client_cert);
+	    if (clientdb->hdb_auth_status)
+		    (clientdb->hdb_auth_status)(context, clientdb, client,
+						from_addr,
+						client_name,
+						"PKINIT",
+						HDB_AUTH_PKINIT_SUCCESS);
 	    free(client_cert);
 	    if (pkp)
 		goto preauth_done;
@@ -1291,22 +1304,30 @@ _kdc_as_rep(krb5_context context,
 					      pa_key->key.keytype, &str);
 		if (ret2)
 		    str = NULL;
+
 		kdc_log(context, config, 5,
 			"Failed to decrypt PA-DATA -- %s "
 			"(enctype %s) error %s",
 			client_name, str ? str : "unknown enctype", msg);
 		krb5_free_error_message(context, msg);
-		free(str);
 
 		if(hdb_next_enctype2key(context, &client->entry,
-					enc_data.etype, &pa_key) == 0)
+					enc_data.etype, &pa_key) == 0) {
+		    free(str);
 		    goto try_next_key;
+		}
 		e_text = "Failed to decrypt PA-DATA";
 
 		free_EncryptedData(&enc_data);
 
 		if (clientdb->hdb_auth_status)
-		    (clientdb->hdb_auth_status)(context, clientdb, client, HDB_AUTH_WRONG_PASSWORD);
+		    (clientdb->hdb_auth_status)(context, clientdb, client,
+						from_addr,
+						client_name,
+						str ? str : "unknown enctype",
+						HDB_AUTH_WRONG_PASSWORD);
+
+		free(str);
 
 		ret = KRB5KDC_ERR_PREAUTH_FAILED;
 		continue;
@@ -1362,6 +1383,13 @@ _kdc_as_rep(krb5_context context,
 	    kdc_log(context, config, 2,
 		    "ENC-TS Pre-authentication succeeded -- %s using %s",
 		    client_name, str ? str : "unknown enctype");
+	    if (clientdb->hdb_auth_status)
+		    (clientdb->hdb_auth_status)(context, clientdb, client,
+						from_addr,
+						client_name,
+						str ? str : "unknown enctype",
+						HDB_AUTH_CORRECT_PASSWORD);
+
 	    free(str);
 	    break;
 	}
@@ -1414,7 +1442,10 @@ _kdc_as_rep(krb5_context context,
 
     if (clientdb->hdb_auth_status)
 	(clientdb->hdb_auth_status)(context, clientdb, client,
-				    HDB_AUTH_SUCCESS);
+				    from_addr,
+				    client_name,
+				    NULL,
+				    HDB_AUTHZ_SUCCESS);
 
     /*
      * Selelct the best encryption type for the KDC with out regard to

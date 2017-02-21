@@ -391,6 +391,7 @@ static void kdc_task_init(struct task_server *task)
 
 	kdc->base_ctx->ev_ctx = task->event_ctx;
 	kdc->base_ctx->lp_ctx = task->lp_ctx;
+	kdc->base_ctx->msg_ctx = task->msg_ctx;
 
 	status = hdb_samba4_create_kdc(kdc->base_ctx,
 				       kdc->smb_krb5_context->krb5_context,

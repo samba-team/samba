@@ -83,6 +83,13 @@ struct auth_usersupplied_info
 
 	const char *service_description;
 	const char *auth_description;
+
+	/*
+	 * for logging only, normally worked out from the password but
+	 * for krb5 logging only (krb5 normally doesn't use this) we
+	 * record the enc type here
+	 */
+	const char *password_type;
 };
 
 struct auth_method_context;

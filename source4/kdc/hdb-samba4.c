@@ -36,9 +36,13 @@
 #include "kdc/kdc-glue.h"
 #include "kdc/db-glue.h"
 #include "auth/auth_sam.h"
+#include "auth/common_auth.h"
 #include <ldb.h>
 #include "sdb.h"
 #include "sdb_hdb.h"
+#include "dsdb/samdb/samdb.h"
+#include "param/param.h"
+#include "../lib/tsocket/tsocket.h"
 
 static krb5_error_code hdb_samba4_open(krb5_context context, HDB *db, int flags, mode_t mode)
 {
@@ -292,19 +296,131 @@ hdb_samba4_check_s4u2self(krb5_context context, HDB *db,
 
 static krb5_error_code hdb_samba4_auth_status(krb5_context context, HDB *db,
 					      hdb_entry_ex *entry,
+					      struct sockaddr *from_addr,
+					      const char *original_client_name,
+					      const char *auth_type,
 					      int hdb_auth_status)
 {
 	struct samba_kdc_db_context *kdc_db_ctx = talloc_get_type_abort(db->hdb_db,
 									struct samba_kdc_db_context);
-	struct samba_kdc_entry *p = talloc_get_type(entry->ctx, struct samba_kdc_entry);
 
 	struct ldb_dn *domain_dn = ldb_get_default_basedn(kdc_db_ctx->samdb);
 
-	if (hdb_auth_status == HDB_AUTH_WRONG_PASSWORD) {
-		authsam_update_bad_pwd_count(kdc_db_ctx->samdb, p->msg, domain_dn);
-	} else if (hdb_auth_status == HDB_AUTH_SUCCESS) {
+	/*
+	 * Forcing this via the NTLM auth structure is not ideal, but
+	 * it is the most practical option right now, and ensures the
+	 * logs are consistent, even if some elements are always NULL.
+	 */
+	struct auth_usersupplied_info ui = {
+		.mapped_state = true,
+		.was_mapped = true,
+		.client = {
+			.account_name = original_client_name,
+			.domain_name = NULL,
+		},
+		.service_description = "Kerberos KDC",
+		.auth_description = "ENC-TS Pre-authentication",
+		.password_type = auth_type
+	};
+
+	size_t sa_socklen = 0;
+
+	switch (from_addr->sa_family) {
+	case AF_INET:
+		sa_socklen = sizeof(struct sockaddr_in);
+		break;
+#ifdef HAVE_IPV6
+	case AF_INET6:
+		sa_socklen = sizeof(struct sockaddr_in6);
+		break;
+#endif
+	}
+
+	switch (hdb_auth_status) {
+	case HDB_AUTHZ_SUCCESS:
+	{
+		struct samba_kdc_entry *p = talloc_get_type(entry->ctx,
+							    struct samba_kdc_entry);
+
+		/*
+		 * TODO: We could log the AS-REQ authorization success here as
+		 * well.  However before we do that, we need to pass
+		 * in the PAC here or re-calculate it.
+		 */
 		authsam_logon_success_accounting(kdc_db_ctx->samdb, p->msg,
 						 domain_dn, true);
+		break;
+	}
+	case HDB_AUTH_INVALID_SIGNATURE:
+		break;
+	case HDB_AUTH_CORRECT_PASSWORD:
+	case HDB_AUTH_WRONG_PASSWORD:
+	{
+		TALLOC_CTX *frame = talloc_stackframe();
+		struct samba_kdc_entry *p = talloc_get_type(entry->ctx,
+							    struct samba_kdc_entry);
+		struct dom_sid *sid
+			= samdb_result_dom_sid(frame, p->msg, "objectSid");
+		const char *account_name
+			= ldb_msg_find_attr_as_string(p->msg, "sAMAccountName", NULL);
+		const char *domain_name = lpcfg_sam_name(p->kdc_db_ctx->lp_ctx);
+		struct tsocket_address *remote_host;
+		NTSTATUS status;
+		int ret;
+
+		if (hdb_auth_status == HDB_AUTH_WRONG_PASSWORD) {
+			authsam_update_bad_pwd_count(kdc_db_ctx->samdb, p->msg, domain_dn);
+			status = NT_STATUS_WRONG_PASSWORD;
+		} else {
+			status = NT_STATUS_OK;
+		}
+
+		ret = tsocket_address_bsd_from_sockaddr(frame, from_addr,
+							sa_socklen,
+							&remote_host);
+		if (ret != 0) {
+			ui.remote_host = NULL;
+		} else {
+			ui.remote_host = remote_host;
+		}
+
+		ui.mapped.account_name = account_name;
+		ui.mapped.domain_name = domain_name;
+
+		log_authentication_event(kdc_db_ctx->msg_ctx,
+					 kdc_db_ctx->lp_ctx,
+					 &ui,
+					 status,
+					 domain_name,
+					 account_name,
+					 NULL,
+					 sid);
+		TALLOC_FREE(frame);
+		break;
+	}
+	case HDB_AUTH_CLIENT_UNKNOWN:
+	{
+		struct tsocket_address *remote_host;
+		int ret;
+		TALLOC_CTX *frame = talloc_stackframe();
+		ret = tsocket_address_bsd_from_sockaddr(frame, from_addr,
+							sa_socklen,
+							&remote_host);
+		if (ret != 0) {
+			ui.remote_host = NULL;
+		} else {
+			ui.remote_host = remote_host;
+		}
+
+		log_authentication_event(kdc_db_ctx->msg_ctx,
+					 kdc_db_ctx->lp_ctx,
+					 &ui,
+					 NT_STATUS_NO_SUCH_USER,
+					 NULL, NULL,
+					 NULL, NULL);
+		TALLOC_FREE(frame);
+		break;
+	}
 	}
 	return 0;
 }

@@ -70,9 +70,12 @@ enum hdb_lockop{ HDB_RLOCK, HDB_WLOCK };
 #define HDB_CAP_F_PASSWORD_UPDATE_KEYS	4
 
 /* auth status values */
-#define HDB_AUTH_SUCCESS		0
+#define HDB_AUTHZ_SUCCESS		0
 #define HDB_AUTH_WRONG_PASSWORD		1
 #define HDB_AUTH_INVALID_SIGNATURE	2
+#define HDB_AUTH_CORRECT_PASSWORD	3
+#define HDB_AUTH_PKINIT_SUCCESS 	4
+#define HDB_AUTH_CLIENT_UNKNOWN		5
 
 /* key usage for master key */
 #define HDB_KU_MKEY	0x484442
@@ -244,7 +247,11 @@ typedef struct HDB{
      * In case the entry is locked out, the backend should set the
      * hdb_entry.flags.locked-out flag.
      */
-    krb5_error_code (*hdb_auth_status)(krb5_context, struct HDB *, hdb_entry_ex *, int);
+    krb5_error_code (*hdb_auth_status)(krb5_context, struct HDB *,
+				       hdb_entry_ex *, struct sockaddr *from_addr,
+				       const char *original_client_name,
+				       const char *auth_type,
+				       int);
     /**
      * Check if delegation is allowed.
      */
