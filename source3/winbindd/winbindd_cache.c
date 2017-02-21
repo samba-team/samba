@@ -4727,47 +4727,6 @@ struct winbindd_tdc_domain * wcache_tdc_fetch_domain( TALLOC_CTX *ctx, const cha
 /*********************************************************************
  ********************************************************************/
 
-struct winbindd_tdc_domain*
-	wcache_tdc_fetch_domainbysid(TALLOC_CTX *ctx,
-				     const struct dom_sid *sid)
-{
-	struct winbindd_tdc_domain *dom_list = NULL;
-	size_t num_domains = 0;
-	int i;
-	struct winbindd_tdc_domain *d = NULL;
-
-	DEBUG(10,("wcache_tdc_fetch_domainbysid: Searching for domain %s\n",
-		  sid_string_dbg(sid)));
-
-	if (!init_wcache()) {
-		return NULL;
-	}
-
-	/* fetch the list */
-
-	wcache_tdc_fetch_list(&dom_list, &num_domains);
-
-	for (i = 0; i<num_domains; i++) {
-		if (dom_sid_equal(sid, &(dom_list[i].sid))) {
-			DEBUG(10, ("wcache_tdc_fetch_domainbysid: "
-				   "Found domain %s for SID %s\n",
-				   dom_list[i].domain_name,
-				   sid_string_dbg(sid)));
-
-			d = wcache_tdc_dup_domain(ctx, &dom_list[i]);
-			break;
-		}
-	}
-
-        TALLOC_FREE(dom_list);
-
-	return d;
-}
-
-
-/*********************************************************************
- ********************************************************************/
-
 void wcache_tdc_clear( void )
 {
 	if ( !init_wcache() )
