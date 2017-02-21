@@ -24,6 +24,7 @@
 #include "system/filesys.h"
 #include "krb5_samba.h"
 #include "lib/util/asn1.h"
+#include "lib/crypto/crypto.h"
 
 #ifdef HAVE_COM_ERR_H
 #include <com_err.h>
@@ -200,6 +201,42 @@ int smb_krb5_create_key_from_string(krb5_context context,
 
 	if (host_princ == NULL && salt == NULL) {
 		return -1;
+	}
+
+	if ((int)enctype == (int)ENCTYPE_ARCFOUR_HMAC) {
+		TALLOC_CTX *frame = talloc_stackframe();
+		uint8_t *utf16 = NULL;
+		size_t utf16_size = 0;
+		uint8_t nt_hash[16];
+		bool ok;
+
+		ok = convert_string_talloc(frame, CH_UNIX, CH_UTF16LE,
+					   password->data, password->length,
+					   (void **)&utf16, &utf16_size);
+		if (!ok) {
+			if (errno == 0) {
+				errno = EINVAL;
+			}
+			ret = errno;
+			TALLOC_FREE(frame);
+			return ret;
+		}
+
+		mdfour(nt_hash, utf16, utf16_size);
+		memset(utf16, 0, utf16_size);
+		ret = smb_krb5_keyblock_init_contents(context,
+						      ENCTYPE_ARCFOUR_HMAC,
+						      nt_hash,
+						      sizeof(nt_hash),
+						      key);
+		ZERO_STRUCT(nt_hash);
+		if (ret != 0) {
+			TALLOC_FREE(frame);
+			return ret;
+		}
+
+		TALLOC_FREE(frame);
+		return 0;
 	}
 
 #if defined(HAVE_KRB5_PRINCIPAL2SALT) && defined(HAVE_KRB5_C_STRING_TO_KEY)
