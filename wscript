@@ -309,7 +309,7 @@ def dist():
     '''makes a tarball for distribution'''
     sambaversion = samba_version.load_version(env=None)
 
-    os.system("make -C ctdb/doc")
+    os.system("make -C ctdb manpages")
     samba_dist.DIST_FILES('ctdb/doc:ctdb/doc', extend=True)
 
     os.system(srcdir + "/release-scripts/build-manpages-nogit")
