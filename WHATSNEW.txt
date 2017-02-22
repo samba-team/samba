@@ -125,14 +125,23 @@ RPC services other than Netlogon.  The Netlogon server honours instead
 the 'rpc server port:netlogon' option.  The default value for both
 these options is the first available port including or after 1024.
 
-Improve AD performance and replication improvements
----------------------------------------------------
+AD LDAP and replication performance improvements
+------------------------------------------------
 
-Samba's LDB and replication code continues to improve, particularly in
-respect to the handling of large numbers of linked attributes.  We now
-respect an 'uptodateness vector' which will dramatically reduce the
-over-replication of links from new DCs.  We have also made the parsing
-of on-disk linked attributes much more efficient.
+Samba's LDB (the database holding the AD directory tree, as seen via
+LDAP) and our DRSUAPI replication code continues to improve,
+particularly in respect to the handling of large numbers of objects or
+linked attributes.
+
+ * We now respect an 'uptodateness vector' which will dramatically
+   reduce the over-replication of links from new DCs.
+
+ * We have also made the parsing of on-disk linked attributes much
+   more efficient.
+
+ * We rely on ldb 1.1.28.  This ldb version has improved memory
+   handling for ldb search results, improving poorly indexed and
+   unindexed search result processing speed by around 20%.
 
 DNS improvements
 ----------------
