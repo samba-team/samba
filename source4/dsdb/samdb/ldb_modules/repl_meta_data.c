@@ -7095,9 +7095,13 @@ static int replmd_prepare_commit(struct ldb_module *module)
 	struct la_backlink *bl;
 	int ret;
 
-	/* walk the list backwards, to do the first entry first, as we
+	/*
+	 * Walk the list of linked attributes from DRS replication.
+	 *
+	 * We walk backwards, to do the first entry first, as we
 	 * added the entries with DLIST_ADD() which puts them at the
-	 * start of the list */
+	 * start of the list
+	 */
 	for (la = DLIST_TAIL(replmd_private->la_list); la; la=prev) {
 		prev = DLIST_PREV(la);
 		DLIST_REMOVE(replmd_private->la_list, la);
