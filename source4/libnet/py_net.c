@@ -457,7 +457,7 @@ static PyObject *py_net_replicate_init(py_net_Object *self, PyObject *args, PyOb
 	s->chunk.forest = &s->forest;
 	s->chunk.dest_dsa = &s->dest_dsa;
 
-	return pytalloc_CObject_FromTallocPtr(s);
+	return pytalloc_GenericObject_steal(s);
 }
 
 
@@ -485,9 +485,8 @@ static PyObject *py_net_replicate_chunk(py_net_Object *self, PyObject *args, PyO
 		return NULL;
 	}
 
-	s = talloc_get_type(PyCObject_AsVoidPtr(py_state), struct replicate_state);
+	s = pytalloc_get_type(py_state, struct replicate_state);
 	if (!s) {
-		PyErr_SetString(PyExc_TypeError, "Expected replication_state");
 		return NULL;
 	}
 
