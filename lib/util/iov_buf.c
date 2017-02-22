@@ -20,6 +20,7 @@
 #include "replace.h"
 #include "system/filesys.h"
 #include "iov_buf.h"
+#include <talloc.h>
 
 ssize_t iov_buflen(const struct iovec *iov, int iovcnt)
 {
@@ -89,4 +90,24 @@ bool iov_advance(struct iovec **iov, int *iovcnt, size_t n)
 	*iov = v;
 	*iovcnt = cnt;
 	return true;
+}
+
+uint8_t *iov_concat(TALLOC_CTX *mem_ctx, const struct iovec *iov, int count)
+{
+	ssize_t buflen;
+	uint8_t *buf;
+
+	buflen = iov_buflen(iov, count);
+	if (buflen == -1) {
+		return NULL;
+	}
+
+	buf = talloc_array(mem_ctx, uint8_t, buflen);
+	if (buf == NULL) {
+		return NULL;
+	}
+
+	iov_buf(iov, count, buf, buflen);
+
+	return buf;
 }

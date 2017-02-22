@@ -78,6 +78,7 @@ bld.SAMBA_SUBSYSTEM('samba-util-core',
 
 bld.SAMBA_LIBRARY('iov_buf',
                   source='iov_buf.c',
+                  deps='talloc',
                   local_include=False,
                   private_library=True)
 

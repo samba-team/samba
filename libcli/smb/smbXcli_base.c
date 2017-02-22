@@ -1343,28 +1343,6 @@ static size_t smbXcli_iov_len(const struct iovec *iov, int count)
 	return ret;
 }
 
-static uint8_t *smbXcli_iov_concat(TALLOC_CTX *mem_ctx,
-				   const struct iovec *iov,
-				   int count)
-{
-	ssize_t buflen;
-	uint8_t *buf;
-
-	buflen = iov_buflen(iov, count);
-	if (buflen == -1) {
-		return NULL;
-	}
-
-	buf = talloc_array(mem_ctx, uint8_t, buflen);
-	if (buf == NULL) {
-		return NULL;
-	}
-
-	iov_buf(iov, count, buf, buflen);
-
-	return buf;
-}
-
 static void smb1cli_req_flags(enum protocol_types protocol,
 			      uint32_t smb1_capabilities,
 			      uint8_t smb_command,
@@ -1647,7 +1625,7 @@ static NTSTATUS smb1cli_conn_signv(struct smbXcli_conn *conn,
 
 	frame = talloc_stackframe();
 
-	buf = smbXcli_iov_concat(frame, &iov[1], iov_count - 1);
+	buf = iov_concat(frame, &iov[1], iov_count - 1);
 	if (buf == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1739,7 +1717,7 @@ static NTSTATUS smb1cli_req_writev_submit(struct tevent_req *req,
 	if (common_encryption_on(state->conn->smb1.trans_enc)) {
 		char *buf, *enc_buf;
 
-		buf = (char *)smbXcli_iov_concat(talloc_tos(), iov, iov_count);
+		buf = (char *)iov_concat(talloc_tos(), iov, iov_count);
 		if (buf == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}

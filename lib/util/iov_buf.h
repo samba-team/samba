@@ -20,13 +20,13 @@
 #ifndef __LIB_IOV_BUF_H__
 #define __LIB_IOV_BUF_H__
 
-#include <unistd.h>
-#include <stdint.h>
-#include <stdbool.h>
+#include "replace.h"
+#include <talloc.h>
 
 ssize_t iov_buflen(const struct iovec *iov, int iovlen);
 ssize_t iov_buf(const struct iovec *iov, int iovcnt,
 		uint8_t *buf, size_t buflen);
 bool iov_advance(struct iovec **iov, int *iovcnt, size_t n);
+uint8_t *iov_concat(TALLOC_CTX *mem_ctx, const struct iovec *iov, int count);
 
 #endif
