@@ -936,17 +936,6 @@ static NTSTATUS get_trust_credentials(struct winbindd_domain *domain,
 		goto ipc_fallback;
 	}
 
-	if (domain->primary && lp_security() == SEC_ADS) {
-		cli_credentials_set_kerberos_state(creds,
-						   CRED_AUTO_USE_KERBEROS);
-	} else if (domain->active_directory) {
-		cli_credentials_set_kerberos_state(creds,
-						   CRED_MUST_USE_KERBEROS);
-	} else {
-		cli_credentials_set_kerberos_state(creds,
-						   CRED_DONT_USE_KERBEROS);
-	}
-
 	if (creds_domain != domain) {
 		/*
 		 * We can only use schannel against a direct trust
