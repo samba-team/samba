@@ -206,7 +206,7 @@ static void wb_groups_members_done(struct tevent_req *subreq)
 
 	/*
 	 * In this error handling here we might have to be a bit more generous
-	 * and just continue if an error occured.
+	 * and just continue if an error occurred.
 	 */
 
 	if (!NT_STATUS_IS_OK(status)) {

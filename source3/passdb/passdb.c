@@ -2020,7 +2020,7 @@ static uint32_t init_buffer_from_samu_v3 (uint8_t **buf, struct samu *sampass, b
 
 	/* check to make sure we got it correct */
 	if (buflen != len) {
-		DEBUG(0, ("init_buffer_from_samu_v3: somthing odd is going on here: bufflen (%lu) != len (%lu) in tdb_pack operations!\n", 
+		DEBUG(0, ("init_buffer_from_samu_v3: something odd is going on here: bufflen (%lu) != len (%lu) in tdb_pack operations!\n", 
 			  (unsigned long)buflen, (unsigned long)len));  
 		/* error */
 		SAFE_FREE (*buf);

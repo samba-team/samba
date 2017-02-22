@@ -4,7 +4,7 @@
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>
-    This parameter prevents clients from seeing the existance of files that cannot be written to. 
+    This parameter prevents clients from seeing the existence of files that cannot be written to. 
     Defaults to off. Note that unwriteable directories are shown as usual.
     </para>
     <para>Please note that enabling this can slow down listing large

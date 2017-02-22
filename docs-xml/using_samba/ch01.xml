@@ -660,7 +660,7 @@ HYDRA          &lt;20&gt;  UNIQUE      Registered
 </table>
 
 
-<para>Note that because <indexterm id="ch01-idx-951737-0"><primary>DNS (Domain Name System)</primary><secondary>names</secondary><tertiary> resource types and</tertiary></indexterm>DNS names don't have resource types, the designers intentionally made hexidecimal value 20 (an ASCII space) default to the type for a file server.</para>
+<para>Note that because <indexterm id="ch01-idx-951737-0"><primary>DNS (Domain Name System)</primary><secondary>names</secondary><tertiary> resource types and</tertiary></indexterm>DNS names don't have resource types, the designers intentionally made hexadecimal value 20 (an ASCII space) default to the type for a file server.</para>
 </sect3>
 
 

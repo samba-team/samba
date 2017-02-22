@@ -73,7 +73,7 @@ static NTSTATUS check_unix_security(const struct auth_context *auth_context,
 							pass,
 							server_info);
 		} else {
-			/* we need to do somthing more useful here */
+			/* we need to do something more useful here */
 			nt_status = NT_STATUS_NO_SUCH_USER;
 		}
 	}

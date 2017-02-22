@@ -266,7 +266,7 @@ static NTSTATUS drepl_replica_sync(struct irpc_message *msg,
 	} else {
 		cb_data = talloc_zero(msg, struct drepl_replica_sync_cb_data);
 		if (!cb_data) {
-			REPLICA_SYNC_FAIL("Not enought memory",
+			REPLICA_SYNC_FAIL("Not enough memory",
 					  WERR_DS_DRA_INTERNAL_ERROR);
 		}
 

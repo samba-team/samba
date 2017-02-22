@@ -494,7 +494,7 @@ class DnsserverTests(RpcInterfaceTestCase):
                 # an alias can only map to one CNAME record.
                 # Also, on Windows, when the empty string is added and
                 # another record is added afterwards, the empty string
-                # will be silently overriden by the new one, so it
+                # will be silently overridden by the new one, so it
                 # fails this test for the empty string.
                 expected_num = 1 if record_type_str == 'CNAME' else 2
 

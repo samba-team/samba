@@ -42,6 +42,10 @@ def configure(conf):
 
     conf.env.standalone_talloc = conf.IN_LAUNCH_DIR()
 
+    conf.define('TALLOC_BUILD_VERSION_MAJOR', int(VERSION.split('.')[0]))
+    conf.define('TALLOC_BUILD_VERSION_MINOR', int(VERSION.split('.')[1]))
+    conf.define('TALLOC_BUILD_VERSION_RELEASE', int(VERSION.split('.')[2]))
+
     conf.env.disable_python = getattr(Options.options, 'disable_python', False)
 
     if not conf.env.standalone_talloc:

@@ -703,7 +703,7 @@ static bool ad_unpack(struct adouble *ad, const size_t nentries,
  * bytes containing packed xattrs. Netatalk can't deal with that, so
  * we simply discard the packed xattrs.
  *
- * @return -1 in case an error occured, 0 if no conversion was done, 1
+ * @return -1 in case an error occurred, 0 if no conversion was done, 1
  * otherwise
  **/
 static int ad_convert(struct adouble *ad, int fd)
@@ -1680,7 +1680,7 @@ static off_t denymode_to_netatalk_brl(enum apple_fork fork_type,
  * Call fcntl() with an exclusive F_GETLK request in order to
  * determine if there's an exisiting shared lock
  *
- * @return true if the requested lock was found or any error occured
+ * @return true if the requested lock was found or any error occurred
  *         false if the lock was not found
  **/
 static bool test_netatalk_lock(files_struct *fsp, off_t in_offset)

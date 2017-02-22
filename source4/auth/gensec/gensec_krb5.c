@@ -750,7 +750,7 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 	
 	ret = krb5_ticket_get_client(context, gensec_krb5_state->ticket, &client_principal);
 	if (ret) {
-		DEBUG(5, ("krb5_ticket_get_client failed to get cleint principal: %s\n", 
+		DEBUG(5, ("krb5_ticket_get_client failed to get client principal: %s\n", 
 			  smb_get_krb5_error_message(context, 
 						     ret, tmp_ctx)));
 		talloc_free(tmp_ctx);

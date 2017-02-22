@@ -67,7 +67,7 @@ struct slq_destroy_state {
 /*
  * If these functions return an error, they hit something like a non
  * recoverable talloc error. Most errors are dealt with by returning
- * an errror code in the Spotlight RPC reply.
+ * an error code in the Spotlight RPC reply.
  */
 static bool slrpc_fetch_properties(struct mds_ctx *mds_ctx,
 				   const DALLOC_CTX *query, DALLOC_CTX *reply);

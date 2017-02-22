@@ -23,7 +23,7 @@ msgid "Success"
 msgstr "Vellykket"
 
 #: ../../../nsswitch/pam_winbind.c:585
-msgid "No primary Domain Controler available"
+msgid "No primary Domain Controller available"
 msgstr "Ingen primær domenekontroller tilgjengelig"
 
 #: ../../../nsswitch/pam_winbind.c:587

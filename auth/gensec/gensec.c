@@ -610,7 +610,7 @@ _PUBLIC_ NTSTATUS gensec_set_target_hostname(struct gensec_security *gensec_secu
 
 _PUBLIC_ const char *gensec_get_target_hostname(struct gensec_security *gensec_security)
 {
-	/* We allow the target hostname to be overriden for testing purposes */
+	/* We allow the target hostname to be overridden for testing purposes */
 	if (gensec_security->settings->target_hostname) {
 		return gensec_security->settings->target_hostname;
 	}

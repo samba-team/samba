@@ -262,7 +262,7 @@ static bool test_fsrvp_state_compare(struct torture_context *tctx,
 }
 
 /*
- * test a simple heirarchy of:
+ * test a simple hierarchy of:
  *
  *       |
  *     sc_set
@@ -334,7 +334,7 @@ static bool test_fsrvp_state_single(struct torture_context *tctx)
 }
 
 /*
- * test a complex heirarchy of:
+ * test a complex hierarchy of:
  *
  *              /\
  *             /  \

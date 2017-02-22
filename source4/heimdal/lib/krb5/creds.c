@@ -193,7 +193,7 @@ krb5_times_equal(const krb5_times *a, const krb5_times *b)
  * - KRB5_TC_MATCH_TIMES Compares only the expiration times of the creds.
  * - KRB5_TC_MATCH_AUTHDATA Compares the authdata fields.
  * - KRB5_TC_MATCH_2ND_TKT Compares the second tickets (used by user-to-user authentication).
- * - KRB5_TC_MATCH_IS_SKEY Compares the existance of the second ticket.
+ * - KRB5_TC_MATCH_IS_SKEY Compares the existence of the second ticket.
  *
  * @param context Kerberos 5 context.
  * @param whichfields which fields to compare.

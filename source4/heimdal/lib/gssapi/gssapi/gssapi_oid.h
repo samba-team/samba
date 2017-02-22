@@ -4,7 +4,7 @@
 
  /* contact Love Hörnquist Åstrand <lha@h5l.org> for new oid arcs */
  /*
-  * 1.2.752.43.13 Heimdal GSS-API Extentions
+  * 1.2.752.43.13 Heimdal GSS-API Extensions
   */
 extern GSSAPI_LIB_VARIABLE gss_OID_desc __gss_krb5_copy_ccache_x_oid_desc;
 #define GSS_KRB5_COPY_CCACHE_X (&__gss_krb5_copy_ccache_x_oid_desc)

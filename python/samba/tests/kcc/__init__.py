@@ -69,7 +69,7 @@ class KCCTests(samba.tests.TestCase):
 
     def test_verify(self):
         """check that the KCC generates graphs that pass its own verify
-        option. This is not a spectacular acheivement when there are
+        option. This is not a spectacular achievement when there are
         only a couple of nodes to connect, but it shows something.
         """
         my_kcc = kcc.KCC(unix_now, readonly=True, verify=True,

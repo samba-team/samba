@@ -5949,7 +5949,7 @@ WERROR _spoolss_StartDocPrinter(struct pipes_struct *p,
 			       Printer->devmode,
 			       &Printer->jobid);
 
-	/* An error occured in print_job_start() so return an appropriate
+	/* An error occurred in print_job_start() so return an appropriate
 	   NT error code. */
 
 	if (!W_ERROR_IS_OK(werr)) {

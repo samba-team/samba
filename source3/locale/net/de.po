@@ -1613,7 +1613,7 @@ msgid ""
 msgstr ""
 
 #: ../../utils/net_ads.c:2636
-msgid "Perfom CLDAP query on DC"
+msgid "Perform CLDAP query on DC"
 msgstr ""
 
 #: ../../utils/net_ads.c:2637
@@ -6630,7 +6630,7 @@ msgstr ""
 #: ../../utils/net_rpc_registry.c:1368
 msgid ""
 "net rpc registry getsd\n"
-"    Get security descriptior"
+"    Get security descriptor"
 msgstr ""
 
 #: ../../utils/net_rpc_rights.c:203

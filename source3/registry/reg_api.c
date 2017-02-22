@@ -977,7 +977,7 @@ static WERROR reg_deletekey_recursive_internal(struct registry_key *parent,
 	W_ERROR_NOT_OK_GOTO_DONE(werr);
 
 	/*
-	 * loop from top to bottom for perfomance:
+	 * loop from top to bottom for performance:
 	 * this way, we need to rehash the regsubkey containers less
 	 */
 	for (i = regsubkey_ctr_numkeys(key->subkeys) ; i > 0; i--) {

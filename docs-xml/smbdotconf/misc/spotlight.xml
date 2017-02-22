@@ -42,7 +42,7 @@
 </programlisting>
 
 	<para>
-	  Or it can be run in a seperate RPC service daemon:
+	  Or it can be run in a separate RPC service daemon:
 	</para>
 
 <programlisting>

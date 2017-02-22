@@ -183,7 +183,7 @@ struct dsdb_dn *dsdb_dn_parse_trusted(TALLOC_CTX *mem_ctx, struct ldb_context *l
 			bval.length = strhex_to_str((char *)bval.data, bval.length,
 						    p1, blen);
 			if (bval.length != (blen / 2)) {
-				DEBUG(10, (__location__ ": non hexidecimal characters found in binary prefix\n"));
+				DEBUG(10, (__location__ ": non hexadecimal characters found in binary prefix\n"));
 				goto failed;
 			}
 		} else {

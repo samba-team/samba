@@ -40,7 +40,7 @@
  *
  * Type of certificates store:
  * - MEMORY
- *   In memory based format. Doesnt support storing.
+ *   In memory based format. Doesn't support storing.
  * - FILE
  *   FILE supports raw DER certicates and PEM certicates. When PEM is
  *   used the file can contain may certificates and match private

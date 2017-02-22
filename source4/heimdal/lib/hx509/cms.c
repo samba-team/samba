@@ -625,7 +625,7 @@ hx509_cms_envelope_1(hx509_context context,
 	if (enc_alg->parameters == NULL) {
 	    ret = ENOMEM;
 	    hx509_set_error_string(context, 0, ret,
-				   "Failed to allocate crypto paramaters "
+				   "Failed to allocate crypto parameters "
 				   "for EnvelopedData");
 	    goto out;
 	}

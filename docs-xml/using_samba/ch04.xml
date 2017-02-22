@@ -593,7 +593,7 @@ netbios aliases = sales accounting payroll</programlisting>
 
 <varlistentry><term>Numerical</term>
 <listitem><para>
-<indexterm id="ch04-idx-967220-0"><primary>numerical type</primary></indexterm>An integer, hexidecimal, or octal number. The standard <literal>0x</literal><emphasis>nn</emphasis> syntax is used for hexadecimal and <literal>0</literal><emphasis>nnn</emphasis> for octal.</para></listitem>
+<indexterm id="ch04-idx-967220-0"><primary>numerical type</primary></indexterm>An integer, hexadecimal, or octal number. The standard <literal>0x</literal><emphasis>nn</emphasis> syntax is used for hexadecimal and <literal>0</literal><emphasis>nnn</emphasis> for octal.</para></listitem>
 </varlistentry>
 
 
@@ -1362,7 +1362,7 @@ writeable = yes</programlisting>
 <indexterm id="ch04-idx-967307-0"><primary>hosts</primary><secondary>subnets and,
 caution with</secondary></indexterm>
 <indexterm id="ch04-idx-967307-1"><primary>subnets</primary><secondary>hosts and,
-caution with</secondary></indexterm>Take care that you don't explicity
+caution with</secondary></indexterm>Take care that you don't explicitly
 allow a host to access a share, but then deny access to the entire
 subnet of which the host is part.</para>
 

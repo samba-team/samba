@@ -195,7 +195,7 @@ static void dreplsrv_notify_op_callback(struct tevent_req *subreq)
 			 ldb_dn_get_linearized(op->source_dsa->partition->dn),
 			 nt_errstr(status), win_errstr(werr));
 	} else {
-		DBG_INFO("dreplsrv_notify: DsReplicaSync successfuly sent to %s\n",
+		DBG_INFO("dreplsrv_notify: DsReplicaSync successfully sent to %s\n",
 			 op->source_dsa->repsFrom1->other_info->dns_name);
 		op->source_dsa->notify_uSN = op->uSN;
 	}

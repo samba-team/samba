@@ -167,7 +167,7 @@ static void smb_signing_md5(const DATA_BLOB *mac_key,
 	*/
 	MD5Init(&md5_ctx);
 
-	/* intialise with the key */
+	/* initialise with the key */
 	MD5Update(&md5_ctx, mac_key->data, mac_key->length);
 
 	/* copy in the first bit of the SMB header */

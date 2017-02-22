@@ -179,7 +179,7 @@ krb5_pac_parse(krb5_context context, const void *ptr, size_t len,
 	if (p->pac->buffers[i].offset_lo & (PAC_ALIGNMENT - 1)) {
 	    ret = EINVAL;
 	    krb5_set_error_message(context, ret,
-				   N_("PAC out of allignment", ""));
+				   N_("PAC out of alignment", ""));
 	    goto out;
 	}
 	if (p->pac->buffers[i].offset_hi) {

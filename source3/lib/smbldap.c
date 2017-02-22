@@ -948,7 +948,7 @@ static int smbldap_connect_system(struct smbldap_state *ldap_state)
 	int version;
 
 	/* removed the sasl_bind_s "EXTERNAL" stuff, as my testsuite 
-	   (OpenLDAP) doesnt' seem to support it */
+	   (OpenLDAP) doesn't seem to support it */
 
 	DEBUG(10,("ldap_connect_system: Binding to ldap server %s as \"%s\"\n",
 		  ldap_state->uri, ldap_state->bind_dn));

@@ -3431,7 +3431,7 @@ int net_ads(struct net_context *c, int argc, const char **argv)
 			"lookup",
 			net_ads_lookup,
 			NET_TRANSPORT_ADS,
-			N_("Perfom CLDAP query on DC"),
+			N_("Perform CLDAP query on DC"),
 			N_("net ads lookup\n"
 			   "    Find the ADS DC using CLDAP lookups")
 		},

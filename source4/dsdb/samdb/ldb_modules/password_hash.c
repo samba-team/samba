@@ -1473,7 +1473,7 @@ static int setup_primary_samba_gpg(struct setup_password_fields_io *io,
 		if (len < 16) {
 			ldb_debug(ldb, LDB_DEBUG_FATAL,
 				  "%s:%s: ki[%zu] key_id[%s] strlen < 16, "
-				  "please specifiy at least the 64bit key id\n",
+				  "please specify at least the 64bit key id\n",
 				  __location__, __func__,
 				  ki, key_id);
 			for (kr = 0; keys[kr] != NULL; kr++) {

@@ -49,7 +49,7 @@ static void trans2_check_hit(const char *format, int op, int level, NTSTATUS sta
 }
 
 /****************************************************************************
-check for existance of a trans2 call
+check for existence of a trans2 call
 ****************************************************************************/
 static NTSTATUS try_trans2(struct smbcli_state *cli, 
 			   int op,
@@ -160,7 +160,7 @@ static bool trans2_op_exists(struct smbcli_state *cli, int op)
 }
 
 /****************************************************************************
-check for existance of a trans2 call
+check for existence of a trans2 call
 ****************************************************************************/
 static bool scan_trans2(
 			struct smbcli_state *cli, int op, int level,
@@ -434,7 +434,7 @@ static NTSTATUS try_nttrans_len(struct smbcli_state *cli,
 }
 
 /****************************************************************************
-check for existance of a nttrans call
+check for existence of a nttrans call
 ****************************************************************************/
 static bool scan_nttrans(struct smbcli_state *cli, int op, int level,
 			int fnum, int dnum, const char *fname)

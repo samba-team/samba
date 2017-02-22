@@ -565,7 +565,7 @@ static void gencache_get_data_blob_parser(time_t timeout, DATA_BLOB blob,
  * @param timeout pointer to a time_t that is filled with entry's
  *        timeout
  *
- * @retval true when entry is successfuly fetched
+ * @retval true when entry is successfully fetched
  * @retval false for failure
  **/
 
@@ -832,7 +832,7 @@ bool gencache_get(const char *keystr, TALLOC_CTX *mem_ctx, char **value,
  * @param value text representation value being cached
  * @param timeout time when the value is expired
  *
- * @retval true when entry is successfuly stored
+ * @retval true when entry is successfully stored
  * @retval false on failure
  **/
 

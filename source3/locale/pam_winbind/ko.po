@@ -18,7 +18,7 @@ msgid "Success"
 msgstr "성공"
 
 #: ../../../nsswitch/pam_winbind.c:585
-msgid "No primary Domain Controler available"
+msgid "No primary Domain Controller available"
 msgstr "사용할 수 있는 기본 도메인 컨트롤러가 없습니다."
 
 #: ../../../nsswitch/pam_winbind.c:587

@@ -285,11 +285,11 @@ Example5 shows how to create an RFC2307/NIS domain enabled user account. If
 
         if smartcard_required:
             if password is not None and password is not '':
-                raise CommandError('It is not allowed to specifiy '
+                raise CommandError('It is not allowed to specify '
                                    '--newpassword '
                                    'together with --smartcard-required.')
             if must_change_at_next_login:
-                raise CommandError('It is not allowed to specifiy '
+                raise CommandError('It is not allowed to specify '
                                    '--must-change-at-next-login '
                                    'together with --smartcard-required.')
 
@@ -757,15 +757,15 @@ Example3 shows how an administrator would reset TestUser3 user's password to pas
 
         if smartcard_required:
             if password is not None and password is not '':
-                raise CommandError('It is not allowed to specifiy '
+                raise CommandError('It is not allowed to specify '
                                    '--newpassword '
                                    'together with --smartcard-required.')
             if must_change_at_next_login:
-                raise CommandError('It is not allowed to specifiy '
+                raise CommandError('It is not allowed to specify '
                                    '--must-change-at-next-login '
                                    'together with --smartcard-required.')
             if clear_smartcard_required:
-                raise CommandError('It is not allowed to specifiy '
+                raise CommandError('It is not allowed to specify '
                                    '--clear-smartcard-required '
                                    'together with --smartcard-required.')
 

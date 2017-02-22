@@ -275,7 +275,7 @@ WERROR regsubkey_ctr_delkey( struct regsubkey_ctr *ctr, const char *keyname )
 }
 
 /***********************************************************************
- Check for the existance of a key
+ Check for the existence of a key
  **********************************************************************/
 
 bool regsubkey_ctr_key_exists( struct regsubkey_ctr *ctr, const char *keyname )
@@ -392,7 +392,7 @@ struct regval_blob *regval_ctr_specific_value(struct regval_ctr *ctr,
 }
 
 /***********************************************************************
- Check for the existance of a value
+ Check for the existence of a value
  **********************************************************************/
 
 bool regval_ctr_value_exists(struct regval_ctr *ctr, const char *value)

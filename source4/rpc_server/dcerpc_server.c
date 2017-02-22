@@ -2174,11 +2174,11 @@ static void dcesrv_terminate_connection(struct dcesrv_connection *dce_conn, cons
 		return;
 	}
 
-	DEBUG(3,("dcesrv: terminating connection due to '%s' defered due to pending calls\n",
+	DEBUG(3,("dcesrv: terminating connection due to '%s' deferred due to pending calls\n",
 		 reason));
 	dce_conn->terminate = talloc_strdup(dce_conn, reason);
 	if (dce_conn->terminate == NULL) {
-		dce_conn->terminate = "dcesrv: defered terminating connection - no memory";
+		dce_conn->terminate = "dcesrv: deferred terminating connection - no memory";
 	}
 	DLIST_ADD_END(dce_ctx->broken_connections, dce_conn);
 }

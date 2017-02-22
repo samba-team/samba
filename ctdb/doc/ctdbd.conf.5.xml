@@ -165,7 +165,7 @@
 	    OPTIONS is a comma-separated list of any permissible
 	    options to the tmpfs filesystem.  The only pre-specified
 	    default is <option>mode=700</option>, which can
-	    overriden by specifying <option>mode</option> in
+	    overridden by specifying <option>mode</option> in
 	    OPTIONS.  It probably makes sense to specify a maximum
 	    <option>size</option>.
 	  </para>

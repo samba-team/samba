@@ -967,7 +967,7 @@ bool run_benchrw(struct torture_context *tctx)
 				req->async.fn = benchrw_callback;
 				req->async.private_data=state[i];
 				break;
-			/* error occured , finish */
+			/* error occurred , finish */
 			case ERROR:
 				finished++;
 				success=false;

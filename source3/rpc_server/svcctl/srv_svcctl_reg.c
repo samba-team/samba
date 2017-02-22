@@ -101,7 +101,7 @@ static struct service_display_info common_unix_svcs[] = {
   { "bind",          NULL, "Domain Name Service", 	NULL },
   { "httpd",         NULL, "HTTP Server", 		NULL },
   { "apache",        NULL, "HTTP Server", 		"Provides s highly scalable and flexible web server "
-							"capable of implementing various protocols incluing "
+							"capable of implementing various protocols including "
 							"but not limited to HTTP" },
   { "autofs",        NULL, "Automounter", 		NULL },
   { "squid",         NULL, "Web Cache Proxy ",		NULL },

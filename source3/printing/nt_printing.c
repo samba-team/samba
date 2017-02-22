@@ -396,7 +396,7 @@ static int get_file_version(files_struct *fsp, char *fname,uint32_t *major, uint
 		if (CVAL(buf,NE_HEADER_TARGET_OS_OFFSET) != NE_HEADER_TARGOS_WIN ) {
 			DEBUG(3,("get_file_version: NE file [%s] wrong target OS = 0x%x\n",
 					fname, CVAL(buf,NE_HEADER_TARGET_OS_OFFSET)));
-			/* At this point, we assume the file is in error. It still could be somthing
+			/* At this point, we assume the file is in error. It still could be something
 			 * else besides a NE file, but it unlikely at this point. */
 			goto error_exit;
 		}

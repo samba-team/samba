@@ -96,7 +96,7 @@
 	</programlisting>
 	<para>
 		To use the experimental snapshot manipulation functionality
-		provided by this module, it must be explicity enabled, and
+		provided by this module, it must be explicitly enabled, and
 		Samba's FSRVP server must be running.
 	</para>
 	<para>

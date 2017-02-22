@@ -290,7 +290,7 @@ static NTSTATUS fss_state_smap_retrieve(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	/* store the full path so that the heirarchy can be rebuilt */
+	/* store the full path so that the hierarchy can be rebuilt */
 	smap->sc_share_name = talloc_strdup(smap, (char *)key->dptr);
 	if (smap->sc_share_name == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -335,7 +335,7 @@ static NTSTATUS fss_state_sc_retrieve(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	/* store the full path so that the heirarchy can be rebuilt */
+	/* store the full path so that the hierarchy can be rebuilt */
 	sc->id_str = talloc_strdup(sc, (char *)key->dptr);
 	if (sc->id_str == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -385,7 +385,7 @@ static NTSTATUS fss_state_sc_set_retrieve(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	/* store the full path so that the heirarchy can be rebuilt */
+	/* store the full path so that the hierarchy can be rebuilt */
 	sc_set->id_str = talloc_strdup(sc_set, (char *)key->dptr);
 	if (sc_set->id_str == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -662,7 +662,7 @@ _PRIVATE_ NTSTATUS fss_state_retrieve(TALLOC_CTX *mem_ctx,
 
 	status = fss_state_hierarchize(&trv_state, sc_sets, sc_sets_count);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed to form fss state heirarchy\n"));
+		DEBUG(0, ("Failed to form fss state hierarchy\n"));
 		goto err_db_free;
 	}
 

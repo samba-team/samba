@@ -18,7 +18,7 @@ msgid "Success"
 msgstr "نجاح"
 
 #: ../../../nsswitch/pam_winbind.c:585
-msgid "No primary Domain Controler available"
+msgid "No primary Domain Controller available"
 msgstr "جهاز التحكم في المجال الرئيسي غير متوفر"
 
 #: ../../../nsswitch/pam_winbind.c:587

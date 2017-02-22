@@ -40,7 +40,7 @@ init_module_fn load_module(const char *path, bool is_probe, void **handle_out)
 	handle = dlopen(path, RTLD_NOW);
 
 	/* This call should reset any possible non-fatal errors that
-	   occured since last call to dl* functions */
+	   occurred since last call to dl* functions */
 	error = dlerror();
 
 	if (handle == NULL) {

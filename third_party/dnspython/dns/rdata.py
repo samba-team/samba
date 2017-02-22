@@ -261,7 +261,7 @@ class Rdata(object):
         # A number of types compare rdata in wire form, so we provide
         # the method here instead of duplicating it.
         #
-        # We specifiy an arbitrary origin of '.' when doing the
+        # We specify an arbitrary origin of '.' when doing the
         # comparison, since the rdata may have relative names and we
         # can't convert a relative name to wire without an origin.
         b1 = cStringIO.StringIO()

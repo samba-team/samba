@@ -443,7 +443,7 @@ appears a third time after the last sub-structure.
 <listitem><para>0 - attributes (undocumented)</para></listitem></varlistentry>
 <varlistentry>
 	<term>VOID*</term>
-<listitem><para>0 - security descriptior (pointer)</para></listitem></varlistentry>
+<listitem><para>0 - security descriptor (pointer)</para></listitem></varlistentry>
 <varlistentry>
 	<term>UINT32</term>
 	<listitem><para>0 - security quality of service</para></listitem>

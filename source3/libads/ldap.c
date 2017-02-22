@@ -1925,7 +1925,7 @@ bool ads_element_in_array(const char **el_array, size_t num_el, const char *el)
  *
  * @param[in]  num_spns     The number of principals stored in the array.
  *
- * @return                  0 on success, or a ADS error if a failure occured.
+ * @return                  0 on success, or a ADS error if a failure occurred.
  */
 ADS_STATUS ads_get_service_principal_names(TALLOC_CTX *mem_ctx,
 					   ADS_STRUCT *ads,

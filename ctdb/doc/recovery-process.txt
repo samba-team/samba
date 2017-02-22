@@ -221,7 +221,7 @@ Make sure to find which node is the recovery master and check the log for that n
 
 Example log entries that start in column 1 are expected to be present in the
 log. Example log entries that are indented 3 columns are optional and might
-only be present if an error occured.
+only be present if an error occurred.
 
 
 1, Log that recovery has been initiated.
@@ -365,7 +365,7 @@ only be present if an error occured.
     initiated. The cluster will not allow a new recovery to be performed until this timeout
     has expired.
 
-"New recoveries supressed for the rerecovery timeout"
+"New recoveries suppressed for the rerecovery timeout"
 "Rerecovery timeout elapsed. Recovery reactivated."
 
 
@@ -424,7 +424,7 @@ Example : RECOVERY LOG ON RECMASTER
 2008/12/01 09:57:29.545404 [ 4933]: Recovery has finished
 2008/12/01 09:57:29.807169 [ 4935]: server/ctdb_recoverd.c:1551 Recovery - finished the recovered event
 2008/12/01 09:57:29.807169 [ 4935]: server/ctdb_recoverd.c:1557 Recovery complete
-2008/12/01 09:57:29.807169 [ 4935]: server/ctdb_recoverd.c:1565 New recoveries supressed for the rerecovery timeout
+2008/12/01 09:57:29.807169 [ 4935]: server/ctdb_recoverd.c:1565 New recoveries suppressed for the rerecovery timeout
 2008/12/01 09:57:39.815648 [ 4935]: server/ctdb_recoverd.c:1567 Rerecovery timeout elapsed. Recovery reactivated.
 
 

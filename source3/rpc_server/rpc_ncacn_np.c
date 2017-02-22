@@ -543,7 +543,7 @@ static NTSTATUS rpcint_binding_handle_ex(TALLOC_CTX *mem_ctx,
  *                             dcerpc_binding_handle
  *
  * @return              NT_STATUS_OK on success, a corresponding NT status if an
- *                      error occured.
+ *                      error occurred.
  *
  * @code
  *   struct dcerpc_binding_handle *winreg_binding;
@@ -590,7 +590,7 @@ NTSTATUS rpcint_binding_handle(TALLOC_CTX *mem_ctx,
  * @param[out] presult  A pointer to store the connected rpc client pipe.
  *
  * @return              NT_STATUS_OK on success, a corresponding NT status if an
- *                      error occured.
+ *                      error occurred.
  */
 NTSTATUS rpc_pipe_open_internal(TALLOC_CTX *mem_ctx,
 				const struct ndr_interface_table *ndr_table,
@@ -1015,7 +1015,7 @@ done:
  * @param[out] presult  A pointer to store the connected rpc client pipe.
  *
  * @return              NT_STATUS_OK on success, a corresponding NT status if an
- *                      error occured.
+ *                      error occurred.
  *
  * @code
  *   struct rpc_pipe_client *winreg_pipe;

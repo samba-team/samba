@@ -320,6 +320,7 @@ int main(int argc, const char **argv)
 	const char * const * attrs = NULL;
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct ldb_control **req_ctrls;
+	unsigned int i;
 
 	ldb = ldb_init(mem_ctx, NULL);
 	if (ldb == NULL) {
@@ -343,6 +344,15 @@ int main(int argc, const char **argv)
 	if (options->basedn != NULL) {
 		basedn = ldb_dn_new(ldb, ldb, options->basedn);
 		if (basedn == NULL) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+	}
+
+	for (i = 0; options->controls != NULL && options->controls[i] != NULL; i++) {
+		if (strncmp(options->controls[i], "reveal_internals:", 17) == 0) {
+			printf("Using reveal internals has unintended consequences.\n");
+			printf("If this is your intent, manually perform the search,"
+			       " and use ldbmodify directly.\n");
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 	}

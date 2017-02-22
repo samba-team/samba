@@ -1504,7 +1504,7 @@ def sync_calculated_attributes(samdb, names):
 # The object is reappended at the end of the list to be created later
 # (and preferably after all the needed object have been created)
 # The function keeps on looping on the list of object to be created until
-# it's empty or that the number of defered creation is equal to the number
+# it's empty or that the number of deferred creation is equal to the number
 # of object that still needs to be created.
 
 # The function add_missing_object will first check if the object can be created.

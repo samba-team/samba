@@ -104,7 +104,7 @@ NTSTATUS dcesrv_samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call,
 			   "(&(sAMAccountName=%s)(objectclass=user))",
 			   ldb_binary_encode_string(mem_ctx, r->in.account->string));
 	if (ret != 1) {
-		/* Don't give the game away:  (don't allow anonymous users to prove the existance of usernames) */
+		/* Don't give the game away:  (don't allow anonymous users to prove the existence of usernames) */
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 
@@ -251,7 +251,7 @@ NTSTATUS dcesrv_samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 			   "(&(sAMAccountName=%s)(objectclass=user))",
 			   ldb_binary_encode_string(mem_ctx, r->in.account->string));
 	if (ret != 1) {
-		/* Don't give the game away:  (don't allow anonymous users to prove the existance of usernames) */
+		/* Don't give the game away:  (don't allow anonymous users to prove the existence of usernames) */
 		status = NT_STATUS_WRONG_PASSWORD;
 		goto failed;
 	}

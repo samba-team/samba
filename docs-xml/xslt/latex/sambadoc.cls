@@ -18,7 +18,7 @@
 %================================================================================
 % 1. Page layout dimensions
 % 3. Define new fonts for headings
-% 4. Redefines the way "figure" amd "table" are formated in a \caption
+% 4. Redefines the way "figure" amd "table" are formatted in a \caption
 % 5. Defines a \capt macro which defines (1) \captwidth, (2) \captsize
 %    and \beforetableskip.
 % 6. Defines and modifies FANCYHDS.STY for headers and foots

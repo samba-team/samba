@@ -1173,7 +1173,7 @@ changes to samba. This change-log is now obsolete.
 	- added "revalidate" option
 	- added hosts allow/deny access check to messaging access
 	- added timeouts in the client
-	- added check for existance of smbrun binary
+	- added check for existence of smbrun binary
 	- man page updates from Colin.Dean@Smallworld.co.uk
 	- freebsd patches from dfr@render.com
 	- added mask sanity check in SMBsearch
@@ -1845,7 +1845,7 @@ protocol drop back in client to avoid openX etc.
 
 handle exported fat drives to a long filename capable client
 
-add check for existance of lpq commands etc (use stat?)
+add check for existence of lpq commands etc (use stat?)
 
 get rid of the silly +4 and -4 by removing NBT stuff
 

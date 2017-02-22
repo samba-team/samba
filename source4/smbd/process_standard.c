@@ -53,7 +53,7 @@ static void standard_model_init(void)
 
 	rc = pipe(child_pipe);
 	if (rc < 0) {
-		smb_panic("Failed to initialze pipe!");
+		smb_panic("Failed to initialize pipe!");
 	}
 }
 
