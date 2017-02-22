@@ -181,7 +181,7 @@ CTDB changes
   ctdb-recoverd: Messages from CTDB's recovery daemon
   ctdb-recovery: Messages from CTDB database recovery
   ctdb-eventd: Messages from CTDB's event daemon
-  ctdb-takeover: Messgaes from CTDB's public IP takeover subsystem
+  ctdb-takeover: Messages from CTDB's public IP takeover subsystem
 
 * The mapping between symbolic and numeric debug levels has changed
 
