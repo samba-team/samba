@@ -1,4 +1,4 @@
-Checking 222 objects
+Checking 223 objects
 ERROR: linked attribute 'member' to '<GUID=118943ce-41c2-48cb-a511-b68c6feaa8aa>;<RMD_ADDTIME=131116484670000000>;<RMD_CHANGETIME=131116484700000000>;<RMD_FLAGS=1>;<RMD_INVOCID=4e4496a3-7fb8-4f97-8a33-d238db8b5e2d>;<RMD_LOCAL_USN=3729>;<RMD_ORIGINATING_USN=3729>;<RMD_VERSION=1>;<SID=S-1-5-21-4177067393-1453636373-93818738-1103>;CN=User UT. Tester,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp' is present on deleted object CN=gsg\0ADEL:91aa85cc-fc19-4b8c-9fc7-aaba425439c7,CN=Deleted Objects,DC=release-4-5-0-pre1,DC=samba,DC=corp
 Remove linked attribute member [YES]
 Fixed undead forward link member
@@ -11,6 +11,9 @@ Fixed undead forward link member
 ERROR: linked attribute 'member' to '<GUID=50d78122-17c8-4352-acf0-8f549b5b5b3c>;<RMD_ADDTIME=131116484690000000>;<RMD_CHANGETIME=131116484720000000>;<RMD_FLAGS=1>;<RMD_INVOCID=4e4496a3-7fb8-4f97-8a33-d238db8b5e2d>;<RMD_LOCAL_USN=3733>;<RMD_ORIGINATING_USN=3733>;<RMD_VERSION=1>;<SID=S-1-5-21-4177067393-1453636373-93818738-1104>;CN=User1 UT. Tester,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp' is present on deleted object CN=udg\0ADEL:7cff5537-51b1-4d26-a295-0225dbea8525,CN=Deleted Objects,DC=release-4-5-0-pre1,DC=samba,DC=corp
 Remove linked attribute member [YES]
 Fixed undead forward link member
+ERROR: missing backlink attribute 'memberOf' in CN=dangling-forward,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp for link member in CN=Allowed RODC Password Replication Group,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+Fix missing backlink memberOf [YES]
+Fixed missing backlink memberOf
 ERROR: target DN is deleted for member in object CN=swimmers,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp - <GUID=2301a64c-5b42-4ca8-851e-12d4a711cfb4>;<RMD_ADDTIME=131116485990000000>;<RMD_CHANGETIME=131116485990000000>;<RMD_FLAGS=1>;<RMD_INVOCID=4e4496a3-7fb8-4f97-8a33-d238db8b5e2d>;<RMD_LOCAL_USN=3745>;<RMD_ORIGINATING_USN=3745>;<RMD_VERSION=1>;<SID=S-1-5-21-4177067393-1453636373-93818738-1111>;CN=fred,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
 Target GUID points at deleted DN 'CN=fred\\0ADEL:2301a64c-5b42-4ca8-851e-12d4a711cfb4,CN=Deleted Objects,DC=release-4-5-0-pre1,DC=samba,DC=corp'
 Remove stale DN link? [YES]
@@ -42,4 +45,4 @@ Fixed undead forward link member
 ERROR: linked attribute 'member' to '<GUID=50d78122-17c8-4352-acf0-8f549b5b5b3c>;<RMD_ADDTIME=131116484680000000>;<RMD_CHANGETIME=131116484710000000>;<RMD_FLAGS=1>;<RMD_INVOCID=4e4496a3-7fb8-4f97-8a33-d238db8b5e2d>;<RMD_LOCAL_USN=3731>;<RMD_ORIGINATING_USN=3731>;<RMD_VERSION=1>;<SID=S-1-5-21-4177067393-1453636373-93818738-1104>;CN=User1 UT. Tester,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp' is present on deleted object CN=ddg\0ADEL:fb8c2fe3-5448-43de-99f9-e1d3b9357cfc,CN=Deleted Objects,DC=release-4-5-0-pre1,DC=samba,DC=corp
 Remove linked attribute member [YES]
 Fixed undead forward link member
-Checked 222 objects (14 errors)
+Checked 223 objects (15 errors)

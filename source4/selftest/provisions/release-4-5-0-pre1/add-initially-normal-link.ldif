@@ -1,0 +1,4 @@
+dn: CN=Allowed RODC Password Replication Group,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+changetype: modify
+add: member
+member: cn=dangling-forward,cn=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
