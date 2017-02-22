@@ -52,19 +52,19 @@ ganesha_rec_subdir=${CTDB_GANESHA_REC_SUBDIR:-.ganesha}
 procfs=${PROCFS_PATH:-/proc}
 
 case $state_fs in
-    gpfs)
-        GANRECDIR="/var/lib/nfs/ganesha"
-        ;;
-    glusterfs)
-        if [ -z "${state_dir}" ]; then
-            echo "CTDB_NFS_STATE_MNT not defined for GlusterFS"
-            exit 1
-        fi
-        host=`hostname`
-        NODESTATEDIR="$state_dir/nfs-ganesha/$host"
-        GANSTATEDIR="$state_dir/nfs-ganesha/.noderefs"
-        NODESTATELN="$GANSTATEDIR/$host"
-        ;;
+gpfs)
+	GANRECDIR="/var/lib/nfs/ganesha"
+	;;
+glusterfs)
+	if [ -z "${state_dir}" ]; then
+		echo "CTDB_NFS_STATE_MNT not defined for GlusterFS"
+		exit 1
+	fi
+	host=`hostname`
+	NODESTATEDIR="$state_dir/nfs-ganesha/$host"
+	GANSTATEDIR="$state_dir/nfs-ganesha/.noderefs"
+	NODESTATELN="$GANSTATEDIR/$host"
+	;;
 esac
 
 
@@ -72,8 +72,8 @@ esac
 
 usage ()
 {
-    _c=$(basename $0)
-    cat <<EOF
+	_c=$(basename $0)
+	cat <<EOF
 usage: $_c { shutdown | startup }
        $_c { stop | start | check } nfs
        $_c { releaseip | takeip }
@@ -88,24 +88,24 @@ EOF
 
 basic_stop ()
 {
-    case "$1" in
+	case "$1" in
 	nfs)
-	    service "$nfs_service" stop
-	    ;;
+		service "$nfs_service" stop
+		;;
 	*)
-	    usage
-    esac
+		usage
+	esac
 }
 
 basic_start ()
 {
-    case "$1" in
+	case "$1" in
 	nfs)
-	    service "$nfs_service" start
-	    ;;
+		service "$nfs_service" start
+		;;
 	*)
-	    usage
-    esac
+		usage
+	esac
 }
 
 ##################################################
@@ -128,17 +128,17 @@ service_stop ()
 
 service_start ()
 {
-    case "$1" in
+	case "$1" in
 	nfs)
-	    basic_start "nfs"
-	    ;;
+		basic_start "nfs"
+		;;
 	nlockmgr)
-	    # Do nothing - used by statd-callout
-	    :
-	    ;;
+		# Do nothing - used by statd-callout
+		:
+		;;
 	*)
-	    usage
-    esac
+		usage
+	esac
 }
 
 ##################################################
@@ -148,129 +148,134 @@ service_start ()
 # Usage: check_ln <TARGET> <LINK>
 check_ln ()
 {
-    if [ ! -L "${2}" ] ; then
-        rm -vrf "${2}"
-    else
-        _t=$(readlink "${2}")
-        if [ "$_t" != "${1}" ] ; then
-            rm -v "${2}"
-        fi
-    fi
-    # This is not an "else".  It also re-creates the link if it was
-    # removed above!
-    if [ ! -e "${2}" ]; then
-        ln -sfv "${1}" "${2}"
-    fi
+	if [ ! -L "${2}" ] ; then
+		rm -vrf "${2}"
+	else
+		_t=$(readlink "${2}")
+		if [ "$_t" != "${1}" ] ; then
+			rm -v "${2}"
+		fi
+	fi
+	# This is not an "else".  It also re-creates the link if it was
+	# removed above!
+	if [ ! -e "${2}" ]; then
+		ln -sfv "${1}" "${2}"
+	fi
 }
 
 # Return 'active' if the shared filesystem is accessible.
 get_cluster_fs_state ()
 {
-    case $state_fs in
-        gpfs)
-            /usr/lpp/mmfs/bin/mmgetstate | awk 'NR == 4 { print $3 }'
-            ;;
-        glusterfs)
-            # Since we're past create_ganesha_recdirs(), we're active.
-            echo "active"
-            ;;
-        *)
-            echo "File system $state_fs not supported"
-            exit 1
-            ;;
-   esac
+	case $state_fs in
+	gpfs)
+		/usr/lpp/mmfs/bin/mmgetstate | awk 'NR == 4 { print $3 }'
+		;;
+	glusterfs)
+		# Since we're past create_ganesha_recdirs(), we're active.
+		echo "active"
+		;;
+	*)
+		echo "File system $state_fs not supported"
+		exit 1
+		;;
+	esac
 }
 
 create_ganesha_recdirs ()
 {
-    if ! _mounts=$(mount | grep $state_fs); then
-      echo "Failed to find mounts of type $state_fs"
-      exit 1
-    fi
-    if [ -z "$_mounts" ]; then
-      echo "startup $state_fs not ready"
-      exit 0
-    fi
+	if ! _mounts=$(mount | grep $state_fs); then
+		echo "Failed to find mounts of type $state_fs"
+		exit 1
+	fi
+	if [ -z "$_mounts" ]; then
+		echo "startup $state_fs not ready"
+		exit 0
+	fi
 
-    case $state_fs in
-        gpfs)
-            _mntpt=$(echo "$_mounts" | sort | awk 'NR == 1 {print $3}')
-            _link_dst="${_mntpt}/${ganesha_rec_subdir}"
-            mkdir -vp "$_link_dst"
-            check_ln "$_link_dst" "$GANRECDIR"
-            ;;
-        glusterfs)
-            [ -d /var/lib/nfs.backup ] || mv /var/lib/nfs /var/lib/nfs.backup
-            check_ln ${NODESTATEDIR} /var/lib/nfs
+	case $state_fs in
+	gpfs)
+		_mntpt=$(echo "$_mounts" | sort | awk 'NR == 1 {print $3}')
+		_link_dst="${_mntpt}/${ganesha_rec_subdir}"
+		mkdir -vp "$_link_dst"
+		check_ln "$_link_dst" "$GANRECDIR"
+		;;
+	glusterfs)
+		[ -d /var/lib/nfs.backup ] || \
+			mv /var/lib/nfs /var/lib/nfs.backup
+		check_ln ${NODESTATEDIR} /var/lib/nfs
 
-            mkdir -p ${NODESTATEDIR}/ganesha/v4recov
-            mkdir -p ${NODESTATEDIR}/ganesha/v4old
-            mkdir -p ${NODESTATEDIR}/statd/sm
-            mkdir -p ${NODESTATEDIR}/statd/sm.bak
-            touch ${NODESTATEDIR}/state
-            touch ${NODESTATEDIR}/statd/state
+		mkdir -p ${NODESTATEDIR}/ganesha/v4recov
+		mkdir -p ${NODESTATEDIR}/ganesha/v4old
+		mkdir -p ${NODESTATEDIR}/statd/sm
+		mkdir -p ${NODESTATEDIR}/statd/sm.bak
+		touch ${NODESTATEDIR}/state
+		touch ${NODESTATEDIR}/statd/state
 
-            mkdir -p ${GANSTATEDIR}
-            check_ln ${NODESTATEDIR} ${NODESTATELN}
-            for node in `ls ${GANSTATEDIR}`; do
-                if [ "${node}" != "${host}" ]; then
-                    check_ln ${GANSTATEDIR}/${node}/ganesha ${NODESTATEDIR}/ganesha/${node}
-                    check_ln ${GANSTATEDIR}/${node}/statd ${NODESTATEDIR}/statd/${node}
-                fi
-            done
-            ;;
-   esac
+		mkdir -p ${GANSTATEDIR}
+		check_ln ${NODESTATEDIR} ${NODESTATELN}
+		for node in `ls ${GANSTATEDIR}`; do
+			if [ "${node}" != "${host}" ]; then
+				check_ln ${GANSTATEDIR}/${node}/ganesha \
+					 ${NODESTATEDIR}/ganesha/${node}
+				check_ln ${GANSTATEDIR}/${node}/statd \
+					 ${NODESTATEDIR}/statd/${node}
+			fi
+		done
+		;;
+	esac
 }
 
 service_check ()
 {
-    create_ganesha_recdirs
+	create_ganesha_recdirs
 
-    # Always succeed if cluster filesystem is not active
-    _cluster_fs_state=$(get_cluster_fs_state)
-    if [ $_cluster_fs_state != "active" ] ; then
+	# Always succeed if cluster filesystem is not active
+	_cluster_fs_state=$(get_cluster_fs_state)
+	if [ $_cluster_fs_state != "active" ] ; then
+		return 0
+	fi
+
+	# Check that NFS Ganesha is running, according to PID file
+	_pidfile="/var/run/ganesha.pid"
+	_ganesha="/usr/bin/ganesha.nfsd"
+	if ! { read _pid < "$_pidfile" && \
+		grep "$_ganesha" "${procfs}/${_pid}/cmdline" ; } >/dev/null 2>&1
+	then
+
+		echo "ERROR: NFS Ganesha not running according to PID file"
+		return 1
+	fi
+
 	return 0
-    fi
-
-    # Check that NFS Ganesha is running, according to PID file
-    _pidfile="/var/run/ganesha.pid"
-    _ganesha="/usr/bin/ganesha.nfsd"
-    if ! { read _pid < "$_pidfile" && \
-	   grep "$_ganesha" "${procfs}/${_pid}/cmdline" ; } >/dev/null 2>&1 ; then
-	echo "ERROR: NFS Ganesha not running according to PID file"
-	return 1
-    fi
-
-    return 0
 }
 
 #-------------------------------------------------
 
 nfs_releaseip ()
 {
-    if [ -x "/usr/bin/grace_period" ]; then
-        /usr/bin/grace_period "2:${2}"
-    else
-        dbus-send --print-reply --system --dest=org.ganesha.nfsd \
-        /org/ganesha/nfsd/admin org.ganesha.nfsd.admin.grace \
-        string:"2:${2}"
-    fi
+	if [ -x "/usr/bin/grace_period" ]; then
+		/usr/bin/grace_period "2:${2}"
+	else
+		dbus-send --print-reply --system --dest=org.ganesha.nfsd \
+			  /org/ganesha/nfsd/admin org.ganesha.nfsd.admin.grace \
+			  string:"2:${2}"
+	fi
 }
 
 nfs_takeip ()
 {
-    case  $state_fs in
-        glusterfs)
-            check_ln ${NODESTATEDIR} ${GANSTATEDIR}/${2}
-            ;;
-    esac
-    if [ -x "/usr/bin/grace_period" ]; then
-        /usr/bin/grace_period "5:${2}"
-    else
-        dbus-send --print-reply --system --dest=org.ganesha.nfsd \
-        /org/ganesha/nfsd/admin org.ganesha.nfsd.admin.grace \
-        string:"5:${2}"
-    fi
+	case  $state_fs in
+	glusterfs)
+		check_ln ${NODESTATEDIR} ${GANSTATEDIR}/${2}
+		;;
+	esac
+	if [ -x "/usr/bin/grace_period" ]; then
+		/usr/bin/grace_period "5:${2}"
+	else
+		dbus-send --print-reply --system --dest=org.ganesha.nfsd \
+			  /org/ganesha/nfsd/admin org.ganesha.nfsd.admin.grace \
+			  string:"5:${2}"
+	fi
 }
 
 ##################################################
@@ -278,20 +283,20 @@ nfs_takeip ()
 
 nfs_shutdown ()
 {
-    basic_stop "nfs"
+	basic_stop "nfs"
 }
 
 nfs_startup ()
 {
-    basic_stop "nfs" || true
+	basic_stop "nfs" || true
 
-    create_ganesha_recdirs
+	create_ganesha_recdirs
 
-    basic_start "nfs"
-    _f="${procfs}/sys/net/ipv4/tcp_tw_recycle"
-    if [ "$_f" ] ; then
-	echo 1 >"$_f"
-    fi
+	basic_start "nfs"
+	_f="${procfs}/sys/net/ipv4/tcp_tw_recycle"
+	if [ "$_f" ] ; then
+		echo 1 >"$_f"
+	fi
 }
 
 ##################################################
@@ -299,16 +304,16 @@ nfs_startup ()
 
 nfs_monitor_list_shares ()
 {
-    grep Path $nfs_exports_file |
-	cut -f2 -d\" |
-	sort -u
+	grep Path $nfs_exports_file |
+		cut -f2 -d\" |
+		sort -u
 }
 
 ##################################################
 
 nfs_register ()
 {
-    cat <<EOF
+	cat <<EOF
 shutdown
 startup
 stop
@@ -326,19 +331,19 @@ action="$1"
 shift
 
 case "$action" in
-    shutdown)            nfs_shutdown            ;;
-    startup)             nfs_startup             ;;
-    stop)                service_stop "$1"       ;;
-    start)               service_start "$1"      ;;
-    check)               service_check "$1"      ;;
-    releaseip)           nfs_releaseip "$@"      ;;
-    takeip)              nfs_takeip "$@"         ;;
-    monitor-list-shares) nfs_monitor_list_shares ;;
-    register)            nfs_register            ;;
-    monitor-pre|monitor-post|releaseip-pre|takeip-pre)
+shutdown)            nfs_shutdown            ;;
+startup)             nfs_startup             ;;
+stop)                service_stop "$1"       ;;
+start)               service_start "$1"      ;;
+check)               service_check "$1"      ;;
+releaseip)           nfs_releaseip "$@"      ;;
+takeip)              nfs_takeip "$@"         ;;
+monitor-list-shares) nfs_monitor_list_shares ;;
+register)            nfs_register            ;;
+monitor-pre|monitor-post|releaseip-pre|takeip-pre)
 	# Not required/implemented
 	:
 	;;
-    *)
+*)
 	usage
 esac
