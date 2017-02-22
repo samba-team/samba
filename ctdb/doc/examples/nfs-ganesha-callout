@@ -213,12 +213,18 @@ create_ganesha_recdirs ()
 
 		mkdir -p "$GANSTATEDIR"
 		check_ln "$NODESTATEDIR" "$NODESTATELN"
-		for node in `ls ${GANSTATEDIR}`; do
-			if [ "${node}" != "${host}" ]; then
-				check_ln "${GANSTATEDIR}/${node}/ganesha" \
-					 "${NODESTATEDIR}/ganesha/${node}"
-				check_ln "${GANSTATEDIR}/${node}/statd" \
-					 "${NODESTATEDIR}/statd/${node}"
+		for _dir in "${GANSTATEDIR}/"* ; do
+			# Handle no directories case
+			if [ ! -d "$_dir" ] ; then
+				break
+			fi
+
+			_node="${_dir##*/}" # basename
+			if [ "${_node}" != "${host}" ]; then
+				check_ln "${GANSTATEDIR}/${_node}/ganesha" \
+					 "${NODESTATEDIR}/ganesha/${_node}"
+				check_ln "${GANSTATEDIR}/${_node}/statd" \
+					 "${NODESTATEDIR}/statd/${_node}"
 			fi
 		done
 		;;
