@@ -120,6 +120,8 @@ static ADS_STATUS ads_cached_connection_connect(ADS_STRUCT **adsp,
 	ads->auth.renewable = renewable;
 	ads->auth.password = password;
 
+	ads->auth.flags |= ADS_AUTH_ALLOW_NTLMSSP;
+
 	ads->auth.realm = SMB_STRDUP(auth_realm);
 	if (!strupper_m(ads->auth.realm)) {
 		ads_destroy(&ads);
