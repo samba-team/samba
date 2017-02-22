@@ -91,6 +91,20 @@ dbcheck_clean() {
     fi
 }
 
+add_dangling_backlink() {
+    ldif=$release_dir/add-dangling-backlink-user.ldif
+    TZ=UTC $ldbadd -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb $ldif
+    if [ "$?" != "0" ]; then
+	return 1
+    fi
+
+    ldif=$release_dir/add-dangling-backlink.ldif
+    TZ=UTC $ldbmodify -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb.d/DC%3DRELEASE-4-5-0-PRE1,DC%3DSAMBA,DC%3DCORP.ldb $ldif
+    if [ "$?" != "0" ]; then
+	return 1
+    fi
+}
+
 add_two_more_users() {
     ldif=$release_dir/add-two-more-users.ldif
     TZ=UTC $ldbadd -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb $ldif
@@ -172,6 +186,7 @@ if [ -d $release_dir ]; then
     testit "remove_one_link" remove_one_link
     testit "remove_one_user" remove_one_user
     testit "move_one_user" move_one_user
+    testit "add_dangling_backlink" add_dangling_backlink
     testit "dbcheck" dbcheck
     testit "dbcheck_clean" dbcheck_clean
     testit "check_expected_after_deleted_links" check_expected_after_deleted_links
