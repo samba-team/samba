@@ -11,18 +11,15 @@
 
 # To use this:
 #
-# * Set CTDB_NFS_CALLOUT in your CTDB configuration to point to this
-#   script
+# * Set CTDB_NFS_CALLOUT in your CTDB configuration to point to (a
+#   copy of) this script, making sure it is executable.
 #
-# * Rename the following files in nfs-checks.d so that they no longer
-#   have the ".check" suffix:
-#     * 10.status.check
-#     * 20.nfs.check
-#     * 30.nlockmgr.check
-#     * 40.mountd.check
-#     * 50.rquotad.check
-#
-# * Install 20.nfs-ganesha.check to nfs-checks.d/20.nfs.check
+# * Create a new directory alongside the nfs-checks.d directory, for
+#   example nfs-checks-ganesha.d.  Install 20.nfs-ganesha.check in
+#   this directory.  Symlink to any other check files from
+#   nfs-checks.d that should still be used, such as
+#   00.portmapper.check.  Set CTDB_NFS_CHECKS_DIR to point to this new
+#   directory of check files.
 #
 # * It is recommended, but not required, to install the grace_period
 #   script (usually shipped in a utils package for NFS-Ganesha) to
