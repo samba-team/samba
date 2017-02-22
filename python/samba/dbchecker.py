@@ -645,10 +645,9 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             self.report("Not fixing missing backlink %s" % backlink_name)
             return
         m = ldb.Message()
-        m.dn = obj.dn
-        m['old_value'] = ldb.MessageElement(val, ldb.FLAG_MOD_DELETE, attrname)
-        m['new_value'] = ldb.MessageElement(val, ldb.FLAG_MOD_ADD, attrname)
-        if self.do_modify(m, ["show_recycled:1"],
+        m.dn = target_dn
+        m['new_value'] = ldb.MessageElement(val, ldb.FLAG_MOD_ADD, backlink_name)
+        if self.do_modify(m, ["show_recycled:1", "relax:0"],
                           "Failed to fix missing backlink %s" % backlink_name):
             self.report("Fixed missing backlink %s" % (backlink_name))
 
@@ -974,12 +973,16 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                         if v_guid == obj_guid:
                             match_count += 1
                 if match_count != 1:
-                    if target_is_deleted:
-                        error_count += 1
-                        if linkID & 1:
-                            self.err_missing_backlink(obj, attrname, val, reverse_link_name, dsdb_dn.dn)
-                        else:
-                            self.err_orphaned_backlink(obj, attrname, val, reverse_link_name, dsdb_dn.dn)
+                    error_count += 1
+                    if linkID & 1:
+                        # Backlink exists, but forward link does not
+                        # Delete the hanging backlink
+                        self.err_orphaned_backlink(obj, attrname, val, reverse_link_name, dsdb_dn.dn)
+                    else:
+                        # Forward link exists, but backlink does not
+                        # Add the missing backlink (if the target object is not Deleted Objects?)
+                        if not target_is_deleted:
+                            self.err_missing_backlink(obj, attrname, obj.dn.extended_str(), reverse_link_name, dsdb_dn.dn)
                     continue
 
 
