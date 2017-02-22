@@ -1096,6 +1096,10 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 		}
 	}
 
+	if (cli_credentials_is_anonymous(creds)) {
+		goto anon_fallback;
+	}
+
 	krb5_state = cli_credentials_get_kerberos_state(creds);
 
 	machine_krb5_principal = cli_credentials_get_principal(creds,
@@ -1167,10 +1171,6 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 	    || NT_STATUS_EQUAL(result, NT_STATUS_NO_LOGON_SERVERS)
 	    || NT_STATUS_EQUAL(result, NT_STATUS_LOGON_FAILURE))
 	{
-		if (cli_credentials_is_anonymous(creds)) {
-			goto done;
-		}
-
 		if (!cm_is_ipc_credentials(creds)) {
 			goto ipc_fallback;
 		}
@@ -1196,7 +1196,6 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 	}
 
 	if (cli_credentials_is_anonymous(creds)) {
-		TALLOC_FREE(creds);
 		goto anon_fallback;
 	}
 
@@ -1243,6 +1242,7 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 	goto done;
 
  anon_fallback:
+	TALLOC_FREE(creds);
 
 	if (smb_sign_client_connections == SMB_SIGNING_REQUIRED) {
 		goto done;
