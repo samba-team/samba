@@ -1107,6 +1107,10 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 		  machine_domain, machine_account,
 		  machine_principal, machine_realm));
 
+	if (cli_credentials_is_anonymous(creds)) {
+		goto anon_fallback;
+	}
+
 	winbindd_set_locator_kdc_envs(domain);
 
 	result = cli_session_setup_creds(*cli, creds);
@@ -1125,10 +1129,6 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 	    || NT_STATUS_EQUAL(result, NT_STATUS_NO_LOGON_SERVERS)
 	    || NT_STATUS_EQUAL(result, NT_STATUS_LOGON_FAILURE))
 	{
-		if (cli_credentials_is_anonymous(creds)) {
-			goto done;
-		}
-
 		if (!cm_is_ipc_credentials(creds)) {
 			goto ipc_fallback;
 		}
