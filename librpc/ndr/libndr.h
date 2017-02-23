@@ -38,16 +38,17 @@
 
 
 /*
-  this is used by the token store/retrieve code
+  We store the token mapping in an array that is resized as necessary.
 */
+struct ndr_token;
+
 struct ndr_token_list {
-	struct ndr_token_list *next, *prev;
-	const void *key;
-	uint32_t value;
+	struct ndr_token *tokens;
+	uint32_t count;
 };
 
-/* this is the base structure passed to routines that 
-   parse MSRPC formatted data 
+/* this is the base structure passed to routines that
+   parse MSRPC formatted data
 
    note that in Samba4 we use separate routines and structures for
    MSRPC marshalling and unmarshalling. Also note that these routines
@@ -63,12 +64,12 @@ struct ndr_pull {
 	uint32_t relative_highest_offset;
 	uint32_t relative_base_offset;
 	uint32_t relative_rap_convert;
-	struct ndr_token_list *relative_base_list;
+	struct ndr_token_list relative_base_list;
 
-	struct ndr_token_list *relative_list;
-	struct ndr_token_list *array_size_list;
-	struct ndr_token_list *array_length_list;
-	struct ndr_token_list *switch_list;
+	struct ndr_token_list relative_list;
+	struct ndr_token_list array_size_list;
+	struct ndr_token_list array_length_list;
+	struct ndr_token_list switch_list;
 
 	TALLOC_CTX *current_mem_ctx;
 
@@ -84,17 +85,17 @@ struct ndr_push {
 	uint32_t alloc_size;
 	uint32_t offset;
 	bool fixed_buf_size;
-	
+
 	uint32_t relative_base_offset;
 	uint32_t relative_end_offset;
-	struct ndr_token_list *relative_base_list;
+	struct ndr_token_list relative_base_list;
 
-	struct ndr_token_list *switch_list;
-	struct ndr_token_list *relative_list;
-	struct ndr_token_list *relative_begin_list;
-	struct ndr_token_list *nbt_string_list;
-	struct ndr_token_list *dns_string_list;
-	struct ndr_token_list *full_ptr_list;
+	struct ndr_token_list switch_list;
+	struct ndr_token_list relative_list;
+	struct ndr_token_list relative_begin_list;
+	struct ndr_token_list nbt_string_list;
+	struct ndr_token_list dns_string_list;
+	struct ndr_token_list full_ptr_list;
 
 	/* this is used to ensure we generate unique reference IDs */
 	uint32_t ptr_count;
@@ -104,7 +105,7 @@ struct ndr_push {
 struct ndr_print {
 	uint32_t flags; /* LIBNDR_FLAG_* */
 	uint32_t depth;
-	struct ndr_token_list *switch_list;
+	struct ndr_token_list switch_list;
 	void (*print)(struct ndr_print *, const char *, ...) PRINTF_ATTRIBUTE(2,3);
 	void *private_data;
 	bool no_newline;
@@ -534,12 +535,13 @@ enum ndr_err_code ndr_push_subcontext_end(struct ndr_push *ndr,
 				 size_t header_size,
 				 ssize_t size_is);
 enum ndr_err_code ndr_token_store(TALLOC_CTX *mem_ctx,
-			 struct ndr_token_list **list, 
-			 const void *key, 
+			 struct ndr_token_list *list,
+			 const void *key,
 			 uint32_t value);
-enum ndr_err_code ndr_token_retrieve_cmp_fn(struct ndr_token_list **list, const void *key, uint32_t *v, int(*_cmp_fn)(const void*,const void*), bool _remove_tok);
-enum ndr_err_code ndr_token_retrieve(struct ndr_token_list **list, const void *key, uint32_t *v);
-uint32_t ndr_token_peek(struct ndr_token_list **list, const void *key);
+enum ndr_err_code ndr_token_retrieve_cmp_fn(struct ndr_token_list *list, const void *key, uint32_t *v,
+					    int(*_cmp_fn)(const void*,const void*), bool erase);
+enum ndr_err_code ndr_token_retrieve(struct ndr_token_list *list, const void *key, uint32_t *v);
+uint32_t ndr_token_peek(struct ndr_token_list *list, const void *key);
 enum ndr_err_code ndr_pull_array_size(struct ndr_pull *ndr, const void *p);
 uint32_t ndr_get_array_size(struct ndr_pull *ndr, const void *p);
 enum ndr_err_code ndr_check_array_size(struct ndr_pull *ndr, void *p, uint32_t size);

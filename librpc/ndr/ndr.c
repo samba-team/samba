@@ -138,11 +138,11 @@ _PUBLIC_ enum ndr_err_code ndr_pull_pop(struct ndr_pull *ndr)
 		return ndr_pull_error(ndr, NDR_ERR_RELATIVE,
 				      "%s", __location__);
 	}
-	if (ndr->relative_list != NULL) {
+	if (ndr->relative_list.count != 0) {
 		return ndr_pull_error(ndr, NDR_ERR_RELATIVE,
 				      "%s", __location__);
 	}
-	if (ndr->relative_base_list != NULL) {
+	if (ndr->relative_base_list.count != 0) {
 		return ndr_pull_error(ndr, NDR_ERR_RELATIVE,
 				      "%s", __location__);
 	}
@@ -914,40 +914,78 @@ _PUBLIC_ enum ndr_err_code ndr_push_subcontext_end(struct ndr_push *ndr,
 	return NDR_ERR_SUCCESS;
 }
 
+
+struct ndr_token {
+	const void *key;
+	uint32_t value;
+};
+
 /*
   store a token in the ndr context, for later retrieval
 */
 _PUBLIC_ enum ndr_err_code ndr_token_store(TALLOC_CTX *mem_ctx,
-			 struct ndr_token_list **list, 
-			 const void *key, 
+			 struct ndr_token_list *list,
+			 const void *key,
 			 uint32_t value)
 {
-	struct ndr_token_list *tok;
-	tok = talloc(mem_ctx, struct ndr_token_list);
-	NDR_ERR_HAVE_NO_MEMORY(tok);
-	tok->key = key;
-	tok->value = value;
-	DLIST_ADD((*list), tok);
+	if (list->tokens == NULL) {
+		list->tokens = talloc_array(mem_ctx, struct ndr_token, 10);
+		if (list->tokens == NULL) {
+			NDR_ERR_HAVE_NO_MEMORY(list->tokens);
+		}
+	} else {
+		uint32_t alloc_count = talloc_array_length(list->tokens);
+		if (list->count == alloc_count) {
+			unsigned new_alloc;
+			unsigned increment = MIN(list->count, 1000);
+			new_alloc = alloc_count + increment;
+			if (new_alloc < alloc_count) {
+				return NDR_ERR_RANGE;
+			}
+			list->tokens = talloc_realloc(mem_ctx, list->tokens,
+						      struct ndr_token, new_alloc);
+			if (list->tokens == NULL) {
+				NDR_ERR_HAVE_NO_MEMORY(list->tokens);
+			}
+		}
+	}
+	list->tokens[list->count].key = key;
+	list->tokens[list->count].value = value;
+	list->count++;
 	return NDR_ERR_SUCCESS;
 }
 
 /*
   retrieve a token from a ndr context, using cmp_fn to match the tokens
 */
-_PUBLIC_ enum ndr_err_code ndr_token_retrieve_cmp_fn(struct ndr_token_list **list, const void *key, uint32_t *v,
-				   comparison_fn_t _cmp_fn, bool _remove_tok)
+_PUBLIC_ enum ndr_err_code ndr_token_retrieve_cmp_fn(struct ndr_token_list *list,
+						     const void *key, uint32_t *v,
+						     comparison_fn_t _cmp_fn,
+						     bool erase)
 {
-	struct ndr_token_list *tok;
-	for (tok=*list;tok;tok=tok->next) {
-		if (_cmp_fn && _cmp_fn(tok->key,key)==0) goto found;
-		else if (!_cmp_fn && tok->key == key) goto found;
+	struct ndr_token *tokens = list->tokens;
+	unsigned i;
+	if (_cmp_fn) {
+		for (i = list->count - 1; i < list->count; i--) {
+			if (_cmp_fn(tokens[i].key, key) == 0) {
+				goto found;
+			}
+		}
+	} else {
+		for (i = list->count - 1; i < list->count; i--) {
+			if (tokens[i].key == key) {
+				goto found;
+			}
+		}
 	}
 	return NDR_ERR_TOKEN;
 found:
-	*v = tok->value;
-	if (_remove_tok) {
-		DLIST_REMOVE((*list), tok);
-		talloc_free(tok);
+	*v = tokens[i].value;
+	if (erase) {
+		if (i != list->count - 1) {
+			tokens[i] = tokens[list->count - 1];
+		}
+		list->count--;
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -955,7 +993,8 @@ found:
 /*
   retrieve a token from a ndr context
 */
-_PUBLIC_ enum ndr_err_code ndr_token_retrieve(struct ndr_token_list **list, const void *key, uint32_t *v)
+_PUBLIC_ enum ndr_err_code ndr_token_retrieve(struct ndr_token_list *list,
+					      const void *key, uint32_t *v)
 {
 	return ndr_token_retrieve_cmp_fn(list, key, v, NULL, true);
 }
@@ -963,14 +1002,17 @@ _PUBLIC_ enum ndr_err_code ndr_token_retrieve(struct ndr_token_list **list, cons
 /*
   peek at but don't removed a token from a ndr context
 */
-_PUBLIC_ uint32_t ndr_token_peek(struct ndr_token_list **list, const void *key)
+_PUBLIC_ uint32_t ndr_token_peek(struct ndr_token_list *list, const void *key)
 {
-	struct ndr_token_list *tok;
-	for (tok = *list; tok; tok = tok->next) {
-		if (tok->key == key) {
-			return tok->value;
+	unsigned i;
+	struct ndr_token *tokens = list->tokens;
+
+	for (i = list->count - 1; i < list->count; i--) {
+		if (tokens[i].key == key) {
+			return tokens[i].value;
 		}
 	}
+
 	return 0;
 }
 
