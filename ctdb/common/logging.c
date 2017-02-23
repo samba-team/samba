@@ -522,6 +522,7 @@ int logging_init(TALLOC_CTX *mem_ctx, const char *logging,
 
 	name = strtok(str, ":");
 	if (name == NULL) {
+		talloc_free(str);
 		return EINVAL;
 	}
 	option = strtok(NULL, ":");
