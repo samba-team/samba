@@ -44,10 +44,6 @@ static NTSTATUS fsctl_dfs_get_refers(TALLOC_CTX *mem_ctx,
 	char *dfs_data = NULL;
 	DATA_BLOB output;
 
-	if (!IS_IPC(conn)) {
-		return NT_STATUS_INVALID_DEVICE_REQUEST;
-	}
-
 	if (!lp_host_msdfs()) {
 		return NT_STATUS_FS_DRIVER_REQUIRED;
 	}
