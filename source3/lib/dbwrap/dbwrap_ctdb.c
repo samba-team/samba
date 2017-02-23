@@ -1254,6 +1254,62 @@ static void db_ctdb_parse_record_parser_nonpersistent(
 	}
 }
 
+static NTSTATUS db_ctdb_try_parse_local_record(struct db_ctdb_ctx *ctx,
+					       TDB_DATA key,
+					       struct db_ctdb_parse_record_state *state)
+{
+	NTSTATUS status;
+
+	if (ctx->transaction != NULL) {
+		struct db_ctdb_transaction_handle *h = ctx->transaction;
+		bool found;
+
+		/*
+		 * Transactions only happen for persistent db's.
+		 */
+
+		found = parse_newest_in_marshall_buffer(
+			h->m_write, key, db_ctdb_parse_record_parser, state);
+
+		if (found) {
+			return NT_STATUS_OK;
+		}
+	}
+
+	if (ctx->db->persistent) {
+		/*
+		 * Persistent db, but not found in the transaction buffer
+		 */
+		return db_ctdb_ltdb_parse(
+			ctx, key, db_ctdb_parse_record_parser, state);
+	}
+
+	state->done = false;
+	state->ask_for_readonly_copy = false;
+
+	status = db_ctdb_ltdb_parse(
+		ctx, key, db_ctdb_parse_record_parser_nonpersistent, state);
+	if (NT_STATUS_IS_OK(status) && state->done) {
+		if (state->empty_record) {
+			/*
+			 * We know authoritatively, that this is an empty
+			 * record. Since ctdb does not distinguish between empty
+			 * and deleted records, this can be a record stored as
+			 * empty or a not-yet-vacuumed tombstone record of a
+			 * deleted record. Now Samba right now can live without
+			 * empty records, so we can safely report this record
+			 * as non-existing.
+			 *
+			 * See bugs 10008 and 12005.
+			 */
+			return NT_STATUS_NOT_FOUND;
+		}
+		return NT_STATUS_OK;
+	}
+
+	return NT_STATUS_MORE_PROCESSING_REQUIRED;
+}
+
 static NTSTATUS db_ctdb_parse_record(struct db_context *db, TDB_DATA key,
 				     void (*parser)(TDB_DATA key,
 						    TDB_DATA data,
@@ -1271,51 +1327,9 @@ static NTSTATUS db_ctdb_parse_record(struct db_context *db, TDB_DATA key,
 	state.my_vnn = ctdbd_vnn(ctx->conn);
 	state.empty_record = false;
 
-	if (ctx->transaction != NULL) {
-		struct db_ctdb_transaction_handle *h = ctx->transaction;
-		bool found;
-
-		/*
-		 * Transactions only happen for persistent db's.
-		 */
-
-		found = parse_newest_in_marshall_buffer(
-			h->m_write, key, db_ctdb_parse_record_parser, &state);
-
-		if (found) {
-			return NT_STATUS_OK;
-		}
-	}
-
-	if (db->persistent) {
-		/*
-		 * Persistent db, but not found in the transaction buffer
-		 */
-		return db_ctdb_ltdb_parse(
-			ctx, key, db_ctdb_parse_record_parser, &state);
-	}
-
-	state.done = false;
-	state.ask_for_readonly_copy = false;
-
-	status = db_ctdb_ltdb_parse(
-		ctx, key, db_ctdb_parse_record_parser_nonpersistent, &state);
-	if (NT_STATUS_IS_OK(status) && state.done) {
-		if (state.empty_record) {
-			/*
-			 * We know authoritatively, that this is an empty
-			 * record. Since ctdb does not distinguish between empty
-			 * and deleted records, this can be a record stored as
-			 * empty or a not-yet-vacuumed tombstone record of a
-			 * deleted record. Now Samba right now can live without
-			 * empty records, so we can safely report this record
-			 * as non-existing.
-			 *
-			 * See bugs 10008 and 12005.
-			 */
-			return NT_STATUS_NOT_FOUND;
-		}
-		return NT_STATUS_OK;
+	status = db_ctdb_try_parse_local_record(ctx, key, &state);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		return status;
 	}
 
 	ret = ctdbd_parse(ctx->conn, ctx->db_id, key,
