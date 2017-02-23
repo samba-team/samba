@@ -178,7 +178,7 @@ NTSTATUS winbindd_list_users_recv(struct tevent_req *req,
 	response->length += len;
 	response->data.num_entries = 0;
 
-	if (len >= 1) {
+	if (result != NULL && len >= 1) {
 		len -= 1;
 		response->data.num_entries = 1;
 
