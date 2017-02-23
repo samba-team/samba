@@ -530,6 +530,7 @@ static bool pipe_auth_generic_bind(struct pipes_struct *p,
 						    &auth_info->credentials,
 						    response,
 						    p->remote_address,
+						    p->local_address,
 						    service_description,
 						    &gensec_security);
 	if (!NT_STATUS_IS_OK(status) &&

@@ -105,7 +105,9 @@ NTSTATUS auth_domain_init(void);
 /* The following definitions come from auth/auth_generic.c  */
 
 NTSTATUS make_auth4_context(TALLOC_CTX *mem_ctx, struct auth4_context **auth4_context_out);
-NTSTATUS auth_generic_prepare(TALLOC_CTX *mem_ctx, const struct tsocket_address *remote_address,
+NTSTATUS auth_generic_prepare(TALLOC_CTX *mem_ctx,
+			      const struct tsocket_address *remote_address,
+			      const struct tsocket_address *local_address,
 			      const char *service_description,
 			      struct gensec_security **gensec_security_out);
 

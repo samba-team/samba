@@ -718,6 +718,7 @@ static NTSTATUS ntlmssp_server_check_password(struct gensec_security *gensec_sec
 	user_info->client.domain_name = ntlmssp_state->domain;
 	user_info->workstation_name = ntlmssp_state->client.netbios_name;
 	user_info->remote_host = gensec_get_remote_address(gensec_security);
+	user_info->local_host = gensec_get_local_address(gensec_security);
 	user_info->service_description
 		= gensec_get_target_service_description(gensec_security);
 	user_info->auth_description = "NTLMSSP";

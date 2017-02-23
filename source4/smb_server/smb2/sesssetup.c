@@ -130,6 +130,7 @@ static void smb2srv_sesssetup_backend(struct smb2srv_request *req, union smb_ses
 	 */
 	if (vuid == 0) {
 		struct gensec_security *gensec_ctx;
+		struct tsocket_address *remote_address, *local_address;
 
 		status = samba_server_gensec_start(req,
 						   req->smb_conn->connection->event.ctx,
@@ -144,6 +145,44 @@ static void smb2srv_sesssetup_backend(struct smb2srv_request *req, union smb_ses
 		}
 
 		gensec_want_feature(gensec_ctx, GENSEC_FEATURE_SESSION_KEY);
+
+		remote_address = socket_get_remote_addr(req->smb_conn->connection->socket,
+							req);
+		if (!remote_address) {
+			status = NT_STATUS_INTERNAL_ERROR;
+			DBG_ERR("Failed to obtain remote address");
+			goto failed;
+		}
+
+		status = gensec_set_remote_address(gensec_ctx,
+						   remote_address);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_ERR("Failed to set remote address");
+			goto failed;
+		}
+
+		local_address = socket_get_local_addr(req->smb_conn->connection->socket,
+						      req);
+		if (!local_address) {
+			status = NT_STATUS_INTERNAL_ERROR;
+			DBG_ERR("Failed to obtain local address");
+			goto failed;
+		}
+
+		status = gensec_set_local_address(gensec_ctx,
+						  local_address);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_ERR("Failed to set local address");
+			goto failed;
+		}
+
+		status = gensec_set_target_service_description(gensec_ctx,
+							       "SMB2");
+
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_ERR("Failed to set service description");
+			goto failed;
+		}
 
 		status = gensec_start_mech_by_oid(gensec_ctx, GENSEC_OID_SPNEGO);
 		if (!NT_STATUS_IS_OK(status)) {

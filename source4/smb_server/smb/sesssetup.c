@@ -119,7 +119,7 @@ failed:
 static void sesssetup_old(struct smbsrv_request *req, union smb_sesssetup *sess)
 {
 	struct auth_usersupplied_info *user_info = NULL;
-	struct tsocket_address *remote_address;
+	struct tsocket_address *remote_address, *local_address;
 	const char *remote_machine = NULL;
 	struct tevent_req *subreq;
 	struct sesssetup_context *state;
@@ -148,6 +148,9 @@ static void sesssetup_old(struct smbsrv_request *req, union smb_sesssetup *sess)
 		if (!remote_machine) goto nomem;
 	}
 
+	local_address = socket_get_local_addr(req->smb_conn->connection->socket, req);
+	if (!local_address) goto nomem;
+
 	user_info = talloc_zero(req, struct auth_usersupplied_info);
 	if (!user_info) goto nomem;
 
@@ -159,7 +162,9 @@ static void sesssetup_old(struct smbsrv_request *req, union smb_sesssetup *sess)
 	user_info->client.account_name = sess->old.in.user;
 	user_info->client.domain_name = sess->old.in.domain;
 	user_info->workstation_name = remote_machine;
+
 	user_info->remote_host = talloc_steal(user_info, remote_address);
+	user_info->local_host = talloc_steal(user_info, local_address);
 	
 	user_info->password_state = AUTH_PASSWORD_RESPONSE;
 	user_info->password.response.lanman = sess->old.in.password;
@@ -264,7 +269,7 @@ static void sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *sess)
 {
 	NTSTATUS status;
 	struct auth_usersupplied_info *user_info = NULL;
-	struct tsocket_address *remote_address;
+	struct tsocket_address *remote_address, *local_address;
 	const char *remote_machine = NULL;
 	struct tevent_req *subreq;
 	struct sesssetup_context *state;
@@ -327,6 +332,9 @@ static void sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *sess)
 		if (!remote_machine) goto nomem;
 	}
 
+	local_address = socket_get_local_addr(req->smb_conn->connection->socket, req);
+	if (!local_address) goto nomem;
+
 	user_info = talloc_zero(req, struct auth_usersupplied_info);
 	if (!user_info) goto nomem;
 
@@ -339,6 +347,7 @@ static void sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *sess)
 	user_info->client.domain_name = sess->nt1.in.domain;
 	user_info->workstation_name = remote_machine;
 	user_info->remote_host = talloc_steal(user_info, remote_address);
+	user_info->local_host = talloc_steal(user_info, local_address);
 	
 	user_info->password_state = AUTH_PASSWORD_RESPONSE;
 	user_info->password.response.lanman = sess->nt1.in.password1;
@@ -455,7 +464,7 @@ static void sesssetup_spnego(struct smbsrv_request *req, union smb_sesssetup *se
 	/* lookup an existing session */
 	if (vuid == 0) {
 		struct gensec_security *gensec_ctx;
-
+		struct tsocket_address *remote_address, *local_address;
 		status = samba_server_gensec_start(req,
 						   req->smb_conn->connection->event.ctx,
 						   req->smb_conn->connection->msg_ctx,
@@ -469,6 +478,44 @@ static void sesssetup_spnego(struct smbsrv_request *req, union smb_sesssetup *se
 		}
 
 		gensec_want_feature(gensec_ctx, GENSEC_FEATURE_SESSION_KEY);
+
+		remote_address = socket_get_remote_addr(req->smb_conn->connection->socket,
+							req);
+		if (!remote_address) {
+			status = NT_STATUS_INTERNAL_ERROR;
+			DBG_ERR("Failed to obtain remote address");
+			goto failed;
+		}
+
+		status = gensec_set_remote_address(gensec_ctx,
+						   remote_address);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_ERR("Failed to set remote address");
+			goto failed;
+		}
+
+		local_address = socket_get_local_addr(req->smb_conn->connection->socket,
+							req);
+		if (!local_address) {
+			status = NT_STATUS_INTERNAL_ERROR;
+			DBG_ERR("Failed to obtain local address");
+			goto failed;
+		}
+
+		status = gensec_set_local_address(gensec_ctx,
+						   local_address);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_ERR("Failed to set local address");
+			goto failed;
+		}
+
+		status = gensec_set_target_service_description(gensec_ctx,
+							       "SMB");
+
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_ERR("Failed to set service description");
+			goto failed;
+		}
 
 		status = gensec_start_mech_by_oid(gensec_ctx, req->smb_conn->negotiate.oid);
 		if (!NT_STATUS_IS_OK(status)) {

@@ -855,6 +855,7 @@ auth:
 	if (state->auth->gensec == NULL) {
 		status = auth_generic_prepare(state->auth,
 					      state->smb2req->xconn->remote_address,
+					      state->smb2req->xconn->local_address,
 					      "SMB2",
 					      &state->auth->gensec);
 		if (tevent_req_nterror(req, status)) {

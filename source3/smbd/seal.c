@@ -72,11 +72,13 @@ bool is_encrypted_packet(const uint8_t *inbuf)
 ******************************************************************************/
 
 static NTSTATUS make_auth_gensec(const struct tsocket_address *remote_address,
+				 const struct tsocket_address *local_address,
 				 struct smb_trans_enc_state *es)
 {
 	NTSTATUS status;
 
 	status = auth_generic_prepare(es, remote_address,
+				      local_address,
 				      "SMB encryption",
 				      &es->gensec_security);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -107,6 +109,7 @@ static NTSTATUS make_auth_gensec(const struct tsocket_address *remote_address,
 ******************************************************************************/
 
 static NTSTATUS make_srv_encryption_context(const struct tsocket_address *remote_address,
+					    const struct tsocket_address *local_address,
 					    struct smb_trans_enc_state **pp_es)
 {
 	NTSTATUS status;
@@ -120,6 +123,7 @@ static NTSTATUS make_srv_encryption_context(const struct tsocket_address *remote
 		return NT_STATUS_NO_MEMORY;
 	}
 	status = make_auth_gensec(remote_address,
+				  local_address,
 				  es);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(es);
@@ -208,6 +212,7 @@ NTSTATUS srv_request_encryption_setup(connection_struct *conn,
 	if (!partial_srv_trans_enc_ctx) {
 		/* This is the initial step. */
 		status = make_srv_encryption_context(conn->sconn->remote_address,
+						     conn->sconn->local_address,
 					&partial_srv_trans_enc_ctx);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
