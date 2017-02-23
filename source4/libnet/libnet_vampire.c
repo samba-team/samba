@@ -652,10 +652,10 @@ WERROR libnet_vampire_cb_store_chunk(void *private_data,
 		return WERR_INVALID_PARAMETER;
 	}
 
-	if (req_replica_flags & DRSUAPI_DRS_CRITICAL_ONLY) {
+	if (req_replica_flags & DRSUAPI_DRS_CRITICAL_ONLY || is_exop) {
 		/*
-		 * If we only replicate the critical objects
-		 * we should not remember what we already
+		 * If we only replicate the critical objects, or this
+		 * is an exop we should not remember what we already
 		 * got, as it is incomplete.
 		 */
 		ZERO_STRUCT(s_dsa->highwatermark);
