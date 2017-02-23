@@ -267,7 +267,7 @@ int main(int argc, char *argv[])
 
 		printf("Holding lock, press any key to continue...\n");
 		printf("You should run the same command on another node now.\n");
-		getchar();
+		(void)getchar();
 		printf("Good bye.\n");
 		exit(0);
 	}
