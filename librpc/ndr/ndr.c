@@ -187,7 +187,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_advance(struct ndr_pull *ndr, uint32_t size)
 {
 	ndr->offset += size;
 	if (ndr->offset > ndr->data_size) {
-		return ndr_pull_error(ndr, NDR_ERR_BUFSIZE, 
+		return ndr_pull_error(ndr, NDR_ERR_BUFSIZE,
 				      "ndr_pull_advance by %u failed",
 				      size);
 	}
@@ -201,7 +201,7 @@ static enum ndr_err_code ndr_pull_set_offset(struct ndr_pull *ndr, uint32_t ofs)
 {
 	ndr->offset = ofs;
 	if (ndr->offset > ndr->data_size) {
-		return ndr_pull_error(ndr, NDR_ERR_BUFSIZE, 
+		return ndr_pull_error(ndr, NDR_ERR_BUFSIZE,
 				      "ndr_pull_set_offset %u failed",
 				      ofs);
 	}
@@ -264,7 +264,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_expand(struct ndr_push *ndr, uint32_t extra_
 				      "push_expand to %u",
 				      size);
 	}
-	
+
 	if (ndr->alloc_size > size) {
 		return NDR_ERR_SUCCESS;
 	}
@@ -314,7 +314,7 @@ _PUBLIC_ void ndr_print_debugc_helper(struct ndr_print *ndr, const char *format,
 	free(s);
 }
 
-_PUBLIC_ void ndr_print_debug_helper(struct ndr_print *ndr, const char *format, ...) 
+_PUBLIC_ void ndr_print_debug_helper(struct ndr_print *ndr, const char *format, ...)
 {
 	va_list ap;
 	char *s = NULL;
@@ -343,7 +343,7 @@ _PUBLIC_ void ndr_print_debug_helper(struct ndr_print *ndr, const char *format, 
 	free(s);
 }
 
-_PUBLIC_ void ndr_print_printf_helper(struct ndr_print *ndr, const char *format, ...) 
+_PUBLIC_ void ndr_print_printf_helper(struct ndr_print *ndr, const char *format, ...)
 {
 	va_list ap;
 	uint32_t i;
@@ -375,7 +375,7 @@ _PUBLIC_ void ndr_print_string_helper(struct ndr_print *ndr, const char *format,
 	}
 
 	va_start(ap, format);
-	ndr->private_data = talloc_vasprintf_append_buffer((char *)ndr->private_data, 
+	ndr->private_data = talloc_vasprintf_append_buffer((char *)ndr->private_data,
 						    format, ap);
 	va_end(ap);
 	if (!ndr->no_newline) {
@@ -513,7 +513,7 @@ failed:
   a useful helper function for printing idl function calls to a string
 */
 _PUBLIC_ char *ndr_print_function_string(TALLOC_CTX *mem_ctx,
-				ndr_print_function_t fn, const char *name, 
+				ndr_print_function_t fn, const char *name,
 				int flags, void *ptr)
 {
 	struct ndr_print *ndr;
@@ -598,7 +598,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_error(struct ndr_pull *ndr,
 */
 _PUBLIC_ enum ndr_err_code ndr_push_error(struct ndr_push *ndr,
 				 enum ndr_err_code ndr_err,
-				 const char *format, ...) 
+				 const char *format, ...)
 {
 	char *s=NULL;
 	va_list ap;
@@ -754,7 +754,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_subcontext_start(struct ndr_pull *ndr,
 		return NDR_ERR_SUCCESS;
 
 	default:
-		return ndr_pull_error(ndr, NDR_ERR_SUBCONTEXT, "Bad subcontext (PULL) header_size %d", 
+		return ndr_pull_error(ndr, NDR_ERR_SUBCONTEXT, "Bad subcontext (PULL) header_size %d",
 				      (int)header_size);
 	}
 
@@ -840,7 +840,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_subcontext_start(struct ndr_push *ndr,
 }
 
 /*
-  push a subcontext header 
+  push a subcontext header
 */
 _PUBLIC_ enum ndr_err_code ndr_push_subcontext_end(struct ndr_push *ndr,
 				 struct ndr_push *subndr,
@@ -859,14 +859,14 @@ _PUBLIC_ enum ndr_err_code ndr_push_subcontext_end(struct ndr_push *ndr,
 	}
 
 	switch (header_size) {
-	case 0: 
+	case 0:
 		break;
 
-	case 2: 
+	case 2:
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, subndr->offset));
 		break;
 
-	case 4: 
+	case 4:
 		NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, subndr->offset));
 		break;
 
@@ -906,7 +906,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_subcontext_end(struct ndr_push *ndr,
 		break;
 
 	default:
-		return ndr_push_error(ndr, NDR_ERR_SUBCONTEXT, "Bad subcontext header size %d", 
+		return ndr_push_error(ndr, NDR_ERR_SUBCONTEXT, "Bad subcontext header size %d",
 				      (int)header_size);
 	}
 
@@ -1000,7 +1000,7 @@ _PUBLIC_ enum ndr_err_code ndr_check_array_size(struct ndr_pull *ndr, void *p, u
 	uint32_t stored;
 	stored = ndr_token_peek(&ndr->array_size_list, p);
 	if (stored != size) {
-		return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, 
+		return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE,
 				      "Bad array size - got %u expected %u\n",
 				      stored, size);
 	}
@@ -1015,7 +1015,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_array_length(struct ndr_pull *ndr, const voi
 	uint32_t length, offset;
 	NDR_CHECK(ndr_pull_uint3264(ndr, NDR_SCALARS, &offset));
 	if (offset != 0) {
-		return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, 
+		return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE,
 				      "non-zero array offset %u\n", offset);
 	}
 	NDR_CHECK(ndr_pull_uint3264(ndr, NDR_SCALARS, &length));
@@ -1038,7 +1038,7 @@ _PUBLIC_ enum ndr_err_code ndr_check_array_length(struct ndr_pull *ndr, void *p,
 	uint32_t stored;
 	stored = ndr_token_peek(&ndr->array_length_list, p);
 	if (stored != length) {
-		return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, 
+		return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE,
 				      "Bad array length - got %u expected %u\n",
 				      stored, length);
 	}
@@ -1146,7 +1146,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_struct_blob(const DATA_BLOB *blob, TALLOC_CT
 /*
   pull a struct from a blob using NDR - failing if all bytes are not consumed
 */
-_PUBLIC_ enum ndr_err_code ndr_pull_struct_blob_all(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, 
+_PUBLIC_ enum ndr_err_code ndr_pull_struct_blob_all(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx,
 						    void *p, ndr_pull_flags_fn_t fn)
 {
 	struct ndr_pull *ndr;
@@ -1213,7 +1213,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_struct_blob_all_noalloc(const DATA_BLOB *blo
 /*
   pull a union from a blob using NDR, given the union discriminator
 */
-_PUBLIC_ enum ndr_err_code ndr_pull_union_blob(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, 
+_PUBLIC_ enum ndr_err_code ndr_pull_union_blob(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx,
 					       void *p,
 			     uint32_t level, ndr_pull_flags_fn_t fn)
 {
@@ -1230,7 +1230,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_union_blob(const DATA_BLOB *blob, TALLOC_CTX
   pull a union from a blob using NDR, given the union discriminator,
   failing if all bytes are not consumed
 */
-_PUBLIC_ enum ndr_err_code ndr_pull_union_blob_all(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, 
+_PUBLIC_ enum ndr_err_code ndr_pull_union_blob_all(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx,
 						   void *p,
 			     uint32_t level, ndr_pull_flags_fn_t fn)
 {
@@ -1275,9 +1275,9 @@ _PUBLIC_ enum ndr_err_code ndr_push_struct_blob(DATA_BLOB *blob, TALLOC_CTX *mem
 	return NDR_ERR_SUCCESS;
 }
 
-/* 
-  push a struct into a provided blob using NDR. 
- 
+/*
+  push a struct into a provided blob using NDR.
+
   We error because we want to have the performance issue (extra
   talloc() calls) show up as an error, not just slower code.  This is
   used for things like GUIDs, which we expect to be a fixed size, and
@@ -1458,16 +1458,16 @@ static enum ndr_err_code ndr_push_relative_ptr2(struct ndr_push *ndr, const void
 	save_offset = ndr->offset;
 	NDR_CHECK(ndr_token_retrieve(&ndr->relative_list, p, &ptr_offset));
 	if (ptr_offset > ndr->offset) {
-		return ndr_push_error(ndr, NDR_ERR_BUFSIZE, 
+		return ndr_push_error(ndr, NDR_ERR_BUFSIZE,
 				      "ndr_push_relative_ptr2 ptr_offset(%u) > ndr->offset(%u)",
 				      ptr_offset, ndr->offset);
 	}
 	ndr->offset = ptr_offset;
 	if (save_offset < ndr->relative_base_offset) {
-		return ndr_push_error(ndr, NDR_ERR_BUFSIZE, 
+		return ndr_push_error(ndr, NDR_ERR_BUFSIZE,
 				      "ndr_push_relative_ptr2 save_offset(%u) < ndr->relative_base_offset(%u)",
 				      save_offset, ndr->relative_base_offset);
-	}	
+	}
 	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, save_offset - ndr->relative_base_offset));
 	ndr->offset = save_offset;
 	return NDR_ERR_SUCCESS;
@@ -1727,7 +1727,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_relative_ptr1(struct ndr_pull *ndr, const vo
 {
 	rel_offset += ndr->relative_base_offset;
 	if (rel_offset > ndr->data_size) {
-		return ndr_pull_error(ndr, NDR_ERR_BUFSIZE, 
+		return ndr_pull_error(ndr, NDR_ERR_BUFSIZE,
 				      "ndr_pull_relative_ptr1 rel_offset(%u) > ndr->data_size(%u)",
 				      rel_offset, ndr->data_size);
 	}

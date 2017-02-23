@@ -1,25 +1,25 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    rpc interface definitions
 
    Copyright (C) Andrew Tridgell 2003
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/* This is a public header file that is installed as part of Samba. 
- * If you remove any functions or change their signature, update 
+/* This is a public header file that is installed as part of Samba.
+ * If you remove any functions or change their signature, update
  * the so version number. */
 
 #ifndef __LIBNDR_H__
@@ -463,7 +463,7 @@ void ndr_print_dom_sid0(struct ndr_print *ndr, const char *name, const struct do
 size_t ndr_size_dom_sid0(const struct dom_sid *sid, int flags);
 void ndr_print_GUID(struct ndr_print *ndr, const char *name, const struct GUID *guid);
 void ndr_print_sockaddr_storage(struct ndr_print *ndr, const char *name, const struct sockaddr_storage *ss);
-bool ndr_syntax_id_equal(const struct ndr_syntax_id *i1, const struct ndr_syntax_id *i2); 
+bool ndr_syntax_id_equal(const struct ndr_syntax_id *i1, const struct ndr_syntax_id *i2);
 char *ndr_syntax_id_to_string(TALLOC_CTX *mem_ctx, const struct ndr_syntax_id *id);
 bool ndr_syntax_id_from_string(const char *s, struct ndr_syntax_id *id);
 enum ndr_err_code ndr_push_struct_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, const void *p, ndr_push_flags_fn_t fn);
@@ -508,7 +508,7 @@ void ndr_print_function_debug(ndr_print_function_t fn, const char *name, int fla
 char *ndr_print_struct_string(TALLOC_CTX *mem_ctx, ndr_print_fn_t fn, const char *name, void *ptr);
 char *ndr_print_union_string(TALLOC_CTX *mem_ctx, ndr_print_fn_t fn, const char *name, uint32_t level, void *ptr);
 char *ndr_print_function_string(TALLOC_CTX *mem_ctx,
-				ndr_print_function_t fn, const char *name, 
+				ndr_print_function_t fn, const char *name,
 				int flags, void *ptr);
 void ndr_set_flags(uint32_t *pflags, uint32_t new_flags);
 enum ndr_err_code ndr_pull_error(struct ndr_pull *ndr,
@@ -566,7 +566,7 @@ enum ndr_err_code ndr_pull_union_blob_all(const DATA_BLOB *blob, TALLOC_CTX *mem
 #define NDR_SCALAR_PROTO(name, type) \
 enum ndr_err_code ndr_push_ ## name(struct ndr_push *ndr, int ndr_flags, type v); \
 enum ndr_err_code ndr_pull_ ## name(struct ndr_pull *ndr, int ndr_flags, type *v); \
-void ndr_print_ ## name(struct ndr_print *ndr, const char *var_name, type v); 
+void ndr_print_ ## name(struct ndr_print *ndr, const char *var_name, type v);
 
 #define NDR_SCALAR_PTR_PROTO(name, type) \
 enum ndr_err_code ndr_push_ ## name(struct ndr_push *ndr, int ndr_flags, const type *v); \
@@ -576,7 +576,7 @@ void ndr_print_ ## name(struct ndr_print *ndr, const char *var_name, const type 
 #define NDR_BUFFER_PROTO(name, type) \
 enum ndr_err_code ndr_push_ ## name(struct ndr_push *ndr, int ndr_flags, const type *v); \
 enum ndr_err_code ndr_pull_ ## name(struct ndr_pull *ndr, int ndr_flags, type *v); \
-void ndr_print_ ## name(struct ndr_print *ndr, const char *var_name, const type *v); 
+void ndr_print_ ## name(struct ndr_print *ndr, const char *var_name, const type *v);
 
 NDR_SCALAR_PROTO(uint8, uint8_t)
 NDR_SCALAR_PROTO(int8, int8_t)
