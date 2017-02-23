@@ -146,4 +146,10 @@ struct auth4_context {
 					      struct auth_session_info **session_info);
 };
 
+void log_authentication_event(const struct auth_usersupplied_info *ui,
+			      NTSTATUS status,
+			      const char *account_name,
+			      const char *domain_name,
+			      const char *unix_username,
+			      struct dom_sid *sid);
 #endif

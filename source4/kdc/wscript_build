@@ -27,7 +27,7 @@ bld.SAMBA_MODULE('service_kdc',
 
 bld.SAMBA_LIBRARY('HDB_SAMBA4',
                   source='hdb-samba4.c hdb-samba4-plugin.c',
-                  deps='ldb auth4_sam auth_sam_reply samba-credentials hdb db-glue samba-hostconfig com_err sdb_hdb',
+                  deps='ldb auth4_sam common_auth samba-credentials hdb db-glue samba-hostconfig com_err sdb_hdb',
                   includes=kdc_include,
                   private_library=True,
                   enabled=bld.CONFIG_SET('SAMBA4_USES_HEIMDAL')
@@ -78,7 +78,7 @@ bld.SAMBA_SUBSYSTEM('KDC-GLUE',
 bld.SAMBA_SUBSYSTEM('WDC_SAMBA4',
 	source='wdc-samba4.c',
         includes=kdc_include,
-	deps='ldb auth4_sam auth_sam_reply samba-credentials hdb PAC_GLUE samba-hostconfig com_err KDC-GLUE',
+	deps='ldb auth4_sam common_auth samba-credentials hdb PAC_GLUE samba-hostconfig com_err KDC-GLUE',
 	enabled=bld.CONFIG_SET('SAMBA4_USES_HEIMDAL')
 	)
 
@@ -107,7 +107,7 @@ bld.SAMBA_SUBSYSTEM('sdb_kdb',
 bld.SAMBA_SUBSYSTEM('PAC_GLUE',
 	source='pac-glue.c',
         includes=kdc_include,
-	deps='ldb auth4_sam auth_sam_reply samba-credentials samba-hostconfig com_err'
+	deps='ldb auth4_sam common_auth samba-credentials samba-hostconfig com_err'
 	)
 
 bld.SAMBA_LIBRARY('pac',
@@ -119,7 +119,7 @@ bld.SAMBA_LIBRARY('pac',
 
 bld.SAMBA_LIBRARY('db-glue',
 	source='db-glue.c',
-	deps='ldb auth4_sam auth_sam_reply samba-credentials sdb samba-hostconfig com_err',
+	deps='ldb auth4_sam common_auth samba-credentials sdb samba-hostconfig com_err',
 	private_library=True,
         includes=kdc_include,
 	)
@@ -134,7 +134,7 @@ bld.SAMBA_SUBSYSTEM('MIT_SAMBA',
                     deps='''
                          ldb
                          auth4_sam
-                         auth_sam_reply
+                         common_auth
                          samba-credentials
                          db-glue
                          PAC_GLUE

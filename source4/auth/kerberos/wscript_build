@@ -9,7 +9,7 @@ bld.SAMBA_LIBRARY('authkrb5',
                   source='kerberos_pac.c',
                   autoproto='proto.h',
                   public_deps='ndr-krb5pac krb5samba samba_socket LIBCLI_RESOLVE asn1',
-                  deps='auth_sam_reply tevent LIBPACKET ndr ldb krb5samba KRB_INIT_CTX KRB5_PAC samba-errors',
+                  deps='common_auth tevent LIBPACKET ndr ldb krb5samba KRB_INIT_CTX KRB5_PAC samba-errors',
                   private_library=True
                   )
 

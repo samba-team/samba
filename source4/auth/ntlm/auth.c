@@ -432,7 +432,7 @@ _PUBLIC_ NTSTATUS auth_check_password_recv(struct tevent_req *req,
 {
 	struct auth_check_password_state *state =
 		tevent_req_data(req, struct auth_check_password_state);
-	NTSTATUS status;
+	NTSTATUS status = NT_STATUS_OK;
 
 	*pauthoritative = state->authoritative;
 
@@ -448,6 +448,9 @@ _PUBLIC_ NTSTATUS auth_check_password_recv(struct tevent_req *req,
 			 state->user_info->mapped.domain_name,
 			 state->user_info->mapped.account_name,
 			 nt_errstr(status), state->authoritative));
+
+		log_authentication_event(state->user_info, status,
+					 NULL, NULL, NULL, NULL);
 		tevent_req_received(req);
 		return status;
 	}
@@ -457,6 +460,12 @@ _PUBLIC_ NTSTATUS auth_check_password_recv(struct tevent_req *req,
 		 state->method->ops->name,
 		 state->user_info_dc->info->domain_name,
 		 state->user_info_dc->info->account_name));
+
+	log_authentication_event(state->user_info, status,
+				 state->user_info_dc->info->domain_name,
+				 state->user_info_dc->info->account_name,
+				 NULL,
+				 &state->user_info_dc->sids[0]);
 
 	*user_info_dc = talloc_move(mem_ctx, &state->user_info_dc);
 

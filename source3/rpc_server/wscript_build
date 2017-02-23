@@ -11,7 +11,7 @@ bld.SAMBA3_SUBSYSTEM('RPC_CONFIG',
 
 bld.SAMBA3_SUBSYSTEM('RPC_NCACN_NP',
                     source='rpc_ncacn_np.c rpc_handles.c rpc_contexts.c',
-                    deps='RPC_CONFIG auth auth_sam_reply RPC_PIPE_REGISTER npa_tstream')
+                    deps='RPC_CONFIG auth common_auth RPC_PIPE_REGISTER npa_tstream')
 
 bld.SAMBA3_SUBSYSTEM('RPC_SERVER_LOOP',
                     source='rpc_server.c',

@@ -1,0 +1,161 @@
+/*
+
+   Authentication and authorization logging
+
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2017
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/*
+ * Debug log levels for authentication logging (these both map to
+ * LOG_NOTICE in syslog)
+ */
+#define AUTH_SUCCESS_LEVEL 4
+#define AUTHZ_SUCCESS_LEVEL 5
+#define AUTH_FAILURE_LEVEL 2
+
+#include "includes.h"
+#include "../lib/tsocket/tsocket.h"
+#include "common_auth.h"
+#include "lib/util/util_str_escape.h"
+#include "libcli/security/dom_sid.h"
+
+/*
+ * Get a human readable timestamp.
+ *
+ * Returns the current time formatted as
+ *  "Tue, 14 Mar 2017 08:38:42.209028 NZDT"
+ *
+ * The returned string is allocated by talloc in the supplied context.
+ * It is the callers responsibility to free it.
+ *
+ */
+static const char* get_timestamp( TALLOC_CTX *frame )
+{
+	char buffer[40];	/* formatted time less usec and timezone */
+	char tz[10];		/* formatted time zone			 */
+	struct tm* tm_info;	/* current local time			 */
+	struct timeval tv;	/* current system time			 */
+	int r;			/* response code from gettimeofday	 */
+	const char * ts;	/* formatted time stamp			 */
+
+	r = gettimeofday(&tv, NULL);
+	if (r) {
+		DBG_ERR("Unable to get time of day: (%d) %s\n",
+			errno,
+			strerror( errno));
+		return NULL;
+	}
+
+	tm_info = localtime(&tv.tv_sec);
+	if (tm_info == NULL) {
+		DBG_ERR("Unable to determine local time\n");
+		return NULL;
+	}
+
+	strftime(buffer, sizeof(buffer)-1, "%a, %d %b %Y %H:%M:%S", tm_info);
+	strftime(tz, sizeof(tz)-1, "%Z", tm_info);
+	ts = talloc_asprintf(frame, "%s.%06ld %s", buffer, tv.tv_usec, tz);
+	if (ts == NULL) {
+		DBG_ERR("Out of memory formatting time stamp\n");
+	}
+	return ts;
+}
+
+/*
+ * Log details of an authentication attempt.
+ * Successful and unsuccessful attempts are logged.
+ *
+ */
+void log_authentication_event(const struct auth_usersupplied_info *ui,
+			      NTSTATUS status,
+			      const char *domain_name,
+			      const char *account_name,
+			      const char *unix_username,
+			      struct dom_sid *sid)
+{
+	TALLOC_CTX *frame = NULL;
+
+	const char *ts = NULL;		   /* formatted current time      */
+	char *remote = NULL;		   /* formatted remote host       */
+	char *local = NULL;		   /* formatted local host        */
+	char *nl = NULL;		   /* NETLOGON details if present */
+	char *trust_computer_name = NULL;
+	char *trust_account_name = NULL;
+	char *logon_line = NULL;
+
+	/* set the log level */
+	int  level = NT_STATUS_IS_OK(status) ? AUTH_FAILURE_LEVEL : AUTH_SUCCESS_LEVEL;
+	if (!CHECK_DEBUGLVLC( DBGC_AUTH_AUDIT, level)) {
+		return;
+	}
+
+	frame = talloc_stackframe();
+
+	/* Get the current time */
+        ts = get_timestamp(frame);
+
+	/* Only log the NETLOGON details if they are present */
+	if (ui->netlogon_trust_account.computer_name ||
+	    ui->netlogon_trust_account.account_name) {
+		trust_computer_name = log_escape(frame,
+			ui->netlogon_trust_account.computer_name);
+		trust_account_name  = log_escape(frame,
+			ui->netlogon_trust_account.account_name);
+		nl = talloc_asprintf(frame,
+			" NETLOGON computer [%s] trust account [%s]",
+			trust_computer_name, trust_account_name);
+	}
+
+	remote = tsocket_address_string(ui->remote_host, frame);
+	local  = tsocket_address_string(ui->local_host, frame);
+
+	if (NT_STATUS_IS_OK(status)) {
+		char sid_buf[DOM_SID_STR_BUFLEN];
+
+		dom_sid_string_buf(sid, sid_buf, sizeof(sid_buf));
+		logon_line = talloc_asprintf(frame,
+					     " became [%s]\\[%s] [%s].",
+					     log_escape(frame, domain_name),
+					     log_escape(frame, account_name),
+					     sid_buf);
+	} else {
+		logon_line = talloc_asprintf(frame,
+					     " mapped to [%s]\\[%s].",
+					     log_escape(frame, ui->mapped.domain_name),
+					     log_escape(frame, ui->mapped.account_name));
+	}
+
+	DEBUGC( DBGC_AUTH_AUDIT, level, (
+		"Auth: [%s,%s] user [%s]\\[%s]"
+		" at [%s] status [%s]"
+		" workstation [%s] remote host [%s]"
+		"%s local host [%s]"
+		" %s\n",
+		ui->service_description,
+		ui->auth_description,
+		log_escape(frame, ui->client.domain_name),
+		log_escape(frame, ui->client.account_name),
+		ts,
+		nt_errstr( status),
+		log_escape(frame, ui->workstation_name),
+		remote,
+		logon_line,
+		local,
+		nl ? nl : ""
+		));
+
+	talloc_free(frame);
+}

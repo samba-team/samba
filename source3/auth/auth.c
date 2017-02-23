@@ -174,7 +174,8 @@ NTSTATUS auth_check_ntlm_password(TALLOC_CTX *mem_ctx,
 	NTSTATUS nt_status = NT_STATUS_NOT_IMPLEMENTED;
 	const char *unix_username;
 	auth_methods *auth_method;
-	struct auth_serversupplied_info *server_info;
+	struct auth_serversupplied_info *server_info = NULL;
+	struct dom_sid sid = {0};
 
 	if (user_info == NULL || auth_context == NULL || pserver_info == NULL) {
 		return NT_STATUS_LOGON_FAILURE;
@@ -291,6 +292,18 @@ NTSTATUS auth_check_ntlm_password(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 
+	nt_status = get_user_sid_info3_and_extra(server_info->info3,
+						 &server_info->extra,
+						 &sid);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		sid = (struct dom_sid) {0};
+	}
+
+	log_authentication_event(user_info, nt_status,
+				 server_info->info3->base.logon_domain.string,
+				 server_info->info3->base.account_name.string,
+				 unix_username, &sid);
+
 	DEBUG(server_info->guest ? 5 : 2,
 	      ("check_ntlm_password:  %sauthentication for user "
 	       "[%s] -> [%s] -> [%s] succeeded\n",
@@ -316,6 +329,9 @@ fail:
 		  "[%s] -> [%s] FAILED with error %s, authoritative=%u\n",
 		  user_info->client.account_name, user_info->mapped.account_name,
 		  nt_errstr(nt_status), *pauthoritative));
+
+	log_authentication_event(user_info, nt_status, NULL, NULL, NULL, NULL);
+
 	ZERO_STRUCTP(pserver_info);
 
 	TALLOC_FREE(frame);
