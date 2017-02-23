@@ -1135,8 +1135,10 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 			goto session_setup_done;
 		}
 
-		DEBUG(4,("failed kerberos session setup with %s\n",
-			 nt_errstr(result)));
+		DEBUG(1, ("Failed to use kerberos connecting to %s from %s "
+			  "with kerberos principal [%s]\n",
+			  controller, lp_netbios_name(),
+			  machine_krb5_principal));
 	}
 
 	if (krb5_state != CRED_MUST_USE_KERBEROS) {
@@ -1154,10 +1156,15 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 					   machine_password,
 					   strlen(machine_password)+1,
 					   machine_domain);
-	}
 
-	if (NT_STATUS_IS_OK(result)) {
-		goto session_setup_done;
+		if (NT_STATUS_IS_OK(result)) {
+			goto session_setup_done;
+		}
+
+		DEBUG(1, ("Failed to use NTLMSSP connecting to %s from %s "
+			  "with username [%s]\\[%s]\n",
+			  controller, lp_netbios_name(),
+			  machine_domain, machine_account));
 	}
 
 	/*
@@ -1182,8 +1189,10 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 		goto anon_fallback;
 	}
 
-	DEBUG(4, ("authenticated session setup failed with %s\n",
-		nt_errstr(result)));
+	DEBUG(1, ("authenticated session setup to %s using %s failed with %s\n",
+		  controller,
+		  cli_credentials_get_unparsed_name(creds, talloc_tos()),
+		  nt_errstr(result)));
 
 	goto done;
 
@@ -1222,6 +1231,11 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 		goto session_setup_done;
 	}
 
+	DEBUG(1, ("Failed to use NTLMSSP connecting to %s from %s "
+		  "with username "
+		  "[%s]\\[%s]\n",  controller, lp_netbios_name(),
+		  machine_domain, machine_account));
+
 	/*
 	 * If we are not going to validiate the conneciton
 	 * with SMB signing, then allow us to fall back to
@@ -1236,8 +1250,10 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 		goto anon_fallback;
 	}
 
-	DEBUG(4, ("authenticated session setup failed with %s\n",
-		nt_errstr(result)));
+	DEBUG(1, ("authenticated session setup to %s using %s failed with %s\n",
+		  controller,
+		  cli_credentials_get_unparsed_name(creds, talloc_tos()),
+		  nt_errstr(result)));
 
 	goto done;
 
@@ -1249,7 +1265,7 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 	}
 
 	/* Fall back to anonymous connection, this might fail later */
-	DEBUG(10,("cm_prepare_connection: falling back to anonymous "
+	DEBUG(5,("cm_prepare_connection: falling back to anonymous "
 		"connection for DC %s\n",
 		controller ));
 
@@ -1260,6 +1276,9 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 		DEBUG(5, ("Connected anonymously\n"));
 		goto session_setup_done;
 	}
+
+	DEBUG(1, ("anonymous session setup to %s failed with %s\n",
+		  controller, nt_errstr(result)));
 
 	/* We can't session setup */
 	goto done;
@@ -1306,6 +1325,8 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 	}
 
 	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(1, ("Failed to prepare SMB connection to %s: %s\n",
+			  controller, nt_errstr(result)));
 		winbind_add_failed_connection_entry(domain, controller, result);
 		if ((*cli) != NULL) {
 			cli_shutdown(*cli);
