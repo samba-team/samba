@@ -88,10 +88,8 @@ determine_algorithm(const struct ctdb_tunable_list *tunables)
 /**********************************************************************/
 
 struct get_public_ips_state {
-	struct tevent_context *ev;
-	struct ctdb_client_context *client;
 	uint32_t *pnns;
-	int count, num_nodes;
+	int count;
 	struct ctdb_public_ip_list *ips;
 };
 
@@ -116,8 +114,13 @@ static struct tevent_req *get_public_ips_send(
 
 	state->pnns = pnns;
 	state->count = count;
-	state->num_nodes = num_nodes;
-	state->ips = NULL;
+
+	state->ips  = talloc_zero_array(state,
+					struct ctdb_public_ip_list,
+					num_nodes);
+	if (tevent_req_nomem(state->ips, req)) {
+		return tevent_req_post(req, ev);
+	}
 
 	ctdb_req_control_get_public_ips(&request, available_only);
 	subreq = ctdb_client_control_multi_send(mem_ctx, ev, client,
@@ -161,12 +164,6 @@ static void get_public_ips_done(struct tevent_req *subreq)
 			      "ret=%d\n", ret);
 		}
 		tevent_req_error(req, ret);
-		return;
-	}
-
-	state->ips = talloc_zero_array(state, struct ctdb_public_ip_list,
-				       state->num_nodes);
-	if (tevent_req_nomem(state->ips, req)) {
 		return;
 	}
 
