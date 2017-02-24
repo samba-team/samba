@@ -5956,6 +5956,7 @@ void reply_printqueue(struct smb_request *req)
 						 &ndr_table_spoolss,
 						 conn->session_info,
 						 conn->sconn->remote_address,
+						 conn->sconn->local_address,
 						 conn->sconn->msg_ctx,
 						 &cli);
 		if (!NT_STATUS_IS_OK(status)) {

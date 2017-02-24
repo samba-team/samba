@@ -79,6 +79,7 @@ static int push_signature(uint8_t **outbuf)
 ****************************************************************************/
 
 static NTSTATUS check_guest_password(const struct tsocket_address *remote_address,
+				     const struct tsocket_address *local_address,
 				     TALLOC_CTX *mem_ctx, 
 				     struct auth_session_info **session_info)
 {
@@ -97,8 +98,8 @@ static NTSTATUS check_guest_password(const struct tsocket_address *remote_addres
 	auth_context->get_ntlm_challenge(auth_context,
 					 chal);
 
-	if (!make_user_info_guest(talloc_tos(), remote_address, "SMB",
-				  &user_info)) {
+	if (!make_user_info_guest(talloc_tos(), remote_address, local_address,
+				  "SMB", &user_info)) {
 		TALLOC_FREE(auth_context);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -884,7 +885,9 @@ void reply_sesssetup_and_X(struct smb_request *req)
 
 	if (!*user) {
 
-		nt_status = check_guest_password(sconn->remote_address, req, &session_info);
+		nt_status = check_guest_password(sconn->remote_address,
+						 sconn->local_address,
+						 req, &session_info);
 
 	} else if (doencrypt) {
 		struct auth4_context *negprot_auth_context = NULL;
@@ -901,6 +904,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 							 &user_info, user,
 							 domain,
 							 sconn->remote_address,
+							 sconn->local_address,
 							 "SMB",
 							 lm_resp, nt_resp);
 		user_info->auth_description = "bare-NTLM";
@@ -925,6 +929,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 						      &user_info,
 						      user, domain,
 						      sconn->remote_address,
+						      sconn->local_address,
 						      "SMB",
 						      chal,
 						      plaintext_password)) {

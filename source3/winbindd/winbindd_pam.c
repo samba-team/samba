@@ -1261,7 +1261,7 @@ static NTSTATUS winbindd_dual_auth_passdb(TALLOC_CTX *mem_ctx,
 	 * here.
 	 */
 	status = make_user_info(frame, &user_info, user, user, domain, domain,
-				lp_netbios_name(), local,
+				lp_netbios_name(), local, local,
 				"winbind",
 				lm_resp, nt_resp, NULL, NULL,
 				NULL, AUTH_PASSWORD_RESPONSE);

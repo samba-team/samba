@@ -382,6 +382,7 @@ static NTSTATUS ep_register(TALLOC_CTX *mem_ctx,
 		status = rpcint_binding_handle(tmp_ctx,
 					       &ndr_table_epmapper,
 					       local,
+					       NULL,
 					       get_session_info_system(),
 					       msg_ctx,
 					       &h);

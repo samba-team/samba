@@ -872,14 +872,18 @@ static void dcerpc_ncalrpc_listener(struct tevent_context *ev,
 	struct dcerpc_ncacn_listen_state *state =
 			talloc_get_type_abort(private_data,
 					      struct dcerpc_ncacn_listen_state);
-	struct tsocket_address *cli_addr = NULL;
+	struct tsocket_address *cli_addr = NULL, *srv_addr = NULL;
 	struct sockaddr_un sunaddr;
 	struct sockaddr *addr = (struct sockaddr *)(void *)&sunaddr;
 	socklen_t len = sizeof(sunaddr);
+	struct sockaddr_un sunaddr_server;
+	struct sockaddr *addr_server = (struct sockaddr *)(void *)&sunaddr_server;
+	socklen_t len_server = sizeof(sunaddr_server);
 	int sd = -1;
 	int rc;
 
 	ZERO_STRUCT(sunaddr);
+	ZERO_STRUCT(sunaddr_server);
 
 	sd = accept(state->fd, addr, &len);
 	if (sd == -1) {
@@ -897,13 +901,29 @@ static void dcerpc_ncalrpc_listener(struct tevent_context *ev,
 		return;
 	}
 
-	DEBUG(10, ("Accepted ncalrpc socket %d\n", sd));
+	rc = getsockname(sd, addr_server, &len_server);
+	if (rc < 0) {
+		close(sd);
+		return;
+	}
+
+	rc = tsocket_address_bsd_from_sockaddr(state,
+					       addr_server,
+					       len_server,
+					       &srv_addr);
+	if (rc < 0) {
+		close(sd);
+		return;
+	}
+
+	DEBUG(10, ("Accepted ncalrpc socket %s (fd: %d)\n",
+		   sunaddr.sun_path, sd));
 
 	dcerpc_ncacn_accept(state->ev_ctx,
 			    state->msg_ctx,
 			    NCALRPC,
 			    state->ep.name,
-			    cli_addr, NULL, sd,
+			    cli_addr, srv_addr, sd,
 			    state->disconnect_fn);
 }
 
@@ -977,7 +997,7 @@ void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 						  ncacn_conn);
 	}
 	if (ncacn_conn->client_name == NULL) {
-		DEBUG(0, ("Out of memory!\n"));
+		DEBUG(0, ("Out of memory obtaining remote socket address as a string!\n"));
 		talloc_free(ncacn_conn);
 		close(s);
 		return;
@@ -986,11 +1006,17 @@ void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 	if (srv_addr != NULL) {
 		ncacn_conn->server = talloc_move(ncacn_conn, &srv_addr);
 
-		ncacn_conn->server_name =
-			tsocket_address_inet_addr_string(ncacn_conn->server,
-							 ncacn_conn);
+		if (tsocket_address_is_inet(ncacn_conn->server, "ip")) {
+			ncacn_conn->server_name =
+				tsocket_address_inet_addr_string(ncacn_conn->server,
+								 ncacn_conn);
+		} else {
+			ncacn_conn->server_name =
+				tsocket_address_unix_path(ncacn_conn->server,
+							  ncacn_conn);
+		}
 		if (ncacn_conn->server_name == NULL) {
-			DEBUG(0, ("Out of memory!\n"));
+			DEBUG(0, ("Out of memory obtaining local socket address as a string!\n"));
 			talloc_free(ncacn_conn);
 			close(s);
 			return;
@@ -1021,7 +1047,7 @@ void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 									    "/root/ncalrpc_as_system",
 									    &ncacn_conn->client);
 					if (rc < 0) {
-						DEBUG(0, ("Out of memory!\n"));
+						DEBUG(0, ("Out of memory building magic ncalrpc_as_system path!\n"));
 						talloc_free(ncacn_conn);
 						close(s);
 						return;
@@ -1031,7 +1057,7 @@ void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 					ncacn_conn->client_name = tsocket_address_unix_path(ncacn_conn->client,
 											    ncacn_conn);
 					if (ncacn_conn->client == NULL) {
-						DEBUG(0, ("Out of memory!\n"));
+						DEBUG(0, ("Out of memory getting magic ncalrpc_as_system string!\n"));
 						talloc_free(ncacn_conn);
 						close(s);
 						return;
@@ -1110,7 +1136,7 @@ void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 	ncacn_conn->send_queue = tevent_queue_create(ncacn_conn,
 							"dcerpc send queue");
 	if (ncacn_conn->send_queue == NULL) {
-		DEBUG(0, ("Out of memory!\n"));
+		DEBUG(0, ("Out of memory building dcerpc send queue!\n"));
 		talloc_free(ncacn_conn);
 		return;
 	}

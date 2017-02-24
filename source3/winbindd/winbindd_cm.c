@@ -1778,12 +1778,14 @@ NTSTATUS wb_open_internal_pipe(TALLOC_CTX *mem_ctx,
 						 table,
 						 session_info,
 						 NULL,
+						 NULL,
 						 winbind_messaging_context(),
 						 &cli);
 	} else {
 		status = rpc_pipe_open_internal(mem_ctx,
 						table,
 						session_info,
+						NULL,
 						NULL,
 						winbind_messaging_context(),
 						&cli);

@@ -115,6 +115,7 @@ static NTSTATUS _winreg_int_openkey(TALLOC_CTX *mem_ctx,
 	status = rpcint_binding_handle(mem_ctx,
 				       &ndr_table_winreg,
 				       local,
+				       NULL,
 				       session_info,
 				       msg_ctx,
 				       &binding_handle);

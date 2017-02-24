@@ -154,6 +154,7 @@ NTSTATUS print_spool_open(files_struct *fsp,
 					 &ndr_table_spoolss,
 					 fsp->conn->session_info,
 					 fsp->conn->sconn->remote_address,
+					 fsp->conn->sconn->local_address,
 					 fsp->conn->sconn->msg_ctx,
 					 &fsp->conn->spoolss_pipe);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -343,6 +344,7 @@ void print_spool_terminate(struct connection_struct *conn,
 					 &ndr_table_spoolss,
 					 conn->session_info,
 					 conn->sconn->remote_address,
+					 conn->sconn->local_address,
 					 conn->sconn->msg_ctx,
 					 &conn->spoolss_pipe);
 	if (!NT_STATUS_IS_OK(status)) {

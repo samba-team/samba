@@ -227,6 +227,7 @@ bool nt_printing_tdb_migrate(struct messaging_context *msg_ctx)
 					&ndr_table_winreg,
 					session_info,
 					NULL,
+					NULL,
 					msg_ctx,
 					&winreg_pipe);
 	if (!NT_STATUS_IS_OK(status)) {

@@ -149,6 +149,16 @@ bool dcesrv_auth_bind(struct dcesrv_call_state *call)
 		}
 	}
 
+	if (call->conn->local_address != NULL) {
+		status = gensec_set_local_address(auth->gensec_security,
+						  call->conn->local_address);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(1, ("Failed to call gensec_set_local_address() %s\n",
+				  nt_errstr(status)));
+			return false;
+		}
+	}
+
 	status = gensec_start_mech_by_authtype(auth->gensec_security, auth->auth_type,
 					       auth->auth_level);
 	if (!NT_STATUS_IS_OK(status)) {
