@@ -39,7 +39,7 @@
 #include "dbwrap/dbwrap.h"
 #include "dbwrap/dbwrap_open.h"
 #include "lib/util/util_tdb.h"
-
+#include "libds/common/roles.h"
 
 /**
  * Fill in credentials for the machine trust account, from the secrets database.
@@ -276,6 +276,8 @@ _PUBLIC_ NTSTATUS cli_credentials_set_machine_account_db_ctx(struct cli_credenti
 	char *secrets_tdb_password = NULL;
 	char *secrets_tdb_old_password = NULL;
 	uint32_t secrets_tdb_secure_channel_type = SEC_CHAN_NULL;
+	int server_role = lpcfg_server_role(lp_ctx);
+	int security = lpcfg_security(lp_ctx);
 	char *keystr;
 	char *keystr_upper = NULL;
 	TALLOC_CTX *tmp_ctx = talloc_named(cred, 0, "cli_credentials_set_secrets from ldb");
@@ -354,13 +356,26 @@ _PUBLIC_ NTSTATUS cli_credentials_set_machine_account_db_ctx(struct cli_credenti
 	}
 
 	if (secrets_tdb_password_more_recent) {
+		enum credentials_use_kerberos use_kerberos = CRED_DONT_USE_KERBEROS;
 		char *machine_account = talloc_asprintf(tmp_ctx, "%s$", lpcfg_netbios_name(lp_ctx));
 		cli_credentials_set_password(cred, secrets_tdb_password, CRED_SPECIFIED);
 		cli_credentials_set_old_password(cred, secrets_tdb_old_password, CRED_SPECIFIED);
 		cli_credentials_set_domain(cred, domain, CRED_SPECIFIED);
 		if (strequal(domain, lpcfg_workgroup(lp_ctx))) {
 			cli_credentials_set_realm(cred, lpcfg_realm(lp_ctx), CRED_SPECIFIED);
+
+			switch (server_role) {
+			case ROLE_DOMAIN_MEMBER:
+				if (security != SEC_ADS) {
+					break;
+				}
+				/* fall through */
+			case ROLE_ACTIVE_DIRECTORY_DC:
+				use_kerberos = CRED_AUTO_USE_KERBEROS;
+				break;
+			}
 		}
+		cli_credentials_set_kerberos_state(cred, use_kerberos);
 		cli_credentials_set_username(cred, machine_account, CRED_SPECIFIED);
 		cli_credentials_set_password_last_changed_time(cred, secrets_tdb_lct);
 		cli_credentials_set_secure_channel_type(cred, secrets_tdb_secure_channel_type);
