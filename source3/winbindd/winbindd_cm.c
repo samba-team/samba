@@ -3294,7 +3294,28 @@ static NTSTATUS cm_connect_netlogon_transport(struct winbindd_domain *domain,
 
 	sec_chan_type = cli_credentials_get_secure_channel_type(creds);
 	if (sec_chan_type == SEC_CHAN_NULL) {
-		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+		if (transport == NCACN_IP_TCP) {
+			DBG_NOTICE("get_secure_channel_type gave SEC_CHAN_NULL for %s, "
+				   " deny NCACN_IP_TCP and let the caller fallback to NCACN_NP.\n",
+				   domain->name);
+			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+		}
+
+		DBG_NOTICE("get_secure_channel_type gave SEC_CHAN_NULL for %s, "
+			   "fallback to noauth on NCACN_NP.\n",
+			   domain->name);
+
+		result = cli_rpc_pipe_open_noauth_transport(conn->cli,
+							    transport,
+							    &ndr_table_netlogon,
+							    &conn->netlogon_pipe);
+		if (!NT_STATUS_IS_OK(result)) {
+			invalidate_cm_connection(domain);
+			return result;
+		}
+
+		*cli = conn->netlogon_pipe;
+		return NT_STATUS_OK;
 	}
 
 	result = rpccli_create_netlogon_creds_with_creds(creds,
