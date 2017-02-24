@@ -49,7 +49,7 @@ def gp_path_list(path):
     return GPO_LIST
 
 
-def gpo_parser(GPO_LIST, ldb, conn, attr_log):
+def gpo_parser(GPO_LIST, ldb, conn, attr_log, lp):
     '''The API method to parse the GPO
     :param GPO_LIST:
     :param ldb: Live instance of an LDB object AKA Samba
@@ -62,9 +62,9 @@ def gpo_parser(GPO_LIST, ldb, conn, attr_log):
     for entry in GPO_LIST:
         (ext, thefile) = entry
         if ret == False:
-            ret = ext.parse(thefile, ldb, conn, attr_log)
+            ret = ext.parse(thefile, ldb, conn, attr_log, lp)
         else:
-            temp = ext.parse(thefile, ldb, conn, attr_log)
+            temp = ext.parse(thefile, ldb, conn, attr_log, lp)
     return ret
 
 
@@ -243,7 +243,7 @@ for guid_eval in hierarchy_gpos:
             if  (version != 0) and GPO_Changed == True:
                 logger.info('GPO %s has changed' % guid)
                 try:
-                    change_backlog = gpo_parser(gpolist, test_ldb, conn, attr_log)
+                    change_backlog = gpo_parser(gpolist, test_ldb, conn, attr_log, lp)
                 except:
                     logger.error('Failed to parse gpo %s' % guid)
                     continue

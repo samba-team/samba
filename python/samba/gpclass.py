@@ -29,27 +29,51 @@ import codecs
 from samba import NTSTATUSError
 from ConfigParser import ConfigParser
 from StringIO import StringIO
+from abc import ABCMeta, abstractmethod
 
 class gp_ext(object):
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
     def list(self, rootpath):
-        return None
+        pass
 
+    @abstractmethod
+    def parse(self, afile, ldb, conn, attr_log, lp):
+        pass
+
+    @abstractmethod
     def __str__(self):
-        return "default_gp_ext"
+        pass
 
 
-class inf_to_ldb(object):
-    '''This class takes the .inf file parameter (essentially a GPO file mapped to a GUID),
-    hashmaps it to the Samba parameter, which then uses an ldb object to update the
-    parameter to Samba4. Not registry oriented whatsoever.
-    '''
+class inf_to():
+    __metaclass__ = ABCMeta
 
-    def __init__(self, logger, ldb, dn, attribute, val):
+    def __init__(self, logger, ldb, dn, lp, attribute, val):
         self.logger = logger
         self.ldb = ldb
         self.dn = dn
         self.attribute = attribute
         self.val = val
+        self.lp = lp
+
+    def explicit(self):
+        return self.val
+
+    def update_samba(self):
+        (upd_sam, value) = self.mapper().get(self.attribute)
+        upd_sam(value())
+
+    @abstractmethod
+    def mapper(self):
+        pass
+
+class inf_to_ldb(inf_to):
+    '''This class takes the .inf file parameter (essentially a GPO file mapped to a GUID),
+    hashmaps it to the Samba parameter, which then uses an ldb object to update the
+    parameter to Samba4. Not registry oriented whatsoever.
+    '''
 
     def ch_minPwdAge(self, val):
         self.logger.info('KDC Minimum Password age was changed from %s to %s' % (self.ldb.get_minPwdAge(), val))
@@ -66,9 +90,6 @@ class inf_to_ldb(object):
     def ch_pwdProperties(self, val):
         self.logger.info('KDC Password Properties were changed from %s to %s' % (self.ldb.get_pwdProperties(), val))
         self.ldb.set_pwdProperties(val)
-
-    def explicit(self):
-        return self.val
 
     def nttime2unix(self):
         seconds = 60
@@ -88,10 +109,6 @@ class inf_to_ldb(object):
                  "pwdProperties" : (self.ch_pwdProperties, self.explicit),
 
                }
-
-    def update_samba(self):
-        (upd_sam, value) = self.mapper().get(self.attribute)
-        upd_sam(value())     # or val = value() then update(val)
 
 
 class gp_sec_ext(gp_ext):
@@ -156,11 +173,12 @@ class gp_sec_ext(gp_ext):
                     (att, setter) = current_section.get(key)
                     value = value.encode('ascii', 'ignore')
                     ret = True
-                    setter(self.logger, self.ldb, self.dn, att, value).update_samba()
+                    setter(self.logger, self.ldb, self.dn, self.lp, att, value).update_samba()
         return ret
 
-    def parse(self, afile, ldb, conn, attr_log):
+    def parse(self, afile, ldb, conn, attr_log, lp):
         self.ldb = ldb
+        self.lp = lp
         self.dn = ldb.get_default_basedn()
 
         # Fixing the bug where only some Linux Boxes capitalize MACHINE
