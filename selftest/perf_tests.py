@@ -33,6 +33,15 @@ plantestsuite_loadlist("samba4.ndr_pack_performance.python(ad_dc_ntvfs)",
                         '--workgroup=$DOMAIN',
                         '$LOADLIST', '$LISTOPT'])
 
+plantestsuite_loadlist("samba4.ldap.ad_dc_search_performance.python(ad_dc_ntvfs)",
+                       "ad_dc_ntvfs",
+                       [python,
+                        os.path.join(samba4srcdir,
+                                     "dsdb/tests/python/ad_dc_search_performance.py"),
+                        '$SERVER', '-U"$USERNAME%$PASSWORD"',
+                        '--workgroup=$DOMAIN',
+                        '$LOADLIST', '$LISTOPT'])
+
 plantestsuite_loadlist("samba4.ldap.ad_dc_multi_bind.ntlm.python(ad_dc_ntvfs)",
                        "ad_dc_ntvfs",
                        [python, os.path.join(samba4srcdir,
