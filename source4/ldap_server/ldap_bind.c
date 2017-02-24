@@ -29,6 +29,37 @@
 #include "param/param.h"
 #include "../lib/util/tevent_ntstatus.h"
 
+static char *ldapsrv_bind_error_msg(TALLOC_CTX *mem_ctx,
+				    HRESULT hresult,
+				    uint32_t DSID,
+				    NTSTATUS status)
+{
+	WERROR werr;
+	char *msg = NULL;
+
+	status = nt_status_squash(status);
+	werr = ntstatus_to_werror(status);
+
+	/*
+	 * There are 4 lower case hex digits following 'v' at the end,
+	 * but different Windows Versions return different values:
+	 *
+	 * Windows 2008R2 uses 'v1db1'
+	 * Windows 2012R2 uses 'v2580'
+	 *
+	 * We just match Windows 2008R2 as that's what was referenced
+	 * in https://bugzilla.samba.org/show_bug.cgi?id=9048
+	 */
+	msg = talloc_asprintf(mem_ctx, "%08X: LdapErr: DSID-%08X, comment: "
+			      "AcceptSecurityContext error, data %x, v1db1",
+			      (unsigned)HRES_ERROR_V(hresult),
+			      (unsigned)DSID,
+			      (unsigned)W_ERROR_V(werr));
+
+	return msg;
+}
+
+
 static NTSTATUS ldapsrv_BindSimple(struct ldapsrv_call *call)
 {
 	struct ldap_BindRequest *req = &call->request->r.BindRequest;
@@ -95,7 +126,8 @@ static NTSTATUS ldapsrv_BindSimple(struct ldapsrv_call *call)
 		status = nt_status_squash(status);
 
 		result = LDAP_INVALID_CREDENTIALS;
-		errstr = talloc_asprintf(reply, "Simple Bind Failed: %s", nt_errstr(status));
+		errstr = ldapsrv_bind_error_msg(reply, HRES_SEC_E_INVALID_TOKEN,
+						0x0C0903A9, status);
 	}
 
 do_reply:
@@ -346,7 +378,8 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 		status = nt_status_squash(status);
 		if (result == 0) {
 			result = LDAP_INVALID_CREDENTIALS;
-			errstr = talloc_asprintf(reply, "SASL:[%s]: %s", req->creds.SASL.mechanism, nt_errstr(status));
+			errstr = ldapsrv_bind_error_msg(reply, HRES_SEC_E_LOGON_DENIED,
+							0x0C0904DC, status);
 		}
 		talloc_unlink(conn, conn->gensec);
 		conn->gensec = NULL;
