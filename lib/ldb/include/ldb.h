@@ -271,6 +271,15 @@ struct ldb_utf8_fns {
 */
 #define LDB_FLG_ENABLE_TRACING 32
 
+/**
+   Flags to tell LDB not to create a new database file:
+
+   Without this flag ldb_tdb (for example) will create a blank file
+   during an invocation of ldb_connect(), even when the caller only
+   wanted read operations, for example in ldbsearch.
+*/
+#define LDB_FLG_DONT_CREATE_DB 64
+
 /*
    structures for ldb_parse_tree handling code
 */

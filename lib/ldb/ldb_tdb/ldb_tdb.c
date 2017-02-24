@@ -1565,6 +1565,8 @@ static int ltdb_connect(struct ldb_context *ldb, const char *url,
 
 	if (flags & LDB_FLG_RDONLY) {
 		open_flags = O_RDONLY;
+	} else if (flags & LDB_FLG_DONT_CREATE_DB) {
+		open_flags = O_RDWR;
 	} else {
 		open_flags = O_CREAT | O_RDWR;
 	}

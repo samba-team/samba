@@ -280,10 +280,7 @@ static struct ldb_cmdline *ldb_cmdline_process_internal(struct ldb_context *ldb,
 	}
 
 	if (search) {
-		/*
-		 * For now we're not adding LDB_FLG_RDONLY,
-		 * as that would result in no tdb locking.
-		 */
+		flags |= LDB_FLG_DONT_CREATE_DB;
 
 		if (options.show_binary) {
 			flags |= LDB_FLG_SHOW_BINARY;
