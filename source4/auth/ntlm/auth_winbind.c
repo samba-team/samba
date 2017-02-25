@@ -141,6 +141,11 @@ static NTSTATUS winbind_check_password(struct auth_method_context *ctx,
 	status = dcerpc_winbind_SamLogon_r(irpc_handle, s, &s->req);
 	NT_STATUS_NOT_OK_RETURN(status);
 
+	if (NT_STATUS_EQUAL(s->req.out.result, NT_STATUS_NO_SUCH_USER) &&
+	    !s->req.out.authoritative) {
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
 	status = make_user_info_dc_netlogon_validation(mem_ctx,
 						      user_info->client.account_name,
 						      s->req.in.validation_level,
