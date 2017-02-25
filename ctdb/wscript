@@ -1025,7 +1025,8 @@ def rpmonly(ctx):
 
 def rpm(ctx):
     import Scripting
-    Scripting.commands.append('dist')
+    Scripting.commands.append('manpages')
+    Scripting.commands.append('distonly')
     Scripting.commands.append('rpmonly')
 
 
