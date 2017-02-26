@@ -749,6 +749,8 @@ for d in dns_list:
             break
     if not found:
         rebuild_cache = True
+        if opts.verbose:
+            print "need cache add: %s" % d
     if opts.all_names:
         update_list.append(d)
         if opts.verbose:
@@ -768,6 +770,8 @@ for c in cache_list:
     if found:
         continue
     rebuild_cache = True
+    if opts.verbose:
+        print "need cache remove: %s" % c
     if not opts.all_names and not check_dns_name(c):
         continue
     delete_list.append(c)
