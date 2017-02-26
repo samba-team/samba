@@ -679,7 +679,7 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 			return WERR_NOT_ENOUGH_MEMORY;
 		}
 
-		/* Ensure we reject compleate junk first */
+		/* Ensure we reject complete junk first */
 		ret = krb5_parse_name(smb_krb5_context->krb5_context, name, &principal);
 		if (ret) {
 			info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
