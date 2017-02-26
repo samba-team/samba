@@ -6248,3 +6248,13 @@ bool smb2cli_tcon_is_encryption_on(struct smbXcli_tcon *tcon)
 {
 	return tcon->smb2.should_encrypt;
 }
+
+void smb2cli_conn_set_mid(struct smbXcli_conn *conn, uint64_t mid)
+{
+	conn->smb2.mid = mid;
+}
+
+uint64_t smb2cli_conn_get_mid(struct smbXcli_conn *conn)
+{
+	return conn->smb2.mid;
+}

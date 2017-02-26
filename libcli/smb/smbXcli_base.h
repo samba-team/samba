@@ -378,6 +378,8 @@ void smb2cli_conn_set_cc_chunk_len(struct smbXcli_conn *conn,
 uint32_t smb2cli_conn_cc_max_chunks(struct smbXcli_conn *conn);
 void smb2cli_conn_set_cc_max_chunks(struct smbXcli_conn *conn,
 				    uint32_t max_chunks);
+void smb2cli_conn_set_mid(struct smbXcli_conn *conn, uint64_t mid);
+uint64_t smb2cli_conn_get_mid(struct smbXcli_conn *conn);
 
 struct tevent_req *smb2cli_req_create(TALLOC_CTX *mem_ctx,
 				      struct tevent_context *ev,
