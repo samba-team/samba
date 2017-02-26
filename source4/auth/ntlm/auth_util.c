@@ -128,12 +128,11 @@ static NTSTATUS map_user_info_cracknames(struct ldb_context *sam_ctx,
 			return NT_STATUS_NO_MEMORY;
 		}
 	} else {
-		char *domain_name;
+		const char *domain_name = default_domain;
 		if (user_info->client.domain_name && *user_info->client.domain_name) {
-			domain_name = talloc_asprintf(tmp_ctx, "%s\\", user_info->client.domain_name);
-		} else {
-			domain_name = talloc_strdup(tmp_ctx, default_domain);
+			domain_name = user_info->client.domain_name;
 		}
+		domain_name = talloc_asprintf(tmp_ctx, "%s\\", domain_name);
 		if (domain_name == NULL) {
 			talloc_free(tmp_ctx);
 			return NT_STATUS_NO_MEMORY;
