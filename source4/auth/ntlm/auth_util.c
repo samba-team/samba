@@ -221,6 +221,7 @@ static NTSTATUS map_user_info_cracknames(struct ldb_context *sam_ctx,
 ****************************************************************************/
 NTSTATUS map_user_info(struct ldb_context *sam_ctx,
 		       TALLOC_CTX *mem_ctx,
+		       bool is_ad_dc,
 		       const char *default_domain,
 		       const struct auth_usersupplied_info *user_info,
 		       struct auth_usersupplied_info **user_info_mapped)
@@ -230,7 +231,7 @@ NTSTATUS map_user_info(struct ldb_context *sam_ctx,
 	char *d;
 	TALLOC_CTX *tmp_ctx;
 
-	if (sam_ctx != NULL) {
+	if (is_ad_dc) {
 		/* if possible, use cracknames to parse the
 		   domain/account */
 		return map_user_info_cracknames(sam_ctx, mem_ctx, default_domain, user_info, user_info_mapped);

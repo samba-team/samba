@@ -280,8 +280,14 @@ _PUBLIC_ struct tevent_req *auth_check_password_send(TALLOC_CTX *mem_ctx,
 	state->user_info	= user_info;
 
 	if (!user_info->mapped_state) {
-		nt_status = map_user_info(auth_ctx->sam_ctx, req, lpcfg_workgroup(auth_ctx->lp_ctx),
-					  user_info, &user_info_tmp);
+		int server_role = lpcfg_server_role(auth_ctx->lp_ctx);
+
+		nt_status = map_user_info(
+			auth_ctx->sam_ctx, req,
+			server_role == ROLE_ACTIVE_DIRECTORY_DC,
+			lpcfg_workgroup(auth_ctx->lp_ctx),
+			user_info, &user_info_tmp);
+
 		if (tevent_req_nterror(req, nt_status)) {
 			return tevent_req_post(req, ev);
 		}
