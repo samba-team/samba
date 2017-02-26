@@ -46,7 +46,6 @@ struct loadparm_context;
 #define AUTH4_INTERFACE_VERSION 0
 
 struct auth_method_context;
-struct auth_check_password_request;
 struct auth4_context;
 struct auth_session_info;
 struct ldb_dn;
