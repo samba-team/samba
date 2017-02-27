@@ -6,6 +6,7 @@ bld.SAMBA_MODULE('TORTURE_SMB2',
         compound.c
         connect.c
         create.c
+        credits.c
         delete-on-close.c
         dir.c
         dosmode.c

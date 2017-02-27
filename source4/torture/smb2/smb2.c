@@ -172,6 +172,7 @@ NTSTATUS torture_smb2_init(void)
 	torture_suite_add_suite(suite, torture_smb2_replay_init());
 	torture_suite_add_simple_test(suite, "dosmode", torture_smb2_dosmode);
 	torture_suite_add_simple_test(suite, "maxfid", torture_smb2_maxfid);
+	torture_suite_add_suite(suite, torture_smb2_crediting_init());
 
 	torture_suite_add_suite(suite, torture_smb2_doc_init());
 
