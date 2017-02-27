@@ -2782,6 +2782,11 @@ void smb2cli_conn_set_max_credits(struct smbXcli_conn *conn,
 	conn->smb2.max_credits = max_credits;
 }
 
+uint16_t smb2cli_conn_get_cur_credits(struct smbXcli_conn *conn)
+{
+	return conn->smb2.cur_credits;
+}
+
 uint8_t smb2cli_conn_get_io_priority(struct smbXcli_conn *conn)
 {
 	if (conn->protocol < PROTOCOL_SMB3_11) {
