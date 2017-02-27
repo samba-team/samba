@@ -1271,7 +1271,8 @@ static NTSTATUS winbindd_dual_auth_passdb(TALLOC_CTX *mem_ctx,
 	status = make_auth_context_fixed(frame, &auth_context, challenge->data);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed to test authentication with check_sam_security_info3: %s\n", nt_errstr(status)));
+		DBG_ERR("make_auth_context_fixed failed: %s\n",
+			nt_errstr(status));
 		TALLOC_FREE(frame);
 		return status;
 	}
