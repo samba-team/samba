@@ -97,7 +97,7 @@ def remove_dns_references(samdb, logger, dnsHostName):
     dnsHostNameUpper = dnsHostName.upper()
 
     try:
-        primary_recs = samdb.dns_lookup(dnsHostName)
+        (dn, primary_recs) = samdb.dns_lookup(dnsHostName)
     except RuntimeError as (enum, estr):
         if enum == werror.WERR_DNS_ERROR_NAME_DOES_NOT_EXIST:
               return
@@ -140,7 +140,7 @@ def remove_dns_references(samdb, logger, dnsHostName):
     for a_name in a_names_to_remove_from:
         try:
             logger.debug("checking for DNS records to remove on %s" % a_name)
-            a_recs = samdb.dns_lookup(a_name)
+            (a_rec_dn, a_recs) = samdb.dns_lookup(a_name)
         except RuntimeError as (enum, estr):
             if enum == werror.WERR_DNS_ERROR_NAME_DOES_NOT_EXIST:
                 return
