@@ -345,14 +345,48 @@ static NTSTATUS gse_get_client_auth_token(TALLOC_CTX *mem_ctx,
 		/* we will need a third leg */
 		status = NT_STATUS_MORE_PROCESSING_REQUIRED;
 		break;
-	default:
-		if ((gss_maj == GSS_S_FAILURE) &&
-		    (gss_min == (OM_uint32)KRB5KRB_AP_ERR_TKT_EXPIRED)) {
+	case GSS_S_CONTEXT_EXPIRED:
+		/* Make SPNEGO ignore us, we can't go any further here */
+		DBG_NOTICE("Context expired\n");
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto done;
+	case GSS_S_FAILURE:
+		switch (gss_min) {
+		case (OM_uint32)KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN:
+			DBG_NOTICE("Server principal not found\n");
+			/* Make SPNEGO ignore us, we can't go any further here */
+			status = NT_STATUS_INVALID_PARAMETER;
+			goto done;
+		case (OM_uint32)KRB5KRB_AP_ERR_TKT_EXPIRED:
 			DBG_NOTICE("Ticket expired\n");
-		} else {
-			DBG_ERR("gss_init_sec_context failed with [%s]\n",
-				gse_errstr(talloc_tos(), gss_maj, gss_min));
+			/* Make SPNEGO ignore us, we can't go any further here */
+			status = NT_STATUS_INVALID_PARAMETER;
+			goto done;
+		case (OM_uint32)KRB5KRB_AP_ERR_TKT_NYV:
+			DBG_NOTICE("Clockskew\n");
+			/* Make SPNEGO ignore us, we can't go any further here */
+			status = NT_STATUS_TIME_DIFFERENCE_AT_DC;
+			goto done;
+		case (OM_uint32)KRB5_KDC_UNREACH:
+			DBG_NOTICE("KDC unreachable\n");
+			/* Make SPNEGO ignore us, we can't go any further here */
+			status = NT_STATUS_NO_LOGON_SERVERS;
+			goto done;
+		case (OM_uint32)KRB5KRB_AP_ERR_MSG_TYPE:
+			/* Garbage input, possibly from the auto-mech detection */
+			status = NT_STATUS_INVALID_PARAMETER;
+			goto done;
+		default:
+			DBG_ERR("gss_init_sec_context failed with [%s](%u)\n",
+				gse_errstr(talloc_tos(), gss_maj, gss_min),
+				gss_min);
+			status = NT_STATUS_LOGON_FAILURE;
+			goto done;
 		}
+		break;
+	default:
+		DBG_ERR("gss_init_sec_context failed with [%s]\n",
+			gse_errstr(talloc_tos(), gss_maj, gss_min));
 		status = NT_STATUS_INTERNAL_ERROR;
 		goto done;
 	}
