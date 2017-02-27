@@ -124,12 +124,14 @@ static PyObject *py_dsdb_dns_lookup(PyObject *self, PyObject *args)
 
 	status = dns_common_zones(samdb, frame, &zones_list);
 	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(frame);
 		PyErr_SetNTSTATUS(status);
 		return NULL;
 	}
 
 	werr = dns_common_name2dn(samdb, zones_list, frame, dns_name, &dn);
 	if (!W_ERROR_IS_OK(werr)) {
+		talloc_free(frame);
 		PyErr_SetWERROR(werr);
 		return NULL;
 	}
@@ -141,16 +143,19 @@ static PyObject *py_dsdb_dns_lookup(PyObject *self, PyObject *args)
 				 &num_records,
 				 NULL);
 	if (!W_ERROR_IS_OK(werr)) {
+		talloc_free(frame);
 		PyErr_SetWERROR(werr);
 		return NULL;
 	}
 
-	return py_dnsp_DnssrvRpcRecord_get_list(records, num_records);
+	ret = py_dnsp_DnssrvRpcRecord_get_list(records, num_records);
+	talloc_free(frame);
+	return ret;
 }
 
 static PyObject *py_dsdb_dns_extract(PyObject *self, PyObject *args)
 {
-	PyObject *py_dns_el;
+	PyObject *py_dns_el, *ret;
 	TALLOC_CTX *frame;
 	WERROR werr;
 	struct ldb_message_element *dns_el;
@@ -175,11 +180,14 @@ static PyObject *py_dsdb_dns_extract(PyObject *self, PyObject *args)
 				  &records,
 				  &num_records);
 	if (!W_ERROR_IS_OK(werr)) {
+		talloc_free(frame);
 		PyErr_SetWERROR(werr);
 		return NULL;
 	}
 
-	return py_dnsp_DnssrvRpcRecord_get_list(records, num_records);
+	ret = py_dnsp_DnssrvRpcRecord_get_list(records, num_records);
+	talloc_free(frame);
+	return ret;
 }
 
 static PyObject *py_dsdb_dns_replace(PyObject *self, PyObject *args)
@@ -213,12 +221,14 @@ static PyObject *py_dsdb_dns_replace(PyObject *self, PyObject *args)
 	status = dns_common_zones(samdb, frame, &zones_list);
 	if (!NT_STATUS_IS_OK(status)) {
 		PyErr_SetNTSTATUS(status);
+		talloc_free(frame);
 		return NULL;
 	}
 
 	werr = dns_common_name2dn(samdb, zones_list, frame, dns_name, &dn);
 	if (!W_ERROR_IS_OK(werr)) {
 		PyErr_SetWERROR(werr);
+		talloc_free(frame);
 		return NULL;
 	}
 
@@ -226,6 +236,7 @@ static PyObject *py_dsdb_dns_replace(PyObject *self, PyObject *args)
 						frame,
 						&records, &num_records);
 	if (ret != 0) {
+		talloc_free(frame);
 		return NULL;
 	}
 
@@ -238,9 +249,11 @@ static PyObject *py_dsdb_dns_replace(PyObject *self, PyObject *args)
 				  num_records);
 	if (!W_ERROR_IS_OK(werr)) {
 		PyErr_SetWERROR(werr);
+		talloc_free(frame);
 		return NULL;
 	}
 
+	talloc_free(frame);
 	Py_RETURN_NONE;
 }
 
@@ -275,6 +288,7 @@ static PyObject *py_dsdb_dns_replace_by_dn(PyObject *self, PyObject *args)
 						frame,
 						&records, &num_records);
 	if (ret != 0) {
+		talloc_free(frame);
 		return NULL;
 	}
 
@@ -287,8 +301,11 @@ static PyObject *py_dsdb_dns_replace_by_dn(PyObject *self, PyObject *args)
 				  num_records);
 	if (!W_ERROR_IS_OK(werr)) {
 		PyErr_SetWERROR(werr);
+		talloc_free(frame);
 		return NULL;
 	}
+
+	talloc_free(frame);
 
 	Py_RETURN_NONE;
 }
