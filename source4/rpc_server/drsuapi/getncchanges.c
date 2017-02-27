@@ -1117,7 +1117,7 @@ denied:
 	DEBUG(2,(__location__ ": Denied single object with secret replication for %s by RODC %s\n",
 		 ldb_dn_get_linearized(obj_dn), ldb_dn_get_linearized(rodc_res->msgs[0]->dn)));
 	ctr6->extended_ret = DRSUAPI_EXOP_ERR_NONE;
-	return WERR_DS_DRA_ACCESS_DENIED;
+	return WERR_DS_DRA_SECRETS_DENIED;
 
 allowed:
 	DEBUG(2,(__location__ ": Allowed single object with secret replication for %s by %s %s\n",
