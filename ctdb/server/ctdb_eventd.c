@@ -38,7 +38,7 @@
 
 #include "common/comm.h"
 #include "common/logging.h"
-#include "common/run_proc.h"
+#include "common/run_event.h"
 #include "common/sock_daemon.h"
 
 struct pending_event {
@@ -55,9 +55,7 @@ struct eventd_client {
 };
 
 struct eventd_context {
-	const char *script_dir;
-	const char *debug_script;
-	struct run_proc_context *run_ctx;
+	struct run_event_context *run_ctx;
 	struct tevent_queue *queue;
 
 	/* current state */
@@ -66,11 +64,9 @@ struct eventd_context {
 	struct tevent_req *req;
 
 	/* result of last execution */
-	int result_run;
-	int result_fail;
-	struct ctdb_script_list *status_run[CTDB_EVENT_MAX];
-	struct ctdb_script_list *status_pass[CTDB_EVENT_MAX];
-	struct ctdb_script_list *status_fail[CTDB_EVENT_MAX];
+	struct run_event_script_list *status_run[CTDB_EVENT_MAX];
+	struct run_event_script_list *status_pass[CTDB_EVENT_MAX];
+	struct run_event_script_list *status_fail[CTDB_EVENT_MAX];
 
 	struct eventd_client *client_list;
 };
@@ -93,21 +89,8 @@ static int eventd_context_init(TALLOC_CTX *mem_ctx,
 		return ENOMEM;
 	}
 
-	ectx->script_dir = talloc_strdup(ectx, script_dir);
-	if (ectx->script_dir == NULL) {
-		talloc_free(ectx);
-		return ENOMEM;
-	}
-
-	if (debug_script != NULL) {
-		ectx->debug_script = talloc_strdup(ectx, debug_script);
-		if (ectx->debug_script == NULL) {
-			talloc_free(ectx);
-			return ENOMEM;
-		}
-	}
-
-	ret = run_proc_init(ectx, ev, &ectx->run_ctx);
+	ret = run_event_init(ectx, ev, script_dir, debug_script,
+			     &ectx->run_ctx);
 	if (ret != 0) {
 		talloc_free(ectx);
 		return ret;
@@ -126,14 +109,9 @@ static int eventd_context_init(TALLOC_CTX *mem_ctx,
 	return 0;
 }
 
-static const char *eventd_script_dir(struct eventd_context *ectx)
+static struct run_event_context *eventd_run_context(struct eventd_context *ectx)
 {
-	return ectx->script_dir;
-}
-
-static const char *eventd_debug_script(struct eventd_context *ectx)
-{
-	return ectx->debug_script;
+	return ectx->run_ctx;
 }
 
 static struct tevent_queue *eventd_queue(struct eventd_context *ectx)
@@ -156,13 +134,14 @@ static void eventd_stop_running(struct eventd_context *ectx)
 	ectx->req = NULL;
 }
 
-static void eventd_cancel_running(struct eventd_context *ectx)
+static struct tevent_req *eventd_cancel_running(struct eventd_context *ectx)
 {
-	if (ectx->req != NULL) {
-		tevent_req_error(ectx->req, ECANCELED);
-	}
+	struct tevent_req *req = ectx->req;
 
+	ectx->req = NULL;
 	eventd_stop_running(ectx);
+
+	return req;
 }
 
 static bool eventd_is_running(struct eventd_context *ectx,
@@ -175,38 +154,73 @@ static bool eventd_is_running(struct eventd_context *ectx,
 	return ectx->running;
 }
 
-static struct ctdb_script_list *script_list_copy(TALLOC_CTX *mem_ctx,
-						 struct ctdb_script_list *s)
+static struct run_event_script_list *script_list_copy(
+					TALLOC_CTX *mem_ctx,
+					struct run_event_script_list *s)
 {
-	struct ctdb_script_list *s2;
+	struct run_event_script_list *s2;
 
-	s2 = talloc_zero(mem_ctx, struct ctdb_script_list);
+	s2 = talloc_zero(mem_ctx, struct run_event_script_list);
 	if (s2 == NULL) {
 		return NULL;
 	}
 
 	s2->num_scripts = s->num_scripts;
 	s2->script = talloc_memdup(s2, s->script,
-				   s->num_scripts * sizeof(struct ctdb_script));
+				   s->num_scripts *
+				   sizeof(struct run_event_script));
 	if (s2->script == NULL) {
 		talloc_free(s2);
 		return NULL;
 	}
+	s2->summary = s->summary;
 
 	return s2;
 }
 
+static struct ctdb_script_list *script_list_to_ctdb_script_list(
+					TALLOC_CTX *mem_ctx,
+					struct run_event_script_list *s)
+{
+	struct ctdb_script_list *sl;
+	int i;
+
+	sl = talloc_zero(mem_ctx, struct ctdb_script_list);
+	if (sl == NULL) {
+		return NULL;
+	}
+
+	sl->script = talloc_zero_array(sl, struct ctdb_script, s->num_scripts);
+	if (sl->script == NULL) {
+		talloc_free(sl);
+		return NULL;
+	}
+
+	sl->num_scripts = s->num_scripts;
+
+	for (i=0; i<s->num_scripts; i++) {
+		struct run_event_script *escript = &s->script[i];
+		struct ctdb_script *script = &sl->script[i];
+
+		strlcpy(script->name, escript->name, MAX_SCRIPT_NAME+1);
+		script->start = escript->begin;
+		script->finished = escript->end;
+		script->status = escript->summary;
+		if (escript->output != NULL) {
+			strlcpy(script->output, escript->output,
+				MAX_SCRIPT_OUTPUT+1);
+		}
+	}
+
+	return sl;
+}
+
 static void eventd_set_result(struct eventd_context *ectx,
 			      enum ctdb_event event,
-			      struct ctdb_script_list *script_list,
-			      int result)
+			      struct run_event_script_list *script_list)
 {
-	struct ctdb_script_list *s;
+	struct run_event_script_list *s;
 
-	/* Avoid negative values, they represent -errno */
-	result = (result < 0) ? -result : result;
-
-	ectx->result_run = result;
 	if (script_list == NULL) {
 		return;
 	}
@@ -219,646 +233,44 @@ static void eventd_set_result(struct eventd_context *ectx,
 		return;
 	}
 
-	if (result == 0) {
+	if (s->summary == 0) {
 		TALLOC_FREE(ectx->status_pass[event]);
 		ectx->status_pass[event] = s;
 	} else {
 		TALLOC_FREE(ectx->status_fail[event]);
 		ectx->status_fail[event] = s;
-		ectx->result_fail = result;
 	}
 }
 
 static int eventd_get_result(struct eventd_context *ectx,
 			     enum ctdb_event event,
 			     enum ctdb_event_status_state state,
+			     TALLOC_CTX *mem_ctx,
 			     struct ctdb_script_list **out)
 {
-	struct ctdb_script_list *s = NULL;
-	int result = 0;
+	struct run_event_script_list *s = NULL;
 
 	switch (state) {
 		case CTDB_EVENT_LAST_RUN:
 			s = ectx->status_run[event];
-			result = ectx->result_run;
 			break;
 
 		case CTDB_EVENT_LAST_PASS:
 			s = ectx->status_pass[event];
-			result = 0;
 			break;
 
 		case CTDB_EVENT_LAST_FAIL:
 			s = ectx->status_fail[event];
-			result = ectx->result_fail;
 			break;
 	}
 
-	*out = s;
-	return result;
-}
-
-/*
- * Run debug script to dianose hung scripts
- */
-
-static int debug_args(TALLOC_CTX *mem_ctx, const char *path,
-		      enum ctdb_event event, pid_t pid, const char ***out)
-{
-	const char **argv;
-
-	argv = talloc_array(mem_ctx, const char *, 4);
-	if (argv == NULL) {
-		return ENOMEM;
-	}
-
-	argv[0] = path;
-	argv[1] = talloc_asprintf(argv, "%d", pid);
-	argv[2] = ctdb_event_to_string(event);
-	if (argv[1] == NULL) {
-		talloc_free(argv);
-		return ENOMEM;
-	}
-	argv[3] = NULL;
-
-	*out = argv;
-	return 0;
-}
-
-static void debug_log(int loglevel, char *output, const char *log_prefix)
-{
-	char *line;
-
-	line = strtok(output, "\n");
-	while (line != NULL) {
-		DEBUG(loglevel, ("%s: %s\n", log_prefix, line));
-		line = strtok(NULL, "\n");
-	}
-}
-
-struct run_debug_state {
-	pid_t pid;
-};
-
-static void run_debug_done(struct tevent_req *subreq);
-
-static struct tevent_req *run_debug_send(TALLOC_CTX *mem_ctx,
-					 struct tevent_context *ev,
-					 struct eventd_context *ectx,
-					 enum ctdb_event event, pid_t pid)
-{
-	struct tevent_req *req, *subreq;
-	struct run_debug_state *state;
-	const char **argv;
-	const char *debug_script;
-	int ret;
-
-	req = tevent_req_create(mem_ctx, &state, struct run_debug_state);
-	if (req == NULL) {
-		return NULL;
-	}
-
-	state->pid = pid;
-
-	debug_script = eventd_debug_script(ectx);
-	if (debug_script == NULL) {
-		tevent_req_done(req);
-		return tevent_req_post(req, ev);
-	}
-
-	if (pid == -1) {
-		D_DEBUG("Script terminated, nothing to debug\n");
-		tevent_req_done(req);
-		return tevent_req_post(req, ev);
-	}
-
-	ret = debug_args(state, debug_script, event, pid, &argv);
-	if (ret != 0) {
-		D_ERR("debug_args() failed\n");
-		tevent_req_error(req, ret);
-		return tevent_req_post(req, ev);
-	}
-
-	D_DEBUG("Running debug %s with args \"%s %s\"\n",
-		debug_script, argv[1], argv[2]);
-
-	subreq = run_proc_send(state, ev, ectx->run_ctx, debug_script, argv,
-			       -1, tevent_timeval_zero());
-	if (tevent_req_nomem(subreq, req)) {
-		return tevent_req_post(req, ev);
-	}
-	tevent_req_set_callback(subreq, run_debug_done, req);
-
-	talloc_free(argv);
-	return req;
-}
-
-static void run_debug_done(struct tevent_req *subreq)
-{
-	struct tevent_req *req = tevent_req_callback_data(
-		subreq, struct tevent_req);
-	struct run_debug_state *state = tevent_req_data(
-		req, struct run_debug_state);
-	char *output;
-	int ret;
-	bool status;
-
-	status = run_proc_recv(subreq, &ret, NULL, NULL, state, &output);
-	TALLOC_FREE(subreq);
-	if (! status) {
-		D_ERR("Running debug failed, ret=%d\n", ret);
-	}
-
-	/* Log output */
-	if (output != NULL) {
-		debug_log(DEBUG_ERR, output, "event_debug");
-		talloc_free(output);
-	}
-
-	kill(-state->pid, SIGTERM);
-	tevent_req_done(req);
-}
-
-static bool run_debug_recv(struct tevent_req *req, int *perr)
-{
-	int ret;
-
-	if (tevent_req_is_unix_error(req, &ret)) {
-		if (perr != NULL) {
-			*perr = ret;
-		}
-		return false;
-	}
-
-	return true;
-}
-
-/*
- * Utility functions for running a single event
- */
-
-static int script_filter(const struct dirent *de)
-{
-	size_t namelen = strlen(de->d_name);
-	char *ptr;
-
-	/* Ignore . and .. */
-	if (namelen < 3) {
+	if (s == NULL) {
+		*out = NULL;
 		return 0;
 	}
 
-	/* Skip filenames with ~ */
-	ptr = strchr(de->d_name, '~');
-	if (ptr != NULL) {
-		return 0;
-	}
-
-	/* Filename should start with [0-9][0-9]. */
-	if ((! isdigit(de->d_name[0])) ||
-	    (! isdigit(de->d_name[1])) ||
-	    (de->d_name[2] != '.')) {
-		return 0;
-	}
-
-	/* Ignore file names longer than MAX_SCRIPT_NAME */
-	if (namelen > MAX_SCRIPT_NAME) {
-		return 0;
-	}
-
-	return 1;
-}
-
-static int get_script_list(TALLOC_CTX *mem_ctx,
-			   const char *script_dir,
-			   struct ctdb_script_list **out)
-{
-	struct dirent **namelist = NULL;
-	struct ctdb_script_list *script_list;
-	int count, ret;
-	int i;
-
-	script_list = talloc_zero(mem_ctx, struct ctdb_script_list);
-	if (script_list == NULL) {
-		return ENOMEM;
-	}
-
-	count = scandir(script_dir, &namelist, script_filter, alphasort);
-	if (count == -1) {
-		ret = errno;
-		if (ret == ENOENT) {
-			D_WARNING("event script dir %s removed\n", script_dir);
-		} else {
-			D_WARNING("scandir() failed on %s, ret=%d\n",
-				  script_dir, ret);
-		}
-		*out = script_list;
-		ret = 0;
-		goto done;
-	}
-
-	if (count == 0) {
-		*out = script_list;
-		ret = 0;
-		goto done;
-	}
-
-	script_list->num_scripts = count;
-	script_list->script = talloc_zero_array(script_list,
-						struct ctdb_script,
-						count);
-	if (script_list->script == NULL) {
-		ret = ENOMEM;
-		talloc_free(script_list);
-		goto done;
-	}
-
-	for (i=0; i<count; i++) {
-		struct ctdb_script *s = &script_list->script[i];
-		size_t len;
-
-		len = strlcpy(s->name, namelist[i]->d_name, sizeof(s->name));
-		if (len >= sizeof(s->name)) {
-			ret = EIO;
-			talloc_free(script_list);
-			goto done;
-		}
-	}
-
-	*out = script_list;
-	ret = 0;
-
-done:
-	if (namelist != NULL && count != -1) {
-		for (i=0; i<count; i++) {
-			free(namelist[i]);
-		}
-		free(namelist);
-	}
-	return ret;
-}
-
-static int script_chmod(TALLOC_CTX *mem_ctx, const char *script_dir,
-			const char *script_name, bool enable)
-{
-	DIR *dirp;
-	struct dirent *de;
-	int ret, new_mode;
-	char *filename;
-	struct stat st;
-	bool found;
-
-	dirp = opendir(script_dir);
-	if (dirp == NULL) {
-		return errno;
-	}
-
-	found = false;
-	while ((de = readdir(dirp)) != NULL) {
-		if (strcmp(de->d_name, script_name) == 0) {
-
-			/* check for valid script names */
-			ret = script_filter(de);
-			if (ret == 0) {
-				closedir(dirp);
-				return EINVAL;
-			}
-
-			found = true;
-			break;
-		}
-	}
-	closedir(dirp);
-
-	if (! found) {
-		return ENOENT;
-	}
-
-	filename = talloc_asprintf(mem_ctx, "%s/%s", script_dir, script_name);
-	if (filename == NULL) {
-		return ENOMEM;
-	}
-
-	ret = stat(filename, &st);
-	if (ret != 0) {
-		ret = errno;
-		goto done;
-	}
-
-	if (enable) {
-		new_mode = st.st_mode | S_IXUSR;
-	} else {
-		new_mode = st.st_mode & ~(S_IXUSR | S_IXGRP | S_IXOTH);
-	}
-
-	ret = chmod(filename, new_mode);
-	if (ret != 0) {
-		ret = errno;
-		goto done;
-	}
-
-done:
-	talloc_free(filename);
-	return ret;
-}
-
-static int script_args(TALLOC_CTX *mem_ctx, enum ctdb_event event,
-		       const char *arg_str, const char ***out)
-{
-	const char **argv;
-	int argc;
-
-	argv = talloc_array(mem_ctx, const char *, 7);
-	if (argv == NULL) {
-		return ENOMEM;
-	}
-
-	argv[0] = NULL; /* script name */
-	argv[1] = ctdb_event_to_string(event);
-	argc = 2;
-
-	if (arg_str != NULL) {
-		char *str, *t, *tok;
-
-		str = talloc_strdup(argv, arg_str);
-		if (str == NULL) {
-			return ENOMEM;
-		}
-
-		t = str;
-		while ((tok = strtok(t, " ")) != NULL) {
-			argv[argc] = talloc_strdup(argv, tok);
-			if (argv[argc] == NULL) {
-				talloc_free(argv);
-				return ENOMEM;
-			}
-			argc += 1;
-			if (argc >= 7) {
-				talloc_free(argv);
-				return EINVAL;
-			}
-			t = NULL;
-		}
-
-		talloc_free(str);
-	}
-
-	argv[argc] = NULL;
-	argc += 1;
-
-	*out = argv;
-	return 0;
-}
-
-/*
- * Run a single event
- */
-
-struct run_event_state {
-	struct tevent_context *ev;
-	struct eventd_context *ectx;
-	struct timeval timeout;
-	enum ctdb_event event;
-
-	struct ctdb_script_list *script_list;
-	const char **argv;
-	int index;
-	int status;
-};
-
-static struct tevent_req *run_event_run_script(struct tevent_req *req);
-static void run_event_next_script(struct tevent_req *subreq);
-static void run_event_debug(struct tevent_req *req, pid_t pid);
-static void run_event_debug_done(struct tevent_req *subreq);
-
-static struct tevent_req *run_event_send(TALLOC_CTX *mem_ctx,
-					 struct tevent_context *ev,
-					 struct eventd_context *ectx,
-					 enum ctdb_event event,
-					 const char *arg_str,
-					 uint32_t timeout)
-{
-	struct tevent_req *req, *subreq;
-	struct run_event_state *state;
-	int ret;
-
-	req = tevent_req_create(mem_ctx, &state, struct run_event_state);
-	if (req == NULL) {
-		return NULL;
-	}
-
-	state->ev = ev;
-	state->ectx = ectx;
-	state->event = event;
-
-	ret = get_script_list(state, eventd_script_dir(ectx),
-			      &state->script_list);
-	if (ret != 0) {
-		D_ERR("get_script_list() failed, ret=%d\n", ret);
-		tevent_req_error(req, ret);
-		return tevent_req_post(req, ev);
-	}
-
-	/* No scripts */
-	if (state->script_list->num_scripts == 0) {
-		tevent_req_done(req);
-		return tevent_req_post(req, ev);
-	}
-
-	ret = script_args(state, event, arg_str, &state->argv);
-	if (ret != 0) {
-		D_ERR("script_args() failed, ret=%d\n", ret);
-		tevent_req_error(req, ret);
-		return tevent_req_post(req, ev);
-	}
-
-	if (timeout > 0) {
-		state->timeout = tevent_timeval_current_ofs(timeout, 0);
-	}
-	state->index = 0;
-	eventd_start_running(ectx, event, req);
-
-	subreq = run_event_run_script(req);
-	if (tevent_req_nomem(subreq, req)) {
-		return tevent_req_post(req, ev);
-	}
-	tevent_req_set_callback(subreq, run_event_next_script, req);
-
-	return req;
-}
-
-static struct tevent_req *run_event_run_script(struct tevent_req *req)
-{
-	struct run_event_state *state = tevent_req_data(
-		req, struct run_event_state);
-	struct ctdb_script *script;
-	struct tevent_req *subreq;
-	char *path;
-
-	script = &state->script_list->script[state->index];
-
-	path = talloc_asprintf(state, "%s/%s",
-			       eventd_script_dir(state->ectx), script->name);
-	if (path == NULL) {
-		return NULL;
-	}
-
-	state->argv[0] = script->name;
-	script->start = tevent_timeval_current();
-
-	D_DEBUG("Running %s with args \"%s %s\"\n",
-		path, state->argv[0], state->argv[1]);
-
-	subreq = run_proc_send(state, state->ev, state->ectx->run_ctx,
-			       path, state->argv, -1, state->timeout);
-
-	talloc_free(path);
-
-	return subreq;
-}
-
-static void run_event_next_script(struct tevent_req *subreq)
-{
-	struct tevent_req *req = tevent_req_callback_data(
-		subreq, struct tevent_req);
-	struct run_event_state *state = tevent_req_data(
-		req, struct run_event_state);
-	struct ctdb_script *script;
-	char *output;
-	struct run_proc_result result;
-	pid_t pid;
-	int ret;
-	bool status;
-
-	script = &state->script_list->script[state->index];
-	script->finished = tevent_timeval_current();
-
-	status = run_proc_recv(subreq, &ret, &result, &pid, state, &output);
-	TALLOC_FREE(subreq);
-	if (! status) {
-		D_ERR("run_proc failed for %s, ret=%d\n", script->name, ret);
-		tevent_req_error(req, ret);
-		return;
-	}
-
-	D_DEBUG("Script %s finished sig=%d, err=%d, status=%d\n",
-		script->name, result.sig, result.err, result.status);
-
-	if (output != NULL) {
-		debug_log(DEBUG_ERR, output, script->name);
-	}
-
-	if (result.sig > 0) {
-		script->status = -EINTR;
-	} else if (result.err > 0) {
-		if (result.err == EACCES) {
-			/* Map EACCESS to ENOEXEC */
-			script->status = -ENOEXEC;
-		} else {
-			script->status = -result.err;
-		}
-	} else {
-		script->status = result.status;
-	}
-
-	if (script->status != 0 && output != NULL) {
-		size_t n;
-
-		n = strlcpy(script->output, output, MAX_SCRIPT_OUTPUT);
-		if (n >= MAX_SCRIPT_OUTPUT) {
-			script->output[MAX_SCRIPT_OUTPUT] = '\0';
-		}
-	}
-
-	/* If a script fails, stop running */
-	if (script->status != 0 && script->status != -ENOEXEC) {
-		state->status = script->status;
-		eventd_stop_running(state->ectx);
-		state->script_list->num_scripts = state->index + 1;
-		eventd_set_result(state->ectx, state->event,
-				  state->script_list, state->status);
-
-		if (state->status == -ETIME && pid != -1) {
-			run_event_debug(req, pid);
-		}
-
-		D_ERR("%s event %s\n", ctdb_event_to_string(state->event),
-		      (state->status == -ETIME) ? "timed out" : "failed");
-
-		tevent_req_done(req);
-		return;
-	}
-
-	state->index += 1;
-
-	/* All scripts executed */
-	if (state->index >= state->script_list->num_scripts) {
-		eventd_stop_running(state->ectx);
-		eventd_set_result(state->ectx, state->event,
-				  state->script_list, state->status);
-		tevent_req_done(req);
-		return;
-	}
-
-	subreq = run_event_run_script(req);
-	if (tevent_req_nomem(subreq, req)) {
-		return;
-	}
-	tevent_req_set_callback(subreq, run_event_next_script, req);
-}
-
-static void run_event_debug(struct tevent_req *req, pid_t pid)
-{
-	struct run_event_state *state = tevent_req_data(
-		req, struct run_event_state);
-	struct tevent_req *subreq;
-
-	/* Debug script is run with ectx as the memory context */
-	subreq = run_debug_send(state->ectx, state->ev, state->ectx,
-				state->event, pid);
-	if (subreq == NULL) {
-		/* If run debug fails, it's not an error */
-		D_NOTICE("Failed to run event debug\n");
-		return;
-	}
-	tevent_req_set_callback(subreq, run_event_debug_done, NULL);
-}
-
-static void run_event_debug_done(struct tevent_req *subreq)
-{
-	int ret = 0;
-	bool status;
-
-	status = run_debug_recv(subreq, &ret);
-	TALLOC_FREE(subreq);
-	if (! status) {
-		D_NOTICE("run_debug() failed, ret=%d\n", ret);
-	}
-}
-
-static bool run_event_recv(struct tevent_req *req, int *perr, int *status)
-{
-	struct run_event_state *state = tevent_req_data(
-		req, struct run_event_state);
-	int ret;
-
-	if (tevent_req_is_unix_error(req, &ret)) {
-		if (ret == ECANCELED) {
-			if (status != NULL) {
-				*status = -ECANCELED;
-			}
-			return true;
-		}
-
-		if (perr != NULL) {
-			*perr = ret;
-		}
-		return false;
-	}
-
-	if (status != NULL) {
-		*status = state->status;
-	}
-	return true;
+	*out = script_list_to_ctdb_script_list(mem_ctx, s);
+	return s->summary;
 }
 
 /*
@@ -874,10 +286,12 @@ struct command_run_state {
 	uint32_t timeout;
 	const char *arg_str;
 	struct ctdb_event_reply *reply;
+	struct tevent_req *subreq;
 };
 
 static void command_run_trigger(struct tevent_req *req, void *private_data);
 static void command_run_done(struct tevent_req *subreq);
+static void command_run_cancel(struct tevent_req *req);
 
 static struct tevent_req *command_run_send(TALLOC_CTX *mem_ctx,
 					   struct tevent_context *ev,
@@ -885,7 +299,7 @@ static struct tevent_req *command_run_send(TALLOC_CTX *mem_ctx,
 					   struct eventd_client *client,
 					   struct ctdb_event_request *request)
 {
-	struct tevent_req *req;
+	struct tevent_req *req, *mon_req;
 	struct command_run_state *state;
 	struct pending_event *pending;
 	enum ctdb_event running_event;
@@ -923,7 +337,8 @@ static struct tevent_req *command_run_send(TALLOC_CTX *mem_ctx,
 	running = eventd_is_running(ectx, &running_event);
 	if (running) {
 		if (running_event == CTDB_EVENT_MONITOR) {
-			eventd_cancel_running(ectx);
+			mon_req = eventd_cancel_running(ectx);
+			command_run_cancel(mon_req);
 		} else if (state->event == CTDB_EVENT_MONITOR) {
 			state->reply->rdata.result = -ECANCELED;
 			tevent_req_done(req);
@@ -955,7 +370,6 @@ static void command_run_trigger(struct tevent_req *req, void *private_data)
 		private_data, struct pending_event);
 	struct command_run_state *state = tevent_req_data(
 		req, struct command_run_state);
-	struct tevent_req *subreq;
 
 	DLIST_REMOVE(state->client->pending_list, pending);
 
@@ -969,12 +383,18 @@ static void command_run_trigger(struct tevent_req *req, void *private_data)
 	D_DEBUG("Running event %s with args \"%s\"\n",
 		ctdb_event_to_string(state->event), state->arg_str);
 
-	subreq = run_event_send(state, state->ev, state->ectx,
-				state->event, state->arg_str, state->timeout);
-	if (tevent_req_nomem(subreq, req)) {
+	state->subreq = run_event_send(state, state->ev,
+				       eventd_run_context(state->ectx),
+				       ctdb_event_to_string(state->event),
+				       state->arg_str,
+				       tevent_timeval_current_ofs(
+					       state->timeout, 0));
+	if (tevent_req_nomem(state->subreq, req)) {
 		return;
 	}
-	tevent_req_set_callback(subreq, command_run_done, req);
+	tevent_req_set_callback(state->subreq, command_run_done, req);
+
+	eventd_start_running(state->ectx, state->event, req);
 }
 
 static void command_run_done(struct tevent_req *subreq)
@@ -983,16 +403,41 @@ static void command_run_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct command_run_state *state = tevent_req_data(
 		req, struct command_run_state);
-	int ret, result;
+	struct run_event_script_list *script_list;
+	int ret;
 	bool status;
 
-	status = run_event_recv(subreq, &ret, &result);
+	eventd_stop_running(state->ectx);
+
+	status = run_event_recv(subreq, &ret, state, &script_list);
+	TALLOC_FREE(subreq);
 	if (! status) {
 		tevent_req_error(req, ret);
 		return;
 	}
 
-	state->reply->rdata.result = result;
+	if (script_list == NULL) {
+		eventd_set_result(state->ectx, state->event, NULL);
+		state->reply->rdata.result = 0;
+	} else {
+		eventd_set_result(state->ectx, state->event, script_list);
+		state->reply->rdata.result = script_list->summary;
+	}
+
+	tevent_req_done(req);
+}
+
+static void command_run_cancel(struct tevent_req *req)
+{
+	struct command_run_state *state = tevent_req_data(
+		req, struct command_run_state);
+
+	eventd_stop_running(state->ectx);
+
+	TALLOC_FREE(state->subreq);
+
+	state->reply->rdata.result = -ECANCELED;
+
 	tevent_req_done(req);
 }
 
@@ -1059,7 +504,7 @@ static struct tevent_req *command_status_send(
 	state->reply->rdata.command = request->rdata.command;
 	state->reply->rdata.result = 0;
 	state->reply->rdata.data.status->status =
-		eventd_get_result(ectx, event, estate,
+		eventd_get_result(ectx, event, estate, state->reply,
 				&state->reply->rdata.data.status->script_list);
 
 	tevent_req_done(req);
@@ -1104,8 +549,8 @@ static struct tevent_req *command_script_list_send(
 {
 	struct tevent_req *req;
 	struct command_script_list_state *state;
-	struct ctdb_script_list *script_list;
-	int ret, i;
+	struct run_event_script_list *s;
+	int ret;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct command_script_list_state);
@@ -1124,43 +569,22 @@ static struct tevent_req *command_script_list_send(
 		return tevent_req_post(req, ev);
 	}
 
-	state->reply->rdata.command = request->rdata.command;
-
-	ret = get_script_list(state, eventd_script_dir(ectx), &script_list);
+	ret = run_event_script_list(eventd_run_context(ectx), state->reply,
+				    &s);
 	if (ret != 0) {
-		state->reply->rdata.result = -ret;
-		state->reply->rdata.data.script_list->script_list = NULL;
-
-		tevent_req_done(req);
+		tevent_req_error(req, ret);
 		return tevent_req_post(req, ev);
 	}
 
-	for (i=0; i<script_list->num_scripts; i++) {
-		struct ctdb_script *script = &script_list->script[i];
-		struct stat st;
-		char *path = NULL;
-
-		path = talloc_asprintf(state, "%s/%s",
-				       eventd_script_dir(ectx), script->name);
-		if (tevent_req_nomem(path, req)) {
-			continue;
-		}
-
-		ret = stat(path, &st);
-		if (ret != 0) {
-			TALLOC_FREE(path);
-			continue;
-		}
-
-		if (! (st.st_mode & S_IXUSR)) {
-			script->status = -ENOEXEC;
-		}
-
-		TALLOC_FREE(path);
+	state->reply->rdata.command = request->rdata.command;
+	if (s == NULL) {
+		state->reply->rdata.result = 0;
+		state->reply->rdata.data.script_list->script_list = NULL;
+	} else {
+		state->reply->rdata.result = s->summary;
+		state->reply->rdata.data.script_list->script_list =
+			script_list_to_ctdb_script_list(state->reply, s);
 	}
-
-	state->reply->rdata.data.script_list->script_list =
-		talloc_steal(state->reply, script_list);
 
 	tevent_req_done(req);
 	return tevent_req_post(req, ev);
@@ -1222,7 +646,7 @@ static struct tevent_req *command_script_enable_send(
 
 	state->reply->rdata.command = request->rdata.command;
 
-	ret = script_chmod(state, eventd_script_dir(ectx), script_name, true);
+	ret = run_event_script_enable(eventd_run_context(ectx), script_name);
 	state->reply->rdata.result = -ret;
 
 	tevent_req_done(req);
@@ -1285,7 +709,7 @@ static struct tevent_req *command_script_disable_send(
 
 	state->reply->rdata.command = request->rdata.command;
 
-	ret = script_chmod(state, eventd_script_dir(ectx), script_name, false);
+	ret = run_event_script_disable(eventd_run_context(ectx), script_name);
 	state->reply->rdata.result = -ret;
 
 	tevent_req_done(req);
