@@ -436,7 +436,8 @@ struct tevent_req *smbXcli_negprot_send(TALLOC_CTX *mem_ctx,
 					struct smbXcli_conn *conn,
 					uint32_t timeout_msec,
 					enum protocol_types min_protocol,
-					enum protocol_types max_protocol);
+					enum protocol_types max_protocol,
+					uint16_t max_credits);
 NTSTATUS smbXcli_negprot_recv(struct tevent_req *req);
 NTSTATUS smbXcli_negprot(struct smbXcli_conn *conn,
 			 uint32_t timeout_msec,

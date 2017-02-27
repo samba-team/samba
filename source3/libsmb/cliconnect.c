@@ -39,6 +39,7 @@
 #include "../libcli/smb/smbXcli_base.h"
 #include "../libcli/smb/smb_seal.h"
 #include "lib/param/param.h"
+#include "../libcli/smb/smb2_negotiate_context.h"
 
 #define STAR_SMBSERVER "*SMBSERVER"
 
@@ -2754,7 +2755,8 @@ static void cli_start_connection_connected(struct tevent_req *subreq)
 	subreq = smbXcli_negprot_send(state, state->ev, state->cli->conn,
 				      state->cli->timeout,
 				      state->min_protocol,
-				      state->max_protocol);
+				      state->max_protocol,
+				      WINDOWS_CLIENT_PURE_SMB2_NEGPROT_INITIAL_CREDIT_ASK);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}

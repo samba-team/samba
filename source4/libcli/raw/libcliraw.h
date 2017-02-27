@@ -103,6 +103,7 @@ struct smbcli_options {
 	enum smb_signing_setting signing;
 	uint32_t smb2_capabilities;
 	struct GUID client_guid;
+	uint64_t max_credits;
 };
 
 /* this is the context for the client transport layer */

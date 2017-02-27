@@ -4092,7 +4092,8 @@ struct tevent_req *smbXcli_negprot_send(TALLOC_CTX *mem_ctx,
 					struct smbXcli_conn *conn,
 					uint32_t timeout_msec,
 					enum protocol_types min_protocol,
-					enum protocol_types max_protocol)
+					enum protocol_types max_protocol,
+					uint16_t max_credits)
 {
 	struct tevent_req *req, *subreq;
 	struct smbXcli_negprot_state *state;
@@ -4125,6 +4126,10 @@ struct tevent_req *smbXcli_negprot_send(TALLOC_CTX *mem_ctx,
 	conn->max_protocol = max_protocol;
 	conn->protocol = PROTOCOL_NONE;
 
+	if (max_protocol >= PROTOCOL_SMB2_02) {
+		conn->smb2.max_credits = max_credits;
+	}
+
 	if ((min_protocol < PROTOCOL_SMB2_02) &&
 	    (max_protocol < PROTOCOL_SMB2_02)) {
 		/*
@@ -4146,16 +4151,6 @@ struct tevent_req *smbXcli_negprot_send(TALLOC_CTX *mem_ctx,
 		 * SMB2 only...
 		 */
 		conn->dispatch_incoming = smb2cli_conn_dispatch_incoming;
-
-		/*
-		 * As we're starting with an SMB2 negprot, emulate Windows
-		 * and ask for 31 credits in the initial SMB2 negprot.
-		 * If we don't and leave requested credits at
-		 * zero, MacOSX servers return zero credits on
-		 * the negprot reply and we fail to connect.
-		 */
-		smb2cli_conn_set_max_credits(conn,
-			WINDOWS_CLIENT_PURE_SMB2_NEGPROT_INITIAL_CREDIT_ASK);
 
 		subreq = smbXcli_negprot_smb2_subreq(state);
 		if (tevent_req_nomem(subreq, req)) {
@@ -5137,7 +5132,8 @@ NTSTATUS smbXcli_negprot(struct smbXcli_conn *conn,
 		goto fail;
 	}
 	req = smbXcli_negprot_send(frame, ev, conn, timeout_msec,
-				   min_protocol, max_protocol);
+				   min_protocol, max_protocol,
+				   WINDOWS_CLIENT_PURE_SMB2_NEGPROT_INITIAL_CREDIT_ASK);
 	if (req == NULL) {
 		goto fail;
 	}

@@ -155,7 +155,8 @@ static void smb2_connect_socket_done(struct composite_context *creq)
 	subreq = smbXcli_negprot_send(state, state->ev,
 				      state->transport->conn, timeout_msec,
 				      min_protocol,
-				      state->transport->options.max_protocol);
+				      state->transport->options.max_protocol,
+				      state->transport->options.max_credits);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -180,9 +181,6 @@ static void smb2_connect_negprot_done(struct tevent_req *subreq)
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
-
-	/* This is a hack... */
-	smb2cli_conn_set_max_credits(transport->conn, 30);
 
 	state->session = smb2_session_init(transport, state->gensec_settings, state);
 	if (tevent_req_nomem(state->session, req)) {

@@ -60,7 +60,8 @@ struct tevent_req *smb_raw_negotiate_send(TALLOC_CTX *mem_ctx,
 				      transport->conn,
 				      timeout_msec,
 				      minprotocol,
-				      maxprotocol);
+				      maxprotocol,
+				      transport->options.max_credits);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}

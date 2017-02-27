@@ -30,6 +30,7 @@
 #include "lib/param/param.h"
 #include "libcli/raw/libcliraw.h"
 #include "librpc/ndr/libndr.h"
+#include "libcli/smb/smb2_negotiate_context.h"
 
 void lpcfg_smbcli_options(struct loadparm_context *lp_ctx,
 			 struct smbcli_options *options)
@@ -47,6 +48,7 @@ void lpcfg_smbcli_options(struct loadparm_context *lp_ctx,
 	options->use_level2_oplocks = true;
 	options->smb2_capabilities = SMB2_CAP_ALL;
 	options->client_guid = GUID_random();
+	options->max_credits = WINDOWS_CLIENT_PURE_SMB2_NEGPROT_INITIAL_CREDIT_ASK;
 }
 
 void lpcfg_smbcli_session_options(struct loadparm_context *lp_ctx,

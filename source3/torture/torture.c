@@ -2990,7 +2990,7 @@ static bool run_negprot_nowait(int dummy)
 		struct tevent_req *req;
 
 		req = smbXcli_negprot_send(ev, ev, cli->conn, cli->timeout,
-					   PROTOCOL_CORE, PROTOCOL_NT1);
+					   PROTOCOL_CORE, PROTOCOL_NT1, 0);
 		if (req == NULL) {
 			TALLOC_FREE(ev);
 			return false;
