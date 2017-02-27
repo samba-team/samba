@@ -314,3 +314,4 @@
 ^samba.tests.dcerpc.dnsserver.samba.tests.dcerpc.dnsserver.DnsserverTests.test_security_descriptor.*
 ^samba3.smb2.credits.session_setup_credits_granted.*
 ^samba3.smb2.credits.single_req_credits_granted.*
+^samba3.smb2.credits.skipped_mid.*
