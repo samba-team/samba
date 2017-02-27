@@ -47,6 +47,8 @@ my $opt_random_order = 0;
 my $opt_one = 0;
 my @opt_exclude = ();
 my @opt_include = ();
+my @opt_exclude_env = ();
+my @opt_include_env = ();
 my $opt_testenv = 0;
 my $opt_list = 0;
 my $opt_mitkrb5 = 0;
@@ -198,6 +200,8 @@ Generic options:
  --testlist=FILE            file to read available tests from
  --exclude=FILE             Exclude tests listed in the file
  --include=FILE             Include tests listed in the file
+ --exclude-env=ENV          Exclude tests for the specified environment
+ --include-env=ENV          Include tests for the specified environment
 
 Paths:
  --prefix=DIR               prefix to run tests in [st]
@@ -243,6 +247,8 @@ my $result = GetOptions (
 		'one' => \$opt_one,
 		'exclude=s' => \@opt_exclude,
 		'include=s' => \@opt_include,
+		'exclude-env=s' => \@opt_exclude_env,
+		'include-env=s' => \@opt_include_env,
 		'srcdir=s' => \$srcdir,
 		'bindir=s' => \$bindir,
 		'testenv' => \$opt_testenv,
@@ -1080,11 +1086,37 @@ $envvarstr
 		my $name = $$_[0];
 		my $envname = $$_[1];
 
-		my $envvars = setup_env($envname, $prefix);
+		my $envvars = "SKIP";
+
+		if (@opt_include_env) {
+		    foreach my $env (@opt_include_env) {
+			if ($envname eq $env) {
+			    $envvars = setup_env($envname, $prefix);
+			}
+		    }
+		} elsif (@opt_exclude_env) {
+		    my $excluded = 0;
+		    foreach my $env (@opt_exclude_env) {
+			if ($envname eq $env) {
+			    $excluded = 1;
+			}
+		    }
+		    if ($excluded == 0) {
+			$envvars = setup_env($envname, $prefix);
+		    }
+		} else {
+		    $envvars = setup_env($envname, $prefix);
+		}
+		
 		if (not defined($envvars)) {
 			Subunit::start_testsuite($name);
 			Subunit::end_testsuite($name, "error",
 				"unable to set up environment $envname - exiting");
+			next;
+		} elsif ($envvars eq "SKIP") {
+			Subunit::start_testsuite($name);
+			Subunit::end_testsuite($name, "skip",
+				"environment $envname is disabled (via --exclude-env / --include-env command line options) in this test run - skipping");
 			next;
 		} elsif ($envvars eq "UNKNOWN") {
 			Subunit::start_testsuite($name);
