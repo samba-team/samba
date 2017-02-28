@@ -315,4 +315,3 @@
 ^samba3.smb2.credits.session_setup_credits_granted.*
 ^samba3.smb2.credits.single_req_credits_granted.*
 ^samba3.smb2.credits.skipped_mid.*
-^samba4.drs.repl_rodc.python.*repl_rodc.DrsRodcTestCase.test_msDSRevealedUsers_using_other_RODC

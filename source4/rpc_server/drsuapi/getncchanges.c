@@ -192,7 +192,6 @@ fail:
 
 static WERROR getncchanges_update_revealed_list(struct ldb_context *sam_ctx,
 						TALLOC_CTX *mem_ctx,
-						struct GUID *destination_dsa_guid,
 						struct ldb_message **msg,
 						struct ldb_dn *object_dn,
 						const struct dsdb_attribute *sa,
@@ -294,7 +293,7 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 					  enum drsuapi_DsExtendedOperation extended_op,
 					  bool force_object_return,
 					  uint32_t *local_pas,
-					  struct GUID *destination_dsa_guid)
+					  struct ldb_dn *machine_dn)
 {
 	const struct ldb_val *md_value;
 	uint32_t i, n;
@@ -389,26 +388,7 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 
 	if (extended_op == DRSUAPI_EXOP_REPL_SECRET) {
 		/* Get the existing revealed users for the destination */
-		struct ldb_dn *ntds_dn = NULL, *server_dn = NULL, *machine_dn = NULL;
 		static const char *machine_attrs[] = { "msDS-RevealedUsers", NULL };
-
-		ldb_err = dsdb_find_dn_by_guid(sam_ctx, obj,
-					       destination_dsa_guid, 0,
-					       &ntds_dn);
-		if (ldb_err != LDB_SUCCESS) {
-			return WERR_DS_DRA_INTERNAL_ERROR;
-		}
-
-		server_dn = ldb_dn_get_parent(obj, ntds_dn);
-		if (server_dn == NULL) {
-			return WERR_DS_DRA_INTERNAL_ERROR;
-		}
-
-		ldb_err = samdb_reference_dn(sam_ctx, obj, server_dn,
-					     "serverReference", &machine_dn);
-		if (ldb_err != LDB_SUCCESS) {
-			return WERR_DS_DRA_INTERNAL_ERROR;
-		}
 
 		revealed_list_msg = ldb_msg_new(sam_ctx);
 		if (revealed_list_msg == NULL) {
@@ -459,7 +439,11 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 			force_attribute = true;
 			DEBUG(4,("Forcing attribute %s in %s\n",
 				 sa->lDAPDisplayName, ldb_dn_get_linearized(msg->dn)));
-			werr = getncchanges_update_revealed_list(sam_ctx, obj, destination_dsa_guid, &revealed_list_msg, msg->dn, sa, &md.ctr.ctr1.array[i], existing_revealed_list_msg);
+			werr = getncchanges_update_revealed_list(sam_ctx, obj,
+								 &revealed_list_msg,
+								 msg->dn, sa,
+								 &md.ctr.ctr1.array[i],
+								 existing_revealed_list_msg);
 			if (!W_ERROR_IS_OK(werr)) {
 				return werr;
 			}
@@ -1149,13 +1133,15 @@ static WERROR getncchanges_repl_secret(struct drsuapi_bind_state *b_state,
 				       struct drsuapi_DsGetNCChangesRequest10 *req10,
 				       struct dom_sid *user_sid,
 				       struct drsuapi_DsGetNCChangesCtr6 *ctr6,
-				       bool has_get_all_changes)
+				       bool has_get_all_changes,
+				       struct ldb_dn **machine_dn)
 {
 	struct drsuapi_DsReplicaObjectIdentifier *ncRoot = req10->naming_context;
 	struct ldb_dn *obj_dn = NULL;
+	struct ldb_dn *ntds_dn = NULL, *server_dn = NULL;
 	struct ldb_dn *rodc_dn, *krbtgt_link_dn;
 	int ret;
-	const char *rodc_attrs[] = { "msDS-KrbTgtLink", "msDS-NeverRevealGroup", "msDS-RevealOnDemandGroup", NULL };
+	const char *rodc_attrs[] = { "msDS-KrbTgtLink", "msDS-NeverRevealGroup", "msDS-RevealOnDemandGroup", "objectGUID", NULL };
 	const char *obj_attrs[] = { "tokenGroups", "objectSid", "UserAccountControl", "msDS-KrbTgtLinkBL", NULL };
 	struct ldb_result *rodc_res, *obj_res;
 	const struct dom_sid **never_reveal_sids, **reveal_sids, **token_sids;
@@ -1176,6 +1162,31 @@ static WERROR getncchanges_repl_secret(struct drsuapi_bind_state *b_state,
 		/* this operation needs system level access */
 		ctr6->extended_ret = DRSUAPI_EXOP_ERR_ACCESS_DENIED;
 		return WERR_DS_DRA_SOURCE_DISABLED;
+	}
+
+	/*
+	 * Before we accept or deny, fetch the machine DN for the destination
+	 * DSA GUID.
+	 *
+	 * If we are the RODC, we will check that this matches the SID.
+	 */
+	ret = dsdb_find_dn_by_guid(b_state->sam_ctx_system, mem_ctx,
+				   &req10->destination_dsa_guid, 0,
+				   &ntds_dn);
+	if (ret != LDB_SUCCESS) {
+		goto failed;
+	}
+
+	server_dn = ldb_dn_get_parent(mem_ctx, ntds_dn);
+	if (server_dn == NULL) {
+		goto failed;
+	}
+
+	ret = samdb_reference_dn(b_state->sam_ctx_system, mem_ctx, server_dn,
+				 "serverReference", machine_dn);
+
+	if (ret != LDB_SUCCESS) {
+		goto failed;
 	}
 
 	/*
@@ -1221,6 +1232,14 @@ static WERROR getncchanges_repl_secret(struct drsuapi_bind_state *b_state,
 	if (dom_sid_equal(user_sid,
 			  samdb_result_dom_sid(mem_ctx, obj_res->msgs[0], "objectSid"))) {
 		goto allowed;
+	}
+
+	/*
+	 * Must be an RODC account at this point, verify machine DN matches the
+	 * SID account
+	 */
+	if (ldb_dn_compare(rodc_res->msgs[0]->dn, *machine_dn) != 0) {
+		goto denied;
 	}
 
 	/* an RODC is allowed to get its own krbtgt account secrets */
@@ -1994,6 +2013,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	struct dsdb_schema_prefixmap *pfm_remote = NULL;
 	bool full = true;
 	uint32_t *local_pas = NULL;
+	struct ldb_dn *machine_dn = NULL; /* Only used for REPL SECRET EXOP */
 
 	DCESRV_PULL_HANDLE_WERR(h, r->in.bind_handle, DRSUAPI_BIND_HANDLE);
 	b_state = h->data;
@@ -2245,7 +2265,8 @@ allowed:
 			werr = getncchanges_repl_secret(b_state, mem_ctx, req10,
 						        user_sid,
 						        &r->out.ctr->ctr6,
-						        has_get_all_changes);
+						        has_get_all_changes,
+							&machine_dn);
 			r->out.result = werr;
 			W_ERROR_NOT_OK_RETURN(werr);
 			break;
@@ -2571,8 +2592,7 @@ allowed:
 						   req10->uptodateness_vector,
 						   req10->extended_op,
 						   max_wait_reached,
-						   local_pas,
-						   &req10->destination_dsa_guid);
+						   local_pas, machine_dn);
 		if (!W_ERROR_IS_OK(werr)) {
 			return werr;
 		}
@@ -2684,7 +2704,7 @@ allowed:
 							   req10->extended_op,
 							   false, /* force_object_return */
 							   local_pas,
-							   &req10->destination_dsa_guid);
+							   machine_dn);
 			if (!W_ERROR_IS_OK(werr)) {
 				return werr;
 			}
