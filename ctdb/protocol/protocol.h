@@ -368,6 +368,7 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_DB_PUSH_START           = 147,
 		    CTDB_CONTROL_DB_PUSH_CONFIRM         = 148,
 		    CTDB_CONTROL_DB_OPEN_FLAGS           = 149,
+		    CTDB_CONTROL_DB_ATTACH_REPLICATED    = 150,
 };
 
 #define CTDB_MONITORING_ENABLED		0
