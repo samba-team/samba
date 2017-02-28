@@ -152,4 +152,9 @@ void log_authentication_event(const struct auth_usersupplied_info *ui,
 			      const char *domain_name,
 			      const char *unix_username,
 			      struct dom_sid *sid);
+
+void log_successful_authz_event(const struct tsocket_address *remote,
+				const struct tsocket_address *local,
+				const char *service_description,
+				struct auth_session_info *session_info);
 #endif

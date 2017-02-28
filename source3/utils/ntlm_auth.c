@@ -1455,6 +1455,9 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 
 		gensec_want_feature_list(state->gensec_state, want_feature_list);
 
+		/* Session info is not complete, do not pass to auth log */
+		gensec_want_feature(state->gensec_state, GENSEC_FEATURE_NO_AUTHZ_LOG);
+
 		switch (stdio_helper_mode) {
 		case GSS_SPNEGO_CLIENT:
 		case GSS_SPNEGO_SERVER:

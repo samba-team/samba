@@ -159,3 +159,57 @@ void log_authentication_event(const struct auth_usersupplied_info *ui,
 
 	talloc_free(frame);
 }
+
+
+/*
+ * Log details of a successful authorization to a service.
+ *
+ * Only successful authorizations are logged.  For clarity:
+ * - NTLM bad passwords will be recorded by the above
+ * - Kerberos decrypt failures need to be logged in gensec_gssapi et al
+ *
+ * The service may later refuse authorization due to an ACL.
+ *
+ */
+void log_successful_authz_event(const struct tsocket_address *remote,
+				const struct tsocket_address *local,
+				const char *service_description,
+				struct auth_session_info *session_info)
+{
+	TALLOC_CTX *frame = NULL;
+
+	char *ts = NULL;             /* formatted current time      */
+	char *remote_str = NULL;     /* formatted remote host       */
+	char *local_str = NULL;      /* formatted local host        */
+	char sid_buf[DOM_SID_STR_BUFLEN];
+
+	/* set the log level */
+	if (!CHECK_DEBUGLVLC( DBGC_AUTH_AUDIT, AUTHZ_SUCCESS_LEVEL)) {
+		return;
+	}
+
+	frame = talloc_stackframe();
+
+	/* Get the current time */
+        ts = http_timestring(frame, time(NULL));
+
+	remote_str = tsocket_address_string(remote, frame);
+	local_str  = tsocket_address_string(local, frame);
+
+	dom_sid_string_buf(&session_info->security_token->sids[0], sid_buf, sizeof(sid_buf));
+
+	DEBUGC( DBGC_AUTH_AUDIT, AUTHZ_SUCCESS_LEVEL, (
+		"Successful AuthZ: [%s] user [%s]\\[%s] [%s]"
+		" at [%s]"
+		" Remote host [%s]"
+		" local host [%s]\n",
+		service_description,
+		log_escape(frame, session_info->info->domain_name),
+		log_escape(frame, session_info->info->account_name),
+		sid_buf,
+		ts,
+		remote_str,
+		local_str));
+
+	talloc_free(frame);
+}

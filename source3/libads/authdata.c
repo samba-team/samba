@@ -269,6 +269,9 @@ NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
 	talloc_unlink(tmp_ctx, gensec_settings);
 	talloc_unlink(tmp_ctx, auth_context);
 
+	/* Session info is not complete, do not pass to auth log */
+	gensec_want_feature(gensec_server_context, GENSEC_FEATURE_NO_AUTHZ_LOG);
+
 	status = gensec_start_mech_by_oid(gensec_server_context, GENSEC_OID_KERBEROS5);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, (__location__ "Failed to start server-side GENSEC krb5 to validate a Kerberos ticket: %s\n", nt_errstr(status)));

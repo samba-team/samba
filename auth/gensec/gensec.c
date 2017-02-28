@@ -29,6 +29,7 @@
 #include "auth/gensec/gensec.h"
 #include "auth/gensec/gensec_internal.h"
 #include "librpc/gen_ndr/dcerpc.h"
+#include "auth/common_auth.h"
 
 _PRIVATE_ NTSTATUS gensec_may_reset_crypto(struct gensec_security *gensec_security,
 					   bool full_reset)
@@ -192,13 +193,36 @@ _PUBLIC_ NTSTATUS gensec_session_key(struct gensec_security *gensec_security,
 	return gensec_security->ops->session_key(gensec_security, mem_ctx, session_key);
 }
 
+/*
+ * Log details of a successful GENSEC authorization to a service.
+ *
+ * Only successful authorizations are logged, as only these call gensec_session_info()
+ *
+ * The service may later refuse authorization due to an ACL.
+ *
+ */
+static void log_successful_gensec_authz_event(struct gensec_security *gensec_security,
+					      struct auth_session_info *session_info)
+{
+	const struct tsocket_address *remote
+		= gensec_get_remote_address(gensec_security);
+	const struct tsocket_address *local
+		= gensec_get_local_address(gensec_security);
+	const char *service_description
+		= gensec_get_target_service_description(gensec_security);
+	log_successful_authz_event(remote, local, service_description, session_info);
+}
+
+
 /**
  * Return the credentials of a logged on user, including session keys
  * etc.
  *
  * Only valid after a successful authentication
  *
- * May only be called once per authentication.
+ * May only be called once per authentication.  This will also make an
+ * authorization log entry, as it is already called by all the
+ * callers.
  *
  */
 
@@ -206,10 +230,18 @@ _PUBLIC_ NTSTATUS gensec_session_info(struct gensec_security *gensec_security,
 				      TALLOC_CTX *mem_ctx,
 				      struct auth_session_info **session_info)
 {
+	NTSTATUS status;
 	if (!gensec_security->ops->session_info) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return gensec_security->ops->session_info(gensec_security, mem_ctx, session_info);
+	status = gensec_security->ops->session_info(gensec_security, mem_ctx, session_info);
+
+	if (NT_STATUS_IS_OK(status) && !gensec_security->subcontext
+	    && (gensec_security->want_features & GENSEC_FEATURE_NO_AUTHZ_LOG) == 0) {
+		log_successful_gensec_authz_event(gensec_security, *session_info);
+	}
+
+	return status;
 }
 
 _PUBLIC_ void gensec_set_max_update_size(struct gensec_security *gensec_security,
