@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the third release candidate of Samba 4.6.  This is *not*
+This is the fourth release candidate of Samba 4.6.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -117,7 +117,7 @@ As part of this change, the NETLOGON service will now run on a distinct
 TCP port, rather than being shared with all other RPC services (LSA,
 SAMR, DRSUAPI etc).
 
-new options for controlling TCP ports used for RPC services
+New options for controlling TCP ports used for RPC services
 -----------------------------------------------------------
 
 The new 'rpc server port' option controls the default port used for
@@ -268,6 +268,7 @@ files and directories in a directory tree.
     -?, --help                Show this help message
     --usage                   Display brief usage message
 
+
 smb.conf changes
 ================
 
@@ -284,6 +285,57 @@ KNOWN ISSUES
 ============
 
 https://wiki.samba.org/index.php/Release_Planning_for_Samba_4.6#Release_blocking_bugs
+
+
+CHANGES SINCE 4.6.0rc3
+======================
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 12545: s3: rpc_server/mdssvc: Add attribute "kMDItemContentType".
+   * BUG 12572: s3: smbd: Don't loop infinitely on bad-symlink resolution.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 12490: vfs_fruit: Correct Netatalk metadata xattr on FreeBSD.
+   * BUG 12536: s3/smbd: Check for invalid access_mask
+     smbd_calculate_access_mask().
+   * BUG 12591: vfs_streams_xattr: use fsp, not base_fsp.
+
+o  Amitay Isaacs <amitay@gmail.com>
+   * BUG 12580: ctdb-common: Fix use-after-free error in comm_fd_handler().
+   * BUG 12595: build: Fix generation of CTDB manpages while creating tarball.
+
+o  Bryan Mason <bmason@redhat.com>
+   * BUG 12575: Modify smbspool_krb5_wrapper to just fall through to smbspool if
+     AUTH_INFO_REQUIRED is not set or is not "negotiate".
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 11830: s3:winbindd: Try a NETLOGON connection with noauth over NCACN_NP
+     against trusted domains.
+   * BUG 12262: 'net ads testjoin' and smb access fails after winbindd changed the
+     trust password.
+   * BUG 12585: librpc/rpc: fix regression in
+     NT_STATUS_RPC_ENUM_VALUE_OUT_OF_RANGE error mapping.
+   * BUG 12586: netlogon_creds_cli_LogonSamLogon doesn't work without
+     netr_LogonSamLogonEx.
+   * BUG 12587: winbindd child segfaults on connect to an NT4 domain.
+   * BUG 12588: s3:winbindd: Make sure cm_prepare_connection() only returns OK
+     with a valid tree connect.
+   * BUG 12598: winbindd (as member) requires kerberos against trusted ad domain,
+     while it shouldn't.
+   * BUG 12601: Backport pytalloc_GenericObject_reference() related changes to
+     4.6.
+
+o  Garming Sam <garming@catalyst.net.nz>
+   * BUG 12600: dbchecker: Stop ignoring linked cases where both objects are
+     alive.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 12571: s3-vfs: Only walk the directory once in open_and_sort_dir().
+
+o  Martin Schwenke <martin@meltin.net>
+   * BUG 12589: CTDB statd-callout does not cause grace period when
+     CTDB_NFS_CALLOUT="".
+   * BUG 12595: ctdb-build: Fix RPM build.
 
 
 CHANGES SINCE 4.6.0rc2
