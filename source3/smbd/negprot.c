@@ -723,16 +723,25 @@ void reply_negprot(struct smb_request *req)
 			break;
 	}
 
-	if(choice != -1) {
-		fstrcpy(remote_proto,supported_protocols[protocol].short_name);
-		reload_services(sconn, conn_snum_used, true);
-		supported_protocols[protocol].proto_reply_fn(req, choice);
-		DEBUG(3,("Selected protocol %s\n",supported_protocols[protocol].proto_name));
-	} else {
-		DEBUG(0,("No protocol supported !\n"));
+	if (choice == -1) {
+		bool ok;
+
+		DBG_NOTICE("No protocol supported !\n");
 		reply_outbuf(req, 1, 0);
 		SSVAL(req->outbuf, smb_vwv0, choice);
+
+		ok = srv_send_smb(xconn, (char *)req->outbuf,
+					false, 0, false, NULL);
+		if (!ok) {
+			DBG_NOTICE("srv_send_smb failed\n");
+		}
+		exit_server_cleanly("no protocol supported\n");
 	}
+
+	fstrcpy(remote_proto,supported_protocols[protocol].short_name);
+	reload_services(sconn, conn_snum_used, true);
+	supported_protocols[protocol].proto_reply_fn(req, choice);
+	DEBUG(3,("Selected protocol %s\n",supported_protocols[protocol].proto_name));
 
 	DEBUG( 5, ( "negprot index=%d\n", choice ) );
 
