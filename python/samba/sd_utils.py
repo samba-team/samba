@@ -37,7 +37,11 @@ class SDUtils(object):
             or security.descriptor object
         """
         m = Message()
-        m.dn = Dn(self.ldb, object_dn)
+        if isinstance(object_dn, Dn):
+            m.dn = object_dn
+        else:
+            m.dn = Dn(self.ldb, object_dn)
+
         assert(isinstance(sd, str) or isinstance(sd, security.descriptor))
         if isinstance(sd, str):
             tmp_desc = security.descriptor.from_sddl(sd, self.domain_sid)
