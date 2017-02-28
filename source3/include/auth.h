@@ -34,7 +34,14 @@ struct auth_serversupplied_info {
 
 	struct security_unix_token utok;
 
-	/* NT group information taken from the info3 structure */
+	/*
+	 * NT group information taken from the info3 structure
+	 *
+	 * This is not normally filled in, during the typical
+	 * authentication process.  If filled in, it has already been
+	 * finalised by a nasty hack to support a cached guest/system
+	 * session_info
+	 */
 
 	struct security_token *security_token;
 
