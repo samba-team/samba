@@ -11017,6 +11017,81 @@ static bool run_local_canonicalize_path(int dummy)
 	return true;
 }
 
+static bool run_ign_bad_negprot(int dummy)
+{
+	struct tevent_context *ev;
+	struct tevent_req *req;
+	struct smbXcli_conn *conn;
+	struct sockaddr_storage ss;
+	NTSTATUS status;
+	int fd;
+	bool ok;
+
+	printf("starting ignore bad negprot\n");
+
+	ok = resolve_name(host, &ss, 0x20, true);
+	if (!ok) {
+		d_fprintf(stderr, "Could not resolve name %s\n", host);
+		return false;
+	}
+
+	status = open_socket_out(&ss, 445, 10000, &fd);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, "open_socket_out failed: %s\n",
+			  nt_errstr(status));
+		return false;
+	}
+
+	conn = smbXcli_conn_create(talloc_tos(), fd, host, SMB_SIGNING_OFF, 0,
+				   NULL, 0);
+	if (conn == NULL) {
+		d_fprintf(stderr, "smbXcli_conn_create failed\n");
+		return false;
+	}
+
+	status = smbXcli_negprot(conn, 0, PROTOCOL_CORE, PROTOCOL_CORE);
+	if (NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, "smbXcli_negprot succeeded!\n");
+		return false;
+	}
+
+	ev = samba_tevent_context_init(talloc_tos());
+	if (ev == NULL) {
+		d_fprintf(stderr, "samba_tevent_context_init failed\n");
+		return false;
+	}
+
+	req = smb1cli_session_setup_nt1_send(
+		ev, ev, conn, 0, getpid(), NULL, 65503, 2, 1, 0, "", "",
+		data_blob_null, data_blob_null, 0x40,
+		"Windows 2000 2195", "Windows 2000 5.0");
+	if (req == NULL) {
+		d_fprintf(stderr, "smb1cli_session_setup_nt1_send failed\n");
+		return false;
+	}
+
+	ok = tevent_req_poll_ntstatus(req, ev, &status);
+	if (!ok) {
+		d_fprintf(stderr, "tevent_req_poll failed\n");
+		return false;
+	}
+
+	status = smb1cli_session_setup_nt1_recv(req, NULL, NULL, NULL, NULL,
+						NULL, NULL);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_RESET)) {
+		d_fprintf(stderr, "smb1cli_session_setup_nt1_recv returned "
+			  "%s, expected NT_STATUS_CONNECTION_RESET\n",
+			  nt_errstr(status));
+		return false;
+	}
+
+	TALLOC_FREE(conn);
+
+	printf("starting ignore bad negprot\n");
+
+	return true;
+}
+
 static double create_procs(bool (*fn)(int), bool *result)
 {
 	int i, status;
@@ -11206,6 +11281,7 @@ static struct {
 	{ "NOTIFY-BENCH2", run_notify_bench2 },
 	{ "NOTIFY-BENCH3", run_notify_bench3 },
 	{ "BAD-NBT-SESSION", run_bad_nbt_session },
+	{ "IGN-BAD-NEGPROT", run_ign_bad_negprot },
 	{ "SMB-ANY-CONNECT", run_smb_any_connect },
 	{ "NOTIFY-ONLINE", run_notify_online },
 	{ "SMB2-BASIC", run_smb2_basic },
