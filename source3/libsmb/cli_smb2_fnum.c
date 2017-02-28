@@ -3045,6 +3045,14 @@ NTSTATUS cli_smb2_list_user_quota_step(struct cli_state *cli,
 				    ph->fid_persistent, ph->fid_volatile, frame,
 				    &outbuf);
 
+	/*
+	 * safeguard against panic from calling parse_user_quota_list with
+	 * NULL buffer
+	 */
+	if (NT_STATUS_IS_OK(status) && outbuf.length == 0) {
+		status = NT_STATUS_NO_MORE_ENTRIES;
+	}
+
 	if (!NT_STATUS_IS_OK(status)) {
 		goto cleanup;
 	}
