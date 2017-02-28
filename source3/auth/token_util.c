@@ -211,6 +211,28 @@ static NTSTATUS add_builtin_administrators(struct security_token *token,
 static NTSTATUS finalize_local_nt_token(struct security_token *result,
 					bool is_guest);
 
+NTSTATUS get_user_sid_info3_and_extra(const struct netr_SamInfo3 *info3,
+				      const struct extra_auth_info *extra,
+				      struct dom_sid *sid)
+{
+	/* USER SID */
+	if (info3->base.rid == (uint32_t)(-1)) {
+		/* this is a signal the user was fake and generated,
+		 * the actual SID we want to use is stored in the extra
+		 * sids */
+		if (is_null_sid(&extra->user_sid)) {
+			/* we couldn't find the user sid, bail out */
+			DEBUG(3, ("Invalid user SID\n"));
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+		sid_copy(sid, &extra->user_sid);
+	} else {
+		sid_copy(sid, info3->base.domain_sid);
+		sid_append_rid(sid, info3->base.rid);
+	}
+	return NT_STATUS_OK;
+}
+
 NTSTATUS create_local_nt_token_from_info3(TALLOC_CTX *mem_ctx,
 					  bool is_guest,
 					  const struct netr_SamInfo3 *info3,
@@ -241,21 +263,10 @@ NTSTATUS create_local_nt_token_from_info3(TALLOC_CTX *mem_ctx,
 	}
 	usrtok->num_sids = 2;
 
-	/* USER SID */
-	if (info3->base.rid == (uint32_t)(-1)) {
-		/* this is a signal the user was fake and generated,
-		 * the actual SID we want to use is stored in the extra
-		 * sids */
-		if (is_null_sid(&extra->user_sid)) {
-			/* we couldn't find the user sid, bail out */
-			DEBUG(3, ("Invalid user SID\n"));
-			TALLOC_FREE(usrtok);
-			return NT_STATUS_UNSUCCESSFUL;
-		}
-		sid_copy(&usrtok->sids[0], &extra->user_sid);
-	} else {
-		sid_copy(&usrtok->sids[0], info3->base.domain_sid);
-		sid_append_rid(&usrtok->sids[0], info3->base.rid);
+	status = get_user_sid_info3_and_extra(info3, extra, &usrtok->sids[0]);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(usrtok);
+		return status;
 	}
 
 	/* GROUP SID */
