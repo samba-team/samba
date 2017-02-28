@@ -204,3 +204,8 @@ else:
                         source='access.c',
                         deps='interfaces samba-util',
                         local_include=False)
+
+    bld.SAMBA_SUBSYSTEM('util_str_escape',
+                        source='util_str_escape.c',
+                        deps='talloc',
+                        local_include=False)

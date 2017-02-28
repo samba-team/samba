@@ -74,6 +74,7 @@
 	torture_local_verif_trailer,
 	torture_local_nss,
 	torture_local_fsrvp,
+	torture_local_util_str_escape,
 	NULL
 };
 
