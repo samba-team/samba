@@ -94,6 +94,11 @@
 
 static int vfs_fruit_debug_level = DBGC_VFS;
 
+static struct global_fruit_config {
+	bool nego_aapl;	/* client negotiated AAPL */
+
+} global_fruit_config;
+
 #undef DBGC_CLASS
 #define DBGC_CLASS vfs_fruit_debug_level
 
@@ -126,7 +131,6 @@ struct fruit_config_data {
 	enum fruit_locking locking;
 	enum fruit_encoding encoding;
 	bool use_aapl;		/* config from smb.conf */
-	bool nego_aapl;		/* client negotiated AAPL */
 	bool use_copyfile;
 	bool readdir_attr_enabled;
 	bool unix_info_enabled;
@@ -2216,7 +2220,7 @@ static NTSTATUS check_aapl(vfs_handle_struct *handle,
 				      SMB2_CREATE_TAG_AAPL,
 				      blob);
 	if (NT_STATUS_IS_OK(status)) {
-		config->nego_aapl = true;
+		global_fruit_config.nego_aapl = true;
 	}
 
 	return status;
@@ -4918,7 +4922,7 @@ static NTSTATUS fruit_create_file(vfs_handle_struct *handle,
 
 	fsp = *result;
 
-	if (config->nego_aapl) {
+	if (global_fruit_config.nego_aapl) {
 		if (config->copyfile_enabled) {
 			/*
 			 * Set a flag in the fsp. Gets used in
@@ -4995,7 +4999,7 @@ static NTSTATUS fruit_readdir_attr(struct vfs_handle_struct *handle,
 				struct fruit_config_data,
 				return NT_STATUS_UNSUCCESSFUL);
 
-	if (!config->nego_aapl) {
+	if (!global_fruit_config.nego_aapl) {
 		return SMB_VFS_NEXT_READDIR_ATTR(handle, fname, mem_ctx, pattr_data);
 	}
 
