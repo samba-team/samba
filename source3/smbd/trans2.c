@@ -3452,7 +3452,8 @@ NTSTATUS smbd_do_qfsinfo(struct smbXsrv_connection *xconn,
 	ZERO_STRUCT(smb_fname);
 	smb_fname.base_name = discard_const_p(char, filename);
 
-	if(SMB_VFS_STAT(conn, &smb_fname) != 0) {
+	if(info_level != SMB_FS_QUOTA_INFORMATION
+	   && SMB_VFS_STAT(conn, &smb_fname) != 0) {
 		DEBUG(2,("stat of . failed (%s)\n", strerror(errno)));
 		return map_nt_error_from_unix(errno);
 	}
