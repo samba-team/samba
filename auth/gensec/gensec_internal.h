@@ -85,6 +85,7 @@ struct gensec_security_ops {
 	bool (*have_feature)(struct gensec_security *gensec_security,
 				    uint32_t feature);
 	NTTIME (*expire_time)(struct gensec_security *gensec_security);
+	const char *(*final_auth_type)(struct gensec_security *gensec_security);
 	bool enabled;
 	bool kerberos;
 	enum gensec_priority priority;
@@ -125,5 +126,7 @@ struct gensec_critical_sizes {
 
 NTSTATUS gensec_may_reset_crypto(struct gensec_security *gensec_security,
 				 bool full_reset);
+
+const char *gensec_final_auth_type(struct gensec_security *gensec_security);
 
 #endif /* __GENSEC_H__ */

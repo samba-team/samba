@@ -1651,6 +1651,17 @@ static NTTIME gensec_spnego_expire_time(struct gensec_security *gensec_security)
 	return gensec_expire_time(spnego_state->sub_sec_security);
 }
 
+static const char *gensec_spnego_final_auth_type(struct gensec_security *gensec_security)
+{
+	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
+
+	if (!spnego_state->sub_sec_security) {
+		return "NONE";
+	} else {
+		return gensec_final_auth_type(spnego_state->sub_sec_security);
+	}
+}
+
 static const char *gensec_spnego_oids[] = { 
 	GENSEC_OID_SPNEGO,
 	NULL 
@@ -1678,6 +1689,7 @@ static const struct gensec_security_ops gensec_spnego_security_ops = {
 	.want_feature     = gensec_spnego_want_feature,
 	.have_feature     = gensec_spnego_have_feature,
 	.expire_time      = gensec_spnego_expire_time,
+	.final_auth_type  = gensec_spnego_final_auth_type,
 	.enabled          = true,
 	.priority         = GENSEC_SPNEGO
 };

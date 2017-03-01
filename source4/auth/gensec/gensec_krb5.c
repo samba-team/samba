@@ -1038,6 +1038,11 @@ static bool gensec_krb5_have_feature(struct gensec_security *gensec_security,
 	return false;
 }
 
+static const char *gensec_krb5_final_auth_type(struct gensec_security *gensec_security)
+{
+	return GENSEC_FINAL_AUTH_TYPE_KRB5;
+}
+
 static const char *gensec_krb5_oids[] = { 
 	GENSEC_OID_KERBEROS5,
 	GENSEC_OID_KERBEROS5_OLD,
@@ -1055,9 +1060,10 @@ static const struct gensec_security_ops gensec_fake_gssapi_krb5_security_ops = {
 	.session_key	= gensec_krb5_session_key,
 	.session_info	= gensec_krb5_session_info,
 	.have_feature   = gensec_krb5_have_feature,
+	.final_auth_type = gensec_krb5_final_auth_type,
 	.enabled        = false,
 	.kerberos       = true,
-	.priority       = GENSEC_KRB5
+	.priority       = GENSEC_KRB5,
 };
 
 static const struct gensec_security_ops gensec_krb5_security_ops = {
@@ -1070,6 +1076,7 @@ static const struct gensec_security_ops gensec_krb5_security_ops = {
 	.have_feature   = gensec_krb5_have_feature,
 	.wrap           = gensec_krb5_wrap,
 	.unwrap         = gensec_krb5_unwrap,
+	.final_auth_type = gensec_krb5_final_auth_type,
 	.enabled        = true,
 	.kerberos       = true,
 	.priority       = GENSEC_KRB5

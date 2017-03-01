@@ -1275,6 +1275,21 @@ static size_t gensec_gse_sig_size(struct gensec_security *gensec_security,
 	return gse_ctx->sig_size;
 }
 
+static const char *gensec_gse_final_auth_type(struct gensec_security *gensec_security)
+{
+	struct gse_context *gse_ctx =
+		talloc_get_type_abort(gensec_security->private_data,
+		struct gse_context);
+
+	/* Only return the string for GSSAPI/Krb5 */
+	if (smb_gss_oid_equal(&gse_ctx->gss_mech,
+			      gss_mech_krb5)) {
+		return GENSEC_FINAL_AUTH_TYPE_KRB5;
+	} else {
+		return "gensec_gse: UNKNOWN MECH";
+	}
+}
+
 static const char *gensec_gse_krb5_oids[] = {
 	GENSEC_OID_KERBEROS5_OLD,
 	GENSEC_OID_KERBEROS5,
@@ -1302,6 +1317,7 @@ const struct gensec_security_ops gensec_gse_krb5_security_ops = {
 	.unwrap         = gensec_gse_unwrap,
 	.have_feature   = gensec_gse_have_feature,
 	.expire_time    = gensec_gse_expire_time,
+	.final_auth_type  = gensec_gse_final_auth_type,
 	.enabled        = true,
 	.kerberos       = true,
 	.priority       = GENSEC_GSSAPI

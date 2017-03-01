@@ -1539,6 +1539,19 @@ static size_t gensec_gssapi_sig_size(struct gensec_security *gensec_security, si
 	return gensec_gssapi_state->sig_size;
 }
 
+static const char *gensec_gssapi_final_auth_type(struct gensec_security *gensec_security)
+{
+	struct gensec_gssapi_state *gensec_gssapi_state
+		= talloc_get_type(gensec_security->private_data, struct gensec_gssapi_state);
+	/* Only return the string for GSSAPI/Krb5 */
+	if (smb_gss_oid_equal(gensec_gssapi_state->gss_oid,
+			      gss_mech_krb5)) {
+		return GENSEC_FINAL_AUTH_TYPE_KRB5;
+	} else {
+		return "gensec_gssapi: UNKNOWN MECH";
+	}
+}
+
 static const char *gensec_gssapi_krb5_oids[] = { 
 	GENSEC_OID_KERBEROS5_OLD,
 	GENSEC_OID_KERBEROS5,
@@ -1572,6 +1585,7 @@ static const struct gensec_security_ops gensec_gssapi_spnego_security_ops = {
 	.unwrap         = gensec_gssapi_unwrap,
 	.have_feature   = gensec_gssapi_have_feature,
 	.expire_time    = gensec_gssapi_expire_time,
+	.final_auth_type = gensec_gssapi_final_auth_type,
 	.enabled        = false,
 	.kerberos       = true,
 	.priority       = GENSEC_GSSAPI
@@ -1599,6 +1613,7 @@ static const struct gensec_security_ops gensec_gssapi_krb5_security_ops = {
 	.unwrap         = gensec_gssapi_unwrap,
 	.have_feature   = gensec_gssapi_have_feature,
 	.expire_time    = gensec_gssapi_expire_time,
+	.final_auth_type = gensec_gssapi_final_auth_type,
 	.enabled        = true,
 	.kerberos       = true,
 	.priority       = GENSEC_GSSAPI
@@ -1619,6 +1634,7 @@ static const struct gensec_security_ops gensec_gssapi_sasl_krb5_security_ops = {
 	.unwrap           = gensec_gssapi_unwrap,
 	.have_feature     = gensec_gssapi_have_feature,
 	.expire_time      = gensec_gssapi_expire_time,
+	.final_auth_type = gensec_gssapi_final_auth_type,
 	.enabled          = true,
 	.kerberos         = true,
 	.priority         = GENSEC_GSSAPI

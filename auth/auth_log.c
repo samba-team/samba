@@ -213,6 +213,7 @@ void log_authentication_event(const struct auth_usersupplied_info *ui,
 void log_successful_authz_event(const struct tsocket_address *remote,
 				const struct tsocket_address *local,
 				const char *service_description,
+				const char *auth_type,
 				struct auth_session_info *session_info)
 {
 	TALLOC_CTX *frame = NULL;
@@ -238,11 +239,12 @@ void log_successful_authz_event(const struct tsocket_address *remote,
 	dom_sid_string_buf(&session_info->security_token->sids[0], sid_buf, sizeof(sid_buf));
 
 	DEBUGC( DBGC_AUTH_AUDIT, AUTHZ_SUCCESS_LEVEL, (
-		"Successful AuthZ: [%s] user [%s]\\[%s] [%s]"
+		"Successful AuthZ: [%s,%s] user [%s]\\[%s] [%s]"
 		" at [%s]"
 		" Remote host [%s]"
 		" local host [%s]\n",
 		service_description,
+		auth_type,
 		log_escape(frame, session_info->info->domain_name),
 		log_escape(frame, session_info->info->account_name),
 		sid_buf,

@@ -193,6 +193,15 @@ _PUBLIC_ NTSTATUS gensec_session_key(struct gensec_security *gensec_security,
 	return gensec_security->ops->session_key(gensec_security, mem_ctx, session_key);
 }
 
+const char *gensec_final_auth_type(struct gensec_security *gensec_security)
+{
+	if (!gensec_security->ops->final_auth_type) {
+		return gensec_security->ops->name;
+	}
+
+	return gensec_security->ops->final_auth_type(gensec_security);
+}
+
 /*
  * Log details of a successful GENSEC authorization to a service.
  *
@@ -210,7 +219,12 @@ static void log_successful_gensec_authz_event(struct gensec_security *gensec_sec
 		= gensec_get_local_address(gensec_security);
 	const char *service_description
 		= gensec_get_target_service_description(gensec_security);
-	log_successful_authz_event(remote, local, service_description, session_info);
+	const char *final_auth_type
+		= gensec_final_auth_type(gensec_security);
+	log_successful_authz_event(remote, local,
+				   service_description,
+				   final_auth_type,
+				   session_info);
 }
 
 

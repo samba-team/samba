@@ -721,7 +721,14 @@ static NTSTATUS ntlmssp_server_check_password(struct gensec_security *gensec_sec
 	user_info->local_host = gensec_get_local_address(gensec_security);
 	user_info->service_description
 		= gensec_get_target_service_description(gensec_security);
-	user_info->auth_description = "NTLMSSP";
+
+	/*
+	 * This will just be the string "NTLMSSP" from
+	 * gensec_ntlmssp_final_auth_type, but ensures it stays in sync
+	 * with the same use in the authorization logging triggered by
+	 * gensec_session_info() later
+	 */
+	user_info->auth_description = gensec_final_auth_type(gensec_security);
 
 	user_info->password_state = AUTH_PASSWORD_RESPONSE;
 	user_info->password.response.lanman = ntlmssp_state->lm_resp;

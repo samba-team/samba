@@ -207,6 +207,11 @@ static NTSTATUS gensec_ntlmssp_may_reset_crypto(struct gensec_security *gensec_s
 	return NT_STATUS_OK;
 }
 
+static const char *gensec_ntlmssp_final_auth_type(struct gensec_security *gensec_security)
+{
+	return GENSEC_FINAL_AUTH_TYPE_NTLMSSP;
+}
+
 static const char *gensec_ntlmssp_oids[] = {
 	GENSEC_OID_NTLMSSP,
 	NULL
@@ -232,6 +237,7 @@ static const struct gensec_security_ops gensec_ntlmssp_security_ops = {
 	.session_key	= gensec_ntlmssp_session_key,
 	.session_info   = gensec_ntlmssp_session_info,
 	.have_feature   = gensec_ntlmssp_have_feature,
+	.final_auth_type = gensec_ntlmssp_final_auth_type,
 	.enabled        = true,
 	.priority       = GENSEC_NTLMSSP
 };
