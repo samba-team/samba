@@ -25,10 +25,6 @@
 #include "auth/auth.h"
 #include "dsdb/samdb/samdb.h"
 
-/*
- It's allowed to pass NULL as session_info,
- when the caller doesn't need a session_info
-*/
 _PUBLIC_ NTSTATUS authenticate_ldap_simple_bind(TALLOC_CTX *mem_ctx,
 						struct tevent_context *ev,
 						struct imessaging_context *msg,
@@ -47,6 +43,7 @@ _PUBLIC_ NTSTATUS authenticate_ldap_simple_bind(TALLOC_CTX *mem_ctx,
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	const char *nt4_domain;
 	const char *nt4_username;
+	uint32_t flags = 0;
 
 	if (!tmp_ctx) {
 		return NT_STATUS_NO_MEMORY;
@@ -86,7 +83,7 @@ _PUBLIC_ NTSTATUS authenticate_ldap_simple_bind(TALLOC_CTX *mem_ctx,
 	user_info->remote_host = remote_address;
 	user_info->local_host = local_address;
 
-	user_info->service_description = "ldap";
+	user_info->service_description = "LDAP";
 
 	user_info->auth_description = "simple bind";
 
@@ -109,22 +106,26 @@ _PUBLIC_ NTSTATUS authenticate_ldap_simple_bind(TALLOC_CTX *mem_ctx,
 		return nt_status;
 	}
 
-	if (session_info) {
-		uint32_t flags = AUTH_SESSION_INFO_DEFAULT_GROUPS;
-		if (user_info_dc->info->authenticated) {
-			flags |= AUTH_SESSION_INFO_AUTHENTICATED;
-		}
-		nt_status = auth_context->generate_session_info(auth_context,
-								tmp_ctx, 
-								user_info_dc,
-								nt4_username,
-								flags,
-								session_info);
-
-		if (NT_STATUS_IS_OK(nt_status)) {
-			talloc_steal(mem_ctx, *session_info);
-		}
+	flags = AUTH_SESSION_INFO_DEFAULT_GROUPS;
+	if (user_info_dc->info->authenticated) {
+		flags |= AUTH_SESSION_INFO_AUTHENTICATED;
 	}
+	nt_status = auth_context->generate_session_info(auth_context,
+							tmp_ctx,
+							user_info_dc,
+							nt4_username,
+							flags,
+							session_info);
+
+	if (NT_STATUS_IS_OK(nt_status)) {
+		talloc_steal(mem_ctx, *session_info);
+	}
+
+	log_successful_authz_event(remote_address,
+				   local_address,
+				   "LDAP",
+				   "simple bind",
+				   *session_info);
 
 	talloc_free(tmp_ctx);
 	return nt_status;
