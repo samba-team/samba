@@ -552,7 +552,7 @@ To process encrypted kerberos traffic
 
 To display more detailed documentation, including details of the output format
 
- perldoc traffic_summnary.pl
+ perldoc traffic_summary.pl
 
  NOTE: tshark pdml output is very verbose, so it's better to pipe the tshark
        output directly to traffic_summary, rather than generating
