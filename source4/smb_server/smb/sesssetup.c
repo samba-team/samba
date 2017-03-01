@@ -39,6 +39,33 @@ struct sesssetup_context {
 };
 
 /*
+ * Log the SMB authentication, as by not calling GENSEC we won't log
+ * it during the gensec_session_info().
+ */
+void smbsrv_not_spengo_sesssetup_authz_log(struct smbsrv_request *req,
+					       struct auth_session_info *session_info)
+{
+	struct tsocket_address *local_address;
+	struct tsocket_address *remote_address;
+	TALLOC_CTX *frame = talloc_stackframe();
+
+	remote_address = socket_get_remote_addr(req->smb_conn->connection->socket,
+						frame);
+	local_address = socket_get_local_addr(req->smb_conn->connection->socket,
+					      frame);
+
+	log_successful_authz_event(remote_address,
+				   local_address,
+				   "SMB",
+				   "bare-NTLM",
+				   session_info);
+
+	talloc_free(frame);
+	return;
+}
+
+
+/*
   setup the OS, Lanman and domain portions of a session setup reply
 */
 static void sesssetup_common_strings(struct smbsrv_request *req,
@@ -97,6 +124,8 @@ static void sesssetup_old_send(struct tevent_req *subreq)
 		status = NT_STATUS_INSUFFICIENT_RESOURCES;
 		goto failed;
 	}
+
+	smbsrv_not_spengo_sesssetup_authz_log(req, session_info);
 
 	/* Ensure this is marked as a 'real' vuid, not one
 	 * simply valid for the session setup leg */
@@ -240,6 +269,8 @@ static void sesssetup_nt1_send(struct tevent_req *subreq)
 		goto failed;
 	}
 
+	smbsrv_not_spengo_sesssetup_authz_log(req, session_info);
+
 	/* Ensure this is marked as a 'real' vuid, not one
 	 * simply valid for the session setup leg */
 	status = smbsrv_session_sesssetup_finished(smb_sess, session_info);
@@ -339,6 +370,7 @@ static void sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *sess)
 	if (!user_info) goto nomem;
 
 	user_info->service_description = "SMB";
+	user_info->auth_description = "bare-NTLM";
 
 	user_info->mapped_state = false;
 	user_info->logon_parameters = 0;
