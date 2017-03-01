@@ -117,6 +117,8 @@ static void dns_process_done(struct tevent_req *subreq);
 static struct tevent_req *dns_process_send(TALLOC_CTX *mem_ctx,
 					   struct tevent_context *ev,
 					   struct dns_server *dns,
+					   const struct tsocket_address *remote_address,
+					   const struct tsocket_address *local_address,
 					   DATA_BLOB *in)
 {
 	struct tevent_req *req, *subreq;
@@ -161,6 +163,8 @@ static struct tevent_req *dns_process_send(TALLOC_CTX *mem_ctx,
 	state->state.flags = state->in_packet.operation;
 	state->state.flags |= DNS_FLAG_REPLY;
 
+	state->state.local_address = local_address;
+	state->state.remote_address = remote_address;
 
 	if (forwarder && *forwarder && **forwarder) {
 		state->state.flags |= DNS_FLAG_RECURSION_AVAIL;
@@ -168,7 +172,8 @@ static struct tevent_req *dns_process_send(TALLOC_CTX *mem_ctx,
 
 	state->out_packet = state->in_packet;
 
-	ret = dns_verify_tsig(dns, state, &state->state, &state->out_packet, in);
+	ret = dns_verify_tsig(dns, state, &state->state,
+			      &state->out_packet, in);
 	if (!W_ERROR_IS_OK(ret)) {
 		state->dns_err = werr_to_dns_err(ret);
 		tevent_req_done(req);
@@ -178,7 +183,8 @@ static struct tevent_req *dns_process_send(TALLOC_CTX *mem_ctx,
 	switch (state->in_packet.operation & DNS_OPCODE) {
 	case DNS_OPCODE_QUERY:
 		subreq = dns_server_process_query_send(
-			state, ev, dns, &state->state, &state->in_packet);
+			state, ev, dns,
+			&state->state, &state->in_packet);
 		if (tevent_req_nomem(subreq, req)) {
 			return tevent_req_post(req, ev);
 		}
@@ -333,6 +339,8 @@ static void dns_tcp_call_loop(struct tevent_req *subreq)
 	call->in.length -= 2;
 
 	subreq = dns_process_send(call, dns->task->event_ctx, dns,
+				  dns_conn->conn->remote_address,
+				  dns_conn->conn->local_address,
 				  &call->in);
 	if (subreq == NULL) {
 		dns_tcp_terminate_connection(
@@ -534,6 +542,8 @@ static void dns_udp_call_loop(struct tevent_req *subreq)
 		 tsocket_address_string(call->src, call)));
 
 	subreq = dns_process_send(call, dns->task->event_ctx, dns,
+				  call->src,
+				  sock->dns_socket->local_address,
 				  &call->in);
 	if (subreq == NULL) {
 		TALLOC_FREE(call);

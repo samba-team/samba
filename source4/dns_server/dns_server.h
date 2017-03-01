@@ -61,6 +61,8 @@ struct dns_request_state {
 	char *key_name;
 	struct dns_res_rec *tsig;
 	uint16_t tsig_error;
+	const struct tsocket_address *local_address;
+	const struct tsocket_address *remote_address;
 };
 
 struct tevent_req *dns_server_process_query_send(

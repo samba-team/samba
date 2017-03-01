@@ -702,6 +702,8 @@ static WERROR handle_authoritative_recv(struct tevent_req *req)
 static NTSTATUS create_tkey(struct dns_server *dns,
 			    const char* name,
 			    const char* algorithm,
+			    const struct tsocket_address *remote_address,
+			    const struct tsocket_address *local_address,
 			    struct dns_server_tkey **tkey)
 {
 	NTSTATUS status;
@@ -737,6 +739,24 @@ static NTSTATUS create_tkey(struct dns_server *dns,
 	}
 
 	gensec_want_feature(k->gensec, GENSEC_FEATURE_SIGN);
+
+	status = gensec_set_remote_address(k->gensec,
+					   remote_address);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to set remote address into GENSEC: %s\n",
+			  nt_errstr(status)));
+		*tkey = NULL;
+		return status;
+	}
+
+	status = gensec_set_local_address(k->gensec,
+					  local_address);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to set local address into GENSEC: %s\n",
+			  nt_errstr(status)));
+		*tkey = NULL;
+		return status;
+	}
 
 	status = gensec_start_mech_by_oid(k->gensec, GENSEC_OID_SPNEGO);
 
@@ -861,6 +881,8 @@ static WERROR handle_tkey(struct dns_server *dns,
 		if (tkey == NULL) {
 			status  = create_tkey(dns, in->questions[0].name,
 					      in_tkey->rdata.tkey_record.algorithm,
+					      state->remote_address,
+					      state->local_address,
 					      &tkey);
 			if (!NT_STATUS_IS_OK(status)) {
 				ret_tkey->rdata.tkey_record.error = DNS_RCODE_BADKEY;
