@@ -399,6 +399,11 @@ NTSTATUS auth_generic_prepare(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+/*
+ * Check a username and password, and return the final session_info.
+ * We also log the authorization of the session here, just as
+ * gensec_session_info() does.
+ */
 NTSTATUS auth_check_password_session_info(struct auth4_context *auth_context,
 					  TALLOC_CTX *mem_ctx,
 					  struct auth_usersupplied_info *user_info,
@@ -414,16 +419,35 @@ NTSTATUS auth_check_password_session_info(struct auth4_context *auth_context,
 						      &authoritative,
 						      &server_info, NULL, NULL);
 
-	if (NT_STATUS_IS_OK(nt_status)) {
-		nt_status = auth_context->generate_session_info(auth_context,
-								mem_ctx,
-								server_info,
-								user_info->client.account_name,
-								AUTH_SESSION_INFO_UNIX_TOKEN |
-								AUTH_SESSION_INFO_DEFAULT_GROUPS |
-								AUTH_SESSION_INFO_NTLM,
-								session_info);
-		TALLOC_FREE(server_info);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
 	}
+
+	nt_status = auth_context->generate_session_info(auth_context,
+							mem_ctx,
+							server_info,
+							user_info->client.account_name,
+							AUTH_SESSION_INFO_UNIX_TOKEN |
+							AUTH_SESSION_INFO_DEFAULT_GROUPS |
+							AUTH_SESSION_INFO_NTLM,
+							session_info);
+	TALLOC_FREE(server_info);
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
+	}
+
+	/*
+	 * This is rather redundant (the authentication has just been
+	 * logged, with much the same details), but because we want to
+	 * log all authorizations consistently (be they NLTM, NTLMSSP
+	 * or krb5) we log this info again as an authorization.
+	 */
+	log_successful_authz_event(user_info->remote_host,
+				   user_info->local_host,
+				   user_info->service_description,
+				   user_info->auth_description,
+				   *session_info);
+
 	return nt_status;
 }
