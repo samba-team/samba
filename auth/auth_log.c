@@ -75,6 +75,42 @@ static const char* get_timestamp( TALLOC_CTX *frame )
 }
 
 /*
+ * Determine the type of the password supplied for the
+ * authorisation attempt.
+ *
+ */
+static const char* get_password_type(const struct auth_usersupplied_info *ui)
+{
+
+	const char *password_type = NULL;
+
+	if (ui->password_state == AUTH_PASSWORD_RESPONSE &&
+	    (ui->logon_parameters & MSV1_0_ALLOW_MSVCHAPV2) &&
+	    ui->password.response.nt.length == 24) {
+		password_type = "MSCHAPv2";
+	} else if ((ui->logon_parameters & MSV1_0_CLEARTEXT_PASSWORD_SUPPLIED)
+		   || (ui->password_state == AUTH_PASSWORD_PLAIN)) {
+		password_type = "Plaintext";
+	} else if (ui->password_state == AUTH_PASSWORD_HASH) {
+		password_type = "Supplied-NT-Hash";
+	} else if (ui->password_state == AUTH_PASSWORD_RESPONSE
+		   && ui->password.response.nt.length > 24) {
+		password_type = "NTLMv2";
+	} else if (ui->password_state == AUTH_PASSWORD_RESPONSE
+		   && ui->password.response.nt.length == 24) {
+		password_type = "NTLMv1";
+	} else if (ui->password_state == AUTH_PASSWORD_RESPONSE
+		   && ui->password.response.lanman.length == 24) {
+		password_type = "LANMan";
+	} else if (ui->password_state == AUTH_PASSWORD_RESPONSE
+		   && ui->password.response.nt.length == 0
+		   && ui->password.response.lanman.length == 0) {
+		password_type = "No-Password";
+	}
+	return password_type;
+}
+
+/*
  * Log details of an authentication attempt.
  * Successful and unsuccessful attempts are logged.
  *
@@ -95,6 +131,7 @@ void log_authentication_event(const struct auth_usersupplied_info *ui,
 	char *trust_computer_name = NULL;
 	char *trust_account_name = NULL;
 	char *logon_line = NULL;
+	const char *password_type = NULL;
 
 	/* set the log level */
 	int  level = NT_STATUS_IS_OK(status) ? AUTH_FAILURE_LEVEL : AUTH_SUCCESS_LEVEL;
@@ -104,6 +141,7 @@ void log_authentication_event(const struct auth_usersupplied_info *ui,
 
 	frame = talloc_stackframe();
 
+	password_type = get_password_type( ui);
 	/* Get the current time */
         ts = get_timestamp(frame);
 
@@ -140,7 +178,7 @@ void log_authentication_event(const struct auth_usersupplied_info *ui,
 
 	DEBUGC( DBGC_AUTH_AUDIT, level, (
 		"Auth: [%s,%s] user [%s]\\[%s]"
-		" at [%s] status [%s]"
+		" at [%s] with [%s] status [%s]"
 		" workstation [%s] remote host [%s]"
 		"%s local host [%s]"
 		" %s\n",
@@ -149,6 +187,7 @@ void log_authentication_event(const struct auth_usersupplied_info *ui,
 		log_escape(frame, ui->client.domain_name),
 		log_escape(frame, ui->client.account_name),
 		ts,
+		password_type,
 		nt_errstr( status),
 		log_escape(frame, ui->workstation_name),
 		remote,
@@ -178,7 +217,7 @@ void log_successful_authz_event(const struct tsocket_address *remote,
 {
 	TALLOC_CTX *frame = NULL;
 
-	char *ts = NULL;             /* formatted current time      */
+	const char *ts = NULL;       /* formatted current time      */
 	char *remote_str = NULL;     /* formatted remote host       */
 	char *local_str = NULL;      /* formatted local host        */
 	char sid_buf[DOM_SID_STR_BUFLEN];
@@ -191,7 +230,7 @@ void log_successful_authz_event(const struct tsocket_address *remote,
 	frame = talloc_stackframe();
 
 	/* Get the current time */
-        ts = http_timestring(frame, time(NULL));
+        ts = get_timestamp(frame);
 
 	remote_str = tsocket_address_string(remote, frame);
 	local_str  = tsocket_address_string(local, frame);
