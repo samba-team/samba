@@ -168,12 +168,35 @@ bool parse_ip(const char *addr, const char *ifaces, unsigned port, ctdb_sock_add
 
 	ZERO_STRUCTP(saddr); /* valgrind :-) */
 
-	/* now is this a ipv4 or ipv6 address ?*/
-	p = index(addr, ':');
+	/* IPv4 or IPv6 address?
+	 *
+	 * Use rindex() because we need the right-most ':' below for
+	 * IPv4-mapped IPv6 addresses anyway...
+	 */
+	p = rindex(addr, ':');
 	if (p == NULL) {
 		ret = parse_ipv4(addr, port, &saddr->ip);
 	} else {
+		uint8_t ipv4_mapped_prefix[12] = {
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff
+		};
+
 		ret = parse_ipv6(addr, ifaces, port, saddr);
+		if (! ret) {
+			return ret;
+		}
+
+		/*
+		 * Check for IPv4-mapped IPv6 address
+		 * (e.g. ::ffff:192.0.2.128) - reparse as IPv4 if
+		 * necessary
+		 */
+		if (memcmp(&saddr->ip6.sin6_addr.s6_addr[0],
+			   ipv4_mapped_prefix,
+			   sizeof(ipv4_mapped_prefix)) == 0) {
+			/* Reparse as IPv4 */
+			ret = parse_ipv4(p+1, port, &saddr->ip);
+		}
 	}
 
 	return ret;

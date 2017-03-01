@@ -77,6 +77,7 @@ int main(int argc, char *argv[])
 			   "fe80::6af7:28ff:fefa:d137" , -1);
 	test_sock_addr_cmp("fe80::6af7:28ff:fefa:d136",
 			   "fe80:0000:0000:0000:6af7:28ff:fefa:d136" , 0);
+	test_sock_addr_cmp("::ffff:192.0.2.128", "192.0.2.128", 0);
 
 	return 0;
 }
