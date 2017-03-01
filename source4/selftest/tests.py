@@ -301,7 +301,7 @@ for t in nbt_tests:
 ntvfsargs = ["--option=torture:sharedelay=100000", "--option=torture:oplocktimeout=3", "--option=torture:writetimeupdatedelay=500000"]
 
 # Filter smb2 tests that should not run against ad_dc_ntvfs
-smb2_s3only = ["smb2.change_notify_disabled", "smb2.dosmode"]
+smb2_s3only = ["smb2.change_notify_disabled", "smb2.dosmode", "smb2.kernel-oplocks"]
 smb2 = [x for x in smbtorture4_testsuites("smb2.") if x not in smb2_s3only]
 
 #The QFILEINFO-IPC test needs to be on ipc$
