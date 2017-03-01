@@ -1860,6 +1860,11 @@ sub provision($$$$$$$$)
 [mangle_illegal]
 	copy = tmp
         mangled names = illegal
+
+[kernel_oplocks]
+	copy = tmp
+	kernel oplocks = yes
+	vfs objects = streams_xattr xattr_tdb
 	";
 	close(CONF);
 
