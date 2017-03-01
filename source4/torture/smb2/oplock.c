@@ -4204,3 +4204,143 @@ bool test_smb2_hold_oplock(struct torture_context *tctx,
 	talloc_free(mem_ctx);
 	return true;
 }
+
+
+static bool test_smb2_kernel_oplocks1(struct torture_context *tctx,
+				      struct smb2_tree *tree)
+{
+	const char *fname = "test_kernel_oplock1.dat";
+	NTSTATUS status;
+	bool ret = true;
+	struct smb2_create create;
+	struct smb2_handle h1 = {{0}}, h2 = {{0}};
+
+	smb2_util_unlink(tree, fname);
+
+	tree->session->transport->oplock.handler = torture_oplock_handler;
+	tree->session->transport->oplock.private_data = tree;
+	ZERO_STRUCT(break_info);
+
+	ZERO_STRUCT(create);
+	create.in.desired_access = SEC_RIGHTS_FILE_ALL;
+	create.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	create.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
+	create.in.create_disposition = NTCREATEX_DISP_OPEN_IF;
+	create.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS;
+	create.in.fname = fname;
+	create.in.oplock_level = SMB2_OPLOCK_LEVEL_EXCLUSIVE;
+
+	status = smb2_create(tree, tctx, &create);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "Error opening the file\n");
+	h1 = create.out.file.handle;
+
+	torture_assert_goto(tctx, create.out.oplock_level == SMB2_OPLOCK_LEVEL_EXCLUSIVE, ret, done,
+			    "Oplock level is not SMB2_OPLOCK_LEVEL_EXCLUSIVE\n");
+
+	ZERO_STRUCT(create);
+	create.in.desired_access = SEC_RIGHTS_FILE_ALL;
+	create.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	create.in.share_access = NTCREATEX_SHARE_ACCESS_MASK;
+	create.in.create_disposition = NTCREATEX_DISP_OPEN_IF;
+	create.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS;
+	create.in.fname = fname;
+
+	status = smb2_create(tree, tctx, &create);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_SHARING_VIOLATION, ret, done,
+					   "Open didn't return NT_STATUS_SHARING_VIOLATION\n");
+	h2 = create.out.file.handle;
+
+	torture_wait_for_oplock_break(tctx);
+	if (break_info.count != 0) {
+		torture_warning(tctx, "Open caused oplock break\n");
+	}
+
+	smb2_util_close(tree, h1);
+	smb2_util_close(tree, h2);
+
+done:
+	if (!smb2_util_handle_empty(h1)) {
+		smb2_util_close(tree, h1);
+	}
+	if (!smb2_util_handle_empty(h2)) {
+		smb2_util_close(tree, h2);
+	}
+	smb2_util_unlink(tree, fname);
+	return ret;
+}
+
+static bool test_smb2_kernel_oplocks2(struct torture_context *tctx,
+				      struct smb2_tree *tree)
+{
+	const char *fname = "test_kernel_oplock2.dat";
+	const char *sname = "test_kernel_oplock2.dat:foo";
+	NTSTATUS status;
+	bool ret = true;
+	struct smb2_create create;
+	struct smb2_handle h1 = {{0}}, h2 = {{0}};
+
+	smb2_util_unlink(tree, fname);
+
+	tree->session->transport->oplock.handler = torture_oplock_handler;
+	tree->session->transport->oplock.private_data = tree;
+	ZERO_STRUCT(break_info);
+
+	ZERO_STRUCT(create);
+	create.in.desired_access = SEC_RIGHTS_FILE_ALL;
+	create.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	create.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
+	create.in.create_disposition = NTCREATEX_DISP_OPEN_IF;
+	create.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS;
+	create.in.fname = fname;
+	create.in.oplock_level = SMB2_OPLOCK_LEVEL_EXCLUSIVE;
+
+	status = smb2_create(tree, tctx, &create);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "Error opening the file\n");
+	h1 = create.out.file.handle;
+
+	torture_assert_goto(tctx, create.out.oplock_level == SMB2_OPLOCK_LEVEL_EXCLUSIVE, ret, done,
+			    "Oplock level is not SMB2_OPLOCK_LEVEL_EXCLUSIVE\n");
+
+	ZERO_STRUCT(create);
+	create.in.desired_access = SEC_RIGHTS_FILE_ALL;
+	create.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	create.in.share_access = NTCREATEX_SHARE_ACCESS_MASK;
+	create.in.create_disposition = NTCREATEX_DISP_OPEN_IF;
+	create.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS;
+	create.in.fname = sname;
+
+	status = smb2_create(tree, tctx, &create);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "Error opening the file\n");
+	h2 = create.out.file.handle;
+
+	torture_wait_for_oplock_break(tctx);
+	if (break_info.count != 0) {
+		torture_warning(tctx, "Stream open caused oplock break\n");
+	}
+
+	smb2_util_close(tree, h1);
+	smb2_util_close(tree, h2);
+
+done:
+	if (!smb2_util_handle_empty(h1)) {
+		smb2_util_close(tree, h1);
+	}
+	if (!smb2_util_handle_empty(h2)) {
+		smb2_util_close(tree, h2);
+	}
+	smb2_util_unlink(tree, fname);
+	return ret;
+}
+
+struct torture_suite *torture_smb2_kernel_oplocks_init(void)
+{
+	struct torture_suite *suite =
+	    torture_suite_create(talloc_autofree_context(), "kernel-oplocks");
+
+	torture_suite_add_1smb2_test(suite, "kernel_oplocks1", test_smb2_kernel_oplocks1);
+	torture_suite_add_1smb2_test(suite, "kernel_oplocks2", test_smb2_kernel_oplocks2);
+
+	suite->description = talloc_strdup(suite, "SMB2-KERNEL-OPLOCK tests");
+
+	return suite;
+}

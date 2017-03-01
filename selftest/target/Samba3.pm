@@ -1824,6 +1824,10 @@ sub provision($$$$$$$$)
 	copy = tmp
 	acl_xattr:ignore system acls = yes
 	acl_xattr:default acl style = windows
+[kernel_oplocks]
+	copy = tmp
+	kernel oplocks = yes
+	vfs objects = streams_xattr xattr_tdb
 	";
 	close(CONF);
 
