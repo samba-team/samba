@@ -103,6 +103,11 @@ interface winbind
 	[out] wbint_RidArray *rids
 	);
 
+    NTSTATUS wbint_LookupUserGroups(
+	[in] dom_sid *sid,
+	[out] wbint_SidArray *sids
+	);
+
     NTSTATUS wbint_QuerySequenceNumber(
 	[out] uint32 *sequence
 	);
