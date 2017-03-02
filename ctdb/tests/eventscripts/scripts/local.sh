@@ -706,10 +706,10 @@ check_statd_callout_smnotify ()
     while read _x _sip _x ; do
 	for _cip ; do
 	    cat <<EOF
---client=${_cip} --ip=${_sip} --server=${_sip} --stateval=${_state_even}
---client=${_cip} --ip=${_sip} --server=${NFS_HOSTNAME} --stateval=${_state_even}
---client=${_cip} --ip=${_sip} --server=${_sip} --stateval=${_state_odd}
---client=${_cip} --ip=${_sip} --server=${NFS_HOSTNAME} --stateval=${_state_odd}
+SM_NOTIFY: ${_sip} -> ${_cip}, MON_NAME=${_sip}, STATE=${_state_even}
+SM_NOTIFY: ${_sip} -> ${_cip}, MON_NAME=${NFS_HOSTNAME}, STATE=${_state_even}
+SM_NOTIFY: ${_sip} -> ${_cip}, MON_NAME=${_sip}, STATE=${_state_odd}
+SM_NOTIFY: ${_sip} -> ${_cip}, MON_NAME=${NFS_HOSTNAME}, STATE=${_state_odd}
 EOF
 	done
     done | {

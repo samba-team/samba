@@ -1,3 +1,39 @@
 #!/bin/sh
-# echo args
-echo "$*"
+
+usage()
+{
+	_prog="${0##*/}" # basename
+	cat <<EOF
+Usage: ${_prog} --client=CLIENT --ip=IP --server=SERVER --stateval=STATEVAL
+EOF
+	exit 1
+}
+
+temp=$(getopt -n "smnotify" -o "h" -l client:,ip:,server:,stateval: -- "$@")
+if [ $? != 0 ] ; then
+	usage
+fi
+
+eval set -- "$temp"
+
+cip=""
+sip=""
+mon_name=""
+state=""
+
+while : ; do
+	case "$1" in
+	--client) cip="$2" ; shift 2 ;;
+	--ip) sip="$2" ; shift 2 ;;
+	--server)  mon_name="$2" ; shift 2 ;;
+	--stateval) state="$2" ; shift 2 ;;
+	--) shift ; break ;;
+	*) usage ;;
+	esac
+done
+
+if [ -z "$cip" -o -z "$sip" -o -z "$mon_name" -o -z "$state" ] ; then
+	usage
+fi
+
+echo "SM_NOTIFY: ${sip} -> ${cip}, MON_NAME=${mon_name}, STATE=${state}"
