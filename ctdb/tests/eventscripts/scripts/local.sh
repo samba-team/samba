@@ -692,7 +692,7 @@ check_ctdb_tdb_statd_state ()
     ctdb_catdb_format_pairs | {
 	ok
 	simple_test_command ctdb catdb ctdb.tdb
-    } || test_fail
+    } || exit $?
 }
 
 check_statd_callout_smnotify ()
@@ -715,7 +715,7 @@ EOF
     done | {
 	ok
 	simple_test_event "notify"
-    } || test_fail
+    } || exit $?
 }
 
 ######################################################################
