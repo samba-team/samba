@@ -778,7 +778,9 @@ static int ctdb_local_attach(struct ctdb_context *ctdb, const char *db_name,
 	key.dsize = strlen(db_name)+1;
 	key.dptr  = discard_const(db_name);
 	ctdb_db->db_id = ctdb_hash(&key);
-	ctdb_db->persistent = persistent;
+	if (persistent) {
+		ctdb_db->db_flags = CTDB_DB_FLAGS_PERSISTENT;
+	}
 
 	if (ctdb_db_volatile(ctdb_db)) {
 		ctdb_db->delete_queue = trbt_create(ctdb_db, 0);

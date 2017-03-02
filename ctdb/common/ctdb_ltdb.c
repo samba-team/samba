@@ -80,37 +80,49 @@ struct ctdb_db_context *ctdb_db_handle(struct ctdb_context *ctdb, const char *na
 
 bool ctdb_db_persistent(struct ctdb_db_context *ctdb_db)
 {
-	return ctdb_db->persistent;
+	if (ctdb_db->db_flags & CTDB_DB_FLAGS_PERSISTENT) {
+		return true;
+	}
+	return false;
 }
 
 bool ctdb_db_volatile(struct ctdb_db_context *ctdb_db)
 {
-	return !ctdb_db->persistent;
+	if (ctdb_db->db_flags & CTDB_DB_FLAGS_PERSISTENT) {
+		return false;
+	}
+	return true;
 }
 
 bool ctdb_db_readonly(struct ctdb_db_context *ctdb_db)
 {
-	return ctdb_db->readonly;
+	if (ctdb_db->db_flags & CTDB_DB_FLAGS_READONLY) {
+		return true;
+	}
+	return false;
 }
 
 void ctdb_db_set_readonly(struct ctdb_db_context *ctdb_db)
 {
-	ctdb_db->readonly = true;
+	ctdb_db->db_flags |= CTDB_DB_FLAGS_READONLY;
 }
 
 void ctdb_db_reset_readonly(struct ctdb_db_context *ctdb_db)
 {
-	ctdb_db->readonly = false;
+	ctdb_db->db_flags &= ~CTDB_DB_FLAGS_READONLY;
 }
 
 bool ctdb_db_sticky(struct ctdb_db_context *ctdb_db)
 {
-	return ctdb_db->sticky;
+	if (ctdb_db->db_flags & CTDB_DB_FLAGS_STICKY) {
+		return true;
+	}
+	return false;
 }
 
 void ctdb_db_set_sticky(struct ctdb_db_context *ctdb_db)
 {
-	ctdb_db->sticky = true;
+	ctdb_db->db_flags |= CTDB_DB_FLAGS_STICKY;
 }
 
 /*

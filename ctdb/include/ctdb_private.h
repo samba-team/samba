@@ -344,9 +344,7 @@ struct ctdb_db_context {
 	struct ctdb_db_context *next, *prev;
 	struct ctdb_context *ctdb;
 	uint32_t db_id;
-	bool persistent;
-	bool readonly; /* Do we support read-only delegations ? */
-	bool sticky; /* Do we support sticky records ? */
+	uint8_t db_flags;
 	const char *db_name;
 	const char *db_path;
 	struct tdb_wrap *ltdb;

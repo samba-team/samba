@@ -2176,7 +2176,9 @@ struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb,
 		return NULL;
 	}
 
-	ctdb_db->persistent = persistent;
+	if (persistent) {
+		ctdb_db->db_flags = CTDB_DB_FLAGS_PERSISTENT;
+	}
 
 	DLIST_ADD(ctdb->db_list, ctdb_db);
 
