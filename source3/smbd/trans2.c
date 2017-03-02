@@ -75,8 +75,11 @@ static NTSTATUS refuse_symlink(connection_struct *conn,
 		int ret = vfs_stat_smb_basename(conn,
 				smb_fname,
 				&sbuf);
-		if (ret == -1) {
+		if (ret == -1 && errno != ENOENT) {
 			return map_nt_error_from_unix(errno);
+		} else if (ret == -1) {
+			/* it's not a symlink.. */
+			return NT_STATUS_OK;
 		}
 		pst = &sbuf;
 	}
