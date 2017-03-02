@@ -89,6 +89,11 @@ NTSTATUS wb_cache_rids_to_names(struct winbindd_domain *domain,
 				char **domain_name,
 				char ***names,
 				enum lsa_SidType **types);
+NTSTATUS wb_cache_lookup_usergroups(struct winbindd_domain *domain,
+				    TALLOC_CTX *mem_ctx,
+				    const struct dom_sid *user_sid,
+				    uint32_t *pnum_sids,
+				    struct dom_sid **psids);
 NTSTATUS wb_cache_lookup_useraliases(struct winbindd_domain *domain,
 				     TALLOC_CTX *mem_ctx,
 				     uint32_t num_sids,

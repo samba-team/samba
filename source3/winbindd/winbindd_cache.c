@@ -2379,6 +2379,77 @@ NTSTATUS wcache_lookup_usergroups(struct winbindd_domain *domain,
 	return status;
 }
 
+/* Lookup groups a user is a member of. */
+NTSTATUS wb_cache_lookup_usergroups(struct winbindd_domain *domain,
+				    TALLOC_CTX *mem_ctx,
+				    const struct dom_sid *user_sid,
+				    uint32_t *num_groups,
+				    struct dom_sid **user_gids)
+{
+	struct cache_entry *centry = NULL;
+	NTSTATUS status;
+	unsigned int i;
+	fstring sid_string;
+	bool old_status;
+
+	old_status = domain->online;
+	status = wcache_lookup_usergroups(domain, mem_ctx, user_sid,
+					  num_groups, user_gids);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+		return status;
+	}
+
+	(*num_groups) = 0;
+	(*user_gids) = NULL;
+
+	/* Return status value returned by seq number check */
+
+	if (!NT_STATUS_IS_OK(domain->last_status))
+		return domain->last_status;
+
+	DEBUG(10,("lookup_usergroups: [Cached] - doing backend query for info for domain %s\n",
+		domain->name ));
+
+	status = domain->backend->lookup_usergroups(domain, mem_ctx, user_sid, num_groups, user_gids);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT) ||
+		NT_STATUS_EQUAL(status, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND)) {
+		if (!domain->internal && old_status) {
+			set_domain_offline(domain);
+		}
+		if (!domain->internal &&
+			!domain->online &&
+			old_status) {
+			NTSTATUS cache_status;
+			cache_status = wcache_lookup_usergroups(domain, mem_ctx, user_sid,
+							  num_groups, user_gids);
+			return cache_status;
+		}
+	}
+	if ( NT_STATUS_EQUAL(status, NT_STATUS_SYNCHRONIZATION_REQUIRED) )
+		goto skip_save;
+
+	/* and save it */
+	refresh_sequence_number(domain);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	centry = centry_start(domain, status);
+	if (!centry)
+		goto skip_save;
+
+	centry_put_uint32(centry, *num_groups);
+	for (i=0; i<(*num_groups); i++) {
+		centry_put_sid(centry, &(*user_gids)[i]);
+	}	
+
+	centry_end(centry, "UG/%s", sid_to_fstring(sid_string, user_sid));
+	centry_free(centry);
+
+skip_save:
+	return status;
+}
+
 static char *wcache_make_sidlist(TALLOC_CTX *mem_ctx, uint32_t num_sids,
 				 const struct dom_sid *sids)
 {
