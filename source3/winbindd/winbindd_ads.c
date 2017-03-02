@@ -574,6 +574,382 @@ static NTSTATUS rids_to_names(struct winbindd_domain *domain,
 					   domain_name, names, types);
 }
 
+/* Lookup groups a user is a member of - alternate method, for when
+   tokenGroups are not available. */
+static NTSTATUS lookup_usergroups_member(struct winbindd_domain *domain,
+					 TALLOC_CTX *mem_ctx,
+					 const char *user_dn, 
+					 struct dom_sid *primary_group,
+					 uint32_t *p_num_groups, struct dom_sid **user_sids)
+{
+	ADS_STATUS rc;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	int count;
+	LDAPMessage *res = NULL;
+	LDAPMessage *msg = NULL;
+	char *ldap_exp;
+	ADS_STRUCT *ads;
+	const char *group_attrs[] = {"objectSid", NULL};
+	char *escaped_dn;
+	uint32_t num_groups = 0;
+
+	DEBUG(3,("ads: lookup_usergroups_member\n"));
+
+	if ( !winbindd_can_contact_domain( domain ) ) {
+		DEBUG(10,("lookup_usergroups_members: No incoming trust for domain %s\n",
+			  domain->name));		
+		return NT_STATUS_OK;
+	}
+
+	ads = ads_cached_connection(domain);
+
+	if (!ads) {
+		domain->last_status = NT_STATUS_SERVER_DISABLED;
+		goto done;
+	}
+
+	if (!(escaped_dn = escape_ldap_string(talloc_tos(), user_dn))) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	ldap_exp = talloc_asprintf(mem_ctx,
+		"(&(member=%s)(objectCategory=group)(groupType:dn:%s:=%d))",
+		escaped_dn,
+		ADS_LDAP_MATCHING_RULE_BIT_AND,
+		GROUP_TYPE_SECURITY_ENABLED);
+	if (!ldap_exp) {
+		DEBUG(1,("lookup_usergroups(dn=%s) asprintf failed!\n", user_dn));
+		TALLOC_FREE(escaped_dn);
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	TALLOC_FREE(escaped_dn);
+
+	rc = ads_search_retry(ads, &res, ldap_exp, group_attrs);
+
+	if (!ADS_ERR_OK(rc)) {
+		DEBUG(1,("lookup_usergroups ads_search member=%s: %s\n", user_dn, ads_errstr(rc)));
+		return ads_ntstatus(rc);
+	} else if (!res) {
+		DEBUG(1,("lookup_usergroups ads_search returned NULL res\n"));
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+
+	count = ads_count_replies(ads, res);
+
+	*user_sids = NULL;
+	num_groups = 0;
+
+	/* always add the primary group to the sid array */
+	status = add_sid_to_array(mem_ctx, primary_group, user_sids,
+				  &num_groups);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	if (count > 0) {
+		for (msg = ads_first_entry(ads, res); msg;
+		     msg = ads_next_entry(ads, msg)) {
+			struct dom_sid group_sid;
+
+			if (!ads_pull_sid(ads, msg, "objectSid", &group_sid)) {
+				DEBUG(1,("No sid for this group ?!?\n"));
+				continue;
+			}
+
+			/* ignore Builtin groups from ADS - Guenther */
+			if (sid_check_is_in_builtin(&group_sid)) {
+				continue;
+			}
+
+			status = add_sid_to_array(mem_ctx, &group_sid,
+						  user_sids, &num_groups);
+			if (!NT_STATUS_IS_OK(status)) {
+				goto done;
+			}
+		}
+
+	}
+
+	*p_num_groups = num_groups;
+	status = (user_sids != NULL) ? NT_STATUS_OK : NT_STATUS_NO_MEMORY;
+
+	DEBUG(3,("ads lookup_usergroups (member) succeeded for dn=%s\n", user_dn));
+done:
+	if (res) 
+		ads_msgfree(ads, res);
+
+	return status;
+}
+
+/* Lookup groups a user is a member of - alternate method, for when
+   tokenGroups are not available. */
+static NTSTATUS lookup_usergroups_memberof(struct winbindd_domain *domain,
+					   TALLOC_CTX *mem_ctx,
+					   const char *user_dn,
+					   struct dom_sid *primary_group,
+					   uint32_t *p_num_groups,
+					   struct dom_sid **user_sids)
+{
+	ADS_STATUS rc;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	ADS_STRUCT *ads;
+	const char *attrs[] = {"memberOf", NULL};
+	uint32_t num_groups = 0;
+	struct dom_sid *group_sids = NULL;
+	int i;
+	char **strings = NULL;
+	size_t num_strings = 0, num_sids = 0;
+
+
+	DEBUG(3,("ads: lookup_usergroups_memberof\n"));
+
+	if ( !winbindd_can_contact_domain( domain ) ) {
+		DEBUG(10,("lookup_usergroups_memberof: No incoming trust for "
+			  "domain %s\n", domain->name));
+		return NT_STATUS_OK;
+	}
+
+	ads = ads_cached_connection(domain);
+
+	if (!ads) {
+		domain->last_status = NT_STATUS_SERVER_DISABLED;
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	rc = ads_search_retry_extended_dn_ranged(ads, mem_ctx, user_dn, attrs,
+						 ADS_EXTENDED_DN_HEX_STRING,
+						 &strings, &num_strings);
+
+	if (!ADS_ERR_OK(rc)) {
+		DEBUG(1,("lookup_usergroups_memberof ads_search "
+			"member=%s: %s\n", user_dn, ads_errstr(rc)));
+		return ads_ntstatus(rc);
+	}
+
+	*user_sids = NULL;
+	num_groups = 0;
+
+	/* always add the primary group to the sid array */
+	status = add_sid_to_array(mem_ctx, primary_group, user_sids,
+				  &num_groups);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	group_sids = talloc_zero_array(mem_ctx, struct dom_sid, num_strings + 1);
+	if (!group_sids) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	for (i=0; i<num_strings; i++) {
+		rc = ads_get_sid_from_extended_dn(mem_ctx, strings[i],
+						  ADS_EXTENDED_DN_HEX_STRING,
+						  &(group_sids)[i]);
+		if (!ADS_ERR_OK(rc)) {
+			/* ignore members without SIDs */
+			if (NT_STATUS_EQUAL(ads_ntstatus(rc),
+			    NT_STATUS_NOT_FOUND)) {
+				continue;
+			}
+			else {
+				status = ads_ntstatus(rc);
+				goto done;
+			}
+		}
+		num_sids++;
+	}
+
+	if (i == 0) {
+		DEBUG(1,("No memberOf for this user?!?\n"));
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	for (i=0; i<num_sids; i++) {
+
+		/* ignore Builtin groups from ADS - Guenther */
+		if (sid_check_is_in_builtin(&group_sids[i])) {
+			continue;
+		}
+
+		status = add_sid_to_array(mem_ctx, &group_sids[i], user_sids,
+					  &num_groups);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto done;
+		}
+
+	}
+
+	*p_num_groups = num_groups;
+	status = (*user_sids != NULL) ? NT_STATUS_OK : NT_STATUS_NO_MEMORY;
+
+	DEBUG(3,("ads lookup_usergroups (memberof) succeeded for dn=%s\n",
+		user_dn));
+
+done:
+	TALLOC_FREE(strings);
+	TALLOC_FREE(group_sids);
+
+	return status;
+}
+
+
+/* Lookup groups a user is a member of. */
+static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
+				  TALLOC_CTX *mem_ctx,
+				  const struct dom_sid *sid,
+				  uint32_t *p_num_groups, struct dom_sid **user_sids)
+{
+	ADS_STRUCT *ads = NULL;
+	const char *attrs[] = {"tokenGroups", "primaryGroupID", NULL};
+	ADS_STATUS rc;
+	int count;
+	LDAPMessage *msg = NULL;
+	char *user_dn = NULL;
+	struct dom_sid *sids;
+	int i;
+	struct dom_sid primary_group;
+	uint32_t primary_group_rid;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	uint32_t num_groups = 0;
+
+	DEBUG(3,("ads: lookup_usergroups\n"));
+	*p_num_groups = 0;
+
+	status = lookup_usergroups_cached(mem_ctx, sid,
+					  p_num_groups, user_sids);
+	if (NT_STATUS_IS_OK(status)) {
+		return NT_STATUS_OK;
+	}
+
+	if ( !winbindd_can_contact_domain( domain ) ) {
+		DEBUG(10,("lookup_usergroups: No incoming trust for domain %s\n",
+			  domain->name));
+
+		/* Tell the cache manager not to remember this one */
+
+		return NT_STATUS_SYNCHRONIZATION_REQUIRED;
+	}
+
+	ads = ads_cached_connection(domain);
+
+	if (!ads) {
+		domain->last_status = NT_STATUS_SERVER_DISABLED;
+		status = NT_STATUS_SERVER_DISABLED;
+		goto done;
+	}
+
+	rc = ads_search_retry_sid(ads, &msg, sid, attrs);
+
+	if (!ADS_ERR_OK(rc)) {
+		status = ads_ntstatus(rc);
+		DEBUG(1, ("lookup_usergroups(sid=%s) ads_search tokenGroups: "
+			  "%s\n", sid_string_dbg(sid), ads_errstr(rc)));
+		goto done;
+	}
+
+	count = ads_count_replies(ads, msg);
+	if (count != 1) {
+		status = NT_STATUS_UNSUCCESSFUL;
+		DEBUG(1,("lookup_usergroups(sid=%s) ads_search tokenGroups: "
+			 "invalid number of results (count=%d)\n", 
+			 sid_string_dbg(sid), count));
+		goto done;
+	}
+
+	if (!msg) {
+		DEBUG(1,("lookup_usergroups(sid=%s) ads_search tokenGroups: NULL msg\n", 
+			 sid_string_dbg(sid)));
+		status = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	user_dn = ads_get_dn(ads, mem_ctx, msg);
+	if (user_dn == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	if (!ads_pull_uint32(ads, msg, "primaryGroupID", &primary_group_rid)) {
+		DEBUG(1,("%s: No primary group for sid=%s !?\n", 
+			 domain->name, sid_string_dbg(sid)));
+		goto done;
+	}
+
+	sid_compose(&primary_group, &domain->sid, primary_group_rid);
+
+	count = ads_pull_sids(ads, mem_ctx, msg, "tokenGroups", &sids);
+
+	/* there must always be at least one group in the token, 
+	   unless we are talking to a buggy Win2k server */
+
+	/* actually this only happens when the machine account has no read
+	 * permissions on the tokenGroup attribute - gd */
+
+	if (count == 0) {
+
+		/* no tokenGroups */
+
+		/* lookup what groups this user is a member of by DN search on
+		 * "memberOf" */
+
+		status = lookup_usergroups_memberof(domain, mem_ctx, user_dn,
+						    &primary_group,
+						    &num_groups, user_sids);
+		*p_num_groups = num_groups;
+		if (NT_STATUS_IS_OK(status)) {
+			goto done;
+		}
+
+		/* lookup what groups this user is a member of by DN search on
+		 * "member" */
+
+		status = lookup_usergroups_member(domain, mem_ctx, user_dn, 
+						  &primary_group,
+						  &num_groups, user_sids);
+		*p_num_groups = num_groups;
+		goto done;
+	}
+
+	*user_sids = NULL;
+	num_groups = 0;
+
+	status = add_sid_to_array(mem_ctx, &primary_group, user_sids,
+				  &num_groups);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	for (i=0;i<count;i++) {
+
+		/* ignore Builtin groups from ADS - Guenther */
+		if (sid_check_is_in_builtin(&sids[i])) {
+			continue;
+		}
+
+		status = add_sid_to_array_unique(mem_ctx, &sids[i],
+						 user_sids, &num_groups);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto done;
+		}
+	}
+
+	*p_num_groups = (uint32_t)num_groups;
+	status = (*user_sids != NULL) ? NT_STATUS_OK : NT_STATUS_NO_MEMORY;
+
+	DEBUG(3,("ads lookup_usergroups (tokenGroups) succeeded for sid=%s\n",
+		 sid_string_dbg(sid)));
+done:
+	TALLOC_FREE(user_dn);
+	ads_msgfree(ads, msg);
+	return status;
+}
+
 /* Lookup aliases a user is member of - use rpc methods */
 static NTSTATUS lookup_useraliases(struct winbindd_domain *domain,
 				   TALLOC_CTX *mem_ctx,
@@ -1157,6 +1533,7 @@ struct winbindd_methods ads_methods = {
 	name_to_sid,
 	sid_to_name,
 	rids_to_names,
+	lookup_usergroups,
 	lookup_useraliases,
 	lookup_groupmem,
 	sequence_number,
