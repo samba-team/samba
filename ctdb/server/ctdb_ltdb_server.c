@@ -960,6 +960,10 @@ again:
 		}
 	}
 
+	/* remember the flags the client has specified */
+	tdb_add_flags(ctdb_db->ltdb->tdb, tdb_flags);
+
+
 	/* set up a rb tree we can use to track which records we have a 
 	   fetch-lock in-flight for so we can defer any additional calls
 	   for the same record.
@@ -1213,9 +1217,6 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 		DEBUG(DEBUG_ERR,("Failed to find db handle for name '%s'\n", db_name));
 		return -1;
 	}
-
-	/* remember the flags the client has specified */
-	tdb_add_flags(db->ltdb->tdb, tdb_flags);
 
 	outdata->dptr  = (uint8_t *)&db->db_id;
 	outdata->dsize = sizeof(db->db_id);
