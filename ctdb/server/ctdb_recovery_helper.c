@@ -1664,7 +1664,8 @@ static void recover_db_transaction_started(struct tevent_req *subreq)
 		return;
 	}
 
-	if (state->db_flags & CTDB_DB_FLAGS_PERSISTENT) {
+	if ((state->db_flags & CTDB_DB_FLAGS_PERSISTENT) ||
+	    (state->db_flags & CTDB_DB_FLAGS_REPLICATED)) {
 		subreq = collect_highseqnum_db_send(
 				state, state->ev, state->client,
 				state->pnn_list, state->count, state->caps,
@@ -1693,7 +1694,8 @@ static void recover_db_collect_done(struct tevent_req *subreq)
 	int ret;
 	bool status;
 
-	if (state->db_flags & CTDB_DB_FLAGS_PERSISTENT) {
+	if ((state->db_flags & CTDB_DB_FLAGS_PERSISTENT) ||
+	    (state->db_flags & CTDB_DB_FLAGS_REPLICATED)) {
 		status = collect_highseqnum_db_recv(subreq, &ret);
 	} else {
 		status = collect_all_db_recv(subreq, &ret);

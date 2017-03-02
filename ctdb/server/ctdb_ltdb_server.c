@@ -1115,6 +1115,7 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 	struct ctdb_db_context *db;
 	struct ctdb_node *node = ctdb->nodes[ctdb->pnn];
 	struct ctdb_client *client = NULL;
+	uint32_t opcode;
 
 	if (ctdb->tunable.allow_client_db_attach == 0) {
 		DEBUG(DEBUG_ERR, ("DB Attach to database %s denied by tunable "
@@ -1196,11 +1197,16 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 	/* Try to ensure it's locked in mem */
 	lockdown_memory(ctdb->valgrinding);
 
+	if (ctdb_db_persistent(db)) {
+		opcode = CTDB_CONTROL_DB_ATTACH_PERSISTENT;
+	} else if (ctdb_db_replicated(db)) {
+		opcode = CTDB_CONTROL_DB_ATTACH_REPLICATED;
+	} else {
+		opcode = CTDB_CONTROL_DB_ATTACH;
+	}
+
 	/* tell all the other nodes about this database */
-	ctdb_daemon_send_control(ctdb, CTDB_BROADCAST_ALL, 0,
-				 ctdb_db_persistent(db) ?
-					CTDB_CONTROL_DB_ATTACH_PERSISTENT :
-					CTDB_CONTROL_DB_ATTACH,
+	ctdb_daemon_send_control(ctdb, CTDB_BROADCAST_ALL, 0, opcode,
 				 0, CTDB_CTRL_FLAG_NOREPLY,
 				 indata, NULL, NULL);
 
