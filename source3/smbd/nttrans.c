@@ -688,16 +688,19 @@ void reply_ntcreate_and_X(struct smb_request *req)
 	p += 8;
 	if (flags & EXTENDED_RESPONSE_REQUIRED) {
 		uint16_t file_status = (NO_EAS|NO_SUBSTREAMS|NO_REPARSETAG);
-		size_t num_names = 0;
 		unsigned int num_streams = 0;
 		struct stream_struct *streams = NULL;
 
-		/* Do we have any EA's ? */
-		status = get_ea_names_from_file(ctx, conn, fsp,
-				smb_fname, NULL, &num_names);
-		if (NT_STATUS_IS_OK(status) && num_names) {
-			file_status &= ~NO_EAS;
+		if (lp_ea_support(SNUM(conn))) {
+			size_t num_names = 0;
+			/* Do we have any EA's ? */
+			status = get_ea_names_from_file(
+			    ctx, conn, fsp, smb_fname, NULL, &num_names);
+			if (NT_STATUS_IS_OK(status) && num_names) {
+				file_status &= ~NO_EAS;
+			}
 		}
+
 		status = vfs_streaminfo(conn, NULL, smb_fname, ctx,
 			&num_streams, &streams);
 		/* There is always one stream, ::$DATA. */
@@ -1334,16 +1337,19 @@ static void call_nt_transact_create(connection_struct *conn,
 	p += 8;
 	if (flags & EXTENDED_RESPONSE_REQUIRED) {
 		uint16_t file_status = (NO_EAS|NO_SUBSTREAMS|NO_REPARSETAG);
-		size_t num_names = 0;
 		unsigned int num_streams = 0;
 		struct stream_struct *streams = NULL;
 
-		/* Do we have any EA's ? */
-		status = get_ea_names_from_file(ctx, conn, fsp,
-				smb_fname, NULL, &num_names);
-		if (NT_STATUS_IS_OK(status) && num_names) {
-			file_status &= ~NO_EAS;
+		if (lp_ea_support(SNUM(conn))) {
+			size_t num_names = 0;
+			/* Do we have any EA's ? */
+			status = get_ea_names_from_file(
+			    ctx, conn, fsp, smb_fname, NULL, &num_names);
+			if (NT_STATUS_IS_OK(status) && num_names) {
+				file_status &= ~NO_EAS;
+			}
 		}
+
 		status = vfs_streaminfo(conn, NULL, smb_fname, ctx,
 			&num_streams, &streams);
 		/* There is always one stream, ::$DATA. */

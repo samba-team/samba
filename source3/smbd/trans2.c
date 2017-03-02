@@ -262,10 +262,6 @@ NTSTATUS get_ea_names_from_file(TALLOC_CTX *mem_ctx,
 	}
 	*pnum_names = 0;
 
-	if (!lp_ea_support(SNUM(conn))) {
-		return NT_STATUS_OK;
-	}
-
 	status = refuse_symlink(conn, fsp, smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		/*
@@ -396,6 +392,10 @@ static NTSTATUS get_ea_list_from_file_path(TALLOC_CTX *mem_ctx,
 
 	*pea_total_len = 0;
 	*ea_list = NULL;
+
+	if (!lp_ea_support(SNUM(conn))) {
+		return NT_STATUS_OK;
+	}
 
 	if (fsp) {
 		posix_pathnames =
