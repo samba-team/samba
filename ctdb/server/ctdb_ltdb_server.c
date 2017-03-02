@@ -757,8 +757,7 @@ int ctdb_set_db_readonly(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb
   return 0 on success, -1 on failure
  */
 static int ctdb_local_attach(struct ctdb_context *ctdb, const char *db_name,
-			     bool persistent, const char *unhealthy_reason,
-			     bool jenkinshash, bool mutexes)
+			     bool persistent, const char *unhealthy_reason)
 {
 	struct ctdb_db_context *ctdb_db, *tmp_db;
 	int ret;
@@ -1118,7 +1117,6 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 	struct ctdb_db_context *db;
 	struct ctdb_node *node = ctdb->nodes[ctdb->pnn];
 	struct ctdb_client *client = NULL;
-	bool with_jenkinshash, with_mutexes;
 
 	if (ctdb->tunable.allow_client_db_attach == 0) {
 		DEBUG(DEBUG_ERR, ("DB Attach to database %s denied by tunable "
@@ -1183,11 +1181,7 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 		return 0;
 	}
 
-	with_jenkinshash = persistent ? false : true;
-	with_mutexes = (ctdb->tunable.mutex_enabled == 1) ? true : false;
-
-	if (ctdb_local_attach(ctdb, db_name, persistent, NULL,
-			      with_jenkinshash, with_mutexes) != 0) {
+	if (ctdb_local_attach(ctdb, db_name, persistent, NULL) != 0) {
 		return -1;
 	}
 
@@ -1357,7 +1351,7 @@ static int ctdb_attach_persistent(struct ctdb_context *ctdb,
 		}
 		p[4] = 0;
 
-		if (ctdb_local_attach(ctdb, s, true, unhealthy_reason, false, false) != 0) {
+		if (ctdb_local_attach(ctdb, s, true, unhealthy_reason) != 0) {
 			DEBUG(DEBUG_ERR,("Failed to attach to persistent database '%s'\n", de->d_name));
 			closedir(d);
 			talloc_free(s);
