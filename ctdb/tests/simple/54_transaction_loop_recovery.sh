@@ -40,8 +40,10 @@ cluster_is_healthy
 
 ctdb_restart_when_done
 
-try_command_on_node 0 "$CTDB attach transaction_loop.tdb persistent"
-try_command_on_node 0 "$CTDB wipedb transaction_loop.tdb"
+TESTDB="persistent_trans.tdb"
+
+try_command_on_node 0 "$CTDB attach $TESTDB persistent"
+try_command_on_node 0 "$CTDB wipedb $TESTDB"
 
 try_command_on_node 0 "$CTDB listnodes"
 num_nodes=$(echo "$out" | wc -l)
@@ -51,7 +53,8 @@ if [ -z "$CTDB_TEST_TIMELIMIT" ] ; then
 fi
 
 t="$CTDB_TEST_WRAPPER $VALGRIND transaction_loop \
-	-n ${num_nodes} -t ${CTDB_TEST_TIMELIMIT}"
+	-n ${num_nodes} -t ${CTDB_TEST_TIMELIMIT} \
+	-D ${TESTDB} -T persistent -k testkey"
 
 echo "Starting recovery loop"
 recovery_loop_start

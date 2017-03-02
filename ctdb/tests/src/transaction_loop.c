@@ -26,10 +26,6 @@
 #include "tests/src/test_options.h"
 #include "tests/src/cluster_wait.h"
 
-#define TESTDB	"transaction_loop.tdb"
-#define TESTKEY	"testkey"
-
-
 struct transaction_loop_state {
 	struct tevent_context *ev;
 	struct ctdb_client_context *client;
@@ -56,7 +52,8 @@ static struct tevent_req *transaction_loop_send(
 				struct tevent_context *ev,
 				struct ctdb_client_context *client,
 				struct ctdb_db_context *ctdb_db,
-				int num_nodes, int timelimit, int interactive)
+				int num_nodes, int timelimit, int interactive,
+				const char *keystr)
 {
 	struct tevent_req *req, *subreq;
 	struct transaction_loop_state *state;
@@ -73,8 +70,8 @@ static struct tevent_req *transaction_loop_send(
 	state->num_nodes = num_nodes;
 	state->timelimit = timelimit;
 	state->interactive = interactive;
-	state->key.dptr = discard_const(TESTKEY);
-	state->key.dsize = strlen(TESTKEY);
+	state->key.dptr = discard_const(keystr);
+	state->key.dsize = strlen(keystr);
 	state->pnn = ctdb_client_pnn(client);
 	state->old_counter = talloc_zero_array(state, uint32_t, num_nodes);
 	if (tevent_req_nomem(state->old_counter, req)) {
@@ -341,10 +338,11 @@ int main(int argc, const char *argv[])
 	struct ctdb_client_context *client;
 	struct ctdb_db_context *ctdb_db;
 	struct tevent_req *req;
+	uint8_t db_flags;
 	int ret;
 	bool status;
 
-	status = process_options_basic(argc, argv, &opts);
+	status = process_options_database(argc, argv, &opts);
 	if (! status) {
 		exit(1);
 	}
@@ -372,17 +370,26 @@ int main(int argc, const char *argv[])
 		exit(1);
 	}
 
-	ret = ctdb_attach(ev, client, tevent_timeval_zero(), TESTDB,
-			  CTDB_DB_FLAGS_PERSISTENT, &ctdb_db);
+	if (strcmp(opts->dbtype, "persistent") == 0) {
+		db_flags = CTDB_DB_FLAGS_PERSISTENT;
+	} else if (strcmp(opts->dbtype, "replicated") == 0) {
+		db_flags = CTDB_DB_FLAGS_REPLICATED;
+	} else {
+		fprintf(stderr, "Database must be persistent or replicated\n");
+		exit(1);
+	}
+
+	ret = ctdb_attach(ev, client, tevent_timeval_zero(), opts->dbname,
+			  db_flags, &ctdb_db);
 	if (ret != 0) {
 		fprintf(stderr, "Failed to attach to persistent DB %s\n",
-			TESTDB);
+			opts->dbname);
 		exit(1);
 	}
 
 	req = transaction_loop_send(mem_ctx, ev, client, ctdb_db,
 				    opts->num_nodes, opts->timelimit,
-				    opts->interactive);
+				    opts->interactive, opts->keystr);
 	if (req == NULL) {
 		fprintf(stderr, "Memory allocation error\n");
 		exit(1);
