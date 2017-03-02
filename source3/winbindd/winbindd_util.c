@@ -345,6 +345,20 @@ static void trustdom_list_done(struct tevent_req *req)
 	char *p;
 	struct winbindd_tdc_domain trust_params = {0};
 	ptrdiff_t extra_len;
+	bool within_forest = false;
+
+	/*
+	 * Only when we enumerate our primary domain
+	 * or our forest root domain, we should keep
+	 * the NETR_TRUST_FLAG_IN_FOREST flag, in
+	 * all other cases we need to clear it as the domain
+	 * is not part of our forest.
+	 */
+	if (state->domain->primary) {
+		within_forest = true;
+	} else if (domain_is_forest_root(state->domain)) {
+		within_forest = true;
+	}
 
 	res = wb_domain_request_recv(req, state, &response, &err);
 	if ((res == -1) || (response->result != WINBINDD_OK)) {
@@ -429,6 +443,14 @@ static void trustdom_list_done(struct tevent_req *req)
 		}
 
 		trust_params.trust_attribs = (uint32_t)strtoul(q, NULL, 10);
+
+		if (!within_forest) {
+			trust_params.trust_flags &= ~NETR_TRUST_FLAG_IN_FOREST;
+		}
+
+		if (!state->domain->primary) {
+			trust_params.trust_flags &= ~NETR_TRUST_FLAG_PRIMARY;
+		}
 
 		/*
 		 * We always call add_trusted_domain() cause on an existing
