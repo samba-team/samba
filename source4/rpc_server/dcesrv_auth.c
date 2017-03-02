@@ -46,9 +46,24 @@ bool dcesrv_auth_bind(struct dcesrv_call_state *call)
 	NTSTATUS status;
 
 	if (pkt->auth_length == 0) {
+		enum dcerpc_transport_t transport =
+			dcerpc_binding_get_transport(call->conn->endpoint->ep_description);
+		const char *auth_type = derpc_transport_string_by_transport(transport);
 		auth->auth_type = DCERPC_AUTH_TYPE_NONE;
 		auth->auth_level = DCERPC_AUTH_LEVEL_NONE;
 		auth->auth_context_id = 0;
+
+		/*
+		 * Log the authorization to this RPC interface.  This
+		 * covered ncacn_np pass-through auth, and anonymous
+		 * DCE/RPC (eg epmapper, netlogon etc)
+		 */
+		log_successful_authz_event(call->conn->remote_address,
+					   call->conn->local_address,
+					   "DCE/RPC",
+					   auth_type,
+					   call->conn->auth_state.session_info);
+
 		return true;
 	}
 
