@@ -276,6 +276,101 @@ static WERROR getncchanges_update_revealed_list(struct ldb_context *sam_ctx,
 	return WERR_OK;
 }
 
+static WERROR get_nc_changes_filter_attrs(struct drsuapi_DsReplicaObjectListItemEx *obj,
+					  struct replPropertyMetaDataBlob md,
+					  struct ldb_context *sam_ctx,
+					  const struct ldb_message *msg,
+					  uint32_t *count,
+					  uint64_t highest_usn,
+					  const struct dsdb_attribute *rdn_sa,
+					  struct dsdb_schema *schema,
+					  bool exop_secret,
+					  struct ldb_message **revealed_list_msg,
+					  struct ldb_message *existing_revealed_list_msg,
+					  struct drsuapi_DsReplicaCursorCtrEx *uptodateness_vector,
+					  struct drsuapi_DsPartialAttributeSet *partial_attribute_set, uint32_t *local_pas,
+					  uint32_t *attids)
+{
+	uint32_t i, n;
+	WERROR werr;
+	for (n=i=0; i<md.ctr.ctr1.count; i++) {
+		const struct dsdb_attribute *sa;
+		bool force_attribute = false;
+
+		/* if the attribute has not changed, and it is not the
+		   instanceType then don't include it */
+		if (md.ctr.ctr1.array[i].local_usn < highest_usn &&
+		    !exop_secret &&
+		    md.ctr.ctr1.array[i].attid != DRSUAPI_ATTID_instanceType) continue;
+
+		/* don't include the rDN */
+		if (md.ctr.ctr1.array[i].attid == rdn_sa->attributeID_id) continue;
+
+		sa = dsdb_attribute_by_attributeID_id(schema, md.ctr.ctr1.array[i].attid);
+		if (!sa) {
+			DEBUG(0,(__location__ ": Failed to find attribute in schema for attrid %u mentioned in replPropertyMetaData of %s\n",
+				 (unsigned int)md.ctr.ctr1.array[i].attid,
+				 ldb_dn_get_linearized(msg->dn)));
+			return WERR_DS_DRA_INTERNAL_ERROR;
+		}
+
+		if (sa->linkID) {
+			struct ldb_message_element *el;
+			el = ldb_msg_find_element(msg, sa->lDAPDisplayName);
+			if (el && el->num_values && dsdb_dn_is_upgraded_link_val(&el->values[0])) {
+				/* don't send upgraded links inline */
+				continue;
+			}
+		}
+
+		if (exop_secret &&
+		    !dsdb_attr_in_rodc_fas(sa)) {
+			force_attribute = true;
+			DEBUG(4,("Forcing attribute %s in %s\n",
+				 sa->lDAPDisplayName, ldb_dn_get_linearized(msg->dn)));
+			werr = getncchanges_update_revealed_list(sam_ctx, obj,
+								 revealed_list_msg,
+								 msg->dn, sa,
+								 &md.ctr.ctr1.array[i],
+								 existing_revealed_list_msg);
+			if (!W_ERROR_IS_OK(werr)) {
+				return werr;
+			}
+		}
+
+		/* filter by uptodateness_vector */
+		if (md.ctr.ctr1.array[i].attid != DRSUAPI_ATTID_instanceType &&
+		    !force_attribute &&
+		    udv_filter(uptodateness_vector,
+			       &md.ctr.ctr1.array[i].originating_invocation_id,
+			       md.ctr.ctr1.array[i].originating_usn)) {
+			continue;
+		}
+
+		/* filter by partial_attribute_set */
+		if (partial_attribute_set && !force_attribute) {
+			uint32_t *result = NULL;
+			BINARY_ARRAY_SEARCH_V(local_pas, partial_attribute_set->num_attids, sa->attributeID_id,
+					      uint32_t_cmp, result);
+			if (result == NULL) {
+				continue;
+			}
+		}
+
+		obj->meta_data_ctr->meta_data[n].originating_change_time = md.ctr.ctr1.array[i].originating_change_time;
+		obj->meta_data_ctr->meta_data[n].version = md.ctr.ctr1.array[i].version;
+		obj->meta_data_ctr->meta_data[n].originating_invocation_id = md.ctr.ctr1.array[i].originating_invocation_id;
+		obj->meta_data_ctr->meta_data[n].originating_usn = md.ctr.ctr1.array[i].originating_usn;
+		attids[n] = md.ctr.ctr1.array[i].attid;
+
+		n++;
+	}
+
+	*count = n;
+
+	return WERR_OK;
+}
+
 /* 
   drsuapi_DsGetNCChanges for one object
 */
@@ -404,77 +499,16 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 		existing_revealed_list_msg = res->msgs[0];
 	}
 
-	for (n=i=0; i<md.ctr.ctr1.count; i++) {
-		const struct dsdb_attribute *sa;
-		bool force_attribute = false;
-
-		/* if the attribute has not changed, and it is not the
-		   instanceType then don't include it */
-		if (md.ctr.ctr1.array[i].local_usn < highest_usn &&
-		    extended_op != DRSUAPI_EXOP_REPL_SECRET &&
-		    md.ctr.ctr1.array[i].attid != DRSUAPI_ATTID_instanceType) continue;
-
-		/* don't include the rDN */
-		if (md.ctr.ctr1.array[i].attid == rdn_sa->attributeID_id) continue;
-
-		sa = dsdb_attribute_by_attributeID_id(schema, md.ctr.ctr1.array[i].attid);
-		if (!sa) {
-			DEBUG(0,(__location__ ": Failed to find attribute in schema for attrid %u mentioned in replPropertyMetaData of %s\n",
-				 (unsigned int)md.ctr.ctr1.array[i].attid,
-				 ldb_dn_get_linearized(msg->dn)));
-			return WERR_DS_DRA_INTERNAL_ERROR;
-		}
-
-		if (sa->linkID) {
-			struct ldb_message_element *el;
-			el = ldb_msg_find_element(msg, sa->lDAPDisplayName);
-			if (el && el->num_values && dsdb_dn_is_upgraded_link_val(&el->values[0])) {
-				/* don't send upgraded links inline */
-				continue;
-			}
-		}
-
-		if (extended_op == DRSUAPI_EXOP_REPL_SECRET &&
-		    !dsdb_attr_in_rodc_fas(sa)) {
-			force_attribute = true;
-			DEBUG(4,("Forcing attribute %s in %s\n",
-				 sa->lDAPDisplayName, ldb_dn_get_linearized(msg->dn)));
-			werr = getncchanges_update_revealed_list(sam_ctx, obj,
-								 &revealed_list_msg,
-								 msg->dn, sa,
-								 &md.ctr.ctr1.array[i],
-								 existing_revealed_list_msg);
-			if (!W_ERROR_IS_OK(werr)) {
-				return werr;
-			}
-		}
-
-		/* filter by uptodateness_vector */
-		if (md.ctr.ctr1.array[i].attid != DRSUAPI_ATTID_instanceType &&
-		    !force_attribute &&
-		    udv_filter(uptodateness_vector,
-			       &md.ctr.ctr1.array[i].originating_invocation_id,
-			       md.ctr.ctr1.array[i].originating_usn)) {
-			continue;
-		}
-
-		/* filter by partial_attribute_set */
-		if (partial_attribute_set && !force_attribute) {
-			uint32_t *result = NULL;
-			BINARY_ARRAY_SEARCH_V(local_pas, partial_attribute_set->num_attids, sa->attributeID_id,
-					      uint32_t_cmp, result);
-			if (result == NULL) {
-				continue;
-			}
-		}
-
-		obj->meta_data_ctr->meta_data[n].originating_change_time = md.ctr.ctr1.array[i].originating_change_time;
-		obj->meta_data_ctr->meta_data[n].version = md.ctr.ctr1.array[i].version;
-		obj->meta_data_ctr->meta_data[n].originating_invocation_id = md.ctr.ctr1.array[i].originating_invocation_id;
-		obj->meta_data_ctr->meta_data[n].originating_usn = md.ctr.ctr1.array[i].originating_usn;
-		attids[n] = md.ctr.ctr1.array[i].attid;
-
-		n++;
+	werr = get_nc_changes_filter_attrs(obj, md, sam_ctx, msg, &n,
+					   highest_usn, rdn_sa, schema,
+					   extended_op == DRSUAPI_EXOP_REPL_SECRET,
+					   &revealed_list_msg,
+					   existing_revealed_list_msg,
+					   uptodateness_vector,
+					   partial_attribute_set, local_pas,
+					   attids);
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
 	}
 
 	if (revealed_list_msg != NULL) {
