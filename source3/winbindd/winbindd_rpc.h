@@ -78,6 +78,15 @@ NTSTATUS rpc_rids_to_names(TALLOC_CTX *mem_ctx,
 			   char ***pnames,
 			   enum lsa_SidType **ptypes);
 
+/* Lookup groups a user is a member of. */
+NTSTATUS rpc_lookup_usergroups(TALLOC_CTX *mem_ctx,
+			       struct rpc_pipe_client *samr_pipe,
+			       struct policy_handle *samr_policy,
+			       const struct dom_sid *domain_sid,
+			       const struct dom_sid *user_sid,
+			       uint32_t *pnum_groups,
+			       struct dom_sid **puser_grpsids);
+
 NTSTATUS rpc_lookup_useraliases(TALLOC_CTX *mem_ctx,
 				struct rpc_pipe_client *samr_pipe,
 				struct policy_handle *samr_policy,
