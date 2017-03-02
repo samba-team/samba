@@ -26,10 +26,10 @@
 struct ctdb_db_context {
 	struct ctdb_db_context *prev, *next;
 	uint32_t db_id;
+	uint8_t db_flags;
 	const char *db_name;
 	const char *db_path;
 	struct tdb_wrap *ltdb;
-	bool persistent;
 };
 
 struct ctdb_client_context {

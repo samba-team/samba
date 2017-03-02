@@ -52,6 +52,22 @@ static struct ctdb_db_context *client_db_handle(
 	return NULL;
 }
 
+static bool ctdb_db_persistent(struct ctdb_db_context *db)
+{
+	if (db->db_flags & CTDB_DB_FLAGS_PERSISTENT) {
+		return true;
+	}
+	return false;
+}
+
+static bool ctdb_db_volatile(struct ctdb_db_context *db)
+{
+	if (db->db_flags & CTDB_DB_FLAGS_PERSISTENT) {
+		return false;
+	}
+	return true;
+}
+
 struct ctdb_set_db_flags_state {
 	struct tevent_context *ev;
 	struct ctdb_client_context *client;
@@ -299,11 +315,9 @@ struct tevent_req *ctdb_attach_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	if (db_flags & CTDB_DB_FLAGS_PERSISTENT) {
-		state->db->persistent = true;
-	}
+	state->db->db_flags = db_flags;
 
-	if (state->db->persistent) {
+	if (ctdb_db_persistent(state->db)) {
 		ctdb_req_control_db_attach_persistent(&request,
 						      state->db->db_name);
 	} else {
@@ -337,7 +351,7 @@ static void ctdb_attach_dbid_done(struct tevent_req *subreq)
 	if (! status) {
 		DEBUG(DEBUG_ERR, ("attach: %s %s failed, ret=%d\n",
 				  state->db->db_name,
-				  (state->db->persistent
+				  (ctdb_db_persistent(state->db)
 					? "DB_ATTACH_PERSISTENT"
 					: "DB_ATTACH"),
 				  ret));
@@ -345,7 +359,7 @@ static void ctdb_attach_dbid_done(struct tevent_req *subreq)
 		return;
 	}
 
-	if (state->db->persistent) {
+	if (ctdb_db_persistent(state->db)) {
 		ret = ctdb_reply_control_db_attach_persistent(
 				reply, &state->db->db_id);
 	} else {
@@ -1173,7 +1187,7 @@ struct tevent_req *ctdb_fetch_lock_send(TALLOC_CTX *mem_ctx,
 	state->pnn = ctdb_client_pnn(client);
 
 	/* Check that database is not persistent */
-	if (db->persistent) {
+	if (! ctdb_db_volatile(db)) {
 		DEBUG(DEBUG_ERR, ("fetch_lock: %s database not volatile\n",
 				  db->db_name));
 		tevent_req_error(req, EINVAL);
@@ -2082,7 +2096,7 @@ struct tevent_req *ctdb_transaction_start_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	if (! db->persistent) {
+	if (ctdb_db_volatile(db)) {
 		tevent_req_error(req, EINVAL);
 		return tevent_req_post(req, ev);
 	}
