@@ -26,9 +26,7 @@ loadconfig nfs
 [ -n "$NFS_HOSTNAME" ] || \
     die "NFS_HOSTNAME is not configured. statd-callout failed"
 
-# A handy newline
-nl="
-"
+############################################################
 
 service_state_dir=$(ctdb_setup_service_state_dir "statd-callout") || exit $?
 
@@ -36,6 +34,56 @@ cd "$service_state_dir" || \
     die "Failed to change directory to \"${service_state_dir}\""
 
 pnn=$(ctdb_get_pnn)
+
+############################################################
+
+send_notifies ()
+{
+	_smnotify="${CTDB_HELPER_BINDIR}/smnotify"
+
+	# State must monotonically increase, across the entire
+	# cluster.  Use seconds since epoch and hope the time is in
+	# sync across nodes.  Even numbers mean service is shut down,
+	# odd numbers mean service is started.
+
+	# Intentionally round to an even number
+	# shellcheck disable=SC2017
+	_state_even=$(( $(date '+%s') / 2 * 2))
+
+	_prev=""
+	while read _sip _cip ; do
+		# NOTE: Consider optimising smnotify to read all the
+		# data from stdin and then run it in the background.
+
+		# Reset stateval for each serverip
+		if [ "$_sip" != "$_prev" ] ; then
+			_stateval="$_state_even"
+		fi
+
+		# Send notifies for server shutdown
+		"$_smnotify" --client="$_cip" --ip="$_sip" \
+			     --server="$_sip" --stateval="$_stateval"
+		"$_smnotify" --client="$_cip" --ip="$_sip" \
+			     --server="$NFS_HOSTNAME" --stateval="$_stateval"
+
+		# Send notifies for server startup
+		_stateval=$((_stateval + 1))
+		"$_smnotify" --client="$_cip" --ip="$_sip" \
+			     --server="$_sip" --stateval="$_stateval"
+		"$_smnotify" --client="$_cip" --ip="$_sip" \
+			     --server="$NFS_HOSTNAME" --stateval="$_stateval"
+	done
+}
+
+delete_records ()
+{
+	while read _sip _cip ; do
+		_key="statd-state@${_sip}@${_cip}"
+		echo "\"${_key}\" \"\""
+	done | $CTDB ptrans "ctdb.tdb"
+}
+
+############################################################
 
 case "$1" in
     # Keep a single file to keep track of the last "add-client" or
@@ -117,16 +165,6 @@ case "$1" in
 	rm -f /var/lib/nfs/statd/sm/*
 	rm -f /var/lib/nfs/statd/sm.bak/*
 
-	# we must keep a monotonically increasing state variable for the entire
-	# cluster  so state always increases when ip addresses fail from one
-	# node to another
-	# We use epoch and hope the nodes are close enough in clock.
-	# Even numbers mean service is shut down, odd numbers mean
-	# service is started.
-	# Intentionally round to an even number
-	# shellcheck disable=SC2017
-	state_even=$(( $(date '+%s') / 2 * 2))
-
 	# We must also let some time pass between stopping and
 	# restarting the lock manager.  Otherwise there is a window
 	# where the lock manager will respond "strangely" immediately
@@ -179,39 +217,8 @@ case "$1" in
 	statd_state=$($CTDB catdb ctdb.tdb | sed -n "$sed_expr" | sort)
 	[ -n "$statd_state" ] || exit 0
 
-	smnotify="${CTDB_HELPER_BINDIR}/smnotify"
-	prev=""
-	echo "$statd_state" | {
-	    # This all needs to be in the same command group at the
-	    # end of the pipe so it doesn't get lost when the loop
-	    # completes.
-	    items=""
-	    while read sip cip ; do
-		# Collect item to delete from the DB
-		key="statd-state@${sip}@${cip}"
-		item="\"${key}\" \"\""
-		items="${items}${items:+${nl}}${item}"
-
-		# NOTE: Consider optimising smnotify to read all the
-		# data from stdin and then run it in the background.
-
-		# Reset stateval for each serverip
-		[ "$sip" = "$prev" ] || stateval="$state_even"
-		# Send notifies for server shutdown
-		"$smnotify" --client="$cip" --ip="$sip" \
-			    --server="$sip" --stateval="$stateval"
-		"$smnotify" --client="$cip" --ip="$sip" \
-			    --server="$NFS_HOSTNAME" --stateval="$stateval"
-		# Send notifies for server startup
-		stateval=$((stateval + 1))
-		"$smnotify" --client="$cip" --ip="$sip" \
-			    --server="$sip" --stateval="$stateval"
-		"$smnotify" --client="$cip" --ip="$sip" \
-			    --server="$NFS_HOSTNAME" --stateval="$stateval"
-	    done
-
-	    echo "$items" | $CTDB ptrans "ctdb.tdb"
-	}
+	echo "$statd_state" | send_notifies
+	echo "$statd_state" | delete_records
 
 	# Remove any stale touch files (i.e. for IPs not currently
 	# hosted on this node and created since the last "update").
