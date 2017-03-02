@@ -1902,7 +1902,7 @@ static int control_getdbmap(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	}
 
 	if (options.machinereadable == 1) {
-		printf("%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s\n",
+		printf("%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s\n",
 		       options.sep,
 		       "ID", options.sep,
 		       "Name", options.sep,
@@ -1910,7 +1910,8 @@ static int control_getdbmap(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		       "Persistent", options.sep,
 		       "Sticky", options.sep,
 		       "Unhealthy", options.sep,
-		       "Readonly", options.sep);
+		       "Readonly", options.sep,
+		       "Replicated", options.sep);
 	} else {
 		printf("Number of databases:%d\n", dbmap->num);
 	}
@@ -1922,6 +1923,7 @@ static int control_getdbmap(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		bool persistent;
 		bool readonly;
 		bool sticky;
+		bool replicated;
 		uint32_t db_id;
 
 		db_id = dbmap->dbs[i].db_id;
@@ -1950,9 +1952,10 @@ static int control_getdbmap(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		persistent = dbmap->dbs[i].flags & CTDB_DB_FLAGS_PERSISTENT;
 		readonly = dbmap->dbs[i].flags & CTDB_DB_FLAGS_READONLY;
 		sticky = dbmap->dbs[i].flags & CTDB_DB_FLAGS_STICKY;
+		replicated = dbmap->dbs[i].flags & CTDB_DB_FLAGS_REPLICATED;
 
 		if (options.machinereadable == 1) {
-			printf("%s0x%08X%s%s%s%s%s%d%s%d%s%d%s%d%s\n",
+			printf("%s0x%08X%s%s%s%s%s%d%s%d%s%d%s%d%s%d%s\n",
 			       options.sep,
 			       db_id, options.sep,
 			       name, options.sep,
@@ -1960,13 +1963,15 @@ static int control_getdbmap(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 			       !! (persistent), options.sep,
 			       !! (sticky), options.sep,
 			       !! (health), options.sep,
-			       !! (readonly), options.sep);
+			       !! (readonly), options.sep,
+			       !! (replicated), options.sep);
 		} else {
-			printf("dbid:0x%08x name:%s path:%s%s%s%s%s\n",
+			printf("dbid:0x%08x name:%s path:%s%s%s%s%s%s\n",
 			       db_id, name, path,
 			       persistent ? " PERSISTENT" : "",
 			       sticky ? " STICKY" : "",
 			       readonly ? " READONLY" : "",
+			       replicated ? " REPLICATED" : "",
 			       health ? " UNHEALTHY" : "");
 		}
 
@@ -2009,11 +2014,12 @@ static int control_getdbstatus(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	}
 
 	printf("dbid: 0x%08x\nname: %s\npath: %s\n", db_id, db_name, db_path);
-	printf("PERSISTENT: %s\nSTICKY: %s\nREADONLY: %s\nHEALTH: %s\n",
+	printf("PERSISTENT: %s\nREPLICATED: %s\nSTICKY: %s\nREADONLY: %s\n",
 	       (db_flags & CTDB_DB_FLAGS_PERSISTENT ? "yes" : "no"),
+	       (db_flags & CTDB_DB_FLAGS_REPLICATED ? "yes" : "no"),
 	       (db_flags & CTDB_DB_FLAGS_STICKY ? "yes" : "no"),
-	       (db_flags & CTDB_DB_FLAGS_READONLY ? "yes" : "no"),
-	       (db_health ? db_health : "OK"));
+	       (db_flags & CTDB_DB_FLAGS_READONLY ? "yes" : "no"));
+	printf("HEALTH: %s\n", (db_health ? db_health : "OK"));
 	return 0;
 }
 
@@ -2349,6 +2355,8 @@ static int control_attach(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 			db_flags = CTDB_DB_FLAGS_READONLY;
 		} else if (strcmp(argv[1], "sticky") == 0) {
 			db_flags = CTDB_DB_FLAGS_STICKY;
+		} else if (strcmp(argv[1], "replicated") == 0) {
+			db_flags = CTDB_DB_FLAGS_REPLICATED;
 		} else {
 			usage("attach");
 		}
@@ -2436,10 +2444,10 @@ static int control_detach(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 			continue;
 		}
 
-		if (db_flags & CTDB_DB_FLAGS_PERSISTENT) {
+		if (db_flags &
+		    (CTDB_DB_FLAGS_PERSISTENT | CTDB_DB_FLAGS_REPLICATED)) {
 			fprintf(stderr,
-			        "Persistent database %s cannot be detached\n",
-				argv[0]);
+			        "Only volatile databases can be detached\n");
 			return 1;
 		}
 
@@ -4843,8 +4851,8 @@ static int control_setdbreadonly(TALLOC_CTX *mem_ctx,
 		return 1;
 	}
 
-	if (db_flags & CTDB_DB_FLAGS_PERSISTENT) {
-		fprintf(stderr, "Cannot set READONLY on persistent DB\n");
+	if (db_flags & (CTDB_DB_FLAGS_PERSISTENT | CTDB_DB_FLAGS_REPLICATED)) {
+		fprintf(stderr, "READONLY can be set only on volatile DB\n");
 		return 1;
 	}
 
@@ -4872,8 +4880,8 @@ static int control_setdbsticky(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return 1;
 	}
 
-	if (db_flags & CTDB_DB_FLAGS_PERSISTENT) {
-		fprintf(stderr, "Cannot set STICKY on persistent DB\n");
+	if (db_flags & (CTDB_DB_FLAGS_PERSISTENT | CTDB_DB_FLAGS_REPLICATED)) {
+		fprintf(stderr, "STICKY can be set only on volatile DB\n");
 		return 1;
 	}
 
@@ -4904,8 +4912,9 @@ static int control_pfetch(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return 1;
 	}
 
-	if (! (db_flags & CTDB_DB_FLAGS_PERSISTENT)) {
-		fprintf(stderr, "DB %s is not a persistent database\n",
+	if (! (db_flags &
+	       (CTDB_DB_FLAGS_PERSISTENT | CTDB_DB_FLAGS_REPLICATED))) {
+		fprintf(stderr, "Transactions not supported on DB %s\n",
 			db_name);
 		return 1;
 	}
@@ -4963,8 +4972,9 @@ static int control_pstore(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return 1;
 	}
 
-	if (! (db_flags & CTDB_DB_FLAGS_PERSISTENT)) {
-		fprintf(stderr, "DB %s is not a persistent database\n",
+	if (! (db_flags &
+	       (CTDB_DB_FLAGS_PERSISTENT | CTDB_DB_FLAGS_REPLICATED))) {
+		fprintf(stderr, "Transactions not supported on DB %s\n",
 			db_name);
 		return 1;
 	}
@@ -5033,8 +5043,9 @@ static int control_pdelete(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return 1;
 	}
 
-	if (! (db_flags & CTDB_DB_FLAGS_PERSISTENT)) {
-		fprintf(stderr, "DB %s is not a persistent database\n",
+	if (! (db_flags &
+	       (CTDB_DB_FLAGS_PERSISTENT | CTDB_DB_FLAGS_REPLICATED))) {
+		fprintf(stderr, "Transactions not supported on DB %s\n",
 			db_name);
 		return 1;
 	}
@@ -5168,8 +5179,9 @@ static int control_ptrans(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return 1;
 	}
 
-	if (! (db_flags & CTDB_DB_FLAGS_PERSISTENT)) {
-		fprintf(stderr, "DB %s is not a persistent database\n",
+	if (! (db_flags &
+	       (CTDB_DB_FLAGS_PERSISTENT | CTDB_DB_FLAGS_REPLICATED))) {
+		fprintf(stderr, "Transactions not supported on DB %s\n",
 			db_name);
 		return 1;
 	}
@@ -5391,7 +5403,7 @@ static int control_readkey(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return 1;
 	}
 
-	if (db_flags & CTDB_DB_FLAGS_PERSISTENT) {
+	if (db_flags & (CTDB_DB_FLAGS_PERSISTENT | CTDB_DB_FLAGS_REPLICATED)) {
 		fprintf(stderr, "DB %s is not a volatile database\n",
 			db_name);
 		return 1;
@@ -5442,7 +5454,7 @@ static int control_writekey(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return 1;
 	}
 
-	if (db_flags & CTDB_DB_FLAGS_PERSISTENT) {
+	if (db_flags & (CTDB_DB_FLAGS_PERSISTENT | CTDB_DB_FLAGS_REPLICATED)) {
 		fprintf(stderr, "DB %s is not a volatile database\n",
 			db_name);
 		return 1;
@@ -5502,7 +5514,7 @@ static int control_deletekey(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return 1;
 	}
 
-	if (db_flags & CTDB_DB_FLAGS_PERSISTENT) {
+	if (db_flags & (CTDB_DB_FLAGS_PERSISTENT | CTDB_DB_FLAGS_REPLICATED)) {
 		fprintf(stderr, "DB %s is not a volatile database\n",
 			db_name);
 		return 1;
@@ -6014,7 +6026,7 @@ static const struct ctdb_cmd {
 	{ "getdebug", control_getdebug, false, true,
 		"get debug level", NULL },
 	{ "attach", control_attach, false, false,
-		"attach a database", "<dbname> [persistent]" },
+		"attach a database", "<dbname> [persistent|replicated]" },
 	{ "detach", control_detach, false, false,
 		"detach database(s)", "<dbname|dbid> ..." },
 	{ "dumpmemory", control_dumpmemory, false, true,

@@ -19,7 +19,7 @@ DBMAP
 EOF
 
 required_result 1 <<EOF
-Cannot set STICKY on persistent DB
+STICKY can be set only on volatile DB
 EOF
 simple_test secrets.tdb
 

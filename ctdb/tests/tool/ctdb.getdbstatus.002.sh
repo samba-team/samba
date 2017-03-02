@@ -23,6 +23,7 @@ dbid: 0x7a19d84d
 name: locking.tdb
 path: /var/run/ctdb/DB_DIR/locking.tdb.1
 PERSISTENT: no
+REPLICATED: no
 STICKY: no
 READONLY: yes
 HEALTH: OK
@@ -34,6 +35,7 @@ dbid: 0x4e66c2b2
 name: brlock.tdb
 path: /var/run/ctdb/DB_DIR/brlock.tdb.1
 PERSISTENT: no
+REPLICATED: no
 STICKY: yes
 READONLY: no
 HEALTH: OK
@@ -45,6 +47,7 @@ dbid: 0x4d2a432b
 name: g_lock.tdb
 path: /var/run/ctdb/DB_DIR/g_lock.tdb.1
 PERSISTENT: no
+REPLICATED: no
 STICKY: no
 READONLY: no
 HEALTH: OK
@@ -56,6 +59,7 @@ dbid: 0x7132c184
 name: secrets.tdb
 path: /var/lib/ctdb/persistent/secrets.tdb.1
 PERSISTENT: yes
+REPLICATED: no
 STICKY: no
 READONLY: no
 HEALTH: OK
@@ -67,6 +71,7 @@ dbid: 0x6cf2837d
 name: registry.tdb
 path: /var/lib/ctdb/persistent/registry.tdb.1
 PERSISTENT: yes
+REPLICATED: no
 STICKY: no
 READONLY: no
 HEALTH: OK

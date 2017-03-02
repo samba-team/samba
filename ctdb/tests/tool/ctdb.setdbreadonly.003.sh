@@ -19,7 +19,7 @@ DBMAP
 EOF
 
 required_result 1 <<EOF
-Cannot set READONLY on persistent DB
+READONLY can be set only on volatile DB
 EOF
 simple_test secrets.tdb
 

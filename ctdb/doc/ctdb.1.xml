@@ -1363,14 +1363,22 @@ DB Statistics: locking.tdb
     <refsect2>
       <title>getdbmap</title>
       <para>
-	This command lists all clustered TDB databases that the CTDB daemon has attached to. Some databases are flagged as PERSISTENT, this means that the database stores data persistently and the data will remain across reboots. One example of such a database is secrets.tdb where information about how the cluster was joined to the domain is stored.
+	This command lists all clustered TDB databases that the CTDB
+	daemon has attached to. Some databases are flagged as PERSISTENT,
+	this means that the database stores data persistently and the
+	data will remain across reboots. One example of such a database
+	is secrets.tdb where information about how the cluster was joined
+	to the domain is stored.  Some database are flagged as REPLICATED,
+	this means that the data in that database is replicated across all
+	the nodes.  But the data will not remain across reboots.  This
+	type of database is used by CTDB to store it's internal state.
       </para>
       <para>
-	If a PERSISTENT database is not in a healthy state the database is
-	flagged as UNHEALTHY. If there's at least one completely healthy node running in
-	the cluster, it's possible that the content is restored by a recovery
-	run automaticly. Otherwise an administrator needs to analyze the
-	problem.
+	If a PERSISTENT database is not in a healthy state the database
+	is flagged as UNHEALTHY. If there's at least one completely
+	healthy node running in the cluster, it's possible that the
+	content is restored by a recovery run automaticly. Otherwise an
+	administrator needs to analyze the problem.
       </para>
       <para>
 	See also "ctdb getdbstatus", "ctdb backupdb", "ctdb restoredb",
@@ -1378,7 +1386,10 @@ DB Statistics: locking.tdb
 	and (if samba or tdb-utils are installed) "tdbtool check".
       </para>
       <para>
-	Most databases are not persistent and only store the state information that the currently running samba daemons need. These databases are always wiped when ctdb/samba starts and when a node is rebooted.
+	Most databases are not persistent and only store the state
+	information that the currently running samba daemons need. These
+	databases are always wiped when ctdb/samba starts and when a
+	node is rebooted.
       </para>
 
       <refsect3>
@@ -1755,7 +1766,7 @@ HEALTH: NO-HEALTHY-NODES - ERROR - Backup of corrupted TDB in '/usr/local/var/li
     </refsect2>
 
     <refsect2>
-      <title>attach <parameter>DBNAME</parameter> [persistent]</title>
+      <title>attach <parameter>DBNAME</parameter> [persistent|replicated]</title>
       <para>
 	Create a new CTDB database called DBNAME and attach to it on
 	all nodes.
