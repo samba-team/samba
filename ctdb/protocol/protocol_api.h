@@ -601,6 +601,11 @@ void ctdb_req_control_db_open_flags(struct ctdb_req_control *request,
 int ctdb_reply_control_db_open_flags(struct ctdb_reply_control *reply,
 				     int *tdb_flags);
 
+void ctdb_req_control_db_attach_replicated(struct ctdb_req_control *request,
+					   const char *db_name);
+int ctdb_reply_control_db_attach_replicated(struct ctdb_reply_control *reply,
+					    uint32_t *db_id);
+
 /* From protocol/protocol_debug.c */
 
 void ctdb_packet_print(uint8_t *buf, size_t buflen, FILE *fp);

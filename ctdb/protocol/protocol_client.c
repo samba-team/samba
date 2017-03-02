@@ -2359,3 +2359,30 @@ int ctdb_reply_control_db_open_flags(struct ctdb_reply_control *reply,
 	}
 	return reply->status;
 }
+
+/* CTDB_CONTROL_DB_ATTACH_REPLICATED */
+
+void ctdb_req_control_db_attach_replicated(struct ctdb_req_control *request,
+					   const char *db_name)
+{
+	request->opcode = CTDB_CONTROL_DB_ATTACH_REPLICATED;
+	request->pad = 0;
+	request->srvid = 0;
+	request->client_id = 0;
+	request->flags = 0;
+
+	request->rdata.opcode = CTDB_CONTROL_DB_ATTACH_REPLICATED;
+	request->rdata.data.db_name = db_name;
+}
+
+int ctdb_reply_control_db_attach_replicated(struct ctdb_reply_control *reply,
+					    uint32_t *db_id)
+{
+	if (reply->rdata.opcode != CTDB_CONTROL_DB_ATTACH_REPLICATED) {
+		return EPROTO;
+	}
+	if (reply->status == 0) {
+		*db_id = reply->rdata.data.db_id;
+	}
+	return reply->status;
+}
