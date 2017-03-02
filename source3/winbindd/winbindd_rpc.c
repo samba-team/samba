@@ -424,6 +424,80 @@ NTSTATUS rpc_rids_to_names(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+/* Lookup groups a user is a member of. */
+NTSTATUS rpc_lookup_usergroups(TALLOC_CTX *mem_ctx,
+			       struct rpc_pipe_client *samr_pipe,
+			       struct policy_handle *samr_policy,
+			       const struct dom_sid *domain_sid,
+			       const struct dom_sid *user_sid,
+			       uint32_t *pnum_groups,
+			       struct dom_sid **puser_grpsids)
+{
+	struct policy_handle user_policy;
+	struct samr_RidWithAttributeArray *rid_array = NULL;
+	struct dom_sid *user_grpsids = NULL;
+	uint32_t num_groups = 0, i;
+	uint32_t user_rid;
+	NTSTATUS status, result;
+	struct dcerpc_binding_handle *b = samr_pipe->binding_handle;
+
+	if (!sid_peek_check_rid(domain_sid, user_sid, &user_rid)) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	/* Get user handle */
+	status = dcerpc_samr_OpenUser(b,
+				      mem_ctx,
+				      samr_policy,
+				      SEC_FLAG_MAXIMUM_ALLOWED,
+				      user_rid,
+				      &user_policy,
+				      &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		return result;
+	}
+
+	/* Query user rids */
+	status = dcerpc_samr_GetGroupsForUser(b,
+					      mem_ctx,
+					      &user_policy,
+					      &rid_array,
+					      &result);
+	{
+		NTSTATUS _result;
+		dcerpc_samr_Close(b, mem_ctx, &user_policy, &_result);
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		return result;
+	}
+
+	num_groups = rid_array->count;
+
+	user_grpsids = talloc_array(mem_ctx, struct dom_sid, num_groups);
+	if (user_grpsids == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		return status;
+	}
+
+	for (i = 0; i < num_groups; i++) {
+		sid_compose(&(user_grpsids[i]), domain_sid,
+			    rid_array->rids[i].rid);
+	}
+
+	*pnum_groups = num_groups;
+
+	*puser_grpsids = user_grpsids;
+
+	return NT_STATUS_OK;
+}
+
 NTSTATUS rpc_lookup_useraliases(TALLOC_CTX *mem_ctx,
 				struct rpc_pipe_client *samr_pipe,
 				struct policy_handle *samr_policy,
