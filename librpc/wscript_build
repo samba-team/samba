@@ -399,6 +399,11 @@ bld.SAMBA_SUBSYSTEM('NDR_SMB2_LEASE_STRUCT',
     public_headers='gen_ndr/smb2_lease_struct.h'
     )
 
+bld.SAMBA_SUBSYSTEM('NDR_QUOTA',
+    source='gen_ndr/ndr_quota.c',
+    public_deps='ndr',
+    )
+
 bld.SAMBA_SUBSYSTEM('NDR_SCHANNEL',
     source='ndr/ndr_schannel.c gen_ndr/ndr_schannel.c',
     public_deps='ndr ndr_nbt'
