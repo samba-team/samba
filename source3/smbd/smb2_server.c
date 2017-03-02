@@ -3566,6 +3566,7 @@ static NTSTATUS smbd_smb2_flush_send_queue(struct smbXsrv_connection *xconn)
 	int ret;
 	int err;
 	bool retry;
+	NTSTATUS status;
 
 	if (xconn->smb2.send_queue == NULL) {
 		TEVENT_FD_NOT_WRITEABLE(xconn->transport.fde);
@@ -3577,10 +3578,11 @@ static NTSTATUS smbd_smb2_flush_send_queue(struct smbXsrv_connection *xconn)
 		bool ok;
 
 		if (e->sendfile_header != NULL) {
-			NTSTATUS status = NT_STATUS_INTERNAL_ERROR;
 			size_t size = 0;
 			size_t i = 0;
 			uint8_t *buf;
+
+			status = NT_STATUS_INTERNAL_ERROR;
 
 			for (i=0; i < e->count; i++) {
 				size += e->vector[i].iov_len;
@@ -3651,6 +3653,16 @@ static NTSTATUS smbd_smb2_flush_send_queue(struct smbXsrv_connection *xconn)
 		xconn->smb2.send_queue_len--;
 		DLIST_REMOVE(xconn->smb2.send_queue, e);
 		talloc_free(e->mem_ctx);
+	}
+
+	/*
+	 * Restart reads if we were blocked on
+	 * draining the send queue.
+	 */
+
+	status = smbd_smb2_request_next_incoming(xconn);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	return NT_STATUS_OK;
