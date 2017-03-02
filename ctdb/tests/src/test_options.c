@@ -55,6 +55,8 @@ static struct poptOption options_database[] = {
 		"Name of database key" },
 	{ "value", 'v', POPT_ARG_STRING, &_values.valuestr, 0,
 		"Value of database key" },
+	{ "dbtype", 'T', POPT_ARG_STRING, &_values.dbtype, 0,
+		"CTDB database type" },
 	{ NULL }
 };
 
@@ -84,6 +86,7 @@ static void set_defaults_database(struct test_options *opts)
 	opts->dbname = NULL;
 	opts->keystr = NULL;
 	opts->valuestr = NULL;
+	opts->dbtype = "volatile";
 }
 
 static bool verify_options_basic(struct test_options *opts)
@@ -111,6 +114,12 @@ static bool verify_options_database(struct test_options *opts)
 	}
 	if (opts->keystr == NULL) {
 		fprintf(stderr, "Error: Please specify key name\n");
+		return false;
+	}
+
+	if ((strcmp(opts->dbtype, "volatile") != 0) &&
+	    (strcmp(opts->dbtype, "persistent") != 0) &&
+	    (strcmp(opts->dbtype, "replicated") != 0)) {
 		return false;
 	}
 

@@ -32,6 +32,7 @@ struct test_options {
 	const char *dbname;
 	const char *keystr;
 	const char *valuestr;
+	const char *dbtype;
 };
 
 bool process_options_basic(int argc, const char **argv,
