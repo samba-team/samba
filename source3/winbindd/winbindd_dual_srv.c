@@ -301,6 +301,23 @@ NTSTATUS _wbint_LookupUserAliases(struct pipes_struct *p,
 	return status;
 }
 
+NTSTATUS _wbint_LookupUserGroups(struct pipes_struct *p,
+				 struct wbint_LookupUserGroups *r)
+{
+	struct winbindd_domain *domain = wb_child_domain();
+	NTSTATUS status;
+
+	if (domain == NULL) {
+		return NT_STATUS_REQUEST_NOT_ACCEPTED;
+	}
+
+	status = wb_cache_lookup_usergroups(domain, p->mem_ctx, r->in.sid,
+					    &r->out.sids->num_sids,
+					    &r->out.sids->sids);
+	reset_cm_connection_on_error(domain, status);
+	return status;
+}
+
 NTSTATUS _wbint_QuerySequenceNumber(struct pipes_struct *p,
 				    struct wbint_QuerySequenceNumber *r)
 {
