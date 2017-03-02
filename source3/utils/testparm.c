@@ -606,12 +606,6 @@ static void do_per_share_checks(int s)
 	vfs_objects = lp_vfs_objects(s);
 	if (vfs_objects && str_list_check(vfs_objects, "fruit")) {
 		uses_fruit = true;
-		if (!lp_ea_support(s) && !lp_ea_support(-1)) {
-			fprintf(stderr,
-				"ERROR: Service \"%s\" uses vfs_fruit, but "
-				"that requires \"ea support = yes\".\n\n",
-				lp_servicename(talloc_tos(), s));
-		}
 	} else {
 		doesnt_use_fruit = true;
 	}
