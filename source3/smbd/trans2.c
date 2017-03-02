@@ -416,7 +416,6 @@ static NTSTATUS get_ea_list_from_file_path(TALLOC_CTX *mem_ctx,
 	}
 
 	if (num_names == 0) {
-		*ea_list = NULL;
 		return NT_STATUS_OK;
 	}
 
