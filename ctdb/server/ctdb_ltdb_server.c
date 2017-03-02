@@ -758,7 +758,7 @@ int ctdb_set_db_readonly(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb
   return 0 on success, -1 on failure
  */
 static int ctdb_local_attach(struct ctdb_context *ctdb, const char *db_name,
-			     bool persistent, const char *unhealthy_reason)
+			     uint8_t db_flags, const char *unhealthy_reason)
 {
 	struct ctdb_db_context *ctdb_db, *tmp_db;
 	int ret;
@@ -766,7 +766,6 @@ static int ctdb_local_attach(struct ctdb_context *ctdb, const char *db_name,
 	int tdb_flags;
 	int mode = 0600;
 	int remaining_tries = 0;
-	uint8_t db_flags = 0;
 
 	ctdb_db = talloc_zero(ctdb, struct ctdb_db_context);
 	CTDB_NO_MEMORY(ctdb, ctdb_db);
@@ -778,9 +777,7 @@ static int ctdb_local_attach(struct ctdb_context *ctdb, const char *db_name,
 	key.dsize = strlen(db_name)+1;
 	key.dptr  = discard_const(db_name);
 	ctdb_db->db_id = ctdb_hash(&key);
-	if (persistent) {
-		ctdb_db->db_flags = CTDB_DB_FLAGS_PERSISTENT;
-	}
+	ctdb_db->db_flags = db_flags;
 
 	if (ctdb_db_volatile(ctdb_db)) {
 		ctdb_db->delete_queue = trbt_create(ctdb_db, 0);
@@ -801,7 +798,7 @@ static int ctdb_local_attach(struct ctdb_context *ctdb, const char *db_name,
 		}
 	}
 
-	if (persistent) {
+	if (ctdb_db_persistent(ctdb_db)) {
 		if (unhealthy_reason) {
 			ret = ctdb_update_persistent_health(ctdb, ctdb_db,
 							    unhealthy_reason, 0);
@@ -843,13 +840,11 @@ static int ctdb_local_attach(struct ctdb_context *ctdb, const char *db_name,
 	}
 
 	/* open the database */
-	ctdb_db->db_path = talloc_asprintf(ctdb_db, "%s/%s.%u", 
-					   persistent?ctdb->db_directory_persistent:ctdb->db_directory, 
+	ctdb_db->db_path = talloc_asprintf(ctdb_db, "%s/%s.%u",
+					   ctdb_db_persistent(ctdb_db) ?
+						ctdb->db_directory_persistent :
+						ctdb->db_directory,
 					   db_name, ctdb->pnn);
-
-	if (persistent) {
-		db_flags = CTDB_DB_FLAGS_PERSISTENT;
-	}
 
 	tdb_flags = ctdb_db_tdb_flags(db_flags, ctdb->valgrinding,
 				      ctdb->tunable.mutex_enabled);
@@ -863,7 +858,7 @@ again:
 		struct stat st;
 		int saved_errno = errno;
 
-		if (!persistent) {
+		if (! ctdb_db_persistent(ctdb_db)) {
 			DEBUG(DEBUG_CRIT,("Failed to open tdb '%s': %d - %s\n",
 					  ctdb_db->db_path,
 					  saved_errno,
@@ -909,7 +904,7 @@ again:
 		goto again;
 	}
 
-	if (!persistent) {
+	if (!ctdb_db_persistent(ctdb_db)) {
 		ctdb_check_db_empty(ctdb_db);
 	} else {
 		ret = tdb_check(ctdb_db->ltdb->tdb, NULL, NULL);
@@ -1112,7 +1107,7 @@ int ctdb_process_deferred_attach(struct ctdb_context *ctdb)
  */
 int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 			       TDB_DATA *outdata,
-			       bool persistent, uint32_t client_id,
+			       uint8_t db_flags, uint32_t client_id,
 			       struct ctdb_req_control_old *c,
 			       bool *async_reply)
 {
@@ -1173,10 +1168,11 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 	/* see if we already have this name */
 	db = ctdb_db_handle(ctdb, db_name);
 	if (db) {
-		if (ctdb_db_persistent(db) != persistent) {
-			DEBUG(DEBUG_ERR, ("ERROR: DB Attach %spersistent to %spersistent "
-					  "database %s\n", persistent ? "" : "non-",
-					  ctdb_db_persistent(db) ? "" : "non-", db_name));
+		if ((db->db_flags & db_flags) != db_flags) {
+			DEBUG(DEBUG_ERR,
+			      ("Error: Failed to re-attach with 0x%x flags,"
+			       " database has 0x%x flags\n", db_flags,
+			       db->db_flags));
 			return -1;
 		}
 		outdata->dptr  = (uint8_t *)&db->db_id;
@@ -1184,7 +1180,7 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 		return 0;
 	}
 
-	if (ctdb_local_attach(ctdb, db_name, persistent, NULL) != 0) {
+	if (ctdb_local_attach(ctdb, db_name, db_flags, NULL) != 0) {
 		return -1;
 	}
 
@@ -1202,8 +1198,9 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 
 	/* tell all the other nodes about this database */
 	ctdb_daemon_send_control(ctdb, CTDB_BROADCAST_ALL, 0,
-				 persistent?CTDB_CONTROL_DB_ATTACH_PERSISTENT:
-						CTDB_CONTROL_DB_ATTACH,
+				 ctdb_db_persistent(db) ?
+					CTDB_CONTROL_DB_ATTACH_PERSISTENT :
+					CTDB_CONTROL_DB_ATTACH,
 				 0, CTDB_CTRL_FLAG_NOREPLY,
 				 indata, NULL, NULL);
 
@@ -1355,7 +1352,7 @@ static int ctdb_attach_persistent(struct ctdb_context *ctdb,
 		}
 		p[4] = 0;
 
-		if (ctdb_local_attach(ctdb, s, true, unhealthy_reason) != 0) {
+		if (ctdb_local_attach(ctdb, s, CTDB_DB_FLAGS_PERSISTENT, unhealthy_reason) != 0) {
 			DEBUG(DEBUG_ERR,("Failed to attach to persistent database '%s'\n", de->d_name));
 			closedir(d);
 			talloc_free(s);

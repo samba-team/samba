@@ -723,7 +723,7 @@ int ctdb_process_deferred_attach(struct ctdb_context *ctdb);
 
 int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 			       TDB_DATA *outdata,
-			       bool persistent, uint32_t client_id,
+			       uint8_t db_flags, uint32_t client_id,
 			       struct ctdb_req_control_old *c,
 			       bool *async_reply);
 int32_t ctdb_control_db_detach(struct ctdb_context *ctdb, TDB_DATA indata,
