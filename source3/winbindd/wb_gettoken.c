@@ -38,6 +38,7 @@ static NTSTATUS wb_add_rids_to_sids(TALLOC_CTX *mem_ctx,
 				    int num_rids, uint32_t *rids);
 
 static void wb_gettoken_gotuser(struct tevent_req *subreq);
+static void wb_gettoken_gotgroups(struct tevent_req *subreq);
 static void wb_gettoken_gotlocalgroups(struct tevent_req *subreq);
 static void wb_gettoken_gotbuiltins(struct tevent_req *subreq);
 
@@ -71,10 +72,7 @@ static void wb_gettoken_gotuser(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct wb_gettoken_state *state = tevent_req_data(
 		req, struct wb_gettoken_state);
-	struct winbindd_domain *domain;
 	struct wbint_userinfo *info;
-	uint32_t i, num_groups;
-	struct dom_sid *groups;
 	NTSTATUS status;
 
 	status = wb_queryuser_recv(subreq, state, &info);
@@ -92,11 +90,27 @@ static void wb_gettoken_gotuser(struct tevent_req *subreq)
 	sid_copy(&state->sids[0], &info->user_sid);
 	sid_copy(&state->sids[1], &info->group_sid);
 
-	status = lookup_usergroups_cached(
-		state, &info->user_sid, &num_groups, &groups);
+	subreq = wb_lookupusergroups_send(state, state->ev, &info->user_sid);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, wb_gettoken_gotgroups, req);
+}
+
+static void wb_gettoken_gotgroups(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct wb_gettoken_state *state = tevent_req_data(
+		req, struct wb_gettoken_state);
+	int i, num_groups;
+	struct dom_sid *groups;
+	struct winbindd_domain *domain;
+	NTSTATUS status;
+
+	status = wb_lookupusergroups_recv(subreq, state, &num_groups, &groups);
+	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_DEBUG("lookup_usergroups_cached failed (%s), not doing "
-			  "supplementary group lookups\n", nt_errstr(status));
 		tevent_req_done(req);
 		return;
 	}
