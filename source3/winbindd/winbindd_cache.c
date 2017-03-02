@@ -2320,6 +2320,65 @@ NTSTATUS wcache_query_user_fullname(struct winbindd_domain *domain,
 	return NT_STATUS_OK;
 }
 
+NTSTATUS wcache_lookup_usergroups(struct winbindd_domain *domain,
+				  TALLOC_CTX *mem_ctx,
+				  const struct dom_sid *user_sid,
+				  uint32_t *pnum_sids,
+				  struct dom_sid **psids)
+{
+	struct winbind_cache *cache = get_cache(domain);
+	struct cache_entry *centry = NULL;
+	NTSTATUS status;
+	uint32_t i, num_sids;
+	struct dom_sid *sids;
+	fstring sid_string;
+
+	if (cache->tdb == NULL) {
+		return NT_STATUS_NOT_FOUND;
+	}
+
+	centry = wcache_fetch(cache, domain, "UG/%s",
+			      sid_to_fstring(sid_string, user_sid));
+	if (centry == NULL) {
+		return NT_STATUS_NOT_FOUND;
+	}
+
+	/* If we have an access denied cache entry and a cached info3 in the
+           samlogon cache then do a query.  This will force the rpc back end
+           to return the info3 data. */
+
+	if (NT_STATUS_EQUAL(domain->last_status, NT_STATUS_ACCESS_DENIED)
+	    && netsamlogon_cache_have(user_sid)) {
+		DEBUG(10, ("lookup_usergroups: cached access denied and have "
+			   "cached info3\n"));
+		domain->last_status = NT_STATUS_OK;
+		centry_free(centry);
+		return NT_STATUS_NOT_FOUND;
+	}
+
+	num_sids = centry_uint32(centry);
+	sids = talloc_array(mem_ctx, struct dom_sid, num_sids);
+	if (sids == NULL) {
+		centry_free(centry);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i=0; i<num_sids; i++) {
+		centry_sid(centry, &sids[i]);
+	}
+
+	status = centry->status;
+
+	DEBUG(10,("lookup_usergroups: [Cached] - cached info for domain %s "
+		  "status: %s\n", domain->name, nt_errstr(status)));
+
+	centry_free(centry);
+
+	*pnum_sids = num_sids;
+	*psids = sids;
+	return status;
+}
+
 static char *wcache_make_sidlist(TALLOC_CTX *mem_ctx, uint32_t num_sids,
 				 const struct dom_sid *sids)
 {
