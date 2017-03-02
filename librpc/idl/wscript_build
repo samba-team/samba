@@ -38,6 +38,7 @@ bld.SAMBA_PIDL_LIST('PIDL',
                     fsrvp_state.idl
                     cab.idl
                     nfs4acl.idl
+                    quota.idl
                     ''',
                     options='--header --ndr-parser',
                     output_dir='../gen_ndr')
