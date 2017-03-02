@@ -1697,6 +1697,14 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 			}
 			TALLOC_FREE(parent);
 
+			/*
+			 * We need to pass the modified properties
+			 * to the caller.
+			 */
+			trust->trust_flags = d.domain_flags;
+			trust->trust_type = d.domain_type;
+			trust->trust_attributes = d.domain_trust_attribs;
+
 			wcache_tdc_add_domain( &d );
 			ret_count++;
 		}
