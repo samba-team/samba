@@ -118,7 +118,7 @@ ctdb_control_getdbmap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indat
 		if (ctdb_db_persistent(ctdb_db)) {
 			dbid_map->dbs[i].flags |= CTDB_DB_FLAGS_PERSISTENT;
 		}
-		if (ctdb_db->readonly != 0) {
+		if (ctdb_db_readonly(ctdb_db)) {
 			dbid_map->dbs[i].flags |= CTDB_DB_FLAGS_READONLY;
 		}
 		if (ctdb_db->sticky != 0) {
@@ -513,15 +513,14 @@ int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata)
 	DEBUG(DEBUG_DEBUG,("finished push of %u records for dbid 0x%x\n",
 		 reply->count, reply->db_id));
 
-	if (ctdb_db->readonly) {
+	if (ctdb_db_readonly(ctdb_db)) {
 		DEBUG(DEBUG_CRIT,("Clearing the tracking database for dbid 0x%x\n",
 				  ctdb_db->db_id));
 		if (tdb_wipe_all(ctdb_db->rottdb) != 0) {
 			DEBUG(DEBUG_ERR,("Failed to wipe tracking database for 0x%x. Dropping read-only delegation support\n", ctdb_db->db_id));
-			ctdb_db->readonly = false;
 			tdb_close(ctdb_db->rottdb);
 			ctdb_db->rottdb = NULL;
-			ctdb_db->readonly = false;
+			ctdb_db_reset_readonly(ctdb_db);
 		}
 		while (ctdb_db->revokechild_active != NULL) {
 			talloc_free(ctdb_db->revokechild_active);
@@ -702,7 +701,7 @@ int32_t ctdb_control_db_push_confirm(struct ctdb_context *ctdb,
 		return -1;
 	}
 
-	if (ctdb_db->readonly) {
+	if (ctdb_db_readonly(ctdb_db)) {
 		DEBUG(DEBUG_ERR,
 		      ("Clearing the tracking database for dbid 0x%x\n",
 		       ctdb_db->db_id));
@@ -711,10 +710,9 @@ int32_t ctdb_control_db_push_confirm(struct ctdb_context *ctdb,
 			      ("Failed to wipe tracking database for 0x%x."
 			       " Dropping read-only delegation support\n",
 			       ctdb_db->db_id));
-			ctdb_db->readonly = false;
 			tdb_close(ctdb_db->rottdb);
 			ctdb_db->rottdb = NULL;
-			ctdb_db->readonly = false;
+			ctdb_db_reset_readonly(ctdb_db);
 		}
 
 		while (ctdb_db->revokechild_active != NULL) {

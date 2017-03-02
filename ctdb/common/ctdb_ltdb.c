@@ -88,6 +88,21 @@ bool ctdb_db_volatile(struct ctdb_db_context *ctdb_db)
 	return !ctdb_db->persistent;
 }
 
+bool ctdb_db_readonly(struct ctdb_db_context *ctdb_db)
+{
+	return ctdb_db->readonly;
+}
+
+void ctdb_db_set_readonly(struct ctdb_db_context *ctdb_db)
+{
+	ctdb_db->readonly = true;
+}
+
+void ctdb_db_reset_readonly(struct ctdb_db_context *ctdb_db)
+{
+	ctdb_db->readonly = false;
+}
+
 /*
   return the lmaster given a key
 */

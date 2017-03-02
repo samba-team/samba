@@ -718,7 +718,7 @@ int ctdb_set_db_readonly(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb
 {
 	char *ropath;
 
-	if (ctdb_db->readonly) {
+	if (ctdb_db_readonly(ctdb_db)) {
 		return 0;
 	}
 
@@ -745,7 +745,7 @@ int ctdb_set_db_readonly(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb
 
 	DEBUG(DEBUG_NOTICE,("OPENED tracking database : '%s'\n", ropath));
 
-	ctdb_db->readonly = true;
+	ctdb_db_set_readonly(ctdb_db);
 
 	DEBUG(DEBUG_NOTICE, ("Readonly property set on DB %s\n", ctdb_db->db_name));
 
@@ -1292,7 +1292,7 @@ int32_t ctdb_control_db_detach(struct ctdb_context *ctdb, TDB_DATA indata,
 	}
 
 	/* Free readonly tracking database */
-	if (ctdb_db->readonly) {
+	if (ctdb_db_readonly(ctdb_db)) {
 		talloc_free(ctdb_db->rottdb);
 	}
 
