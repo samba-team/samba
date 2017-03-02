@@ -60,9 +60,18 @@ static bool ctdb_db_persistent(struct ctdb_db_context *db)
 	return false;
 }
 
+static bool ctdb_db_replicated(struct ctdb_db_context *db)
+{
+	if (db->db_flags & CTDB_DB_FLAGS_REPLICATED) {
+		return true;
+	}
+	return false;
+}
+
 static bool ctdb_db_volatile(struct ctdb_db_context *db)
 {
-	if (db->db_flags & CTDB_DB_FLAGS_PERSISTENT) {
+	if (db->db_flags & CTDB_DB_FLAGS_PERSISTENT ||
+	    db->db_flags & CTDB_DB_FLAGS_REPLICATED) {
 		return false;
 	}
 	return true;
@@ -320,6 +329,9 @@ struct tevent_req *ctdb_attach_send(TALLOC_CTX *mem_ctx,
 	if (ctdb_db_persistent(state->db)) {
 		ctdb_req_control_db_attach_persistent(&request,
 						      state->db->db_name);
+	} else if (ctdb_db_replicated(state->db)) {
+		ctdb_req_control_db_attach_replicated(&request,
+						      state->db->db_name);
 	} else {
 		ctdb_req_control_db_attach(&request, state->db->db_name);
 	}
@@ -353,7 +365,9 @@ static void ctdb_attach_dbid_done(struct tevent_req *subreq)
 				  state->db->db_name,
 				  (ctdb_db_persistent(state->db)
 					? "DB_ATTACH_PERSISTENT"
-					: "DB_ATTACH"),
+					: (ctdb_db_replicated(state->db)
+						? "DB_ATTACH_REPLICATED"
+						: "DB_ATTACH")),
 				  ret));
 		tevent_req_error(req, ret);
 		return;
@@ -361,6 +375,9 @@ static void ctdb_attach_dbid_done(struct tevent_req *subreq)
 
 	if (ctdb_db_persistent(state->db)) {
 		ret = ctdb_reply_control_db_attach_persistent(
+				reply, &state->db->db_id);
+	} else if (ctdb_db_replicated(state->db)) {
+		ret = ctdb_reply_control_db_attach_replicated(
 				reply, &state->db->db_id);
 	} else {
 		ret = ctdb_reply_control_db_attach(reply, &state->db->db_id);
