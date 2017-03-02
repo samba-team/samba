@@ -153,6 +153,27 @@ static NTSTATUS rids_to_names(struct winbindd_domain *domain,
 	return result;
 }
 
+/* Lookup groups a user is a member of.  I wish Unix had a call like this! */
+static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
+				  TALLOC_CTX *mem_ctx,
+				  const struct dom_sid *user_sid,
+				  uint32_t *num_groups,
+				  struct dom_sid **user_gids)
+{
+	NTSTATUS result;
+
+	result = ads_methods.lookup_usergroups(domain, mem_ctx, user_sid,
+					       num_groups, user_gids);
+
+	if (reconnect_need_retry(result, domain)) {
+		result = ads_methods.lookup_usergroups(domain, mem_ctx,
+						       user_sid, num_groups,
+						       user_gids);
+	}
+
+	return result;
+}
+
 static NTSTATUS lookup_useraliases(struct winbindd_domain *domain,
 				   TALLOC_CTX *mem_ctx,
 				   uint32_t num_sids,
@@ -269,6 +290,7 @@ struct winbindd_methods reconnect_ads_methods = {
 	name_to_sid,
 	sid_to_name,
 	rids_to_names,
+	lookup_usergroups,
 	lookup_useraliases,
 	lookup_groupmem,
 	sequence_number,

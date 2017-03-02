@@ -393,6 +393,77 @@ static NTSTATUS msrpc_rids_to_names(struct winbindd_domain *domain,
 	return result;
 }
 
+/* Lookup groups a user is a member of.  I wish Unix had a call like this! */
+static NTSTATUS msrpc_lookup_usergroups(struct winbindd_domain *domain,
+					TALLOC_CTX *mem_ctx,
+					const struct dom_sid *user_sid,
+					uint32_t *pnum_groups,
+					struct dom_sid **puser_grpsids)
+{
+	struct rpc_pipe_client *samr_pipe;
+	struct policy_handle dom_pol;
+	struct dom_sid *user_grpsids = NULL;
+	uint32_t num_groups = 0;
+	TALLOC_CTX *tmp_ctx;
+	NTSTATUS status;
+
+	DEBUG(3,("msrpc_lookup_usergroups sid=%s\n", sid_string_dbg(user_sid)));
+
+	*pnum_groups = 0;
+
+	tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* Check if we have a cached user_info_3 */
+	status = lookup_usergroups_cached(tmp_ctx,
+					  user_sid,
+					  &num_groups,
+					  &user_grpsids);
+	if (NT_STATUS_IS_OK(status)) {
+		goto cached;
+	}
+
+	if ( !winbindd_can_contact_domain( domain ) ) {
+		DEBUG(10,("lookup_usergroups: No incoming trust for domain %s\n",
+			  domain->name));
+
+		/* Tell the cache manager not to remember this one */
+		status = NT_STATUS_SYNCHRONIZATION_REQUIRED;
+		goto done;
+	}
+
+	/* no cache; hit the wire */
+	status = cm_connect_sam(domain, tmp_ctx, false, &samr_pipe, &dom_pol);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	status = rpc_lookup_usergroups(tmp_ctx,
+				       samr_pipe,
+				       &dom_pol,
+				       &domain->sid,
+				       user_sid,
+				       &num_groups,
+				       &user_grpsids);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+cached:
+	*pnum_groups = num_groups;
+
+	if (puser_grpsids) {
+		*puser_grpsids = talloc_move(mem_ctx, &user_grpsids);
+	}
+
+done:
+	TALLOC_FREE(tmp_ctx);
+	return status;
+	return NT_STATUS_OK;
+}
+
 #define MAX_SAM_ENTRIES_W2K 0x400 /* 1024 */
 
 static NTSTATUS msrpc_lookup_useraliases(struct winbindd_domain *domain,
@@ -1090,6 +1161,7 @@ struct winbindd_methods msrpc_methods = {
 	msrpc_name_to_sid,
 	msrpc_sid_to_name,
 	msrpc_rids_to_names,
+	msrpc_lookup_usergroups,
 	msrpc_lookup_useraliases,
 	msrpc_lookup_groupmem,
 	msrpc_sequence_number,
