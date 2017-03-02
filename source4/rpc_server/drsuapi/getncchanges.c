@@ -491,27 +491,6 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 		}
 		revealed_list_msg->dn = machine_dn;
 
-		ldb_err = dsdb_search_dn(sam_ctx, obj, &res, machine_dn, machine_attrs, 0);
-		if (ldb_err != LDB_SUCCESS || res->count != 1) {
-			return WERR_DS_DRA_INTERNAL_ERROR;
-		}
-
-		existing_revealed_list_msg = res->msgs[0];
-	}
-
-	werr = get_nc_changes_filter_attrs(obj, md, sam_ctx, msg, &n,
-					   highest_usn, rdn_sa, schema,
-					   extended_op == DRSUAPI_EXOP_REPL_SECRET,
-					   &revealed_list_msg,
-					   existing_revealed_list_msg,
-					   uptodateness_vector,
-					   partial_attribute_set, local_pas,
-					   attids);
-	if (!W_ERROR_IS_OK(werr)) {
-		return werr;
-	}
-
-	if (revealed_list_msg != NULL) {
 		ret = ldb_transaction_start(sam_ctx);
 		if (ret != LDB_SUCCESS) {
 			DEBUG(0,(__location__ ": Failed transaction start - %s\n",
@@ -519,12 +498,35 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 			return WERR_DS_DRA_INTERNAL_ERROR;
 		}
 
-		ret = ldb_modify(sam_ctx, revealed_list_msg);
-		if (ret != LDB_SUCCESS) {
-			DEBUG(0,(__location__ ": Failed to commit revealed links - %s\n",
-				 ldb_errstring(sam_ctx)));
+		ldb_err = dsdb_search_dn(sam_ctx, obj, &res, machine_dn, machine_attrs, 0);
+		if (ldb_err != LDB_SUCCESS || res->count != 1) {
 			ldb_transaction_cancel(sam_ctx);
 			return WERR_DS_DRA_INTERNAL_ERROR;
+		}
+
+		existing_revealed_list_msg = res->msgs[0];
+
+		werr = get_nc_changes_filter_attrs(obj, md, sam_ctx, msg, &n,
+						   highest_usn, rdn_sa, schema,
+						   true,
+						   &revealed_list_msg,
+						   existing_revealed_list_msg,
+						   uptodateness_vector,
+						   partial_attribute_set, local_pas,
+						   attids);
+		if (!W_ERROR_IS_OK(werr)) {
+			ldb_transaction_cancel(sam_ctx);
+			return werr;
+		}
+
+		if (revealed_list_msg != NULL) {
+			ret = ldb_modify(sam_ctx, revealed_list_msg);
+			if (ret != LDB_SUCCESS) {
+				DEBUG(0,(__location__ ": Failed to alter revealed links - %s\n",
+					 ldb_errstring(sam_ctx)));
+				ldb_transaction_cancel(sam_ctx);
+				return WERR_DS_DRA_INTERNAL_ERROR;
+			}
 		}
 
 		ret = ldb_transaction_commit(sam_ctx);
@@ -532,6 +534,18 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 			DEBUG(0,(__location__ ": Failed transaction commit - %s\n",
 				 ldb_errstring(sam_ctx)));
 			return WERR_DS_DRA_INTERNAL_ERROR;
+		}
+	} else {
+		werr = get_nc_changes_filter_attrs(obj, md, sam_ctx, msg, &n,
+						   highest_usn, rdn_sa, schema,
+						   false,
+						   &revealed_list_msg,
+						   existing_revealed_list_msg,
+						   uptodateness_vector,
+						   partial_attribute_set, local_pas,
+						   attids);
+		if (!W_ERROR_IS_OK(werr)) {
+			return werr;
 		}
 	}
 
