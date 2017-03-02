@@ -586,18 +586,6 @@ skip_lock_debug:
 					    (void *)lock_ctx);
 }
 
-static int db_flags(struct ctdb_db_context *ctdb_db)
-{
-	int tdb_flags = TDB_DEFAULT;
-
-#ifdef TDB_MUTEX_LOCKING
-	if (!ctdb_db->persistent && ctdb_db->ctdb->tunable.mutex_enabled) {
-		tdb_flags = (TDB_MUTEX_LOCKING | TDB_CLEAR_IF_FIRST);
-	}
-#endif
-	return tdb_flags;
-}
-
 static bool lock_helper_args(TALLOC_CTX *mem_ctx,
 			     struct lock_context *lock_ctx, int fd,
 			     int *argc, const char ***argv)
@@ -631,7 +619,7 @@ static bool lock_helper_args(TALLOC_CTX *mem_ctx,
 		args[2] = talloc_strdup(args, "RECORD");
 		args[3] = talloc_strdup(args, lock_ctx->ctdb_db->db_path);
 		args[4] = talloc_asprintf(args, "0x%x",
-					  db_flags(lock_ctx->ctdb_db));
+				tdb_get_flags(lock_ctx->ctdb_db->ltdb->tdb));
 		if (lock_ctx->key.dsize == 0) {
 			args[5] = talloc_strdup(args, "NULL");
 		} else {
@@ -643,7 +631,7 @@ static bool lock_helper_args(TALLOC_CTX *mem_ctx,
 		args[2] = talloc_strdup(args, "DB");
 		args[3] = talloc_strdup(args, lock_ctx->ctdb_db->db_path);
 		args[4] = talloc_asprintf(args, "0x%x",
-					  db_flags(lock_ctx->ctdb_db));
+				tdb_get_flags(lock_ctx->ctdb_db->ltdb->tdb));
 		break;
 	}
 
