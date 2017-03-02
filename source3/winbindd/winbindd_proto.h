@@ -169,6 +169,11 @@ NTSTATUS wcache_lookup_useraliases(struct winbindd_domain *domain,
 				   TALLOC_CTX *mem_ctx,
 				   uint32_t num_sids, const struct dom_sid *sids,
 				   uint32_t *pnum_aliases, uint32_t **paliases);
+NTSTATUS wcache_lookup_usergroups(struct winbindd_domain *domain,
+				  TALLOC_CTX *mem_ctx,
+				  const struct dom_sid *user_sid,
+				  uint32_t *pnum_sids,
+				  struct dom_sid **psids);
 
 void wcache_flush_cache(void);
 NTSTATUS wcache_count_cached_creds(struct winbindd_domain *domain, int *count);
