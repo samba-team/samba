@@ -825,6 +825,17 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 		p->auth.auth_type = DCERPC_AUTH_TYPE_NONE;
 		p->auth.auth_level = DCERPC_AUTH_LEVEL_NONE;
 		p->auth.auth_context_id = 0;
+
+		/*
+		 * Log the authorization to this RPC interface.  This
+		 * covered ncacn_np pass-through auth, and anonymous
+		 * DCE/RPC (eg epmapper, netlogon etc)
+		 */
+		log_successful_authz_event(p->remote_address,
+					   p->local_address,
+					   table->name,
+					   derpc_transport_string_by_transport(p->transport),
+					   p->session_info);
 	}
 
 	ZERO_STRUCT(u.bind_ack);
