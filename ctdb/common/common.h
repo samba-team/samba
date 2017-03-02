@@ -45,6 +45,7 @@ struct ctdb_db_context *ctdb_db_handle(struct ctdb_context *ctdb,
 				       const char *name);
 
 bool ctdb_db_persistent(struct ctdb_db_context *ctdb_db);
+bool ctdb_db_replicated(struct ctdb_db_context *ctdb_db);
 bool ctdb_db_volatile(struct ctdb_db_context *ctdb_db);
 
 bool ctdb_db_readonly(struct ctdb_db_context *ctdb_db);

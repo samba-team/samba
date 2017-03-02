@@ -92,9 +92,18 @@ bool ctdb_db_persistent(struct ctdb_db_context *ctdb_db)
 	return false;
 }
 
+bool ctdb_db_replicated(struct ctdb_db_context *ctdb_db)
+{
+	if (ctdb_db->db_flags & CTDB_DB_FLAGS_REPLICATED) {
+		return true;
+	}
+	return false;
+}
+
 bool ctdb_db_volatile(struct ctdb_db_context *ctdb_db)
 {
-	if (ctdb_db->db_flags & CTDB_DB_FLAGS_PERSISTENT) {
+	if ((ctdb_db->db_flags & CTDB_DB_FLAGS_PERSISTENT) ||
+	    (ctdb_db->db_flags & CTDB_DB_FLAGS_REPLICATED)) {
 		return false;
 	}
 	return true;
