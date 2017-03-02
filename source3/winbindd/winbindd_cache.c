@@ -2917,6 +2917,11 @@ void wcache_invalidate_samlogon(struct winbindd_domain *domain,
 	DEBUG(10, ("wcache_invalidate_samlogon: clearing %s\n", key_str));
 	tdb_delete(cache->tdb, string_tdb_data(key_str));
 
+	/* Clear UG/SID cache entry */
+	fstr_sprintf(key_str, "UG/%s", sid_to_fstring(sid_string, sid));
+	DEBUG(10, ("wcache_invalidate_samlogon: clearing %s\n", key_str));
+	tdb_delete(cache->tdb, string_tdb_data(key_str));
+
 	/* Samba/winbindd never needs this. */
 	netsamlogon_clear_cached_user(sid);
 }
@@ -3679,6 +3684,32 @@ static int validate_gl(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf,
 	return 0;
 }
 
+static int validate_ug(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf,
+		       struct tdb_validation_status *state)
+{
+	struct cache_entry *centry = create_centry_validate(keystr, dbuf, state);
+	int32_t num_groups, i;
+
+	if (!centry) {
+		return 1;
+	}
+
+	num_groups = centry_uint32(centry);
+
+	for (i=0; i< num_groups; i++) {
+		struct dom_sid sid;
+		centry_sid(centry, &sid);
+	}
+
+	centry_free(centry);
+
+	if (!(state->success)) {
+		return 1;
+	}
+	DEBUG(10,("validate_ug: %s ok\n", keystr));
+	return 0;
+}
+
 static int validate_ua(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf,
 		       struct tdb_validation_status *state)
 {
@@ -3881,6 +3912,7 @@ struct key_val_struct {
 	{"CRED/", validate_cred},
 	{"UL/", validate_ul},
 	{"GL/", validate_gl},
+	{"UG/", validate_ug},
 	{"UA", validate_ua},
 	{"GM/", validate_gm},
 	{"DR/", validate_dr},
