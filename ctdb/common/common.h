@@ -44,6 +44,9 @@ int ctdb_db_tdb_flags(uint8_t db_flags, bool with_valgrind, bool with_mutex);
 struct ctdb_db_context *ctdb_db_handle(struct ctdb_context *ctdb,
 				       const char *name);
 
+bool ctdb_db_persistent(struct ctdb_db_context *ctdb_db);
+bool ctdb_db_volatile(struct ctdb_db_context *ctdb_db);
+
 uint32_t ctdb_lmaster(struct ctdb_context *ctdb, const TDB_DATA *key);
 
 int ctdb_ltdb_fetch(struct ctdb_db_context *ctdb_db,

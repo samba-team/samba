@@ -120,7 +120,7 @@ static int ctdb_traverse_local_fn(struct tdb_context *tdb, TDB_DATA key, TDB_DAT
 
 	hdr = (struct ctdb_ltdb_header *)data.dptr;
 
-	if (h->ctdb_db->persistent == 0) {
+	if (ctdb_db_volatile(h->ctdb_db)) {
 		/* filter out zero-length records */
 		if (!h->withemptyrecords &&
 		    data.dsize <= sizeof(struct ctdb_ltdb_header))
@@ -386,7 +386,7 @@ static struct ctdb_traverse_all_handle *ctdb_daemon_traverse_all(struct ctdb_db_
 		data.dsize = sizeof(r);
 	}
 
-	if (ctdb_db->persistent == 0) {
+	if (ctdb_db_volatile(ctdb_db)) {
 		/* normal database, traverse all nodes */	  
 		destination = CTDB_BROADCAST_VNNMAP;
 	} else {
@@ -587,7 +587,7 @@ int32_t ctdb_control_traverse_data(struct ctdb_context *ctdb, TDB_DATA data, TDB
 		/* Persistent databases are only scanned on one node (the local
 		 * node)
 		 */
-		if (state->ctdb_db->persistent == 0) {
+		if (ctdb_db_volatile(state->ctdb_db)) {
 			if (state->null_count != ctdb_get_num_active_nodes(ctdb)) {
 				return 0;
 			}

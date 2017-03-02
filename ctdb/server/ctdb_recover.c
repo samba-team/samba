@@ -115,7 +115,7 @@ ctdb_control_getdbmap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indat
 	dbid_map->num = len;
 	for (i=0,ctdb_db=ctdb->db_list;ctdb_db;i++,ctdb_db=ctdb_db->next){
 		dbid_map->dbs[i].db_id       = ctdb_db->db_id;
-		if (ctdb_db->persistent != 0) {
+		if (ctdb_db_persistent(ctdb_db)) {
 			dbid_map->dbs[i].flags |= CTDB_DB_FLAGS_PERSISTENT;
 		}
 		if (ctdb_db->readonly != 0) {

@@ -1974,7 +1974,7 @@ int ctdb_migration_init(struct ctdb_db_context *ctdb_db)
 	struct tevent_timer *te;
 	int ret;
 
-	if (ctdb_db->persistent) {
+	if (! ctdb_db_volatile(ctdb_db)) {
 		return 0;
 	}
 

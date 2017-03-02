@@ -933,8 +933,9 @@ again:
 */
 int ctdb_record_store(struct ctdb_record_handle *h, TDB_DATA data)
 {
-	if (h->ctdb_db->persistent) {
-		DEBUG(DEBUG_ERR, (__location__ " ctdb_record_store prohibited for persistent dbs\n"));
+	if (! ctdb_db_volatile(h->ctdb_db)) {
+		DEBUG(DEBUG_ERR,
+		      ("ctdb_record_store prohibited for non-volatile dbs\n"));
 		return -1;
 	}
 

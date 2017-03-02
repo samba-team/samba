@@ -339,7 +339,7 @@ int32_t ctdb_control_update_record(struct ctdb_context *ctdb,
 	state->c       = c;
 	state->m       = m;
 	state->flags   = 0;
-	if (!ctdb_db->persistent) {
+	if (ctdb_db_volatile(ctdb_db)) {
 		state->flags   = UPDATE_FLAGS_REPLACE_ONLY;
 	}
 

@@ -143,7 +143,7 @@ static int ctdb_ltdb_store_server(struct ctdb_db_context *ctdb_db,
 	}
 
 	if (keep) {
-		if (!ctdb_db->persistent &&
+		if (ctdb_db_volatile(ctdb_db) &&
 		    (ctdb_db->ctdb->pnn == header->dmaster) &&
 		    !(header->flags & CTDB_REC_RO_FLAGS))
 		{
@@ -607,7 +607,7 @@ int ctdb_recheck_persistent_health(struct ctdb_context *ctdb)
 	int fail = 0;
 
 	for (ctdb_db = ctdb->db_list; ctdb_db; ctdb_db = ctdb_db->next) {
-		if (!ctdb_db->persistent) {
+		if (!ctdb_db_persistent(ctdb_db)) {
 			continue;
 		}
 
@@ -722,8 +722,9 @@ int ctdb_set_db_readonly(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb
 		return 0;
 	}
 
-	if (ctdb_db->persistent) {
-		DEBUG(DEBUG_ERR,("Persistent databases do not support readonly property\n"));
+	if (! ctdb_db_volatile(ctdb_db)) {
+		DEBUG(DEBUG_ERR,
+		      ("Non-volatile databases do not support readonly flag\n"));
 		return -1;
 	}
 
@@ -779,7 +780,7 @@ static int ctdb_local_attach(struct ctdb_context *ctdb, const char *db_name,
 	ctdb_db->db_id = ctdb_hash(&key);
 	ctdb_db->persistent = persistent;
 
-	if (!ctdb_db->persistent) {
+	if (ctdb_db_volatile(ctdb_db)) {
 		ctdb_db->delete_queue = trbt_create(ctdb_db, 0);
 		if (ctdb_db->delete_queue == NULL) {
 			CTDB_NO_MEMORY(ctdb, ctdb_db->delete_queue);
@@ -1170,10 +1171,10 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 	/* see if we already have this name */
 	db = ctdb_db_handle(ctdb, db_name);
 	if (db) {
-		if (db->persistent != persistent) {
+		if (ctdb_db_persistent(db) != persistent) {
 			DEBUG(DEBUG_ERR, ("ERROR: DB Attach %spersistent to %spersistent "
 					  "database %s\n", persistent ? "" : "non-",
-					  db-> persistent ? "" : "non-", db_name));
+					  ctdb_db_persistent(db) ? "" : "non-", db_name));
 			return -1;
 		}
 		outdata->dptr  = (uint8_t *)&db->db_id;
@@ -1234,9 +1235,10 @@ int32_t ctdb_control_db_detach(struct ctdb_context *ctdb, TDB_DATA indata,
 		return -1;
 	}
 
-	if (ctdb_db->persistent) {
-		DEBUG(DEBUG_ERR, ("DB detach from persistent database %s "
-				  "denied\n", ctdb_db->db_name));
+	if (! ctdb_db_volatile(ctdb_db)) {
+		DEBUG(DEBUG_ERR,
+		      ("Detaching non-volatile database %s denied\n",
+		       ctdb_db->db_name));
 		return -1;
 	}
 
@@ -1572,8 +1574,9 @@ int ctdb_set_db_sticky(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_d
 		return 0;
 	}
 
-	if (ctdb_db->persistent) {
-		DEBUG(DEBUG_ERR,("Trying to set persistent database with sticky property\n"));
+	if (! ctdb_db_volatile(ctdb_db)) {
+		DEBUG(DEBUG_ERR,
+		      ("Non-volatile databases do not support sticky flag\n"));
 		return -1;
 	}
 

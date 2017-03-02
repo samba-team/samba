@@ -78,6 +78,15 @@ struct ctdb_db_context *ctdb_db_handle(struct ctdb_context *ctdb, const char *na
 	return NULL;
 }
 
+bool ctdb_db_persistent(struct ctdb_db_context *ctdb_db)
+{
+	return ctdb_db->persistent;
+}
+
+bool ctdb_db_volatile(struct ctdb_db_context *ctdb_db)
+{
+	return !ctdb_db->persistent;
+}
 
 /*
   return the lmaster given a key
@@ -133,7 +142,8 @@ int ctdb_ltdb_fetch(struct ctdb_db_context *ctdb_db,
 		if (data) {
 			*data = tdb_null;
 		}
-		if (ctdb_db->persistent || header->dmaster == ctdb_db->ctdb->pnn) {
+		if (ctdb_db_persistent(ctdb_db) ||
+		    header->dmaster == ctdb_db->ctdb->pnn) {
 			if (ctdb_ltdb_store(ctdb_db, key, header, tdb_null) != 0) {
 				DEBUG(DEBUG_NOTICE,
 				      (__location__ "failed to store initial header\n"));
@@ -285,8 +295,10 @@ int ctdb_ltdb_unlock(struct ctdb_db_context *ctdb_db, TDB_DATA key)
 */
 int ctdb_ltdb_delete(struct ctdb_db_context *ctdb_db, TDB_DATA key)
 {
-	if (ctdb_db->persistent != 0) {
-		DEBUG(DEBUG_ERR,("Trying to delete empty record in persistent database\n"));
+	if (! ctdb_db_volatile(ctdb_db)) {
+		DEBUG(DEBUG_WARNING,
+		      ("Ignored deletion of empty record from "
+		       "non-volatile database\n"));
 		return 0;
 	}
 	if (tdb_delete(ctdb_db->ltdb->tdb, key) != 0) {

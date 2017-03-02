@@ -1574,8 +1574,10 @@ void ctdb_stop_vacuuming(struct ctdb_context *ctdb)
  */
 int ctdb_vacuum_init(struct ctdb_db_context *ctdb_db)
 {
-	if (ctdb_db->persistent != 0) {
-		DEBUG(DEBUG_ERR,("Vacuuming is disabled for persistent database %s\n", ctdb_db->db_name));
+	if (! ctdb_db_volatile(ctdb_db)) {
+		DEBUG(DEBUG_ERR,
+		      ("Vacuuming is disabled for non-volatile database %s\n",
+		       ctdb_db->db_name));
 		return 0;
 	}
 
