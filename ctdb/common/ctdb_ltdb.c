@@ -103,6 +103,16 @@ void ctdb_db_reset_readonly(struct ctdb_db_context *ctdb_db)
 	ctdb_db->readonly = false;
 }
 
+bool ctdb_db_sticky(struct ctdb_db_context *ctdb_db)
+{
+	return ctdb_db->sticky;
+}
+
+void ctdb_db_set_sticky(struct ctdb_db_context *ctdb_db)
+{
+	ctdb_db->sticky = true;
+}
+
 /*
   return the lmaster given a key
 */

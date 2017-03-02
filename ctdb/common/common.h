@@ -51,6 +51,9 @@ bool ctdb_db_readonly(struct ctdb_db_context *ctdb_db);
 void ctdb_db_set_readonly(struct ctdb_db_context *ctdb_db);
 void ctdb_db_reset_readonly(struct ctdb_db_context *ctdb_db);
 
+bool ctdb_db_sticky(struct ctdb_db_context *ctdb_db);
+void ctdb_db_set_sticky(struct ctdb_db_context *ctdb_db);
+
 uint32_t ctdb_lmaster(struct ctdb_context *ctdb, const TDB_DATA *key);
 
 int ctdb_ltdb_fetch(struct ctdb_db_context *ctdb_db,

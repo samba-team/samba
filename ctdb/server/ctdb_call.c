@@ -381,7 +381,7 @@ static void ctdb_become_dmaster(struct ctdb_db_context *ctdb_db,
 	   see if the record is flagged as "hot" and set up a pin-down
 	   context to stop migrations for a little while if so
 	*/
-	if (ctdb_db->sticky) {
+	if (ctdb_db_sticky(ctdb_db)) {
 		ctdb_set_sticky_pindown(ctdb, ctdb_db, key);
 	}
 
@@ -929,7 +929,7 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	/* If this record is pinned down we should defer the
 	   request until the pindown times out
 	*/
-	if (ctdb_db->sticky) {
+	if (ctdb_db_sticky(ctdb_db)) {
 		if (ctdb_defer_pinned_down_request(ctdb, ctdb_db, call->key, hdr) == 0) {
 			DEBUG(DEBUG_WARNING,
 			      ("Defer request for pinned down record in %s\n", ctdb_db->db_name));
@@ -1105,7 +1105,8 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	   hopcount is big. If it is it means the record is hot and we
 	   should make it sticky.
 	*/
-	if (ctdb_db->sticky && c->hopcount >= ctdb->tunable.hopcount_make_sticky) {
+	if (ctdb_db_sticky(ctdb_db) &&
+	    c->hopcount >= ctdb->tunable.hopcount_make_sticky) {
 		ctdb_make_record_sticky(ctdb, ctdb_db, call->key);
 	}
 

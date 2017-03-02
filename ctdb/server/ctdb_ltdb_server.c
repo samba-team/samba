@@ -1570,7 +1570,7 @@ int32_t ctdb_ltdb_enable_seqnum(struct ctdb_context *ctdb, uint32_t db_id)
 
 int ctdb_set_db_sticky(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_db)
 {
-	if (ctdb_db->sticky) {
+	if (ctdb_db_sticky(ctdb_db)) {
 		return 0;
 	}
 
@@ -1582,7 +1582,7 @@ int ctdb_set_db_sticky(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_d
 
 	ctdb_db->sticky_records = trbt_create(ctdb_db, 0);
 
-	ctdb_db->sticky = true;
+	ctdb_db_set_sticky(ctdb_db);
 
 	DEBUG(DEBUG_NOTICE,("set db sticky %s\n", ctdb_db->db_name));
 
