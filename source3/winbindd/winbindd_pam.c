@@ -1344,6 +1344,16 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 
 		result = cm_connect_netlogon(domain, &netlogon_pipe);
 
+		if (NT_STATUS_EQUAL(result,
+				    NT_STATUS_CANT_ACCESS_DOMAIN_INFO)) {
+			/*
+			 * This means we don't have a trust account.
+			 */
+			*authoritative = 0;
+			result = NT_STATUS_NO_SUCH_USER;
+			break;
+		}
+
 		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(3,("Could not open handle to NETLOGON pipe "
 				 "(error: %s, attempts: %d)\n",
