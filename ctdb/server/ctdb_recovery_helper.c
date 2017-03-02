@@ -1435,7 +1435,7 @@ struct recover_db_state {
 	uint32_t *caps;
 	uint32_t *ban_credits;
 	uint32_t db_id;
-	bool persistent;
+	uint8_t db_flags;
 
 	uint32_t destnode;
 	struct ctdb_transdb transdb;
@@ -1462,7 +1462,7 @@ static struct tevent_req *recover_db_send(TALLOC_CTX *mem_ctx,
 					  uint32_t *caps,
 					  uint32_t *ban_credits,
 					  uint32_t generation,
-					  uint32_t db_id, bool persistent)
+					  uint32_t db_id, uint8_t db_flags)
 {
 	struct tevent_req *req, *subreq;
 	struct recover_db_state *state;
@@ -1481,7 +1481,7 @@ static struct tevent_req *recover_db_send(TALLOC_CTX *mem_ctx,
 	state->caps = caps;
 	state->ban_credits = ban_credits;
 	state->db_id = db_id;
-	state->persistent = persistent;
+	state->db_flags = db_flags;
 
 	state->destnode = ctdb_client_pnn(client);
 	state->transdb.db_id = db_id;
@@ -1659,12 +1659,12 @@ static void recover_db_transaction_started(struct tevent_req *subreq)
 	state->recdb = recdb_create(state, state->db_id, state->db_name,
 				    state->db_path,
 				    state->tun_list->database_hash_size,
-				    state->persistent);
+				    state->db_flags & CTDB_DB_FLAGS_PERSISTENT);
 	if (tevent_req_nomem(state->recdb, req)) {
 		return;
 	}
 
-	if (state->persistent) {
+	if (state->db_flags & CTDB_DB_FLAGS_PERSISTENT) {
 		subreq = collect_highseqnum_db_send(
 				state, state->ev, state->client,
 				state->pnn_list, state->count, state->caps,
@@ -1693,7 +1693,7 @@ static void recover_db_collect_done(struct tevent_req *subreq)
 	int ret;
 	bool status;
 
-	if (state->persistent) {
+	if (state->db_flags & CTDB_DB_FLAGS_PERSISTENT) {
 		status = collect_highseqnum_db_recv(subreq, &ret);
 	} else {
 		status = collect_all_db_recv(subreq, &ret);
@@ -1894,7 +1894,7 @@ struct db_recovery_one_state {
 	uint32_t *ban_credits;
 	uint32_t generation;
 	uint32_t db_id;
-	bool persistent;
+	uint8_t db_flags;
 	int num_fails;
 };
 
@@ -1947,13 +1947,12 @@ static struct tevent_req *db_recovery_send(TALLOC_CTX *mem_ctx,
 		substate->ban_credits = ban_credits;
 		substate->generation = generation;
 		substate->db_id = dbmap->dbs[i].db_id;
-		substate->persistent = dbmap->dbs[i].flags &
-				       CTDB_DB_FLAGS_PERSISTENT;
+		substate->db_flags = dbmap->dbs[i].flags;
 
 		subreq = recover_db_send(state, ev, client, tun_list,
 					 pnn_list, count, caps, ban_credits,
 					 generation, substate->db_id,
-					 substate->persistent);
+					 substate->db_flags);
 		if (tevent_req_nomem(subreq, req)) {
 			return tevent_req_post(req, ev);
 		}
@@ -1989,7 +1988,7 @@ static void db_recovery_one_done(struct tevent_req *subreq)
 					 substate->pnn_list, substate->count,
 					 substate->caps, substate->ban_credits,
 					 substate->generation, substate->db_id,
-					 substate->persistent);
+					 substate->db_flags);
 		if (tevent_req_nomem(subreq, req)) {
 			goto failed;
 		}
