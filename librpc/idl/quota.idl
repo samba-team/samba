@@ -1,0 +1,54 @@
+#include "idl_types.h"
+
+import "security.idl";
+
+[
+	pointer_default(unique)
+]
+
+interface file_quota {
+
+	/* MS-FSCC 2.4.33.1 */
+	typedef [public] struct {
+		uint32 next_entry_offset;
+		uint32 sid_length;
+		dom_sid sid;
+	} file_get_quota_info;
+
+	/* MS-FSCC 2.4.33 */
+	typedef [public] struct {
+		uint32 next_entry_offset;
+		uint32 sid_length;
+		hyper change_time;
+		hyper quota_used;
+		hyper quota_threshold;
+		hyper quota_limit;
+		dom_sid sid;
+	} file_quota_information;
+}
+
+interface smb2_query_quoata
+{
+	/* MS-SMB2 2.2.37.1 */
+	typedef [public] struct {
+		uint8 return_single;
+		uint8 restart_scan;
+		uint16 reserved;
+		uint32 sid_list_length;
+		uint32 start_sid_length;
+		uint32 start_sid_offset;
+	} smb2_query_quota_info;
+}
+
+interface smb1_nt_transact_query_quota
+{
+	/* MS-SMB 2.2.7.5.1 */
+	typedef [public] struct {
+		uint16 fid;
+		uint8 return_single_entry;
+		uint8 restart_scan;
+		uint32 sid_list_length;
+		uint32 start_sid_length;
+		uint32 start_sid_offset;
+	} nttrans_query_quota_params;
+}
