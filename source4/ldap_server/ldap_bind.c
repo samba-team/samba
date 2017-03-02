@@ -109,6 +109,8 @@ static NTSTATUS ldapsrv_BindSimple(struct ldapsrv_call *call)
 		talloc_unlink(call->conn, call->conn->session_info);
 		call->conn->session_info = talloc_steal(call->conn, session_info);
 
+		call->conn->authz_logged = true;
+
 		/* don't leak the old LDB */
 		talloc_unlink(call->conn, call->conn->ldb);
 
@@ -379,7 +381,9 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 				
 				/* don't leak the old LDB */
 				talloc_unlink(conn, conn->ldb);
-				
+
+				call->conn->authz_logged = true;
+
 				status = ldapsrv_backend_Init(conn);		
 				
 				if (!NT_STATUS_IS_OK(status)) {

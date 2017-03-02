@@ -24,6 +24,7 @@
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
 #include "auth/gensec/gensec_internal.h" /* TODO: remove this */
+#include "auth/common_auth.h"
 #include "param/param.h"
 #include "smbd/service_stream.h"
 #include "dsdb/samdb/samdb.h"
@@ -1227,6 +1228,7 @@ NTSTATUS ldapsrv_do_call(struct ldapsrv_call *call)
 	unsigned int i;
 	struct ldap_message *msg = call->request;
 	NTSTATUS status;
+	bool log = true;
 
 	/* Check for undecoded critical extensions */
 	for (i=0; msg->controls && msg->controls[i]; i++) {
@@ -1235,6 +1237,56 @@ NTSTATUS ldapsrv_do_call(struct ldapsrv_call *call)
 			DEBUG(3, ("ldapsrv_do_call: Critical extension %s is not known to this server\n",
 				  msg->controls[i]->oid));
 			return ldapsrv_unwilling(call, LDAP_UNAVAILABLE_CRITICAL_EXTENSION);
+		}
+	}
+
+	if (call->conn->authz_logged == false) {
+
+		/*
+		 * We do not want to log anonymous access if the query
+		 * is just for the rootDSE, or it is a startTLS or a
+		 * Bind.
+		 *
+		 * A rootDSE search could also be done over
+		 * CLDAP anonymously for example, so these don't
+		 * really count.
+		 * Essentially we want to know about
+		 * access beyond that normally done prior to a
+		 * bind.
+		 */
+
+		switch(call->request->type) {
+		case LDAP_TAG_BindRequest:
+			log = false;
+			break;
+		case LDAP_TAG_ExtendedResponse: {
+			struct ldap_ExtendedRequest *req = &call->request->r.ExtendedRequest;
+			if (strcmp(req->oid, LDB_EXTENDED_START_TLS_OID) == 0) {
+				log = false;
+			}
+			break;
+		}
+		case LDAP_TAG_SearchRequest: {
+			struct ldap_SearchRequest *req = &call->request->r.SearchRequest;
+			if (req->scope == LDAP_SEARCH_SCOPE_BASE) {
+				if (req->basedn[0] == '\0') {
+					log = false;
+				}
+			}
+			break;
+		}
+		default:
+			break;
+		}
+
+		if (log) {
+			log_successful_authz_event(call->conn->connection->remote_address,
+						   call->conn->connection->local_address,
+						   "LDAP",
+						   "no bind",
+						   call->conn->session_info);
+
+			call->conn->authz_logged = true;
 		}
 	}
 
