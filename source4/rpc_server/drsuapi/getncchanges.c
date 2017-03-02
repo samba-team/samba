@@ -276,6 +276,13 @@ static WERROR getncchanges_update_revealed_list(struct ldb_context *sam_ctx,
 	return WERR_OK;
 }
 
+/*
+ * This function filter attributes for build_object based on the
+ * uptodatenessvector and partial attribute set.
+ *
+ * Any secret attributes are forced here for REPL_SECRET, and audited at this
+ * point with msDS-RevealedUsers.
+ */
 static WERROR get_nc_changes_filter_attrs(struct drsuapi_DsReplicaObjectListItemEx *obj,
 					  struct replPropertyMetaDataBlob md,
 					  struct ldb_context *sam_ctx,
@@ -284,12 +291,13 @@ static WERROR get_nc_changes_filter_attrs(struct drsuapi_DsReplicaObjectListItem
 					  uint64_t highest_usn,
 					  const struct dsdb_attribute *rdn_sa,
 					  struct dsdb_schema *schema,
+					  struct drsuapi_DsReplicaCursorCtrEx *uptodateness_vector,
+					  struct drsuapi_DsPartialAttributeSet *partial_attribute_set,
+					  uint32_t *local_pas,
+					  uint32_t *attids,
 					  bool exop_secret,
 					  struct ldb_message **revealed_list_msg,
-					  struct ldb_message *existing_revealed_list_msg,
-					  struct drsuapi_DsReplicaCursorCtrEx *uptodateness_vector,
-					  struct drsuapi_DsPartialAttributeSet *partial_attribute_set, uint32_t *local_pas,
-					  uint32_t *attids)
+					  struct ldb_message *existing_revealed_list_msg)
 {
 	uint32_t i, n;
 	WERROR werr;
@@ -403,7 +411,6 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 	unsigned int instanceType;
 	struct dsdb_syntax_ctx syntax_ctx;
 	struct ldb_result *res = NULL;
-	struct ldb_message *revealed_list_msg = NULL, *existing_revealed_list_msg = NULL;
 	WERROR werr;
 	int ret;
 
@@ -483,7 +490,12 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 
 	if (extended_op == DRSUAPI_EXOP_REPL_SECRET) {
 		/* Get the existing revealed users for the destination */
-		static const char *machine_attrs[] = { "msDS-RevealedUsers", NULL };
+		struct ldb_message *revealed_list_msg = NULL;
+		struct ldb_message *existing_revealed_list_msg = NULL;
+		const char *machine_attrs[] = {
+			"msDS-RevealedUsers",
+			NULL
+		};
 
 		revealed_list_msg = ldb_msg_new(sam_ctx);
 		if (revealed_list_msg == NULL) {
@@ -508,12 +520,12 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 
 		werr = get_nc_changes_filter_attrs(obj, md, sam_ctx, msg, &n,
 						   highest_usn, rdn_sa, schema,
-						   true,
-						   &revealed_list_msg,
-						   existing_revealed_list_msg,
 						   uptodateness_vector,
 						   partial_attribute_set, local_pas,
-						   attids);
+						   attids,
+						   true,
+						   &revealed_list_msg,
+						   existing_revealed_list_msg);
 		if (!W_ERROR_IS_OK(werr)) {
 			ldb_transaction_cancel(sam_ctx);
 			return werr;
@@ -538,12 +550,12 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 	} else {
 		werr = get_nc_changes_filter_attrs(obj, md, sam_ctx, msg, &n,
 						   highest_usn, rdn_sa, schema,
-						   false,
-						   &revealed_list_msg,
-						   existing_revealed_list_msg,
 						   uptodateness_vector,
 						   partial_attribute_set, local_pas,
-						   attids);
+						   attids,
+						   false,
+						   NULL,
+						   NULL);
 		if (!W_ERROR_IS_OK(werr)) {
 			return werr;
 		}
