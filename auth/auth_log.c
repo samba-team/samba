@@ -22,15 +22,20 @@
  * Debug log levels for authentication logging (these both map to
  * LOG_NOTICE in syslog)
  */
-#define AUTH_SUCCESS_LEVEL 4
-#define AUTHZ_SUCCESS_LEVEL 5
 #define AUTH_FAILURE_LEVEL 2
+#define AUTH_SUCCESS_LEVEL 3
+#define AUTHZ_SUCCESS_LEVEL 4
+
+/* 5 is used for both authentication and authorization */
+#define AUTH_ANONYMOUS_LEVEL 5
+#define AUTHZ_ANONYMOUS_LEVEL 5
 
 #include "includes.h"
 #include "../lib/tsocket/tsocket.h"
 #include "common_auth.h"
 #include "lib/util/util_str_escape.h"
 #include "libcli/security/dom_sid.h"
+#include "libcli/security/security_token.h"
 
 /*
  * Get a human readable timestamp.
@@ -134,8 +139,16 @@ void log_authentication_event(const struct auth_usersupplied_info *ui,
 	const char *password_type = NULL;
 
 	/* set the log level */
-	int  level = NT_STATUS_IS_OK(status) ? AUTH_FAILURE_LEVEL : AUTH_SUCCESS_LEVEL;
-	if (!CHECK_DEBUGLVLC( DBGC_AUTH_AUDIT, level)) {
+	int debug_level = AUTH_FAILURE_LEVEL;
+
+	if (NT_STATUS_IS_OK(status)) {
+		debug_level = AUTH_SUCCESS_LEVEL;
+		if (dom_sid_equal(sid, &global_sid_Anonymous)) {
+			debug_level = AUTH_ANONYMOUS_LEVEL;
+		}
+	}
+
+	if (!CHECK_DEBUGLVLC( DBGC_AUTH_AUDIT, debug_level)) {
 		return;
 	}
 
@@ -176,7 +189,7 @@ void log_authentication_event(const struct auth_usersupplied_info *ui,
 					     log_escape(frame, ui->mapped.account_name));
 	}
 
-	DEBUGC( DBGC_AUTH_AUDIT, level, (
+	DEBUGC( DBGC_AUTH_AUDIT, debug_level, (
 		"Auth: [%s,%s] user [%s]\\[%s]"
 		" at [%s] with [%s] status [%s]"
 		" workstation [%s] remote host [%s]"
@@ -222,9 +235,14 @@ void log_successful_authz_event(const struct tsocket_address *remote,
 	char *remote_str = NULL;     /* formatted remote host       */
 	char *local_str = NULL;      /* formatted local host        */
 	char sid_buf[DOM_SID_STR_BUFLEN];
+	int debug_level = AUTHZ_SUCCESS_LEVEL;
+
+	if (security_token_is_anonymous(session_info->security_token)) {
+		debug_level = AUTH_ANONYMOUS_LEVEL;
+	}
 
 	/* set the log level */
-	if (!CHECK_DEBUGLVLC( DBGC_AUTH_AUDIT, AUTHZ_SUCCESS_LEVEL)) {
+	if (!CHECK_DEBUGLVLC( DBGC_AUTH_AUDIT, debug_level)) {
 		return;
 	}
 
