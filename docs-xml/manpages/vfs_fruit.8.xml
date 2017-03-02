@@ -45,8 +45,6 @@
 	<command>vfs_streams_xattr</command> which must be loaded
 	together with <command>vfs_fruit</command>.</para>
 
-	<para>vfs_fruit requires "ea support = yes".</para>
-
 	<para>Be careful when mixing shares with and without
 	vfs_fruit. OS X clients negotiate SMB2 AAPL protocol
 	extensions on the first tcon, so mixing shares with and
@@ -273,7 +271,6 @@
 
 <programlisting>
         <smbconfsection name="[share]"/>
-	<smbconfoption name="ea support">yes</smbconfoption>
 	<smbconfoption name="vfs objects">catia fruit streams_xattr</smbconfoption>
 	<smbconfoption name="fruit:resource">file</smbconfoption>
 	<smbconfoption name="fruit:metadata">netatalk</smbconfoption>
