@@ -365,7 +365,6 @@ static ADS_STATUS ads_init_gssapi_cred(ADS_STRUCT *ads, gss_cred_id_t *cred)
 		return ADS_ERROR_KRB5(kerr);
 	}
 
-#ifdef HAVE_GSS_KRB5_IMPORT_CRED
 	kerr = krb5_cc_resolve(kctx, ads->auth.ccache_name, &kccache);
 	if (kerr) {
 		status = ADS_ERROR_KRB5(kerr);
@@ -377,32 +376,6 @@ static ADS_STATUS ads_init_gssapi_cred(ADS_STRUCT *ads, gss_cred_id_t *cred)
 		status = ADS_ERROR_GSS(maj, min);
 		goto done;
 	}
-#else
-	/* We need to fallback to overriding the default creds.
-	 * This operation is not thread safe as it changes the process
-	 * environment variable, but we do not have any better option
-	 * with older kerberos libraries */
-	{
-		const char *oldccname = NULL;
-
-		oldccname = getenv("KRB5CCNAME");
-		setenv("KRB5CCNAME", ads->auth.ccache_name, 1);
-
-		maj = gss_acquire_cred(&min, GSS_C_NO_NAME, GSS_C_INDEFINITE,
-				       NULL, GSS_C_INITIATE, cred, NULL, NULL);
-
-		if (oldccname) {
-			setenv("KRB5CCNAME", oldccname, 1);
-		} else {
-			unsetenv("KRB5CCNAME");
-		}
-
-		if (maj != GSS_S_COMPLETE) {
-			status = ADS_ERROR_GSS(maj, min);
-			goto done;
-		}
-	}
-#endif
 
 	status = ADS_SUCCESS;
 
