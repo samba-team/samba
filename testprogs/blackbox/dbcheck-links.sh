@@ -200,6 +200,78 @@ dangling_one_way() {
     fi
 }
 
+dangling_multi_valued() {
+    # multi1 - All 4 backlinks
+    # multi2 - Missing all 4 backlinks
+    # multi3 - Missing 2 backlinks
+    # Administrator - Has 2 too many backlinks
+    # multi5 - Has 2 backlinks but no forward links
+    ldif=$release_dir/add-dangling-multilink-users.ldif
+    TZ=UTC $ldbadd -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb $ldif
+    if [ "$?" != "0" ]; then
+	return 1
+    fi
+
+    ldif=$release_dir/add-initially-normal-multilink.ldif
+    TZ=UTC $ldbmodify -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb $ldif
+    if [ "$?" != "0" ]; then
+	return 1
+    fi
+
+    ldif=$release_dir/delete-only-multi-backlink.ldif
+    TZ=UTC $ldbmodify -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb.d/DC%3DRELEASE-4-5-0-PRE1,DC%3DSAMBA,DC%3DCORP.ldb $ldif
+    if [ "$?" != "0" ]; then
+	return 1
+    fi
+
+    ldif=$release_dir/add-dangling-multi-backlink.ldif
+    TZ=UTC $ldbmodify -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb.d/DC%3DRELEASE-4-5-0-PRE1,DC%3DSAMBA,DC%3DCORP.ldb $ldif
+    if [ "$?" != "0" ]; then
+	return 1
+    fi
+
+    $PYTHON $BINDIR/samba-tool dbcheck -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb --fix --yes
+    if [ "$?" != "1" ]; then
+	return 1
+    fi
+}
+
+dangling_multi_valued_check_missing() {
+    WORDS=`TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb '(samaccountname=dangling-multi2)' -s sub -b DC=release-4-5-0-pre1,DC=samba,DC=corp --show-deleted --reveal --sorted msDS-RevealedDSAs | grep msDS-RevealedDSAs | wc -l`
+    if [ $WORDS -ne 4 ]; then
+        echo Got only $WORDS links for dangling-multi2
+	return 1
+    fi
+    WORDS=`TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb '(samaccountname=dangling-multi3)' -s sub -b DC=release-4-5-0-pre1,DC=samba,DC=corp --show-deleted --reveal --sorted msDS-RevealedDSAs | grep msDS-RevealedDSAs | wc -l`
+    if [ $WORDS -ne 4 ]; then
+        echo Got only $WORDS links for dangling-multi3
+	return 1
+    fi
+}
+
+dangling_multi_valued_check_equal_or_too_many() {
+    WORDS=`TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb '(samaccountname=dangling-multi1)' -s sub -b DC=release-4-5-0-pre1,DC=samba,DC=corp --show-deleted --reveal --sorted msDS-RevealedDSAs | grep msDS-RevealedDSAs | wc -l`
+    if [ $WORDS -ne 4 ]; then
+        echo Got $WORDS links for dangling-multi1
+	return 1
+    fi
+
+    WORDS=`TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb '(samaccountname=dangling-multi5)' -s sub -b DC=release-4-5-0-pre1,DC=samba,DC=corp --show-deleted --reveal --sorted msDS-RevealedDSAs | grep msDS-RevealedDSAs | wc -l`
+
+    if [ $WORDS -ne 0 ]; then
+        echo Got $WORDS links for dangling-multi5
+	return 1
+    fi
+
+    WORDS=`TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb '(samaccountname=Administrator)' -s sub -b DC=release-4-5-0-pre1,DC=samba,DC=corp --show-deleted --reveal --sorted msDS-RevealedDSAs | grep msDS-RevealedDSAs | wc -l`
+
+    if [ $WORDS -ne 2 ]; then
+        echo Got $WORDS links for Administrator
+	return 1
+    fi
+}
+
+
 if [ -d $release_dir ]; then
     testit $RELEASE undump
     testit "add_two_more_users" add_two_more_users
@@ -216,6 +288,11 @@ if [ -d $release_dir ]; then
     testit "check_expected_after_objects" check_expected_after_objects
     testit "dangling_one_way" dangling_one_way
     testit "dbcheck_clean" dbcheck_clean
+    testit "dangling_multi_valued" dangling_multi_valued
+    testit "dangling_multi_valued_check_missing" dangling_multi_valued_check_missing
+    testit "dangling_multi_valued_check_equal_or_too_many" dangling_multi_valued_check_equal_or_too_many
+    # Currently this cannot pass
+    testit "dangling_multi_valued_dbcheck" dbcheck_clean
 else
     subunit_start_test $RELEASE
     subunit_skip_test $RELEASE <<EOF

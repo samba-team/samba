@@ -1,0 +1,13 @@
+dn: CN=dangling-multi2,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+changetype: modify
+delete: msDS-RevealedDSAs
+msDS-RevealedDSAs: <GUID=4db69022-b1bc-46b0-a62e-3d7ff19636dc>;<SID=S-1-5-21-4177067393-1453636373-93818738-1000>;CN=DOUGLASB-DESKTO,OU=Domain Controllers,DC=release-4-5-0-pre1,DC=samba,DC=corp
+msDS-RevealedDSAs: <GUID=4db69022-b1bc-46b0-a62e-3d7ff19636dc>;<SID=S-1-5-21-4177067393-1453636373-93818738-1000>;CN=DOUGLASB-DESKTO,OU=Domain Controllers,DC=release-4-5-0-pre1,DC=samba,DC=corp
+msDS-RevealedDSAs: <GUID=4db69022-b1bc-46b0-a62e-3d7ff19636dc>;<SID=S-1-5-21-4177067393-1453636373-93818738-1000>;CN=DOUGLASB-DESKTO,OU=Domain Controllers,DC=release-4-5-0-pre1,DC=samba,DC=corp
+msDS-RevealedDSAs: <GUID=4db69022-b1bc-46b0-a62e-3d7ff19636dc>;<SID=S-1-5-21-4177067393-1453636373-93818738-1000>;CN=DOUGLASB-DESKTO,OU=Domain Controllers,DC=release-4-5-0-pre1,DC=samba,DC=corp
+
+dn: CN=dangling-multi3,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+changetype: modify
+delete: msDS-RevealedDSAs
+msDS-RevealedDSAs: <GUID=4db69022-b1bc-46b0-a62e-3d7ff19636dc>;<SID=S-1-5-21-4177067393-1453636373-93818738-1000>;CN=DOUGLASB-DESKTO,OU=Domain Controllers,DC=release-4-5-0-pre1,DC=samba,DC=corp
+msDS-RevealedDSAs: <GUID=4db69022-b1bc-46b0-a62e-3d7ff19636dc>;<SID=S-1-5-21-4177067393-1453636373-93818738-1000>;CN=DOUGLASB-DESKTO,OU=Domain Controllers,DC=release-4-5-0-pre1,DC=samba,DC=corp

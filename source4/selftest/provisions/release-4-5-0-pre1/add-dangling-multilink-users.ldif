@@ -1,0 +1,20 @@
+dn: CN=dangling-multi1,CN=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+objectclass: user
+samaccountname: dangling-multi1
+
+dn: CN=dangling-multi2,CN=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+objectclass: user
+samaccountname: dangling-multi2
+
+dn: CN=dangling-multi3,CN=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+objectclass: user
+samaccountname: dangling-multi3
+
+dn: CN=dangling-multi4,CN=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+objectclass: user
+samaccountname: dangling-multi4
+
+dn: CN=dangling-multi5,CN=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+objectclass: user
+samaccountname: dangling-multi5
+

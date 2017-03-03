@@ -973,6 +973,54 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                         if v_guid == obj_guid:
                             match_count += 1
                 if match_count != 1:
+                    reverse_syntax_oid = self.samdb_schema.get_syntax_oid_from_lDAPDisplayName(reverse_link_name)
+                    if syntax_oid == dsdb.DSDB_SYNTAX_BINARY_DN or reverse_syntax_oid == dsdb.DSDB_SYNTAX_BINARY_DN:
+                        if not linkID & 1:
+                            # Forward binary multi-valued linked attribute
+                            forward_count = 0
+                            for w in obj[attrname]:
+                                w_guid = dsdb_Dn(self.samdb, w).dn.get_extended_component("GUID")
+                                if w_guid == guid:
+                                    forward_count += 1
+
+                            if match_count == forward_count:
+                                continue
+
+                            error_count += 1
+
+                            # Add or remove the missing number of backlinks
+                            diff_count = forward_count - match_count
+
+                            # Loop until the difference between the forward and
+                            # the backward links is resolved.
+                            while diff_count != 0:
+                                if diff_count > 0:
+                                    # self.err_missing_backlink(obj, attrname,
+                                    #                          obj.dn.extended_str(),
+                                    #                          reverse_link_name,
+                                    #                          dsdb_dn.dn)
+                                    # diff_count -= 1
+                                    # TODO no method to fix these right now
+                                    self.report("ERROR: Can't fix missing "
+                                                "multi-valued backlinks on %s" % str(dsdb_dn.dn))
+                                    break
+                                else:
+                                    self.err_orphaned_backlink(res[0], reverse_link_name,
+                                                               obj.dn.extended_str(), attrname,
+                                                               dsdb_dn.dn)
+                                    diff_count += 1
+
+                        else:
+                            # If there's a backward link on binary multi-valued linked attribute,
+                            # let the check on the forward link remedy the value.
+                            # UNLESS, there is no forward link detected.
+                            if match_count == 0:
+                                self.err_orphaned_backlink(obj, attrname,
+                                                           val, reverse_link_name,
+                                                           dsdb_dn.dn)
+
+                        continue
+
                     error_count += 1
                     if linkID & 1:
                         # Backlink exists, but forward link does not
