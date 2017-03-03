@@ -92,6 +92,7 @@ conf.CHECK_FUNCS_IN('''
        gsskrb5_extract_authz_data_from_sec_context
        gss_krb5_export_lucid_sec_context
        gss_import_cred gss_export_cred
+       gss_acquire_cred_from
        ''', 'gssapi gssapi_krb5')
 conf.CHECK_VARIABLE('GSS_KRB5_CRED_NO_CI_FLAGS_X', headers=possible_gssapi_headers)
 conf.CHECK_FUNCS_IN('krb5_mk_req_extended krb5_kt_compare', 'krb5')
