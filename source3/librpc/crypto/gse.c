@@ -271,11 +271,12 @@ static NTSTATUS gse_init_client(TALLOC_CTX *mem_ctx,
 	/* TODO: get krb5 ticket using username/password, if no valid
 	 * one already available in ccache */
 
-	gss_maj = gss_krb5_import_cred(&gss_min,
-				       gse_ctx->ccache,
-				       NULL, /* keytab_principal */
-				       NULL, /* keytab */
-				       &gse_ctx->creds);
+	gss_maj = smb_gss_krb5_import_cred(&gss_min,
+					   gse_ctx->k5ctx,
+					   gse_ctx->ccache,
+					   NULL, /* keytab_principal */
+					   NULL, /* keytab */
+					   &gse_ctx->creds);
 	if (gss_maj) {
 		char *ccache = NULL;
 		int kret;
@@ -287,7 +288,7 @@ static NTSTATUS gse_init_client(TALLOC_CTX *mem_ctx,
 			ccache = NULL;
 		}
 
-		DEBUG(5, ("gss_krb5_import_cred ccache[%s] failed with [%s] -"
+		DEBUG(5, ("smb_gss_krb5_import_cred ccache[%s] failed with [%s] -"
 			  "the caller may retry after a kinit.\n",
 			  ccache, gse_errstr(gse_ctx, gss_maj, gss_min)));
 		SAFE_FREE(ccache);
@@ -576,12 +577,13 @@ static NTSTATUS gse_init_server(TALLOC_CTX *mem_ctx,
 	}
 
 	/* This creates a GSSAPI cred_id_t with the keytab set */
-	gss_maj = gss_krb5_import_cred(&gss_min, NULL, NULL, gse_ctx->keytab, 
-				       &gse_ctx->creds);
+	gss_maj = smb_gss_krb5_import_cred(&gss_min, gse_ctx->k5ctx,
+					   NULL, NULL, gse_ctx->keytab,
+					   &gse_ctx->creds);
 
 	if (gss_maj != 0
 	    && gss_maj != (GSS_S_CALL_BAD_STRUCTURE|GSS_S_BAD_NAME)) {
-		DEBUG(0, ("gss_krb5_import_cred failed with [%s]\n",
+		DEBUG(0, ("smb_gss_krb5_import_cred failed with [%s]\n",
 			  gse_errstr(gse_ctx, gss_maj, gss_min)));
 		status = NT_STATUS_INTERNAL_ERROR;
 		goto done;
