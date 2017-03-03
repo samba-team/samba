@@ -25,12 +25,25 @@
 #ifdef HAVE_GSSAPI
 
 #include "system/gssapi.h"
+#include "krb5_samba.h"
 
 #if defined(HAVE_GSS_OID_EQUAL)
 #define smb_gss_oid_equal gss_oid_equal
 #else
 int smb_gss_oid_equal(const gss_OID first_oid, const gss_OID second_oid);
 #endif /* HAVE_GSS_OID_EQUAL */
+
+/* wrapper around gss_krb5_import_cred() that prefers to use gss_acquire_cred_from()
+ * if this GSSAPI extension is available. gss_acquire_cred_from() is properly
+ * interposed by GSS-proxy while gss_krb5_import_cred() is not.
+ *
+ * This wrapper requires a proper krb5_context to resolve the ccache name for
+ * gss_acquire_cred_from().
+ *
+ * All gss_krb5_import_cred() callers in Samba already have krb5_context available. */
+uint32_t smb_gss_krb5_import_cred(OM_uint32 *minor_status, krb5_context ctx,
+				  krb5_ccache id, krb5_principal keytab_principal,
+				  krb5_keytab keytab, gss_cred_id_t *cred);
 
 #endif /* HAVE_GSSAPI */
 #endif /* _GSS_SAMBA_H */
