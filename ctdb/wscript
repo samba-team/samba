@@ -690,30 +690,6 @@ def build(bld):
                      deps='sys_rw replace',
                      install_path='${CTDB_HELPER_BINDIR}')
 
-    bld.SAMBA_GENERATOR('ctdb-smnotify-h',
-                        source='utils/smnotify/smnotify.x',
-                        target='utils/smnotify/smnotify.h',
-                        rule='rpcgen -h ${SRC} > ${TGT}')
-
-    xdr_buf_hack = 'grep -Fv "register int32_t *buf;"'
-
-    bld.SAMBA_GENERATOR('ctdb-smnotify-x',
-                        source='utils/smnotify/smnotify.x',
-                        target='utils/smnotify/gen_xdr.c',
-                        rule='rpcgen -c ${SRC} | ' + xdr_buf_hack + ' > ${TGT}')
-
-    bld.SAMBA_GENERATOR('ctdb-smnotify-c',
-                        source='utils/smnotify/smnotify.x',
-                        target='utils/smnotify/gen_smnotify.c',
-                        rule='rpcgen -l ${SRC} > ${TGT}')
-
-    bld.SAMBA_BINARY('smnotify',
-                     source=bld.SUBDIR('utils/smnotify',
-                                       'smnotify.c gen_smnotify.c gen_xdr.c'),
-                     deps='ctdb-smnotify-h ctdb-smnotify-c ctdb-smnotify-x popt tirpc',
-                     includes='utils utils/smnotify',
-                     install_path='${CTDB_HELPER_BINDIR}')
-
     bld.SAMBA_BINARY('ping_pong',
                      source='utils/ping_pong/ping_pong.c',
                      deps='',

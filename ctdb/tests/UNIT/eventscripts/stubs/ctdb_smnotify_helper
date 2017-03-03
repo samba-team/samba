@@ -1,0 +1,44 @@
+#!/bin/sh
+
+print_monitor_line()
+{
+	_client_ip="$1"
+	_server_ip="$2"
+
+	_priv="00000000000000000000000000000000"
+
+	# Pass 0 for local IP instead of doing endianness conversion
+	printf '%08x %08x %08x %08x %s %s %s\n' \
+	       0 \
+	       100021 \
+	       4 \
+	       16 \
+	       "$_priv" \
+	       "$_client_ip" \
+	       "$_server_ip"
+}
+
+print_state()
+{
+	_state="$1"
+
+	# Write the state as a host order 32-bit integer
+	_imports="import sys; import struct;"
+	_expr="sys.stdout.buffer.write(struct.pack('i', int(${_state})))"
+	python3 -c "${_imports} ${_expr}"
+}
+
+usage()
+{
+	printf 'usage: %s { monitor <client-ip> <source-ip> | state <stat> }\n' \
+	       "$1"
+	exit 1
+}
+
+if [ $# -eq 3 ] && [ "$1" = "monitor" ]; then
+	print_monitor_line "$2" "$3"
+elif [ $# -eq 2 ] && [ "$1" = "state" ]; then
+	print_state "$2"
+else
+	usage "$0"
+fi

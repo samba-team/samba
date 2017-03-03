@@ -14,6 +14,16 @@
 #   NFS_HOSTNAME=mycluster
 #   STATD_HOSTNAME="${NFS_HOSTNAME} -H /usr/local/libexec/ctdb/statd_callout"
 #
+# If using Linux kernel NFS then the following should also be set in
+# /etc/nfs.conf:
+#
+#   [sm-notify]
+#      lift-grace = n
+#
+# See sm-notify(8) for details.  This doesn't matter when using
+# NFS-Ganesha because sm-notify's attempt to lift grace will fail
+# silently if /proc/fs/lockd/nlm_end_grace is not found.
+#
 
 if [ -z "$CTDB_BASE" ] ; then
 	export CTDB_BASE="/usr/local/etc/ctdb"
@@ -90,41 +100,59 @@ statd_callout_queue_dir="${statd_callout_state_dir}/queue"
 
 ############################################################
 
+# Read pairs of:
+#   server-IP client-IP
+# from stdin and send associated SM_NOTIFY packets.
 send_notifies()
 {
-	_smnotify="${CTDB_HELPER_BINDIR}/smnotify"
-
 	# State must monotonically increase, across the entire
-	# cluster.  Use seconds since epoch and hope the time is in
+	# cluster.  Use seconds since epoch and assume the time is in
 	# sync across nodes.  Even numbers mean service is shut down,
-	# odd numbers mean service is started.
+	# odd numbers mean service is up.  However, sm-notify always
+	# reads the state and converts it to odd (if necessary, by
+	# adding 1 when it is even) because it only sends "up"
+	# notifications.  Note that there is a 2038 issue here but we
+	# will get to that later.
+	_state=$(date '+%s')
 
-	# Intentionally round to an even number
-	# shellcheck disable=SC2017
-	_state_even=$(($(date '+%s') / 2 * 2))
+	_helper="${CTDB_HELPER_BINDIR}/ctdb_smnotify_helper"
 
-	_prev=""
+	_notify_dir="${statd_callout_state_dir}/sm-notify"
+	mkdir -p "$_notify_dir"
+
 	while read -r _sip _cip; do
-		# NOTE: Consider optimising smnotify to read all the
-		# data from stdin and then run it in the background.
+		# Create a directory per server IP containing a file
+		# for each client IP
+		mkdir -p \
+			"${_notify_dir}/${_sip}/sm" \
+			"${_notify_dir}/${_sip}/sm.bak"
 
-		# Reset stateval for each serverip
-		if [ "$_sip" != "$_prev" ]; then
-			_stateval="$_state_even"
+		_out="${_notify_dir}/${_sip}/sm/${_cip}"
+		"$_helper" "monitor" "$_cip" "$_sip" >"$_out"
+	done
+
+	# Send notifications for server startup
+	_ref=$(find_statd_sm_dir)
+	for _sip_dir in "$_notify_dir"/*; do
+		if [ "$_sip_dir" = "${_notify_dir}/*" ]; then
+			break
 		fi
 
-		# Send notifies for server shutdown
-		"$_smnotify" --client="$_cip" --ip="$_sip" \
-			--server="$_sip" --stateval="$_stateval"
-		"$_smnotify" --client="$_cip" --ip="$_sip" \
-			--server="$NFS_HOSTNAME" --stateval="$_stateval"
+		_sip="${_sip_dir##*/}" # basename
 
-		# Send notifies for server startup
-		_stateval=$((_stateval + 1))
-		"$_smnotify" --client="$_cip" --ip="$_sip" \
-			--server="$_sip" --stateval="$_stateval"
-		"$_smnotify" --client="$_cip" --ip="$_sip" \
-			--server="$NFS_HOSTNAME" --stateval="$_stateval"
+		# Write the state as a host order 32-bit integer.  See
+		# note at top of function about state.
+		_out="${_sip_dir}/state"
+		"$_helper" "state" "$_state" >"$_out"
+
+		# The ownership of the directory and contents should
+		# match the system's statd sm directory, so that
+		# sm-notify drops privileges and switches to run as
+		# the directory owner.
+		chown -R --reference="$_ref" "$_sip_dir"
+		timeout 10 sm-notify -d -f -m 0 -n -P "$_sip_dir" -v "$_sip"
+
+		rm -rf "$_sip_dir"
 	done
 }
 
@@ -229,21 +257,13 @@ notify)
 	#    clients are ok with, buth other clients will barf at.
 	# 2, Some clients only accept statd packets IFF they come from the
 	#    'correct' ip address.
-	# 2a,Send out the notification using the 'correct' ip address and also
+	#    Send out the notification using the 'correct' ip address and also
 	#    specify the 'correct' hostname in the statd packet.
 	#    Some clients require both the correct source address and also the
 	#    correct name. (these clients also ONLY work if the ip addresses
 	#    used to map the share can be resolved into the name returned in
 	#    the notify packet.)
-	# 2b,Other clients require that the source ip address of the notify
-	#    packet matches the ip address used to take out the lock.
-	#    I.e. that the correct source address is used.
-	#    These clients also require that the statd notify packet contains
-	#    the name as the ip address used when the lock was taken out.
 	#
-	# Both 2a and 2b are commonly used in lockmanagers since they maximize
-	# probability that the client will accept the statd notify packet and
-	# not just ignore it.
 	# For all IPs we serve, collect info and push to the config database
 
 	# Construct a sed expression to take catdb output and produce pairs of:

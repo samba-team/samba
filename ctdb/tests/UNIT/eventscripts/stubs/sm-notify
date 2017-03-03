@@ -1,0 +1,76 @@
+#!/bin/sh
+
+usage()
+{
+	_prog="${0##*/}" # basename
+	cat <<EOF
+Usage: ${_prog} [-dfn] [-m MINUTES] [-P PATH] [-v name]
+EOF
+	exit 1
+}
+
+temp=$(getopt -n "sm-notify" -o "dfnm:P:v:h" -l "help" -- "$@")
+# shellcheck disable=SC2181
+# Would create unreadable long line
+if [ $? != 0 ] ; then
+	usage
+fi
+
+eval set -- "$temp"
+
+no_detach=false
+force=false
+minutes=15
+no_update_state=false
+path=""
+mon_name=""
+
+while : ; do
+	case "$1" in
+	-d) no_detach=true ; shift ;;
+	-f) force=true ; shift ;;
+	-n) no_update_state=true ; shift ;;
+	-m) minutes="$2" ; shift 2 ;;
+	-P) path="$2" ; shift 2 ;;
+	-v) mon_name="$2" ; shift 2 ;;
+	--) shift ; break ;;
+	*) usage ;;
+	esac
+done
+
+# Silence shellcheck regarding unused variables, which serve to
+# document the possible options, which might be used in the future
+: "$force" "$no_update_state" "$minutes"
+
+if ! $no_detach ; then
+	echo "Not supported without -P"
+	usage
+fi
+
+if [ -z "$path" ] ; then
+	echo "Not supported without -P"
+	usage
+fi
+
+if [ -z "$mon_name" ] ; then
+	echo "Not supported without -v"
+	usage
+fi
+
+read_state_file ()
+{
+	_path="$1"
+
+	od -t d4 "${_path}/state" | sed -n -e 's|^00*  *||p'
+}
+
+state=$(read_state_file "$path")
+
+find "${path}/sm" -type f |
+sort |
+while IFS="" read -r file ; do
+	read -r _ _ _ _ _ cip sip <"$file"
+	cat <<EOF
+SM_NOTIFY: ${sip} -> ${cip}, MON_NAME=${NFS_HOSTNAME}, STATE=${state}
+EOF
+done

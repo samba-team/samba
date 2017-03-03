@@ -3,6 +3,8 @@ setup()
 	setup_public_addresses
 	ctdb_set_pnn
 	setup_date "1234567890"
+
+	export NFS_HOSTNAME
 }
 
 ctdb_catdb_format_pairs()
@@ -48,8 +50,13 @@ EOF
 
 check_statd_callout_smnotify()
 {
-	_state_even=$(( $(date '+%s') / 2 * 2))
-	_state_odd=$((_state_even + 1))
+	# The state here doesn't really matter because the date stub
+	# generates a fixed value (as per above setup() function,
+	# which happens to set it to an even value).  In reality,
+	# sm-notify would convert it to an odd value, but for testing
+	# it doesn't really matter because the sm-notify stub just
+	# prints the state and it just needs to be matched.
+	_state=$(date '+%s')
 
 	nfs_load_config
 
@@ -57,10 +64,7 @@ check_statd_callout_smnotify()
 		while read -r _ _sip _; do
 			for _cip; do
 				cat <<EOF
-SM_NOTIFY: ${_sip} -> ${_cip}, MON_NAME=${_sip}, STATE=${_state_even}
-SM_NOTIFY: ${_sip} -> ${_cip}, MON_NAME=${NFS_HOSTNAME}, STATE=${_state_even}
-SM_NOTIFY: ${_sip} -> ${_cip}, MON_NAME=${_sip}, STATE=${_state_odd}
-SM_NOTIFY: ${_sip} -> ${_cip}, MON_NAME=${NFS_HOSTNAME}, STATE=${_state_odd}
+SM_NOTIFY: ${_sip} -> ${_cip}, MON_NAME=${NFS_HOSTNAME}, STATE=${_state}
 EOF
 			done
 		done | {
