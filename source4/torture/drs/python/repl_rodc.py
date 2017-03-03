@@ -118,6 +118,7 @@ class DrsRodcTestCase(drs_base.DrsBaseTestCase):
         rodc_creds.guess(self.rodc_ctx.lp)
         rodc_creds.set_username(self.rodc_name+'$')
         rodc_creds.set_password(self.rodc_pass)
+        self.rodc_creds = rodc_creds
 
         (self.drs, self.drs_handle) = self._ds_bind(self.dnsname_dc1)
         (self.rodc_drs, self.rodc_drs_handle) = self._ds_bind(self.dnsname_dc1, rodc_creds)
@@ -478,6 +479,91 @@ class DrsRodcTestCase(drs_base.DrsBaseTestCase):
 
         try:
             (level, ctr) = other_rodc_drs.DsGetNCChanges(other_rodc_drs_handle, 10, req10)
+            self.fail("Successfully replicated secrets to an RODC that shouldn't have been replicated.")
+        except WERRORError as (enum, estr):
+            self.assertEquals(enum, 8630) # ERROR_DS_DRA_SECRETS_DENIED
+
+    def test_msDSRevealedUsers_local_deny_allow(self):
+        """
+        Ensure that the deny trumps allow, and we can modify these
+        attributes directly instead of the global groups.
+
+        This may fail on Windows due to tokenGroup calculation caching.
+        """
+        rand = random.randint(1, 10000000)
+        expected_user_attributes = [drsuapi.DRSUAPI_ATTID_lmPwdHistory,
+                                    drsuapi.DRSUAPI_ATTID_supplementalCredentials,
+                                    drsuapi.DRSUAPI_ATTID_ntPwdHistory,
+                                    drsuapi.DRSUAPI_ATTID_unicodePwd,
+                                    drsuapi.DRSUAPI_ATTID_dBCSPwd]
+
+        # Add a user on DC1, add it to allowed password replication
+        # group, and replicate to RODC with EXOP_REPL_SECRETS
+        user_name = "test_rodcF_%s" % rand
+        password = "password12#"
+        user_dn = "CN=%s,%s" % (user_name, self.ou)
+        self.ldb_dc1.add({
+            "dn": user_dn,
+            "objectclass": "user",
+            "sAMAccountName": user_name
+        })
+
+        # Store some secret on this user
+        self.ldb_dc1.setpassword("(sAMAccountName=%s)" % user_name, password, False, user_name)
+
+        req10 = self._getnc_req10(dest_dsa=str(self.rodc_ctx.ntds_guid),
+                                  invocation_id=self.ldb_dc1.get_invocation_id(),
+                                  nc_dn_str=user_dn,
+                                  exop=drsuapi.DRSUAPI_EXOP_REPL_SECRET,
+                                  partial_attribute_set=drs_get_rodc_partial_attribute_set(self.ldb_dc1, self.tmp_samdb),
+                                  max_objects=133,
+                                  replica_flags=0)
+
+        m = ldb.Message()
+        m.dn = ldb.Dn(self.ldb_dc1, self.computer_dn)
+
+        m["msDS-RevealOnDemandGroup"] = \
+            ldb.MessageElement(user_dn, ldb.FLAG_MOD_ADD,
+                               "msDS-RevealOnDemandGroup")
+        self.ldb_dc1.modify(m)
+
+        # In local allow, should be success
+        try:
+            (level, ctr) = self.rodc_drs.DsGetNCChanges(self.rodc_drs_handle, 10, req10)
+        except:
+            self.fail("Should have succeeded when in local allow group")
+
+        self._assert_in_revealed_users(user_dn, expected_user_attributes)
+
+        (self.rodc_drs, self.rodc_drs_handle) = self._ds_bind(self.dnsname_dc1, self.rodc_creds)
+
+        m = ldb.Message()
+        m.dn = ldb.Dn(self.ldb_dc1, self.computer_dn)
+
+        m["msDS-NeverRevealGroup"] = \
+            ldb.MessageElement(user_dn, ldb.FLAG_MOD_ADD,
+                               "msDS-NeverRevealGroup")
+        self.ldb_dc1.modify(m)
+
+        # In local allow and deny, should be failure
+        try:
+            (level, ctr) = self.rodc_drs.DsGetNCChanges(self.rodc_drs_handle, 10, req10)
+            self.fail("Successfully replicated secrets to an RODC that shouldn't have been replicated.")
+        except WERRORError as (enum, estr):
+            self.assertEquals(enum, 8630) # ERROR_DS_DRA_SECRETS_DENIED
+
+        m = ldb.Message()
+        m.dn = ldb.Dn(self.ldb_dc1, self.computer_dn)
+
+        m["msDS-RevealOnDemandGroup"] = \
+            ldb.MessageElement(user_dn, ldb.FLAG_MOD_DELETE,
+                               "msDS-RevealOnDemandGroup")
+        self.ldb_dc1.modify(m)
+
+        # In local deny, should be failure
+        (self.rodc_drs, self.rodc_drs_handle) = self._ds_bind(self.dnsname_dc1, self.rodc_creds)
+        try:
+            (level, ctr) = self.rodc_drs.DsGetNCChanges(self.rodc_drs_handle, 10, req10)
             self.fail("Successfully replicated secrets to an RODC that shouldn't have been replicated.")
         except WERRORError as (enum, estr):
             self.assertEquals(enum, 8630) # ERROR_DS_DRA_SECRETS_DENIED
