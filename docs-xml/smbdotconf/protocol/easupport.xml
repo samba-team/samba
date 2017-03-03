@@ -4,12 +4,27 @@
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This boolean parameter controls whether <citerefentry><refentrytitle>smbd</refentrytitle>                                       
-    <manvolnum>8</manvolnum></citerefentry> will allow clients to attempt to store OS/2 style Extended
-    attributes on a share. In order to enable this parameter the underlying filesystem exported by
-    the share must support extended attributes (such as provided on XFS and EXT3 on Linux, with the
-    correct kernel patches). On Linux the filesystem must have been mounted with the mount
-        option user_xattr in order for extended attributes to work, also
-		extended attributes must be compiled into the Linux kernel.</para>
+    <manvolnum>8</manvolnum></citerefentry> will allow clients to attempt to access extended
+    attributes on a share. In order to enable this parameter on a setup with default VFS modules:
+    </para>
+    <itemizedlist>
+	<listitem><para>Samba must have been built with extended attributes support.
+	</para></listitem>
+	<listitem><para>The underlying filesystem exposed by the share must support extended
+	attributes (e.g. the getfattr<manvolnum>1</manvolnum> / setfattr<manvolnum>1</manvolnum>
+	utilities must work).
+	</para></listitem>
+    </itemizedlist>
+    <para>
+    Note that the SMB protocol allows setting attributes whose value is 64K bytes long,
+    and that on NTFS, the maximum storage space for extended attributes per file is 64K.
+    On most UNIX systems (Solaris and ZFS file system being the exception), the limits
+    are much lower - typically 4K. Worse, the same 4K space is often used to store
+    system metadata such as POSIX ACLs, or Samba's NT ACLs. Giving clients
+    access to this tight space via extended attribute support could consume all
+    of it by unsuspecting client applications, which would prevent changing
+    system metadata due to lack of space.
+    </para>
 </description>
 
 <value type="default">no</value>
