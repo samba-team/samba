@@ -1129,13 +1129,14 @@ static WERROR samdb_result_sid_array_dn(struct ldb_context *sam_ctx,
 
 /*
   return an array of SIDs from a ldb_message given an attribute name
-  assumes the SIDs are in NDR form
+  assumes the SIDs are in NDR form (with an additional sid at the end)
  */
 static WERROR samdb_result_sid_array_ndr(struct ldb_context *sam_ctx,
 					 struct ldb_message *msg,
 					 TALLOC_CTX *mem_ctx,
 					 const char *attr,
-					 const struct dom_sid ***sids)
+					 const struct dom_sid ***sids,
+					 const struct dom_sid *user_sid)
 {
 	struct ldb_message_element *el;
 	unsigned int i;
@@ -1146,7 +1147,8 @@ static WERROR samdb_result_sid_array_ndr(struct ldb_context *sam_ctx,
 		return WERR_OK;
 	}
 
-	(*sids) = talloc_array(mem_ctx, const struct dom_sid *, el->num_values + 1);
+	/* Make array long enough for NULL and additional SID */
+	(*sids) = talloc_array(mem_ctx, const struct dom_sid *, el->num_values + 2);
 	W_ERROR_HAVE_NO_MEMORY(*sids);
 
 	for (i=0; i<el->num_values; i++) {
@@ -1163,7 +1165,8 @@ static WERROR samdb_result_sid_array_ndr(struct ldb_context *sam_ctx,
 		}
 		(*sids)[i] = sid;
 	}
-	(*sids)[i] = NULL;
+	(*sids)[i] = user_sid;
+	(*sids)[i+1] = NULL;
 
 	return WERR_OK;
 }
@@ -1205,6 +1208,7 @@ static WERROR getncchanges_repl_secret(struct drsuapi_bind_state *b_state,
 	const char *obj_attrs[] = { "tokenGroups", "objectSid", "UserAccountControl", "msDS-KrbTgtLinkBL", NULL };
 	struct ldb_result *rodc_res, *obj_res;
 	const struct dom_sid **never_reveal_sids, **reveal_sids, **token_sids;
+	const struct dom_sid *object_sid = NULL;
 	WERROR werr;
 
 	DEBUG(3,(__location__ ": DRSUAPI_EXOP_REPL_SECRET extended op on %s\n",
@@ -1289,8 +1293,8 @@ static WERROR getncchanges_repl_secret(struct drsuapi_bind_state *b_state,
 	if (ret != LDB_SUCCESS || obj_res->count != 1) goto failed;
 
 	/* if the object SID is equal to the user_sid, allow */
-	if (dom_sid_equal(user_sid,
-			  samdb_result_dom_sid(mem_ctx, obj_res->msgs[0], "objectSid"))) {
+	object_sid = samdb_result_dom_sid(mem_ctx, obj_res->msgs[0], "objectSid");
+	if (dom_sid_equal(user_sid, object_sid)) {
 		goto allowed;
 	}
 
@@ -1335,7 +1339,7 @@ static WERROR getncchanges_repl_secret(struct drsuapi_bind_state *b_state,
 	}
 
 	werr = samdb_result_sid_array_ndr(b_state->sam_ctx_system, obj_res->msgs[0],
-					 mem_ctx, "tokenGroups", &token_sids);
+					 mem_ctx, "tokenGroups", &token_sids, object_sid);
 	if (!W_ERROR_IS_OK(werr) || token_sids==NULL) {
 		goto denied;
 	}
