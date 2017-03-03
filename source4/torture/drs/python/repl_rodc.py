@@ -207,7 +207,7 @@ class DrsRodcTestCase(drs_base.DrsBaseTestCase):
         # Check that the user has been added to msDSRevealedUsers
         self._assert_in_revealed_users(user_dn, expected_user_attributes)
 
-    def test_msDSRevealedUsers(self):
+    def test_msDSRevealedUsers_admin(self):
         """
         When a secret attribute is to be replicated to an RODC, the contents
         of the attribute should be added to the msDSRevealedUsers attribute
@@ -283,6 +283,82 @@ class DrsRodcTestCase(drs_base.DrsBaseTestCase):
                                   attrs=["msDS-RevealedUsers"])
         self.assertFalse("msDS-RevealedUsers" in res[0])
 
+    def test_msDSRevealedUsers(self):
+        """
+        When a secret attribute is to be replicated to an RODC, the contents
+        of the attribute should be added to the msDSRevealedUsers attribute
+        of the computer object corresponding to the RODC.
+        """
+
+        rand = random.randint(1, 10000000)
+        expected_user_attributes = [drsuapi.DRSUAPI_ATTID_lmPwdHistory,
+                                    drsuapi.DRSUAPI_ATTID_supplementalCredentials,
+                                    drsuapi.DRSUAPI_ATTID_ntPwdHistory,
+                                    drsuapi.DRSUAPI_ATTID_unicodePwd,
+                                    drsuapi.DRSUAPI_ATTID_dBCSPwd]
+
+        # Add a user on DC1, add it to allowed password replication
+        # group, and replicate to RODC with EXOP_REPL_SECRETS
+        user_name = "test_rodcD_%s" % rand
+        password = "password12#"
+        user_dn = "CN=%s,%s" % (user_name, self.ou)
+        self.ldb_dc1.add({
+            "dn": user_dn,
+            "objectclass": "user",
+            "sAMAccountName": user_name
+        })
+
+        # Store some secret on this user
+        self.ldb_dc1.setpassword("(sAMAccountName=%s)" % user_name, password, False, user_name)
+
+        self.ldb_dc1.add_remove_group_members("Allowed RODC Password Replication Group",
+                                              [user_name],
+                                              add_members_operation=True)
+
+        req10 = self._getnc_req10(dest_dsa=str(self.rodc_ctx.ntds_guid),
+                                  invocation_id=self.ldb_dc1.get_invocation_id(),
+                                  nc_dn_str=user_dn,
+                                  exop=drsuapi.DRSUAPI_EXOP_REPL_SECRET,
+                                  partial_attribute_set=drs_get_rodc_partial_attribute_set(self.ldb_dc1, self.tmp_samdb),
+                                  max_objects=133,
+                                  replica_flags=0)
+        (level, ctr) = self.drs.DsGetNCChanges(self.drs_handle, 10, req10)
+
+        # Check that the user has been added to msDSRevealedUsers
+        (packed_attrs_1, unpacked_attrs_1) = self._assert_in_revealed_users(user_dn, expected_user_attributes)
+
+        # Change the user's password on DC1
+        self.ldb_dc1.setpassword("(sAMAccountName=%s)" % user_name, password+"1", False, user_name)
+
+        (packed_attrs_2, unpacked_attrs_2) = self._assert_in_revealed_users(user_dn, expected_user_attributes)
+        self._assert_attrlist_equals(unpacked_attrs_1, unpacked_attrs_2)
+
+        # Replicate to RODC again with EXOP_REPL_SECRETS
+        req10 = self._getnc_req10(dest_dsa=str(self.rodc_ctx.ntds_guid),
+                                  invocation_id=self.ldb_dc1.get_invocation_id(),
+                                  nc_dn_str=user_dn,
+                                  exop=drsuapi.DRSUAPI_EXOP_REPL_SECRET,
+                                  partial_attribute_set=drs_get_rodc_partial_attribute_set(self.ldb_dc1, self.tmp_samdb),
+                                  max_objects=133,
+                                  replica_flags=0)
+        (level, ctr) = self.rodc_drs.DsGetNCChanges(self.rodc_drs_handle, 10, req10)
+
+        # This is important for Windows, because the entry won't have been
+        # updated in time if we don't have it. Even with this sleep, it only
+        # passes some of the time...
+        time.sleep(5)
+
+        # Check that the entry in msDSRevealedUsers has been updated
+        (packed_attrs_3, unpacked_attrs_3) = self._assert_in_revealed_users(user_dn, expected_user_attributes)
+        self._assert_attrlist_changed(unpacked_attrs_2, unpacked_attrs_3, expected_user_attributes)
+
+        # We should be able to delete the user
+        self.ldb_dc1.deleteuser(user_name)
+
+        res = self.ldb_dc1.search(scope=ldb.SCOPE_BASE, base=self.computer_dn,
+                                  attrs=["msDS-RevealedUsers"])
+        self.assertFalse("msDS-RevealedUsers" in res[0])
+
     def test_msDSRevealedUsers_pas(self):
         """
         If we provide a Partial Attribute Set when replicating to an RODC,
@@ -302,7 +378,7 @@ class DrsRodcTestCase(drs_base.DrsBaseTestCase):
 
         # Add a user on DC1, add it to allowed password replication
         # group, and replicate to RODC with EXOP_REPL_SECRETS
-        user_name = "test_rodcD_%s" % rand
+        user_name = "test_rodcE_%s" % rand
         password = "password12#"
         user_dn = "CN=%s,%s" % (user_name, self.ou)
         self.ldb_dc1.add({
