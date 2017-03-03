@@ -579,8 +579,9 @@ _PUBLIC_ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
 		return ENOMEM;
 	}
 
-	maj_stat = gss_krb5_import_cred(&min_stat, ccache->ccache, NULL, NULL, 
-					&gcc->creds);
+	maj_stat = smb_gss_krb5_import_cred(&min_stat, ccache->smb_krb5_context->krb5_context,
+					    ccache->ccache, NULL, NULL,
+					    &gcc->creds);
 	if ((maj_stat == GSS_S_FAILURE) &&
 	    (min_stat == (OM_uint32)KRB5_CC_END ||
 	     min_stat == (OM_uint32)KRB5_CC_NOTFOUND ||
@@ -597,8 +598,9 @@ _PUBLIC_ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
 			return ret;
 		}
 
-		maj_stat = gss_krb5_import_cred(&min_stat, ccache->ccache, NULL, NULL,
-						&gcc->creds);
+		maj_stat = smb_gss_krb5_import_cred(&min_stat, ccache->smb_krb5_context->krb5_context,
+						    ccache->ccache, NULL, NULL,
+						    &gcc->creds);
 
 	}
 
@@ -609,7 +611,7 @@ _PUBLIC_ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
 		} else {
 			ret = EINVAL;
 		}
-		(*error_string) = talloc_asprintf(cred, "gss_krb5_import_cred failed: %s", error_message(ret));
+		(*error_string) = talloc_asprintf(cred, "smb_gss_krb5_import_cred failed: %s", error_message(ret));
 		return ret;
 	}
 
@@ -1076,12 +1078,14 @@ _PUBLIC_ int cli_credentials_get_server_gss_creds(struct cli_credentials *cred,
 
 	if (ktc->password_based || obtained < CRED_SPECIFIED) {
 		/* This creates a GSSAPI cred_id_t for match-by-key with only the keytab set */
-		maj_stat = gss_krb5_import_cred(&min_stat, NULL, NULL, ktc->keytab,
-						&gcc->creds);
+		maj_stat = smb_gss_krb5_import_cred(&min_stat, smb_krb5_context->krb5_context,
+						    NULL, NULL, ktc->keytab,
+						    &gcc->creds);
 	} else {
 		/* This creates a GSSAPI cred_id_t with the principal and keytab set, matching by name */
-		maj_stat = gss_krb5_import_cred(&min_stat, NULL, princ, ktc->keytab,
-						&gcc->creds);
+		maj_stat = smb_gss_krb5_import_cred(&min_stat, smb_krb5_context->krb5_context,
+						    NULL, princ, ktc->keytab,
+						    &gcc->creds);
 	}
 	if (maj_stat) {
 		if (min_stat) {
