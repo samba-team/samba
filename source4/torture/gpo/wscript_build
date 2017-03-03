@@ -1,0 +1,13 @@
+#!/usr/bin/env python
+
+bld.SAMBA_MODULE('TORTURE_GPO',
+	source='''
+        gpo.c
+        apply.c
+        ''',
+	subsystem='smbtorture',
+	deps='torture samba-util-core ldb',
+	internal_module=True,
+	autoproto='proto.h',
+	init_function='torture_gpo_init'
+	)

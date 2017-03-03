@@ -170,7 +170,7 @@ class gp_sec_ext(gp_ext):
         ret = False
         inftable = self.populate_inf()
 
-        policy = conn.loadfile(path.replace('/', '\\')).decode('utf-16')
+        policy = conn.loadfile(path.replace('/', '\\'))
         current_section = None
 
         # So here we would declare a boolean,
@@ -181,7 +181,10 @@ class gp_sec_ext(gp_ext):
 
         inf_conf = ConfigParser()
         inf_conf.optionxform=str
-        inf_conf.readfp(StringIO(policy))
+        try:
+            inf_conf.readfp(StringIO(policy))
+        except:
+            inf_conf.readfp(StringIO(policy.decode('utf-16')))
 
         for section in inf_conf.sections():
             current_section = inftable.get(section)

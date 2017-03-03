@@ -238,6 +238,10 @@ for env in ["ad_dc_ntvfs", "nt4_dc"]:
 plantestsuite("samba.blackbox.pdbtest.s4winbind(ad_dc_ntvfs)", "ad_dc_ntvfs:local", [os.path.join(bbdir, "test_pdbtest.sh"), '$SERVER', "$PREFIX", "pdbtest3", smbclient4, '$SMB_CONF_PATH', configuration + " --option='authmethods=winbind'"])
 plantestsuite("samba.blackbox.pdbtest.s4winbind_wbclient(ad_dc_ntvfs)", "ad_dc_ntvfs:local", [os.path.join(bbdir, "test_pdbtest.sh"), '$SERVER', "$PREFIX", "pdbtest4", smbclient4, '$SMB_CONF_PATH', configuration + " --option='authmethods=winbind_wbclient'"])
 
+gpo = smbtorture4_testsuites("gpo.")
+for t in gpo:
+    plansmbtorture4testsuite(t, 'ad_dc:local', ['//$SERVER/sysvol', '-U$USERNAME%$PASSWORD'])
+
 transports = ["ncacn_np", "ncacn_ip_tcp"]
 
 #Kerberos varies between functional levels, so it is important to check this on all of them
