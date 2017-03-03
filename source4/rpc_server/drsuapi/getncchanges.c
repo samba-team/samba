@@ -190,6 +190,93 @@ fail:
 	}
 }
 
+static WERROR getncchanges_update_revealed_list(struct ldb_context *sam_ctx,
+						TALLOC_CTX *mem_ctx,
+						struct GUID *destination_dsa_guid,
+						struct ldb_message **msg,
+						struct ldb_dn *object_dn,
+						const struct dsdb_attribute *sa,
+						struct replPropertyMetaData1 *meta_data,
+						struct ldb_message *revealed_users)
+{
+	enum ndr_err_code ndr_err;
+	int ldb_err;
+	unsigned i;
+	char *attr_str = NULL;
+	char *attr_hex = NULL;
+	DATA_BLOB attr_blob;
+	struct ldb_message_element *existing = NULL, *el_add = NULL, *el_del = NULL;
+	const char * const * secret_attributes = ldb_get_opaque(sam_ctx, "LDB_SECRET_ATTRIBUTE_LIST");
+
+	if (!ldb_attr_in_list(secret_attributes,
+			      sa->lDAPDisplayName)) {
+		return WERR_OK;
+	}
+
+
+	ndr_err = ndr_push_struct_blob(&attr_blob, mem_ctx, meta_data, (ndr_push_flags_fn_t)ndr_push_replPropertyMetaData1);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return WERR_DS_DRA_INTERNAL_ERROR;
+	}
+
+	attr_hex = hex_encode_talloc(mem_ctx, attr_blob.data, attr_blob.length);
+	if (attr_hex == NULL) {
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
+
+	attr_str = talloc_asprintf(mem_ctx, "B:%zd:%s:%s", attr_blob.length*2, attr_hex, ldb_dn_get_linearized(object_dn));
+	if (attr_str == NULL) {
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
+
+	existing = ldb_msg_find_element(revealed_users, "msDS-RevealedUsers");
+	if (existing != NULL) {
+		/* Replace the old value (if one exists) with the current one */
+		for (i = 0; i < existing->num_values; i++) {
+			struct dsdb_dn *existing_dn = dsdb_dn_parse_trusted(mem_ctx, sam_ctx, &existing->values[i], DSDB_SYNTAX_BINARY_DN);
+			if (ldb_dn_compare(object_dn, existing_dn->dn) == 0) {
+				struct replPropertyMetaData1 existing_meta_data;
+				ndr_err = ndr_pull_struct_blob_all_noalloc(&existing_dn->extra_part,
+							       &existing_meta_data,
+							       (ndr_pull_flags_fn_t)ndr_pull_replPropertyMetaData1);
+				if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+					return WERR_DS_DRA_INTERNAL_ERROR;
+				}
+
+				if (existing_meta_data.attid == sa->attributeID_id) {
+					ldb_err = ldb_msg_add_empty(*msg, "msDS-RevealedUsers", LDB_FLAG_MOD_DELETE, &el_del);
+					if (ldb_err != LDB_SUCCESS) {
+						return WERR_DS_DRA_INTERNAL_ERROR;
+					}
+
+					el_del->values = talloc_array((*msg)->elements, struct ldb_val, 1);
+					if (el_del->values == NULL) {
+						return WERR_NOT_ENOUGH_MEMORY;
+					}
+					el_del->values[0] = existing->values[i];
+					el_del->num_values = 1;
+				}
+			}
+		}
+	}
+
+	ldb_err = ldb_msg_add_empty(*msg, "msDS-RevealedUsers", LDB_FLAG_MOD_ADD, &el_add);
+	if (ldb_err != LDB_SUCCESS) {
+		return WERR_DS_DRA_INTERNAL_ERROR;
+	}
+
+	el_add->values = talloc_array((*msg)->elements, struct ldb_val, 1);
+	if (el_add->values == NULL) {
+		return WERR_NOT_ENOUGH_MEMORY;
+
+	}
+
+	el_add->values[0] = data_blob_string_const(attr_str);
+	el_add->num_values = 1;
+
+	return WERR_OK;
+}
+
 /* 
   drsuapi_DsGetNCChanges for one object
 */
@@ -206,12 +293,14 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 					  struct drsuapi_DsReplicaCursorCtrEx *uptodateness_vector,
 					  enum drsuapi_DsExtendedOperation extended_op,
 					  bool force_object_return,
-					  uint32_t *local_pas)
+					  uint32_t *local_pas,
+					  struct GUID *destination_dsa_guid)
 {
 	const struct ldb_val *md_value;
 	uint32_t i, n;
 	struct replPropertyMetaDataBlob md;
 	uint32_t rid = 0;
+	int ldb_err;
 	enum ndr_err_code ndr_err;
 	uint32_t *attids;
 	const char *rdn;
@@ -219,6 +308,10 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 	uint64_t uSNChanged;
 	unsigned int instanceType;
 	struct dsdb_syntax_ctx syntax_ctx;
+	struct ldb_result *res = NULL;
+	struct ldb_message *revealed_list_msg = NULL, *existing_revealed_list_msg = NULL;
+	WERROR werr;
+	int ret;
 
 	/* make dsdb sytanx context for conversions */
 	dsdb_syntax_ctx_init(&syntax_ctx, sam_ctx, schema);
@@ -293,6 +386,44 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 	dom_sid_split_rid(NULL, &obj->object.identifier->sid, NULL, &rid);
 
 	obj->meta_data_ctr->meta_data = talloc_array(obj, struct drsuapi_DsReplicaMetaData, md.ctr.ctr1.count);
+
+	if (extended_op == DRSUAPI_EXOP_REPL_SECRET) {
+		/* Get the existing revealed users for the destination */
+		struct ldb_dn *ntds_dn = NULL, *server_dn = NULL, *machine_dn = NULL;
+		static const char *machine_attrs[] = { "msDS-RevealedUsers", NULL };
+
+		ldb_err = dsdb_find_dn_by_guid(sam_ctx, obj,
+					       destination_dsa_guid, 0,
+					       &ntds_dn);
+		if (ldb_err != LDB_SUCCESS) {
+			return WERR_DS_DRA_INTERNAL_ERROR;
+		}
+
+		server_dn = ldb_dn_get_parent(obj, ntds_dn);
+		if (server_dn == NULL) {
+			return WERR_DS_DRA_INTERNAL_ERROR;
+		}
+
+		ldb_err = samdb_reference_dn(sam_ctx, obj, server_dn,
+					     "serverReference", &machine_dn);
+		if (ldb_err != LDB_SUCCESS) {
+			return WERR_DS_DRA_INTERNAL_ERROR;
+		}
+
+		revealed_list_msg = ldb_msg_new(sam_ctx);
+		if (revealed_list_msg == NULL) {
+			return WERR_NOT_ENOUGH_MEMORY;
+		}
+		revealed_list_msg->dn = machine_dn;
+
+		ldb_err = dsdb_search_dn(sam_ctx, obj, &res, machine_dn, machine_attrs, 0);
+		if (ldb_err != LDB_SUCCESS || res->count != 1) {
+			return WERR_DS_DRA_INTERNAL_ERROR;
+		}
+
+		existing_revealed_list_msg = res->msgs[0];
+	}
+
 	for (n=i=0; i<md.ctr.ctr1.count; i++) {
 		const struct dsdb_attribute *sa;
 		bool force_attribute = false;
@@ -328,6 +459,10 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 			force_attribute = true;
 			DEBUG(4,("Forcing attribute %s in %s\n",
 				 sa->lDAPDisplayName, ldb_dn_get_linearized(msg->dn)));
+			werr = getncchanges_update_revealed_list(sam_ctx, obj, destination_dsa_guid, &revealed_list_msg, msg->dn, sa, &md.ctr.ctr1.array[i], existing_revealed_list_msg);
+			if (!W_ERROR_IS_OK(werr)) {
+				return werr;
+			}
 		}
 
 		/* filter by uptodateness_vector */
@@ -354,7 +489,32 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 		obj->meta_data_ctr->meta_data[n].originating_invocation_id = md.ctr.ctr1.array[i].originating_invocation_id;
 		obj->meta_data_ctr->meta_data[n].originating_usn = md.ctr.ctr1.array[i].originating_usn;
 		attids[n] = md.ctr.ctr1.array[i].attid;
+
 		n++;
+	}
+
+	if (revealed_list_msg != NULL) {
+		ret = ldb_transaction_start(sam_ctx);
+		if (ret != LDB_SUCCESS) {
+			DEBUG(0,(__location__ ": Failed transaction start - %s\n",
+				 ldb_errstring(sam_ctx)));
+			return WERR_DS_DRA_INTERNAL_ERROR;
+		}
+
+		ret = ldb_modify(sam_ctx, revealed_list_msg);
+		if (ret != LDB_SUCCESS) {
+			DEBUG(0,(__location__ ": Failed to commit revealed links - %s\n",
+				 ldb_errstring(sam_ctx)));
+			ldb_transaction_cancel(sam_ctx);
+			return WERR_DS_DRA_INTERNAL_ERROR;
+		}
+
+		ret = ldb_transaction_commit(sam_ctx);
+		if (ret != LDB_SUCCESS) {
+			DEBUG(0,(__location__ ": Failed transaction commit - %s\n",
+				 ldb_errstring(sam_ctx)));
+			return WERR_DS_DRA_INTERNAL_ERROR;
+		}
 	}
 
 	/* ignore it if its an empty change. Note that renames always
@@ -391,7 +551,6 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 	 */
 	for (i=0; i<obj->object.attribute_ctr.num_attributes; i++) {
 		struct ldb_message_element *el;
-		WERROR werr;
 		const struct dsdb_attribute *sa;
 
 		sa = dsdb_attribute_by_attributeID_id(schema, attids[i]);
@@ -1133,7 +1292,6 @@ failed:
 	ctr6->extended_ret = DRSUAPI_EXOP_ERR_NONE;
 	return WERR_DS_DRA_BAD_DN;
 }
-
 
 /*
   handle a DRSUAPI_EXOP_REPL_OBJ call
@@ -2413,7 +2571,8 @@ allowed:
 						   req10->uptodateness_vector,
 						   req10->extended_op,
 						   max_wait_reached,
-						   local_pas);
+						   local_pas,
+						   &req10->destination_dsa_guid);
 		if (!W_ERROR_IS_OK(werr)) {
 			return werr;
 		}
@@ -2524,7 +2683,8 @@ allowed:
 							   req10->uptodateness_vector,
 							   req10->extended_op,
 							   false, /* force_object_return */
-							   local_pas);
+							   local_pas,
+							   &req10->destination_dsa_guid);
 			if (!W_ERROR_IS_OK(werr)) {
 				return werr;
 			}
