@@ -372,7 +372,7 @@ static ADS_STATUS ads_init_gssapi_cred(ADS_STRUCT *ads, gss_cred_id_t *cred)
 		goto done;
 	}
 
-	maj = gss_krb5_import_cred(&min, kccache, NULL, NULL, cred);
+	maj = smb_gss_krb5_import_cred(&min, kctx, kccache, NULL, NULL, cred);
 	if (maj != GSS_S_COMPLETE) {
 		status = ADS_ERROR_GSS(maj, min);
 		goto done;
