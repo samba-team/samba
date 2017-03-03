@@ -266,7 +266,6 @@ _PUBLIC_ struct tevent_req *auth_check_password_send(TALLOC_CTX *mem_ctx,
 	/* if all the modules say 'not for me' this is reasonable */
 	NTSTATUS nt_status;
 	uint8_t chal[8];
-	struct auth_usersupplied_info *user_info_tmp;
 	struct tevent_immediate *im;
 
 	DEBUG(3,("auth_check_password_send: "
@@ -285,6 +284,7 @@ _PUBLIC_ struct tevent_req *auth_check_password_send(TALLOC_CTX *mem_ctx,
 
 	if (!user_info->mapped_state) {
 		int server_role = lpcfg_server_role(auth_ctx->lp_ctx);
+		struct auth_usersupplied_info *user_info_tmp;
 
 		nt_status = map_user_info(
 			auth_ctx->sam_ctx, req,
