@@ -141,7 +141,9 @@ static NTSTATUS wb_irpc_SamLogon(struct irpc_message *msg,
 
 	domain = find_auth_domain(0, target_domain_name);
 	if (domain == NULL) {
-		return NT_STATUS_NO_SUCH_USER;
+		req->out.result = NT_STATUS_NO_SUCH_USER;
+		req->out.authoritative = 0;
+		return NT_STATUS_OK;
 	}
 
 	DEBUG(5, ("wb_irpc_SamLogon called\n"));
