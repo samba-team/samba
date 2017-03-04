@@ -171,7 +171,8 @@ uint32_t map_oplock_to_lease_type(uint16_t op_type)
 	return ret;
 }
 
-uint32_t get_lease_type(struct share_mode_data *d, struct share_mode_entry *e)
+uint32_t get_lease_type(const struct share_mode_data *d,
+			const struct share_mode_entry *e)
 {
 	if (e->op_type == LEASE_OPLOCK) {
 		return d->leases[e->lease_idx].current_state;
