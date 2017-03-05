@@ -154,6 +154,15 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 		num_sids++;
 	}
 
+	if (session_info_flags & AUTH_SESSION_INFO_NTLM) {
+		sids = talloc_realloc(tmp_ctx, sids, struct dom_sid, num_sids + 1);
+		NT_STATUS_HAVE_NO_MEMORY(sids);
+
+		if (!dom_sid_parse(SID_NT_NTLM_AUTHENTICATION, &sids[num_sids])) {
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+		num_sids++;
+	}
 
 
 	if (num_sids > PRIMARY_USER_SID_INDEX && dom_sid_equal(anonymous_sid, &sids[PRIMARY_USER_SID_INDEX])) {

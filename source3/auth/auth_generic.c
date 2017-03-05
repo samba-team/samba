@@ -403,7 +403,8 @@ NTSTATUS auth_check_password_session_info(struct auth4_context *auth_context,
 								server_info,
 								user_info->client.account_name,
 								AUTH_SESSION_INFO_UNIX_TOKEN |
-								AUTH_SESSION_INFO_DEFAULT_GROUPS,
+								AUTH_SESSION_INFO_DEFAULT_GROUPS |
+								AUTH_SESSION_INFO_NTLM,
 								session_info);
 		TALLOC_FREE(server_info);
 	}
