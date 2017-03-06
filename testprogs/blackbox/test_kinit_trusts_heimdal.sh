@@ -52,8 +52,16 @@ rm -rf $KRB5CCNAME_PATH
 echo $TRUST_PASSWORD > $PREFIX/tmppassfile
 testit "kinit with password" $samba4kinit $enctype --password-file=$PREFIX/tmppassfile --request-pac $TRUST_USERNAME@$TRUST_REALM   || failed=`expr $failed + 1`
 test_smbclient "Test login with user kerberos ccache" 'ls' "$unc" -k yes || failed=`expr $failed + 1`
+rm -rf $KRB5CCNAME_PATH
+
+# Test with smbclient4
+smbclient="$samba4bindir/smbclient4"
+testit "kinit with password" $samba4kinit $enctype --password-file=$PREFIX/tmppassfile --request-pac $TRUST_USERNAME@$TRUST_REALM   || failed=`expr $failed + 1`
+test_smbclient "Test login with user kerberos ccache (smbclient4)" 'ls' "$unc" -k yes || failed=`expr $failed + 1`
+rm -rf $KRB5CCNAME_PATH
 
 testit "kinit with password (enterprise style)" $samba4kinit $enctype --enterprise --password-file=$PREFIX/tmppassfile --request-pac $TRUST_USERNAME@$TRUST_REALM   || failed=`expr $failed + 1`
+smbclient="$samba4bindir/smbclient"
 test_smbclient "Test login with user kerberos ccache" 'ls' "$unc" -k yes || failed=`expr $failed + 1`
 
 if test x"${TYPE}" = x"forest" ;then
