@@ -1578,7 +1578,7 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(TALLOC_CTX *mem_ctx,
 
 	/* handle the case where a NT4 DC does not fill in the acct_flags in
 	 * the samlogon reply info3. When accurate info3 is required by the
-	 * caller, we look up the account flags ourselve - gd */
+	 * caller, we look up the account flags ourselves - gd */
 
 	if ((request_flags & WBFLAG_PAM_INFO3_TEXT) &&
 	    NT_STATUS_IS_OK(result) && (my_info3->base.acct_flags == 0)) {
