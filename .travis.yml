@@ -6,12 +6,12 @@ sudo: true
 cache: ccache
 
 # Everything except samba and ctdb (long tests)
+# but the following are dropped while testing tdb et al
+#  - TASK=samba-libs
+#  - TASK=samba-static
+#  - TASK=samba-o3
 env:
-  - TASK=samba-xc
   - TASK=samba-ctdb
-  - TASK=samba-libs
-  - TASK=samba-static
-  - TASK=samba-o3
   - TASK=ldb
   - TASK=tdb
   - TASK=talloc
