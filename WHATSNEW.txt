@@ -1,16 +1,26 @@
 Release Announcements
 =====================
 
-This is the fourth release candidate of Samba 4.6.  This is *not*
-intended for production environments and is designed for testing
-purposes only.  Please report any defects via the Samba bug reporting
-system at https://bugzilla.samba.org/.
-
-Samba 4.6 will be the next version of the Samba suite.
+This is the first stable release of Samba 4.6.
+Please read the release notes carefully before upgrading.
 
 
 UPGRADING
 =========
+
+ID Mapping
+----------
+We discovered that the majority of users have an invalid or incorrect
+ID mapping configuration. We implemented checks in the 'testparm' tool to
+validate the ID mapping configuration. You should run it and check if it prints
+any warnings or errors after upgrading! If it does you should fix them. See the
+'IDENTITY MAPPING CONSIDERATIONS' section in the smb.conf manpage.
+There are some ID mapping backends which are not allowed to be used for the
+default backend. Winbind will no longer start if an invalid backend is
+configured as the default backend.
+
+To avoid problems in future we advise all users to run 'testparm' after
+changing the smb.conf file!
 
 vfs_fruit option "fruit:resource" spelling correction
 -----------------------------------------------------
@@ -29,20 +39,6 @@ next Samba version 4.7 will not accept the wrong spelling.
 
 Users who were using the wrong spelling "ressource" with two "s" can keep the
 setting, but are advised to switch to the correct spelling.
-
-ID Mapping
-----------
-We discovered that the majority of users have an invalid or incorrect
-ID mapping configuration. We implemented checks in the 'testparm' tool to
-validate the ID mapping configuration. You should run it and check if it prints
-any warnings or errors after upgrading! If it does you should fix them. See the
-'IDENTITY MAPPING CONSIDERATIONS' section in the smb.conf manpage.
-There are some ID mapping backends which are not allowed to be used for the
-default backend. Winbind will no longer start if an invalid backend is
-configured as the default backend.
-
-To avoid problems in future we advise all users to run 'testparm' after
-changing the smb.conf file!
 
 vfs_fruit Netatalk metadata xattr name on *BSD
 ----------------------------------------------
@@ -271,8 +267,9 @@ files and directories in a directory tree.
 idmap_hash
 ----------
 
-The idmap_hash module is marked as deprecated with this realese and will be
+The idmap_hash module is marked as deprecated with this release and will be
 removed in a future version. See the manpage of the module for details.
+
 
 smb.conf changes
 ================
@@ -290,6 +287,37 @@ KNOWN ISSUES
 ============
 
 https://wiki.samba.org/index.php/Release_Planning_for_Samba_4.6#Release_blocking_bugs
+
+
+CHANGES SINCE 4.6.0rc4
+======================
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 12592: Fix several issues found by covscan.
+   * BUG 12608: s3: smbd: Restart reading the incoming SMB2 fd when the send
+     queue is drained.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 12427: vfs_fruit doesn't work with fruit:metadata=stream.
+   * BUG 12526: vfs_fruit: Only veto AppleDouble files if "fruit:resource" is
+     set to "file".
+   * BUG 12604: vfs_fruit: Enabling AAPL extensions must be a global switch.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 9048: Samba4 ldap error codes.
+   * BUG 12557: gensec:spnego: Add debug message for the failed principal.
+   * BUG 12605: s3:winbindd: Fix endless forest trust scan.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 12557: s3:librpc: Handle gss_min in gse_get_client_auth_token()
+     correctly.
+   * BUG 12582: idmap_hash: Add a deprecation message, improve the idmap_hash
+     manpage.
+   * BUG 12592: Fix several issues found by covscan.
+
+o  Martin Schwenke <martin@meltin.net>
+   * BUG 12592: ctdb-logging: CID 1396883 Dereference null return value
+     (NULL_RETURNS).
 
 
 CHANGES SINCE 4.6.0rc3
