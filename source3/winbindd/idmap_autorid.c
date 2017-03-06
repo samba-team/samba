@@ -636,6 +636,19 @@ static NTSTATUS idmap_autorid_sid_to_id(struct idmap_tdb_common_context *common,
 	}
 
 	/*
+	 * If the caller already did a lookup sid and made sure the
+	 * domain sid is valid, we can allocate a new range.
+	 *
+	 * Currently the winbindd parent already does a lookup sids
+	 * first, but hopefully changes in future. If the
+	 * caller knows the domain sid, ID_TYPE_BOTH should be
+	 * passed instead of ID_TYPE_NOT_SPECIFIED.
+	 */
+	if (map->xid.type != ID_TYPE_NOT_SPECIFIED) {
+		goto allocate;
+	}
+
+	/*
 	 * Check of last resort: A domain is valid if a user from that
 	 * domain has recently logged in. The samlogon_cache these
 	 * days also stores the domain sid.
