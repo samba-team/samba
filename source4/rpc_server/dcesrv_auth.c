@@ -49,6 +49,10 @@ bool dcesrv_auth_bind(struct dcesrv_call_state *call)
 		enum dcerpc_transport_t transport =
 			dcerpc_binding_get_transport(call->conn->endpoint->ep_description);
 		const char *auth_type = derpc_transport_string_by_transport(transport);
+		const char *transport_protection = AUTHZ_TRANSPORT_PROTECTION_NONE;
+		if (transport == NCACN_NP) {
+			transport_protection = AUTHZ_TRANSPORT_PROTECTION_SMB;
+		}
 		auth->auth_type = DCERPC_AUTH_TYPE_NONE;
 		auth->auth_level = DCERPC_AUTH_LEVEL_NONE;
 		auth->auth_context_id = 0;
@@ -62,6 +66,7 @@ bool dcesrv_auth_bind(struct dcesrv_call_state *call)
 					   call->conn->local_address,
 					   "DCE/RPC",
 					   auth_type,
+					   transport_protection,
 					   call->conn->auth_state.session_info);
 
 		return true;

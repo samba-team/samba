@@ -145,6 +145,7 @@ static void smb2srv_sesssetup_backend(struct smb2srv_request *req, union smb_ses
 		}
 
 		gensec_want_feature(gensec_ctx, GENSEC_FEATURE_SESSION_KEY);
+		gensec_want_feature(gensec_ctx, GENSEC_FEATURE_SMB_TRANSPORT);
 
 		remote_address = socket_get_remote_addr(req->smb_conn->connection->socket,
 							req);

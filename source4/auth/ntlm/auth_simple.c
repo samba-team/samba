@@ -31,6 +31,7 @@ _PUBLIC_ NTSTATUS authenticate_ldap_simple_bind(TALLOC_CTX *mem_ctx,
 						struct loadparm_context *lp_ctx,
 						struct tsocket_address *remote_address,
 						struct tsocket_address *local_address,
+						bool using_tls,
 						const char *dn,
 						const char *password,
 						struct auth_session_info **session_info)
@@ -44,6 +45,10 @@ _PUBLIC_ NTSTATUS authenticate_ldap_simple_bind(TALLOC_CTX *mem_ctx,
 	const char *nt4_domain;
 	const char *nt4_username;
 	uint32_t flags = 0;
+	const char *transport_protection = AUTHZ_TRANSPORT_PROTECTION_NONE;
+	if (using_tls) {
+		transport_protection = AUTHZ_TRANSPORT_PROTECTION_TLS;
+	}
 
 	if (!tmp_ctx) {
 		return NT_STATUS_NO_MEMORY;
@@ -85,7 +90,11 @@ _PUBLIC_ NTSTATUS authenticate_ldap_simple_bind(TALLOC_CTX *mem_ctx,
 
 	user_info->service_description = "LDAP";
 
-	user_info->auth_description = "simple bind";
+	if (using_tls) {
+		user_info->auth_description = "simple bind";
+	} else {
+		user_info->auth_description = "simple bind/TLS";
+	}
 
 	user_info->password_state = AUTH_PASSWORD_PLAIN;
 	user_info->password.plaintext = talloc_strdup(user_info, password);
@@ -125,6 +134,7 @@ _PUBLIC_ NTSTATUS authenticate_ldap_simple_bind(TALLOC_CTX *mem_ctx,
 				   local_address,
 				   "LDAP",
 				   "simple bind",
+				   transport_protection,
 				   *session_info);
 
 	talloc_free(tmp_ctx);

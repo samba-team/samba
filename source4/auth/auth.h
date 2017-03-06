@@ -164,6 +164,7 @@ NTSTATUS authenticate_ldap_simple_bind(TALLOC_CTX *mem_ctx,
 				       struct loadparm_context *lp_ctx,
 				       struct tsocket_address *remote_address,
 				       struct tsocket_address *local_address,
+				       bool using_tls,
 				       const char *dn,
 				       const char *password,
 				       struct auth_session_info **session_info);

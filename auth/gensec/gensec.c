@@ -221,9 +221,22 @@ static void log_successful_gensec_authz_event(struct gensec_security *gensec_sec
 		= gensec_get_target_service_description(gensec_security);
 	const char *final_auth_type
 		= gensec_final_auth_type(gensec_security);
+	const char *transport_protection = NULL;
+	if (gensec_security->want_features & GENSEC_FEATURE_SMB_TRANSPORT) {
+		transport_protection = AUTHZ_TRANSPORT_PROTECTION_SMB;
+	} else if (gensec_security->want_features & GENSEC_FEATURE_LDAPS_TRANSPORT) {
+		transport_protection = AUTHZ_TRANSPORT_PROTECTION_TLS;
+	} else if (gensec_have_feature(gensec_security, GENSEC_FEATURE_SEAL)) {
+		transport_protection = AUTHZ_TRANSPORT_PROTECTION_SEAL;
+	} else if (gensec_have_feature(gensec_security, GENSEC_FEATURE_SIGN)) {
+		transport_protection = AUTHZ_TRANSPORT_PROTECTION_SIGN;
+	} else {
+		transport_protection = AUTHZ_TRANSPORT_PROTECTION_NONE;
+	}
 	log_successful_authz_event(remote, local,
 				   service_description,
 				   final_auth_type,
+				   transport_protection,
 				   session_info);
 }
 

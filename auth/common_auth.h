@@ -146,6 +146,12 @@ struct auth4_context {
 					      struct auth_session_info **session_info);
 };
 
+#define AUTHZ_TRANSPORT_PROTECTION_NONE "NONE"
+#define AUTHZ_TRANSPORT_PROTECTION_SMB "SMB"
+#define AUTHZ_TRANSPORT_PROTECTION_TLS "TLS"
+#define AUTHZ_TRANSPORT_PROTECTION_SEAL "SEAL"
+#define AUTHZ_TRANSPORT_PROTECTION_SIGN "SIGN"
+
 void log_authentication_event(const struct auth_usersupplied_info *ui,
 			      NTSTATUS status,
 			      const char *account_name,
@@ -157,5 +163,6 @@ void log_successful_authz_event(const struct tsocket_address *remote,
 				const struct tsocket_address *local,
 				const char *service_description,
 				const char *auth_type,
+				const char *transport_protection,
 				struct auth_session_info *session_info);
 #endif

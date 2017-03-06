@@ -58,6 +58,7 @@ void smbsrv_not_spengo_sesssetup_authz_log(struct smbsrv_request *req,
 				   local_address,
 				   "SMB",
 				   "bare-NTLM",
+				   AUTHZ_TRANSPORT_PROTECTION_SMB,
 				   session_info);
 
 	talloc_free(frame);
@@ -510,6 +511,7 @@ static void sesssetup_spnego(struct smbsrv_request *req, union smb_sesssetup *se
 		}
 
 		gensec_want_feature(gensec_ctx, GENSEC_FEATURE_SESSION_KEY);
+		gensec_want_feature(gensec_ctx, GENSEC_FEATURE_SMB_TRANSPORT);
 
 		remote_address = socket_get_remote_addr(req->smb_conn->connection->socket,
 							req);

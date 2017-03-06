@@ -73,6 +73,8 @@ static NTSTATUS ldapsrv_BindSimple(struct ldapsrv_call *call)
 
 	NTSTATUS status;
 
+	bool using_tls = call->conn->sockets.active == call->conn->sockets.tls;
+
 	DEBUG(10, ("BindSimple dn: %s\n",req->dn));
 
 	reply = ldapsrv_init_reply(call, LDAP_TAG_BindResponse);
@@ -83,7 +85,7 @@ static NTSTATUS ldapsrv_BindSimple(struct ldapsrv_call *call)
 	if (req->dn != NULL &&
 	    strlen(req->dn) != 0 &&
 	    call->conn->require_strong_auth > LDAP_SERVER_REQUIRE_STRONG_AUTH_NO &&
-	    call->conn->sockets.active != call->conn->sockets.tls)
+	    !using_tls)
 	{
 		status = NT_STATUS_NETWORK_ACCESS_DENIED;
 		result = LDAP_STRONG_AUTH_REQUIRED;
@@ -98,6 +100,7 @@ static NTSTATUS ldapsrv_BindSimple(struct ldapsrv_call *call)
 					       call->conn->lp_ctx,
 					       call->conn->connection->remote_address,
 					       call->conn->connection->local_address,
+					       using_tls,
 					       req->dn,
 					       req->creds.password,
 					       &session_info);
@@ -217,6 +220,10 @@ static NTSTATUS ldapsrv_setup_gensec(struct ldapsrv_connection *conn,
 
 	gensec_want_feature(gensec_security, GENSEC_FEATURE_ASYNC_REPLIES);
 	gensec_want_feature(gensec_security, GENSEC_FEATURE_LDAP_STYLE);
+
+	if (conn->sockets.active == conn->sockets.tls) {
+		gensec_want_feature(gensec_security, GENSEC_FEATURE_LDAPS_TRANSPORT);
+	}
 
 	status = gensec_start_mech_by_sasl_name(gensec_security, sasl_mech);
 

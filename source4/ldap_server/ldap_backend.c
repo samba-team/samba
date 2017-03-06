@@ -1280,10 +1280,16 @@ NTSTATUS ldapsrv_do_call(struct ldapsrv_call *call)
 		}
 
 		if (log) {
+			const char *transport_protection = AUTHZ_TRANSPORT_PROTECTION_NONE;
+			if (call->conn->sockets.active == call->conn->sockets.tls) {
+				transport_protection = AUTHZ_TRANSPORT_PROTECTION_TLS;
+			}
+
 			log_successful_authz_event(call->conn->connection->remote_address,
 						   call->conn->connection->local_address,
 						   "LDAP",
 						   "no bind",
+						   transport_protection,
 						   call->conn->session_info);
 
 			call->conn->authz_logged = true;

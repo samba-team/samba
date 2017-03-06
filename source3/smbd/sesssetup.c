@@ -263,6 +263,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 
 		gensec_want_feature(auth->gensec, GENSEC_FEATURE_SESSION_KEY);
 		gensec_want_feature(auth->gensec, GENSEC_FEATURE_UNIX_TOKEN);
+		gensec_want_feature(auth->gensec, GENSEC_FEATURE_SMB_TRANSPORT);
 
 		status = gensec_start_mech_by_oid(auth->gensec,
 						  GENSEC_OID_SPNEGO);

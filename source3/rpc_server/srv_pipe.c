@@ -822,6 +822,11 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 			goto err_exit;
 		}
 	} else {
+		const char *transport_protection = AUTHZ_TRANSPORT_PROTECTION_NONE;
+		if (p->transport == NCACN_NP) {
+			transport_protection = AUTHZ_TRANSPORT_PROTECTION_SMB;
+		}
+
 		p->auth.auth_type = DCERPC_AUTH_TYPE_NONE;
 		p->auth.auth_level = DCERPC_AUTH_LEVEL_NONE;
 		p->auth.auth_context_id = 0;
@@ -835,6 +840,7 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 					   p->local_address,
 					   table->name,
 					   derpc_transport_string_by_transport(p->transport),
+					   transport_protection,
 					   p->session_info);
 	}
 

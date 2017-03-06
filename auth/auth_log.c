@@ -227,6 +227,7 @@ void log_successful_authz_event(const struct tsocket_address *remote,
 				const struct tsocket_address *local,
 				const char *service_description,
 				const char *auth_type,
+				const char *transport_protection,
 				struct auth_session_info *session_info)
 {
 	TALLOC_CTX *frame = NULL;

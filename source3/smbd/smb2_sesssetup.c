@@ -864,6 +864,7 @@ auth:
 
 		gensec_want_feature(state->auth->gensec, GENSEC_FEATURE_SESSION_KEY);
 		gensec_want_feature(state->auth->gensec, GENSEC_FEATURE_UNIX_TOKEN);
+		gensec_want_feature(state->auth->gensec, GENSEC_FEATURE_SMB_TRANSPORT);
 
 		status = gensec_start_mech_by_oid(state->auth->gensec,
 						  GENSEC_OID_SPNEGO);
