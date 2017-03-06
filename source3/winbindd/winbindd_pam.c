@@ -1695,15 +1695,10 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(TALLOC_CTX *mem_ctx,
 						       &info,
 						       &result_tmp);
 
-		if (!NT_STATUS_IS_OK(status_tmp)) {
+		if (any_nt_status_not_ok(status_tmp, result_tmp,
+					 &status_tmp)) {
 			DEBUG(3, ("could not query user info on SAMR pipe: %s\n",
 				nt_errstr(status_tmp)));
-			dcerpc_samr_Close(b, mem_ctx, &user_pol, &result_tmp);
-			goto done;
-		}
-		if (!NT_STATUS_IS_OK(result_tmp)) {
-			DEBUG(3, ("could not query user info on SAMR pipe: %s\n",
-				nt_errstr(result_tmp)));
 			dcerpc_samr_Close(b, mem_ctx, &user_pol, &result_tmp);
 			goto done;
 		}
