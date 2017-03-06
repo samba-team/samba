@@ -1823,13 +1823,15 @@ static bool wbinfo_auth_crap(char *username, bool use_ntlmv2, bool use_lanman)
 
 	if (wbc_status == WBC_ERR_AUTH_ERROR) {
 		d_fprintf(stderr,
-			 "wbcAuthenticateUserEx(%s%c%s): error code was %s (0x%x)\n"
+			 "wbcAuthenticateUserEx(%s%c%s): error code was "
+			  "%s (0x%x, authoritative=%"PRIu8")\n"
 			 "error message was: %s\n",
 			 name_domain,
 			 winbind_separator(),
 			 name_user,
 			 err->nt_string,
 			 err->nt_status,
+			 err->authoritative,
 			 err->display_string);
 		wbcFreeMemory(err);
 	} else if (WBC_ERROR_IS_OK(wbc_status)) {
