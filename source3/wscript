@@ -160,11 +160,11 @@ main() {
 #include <sys/types.h>
 #include <fcntl.h>
 #include <signal.h>
-#ifndef F_NOTIFY
-#define F_NOTIFY 1026
+#ifndef F_GETLEASE
+#define F_GETLEASE 1025
 #endif
 main() {
-        exit(fcntl(open("/tmp", O_RDONLY), F_NOTIFY, 0) == -1 ?  1 : 0);
+        exit(fcntl(open("/tmp", O_RDONLY), F_GETLEASE, 0) == -1 ?  1 : 0);
 }''', 'HAVE_KERNEL_OPLOCKS_LINUX', addmain=False, execute=True,
         msg="Checking for Linux kernel oplocks")
 
