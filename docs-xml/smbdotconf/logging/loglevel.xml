@@ -41,7 +41,30 @@
         <listitem><para><parameter moreinfo="none">dns</parameter></para></listitem>
         <listitem><para><parameter moreinfo="none">ldb</parameter></para></listitem>
         <listitem><para><parameter moreinfo="none">tevent</parameter></para></listitem>
+        <listitem><para><parameter moreinfo="none">auth_audit</parameter></para></listitem>
+        <listitem><para><parameter moreinfo="none">auth_json_audit</parameter></para></listitem>
     </itemizedlist>
+
+    <para>Authentication and authorization audit information is logged
+    under the auth_audit, and if Samba is compiled against the jansson
+    JSON library, a JSON representation is logged under
+    auth_json_audit.</para>
+
+    <para>Support is comprehensive for all authentication and authorisation
+    of user accounts in the Samba Active Directory Domain Controller,
+    as well as the implicit authentication in password changes.  In
+    the file server, NTLM authentication, SMB and RPC authorization is
+    covered.</para>
+    
+    <para>Log levels for auth_audit and auth_audit_json are:</para>
+    <itemizedlist>
+	<listitem><para>2: Authentication Failure</para></listitem>
+	<listitem><para>3: Authentication Success</para></listitem>
+	<listitem><para>4: Authorization Success</para></listitem>
+	<listitem><para>5: Anonymous Authentication and Authorization Success</para></listitem>
+    </itemizedlist>
+    
+
     
 </description>
 <value type="default">0</value>

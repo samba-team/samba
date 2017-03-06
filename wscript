@@ -203,6 +203,7 @@ def configure(conf):
         conf.RECURSE('ctdb')
     conf.RECURSE('lib/socket')
     conf.RECURSE('testsuite/unittests')
+    conf.RECURSE('auth')
 
     conf.SAMBA_CHECK_UNDEFINED_SYMBOL_FLAGS()
 

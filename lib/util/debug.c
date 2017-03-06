@@ -538,6 +538,7 @@ static const char *default_classname_table[] = {
 	[DBGC_LDB] =		"ldb",
 	[DBGC_TEVENT] =		"tevent",
 	[DBGC_AUTH_AUDIT] =	"auth_audit",
+	[DBGC_AUTH_AUDIT_JSON] = "auth_json_audit",
 };
 
 /*

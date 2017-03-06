@@ -1,0 +1,7 @@
+#!/usr/bin/env python
+
+conf.SET_TARGET_TYPE('jansson', 'EMPTY')
+
+if conf.CHECK_CFG(package='jansson', args='--cflags --libs',
+		  msg='Checking for jansson'):
+    conf.CHECK_FUNCS_IN('json_object', 'jansson')
