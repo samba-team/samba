@@ -2779,9 +2779,16 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 	if (NT_STATUS_EQUAL(fsp_open, NT_STATUS_NETWORK_BUSY)) {
 		struct deferred_open_record state;
+		bool delay;
 
 		/*
-		 * EWOULDBLOCK/EAGAIN maps to NETWORK_BUSY.
+		 * This handles the kernel oplock case:
+		 *
+		 * the file has an active kernel oplock and the open() returned
+		 * EWOULDBLOCK/EAGAIN which maps to NETWORK_BUSY.
+		 *
+		 * "Samba locking.tdb oplocks" are handled below after acquiring
+		 * the sharemode lock with get_share_mode_lock().
 		 */
 		if (file_existed && S_ISFIFO(fsp->fsp_name->st.st_ex_mode)) {
 			DEBUG(10, ("FIFO busy\n"));
@@ -2812,8 +2819,10 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			smb_panic("validate_oplock_types failed");
 		}
 
-		if (delay_for_oplock(fsp, 0, lease, lck, false,
-				     create_disposition, first_open_attempt)) {
+		delay = delay_for_oplock(fsp, 0, lease, lck, false,
+					 create_disposition,
+					 first_open_attempt);
+		if (delay) {
 			schedule_defer_open(lck, fsp->file_id, request_time,
 					    req);
 			TALLOC_FREE(lck);
@@ -2934,15 +2943,27 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		file_existed = true;
 	}
 
-	if ((req != NULL) &&
-	    delay_for_oplock(
-		    fsp, oplock_request, lease, lck,
-		    NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION),
-		    create_disposition, first_open_attempt)) {
-		schedule_defer_open(lck, fsp->file_id, request_time, req);
-		TALLOC_FREE(lck);
-		fd_close(fsp);
-		return NT_STATUS_SHARING_VIOLATION;
+	if (req != NULL) {
+		/*
+		 * Handle oplocks, deferring the request if delay_for_oplock()
+		 * triggered a break message and we have to wait for the break
+		 * response.
+		 */
+		bool delay;
+		bool sharing_violation = NT_STATUS_EQUAL(
+			status, NT_STATUS_SHARING_VIOLATION);
+
+		delay = delay_for_oplock(fsp, oplock_request, lease, lck,
+					 sharing_violation,
+					 create_disposition,
+					 first_open_attempt);
+		if (delay) {
+			schedule_defer_open(lck, fsp->file_id,
+					    request_time, req);
+			TALLOC_FREE(lck);
+			fd_close(fsp);
+			return NT_STATUS_SHARING_VIOLATION;
+		}
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
