@@ -32,7 +32,7 @@ if test -x $samba4bindir/samba4kinit; then
 	samba4kinit=$samba4bindir/samba4kinit
 fi
 
-smbclient="$samba4bindir/smbclient4"
+smbclient="$samba4bindir/smbclient"
 wbinfo="$samba4bindir/wbinfo"
 rpcclient="$samba4bindir/rpcclient"
 samba_tool="$samba4bindir/samba-tool"
