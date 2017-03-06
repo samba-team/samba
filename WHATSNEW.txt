@@ -89,7 +89,7 @@ The OS Version for the printing server has been increased to announce
 Windows Server 2003 R2 SP2. If a driver needs a newer version then you should
 check the smb.conf manpage for details.
 
-new option for owner inheritance
+New option for owner inheritance
 --------------------------------
 The "inherit owner" smb.conf parameter instructs smbd to set the
 owner of files to be the same as the parent directory's owner.
@@ -185,9 +185,9 @@ CTDB changes
   Symbolic debug levels are recommended.  See the DEBUG LEVEL section
   of ctdb(7) for details.
 
-*  Tunable IPAllocAlgorithm replaces LCP2PublicIPs, DeterministicIPs
+* Tunable IPAllocAlgorithm replaces LCP2PublicIPs, DeterministicIPs
 
-   See ctdb-tunables(7) for details
+  See ctdb-tunables(7) for details.
 
 * CTDB's configuration tunables should be consistently set across a cluster
 
@@ -196,16 +196,14 @@ CTDB changes
 
 * CTDB ships with recovery lock helper call-outs for etcd and Ceph RADOS
 
-  To build/install these, use the --enable-etcd-reclock and
-  --enable-ceph-reclock configure options.
+  To build/install these, use the "--enable-etcd-reclock" and
+  "--enable-ceph-reclock" configure options.
 
 winbind changes
 ---------------
 
-4.6 winbind simplifies the calculation of supplementary groups to make
-it more reliable and predictable. Before 4.6, winbind contained code
-that tried to emulate the group membership calculation that domain
-controllers do when a user logs in. This group membership calculation
+winbind contains code that tries to emulate the group membership calculation
+that domain controllers do when a user logs in. This group membership calculation
 is a very complex process, in particular for domain trust relationship
 situations. Also, in many scenarios it is impossible for winbind to
 correctly do this calculation due to access restrictions in the
@@ -217,14 +215,21 @@ calculates the user's group memberships authoritatively and makes the
 information available to the Samba server. This is the only reliable
 way Samba can get informed about the groups a user is member of.
 
-Because of its flakiness, the fallback group membership code was
-removed.
+Because of its flakiness, the fallback group membership code is unwished,
+and our code pathes try hard to only use of the group memberships
+calculated by the domain controller.
 
-This means that "id <username>" without the user having logged in
-previously stops showing any supplementary groups. Also, it will show
-"DOMAIN\Domain Users" as the primary group. Once the user has logged
-in, "id <username>" will correctly show the primary group and
-supplementary group list.
+However, a lot of admins rely on the fallback behavior in order to support
+access for nfs access, ssh public key authentication and passwordless sudo.
+
+That's the reason for changing this back between 4.6.0rc4 and 4.6.0
+(See BUG 12612).
+
+The winbind change to simplify the calculation of supplementary groups to make
+it more reliable and predictable has been deferred to 4.7 or later.
+
+This means that 'id <username>' without the user having logged in
+previously works similar to 4.5.
 
 winbind primary group and nss info
 ----------------------------------
@@ -303,10 +308,15 @@ o  Ralph Boehme <slow@samba.org>
      set to "file".
    * BUG 12604: vfs_fruit: Enabling AAPL extensions must be a global switch.
 
+o  Volker Lendecke <vl@samba.org>
+   * BUG 12612: Re-enable token groups fallback.
+
 o  Stefan Metzmacher <metze@samba.org>
    * BUG 9048: Samba4 ldap error codes.
    * BUG 12557: gensec:spnego: Add debug message for the failed principal.
    * BUG 12605: s3:winbindd: Fix endless forest trust scan.
+   * BUG 12612: winbindd: Find the domain based on the sid within
+     wb_lookupusergroups_send().
 
 o  Andreas Schneider <asn@samba.org>
    * BUG 12557: s3:librpc: Handle gss_min in gse_get_client_auth_token()
@@ -448,7 +458,7 @@ o  Martin Schwenke <martin@meltin.net>
    * BUG 12511: ctdb-takeover: Handle case where there are no RELEASE_IPs to
      send.
    * BUG 12512: ctdb-scripts: Fix remaining uses of "ctdb gratiousarp".
-   * BUG 12516: /etc/iproute2/rt_tables gets populated with multiple
+   * BUG 12516: ctdb-scripts: /etc/iproute2/rt_tables gets populated with multiple
      'default' entries.
 
 
