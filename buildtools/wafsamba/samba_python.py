@@ -75,6 +75,8 @@ def _check_python_headers(conf, mandatory):
         conf.env['PYTHON_SO_ABI_FLAG'] = abi_pattern % ''
     else:
         conf.env['PYTHON_SO_ABI_FLAG'] = ''
+    conf.env['PYTHON_LIBNAME_SO_ABI_FLAG'] = (
+        conf.env['PYTHON_SO_ABI_FLAG'].replace('_', '-'))
 
 
 def SAMBA_PYTHON(bld, name,

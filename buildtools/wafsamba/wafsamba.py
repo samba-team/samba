@@ -144,7 +144,7 @@ def SAMBA_LIBRARY(bld, libname, source,
     '''define a Samba library'''
 
     if pyembed and bld.env['IS_EXTRA_PYTHON']:
-        public_headers = pc_files = None
+        public_headers = None
 
     if private_library and public_headers:
         raise Utils.WafError("private library '%s' must not have public header files" %
@@ -225,7 +225,7 @@ def SAMBA_LIBRARY(bld, libname, source,
         if vnum is None and soname is None:
             raise Utils.WafError("public library '%s' must have a vnum" %
                     libname)
-        if pc_files is None and not bld.env['IS_EXTRA_PYTHON']:
+        if pc_files is None:
             raise Utils.WafError("public library '%s' must have pkg-config file" %
                        libname)
         if public_headers is None and not bld.env['IS_EXTRA_PYTHON']:
@@ -328,7 +328,10 @@ def SAMBA_LIBRARY(bld, libname, source,
         t.link_name = link_name
 
     if pc_files is not None and not private_library:
-        bld.PKG_CONFIG_FILES(pc_files, vnum=vnum)
+        if pyembed and bld.env['IS_EXTRA_PYTHON']:
+            bld.PKG_CONFIG_FILES(pc_files, vnum=vnum, extra_name=bld.env['PYTHON_SO_ABI_FLAG'])
+        else:
+            bld.PKG_CONFIG_FILES(pc_files, vnum=vnum)
 
     if (manpages is not None and 'XSLTPROC_MANPAGES' in bld.env and
         bld.env['XSLTPROC_MANPAGES']):
