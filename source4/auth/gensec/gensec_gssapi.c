@@ -83,6 +83,56 @@ static int gensec_gssapi_destructor(struct gensec_gssapi_state *gensec_gssapi_st
 	return 0;
 }
 
+static NTSTATUS gensec_gssapi_setup_server_principal(TALLOC_CTX *mem_ctx,
+						     const char *target_principal,
+						     const char *service,
+						     const char *hostname,
+						     const char *realm,
+						     const gss_OID mech,
+						     char **pserver_principal,
+						     gss_name_t *pserver_name)
+{
+	char *server_principal = NULL;
+	gss_buffer_desc name_token;
+	gss_OID name_type;
+	OM_uint32 maj_stat, min_stat = 0;
+
+	if (target_principal != NULL) {
+		server_principal = talloc_strdup(mem_ctx, target_principal);
+		name_type = GSS_C_NULL_OID;
+	} else {
+		server_principal = talloc_asprintf(mem_ctx,
+						   "%s/%s@%s",
+						   service, hostname, realm);
+		name_type = GSS_C_NT_USER_NAME;
+	}
+	if (server_principal == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	name_token.value = (uint8_t *)server_principal;
+	name_token.length = strlen(server_principal);
+
+	maj_stat = gss_import_name(&min_stat,
+				   &name_token,
+				   name_type,
+				   pserver_name);
+	if (maj_stat) {
+		DBG_WARNING("GSS Import name of %s failed: %s\n",
+			    server_principal,
+			    gssapi_error_string(mem_ctx,
+						maj_stat,
+						min_stat,
+						mech));
+		TALLOC_FREE(server_principal);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	*pserver_principal = server_principal;
+
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 {
 	struct gensec_gssapi_state *gensec_gssapi_state;
@@ -304,9 +354,6 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 	struct gensec_gssapi_state *gensec_gssapi_state;
 	struct cli_credentials *creds = gensec_get_credentials(gensec_security);
 	NTSTATUS nt_status;
-	gss_buffer_desc name_token;
-	gss_OID name_type;
-	OM_uint32 maj_stat, min_stat;
 	const char *target_principal = NULL;
 	const char *hostname = gensec_get_target_hostname(gensec_security);
 	const char *service = gensec_get_target_service(gensec_security);
@@ -353,31 +400,16 @@ do_start:
 		gensec_gssapi_state->gss_want_flags &= ~(GSS_C_DELEG_FLAG|GSS_C_DELEG_POLICY_FLAG);
 	}
 
-	if (target_principal != NULL) {
-		name_type = GSS_C_NULL_OID;
-	} else {
-		target_principal = talloc_asprintf(gensec_gssapi_state,
-					"%s/%s@%s", service, hostname, realm);
-		if (target_principal == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		name_type = GSS_C_NT_USER_NAME;
-	}
-	gensec_gssapi_state->target_principal = target_principal;
-
-	name_token.value  = discard_const_p(uint8_t, gensec_gssapi_state->target_principal);
-	name_token.length = strlen(gensec_gssapi_state->target_principal);
-
-
-	maj_stat = gss_import_name (&min_stat,
-				    &name_token,
-				    name_type,
-				    &gensec_gssapi_state->server_name);
-	if (maj_stat) {
-		DEBUG(2, ("GSS Import name of %s failed: %s\n",
-			  (char *)name_token.value,
-			  gssapi_error_string(gensec_gssapi_state, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
-		return NT_STATUS_INVALID_PARAMETER;
+	nt_status = gensec_gssapi_setup_server_principal(gensec_gssapi_state,
+							 target_principal,
+							 service,
+							 hostname,
+							 realm,
+							 gensec_gssapi_state->gss_oid,
+							 &gensec_gssapi_state->target_principal,
+							 &gensec_gssapi_state->server_name);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
 	}
 
 	return NT_STATUS_OK;

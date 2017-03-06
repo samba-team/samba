@@ -65,5 +65,5 @@ struct gensec_gssapi_state {
 	int gss_exchange_count;
 	size_t sig_size;
 
-	const char *target_principal;
+	char *target_principal;
 };
