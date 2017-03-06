@@ -32,11 +32,11 @@ static void wb_lookupusergroups_done(struct tevent_req *subreq);
 
 struct tevent_req *wb_lookupusergroups_send(TALLOC_CTX *mem_ctx,
 					    struct tevent_context *ev,
-					    struct winbindd_domain *domain,
 					    const struct dom_sid *sid)
 {
 	struct tevent_req *req, *subreq;
 	struct wb_lookupusergroups_state *state;
+	struct winbindd_domain *domain;
 	NTSTATUS status;
 
 	req = tevent_req_create(mem_ctx, &state,
@@ -52,6 +52,15 @@ struct tevent_req *wb_lookupusergroups_send(TALLOC_CTX *mem_ctx,
 					  &state->sids.sids);
 	if (NT_STATUS_IS_OK(status)) {
 		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+	}
+
+	domain = find_domain_from_sid_noinit(&state->sid);
+	if (domain == NULL) {
+		char buf[DOM_SID_STR_BUFLEN];
+		dom_sid_string_buf(&state->sid, buf, sizeof(buf));
+		DEBUG(1,("could not find domain entry for sid %s\n", buf));
+		tevent_req_nterror(req, NT_STATUS_NO_SUCH_DOMAIN);
 		return tevent_req_post(req, ev);
 	}
 
