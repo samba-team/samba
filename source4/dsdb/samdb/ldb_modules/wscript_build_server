@@ -224,7 +224,7 @@ bld.SAMBA_MODULE('ldb_objectclass_attrs',
 	subsystem='ldb',
 	init_function='ldb_objectclass_attrs_module_init',
 	module_init_name='ldb_init_module',
-	deps='talloc samdb samba-util',
+	deps='talloc samdb DSDB_MODULE_HELPERS samba-util',
 	internal_module=False,
 	)
 

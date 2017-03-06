@@ -36,6 +36,7 @@
 #include "includes.h"
 #include "ldb_module.h"
 #include "dsdb/samdb/samdb.h"
+#include "dsdb/samdb/ldb_modules/util.h"
 
 struct oc_context {
 
@@ -214,7 +215,46 @@ static int attr_handler(struct oc_context *ac)
 					       ldb_dn_get_linearized(msg->dn));
 			return LDB_ERR_UNWILLING_TO_PERFORM;
 		}
-		
+
+		/*
+		 * Enforce systemOnly checks from [ADTS] 3.1.1.5.3.2
+		 * Constraints in Modify Operation
+		 */
+		if (ac->req->operation == LDB_MODIFY && attr->systemOnly) {
+			/*
+			 * Allow dbcheck and relax to bypass. objectClass, name
+			 * and distinguishedName are generally handled
+			 * elsewhere.
+			 *
+			 * The remaining cases, undelete, msDS-AdditionalDnsHostName
+			 * and wellKnownObjects are documented in the specification.
+			 */
+			if (!ldb_request_get_control(ac->req, LDB_CONTROL_RELAX_OID) &&
+			    !ldb_request_get_control(ac->req, DSDB_CONTROL_DBCHECK) &&
+			    !ldb_request_get_control(ac->req, DSDB_CONTROL_RESTORE_TOMBSTONE_OID) &&
+			    ldb_attr_cmp(attr->lDAPDisplayName, "objectClass") != 0 &&
+			    ldb_attr_cmp(attr->lDAPDisplayName, "name") != 0 &&
+			    ldb_attr_cmp(attr->lDAPDisplayName, "distinguishedName") != 0 &&
+			    ldb_attr_cmp(attr->lDAPDisplayName, "msDS-AdditionalDnsHostName") != 0 &&
+			    ldb_attr_cmp(attr->lDAPDisplayName, "wellKnownObjects") != 0) {
+				/*
+				 * Comparison against base schema DN is used as a substitute for
+				 * fschemaUpgradeInProgress and other specific schema checks.
+				 */
+				if (ldb_dn_compare_base(ldb_get_schema_basedn(ldb), msg->dn) != 0) {
+					struct ldb_control *as_system = ldb_request_get_control(ac->req,
+												LDB_CONTROL_AS_SYSTEM_OID);
+					if (!dsdb_module_am_system(ac->module) && !as_system) {
+						ldb_asprintf_errstring(ldb,
+								       "objectclass_attrs: attribute '%s' on entry '%s' must can only be modified as system",
+								       msg->elements[i].name,
+								       ldb_dn_get_linearized(msg->dn));
+						return LDB_ERR_CONSTRAINT_VIOLATION;
+					}
+				}
+			}
+		}
+
 		if (!(msg->elements[i].flags & LDB_FLAG_INTERNAL_DISABLE_VALIDATION)) {
 			werr = attr->syntax->validate_ldb(&syntax_ctx, attr,
 							  &msg->elements[i]);

@@ -387,7 +387,9 @@ static int ridalloc_create_rid_set_ntds(struct ldb_module *module, TALLOC_CTX *m
 	}
 	msg->elements[0].flags = LDB_FLAG_MOD_ADD;
 
-	ret = dsdb_module_modify(module, msg, DSDB_FLAG_NEXT_MODULE, parent);
+	ret = dsdb_module_modify(module, msg,
+				 DSDB_FLAG_NEXT_MODULE|DSDB_FLAG_AS_SYSTEM,
+				 parent);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb, "Failed to add rIDSetReferences to %s - %s",
 				       ldb_dn_get_linearized(msg->dn),
@@ -677,7 +679,7 @@ int ridalloc_allocate_rid(struct ldb_module *module, uint32_t *rid, struct ldb_r
 		return ret;
 	}
 
-	ret = dsdb_module_modify(module, msg, DSDB_FLAG_NEXT_MODULE, parent);
+	ret = dsdb_module_modify(module, msg, DSDB_FLAG_NEXT_MODULE|DSDB_FLAG_AS_SYSTEM, parent);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
@@ -807,7 +809,7 @@ int ridalloc_allocate_rid_pool_fsmo(struct ldb_module *module, struct dsdb_fsmo_
 		return ret;
 	}
 
-	ret = dsdb_module_modify(module, msg, DSDB_FLAG_NEXT_MODULE, parent);
+	ret = dsdb_module_modify(module, msg, DSDB_FLAG_NEXT_MODULE|DSDB_FLAG_AS_SYSTEM, parent);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb, "Failed to modify RID Set object %s - %s",
 				       ldb_dn_get_linearized(rid_set_dn), ldb_errstring(ldb));
