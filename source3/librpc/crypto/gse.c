@@ -352,10 +352,13 @@ err_out:
 }
 
 static NTSTATUS gse_get_client_auth_token(TALLOC_CTX *mem_ctx,
-					  struct gse_context *gse_ctx,
+					  struct gensec_security *gensec_security,
 					  const DATA_BLOB *token_in,
 					  DATA_BLOB *token_out)
 {
+	struct gse_context *gse_ctx =
+		talloc_get_type_abort(gensec_security->private_data,
+				      struct gse_context);
 	OM_uint32 gss_maj, gss_min;
 	gss_buffer_desc in_data;
 	gss_buffer_desc out_data;
@@ -542,10 +545,13 @@ done:
 }
 
 static NTSTATUS gse_get_server_auth_token(TALLOC_CTX *mem_ctx,
-					  struct gse_context *gse_ctx,
+					  struct gensec_security *gensec_security,
 					  const DATA_BLOB *token_in,
 					  DATA_BLOB *token_out)
 {
+	struct gse_context *gse_ctx =
+		talloc_get_type_abort(gensec_security->private_data,
+				      struct gse_context);
 	OM_uint32 gss_maj, gss_min;
 	gss_buffer_desc in_data;
 	gss_buffer_desc out_data;
@@ -762,17 +768,16 @@ static NTSTATUS gensec_gse_update(struct gensec_security *gensec_security,
 				  const DATA_BLOB in, DATA_BLOB *out)
 {
 	NTSTATUS status;
-	struct gse_context *gse_ctx =
-		talloc_get_type_abort(gensec_security->private_data,
-		struct gse_context);
 
 	switch (gensec_security->gensec_role) {
 	case GENSEC_CLIENT:
-		status = gse_get_client_auth_token(mem_ctx, gse_ctx,
+		status = gse_get_client_auth_token(mem_ctx,
+						   gensec_security,
 						   &in, out);
 		break;
 	case GENSEC_SERVER:
-		status = gse_get_server_auth_token(mem_ctx, gse_ctx,
+		status = gse_get_server_auth_token(mem_ctx,
+						   gensec_security,
 						   &in, out);
 		break;
 	}
