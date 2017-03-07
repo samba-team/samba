@@ -1967,10 +1967,15 @@ struct defer_open_state {
 
 static void defer_open_done(struct tevent_req *req);
 
-/****************************************************************************
- Handle the 1 second delay in returning a SHARING_VIOLATION error.
-****************************************************************************/
-
+/**
+ * Defer an open and watch a locking.tdb record
+ *
+ * This defers an open that gets rescheduled once the locking.tdb record watch
+ * is triggered by a change to the record.
+ *
+ * It is used to defer opens that triggered an oplock break and for the SMB1
+ * sharing violation delay.
+ **/
 static void defer_open(struct share_mode_lock *lck,
 		       struct timeval request_time,
 		       struct timeval timeout,
@@ -1980,6 +1985,9 @@ static void defer_open(struct share_mode_lock *lck,
 {
 	struct deferred_open_record *open_rec = NULL;
 	struct timeval abs_timeout;
+	struct defer_open_state *watch_state;
+	struct tevent_req *watch_req;
+	bool ok;
 
 	abs_timeout = timeval_sum(&request_time, &timeout);
 
@@ -1999,38 +2007,32 @@ static void defer_open(struct share_mode_lock *lck,
 		exit_server("talloc failed");
 	}
 
-	if (lck) {
-		struct defer_open_state *watch_state;
-		struct tevent_req *watch_req;
-		bool ret;
+	watch_state = talloc(open_rec, struct defer_open_state);
+	if (watch_state == NULL) {
+		exit_server("talloc failed");
+	}
+	watch_state->xconn = req->xconn;
+	watch_state->mid = req->mid;
 
-		watch_state = talloc(open_rec, struct defer_open_state);
-		if (watch_state == NULL) {
-			exit_server("talloc failed");
-		}
-		watch_state->xconn = req->xconn;
-		watch_state->mid = req->mid;
+	DBG_DEBUG("defering mid %" PRIu64 "\n", req->mid);
 
-		DEBUG(10, ("defering mid %llu\n",
-			   (unsigned long long)req->mid));
+	watch_req = dbwrap_watched_watch_send(watch_state,
+					      req->sconn->ev_ctx,
+					      lck->data->record,
+					      (struct server_id){0});
+	if (watch_req == NULL) {
+		exit_server("Could not watch share mode record");
+	}
+	tevent_req_set_callback(watch_req, defer_open_done, watch_state);
 
-		watch_req = dbwrap_watched_watch_send(
-			watch_state, req->sconn->ev_ctx, lck->data->record,
-			(struct server_id){0});
-		if (watch_req == NULL) {
-			exit_server("Could not watch share mode record");
-		}
-		tevent_req_set_callback(watch_req, defer_open_done,
-					watch_state);
-
-		ret = tevent_req_set_endtime(
-			watch_req, req->sconn->ev_ctx,
-			abs_timeout);
-		SMB_ASSERT(ret);
+	ok = tevent_req_set_endtime(watch_req, req->sconn->ev_ctx, abs_timeout);
+	if (!ok) {
+		exit_server("tevent_req_set_endtime failed");
 	}
 
-	if (!push_deferred_open_message_smb(req, request_time, timeout,
-					    open_rec->id, open_rec)) {
+	ok = push_deferred_open_message_smb(req, request_time, timeout,
+					    open_rec->id, open_rec);
+	if (!ok) {
 		TALLOC_FREE(lck);
 		exit_server("push_deferred_open_message_smb failed");
 	}
