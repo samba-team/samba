@@ -103,7 +103,6 @@ add_dangling_link() {
     if [ "$?" != "0" ]; then
 	return 1
     fi
-    sleep 6
 
     ldif=$release_dir/delete-only-backlink.ldif
     TZ=UTC $ldbmodify -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb.d/DC%3DRELEASE-4-5-0-PRE1,DC%3DSAMBA,DC%3DCORP.ldb $ldif
