@@ -20,4 +20,4 @@ simple_test run monitor 30
 required_result 0 <<EOF
 ctdb-eventd[PID]: 01.test: Running event monitor
 EOF
-unit_test tail -n 1 "$eventd_logfile"
+unit_test grep "01.test:" "$eventd_logfile"
