@@ -190,6 +190,10 @@ NTSTATUS _wbint_Sids2UnixIDs(struct pipes_struct *p,
 		struct id_map *m = id_map_ptrs[i];
 
 		if (!idmap_unix_id_is_in_range(m->xid.id, dom)) {
+			DBG_DEBUG("id %"PRIu32" is out of range "
+				  "%"PRIu32"-%"PRIu32" for domain %s\n",
+				  m->xid.id, dom->low_id, dom->high_id,
+				  dom->name);
 			m->status = ID_UNMAPPED;
 		}
 
