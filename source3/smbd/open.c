@@ -2057,6 +2057,40 @@ static void defer_open_done(struct tevent_req *req)
 	TALLOC_FREE(state);
 }
 
+/**
+ * Reschedule an open for immediate execution
+ **/
+static void retry_open(struct timeval request_time,
+		       struct smb_request *req,
+		       struct file_id id)
+{
+	struct deferred_open_record *open_rec = NULL;
+	bool ok;
+
+	DBG_DEBUG("request time [%s] mid [%" PRIu64 "] file_id [%s]\n",
+		  timeval_string(talloc_tos(), &request_time, false),
+		  req->mid,
+		  file_id_string_tos(&id));
+
+	open_rec = deferred_open_record_create(false, false, id);
+	if (open_rec == NULL) {
+		exit_server("talloc failed");
+	}
+
+	ok = push_deferred_open_message_smb(req,
+					    request_time,
+					    timeval_set(0, 0),
+					    id,
+					    open_rec);
+	if (!ok) {
+		exit_server("push_deferred_open_message_smb failed");
+	}
+
+	ok = schedule_deferred_open_message_smb(req->xconn, req->mid);
+	if (!ok) {
+		exit_server("schedule_deferred_open_message_smb failed");
+	}
+}
 
 /****************************************************************************
  On overwrite open ensure that the attributes match.
@@ -2841,8 +2875,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 		lck = get_existing_share_mode_lock(talloc_tos(), fsp->file_id);
 		if (lck == NULL) {
-			defer_open(NULL, request_time, timeval_set(0, 0),
-				   req, false, false, fsp->file_id);
+			retry_open(request_time, req, fsp->file_id);
 			DEBUG(10, ("No share mode lock found after "
 				   "EWOULDBLOCK, retrying sync\n"));
 			return NT_STATUS_SHARING_VIOLATION;
@@ -2868,8 +2901,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		 * No oplock from Samba around. Immediately retry with
 		 * a blocking open.
 		 */
-		defer_open(lck, request_time, timeval_set(0, 0), req,
-			   false, false, fsp->file_id);
+		retry_open(request_time, req, fsp->file_id);
 
 		TALLOC_FREE(lck);
 		DEBUG(10, ("No Samba oplock around after EWOULDBLOCK. "
