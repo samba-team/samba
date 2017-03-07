@@ -4,6 +4,7 @@
    Copyright (C) Andrew Tridgell 1992-1998
    Copyright (C) Jeremy Allison 2001-2004
    Copyright (C) Volker Lendecke 2005
+   Copyright (C) Ralph Boehme 2017
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
