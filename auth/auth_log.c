@@ -51,6 +51,11 @@
 #include "lib/util/util_str_escape.h"
 #include "libcli/security/dom_sid.h"
 #include "libcli/security/security_token.h"
+#include "librpc/gen_ndr/server_id.h"
+#include "source4/lib/messaging/messaging.h"
+#include "source4/lib/messaging/irpc.h"
+#include "lib/util/server_id_db.h"
+#include "lib/param/param.h"
 
 /*
  * Get a human readable timestamp.
@@ -115,6 +120,81 @@ struct json_context {
 	json_t *root;
 	bool error;
 };
+
+static NTSTATUS get_auth_event_server(struct imessaging_context *msg_ctx,
+				      struct server_id *auth_event_server)
+{
+	NTSTATUS status;
+	TALLOC_CTX *frame = talloc_stackframe();
+	unsigned num_servers, i;
+	struct server_id *servers;
+
+	status = irpc_servers_byname(msg_ctx, frame,
+				     AUTH_EVENT_NAME,
+				     &num_servers, &servers);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_NOTICE("Failed to find 'auth_event' registered on the "
+			   "message bus to send JSON authentication events to: %s\n",
+			   nt_errstr(status));
+		TALLOC_FREE(frame);
+		return status;
+	}
+
+	/*
+	 * Select the first server that is listening, because
+	 * we get connection refused as
+	 * NT_STATUS_OBJECT_NAME_NOT_FOUND without waiting
+	 */
+	for (i = 0; i < num_servers; i++) {
+		status = imessaging_send(msg_ctx, servers[i], MSG_PING,
+					 &data_blob_null);
+		if (NT_STATUS_IS_OK(status)) {
+			*auth_event_server = servers[i];
+			TALLOC_FREE(frame);
+			return NT_STATUS_OK;
+		}
+	}
+	DBG_NOTICE("Failed to find a running 'auth_event' server "
+		   "registered on the message bus to send JSON "
+		   "authentication events to\n");
+	TALLOC_FREE(frame);
+	return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+}
+
+static void auth_message_send(struct imessaging_context *msg_ctx,
+			      const char *json)
+{
+	struct server_id	auth_event_server;
+	NTSTATUS status;
+	DATA_BLOB json_blob = data_blob_string_const(json);
+	if (msg_ctx == NULL) {
+		return;
+	}
+
+	/* Need to refetch the address each time as the destination server may
+	 * have disconnected and reconnected in the interim, in which case
+	 * messages may get lost, manifests in the auth_log tests
+	 */
+	status = get_auth_event_server(msg_ctx, &auth_event_server);
+	if (!NT_STATUS_IS_OK(status)) {
+		return;
+	}
+
+	status = imessaging_send(msg_ctx, auth_event_server, MSG_AUTH_LOG,
+				 &json_blob);
+
+	/* If the server crashed, try to find it again */
+	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+		status = get_auth_event_server(msg_ctx, &auth_event_server);
+		if (!NT_STATUS_IS_OK(status)) {
+			return;
+		}
+		imessaging_send(msg_ctx, auth_event_server, MSG_AUTH_LOG,
+				&json_blob);
+
+	}
+}
 
 /*
  * Write the json object to the debug lines.
