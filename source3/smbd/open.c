@@ -1932,6 +1932,27 @@ static bool request_timed_out(struct timeval request_time,
 	return (timeval_compare(&end_time, &now) < 0);
 }
 
+static struct deferred_open_record *deferred_open_record_create(
+	bool delayed_for_oplocks,
+	bool async_open,
+	struct file_id id)
+{
+	struct deferred_open_record *record = NULL;
+
+	record = talloc(NULL, struct deferred_open_record);
+	if (record == NULL) {
+		return NULL;
+	}
+
+	*record = (struct deferred_open_record) {
+		.delayed_for_oplocks = delayed_for_oplocks,
+		.async_open = async_open,
+		.id = id,
+	};
+
+	return record;
+}
+
 struct defer_open_state {
 	struct smbXsrv_connection *xconn;
 	uint64_t mid;
@@ -1947,23 +1968,31 @@ static void defer_open(struct share_mode_lock *lck,
 		       struct timeval request_time,
 		       struct timeval timeout,
 		       struct smb_request *req,
-		       struct deferred_open_record *state)
+		       bool delayed_for_oplocks,
+		       bool async_open,
+		       struct file_id id)
 {
-	struct deferred_open_record *open_rec;
+	struct deferred_open_record *open_rec = NULL;
+	struct timeval abs_timeout;
 
-	DEBUG(10,("defer_open_sharing_error: time [%u.%06u] adding deferred "
-		  "open entry for mid %llu\n",
-		  (unsigned int)request_time.tv_sec,
-		  (unsigned int)request_time.tv_usec,
-		  (unsigned long long)req->mid));
+	abs_timeout = timeval_sum(&request_time, &timeout);
 
-	open_rec = talloc(NULL, struct deferred_open_record);
+	DBG_DEBUG("request time [%s] timeout [%s] mid [%" PRIu64 "] "
+		  "delayed_for_oplocks [%s] async_open [%s] file_id [%s]\n",
+		  timeval_string(talloc_tos(), &request_time, false),
+		  timeval_string(talloc_tos(), &abs_timeout, false),
+		  req->mid,
+		  delayed_for_oplocks ? "yes" : "no",
+		  async_open ? "yes" : "no",
+		  file_id_string_tos(&id));
+
+	open_rec = deferred_open_record_create(delayed_for_oplocks,
+					       async_open,
+					       id);
 	if (open_rec == NULL) {
 		TALLOC_FREE(lck);
 		exit_server("talloc failed");
 	}
-
-	*open_rec = *state;
 
 	if (lck) {
 		struct defer_open_state *watch_state;
@@ -1991,12 +2020,12 @@ static void defer_open(struct share_mode_lock *lck,
 
 		ret = tevent_req_set_endtime(
 			watch_req, req->sconn->ev_ctx,
-			timeval_sum(&request_time, &timeout));
+			abs_timeout);
 		SMB_ASSERT(ret);
 	}
 
 	if (!push_deferred_open_message_smb(req, request_time, timeout,
-					    state->id, open_rec)) {
+					    open_rec->id, open_rec)) {
 		TALLOC_FREE(lck);
 		exit_server("push_deferred_open_message_smb failed");
 	}
@@ -2144,8 +2173,6 @@ static void schedule_defer_open(struct share_mode_lock *lck,
 				struct timeval request_time,
 				struct smb_request *req)
 {
-	struct deferred_open_record state;
-
 	/* This is a relative time, added to the absolute
 	   request_time value to get the absolute timeout time.
 	   Note that if this is the second or greater time we enter
@@ -2164,18 +2191,11 @@ static void schedule_defer_open(struct share_mode_lock *lck,
 
 	timeout = timeval_set(OPLOCK_BREAK_TIMEOUT*2, 0);
 
-	/* Nothing actually uses state.delayed_for_oplocks
-	   but it's handy to differentiate in debug messages
-	   between a 30 second delay due to oplock break, and
-	   a 1 second delay for share mode conflicts. */
-
-	state.delayed_for_oplocks = True;
-	state.async_open = false;
-	state.id = id;
-
-	if (!request_timed_out(request_time, timeout)) {
-		defer_open(lck, request_time, timeout, req, &state);
+	if (request_timed_out(request_time, timeout)) {
+		return;
 	}
+
+	defer_open(lck, request_time, timeout, req, true, false, id);
 }
 
 /****************************************************************************
@@ -2185,18 +2205,16 @@ static void schedule_defer_open(struct share_mode_lock *lck,
 static void schedule_async_open(struct timeval request_time,
 				struct smb_request *req)
 {
-	struct deferred_open_record state;
 	struct timeval timeout;
 
 	timeout = timeval_set(20, 0);
 
-	ZERO_STRUCT(state);
-	state.delayed_for_oplocks = false;
-	state.async_open = true;
-
-	if (!request_timed_out(request_time, timeout)) {
-		defer_open(NULL, request_time, timeout, req, &state);
+	if (request_timed_out(request_time, timeout)) {
+		return;
 	}
+
+	defer_open(NULL, request_time, timeout, req,
+		   false, true, (struct file_id){0});
 }
 
 /****************************************************************************
@@ -2797,7 +2815,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			     open_access_mask, &new_file_created);
 
 	if (NT_STATUS_EQUAL(fsp_open, NT_STATUS_NETWORK_BUSY)) {
-		struct deferred_open_record state;
 		bool delay;
 
 		/*
@@ -2824,11 +2841,8 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 		lck = get_existing_share_mode_lock(talloc_tos(), fsp->file_id);
 		if (lck == NULL) {
-			state.delayed_for_oplocks = false;
-			state.async_open = false;
-			state.id = fsp->file_id;
 			defer_open(NULL, request_time, timeval_set(0, 0),
-				   req, &state);
+				   req, false, false, fsp->file_id);
 			DEBUG(10, ("No share mode lock found after "
 				   "EWOULDBLOCK, retrying sync\n"));
 			return NT_STATUS_SHARING_VIOLATION;
@@ -2854,10 +2868,9 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		 * No oplock from Samba around. Immediately retry with
 		 * a blocking open.
 		 */
-		state.delayed_for_oplocks = false;
-		state.async_open = false;
-		state.id = fsp->file_id;
-		defer_open(lck, request_time, timeval_set(0, 0), req, &state);
+		defer_open(lck, request_time, timeval_set(0, 0), req,
+			   false, false, fsp->file_id);
+
 		TALLOC_FREE(lck);
 		DEBUG(10, ("No Samba oplock around after EWOULDBLOCK. "
 			   "Retrying sync\n"));
@@ -3062,7 +3075,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		    !conn->sconn->using_smb2 &&
 		    lp_defer_sharing_violations()) {
 			struct timeval timeout;
-			struct deferred_open_record state;
 			int timeout_usecs;
 
 			/* this is a hack to speed up torture tests
@@ -3081,18 +3093,9 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 			timeout = timeval_set(0, timeout_usecs);
 
-			/* Nothing actually uses state.delayed_for_oplocks
-			   but it's handy to differentiate in debug messages
-			   between a 30 second delay due to oplock break, and
-			   a 1 second delay for share mode conflicts. */
-
-			state.delayed_for_oplocks = False;
-			state.async_open = false;
-			state.id = id;
-
 			if (!request_timed_out(request_time, timeout)) {
-				defer_open(lck, request_time, timeout,
-					   req, &state);
+				defer_open(lck, request_time, timeout, req,
+					   false, false, id);
 			}
 		}
 
