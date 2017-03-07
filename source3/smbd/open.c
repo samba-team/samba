@@ -3089,9 +3089,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			state.async_open = false;
 			state.id = id;
 
-			if ((req != NULL)
-			    && !request_timed_out(request_time,
-						  timeout)) {
+			if (!request_timed_out(request_time, timeout)) {
 				defer_open(lck, request_time, timeout,
 					   req, &state);
 			}
