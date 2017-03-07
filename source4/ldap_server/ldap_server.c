@@ -437,7 +437,7 @@ static bool ldapsrv_call_read_next(struct ldapsrv_connection *conn)
 	}
 
 	/*
-	 * The minimun size of a LDAP pdu is 7 bytes
+	 * The minimum size of a LDAP pdu is 7 bytes
 	 *
 	 * dumpasn1 -hh ldap-unbind-min.dat
 	 *
