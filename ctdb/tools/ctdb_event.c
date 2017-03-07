@@ -223,23 +223,26 @@ static int command_status(TALLOC_CTX *mem_ctx, struct tool_context *tctx,
 	talloc_free(req);
 	if (! status) {
 		fprintf(stderr, "Failed to get event %s status, ret=%d\n",
-			argv[0], ret);
+			ctdb_event_to_string(event), ret);
 		return ret;
 	}
 
 	if (result != 0) {
 		fprintf(stderr, "Failed to get event %s status, result=%d\n",
-			argv[0], result);
+			ctdb_event_to_string(event), result);
 		return result;
 	}
 
 	if (script_list == NULL) {
 		if (state == CTDB_EVENT_LAST_RUN) {
-			printf("Event %s has never run\n", argv[0]);
+			printf("Event %s has never run\n",
+			       ctdb_event_to_string(event));
 		} else if (state == CTDB_EVENT_LAST_PASS) {
-			printf("Event %s has never passed\n", argv[0]);
+			printf("Event %s has never passed\n",
+				ctdb_event_to_string(event));
 		} else if (state == CTDB_EVENT_LAST_FAIL) {
-			printf("Event %s has never failed\n", argv[0]);
+			printf("Event %s has never failed\n",
+				ctdb_event_to_string(event));
 		}
 	} else {
 		for (i=0; i<script_list->num_scripts; i++) {
