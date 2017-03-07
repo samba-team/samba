@@ -139,6 +139,9 @@ interface messaging
 		MSG_NTVFS_OPLOCK_BREAK          = 0x0703,
 		MSG_DREPL_ALLOCATE_RID          = 0x0704,
 
+		/* Called during authentication and authorization to allow out-of- */
+		MSG_AUTH_LOG                    = 0x0800,
+
 		/* dbwrap messages 4001-4999 (0x0FA0 - 0x1387) */
 		/* MSG_DBWRAP_TDB2_CHANGES		= 4001, */
 		/* MSG_DBWRAP_G_LOCK_RETRY		= 4002, */
