@@ -1957,7 +1957,6 @@ static void defer_open(struct share_mode_lock *lck,
 		       struct timeval timeout,
 		       struct smb_request *req,
 		       bool delayed_for_oplocks,
-		       bool async_open,
 		       struct file_id id)
 {
 	struct deferred_open_record *open_rec = NULL;
@@ -1966,16 +1965,15 @@ static void defer_open(struct share_mode_lock *lck,
 	abs_timeout = timeval_sum(&request_time, &timeout);
 
 	DBG_DEBUG("request time [%s] timeout [%s] mid [%" PRIu64 "] "
-		  "delayed_for_oplocks [%s] async_open [%s] file_id [%s]\n",
+		  "delayed_for_oplocks [%s] file_id [%s]\n",
 		  timeval_string(talloc_tos(), &request_time, false),
 		  timeval_string(talloc_tos(), &abs_timeout, false),
 		  req->mid,
 		  delayed_for_oplocks ? "yes" : "no",
-		  async_open ? "yes" : "no",
 		  file_id_string_tos(&id));
 
 	open_rec = deferred_open_record_create(delayed_for_oplocks,
-					       async_open,
+					       false,
 					       id);
 	if (open_rec == NULL) {
 		TALLOC_FREE(lck);
@@ -2216,7 +2214,7 @@ static void schedule_defer_open(struct share_mode_lock *lck,
 		return;
 	}
 
-	defer_open(lck, request_time, timeout, req, true, false, id);
+	defer_open(lck, request_time, timeout, req, true, id);
 }
 
 /****************************************************************************
@@ -3140,7 +3138,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 			if (!request_timed_out(request_time, timeout)) {
 				defer_open(lck, request_time, timeout, req,
-					   false, false, id);
+					   false, id);
 			}
 		}
 
