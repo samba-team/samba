@@ -22,7 +22,7 @@ o  Björn Jacke <bj@sernet.de>
 
 o  Martin Schwenke <martin@meltin.net>
    * BUG 12512: ctdb-scripts: Fix remaining uses of "ctdb gratiousarp".
-   * BUG 12516: /etc/iproute2/rt_tables gets populated with multiple
+   * BUG 12516: ctdb-scripts: /etc/iproute2/rt_tables gets populated with multiple
      'default' entries.
 
 
