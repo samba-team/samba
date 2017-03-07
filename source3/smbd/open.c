@@ -45,6 +45,13 @@ struct deferred_open_record {
         bool delayed_for_oplocks;
 	bool async_open;
         struct file_id id;
+
+	/*
+	 * Timer for async opens, needed because they don't use a watch on
+	 * a locking.tdb record. This is currently only used for real async
+	 * opens and just terminates smbd if the async open times out.
+	 */
+	struct tevent_timer *te;
 };
 
 /****************************************************************************
@@ -2236,19 +2243,44 @@ static void schedule_defer_open(struct share_mode_lock *lck,
  Reschedule an open call that went asynchronous.
 ****************************************************************************/
 
+static void schedule_async_open_timer(struct tevent_context *ev,
+				      struct tevent_timer *te,
+				      struct timeval current_time,
+				      void *private_data)
+{
+	exit_server("async open timeout");
+}
+
 static void schedule_async_open(struct timeval request_time,
 				struct smb_request *req)
 {
-	struct timeval timeout;
-
-	timeout = timeval_set(20, 0);
+	struct deferred_open_record *open_rec = NULL;
+	struct timeval timeout = timeval_set(20, 0);
+	bool ok;
 
 	if (request_timed_out(request_time, timeout)) {
 		return;
 	}
 
-	defer_open(NULL, request_time, timeout, req,
-		   false, true, (struct file_id){0});
+	open_rec = deferred_open_record_create(false, true, (struct file_id){0});
+	if (open_rec == NULL) {
+		exit_server("deferred_open_record_create failed");
+	}
+
+	ok = push_deferred_open_message_smb(req, request_time, timeout,
+					    (struct file_id){0}, open_rec);
+	if (!ok) {
+		exit_server("push_deferred_open_message_smb failed");
+	}
+
+	open_rec->te = tevent_add_timer(req->sconn->ev_ctx,
+					req,
+					timeval_current_ofs(20, 0),
+					schedule_async_open_timer,
+					open_rec);
+	if (open_rec->te == NULL) {
+		exit_server("tevent_add_timer failed");
+	}
 }
 
 /****************************************************************************
