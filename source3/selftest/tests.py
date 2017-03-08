@@ -36,6 +36,25 @@ def plansmbtorture4testsuite(name, env, options, description=''):
     selftesthelpers.plansmbtorture4testsuite(
         name, env, options, target='samba3', modname=modname)
 
+# find config.h
+try:
+    config_h = os.environ["CONFIG_H"]
+except KeyError:
+    samba4bindir = bindir()
+    config_h = os.path.join(samba4bindir, "default/include/config.h")
+
+# check available features
+config_hash = dict()
+f = open(config_h, 'r')
+try:
+    lines = f.readlines()
+    config_hash = dict((x[0], ' '.join(x[1:]))
+            for x in map(lambda line: line.strip().split(' ')[1:],
+                         filter(lambda line: (line[0:7] == '#define') and (len(line.split(' ')) > 2), lines)))
+finally:
+    f.close()
+
+have_libarchive = ("HAVE_LIBARCHIVE" in config_hash)
 
 plantestsuite("samba3.blackbox.success", "nt4_dc:local", [os.path.join(samba3srcdir, "script/tests/test_success.sh")])
 plantestsuite("samba3.blackbox.failure", "nt4_dc:local", [os.path.join(samba3srcdir, "script/tests/test_failure.sh")])
@@ -207,20 +226,6 @@ for env in ["fileserver"]:
     #
     # tar command tests
     #
-
-    # find config.h
-    try:
-        config_h = os.environ["CONFIG_H"]
-    except KeyError:
-        samba4bindir = bindir()
-        config_h = os.path.join(samba4bindir, "default/include/config.h")
-
-    # see if libarchive is supported
-    f = open(config_h, 'r')
-    try:
-        have_libarchive = ("HAVE_LIBARCHIVE 1" in f.read())
-    finally:
-        f.close()
 
     # tar command enabled only if built with libarchive
     if have_libarchive:
