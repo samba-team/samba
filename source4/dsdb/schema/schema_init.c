@@ -621,9 +621,15 @@ static int dsdb_schema_setup_ldb_schema_attribute(struct ldb_context *ldb,
 } while (0)
 
 /** Create an dsdb_attribute out of ldb message, attr must be already talloced
+ *
+ * If supplied the attribute will be checked against the prefixmap to
+ * ensure it can be mapped.  However we can't have this attribute
+ * const as dsdb_schema_pfm_attid_from_oid calls
+ * dsdb_schema_pfm_make_attid_impl() which may modify prefixmap in
+ * other situations.
  */
 
-WERROR dsdb_attribute_from_ldb(const struct dsdb_schema *schema,
+WERROR dsdb_attribute_from_ldb(struct dsdb_schema_prefixmap *prefixmap,
 			       struct ldb_message *msg,
 			       struct dsdb_attribute *attr)
 {
@@ -646,13 +652,13 @@ WERROR dsdb_attribute_from_ldb(const struct dsdb_schema *schema,
 
 	GET_STRING_LDB(msg, "lDAPDisplayName", attr, attr, lDAPDisplayName, true);
 	GET_STRING_LDB(msg, "attributeID", attr, attr, attributeID_oid, true);
-	if (!schema->prefixmap || schema->prefixmap->length == 0) {
+	if (!prefixmap || prefixmap->length == 0) {
 		/* set an invalid value */
 		attr->attributeID_id = DRSUAPI_ATTID_INVALID;
 	} else {
-		status = dsdb_schema_pfm_attid_from_oid(schema->prefixmap,
-						    attr->attributeID_oid,
-						    &attr->attributeID_id);
+		status = dsdb_schema_pfm_attid_from_oid(prefixmap,
+							attr->attributeID_oid,
+							&attr->attributeID_id);
 		if (!W_ERROR_IS_OK(status)) {
 			DEBUG(0,("%s: '%s': unable to map attributeID %s: %s\n",
 				__location__, attr->lDAPDisplayName, attr->attributeID_oid,
@@ -676,11 +682,11 @@ WERROR dsdb_attribute_from_ldb(const struct dsdb_schema *schema,
 	GET_UINT32_LDB(msg, "linkID", attr, linkID);
 
 	GET_STRING_LDB(msg, "attributeSyntax", attr, attr, attributeSyntax_oid, true);
-	if (!schema->prefixmap || schema->prefixmap->length == 0) {
+	if (!prefixmap || prefixmap->length == 0) {
 		/* set an invalid value */
 		attr->attributeSyntax_id = DRSUAPI_ATTID_INVALID;
 	} else {
-		status = dsdb_schema_pfm_attid_from_oid(schema->prefixmap,
+		status = dsdb_schema_pfm_attid_from_oid(prefixmap,
 							attr->attributeSyntax_oid,
 							&attr->attributeSyntax_id);
 		if (!W_ERROR_IS_OK(status)) {
@@ -723,7 +729,7 @@ WERROR dsdb_set_attribute_from_ldb_dups(struct ldb_context *ldb,
 		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
-	status = dsdb_attribute_from_ldb(schema, msg, attr);
+	status = dsdb_attribute_from_ldb(schema->prefixmap, msg, attr);
 	if (!W_ERROR_IS_OK(status)) {
 		return status;
 	}
