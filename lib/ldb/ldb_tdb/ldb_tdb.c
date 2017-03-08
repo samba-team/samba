@@ -794,31 +794,33 @@ int ltdb_modify_internal(struct ldb_module *module,
 				/* Check that values don't exist yet on multi-
 				   valued attributes or aren't provided twice */
 				/* TODO: This is O(n^2) - replace with more efficient check */
-				for (j = 0; j < el->num_values; j++) {
-					if (ldb_msg_find_val(el2, &el->values[j]) != NULL) {
-						if (control_permissive) {
-							/* remove this one as if it was never added */
-							el->num_values--;
-							for (k = j; k < el->num_values; k++) {
-								el->values[k] = el->values[k + 1];
+				if (!(el->flags & LDB_FLAG_INTERNAL_DISABLE_SINGLE_VALUE_CHECK)) {
+					for (j = 0; j < el->num_values; j++) {
+						if (ldb_msg_find_val(el2, &el->values[j]) != NULL) {
+							if (control_permissive) {
+								/* remove this one as if it was never added */
+								el->num_values--;
+								for (k = j; k < el->num_values; k++) {
+									el->values[k] = el->values[k + 1];
+								}
+								j--; /* rewind */
+
+								continue;
 							}
-							j--; /* rewind */
 
-							continue;
+							ldb_asprintf_errstring(ldb,
+									       "attribute '%s': value #%u on '%s' already exists",
+									       el->name, j, ldb_dn_get_linearized(msg2->dn));
+							ret = LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
+							goto done;
 						}
-
-						ldb_asprintf_errstring(ldb,
-								       "attribute '%s': value #%u on '%s' already exists",
-								       el->name, j, ldb_dn_get_linearized(msg2->dn));
-						ret = LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
-						goto done;
-					}
-					if (ldb_msg_find_val(el, &el->values[j]) != &el->values[j]) {
-						ldb_asprintf_errstring(ldb,
-								       "attribute '%s': value #%u on '%s' provided more than once",
-								       el->name, j, ldb_dn_get_linearized(msg2->dn));
-						ret = LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
-						goto done;
+						if (ldb_msg_find_val(el, &el->values[j]) != &el->values[j]) {
+							ldb_asprintf_errstring(ldb,
+									       "attribute '%s': value #%u on '%s' provided more than once",
+									       el->name, j, ldb_dn_get_linearized(msg2->dn));
+							ret = LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
+							goto done;
+						}
 					}
 				}
 
