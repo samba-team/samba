@@ -1901,6 +1901,8 @@ struct compare_ctx {
 	const char *ldap_oid;
 	int err;
 	const struct GUID *invocation_id;
+	DATA_BLOB extra_part;
+	bool compare_extra_part;
 };
 
 /* When a parsed_dn comes from the database, sometimes it is not really parsed. */
@@ -1960,6 +1962,7 @@ static int parsed_dn_compare(struct parsed_dn *pdn1, struct parsed_dn *pdn2)
 static int la_guid_compare_with_trusted_dn(struct compare_ctx *ctx,
 					   struct parsed_dn *p)
 {
+	int cmp = 0;
 	/*
 	 * This works like a standard compare function in its return values,
 	 * but has an extra trick to deal with errors: zero is returned and
@@ -1979,7 +1982,12 @@ static int la_guid_compare_with_trusted_dn(struct compare_ctx *ctx,
 			return 0;
 		}
 	}
-	return ndr_guid_compare(ctx->guid, &p->guid);
+	cmp = ndr_guid_compare(ctx->guid, &p->guid);
+	if (cmp == 0 && ctx->compare_extra_part) {
+		return data_blob_cmp(&ctx->extra_part, &p->dsdb_dn->extra_part);
+	}
+
+	return cmp;
 }
 
 
@@ -1988,9 +1996,11 @@ static int parsed_dn_find(struct ldb_context *ldb, struct parsed_dn *pdn,
 			  unsigned int count,
 			  struct GUID *guid,
 			  struct ldb_dn *target_dn,
+			  DATA_BLOB extra_part,
 			  struct parsed_dn **exact,
 			  struct parsed_dn **next,
-			  const char *ldap_oid)
+			  const char *ldap_oid,
+			  bool compare_extra_part)
 {
 	unsigned int i;
 	struct compare_ctx ctx;
@@ -2066,6 +2076,8 @@ static int parsed_dn_find(struct ldb_context *ldb, struct parsed_dn *pdn,
 	ctx.ldb = ldb;
 	ctx.mem_ctx = pdn;
 	ctx.ldap_oid = ldap_oid;
+	ctx.extra_part = extra_part;
+	ctx.compare_extra_part = compare_extra_part;
 	ctx.err = 0;
 
 	BINARY_ARRAY_SEARCH_GTE(pdn, count, &ctx, la_guid_compare_with_trusted_dn,
@@ -2572,8 +2584,10 @@ static int replmd_modify_la_add(struct ldb_module *module,
 		int err = parsed_dn_find(ldb, old_dns, old_num_values,
 					 &dns[i].guid,
 					 dns[i].dsdb_dn->dn,
+					 dns[i].dsdb_dn->extra_part,
 					 &exact, &next,
-					 schema_attr->syntax->ldap_oid);
+					 schema_attr->syntax->ldap_oid,
+					 true);
 		if (err != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
 			return err;
@@ -2842,8 +2856,10 @@ static int replmd_modify_la_delete(struct ldb_module *module,
 		ret = parsed_dn_find(ldb, old_dns, old_el->num_values,
 				     &p->guid,
 				     NULL,
+				     p->dsdb_dn->extra_part,
 				     &exact, &next,
-				     schema_attr->syntax->ldap_oid);
+				     schema_attr->syntax->ldap_oid,
+				     true);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
 			return ret;
@@ -3848,8 +3864,8 @@ static int replmd_delete_remove_link(struct ldb_module *module,
 		}
 
 		ret = parsed_dn_find(ldb, link_dns, link_el->num_values,
-				     guid, dn, &p, &unused,
-				     target_attr->syntax->ldap_oid);
+				     guid, dn, data_blob_null, &p, &unused,
+				     target_attr->syntax->ldap_oid, false);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
 			return ret;
@@ -3871,6 +3887,7 @@ static int replmd_delete_remove_link(struct ldb_module *module,
 		/* This needs to get the Binary DN, by first searching */
 		dn_str = dsdb_dn_get_linearized(tmp_ctx,
 						p->dsdb_dn);
+
 		dn_val = data_blob_string_const(dn_str);
 		el2->values = &dn_val;
 		el2->num_values = 1;
@@ -6959,8 +6976,10 @@ linked_attributes[0]:
 	ret = parsed_dn_find(ldb, pdn_list, old_el->num_values,
 			     &guid,
 			     dsdb_dn->dn,
+			     dsdb_dn->extra_part,
 			     &pdn, &next,
-			     attr->syntax->ldap_oid);
+			     attr->syntax->ldap_oid,
+			     true);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
