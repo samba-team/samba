@@ -108,8 +108,6 @@ struct cache_entry {
 
 void (*smb_panic_fn)(const char *const why) = smb_panic;
 
-#define WINBINDD_MAX_CACHE_SIZE (50*1024*1024)
-
 static struct winbind_cache *wcache;
 
 static char *wcache_path(void)
