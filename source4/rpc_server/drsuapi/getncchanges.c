@@ -1962,14 +1962,17 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	if (!W_ERROR_IS_OK(werr)) {
 		return werr;
 	}
-	if (is_secret_request && req10->extended_op != DRSUAPI_EXOP_REPL_SECRET) {
+	if (is_secret_request) {
 		werr = drs_security_access_check_nc_root(b_state->sam_ctx,
 							 mem_ctx,
 							 dce_call->conn->auth_state.session_info->security_token,
 							 req10->naming_context,
 							 GUID_DRS_GET_ALL_CHANGES);
 		if (!W_ERROR_IS_OK(werr)) {
-			return werr;
+			/* Only bail if this is not a EXOP_REPL_SECRET */
+			if (req10->extended_op != DRSUAPI_EXOP_REPL_SECRET) {
+				return werr;
+			}
 		} else {
 			has_get_all_changes = true;
 		}
