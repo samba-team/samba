@@ -445,6 +445,7 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 	const char *hostname = gensec_get_target_hostname(gensec_security);
 	const char *service = gensec_get_target_service(gensec_security);
 	const char *client_realm = cli_credentials_get_realm(cli_creds);
+	const char *server_realm = NULL;
 	gss_OID gss_oid_p = NULL;
 	OM_uint32 time_req = 0;
 	OM_uint32 time_rec = 0;
@@ -484,12 +485,71 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 			}
 #endif
 
+			/*
+			 * With credentials for
+			 * administrator@FOREST1.EXAMPLE.COM this patch changes
+			 * the target_principal for the ldap service of host
+			 * dc2.forest2.example.com from
+			 *
+			 *   ldap/dc2.forest2.example.com@FOREST1.EXAMPLE.COM
+			 *
+			 * to
+			 *
+			 *   ldap/dc2.forest2.example.com@FOREST2.EXAMPLE.COM
+			 *
+			 * Typically
+			 * ldap/dc2.forest2.example.com@FOREST1.EXAMPLE.COM
+			 * should be used in order to allow the KDC of
+			 * FOREST1.EXAMPLE.COM to generate a referral ticket
+			 * for krbtgt/FOREST2.EXAMPLE.COM@FOREST1.EXAMPLE.COM.
+			 *
+			 * The problem is that KDCs only return such referral
+			 * tickets if there's a forest trust between
+			 * FOREST1.EXAMPLE.COM and FOREST2.EXAMPLE.COM. If
+			 * there's only an external domain trust between
+			 * FOREST1.EXAMPLE.COM and FOREST2.EXAMPLE.COM the KDC
+			 * of FOREST1.EXAMPLE.COM will respond with
+			 * S_PRINCIPAL_UNKNOWN when being asked for
+			 * ldap/dc2.forest2.example.com@FOREST1.EXAMPLE.COM.
+			 *
+			 * In the case of an external trust the client can
+			 * still ask explicitly for
+			 * krbtgt/FOREST2.EXAMPLE.COM@FOREST1.EXAMPLE.COM and
+			 * the KDC of FOREST1.EXAMPLE.COM will generate it.
+			 *
+			 * From there the client can use the
+			 * krbtgt/FOREST2.EXAMPLE.COM@FOREST1.EXAMPLE.COM
+			 * ticket and ask a KDC of FOREST2.EXAMPLE.COM for a
+			 * service ticket for
+			 * ldap/dc2.forest2.example.com@FOREST2.EXAMPLE.COM.
+			 *
+			 * With Heimdal we'll get the fallback on
+			 * S_PRINCIPAL_UNKNOWN behavior when we pass
+			 * ldap/dc2.forest2.example.com@FOREST2.EXAMPLE.COM as
+			 * target principal. As _krb5_get_cred_kdc_any() first
+			 * calls get_cred_kdc_referral() (which always starts
+			 * with the client realm) and falls back to
+			 * get_cred_kdc_capath() (which starts with the given
+			 * realm).
+			 *
+			 * MIT krb5 only tries the given realm of the target
+			 * principal, if we want to autodetect support for
+			 * transitive forest trusts, would have to do the
+			 * fallback ourself.
+			 */
 			if (gensec_gssapi_state->server_name == NULL) {
+				server_realm = smb_krb5_get_realm_from_hostname(gensec_gssapi_state,
+										hostname,
+										client_realm);
+				if (server_realm == NULL) {
+					return NT_STATUS_NO_MEMORY;
+				}
+
 				nt_status = gensec_gssapi_setup_server_principal(gensec_gssapi_state,
 										 target_principal,
 										 service,
 										 hostname,
-										 client_realm,
+										 server_realm,
 										 gensec_gssapi_state->gss_oid,
 										 &gensec_gssapi_state->target_principal,
 										 &gensec_gssapi_state->server_name);
