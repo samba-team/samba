@@ -2659,13 +2659,27 @@ static char *smb_krb5_get_default_realm_from_ccache(TALLOC_CTX *mem_ctx)
 	return realm;
 }
 
-/************************************************************************
- Routine to get the realm from a given DNS name.
-************************************************************************/
-
-static char *smb_krb5_get_realm_from_hostname(TALLOC_CTX *mem_ctx,
-						const char *hostname,
-						const char *client_realm)
+/**
+ * @brief Get the realm from the service hostname.
+ *
+ * This function will look for a domain realm mapping in the [domain_realm]
+ * section of the krb5.conf first and fallback to extract the realm from
+ * the provided service hostname. As a last resort it will return the
+ * provided client_realm.
+ *
+ * @param[in]  mem_ctx     The talloc context
+ *
+ * @param[in]  hostname    The service hostname
+ *
+ * @param[in]  client_realm  If we can not find a mapping, fall back to
+ *                           this realm.
+ *
+ * @return The realm to use for the service hostname, NULL if a fatal error
+ *         occured.
+ */
+char *smb_krb5_get_realm_from_hostname(TALLOC_CTX *mem_ctx,
+				       const char *hostname,
+				       const char *client_realm)
 {
 #if defined(HAVE_KRB5_REALM_TYPE)
 	/* Heimdal. */
