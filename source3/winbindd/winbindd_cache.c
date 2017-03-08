@@ -1115,13 +1115,9 @@ NTSTATUS resolve_username_to_alias( TALLOC_CTX *mem_ctx,
 	if (!cache->tdb)
 		goto do_query;
 
-	upper_name = talloc_strdup(mem_ctx, name);
+	upper_name = talloc_strdup_upper(mem_ctx, name);
 	if (upper_name == NULL) {
 		return NT_STATUS_NO_MEMORY;
-	}
-	if (!strupper_m(upper_name)) {
-		talloc_free(upper_name);
-		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	centry = wcache_fetch(cache, domain, "NSS/NA/%s", upper_name);
