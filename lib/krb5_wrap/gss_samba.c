@@ -161,9 +161,49 @@ uint32_t smb_gss_krb5_import_cred(uint32_t *minor_status, krb5_context ctx,
 	krb5_free_string(ctx, discard_const(ccache_element.value));
 #else
 	major_status = gss_krb5_import_cred(minor_status,
-					id,
-					keytab_principal,
-					keytab, cred);
+					    id,
+					    keytab_principal,
+					    keytab, cred);
+
+	if (major_status == (GSS_S_CALL_BAD_STRUCTURE|GSS_S_BAD_NAME)) {
+		if ((keytab_principal == NULL) && (keytab != NULL)) {
+			/* No principal was specified and MIT krb5 1.9 version failed.
+			 * We have to fall back to set global acceptor identity */
+			gss_OID_set_desc mech_set;
+			char *kt_name = NULL;
+
+			kt_name = malloc(4096);
+			if (!kt_name) {
+				return ENOMEM;
+			}
+
+			major_status = krb5_kt_get_name(ctx,
+							keytab,
+							kt_name, 4096);
+			if (major_status != 0) {
+				free(kt_name);
+				return major_status;
+			}
+
+			major_status = gsskrb5_register_acceptor_identity(kt_name);
+			if (major_status) {
+				free(kt_name);
+				return major_status;
+			}
+
+			/* We are dealing with krb5 GSSAPI mech in this fallback */
+			mech_set.count = 1;
+			mech_set.elements = gss_mech_krb5;
+			major_status = gss_acquire_cred(minor_status,
+							GSS_C_NO_NAME,
+							GSS_C_INDEFINITE,
+							&mech_set,
+							GSS_C_ACCEPT,
+							cred,
+							NULL, NULL);
+			free(kt_name);
+		}
+	}
 #endif
 	return major_status;
 }
