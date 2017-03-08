@@ -62,3 +62,6 @@ semantic.cache
 .testrepository
 /bin/.confcache/*/*
 /bin/.conf_check_*/*
+/.emacs.desktop*
+/.gdb_history
+.clang-format
