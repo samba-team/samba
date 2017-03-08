@@ -2664,7 +2664,8 @@ static char *smb_krb5_get_default_realm_from_ccache(TALLOC_CTX *mem_ctx)
 ************************************************************************/
 
 static char *smb_krb5_get_realm_from_hostname(TALLOC_CTX *mem_ctx,
-						const char *hostname)
+						const char *hostname,
+						const char *client_realm)
 {
 #if defined(HAVE_KRB5_REALM_TYPE)
 	/* Heimdal. */
@@ -2695,6 +2696,9 @@ static char *smb_krb5_get_realm_from_hostname(TALLOC_CTX *mem_ctx,
 	    realm_list[0] != NULL &&
 	    realm_list[0][0] != '\0') {
 		realm = talloc_strdup(mem_ctx, realm_list[0]);
+		if (realm == NULL) {
+			goto out;
+		}
 	} else {
 		const char *p = NULL;
 
@@ -2707,7 +2711,14 @@ static char *smb_krb5_get_realm_from_hostname(TALLOC_CTX *mem_ctx,
 		p = strchr_m(hostname, '.');
 		if (p != NULL && p[1] != '\0') {
 			realm = talloc_strdup_upper(mem_ctx, p + 1);
+			if (realm == NULL) {
+				goto out;
+			}
 		}
+	}
+
+	if (realm == NULL) {
+		realm = talloc_strdup(mem_ctx, client_realm);
 	}
 
   out:
@@ -2752,7 +2763,8 @@ char *smb_krb5_get_principal_from_service_hostname(TALLOC_CTX *mem_ctx,
 	if (host) {
 		/* DNS name. */
 		realm = smb_krb5_get_realm_from_hostname(talloc_tos(),
-							 remote_name);
+							 remote_name,
+							 default_realm);
 	} else {
 		/* NetBIOS name - use our realm. */
 		realm = smb_krb5_get_default_realm_from_ccache(talloc_tos());
