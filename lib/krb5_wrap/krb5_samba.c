@@ -2691,7 +2691,9 @@ static char *smb_krb5_get_realm_from_hostname(TALLOC_CTX *mem_ctx,
 		goto out;
 	}
 
-	if (realm_list && realm_list[0]) {
+	if (realm_list != NULL &&
+	    realm_list[0] != NULL &&
+	    realm_list[0][0] != '\0') {
 		realm = talloc_strdup(mem_ctx, realm_list[0]);
 	}
 
