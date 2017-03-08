@@ -164,13 +164,21 @@ test_smbcquotas() {
     conf="$2"
     user="$3"
     expected="$4"
+    proto="$5"
 	shift
+    shift
     shift
     shift
     shift
 	subunit_start_test "$name"
     setup_conf "$conf" "."
-	output=$($VALGRIND $smbcquotas //$SERVER/dfq $@ 2>/dev/null | tr '\\' '/')
+    if [ "$proto"  = "smb2" ]; then
+        mproto="-m SMB2"
+    else
+        mproto="-m SMB1"
+    fi
+
+	output=$($VALGRIND $smbcquotas $mproto //$SERVER/dfq $@ 2>/dev/null | tr '\\' '/')
 	status=$?
 	if [ "$status" = "0" ]; then
 		received=$(echo "$output" | awk "/$SERVER\\/$user/ {printf \"%s%s%s\", \$3, \$4, \$5}")
@@ -191,7 +199,9 @@ test_smbclient_dfree "Test dfree subdir SMB3 no quota" dfq "subdir1" "conf1 . co
 test_smbclient_dfree "Test dfree subdir NT1 no quota" dfq "subdir1" "conf1 . conf2 subdir1" "10 1024. 5" -U$USERNAME%$PASSWORD --option=clientmaxprotocol=NT1 || failed=`expr $failed + 1`
 test_smbclient_dfree "Test large disk" dfq "." "conf3 ." "1125899906842624 1024. 3000" -U$USERNAME%$PASSWORD --option=clientmaxprotocol=SMB3 || failed=`expr $failed + 1`
 #basic quota test (SMB1 only)
-test_smbcquotas "Test user quota" confq1 $USERNAME "40960/4096000/3072000" -U$USERNAME%$PASSWORD --option=clientmaxprotocol=NT1 || failed=`expr $failed + 1`
+test_smbcquotas "Test user quota" confq1 $USERNAME "40960/4096000/3072000" "smb1" -U$USERNAME%$PASSWORD --option=clientmaxprotocol=NT1 || failed=`expr $failed + 1`
+#basic quota test (SMB2 only)
+test_smbcquotas "Test user quota" confq1 $USERNAME "40960/4096000/3072000" "smb2" -U$USERNAME%$PASSWORD --option=clientmaxprotocol=SMB2 || failed=`expr $failed + 1`
 
 # Test dfree cache through queries in two different directories
 test_smbclient_dfree_2 "Test dfree cache" dfq_cache "." "subdir1" \
