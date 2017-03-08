@@ -400,18 +400,6 @@ do_start:
 		gensec_gssapi_state->gss_want_flags &= ~(GSS_C_DELEG_FLAG|GSS_C_DELEG_POLICY_FLAG);
 	}
 
-	nt_status = gensec_gssapi_setup_server_principal(gensec_gssapi_state,
-							 target_principal,
-							 service,
-							 hostname,
-							 realm,
-							 gensec_gssapi_state->gss_oid,
-							 &gensec_gssapi_state->target_principal,
-							 &gensec_gssapi_state->server_name);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		return nt_status;
-	}
-
 	return NT_STATUS_OK;
 }
 
@@ -452,7 +440,11 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 	OM_uint32 min_stat2;
 	gss_buffer_desc input_token = { 0, NULL };
 	gss_buffer_desc output_token = { 0, NULL };
-
+	struct cli_credentials *cli_creds = gensec_get_credentials(gensec_security);
+	const char *target_principal = gensec_get_target_principal(gensec_security);
+	const char *hostname = gensec_get_target_hostname(gensec_security);
+	const char *service = gensec_get_target_service(gensec_security);
+	const char *client_realm = cli_credentials_get_realm(cli_creds);
 	gss_OID gss_oid_p = NULL;
 	OM_uint32 time_req = 0;
 	OM_uint32 time_rec = 0;
@@ -491,6 +483,21 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 				return NT_STATUS_INTERNAL_ERROR;
 			}
 #endif
+
+			if (gensec_gssapi_state->server_name == NULL) {
+				nt_status = gensec_gssapi_setup_server_principal(gensec_gssapi_state,
+										 target_principal,
+										 service,
+										 hostname,
+										 client_realm,
+										 gensec_gssapi_state->gss_oid,
+										 &gensec_gssapi_state->target_principal,
+										 &gensec_gssapi_state->server_name);
+				if (!NT_STATUS_IS_OK(nt_status)) {
+					return nt_status;
+				}
+			}
+
 			maj_stat = gss_init_sec_context(&min_stat, 
 							gensec_gssapi_state->client_cred->creds,
 							&gensec_gssapi_state->gssapi_context, 
