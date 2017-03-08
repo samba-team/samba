@@ -72,7 +72,7 @@ bld.SAMBA_SUBSYSTEM('samba-util-core',
                               signal.c util.c idtree.c fault.c
                               substitute.c util_process.c util_strlist.c
                               strv_util.c bitmap.c select.c pidfile.c
-                              become_daemon.c ''',
+                              become_daemon.c mkdir_p.c''',
                     deps='''time-basic samba-debug socket-blocking talloc
                             tevent execinfo pthread strv''',
                     local_include=False)

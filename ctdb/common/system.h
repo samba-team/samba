@@ -53,7 +53,6 @@ bool parse_ip_mask(const char *str, const char *ifaces, ctdb_sock_addr *addr,
 
 void lockdown_memory(bool valgrinding);
 
-int mkdir_p(const char *dir, int mode);
 void mkdir_p_or_die(const char *dir, int mode);
 
 void ctdb_wait_for_process_to_exit(pid_t pid);

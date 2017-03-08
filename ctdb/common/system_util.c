@@ -41,6 +41,8 @@
 #include <procinfo.h>
 #endif
 
+#include "lib/util/mkdir_p.h"
+
 /*
   if possible, make this task real time
  */
@@ -270,53 +272,6 @@ void lockdown_memory(bool valgrinding)
 				     strerror(errno)));
 	}
 #endif
-}
-
-int mkdir_p(const char *dir, int mode)
-{
-	char t[PATH_MAX];
-	ssize_t len;
-	int ret;
-
-	if (strcmp(dir, "/") == 0) {
-		return 0;
-	}
-
-	if (strcmp(dir, ".") == 0) {
-		return 0;
-	}
-
-	/* Try to create directory */
-	ret = mkdir(dir, mode);
-	/* Succeed if that worked or if it already existed */
-	if (ret == 0 || errno == EEXIST) {
-		return 0;
-	}
-	/* Fail on anything else except ENOENT */
-	if (errno != ENOENT) {
-		return ret;
-	}
-
-	/* Create ancestors */
-	len = strlen(dir);
-	if (len >= PATH_MAX) {
-		errno = ENAMETOOLONG;
-		return -1;
-	}
-	strncpy(t, dir, len+1);
-
-	ret = mkdir_p(dirname(t), mode);
-	if (ret != 0) {
-		return ret;
-	}
-
-	/* Create directory */
-	ret = mkdir(dir, mode);
-	if ((ret == -1) && (errno == EEXIST)) {
-		ret = 0;
-	}
-
-	return ret;
 }
 
 void mkdir_p_or_die(const char *dir, int mode)
