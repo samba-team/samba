@@ -352,10 +352,12 @@ class DrsBaseTestCase(SambaToolCmdTest):
 
         return req10
 
-    def _ds_bind(self, server_name):
+    def _ds_bind(self, server_name, creds=None):
         binding_str = "ncacn_ip_tcp:%s[seal]" % server_name
 
-        drs = drsuapi.drsuapi(binding_str, self.get_loadparm(), self.get_credentials())
+        if creds is None:
+            creds = self.get_credentials()
+        drs = drsuapi.drsuapi(binding_str, self.get_loadparm(), creds)
         (drs_handle, supported_extensions) = drs_DsBind(drs)
         return (drs, drs_handle)
 
