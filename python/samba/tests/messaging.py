@@ -49,6 +49,10 @@ class MessagingTests(TestCase):
         x = self.get_context()
         self.assertTrue(isinstance(x.server_id, server_id))
 
+    def test_add_name(self):
+        x = self.get_context()
+        x.irpc_add_name("samba.messaging test")
+
     def test_ping_speed(self):
         server_ctx = self.get_context((0, 1))
         def ping_callback(src, data):
