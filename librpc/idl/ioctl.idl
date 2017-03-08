@@ -11,6 +11,10 @@ interface copychunk
 		uint8 context[4];
 	} req_resume_key_rsp;
 
+	const uint32 COPYCHUNK_MAX_CHUNKS = 256; /* 2k8r2 & win8 = 256 */
+	const uint32 COPYCHUNK_MAX_CHUNK_LEN = 1048576; /* 2k8r2 & win8 = 1048576 */
+	const uint32 COPYCHUNK_MAX_TOTAL_LEN = 16777216; /* 2k8r2 & win8 = 16777216 */
+
 	typedef struct {
 		hyper source_off;
 		hyper target_off;

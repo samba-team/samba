@@ -31,9 +31,6 @@
 #include "smb2_ioctl_private.h"
 #include "../lib/tsocket/tsocket.h"
 
-#define COPYCHUNK_MAX_CHUNKS	256		/* 2k8r2 & win8 = 256 */
-#define COPYCHUNK_MAX_CHUNK_LEN	1048576		/* 2k8r2 & win8 = 1048576 */
-#define COPYCHUNK_MAX_TOTAL_LEN	16777216	/* 2k8r2 & win8 = 16777216 */
 static void copychunk_pack_limits(struct srv_copychunk_rsp *cc_rsp)
 {
 	cc_rsp->chunks_written = COPYCHUNK_MAX_CHUNKS;
