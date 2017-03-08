@@ -464,6 +464,7 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 		switch (gensec_security->gensec_role) {
 		case GENSEC_CLIENT:
 		{
+			bool fallback = false;
 #ifdef SAMBA4_USES_HEIMDAL
 			struct gsskrb5_send_to_kdc send_to_kdc;
 			krb5_error_code ret;
@@ -537,12 +538,59 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 			 * transitive forest trusts, would have to do the
 			 * fallback ourself.
 			 */
+#ifndef SAMBA4_USES_HEIMDAL
+			if (gensec_gssapi_state->server_name == NULL) {
+				nt_status = gensec_gssapi_setup_server_principal(gensec_gssapi_state,
+										 target_principal,
+										 service,
+										 hostname,
+										 client_realm,
+										 gensec_gssapi_state->gss_oid,
+										 &gensec_gssapi_state->target_principal,
+										 &gensec_gssapi_state->server_name);
+				if (!NT_STATUS_IS_OK(nt_status)) {
+					return nt_status;
+				}
+
+				maj_stat = gss_init_sec_context(&min_stat,
+								gensec_gssapi_state->client_cred->creds,
+								&gensec_gssapi_state->gssapi_context,
+								gensec_gssapi_state->server_name,
+								gensec_gssapi_state->gss_oid,
+								gensec_gssapi_state->gss_want_flags,
+								time_req,
+								gensec_gssapi_state->input_chan_bindings,
+								&input_token,
+								&gss_oid_p,
+								&output_token,
+								&gensec_gssapi_state->gss_got_flags, /* ret flags */
+								&time_rec);
+				if (maj_stat != GSS_S_FAILURE) {
+					goto init_sec_context_done;
+				}
+				if (min_stat != (OM_uint32)KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN) {
+					goto init_sec_context_done;
+				}
+				if (target_principal != NULL) {
+					goto init_sec_context_done;
+				}
+
+				fallback = true;
+				TALLOC_FREE(gensec_gssapi_state->target_principal);
+				gss_release_name(&min_stat2, &gensec_gssapi_state->server_name);
+			}
+#endif /* !SAMBA4_USES_HEIMDAL */
 			if (gensec_gssapi_state->server_name == NULL) {
 				server_realm = smb_krb5_get_realm_from_hostname(gensec_gssapi_state,
 										hostname,
 										client_realm);
 				if (server_realm == NULL) {
 					return NT_STATUS_NO_MEMORY;
+				}
+
+				if (fallback &&
+				    strequal(client_realm, server_realm)) {
+					goto init_sec_context_done;
 				}
 
 				nt_status = gensec_gssapi_setup_server_principal(gensec_gssapi_state,
@@ -571,6 +619,9 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 							&output_token, 
 							&gensec_gssapi_state->gss_got_flags, /* ret flags */
 							&time_rec);
+			goto init_sec_context_done;
+			/* JUMP! */
+init_sec_context_done:
 			if (gss_oid_p) {
 				gensec_gssapi_state->gss_oid = gss_oid_p;
 			}
