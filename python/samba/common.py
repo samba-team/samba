@@ -19,6 +19,7 @@
 
 import ldb
 import dsdb
+import binascii
 
 
 def confirm(msg, forced=False, allow_all=False):
@@ -97,3 +98,7 @@ class dsdb_Dn(object):
         if self.prefix == '':
             return None
         return int(self.binary, 16)
+
+    def get_bytes(self):
+        '''return binary as a byte string'''
+        return binascii.unhexlify(self.binary)
