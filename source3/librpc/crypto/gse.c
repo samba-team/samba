@@ -120,6 +120,54 @@ static int gse_context_destructor(void *ptr)
 	return 0;
 }
 
+static NTSTATUS gse_setup_server_principal(TALLOC_CTX *mem_ctx,
+					   const char *target_principal,
+					   const char *service,
+					   const char *hostname,
+					   const char *realm,
+					   char **pserver_principal,
+					   gss_name_t *pserver_name)
+{
+	char *server_principal = NULL;
+	gss_buffer_desc name_token;
+	gss_OID name_type;
+	OM_uint32 maj_stat, min_stat = 0;
+
+	if (target_principal != NULL) {
+		server_principal = talloc_strdup(mem_ctx, target_principal);
+		name_type = GSS_C_NULL_OID;
+	} else {
+		server_principal = talloc_asprintf(mem_ctx,
+						   "%s/%s@%s",
+						   service,
+						   hostname,
+						   realm);
+		name_type = GSS_C_NT_USER_NAME;
+	}
+	if (server_principal == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	name_token.value = (uint8_t *)server_principal;
+	name_token.length = strlen(server_principal);
+
+	maj_stat = gss_import_name(&min_stat,
+				   &name_token,
+				   name_type,
+				   pserver_name);
+	if (maj_stat) {
+		DBG_WARNING("GSS Import name of %s failed: %s\n",
+			    server_principal,
+			    gse_errstr(mem_ctx, maj_stat, min_stat));
+		TALLOC_FREE(server_principal);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	*pserver_principal = server_principal;
+
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS gse_context_init(TALLOC_CTX *mem_ctx,
 				 bool do_sign, bool do_seal,
 				 const char *ccache_name,
@@ -203,11 +251,12 @@ static NTSTATUS gse_init_client(TALLOC_CTX *mem_ctx,
 {
 	struct gse_context *gse_ctx;
 	OM_uint32 gss_maj, gss_min;
-	gss_buffer_desc name_buffer = GSS_C_EMPTY_BUFFER;
 #ifdef HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X
 	gss_buffer_desc empty_buffer = GSS_C_EMPTY_BUFFER;
 	gss_OID oid = discard_const(GSS_KRB5_CRED_NO_CI_FLAGS_X);
 #endif
+	char *server_principal = NULL;
+	char *server_realm = NULL;
 	NTSTATUS status;
 
 	if (!server || !service) {
@@ -223,30 +272,24 @@ static NTSTATUS gse_init_client(TALLOC_CTX *mem_ctx,
 
 	/* Guess the realm based on the supplied service, and avoid the GSS libs
 	   doing DNS lookups which may fail.
-
-	   TODO: Loop with the KDC on some more combinations (local
-	   realm in particular), possibly falling back to
-	   GSS_C_NT_HOSTBASED_SERVICE
 	*/
-	name_buffer.value =
-		smb_krb5_get_principal_from_service_hostname(gse_ctx,
-							     service,
-							     server,
-							     realm);
-	if (!name_buffer.value) {
-		status = NT_STATUS_NO_MEMORY;
-		goto err_out;
+	server_realm = smb_krb5_get_realm_from_hostname(mem_ctx,
+							server,
+							realm);
+	if (server_realm == NULL) {
+		return NT_STATUS_NO_MEMORY;
 	}
-	name_buffer.length = strlen((char *)name_buffer.value);
-	gss_maj = gss_import_name(&gss_min, &name_buffer,
-				  GSS_C_NT_USER_NAME,
-				  &gse_ctx->server_name);
-	if (gss_maj) {
-		DEBUG(5, ("gss_import_name failed for %s, with [%s]\n",
-			  (char *)name_buffer.value,
-			  gse_errstr(gse_ctx, gss_maj, gss_min)));
-		status = NT_STATUS_INTERNAL_ERROR;
-		goto err_out;
+
+	status = gse_setup_server_principal(mem_ctx,
+					    NULL,
+					    service,
+					    server,
+					    server_realm,
+					    &server_principal,
+					    &gse_ctx->server_name);
+	TALLOC_FREE(server_realm);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	/* TODO: get krb5 ticket using username/password, if no valid
@@ -299,11 +342,11 @@ static NTSTATUS gse_init_client(TALLOC_CTX *mem_ctx,
 #endif
 
 	*_gse_ctx = gse_ctx;
-	TALLOC_FREE(name_buffer.value);
+	TALLOC_FREE(server_principal);
 	return NT_STATUS_OK;
 
 err_out:
-	TALLOC_FREE(name_buffer.value);
+	TALLOC_FREE(server_principal);
 	TALLOC_FREE(gse_ctx);
 	return status;
 }
