@@ -356,10 +356,10 @@ static void named_pipe_accept_done(struct tevent_req *subreq)
 
 	ret = tstream_npa_accept_existing_recv(subreq, &error, npc,
 						&npc->tstream,
-						&npc->client,
-						&npc->client_name,
-						&npc->server,
-						&npc->server_name,
+						&npc->remote_client_addr,
+						&npc->remote_client_name,
+						&npc->local_server_addr,
+						&npc->local_server_name,
 						&session_info_transport);
 
 	npc->session_info = talloc_move(npc, &session_info_transport->session_info);
@@ -375,8 +375,8 @@ static void named_pipe_accept_done(struct tevent_req *subreq)
 	ret = make_server_pipes_struct(npc,
 				       npc->msg_ctx,
 				       npc->pipe_name, NCACN_NP,
-				       npc->server,
-				       npc->client,
+				       npc->local_server_addr,
+				       npc->remote_client_addr,
 				       npc->session_info,
 				       &npc->p, &error);
 	if (ret != 0) {
@@ -402,7 +402,7 @@ static void named_pipe_accept_done(struct tevent_req *subreq)
 
 fail:
 	DEBUG(2, ("Fatal error. Terminating client(%s) connection!\n",
-		  npc->client_name));
+		  npc->remote_client_name));
 	/* terminate client connection */
 	talloc_free(npc);
 	return;
@@ -531,7 +531,7 @@ void named_pipe_packet_process(struct tevent_req *subreq)
 fail:
 	DEBUG(2, ("Fatal error(%s). "
 		  "Terminating client(%s) connection!\n",
-		  nt_errstr(status), npc->client_name));
+		  nt_errstr(status), npc->remote_client_name));
 	/* terminate client connection */
 	talloc_free(npc);
 	return;
@@ -583,7 +583,7 @@ static void named_pipe_packet_done(struct tevent_req *subreq)
 fail:
 	DEBUG(2, ("Fatal error(%s). "
 		  "Terminating client(%s) connection!\n",
-		  strerror(sys_errno), npc->client_name));
+		  strerror(sys_errno), npc->remote_client_name));
 	/* terminate client connection */
 	talloc_free(npc);
 	return;

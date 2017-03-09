@@ -123,14 +123,15 @@ NTSTATUS make_internal_rpc_pipe_socketpair(TALLOC_CTX *mem_ctx,
 		goto out;
 	}
 
-	npc->client = tsocket_address_copy(remote_address, npc);
-	if (npc->client == NULL) {
+	npc->remote_client_addr = tsocket_address_copy(remote_address, npc);
+	if (npc->remote_client_addr == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto out;
 	}
 
-	npc->client_name = tsocket_address_inet_addr_string(npc->client, npc);
-	if (npc->client_name == NULL) {
+	npc->remote_client_name = tsocket_address_inet_addr_string(npc->remote_client_addr,
+								   npc);
+	if (npc->remote_client_name == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto out;
 	}
@@ -145,8 +146,8 @@ NTSTATUS make_internal_rpc_pipe_socketpair(TALLOC_CTX *mem_ctx,
 				      npc->msg_ctx,
 				      npc->pipe_name,
 				      NCACN_NP,
-				      npc->server,
-				      npc->client,
+				      npc->local_server_addr,
+				      npc->remote_client_addr,
 				      npc->session_info,
 				      &npc->p,
 				      &error);
