@@ -609,10 +609,11 @@ class OpenLDAPBackend(LDAPBackend):
 class FDSBackend(LDAPBackend):
 
     def __init__(self, backend_type, paths=None, lp=None,
-            names=None, logger=None, domainsid=None,
-            schema=None, hostname=None, ldapadminpass=None, slapd_path=None,
-            ldap_backend_extra_port=None, ldap_dryrun_mode=False, root=None,
-            setup_ds_path=None):
+                 names=None, logger=None, domainsid=None,
+                 schema=None, hostname=None, ldapadminpass=None,
+                 slapd_path=None, ldap_backend_extra_port=None,
+                 ldap_backend_forced_uri=None, ldap_dryrun_mode=False,
+                 root=None, setup_ds_path=None):
 
         from samba.provision import setup_path
 
