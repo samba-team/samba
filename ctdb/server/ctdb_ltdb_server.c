@@ -104,8 +104,6 @@ static int ctdb_ltdb_store_server(struct ctdb_db_context *ctdb_db,
 		keep = true;
 	} else if (header->flags & CTDB_REC_RO_FLAGS) {
 		keep = true;
-	} else if (ctdb_db->persistent) {
-		keep = true;
 	} else if (header->flags & CTDB_REC_FLAG_AUTOMATIC) {
 		/*
 		 * The record is not created by the client but
