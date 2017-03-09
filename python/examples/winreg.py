@@ -73,7 +73,7 @@ else:
     root = "HKLM"
 
 if opts.createkey:
-    reg.create_key("HKLM\\SOFTWARE", opt.createkey)
+    winreg.create_key("HKLM\\SOFTWARE", opts.createkey)
 else:
     print "Listing registry tree '%s'" % root
     try:
