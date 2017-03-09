@@ -576,11 +576,8 @@ static NTSTATUS msrpc_lookup_groupmem(struct winbindd_domain *domain,
 				       group_rid,
 				       &group_pol,
 				       &result);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (any_nt_status_not_ok(status, result, &status)) {
 		return status;
-	}
-	if (!NT_STATUS_IS_OK(result)) {
-		return result;
 	}
 
         /* Step #1: Get a list of user rids that are the members of the
@@ -604,12 +601,8 @@ static NTSTATUS msrpc_lookup_groupmem(struct winbindd_domain *domain,
 		dcerpc_samr_Close(b, mem_ctx, &group_pol, &_result);
 	}
 
-	if (!NT_STATUS_IS_OK(status)) {
+	if (any_nt_status_not_ok(status, result, &status)) {
 		return status;
-	}
-
-	if (!NT_STATUS_IS_OK(result)) {
-		return result;
 	}
 
 	if (!rids || !rids->count) {
@@ -927,12 +920,8 @@ static NTSTATUS msrpc_lockout_policy(struct winbindd_domain *domain,
 					     DomainLockoutInformation,
 					     &info,
 					     &result);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
-	}
-	if (!NT_STATUS_IS_OK(result)) {
-		status = result;
-		goto done;
+	if (any_nt_status_not_ok(status, result, &status)) {
+		return status;
 	}
 
 	*lockout_policy = info->info12;
@@ -1062,12 +1051,8 @@ NTSTATUS winbindd_lookup_sids(TALLOC_CTX *mem_ctx,
 		status = NT_STATUS_ACCESS_DENIED;
 	}
 
-	if (!NT_STATUS_IS_OK(status)) {
+	if (any_nt_status_not_ok(status, result, &status)) {
 		return status;
-	}
-
-	if (!NT_STATUS_IS_OK(result)) {
-		return result;
 	}
 
 	return NT_STATUS_OK;
@@ -1141,12 +1126,8 @@ static NTSTATUS winbindd_lookup_names(TALLOC_CTX *mem_ctx,
 		status = NT_STATUS_ACCESS_DENIED;
 	}
 
-	if (!NT_STATUS_IS_OK(status)) {
+	if (any_nt_status_not_ok(status, result, &status)) {
 		return status;
-	}
-
-	if (!NT_STATUS_IS_OK(result)) {
-		return result;
 	}
 
 	return NT_STATUS_OK;
