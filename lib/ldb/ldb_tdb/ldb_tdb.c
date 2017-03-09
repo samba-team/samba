@@ -361,7 +361,7 @@ static int ltdb_add_internal(struct ldb_module *module,
 				if (ldb_msg_find_val(el, &el->values[j]) != &el->values[j]) {
 					ldb_asprintf_errstring(ldb,
 							       "attribute '%s': value #%u on '%s' "
-							       "provided more than once",
+							       "provided more than once in ADD object",
 							       el->name, j, 
 							       ldb_dn_get_linearized(msg->dn));
 					return LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
@@ -820,7 +820,7 @@ int ltdb_modify_internal(struct ldb_module *module,
 						}
 						if (ldb_msg_find_val(el, &el->values[j]) != &el->values[j]) {
 							ldb_asprintf_errstring(ldb,
-									       "attribute '%s': value #%u on '%s' provided more than once",
+									       "attribute '%s': value #%u on '%s' provided more than once in ADD",
 									       el->name, j, ldb_dn_get_linearized(msg2->dn));
 							ret = LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
 							goto done;
@@ -875,7 +875,7 @@ int ltdb_modify_internal(struct ldb_module *module,
 				for (j=0; j<el->num_values; j++) {
 					if (ldb_msg_find_val(el, &el->values[j]) != &el->values[j]) {
 						ldb_asprintf_errstring(ldb,
-								       "attribute '%s': value #%u on '%s' provided more than once",
+								       "attribute '%s': value #%u on '%s' provided more than once in REPLACE",
 								       el->name, j, ldb_dn_get_linearized(msg2->dn));
 						ret = LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
 						goto done;
