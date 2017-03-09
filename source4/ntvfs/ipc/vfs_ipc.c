@@ -253,8 +253,8 @@ static NTSTATUS ipc_open(struct ntvfs_module_context *ntvfs,
 	struct tevent_req *subreq;
 	const char *fname;
 	const char *directory;
-	const struct tsocket_address *client_addr;
-	const struct tsocket_address *server_addr;
+	const struct tsocket_address *remote_client_addr;
+	const struct tsocket_address *local_server_addr;
 
 	switch (oi->generic.level) {
 	case RAW_OPEN_NTCREATEX:
@@ -321,16 +321,16 @@ static NTSTATUS ipc_open(struct ntvfs_module_context *ntvfs,
 
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	client_addr = ntvfs_get_local_address(ipriv->ntvfs);
-	server_addr = ntvfs_get_remote_address(ipriv->ntvfs);
+	local_server_addr = ntvfs_get_local_address(ipriv->ntvfs);
+	remote_client_addr = ntvfs_get_remote_address(ipriv->ntvfs);
 
 	subreq = tstream_npa_connect_send(p,
 					  ipriv->ntvfs->ctx->event_ctx,
 					  directory,
 					  fname,
-					  client_addr,
+					  remote_client_addr,
 					  NULL,
-					  server_addr,
+					  local_server_addr,
 					  NULL,
 					  state->session_info_transport);
 	NT_STATUS_HAVE_NO_MEMORY(subreq);
