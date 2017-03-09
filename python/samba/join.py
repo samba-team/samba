@@ -228,7 +228,7 @@ class dc_join(object):
 
         if "msDS-Krbtgtlink" in res[0]:
             new_krbtgt_dn = res[0]["msDS-Krbtgtlink"][0]
-            del_noerror(ctx.new_krbtgt_dn)
+            ctx.del_noerror(ctx.new_krbtgt_dn)
 
         res = ctx.samdb.search(base=ctx.samdb.get_default_basedn(),
                                expression='(&(sAMAccountName=%s)(servicePrincipalName=%s))' %
