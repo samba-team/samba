@@ -347,6 +347,7 @@ static NTSTATUS gse_get_client_auth_token(TALLOC_CTX *mem_ctx,
 	const char *client_realm = cli_credentials_get_realm(cli_creds);
 	char *server_principal = NULL;
 	char *server_realm = NULL;
+	bool fallback = false;
 
 	in_data.value = token_in->data;
 	in_data.length = token_in->length;
@@ -393,12 +394,61 @@ static NTSTATUS gse_get_client_auth_token(TALLOC_CTX *mem_ctx,
 	 * want to autodetect support for transitive forest trusts, would have
 	 * to do the fallback ourself.
 	 */
+#ifndef SAMBA4_USES_HEIMDAL
+	if (gse_ctx->server_name == NULL) {
+		OM_uint32 gss_min2 = 0;
+
+		status = gse_setup_server_principal(mem_ctx,
+						    target_principal,
+						    service,
+						    hostname,
+						    client_realm,
+						    &server_principal,
+						    &gse_ctx->server_name);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		gss_maj = gss_init_sec_context(&gss_min,
+					       gse_ctx->creds,
+					       &gse_ctx->gssapi_context,
+					       gse_ctx->server_name,
+					       &gse_ctx->gss_mech,
+					       gse_ctx->gss_want_flags,
+					       0,
+					       GSS_C_NO_CHANNEL_BINDINGS,
+					       &in_data,
+					       NULL,
+					       &out_data,
+					       &gse_ctx->gss_got_flags,
+					       &time_rec);
+		if (gss_maj != GSS_S_FAILURE) {
+			goto init_sec_context_done;
+		}
+		if (gss_min != (OM_uint32)KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN) {
+			goto init_sec_context_done;
+		}
+		if (target_principal != NULL) {
+			goto init_sec_context_done;
+		}
+
+		fallback = true;
+		TALLOC_FREE(server_principal);
+		gss_release_name(&gss_min2, &gse_ctx->server_name);
+	}
+#endif /* !SAMBA4_USES_HEIMDAL */
+
 	if (gse_ctx->server_name == NULL) {
 		server_realm = smb_krb5_get_realm_from_hostname(mem_ctx,
 								hostname,
 								client_realm);
 		if (server_realm == NULL) {
 			return NT_STATUS_NO_MEMORY;
+		}
+
+		if (fallback &&
+		    strequal(client_realm, server_realm)) {
+			goto init_sec_context_done;
 		}
 
 		status = gse_setup_server_principal(mem_ctx,
@@ -425,6 +475,10 @@ static NTSTATUS gse_get_client_auth_token(TALLOC_CTX *mem_ctx,
 					0, GSS_C_NO_CHANNEL_BINDINGS,
 					&in_data, NULL, &out_data,
 					&gse_ctx->gss_got_flags, &time_rec);
+	goto init_sec_context_done;
+	/* JUMP! */
+init_sec_context_done:
+
 	switch (gss_maj) {
 	case GSS_S_COMPLETE:
 		/* we are done with it */
