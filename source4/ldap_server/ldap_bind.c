@@ -251,8 +251,6 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 	 */
 
 	if (!conn->gensec) {
-		conn->session_info = NULL;
-
 		status = ldapsrv_setup_gensec(conn, req->creds.SASL.mechanism,
 					      &conn->gensec);
 		if (!NT_STATUS_IS_OK(status)) {
