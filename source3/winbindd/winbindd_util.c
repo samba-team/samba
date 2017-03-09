@@ -854,7 +854,7 @@ bool init_domain_list(void)
 			 */
 			ok = migrate_secrets_tdb_to_ldb(domain);
 
-			if (ok == false) {
+			if (!ok) {
 				DEBUG(0, ("Failed to migrate our own, "
 					  "local AD domain join password for "
 					  "winbindd's internal use into "
@@ -865,7 +865,7 @@ bool init_domain_list(void)
 					       current_nt_hash.hash,
 					       &account_name,
 					       &sec_chan_type);
-			if (ok == false) {
+			if (!ok) {
 				DEBUG(0, ("Failed to find our our own, just "
 					  "written local AD domain join "
 					  "password for winbindd's internal "
