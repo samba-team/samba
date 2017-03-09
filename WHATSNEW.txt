@@ -1,4 +1,111 @@
                    =============================
+                   Release Notes for Samba 4.5.6
+                           March 9, 2017
+                   =============================
+
+
+This is the latest stable release of the Samba 4.5 release series.
+
+
+Changes since 4.5.5:
+--------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 12499: s3: vfs: dirsort doesn't handle opendir of "." correctly.
+   * BUG 12531: vfs_shadow_copy2 doesn't cope with server changing directories.
+   * BUG 12546: vfs_streams_xattr doesn't cope with server changing directories.
+   * BUG 12572: s3: smbd: Don't loop infinitely on bad-symlink resolution.
+   * BUG 12608: s3: smbd: Restart reading the incoming SMB2 fd when the send
+     queue is drained.
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 12573: Samba < 4.7 does not know about compatibleFeatures and
+     requiredFeatures.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 12184: s3/rpc_server: Shared rpc modules loading.
+   * BUG 12427: vfs_fruit doesn't work with fruit:metadata=stream.
+   * BUG 12520: Ensure global "smb encrypt = off" is effective.
+   * BUG 12524: s3/rpc_server: move rpc_modules.c to its own subsystem.
+   * BUG 12536: s3/smbd: check for invalid access_mask
+     smbd_calculate_access_mask().
+   * BUG 12541: vfs_fruit: checks wrong AAPL config state and so always uses
+     readdirattr.
+   * BUG 12545: s3/rpc_server/mdssvc: add attribute "kMDItemContentType".
+   * BUG 12591: vfs_streams_xattr: use fsp, not base_fsp.
+   * BUG 12604: vfs_fruit: Enabling AAPL extensions must be a global switch.
+
+o  Amitay Isaacs <amitay@gmail.com>
+   * BUG 12469: ctdb-tests: Use replace headers instead of system headers.
+   * BUG 12547: ctdb-build: Install CTDB tests correctly from toplevel.
+   * BUG 12580: ctdb-common: Fix use-after-free error in comm_fd_handler().
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 12551: smbd: Fix "map acl inherit" = yes.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 9048: s4:ldap_server: Match Windows in the error messages of failing
+     LDAP Bind requests.
+   * BUG 11830: s3:winbindd: Try a NETLOGON connection with noauth over NCACN_NP
+     against trusted domains.
+   * BUG 12262: 'net ads testjoin' and smb access fails after winbindd changed the
+     trust password.
+   * BUG 12399: s4:repl_meta_data: Normalize rdn attribute name via the schema.
+   * BUG 12540: s3:smbd: Allow "server min protocol = SMB3_00" to go via "SMB
+     2.???" negprot.
+   * BUG 12581: smbclient fails on bad endianess when listing shares from
+     Solaris kernel SMB server on SPARC.
+   * BUG 12585: librpc/rpc: fix regression in
+     NT_STATUS_RPC_ENUM_VALUE_OUT_OF_RANGE error mapping.
+   * BUG 12586: libcli/auth: Use the correct creds value against servers without
+     LogonSamLogonEx.
+   * BUG 12587: winbindd child segfaults on connect to an NT4 domain.
+   * BUG 12588: cm_prepare_connection may return NT_STATUS_OK without a valid
+     connection.
+   * BUG 12598: winbindd (as member) requires Kerberos against trusted ad
+     domain, while it shouldn't.
+   * BUG 12605: s3:winbindd: Fix endless forest trust scan.
+
+o  Garming Sam <garming@catalyst.net.nz>
+   * BUG 12577: dbcheck-links: Test that dbcheck against one-way links does not
+     error.
+   * BUG 12600: dbchecker: Stop ignoring linked cases where both objects are
+     alive.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 12571: s3-vfs: Only walk the directory once in open_and_sort_dir().
+
+o  Martin Schwenke <martin@meltin.net>
+   * BUG 12589: ctdb-scripts: Initialise CTDB_NFS_CALLOUT in statd-callout.
+
+o  Uri Simchoni <uri@samba.org>
+   * BUG 12529: waf: backport finding of pkg-config.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   =============================
                    Release Notes for Samba 4.5.5
                           January 30, 2017
                    =============================
@@ -46,8 +153,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    =============================
                    Release Notes for Samba 4.5.4
