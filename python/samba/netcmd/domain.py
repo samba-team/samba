@@ -2089,7 +2089,7 @@ class cmd_domain_trust_show(DomainTrustCommand):
                 local_tdo_forest = local_lsa.lsaRQueryForestTrustInformation(local_policy,
                                         lsaString, lsa.LSA_FOREST_TRUST_DOMAIN_INFO)
         except RuntimeError as error:
-            if self.check_runtime_error(error, self.NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE):
+            if self.check_runtime_error(error, ntstatus.NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE):
                 error = None
             if self.check_runtime_error(error, ntstatus.NT_STATUS_NOT_FOUND):
                 error = None
