@@ -252,12 +252,10 @@ add_trusted_domain_from_tdc(const struct winbindd_tdc_domain *tdc)
 	domain->domain_trust_attribs = tdc->trust_attribs;
 
 	/* Is this our primary domain ? */
-	if (strequal(domain_name, get_global_sam_name()) &&
-			(role != ROLE_DOMAIN_MEMBER)) {
-		domain->primary = true;
-	} else if (strequal(domain_name, lp_workgroup()) &&
-			(role == ROLE_DOMAIN_MEMBER)) {
-		domain->primary = true;
+	if (role == ROLE_DOMAIN_MEMBER) {
+		domain->primary = strequal(domain_name, lp_workgroup());
+	} else {
+		domain->primary = strequal(domain_name, get_global_sam_name());
 	}
 
 	if (domain->primary) {
