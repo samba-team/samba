@@ -60,10 +60,10 @@ struct tevent_req *tstream_npa_connect_send(TALLOC_CTX *mem_ctx,
 					    struct tevent_context *ev,
 					    const char *directory,
 					    const char *npipe,
-					    const struct tsocket_address *client,
-					    const char *client_name_in,
-					    const struct tsocket_address *server,
-					    const char *server_name,
+					    const struct tsocket_address *remote_client_addr,
+					    const char *remote_client_name_in,
+					    const struct tsocket_address *local_server_addr,
+					    const char *local_server_name,
 					    const struct auth_session_info_transport *session_info)
 {
 	struct tevent_req *req;
@@ -113,7 +113,7 @@ struct tevent_req *tstream_npa_connect_send(TALLOC_CTX *mem_ctx,
 
 	ZERO_STRUCT(state->auth_req);
 
-	if (!server) {
+	if (!local_server_addr) {
 		tevent_req_error(req, EINVAL);
 		goto post;
 	}
@@ -121,27 +121,29 @@ struct tevent_req *tstream_npa_connect_send(TALLOC_CTX *mem_ctx,
 	state->auth_req.level = 4;
 	info4 = &state->auth_req.info.info4;
 
-	info4->client_name = client_name_in;
-	info4->client_addr = tsocket_address_inet_addr_string(client, state);
-	if (!info4->client_addr) {
+	info4->remote_client_name = remote_client_name_in;
+	info4->remote_client_addr = tsocket_address_inet_addr_string(remote_client_addr,
+								     state);
+	if (!info4->remote_client_addr) {
 		/* errno might be EINVAL */
 		tevent_req_error(req, errno);
 		goto post;
 	}
-	info4->client_port = tsocket_address_inet_port(client);
-	if (!info4->client_name) {
-		info4->client_name = info4->client_addr;
+	info4->remote_client_port = tsocket_address_inet_port(remote_client_addr);
+	if (!info4->remote_client_name) {
+		info4->remote_client_name = info4->remote_client_addr;
 	}
 
-	info4->server_addr = tsocket_address_inet_addr_string(server, state);
-	if (!info4->server_addr) {
+	info4->local_server_addr = tsocket_address_inet_addr_string(local_server_addr,
+								    state);
+	if (!info4->local_server_addr) {
 		/* errno might be EINVAL */
 		tevent_req_error(req, errno);
 		goto post;
 	}
-	info4->server_port = tsocket_address_inet_port(server);
-	if (!info4->server_name) {
-		info4->server_name = info4->server_addr;
+	info4->local_server_port = tsocket_address_inet_port(local_server_addr);
+	if (!info4->local_server_name) {
+		info4->local_server_name = info4->local_server_addr;
 	}
 
 	info4->session_info = discard_const_p(struct auth_session_info_transport, session_info);
@@ -1074,10 +1076,10 @@ struct tstream_npa_accept_state {
 
 	/* results */
 	NTSTATUS accept_status;
-	struct tsocket_address *client;
-	char *client_name;
-	struct tsocket_address *server;
-	char *server_name;
+	struct tsocket_address *remote_client_addr;
+	char *remote_client_name;
+	struct tsocket_address *local_server_addr;
+	char *local_server_name;
 	struct auth_session_info_transport *session_info;
 };
 
@@ -1289,40 +1291,42 @@ static void tstream_npa_accept_existing_reply(struct tevent_req *subreq)
 	pipe_reply.info.info4.allocation_size = state->alloc_size;
 
 	i4 = pipe_request->info.info4;
-	if (i4.server_addr == NULL) {
+	if (i4.local_server_addr == NULL) {
 		pipe_reply.status = NT_STATUS_INVALID_ADDRESS;
-		DEBUG(2, ("Missing server address\n"));
+		DEBUG(2, ("Missing local server address\n"));
 		goto reply;
 	}
-	if (i4.client_addr == NULL) {
+	if (i4.remote_client_addr == NULL) {
 		pipe_reply.status = NT_STATUS_INVALID_ADDRESS;
-		DEBUG(2, ("Missing client address\n"));
+		DEBUG(2, ("Missing remote client address\n"));
 		goto reply;
 	}
 
-	state->server_name = discard_const_p(char,
-					     talloc_move(state, &i4.server_name));
+	state->local_server_name = discard_const_p(char,
+						   talloc_move(state,
+							       &i4.local_server_name));
 	ret = tsocket_address_inet_from_strings(state, "ip",
-						i4.server_addr,
-						i4.server_port,
-						&state->server);
+						i4.local_server_addr,
+						i4.local_server_port,
+						&state->local_server_addr);
 	if (ret != 0) {
-		DEBUG(2, ("Invalid server address[%s:%u] - %s\n",
-			  i4.server_addr, i4.server_port,
+		DEBUG(2, ("Invalid local server address[%s:%u] - %s\n",
+			  i4.local_server_addr, i4.local_server_port,
 			  strerror(errno)));
 		pipe_reply.status = NT_STATUS_INVALID_ADDRESS;
 		goto reply;
 	}
 
-	state->client_name = discard_const_p(char,
-					     talloc_move(state, &i4.client_name));
+	state->remote_client_name = discard_const_p(char,
+						    talloc_move(state,
+								&i4.remote_client_name));
 	ret = tsocket_address_inet_from_strings(state, "ip",
-						i4.client_addr,
-						i4.client_port,
-						&state->client);
+						i4.remote_client_addr,
+						i4.remote_client_port,
+						&state->remote_client_addr);
 	if (ret != 0) {
-		DEBUG(2, ("Invalid client address[%s:%u] - %s\n",
-			  i4.client_addr, i4.client_port,
+		DEBUG(2, ("Invalid remote client address[%s:%u] - %s\n",
+			  i4.remote_client_addr, i4.remote_client_port,
 			  strerror(errno)));
 		pipe_reply.status = NT_STATUS_INVALID_ADDRESS;
 		goto reply;
@@ -1384,10 +1388,10 @@ int _tstream_npa_accept_existing_recv(struct tevent_req *req,
 				      int *perrno,
 				      TALLOC_CTX *mem_ctx,
 				      struct tstream_context **stream,
-				      struct tsocket_address **client,
-				      char **_client_name,
-				      struct tsocket_address **server,
-				      char **server_name,
+				      struct tsocket_address **remote_client_addr,
+				      char **_remote_client_name,
+				      struct tsocket_address **local_server_addr,
+				      char **local_server_name,
 				      struct auth_session_info_transport **session_info,
 				      const char *location)
 {
@@ -1433,10 +1437,10 @@ int _tstream_npa_accept_existing_recv(struct tevent_req *req,
 	npas->unix_stream = state->plain;
 	npas->file_type = state->file_type;
 
-	*client = talloc_move(mem_ctx, &state->client);
-	*_client_name = talloc_move(mem_ctx, &state->client_name);
-	*server = talloc_move(mem_ctx, &state->server);
-	*server_name = talloc_move(mem_ctx, &state->server_name);
+	*remote_client_addr = talloc_move(mem_ctx, &state->remote_client_addr);
+	*_remote_client_name = talloc_move(mem_ctx, &state->remote_client_name);
+	*local_server_addr = talloc_move(mem_ctx, &state->local_server_addr);
+	*local_server_name = talloc_move(mem_ctx, &state->local_server_name);
 	*session_info = talloc_move(mem_ctx, &state->session_info);
 
 	tevent_req_received(req);

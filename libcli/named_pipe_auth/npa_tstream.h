@@ -29,10 +29,10 @@ struct tevent_req *tstream_npa_connect_send(TALLOC_CTX *mem_ctx,
 					    struct tevent_context *ev,
 					    const char *directory,
 					    const char *npipe,
-					    const struct tsocket_address *client,
-					    const char *client_name_in,
-					    const struct tsocket_address *server,
-					    const char *server_name,
+					    const struct tsocket_address *remote_client_addr,
+					    const char *remote_client_name_in,
+					    const struct tsocket_address *local_server_addr,
+					    const char *local_server_name,
 					    const struct auth_session_info_transport *session_info);
 int _tstream_npa_connect_recv(struct tevent_req *req,
 			      int *perrno,
@@ -99,21 +99,25 @@ int _tstream_npa_accept_existing_recv(struct tevent_req *req,
 				      int *perrno,
 				      TALLOC_CTX *mem_ctx,
 				      struct tstream_context **stream,
-				      struct tsocket_address **client,
-				      char **_client_name,
-				      struct tsocket_address **server,
-				      char **server_name,
+				      struct tsocket_address **remote_client_addr,
+				      char **_remote_client_name,
+				      struct tsocket_address **local_server_addr,
+				      char **local_server_name,
 				      struct auth_session_info_transport **session_info,
 				      const char *location);
 #define tstream_npa_accept_existing_recv(req, perrno, \
 					 mem_ctx, stream, \
-					 client, client_name, \
-					 server, server_name, \
+					 remote_client_addr, \
+					 remote_client_name,  \
+					 local_server_addr, \
+					 local_server_name, \
 					 session_info) \
 	_tstream_npa_accept_existing_recv(req, perrno, \
 					  mem_ctx, stream, \
-					  client, client_name, \
-					  server, server_name, \
+					  remote_client_addr, \
+					  remote_client_name,  \
+					  local_server_addr, \
+					  local_server_name, \
 					  session_info, \
 					  __location__)
 
