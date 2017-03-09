@@ -202,7 +202,7 @@ class UserTests(samba.tests.TestCase):
                             scope=SCOPE_SUBTREE,
                             attrs=['cn'])
 
-    def _test_member_search(self):
+    def _test_member_search(self, rounds=10):
         expressions = []
         for d in range(50):
             expressions.append('(member=cn=u%d,%s)' % (d + 500, self.ou_users))
@@ -214,7 +214,7 @@ class UserTests(samba.tests.TestCase):
 
         for expression in expressions:
             t = time.time()
-            for i in range(10):
+            for i in range(rounds):
                 self.ldb.search(self.ou,
                                 expression=expression,
                                 scope=SCOPE_SUBTREE,
@@ -266,7 +266,8 @@ class UserTests(samba.tests.TestCase):
     test_01_10_complex_search_3k_users = _test_complex_search
     test_01_11_unindexed_search_3k_users = _test_unindexed_search
     test_01_12_indexed_search_3k_users = _test_indexed_search
-    test_01_13_member_search_3k_users = _test_member_search
+    def test_01_13_member_search_3k_users(self):
+        self._test_member_search(rounds=5)
 
     test_02_01_link_users_1000 = _test_link_many_users
     test_02_02_link_users_2000 = _test_link_many_users
@@ -275,7 +276,8 @@ class UserTests(samba.tests.TestCase):
     test_03_10_complex_search_linked_users = _test_complex_search
     test_03_11_unindexed_search_linked_users = _test_unindexed_search
     test_03_12_indexed_search_linked_users = _test_indexed_search
-    test_03_12_member_search_linked_users = _test_member_search
+    def test_03_13_member_search_linked_users(self):
+        self._test_member_search(rounds=2)
 
 if "://" not in host:
     if os.path.isfile(host):
