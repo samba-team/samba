@@ -124,7 +124,7 @@ class SambaConf:
 			
 			if input_str[-1] == "\\" :
 				result += input_str[0:-1]
-				contine
+				continue
 
 			## otherwise we have a complete line
 			result += input_str
