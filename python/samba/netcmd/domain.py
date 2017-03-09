@@ -773,10 +773,10 @@ class cmd_domain_demote(Command):
 
         self.errf.write("Deactivating inbound replication\n")
 
-        if not (dsa_options & DS_NTDSDSA_OPT_DISABLE_OUTBOUND_REPL) and not samdb.am_rodc():
-            nmsg = ldb.Message()
-            nmsg.dn = msg[0].dn
+        nmsg = ldb.Message()
+        nmsg.dn = msg[0].dn
 
+        if not (dsa_options & DS_NTDSDSA_OPT_DISABLE_OUTBOUND_REPL) and not samdb.am_rodc():
             dsa_options |= DS_NTDSDSA_OPT_DISABLE_INBOUND_REPL
             nmsg["options"] = ldb.MessageElement(str(dsa_options), ldb.FLAG_MOD_REPLACE, "options")
             samdb.modify(nmsg)
@@ -822,19 +822,21 @@ class cmd_domain_demote(Command):
             uac = int(str(res[0]["userAccountControl"]))
 
         except Exception, e:
-            self.errf.write(
-                "Error while demoting, re-enabling inbound replication\n")
-            dsa_options ^= DS_NTDSDSA_OPT_DISABLE_INBOUND_REPL
-            nmsg["options"] = ldb.MessageElement(str(dsa_options), ldb.FLAG_MOD_REPLACE, "options")
-            samdb.modify(nmsg)
+            if not (dsa_options & DS_NTDSDSA_OPT_DISABLE_OUTBOUND_REPL) and not samdb.am_rodc():
+                self.errf.write(
+                    "Error while demoting, re-enabling inbound replication\n")
+                dsa_options ^= DS_NTDSDSA_OPT_DISABLE_INBOUND_REPL
+                nmsg["options"] = ldb.MessageElement(str(dsa_options), ldb.FLAG_MOD_REPLACE, "options")
+                samdb.modify(nmsg)
             raise CommandError("Error while changing account control", e)
 
         if (len(res) != 1):
-            self.errf.write(
-                "Error while demoting, re-enabling inbound replication")
-            dsa_options ^= DS_NTDSDSA_OPT_DISABLE_INBOUND_REPL
-            nmsg["options"] = ldb.MessageElement(str(dsa_options), ldb.FLAG_MOD_REPLACE, "options")
-            samdb.modify(nmsg)
+            if not (dsa_options & DS_NTDSDSA_OPT_DISABLE_OUTBOUND_REPL) and not samdb.am_rodc():
+                self.errf.write(
+                    "Error while demoting, re-enabling inbound replication")
+                dsa_options ^= DS_NTDSDSA_OPT_DISABLE_INBOUND_REPL
+                nmsg["options"] = ldb.MessageElement(str(dsa_options), ldb.FLAG_MOD_REPLACE, "options")
+                samdb.modify(nmsg)
             raise CommandError("Unable to find object with samaccountName = %s$"
                                " in the remote dc" % netbios_name.upper())
 
@@ -852,11 +854,12 @@ class cmd_domain_demote(Command):
         try:
             remote_samdb.modify(msg)
         except Exception, e:
-            self.errf.write(
-                "Error while demoting, re-enabling inbound replication")
-            dsa_options ^= DS_NTDSDSA_OPT_DISABLE_INBOUND_REPL
-            nmsg["options"] = ldb.MessageElement(str(dsa_options), ldb.FLAG_MOD_REPLACE, "options")
-            samdb.modify(nmsg)
+            if not (dsa_options & DS_NTDSDSA_OPT_DISABLE_OUTBOUND_REPL) and not samdb.am_rodc():
+                self.errf.write(
+                    "Error while demoting, re-enabling inbound replication")
+                dsa_options ^= DS_NTDSDSA_OPT_DISABLE_INBOUND_REPL
+                nmsg["options"] = ldb.MessageElement(str(dsa_options), ldb.FLAG_MOD_REPLACE, "options")
+                samdb.modify(nmsg)
 
             raise CommandError("Error while changing account control", e)
 
@@ -880,11 +883,12 @@ class cmd_domain_demote(Command):
                                             scope=ldb.SCOPE_ONELEVEL)
 
             if i == 100:
-                self.errf.write(
-                    "Error while demoting, re-enabling inbound replication\n")
-                dsa_options ^= DS_NTDSDSA_OPT_DISABLE_INBOUND_REPL
-                nmsg["options"] = ldb.MessageElement(str(dsa_options), ldb.FLAG_MOD_REPLACE, "options")
-                samdb.modify(nmsg)
+                if not (dsa_options & DS_NTDSDSA_OPT_DISABLE_OUTBOUND_REPL) and not samdb.am_rodc():
+                    self.errf.write(
+                        "Error while demoting, re-enabling inbound replication\n")
+                    dsa_options ^= DS_NTDSDSA_OPT_DISABLE_INBOUND_REPL
+                    nmsg["options"] = ldb.MessageElement(str(dsa_options), ldb.FLAG_MOD_REPLACE, "options")
+                    samdb.modify(nmsg)
 
                 msg = ldb.Message()
                 msg.dn = dc_dn
@@ -905,11 +909,12 @@ class cmd_domain_demote(Command):
             newdn = ldb.Dn(remote_samdb, "%s,%s" % (newrdn, str(computer_dn)))
             remote_samdb.rename(dc_dn, newdn)
         except Exception, e:
-            self.errf.write(
-                "Error while demoting, re-enabling inbound replication\n")
-            dsa_options ^= DS_NTDSDSA_OPT_DISABLE_INBOUND_REPL
-            nmsg["options"] = ldb.MessageElement(str(dsa_options), ldb.FLAG_MOD_REPLACE, "options")
-            samdb.modify(nmsg)
+            if not (dsa_options & DS_NTDSDSA_OPT_DISABLE_OUTBOUND_REPL) and not samdb.am_rodc():
+                self.errf.write(
+                    "Error while demoting, re-enabling inbound replication\n")
+                dsa_options ^= DS_NTDSDSA_OPT_DISABLE_INBOUND_REPL
+                nmsg["options"] = ldb.MessageElement(str(dsa_options), ldb.FLAG_MOD_REPLACE, "options")
+                samdb.modify(nmsg)
 
             msg = ldb.Message()
             msg.dn = dc_dn
