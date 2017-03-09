@@ -255,8 +255,6 @@ static NTSTATUS gse_init_client(TALLOC_CTX *mem_ctx,
 	gss_buffer_desc empty_buffer = GSS_C_EMPTY_BUFFER;
 	gss_OID oid = discard_const(GSS_KRB5_CRED_NO_CI_FLAGS_X);
 #endif
-	char *server_principal = NULL;
-	char *server_realm = NULL;
 	NTSTATUS status;
 
 	if (!server || !service) {
@@ -268,28 +266,6 @@ static NTSTATUS gse_init_client(TALLOC_CTX *mem_ctx,
 				  &gse_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		return NT_STATUS_NO_MEMORY;
-	}
-
-	/* Guess the realm based on the supplied service, and avoid the GSS libs
-	   doing DNS lookups which may fail.
-	*/
-	server_realm = smb_krb5_get_realm_from_hostname(mem_ctx,
-							server,
-							realm);
-	if (server_realm == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	status = gse_setup_server_principal(mem_ctx,
-					    NULL,
-					    service,
-					    server,
-					    server_realm,
-					    &server_principal,
-					    &gse_ctx->server_name);
-	TALLOC_FREE(server_realm);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
 	}
 
 	/* TODO: get krb5 ticket using username/password, if no valid
@@ -342,11 +318,9 @@ static NTSTATUS gse_init_client(TALLOC_CTX *mem_ctx,
 #endif
 
 	*_gse_ctx = gse_ctx;
-	TALLOC_FREE(server_principal);
 	return NT_STATUS_OK;
 
 err_out:
-	TALLOC_FREE(server_principal);
 	TALLOC_FREE(gse_ctx);
 	return status;
 }
@@ -366,9 +340,80 @@ static NTSTATUS gse_get_client_auth_token(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	OM_uint32 time_rec = 0;
 	struct timeval tv;
+	struct cli_credentials *cli_creds = gensec_get_credentials(gensec_security);
+	const char *hostname = gensec_get_target_hostname(gensec_security);
+	const char *service = gensec_get_target_service(gensec_security);
+	const char *client_realm = cli_credentials_get_realm(cli_creds);
+	char *server_principal = NULL;
+	char *server_realm = NULL;
 
 	in_data.value = token_in->data;
 	in_data.length = token_in->length;
+
+	/*
+	 * With credentials for administrator@FOREST1.EXAMPLE.COM this patch
+	 * changes the target_principal for the ldap service of host
+	 * dc2.forest2.example.com from
+	 *
+	 *   ldap/dc2.forest2.example.com@FOREST1.EXAMPLE.COM
+	 *
+	 * to
+	 *
+	 *   ldap/dc2.forest2.example.com@FOREST2.EXAMPLE.COM
+	 *
+	 * Typically ldap/dc2.forest2.example.com@FOREST1.EXAMPLE.COM should be
+	 * used in order to allow the KDC of FOREST1.EXAMPLE.COM to generate a
+	 * referral ticket for krbtgt/FOREST2.EXAMPLE.COM@FOREST1.EXAMPLE.COM.
+	 *
+	 * The problem is that KDCs only return such referral tickets if
+	 * there's a forest trust between FOREST1.EXAMPLE.COM and
+	 * FOREST2.EXAMPLE.COM. If there's only an external domain trust
+	 * between FOREST1.EXAMPLE.COM and FOREST2.EXAMPLE.COM the KDC of
+	 * FOREST1.EXAMPLE.COM will respond with S_PRINCIPAL_UNKNOWN when being
+	 * asked for ldap/dc2.forest2.example.com@FOREST1.EXAMPLE.COM.
+	 *
+	 * In the case of an external trust the client can still ask explicitly
+	 * for krbtgt/FOREST2.EXAMPLE.COM@FOREST1.EXAMPLE.COM and the KDC of
+	 * FOREST1.EXAMPLE.COM will generate it.
+	 *
+	 * From there the client can use the
+	 * krbtgt/FOREST2.EXAMPLE.COM@FOREST1.EXAMPLE.COM ticket and ask a KDC
+	 * of FOREST2.EXAMPLE.COM for a service ticket for
+	 * ldap/dc2.forest2.example.com@FOREST2.EXAMPLE.COM.
+	 *
+	 * With Heimdal we'll get the fallback on S_PRINCIPAL_UNKNOWN behavior
+	 * when we pass ldap/dc2.forest2.example.com@FOREST2.EXAMPLE.COM as
+	 * target principal. As _krb5_get_cred_kdc_any() first calls
+	 * get_cred_kdc_referral() (which always starts with the client realm)
+	 * and falls back to get_cred_kdc_capath() (which starts with the given
+	 * realm).
+	 *
+	 * MIT krb5 only tries the given realm of the target principal, if we
+	 * want to autodetect support for transitive forest trusts, would have
+	 * to do the fallback ourself.
+	 */
+	if (gse_ctx->server_name == NULL) {
+		server_realm = smb_krb5_get_realm_from_hostname(mem_ctx,
+								hostname,
+								client_realm);
+		if (server_realm == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		status = gse_setup_server_principal(mem_ctx,
+						    NULL,
+						    service,
+						    hostname,
+						    server_realm,
+						    &server_principal,
+						    &gse_ctx->server_name);
+		TALLOC_FREE(server_realm);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		TALLOC_FREE(server_principal);
+	}
 
 	gss_maj = gss_init_sec_context(&gss_min,
 					gse_ctx->creds,
