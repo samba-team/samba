@@ -341,6 +341,7 @@ static NTSTATUS gse_get_client_auth_token(TALLOC_CTX *mem_ctx,
 	OM_uint32 time_rec = 0;
 	struct timeval tv;
 	struct cli_credentials *cli_creds = gensec_get_credentials(gensec_security);
+	const char *target_principal = gensec_get_target_principal(gensec_security);
 	const char *hostname = gensec_get_target_hostname(gensec_security);
 	const char *service = gensec_get_target_service(gensec_security);
 	const char *client_realm = cli_credentials_get_realm(cli_creds);
@@ -401,7 +402,7 @@ static NTSTATUS gse_get_client_auth_token(TALLOC_CTX *mem_ctx,
 		}
 
 		status = gse_setup_server_principal(mem_ctx,
-						    NULL,
+						    target_principal,
 						    service,
 						    hostname,
 						    server_realm,
