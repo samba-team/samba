@@ -1510,7 +1510,7 @@ static NTSTATUS _netr_LogonSamLogon_base(struct pipes_struct *p,
 			return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	*r->out.authoritative = true; /* authoritative response */
+	*r->out.authoritative = 1; /* authoritative response */
 
 	switch (r->in.validation_level) {
 	case 2:
