@@ -318,11 +318,6 @@ char *smb_krb5_get_realm_from_hostname(TALLOC_CTX *mem_ctx,
 				       const char *hostname,
 				       const char *client_realm);
 
-char *smb_krb5_get_principal_from_service_hostname(TALLOC_CTX *mem_ctx,
-						   const char *service,
-						   const char *remote_name,
-						   const char *default_realm);
-
 char *smb_get_krb5_error_message(krb5_context context,
 				 krb5_error_code code,
 				 TALLOC_CTX *mem_ctx);
