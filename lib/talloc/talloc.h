@@ -407,10 +407,11 @@ const char *talloc_set_name(const void *ptr, const char *fmt, ...) PRINTF_ATTRIB
  *
  * @param[in]  new_ctx  The new parent context.
  *
- * @param[in]  pptr     Pointer to the talloc chunk to move.
+ * @param[in]  pptr     Pointer to a pointer to the talloc chunk to move.
  *
- * @return              The pointer of the talloc chunk it has been moved to,
- *                      NULL on error.
+ * @return              The pointer to the talloc chunk that moved.
+ *                      It does not have any failure modes.
+ *
  */
 void *talloc_move(const void *new_ctx, void **pptr);
 #else
