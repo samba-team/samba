@@ -941,10 +941,10 @@ struct dcerpc_ncacn_conn {
 	struct tstream_context *tstream;
 	struct tevent_queue *send_queue;
 
-	struct tsocket_address *client;
-	char *client_name;
-	struct tsocket_address *server;
-	char *server_name;
+	struct tsocket_address *remote_client_addr;
+	char *remote_client_name;
+	struct tsocket_address *local_server_addr;
+	char *local_server_name;
 	struct auth_session_info *session_info;
 
 	struct iovec *iov;
@@ -986,17 +986,17 @@ void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 	ncacn_conn->sock = s;
 	ncacn_conn->disconnect_fn = fn;
 
-	ncacn_conn->client = talloc_move(ncacn_conn, &cli_addr);
-	if (tsocket_address_is_inet(ncacn_conn->client, "ip")) {
-		ncacn_conn->client_name =
-			tsocket_address_inet_addr_string(ncacn_conn->client,
+	ncacn_conn->remote_client_addr = talloc_move(ncacn_conn, &cli_addr);
+	if (tsocket_address_is_inet(ncacn_conn->remote_client_addr, "ip")) {
+		ncacn_conn->remote_client_name =
+			tsocket_address_inet_addr_string(ncacn_conn->remote_client_addr,
 							 ncacn_conn);
 	} else {
-		ncacn_conn->client_name =
-			tsocket_address_unix_path(ncacn_conn->client,
+		ncacn_conn->remote_client_name =
+			tsocket_address_unix_path(ncacn_conn->remote_client_addr,
 						  ncacn_conn);
 	}
-	if (ncacn_conn->client_name == NULL) {
+	if (ncacn_conn->remote_client_name == NULL) {
 		DEBUG(0, ("Out of memory obtaining remote socket address as a string!\n"));
 		talloc_free(ncacn_conn);
 		close(s);
@@ -1004,18 +1004,18 @@ void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 	}
 
 	if (srv_addr != NULL) {
-		ncacn_conn->server = talloc_move(ncacn_conn, &srv_addr);
+		ncacn_conn->local_server_addr = talloc_move(ncacn_conn, &srv_addr);
 
-		if (tsocket_address_is_inet(ncacn_conn->server, "ip")) {
-			ncacn_conn->server_name =
-				tsocket_address_inet_addr_string(ncacn_conn->server,
+		if (tsocket_address_is_inet(ncacn_conn->local_server_addr, "ip")) {
+			ncacn_conn->local_server_name =
+				tsocket_address_inet_addr_string(ncacn_conn->local_server_addr,
 								 ncacn_conn);
 		} else {
-			ncacn_conn->server_name =
-				tsocket_address_unix_path(ncacn_conn->server,
+			ncacn_conn->local_server_name =
+				tsocket_address_unix_path(ncacn_conn->local_server_addr,
 							  ncacn_conn);
 		}
-		if (ncacn_conn->server_name == NULL) {
+		if (ncacn_conn->local_server_name == NULL) {
 			DEBUG(0, ("Out of memory obtaining local socket address as a string!\n"));
 			talloc_free(ncacn_conn);
 			close(s);
@@ -1025,7 +1025,7 @@ void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 
 	switch (transport) {
 		case NCACN_IP_TCP:
-			pipe_name = tsocket_address_string(ncacn_conn->client,
+			pipe_name = tsocket_address_string(ncacn_conn->remote_client_addr,
 							   ncacn_conn);
 			if (pipe_name == NULL) {
 				close(s);
@@ -1041,11 +1041,11 @@ void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 					  "uid - %s!\n", strerror(errno)));
 			} else {
 				if (uid == sec_initial_uid()) {
-					TALLOC_FREE(ncacn_conn->client);
+					TALLOC_FREE(ncacn_conn->remote_client_addr);
 
 					rc = tsocket_address_unix_from_path(ncacn_conn,
 									    "/root/ncalrpc_as_system",
-									    &ncacn_conn->client);
+									    &ncacn_conn->remote_client_addr);
 					if (rc < 0) {
 						DEBUG(0, ("Out of memory building magic ncalrpc_as_system path!\n"));
 						talloc_free(ncacn_conn);
@@ -1053,10 +1053,11 @@ void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 						return;
 					}
 
-					TALLOC_FREE(ncacn_conn->client_name);
-					ncacn_conn->client_name = tsocket_address_unix_path(ncacn_conn->client,
-											    ncacn_conn);
-					if (ncacn_conn->client == NULL) {
+					TALLOC_FREE(ncacn_conn->remote_client_name);
+					ncacn_conn->remote_client_name
+						= tsocket_address_unix_path(ncacn_conn->remote_client_addr,
+									    ncacn_conn);
+					if (ncacn_conn->remote_client_name == NULL) {
 						DEBUG(0, ("Out of memory getting magic ncalrpc_as_system string!\n"));
 						talloc_free(ncacn_conn);
 						close(s);
@@ -1121,8 +1122,8 @@ void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 				      ncacn_conn->msg_ctx,
 				      pipe_name,
 				      ncacn_conn->transport,
-				      ncacn_conn->client,
-				      ncacn_conn->server,
+				      ncacn_conn->remote_client_addr,
+				      ncacn_conn->local_server_addr,
 				      ncacn_conn->session_info,
 				      &ncacn_conn->p,
 				      &sys_errno);
@@ -1298,7 +1299,7 @@ static void dcerpc_ncacn_packet_process(struct tevent_req *subreq)
 
 fail:
 	DEBUG(3, ("Terminating client(%s) connection! - '%s'\n",
-		  ncacn_conn->client_name, nt_errstr(status)));
+		  ncacn_conn->remote_client_name, nt_errstr(status)));
 
 	/* Terminate client connection */
 	talloc_free(ncacn_conn);
@@ -1351,7 +1352,7 @@ static void dcerpc_ncacn_packet_done(struct tevent_req *subreq)
 
 fail:
 	DEBUG(3, ("Terminating client(%s) connection! - '%s'\n",
-		  ncacn_conn->client_name, nt_errstr(status)));
+		  ncacn_conn->remote_client_name, nt_errstr(status)));
 
 	/* Terminate client connection */
 	talloc_free(ncacn_conn);
