@@ -209,7 +209,7 @@ class cmd_sites_subnet_set_site(Command):
                                (subnetname, site_of_subnet, e))
 
         print >> self.outf, ("Subnet %s shifted to site %s" %
-                             (subnet_name, site_of_subnet))
+                             (subnetname, site_of_subnet))
 
 
 class cmd_sites_subnet(SuperCommand):
