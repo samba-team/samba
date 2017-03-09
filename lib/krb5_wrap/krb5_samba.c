@@ -2604,61 +2604,6 @@ krb5_error_code smb_krb5_principal_set_realm(krb5_context context,
 }
 
 
-/************************************************************************
- Routine to get the default realm from the kerberos credentials cache.
- Caller must free if the return value is not NULL.
-************************************************************************/
-
-static char *smb_krb5_get_default_realm_from_ccache(TALLOC_CTX *mem_ctx)
-{
-	char *realm = NULL;
-	krb5_context ctx = NULL;
-	krb5_ccache cc = NULL;
-	krb5_principal princ = NULL;
-
-	initialize_krb5_error_table();
-	if (krb5_init_context(&ctx)) {
-		return NULL;
-	}
-
-	DEBUG(5,("kerberos_get_default_realm_from_ccache: "
-		"Trying to read krb5 cache: %s\n",
-		krb5_cc_default_name(ctx)));
-	if (krb5_cc_default(ctx, &cc)) {
-		DEBUG(5,("kerberos_get_default_realm_from_ccache: "
-			"failed to read default cache\n"));
-		goto out;
-	}
-	if (krb5_cc_get_principal(ctx, cc, &princ)) {
-		DEBUG(5,("kerberos_get_default_realm_from_ccache: "
-			"failed to get default principal\n"));
-		goto out;
-	}
-
-#if defined(HAVE_KRB5_PRINCIPAL_GET_REALM)
-	realm = talloc_strdup(mem_ctx, krb5_principal_get_realm(ctx, princ));
-#elif defined(HAVE_KRB5_PRINC_REALM)
-	{
-		krb5_data *realm_data = krb5_princ_realm(ctx, princ);
-		realm = talloc_strndup(mem_ctx, realm_data->data, realm_data->length);
-	}
-#endif
-
-  out:
-
-	if (ctx) {
-		if (princ) {
-			krb5_free_principal(ctx, princ);
-		}
-		if (cc) {
-			krb5_cc_close(ctx, cc);
-		}
-		krb5_free_context(ctx);
-	}
-
-	return realm;
-}
-
 /**
  * @brief Get the realm from the service hostname.
  *
@@ -2746,62 +2691,6 @@ char *smb_krb5_get_realm_from_hostname(TALLOC_CTX *mem_ctx,
 		ctx = NULL;
 	}
 	return realm;
-}
-
-/**
- * @brief Get the principal as a string from the service hostname.
- *
- * @param[in]  mem_ctx  The talloc context
- *
- * @param[in]  service  The service name
- *
- * @param[in]  remote_name The remote name
- *
- * @param[in]  default_realm The default_realm if we cannot get it from the
- *                           hostname or netbios name.
- *
- * @return A talloc'ed principal string or NULL if an error occured.
- *
- * The caller needs to free the principal with talloc_free() if it isn't needed
- * anymore.
- */
-char *smb_krb5_get_principal_from_service_hostname(TALLOC_CTX *mem_ctx,
-						   const char *service,
-						   const char *remote_name,
-						   const char *default_realm)
-{
-	char *realm = NULL;
-	char *host = NULL;
-	char *principal;
-	host = strchr_m(remote_name, '.');
-	if (host) {
-		/* DNS name. */
-		realm = smb_krb5_get_realm_from_hostname(talloc_tos(),
-							 remote_name,
-							 default_realm);
-	} else {
-		/* NetBIOS name - use our realm. */
-		realm = smb_krb5_get_default_realm_from_ccache(talloc_tos());
-	}
-
-	if (realm == NULL || *realm == '\0') {
-		realm = talloc_strdup(talloc_tos(), default_realm);
-		if (!realm) {
-			return NULL;
-		}
-		DEBUG(3,("Cannot get realm from, "
-			 "desthost %s or default ccache. Using default "
-			 "smb.conf realm %s\n",
-			 remote_name,
-			 realm));
-	}
-
-	principal = talloc_asprintf(mem_ctx,
-				    "%s/%s@%s",
-				    service, remote_name,
-				    realm);
-	TALLOC_FREE(realm);
-	return principal;
 }
 
 /**
