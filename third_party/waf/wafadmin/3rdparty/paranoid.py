@@ -21,9 +21,9 @@ say('you make the errors, we detect them')
 def check_task_classes(self):
 	for x in Task.TaskBase.classes:
 		if isinstance(x, Task.Task):
-			if not getattr(cls, 'ext_in', None) or getattr(cls, 'before', None):
+			if not getattr(x, 'ext_in', None) or getattr(x, 'before', None):
 				say('class %s has no precedence constraints (ext_in/before)')
-			if not getattr(cls, 'ext_out', None) or getattr(cls, 'after', None):
+			if not getattr(x, 'ext_out', None) or getattr(x, 'after', None):
 				say('class %s has no precedence constraints (ext_out/after)')
 
 comp = Build.BuildContext.compile
