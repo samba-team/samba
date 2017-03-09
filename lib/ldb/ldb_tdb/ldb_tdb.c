@@ -355,13 +355,17 @@ static int ltdb_add_internal(struct ldb_module *module,
 			continue;
 		}
 
-		/* TODO: This is O(n^2) - replace with more efficient check */
-		for (j=0; j<el->num_values; j++) {
-			if (ldb_msg_find_val(el, &el->values[j]) != &el->values[j]) {
-				ldb_asprintf_errstring(ldb,
-						       "attribute '%s': value #%u on '%s' provided more than once",
-						       el->name, j, ldb_dn_get_linearized(msg->dn));
-				return LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
+		if (check_single_value) {
+			/* TODO: This is O(n^2) - replace with more efficient check */
+			for (j=0; j<el->num_values; j++) {
+				if (ldb_msg_find_val(el, &el->values[j]) != &el->values[j]) {
+					ldb_asprintf_errstring(ldb,
+							       "attribute '%s': value #%u on '%s' "
+							       "provided more than once",
+							       el->name, j, 
+							       ldb_dn_get_linearized(msg->dn));
+					return LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
+				}
 			}
 		}
 	}
