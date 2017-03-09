@@ -534,7 +534,7 @@ int pthreadpool_add_job(struct pthreadpool *pool, int job_id,
 		return res;
 	}
 
-	res = pthread_create(&thread_id, NULL, pthreadpool_server,
+	res = pthread_create(&thread_id, &thread_attr, pthreadpool_server,
 			     (void *)pool);
 	if (res == 0) {
 		pool->num_threads += 1;
