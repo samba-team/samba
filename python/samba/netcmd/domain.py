@@ -3169,7 +3169,7 @@ class cmd_domain_trust_namespaces(DomainTrustCommand):
                 if len(enable_nb) > 0:
                     raise CommandError("--enable-nb not allowed together with --enable-all")
 
-                if len(enable_sid) > 0:
+                if len(enable_sid_str) > 0:
                     raise CommandError("--enable-sid not allowed together with --enable-all")
 
             if len(enable_tln) > 0:
