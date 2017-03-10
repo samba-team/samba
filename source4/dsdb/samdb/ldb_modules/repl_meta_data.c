@@ -1949,7 +1949,12 @@ static int ndr_guid_compare(struct GUID *guid1, struct GUID *guid2)
 
 static int parsed_dn_compare(struct parsed_dn *pdn1, struct parsed_dn *pdn2)
 {
-	return ndr_guid_compare(&pdn1->guid, &pdn2->guid);
+	int ret = ndr_guid_compare(&pdn1->guid, &pdn2->guid);
+	if (ret == 0) {
+		return data_blob_cmp(&pdn1->dsdb_dn->extra_part,
+				     &pdn2->dsdb_dn->extra_part);
+	}
+	return ret;
 }
 
 static int la_guid_compare_with_trusted_dn(struct compare_ctx *ctx,
