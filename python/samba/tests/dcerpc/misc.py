@@ -24,6 +24,13 @@ from samba.compat import PY3
 text1 = "76f53846-a7c2-476a-ae2c-20e2b80d7b34"
 text2 = "344edffa-330a-4b39-b96e-2c34da52e8b1"
 
+
+if not PY3:
+    # cmp() exists only in Python 2
+    def cmp(a, b):
+        return (a > b) - (a < b)
+
+
 class GUIDTests(samba.tests.TestCase):
 
     def test_str(self):
@@ -38,18 +45,15 @@ class GUIDTests(samba.tests.TestCase):
         guid1 = misc.GUID(text1)
         guid2 = misc.GUID(text2)
         self.assertFalse(guid1 == guid2)
-        if not PY3:
-            # cmp() exists only in Python 2
-            self.assertTrue(cmp(guid1, guid2) > 0)
+        self.assertGreater(guid1, guid2)
+        self.assertTrue(cmp(guid1, guid2) > 0)
 
     def test_compare_same(self):
         guid1 = misc.GUID(text1)
         guid2 = misc.GUID(text1)
         self.assertTrue(guid1 == guid2)
         self.assertEquals(guid1, guid2)
-        if not PY3:
-            # cmp() exists only in Python 2
-            self.assertEquals(0, cmp(guid1, guid2))
+        self.assertEquals(0, cmp(guid1, guid2))
 
 
 class PolicyHandleTests(samba.tests.TestCase):
@@ -66,4 +70,3 @@ class PolicyHandleTests(samba.tests.TestCase):
     def test_str(self):
         x = misc.policy_handle(text1, 42)
         self.assertEquals("%d, %s" % (42, text1), str(x))
-
