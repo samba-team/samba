@@ -25,3 +25,10 @@ bld.SAMBA_SUBSYSTEM('TORTURE_LIBCRYPTO',
         autoproto='test_proto.h',
         deps='LIBCRYPTO'
         )
+
+for env in bld.gen_python_environments():
+	bld.SAMBA_PYTHON('python_crypto',
+		source='py_crypto.c',
+		deps='LIBCRYPTO',
+		realname='samba/crypto.so'
+		)
