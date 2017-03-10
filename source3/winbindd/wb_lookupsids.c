@@ -25,7 +25,6 @@
 #include "passdb/machine_sid.h"
 
 struct wb_lookupsids_domain {
-	struct dom_sid sid;
 	struct winbindd_domain *domain;
 
 	/*
@@ -194,7 +193,12 @@ static bool wb_lookupsids_next(struct tevent_req *req,
 
 		d = &state->domains[state->domains_done];
 
-		if (sid_check_is_our_sam(&d->sid)) {
+		if (d->domain->internal) {
+			/*
+			 * This is only our local SAM,
+			 * see wb_lookupsids_bulk() and
+			 * wb_lookupsids_get_domain().
+			 */
 			state->rids.num_rids = d->sids.num_sids;
 			state->rids.rids = talloc_array(state, uint32_t,
 							state->rids.num_rids);
@@ -207,7 +211,7 @@ static bool wb_lookupsids_next(struct tevent_req *req,
 			}
 			subreq = dcerpc_wbint_LookupRids_send(
 				state, state->ev, dom_child_handle(d->domain),
-				&d->sid, &state->rids, &state->domain_name,
+				&d->domain->sid, &state->rids, &state->domain_name,
 				&state->rid_names);
 			if (tevent_req_nomem(subreq, req)) {
 				return false;
@@ -322,14 +326,42 @@ static struct wb_lookupsids_domain *wb_lookupsids_get_domain(
 	domains = *pdomains;
 	num_domains = talloc_array_length(domains);
 
-	for (i=0; i<num_domains; i++) {
-		if (dom_sid_compare_domain(sid, &domains[i].sid) == 0) {
-			return &domains[i];
-		}
-	}
-
 	wb_domain = find_lookup_domain_from_sid(sid);
 	if (wb_domain == NULL) {
+		return NULL;
+	}
+
+	for (i=0; i<num_domains; i++) {
+		if (domains[i].domain != wb_domain) {
+			continue;
+		}
+
+		if (!domains[i].domain->internal) {
+			/*
+			 * If it's not our local sam,
+			 * we can re-use the domain without
+			 * checking the sid.
+			 *
+			 * Note the wb_lookupsids_bulk() above
+			 * already catched special SIDs,
+			 * e.g. the unix and builtin domains.
+			 */
+			return &domains[i];
+		}
+
+		if (dom_sid_compare_domain(sid, &domains[i].domain->sid) == 0) {
+			/*
+			 * If it's out local sam we can also use it.
+			 */
+			return &domains[i];
+		}
+
+		/*
+		 * I'm not sure if this can be triggered,
+		 * as wb_lookupsids_bulk() should also catch this,
+		 * but we need to make sure that we don't use
+		 * wbint_LookupRids() without a SID match.
+		 */
 		return NULL;
 	}
 
@@ -341,8 +373,6 @@ static struct wb_lookupsids_domain *wb_lookupsids_get_domain(
 	*pdomains = domains;
 
 	domain = &domains[num_domains];
-	sid_copy(&domain->sid, sid);
-	sid_split_rid(&domain->sid, NULL);
 	domain->domain = wb_domain;
 
 	domain->sids.sids = talloc_array(domains, struct lsa_SidPtr, num_sids);
