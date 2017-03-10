@@ -537,7 +537,9 @@ for env in ["ad_dc:local", "s4member:local", "nt4_dc:local", "ad_member:local", 
         skiptestsuite("samba.nss.test using winbind(%s)" % env, "nsstest not available")
 
 subunitrun = valgrindify(python) + " " + os.path.join(samba4srcdir, "scripting/bin/subunitrun")
-def planoldpythontestsuite(env, module, name=None, extra_path=[], environ={}, extra_args=[]):
+if extra_python is not None:
+    subunitrun3 = valgrindify(extra_python) + " " + os.path.join(samba4srcdir, "scripting/bin/subunitrun")
+def planoldpythontestsuite(env, module, name=None, extra_path=[], environ={}, extra_args=[], py3_compatible=False):
     environ = dict(environ)
     py_path = list(extra_path)
     if py_path:
@@ -548,8 +550,12 @@ def planoldpythontestsuite(env, module, name=None, extra_path=[], environ={}, ex
     if name is None:
         name = module
     plantestsuite_loadlist(name, env, args)
+    if py3_compatible and extra_python is not None:
+        args[0] = subunitrun3
+        plantestsuite_loadlist(name, env, args)
 
-planoldpythontestsuite("ad_dc_ntvfs:local", "samba.tests.gensec", extra_args=['-U"$USERNAME%$PASSWORD"'])
+
+planoldpythontestsuite("ad_dc_ntvfs:local", "samba.tests.gensec", extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
 planoldpythontestsuite("none", "simple", extra_path=["%s/lib/tdb/python/tests" % srcdir()], name="tdb.python")
 planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.dcerpc.sam")
 planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.dsdb")

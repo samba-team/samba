@@ -26,9 +26,13 @@ bld.SAMBA_MODULE('gensec_gssapi',
 	deps='gssapi samba-credentials authkrb5 com_err'
 	)
 
-bld.SAMBA_PYTHON('pygensec',
-	source='pygensec.c',
-	deps='gensec pytalloc-util pyparam_util',
-	realname='samba/gensec.so'
-	)
 
+for env in bld.gen_python_environments():
+	pytalloc_util = bld.pyembed_libname('pytalloc-util')
+	pyparam_util = bld.pyembed_libname('pyparam_util')
+
+	bld.SAMBA_PYTHON('pygensec',
+		source='pygensec.c',
+		deps='gensec %s %s' % (pytalloc_util, pyparam_util),
+		realname='samba/gensec.so'
+		)

@@ -18,8 +18,34 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include <Python.h>
+#include "python/py3compat.h"
 #include "librpc/gen_ndr/misc.h"
 
+#if PY_MAJOR_VERSION >= 3
+static PyObject *py_GUID_richcmp(PyObject *py_self, PyObject *py_other, int op)
+{
+	int ret;
+	struct GUID *self = pytalloc_get_ptr(py_self), *other;
+	other = pytalloc_get_ptr(py_other);
+	if (other == NULL) {
+		Py_INCREF(Py_NotImplemented);
+		return Py_NotImplemented;
+	}
+
+	ret = GUID_compare(self, other);
+
+	switch (op) {
+		case Py_EQ: if (ret == 0) Py_RETURN_TRUE; else Py_RETURN_FALSE;
+		case Py_NE: if (ret != 0) Py_RETURN_TRUE; else Py_RETURN_FALSE;
+		case Py_LT: if (ret <  0) Py_RETURN_TRUE; else Py_RETURN_FALSE;
+		case Py_GT: if (ret >  0) Py_RETURN_TRUE; else Py_RETURN_FALSE;
+		case Py_LE: if (ret <= 0) Py_RETURN_TRUE; else Py_RETURN_FALSE;
+		case Py_GE: if (ret >= 0) Py_RETURN_TRUE; else Py_RETURN_FALSE;
+	}
+	Py_INCREF(Py_NotImplemented);
+	return Py_NotImplemented;
+}
+#else
 static int py_GUID_cmp(PyObject *py_self, PyObject *py_other)
 {
 	int ret;
@@ -37,12 +63,13 @@ static int py_GUID_cmp(PyObject *py_self, PyObject *py_other)
 		return 0;
 	}
 }
+#endif
 
 static PyObject *py_GUID_str(PyObject *py_self)
 {
 	struct GUID *self = pytalloc_get_ptr(py_self);
 	char *str = GUID_string(NULL, self);
-	PyObject *ret = PyString_FromString(str);
+	PyObject *ret = PyStr_FromString(str);
 	talloc_free(str);
 	return ret;
 }
@@ -51,7 +78,7 @@ static PyObject *py_GUID_repr(PyObject *py_self)
 {
 	struct GUID *self = pytalloc_get_ptr(py_self);
 	char *str = GUID_string(NULL, self);
-	PyObject *ret = PyString_FromFormat("GUID('%s')", str);
+	PyObject *ret = PyStr_FromFormat("GUID('%s')", str);
 	talloc_free(str);
 	return ret;
 }
@@ -68,13 +95,14 @@ static int py_GUID_init(PyObject *self, PyObject *args, PyObject *kwargs)
 
 	if (str != NULL) {
 		DATA_BLOB guid_val;
+		Py_ssize_t _size;
 
-		if (!PyString_Check(str)) {
+		if (!PyStr_Check(str)) {
 			PyErr_SetString(PyExc_TypeError, "Expected a string argument to GUID()");
 			return -1;
 		}
-		guid_val.data = (uint8_t *)PyString_AsString(str);
-		guid_val.length = PyString_Size(str);
+		guid_val.data = (uint8_t *)PyStr_AsUTF8AndSize(str, &_size);
+		guid_val.length = _size;
 		status = GUID_from_data_blob(&guid_val, guid);
 		if (!NT_STATUS_IS_OK(status)) {
 			PyErr_SetNTSTATUS(status);
@@ -90,7 +118,11 @@ static void py_GUID_patch(PyTypeObject *type)
 	type->tp_init = py_GUID_init;
 	type->tp_str = py_GUID_str;
 	type->tp_repr = py_GUID_repr;
+#if PY_MAJOR_VERSION >= 3
+	type->tp_richcompare = py_GUID_richcmp;
+#else
 	type->tp_compare = py_GUID_cmp;
+#endif
 }
 
 #define PY_GUID_PATCH py_GUID_patch
@@ -120,7 +152,7 @@ static PyObject *py_policy_handle_repr(PyObject *py_self)
 {
 	struct policy_handle *self = pytalloc_get_ptr(py_self);
 	char *uuid_str = GUID_string(NULL, &self->uuid);
-	PyObject *ret = PyString_FromFormat("policy_handle(%d, '%s')", self->handle_type, uuid_str);
+	PyObject *ret = PyStr_FromFormat("policy_handle(%d, '%s')", self->handle_type, uuid_str);
 	talloc_free(uuid_str);
 	return ret;
 }
@@ -129,7 +161,7 @@ static PyObject *py_policy_handle_str(PyObject *py_self)
 {
 	struct policy_handle *self = pytalloc_get_ptr(py_self);
 	char *uuid_str = GUID_string(NULL, &self->uuid);
-	PyObject *ret = PyString_FromFormat("%d, %s", self->handle_type, uuid_str);
+	PyObject *ret = PyStr_FromFormat("%d, %s", self->handle_type, uuid_str);
 	talloc_free(uuid_str);
 	return ret;
 }

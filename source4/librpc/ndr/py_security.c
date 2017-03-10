@@ -18,6 +18,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include <Python.h>
+#include "py3compat.h"
 #include "libcli/security/security.h"
 
 static void PyType_AddMethods(PyTypeObject *type, PyMethodDef *methods)
@@ -65,6 +66,32 @@ static PyObject *py_dom_sid_split(PyObject *py_self, PyObject *args)
 	return Py_BuildValue("(OI)", py_domain_sid, rid);
 }
 
+#if PY_MAJOR_VERSION >= 3
+static PyObject *py_dom_sid_richcmp(PyObject *py_self, PyObject *py_other, int op)
+{
+	struct dom_sid *self = pytalloc_get_ptr(py_self), *other;
+	int val;
+
+	other = pytalloc_get_ptr(py_other);
+	if (other == NULL) {
+		Py_INCREF(Py_NotImplemented);
+		return Py_NotImplemented;
+	}
+
+	val =  dom_sid_compare(self, other);
+
+	switch (op) {
+			case Py_EQ: if (val == 0) Py_RETURN_TRUE; else Py_RETURN_FALSE;
+			case Py_NE: if (val != 0) Py_RETURN_TRUE; else Py_RETURN_FALSE;
+			case Py_LT: if (val <  0) Py_RETURN_TRUE; else Py_RETURN_FALSE;
+			case Py_GT: if (val >  0) Py_RETURN_TRUE; else Py_RETURN_FALSE;
+			case Py_LE: if (val <= 0) Py_RETURN_TRUE; else Py_RETURN_FALSE;
+			case Py_GE: if (val >= 0) Py_RETURN_TRUE; else Py_RETURN_FALSE;
+	}
+	Py_INCREF(Py_NotImplemented);
+	return Py_NotImplemented;
+}
+#else
 static int py_dom_sid_cmp(PyObject *py_self, PyObject *py_other)
 {
 	struct dom_sid *self = pytalloc_get_ptr(py_self), *other;
@@ -82,12 +109,13 @@ static int py_dom_sid_cmp(PyObject *py_self, PyObject *py_other)
 	}
 	return 0;
 }
+#endif
 
 static PyObject *py_dom_sid_str(PyObject *py_self)
 {
 	struct dom_sid *self = pytalloc_get_ptr(py_self);
 	char *str = dom_sid_string(NULL, self);
-	PyObject *ret = PyString_FromString(str);
+	PyObject *ret = PyStr_FromString(str);
 	talloc_free(str);
 	return ret;
 }
@@ -96,7 +124,7 @@ static PyObject *py_dom_sid_repr(PyObject *py_self)
 {
 	struct dom_sid *self = pytalloc_get_ptr(py_self);
 	char *str = dom_sid_string(NULL, self);
-	PyObject *ret = PyString_FromFormat("dom_sid('%s')", str);
+	PyObject *ret = PyStr_FromFormat("dom_sid('%s')", str);
 	talloc_free(str);
 	return ret;
 }
@@ -131,7 +159,11 @@ static void py_dom_sid_patch(PyTypeObject *type)
 	type->tp_init = py_dom_sid_init;
 	type->tp_str = py_dom_sid_str;
 	type->tp_repr = py_dom_sid_repr;
+#if PY_MAJOR_VERSION >= 3
+	type->tp_richcompare = py_dom_sid_richcmp;
+#else
 	type->tp_compare = py_dom_sid_cmp;
+#endif
 	PyType_AddMethods(type, py_dom_sid_extra_methods);
 }
 
@@ -246,7 +278,7 @@ static PyObject *py_descriptor_as_sddl(PyObject *self, PyObject *args)
 
 	text = sddl_encode(NULL, desc, sid);
 
-	ret = PyString_FromString(text);
+	ret = PyStr_FromString(text);
 
 	talloc_free(text);
 
@@ -395,7 +427,7 @@ static PyObject *py_privilege_name(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "i", &priv))
 		return NULL;
 
-	return PyString_FromString(sec_privilege_name(priv));
+	return PyStr_FromString(sec_privilege_name(priv));
 }
 
 static PyObject *py_privilege_id(PyObject *self, PyObject *args)

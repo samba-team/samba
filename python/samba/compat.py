@@ -1,5 +1,6 @@
-# Unix SMB/CIFS implementation.
-# Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2008
+# module which helps with porting to Python 3
+#
+# Copyright (C) Lumir Balhar <lbalhar@redhat.com> 2017
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,6 +14,9 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
 
-from samba.dcerpc.base import *
+"""module which helps with porting to Python 3"""
+
+import sys
+
+PY3 = sys.version_info[0] == 3

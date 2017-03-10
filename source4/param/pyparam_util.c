@@ -18,6 +18,7 @@
 */
 
 #include <Python.h>
+#include "py3compat.h"
 #include "includes.h"
 #include "param/param.h"
 #include "param/pyparam.h"
@@ -33,14 +34,14 @@ _PUBLIC_ struct loadparm_context *lpcfg_from_py_object(TALLOC_CTX *mem_ctx, PyOb
 	PyTypeObject *lp_type;
 	bool is_lpobj;
 
-	if (PyString_Check(py_obj)) {
+	if (PyStr_Check(py_obj)) {
 		lp_ctx = loadparm_init_global(false);
 		if (lp_ctx == NULL) {
 			return NULL;
 		}
-		if (!lpcfg_load(lp_ctx, PyString_AsString(py_obj))) {
+		if (!lpcfg_load(lp_ctx, PyStr_AsString(py_obj))) {
 			PyErr_Format(PyExc_RuntimeError, "Unable to load %s", 
-				     PyString_AsString(py_obj));
+				     PyStr_AsString(py_obj));
 			return NULL;
 		}
 		return lp_ctx;

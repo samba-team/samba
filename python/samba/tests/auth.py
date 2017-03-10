@@ -26,6 +26,31 @@ import samba.tests
 
 class AuthTests(samba.tests.TestCase):
 
-    def test_system_session(self):
-        auth.system_session()
+    def setUp(self):
+        super(AuthTests, self).setUp()
+        self.system_session = auth.system_session()
 
+    def test_system_session_attrs(self):
+        self.assertTrue(hasattr(self.system_session, 'credentials'))
+        self.assertTrue(hasattr(self.system_session, 'info'))
+        self.assertTrue(hasattr(self.system_session, 'security_token'))
+        self.assertTrue(hasattr(self.system_session, 'session_key'))
+        self.assertTrue(hasattr(self.system_session, 'torture'))
+
+    def test_system_session_credentials(self):
+        self.assertIsNone(self.system_session.credentials.get_bind_dn())
+        self.assertIsNone(self.system_session.credentials.get_password())
+        self.assertEqual(self.system_session.credentials.get_username(), '')
+
+    def test_system_session_info(self):
+        self.assertEqual(self.system_session.info.full_name, 'System')
+        self.assertEqual(self.system_session.info.domain_name, 'NT AUTHORITY')
+        self.assertEqual(self.system_session.info.account_name, 'SYSTEM')
+
+    def test_system_session_session_key(self):
+        expected = b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+        self.assertEqual(self.system_session.session_key, expected)
+
+    def test_system_session_security_token(self):
+        self.assertTrue(self.system_session.security_token.is_system())
+        self.assertFalse(self.system_session.security_token.is_anonymous())

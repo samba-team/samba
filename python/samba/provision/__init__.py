@@ -760,11 +760,7 @@ def make_smbconf(smbconf, hostname, domain, realm, targetdir,
     # and dump it without any values that are the default
     # this ensures that any smb.conf parameters that were set
     # on the provision/join command line are set in the resulting smb.conf
-    f = open(smbconf, mode='w')
-    try:
-        lp.dump(f, False)
-    finally:
-        f.close()
+    lp.dump(False, smbconf)
 
 
 def setup_name_mappings(idmap, sid, root_uid, nobody_uid,

@@ -55,9 +55,22 @@ def configure(conf):
     conf.env.standalone_ldb = conf.IN_LAUNCH_DIR()
 
     if not conf.env.standalone_ldb:
-        if conf.CHECK_BUNDLED_SYSTEM_PKG('pyldb-util', minversion=VERSION,
-                                     onlyif='talloc tdb tevent',
-                                     implied_deps='replace talloc tdb tevent ldb'):
+        using_system_pyldb_util = True
+        if not conf.CHECK_BUNDLED_SYSTEM_PKG('pyldb-util', minversion=VERSION,
+                                             onlyif='talloc tdb tevent',
+                                             implied_deps='replace talloc tdb tevent ldb'):
+            using_system_pyldb_util = False
+
+        # We need to get a pyldb-util for all the python versions
+        # we are building for
+        if conf.env['EXTRA_PYTHON']:
+            name = 'pyldb-util' + conf.all_envs['extrapython']['PYTHON_SO_ABI_FLAG']
+            if not conf.CHECK_BUNDLED_SYSTEM_PKG(name, minversion=VERSION,
+                                                 onlyif='talloc tdb tevent',
+                                                 implied_deps='replace talloc tdb tevent ldb'):
+                using_system_pyldb_util = False
+
+        if using_system_pyldb_util:
             conf.define('USING_SYSTEM_PYLDB_UTIL', 1)
             if conf.CHECK_BUNDLED_SYSTEM_PKG('ldb', minversion=VERSION,
                                          onlyif='talloc tdb tevent pyldb-util',
@@ -112,17 +125,17 @@ def build(bld):
                      internal_module=False,
                      subsystem='ldb')
 
-    # we're not currently linking against the ldap libs, but ldb.pc.in
-    # has @LDAP_LIBS@
-    bld.env.LDAP_LIBS = ''
-
-    if not 'PACKAGE_VERSION' in bld.env:
-        bld.env.PACKAGE_VERSION = VERSION
-        bld.env.PKGCONFIGDIR = '${LIBDIR}/pkgconfig'
-
     if not bld.env.disable_python:
         if not bld.CONFIG_SET('USING_SYSTEM_PYLDB_UTIL'):
             for env in bld.gen_python_environments(['PKGCONFIGDIR']):
+                # we're not currently linking against the ldap libs, but ldb.pc.in
+                # has @LDAP_LIBS@
+                bld.env.LDAP_LIBS = ''
+
+                if not 'PACKAGE_VERSION' in bld.env:
+                    bld.env.PACKAGE_VERSION = VERSION
+                    bld.env.PKGCONFIGDIR = '${LIBDIR}/pkgconfig'
+
                 name = bld.pyembed_libname('pyldb-util')
                 bld.SAMBA_LIBRARY(name,
                                   deps='ldb',
