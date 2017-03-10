@@ -1005,17 +1005,6 @@ struct winbindd_domain *find_our_domain(void)
 	return NULL;
 }
 
-struct winbindd_domain *find_root_domain(void)
-{
-	struct winbindd_domain *ours = find_our_domain();
-
-	if (ours->forest_name == NULL) {
-		return NULL;
-	}
-
-	return find_domain_from_name( ours->forest_name );
-}
-
 /* Find the appropriate domain to lookup a name or SID */
 
 struct winbindd_domain *find_lookup_domain_from_sid(const struct dom_sid *sid)
