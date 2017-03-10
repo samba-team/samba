@@ -1128,18 +1128,19 @@ static WERROR samdb_result_sid_array_dn(struct ldb_context *sam_ctx,
 
 
 /*
-  return an array of SIDs from a ldb_message given an attribute name
-  assumes the SIDs are in NDR form (with an additional sid at the end)
+ * Return an array of SIDs from a ldb_message given an attribute name assumes
+ * the SIDs are in NDR form (with additional sids applied on the end).
  */
 static WERROR samdb_result_sid_array_ndr(struct ldb_context *sam_ctx,
 					 struct ldb_message *msg,
 					 TALLOC_CTX *mem_ctx,
 					 const char *attr,
 					 const struct dom_sid ***sids,
-					 const struct dom_sid *user_sid)
+					 const struct dom_sid **additional_sids,
+					 unsigned int num_additional)
 {
 	struct ldb_message_element *el;
-	unsigned int i;
+	unsigned int i, j;
 
 	el = ldb_msg_find_element(msg, attr);
 	if (!el) {
@@ -1148,7 +1149,8 @@ static WERROR samdb_result_sid_array_ndr(struct ldb_context *sam_ctx,
 	}
 
 	/* Make array long enough for NULL and additional SID */
-	(*sids) = talloc_array(mem_ctx, const struct dom_sid *, el->num_values + 2);
+	(*sids) = talloc_array(mem_ctx, const struct dom_sid *,
+			       el->num_values + num_additional + 1);
 	W_ERROR_HAVE_NO_MEMORY(*sids);
 
 	for (i=0; i<el->num_values; i++) {
@@ -1165,8 +1167,12 @@ static WERROR samdb_result_sid_array_ndr(struct ldb_context *sam_ctx,
 		}
 		(*sids)[i] = sid;
 	}
-	(*sids)[i] = user_sid;
-	(*sids)[i+1] = NULL;
+
+	for (j = 0; j < num_additional; j++) {
+		(*sids)[i++] = additional_sids[j];
+	}
+
+	(*sids)[i] = NULL;
 
 	return WERR_OK;
 }
@@ -1210,6 +1216,7 @@ static WERROR getncchanges_repl_secret(struct drsuapi_bind_state *b_state,
 	const struct dom_sid **never_reveal_sids, **reveal_sids, **token_sids;
 	const struct dom_sid *object_sid = NULL;
 	WERROR werr;
+	const struct dom_sid *additional_sids[] = { NULL, NULL };
 
 	DEBUG(3,(__location__ ": DRSUAPI_EXOP_REPL_SECRET extended op on %s\n",
 		 drs_ObjectIdentifier_to_string(mem_ctx, ncRoot)));
@@ -1298,6 +1305,8 @@ static WERROR getncchanges_repl_secret(struct drsuapi_bind_state *b_state,
 		goto allowed;
 	}
 
+	additional_sids[0] = object_sid;
+
 	/*
 	 * Must be an RODC account at this point, verify machine DN matches the
 	 * SID account
@@ -1344,7 +1353,8 @@ static WERROR getncchanges_repl_secret(struct drsuapi_bind_state *b_state,
 	 * TODO determine if sIDHistory is required for this check
 	 */
 	werr = samdb_result_sid_array_ndr(b_state->sam_ctx_system, obj_res->msgs[0],
-					 mem_ctx, "tokenGroups", &token_sids, object_sid);
+					  mem_ctx, "tokenGroups", &token_sids,
+					  additional_sids, 1);
 	if (!W_ERROR_IS_OK(werr) || token_sids==NULL) {
 		goto denied;
 	}
