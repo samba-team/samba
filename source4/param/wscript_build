@@ -4,6 +4,7 @@ bld.SAMBA_SUBSYSTEM('PROVISION',
 	source='provision.c pyparam.c',
 	deps='LIBPYTHON pyparam_util ldb pytalloc-util pyldb-util',
 	pyext=True,
+	enabled=bld.PYTHON_BUILD_IS_ENABLED(),
 	)
 
 
@@ -51,6 +52,7 @@ bld.SAMBA_SUBSYSTEM('pyparam_util',
 	source='pyparam_util.c',
 	deps='LIBPYTHON samba-hostconfig pytalloc-util',
 	pyext=True,
+	enabled=bld.PYTHON_BUILD_IS_ENABLED(),
 	)
 
 bld.SAMBA_LIBRARY('shares',

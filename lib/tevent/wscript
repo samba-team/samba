@@ -22,10 +22,6 @@ def set_options(opt):
     opt.PRIVATE_EXTENSION_DEFAULT('tevent', noextension='tevent')
     opt.RECURSE('lib/replace')
     opt.RECURSE('lib/talloc')
-    if opt.IN_LAUNCH_DIR():
-        opt.add_option('--disable-python',
-                       help=("disable the pytevent module"),
-                       action="store_true", dest='disable_python', default=False)
 
 
 def configure(conf):
@@ -38,7 +34,8 @@ def configure(conf):
         if conf.CHECK_BUNDLED_SYSTEM_PKG('tevent', minversion=VERSION,
                                      onlyif='talloc', implied_deps='replace talloc'):
             conf.define('USING_SYSTEM_TEVENT', 1)
-            if conf.CHECK_BUNDLED_SYSTEM_PYTHON('pytevent', 'tevent', minversion=VERSION):
+            if not conf.env.disable_python and \
+                conf.CHECK_BUNDLED_SYSTEM_PYTHON('pytevent', 'tevent', minversion=VERSION):
                 conf.define('USING_SYSTEM_PYTEVENT', 1)
 
     if conf.CHECK_FUNCS('epoll_create', headers='sys/epoll.h'):
@@ -60,8 +57,6 @@ def configure(conf):
 
     if not conf.CONFIG_SET('USING_SYSTEM_TEVENT'):
         conf.DEFINE('TEVENT_NUM_SIGNALS', tevent_num_signals)
-
-    conf.env.disable_python = getattr(Options.options, 'disable_python', False)
 
     if not conf.env.disable_python:
         # also disable if we don't have the python libs installed

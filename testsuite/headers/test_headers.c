@@ -23,7 +23,9 @@
 
 #define _GNU_SOURCE 1
 
-#include <Python.h>
+#ifdef HAVE_PYTHON_H
+# include <Python.h>
+#endif
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>

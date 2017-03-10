@@ -46,7 +46,7 @@ def configure(conf):
     conf.find_program('xsltproc', var='XSLTPROC')
     conf.check_tool('python')
     conf.check_python_version((2,4,2))
-    conf.SAMBA_CHECK_PYTHON_HEADERS(mandatory=True)
+    conf.SAMBA_CHECK_PYTHON_HEADERS(mandatory=not conf.env.disable_python)
 
     # where does the default LIBDIR end up? in conf.env somewhere?
     #
@@ -55,10 +55,16 @@ def configure(conf):
     conf.env.standalone_ldb = conf.IN_LAUNCH_DIR()
 
     if not conf.env.standalone_ldb:
-        if conf.CHECK_BUNDLED_SYSTEM_PKG('pyldb-util', minversion=VERSION,
+        if conf.env.disable_python:
+            if conf.CHECK_BUNDLED_SYSTEM_PKG('ldb', minversion=VERSION,
+                                         onlyif='talloc tdb tevent',
+                                         implied_deps='replace talloc tdb tevent'):
+                conf.define('USING_SYSTEM_LDB', 1)
+        else:
+            if conf.CHECK_BUNDLED_SYSTEM_PKG('pyldb-util', minversion=VERSION,
                                      onlyif='talloc tdb tevent',
                                      implied_deps='replace talloc tdb tevent ldb'):
-            conf.define('USING_SYSTEM_PYLDB_UTIL', 1)
+                conf.define('USING_SYSTEM_PYLDB_UTIL', 1)
             if conf.CHECK_BUNDLED_SYSTEM_PKG('ldb', minversion=VERSION,
                                          onlyif='talloc tdb tevent pyldb-util',
                                          implied_deps='replace talloc tdb tevent'):
@@ -120,11 +126,10 @@ def build(bld):
         bld.env.PACKAGE_VERSION = VERSION
         bld.env.PKGCONFIGDIR = '${LIBDIR}/pkgconfig'
 
-    if not bld.env.disable_python:
-        if not bld.CONFIG_SET('USING_SYSTEM_PYLDB_UTIL'):
-            for env in bld.gen_python_environments(['PKGCONFIGDIR']):
-                name = bld.pyembed_libname('pyldb-util')
-                bld.SAMBA_LIBRARY(name,
+    if not bld.CONFIG_SET('USING_SYSTEM_PYLDB_UTIL'):
+        for env in bld.gen_python_environments(['PKGCONFIGDIR']):
+            name = bld.pyembed_libname('pyldb-util')
+            bld.SAMBA_LIBRARY(name,
                                   deps='ldb',
                                   source='pyldb_util.c',
                                   public_headers=('' if private_library else 'pyldb.h'),
@@ -133,15 +138,17 @@ def build(bld):
                                   private_library=private_library,
                                   pc_files='pyldb-util.pc',
                                   pyembed=True,
+                                  enabled=bld.PYTHON_BUILD_IS_ENABLED(),
                                   abi_directory='ABI',
                                   abi_match='pyldb_*')
 
-                if not bld.CONFIG_SET('USING_SYSTEM_LDB'):
+            if not bld.CONFIG_SET('USING_SYSTEM_LDB'):
                     bld.SAMBA_PYTHON('pyldb', 'pyldb.c',
                                      deps='ldb ' + name,
                                      realname='ldb.so',
                                      cflags='-DPACKAGE_VERSION=\"%s\"' % VERSION)
 
+        if bld.PYTHON_BUILD_IS_ENABLED():
             for env in bld.gen_python_environments(['PKGCONFIGDIR']):
                 bld.SAMBA_SCRIPT('_ldb_text.py',
                                  pattern='_ldb_text.py',
