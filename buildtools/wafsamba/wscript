@@ -196,6 +196,10 @@ def set_options(opt):
                    help='tag release in git at the same time',
                    type='string', action='store', dest='TAG_RELEASE')
 
+    opt.add_option('--disable-python',
+                    help='do not generate python modules',
+                    action='store_true', dest='disable_python', default=False)
+
     opt.add_option('--extra-python', type=str,
                     help=("build selected libraries for the specified "
                           "additional version of Python "
@@ -279,7 +283,13 @@ def configure(conf):
     conf.env.AUTOCONF_HOST  = Options.options.AUTOCONF_HOST
     conf.env.AUTOCONF_PROGRAM_PREFIX = Options.options.AUTOCONF_PROGRAM_PREFIX
 
+    conf.env.disable_python = Options.options.disable_python
+
     conf.env.EXTRA_PYTHON = Options.options.EXTRA_PYTHON
+
+    if (conf.env.disable_python and conf.env.EXTRA_PYTHON):
+        Logs.error('ERROR: cannot specify both --disable-python and --extra-python.')
+        sys.exit(1)
 
     if (conf.env.AUTOCONF_HOST and
         conf.env.AUTOCONF_BUILD and

@@ -20,6 +20,7 @@
 */
 
 #include <Python.h>
+#include "python/py3compat.h"
 #include "includes.h"
 #include <pyldb.h>
 #include <pytalloc.h>
@@ -35,8 +36,6 @@
 #include "dsdb/samdb/samdb.h"
 #include "py_net.h"
 #include "librpc/rpc/pyrpc_util.h"
-
-void initnet(void);
 
 static void PyErr_SetDsExtendedError(enum drsuapi_DsExtendedError ext_err, const char *error_description)
 {
@@ -290,7 +289,7 @@ static PyObject *py_net_time(py_net_Object *self, PyObject *args, PyObject *kwar
 	tm = localtime(&r.generic.out.time);
 	strftime(timestr, sizeof(timestr)-1, "%c %Z",tm);
 	
-	ret = PyString_FromString(timestr);
+	ret = PyStr_FromString(timestr);
 
 	talloc_free(mem_ctx);
 
@@ -720,7 +719,7 @@ static PyObject *net_obj_new(PyTypeObject *type, PyObject *args, PyObject *kwarg
 
 
 PyTypeObject py_net_Type = {
-	PyObject_HEAD_INIT(NULL) 0,
+	PyVarObject_HEAD_INIT(NULL, 0)
 	.tp_name = "net.Net",
 	.tp_basicsize = sizeof(py_net_Object),
 	.tp_dealloc = (destructor)py_net_dealloc,
@@ -728,21 +727,29 @@ PyTypeObject py_net_Type = {
 	.tp_new = net_obj_new,
 };
 
-void initnet(void)
+static struct PyModuleDef moduledef = {
+	PyModuleDef_HEAD_INIT,
+	.m_name = "net",
+	.m_size = -1,
+};
+
+MODULE_INIT_FUNC(net)
 {
 	PyObject *m;
 
 	if (PyType_Ready(&py_net_Type) < 0)
-		return;
+		return NULL;
 
-	m = Py_InitModule3("net", NULL, NULL);
+	m = PyModule_Create(&moduledef);
 	if (m == NULL)
-		return;
+		return NULL;
 
 	Py_INCREF(&py_net_Type);
 	PyModule_AddObject(m, "Net", (PyObject *)&py_net_Type);
-	PyModule_AddObject(m, "LIBNET_JOINDOMAIN_AUTOMATIC", PyInt_FromLong(LIBNET_JOINDOMAIN_AUTOMATIC));
-	PyModule_AddObject(m, "LIBNET_JOINDOMAIN_SPECIFIED", PyInt_FromLong(LIBNET_JOINDOMAIN_SPECIFIED));
-	PyModule_AddObject(m, "LIBNET_JOIN_AUTOMATIC", PyInt_FromLong(LIBNET_JOIN_AUTOMATIC));
-	PyModule_AddObject(m, "LIBNET_JOIN_SPECIFIED", PyInt_FromLong(LIBNET_JOIN_SPECIFIED));
+	PyModule_AddIntConstant(m, "LIBNET_JOINDOMAIN_AUTOMATIC", LIBNET_JOINDOMAIN_AUTOMATIC);
+	PyModule_AddIntConstant(m, "LIBNET_JOINDOMAIN_SPECIFIED", LIBNET_JOINDOMAIN_SPECIFIED);
+	PyModule_AddIntConstant(m, "LIBNET_JOIN_AUTOMATIC", LIBNET_JOIN_AUTOMATIC);
+	PyModule_AddIntConstant(m, "LIBNET_JOIN_SPECIFIED", LIBNET_JOIN_SPECIFIED);
+
+	return m;
 }

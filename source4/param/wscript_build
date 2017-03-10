@@ -4,6 +4,7 @@ bld.SAMBA_SUBSYSTEM('PROVISION',
 	source='provision.c pyparam.c',
 	deps='LIBPYTHON pyparam_util ldb pytalloc-util pyldb-util',
 	pyext=True,
+	enabled=bld.PYTHON_BUILD_IS_ENABLED(),
 	)
 
 
@@ -35,23 +36,27 @@ bld.SAMBA_SUBSYSTEM('SECRETS',
 	deps='ldb tdb-wrap util_tdb NDR_SECURITY tevent ldbwrap'
 	)
 
+for env in bld.gen_python_environments():
+	pytalloc_util = bld.pyembed_libname('pytalloc-util')
+	pyparam_util = bld.pyembed_libname('pyparam_util')
 
-bld.SAMBA_PYTHON('pyparam',
-	source='pyparam.c',
-	deps='samba-hostconfig pytalloc-util',
-	realname='samba/param.so'
-	)
+	bld.SAMBA_PYTHON('pyparam',
+	    source='pyparam.c',
+	    deps='samba-hostconfig %s' % pytalloc_util,
+	    realname='samba/param.so'
+	    )
+
+	bld.SAMBA_SUBSYSTEM(pyparam_util,
+	    source='pyparam_util.c',
+	    deps='LIBPYTHON samba-hostconfig %s' % pytalloc_util,
+	    pyext=True,
+	    enabled=bld.PYTHON_BUILD_IS_ENABLED()
+	    )
 
 bld.SAMBA_SUBSYSTEM('param_options',
 	source='loadparm.c',
 	deps='samba-hostconfig')
 
-
-bld.SAMBA_SUBSYSTEM('pyparam_util',
-	source='pyparam_util.c',
-	deps='LIBPYTHON samba-hostconfig pytalloc-util',
-	pyext=True,
-	)
 
 bld.SAMBA_LIBRARY('shares',
                   source=[],

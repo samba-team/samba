@@ -17,6 +17,7 @@
 */
 
 #include <Python.h>
+#include "python/py3compat.h"
 #include "includes.h"
 #include "pycredentials.h"
 #include "param/param.h"
@@ -32,7 +33,7 @@ static PyObject *PyString_FromStringOrNULL(const char *str)
 {
 	if (str == NULL)
 		Py_RETURN_NONE;
-	return PyString_FromString(str);
+	return PyStr_FromString(str);
 }
 
 static PyObject *py_creds_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
@@ -335,7 +336,7 @@ static PyObject *py_creds_get_nt_hash(PyObject *self, PyObject *unused)
 	struct cli_credentials *creds = PyCredentials_AsCliCredentials(self);
 	struct samr_Password *ntpw = cli_credentials_get_nt_hash(creds, creds);
 
-	ret = PyString_FromStringAndSize(discard_const_p(char, ntpw->hash), 16);
+	ret = PyBytes_FromStringAndSize(discard_const_p(char, ntpw->hash), 16);
 	TALLOC_FREE(ntpw);
 	return ret;
 }
@@ -623,6 +624,14 @@ static PyMethodDef py_creds_methods[] = {
 	{ NULL }
 };
 
+static struct PyModuleDef moduledef = {
+    PyModuleDef_HEAD_INIT,
+    .m_name = "credentials",
+    .m_doc = "Credentials management.",
+    .m_size = -1,
+    .m_methods = py_creds_methods,
+};
+
 PyTypeObject PyCredentials = {
 	.tp_name = "credentials.Credentials",
 	.tp_new = py_creds_new,
@@ -636,18 +645,18 @@ PyTypeObject PyCredentialCacheContainer = {
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 };
 
-void initcredentials(void)
+MODULE_INIT_FUNC(credentials)
 {
 	PyObject *m;
 	if (pytalloc_BaseObject_PyType_Ready(&PyCredentials) < 0)
-		return;
+		return NULL;
 
 	if (pytalloc_BaseObject_PyType_Ready(&PyCredentialCacheContainer) < 0)
-		return;
+		return NULL;
 
-	m = Py_InitModule3("credentials", NULL, "Credentials management.");
+	m = PyModule_Create(&moduledef);
 	if (m == NULL)
-		return;
+		return NULL;
 
 	PyModule_AddObject(m, "UNINITIALISED", PyInt_FromLong(CRED_UNINITIALISED));
 	PyModule_AddObject(m, "CALLBACK", PyInt_FromLong(CRED_CALLBACK));
@@ -668,4 +677,5 @@ void initcredentials(void)
 	PyModule_AddObject(m, "Credentials", (PyObject *)&PyCredentials);
 	Py_INCREF(&PyCredentialCacheContainer);
 	PyModule_AddObject(m, "CredentialCacheContainer", (PyObject *)&PyCredentialCacheContainer);
+	return m;
 }
