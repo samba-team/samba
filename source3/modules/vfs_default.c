@@ -33,6 +33,7 @@
 #include "lib/util/tevent_ntstatus.h"
 #include "lib/util/sys_rw.h"
 #include "lib/pthreadpool/pthreadpool_tevent.h"
+#include "librpc/gen_ndr/ndr_ioctl.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
@@ -1617,7 +1618,7 @@ static struct tevent_req *vfswrap_copy_chunk_send(struct vfs_handle_struct *hand
 	}
 
 	vfs_cc_state->buf = talloc_array(vfs_cc_state, uint8_t,
-					 MIN(num, 8*1024*1024));
+					 MIN(num, COPYCHUNK_MAX_TOTAL_LEN));
 	if (tevent_req_nomem(vfs_cc_state->buf, req)) {
 		return tevent_req_post(req, ev);
 	}
