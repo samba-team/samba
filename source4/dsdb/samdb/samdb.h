@@ -40,6 +40,7 @@ struct dsdb_trust_routing_table;
 #include "dsdb/schema/schema.h"
 #include "dsdb/samdb/samdb_proto.h"
 #include "dsdb/common/dsdb_dn.h"
+#include "dsdb/common/util_links.h"
 #include "dsdb/common/proto.h"
 #include "../libds/common/flags.h"
 
