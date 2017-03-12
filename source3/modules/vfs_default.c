@@ -1592,9 +1592,22 @@ static NTSTATUS vfswrap_fset_dos_attributes(struct vfs_handle_struct *handle,
 }
 
 struct vfs_cc_state {
-	off_t copied;
+	struct tevent_context *ev;
 	uint8_t *buf;
+	bool read_lck_locked;
+	struct lock_struct read_lck;
+	bool write_lck_locked;
+	struct lock_struct write_lck;
+	struct files_struct *src_fsp;
+	off_t src_off;
+	struct files_struct *dst_fsp;
+	off_t dst_off;
+	off_t to_copy;
+	off_t remaining;
+	size_t next_io_size;
 };
+
+static NTSTATUS copy_chunk_loop(struct tevent_req *req);
 
 static struct tevent_req *vfswrap_copy_chunk_send(struct vfs_handle_struct *handle,
 						  TALLOC_CTX *mem_ctx,
@@ -1603,23 +1616,31 @@ static struct tevent_req *vfswrap_copy_chunk_send(struct vfs_handle_struct *hand
 						  off_t src_off,
 						  struct files_struct *dest_fsp,
 						  off_t dest_off,
-						  off_t num)
+						  off_t to_copy)
 {
 	struct tevent_req *req;
-	struct vfs_cc_state *vfs_cc_state;
+	struct vfs_cc_state *state = NULL;
+	size_t num = MIN(to_copy, COPYCHUNK_MAX_TOTAL_LEN);
 	NTSTATUS status;
 
-	DEBUG(10, ("performing server side copy chunk of length %lu\n",
-		   (unsigned long)num));
+	DBG_DEBUG("server side copy chunk of length %" PRIu64 "\n", to_copy);
 
-	req = tevent_req_create(mem_ctx, &vfs_cc_state, struct vfs_cc_state);
+	req = tevent_req_create(mem_ctx, &state, struct vfs_cc_state);
 	if (req == NULL) {
 		return NULL;
 	}
 
-	vfs_cc_state->buf = talloc_array(vfs_cc_state, uint8_t,
-					 MIN(num, COPYCHUNK_MAX_TOTAL_LEN));
-	if (tevent_req_nomem(vfs_cc_state->buf, req)) {
+	*state = (struct vfs_cc_state) {
+		.ev = ev,
+		.src_fsp = src_fsp,
+		.src_off = src_off,
+		.dst_fsp = dest_fsp,
+		.dst_off = dest_off,
+		.to_copy = to_copy,
+		.remaining = to_copy,
+	};
+	state->buf = talloc_array(state, uint8_t, num);
+	if (tevent_req_nomem(state->buf, req)) {
 		return tevent_req_post(req, ev);
 	}
 
@@ -1652,106 +1673,178 @@ static struct tevent_req *vfswrap_copy_chunk_send(struct vfs_handle_struct *hand
 		return tevent_req_post(req, ev);
 	}
 
-	/* could use 2.6.33+ sendfile here to do this in kernel */
-	while (vfs_cc_state->copied < num) {
-		ssize_t ret;
-		struct lock_struct lck;
-		int saved_errno;
-
-		off_t this_num = MIN(talloc_array_length(vfs_cc_state->buf),
-				     num - vfs_cc_state->copied);
-
-		init_strict_lock_struct(src_fsp,
-					src_fsp->op->global->open_persistent_id,
-					src_off,
-					this_num,
-					READ_LOCK,
-					&lck);
-
-		if (!SMB_VFS_STRICT_LOCK(src_fsp->conn, src_fsp, &lck)) {
-			tevent_req_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
-			return tevent_req_post(req, ev);
-		}
-
-		ret = SMB_VFS_PREAD(src_fsp, vfs_cc_state->buf,
-				    this_num, src_off);
-		if (ret == -1) {
-			saved_errno = errno;
-		}
-
-		SMB_VFS_STRICT_UNLOCK(src_fsp->conn, src_fsp, &lck);
-
-		if (ret == -1) {
-			errno = saved_errno;
-			tevent_req_nterror(req, map_nt_error_from_unix(errno));
-			return tevent_req_post(req, ev);
-		}
-		if (ret != this_num) {
-			/* zero tolerance for short reads */
-			tevent_req_nterror(req, NT_STATUS_IO_DEVICE_ERROR);
-			return tevent_req_post(req, ev);
-		}
-
-		src_off += ret;
-
-		init_strict_lock_struct(dest_fsp,
-					dest_fsp->op->global->open_persistent_id,
-					dest_off,
-					this_num,
-					WRITE_LOCK,
-					&lck);
-
-		if (!SMB_VFS_STRICT_LOCK(dest_fsp->conn, dest_fsp, &lck)) {
-			tevent_req_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
-			return tevent_req_post(req, ev);
-		}
-
-		ret = SMB_VFS_PWRITE(dest_fsp, vfs_cc_state->buf,
-				     this_num, dest_off);
-		if (ret == -1) {
-			saved_errno = errno;
-		}
-
-		SMB_VFS_STRICT_UNLOCK(dest_fsp->conn, dest_fsp, &lck);
-
-		if (ret == -1) {
-			errno = saved_errno;
-			tevent_req_nterror(req, map_nt_error_from_unix(errno));
-			return tevent_req_post(req, ev);
-		}
-		if (ret != this_num) {
-			/* zero tolerance for short writes */
-			tevent_req_nterror(req, NT_STATUS_IO_DEVICE_ERROR);
-			return tevent_req_post(req, ev);
-		}
-		dest_off += ret;
-
-		vfs_cc_state->copied += this_num;
+	status = copy_chunk_loop(req);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return tevent_req_post(req, ev);
 	}
 
-	tevent_req_done(req);
-	return tevent_req_post(req, ev);
+	return req;
+}
+
+static void vfswrap_copy_chunk_read_done(struct tevent_req *subreq);
+
+static NTSTATUS copy_chunk_loop(struct tevent_req *req)
+{
+	struct vfs_cc_state *state = tevent_req_data(req, struct vfs_cc_state);
+	struct tevent_req *subreq = NULL;
+	bool ok;
+
+	state->next_io_size = MIN(state->remaining, talloc_array_length(state->buf));
+
+	init_strict_lock_struct(state->src_fsp,
+				state->src_fsp->op->global->open_persistent_id,
+				state->src_off,
+				state->next_io_size,
+				READ_LOCK,
+				&state->read_lck);
+
+	ok = SMB_VFS_STRICT_LOCK(state->src_fsp->conn,
+				 state->src_fsp,
+				 &state->read_lck);
+	if (!ok) {
+		return NT_STATUS_FILE_LOCK_CONFLICT;
+	}
+
+	subreq = SMB_VFS_PREAD_SEND(state,
+				    state->src_fsp->conn->sconn->ev_ctx,
+				    state->src_fsp,
+				    state->buf,
+				    state->next_io_size,
+				    state->src_off);
+	if (subreq == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	tevent_req_set_callback(subreq, vfswrap_copy_chunk_read_done, req);
+
+	return NT_STATUS_OK;
+}
+
+static void vfswrap_copy_chunk_write_done(struct tevent_req *subreq);
+
+static void vfswrap_copy_chunk_read_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct vfs_cc_state *state = tevent_req_data(req, struct vfs_cc_state);
+	struct vfs_aio_state aio_state;
+	ssize_t nread;
+	bool ok;
+
+	SMB_VFS_STRICT_UNLOCK(state->src_fsp->conn,
+			      state->src_fsp,
+			      &state->read_lck);
+	ZERO_STRUCT(state->read_lck);
+
+	nread = SMB_VFS_PREAD_RECV(subreq, &aio_state);
+	TALLOC_FREE(subreq);
+	if (nread == -1) {
+		DBG_ERR("read failed: %s\n", strerror(errno));
+		tevent_req_nterror(req, map_nt_error_from_unix(aio_state.error));
+		return;
+	}
+	if (nread != state->next_io_size) {
+		DBG_ERR("Short read, only %zd of %zu\n",
+			nread, state->next_io_size);
+		tevent_req_nterror(req, NT_STATUS_IO_DEVICE_ERROR);
+		return;
+	}
+
+	state->src_off += nread;
+
+	init_strict_lock_struct(state->dst_fsp,
+				state->dst_fsp->op->global->open_persistent_id,
+				state->dst_off,
+				state->next_io_size,
+				WRITE_LOCK,
+				&state->write_lck);
+
+	ok = SMB_VFS_STRICT_LOCK(state->dst_fsp->conn,
+				 state->dst_fsp,
+				 &state->write_lck);
+	if (!ok) {
+		tevent_req_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
+		return;
+	}
+
+	subreq = SMB_VFS_PWRITE_SEND(state,
+				     state->ev,
+				     state->dst_fsp,
+				     state->buf,
+				     state->next_io_size,
+				     state->dst_off);
+	if (subreq == NULL) {
+		tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
+		return;
+	}
+	tevent_req_set_callback(subreq, vfswrap_copy_chunk_write_done, req);
+}
+
+static void vfswrap_copy_chunk_write_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct vfs_cc_state *state = tevent_req_data(req, struct vfs_cc_state);
+	struct vfs_aio_state aio_state;
+	ssize_t nwritten;
+	NTSTATUS status;
+
+	SMB_VFS_STRICT_UNLOCK(state->dst_fsp->conn,
+			      state->dst_fsp,
+			      &state->write_lck);
+	ZERO_STRUCT(state->write_lck);
+
+	nwritten = SMB_VFS_PWRITE_RECV(subreq, &aio_state);
+	TALLOC_FREE(subreq);
+	if (nwritten == -1) {
+		DBG_ERR("write failed: %s\n", strerror(errno));
+		tevent_req_nterror(req, map_nt_error_from_unix(aio_state.error));
+		return;
+	}
+	if (nwritten != state->next_io_size) {
+		DBG_ERR("Short write, only %zd of %zu\n", nwritten, state->next_io_size);
+		tevent_req_nterror(req, NT_STATUS_IO_DEVICE_ERROR);
+		return;
+	}
+
+	state->dst_off += nwritten;
+
+	if (state->remaining < nwritten) {
+		/* Paranoia check */
+		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+		return;
+	}
+	state->remaining -= nwritten;
+	if (state->remaining == 0) {
+		tevent_req_done(req);
+		return;
+	}
+
+	status = copy_chunk_loop(req);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	return;
 }
 
 static NTSTATUS vfswrap_copy_chunk_recv(struct vfs_handle_struct *handle,
 					struct tevent_req *req,
 					off_t *copied)
 {
-	struct vfs_cc_state *vfs_cc_state = tevent_req_data(req,
-							struct vfs_cc_state);
+	struct vfs_cc_state *state = tevent_req_data(req, struct vfs_cc_state);
 	NTSTATUS status;
 
 	if (tevent_req_is_nterror(req, &status)) {
-		DEBUG(2, ("server side copy chunk failed: %s\n",
-			  nt_errstr(status)));
+		DBG_DEBUG("copy chunk failed: %s\n", nt_errstr(status));
 		*copied = 0;
 		tevent_req_received(req);
 		return status;
 	}
 
-	*copied = vfs_cc_state->copied;
-	DEBUG(10, ("server side copy chunk copied %lu\n",
-		   (unsigned long)*copied));
+	*copied = state->to_copy;
+	DBG_DEBUG("copy chunk copied %lu\n", (unsigned long)*copied);
 	tevent_req_received(req);
 
 	return NT_STATUS_OK;
