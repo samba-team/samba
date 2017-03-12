@@ -2393,7 +2393,7 @@ static int replmd_modify_la_add(struct ldb_module *module,
 		int err = parsed_dn_find(ldb, old_dns, old_num_values,
 					 &dns[i].guid,
 					 dns[i].dsdb_dn->dn,
-					 dns[i].dsdb_dn->extra_part,
+					 dns[i].dsdb_dn->extra_part, 0,
 					 &exact, &next,
 					 schema_attr->syntax->ldap_oid,
 					 true);
@@ -2665,7 +2665,7 @@ static int replmd_modify_la_delete(struct ldb_module *module,
 		ret = parsed_dn_find(ldb, old_dns, old_el->num_values,
 				     &p->guid,
 				     NULL,
-				     p->dsdb_dn->extra_part,
+				     p->dsdb_dn->extra_part, 0,
 				     &exact, &next,
 				     schema_attr->syntax->ldap_oid,
 				     true);
@@ -3673,7 +3673,9 @@ static int replmd_delete_remove_link(struct ldb_module *module,
 		}
 
 		ret = parsed_dn_find(ldb, link_dns, link_el->num_values,
-				     guid, dn, data_blob_null, &p, &unused,
+				     guid, dn,
+				     data_blob_null, 0,
+				     &p, &unused,
 				     target_attr->syntax->ldap_oid, false);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
@@ -6785,7 +6787,7 @@ linked_attributes[0]:
 	ret = parsed_dn_find(ldb, pdn_list, old_el->num_values,
 			     &guid,
 			     dsdb_dn->dn,
-			     dsdb_dn->extra_part,
+			     dsdb_dn->extra_part, 0,
 			     &pdn, &next,
 			     attr->syntax->ldap_oid,
 			     true);

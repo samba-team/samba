@@ -74,7 +74,16 @@ static int la_guid_compare_with_trusted_dn(struct compare_ctx *ctx,
 	}
 	cmp = ndr_guid_compare(ctx->guid, &p->guid);
 	if (cmp == 0 && ctx->compare_extra_part) {
-		return data_blob_cmp(&ctx->extra_part, &p->dsdb_dn->extra_part);
+		if (ctx->partial_extra_part_length != 0) {
+			/* Allow a prefix match on the blob. */
+			return memcmp(ctx->extra_part.data,
+				      p->dsdb_dn->extra_part.data,
+				      MIN(ctx->partial_extra_part_length,
+					  p->dsdb_dn->extra_part.length));
+		} else {
+			return data_blob_cmp(&ctx->extra_part,
+					     &p->dsdb_dn->extra_part);
+		}
 	}
 
 	return cmp;
@@ -106,6 +115,7 @@ int parsed_dn_find(struct ldb_context *ldb, struct parsed_dn *pdn,
 		   const struct GUID *guid,
 		   struct ldb_dn *target_dn,
 		   DATA_BLOB extra_part,
+		   size_t partial_extra_part_length,
 		   struct parsed_dn **exact,
 		   struct parsed_dn **next,
 		   const char *ldap_oid,
@@ -186,6 +196,7 @@ int parsed_dn_find(struct ldb_context *ldb, struct parsed_dn *pdn,
 	ctx.mem_ctx = pdn;
 	ctx.ldap_oid = ldap_oid;
 	ctx.extra_part = extra_part;
+	ctx.partial_extra_part_length = partial_extra_part_length;
 	ctx.compare_extra_part = compare_extra_part;
 	ctx.err = 0;
 

@@ -30,6 +30,7 @@ struct compare_ctx {
         int err;
         const struct GUID *invocation_id;
         DATA_BLOB extra_part;
+        size_t partial_extra_part_length;
         bool compare_extra_part;
 };
 
