@@ -190,17 +190,39 @@ fail:
 	}
 }
 
+/*
+ * Similar to function in repl_meta_data without the extra
+ * dependencies.
+ */
+static WERROR get_parsed_dns_trusted(TALLOC_CTX *mem_ctx, struct ldb_message_element *el,
+				  struct parsed_dn **pdn)
+{
+	/* Here we get a list of 'struct parsed_dns' without the parsing */
+	int i;
+	*pdn = talloc_zero_array(mem_ctx, struct parsed_dn,
+				 el->num_values);
+	if (!*pdn) {
+		return WERR_DS_DRA_INTERNAL_ERROR;
+	}
+
+	for (i = 0; i < el->num_values; i++) {
+		(*pdn)[i].v = &el->values[i];
+	}
+
+	return WERR_OK;
+}
+
 static WERROR getncchanges_update_revealed_list(struct ldb_context *sam_ctx,
 						TALLOC_CTX *mem_ctx,
 						struct ldb_message **msg,
 						struct ldb_dn *object_dn,
+						const struct GUID *object_guid,
 						const struct dsdb_attribute *sa,
 						struct replPropertyMetaData1 *meta_data,
 						struct ldb_message *revealed_users)
 {
 	enum ndr_err_code ndr_err;
 	int ldb_err;
-	unsigned i;
 	char *attr_str = NULL;
 	char *attr_hex = NULL;
 	DATA_BLOB attr_blob;
@@ -231,30 +253,59 @@ static WERROR getncchanges_update_revealed_list(struct ldb_context *sam_ctx,
 	existing = ldb_msg_find_element(revealed_users, "msDS-RevealedUsers");
 	if (existing != NULL) {
 		/* Replace the old value (if one exists) with the current one */
-		for (i = 0; i < existing->num_values; i++) {
-			struct dsdb_dn *existing_dn = dsdb_dn_parse_trusted(mem_ctx, sam_ctx, &existing->values[i], DSDB_SYNTAX_BINARY_DN);
-			if (ldb_dn_compare(object_dn, existing_dn->dn) == 0) {
-				struct replPropertyMetaData1 existing_meta_data;
-				ndr_err = ndr_pull_struct_blob_all_noalloc(&existing_dn->extra_part,
-							       &existing_meta_data,
-							       (ndr_pull_flags_fn_t)ndr_pull_replPropertyMetaData1);
-				if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		struct parsed_dn *link_dns;
+		struct parsed_dn *exact = NULL, *unused = NULL;
+		WERROR werr;
+		uint8_t attid[4];
+		DATA_BLOB partial_meta;
+
+		werr = get_parsed_dns_trusted(mem_ctx, existing, &link_dns);
+		if (!W_ERROR_IS_OK(werr)) {
+			return werr;
+		}
+
+		/* Construct a partial metadata blob to match on in the DB */
+		SIVAL(attid, 0, sa->attributeID_id);
+		partial_meta.length = 4;
+		partial_meta.data = attid;
+
+		/* Binary search using GUID and attribute id for uniqueness */
+		ldb_err = parsed_dn_find(sam_ctx, link_dns, existing->num_values,
+					 object_guid, object_dn,
+					 partial_meta, 4,
+					 &exact, &unused,
+					 DSDB_SYNTAX_BINARY_DN, true);
+
+		if (ldb_err != LDB_SUCCESS) {
+			DEBUG(0,(__location__ ": Failed parsed DN find - %s\n",
+				 ldb_errstring(sam_ctx)));
+			return WERR_DS_DRA_INTERNAL_ERROR;
+		}
+
+		if (exact != NULL) {
+			/* Perform some verification of the blob */
+			struct replPropertyMetaData1 existing_meta_data;
+			ndr_err = ndr_pull_struct_blob_all_noalloc(&exact->dsdb_dn->extra_part,
+								   &existing_meta_data,
+								   (ndr_pull_flags_fn_t)ndr_pull_replPropertyMetaData1);
+			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+				return WERR_DS_DRA_INTERNAL_ERROR;
+			}
+
+			if (existing_meta_data.attid == sa->attributeID_id) {
+				ldb_err = ldb_msg_add_empty(*msg, "msDS-RevealedUsers", LDB_FLAG_MOD_DELETE, &el_del);
+				if (ldb_err != LDB_SUCCESS) {
 					return WERR_DS_DRA_INTERNAL_ERROR;
 				}
 
-				if (existing_meta_data.attid == sa->attributeID_id) {
-					ldb_err = ldb_msg_add_empty(*msg, "msDS-RevealedUsers", LDB_FLAG_MOD_DELETE, &el_del);
-					if (ldb_err != LDB_SUCCESS) {
-						return WERR_DS_DRA_INTERNAL_ERROR;
-					}
-
-					el_del->values = talloc_array((*msg)->elements, struct ldb_val, 1);
-					if (el_del->values == NULL) {
-						return WERR_NOT_ENOUGH_MEMORY;
-					}
-					el_del->values[0] = existing->values[i];
-					el_del->num_values = 1;
+				el_del->values = talloc_array((*msg)->elements, struct ldb_val, 1);
+				if (el_del->values == NULL) {
+					return WERR_NOT_ENOUGH_MEMORY;
 				}
+				el_del->values[0] = *exact->v;
+				el_del->num_values = 1;
+			} else {
+				return WERR_DS_DRA_INTERNAL_ERROR;
 			}
 		}
 	}
@@ -287,6 +338,7 @@ static WERROR get_nc_changes_filter_attrs(struct drsuapi_DsReplicaObjectListItem
 					  struct replPropertyMetaDataBlob md,
 					  struct ldb_context *sam_ctx,
 					  const struct ldb_message *msg,
+					  const struct GUID *guid,
 					  uint32_t *count,
 					  uint64_t highest_usn,
 					  const struct dsdb_attribute *rdn_sa,
@@ -338,7 +390,7 @@ static WERROR get_nc_changes_filter_attrs(struct drsuapi_DsReplicaObjectListItem
 				 sa->lDAPDisplayName, ldb_dn_get_linearized(msg->dn)));
 			werr = getncchanges_update_revealed_list(sam_ctx, obj,
 								 revealed_list_msg,
-								 msg->dn, sa,
+								 msg->dn, guid, sa,
 								 &md.ctr.ctr1.array[i],
 								 existing_revealed_list_msg);
 			if (!W_ERROR_IS_OK(werr)) {
@@ -396,7 +448,8 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 					  enum drsuapi_DsExtendedOperation extended_op,
 					  bool force_object_return,
 					  uint32_t *local_pas,
-					  struct ldb_dn *machine_dn)
+					  struct ldb_dn *machine_dn,
+					  const struct GUID *guid)
 {
 	const struct ldb_val *md_value;
 	uint32_t i, n;
@@ -510,7 +563,7 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 			return WERR_DS_DRA_INTERNAL_ERROR;
 		}
 
-		ldb_err = dsdb_search_dn(sam_ctx, obj, &res, machine_dn, machine_attrs, 0);
+		ldb_err = dsdb_search_dn(sam_ctx, obj, &res, machine_dn, machine_attrs, DSDB_SEARCH_SHOW_EXTENDED_DN);
 		if (ldb_err != LDB_SUCCESS || res->count != 1) {
 			ldb_transaction_cancel(sam_ctx);
 			return WERR_DS_DRA_INTERNAL_ERROR;
@@ -518,8 +571,9 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 
 		existing_revealed_list_msg = res->msgs[0];
 
-		werr = get_nc_changes_filter_attrs(obj, md, sam_ctx, msg, &n,
-						   highest_usn, rdn_sa, schema,
+		werr = get_nc_changes_filter_attrs(obj, md, sam_ctx, msg,
+						   guid, &n, highest_usn,
+						   rdn_sa, schema,
 						   uptodateness_vector,
 						   partial_attribute_set, local_pas,
 						   attids,
@@ -548,9 +602,9 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 			return WERR_DS_DRA_INTERNAL_ERROR;
 		}
 	} else {
-		werr = get_nc_changes_filter_attrs(obj, md, sam_ctx, msg, &n,
-						   highest_usn, rdn_sa, schema,
-						   uptodateness_vector,
+		werr = get_nc_changes_filter_attrs(obj, md, sam_ctx, msg, guid,
+						   &n, highest_usn, rdn_sa,
+						   schema, uptodateness_vector,
 						   partial_attribute_set, local_pas,
 						   attids,
 						   false,
@@ -2671,7 +2725,8 @@ allowed:
 						   req10->uptodateness_vector,
 						   req10->extended_op,
 						   max_wait_reached,
-						   local_pas, machine_dn);
+						   local_pas, machine_dn,
+						   &getnc_state->guids[i]);
 		if (!W_ERROR_IS_OK(werr)) {
 			return werr;
 		}
@@ -2783,7 +2838,8 @@ allowed:
 							   req10->extended_op,
 							   false, /* force_object_return */
 							   local_pas,
-							   machine_dn);
+							   machine_dn,
+							   next_anc_guid);
 			if (!W_ERROR_IS_OK(werr)) {
 				return werr;
 			}
