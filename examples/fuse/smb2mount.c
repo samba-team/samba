@@ -26,7 +26,8 @@
 #include "clifuse.h"
 
 static struct cli_state *connect_one(const struct user_auth_info *auth_info,
-				     const char *server, const char *share)
+				     const char *server, int port,
+				     const char *share)
 {
 	struct cli_state *c = NULL;
 	NTSTATUS nt_status;
@@ -38,7 +39,7 @@ static struct cli_state *connect_one(const struct user_auth_info *auth_info,
 	}
 
 	nt_status = cli_full_connection(&c, lp_netbios_name(), server,
-				NULL, 0,
+				NULL, port,
 				share, "?????",
 				get_cmdline_auth_info_username(auth_info),
 				lp_workgroup(),
@@ -73,6 +74,7 @@ int main(int argc, char *argv[])
 	TALLOC_CTX *frame = talloc_stackframe();
 	poptContext pc;
 	int opt, ret;
+	int port = 0;
 	char *unc, *mountpoint, *server, *share;
 	struct cli_state *cli;
 
@@ -80,6 +82,8 @@ int main(int argc, char *argv[])
 		POPT_AUTOHELP
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CREDENTIALS
+		{ "port", 'p', POPT_ARG_INT, &port, 'p', "Port to connect to",
+		  "PORT" },
 		POPT_TABLEEND
 	};
 
@@ -96,6 +100,8 @@ int main(int argc, char *argv[])
 
 	while ((opt = poptGetNextOpt(pc)) != -1) {
 		switch(opt) {
+		    case 'p':
+			    break;
 		    default:
 			    fprintf(stderr, "Unknown Option: %c\n", opt);
 			    exit(1);
@@ -137,7 +143,7 @@ int main(int argc, char *argv[])
 	*share = 0;
 	share++;
 
-	cli = connect_one(cmdline_auth_info, server, share);
+	cli = connect_one(cmdline_auth_info, server, port, share);
 	if (cli == NULL) {
 		return -1;
 	}
