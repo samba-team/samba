@@ -1235,6 +1235,7 @@ static NTSTATUS winbindd_dual_auth_passdb(TALLOC_CTX *mem_ctx,
 	struct tsocket_address *local;
 	struct netr_SamInfo3 *info3;
 	NTSTATUS status;
+	bool ok;
 	int rc;
 	TALLOC_CTX *frame = talloc_stackframe();
 
@@ -1268,13 +1269,20 @@ static NTSTATUS winbindd_dual_auth_passdb(TALLOC_CTX *mem_ctx,
 		user_info->flags |= USER_INFO_INTERACTIVE_LOGON;
 	}
 
-	status = make_auth_context_fixed(frame, &auth_context, challenge->data);
+	status = make_auth_context_subsystem(frame, &auth_context);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_ERR("make_auth_context_fixed failed: %s\n",
+		DBG_ERR("make_auth_context_subsystem failed: %s\n",
 			nt_errstr(status));
 		TALLOC_FREE(frame);
 		return status;
+	}
+
+	ok = auth3_context_set_challenge(auth_context,
+					 challenge->data, "fixed");
+	if (!ok) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	status = auth_check_ntlm_password(mem_ctx,
