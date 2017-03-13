@@ -1187,6 +1187,8 @@ krb5_error_code smb_krb5_kt_open(krb5_context context,
 		goto open_keytab;
 	}
 
+	DBG_WARNING("ERROR: Invalid keytab name: %s\n", keytab_name_req);
+
 	return KRB5_KT_BADNAME;
 
 open_keytab:
