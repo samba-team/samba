@@ -35,6 +35,15 @@ testit "testjoin" $VALGRIND $net_tool ads testjoin -kP || failed=`expr $failed +
 
 testit "leave" $VALGRIND $net_tool ads leave -U$DC_USERNAME%$DC_PASSWORD || failed=`expr $failed + 1`
 
+# Test with kerberos method = secrets and keytab
+dedicated_keytab_file="$PREFIX_ABS/test_net_ads_dedicated_krb5.keytab"
+testit "join (decicated keytab)" $VALGRIND $net_tool ads join -U$DC_USERNAME%$DC_PASSWORD --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" || failed=`expr $failed + 1`
+
+testit "testjoin (dedicated keytab)" $VALGRIND $net_tool ads testjoin -kP || failed=`expr $failed + 1`
+
+testit "leave (dedicated keytab)" $VALGRIND $net_tool ads leave -U$DC_USERNAME%$DC_PASSWORD || failed=`expr $failed + 1`
+rm -f $dedicated_keytab_file
+
 testit_expect_failure "testjoin(not joined)" $VALGRIND $net_tool ads testjoin -kP || failed=`expr $failed + 1`
 
 testit "join+kerberos" $VALGRIND $net_tool ads join -kU$DC_USERNAME%$DC_PASSWORD || failed=`expr $failed + 1`
