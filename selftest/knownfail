@@ -329,7 +329,6 @@
 ^samba.tests.auth_log.samba.tests.auth_log.AuthLogTests.test_rpc_ncacn_np_krb_dns_smb2
 ^samba.tests.auth_log.samba.tests.auth_log.AuthLogTests.test_rpc_ncacn_np_krb_srv
 ^samba.tests.auth_log.samba.tests.auth_log.AuthLogTests.test_rpc_ncacn_np_krb_srv_sign
-^samba.tests.auth_log.samba.tests.auth_log.AuthLogTests.test_rpc_ncacn_np_ntlm_srv\(ad_dc:local\)
 ^samba.tests.auth_log.samba.tests.auth_log.AuthLogTests.test_smb\(
 ^samba.tests.auth_log.samba.tests.auth_log.AuthLogTests.test_smb_bad_password
 ^samba.tests.auth_log.samba.tests.auth_log.AuthLogTests.test_smb_bad_user

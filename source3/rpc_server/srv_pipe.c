@@ -822,6 +822,8 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 			goto err_exit;
 		}
 	} else {
+		TALLOC_CTX *frame = talloc_stackframe();
+		struct auth4_context *auth4_context;
 		const char *transport_protection = AUTHZ_TRANSPORT_PROTECTION_NONE;
 		if (p->transport == NCACN_NP) {
 			transport_protection = AUTHZ_TRANSPORT_PROTECTION_SMB;
@@ -831,18 +833,27 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 		p->auth.auth_level = DCERPC_AUTH_LEVEL_NONE;
 		p->auth.auth_context_id = 0;
 
+		status = make_auth4_context(frame, &auth4_context);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("Unable to make auth context for authz log.\n"));
+			TALLOC_FREE(frame);
+			goto err_exit;
+		}
+
 		/*
 		 * Log the authorization to this RPC interface.  This
 		 * covered ncacn_np pass-through auth, and anonymous
 		 * DCE/RPC (eg epmapper, netlogon etc)
 		 */
-		log_successful_authz_event(NULL, NULL,
+		log_successful_authz_event(auth4_context->msg_ctx,
+					   auth4_context->lp_ctx,
 					   p->remote_address,
 					   p->local_address,
 					   table->name,
 					   derpc_transport_string_by_transport(p->transport),
 					   transport_protection,
 					   p->session_info);
+		TALLOC_FREE(frame);
 	}
 
 	ZERO_STRUCT(u.bind_ack);
