@@ -193,7 +193,9 @@ uint32_t smb_gss_krb5_import_cred(uint32_t *minor_status, krb5_context ctx,
 
 			/* We are dealing with krb5 GSSAPI mech in this fallback */
 			mech_set.count = 1;
-			mech_set.elements = gss_mech_krb5;
+			mech_set.elements =
+				discard_const_p(struct gss_OID_desc_struct,
+						gss_mech_krb5);
 			major_status = gss_acquire_cred(minor_status,
 							GSS_C_NO_NAME,
 							GSS_C_INDEFINITE,
