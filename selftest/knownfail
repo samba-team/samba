@@ -326,3 +326,6 @@
 ^samba4.blackbox.trust_ntlm.Test08.*client.*with.ADDOM.SAMBA.EXAMPLE.COM\\Administrator%locDCpass1\(fl2003dc:local\)
 ^samba4.blackbox.trust_ntlm.Test09.*client.*with.Administrator@ADDOMAIN%locDCpass1\(fl2003dc:local\)
 ^samba4.blackbox.trust_ntlm.Test10.*client.*with.Administrator@ADDOM.SAMBA.EXAMPLE.COM%locDCpass1\(fl2003dc:local\)
+^samba4.ldap.rodc.python\(rodc\).__main__.RodcTests.test_add.*
+^samba4.ldap.rodc.python\(rodc\).__main__.RodcTests.test_delete.*
+^samba4.ldap.rodc.python\(rodc\).__main__.RodcTests.test_modify_nonreplicated.*
