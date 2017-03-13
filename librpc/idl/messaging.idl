@@ -173,4 +173,7 @@ interface messaging
 		uint32 num_recs;
 		messaging_rec *recs[num_recs];
 	} messaging_reclog;
+
+        /* This allows this well known service name to be referenced in python and C */
+        const string AUTH_EVENT_NAME = "auth_event";
 }
