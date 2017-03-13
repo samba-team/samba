@@ -1586,11 +1586,18 @@ static NTSTATUS _netr_LogonSamLogon_base(struct pipes_struct *p,
 	{
 		const char *wksname = nt_workstation;
 		const char *workgroup = lp_workgroup();
+		bool ok;
 
-		status = make_auth_context_fixed(talloc_tos(), &auth_context,
-						 logon->network->challenge);
+		status = make_auth_context_subsystem(talloc_tos(),
+						     &auth_context);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
+		}
+
+		ok = auth3_context_set_challenge(
+			auth_context, logon->network->challenge, "fixed");
+		if (!ok) {
+			return NT_STATUS_NO_MEMORY;
 		}
 
 		/* For a network logon, the workstation name comes in with two
