@@ -1,4 +1,59 @@
                    ==============================
+                   Release Notes for Samba 4.4.11
+                           March 13, 2017
+                   ==============================
+
+
+This is the latest stable release of Samba 4.4. Please note that this will
+very likely be the last maintenance release of the Samba 4.4 release branch.
+
+
+Changes since 4.4.10:
+---------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 12608: s3: smbd: Restart reading the incoming SMB2 fd when the send
+     queue is drained.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 7537: s3/smbd: Fix deferred open with streams and kernel oplocks.
+   * BUG 12604: vfs_fruit: Enabling AAPL extensions must be a global switch.
+   * BUG 12615: manpages/vfs_fruit: Document global options.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 12610: smbd: Do an early exit on negprot failure.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 11830: s3:winbindd: Fix endless forest trust scan.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 12686: Fix build with newer glibc.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ==============================
                    Release Notes for Samba 4.4.10
                             March 1, 2017
                    ==============================
@@ -102,8 +157,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    =============================
                    Release Notes for Samba 4.4.9
