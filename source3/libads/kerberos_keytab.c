@@ -34,6 +34,57 @@
 
 #ifdef HAVE_ADS
 
+/* This MAX_NAME_LEN is a constant defined in krb5.h */
+#ifndef MAX_KEYTAB_NAME_LEN
+#define MAX_KEYTAB_NAME_LEN 1100
+#endif
+
+static krb5_error_code ads_keytab_open(krb5_context context,
+				       krb5_keytab *keytab)
+{
+	char keytab_str[MAX_KEYTAB_NAME_LEN] = {0};
+	const char *keytab_name = NULL;
+	krb5_error_code ret = 0;
+
+	switch (lp_kerberos_method()) {
+	case KERBEROS_VERIFY_SYSTEM_KEYTAB:
+	case KERBEROS_VERIFY_SECRETS_AND_KEYTAB:
+		ret = krb5_kt_default_name(context,
+					   keytab_str,
+					   sizeof(keytab_str) - 2);
+		if (ret != 0) {
+			DBG_WARNING("Failed to get default keytab name");
+			goto out;
+		}
+		keytab_name = keytab_str;
+		break;
+	case KERBEROS_VERIFY_DEDICATED_KEYTAB:
+		keytab_name = lp_dedicated_keytab_file();
+		break;
+	default:
+		DBG_ERR("Invalid kerberos method set (%d)\n",
+			lp_kerberos_method());
+		ret = KRB5_KT_BADNAME;
+		goto out;
+	}
+
+	if (keytab_name == NULL || keytab_name[0] == '\0') {
+		DBG_ERR("Invalid keytab name\n");
+		ret = KRB5_KT_BADNAME;
+		goto out;
+	}
+
+	ret = smb_krb5_kt_open(context, keytab_name, true, keytab);
+	if (ret != 0) {
+		DBG_WARNING("smb_krb5_kt_open failed (%s)\n",
+			    error_message(ret));
+		goto out;
+	}
+
+out:
+	return ret;
+}
+
 /**********************************************************************
  Adds a single service principal, i.e. 'host' to the system keytab
 ***********************************************************************/
@@ -75,10 +126,8 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc)
 		return -1;
 	}
 
-	ret = smb_krb5_kt_open(context, NULL, True, &keytab);
-	if (ret) {
-		DEBUG(1, ("smb_krb5_kt_open failed (%s)\n",
-			  error_message(ret)));
+	ret = ads_keytab_open(context, &keytab);
+	if (ret != 0) {
 		goto out;
 	}
 
@@ -262,10 +311,8 @@ int ads_keytab_flush(ADS_STRUCT *ads)
 		return ret;
 	}
 
-	ret = smb_krb5_kt_open(context, NULL, True, &keytab);
-	if (ret) {
-		DEBUG(1, ("smb_krb5_kt_open failed (%s)\n",
-			  error_message(ret)));
+	ret = ads_keytab_open(context, &keytab);
+	if (ret != 0) {
 		goto out;
 	}
 
@@ -447,10 +494,8 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 	DEBUG(3, (__location__ ": Searching for keytab entries to preserve "
 		  "and update.\n"));
 
-	ret = smb_krb5_kt_open(context, NULL, True, &keytab);
-	if (ret) {
-		DEBUG(1, ("smb_krb5_kt_open failed (%s)\n",
-			  error_message(ret)));
+	ret = ads_keytab_open(context, &keytab);
+	if (ret != 0) {
 		goto done;
 	}
 
