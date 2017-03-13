@@ -471,10 +471,12 @@ NTSTATUS make_auth_context_subsystem(TALLOC_CTX *mem_ctx,
 	char **auth_method_list = NULL; 
 	NTSTATUS nt_status;
 
-	if (lp_auth_methods()
-	    && !(auth_method_list = str_list_copy(talloc_tos(), 
-			      lp_auth_methods()))) {
-		return NT_STATUS_NO_MEMORY;
+	if (lp_auth_methods()) {
+		DEBUG(5,("Using specified auth order\n"));
+		nt_status = make_auth_context_text_list(
+			mem_ctx, auth_context,
+			discard_const_p(char *, lp_auth_methods()));
+		return nt_status;
 	}
 
 	if (auth_method_list == NULL) {
