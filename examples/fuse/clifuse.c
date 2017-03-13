@@ -717,6 +717,72 @@ static void cli_ll_lookup_done(struct tevent_req *req)
 	TALLOC_FREE(state);
 }
 
+struct ll_getattr_state {
+	struct mount_state *mstate;
+	fuse_req_t freq;
+	struct fuse_file_info fi;
+};
+
+static void cli_ll_getattr_done(struct tevent_req *req);
+
+static void cli_ll_getattr(fuse_req_t freq, fuse_ino_t ino,
+			   struct fuse_file_info *fi)
+{
+	struct mount_state *mstate = talloc_get_type_abort(
+		fuse_req_userdata(freq), struct mount_state);
+	struct ll_getattr_state *state;
+	struct inode_state *istate;
+	struct tevent_req *req;
+
+	DBG_DEBUG("ino=%ju\n", (uintmax_t)ino);
+
+	istate = idr_find(mstate->ino_ctx, ino);
+	if (istate == NULL) {
+		fuse_reply_err(freq, ENOENT);
+		return;
+	}
+
+	state = talloc(mstate, struct ll_getattr_state);
+	if (state == NULL) {
+		fuse_reply_err(freq, ENOMEM);
+		return;
+	}
+	state->mstate = mstate;
+	state->freq = freq;
+
+	req = cli_get_unixattr_send(state, mstate->ev, mstate->cli,
+				    istate->path);
+	if (req == NULL) {
+		TALLOC_FREE(state);
+		fuse_reply_err(freq, ENOMEM);
+		return;
+	}
+	tevent_req_set_callback(req, cli_ll_getattr_done, state);
+}
+
+static void cli_ll_getattr_done(struct tevent_req *req)
+{
+	struct ll_getattr_state *state = tevent_req_callback_data(
+		req, struct ll_getattr_state);
+	struct stat st;
+	NTSTATUS status;
+	int ret;
+
+	status = cli_get_unixattr_recv(req, &st);
+	TALLOC_FREE(req);
+	if (!NT_STATUS_IS_OK(status)) {
+		fuse_reply_err(state->freq, map_errno_from_nt_status(status));
+		return;
+	}
+
+	ret = fuse_reply_attr(state->freq, &st, 1);
+	if (ret != 0) {
+		DBG_NOTICE("fuse_reply_attr failed: %s\n",
+			   strerror(-errno));
+	}
+}
+
+
 struct ll_open_state {
 	struct mount_state *mstate;
 	fuse_req_t freq;
@@ -1302,6 +1368,7 @@ static void cli_ll_releasedir_done(struct tevent_req *req)
 
 static struct fuse_lowlevel_ops cli_ll_ops = {
 	.lookup = cli_ll_lookup,
+	.getattr = cli_ll_getattr,
 	.open = cli_ll_open,
 	.create = cli_ll_create,
 	.release = cli_ll_release,
