@@ -116,9 +116,9 @@ ssize_t sys_sendfile_native(int tofd, int fromfd, off_t offset, size_t count, st
 		if(nwritten < hv->iov_len) {
 			return nwritten;
 		}
-	}
 
-	total += nwritten;
+		total += nwritten;
+	}
 
 	if((nwritten = sendfile(tofd, fromfd, &offset, count)) == -1) {
 		if (errno == ENOSYS || errno == EINVAL) {
