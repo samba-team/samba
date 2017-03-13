@@ -528,25 +528,6 @@ NTSTATUS make_auth_context_subsystem(TALLOC_CTX *mem_ctx,
 	return make_auth_context_specific(mem_ctx, auth_context, methods);
 }
 
-/***************************************************************************
- Make a auth_info struct with a fixed challenge
-***************************************************************************/
-
-NTSTATUS make_auth_context_fixed(TALLOC_CTX *mem_ctx,
-				 struct auth_context **auth_context,
-				 uchar chal[8])
-{
-	NTSTATUS nt_status;
-	nt_status = make_auth_context_subsystem(mem_ctx, auth_context);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		return nt_status;
-	}
-
-	(*auth_context)->challenge = data_blob_talloc(*auth_context, chal, 8);
-	(*auth_context)->challenge_set_by = "fixed";
-	return nt_status;
-}
-
 bool auth3_context_set_challenge(struct auth_context *ctx, uint8_t chal[8],
 				 const char *challenge_set_by)
 {
