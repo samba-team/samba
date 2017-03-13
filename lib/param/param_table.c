@@ -202,9 +202,13 @@ static const struct enum_list enum_smbd_profiling_level[] = {
 static const struct enum_list enum_kerberos_method[] = {
 	{KERBEROS_VERIFY_SECRETS, "default"},
 	{KERBEROS_VERIFY_SECRETS, "secrets only"},
+	{KERBEROS_VERIFY_SECRETS, "secretsonly"},
 	{KERBEROS_VERIFY_SYSTEM_KEYTAB, "system keytab"},
+	{KERBEROS_VERIFY_SYSTEM_KEYTAB, "systemkeytab"},
 	{KERBEROS_VERIFY_DEDICATED_KEYTAB, "dedicated keytab"},
+	{KERBEROS_VERIFY_DEDICATED_KEYTAB, "dedicatedkeytab"},
 	{KERBEROS_VERIFY_SECRETS_AND_KEYTAB, "secrets and keytab"},
+	{KERBEROS_VERIFY_SECRETS_AND_KEYTAB, "secretsandkeytab"},
 	{-1, NULL}
 };
 
