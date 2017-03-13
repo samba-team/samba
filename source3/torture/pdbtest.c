@@ -268,6 +268,7 @@ static bool test_auth(TALLOC_CTX *mem_ctx, struct samu *pdb_entry)
 	struct netr_SamInfo3 *info3_sam, *info3_auth;
 	struct auth_serversupplied_info *server_info;
 	NTSTATUS status;
+	bool ok;
 	
 	SMBOWFencrypt(pdb_get_nt_passwd(pdb_entry), challenge_8,
 		      local_nt_response);
@@ -298,13 +299,20 @@ static bool test_auth(TALLOC_CTX *mem_ctx, struct samu *pdb_entry)
 		return False;
 	}
 
-	status = make_auth_context_fixed(NULL, &auth_context, challenge.data);
+	status = make_auth_context_subsystem(NULL, &auth_context);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to test authentication with check_sam_security_info3: %s\n", nt_errstr(status)));
 		return False;
 	}
-	
+
+	ok = auth3_context_set_challenge(
+		auth_context, challenge.data, "fixed");
+	if (!ok) {
+		DBG_ERR("auth3_context_set_challenge failed\n");
+		return false;
+	}
+
 	status = auth_check_ntlm_password(mem_ctx,
 					  auth_context,
 					  user_info,
