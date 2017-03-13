@@ -21,8 +21,9 @@
 import samba
 from samba.messaging import Messaging
 from samba.tests import TestCase
-from samba.dcerpc.server_id import server_id
+import time
 from samba.ndr import ndr_print
+from samba.dcerpc import server_id
 import random
 
 class MessagingTests(TestCase):
@@ -35,7 +36,8 @@ class MessagingTests(TestCase):
         x = self.get_context()
         def callback():
             pass
-        msg_type = x.register(callback)
+        msg_type = x.register((callback, None))
+        self.assertTrue(isinstance(msg_type, long))
         x.deregister(callback, msg_type)
 
     def test_all_servers(self):
@@ -54,7 +56,7 @@ class MessagingTests(TestCase):
 
     def test_assign_server_id(self):
         x = self.get_context()
-        self.assertTrue(isinstance(x.server_id, server_id))
+        self.assertTrue(isinstance(x.server_id, server_id.server_id))
 
     def test_add_remove_name(self):
         x = self.get_context()
@@ -69,19 +71,41 @@ class MessagingTests(TestCase):
                           x.irpc_servers_byname, name)
 
     def test_ping_speed(self):
+        got_ping = {"count": 0}
+        got_pong = {"count": 0}
+        timeout = False
+
+        msg_pong = 0
+        msg_ping = 0
+
         server_ctx = self.get_context((0, 1))
-        def ping_callback(src, data):
-                server_ctx.send(src, data)
-        def exit_callback():
-                print "received exit"
-        msg_ping = server_ctx.register(ping_callback)
-        msg_exit = server_ctx.register(exit_callback)
+        def ping_callback(got_ping, msg_type, src, data):
+            got_ping["count"] += 1
+            server_ctx.send(src, msg_pong, data)
 
-        def pong_callback():
-                print "received pong"
+        msg_ping = server_ctx.register((ping_callback, got_ping))
+
+        def pong_callback(got_pong, msg_type, src, data):
+            got_pong["count"] += 1
+
         client_ctx = self.get_context((0, 2))
-        msg_pong = client_ctx.register(pong_callback)
+        msg_pong = client_ctx.register((pong_callback, got_pong))
 
+        # Try both server_id forms (structure and tuple)
         client_ctx.send((0, 1), msg_ping, "testing")
-        client_ctx.send((0, 1), msg_ping, "")
 
+        client_ctx.send((0, 1), msg_ping, "testing2")
+
+        start_time = time.time()
+
+        # NOTE WELL: If debugging this with GDB, then the timeout will
+        # fire while you are trying to understand it.
+
+        while (got_ping["count"] < 2 or got_pong["count"] < 2) and not timeout:
+            client_ctx.loop_once(0.1)
+            server_ctx.loop_once(0.1)
+            if time.time() - start_time > 1:
+                timeout = True
+
+        self.assertEqual(got_ping["count"], 2)
+        self.assertEqual(got_pong["count"], 2)

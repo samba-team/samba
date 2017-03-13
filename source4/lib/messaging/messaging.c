@@ -24,6 +24,7 @@
 #include "lib/util/server_id.h"
 #include "system/filesys.h"
 #include "messaging/messaging.h"
+#include "messaging/messaging_internal.h"
 #include "../lib/util/dlinklist.h"
 #include "lib/socket/socket.h"
 #include "librpc/gen_ndr/ndr_irpc.h"
@@ -53,22 +54,6 @@ struct irpc_request {
 		void (*handler)(struct irpc_request *irpc, struct irpc_message *m);
 		void *private_data;
 	} incoming;
-};
-
-struct imessaging_context {
-	struct imessaging_context *prev, *next;
-	struct tevent_context *ev;
-	struct server_id server_id;
-	const char *sock_dir;
-	const char *lock_dir;
-	struct dispatch_fn **dispatch;
-	uint32_t num_types;
-	struct idr_context *dispatch_tree;
-	struct irpc_list *irpc;
-	struct idr_context *idr;
-	struct server_id_db *names;
-	struct timeval start_time;
-	void *msg_dgm_ref;
 };
 
 /* we have a linked list of dispatch handlers for each msg_type that
