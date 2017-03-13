@@ -78,7 +78,7 @@ subunit_skip_test () {
 testit () {
 	name="$1"
 	shift
-	cmdline="$*"
+	cmdline="$@"
 	subunit_start_test "$name"
 	output=`$cmdline 2>&1`
 	status=$?
@@ -93,7 +93,7 @@ testit () {
 testit_expect_failure () {
 	name="$1"
 	shift
-	cmdline="$*"
+	cmdline="$@"
 	subunit_start_test "$name"
 	output=`$cmdline 2>&1`
 	status=$?
