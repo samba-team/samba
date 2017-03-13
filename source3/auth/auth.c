@@ -461,6 +461,26 @@ static NTSTATUS make_auth_context_text_list(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS make_auth_context_specific(TALLOC_CTX *mem_ctx,
+					   struct auth_context **auth_context,
+					   const char *methods)
+{
+	char **method_list;
+	NTSTATUS status;
+
+	method_list = str_list_make_v3(talloc_tos(), methods, NULL);
+	if (method_list == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = make_auth_context_text_list(
+		mem_ctx, auth_context, method_list);
+
+	TALLOC_FREE(method_list);
+
+	return status;
+}
+
 /***************************************************************************
  Make a auth_context struct for the auth subsystem
 ***************************************************************************/
@@ -468,7 +488,7 @@ static NTSTATUS make_auth_context_text_list(TALLOC_CTX *mem_ctx,
 NTSTATUS make_auth_context_subsystem(TALLOC_CTX *mem_ctx,
 				     struct auth_context **auth_context)
 {
-	char **auth_method_list = NULL; 
+	const char *methods = NULL;
 	NTSTATUS nt_status;
 
 	if (lp_auth_methods()) {
@@ -482,47 +502,32 @@ NTSTATUS make_auth_context_subsystem(TALLOC_CTX *mem_ctx,
 	switch (lp_server_role()) {
 	case ROLE_DOMAIN_MEMBER:
 		DEBUG(5,("Making default auth method list for server role = 'domain member'\n"));
-		auth_method_list = str_list_make_v3(
-			talloc_tos(), "guest sam winbind:ntdomain",
-			NULL);
+		methods = "guest sam winbind:ntdomain";
 		break;
 	case ROLE_DOMAIN_BDC:
 	case ROLE_DOMAIN_PDC:
 		DEBUG(5,("Making default auth method list for DC\n"));
-		auth_method_list = str_list_make_v3(
-			talloc_tos(),
-			"guest sam winbind:trustdomain",
-			NULL);
+		methods = "guest sam winbind:trustdomain";
 		break;
 	case ROLE_STANDALONE:
 		DEBUG(5,("Making default auth method list for server role = 'standalone server', encrypt passwords = yes\n"));
 		if (lp_encrypt_passwords()) {
-			auth_method_list = str_list_make_v3(
-					talloc_tos(), "guest sam",
-					NULL);
+			methods = "guest sam";
 		} else {
 			DEBUG(5,("Making default auth method list for server role = 'standalone server', encrypt passwords = no\n"));
-			auth_method_list = str_list_make_v3(
-				talloc_tos(), "guest unix", NULL);
+			methods = "guest unix";
 		}
 		break;
 	case ROLE_ACTIVE_DIRECTORY_DC:
 		DEBUG(5,("Making default auth method list for server role = 'active directory domain controller'\n"));
-		auth_method_list = str_list_make_v3(
-			talloc_tos(),
-			"samba4",
-			NULL);
+		methods = "samba4";
 		break;
 	default:
 		DEBUG(5,("Unknown auth method!\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	nt_status = make_auth_context_text_list(mem_ctx, auth_context,
-						auth_method_list);
-
-	TALLOC_FREE(auth_method_list);
-	return nt_status;
+	return make_auth_context_specific(mem_ctx, auth_context, methods);
 }
 
 /***************************************************************************
