@@ -547,4 +547,16 @@ NTSTATUS make_auth_context_fixed(TALLOC_CTX *mem_ctx,
 	return nt_status;
 }
 
-
+bool auth3_context_set_challenge(struct auth_context *ctx, uint8_t chal[8],
+				 const char *challenge_set_by)
+{
+	ctx->challenge = data_blob_talloc(ctx, chal, 8);
+	if (ctx->challenge.data == NULL) {
+		return false;
+	}
+	ctx->challenge_set_by = talloc_strdup(ctx, challenge_set_by);
+	if (ctx->challenge_set_by == NULL) {
+		return false;
+	}
+	return true;
+}
