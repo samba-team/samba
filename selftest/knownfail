@@ -319,3 +319,5 @@
 ^samba3.smb2.credits.skipped_mid.*
 ^samba4.blackbox.dbcheck-links.release-4-5-0-pre1.dangling_multi_valued_dbcheck
 ^samba4.blackbox.dbcheck-links.release-4-5-0-pre1.dangling_multi_valued_check_missing
+^samba.tests.auth_log.samba.tests.auth_log.AuthLogTests
+^samba.tests.auth_log_ncalrpc.samba.tests.auth_log_ncalrpc.AuthLogTestsNcalrpc
