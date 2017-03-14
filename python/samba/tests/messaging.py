@@ -23,6 +23,7 @@ from samba.messaging import Messaging
 from samba.tests import TestCase
 from samba.dcerpc.server_id import server_id
 from samba.ndr import ndr_print
+import random
 
 class MessagingTests(TestCase):
 
@@ -46,20 +47,26 @@ class MessagingTests(TestCase):
         for name in x.irpc_all_servers():
             self.assertTrue(isinstance(x.irpc_servers_byname(name.name), list))
 
+    def test_unknown_name(self):
+        x = self.get_context()
+        self.assertRaises(KeyError,
+                          x.irpc_servers_byname, "samba.messaging test NONEXISTING")
+
     def test_assign_server_id(self):
         x = self.get_context()
         self.assertTrue(isinstance(x.server_id, server_id))
 
-    def test_add_name(self):
+    def test_add_remove_name(self):
         x = self.get_context()
-        x.irpc_add_name("samba.messaging test")
-        name_list = x.irpc_servers_byname("samba.messaging test")
+        name = "samba.messaging test-%d" % random.randint(1, 1000000)
+        x.irpc_add_name(name)
+        name_list = x.irpc_servers_byname(name)
         self.assertEqual(len(name_list), 1)
         self.assertEqual(ndr_print(x.server_id),
                          ndr_print(name_list[0]))
-        x.irpc_remove_name("samba.messaging test")
-        self.assertEqual([],
-                         x.irpc_servers_byname("samba.messaging test"))
+        x.irpc_remove_name(name)
+        self.assertRaises(KeyError,
+                          x.irpc_servers_byname, name)
 
     def test_ping_speed(self):
         server_ctx = self.get_context((0, 1))

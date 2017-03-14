@@ -319,3 +319,4 @@
 ^samba3.smb2.credits.skipped_mid.*
 ^samba4.blackbox.dbcheck-links.release-4-5-0-pre1.dangling_multi_valued_dbcheck
 ^samba4.blackbox.dbcheck-links.release-4-5-0-pre1.dangling_multi_valued_check_missing
+^samba.tests.messaging.samba.tests.messaging.MessagingTests.test_add_remove_name
