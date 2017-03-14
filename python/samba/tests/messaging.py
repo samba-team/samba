@@ -22,6 +22,7 @@ import samba
 from samba.messaging import Messaging
 from samba.tests import TestCase
 from samba.dcerpc.server_id import server_id
+from samba.ndr import ndr_print
 
 class MessagingTests(TestCase):
 
@@ -52,6 +53,13 @@ class MessagingTests(TestCase):
     def test_add_name(self):
         x = self.get_context()
         x.irpc_add_name("samba.messaging test")
+        name_list = x.irpc_servers_byname("samba.messaging test")
+        self.assertEqual(len(name_list), 1)
+        self.assertEqual(ndr_print(x.server_id),
+                         ndr_print(name_list[0]))
+        x.irpc_remove_name("samba.messaging test")
+        self.assertEqual([],
+                         x.irpc_servers_byname("samba.messaging test"))
 
     def test_ping_speed(self):
         server_ctx = self.get_context((0, 1))

@@ -260,6 +260,20 @@ static PyObject *py_irpc_add_name(PyObject *self, PyObject *args, PyObject *kwar
 	Py_RETURN_NONE;
 }
 
+static PyObject *py_irpc_remove_name(PyObject *self, PyObject *args, PyObject *kwargs)
+{
+	imessaging_Object *iface = (imessaging_Object *)self;
+	char *server_name;
+
+	if (!PyArg_ParseTuple(args, "s", &server_name)) {
+		return NULL;
+	}
+
+	irpc_remove_name(iface->msg_ctx, server_name);
+
+	Py_RETURN_NONE;
+}
+
 static PyObject *py_irpc_servers_byname(PyObject *self, PyObject *args, PyObject *kwargs)
 {
 	imessaging_Object *iface = (imessaging_Object *)self;
@@ -363,6 +377,10 @@ static PyMethodDef py_imessaging_methods[] = {
 	{ "irpc_add_name", (PyCFunction)py_irpc_add_name, METH_VARARGS,
 		"S.irpc_add_name(name) -> None\n"
 	        "Add this context to the list of server_id values that "
+	        "are registered for a particular name" },
+	{ "irpc_remove_name", (PyCFunction)py_irpc_remove_name, METH_VARARGS,
+		"S.irpc_remove_name(name) -> None\n"
+	        "Remove this context from the list of server_id values that "
 	        "are registered for a particular name" },
 	{ "irpc_servers_byname", (PyCFunction)py_irpc_servers_byname, METH_VARARGS,
 		"S.irpc_servers_byname(name) -> list\nGet list of server_id values that are registered for a particular name" },
