@@ -24,13 +24,8 @@ bld.SAMBA_PIDL_LIST('PIDL',
                     output_dir='../gen_ndr')
 
 bld.SAMBA_PIDL_LIST('PIDL',
-                    'idmap.idl',
+                    'idmap.idl messaging.idl',
                     options='--header --ndr-parser --client --python',
-                    output_dir='../gen_ndr')
-
-bld.SAMBA_PIDL_LIST('PIDL',
-                    'messaging.idl',
-                    options='--header --ndr-parser',
                     output_dir='../gen_ndr')
 
 bld.SAMBA_PIDL_LIST('PIDL',
