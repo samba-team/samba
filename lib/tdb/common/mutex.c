@@ -752,12 +752,23 @@ static bool tdb_robust_mutex_setup_sigchild(void (*handler)(int),
 
 static void tdb_robust_mutex_handler(int sig)
 {
-	if (tdb_robust_mutex_pid != -1) {
-		pid_t pid;
-		int status;
+	pid_t child_pid = tdb_robust_mutex_pid;
 
-		pid = waitpid(tdb_robust_mutex_pid, &status, WNOHANG);
-		if (pid == tdb_robust_mutex_pid) {
+	if (child_pid != -1) {
+		pid_t pid;
+
+		pid = waitpid(child_pid, NULL, WNOHANG);
+		if (pid == -1) {
+			switch (errno) {
+			case ECHILD:
+				tdb_robust_mutex_pid = -1;
+				return;
+
+			default:
+				return;
+			}
+		}
+		if (pid == child_pid) {
 			tdb_robust_mutex_pid = -1;
 			return;
 		}
@@ -776,6 +787,44 @@ static void tdb_robust_mutex_handler(int sig)
 	tdb_robust_mutext_old_handler(sig);
 }
 
+static void tdb_robust_mutex_wait_for_child(pid_t *child_pid)
+{
+	int options = WNOHANG;
+
+	if (*child_pid == -1) {
+		return;
+	}
+
+	while (tdb_robust_mutex_pid > 0) {
+		pid_t pid;
+
+		/*
+		 * First we try with WNOHANG, as the process might not exist
+		 * anymore. Once we've sent SIGKILL we block waiting for the
+		 * exit.
+		 */
+		pid = waitpid(*child_pid, NULL, options);
+		if (pid == -1) {
+			if (errno == EINTR) {
+				continue;
+			} else if (errno == ECHILD) {
+				break;
+			} else {
+				abort();
+			}
+		}
+		if (pid == *child_pid) {
+			break;
+		}
+
+		kill(*child_pid, SIGKILL);
+		options = 0;
+	}
+
+	tdb_robust_mutex_pid = -1;
+	*child_pid = -1;
+}
+
 _PUBLIC_ bool tdb_runtime_check_for_robust_mutexes(void)
 {
 	void *ptr = NULL;
@@ -788,17 +837,14 @@ _PUBLIC_ bool tdb_runtime_check_for_robust_mutexes(void)
 	char c = 0;
 	bool ok;
 	static bool initialized;
-	sigset_t mask, old_mask, suspend_mask;
+	pid_t saved_child_pid = -1;
 	bool cleanup_ma = false;
-	bool cleanup_sigmask = false;
 
 	if (initialized) {
 		return tdb_mutex_locking_cached;
 	}
 
 	initialized = true;
-
-	sigemptyset(&suspend_mask);
 
 	ok = tdb_mutex_locking_supported();
 	if (!ok) {
@@ -845,26 +891,13 @@ _PUBLIC_ bool tdb_runtime_check_for_robust_mutexes(void)
 	}
 	m = (pthread_mutex_t *)ptr;
 
-	/*
-	 * Block SIGCHLD so we can atomically wait for it later with
-	 * sigsuspend()
-	 */
-	sigemptyset(&mask);
-	sigaddset(&mask, SIGCHLD);
-	ret = pthread_sigmask(SIG_BLOCK, &mask, &old_mask);
-	if (ret != 0) {
-		goto cleanup;
-	}
-	cleanup_sigmask = true;
-	suspend_mask = old_mask;
-	sigdelset(&suspend_mask, SIGCHLD);
-
 	if (tdb_robust_mutex_setup_sigchild(tdb_robust_mutex_handler,
 			&tdb_robust_mutext_old_handler) == false) {
 		goto cleanup;
 	}
 
 	tdb_robust_mutex_pid = fork();
+	saved_child_pid = tdb_robust_mutex_pid;
 	if (tdb_robust_mutex_pid == 0) {
 		size_t nwritten;
 		close(pipe_down[1]);
@@ -914,14 +947,7 @@ _PUBLIC_ bool tdb_runtime_check_for_robust_mutexes(void)
 		goto cleanup;
 	}
 
-	while (tdb_robust_mutex_pid > 0) {
-		ret = sigsuspend(&suspend_mask);
-		if (ret != -1 || errno != EINTR) {
-			abort();
-		}
-	}
-	tdb_robust_mutex_setup_sigchild(tdb_robust_mutext_old_handler, NULL);
-	tdb_robust_mutext_old_handler = SIG_ERR;
+	tdb_robust_mutex_wait_for_child(&saved_child_pid);
 
 	ret = pthread_mutex_trylock(m);
 	if (ret != EOWNERDEAD) {
@@ -950,23 +976,21 @@ _PUBLIC_ bool tdb_runtime_check_for_robust_mutexes(void)
 	tdb_mutex_locking_cached = true;
 
 cleanup:
-	while (tdb_robust_mutex_pid > 0) {
-		kill(tdb_robust_mutex_pid, SIGKILL);
-		ret = sigsuspend(&suspend_mask);
-		if (ret != -1 || errno != EINTR) {
-			abort();
-		}
-	}
+	/*
+	 * Note that we don't reset the signal handler we just reset
+	 * tdb_robust_mutex_pid to -1. This is ok as this code path is only
+	 * called once per process.
+	 *
+	 * Leaving our signal handler avoids races with other threads potentialy
+	 * setting up their SIGCHLD handlers.
+	 *
+	 * The worst thing that can happen is that the other newer signal
+	 * handler will get the SIGCHLD signal for our child and/or reap the
+	 * child with a wait() function. tdb_robust_mutex_wait_for_child()
+	 * handles the case where waitpid returns ECHILD.
+	 */
+	tdb_robust_mutex_wait_for_child(&saved_child_pid);
 
-	if (tdb_robust_mutext_old_handler != SIG_ERR) {
-		tdb_robust_mutex_setup_sigchild(tdb_robust_mutext_old_handler, NULL);
-	}
-	if (cleanup_sigmask) {
-		ret = pthread_sigmask(SIG_SETMASK, &old_mask, NULL);
-		if (ret != 0) {
-			abort();
-		}
-	}
 	if (m != NULL) {
 		pthread_mutex_destroy(m);
 	}
