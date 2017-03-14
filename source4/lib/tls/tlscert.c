@@ -175,5 +175,6 @@ failed:
 }
 
 #else
+void tls_cert_dummy(void);
 void tls_cert_dummy(void) {}
 #endif
