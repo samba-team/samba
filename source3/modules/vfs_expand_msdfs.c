@@ -147,8 +147,7 @@ static char *expand_msdfs_target(TALLOC_CTX *ctx,
 		return NULL;
 	}
 
-	targethost = read_target_host(
-		ctx, raddr, mapfilename);
+	targethost = read_target_host(ctx, mapfilename, raddr);
 	if (targethost == NULL) {
 		DEBUG(1, ("Could not expand target host from file %s\n",
 			  mapfilename));
