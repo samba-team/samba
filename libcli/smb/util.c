@@ -319,28 +319,42 @@ uint8_t *trans2_bytes_push_bytes(uint8_t *buf,
 static NTSTATUS internal_bytes_pull_str(TALLOC_CTX *mem_ctx, char **_str,
 					bool ucs2, bool align_odd,
 					const uint8_t *buf, size_t buf_len,
-					size_t *pbuf_consumed)
+					const uint8_t *position,
+					size_t *p_consumed)
 {
 	size_t pad = 0;
+	size_t offset;
 	char *str = NULL;
 	size_t str_len = 0;
 	bool ok;
 
 	*_str = NULL;
-	if (pbuf_consumed != NULL) {
-		*pbuf_consumed = 0;
+	if (p_consumed != NULL) {
+		*p_consumed = 0;
+	}
+
+	if (position < buf) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	offset = PTR_DIFF(position, buf);
+	if (offset > buf_len) {
+		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
 	if (ucs2 &&
-	    ((align_odd && (buf_len % 2 == 0)) ||
-	     (!align_odd && (buf_len % 2 == 1)))) {
-		if (buf_len < 1) {
-			return NT_STATUS_BUFFER_TOO_SMALL;
-		}
-		pad = 1;
-		buf_len -= pad;
-		buf += pad;
+	    ((align_odd && (offset % 2 == 0)) ||
+	     (!align_odd && (offset % 2 == 1)))) {
+		pad += 1;
+		offset += 1;
 	}
+
+	if (offset > buf_len) {
+		return NT_STATUS_BUFFER_TOO_SMALL;
+	}
+
+	buf_len -= offset;
+	buf += offset;
 
 	if (ucs2) {
 		buf_len = utf16_len_n(buf, buf_len);
@@ -361,17 +375,18 @@ static NTSTATUS internal_bytes_pull_str(TALLOC_CTX *mem_ctx, char **_str,
 		return map_nt_error_from_unix_common(errno);
 	}
 
-	if (pbuf_consumed != NULL) {
-		*pbuf_consumed = buf_len + pad;
+	if (p_consumed != NULL) {
+		*p_consumed = buf_len + pad;
 	}
 	*_str = str;
-	return NT_STATUS_OK;;
+	return NT_STATUS_OK;
 }
 
 NTSTATUS smb_bytes_pull_str(TALLOC_CTX *mem_ctx, char **_str, bool ucs2,
 			    const uint8_t *buf, size_t buf_len,
-			    size_t *_buf_consumed)
+			    const uint8_t *position,
+			    size_t *_consumed)
 {
 	return internal_bytes_pull_str(mem_ctx, _str, ucs2, true,
-				       buf, buf_len, _buf_consumed);
+				       buf, buf_len, position, _consumed);
 }
