@@ -14,28 +14,32 @@ if [ $(dirname "$TEST_SUBDIR") = "." ] ; then
     TEST_SUBDIR=$(cd "$TEST_SUBDIR" ; pwd)
 fi
 
-_test_dir=$(dirname "$TEST_SUBDIR")
-
 # If we are running from within the source tree then, depending on the
 # tests that we're running, we may need to add the top level bin/ and
-# tools/ subdirectories to $PATH.  This means we need a way of
-# determining if we're running from within the source tree.  There is
-# no use looking outside the tests/ subdirectory because anything
-# above that level may be meaningless and outside our control.
-# Therefore, we'll use existence of $_test_dir/run_tests.sh to
-# indicate that we're running in-tree - on a system where the tests
-# have been installed, this file will be absent (renamed and placed in
-# some bin/ directory).
-if [ -f "${_test_dir}/run_tests.sh" ] ; then
-    ctdb_dir=$(dirname "$_test_dir")
+# tools/ subdirectories to $PATH.  In this case, sanity check that
+# run_tests.sh is in the expected place.  If the tests are installed
+# then sanity check that TEST_BIN_DIR is set.
+if $CTDB_TESTS_ARE_INSTALLED ; then
+	if [ -z "$TEST_BIN_DIR" ] ; then
+		die "CTDB_TESTS_ARE_INSTALLED but TEST_BIN_DIR not set"
+	fi
 
-    _tools_dir="${ctdb_dir}/tools"
-    if [ -d "$_tools_dir" ] ; then
-	PATH="${_tools_dir}:$PATH"
-    fi
+	_test_bin_dir="$TEST_BIN_DIR"
+else
+	if [ ! -f "${CTDB_TEST_DIR}/run_tests.sh" ] ; then
+		die "Tests not installed but can't find run_tests.sh"
+	fi
+
+	ctdb_dir=$(dirname "$CTDB_TEST_DIR")
+
+	_tools_dir="${ctdb_dir}/tools"
+	if [ -d "$_tools_dir" ] ; then
+		PATH="${_tools_dir}:$PATH"
+	fi
+
+	_test_bin_dir="${ctdb_dir}/bin"
 fi
 
-_test_bin_dir="${TEST_BIN_DIR:-${ctdb_dir}/bin}"
 case "$_test_bin_dir" in
     /*) : ;;
     *) _test_bin_dir="${PWD}/${_test_bin_dir}" ;;
