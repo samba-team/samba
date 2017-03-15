@@ -24,9 +24,14 @@ smbclient="$samba_bindir/smbclient"
 . $samba_srcdir/testprogs/blackbox/subunit.sh
 . $samba_srcdir/testprogs/blackbox/common_test_fns.inc
 
-SMB_UNC="//$SERVER/subDUG"
+SMB_UNC="//$SERVER/sub_dug"
 
-test_smbclient "Test login to share with substitution" \
+test_smbclient "Test login to share with substitution (DUG)" \
+	"ls" "$SMB_UNC" "-U$USERNAME%$PASSWORD" || failed=$(expr $failed + 1)
+
+SMB_UNC="//$SERVER/sub_dug2"
+
+test_smbclient "Test login to share with substitution (Dug)" \
 	"ls" "$SMB_UNC" "-U$USERNAME%$PASSWORD" || failed=$(expr $failed + 1)
 
 exit $failed
