@@ -1136,6 +1136,8 @@ static bool slrpc_open_query(struct mds_ctx *mds_ctx,
 	struct sl_query *slq = NULL;
 	int result;
 	char *querystring;
+	char *scope = NULL;
+	char *escaped_scope = NULL;
 
 	array = dalloc_zero(reply, sl_array_t);
 	if (array == NULL) {
@@ -1214,12 +1216,20 @@ static bool slrpc_open_query(struct mds_ctx *mds_ctx,
 		goto error;
 	}
 
-	slq->path_scope = dalloc_get(path_scope, "char *", 0);
-	if (slq->path_scope == NULL) {
+	scope = dalloc_get(path_scope, "char *", 0);
+	if (scope == NULL) {
 		goto error;
 	}
 
-	slq->path_scope = talloc_strdup(slq, slq->path_scope);
+	escaped_scope = g_uri_escape_string(scope,
+					    G_URI_RESERVED_CHARS_ALLOWED_IN_PATH,
+					    TRUE);
+	if (escaped_scope == NULL) {
+		goto error;
+	}
+
+	slq->path_scope = talloc_strdup(slq, escaped_scope);
+	g_free(escaped_scope);
 	if (slq->path_scope == NULL) {
 		goto error;
 	}
