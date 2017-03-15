@@ -2475,7 +2475,7 @@ sub setup_rodc($$$)
 		return undef;
 	}
 
-	if (not defined($self->check_or_start($env, "single"))) {
+	if (not defined($self->check_or_start($env, "standard"))) {
 	    return undef;
 	}
 
