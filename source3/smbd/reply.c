@@ -779,7 +779,9 @@ void reply_special(struct smbXsrv_connection *xconn, char *inbuf, size_t inbuf_s
 	DEBUG(5,("init msg_type=0x%x msg_flags=0x%x\n",
 		    msg_type, msg_flags));
 
-	srv_send_smb(xconn, outbuf, false, 0, false, NULL);
+	if (!srv_send_smb(xconn, outbuf, false, 0, false, NULL)) {
+		exit_server_cleanly("reply_special: srv_send_smb failed.");
+	}
 
 	if (CVAL(outbuf, 0) != 0x82) {
 		exit_server_cleanly("invalid netbios session");
