@@ -210,16 +210,16 @@ static void smb1cli_session_setup_lm21_done(struct tevent_req *subreq)
 	p = bytes;
 
 	status = smb_bytes_pull_str(state, &state->out_native_os,
-				    use_unicode, p,
-				    bytes+num_bytes-p, &ret);
+				    use_unicode, bytes, num_bytes,
+				    p, &ret);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 	p += ret;
 
 	status = smb_bytes_pull_str(state, &state->out_native_lm,
-				    use_unicode, p,
-				    bytes+num_bytes-p, &ret);
+				    use_unicode, bytes, num_bytes,
+				    p, &ret);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
@@ -493,24 +493,24 @@ static void smb1cli_session_setup_nt1_done(struct tevent_req *subreq)
 	p = bytes;
 
 	status = smb_bytes_pull_str(state, &state->out_native_os,
-				    use_unicode, p,
-				    bytes+num_bytes-p, &ret);
+				    use_unicode, bytes, num_bytes,
+				    p, &ret);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 	p += ret;
 
 	status = smb_bytes_pull_str(state, &state->out_native_lm,
-				    use_unicode, p,
-				    bytes+num_bytes-p, &ret);
+				    use_unicode, bytes, num_bytes,
+				    p, &ret);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 	p += ret;
 
 	status = smb_bytes_pull_str(state, &state->out_primary_domain,
-				    use_unicode, p,
-				    bytes+num_bytes-p, &ret);
+				    use_unicode, bytes, num_bytes,
+				    p, &ret);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
@@ -754,16 +754,16 @@ static void smb1cli_session_setup_ext_done(struct tevent_req *subreq)
 	p += out_security_blob_length;
 
 	status = smb_bytes_pull_str(state, &state->out_native_os,
-				    use_unicode, p,
-				    bytes+num_bytes-p, &ret);
+				    use_unicode, bytes, num_bytes,
+				    p, &ret);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 	p += ret;
 
 	status = smb_bytes_pull_str(state, &state->out_native_lm,
-				    use_unicode, p,
-				    bytes+num_bytes-p, &ret);
+				    use_unicode, bytes, num_bytes,
+				    p, &ret);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
