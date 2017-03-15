@@ -372,6 +372,38 @@ NTSTATUS cli_session_creds_prepare_krb5(struct cli_state *cli,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS cli_state_update_after_sesssetup(struct cli_state *cli,
+						 const char *native_os,
+						 const char *native_lm,
+						 const char *primary_domain)
+{
+#define _VALID_STR(p) ((p) != NULL && (p)[0] != '\0')
+
+	if (!_VALID_STR(cli->server_os) && _VALID_STR(native_os)) {
+		cli->server_os = talloc_strdup(cli, native_os);
+		if (cli->server_os == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	if (!_VALID_STR(cli->server_type) && _VALID_STR(native_lm)) {
+		cli->server_type = talloc_strdup(cli, native_lm);
+		if (cli->server_type == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	if (!_VALID_STR(cli->server_domain) && _VALID_STR(primary_domain)) {
+		cli->server_domain = talloc_strdup(cli, primary_domain);
+		if (cli->server_domain == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+#undef _VALID_STRING
+	return NT_STATUS_OK;
+}
+
 /********************************************************
  Utility function to ensure we always return at least
  a valid char * pointer to an empty string for the
@@ -762,7 +794,6 @@ static void cli_sesssetup_blob_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct cli_sesssetup_blob_state *state = tevent_req_data(
 		req, struct cli_sesssetup_blob_state);
-	struct cli_state *cli = state->cli;
 	NTSTATUS status;
 
 	if (smbXcli_conn_protocol(state->cli->conn) >= PROTOCOL_SMB2_02) {
@@ -784,14 +815,15 @@ static void cli_sesssetup_blob_done(struct tevent_req *subreq)
 		return;
 	}
 
-	if (cli->server_os == NULL) {
-		cli->server_os = talloc_move(cli, &state->out_native_os);
-	}
-	if (cli->server_type == NULL) {
-		cli->server_type = talloc_move(cli, &state->out_native_lm);
-	}
-
 	state->status = status;
+
+	status = cli_state_update_after_sesssetup(state->cli,
+						  state->out_native_os,
+						  state->out_native_lm,
+						  NULL);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
 
 	if (state->blob.length != 0) {
 		/*
@@ -1670,14 +1702,12 @@ static void cli_session_setup_creds_done_nt1(struct tevent_req *subreq)
 		return;
 	}
 
-	if (cli->server_os == NULL) {
-		cli->server_os = talloc_move(cli, &state->out_native_os);
-	}
-	if (cli->server_type == NULL) {
-		cli->server_type = talloc_move(cli, &state->out_native_lm);
-	}
-	if (cli->server_domain == NULL) {
-		cli->server_domain = talloc_move(cli, &state->out_primary_domain);
+	status = cli_state_update_after_sesssetup(state->cli,
+						  state->out_native_os,
+						  state->out_native_lm,
+						  state->out_primary_domain);
+	if (tevent_req_nterror(req, status)) {
+		return;
 	}
 
 	ok = smb1cli_conn_activate_signing(cli->conn,
@@ -1710,7 +1740,6 @@ static void cli_session_setup_creds_done_lm21(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct cli_session_setup_creds_state *state = tevent_req_data(
 		req, struct cli_session_setup_creds_state);
-	struct cli_state *cli = state->cli;
 	NTSTATUS status;
 
 	status = smb1cli_session_setup_lm21_recv(subreq, state,
@@ -1723,11 +1752,12 @@ static void cli_session_setup_creds_done_lm21(struct tevent_req *subreq)
 		return;
 	}
 
-	if (cli->server_os == NULL) {
-		cli->server_os = talloc_move(cli, &state->out_native_os);
-	}
-	if (cli->server_type == NULL) {
-		cli->server_type = talloc_move(cli, &state->out_native_lm);
+	status = cli_state_update_after_sesssetup(state->cli,
+						  state->out_native_os,
+						  state->out_native_lm,
+						  NULL);
+	if (tevent_req_nterror(req, status)) {
+		return;
 	}
 
 	tevent_req_done(req);
