@@ -424,24 +424,30 @@ ADS_STATUS ads_delete_gpo_link(ADS_STRUCT *ads,
 	ADS_ERROR_HAVE_NO_MEMORY(gpo->ds_path);
 
 	if (!ads_pull_uint32(ads, res, "versionNumber", &gpo->version)) {
-		return ADS_ERROR(LDAP_NO_MEMORY);
+		return ADS_ERROR(LDAP_NO_SUCH_ATTRIBUTE);
 	}
 
 	if (!ads_pull_uint32(ads, res, "flags", &gpo->options)) {
-		return ADS_ERROR(LDAP_NO_MEMORY);
+		return ADS_ERROR(LDAP_NO_SUCH_ATTRIBUTE);
 	}
 
 	gpo->file_sys_path = ads_pull_string(ads, mem_ctx, res,
 		"gPCFileSysPath");
-	ADS_ERROR_HAVE_NO_MEMORY(gpo->file_sys_path);
+	if (gpo->file_sys_path == NULL) {
+		return ADS_ERROR(LDAP_NO_SUCH_ATTRIBUTE);
+	}
 
 	gpo->display_name = ads_pull_string(ads, mem_ctx, res,
 		"displayName");
-	ADS_ERROR_HAVE_NO_MEMORY(gpo->display_name);
+	if (gpo->display_name == NULL) {
+		return ADS_ERROR(LDAP_NO_SUCH_ATTRIBUTE);
+	}
 
 	gpo->name = ads_pull_string(ads, mem_ctx, res,
 		"name");
-	ADS_ERROR_HAVE_NO_MEMORY(gpo->name);
+	if (gpo->name == NULL) {
+		return ADS_ERROR(LDAP_NO_SUCH_ATTRIBUTE);
+	}
 
 	gpo->machine_extensions = ads_pull_string(ads, mem_ctx, res,
 		"gPCMachineExtensionNames");
@@ -450,7 +456,9 @@ ADS_STATUS ads_delete_gpo_link(ADS_STRUCT *ads,
 
 	ads_pull_sd(ads, mem_ctx, res, "ntSecurityDescriptor",
 		&gpo->security_descriptor);
-	ADS_ERROR_HAVE_NO_MEMORY(gpo->security_descriptor);
+	if (gpo->security_descriptor == NULL) {
+		return ADS_ERROR(LDAP_NO_SUCH_ATTRIBUTE);
+	}
 
 	return ADS_ERROR(LDAP_SUCCESS);
 }
@@ -586,6 +594,13 @@ static ADS_STATUS add_gplink_to_gpo_list(ADS_STRUCT *ads,
 		if (!ADS_ERR_OK(status)) {
 			DEBUG(10,("failed to get gpo: %s\n",
 				gp_link->link_names[i]));
+			if ((status.error_type == ENUM_ADS_ERROR_LDAP) &&
+			    (status.err.rc == LDAP_NO_SUCH_ATTRIBUTE)) {
+				DEBUG(10,("skipping empty gpo: %s\n",
+					gp_link->link_names[i]));
+				talloc_free(new_gpo);
+				continue;
+			}
 			return status;
 		}
 
