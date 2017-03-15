@@ -521,7 +521,10 @@ static void dbwrap_watched_parse_record_parser(TDB_DATA key, TDB_DATA data,
 
 	num_watchers = dbwrap_watched_parse(data, NULL, 0, &state->deleted,
 					    &userdata);
-	if ((num_watchers == -1) || state->deleted) {
+	if (num_watchers == -1) {
+		state->deleted = true;
+	}
+	if (state->deleted) {
 		return;
 	}
 	state->parser(key, userdata, state->private_data);
