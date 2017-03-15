@@ -394,14 +394,31 @@ sub setup_admember($$$$)
 	$substitution_path = "$share_dir/D_SAMBADOMAIN/U_alice/G_domain users";
 	push(@dirs, $substitution_path);
 
+	# Using '/' as the winbind separator is a bad idea ...
+	$substitution_path = "$share_dir/D_SAMBADOMAIN/u_SAMBADOMAIN";
+	push(@dirs, $substitution_path);
+
+	$substitution_path = "$share_dir/D_SAMBADOMAIN/u_SAMBADOMAIN/alice";
+	push(@dirs, $substitution_path);
+
+	$substitution_path = "$share_dir/D_SAMBADOMAIN/u_SAMBADOMAIN/alice/g_SAMBADOMAIN";
+	push(@dirs, $substitution_path);
+
+	$substitution_path = "$share_dir/D_SAMBADOMAIN/u_SAMBADOMAIN/alice/g_SAMBADOMAIN/domain users";
+	push(@dirs, $substitution_path);
+
 	my $member_options = "
 	security = ads
         workgroup = $dcvars->{DOMAIN}
         realm = $dcvars->{REALM}
         netbios aliases = foo bar
 
-[subDUG]
+[sub_dug]
 	path = $share_dir/D_%D/U_%U/G_%G
+	writeable = yes
+
+[sub_dug2]
+	path = $share_dir/D_%D/u_%u/g_%g
 	writeable = yes
 
 ";
