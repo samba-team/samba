@@ -374,7 +374,7 @@ static void auth_check_password_async_trigger(struct tevent_context *ev,
 		status = method->ops->want_check(method, req, state->user_info);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
 			DEBUG(11,("auth_check_password_send: "
-				  "%s had nothing to say\n",
+				  "%s doesn't want to check\n",
 				  method->ops->name));
 			continue;
 		}
@@ -387,10 +387,15 @@ static void auth_check_password_async_trigger(struct tevent_context *ev,
 						     state,
 						     state->user_info,
 						     &state->user_info_dc);
-		if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
-			/* the backend has handled the request */
-			break;
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
+			DEBUG(11,("auth_check_password_send: "
+				  "%s passes to the next method\n",
+				  method->ops->name));
+			continue;
 		}
+
+		/* the backend has handled the request */
+		break;
 	}
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
