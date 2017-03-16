@@ -1580,6 +1580,12 @@ static NTSTATUS _netr_LogonSamLogon_base(struct pipes_struct *p,
 					      r->in.logon_level,
 					      logon);
 
+	status = make_auth_context_subsystem(talloc_tos(),
+					     &auth_context);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
 	switch (r->in.logon_level) {
 	case NetlogonNetworkInformation:
 	case NetlogonNetworkTransitiveInformation:
@@ -1587,12 +1593,6 @@ static NTSTATUS _netr_LogonSamLogon_base(struct pipes_struct *p,
 		const char *wksname = nt_workstation;
 		const char *workgroup = lp_workgroup();
 		bool ok;
-
-		status = make_auth_context_subsystem(talloc_tos(),
-						     &auth_context);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
 
 		ok = auth3_context_set_challenge(
 			auth_context, logon->network->challenge, "fixed");
@@ -1658,11 +1658,6 @@ static NTSTATUS _netr_LogonSamLogon_base(struct pipes_struct *p,
 		DEBUG(100,("decrypt of nt owf password:"));
 		dump_data(100, logon->password->ntpassword.hash, 16);
 #endif
-		status = make_auth_context_subsystem(talloc_tos(),
-						     &auth_context);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
 
 		auth_get_ntlm_challenge(auth_context, chal);
 
