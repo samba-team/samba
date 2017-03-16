@@ -125,9 +125,73 @@ static NTSTATUS auth_init_sam(struct auth_context *auth_context, const char *par
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS auth_sam_netlogon3_auth(const struct auth_context *auth_context,
+					void *my_private_data,
+					TALLOC_CTX *mem_ctx,
+					const struct auth_usersupplied_info *user_info,
+					struct auth_serversupplied_info **server_info)
+{
+	bool is_my_domain;
+
+	if (!user_info || !auth_context) {
+		return NT_STATUS_LOGON_FAILURE;
+	}
+
+	DBG_DEBUG("Check auth for: [%s]\\[%s]\n",
+		  user_info->mapped.domain_name,
+		  user_info->mapped.account_name);
+
+	/* check whether or not we service this domain/workgroup name */
+
+	switch (lp_server_role()) {
+	case ROLE_DOMAIN_PDC:
+	case ROLE_DOMAIN_BDC:
+		break;
+	default:
+		DBG_ERR("Invalid server role\n");
+		return NT_STATUS_INVALID_SERVER_STATE;
+	}
+
+	is_my_domain = strequal(user_info->mapped.domain_name, lp_workgroup());
+	if (!is_my_domain) {
+		DBG_INFO("%s is not our domain name (DC for %s)\n",
+			 user_info->mapped.domain_name, lp_workgroup());
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
+	return check_sam_security(&auth_context->challenge, mem_ctx,
+				  user_info, server_info);
+}
+
+/* module initialisation */
+static NTSTATUS auth_init_sam_netlogon3(struct auth_context *auth_context,
+					const char *param, auth_methods **auth_method)
+{
+	struct auth_methods *result;
+
+	if (lp_server_role() == ROLE_ACTIVE_DIRECTORY_DC
+	    && !lp_parm_bool(-1, "server role check", "inhibit", false)) {
+		DEBUG(0, ("server role = 'active directory domain controller' "
+			  "not compatible with running the auth_sam module.\n"));
+		DEBUGADD(0, ("You should not set 'auth methods' when "
+			     "running the AD DC.\n"));
+		exit(1);
+	}
+
+	result = talloc_zero(auth_context, struct auth_methods);
+	if (result == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	result->auth = auth_sam_netlogon3_auth;
+	result->name = "sam_netlogon3";
+	*auth_method = result;
+	return NT_STATUS_OK;
+}
+
 NTSTATUS auth_sam_init(void)
 {
 	smb_register_auth(AUTH_INTERFACE_VERSION, "sam", auth_init_sam);
 	smb_register_auth(AUTH_INTERFACE_VERSION, "sam_ignoredomain", auth_init_sam_ignoredomain);
+	smb_register_auth(AUTH_INTERFACE_VERSION, "sam_netlogon3", auth_init_sam_netlogon3);
 	return NT_STATUS_OK;
 }
