@@ -66,31 +66,6 @@ template_creds.set_workstation(global_creds.get_workstation())
 template_creds.set_gensec_features(global_creds.get_gensec_features())
 template_creds.set_kerberos_state(global_creds.get_kerberos_state())
 
-def insta_creds(template=template_creds, username=None, userpass=None, kerberos_state=None):
-    if username is not None:
-        assert userpass is not None
-
-    if username is None:
-        assert userpass is None
-
-        username = template.get_username()
-        userpass = template.get_password()
-
-    if kerberos_state is None:
-        kerberos_state = template.get_kerberos_state()
-
-    # get a copy of the global creds or a the passed in creds
-    c = Credentials()
-    c.set_username(username)
-    c.set_password(userpass)
-    c.set_domain(template.get_domain())
-    c.set_realm(template.get_realm())
-    c.set_workstation(template.get_workstation())
-    c.set_gensec_features(c.get_gensec_features()
-                          | gensec.FEATURE_SEAL)
-    c.set_kerberos_state(kerberos_state)
-    return c
-
 #
 # Tests start here
 #
@@ -582,22 +557,26 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
         self.samr_domain = self.samr.OpenDomain(self.samr_handle, security.SEC_FLAG_MAXIMUM_ALLOWED, self.domain_sid)
 
         # (Re)adds the test user accounts
-        self.lockout1krb5_creds = insta_creds(username="lockout1krb5",
-                                              userpass="thatsAcomplPASS0",
-                                              kerberos_state=MUST_USE_KERBEROS)
+        self.lockout1krb5_creds = self.insta_creds(template_creds,
+                                                   username="lockout1krb5",
+                                                   userpass="thatsAcomplPASS0",
+                                                   kerberos_state=MUST_USE_KERBEROS)
         self.lockout1krb5_ldb = self._readd_user(self.lockout1krb5_creds)
-        self.lockout2krb5_creds = insta_creds(username="lockout2krb5",
-                                              userpass="thatsAcomplPASS0",
-                                              kerberos_state=MUST_USE_KERBEROS)
+        self.lockout2krb5_creds = self.insta_creds(template_creds,
+                                                   username="lockout2krb5",
+                                                   userpass="thatsAcomplPASS0",
+                                                   kerberos_state=MUST_USE_KERBEROS)
         self.lockout2krb5_ldb = self._readd_user(self.lockout2krb5_creds,
                                         lockOutObservationWindow=self.lockout_observation_window)
-        self.lockout1ntlm_creds = insta_creds(username="lockout1ntlm",
-                                              userpass="thatsAcomplPASS0",
-                                              kerberos_state=DONT_USE_KERBEROS)
+        self.lockout1ntlm_creds = self.insta_creds(template_creds,
+                                                   username="lockout1ntlm",
+                                                   userpass="thatsAcomplPASS0",
+                                                   kerberos_state=DONT_USE_KERBEROS)
         self.lockout1ntlm_ldb = self._readd_user(self.lockout1ntlm_creds)
-        self.lockout2ntlm_creds = insta_creds(username="lockout2ntlm",
-                                              userpass="thatsAcomplPASS0",
-                                              kerberos_state=DONT_USE_KERBEROS)
+        self.lockout2ntlm_creds = self.insta_creds(template_creds,
+                                                   username="lockout2ntlm",
+                                                   userpass="thatsAcomplPASS0",
+                                                   kerberos_state=DONT_USE_KERBEROS)
         self.lockout2ntlm_ldb = self._readd_user(self.lockout2ntlm_creds,
                                         lockOutObservationWindow=self.lockout_observation_window)
 
@@ -1499,7 +1478,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
         # Open a second LDB connection with the user credentials. Use the
         # command line credentials for informations like the domain, the realm
         # and the workstation.
-        creds_lockout = insta_creds(creds)
+        creds_lockout = self.insta_creds(creds)
 
         # The wrong password
         creds_lockout.set_password("thatsAcomplPASS1x")
@@ -1679,7 +1658,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
 
         creds_lockout.set_password(userpass)
 
-        creds_lockout2 = insta_creds(creds_lockout)
+        creds_lockout2 = self.insta_creds(creds_lockout)
 
         ldb_lockout = SamDB(url=host_url, credentials=creds_lockout2, lp=lp)
         time.sleep(3)
@@ -1816,7 +1795,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
             logoncount_relation = 'equal'
             lastlogon_relation = 'equal'
 
-        SamDB(url=host_url, credentials=insta_creds(creds), lp=lp)
+        SamDB(url=host_url, credentials=self.insta_creds(creds), lp=lp)
 
         res = self._check_account(userdn,
                                   badPwdCount=0,
@@ -1837,7 +1816,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
         self.assertGreaterEqual(lastLogon, lastLogonTimestamp)
 
         time.sleep(1)
-        SamDB(url=host_url, credentials=insta_creds(creds), lp=lp)
+        SamDB(url=host_url, credentials=self.insta_creds(creds), lp=lp)
 
         res = self._check_account(userdn,
                                   badPwdCount=0,
@@ -1856,7 +1835,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
 
         time.sleep(1)
 
-        SamDB(url=host_url, credentials=insta_creds(creds), lp=lp)
+        SamDB(url=host_url, credentials=self.insta_creds(creds), lp=lp)
 
         res = self._check_account(userdn,
                                   badPwdCount=0,

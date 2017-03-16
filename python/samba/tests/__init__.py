@@ -24,6 +24,7 @@ import samba
 from samba import param
 from samba import credentials
 from samba.credentials import Credentials
+from samba import gensec
 import socket
 import struct
 import subprocess
@@ -80,6 +81,36 @@ class TestCase(unittest.TestCase):
             result += "[%04X] %-*s  %-*s  %s %s\n" % (N, 8*3, hl, 8*3, hr, ll, lr)
             N += 16
         return result
+
+    def insta_creds(self, template=None, username=None, userpass=None, kerberos_state=None):
+
+        if template is None:
+            assert template is not None
+
+        if username is not None:
+            assert userpass is not None
+
+        if username is None:
+            assert userpass is None
+
+            username = template.get_username()
+            userpass = template.get_password()
+
+        if kerberos_state is None:
+            kerberos_state = template.get_kerberos_state()
+
+        # get a copy of the global creds or a the passed in creds
+        c = Credentials()
+        c.set_username(username)
+        c.set_password(userpass)
+        c.set_domain(template.get_domain())
+        c.set_realm(template.get_realm())
+        c.set_workstation(template.get_workstation())
+        c.set_gensec_features(c.get_gensec_features())
+        c.set_kerberos_state(kerberos_state)
+        return c
+
+
 
     # These functions didn't exist before Python2.7:
     if sys.version_info < (2, 7):
