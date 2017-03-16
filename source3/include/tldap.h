@@ -47,9 +47,15 @@ struct tldap_mod {
 	DATA_BLOB *values;
 };
 
+#if defined(HAVE_IMMEDIATE_STRUCTURES)
 typedef struct { uint8_t rc; } TLDAPRC;
 #define TLDAP_RC(x) ((TLDAPRC){.rc = x})
 #define TLDAP_RC_V(x) ((x).rc)
+#else
+typedef uint8_t TLDAPRC;
+#define TLDAP_RC(x) (x)
+#define TLDAP_RC_V(x) (x)
+#endif
 
 #define TLDAP_RC_EQUAL(x,y) (TLDAP_RC_V(x)==TLDAP_RC_V(y))
 #define TLDAP_RC_IS_SUCCESS(x) TLDAP_RC_EQUAL(x,TLDAP_SUCCESS)
