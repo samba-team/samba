@@ -162,8 +162,8 @@ static struct winbind_cache *get_cache(struct winbindd_domain *domain)
 	   --jerry
 	 */
 
-	if (domain->backend == NULL) {
 #ifdef HAVE_ADS
+	if (domain->backend == NULL) {
 		struct winbindd_domain *our_domain = domain;
 
 		/* find our domain first so we can figure out if we 
@@ -177,13 +177,13 @@ static struct winbind_cache *get_cache(struct winbindd_domain *domain)
 		    && !lp_winbind_rpc_only()) {
 			DEBUG(5,("get_cache: Setting ADS methods for domain %s\n", domain->name));
 			domain->backend = &reconnect_ads_methods;
-		} else {
-#endif	/* HAVE_ADS */
-			DEBUG(5,("get_cache: Setting MS-RPC methods for domain %s\n", domain->name));
-			domain->backend = &reconnect_methods;
-#ifdef HAVE_ADS
 		}
+	}
 #endif	/* HAVE_ADS */
+
+	if (domain->backend == NULL) {
+		DEBUG(5,("get_cache: Setting MS-RPC methods for domain %s\n", domain->name));
+		domain->backend = &reconnect_methods;
 	}
 
 	if (ret)
