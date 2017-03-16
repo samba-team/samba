@@ -910,32 +910,45 @@ struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 }
 
 static NTSTATUS rpc_pipe_open_external(TALLOC_CTX *mem_ctx,
-				const char *pipe_name,
-				const struct ndr_interface_table *table,
-				const struct auth_session_info *session_info,
-				struct rpc_pipe_client **_result)
+				       const char *pipe_name,
+				       const struct ndr_interface_table *table,
+				       const struct auth_session_info *session_info,
+				       const struct tsocket_address *remote_client_address,
+				       const struct tsocket_address *local_server_address,
+				       struct rpc_pipe_client **_result)
 {
-	struct tsocket_address *local, *remote;
 	struct rpc_pipe_client *result = NULL;
 	struct np_proxy_state *proxy_state = NULL;
 	struct pipe_auth_data *auth;
+	struct tsocket_address *remote_client_addr;
+	struct tsocket_address *local_server_addr;
 	NTSTATUS status;
 	int ret;
 
-	/* this is an internal connection, fake up ip addresses */
-	ret = tsocket_address_inet_from_strings(talloc_tos(), "ip",
-						NULL, 0, &local);
-	if (ret) {
-		return NT_STATUS_NO_MEMORY;
+	if (local_server_address == NULL) {
+		/* this is an internal connection, fake up ip addresses */
+		ret = tsocket_address_inet_from_strings(talloc_tos(), "ip",
+							NULL, 0, &local_server_addr);
+		if (ret) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		local_server_address = local_server_addr;
 	}
-	ret = tsocket_address_inet_from_strings(talloc_tos(), "ip",
-						NULL, 0, &remote);
-	if (ret) {
-		return NT_STATUS_NO_MEMORY;
+
+	if (remote_client_address == NULL) {
+		/* this is an internal connection, fake up ip addresses */
+		ret = tsocket_address_inet_from_strings(talloc_tos(), "ip",
+							NULL, 0, &remote_client_addr);
+		if (ret) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		remote_client_address = remote_client_addr;
 	}
 
 	proxy_state = make_external_rpc_pipe_p(mem_ctx, pipe_name,
-						local, remote, session_info);
+					       local_server_address,
+					       remote_client_address,
+					       session_info);
 	if (!proxy_state) {
 		DEBUG(1, ("Unable to make proxy_state for connection to %s.\n", pipe_name));
 		return NT_STATUS_UNSUCCESSFUL;
@@ -1098,6 +1111,7 @@ NTSTATUS rpc_pipe_open_interface(TALLOC_CTX *mem_ctx,
 		status = rpc_pipe_open_external(tmp_ctx,
 						pipe_name, table,
 						session_info,
+						remote_address, local_address,
 						&cli);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto done;
