@@ -162,7 +162,7 @@ static struct winbind_cache *get_cache(struct winbindd_domain *domain)
 	   --jerry
 	 */
 
-	if (!domain->backend) {
+	if (domain->backend == NULL) {
 #ifdef HAVE_ADS
 		struct winbindd_domain *our_domain = domain;
 
