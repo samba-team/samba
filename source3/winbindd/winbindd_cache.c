@@ -175,14 +175,15 @@ static struct winbind_cache *get_cache(struct winbindd_domain *domain)
 		if ((our_domain->active_directory || IS_DC)
 		    && domain->active_directory
 		    && !lp_winbind_rpc_only()) {
-			DEBUG(5,("get_cache: Setting ADS methods for domain %s\n", domain->name));
+			DBG_INFO("Setting ADS methods for domain %s\n",
+				 domain->name);
 			domain->backend = &reconnect_ads_methods;
 		}
 	}
 #endif	/* HAVE_ADS */
 
 	if (domain->backend == NULL) {
-		DEBUG(5,("get_cache: Setting MS-RPC methods for domain %s\n", domain->name));
+		DBG_INFO("Setting MS-RPC methods for domain %s\n", domain->name);
 		domain->backend = &reconnect_methods;
 	}
 
