@@ -145,17 +145,17 @@ static struct winbind_cache *get_cache(struct winbindd_domain *domain)
 		init_dc_connection(domain, false);
 	}
 
-	/* 
+	/*
 	   OK.  Listen up because I'm only going to say this once.
 	   We have the following scenarios to consider
 	   (a) trusted AD domains on a Samba DC,
 	   (b) trusted AD domains and we are joined to a non-kerberos domain
 	   (c) trusted AD domains and we are joined to a kerberos (AD) domain
 
-	   For (a) we can always contact the trusted domain using krb5 
+	   For (a) we can always contact the trusted domain using krb5
 	   since we have the domain trust account password
 
-	   For (b) we can only use RPC since we have no way of 
+	   For (b) we can only use RPC since we have no way of
 	   getting a krb5 ticket in our own domain
 
 	   For (c) we can always use krb5 since we have a kerberos trust
@@ -167,7 +167,7 @@ static struct winbind_cache *get_cache(struct winbindd_domain *domain)
 	if (domain->backend == NULL) {
 		struct winbindd_domain *our_domain = domain;
 
-		/* find our domain first so we can figure out if we 
+		/* find our domain first so we can figure out if we
 		   are joined to a kerberized domain */
 
 		if (!domain->primary) {
