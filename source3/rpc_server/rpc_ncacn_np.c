@@ -658,8 +658,8 @@ NTSTATUS rpc_pipe_open_internal(TALLOC_CTX *mem_ctx,
 
 NTSTATUS make_external_rpc_pipe(TALLOC_CTX *mem_ctx,
 				const char *pipe_name,
-				const struct tsocket_address *local_address,
-				const struct tsocket_address *remote_address,
+				const struct tsocket_address *remote_client_address,
+				const struct tsocket_address *local_server_address,
 				const struct auth_session_info *session_info,
 				struct npa_state **pnpa)
 {
@@ -726,9 +726,9 @@ NTSTATUS make_external_rpc_pipe(TALLOC_CTX *mem_ctx,
 					  ev_ctx,
 					  socket_np_dir,
 					  pipe_name,
-					  remote_address, /* client_addr */
+					  remote_client_address,
 					  NULL, /* client_name */
-					  local_address, /* server_addr */
+					  local_server_address,
 					  NULL, /* server_name */
 					  session_info_t);
 	if (subreq == NULL) {
@@ -790,8 +790,8 @@ out:
 
 struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 				const char *pipe_name,
-				const struct tsocket_address *local_address,
-				const struct tsocket_address *remote_address,
+				const struct tsocket_address *remote_client_address,
+				const struct tsocket_address *local_server_address,
 				const struct auth_session_info *session_info)
 {
 	struct np_proxy_state *result;
@@ -858,9 +858,9 @@ struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 	subreq = tstream_npa_connect_send(talloc_tos(), ev,
 					  socket_np_dir,
 					  pipe_name,
-					  remote_address, /* client_addr */
+					  remote_client_address,
 					  NULL, /* client_name */
-					  local_address, /* server_addr */
+					  local_server_address,
 					  NULL, /* server_name */
 					  session_info_t);
 	if (subreq == NULL) {
@@ -946,8 +946,8 @@ static NTSTATUS rpc_pipe_open_external(TALLOC_CTX *mem_ctx,
 	}
 
 	proxy_state = make_external_rpc_pipe_p(mem_ctx, pipe_name,
-					       local_server_address,
 					       remote_client_address,
+					       local_server_address,
 					       session_info);
 	if (!proxy_state) {
 		DEBUG(1, ("Unable to make proxy_state for connection to %s.\n", pipe_name));

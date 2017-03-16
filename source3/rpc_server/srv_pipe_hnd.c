@@ -84,8 +84,8 @@ NTSTATUS np_open(TALLOC_CTX *mem_ctx, const char *name,
 	case RPC_SERVICE_MODE_EXTERNAL:
 		status = make_external_rpc_pipe(handle,
 						name,
-						local_address,
 						remote_address,
+						local_address,
 						session_info,
 						&npa);
 		if (!NT_STATUS_IS_OK(status)) {
