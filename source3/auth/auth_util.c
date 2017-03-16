@@ -134,9 +134,11 @@ NTSTATUS make_user_info_map(TALLOC_CTX *mem_ctx,
 	 * non-domain member box will also map to WORKSTATION\user.
 	 * This also deals with the client passing in a "" domain */
 
-	if (!upn_form && !is_trusted_domain(domain) &&
+	if (!upn_form &&
 	    !strequal(domain, my_sam_name()) &&
-	    !strequal(domain, get_global_sam_name())) {
+	    !strequal(domain, get_global_sam_name()) &&
+	    !is_trusted_domain(domain))
+	{
 		if (lp_map_untrusted_to_domain())
 			domain = my_sam_name();
 		else
