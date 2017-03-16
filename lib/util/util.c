@@ -924,7 +924,7 @@ _PUBLIC_ _PURE_ DATA_BLOB strhex_to_data_blob(TALLOC_CTX *mem_ctx, const char *s
  */
 _PUBLIC_ _PURE_ DATA_BLOB hexdump_to_data_blob(TALLOC_CTX *mem_ctx, const char *hexdump, size_t hexdump_len)
 {
-	DATA_BLOB ret_blob = {'\0'};
+	DATA_BLOB ret_blob = { 0 };
 	size_t i = 0;
 	size_t char_count = 0;
 	/* hexdump line length is 77 chars long. We then use the ASCII representation of the bytes
