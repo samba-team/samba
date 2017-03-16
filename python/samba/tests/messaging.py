@@ -25,6 +25,7 @@ import time
 from samba.ndr import ndr_print
 from samba.dcerpc import server_id
 import random
+import os
 
 class MessagingTests(TestCase):
 
@@ -95,6 +96,47 @@ class MessagingTests(TestCase):
         client_ctx.send((0, 1), msg_ping, "testing")
 
         client_ctx.send((0, 1), msg_ping, "testing2")
+
+        start_time = time.time()
+
+        # NOTE WELL: If debugging this with GDB, then the timeout will
+        # fire while you are trying to understand it.
+
+        while (got_ping["count"] < 2 or got_pong["count"] < 2) and not timeout:
+            client_ctx.loop_once(0.1)
+            server_ctx.loop_once(0.1)
+            if time.time() - start_time > 1:
+                timeout = True
+
+        self.assertEqual(got_ping["count"], 2)
+        self.assertEqual(got_pong["count"], 2)
+
+    def test_pid_defaulting(self):
+        got_ping = {"count": 0}
+        got_pong = {"count": 0}
+        timeout = False
+
+        msg_pong = 0
+        msg_ping = 0
+
+        pid = os.getpid()
+        server_ctx = self.get_context((pid, 1))
+        def ping_callback(got_ping, msg_type, src, data):
+            got_ping["count"] += 1
+            server_ctx.send(src, msg_pong, data)
+
+        msg_ping = server_ctx.register((ping_callback, got_ping))
+
+        def pong_callback(got_pong, msg_type, src, data):
+            got_pong["count"] += 1
+
+        client_ctx = self.get_context((2,))
+        msg_pong = client_ctx.register((pong_callback, got_pong))
+
+        # Try one and two element tuple forms
+        client_ctx.send((pid, 1), msg_ping, "testing")
+
+        client_ctx.send((1,), msg_ping, "testing2")
 
         start_time = time.time()
 

@@ -62,10 +62,17 @@ static bool server_id_from_py(PyObject *object, struct server_id *server_id)
 		server_id->task_id = task_id;
 		server_id->vnn = vnn;
 		return true;
-	} else {
+	} else if (PyTuple_Size(object) == 2) {
 		unsigned long long pid;
 		int task_id;
 		if (!PyArg_ParseTuple(object, "KI", &pid, &task_id))
+			return false;
+		*server_id = cluster_id(pid, task_id);
+		return true;
+	} else {
+		unsigned long long pid = getpid();
+		int task_id;
+		if (!PyArg_ParseTuple(object, "I", &task_id))
 			return false;
 		*server_id = cluster_id(pid, task_id);
 		return true;
