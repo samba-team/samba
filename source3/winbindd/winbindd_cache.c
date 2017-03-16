@@ -135,11 +135,12 @@ static struct winbind_cache *get_cache(struct winbindd_domain *domain)
 	}
 
 	if (strequal(domain->name, get_global_sam_name()) &&
-	    sid_check_is_our_sam(&domain->sid)) {
+	    sid_check_is_our_sam(&domain->sid))
+	{
 		domain->backend = &sam_passdb_methods;
 	}
 
-	if ( !domain->initialized ) {
+	if (!domain->initialized) {
 		/* We do not need a connection to an RW DC for cache operation */
 		init_dc_connection(domain, false);
 	}
@@ -169,12 +170,14 @@ static struct winbind_cache *get_cache(struct winbindd_domain *domain)
 		/* find our domain first so we can figure out if we 
 		   are joined to a kerberized domain */
 
-		if ( !domain->primary )
+		if (!domain->primary) {
 			our_domain = find_our_domain();
+		}
 
 		if ((our_domain->active_directory || IS_DC)
 		    && domain->active_directory
-		    && !lp_winbind_rpc_only()) {
+		    && !lp_winbind_rpc_only())
+		{
 			DBG_INFO("Setting ADS methods for domain %s\n",
 				 domain->name);
 			domain->backend = &reconnect_ads_methods;
@@ -187,8 +190,9 @@ static struct winbind_cache *get_cache(struct winbindd_domain *domain)
 		domain->backend = &reconnect_methods;
 	}
 
-	if (ret)
+	if (ret != NULL) {
 		return ret;
+	}
 
 	ret = SMB_XMALLOC_P(struct winbind_cache);
 	ZERO_STRUCTP(ret);
