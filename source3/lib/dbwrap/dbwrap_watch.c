@@ -278,7 +278,7 @@ static struct db_record *dbwrap_watched_fetch_locked(
 	num_watchers = dbwrap_watched_parse(subrec_value, NULL, 0, NULL, NULL);
 	if (num_watchers == -1) {
 		/* Fresh or invalid record */
-		rec->value = (TDB_DATA) {};
+		rec->value = (TDB_DATA) { 0 };
 		return rec;
 	}
 
