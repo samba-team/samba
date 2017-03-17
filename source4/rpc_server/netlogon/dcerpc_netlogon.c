@@ -868,11 +868,10 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 	case NetlogonInteractiveTransitiveInformation:
 	case NetlogonServiceTransitiveInformation:
 
-		/* TODO: we need to deny anonymous access here */
-		nt_status = auth_context_create(mem_ctx,
-						dce_call->event_ctx, dce_call->msg_ctx,
-						dce_call->conn->dce_ctx->lp_ctx,
-						&auth_context);
+		nt_status = auth_context_create_for_netlogon(mem_ctx,
+					dce_call->event_ctx, dce_call->msg_ctx,
+					dce_call->conn->dce_ctx->lp_ctx,
+					&auth_context);
 		NT_STATUS_NOT_OK_RETURN(nt_status);
 
 		user_info->logon_parameters = r->in.logon->password->identity_info.parameter_control;
@@ -895,11 +894,10 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 	case NetlogonNetworkInformation:
 	case NetlogonNetworkTransitiveInformation:
 
-		/* TODO: we need to deny anonymous access here */
-		nt_status = auth_context_create(mem_ctx,
-						dce_call->event_ctx, dce_call->msg_ctx,
-						dce_call->conn->dce_ctx->lp_ctx,
-						&auth_context);
+		nt_status = auth_context_create_for_netlogon(mem_ctx,
+					dce_call->event_ctx, dce_call->msg_ctx,
+					dce_call->conn->dce_ctx->lp_ctx,
+					&auth_context);
 		NT_STATUS_NOT_OK_RETURN(nt_status);
 
 		nt_status = auth_context_set_challenge(auth_context, r->in.logon->network->challenge, "netr_LogonSamLogonWithFlags");
