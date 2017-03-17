@@ -619,7 +619,7 @@ const char **auth_methods_from_lp(TALLOC_CTX *mem_ctx, struct loadparm_context *
 	case ROLE_DOMAIN_BDC:
 	case ROLE_DOMAIN_PDC:
 	case ROLE_ACTIVE_DIRECTORY_DC:
-		auth_methods = str_list_make(mem_ctx, "anonymous sam_ignoredomain winbind", NULL);
+		auth_methods = str_list_make(mem_ctx, "anonymous sam_ignoredomain winbind_rodc", NULL);
 		break;
 	}
 	return discard_const_p(const char *, auth_methods);
