@@ -1,5 +1,79 @@
-Release Announcements
-=====================
+                   =============================
+                   Release Notes for Samba 4.6.1
+                           March 23, 2017
+                   =============================
+
+
+This is a security release in order to address the following defect:
+
+o  CVE-2017-2619 (Symlink race allows access outside share definition)
+
+=======
+Details
+=======
+
+o  CVE-2017-2619:
+   All versions of Samba prior to 4.6.1, 4.5.7, 4.4.11 are vulnerable to
+   a malicious client using a symlink race to allow access to areas of
+   the server file system not exported under the share definition.
+
+   Samba uses the realpath() system call to ensure when a client requests
+   access to a pathname that it is under the exported share path on the
+   server file system.
+
+   Clients that have write access to the exported part of the file system
+   via SMB1 unix extensions or NFS to create symlinks can race the server
+   by renaming a realpath() checked path and then creating a symlink. If
+   the client wins the race it can cause the server to access the new
+   symlink target after the exported share path check has been done. This
+   new symlink target can point to anywhere on the server file system.
+
+   This is a difficult race to win, but theoretically possible. Note that
+   the proof of concept code supplied wins the race reliably only when
+   the server is slowed down using the strace utility running on the
+   server. Exploitation of this bug has not been seen in the wild.
+
+
+Changes since 4.6.0:
+--------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 12496: CVE-2017-2619: Symlink race permits opening files outside share
+     directory.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 12496: CVE-2017-2619: Symlink race permits opening files outside share
+     directory.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+		   ==============================
+                   Release Notes for Samba 4.6.0
+                           March 7, 2017
+                   ==============================
+
 
 This is the first stable release of Samba 4.6.
 Please read the release notes carefully before upgrading.
