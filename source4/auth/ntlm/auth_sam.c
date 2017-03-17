@@ -580,6 +580,7 @@ static NTSTATUS authsam_check_password_internals(struct auth_method_context *ctx
 	struct ldb_dn *domain_dn;
 	DATA_BLOB user_sess_key, lm_sess_key;
 	TALLOC_CTX *tmp_ctx;
+	const char *p = NULL;
 
 	if (ctx->auth_ctx->sam_ctx == NULL) {
 		DEBUG(0, ("No SAM available, cannot log in users\n"));
@@ -600,6 +601,43 @@ static NTSTATUS authsam_check_password_internals(struct auth_method_context *ctx
 	if (domain_dn == NULL) {
 		talloc_free(tmp_ctx);
 		return NT_STATUS_NO_SUCH_DOMAIN;
+	}
+
+	p = strchr_m(account_name, '@');
+	if (p != NULL) {
+		const char *nt4_domain = NULL;
+		const char *nt4_account = NULL;
+		bool is_my_domain = false;
+
+		nt_status = crack_name_to_nt4_name(mem_ctx,
+						   ctx->auth_ctx->event_ctx,
+						   ctx->auth_ctx->lp_ctx,
+						   /*
+						    * DRSUAPI_DS_NAME_FORMAT_UPN_FOR_LOGON ?
+						    */
+						   DRSUAPI_DS_NAME_FORMAT_USER_PRINCIPAL,
+						   account_name,
+						   &nt4_domain, &nt4_account);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			talloc_free(tmp_ctx);
+			return NT_STATUS_NO_SUCH_USER;
+		}
+
+		is_my_domain = lpcfg_is_mydomain(ctx->auth_ctx->lp_ctx, nt4_domain);
+		if (!is_my_domain) {
+			/*
+			 * This is a user within our forest,
+			 * but in a different domain,
+			 * we're not authoritative
+			 */
+			talloc_free(tmp_ctx);
+			return NT_STATUS_NOT_IMPLEMENTED;
+		}
+
+		/*
+		 * Let's use the NT4 account name for the lookup.
+		 */
+		account_name = nt4_account;
 	}
 
 	nt_status = authsam_search_account(tmp_ctx, ctx->auth_ctx->sam_ctx, account_name, domain_dn, &msg);
