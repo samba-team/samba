@@ -269,7 +269,8 @@ static bool test_auth(TALLOC_CTX *mem_ctx, struct samu *pdb_entry)
 	struct auth_serversupplied_info *server_info;
 	NTSTATUS status;
 	bool ok;
-	
+	uint8_t authoritative = 0;
+
 	SMBOWFencrypt(pdb_get_nt_passwd(pdb_entry), challenge_8,
 		      local_nt_response);
 	SMBsesskeygen_ntv1(pdb_get_nt_passwd(pdb_entry), local_nt_session_key);
@@ -316,10 +317,13 @@ static bool test_auth(TALLOC_CTX *mem_ctx, struct samu *pdb_entry)
 	status = auth_check_ntlm_password(mem_ctx,
 					  auth_context,
 					  user_info,
-					  &server_info);
+					  &server_info,
+					  &authoritative);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed to test authentication with auth module: %s\n", nt_errstr(status)));
+		DEBUG(0, ("Failed to test authentication with auth module: "
+			  "%s authoritative[%u].\n",
+			  nt_errstr(status), authoritative));
 		return False;
 	}
 	

@@ -1682,7 +1682,8 @@ static NTSTATUS _netr_LogonSamLogon_base(struct pipes_struct *p,
 		status = auth_check_ntlm_password(p->mem_ctx,
 						  auth_context,
 						  user_info,
-						  &server_info);
+						  &server_info,
+						  r->out.authoritative);
 	}
 
 	TALLOC_FREE(auth_context);
@@ -1694,15 +1695,6 @@ static NTSTATUS _netr_LogonSamLogon_base(struct pipes_struct *p,
 	/* Check account and password */
 
 	if (!NT_STATUS_IS_OK(status)) {
-		/* If we don't know what this domain is, we need to
-		   indicate that we are not authoritative.  This
-		   allows the client to decide if it needs to try
-		   a local user.  Fix by jpjanosi@us.ibm.com, #2976 */
-                if ( NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_USER)
-		     && !strequal(nt_domain, get_global_sam_name())
-		     && !is_trusted_domain(nt_domain) )
-			*r->out.authoritative = false; /* We are not authoritative */
-
 		TALLOC_FREE(server_info);
 		return status;
 	}

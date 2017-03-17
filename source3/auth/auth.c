@@ -153,22 +153,25 @@ static bool check_domain_match(const char *user, const char *domain)
  *                  filled in, either at creation or by calling the challenge geneation 
  *                  function auth_get_challenge().  
  *
- * @param server_info If successful, contains information about the authentication, 
- *                    including a struct samu struct describing the user.
+ * @param pserver_info If successful, contains information about the authentication,
+ *                     including a struct samu struct describing the user.
+ *
+ * @param pauthoritative Indicates if the result should be treated as final
+ *                       result.
  *
  * @return An NTSTATUS with NT_STATUS_OK or an appropriate error.
  *
  **/
-
 NTSTATUS auth_check_ntlm_password(TALLOC_CTX *mem_ctx,
 				  const struct auth_context *auth_context,
 				  const struct auth_usersupplied_info *user_info,
-				  struct auth_serversupplied_info **pserver_info)
+				  struct auth_serversupplied_info **pserver_info,
+				  uint8_t *pauthoritative)
 {
 	TALLOC_CTX *frame;
 	const char *auth_method_name = "";
 	/* if all the modules say 'not for me' this is reasonable */
-	NTSTATUS nt_status = NT_STATUS_NO_SUCH_USER;
+	NTSTATUS nt_status = NT_STATUS_NOT_IMPLEMENTED;
 	const char *unix_username;
 	auth_methods *auth_method;
 	struct auth_serversupplied_info *server_info;
@@ -178,6 +181,8 @@ NTSTATUS auth_check_ntlm_password(TALLOC_CTX *mem_ctx,
 	}
 
 	frame = talloc_stackframe();
+
+	*pauthoritative = 1;
 
 	DEBUG(3, ("check_ntlm_password:  Checking password for unmapped user [%s]\\[%s]@[%s] with the new password interface\n", 
 		  user_info->client.domain_name, user_info->client.account_name, user_info->workstation_name));
@@ -236,23 +241,18 @@ NTSTATUS auth_check_ntlm_password(TALLOC_CTX *mem_ctx,
 		DBG_DEBUG("%s had nothing to say\n", auth_method->name);
 	}
 
-	/* check if the module did anything */
-	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NOT_IMPLEMENTED) &&
-	    ((user_info->flags & USER_INFO_LOCAL_SAM_ONLY) == 0)) {
-		/*
-		 * we don't expose the NT_STATUS_NOT_IMPLEMENTED
-		 * internals, except when the caller is only probing
-		 * one method, as they may do the fallback
-		 */
+	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NOT_IMPLEMENTED)) {
+		*pauthoritative = 0;
 		nt_status = NT_STATUS_NO_SUCH_USER;
 	}
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DBG_INFO("%s authentication for user [%s] FAILED with "
-			 "error %s\n",
+			 "error %s, authoritative=%u\n",
 			 auth_method_name,
 			 user_info->client.account_name,
-			 nt_errstr(nt_status));
+			 nt_errstr(nt_status),
+			 *pauthoritative);
 		goto fail;
 	}
 
@@ -313,9 +313,10 @@ fail:
 
 	/* failed authentication; check for guest lapping */
 
-	DEBUG(2, ("check_ntlm_password:  Authentication for user [%s] -> [%s] FAILED with error %s\n",
+	DEBUG(2, ("check_ntlm_password:  Authentication for user "
+		  "[%s] -> [%s] FAILED with error %s, authoritative=%u\n",
 		  user_info->client.account_name, user_info->mapped.account_name,
-		  nt_errstr(nt_status)));
+		  nt_errstr(nt_status), *pauthoritative));
 	ZERO_STRUCTP(pserver_info);
 
 	TALLOC_FREE(frame);

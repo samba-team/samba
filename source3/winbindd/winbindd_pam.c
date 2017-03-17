@@ -1293,12 +1293,9 @@ static NTSTATUS winbindd_dual_auth_passdb(TALLOC_CTX *mem_ctx,
 	status = auth_check_ntlm_password(mem_ctx,
 					  auth_context,
 					  user_info,
-					  &server_info);
-
+					  &server_info,
+					  pauthoritative);
 	if (!NT_STATUS_IS_OK(status)) {
-		if (NT_STATUS_EQUAL(result, NT_STATUS_NOT_IMPLEMENTED)) {
-			*pauthoritative = 0;
-		}
 		TALLOC_FREE(frame);
 		return status;
 	}

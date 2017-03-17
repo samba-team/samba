@@ -78,8 +78,11 @@ NTSTATUS auth_get_ntlm_challenge(struct auth_context *auth_context,
  *                  filled in, either at creation or by calling the challenge geneation 
  *                  function auth_get_challenge().  
  *
- * @param server_info If successful, contains information about the authentication, 
- *                    including a struct samu struct describing the user.
+ * @param pserver_info If successful, contains information about the authentication,
+ *                     including a struct samu struct describing the user.
+ *
+ * @param pauthoritative Indicates if the result should be treated as final
+ *                       result.
  *
  * @return An NTSTATUS with NT_STATUS_OK or an appropriate error.
  *
@@ -87,7 +90,8 @@ NTSTATUS auth_get_ntlm_challenge(struct auth_context *auth_context,
 NTSTATUS auth_check_ntlm_password(TALLOC_CTX *mem_ctx,
 				  const struct auth_context *auth_context,
 				  const struct auth_usersupplied_info *user_info,
-				  struct auth_serversupplied_info **server_info);
+				  struct auth_serversupplied_info **pserver_info,
+				  uint8_t *pauthoritative);
 
 /* The following definitions come from auth/auth_builtin.c  */
 
