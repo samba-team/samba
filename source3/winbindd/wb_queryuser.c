@@ -329,7 +329,7 @@ static void wb_queryuser_got_group_name(struct tevent_req *subreq)
 	NTSTATUS status;
 	const char *domain_name;
 
-	status = wb_lookupsid_recv(subreq, state, &type, &domain_name,
+	status = wb_lookupsid_recv(subreq, state->info, &type, &domain_name,
 				   &state->info->primary_group_name);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
