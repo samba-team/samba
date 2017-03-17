@@ -323,8 +323,3 @@
 # rap password tests don't function in the ad_dc_ntvfs:local environment
 #
 ^samba.tests.auth_log_pass_change.samba.tests.auth_log_pass_change.AuthLogPassChangeTests.test_rap_change_password\(ad_dc_ntvfs:local\)
-^samba.tests.auth_log_pass_change.samba.tests.auth_log_pass_change.AuthLogPassChangeTests.test_admin_change_password\(
-^samba.tests.auth_log_pass_change.samba.tests.auth_log_pass_change.AuthLogPassChangeTests.test_admin_change_password_bad_original_password
-^samba.tests.auth_log_pass_change.samba.tests.auth_log_pass_change.AuthLogPassChangeTests.test_admin_change_password_new_password_fails_restriction
-^samba.tests.auth_log_pass_change.samba.tests.auth_log_pass_change.AuthLogPassChangeTests.test_admin_change_password_unknown_user
-^samba.tests.auth_log_pass_change.samba.tests.auth_log_pass_change.AuthLogPassChangeTests.test_rap_change_password\(ad_dc:local\)
