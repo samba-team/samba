@@ -86,17 +86,6 @@ struct getgrent_state {
 	struct wbint_Principal *groups;
 };
 
-/* Storage for cached getpwent() user entries */
-
-struct getpwent_user {
-	fstring name;                        /* Account name */
-	fstring gecos;                       /* User information */
-	fstring homedir;                     /* User Home Directory */
-	fstring shell;                       /* User Login Shell */
-	struct dom_sid user_sid;                    /* NT user and primary group SIDs */
-	struct dom_sid group_sid;
-};
-
 /* Our connection to the DC */
 
 struct winbindd_cm_conn {
