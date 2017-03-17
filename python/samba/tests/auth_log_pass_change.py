@@ -31,6 +31,7 @@ from samba.net import Net
 from samba import ntstatus
 import samba
 from subprocess import call
+from ldb import LdbError
 
 USER_NAME = "authlogtestuser"
 USER_PASS = samba.generate_random_password(32,32)
@@ -226,10 +227,9 @@ class AuthLogPassChangeTests(samba.tests.auth_log_base.AuthLogTestBase):
                     msg["Authentication"]["authDescription"]
                         == "OemChangePasswordUser2")
 
-        newPassword  = samba.generate_random_password(32,32)
         username     = os.environ["USERNAME"]
-        password     = os.environ["PASSWORD"]
         server       = os.environ["SERVER"]
+        password     = os.environ["PASSWORD"]
         server_param = "--server=%s" % server
         creds        = "-U%s%%%s" % (username,password)
         call(["bin/net", "rap", server_param,
@@ -238,5 +238,92 @@ class AuthLogPassChangeTests(samba.tests.auth_log_base.AuthLogTestBase):
 
         messages = self.waitForMessages( isLastExpectedMessage)
         self.assertEquals(7,
+                          len(messages),
+                          "Did not receive the expected number of messages")
+
+    def test_ldap_change_password(self):
+        def isLastExpectedMessage( msg):
+            return (msg["type"] == "Authentication" and
+                    msg["Authentication"]["status"]
+                        == "NT_STATUS_OK" and
+                    msg["Authentication"]["serviceDescription"]
+                        == "LDAP Password Change" and
+                    msg["Authentication"]["authDescription"]
+                        == "LDAP Modify")
+
+        new_password = samba.generate_random_password(32,32)
+        self.ldb.modify_ldif(
+            "dn: cn=" + USER_NAME + ",cn=users," + self.base_dn + "\n" +
+            "changetype: modify\n" +
+            "delete: userPassword\n" +
+            "userPassword: " + USER_PASS + "\n" +
+            "add: userPassword\n" +
+            "userPassword: " + new_password + "\n"
+        )
+
+        messages = self.waitForMessages( isLastExpectedMessage)
+        print "Received %d messages" % len(messages)
+        self.assertEquals(4,
+                          len(messages),
+                          "Did not receive the expected number of messages")
+
+    #
+    # Currently this does not get logged, so we expect to only see the log
+    # entries for the underlying ldap bind.
+    #
+    def test_ldap_change_password_bad_user(self):
+        def isLastExpectedMessage( msg):
+            return (msg["type"] == "Authorization" and
+                    msg["Authorization"]["serviceDescription"]
+                        == "LDAP" and
+                    msg["Authorization"]["authType"] == "krb5")
+
+        new_password = samba.generate_random_password(32,32)
+        try:
+            self.ldb.modify_ldif(
+                "dn: cn=" + "badUser" + ",cn=users," + self.base_dn + "\n" +
+                "changetype: modify\n" +
+                "delete: userPassword\n" +
+                "userPassword: " + USER_PASS + "\n" +
+                "add: userPassword\n" +
+                "userPassword: " + new_password + "\n"
+            )
+            self.fail()
+        except LdbError, (num, msg):
+            pass
+
+        messages = self.waitForMessages( isLastExpectedMessage)
+        print "Received %d messages" % len(messages)
+        self.assertEquals(3,
+                          len(messages),
+                          "Did not receive the expected number of messages")
+
+    def test_ldap_change_password_bad_original_password(self):
+        def isLastExpectedMessage( msg):
+            return (msg["type"] == "Authentication" and
+                    msg["Authentication"]["status"]
+                        == "NT_STATUS_WRONG_PASSWORD" and
+                    msg["Authentication"]["serviceDescription"]
+                        == "LDAP Password Change" and
+                    msg["Authentication"]["authDescription"]
+                        == "LDAP Modify")
+
+        new_password = samba.generate_random_password(32,32)
+        try:
+            self.ldb.modify_ldif(
+                "dn: cn=" + USER_NAME + ",cn=users," + self.base_dn + "\n" +
+                "changetype: modify\n" +
+                "delete: userPassword\n" +
+                "userPassword: " + "badPassword" + "\n" +
+                "add: userPassword\n" +
+                "userPassword: " + new_password + "\n"
+            )
+            self.fail()
+        except LdbError, (num, msg):
+            pass
+
+        messages = self.waitForMessages( isLastExpectedMessage)
+        print "Received %d messages" % len(messages)
+        self.assertEquals(4,
                           len(messages),
                           "Did not receive the expected number of messages")

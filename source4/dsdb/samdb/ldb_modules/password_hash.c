@@ -45,6 +45,8 @@
 #include "../lib/crypto/crypto.h"
 #include "param/param.h"
 #include "lib/krb5_wrap/krb5_samba.h"
+#include "auth/common_auth.h"
+#include "lib/messaging/messaging.h"
 
 #ifdef ENABLE_GPGME
 #undef class
@@ -119,7 +121,7 @@ struct setup_password_fields_io {
 
 	struct smb_krb5_context *smb_krb5_context;
 
-	/* infos about the user account */
+	/* info about the user account */
 	struct {
 		uint32_t userAccountControl;
 		NTTIME pwdLastSet;
@@ -128,6 +130,7 @@ struct setup_password_fields_io {
 		bool is_computer;
 		bool is_krbtgt;
 		uint32_t restrictions;
+		struct dom_sid *account_sid;
 	} u;
 
 	/* new credentials and old given credentials */
@@ -2292,7 +2295,7 @@ static int setup_smartcard_reset(struct setup_password_fields_io *io)
 	return LDB_SUCCESS;
 }
 
-static int make_error_and_update_badPwdCount(struct setup_password_fields_io *io)
+static int make_error_and_update_badPwdCount(struct setup_password_fields_io *io, WERROR *werror)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(io->ac->module);
 	struct ldb_message *mod_msg = NULL;
@@ -2390,21 +2393,24 @@ static int make_error_and_update_badPwdCount(struct setup_password_fields_io *io
 
 done:
 	ret = LDB_ERR_CONSTRAINT_VIOLATION;
+	*werror = WERR_INVALID_PASSWORD;
 	ldb_asprintf_errstring(ldb,
 			       "%08X: %s - check_password_restrictions: "
 			       "The old password specified doesn't match!",
-			       W_ERROR_V(WERR_INVALID_PASSWORD),
+			       W_ERROR_V(*werror),
 			       ldb_strerror(ret));
 	return ret;
 }
 
-static int check_password_restrictions(struct setup_password_fields_io *io)
+static int check_password_restrictions(struct setup_password_fields_io *io, WERROR *werror)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(io->ac->module);
 	int ret;
 	struct loadparm_context *lp_ctx =
 		lp_ctx = talloc_get_type(ldb_get_opaque(ldb, "loadparm"),
 					 struct loadparm_context);
+
+	*werror = WERR_INVALID_PARAMETER;
 
 	if (!io->ac->update_password) {
 		return LDB_SUCCESS;
@@ -2427,7 +2433,7 @@ static int check_password_restrictions(struct setup_password_fields_io *io)
 		   has no problems at all */
 		if (io->og.nt_hash) {
 			if (!io->o.nt_hash || memcmp(io->og.nt_hash->hash, io->o.nt_hash->hash, 16) != 0) {
-				return make_error_and_update_badPwdCount(io);
+				return make_error_and_update_badPwdCount(io, werror);
 			}
 
 			nt_hash_checked = true;
@@ -2440,7 +2446,7 @@ static int check_password_restrictions(struct setup_password_fields_io *io)
 		if (io->og.lm_hash) {
 			if ((!io->o.lm_hash && !nt_hash_checked)
 			    || (io->o.lm_hash && memcmp(io->og.lm_hash->hash, io->o.lm_hash->hash, 16) != 0)) {
-				return make_error_and_update_badPwdCount(io);
+				return make_error_and_update_badPwdCount(io, werror);
 			}
 		}
 	}
@@ -2455,10 +2461,11 @@ static int check_password_restrictions(struct setup_password_fields_io *io)
 	    !io->ac->pwd_reset)
 	{
 		ret = LDB_ERR_CONSTRAINT_VIOLATION;
+		*werror = WERR_PASSWORD_RESTRICTION;
 		ldb_asprintf_errstring(ldb,
 			"%08X: %s - check_password_restrictions: "
 			"password is too young to change!",
-			W_ERROR_V(WERR_PASSWORD_RESTRICTION),
+			W_ERROR_V(*werror),
 			ldb_strerror(ret));
 		return ret;
 	}
@@ -2481,10 +2488,11 @@ static int check_password_restrictions(struct setup_password_fields_io *io)
 
 		case SAMR_VALIDATION_STATUS_PWD_TOO_SHORT:
 			ret = LDB_ERR_CONSTRAINT_VIOLATION;
+			*werror = WERR_PASSWORD_RESTRICTION;
 			ldb_asprintf_errstring(ldb,
 				"%08X: %s - check_password_restrictions: "
 				"the password is too short. It should be equal or longer than %u characters!",
-				W_ERROR_V(WERR_PASSWORD_RESTRICTION),
+				W_ERROR_V(*werror),
 				ldb_strerror(ret),
 				io->ac->status->domain_data.minPwdLength);
 			io->ac->status->reject_reason = SAM_PWD_CHANGE_PASSWORD_TOO_SHORT;
@@ -2492,26 +2500,29 @@ static int check_password_restrictions(struct setup_password_fields_io *io)
 
 		case SAMR_VALIDATION_STATUS_NOT_COMPLEX_ENOUGH:
 			ret = LDB_ERR_CONSTRAINT_VIOLATION;
+			*werror = WERR_PASSWORD_RESTRICTION;
 			ldb_asprintf_errstring(ldb,
 				"%08X: %s - check_password_restrictions: "
 				"the password does not meet the complexity criteria!",
-				W_ERROR_V(WERR_PASSWORD_RESTRICTION),
+				W_ERROR_V(*werror),
 				ldb_strerror(ret));
 			io->ac->status->reject_reason = SAM_PWD_CHANGE_NOT_COMPLEX;
 			return ret;
 
 		default:
 			ret = LDB_ERR_CONSTRAINT_VIOLATION;
+			*werror = WERR_PASSWORD_RESTRICTION;
 			ldb_asprintf_errstring(ldb,
 				"%08X: %s - check_password_restrictions: "
 				"the password doesn't fit due to a miscellaneous restriction!",
-				W_ERROR_V(WERR_PASSWORD_RESTRICTION),
+				W_ERROR_V(*werror),
 				ldb_strerror(ret));
 			return ret;
 		}
 	}
 
 	if (io->ac->pwd_reset) {
+		*werror = WERR_OK;
 		return LDB_SUCCESS;
 	}
 
@@ -2523,10 +2534,11 @@ static int check_password_restrictions(struct setup_password_fields_io *io)
 			ret = memcmp(io->n.nt_hash, io->o.nt_history[i].hash, 16);
 			if (ret == 0) {
 				ret = LDB_ERR_CONSTRAINT_VIOLATION;
+				*werror = WERR_PASSWORD_RESTRICTION;
 				ldb_asprintf_errstring(ldb,
 					"%08X: %s - check_password_restrictions: "
 					"the password was already used (in history)!",
-					W_ERROR_V(WERR_PASSWORD_RESTRICTION),
+					W_ERROR_V(*werror),
 					ldb_strerror(ret));
 				io->ac->status->reject_reason = SAM_PWD_CHANGE_PWD_IN_HISTORY;
 				return ret;
@@ -2542,10 +2554,11 @@ static int check_password_restrictions(struct setup_password_fields_io *io)
 			ret = memcmp(io->n.lm_hash, io->o.lm_history[i].hash, 16);
 			if (ret == 0) {
 				ret = LDB_ERR_CONSTRAINT_VIOLATION;
+				*werror = WERR_PASSWORD_RESTRICTION;
 				ldb_asprintf_errstring(ldb,
 					"%08X: %s - check_password_restrictions: "
 					"the password was already used (in history)!",
-					W_ERROR_V(WERR_PASSWORD_RESTRICTION),
+					W_ERROR_V(*werror),
 					ldb_strerror(ret));
 				io->ac->status->reject_reason = SAM_PWD_CHANGE_PWD_IN_HISTORY;
 				return ret;
@@ -2556,10 +2569,11 @@ static int check_password_restrictions(struct setup_password_fields_io *io)
 	/* are all password changes disallowed? */
 	if (io->ac->status->domain_data.pwdProperties & DOMAIN_REFUSE_PASSWORD_CHANGE) {
 		ret = LDB_ERR_CONSTRAINT_VIOLATION;
+		*werror = WERR_PASSWORD_RESTRICTION;
 		ldb_asprintf_errstring(ldb,
 			"%08X: %s - check_password_restrictions: "
 			"password changes disabled!",
-			W_ERROR_V(WERR_PASSWORD_RESTRICTION),
+			W_ERROR_V(*werror),
 			ldb_strerror(ret));
 		return ret;
 	}
@@ -2567,15 +2581,97 @@ static int check_password_restrictions(struct setup_password_fields_io *io)
 	/* can this user change the password? */
 	if (io->u.userAccountControl & UF_PASSWD_CANT_CHANGE) {
 		ret = LDB_ERR_CONSTRAINT_VIOLATION;
+		*werror = WERR_PASSWORD_RESTRICTION;
 		ldb_asprintf_errstring(ldb,
 			"%08X: %s - check_password_restrictions: "
 			"password can't be changed on this account!",
-			W_ERROR_V(WERR_PASSWORD_RESTRICTION),
+			W_ERROR_V(*werror),
 			ldb_strerror(ret));
 		return ret;
 	}
 
 	return LDB_SUCCESS;
+}
+
+static int check_password_restrictions_and_log(struct setup_password_fields_io *io)
+{
+	WERROR werror;
+	int ret = check_password_restrictions(io, &werror);
+	struct ph_context *ac = io->ac;
+	/*
+	 * Password resets are not authentication events, and if the
+	 * upper layer checked the password and supplied the hash
+	 * values as proof, then this is also not an authentication
+	 * even at this layer (already logged).  This is to log LDAP
+	 * password changes.
+	 */
+
+	/* Do not record a failure in the auth log below in the success case */
+	if (ret == LDB_SUCCESS) {
+		werror = WERR_OK;
+	}
+
+	if (ac->pwd_reset == false && ac->change == NULL) {
+		struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
+		struct imessaging_context *msg_ctx;
+		struct loadparm_context *lp_ctx
+			= talloc_get_type_abort(ldb_get_opaque(ldb, "loadparm"),
+						struct loadparm_context);
+		NTSTATUS status = werror_to_ntstatus(werror);
+		const char *domain_name = lpcfg_sam_name(lp_ctx);
+		void *opaque_remote_address = NULL;
+		/*
+		 * Forcing this via the NTLM auth structure is not ideal, but
+		 * it is the most practical option right now, and ensures the
+		 * logs are consistent, even if some elements are always NULL.
+		 */
+		struct auth_usersupplied_info ui = {
+			.mapped_state = true,
+			.was_mapped = true,
+			.client = {
+				.account_name = io->u.sAMAccountName,
+				.domain_name = domain_name,
+			},
+			.mapped = {
+				.account_name = io->u.sAMAccountName,
+				.domain_name = domain_name,
+			},
+			.service_description = "LDAP Password Change",
+			.auth_description = "LDAP Modify",
+			.password_type = "plaintext"
+		};
+
+		opaque_remote_address = ldb_get_opaque(ldb,
+						       "remoteAddress");
+		if (opaque_remote_address == NULL) {
+			ldb_asprintf_errstring(ldb,
+					       "Failed to obtain remote address for "
+					       "the LDAP client while changing the "
+					       "password");
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		ui.remote_host = talloc_get_type(opaque_remote_address,
+						 struct tsocket_address);
+
+		msg_ctx = imessaging_client_init(ac, lp_ctx,
+						 ldb_get_event_context(ldb));
+		if (!msg_ctx) {
+			ldb_asprintf_errstring(ldb,
+					       "Failed to generate client messaging context in %s",
+					       lpcfg_imessaging_path(ac, lp_ctx));
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		log_authentication_event(msg_ctx,
+					 lp_ctx,
+					 &ui,
+					 status,
+					 domain_name,
+					 io->u.sAMAccountName,
+					 NULL,
+					 io->u.account_sid);
+
+	}
+	return ret;
 }
 
 static int update_final_msg(struct setup_password_fields_io *io)
@@ -2842,12 +2938,12 @@ static int setup_io(struct ph_context *ac,
 	io->u.is_computer		= ldb_msg_check_string_attribute(info_msg, "objectClass", "computer");
 
 	/* Ensure it has an objectSID too */
-	account_sid = samdb_result_dom_sid(ac, info_msg, "objectSid");
-	if (account_sid != NULL) {
+	io->u.account_sid = samdb_result_dom_sid(ac, info_msg, "objectSid");
+	if (io->u.account_sid != NULL) {
 		NTSTATUS status;
 		uint32_t rid = 0;
 
-		status = dom_sid_split_rid(account_sid, account_sid, NULL, &rid);
+		status = dom_sid_split_rid(account_sid, io->u.account_sid, NULL, &rid);
 		if (NT_STATUS_IS_OK(status)) {
 			if (rid == DOMAIN_RID_KRBTGT) {
 				io->u.is_krbtgt = true;
@@ -3842,7 +3938,7 @@ static int password_hash_add_do_add(struct ph_context *ac)
 		return ret;
 	}
 
-	ret = check_password_restrictions(&io);
+	ret = check_password_restrictions_and_log(&io);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -4180,7 +4276,7 @@ static int password_hash_mod_do_mod(struct ph_context *ac)
 		return ret;
 	}
 
-	ret = check_password_restrictions(&io);
+	ret = check_password_restrictions_and_log(&io);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
