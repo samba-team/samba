@@ -1269,10 +1269,9 @@ static NTSTATUS winbindd_dual_auth_passdb(TALLOC_CTX *mem_ctx,
 		user_info->flags |= USER_INFO_INTERACTIVE_LOGON;
 	}
 
-	status = make_auth_context_subsystem(frame, &auth_context);
-
+	status = make_auth3_context_for_winbind(frame, &auth_context);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_ERR("make_auth_context_subsystem failed: %s\n",
+		DBG_ERR("make_auth3_context_for_winbind failed: %s\n",
 			nt_errstr(status));
 		TALLOC_FREE(frame);
 		return status;
