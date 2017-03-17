@@ -107,7 +107,7 @@ static void wb_getpwsid_queryuser_done(struct tevent_req *subreq)
 	if (tevent_req_nomem(tmp, req)) {
 		return;
 	}
-	strlcpy(pw->pw_shell, tmp, sizeof(pw->pw_dir));
+	strlcpy(pw->pw_shell, tmp, sizeof(pw->pw_shell));
 	TALLOC_FREE(tmp);
 
 	strlcpy(pw->pw_passwd, "*", sizeof(pw->pw_passwd));
