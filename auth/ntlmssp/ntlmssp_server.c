@@ -726,9 +726,12 @@ static NTSTATUS ntlmssp_server_check_password(struct gensec_security *gensec_sec
 	user_info->password.response.nt.data = talloc_steal(user_info, ntlmssp_state->nt_resp.data);
 
 	if (auth_context->check_ntlm_password) {
+		uint8_t authoritative = 0;
+
 		nt_status = auth_context->check_ntlm_password(auth_context,
 							      gensec_ntlmssp,
 							      user_info,
+							      &authoritative,
 							      &gensec_ntlmssp->server_returned_info,
 							      user_session_key, lm_session_key);
 	}

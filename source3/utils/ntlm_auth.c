@@ -947,6 +947,7 @@ static NTSTATUS ntlm_auth_set_challenge(struct auth4_context *auth_ctx, const ui
 static NTSTATUS winbind_pw_check(struct auth4_context *auth4_context, 
 				 TALLOC_CTX *mem_ctx,
 				 const struct auth_usersupplied_info *user_info, 
+				 uint8_t *pauthoritative,
 				 void **server_returned_info,
 				 DATA_BLOB *session_key, DATA_BLOB *lm_session_key)
 {
@@ -955,7 +956,6 @@ static NTSTATUS winbind_pw_check(struct auth4_context *auth4_context,
 	uint8_t lm_key[8]; 
 	uint8_t user_sess_key[16]; 
 	char *unix_name = NULL;
-	uint8_t authoritative = 0;
 
 	nt_status = contact_winbind_auth_crap(user_info->client.account_name, user_info->client.domain_name, 
 					      user_info->workstation_name, 
@@ -965,7 +965,7 @@ static NTSTATUS winbind_pw_check(struct auth4_context *auth4_context,
 					      WBFLAG_PAM_LMKEY | WBFLAG_PAM_USER_SESSION_KEY | WBFLAG_PAM_UNIX_NAME,
 					      0,
 					      lm_key, user_sess_key, 
-					      &authoritative,
+					      pauthoritative,
 					      &error_string, &unix_name);
 
 	if (NT_STATUS_IS_OK(nt_status)) {
@@ -995,7 +995,8 @@ static NTSTATUS winbind_pw_check(struct auth4_context *auth4_context,
 
 static NTSTATUS local_pw_check(struct auth4_context *auth4_context, 
 				TALLOC_CTX *mem_ctx,
-				const struct auth_usersupplied_info *user_info, 
+				const struct auth_usersupplied_info *user_info,
+				uint8_t *pauthoritative,
 				void **server_returned_info,
 				DATA_BLOB *session_key, DATA_BLOB *lm_session_key)
 {
@@ -1003,6 +1004,8 @@ static NTSTATUS local_pw_check(struct auth4_context *auth4_context,
 	struct samr_Password lm_pw, nt_pw;
 
 	nt_lm_owf_gen (opt_password, nt_pw.hash, lm_pw.hash);
+
+	*pauthoritative = 1;
 
 	nt_status = ntlm_password_check(mem_ctx,
 					true, true, 0,

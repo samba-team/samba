@@ -389,10 +389,12 @@ NTSTATUS auth_check_password_session_info(struct auth4_context *auth_context,
 {
 	NTSTATUS nt_status;
 	void *server_info;
+	uint8_t authoritative = 0;
 
 	nt_status = auth_context->check_ntlm_password(auth_context,
 						      talloc_tos(),
 						      user_info,
+						      &authoritative,
 						      &server_info, NULL, NULL);
 
 	if (NT_STATUS_IS_OK(nt_status)) {

@@ -136,6 +136,7 @@ NTSTATUS auth3_set_challenge(struct auth4_context *auth4_context, const uint8_t 
 NTSTATUS auth3_check_password(struct auth4_context *auth4_context,
 			      TALLOC_CTX *mem_ctx,
 			      const struct auth_usersupplied_info *user_info,
+			      uint8_t *pauthoritative,
 			      void **server_returned_info,
 			      DATA_BLOB *session_key, DATA_BLOB *lm_session_key)
 {
@@ -145,7 +146,11 @@ NTSTATUS auth3_check_password(struct auth4_context *auth4_context,
 	struct auth_serversupplied_info *server_info;
 	NTSTATUS nt_status;
 	bool username_was_mapped;
-	uint8_t authoritative = 0;
+
+	/*
+	 * Be authoritative by default.
+	 */
+	*pauthoritative = 1;
 
 	/* The client has given us its machine name (which we only get over NBT transport).
 	   We need to possibly reload smb.conf if smb.conf includes depend on the machine name. */
@@ -181,7 +186,7 @@ NTSTATUS auth3_check_password(struct auth4_context *auth4_context,
 					     auth_context,
 					     mapped_user_info,
 					     &server_info,
-					     &authoritative);
+					     pauthoritative);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(5,("Checking NTLMSSP password for %s\\%s failed: "
@@ -189,7 +194,7 @@ NTSTATUS auth3_check_password(struct auth4_context *auth4_context,
 			 user_info->client.domain_name,
 			 user_info->client.account_name,
 			 nt_errstr(nt_status),
-			 authoritative));
+			 *pauthoritative));
 	}
 
 	username_was_mapped = mapped_user_info->was_mapped;
@@ -203,6 +208,7 @@ NTSTATUS auth3_check_password(struct auth4_context *auth4_context,
 							user_info->client.domain_name,
 							&server_info);
 		if (NT_STATUS_IS_OK(nt_status)) {
+			*pauthoritative = 1;
 			*server_returned_info = talloc_steal(mem_ctx, server_info);
 		}
 		return nt_status;

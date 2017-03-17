@@ -132,6 +132,7 @@ NTSTATUS auth3_set_challenge(struct auth4_context *auth4_context, const uint8_t 
 NTSTATUS auth3_check_password(struct auth4_context *auth4_context,
 			      TALLOC_CTX *mem_ctx,
 			      const struct auth_usersupplied_info *user_info,
+			      uint8_t *pauthoritative,
 			      void **server_returned_info,
 			      DATA_BLOB *session_key, DATA_BLOB *lm_session_key);
 

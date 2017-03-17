@@ -189,15 +189,15 @@ _PUBLIC_ NTSTATUS auth_check_password(struct auth4_context *auth_ctx,
 static NTSTATUS auth_check_password_wrapper(struct auth4_context *auth_ctx,
 					    TALLOC_CTX *mem_ctx,
 					    const struct auth_usersupplied_info *user_info,
+					    uint8_t *pauthoritative,
 					    void **server_returned_info,
 					    DATA_BLOB *user_session_key, DATA_BLOB *lm_session_key)
 {
 	struct auth_user_info_dc *user_info_dc;
 	NTSTATUS status;
-	uint8_t authoritative = 0;
 
 	status = auth_check_password(auth_ctx, mem_ctx, user_info,
-				     &user_info_dc, &authoritative);
+				     &user_info_dc, pauthoritative);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
