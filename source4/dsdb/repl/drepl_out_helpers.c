@@ -498,7 +498,7 @@ static void dreplsrv_op_pull_source_get_changes_trigger(struct tevent_req *req)
 			return;
 		}
 		replica_flags &= ~DRSUAPI_DRS_WRIT_REP;
-	} else if (partition->rodc_replica) {
+	} else if (partition->rodc_replica || state->op->extended_op == DRSUAPI_EXOP_REPL_SECRET) {
 		bool for_schema = false;
 		if (ldb_dn_compare_base(schema_dn, partition->dn) == 0) {
 			for_schema = true;
