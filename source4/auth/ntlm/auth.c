@@ -184,11 +184,11 @@ _PUBLIC_ NTSTATUS auth_check_password(struct auth4_context *auth_ctx,
 	return status;
 }
 
-_PUBLIC_ NTSTATUS auth_check_password_wrapper(struct auth4_context *auth_ctx,
-					      TALLOC_CTX *mem_ctx,
-					      const struct auth_usersupplied_info *user_info, 
-					      void **server_returned_info,
-					      DATA_BLOB *user_session_key, DATA_BLOB *lm_session_key)
+static NTSTATUS auth_check_password_wrapper(struct auth4_context *auth_ctx,
+					    TALLOC_CTX *mem_ctx,
+					    const struct auth_usersupplied_info *user_info,
+					    void **server_returned_info,
+					    DATA_BLOB *user_session_key, DATA_BLOB *lm_session_key)
 {
 	struct auth_user_info_dc *user_info_dc;
 	NTSTATUS status;
