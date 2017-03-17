@@ -208,7 +208,7 @@ NTSTATUS make_auth4_context(TALLOC_CTX *mem_ctx, struct auth4_context **auth4_co
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
 
-	nt_status = make_auth_context_subsystem(tmp_ctx, &auth_context);
+	nt_status = make_auth3_context_for_ntlm(tmp_ctx, &auth_context);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		TALLOC_FREE(tmp_ctx);
 		return nt_status;
@@ -242,7 +242,7 @@ NTSTATUS auth_generic_prepare(TALLOC_CTX *mem_ctx,
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
 
-	nt_status = make_auth_context_subsystem(tmp_ctx, &auth_context);
+	nt_status = make_auth3_context_for_ntlm(tmp_ctx, &auth_context);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		TALLOC_FREE(tmp_ctx);
 		return nt_status;
