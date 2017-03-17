@@ -153,7 +153,8 @@ NTSTATUS auth_context_create_for_netlogon(TALLOC_CTX *mem_ctx,
 NTSTATUS auth_check_password(struct auth4_context *auth_ctx,
 			     TALLOC_CTX *mem_ctx,
 			     const struct auth_usersupplied_info *user_info, 
-			     struct auth_user_info_dc **user_info_dc);
+			     struct auth_user_info_dc **user_info_dc,
+			     uint8_t *pauthoritative);
 NTSTATUS auth4_init(void);
 NTSTATUS auth_register(const struct auth_operations *ops);
 NTSTATUS server_service_auth_init(void);
@@ -173,7 +174,8 @@ struct tevent_req *auth_check_password_send(TALLOC_CTX *mem_ctx,
 					    const struct auth_usersupplied_info *user_info);
 NTSTATUS auth_check_password_recv(struct tevent_req *req,
 				  TALLOC_CTX *mem_ctx,
-				  struct auth_user_info_dc **user_info_dc);
+				  struct auth_user_info_dc **user_info_dc,
+				  uint8_t *pauthoritative);
 
 bool auth_challenge_may_be_modified(struct auth4_context *auth_ctx);
 NTSTATUS auth_context_set_challenge(struct auth4_context *auth_ctx, const uint8_t chal[8], const char *set_by);

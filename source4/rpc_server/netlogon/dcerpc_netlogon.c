@@ -982,8 +982,8 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	nt_status = auth_check_password(auth_context, mem_ctx, user_info, &user_info_dc);
-	/* TODO: set *r->out.authoritative = 0 on specific errors */
+	nt_status = auth_check_password(auth_context, mem_ctx, user_info,
+					&user_info_dc, r->out.authoritative);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
 	switch (r->in.validation_level) {

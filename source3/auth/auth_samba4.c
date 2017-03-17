@@ -118,6 +118,7 @@ static NTSTATUS check_samba4_security(const struct auth_context *auth_context,
 	NTSTATUS nt_status;
 	struct auth_user_info_dc *user_info_dc;
 	struct auth4_context *auth4_context;
+	uint8_t authoritative = 0;
 
 	nt_status = make_auth4_context_s4(auth_context, mem_ctx, &auth4_context);
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -132,13 +133,19 @@ static NTSTATUS check_samba4_security(const struct auth_context *auth_context,
 		return nt_status;
 	}
 
-	nt_status = auth_check_password(auth4_context, auth4_context, user_info, &user_info_dc);
+	nt_status = auth_check_password(auth4_context, auth4_context, user_info,
+					&user_info_dc, &authoritative);
 	if (!NT_STATUS_IS_OK(nt_status)) {
+		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_SUCH_USER) &&
+				    authoritative == 0)
+		{
+			nt_status = NT_STATUS_NOT_IMPLEMENTED;
+		}
 		TALLOC_FREE(auth4_context);
 		TALLOC_FREE(frame);
 		return nt_status;
 	}
-	
+
 	nt_status = auth_convert_user_info_dc_saminfo3(mem_ctx,
 						       user_info_dc,
 						       &info3);

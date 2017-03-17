@@ -72,9 +72,11 @@ static void sesssetup_old_send(struct tevent_req *subreq)
 	struct auth_session_info *session_info;
 	struct smbsrv_session *smb_sess;
 	NTSTATUS status;
+	uint8_t authoritative = 0;
 	uint32_t flags;
 
-	status = auth_check_password_recv(subreq, req, &user_info_dc);
+	status = auth_check_password_recv(subreq, req, &user_info_dc,
+					  &authoritative);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) goto failed;
 
@@ -202,11 +204,12 @@ static void sesssetup_nt1_send(struct tevent_req *subreq)
 	struct auth_user_info_dc *user_info_dc = NULL;
 	struct auth_session_info *session_info;
 	struct smbsrv_session *smb_sess;
-
+	uint8_t authoritative = 0;
 	uint32_t flags;
 	NTSTATUS status;
 
-	status = auth_check_password_recv(subreq, req, &user_info_dc);
+	status = auth_check_password_recv(subreq, req, &user_info_dc,
+					  &authoritative);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) goto failed;
 

@@ -155,7 +155,8 @@ static NTSTATUS auth_generate_session_info_principal(struct auth4_context *auth_
 _PUBLIC_ NTSTATUS auth_check_password(struct auth4_context *auth_ctx,
 			     TALLOC_CTX *mem_ctx,
 			     const struct auth_usersupplied_info *user_info, 
-			     struct auth_user_info_dc **user_info_dc)
+			     struct auth_user_info_dc **user_info_dc,
+			     uint8_t *pauthoritative)
 {
 	struct tevent_req *subreq;
 	struct tevent_context *ev;
@@ -178,7 +179,8 @@ _PUBLIC_ NTSTATUS auth_check_password(struct auth4_context *auth_ctx,
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	status = auth_check_password_recv(subreq, mem_ctx, user_info_dc);
+	status = auth_check_password_recv(subreq, mem_ctx,
+					  user_info_dc, pauthoritative);
 	TALLOC_FREE(subreq);
 
 	return status;
@@ -192,9 +194,10 @@ static NTSTATUS auth_check_password_wrapper(struct auth4_context *auth_ctx,
 {
 	struct auth_user_info_dc *user_info_dc;
 	NTSTATUS status;
+	uint8_t authoritative = 0;
 
 	status = auth_check_password(auth_ctx, mem_ctx, user_info,
-				     &user_info_dc);
+				     &user_info_dc, &authoritative);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -225,6 +228,7 @@ struct auth_check_password_state {
 	const struct auth_usersupplied_info *user_info;
 	struct auth_user_info_dc *user_info_dc;
 	struct auth_method_context *method;
+	uint8_t authoritative;
 };
 
 static void auth_check_password_async_trigger(struct tevent_context *ev,
@@ -279,6 +283,10 @@ _PUBLIC_ struct tevent_req *auth_check_password_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
+	/*
+	 * We are authoritative by default.
+	 */
+	state->authoritative	= 1;
 	state->auth_ctx		= auth_ctx;
 	state->user_info	= user_info;
 
@@ -386,13 +394,8 @@ static void auth_check_password_async_trigger(struct tevent_context *ev,
 	}
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
-		if (!(state->user_info->flags & USER_INFO_LOCAL_SAM_ONLY)) {
-			/* don't expose the NT_STATUS_NOT_IMPLEMENTED
-			 * internals, except when the caller is only probing
-			 * one method, as they may do the fallback 
-			 */
-			status = NT_STATUS_NO_SUCH_USER;
-		}
+		state->authoritative = 0;
+		status = NT_STATUS_NO_SUCH_USER;
 	}
 
 	if (tevent_req_nterror(req, status)) {
@@ -424,20 +427,23 @@ static void auth_check_password_async_trigger(struct tevent_context *ev,
 
 _PUBLIC_ NTSTATUS auth_check_password_recv(struct tevent_req *req,
 				  TALLOC_CTX *mem_ctx,
-				  struct auth_user_info_dc **user_info_dc)
+				  struct auth_user_info_dc **user_info_dc,
+				  uint8_t *pauthoritative)
 {
 	struct auth_check_password_state *state =
 		tevent_req_data(req, struct auth_check_password_state);
 	NTSTATUS status;
 
+	*pauthoritative = state->authoritative;
+
 	if (tevent_req_is_nterror(req, &status)) {
 		DEBUG(2,("auth_check_password_recv: "
 			 "%s authentication for user [%s\\%s] "
-			 "FAILED with error %s\n",
+			 "FAILED with error %s, authoritative=%u\n",
 			 (state->method ? state->method->ops->name : "NO_METHOD"),
 			 state->user_info->mapped.domain_name,
 			 state->user_info->mapped.account_name,
-			 nt_errstr(status)));
+			 nt_errstr(status), state->authoritative));
 		tevent_req_received(req);
 		return status;
 	}

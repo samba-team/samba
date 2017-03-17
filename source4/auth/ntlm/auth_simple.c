@@ -42,6 +42,7 @@ _PUBLIC_ NTSTATUS authenticate_username_pw(TALLOC_CTX *mem_ctx,
 	struct auth_usersupplied_info *user_info;
 	struct auth_user_info_dc *user_info_dc;
 	NTSTATUS nt_status;
+	uint8_t authoritative = 0;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 
 	if (!tmp_ctx) {
@@ -83,7 +84,8 @@ _PUBLIC_ NTSTATUS authenticate_username_pw(TALLOC_CTX *mem_ctx,
 		MSV1_0_CLEARTEXT_PASSWORD_ALLOWED |
 		MSV1_0_CLEARTEXT_PASSWORD_SUPPLIED;
 
-	nt_status = auth_check_password(auth_context, tmp_ctx, user_info, &user_info_dc);
+	nt_status = auth_check_password(auth_context, tmp_ctx, user_info,
+					&user_info_dc, &authoritative);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(tmp_ctx);
 		return nt_status;
