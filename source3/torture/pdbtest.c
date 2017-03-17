@@ -299,7 +299,7 @@ static bool test_auth(TALLOC_CTX *mem_ctx, struct samu *pdb_entry)
 		return False;
 	}
 
-	status = make_auth_context_subsystem(NULL, &auth_context);
+	status = make_auth3_context_for_ntlm(NULL, &auth_context);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to test authentication with check_sam_security_info3: %s\n", nt_errstr(status)));
