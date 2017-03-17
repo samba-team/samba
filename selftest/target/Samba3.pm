@@ -412,6 +412,7 @@ sub setup_admember($$$$)
         workgroup = $dcvars->{DOMAIN}
         realm = $dcvars->{REALM}
         netbios aliases = foo bar
+	template homedir = /home/%D/%G/%U
 
 [sub_dug]
 	path = $share_dir/D_%D/U_%U/G_%G

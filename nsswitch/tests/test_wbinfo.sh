@@ -205,13 +205,18 @@ subunit_start_test "$test_name"
 # The full name (GECOS) is based on name (the RDN, in this case CN)
 # and displayName in winbindd_ads, and is based only on displayName in
 # winbindd_msrpc and winbindd_rpc.  Allow both versions.
-expected_line="$DOMAIN/administrator:*:$admin_uid:$gid:Administrator:/home/$DOMAIN/administrator:/bin/false"
-expected2_line="$DOMAIN/administrator:*:$admin_uid:$gid::/home/$DOMAIN/administrator:/bin/false"
+if test "$TARGET" = "ad_member"; then
+	expected1_line="$DOMAIN/administrator:*:$admin_uid:$gid:Administrator:/home/$DOMAIN/Domain Users/administrator:/bin/false"
+	expected2_line="$DOMAIN/administrator:*:$admin_uid:$gid::/home/$DOMAIN/Domain Users/administrator:/bin/false"
+else
+	expected1_line="$DOMAIN/administrator:*:$admin_uid:$gid:Administrator:/home/$DOMAIN/administrator:/bin/false"
+	expected2_line="$DOMAIN/administrator:*:$admin_uid:$gid::/home/$DOMAIN/administrator:/bin/false"
+fi
 
-if test x$passwd_line = x"$expected_line" -o x$passwd_line = x"$expected2_line"; then
+if test "x$passwd_line" = "x$expected1_line" -o "x$passwd_line" = "x$expected2_line"; then
 	subunit_pass_test "$test_name"
 else
-	echo "expected '$expected_line' or '$expected2_line' got '$passwd_line'" | subunit_fail_test "$test_name"
+	echo "expected '$expected1_line' or '$expected2_line' got '$passwd_line'" | subunit_fail_test "$test_name"
 	failed=`expr $failed + 1`
 fi
 
@@ -227,10 +232,10 @@ fi
 
 test_name="confirm output of wbinfo --uid-info against $TARGET"
 subunit_start_test "$test_name"
-if test x$passwd_line = x"$expected_line" -o x$passwd_line = x"$expected2_line"; then
+if test "x$passwd_line" = "x$expected1_line" -o "x$passwd_line" = "x$expected2_line"; then
 	subunit_pass_test "$test_name"
 else
-	echo "expected '$expected_line' or '$expected2_line' got '$passwd_line'" | subunit_fail_test "$test_name"
+	echo "expected '$expected1_line' or '$expected2_line' got '$passwd_line'" | subunit_fail_test "$test_name"
 	failed=`expr $failed + 1`
 fi
 
