@@ -483,8 +483,8 @@ static NTSTATUS make_auth_context_specific(TALLOC_CTX *mem_ctx,
  Make a auth_context struct for the auth subsystem
 ***************************************************************************/
 
-NTSTATUS make_auth_context_subsystem(TALLOC_CTX *mem_ctx,
-				     struct auth_context **auth_context)
+static NTSTATUS make_auth_context_subsystem(TALLOC_CTX *mem_ctx,
+					    struct auth_context **auth_context)
 {
 	const char *methods = NULL;
 	NTSTATUS nt_status;
