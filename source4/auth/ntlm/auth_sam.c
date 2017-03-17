@@ -690,41 +690,124 @@ static NTSTATUS authsam_want_check(struct auth_method_context *ctx,
 				   TALLOC_CTX *mem_ctx,
 				   const struct auth_usersupplied_info *user_info)
 {
-	bool is_local_name, is_my_domain;
+	const char *effective_domain = user_info->mapped.domain_name;
+	bool is_local_name = false;
+	bool is_my_domain = false;
+	const char *p = NULL;
+	struct dsdb_trust_routing_table *trt = NULL;
+	const struct lsa_TrustDomainInfoInfoEx *tdo = NULL;
+	NTSTATUS status;
 
 	if (!user_info->mapped.account_name || !*user_info->mapped.account_name) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
 	is_local_name = lpcfg_is_myname(ctx->auth_ctx->lp_ctx,
-				  user_info->mapped.domain_name);
-	is_my_domain = lpcfg_is_my_domain_or_realm(ctx->auth_ctx->lp_ctx,
-						 user_info->mapped.domain_name);
+					effective_domain);
 
 	/* check whether or not we service this domain/workgroup name */
 	switch (lpcfg_server_role(ctx->auth_ctx->lp_ctx)) {
-		case ROLE_STANDALONE:
-			return NT_STATUS_OK;
+	case ROLE_STANDALONE:
+		return NT_STATUS_OK;
 
-		case ROLE_DOMAIN_MEMBER:
-			if (!is_local_name) {
-				DEBUG(6,("authsam_check_password: %s is not one of my local names (DOMAIN_MEMBER)\n",
-					user_info->mapped.domain_name));
-				return NT_STATUS_NOT_IMPLEMENTED;
-			}
+	case ROLE_DOMAIN_MEMBER:
+		if (is_local_name) {
 			return NT_STATUS_OK;
+		}
 
-		case ROLE_ACTIVE_DIRECTORY_DC:
-			if (!is_local_name && !is_my_domain) {
-				DEBUG(6,("authsam_check_password: %s is not one of my local names or domain name (DC)\n",
-					user_info->mapped.domain_name));
-				return NT_STATUS_NOT_IMPLEMENTED;
-			}
-			return NT_STATUS_OK;
+		DBG_DEBUG("%s is not one of my local names (DOMAIN_MEMBER)\n",
+			  effective_domain);
+		return NT_STATUS_NOT_IMPLEMENTED;
+
+	case ROLE_ACTIVE_DIRECTORY_DC:
+		/* handled later */
+		break;
+
+	default:
+		DBG_ERR("lpcfg_server_role() has an undefined value\n");
+		return NT_STATUS_INVALID_SERVER_STATE;
 	}
 
-	DEBUG(6,("authsam_check_password: lpcfg_server_role() has an undefined value\n"));
-	return NT_STATUS_NOT_IMPLEMENTED;
+	/*
+	 * Now we handle the AD DC case...
+	 */
+
+	is_my_domain = lpcfg_is_my_domain_or_realm(ctx->auth_ctx->lp_ctx,
+						   effective_domain);
+	if (is_my_domain) {
+		return NT_STATUS_OK;
+	}
+
+	if (user_info->mapped_state) {
+		/*
+		 * The caller already did a cracknames call.
+		 */
+		DBG_DEBUG("%s is not one domain name (DC)\n",
+			  effective_domain);
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
+	if (effective_domain != NULL && !strequal(effective_domain, "")) {
+		DBG_DEBUG("%s is not one domain name (DC)\n",
+			  effective_domain);
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
+	p = strchr_m(user_info->mapped.account_name, '@');
+	if (p == NULL) {
+		if (effective_domain == NULL) {
+			return NT_STATUS_OK;
+		}
+		DEBUG(6,("authsam_check_password: '' without upn not handled (DC)\n"));
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
+	effective_domain = p + 1;
+	is_my_domain = lpcfg_is_my_domain_or_realm(ctx->auth_ctx->lp_ctx,
+						   effective_domain);
+	if (is_my_domain) {
+		return NT_STATUS_OK;
+	}
+
+	if (strequal(effective_domain, "")) {
+		DBG_DEBUG("authsam_check_password: upn without realm (DC)\n");
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
+	/*
+	 * as last option we check the routing table if the
+	 * domain is within our forest.
+	 */
+	status = dsdb_trust_routing_table_load(ctx->auth_ctx->sam_ctx,
+					       mem_ctx, &trt);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("authsam_check_password: dsdb_trust_routing_table_load() %s\n",
+			 nt_errstr(status));
+		return status;
+	}
+
+	tdo = dsdb_trust_routing_by_name(trt, effective_domain);
+	if (tdo == NULL) {
+		DBG_DEBUG("%s is not a known TLN (DC)\n",
+			  effective_domain);
+		TALLOC_FREE(trt);
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
+	if (!(tdo->trust_attributes & LSA_TRUST_ATTRIBUTE_WITHIN_FOREST)) {
+		DBG_DEBUG("%s is not a TLN in our forest (DC)\n",
+			  effective_domain);
+		TALLOC_FREE(trt);
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
+	/*
+	 * This principal is within our forest.
+	 * we'll later do a crack_name_to_nt4_name()
+	 * to check if it's in our domain.
+	 */
+	TALLOC_FREE(trt);
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS authsam_failtrusts_want_check(struct auth_method_context *ctx,
