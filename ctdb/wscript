@@ -390,7 +390,8 @@ def build(bld):
                                           '''db_hash.c srvid.c reqid.c
                                              pkt_read.c pkt_write.c comm.c
                                              logging.c rb_tree.c tunable.c
-                                             pidfile.c run_proc.c'''),
+                                             pidfile.c run_proc.c
+                                             hash_count.c'''),
                         deps='''samba-util sys_rw tevent-util
                                 replace talloc tevent tdb''')
 
@@ -738,6 +739,7 @@ def build(bld):
         'run_proc_test',
         'sock_daemon_test',
         'sock_io_test',
+        'hash_count_test'
     ]
 
     for target in ctdb_unit_tests:
