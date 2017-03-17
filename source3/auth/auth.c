@@ -544,7 +544,24 @@ NTSTATUS make_auth3_context_for_netlogon(TALLOC_CTX *mem_ctx,
 NTSTATUS make_auth3_context_for_winbind(TALLOC_CTX *mem_ctx,
 				        struct auth_context **auth_context)
 {
-	return make_auth_context_subsystem(mem_ctx, auth_context);
+	const char *methods = NULL;
+
+	switch (lp_server_role()) {
+	case ROLE_STANDALONE:
+	case ROLE_DOMAIN_MEMBER:
+	case ROLE_DOMAIN_BDC:
+	case ROLE_DOMAIN_PDC:
+		methods = "sam";
+		break;
+	case ROLE_ACTIVE_DIRECTORY_DC:
+		methods = "samba4:sam";
+		break;
+	default:
+		DEBUG(5,("Unknown auth method!\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	return make_auth_context_specific(mem_ctx, auth_context, methods);
 }
 
 bool auth3_context_set_challenge(struct auth_context *ctx, uint8_t chal[8],
