@@ -559,7 +559,36 @@ NTSTATUS make_auth3_context_for_ntlm(TALLOC_CTX *mem_ctx,
 NTSTATUS make_auth3_context_for_netlogon(TALLOC_CTX *mem_ctx,
 					 struct auth_context **auth_context)
 {
-	return make_auth_context_subsystem(mem_ctx, auth_context);
+	const char *methods = NULL;
+	NTSTATUS nt_status;
+
+	/*
+	 * We do the lp_auth_methods check before
+	 * the lp_server_role check in order to
+	 * backward compatible. The "auth methods" option
+	 * is deprecated now, so this will go away in a future
+	 * release.
+	 */
+	if (lp_auth_methods()) {
+		DBG_INFO("Using specified auth order for netlogon\n");
+		nt_status = make_auth_context_text_list(
+			mem_ctx, auth_context,
+			discard_const_p(char *, lp_auth_methods()));
+		return nt_status;
+	}
+
+	switch (lp_server_role()) {
+	case ROLE_DOMAIN_BDC:
+	case ROLE_DOMAIN_PDC:
+		methods = "sam_netlogon3 winbind:trustdomain";
+		break;
+
+	default:
+		DBG_ERR("Invalid server role!\n");
+		return NT_STATUS_INVALID_SERVER_STATE;
+	}
+
+	return make_auth_context_specific(mem_ctx, auth_context, methods);
 }
 
 NTSTATUS make_auth3_context_for_winbind(TALLOC_CTX *mem_ctx,
