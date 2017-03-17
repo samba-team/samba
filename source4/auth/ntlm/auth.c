@@ -645,6 +645,15 @@ _PUBLIC_ NTSTATUS auth_context_create(TALLOC_CTX *mem_ctx,
 	return status;
 }
 
+_PUBLIC_ NTSTATUS auth_context_create_for_netlogon(TALLOC_CTX *mem_ctx,
+						   struct tevent_context *ev,
+						   struct imessaging_context *msg,
+						   struct loadparm_context *lp_ctx,
+						   struct auth4_context **auth_ctx)
+{
+	return auth_context_create(mem_ctx, ev, msg, lp_ctx, auth_ctx);
+}
+
 /* the list of currently registered AUTH backends */
 static struct auth_backend {
 	const struct auth_operations *ops;
