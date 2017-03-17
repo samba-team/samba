@@ -142,9 +142,9 @@ int db_hash_fetch(struct db_hash_context *dh, uint8_t *keybuf, size_t keylen,
 int db_hash_exists(struct db_hash_context *dh, uint8_t *keybuf, size_t keylen);
 
 /**
- * @brief Traverse the database
+ * @brief Traverse the database without modification
  *
- * The parser function should non-zero value to stop traverse.
+ * The parser function should return non-zero value to stop traverse.
  *
  * @param[in] dh The tdb hash table context
  * @param[in] parser Function called for each record
@@ -155,5 +155,20 @@ int db_hash_exists(struct db_hash_context *dh, uint8_t *keybuf, size_t keylen);
 int db_hash_traverse(struct db_hash_context *dh,
 		     db_hash_record_parser_fn parser, void *private_data,
 		     int *count);
+
+/**
+ * @brief Traverse the database for modifications
+ *
+ * The parser function should return non-zero value to stop traverse.
+ *
+ * @param[in] dh The tdb hash table context
+ * @param[in] parser Function called for each record
+ * @param[in] private_data Private data to parser function
+ * @param[out] count Number of records traversed
+ * @return 0 on success, errno on failure
+ */
+int db_hash_traverse_update(struct db_hash_context *dh,
+			    db_hash_record_parser_fn parser,
+			    void *private_data, int *count);
 
 #endif /* __CTDB_DB_HASH_H__ */

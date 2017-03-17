@@ -266,3 +266,30 @@ int db_hash_traverse(struct db_hash_context *dh,
 
 	return ret;
 }
+
+int db_hash_traverse_update(struct db_hash_context *dh,
+			    db_hash_record_parser_fn parser,
+			    void *private_data, int *count)
+{
+	struct db_hash_traverse_state state;
+	int ret;
+
+	if (dh == NULL || parser == NULL) {
+		return EINVAL;
+	}
+
+	state.parser = parser;
+	state.private_data = private_data;
+
+	ret = tdb_traverse(dh->db, db_hash_traverse_parser, &state);
+	if (ret == -1) {
+		ret = db_hash_map_tdb_error(dh);
+	} else {
+		if (count != NULL) {
+			*count = ret;
+		}
+		ret = 0;
+	}
+
+	return ret;
+}
