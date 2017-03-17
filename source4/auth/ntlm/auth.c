@@ -291,24 +291,39 @@ _PUBLIC_ struct tevent_req *auth_check_password_send(TALLOC_CTX *mem_ctx,
 	state->user_info	= user_info;
 
 	if (!user_info->mapped_state) {
-		int server_role = lpcfg_server_role(auth_ctx->lp_ctx);
 		struct auth_usersupplied_info *user_info_tmp;
 
-		nt_status = map_user_info(
-			auth_ctx->sam_ctx, req,
-			server_role == ROLE_ACTIVE_DIRECTORY_DC,
-			lpcfg_workgroup(auth_ctx->lp_ctx),
-			user_info, &user_info_tmp);
-
-		if (tevent_req_nterror(req, nt_status)) {
-			return tevent_req_post(req, ev);
+		/*
+		 * We don't really do any mapping here.
+		 *
+		 * So we don't set user_info->mapped_state,
+		 * but we set mapped.domain_name and
+		 * mapped.account_name to the client
+		 * provided values.
+		 *
+		 * It's up to the backends to do mappings
+		 * for their authentication.
+		 */
+		user_info_tmp = talloc_zero(state, struct auth_usersupplied_info);
+		if (tevent_req_nomem(user_info_tmp, req)) {
+			return tevent_req_post(req, ev);;
 		}
+
+		/*
+		 * The lifetime of user_info is longer than
+		 * user_info_tmp, so we don't need to copy the
+		 * strings.
+		 */
+		*user_info_tmp = *user_info;
+		user_info_tmp->mapped.domain_name = user_info->client.domain_name;
+		user_info_tmp->mapped.account_name = user_info->client.account_name;
+
 		user_info = user_info_tmp;
 		state->user_info = user_info_tmp;
 	}
 
 	DEBUGADD(3,("auth_check_password_send: "
-		    "mapped user is: [%s]\\[%s]@[%s]\n",
+		    "user is: [%s]\\[%s]@[%s]\n",
 		    user_info->mapped.domain_name,
 		    user_info->mapped.account_name,
 		    user_info->workstation_name));
