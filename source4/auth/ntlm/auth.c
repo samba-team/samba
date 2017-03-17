@@ -716,7 +716,40 @@ _PUBLIC_ NTSTATUS auth_context_create_for_netlogon(TALLOC_CTX *mem_ctx,
 						   struct loadparm_context *lp_ctx,
 						   struct auth4_context **auth_ctx)
 {
-	return auth_context_create(mem_ctx, ev, msg, lp_ctx, auth_ctx);
+	NTSTATUS status;
+	char **_auth_methods = NULL;
+	const char **auth_methods = NULL;
+
+	/*
+	 * As 'auth methods' is deprecated it will be removed
+	 * in future releases again, but for now give
+	 * admins the flexibility to configure, the behavior
+	 * from Samba 4.6: "auth methods = anonymous sam_ignoredomain",
+	 * for a while.
+	 */
+	auth_methods = lpcfg_auth_methods(lp_ctx);
+	if (auth_methods != NULL) {
+		DBG_NOTICE("using deprecated 'auth methods' values.\n");
+	} else {
+		/*
+		 * We can remove "winbind_rodc sam_failtrusts",
+		 * when we made the netlogon retries to
+		 * to contact winbind via irpc.
+		 */
+		_auth_methods = str_list_make(mem_ctx,
+				"sam "
+				"winbind_rodc sam_failtrusts",
+				NULL);
+		if (_auth_methods == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		auth_methods = discard_const_p(const char *, _auth_methods);
+	}
+
+	status = auth_context_create_methods(mem_ctx, auth_methods, ev, msg,
+					     lp_ctx, NULL, auth_ctx);
+	talloc_free(_auth_methods);
+	return status;
 }
 
 /* the list of currently registered AUTH backends */
