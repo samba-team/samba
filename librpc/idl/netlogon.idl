@@ -168,7 +168,7 @@ interface netlogon
 		[size_is(length)] uint8 *data;
 	} netr_GenericInfo;
 
-	typedef enum {
+	typedef [public] enum {
 		NetlogonInteractiveInformation = 1,
 		NetlogonNetworkInformation = 2,
 		NetlogonServiceInformation = 3,
