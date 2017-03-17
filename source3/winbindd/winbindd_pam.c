@@ -1227,6 +1227,7 @@ static NTSTATUS winbindd_dual_auth_passdb(TALLOC_CTX *mem_ctx,
 					  const DATA_BLOB *lm_resp,
 					  const DATA_BLOB *nt_resp,
 					  bool interactive,
+					  uint8_t *pauthoritative,
 					  struct netr_SamInfo3 **pinfo3)
 {
 	struct auth_context *auth_context;
@@ -1238,6 +1239,11 @@ static NTSTATUS winbindd_dual_auth_passdb(TALLOC_CTX *mem_ctx,
 	bool ok;
 	int rc;
 	TALLOC_CTX *frame = talloc_stackframe();
+
+	/*
+	 * We are authoritative by default
+	 */
+	*pauthoritative = 1;
 
 	rc = tsocket_address_inet_from_strings(frame,
 					       "ip",
@@ -1290,6 +1296,9 @@ static NTSTATUS winbindd_dual_auth_passdb(TALLOC_CTX *mem_ctx,
 					  &server_info);
 
 	if (!NT_STATUS_IS_OK(status)) {
+		if (NT_STATUS_EQUAL(result, NT_STATUS_NOT_IMPLEMENTED)) {
+			*pauthoritative = 0;
+		}
 		TALLOC_FREE(frame);
 		return status;
 	}
@@ -1563,12 +1572,14 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(TALLOC_CTX *mem_ctx,
 			mem_ctx, 0, name_domain, name_user,
 			&chal_blob, &lm_resp, &nt_resp,
 			true, /* interactive */
+			&authoritative,
 			info3);
 
 		/* 
-		 * We need to try the remote NETLOGON server if this is NOT_IMPLEMENTED 
+		 * We need to try the remote NETLOGON server if this is
+		 * not authoritative.
 		 */
-		if (!NT_STATUS_EQUAL(result, NT_STATUS_NOT_IMPLEMENTED)) {
+		if (authoritative != 0) {
 			goto done;
 		}
 	}
@@ -1983,13 +1994,14 @@ NTSTATUS winbind_dual_SamLogon(struct winbindd_domain *domain,
 			name_domain, name_user,
 			&chal_blob, &lm_response, &nt_response,
 			false, /* interactive */
+			authoritative,
 			info3);
 
 		/* 
-		 * We need to try the remote NETLOGON server if this is NOT_IMPLEMENTED 
+		 * We need to try the remote NETLOGON server if this is
+		 * not authoritative.
 		 */
-		if (!NT_STATUS_EQUAL(result, NT_STATUS_NOT_IMPLEMENTED)) {
-			*authoritative = 1;
+		if (*authoritative != 0) {
 			*flags = 0;
 			goto process_result;
 		}
