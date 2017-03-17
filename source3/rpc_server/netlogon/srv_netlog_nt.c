@@ -1580,8 +1580,7 @@ static NTSTATUS _netr_LogonSamLogon_base(struct pipes_struct *p,
 					      r->in.logon_level,
 					      logon);
 
-	status = make_auth_context_subsystem(talloc_tos(),
-					     &auth_context);
+	status = make_auth3_context_for_netlogon(talloc_tos(), &auth_context);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
