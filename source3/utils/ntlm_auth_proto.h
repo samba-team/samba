@@ -39,6 +39,7 @@ NTSTATUS contact_winbind_auth_crap(const char *username,
 				   uint32_t extra_logon_parameters,
 				   uint8_t lm_key[8],
 				   uint8_t user_session_key[16],
+				   uint8_t *pauthoritative,
 				   char **error_string,
 				   char **unix_name);
 

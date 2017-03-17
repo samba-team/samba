@@ -528,6 +528,7 @@ NTSTATUS contact_winbind_auth_crap(const char *username,
 				   uint32_t extra_logon_parameters,
 				   uint8_t lm_key[8],
 				   uint8_t user_session_key[16],
+				   uint8_t *pauthoritative,
 				   char **error_string,
 				   char **unix_name)
 {
@@ -535,6 +536,8 @@ NTSTATUS contact_winbind_auth_crap(const char *username,
         NSS_STATUS result;
 	struct winbindd_request request;
 	struct winbindd_response response;
+
+	*pauthoritative = 1;
 
 	if (!get_require_membership_sid()) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -605,6 +608,7 @@ NTSTATUS contact_winbind_auth_crap(const char *username,
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		if (error_string) 
 			*error_string = smb_xstrdup(response.data.auth.error_string);
+		*pauthoritative = response.data.auth.authoritative;
 		winbindd_free_response(&response);
 		return nt_status;
 	}
@@ -951,6 +955,7 @@ static NTSTATUS winbind_pw_check(struct auth4_context *auth4_context,
 	uint8_t lm_key[8]; 
 	uint8_t user_sess_key[16]; 
 	char *unix_name = NULL;
+	uint8_t authoritative = 0;
 
 	nt_status = contact_winbind_auth_crap(user_info->client.account_name, user_info->client.domain_name, 
 					      user_info->workstation_name, 
@@ -960,6 +965,7 @@ static NTSTATUS winbind_pw_check(struct auth4_context *auth4_context,
 					      WBFLAG_PAM_LMKEY | WBFLAG_PAM_USER_SESSION_KEY | WBFLAG_PAM_UNIX_NAME,
 					      0,
 					      lm_key, user_sess_key, 
+					      &authoritative,
 					      &error_string, &unix_name);
 
 	if (NT_STATUS_IS_OK(nt_status)) {
@@ -1719,6 +1725,8 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 				TALLOC_FREE(mem_ctx);
 
 			} else {
+				uint8_t authoritative = 0;
+
 				if (!domain) {
 					domain = smb_xstrdup(get_winbind_domain());
 				}
@@ -1738,6 +1746,7 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 								      flags, 0,
 								      lm_key,
 								      user_session_key,
+								      &authoritative,
 								      &error_string,
 								      NULL);
 			}
@@ -2185,6 +2194,7 @@ static bool check_auth_crap(void)
 	char *hex_lm_key;
 	char *hex_user_session_key;
 	char *error_string;
+	uint8_t authoritative = 0;
 
 	setbuf(stdout, NULL);
 
@@ -2204,6 +2214,7 @@ static bool check_auth_crap(void)
 					      flags, 0,
 					      (unsigned char *)lm_key, 
 					      (unsigned char *)user_session_key, 
+					      &authoritative,
 					      &error_string, NULL);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
