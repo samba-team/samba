@@ -397,9 +397,10 @@ static NTSTATUS idmap_ad_context_create(TALLOC_CTX *mem_ctx,
 	ctx->unix_nss_info = lp_parm_bool(
 		-1, schema_config_option, "unix_nss_info", false);
 
-	schema_mode = lp_parm_const_string(
-		-1, schema_config_option, "schema_mode", "rfc2307");
 	TALLOC_FREE(schema_config_option);
+
+	schema_mode = idmap_config_const_string(
+		domname, "schema_mode", "rfc2307");
 
 	rc = get_posix_schema_names(ctx->ld, schema_mode, ctx, &ctx->schema);
 	if (!TLDAP_RC_IS_SUCCESS(rc)) {
