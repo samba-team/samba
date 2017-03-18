@@ -37,9 +37,7 @@ struct idmap_rid_context {
 
 static NTSTATUS idmap_rid_initialize(struct idmap_domain *dom)
 {
-	NTSTATUS ret;
 	struct idmap_rid_context *ctx;
-	char *config_option = NULL;
 
 	ctx = talloc_zero(dom, struct idmap_rid_context);
 	if (ctx == NULL) {
@@ -47,23 +45,11 @@ static NTSTATUS idmap_rid_initialize(struct idmap_domain *dom)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	config_option = talloc_asprintf(ctx, "idmap config %s", dom->name);
-	if ( ! config_option) {
-		DEBUG(0, ("Out of memory!\n"));
-		ret = NT_STATUS_NO_MEMORY;
-		goto failed;
-	}
-
-	ctx->base_rid = lp_parm_int(-1, config_option, "base_rid", 0);
+	ctx->base_rid = idmap_config_int(dom->name, "base_rid", 0);
 
 	dom->private_data = ctx;
 
-	talloc_free(config_option);
 	return NT_STATUS_OK;
-
-failed:
-	talloc_free(ctx);
-	return ret;
 }
 
 static NTSTATUS idmap_rid_id_to_sid(struct idmap_domain *dom, struct id_map *map)
