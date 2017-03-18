@@ -763,7 +763,6 @@ static int idmap_rfc2307_context_destructor(struct idmap_rfc2307_context *ctx)
 static NTSTATUS idmap_rfc2307_initialize(struct idmap_domain *domain)
 {
 	struct idmap_rfc2307_context *ctx;
-	char *cfg_opt;
 	const char *bind_path_user, *bind_path_group, *ldap_server, *realm;
 	NTSTATUS status;
 
@@ -772,12 +771,6 @@ static NTSTATUS idmap_rfc2307_initialize(struct idmap_domain *domain)
 		return NT_STATUS_NO_MEMORY;
 	}
 	talloc_set_destructor(ctx, idmap_rfc2307_context_destructor);
-
-	cfg_opt = talloc_asprintf(ctx, "idmap config %s", domain->name);
-	if (cfg_opt == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto err;
-	}
 
 	bind_path_user = idmap_config_const_string(
 		domain->name, "bind_path_user", NULL);
@@ -835,14 +828,12 @@ static NTSTATUS idmap_rfc2307_initialize(struct idmap_domain *domain)
 		}
 	}
 
-	ctx->user_cn = lp_parm_bool(-1, cfg_opt, "user_cn", false);
+	ctx->user_cn = idmap_config_bool(domain->name, "user_cn", false);
 
 	domain->private_data = ctx;
-	talloc_free(cfg_opt);
 	return NT_STATUS_OK;
 
 err:
-	talloc_free(cfg_opt);
 	talloc_free(ctx);
 	return status;
 }
