@@ -357,7 +357,6 @@ static NTSTATUS idmap_ad_context_create(TALLOC_CTX *mem_ctx,
 					struct idmap_ad_context **pctx)
 {
 	struct idmap_ad_context *ctx;
-	char *schema_config_option;
 	const char *schema_mode;
 	NTSTATUS status;
 	TLDAPRC rc;
@@ -385,19 +384,10 @@ static NTSTATUS idmap_ad_context_create(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	schema_config_option = talloc_asprintf(
-		ctx, "idmap config %s", domname);
-	if (schema_config_option == NULL) {
-		TALLOC_FREE(ctx);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	ctx->unix_primary_group = lp_parm_bool(
-		-1, schema_config_option, "unix_primary_group", false);
-	ctx->unix_nss_info = lp_parm_bool(
-		-1, schema_config_option, "unix_nss_info", false);
-
-	TALLOC_FREE(schema_config_option);
+	ctx->unix_primary_group = idmap_config_bool(
+		domname, "unix_primary_group", false);
+	ctx->unix_nss_info = idmap_config_bool(
+		domname, "unix_nss_info", false);
 
 	schema_mode = idmap_config_const_string(
 		domname, "schema_mode", "rfc2307");
