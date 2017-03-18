@@ -387,7 +387,8 @@ ctdb_check_unix_socket()
 		return 1
 	fi
 
-	if ! netstat --unix -a -n | grep -q "^unix.*LISTEN.*${_sockpath}$"; then
+	_out=$(ss -l -x "src ${_sockpath}" | tail -n +2)
+	if [ -z "$_out" ] ; then
 		echo "ERROR: ${service_name} not listening on ${_sockpath}"
 		return 1
 	fi
