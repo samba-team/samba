@@ -869,8 +869,7 @@ static NTSTATUS idmap_autorid_initialize(struct idmap_domain *dom)
 	DEBUG(5, ("%d domain ranges with a size of %d are available\n",
 		  config->maxranges, config->rangesize));
 
-	ignore_builtin = lp_parm_bool(-1, "idmap config *",
-				      "ignore builtin", false);
+	ignore_builtin = idmap_config_bool("*", "ignore builtin", false);
 
 	/* fill the TDB common configuration */
 
