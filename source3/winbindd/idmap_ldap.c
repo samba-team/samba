@@ -416,7 +416,6 @@ static NTSTATUS idmap_ldap_db_init(struct idmap_domain *dom)
 {
 	NTSTATUS ret;
 	struct idmap_ldap_context *ctx = NULL;
-	char *config_option = NULL;
 	const char *tmp = NULL;
 
 	/* Only do init if we are online */
@@ -430,14 +429,7 @@ static NTSTATUS idmap_ldap_db_init(struct idmap_domain *dom)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	config_option = talloc_asprintf(ctx, "idmap config %s", dom->name);
-	if (!config_option) {
-		DEBUG(0, ("Out of memory!\n"));
-		ret = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
-
-	tmp = lp_parm_const_string(-1, config_option, "ldap_url", NULL);
+	tmp = idmap_config_const_string(dom->name, "ldap_url", NULL);
 
 	if ( ! tmp) {
 		DEBUG(1, ("ERROR: missing idmap ldap url\n"));
@@ -449,7 +441,7 @@ static NTSTATUS idmap_ldap_db_init(struct idmap_domain *dom)
 
 	trim_char(ctx->url, '\"', '\"');
 
-	tmp = lp_parm_const_string(-1, config_option, "ldap_base_dn", NULL);
+	tmp = idmap_config_const_string(dom->name, "ldap_base_dn", NULL);
 	if ( ! tmp || ! *tmp) {
 		tmp = lp_ldap_idmap_suffix(talloc_tos());
 		if ( ! tmp) {
@@ -500,7 +492,6 @@ static NTSTATUS idmap_ldap_db_init(struct idmap_domain *dom)
 		goto done;
 	}
 
-	talloc_free(config_option);
 	return NT_STATUS_OK;
 
 /*failed */
