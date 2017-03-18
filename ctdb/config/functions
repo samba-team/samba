@@ -376,16 +376,21 @@ ctdb_check_tcp_ports()
 
 ######################################################
 # check a unix socket
-# usage: ctdb_check_unix_socket SERVICE_NAME <socket_path>
+# usage: ctdb_check_unix_socket SOCKPATH
 ######################################################
-ctdb_check_unix_socket() {
-    socket_path="$1"
-    [ -z "$socket_path" ] && return
+ctdb_check_unix_socket()
+{
+	_sockpath="$1"
 
-    if ! netstat --unix -a -n | grep -q "^unix.*LISTEN.*${socket_path}$"; then
-        echo "ERROR: $service_name socket $socket_path not found"
-        return 1
-    fi
+	if [ -z "$_sockpath" ] ; then
+		echo "ERROR: ctdb_check_unix_socket() requires socket path"
+		return 1
+	fi
+
+	if ! netstat --unix -a -n | grep -q "^unix.*LISTEN.*${_sockpath}$"; then
+		echo "ERROR: ${service_name} not listening on ${_sockpath}"
+		return 1
+	fi
 }
 
 ################################################
