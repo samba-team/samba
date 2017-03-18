@@ -361,7 +361,6 @@ static struct idmap_domain *idmap_init_domain(TALLOC_CTX *mem_ctx,
 {
 	struct idmap_domain *result;
 	NTSTATUS status;
-	char *config_option = NULL;
 	const char *range;
 	unsigned low_id = 0;
 	unsigned high_id = 0;
@@ -405,17 +404,8 @@ static struct idmap_domain *idmap_init_domain(TALLOC_CTX *mem_ctx,
 	 * load ranges and read only information from the config
 	 */
 
-	config_option = talloc_asprintf(result, "idmap config %s",
-					result->name);
-	if (config_option == NULL) {
-		DEBUG(0, ("Out of memory!\n"));
-		goto fail;
-	}
-
-	result->read_only = lp_parm_bool(-1, config_option, "read only", false);
+	result->read_only = idmap_config_bool(result->name, "read only", false);
 	range = idmap_config_const_string(result->name, "range", NULL);
-
-	talloc_free(config_option);
 
 	if (range == NULL) {
 		if (check_range) {
