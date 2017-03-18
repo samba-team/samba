@@ -64,7 +64,6 @@ struct idmap_ldap_context {
 
 static NTSTATUS get_credentials( TALLOC_CTX *mem_ctx,
 				 struct smbldap_state *ldap_state,
-				 const char *config_option,
 				 struct idmap_domain *dom,
 				 char **dn )
 {
@@ -76,7 +75,7 @@ static NTSTATUS get_credentials( TALLOC_CTX *mem_ctx,
 
 	/* assume anonymous if we don't have a specified user */
 
-	tmp = lp_parm_const_string(-1, config_option, "ldap_user_dn", NULL);
+	tmp = idmap_config_const_string(dom->name, "ldap_user_dn", NULL);
 
 	if ( tmp ) {
 		if (!dom) {
@@ -478,7 +477,7 @@ static NTSTATUS idmap_ldap_db_init(struct idmap_domain *dom)
 		goto done;
 	}
 
-	ret = get_credentials( ctx, ctx->smbldap_state, config_option,
+	ret = get_credentials( ctx, ctx->smbldap_state,
 			       dom, &ctx->user_dn );
 	if ( !NT_STATUS_IS_OK(ret) ) {
 		DEBUG(1,("idmap_ldap_db_init: Failed to get connection "
