@@ -172,8 +172,8 @@ if ! which mktemp >/dev/null 2>&1 ; then
     }
 fi
 
-tf=$(mktemp)
-sf=$(mktemp)
+tf=$(mktemp) || die "mktemp failed for tf - is TMPDIR missing?"
+sf=$(mktemp) || die "mktemp failed for sf - is TMPDIR missing?"
 
 set -o pipefail
 
