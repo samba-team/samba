@@ -398,7 +398,7 @@ static struct idmap_domain *idmap_init_domain(TALLOC_CTX *mem_ctx,
 	}
 
 	result->read_only = lp_parm_bool(-1, config_option, "read only", false);
-	range = lp_parm_const_string(-1, config_option, "range", NULL);
+	range = idmap_config_const_string(result->name, "range", NULL);
 
 	talloc_free(config_option);
 
