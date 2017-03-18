@@ -844,8 +844,7 @@ static NTSTATUS idmap_autorid_initialize(struct idmap_domain *dom)
 	commonconfig->private_data = config;
 
 	config->minvalue = dom->low_id;
-	config->rangesize = lp_parm_int(-1, "idmap config *",
-					"rangesize", 100000);
+	config->rangesize = idmap_config_int("*", "rangesize", 100000);
 
 	config->maxranges = (dom->high_id - dom->low_id + 1) /
 	    config->rangesize;
