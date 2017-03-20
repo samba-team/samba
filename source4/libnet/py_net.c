@@ -156,20 +156,32 @@ static PyObject *py_net_change_password(py_net_Object *self, PyObject *args, PyO
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx;
 	struct tevent_context *ev;
-	const char *kwnames[] = { "newpassword", NULL };
+	const char *kwnames[] = { "newpassword", "oldpassword", "domain", "username", NULL };
 
 	ZERO_STRUCT(r);
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s:change_password",
-					discard_const_p(char *, kwnames),
-					&r.generic.in.newpassword)) {
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|sss:change_password",
+					 discard_const_p(char *, kwnames),
+					 &r.generic.in.newpassword,
+					 &r.generic.in.oldpassword,
+					 &r.generic.in.domain_name,
+					 &r.generic.in.account_name)) {
 		return NULL;
 	}
 
 	r.generic.level = LIBNET_CHANGE_PASSWORD_GENERIC;
-	r.generic.in.account_name = cli_credentials_get_username(self->libnet_ctx->cred);
-	r.generic.in.domain_name = cli_credentials_get_domain(self->libnet_ctx->cred);
-	r.generic.in.oldpassword = cli_credentials_get_password(self->libnet_ctx->cred);
+	if (r.generic.in.account_name == NULL) {
+		r.generic.in.account_name
+			= cli_credentials_get_username(self->libnet_ctx->cred);
+	}
+	if (r.generic.in.domain_name == NULL) {
+		r.generic.in.domain_name
+			= cli_credentials_get_domain(self->libnet_ctx->cred);
+	}
+	if (r.generic.in.oldpassword == NULL) {
+		r.generic.in.oldpassword
+			= cli_credentials_get_password(self->libnet_ctx->cred);
+	}
 
 	/* FIXME: we really need to get a context from the caller or we may end
 	 * up with 2 event contexts */
