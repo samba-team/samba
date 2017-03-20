@@ -724,6 +724,28 @@ my @exported_envvars = (
 	"TRUST_REALM",
 	"TRUST_DOMSID",
 
+	# stuff related to a trusted domain, on a trust_member
+	# the domain behind a forest trust (two-way)
+	"TRUST_F_BOTH_SERVER",
+	"TRUST_F_BOTH_SERVER_IP",
+	"TRUST_F_BOTH_SERVER_IPV6",
+	"TRUST_F_BOTH_NETBIOSNAME",
+	"TRUST_F_BOTH_USERNAME",
+	"TRUST_F_BOTH_PASSWORD",
+	"TRUST_F_BOTH_DOMAIN",
+	"TRUST_F_BOTH_REALM",
+
+	# stuff related to a trusted domain, on a trust_member
+	# the domain behind an external trust (two-way)
+	"TRUST_E_BOTH_SERVER",
+	"TRUST_E_BOTH_SERVER_IP",
+	"TRUST_E_BOTH_SERVER_IPV6",
+	"TRUST_E_BOTH_NETBIOSNAME",
+	"TRUST_E_BOTH_USERNAME",
+	"TRUST_E_BOTH_PASSWORD",
+	"TRUST_E_BOTH_DOMAIN",
+	"TRUST_E_BOTH_REALM",
+
 	# domain controller stuff
 	"DC_SERVER",
 	"DC_SERVER_IP",
