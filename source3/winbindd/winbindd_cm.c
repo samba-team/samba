@@ -1814,13 +1814,14 @@ NTSTATUS wb_open_internal_pipe(TALLOC_CTX *mem_ctx,
 }
 
 static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
-				   struct winbindd_cm_conn *new_conn)
+				   struct winbindd_cm_conn *new_conn,
+				   bool need_rw_dc)
 {
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS result;
 	char *saf_servername;
 	int retries;
-	uint32_t request_flags = 0;
+	uint32_t request_flags = need_rw_dc ? DS_WRITABLE_REQUIRED : 0;
 
 	if ((mem_ctx = talloc_init("cm_open_connection")) == NULL) {
 		set_domain_offline(domain);
@@ -2127,7 +2128,7 @@ static NTSTATUS init_dc_connection_network(struct winbindd_domain *domain, bool 
 		set_dc_type_and_flags_trustinfo(domain);
 	}
 
-	result = cm_open_connection(domain, &domain->conn);
+	result = cm_open_connection(domain, &domain->conn, need_rw_dc);
 
 	if (NT_STATUS_IS_OK(result) && !domain->initialized) {
 		set_dc_type_and_flags(domain);
