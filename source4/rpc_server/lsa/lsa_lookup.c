@@ -793,6 +793,13 @@ NTSTATUS dcesrv_lsa_LookupSids(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 	r->out.names->names = NULL;
 	*r->out.count = 0;
 
+	r->out.names->names = talloc_zero_array(r->out.names,
+						struct lsa_TranslatedName,
+						r->in.sids->num_sids);
+	if (r->out.names->names == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	ZERO_STRUCT(r2);
 
 	r2.in.handle   = r->in.handle;
@@ -816,27 +823,13 @@ NTSTATUS dcesrv_lsa_LookupSids(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 	/* we deliberately don't check for error from the above,
 	   as even on error we are supposed to return the names  */
 
-	r->out.domains = r2.out.domains;
-	if (!r2.out.names) {
-		r->out.names = NULL;
-		return status;
-	}
-
-	r->out.names = talloc(mem_ctx, struct lsa_TransNameArray);
-	if (r->out.names == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	r->out.names->count = r2.out.names->count;
-	r->out.names->names = talloc_array(r->out.names, struct lsa_TranslatedName, 
-					     r->out.names->count);
-	if (r->out.names->names == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	for (i=0;i<r->out.names->count;i++) {
+	SMB_ASSERT(r2.out.names->count <= r->in.sids->num_sids);
+	for (i=0;i<r2.out.names->count;i++) {
 		r->out.names->names[i].sid_type    = r2.out.names->names[i].sid_type;
 		r->out.names->names[i].name.string = r2.out.names->names[i].name.string;
 		r->out.names->names[i].sid_index   = r2.out.names->names[i].sid_index;
 	}
+	r->out.names->count = r2.out.names->count;
 
 	return status;
 }
