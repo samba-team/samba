@@ -434,3 +434,502 @@ bool is_null_sid(const struct dom_sid *sid)
 	const struct dom_sid null_sid = {0};
 	return dom_sid_equal(sid, &null_sid);
 }
+
+/*
+ * See [MS-LSAT] 3.1.1.1.1 Predefined Translation Database and Corresponding View
+ */
+struct predefined_name_mapping {
+	const char *name;
+	enum lsa_SidType type;
+	struct dom_sid sid;
+};
+
+struct predefined_domain_mapping {
+	const char *domain;
+	struct dom_sid sid;
+	size_t num_names;
+	const struct predefined_name_mapping *names;
+};
+
+/* S-1-${AUTHORITY} */
+#define _SID0(authority) \
+	{ 1, 0, {0,0,0,0,0,authority}, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}}
+/* S-1-${AUTHORITY}-${SUB1} */
+#define _SID1(authority,sub1) \
+	{ 1, 1, {0,0,0,0,0,authority}, {sub1,0,0,0,0,0,0,0,0,0,0,0,0,0,0}}
+/* S-1-${AUTHORITY}-${SUB1}-${SUB2} */
+#define _SID2(authority,sub1,sub2) \
+	{ 1, 2, {0,0,0,0,0,authority}, {sub1,sub2,0,0,0,0,0,0,0,0,0,0,0,0,0}}
+
+/*
+ * S-1-0
+ */
+static const struct predefined_name_mapping predefined_names_S_1_0[] = {
+	{
+		.name = "NULL SID",
+		.type = SID_NAME_WKN_GRP,
+		.sid = _SID1(0, 0), /* S-1-0-0 */
+	},
+};
+
+/*
+ * S-1-1
+ */
+static const struct predefined_name_mapping predefined_names_S_1_1[] = {
+	{
+		.name = "Everyone",
+		.type = SID_NAME_WKN_GRP,
+		.sid = _SID1(1, 0), /* S-1-1-0 */
+	},
+};
+
+/*
+ * S-1-2
+ */
+static const struct predefined_name_mapping predefined_names_S_1_2[] = {
+	{
+		.name = "LOCAL",
+		.type = SID_NAME_WKN_GRP,
+		.sid = _SID1(2, 0), /* S-1-2-0 */
+	},
+};
+
+/*
+ * S-1-3
+ */
+static const struct predefined_name_mapping predefined_names_S_1_3[] = {
+	{
+		.name = "CREATOR OWNER",
+		.type = SID_NAME_WKN_GRP,
+		.sid = _SID1(3, 0), /* S-1-3-0 */
+	},
+	{
+		.name = "CREATOR GROUP",
+		.type = SID_NAME_WKN_GRP,
+		.sid = _SID1(3, 1), /* S-1-3-1 */
+	},
+	{
+		.name = "CREATOR OWNER SERVER",
+		.type = SID_NAME_WKN_GRP,
+		.sid = _SID1(3, 0), /* S-1-3-2 */
+	},
+	{
+		.name = "CREATOR GROUP SERVER",
+		.type = SID_NAME_WKN_GRP,
+		.sid = _SID1(3, 1), /* S-1-3-3 */
+	},
+	{
+		.name = "OWNER RIGHTS",
+		.type = SID_NAME_WKN_GRP,
+		.sid = _SID1(3, 4), /* S-1-3-4 */
+	},
+};
+
+/*
+ * S-1-5 only 'NT Pseudo Domain'
+ */
+static const struct predefined_name_mapping predefined_names_S_1_5p[] = {
+	{
+		.name = "NT Pseudo Domain",
+		.type = SID_NAME_DOMAIN,
+		.sid = _SID0(5), /* S-1-5 */
+	},
+};
+
+/*
+ * S-1-5 'NT AUTHORITY'
+ */
+static const struct predefined_name_mapping predefined_names_S_1_5a[] = {
+	{
+		.name = "DIALUP",
+		.type = SID_NAME_WKN_GRP,
+		.sid = _SID1(5, 1), /* S-1-5-1 */
+	},
+	{
+		.name = "NETWORK",
+		.type = SID_NAME_WKN_GRP,
+		.sid = _SID1(5, 2), /* S-1-5-2 */
+	},
+	{
+		.name = "BATCH",
+		.type = SID_NAME_WKN_GRP,
+		.sid = _SID1(5, 3), /* S-1-5-3 */
+	},
+	{
+		.name = "INTERACTIVE",
+		.type = SID_NAME_WKN_GRP,
+		.sid = _SID1(5, 4), /* S-1-5-4 */
+	},
+	{
+		.name = "SERVICE",
+		.type = SID_NAME_WKN_GRP,
+		.sid = _SID1(5, 6), /* S-1-5-6 */
+	},
+	{
+		.name = "ANONYMOUS LOGON",
+		.type = SID_NAME_WKN_GRP,
+		.sid = _SID1(5, 7), /* S-1-5-7 */
+	},
+	{
+		.name = "PROXY",
+		.type = SID_NAME_WKN_GRP,
+		.sid = _SID1(5, 8), /* S-1-5-8 */
+	},
+	{
+		.name = "ENTERPRISE DOMAIN CONTROLLERS",
+		.type = SID_NAME_WKN_GRP,
+		.sid = _SID1(5, 9), /* S-1-5-9 */
+	},
+	{
+		.name = "SELF",
+		.type = SID_NAME_WKN_GRP,
+		.sid = _SID1(5, 10), /* S-1-5-10 */
+	},
+	{
+		.name = "Authenticated Users",
+		.type = SID_NAME_WKN_GRP,
+		.sid = _SID1(5, 11), /* S-1-5-11 */
+	},
+	{
+		.name = "RESTRICTED",
+		.type = SID_NAME_WKN_GRP,
+		.sid = _SID1(5, 12), /* S-1-5-12 */
+	},
+	{
+		.name = "TERMINAL SERVER USER",
+		.type = SID_NAME_WKN_GRP,
+		.sid = _SID1(5, 13), /* S-1-5-13 */
+	},
+	{
+		.name = "REMOTE INTERACTIVE LOGON",
+		.type = SID_NAME_WKN_GRP,
+		.sid = _SID1(5, 14), /* S-1-5-14 */
+	},
+	{
+		.name = "This Organization",
+		.type = SID_NAME_WKN_GRP,
+		.sid = _SID1(5, 15), /* S-1-5-15 */
+	},
+	{
+		.name = "IUSR",
+		.type = SID_NAME_WKN_GRP,
+		.sid = _SID1(5, 17), /* S-1-5-17 */
+	},
+	{
+		.name = "SYSTEM",
+		.type = SID_NAME_WKN_GRP,
+		.sid = _SID1(5, 18), /* S-1-5-18 */
+	},
+	{
+		.name = "LOCAL SERVICE",
+		.type = SID_NAME_WKN_GRP,
+		.sid = _SID1(5, 19), /* S-1-5-19 */
+	},
+	{
+		.name = "NETWORK SERVICE",
+		.type = SID_NAME_WKN_GRP,
+		.sid = _SID1(5, 20), /* S-1-5-20 */
+	},
+	{
+		.name = "WRITE RESTRICTED",
+		.type = SID_NAME_WKN_GRP,
+		.sid = _SID1(5, 33), /* S-1-5-33 */
+	},
+	{
+		.name = "Other Organization",
+		.type = SID_NAME_WKN_GRP,
+		.sid = _SID1(5, 1000), /* S-1-5-1000 */
+	},
+};
+
+/*
+ * S-1-5-32
+ */
+static const struct predefined_name_mapping predefined_names_S_1_5_32[] = {
+	{
+		.name = "BUILTIN",
+		.type = SID_NAME_DOMAIN,
+		.sid = _SID1(5, 32), /* S-1-5-32 */
+	},
+};
+
+/*
+ * S-1-5-64
+ */
+static const struct predefined_name_mapping predefined_names_S_1_5_64[] = {
+	{
+		.name = "NTLM Authentication",
+		.type = SID_NAME_WKN_GRP,
+		.sid = _SID2(5, 64, 10), /* S-1-5-64-10 */
+	},
+	{
+		.name = "SChannel Authentication",
+		.type = SID_NAME_WKN_GRP,
+		.sid = _SID2(5, 64, 14), /* S-1-5-64-14 */
+	},
+	{
+		.name = "Digest Authentication",
+		.type = SID_NAME_WKN_GRP,
+		.sid = _SID2(5, 64, 21), /* S-1-5-64-21 */
+	},
+};
+
+/*
+ * S-1-7
+ */
+static const struct predefined_name_mapping predefined_names_S_1_7[] = {
+	{
+		.name = "Internet$",
+		.type = SID_NAME_DOMAIN,
+		.sid = _SID0(7), /* S-1-7 */
+	},
+};
+
+/*
+ * S-1-16
+ */
+static const struct predefined_name_mapping predefined_names_S_1_16[] = {
+	{
+		.name = "Mandatory Label",
+		.type = SID_NAME_DOMAIN,
+		.sid = _SID0(16), /* S-1-16 */
+	},
+	{
+		.name = "Untrusted Mandatory Level",
+		.type = SID_NAME_LABEL,
+		.sid = _SID1(16, 0), /* S-1-16-0 */
+	},
+	{
+		.name = "Low Mandatory Level",
+		.type = SID_NAME_LABEL,
+		.sid = _SID1(16, 4096), /* S-1-16-4096 */
+	},
+	{
+		.name = "Medium Mandatory Level",
+		.type = SID_NAME_LABEL,
+		.sid = _SID1(16, 8192), /* S-1-16-8192 */
+	},
+	{
+		.name = "High Mandatory Level",
+		.type = SID_NAME_LABEL,
+		.sid = _SID1(16, 12288), /* S-1-16-12288 */
+	},
+	{
+		.name = "System Mandatory Level",
+		.type = SID_NAME_LABEL,
+		.sid = _SID1(16, 16384), /* S-1-16-16384 */
+	},
+	{
+		.name = "Protected Process Mandatory Level",
+		.type = SID_NAME_LABEL,
+		.sid = _SID1(16, 20480), /* S-1-16-20480 */
+	},
+};
+
+static const struct predefined_domain_mapping predefined_domains[] = {
+	{
+		.domain = "",
+		.sid = _SID0(0), /* S-1-0 */
+		.num_names = ARRAY_SIZE(predefined_names_S_1_0),
+		.names = predefined_names_S_1_0,
+	},
+	{
+		.domain = "",
+		.sid = _SID0(1), /* S-1-1 */
+		.num_names = ARRAY_SIZE(predefined_names_S_1_1),
+		.names = predefined_names_S_1_1,
+	},
+	{
+		.domain = "",
+		.sid = _SID0(2), /* S-1-2 */
+		.num_names = ARRAY_SIZE(predefined_names_S_1_2),
+		.names = predefined_names_S_1_2,
+	},
+	{
+		.domain = "",
+		.sid = _SID0(3), /* S-1-3 */
+		.num_names = ARRAY_SIZE(predefined_names_S_1_3),
+		.names = predefined_names_S_1_3,
+	},
+	{
+		.domain = "",
+		.sid = _SID0(3), /* S-1-3 */
+		.num_names = ARRAY_SIZE(predefined_names_S_1_3),
+		.names = predefined_names_S_1_3,
+	},
+	/*
+	 * S-1-5 is split here
+	 *
+	 * 'NT Pseudo Domain' has precedence before 'NT AUTHORITY'.
+	 *
+	 * In a LookupSids with multiple sids e.g. S-1-5 and S-1-5-7
+	 * the domain section (struct lsa_DomainInfo) gets
+	 * 'NT Pseudo Domain' with S-1-5. If asked in reversed order
+	 * S-1-5-7 and then S-1-5, you get struct lsa_DomainInfo
+	 * with 'NT AUTHORITY' and S-1-5.
+	 */
+	{
+		.domain = "NT Pseudo Domain",
+		.sid = _SID0(5), /* S-1-5 */
+		.num_names = ARRAY_SIZE(predefined_names_S_1_5p),
+		.names = predefined_names_S_1_5p,
+	},
+	{
+		.domain = "NT AUTHORITY",
+		.sid = _SID0(5), /* S-1-5 */
+		.num_names = ARRAY_SIZE(predefined_names_S_1_5a),
+		.names = predefined_names_S_1_5a,
+	},
+	{
+		.domain = "BUILTIN",
+		.sid = _SID1(5, 32), /* S-1-5-32 */
+		.num_names = ARRAY_SIZE(predefined_names_S_1_5_32),
+		.names = predefined_names_S_1_5_32,
+	},
+	/*
+	 * 'NT AUTHORITY' again with S-1-5-64 this time
+	 */
+	{
+		.domain = "NT AUTHORITY",
+		.sid = _SID1(5, 64), /* S-1-5-64 */
+		.num_names = ARRAY_SIZE(predefined_names_S_1_5_64),
+		.names = predefined_names_S_1_5_64,
+	},
+	{
+		.domain = "Internet$",
+		.sid = _SID0(7), /* S-1-7 */
+		.num_names = ARRAY_SIZE(predefined_names_S_1_7),
+		.names = predefined_names_S_1_7,
+	},
+	{
+		.domain = "Mandatory Label",
+		.sid = _SID0(16), /* S-1-16 */
+		.num_names = ARRAY_SIZE(predefined_names_S_1_16),
+		.names = predefined_names_S_1_16,
+	},
+};
+
+NTSTATUS dom_sid_lookup_predefined_name(const char *name,
+					const struct dom_sid **sid,
+					enum lsa_SidType *type,
+					const struct dom_sid **authority_sid,
+					const char **authority_name)
+{
+	size_t di;
+	const char *domain = "";
+	size_t domain_len = 0;
+	const char *p;
+	bool match;
+
+	*sid = NULL;
+	*type = SID_NAME_UNKNOWN;
+	*authority_sid = NULL;
+	*authority_name = NULL;
+
+	if (name == NULL) {
+		name = "";
+	}
+
+	p = strchr(name, '\\');
+	if (p != NULL) {
+		domain = name;
+		domain_len = PTR_DIFF(p, domain);
+		name = p + 1;
+	}
+
+	match = strequal(name, "");
+	if (match) {
+		/*
+		 * Strange, but that's what W2012R2 does.
+		 */
+		name = "BUILTIN";
+	}
+
+	for (di = 0; di < ARRAY_SIZE(predefined_domains); di++) {
+		const struct predefined_domain_mapping *d =
+			&predefined_domains[di];
+		size_t ni;
+
+		if (domain_len != 0) {
+			int cmp;
+
+			cmp = strncasecmp(d->domain, domain, domain_len);
+			if (cmp != 0) {
+				continue;
+			}
+		}
+
+		for (ni = 0; ni < d->num_names; ni++) {
+			const struct predefined_name_mapping *n =
+				&d->names[ni];
+
+			match = strequal(n->name, name);
+			if (!match) {
+				continue;
+			}
+
+			*sid = &n->sid;
+			*type = n->type;
+			*authority_sid = &d->sid;
+			*authority_name = d->domain;
+			return NT_STATUS_OK;
+		}
+	}
+
+	return NT_STATUS_NONE_MAPPED;
+}
+
+NTSTATUS dom_sid_lookup_predefined_sid(const struct dom_sid *sid,
+				       const char **name,
+				       enum lsa_SidType *type,
+				       const struct dom_sid **authority_sid,
+				       const char **authority_name)
+{
+	size_t di;
+	bool match_domain = false;
+
+	*name = NULL;
+	*type = SID_NAME_UNKNOWN;
+	*authority_sid = NULL;
+	*authority_name = NULL;
+
+	if (sid == NULL) {
+		return NT_STATUS_INVALID_SID;
+	}
+
+	for (di = 0; di < ARRAY_SIZE(predefined_domains); di++) {
+		const struct predefined_domain_mapping *d =
+			&predefined_domains[di];
+		size_t ni;
+		int cmp;
+
+		cmp = dom_sid_compare_auth(&d->sid, sid);
+		if (cmp != 0) {
+			continue;
+		}
+
+		match_domain = true;
+
+		for (ni = 0; ni < d->num_names; ni++) {
+			const struct predefined_name_mapping *n =
+				&d->names[ni];
+
+			cmp = dom_sid_compare(&n->sid, sid);
+			if (cmp != 0) {
+				continue;
+			}
+
+			*name = n->name;
+			*type = n->type;
+			*authority_sid = &d->sid;
+			*authority_name = d->domain;
+			return NT_STATUS_OK;
+		}
+	}
+
+	if (!match_domain) {
+		return NT_STATUS_INVALID_SID;
+	}
+
+	return NT_STATUS_NONE_MAPPED;
+}

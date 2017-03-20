@@ -62,6 +62,19 @@ extern const struct dom_sid global_sid_Unix_NFS_Groups;
 extern const struct dom_sid global_sid_Unix_NFS_Mode;
 extern const struct dom_sid global_sid_Unix_NFS_Other;
 
+enum lsa_SidType;
+
+NTSTATUS dom_sid_lookup_predefined_name(const char *name,
+					const struct dom_sid **sid,
+					enum lsa_SidType *type,
+					const struct dom_sid **authority_sid,
+					const char **authority_name);
+NTSTATUS dom_sid_lookup_predefined_sid(const struct dom_sid *sid,
+				       const char **name,
+				       enum lsa_SidType *type,
+				       const struct dom_sid **authority_sid,
+				       const char **authority_name);
+
 int dom_sid_compare_auth(const struct dom_sid *sid1,
 			 const struct dom_sid *sid2);
 int dom_sid_compare(const struct dom_sid *sid1, const struct dom_sid *sid2);
