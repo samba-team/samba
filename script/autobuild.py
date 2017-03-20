@@ -747,6 +747,11 @@ while True:
     try:
         run_cmd("rm -rf %s" % test_tmpdir, show=True)
         os.makedirs(test_tmpdir)
+        # The waf uninstall code removes empty directories all the way
+        # up the tree.  Creating a file in test_tmpdir stops it from
+        # being removed.
+        run_cmd("touch %s" % os.path.join(test_tmpdir,
+                                          ".directory-is-not-empty"), show=True)
         run_cmd("stat %s" % test_tmpdir, show=True)
         run_cmd("stat %s" % testbase, show=True)
         run_cmd("git clone --recursive --shared %s %s" % (gitroot, test_master), show=True, dir=gitroot)
