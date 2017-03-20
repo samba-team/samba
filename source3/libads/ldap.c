@@ -279,7 +279,12 @@ static bool ads_try_connect(ADS_STRUCT *ads, bool gc,
 	SAFE_FREE(ads->config.client_site_name);
 	SAFE_FREE(ads->server.workgroup);
 
-	ads->config.flags	       = cldap_reply.server_type;
+	if (!check_cldap_reply_required_flags(cldap_reply.server_type,
+					      ads->config.flags)) {
+		ret = false;
+		goto out;
+	}
+
 	ads->config.ldap_server_name   = SMB_STRDUP(cldap_reply.pdc_dns_name);
 	ads->config.realm              = SMB_STRDUP(cldap_reply.dns_domain);
 	if (!strupper_m(ads->config.realm)) {
@@ -304,6 +309,9 @@ static bool ads_try_connect(ADS_STRUCT *ads, bool gc,
 	/* Store our site name. */
 	sitename_store( cldap_reply.domain_name, cldap_reply.client_site);
 	sitename_store( cldap_reply.dns_domain, cldap_reply.client_site);
+
+	/* Leave this until last so that the flags are not clobbered */
+	ads->config.flags	       = cldap_reply.server_type;
 
 	ret = true;
 
@@ -334,7 +342,9 @@ static NTSTATUS cldap_ping_list(ADS_STRUCT *ads,const char *domain,
 			check_negative_conn_cache(domain, server)))
 			continue;
 
+		/* Returns ok only if it matches the correct server type */
 		ok = ads_try_connect(ads, false, &ip_list[i].ss);
+
 		if (ok) {
 			return NT_STATUS_OK;
 		}

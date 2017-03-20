@@ -27,6 +27,9 @@
 
 /* The following definitions come from libads/cldap.c  */
 
+bool check_cldap_reply_required_flags(uint32_t ret_flags,
+				      uint32_t req_flags);
+
 struct tevent_req *cldap_multi_netlogon_send(
 	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	const struct tsocket_address * const *servers,

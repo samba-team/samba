@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "../libcli/cldap/cldap.h"
+#include "../librpc/gen_ndr/ndr_netlogon.h"
 #include "../lib/tsocket/tsocket.h"
 #include "../lib/util/tevent_ntstatus.h"
 #include "libads/cldap.h"
@@ -46,6 +47,43 @@ struct cldap_multi_netlogon_state {
 
 static void cldap_multi_netlogon_done(struct tevent_req *subreq);
 static void cldap_multi_netlogon_next(struct tevent_req *subreq);
+
+/****************************************************************
+****************************************************************/
+
+#define RETURN_ON_FALSE(x) if (!(x)) return false;
+
+bool check_cldap_reply_required_flags(uint32_t ret_flags,
+				      uint32_t req_flags)
+{
+	if (req_flags == 0) {
+		return true;
+	}
+
+	if (req_flags & DS_PDC_REQUIRED)
+		RETURN_ON_FALSE(ret_flags & NBT_SERVER_PDC);
+
+	if (req_flags & DS_GC_SERVER_REQUIRED)
+		RETURN_ON_FALSE(ret_flags & NBT_SERVER_GC);
+
+	if (req_flags & DS_ONLY_LDAP_NEEDED)
+		RETURN_ON_FALSE(ret_flags & NBT_SERVER_LDAP);
+
+	if ((req_flags & DS_DIRECTORY_SERVICE_REQUIRED) ||
+	    (req_flags & DS_DIRECTORY_SERVICE_PREFERRED))
+		RETURN_ON_FALSE(ret_flags & NBT_SERVER_DS);
+
+	if (req_flags & DS_KDC_REQUIRED)
+		RETURN_ON_FALSE(ret_flags & NBT_SERVER_KDC);
+
+	if (req_flags & DS_TIMESERV_REQUIRED)
+		RETURN_ON_FALSE(ret_flags & NBT_SERVER_TIMESERV);
+
+	if (req_flags & DS_WRITABLE_REQUIRED)
+		RETURN_ON_FALSE(ret_flags & NBT_SERVER_WRITABLE);
+
+	return true;
+}
 
 /*
  * Do a parallel cldap ping to the servers. The first "min_servers"

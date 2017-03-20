@@ -279,43 +279,6 @@ static uint32_t get_cldap_reply_server_flags(struct netlogon_samlogon_response *
 /****************************************************************
 ****************************************************************/
 
-#define RETURN_ON_FALSE(x) if (!(x)) return false;
-
-static bool check_cldap_reply_required_flags(uint32_t ret_flags,
-					     uint32_t req_flags)
-{
-	if (req_flags == 0) {
-		return true;
-	}
-
-	if (req_flags & DS_PDC_REQUIRED)
-		RETURN_ON_FALSE(ret_flags & NBT_SERVER_PDC);
-
-	if (req_flags & DS_GC_SERVER_REQUIRED)
-		RETURN_ON_FALSE(ret_flags & NBT_SERVER_GC);
-
-	if (req_flags & DS_ONLY_LDAP_NEEDED)
-		RETURN_ON_FALSE(ret_flags & NBT_SERVER_LDAP);
-
-	if ((req_flags & DS_DIRECTORY_SERVICE_REQUIRED) ||
-	    (req_flags & DS_DIRECTORY_SERVICE_PREFERRED))
-		RETURN_ON_FALSE(ret_flags & NBT_SERVER_DS);
-
-	if (req_flags & DS_KDC_REQUIRED)
-		RETURN_ON_FALSE(ret_flags & NBT_SERVER_KDC);
-
-	if (req_flags & DS_TIMESERV_REQUIRED)
-		RETURN_ON_FALSE(ret_flags & NBT_SERVER_TIMESERV);
-
-	if (req_flags & DS_WRITABLE_REQUIRED)
-		RETURN_ON_FALSE(ret_flags & NBT_SERVER_WRITABLE);
-
-	return true;
-}
-
-/****************************************************************
-****************************************************************/
-
 static NTSTATUS dsgetdcname_cache_fetch(TALLOC_CTX *mem_ctx,
 					const char *domain_name,
 					const struct GUID *domain_guid,
