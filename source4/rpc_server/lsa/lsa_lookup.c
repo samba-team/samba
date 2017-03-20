@@ -1120,6 +1120,13 @@ NTSTATUS dcesrv_lsa_LookupNames(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	r->out.sids->sids = NULL;
 	*r->out.count = 0;
 
+	r->out.sids->sids = talloc_zero_array(r->out.sids,
+					      struct lsa_TranslatedSid,
+					      r->in.num_names);
+	if (r->out.sids->sids == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	ZERO_STRUCT(r2);
 
 	r2.in.handle    = r->in.handle;
@@ -1141,25 +1148,14 @@ NTSTATUS dcesrv_lsa_LookupNames(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	r2.out.domains	= r->out.domains;
 
 	status = dcesrv_lsa_LookupNames2(dce_call, mem_ctx, &r2);
-	if (r2.out.sids == NULL) {
-		return status;
-	}
 
-	r->out.sids = talloc(mem_ctx, struct lsa_TransSidArray);
-	if (r->out.sids == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	r->out.sids->count = r2.out.sids->count;
-	r->out.sids->sids = talloc_array(r->out.sids, struct lsa_TranslatedSid, 
-					   r->out.sids->count);
-	if (r->out.sids->sids == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	for (i=0;i<r->out.sids->count;i++) {
+	SMB_ASSERT(r2.out.sids->count <= r->in.num_names);
+	for (i=0;i<r2.out.sids->count;i++) {
 		r->out.sids->sids[i].sid_type    = r2.out.sids->sids[i].sid_type;
 		r->out.sids->sids[i].rid         = r2.out.sids->sids[i].rid;
 		r->out.sids->sids[i].sid_index   = r2.out.sids->sids[i].sid_index;
 	}
+	r->out.sids->count = r2.out.sids->count;
 
 	return status;
 }
