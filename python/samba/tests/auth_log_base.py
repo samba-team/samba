@@ -49,12 +49,7 @@ class AuthLogTestBase(samba.tests.TestCase):
         self.msg_ctx.register(self.msg_handler_and_context,
                               msg_type=MSG_AUTH_LOG)
 
-        # Discard any previously queued messages.
-        self.msg_ctx.loop_once(0.001)
-        while len( self.context["messages"]):
-            self.msg_ctx.loop_once(0.001)
-        self.context["messages"] = []
-
+        self.discardMessages()
 
         self.remoteAddress = None
         self.server = os.environ["SERVER"]
@@ -100,3 +95,10 @@ class AuthLogTestBase(samba.tests.TestCase):
 
         self.connection = None
         return filter( isRemote, self.context["messages"])
+
+    # Discard any previously queued messages.
+    def discardMessages(self):
+        self.msg_ctx.loop_once(0.001)
+        while len( self.context["messages"]):
+            self.msg_ctx.loop_once(0.001)
+        self.context["messages"] = []

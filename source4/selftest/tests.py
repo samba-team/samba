@@ -596,6 +596,12 @@ if have_jansson_support:
     planoldpythontestsuite("ad_dc_ntvfs:local", "samba.tests.auth_log", extra_args=['-U"$USERNAME%$PASSWORD"'],
                            environ={'CLIENT_IP': '127.0.0.11',
                                     'SOCKET_WRAPPER_DEFAULT_IFACE': 11})
+    planoldpythontestsuite("ad_dc:local", "samba.tests.auth_log_pass_change", extra_args=['-U"$USERNAME%$PASSWORD"'],
+                           environ={'CLIENT_IP': '127.0.0.11',
+                                    'SOCKET_WRAPPER_DEFAULT_IFACE': 11})
+    planoldpythontestsuite("ad_dc_ntvfs:local", "samba.tests.auth_log_pass_change", extra_args=['-U"$USERNAME%$PASSWORD"'],
+                           environ={'CLIENT_IP': '127.0.0.11',
+                                    'SOCKET_WRAPPER_DEFAULT_IFACE': 11})
     planoldpythontestsuite("ad_dc_ntvfs:local", "samba.tests.auth_log_ncalrpc", extra_args=['-U"$USERNAME%$PASSWORD"'])
     planoldpythontestsuite("ad_dc:local", "samba.tests.auth_log_ncalrpc", extra_args=['-U"$USERNAME%$PASSWORD"'])
 planoldpythontestsuite("ad_dc", "samba.tests.dcerpc.dnsserver", extra_args=['-U"$USERNAME%$PASSWORD"'])
