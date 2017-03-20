@@ -1836,39 +1836,39 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 	   before talking to it. It going down may have
 	   triggered the reconnection. */
 
-	if ( saf_servername && NT_STATUS_IS_OK(check_negative_conn_cache( domain->name, saf_servername))) {
+	if (saf_servername && NT_STATUS_IS_OK(check_negative_conn_cache(domain->name, saf_servername))) {
+		struct sockaddr_storage ss;
+		char *dcname = NULL;
+		bool resolved = true;
 
-		DEBUG(10,("cm_open_connection: saf_servername is '%s' for domain %s\n",
-			saf_servername, domain->name ));
+		DEBUG(10, ("cm_open_connection: saf_servername is '%s' for domain %s\n",
+			   saf_servername, domain->name));
 
 		/* convert an ip address to a name */
-		if (is_ipaddress( saf_servername ) ) {
-			char *dcname = NULL;
-			struct sockaddr_storage ss;
-
+		if (is_ipaddress(saf_servername)) {
 			if (!interpret_string_addr(&ss, saf_servername,
-						AI_NUMERICHOST)) {
+						   AI_NUMERICHOST)) {
 				TALLOC_FREE(mem_ctx);
 				return NT_STATUS_UNSUCCESSFUL;
 			}
-			if (dcip_check_name(mem_ctx, domain, &ss, &dcname, request_flags)) {
-				domain->dcname = talloc_strdup(domain,
-							       dcname);
-				if (domain->dcname == NULL) {
-					TALLOC_FREE(mem_ctx);
-					return NT_STATUS_NO_MEMORY;
-				}
-			} else {
-				winbind_add_failed_connection_entry(
-					domain, saf_servername,
-					NT_STATUS_UNSUCCESSFUL);
-			}
 		} else {
-			domain->dcname = talloc_strdup(domain, saf_servername);
+			if (!resolve_name(saf_servername, &ss, 0x20, true)) {
+				resolved = false;
+			}
+		}
+
+		if (resolved && dcip_check_name(mem_ctx, domain, &ss, &dcname, request_flags)) {
+			domain->dcname = talloc_strdup(domain,
+						       dcname);
 			if (domain->dcname == NULL) {
 				TALLOC_FREE(mem_ctx);
 				return NT_STATUS_NO_MEMORY;
 			}
+
+			domain->dcaddr = ss;
+		} else {
+			winbind_add_failed_connection_entry(domain, saf_servername,
+							    NT_STATUS_UNSUCCESSFUL);
 		}
 	}
 
@@ -1879,12 +1879,12 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 
 		result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 
-		DEBUG(10,("cm_open_connection: dcname is '%s' for domain %s\n",
-			domain->dcname ? domain->dcname : "", domain->name ));
+		DEBUG(10, ("cm_open_connection: dcname is '%s' for domain %s\n",
+			   domain->dcname ? domain->dcname : "", domain->name));
 
-		if (domain->dcname != NULL
-			&& NT_STATUS_IS_OK(check_negative_conn_cache( domain->name, domain->dcname))
-			&& (resolve_name(domain->dcname, &domain->dcaddr, 0x20, true)))
+		if (domain->dcname != NULL &&
+		    NT_STATUS_IS_OK(check_negative_conn_cache(domain->name,
+							      domain->dcname)))
 		{
 			NTSTATUS status;
 
