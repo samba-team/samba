@@ -853,25 +853,21 @@ static NTSTATUS dcesrv_lsa_LookupNames_common(struct dcesrv_call_state *dce_call
 	struct lsa_RefDomainList *domains;
 	uint32_t i;
 
+	*r->out.domains = NULL;
+	r->out.sids->count = 0;
+	r->out.sids->sids = NULL;
+	*r->out.count = 0;
+
 	if (r->in.level < LSA_LOOKUP_NAMES_ALL ||
 	    r->in.level > LSA_LOOKUP_NAMES_RODC_REFERRAL_TO_FULL_DC) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	*r->out.domains = NULL;
-
-	domains = talloc_zero(mem_ctx,  struct lsa_RefDomainList);
+	domains = talloc_zero(r->out.domains, struct lsa_RefDomainList);
 	if (domains == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 	*r->out.domains = domains;
-
-	r->out.sids = talloc_zero(mem_ctx,  struct lsa_TransSidArray3);
-	if (r->out.sids == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	*r->out.count = 0;
 
 	r->out.sids->sids = talloc_array(r->out.sids, struct lsa_TranslatedSid3, 
 					   r->in.num_names);
@@ -978,6 +974,11 @@ NTSTATUS dcesrv_lsa_LookupNames4(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	    auth->auth_level < DCERPC_AUTH_LEVEL_INTEGRITY) {
 		DCESRV_FAULT(DCERPC_FAULT_ACCESS_DENIED);
 	}
+
+	*r->out.domains = NULL;
+	r->out.sids->count = 0;
+	r->out.sids->sids = NULL;
+	*r->out.count = 0;
 
 	status = dcesrv_lsa_get_policy_state(dce_call, mem_ctx,
 					     0, /* we skip access checks */
