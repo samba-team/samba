@@ -596,12 +596,15 @@ static NTSTATUS dcesrv_lsa_LookupSids_common(struct dcesrv_call_state *dce_call,
 	NTSTATUS status = NT_STATUS_OK;
 	uint32_t i;
 
+	*r->out.domains = NULL;
+	r->out.names->count = 0;
+	r->out.names->names = NULL;
+	*r->out.count = 0;
+
 	if (r->in.level < LSA_LOOKUP_NAMES_ALL ||
 	    r->in.level > LSA_LOOKUP_NAMES_RODC_REFERRAL_TO_FULL_DC) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-
-	*r->out.domains = NULL;
 
 	/* NOTE: the WSPP test suite tries SIDs with invalid revision numbers,
 	   and expects NT_STATUS_INVALID_PARAMETER back - we just treat it as 
@@ -614,13 +617,6 @@ static NTSTATUS dcesrv_lsa_LookupSids_common(struct dcesrv_call_state *dce_call,
 		return NT_STATUS_NO_MEMORY;
 	}
 	*r->out.domains = domains;
-
-	r->out.names = talloc_zero(mem_ctx,  struct lsa_TransNameArray2);
-	if (r->out.names == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	*r->out.count = 0;
 
 	r->out.names->names = talloc_array(r->out.names, struct lsa_TranslatedName2, 
 					     r->in.sids->num_sids);
@@ -739,6 +735,11 @@ NTSTATUS dcesrv_lsa_LookupSids3(struct dcesrv_call_state *dce_call,
 		DCESRV_FAULT(DCERPC_FAULT_ACCESS_DENIED);
 	}
 
+	*r->out.domains = NULL;
+	r->out.names->count = 0;
+	r->out.names->names = NULL;
+	*r->out.count = 0;
+
 	status = dcesrv_lsa_get_policy_state(dce_call, mem_ctx,
 					     0, /* we skip access checks */
 					     &policy_state);
@@ -790,17 +791,28 @@ NTSTATUS dcesrv_lsa_LookupSids(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 		DCESRV_FAULT(DCERPC_FAULT_ACCESS_DENIED);
 	}
 
+	*r->out.domains = NULL;
+	r->out.names->count = 0;
+	r->out.names->names = NULL;
+	*r->out.count = 0;
+
 	ZERO_STRUCT(r2);
 
 	r2.in.handle   = r->in.handle;
 	r2.in.sids     = r->in.sids;
-	r2.in.names    = NULL;
+	r2.in.names    = talloc_zero(mem_ctx, struct lsa_TransNameArray2);
+	if (r2.in.names == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 	r2.in.level    = r->in.level;
 	r2.in.count    = r->in.count;
 	r2.in.lookup_options = LSA_LOOKUP_OPTION_SEARCH_ISOLATED_NAMES;
 	r2.in.client_revision = LSA_CLIENT_REVISION_1;
 	r2.out.count   = r->out.count;
-	r2.out.names   = NULL;
+	r2.out.names   = talloc_zero(mem_ctx, struct lsa_TransNameArray2);
+	if (r2.out.names == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 	r2.out.domains = r->out.domains;
 
 	status = dcesrv_lsa_LookupSids2(dce_call, mem_ctx, &r2);
