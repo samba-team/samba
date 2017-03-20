@@ -1325,12 +1325,13 @@ static bool add_sockaddr_to_array(TALLOC_CTX *mem_ctx,
 
 /*******************************************************************
  convert an ip to a name
+ For an AD Domain, it checks the requirements of the request flags.
 *******************************************************************/
 
 static bool dcip_to_name(TALLOC_CTX *mem_ctx,
 		const struct winbindd_domain *domain,
 		struct sockaddr_storage *pss,
-		char **name)
+		char **name, uint32_t request_flags)
 {
 	struct ip_service ip_list;
 	uint32_t nt_version = NETLOGON_NT_VERSION_1;
@@ -1362,6 +1363,7 @@ static bool dcip_to_name(TALLOC_CTX *mem_ctx,
 
 		ads = ads_init(domain->alt_name, domain->name, addr);
 		ads->auth.flags |= ADS_AUTH_NO_BIND;
+		ads->config.flags |= request_flags;
 
 		ads_status = ads_connect(ads);
 		if (ADS_ERR_OK(ads_status)) {
@@ -1652,7 +1654,7 @@ static bool find_new_dc(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Try to figure out the name */
-	if (dcip_to_name(mem_ctx, domain, pss, dcname)) {
+	if (dcip_to_name(mem_ctx, domain, pss, dcname, 0)) {
 		return True;
 	}
 
@@ -1840,7 +1842,7 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 				TALLOC_FREE(mem_ctx);
 				return NT_STATUS_UNSUCCESSFUL;
 			}
-			if (dcip_to_name(mem_ctx, domain, &ss, &dcname)) {
+			if (dcip_to_name(mem_ctx, domain, &ss, &dcname, 0)) {
 				domain->dcname = talloc_strdup(domain,
 							       dcname);
 				if (domain->dcname == NULL) {
