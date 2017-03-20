@@ -1081,6 +1081,7 @@ const char* wbcSidTypeString(enum wbcSidType type)
 	case WBC_SID_NAME_INVALID:  return "SID_INVALID";
 	case WBC_SID_NAME_UNKNOWN:  return "SID_UNKNOWN";
 	case WBC_SID_NAME_COMPUTER: return "SID_COMPUTER";
+	case WBC_SID_NAME_LABEL:    return "SID_LABEL";
 	default:                    return "Unknown type";
 	}
 }

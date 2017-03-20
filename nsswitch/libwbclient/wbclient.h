@@ -75,6 +75,7 @@ const char *wbcErrorString(wbcErr error);
  *  0.12: Added wbcCtxCreate and friends
  *  0.13: Added wbcCtxUnixIdsToSids and wbcUnixIdsToSids
  *  0.14: Added "authoritative" to wbcAuthErrorInfo
+ *        Added WBC_SID_NAME_LABEL
  **/
 #define WBCLIENT_MAJOR_VERSION 0
 #define WBCLIENT_MINOR_VERSION 14
@@ -139,7 +140,8 @@ enum wbcSidType {
 	WBC_SID_NAME_DELETED=6,
 	WBC_SID_NAME_INVALID=7,
 	WBC_SID_NAME_UNKNOWN=8,
-	WBC_SID_NAME_COMPUTER=9
+	WBC_SID_NAME_COMPUTER=9,
+	WBC_SID_NAME_LABEL=10
 };
 
 /**

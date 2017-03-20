@@ -216,6 +216,8 @@ static bool test_wbc_sidtypestring(struct torture_context *tctx)
 				 "SID_UNKNOWN", "SID_UNKNOWN failed");
 	torture_assert_str_equal(tctx, wbcSidTypeString(WBC_SID_NAME_COMPUTER),
 				 "SID_COMPUTER",  "SID_COMPUTER failed");
+	torture_assert_str_equal(tctx, wbcSidTypeString(WBC_SID_NAME_LABEL),
+				 "SID_LABEL",  "SID_LABEL failed");
 	return true;
 }
 
