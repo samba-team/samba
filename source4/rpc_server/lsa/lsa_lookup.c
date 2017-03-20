@@ -797,8 +797,8 @@ NTSTATUS dcesrv_lsa_LookupSids(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 	r2.in.names    = NULL;
 	r2.in.level    = r->in.level;
 	r2.in.count    = r->in.count;
-	r2.in.lookup_options = 0;
-	r2.in.client_revision = 0;
+	r2.in.lookup_options = LSA_LOOKUP_OPTION_SEARCH_ISOLATED_NAMES;
+	r2.in.client_revision = LSA_CLIENT_REVISION_1;
 	r2.out.count   = r->out.count;
 	r2.out.names   = NULL;
 	r2.out.domains = r->out.domains;
@@ -1124,8 +1124,8 @@ NTSTATUS dcesrv_lsa_LookupNames(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	r2.in.sids      = NULL;
 	r2.in.level     = r->in.level;
 	r2.in.count     = r->in.count;
-	r2.in.lookup_options = 0;
-	r2.in.client_revision = 0;
+	r2.in.lookup_options = LSA_LOOKUP_OPTION_SEARCH_ISOLATED_NAMES;
+	r2.in.client_revision = LSA_CLIENT_REVISION_1;
 	r2.out.count    = r->out.count;
 	r2.out.domains	= r->out.domains;
 
