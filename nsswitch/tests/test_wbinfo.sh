@@ -254,6 +254,10 @@ testit "wbinfo -K against $TARGET with domain creds" $wbinfo --krb5ccname=$KRB5C
 
 testit "wbinfo --separator against $TARGET" $wbinfo --separator || failed=`expr $failed + 1`
 
+testit_expect_failure "wbinfo -a against $TARGET with invalid password" $wbinfo -a "$DOMAIN/$USERNAME%InvalidPassword" && failed=`expr $failed + 1`
+
+testit_expect_failure "wbinfo -K against $TARGET with invalid password" $wbinfo -K "$DOMAIN/$USERNAME%InvalidPassword" && failed=`expr $failed + 1`
+
 rm -f $KRB5CCNAME_PATH
 
 exit $failed
