@@ -505,7 +505,8 @@ import "misc.idl", "security.idl";
 		SID_NAME_DELETED  = 6, /* deleted account: needed for c2 rating */
 		SID_NAME_INVALID  = 7, /* invalid account */
 		SID_NAME_UNKNOWN  = 8, /* oops. */
-		SID_NAME_COMPUTER = 9  /* machine */
+		SID_NAME_COMPUTER = 9, /* machine */
+		SID_NAME_LABEL    = 10 /* Mandatory Label */
 	} lsa_SidType;
 
 	typedef struct {
