@@ -966,7 +966,7 @@ _kdc_as_rep(krb5_context context,
     AS_REP rep;
     KDCOptions f = b->kdc_options;
     hdb_entry_ex *client = NULL, *server = NULL;
-    HDB *clientdb;
+    HDB *clientdb = NULL;
     krb5_enctype setype, sessionetype;
     krb5_data e_data;
     EncTicketPart et;
@@ -976,7 +976,7 @@ _kdc_as_rep(krb5_context context,
     krb5_error_code ret = 0;
     const char *e_text = NULL;
     krb5_crypto crypto;
-    Key *skey;
+    Key *skey = NULL;
     EncryptionKey *reply_key = NULL, session_key;
     int flags = HDB_F_FOR_AS_REQ;
 #ifdef PKINIT
