@@ -1035,9 +1035,12 @@ NTSTATUS dcesrv_lsa_LookupNames2(struct dcesrv_call_state *dce_call,
 		DCESRV_FAULT(DCERPC_FAULT_ACCESS_DENIED);
 	}
 
-	*r->out.domains = NULL;
-
 	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_POLICY);
+
+	*r->out.domains = NULL;
+	r->out.sids->count = 0;
+	r->out.sids->sids = NULL;
+	*r->out.count = 0;
 
 	if (r->in.level < LSA_LOOKUP_NAMES_ALL ||
 	    r->in.level > LSA_LOOKUP_NAMES_RODC_REFERRAL_TO_FULL_DC) {
@@ -1046,18 +1049,11 @@ NTSTATUS dcesrv_lsa_LookupNames2(struct dcesrv_call_state *dce_call,
 
 	state = h->data;
 
-	domains = talloc_zero(mem_ctx,  struct lsa_RefDomainList);
+	domains = talloc_zero(r->out.domains, struct lsa_RefDomainList);
 	if (domains == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 	*r->out.domains = domains;
-
-	r->out.sids = talloc_zero(mem_ctx,  struct lsa_TransSidArray2);
-	if (r->out.sids == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	*r->out.count = 0;
 
 	r->out.sids->sids = talloc_array(r->out.sids, struct lsa_TranslatedSid2, 
 					   r->in.num_names);
@@ -1129,17 +1125,29 @@ NTSTATUS dcesrv_lsa_LookupNames(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 		DCESRV_FAULT(DCERPC_FAULT_ACCESS_DENIED);
 	}
 
+	*r->out.domains = NULL;
+	r->out.sids->count = 0;
+	r->out.sids->sids = NULL;
+	*r->out.count = 0;
+
 	ZERO_STRUCT(r2);
 
 	r2.in.handle    = r->in.handle;
 	r2.in.num_names = r->in.num_names;
 	r2.in.names     = r->in.names;
-	r2.in.sids      = NULL;
+	r2.in.sids      = talloc_zero(mem_ctx, struct lsa_TransSidArray2);
+	if (r2.in.sids == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 	r2.in.level     = r->in.level;
 	r2.in.count     = r->in.count;
 	r2.in.lookup_options = LSA_LOOKUP_OPTION_SEARCH_ISOLATED_NAMES;
 	r2.in.client_revision = LSA_CLIENT_REVISION_1;
 	r2.out.count    = r->out.count;
+	r2.out.sids     = talloc_zero(mem_ctx, struct lsa_TransSidArray2);
+	if (r2.out.sids == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 	r2.out.domains	= r->out.domains;
 
 	status = dcesrv_lsa_LookupNames2(dce_call, mem_ctx, &r2);
