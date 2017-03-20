@@ -593,7 +593,6 @@ static NTSTATUS dcesrv_lsa_LookupSids_common(struct dcesrv_call_state *dce_call,
 					     struct lsa_LookupSids2 *r)
 {
 	struct lsa_RefDomainList *domains = NULL;
-	NTSTATUS status = NT_STATUS_OK;
 	uint32_t i;
 
 	*r->out.domains = NULL;
@@ -641,14 +640,12 @@ static NTSTATUS dcesrv_lsa_LookupSids_common(struct dcesrv_call_state *dce_call,
 
 		if (sid_str == NULL) {
 			r->out.names->names[i].name.string = "(SIDERROR)";
-			status = STATUS_SOME_UNMAPPED;
 			continue;
 		}
 
 		status2 = dcesrv_lsa_lookup_sid(state, mem_ctx, sid, sid_str, 
 						&authority_name, &name, &rtype);
 		if (!NT_STATUS_IS_OK(status2)) {
-			status = STATUS_SOME_UNMAPPED;
 			continue;
 		}
 
@@ -675,7 +672,7 @@ static NTSTATUS dcesrv_lsa_LookupSids_common(struct dcesrv_call_state *dce_call,
 		return STATUS_SOME_UNMAPPED;
 	}
 
-	return status;
+	return NT_STATUS_OK;
 }
 
 /*
