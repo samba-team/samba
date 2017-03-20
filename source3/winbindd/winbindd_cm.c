@@ -1334,10 +1334,10 @@ static bool add_sockaddr_to_array(TALLOC_CTX *mem_ctx,
  For an AD Domain, it checks the requirements of the request flags.
 *******************************************************************/
 
-static bool dcip_to_name(TALLOC_CTX *mem_ctx,
-		const struct winbindd_domain *domain,
-		struct sockaddr_storage *pss,
-		char **name, uint32_t request_flags)
+static bool dcip_check_name(TALLOC_CTX *mem_ctx,
+			    const struct winbindd_domain *domain,
+			    struct sockaddr_storage *pss,
+			    char **name, uint32_t request_flags)
 {
 	struct ip_service ip_list;
 	uint32_t nt_version = NETLOGON_NT_VERSION_1;
@@ -1381,7 +1381,7 @@ static bool dcip_to_name(TALLOC_CTX *mem_ctx,
 			}
 			namecache_store(*name, 0x20, 1, &ip_list);
 
-			DEBUG(10,("dcip_to_name: flags = 0x%x\n", (unsigned int)ads->config.flags));
+			DEBUG(10,("dcip_check_name: flags = 0x%x\n", (unsigned int)ads->config.flags));
 
 			if (domain->primary && (ads->config.flags & NBT_SERVER_KDC)) {
 				if (ads_closest_dc(ads)) {
@@ -1662,7 +1662,7 @@ static bool find_new_dc(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Try to figure out the name */
-	if (dcip_to_name(mem_ctx, domain, pss, dcname, request_flags)) {
+	if (dcip_check_name(mem_ctx, domain, pss, dcname, request_flags)) {
 		return True;
 	}
 
@@ -1851,7 +1851,7 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 				TALLOC_FREE(mem_ctx);
 				return NT_STATUS_UNSUCCESSFUL;
 			}
-			if (dcip_to_name(mem_ctx, domain, &ss, &dcname, request_flags)) {
+			if (dcip_check_name(mem_ctx, domain, &ss, &dcname, request_flags)) {
 				domain->dcname = talloc_strdup(domain,
 							       dcname);
 				if (domain->dcname == NULL) {
