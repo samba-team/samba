@@ -99,7 +99,8 @@ static NTSTATUS init_dc_connection_network(struct winbindd_domain *domain, bool 
 static void set_dc_type_and_flags( struct winbindd_domain *domain );
 static bool set_dc_type_and_flags_trustinfo( struct winbindd_domain *domain );
 static bool get_dcs(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
-		    struct dc_name_ip **dcs, int *num_dcs);
+		    struct dc_name_ip **dcs, int *num_dcs,
+		    uint32_t request_flags);
 
 /****************************************************************
  Child failed to find DC's. Reschedule check.
@@ -266,7 +267,7 @@ static bool fork_child_dc_connect(struct winbindd_domain *domain)
 		_exit(1);
 	}
 
-	if ((!get_dcs(mem_ctx, domain, &dcs, &num_dcs)) || (num_dcs == 0)) {
+	if ((!get_dcs(mem_ctx, domain, &dcs, &num_dcs, 0)) || (num_dcs == 0)) {
 		/* Still offline ? Can't find DC's. */
 		messaging_send_buf(winbind_messaging_context(),
 				   pid_to_procid(parent_pid),
@@ -769,7 +770,8 @@ static bool cm_is_ipc_credentials(struct cli_credentials *creds)
 
 static bool get_dc_name_via_netlogon(struct winbindd_domain *domain,
 				     fstring dcname,
-				     struct sockaddr_storage *dc_ss)
+				     struct sockaddr_storage *dc_ss,
+				     uint32_t request_flags)
 {
 	struct winbindd_domain *our_domain = NULL;
 	struct rpc_pipe_client *netlogon_pipe = NULL;
@@ -814,13 +816,17 @@ static bool get_dc_name_via_netlogon(struct winbindd_domain *domain,
 	if (our_domain->active_directory) {
 		struct netr_DsRGetDCNameInfo *domain_info = NULL;
 
+		/*
+		 * TODO request flags are not respected in the server
+		 * (and in some cases, like REQUIRE_PDC, causes an error)
+		 */
 		result = dcerpc_netr_DsRGetDCName(b,
 						  mem_ctx,
 						  our_domain->dcname,
 						  domain->name,
 						  NULL,
 						  NULL,
-						  DS_RETURN_DNS_NAME,
+						  request_flags|DS_RETURN_DNS_NAME,
 						  &domain_info,
 						  &werr);
 		if (NT_STATUS_IS_OK(result) && W_ERROR_IS_OK(werr)) {
@@ -1456,7 +1462,8 @@ static bool dcip_to_name(TALLOC_CTX *mem_ctx,
 *******************************************************************/
 
 static bool get_dcs(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
-		    struct dc_name_ip **dcs, int *num_dcs)
+		    struct dc_name_ip **dcs, int *num_dcs,
+		    uint32_t request_flags)
 {
 	fstring dcname;
 	struct  sockaddr_storage ss;
@@ -1470,7 +1477,7 @@ static bool get_dcs(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
 
 	/* If not our domain, get the preferred DC, by asking our primary DC */
 	if ( !is_our_domain
-		&& get_dc_name_via_netlogon(domain, dcname, &ss)
+		&& get_dc_name_via_netlogon(domain, dcname, &ss, request_flags)
 		&& add_one_dc_unique(mem_ctx, domain->name, dcname, &ss, dcs,
 		       num_dcs) )
 	{
@@ -1587,7 +1594,8 @@ static bool get_dcs(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
 
 static bool find_new_dc(TALLOC_CTX *mem_ctx,
 			struct winbindd_domain *domain,
-			char **dcname, struct sockaddr_storage *pss, int *fd)
+			char **dcname, struct sockaddr_storage *pss, int *fd,
+			uint32_t request_flags)
 {
 	struct dc_name_ip *dcs = NULL;
 	int num_dcs = 0;
@@ -1606,7 +1614,7 @@ static bool find_new_dc(TALLOC_CTX *mem_ctx,
 	*fd = -1;
 
  again:
-	if (!get_dcs(mem_ctx, domain, &dcs, &num_dcs) || (num_dcs == 0))
+	if (!get_dcs(mem_ctx, domain, &dcs, &num_dcs, request_flags) || (num_dcs == 0))
 		return False;
 
 	for (i=0; i<num_dcs; i++) {
@@ -1654,7 +1662,7 @@ static bool find_new_dc(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Try to figure out the name */
-	if (dcip_to_name(mem_ctx, domain, pss, dcname, 0)) {
+	if (dcip_to_name(mem_ctx, domain, pss, dcname, request_flags)) {
 		return True;
 	}
 
@@ -1812,6 +1820,7 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 	NTSTATUS result;
 	char *saf_servername;
 	int retries;
+	uint32_t request_flags = 0;
 
 	if ((mem_ctx = talloc_init("cm_open_connection")) == NULL) {
 		set_domain_offline(domain);
@@ -1842,7 +1851,7 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 				TALLOC_FREE(mem_ctx);
 				return NT_STATUS_UNSUCCESSFUL;
 			}
-			if (dcip_to_name(mem_ctx, domain, &ss, &dcname, 0)) {
+			if (dcip_to_name(mem_ctx, domain, &ss, &dcname, request_flags)) {
 				domain->dcname = talloc_strdup(domain,
 							       dcname);
 				if (domain->dcname == NULL) {
@@ -1888,7 +1897,7 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 		}
 
 		if ((fd == -1) &&
-		    !find_new_dc(mem_ctx, domain, &dcname, &domain->dcaddr, &fd))
+		    !find_new_dc(mem_ctx, domain, &dcname, &domain->dcaddr, &fd, request_flags))
 		{
 			/* This is the one place where we will
 			   set the global winbindd offline state
