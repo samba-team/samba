@@ -349,9 +349,15 @@ NTSTATUS cli_session_creds_prepare_krb5(struct cli_state *cli,
 				0 /* no time correction for now */,
 				NULL);
 	if (ret != 0) {
-		DEBUG(0, ("Kinit for %s to access %s failed: %s\n",
-			  user_principal, target_hostname,
-			  error_message(ret)));
+		int dbglvl = DBGLVL_WARNING;
+
+		if (krb5_state == CRED_MUST_USE_KERBEROS) {
+			dbglvl = DBGLVL_ERR;
+		}
+
+		DEBUG(dbglvl, ("Kinit for %s to access %s failed: %s\n",
+			       user_principal, target_hostname,
+			       error_message(ret)));
 		if (krb5_state == CRED_MUST_USE_KERBEROS) {
 			TALLOC_FREE(frame);
 			return krb5_to_nt_status(ret);
