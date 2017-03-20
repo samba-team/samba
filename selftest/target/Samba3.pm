@@ -181,7 +181,7 @@ sub check_env($$)
 
 	nt4_member          => ["nt4_dc"],
 
-	ad_member           => ["ad_dc"],
+	ad_member           => ["ad_dc", "fl2008r2dc", "fl2003dc"],
 	ad_member_rfc2307   => ["ad_dc_ntvfs"],
 	ad_member_idmap_rid => ["ad_dc"],
 	ad_member_idmap_ad  => ["fl2008r2dc"],
@@ -369,7 +369,7 @@ sub setup_nt4_member
 
 sub setup_ad_member
 {
-	my ($self, $prefix, $dcvars) = @_;
+	my ($self, $prefix, $dcvars, $trustvars_f, $trustvars_e) = @_;
 
 	my $prefix_abs = abs_path($prefix);
 	my @dirs = ();
@@ -492,6 +492,26 @@ sub setup_ad_member
 	$ret->{DC_NETBIOSNAME} = $dcvars->{NETBIOSNAME};
 	$ret->{DC_USERNAME} = $dcvars->{USERNAME};
 	$ret->{DC_PASSWORD} = $dcvars->{PASSWORD};
+
+	# forest trust
+	$ret->{TRUST_F_BOTH_SERVER} = $trustvars_f->{SERVER};
+	$ret->{TRUST_F_BOTH_SERVER_IP} = $trustvars_f->{SERVER_IP};
+	$ret->{TRUST_F_BOTH_SERVER_IPV6} = $trustvars_f->{SERVER_IPV6};
+	$ret->{TRUST_F_BOTH_NETBIOSNAME} = $trustvars_f->{NETBIOSNAME};
+	$ret->{TRUST_F_BOTH_USERNAME} = $trustvars_f->{USERNAME};
+	$ret->{TRUST_F_BOTH_PASSWORD} = $trustvars_f->{PASSWORD};
+	$ret->{TRUST_F_BOTH_DOMAIN} = $trustvars_f->{DOMAIN};
+	$ret->{TRUST_F_BOTH_REALM} = $trustvars_f->{REALM};
+
+	# external trust
+	$ret->{TRUST_E_BOTH_SERVER} = $trustvars_e->{SERVER};
+	$ret->{TRUST_E_BOTH_SERVER_IP} = $trustvars_e->{SERVER_IP};
+	$ret->{TRUST_E_BOTH_SERVER_IPV6} = $trustvars_e->{SERVER_IPV6};
+	$ret->{TRUST_E_BOTH_NETBIOSNAME} = $trustvars_e->{NETBIOSNAME};
+	$ret->{TRUST_E_BOTH_USERNAME} = $trustvars_e->{USERNAME};
+	$ret->{TRUST_E_BOTH_PASSWORD} = $trustvars_e->{PASSWORD};
+	$ret->{TRUST_E_BOTH_DOMAIN} = $trustvars_e->{DOMAIN};
+	$ret->{TRUST_E_BOTH_REALM} = $trustvars_e->{REALM};
 
 	return $ret;
 }
