@@ -77,6 +77,7 @@ static NTSTATUS copychunk_check_limits(struct srv_copychunk_copy *cc_copy)
 
 struct fsctl_srv_copychunk_state {
 	struct connection_struct *conn;
+	struct srv_copychunk_copy cc_copy;
 	uint32_t dispatch_count;
 	uint32_t recv_count;
 	uint32_t bad_recv_count;
@@ -164,7 +165,6 @@ static struct tevent_req *fsctl_srv_copychunk_send(TALLOC_CTX *mem_ctx,
 						   struct smbd_smb2_request *smb2req)
 {
 	struct tevent_req *req;
-	struct srv_copychunk_copy cc_copy;
 	enum ndr_err_code ndr_ret;
 	uint64_t src_persistent_h;
 	uint64_t src_volatile_h;
@@ -192,7 +192,7 @@ static struct tevent_req *fsctl_srv_copychunk_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	ndr_ret = ndr_pull_struct_blob(in_input, mem_ctx, &cc_copy,
+	ndr_ret = ndr_pull_struct_blob(in_input, mem_ctx, &state->cc_copy,
 			(ndr_pull_flags_fn_t)ndr_pull_srv_copychunk_copy);
 	if (ndr_ret != NDR_ERR_SUCCESS) {
 		DEBUG(0, ("failed to unmarshall copy chunk req\n"));
@@ -202,8 +202,8 @@ static struct tevent_req *fsctl_srv_copychunk_send(TALLOC_CTX *mem_ctx,
 	}
 
 	/* persistent/volatile keys sent as the resume key */
-	src_persistent_h = BVAL(cc_copy.source_key, 0);
-	src_volatile_h = BVAL(cc_copy.source_key, 8);
+	src_persistent_h = BVAL(state->cc_copy.source_key, 0);
+	src_volatile_h = BVAL(state->cc_copy.source_key, 8);
 	state->src_fsp = file_fsp_get(smb2req, src_persistent_h, src_volatile_h);
 	if (state->src_fsp == NULL) {
 		DEBUG(3, ("invalid resume key in copy chunk req\n"));
@@ -223,7 +223,7 @@ static struct tevent_req *fsctl_srv_copychunk_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	state->status = copychunk_check_limits(&cc_copy);
+	state->status = copychunk_check_limits(&state->cc_copy);
 	if (!NT_STATUS_IS_OK(state->status)) {
 		DEBUG(3, ("copy chunk req exceeds limits\n"));
 		state->out_data = COPYCHUNK_OUT_LIMITS;
@@ -234,7 +234,7 @@ static struct tevent_req *fsctl_srv_copychunk_send(TALLOC_CTX *mem_ctx,
 	/* any errors from here onwards should carry copychunk response data */
 	state->out_data = COPYCHUNK_OUT_RSP;
 
-	if (cc_copy.chunk_count == 0) {
+	if (state->cc_copy.chunk_count == 0) {
 		struct tevent_req *vfs_subreq;
 		/*
 		 * Process as OS X copyfile request. This is currently
@@ -266,9 +266,9 @@ static struct tevent_req *fsctl_srv_copychunk_send(TALLOC_CTX *mem_ctx,
 		return req;
 	}
 
-	for (i = 0; i < cc_copy.chunk_count; i++) {
+	for (i = 0; i < state->cc_copy.chunk_count; i++) {
 		struct tevent_req *vfs_subreq;
-		chunk = &cc_copy.chunks[i];
+		chunk = &state->cc_copy.chunks[i];
 		vfs_subreq = SMB_VFS_COPY_CHUNK_SEND(dst_fsp->conn,
 						     state, ev,
 						     state->src_fsp,
