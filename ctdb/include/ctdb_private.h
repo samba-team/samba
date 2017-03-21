@@ -387,6 +387,8 @@ struct ctdb_db_context {
 
 	bool push_started;
 	void *push_state;
+
+	struct hash_count_context *migratedb;
 };
 
 
@@ -520,6 +522,8 @@ int ctdb_add_revoke_deferred_call(struct ctdb_context *ctdb,
 				  struct ctdb_db_context *ctdb_db,
 				  TDB_DATA key, struct ctdb_req_header *hdr,
 				  deferred_requeue_fn fn, void *call_context);
+
+int ctdb_migration_init(struct ctdb_db_context *ctdb_db);
 
 /* from server/ctdb_control.c */
 

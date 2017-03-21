@@ -1027,6 +1027,15 @@ again:
 		return -1;
 	}
 
+	ret = ctdb_migration_init(ctdb_db);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,
+		      ("Failed to setup migration tracking for db '%s'\n",
+		       ctdb_db->db_name));
+		talloc_free(ctdb_db);
+		return -1;
+	}
+
 	ctdb_db->generation = ctdb->vnn_map->generation;
 
 	DEBUG(DEBUG_NOTICE,("Attached to database '%s' with flags 0x%x\n",

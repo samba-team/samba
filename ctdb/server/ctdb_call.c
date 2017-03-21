@@ -41,6 +41,7 @@
 #include "common/system.h"
 #include "common/common.h"
 #include "common/logging.h"
+#include "common/hash_count.h"
 
 struct ctdb_sticky_record {
 	struct ctdb_context *ctdb;
@@ -415,6 +416,8 @@ static void ctdb_become_dmaster(struct ctdb_db_context *ctdb_db,
 		}
 		return;
 	}
+
+	(void) hash_count_increment(ctdb_db->migratedb, key);
 
 	ctdb_call_local(ctdb_db, state->call, &header, state, &data, true);
 
@@ -1092,7 +1095,6 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	}
 	CTDB_INCREMENT_STAT(ctdb, hop_count_bucket[bucket]);
 	CTDB_INCREMENT_DB_STAT(ctdb_db, hop_count_bucket[bucket]);
-	ctdb_update_db_stat_hot_keys(ctdb_db, call->key, c->hopcount);
 
 	/* If this database supports sticky records, then check if the
 	   hopcount is big. If it is it means the record is hot and we
@@ -1926,6 +1928,76 @@ int ctdb_add_revoke_deferred_call(struct ctdb_context *ctdb, struct ctdb_db_cont
 
 	talloc_set_destructor(deferred_call, deferred_call_destructor);
 	talloc_steal(deferred_call, hdr);
+
+	return 0;
+}
+
+static void ctdb_migration_count_handler(TDB_DATA key, uint64_t counter,
+					 void *private_data)
+{
+	struct ctdb_db_context *ctdb_db = talloc_get_type_abort(
+		private_data, struct ctdb_db_context);
+	int value;
+
+	value = (counter < INT_MAX ? counter : INT_MAX);
+	ctdb_update_db_stat_hot_keys(ctdb_db, key, value);
+}
+
+static void ctdb_migration_cleandb_event(struct tevent_context *ev,
+					 struct tevent_timer *te,
+					 struct timeval current_time,
+					 void *private_data)
+{
+	struct ctdb_db_context *ctdb_db = talloc_get_type_abort(
+		private_data, struct ctdb_db_context);
+
+	if (ctdb_db->migratedb == NULL) {
+		return;
+	}
+
+	hash_count_expire(ctdb_db->migratedb, NULL);
+
+	te = tevent_add_timer(ctdb_db->ctdb->ev, ctdb_db->migratedb,
+			      tevent_timeval_current_ofs(10, 0),
+			      ctdb_migration_cleandb_event, ctdb_db);
+	if (te == NULL) {
+		DEBUG(DEBUG_ERR,
+		      ("Memory error in migration cleandb event for %s\n",
+		       ctdb_db->db_name));
+		TALLOC_FREE(ctdb_db->migratedb);
+	}
+}
+
+int ctdb_migration_init(struct ctdb_db_context *ctdb_db)
+{
+	struct timeval one_second = { 1, 0 };
+	struct tevent_timer *te;
+	int ret;
+
+	if (ctdb_db->persistent) {
+		return 0;
+	}
+
+	ret = hash_count_init(ctdb_db, one_second,
+			      ctdb_migration_count_handler, ctdb_db,
+			      &ctdb_db->migratedb);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,
+		      ("Memory error in migration init for %s\n",
+		       ctdb_db->db_name));
+		return -1;
+	}
+
+	te = tevent_add_timer(ctdb_db->ctdb->ev, ctdb_db->migratedb,
+			      tevent_timeval_current_ofs(10, 0),
+			      ctdb_migration_cleandb_event, ctdb_db);
+	if (te == NULL) {
+		DEBUG(DEBUG_ERR,
+		      ("Memory error in migration init for %s\n",
+		       ctdb_db->db_name));
+		TALLOC_FREE(ctdb_db->migratedb);
+		return -1;
+	}
 
 	return 0;
 }
