@@ -223,11 +223,6 @@ NTSTATUS auth_check_ntlm_password(TALLOC_CTX *mem_ctx,
 
 		auth_method_name = auth_method->name;
 
-		if (user_info->flags & USER_INFO_LOCAL_SAM_ONLY
-		    && !(auth_method->flags & AUTH_METHOD_LOCAL_SAM)) {
-			continue;
-		}
-
 		nt_status = auth_method->auth(auth_context,
 					      auth_method->private_data,
 					      talloc_tos(),

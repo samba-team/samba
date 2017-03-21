@@ -379,7 +379,6 @@ static NTSTATUS auth_init_samba4(struct auth_context *auth_context,
 	result->auth = check_samba4_security;
 	result->prepare_gensec = prepare_gensec;
 	result->make_auth4_context = make_auth4_context_s4;
-	result->flags = AUTH_METHOD_LOCAL_SAM;
 
 	if (param && *param) {
 		auth_context->forced_samba4_methods = talloc_strdup(result, param);
