@@ -76,6 +76,8 @@ WERROR _dfs_Add(struct pipes_struct *p, struct dfs_Add *r)
 
 	/* The following call can change the cwd. */
 	status = get_referred_path(ctx, r->in.path,
+				   p->remote_address,
+				   p->local_address,
 				   true, /*allow_broken_path */
 				   jn, &consumedcnt, &self_ref);
 	if(!NT_STATUS_IS_OK(status)) {
@@ -146,6 +148,8 @@ WERROR _dfs_Remove(struct pipes_struct *p, struct dfs_Remove *r)
 	}
 
 	status = get_referred_path(ctx, r->in.dfs_entry_path,
+				   p->remote_address,
+				   p->local_address,
 				   true, /*allow_broken_path */
 				   jn, &consumedcnt, &self_ref);
 	if(!NT_STATUS_IS_OK(status)) {
@@ -374,6 +378,8 @@ WERROR _dfs_GetInfo(struct pipes_struct *p, struct dfs_GetInfo *r)
 
 	/* The following call can change the cwd. */
 	status = get_referred_path(ctx, r->in.dfs_entry_path,
+				   p->remote_address,
+				   p->local_address,
 				   true, /*allow_broken_path */
 				   jn, &consumedcnt, &self_ref);
 	if(!NT_STATUS_IS_OK(status) ||
