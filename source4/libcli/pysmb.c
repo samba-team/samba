@@ -599,10 +599,17 @@ static PyObject *py_smb_new(PyTypeObject *type, PyObject *args, PyObject *kwargs
 
 	spdata->lp_ctx = lpcfg_from_py_object(spdata, py_lp);
 	if (spdata->lp_ctx == NULL) {
+		PyErr_SetString(PyExc_TypeError, "Expected loadparm context");
 		TALLOC_FREE(frame);
 		return NULL;
 	}
-	spdata->creds = PyCredentials_AsCliCredentials(py_creds);
+
+	spdata->creds = cli_credentials_from_py_object(py_creds);
+	if (spdata->creds == NULL) {
+		PyErr_SetString(PyExc_TypeError, "Expected credentials");
+		TALLOC_FREE(frame);
+		return NULL;
+	}
 	spdata->ev_ctx = s4_event_context_init(spdata);
 	if (spdata->ev_ctx == NULL) {
 		PyErr_NoMemory();
