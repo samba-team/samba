@@ -76,11 +76,11 @@ static NTSTATUS copychunk_check_limits(struct srv_copychunk_copy *cc_copy)
 }
 
 struct fsctl_srv_copychunk_state {
+	struct tevent_context *ev;
 	struct connection_struct *conn;
 	struct srv_copychunk_copy cc_copy;
-	uint32_t dispatch_count;
-	uint32_t recv_count;
-	uint32_t bad_recv_count;
+	uint32_t current_chunk;
+	uint32_t next_chunk;
 	NTSTATUS status;
 	off_t total_written;
 	struct files_struct *src_fsp;
@@ -156,6 +156,8 @@ static NTSTATUS copychunk_check_handles(uint32_t ctl_code,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS fsctl_srv_copychunk_loop(struct tevent_req *req);
+
 static struct tevent_req *fsctl_srv_copychunk_send(TALLOC_CTX *mem_ctx,
 						   struct tevent_context *ev,
 						   uint32_t ctl_code,
@@ -164,13 +166,12 @@ static struct tevent_req *fsctl_srv_copychunk_send(TALLOC_CTX *mem_ctx,
 						   size_t in_max_output,
 						   struct smbd_smb2_request *smb2req)
 {
-	struct tevent_req *req;
-	enum ndr_err_code ndr_ret;
+	struct tevent_req *req = NULL;
+	struct fsctl_srv_copychunk_state *state = NULL;
 	uint64_t src_persistent_h;
 	uint64_t src_volatile_h;
-	int i;
-	struct srv_copychunk *chunk;
-	struct fsctl_srv_copychunk_state *state;
+	enum ndr_err_code ndr_ret;
+	NTSTATUS status;
 
 	/* handler for both copy-chunk variants */
 	SMB_ASSERT((ctl_code == FSCTL_SRV_COPYCHUNK)
@@ -181,7 +182,10 @@ static struct tevent_req *fsctl_srv_copychunk_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
-	state->conn = dst_fsp->conn;
+	*state = (struct fsctl_srv_copychunk_state) {
+		.conn = dst_fsp->conn,
+		.ev = ev,
+	};
 
 	if (in_max_output < sizeof(struct srv_copychunk_rsp)) {
 		DEBUG(3, ("max output %d not large enough to hold copy chunk "
@@ -234,109 +238,123 @@ static struct tevent_req *fsctl_srv_copychunk_send(TALLOC_CTX *mem_ctx,
 	/* any errors from here onwards should carry copychunk response data */
 	state->out_data = COPYCHUNK_OUT_RSP;
 
+	status = fsctl_srv_copychunk_loop(req);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
+
+	return req;
+}
+
+static NTSTATUS fsctl_srv_copychunk_loop(struct tevent_req *req)
+{
+	struct fsctl_srv_copychunk_state *state = tevent_req_data(
+		req, struct fsctl_srv_copychunk_state);
+	struct tevent_req *subreq = NULL;
+	struct srv_copychunk *chunk = NULL;
+
+	if (state->next_chunk > state->cc_copy.chunk_count) {
+		DBG_ERR("Copy-chunk loop next_chunk [%d] chunk_count [%d]\n",
+			state->next_chunk, state->cc_copy.chunk_count);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
 	if (state->cc_copy.chunk_count == 0) {
-		struct tevent_req *vfs_subreq;
 		/*
 		 * Process as OS X copyfile request. This is currently
 		 * the only copychunk request with a chunk count of 0
 		 * we will process.
 		 */
-		if (!state->src_fsp->aapl_copyfile_supported) {
-			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
-			return tevent_req_post(req, ev);
-		}
-		if (!state->dst_fsp->aapl_copyfile_supported) {
-			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
-			return tevent_req_post(req, ev);
+		if (!state->src_fsp->aapl_copyfile_supported ||
+		    !state->dst_fsp->aapl_copyfile_supported)
+		{
+			/*
+			 * This must not return an error but just a chunk count
+			 * of 0 in the response.
+			 */
+			tevent_req_done(req);
+			tevent_req_post(req, state->ev);
+			return NT_STATUS_OK;
 		}
 		state->aapl_copyfile = true;
-		vfs_subreq = SMB_VFS_COPY_CHUNK_SEND(dst_fsp->conn,
-						     state, ev,
-						     state->src_fsp,
-						     0,
-						     state->dst_fsp,
-						     0,
-						     0);
-		if (tevent_req_nomem(vfs_subreq, req)) {
-			return tevent_req_post(req, ev);
+
+		subreq = SMB_VFS_COPY_CHUNK_SEND(state->dst_fsp->conn,
+						 state,
+						 state->ev,
+						 state->src_fsp,
+						 0,
+						 state->dst_fsp,
+						 0,
+						 0);
+		if (subreq == NULL) {
+			return NT_STATUS_NO_MEMORY;
 		}
-		tevent_req_set_callback(vfs_subreq,
+		tevent_req_set_callback(subreq,
 					fsctl_srv_copychunk_vfs_done, req);
-		state->dispatch_count++;
-		return req;
+		return NT_STATUS_OK;
 	}
 
-	for (i = 0; i < state->cc_copy.chunk_count; i++) {
-		struct tevent_req *vfs_subreq;
-		chunk = &state->cc_copy.chunks[i];
-		vfs_subreq = SMB_VFS_COPY_CHUNK_SEND(dst_fsp->conn,
-						     state, ev,
-						     state->src_fsp,
-						     chunk->source_off,
-						     state->dst_fsp,
-						     chunk->target_off,
-						     chunk->length);
-		if (vfs_subreq == NULL) {
-			DEBUG(0, ("VFS copy chunk send failed\n"));
-			state->status = NT_STATUS_NO_MEMORY;
-			if (state->dispatch_count == 0) {
-				/* nothing dispatched, return immediately */
-				tevent_req_nterror(req, state->status);
-				return tevent_req_post(req, ev);
-			} else {
-				/*
-				 * wait for dispatched to complete before
-				 * returning error.
-				 */
-				break;
-			}
-		}
-		tevent_req_set_callback(vfs_subreq,
-					fsctl_srv_copychunk_vfs_done, req);
-		state->dispatch_count++;
-	}
+	chunk = &state->cc_copy.chunks[state->current_chunk];
 
-	return req;
+	/*
+	 * Doing the increment and calculation for the next chunk here and not
+	 * in the done function, as a later commit will make this a more
+	 * sophisticated logic.
+	 */
+	state->next_chunk++;
+
+	subreq = SMB_VFS_COPY_CHUNK_SEND(state->dst_fsp->conn,
+					 state,
+					 state->ev,
+					 state->src_fsp,
+					 chunk->source_off,
+					 state->dst_fsp,
+					 chunk->target_off,
+					 chunk->length);
+	if (tevent_req_nomem(subreq, req)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	tevent_req_set_callback(subreq,	fsctl_srv_copychunk_vfs_done, req);
+
+	return NT_STATUS_OK;
 }
 
 static void fsctl_srv_copychunk_vfs_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
-	struct fsctl_srv_copychunk_state *state = tevent_req_data(req,
-					struct fsctl_srv_copychunk_state);
+	struct fsctl_srv_copychunk_state *state = tevent_req_data(
+		req, struct fsctl_srv_copychunk_state);
 	off_t chunk_nwritten;
 	NTSTATUS status;
 
-	state->recv_count++;
 	status = SMB_VFS_COPY_CHUNK_RECV(state->conn, subreq,
 					 &chunk_nwritten);
 	TALLOC_FREE(subreq);
-	if (NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("good copy chunk recv %u of %u\n",
-			   (unsigned int)state->recv_count,
-			   (unsigned int)state->dispatch_count));
-		state->total_written += chunk_nwritten;
-	} else {
-		DEBUG(0, ("bad status in copy chunk recv %u of %u: %s\n",
-			  (unsigned int)state->recv_count,
-			  (unsigned int)state->dispatch_count,
-			  nt_errstr(status)));
-		state->bad_recv_count++;
-		/* may overwrite previous failed status */
-		state->status = status;
-	}
-
-	if (state->recv_count != state->dispatch_count) {
-		/*
-		 * Wait for all VFS copy_chunk requests to complete, even
-		 * if an error is received for a specific chunk.
-		 */
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("copy chunk failed [%s] chunk [%u] of [%u]\n",
+			nt_errstr(status),
+			(unsigned int)state->next_chunk,
+			(unsigned int)state->cc_copy.chunk_count);
+		tevent_req_nterror(req, status);
 		return;
 	}
 
-	if (!tevent_req_nterror(req, state->status)) {
+	DBG_DEBUG("good copy chunk [%u] of [%u]\n",
+		  (unsigned int)state->next_chunk,
+		  (unsigned int)state->cc_copy.chunk_count);
+	state->total_written += chunk_nwritten;
+
+	state->current_chunk = state->next_chunk;
+
+	if (state->next_chunk == state->cc_copy.chunk_count) {
 		tevent_req_done(req);
+		return;
+	}
+
+	status = fsctl_srv_copychunk_loop(req);
+	if (tevent_req_nterror(req, status)) {
+		return;
 	}
 }
 
@@ -361,7 +379,7 @@ static NTSTATUS fsctl_srv_copychunk_recv(struct tevent_req *req,
 		if (state->aapl_copyfile == true) {
 			cc_rsp->chunks_written = 0;
 		} else {
-			cc_rsp->chunks_written = state->recv_count - state->bad_recv_count;
+			cc_rsp->chunks_written = state->current_chunk;
 		}
 		cc_rsp->chunk_bytes_written = 0;
 		cc_rsp->total_bytes_written = state->total_written;
@@ -371,9 +389,7 @@ static NTSTATUS fsctl_srv_copychunk_recv(struct tevent_req *req,
 		assert(1);
 		break;
 	}
-	status = state->status;
-	tevent_req_received(req);
-
+	status = tevent_req_simple_recv_ntstatus(req);
 	return status;
 }
 
