@@ -705,7 +705,6 @@ static const struct auth_operations sam_ignoredomain_ops = {
 	.want_check	           = authsam_ignoredomain_want_check,
 	.check_password	           = authsam_check_password_internals,
 	.get_user_info_dc_principal = authsam_get_user_info_dc_principal_wrapper,
-	.flags                     = AUTH_METHOD_LOCAL_SAM
 };
 
 static const struct auth_operations sam_ops = {
@@ -713,7 +712,6 @@ static const struct auth_operations sam_ops = {
 	.want_check	           = authsam_want_check,
 	.check_password	           = authsam_check_password_internals,
 	.get_user_info_dc_principal = authsam_get_user_info_dc_principal_wrapper,
-	.flags                     = AUTH_METHOD_LOCAL_SAM
 };
 
 _PUBLIC_ NTSTATUS auth4_sam_init(void);
