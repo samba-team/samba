@@ -1266,7 +1266,7 @@ static WERROR getncchanges_repl_secret(struct drsuapi_bind_state *b_state,
 	int ret;
 	const char *rodc_attrs[] = { "msDS-KrbTgtLink", "msDS-NeverRevealGroup", "msDS-RevealOnDemandGroup", "objectGUID", NULL };
 	const char *obj_attrs[] = { "tokenGroups", "objectSid", "UserAccountControl", "msDS-KrbTgtLinkBL", NULL };
-	struct ldb_result *rodc_res, *obj_res;
+	struct ldb_result *rodc_res = NULL, *obj_res = NULL;
 	const struct dom_sid **never_reveal_sids, **reveal_sids, **token_sids;
 	const struct dom_sid *object_sid = NULL;
 	WERROR werr;
@@ -1334,12 +1334,12 @@ static WERROR getncchanges_repl_secret(struct drsuapi_bind_state *b_state,
 	 * Which basically means that if you have GET_ALL_CHANGES rights (~== RWDC)
 	 * then you can do EXOP_REPL_SECRETS
 	 */
+	obj_dn = drs_ObjectIdentifier_to_dn(mem_ctx, b_state->sam_ctx_system, ncRoot);
+	if (!ldb_dn_validate(obj_dn)) goto failed;
+
 	if (has_get_all_changes) {
 		goto allowed;
 	}
-
-	obj_dn = drs_ObjectIdentifier_to_dn(mem_ctx, b_state->sam_ctx_system, ncRoot);
-	if (!ldb_dn_validate(obj_dn)) goto failed;
 
 	rodc_dn = ldb_dn_new_fmt(mem_ctx, b_state->sam_ctx_system, "<SID=%s>",
 				 dom_sid_string(mem_ctx, user_sid));
@@ -1433,7 +1433,7 @@ denied:
 allowed:
 	DEBUG(2,(__location__ ": Allowed single object with secret replication for %s by %s %s\n",
 		 ldb_dn_get_linearized(obj_dn), has_get_all_changes?"RWDC":"RODC",
-		 ldb_dn_get_linearized(rodc_res->msgs[0]->dn)));
+		 ldb_dn_get_linearized(*machine_dn)));
 	ctr6->extended_ret = DRSUAPI_EXOP_ERR_SUCCESS;
 	req10->highwatermark.highest_usn = 0;
 	return WERR_OK;
