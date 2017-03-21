@@ -59,21 +59,19 @@ static void dos_format(char *s)
  * Connect to SMB share using smb_full_connection
  */
 static NTSTATUS do_smb_connect(TALLOC_CTX *mem_ctx, struct smb_private_data *spdata,
-			const char *hostname, const char *service, struct smbcli_tree **tree)
+			       const char *hostname, const char *service,
+			       struct smbcli_options *options,
+			       struct smbcli_session_options *session_options,
+			       struct smbcli_tree **tree)
 {
 	struct smbcli_state *smb_state;
 	NTSTATUS status;
-	struct smbcli_options options;
-	struct smbcli_session_options session_options;
 
 	*tree = NULL;
 
 	gensec_init();
 
 	smb_state = smbcli_state_init(mem_ctx);
-
-	lpcfg_smbcli_options(spdata->lp_ctx, &options);
-	lpcfg_smbcli_session_options(spdata->lp_ctx, &session_options);
 
 	status = smbcli_full_connection(mem_ctx, &smb_state, hostname, 
 					lpcfg_smb_ports(spdata->lp_ctx),
@@ -83,8 +81,8 @@ static NTSTATUS do_smb_connect(TALLOC_CTX *mem_ctx, struct smb_private_data *spd
 					spdata->creds,
 					lpcfg_resolve_context(spdata->lp_ctx),
 					spdata->ev_ctx,
-					&options,
-					&session_options,
+					options,
+					session_options,
 					lpcfg_gensec_settings(mem_ctx, spdata->lp_ctx));
 
 	if (NT_STATUS_IS_OK(status)) {
@@ -570,17 +568,23 @@ static PyObject *py_smb_new(PyTypeObject *type, PyObject *args, PyObject *kwargs
 {
 	PyObject *py_creds = Py_None;
 	PyObject *py_lp = Py_None;
-	const char *kwnames[] = { "hostname", "service", "creds", "lp", NULL };
+	const char *kwnames[] = { "hostname", "service", "creds", "lp",
+				  "ntlmv2_auth", "use_spnego", NULL };
 	const char *hostname = NULL;
 	const char *service = NULL;
 	PyObject *smb;
 	struct smb_private_data *spdata;
 	NTSTATUS status;
 	TALLOC_CTX *frame = NULL;
+	struct smbcli_options options;
+	struct smbcli_session_options session_options;
+	uint8_t ntlmv2_auth = 0xFF;
+	uint8_t use_spnego = 0xFF;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "zz|OO",
-					discard_const_p(char *, kwnames),
-					&hostname, &service, &py_creds, &py_lp)) {
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "zz|OObb",
+					 discard_const_p(char *, kwnames),
+					 &hostname, &service, &py_creds, &py_lp,
+					 &ntlmv2_auth, &use_spnego)) {
 		return NULL;
 	}
 
@@ -606,7 +610,20 @@ static PyObject *py_smb_new(PyTypeObject *type, PyObject *args, PyObject *kwargs
 		return NULL;
 	}
 
-	status = do_smb_connect(spdata, spdata, hostname, service, &spdata->tree);
+	lpcfg_smbcli_options(spdata->lp_ctx, &options);
+	lpcfg_smbcli_session_options(spdata->lp_ctx, &session_options);
+
+	if (ntlmv2_auth != 0xFF) {
+		session_options.ntlmv2_auth = ntlmv2_auth;
+	}
+	if (use_spnego != 0xFF) {
+		options.use_spnego = use_spnego;
+	}
+
+	status = do_smb_connect(spdata, spdata, hostname, service,
+				&options,
+				&session_options,
+				&spdata->tree);
 	PyErr_NTSTATUS_IS_ERR_RAISE(status);
 	if (spdata->tree == NULL) {
 		TALLOC_FREE(frame);
