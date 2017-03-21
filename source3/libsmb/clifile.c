@@ -1074,7 +1074,10 @@ NTSTATUS cli_rename_recv(struct tevent_req *req)
 	return tevent_req_simple_recv_ntstatus(req);
 }
 
-NTSTATUS cli_rename(struct cli_state *cli, const char *fname_src, const char *fname_dst)
+NTSTATUS cli_rename(struct cli_state *cli,
+		    const char *fname_src,
+		    const char *fname_dst,
+		    bool replace)
 {
 	TALLOC_CTX *frame = NULL;
 	struct tevent_context *ev;
@@ -1082,7 +1085,7 @@ NTSTATUS cli_rename(struct cli_state *cli, const char *fname_src, const char *fn
 	NTSTATUS status = NT_STATUS_OK;
 
 	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
-		return cli_smb2_rename(cli, fname_src, fname_dst, false);
+		return cli_smb2_rename(cli, fname_src, fname_dst, replace);
 	}
 
 	frame = talloc_stackframe();
@@ -1090,6 +1093,14 @@ NTSTATUS cli_rename(struct cli_state *cli, const char *fname_src, const char *fn
 	if (smbXcli_conn_has_async_calls(cli->conn)) {
 		/*
 		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+
+	if (replace) {
+		/*
+		 * SMB1 doesn't support replace
 		 */
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto fail;

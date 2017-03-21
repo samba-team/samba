@@ -4703,7 +4703,7 @@ static bool run_rename(int dummy)
 		return False;
 	}
 
-	status = cli_rename(cli1, fname, fname1);
+	status = cli_rename(cli1, fname, fname1, false);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("First rename failed (SHARE_READ) (this is correct) - %s\n", nt_errstr(status));
 	} else {
@@ -4731,7 +4731,7 @@ static bool run_rename(int dummy)
 		return False;
 	}
 
-	status = cli_rename(cli1, fname, fname1);
+	status = cli_rename(cli1, fname, fname1, false);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Second rename failed (SHARE_DELETE | SHARE_READ) - this should have succeeded - %s\n", nt_errstr(status));
 		correct = False;
@@ -4778,7 +4778,7 @@ static bool run_rename(int dummy)
   }
 #endif
 
-	status = cli_rename(cli1, fname, fname1);
+	status = cli_rename(cli1, fname, fname1, false);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Third rename failed (SHARE_NONE) - this should have succeeded - %s\n", nt_errstr(status));
 		correct = False;
@@ -4806,7 +4806,7 @@ static bool run_rename(int dummy)
 		return False;
 	}
 
-	status = cli_rename(cli1, fname, fname1);
+	status = cli_rename(cli1, fname, fname1, false);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Fourth rename failed (SHARE_READ | SHARE_WRITE) (this is correct) - %s\n", nt_errstr(status));
 	} else {
@@ -4834,7 +4834,7 @@ static bool run_rename(int dummy)
 		return False;
 	}
 
-	status = cli_rename(cli1, fname, fname1);
+	status = cli_rename(cli1, fname, fname1, false);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Fifth rename failed (SHARE_READ | SHARE_WRITE | SHARE_DELETE) - this should have succeeded - %s ! \n", nt_errstr(status));
 		correct = False;
@@ -5043,13 +5043,13 @@ static bool run_rename_access(int dummy)
 	 * dst directory should fail.
 	 */
 
-	status = cli_rename(cli, src, dst);
+	status = cli_rename(cli, src, dst, false);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
 		printf("rename of %s -> %s should be ACCESS denied, was %s\n",
 			src, dst, nt_errstr(status));
 		goto fail;
 	}
-	status = cli_rename(cli, dsrc, ddst);
+	status = cli_rename(cli, dsrc, ddst, false);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
 		printf("rename of %s -> %s should be ACCESS denied, was %s\n",
 			src, dst, nt_errstr(status));

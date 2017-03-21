@@ -261,7 +261,7 @@ void nb_rename(const char *oldname, const char *newname)
 {
 	NTSTATUS status;
 
-	status = cli_rename(c, oldname, newname);
+	status = cli_rename(c, oldname, newname, false);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("ERROR: rename %s %s failed (%s)\n", 
 		       oldname, newname, nt_errstr(status));
