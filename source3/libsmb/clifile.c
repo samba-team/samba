@@ -1082,9 +1082,7 @@ NTSTATUS cli_rename(struct cli_state *cli, const char *fname_src, const char *fn
 	NTSTATUS status = NT_STATUS_OK;
 
 	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
-		return cli_smb2_rename(cli,
-					fname_src,
-					fname_dst);
+		return cli_smb2_rename(cli, fname_src, fname_dst, false);
 	}
 
 	frame = talloc_stackframe();

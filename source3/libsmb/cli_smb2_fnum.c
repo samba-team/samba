@@ -2010,8 +2010,9 @@ NTSTATUS cli_smb2_set_security_descriptor(struct cli_state *cli,
 ***************************************************************/
 
 NTSTATUS cli_smb2_rename(struct cli_state *cli,
-			const char *fname_src,
-			const char *fname_dst)
+			 const char *fname_src,
+			 const char *fname_dst,
+			 bool replace)
 {
 	NTSTATUS status;
 	DATA_BLOB inbuf = data_blob_null;
@@ -2089,6 +2090,10 @@ NTSTATUS cli_smb2_rename(struct cli_state *cli,
 	if (inbuf.data == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
+	}
+
+	if (replace) {
+		SCVAL(inbuf.data, 0, 1);
 	}
 
 	SIVAL(inbuf.data, 16, converted_size_bytes);

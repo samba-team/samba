@@ -132,8 +132,9 @@ NTSTATUS cli_smb2_set_security_descriptor(struct cli_state *cli,
 			uint32_t sec_info,
 			const struct security_descriptor *sd);
 NTSTATUS cli_smb2_rename(struct cli_state *cli,
-			const char *fname_src,
-			const char *fname_dst);
+			 const char *fname_src,
+			 const char *fname_dst,
+			 bool replace);
 NTSTATUS cli_smb2_set_ea_fnum(struct cli_state *cli,
 			uint16_t fnum,
 			const char *ea_name,
