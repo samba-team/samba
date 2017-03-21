@@ -237,7 +237,7 @@ void ctdb_req_control_statistics_reset(struct ctdb_req_control *request);
 int ctdb_reply_control_statistics_reset(struct ctdb_reply_control *reply);
 
 void ctdb_req_control_db_attach(struct ctdb_req_control *request,
-				const char *db_name, uint32_t tdb_flags);
+				const char *db_name);
 int ctdb_reply_control_db_attach(struct ctdb_reply_control *reply,
 				 uint32_t *db_id);
 
@@ -346,8 +346,7 @@ void ctdb_req_control_set_tcp_tickle_list(struct ctdb_req_control *request,
 int ctdb_reply_control_set_tcp_tickle_list(struct ctdb_reply_control *reply);
 
 void ctdb_req_control_db_attach_persistent(struct ctdb_req_control *request,
-					   const char *name,
-					   uint32_t tdb_flags);
+					   const char *name);
 int ctdb_reply_control_db_attach_persistent(struct ctdb_reply_control *reply,
 					    uint32_t *db_id);
 

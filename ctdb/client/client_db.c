@@ -305,9 +305,9 @@ struct tevent_req *ctdb_attach_send(TALLOC_CTX *mem_ctx,
 
 	if (state->db->persistent) {
 		ctdb_req_control_db_attach_persistent(&request,
-						      state->db->db_name, 0);
+						      state->db->db_name);
 	} else {
-		ctdb_req_control_db_attach(&request, state->db->db_name, 0);
+		ctdb_req_control_db_attach(&request, state->db->db_name);
 	}
 
 	subreq = ctdb_client_control_send(state, state->ev, state->client,

@@ -421,7 +421,7 @@ int ctdb_ctrl_db_attach(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	struct ctdb_reply_control *reply;
 	int ret;
 
-	ctdb_req_control_db_attach(&request, db_name, 0);
+	ctdb_req_control_db_attach(&request, db_name);
 	ret = ctdb_client_control(mem_ctx, ev, client, destnode, timeout,
 				  &request, &reply);
 	if (ret != 0) {
@@ -1126,7 +1126,7 @@ int ctdb_ctrl_db_attach_persistent(TALLOC_CTX *mem_ctx,
 	struct ctdb_reply_control *reply;
 	int ret;
 
-	ctdb_req_control_db_attach_persistent(&request, db_name, 0);
+	ctdb_req_control_db_attach_persistent(&request, db_name);
 	ret = ctdb_client_control(mem_ctx, ev, client, destnode, timeout,
 				  &request, &reply);
 	if (ret != 0) {
