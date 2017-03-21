@@ -1000,10 +1000,13 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>rename &lt;old filename&gt; &lt;new filename&gt;</term>
+		<term>rename &lt;old filename&gt; &lt;new filename&gt; [-f]</term>
 		<listitem><para>Rename files in the current working directory on the
 		server from <replaceable>old filename</replaceable> to
-		<replaceable>new filename</replaceable>. </para></listitem>
+		<replaceable>new filename</replaceable>. The optional
+		-f switch is supported only by SMB2 protocol and beyond,
+		and allows for superseding the destination file,
+		if it exists.</para></listitem>
 		</varlistentry>
 
 		<varlistentry>
