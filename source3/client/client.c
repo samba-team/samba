@@ -3833,10 +3833,11 @@ static int cmd_rename(void)
 	char *targetsrc;
 	char *targetdest;
         NTSTATUS status;
+	bool replace = false;
 
 	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL) ||
 	    !next_token_talloc(ctx, &cmd_ptr,&buf2,NULL)) {
-		d_printf("rename <src> <dest>\n");
+		d_printf("rename <src> <dest> [-f]\n");
 		return 1;
 	}
 
@@ -3856,6 +3857,11 @@ static int cmd_rename(void)
 		return 1;
 	}
 
+	if (next_token_talloc(ctx, &cmd_ptr, &buf, NULL) &&
+	    strcsequal(buf, "-f")) {
+		replace = true;
+	}
+
 	status = cli_resolve_path(ctx, "", auth_info, cli, src, &targetcli,
 				  &targetsrc);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -3870,7 +3876,7 @@ static int cmd_rename(void)
 		return 1;
 	}
 
-	status = cli_rename(targetcli, targetsrc, targetdest, false);
+	status = cli_rename(targetcli, targetsrc, targetdest, replace);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("%s renaming files %s -> %s \n",
 			nt_errstr(status),
