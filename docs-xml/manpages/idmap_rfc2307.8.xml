@@ -70,13 +70,13 @@
 		</varlistentry>
 		<varlistentry>
 			<term>bind_path_user</term>
-			<listitem><para>Specifies the bind path where
+			<listitem><para>Specifies the search base where
 			user objects can be found in the LDAP
 			server.</para></listitem>
 		</varlistentry>
 		<varlistentry>
 			<term>bind_path_group</term>
-			<listitem><para>Specifies the bind path where
+			<listitem><para>Specifies the search base where
 			group objects can be found in the LDAP
 			server.</para></listitem>
 		</varlistentry>
