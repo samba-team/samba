@@ -1269,7 +1269,7 @@ static NTSTATUS winbindd_dual_auth_passdb(TALLOC_CTX *mem_ctx,
 	user_info->mapped_state = True;
 
 	/* We don't want to come back to winbindd or to do PAM account checks */
-	user_info->flags |= USER_INFO_LOCAL_SAM_ONLY | USER_INFO_INFO3_AND_NO_AUTHZ;
+	user_info->flags |= USER_INFO_INFO3_AND_NO_AUTHZ;
 
 	if (interactive) {
 		user_info->flags |= USER_INFO_INTERACTIVE_LOGON;
