@@ -64,3 +64,15 @@ plantestsuite_loadlist("samba4.ldb.multi_connect.python(ad_dc_ntvfs)",
                                              "dsdb/tests/python/ad_dc_multi_bind.py"),
                         'tdb://$PREFIX_ABS/ad_dc_ntvfs/private/sam.ldb'
                         '$LOADLIST', '$LISTOPT'])
+
+
+# this one doesn't tidy itself up fully, so leave it as last unless
+# you want a messy database.
+plantestsuite_loadlist("samba4.ldap.ad_dc_medley_performance.python(ad_dc_ntvfs)",
+                       "ad_dc_ntvfs",
+                       [python,
+                        os.path.join(samba4srcdir,
+                                     "dsdb/tests/python/ad_dc_medley_performance.py"),
+                        '$SERVER', '-U"$USERNAME%$PASSWORD"',
+                        '--workgroup=$DOMAIN',
+                        '$LOADLIST', '$LISTOPT'])
