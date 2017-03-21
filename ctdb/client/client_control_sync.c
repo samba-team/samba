@@ -415,14 +415,13 @@ int ctdb_ctrl_statistics_reset(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 int ctdb_ctrl_db_attach(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			struct ctdb_client_context *client,
 			int destnode, struct timeval timeout,
-			const char *db_name, uint32_t tdb_flags,
-			uint32_t *db_id)
+			const char *db_name, uint32_t *db_id)
 {
 	struct ctdb_req_control request;
 	struct ctdb_reply_control *reply;
 	int ret;
 
-	ctdb_req_control_db_attach(&request, db_name, tdb_flags);
+	ctdb_req_control_db_attach(&request, db_name, 0);
 	ret = ctdb_client_control(mem_ctx, ev, client, destnode, timeout,
 				  &request, &reply);
 	if (ret != 0) {
@@ -1121,14 +1120,13 @@ int ctdb_ctrl_db_attach_persistent(TALLOC_CTX *mem_ctx,
 				   struct tevent_context *ev,
 				   struct ctdb_client_context *client,
 				   int destnode, struct timeval timeout,
-				   const char *db_name, int tdb_flags,
-				   uint32_t *db_id)
+				   const char *db_name, uint32_t *db_id)
 {
 	struct ctdb_req_control request;
 	struct ctdb_reply_control *reply;
 	int ret;
 
-	ctdb_req_control_db_attach_persistent(&request, db_name, tdb_flags);
+	ctdb_req_control_db_attach_persistent(&request, db_name, 0);
 	ret = ctdb_client_control(mem_ctx, ev, client, destnode, timeout,
 				  &request, &reply);
 	if (ret != 0) {

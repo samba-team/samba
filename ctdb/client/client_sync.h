@@ -91,8 +91,7 @@ int ctdb_ctrl_statistics_reset(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 int ctdb_ctrl_db_attach(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			struct ctdb_client_context *client,
 			int destnode, struct timeval timeout,
-			const char *db_name, uint32_t tdb_flags,
-			uint32_t *db_id);
+			const char *db_name, uint32_t *db_id);
 
 int ctdb_ctrl_traverse_start(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			     struct ctdb_client_context *client,
@@ -216,8 +215,7 @@ int ctdb_ctrl_db_attach_persistent(TALLOC_CTX *mem_ctx,
 				   struct tevent_context *ev,
 				   struct ctdb_client_context *client,
 				   int destnode, struct timeval timeout,
-				   const char *db_name, int tdb_flags,
-				   uint32_t *db_id);
+				   const char *db_name, uint32_t *db_id);
 
 int ctdb_ctrl_send_gratuitous_arp(TALLOC_CTX *mem_ctx,
 				  struct tevent_context *ev,
