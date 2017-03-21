@@ -774,27 +774,25 @@ static NTSTATUS idmap_rfc2307_initialize(struct idmap_domain *domain)
 
 	bind_path_user = idmap_config_const_string(
 		domain->name, "bind_path_user", NULL);
-	if (bind_path_user) {
-		ctx->bind_path_user = talloc_strdup(ctx, bind_path_user);
-		if (ctx->bind_path_user == NULL) {
-			status = NT_STATUS_NO_MEMORY;
-			goto err;
-		}
-	} else {
+	if (bind_path_user == NULL) {
 		status = NT_STATUS_INVALID_PARAMETER;
+		goto err;
+	}
+	ctx->bind_path_user = talloc_strdup(ctx, bind_path_user);
+	if (ctx->bind_path_user == NULL) {
+		status = NT_STATUS_NO_MEMORY;
 		goto err;
 	}
 
 	bind_path_group = idmap_config_const_string(
 		domain->name, "bind_path_group", NULL);
-	if (bind_path_group) {
-		ctx->bind_path_group = talloc_strdup(ctx, bind_path_group);
-		if (ctx->bind_path_group == NULL) {
-			status = NT_STATUS_NO_MEMORY;
-			goto err;
-		}
-	} else {
+	if (bind_path_group == NULL) {
 		status = NT_STATUS_INVALID_PARAMETER;
+		goto err;
+	}
+	ctx->bind_path_group = talloc_strdup(ctx, bind_path_group);
+	if (ctx->bind_path_group == NULL) {
+		status = NT_STATUS_NO_MEMORY;
 		goto err;
 	}
 
