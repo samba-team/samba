@@ -39,6 +39,8 @@ struct ctdb_queue *ctdb_queue_setup(struct ctdb_context *ctdb,
 
 /* From common/ctdb_ltdb.c */
 
+int ctdb_db_tdb_flags(uint8_t db_flags, bool with_valgrind, bool with_mutex);
+
 struct ctdb_db_context *ctdb_db_handle(struct ctdb_context *ctdb,
 				       const char *name);
 

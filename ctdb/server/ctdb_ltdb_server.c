@@ -763,9 +763,10 @@ static int ctdb_local_attach(struct ctdb_context *ctdb, const char *db_name,
 	struct ctdb_db_context *ctdb_db, *tmp_db;
 	int ret;
 	struct TDB_DATA key;
-	unsigned tdb_flags;
+	int tdb_flags;
 	int mode = 0600;
 	int remaining_tries = 0;
+	uint8_t db_flags = 0;
 
 	ctdb_db = talloc_zero(ctdb, struct ctdb_db_context);
 	CTDB_NO_MEMORY(ctdb, ctdb_db);
@@ -844,20 +845,12 @@ static int ctdb_local_attach(struct ctdb_context *ctdb, const char *db_name,
 					   persistent?ctdb->db_directory_persistent:ctdb->db_directory, 
 					   db_name, ctdb->pnn);
 
-	tdb_flags = persistent? TDB_DEFAULT : TDB_CLEAR_IF_FIRST | TDB_NOSYNC;
-	if (ctdb->valgrinding) {
-		tdb_flags |= TDB_NOMMAP;
+	if (persistent) {
+		db_flags = CTDB_DB_FLAGS_PERSISTENT;
 	}
-	tdb_flags |= TDB_DISALLOW_NESTING;
-	if (jenkinshash) {
-		tdb_flags |= TDB_INCOMPATIBLE_HASH;
-	}
-#ifdef TDB_MUTEX_LOCKING
-	if (ctdb->tunable.mutex_enabled && mutexes &&
-	    tdb_runtime_check_for_robust_mutexes()) {
-		tdb_flags |= (TDB_MUTEX_LOCKING | TDB_CLEAR_IF_FIRST);
-	}
-#endif
+
+	tdb_flags = ctdb_db_tdb_flags(db_flags, ctdb->valgrinding,
+				      ctdb->tunable.mutex_enabled);
 
 again:
 	ctdb_db->ltdb = tdb_wrap_open(ctdb_db, ctdb_db->db_path,

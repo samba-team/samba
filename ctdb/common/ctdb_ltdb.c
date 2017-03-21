@@ -33,6 +33,37 @@
 #include "common/common.h"
 #include "common/logging.h"
 
+
+/*
+ * Calculate tdb flags based on databse type
+ */
+int ctdb_db_tdb_flags(uint8_t db_flags, bool with_valgrind, bool with_mutex)
+{
+	int tdb_flags = 0;
+
+	if (db_flags & CTDB_DB_FLAGS_PERSISTENT) {
+		tdb_flags = TDB_DEFAULT;
+	} else {
+		tdb_flags = TDB_NOSYNC |
+			    TDB_CLEAR_IF_FIRST |
+			    TDB_INCOMPATIBLE_HASH;
+
+#ifdef TDB_MUTEX_LOCKING
+		if (with_mutex && tdb_runtime_check_for_robust_mutexes()) {
+			tdb_flags |= TDB_MUTEX_LOCKING;
+		}
+#endif
+
+	}
+
+	tdb_flags |= TDB_DISALLOW_NESTING;
+	if (with_valgrind) {
+		tdb_flags |= TDB_NOMMAP;
+	}
+
+	return tdb_flags;
+}
+
 /*
   find an attached ctdb_db handle given a name
  */

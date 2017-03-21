@@ -2085,15 +2085,15 @@ struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb,
 				    struct timeval timeout,
 				    const char *name,
 				    bool persistent,
-				    uint32_t tdb_flags)
+				    uint32_t tdb_flags_unused)
 {
 	struct ctdb_db_context *ctdb_db;
 	TDB_DATA data;
 	int ret;
 	int32_t res;
-#ifdef TDB_MUTEX_LOCKING
-	uint32_t mutex_enabled = 0;
-#endif
+	uint8_t db_flags = 0;
+	int tdb_flags;
+	bool with_mutex = false;
 
 	ctdb_db = ctdb_db_handle(ctdb, name);
 	if (ctdb_db) {
@@ -2110,16 +2110,10 @@ struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb,
 	data.dptr = discard_const(name);
 	data.dsize = strlen(name)+1;
 
-	/* CTDB has switched to using jenkins hash for volatile databases.
-	 * Even if tdb_flags do not explicitly mention TDB_INCOMPATIBLE_HASH,
-	 * always set it.
-	 */
-	if (!persistent) {
-		tdb_flags |= TDB_INCOMPATIBLE_HASH;
-	}
-
 #ifdef TDB_MUTEX_LOCKING
 	if (!persistent) {
+		uint32_t mutex_enabled = 0;
+
 		ret = ctdb_ctrl_get_tunable(ctdb, timeval_current_ofs(3,0),
 					    CTDB_CURRENT_NODE,
 					    "TDBMutexEnabled",
@@ -2129,10 +2123,15 @@ struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb,
 		}
 
 		if (mutex_enabled == 1) {
-			tdb_flags |= (TDB_MUTEX_LOCKING | TDB_CLEAR_IF_FIRST);
+			with_mutex = true;
 		}
 	}
 #endif
+
+	if (persistent) {
+		db_flags = CTDB_DB_FLAGS_PERSISTENT;
+	}
+	tdb_flags = ctdb_db_tdb_flags(db_flags, ctdb->valgrinding, with_mutex);
 
 	/* tell ctdb daemon to attach */
 	ret = ctdb_control(ctdb, CTDB_CURRENT_NODE, tdb_flags, 
@@ -2143,7 +2142,7 @@ struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb,
 		talloc_free(ctdb_db);
 		return NULL;
 	}
-	
+
 	ctdb_db->db_id = *(uint32_t *)data.dptr;
 	talloc_free(data.dptr);
 
@@ -2153,21 +2152,6 @@ struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb,
 		talloc_free(ctdb_db);
 		return NULL;
 	}
-
-	if (persistent) {
-		tdb_flags = TDB_DEFAULT;
-	} else {
-		tdb_flags = TDB_NOSYNC;
-#ifdef TDB_MUTEX_LOCKING
-		if (mutex_enabled) {
-			tdb_flags |= (TDB_MUTEX_LOCKING | TDB_CLEAR_IF_FIRST);
-		}
-#endif
-	}
-	if (ctdb->valgrinding) {
-		tdb_flags |= TDB_NOMMAP;
-	}
-	tdb_flags |= TDB_DISALLOW_NESTING;
 
 	ctdb_db->ltdb = tdb_wrap_open(ctdb_db, ctdb_db->db_path, 0, tdb_flags,
 				      O_RDWR, 0);
