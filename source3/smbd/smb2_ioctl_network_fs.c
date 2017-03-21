@@ -246,12 +246,74 @@ static struct tevent_req *fsctl_srv_copychunk_send(TALLOC_CTX *mem_ctx,
 	return req;
 }
 
+/*
+ * Work out the next IO request from the remaining chunks starting with
+ * state->current_chunk. Chunks with left to right adjacent ranges can be merged
+ * into a single IO request.
+ */
+static uint32_t next_merged_io(struct fsctl_srv_copychunk_state *state)
+{
+	struct srv_copychunk *chunk = NULL;
+	uint32_t length;
+	off_t next_src_offset;
+	off_t next_dst_offset;
+
+	/*
+	 * We're expected to process at least one chunk and return it's length,
+	 * so let's do this first.
+	 */
+
+	chunk = &state->cc_copy.chunks[state->current_chunk];
+	length = chunk->length;
+	state->next_chunk++;
+
+	/*
+	 * Now process subsequent chunks merging chunks as long as ranges are
+	 * adjacent and the source file size is not exceeded (this is needed
+	 * for error reporting).
+	 */
+
+	next_src_offset = chunk->source_off + chunk->length;
+	next_dst_offset = chunk->target_off + chunk->length;
+
+	while (state->next_chunk < state->cc_copy.chunk_count) {
+		chunk = &state->cc_copy.chunks[state->next_chunk];
+
+		if ((chunk->source_off != next_src_offset) ||
+		    (chunk->target_off != next_dst_offset))
+		{
+			/* Not adjacent, stop merging */
+			break;
+		}
+
+		next_src_offset += chunk->length;
+		next_dst_offset += chunk->length;
+
+		if (next_src_offset > state->src_fsp->fsp_name->st.st_ex_size) {
+			/* Source filesize exceeded, stop merging */
+			break;
+		}
+
+		/*
+		 * Found a mergable chunk, merge it and continue searching.
+		 * Note: this can't wrap, limits were already checked in
+		 * copychunk_check_limits().
+		 */
+		length += chunk->length;
+
+		state->next_chunk++;
+	}
+
+	return length;
+}
+
 static NTSTATUS fsctl_srv_copychunk_loop(struct tevent_req *req)
 {
 	struct fsctl_srv_copychunk_state *state = tevent_req_data(
 		req, struct fsctl_srv_copychunk_state);
 	struct tevent_req *subreq = NULL;
 	struct srv_copychunk *chunk = NULL;
+	uint32_t length;
 
 	if (state->next_chunk > state->cc_copy.chunk_count) {
 		DBG_ERR("Copy-chunk loop next_chunk [%d] chunk_count [%d]\n",
@@ -269,8 +331,8 @@ static NTSTATUS fsctl_srv_copychunk_loop(struct tevent_req *req)
 		    !state->dst_fsp->aapl_copyfile_supported)
 		{
 			/*
-			 * This must not return an error but just a chunk count
-			 * of 0 in the response.
+			 * This must not produce an error but just return a
+			 * chunk count of 0 in the response.
 			 */
 			tevent_req_done(req);
 			tevent_req_post(req, state->ev);
@@ -295,13 +357,7 @@ static NTSTATUS fsctl_srv_copychunk_loop(struct tevent_req *req)
 	}
 
 	chunk = &state->cc_copy.chunks[state->current_chunk];
-
-	/*
-	 * Doing the increment and calculation for the next chunk here and not
-	 * in the done function, as a later commit will make this a more
-	 * sophisticated logic.
-	 */
-	state->next_chunk++;
+	length = next_merged_io(state);
 
 	subreq = SMB_VFS_COPY_CHUNK_SEND(state->dst_fsp->conn,
 					 state,
@@ -310,7 +366,7 @@ static NTSTATUS fsctl_srv_copychunk_loop(struct tevent_req *req)
 					 chunk->source_off,
 					 state->dst_fsp,
 					 chunk->target_off,
-					 chunk->length);
+					 length);
 	if (tevent_req_nomem(subreq, req)) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -346,8 +402,7 @@ static void fsctl_srv_copychunk_vfs_done(struct tevent_req *subreq)
 	state->total_written += chunk_nwritten;
 
 	state->current_chunk = state->next_chunk;
-
-	if (state->next_chunk == state->cc_copy.chunk_count) {
+	if (state->current_chunk == state->cc_copy.chunk_count) {
 		tevent_req_done(req);
 		return;
 	}
