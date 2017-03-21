@@ -472,11 +472,13 @@ bool is_msdfs_link(connection_struct *conn,
 		SMB_STRUCT_STAT *sbufp);
 struct junction_map;
 NTSTATUS get_referred_path(TALLOC_CTX *ctx,
-			const char *dfs_path,
-			bool allow_broken_path,
-			struct junction_map *jucn,
-			int *consumedcntp,
-			bool *self_referralp);
+			   const char *dfs_path,
+			   const struct tsocket_address *remote_address,
+			   const struct tsocket_address *local_address,
+			   bool allow_broken_path,
+			   struct junction_map *jucn,
+			   int *consumedcntp,
+			   bool *self_referralp);
 int setup_dfs_referral(connection_struct *orig_conn,
 			const char *dfs_path,
 			int max_referral_level,
