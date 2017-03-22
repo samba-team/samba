@@ -6,7 +6,7 @@
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>
-    With <smbconfoption name="map untrusted to domain">auto</smbconfoption>
+    By default, and with <smbconfoption name="map untrusted to domain">auto</smbconfoption>
     smbd will defer the decision whether the domain name provided by the
     client is a valid domain name to the Domain Controller (DC) of
     the domain it is a member of, if it is not a DC.  If the DC indicates
@@ -16,7 +16,7 @@
     </para>
 
     <para>
-    By default, and with <smbconfoption name="map untrusted to domain">no</smbconfoption>,
+    With <smbconfoption name="map untrusted to domain">no</smbconfoption>,
     if a client connects to smbd using an untrusted domain name, such as
     BOGUS\user, smbd replaces the BOGUS domain with it's SAM name
     (forcing local authentication) before
@@ -39,10 +39,17 @@
     </para>
 
     <para>
+    <smbconfoption name="map untrusted to domain">no</smbconfoption>,
+    was the default up to Samba 4.6.
+    </para>
+
+    <para>
     <smbconfoption name="map untrusted to domain">auto</smbconfoption> was added
-    with Samba 4.7.0.
+    and become the default with Samba 4.7.0. As the option is marked as
+    <constant>deprecated</constant> it will be removed in a future release, while the behavior of
+    <smbconfoption name="map untrusted to domain">auto</smbconfoption> will be kept.
     </para>
 </description>
 
-<value type="default">no</value>
+<value type="default">auto</value>
 </samba:parameter>
