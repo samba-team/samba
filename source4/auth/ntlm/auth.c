@@ -840,14 +840,11 @@ _PUBLIC_ NTSTATUS auth_context_create_for_netlogon(TALLOC_CTX *mem_ctx,
 		DBG_NOTICE("using deprecated 'auth methods' values.\n");
 	} else {
 		/*
-		 * We can remove "winbind_rodc sam_failtrusts",
-		 * when we made the netlogon retries to
-		 * to contact winbind via irpc.
+		 * Here we only allow 'sam winbind' instead of
+		 * the 'anonymous sam winbind sam_ignoredomain'
+		 * we typically use for authentication from clients.
 		 */
-		_auth_methods = str_list_make(mem_ctx,
-				"sam "
-				"winbind_rodc sam_failtrusts",
-				NULL);
+		_auth_methods = str_list_make(mem_ctx, "sam winbind", NULL);
 		if (_auth_methods == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
