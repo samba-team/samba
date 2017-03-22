@@ -608,6 +608,20 @@ _PUBLIC_ NTSTATUS auth_context_create_methods(TALLOC_CTX *mem_ctx, const char * 
 const char **auth_methods_from_lp(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
 {
 	char **auth_methods = NULL;
+	const char **const_auth_methods = NULL;
+
+	/*
+	 * As 'auth methods' is deprecated it will be removed
+	 * in future releases again, but for now give
+	 * admins the flexibility to configure, the behavior
+	 * from Samba 4.6: "auth methods = anonymous sam_ignoredomain",
+	 * for a while.
+	 */
+	const_auth_methods = lpcfg_auth_methods(lp_ctx);
+	if (const_auth_methods != NULL) {
+		DBG_NOTICE("using deprecated 'auth methods' values.\n");
+		return const_auth_methods;
+	}
 
 	switch (lpcfg_server_role(lp_ctx)) {
 	case ROLE_STANDALONE:
