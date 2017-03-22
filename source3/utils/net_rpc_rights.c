@@ -153,7 +153,7 @@ static NTSTATUS enum_privileges(struct rpc_pipe_client *pipe_hnd,
 			continue;
 		}
 
-		d_printf("%s\n", description->string);
+		d_printf("%s\n", description ? description->string : "??????");
 	}
 
 	return NT_STATUS_OK;
