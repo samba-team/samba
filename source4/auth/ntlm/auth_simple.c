@@ -42,8 +42,8 @@ _PUBLIC_ NTSTATUS authenticate_ldap_simple_bind(TALLOC_CTX *mem_ctx,
 	NTSTATUS nt_status;
 	uint8_t authoritative = 0;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
-	const char *nt4_domain;
-	const char *nt4_username;
+	const char *nt4_domain = NULL;
+	const char *nt4_username = NULL;
 	uint32_t flags = 0;
 	const char *transport_protection = AUTHZ_TRANSPORT_PROTECTION_NONE;
 	if (using_tls) {
@@ -54,15 +54,7 @@ _PUBLIC_ NTSTATUS authenticate_ldap_simple_bind(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	nt_status = crack_auto_name_to_nt4_name(tmp_ctx, ev, lp_ctx, dn,
-						&nt4_domain, &nt4_username);
-
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		talloc_free(tmp_ctx);
-		return nt_status;
-	}
-
-	nt_status = auth_context_create(tmp_ctx, 
+	nt_status = auth_context_create(tmp_ctx,
 					ev, msg,
 					lp_ctx,
 					&auth_context);
@@ -71,13 +63,19 @@ _PUBLIC_ NTSTATUS authenticate_ldap_simple_bind(TALLOC_CTX *mem_ctx,
 		return nt_status;
 	}
 
+	/*
+	 * We check the error after building the user_info so we can
+	 * log a failure to find the user correctly
+	 */
+	nt_status = crack_auto_name_to_nt4_name(tmp_ctx, ev, lp_ctx, dn,
+						&nt4_domain, &nt4_username);
+
 	user_info = talloc_zero(tmp_ctx, struct auth_usersupplied_info);
 	if (!user_info) {
 		talloc_free(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	user_info->mapped_state = true;
 	user_info->client.account_name = dn;
 	/* No client.domain_name, use account_name instead */
 	user_info->mapped.account_name = nt4_username;
@@ -107,6 +105,19 @@ _PUBLIC_ NTSTATUS authenticate_ldap_simple_bind(TALLOC_CTX *mem_ctx,
 		MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT |
 		MSV1_0_CLEARTEXT_PASSWORD_ALLOWED |
 		MSV1_0_CLEARTEXT_PASSWORD_SUPPLIED;
+
+	/* This is a check for the crack names call above */
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		log_authentication_event(auth_context->msg_ctx,
+					 auth_context->lp_ctx,
+					 user_info, nt_status,
+					 NULL, NULL, NULL, NULL);
+		talloc_free(tmp_ctx);
+		return nt_status;
+	}
+
+	/* Now that we have checked if the crack names worked, set mapped_state */
+	user_info->mapped_state = true;
 
 	nt_status = auth_check_password(auth_context, tmp_ctx, user_info,
 					&user_info_dc, &authoritative);

@@ -32,6 +32,7 @@ import samba.tests.auth_log_base
 from samba.credentials import Credentials, DONT_USE_KERBEROS, MUST_USE_KERBEROS
 from samba import NTSTATUSError
 from subprocess import call
+from ldb import LdbError
 
 class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
 
@@ -484,6 +485,85 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                            msg["Authentication"]["serviceDescription"])
         self.assertEquals("simple bind",
                            msg["Authentication"]["authDescription"])
+
+    def test_ldap_simple_bind_bad_password(self):
+        def isLastExpectedMessage( msg):
+            return (msg["type"] == "Authentication" and
+                    msg["Authentication"]["serviceDescription"]  == "LDAP" and
+                    msg["Authentication"]["status"]
+                        == "NT_STATUS_WRONG_PASSWORD" and
+                    msg["Authentication"]["authDescription"] == "simple bind")
+
+        creds = self.insta_creds(template=self.get_credentials())
+        creds.set_password( "badPassword")
+        creds.set_bind_dn("%s\\%s" % (creds.get_domain(),
+                                     creds.get_username()))
+
+        thrown = False
+        try:
+            self.samdb = SamDB(url="ldaps://%s" % os.environ["SERVER"],
+                               lp = self.get_loadparm(),
+                               credentials=creds)
+        except LdbError:
+            thrown = True
+        self.assertEquals( thrown, True)
+
+        messages = self.waitForMessages( isLastExpectedMessage)
+        self.assertEquals(1,
+                          len(messages),
+                          "Did not receive the expected number of messages")
+
+
+    def test_ldap_simple_bind_bad_user(self):
+        def isLastExpectedMessage( msg):
+            return (msg["type"] == "Authentication" and
+                    msg["Authentication"]["serviceDescription"]  == "LDAP" and
+                    msg["Authentication"]["status"]
+                        == "NT_STATUS_NO_SUCH_USER" and
+                    msg["Authentication"]["authDescription"] == "simple bind")
+
+        creds = self.insta_creds(template=self.get_credentials())
+        creds.set_bind_dn("%s\\%s" % (creds.get_domain(), "badUser"))
+
+        thrown = False
+        try:
+            self.samdb = SamDB(url="ldaps://%s" % os.environ["SERVER"],
+                               lp = self.get_loadparm(),
+                               credentials=creds)
+        except LdbError:
+            thrown = True
+        self.assertEquals( thrown, True)
+
+        messages = self.waitForMessages( isLastExpectedMessage)
+        self.assertEquals(1,
+                          len(messages),
+                          "Did not receive the expected number of messages")
+
+
+    def test_ldap_simple_bind_unparseable_user(self):
+        def isLastExpectedMessage( msg):
+            return (msg["type"] == "Authentication" and
+                    msg["Authentication"]["serviceDescription"]  == "LDAP" and
+                    msg["Authentication"]["status"]
+                        == "NT_STATUS_NO_SUCH_USER" and
+                    msg["Authentication"]["authDescription"] == "simple bind")
+
+        creds = self.insta_creds(template=self.get_credentials())
+        creds.set_bind_dn("%s\\%s" % (creds.get_domain(), "abdcef"))
+
+        thrown = False
+        try:
+            self.samdb = SamDB(url="ldaps://%s" % os.environ["SERVER"],
+                               lp = self.get_loadparm(),
+                               credentials=creds)
+        except LdbError:
+            thrown = True
+        self.assertEquals( thrown, True)
+
+        messages = self.waitForMessages( isLastExpectedMessage)
+        self.assertEquals(1,
+                          len(messages),
+                          "Did not receive the expected number of messages")
 
     def test_smb(self):
         def isLastExpectedMessage( msg):
