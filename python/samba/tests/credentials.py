@@ -123,6 +123,27 @@ class CredentialsTests(samba.tests.TestCaseInTempDir):
         self.assertEqual(binascii.a2b_hex(hex_nthash),
                          self.creds.get_nt_hash())
 
+    def test_get_ntlm_response(self):
+        password="SecREt01"
+        hex_challenge="0123456789abcdef"
+        hex_nthash="cd06ca7c7e10c99b1d33b7485a2ed808"
+        hex_session_key="3f373ea8e4af954f14faa506f8eebdc4"
+        hex_ntlm_response="25a98c1c31e81847466b29b2df4680f39958fb8c213a9cc6"
+        self.creds.set_username("fred")
+        self.creds.set_domain("nurk")
+        self.creds.set_password(password)
+        self.assertEqual(password, self.creds.get_password())
+        self.assertEqual(binascii.a2b_hex(hex_nthash),
+                         self.creds.get_nt_hash())
+        response = self.creds.get_ntlm_response(flags=credentials.CLI_CRED_NTLM_AUTH,
+                                                challenge=binascii.a2b_hex(hex_challenge))
+
+
+        self.assertEqual(response["nt_response"], binascii.a2b_hex(hex_ntlm_response))
+        self.assertEqual(response["nt_session_key"], binascii.a2b_hex(hex_session_key))
+        self.assertEqual(response["flags"], credentials.CLI_CRED_NTLM_AUTH)
+
+
     def test_get_nt_hash_string(self):
         self.creds.set_password_will_be_nt_hash(True)
         hex_nthash="c2ae1fe6e648846352453e816f2aeb93"

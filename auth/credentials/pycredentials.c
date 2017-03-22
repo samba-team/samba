@@ -75,6 +75,61 @@ static PyObject *py_creds_get_ntlm_username_domain(PyObject *self, PyObject *unu
 	return ret;
 }
 
+static PyObject *py_creds_get_ntlm_response(PyObject *self, PyObject *args, PyObject *kwargs)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	PyObject *ret = NULL;
+	int flags;
+	struct timeval tv_now;
+	NTTIME server_timestamp;
+	DATA_BLOB challenge = data_blob_null;
+	DATA_BLOB target_info = data_blob_null;
+	NTSTATUS status;
+	DATA_BLOB lm_response = data_blob_null;
+	DATA_BLOB nt_response = data_blob_null;
+	DATA_BLOB lm_session_key = data_blob_null;
+	DATA_BLOB nt_session_key = data_blob_null;
+	const char *kwnames[] = { "flags", "challenge",
+				  "target_info", "server_timestamp",
+				  NULL };
+
+	tv_now = timeval_current();
+	server_timestamp = timeval_to_nttime(&tv_now);
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "is#|s#K",
+					 discard_const_p(char *, kwnames),
+					 &flags, &challenge, &target_info.data, &target_info.length)) {
+		return NULL;
+	}
+
+	status = cli_credentials_get_ntlm_response(PyCredentials_AsCliCredentials(self),
+						   frame, &flags,
+						   challenge,
+						   &server_timestamp,
+						   target_info,
+						   &lm_response, &nt_response,
+						   &lm_session_key, &nt_session_key);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_SetNTSTATUS(status);
+		TALLOC_FREE(frame);
+		return NULL;
+	}
+
+	ret = Py_BuildValue("{siss#ss#ss#ss#}",
+			    "flags", flags,
+			    "lm_reponse",
+			    (const char *)lm_response.data, lm_response.length,
+			    "nt_response",
+			    (const char *)nt_response.data, nt_response.length,
+			    "lm_session_key",
+			    (const char *)lm_session_key.data, lm_session_key.length,
+			    "nt_session_key",
+			    (const char *)nt_session_key.data, nt_session_key.length);
+	TALLOC_FREE(frame);
+	return ret;
+}
+
 static PyObject *py_creds_get_principal(PyObject *self, PyObject *unused)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -542,6 +597,11 @@ static PyMethodDef py_creds_methods[] = {
 	{ "get_ntlm_username_domain", py_creds_get_ntlm_username_domain, METH_NOARGS,
 		"S.get_ntlm_username_domain() -> (domain, username)\n"
 		"Obtain NTLM username and domain, split up either as (DOMAIN, user) or (\"\", \"user@realm\")." },
+	{ "get_ntlm_response", (PyCFunction)py_creds_get_ntlm_response, METH_VARARGS | METH_KEYWORDS,
+		"S.get_ntlm_username_domain"
+	        "(flags, challenge, target_info[, server_timestamp]) -> "
+	        "(flags, lm_response, nt_response, lm_session_key, nt_session_key)\n"
+		"Obtain LM or NTLM response." },
 	{ "set_password", py_creds_set_password, METH_VARARGS,
 		"S.set_password(password[, credentials.SPECIFIED]) -> None\n"
 		"Change password." },
@@ -672,6 +732,11 @@ MODULE_INIT_FUNC(credentials)
 	PyModule_AddObject(m, "AUTO_KRB_FORWARDABLE",  PyInt_FromLong(CRED_AUTO_KRB_FORWARDABLE));
 	PyModule_AddObject(m, "NO_KRB_FORWARDABLE",    PyInt_FromLong(CRED_NO_KRB_FORWARDABLE));
 	PyModule_AddObject(m, "FORCE_KRB_FORWARDABLE", PyInt_FromLong(CRED_FORCE_KRB_FORWARDABLE));
+	PyModule_AddObject(m, "CLI_CRED_NTLM2", PyInt_FromLong(CLI_CRED_NTLM2));
+	PyModule_AddObject(m, "CLI_CRED_NTLMv2_AUTH", PyInt_FromLong(CLI_CRED_NTLMv2_AUTH));
+	PyModule_AddObject(m, "CLI_CRED_LANMAN_AUTH", PyInt_FromLong(CLI_CRED_LANMAN_AUTH));
+	PyModule_AddObject(m, "CLI_CRED_NTLM_AUTH", PyInt_FromLong(CLI_CRED_NTLM_AUTH));
+	PyModule_AddObject(m, "CLI_CRED_CLEAR_AUTH", PyInt_FromLong(CLI_CRED_CLEAR_AUTH));
 
 	Py_INCREF(&PyCredentials);
 	PyModule_AddObject(m, "Credentials", (PyObject *)&PyCredentials);
