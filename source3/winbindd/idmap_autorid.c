@@ -913,9 +913,6 @@ done:
 	return status;
 }
 
-/*
-  Close the idmap tdb instance
-*/
 static struct idmap_methods autorid_methods = {
 	.init = idmap_autorid_initialize,
 	.unixids_to_sids = idmap_autorid_unixids_to_sids,
