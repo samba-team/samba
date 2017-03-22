@@ -418,7 +418,7 @@ static int command_set_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t
 			return -1;
 		}
 
-		DEBUG (3, ("get_quota: Running command %s\n", syscmd));
+		DBG_NOTICE("set_quota: Running command %s\n", syscmd);
 
 		lines = file_lines_pload(talloc_tos(), syscmd, NULL);
 		SAFE_FREE(syscmd);
