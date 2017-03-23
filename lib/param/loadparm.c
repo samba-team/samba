@@ -2832,6 +2832,8 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 
 	lpcfg_do_global_parameter(lp_ctx, "strict locking", "Auto");
 
+	lpcfg_do_global_parameter(lp_ctx, "strict sync", "yes");
+
 	lpcfg_do_global_parameter(lp_ctx, "map readonly", "yes");
 
 	lpcfg_do_global_parameter(lp_ctx, "allow trusted domains", "yes");

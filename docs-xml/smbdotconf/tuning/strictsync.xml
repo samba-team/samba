@@ -3,26 +3,38 @@
 				 type="boolean"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
  <description>
-    <para>Many Windows applications (including the Windows 98 explorer
-    shell) seem to confuse flushing buffer contents to disk with doing
-    a sync to disk. Under UNIX, a sync call forces the thread to be
-    suspended until the kernel has ensured that all outstanding data in
-    kernel disk buffers has been safely stored onto stable storage.
-    This is very slow and should only be done rarely. Setting this
-    parameter to <constant>no</constant> (the default) means that
-    <citerefentry><refentrytitle>smbd</refentrytitle>
-    <manvolnum>8</manvolnum></citerefentry> ignores the Windows
-    applications requests for a sync call. There is only a possibility
-    of losing data if the operating system itself that Samba is running
-    on crashes, so there is little danger in this default setting. In
-    addition, this fixes many performance problems that people have
-    reported with the new Windows98 explorer shell file copies.</para>
+    <para>This parameter controls whether Samba honors a request
+    from an SMB client to ensure any outstanding operating system
+    buffer contents held in memory are safely written onto stable
+    storage on disk. If set to <constant>yes</constant>, which is
+    the default, then Windows applications can force the smbd server
+    to synchronize unwritten data onto the disk. If set to
+    <constant>no</constant> then smbd will ignore client
+    requests to synchronize unwritten data onto stable storage on
+    disk.</para>
+
+    <para>In Samba 4.7.0, the default for this parameter changed from
+    <constant>no</constant> to <constant>yes</constant> to better
+    match the expectations of SMB2/3 clients and improve application
+    safety when running against smbd.</para>
+
     <para>The flush request from SMB2/3 clients is handled
-    asynchronously, so for these clients setting the parameter
-    to <constant>yes</constant> does not block the processing of other
-    requests in the smbd process.</para>
+    asynchronously inside smbd, so leaving the parameter as the default
+    value of <constant>yes</constant> does not block the processing of
+    other requests to the smbd process.</para>
+
+    <para>Legacy Windows applications (such as the Windows 98 explorer
+    shell) seemed to confuse writing buffer contents to the operating
+    system with synchronously writing outstanding data onto stable storage
+    on disk. Changing this parameter to <constant>no</constant> means that
+    <citerefentry><refentrytitle>smbd</refentrytitle>
+    <manvolnum>8</manvolnum></citerefentry> will ignore the Windows
+    applications request to synchronize unwritten data onto disk. Only
+    consider changing this if smbd is serving obsolete SMB1 Windows clients
+    prior to Windows XP (Windows 98 and below). There should be no need to
+    change this setting for normal operations.</para>
 </description>
 
 <related>sync always</related>
-<value type="default">no</value>
+<value type="default">yes</value>
 </samba:parameter>
