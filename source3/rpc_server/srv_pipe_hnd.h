@@ -29,8 +29,8 @@ struct pipes_struct;
 
 bool fsp_is_np(struct files_struct *fsp);
 NTSTATUS np_open(TALLOC_CTX *mem_ctx, const char *name,
-		 const struct tsocket_address *local_address,
-		 const struct tsocket_address *remote_address,
+		 const struct tsocket_address *remote_client_address,
+		 const struct tsocket_address *local_server_address,
 		 struct auth_session_info *session_info,
 		 struct tevent_context *ev_ctx,
 		 struct messaging_context *msg_ctx,

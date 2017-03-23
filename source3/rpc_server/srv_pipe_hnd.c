@@ -49,8 +49,8 @@ bool fsp_is_np(struct files_struct *fsp)
 }
 
 NTSTATUS np_open(TALLOC_CTX *mem_ctx, const char *name,
-		 const struct tsocket_address *local_address,
-		 const struct tsocket_address *remote_address,
+		 const struct tsocket_address *remote_client_address,
+		 const struct tsocket_address *local_server_address,
 		 struct auth_session_info *session_info,
 		 struct tevent_context *ev_ctx,
 		 struct messaging_context *msg_ctx,
@@ -84,8 +84,8 @@ NTSTATUS np_open(TALLOC_CTX *mem_ctx, const char *name,
 	case RPC_SERVICE_MODE_EXTERNAL:
 		status = make_external_rpc_pipe(handle,
 						name,
-						remote_address,
-						local_address,
+						remote_client_address,
+						local_server_address,
 						session_info,
 						&npa);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -111,7 +111,7 @@ NTSTATUS np_open(TALLOC_CTX *mem_ctx, const char *name,
 							   msg_ctx,
 							   name,
 							   &syntax,
-							   remote_address,
+							   remote_client_address,
 							   session_info,
 							   &npa);
 		if (!NT_STATUS_IS_OK(status)) {
