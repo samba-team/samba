@@ -145,6 +145,23 @@
 	    </listitem>
 	  </varlistentry>
 
+	  <varlistentry>
+	    <term>fruit:zero_file_id = yes | no</term>
+	    <listitem>
+	      <para>A <emphasis>global</emphasis> option whether to return
+	      zero to queries of on-disk file identifier, if the client
+	      has negotiated AAPL.</para>
+	      <para>Mac applications and / or the Mac SMB
+	      client code expect the on-disk file identifier to have the
+	      semantics of HFS+ Catalog Node Identifier (CNID). Samba
+	      doesn't provide those semantics, and that occasionally cause
+	      usability issues or even data loss. Returning a file identifier
+	      of zero causes the Mac client to stop using and trusting the
+	      file id returned from the server.</para>
+	      <para>The default is <emphasis>yes</emphasis>.</para>
+	    </listitem>
+	  </varlistentry>
+
 	</variablelist>
 </refsect1>
 
