@@ -1588,7 +1588,8 @@ static int smb_Dir_destructor(struct smb_Dir *dirp)
  Open a directory.
 ********************************************************************/
 
-struct smb_Dir *OpenDir(TALLOC_CTX *mem_ctx, connection_struct *conn,
+static struct smb_Dir *OpenDir_internal(TALLOC_CTX *mem_ctx,
+			connection_struct *conn,
 			const char *name,
 			const char *mask,
 			uint32_t attr)
@@ -1600,32 +1601,96 @@ struct smb_Dir *OpenDir(TALLOC_CTX *mem_ctx, connection_struct *conn,
 		return NULL;
 	}
 
-	dirp->conn = conn;
-	dirp->name_cache_size = lp_directory_name_cache_size(SNUM(conn));
-
-	dirp->dir_path = talloc_strdup(dirp, name);
-	if (!dirp->dir_path) {
-		errno = ENOMEM;
+	dirp->dir = SMB_VFS_OPENDIR(conn, name, mask, attr);
+	if (!dirp->dir) {
+		DEBUG(5,("OpenDir: Can't open %s. %s\n", name,
+			 strerror(errno) ));
 		goto fail;
 	}
+
+	dirp->conn = conn;
+	dirp->name_cache_size = lp_directory_name_cache_size(SNUM(conn));
 
 	if (sconn && !sconn->using_smb2) {
 		sconn->searches.dirhandles_open++;
 	}
 	talloc_set_destructor(dirp, smb_Dir_destructor);
 
-	dirp->dir = SMB_VFS_OPENDIR(conn, dirp->dir_path, mask, attr);
-	if (!dirp->dir) {
-		DEBUG(5,("OpenDir: Can't open %s. %s\n", dirp->dir_path,
-			 strerror(errno) ));
-		goto fail;
-	}
-
 	return dirp;
 
   fail:
 	TALLOC_FREE(dirp);
 	return NULL;
+}
+
+/****************************************************************************
+ Open a directory handle by pathname, ensuring it's under the share path.
+****************************************************************************/
+
+static struct smb_Dir *open_dir_safely(TALLOC_CTX *ctx,
+					connection_struct *conn,
+					const char *name,
+					const char *wcard,
+					uint32_t attr)
+{
+	struct smb_Dir *dir_hnd = NULL;
+	char *saved_dir = vfs_GetWd(ctx, conn);
+	NTSTATUS status;
+
+	if (saved_dir == NULL) {
+		return NULL;
+	}
+
+	if (vfs_ChDir(conn, name) == -1) {
+		goto out;
+	}
+
+	/*
+	 * Now the directory is pinned, use
+	 * REALPATH to ensure we can access it.
+	 */
+	status = check_name(conn, ".");
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
+	dir_hnd = OpenDir_internal(ctx,
+				conn,
+				".",
+				wcard,
+				attr);
+
+	if (dir_hnd == NULL) {
+		goto out;
+	}
+
+	/*
+	 * OpenDir_internal only gets "." as the dir name.
+	 * Store the real dir name here.
+	 */
+
+	dir_hnd->dir_path = talloc_strdup(dir_hnd, name);
+	if (!dir_hnd->dir_path) {
+		errno = ENOMEM;
+	}
+
+  out:
+
+	vfs_ChDir(conn, saved_dir);
+	TALLOC_FREE(saved_dir);
+	return dir_hnd;
+}
+
+struct smb_Dir *OpenDir(TALLOC_CTX *mem_ctx, connection_struct *conn,
+			const char *name,
+			const char *mask,
+			uint32_t attr)
+{
+	return open_dir_safely(mem_ctx,
+				conn,
+				name,
+				mask,
+				attr);
 }
 
 /*******************************************************************
@@ -1641,7 +1706,17 @@ static struct smb_Dir *OpenDir_fsp(TALLOC_CTX *mem_ctx, connection_struct *conn,
 	struct smbd_server_connection *sconn = conn->sconn;
 
 	if (!dirp) {
-		return NULL;
+		goto fail;
+	}
+
+	if (!fsp->is_directory) {
+		errno = EBADF;
+		goto fail;
+	}
+
+	if (fsp->fh->fd == -1) {
+		errno = EBADF;
+		goto fail;
 	}
 
 	dirp->conn = conn;
@@ -1653,36 +1728,33 @@ static struct smb_Dir *OpenDir_fsp(TALLOC_CTX *mem_ctx, connection_struct *conn,
 		goto fail;
 	}
 
-	if (sconn && !sconn->using_smb2) {
-		sconn->searches.dirhandles_open++;
-	}
-	talloc_set_destructor(dirp, smb_Dir_destructor);
-
-	if (fsp->is_directory && fsp->fh->fd != -1) {
-		dirp->dir = SMB_VFS_FDOPENDIR(fsp, mask, attr);
-		if (dirp->dir != NULL) {
-			dirp->fsp = fsp;
-		} else {
-			DEBUG(10,("OpenDir_fsp: SMB_VFS_FDOPENDIR on %s returned "
-				"NULL (%s)\n",
-				dirp->dir_path,
-				strerror(errno)));
-			if (errno != ENOSYS) {
-				return NULL;
-			}
+	dirp->dir = SMB_VFS_FDOPENDIR(fsp, mask, attr);
+	if (dirp->dir != NULL) {
+		dirp->fsp = fsp;
+	} else {
+		DEBUG(10,("OpenDir_fsp: SMB_VFS_FDOPENDIR on %s returned "
+			"NULL (%s)\n",
+			dirp->dir_path,
+			strerror(errno)));
+		if (errno != ENOSYS) {
+			goto fail;
 		}
 	}
 
 	if (dirp->dir == NULL) {
-		/* FDOPENDIR didn't work. Use OPENDIR instead. */
-		dirp->dir = SMB_VFS_OPENDIR(conn, dirp->dir_path, mask, attr);
+		/* FDOPENDIR is not supported. Use OPENDIR instead. */
+		TALLOC_FREE(dirp);
+		return open_dir_safely(mem_ctx,
+					conn,
+					fsp->fsp_name->base_name,
+					mask,
+					attr);
 	}
 
-	if (!dirp->dir) {
-		DEBUG(5,("OpenDir_fsp: Can't open %s. %s\n", dirp->dir_path,
-			 strerror(errno) ));
-		goto fail;
+	if (sconn && !sconn->using_smb2) {
+		sconn->searches.dirhandles_open++;
 	}
+	talloc_set_destructor(dirp, smb_Dir_destructor);
 
 	return dirp;
 
