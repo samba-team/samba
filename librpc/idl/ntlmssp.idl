@@ -207,10 +207,10 @@ interface ntlmssp
 		uint8 ChallengeFromClient[8];
 	} LMv2_RESPONSE;
 
-	typedef [nopython,nodiscriminant] union {
+	typedef [nodiscriminant] union {
 		[case(24)] LM_RESPONSE v1;
 		[default];
-	} ntlmssp_LM_RESPONSE;
+	} ntlmssp_LM_RESPONSE_with_len;
 
 	/* [MS-NLMP] 2.2.2.6 NTLM_RESPONSE */
 
@@ -238,11 +238,11 @@ interface ntlmssp
 		NTLMv2_CLIENT_CHALLENGE Challenge;
 	} NTLMv2_RESPONSE;
 
-	typedef [public,nopython,nodiscriminant] union {
+	typedef [public,nodiscriminant] union {
 		[case(0)] ;
 		[case(0x18)] NTLM_RESPONSE v1;
 		[default] NTLMv2_RESPONSE v2;
-	} ntlmssp_NTLM_RESPONSE;
+	} ntlmssp_NTLM_RESPONSE_with_len;
 
 	const int NTLMSSP_MIC_OFFSET = 72;
 	const int NTLMSSP_MIC_SIZE = 16;
@@ -258,10 +258,10 @@ interface ntlmssp
 		[value(NtLmAuthenticate)] ntlmssp_MessageType MessageType;
 		uint16 LmChallengeResponseLen;
 		[value(LmChallengeResponseLen)] uint16 LmChallengeResponseMaxLen;
-		[relative] [subcontext(0),subcontext_size(LmChallengeResponseLen),switch_is(LmChallengeResponseLen)] ntlmssp_LM_RESPONSE *LmChallengeResponse;
+		[relative] [subcontext(0),subcontext_size(LmChallengeResponseLen),switch_is(LmChallengeResponseLen)] ntlmssp_LM_RESPONSE_with_len *LmChallengeResponse;
 		uint16 NtChallengeResponseLen;
 		[value(NtChallengeResponseLen)] uint16 NtChallengeResponseMaxLen;
-		[relative] [subcontext(0),subcontext_size(NtChallengeResponseMaxLen),switch_is(NtChallengeResponseLen)] ntlmssp_NTLM_RESPONSE *NtChallengeResponse;
+		[relative] [subcontext(0),subcontext_size(NtChallengeResponseMaxLen),switch_is(NtChallengeResponseLen)] ntlmssp_NTLM_RESPONSE_with_len *NtChallengeResponse;
 		[value(ndr_ntlmssp_string_length(NegotiateFlags, DomainName))] uint16 DomainNameLen;
 		[value(DomainNameLen)] uint16 DomainNameMaxLen;
 		[relative] [subcontext(0),subcontext_size(DomainNameLen)] [flag(ndr_ntlmssp_negotiated_string_flags(r->NegotiateFlags))] string *DomainName;

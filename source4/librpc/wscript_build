@@ -246,6 +246,12 @@ for env in bld.gen_python_environments():
 		realname='samba/dcerpc/drsblobs.so'
 		)
 
+	bld.SAMBA_PYTHON('python_dcerpc_ntlmssp',
+		source='../../librpc/gen_ndr/py_ntlmssp.c',
+		deps='%s %s RPC_NDR_NTLMSSP' % (pytalloc_util, pyrpc_util),
+		realname='samba/dcerpc/ntlmssp.so'
+		)
+
 bld.SAMBA_PYTHON('python_srvsvc',
     source='../../librpc/gen_ndr/py_srvsvc.c',
     deps='RPC_NDR_SRVSVC pytalloc-util pyrpc_util',
