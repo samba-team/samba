@@ -30,6 +30,7 @@
 #include "nsswitch/libwbclient/wbclient.h"
 #include "auth/auth_sam_reply.h"
 #include "libcli/security/security.h"
+#include "dsdb/samdb/samdb.h"
 
 _PUBLIC_ NTSTATUS auth4_winbind_init(void);
 
@@ -42,6 +43,48 @@ static NTSTATUS winbind_want_check(struct auth_method_context *ctx,
 	}
 
 	/* TODO: maybe limit the user scope to remote users only */
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS winbind_rodc_want_check(struct auth_method_context *ctx,
+					TALLOC_CTX *mem_ctx,
+					const struct auth_usersupplied_info *user_info)
+{
+	int ret;
+	bool am_rodc;
+
+	if (!user_info->mapped.account_name || !*user_info->mapped.account_name) {
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
+	if (ctx->auth_ctx->sam_ctx == NULL) {
+		DBG_ERR("ctx->auth_ctx->sam_ctx == NULL, don't check.\n");
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
+	ret = samdb_rodc(ctx->auth_ctx->sam_ctx, &am_rodc);
+	if (ret != LDB_SUCCESS) {
+		DBG_ERR("samdb_rodc() failed %d %s, don't check.\n",
+			ret, ldb_errstring(ctx->auth_ctx->sam_ctx));
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
+	if (!am_rodc) {
+		/*
+		 * We don't support trusts yet and we
+		 * don't want to add them using the
+		 * semi-async irpc call that uses
+		 * a nested event loop.
+		 */
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
+	/*
+	 * We're a RODC, so we forward the request to our winbind.
+	 * As the RODC is not yet production ready anyway, we keep
+	 * the semi-async behavior with nested event loops in order
+	 * to keep autobuild happy.
+	 */
 	return NT_STATUS_OK;
 }
 
@@ -258,6 +301,12 @@ static const struct auth_operations winbind_ops = {
 	.check_password	= winbind_check_password
 };
 
+static const struct auth_operations winbind_rodc_ops = {
+	.name		= "winbind_rodc",
+	.want_check	= winbind_rodc_want_check,
+	.check_password	= winbind_check_password
+};
+
 static const struct auth_operations winbind_wbclient_ops = {
 	.name		= "winbind_wbclient",
 	.want_check	= winbind_want_check,
@@ -271,6 +320,12 @@ _PUBLIC_ NTSTATUS auth4_winbind_init(void)
 	ret = auth_register(&winbind_ops);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("Failed to register 'winbind' auth backend!\n"));
+		return ret;
+	}
+
+	ret = auth_register(&winbind_rodc_ops);
+	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(0,("Failed to register 'winbind_rodc' auth backend!\n"));
 		return ret;
 	}
 
