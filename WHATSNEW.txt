@@ -16,12 +16,18 @@ UPGRADING
 NEW FEATURES/CHANGES
 ====================
 
+The "strict sync" global parameter has been changed from
+a default of "no" to "yes". This means smbd will by default
+obey client requests to synchronize unwritten data in operating
+system buffers safely onto disk. This is a safer default setting
+for modern SMB1/2/3 clients.
 
 smb.conf changes
 ================
 
   Parameter Name                Description             Default
   --------------                -----------             -------
+  strict sync			Default changed		yes
 
 
 KNOWN ISSUES
