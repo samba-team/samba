@@ -1228,7 +1228,6 @@ NTSTATUS ldapsrv_do_call(struct ldapsrv_call *call)
 	unsigned int i;
 	struct ldap_message *msg = call->request;
 	NTSTATUS status;
-	bool log = true;
 
 	/* Check for undecoded critical extensions */
 	for (i=0; msg->controls && msg->controls[i]; i++) {
@@ -1241,6 +1240,7 @@ NTSTATUS ldapsrv_do_call(struct ldapsrv_call *call)
 	}
 
 	if (call->conn->authz_logged == false) {
+		bool log = true;
 
 		/*
 		 * We do not want to log anonymous access if the query
