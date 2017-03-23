@@ -10,16 +10,16 @@ fi
 USERNAME="$1"
 PASSWORD="$2"
 shift 2
-ADDARGS="$*"
+ADDARGS="$@"
 
 rpcclient_samlogon_schannel_seal()
 {
-	$VALGRIND $BINDIR/rpcclient -U% -c "schannel;samlogon $USERNAME $PASSWORD;samlogon $USERNAME $PASSWORD" $@
+	$VALGRIND $BINDIR/rpcclient -U% -c "schannel;samlogon '$USERNAME' '$PASSWORD';samlogon '$USERNAME' '$PASSWORD'" $@
 }
 
 rpcclient_samlogon_schannel_sign()
 {
-	$VALGRIND $BINDIR/rpcclient -U% -c "schannelsign;samlogon $USERNAME $PASSWORD;samlogon $USERNAME $PASSWORD" $@
+	$VALGRIND $BINDIR/rpcclient -U% -c "schannelsign;samlogon '$USERNAME' '$PASSWORD';samlogon '$USERNAME' '$PASSWORD'" $@
 }
 
 incdir=`dirname $0`/../../../testprogs/blackbox

@@ -484,7 +484,7 @@ for env in ["nt4_dc", "fl2003dc"]:
     for t in winbind_wbclient_tests:
         plansmbtorture4testsuite(t, "%s:local" % env, '//$SERVER/tmp -U$DC_USERNAME%$DC_PASSWORD')
 
-for env in ["nt4_dc", "nt4_member", "ad_dc", "ad_member", "s4member", "chgdcpass"]:
+for env in ["nt4_dc", "nt4_member", "ad_dc", "ad_member", "s4member", "chgdcpass", "rodc"]:
     tests = ["--ping", "--separator",
              "--own-domain",
              "--all-domains",
@@ -661,7 +661,20 @@ plansmbtorture4testsuite(t, "vampire_dc", ['$SERVER', '-U$USERNAME%$PASSWORD', '
 for env in ['rodc']:
     plansmbtorture4testsuite('rpc.echo', env, ['ncacn_np:$SERVER', "-k", "yes", '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN'], modname="samba4.rpc.echo")
     plansmbtorture4testsuite('rpc.echo', "%s:local" % env, ['ncacn_np:$SERVER', "-k", "yes", '-P', '--workgroup=$DOMAIN'], modname="samba4.rpc.echo")
+    plansmbtorture4testsuite('rpc.echo', "%s:local" % env, ['ncacn_np:$SERVER', "-k", "no", '-Utestallowed\ account%$DC_PASSWORD', '--workgroup=$DOMAIN'], modname="samba4.rpc.echo.testallowed")
+    plansmbtorture4testsuite('rpc.echo', "%s:local" % env, ['ncacn_np:$SERVER', "-k", "no", '-Utestdenied%$DC_PASSWORD', '--workgroup=$DOMAIN'], modname="samba4.rpc.echo.testdenied")
 planpythontestsuite("rodc:local", "samba.tests.samba_tool.rodc")
+
+plantestsuite("samba.blackbox.rpcclient_samlogon", "rodc:local", [os.path.join(samba3srcdir, "script/tests/test_rpcclient_samlogon.sh"),
+								  "$DC_USERNAME", "$DC_PASSWORD", "ncacn_np:$SERVER", configuration])
+
+plantestsuite("samba.blackbox.rpcclient_samlogon_testallowed", "rodc:local", [os.path.join(samba3srcdir, "script/tests/test_rpcclient_samlogon.sh"),
+								              "testallowed\ account", "$DC_PASSWORD", "ncacn_np:$SERVER", configuration])
+
+plantestsuite("samba.blackbox.rpcclient_samlogon_testdenied", "rodc:local", [os.path.join(samba3srcdir, "script/tests/test_rpcclient_samlogon.sh"),
+								             "testdenied", "$DC_PASSWORD", "ncacn_np:$SERVER", configuration])
+
+
 
 plantestsuite("samba4.blackbox.provision-backend", "none", ["PYTHON=%s" % python, os.path.join(samba4srcdir, "setup/tests/blackbox_provision-backend.sh"), '$PREFIX/provision'])
 

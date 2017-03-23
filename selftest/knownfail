@@ -217,6 +217,8 @@
 ^samba.wbinfo_simple.\(ad_dc:local\).--allocate-gid
 ^samba.wbinfo_simple.\(chgdcpass:local\).--allocate-uid
 ^samba.wbinfo_simple.\(chgdcpass:local\).--allocate-gid
+^samba.wbinfo_simple.\(rodc:local\).--allocate-uid
+^samba.wbinfo_simple.\(rodc:local\).--allocate-gid
 #
 # These do not work against winbindd in member mode for unknown reasons
 #
