@@ -135,6 +135,7 @@ struct fruit_config_data {
 	bool copyfile_enabled;
 	bool veto_appledouble;
 	bool posix_rename;
+	bool aapl_zero_file_id;
 
 	/*
 	 * Additional options, all enabled by default,
@@ -1591,6 +1592,9 @@ static int init_fruit_config(vfs_handle_struct *handle)
 	config->posix_rename = lp_parm_bool(
 		SNUM(handle->conn), FRUIT_PARAM_TYPE_NAME, "posix_rename", true);
 
+	config->aapl_zero_file_id =
+	    lp_parm_bool(-1, FRUIT_PARAM_TYPE_NAME, "zero_file_id", true);
+
 	config->readdir_attr_rsize = lp_parm_bool(
 		SNUM(handle->conn), "readdir_attr", "aapl_rsize", true);
 
@@ -2236,6 +2240,9 @@ static NTSTATUS check_aapl(vfs_handle_struct *handle,
 				      blob);
 	if (NT_STATUS_IS_OK(status)) {
 		global_fruit_config.nego_aapl = true;
+		if (config->aapl_zero_file_id) {
+			aapl_force_zero_file_id(handle->conn->sconn);
+		}
 	}
 
 	return status;
