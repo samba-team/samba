@@ -138,12 +138,26 @@ uint64_t smb_roundup(connection_struct *conn, uint64_t val)
 uint64_t get_FileIndex(connection_struct *conn, const SMB_STRUCT_STAT *psbuf)
 {
 	uint64_t file_index;
+	if (conn->sconn->aapl_zero_file_id) {
+		return 0;
+	}
 	if (conn->base_share_dev == psbuf->st_ex_dev) {
 		return (uint64_t)psbuf->st_ex_ino;
 	}
 	file_index = ((psbuf->st_ex_ino) & UINT32_MAX); /* FileIndexLow */
 	file_index |= ((uint64_t)((psbuf->st_ex_dev) & UINT32_MAX)) << 32; /* FileIndexHigh */
 	return file_index;
+}
+
+
+/********************************************************************
+ Globally (for this connection / multi-channel) disable file-ID
+ calculation. This is required to be global because it serves
+ Macs in AAPL mode, which is globally set.
+********************************************************************/
+void aapl_force_zero_file_id(struct smbd_server_connection *sconn)
+{
+	sconn->aapl_zero_file_id = true;
 }
 
 /****************************************************************************
