@@ -67,7 +67,7 @@
  * It is the callers responsibility to free it.
  *
  */
-static const char* get_timestamp( TALLOC_CTX *frame )
+static const char* get_timestamp(TALLOC_CTX *frame)
 {
 	char buffer[40];	/* formatted time less usec and timezone */
 	char tz[10];		/* formatted time zone			 */
@@ -80,7 +80,7 @@ static const char* get_timestamp( TALLOC_CTX *frame )
 	if (r) {
 		DBG_ERR("Unable to get time of day: (%d) %s\n",
 			errno,
-			strerror( errno));
+			strerror(errno));
 		return NULL;
 	}
 
@@ -165,7 +165,7 @@ static NTSTATUS get_auth_event_server(struct imessaging_context *msg_ctx,
 static void auth_message_send(struct imessaging_context *msg_ctx,
 			      const char *json)
 {
-	struct server_id	auth_event_server;
+	struct server_id auth_event_server;
 	NTSTATUS status;
 	DATA_BLOB json_blob = data_blob_string_const(json);
 	if (msg_ctx == NULL) {
@@ -206,18 +206,18 @@ static void log_json(struct imessaging_context *msg_ctx,
 {
 	char* json = NULL;
 
-	if( context->error) {
+	if (context->error) {
 		return;
 	}
 
-	json = json_dumps( context->root, 0);
+	json = json_dumps(context->root, 0);
 	if (json == NULL) {
-		DBG_ERR( "Unable to convert JSON object to string\n");
+		DBG_ERR("Unable to convert JSON object to string\n");
 		context->error = true;
 		return;
 	}
 
-	DEBUGC( debug_class, debug_level, ( "JSON %s: %s\n", type, json));
+	DEBUGC(debug_class, debug_level, ("JSON %s: %s\n", type, json));
 	auth_message_send(msg_ctx, json);
 
 	if (json) {
@@ -232,7 +232,7 @@ static void log_json(struct imessaging_context *msg_ctx,
  * Free with a call to free_json_context
  *
  */
-static struct json_context get_json_context( void) {
+static struct json_context get_json_context(void) {
 
 	struct json_context context;
 	context.error = false;
@@ -252,7 +252,7 @@ static struct json_context get_json_context( void) {
 static void free_json_context(struct json_context *context)
 {
 	if (context->root) {
-		json_decref( context->root);
+		json_decref(context->root);
 	}
 }
 
@@ -270,7 +270,7 @@ static void add_int(struct json_context *context,
 		return;
 	}
 
-	rc = json_object_set_new( context->root, name, json_integer( value));
+	rc = json_object_set_new(context->root, name, json_integer(value));
 	if (rc) {
 		DBG_ERR("Unable to set name [%s] value [%d]\n", name, value);
 		context->error = true;
@@ -333,7 +333,7 @@ static void add_object(struct json_context *context,
  * "version":{"major":1,"minor":0}
  *
  */
-static void add_version( struct json_context *context, int major, int minor)
+static void add_version(struct json_context *context, int major, int minor)
 {
 	struct json_context version = get_json_context();
 	add_int(&version, "major", major);
@@ -347,7 +347,7 @@ static void add_version( struct json_context *context, int major, int minor)
  * "timestamp":"2017-03-06T17:18:04.455081+1300"
  *
  */
-static void add_timestamp( struct json_context *context)
+static void add_timestamp(struct json_context *context)
 {
 	char buffer[40];	/* formatted time less usec and timezone */
 	char timestamp[50];	/* the formatted ISO 8601 time stamp	 */
@@ -364,7 +364,7 @@ static void add_timestamp( struct json_context *context)
 	if (r) {
 		DBG_ERR("Unable to get time of day: (%d) %s\n",
 			errno,
-			strerror( errno));
+			strerror(errno));
 		context->error = true;
 		return;
 	}
@@ -467,7 +467,7 @@ static void log_authentication_event_json(
 
 	authentication = get_json_context();
 	add_version(&authentication, AUTH_MAJOR, AUTH_MINOR);
-	add_string(&authentication, "status", nt_errstr( status));
+	add_string(&authentication, "status", nt_errstr(status));
 	add_address(&authentication, "localAddress", ui->local_host);
 	add_address(&authentication, "remoteAddress", ui->remote_host);
 	add_string(&authentication,
@@ -499,7 +499,7 @@ static void log_authentication_event_json(
 	add_sid(&authentication,
 		"netlogonTrustAccountSid",
 		ui->netlogon_trust_account.sid);
-	add_string(&authentication, "passwordType", get_password_type( ui));
+	add_string(&authentication, "passwordType", get_password_type(ui));
 	add_object(&context,AUTH_JSON_TYPE, &authentication);
 
 	log_json(msg_ctx, &context, AUTH_JSON_TYPE, DBGC_AUTH_AUDIT, debug_level);
@@ -559,7 +559,7 @@ static void log_successful_authz_event_json(
 	add_string(&authorization, "transportProtection", transport_protection);
 
 	snprintf(account_flags,
-		 sizeof( account_flags),
+		 sizeof(account_flags),
 		 "0x%08X",
 		 session_info->info->acct_flags);
 	add_string(&authorization, "accountFlags", account_flags);
@@ -691,7 +691,7 @@ static void log_authentication_event_human_readable(
 
 	frame = talloc_stackframe();
 
-	password_type = get_password_type( ui);
+	password_type = get_password_type(ui);
 	/* Get the current time */
         ts = get_timestamp(frame);
 
@@ -708,7 +708,7 @@ static void log_authentication_event_human_readable(
 	}
 
 	remote = tsocket_address_string(ui->remote_host, frame);
-	local  = tsocket_address_string(ui->local_host, frame);
+	local = tsocket_address_string(ui->local_host, frame);
 
 	if (NT_STATUS_IS_OK(status)) {
 		char sid_buf[DOM_SID_STR_BUFLEN];
@@ -727,8 +727,8 @@ static void log_authentication_event_human_readable(
 				log_escape(frame, ui->mapped.account_name));
 	}
 
-	DEBUGC( DBGC_AUTH_AUDIT, debug_level, (
-		"Auth: [%s,%s] user [%s]\\[%s]"
+	DEBUGC(DBGC_AUTH_AUDIT, debug_level,
+	       ("Auth: [%s,%s] user [%s]\\[%s]"
 		" at [%s] with [%s] status [%s]"
 		" workstation [%s] remote host [%s]"
 		"%s local host [%s]"
@@ -739,13 +739,13 @@ static void log_authentication_event_human_readable(
 		log_escape(frame, ui->client.account_name),
 		ts,
 		password_type,
-		nt_errstr( status),
+		nt_errstr(status),
 		log_escape(frame, ui->workstation_name),
 		remote,
 		logon_line,
 		local,
 		nl ? nl : ""
-		));
+	       ));
 
 	talloc_free(frame);
 }
@@ -776,7 +776,7 @@ void log_authentication_event(struct imessaging_context *msg_ctx,
 		}
 	}
 
-	if (CHECK_DEBUGLVLC( DBGC_AUTH_AUDIT, debug_level)) {
+	if (CHECK_DEBUGLVLC(DBGC_AUTH_AUDIT, debug_level)) {
 		log_authentication_event_human_readable(ui,
 							status,
 							domain_name,
@@ -785,7 +785,7 @@ void log_authentication_event(struct imessaging_context *msg_ctx,
 							sid,
 							debug_level);
 	}
-	if (CHECK_DEBUGLVLC( DBGC_AUTH_AUDIT_JSON, debug_level) ||
+	if (CHECK_DEBUGLVLC(DBGC_AUTH_AUDIT_JSON, debug_level) ||
 	    (msg_ctx && lp_ctx && lpcfg_auth_event_notification(lp_ctx))) {
 		log_authentication_event_json(msg_ctx, lp_ctx,
 					      ui,
@@ -827,14 +827,14 @@ static void log_successful_authz_event_human_readable(
         ts = get_timestamp(frame);
 
 	remote_str = tsocket_address_string(remote, frame);
-	local_str  = tsocket_address_string(local, frame);
+	local_str = tsocket_address_string(local, frame);
 
 	dom_sid_string_buf(&session_info->security_token->sids[0],
 			   sid_buf,
 			   sizeof(sid_buf));
 
-	DEBUGC( DBGC_AUTH_AUDIT, debug_level, (
-		"Successful AuthZ: [%s,%s] user [%s]\\[%s] [%s]"
+	DEBUGC(DBGC_AUTH_AUDIT, debug_level,
+	       ("Successful AuthZ: [%s,%s] user [%s]\\[%s] [%s]"
 		" at [%s]"
 		" Remote host [%s]"
 		" local host [%s]\n",
@@ -878,7 +878,7 @@ void log_successful_authz_event(struct imessaging_context *msg_ctx,
 		debug_level = AUTH_ANONYMOUS_LEVEL;
 	}
 
-	if (CHECK_DEBUGLVLC( DBGC_AUTH_AUDIT, debug_level)) {
+	if (CHECK_DEBUGLVLC(DBGC_AUTH_AUDIT, debug_level)) {
 		log_successful_authz_event_human_readable(remote,
 							  local,
 							  service_description,
@@ -887,7 +887,7 @@ void log_successful_authz_event(struct imessaging_context *msg_ctx,
 							  session_info,
 							  debug_level);
 	}
-	if (CHECK_DEBUGLVLC( DBGC_AUTH_AUDIT_JSON, debug_level) ||
+	if (CHECK_DEBUGLVLC(DBGC_AUTH_AUDIT_JSON, debug_level) ||
 	    (msg_ctx && lp_ctx && lpcfg_auth_event_notification(lp_ctx))) {
 		log_successful_authz_event_json(msg_ctx, lp_ctx,
 						remote,
