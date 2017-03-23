@@ -565,6 +565,53 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                           len(messages),
                           "Did not receive the expected number of messages")
 
+    #
+    # Note: as this test does not expect any messages it will
+    #       time out in the call to self.waitForMessages.
+    #       This is expected, but it will slow this test.
+    def test_ldap_anonymous_access_bind_only(self):
+        # Should be no logging for anonymous bind
+        # so receiving any message indicates a failure.
+        def isLastExpectedMessage( msg):
+            return True
+
+        creds = self.insta_creds(template=self.get_credentials())
+        creds.set_anonymous()
+
+        self.samdb = SamDB(url="ldaps://%s" % os.environ["SERVER"],
+                           lp = self.get_loadparm(),
+                           credentials=creds)
+
+        messages = self.waitForMessages( isLastExpectedMessage)
+        self.assertEquals(0,
+                          len(messages),
+                          "Did not receive the expected number of messages")
+
+    def test_ldap_anonymous_access(self):
+        def isLastExpectedMessage( msg):
+            return (msg["type"] == "Authorization" and
+                    msg["Authorization"]["serviceDescription"]  == "LDAP" and
+                    msg["Authorization"]["transportProtection"] == "TLS" and
+                    msg["Authorization"]["account"] == "ANONYMOUS LOGON" and
+                    msg["Authorization"]["authType"] == "no bind")
+
+        creds = self.insta_creds(template=self.get_credentials())
+        creds.set_anonymous()
+
+        self.samdb = SamDB(url="ldaps://%s" % os.environ["SERVER"],
+                           lp = self.get_loadparm(),
+                           credentials=creds)
+
+        try:
+            res = self.samdb.search(base=self.samdb.domain_dn())
+            self.fail( "Expected an LdbError exception")
+        except LdbError:
+            pass
+
+        messages = self.waitForMessages( isLastExpectedMessage)
+        self.assertEquals(1,
+                          len(messages),
+                          "Did not receive the expected number of messages")
     def test_smb(self):
         def isLastExpectedMessage( msg):
             return (msg["type"] == "Authorization" and
@@ -879,3 +926,338 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
         self.assertEquals(1,
                           len(messages),
                           "Did not receive the expected number of messages")
+
+    def test_samlogon_interactive(self):
+
+        workstation = "AuthLogTests"
+
+        def isLastExpectedMessage( msg):
+            return (msg["type"] == "Authentication" and
+                    msg["Authentication"]["serviceDescription"]
+                        == "SamLogon" and
+                    msg["Authentication"]["authDescription"]
+                        == "interactive" and
+                    msg["Authentication"]["status"] == "NT_STATUS_OK" and
+                    msg["Authentication"]["workstation"]
+                        == r"\\%s" % workstation)
+
+        server   = os.environ["SERVER"]
+        user     = os.environ["USERNAME"]
+        password = os.environ["PASSWORD"]
+        samlogon = "samlogon %s %s %s %d" % (user, password, workstation, 1)
+
+
+        call(["bin/rpcclient", "-c", samlogon, "-U%", server])
+
+        messages = self.waitForMessages( isLastExpectedMessage)
+        received = len(messages)
+        self.assertIs(True,
+                      (received == 5 or received == 6),
+                      "Did not receive the expected number of messages")
+
+    def test_samlogon_interactive_bad_password(self):
+
+        workstation = "AuthLogTests"
+
+        def isLastExpectedMessage( msg):
+            return (msg["type"] == "Authentication" and
+                    msg["Authentication"]["serviceDescription"]
+                        == "SamLogon" and
+                    msg["Authentication"]["authDescription"]
+                        == "interactive" and
+                    msg["Authentication"]["status"]
+                        == "NT_STATUS_WRONG_PASSWORD" and
+                    msg["Authentication"]["workstation"]
+                        == r"\\%s" % workstation)
+
+        server   = os.environ["SERVER"]
+        user     = os.environ["USERNAME"]
+        password = "badPassword"
+        samlogon = "samlogon %s %s %s %d" % (user, password, workstation, 1)
+
+
+        call(["bin/rpcclient", "-c", samlogon, "-U%", server])
+
+        messages = self.waitForMessages( isLastExpectedMessage)
+        received = len(messages)
+        self.assertIs(True,
+                      (received == 5 or received == 6),
+                      "Did not receive the expected number of messages")
+
+    def test_samlogon_interactive_bad_user(self):
+
+        workstation = "AuthLogTests"
+
+        def isLastExpectedMessage( msg):
+            return (msg["type"] == "Authentication" and
+                    msg["Authentication"]["serviceDescription"]
+                        == "SamLogon" and
+                    msg["Authentication"]["authDescription"]
+                        == "interactive" and
+                    msg["Authentication"]["status"]
+                        == "NT_STATUS_NO_SUCH_USER" and
+                    msg["Authentication"]["workstation"]
+                        == r"\\%s" % workstation)
+
+        server   = os.environ["SERVER"]
+        user     = "badUser"
+        password = os.environ["PASSWORD"]
+        samlogon = "samlogon %s %s %s %d" % (user, password, workstation, 1)
+
+
+        call(["bin/rpcclient", "-c", samlogon, "-U%", server])
+
+        messages = self.waitForMessages( isLastExpectedMessage)
+        received = len(messages)
+        self.assertIs(True,
+                      (received == 5 or received == 6),
+                      "Did not receive the expected number of messages")
+
+    def test_samlogon_network(self):
+
+        workstation = "AuthLogTests"
+
+        def isLastExpectedMessage( msg):
+            return (msg["type"] == "Authentication" and
+                    msg["Authentication"]["serviceDescription"]
+                        == "SamLogon" and
+                    msg["Authentication"]["authDescription"]
+                        == "network" and
+                    msg["Authentication"]["status"] == "NT_STATUS_OK" and
+                    msg["Authentication"]["workstation"]
+                        == r"\\%s" % workstation)
+
+        server   = os.environ["SERVER"]
+        user     = os.environ["USERNAME"]
+        password = os.environ["PASSWORD"]
+        samlogon = "samlogon %s %s %s %d" % (user, password, workstation, 2)
+
+
+        call(["bin/rpcclient", "-c", samlogon, "-U%", server])
+
+        messages = self.waitForMessages( isLastExpectedMessage)
+        received = len(messages)
+        self.assertIs(True,
+                      (received == 5 or received == 6),
+                      "Did not receive the expected number of messages")
+
+    def test_samlogon_network_bad_password(self):
+
+        workstation = "AuthLogTests"
+
+        def isLastExpectedMessage( msg):
+            return (msg["type"] == "Authentication" and
+                    msg["Authentication"]["serviceDescription"]
+                        == "SamLogon" and
+                    msg["Authentication"]["authDescription"]
+                        == "network" and
+                    msg["Authentication"]["status"]
+                        == "NT_STATUS_WRONG_PASSWORD" and
+                    msg["Authentication"]["workstation"]
+                        == r"\\%s" % workstation)
+
+        server   = os.environ["SERVER"]
+        user     = os.environ["USERNAME"]
+        password = "badPassword"
+        samlogon = "samlogon %s %s %s %d" % (user, password, workstation, 2)
+
+
+        call(["bin/rpcclient", "-c", samlogon, "-U%", server])
+
+        messages = self.waitForMessages( isLastExpectedMessage)
+        received = len(messages)
+        self.assertIs(True,
+                      (received == 5 or received == 6),
+                      "Did not receive the expected number of messages")
+
+    def test_samlogon_network_bad_user(self):
+
+        workstation = "AuthLogTests"
+
+        def isLastExpectedMessage( msg):
+            return (msg["type"] == "Authentication" and
+                    msg["Authentication"]["serviceDescription"]
+                        == "SamLogon" and
+                    msg["Authentication"]["authDescription"]
+                        == "network" and
+                    msg["Authentication"]["status"]
+                        == "NT_STATUS_NO_SUCH_USER" and
+                    msg["Authentication"]["workstation"]
+                        == r"\\%s" % workstation)
+
+        server   = os.environ["SERVER"]
+        user     = "badUser"
+        password =  os.environ["PASSWORD"]
+        samlogon = "samlogon %s %s %s %d" % (user, password, workstation, 2)
+
+
+        call(["bin/rpcclient", "-c", samlogon, "-U%", server])
+
+        messages = self.waitForMessages( isLastExpectedMessage)
+        received = len(messages)
+        self.assertIs(True,
+                      (received == 5 or received == 6),
+                      "Did not receive the expected number of messages")
+
+    def test_samlogon_network_mschap(self):
+
+        workstation = "AuthLogTests"
+
+        def isLastExpectedMessage( msg):
+            return (msg["type"] == "Authentication" and
+                    msg["Authentication"]["serviceDescription"]
+                        == "SamLogon" and
+                    msg["Authentication"]["authDescription"]
+                        == "network" and
+                    msg["Authentication"]["status"] == "NT_STATUS_OK" and
+                    msg["Authentication"]["passwordType"] == "MSCHAPv2" and
+                    msg["Authentication"]["workstation"]
+                        == r"\\%s" % workstation)
+
+        server   = os.environ["SERVER"]
+        user     = os.environ["USERNAME"]
+        password = os.environ["PASSWORD"]
+        samlogon = "samlogon %s %s %s %d 0x00010000" % (user, password, workstation, 2)
+
+
+        call(["bin/rpcclient", "-c", samlogon, "-U%", server])
+
+        messages = self.waitForMessages( isLastExpectedMessage)
+        received = len(messages)
+        self.assertIs(True,
+                      (received == 5 or received == 6),
+                      "Did not receive the expected number of messages")
+
+    def test_samlogon_network_mschap_bad_password(self):
+
+        workstation = "AuthLogTests"
+
+        def isLastExpectedMessage( msg):
+            return (msg["type"] == "Authentication" and
+                    msg["Authentication"]["serviceDescription"]
+                        == "SamLogon" and
+                    msg["Authentication"]["authDescription"]
+                        == "network" and
+                    msg["Authentication"]["status"]
+                        == "NT_STATUS_WRONG_PASSWORD" and
+                    msg["Authentication"]["passwordType"] == "MSCHAPv2" and
+                    msg["Authentication"]["workstation"]
+                        == r"\\%s" % workstation)
+
+        server   = os.environ["SERVER"]
+        user     = os.environ["USERNAME"]
+        password = "badPassword"
+        samlogon = "samlogon %s %s %s %d 0x00010000" % (user, password, workstation, 2)
+
+
+        call(["bin/rpcclient", "-c", samlogon, "-U%", server])
+
+        messages = self.waitForMessages( isLastExpectedMessage)
+        received = len(messages)
+        self.assertIs(True,
+                      (received == 5 or received == 6),
+                      "Did not receive the expected number of messages")
+
+    def test_samlogon_network_mschap_bad_user(self):
+
+        workstation = "AuthLogTests"
+
+        def isLastExpectedMessage( msg):
+            return (msg["type"] == "Authentication" and
+                    msg["Authentication"]["serviceDescription"]
+                        == "SamLogon" and
+                    msg["Authentication"]["authDescription"]
+                        == "network" and
+                    msg["Authentication"]["status"]
+                        == "NT_STATUS_NO_SUCH_USER" and
+                    msg["Authentication"]["passwordType"] == "MSCHAPv2" and
+                    msg["Authentication"]["workstation"]
+                        == r"\\%s" % workstation)
+
+        server   = os.environ["SERVER"]
+        user     = "badUser"
+        password = os.environ["PASSWORD"]
+        samlogon = "samlogon %s %s %s %d 0x00010000" % (user, password, workstation, 2)
+
+
+        call(["bin/rpcclient", "-c", samlogon, "-U%", server])
+
+        messages = self.waitForMessages( isLastExpectedMessage)
+        received = len(messages)
+        self.assertIs(True,
+                      (received == 5 or received == 6),
+                      "Did not receive the expected number of messages")
+
+    def test_samlogon_schannel_seal(self):
+
+        workstation = "AuthLogTests"
+
+        def isLastExpectedMessage( msg):
+            return (msg["type"] == "Authentication" and
+                    msg["Authentication"]["serviceDescription"]
+                        == "SamLogon" and
+                    msg["Authentication"]["authDescription"]
+                        == "network" and
+                    msg["Authentication"]["status"] == "NT_STATUS_OK" and
+                    msg["Authentication"]["workstation"]
+                        == r"\\%s" % workstation)
+
+        server   = os.environ["SERVER"]
+        user     = os.environ["USERNAME"]
+        password = os.environ["PASSWORD"]
+        samlogon = "schannel;samlogon %s %s %s" % (user, password, workstation)
+
+
+        call(["bin/rpcclient", "-c", samlogon, "-U%", server])
+
+        messages = self.waitForMessages( isLastExpectedMessage)
+        received = len(messages)
+        self.assertIs(True,
+                      (received == 5 or received == 6),
+                      "Did not receive the expected number of messages")
+
+        # Check the second to last message it should be an Authorization
+        msg = messages[-2]
+        self.assertEquals("Authorization", msg["type"])
+        self.assertEquals("DCE/RPC",
+                          msg["Authorization"]["serviceDescription"])
+        self.assertEquals("schannel",  msg["Authorization"]["authType"])
+        self.assertEquals("SEAL", msg["Authorization"]["transportProtection"])
+
+    # Signed logons get promoted to sealed, this test ensures that
+    # this behaviour is not removed accidently
+    def test_samlogon_schannel_sign(self):
+
+        workstation = "AuthLogTests"
+
+        def isLastExpectedMessage( msg):
+            return (msg["type"] == "Authentication" and
+                    msg["Authentication"]["serviceDescription"]
+                        == "SamLogon" and
+                    msg["Authentication"]["authDescription"]
+                        == "network" and
+                    msg["Authentication"]["status"] == "NT_STATUS_OK" and
+                    msg["Authentication"]["workstation"]
+                        == r"\\%s" % workstation)
+
+        server   = os.environ["SERVER"]
+        user     = os.environ["USERNAME"]
+        password = os.environ["PASSWORD"]
+        samlogon = "schannelsign;samlogon %s %s %s" % (user, password, workstation)
+
+
+        call(["bin/rpcclient", "-c", samlogon, "-U%", server])
+
+        messages = self.waitForMessages( isLastExpectedMessage)
+        received = len(messages)
+        self.assertIs(True,
+                      (received == 5 or received == 6),
+                      "Did not receive the expected number of messages")
+
+        # Check the second to last message it should be an Authorization
+        msg = messages[-2]
+        self.assertEquals("Authorization", msg["type"])
+        self.assertEquals("DCE/RPC",
+                          msg["Authorization"]["serviceDescription"])
+        self.assertEquals("schannel",  msg["Authorization"]["authType"])
+        self.assertEquals("SEAL", msg["Authorization"]["transportProtection"])
