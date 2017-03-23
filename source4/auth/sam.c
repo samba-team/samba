@@ -831,6 +831,7 @@ NTSTATUS authsam_logon_success_accounting(struct ldb_context *sam_ctx,
 	struct timeval tv_now;
 	NTTIME now;
 	NTTIME lastLogonTimestamp;
+	bool am_rodc = false;
 
 	mem_ctx = talloc_new(msg);
 	if (mem_ctx == NULL) {
@@ -902,11 +903,20 @@ NTSTATUS authsam_logon_success_accounting(struct ldb_context *sam_ctx,
 		}
 	}
 
-	status = authsam_update_lastlogon_timestamp(sam_ctx, msg_mod, domain_dn,
-						    lastLogonTimestamp, now);
-	if (!NT_STATUS_IS_OK(status)) {
+	ret = samdb_rodc(sam_ctx, &am_rodc);
+	if (ret != LDB_SUCCESS) {
 		TALLOC_FREE(mem_ctx);
-		return NT_STATUS_NO_MEMORY;
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	if (!am_rodc) {
+		/* TODO Perform the (async) SendToSAM calls for MS-SAMS */
+		status = authsam_update_lastlogon_timestamp(sam_ctx, msg_mod, domain_dn,
+							    lastLogonTimestamp, now);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(mem_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 
 	if (msg_mod->num_elements > 0) {
