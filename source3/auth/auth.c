@@ -485,6 +485,15 @@ static NTSTATUS make_auth_context_subsystem(TALLOC_CTX *mem_ctx,
 	const char *methods = NULL;
 	NTSTATUS nt_status;
 
+	switch (lp_server_role()) {
+	case ROLE_ACTIVE_DIRECTORY_DC:
+		DEBUG(5,("Making default auth method list for server role = "
+			 "'active directory domain controller'\n"));
+		return make_auth_context_specific(mem_ctx, auth_context, "samba4");
+	default:
+		break;
+	}
+
 	if (lp_auth_methods()) {
 		DEBUG(5,("Using specified auth order\n"));
 		nt_status = make_auth_context_text_list(
@@ -511,10 +520,6 @@ static NTSTATUS make_auth_context_subsystem(TALLOC_CTX *mem_ctx,
 			DEBUG(5,("Making default auth method list for server role = 'standalone server', encrypt passwords = no\n"));
 			methods = "guest unix";
 		}
-		break;
-	case ROLE_ACTIVE_DIRECTORY_DC:
-		DEBUG(5,("Making default auth method list for server role = 'active directory domain controller'\n"));
-		methods = "samba4";
 		break;
 	default:
 		DEBUG(5,("Unknown auth method!\n"));
