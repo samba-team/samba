@@ -237,6 +237,11 @@ static NTSTATUS authsam_password_check_and_record(struct auth4_context *auth_con
 			 * mechanism. We also send a message to our
 			 * drepl server to tell it to try and
 			 * replicate the secrets for this account.
+			 *
+			 * TODO: Should we only trigger this is detected
+			 * there's a chance that the password might be
+			 * replicated, we should be able to detect this
+			 * based on msDS-NeverRevealGroup.
 			 */
 			auth_sam_trigger_repl_secret(auth_context, msg->dn);
 			TALLOC_FREE(tmp_ctx);
