@@ -3914,6 +3914,63 @@ done:
 	return ret;
 }
 
+static bool test_zero_file_id(struct torture_context *tctx,
+			      struct smb2_tree *tree)
+{
+	const char *fname = "filtest_file_id";
+	struct smb2_create create = {0};
+	NTSTATUS status;
+	bool ret = true;
+	uint8_t zero_file_id[8] = {0};
+
+	torture_comment(tctx, "Testing zero file id\n");
+
+	ret = torture_setup_file(tctx, tree, fname, false);
+	torture_assert_goto(tctx, ret == true, ret, done, "torture_setup_file");
+
+	ZERO_STRUCT(create);
+	create.in.desired_access = SEC_FILE_READ_ATTRIBUTE;
+	create.in.share_access = NTCREATEX_SHARE_ACCESS_MASK;
+	create.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	create.in.create_disposition = NTCREATEX_DISP_OPEN;
+	create.in.fname = fname;
+	create.in.query_on_disk_id = true;
+
+	status = smb2_create(tree, tctx, &create);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_OK, ret,
+					   done,
+					   "test file could not be opened");
+	torture_assert_mem_not_equal_goto(tctx, create.out.on_disk_id,
+					  zero_file_id, 8, ret, done,
+					  "unexpected zero file id");
+
+	smb2_util_close(tree, create.out.file.handle);
+
+	ret = enable_aapl(tctx, tree);
+	torture_assert(tctx, ret == true, "enable_aapl failed");
+
+	ZERO_STRUCT(create);
+	create.in.desired_access = SEC_FILE_READ_ATTRIBUTE;
+	create.in.share_access = NTCREATEX_SHARE_ACCESS_MASK;
+	create.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	create.in.create_disposition = NTCREATEX_DISP_OPEN;
+	create.in.fname = fname;
+	create.in.query_on_disk_id = true;
+
+	status = smb2_create(tree, tctx, &create);
+	torture_assert_ntstatus_equal_goto(
+	    tctx, status, NT_STATUS_OK, ret, done,
+	    "test file could not be opened with AAPL");
+	torture_assert_mem_equal_goto(tctx, create.out.on_disk_id, zero_file_id,
+				      8, ret, done, "non-zero file id");
+
+	smb2_util_close(tree, create.out.file.handle);
+
+done:
+	smb2_util_unlink(tree, fname);
+	return ret;
+}
+
 /*
  * Note: This test depends on "vfs objects = catia fruit streams_xattr".  For
  * some tests torture must be run on the host it tests and takes an additional
@@ -3965,6 +4022,21 @@ struct torture_suite *torture_vfs_fruit_netatalk(void)
 
 	torture_suite_add_1smb2_test(suite, "read netatalk metadata", test_read_netatalk_metadata);
 	torture_suite_add_1smb2_test(suite, "OS X AppleDouble file conversion", test_adouble_conversion);
+
+	return suite;
+}
+
+struct torture_suite *torture_vfs_fruit_file_id(void)
+{
+	struct torture_suite *suite =
+	    torture_suite_create(talloc_autofree_context(), "fruit_file_id");
+
+	suite->description =
+	    talloc_strdup(suite, "vfs_fruit tests for on-disk file ID that "
+				 "require fruit:zero_file_id=yes");
+
+	torture_suite_add_1smb2_test(suite, "zero file id if AAPL negotiated",
+				     test_zero_file_id);
 
 	return suite;
 }
