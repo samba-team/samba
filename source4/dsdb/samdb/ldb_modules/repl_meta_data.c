@@ -235,7 +235,6 @@ static bool replmd_check_urgent_attribute(const struct ldb_message_element *el)
 	return false;
 }
 
-
 static int replmd_replicated_apply_isDeleted(struct replmd_replicated_request *ar);
 
 /*
@@ -1506,6 +1505,7 @@ static int replmd_update_rpmd_element(struct ldb_context *ldb,
 	md1 = &omd->ctr.ctr1.array[i];
 	md1->version++;
 	md1->attid = attid;
+
 	if (md1->attid == DRSUAPI_ATTID_isDeleted) {
 		const struct ldb_val *rdn_val = ldb_dn_get_rdn_val(msg->dn);
 		const char* rdn;
@@ -1531,6 +1531,15 @@ static int replmd_update_rpmd_element(struct ldb_context *ldb,
 	md1->originating_invocation_id = *our_invocation_id;
 	md1->originating_usn           = *seq_num;
 	md1->local_usn                 = *seq_num;
+
+	if (ldb_request_get_control(req, DSDB_CONTROL_FORCE_RODC_LOCAL_CHANGE) != NULL) {
+		/* Force version to 0 to be overriden later via replication */
+		bool am_rodc = false;
+		int ret = samdb_rodc(ldb, &am_rodc);
+		if (ret == LDB_SUCCESS && am_rodc) {
+			md1->version = 0;
+		}
+	}
 
 	return LDB_SUCCESS;
 }
@@ -1837,7 +1846,8 @@ static int replmd_update_rpmd(struct ldb_module *module,
 
 		/*if we are RODC and this is a DRSR update then its ok*/
 		if (!ldb_request_get_control(req, DSDB_CONTROL_REPLICATED_UPDATE_OID)
-		    && !ldb_request_get_control(req, DSDB_CONTROL_DBCHECK_MODIFY_RO_REPLICA)) {
+		    && !ldb_request_get_control(req, DSDB_CONTROL_DBCHECK_MODIFY_RO_REPLICA)
+		    && !ldb_request_get_control(req, DSDB_CONTROL_FORCE_RODC_LOCAL_CHANGE)) {
 			unsigned instanceType;
 
 			ret = samdb_rodc(ldb, rodc);

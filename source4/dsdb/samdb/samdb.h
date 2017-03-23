@@ -183,6 +183,12 @@ struct dsdb_control_password_user_account_control {
 /* passed when we want to thoroughly delete linked attributes */
 #define DSDB_CONTROL_REPLMD_VANISH_LINKS "1.3.6.1.4.1.7165.4.3.29"
 
+/*
+ * lockoutTime is a replicated attribute, but must be modified before
+ * connectivity occurs to allow password lockouts.
+ */
+#define DSDB_CONTROL_FORCE_RODC_LOCAL_CHANGE "1.3.6.1.4.1.7165.4.3.31"
+
 #define DSDB_EXTENDED_REPLICATED_OBJECTS_OID "1.3.6.1.4.1.7165.4.4.1"
 struct dsdb_extended_replicated_object {
 	struct ldb_message *msg;
