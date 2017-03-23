@@ -138,6 +138,7 @@ int server_id_db_prune_name(struct server_id_db *db, const char *name,
 	char idbuf[idbuf_len];
 	TDB_DATA key;
 	uint8_t *data;
+	size_t datalen;
 	char *ids, *id;
 	int ret;
 
@@ -156,6 +157,13 @@ int server_id_db_prune_name(struct server_id_db *db, const char *name,
 		return ret;
 	}
 
+	datalen = talloc_get_size(data);
+	if ((datalen == 0) || (data[datalen-1] != '\0')) {
+		tdb_chainunlock(tdb, key);
+		TALLOC_FREE(data);
+		return EINVAL;
+	}
+
 	ids = (char *)data;
 
 	id = strv_find(ids, idbuf);
@@ -166,7 +174,12 @@ int server_id_db_prune_name(struct server_id_db *db, const char *name,
 	}
 
 	strv_delete(&ids, id);
-	ret = tdb_store(tdb, key, talloc_tdb_data(ids), TDB_MODIFY);
+
+	if (talloc_get_size(ids) == 0) {
+		ret = tdb_delete(tdb, key);
+	} else {
+		ret = tdb_store(tdb, key, talloc_tdb_data(ids), TDB_MODIFY);
+	}
 	TALLOC_FREE(data);
 
 	tdb_chainunlock(tdb, key);
@@ -200,6 +213,7 @@ int server_id_db_lookup(struct server_id_db *db, const char *name,
 	struct tdb_context *tdb = db->tdb->tdb;
 	TDB_DATA key;
 	uint8_t *data;
+	size_t datalen;
 	char *ids, *id;
 	unsigned num_servers;
 	struct server_id *servers;
@@ -210,6 +224,12 @@ int server_id_db_lookup(struct server_id_db *db, const char *name,
 	ret = tdb_fetch_talloc(tdb, key, mem_ctx, &data);
 	if (ret != 0) {
 		return ret;
+	}
+
+	datalen = talloc_get_size(data);
+	if ((datalen == 0) || (data[datalen-1] != '\0')) {
+		TALLOC_FREE(data);
+		return EINVAL;
 	}
 
 	ids = (char *)data;
