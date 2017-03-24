@@ -130,7 +130,9 @@ _PUBLIC_ NTSTATUS authenticate_ldap_simple_bind(TALLOC_CTX *mem_ctx,
 		talloc_steal(mem_ctx, *session_info);
 	}
 
-	log_successful_authz_event(remote_address,
+	log_successful_authz_event(auth_context->msg_ctx,
+				   auth_context->lp_ctx,
+				   remote_address,
 				   local_address,
 				   "LDAP",
 				   "simple bind",

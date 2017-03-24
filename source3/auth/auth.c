@@ -299,7 +299,8 @@ NTSTATUS auth_check_ntlm_password(TALLOC_CTX *mem_ctx,
 		sid = (struct dom_sid) {0};
 	}
 
-	log_authentication_event(user_info, nt_status,
+	log_authentication_event(NULL, NULL,
+				 user_info, nt_status,
 				 server_info->info3->base.logon_domain.string,
 				 server_info->info3->base.account_name.string,
 				 unix_username, &sid);
@@ -330,7 +331,7 @@ fail:
 		  user_info->client.account_name, user_info->mapped.account_name,
 		  nt_errstr(nt_status), *pauthoritative));
 
-	log_authentication_event(user_info, nt_status, NULL, NULL, NULL, NULL);
+	log_authentication_event(NULL, NULL, user_info, nt_status, NULL, NULL, NULL, NULL);
 
 	ZERO_STRUCTP(pserver_info);
 

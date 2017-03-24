@@ -62,7 +62,9 @@ bool dcesrv_auth_bind(struct dcesrv_call_state *call)
 		 * covered ncacn_np pass-through auth, and anonymous
 		 * DCE/RPC (eg epmapper, netlogon etc)
 		 */
-		log_successful_authz_event(call->conn->remote_address,
+		log_successful_authz_event(call->conn->msg_ctx,
+					   call->conn->dce_ctx->lp_ctx,
+					   call->conn->remote_address,
 					   call->conn->local_address,
 					   "DCE/RPC",
 					   auth_type,

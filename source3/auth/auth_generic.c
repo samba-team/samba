@@ -443,7 +443,9 @@ NTSTATUS auth_check_password_session_info(struct auth4_context *auth_context,
 	 * log all authorizations consistently (be they NLTM, NTLMSSP
 	 * or krb5) we log this info again as an authorization.
 	 */
-	log_successful_authz_event(user_info->remote_host,
+	log_successful_authz_event(auth_context->msg_ctx,
+				   auth_context->lp_ctx,
+				   user_info->remote_host,
 				   user_info->local_host,
 				   user_info->service_description,
 				   user_info->auth_description,

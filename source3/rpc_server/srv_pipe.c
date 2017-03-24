@@ -836,7 +836,8 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 		 * covered ncacn_np pass-through auth, and anonymous
 		 * DCE/RPC (eg epmapper, netlogon etc)
 		 */
-		log_successful_authz_event(p->remote_address,
+		log_successful_authz_event(NULL, NULL,
+					   p->remote_address,
 					   p->local_address,
 					   table->name,
 					   derpc_transport_string_by_transport(p->transport),

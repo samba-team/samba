@@ -1,0 +1,26 @@
+<samba:parameter name="auth event notification"
+                 context="G"
+                 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>When enabled, this option causes Samba (acting as an
+	Active Directory Domain Controller) to stream authentication
+	events across the internal message bus.  Scripts built using
+	Samba's python bindings can listen to these events by
+	registering as the service
+	<filename moreinfo="none">auth_event</filename>.</para>
+
+	<para>This should be considered a developer option (it assists
+	in the Samba testsuite) rather than a facility for external
+	auditing, as message delivery is not guaranteed (a feature
+	that the testsuite works around).  Additionally Samba must be
+	compiled with the jansson support for this option to be
+	effective.</para>
+
+	<para>The authentication events are also logged via the normal
+	logging methods when the <smbconfoption name="log level"/> is
+	set appropriately.</para>
+</description>
+
+<value type="default">no</value>
+</samba:parameter>

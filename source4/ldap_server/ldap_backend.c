@@ -1285,7 +1285,9 @@ NTSTATUS ldapsrv_do_call(struct ldapsrv_call *call)
 				transport_protection = AUTHZ_TRANSPORT_PROTECTION_TLS;
 			}
 
-			log_successful_authz_event(call->conn->connection->remote_address,
+			log_successful_authz_event(call->conn->connection->msg_ctx,
+						   call->conn->connection->lp_ctx,
+						   call->conn->connection->remote_address,
 						   call->conn->connection->local_address,
 						   "LDAP",
 						   "no bind",

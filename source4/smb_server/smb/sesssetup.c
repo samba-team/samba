@@ -54,7 +54,9 @@ void smbsrv_not_spengo_sesssetup_authz_log(struct smbsrv_request *req,
 	local_address = socket_get_local_addr(req->smb_conn->connection->socket,
 					      frame);
 
-	log_successful_authz_event(remote_address,
+	log_successful_authz_event(req->smb_conn->connection->msg_ctx,
+				   req->smb_conn->lp_ctx,
+				   remote_address,
 				   local_address,
 				   "SMB",
 				   "bare-NTLM",

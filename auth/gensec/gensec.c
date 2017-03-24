@@ -233,7 +233,9 @@ static void log_successful_gensec_authz_event(struct gensec_security *gensec_sec
 	} else {
 		transport_protection = AUTHZ_TRANSPORT_PROTECTION_NONE;
 	}
-	log_successful_authz_event(remote, local,
+	log_successful_authz_event(gensec_security->auth_context->msg_ctx,
+				   gensec_security->auth_context->lp_ctx,
+				   remote, local,
 				   service_description,
 				   final_auth_type,
 				   transport_protection,

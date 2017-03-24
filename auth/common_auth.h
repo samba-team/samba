@@ -152,14 +152,38 @@ struct auth4_context {
 #define AUTHZ_TRANSPORT_PROTECTION_SEAL "SEAL"
 #define AUTHZ_TRANSPORT_PROTECTION_SIGN "SIGN"
 
-void log_authentication_event(const struct auth_usersupplied_info *ui,
+/*
+ * Log details of an authentication attempt.
+ * Successful and unsuccessful attempts are logged.
+ *
+ * NOTE: msg_ctx and lp_ctx is optional, but when supplied allows streaming the
+ * authentication events over the message bus.
+ */
+void log_authentication_event(struct imessaging_context *msg_ctx,
+			      struct loadparm_context *lp_ctx,
+			      const struct auth_usersupplied_info *ui,
 			      NTSTATUS status,
 			      const char *account_name,
 			      const char *domain_name,
 			      const char *unix_username,
 			      struct dom_sid *sid);
 
-void log_successful_authz_event(const struct tsocket_address *remote,
+/*
+ * Log details of a successful authorization to a service.
+ *
+ * Only successful authorizations are logged.  For clarity:
+ * - NTLM bad passwords will be recorded by log_authentication_event
+ * - Kerberos decrypt failures need to be logged in gensec_gssapi et al
+ *
+ * The service may later refuse authorization due to an ACL.
+ *
+ *
+ * NOTE: msg_ctx and lp_ctx is optional, but when supplied allows streaming the
+ * authorization events over the message bus.
+ */
+void log_successful_authz_event(struct imessaging_context *msg_ctx,
+				struct loadparm_context *lp_ctx,
+				const struct tsocket_address *remote,
 				const struct tsocket_address *local,
 				const char *service_description,
 				const char *auth_type,

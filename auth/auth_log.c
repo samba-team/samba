@@ -200,7 +200,8 @@ static void auth_message_send(struct imessaging_context *msg_ctx,
  * Write the json object to the debug logs.
  *
  */
-static void log_json( struct json_context *context,
+static void log_json(struct imessaging_context *msg_ctx,
+		     struct json_context *context,
 		     const char *type, int debug_class, int debug_level)
 {
 	char* json = NULL;
@@ -217,6 +218,7 @@ static void log_json( struct json_context *context,
 	}
 
 	DEBUGC( debug_class, debug_level, ( "JSON %s: %s\n", type, json));
+	auth_message_send(msg_ctx, json);
 
 	if (json) {
 		free(json);
@@ -446,6 +448,8 @@ static void add_sid(struct json_context *context,
  *           \t\(.Authentication.localAddress)"'
  */
 static void log_authentication_event_json(
+	                struct imessaging_context *msg_ctx,
+			struct loadparm_context *lp_ctx,
 			const struct auth_usersupplied_info *ui,
 			NTSTATUS status,
 			const char *domain_name,
@@ -498,7 +502,7 @@ static void log_authentication_event_json(
 	add_string(&authentication, "passwordType", get_password_type( ui));
 	add_object(&context,AUTH_JSON_TYPE, &authentication);
 
-	log_json(&context, AUTH_JSON_TYPE, DBGC_AUTH_AUDIT, debug_level);
+	log_json(msg_ctx, &context, AUTH_JSON_TYPE, DBGC_AUTH_AUDIT, debug_level);
 	free_json_context(&context);
 }
 
@@ -523,6 +527,8 @@ static void log_authentication_event_json(
  *
  */
 static void log_successful_authz_event_json(
+				struct imessaging_context *msg_ctx,
+				struct loadparm_context *lp_ctx,
 				const struct tsocket_address *remote,
 				const struct tsocket_address *local,
 				const char *service_description,
@@ -559,7 +565,8 @@ static void log_successful_authz_event_json(
 	add_string(&authorization, "accountFlags", account_flags);
 	add_object(&context,AUTHZ_JSON_TYPE, &authorization);
 
-	log_json(&context,
+	log_json(msg_ctx,
+		 &context,
 		 AUTHZ_JSON_TYPE,
 		 DBGC_AUTH_AUDIT,
 		 debug_level);
@@ -568,7 +575,29 @@ static void log_successful_authz_event_json(
 
 #else
 
+static void log_no_json(struct imessaging_context *msg_ctx,
+                        struct loadparm_context *lp_ctx)
+{
+	if (msg_ctx && lp_ctx && lpcfg_auth_event_notification(lp_ctx)) {
+		static bool auth_event_logged = false;
+		if (auth_event_logged == false) {
+			auth_event_logged = true;
+			DBG_ERR("auth event notification = true but Samba was not compiled with jansson\n");
+		}
+	} else {
+		static bool json_logged = false;
+		if (json_logged == false) {
+			json_logged = true;
+			DBG_NOTICE("JSON auth logs not available unless compiled with jansson\n");
+		}
+	}
+
+	return;
+}
+
 static void log_authentication_event_json(
+	                struct imessaging_context *msg_ctx,
+			struct loadparm_context *lp_ctx,
 			const struct auth_usersupplied_info *ui,
 			NTSTATUS status,
 			const char *domain_name,
@@ -577,10 +606,13 @@ static void log_authentication_event_json(
 			struct dom_sid *sid,
 			int debug_level)
 {
+	log_no_json(msg_ctx, lp_ctx);
 	return;
 }
 
 static void log_successful_authz_event_json(
+				struct imessaging_context *msg_ctx,
+				struct loadparm_context *lp_ctx,
 				const struct tsocket_address *remote,
 				const struct tsocket_address *local,
 				const char *service_description,
@@ -589,6 +621,7 @@ static void log_successful_authz_event_json(
 				struct auth_session_info *session_info,
 				int debug_level)
 {
+	log_no_json(msg_ctx, lp_ctx);
 	return;
 }
 
@@ -722,7 +755,9 @@ static void log_authentication_event_human_readable(
  * NOTE: msg_ctx and lp_ctx is optional, but when supplied allows streaming the
  * authentication events over the message bus.
  */
-void log_authentication_event( const struct auth_usersupplied_info *ui,
+void log_authentication_event(struct imessaging_context *msg_ctx,
+			      struct loadparm_context *lp_ctx,
+			      const struct auth_usersupplied_info *ui,
 			      NTSTATUS status,
 			      const char *domain_name,
 			      const char *account_name,
@@ -748,8 +783,10 @@ void log_authentication_event( const struct auth_usersupplied_info *ui,
 							sid,
 							debug_level);
 	}
-	if (CHECK_DEBUGLVLC( DBGC_AUTH_AUDIT_JSON, debug_level)) {
-		log_authentication_event_json(ui,
+	if (CHECK_DEBUGLVLC( DBGC_AUTH_AUDIT_JSON, debug_level) ||
+	    (msg_ctx && lp_ctx && lpcfg_auth_event_notification(lp_ctx))) {
+		log_authentication_event_json(msg_ctx, lp_ctx,
+					      ui,
 					      status,
 					      domain_name,
 					      account_name,
@@ -823,7 +860,9 @@ static void log_successful_authz_event_human_readable(
  * NOTE: msg_ctx and lp_ctx is optional, but when supplied allows streaming the
  * authentication events over the message bus.
  */
-void log_successful_authz_event(const struct tsocket_address *remote,
+void log_successful_authz_event(struct imessaging_context *msg_ctx,
+				struct loadparm_context *lp_ctx,
+				const struct tsocket_address *remote,
 				const struct tsocket_address *local,
 				const char *service_description,
 				const char *auth_type,
@@ -846,8 +885,10 @@ void log_successful_authz_event(const struct tsocket_address *remote,
 							  session_info,
 							  debug_level);
 	}
-	if (CHECK_DEBUGLVLC( DBGC_AUTH_AUDIT_JSON, debug_level)) {
-		log_successful_authz_event_json(remote,
+	if (CHECK_DEBUGLVLC( DBGC_AUTH_AUDIT_JSON, debug_level) ||
+	    (msg_ctx && lp_ctx && lpcfg_auth_event_notification(lp_ctx))) {
+		log_successful_authz_event_json(msg_ctx, lp_ctx,
+						remote,
 						local,
 						service_description,
 						auth_type,
