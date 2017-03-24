@@ -197,7 +197,7 @@ static void auth_message_send(struct imessaging_context *msg_ctx,
 }
 
 /*
- * Write the json object to the debug lines.
+ * Write the json object to the debug logs.
  *
  */
 static void log_json( struct json_context *context,
