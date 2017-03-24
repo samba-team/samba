@@ -231,68 +231,6 @@ void imessaging_deregister(struct imessaging_context *msg, uint32_t msg_type, vo
 }
 
 /*
-  Send a message to a particular server
-*/
-NTSTATUS imessaging_send(struct imessaging_context *msg, struct server_id server,
-			uint32_t msg_type, const DATA_BLOB *data)
-{
-	uint8_t hdr[MESSAGE_HDR_LENGTH];
-	struct iovec iov[2];
-	int num_iov, ret;
-	pid_t pid;
-	void *priv;
-
-	if (!cluster_node_equal(&msg->server_id, &server)) {
-		/* No cluster in source4... */
-		return NT_STATUS_OK;
-	}
-
-	message_hdr_put(hdr, msg_type, msg->server_id, server);
-
-	iov[0] = (struct iovec) { .iov_base = &hdr, .iov_len = sizeof(hdr) };
-	num_iov = 1;
-
-	if (data != NULL) {
-		iov[1] = (struct iovec) { .iov_base = data->data,
-					  .iov_len = data->length };
-		num_iov += 1;
-	}
-
-	pid = server.pid;
-	if (pid == 0) {
-		pid = getpid();
-	}
-
-	ret = messaging_dgm_send(pid, iov, num_iov, NULL, 0);
-
-	if (ret == EACCES) {
-		priv = root_privileges();
-		ret = messaging_dgm_send(pid, iov, num_iov, NULL, 0);
-		TALLOC_FREE(priv);
-	}
-
-	if (ret != 0) {
-		return map_nt_error_from_unix_common(ret);
-	}
-	return NT_STATUS_OK;
-}
-
-/*
-  Send a message to a particular server, with the message containing a single pointer
-*/
-NTSTATUS imessaging_send_ptr(struct imessaging_context *msg, struct server_id server,
-			    uint32_t msg_type, void *ptr)
-{
-	DATA_BLOB blob;
-
-	blob.data = (uint8_t *)&ptr;
-	blob.length = sizeof(void *);
-
-	return imessaging_send(msg, server, msg_type, &blob);
-}
-
-
-/*
 */
 int imessaging_cleanup(struct imessaging_context *msg)
 {
@@ -772,24 +710,6 @@ NTSTATUS irpc_add_name(struct imessaging_context *msg_ctx, const char *name)
 	int ret;
 
 	ret = server_id_db_add(msg_ctx->names, name);
-	if (ret != 0) {
-		return map_nt_error_from_unix_common(ret);
-	}
-	return NT_STATUS_OK;
-}
-
-/*
-  return a list of server ids for a server name
-*/
-NTSTATUS irpc_servers_byname(struct imessaging_context *msg_ctx,
-			     TALLOC_CTX *mem_ctx, const char *name,
-			     unsigned *num_servers,
-			     struct server_id **servers)
-{
-	int ret;
-
-	ret = server_id_db_lookup(msg_ctx->names, name, mem_ctx,
-				  num_servers, servers);
 	if (ret != 0) {
 		return map_nt_error_from_unix_common(ret);
 	}

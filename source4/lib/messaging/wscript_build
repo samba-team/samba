@@ -1,6 +1,12 @@
 #!/usr/bin/env python
 
 
+bld.SAMBA_LIBRARY('MESSAGING_SEND',
+	source='messaging_send.c',
+	public_deps='messages_util messages_dgm UNIX_PRIVS cluster server_id_db',
+	private_library=True
+	)
+
 bld.SAMBA_LIBRARY('MESSAGING',
 	source='messaging.c',
 	public_deps='samba-util NDR_IRPC UNIX_PRIVS cluster ndr dcerpc messages_util server_id_db talloc_report',
