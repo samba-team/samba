@@ -60,7 +60,11 @@ class cmd_processes(Command):
         msg_ctx = Messaging()
 
         if name is not None:
-            ids = msg_ctx.irpc_servers_byname(name)
+            try:
+                ids = msg_ctx.irpc_servers_byname(name)
+            except KeyError:
+                ids = []
+
             for server_id in ids:
                 self.outf.write("%d\n" % server_id.pid)
         elif pid is not None:

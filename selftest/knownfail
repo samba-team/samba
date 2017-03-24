@@ -319,4 +319,3 @@
 ^samba3.smb2.credits.skipped_mid.*
 ^samba4.blackbox.dbcheck-links.release-4-5-0-pre1.dangling_multi_valued_dbcheck
 ^samba4.blackbox.dbcheck-links.release-4-5-0-pre1.dangling_multi_valued_check_missing
-^samba.tests.samba_tool.processes.samba.tests.samba_tool.processes.ProcessCmdTestCase.test_unknown_name\(ad_dc_ntvfs:local\)
