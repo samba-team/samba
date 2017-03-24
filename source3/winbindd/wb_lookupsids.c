@@ -471,7 +471,6 @@ static void wb_lookupsids_done(struct tevent_req *subreq)
 		req, struct wb_lookupsids_state);
 	struct wb_lookupsids_domain *d;
 	uint32_t i;
-	bool fallback = false;
 
 	NTSTATUS status, result;
 
@@ -480,31 +479,16 @@ static void wb_lookupsids_done(struct tevent_req *subreq)
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
-
-	d = &state->domains[state->domains_done];
-
-	if (NT_STATUS_IS_ERR(result)) {
-		fallback = true;
-	} else if (state->tmp_names.count != d->sids.num_sids) {
-		fallback = true;
-	}
-
-	if (fallback) {
-		for (i=0; i < d->sids.num_sids; i++) {
-			uint32_t res_sid_index = d->sid_indexes[i];
-
-			state->single_sids[state->num_single_sids] =
-				res_sid_index;
-			state->num_single_sids += 1;
-		}
-		state->domains_done += 1;
-		wb_lookupsids_next(req, state);
+	if (NT_STATUS_LOOKUP_ERR(result)) {
+		tevent_req_nterror(req, result);
 		return;
 	}
 
 	/*
 	 * Look at the individual states in the translated names.
 	 */
+
+	d = &state->domains[state->domains_done];
 
 	for (i=0; i<state->tmp_names.count; i++) {
 		uint32_t res_sid_index = d->sid_indexes[i];
