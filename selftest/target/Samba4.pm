@@ -1418,6 +1418,7 @@ sub provision_ad_dc_ntvfs($$)
 	allow nt4 crypto = yes
 	lsa over netlogon = yes
         rpc server port = 1027
+        auth event notification = true
 	";
 	my $ret = $self->provision($prefix,
 				   "domain controller",
@@ -1775,6 +1776,8 @@ sub provision_ad_dc($$)
 	queue resume command = $bindir_abs/vlp tdbfile=$lockdir/vlp.tdb queueresume %p
 	lpq cache time = 0
 	print notify backchannel = yes
+
+        auth event notification = true
 ";
 
 	my $extra_smbconf_shares = "
