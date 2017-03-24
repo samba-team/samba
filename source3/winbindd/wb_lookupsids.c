@@ -507,19 +507,8 @@ static void wb_lookupsids_done(struct tevent_req *subreq)
 	 */
 
 	for (i=0; i<state->tmp_names.count; i++) {
-
 		uint32_t res_sid_index = d->sid_indexes[i];
 
-		if (state->tmp_names.names[i].sid_type == SID_NAME_UNKNOWN) {
-			/*
-			 * Make unknown SIDs go through
-			 * wb_lookupsid. This retries the forest root.
-			 */
-			state->single_sids[state->num_single_sids] =
-				res_sid_index;
-			state->num_single_sids += 1;
-			continue;
-		}
 		if (!wb_lookupsids_move_name(
 			    &state->tmp_domains, &state->tmp_names.names[i],
 			    state->res_domains, state->res_names,
