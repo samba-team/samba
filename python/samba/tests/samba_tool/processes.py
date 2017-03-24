@@ -29,6 +29,12 @@ class ProcessCmdTestCase(SambaToolCmdTest):
         (result, out, err) = self.runcmd("processes", "--name", "samba")
         self.assertCmdSuccess(result, out, err, "Ensuring processes ran successfully")
 
+    def test_unknown_name(self):
+        """Run processes command with an not-existing --name"""
+        (result, out, err) = self.runcmd("processes", "--name", "not-existing-samba")
+        self.assertCmdSuccess(result, out, err, "Ensuring processes ran successfully")
+        self.assertEqual(out, "")
+
     def test_all(self):
         """Run processes command"""
         (result, out, err) = self.runcmd("processes")
