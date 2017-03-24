@@ -23,6 +23,7 @@
 #include "librpc/gen_ndr/ndr_winbind_c.h"
 #include "../libcli/security/security.h"
 #include "passdb/machine_sid.h"
+#include "lsa.h"
 
 struct wb_lookupsids_domain {
 	struct winbindd_domain *domain;
@@ -537,7 +538,8 @@ static void wb_lookupsids_single_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct wb_lookupsids_state *state = tevent_req_data(
 		req, struct wb_lookupsids_state);
-	const char *domain_name, *name;
+	const char *domain_name = NULL;
+	const char *name = NULL;
 	enum lsa_SidType type;
 	uint32_t res_sid_index;
 	uint32_t src_rid;
@@ -545,67 +547,53 @@ static void wb_lookupsids_single_done(struct tevent_req *subreq)
 	struct dom_sid src_domain_sid;
 	struct lsa_DomainInfo src_domain;
 	struct lsa_RefDomainList src_domains;
+	struct lsa_RefDomainList *psrc_domains = NULL;
 	struct lsa_TranslatedName src_name;
 
+	uint32_t domain_idx = UINT32_MAX;
 	NTSTATUS status;
+	bool ok;
 
 	status = wb_lookupsid_recv(subreq, talloc_tos(), &type,
 				   &domain_name, &name);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		struct winbindd_domain *wb_domain = NULL;
-		const char *tmpname;
-
-		type = SID_NAME_UNKNOWN;
-
-		res_sid_index = state->single_sids[state->single_sids_done];
-		wb_domain = find_domain_from_sid_noinit(&state->sids[res_sid_index]);
-		if (wb_domain != NULL) {
-			/*
-			 * If the lookupsid failed because the rid not
-			 * found in a domain and we have a reference
-			 * to the lookup domain, use the name from
-			 * there.
-			 *
-			 * Callers like sid2xid will use the domain
-			 * name in the idmap backend to figure out
-			 * which domain to use in processing.
-			 */
-			tmpname = wb_domain->name;
-		} else {
-			tmpname = "";
-		}
-		domain_name = talloc_strdup(talloc_tos(), tmpname);
-		if (tevent_req_nomem(domain_name, req)) {
-			return;
-		}
-		name = talloc_strdup(talloc_tos(), "");
-		if (tevent_req_nomem(name, req)) {
-			return;
-		}
+	if (NT_STATUS_LOOKUP_ERR(status)) {
+		tevent_req_nterror(req, status);
+		return;
 	}
 
-	/*
-	 * Fake up structs for wb_lookupsids_move_name
-	 */
 	res_sid_index = state->single_sids[state->single_sids_done];
 
-	sid_copy(&src_domain_sid, &state->sids[res_sid_index]);
-	sid_split_rid(&src_domain_sid, &src_rid);
-	src_domain.name.string = domain_name;
-	src_domain.sid = &src_domain_sid;
+	if ((domain_name != NULL) && (domain_name[0] != '\0')) {
+		/*
+		 * Build structs with the domain name for
+		 * wb_lookupsids_move_name(). If we didn't get a name, we will
+		 * pass NULL and UINT32_MAX.
+		 */
 
-	src_domains.count = 1;
-	src_domains.domains = &src_domain;
+		sid_copy(&src_domain_sid, &state->sids[res_sid_index]);
+		sid_split_rid(&src_domain_sid, &src_rid);
+
+		src_domain.name.string = domain_name;
+		src_domain.sid = &src_domain_sid;
+
+		src_domains.count = 1;
+		src_domains.domains = &src_domain;
+		psrc_domains = &src_domains;
+
+		domain_idx = 0;
+	}
 
 	src_name.sid_type = type;
 	src_name.name.string = name;
-	src_name.sid_index = 0;
+	src_name.sid_index = domain_idx;
 
-	if (!wb_lookupsids_move_name(
-		    &src_domains, &src_name,
-		    state->res_domains, state->res_names,
-		    res_sid_index)) {
+	ok = wb_lookupsids_move_name(psrc_domains,
+				     &src_name,
+				     state->res_domains,
+				     state->res_names,
+				     res_sid_index);
+	if (!ok) {
 		tevent_req_oom(req);
 		return;
 	}
