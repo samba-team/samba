@@ -32,6 +32,7 @@
 #include "rpc_client/cli_samr.h"
 #include "rpc_client/cli_lsarpc.h"
 #include "../libcli/security/security.h"
+#include "lsa.h"
 
 /* Query display info for a domain */
 NTSTATUS rpc_query_user_list(TALLOC_CTX *mem_ctx,
@@ -1107,7 +1108,7 @@ static NTSTATUS rpc_try_lookup_sids3(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	if (NT_STATUS_IS_ERR(result)) {
+	if (NT_STATUS_LOOKUP_ERR(result)) {
 		return result;
 	}
 	if (sids->num_sids != lsa_names2.count) {
@@ -1136,7 +1137,7 @@ static NTSTATUS rpc_try_lookup_sids3(TALLOC_CTX *mem_ctx,
 			return NT_STATUS_INVALID_NETWORK_RESPONSE;
 		}
 	}
-	return result;
+	return NT_STATUS_OK;
 }
 
 NTSTATUS rpc_lookup_sids(TALLOC_CTX *mem_ctx,
@@ -1169,7 +1170,7 @@ NTSTATUS rpc_lookup_sids(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	if (NT_STATUS_IS_ERR(result)) {
+	if (NT_STATUS_LOOKUP_ERR(result)) {
 		return result;
 	}
 
@@ -1189,5 +1190,5 @@ NTSTATUS rpc_lookup_sids(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	return result;
+	return NT_STATUS_OK;
 }
