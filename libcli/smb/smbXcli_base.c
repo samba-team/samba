@@ -468,6 +468,23 @@ bool smbXcli_conn_use_unicode(struct smbXcli_conn *conn)
 	return false;
 }
 
+/*
+ * [MS-SMB] 2.2.2.3.5 - SMB1 support for passing through
+ * query/set commands to the file system
+ */
+bool smbXcli_conn_support_passthrough(struct smbXcli_conn *conn)
+{
+	if (conn->protocol >= PROTOCOL_SMB2_02) {
+		return true;
+	}
+
+	if (conn->smb1.capabilities & CAP_W2K_SMBS) {
+		return true;
+	}
+
+	return false;
+}
+
 void smbXcli_conn_set_sockopt(struct smbXcli_conn *conn, const char *options)
 {
 	set_socket_options(conn->sock_fd, options);
