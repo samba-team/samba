@@ -432,17 +432,23 @@ static bool wb_lookupsids_move_name(struct lsa_RefDomainList *src_domains,
 {
 	struct lsa_TranslatedName *dst_name;
 	struct lsa_DomainInfo *src_domain;
-	uint32_t src_domain_index, dst_domain_index;
+	uint32_t src_domain_index;
+	uint32_t dst_domain_index = UINT32_MAX;
+	bool ok;
 
 	src_domain_index = src_name->sid_index;
-	if (src_domain_index >= src_domains->count) {
-		return false;
-	}
-	src_domain = &src_domains->domains[src_domain_index];
+	if ((src_domain_index != UINT32_MAX) && (src_domains != NULL)) {
+		if (src_domain_index >= src_domains->count) {
+			return false;
+		}
+		src_domain = &src_domains->domains[src_domain_index];
 
-	if (!wb_lookupsids_find_dom_idx(
-		    src_domain, dst_domains, &dst_domain_index)) {
-		return false;
+		ok = wb_lookupsids_find_dom_idx(src_domain,
+						dst_domains,
+						&dst_domain_index);
+		if (!ok) {
+			return false;
+		}
 	}
 
 	dst_name = &dst_names->names[dst_name_index];
