@@ -325,10 +325,11 @@ NTSTATUS cli_posix_chown(struct cli_state *cli,
 			uid_t uid,
 			gid_t gid);
 struct tevent_req *cli_rename_send(TALLOC_CTX *mem_ctx,
-                                struct tevent_context *ev,
-                                struct cli_state *cli,
-                                const char *fname_src,
-                                const char *fname_dst);
+				   struct tevent_context *ev,
+				   struct cli_state *cli,
+				   const char *fname_src,
+				   const char *fname_dst,
+				   bool replace);
 NTSTATUS cli_rename_recv(struct tevent_req *req);
 NTSTATUS cli_rename(struct cli_state *cli,
 		    const char *fname_src,

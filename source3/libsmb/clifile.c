@@ -996,15 +996,18 @@ static struct tevent_req *cli_cifs_rename_send(TALLOC_CTX *mem_ctx,
 					       struct tevent_context *ev,
 					       struct cli_state *cli,
 					       const char *fname_src,
-					       const char *fname_dst);
+					       const char *fname_dst,
+					       bool replace);
 
 struct tevent_req *cli_rename_send(TALLOC_CTX *mem_ctx,
 				   struct tevent_context *ev,
 				   struct cli_state *cli,
 				   const char *fname_src,
-				   const char *fname_dst)
+				   const char *fname_dst,
+				   bool replace)
 {
-	return cli_cifs_rename_send(mem_ctx, ev, cli, fname_src, fname_dst);
+	return cli_cifs_rename_send(mem_ctx, ev, cli, fname_src, fname_dst,
+				    replace);
 }
 
 static void cli_cifs_rename_done(struct tevent_req *subreq);
@@ -1017,7 +1020,8 @@ static struct tevent_req *cli_cifs_rename_send(TALLOC_CTX *mem_ctx,
 					       struct tevent_context *ev,
 					       struct cli_state *cli,
 					       const char *fname_src,
-					       const char *fname_dst)
+					       const char *fname_dst,
+					       bool replace)
 {
 	struct tevent_req *req = NULL, *subreq = NULL;
 	struct cli_cifs_rename_state *state = NULL;
@@ -1028,6 +1032,14 @@ static struct tevent_req *cli_cifs_rename_send(TALLOC_CTX *mem_ctx,
 	req = tevent_req_create(mem_ctx, &state, struct cli_cifs_rename_state);
 	if (req == NULL) {
 		return NULL;
+	}
+
+	if (replace) {
+		/*
+		 * CIFS doesn't support replace
+		 */
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return tevent_req_post(req, ev);
 	}
 
 	SSVAL(state->vwv+0, 0, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_DIRECTORY);
@@ -1113,21 +1125,13 @@ NTSTATUS cli_rename(struct cli_state *cli,
 		goto fail;
 	}
 
-	if (replace) {
-		/*
-		 * SMB1 doesn't support replace
-		 */
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto fail;
-	}
-
 	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
 	}
 
-	req = cli_rename_send(frame, ev, cli, fname_src, fname_dst);
+	req = cli_rename_send(frame, ev, cli, fname_src, fname_dst, replace);
 	if (req == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
