@@ -992,25 +992,40 @@ NTSTATUS cli_posix_chown(struct cli_state *cli,
  Rename a file.
 ****************************************************************************/
 
-static void cli_rename_done(struct tevent_req *subreq);
+static struct tevent_req *cli_cifs_rename_send(TALLOC_CTX *mem_ctx,
+					       struct tevent_context *ev,
+					       struct cli_state *cli,
+					       const char *fname_src,
+					       const char *fname_dst);
 
-struct cli_rename_state {
+struct tevent_req *cli_rename_send(TALLOC_CTX *mem_ctx,
+				   struct tevent_context *ev,
+				   struct cli_state *cli,
+				   const char *fname_src,
+				   const char *fname_dst)
+{
+	return cli_cifs_rename_send(mem_ctx, ev, cli, fname_src, fname_dst);
+}
+
+static void cli_cifs_rename_done(struct tevent_req *subreq);
+
+struct cli_cifs_rename_state {
 	uint16_t vwv[1];
 };
 
-struct tevent_req *cli_rename_send(TALLOC_CTX *mem_ctx,
-				struct tevent_context *ev,
-				struct cli_state *cli,
-				const char *fname_src,
-				const char *fname_dst)
+static struct tevent_req *cli_cifs_rename_send(TALLOC_CTX *mem_ctx,
+					       struct tevent_context *ev,
+					       struct cli_state *cli,
+					       const char *fname_src,
+					       const char *fname_dst)
 {
 	struct tevent_req *req = NULL, *subreq = NULL;
-	struct cli_rename_state *state = NULL;
+	struct cli_cifs_rename_state *state = NULL;
 	uint8_t additional_flags = 0;
 	uint16_t additional_flags2 = 0;
 	uint8_t *bytes = NULL;
 
-	req = tevent_req_create(mem_ctx, &state, struct cli_rename_state);
+	req = tevent_req_create(mem_ctx, &state, struct cli_cifs_rename_state);
 	if (req == NULL) {
 		return NULL;
 	}
@@ -1051,11 +1066,11 @@ struct tevent_req *cli_rename_send(TALLOC_CTX *mem_ctx,
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
-	tevent_req_set_callback(subreq, cli_rename_done, req);
+	tevent_req_set_callback(subreq, cli_cifs_rename_done, req);
 	return req;
 }
 
-static void cli_rename_done(struct tevent_req *subreq)
+static void cli_cifs_rename_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 				subreq, struct tevent_req);
