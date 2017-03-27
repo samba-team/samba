@@ -42,8 +42,14 @@ static void drepl_repl_secret_callback(struct dreplsrv_service *service,
 {
 	struct repl_secret_state *state = talloc_get_type_abort(cb_data, struct repl_secret_state);
 	if (!W_ERROR_IS_OK(werr)) {
-		DEBUG(3,(__location__ ": repl secret failed for user %s - %s: extended_ret[0x%X]\n",
-			 state->user_dn, win_errstr(werr), ext_err));
+		if (W_ERROR_EQUAL(werr, WERR_DS_DRA_SECRETS_DENIED)) {
+			DEBUG(3,(__location__ ": repl secret disallowed for user "
+				 "%s - not in allowed replication group\n",
+				 state->user_dn));
+		} else {
+			DEBUG(3,(__location__ ": repl secret failed for user %s - %s: extended_ret[0x%X]\n",
+				 state->user_dn, win_errstr(werr), ext_err));
+		}
 	} else {
 		DEBUG(3,(__location__ ": repl secret completed OK for '%s'\n", state->user_dn));
 	}
