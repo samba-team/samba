@@ -1781,7 +1781,8 @@ static bool wbinfo_auth_crap(char *username, bool use_ntlmv2, bool use_lanman)
 						get_winbind_netbios_name(),
 						get_winbind_domain());
 
-		if (!SMBNTLMv2encrypt(NULL, name_user, name_domain, pass,
+		if (pass != NULL &&
+		    !SMBNTLMv2encrypt(NULL, name_user, name_domain, pass,
 				      &server_chal,
 				      &names_blob,
 				      &lm, &nt, NULL, NULL)) {
