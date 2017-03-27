@@ -23,6 +23,7 @@
 		<arg choice="opt">-s suffix</arg>
 		<arg choice="opt">-v</arg>
 		<arg choice="opt">-h</arg>
+		<arg choice="opt">-n hashsize</arg>
 		<arg choice="opt">-l</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
@@ -67,6 +68,13 @@
 		<listitem><para>
 		The <command>-v</command> will check the database for damages (corrupt data)
 		which if detected causes the backup to be restored.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-n hashsize</term>
+		<listitem><para>
+		The <command>-n</command> option sets the hash size for the new backup tdb.
 		</para></listitem>
 		</varlistentry>
 
