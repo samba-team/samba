@@ -211,7 +211,7 @@ sub wait_for_start($$)
 	}
 
 	# Ensure we have the first RID Set before we start tests.  This makes the tests more reliable.
-	if ($testenv_vars->{SERVER_ROLE} eq "domain controller" and not ($testenv_vars->{NETBIOSNAME} eq "RODC")) {
+	if ($testenv_vars->{SERVER_ROLE} eq "domain controller") {
 		# Add hosts file for name lookups
 		$ENV{NSS_WRAPPER_HOSTS} = $testenv_vars->{NSS_WRAPPER_HOSTS};
 		if (defined($testenv_vars->{RESOLV_WRAPPER_CONF})) {
@@ -220,22 +220,27 @@ sub wait_for_start($$)
 			$ENV{RESOLV_WRAPPER_HOSTS} = $testenv_vars->{RESOLV_WRAPPER_HOSTS};
 		}
 
-	    print "waiting for working LDAP and a RID Set to be allocated\n";
-	    my $ldbsearch = Samba::bindir_path($self, "ldbsearch");
-	    my $count = 0;
-	    my $base_dn = "DC=".join(",DC=", split(/\./, $testenv_vars->{REALM}));
-	    my $rid_set_dn = "cn=RID Set,cn=$testenv_vars->{NETBIOSNAME},ou=domain controllers,$base_dn";
-	    my $max_wait = 60;
-	    my $cmd = "$ldbsearch $testenv_vars->{CONFIGURATION} -H ldap://$testenv_vars->{SERVER} -U$testenv_vars->{USERNAME}%$testenv_vars->{PASSWORD} -s base -b \"$rid_set_dn\" rIDAllocationPool";
-	    while (system("$cmd >/dev/null") != 0) {
-		$count++;
-		if ($count > $max_wait) {
-		    warn("Timed out ($max_wait sec) waiting for working LDAP and a RID Set to be allocated by $testenv_vars->{NETBIOSNAME} PID $testenv_vars->{SAMBA_PID}");
-		    $ret = -1;
-		    last;
+		print "waiting for working LDAP and a RID Set to be allocated\n";
+		my $ldbsearch = Samba::bindir_path($self, "ldbsearch");
+		my $count = 0;
+		my $base_dn = "DC=".join(",DC=", split(/\./, $testenv_vars->{REALM}));
+
+		my $search_dn = $base_dn;
+		if ($testenv_vars->{NETBIOSNAME} ne "RODC") {
+			# TODO currently no check for actual rIDAllocationPool
+			$search_dn = "cn=RID Set,cn=$testenv_vars->{NETBIOSNAME},ou=domain controllers,$base_dn";
 		}
-		sleep(1);
-	    }
+		my $max_wait = 60;
+		my $cmd = "$ldbsearch $testenv_vars->{CONFIGURATION} -H ldap://$testenv_vars->{SERVER} -U$testenv_vars->{USERNAME}%$testenv_vars->{PASSWORD} -s base -b \"$search_dn\"";
+		while (system("$cmd >/dev/null") != 0) {
+			$count++;
+			if ($count > $max_wait) {
+				warn("Timed out ($max_wait sec) waiting for working LDAP and a RID Set to be allocated by $testenv_vars->{NETBIOSNAME} PID $testenv_vars->{SAMBA_PID}");
+				$ret = -1;
+				last;
+			}
+			sleep(1);
+		}
 	}
 	print $self->getlog_env($testenv_vars);
 
