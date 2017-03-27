@@ -1245,6 +1245,9 @@ sub provision($$$$$$$$)
 	my $shadow_shrdir="$shadow_basedir/share";
 	push(@dirs,$shadow_shrdir);
 
+	my $nosymlinks_shrdir="$shrdir/nosymlinks";
+	push(@dirs,$nosymlinks_shrdir);
+
 	# this gets autocreated by winbindd
 	my $wbsockdir="$prefix_abs/winbindd";
 
@@ -1860,6 +1863,11 @@ sub provision($$$$$$$$)
 [mangle_illegal]
 	copy = tmp
         mangled names = illegal
+
+[nosymlinks]
+	copy = tmp
+	path = $nosymlinks_shrdir
+	follow symlinks = no
 
 [kernel_oplocks]
 	copy = tmp
