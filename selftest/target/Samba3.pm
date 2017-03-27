@@ -1207,6 +1207,9 @@ sub provision($$$$$$$$)
 	my $shadow_shrdir="$shadow_basedir/share";
 	push(@dirs,$shadow_shrdir);
 
+	my $nosymlinks_shrdir="$shrdir/nosymlinks";
+	push(@dirs,$nosymlinks_shrdir);
+
 	# this gets autocreated by winbindd
 	my $wbsockdir="$prefix_abs/winbindd";
 	my $wbsockprivdir="$lockdir/winbindd_privileged";
@@ -1824,6 +1827,10 @@ sub provision($$$$$$$$)
 	copy = tmp
 	acl_xattr:ignore system acls = yes
 	acl_xattr:default acl style = windows
+[nosymlinks]
+	copy = tmp
+	path = $nosymlinks_shrdir
+	follow symlinks = no
 [kernel_oplocks]
 	copy = tmp
 	kernel oplocks = yes
