@@ -1907,7 +1907,7 @@ process_result:
 			   -- jerry */
 
 			result = NT_STATUS_NOT_SUPPORTED;
-			if (our_domain == domain ) {
+			if (strequal(name_domain, our_domain->name)) {
 				result = fillup_password_policy(
 					our_domain, state->response);
 			}
@@ -1915,8 +1915,9 @@ process_result:
 			if (!NT_STATUS_IS_OK(result)
 			    && !NT_STATUS_EQUAL(result, NT_STATUS_NOT_SUPPORTED) )
 			{
-				DEBUG(10,("Failed to get password policies for domain %s: %s\n",
-					  domain->name, nt_errstr(result)));
+				DBG_DEBUG("Failed to get password policies for "
+					  "domain %s: %s\n", our_domain->name,
+					  nt_errstr(result));
 				goto done;
 			}
 		}
