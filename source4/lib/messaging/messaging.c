@@ -391,6 +391,10 @@ struct imessaging_context *imessaging_init(TALLOC_CTX *mem_ctx,
 
 	tdb_flags |= lpcfg_tdb_flags(lp_ctx, 0);
 
+	/*
+	 * This context holds a destructor that cleans up any names
+	 * registered on this context on talloc_free()
+	 */
 	msg->names = server_id_db_init(msg, server_id, lock_dir, 0, tdb_flags);
 	if (msg->names == NULL) {
 		goto fail;
@@ -767,6 +771,9 @@ static int irpc_destructor(struct irpc_request *irpc)
 
 /*
   add a string name that this irpc server can be called on
+
+  It will be removed from the DB either via irpc_remove_name or on
+  talloc_free(msg_ctx->names).
 */
 NTSTATUS irpc_add_name(struct imessaging_context *msg_ctx, const char *name)
 {
