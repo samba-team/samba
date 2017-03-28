@@ -1098,7 +1098,7 @@ EOF
     ret=$?
     rm -f $tmpfile
 
-    if [ $ret != 0 ] ; then
+    if [ $ret -ne 0 ] ; then
        echo "$out"
        echo "failed accessing nosymlinks with error $ret"
        false
@@ -1107,10 +1107,11 @@ EOF
 
     echo "$out" | grep 'NT_STATUS_ACCESS_DENIED'
     ret=$?
-    if [ $ret != 0 ] ; then
+    if [ $ret -ne 0 ] ; then
        echo "$out"
        echo "failed - should get NT_STATUS_ACCESS_DENIED getting \\nosymlinks\\source"
        false
+       return
     fi
 
 # But we should be able to create and delete directories.
@@ -1125,7 +1126,7 @@ EOF
     ret=$?
     rm -f $tmpfile
 
-    if [ $ret != 0 ] ; then
+    if [ $ret -ne 0 ] ; then
        echo "$out"
        echo "failed accessing nosymlinks with error $ret"
        false
@@ -1134,7 +1135,7 @@ EOF
 
     echo "$out" | grep 'NT_STATUS'
     ret=$?
-    if [ $ret == 0 ] ; then
+    if [ $ret -eq 0 ] ; then
 	echo "$out"
 	echo "failed - NT_STATUS_XXXX doing mkdir a; mkdir a\\b on \\nosymlinks"
 	false
