@@ -1096,6 +1096,76 @@ EOF
     fi
 }
 
+# Test follow symlinks can't access symlinks
+test_nosymlinks()
+{
+# Setup test dirs.
+    slink_name="$LOCAL_PATH/nosymlinks/source"
+    slink_target="$LOCAL_PATH/nosymlinks/target"
+    mkdir_target="$LOCAL_PATH/nosymlinks/a"
+
+    rm -f $slink_target
+    rm -f $slink_name
+    rm -rf $mkdir_target
+
+    touch $slink_target
+    ln -s $slink_target $slink_name
+
+# Getting a file through a symlink name should fail.
+    tmpfile=$PREFIX/smbclient_interactive_prompt_commands
+    cat > $tmpfile <<EOF
+get source
+quit
+EOF
+    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/nosymlinks -I $SERVER_IP $ADDARGS < $tmpfile 2>&1'
+    eval echo "$cmd"
+    out=`eval $cmd`
+    ret=$?
+    rm -f $tmpfile
+
+    if [ $ret -ne 0 ] ; then
+       echo "$out"
+       echo "failed accessing nosymlinks with error $ret"
+       false
+       return
+    fi
+
+    echo "$out" | grep 'NT_STATUS_ACCESS_DENIED'
+    ret=$?
+    if [ $ret -ne 0 ] ; then
+       echo "$out"
+       echo "failed - should get NT_STATUS_ACCESS_DENIED getting \\nosymlinks\\source"
+       false
+       return
+    fi
+
+# But we should be able to create and delete directories.
+    cat > $tmpfile <<EOF
+mkdir a
+mkdir a\\b
+quit
+EOF
+    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/nosymlinks -I $SERVER_IP $ADDARGS < $tmpfile 2>&1'
+    eval echo "$cmd"
+    out=`eval $cmd`
+    ret=$?
+    rm -f $tmpfile
+
+    if [ $ret -ne 0 ] ; then
+       echo "$out"
+       echo "failed accessing nosymlinks with error $ret"
+       false
+       return
+    fi
+
+    echo "$out" | grep 'NT_STATUS'
+    ret=$?
+    if [ $ret -eq 0 ] ; then
+	echo "$out"
+	echo "failed - NT_STATUS_XXXX doing mkdir a; mkdir a\\b on \\nosymlinks"
+	false
+    fi
+}
 
 LOGDIR_PREFIX=test_smbclient_s3
 
@@ -1194,6 +1264,10 @@ testit "Ensure widelinks are restricted" \
 
 testit "streams_depot can delete correctly" \
     test_streams_depot_delete || \
+    failed=`expr $failed + 1`
+
+testit "follow symlinks = no" \
+    test_nosymlinks || \
     failed=`expr $failed + 1`
 
 testit "rm -rf $LOGDIR" \
