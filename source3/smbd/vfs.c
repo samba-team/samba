@@ -1192,6 +1192,7 @@ NTSTATUS check_reduced_name(connection_struct *conn,
 				const char *fname)
 {
 	char *resolved_name = NULL;
+	char *new_fname = NULL;
 	bool allow_symlinks = true;
 	bool allow_widelinks = false;
 
@@ -1333,11 +1334,32 @@ NTSTATUS check_reduced_name(connection_struct *conn,
 			}
 
 			p++;
+
+			/*
+			 * If cwd_name is present and not ".",
+			 * then fname is relative to that, not
+			 * the root of the share. Make sure the
+			 * path we check is the one the client
+			 * sent (cwd_name+fname).
+			 */
+			if (cwd_name != NULL && !ISDOT(cwd_name)) {
+				new_fname = talloc_asprintf(talloc_tos(),
+							"%s/%s",
+							cwd_name,
+							fname);
+				if (new_fname == NULL) {
+					SAFE_FREE(resolved_name);
+					return NT_STATUS_NO_MEMORY;
+				}
+				fname = new_fname;
+			}
+
 			if (strcmp(fname, p)!=0) {
 				DEBUG(2, ("check_reduced_name: Bad access "
 					"attempt: %s is a symlink to %s\n",
 					  fname, p));
 				SAFE_FREE(resolved_name);
+				TALLOC_FREE(new_fname);
 				return NT_STATUS_ACCESS_DENIED;
 			}
 		}
@@ -1347,6 +1369,7 @@ NTSTATUS check_reduced_name(connection_struct *conn,
 
 	DBG_INFO("%s reduced to %s\n", fname, resolved_name);
 	SAFE_FREE(resolved_name);
+	TALLOC_FREE(new_fname);
 	return NT_STATUS_OK;
 }
 
