@@ -76,6 +76,12 @@ def _check_python_headers(conf, mandatory):
     else:
         conf.env['PYTHON_SO_ABI_FLAG'] = ''
 
+    for lib in conf.env['LINKFLAGS_PYEMBED']:
+        if lib.startswith('-L'):
+            conf.env.append_unique('LIBPATH_PYEMBED', lib[2:]) # strip '-L'
+            conf.env['LINKFLAGS_PYEMBED'].remove(lib)
+
+    return
 
 def SAMBA_PYTHON(bld, name,
                  source='',
