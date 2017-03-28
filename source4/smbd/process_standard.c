@@ -30,6 +30,7 @@
 #include "ldb_wrap.h"
 #include "lib/messaging/messaging.h"
 #include "lib/util/debug.h"
+#include "source3/lib/messages_dgm.h"
 
 struct standard_child_state {
 	const char *name;
@@ -114,6 +115,8 @@ static void standard_child_pipe_handler(struct tevent_context *ev,
 		= talloc_get_type_abort(private_data, struct standard_child_state);
 	int status = 0;
 	pid_t pid;
+
+	messaging_dgm_cleanup(state->pid);
 
 	/* the child has closed the pipe, assume its dead */
 	errno = 0;

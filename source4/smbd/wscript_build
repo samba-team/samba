@@ -40,7 +40,7 @@ bld.SAMBA_MODULE('process_model_standard',
                  source='process_standard.c',
                  subsystem='process_model',
                  init_function='process_model_standard_init',
-                 deps='MESSAGING events ldbsamba process_model samba-sockets cluster',
+                 deps='MESSAGING events ldbsamba process_model samba-sockets cluster messages_dgm',
                  internal_module=False
                  )
 
