@@ -2933,7 +2933,9 @@ allowed:
 		   to send notifies using the GC SPN */
 		ureq.options |= (req10->replica_flags & DRSUAPI_DRS_REF_GCSPN);
 
-		werr = drsuapi_UpdateRefs(b_state, mem_ctx, &ureq);
+		werr = drsuapi_UpdateRefs(dce_call->msg_ctx,
+					  dce_call->event_ctx, b_state,
+					  mem_ctx, &ureq);
 		if (!W_ERROR_IS_OK(werr)) {
 			DEBUG(0,(__location__ ": Failed UpdateRefs on %s for %s in DsGetNCChanges - %s\n",
 				 drs_ObjectIdentifier_to_string(mem_ctx, ncRoot), ureq.dest_dsa_dns_name,

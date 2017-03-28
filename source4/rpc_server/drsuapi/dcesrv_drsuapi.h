@@ -40,7 +40,9 @@ struct drsuapi_bind_state {
 
 
 /* prototypes of internal functions */
-WERROR drsuapi_UpdateRefs(struct drsuapi_bind_state *b_state, TALLOC_CTX *mem_ctx,
+WERROR drsuapi_UpdateRefs(struct imessaging_context *msg_ctx,
+			  struct tevent_context *event_ctx,
+			  struct drsuapi_bind_state *b_state, TALLOC_CTX *mem_ctx,
 			  struct drsuapi_DsReplicaUpdateRefsRequest1 *req);
 WERROR dcesrv_drsuapi_DsReplicaUpdateRefs(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					  struct drsuapi_DsReplicaUpdateRefs *r);
