@@ -549,7 +549,7 @@ static int non_widelink_open(struct connection_struct *conn,
 	}
 
 	/* Ensure the relative path is below the share. */
-	status = check_reduced_name(conn, final_component);
+	status = check_reduced_name(conn, parent_dir, final_component);
 	if (!NT_STATUS_IS_OK(status)) {
 		saved_errno = map_errno_from_nt_status(status);
 		goto out;
