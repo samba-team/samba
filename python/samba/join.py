@@ -964,8 +964,10 @@ class dc_join(object):
         if not ctx.RODC:
             r.options |= drsuapi.DRSUAPI_DRS_WRIT_REP
 
-        if ctx.drsuapi:
-            ctx.drsuapi.DsReplicaUpdateRefs(ctx.drsuapi_handle, 1, r)
+        if ctx.drsuapi is None:
+            ctx.drsuapi_connect()
+
+        ctx.drsuapi.DsReplicaUpdateRefs(ctx.drsuapi_handle, 1, r)
 
     def join_finalise(ctx):
         """Finalise the join, mark us synchronised and setup secrets db."""
