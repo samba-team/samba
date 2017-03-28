@@ -702,13 +702,36 @@ NTSTATUS authsam_update_bad_pwd_count(struct ldb_context *sam_ctx,
 	}
 
 	if (msg_mod != NULL) {
-		ret = dsdb_modify(sam_ctx, msg_mod, 0);
+		struct ldb_request *req;
+
+		ret = ldb_build_mod_req(&req, sam_ctx, sam_ctx,
+					msg_mod,
+					NULL,
+					NULL,
+					ldb_op_default_callback,
+					NULL);
 		if (ret != LDB_SUCCESS) {
-			DEBUG(0, ("Failed to update badPwdCount, badPasswordTime or set lockoutTime on %s: %s\n",
-				  ldb_dn_get_linearized(msg_mod->dn), ldb_errstring(sam_ctx)));
-			TALLOC_FREE(mem_ctx);
-			return NT_STATUS_INTERNAL_ERROR;
+			goto done;
 		}
+
+		ret = ldb_request_add_control(req,
+					      DSDB_CONTROL_FORCE_RODC_LOCAL_CHANGE,
+					      false, NULL);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(req);
+			goto done;
+		}
+
+		ret = dsdb_autotransaction_request(sam_ctx, req);
+		talloc_free(req);
+	}
+
+done:
+	if (ret != LDB_SUCCESS) {
+		DEBUG(0, ("Failed to update badPwdCount, badPasswordTime or set lockoutTime on %s: %s\n",
+			  ldb_dn_get_linearized(msg_mod->dn), ldb_errstring(sam_ctx)));
+		TALLOC_FREE(mem_ctx);
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 
 	TALLOC_FREE(mem_ctx);
@@ -930,17 +953,47 @@ NTSTATUS authsam_logon_success_accounting(struct ldb_context *sam_ctx,
 	}
 
 	if (msg_mod->num_elements > 0) {
-		ret = dsdb_replace(sam_ctx, msg_mod, 0);
-		if (ret != LDB_SUCCESS) {
-			DEBUG(0, ("Failed to set badPwdCount and lockoutTime "
-				  "to 0 and/or  lastlogon to now (%lld) "
-				  "%s: %s\n", (long long int)now,
-				  ldb_dn_get_linearized(msg_mod->dn),
-				  ldb_errstring(sam_ctx)));
-			TALLOC_FREE(mem_ctx);
-			return NT_STATUS_INTERNAL_ERROR;
+		unsigned int i;
+		struct ldb_request *req;
+
+		/* mark all the message elements as LDB_FLAG_MOD_REPLACE */
+		for (i=0;i<msg_mod->num_elements;i++) {
+			msg_mod->elements[i].flags = LDB_FLAG_MOD_REPLACE;
 		}
+
+		ret = ldb_build_mod_req(&req, sam_ctx, sam_ctx,
+					msg_mod,
+					NULL,
+					NULL,
+					ldb_op_default_callback,
+					NULL);
+		if (ret != LDB_SUCCESS) {
+			goto done;
+		}
+
+		ret = ldb_request_add_control(req,
+					      DSDB_CONTROL_FORCE_RODC_LOCAL_CHANGE,
+					      false, NULL);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(req);
+			goto done;
+		}
+
+		ret = dsdb_autotransaction_request(sam_ctx, req);
+		talloc_free(req);
 	}
+
+done:
+	if (ret != LDB_SUCCESS) {
+		DEBUG(0, ("Failed to set badPwdCount and lockoutTime "
+			  "to 0 and/or  lastlogon to now (%lld) "
+			  "%s: %s\n", (long long int)now,
+			  ldb_dn_get_linearized(msg_mod->dn),
+			  ldb_errstring(sam_ctx)));
+		TALLOC_FREE(mem_ctx);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
 	TALLOC_FREE(mem_ctx);
 	return NT_STATUS_OK;
 }
