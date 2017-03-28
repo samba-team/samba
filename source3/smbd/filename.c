@@ -1240,7 +1240,7 @@ NTSTATUS check_name(connection_struct *conn, const char *name)
 	}
 
 	if (!lp_widelinks(SNUM(conn)) || !lp_follow_symlinks(SNUM(conn))) {
-		status = check_reduced_name(conn,name);
+		status = check_reduced_name(conn, NULL, name);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(5,("check_name: name %s failed with %s\n",name,
 						nt_errstr(status)));
