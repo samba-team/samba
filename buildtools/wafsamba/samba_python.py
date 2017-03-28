@@ -90,6 +90,12 @@ def _check_python_headers(conf, mandatory):
     conf.env['PYTHON_LIBNAME_SO_ABI_FLAG'] = (
         conf.env['PYTHON_SO_ABI_FLAG'].replace('_', '-'))
 
+    for lib in conf.env['LINKFLAGS_PYEMBED']:
+        if lib.startswith('-L'):
+            conf.env.append_unique('LIBPATH_PYEMBED', lib[2:]) # strip '-L'
+            conf.env['LINKFLAGS_PYEMBED'].remove(lib)
+
+    return
 
 def PYTHON_BUILD_IS_ENABLED(self):
     return self.CONFIG_SET('HAVE_PYTHON_H')
