@@ -1179,9 +1179,17 @@ NTSTATUS check_reduced_name_with_privilege(connection_struct *conn,
 /*******************************************************************
  Reduce a file name, removing .. elements and checking that
  it is below dir in the heirachy. This uses realpath.
+
+ If cwd_name == NULL then fname is a client given path relative
+ to the root path of the share.
+
+ If cwd_name != NULL then fname is a client given path relative
+ to cwd_name. cwd_name is relative to the root path of the share.
 ********************************************************************/
 
-NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
+NTSTATUS check_reduced_name(connection_struct *conn,
+				const char *cwd_name,
+				const char *fname)
 {
 	char *resolved_name = NULL;
 	bool allow_symlinks = true;
