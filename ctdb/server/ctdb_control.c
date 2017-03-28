@@ -267,10 +267,10 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	}
 
 	case CTDB_CONTROL_DB_ATTACH:
-	  return ctdb_control_db_attach(ctdb, indata, outdata, srvid, false, client_id, c, async_reply);
+	  return ctdb_control_db_attach(ctdb, indata, outdata, false, client_id, c, async_reply);
 
 	case CTDB_CONTROL_DB_ATTACH_PERSISTENT:
-	  return ctdb_control_db_attach(ctdb, indata, outdata, srvid, true, client_id, c, async_reply);
+	  return ctdb_control_db_attach(ctdb, indata, outdata, true, client_id, c, async_reply);
 
 	case CTDB_CONTROL_SET_CALL:
 		return control_not_implemented("SET_CALL", NULL);

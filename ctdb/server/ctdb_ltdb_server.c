@@ -1109,7 +1109,7 @@ int ctdb_process_deferred_attach(struct ctdb_context *ctdb)
   a client has asked to attach a new database
  */
 int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
-			       TDB_DATA *outdata, uint64_t tdb_flags, 
+			       TDB_DATA *outdata,
 			       bool persistent, uint32_t client_id,
 			       struct ctdb_req_control_old *c,
 			       bool *async_reply)
@@ -1169,16 +1169,6 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 		}
 	}
 
-	/* the client can optionally pass additional tdb flags, but we
-	   only allow a subset of those on the database in ctdb. Note
-	   that tdb_flags is passed in via the (otherwise unused)
-	   srvid to the attach control */
-#ifdef TDB_MUTEX_LOCKING
-	tdb_flags &= (TDB_NOSYNC|TDB_INCOMPATIBLE_HASH|TDB_MUTEX_LOCKING|TDB_CLEAR_IF_FIRST);
-#else
-	tdb_flags &= (TDB_NOSYNC|TDB_INCOMPATIBLE_HASH);
-#endif
-
 	/* see if we already have this name */
 	db = ctdb_db_handle(ctdb, db_name);
 	if (db) {
@@ -1193,12 +1183,8 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 		return 0;
 	}
 
-	with_jenkinshash = (tdb_flags & TDB_INCOMPATIBLE_HASH) ? true : false;
-#ifdef TDB_MUTEX_LOCKING
-	with_mutexes = (tdb_flags & TDB_MUTEX_LOCKING) ? true : false;
-#else
-	with_mutexes = false;
-#endif
+	with_jenkinshash = persistent ? false : true;
+	with_mutexes = (ctdb->tunable.mutex_enabled == 1) ? true : false;
 
 	if (ctdb_local_attach(ctdb, db_name, persistent, NULL,
 			      with_jenkinshash, with_mutexes) != 0) {
@@ -1218,7 +1204,7 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 	lockdown_memory(ctdb->valgrinding);
 
 	/* tell all the other nodes about this database */
-	ctdb_daemon_send_control(ctdb, CTDB_BROADCAST_ALL, tdb_flags,
+	ctdb_daemon_send_control(ctdb, CTDB_BROADCAST_ALL, 0,
 				 persistent?CTDB_CONTROL_DB_ATTACH_PERSISTENT:
 						CTDB_CONTROL_DB_ATTACH,
 				 0, CTDB_CTRL_FLAG_NOREPLY,
