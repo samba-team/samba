@@ -69,6 +69,8 @@ bld.RECURSE('source4/lib/cmdline')
 bld.RECURSE('source4/lib/http')
 if bld.CONFIG_GET('NSS_WRAPPER'):
     bld.RECURSE('lib/nss_wrapper')
+if bld.CONFIG_GET('PAM_WRAPPER'):
+    bld.RECURSE('lib/pam_wrapper')
 if bld.CONFIG_GET('SOCKET_WRAPPER'):
     bld.RECURSE('lib/socket_wrapper')
 if bld.CONFIG_GET('RESOLV_WRAPPER'):

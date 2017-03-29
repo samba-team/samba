@@ -173,6 +173,7 @@ def configure(conf):
     conf.RECURSE('selftest')
     if conf.CONFIG_GET('ENABLE_SELFTEST'):
         conf.RECURSE('lib/nss_wrapper')
+        conf.RECURSE('lib/pam_wrapper')
         conf.RECURSE('lib/resolv_wrapper')
         conf.RECURSE('lib/socket_wrapper')
         conf.RECURSE('lib/uid_wrapper')
