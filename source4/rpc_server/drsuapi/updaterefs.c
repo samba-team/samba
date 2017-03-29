@@ -35,6 +35,43 @@ struct repsTo {
 	struct repsFromToBlob *r;
 };
 
+static WERROR uref_check_dest(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
+			      struct ldb_dn *dn, struct GUID *dest_guid,
+			      uint32_t options)
+{
+	struct repsTo reps;
+	WERROR werr;
+	unsigned int i;
+	bool found = false;
+
+	werr = dsdb_loadreps(sam_ctx, mem_ctx, dn, "repsTo", &reps.r, &reps.count);
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
+	}
+
+	for (i=0; i<reps.count; i++) {
+		if (GUID_equal(dest_guid,
+			       &reps.r[i].ctr.ctr1.source_dsa_obj_guid)) {
+			found = true;
+			break;
+		}
+	}
+
+	if (options & DRSUAPI_DRS_ADD_REF) {
+		if (found && !(options & DRSUAPI_DRS_DEL_REF)) {
+			return WERR_DS_DRA_REF_ALREADY_EXISTS;
+		}
+	}
+
+	if (options & DRSUAPI_DRS_DEL_REF) {
+		if (!found && !(options & DRSUAPI_DRS_ADD_REF)) {
+			return WERR_DS_DRA_REF_NOT_FOUND;
+		}
+	}
+
+	return WERR_OK;
+}
+
 /*
   add a replication destination for a given partition GUID
  */
@@ -195,6 +232,22 @@ WERROR drsuapi_UpdateRefs(struct imessaging_context *msg_ctx,
 	if (ldb_dn_compare(dn, nc_root) != 0) {
 		DEBUG(2, ("dn %s is not equal to %s\n", ldb_dn_get_linearized(dn), ldb_dn_get_linearized(nc_root)));
 		return WERR_DS_DRA_BAD_NC;
+	}
+
+	/*
+	 * First check without a transaction open.
+	 *
+	 * This means that in the usual case, it will never open it and never
+	 * bother to refresh the dreplsrv.
+	 */
+	werr = uref_check_dest(sam_ctx, mem_ctx, dn, &req->dest_dsa_guid,
+			       req->options);
+	if (W_ERROR_EQUAL(werr, WERR_DS_DRA_REF_ALREADY_EXISTS) ||
+	    W_ERROR_EQUAL(werr, WERR_DS_DRA_REF_NOT_FOUND)) {
+		if (req->options & DRSUAPI_DRS_GETCHG_CHECK) {
+			return WERR_OK;
+		}
+		return werr;
 	}
 
 	if (ldb_transaction_start(sam_ctx) != LDB_SUCCESS) {
