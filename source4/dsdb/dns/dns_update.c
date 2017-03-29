@@ -531,36 +531,35 @@ static NTSTATUS dnsupdate_dnsupdate_RODC(struct irpc_message *msg,
 		return NT_STATUS_OK;
 	}
 
-
 	for (i=0; i<st->r->in.dns_names->count; i++) {
 		struct NL_DNS_NAME_INFO *n = &r->in.dns_names->names[i];
 		switch (n->type) {
 		case NlDnsLdapAtSite:
-			dprintf(st->fd, "SRV _ldap._tcp.%s._sites.%s. %s %u\n",
+			dprintf(st->fd, "SRV _ldap._tcp.%s._sites.%s %s %u\n",
 				site, dnsdomain, hostname, n->port);
 			break;
 		case NlDnsGcAtSite:
-			dprintf(st->fd, "SRV _ldap._tcp.%s._sites.gc._msdcs.%s. %s %u\n",
+			dprintf(st->fd, "SRV _ldap._tcp.%s._sites.gc._msdcs.%s %s %u\n",
 				site, dnsdomain, hostname, n->port);
 			break;
 		case NlDnsDsaCname:
-			dprintf(st->fd, "CNAME %s._msdcs.%s. %s\n",
+			dprintf(st->fd, "CNAME %s._msdcs.%s %s\n",
 				ntdsguid, dnsforest, hostname);
 			break;
 		case NlDnsKdcAtSite:
-			dprintf(st->fd, "SRV _kerberos._tcp.%s._sites.dc._msdcs.%s. %s %u\n",
+			dprintf(st->fd, "SRV _kerberos._tcp.%s._sites.dc._msdcs.%s %s %u\n",
 				site, dnsdomain, hostname, n->port);
 			break;
 		case NlDnsDcAtSite:
-			dprintf(st->fd, "SRV _ldap._tcp.%s._sites.dc._msdcs.%s. %s %u\n",
+			dprintf(st->fd, "SRV _ldap._tcp.%s._sites.dc._msdcs.%s %s %u\n",
 				site, dnsdomain, hostname, n->port);
 			break;
 		case NlDnsRfc1510KdcAtSite:
-			dprintf(st->fd, "SRV _kerberos._tcp.%s._sites.%s. %s %u\n",
+			dprintf(st->fd, "SRV _kerberos._tcp.%s._sites.%s %s %u\n",
 				site, dnsdomain, hostname, n->port);
 			break;
 		case NlDnsGenericGcAtSite:
-			dprintf(st->fd, "SRV _gc._tcp.%s._sites.%s. %s %u\n",
+			dprintf(st->fd, "SRV _gc._tcp.%s._sites.%s %s %u\n",
 				site, dnsforest, hostname, n->port);
 			break;
 		}
