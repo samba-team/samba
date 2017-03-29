@@ -215,10 +215,6 @@
 #
 ^samba4.winbind.struct.domain_info\(s4member:local\)
 ^samba4.winbind.struct.getdcname\(s4member:local\)
-^samba.blackbox.wbinfo\(s4member:local\).wbinfo -r against s4member\(s4member:local\)
-^samba.blackbox.wbinfo\(s4member:local\).wbinfo --user-sids against s4member\(s4member:local\)
-^samba.wbinfo_simple.\(s4member:local\).--user-groups
-^samba.nss.test using winbind\(s4member:local\)
 #
 # These fail since ad_dc_ntvfs assigns the local user's uid to SAMBADOMAIN/Administrator
 # hence we have a duplicate UID in nsswitch.
