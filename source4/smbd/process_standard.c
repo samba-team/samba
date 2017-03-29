@@ -28,6 +28,7 @@
 #include "cluster/cluster.h"
 #include "param/param.h"
 #include "ldb_wrap.h"
+#include "lib/messaging/messaging.h"
 
 struct standard_child_state {
 	const char *name;
@@ -270,6 +271,12 @@ static void standard_accept_connection(struct tevent_context *ev,
 	/* tdb needs special fork handling */
 	ldb_wrap_fork_hook();
 
+	/* Must be done after a fork() to reset messaging contexts. */
+	status = imessaging_reinit_all();
+	if (!NT_STATUS_IS_OK(status)) {
+		smb_panic("Failed to re-initialise imessaging after fork");
+	}
+
 	tevent_add_fd(ev, ev, child_pipe[0], TEVENT_FD_READ,
 		      standard_pipe_handler, NULL);
 	if (child_pipe[1] != -1) {
@@ -309,6 +316,7 @@ static void standard_new_task(struct tevent_context *ev,
 			      void *private_data)
 {
 	pid_t pid;
+	NTSTATUS status;
 	struct standard_child_state *state;
 
 	state = setup_standard_child_pipe(ev, service_name);
@@ -345,6 +353,12 @@ static void standard_new_task(struct tevent_context *ev,
 
 	/* ldb/tdb need special fork handling */
 	ldb_wrap_fork_hook();
+
+	/* Must be done after a fork() to reset messaging contexts. */
+	status = imessaging_reinit_all();
+	if (!NT_STATUS_IS_OK(status)) {
+		smb_panic("Failed to re-initialise imessaging after fork");
+	}
 
 	tevent_add_fd(ev, ev, child_pipe[0], TEVENT_FD_READ,
 		      standard_pipe_handler, NULL);

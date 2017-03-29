@@ -271,6 +271,49 @@ void imessaging_dgm_unref_all(void)
 	}
 }
 
+static NTSTATUS imessaging_reinit(struct imessaging_context *msg)
+{
+	int ret = -1;
+
+	TALLOC_FREE(msg->msg_dgm_ref);
+
+	msg->server_id.pid = getpid();
+
+	msg->msg_dgm_ref = messaging_dgm_ref(msg,
+				msg->ev,
+				&msg->server_id.unique_id,
+				msg->sock_dir,
+				msg->lock_dir,
+				imessaging_dgm_recv,
+				msg,
+				&ret);
+
+	if (msg->msg_dgm_ref == NULL) {
+		DEBUG(2, ("messaging_dgm_ref failed: %s\n",
+			strerror(ret)));
+		return map_nt_error_from_unix_common(ret);
+	}
+
+	server_id_db_reinit(msg->names, msg->server_id);
+	return NT_STATUS_OK;
+}
+
+/*
+ * Must be called after a fork.
+ */
+NTSTATUS imessaging_reinit_all(void)
+{
+	struct imessaging_context *msg = NULL;
+
+	for (msg = msg_ctxs; msg != NULL; msg = msg->next) {
+		NTSTATUS status = imessaging_reinit(msg);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
+	return NT_STATUS_OK;
+}
+
 /*
   create the listening socket and setup the dispatcher
 */
