@@ -119,6 +119,7 @@ int ltdb_unlock_read(struct ldb_module *module)
 	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
 	if (ltdb->in_transaction == 0 && ltdb->read_lock_count == 1) {
 		tdb_unlockall_read(ltdb->tdb);
+		ltdb->read_lock_count--;
 		return 0;
 	}
 	ltdb->read_lock_count--;
