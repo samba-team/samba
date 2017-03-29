@@ -8,13 +8,13 @@ test_smbclient() {
 	shift
 	shift
 	shift
-	echo "test: $name"
-	$VALGRIND $smbclient $CONFIGURATION "$unc" -c "$cmd" $@
+	subunit_start_test "$name"
+	output=`$VALGRIND $smbclient $CONFIGURATION "$unc" -c "$cmd" $@ 2>&1`
 	status=$?
 	if [ x$status = x0 ]; then
-		echo "success: $name"
+		subunit_pass_test "$name"
 	else
-		echo "failure: $name"
+		echo "$output" | subunit_fail_test "$name"
 	fi
 	return $status
 }
@@ -26,13 +26,13 @@ test_smbclient_expect_failure() {
 	shift
 	shift
 	shift
-	echo "test: $name"
-	$VALGRIND $smbclient $CONFIGURATION "$unc" -c "$cmd" $@
+	subunit_start_test "$name"
+	output=`$VALGRIND $smbclient $CONFIGURATION "$unc" -c "$cmd" $@ 2>&1`
 	status=$?
 	if [ x$status = x0 ]; then
-		echo "failure: $name"
+		echo "$output" | subunit_fail_test "$name"
 	else
-		echo "success: $name"
+		subunit_pass_test "$name"
 	fi
 	return $status
 }
