@@ -236,6 +236,16 @@ static int ltdb_index_load(struct ldb_module *module,
 	struct ldb_dn *indexlist_dn;
 	int r;
 
+	if (ldb->schema.index_handler_override) {
+		/*
+		 * we skip loading the @INDEXLIST record when a module is
+		 * supplying its own attribute handling
+		 */
+		ltdb->cache->attribute_indexes = true;
+		ltdb->cache->one_level_indexes = ldb->schema.one_level_indexes;
+		return 0;
+	}
+
 	talloc_free(ltdb->cache->indexlist);
 
 	ltdb->cache->indexlist = ldb_msg_new(ltdb->cache);
