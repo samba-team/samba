@@ -1367,6 +1367,7 @@ static int replmd_update_rpmd_element(struct ldb_context *ldb,
 				      const struct GUID *our_invocation_id,
 				      NTTIME now,
 				      bool is_schema_nc,
+				      bool is_forced_rodc,
 				      struct ldb_request *req)
 {
 	uint32_t i;
@@ -1532,13 +1533,9 @@ static int replmd_update_rpmd_element(struct ldb_context *ldb,
 	md1->originating_usn           = *seq_num;
 	md1->local_usn                 = *seq_num;
 
-	if (ldb_request_get_control(req, DSDB_CONTROL_FORCE_RODC_LOCAL_CHANGE) != NULL) {
+	if (is_forced_rodc) {
 		/* Force version to 0 to be overriden later via replication */
-		bool am_rodc = false;
-		int ret = samdb_rodc(ldb, &am_rodc);
-		if (ret == LDB_SUCCESS && am_rodc) {
-			md1->version = 0;
-		}
+		md1->version = 0;
 	}
 
 	return LDB_SUCCESS;
@@ -1561,7 +1558,8 @@ static int replmd_update_rpmd_rdn_attr(struct ldb_context *ldb,
 				       struct replPropertyMetaDataBlob *omd,
 				       struct replmd_replicated_request *ar,
 				       NTTIME now,
-				       bool is_schema_nc)
+				       bool is_schema_nc,
+				       bool is_forced_rodc)
 {
 	const char *rdn_name = ldb_dn_get_rdn_name(msg->dn);
 	const struct dsdb_attribute *rdn_attr =
@@ -1592,7 +1590,8 @@ static int replmd_update_rpmd_rdn_attr(struct ldb_context *ldb,
 	return replmd_update_rpmd_element(ldb, msg, &new_el, NULL,
 					  omd, ar->schema, &ar->seq_num,
 					  &ar->our_invocation_id,
-					  now, is_schema_nc, ar->req);
+					  now, is_schema_nc, is_forced_rodc,
+					  ar->req);
 
 }
 
@@ -1639,6 +1638,7 @@ static int replmd_update_rpmd(struct ldb_module *module,
 	bool rmd_is_provided;
 	bool rmd_is_just_resorted = false;
 	const char *not_rename_attrs[4 + msg->num_elements];
+	bool is_forced_rodc = false;
 
 	if (rename_attrs) {
 		attrs = rename_attrs;
@@ -1654,6 +1654,17 @@ static int replmd_update_rpmd(struct ldb_module *module,
 	}
 
 	ldb = ldb_module_get_ctx(module);
+
+	ret = samdb_rodc(ldb, rodc);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(4, (__location__ ": unable to tell if we are an RODC\n"));
+		*rodc = false;
+	}
+
+	if (*rodc &&
+	    ldb_request_get_control(req, DSDB_CONTROL_FORCE_RODC_LOCAL_CHANGE)) {
+		is_forced_rodc = true;
+	}
 
 	our_invocation_id = samdb_ntds_invocation_id(ldb);
 	if (!our_invocation_id) {
@@ -1791,6 +1802,7 @@ static int replmd_update_rpmd(struct ldb_module *module,
 							 &omd, schema, seq_num,
 							 our_invocation_id,
 							 now, is_schema_nc,
+							 is_forced_rodc,
 							 req);
 			if (ret != LDB_SUCCESS) {
 				return ret;
@@ -1847,13 +1859,10 @@ static int replmd_update_rpmd(struct ldb_module *module,
 		/*if we are RODC and this is a DRSR update then its ok*/
 		if (!ldb_request_get_control(req, DSDB_CONTROL_REPLICATED_UPDATE_OID)
 		    && !ldb_request_get_control(req, DSDB_CONTROL_DBCHECK_MODIFY_RO_REPLICA)
-		    && !ldb_request_get_control(req, DSDB_CONTROL_FORCE_RODC_LOCAL_CHANGE)) {
+		    && !is_forced_rodc) {
 			unsigned instanceType;
 
-			ret = samdb_rodc(ldb, rodc);
-			if (ret != LDB_SUCCESS) {
-				DEBUG(4, (__location__ ": unable to tell if we are an RODC\n"));
-			} else if (*rodc) {
+			if (*rodc) {
 				ldb_set_errstring(ldb, "RODC modify is forbidden!");
 				return LDB_ERR_REFERRAL;
 			}
@@ -4953,7 +4962,8 @@ static int replmd_replicated_apply_add(struct replmd_replicated_request *ar)
 
 	rdn_val = ldb_dn_get_rdn_val(msg->dn);
 	ret = replmd_update_rpmd_rdn_attr(ldb, msg, rdn_val, NULL,
-				     md, ar, now, is_schema_nc);
+					  md, ar, now, is_schema_nc,
+					  false);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb, "%s: error during DRS repl ADD: %s", __func__, ldb_errstring(ldb));
 		return replmd_replicated_request_error(ar, ret);
@@ -5683,7 +5693,8 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 
 	if (renamed) {
 		ret = replmd_update_rpmd_rdn_attr(ldb, msg, new_rdn, old_rdn,
-						  &nmd, ar, now, is_schema_nc);
+						  &nmd, ar, now, is_schema_nc,
+						  false);
 		if (ret != LDB_SUCCESS) {
 			ldb_asprintf_errstring(ldb, "%s: error during DRS repl merge: %s", __func__, ldb_errstring(ldb));
 			return replmd_replicated_request_error(ar, ret);
