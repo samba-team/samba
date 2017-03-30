@@ -385,6 +385,7 @@ int ltdb_cache_load(struct ldb_module *module)
 	if (options_dn == NULL) goto failed;
 
 	r= ltdb_search_dn1(module, options_dn, options, 0);
+	talloc_free(options_dn);
 	if (r != LDB_SUCCESS && r != LDB_ERR_NO_SUCH_OBJECT) {
 		goto failed;
 	}
