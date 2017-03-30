@@ -1553,66 +1553,34 @@ static int setup_primary_samba_gpg(struct setup_password_fields_io *io,
 #endif /* else ENABLE_GPGME */
 }
 
+#define NUM_PACKAGES 5
 static int setup_supplemental_field(struct setup_password_fields_io *io)
 {
 	struct ldb_context *ldb;
 	struct supplementalCredentialsBlob scb;
 	struct supplementalCredentialsBlob *old_scb = NULL;
-	/* Packages + (Kerberos-Newer-Keys, Kerberos, WDigest, CLEARTEXT, SambaGPG) */
+	/*
+	 * Packages +
+	 * (Kerberos-Newer-Keys, Kerberos, WDigest, CLEARTEXT, SambaGPG)
+	 */
 	uint32_t num_names = 0;
-	const char *names[1+5];
+	const char *names[1+NUM_PACKAGES];
 	uint32_t num_packages = 0;
-	struct supplementalCredentialsPackage packages[1+5];
-	/* Packages */
-	struct supplementalCredentialsPackage *pp = NULL;
-	struct package_PackagesBlob pb;
-	DATA_BLOB pb_blob;
-	char *pb_hexstr;
-	/* Primary:Kerberos-Newer-Keys */
-	const char **nkn = NULL;
-	struct supplementalCredentialsPackage *pkn = NULL;
-	struct package_PrimaryKerberosBlob pknb;
-	DATA_BLOB pknb_blob;
-	char *pknb_hexstr;
-	/* Primary:Kerberos */
-	const char **nk = NULL;
-	struct supplementalCredentialsPackage *pk = NULL;
-	struct package_PrimaryKerberosBlob pkb;
-	DATA_BLOB pkb_blob;
-	char *pkb_hexstr;
-	/* Primary:WDigest */
-	const char **nd = NULL;
-	struct supplementalCredentialsPackage *pd = NULL;
-	struct package_PrimaryWDigestBlob pdb;
-	DATA_BLOB pdb_blob;
-	char *pdb_hexstr;
-	/* Primary:CLEARTEXT */
-	const char **nc = NULL;
-	struct supplementalCredentialsPackage *pc = NULL;
-	struct package_PrimaryCLEARTEXTBlob pcb;
-	DATA_BLOB pcb_blob;
-	char *pcb_hexstr;
-	/* Primary:SambaGPG */
-	const char **ng = NULL;
-	struct supplementalCredentialsPackage *pg = NULL;
-	struct package_PrimarySambaGPGBlob pgb;
-	DATA_BLOB pgb_blob;
-	char *pgb_hexstr;
+	struct supplementalCredentialsPackage packages[1+NUM_PACKAGES];
+	struct supplementalCredentialsPackage *pp = packages;
 	int ret;
 	enum ndr_err_code ndr_err;
-	uint8_t zero16[16];
 	bool do_newer_keys = false;
 	bool do_cleartext = false;
 	bool do_samba_gpg = false;
 
-	ZERO_STRUCT(zero16);
 	ZERO_STRUCT(names);
 	ZERO_STRUCT(packages);
 
 	ldb = ldb_module_get_ctx(io->ac->module);
 
 	if (!io->n.cleartext_utf8) {
-		/* 
+		/*
 		 * when we don't have a cleartext password
 		 * we can't setup a supplementalCredential value
 		 */
@@ -1633,16 +1601,8 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 		}
 	}
 	/* Per MS-SAMR 3.1.1.8.11.6 we create AES keys if our domain functionality level is 2008 or higher */
-	do_newer_keys = (dsdb_functional_level(ldb) >= DS_DOMAIN_FUNCTION_2008);
 
-	if (io->ac->status->domain_data.store_cleartext &&
-	    (io->u.userAccountControl & UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED)) {
-		do_cleartext = true;
-	}
 
-	if (io->ac->gpg_key_ids != NULL) {
-		do_samba_gpg = true;
-	}
 
 	/*
 	 * The ordering is this
@@ -1662,167 +1622,177 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 	 * a Windows DC, it will keep the old Primary:SambaGPG value,
 	 * but as the first element.
 	 */
+	do_newer_keys = (dsdb_functional_level(ldb) >= DS_DOMAIN_FUNCTION_2008);
 	if (do_newer_keys) {
-		/* Primary:Kerberos-Newer-Keys */
-		nkn = &names[num_names++];
-		pkn = &packages[num_packages++];
-	}
-
-	/* Primary:Kerberos */
-	nk = &names[num_names++];
-	pk = &packages[num_packages++];
-
-	if (!do_cleartext && !do_samba_gpg) {
-		/* Packages */
-		pp = &packages[num_packages++];
-	}
-
-	/* Primary:WDigest */
-	nd = &names[num_names++];
-	pd = &packages[num_packages++];
-
-	if (do_cleartext) {
-		if (!do_samba_gpg) {
-			/* Packages */
-			pp = &packages[num_packages++];
-		}
-
-		/* Primary:CLEARTEXT */
-		nc = &names[num_names++];
-		pc = &packages[num_packages++];
-	}
-
-	if (do_samba_gpg) {
-		/* Packages */
-		pp = &packages[num_packages++];
-
-		/* Primary:SambaGPG */
-		ng = &names[num_names++];
-		pg = &packages[num_packages++];
-	}
-
-	if (pkn) {
+		struct package_PrimaryKerberosBlob pknb;
+		DATA_BLOB pknb_blob;
+		char *pknb_hexstr;
 		/*
 		 * setup 'Primary:Kerberos-Newer-Keys' element
 		 */
-		*nkn = "Kerberos-Newer-Keys";
+		names[num_names++] = "Kerberos-Newer-Keys";
 
 		ret = setup_primary_kerberos_newer(io, old_scb, &pknb);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
 
-		ndr_err = ndr_push_struct_blob(&pknb_blob, io->ac,
-					       &pknb,
-					       (ndr_push_flags_fn_t)ndr_push_package_PrimaryKerberosBlob);
+		ndr_err = ndr_push_struct_blob(
+			&pknb_blob, io->ac,
+			&pknb,
+			(ndr_push_flags_fn_t)ndr_push_package_PrimaryKerberosBlob);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
-			ldb_asprintf_errstring(ldb,
-					       "setup_supplemental_field: "
-					       "failed to push package_PrimaryKerberosNeverBlob: %s",
-					       nt_errstr(status));
+			ldb_asprintf_errstring(
+				ldb,
+				"setup_supplemental_field: "
+				"failed to push "
+				"package_PrimaryKerberosNeverBlob: %s",
+				nt_errstr(status));
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		pknb_hexstr = data_blob_hex_string_upper(io->ac, &pknb_blob);
 		if (!pknb_hexstr) {
 			return ldb_oom(ldb);
 		}
-		pkn->name	= "Primary:Kerberos-Newer-Keys";
-		pkn->reserved	= 1;
-		pkn->data	= pknb_hexstr;
+		pp->name	= "Primary:Kerberos-Newer-Keys";
+		pp->reserved	= 1;
+		pp->data	= pknb_hexstr;
+		pp++;
+		num_packages++;
 	}
 
-	/*
-	 * setup 'Primary:Kerberos' element
-	 */
-	*nk = "Kerberos";
+	{
+		/*
+		 * setup 'Primary:Kerberos' element
+		 */
+		/* Primary:Kerberos */
+		struct package_PrimaryKerberosBlob pkb;
+		DATA_BLOB pkb_blob;
+		char *pkb_hexstr;
 
-	ret = setup_primary_kerberos(io, old_scb, &pkb);
-	if (ret != LDB_SUCCESS) {
-		return ret;
+		names[num_names++] = "Kerberos";
+
+		ret = setup_primary_kerberos(io, old_scb, &pkb);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+
+		ndr_err = ndr_push_struct_blob(
+			&pkb_blob, io->ac,
+			&pkb,
+			(ndr_push_flags_fn_t)ndr_push_package_PrimaryKerberosBlob);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
+			ldb_asprintf_errstring(
+				ldb,
+				"setup_supplemental_field: "
+				"failed to push package_PrimaryKerberosBlob: %s",
+				nt_errstr(status));
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		pkb_hexstr = data_blob_hex_string_upper(io->ac, &pkb_blob);
+		if (!pkb_hexstr) {
+			return ldb_oom(ldb);
+		}
+		pp->name	= "Primary:Kerberos";
+		pp->reserved	= 1;
+		pp->data	= pkb_hexstr;
+		pp++;
+		num_packages++;
 	}
 
-	ndr_err = ndr_push_struct_blob(&pkb_blob, io->ac, 
-				       &pkb,
-				       (ndr_push_flags_fn_t)ndr_push_package_PrimaryKerberosBlob);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
-		ldb_asprintf_errstring(ldb,
-				       "setup_supplemental_field: "
-				       "failed to push package_PrimaryKerberosBlob: %s",
-				       nt_errstr(status));
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	pkb_hexstr = data_blob_hex_string_upper(io->ac, &pkb_blob);
-	if (!pkb_hexstr) {
-		return ldb_oom(ldb);
-	}
-	pk->name	= "Primary:Kerberos";
-	pk->reserved	= 1;
-	pk->data	= pkb_hexstr;
+	{
+		/*
+		 * setup 'Primary:WDigest' element
+		 */
+		struct package_PrimaryWDigestBlob pdb;
+		DATA_BLOB pdb_blob;
+		char *pdb_hexstr;
 
-	/*
-	 * setup 'Primary:WDigest' element
-	 */
-	*nd = "WDigest";
+		names[num_names++] = "WDigest";
 
-	ret = setup_primary_wdigest(io, old_scb, &pdb);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
+		ret = setup_primary_wdigest(io, old_scb, &pdb);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
 
-	ndr_err = ndr_push_struct_blob(&pdb_blob, io->ac, 
-				       &pdb,
-				       (ndr_push_flags_fn_t)ndr_push_package_PrimaryWDigestBlob);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
-		ldb_asprintf_errstring(ldb,
-				       "setup_supplemental_field: "
-				       "failed to push package_PrimaryWDigestBlob: %s",
-				       nt_errstr(status));
-		return LDB_ERR_OPERATIONS_ERROR;
+		ndr_err = ndr_push_struct_blob(
+			&pdb_blob, io->ac,
+			&pdb,
+			(ndr_push_flags_fn_t)ndr_push_package_PrimaryWDigestBlob);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
+			ldb_asprintf_errstring(
+				ldb,
+				"setup_supplemental_field: "
+				"failed to push package_PrimaryWDigestBlob: %s",
+				nt_errstr(status));
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		pdb_hexstr = data_blob_hex_string_upper(io->ac, &pdb_blob);
+		if (!pdb_hexstr) {
+			return ldb_oom(ldb);
+		}
+		pp->name	= "Primary:WDigest";
+		pp->reserved	= 1;
+		pp->data	= pdb_hexstr;
+		pp++;
+		num_packages++;
 	}
-	pdb_hexstr = data_blob_hex_string_upper(io->ac, &pdb_blob);
-	if (!pdb_hexstr) {
-		return ldb_oom(ldb);
-	}
-	pd->name	= "Primary:WDigest";
-	pd->reserved	= 1;
-	pd->data	= pdb_hexstr;
 
 	/*
 	 * setup 'Primary:CLEARTEXT' element
 	 */
-	if (pc) {
-		*nc		= "CLEARTEXT";
+	if (io->ac->status->domain_data.store_cleartext &&
+	    (io->u.userAccountControl & UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED)) {
+		do_cleartext = true;
+	}
+	if (do_cleartext) {
+		struct package_PrimaryCLEARTEXTBlob pcb;
+		DATA_BLOB pcb_blob;
+		char *pcb_hexstr;
+
+		names[num_names++] = "CLEARTEXT";
 
 		pcb.cleartext	= *io->n.cleartext_utf16;
 
-		ndr_err = ndr_push_struct_blob(&pcb_blob, io->ac, 
-					       &pcb,
-					       (ndr_push_flags_fn_t)ndr_push_package_PrimaryCLEARTEXTBlob);
+		ndr_err = ndr_push_struct_blob(
+			&pcb_blob, io->ac,
+			&pcb,
+			(ndr_push_flags_fn_t)ndr_push_package_PrimaryCLEARTEXTBlob);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
-			ldb_asprintf_errstring(ldb,
-					       "setup_supplemental_field: "
-					       "failed to push package_PrimaryCLEARTEXTBlob: %s",
-					       nt_errstr(status));
+			ldb_asprintf_errstring(
+				ldb,
+				"setup_supplemental_field: "
+				"failed to push package_PrimaryCLEARTEXTBlob: %s",
+				nt_errstr(status));
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		pcb_hexstr = data_blob_hex_string_upper(io->ac, &pcb_blob);
 		if (!pcb_hexstr) {
 			return ldb_oom(ldb);
 		}
-		pc->name	= "Primary:CLEARTEXT";
-		pc->reserved	= 1;
-		pc->data	= pcb_hexstr;
+		pp->name	= "Primary:CLEARTEXT";
+		pp->reserved	= 1;
+		pp->data	= pcb_hexstr;
+		pp++;
+		num_packages++;
 	}
 
 	/*
 	 * setup 'Primary:SambaGPG' element
 	 */
-	if (pg) {
-		*ng		= "SambaGPG";
+	if (io->ac->gpg_key_ids != NULL) {
+		do_samba_gpg = true;
+	}
+	if (do_samba_gpg) {
+		struct package_PrimarySambaGPGBlob pgb;
+		DATA_BLOB pgb_blob;
+		char *pgb_hexstr;
+
+		names[num_names++] = "SambaGPG";
 
 		ret = setup_primary_samba_gpg(io, &pgb);
 		if (ret != LDB_SUCCESS) {
@@ -1843,52 +1813,82 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 		if (!pgb_hexstr) {
 			return ldb_oom(ldb);
 		}
-		pg->name	= "Primary:SambaGPG";
-		pg->reserved	= 1;
-		pg->data	= pgb_hexstr;
+		pp->name	= "Primary:SambaGPG";
+		pp->reserved	= 1;
+		pp->data	= pgb_hexstr;
+		pp++;
+		num_packages++;
 	}
 
 	/*
 	 * setup 'Packages' element
 	 */
-	pb.names = names;
-	ndr_err = ndr_push_struct_blob(&pb_blob, io->ac, 
-				       &pb,
-				       (ndr_push_flags_fn_t)ndr_push_package_PackagesBlob);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
-		ldb_asprintf_errstring(ldb,
-				       "setup_supplemental_field: "
-				       "failed to push package_PackagesBlob: %s",
-				       nt_errstr(status));
-		return LDB_ERR_OPERATIONS_ERROR;
+	{
+		struct package_PackagesBlob pb;
+		DATA_BLOB pb_blob;
+		char *pb_hexstr;
+
+		pb.names = names;
+		ndr_err = ndr_push_struct_blob(
+			&pb_blob, io->ac,
+			&pb,
+			(ndr_push_flags_fn_t)ndr_push_package_PackagesBlob);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
+			ldb_asprintf_errstring(
+				ldb,
+				"setup_supplemental_field: "
+				"failed to push package_PackagesBlob: %s",
+				nt_errstr(status));
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		pb_hexstr = data_blob_hex_string_upper(io->ac, &pb_blob);
+		if (!pb_hexstr) {
+			return ldb_oom(ldb);
+		}
+		pp->name	= "Packages";
+		pp->reserved	= 2;
+		pp->data	= pb_hexstr;
+		num_packages++;
+		/*
+		 * We don't increment pp so it's pointing to the last package
+		 */
 	}
-	pb_hexstr = data_blob_hex_string_upper(io->ac, &pb_blob);
-	if (!pb_hexstr) {
-		return ldb_oom(ldb);
-	}
-	pp->name	= "Packages";
-	pp->reserved	= 2;
-	pp->data	= pb_hexstr;
 
 	/*
 	 * setup 'supplementalCredentials' value
 	 */
-	ZERO_STRUCT(scb);
-	scb.sub.signature	= SUPPLEMENTAL_CREDENTIALS_SIGNATURE;
-	scb.sub.num_packages	= num_packages;
-	scb.sub.packages	= packages;
+	{
+		/*
+		 * The 'Packages' element needs to be the second last element
+		 * in supplementalCredentials
+		 */
+		struct supplementalCredentialsPackage temp;
+		struct supplementalCredentialsPackage *prev;
 
-	ndr_err = ndr_push_struct_blob(&io->g.supplemental, io->ac, 
-				       &scb,
-				       (ndr_push_flags_fn_t)ndr_push_supplementalCredentialsBlob);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
-		ldb_asprintf_errstring(ldb,
-				       "setup_supplemental_field: "
-				       "failed to push supplementalCredentialsBlob: %s",
-				       nt_errstr(status));
-		return LDB_ERR_OPERATIONS_ERROR;
+		prev = pp-1;
+		temp = *prev;
+		*prev = *pp;
+		*pp = temp;
+
+		ZERO_STRUCT(scb);
+		scb.sub.signature	= SUPPLEMENTAL_CREDENTIALS_SIGNATURE;
+		scb.sub.num_packages	= num_packages;
+		scb.sub.packages	= packages;
+
+		ndr_err = ndr_push_struct_blob(
+			&io->g.supplemental, io->ac,
+			&scb,
+			(ndr_push_flags_fn_t)ndr_push_supplementalCredentialsBlob);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
+			ldb_asprintf_errstring(
+				ldb,
+				"setup_supplemental_field: "
+				"failed to push supplementalCredentialsBlob: %s",
+				nt_errstr(status));
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
 	}
 
 	return LDB_SUCCESS;
