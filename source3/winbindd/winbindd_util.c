@@ -1041,12 +1041,19 @@ struct winbindd_domain *find_builtin_domain(void)
 
 struct winbindd_domain *find_lookup_domain_from_sid(const struct dom_sid *sid)
 {
-	/* SIDs in the S-1-22-{1,2} domain should be handled by our passdb */
+	DBG_DEBUG("SID [%s]\n", sid_string_dbg(sid));
+
+	/*
+	 * SIDs in the S-1-22-{1,2} domain and well-known SIDs should be handled
+	 * by our passdb.
+	 */
 
 	if ( sid_check_is_in_unix_groups(sid) ||
 	     sid_check_is_unix_groups(sid) ||
 	     sid_check_is_in_unix_users(sid) ||
-	     sid_check_is_unix_users(sid) )
+	     sid_check_is_unix_users(sid) ||
+	     sid_check_is_wellknown_domain(sid, NULL) ||
+	     sid_check_is_in_wellknown_domain(sid) )
 	{
 		return find_domain_from_sid(get_global_sam_sid());
 	}
@@ -1054,8 +1061,6 @@ struct winbindd_domain *find_lookup_domain_from_sid(const struct dom_sid *sid)
 	/* A DC can't ask the local smbd for remote SIDs, here winbindd is the
 	 * one to contact the external DC's. On member servers the internal
 	 * domains are different: These are part of the local SAM. */
-
-	DEBUG(10, ("find_lookup_domain_from_sid(%s)\n", sid_string_dbg(sid)));
 
 	if (IS_DC || is_internal_domain(sid) || is_in_internal_domain(sid)) {
 		DEBUG(10, ("calling find_domain_from_sid\n"));
