@@ -71,6 +71,7 @@ int dsdb_schema_set_indices_and_attributes(struct ldb_context *ldb,
 
 	/* setup our own attribute name to schema handler */
 	ldb_schema_attribute_set_override_handler(ldb, dsdb_attribute_handler_override, schema);
+	ldb_schema_set_override_indexlist(ldb, true);
 
 	if (!write_indices_and_attributes) {
 		return ret;

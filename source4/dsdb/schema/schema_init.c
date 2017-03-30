@@ -514,6 +514,10 @@ static int dsdb_schema_setup_ldb_schema_attribute(struct ldb_context *ldb,
 		a->flags |= LDB_ATTR_FLAG_SINGLE_VALUE;
 	}
 	
+	if (attr->searchFlags & SEARCH_FLAG_ATTINDEX) {
+		a->flags |= LDB_ATTR_FLAG_INDEXED;
+	}
+
 	
 	return LDB_SUCCESS;
 }
