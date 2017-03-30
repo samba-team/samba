@@ -1121,6 +1121,7 @@ static int ltdb_start_trans(struct ldb_module *module)
 
 static int ltdb_prepare_commit(struct ldb_module *module)
 {
+	int ret;
 	void *data = ldb_module_get_private(module);
 	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
 
@@ -1128,15 +1129,21 @@ static int ltdb_prepare_commit(struct ldb_module *module)
 		return LDB_SUCCESS;
 	}
 
-	if (ltdb_index_transaction_commit(module) != 0) {
+	ret = ltdb_index_transaction_commit(module);
+	if (ret != LDB_SUCCESS) {
 		tdb_transaction_cancel(ltdb->tdb);
 		ltdb->in_transaction--;
-		return ltdb_err_map(tdb_error(ltdb->tdb));
+		return ret;
 	}
 
 	if (tdb_transaction_prepare_commit(ltdb->tdb) != 0) {
+		ret = ltdb_err_map(tdb_error(ltdb->tdb));
 		ltdb->in_transaction--;
-		return ltdb_err_map(tdb_error(ltdb->tdb));
+		ldb_asprintf_errstring(ldb_module_get_ctx(module),
+				       "Failure during tdb_transaction_prepare_commit(): %s -> %s",
+				       tdb_errorstr(ltdb->tdb),
+				       ldb_strerror(ret));
+		return ret;
 	}
 
 	ltdb->prepared_commit = true;
