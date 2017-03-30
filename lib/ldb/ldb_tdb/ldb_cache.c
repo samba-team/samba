@@ -226,6 +226,49 @@ failed:
 	return -1;
 }
 
+/*
+  register any index records we find for the DB
+*/
+static int ltdb_index_load(struct ldb_module *module,
+			   struct ltdb_private *ltdb)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	struct ldb_dn *indexlist_dn;
+	int r;
+
+	talloc_free(ltdb->cache->indexlist);
+
+	ltdb->cache->indexlist = ldb_msg_new(ltdb->cache);
+	if (ltdb->cache->indexlist == NULL) {
+		return -1;
+	}
+	ltdb->cache->one_level_indexes = false;
+	ltdb->cache->attribute_indexes = false;
+
+	indexlist_dn = ldb_dn_new(ltdb, ldb, LTDB_INDEXLIST);
+	if (indexlist_dn == NULL) {
+		return -1;
+	}
+
+	r = ltdb_search_dn1(module, indexlist_dn, ltdb->cache->indexlist,
+			    LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC
+			    |LDB_UNPACK_DATA_FLAG_NO_VALUES_ALLOC
+			    |LDB_UNPACK_DATA_FLAG_NO_DN);
+	TALLOC_FREE(indexlist_dn);
+
+	if (r != LDB_SUCCESS && r != LDB_ERR_NO_SUCH_OBJECT) {
+		return -1;
+	}
+
+	if (ldb_msg_find_element(ltdb->cache->indexlist, LTDB_IDXONE) != NULL) {
+		ltdb->cache->one_level_indexes = true;
+	}
+	if (ldb_msg_find_element(ltdb->cache->indexlist, LTDB_IDXATTR) != NULL) {
+		ltdb->cache->attribute_indexes = true;
+	}
+
+	return 0;
+}
 
 /*
   initialise the baseinfo record
@@ -316,7 +359,6 @@ int ltdb_cache_load(struct ldb_module *module)
 	void *data = ldb_module_get_private(module);
 	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
 	struct ldb_dn *baseinfo_dn = NULL, *options_dn = NULL;
-	struct ldb_dn *indexlist_dn = NULL;
 	uint64_t seq;
 	struct ldb_message *baseinfo = NULL, *options = NULL;
 	int r;
@@ -332,10 +374,6 @@ int ltdb_cache_load(struct ldb_module *module)
 	if (ltdb->cache == NULL) {
 		ltdb->cache = talloc_zero(ltdb, struct ltdb_cache);
 		if (ltdb->cache == NULL) goto failed;
-		ltdb->cache->indexlist = ldb_msg_new(ltdb->cache);
-		if (ltdb->cache->indexlist == NULL) {
-			goto failed;
-		}
 	}
 
 	baseinfo = ldb_msg_new(ltdb->cache);
@@ -403,7 +441,6 @@ int ltdb_cache_load(struct ldb_module *module)
 		ltdb->disallow_dn_filter = false;
 	}
 
-	talloc_free(ltdb->cache->indexlist);
 	/*
 	 * ltdb_attributes_unload() calls internally talloc_free() on
 	 * any non-fixed elemnts in ldb->schema.attributes.
@@ -413,29 +450,9 @@ int ltdb_cache_load(struct ldb_module *module)
 	 * partition module.
 	 */
 	ltdb_attributes_unload(module);
-	ltdb->cache->indexlist = ldb_msg_new(ltdb->cache);
-	if (ltdb->cache->indexlist == NULL) {
-		goto failed;
-	}
-	ltdb->cache->one_level_indexes = false;
-	ltdb->cache->attribute_indexes = false;
-	    
-	indexlist_dn = ldb_dn_new(module, ldb, LTDB_INDEXLIST);
-	if (indexlist_dn == NULL) goto failed;
 
-	r = ltdb_search_dn1(module, indexlist_dn, ltdb->cache->indexlist,
-			    LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC
-			    |LDB_UNPACK_DATA_FLAG_NO_VALUES_ALLOC
-			    |LDB_UNPACK_DATA_FLAG_NO_DN);
-	if (r != LDB_SUCCESS && r != LDB_ERR_NO_SUCH_OBJECT) {
+	if (ltdb_index_load(module, ltdb) == -1) {
 		goto failed;
-	}
-
-	if (ldb_msg_find_element(ltdb->cache->indexlist, LTDB_IDXONE) != NULL) {
-		ltdb->cache->one_level_indexes = true;
-	}
-	if (ldb_msg_find_element(ltdb->cache->indexlist, LTDB_IDXATTR) != NULL) {
-		ltdb->cache->attribute_indexes = true;
 	}
 
 	/*
@@ -450,13 +467,11 @@ int ltdb_cache_load(struct ldb_module *module)
 done:
 	talloc_free(options);
 	talloc_free(baseinfo);
-	talloc_free(indexlist_dn);
 	return 0;
 
 failed:
 	talloc_free(options);
 	talloc_free(baseinfo);
-	talloc_free(indexlist_dn);
 	return -1;
 }
 
