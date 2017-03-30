@@ -257,12 +257,14 @@ int tdb_allrecord_upgrade(struct tdb_context *tdb)
 		TDB_LOG((tdb, TDB_DEBUG_ERROR,
 			 "tdb_allrecord_upgrade failed: count %u too high\n",
 			 tdb->allrecord_lock.count));
+		tdb->ecode = TDB_ERR_LOCK;
 		return -1;
 	}
 
 	if (tdb->allrecord_lock.off != 1) {
 		TDB_LOG((tdb, TDB_DEBUG_ERROR,
 			 "tdb_allrecord_upgrade failed: already upgraded?\n"));
+		tdb->ecode = TDB_ERR_LOCK;
 		return -1;
 	}
 
