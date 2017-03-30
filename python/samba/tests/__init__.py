@@ -106,7 +106,8 @@ class TestCase(unittest.TestCase):
         c.set_domain(template.get_domain())
         c.set_realm(template.get_realm())
         c.set_workstation(template.get_workstation())
-        c.set_gensec_features(c.get_gensec_features())
+        c.set_gensec_features(c.get_gensec_features()
+                              | gensec.FEATURE_SEAL)
         c.set_kerberos_state(kerberos_state)
         return c
 
