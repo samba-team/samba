@@ -22,14 +22,12 @@
 ^samba3.raw.samba3hide.samba3hide\((nt4_dc|ad_dc)\) # This test fails against an smbd environment with NT ACLs enabled
 ^samba3.raw.samba3closeerr.samba3closeerr\(nt4_dc\) # This test fails against an smbd environment with NT ACLs enabled
 ^samba3.raw.acls nfs4acl_xattr-simple.INHERITFLAGS\(nt4_dc\) # This (and the follow nfs4acl_xattr tests fail because our NFSv4 backend isn't a complete mapping yet.
-^samba3.raw.acls nfs4acl_xattr-simple.sd\(nt4_dc\)
 ^samba3.raw.acls nfs4acl_xattr-simple.create_file\(nt4_dc\)
 ^samba3.raw.acls nfs4acl_xattr-simple.create_dir\(nt4_dc\)
 ^samba3.raw.acls nfs4acl_xattr-simple.nulldacl\(nt4_dc\)
 ^samba3.raw.acls nfs4acl_xattr-simple.generic\(nt4_dc\)
 ^samba3.raw.acls nfs4acl_xattr-simple.inheritance\(nt4_dc\)
 ^samba3.raw.acls nfs4acl_xattr-special.INHERITFLAGS\(nt4_dc\)
-^samba3.raw.acls nfs4acl_xattr-special.sd\(nt4_dc\)
 ^samba3.raw.acls nfs4acl_xattr-special.create_file\(nt4_dc\)
 ^samba3.raw.acls nfs4acl_xattr-special.create_dir\(nt4_dc\)
 ^samba3.raw.acls nfs4acl_xattr-special.nulldacl\(nt4_dc\)
