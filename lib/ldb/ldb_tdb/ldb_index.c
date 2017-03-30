@@ -452,6 +452,10 @@ static bool ltdb_is_indexed(struct ldb_module *module,
 	unsigned int i;
 	struct ldb_message_element *el;
 
+	if (!ltdb->cache->attribute_indexes) {
+		return false;
+	}
+
 	el = ldb_msg_find_element(ltdb->cache->indexlist, LTDB_IDXATTR);
 	if (el == NULL) {
 		return false;
@@ -1222,7 +1226,7 @@ static int ltdb_index_add_all(struct ldb_module *module, const char *dn,
 		return LDB_SUCCESS;
 	}
 
-	if (ltdb->cache->indexlist->num_elements == 0) {
+	if (!ltdb->cache->attribute_indexes) {
 		/* no indexed fields */
 		return LDB_SUCCESS;
 	}
@@ -1640,7 +1644,7 @@ int ltdb_reindex(struct ldb_module *module)
 	}
 
 	/* if we don't have indexes we have nothing todo */
-	if (ltdb->cache->indexlist->num_elements == 0) {
+	if (!ltdb->cache->attribute_indexes) {
 		return LDB_SUCCESS;
 	}
 
