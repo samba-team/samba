@@ -449,8 +449,24 @@ static bool ltdb_is_indexed(struct ldb_module *module,
 			    struct ltdb_private *ltdb,
 			    const char *attr)
 {
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	unsigned int i;
 	struct ldb_message_element *el;
+
+	if (ldb->schema.index_handler_override) {
+		const struct ldb_schema_attribute *a
+			= ldb_schema_attribute_by_name(ldb, attr);
+
+		if (a == NULL) {
+			return false;
+		}
+
+		if (a->flags & LDB_ATTR_FLAG_INDEXED) {
+			return true;
+		} else {
+			return false;
+		}
+	}
 
 	if (!ltdb->cache->attribute_indexes) {
 		return false;

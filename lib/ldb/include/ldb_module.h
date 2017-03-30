@@ -125,6 +125,8 @@ typedef const struct ldb_schema_attribute *(*ldb_attribute_handler_override_fn_t
 void ldb_schema_attribute_set_override_handler(struct ldb_context *ldb,
 					       ldb_attribute_handler_override_fn_t override,
 					       void *private_data);
+void ldb_schema_set_override_indexlist(struct ldb_context *ldb,
+				       bool one_level_indexes);
 
 /* A useful function to build comparison functions with */
 int ldb_any_comparison(struct ldb_context *ldb, void *mem_ctx, 

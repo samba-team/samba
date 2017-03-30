@@ -225,6 +225,7 @@ ldb_schema_attribute_fill_with_syntax: int (struct ldb_context *, TALLOC_CTX *, 
 ldb_schema_attribute_remove: void (struct ldb_context *, const char *)
 ldb_schema_attribute_remove_flagged: void (struct ldb_context *, unsigned int)
 ldb_schema_attribute_set_override_handler: void (struct ldb_context *, ldb_attribute_handler_override_fn_t, void *)
+ldb_schema_set_override_indexlist: void (struct ldb_context *, bool)
 ldb_search: int (struct ldb_context *, TALLOC_CTX *, struct ldb_result **, struct ldb_dn *, enum ldb_scope, const char * const *, const char *, ...)
 ldb_search_default_callback: int (struct ldb_request *, struct ldb_reply *)
 ldb_sequence_number: int (struct ldb_context *, enum ldb_sequence_type, uint64_t *)

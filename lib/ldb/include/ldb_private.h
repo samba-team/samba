@@ -88,6 +88,13 @@ struct ldb_schema {
 
 	unsigned num_dn_extended_syntax;
 	struct ldb_dn_extended_syntax *dn_extended_syntax;
+
+	/*
+	 * If set, the attribute_handler_override has the details of
+	 * what attributes have an index
+	 */
+	bool index_handler_override;
+	bool one_level_indexes;
 };
 
 /*
