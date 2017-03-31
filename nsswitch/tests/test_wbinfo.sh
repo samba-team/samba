@@ -82,9 +82,7 @@ else
 	echo "success: wbinfo -s check for sane mapping"
 fi
 
-WELL_KNOWN_SIDS="S-1-1-0\n /EVERYONE 5\n S-1-3-1\n /CREATOR GROUP 5\n S-1-5-1\n NT AUTHORITY/DIALUP 5"
-
-printf "$WELL_KNOWN_SIDS" | while read SID ; do
+while read SID ; do
     read NAME
 
     testit "wbinfo -s $SID against $TARGET" $wbinfo -s $SID || failed=`expr $failed + 1`
@@ -100,7 +98,14 @@ printf "$WELL_KNOWN_SIDS" | while read SID ; do
     else
         echo "success: wbinfo -s $SID against $TARGET"
     fi
-done
+done <<EOF
+S-1-1-0
+/EVERYONE 5
+S-1-3-1
+/CREATOR GROUP 5
+S-1-5-1
+NT AUTHORITY/DIALUP 5
+EOF
 
 testit "wbinfo -n on the returned name against $TARGET" $wbinfo -n $admin_name || failed=`expr $failed + 1`
 test_sid=`$wbinfo -n $tested_name | cut -d " " -f1`
