@@ -604,6 +604,21 @@ if have_jansson_support:
                                     'SOCKET_WRAPPER_DEFAULT_IFACE': 11})
     planoldpythontestsuite("ad_dc_ntvfs:local", "samba.tests.auth_log_ncalrpc", extra_args=['-U"$USERNAME%$PASSWORD"'])
     planoldpythontestsuite("ad_dc:local", "samba.tests.auth_log_ncalrpc", extra_args=['-U"$USERNAME%$PASSWORD"'])
+# Need to test the password hashing in multiple environments to ensure that
+# all the possible options are covered
+#
+# ad_dc:local functional_level >= 2008, gpg keys available
+planoldpythontestsuite("ad_dc:local",
+                       "samba.tests.password_hash_gpgme",
+                       extra_args=['-U"$USERNAME%$PASSWORD"'])
+# ad_dc_ntvfs:local functional level >= 2008, gpg keys not available
+planoldpythontestsuite("ad_dc_ntvfs:local",
+                       "samba.tests.password_hash_fl2008",
+                       extra_args=['-U"$USERNAME%$PASSWORD"'])
+# fl2003dc:local functional level < 2008, gpg keys not available
+planoldpythontestsuite("fl2003dc:local",
+                       "samba.tests.password_hash_fl2003",
+                       extra_args=['-U"$USERNAME%$PASSWORD"'])
 planoldpythontestsuite("ad_dc", "samba.tests.dcerpc.dnsserver", extra_args=['-U"$USERNAME%$PASSWORD"'])
 planoldpythontestsuite("ad_dc", "samba.tests.dcerpc.raw_protocol", extra_args=['-U"$USERNAME%$PASSWORD"'])
 plantestsuite_loadlist("samba4.ldap.python(ad_dc_ntvfs)", "ad_dc_ntvfs", [python, os.path.join(samba4srcdir, "dsdb/tests/python/ldap.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
