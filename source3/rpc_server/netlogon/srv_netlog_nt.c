@@ -33,6 +33,7 @@
 #include "../librpc/gen_ndr/ndr_lsa_c.h"
 #include "rpc_client/cli_lsarpc.h"
 #include "rpc_client/init_lsa.h"
+#include "rpc_client/init_samr.h"
 #include "rpc_server/rpc_ncacn_np.h"
 #include "../libcli/security/security.h"
 #include "../libcli/security/dom_sid.h"
@@ -1138,14 +1139,27 @@ static NTSTATUS netr_creds_server_step_check(struct pipes_struct *p,
 	return status;
 }
 
+
 /*************************************************************************
  *************************************************************************/
+
+struct _samr_Credentials_t {
+	enum {
+		CRED_TYPE_NT_HASH,
+		CRED_TYPE_PLAIN_TEXT,
+	} cred_type;
+	union {
+		struct samr_Password *nt_hash;
+		const char *password;
+	} creds;
+};
+
 
 static NTSTATUS netr_set_machine_account_password(TALLOC_CTX *mem_ctx,
 						  struct auth_session_info *session_info,
 						  struct messaging_context *msg_ctx,
 						  const char *account_name,
-						  struct samr_Password *nt_hash)
+						  struct _samr_Credentials_t *cr)
 {
 	NTSTATUS status;
 	NTSTATUS result = NT_STATUS_OK;
@@ -1155,9 +1169,11 @@ static NTSTATUS netr_set_machine_account_password(TALLOC_CTX *mem_ctx,
 	uint32_t acct_ctrl;
 	union samr_UserInfo *info;
 	struct samr_UserInfo18 info18;
+	struct samr_UserInfo26 info26;
 	DATA_BLOB in,out;
 	int rc;
 	DATA_BLOB session_key;
+	enum samr_UserInfoLevel infolevel;
 
 	ZERO_STRUCT(user_handle);
 
@@ -1229,22 +1245,44 @@ static NTSTATUS netr_set_machine_account_password(TALLOC_CTX *mem_ctx,
 		goto out;
 	}
 
-	ZERO_STRUCT(info18);
+	switch(cr->cred_type) {
+		case CRED_TYPE_NT_HASH:
+			ZERO_STRUCT(info18);
 
-	in = data_blob_const(nt_hash->hash, 16);
-	out = data_blob_talloc_zero(mem_ctx, 16);
-	sess_crypt_blob(&out, &in, &session_key, true);
-	memcpy(info18.nt_pwd.hash, out.data, out.length);
+			infolevel = UserInternal1Information;
 
-	info18.nt_pwd_active = true;
+			in = data_blob_const(cr->creds.nt_hash, 16);
+			out = data_blob_talloc_zero(mem_ctx, 16);
+			sess_crypt_blob(&out, &in, &session_key, true);
+			memcpy(info18.nt_pwd.hash, out.data, out.length);
 
-	info->info18 = info18;
+			info18.nt_pwd_active = true;
+
+			info->info18 = info18;
+		break;
+		case CRED_TYPE_PLAIN_TEXT:
+			ZERO_STRUCT(info26);
+
+			infolevel = UserInternal5InformationNew;
+
+			init_samr_CryptPasswordEx(cr->creds.password,
+						  &session_key,
+						  &info26.password);
+
+			info26.password_expired = PASS_DONT_CHANGE_AT_NEXT_LOGON;
+			info->info26 = info26;
+		break;
+		default:
+			status = NT_STATUS_INTERNAL_ERROR;
+			goto out;
+		break;
+	}
 
 	become_root();
 	status = dcerpc_samr_SetUserInfo2(h,
 					  mem_ctx,
 					  &user_handle,
-					  UserInternal1Information,
+					  infolevel,
 					  info,
 					  &result);
 	unbecome_root();
@@ -1274,6 +1312,7 @@ NTSTATUS _netr_ServerPasswordSet(struct pipes_struct *p,
 	NTSTATUS status = NT_STATUS_OK;
 	int i;
 	struct netlogon_creds_CredentialState *creds = NULL;
+	struct _samr_Credentials_t cr = { CRED_TYPE_NT_HASH, {0}};
 
 	DEBUG(5,("_netr_ServerPasswordSet: %d\n", __LINE__));
 
@@ -1308,11 +1347,12 @@ NTSTATUS _netr_ServerPasswordSet(struct pipes_struct *p,
 		DEBUG(100,("%02X ", r->in.new_password->hash[i]));
 	DEBUG(100,("\n"));
 
+	cr.creds.nt_hash = r->in.new_password;
 	status = netr_set_machine_account_password(p->mem_ctx,
 						   p->session_info,
 						   p->msg_ctx,
 						   creds->account_name,
-						   r->in.new_password);
+						   &cr);
 	return status;
 }
 
@@ -1327,7 +1367,7 @@ NTSTATUS _netr_ServerPasswordSet2(struct pipes_struct *p,
 	struct netlogon_creds_CredentialState *creds = NULL;
 	DATA_BLOB plaintext;
 	struct samr_CryptPassword password_buf;
-	struct samr_Password nt_hash;
+	struct _samr_Credentials_t cr = { CRED_TYPE_PLAIN_TEXT, {0}};
 
 	become_root();
 	status = netr_creds_server_step_check(p, p->mem_ctx,
@@ -1350,6 +1390,10 @@ NTSTATUS _netr_ServerPasswordSet2(struct pipes_struct *p,
 		return status;
 	}
 
+	DEBUG(3,("_netr_ServerPasswordSet2: Server Password Seti2 by remote "
+		 "machine:[%s] on account [%s]\n",
+		 r->in.computer_name, creds->computer_name));
+
 	memcpy(password_buf.data, r->in.new_password->data, 512);
 	SIVAL(password_buf.data, 512, r->in.new_password->length);
 
@@ -1359,18 +1403,23 @@ NTSTATUS _netr_ServerPasswordSet2(struct pipes_struct *p,
 		netlogon_creds_arcfour_crypt(creds, password_buf.data, 516);
 	}
 
-	if (!extract_pw_from_buffer(p->mem_ctx, password_buf.data, &plaintext)) {
+	if (!decode_pw_buffer(p->mem_ctx,
+			      password_buf.data,
+			      (char**) &plaintext.data,
+			      &plaintext.length,
+			      CH_UTF16)) {
+		DEBUG(2,("_netr_ServerPasswordSet2: unable to extract password "
+			 "from a buffer. Rejecting auth request as a wrong password\n"));
 		TALLOC_FREE(creds);
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 
-	mdfour(nt_hash.hash, plaintext.data, plaintext.length);
-
+	cr.creds.password = (const char*) plaintext.data;
 	status = netr_set_machine_account_password(p->mem_ctx,
 						   p->session_info,
 						   p->msg_ctx,
 						   creds->account_name,
-						   &nt_hash);
+						   &cr);
 	TALLOC_FREE(creds);
 	return status;
 }
