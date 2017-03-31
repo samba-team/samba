@@ -115,15 +115,29 @@ static void sig_hup(int sig)
 static void sig_term(int sig)
 {
 #if HAVE_GETPGRP
-	static int done_sigterm;
-	if (done_sigterm == 0 && getpgrp() == getpid()) {
+	if (getpgrp() == getpid()) {
+		/*
+		 * We're the process group leader, send
+		 * SIGTERM to our process group.
+		 */
 		DEBUG(0,("SIGTERM: killing children\n"));
-		done_sigterm = 1;
 		kill(-getpgrp(), SIGTERM);
 	}
 #endif
 	DEBUG(0,("Exiting pid %d on SIGTERM\n", (int)getpid()));
 	exit(127);
+}
+
+static void sigterm_signal_handler(struct tevent_context *ev,
+				struct tevent_signal *se,
+				int signum, int count, void *siginfo,
+				void *private_data)
+{
+	struct server_state *state = talloc_get_type_abort(
+                private_data, struct server_state);
+
+	DEBUG(10,("Process %s got SIGTERM\n", state->binary_name));
+	sig_term(SIGTERM);
 }
 
 /*
@@ -358,6 +372,7 @@ static int binary_smbd_main(const char *binary_name,
 		{ NULL }
 	};
 	struct server_state *state = NULL;
+	struct tevent_signal *se = NULL;
 
 	pc = poptGetContext(binary_name, argc, argv, long_options, 0);
 	while((opt = poptGetNextOpt(pc)) != -1) {
@@ -521,6 +536,16 @@ static int binary_smbd_main(const char *binary_name,
 		if (te == NULL) {
 			exit_daemon("Maxruntime handler failed", ENOMEM);
 		}
+	}
+
+	se = tevent_add_signal(state->event_ctx,
+				state->event_ctx,
+				SIGTERM,
+				0,
+				sigterm_signal_handler,
+				state);
+	if (se == NULL) {
+		exit_daemon("Initialize SIGTERM handler failed", ENOMEM);
 	}
 
 	if (lpcfg_server_role(cmdline_lp_ctx) != ROLE_ACTIVE_DIRECTORY_DC
