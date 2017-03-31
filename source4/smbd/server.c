@@ -165,11 +165,12 @@ static void server_stdin_handler(struct tevent_context *event_ctx,
 				uint16_t flags,
 				void *private_data)
 {
-	const char *binary_name = (const char *)private_data;
+	struct server_state *state = talloc_get_type_abort(
+		private_data, struct server_state);
 	uint8_t c;
 	if (read(0, &c, 1) == 0) {
 		DEBUG(0,("%s: EOF on stdin - PID %d terminating\n",
-				binary_name, (int)getpid()));
+				state->binary_name, (int)getpid()));
 #if HAVE_GETPGRP
 		if (getpgrp() == getpid()) {
 			DEBUG(0,("Sending SIGTERM from pid %d\n",
@@ -497,7 +498,7 @@ static int binary_smbd_main(const char *binary_name,
 				0,
 				stdin_event_flags,
 				server_stdin_handler,
-				discard_const(binary_name));
+				state);
 	}
 
 	if (max_runtime) {
