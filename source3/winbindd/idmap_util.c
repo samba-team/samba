@@ -52,10 +52,7 @@ struct id_map *idmap_find_map_by_id(struct id_map **maps, enum id_type type,
 {
 	int i;
 
-	for (i = 0; i < IDMAP_LDAP_MAX_IDS; i++) {
-		if (maps[i] == NULL) { /* end of the run */
-			return NULL;
-		}
+	for (i = 0; maps[i] != NULL; i++) {
 		if ((maps[i]->xid.type == type) && (maps[i]->xid.id == id)) {
 			return maps[i];
 		}
