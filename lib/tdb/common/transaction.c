@@ -476,6 +476,10 @@ static int _tdb_transaction_start(struct tdb_context *tdb,
 		SAFE_FREE(tdb->transaction);
 		if ((lockflags & TDB_LOCK_WAIT) == 0) {
 			tdb->ecode = TDB_ERR_NOLOCK;
+		} else {
+			TDB_LOG((tdb, TDB_DEBUG_ERROR,
+				 "tdb_transaction_start: "
+				 "failed to get transaction lock\n"));
 		}
 		return -1;
 	}
