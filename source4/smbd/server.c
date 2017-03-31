@@ -189,10 +189,11 @@ _NORETURN_ static void max_runtime_handler(struct tevent_context *ev,
 					   struct tevent_timer *te,
 					   struct timeval t, void *private_data)
 {
-	const char *binary_name = (const char *)private_data;
+	struct server_state *state = talloc_get_type_abort(
+		private_data, struct server_state);
 	DEBUG(0,("%s: maximum runtime exceeded - "
 		"terminating PID %d at %llu, current ts: %llu\n",
-		 binary_name,
+		 state->binary_name,
 		(int)getpid(),
 		(unsigned long long)t.tv_sec,
 		(unsigned long long)time(NULL)));
@@ -509,7 +510,7 @@ static int binary_smbd_main(const char *binary_name,
 		tevent_add_timer(state->event_ctx, state->event_ctx,
 				 timeval_current_ofs(max_runtime, 0),
 				 max_runtime_handler,
-				 discard_const(binary_name));
+				 state);
 	}
 
 	if (lpcfg_server_role(cmdline_lp_ctx) != ROLE_ACTIVE_DIRECTORY_DC
