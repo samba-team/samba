@@ -244,7 +244,7 @@ out:
 
 
 /*
-  a read style traverse - temporarily marks the db read only
+  a read style traverse - temporarily marks each record read only
 */
 _PUBLIC_ int tdb_traverse_read(struct tdb_context *tdb,
 		      tdb_traverse_func fn, void *private_data)
@@ -252,18 +252,10 @@ _PUBLIC_ int tdb_traverse_read(struct tdb_context *tdb,
 	struct tdb_traverse_lock tl = { NULL, 0, 0, F_RDLCK };
 	int ret;
 
-	/* we need to get a read lock on the transaction lock here to
-	   cope with the lock ordering semantics of solaris10 */
-	if (tdb_transaction_lock(tdb, F_RDLCK, TDB_LOCK_WAIT)) {
-		return -1;
-	}
-
 	tdb->traverse_read++;
 	tdb_trace(tdb, "tdb_traverse_read_start");
 	ret = tdb_traverse_internal(tdb, fn, private_data, &tl);
 	tdb->traverse_read--;
-
-	tdb_transaction_unlock(tdb, F_RDLCK);
 
 	return ret;
 }

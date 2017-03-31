@@ -41,7 +41,30 @@ static int traverse2(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
 	return 0;
 }
 
-static int traverse1(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
+static int traverse1r(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
+		     void *p)
+{
+	ok1(correct_key(key));
+	ok1(correct_data(data));
+	ok1(external_agent_operation(agent, TRANSACTION_START, tdb_name(tdb))
+	    == SUCCESS);
+	ok1(external_agent_operation(agent, STORE, tdb_name(tdb))
+	    == SUCCESS);
+	ok1(external_agent_operation(agent, TRANSACTION_COMMIT, tdb_name(tdb))
+	    == WOULD_HAVE_BLOCKED);
+	tdb_traverse(tdb, traverse2, NULL);
+
+	/* That should *not* release the all-records lock! */
+	ok1(external_agent_operation(agent, TRANSACTION_START, tdb_name(tdb))
+	    == SUCCESS);
+	ok1(external_agent_operation(agent, STORE, tdb_name(tdb))
+	    == SUCCESS);
+	ok1(external_agent_operation(agent, TRANSACTION_COMMIT, tdb_name(tdb))
+	    == WOULD_HAVE_BLOCKED);
+	return 0;
+}
+
+static int traverse1w(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
 		     void *p)
 {
 	ok1(correct_key(key));
@@ -50,7 +73,7 @@ static int traverse1(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
 	    == WOULD_HAVE_BLOCKED);
 	tdb_traverse(tdb, traverse2, NULL);
 
-	/* That should *not* release the transaction lock! */
+	/* That should *not* release the all-records lock! */
 	ok1(external_agent_operation(agent, TRANSACTION_START, tdb_name(tdb))
 	    == WOULD_HAVE_BLOCKED);
 	return 0;
@@ -80,8 +103,8 @@ int main(int argc, char *argv[])
 	data.dsize = strlen("world");
 
 	ok1(tdb_store(tdb, key, data, TDB_INSERT) == 0);
-	tdb_traverse(tdb, traverse1, NULL);
-	tdb_traverse_read(tdb, traverse1, NULL);
+	tdb_traverse(tdb, traverse1w, NULL);
+	tdb_traverse_read(tdb, traverse1r, NULL);
 	tdb_close(tdb);
 
 	return exit_status();
