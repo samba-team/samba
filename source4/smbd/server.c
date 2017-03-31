@@ -44,6 +44,11 @@
 #include "nsswitch/winbind_client.h"
 #include "libds/common/roles.h"
 
+struct server_state {
+	struct tevent_context *event_ctx;
+	const char *binary_name;
+};
+
 /*
   recursively delete a directory tree
 */
@@ -319,7 +324,6 @@ static int binary_smbd_main(const char *binary_name,
 	STATIC_service_MODULES_PROTO;
 	init_module_fn static_init[] = { STATIC_service_MODULES };
 	init_module_fn *shared_init;
-	struct tevent_context *event_ctx;
 	uint16_t stdin_event_flags;
 	NTSTATUS status;
 	const char *model = "standard";
@@ -348,6 +352,7 @@ static int binary_smbd_main(const char *binary_name,
 		POPT_COMMON_VERSION
 		{ NULL }
 	};
+	struct server_state *state = NULL;
 
 	pc = poptGetContext(binary_name, argc, argv, long_options, 0);
 	while((opt = poptGetNextOpt(pc)) != -1) {
@@ -418,6 +423,13 @@ static int binary_smbd_main(const char *binary_name,
 		become_daemon(true, false, false);
 	}
 
+	/* Create the memory context to hang everything off. */
+	state = talloc_zero(NULL, struct server_state);
+	if (state == NULL) {
+		exit_daemon("Samba cannot create server state", ENOMEM);
+	};
+	state->binary_name = binary_name;
+
 	cleanup_tmp_files(cmdline_lp_ctx);
 
 	if (!directory_exist(lpcfg_lock_directory(cmdline_lp_ctx))) {
@@ -453,13 +465,13 @@ static int binary_smbd_main(const char *binary_name,
 
 	/* the event context is the top level structure in smbd. Everything else
 	   should hang off that */
-	event_ctx = s4_event_context_init(talloc_autofree_context());
+	state->event_ctx = s4_event_context_init(talloc_autofree_context());
 
-	if (event_ctx == NULL) {
+	if (state->event_ctx == NULL) {
 		exit_daemon("Initializing event context failed", EACCES);
 	}
 
-	talloc_set_destructor(event_ctx, event_ctx_destructor);
+	talloc_set_destructor(state->event_ctx, event_ctx_destructor);
 
 	if (opt_interactive) {
 		/* terminate when stdin goes away */
@@ -480,8 +492,8 @@ static int binary_smbd_main(const char *binary_name,
 	}
 
 	if (S_ISFIFO(st.st_mode) || S_ISSOCK(st.st_mode)) {
-		tevent_add_fd(event_ctx,
-				event_ctx,
+		tevent_add_fd(state->event_ctx,
+				state->event_ctx,
 				0,
 				stdin_event_flags,
 				server_stdin_handler,
@@ -493,7 +505,7 @@ static int binary_smbd_main(const char *binary_name,
 			"current ts %llu\n",
 			binary_name, (int)getpid(),
 			max_runtime, (unsigned long long) time(NULL)));
-		tevent_add_timer(event_ctx, event_ctx,
+		tevent_add_timer(state->event_ctx, state->event_ctx,
 				 timeval_current_ofs(max_runtime, 0),
 				 max_runtime_handler,
 				 discard_const(binary_name));
@@ -519,9 +531,9 @@ static int binary_smbd_main(const char *binary_name,
 			"and exited. Check logs for details", EINVAL);
 	};
 
-	prime_ldb_databases(event_ctx);
+	prime_ldb_databases(state->event_ctx);
 
-	status = setup_parent_messaging(event_ctx, cmdline_lp_ctx);
+	status = setup_parent_messaging(state->event_ctx, cmdline_lp_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		exit_daemon("Samba failed to setup parent messaging",
 			NT_STATUS_V(status));
@@ -529,7 +541,7 @@ static int binary_smbd_main(const char *binary_name,
 
 	DEBUG(0,("%s: using '%s' process model\n", binary_name, model));
 
-	status = server_service_startup(event_ctx, cmdline_lp_ctx, model,
+	status = server_service_startup(state->event_ctx, cmdline_lp_ctx, model,
 					lpcfg_server_services(cmdline_lp_ctx));
 	if (!NT_STATUS_IS_OK(status)) {
 		exit_daemon("Samba failed to start services",
@@ -542,11 +554,11 @@ static int binary_smbd_main(const char *binary_name,
 
 	/* wait for events - this is where smbd sits for most of its
 	   life */
-	tevent_loop_wait(event_ctx);
+	tevent_loop_wait(state->event_ctx);
 
-	/* as everything hangs off this event context, freeing it
-	   should initiate a clean shutdown of all services */
-	talloc_free(event_ctx);
+	/* as everything hangs off this state->event context, freeing state
+	   will initiate a clean shutdown of all services */
+	TALLOC_FREE(state);
 
 	return 0;
 }
