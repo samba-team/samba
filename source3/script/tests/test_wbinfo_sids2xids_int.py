@@ -29,7 +29,7 @@ domsid = domsid.split(' ')[0]
 #print domain
 #print domsid
 
-sids=[ domsid + '-512', 'S-1-5-32-545', domsid + '-513' ]
+sids=[ domsid + '-512', 'S-1-5-32-545', domsid + '-513', 'S-1-1-0', 'S-1-3-1', 'S-1-5-1' ]
 
 flush_cache()
 
