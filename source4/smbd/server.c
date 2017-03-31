@@ -497,23 +497,30 @@ static int binary_smbd_main(const char *binary_name,
 	}
 
 	if (S_ISFIFO(st.st_mode) || S_ISSOCK(st.st_mode)) {
-		tevent_add_fd(state->event_ctx,
+		struct tevent_fd *fde = tevent_add_fd(state->event_ctx,
 				state->event_ctx,
 				0,
 				stdin_event_flags,
 				server_stdin_handler,
 				state);
+		if (fde == NULL) {
+			exit_daemon("Initializing stdin failed", ENOMEM);
+		}
 	}
 
 	if (max_runtime) {
+		struct tevent_timer *te;
 		DEBUG(0,("%s PID %d was called with maxruntime %d - "
 			"current ts %llu\n",
 			binary_name, (int)getpid(),
 			max_runtime, (unsigned long long) time(NULL)));
-		tevent_add_timer(state->event_ctx, state->event_ctx,
+		te = tevent_add_timer(state->event_ctx, state->event_ctx,
 				 timeval_current_ofs(max_runtime, 0),
 				 max_runtime_handler,
 				 state);
+		if (te == NULL) {
+			exit_daemon("Maxruntime handler failed", ENOMEM);
+		}
 	}
 
 	if (lpcfg_server_role(cmdline_lp_ctx) != ROLE_ACTIVE_DIRECTORY_DC
