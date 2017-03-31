@@ -227,15 +227,17 @@ static void prime_ldb_databases(struct tevent_context *event_ctx)
 static NTSTATUS samba_terminate(struct irpc_message *msg,
 				struct samba_terminate *r)
 {
-	DEBUG(0,("samba_terminate of %d: %s\n",
-		 (int)getpid(), r->in.reason));
+	struct server_state *state = talloc_get_type(msg->private_data,
+					struct server_state);
+	DBG_ERR("samba_terminate of %s %d: %s\n",
+		state->binary_name, (int)getpid(), r->in.reason);
 	exit(1);
 }
 
 /*
   setup messaging for the top level samba (parent) task
  */
-static NTSTATUS setup_parent_messaging(struct tevent_context *event_ctx,
+static NTSTATUS setup_parent_messaging(struct server_state *state,
 				       struct loadparm_context *lp_ctx)
 {
 	struct imessaging_context *msg;
@@ -243,7 +245,8 @@ static NTSTATUS setup_parent_messaging(struct tevent_context *event_ctx,
 
 	msg = imessaging_init(talloc_autofree_context(),
 			      lp_ctx,
-			      cluster_id(0, SAMBA_PARENT_TASKID), event_ctx);
+			      cluster_id(0, SAMBA_PARENT_TASKID),
+			      state->event_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(msg);
 
 	status = irpc_add_name(msg, "samba");
@@ -252,7 +255,7 @@ static NTSTATUS setup_parent_messaging(struct tevent_context *event_ctx,
 	}
 
 	status = IRPC_REGISTER(msg, irpc, SAMBA_TERMINATE,
-			       samba_terminate, NULL);
+			       samba_terminate, state);
 
 	return status;
 }
@@ -535,7 +538,7 @@ static int binary_smbd_main(const char *binary_name,
 
 	prime_ldb_databases(state->event_ctx);
 
-	status = setup_parent_messaging(state->event_ctx, cmdline_lp_ctx);
+	status = setup_parent_messaging(state, cmdline_lp_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		exit_daemon("Samba failed to setup parent messaging",
 			NT_STATUS_V(status));
