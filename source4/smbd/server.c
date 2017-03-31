@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    Main SMB server routines
@@ -7,17 +7,17 @@
    Copyright (C) Martin Pool			2002
    Copyright (C) Jelmer Vernooij		2002
    Copyright (C) James J Myers 			2003 <myersjj@samba.org>
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -75,7 +75,7 @@ static void recursive_delete(const char *path)
 			continue;
 		}
 		if (unlink(fname) != 0) {
-			DEBUG(0,("Unabled to delete '%s' - %s\n", 
+			DEBUG(0,("Unabled to delete '%s' - %s\n",
 				 fname, strerror(errno)));
 			smb_panic("unable to cleanup tmp files");
 		}
@@ -89,7 +89,7 @@ static void recursive_delete(const char *path)
   TDB_CLEAR_IF_FIRST. Unfortunately TDB_CLEAR_IF_FIRST is not
   efficient on unix systems due to the lack of scaling of the byte
   range locking system. So instead of putting the burden on tdb to
-  cleanup tmp files, this function deletes them. 
+  cleanup tmp files, this function deletes them.
 */
 static void cleanup_tmp_files(struct loadparm_context *lp_ctx)
 {
@@ -143,7 +143,8 @@ static void setup_signals(void)
 #endif
 
 	/* POSIX demands that signals are inherited. If the invoking process has
-	 * these signals masked, we will have problems, as we won't receive them. */
+	 * these signals masked, we will have problems,
+	 * as we won't receive them. */
 	BlockSignals(false, SIGHUP);
 	BlockSignals(false, SIGTERM);
 
@@ -154,16 +155,20 @@ static void setup_signals(void)
 /*
   handle io on stdin
 */
-static void server_stdin_handler(struct tevent_context *event_ctx, struct tevent_fd *fde, 
-				 uint16_t flags, void *private_data)
+static void server_stdin_handler(struct tevent_context *event_ctx,
+				struct tevent_fd *fde,
+				uint16_t flags,
+				void *private_data)
 {
 	const char *binary_name = (const char *)private_data;
 	uint8_t c;
 	if (read(0, &c, 1) == 0) {
-		DEBUG(0,("%s: EOF on stdin - PID %d terminating\n", binary_name, (int)getpid()));
+		DEBUG(0,("%s: EOF on stdin - PID %d terminating\n",
+				binary_name, (int)getpid()));
 #if HAVE_GETPGRP
 		if (getpgrp() == getpid()) {
-			DEBUG(0,("Sending SIGTERM from pid %d\n", (int)getpid()));
+			DEBUG(0,("Sending SIGTERM from pid %d\n",
+				(int)getpid()));
 			kill(-getpgrp(), SIGTERM);
 		}
 #endif
@@ -174,13 +179,17 @@ static void server_stdin_handler(struct tevent_context *event_ctx, struct tevent
 /*
   die if the user selected maximum runtime is exceeded
 */
-_NORETURN_ static void max_runtime_handler(struct tevent_context *ev, 
-					   struct tevent_timer *te, 
+_NORETURN_ static void max_runtime_handler(struct tevent_context *ev,
+					   struct tevent_timer *te,
 					   struct timeval t, void *private_data)
 {
 	const char *binary_name = (const char *)private_data;
-	DEBUG(0,("%s: maximum runtime exceeded - terminating PID %d at %llu, current ts: %llu\n",
-		 binary_name, (int)getpid(), (unsigned long long)t.tv_sec, (unsigned long long) time(NULL)));
+	DEBUG(0,("%s: maximum runtime exceeded - "
+		"terminating PID %d at %llu, current ts: %llu\n",
+		 binary_name,
+		(int)getpid(),
+		(unsigned long long)t.tv_sec,
+		(unsigned long long)time(NULL)));
 	exit(0);
 }
 
@@ -193,7 +202,11 @@ static void prime_ldb_databases(struct tevent_context *event_ctx)
 	TALLOC_CTX *db_context;
 	db_context = talloc_new(event_ctx);
 
-	samdb_connect(db_context, event_ctx, cmdline_lp_ctx, system_session(cmdline_lp_ctx), 0);
+	samdb_connect(db_context,
+			event_ctx,
+			cmdline_lp_ctx,
+			system_session(cmdline_lp_ctx),
+			0);
 	privilege_connect(db_context, cmdline_lp_ctx);
 
 	/* we deliberately leave these open, which allows them to be
@@ -204,7 +217,7 @@ static void prime_ldb_databases(struct tevent_context *event_ctx)
 /*
   called when a fatal condition occurs in a child task
  */
-static NTSTATUS samba_terminate(struct irpc_message *msg, 
+static NTSTATUS samba_terminate(struct irpc_message *msg,
 				struct samba_terminate *r)
 {
 	DEBUG(0,("samba_terminate of %d: %s\n",
@@ -215,7 +228,7 @@ static NTSTATUS samba_terminate(struct irpc_message *msg,
 /*
   setup messaging for the top level samba (parent) task
  */
-static NTSTATUS setup_parent_messaging(struct tevent_context *event_ctx, 
+static NTSTATUS setup_parent_messaging(struct tevent_context *event_ctx,
 				       struct loadparm_context *lp_ctx)
 {
 	struct imessaging_context *msg;
@@ -277,7 +290,9 @@ static void show_build(void)
 
 	printf("Paths:\n");
 	for (i=0; config_options[i].name; i++) {
-		printf("   %s: %s\n", config_options[i].name, config_options[i].value);
+		printf("   %s: %s\n",
+			config_options[i].name,
+			config_options[i].value);
 	}
 
 	exit(0);
@@ -292,7 +307,9 @@ static int event_ctx_destructor(struct tevent_context *event_ctx)
 /*
  main server.
 */
-static int binary_smbd_main(const char *binary_name, int argc, const char *argv[])
+static int binary_smbd_main(const char *binary_name,
+				int argc,
+				const char *argv[])
 {
 	bool opt_daemon = false;
 	bool opt_interactive = false;
@@ -320,11 +337,13 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 		 "Become a daemon (default)", NULL },
 		{"interactive",	'i', POPT_ARG_NONE, NULL, OPT_INTERACTIVE,
 		 "Run interactive (not a daemon)", NULL},
-		{"model", 'M', POPT_ARG_STRING,	NULL, OPT_PROCESS_MODEL, 
+		{"model", 'M', POPT_ARG_STRING,	NULL, OPT_PROCESS_MODEL,
 		 "Select process model", "MODEL"},
-		{"maximum-runtime",0, POPT_ARG_INT, &max_runtime, 0, 
-		 "set maximum runtime of the server process, till autotermination", "seconds"},
-		{"show-build", 'b', POPT_ARG_NONE, NULL, OPT_SHOW_BUILD, "show build info", NULL },
+		{"maximum-runtime",0, POPT_ARG_INT, &max_runtime, 0,
+		 "set maximum runtime of the server process, "
+			"till autotermination", "seconds"},
+		{"show-build", 'b', POPT_ARG_NONE, NULL, OPT_SHOW_BUILD,
+			"show build info", NULL },
 		POPT_COMMON_SAMBA
 		POPT_COMMON_VERSION
 		{ NULL }
@@ -355,7 +374,8 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 
 	if (opt_daemon && opt_interactive) {
 		fprintf(stderr,"\nERROR: "
-			  "Option -i|--interactive is not allowed together with -D|--daemon\n\n");
+			"Option -i|--interactive is "
+			"not allowed together with -D|--daemon\n\n");
 		poptPrintUsage(pc, stderr, 0);
 		return 1;
 	} else if (!opt_interactive) {
@@ -374,13 +394,22 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 	   so set our umask to 0 */
 	umask(0);
 
-	DEBUG(0,("%s version %s started.\n", binary_name, SAMBA_VERSION_STRING));
-	DEBUGADD(0,("Copyright Andrew Tridgell and the Samba Team 1992-2017\n"));
+	DEBUG(0,("%s version %s started.\n",
+		binary_name,
+		SAMBA_VERSION_STRING));
+	DEBUGADD(0,("Copyright Andrew Tridgell and the Samba Team"
+		" 1992-2017\n"));
 
-	if (sizeof(uint16_t) < 2 || sizeof(uint32_t) < 4 || sizeof(uint64_t) < 8) {
-		DEBUG(0,("ERROR: Samba is not configured correctly for the word size on your machine\n"));
-		DEBUGADD(0,("sizeof(uint16_t) = %u, sizeof(uint32_t) %u, sizeof(uint64_t) = %u\n",
-			    (unsigned int)sizeof(uint16_t), (unsigned int)sizeof(uint32_t), (unsigned int)sizeof(uint64_t)));
+	if (sizeof(uint16_t) < 2 ||
+			sizeof(uint32_t) < 4 ||
+			sizeof(uint64_t) < 8) {
+		DEBUG(0,("ERROR: Samba is not configured correctly "
+			"for the word size on your machine\n"));
+		DEBUGADD(0,("sizeof(uint16_t) = %u, sizeof(uint32_t) %u, "
+			"sizeof(uint64_t) = %u\n",
+			(unsigned int)sizeof(uint16_t),
+			(unsigned int)sizeof(uint32_t),
+			(unsigned int)sizeof(uint64_t)));
 		return 1;
 	}
 
@@ -398,19 +427,22 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 	pidfile_create(lpcfg_pid_directory(cmdline_lp_ctx), binary_name);
 
 	if (lpcfg_server_role(cmdline_lp_ctx) == ROLE_ACTIVE_DIRECTORY_DC) {
-		if (!open_schannel_session_store(talloc_autofree_context(), cmdline_lp_ctx)) {
-			exit_daemon("Samba cannot open schannel store for secured NETLOGON operations.", EACCES);
+		if (!open_schannel_session_store(talloc_autofree_context(),
+				cmdline_lp_ctx)) {
+			exit_daemon("Samba cannot open schannel store "
+				"for secured NETLOGON operations.", EACCES);
 		}
 	}
 
 	/* make sure we won't go through nss_winbind */
 	if (!winbind_off()) {
-		exit_daemon("Samba failed to disable recusive winbindd calls.", EACCES);
+		exit_daemon("Samba failed to disable recusive "
+			"winbindd calls.", EACCES);
 	}
 
 	gensec_init(); /* FIXME: */
 
-	process_model_init(cmdline_lp_ctx); 
+	process_model_init(cmdline_lp_ctx);
 
 	shared_init = load_samba_modules(NULL, "service");
 
@@ -418,7 +450,7 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 	run_init_functions(shared_init);
 
 	talloc_free(shared_init);
-	
+
 	/* the event context is the top level structure in smbd. Everything else
 	   should hang off that */
 	event_ctx = s4_event_context_init(talloc_autofree_context());
@@ -443,7 +475,8 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 #endif
 
 	if (fstat(0, &st) != 0) {
-		exit_daemon("Samba failed to set standard input handler", ENOTTY);
+		exit_daemon("Samba failed to set standard input handler",
+				ENOTTY);
 	}
 
 	if (S_ISFIFO(st.st_mode) || S_ISSOCK(st.st_mode)) {
@@ -456,9 +489,10 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 	}
 
 	if (max_runtime) {
-		DEBUG(0,("%s PID %d was called with maxruntime %d - current ts %llu\n",
-			 binary_name, (int)getpid(),
-			 max_runtime, (unsigned long long) time(NULL)));
+		DEBUG(0,("%s PID %d was called with maxruntime %d - "
+			"current ts %llu\n",
+			binary_name, (int)getpid(),
+			max_runtime, (unsigned long long) time(NULL)));
 		tevent_add_timer(event_ctx, event_ctx,
 				 timeval_current_ofs(max_runtime, 0),
 				 max_runtime_handler,
@@ -466,29 +500,40 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 	}
 
 	if (lpcfg_server_role(cmdline_lp_ctx) != ROLE_ACTIVE_DIRECTORY_DC
-	    && !lpcfg_parm_bool(cmdline_lp_ctx, NULL, "server role check", "inhibit", false)
-	    && !str_list_check_ci(lpcfg_server_services(cmdline_lp_ctx), "smb") 
-	    && !str_list_check_ci(lpcfg_dcerpc_endpoint_servers(cmdline_lp_ctx), "remote")
-	    && !str_list_check_ci(lpcfg_dcerpc_endpoint_servers(cmdline_lp_ctx), "mapiproxy")) {
-		DEBUG(0, ("At this time the 'samba' binary should only be used for either:\n"));
-		DEBUGADD(0, ("'server role = active directory domain controller' or to access the ntvfs file server with 'server services = +smb' or the rpc proxy with 'dcerpc endpoint servers = remote'\n"));
-		DEBUGADD(0, ("You should start smbd/nmbd/winbindd instead for domain member and standalone file server tasks\n"));
-		exit_daemon("Samba detected misconfigured 'server role' and exited. Check logs for details", EINVAL);
+	    && !lpcfg_parm_bool(cmdline_lp_ctx, NULL,
+			"server role check", "inhibit", false)
+	    && !str_list_check_ci(lpcfg_server_services(cmdline_lp_ctx), "smb")
+	    && !str_list_check_ci(lpcfg_dcerpc_endpoint_servers(cmdline_lp_ctx),
+			"remote")
+	    && !str_list_check_ci(lpcfg_dcerpc_endpoint_servers(cmdline_lp_ctx),
+			"mapiproxy")) {
+		DEBUG(0, ("At this time the 'samba' binary should only be used "
+			"for either:\n"));
+		DEBUGADD(0, ("'server role = active directory domain "
+			"controller' or to access the ntvfs file server "
+			"with 'server services = +smb' or the rpc proxy "
+			"with 'dcerpc endpoint servers = remote'\n"));
+		DEBUGADD(0, ("You should start smbd/nmbd/winbindd instead for "
+			"domain member and standalone file server tasks\n"));
+		exit_daemon("Samba detected misconfigured 'server role' "
+			"and exited. Check logs for details", EINVAL);
 	};
 
 	prime_ldb_databases(event_ctx);
 
 	status = setup_parent_messaging(event_ctx, cmdline_lp_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
-		exit_daemon("Samba failed to setup parent messaging", NT_STATUS_V(status));
+		exit_daemon("Samba failed to setup parent messaging",
+			NT_STATUS_V(status));
 	}
 
 	DEBUG(0,("%s: using '%s' process model\n", binary_name, model));
 
-	status = server_service_startup(event_ctx, cmdline_lp_ctx, model, 
+	status = server_service_startup(event_ctx, cmdline_lp_ctx, model,
 					lpcfg_server_services(cmdline_lp_ctx));
 	if (!NT_STATUS_IS_OK(status)) {
-		exit_daemon("Samba failed to start services", NT_STATUS_V(status));
+		exit_daemon("Samba failed to start services",
+			NT_STATUS_V(status));
 	}
 
 	if (opt_daemon) {
