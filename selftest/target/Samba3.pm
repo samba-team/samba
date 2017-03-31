@@ -1823,6 +1823,10 @@ sub provision($$$$$$$$)
 	copy = tmp
 	acl_xattr:ignore system acls = yes
 	acl_xattr:default acl style = posix
+[nosymlinks]
+	copy = tmp
+	path = $nosymlinks_shrdir
+	follow symlinks = no
 [acl_xattr_ign_sysacl_windows]
 	copy = tmp
 	acl_xattr:ignore system acls = yes
