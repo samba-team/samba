@@ -553,7 +553,7 @@ static void idmap_rfc2307_map_xid_results(struct idmap_rfc2307_context *ctx,
 		if (i == 0) {
 			entry = ldap_first_entry(ctx->ldap, result);
 		} else {
-			entry = ldap_next_entry(ctx->ldap, result);
+			entry = ldap_next_entry(ctx->ldap, entry);
 		}
 		if (!entry) {
 			DEBUG(2, ("Unable to fetch entry.\n"));
