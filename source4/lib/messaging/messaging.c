@@ -322,6 +322,7 @@ struct imessaging_context *imessaging_init(TALLOC_CTX *mem_ctx,
 					   struct server_id server_id,
 					   struct tevent_context *ev)
 {
+	NTSTATUS status;
 	struct imessaging_context *msg;
 	bool ok;
 	int ret;
@@ -393,11 +394,28 @@ struct imessaging_context *imessaging_init(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 
-	imessaging_register(msg, NULL, MSG_PING, ping_message);
-	imessaging_register(msg, NULL, MSG_REQ_POOL_USAGE, pool_message);
-	imessaging_register(msg, NULL, MSG_IRPC, irpc_handler);
-	imessaging_register(msg, NULL, MSG_REQ_RINGBUF_LOG, ringbuf_log_msg);
-	IRPC_REGISTER(msg, irpc, IRPC_UPTIME, irpc_uptime, msg);
+	status = imessaging_register(msg, NULL, MSG_PING, ping_message);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+	status = imessaging_register(msg, NULL, MSG_REQ_POOL_USAGE,
+				     pool_message);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+	status = imessaging_register(msg, NULL, MSG_IRPC, irpc_handler);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+	status = imessaging_register(msg, NULL, MSG_REQ_RINGBUF_LOG,
+				     ringbuf_log_msg);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+	status = IRPC_REGISTER(msg, irpc, IRPC_UPTIME, irpc_uptime, msg);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
 
 	DLIST_ADD(msg_ctxs, msg);
 
