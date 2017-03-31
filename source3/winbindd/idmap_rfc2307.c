@@ -521,10 +521,7 @@ static struct id_map* idmap_rfc2307_find_map(struct idmap_rfc2307_map *maps,
 
 	DEBUG(10, ("Looking for name %s, type %d\n", name, type));
 
-	for (i = 0; i < IDMAP_LDAP_MAX_IDS; i++) {
-		if (maps[i].map == NULL) { /* end of the run */
-			return NULL;
-		}
+	for (i = 0; maps[i].map != NULL; i++) {
 		DEBUG(10, ("Entry %d: name %s, type %d\n",
 			   i, maps[i].name, maps[i].type));
 		if (type == maps[i].type && strcmp(name, maps[i].name) == 0) {
