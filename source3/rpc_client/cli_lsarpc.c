@@ -28,6 +28,7 @@
 #include "rpc_client/cli_lsarpc.h"
 #include "rpc_client/init_lsa.h"
 #include "../libcli/security/security.h"
+#include "lsa.h"
 
 /** @defgroup lsa LSA - Local Security Architecture
  *  @ingroup rpc_client
@@ -221,7 +222,7 @@ static NTSTATUS dcerpc_lsa_lookup_sids_noalloc(struct dcerpc_binding_handle *h,
 			return status;
 		}
 
-		if(!NT_STATUS_IS_ERR(result)) {
+		if (!NT_STATUS_LOOKUP_ERR(result)) {
 			lsa_names.count = lsa_names2.count;
 			lsa_names.names = talloc_array(mem_ctx,
 						       struct lsa_TranslatedName,
