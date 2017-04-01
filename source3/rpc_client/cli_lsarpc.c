@@ -256,10 +256,7 @@ static NTSTATUS dcerpc_lsa_lookup_sids_noalloc(struct dcerpc_binding_handle *h,
 		return status;
 	}
 
-	if (!NT_STATUS_IS_OK(result) &&
-	    !NT_STATUS_EQUAL(result, NT_STATUS_NONE_MAPPED) &&
-	    !NT_STATUS_EQUAL(result, STATUS_SOME_UNMAPPED))
-	{
+	if (NT_STATUS_LOOKUP_ERR(result)) {
 		*presult = result;
 		return status;
 	}
