@@ -22,4 +22,8 @@ int init_lsa_ref_domain_list(TALLOC_CTX *mem_ctx,
 			     const char *dom_name,
 			     struct dom_sid *dom_sid);
 
+#define NT_STATUS_LOOKUP_ERR(status) \
+	(!NT_STATUS_IS_OK(status) && \
+	 !NT_STATUS_EQUAL(status, STATUS_SOME_UNMAPPED) && \
+	 !NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED))
 #endif
