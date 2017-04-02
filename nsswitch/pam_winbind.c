@@ -1002,7 +1002,6 @@ static bool _pam_send_password_expiry_message(struct pwb_context *ctx,
 
 static void _pam_warn_password_expiry(struct pwb_context *ctx,
 				      const struct wbcAuthUserInfo *info,
-				      const struct wbcUserPasswordPolicyInfo *policy,
 				      int warn_pwd_expire,
 				      bool *already_expired,
 				      bool *change_pwd)
@@ -1010,7 +1009,7 @@ static void _pam_warn_password_expiry(struct pwb_context *ctx,
 	time_t now = time(NULL);
 	time_t next_change = 0;
 
-	if (!info || !policy) {
+	if (info == NULL) {
 		return;
 	}
 
@@ -1034,23 +1033,6 @@ static void _pam_warn_password_expiry(struct pwb_context *ctx,
 
 	/* check if the info3 must change timestamp has been set */
 	next_change = info->pass_must_change_time;
-
-	if (_pam_send_password_expiry_message(ctx, next_change, now,
-					      warn_pwd_expire,
-					      already_expired,
-					      change_pwd)) {
-		return;
-	}
-
-	/* now check for the global password policy */
-	/* good catch from Ralf Haferkamp: an expiry of "never" is translated
-	 * to -1 */
-	if ((policy->expire == (int64_t)-1) ||
-	    (policy->expire == 0)) {
-		return;
-	}
-
-	next_change = info->pass_last_set_time + policy->expire;
 
 	if (_pam_send_password_expiry_message(ctx, next_change, now,
 					      warn_pwd_expire,
@@ -1694,23 +1676,17 @@ static int winbind_auth_request(struct pwb_context *ctx,
 				const int warn_pwd_expire,
 				struct wbcAuthErrorInfo **p_error,
 				struct wbcLogonUserInfo **p_info,
-				struct wbcUserPasswordPolicyInfo **p_policy,
 				time_t *pwd_last_set,
 				char **user_ret)
 {
 	wbcErr wbc_status;
-
 	struct wbcLogonUserParams logon;
 	char membership_of[1024];
 	uid_t user_uid = -1;
-	uint32_t flags = WBFLAG_PAM_INFO3_TEXT |
-			 WBFLAG_PAM_GET_PWD_POLICY;
-
+	uint32_t flags = WBFLAG_PAM_INFO3_TEXT;
 	struct wbcLogonUserInfo *info = NULL;
 	struct wbcAuthUserInfo *user_info = NULL;
 	struct wbcAuthErrorInfo *error = NULL;
-	struct wbcUserPasswordPolicyInfo *policy = NULL;
-
 	int ret = PAM_AUTH_ERR;
 	int i;
 	const char *codes[] = {
@@ -1843,7 +1819,7 @@ static int winbind_auth_request(struct pwb_context *ctx,
 				     &logon,
 				     &info,
 				     &error,
-				     &policy);
+				     NULL);
 	ret = wbc_auth_error_to_pam_error(ctx, error, wbc_status,
 					  user, "wbcLogonUser");
 	wbcFreeMemory(logon.blobs);
@@ -1861,10 +1837,6 @@ static int winbind_auth_request(struct pwb_context *ctx,
 		*p_info = info;
 	}
 
-	if (p_policy && policy) {
-		*p_policy = policy;
-	}
-
 	if (p_error && error) {
 		/* We want to process the error in the caller. */
 		*p_error = error;
@@ -1879,13 +1851,13 @@ static int winbind_auth_request(struct pwb_context *ctx,
 		}
 	}
 
-	if ((ret == PAM_SUCCESS) && user_info && policy && info) {
+	if ((ret == PAM_SUCCESS) && user_info && info) {
 
 		bool already_expired = false;
 		bool change_pwd = false;
 
 		/* warn a user if the password is about to expire soon */
-		_pam_warn_password_expiry(ctx, user_info, policy,
+		_pam_warn_password_expiry(ctx, user_info,
 					  warn_pwd_expire,
 					  &already_expired,
 					  &change_pwd);
@@ -1893,15 +1865,15 @@ static int winbind_auth_request(struct pwb_context *ctx,
 		if (already_expired == true) {
 
 			SMB_TIME_T last_set = user_info->pass_last_set_time;
+			SMB_TIME_T must_set = user_info->pass_must_change_time;
 
 			_pam_log_debug(ctx, LOG_DEBUG,
 				       "Password has expired "
 				       "(Password was last set: %lld, "
-				       "the policy says it should expire here "
+				       "it must be changed here "
 				       "%lld (now it's: %ld))\n",
 				       (long long int)last_set,
-				       (long long int)last_set +
-				       policy->expire,
+				       (long long int)must_set,
 				       (long)time(NULL));
 
 			return PAM_AUTHTOK_EXPIRED;
@@ -1939,9 +1911,6 @@ static int winbind_auth_request(struct pwb_context *ctx,
 	}
 	if (info && !p_info) {
 		wbcFreeMemory(info);
-	}
-	if (policy && !p_policy) {
-		wbcFreeMemory(policy);
 	}
 
 	return ret;
@@ -2734,8 +2703,7 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 	/* Now use the username to look up password */
 	retval = winbind_auth_request(ctx, real_username, password,
 				      member, cctype, warn_pwd_expire,
-				      NULL, NULL, NULL,
-				      NULL, &username_ret);
+				      NULL, NULL, NULL, &username_ret);
 
 	if (retval == PAM_NEW_AUTHTOK_REQD ||
 	    retval == PAM_AUTHTOK_EXPIRED) {
@@ -3145,7 +3113,7 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 
 		ret = winbind_auth_request(ctx, user, pass_old,
 					   NULL, NULL, 0,
-					   &error, NULL, NULL,
+					   &error, NULL,
 					   &pwdlastset_prelim, NULL);
 
 		if (ret != PAM_ACCT_EXPIRED &&
@@ -3253,7 +3221,6 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 			const char *cctype = NULL;
 			int warn_pwd_expire;
 			struct wbcLogonUserInfo *info = NULL;
-			struct wbcUserPasswordPolicyInfo *policy = NULL;
 
 			member = get_member_from_config(ctx);
 			cctype = get_krb5_cc_type_from_config(ctx);
@@ -3269,7 +3236,7 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 
 			ret = winbind_auth_request(ctx, user, pass_new,
 						   member, cctype, 0,
-						   &error, &info, &policy,
+						   &error, &info,
 						   NULL, &username_ret);
 			pass_old = pass_new = NULL;
 
@@ -3283,7 +3250,7 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 
 				/* warn a user if the password is about to
 				 * expire soon */
-				_pam_warn_password_expiry(ctx, user_info, policy,
+				_pam_warn_password_expiry(ctx, user_info,
 							  warn_pwd_expire,
 							  NULL, NULL);
 
@@ -3309,7 +3276,6 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 				wbcFreeMemory(info->blobs);
 			}
 			wbcFreeMemory(info);
-			wbcFreeMemory(policy);
 
 			goto out;
 		}
