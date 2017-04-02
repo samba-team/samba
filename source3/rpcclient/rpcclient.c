@@ -53,6 +53,7 @@ struct messaging_context *rpcclient_msg_ctx;
 struct user_auth_info *rpcclient_auth_info;
 struct cli_state *rpcclient_cli_state;
 struct netlogon_creds_cli_context *rpcclient_netlogon_creds;
+static const char *rpcclient_netlogon_domain;
 
 /* List to hold groups of commands.
  *
@@ -764,7 +765,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 				cli, rpcclient_msg_ctx,
 				cmd_entry->table,
 				default_transport,
-				get_cmdline_auth_info_domain(auth_info),
+				rpcclient_netlogon_domain,
 				&cmd_entry->rpc_pipe,
 				talloc_autofree_context(),
 				&rpcclient_netlogon_creds);
@@ -787,7 +788,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 
 		if (rpcclient_netlogon_creds == NULL && cmd_entry->use_netlogon_creds) {
 			const char *dc_name = cmd_entry->rpc_pipe->desthost;
-			const char *domain = get_cmdline_auth_info_domain(auth_info);
+			const char *domain = rpcclient_netlogon_domain;
 			struct cli_credentials *creds = NULL;
 
 			ntresult = pdb_get_trust_credentials(domain, NULL,
@@ -946,7 +947,6 @@ out_free:
 	enum dcerpc_transport_t transport;
 	uint32_t bflags = 0;
 	const char *binding_string = NULL;
-	char *user, *domain, *q;
 	const char *host;
 	int signing_state = SMB_SIGNING_IPC_DEFAULT;
 
@@ -1141,16 +1141,11 @@ out_free:
 		flags |= CLI_FULL_CONNECTION_USE_NT_HASH;
 	}
 
-	user = talloc_strdup(frame, get_cmdline_auth_info_username(rpcclient_auth_info));
-	SMB_ASSERT(user != NULL);
-	domain = talloc_strdup(frame, lp_workgroup());
-	SMB_ASSERT(domain != NULL);
-	set_cmdline_auth_info_domain(rpcclient_auth_info, domain);
-
-	if ((q = strchr_m(user,'\\'))) {
-		*q = 0;
-		set_cmdline_auth_info_domain(rpcclient_auth_info, user);
-		set_cmdline_auth_info_username(rpcclient_auth_info, q+1);
+	rpcclient_netlogon_domain = get_cmdline_auth_info_domain(rpcclient_auth_info);
+	if (rpcclient_netlogon_domain == NULL ||
+	    rpcclient_netlogon_domain[0] == '\0')
+	{
+		rpcclient_netlogon_domain = lp_workgroup();
 	}
 
 	nt_status = cli_full_connection(&cli, lp_netbios_name(), host,
