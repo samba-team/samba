@@ -1564,7 +1564,16 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(TALLOC_CTX *mem_ctx,
 
 	parse_domain_user(user, name_domain, name_user);
 
-	if (strequal(name_domain, get_global_sam_name())) {
+	/*
+	 * We check against domain->name instead of
+	 * name_domain, as find_auth_domain() ->
+	 * find_domain_from_name_noinit() already decided
+	 * that we are in a child for the correct domain.
+	 *
+	 * name_domain can also be lp_realm()
+	 * we need to check against domain->name.
+	 */
+	if (strequal(domain->name, get_global_sam_name())) {
 		DATA_BLOB chal_blob = data_blob_const(chal, sizeof(chal));
 
 		/* do password magic */
@@ -2004,7 +2013,16 @@ NTSTATUS winbind_dual_SamLogon(struct winbindd_domain *domain,
 {
 	NTSTATUS result;
 
-	if (strequal(name_domain, get_global_sam_name())) {
+	/*
+	 * We check against domain->name instead of
+	 * name_domain, as find_auth_domain() ->
+	 * find_domain_from_name_noinit() already decided
+	 * that we are in a child for the correct domain.
+	 *
+	 * name_domain can also be lp_realm()
+	 * we need to check against domain->name.
+	 */
+	if (strequal(domain->name, get_global_sam_name())) {
 		DATA_BLOB chal_blob = data_blob_const(
 			chal, 8);
 
