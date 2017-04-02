@@ -284,7 +284,10 @@ static bool wb_lookupsids_bulk(const struct dom_sid *sid)
 	    sid_check_is_in_unix_users(sid) ||
 	    sid_check_is_unix_users(sid) ||
 	    sid_check_is_in_builtin(sid) ||
-	    sid_check_is_builtin(sid)) {
+	    sid_check_is_builtin(sid) ||
+	    sid_check_is_wellknown_domain(sid, NULL) ||
+	    sid_check_is_in_wellknown_domain(sid))
+	{
 		/*
 		 * These are locally done piece by piece anyway, no
 		 * need for bulk optimizations.
