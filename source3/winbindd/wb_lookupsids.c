@@ -586,38 +586,22 @@ static void wb_lookupsids_lookuprids_done(struct tevent_req *subreq)
 	NTSTATUS status, result;
 	struct wb_lookupsids_domain *d;
 	uint32_t i;
-	bool fallback = false;
 
 	status = dcerpc_wbint_LookupRids_recv(subreq, state, &result);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
-
-	d = &state->domains[state->domains_done];
-
-	if (NT_STATUS_IS_ERR(result)) {
-		fallback = true;
-	} else if (state->rid_names.num_principals != d->sids.num_sids) {
-		fallback = true;
-	}
-
-	if (fallback) {
-		for (i=0; i < d->sids.num_sids; i++) {
-			uint32_t res_sid_index = d->sid_indexes[i];
-
-			state->single_sids[state->num_single_sids] =
-				res_sid_index;
-			state->num_single_sids += 1;
-		}
-		state->domains_done += 1;
-		wb_lookupsids_next(req, state);
+	if (NT_STATUS_LOOKUP_ERR(result)) {
+		tevent_req_nterror(req, result);
 		return;
 	}
 
 	/*
 	 * Look at the individual states in the translated names.
 	 */
+
+	d = &state->domains[state->domains_done];
 
 	sid_copy(&src_domain_sid, get_global_sam_sid());
 	src_domain.name.string = get_global_sam_name();
