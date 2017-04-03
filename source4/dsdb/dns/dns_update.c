@@ -515,7 +515,7 @@ static NTSTATUS dnsupdate_dnsupdate_RODC(struct irpc_message *msg,
 
 
 	/* find dnsdomain and dnsforest */
-	dnsdomain = lpcfg_realm(s->task->lp_ctx);
+	dnsdomain = lpcfg_dnsdomain(s->task->lp_ctx);
 	dnsforest = dnsdomain;
 
 	/* find the hostname */
