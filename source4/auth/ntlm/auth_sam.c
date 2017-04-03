@@ -108,7 +108,9 @@ static NTSTATUS authsam_password_ok(struct auth4_context *auth_context,
   send a message to the drepl server telling it to initiate a
   REPL_SECRET getncchanges extended op to fetch the users secrets
  */
-static void auth_sam_trigger_repl_secret(struct auth4_context *auth_context,
+static void auth_sam_trigger_repl_secret(TALLOC_CTX *mem_ctx,
+					 struct imessaging_context *msg_ctx,
+					 struct tevent_context *event_ctx,
 					 struct ldb_dn *user_dn)
 {
 	struct dcerpc_binding_handle *irpc_handle;
@@ -116,12 +118,12 @@ static void auth_sam_trigger_repl_secret(struct auth4_context *auth_context,
 	struct tevent_req *req;
 	TALLOC_CTX *tmp_ctx;
 
-	tmp_ctx = talloc_new(auth_context);
+	tmp_ctx = talloc_new(mem_ctx);
 	if (tmp_ctx == NULL) {
 		return;
 	}
 
-	irpc_handle = irpc_binding_handle_by_name(tmp_ctx, auth_context->msg_ctx,
+	irpc_handle = irpc_binding_handle_by_name(tmp_ctx, msg_ctx,
 						  "dreplsrv",
 						  &ndr_table_irpc);
 	if (irpc_handle == NULL) {
@@ -140,7 +142,7 @@ static void auth_sam_trigger_repl_secret(struct auth4_context *auth_context,
 	 * a callback and wait for it to be triggered!
 	 */
 	req = dcerpc_drepl_trigger_repl_secret_r_send(tmp_ctx,
-						      auth_context->event_ctx,
+						      event_ctx,
 						      irpc_handle,
 						      &r);
 
@@ -215,7 +217,10 @@ static NTSTATUS authsam_password_check_and_record(struct auth4_context *auth_con
 			 * replicated, we should be able to detect this
 			 * based on msDS-NeverRevealGroup.
 			 */
-			auth_sam_trigger_repl_secret(auth_context, msg->dn);
+			auth_sam_trigger_repl_secret(auth_context,
+						     auth_context->msg_ctx,
+						     auth_context->event_ctx,
+						     msg->dn);
 			TALLOC_FREE(tmp_ctx);
 			return NT_STATUS_NOT_IMPLEMENTED;
 		}
