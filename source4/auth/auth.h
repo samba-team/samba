@@ -63,7 +63,9 @@ struct auth_operations {
 
 	NTSTATUS (*check_password)(struct auth_method_context *ctx, TALLOC_CTX *mem_ctx,
 				   const struct auth_usersupplied_info *user_info,
-				   struct auth_user_info_dc **interim_info);
+				   struct auth_user_info_dc **interim_info,
+				   bool *authoritative);
+
 
 	/* Lookup a 'session info interim' return based only on the principal or DN */
 	NTSTATUS (*get_user_info_dc_principal)(TALLOC_CTX *mem_ctx,

@@ -99,7 +99,8 @@ struct winbind_check_password_state {
 static NTSTATUS winbind_check_password(struct auth_method_context *ctx,
 				       TALLOC_CTX *mem_ctx,
 				       const struct auth_usersupplied_info *user_info, 
-				       struct auth_user_info_dc **user_info_dc)
+				       struct auth_user_info_dc **user_info_dc,
+				       bool *authoritative)
 {
 	NTSTATUS status;
 	struct dcerpc_binding_handle *irpc_handle;
@@ -207,7 +208,8 @@ static NTSTATUS winbind_check_password(struct auth_method_context *ctx,
 static NTSTATUS winbind_check_password_wbclient(struct auth_method_context *ctx,
 						TALLOC_CTX *mem_ctx,
 						const struct auth_usersupplied_info *user_info,
-						struct auth_user_info_dc **user_info_dc)
+						struct auth_user_info_dc **user_info_dc,
+						bool *authoritative)
 {
 	struct wbcAuthUserParams params;
 	struct wbcAuthUserInfo *info = NULL;

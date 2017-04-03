@@ -190,7 +190,8 @@ static NTSTATUS authsam_password_check_and_record(struct auth4_context *auth_con
 						  uint16_t acct_flags,
 						  const struct auth_usersupplied_info *user_info,
 						  DATA_BLOB *user_sess_key,
-						  DATA_BLOB *lm_sess_key)
+						  DATA_BLOB *lm_sess_key,
+						  bool *authoritative)
 {
 	NTSTATUS nt_status;
 	NTSTATUS auth_status;
@@ -495,7 +496,8 @@ static NTSTATUS authsam_authenticate(struct auth4_context *auth_context,
 				     struct ldb_dn *domain_dn,
 				     struct ldb_message *msg,
 				     const struct auth_usersupplied_info *user_info,
-				     DATA_BLOB *user_sess_key, DATA_BLOB *lm_sess_key)
+				     DATA_BLOB *user_sess_key, DATA_BLOB *lm_sess_key,
+				     bool *authoritative)
 {
 	NTSTATUS nt_status;
 	bool interactive = (user_info->password_state == AUTH_PASSWORD_HASH);
@@ -530,7 +532,8 @@ static NTSTATUS authsam_authenticate(struct auth4_context *auth_context,
 	nt_status = authsam_password_check_and_record(auth_context, tmp_ctx,
 						      domain_dn, msg, acct_flags,
 						      user_info,
-						      user_sess_key, lm_sess_key);
+						      user_sess_key, lm_sess_key,
+						      authoritative);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		TALLOC_FREE(tmp_ctx);
 		return nt_status;
@@ -572,7 +575,8 @@ static NTSTATUS authsam_authenticate(struct auth4_context *auth_context,
 static NTSTATUS authsam_check_password_internals(struct auth_method_context *ctx,
 						 TALLOC_CTX *mem_ctx,
 						 const struct auth_usersupplied_info *user_info, 
-						 struct auth_user_info_dc **user_info_dc)
+						 struct auth_user_info_dc **user_info_dc,
+						 bool *authoritative)
 {
 	NTSTATUS nt_status;
 	const char *account_name = user_info->mapped.account_name;
@@ -647,7 +651,7 @@ static NTSTATUS authsam_check_password_internals(struct auth_method_context *ctx
 	}
 
 	nt_status = authsam_authenticate(ctx->auth_ctx, tmp_ctx, ctx->auth_ctx->sam_ctx, domain_dn, msg, user_info,
-					 &user_sess_key, &lm_sess_key);
+					 &user_sess_key, &lm_sess_key, authoritative);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(tmp_ctx);
 		return nt_status;
@@ -882,7 +886,8 @@ static NTSTATUS authsam_failtrusts_want_check(struct auth_method_context *ctx,
 static NTSTATUS authsam_failtrusts_check_password(struct auth_method_context *ctx,
 						  TALLOC_CTX *mem_ctx,
 						  const struct auth_usersupplied_info *user_info,
-						  struct auth_user_info_dc **user_info_dc)
+						  struct auth_user_info_dc **user_info_dc,
+						  bool *authoritative)
 {
 	/*
 	 * This should a good error for now,

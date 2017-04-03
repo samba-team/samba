@@ -84,7 +84,8 @@ static NTSTATUS anonymous_want_check(struct auth_method_context *ctx,
 static NTSTATUS anonymous_check_password(struct auth_method_context *ctx,
 			      		 TALLOC_CTX *mem_ctx,
 					 const struct auth_usersupplied_info *user_info, 
-					 struct auth_user_info_dc **_user_info_dc)
+					 struct auth_user_info_dc **_user_info_dc,
+					 bool *authoritative)
 {
 	return auth_anonymous_user_info_dc(mem_ctx, lpcfg_netbios_name(ctx->auth_ctx->lp_ctx), _user_info_dc);
 }

@@ -371,10 +371,12 @@ static void auth_check_password_async_trigger(struct tevent_context *ev,
 		tevent_req_data(req, struct auth_check_password_state);
 	NTSTATUS status;
 	struct auth_method_context *method;
+	bool authoritative = true;
 
 	status = NT_STATUS_OK;
 
 	for (method=state->auth_ctx->methods; method; method = method->next) {
+		authoritative = true;
 
 		/* we fill in state->method here so debug messages in
 		   the callers know which method failed */
@@ -396,8 +398,10 @@ static void auth_check_password_async_trigger(struct tevent_context *ev,
 		status = method->ops->check_password(method,
 						     state,
 						     state->user_info,
-						     &state->user_info_dc);
-		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
+						     &state->user_info_dc,
+						     &authoritative);
+		if (!authoritative ||
+		    NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
 			DEBUG(11,("auth_check_password_send: "
 				  "%s passes to the next method\n",
 				  method->ops->name));
@@ -408,7 +412,8 @@ static void auth_check_password_async_trigger(struct tevent_context *ev,
 		break;
 	}
 
-	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
+	if (!authoritative ||
+	    NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
 		state->authoritative = 0;
 		status = NT_STATUS_NO_SUCH_USER;
 	}

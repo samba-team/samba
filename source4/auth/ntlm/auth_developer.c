@@ -49,7 +49,8 @@ static NTSTATUS name_to_ntstatus_want_check(struct auth_method_context *ctx,
 static NTSTATUS name_to_ntstatus_check_password(struct auth_method_context *ctx,
 			      		        TALLOC_CTX *mem_ctx,
 					        const struct auth_usersupplied_info *user_info, 
-					        struct auth_user_info_dc **_user_info_dc)
+					        struct auth_user_info_dc **_user_info_dc,
+						bool *authoritative)
 {
 	NTSTATUS nt_status;
 	struct auth_user_info_dc *user_info_dc;

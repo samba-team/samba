@@ -713,7 +713,8 @@ static NTSTATUS authunix_want_check(struct auth_method_context *ctx,
 static NTSTATUS authunix_check_password(struct auth_method_context *ctx,
 					TALLOC_CTX *mem_ctx,
 					const struct auth_usersupplied_info *user_info,
-					struct auth_user_info_dc **user_info_dc)
+					struct auth_user_info_dc **user_info_dc,
+					bool *authoritative)
 {
 	TALLOC_CTX *check_ctx;
 	NTSTATUS nt_status;
