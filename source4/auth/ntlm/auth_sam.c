@@ -174,6 +174,7 @@ static NTSTATUS authsam_password_check_and_record(struct auth4_context *auth_con
 	struct ldb_message *dom_msg;
 	struct samr_Password *lm_pwd;
 	struct samr_Password *nt_pwd;
+	bool am_rodc;
 
 	tmp_ctx = talloc_new(mem_ctx);
 	if (tmp_ctx == NULL) {
@@ -196,7 +197,6 @@ static NTSTATUS authsam_password_check_and_record(struct auth4_context *auth_con
 	}
 
 	if (lm_pwd == NULL && nt_pwd == NULL) {
-		bool am_rodc;
 		if (samdb_rodc(auth_context->sam_ctx, &am_rodc) == LDB_SUCCESS && am_rodc) {
 			/*
 			 * we don't have passwords for this
@@ -456,6 +456,10 @@ static NTSTATUS authsam_password_check_and_record(struct auth4_context *auth_con
 		DEBUG(0, ("Failed to note bad password for user [%s]: %s\n",
 			  user_info->mapped.account_name,
 			  nt_errstr(nt_status)));
+	}
+
+	if (samdb_rodc(auth_context->sam_ctx, &am_rodc) == LDB_SUCCESS && am_rodc) {
+		*authoritative = false;
 	}
 
 	TALLOC_FREE(tmp_ctx);
