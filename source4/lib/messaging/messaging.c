@@ -256,18 +256,20 @@ static int imessaging_context_destructor(struct imessaging_context *msg)
 }
 
 /*
- * Cleanup messaging dgm contexts
+ * Cleanup messaging dgm contexts on a specific event context.
  *
  * We must make sure to unref all messaging_dgm_ref's *before* the
  * tevent context goes away. Only when the last ref is freed, the
  * refcounted messaging dgm context will be freed.
  */
-void imessaging_dgm_unref_all(void)
+void imessaging_dgm_unref_ev(struct tevent_context *ev)
 {
 	struct imessaging_context *msg = NULL;
 
 	for (msg = msg_ctxs; msg != NULL; msg = msg->next) {
-		TALLOC_FREE(msg->msg_dgm_ref);
+		if (msg->ev == ev) {
+			TALLOC_FREE(msg->msg_dgm_ref);
+		}
 	}
 }
 

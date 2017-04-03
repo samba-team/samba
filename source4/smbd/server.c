@@ -324,7 +324,7 @@ static void show_build(void)
 
 static int event_ctx_destructor(struct tevent_context *event_ctx)
 {
-	imessaging_dgm_unref_all();
+	imessaging_dgm_unref_ev(event_ctx);
 	return 0;
 }
 
