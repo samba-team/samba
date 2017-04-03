@@ -35,6 +35,9 @@
 #include "kdc/sdb.h"
 #include "kdc/samba_kdc.h"
 #include "kdc/db-glue.h"
+#include "librpc/gen_ndr/ndr_irpc_c.h"
+#include "lib/messaging/irpc.h"
+
 
 #define SAMBA_KVNO_GET_KRBTGT(kvno) \
 	((uint16_t)(((uint32_t)kvno) >> 16))
@@ -65,6 +68,52 @@ static const char *trust_attrs[] = {
 	NULL
 };
 
+/*
+  send a message to the drepl server telling it to initiate a
+  REPL_SECRET getncchanges extended op to fetch the users secrets
+ */
+static void auth_sam_trigger_repl_secret(TALLOC_CTX *mem_ctx,
+                                  struct imessaging_context *msg_ctx,
+                                  struct tevent_context *event_ctx,
+                                  struct ldb_dn *user_dn)
+{
+        struct dcerpc_binding_handle *irpc_handle;
+        struct drepl_trigger_repl_secret r;
+        struct tevent_req *req;
+        TALLOC_CTX *tmp_ctx;
+
+        tmp_ctx = talloc_new(mem_ctx);
+        if (tmp_ctx == NULL) {
+                return;
+        }
+
+        irpc_handle = irpc_binding_handle_by_name(tmp_ctx, msg_ctx,
+                                                  "dreplsrv",
+                                                  &ndr_table_irpc);
+        if (irpc_handle == NULL) {
+                DEBUG(1,(__location__ ": Unable to get binding handle for dreplsrv\n"));
+                TALLOC_FREE(tmp_ctx);
+                return;
+        }
+
+        r.in.user_dn = ldb_dn_get_linearized(user_dn);
+
+        /*
+         * This seem to rely on the current IRPC implementation,
+         * which delivers the message in the _send function.
+         *
+         * TODO: we need a ONE_WAY IRPC handle and register
+         * a callback and wait for it to be triggered!
+         */
+        req = dcerpc_drepl_trigger_repl_secret_r_send(tmp_ctx,
+                                                      event_ctx,
+                                                      irpc_handle,
+                                                      &r);
+
+        /* we aren't interested in a reply */
+        talloc_free(req);
+        TALLOC_FREE(tmp_ctx);
+}
 
 static time_t ldb_msg_find_krb5time_ldap_time(struct ldb_message *msg, const char *attr, time_t default_val)
 {
@@ -504,7 +553,8 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 	if (allocated_keys == 0) {
 		if (kdc_db_ctx->rodc) {
 			/* We are on an RODC, but don't have keys for this account.  Signal this to the caller */
-			/* TODO:  We need to call a generalised version of auth_sam_trigger_repl_secret from here */
+			auth_sam_trigger_repl_secret(kdc_db_ctx, kdc_db_ctx->msg_ctx,
+						     kdc_db_ctx->ev_ctx, msg->dn);
 			return SDB_ERR_NOT_FOUND_HERE;
 		}
 

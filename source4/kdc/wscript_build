@@ -140,7 +140,7 @@ bld.SAMBA_LIBRARY('pac',
 
 bld.SAMBA_LIBRARY('db-glue',
 	source='db-glue.c',
-	deps='ldb auth4_sam common_auth samba-credentials sdb samba-hostconfig com_err',
+	deps='ldb auth4_sam common_auth samba-credentials sdb samba-hostconfig com_err RPC_NDR_IRPC MESSAGING',
 	private_library=True,
         includes=kdc_include,
 	)
