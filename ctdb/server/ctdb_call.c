@@ -818,12 +818,13 @@ ctdb_defer_pinned_down_request(struct ctdb_context *ctdb, struct ctdb_db_context
 }
 
 static void
-ctdb_update_db_stat_hot_keys(struct ctdb_db_context *ctdb_db, TDB_DATA key, int hopcount)
+ctdb_update_db_stat_hot_keys(struct ctdb_db_context *ctdb_db, TDB_DATA key,
+			     int count)
 {
 	int i, id;
 
 	/* smallest value is always at index 0 */
-	if (hopcount <= ctdb_db->statistics.hot_keys[0].count) {
+	if (count <= ctdb_db->statistics.hot_keys[0].count) {
 		return;
 	}
 
@@ -836,10 +837,10 @@ ctdb_update_db_stat_hot_keys(struct ctdb_db_context *ctdb_db, TDB_DATA key, int 
 			continue;
 		}
 		/* found an entry for this key */
-		if (hopcount <= ctdb_db->statistics.hot_keys[i].count) {
+		if (count <= ctdb_db->statistics.hot_keys[i].count) {
 			return;
 		}
-		ctdb_db->statistics.hot_keys[i].count = hopcount;
+		ctdb_db->statistics.hot_keys[i].count = count;
 		goto sort_keys;
 	}
 
@@ -855,9 +856,10 @@ ctdb_update_db_stat_hot_keys(struct ctdb_db_context *ctdb_db, TDB_DATA key, int 
 	}
 	ctdb_db->statistics.hot_keys[id].key.dsize = key.dsize;
 	ctdb_db->statistics.hot_keys[id].key.dptr  = talloc_memdup(ctdb_db, key.dptr, key.dsize);
-	ctdb_db->statistics.hot_keys[id].count = hopcount;
-	DEBUG(DEBUG_NOTICE,("Updated hot key database=%s key=0x%08x id=%d hop_count=%d\n",
-			    ctdb_db->db_name, ctdb_hash(&key), id, hopcount));
+	ctdb_db->statistics.hot_keys[id].count = count;
+	DEBUG(DEBUG_NOTICE,
+	      ("Updated hot key database=%s key=0x%08x id=%d count=%d\n",
+	       ctdb_db->db_name, ctdb_hash(&key), id, count));
 
 sort_keys:
 	for (i = 1; i < MAX_HOT_KEYS; i++) {
@@ -865,9 +867,9 @@ sort_keys:
 			continue;
 		}
 		if (ctdb_db->statistics.hot_keys[i].count < ctdb_db->statistics.hot_keys[0].count) {
-			hopcount = ctdb_db->statistics.hot_keys[i].count;
+			count = ctdb_db->statistics.hot_keys[i].count;
 			ctdb_db->statistics.hot_keys[i].count = ctdb_db->statistics.hot_keys[0].count;
-			ctdb_db->statistics.hot_keys[0].count = hopcount;
+			ctdb_db->statistics.hot_keys[0].count = count;
 
 			key = ctdb_db->statistics.hot_keys[i].key;
 			ctdb_db->statistics.hot_keys[i].key = ctdb_db->statistics.hot_keys[0].key;
