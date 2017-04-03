@@ -31,6 +31,7 @@
 #include "auth/auth_sam_reply.h"
 #include "libcli/security/security.h"
 #include "dsdb/samdb/samdb.h"
+#include "auth/auth_sam.h"
 
 _PUBLIC_ NTSTATUS auth4_winbind_init(TALLOC_CTX *);
 
@@ -107,6 +108,9 @@ static NTSTATUS winbind_check_password(struct auth_method_context *ctx,
 	struct winbind_check_password_state *s;
 	const struct auth_usersupplied_info *user_info_new;
 	struct netr_IdentityInfo *identity_info;
+	struct ldb_dn *domain_dn;
+	struct ldb_message *msg;
+
 
 	if (!ctx->auth_ctx->msg_ctx) {
 		DEBUG(0,("winbind_check_password: auth_context_create was called with out messaging context\n"));
@@ -188,6 +192,42 @@ static NTSTATUS winbind_check_password(struct auth_method_context *ctx,
 	if (NT_STATUS_EQUAL(s->req.out.result, NT_STATUS_NO_SUCH_USER) &&
 	    !s->req.out.authoritative) {
 		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
+	/*
+	 * At best, reset the badPwdCount to 0 if the account exists.
+	 * This means that lockouts happen at a badPwdCount earlier than
+	 * normal, but makes it more fault tolerant.
+	 */
+	if (NT_STATUS_IS_OK(s->req.out.result)) {
+		const char *account_name = user_info->mapped.account_name;
+		const char *p = NULL;
+		p = strchr_m(account_name, '@');
+		if (p != NULL) {
+			const char *nt4_domain = NULL;
+			const char *nt4_account = NULL;
+
+			status = crack_name_to_nt4_name(mem_ctx,
+							ctx->auth_ctx->event_ctx,
+							ctx->auth_ctx->lp_ctx,
+							DRSUAPI_DS_NAME_FORMAT_USER_PRINCIPAL,
+							account_name,
+							&nt4_domain, &nt4_account);
+			if (NT_STATUS_IS_OK(status) &&
+			    lpcfg_is_mydomain(ctx->auth_ctx->lp_ctx, nt4_domain)) {
+				account_name = nt4_account;
+			}
+		}
+
+		domain_dn = ldb_get_default_basedn(ctx->auth_ctx->sam_ctx);
+		if (domain_dn != NULL) {
+			status = authsam_search_account(mem_ctx, ctx->auth_ctx->sam_ctx, account_name, domain_dn, &msg);
+			if (NT_STATUS_IS_OK(status)) {
+			    authsam_logon_success_accounting(ctx->auth_ctx->sam_ctx, msg,
+							     domain_dn,
+							     user_info->flags & USER_INFO_INTERACTIVE_LOGON);
+			}
+		}
 	}
 
 	status = make_user_info_dc_netlogon_validation(mem_ctx,

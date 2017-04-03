@@ -837,6 +837,34 @@ static NTSTATUS authsam_update_lastlogon_timestamp(struct ldb_context *sam_ctx,
 	return NT_STATUS_OK;
 }
 
+/****************************************************************************
+ Look for the specified user in the sam, return ldb result structures
+****************************************************************************/
+
+NTSTATUS authsam_search_account(TALLOC_CTX *mem_ctx, struct ldb_context *sam_ctx,
+					 const char *account_name,
+					 struct ldb_dn *domain_dn,
+					 struct ldb_message **ret_msg)
+{
+	int ret;
+
+	/* pull the user attributes */
+	ret = dsdb_search_one(sam_ctx, mem_ctx, ret_msg, domain_dn, LDB_SCOPE_SUBTREE,
+			      user_attrs,
+			      DSDB_SEARCH_SHOW_EXTENDED_DN,
+			      "(&(sAMAccountName=%s)(objectclass=user))",
+			      ldb_binary_encode_string(mem_ctx, account_name));
+	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+		DEBUG(3,("sam_search_user: Couldn't find user [%s] in samdb, under %s\n",
+			 account_name, ldb_dn_get_linearized(domain_dn)));
+		return NT_STATUS_NO_SUCH_USER;
+	}
+	if (ret != LDB_SUCCESS) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	return NT_STATUS_OK;
+}
 
 
 /* Reset the badPwdCount to zero and update the lastLogon time. */
