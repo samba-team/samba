@@ -32,16 +32,13 @@ class DsdbTests(TestCase):
 
     def setUp(self):
         super(DsdbTests, self).setUp()
-        self.lp = samba.param.LoadParm()
-        self.lp.load(os.path.join(os.path.join(self.baseprovpath(), "etc"), "smb.conf"))
+        self.lp = samba.tests.env_loadparm()
         self.creds = Credentials()
         self.creds.guess(self.lp)
         self.session = system_session()
-        self.samdb = SamDB(os.path.join(self.baseprovpath(), "private", "sam.ldb"),
-            session_info=self.session, credentials=self.creds,lp=self.lp)
-
-    def baseprovpath(self):
-        return os.path.join(os.environ['SELFTEST_PREFIX'], "ad_dc_ntvfs")
+        self.samdb = SamDB(session_info=self.session,
+                           credentials=self.creds,
+                           lp=self.lp)
 
     def test_get_oid_from_attrid(self):
         oid = self.samdb.get_oid_from_attid(591614)
