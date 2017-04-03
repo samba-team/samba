@@ -137,6 +137,7 @@ static void sigterm_signal_handler(struct tevent_context *ev,
                 private_data, struct server_state);
 
 	DEBUG(10,("Process %s got SIGTERM\n", state->binary_name));
+	TALLOC_FREE(state);
 	sig_term(SIGTERM);
 }
 
@@ -192,6 +193,7 @@ static void server_stdin_handler(struct tevent_context *event_ctx,
 			kill(-getpgrp(), SIGTERM);
 		}
 #endif
+		TALLOC_FREE(state);
 		exit(0);
 	}
 }
@@ -211,6 +213,7 @@ _NORETURN_ static void max_runtime_handler(struct tevent_context *ev,
 		(int)getpid(),
 		(unsigned long long)t.tv_sec,
 		(unsigned long long)time(NULL)));
+	TALLOC_FREE(state);
 	exit(0);
 }
 
@@ -245,6 +248,7 @@ static NTSTATUS samba_terminate(struct irpc_message *msg,
 					struct server_state);
 	DBG_ERR("samba_terminate of %s %d: %s\n",
 		state->binary_name, (int)getpid(), r->in.reason);
+	TALLOC_FREE(state);
 	exit(1);
 }
 
@@ -257,7 +261,7 @@ static NTSTATUS setup_parent_messaging(struct server_state *state,
 	struct imessaging_context *msg;
 	NTSTATUS status;
 
-	msg = imessaging_init(talloc_autofree_context(),
+	msg = imessaging_init(state->event_ctx,
 			      lp_ctx,
 			      cluster_id(0, SAMBA_PARENT_TASKID),
 			      state->event_ctx);
@@ -485,7 +489,7 @@ static int binary_smbd_main(const char *binary_name,
 
 	/* the event context is the top level structure in smbd. Everything else
 	   should hang off that */
-	state->event_ctx = s4_event_context_init(talloc_autofree_context());
+	state->event_ctx = s4_event_context_init(state);
 
 	if (state->event_ctx == NULL) {
 		exit_daemon("Initializing event context failed", EACCES);
