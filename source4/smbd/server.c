@@ -463,8 +463,9 @@ static int binary_smbd_main(const char *binary_name,
 	pidfile_create(lpcfg_pid_directory(cmdline_lp_ctx), binary_name);
 
 	if (lpcfg_server_role(cmdline_lp_ctx) == ROLE_ACTIVE_DIRECTORY_DC) {
-		if (!open_schannel_session_store(talloc_autofree_context(),
+		if (!open_schannel_session_store(state,
 				cmdline_lp_ctx)) {
+			TALLOC_FREE(state);
 			exit_daemon("Samba cannot open schannel store "
 				"for secured NETLOGON operations.", EACCES);
 		}
@@ -472,6 +473,7 @@ static int binary_smbd_main(const char *binary_name,
 
 	/* make sure we won't go through nss_winbind */
 	if (!winbind_off()) {
+		TALLOC_FREE(state);
 		exit_daemon("Samba failed to disable recusive "
 			"winbindd calls.", EACCES);
 	}
@@ -492,6 +494,7 @@ static int binary_smbd_main(const char *binary_name,
 	state->event_ctx = s4_event_context_init(state);
 
 	if (state->event_ctx == NULL) {
+		TALLOC_FREE(state);
 		exit_daemon("Initializing event context failed", EACCES);
 	}
 
@@ -511,6 +514,7 @@ static int binary_smbd_main(const char *binary_name,
 #endif
 
 	if (fstat(0, &st) != 0) {
+		TALLOC_FREE(state);
 		exit_daemon("Samba failed to set standard input handler",
 				ENOTTY);
 	}
@@ -523,6 +527,7 @@ static int binary_smbd_main(const char *binary_name,
 				server_stdin_handler,
 				state);
 		if (fde == NULL) {
+			TALLOC_FREE(state);
 			exit_daemon("Initializing stdin failed", ENOMEM);
 		}
 	}
@@ -538,6 +543,7 @@ static int binary_smbd_main(const char *binary_name,
 				 max_runtime_handler,
 				 state);
 		if (te == NULL) {
+			TALLOC_FREE(state);
 			exit_daemon("Maxruntime handler failed", ENOMEM);
 		}
 	}
@@ -549,6 +555,7 @@ static int binary_smbd_main(const char *binary_name,
 				sigterm_signal_handler,
 				state);
 	if (se == NULL) {
+		TALLOC_FREE(state);
 		exit_daemon("Initialize SIGTERM handler failed", ENOMEM);
 	}
 
@@ -576,6 +583,7 @@ static int binary_smbd_main(const char *binary_name,
 
 	status = setup_parent_messaging(state, cmdline_lp_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(state);
 		exit_daemon("Samba failed to setup parent messaging",
 			NT_STATUS_V(status));
 	}
@@ -585,6 +593,7 @@ static int binary_smbd_main(const char *binary_name,
 	status = server_service_startup(state->event_ctx, cmdline_lp_ctx, model,
 					lpcfg_server_services(cmdline_lp_ctx));
 	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(state);
 		exit_daemon("Samba failed to start services",
 			NT_STATUS_V(status));
 	}
