@@ -384,6 +384,35 @@ struct winbindd_domain *find_auth_domain(uint8_t flags,
 	return find_our_domain();
 }
 
+static void fake_password_policy(struct winbindd_response *r,
+				 const struct netr_SamBaseInfo *bi)
+{
+	NTTIME min_password_age;
+	NTTIME max_password_age;
+
+	if (bi->allow_password_change > bi->last_password_change) {
+		min_password_age = bi->allow_password_change -
+				   bi->last_password_change;
+	} else {
+		min_password_age = 0;
+	}
+
+	if (bi->force_password_change > bi->last_password_change) {
+		max_password_age = bi->force_password_change -
+				   bi->last_password_change;
+	} else {
+		max_password_age = 0;
+	}
+
+	r->data.auth.policy.min_length_password = 0;
+	r->data.auth.policy.password_history = 0;
+	r->data.auth.policy.password_properties = 0;
+	r->data.auth.policy.expire =
+		nt_time_to_unix_abs(&max_password_age);
+	r->data.auth.policy.min_passwordage =
+		nt_time_to_unix_abs(&min_password_age);
+}
+
 static void fill_in_password_policy(struct winbindd_response *r,
 				    const struct samr_DomInfo1 *p)
 {
@@ -1930,28 +1959,14 @@ process_result:
 		}
 
 		if (state->request->flags & WBFLAG_PAM_GET_PWD_POLICY) {
-			struct winbindd_domain *our_domain = find_our_domain();
-
-			/* This is not entirely correct I believe, but it is
-			   consistent.  Only apply the password policy settings
-			   too warn users for our own domain.  Cannot obtain these
-			   from trusted DCs all the  time so don't do it at all.
-			   -- jerry */
-
-			result = NT_STATUS_NOT_SUPPORTED;
-			if (strequal(name_domain, our_domain->name)) {
-				result = fillup_password_policy(
-					our_domain, state->response);
-			}
-
-			if (!NT_STATUS_IS_OK(result)
-			    && !NT_STATUS_EQUAL(result, NT_STATUS_NOT_SUPPORTED) )
-			{
-				DBG_DEBUG("Failed to get password policies for "
-					  "domain %s: %s\n", our_domain->name,
-					  nt_errstr(result));
-				goto done;
-			}
+			/*
+			 * WBFLAG_PAM_GET_PWD_POLICY is not used within
+			 * any Samba caller anymore.
+			 *
+			 * We just fake this based on the effective values
+			 * for the user, for legacy callers.
+			 */
+			fake_password_policy(state->response, &info3->base);
 		}
 
 		result = NT_STATUS_OK;
