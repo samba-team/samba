@@ -624,18 +624,19 @@ uint32_t ctdb_db_id(struct ctdb_db_context *db)
 	return db->db_id;
 }
 
-struct ctdb_db_traverse_state {
+struct ctdb_db_traverse_local_state {
 	ctdb_rec_parser_func_t parser;
 	void *private_data;
 	bool extract_header;
 	int error;
 };
 
-static int ctdb_db_traverse_handler(struct tdb_context *tdb, TDB_DATA key,
-				    TDB_DATA data, void *private_data)
+static int ctdb_db_traverse_local_handler(struct tdb_context *tdb,
+					  TDB_DATA key, TDB_DATA data,
+					  void *private_data)
 {
-	struct ctdb_db_traverse_state *state =
-		(struct ctdb_db_traverse_state *)private_data;
+	struct ctdb_db_traverse_local_state *state =
+		(struct ctdb_db_traverse_local_state *)private_data;
 	int ret;
 
 	if (state->extract_header) {
@@ -660,11 +661,11 @@ static int ctdb_db_traverse_handler(struct tdb_context *tdb, TDB_DATA key,
 	return 0;
 }
 
-int ctdb_db_traverse(struct ctdb_db_context *db, bool readonly,
-		     bool extract_header,
-		     ctdb_rec_parser_func_t parser, void *private_data)
+int ctdb_db_traverse_local(struct ctdb_db_context *db, bool readonly,
+			   bool extract_header,
+			   ctdb_rec_parser_func_t parser, void *private_data)
 {
-	struct ctdb_db_traverse_state state;
+	struct ctdb_db_traverse_local_state state;
 	int ret;
 
 	state.parser = parser;
@@ -674,10 +675,11 @@ int ctdb_db_traverse(struct ctdb_db_context *db, bool readonly,
 
 	if (readonly) {
 		ret = tdb_traverse_read(db->ltdb->tdb,
-					ctdb_db_traverse_handler, &state);
+					ctdb_db_traverse_local_handler,
+					&state);
 	} else {
 		ret = tdb_traverse(db->ltdb->tdb,
-				   ctdb_db_traverse_handler, &state);
+				   ctdb_db_traverse_local_handler, &state);
 	}
 
 	if (ret == -1) {

@@ -2220,7 +2220,7 @@ static int control_cattdb(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	}
 
 	state.count = 0;
-	ret = ctdb_db_traverse(db, true, true, dump_record, &state);
+	ret = ctdb_db_traverse_local(db, true, true, dump_record, &state);
 
 	printf("Dumped %u record(s)\n", state.count);
 
@@ -4152,7 +4152,7 @@ static int control_backupdb(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	state.nbuf = 0;
 	state.nrec = 0;
 
-	ret = ctdb_db_traverse(db, true, false, backup_handler, &state);
+	ret = ctdb_db_traverse_local(db, true, false, backup_handler, &state);
 	if (ret != 0) {
 		fprintf(stderr, "Failed to collect records from DB %s\n",
 			db_name);
