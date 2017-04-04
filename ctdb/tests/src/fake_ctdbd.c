@@ -663,8 +663,13 @@ static bool dbmap_parse(struct database_map *db_map)
 				flags |= CTDB_DB_FLAGS_STICKY;
 			} else if (strcmp(tok, "READONLY") == 0) {
 				flags |= CTDB_DB_FLAGS_READONLY;
+			} else if (strcmp(tok, "REPLICATED") == 0) {
+				flags |= CTDB_DB_FLAGS_REPLICATED;
 			} else if (tok[0] >= '0'&& tok[0] <= '9') {
-				if ((flags & CTDB_DB_FLAGS_PERSISTENT) == 0) {
+				uint8_t nv = CTDB_DB_FLAGS_PERSISTENT |
+					     CTDB_DB_FLAGS_REPLICATED;
+
+				if ((flags & nv) == 0) {
 					fprintf(stderr,
 						"seq_num for volatile db\n");
 					goto fail;

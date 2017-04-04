@@ -16,6 +16,8 @@ DBMAP
 0x4d2a432b g_lock.tdb
 0x7132c184 secrets.tdb PERSISTENT
 0x6cf2837d registry.tdb PERSISTENT 42
+0xbc57b384 ctdb-ip.tdb REPLICATED
+0xbec75f0b ctdb-conn.tdb REPLICATED 23
 EOF
 
 ok <<EOF
@@ -77,6 +79,30 @@ READONLY: no
 HEALTH: OK
 EOF
 simple_test 0x6cf2837d
+
+ok <<EOF
+dbid: 0xbc57b384
+name: ctdb-ip.tdb
+path: /var/run/ctdb/DB_DIR/ctdb-ip.tdb.0
+PERSISTENT: no
+REPLICATED: yes
+STICKY: no
+READONLY: no
+HEALTH: OK
+EOF
+simple_test 0xbc57b384
+
+ok <<EOF
+dbid: 0xbec75f0b
+name: ctdb-conn.tdb
+path: /var/run/ctdb/DB_DIR/ctdb-conn.tdb.0
+PERSISTENT: no
+REPLICATED: yes
+STICKY: no
+READONLY: no
+HEALTH: OK
+EOF
+simple_test 0xbec75f0b
 
 required_result 1 "No database matching '0xdeadc0de' found"
 simple_test 0xdeadc0de
