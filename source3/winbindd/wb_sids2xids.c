@@ -185,20 +185,41 @@ static void wb_sids2xids_lookupsids_done(struct tevent_req *subreq)
 	}
 
 	for (i=0; i<state->num_non_cached; i++) {
+		const struct dom_sid *sid = &state->non_cached[i];
 		struct dom_sid dom_sid;
-		struct lsa_DomainInfo *info;
 		struct lsa_TranslatedName *n = &names->names[i];
 		struct wbint_TransID *t = &state->ids.ids[i];
 		int domain_index;
+		const char *domain_name = NULL;
 
-		sid_copy(&dom_sid, &state->non_cached[i]);
+		if (n->sid_index != UINT32_MAX) {
+			const struct lsa_DomainInfo *info;
+
+			info = &domains->domains[n->sid_index];
+			domain_name = info->name.string;
+		}
+		if (domain_name == NULL) {
+			struct winbindd_domain *wb_domain = NULL;
+
+			/*
+			 * This is needed to handle Samba DCs
+			 * which always return sid_index == UINT32_MAX for
+			 * unknown sids.
+			 */
+			wb_domain = find_domain_from_sid_noinit(sid);
+			if (wb_domain != NULL) {
+				domain_name = wb_domain->name;
+			}
+		}
+		if (domain_name == NULL) {
+			domain_name = "";
+		}
+
+		sid_copy(&dom_sid, sid);
 		sid_split_rid(&dom_sid, &t->rid);
-
-		info = &domains->domains[n->sid_index];
 		t->type = lsa_SidType_to_id_type(n->sid_type);
-
 		domain_index = init_lsa_ref_domain_list(
-			state, &state->idmap_doms, info->name.string, &dom_sid);
+			state, &state->idmap_doms, domain_name, &dom_sid);
 		if (domain_index == -1) {
 			tevent_req_oom(req);
 			return;
