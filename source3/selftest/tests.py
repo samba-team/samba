@@ -393,7 +393,17 @@ for t in tests:
         plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/write-list-tmp -U$USERNAME%$PASSWORD')
         plansmbtorture4testsuite(t, "ad_dc", '//$SERVER/tmp -U$USERNAME%$PASSWORD')
     elif t == "idmap.rfc2307":
-        plantestsuite(t, "ad_member_rfc2307", [os.path.join(samba3srcdir, "../nsswitch/tests/test_idmap_rfc2307.sh"), '$DOMAIN', 'Administrator', '2000000', 'Guest', '2000001', '"Domain Users"', '2000002', 'DnsAdmins', '2000003', 'ou=idmap,dc=samba,dc=example,dc=com', '$DC_SERVER', '$DC_USERNAME', '$DC_PASSWORD'])
+        plantestsuite(t, "ad_member_rfc2307",
+                      [os.path.join(samba3srcdir,
+                                    "../nsswitch/tests/test_idmap_rfc2307.sh"),
+                       '$DOMAIN',
+                       'Administrator', '2000000',
+                       'Guest', '2000001',
+                       '"Domain Users"', '2000002',
+                       'DnsAdmins', '2000003',
+                       '2000005', '35',
+                       'ou=idmap,dc=samba,dc=example,dc=com',
+                       '$DC_SERVER', '$DC_USERNAME', '$DC_PASSWORD'])
     elif t == "idmap.alloc":
         plantestsuite(t, "ad_member_rfc2307", [os.path.join(samba3srcdir, "../nsswitch/tests/test_idmap_nss.sh"), '$DOMAIN'])
     elif t == "idmap.rid":
