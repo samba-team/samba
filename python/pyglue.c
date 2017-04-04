@@ -152,6 +152,15 @@ static PyObject *py_is_ntvfs_fileserver_built(PyObject *self)
 #endif
 }
 
+static PyObject *py_is_heimdal_built(PyObject *self)
+{
+#ifdef SAMBA4_USES_HEIMDAL
+	Py_RETURN_TRUE;
+#else
+	Py_RETURN_FALSE;
+#endif
+}
+
 /*
   return the list of interface IPs we have configured
   takes an loadparm context, returns a list of IPs in string form
@@ -307,6 +316,8 @@ static PyMethodDef py_misc_methods[] = {
 		"(for testing) find one string in another with Samba's strstr_m()"},
 	{ "is_ntvfs_fileserver_built", (PyCFunction)py_is_ntvfs_fileserver_built, METH_NOARGS,
 		"is the NTVFS file server built in this installation?" },
+	{ "is_heimdal_built", (PyCFunction)py_is_heimdal_built, METH_NOARGS,
+		"is Samba built with Heimdal Kerberbos?" },
 	{ NULL }
 };
 
