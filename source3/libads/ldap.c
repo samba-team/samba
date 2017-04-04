@@ -613,6 +613,11 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 		if (ads->server.gc == true) {
 			return ADS_ERROR(LDAP_OPERATIONS_ERROR);
 		}
+
+		if (ads->server.no_fallback) {
+			status = ADS_ERROR_NT(NT_STATUS_NOT_FOUND);
+			goto out;
+		}
 	}
 
 	ntstatus = ads_find_dc(ads);

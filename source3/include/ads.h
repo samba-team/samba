@@ -64,6 +64,7 @@ typedef struct ads_struct {
 		char *workgroup;
 		char *ldap_server;
 		bool gc;     /* Is this a global catalog server? */
+		bool no_fallback; /* Bail if the ldap_server is not available */
 	} server;
 
 	/* info needed to authenticate */
