@@ -561,7 +561,7 @@ interface drsuapi
 		[size_is(num_attids)] drsuapi_DsAttributeId attids[];
 	} drsuapi_DsPartialAttributeSet;
 
-	typedef struct {
+	typedef [public] struct {
 		GUID destination_dsa_guid;
 		GUID source_dsa_invocation_id; /* the 'invocationId' field of the CN=NTDS Settings object */
 		[ref] drsuapi_DsReplicaObjectIdentifier *naming_context;
