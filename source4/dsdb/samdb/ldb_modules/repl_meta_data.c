@@ -41,6 +41,7 @@
 #include "dsdb/common/proto.h"
 #include "dsdb/common/util.h"
 #include "../libds/common/flags.h"
+#include "librpc/gen_ndr/irpc.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
@@ -3153,6 +3154,47 @@ static int replmd_modify_handle_linked_attribs(struct ldb_module *module,
 }
 
 
+static int send_rodc_referral(struct ldb_request *req,
+			      struct ldb_context *ldb,
+			      struct ldb_dn *dn)
+{
+	char *referral = NULL;
+	struct loadparm_context *lp_ctx = NULL;
+	struct ldb_dn *fsmo_role_dn = NULL;
+	struct ldb_dn *role_owner_dn = NULL;
+	const char *domain = NULL;
+	WERROR werr;
+
+	lp_ctx = talloc_get_type(ldb_get_opaque(ldb, "loadparm"),
+				 struct loadparm_context);
+
+	werr = dsdb_get_fsmo_role_info(req, ldb, DREPL_PDC_MASTER,
+				       &fsmo_role_dn, &role_owner_dn);
+
+	if (W_ERROR_IS_OK(werr)) {
+		struct ldb_dn *server_dn = ldb_dn_copy(req, role_owner_dn);
+		if (server_dn != NULL) {
+			ldb_dn_remove_child_components(server_dn, 1);
+			domain = samdb_dn_to_dnshostname(ldb, req,
+							 server_dn);
+		}
+	}
+
+	if (domain == NULL) {
+		domain = lpcfg_dnsdomain(lp_ctx);
+	}
+
+	referral = talloc_asprintf(req, "ldap://%s/%s",
+				   domain,
+				   ldb_dn_get_linearized(dn));
+	if (referral == NULL) {
+		ldb_oom(ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	return ldb_module_send_referral(req, referral);
+}
+
 
 static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 {
@@ -3225,17 +3267,7 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 				 msg, &ac->seq_num, t, is_schema_nc,
 				 &is_urgent, &rodc);
 	if (rodc && (ret == LDB_ERR_REFERRAL)) {
-		struct loadparm_context *lp_ctx;
-		char *referral;
-
-		lp_ctx = talloc_get_type(ldb_get_opaque(ldb, "loadparm"),
-					 struct loadparm_context);
-
-		referral = talloc_asprintf(req,
-					   "ldap://%s/%s",
-					   lpcfg_dnsdomain(lp_ctx),
-					   ldb_dn_get_linearized(msg->dn));
-		ret = ldb_module_send_referral(req, referral);
+		ret = send_rodc_referral(req, ldb, msg->dn);
 		talloc_free(ac);
 		return ret;
 
@@ -3498,18 +3530,7 @@ static int replmd_rename_callback(struct ldb_request *req, struct ldb_reply *are
 				 msg, &ac->seq_num, t,
 				 is_schema_nc, &is_urgent, &rodc);
 	if (rodc && (ret == LDB_ERR_REFERRAL)) {
-		struct ldb_dn *olddn = ac->req->op.rename.olddn;
-		struct loadparm_context *lp_ctx;
-		char *referral;
-
-		lp_ctx = talloc_get_type(ldb_get_opaque(ldb, "loadparm"),
-					 struct loadparm_context);
-
-		referral = talloc_asprintf(req,
-					   "ldap://%s/%s",
-					   lpcfg_dnsdomain(lp_ctx),
-					   ldb_dn_get_linearized(olddn));
-		ret = ldb_module_send_referral(req, referral);
+		ret = send_rodc_referral(req, ldb, ac->req->op.rename.olddn);
 		talloc_free(ares);
 		return ldb_module_done(req, NULL, NULL, ret);
 	}
