@@ -2850,12 +2850,12 @@ static int samldb_service_principal_names_change(struct samldb_ctx *ac)
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
-		dns_hostname = talloc_strdup(ac, 
+		dns_hostname = talloc_strdup(ac,
 					     ldb_msg_find_attr_as_string(msg, "dNSHostName", NULL));
 		if (dns_hostname == NULL) {
 			return ldb_module_oom(ac->module);
 		}
-			
+
 		talloc_free(msg);
 
 		ret = dsdb_module_search_dn(ac->module, ac, &res, ac->msg->dn,

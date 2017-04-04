@@ -3238,6 +3238,7 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 		ret = ldb_module_send_referral(req, referral);
 		talloc_free(ac);
 		return ret;
+
 	}
 
 	if (ret != LDB_SUCCESS) {
