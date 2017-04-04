@@ -2083,51 +2083,6 @@ static int dump_record(uint32_t reqid, struct ctdb_ltdb_header *header,
 	return 0;
 }
 
-struct traverse_state {
-	TALLOC_CTX *mem_ctx;
-	bool done;
-	ctdb_rec_parser_func_t func;
-	struct dump_record_state sub_state;
-};
-
-static void traverse_handler(uint64_t srvid, TDB_DATA data, void *private_data)
-{
-	struct traverse_state *state = (struct traverse_state *)private_data;
-	struct ctdb_rec_data *rec;
-	struct ctdb_ltdb_header header;
-	int ret;
-
-	ret = ctdb_rec_data_pull(data.dptr, data.dsize, state->mem_ctx, &rec);
-	if (ret != 0) {
-		return;
-	}
-
-	if (rec->key.dsize == 0 && rec->data.dsize == 0) {
-		talloc_free(rec);
-		/* end of traverse */
-		state->done = true;
-		return;
-	}
-
-	ret = ctdb_ltdb_header_extract(&rec->data, &header);
-	if (ret != 0) {
-		talloc_free(rec);
-		return;
-	}
-
-	if (rec->data.dsize == 0) {
-		talloc_free(rec);
-		return;
-	}
-
-	ret = state->func(rec->reqid, &header, rec->key, rec->data,
-			  &state->sub_state);
-	talloc_free(rec);
-	if (ret != 0) {
-		state->done = true;
-	}
-}
-
 static int control_catdb(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 			 int argc, const char **argv)
 {
@@ -2135,8 +2090,7 @@ static int control_catdb(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	const char *db_name;
 	uint32_t db_id;
 	uint8_t db_flags;
-	struct ctdb_traverse_start_ext traverse;
-	struct traverse_state state;
+	struct dump_record_state state;
 	int ret;
 
 	if (argc != 1) {
@@ -2154,44 +2108,15 @@ static int control_catdb(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return ret;
 	}
 
-	/* Valgrind fix */
-	ZERO_STRUCT(traverse);
+	state.count = 0;
 
-	traverse.db_id = db_id;
-	traverse.reqid = 0;
-	traverse.srvid = next_srvid(ctdb);
-	traverse.withemptyrecords = false;
+	ret = ctdb_db_traverse(mem_ctx, ctdb->ev, ctdb->client, db,
+			       ctdb->cmd_pnn, TIMEOUT(),
+			       dump_record, &state);
 
-	state.mem_ctx = mem_ctx;
-	state.done = false;
-	state.func = dump_record;
-	state.sub_state.count = 0;
+	printf("Dumped %u records\n", state.count);
 
-	ret = ctdb_client_set_message_handler(ctdb->ev, ctdb->client,
-					      traverse.srvid,
-					      traverse_handler, &state);
-	if (ret != 0) {
-		return ret;
-	}
-
-	ret = ctdb_ctrl_traverse_start_ext(mem_ctx, ctdb->ev, ctdb->client,
-					   ctdb->cmd_pnn, TIMEOUT(),
-					   &traverse);
-	if (ret != 0) {
-		return ret;
-	}
-
-	ctdb_client_wait(ctdb->ev, &state.done);
-
-	printf("Dumped %u records\n", state.sub_state.count);
-
-	ret = ctdb_client_remove_message_handler(ctdb->ev, ctdb->client,
-						 traverse.srvid, &state);
-	if (ret != 0) {
-		return ret;
-	}
-
-	return 0;
+	return ret;
 }
 
 static int control_cattdb(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
