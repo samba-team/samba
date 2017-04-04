@@ -1,6 +1,6 @@
 #!/bin/sh
 # Test id mapping through idmap_rfc2307 module
-if [ $# -lt 9 ]; then
+if [ $# -lt 13 ]; then
 	echo Usage: $0 DOMAIN USERNAME UID USERNAME2 UID2 GROUPNAME GID GROUPNAME2 GID2 LDAPPREFIX DC_SERVER DC_USERNAME DC_PASSWORD
 	exit 1
 fi
