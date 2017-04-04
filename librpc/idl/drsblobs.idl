@@ -323,6 +323,16 @@ interface drsblobs {
 		 * 'Primary:CLEARTEXT':
 		 *    data contains the cleartext password
 		 *    as UTF16 string encoded as HEX string
+		 *
+		 * 'Primary:userPassword':
+		 *    ...
+		 *
+		 * 'Primary:SambaGPG':
+		 *    ...
+		 *
+		 * 'Primary:NTLM-Strong-NTOWF':
+		 *    ... Not yet implemented.
+		 *
 		 */
 		[charset(DOS)] uint8 data[data_len];
 	} supplementalCredentialsPackage;
@@ -459,6 +469,40 @@ interface drsblobs {
 	void decode_PrimarySambaGPG(
 		[in] package_PrimarySambaGPGBlob blob
 		);
+
+	/*
+	 * Password hashes stored in a scheme compatible with
+	 * OpenLDAP's userPassword attribute. The Package is named
+	 * Primary:userPassword each calculated hash,
+	 * which is typically caclulated via crypt(), the scheme is stored.
+	 * The scheme name and the {scheme} format is re-used from OpenLDAP's
+	 * use for userPassword to aid interopability when exported.
+	 *
+	 * The currently supported scheme so far is {CRYPT}, which may
+	 * be specified multiple times if both CryptSHA256 ($5$) and
+	 * CryptSHA512 ($6$) are in use.
+	 *
+	 * current_nt_hash is either the unicodePwd or the
+	 * NTLM-Strong-NTOWF, to allow us to prove this password is
+	 * a valid element.
+	 */
+	typedef struct {
+		[value(2*strlen_m(scheme))] uint16 scheme_len;
+		[charset(UTF16)] uint8 scheme[scheme_len];
+		[value((value?value->length:0))] uint32 value_len;
+		[relative,subcontext(0),subcontext_size(value_len),
+			flag(NDR_REMAINING)] DATA_BLOB *value;
+	} package_PrimaryUserPasswordValue;
+
+	typedef [public] struct {
+		samr_Password current_nt_hash;
+		uint16 num_hashes;
+		package_PrimaryUserPasswordValue hashes[num_hashes];
+	} package_PrimaryUserPasswordBlob;
+
+	void decode_PrimaryUserPasswordBlob(
+		[in] package_PrimaryUserPasswordBlob blob
+	);
 
 	typedef struct {
 		[value(0)] uint32 size;
