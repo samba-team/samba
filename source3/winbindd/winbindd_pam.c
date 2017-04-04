@@ -1420,7 +1420,7 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 				 */
 				DEBUG(3, ("This is the third problem for this "
 					  "particular call, adding DC to the "
-					  "negative cache list\n"));
+					  "negative cache list: %s %s\n", domain->name, domain->dcname));
 				add_failed_connection_entry(domain->name,
 							    domain->dcname,
 							    result);
@@ -1530,7 +1530,7 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 
 	if (NT_STATUS_EQUAL(result, NT_STATUS_IO_TIMEOUT)) {
 		DEBUG(3,("winbind_samlogon_retry_loop: sam_network_logon(ex) "
-				"returned NT_STATUS_IO_TIMEOUT after the retry."
+				"returned NT_STATUS_IO_TIMEOUT after the retry. "
 				"Killing connections to domain %s\n",
 			domainname));
 		invalidate_cm_connection(domain);
