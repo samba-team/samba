@@ -22,6 +22,11 @@ DC_PASSWORD="$4"
 
 wbinfo="$VALGRIND $BINDIR/wbinfo"
 
+ldbsearch="ldbsearch"
+if [ -x "$BINDIR/ldbsearch" ]; then
+	ldbsearch="$BINDIR/ldbsearch"
+fi
+
 ldbadd="ldbadd"
 if [ -x "$BINDIR/ldbadd" ]; then
 	ldbadd="$BINDIR/ldbadd"
@@ -37,10 +42,11 @@ failed=0
 . `dirname $0`/../../testprogs/blackbox/subunit.sh
 
 # Delete LDAP records
-$VALGRIND $ldbdel -H ldap://$DC_SERVER -U$DOMAIN/$DC_USERNAME%$DC_PASSWORD "cn=$USERNAME,$LDAPPREFIX"
-$VALGRIND $ldbdel -H ldap://$DC_SERVER -U$DOMAIN/$DC_USERNAME%$DC_PASSWORD "cn=$USERNAME2,$LDAPPREFIX"
-$VALGRIND $ldbdel -H ldap://$DC_SERVER -U$DOMAIN/$DC_USERNAME%$DC_PASSWORD "cn=$GROUPNAME,$LDAPPREFIX"
-$VALGRIND $ldbdel -H ldap://$DC_SERVER -U$DOMAIN/$DC_USERNAME%$DC_PASSWORD "cn=$GROUPNAME2,$LDAPPREFIX"
+$VALGRIND $ldbsearch -H ldap://$DC_SERVER -U$DOMAIN/$DC_USERNAME%$DC_PASSWORD \
+	  -s one -b "$LDAPPREFIX" | grep '^dn:' | cut -d ' ' -f 2- |
+    xargs -d '\n' -n 1 -IDEL_DN \
+	  $ldbdel -H ldap://$DC_SERVER -U$DOMAIN/$DC_USERNAME%$DC_PASSWORD \
+	  "DEL_DN"
 $VALGRIND $ldbdel -H ldap://$DC_SERVER -U$DOMAIN/$DC_USERNAME%$DC_PASSWORD "$LDAPPREFIX"
 
 # Add id mapping information to LDAP
@@ -141,10 +147,11 @@ echo "SID $group_sid2 resolved to $group_name2"
 testit "test $group_name2 = $DOMAIN/$GROUPNAME2" test "$(echo $group_name2 | tr A-Z a-z)" = "$(echo $DOMAIN/$GROUPNAME2 | tr A-Z a-z)" || failed=$(expr $failed + 1)
 
 # Delete LDAP records
-$VALGRIND $ldbdel -H ldap://$DC_SERVER -U$DOMAIN/$DC_USERNAME%$DC_PASSWORD "cn=$USERNAME,$LDAPPREFIX"
-$VALGRIND $ldbdel -H ldap://$DC_SERVER -U$DOMAIN/$DC_USERNAME%$DC_PASSWORD "cn=$USERNAME2,$LDAPPREFIX"
-$VALGRIND $ldbdel -H ldap://$DC_SERVER -U$DOMAIN/$DC_USERNAME%$DC_PASSWORD "cn=$GROUPNAME,$LDAPPREFIX"
-$VALGRIND $ldbdel -H ldap://$DC_SERVER -U$DOMAIN/$DC_USERNAME%$DC_PASSWORD "cn=$GROUPNAME2,$LDAPPREFIX"
+$VALGRIND $ldbsearch -H ldap://$DC_SERVER -U$DOMAIN/$DC_USERNAME%$DC_PASSWORD \
+	  -s one -b "$LDAPPREFIX" | grep '^dn:' | cut -d ' ' -f 2- |
+    xargs -d '\n' -n 1 -IDEL_DN \
+	  $ldbdel -H ldap://$DC_SERVER -U$DOMAIN/$DC_USERNAME%$DC_PASSWORD \
+	  "DEL_DN"
 $VALGRIND $ldbdel -H ldap://$DC_SERVER -U$DOMAIN/$DC_USERNAME%$DC_PASSWORD "$LDAPPREFIX"
 
 exit $failed
