@@ -72,8 +72,6 @@ struct wb_lookupsids_state {
 	 * wbint_LookupSid. Preallocated with num_sids.
 	 */
 	uint32_t *single_sids;
-	/* Pointer into the "domains" array above*/
-	struct wb_lookupsids_domain **single_domains;
 	uint32_t num_single_sids;
 	uint32_t single_sids_done;
 
@@ -127,12 +125,6 @@ struct tevent_req *wb_lookupsids_send(TALLOC_CTX *mem_ctx,
 
 	state->single_sids = talloc_array(state, uint32_t, num_sids);
 	if (tevent_req_nomem(state->single_sids, req)) {
-		return tevent_req_post(req, ev);
-	}
-	state->single_domains = talloc_zero_array(state,
-						  struct wb_lookupsids_domain *,
-						  num_sids);
-	if (tevent_req_nomem(state->single_domains, req)) {
 		return tevent_req_post(req, ev);
 	}
 
@@ -496,7 +488,6 @@ static void wb_lookupsids_done(struct tevent_req *subreq)
 
 			state->single_sids[state->num_single_sids] =
 				res_sid_index;
-			state->single_domains[state->num_single_sids] = d;
 			state->num_single_sids += 1;
 		}
 		state->domains_done += 1;
