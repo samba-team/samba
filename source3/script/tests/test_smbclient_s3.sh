@@ -1100,29 +1100,26 @@ EOF
 test_nosymlinks()
 {
 # Setup test dirs.
-    slink_name="$LOCAL_PATH/nosymlinks/source"
-    slink_target="$LOCAL_PATH/nosymlinks/target"
-    mkdir_target="$LOCAL_PATH/nosymlinks/a"
-    dir1="$LOCAL_PATH/nosymlinks/foo"
-    dir2="$LOCAL_PATH/nosymlinks/foo/bar"
-    get_target="$LOCAL_PATH/nosymlinks/foo/bar/testfile"
+    test_dir="$LOCAL_PATH/nosymlinks/test"
 
-    rm -f $slink_target
-    rm -f $slink_name
-    rm -rf $mkdir_target
-    rm -rf $dir1
+    slink_name="$test_dir/source"
+    slink_target="$test_dir/target"
+    foobar_dir="$test_dir/foo/bar"
+    get_target="$test_dir/foo/bar/testfile"
 
-    touch $slink_target
+    rm -rf $test_dir
+
+    mkdir -p $test_dir
+    echo "$slink_target" > $slink_target
     ln -s $slink_target $slink_name
 
-    mkdir $dir1
-    mkdir $dir2
-    touch $get_target
+    mkdir -p $foobar_dir
+    echo "$get_target" > $get_target
 
 # Getting a file through a symlink name should fail.
     tmpfile=$PREFIX/smbclient_interactive_prompt_commands
     cat > $tmpfile <<EOF
-get source
+get test\\source
 quit
 EOF
     cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/nosymlinks -I $SERVER_IP $ADDARGS < $tmpfile 2>&1'
@@ -1149,8 +1146,8 @@ EOF
 
 # But we should be able to create and delete directories.
     cat > $tmpfile <<EOF
-mkdir a
-mkdir a\\b
+mkdir test\\a
+mkdir test\\a\\b
 quit
 EOF
     cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/nosymlinks -I $SERVER_IP $ADDARGS < $tmpfile 2>&1'
@@ -1176,7 +1173,7 @@ EOF
 
 # Ensure regular file/directory access also works.
     cat > $tmpfile <<EOF
-cd foo\\bar
+cd test\\foo\\bar
 ls
 get testfile -
 quit
