@@ -465,6 +465,8 @@ sub setup_admember_rfc2307($$$$)
 	security = ads
         workgroup = $dcvars->{DOMAIN}
         realm = $dcvars->{REALM}
+        idmap cache time = 0
+        idmap negative cache time = 0
         idmap config * : backend = autorid
         idmap config * : range = 1000000-1999999
         idmap config * : rangesize = 100000
