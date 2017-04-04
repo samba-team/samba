@@ -102,7 +102,7 @@ EOF
 
 testit "add second ldap group mapping record" $VALGRIND $ldbadd -H ldap://$DC_SERVER -U$DOMAIN/$DC_USERNAME%$DC_PASSWORD $PREFIX/tmpldb
 
-rm -f $PREFIX/tmpldbmodify
+rm -f $PREFIX/tmpldb
 
 testit "wbinfo --name-to-sid" $wbinfo --name-to-sid "$DOMAIN/$USERNAME" || failed=$(expr $failed + 1)
 user_sid=$($wbinfo -n "$DOMAIN/$USERNAME" | cut -d " " -f1)
