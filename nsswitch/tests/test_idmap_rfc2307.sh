@@ -45,14 +45,14 @@ $VALGRIND $ldbdel -H ldap://$DC_SERVER -U$DOMAIN/$DC_USERNAME%$DC_PASSWORD "$LDA
 
 # Add id mapping information to LDAP
 
-cat > $PREFIX/tmpldb <<EOF
+testit "add ldap prefix" $VALGRIND $ldbadd -H ldap://$DC_SERVER \
+        -U$DOMAIN/$DC_USERNAME%$DC_PASSWORD <<EOF
 dn: $LDAPPREFIX
 objectclass: organizationalUnit
 EOF
 
-testit "add ldap prefix" $VALGRIND $ldbadd -H ldap://$DC_SERVER -U$DOMAIN/$DC_USERNAME%$DC_PASSWORD $PREFIX/tmpldb
-
-cat > $PREFIX/tmpldb <<EOF
+testit "add ldap user mapping record" $VALGRIND $ldbadd -H ldap://$DC_SERVER \
+        -U$DOMAIN/$DC_USERNAME%$DC_PASSWORD <<EOF
 dn: cn=$USERNAME,$LDAPPREFIX
 objectClass: organizationalPerson
 objectClass: posixAccount
@@ -64,9 +64,8 @@ gidNumber: 1
 homeDirectory: /home/admin
 EOF
 
-testit "add ldap user mapping record" $VALGRIND $ldbadd -H ldap://$DC_SERVER -U$DOMAIN/$DC_USERNAME%$DC_PASSWORD $PREFIX/tmpldb
-
-cat > $PREFIX/tmpldb <<EOF
+testit "add second ldap user mapping record" $VALGRIND $ldbadd \
+       -H ldap://$DC_SERVER -U$DOMAIN/$DC_USERNAME%$DC_PASSWORD <<EOF
 dn: cn=$USERNAME2,$LDAPPREFIX
 objectClass: organizationalPerson
 objectClass: posixAccount
@@ -78,9 +77,8 @@ gidNumber: 2
 homeDirectory: /home/admin
 EOF
 
-testit "add second ldap user mapping record" $VALGRIND $ldbadd -H ldap://$DC_SERVER -U$DOMAIN/$DC_USERNAME%$DC_PASSWORD $PREFIX/tmpldb
-
-cat > $PREFIX/tmpldb <<EOF
+testit "add ldap group mapping record" $VALGRIND $ldbadd \
+       -H ldap://$DC_SERVER -U$DOMAIN/$DC_USERNAME%$DC_PASSWORD <<EOF
 dn: cn=$GROUPNAME,$LDAPPREFIX
 objectClass: posixGroup
 objectClass: groupOfNames
@@ -89,9 +87,8 @@ gidNumber: $GROUPGID
 member: cn=$USERNAME,$LDAPPREFIX
 EOF
 
-testit "add ldap group mapping record" $VALGRIND $ldbadd -H ldap://$DC_SERVER -U$DOMAIN/$DC_USERNAME%$DC_PASSWORD $PREFIX/tmpldb
-
-cat > $PREFIX/tmpldb <<EOF
+testit "add second ldap group mapping record" $VALGRIND $ldbadd \
+       -H ldap://$DC_SERVER -U$DOMAIN/$DC_USERNAME%$DC_PASSWORD <<EOF
 dn: cn=$GROUPNAME2,$LDAPPREFIX
 objectClass: posixGroup
 objectClass: groupOfNames
@@ -99,10 +96,6 @@ cn: $GROUPNAME2
 gidNumber: $GROUPGID2
 member: cn=$USERNAME,$LDAPPREFIX
 EOF
-
-testit "add second ldap group mapping record" $VALGRIND $ldbadd -H ldap://$DC_SERVER -U$DOMAIN/$DC_USERNAME%$DC_PASSWORD $PREFIX/tmpldb
-
-rm -f $PREFIX/tmpldb
 
 testit "wbinfo --name-to-sid" $wbinfo --name-to-sid "$DOMAIN/$USERNAME" || failed=$(expr $failed + 1)
 user_sid=$($wbinfo -n "$DOMAIN/$USERNAME" | cut -d " " -f1)
