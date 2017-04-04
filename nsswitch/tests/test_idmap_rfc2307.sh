@@ -1,7 +1,9 @@
 #!/bin/sh
 # Test id mapping through idmap_rfc2307 module
-if [ $# -lt 13 ]; then
-	echo Usage: $0 DOMAIN USERNAME UID USERNAME2 UID2 GROUPNAME GID GROUPNAME2 GID2 LDAPPREFIX DC_SERVER DC_USERNAME DC_PASSWORD
+if [ $# -lt 15 ]; then
+    echo Usage: $0 DOMAIN USERNAME UID USERNAME2 UID2 \
+	 GROUPNAME GID GROUPNAME2 GID2 GID_START NUMGROUPS \
+	 LDAPPREFIX DC_SERVER DC_USERNAME DC_PASSWORD
 	exit 1
 fi
 
@@ -15,12 +17,15 @@ GROUPGID="$7"
 GROUPNAME2="$8"
 GROUPGID2="$9"
 shift 9
-LDAPPREFIX="$1"
-DC_SERVER="$2"
-DC_USERNAME="$3"
-DC_PASSWORD="$4"
+GID_START="$1"
+NUMGROUPS="$2"
+LDAPPREFIX="$3"
+DC_SERVER="$4"
+DC_USERNAME="$5"
+DC_PASSWORD="$6"
 
 wbinfo="$VALGRIND $BINDIR/wbinfo"
+net="$VALGRIND $BINDIR/net"
 
 ldbsearch="ldbsearch"
 if [ -x "$BINDIR/ldbsearch" ]; then
@@ -145,6 +150,55 @@ group_name2=$($wbinfo --sid-to-name=$group_sid2 | cut -d " " -f1)
 echo "SID $group_sid2 resolved to $group_name2"
 
 testit "test $group_name2 = $DOMAIN/$GROUPNAME2" test "$(echo $group_name2 | tr A-Z a-z)" = "$(echo $DOMAIN/$GROUPNAME2 | tr A-Z a-z)" || failed=$(expr $failed + 1)
+
+i=0
+while [ ${i} -lt ${NUMGROUPS} ] ; do
+    GRP=$(printf "test_rfc2307_group_%3.3d" "$i")
+    GRP_GID=$(expr "$GID_START" + "$i")
+    testit "Add group $GRP" $net rpc group add "$GRP" -S "$DC_SERVER" \
+	   -U"${DOMAIN}\\${DC_USERNAME}"%"${DC_PASSWORD}" ||
+	failed=$(expr $failed + 1)
+    testit "Add groupmem $GRP $USERNAME" \
+	   $net rpc group addmem "$GRP" "$USERNAME" \
+	   -S "$DC_SERVER" \
+	   -U"${DOMAIN}\\${DC_USERNAME}"%"${DC_PASSWORD}" ||
+	failed=$(expr $failed + 1)
+    testit "Add group object for $GRP $GRP_GID" \
+	   $VALGRIND $ldbadd \
+       -H ldap://$DC_SERVER -U$DOMAIN/$DC_USERNAME%$DC_PASSWORD <<EOF
+dn: cn=$GRP,$LDAPPREFIX
+objectClass: posixGroup
+objectClass: groupOfNames
+cn: $GRP
+gidNumber: $GRP_GID
+member: cn=$USERNAME,$LDAPPREFIX
+EOF
+    i=$(expr "$i" + 1)
+done
+
+# Test whether wbinfo -r shows all groups
+
+EXPECTED_USERGROUPS="1000000/1000001/2000002/"
+i=0
+while [ ${i} -lt ${NUMGROUPS} ] ; do
+    EXPECTED_USERGROUPS="$EXPECTED_USERGROUPS$(expr ${i} + ${GID_START})/"
+    i=$(expr "$i" + 1)
+done
+
+USERGROUPS=$($wbinfo -r $DOMAIN/$USERNAME | sort -n | tr '\n' '/')
+
+testit "Testing for expected group memberships" \
+       test "$USERGROUPS" = "$EXPECTED_USERGROUPS" ||
+       failed=$(expr $failed + 1)
+
+i=0
+while [ ${i} -lt ${NUMGROUPS} ] ; do
+    GRP=$(printf "test_rfc2307_group_%3.3d" ${i})
+    testit "Del group $GRP" $net rpc group delete "$GRP" -S "$DC_SERVER" \
+	   -U"${DOMAIN}\\${DC_USERNAME}"%"${DC_PASSWORD}" ||
+	failed=$(expr $failed + 1)
+    i=$(expr "$i" + 1)
+done
 
 # Delete LDAP records
 $VALGRIND $ldbsearch -H ldap://$DC_SERVER -U$DOMAIN/$DC_USERNAME%$DC_PASSWORD \
