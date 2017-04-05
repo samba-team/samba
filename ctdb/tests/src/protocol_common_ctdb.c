@@ -2001,3 +2001,18 @@ void verify_ctdb_req_keepalive(struct ctdb_req_keepalive *c,
 	assert(c->version == c2->version);
 	assert(c->uptime == c2->uptime);
 }
+
+void fill_ctdb_req_tunnel(TALLOC_CTX *mem_ctx, struct ctdb_req_tunnel *c)
+{
+	c->tunnel_id = rand64();
+	c->flags = rand32();
+	fill_tdb_data(mem_ctx, &c->data);
+}
+
+void verify_ctdb_req_tunnel(struct ctdb_req_tunnel *c,
+			    struct ctdb_req_tunnel *c2)
+{
+	assert(c->tunnel_id == c2->tunnel_id);
+	assert(c->flags == c2->flags);
+	verify_tdb_data(&c->data, &c2->data);
+}

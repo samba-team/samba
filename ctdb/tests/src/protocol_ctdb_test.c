@@ -26,6 +26,7 @@
 #include "protocol/protocol_control.c"
 #include "protocol/protocol_message.c"
 #include "protocol/protocol_keepalive.c"
+#include "protocol/protocol_tunnel.c"
 #include "protocol/protocol_packet.c"
 
 #include "tests/src/protocol_common.h"
@@ -301,6 +302,7 @@ PROTOCOL_CTDB4_TEST(struct ctdb_req_message_data, ctdb_req_message_data,
 
 PROTOCOL_CTDB4_TEST(struct ctdb_req_keepalive, ctdb_req_keepalive,
 			CTDB_REQ_KEEPALIVE);
+PROTOCOL_CTDB4_TEST(struct ctdb_req_tunnel, ctdb_req_tunnel, CTDB_REQ_TUNNEL);
 
 int main(int argc, char *argv[])
 {
@@ -364,6 +366,7 @@ int main(int argc, char *argv[])
 	TEST_FUNC(ctdb_req_message_data)();
 
 	TEST_FUNC(ctdb_req_keepalive)();
+	TEST_FUNC(ctdb_req_tunnel)();
 
 	return 0;
 }

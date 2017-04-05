@@ -55,6 +55,7 @@ output=$(
     generate_message_output "ctdb_req_message"
     echo "ctdb_req_message_data"
     echo "ctdb_req_keepalive"
+    echo "ctdb_req_tunnel"
 )
 
 ok "$output"

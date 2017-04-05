@@ -653,6 +653,20 @@ int ctdb_req_keepalive_pull(uint8_t *buf, size_t buflen,
 			    TALLOC_CTX *mem_ctx,
 			    struct ctdb_req_keepalive *c);
 
+/* From protocol/protocol_tunnel.c */
+
+size_t ctdb_req_tunnel_len(struct ctdb_req_header *h,
+			   struct ctdb_req_tunnel *c);
+
+int ctdb_req_tunnel_push(struct ctdb_req_header *h,
+			 struct ctdb_req_tunnel *c,
+			 uint8_t *buf, size_t *buflen);
+
+int ctdb_req_tunnel_pull(uint8_t *buf, size_t buflen,
+			 struct ctdb_req_header *h,
+			 TALLOC_CTX *mem_ctx,
+			 struct ctdb_req_tunnel *c);
+
 /* From protocol/protocol_event.c */
 
 size_t ctdb_event_request_len(struct ctdb_event_request *in);

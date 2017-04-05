@@ -29,6 +29,7 @@
 #include "protocol/protocol_control.c"
 #include "protocol/protocol_message.c"
 #include "protocol/protocol_keepalive.c"
+#include "protocol/protocol_tunnel.c"
 
 #include "tests/src/protocol_common.h"
 #include "tests/src/protocol_common_ctdb.h"
@@ -1107,6 +1108,90 @@ static int ctdb_req_keepalive_pull_old(uint8_t *buf, size_t buflen,
 	return 0;
 }
 
+struct ctdb_req_tunnel_wire {
+	struct ctdb_req_header hdr;
+	uint64_t tunnel_id;
+	uint32_t flags;
+	uint32_t datalen;
+	uint8_t data[1];
+};
+
+static size_t ctdb_req_tunnel_len_old(struct ctdb_req_header *h,
+				      struct ctdb_req_tunnel *c)
+{
+	return offsetof(struct ctdb_req_tunnel_wire, data) +
+		ctdb_tdb_data_len(&c->data);
+}
+
+static int ctdb_req_tunnel_push_old(struct ctdb_req_header *h,
+				    struct ctdb_req_tunnel *c,
+				    uint8_t *buf, size_t *buflen)
+{
+	struct ctdb_req_tunnel_wire *wire =
+		(struct ctdb_req_tunnel_wire *)buf;
+	size_t length, np;
+
+	length = ctdb_req_tunnel_len_old(h, c);
+	if (*buflen < length) {
+		*buflen = length;
+		return EMSGSIZE;
+	}
+
+	h->length = *buflen;
+	ctdb_req_header_push_old(h, (uint8_t *)&wire->hdr);
+
+	wire->tunnel_id = c->tunnel_id;
+	wire->flags = c->flags;
+	wire->datalen = ctdb_tdb_data_len(&c->data);
+	ctdb_tdb_data_push(&c->data, wire->data, &np);
+
+	return 0;
+}
+
+static int ctdb_req_tunnel_pull_old(uint8_t *buf, size_t buflen,
+				    struct ctdb_req_header *h,
+				    TALLOC_CTX *mem_ctx,
+				    struct ctdb_req_tunnel *c)
+{
+	struct ctdb_req_tunnel_wire *wire =
+		(struct ctdb_req_tunnel_wire *)buf;
+	size_t length, np;
+	int ret;
+
+	length = offsetof(struct ctdb_req_tunnel_wire, data);
+	if (buflen < length) {
+		return EMSGSIZE;
+	}
+	if (wire->datalen > buflen) {
+		return EMSGSIZE;
+	}
+	if (length + wire->datalen < length) {
+		return EMSGSIZE;
+	}
+	if (buflen < length + wire->datalen) {
+		return EMSGSIZE;
+	}
+
+	if (h != NULL) {
+		ret = ctdb_req_header_pull_old((uint8_t *)&wire->hdr, buflen,
+					       h);
+		if (ret != 0) {
+			return ret;
+		}
+	}
+
+	c->tunnel_id = wire->tunnel_id;
+	c->flags = wire->flags;
+
+	ret = ctdb_tdb_data_pull(wire->data, wire->datalen, mem_ctx, &c->data,
+				 &np);
+	if (ret != 0) {
+		return ret;
+	}
+
+	return 0;
+}
+
 
 COMPAT_CTDB1_TEST(struct ctdb_req_header, ctdb_req_header);
 
@@ -1123,6 +1208,7 @@ COMPAT_CTDB7_TEST(struct ctdb_req_message, ctdb_req_message, CTDB_REQ_MESSAGE);
 COMPAT_CTDB4_TEST(struct ctdb_req_message_data, ctdb_req_message_data, CTDB_REQ_MESSAGE);
 
 COMPAT_CTDB4_TEST(struct ctdb_req_keepalive, ctdb_req_keepalive, CTDB_REQ_KEEPALIVE);
+COMPAT_CTDB4_TEST(struct ctdb_req_tunnel, ctdb_req_tunnel, CTDB_REQ_TUNNEL);
 
 #define NUM_CONTROLS	151
 
@@ -1178,6 +1264,7 @@ int main(int argc, char *argv[])
 	COMPAT_TEST_FUNC(ctdb_req_message_data)();
 
 	COMPAT_TEST_FUNC(ctdb_req_keepalive)();
+	COMPAT_TEST_FUNC(ctdb_req_tunnel)();
 
 	return 0;
 }
