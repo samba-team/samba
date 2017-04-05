@@ -36,6 +36,7 @@ enum ctdb_operation {
 	CTDB_REQ_CONTROL        = 7,
 	CTDB_REPLY_CONTROL      = 8,
 	CTDB_REQ_KEEPALIVE      = 9,
+	CTDB_REQ_TUNNEL		= 10,
 };
 
 /* used on the domain socket, send a pdu to the local daemon */
@@ -996,6 +997,16 @@ struct ctdb_req_message_data {
 struct ctdb_req_keepalive {
 	uint32_t version;
 	uint32_t uptime;
+};
+
+#define CTDB_TUNNEL_FLAG_REQUEST	0x00000001
+#define CTDB_TUNNEL_FLAG_REPLY		0x00000002
+#define CTDB_TUNNEL_FLAG_NOREPLY	0x00000010
+
+struct ctdb_req_tunnel {
+	uint64_t tunnel_id;
+	uint32_t flags;
+	TDB_DATA data;
 };
 
 
