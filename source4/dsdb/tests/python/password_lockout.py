@@ -70,8 +70,7 @@ template_creds.set_kerberos_state(global_creds.get_kerberos_state())
 # Tests start here
 #
 
-class PasswordTests(samba.tests.TestCase):
-
+class BasePasswordTestCase(samba.tests.TestCase):
     def _open_samr_user(self, res):
         self.assertTrue("objectSid" in res[0])
 
@@ -88,41 +87,6 @@ class PasswordTests(samba.tests.TestCase):
         acb_info.acct_flags &= ~samr.ACB_AUTOLOCK
         self.samr.SetUserInfo(samr_user, 16, acb_info)
         self.samr.Close(samr_user)
-
-    def _reset_ldap_lockoutTime(self, res):
-        self.ldb.modify_ldif("""
-dn: """ + str(res[0].dn) + """
-changetype: modify
-replace: lockoutTime
-lockoutTime: 0
-""")
-
-    def _reset_ldap_userAccountControl(self, res):
-        self.assertTrue("userAccountControl" in res[0])
-        self.assertTrue("msDS-User-Account-Control-Computed" in res[0])
-
-        uac = int(res[0]["userAccountControl"][0])
-        uacc = int(res[0]["msDS-User-Account-Control-Computed"][0])
-
-        uac |= uacc
-        uac = uac & ~dsdb.UF_LOCKOUT
-
-        self.ldb.modify_ldif("""
-dn: """ + str(res[0].dn) + """
-changetype: modify
-replace: userAccountControl
-userAccountControl: %d
-""" % uac)
-
-    def _reset_by_method(self, res, method):
-        if method is "ldap_userAccountControl":
-            self._reset_ldap_userAccountControl(res)
-        elif method is "ldap_lockoutTime":
-            self._reset_ldap_lockoutTime(res)
-        elif method is "samr":
-            self._reset_samr(res)
-        else:
-            self.assertTrue(False, msg="Invalid reset method[%s]" % method)
 
     def _check_attribute(self, res, name, value):
         if value is None:
@@ -470,7 +434,7 @@ userPassword: """ + userpass + """
                                                (num, errno)))
 
     def setUp(self):
-        super(PasswordTests, self).setUp()
+        super(BasePasswordTestCase, self).setUp()
 
         self.ldb = SamDB(url=host_url, session_info=system_session(lp),
                          credentials=global_creds, lp=lp)
@@ -579,6 +543,374 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
                                                    kerberos_state=DONT_USE_KERBEROS)
         self.lockout2ntlm_ldb = self._readd_user(self.lockout2ntlm_creds,
                                         lockOutObservationWindow=self.lockout_observation_window)
+
+    def tearDown(self):
+        super(BasePasswordTestCase, self).tearDown()
+
+    def _test_login_lockout(self, creds):
+        username = creds.get_username()
+        userpass = creds.get_password()
+        userdn = "cn=%s,cn=users,%s" % (username, self.base_dn)
+
+        use_kerberos = creds.get_kerberos_state()
+        # This unlocks by waiting for account_lockout_duration
+        if use_kerberos == MUST_USE_KERBEROS:
+            logoncount_relation = 'greater'
+            lastlogon_relation = 'greater'
+            print "Performs a lockout attempt against LDAP using Kerberos"
+        else:
+            logoncount_relation = 'equal'
+            lastlogon_relation = 'equal'
+            print "Performs a lockout attempt against LDAP using NTLM"
+
+        # Change password on a connection as another user
+        res = self._check_account(userdn,
+                                  badPwdCount=0,
+                                  badPasswordTime=("greater", 0),
+                                  logonCount=(logoncount_relation, 0),
+                                  lastLogon=("greater", 0),
+                                  lastLogonTimestamp=("greater", 0),
+                                  userAccountControl=
+                                    dsdb.UF_NORMAL_ACCOUNT,
+                                  msDSUserAccountControlComputed=0)
+        badPasswordTime = int(res[0]["badPasswordTime"][0])
+        logonCount = int(res[0]["logonCount"][0])
+        lastLogon = int(res[0]["lastLogon"][0])
+        firstLogon = lastLogon
+        lastLogonTimestamp = int(res[0]["lastLogonTimestamp"][0])
+        print firstLogon
+        print lastLogonTimestamp
+
+
+        self.assertGreater(lastLogon, badPasswordTime)
+        self.assertGreaterEqual(lastLogon, lastLogonTimestamp)
+
+        # Open a second LDB connection with the user credentials. Use the
+        # command line credentials for informations like the domain, the realm
+        # and the workstation.
+        creds_lockout = self.insta_creds(creds)
+
+        # The wrong password
+        creds_lockout.set_password("thatsAcomplPASS1x")
+
+        self.assertLoginFailure(host_url, creds_lockout, lp)
+
+        res = self._check_account(userdn,
+                                  badPwdCount=1,
+                                  badPasswordTime=("greater", badPasswordTime),
+                                  logonCount=logonCount,
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
+                                  userAccountControl=
+                                    dsdb.UF_NORMAL_ACCOUNT,
+                                  msDSUserAccountControlComputed=0,
+                                  msg='lastlogontimestamp with wrong password')
+        badPasswordTime = int(res[0]["badPasswordTime"][0])
+
+        # Correct old password
+        creds_lockout.set_password(userpass)
+
+        ldb_lockout = SamDB(url=host_url, credentials=creds_lockout, lp=lp)
+
+        # lastLogonTimestamp should not change
+        # lastLogon increases if badPwdCount is non-zero (!)
+        res = self._check_account(userdn,
+                                  badPwdCount=0,
+                                  badPasswordTime=badPasswordTime,
+                                  logonCount=(logoncount_relation, logonCount),
+                                  lastLogon=('greater', lastLogon),
+                                  lastLogonTimestamp=lastLogonTimestamp,
+                                  userAccountControl=
+                                    dsdb.UF_NORMAL_ACCOUNT,
+                                  msDSUserAccountControlComputed=0,
+                                  msg='LLTimestamp is updated to lastlogon')
+
+        logonCount = int(res[0]["logonCount"][0])
+        lastLogon = int(res[0]["lastLogon"][0])
+        self.assertGreater(lastLogon, badPasswordTime)
+        self.assertGreaterEqual(lastLogon, lastLogonTimestamp)
+
+        # The wrong password
+        creds_lockout.set_password("thatsAcomplPASS1x")
+
+        self.assertLoginFailure(host_url, creds_lockout, lp)
+
+        res = self._check_account(userdn,
+                                  badPwdCount=1,
+                                  badPasswordTime=("greater", badPasswordTime),
+                                  logonCount=logonCount,
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
+                                  userAccountControl=
+                                    dsdb.UF_NORMAL_ACCOUNT,
+                                  msDSUserAccountControlComputed=0)
+        badPasswordTime = int(res[0]["badPasswordTime"][0])
+
+        # The wrong password
+        creds_lockout.set_password("thatsAcomplPASS1x")
+
+        try:
+            ldb_lockout = SamDB(url=host_url, credentials=creds_lockout, lp=lp)
+            self.fail()
+
+        except LdbError, (num, msg):
+            self.assertEquals(num, ERR_INVALID_CREDENTIALS)
+
+        res = self._check_account(userdn,
+                                  badPwdCount=2,
+                                  badPasswordTime=("greater", badPasswordTime),
+                                  logonCount=logonCount,
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
+                                  userAccountControl=
+                                    dsdb.UF_NORMAL_ACCOUNT,
+                                  msDSUserAccountControlComputed=0)
+        badPasswordTime = int(res[0]["badPasswordTime"][0])
+
+        print "two failed password change"
+
+        # The wrong password
+        creds_lockout.set_password("thatsAcomplPASS1x")
+
+        try:
+            ldb_lockout = SamDB(url=host_url, credentials=creds_lockout, lp=lp)
+            self.fail()
+
+        except LdbError, (num, msg):
+            self.assertEquals(num, ERR_INVALID_CREDENTIALS)
+
+        res = self._check_account(userdn,
+                                  badPwdCount=3,
+                                  badPasswordTime=("greater", badPasswordTime),
+                                  logonCount=logonCount,
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
+                                  lockoutTime=("greater", badPasswordTime),
+                                  userAccountControl=
+                                    dsdb.UF_NORMAL_ACCOUNT,
+                                  msDSUserAccountControlComputed=dsdb.UF_LOCKOUT)
+        badPasswordTime = int(res[0]["badPasswordTime"][0])
+        lockoutTime = int(res[0]["lockoutTime"][0])
+
+        # The wrong password
+        creds_lockout.set_password("thatsAcomplPASS1x")
+        try:
+            ldb_lockout = SamDB(url=host_url, credentials=creds_lockout, lp=lp)
+            self.fail()
+        except LdbError, (num, msg):
+            self.assertEquals(num, ERR_INVALID_CREDENTIALS)
+
+        res = self._check_account(userdn,
+                                  badPwdCount=3,
+                                  badPasswordTime=badPasswordTime,
+                                  logonCount=logonCount,
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
+                                  lockoutTime=lockoutTime,
+                                  userAccountControl=
+                                    dsdb.UF_NORMAL_ACCOUNT,
+                                  msDSUserAccountControlComputed=dsdb.UF_LOCKOUT)
+
+        # The wrong password
+        creds_lockout.set_password("thatsAcomplPASS1x")
+        try:
+            ldb_lockout = SamDB(url=host_url, credentials=creds_lockout, lp=lp)
+            self.fail()
+        except LdbError, (num, msg):
+            self.assertEquals(num, ERR_INVALID_CREDENTIALS)
+
+        res = self._check_account(userdn,
+                                  badPwdCount=3,
+                                  badPasswordTime=badPasswordTime,
+                                  logonCount=logonCount,
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
+                                  lockoutTime=lockoutTime,
+                                  userAccountControl=
+                                    dsdb.UF_NORMAL_ACCOUNT,
+                                  msDSUserAccountControlComputed=dsdb.UF_LOCKOUT)
+
+        # The correct password, but we are locked out
+        creds_lockout.set_password(userpass)
+        try:
+            ldb_lockout = SamDB(url=host_url, credentials=creds_lockout, lp=lp)
+            self.fail()
+        except LdbError, (num, msg):
+            self.assertEquals(num, ERR_INVALID_CREDENTIALS)
+
+        res = self._check_account(userdn,
+                                  badPwdCount=3,
+                                  badPasswordTime=badPasswordTime,
+                                  logonCount=logonCount,
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
+                                  lockoutTime=lockoutTime,
+                                  userAccountControl=
+                                    dsdb.UF_NORMAL_ACCOUNT,
+                                  msDSUserAccountControlComputed=dsdb.UF_LOCKOUT)
+
+        # wait for the lockout to end
+        time.sleep(self.account_lockout_duration + 1)
+        print self.account_lockout_duration + 1
+
+        res = self._check_account(userdn,
+                                  badPwdCount=3, effective_bad_password_count=0,
+                                  badPasswordTime=badPasswordTime,
+                                  logonCount=logonCount,
+                                  lockoutTime=lockoutTime,
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
+                                  userAccountControl=
+                                    dsdb.UF_NORMAL_ACCOUNT,
+                                  msDSUserAccountControlComputed=0)
+
+        # The correct password after letting the timeout expire
+
+        creds_lockout.set_password(userpass)
+
+        creds_lockout2 = self.insta_creds(creds_lockout)
+
+        ldb_lockout = SamDB(url=host_url, credentials=creds_lockout2, lp=lp)
+        time.sleep(3)
+
+        res = self._check_account(userdn,
+                                  badPwdCount=0,
+                                  badPasswordTime=badPasswordTime,
+                                  logonCount=(logoncount_relation, logonCount),
+                                  lastLogon=(lastlogon_relation, lastLogon),
+                                  lastLogonTimestamp=lastLogonTimestamp,
+                                  lockoutTime=0,
+                                  userAccountControl=
+                                    dsdb.UF_NORMAL_ACCOUNT,
+                                  msDSUserAccountControlComputed=0,
+                                  msg="lastLogon is way off")
+
+        logonCount = int(res[0]["logonCount"][0])
+        lastLogon = int(res[0]["lastLogon"][0])
+
+        # The wrong password
+        creds_lockout.set_password("thatsAcomplPASS1x")
+        try:
+            ldb_lockout = SamDB(url=host_url, credentials=creds_lockout, lp=lp)
+            self.fail()
+        except LdbError, (num, msg):
+            self.assertEquals(num, ERR_INVALID_CREDENTIALS)
+
+        res = self._check_account(userdn,
+                                  badPwdCount=1,
+                                  badPasswordTime=("greater", badPasswordTime),
+                                  logonCount=logonCount,
+                                  lockoutTime=0,
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
+                                  userAccountControl=
+                                    dsdb.UF_NORMAL_ACCOUNT,
+                                  msDSUserAccountControlComputed=0)
+        badPasswordTime = int(res[0]["badPasswordTime"][0])
+
+        # The wrong password
+        creds_lockout.set_password("thatsAcomplPASS1x")
+        try:
+            ldb_lockout = SamDB(url=host_url, credentials=creds_lockout, lp=lp)
+            self.fail()
+        except LdbError, (num, msg):
+            self.assertEquals(num, ERR_INVALID_CREDENTIALS)
+
+        res = self._check_account(userdn,
+                                  badPwdCount=2,
+                                  badPasswordTime=("greater", badPasswordTime),
+                                  logonCount=logonCount,
+                                  lockoutTime=0,
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
+                                  userAccountControl=
+                                    dsdb.UF_NORMAL_ACCOUNT,
+                                  msDSUserAccountControlComputed=0)
+        badPasswordTime = int(res[0]["badPasswordTime"][0])
+
+        time.sleep(self.lockout_observation_window + 1)
+
+        res = self._check_account(userdn,
+                                  badPwdCount=2, effective_bad_password_count=0,
+                                  badPasswordTime=badPasswordTime,
+                                  logonCount=logonCount,
+                                  lockoutTime=0,
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
+                                  userAccountControl=
+                                    dsdb.UF_NORMAL_ACCOUNT,
+                                  msDSUserAccountControlComputed=0)
+
+        # The wrong password
+        creds_lockout.set_password("thatsAcomplPASS1x")
+        try:
+            ldb_lockout = SamDB(url=host_url, credentials=creds_lockout, lp=lp)
+            self.fail()
+        except LdbError, (num, msg):
+            self.assertEquals(num, ERR_INVALID_CREDENTIALS)
+
+        res = self._check_account(userdn,
+                                  badPwdCount=1,
+                                  badPasswordTime=("greater", badPasswordTime),
+                                  logonCount=logonCount,
+                                  lockoutTime=0,
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
+                                  userAccountControl=
+                                    dsdb.UF_NORMAL_ACCOUNT,
+                                  msDSUserAccountControlComputed=0)
+        badPasswordTime = int(res[0]["badPasswordTime"][0])
+
+        # The correct password without letting the timeout expire
+        creds_lockout.set_password(userpass)
+        ldb_lockout = SamDB(url=host_url, credentials=creds_lockout, lp=lp)
+
+        res = self._check_account(userdn,
+                                  badPwdCount=0,
+                                  badPasswordTime=badPasswordTime,
+                                  logonCount=(logoncount_relation, logonCount),
+                                  lockoutTime=0,
+                                  lastLogon=("greater", lastLogon),
+                                  lastLogonTimestamp=lastLogonTimestamp,
+                                  userAccountControl=
+                                    dsdb.UF_NORMAL_ACCOUNT,
+                                  msDSUserAccountControlComputed=0)
+
+class PasswordTests(BasePasswordTestCase):
+    def _reset_ldap_lockoutTime(self, res):
+        self.ldb.modify_ldif("""
+dn: """ + str(res[0].dn) + """
+changetype: modify
+replace: lockoutTime
+lockoutTime: 0
+""")
+
+    def _reset_ldap_userAccountControl(self, res):
+        self.assertTrue("userAccountControl" in res[0])
+        self.assertTrue("msDS-User-Account-Control-Computed" in res[0])
+
+        uac = int(res[0]["userAccountControl"][0])
+        uacc = int(res[0]["msDS-User-Account-Control-Computed"][0])
+
+        uac |= uacc
+        uac = uac & ~dsdb.UF_LOCKOUT
+
+        self.ldb.modify_ldif("""
+dn: """ + str(res[0].dn) + """
+changetype: modify
+replace: userAccountControl
+userAccountControl: %d
+""" % uac)
+
+    def _reset_by_method(self, res, method):
+        if method is "ldap_userAccountControl":
+            self._reset_ldap_userAccountControl(res)
+        elif method is "ldap_lockoutTime":
+            self._reset_ldap_lockoutTime(res)
+        elif method is "samr":
+            self._reset_samr(res)
+        else:
+            self.assertTrue(False, msg="Invalid reset method[%s]" % method)
 
     def _test_userPassword_lockout_with_clear_change(self, creds, other_ldb, method,
                                                      initial_lastlogon_relation=None):
@@ -1437,7 +1769,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
                                                         self.lockout2ntlm_ldb,
                                                         initial_logoncount_relation="equal")
 
-    def _test_login_lockout(self, creds):
+    def __test_login_lockout(self, creds):
         username = creds.get_username()
         userpass = creds.get_password()
         userdn = "cn=%s,cn=users,%s" % (username, self.base_dn)
@@ -1853,9 +2185,6 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
     def test_multiple_logon_ntlm(self):
         self._test_multiple_logon(self.lockout1ntlm_creds)
 
-
-    def tearDown(self):
-        super(PasswordTests, self).tearDown()
 
 host_url = "ldap://%s" % host
 
