@@ -49,6 +49,10 @@ def write_dot_file(basename, edge_list, vertices=None, label=None,
 
     for i, edge in enumerate(edge_list):
         a, b = edge
+        if a is None:
+            a = "Missing source value"
+        if b is None:
+            b = "Missing destination value"
         if reformat_labels:
             a = a.replace(',', '\\n')
             b = b.replace(',', '\\n')
