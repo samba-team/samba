@@ -2002,6 +2002,12 @@ sub setup_env($$$)
 		}
 		return $target3->setup_admember_rfc2307("$path/ad_member_rfc2307",
 							$self->{vars}->{ad_dc_ntvfs}, 34);
+	} elsif ($envname eq "ad_member_idmap_rid") {
+		if (not defined($self->{vars}->{ad_dc})) {
+			$self->setup_ad_dc("$path/ad_dc");
+		}
+		return $target3->setup_ad_member_idmap_rid("$path/ad_member_idmap_rid",
+							   $self->{vars}->{ad_dc});
 	} elsif ($envname eq "none") {
 		return $self->setup_none("$path/none");
 	} else {
