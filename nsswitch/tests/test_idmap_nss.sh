@@ -22,7 +22,7 @@ RID=66666
 while true ; do
     id $RID
     if [ $? -ne 0 ] ; then
-	$wbinfo -s $DOMAIN_SID\\$RID
+	$wbinfo -s $DOMAIN_SID-$RID
 	if [ $? -ne 0 ] ; then
 	    break
 	fi
