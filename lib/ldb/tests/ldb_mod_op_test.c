@@ -21,9 +21,16 @@
 #include <errno.h>
 #include <unistd.h>
 #include <talloc.h>
+
+#define TEVENT_DEPRECATED 1
+#include <tevent.h>
+
 #include <ldb.h>
 #include <string.h>
 #include <ctype.h>
+
+#include <sys/wait.h>
+
 
 #define DEFAULT_BE  "tdb"
 
@@ -1165,6 +1172,239 @@ static void test_search_match_basedn(void **state)
 	assert_int_equal(ret, 0);
 }
 
+
+/*
+ * This test is complex.
+ * The purpose is to test for a deadlock detected between ldb_search()
+ * and ldb_transaction_commit().  The deadlock happens if in process
+ * (1) and (2):
+ *  - (1) the all-record lock is taken in ltdb_search()
+ *  - (2) the ldb_transaction_start() call is made
+ *  - (1) an un-indexed search starts (forced here by doing it in
+ *        the callback
+ *  - (2) the ldb_transaction_commit() is called.
+ *        This returns LDB_ERR_BUSY if the deadlock is detected
+ *
+ * With ldb 1.1.29 and tdb 1.3.12 we avoid this only due to a missing
+ * lock call in ltdb_search() due to a refcounting bug in
+ * ltdb_lock_read()
+ */
+
+struct search_against_transaction_ctx {
+	struct ldbtest_ctx *test_ctx;
+	int res_count;
+	pid_t child_pid;
+	struct ldb_dn *basedn;
+};
+
+static int test_ldb_search_against_transaction_callback2(struct ldb_request *req,
+							 struct ldb_reply *ares)
+{
+	struct search_against_transaction_ctx *ctx = req->context;
+	switch (ares->type) {
+	case LDB_REPLY_ENTRY:
+		ctx->res_count++;
+		if (ctx->res_count != 1) {
+			return LDB_SUCCESS;
+		}
+
+		break;
+
+	case LDB_REPLY_REFERRAL:
+		break;
+
+	case LDB_REPLY_DONE:
+		return ldb_request_done(req, LDB_SUCCESS);
+	}
+
+	return 0;
+
+}
+
+/*
+ * This purpose of this callback is to trigger a transaction in
+ * the child process while the all-record lock is held, but before
+ * we take any locks in the tdb_traverse_read() handler.
+ *
+ * In tdb 1.3.12 tdb_traverse_read() take the read transaction lock
+ * however in ldb 1.1.29 ltdb_search() forgets to take the all-record
+ * lock (except the very first time) due to a ref-counting bug.
+ *
+ */
+
+static int test_ldb_search_against_transaction_callback1(struct ldb_request *req,
+							 struct ldb_reply *ares)
+{
+	int ret;
+	int pipes[2];
+	char buf[2];
+	struct search_against_transaction_ctx *ctx = req->context;
+	switch (ares->type) {
+	case LDB_REPLY_ENTRY:
+		break;
+
+	case LDB_REPLY_REFERRAL:
+		return LDB_SUCCESS;
+
+	case LDB_REPLY_DONE:
+		return ldb_request_done(req, LDB_SUCCESS);
+	}
+
+	ret = pipe(pipes);
+	assert_int_equal(ret, 0);
+
+	ctx->child_pid = fork();
+	if (ctx->child_pid == 0) {
+		TALLOC_CTX *tmp_ctx = NULL;
+		struct ldb_message *msg;
+		TALLOC_FREE(ctx->test_ctx->ldb);
+		TALLOC_FREE(ctx->test_ctx->ev);
+		ctx->test_ctx->ev = tevent_context_init(ctx->test_ctx);
+		if (ctx->test_ctx->ev == NULL) {
+			exit(LDB_ERR_OPERATIONS_ERROR);
+		}
+
+		ctx->test_ctx->ldb = ldb_init(ctx->test_ctx,
+					      ctx->test_ctx->ev);
+		if (ctx->test_ctx->ldb == NULL) {
+			exit(LDB_ERR_OPERATIONS_ERROR);
+		}
+
+		ret = ldb_connect(ctx->test_ctx->ldb,
+				  ctx->test_ctx->dbpath, 0, NULL);
+		if (ret != LDB_SUCCESS) {
+			exit(ret);
+		}
+
+		tmp_ctx = talloc_new(ctx->test_ctx);
+		if (tmp_ctx == NULL) {
+			exit(LDB_ERR_OPERATIONS_ERROR);
+		}
+
+		msg = ldb_msg_new(tmp_ctx);
+		if (msg == NULL) {
+			exit(LDB_ERR_OPERATIONS_ERROR);
+		}
+
+		msg->dn = ldb_dn_new_fmt(msg, ctx->test_ctx->ldb,
+					 "dc=test");
+		if (msg->dn == NULL) {
+			exit(LDB_ERR_OPERATIONS_ERROR);
+		}
+
+		ret = ldb_msg_add_string(msg, "cn", "test_cn_val");
+		if (ret != 0) {
+			exit(LDB_ERR_OPERATIONS_ERROR);
+		}
+
+		ret = ldb_transaction_start(ctx->test_ctx->ldb);
+		if (ret != 0) {
+			exit(ret);
+		}
+
+		ret = write(pipes[1], "GO", 2);
+		if (ret != 2) {
+			exit(LDB_ERR_OPERATIONS_ERROR);
+		}
+
+		ret = ldb_add(ctx->test_ctx->ldb, msg);
+		if (ret != 0) {
+			exit(ret);
+		}
+
+		ret = ldb_transaction_commit(ctx->test_ctx->ldb);
+		exit(ret);
+	}
+
+	ret = read(pipes[0], buf, 2);
+	assert_int_equal(ret, 2);
+
+	/* This search must be unindexed (ie traverse in tdb) */
+	ret = ldb_build_search_req(&req,
+				   ctx->test_ctx->ldb,
+				   ctx->test_ctx,
+				   ctx->basedn,
+				   LDB_SCOPE_SUBTREE,
+				   "cn=*", NULL,
+				   NULL,
+				   ctx,
+				   test_ldb_search_against_transaction_callback2,
+				   NULL);
+	assert_int_equal(ret, 0);
+	ret = ldb_request(ctx->test_ctx->ldb, req);
+
+	if (ret == LDB_SUCCESS) {
+		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
+	}
+	assert_int_equal(ret, 0);
+	assert_int_equal(ctx->res_count, 2);
+
+	return LDB_SUCCESS;
+}
+
+static void test_ldb_search_against_transaction(void **state)
+{
+	struct search_test_ctx *search_test_ctx = talloc_get_type_abort(*state,
+			struct search_test_ctx);
+	struct search_against_transaction_ctx
+		ctx =
+		{ .res_count = 0,
+		  .test_ctx = search_test_ctx->ldb_test_ctx
+		};
+
+	int ret;
+	struct ldb_request *req;
+	pid_t pid;
+	int wstatus;
+	struct ldb_dn *base_search_dn;
+
+	tevent_loop_allow_nesting(search_test_ctx->ldb_test_ctx->ev);
+
+	base_search_dn
+		= ldb_dn_new_fmt(search_test_ctx,
+				 search_test_ctx->ldb_test_ctx->ldb,
+				 "cn=test_search_cn,%s",
+				 search_test_ctx->base_dn);
+	assert_non_null(base_search_dn);
+
+	ctx.basedn
+		= ldb_dn_new_fmt(search_test_ctx,
+				 search_test_ctx->ldb_test_ctx->ldb,
+				 "%s",
+				 search_test_ctx->base_dn);
+	assert_non_null(ctx.basedn);
+
+
+	/* This search must be indexed (ie no traverse in tdb) */
+	ret = ldb_build_search_req(&req,
+				   search_test_ctx->ldb_test_ctx->ldb,
+				   search_test_ctx,
+				   base_search_dn,
+				   LDB_SCOPE_BASE,
+				   "cn=*", NULL,
+				   NULL,
+				   &ctx,
+				   test_ldb_search_against_transaction_callback1,
+				   NULL);
+	assert_int_equal(ret, 0);
+	ret = ldb_request(search_test_ctx->ldb_test_ctx->ldb, req);
+
+	if (ret == LDB_SUCCESS) {
+		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
+	}
+	assert_int_equal(ret, 0);
+	assert_int_equal(ctx.res_count, 2);
+
+	pid = waitpid(ctx.child_pid, &wstatus, 0);
+	assert_int_equal(pid, ctx.child_pid);
+
+	assert_true(WIFEXITED(wstatus));
+
+	assert_int_equal(WEXITSTATUS(wstatus), 0);
+
+
+}
+
 static int ldb_case_test_setup(void **state)
 {
 	int ret;
@@ -1514,6 +1754,9 @@ int main(int argc, const char **argv)
 						ldb_search_test_setup,
 						ldb_search_test_teardown),
 		cmocka_unit_test_setup_teardown(test_search_match_basedn,
+						ldb_search_test_setup,
+						ldb_search_test_teardown),
+		cmocka_unit_test_setup_teardown(test_ldb_search_against_transaction,
 						ldb_search_test_setup,
 						ldb_search_test_teardown),
 		cmocka_unit_test_setup_teardown(test_ldb_attrs_case_insensitive,
