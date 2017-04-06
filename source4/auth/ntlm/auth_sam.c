@@ -660,8 +660,8 @@ static NTSTATUS authsam_want_check(struct auth_method_context *ctx,
 
 	is_local_name = lpcfg_is_myname(ctx->auth_ctx->lp_ctx,
 				  user_info->mapped.domain_name);
-	is_my_domain  = lpcfg_is_mydomain(ctx->auth_ctx->lp_ctx,
-				       user_info->mapped.domain_name); 
+	is_my_domain = lpcfg_is_my_domain_or_realm(ctx->auth_ctx->lp_ctx,
+						 user_info->mapped.domain_name);
 
 	/* check whether or not we service this domain/workgroup name */
 	switch (lpcfg_server_role(ctx->auth_ctx->lp_ctx)) {
