@@ -609,6 +609,12 @@ void fill_ctdb_req_control_data(TALLOC_CTX *mem_ctx,
 		assert(cd->data.pid_srvid != NULL);
 		fill_ctdb_pid_srvid(mem_ctx, cd->data.pid_srvid);
 		break;
+
+	case CTDB_CONTROL_TUNNEL_REGISTER:
+		break;
+
+	case CTDB_CONTROL_TUNNEL_DEREGISTER:
+		break;
 	}
 }
 
@@ -1013,6 +1019,12 @@ void verify_ctdb_req_control_data(struct ctdb_req_control_data *cd,
 
 	case CTDB_CONTROL_CHECK_PID_SRVID:
 		verify_ctdb_pid_srvid(cd->data.pid_srvid, cd2->data.pid_srvid);
+		break;
+
+	case CTDB_CONTROL_TUNNEL_REGISTER:
+		break;
+
+	case CTDB_CONTROL_TUNNEL_DEREGISTER:
 		break;
 	}
 }
@@ -1428,6 +1440,13 @@ void fill_ctdb_reply_control_data(TALLOC_CTX *mem_ctx,
 
 	case CTDB_CONTROL_CHECK_PID_SRVID:
 		break;
+
+	case CTDB_CONTROL_TUNNEL_REGISTER:
+		break;
+
+	case CTDB_CONTROL_TUNNEL_DEREGISTER:
+		break;
+
 	}
 }
 
@@ -1775,6 +1794,13 @@ void verify_ctdb_reply_control_data(struct ctdb_reply_control_data *cd,
 
 	case CTDB_CONTROL_CHECK_PID_SRVID:
 		break;
+
+	case CTDB_CONTROL_TUNNEL_REGISTER:
+		break;
+
+	case CTDB_CONTROL_TUNNEL_DEREGISTER:
+		break;
+
 	}
 }
 

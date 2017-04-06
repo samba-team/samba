@@ -2329,3 +2329,45 @@ int ctdb_reply_control_check_pid_srvid(struct ctdb_reply_control *reply,
 
 	return reply->status;
 }
+
+/* CTDB_CONTROL_TUNNEL_REGISTER */
+
+void ctdb_req_control_tunnel_register(struct ctdb_req_control *request,
+				      uint64_t tunnel_id)
+{
+	request->opcode = CTDB_CONTROL_TUNNEL_REGISTER;
+	request->pad = 0;
+	request->srvid = tunnel_id;
+	request->client_id = 0;
+	request->flags = 0;
+}
+
+int ctdb_reply_control_tunnel_register(struct ctdb_reply_control *reply)
+{
+	if (reply->rdata.opcode != CTDB_CONTROL_TUNNEL_REGISTER) {
+		return EPROTO;
+	}
+
+	return reply->status;
+}
+
+/* CTDB_CONTROL_TUNNEL_DEREGISTER */
+
+void ctdb_req_control_tunnel_deregister(struct ctdb_req_control *request,
+					uint64_t tunnel_id)
+{
+	request->opcode = CTDB_CONTROL_TUNNEL_DEREGISTER;
+	request->pad = 0;
+	request->srvid = tunnel_id;
+	request->client_id = 0;
+	request->flags = 0;
+}
+
+int ctdb_reply_control_tunnel_deregister(struct ctdb_reply_control *reply)
+{
+	if (reply->rdata.opcode != CTDB_CONTROL_TUNNEL_DEREGISTER) {
+		return EPROTO;
+	}
+
+	return reply->status;
+}

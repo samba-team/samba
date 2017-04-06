@@ -420,6 +420,12 @@ static size_t ctdb_req_control_data_len(struct ctdb_req_control_data *cd)
 	case CTDB_CONTROL_CHECK_PID_SRVID:
 		len = ctdb_pid_srvid_len(cd->data.pid_srvid);
 		break;
+
+	case CTDB_CONTROL_TUNNEL_REGISTER:
+		break;
+
+	case CTDB_CONTROL_TUNNEL_DEREGISTER:
+		break;
 	}
 
 	return len;
@@ -1415,6 +1421,12 @@ static size_t ctdb_reply_control_data_len(struct ctdb_reply_control_data *cd)
 		break;
 
 	case CTDB_CONTROL_CHECK_PID_SRVID:
+		break;
+
+	case CTDB_CONTROL_TUNNEL_REGISTER:
+		break;
+
+	case CTDB_CONTROL_TUNNEL_DEREGISTER:
 		break;
 	}
 
