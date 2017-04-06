@@ -462,7 +462,8 @@ def build(bld):
                                              ctdb_vacuum.c ctdb_banning.c
                                              ctdb_statistics.c
                                              ctdb_update_record.c
-                                             ctdb_lock.c ctdb_fork.c'''),
+                                             ctdb_lock.c ctdb_fork.c
+                                             ctdb_tunnel.c'''),
                      includes='include',
                      deps='''ctdb-client ctdb-common ctdb-system ctdb-protocol
                              ctdb-tcp ctdb-util replace sys_rw popt

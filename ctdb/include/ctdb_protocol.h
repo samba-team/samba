@@ -134,6 +134,14 @@ struct ctdb_req_keepalive_old {
 	uint32_t uptime;
 };
 
+struct ctdb_req_tunnel_old {
+	struct ctdb_req_header hdr;
+	uint64_t tunnel_id;
+	uint32_t flags;
+	uint32_t datalen;
+	uint8_t data[1];
+};
+
 /*
    Structure used for a nodemap. 
    The nodemap is the structure containing a list of all nodes

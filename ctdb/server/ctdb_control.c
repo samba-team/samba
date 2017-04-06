@@ -700,6 +700,12 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		CHECK_CONTROL_DATA_SIZE((sizeof(pid_t) + sizeof(uint64_t)));
 		return ctdb_control_check_pid_srvid(ctdb, indata);
 
+	case CTDB_CONTROL_TUNNEL_REGISTER:
+		return ctdb_control_tunnel_register(ctdb, client_id, srvid);
+
+	case CTDB_CONTROL_TUNNEL_DEREGISTER:
+		return ctdb_control_tunnel_deregister(ctdb, client_id, srvid);
+
 	default:
 		DEBUG(DEBUG_CRIT,(__location__ " Unknown CTDB control opcode %u\n", opcode));
 		return -1;

@@ -289,6 +289,7 @@ struct ctdb_context {
 	void *private_data; /* private to transport */
 	struct ctdb_db_context *db_list;
 	struct srvid_context *srv;
+	struct srvid_context *tunnels;
 	struct ctdb_daemon_data daemon;
 	struct ctdb_statistics statistics;
 	struct ctdb_statistics statistics_current;
@@ -551,6 +552,9 @@ int daemon_register_message_handler(struct ctdb_context *ctdb,
 				    uint32_t client_id, uint64_t srvid);
 int daemon_deregister_message_handler(struct ctdb_context *ctdb,
 				      uint32_t client_id, uint64_t srvid);
+
+void daemon_tunnel_handler(uint64_t tunnel_id, TDB_DATA data,
+			   void *private_data);
 
 int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork);
 
@@ -960,6 +964,13 @@ int32_t ctdb_control_get_tunable(struct ctdb_context *ctdb, TDB_DATA indata,
 int32_t ctdb_control_set_tunable(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_list_tunables(struct ctdb_context *ctdb,
 				   TDB_DATA *outdata);
+
+/* from ctdb_tunnel.c */
+
+int32_t ctdb_control_tunnel_register(struct ctdb_context *ctdb,
+				     uint32_t client_id, uint64_t tunnel_id);
+int32_t ctdb_control_tunnel_deregister(struct ctdb_context *ctdb,
+				       uint32_t client_id, uint64_t tunnel_id);
 
 /* from ctdb_update_record.c */
 

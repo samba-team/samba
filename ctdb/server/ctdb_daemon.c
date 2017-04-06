@@ -209,6 +209,36 @@ int daemon_deregister_message_handler(struct ctdb_context *ctdb, uint32_t client
 	return srvid_deregister(ctdb->srv, srvid, client);
 }
 
+void daemon_tunnel_handler(uint64_t tunnel_id, TDB_DATA data,
+			   void *private_data)
+{
+	struct ctdb_client *client =
+		talloc_get_type_abort(private_data, struct ctdb_client);
+	struct ctdb_req_tunnel_old *c, *pkt;
+	size_t len;
+
+	pkt = (struct ctdb_req_tunnel_old *)data.dptr;
+
+	len = offsetof(struct ctdb_req_tunnel_old, data) + pkt->datalen;
+	c = ctdbd_allocate_pkt(client->ctdb, client->ctdb, CTDB_REQ_TUNNEL,
+			       len, struct ctdb_req_tunnel_old);
+	if (c == NULL) {
+		DEBUG(DEBUG_ERR, ("Memory error in daemon_tunnel_handler\n"));
+		return;
+	}
+
+	talloc_set_name_const(c, "req_tunnel packet");
+
+	c->tunnel_id = tunnel_id;
+	c->flags = pkt->flags;
+	c->datalen = pkt->datalen;
+	memcpy(c->data, pkt->data, pkt->datalen);
+
+	daemon_queue_send(client, &c->hdr);
+
+	talloc_free(c);
+}
+
 /*
   destroy a ctdb_client
 */
@@ -1253,6 +1283,12 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 	TALLOC_FREE(ctdb->srv);
 	if (srvid_init(ctdb, &ctdb->srv) != 0) {
 		DEBUG(DEBUG_CRIT,("Failed to setup message srvid context\n"));
+		exit(1);
+	}
+
+	TALLOC_FREE(ctdb->tunnels);
+	if (srvid_init(ctdb, &ctdb->tunnels) != 0) {
+		DEBUG(DEBUG_ERR, ("Failed to setup tunnels context\n"));
 		exit(1);
 	}
 
