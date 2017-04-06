@@ -88,3 +88,54 @@ int32_t ctdb_control_tunnel_deregister(struct ctdb_context *ctdb,
 
 	return 0;
 }
+
+int ctdb_daemon_send_tunnel(struct ctdb_context *ctdb, uint32_t destnode,
+			    uint64_t tunnel_id, uint32_t flags, TDB_DATA data)
+{
+	struct ctdb_req_tunnel_old *c;
+	size_t len;
+
+	if (ctdb->methods == NULL) {
+		DEBUG(DEBUG_INFO,
+		      ("Failed to send tunnel. Transport is DOWN\n"));
+		return -1;
+	}
+
+	len = offsetof(struct ctdb_req_tunnel_old, data) + data.dsize;
+	c = ctdb_transport_allocate(ctdb, ctdb, CTDB_REQ_TUNNEL, len,
+				    struct ctdb_req_tunnel_old);
+	if (c == NULL) {
+		DEBUG(DEBUG_ERR,
+		      ("Memory error in ctdb_daemon_send_tunnel()\n"));
+		return -1;
+	}
+
+	c->hdr.destnode = destnode;
+	c->tunnel_id = tunnel_id;
+	c->flags = flags;
+	c->datalen = data.dsize;
+	memcpy(c->data, data.dptr, data.dsize);
+
+	ctdb_queue_packet(ctdb, &c->hdr);
+
+	talloc_free(c);
+	return 0;
+}
+
+void ctdb_request_tunnel(struct ctdb_context *ctdb,
+			 struct ctdb_req_header *hdr)
+{
+	struct ctdb_req_tunnel_old *c =
+		(struct ctdb_req_tunnel_old *)hdr;
+	TDB_DATA data;
+	int ret;
+
+	data.dsize = hdr->length;
+	data.dptr = (uint8_t *)c;
+
+	ret = srvid_dispatch(ctdb->tunnels, c->tunnel_id, 0, data);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Tunnel id 0x%"PRIx64" not registered\n",
+				  c->tunnel_id));
+	}
+}

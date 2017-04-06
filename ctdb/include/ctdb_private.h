@@ -972,6 +972,13 @@ int32_t ctdb_control_tunnel_register(struct ctdb_context *ctdb,
 int32_t ctdb_control_tunnel_deregister(struct ctdb_context *ctdb,
 				       uint32_t client_id, uint64_t tunnel_id);
 
+int ctdb_daemon_send_tunnel(struct ctdb_context *ctdb, uint32_t destnode,
+			    uint64_t tunnel_id, uint32_t client_id,
+			    TDB_DATA data);
+
+void ctdb_request_tunnel(struct ctdb_context *ctdb,
+			 struct ctdb_req_header *hdr);
+
 /* from ctdb_update_record.c */
 
 int32_t ctdb_control_update_record(struct ctdb_context *ctdb,

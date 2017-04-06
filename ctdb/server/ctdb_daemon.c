@@ -817,6 +817,8 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 
 static void daemon_request_control_from_client(struct ctdb_client *client, 
 					       struct ctdb_req_control_old *c);
+static void daemon_request_tunnel_from_client(struct ctdb_client *client,
+					      struct ctdb_req_tunnel_old *c);
 
 /* data contains a packet from the client */
 static void daemon_incoming_packet(void *p, struct ctdb_req_header *hdr)
@@ -856,6 +858,11 @@ static void daemon_incoming_packet(void *p, struct ctdb_req_header *hdr)
 	case CTDB_REQ_CONTROL:
 		CTDB_INCREMENT_STAT(ctdb, client.req_control);
 		daemon_request_control_from_client(client, (struct ctdb_req_control_old *)hdr);
+		break;
+
+	case CTDB_REQ_TUNNEL:
+		CTDB_INCREMENT_STAT(ctdb, client.req_tunnel);
+		daemon_request_tunnel_from_client(client, (struct ctdb_req_tunnel_old *)hdr);
 		break;
 
 	default:
@@ -1557,6 +1564,39 @@ static void daemon_request_control_from_client(struct ctdb_client *client,
 	}
 
 	talloc_free(tmp_ctx);
+}
+
+static void daemon_request_tunnel_from_client(struct ctdb_client *client,
+					      struct ctdb_req_tunnel_old *c)
+{
+	TDB_DATA data;
+	int ret;
+
+	if (! ctdb_validate_pnn(client->ctdb, c->hdr.destnode)) {
+		DEBUG(DEBUG_ERR, ("Invalid destination 0x%x\n",
+				  c->hdr.destnode));
+		return;
+	}
+
+	ret = srvid_exists(client->ctdb->tunnels, c->tunnel_id, NULL);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,
+		      ("tunnel id 0x%"PRIx64" not registered, dropping pkt\n",
+		       c->tunnel_id));
+		return;
+	}
+
+	data = (TDB_DATA) {
+		.dsize = c->datalen,
+		.dptr = &c->data[0],
+	};
+
+	ret = ctdb_daemon_send_tunnel(client->ctdb, c->hdr.destnode,
+				      c->tunnel_id, c->flags, data);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Failed to set tunnel to remote note %u\n",
+				  c->hdr.destnode));
+	}
 }
 
 /*

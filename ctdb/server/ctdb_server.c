@@ -268,6 +268,11 @@ void ctdb_input_pkt(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 		ctdb_request_keepalive(ctdb, hdr);
 		break;
 
+	case CTDB_REQ_TUNNEL:
+		CTDB_INCREMENT_STAT(ctdb, node.req_tunnel);
+		ctdb_request_tunnel(ctdb, hdr);
+		break;
+
 	default:
 		DEBUG(DEBUG_CRIT,("%s: Packet with unknown operation %u\n", 
 			 __location__, hdr->operation));
