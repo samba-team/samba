@@ -84,6 +84,17 @@ class BasePasswordTestCase(samba.tests.TestCase):
             return
         self.assertEqual(mode, not mode, "Invalid Mode[%s]" % mode)
 
+    def _check_account_initial(self, userdn):
+        self._check_account(userdn,
+                            badPwdCount=0,
+                            badPasswordTime=0,
+                            logonCount=0,
+                            lastLogon=0,
+                            lastLogonTimestamp=("absent", None),
+                            userAccountControl=
+                            dsdb.UF_NORMAL_ACCOUNT,
+                            msDSUserAccountControlComputed=0)
+
     def _check_account(self, dn,
                        badPwdCount=None,
                        badPasswordTime=None,
@@ -213,6 +224,7 @@ userPassword: """ + userpass + """
                                       username=username,
                                       userpass=userpass+"X",
                                       kerberos_state=use_kerberos)
+        self._check_account_initial(userdn)
 
         # Fail once to get a badPasswordTime
         try:

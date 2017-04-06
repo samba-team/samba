@@ -24,7 +24,10 @@ from samba.auth import system_session
 from samba.samdb import SamDB
 from samba.credentials import Credentials, DONT_USE_KERBEROS, MUST_USE_KERBEROS
 from samba import gensec, dsdb
+from ldb import SCOPE_BASE, LdbError, ERR_INVALID_CREDENTIALS
+from samba.dcerpc import security, samr
 
+import password_lockout_base
 
 def passwd_encode(pw):
     return base64.b64encode(('"%s"' % pw).encode('utf-16-le'))
@@ -111,7 +114,7 @@ def get_server_ref_from_samdb(samdb):
 
 
 
-class RodcRwdcTests(samba.tests.TestCase):
+class RodcRwdcTests(password_lockout_base.BasePasswordTestCase):
     counter = itertools.count(1).next
 
     def force_replication(self, base=None):
@@ -140,6 +143,10 @@ class RodcRwdcTests(samba.tests.TestCase):
             print stderr
             raise RodcRwdcTestException()
 
+    def _check_account_initial(self, dn):
+        self.force_replication()
+        return super(RodcRwdcTests, self)._check_account_initial(dn)
+
     def tearDown(self):
         super(RodcRwdcTests, self).tearDown()
         self.rwdc_db.set_dsheuristics(self.rwdc_dsheuristics)
@@ -147,12 +154,29 @@ class RodcRwdcTests(samba.tests.TestCase):
         set_auto_replication(RWDC, True)
 
     def setUp(self):
-        super(RodcRwdcTests, self).setUp()
         self.rodc_db = SamDB('ldap://%s' % RODC, credentials=CREDS,
                              session_info=system_session(LP), lp=LP)
 
         self.rwdc_db = SamDB('ldap://%s' % RWDC, credentials=CREDS,
                              session_info=system_session(LP), lp=LP)
+
+        # Define variables for BasePasswordTestCase
+        self.lp = LP
+        self.global_creds = CREDS
+        self.host = RWDC
+        self.host_url = 'ldap://%s' % RWDC
+        self.ldb = SamDB(url='ldap://%s' % RWDC, session_info=system_session(self.lp),
+                         credentials=self.global_creds, lp=self.lp)
+
+        super(RodcRwdcTests, self).setUp()
+        self.host = RODC
+        self.host_url = 'ldap://%s' % RODC
+        self.ldb = SamDB(url='ldap://%s' % RODC, session_info=system_session(self.lp),
+                         credentials=self.global_creds, lp=self.lp)
+
+        self.samr = samr.samr("ncacn_ip_tcp:%s[seal]" % self.host, self.lp, self.global_creds)
+        self.samr_handle = self.samr.Connect2(None, security.SEC_FLAG_MAXIMUM_ALLOWED)
+        self.samr_domain = self.samr.OpenDomain(self.samr_handle, security.SEC_FLAG_MAXIMUM_ALLOWED, self.domain_sid)
 
         self.base_dn = self.rwdc_db.domain_dn()
 
@@ -547,6 +571,112 @@ class RodcRwdcTests(samba.tests.TestCase):
     def test_change_password_reveal_on_demand_kerberos(self):
         CREDS.set_kerberos_state(MUST_USE_KERBEROS)
         self._test_ldap_change_password_reveal_on_demand()
+
+    def test_login_lockout_krb5(self):
+        username = self.lockout1krb5_creds.get_username()
+        userpass = self.lockout1krb5_creds.get_password()
+        userdn = "cn=%s,cn=users,%s" % (username, self.base_dn)
+
+        preload_rodc_user(userdn)
+
+        use_kerberos = self.lockout1krb5_creds.get_kerberos_state()
+        fail_creds = self.insta_creds(self.template_creds,
+                                      username=username,
+                                      userpass=userpass+"X",
+                                      kerberos_state=use_kerberos)
+
+        try:
+            ldb = SamDB(url=self.host_url, credentials=fail_creds, lp=self.lp)
+            self.fail()
+        except LdbError, (num, msg):
+            self.assertEquals(num, ERR_INVALID_CREDENTIALS)
+
+        # Succeed to reset everything to 0
+        success_creds = self.insta_creds(self.template_creds,
+                                         username=username,
+                                         userpass=userpass,
+                                         kerberos_state=use_kerberos)
+
+        ldb = SamDB(url=self.host_url, credentials=success_creds, lp=self.lp)
+
+        self._test_login_lockout(self.lockout1krb5_creds)
+
+    def test_login_lockout_ntlm(self):
+        username = self.lockout1ntlm_creds.get_username()
+        userpass = self.lockout1ntlm_creds.get_password()
+        userdn = "cn=%s,cn=users,%s" % (username, self.base_dn)
+
+        preload_rodc_user(userdn)
+
+        use_kerberos = self.lockout1ntlm_creds.get_kerberos_state()
+        fail_creds = self.insta_creds(self.template_creds,
+                                      username=username,
+                                      userpass=userpass+"X",
+                                      kerberos_state=use_kerberos)
+
+        try:
+            ldb = SamDB(url=self.host_url, credentials=fail_creds, lp=self.lp)
+            self.fail()
+        except LdbError, (num, msg):
+            self.assertEquals(num, ERR_INVALID_CREDENTIALS)
+
+        # Succeed to reset everything to 0
+        ldb = SamDB(url=self.host_url, credentials=self.lockout1ntlm_creds, lp=self.lp)
+
+        self._test_login_lockout(self.lockout1ntlm_creds)
+
+    def test_multiple_logon_krb5(self):
+        username = self.lockout1krb5_creds.get_username()
+        userpass = self.lockout1krb5_creds.get_password()
+        userdn = "cn=%s,cn=users,%s" % (username, self.base_dn)
+
+        preload_rodc_user(userdn)
+
+        use_kerberos = self.lockout1krb5_creds.get_kerberos_state()
+        fail_creds = self.insta_creds(self.template_creds,
+                                      username=username,
+                                      userpass=userpass+"X",
+                                      kerberos_state=use_kerberos)
+
+        try:
+            ldb = SamDB(url=self.host_url, credentials=fail_creds, lp=self.lp)
+            self.fail()
+        except LdbError, (num, msg):
+            self.assertEquals(num, ERR_INVALID_CREDENTIALS)
+
+        # Succeed to reset everything to 0
+        success_creds = self.insta_creds(self.template_creds,
+                                         username=username,
+                                         userpass=userpass,
+                                         kerberos_state=use_kerberos)
+
+        ldb = SamDB(url=self.host_url, credentials=success_creds, lp=self.lp)
+
+        self._test_multiple_logon(self.lockout1krb5_creds)
+
+    def test_multiple_logon_ntlm(self):
+        username = self.lockout1ntlm_creds.get_username()
+        userdn = "cn=%s,cn=users,%s" % (username, self.base_dn)
+        userpass = self.lockout1ntlm_creds.get_password()
+
+        preload_rodc_user(userdn)
+
+        use_kerberos = self.lockout1ntlm_creds.get_kerberos_state()
+        fail_creds = self.insta_creds(self.template_creds,
+                                      username=username,
+                                      userpass=userpass+"X",
+                                      kerberos_state=use_kerberos)
+
+        try:
+            ldb = SamDB(url=self.host_url, credentials=fail_creds, lp=self.lp)
+            self.fail()
+        except LdbError, (num, msg):
+            self.assertEquals(num, ERR_INVALID_CREDENTIALS)
+
+        # Succeed to reset everything to 0
+        ldb = SamDB(url=self.host_url, credentials=self.lockout1ntlm_creds, lp=self.lp)
+
+        self._test_multiple_logon(self.lockout1ntlm_creds)
 
 def main():
     global RODC, RWDC, CREDS, LP
