@@ -424,7 +424,7 @@ def build(bld):
                                              client_message_sync.c
                                              client_control_sync.c
                                              client_db.c client_util.c
-                                             client_event.c
+                                             client_event.c client_tunnel.c
                                           '''),
                         includes='include',
                         deps='replace talloc tevent tdb tdb-wrap')

@@ -35,6 +35,7 @@ struct ctdb_db_context {
 struct ctdb_client_context {
 	struct reqid_context *idr;
 	struct srvid_context *srv;
+	struct srvid_context *tunnels;
 	struct comm_context *comm;
 	ctdb_client_callback_func_t callback;
 	void *private_data;
@@ -64,6 +65,13 @@ struct ctdb_transaction_handle {
 	bool updated;
 };
 
+struct ctdb_tunnel_context {
+	struct ctdb_client_context *client;
+	uint64_t tunnel_id;
+	ctdb_tunnel_callback_func_t callback;
+	void *private_data;
+};
+
 /* From client_call.c */
 
 void ctdb_client_reply_call(struct ctdb_client_context *client,
@@ -78,5 +86,10 @@ void ctdb_client_req_message(struct ctdb_client_context *client,
 
 void ctdb_client_reply_control(struct ctdb_client_context *client,
 			       uint8_t *buf, size_t buflen, uint32_t reqid);
+
+/* From client_tunnel.c */
+
+void ctdb_client_req_tunnel(struct ctdb_client_context *client,
+			    uint8_t *buf, size_t buflen, uint32_t reqid);
 
 #endif /* __CTDB_CLIENT_PRIVATE_H__ */
