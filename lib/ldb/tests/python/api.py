@@ -5,7 +5,8 @@
 import os
 from unittest import TestCase
 import sys
-
+import gc
+import time
 import ldb
 
 PY3 = sys.version_info > (3, 0)
@@ -106,7 +107,12 @@ class SimpleLdb(TestCase):
         self.assertTrue(l.get_opaque("my_opaque") is not None)
         self.assertEqual(None, l.get_opaque("unknown"))
 
-    def test_search_scope_base(self):
+    def test_search_scope_base_empty_db(self):
+        l = ldb.Ldb(filename())
+        self.assertEqual(len(l.search(ldb.Dn(l, "dc=foo1"),
+                          ldb.SCOPE_BASE)), 0)
+
+    def test_search_scope_onelevel_empty_db(self):
         l = ldb.Ldb(filename())
         self.assertEqual(len(l.search(ldb.Dn(l, "dc=foo1"),
                           ldb.SCOPE_ONELEVEL)), 0)
@@ -1254,7 +1260,7 @@ class LdbResultTests(TestCase):
         res = self.l.search().referals
         it = iter(res)
 
-    def test_iter_as_sequence_msgs(self):
+    def test_search_sequence_msgs(self):
         found = False
         res = self.l.search().msgs
 
@@ -1264,15 +1270,112 @@ class LdbResultTests(TestCase):
                 found = True
         self.assertTrue(found)
 
-    def test_iter_as_sequence(self):
+    def test_search_as_iter(self):
         found = False
         res = self.l.search()
 
-        for i in range(0, len(res)):
-            l = res[i]
+        for l in res:
             if str(l.dn) == "OU=OU10,DC=SAMBA,DC=ORG":
                 found = True
         self.assertTrue(found)
+
+    def test_search_iter(self):
+        found = False
+        res = self.l.search_iterator()
+
+        for l in res:
+            if str(l.dn) == "OU=OU10,DC=SAMBA,DC=ORG":
+                found = True
+        self.assertTrue(found)
+
+    def test_search_iter_against_trans(self):
+        found = False
+        found11 = False
+
+        # We need to hold this iterator open to hold the all-record
+        # lock
+        res = self.l.search_iterator()
+
+        (r1, w1) = os.pipe()
+
+        (r2, w2) = os.pipe()
+
+        l = next(res)
+        if str(l.dn) == "OU=OU10,DC=SAMBA,DC=ORG":
+            found = True
+
+        # For the first element, with the sequence open (which
+        # means with ldb locks held), fork a child that will
+        # write to the DB
+        pid = os.fork()
+        if pid == 0:
+            # In the child, re-open
+            del(self.l)
+            gc.collect()
+
+            child_ldb = ldb.Ldb(self.name)
+            # start a transaction
+            child_ldb.transaction_start()
+
+            # write to it
+            child_ldb.add({"dn": "OU=OU11,DC=SAMBA,DC=ORG",
+                           "name": b"samba.org"})
+
+            os.write(w1, b"added")
+
+            # Now wait for the search to be done
+            os.read(r2, 6)
+
+            # and commit
+            try:
+                child_ldb.transaction_commit()
+            except LdbError as err:
+                # We print this here to see what went wrong in the child
+                print(err)
+                os._exit(1)
+
+            os.write(w1, b"transaction")
+            os._exit(0)
+
+        self.assertEqual(os.read(r1, 5), b"added")
+
+        # This should not turn up until the transaction is concluded
+        res11 = self.l.search(base="OU=OU11,DC=SAMBA,DC=ORG",
+                            scope=ldb.SCOPE_BASE)
+        self.assertEqual(len(res11), 0)
+
+        os.write(w2, b"search")
+
+        # Now wait for the transaction to be done.  This should
+        # deadlock, but the search doesn't hold a read lock for the
+        # iterator lifetime currently.
+        self.assertEqual(os.read(r1, 11), b"transaction")
+
+        # This should not turn up until the search finishes and
+        # removed the read lock, but for ldb_tdb that happened as soon
+        # as we called the first res.next()
+        res11 = self.l.search(base="OU=OU11,DC=SAMBA,DC=ORG",
+                            scope=ldb.SCOPE_BASE)
+        self.assertEqual(len(res11), 1)
+
+        # These results were actually collected at the first next(res) call
+        for l in res:
+            if str(l.dn) == "OU=OU10,DC=SAMBA,DC=ORG":
+                found = True
+            if str(l.dn) == "OU=OU11,DC=SAMBA,DC=ORG":
+                found11 = True
+
+        # This should now turn up, as the transaction is over and all
+        # read locks are gone
+        res11 = self.l.search(base="OU=OU11,DC=SAMBA,DC=ORG",
+                            scope=ldb.SCOPE_BASE)
+        self.assertEqual(len(res11), 1)
+
+        self.assertTrue(found)
+        self.assertFalse(found11)
+
+        (got_pid, status) = os.waitpid(pid, 0)
+        self.assertEqual(got_pid, pid)
 
 
 class BadTypeTests(TestCase):
