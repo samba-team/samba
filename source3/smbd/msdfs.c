@@ -888,7 +888,7 @@ static NTSTATUS dfs_redirect(TALLOC_CTX *ctx,
 	}
 
 	status = dfs_path_lookup(ctx, conn, path_in, pdp,
-			search_wcard_flag, NULL, NULL);
+				 ucf_flags, NULL, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status, NT_STATUS_PATH_NOT_COVERED)) {
 			DEBUG(3,("dfs_redirect: Redirecting %s\n", path_in));
@@ -1073,7 +1073,7 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 	 * NT_STATUS_PATH_NOT_COVERED. */
 
 	status = dfs_path_lookup(ctx, conn, dfs_path, pdp,
-			False, consumedcntp, &targetpath);
+				 0, consumedcntp, &targetpath);
 
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_PATH_NOT_COVERED)) {
 		DEBUG(3,("get_referred_path: No valid referrals for path %s\n",
