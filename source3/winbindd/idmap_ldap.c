@@ -78,16 +78,7 @@ static NTSTATUS get_credentials( TALLOC_CTX *mem_ctx,
 	tmp = idmap_config_const_string(dom->name, "ldap_user_dn", NULL);
 
 	if ( tmp ) {
-		if (!dom) {
-			DEBUG(0, ("get_credentials: Invalid domain 'NULL' "
-				  "encountered for user DN %s\n",
-				  tmp));
-			ret = NT_STATUS_UNSUCCESSFUL;
-			goto done;
-		} else {
-			secret = idmap_fetch_secret("ldap", dom->name, tmp);
-		}
-
+		secret = idmap_fetch_secret("ldap", dom->name, tmp);
 		if (!secret) {
 			DEBUG(0, ("get_credentials: Unable to fetch "
 				  "auth credentials for %s in %s\n",
