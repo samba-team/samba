@@ -973,6 +973,31 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
     def test_multiple_logon_ntlm(self):
         self._test_multiple_logon(self.lockout1ntlm_creds)
 
+    def test_lockout_observation_window(self):
+        lockout3krb5_creds = self.insta_creds(self.template_creds,
+                                              username="lockout3krb5",
+                                              userpass="thatsAcomplPASS0",
+                                              kerberos_state=MUST_USE_KERBEROS)
+        self._testing_add_user(lockout3krb5_creds)
+
+        lockout4krb5_creds = self.insta_creds(self.template_creds,
+                                              username="lockout4krb5",
+                                              userpass="thatsAcomplPASS0",
+                                              kerberos_state=MUST_USE_KERBEROS)
+        self._testing_add_user(lockout4krb5_creds,
+                               lockOutObservationWindow=self.lockout_observation_window)
+
+        lockout3ntlm_creds = self.insta_creds(self.template_creds,
+                                              username="lockout3ntlm",
+                                              userpass="thatsAcomplPASS0",
+                                              kerberos_state=DONT_USE_KERBEROS)
+        self._testing_add_user(lockout3ntlm_creds)
+        lockout4ntlm_creds = self.insta_creds(self.template_creds,
+                                              username="lockout4ntlm",
+                                              userpass="thatsAcomplPASS0",
+                                              kerberos_state=DONT_USE_KERBEROS)
+        self._testing_add_user(lockout4ntlm_creds,
+                               lockOutObservationWindow=self.lockout_observation_window)
 
 host_url = "ldap://%s" % host
 

@@ -195,6 +195,51 @@ class BasePasswordTestCase(samba.tests.TestCase):
         userpass = creds.get_password()
         userdn = "cn=%s,cn=users,%s" % (username, self.base_dn)
 
+        delete_force(self.ldb, userdn)
+        self.ldb.add({
+             "dn": userdn,
+             "objectclass": "user",
+             "sAMAccountName": username})
+
+        self.addCleanup(delete_force, self.ldb, userdn)
+
+        # Sets the initial user password with a "special" password change
+        # I think that this internally is a password set operation and it can
+        # only be performed by someone which has password set privileges on the
+        # account (at least in s4 we do handle it like that).
+        self.ldb.modify_ldif("""
+dn: """ + userdn + """
+changetype: modify
+delete: userPassword
+add: userPassword
+userPassword: """ + userpass + """
+""")
+        # Enables the user account
+        self.ldb.enable_account("(sAMAccountName=%s)" % username)
+
+        use_kerberos = creds.get_kerberos_state()
+        fail_creds = self.insta_creds(self.template_creds,
+                                      username=username,
+                                      userpass=userpass+"X",
+                                      kerberos_state=use_kerberos)
+
+        # Fail once to get a badPasswordTime
+        try:
+            ldb = SamDB(url=self.host_url, credentials=fail_creds, lp=self.lp)
+            self.fail()
+        except LdbError, (num, msg):
+            self.assertEquals(num, ERR_INVALID_CREDENTIALS)
+
+        # Succeed to reset everything to 0
+        ldb = SamDB(url=self.host_url, credentials=creds, lp=self.lp)
+
+        return ldb
+
+    def _testing_add_user(self, creds, lockOutObservationWindow=0):
+        username = creds.get_username()
+        userpass = creds.get_password()
+        userdn = "cn=%s,cn=users,%s" % (username, self.base_dn)
+
         use_kerberos = creds.get_kerberos_state()
         if use_kerberos == MUST_USE_KERBEROS:
             logoncount_relation = 'greater'
