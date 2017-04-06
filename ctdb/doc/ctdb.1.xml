@@ -123,10 +123,10 @@
     <title>OPTIONS</title>
 
     <variablelist>
-      <varlistentry><term>-n <parameter>PNN-LIST</parameter></term>
+      <varlistentry><term>-n <parameter>PNN</parameter></term>
       <listitem>
 	<para>
-	  The nodes specified by PNN-LIST should be queried for the
+	  The node specified by PNN should be queried for the
 	  requested information.  Default is to query the daemon
 	  running on the local host.
 	</para>
