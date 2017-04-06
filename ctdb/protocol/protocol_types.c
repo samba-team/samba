@@ -206,9 +206,11 @@ size_t ctdb_statistics_len(struct ctdb_statistics *in)
 		ctdb_uint32_len(&in->node.req_message) +
 		ctdb_uint32_len(&in->node.req_control) +
 		ctdb_uint32_len(&in->node.reply_control) +
+		ctdb_uint32_len(&in->node.req_tunnel) +
 		ctdb_uint32_len(&in->client.req_call) +
 		ctdb_uint32_len(&in->client.req_message) +
 		ctdb_uint32_len(&in->client.req_control) +
+		ctdb_uint32_len(&in->client.req_tunnel) +
 		ctdb_uint32_len(&in->timeouts.call) +
 		ctdb_uint32_len(&in->timeouts.control) +
 		ctdb_uint32_len(&in->timeouts.traverse) +
@@ -298,6 +300,9 @@ void ctdb_statistics_push(struct ctdb_statistics *in, uint8_t *buf,
 	ctdb_uint32_push(&in->node.reply_control, buf+offset, &np);
 	offset += np;
 
+	ctdb_uint32_push(&in->node.req_tunnel, buf+offset, &np);
+	offset += np;
+
 	ctdb_uint32_push(&in->client.req_call, buf+offset, &np);
 	offset += np;
 
@@ -305,6 +310,9 @@ void ctdb_statistics_push(struct ctdb_statistics *in, uint8_t *buf,
 	offset += np;
 
 	ctdb_uint32_push(&in->client.req_control, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->client.req_tunnel, buf+offset, &np);
 	offset += np;
 
 	ctdb_uint32_push(&in->timeouts.call, buf+offset, &np);
@@ -528,6 +536,13 @@ static int ctdb_statistics_pull_elems(uint8_t *buf, size_t buflen,
 	offset += np;
 
 	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->node.req_tunnel, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
 			       &out->client.req_call, &np);
 	if (ret != 0) {
 		return ret;
@@ -543,6 +558,13 @@ static int ctdb_statistics_pull_elems(uint8_t *buf, size_t buflen,
 
 	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
 			       &out->client.req_control, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->client.req_tunnel, &np);
 	if (ret != 0) {
 		return ret;
 	}

@@ -404,11 +404,13 @@ struct ctdb_statistics {
 		uint32_t req_message;
 		uint32_t req_control;
 		uint32_t reply_control;
+		uint32_t req_tunnel;
 	} node;
 	struct {
 		uint32_t req_call;
 		uint32_t req_message;
 		uint32_t req_control;
+		uint32_t req_tunnel;
 	} client;
 	struct {
 		uint32_t call;
