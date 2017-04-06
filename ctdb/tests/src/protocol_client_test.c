@@ -1979,7 +1979,7 @@ static void test_ctdb_req_header(void)
 	talloc_free(mem_ctx);
 }
 
-static void test_req_call_test(void)
+static void test_ctdb_req_call(void)
 {
 	TALLOC_CTX *mem_ctx;
 	uint8_t *pkt;
@@ -2018,7 +2018,7 @@ static void test_req_call_test(void)
 	talloc_free(mem_ctx);
 }
 
-static void test_reply_call_test(void)
+static void test_ctdb_reply_call(void)
 {
 	TALLOC_CTX *mem_ctx;
 	uint8_t *pkt;
@@ -2057,7 +2057,7 @@ static void test_reply_call_test(void)
 	talloc_free(mem_ctx);
 }
 
-static void test_reply_error_test(void)
+static void test_ctdb_reply_error(void)
 {
 	TALLOC_CTX *mem_ctx;
 	uint8_t *pkt;
@@ -2096,7 +2096,7 @@ static void test_reply_error_test(void)
 	talloc_free(mem_ctx);
 }
 
-static void test_req_dmaster_test(void)
+static void test_ctdb_req_dmaster(void)
 {
 	TALLOC_CTX *mem_ctx;
 	uint8_t *pkt;
@@ -2135,7 +2135,7 @@ static void test_req_dmaster_test(void)
 	talloc_free(mem_ctx);
 }
 
-static void test_reply_dmaster_test(void)
+static void test_ctdb_reply_dmaster(void)
 {
 	TALLOC_CTX *mem_ctx;
 	uint8_t *pkt;
@@ -2176,7 +2176,7 @@ static void test_reply_dmaster_test(void)
 
 #define NUM_CONTROLS	149
 
-static void test_req_control_data_test(void)
+static void test_ctdb_req_control_data(void)
 {
 	TALLOC_CTX *mem_ctx;
 	size_t buflen;
@@ -2206,7 +2206,7 @@ static void test_req_control_data_test(void)
 	fflush(stdout);
 }
 
-static void test_reply_control_data_test(void)
+static void test_ctdb_reply_control_data(void)
 {
 	TALLOC_CTX *mem_ctx;
 	size_t buflen;
@@ -2236,7 +2236,7 @@ static void test_reply_control_data_test(void)
 	fflush(stdout);
 }
 
-static void test_req_control_test(void)
+static void test_ctdb_req_control(void)
 {
 	TALLOC_CTX *mem_ctx;
 	uint8_t *pkt;
@@ -2283,7 +2283,7 @@ static void test_req_control_test(void)
 	fflush(stdout);
 }
 
-static void test_reply_control_test(void)
+static void test_ctdb_reply_control(void)
 {
 	TALLOC_CTX *mem_ctx;
 	uint8_t *pkt;
@@ -2330,7 +2330,7 @@ static void test_reply_control_test(void)
 	fflush(stdout);
 }
 
-static void test_req_message_test(void)
+static void test_ctdb_req_message_data(void)
 {
 	TALLOC_CTX *mem_ctx;
 	uint8_t *pkt;
@@ -2400,7 +2400,7 @@ static void test_ctdb_event_header(void)
 
 #define NUM_COMMANDS	5
 
-static void test_event_request_data(void)
+static void test_ctdb_event_request_data(void)
 {
 	TALLOC_CTX *mem_ctx;
 	size_t buflen;
@@ -2431,7 +2431,7 @@ static void test_event_request_data(void)
 	fflush(stdout);
 }
 
-static void test_event_reply_data(void)
+static void test_ctdb_event_reply_data(void)
 {
 	TALLOC_CTX *mem_ctx;
 	size_t buflen;
@@ -2462,7 +2462,7 @@ static void test_event_reply_data(void)
 	fflush(stdout);
 }
 
-static void test_event_request(void)
+static void test_ctdb_event_request(void)
 {
 	TALLOC_CTX *mem_ctx;
 	uint8_t *buf;
@@ -2502,7 +2502,7 @@ static void test_event_request(void)
 	fflush(stdout);
 }
 
-static void test_event_reply(void)
+static void test_ctdb_event_reply(void)
 {
 	TALLOC_CTX *mem_ctx;
 	uint8_t *buf;
@@ -2551,26 +2551,26 @@ int main(int argc, char *argv[])
 
 	test_ctdb_req_header();
 
-	test_req_call_test();
-	test_reply_call_test();
-	test_reply_error_test();
-	test_req_dmaster_test();
-	test_reply_dmaster_test();
+	test_ctdb_req_call();
+	test_ctdb_reply_call();
+	test_ctdb_reply_error();
+	test_ctdb_req_dmaster();
+	test_ctdb_reply_dmaster();
 
-	test_req_control_data_test();
-	test_reply_control_data_test();
+	test_ctdb_req_control_data();
+	test_ctdb_reply_control_data();
 
-	test_req_control_test();
-	test_reply_control_test();
+	test_ctdb_req_control();
+	test_ctdb_reply_control();
 
-	test_req_message_test();
+	test_ctdb_req_message_data();
 
 	test_ctdb_event_header();
 
-	test_event_request_data();
-	test_event_reply_data();
-	test_event_request();
-	test_event_reply();
+	test_ctdb_event_request_data();
+	test_ctdb_event_reply_data();
+	test_ctdb_event_request();
+	test_ctdb_event_reply();
 
 	return 0;
 }
