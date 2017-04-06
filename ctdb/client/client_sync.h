@@ -481,6 +481,16 @@ int ctdb_ctrl_check_pid_srvid(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			      int destnode, struct timeval timeout,
 			      struct ctdb_pid_srvid *pid_srvid, int *status);
 
+int ctdb_ctrl_tunnel_register(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+			      struct ctdb_client_context *client,
+			      int destnode, struct timeval timeout,
+			      uint64_t tunnel_id);
+
+int ctdb_ctrl_tunnel_deregister(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+				struct ctdb_client_context *client,
+				int destnode, struct timeval timeout,
+				uint64_t tunnel_id);
+
 /* from client/client_message_sync.c */
 
 int ctdb_message_recd_update_ip(TALLOC_CTX *mem_ctx, struct tevent_context *ev,

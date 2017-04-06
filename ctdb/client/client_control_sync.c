@@ -2660,3 +2660,61 @@ int ctdb_ctrl_check_pid_srvid(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 
 	return 0;
 }
+
+int ctdb_ctrl_tunnel_register(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+			      struct ctdb_client_context *client,
+			      int destnode, struct timeval timeout,
+			      uint64_t tunnel_id)
+{
+	struct ctdb_req_control request;
+	struct ctdb_reply_control *reply;
+	int ret;
+
+	ctdb_req_control_tunnel_register(&request, tunnel_id);
+	ret = ctdb_client_control(mem_ctx, ev, client, destnode, timeout,
+				  &request, &reply);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,
+		      ("Control TUNNEL_REGISTER failed to node %u, ret=%d\n",
+		       destnode, ret));
+		return ret;
+	}
+
+	ret = ctdb_reply_control_tunnel_register(reply);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,
+		      ("Control TUNNEL_REGISTER failed, ret=%d\n", ret));
+		return ret;
+	}
+
+	return 0;
+}
+
+int ctdb_ctrl_tunnel_deregister(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+				struct ctdb_client_context *client,
+				int destnode, struct timeval timeout,
+				uint64_t tunnel_id)
+{
+	struct ctdb_req_control request;
+	struct ctdb_reply_control *reply;
+	int ret;
+
+	ctdb_req_control_tunnel_deregister(&request, tunnel_id);
+	ret = ctdb_client_control(mem_ctx, ev, client, destnode, timeout,
+				  &request, &reply);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,
+		      ("Control TUNNEL_DEREGISTER failed to node %u, ret=%d\n",
+		       destnode, ret));
+		return ret;
+	}
+
+	ret = ctdb_reply_control_tunnel_deregister(reply);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,
+		      ("Control TUNNEL_DEREGISTER failed, ret=%d\n", ret));
+		return ret;
+	}
+
+	return 0;
+}
