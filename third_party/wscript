@@ -47,6 +47,7 @@ Unable to find Python module '%s'. Please install the system package or place a 
 def configure(conf):
     for module, package in external_pkgs.items():
         find_third_party_module(conf, module, package)
+    conf.RECURSE('cmocka')
     conf.RECURSE('popt')
     conf.RECURSE('zlib')
 
@@ -69,5 +70,6 @@ def build(bld):
                         target='empty_file')
 
     bld.INSTALL_FILES('${PYTHONARCHDIR}/samba/third_party', 'empty_file', destname='__init__.py')
+    bld.RECURSE('cmocka')
     bld.RECURSE('zlib')
     bld.RECURSE('popt')

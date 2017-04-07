@@ -143,6 +143,12 @@ def configure(conf):
         else:
             conf.define('USING_SYSTEM_POPT', 1)
 
+        if not conf.CHECK_CMOCKA():
+            raise Utils.WafError('cmocka development packages has not been found.\nIf third_party is installed, check that it is in the proper place.')
+        else:
+            conf.define('USING_SYSTEM_CMOCKA', 1)
+
+
     conf.RECURSE('lib/ldb')
 
     if not (Options.options.without_ad_dc):
