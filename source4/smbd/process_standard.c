@@ -212,6 +212,7 @@ static void standard_accept_connection(struct tevent_context *ev,
 	pid_t pid;
 	struct socket_address *c, *s;
 	struct standard_child_state *state;
+	struct tevent_fd *fde = NULL;
 
 	state = setup_standard_child_pipe(ev, NULL);
 	if (state == NULL) {
@@ -278,8 +279,12 @@ static void standard_accept_connection(struct tevent_context *ev,
 		smb_panic("Failed to re-initialise imessaging after fork");
 	}
 
-	tevent_add_fd(ev, ev, child_pipe[0], TEVENT_FD_READ,
+	fde = tevent_add_fd(ev, ev, child_pipe[0], TEVENT_FD_READ,
 		      standard_pipe_handler, NULL);
+	if (fde == NULL) {
+		smb_panic("Failed to add fd handler after fork");
+	}
+
 	if (child_pipe[1] != -1) {
 		close(child_pipe[1]);
 		child_pipe[1] = -1;
@@ -319,6 +324,7 @@ static void standard_new_task(struct tevent_context *ev,
 	pid_t pid;
 	NTSTATUS status;
 	struct standard_child_state *state;
+	struct tevent_fd *fde = NULL;
 
 	state = setup_standard_child_pipe(ev, service_name);
 	if (state == NULL) {
@@ -361,8 +367,11 @@ static void standard_new_task(struct tevent_context *ev,
 		smb_panic("Failed to re-initialise imessaging after fork");
 	}
 
-	tevent_add_fd(ev, ev, child_pipe[0], TEVENT_FD_READ,
+	fde = tevent_add_fd(ev, ev, child_pipe[0], TEVENT_FD_READ,
 		      standard_pipe_handler, NULL);
+	if (fde == NULL) {
+		smb_panic("Failed to add fd handler after fork");
+	}
 	if (child_pipe[1] != -1) {
 		close(child_pipe[1]);
 		child_pipe[1] = -1;
