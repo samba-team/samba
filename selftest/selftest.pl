@@ -307,8 +307,11 @@ die("using an empty prefix isn't allowed") unless $prefix ne "";
 # permissions on this as some subdirectories in this tree will have
 # wider permissions (ie 0777) and this would allow other users on the
 # host to subvert the test process.
+umask 0077;
 mkdir($prefix, 0700) unless -d $prefix;
 chmod 0700, $prefix;
+# We need to have no umask limitations for the tests.
+umask 0000;
 
 my $prefix_abs = abs_path($prefix);
 my $tmpdir_abs = abs_path("$prefix/tmp");
