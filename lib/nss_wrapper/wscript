@@ -101,8 +101,8 @@ def configure(conf):
                                define='HAVE_LINUX_GETNAMEINFO_UNSIGNED', headers='unistd.h netdb.h')
 
         # Create full path to nss_wrapper
-        srcdir = os.path.realpath(conf.srcdir)
-        libnss_wrapper_so_path = srcdir + '/bin/default/lib/nss_wrapper/libnss-wrapper.so'
+        blddir = os.path.realpath(conf.blddir)
+        libnss_wrapper_so_path = blddir + '/default/lib/nss_wrapper/libnss-wrapper.so'
 
     conf.DEFINE('LIBNSS_WRAPPER_SO_PATH', libnss_wrapper_so_path)
     conf.DEFINE('NSS_WRAPPER', 1)
