@@ -65,6 +65,7 @@ static void standard_pipe_handler(struct tevent_context *event_ctx, struct teven
 				  uint16_t flags, void *private_data)
 {
 	DEBUG(10,("Child %d exiting\n", (int)getpid()));
+	talloc_free(event_ctx);
 	exit(0);
 }
 
