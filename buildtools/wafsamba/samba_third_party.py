@@ -33,3 +33,9 @@ def CHECK_POPT(conf):
     return conf.CHECK_BUNDLED_SYSTEM('popt', checkfunctions='poptGetContext', headers='popt.h')
 
 Build.BuildContext.CHECK_POPT = CHECK_POPT
+
+@conf
+def CHECK_CMOCKA(conf):
+    return conf.CHECK_BUNDLED_SYSTEM_PKG('cmocka', minversion='1.1.1')
+
+Build.BuildContext.CHECK_CMOCKA = CHECK_CMOCKA
