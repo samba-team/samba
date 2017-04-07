@@ -67,6 +67,26 @@ static void sighup_signal_handler(struct tevent_context *ev,
 	debug_schedule_reopen_logs();
 }
 
+static void sigterm_signal_handler(struct tevent_context *ev,
+				struct tevent_signal *se,
+				int signum, int count, void *siginfo,
+				void *private_data)
+{
+#if HAVE_GETPGRP
+	if (getpgrp() == getpid()) {
+		/*
+		 * We're the process group leader, send
+		 * SIGTERM to our process group.
+		 */
+		DEBUG(0,("SIGTERM: killing children\n"));
+		kill(-getpgrp(), SIGTERM);
+	}
+#endif
+	DEBUG(0,("Exiting pid %u on SIGTERM\n", (unsigned int)getpid()));
+	talloc_free(ev);
+	exit(127);
+}
+
 /*
   handle EOF on the parent-to-all-children pipe in the child
 */
@@ -310,6 +330,16 @@ static void standard_accept_connection(struct tevent_context *ev,
 		smb_panic("Failed to add SIGHUP handler after fork");
 	}
 
+	se = tevent_add_signal(ev,
+				ev,
+				SIGTERM,
+				0,
+				sigterm_signal_handler,
+				NULL);
+	if (se == NULL) {
+		smb_panic("Failed to add SIGTERM handler after fork");
+	}
+
 	/* setup the process title */
 	c = socket_get_peer_addr(sock2, ev);
 	s = socket_get_my_addr(sock2, ev);
@@ -406,6 +436,16 @@ static void standard_new_task(struct tevent_context *ev,
 				NULL);
 	if (se == NULL) {
 		smb_panic("Failed to add SIGHUP handler after fork");
+	}
+
+	se = tevent_add_signal(ev,
+				ev,
+				SIGTERM,
+				0,
+				sigterm_signal_handler,
+				NULL);
+	if (se == NULL) {
+		smb_panic("Failed to add SIGTERM handler after fork");
 	}
 
 	setproctitle("task %s server_id[%d]", service_name, (int)pid);
