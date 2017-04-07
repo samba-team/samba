@@ -901,6 +901,16 @@ NTSTATUS authsam_logon_success_accounting(struct ldb_context *sam_ctx,
 			TALLOC_FREE(mem_ctx);
 			return NT_STATUS_NO_MEMORY;
 		}
+	} else {
+		/* Set an unset logonCount to 0 on first successful login */
+		if (ldb_msg_find_ldb_val(msg, "logonCount") == NULL) {
+			ret = samdb_msg_add_int(sam_ctx, msg_mod, msg_mod,
+						"logonCount", 0);
+			if (ret != LDB_SUCCESS) {
+				TALLOC_FREE(mem_ctx);
+				return NT_STATUS_NO_MEMORY;
+			}
+		}
 	}
 
 	ret = samdb_rodc(sam_ctx, &am_rodc);
