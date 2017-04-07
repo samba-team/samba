@@ -29,6 +29,7 @@
 #include "param/param.h"
 #include "ldb_wrap.h"
 #include "lib/messaging/messaging.h"
+#include "lib/util/debug.h"
 
 struct standard_child_state {
 	const char *name;
@@ -56,6 +57,14 @@ static void standard_model_init(void)
 	if (rc < 0) {
 		smb_panic("Failed to initialize pipe!");
 	}
+}
+
+static void sighup_signal_handler(struct tevent_context *ev,
+				struct tevent_signal *se,
+				int signum, int count, void *siginfo,
+				void *private_data)
+{
+	debug_schedule_reopen_logs();
 }
 
 /*
@@ -213,6 +222,7 @@ static void standard_accept_connection(struct tevent_context *ev,
 	struct socket_address *c, *s;
 	struct standard_child_state *state;
 	struct tevent_fd *fde = NULL;
+	struct tevent_signal *se = NULL;
 
 	state = setup_standard_child_pipe(ev, NULL);
 	if (state == NULL) {
@@ -290,6 +300,16 @@ static void standard_accept_connection(struct tevent_context *ev,
 		child_pipe[1] = -1;
 	}
 
+	se = tevent_add_signal(ev,
+				ev,
+				SIGHUP,
+				0,
+				sighup_signal_handler,
+				NULL);
+	if (se == NULL) {
+		smb_panic("Failed to add SIGHUP handler after fork");
+	}
+
 	/* setup the process title */
 	c = socket_get_peer_addr(sock2, ev);
 	s = socket_get_my_addr(sock2, ev);
@@ -325,6 +345,7 @@ static void standard_new_task(struct tevent_context *ev,
 	NTSTATUS status;
 	struct standard_child_state *state;
 	struct tevent_fd *fde = NULL;
+	struct tevent_signal *se = NULL;
 
 	state = setup_standard_child_pipe(ev, service_name);
 	if (state == NULL) {
@@ -375,6 +396,16 @@ static void standard_new_task(struct tevent_context *ev,
 	if (child_pipe[1] != -1) {
 		close(child_pipe[1]);
 		child_pipe[1] = -1;
+	}
+
+	se = tevent_add_signal(ev,
+				ev,
+				SIGHUP,
+				0,
+				sighup_signal_handler,
+				NULL);
+	if (se == NULL) {
+		smb_panic("Failed to add SIGHUP handler after fork");
 	}
 
 	setproctitle("task %s server_id[%d]", service_name, (int)pid);
