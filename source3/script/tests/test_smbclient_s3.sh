@@ -346,6 +346,17 @@ test_msdfs_link()
     tmpfile=$PREFIX/smbclient.in.$$
     prompt="  msdfs-target  "
 
+    cmd='$SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/msdfs-share -I $SERVER_IP $ADDARGS -m nt1 -c dir 2>&1'
+    out=`eval $cmd`
+    ret=$?
+
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed listing msfds-share\ with error $ret"
+	false
+	return
+    fi
+
     cat > $tmpfile <<EOF
 ls
 cd \\msdfs-src1
