@@ -45,8 +45,10 @@ smb.conf changes
 
   Parameter Name                Description             Default
   --------------                -----------             -------
-  strict sync			Default changed		yes
   auth event notification       New parameter           no
+  auth methods                  Deprecated
+  map untrusted to domain       Deprecated
+  strict sync                   Default changed         yes
 
 KNOWN ISSUES
 ============
