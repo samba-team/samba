@@ -7,9 +7,14 @@
 import sys
 import difflib
 
-exceptions = ['BUILD_DIRECTORY', 'CROSS_COMPILE', 'CROSS_ANSWERS',
-              'CROSS_EXECUTE', 'SELFTEST_PREFIX', 'LIBSOCKET_WRAPPER_SO_PATH',
-              'defines' ]
+exceptions = [
+    'BUILD_DIRECTORY', 'SELFTEST_PREFIX', 'defines',
+    'CROSS_COMPILE', 'CROSS_ANSWERS', 'CROSS_EXECUTE',
+    'LIBSOCKET_WRAPPER_SO_PATH',
+    'LIBNSS_WRAPPER_SO_PATH',
+    'LIBUID_WRAPPER_SO_PATH',
+    'LIBRESOLV_WRAPPER_SO_PATH',
+]
 
 base_lines = list()
 base_fname = ''
