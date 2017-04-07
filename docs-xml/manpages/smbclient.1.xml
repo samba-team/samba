@@ -1004,9 +1004,9 @@
 		<listitem><para>Rename files in the current working directory on the
 		server from <replaceable>old filename</replaceable> to
 		<replaceable>new filename</replaceable>. The optional
-		-f switch is supported only by SMB2 protocol and beyond,
-		and allows for superseding the destination file,
-		if it exists.</para></listitem>
+		-f switch allows for superseding the destination file,
+		if it exists. This is supported by NT1 protocol dialect
+		and SMB2 protocol family.</para></listitem>
 		</varlistentry>
 
 		<varlistentry>
