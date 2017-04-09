@@ -651,6 +651,13 @@ plantestsuite_loadlist("samba4.ldap.rodc.python(rodc)", "rodc",
                         '$SERVER', '-U"$USERNAME%$PASSWORD"',
                         '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
 
+plantestsuite_loadlist("samba4.ldap.rodc_rwdc.python(rodc)", "rodc:local",
+                       [python,
+                        os.path.join(samba4srcdir,
+                                     "dsdb/tests/python/rodc_rwdc.py"),
+                        '$SERVER', '$DC_SERVER', '-U"$USERNAME%$PASSWORD"',
+                        '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
+
 for env in ["ad_dc_ntvfs", "fl2000dc", "fl2003dc", "fl2008r2dc"]:
     plantestsuite_loadlist("samba4.ldap_schema.python(%s)" % env, env, [python, os.path.join(samba4srcdir, "dsdb/tests/python/ldap_schema.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
     plantestsuite("samba4.ldap.possibleInferiors.python(%s)" % env, env, [python, os.path.join(samba4srcdir, "dsdb/samdb/ldb_modules/tests/possibleinferiors.py"), "ldap://$SERVER", '-U"$USERNAME%$PASSWORD"', "-W$DOMAIN"])
