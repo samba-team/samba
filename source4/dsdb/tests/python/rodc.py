@@ -87,23 +87,42 @@ class RodcTests(samba.tests.TestCase):
                         self.fail("couldn't modify referred location %s" %
                                   address)
 
+                    if address.lower().startswith(self.samdb.domain_dns_name()):
+                        self.fail("referral address did not give a specific DC")
+
     def test_modify_replicated_attributes(self):
         # some timestamp ones
         dn = 'CN=Guest,CN=Users,' + self.base_dn
         value = 'hallooo'
         for attr in ['carLicense', 'middleName']:
-            m = ldb.Message()
-            m.dn = ldb.Dn(self.samdb, dn)
-            m[attr] = ldb.MessageElement(value,
-                                         ldb.FLAG_MOD_REPLACE,
-                                         attr)
+            msg = ldb.Message()
+            msg.dn = ldb.Dn(self.samdb, dn)
+            msg[attr] = ldb.MessageElement(value,
+                                           ldb.FLAG_MOD_REPLACE,
+                                           attr)
             try:
-                self.samdb.modify(m)
+                self.samdb.modify(msg)
                 self.fail("Failed to fail to modify %s %s" % (dn, attr))
             except ldb.LdbError as (ecode, emsg):
                 if ecode != ldb.ERR_REFERRAL:
                     self.fail("Failed to REFER when trying to modify %s %s" %
                               (dn, attr))
+                else:
+                    m = re.search(r'(ldap://[^>]+)>', emsg)
+                    if m is None:
+                        self.fail("referral seems not to refer to anything")
+                    address = m.group(1)
+
+                    try:
+                        tmpdb = SamDB(address, credentials=CREDS,
+                                      session_info=system_session(LP), lp=LP)
+                        tmpdb.modify(msg)
+                    except ldb.LdbError, e:
+                        self.fail("couldn't modify referred location %s" %
+                                  address)
+
+                    if address.lower().startswith(self.samdb.domain_dns_name()):
+                        self.fail("referral address did not give a specific DC")
 
     def test_modify_nonreplicated_attributes(self):
         # some timestamp ones
@@ -123,6 +142,14 @@ class RodcTests(samba.tests.TestCase):
                 if ecode != ldb.ERR_REFERRAL:
                     self.fail("Failed to REFER when trying to modify %s %s" %
                               (dn, attr))
+                else:
+                    m = re.search(r'(ldap://[^>]+)>', emsg)
+                    if m is None:
+                        self.fail("referral seems not to refer to anything")
+                    address = m.group(1)
+
+                    if address.lower().startswith(self.samdb.domain_dns_name()):
+                        self.fail("referral address did not give a specific DC")
 
     def test_modify_nonreplicated_reps_attributes(self):
         # some timestamp ones
@@ -149,6 +176,14 @@ class RodcTests(samba.tests.TestCase):
             if ecode != ldb.ERR_REFERRAL:
                 self.fail("Failed to REFER when trying to modify %s %s" %
                           (dn, attr))
+            else:
+                m = re.search(r'(ldap://[^>]+)>', emsg)
+                if m is None:
+                    self.fail("referral seems not to refer to anything")
+                address = m.group(1)
+
+                if address.lower().startswith(self.samdb.domain_dns_name()):
+                    self.fail("referral address did not give a specific DC")
 
     def test_delete_special_objects(self):
         dn = 'CN=Guest,CN=Users,' + self.base_dn
@@ -159,6 +194,14 @@ class RodcTests(samba.tests.TestCase):
             if ecode != ldb.ERR_REFERRAL:
                 print ecode, emsg
                 self.fail("Failed to REFER when trying to delete %s" % dn)
+            else:
+                m = re.search(r'(ldap://[^>]+)>', emsg)
+                if m is None:
+                    self.fail("referral seems not to refer to anything")
+                address = m.group(1)
+
+                if address.lower().startswith(self.samdb.domain_dns_name()):
+                    self.fail("referral address did not give a specific DC")
 
     def test_no_delete_nonexistent_objects(self):
         dn = 'CN=does-not-exist-%s,CN=Users,%s' % (self.tag, self.base_dn)
