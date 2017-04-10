@@ -384,7 +384,7 @@ userPassword: """ + userpass + """
                                     dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
 
-        ldb = SamDB(url=host_url, credentials=creds, lp=lp)
+        ldb = SamDB(url=self.host_url, credentials=creds, lp=self.lp)
 
         if lockOutObservationWindow == 0:
             badPwdCount = 0
@@ -434,9 +434,12 @@ userPassword: """ + userpass + """
                                                (num, errno)))
 
     def setUp(self):
+        self.host = host
+        self.host_url = host_url
+        self.lp = lp
         super(BasePasswordTestCase, self).setUp()
 
-        self.ldb = SamDB(url=host_url, session_info=system_session(lp),
+        self.ldb = SamDB(url=self.host_url, session_info=system_session(lp),
                          credentials=global_creds, lp=lp)
 
         # Gets back the basedn
@@ -516,7 +519,7 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
         self.base_dn = self.ldb.domain_dn()
 
         self.domain_sid = security.dom_sid(self.ldb.get_domain_sid())
-        self.samr = samr.samr("ncacn_ip_tcp:%s[seal]" % host, lp, global_creds)
+        self.samr = samr.samr("ncacn_ip_tcp:%s[seal]" % self.host, self.lp, global_creds)
         self.samr_handle = self.samr.Connect2(None, security.SEC_FLAG_MAXIMUM_ALLOWED)
         self.samr_domain = self.samr.OpenDomain(self.samr_handle, security.SEC_FLAG_MAXIMUM_ALLOWED, self.domain_sid)
 
@@ -531,7 +534,7 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
                                                    userpass="thatsAcomplPASS0",
                                                    kerberos_state=MUST_USE_KERBEROS)
         self.lockout2krb5_ldb = self._readd_user(self.lockout2krb5_creds,
-                                        lockOutObservationWindow=self.lockout_observation_window)
+                                                 lockOutObservationWindow=self.lockout_observation_window)
         self.lockout1ntlm_creds = self.insta_creds(template_creds,
                                                    username="lockout1ntlm",
                                                    userpass="thatsAcomplPASS0",
@@ -542,7 +545,7 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
                                                    userpass="thatsAcomplPASS0",
                                                    kerberos_state=DONT_USE_KERBEROS)
         self.lockout2ntlm_ldb = self._readd_user(self.lockout2ntlm_creds,
-                                        lockOutObservationWindow=self.lockout_observation_window)
+                                                 lockOutObservationWindow=self.lockout_observation_window)
 
     def tearDown(self):
         super(BasePasswordTestCase, self).tearDown()
@@ -593,7 +596,7 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
         # The wrong password
         creds_lockout.set_password("thatsAcomplPASS1x")
 
-        self.assertLoginFailure(host_url, creds_lockout, lp)
+        self.assertLoginFailure(self.host_url, creds_lockout, self.lp)
 
         res = self._check_account(userdn,
                                   badPwdCount=1,
@@ -610,7 +613,7 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
         # Correct old password
         creds_lockout.set_password(userpass)
 
-        ldb_lockout = SamDB(url=host_url, credentials=creds_lockout, lp=lp)
+        ldb_lockout = SamDB(url=self.host_url, credentials=creds_lockout, lp=self.lp)
 
         # lastLogonTimestamp should not change
         # lastLogon increases if badPwdCount is non-zero (!)
@@ -633,7 +636,7 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
         # The wrong password
         creds_lockout.set_password("thatsAcomplPASS1x")
 
-        self.assertLoginFailure(host_url, creds_lockout, lp)
+        self.assertLoginFailure(self.host_url, creds_lockout, self.lp)
 
         res = self._check_account(userdn,
                                   badPwdCount=1,
@@ -650,7 +653,7 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
         creds_lockout.set_password("thatsAcomplPASS1x")
 
         try:
-            ldb_lockout = SamDB(url=host_url, credentials=creds_lockout, lp=lp)
+            ldb_lockout = SamDB(url=self.host_url, credentials=creds_lockout, lp=self.lp)
             self.fail()
 
         except LdbError, (num, msg):
@@ -673,7 +676,7 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
         creds_lockout.set_password("thatsAcomplPASS1x")
 
         try:
-            ldb_lockout = SamDB(url=host_url, credentials=creds_lockout, lp=lp)
+            ldb_lockout = SamDB(url=self.host_url, credentials=creds_lockout, lp=self.lp)
             self.fail()
 
         except LdbError, (num, msg):
@@ -695,7 +698,7 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
         # The wrong password
         creds_lockout.set_password("thatsAcomplPASS1x")
         try:
-            ldb_lockout = SamDB(url=host_url, credentials=creds_lockout, lp=lp)
+            ldb_lockout = SamDB(url=self.host_url, credentials=creds_lockout, lp=self.lp)
             self.fail()
         except LdbError, (num, msg):
             self.assertEquals(num, ERR_INVALID_CREDENTIALS)
@@ -714,7 +717,7 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
         # The wrong password
         creds_lockout.set_password("thatsAcomplPASS1x")
         try:
-            ldb_lockout = SamDB(url=host_url, credentials=creds_lockout, lp=lp)
+            ldb_lockout = SamDB(url=self.host_url, credentials=creds_lockout, lp=self.lp)
             self.fail()
         except LdbError, (num, msg):
             self.assertEquals(num, ERR_INVALID_CREDENTIALS)
@@ -733,7 +736,7 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
         # The correct password, but we are locked out
         creds_lockout.set_password(userpass)
         try:
-            ldb_lockout = SamDB(url=host_url, credentials=creds_lockout, lp=lp)
+            ldb_lockout = SamDB(url=self.host_url, credentials=creds_lockout, lp=self.lp)
             self.fail()
         except LdbError, (num, msg):
             self.assertEquals(num, ERR_INVALID_CREDENTIALS)
@@ -770,7 +773,7 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
 
         creds_lockout2 = self.insta_creds(creds_lockout)
 
-        ldb_lockout = SamDB(url=host_url, credentials=creds_lockout2, lp=lp)
+        ldb_lockout = SamDB(url=self.host_url, credentials=creds_lockout2, lp=self.lp)
         time.sleep(3)
 
         res = self._check_account(userdn,
@@ -791,7 +794,7 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
         # The wrong password
         creds_lockout.set_password("thatsAcomplPASS1x")
         try:
-            ldb_lockout = SamDB(url=host_url, credentials=creds_lockout, lp=lp)
+            ldb_lockout = SamDB(url=self.host_url, credentials=creds_lockout, lp=self.lp)
             self.fail()
         except LdbError, (num, msg):
             self.assertEquals(num, ERR_INVALID_CREDENTIALS)
@@ -811,7 +814,7 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
         # The wrong password
         creds_lockout.set_password("thatsAcomplPASS1x")
         try:
-            ldb_lockout = SamDB(url=host_url, credentials=creds_lockout, lp=lp)
+            ldb_lockout = SamDB(url=self.host_url, credentials=creds_lockout, lp=self.lp)
             self.fail()
         except LdbError, (num, msg):
             self.assertEquals(num, ERR_INVALID_CREDENTIALS)
@@ -844,7 +847,7 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
         # The wrong password
         creds_lockout.set_password("thatsAcomplPASS1x")
         try:
-            ldb_lockout = SamDB(url=host_url, credentials=creds_lockout, lp=lp)
+            ldb_lockout = SamDB(url=self.host_url, credentials=creds_lockout, lp=self.lp)
             self.fail()
         except LdbError, (num, msg):
             self.assertEquals(num, ERR_INVALID_CREDENTIALS)
@@ -863,7 +866,7 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
 
         # The correct password without letting the timeout expire
         creds_lockout.set_password(userpass)
-        ldb_lockout = SamDB(url=host_url, credentials=creds_lockout, lp=lp)
+        ldb_lockout = SamDB(url=self.host_url, credentials=creds_lockout, lp=self.lp)
 
         res = self._check_account(userdn,
                                   badPwdCount=0,
@@ -898,7 +901,7 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
             logoncount_relation = 'equal'
             lastlogon_relation = 'equal'
 
-        SamDB(url=host_url, credentials=self.insta_creds(creds), lp=lp)
+        SamDB(url=self.host_url, credentials=self.insta_creds(creds), lp=self.lp)
 
         res = self._check_account(userdn,
                                   badPwdCount=0,
@@ -919,7 +922,7 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
         self.assertGreaterEqual(lastLogon, lastLogonTimestamp)
 
         time.sleep(1)
-        SamDB(url=host_url, credentials=self.insta_creds(creds), lp=lp)
+        SamDB(url=self.host_url, credentials=self.insta_creds(creds), lp=self.lp)
 
         res = self._check_account(userdn,
                                   badPwdCount=0,
@@ -938,7 +941,7 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
 
         time.sleep(1)
 
-        SamDB(url=host_url, credentials=self.insta_creds(creds), lp=lp)
+        SamDB(url=self.host_url, credentials=self.insta_creds(creds), lp=self.lp)
 
         res = self._check_account(userdn,
                                   badPwdCount=0,
