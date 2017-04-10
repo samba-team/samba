@@ -137,10 +137,12 @@ def get_credentials(lp):
         if opts.use_file is not None:
             return
 
-        # Now confirm we can get a ticket to a DNS server
-        ans = check_one_dns_name(sub_vars['DNSDOMAIN'] + '.', 'NS')
+        # Now confirm we can get a ticket to the DNS server
+        ans = check_one_dns_name(sub_vars['DNSDOMAIN'] + '.', 'SOA')
+
+        # Actually there is only one
         for i in range(len(ans)):
-            target_hostname = str(ans[i].target).rstrip('.')
+            target_hostname = str(ans[i].mname).rstrip('.')
             settings = {}
             settings["lp_ctx"] = lp
             settings["target_hostname"] = target_hostname
