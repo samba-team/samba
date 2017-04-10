@@ -209,6 +209,7 @@ class dc_join(object):
         creds.guess(ctx.lp)
         try:
             creds.set_machine_account(ctx.lp)
+            creds.set_kerberos_state(ctx.creds.get_kerberos_state())
             machine_samdb = SamDB(url="ldap://%s" % ctx.server,
                                   session_info=system_session(),
                                 credentials=creds, lp=ctx.lp)
