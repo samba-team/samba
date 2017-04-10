@@ -194,9 +194,13 @@ static void wb_sids2xids_lookupsids_done(struct tevent_req *subreq)
 
 		if (n->sid_index != UINT32_MAX) {
 			const struct lsa_DomainInfo *info;
+			bool match;
 
 			info = &domains->domains[n->sid_index];
-			domain_name = info->name.string;
+			match = dom_sid_in_domain(info->sid, sid);
+			if (match) {
+				domain_name = info->name.string;
+			}
 		}
 		if (domain_name == NULL) {
 			struct winbindd_domain *wb_domain = NULL;
