@@ -179,10 +179,11 @@ def configure(conf):
     conf.RECURSE('selftest')
     if conf.CONFIG_GET('ENABLE_SELFTEST'):
         conf.RECURSE('lib/nss_wrapper')
-        conf.RECURSE('lib/pam_wrapper')
         conf.RECURSE('lib/resolv_wrapper')
         conf.RECURSE('lib/socket_wrapper')
         conf.RECURSE('lib/uid_wrapper')
+        if Options.options.with_pam:
+            conf.RECURSE('lib/pam_wrapper')
         if Options.options.with_ntvfs_fileserver != False:
             if not (Options.options.without_ad_dc or Options.options.with_system_mitkrb5):
                 conf.DEFINE('WITH_NTVFS_FILESERVER', 1)

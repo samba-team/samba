@@ -39,6 +39,7 @@ finally:
 
 have_man_pages_support = ("XSLTPROC_MANPAGES" in config_hash)
 with_cmocka = ("HAVE_CMOCKA" in config_hash)
+with_pam = ("WITH_PAM" in config_hash)
 pam_wrapper_so_path=config_hash["LIBPAM_WRAPPER_SO_PATH"]
 
 planpythontestsuite("none", "samba.tests.source")
@@ -137,8 +138,9 @@ plantestsuite(
      configuration])
 planpythontestsuite("none", "samba.tests.glue", py3_compatible=True)
 
-plantestsuite("samba.tests.pam_winbind", "ad_member",
-              [os.path.join(srcdir(), "python/samba/tests/test_pam_winbind.sh"), valgrindify(python), pam_wrapper_so_path])
+if with_pam:
+    plantestsuite("samba.tests.pam_winbind", "ad_member",
+                  [os.path.join(srcdir(), "python/samba/tests/test_pam_winbind.sh"), valgrindify(python), pam_wrapper_so_path])
 
 if with_cmocka:
     plantestsuite("samba.unittests.krb5samba", "none",
