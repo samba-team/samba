@@ -341,7 +341,11 @@ bool dom_sid_in_domain(const struct dom_sid *domain_sid,
 		return false;
 	}
 
-	if (domain_sid->num_auths > sid->num_auths) {
+	if (sid->num_auths < 2) {
+		return false;
+	}
+
+	if (domain_sid->num_auths != (sid->num_auths - 1)) {
 		return false;
 	}
 
