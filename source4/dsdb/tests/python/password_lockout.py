@@ -876,6 +876,81 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
                                     dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
 
+    def _test_multiple_logon(self, creds):
+        # Test the happy case in which a user logs on correctly, then
+        # logs on correctly again, so that the bad password and
+        # lockout times are both zero the second time. The lastlogon
+        # time should increase.
+
+        # Open a second LDB connection with the user credentials. Use the
+        # command line credentials for informations like the domain, the realm
+        # and the workstation.
+        username = creds.get_username()
+        userdn = "cn=%s,cn=users,%s" % (username, self.base_dn)
+
+        use_kerberos = creds.get_kerberos_state()
+        if use_kerberos == MUST_USE_KERBEROS:
+            print "Testing multiple logon with Kerberos"
+            logoncount_relation = 'greater'
+            lastlogon_relation = 'greater'
+        else:
+            print "Testing multiple logon with NTLM"
+            logoncount_relation = 'equal'
+            lastlogon_relation = 'equal'
+
+        SamDB(url=host_url, credentials=self.insta_creds(creds), lp=lp)
+
+        res = self._check_account(userdn,
+                                  badPwdCount=0,
+                                  badPasswordTime=("greater", 0),
+                                  logonCount=(logoncount_relation, 0),
+                                  lastLogon=("greater", 0),
+                                  lastLogonTimestamp=("greater", 0),
+                                  userAccountControl=
+                                    dsdb.UF_NORMAL_ACCOUNT,
+                                  msDSUserAccountControlComputed=0)
+        badPasswordTime = int(res[0]["badPasswordTime"][0])
+        logonCount = int(res[0]["logonCount"][0])
+        lastLogon = int(res[0]["lastLogon"][0])
+        lastLogonTimestamp = int(res[0]["lastLogonTimestamp"][0])
+        firstLogon = lastLogon
+        print "last logon is %d" % lastLogon
+        self.assertGreater(lastLogon, badPasswordTime)
+        self.assertGreaterEqual(lastLogon, lastLogonTimestamp)
+
+        time.sleep(1)
+        SamDB(url=host_url, credentials=self.insta_creds(creds), lp=lp)
+
+        res = self._check_account(userdn,
+                                  badPwdCount=0,
+                                  badPasswordTime=badPasswordTime,
+                                  logonCount=(logoncount_relation, logonCount),
+                                  lastLogon=(lastlogon_relation, lastLogon),
+                                  lastLogonTimestamp=lastLogonTimestamp,
+                                  userAccountControl=
+                                  dsdb.UF_NORMAL_ACCOUNT,
+                                  msDSUserAccountControlComputed=0,
+                                  msg=("second logon, firstlogon was %s" %
+                                       firstLogon))
+
+
+        lastLogon = int(res[0]["lastLogon"][0])
+
+        time.sleep(1)
+
+        SamDB(url=host_url, credentials=self.insta_creds(creds), lp=lp)
+
+        res = self._check_account(userdn,
+                                  badPwdCount=0,
+                                  badPasswordTime=badPasswordTime,
+                                  logonCount=(logoncount_relation, logonCount),
+                                  lastLogon=(lastlogon_relation, lastLogon),
+                                  lastLogonTimestamp=lastLogonTimestamp,
+                                  userAccountControl=
+                                    dsdb.UF_NORMAL_ACCOUNT,
+                                  msDSUserAccountControlComputed=0)
+
+
 class PasswordTests(BasePasswordTestCase):
     def _reset_ldap_lockoutTime(self, res):
         self.ldb.modify_ldif("""
@@ -1774,80 +1849,6 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
 
     def test_login_lockout_ntlm(self):
         self._test_login_lockout(self.lockout1ntlm_creds)
-
-    def _test_multiple_logon(self, creds):
-        # Test the happy case in which a user logs on correctly, then
-        # logs on correctly again, so that the bad password and
-        # lockout times are both zero the second time. The lastlogon
-        # time should increase.
-
-        # Open a second LDB connection with the user credentials. Use the
-        # command line credentials for informations like the domain, the realm
-        # and the workstation.
-        username = creds.get_username()
-        userdn = "cn=%s,cn=users,%s" % (username, self.base_dn)
-
-        use_kerberos = creds.get_kerberos_state()
-        if use_kerberos == MUST_USE_KERBEROS:
-            print "Testing multiple logon with Kerberos"
-            logoncount_relation = 'greater'
-            lastlogon_relation = 'greater'
-        else:
-            print "Testing multiple logon with NTLM"
-            logoncount_relation = 'equal'
-            lastlogon_relation = 'equal'
-
-        SamDB(url=host_url, credentials=self.insta_creds(creds), lp=lp)
-
-        res = self._check_account(userdn,
-                                  badPwdCount=0,
-                                  badPasswordTime=("greater", 0),
-                                  logonCount=(logoncount_relation, 0),
-                                  lastLogon=("greater", 0),
-                                  lastLogonTimestamp=("greater", 0),
-                                  userAccountControl=
-                                    dsdb.UF_NORMAL_ACCOUNT,
-                                  msDSUserAccountControlComputed=0)
-        badPasswordTime = int(res[0]["badPasswordTime"][0])
-        logonCount = int(res[0]["logonCount"][0])
-        lastLogon = int(res[0]["lastLogon"][0])
-        lastLogonTimestamp = int(res[0]["lastLogonTimestamp"][0])
-        firstLogon = lastLogon
-        print "last logon is %d" % lastLogon
-        self.assertGreater(lastLogon, badPasswordTime)
-        self.assertGreaterEqual(lastLogon, lastLogonTimestamp)
-
-        time.sleep(1)
-        SamDB(url=host_url, credentials=self.insta_creds(creds), lp=lp)
-
-        res = self._check_account(userdn,
-                                  badPwdCount=0,
-                                  badPasswordTime=badPasswordTime,
-                                  logonCount=(logoncount_relation, logonCount),
-                                  lastLogon=(lastlogon_relation, lastLogon),
-                                  lastLogonTimestamp=lastLogonTimestamp,
-                                  userAccountControl=
-                                  dsdb.UF_NORMAL_ACCOUNT,
-                                  msDSUserAccountControlComputed=0,
-                                  msg=("second logon, firstlogon was %s" %
-                                       firstLogon))
-
-
-        lastLogon = int(res[0]["lastLogon"][0])
-
-        time.sleep(1)
-
-        SamDB(url=host_url, credentials=self.insta_creds(creds), lp=lp)
-
-        res = self._check_account(userdn,
-                                  badPwdCount=0,
-                                  badPasswordTime=badPasswordTime,
-                                  logonCount=(logoncount_relation, logonCount),
-                                  lastLogon=(lastlogon_relation, lastLogon),
-                                  lastLogonTimestamp=lastLogonTimestamp,
-                                  userAccountControl=
-                                    dsdb.UF_NORMAL_ACCOUNT,
-                                  msDSUserAccountControlComputed=0)
 
     def test_multiple_logon_krb5(self):
         self._test_multiple_logon(self.lockout1krb5_creds)
