@@ -53,19 +53,6 @@ host = args[0]
 lp = sambaopts.get_loadparm()
 global_creds = credopts.get_credentials(lp)
 
-# Force an encrypted connection
-global_creds.set_gensec_features(global_creds.get_gensec_features() |
-                                 gensec.FEATURE_SEAL)
-
-template_creds = Credentials()
-template_creds.set_username("testuser")
-template_creds.set_password("thatsAcomplPASS1")
-template_creds.set_domain(global_creds.get_domain())
-template_creds.set_realm(global_creds.get_realm())
-template_creds.set_workstation(global_creds.get_workstation())
-template_creds.set_gensec_features(global_creds.get_gensec_features())
-template_creds.set_kerberos_state(global_creds.get_kerberos_state())
-
 #
 # Tests start here
 #
@@ -437,7 +424,20 @@ userPassword: """ + userpass + """
         self.host = host
         self.host_url = host_url
         self.lp = lp
+        self.global_creds = global_creds
         super(BasePasswordTestCase, self).setUp()
+
+        self.global_creds.set_gensec_features(self.global_creds.get_gensec_features() |
+                                              gensec.FEATURE_SEAL)
+
+        self.template_creds = Credentials()
+        self.template_creds.set_username("testuser")
+        self.template_creds.set_password("thatsAcomplPASS1")
+        self.template_creds.set_domain(self.global_creds.get_domain())
+        self.template_creds.set_realm(self.global_creds.get_realm())
+        self.template_creds.set_workstation(self.global_creds.get_workstation())
+        self.template_creds.set_gensec_features(self.global_creds.get_gensec_features())
+        self.template_creds.set_kerberos_state(self.global_creds.get_kerberos_state())
 
         self.ldb = SamDB(url=self.host_url, session_info=system_session(lp),
                          credentials=global_creds, lp=lp)
@@ -519,28 +519,28 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
         self.base_dn = self.ldb.domain_dn()
 
         self.domain_sid = security.dom_sid(self.ldb.get_domain_sid())
-        self.samr = samr.samr("ncacn_ip_tcp:%s[seal]" % self.host, self.lp, global_creds)
+        self.samr = samr.samr("ncacn_ip_tcp:%s[seal]" % self.host, self.lp, self.global_creds)
         self.samr_handle = self.samr.Connect2(None, security.SEC_FLAG_MAXIMUM_ALLOWED)
         self.samr_domain = self.samr.OpenDomain(self.samr_handle, security.SEC_FLAG_MAXIMUM_ALLOWED, self.domain_sid)
 
         # (Re)adds the test user accounts
-        self.lockout1krb5_creds = self.insta_creds(template_creds,
+        self.lockout1krb5_creds = self.insta_creds(self.template_creds,
                                                    username="lockout1krb5",
                                                    userpass="thatsAcomplPASS0",
                                                    kerberos_state=MUST_USE_KERBEROS)
         self.lockout1krb5_ldb = self._readd_user(self.lockout1krb5_creds)
-        self.lockout2krb5_creds = self.insta_creds(template_creds,
+        self.lockout2krb5_creds = self.insta_creds(self.template_creds,
                                                    username="lockout2krb5",
                                                    userpass="thatsAcomplPASS0",
                                                    kerberos_state=MUST_USE_KERBEROS)
         self.lockout2krb5_ldb = self._readd_user(self.lockout2krb5_creds,
                                                  lockOutObservationWindow=self.lockout_observation_window)
-        self.lockout1ntlm_creds = self.insta_creds(template_creds,
+        self.lockout1ntlm_creds = self.insta_creds(self.template_creds,
                                                    username="lockout1ntlm",
                                                    userpass="thatsAcomplPASS0",
                                                    kerberos_state=DONT_USE_KERBEROS)
         self.lockout1ntlm_ldb = self._readd_user(self.lockout1ntlm_creds)
-        self.lockout2ntlm_creds = self.insta_creds(template_creds,
+        self.lockout2ntlm_creds = self.insta_creds(self.template_creds,
                                                    username="lockout2ntlm",
                                                    userpass="thatsAcomplPASS0",
                                                    kerberos_state=DONT_USE_KERBEROS)
