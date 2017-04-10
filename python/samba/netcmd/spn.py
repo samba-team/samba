@@ -67,8 +67,8 @@ class cmd_spn_list(Command):
                 for e in spns:
                     self.outf.write("\t %s\n" % e)
             else:
-                self.outf.write("User %s has no servicePrincipalName" %
-                    res[0].dn)
+                self.outf.write("User %s has no servicePrincipalName\n" %
+                                res[0].dn)
         else:
             raise CommandError("User %s not found" % user)
 
