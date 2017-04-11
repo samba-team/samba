@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Blackbox test for shadow_copy2 VFS.
+# Blackbox test for the offline VFS module.
 #
 if [ $# -lt 7 ]; then
 cat <<EOF
