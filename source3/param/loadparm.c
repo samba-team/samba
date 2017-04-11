@@ -2368,9 +2368,14 @@ bool lp_file_list_changed(void)
  **/
 static void init_iconv(void)
 {
-	global_iconv_handle = smb_iconv_handle_reinit(NULL, lp_dos_charset(),
-						      lp_unix_charset(),
-						      true, global_iconv_handle);
+	struct smb_iconv_handle *ret = NULL;
+
+	ret = reinit_iconv_handle(NULL,
+				  lp_dos_charset(),
+				  lp_unix_charset());
+	if (ret == NULL) {
+		smb_panic("reinit_iconv_handle failed");
+	}
 }
 
 /***************************************************************************
