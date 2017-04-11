@@ -684,7 +684,7 @@ static bool shadow_copy2_strip_snapshot_internal(TALLOC_CTX *mem_ctx,
 				if (make_relative_path(priv->shadow_cwd,
 						stripped) == false) {
 					DEBUG(10, (__location__ ": path '%s' "
-						"doesn't start with cwd '%s\n",
+						"doesn't start with cwd '%s'\n",
 						stripped, priv->shadow_cwd));
 						ret = false;
 					errno = ENOENT;
@@ -726,7 +726,7 @@ static bool shadow_copy2_strip_snapshot_internal(TALLOC_CTX *mem_ctx,
 			if (make_relative_path(priv->shadow_cwd,
 					stripped) == false) {
 				DEBUG(10, (__location__ ": path '%s' "
-					"doesn't start with cwd '%s\n",
+					"doesn't start with cwd '%s'\n",
 					stripped, priv->shadow_cwd));
 				ret = false;
 				errno = ENOENT;
