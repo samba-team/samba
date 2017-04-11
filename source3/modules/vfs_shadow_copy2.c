@@ -671,10 +671,11 @@ static bool shadow_copy2_strip_snapshot_internal(TALLOC_CTX *mem_ctx,
 		 * with a path prefix.
 		 */
 		if (pstripped != NULL) {
-			if (len_before_gmt > 0) {
+			if (len_before_gmt > 1) {
 				/*
-				 * There is a slash before
-				 * the @GMT-. Remove it.
+				 * There is a path (and not only a slash)
+				 * before the @GMT-. Remove the trailing
+				 * slash character.
 				 */
 				len_before_gmt -= 1;
 			}
