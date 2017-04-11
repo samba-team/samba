@@ -27,7 +27,7 @@
  **/
 void gfree_charcnv(void)
 {
-	TALLOC_FREE(global_iconv_handle);
+	free_iconv_handle();
 }
 
 /**
