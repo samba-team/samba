@@ -121,6 +121,64 @@ for i in IPs:
 if opts.verbose:
     print "IPs: %s" % IPs
 
+def get_possible_rw_dns_server(creds, domain):
+    """Get a list of possible read-write DNS servers, starting with
+       the SOA.  The SOA is the correct answer, but old Samba domains
+       (4.6 and prior) do not maintain this value, so add NS servers
+       as well"""
+
+    hostnames = []
+    ans_soa = check_one_dns_name(domain, 'SOA')
+
+    # Actually there is only one
+    for i in range(len(ans_soa)):
+        hostnames.append(str(ans_soa[i].mname).rstrip('.'))
+
+    # This is not strictly legit, but old Samba domains may have an
+    # unmaintained SOA record, so go for any NS that we can get a
+    # ticket to.
+    ans_ns = check_one_dns_name(domain, 'NS')
+
+    # Actually there is only one
+    for i in range(len(ans_ns)):
+        hostnames.append(str(ans_ns[i].target).rstrip('.'))
+
+    return hostnames
+
+def get_krb5_rw_dns_server(creds, domain):
+    """Get a list of read-write DNS servers that we can obtain a ticket
+       for, starting with the SOA.  The SOA is the correct answer, but
+       old Samba domains (4.6 and prior) do not maintain this value,
+       so continue with the NS servers as well until we get one that
+       the KDC will issue a ticket to.
+    """
+
+    rw_dns_servers = get_possible_rw_dns_server(creds, domain)
+    # Actually there is only one
+    for i in range(len(rw_dns_servers)):
+        target_hostname = str(rw_dns_servers[i])
+        settings = {}
+        settings["lp_ctx"] = lp
+        settings["target_hostname"] = target_hostname
+
+        gensec_client = gensec.Security.start_client(settings)
+        gensec_client.set_credentials(creds)
+        gensec_client.set_target_service("DNS")
+        gensec_client.set_target_hostname(target_hostname)
+        gensec_client.want_feature(gensec.FEATURE_SEAL)
+        gensec_client.start_mech_by_sasl_name("GSSAPI")
+        server_to_client = ""
+        try:
+            (client_finished, client_to_server) = gensec_client.update(server_to_client)
+            if opts.verbose:
+                print "Successfully obtained Kerberos ticket to DNS/%s as %s" \
+                    % (target_hostname, creds.get_username())
+            return target_hostname
+        except RuntimeError:
+            # Only raise an exception if they all failed
+            if i != len(rw_dns_servers) - 1:
+                pass
+            raise
 
 def get_credentials(lp):
     """# get credentials if we haven't got them already."""
@@ -138,33 +196,8 @@ def get_credentials(lp):
             return
 
         # Now confirm we can get a ticket to the DNS server
-        ans = check_one_dns_name(sub_vars['DNSDOMAIN'] + '.', 'SOA')
-
-        # Actually there is only one
-        for i in range(len(ans)):
-            target_hostname = str(ans[i].mname).rstrip('.')
-            settings = {}
-            settings["lp_ctx"] = lp
-            settings["target_hostname"] = target_hostname
-
-            gensec_client = gensec.Security.start_client(settings)
-            gensec_client.set_credentials(creds)
-            gensec_client.set_target_service("DNS")
-            gensec_client.set_target_hostname(target_hostname)
-            gensec_client.want_feature(gensec.FEATURE_SEAL)
-            gensec_client.start_mech_by_sasl_name("GSSAPI")
-            server_to_client = ""
-            try:
-                (client_finished, client_to_server) = gensec_client.update(server_to_client)
-                if opts.verbose:
-                    print "Successfully obtained Kerberos ticket to DNS/%s as %s" \
-                            % (target_hostname, creds.get_username())
-                return
-            except RuntimeError:
-                # Only raise an exception if they all failed
-                if i != len(ans) - 1:
-                    pass
-                raise
+        get_krb5_rw_dns_server(creds, sub_vars['DNSDOMAIN'] + '.')
+        return creds
 
     except RuntimeError as e:
         os.unlink(ccachename)
@@ -452,11 +485,18 @@ def call_nsupdate(d, op="add"):
         f.write('server %s\n' % d.nameservers[0])
     else:
         resolver = get_resolver(d)
+
+        # Local the zone for this name
         zone = dns.resolver.zone_for_name(normalised_name,
                                           resolver=resolver)
-        soa = resolver.query(zone, "SOA")
 
-        f.write('server %s\n' % soa[0].mname)
+        # Now find the SOA, or if we can't get a ticket to the SOA,
+        # any server with an NS record we can get a ticket for.
+        #
+        # Thanks to the Kerberos Crednetials cache this is not
+        # expensive inside the loop
+        server = get_krb5_rw_dns_server(creds, zone)
+        f.write('server %s\n' % server)
 
     if d.type == "A":
         f.write("update %s %s %u A %s\n" % (op, normalised_name, default_ttl, d.ip))
