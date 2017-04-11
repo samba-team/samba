@@ -211,4 +211,9 @@ interface winbind
 		[in] uint32 flags,
 		[out,ref] lsa_ForestTrustInformation **forest_trust_info
 		);
+
+	NTSTATUS winbind_SendToSam(
+		[in] netr_SendToSamBase message
+		);
+
 }

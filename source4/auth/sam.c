@@ -30,6 +30,7 @@
 #include "dsdb/common/util.h"
 #include "libcli/ldap/ldap_ndr.h"
 #include "param/param.h"
+#include "librpc/gen_ndr/ndr_winbind_c.h"
 
 #define KRBTGT_ATTRS \
 	/* required for the krb5 kdc */		\
@@ -74,9 +75,14 @@ const char *user_attrs[] = {
 	 */
 	"lockoutTime",
 
+	/*
+	 * Needed for SendToSAM requests
+	 */
+	"objectGUID",
+
 	/* check 'allowed workstations' */
 	"userWorkstations",
-		       
+
 	/* required for user_info_dc, not access control: */
 	"displayName",
 	"scriptPath",
@@ -871,11 +877,13 @@ NTSTATUS authsam_search_account(TALLOC_CTX *mem_ctx, struct ldb_context *sam_ctx
 NTSTATUS authsam_logon_success_accounting(struct ldb_context *sam_ctx,
 					  const struct ldb_message *msg,
 					  struct ldb_dn *domain_dn,
-					  bool interactive_or_kerberos)
+					  bool interactive_or_kerberos,
+					  struct netr_SendToSamBase **send_to_sam)
 {
 	int ret;
 	NTSTATUS status;
 	int badPwdCount;
+	int dbBadPwdCount;
 	int64_t lockoutTime;
 	struct ldb_message *msg_mod;
 	TALLOC_CTX *mem_ctx;
@@ -890,8 +898,9 @@ NTSTATUS authsam_logon_success_accounting(struct ldb_context *sam_ctx,
 	}
 
 	lockoutTime = ldb_msg_find_attr_as_int64(msg, "lockoutTime", 0);
+	dbBadPwdCount = ldb_msg_find_attr_as_int(msg, "badPwdCount", 0);
 	if (interactive_or_kerberos) {
-		badPwdCount = ldb_msg_find_attr_as_int(msg, "badPwdCount", 0);
+		badPwdCount = dbBadPwdCount;
 	} else {
 		badPwdCount = samdb_result_effective_badPwdCount(sam_ctx, mem_ctx,
 								 domain_dn, msg);
@@ -971,12 +980,23 @@ NTSTATUS authsam_logon_success_accounting(struct ldb_context *sam_ctx,
 	}
 
 	if (!am_rodc) {
-		/* TODO Perform the (async) SendToSAM calls for MS-SAMS */
 		status = authsam_update_lastlogon_timestamp(sam_ctx, msg_mod, domain_dn,
 							    lastLogonTimestamp, now);
 		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(mem_ctx);
 			return NT_STATUS_NO_MEMORY;
+		}
+	} else {
+		/* Perform the (async) SendToSAM calls for MS-SAMS */
+		if (dbBadPwdCount != 0 && send_to_sam != NULL) {
+			struct netr_SendToSamBase *base_msg;
+			struct GUID guid = samdb_result_guid(msg, "objectGUID");
+			base_msg = talloc_zero(msg, struct netr_SendToSamBase);
+
+			base_msg->message_type = SendToSamResetBadPasswordCount;
+			base_msg->message_size = 16;
+			base_msg->message.reset_bad_password.guid = guid;
+			*send_to_sam = base_msg;
 		}
 	}
 

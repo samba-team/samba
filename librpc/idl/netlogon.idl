@@ -1466,9 +1466,46 @@ interface netlogon
 		[out,ref] samr_Password *password
 		);
 
+	typedef [public] enum {
+		SendToSamUpdatePassword = 0,
+		SendToSamResetBadPasswordCount = 1,
+		SendToSamUpdatePasswordForward = 2,
+		SendToSamUpdateLastLogonTimestamp = 3,
+		SendToSamResetSmartCardPassword = 4
+	} netr_SendToSamType;
+
+	typedef struct {
+		GUID guid;
+	} netr_SendToSamResetBadPasswordCount;
+
+	typedef [nodiscriminant, public,switch_type(netr_SendToSamType)] union {
+		/* TODO Implement other SendToSam message types
+		 * [case(SendToSamUpdatePassword)] netr_SendToSamUpdatePassword ...; */
+		[case(SendToSamResetBadPasswordCount)] netr_SendToSamResetBadPasswordCount reset_bad_password;
+		/*
+		 * [case(SendToSamUpdatePasswordForward)] netrSendToSamUpdatePasswordForward ...;
+		 * [case(SendToSamUpdateLastLogonTimestamp)] netrSendToSamUpdateLastLogonTimestamp ...;
+		 * [case(SendToSamResetSmartCardPassword)]   netrSendToSamResetSmartCardPassword ...;
+		 */
+		[default];
+	} netr_SendToSamMessage;
+
+	typedef [public] struct {
+		netr_SendToSamType message_type;
+		uint32 message_size;
+		[switch_is(message_type), subcontext(0), subcontext_size(message_size)] netr_SendToSamMessage message;
+	} netr_SendToSamBase;
+
 	/****************/
 	/* Function 0x20 */
-	[todo] WERROR netr_NETRLOGONSENDTOSAM();
+	NTSTATUS netr_NetrLogonSendToSam(
+		[in,unique] [string,charset(UTF16)] uint16 *server_name,
+		[in]  [string,charset(UTF16)] uint16 *computer_name,
+		[in,ref] netr_Authenticator *credential,
+		[out,ref] netr_Authenticator *return_authenticator,
+		[in,ref]  [size_is(buffer_len)] uint8 *opaque_buffer,
+		[in] uint32 buffer_len
+		);
 
 	/****************/
 	/* Function 0x21 */

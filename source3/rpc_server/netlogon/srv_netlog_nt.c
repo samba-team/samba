@@ -2277,11 +2277,11 @@ NTSTATUS _netr_ServerPasswordGet(struct pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _netr_NETRLOGONSENDTOSAM(struct pipes_struct *p,
-				struct netr_NETRLOGONSENDTOSAM *r)
+NTSTATUS _netr_NetrLogonSendToSam(struct pipes_struct *p,
+				struct netr_NetrLogonSendToSam *r)
 {
 	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
-	return WERR_NOT_SUPPORTED;
+	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 /****************************************************************

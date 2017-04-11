@@ -296,6 +296,28 @@ hdb_samba4_check_s4u2self(krb5_context context, HDB *db,
 	return ret;
 }
 
+static void reset_bad_password_netlogon(TALLOC_CTX *mem_ctx,
+					struct samba_kdc_db_context *kdc_db_ctx,
+					struct netr_SendToSamBase *send_to_sam)
+{
+	struct dcerpc_binding_handle *irpc_handle;
+	struct winbind_SendToSam req;
+
+	irpc_handle = irpc_binding_handle_by_name(mem_ctx, kdc_db_ctx->msg_ctx,
+						  "winbind_server",
+						  &ndr_table_winbind);
+
+	if (irpc_handle == NULL) {
+		DEBUG(0, ("No winbind_server running!\n"));
+		return;
+	}
+
+	req.in.message = *send_to_sam;
+
+	dcerpc_winbind_SendToSam_r_send(mem_ctx, kdc_db_ctx->ev_ctx,
+					irpc_handle, &req);
+}
+
 static void send_bad_password_netlogon(TALLOC_CTX *mem_ctx,
 				       struct samba_kdc_db_context *kdc_db_ctx,
 				       struct auth_usersupplied_info *user_info)
@@ -396,8 +418,10 @@ static krb5_error_code hdb_samba4_auth_status(krb5_context context, HDB *db,
 	switch (hdb_auth_status) {
 	case HDB_AUTHZ_SUCCESS:
 	{
+		TALLOC_CTX *frame = talloc_stackframe();
 		struct samba_kdc_entry *p = talloc_get_type(entry->ctx,
 							    struct samba_kdc_entry);
+		struct netr_SendToSamBase *send_to_sam = NULL;
 
 		/*
 		 * TODO: We could log the AS-REQ authorization success here as
@@ -405,7 +429,11 @@ static krb5_error_code hdb_samba4_auth_status(krb5_context context, HDB *db,
 		 * in the PAC here or re-calculate it.
 		 */
 		authsam_logon_success_accounting(kdc_db_ctx->samdb, p->msg,
-						 domain_dn, true);
+						 domain_dn, true, &send_to_sam);
+		if (kdc_db_ctx->rodc && send_to_sam != NULL) {
+			reset_bad_password_netlogon(frame, kdc_db_ctx, send_to_sam);
+		}
+		talloc_free(frame);
 		break;
 	}
 	case HDB_AUTH_INVALID_SIGNATURE:

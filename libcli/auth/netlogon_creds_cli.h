@@ -181,4 +181,15 @@ NTSTATUS netlogon_creds_cli_GetForestTrustInformation(
 			TALLOC_CTX *mem_ctx,
 			struct lsa_ForestTrustInformation **forest_trust_info);
 
+struct tevent_req *netlogon_creds_cli_SendToSam_send(TALLOC_CTX *mem_ctx,
+						     struct tevent_context *ev,
+						     struct netlogon_creds_cli_context *context,
+						     struct dcerpc_binding_handle *b,
+						     struct netr_SendToSamBase *message);
+
+NTSTATUS netlogon_creds_cli_SendToSam(
+				struct netlogon_creds_cli_context *context,
+				struct dcerpc_binding_handle *b,
+				struct netr_SendToSamBase *message);
+
 #endif /* NETLOGON_CREDS_CLI_H */

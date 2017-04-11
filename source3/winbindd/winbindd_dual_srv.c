@@ -1701,3 +1701,28 @@ done:
 	TALLOC_FREE(frame);
 	return WERR_OK;
 }
+
+NTSTATUS _winbind_SendToSam(struct pipes_struct *p, struct winbind_SendToSam *r)
+{
+	struct winbindd_domain *domain;
+	NTSTATUS status;
+	struct rpc_pipe_client *netlogon_pipe;
+
+	DEBUG(5, ("_winbind_SendToSam received\n"));
+	domain = wb_child_domain();
+	if (domain == NULL) {
+		return NT_STATUS_REQUEST_NOT_ACCEPTED;
+	}
+
+	status = cm_connect_netlogon(domain, &netlogon_pipe);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(3, ("could not open handle to NETLOGON pipe\n"));
+		return status;
+	}
+
+	status = netlogon_creds_cli_SendToSam(domain->conn.netlogon_creds,
+					      netlogon_pipe->binding_handle,
+					      &r->in.message);
+
+	return status;
+}

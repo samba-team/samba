@@ -32,6 +32,7 @@
 #include "dsdb/common/util.h"
 #include "param/param.h"
 #include "librpc/gen_ndr/ndr_irpc_c.h"
+#include "librpc/gen_ndr/ndr_winbind_c.h"
 #include "lib/messaging/irpc.h"
 #include "libcli/auth/libcli_auth.h"
 #include "libds/common/roles.h"
@@ -103,6 +104,49 @@ static NTSTATUS authsam_password_ok(struct auth4_context *auth_context,
 	return NT_STATUS_OK;
 }
 
+static void auth_sam_trigger_zero_password(TALLOC_CTX *mem_ctx,
+					   struct imessaging_context *msg_ctx,
+					   struct tevent_context *event_ctx,
+					   struct netr_SendToSamBase *send_to_sam)
+{
+	struct dcerpc_binding_handle *irpc_handle;
+	struct winbind_SendToSam r;
+	struct tevent_req *req;
+	TALLOC_CTX *tmp_ctx;
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		return;
+	}
+
+	irpc_handle = irpc_binding_handle_by_name(tmp_ctx, msg_ctx,
+						  "winbind_server",
+						  &ndr_table_winbind);
+	if (irpc_handle == NULL) {
+		DEBUG(1,(__location__ ": Unable to get binding handle for winbind\n"));
+		TALLOC_FREE(tmp_ctx);
+		return;
+	}
+
+	r.in.message = *send_to_sam;
+
+	/*
+	 * This seem to rely on the current IRPC implementation,
+	 * which delivers the message in the _send function.
+	 *
+	 * TODO: we need a ONE_WAY IRPC handle and register
+	 * a callback and wait for it to be triggered!
+	 */
+	req = dcerpc_winbind_SendToSam_r_send(tmp_ctx,
+					      event_ctx,
+					      irpc_handle,
+					      &r);
+
+	/* we aren't interested in a reply */
+	talloc_free(req);
+	TALLOC_FREE(tmp_ctx);
+
+}
 
 /*
   send a message to the drepl server telling it to initiate a
@@ -482,6 +526,7 @@ static NTSTATUS authsam_authenticate(struct auth4_context *auth_context,
 	NTSTATUS nt_status;
 	bool interactive = (user_info->password_state == AUTH_PASSWORD_HASH);
 	uint32_t acct_flags = samdb_result_acct_flags(msg, NULL);
+	struct netr_SendToSamBase *send_to_sam = NULL;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	if (!tmp_ctx) {
 		return NT_STATUS_NO_MEMORY;
@@ -533,7 +578,16 @@ static NTSTATUS authsam_authenticate(struct auth4_context *auth_context,
 
 	nt_status = authsam_logon_success_accounting(auth_context->sam_ctx,
 						     msg, domain_dn,
-						     interactive);
+						     interactive,
+						     &send_to_sam);
+
+	if (send_to_sam != NULL) {
+		auth_sam_trigger_zero_password(tmp_ctx,
+					       auth_context->msg_ctx,
+					       auth_context->event_ctx,
+					       send_to_sam);
+	}
+
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		TALLOC_FREE(tmp_ctx);
 		return nt_status;

@@ -255,6 +255,24 @@ static NTSTATUS wb_irpc_GetForestTrustInformation(struct irpc_message *msg,
 					domain, 45 /* timeout */);
 }
 
+static NTSTATUS wb_irpc_SendToSam(struct irpc_message *msg,
+				  struct winbind_SendToSam *req)
+{
+	/* TODO make sure that it is RWDC */
+	struct winbindd_domain *domain = find_our_domain();
+	if (domain == NULL) {
+		return NT_STATUS_NO_SUCH_DOMAIN;
+	}
+
+	DEBUG(5, ("wb_irpc_SendToSam called\n"));
+
+	return wb_irpc_forward_rpc_call(msg, msg,
+					winbind_event_context(),
+					req, NDR_WINBIND_SENDTOSAM,
+					"winbind_SendToSam",
+					domain, IRPC_CALL_TIMEOUT);
+}
+
 NTSTATUS wb_irpc_register(void)
 {
 	NTSTATUS status;
@@ -278,6 +296,11 @@ NTSTATUS wb_irpc_register(void)
 	status = IRPC_REGISTER(winbind_imessaging_context(), winbind,
 			       WINBIND_GETFORESTTRUSTINFORMATION,
 			       wb_irpc_GetForestTrustInformation, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	status = IRPC_REGISTER(winbind_imessaging_context(), winbind, WINBIND_SENDTOSAM,
+			       wb_irpc_SendToSam, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

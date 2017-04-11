@@ -225,7 +225,8 @@ static NTSTATUS winbind_check_password(struct auth_method_context *ctx,
 			if (NT_STATUS_IS_OK(status)) {
 			    authsam_logon_success_accounting(ctx->auth_ctx->sam_ctx, msg,
 							     domain_dn,
-							     user_info->flags & USER_INFO_INTERACTIVE_LOGON);
+							     user_info->flags & USER_INFO_INTERACTIVE_LOGON,
+							     NULL);
 			}
 		}
 	}

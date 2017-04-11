@@ -2254,12 +2254,104 @@ static NTSTATUS dcesrv_netr_ServerPasswordGet(struct dcesrv_call_state *dce_call
 
 
 /*
-  netr_NETRLOGONSENDTOSAM
+  netr_NetrLogonSendToSam
 */
-static WERROR dcesrv_netr_NETRLOGONSENDTOSAM(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct netr_NETRLOGONSENDTOSAM *r)
+static NTSTATUS dcesrv_netr_NetrLogonSendToSam(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+					       struct netr_NetrLogonSendToSam *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct netlogon_creds_CredentialState *creds;
+	struct ldb_context *sam_ctx;
+	NTSTATUS nt_status;
+	DATA_BLOB decrypted_blob;
+	enum ndr_err_code ndr_err;
+	struct netr_SendToSamBase base_msg = { 0 };
+
+	nt_status = dcesrv_netr_creds_server_step_check(dce_call,
+							mem_ctx,
+							r->in.computer_name,
+							r->in.credential,
+							r->out.return_authenticator,
+							&creds);
+
+	NT_STATUS_NOT_OK_RETURN(nt_status);
+
+	switch (creds->secure_channel_type) {
+	case SEC_CHAN_BDC:
+	case SEC_CHAN_RODC:
+		break;
+	case SEC_CHAN_WKSTA:
+	case SEC_CHAN_DNS_DOMAIN:
+	case SEC_CHAN_DOMAIN:
+	case SEC_CHAN_NULL:
+		return NT_STATUS_INVALID_PARAMETER;
+	default:
+		DEBUG(1, ("Client asked for an invalid secure channel type: %d\n",
+			  creds->secure_channel_type));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx,
+				dce_call->conn->dce_ctx->lp_ctx,
+				system_session(dce_call->conn->dce_ctx->lp_ctx), 0);
+	if (sam_ctx == NULL) {
+		return NT_STATUS_INVALID_SYSTEM_SERVICE;
+	}
+
+	/* Buffer is meant to be 16-bit aligned */
+	if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
+		netlogon_creds_aes_decrypt(creds, r->in.opaque_buffer, r->in.buffer_len);
+	} else {
+		netlogon_creds_arcfour_crypt(creds, r->in.opaque_buffer, r->in.buffer_len);
+	}
+
+	decrypted_blob.data = r->in.opaque_buffer;
+	decrypted_blob.length = r->in.buffer_len;
+
+	ndr_err = ndr_pull_struct_blob(&decrypted_blob, mem_ctx, &base_msg,
+				       (ndr_pull_flags_fn_t)ndr_pull_netr_SendToSamBase);
+
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		/* We only partially implement SendToSam */
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
+	/* Now 'send' to SAM */
+	switch (base_msg.message_type) {
+	case SendToSamResetBadPasswordCount:
+	{
+		struct ldb_message *msg = ldb_msg_new(mem_ctx);
+		struct ldb_dn *dn = NULL;
+		int ret = 0;
+
+
+		ret = dsdb_find_dn_by_guid(sam_ctx,
+					   mem_ctx,
+					   &base_msg.message.reset_bad_password.guid,
+					   0,
+					   &dn);
+		if (ret != LDB_SUCCESS) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		msg->dn = dn;
+
+		ret = samdb_msg_add_int(sam_ctx, mem_ctx, msg, "badPwdCount", 0);
+		if (ret != LDB_SUCCESS) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		ret = dsdb_replace(sam_ctx, msg, 0);
+		if (ret != LDB_SUCCESS) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		break;
+	}
+	default:
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
+	return NT_STATUS_OK;
 }
 
 
