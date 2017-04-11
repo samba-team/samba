@@ -58,6 +58,25 @@ EOF
 	${TESTPARM} ${TEMP_CONFFILE}
 }
 
+testit "name resolve order = lmhosts wins host bcast"\
+	test_one_global_option "name resolve order = lmhosts wins host bcast" || \
+	failed=`expr ${failed} + 1`
+
+testit_expect_failure "name resolve order = bad wins host bcast"\
+	test_one_global_option "name resolve order = bad wins host bcast" || \
+	failed=`expr ${failed} + 1`
+
+testit_expect_failure "name resolve order = lmhosts bad host bcast"\
+	test_one_global_option "name resolve order = lmhosts bad host bcast" || \
+	failed=`expr ${failed} + 1`
+
+testit_expect_failure "name resolve order = lmhosts wins bad bcast"\
+	test_one_global_option "name resolve order = lmhosts wins bad bcast" || \
+	failed=`expr ${failed} + 1`
+
+testit_expect_failure "name resolve order = lmhosts wins host bad"\
+	test_one_global_option "name resolve order = lmhosts wins host bad" || \
+	failed=`expr ${failed} + 1`
 
 testit "netbios name" \
 	test_one_global_option "netbios name = funky" || \
