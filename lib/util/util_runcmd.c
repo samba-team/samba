@@ -29,6 +29,8 @@
 #include "system/filesys.h"
 #include "../lib/util/tevent_unix.h"
 #include "../lib/util/util_runcmd.h"
+#include "../lib/util/tfork.h"
+#include "../lib/util/sys_rw.h"
 
 static int samba_runcmd_state_destructor(struct samba_runcmd_state *state)
 {
@@ -106,7 +108,7 @@ struct tevent_req *samba_runcmd_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	state->pid = fork();
+	state->pid = tfork(&state->fd_status, NULL);
 	if (state->pid == (pid_t)-1) {
 		close(p1[0]);
 		close(p1[1]);
@@ -130,10 +132,12 @@ struct tevent_req *samba_runcmd_send(TALLOC_CTX *mem_ctx,
 		set_blocking(state->fd_stdout, false);
 		set_blocking(state->fd_stderr, false);
 		set_blocking(state->fd_stdin,  false);
+		set_blocking(state->fd_status, false);
 
 		smb_set_close_on_exec(state->fd_stdin);
 		smb_set_close_on_exec(state->fd_stdout);
 		smb_set_close_on_exec(state->fd_stderr);
+		smb_set_close_on_exec(state->fd_status);
 
 		talloc_set_destructor(state, samba_runcmd_state_destructor);
 
@@ -145,6 +149,7 @@ struct tevent_req *samba_runcmd_send(TALLOC_CTX *mem_ctx,
 		if (tevent_req_nomem(state->fde_stdout, req)) {
 			close(state->fd_stdout);
 			close(state->fd_stderr);
+			close(state->fd_status);
 			return tevent_req_post(req, ev);
 		}
 		tevent_fd_set_auto_close(state->fde_stdout);
@@ -155,10 +160,25 @@ struct tevent_req *samba_runcmd_send(TALLOC_CTX *mem_ctx,
 						  samba_runcmd_io_handler,
 						  req);
 		if (tevent_req_nomem(state->fde_stdout, req)) {
+			close(state->fd_stdout);
 			close(state->fd_stderr);
+			close(state->fd_status);
 			return tevent_req_post(req, ev);
 		}
 		tevent_fd_set_auto_close(state->fde_stderr);
+
+		state->fde_status = tevent_add_fd(ev, state,
+						  state->fd_status,
+						  TEVENT_FD_READ,
+						  samba_runcmd_io_handler,
+						  req);
+		if (tevent_req_nomem(state->fde_stdout, req)) {
+			close(state->fd_stdout);
+			close(state->fd_stderr);
+			close(state->fd_status);
+			return tevent_req_post(req, ev);
+		}
+		tevent_fd_set_auto_close(state->fde_status);
 
 		if (!timeval_is_zero(&endtime)) {
 			tevent_req_set_endtime(req, ev, endtime);
@@ -231,6 +251,10 @@ static void samba_runcmd_io_handler(struct tevent_context *ev,
 	char *p;
 	int n, fd;
 
+	if (!(flags & TEVENT_FD_READ)) {
+		return;
+	}
+
 	if (fde == state->fde_stdout) {
 		level = state->stdout_log_level;
 		fd = state->fd_stdout;
@@ -238,12 +262,39 @@ static void samba_runcmd_io_handler(struct tevent_context *ev,
 		level = state->stderr_log_level;
 		fd = state->fd_stderr;
 	} else {
+		int status;
+		ssize_t nread;
+
+		/*
+		 * Note: reading on a non-blocking pipe is guaranteed to deliver
+		 * any pending data up to some kernel limit which is way beyond
+		 * what we're reading here.
+		 */
+		nread = sys_read(state->fd_status, &status, sizeof(status));
+		if (nread != sizeof(status)) {
+			DBG_ERR("Bad read on status pipe\n");
+			tevent_req_error(req, EIO);
+			return;
+		}
+
+		if (WIFEXITED(status)) {
+			status = WEXITSTATUS(status);
+		} else if (WIFSIGNALED(status)) {
+			status = WTERMSIG(status);
+		} else {
+			status = ECHILD;
+		}
+
+		DBG_NOTICE("Child %s exited %d\n", state->arg0, status);
+		if (status != 0) {
+			tevent_req_error(req, status);
+			return;
+		}
+
+		tevent_req_done(req);
 		return;
 	}
 
-	if (!(flags & TEVENT_FD_READ)) {
-		return;
-	}
 
 	n = read(fd, &state->buf[state->buf_used],
 		 sizeof(state->buf) - state->buf_used);
@@ -253,53 +304,11 @@ static void samba_runcmd_io_handler(struct tevent_context *ev,
 		if (fde == state->fde_stdout) {
 			talloc_free(fde);
 			state->fde_stdout = NULL;
+			return;
 		}
 		if (fde == state->fde_stderr) {
 			talloc_free(fde);
 			state->fde_stderr = NULL;
-		}
-		if (state->fde_stdout == NULL &&
-		    state->fde_stderr == NULL) {
-			int status;
-			/* the child has closed both stdout and
-			 * stderr, assume its dead */
-			pid_t pid = waitpid(state->pid, &status, 0);
-			if (pid != state->pid) {
-				if (errno == ECHILD) {
-					/* this happens when the
-					   parent has set SIGCHLD to
-					   SIG_IGN. In that case we
-					   can only get error
-					   information for the child
-					   via its logging. We should
-					   stop using SIG_IGN on
-					   SIGCHLD in the standard
-					   process model.
-					*/
-					DEBUG(0, ("Error in waitpid() unexpectedly got ECHILD "
-						  "for %s child %d - %s, "
-						  "someone has set SIGCHLD to SIG_IGN!\n",
-					state->arg0, (int)state->pid, strerror(errno)));
-					tevent_req_error(req, errno);
-					return;
-				}
-				DEBUG(0,("Error in waitpid() for child %s - %s \n",
-					 state->arg0, strerror(errno)));
-				if (errno == 0) {
-					errno = ECHILD;
-				}
-				tevent_req_error(req, errno);
-				return;
-			}
-			status = WEXITSTATUS(status);
-			DEBUG(3,("Child %s exited with status %d\n",
-				 state->arg0, status));
-			if (status != 0) {
-				tevent_req_error(req, status);
-				return;
-			}
-
-			tevent_req_done(req);
 			return;
 		}
 		return;
