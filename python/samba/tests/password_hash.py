@@ -30,7 +30,6 @@ from samba.dcerpc.samr import DOMAIN_PASSWORD_STORE_CLEARTEXT
 from samba.dsdb import UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED
 from samba.tests import delete_force
 import ldb
-import os
 import samba
 import binascii
 import md5
