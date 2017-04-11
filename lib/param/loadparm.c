@@ -69,6 +69,7 @@
 #include "tdb.h"
 #include "librpc/gen_ndr/nbt.h"
 #include "libds/common/roles.h"
+#include "lib/util/samba_util.h"
 
 #ifdef HAVE_HTTPCONNECTENCRYPT
 #include <cups/http.h>
@@ -1710,6 +1711,50 @@ static bool set_variable_helper(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr
 
 }
 
+bool handle_name_resolve_order(struct loadparm_context *lp_ctx,
+			       struct loadparm_service *service,
+			       const char *pszParmValue, char **ptr)
+{
+	const char **valid_values = NULL;
+	const char **values_to_set = NULL;
+	int i;
+	bool value_is_valid = false;
+	valid_values = str_list_make_v3_const(NULL,
+					      DEFAULT_NAME_RESOLVE_ORDER,
+					      NULL);
+	if (valid_values == NULL) {
+		DBG_ERR("OOM: failed to make string list from %s\n",
+			DEFAULT_NAME_RESOLVE_ORDER);
+		goto out;
+	}
+	values_to_set = str_list_make_v3_const(lp_ctx->globals->ctx,
+					       pszParmValue,
+					       NULL);
+	if (values_to_set == NULL) {
+		DBG_ERR("OOM: failed to make string list from %s\n",
+			pszParmValue);
+		goto out;
+	}
+	TALLOC_FREE(lp_ctx->globals->name_resolve_order);
+	for (i = 0; values_to_set[i] != NULL; i++) {
+		value_is_valid = str_list_check(valid_values, values_to_set[i]);
+		if (!value_is_valid) {
+			DBG_ERR("WARNING: Ignoring invalid list value '%s' "
+				"for parameter 'name resolve order'\n",
+				values_to_set[i]);
+			break;
+		}
+	}
+out:
+	if (value_is_valid) {
+		lp_ctx->globals->name_resolve_order = values_to_set;
+	} else {
+		TALLOC_FREE(values_to_set);
+	}
+	TALLOC_FREE(valid_values);
+	return value_is_valid;
+}
+
 static bool set_variable(TALLOC_CTX *mem_ctx, struct loadparm_service *service,
 			 int parmnum, void *parm_ptr,
 			 const char *pszParmName, const char *pszParmValue,
@@ -2605,7 +2650,9 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	myname = get_myname(lp_ctx);
 	lpcfg_do_global_parameter(lp_ctx, "netbios name", myname);
 	talloc_free(myname);
-	lpcfg_do_global_parameter(lp_ctx, "name resolve order", "lmhosts wins host bcast");
+	lpcfg_do_global_parameter(lp_ctx,
+				  "name resolve order",
+				  DEFAULT_NAME_RESOLVE_ORDER);
 
 	lpcfg_do_global_parameter(lp_ctx, "fstype", "NTFS");
 

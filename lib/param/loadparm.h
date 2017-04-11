@@ -105,6 +105,7 @@ struct file_lists {
 	time_t modtime;
 };
 
+#define DEFAULT_NAME_RESOLVE_ORDER "lmhosts wins host bcast"
 #define FLAG_DEPRECATED 0x1000 /* options that should no longer be used */
 #define FLAG_SYNONYM	0x2000 /* options that is a synonym of another option */
 #define FLAG_CMDLINE	0x10000 /* option has been overridden */

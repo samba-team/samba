@@ -609,7 +609,10 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 	lpcfg_string_set(Globals.ctx, &Globals.logon_path,
 			 "\\\\%N\\%U\\profile");
 
-	Globals.name_resolve_order = str_list_make_v3_const(NULL, "lmhosts wins host bcast", NULL);
+	Globals.name_resolve_order =
+			str_list_make_v3_const(Globals.ctx,
+					       DEFAULT_NAME_RESOLVE_ORDER,
+					       NULL);
 	lpcfg_string_set(Globals.ctx, &Globals.password_server, "*");
 
 	Globals.algorithmic_rid_base = BASE_RID;

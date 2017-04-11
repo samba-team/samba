@@ -163,7 +163,8 @@ class SmbDotConfTests(TestCase):
                           'client plaintext auth',
                           'registry shares',
                           'smb ports',
-                          'rpc server dynamic port range'])
+                          'rpc server dynamic port range',
+                          'name resolve order'])
         self._test_empty(['bin/testparm'])
 
     def test_default_s4(self):
@@ -171,7 +172,8 @@ class SmbDotConfTests(TestCase):
         self._set_defaults(['bin/samba-tool', 'testparm'])
         self._set_arbitrary(['bin/samba-tool', 'testparm'],
             exceptions = ['smb ports',
-                          'rpc server dynamic port range'])
+                          'rpc server dynamic port range',
+                          'name resolve order'])
         self._test_empty(['bin/samba-tool', 'testparm'])
 
     def _test_default(self, program):
