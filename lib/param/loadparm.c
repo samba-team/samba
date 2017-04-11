@@ -3356,20 +3356,17 @@ struct smb_iconv_handle *lpcfg_iconv_handle(struct loadparm_context *lp_ctx)
 
 _PUBLIC_ void reload_charcnv(struct loadparm_context *lp_ctx)
 {
-	struct smb_iconv_handle *old_ic = lp_ctx->iconv_handle;
 	if (!lp_ctx->global) {
 		return;
 	}
 
-	if (old_ic == NULL) {
-		old_ic = global_iconv_handle;
+	lp_ctx->iconv_handle =
+		reinit_iconv_handle(lp_ctx,
+				    lpcfg_dos_charset(lp_ctx),
+				    lpcfg_unix_charset(lp_ctx));
+	if (lp_ctx->iconv_handle == NULL) {
+		smb_panic("reinit_iconv_handle failed");
 	}
-	lp_ctx->iconv_handle = smb_iconv_handle_reinit(lp_ctx,
-					lpcfg_dos_charset(lp_ctx),
-					lpcfg_unix_charset(lp_ctx),
-					true,
-					old_ic);
-	global_iconv_handle = lp_ctx->iconv_handle;
 }
 
 _PUBLIC_ char *lpcfg_tls_keyfile(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
