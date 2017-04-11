@@ -36,7 +36,7 @@ import md5
 
 
 USER_NAME = "PasswordHashTestUser"
-USER_PASS = samba.generate_random_password(32,32)
+USER_PASS = samba.generate_random_password(32, 32)
 UPN       = "PWHash@User.Principle"
 
 # Get named package from the passed supplemental credentials
@@ -73,7 +73,7 @@ class PassWordHashTests(TestCase):
         self.lp = samba.tests.env_loadparm()
         # set any needed options
         if options is not None:
-            for (option,value) in options:
+            for (option, value) in options:
                 self.lp.set(option, value)
 
         self.creds = Credentials()
@@ -139,7 +139,7 @@ class PassWordHashTests(TestCase):
         res = self.ldb.search(scope=ldb.SCOPE_BASE,
                               base=base,
                               attrs=["supplementalCredentials"])
-        self.assertIs( True, len(res) > 0)
+        self.assertIs(True, len(res) > 0)
         obj = res[0]
         sc_blob = obj["supplementalCredentials"][0]
         sc = ndr_unpack(drsblobs.supplementalCredentialsBlob, sc_blob)
@@ -147,7 +147,7 @@ class PassWordHashTests(TestCase):
 
     # Calculate and validate a Wdigest value
     def check_digest(self, user, realm, password,  digest):
-        expected = calc_digest( user, realm, password)
+        expected = calc_digest(user, realm, password)
         actual = binascii.hexlify(bytearray(digest))
         error = "Digest expected[%s], actual[%s], " \
                 "user[%s], realm[%s], pass[%s]" % \
