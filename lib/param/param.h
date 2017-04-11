@@ -301,10 +301,6 @@ char *smbd_tmp_path(TALLOC_CTX *mem_ctx,
 
 const char *lpcfg_imessaging_path(TALLOC_CTX *mem_ctx,
 				       struct loadparm_context *lp_ctx);
-struct smb_iconv_handle *smb_iconv_handle_reinit_lp(TALLOC_CTX *mem_ctx,
-							      struct loadparm_context *lp_ctx,
-							      struct smb_iconv_handle *old_ic);
-
 const char *lpcfg_sam_name(struct loadparm_context *lp_ctx);
 const char *lpcfg_sam_dnsname(struct loadparm_context *lp_ctx);
 

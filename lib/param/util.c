@@ -248,17 +248,6 @@ const char *lpcfg_imessaging_path(TALLOC_CTX *mem_ctx,
 	return smbd_tmp_path(mem_ctx, lp_ctx, "msg");
 }
 
-struct smb_iconv_handle *smb_iconv_handle_reinit_lp(TALLOC_CTX *mem_ctx,
-							      struct loadparm_context *lp_ctx,
-							      struct smb_iconv_handle *old_ic)
-{
-	return smb_iconv_handle_reinit(mem_ctx, lpcfg_dos_charset(lp_ctx),
-				       lpcfg_unix_charset(lp_ctx),
-				       true,
-				       old_ic);
-}
-
-
 const char *lpcfg_sam_name(struct loadparm_context *lp_ctx)
 {
 	switch (lpcfg_server_role(lp_ctx)) {

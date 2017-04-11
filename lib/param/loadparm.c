@@ -1265,7 +1265,8 @@ bool handle_charset(struct loadparm_context *lp_ctx, struct loadparm_service *se
 {
 	if (lp_ctx->s3_fns) {
 		if (*ptr == NULL || strcmp(*ptr, pszParmValue) != 0) {
-			global_iconv_handle = smb_iconv_handle_reinit(NULL,
+			global_iconv_handle =
+				smb_iconv_handle_reinit(NULL,
 							lpcfg_dos_charset(lp_ctx),
 							lpcfg_unix_charset(lp_ctx),
 							true, global_iconv_handle);
@@ -3357,7 +3358,11 @@ _PUBLIC_ void reload_charcnv(struct loadparm_context *lp_ctx)
 	if (old_ic == NULL) {
 		old_ic = global_iconv_handle;
 	}
-	lp_ctx->iconv_handle = smb_iconv_handle_reinit_lp(lp_ctx, lp_ctx, old_ic);
+	lp_ctx->iconv_handle = smb_iconv_handle_reinit(lp_ctx,
+					lpcfg_dos_charset(lp_ctx),
+					lpcfg_unix_charset(lp_ctx),
+					true,
+					old_ic);
 	global_iconv_handle = lp_ctx->iconv_handle;
 }
 
