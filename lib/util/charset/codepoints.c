@@ -16521,6 +16521,24 @@ struct smb_iconv_handle *get_iconv_testing_handle(TALLOC_CTX *mem_ctx,
 				       dos_charset, unix_charset, use_builtin_handlers, NULL);
 }
 
+struct smb_iconv_handle *reinit_iconv_handle(TALLOC_CTX *mem_ctx,
+				const char *dos_charset,
+				const char *unix_charset)
+{
+	global_iconv_handle =
+		smb_iconv_handle_reinit(mem_ctx,
+					dos_charset,
+					unix_charset,
+					true,
+					global_iconv_handle);
+	return global_iconv_handle;
+}
+
+void free_iconv_handle(void)
+{
+	TALLOC_FREE(global_iconv_handle);
+}
+
 /**
  * Return the name of a charset to give to iconv().
  **/
