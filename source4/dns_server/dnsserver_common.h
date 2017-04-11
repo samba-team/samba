@@ -35,7 +35,8 @@ struct dns_server_zone {
 	struct ldb_dn *dn;
 };
 
-WERROR dns_common_extract(const struct ldb_message_element *el,
+WERROR dns_common_extract(struct ldb_context *samdb,
+			  const struct ldb_message_element *el,
 			  TALLOC_CTX *mem_ctx,
 			  struct dnsp_DnssrvRpcRecord **records,
 			  uint16_t *num_records);

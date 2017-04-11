@@ -42,7 +42,6 @@ samba.tests.dns.__main__.TestSimpleQueries.test_one_SOA_query\(rodc:local\)
 
 # The very first DC will have DNS records, but subsequent DCs only get entries into
 # the dns_hosts_file in our selftest env
-samba.tests.dns.__main__.TestSimpleQueries.test_one_SOA_query\(vampire_dc:local\)
 samba.tests.dns.__main__.TestSimpleQueries.test_one_a_query\(vampire_dc:local\)
 samba.tests.dns.__main__.TestSimpleQueries.test_one_a_query_tcp\(vampire_dc:local\)
 samba.tests.dns.__main__.TestSimpleQueries.test_one_mx_query\(vampire_dc:local\)

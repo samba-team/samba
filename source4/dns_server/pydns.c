@@ -160,16 +160,20 @@ static PyObject *py_dsdb_dns_lookup(PyObject *self,
 
 static PyObject *py_dsdb_dns_extract(PyObject *self, PyObject *args)
 {
+	struct ldb_context *samdb;
 	PyObject *py_dns_el, *ret;
+	PyObject *py_ldb = NULL;
 	TALLOC_CTX *frame;
 	WERROR werr;
 	struct ldb_message_element *dns_el;
 	struct dnsp_DnssrvRpcRecord *records;
 	uint16_t num_records;
 
-	if (!PyArg_ParseTuple(args, "O", &py_dns_el)) {
+	if (!PyArg_ParseTuple(args, "OO", &py_ldb, &py_dns_el)) {
 		return NULL;
 	}
+
+	PyErr_LDB_OR_RAISE(py_ldb, samdb);
 
 	if (!py_check_dcerpc_type(py_dns_el, "ldb", "MessageElement")) {
 		PyErr_SetString(PyExc_TypeError,
@@ -180,7 +184,7 @@ static PyObject *py_dsdb_dns_extract(PyObject *self, PyObject *args)
 
 	frame = talloc_stackframe();
 
-	werr = dns_common_extract(dns_el,
+	werr = dns_common_extract(samdb, dns_el,
 				  frame,
 				  &records,
 				  &num_records);

@@ -69,7 +69,8 @@ uint8_t werr_to_dns_err(WERROR werr)
 	return DNS_RCODE_SERVFAIL;
 }
 
-WERROR dns_common_extract(const struct ldb_message_element *el,
+WERROR dns_common_extract(struct ldb_context *samdb,
+			  const struct ldb_message_element *el,
 			  TALLOC_CTX *mem_ctx,
 			  struct dnsp_DnssrvRpcRecord **records,
 			  uint16_t *num_records)
@@ -86,9 +87,13 @@ WERROR dns_common_extract(const struct ldb_message_element *el,
 		return WERR_NOT_ENOUGH_MEMORY;
 	}
 	for (ri = 0; ri < el->num_values; ri++) {
+		bool am_rodc;
+		int ret;
+		const char *attrs[] = { "dnsHostName", NULL };
+		const char *dnsHostName;
 		struct ldb_val *v = &el->values[ri];
 		enum ndr_err_code ndr_err;
-
+		struct ldb_result *res = NULL;
 		ndr_err = ndr_pull_struct_blob(v, recs, &recs[ri],
 				(ndr_pull_flags_fn_t)ndr_pull_dnsp_DnssrvRpcRecord);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -96,7 +101,49 @@ WERROR dns_common_extract(const struct ldb_message_element *el,
 			DEBUG(0, ("Failed to grab dnsp_DnssrvRpcRecord\n"));
 			return DNS_ERR(SERVER_FAILURE);
 		}
+
+		/*
+		 * In AD, except on an RODC (where we should list a random RWDC,
+		 * we should over-stamp the MNAME with our own hostname
+		 */
+		if (recs[ri].wType != DNS_TYPE_SOA) {
+			continue;
+		}
+
+		ret = samdb_rodc(samdb, &am_rodc);
+		if (ret != LDB_SUCCESS) {
+			DEBUG(0, ("Failed to confirm we are not an RODC: %s\n",
+				  ldb_errstring(samdb)));
+			return DNS_ERR(SERVER_FAILURE);
+		}
+
+		if (am_rodc) {
+			continue;
+		}
+
+		ret = dsdb_search_dn(samdb, mem_ctx, &res, NULL,
+				     attrs, 0);
+
+		if (res->count != 1 || ret != LDB_SUCCESS) {
+			DEBUG(0, ("Failed to get rootDSE for dnsHostName: %s",
+				  ldb_errstring(samdb)));
+			return DNS_ERR(SERVER_FAILURE);
+		}
+
+		dnsHostName
+			= ldb_msg_find_attr_as_string(res->msgs[0],
+						      "dnsHostName",
+						      NULL);
+
+		if (dnsHostName == NULL) {
+			DEBUG(0, ("Failed to get dnsHostName from rootDSE"));
+			return DNS_ERR(SERVER_FAILURE);
+		}
+
+		recs[ri].data.soa.mname
+			= talloc_steal(recs, dnsHostName);
 	}
+
 	*records = recs;
 	*num_records = el->num_values;
 	return WERR_OK;
@@ -189,7 +236,7 @@ WERROR dns_common_lookup(struct ldb_context *samdb,
 		}
 	}
 
-	werr = dns_common_extract(el, mem_ctx, records, num_records);
+	werr = dns_common_extract(samdb, el, mem_ctx, records, num_records);
 	TALLOC_FREE(msg);
 	if (!W_ERROR_IS_OK(werr)) {
 		return werr;

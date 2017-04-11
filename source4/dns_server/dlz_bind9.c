@@ -997,7 +997,7 @@ _PUBLIC_ isc_result_t dlz_allnodes(const char *zone, void *dbdata,
 			return ISC_R_NOMEMORY;
 		}
 
-		werr = dns_common_extract(el, el_ctx, &recs, &num_recs);
+		werr = dns_common_extract(state->samdb, el, el_ctx, &recs, &num_recs);
 		if (!W_ERROR_IS_OK(werr)) {
 			state->log(ISC_LOG_ERROR, "samba_dlz: failed to parse dnsRecord for %s, %s",
 				   ldb_dn_get_linearized(dn), win_errstr(werr));

@@ -940,7 +940,7 @@ accountExpires: %u
 
     def dns_extract(self, el):
         '''Return the NDR database structures from a dnsRecord element'''
-        return dsdb_dns.extract(el)
+        return dsdb_dns.extract(self, el)
 
     def dns_replace(self, dns_name, new_records):
         '''Do a DNS modification on the database, sets the NDR database
