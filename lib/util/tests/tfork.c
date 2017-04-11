@@ -19,6 +19,7 @@
 
 #include "replace.h"
 #include <talloc.h>
+#include <tevent.h>
 #include "system/filesys.h"
 #include "libcli/util/ntstatus.h"
 #include "torture/torture.h"
@@ -85,6 +86,37 @@ done:
 	return ok;
 }
 
+static bool test_tfork_cmd_send(struct torture_context *tctx)
+{
+	struct tevent_context *ev = NULL;
+	struct tevent_req *req = NULL;
+	const char *cmd[2] = { NULL, NULL };
+	bool ok = true;
+
+	ev = tevent_context_init(tctx);
+	torture_assert_goto(tctx, ev != NULL, ok, done,
+			    "tevent_context_init failed\n");
+
+	cmd[0] = talloc_asprintf(tctx, "%s/testprogs/blackbox/tfork.sh", SRCDIR);
+	torture_assert_goto(tctx, cmd[0] != NULL, ok, done,
+			    "talloc_asprintf failed\n");
+
+	req = samba_runcmd_send(tctx, ev, timeval_zero(), 1, 0,
+				cmd, "foo", NULL);
+	torture_assert_goto(tctx, req != NULL, ok, done,
+			    "samba_runcmd_send failed\n");
+
+	ok = tevent_req_poll(req, ev);
+	torture_assert_goto(tctx, ok, ok, done, "tevent_req_poll failed\n");
+
+	torture_comment(tctx, "samba_runcmd_send test finished\n");
+
+done:
+	TALLOC_FREE(ev);
+
+	return ok;
+}
+
 struct torture_suite *torture_local_tfork(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite =
@@ -97,6 +129,10 @@ struct torture_suite *torture_local_tfork(TALLOC_CTX *mem_ctx)
 	torture_suite_add_simple_test(suite,
 				      "tfork_status",
 				      test_tfork_status);
+
+	torture_suite_add_simple_test(suite,
+				      "tfork_cmd_send",
+				      test_tfork_cmd_send);
 
 	return suite;
 }
