@@ -626,7 +626,7 @@ def call_samba_tool(d, op="add", zone=None):
                 sys.exit(1)
             error_count = error_count + 1
             if opts.verbose:
-                print("Failed 'samba-tool dns' based update: %s" % (str(d)))
+                print("Failed 'samba-tool dns' based update of %s" % (str(d)))
     except Exception, estr:
         if opts.fail_immediately:
             sys.exit(1)
