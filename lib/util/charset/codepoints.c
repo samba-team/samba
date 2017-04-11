@@ -16502,7 +16502,7 @@ struct smb_iconv_handle {
 	smb_iconv_t conv_handles[NUM_CHARSETS][NUM_CHARSETS];
 };
 
-struct smb_iconv_handle *global_iconv_handle = NULL;
+static struct smb_iconv_handle *global_iconv_handle = NULL;
 
 struct smb_iconv_handle *get_iconv_handle(void)
 {
