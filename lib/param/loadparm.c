@@ -1265,11 +1265,14 @@ bool handle_charset(struct loadparm_context *lp_ctx, struct loadparm_service *se
 {
 	if (lp_ctx->s3_fns) {
 		if (*ptr == NULL || strcmp(*ptr, pszParmValue) != 0) {
-			global_iconv_handle =
-				smb_iconv_handle_reinit(NULL,
-							lpcfg_dos_charset(lp_ctx),
-							lpcfg_unix_charset(lp_ctx),
-							true, global_iconv_handle);
+			struct smb_iconv_handle *ret = NULL;
+
+			ret = reinit_iconv_handle(NULL,
+						  lpcfg_dos_charset(lp_ctx),
+						  lpcfg_unix_charset(lp_ctx));
+			if (ret == NULL) {
+				smb_panic("reinit_iconv_handle failed");
+			}
 		}
 
 	}
@@ -1304,16 +1307,19 @@ bool handle_dos_charset(struct loadparm_context *lp_ctx, struct loadparm_service
 		}
 
 		if (*ptr == NULL || strcmp(*ptr, pszParmValue) != 0) {
+			struct smb_iconv_handle *ret = NULL;
 			if (is_utf8) {
 				DEBUG(0,("ERROR: invalid DOS charset: 'dos charset' must not "
 					"be UTF8, using (default value) %s instead.\n",
 					DEFAULT_DOS_CHARSET));
 				pszParmValue = DEFAULT_DOS_CHARSET;
 			}
-			global_iconv_handle = smb_iconv_handle_reinit(NULL,
-							lpcfg_dos_charset(lp_ctx),
-							lpcfg_unix_charset(lp_ctx),
-							true, global_iconv_handle);
+			ret = reinit_iconv_handle(NULL,
+						lpcfg_dos_charset(lp_ctx),
+						lpcfg_unix_charset(lp_ctx));
+			if (ret == NULL) {
+				smb_panic("reinit_iconv_handle failed");
+			}
 		}
 	}
 
