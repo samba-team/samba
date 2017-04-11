@@ -444,7 +444,11 @@ static bool make_relative_path(const char *cwd, char *abs_path)
 	if (memcmp(abs_path, cwd, cwd_len) != 0) {
 		return false;
 	}
-	if (abs_path[cwd_len] != '/' && abs_path[cwd_len] != '\0') {
+	/* The cwd_len != 1 case is for $cwd == '/' */
+	if (cwd_len != 1 &&
+	    abs_path[cwd_len] != '/' &&
+	    abs_path[cwd_len] != '\0')
+	{
 		return false;
 	}
 	if (abs_path[cwd_len] == '/') {
