@@ -330,3 +330,12 @@
 # We currently don't send referrals for LDAP modify of non-replicated attrs
 ^samba4.ldap.rodc.python\(rodc\).__main__.RodcTests.test_modify_nonreplicated.*
 ^samba4.ldap.rodc_rwdc.python.*.__main__.RodcRwdcTests.test_change_password_reveal_on_demand_kerberos
+# Tests for password hash supplemental credentials, userPassword hashes
+# Will fail as the implementation has not been written
+#
+^samba.tests.password_hash_gpgme.samba.tests.password_hash_gpgme.PassWordHashGpgmeTests.test_userPassword_multiple_hashes\(ad_dc:local\)
+^samba.tests.password_hash_gpgme.samba.tests.password_hash_gpgme.PassWordHashGpgmeTests.test_userPassword_multiple_hashes_rounds_specified\(ad_dc:local\)
+^samba.tests.password_hash_fl2008.samba.tests.password_hash_fl2008.PassWordHashFl2008Tests.test_userPassword_cleartext_sha256\(ad_dc_ntvfs:local\)
+^samba.tests.password_hash_fl2008.samba.tests.password_hash_fl2008.PassWordHashFl2008Tests.test_userPassword_sha512\(ad_dc_ntvfs:local\)
+^samba.tests.password_hash_fl2003.samba.tests.password_hash_fl2003.PassWordHashFl2003Tests.test_userPassword_cleartext_sha512\(fl2003dc:local\)
+^samba.tests.password_hash_fl2003.samba.tests.password_hash_fl2003.PassWordHashFl2003Tests.test_userPassword_sha256\(fl2003dc:local\)

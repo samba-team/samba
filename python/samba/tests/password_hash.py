@@ -33,6 +33,7 @@ import ldb
 import samba
 import binascii
 import md5
+import crypt
 
 
 USER_NAME = "PasswordHashTestUser"
@@ -287,3 +288,36 @@ class PassWordHashTests(TestCase):
                           "Digest",
                           USER_PASS,
                           digests.hashes[28].hash)
+
+
+    def checkUserPassword(self, up, expected):
+
+        # Check we've received the correct number of hashes
+        self.assertEquals(len(expected), up.num_hashes)
+
+        i = 0
+        for (tag, alg, rounds) in expected:
+            self.assertEquals(tag, up.hashes[i].scheme)
+
+            data = up.hashes[i].value.split("$")
+            # Check we got the expected crypt algorithm
+            self.assertEquals(alg, data[1])
+
+            if rounds is None:
+                cmd = "$%s$%s" % (alg, data[2])
+            else:
+                cmd = "$%s$rounds=%d$%s" % (alg, rounds, data[3])
+
+            # Calculate the expected hash value
+            expected = crypt.crypt(USER_PASS, cmd)
+            self.assertEquals(expected, up.hashes[i].value)
+            i += 1
+
+    # Check that the correct nt_hash was stored for userPassword
+    def checkNtHash(self, password, nt_hash):
+        creds = Credentials()
+        creds.set_anonymous()
+        creds.set_password(password)
+        expected = creds.get_nt_hash()
+        actual = bytearray(nt_hash)
+        self.assertEquals(expected, actual)

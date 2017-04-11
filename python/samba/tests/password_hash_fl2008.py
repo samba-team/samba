@@ -71,6 +71,50 @@ class PassWordHashFl2008Tests(PassWordHashTests):
                              binascii.a2b_hex(package.data))
         self.check_wdigests(digests)
 
+    def test_userPassword_sha512(self):
+        self.add_user(options=[("password hash userPassword schemes",
+                                "CryptSHA512")])
+
+        sc = self.get_supplemental_creds()
+
+        # Check that we got all the expected supplemental credentials
+        # And they are in the expected order.
+        size = len(sc.sub.packages)
+        self.assertEquals(5, size)
+
+        (pos, package) = get_package(sc, "Primary:Kerberos-Newer-Keys")
+        self.assertEquals(1, pos)
+        self.assertEquals("Primary:Kerberos-Newer-Keys", package.name)
+
+        (pos, package) = get_package(sc, "Primary:Kerberos")
+        self.assertEquals(2, pos)
+        self.assertEquals("Primary:Kerberos", package.name)
+
+        (pos, wp_package) = get_package(sc, "Primary:WDigest")
+        self.assertEquals(3, pos)
+        self.assertEquals("Primary:WDigest", wp_package.name)
+
+        (pos, package) = get_package(sc, "Packages")
+        self.assertEquals(4, pos)
+        self.assertEquals("Packages", package.name)
+
+        (pos, up_package) = get_package(sc, "Primary:userPassword")
+        self.assertEquals(5, pos)
+        self.assertEquals("Primary:userPassword", up_package.name)
+
+        # Check that the WDigest values are correct.
+        #
+        digests = ndr_unpack(drsblobs.package_PrimaryWDigestBlob,
+                             binascii.a2b_hex(wp_package.data))
+        self.check_wdigests(digests)
+
+        # Check that the userPassword hashes are computed correctly
+        #
+        up = ndr_unpack(drsblobs.package_PrimaryUserPasswordBlob,
+                        binascii.a2b_hex(up_package.data))
+        self.checkUserPassword(up, [("{CRYPT}", "6",None)])
+        self.checkNtHash(USER_PASS, up.current_nt_hash.hash)
+
     def test_supplementalCredentials_cleartext(self):
         self.add_user(clear_text=True)
 
@@ -110,3 +154,57 @@ class PassWordHashFl2008Tests(PassWordHashTests):
         ct = ndr_unpack(drsblobs.package_PrimaryCLEARTEXTBlob,
                         binascii.a2b_hex(ct_package.data))
         self.assertEquals(USER_PASS.encode('utf-16-le'), ct.cleartext)
+
+    def test_userPassword_cleartext_sha256(self):
+        self.add_user(clear_text=True,
+                      options=[("password hash userPassword schemes",
+                                "CryptSHA256:rounds=100")])
+
+        sc = self.get_supplemental_creds()
+
+        # Check that we got all the expected supplemental credentials
+        # And they are in the expected order.
+        size = len(sc.sub.packages)
+        self.assertEquals(6, size)
+
+        (pos, package) = get_package(sc, "Primary:Kerberos-Newer-Keys")
+        self.assertEquals(1, pos)
+        self.assertEquals("Primary:Kerberos-Newer-Keys", package.name)
+
+        (pos, package) = get_package(sc, "Primary:Kerberos")
+        self.assertEquals(2, pos)
+        self.assertEquals("Primary:Kerberos", package.name)
+
+        (pos, wd_package) = get_package(sc, "Primary:WDigest")
+        self.assertEquals(3, pos)
+        self.assertEquals("Primary:WDigest", wd_package.name)
+
+        (pos, ct_package) = get_package(sc, "Primary:CLEARTEXT")
+        self.assertEquals(4, pos)
+        self.assertEquals("Primary:CLEARTEXT", ct_package.name)
+
+        (pos, package) = get_package(sc, "Packages")
+        self.assertEquals(5, pos)
+        self.assertEquals("Packages", package.name)
+
+        (pos, up_package) = get_package(sc, "Primary:userPassword")
+        self.assertEquals(6, pos)
+        self.assertEquals("Primary:userPassword", up_package.name)
+
+        # Check that the WDigest values are correct.
+        #
+        digests = ndr_unpack(drsblobs.package_PrimaryWDigestBlob,
+                             binascii.a2b_hex(wd_package.data))
+        self.check_wdigests(digests)
+
+        # Check the clear text  value is correct.
+        ct = ndr_unpack(drsblobs.package_PrimaryCLEARTEXTBlob,
+                        binascii.a2b_hex(ct_package.data))
+        self.assertEquals(USER_PASS.encode('utf-16-le'), ct.cleartext)
+
+        # Check that the userPassword hashes are computed correctly
+        #
+        up = ndr_unpack(drsblobs.package_PrimaryUserPasswordBlob,
+                        binascii.a2b_hex(up_package.data))
+        self.checkUserPassword(up, [("{CRYPT}", "5",100 )])
+        self.checkNtHash(USER_PASS, up.current_nt_hash.hash)

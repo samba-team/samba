@@ -36,13 +36,14 @@ from samba.dcerpc import drsblobs
 import binascii
 
 
+
 class PassWordHashFl2003Tests(PassWordHashTests):
 
     def setUp(self):
         super(PassWordHashFl2003Tests, self).setUp()
 
     def test_default_supplementalCredentials(self):
-        self.add_user()
+        self.add_user(options=[("password hash userPassword schemes", "")])
 
         sc = self.get_supplemental_creds()
 
@@ -69,8 +70,50 @@ class PassWordHashFl2003Tests(PassWordHashTests):
                              binascii.a2b_hex(package.data))
         self.check_wdigests(digests)
 
+    def test_userPassword_sha256(self):
+        self.add_user(options=[("password hash userPassword schemes",
+                                "CryptSHA256")])
+
+        sc = self.get_supplemental_creds()
+
+        # Check that we got all the expected supplemental credentials
+        # And they are in the expected order.
+        size = len(sc.sub.packages)
+        self.assertEquals(4, size)
+
+        (pos, package) = get_package(sc, "Primary:Kerberos")
+        self.assertEquals(1, pos)
+        self.assertEquals("Primary:Kerberos", package.name)
+
+        (pos, wd_package) = get_package(sc, "Primary:WDigest")
+        self.assertEquals(2, pos)
+        self.assertEquals("Primary:WDigest", wd_package.name)
+
+        (pos, package) = get_package(sc, "Packages")
+        self.assertEquals(3, pos)
+        self.assertEquals("Packages", package.name)
+
+        (pos, up_package) = get_package(sc, "Primary:userPassword")
+        self.assertEquals(4, pos)
+        self.assertEquals("Primary:userPassword", up_package.name)
+
+        # Check that the WDigest values are correct.
+        #
+        digests = ndr_unpack(drsblobs.package_PrimaryWDigestBlob,
+                             binascii.a2b_hex(wd_package.data))
+        self.check_wdigests(digests)
+
+        # Check that the userPassword hashes are computed correctly
+        #
+        up = ndr_unpack(drsblobs.package_PrimaryUserPasswordBlob,
+                        binascii.a2b_hex(up_package.data))
+
+        self.checkUserPassword(up, [("{CRYPT}", "5", None)])
+        self.checkNtHash(USER_PASS, up.current_nt_hash.hash)
+
     def test_supplementalCredentials_cleartext(self):
-        self.add_user(clear_text=True)
+        self.add_user(clear_text=True,
+                      options=[("password hash userPassword schemes", "")])
 
         sc = self.get_supplemental_creds()
 
@@ -95,6 +138,7 @@ class PassWordHashFl2003Tests(PassWordHashTests):
         self.assertEquals(4, pos)
         self.assertEquals("Primary:CLEARTEXT", ct_package.name)
 
+
         # Check that the WDigest values are correct.
         #
         digests = ndr_unpack(drsblobs.package_PrimaryWDigestBlob,
@@ -105,3 +149,53 @@ class PassWordHashFl2003Tests(PassWordHashTests):
         ct = ndr_unpack(drsblobs.package_PrimaryCLEARTEXTBlob,
                         binascii.a2b_hex(ct_package.data))
         self.assertEquals(USER_PASS.encode('utf-16-le'), ct.cleartext)
+
+    def test_userPassword_cleartext_sha512(self):
+        self.add_user(clear_text=True,
+                      options=[("password hash userPassword schemes",
+                                "CryptSHA512:rounds=10000")])
+
+        sc = self.get_supplemental_creds()
+
+        # Check that we got all the expected supplemental credentials
+        # And they are in the expected order.
+        size = len(sc.sub.packages)
+        self.assertEquals(5, size)
+
+        (pos, package) = get_package(sc, "Primary:Kerberos")
+        self.assertEquals(1, pos)
+        self.assertEquals("Primary:Kerberos", package.name)
+
+        (pos, wd_package) = get_package(sc, "Primary:WDigest")
+        self.assertEquals(2, pos)
+        self.assertEquals("Primary:WDigest", wd_package.name)
+
+        (pos, ct_package) = get_package(sc, "Primary:CLEARTEXT")
+        self.assertEquals(3, pos)
+        self.assertEquals("Primary:CLEARTEXT", ct_package.name)
+
+        (pos, package) = get_package(sc, "Packages")
+        self.assertEquals(4, pos)
+        self.assertEquals("Packages", package.name)
+
+        (pos, up_package) = get_package(sc, "Primary:userPassword")
+        self.assertEquals(5, pos)
+        self.assertEquals("Primary:userPassword", up_package.name)
+
+        # Check that the WDigest values are correct.
+        #
+        digests = ndr_unpack(drsblobs.package_PrimaryWDigestBlob,
+                             binascii.a2b_hex(wd_package.data))
+        self.check_wdigests(digests)
+
+        # Check the clear text  value is correct.
+        ct = ndr_unpack(drsblobs.package_PrimaryCLEARTEXTBlob,
+                        binascii.a2b_hex(ct_package.data))
+        self.assertEquals(USER_PASS.encode('utf-16-le'), ct.cleartext)
+
+        # Check that the userPassword hashes are computed correctly
+        #
+        up = ndr_unpack(drsblobs.package_PrimaryUserPasswordBlob,
+                        binascii.a2b_hex(up_package.data))
+        self.checkUserPassword(up, [("{CRYPT}", "6",10000 )])
+        self.checkNtHash(USER_PASS, up.current_nt_hash.hash)
