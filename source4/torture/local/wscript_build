@@ -21,6 +21,7 @@ TORTURE_LOCAL_SOURCE = '''../../../lib/util/charset/tests/iconv.c
 	../../../lib/util/tests/strv_util.c
 	../../../lib/util/tests/util.c
 	../../../lib/util/tests/util_str_escape.c
+	../../../lib/util/tests/tfork.c
 	verif_trailer.c
 	nss_tests.c
 	fsrvp_state.c'''
