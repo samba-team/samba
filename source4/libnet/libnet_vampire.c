@@ -694,7 +694,7 @@ WERROR libnet_vampire_cb_store_chunk(void *private_data,
 	}
 	s->total_objects += object_count;
 
-	partition_dn = ldb_dn_new(s, s->ldb, c->partition->nc.dn);
+	partition_dn = ldb_dn_new(s_dsa, s->ldb, c->partition->nc.dn);
 	if (partition_dn == NULL) {
 		DEBUG(0,("Failed to parse partition DN from DRS.\n"));
 		return WERR_INVALID_PARAMETER;
@@ -710,7 +710,7 @@ WERROR libnet_vampire_cb_store_chunk(void *private_data,
 			DEBUG(0,("Exop on[%s] objects[%u] linked_values[%u]\n",
 			c->partition->nc.dn, s->total_objects, linked_attributes_count));
 		}
-		ret = dsdb_find_nc_root(s->ldb, s,
+		ret = dsdb_find_nc_root(s->ldb, s_dsa,
 					partition_dn, &nc_root);
 		if (ret != LDB_SUCCESS) {
 			DEBUG(0,(__location__ ": Failed to find nc_root for %s\n",
