@@ -65,6 +65,7 @@ class SambaOptions(optparse.OptionGroup):
             raise optparse.OptionValueError("invalid %s option value: %s" %
                                             (opt_str, arg))
         self._lp.set('debug level', str(arg))
+        parser.values.debuglevel = int(arg)
 
     def _set_realm(self, option, opt_str, arg, parser):
         self._lp.set('realm', arg)
