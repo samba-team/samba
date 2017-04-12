@@ -947,6 +947,10 @@ int i; i = PAM_RADIO_TYPE;
         if use_pam:
             conf.DEFINE('WITH_PAM', 1)
             conf.DEFINE('WITH_PAM_MODULES', 1)
+        else:
+            conf.fatal("PAM support is enabled but prerequisite libraries "
+                       "or headers not found. Use --without-pam to disable "
+                       "PAM support.");
 
     seteuid = False
 
