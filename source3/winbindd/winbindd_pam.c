@@ -2003,6 +2003,7 @@ NTSTATUS winbind_dual_SamLogon(struct winbindd_domain *domain,
 			       DATA_BLOB lm_response,
 			       DATA_BLOB nt_response,
 			       uint8_t *authoritative,
+			       bool skip_sam,
 			       uint32_t *flags,
 			       struct netr_SamInfo3 **info3)
 {
@@ -2017,7 +2018,7 @@ NTSTATUS winbind_dual_SamLogon(struct winbindd_domain *domain,
 	 * name_domain can also be lp_realm()
 	 * we need to check against domain->name.
 	 */
-	if (strequal(domain->name, get_global_sam_name())) {
+	if (!skip_sam && strequal(domain->name, get_global_sam_name())) {
 		DATA_BLOB chal_blob = data_blob_const(
 			chal, 8);
 
@@ -2172,6 +2173,7 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 				       lm_resp,
 				       nt_resp,
 				       &authoritative,
+				       false,
 				       &flags,
 				       &info3);
 	if (!NT_STATUS_IS_OK(result)) {

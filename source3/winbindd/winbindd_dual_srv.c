@@ -890,7 +890,9 @@ NTSTATUS _winbind_SamLogon(struct pipes_struct *p,
 				       r->in.logon.network->identity_info.workstation.string,
 				       r->in.logon.network->challenge,
 				       lm_response, nt_response,
-				       &r->out.authoritative, &flags,
+				       &r->out.authoritative,
+				       true,
+				       &flags,
 				       &r->out.validation.sam3);
 	return status;
 }

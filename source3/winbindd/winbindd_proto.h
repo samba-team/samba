@@ -454,6 +454,7 @@ NTSTATUS winbind_dual_SamLogon(struct winbindd_domain *domain,
 			       DATA_BLOB lm_response,
 			       DATA_BLOB nt_response,
 			       uint8_t *authoritative,
+			       bool skip_sam,
 			       uint32_t *flags,
 			       struct netr_SamInfo3 **info3);
 
