@@ -5,10 +5,38 @@ import os, sys, tarfile
 import Utils, Scripting, Logs, Options
 from Configure import conf
 from samba_utils import os_path_relpath
+from waflib import Context
 
 dist_dirs = None
 dist_files = None
 dist_blacklist = ""
+dist_archive = None
+
+class Dist(Context.Context):
+    # TODO remove
+    cmd = 'dist'
+    fun = 'dist'
+    def execute(self):
+        Context.g_module.dist()
+
+class DistCheck(Scripting.DistCheck):
+    fun = 'distcheck'
+    cmd = 'distcheck'
+    def execute(self):
+        Options.options.distcheck_args = ''
+        if Context.g_module.distcheck is Scripting.distcheck:
+            # default
+            Context.g_module.distcheck(self)
+        else:
+            Context.g_module.distcheck()
+        Context.g_module.dist()
+        self.check()
+    def get_arch_name(self):
+        global dist_archive
+        return dist_archive
+    def make_distcheck_cmd(self, tmpdir):
+        waf = os.path.abspath(sys.argv[0])
+        return [sys.executable, waf, 'configure', 'build', 'install', 'uninstall', '--destdir=' + tmpdir]
 
 def add_symlink(tar, fname, abspath, basedir):
     '''handle symlinks to directories that may move during packaging'''
@@ -218,6 +246,9 @@ def dist(appname='', version=''):
     else:
         Logs.info('Created %s' % dist_name)
 
+    # TODO use the ctx object instead
+    global dist_archive
+    dist_archive = dist_name
     return dist_name
 
 
