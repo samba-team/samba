@@ -469,9 +469,9 @@ class builder(object):
         self.cmd = self.cmd.replace("${TESTS}", options.restrict_tests)
 #        if self.output_mime_type == "text/x-subunit":
 #            self.cmd += " | %s --immediate" % (os.path.join(os.path.dirname(__file__), "selftest/format-subunit"))
-        do_print('%s: [%s] Running %s' % (self.name, self.stage, self.cmd))
         cwd = os.getcwd()
         os.chdir("%s/%s" % (self.sdir, self.dir))
+        do_print('%s: [%s] Running %s in %r' % (self.name, self.stage, self.cmd, os.getcwd()))
         self.proc = Popen(self.cmd, shell=True,
                           close_fds=True,
                           stdout=self.stdout, stderr=self.stderr, stdin=self.stdin)
@@ -625,7 +625,7 @@ def cleanup():
         return
     run_cmd("stat %s || true" % test_tmpdir, show=True)
     run_cmd("stat %s" % testbase, show=True)
-    do_print("Cleaning up ....")
+    do_print("Cleaning up %r" % cleanup_list)
     for d in cleanup_list:
         run_cmd("rm -rf %s" % d)
 
