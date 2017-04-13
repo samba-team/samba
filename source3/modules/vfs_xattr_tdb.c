@@ -85,6 +85,12 @@ static ssize_t xattr_tdb_getxattr(struct vfs_handle_struct *handle,
 		TALLOC_FREE(frame);
 		return -1;
 	}
+
+	if (size == 0) {
+		TALLOC_FREE(frame);
+		return xattr_size;
+	}
+
 	if (blob.length > size) {
 		TALLOC_FREE(frame);
 		errno = ERANGE;
@@ -125,6 +131,12 @@ static ssize_t xattr_tdb_fgetxattr(struct vfs_handle_struct *handle,
 		TALLOC_FREE(frame);
 		return -1;
 	}
+
+	if (size == 0) {
+		TALLOC_FREE(frame);
+		return xattr_size;
+	}
+
 	if (blob.length > size) {
 		TALLOC_FREE(frame);
 		errno = ERANGE;
