@@ -175,9 +175,9 @@ tasks = {
     # Test cross-compile infrastructure
     "samba-xc": [("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
                    ("configure-native", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
-                   ("configure-cross-execute", "./configure.developer -b ./bin-xe --cross-compile --cross-execute=script/identity_cc.sh" \
+                   ("configure-cross-execute", "./configure.developer --out ./bin-xe --cross-compile --cross-execute=script/identity_cc.sh" \
                     " --cross-answers=./bin-xe/cross-answers.txt --with-selftest-prefix=./bin-xe/ab" + samba_configure_params, "text/plain"),
-                   ("configure-cross-answers", "./configure.developer -b ./bin-xa --cross-compile" \
+                   ("configure-cross-answers", "./configure.developer --out ./bin-xa --cross-compile" \
                     " --cross-answers=./bin-xe/cross-answers.txt --with-selftest-prefix=./bin-xa/ab" + samba_configure_params, "text/plain"),
                    ("compare-results", "script/compare_cc_results.py ./bin/c4che/default.cache.py ./bin-xe/c4che/default.cache.py ./bin-xa/c4che/default.cache.py", "text/plain")],
 
