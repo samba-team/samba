@@ -357,9 +357,6 @@ def dist():
 def distcheck():
     '''test that distribution tarball builds and installs'''
     samba_version.load_version(env=None)
-    import Scripting
-    d = Scripting.distcheck
-    d()
 
 def wildcard_cmd(cmd):
     '''called on a unknown command'''

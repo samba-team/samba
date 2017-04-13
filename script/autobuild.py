@@ -87,11 +87,11 @@ tasks = {
 
     # Test cross-compile infrastructure
     "samba-xc" : [ ("configure-native", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
-                   ("configure-cross-execute", "./configure.developer -b ./bin-xe --cross-compile --cross-execute=script/identity_cc.sh" \
+                   ("configure-cross-execute", "./configure.developer --out ./bin-xe --cross-compile --cross-execute=script/identity_cc.sh" \
                     " --cross-answers=./bin-xe/cross-answers.txt --with-selftest-prefix=./bin-xe/ab" + samba_configure_params, "text/plain"),
-                   ("configure-cross-answers", "./configure.developer -b ./bin-xa --cross-compile" \
+                   ("configure-cross-answers", "./configure.developer --out ./bin-xa --cross-compile" \
                     " --cross-answers=./bin-xe/cross-answers.txt --with-selftest-prefix=./bin-xa/ab" + samba_configure_params, "text/plain"),
-                   ("compare-results", "script/compare_cc_results.py ./bin/c4che/default.cache.py ./bin-xe/c4che/default.cache.py ./bin-xa/c4che/default.cache.py", "text/plain")],
+                   ("compare-results", "script/compare_cc_results.py ./bin/c4che/default_cache.py ./bin-xe/c4che/default_cache.py ./bin-xa/c4che/default_cache.py", "text/plain")],
 
     # test build with -O3 -- catches extra warnings and bugs
     "samba-o3" : [ ("random-sleep", "../script/random-sleep.sh 60 600", "text/plain"),
@@ -325,9 +325,9 @@ class builder(object):
         self.cmd = self.cmd.replace("${TESTS}", options.restrict_tests)
 #        if self.output_mime_type == "text/x-subunit":
 #            self.cmd += " | %s --immediate" % (os.path.join(os.path.dirname(__file__), "selftest/format-subunit"))
-        do_print('%s: [%s] Running %s' % (self.name, self.stage, self.cmd))
         cwd = os.getcwd()
         os.chdir("%s/%s" % (self.sdir, self.dir))
+        do_print('%s: [%s] Running %s in %r' % (self.name, self.stage, self.cmd, os.getcwd()))
         self.proc = Popen(self.cmd, shell=True,
                           stdout=self.stdout, stderr=self.stderr, stdin=self.stdin)
         os.chdir(cwd)
@@ -473,7 +473,7 @@ def cleanup():
         return
     run_cmd("stat %s || true" % test_tmpdir, show=True)
     run_cmd("stat %s" % testbase, show=True)
-    do_print("Cleaning up ....")
+    do_print("Cleaning up %r" % cleanup_list)
     for d in cleanup_list:
         run_cmd("rm -rf %s" % d)
 
