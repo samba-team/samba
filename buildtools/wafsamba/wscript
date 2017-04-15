@@ -212,6 +212,8 @@ def configure(conf):
     conf.env.hlist = []
     conf.env.srcdir = conf.srcdir
 
+    conf.define('SRCDIR', conf.env['srcdir'])
+
     if Options.options.timestamp_dependencies:
         conf.ENABLE_TIMESTAMP_DEPENDENCIES()
 
