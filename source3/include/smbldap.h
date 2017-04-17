@@ -60,8 +60,6 @@ struct smbldap_state {
 
 /* struct used by both pdb_ldap.c and pdb_nds.c */
 
-struct ipasam_privates;
-
 struct ldapsam_privates {
 	struct smbldap_state *smbldap_state;
 
@@ -80,10 +78,6 @@ struct ldapsam_privates {
 
 	/* Is this NDS ldap? */
 	int is_nds_ldap;
-
-	/* Is this IPA ldap? */
-	int is_ipa_ldap;
-	struct ipasam_privates *ipasam_privates;
 
 	/* ldap server location parameter */
 	char *location;
