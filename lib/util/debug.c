@@ -396,7 +396,7 @@ static void debug_backends_log(const char *msg, int msg_level)
 	 * a buffer without the newline character.
 	 */
 	len = MIN(strlen(msg), FORMAT_BUFR_SIZE - 1);
-	if (msg[len - 1] == '\n') {
+	if ((len > 0) && (msg[len - 1] == '\n')) {
 		len--;
 	}
 
