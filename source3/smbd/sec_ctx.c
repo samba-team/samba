@@ -139,7 +139,6 @@ static void gain_root(void)
 static int get_current_groups(gid_t gid, uint32_t *p_ngroups, gid_t **p_groups)
 {
 	int i;
-	gid_t grp;
 	int ngroups;
 	gid_t *groups = NULL;
 
@@ -153,7 +152,7 @@ static int get_current_groups(gid_t gid, uint32_t *p_ngroups, gid_t **p_groups)
 	set_effective_gid(gid);
 	samba_setgid(gid);
 
-	ngroups = sys_getgroups(0,&grp);
+	ngroups = sys_getgroups(0, NULL);
 	if (ngroups <= 0) {
 		goto fail;
 	}
