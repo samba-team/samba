@@ -26,6 +26,36 @@
 #ifndef _PASSDB_PDB_LDAP_H_
 #define _PASSDB_PDB_LDAP_H_
 
+/* struct used by both pdb_ldap.c and pdb_nds.c */
+
+struct ldapsam_privates {
+	struct smbldap_state *smbldap_state;
+
+	/* Former statics */
+	LDAPMessage *result;
+	LDAPMessage *entry;
+	int index;
+
+	const char *domain_name;
+	struct dom_sid domain_sid;
+
+	/* configuration items */
+	int schema_ver;
+
+	char *domain_dn;
+
+	/* Is this NDS ldap? */
+	int is_nds_ldap;
+
+	/* ldap server location parameter */
+	char *location;
+
+	struct {
+		char *filter;
+		LDAPMessage *result;
+	} search_cache;
+};
+
 /* The following definitions come from passdb/pdb_ldap.c  */
 
 const char** get_userattr_list( TALLOC_CTX *mem_ctx, int schema_ver );

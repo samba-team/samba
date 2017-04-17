@@ -58,36 +58,6 @@ struct smbldap_state {
 	struct timeval last_rebind; /* monotonic */
 };
 
-/* struct used by both pdb_ldap.c and pdb_nds.c */
-
-struct ldapsam_privates {
-	struct smbldap_state *smbldap_state;
-
-	/* Former statics */
-	LDAPMessage *result;
-	LDAPMessage *entry;
-	int index;
-
-	const char *domain_name;
-	struct dom_sid domain_sid;
-
-	/* configuration items */
-	int schema_ver;
-
-	char *domain_dn;
-
-	/* Is this NDS ldap? */
-	int is_nds_ldap;
-
-	/* ldap server location parameter */
-	char *location;
-
-	struct {
-		char *filter;
-		LDAPMessage *result;
-	} search_cache;
-};
-
 /* The following definitions come from lib/smbldap.c  */
 
 NTSTATUS smbldap_init(TALLOC_CTX *mem_ctx,
