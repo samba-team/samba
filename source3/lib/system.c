@@ -790,12 +790,11 @@ int groups_max(void)
 
 static int sys_broken_getgroups(int setlen, gid_t *gidset)
 {
-	GID_T gid;
 	GID_T *group_list;
 	int i, ngroups;
 
 	if(setlen == 0) {
-		return getgroups(setlen, &gid);
+		return getgroups(0, NULL);
 	}
 
 	/*
@@ -808,9 +807,6 @@ static int sys_broken_getgroups(int setlen, gid_t *gidset)
 		return -1;
 	} 
 
-	if (setlen == 0)
-		setlen = groups_max();
-
 	if((group_list = SMB_MALLOC_ARRAY(GID_T, setlen)) == NULL) {
 		DEBUG(0,("sys_getgroups: Malloc fail.\n"));
 		return -1;
@@ -822,6 +818,12 @@ static int sys_broken_getgroups(int setlen, gid_t *gidset)
 		errno = saved_errno;
 		return -1;
 	}
+
+	/*
+	 * We're safe here as if ngroups > setlen then
+	 * getgroups *must* return EINVAL.
+	 * pubs.opengroup.org/onlinepubs/009695399/functions/getgroups.html
+	 */
 
 	for(i = 0; i < ngroups; i++)
 		gidset[i] = (gid_t)group_list[i];
