@@ -544,22 +544,33 @@ int ctdb_client_set_message_handler(struct tevent_context *ev,
 				    void *private_data)
 {
 	TALLOC_CTX *mem_ctx;
+	struct tevent_req *req;
 	int ret;
+	bool status;
 
 	mem_ctx = talloc_new(client);
 	if (mem_ctx == NULL) {
 		return ENOMEM;
 	}
 
-	ret = ctdb_ctrl_register_srvid(mem_ctx, ev, client, client->pnn,
-				       tevent_timeval_zero(), srvid);
-	talloc_free(mem_ctx);
-	if (ret != 0) {
+	req = ctdb_client_set_message_handler_send(mem_ctx, ev, client,
+						   srvid, handler,
+						   private_data);
+	if (req == NULL) {
+		talloc_free(mem_ctx);
+		return ENOMEM;
+	}
+
+	tevent_req_poll(req, ev);
+
+	status = ctdb_client_set_message_handler_recv(req, &ret);
+	if (! status) {
+		talloc_free(mem_ctx);
 		return ret;
 	}
 
-	return srvid_register(client->srv, client, srvid,
-			      handler, private_data);
+	talloc_free(mem_ctx);
+	return 0;
 }
 
 int ctdb_client_remove_message_handler(struct tevent_context *ev,
@@ -567,19 +578,30 @@ int ctdb_client_remove_message_handler(struct tevent_context *ev,
 				       uint64_t srvid, void *private_data)
 {
 	TALLOC_CTX *mem_ctx;
+	struct tevent_req *req;
 	int ret;
+	bool status;
 
 	mem_ctx = talloc_new(client);
 	if (mem_ctx == NULL) {
 		return ENOMEM;
 	}
 
-	ret = ctdb_ctrl_deregister_srvid(mem_ctx, ev, client, client->pnn,
-					 tevent_timeval_zero(), srvid);
-	talloc_free(mem_ctx);
-	if (ret != 0) {
+	req = ctdb_client_remove_message_handler_send(mem_ctx, ev, client,
+						      srvid, private_data);
+	if (req == NULL) {
+		talloc_free(mem_ctx);
+		return ENOMEM;
+	}
+
+	tevent_req_poll(req, ev);
+
+	status = ctdb_client_remove_message_handler_recv(req, &ret);
+	if (! status) {
+		talloc_free(mem_ctx);
 		return ret;
 	}
 
-	return srvid_deregister(client->srv, srvid, private_data);
+	talloc_free(mem_ctx);
+	return 0;
 }
