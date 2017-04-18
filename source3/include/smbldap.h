@@ -37,7 +37,7 @@ struct smbldap_state {
 	LDAP *ldap_struct;
 	pid_t pid;
 	time_t last_ping; /* monotonic */
-	/* retrive-once info */
+	/* retrieve-once info */
 	const char *uri;
 
 	/* credentials */
