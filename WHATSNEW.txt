@@ -50,6 +50,16 @@ smb.conf changes
   map untrusted to domain       Deprecated
   strict sync                   Default changed         yes
 
+Removal of lpcfg_register_defaults_hook()
+-----------------------------------------
+
+The undocumented and unsupported function lpcfg_register_defaults_hook()
+that was used by external projects to call into Samba and modify
+smb.conf default parameter settings has been removed. If your project
+was using this call please raise the issue on
+samba-technical@lists.samba.org in order to design a supported
+way of obtaining the same functionality.
+
 KNOWN ISSUES
 ============
 

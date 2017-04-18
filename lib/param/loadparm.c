@@ -2551,23 +2551,6 @@ static int lpcfg_destructor(struct loadparm_context *lp_ctx)
 	return 0;
 }
 
-struct defaults_hook_data {
-	const char *name;
-	lpcfg_defaults_hook hook;
-	struct defaults_hook_data *prev, *next;
-} *defaults_hooks = NULL;
-
-
-bool lpcfg_register_defaults_hook(const char *name, lpcfg_defaults_hook hook)
-{
-	struct defaults_hook_data *hook_data = talloc(talloc_autofree_context(),
-												  struct defaults_hook_data);
-	hook_data->name = talloc_strdup(hook_data, name);
-	hook_data->hook = hook;
-	DLIST_ADD(defaults_hooks, hook_data);
-	return false;
-}
-
 /**
  * Initialise the global parameter structure.
  *
@@ -2580,7 +2563,6 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	struct loadparm_context *lp_ctx;
 	struct parmlist_entry *parm;
 	char *logfile;
-	struct defaults_hook_data *defaults_hook;
 
 	lp_ctx = talloc_zero(mem_ctx, struct loadparm_context);
 	if (lp_ctx == NULL)
@@ -3003,20 +2985,6 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lpcfg_do_global_parameter(lp_ctx,
 				  "rpc server dynamic port range",
 				  "49152-65535");
-
-	/* Allow modules to adjust defaults */
-	for (defaults_hook = defaults_hooks; defaults_hook;
-		 defaults_hook = defaults_hook->next) {
-		bool ret;
-
-		ret = defaults_hook->hook(lp_ctx);
-		if (!ret) {
-			DEBUG(1, ("Defaults hook %s failed to run.",
-					  defaults_hook->name));
-			talloc_free(lp_ctx);
-			return NULL;
-		}
-	}
 
 	for (i = 0; parm_table[i].label; i++) {
 		if (!(lp_ctx->flags[i] & FLAG_CMDLINE)) {
