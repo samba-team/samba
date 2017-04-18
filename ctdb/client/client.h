@@ -689,7 +689,14 @@ int ctdb_attach(struct tevent_context *ev,
 		const char *db_name, uint8_t db_flags,
 		struct ctdb_db_context **out);
 
-int ctdb_detach(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+struct tevent_req *ctdb_detach_send(TALLOC_CTX *mem_ctx,
+				    struct tevent_context *ev,
+				    struct ctdb_client_context *client,
+				    struct timeval timeout, uint32_t db_id);
+
+bool ctdb_detach_recv(struct tevent_req *req, int *perr);
+
+int ctdb_detach(struct tevent_context *ev,
 		struct ctdb_client_context *client,
 		struct timeval timeout, uint32_t db_id);
 

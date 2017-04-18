@@ -596,26 +596,167 @@ int ctdb_attach(struct tevent_context *ev,
 	return 0;
 }
 
-int ctdb_detach(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+struct ctdb_detach_state {
+	struct ctdb_client_context *client;
+	struct tevent_context *ev;
+	struct timeval timeout;
+	uint32_t db_id;
+	const char *db_name;
+};
+
+static void ctdb_detach_dbname_done(struct tevent_req *subreq);
+static void ctdb_detach_done(struct tevent_req *subreq);
+
+struct tevent_req *ctdb_detach_send(TALLOC_CTX *mem_ctx,
+				    struct tevent_context *ev,
+				    struct ctdb_client_context *client,
+				    struct timeval timeout, uint32_t db_id)
+{
+	struct tevent_req *req, *subreq;
+	struct ctdb_detach_state *state;
+	struct ctdb_req_control request;
+
+	req = tevent_req_create(mem_ctx, &state, struct ctdb_detach_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	state->client = client;
+	state->ev = ev;
+	state->timeout = timeout;
+	state->db_id = db_id;
+
+	ctdb_req_control_get_dbname(&request, db_id);
+	subreq = ctdb_client_control_send(state, ev, client,
+					  ctdb_client_pnn(client), timeout,
+					  &request);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, ctdb_detach_dbname_done, req);
+
+	return req;
+}
+
+static void ctdb_detach_dbname_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct ctdb_detach_state *state = tevent_req_data(
+		req, struct ctdb_detach_state);
+	struct ctdb_reply_control *reply;
+	struct ctdb_req_control request;
+	int ret;
+	bool status;
+
+	status = ctdb_client_control_recv(subreq, &ret, state, &reply);
+	TALLOC_FREE(subreq);
+	if (! status) {
+		DEBUG(DEBUG_ERR, ("detach: 0x%x GET_DBNAME failed, ret=%d\n",
+				  state->db_id, ret));
+		tevent_req_error(req, ret);
+		return;
+	}
+
+	ret = ctdb_reply_control_get_dbname(reply, state, &state->db_name);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("detach: 0x%x GET_DBNAME failed, ret=%d\n",
+				  state->db_id, ret));
+		tevent_req_error(req, ret);
+		return;
+	}
+
+	ctdb_req_control_db_detach(&request, state->db_id);
+	subreq = ctdb_client_control_send(state, state->ev, state->client,
+					  ctdb_client_pnn(state->client),
+					  state->timeout, &request);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, ctdb_detach_done, req);
+
+}
+
+static void ctdb_detach_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct ctdb_detach_state *state = tevent_req_data(
+		req, struct ctdb_detach_state);
+	struct ctdb_reply_control *reply;
+	struct ctdb_db_context *db;
+	int ret;
+	bool status;
+
+	status = ctdb_client_control_recv(subreq, &ret, state, &reply);
+	TALLOC_FREE(subreq);
+	if (! status) {
+		DEBUG(DEBUG_ERR, ("detach: %s DB_DETACH failed, ret=%d\n",
+				  state->db_name, ret));
+		tevent_req_error(req, ret);
+		return;
+	}
+
+	ret = ctdb_reply_control_db_detach(reply);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("detach: %s DB_DETACH failed, ret=%d\n",
+				  state->db_name, ret));
+		tevent_req_error(req, ret);
+		return;
+	}
+
+	db = client_db_handle(state->client, state->db_name);
+	if (db != NULL) {
+		DLIST_REMOVE(state->client->db, db);
+		TALLOC_FREE(db);
+	}
+
+	tevent_req_done(req);
+}
+
+bool ctdb_detach_recv(struct tevent_req *req, int *perr)
+{
+	int ret;
+
+	if (tevent_req_is_unix_error(req, &ret)) {
+		if (perr != NULL) {
+			*perr = ret;
+		}
+		return false;
+	}
+
+	return true;
+}
+
+int ctdb_detach(struct tevent_context *ev,
 		struct ctdb_client_context *client,
 		struct timeval timeout, uint32_t db_id)
 {
-	struct ctdb_db_context *db;
+	TALLOC_CTX *mem_ctx;
+	struct tevent_req *req;
 	int ret;
+	bool status;
 
-	ret = ctdb_ctrl_db_detach(mem_ctx, ev, client, client->pnn, timeout,
-				  db_id);
-	if (ret != 0) {
+	mem_ctx = talloc_new(client);
+	if (mem_ctx == NULL) {
+		return ENOMEM;
+	}
+
+	req = ctdb_detach_send(mem_ctx, ev, client, timeout, db_id);
+	if (req == NULL) {
+		talloc_free(mem_ctx);
+		return ENOMEM;
+	}
+
+	tevent_req_poll(req, ev);
+
+	status = ctdb_detach_recv(req, &ret);
+	if (! status) {
+		talloc_free(mem_ctx);
 		return ret;
 	}
 
-	for (db = client->db; db != NULL; db = db->next) {
-		if (db->db_id == db_id) {
-			DLIST_REMOVE(client->db, db);
-			break;
-		}
-	}
-
+	talloc_free(mem_ctx);
 	return 0;
 }
 

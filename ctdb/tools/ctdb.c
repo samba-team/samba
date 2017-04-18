@@ -2442,8 +2442,7 @@ static int control_detach(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 			return 1;
 		}
 
-		ret = ctdb_detach(mem_ctx, ctdb->ev, ctdb->client,
-				  TIMEOUT(), db_id);
+		ret = ctdb_detach(ctdb->ev, ctdb->client, TIMEOUT(), db_id);
 		if (ret != 0) {
 			fprintf(stderr, "Database %s detach failed\n", db_name);
 			ret2 = ret;
