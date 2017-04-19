@@ -45,6 +45,12 @@ bool smbldap_get_paged_results(struct smbldap_state *state)
 	return state->paged_results;
 }
 
+void smbldap_set_paged_results(struct smbldap_state *state,
+			       bool paged_results)
+{
+	state->paged_results = paged_results;
+}
+
 /*******************************************************************
  Search an attribute and return the first value found.
 ******************************************************************/

@@ -4424,7 +4424,7 @@ static bool ldapsam_search_firstpage(struct pdb_search *search)
 
 		/* Ok, the server was lying. It told us it could do paged
 		 * searches when it could not. */
-		state->connection->paged_results = False;
+		smbldap_set_paged_results(state->connection, false);
 	}
 
         ld = smbldap_get_ldap(state->connection);
