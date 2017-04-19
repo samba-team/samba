@@ -68,6 +68,8 @@ NTSTATUS smbldap_init(TALLOC_CTX *mem_ctx,
 		      const char *bind_secret,
 		      struct smbldap_state **smbldap_state);
 
+LDAP *smbldap_get_ldap(struct smbldap_state *state);
+
 void smbldap_set_mod (LDAPMod *** modlist, int modop, const char *attribute, const char *value);
 void smbldap_set_mod_blob(LDAPMod *** modlist, int modop, const char *attribute, const DATA_BLOB *newblob);
 void smbldap_make_mod(LDAP *ldap_struct, LDAPMessage *existing,

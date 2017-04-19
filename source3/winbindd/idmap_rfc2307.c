@@ -142,7 +142,7 @@ static NTSTATUS idmap_rfc2307_ldap_search(struct idmap_rfc2307_context *ctx,
 
 	ret = smbldap_search(ctx->smbldap_state, bind_path, LDAP_SCOPE_SUBTREE,
 			     expr, attrs, 0, result);
-	ctx->ldap = ctx->smbldap_state->ldap_struct;
+	ctx->ldap = smbldap_get_ldap(ctx->smbldap_state);
 
 	if (ret == LDAP_SUCCESS) {
 		return NT_STATUS_OK;
