@@ -33,30 +33,7 @@
  *
  */
 
-struct smbldap_state {
-	LDAP *ldap_struct;
-	pid_t pid;
-	time_t last_ping; /* monotonic */
-	/* retrieve-once info */
-	const char *uri;
-
-	/* credentials */
-	bool anonymous;
-	char *bind_dn;
-	char *bind_secret;
-	int (*bind_callback)(LDAP *ldap_struct, struct smbldap_state *ldap_state, void *data);
-	void *bind_callback_data;
-
-	bool paged_results;
-
-	unsigned int num_failures;
-
-	time_t last_use; /* monotonic */
-	struct tevent_context *tevent_context;
-	struct tevent_timer *idle_event;
-
-	struct timeval last_rebind; /* monotonic */
-};
+struct smbldap_state;
 
 /* The following definitions come from lib/smbldap.c  */
 
