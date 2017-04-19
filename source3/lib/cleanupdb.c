@@ -61,7 +61,7 @@ bool cleanupdb_store_child(const pid_t pid, const bool unclean)
 	struct cleanup_key key = { .pid = pid };
 	struct cleanup_rec rec = { .pid = pid, .unclean = unclean };
 	TDB_DATA tdbkey = { .dptr = (uint8_t *)&key, .dsize = sizeof(key) };
-	TDB_DATA tdbdata = { .dptr = (uint8_t *)&key, .dsize = sizeof(rec) };
+	TDB_DATA tdbdata = { .dptr = (uint8_t *)&rec, .dsize = sizeof(rec) };
 	int result;
 
 	db = cleanup_db();
