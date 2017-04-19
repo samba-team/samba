@@ -2068,9 +2068,9 @@ static bool test_aapl(struct torture_context *tctx,
 	}
 
 	aapl_vol_caps = BVAL(aapl->data.data, 24);
-	if (aapl_vol_caps != SMB2_CRTCTX_AAPL_CASE_SENSITIVE) {
+	if (aapl_vol_caps != 0) {
 		/* this will fail on a case insensitive fs ... */
-		torture_warning(tctx,
+		torture_result(tctx, TORTURE_FAIL,
 				"(%s) unexpected vol_caps: %d",
 				__location__, (int)aapl_vol_caps);
 	}
