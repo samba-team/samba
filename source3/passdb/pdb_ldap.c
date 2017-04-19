@@ -4399,7 +4399,7 @@ static bool ldapsam_search_firstpage(struct pdb_search *search)
 
 	state->entries = NULL;
 
-	if (state->connection->paged_results) {
+	if (smbldap_get_paged_results(state->connection)) {
 		rc = smbldap_search_paged(state->connection, state->base,
 					  state->scope, state->filter,
 					  state->attrs, state->attrsonly,
@@ -4444,7 +4444,7 @@ static bool ldapsam_search_nextpage(struct pdb_search *search)
 		(struct ldap_search_state *)search->private_data;
 	int rc;
 
-	if (!state->connection->paged_results) {
+	if (!smbldap_get_paged_results(state->connection)) {
 		/* There is no next page when there are no paged results */
 		return False;
 	}
@@ -4529,8 +4529,9 @@ static void ldapsam_search_end(struct pdb_search *search)
 	state->entries = NULL;
 	state->current_entry = NULL;
 
-	if (!state->connection->paged_results)
+	if (!smbldap_get_paged_results(state->connection)) {
 		return;
+	}
 
 	/* Tell the LDAP server we're not interested in the rest anymore. */
 

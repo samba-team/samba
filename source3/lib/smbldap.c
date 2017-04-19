@@ -40,6 +40,10 @@ LDAP *smbldap_get_ldap(struct smbldap_state *state)
 	return state->ldap_struct;
 }
 
+bool smbldap_get_paged_results(struct smbldap_state *state)
+{
+	return state->paged_results;
+}
 
 /*******************************************************************
  Search an attribute and return the first value found.
