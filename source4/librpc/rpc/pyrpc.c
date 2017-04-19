@@ -293,6 +293,7 @@ static PyObject *dcerpc_interface_new(PyTypeObject *type, PyObject *args, PyObje
 		"binding", "syntax", "lp_ctx", "credentials", "basis_connection", NULL
 	};
 	static struct ndr_interface_table dummy_table;
+	static struct ndr_interface_string_array dummy_endpoints;
 	PyObject *args2 = Py_None;
 	PyObject *kwargs2 = Py_None;
 
@@ -314,6 +315,13 @@ static PyObject *dcerpc_interface_new(PyTypeObject *type, PyObject *args, PyObje
 	 */
 	if (!ndr_syntax_from_py_object(syntax, &dummy_table.syntax_id)) {
 		return NULL;
+	}
+
+	/*
+	 * Initialise the endpoints list in dummy_table if required
+	 */
+	if (dummy_table.endpoints == NULL) {
+		dummy_table.endpoints = &dummy_endpoints;
 	}
 
 	args2 = Py_BuildValue("(s)", binding_string);
