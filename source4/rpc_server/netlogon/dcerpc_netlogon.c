@@ -2252,6 +2252,185 @@ static NTSTATUS dcesrv_netr_ServerPasswordGet(struct dcesrv_call_state *dce_call
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
+/*
+  see if any SIDs in list1 are in list2
+ */
+static bool sid_list_match(const struct dom_sid **list1, const struct dom_sid **list2)
+{
+	unsigned int i, j;
+	/* do we ever have enough SIDs here to worry about O(n^2) ? */
+	for (i=0; list1[i]; i++) {
+		for (j=0; list2[j]; j++) {
+			if (dom_sid_equal(list1[i], list2[j])) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+/*
+  return an array of SIDs from a ldb_message given an attribute name
+  assumes the SIDs are in extended DN format
+ */
+static WERROR samdb_result_sid_array_dn(struct ldb_context *sam_ctx,
+					struct ldb_message *msg,
+					TALLOC_CTX *mem_ctx,
+					const char *attr,
+					const struct dom_sid ***sids)
+{
+	struct ldb_message_element *el;
+	unsigned int i;
+
+	el = ldb_msg_find_element(msg, attr);
+	if (!el) {
+		*sids = NULL;
+		return WERR_OK;
+	}
+
+	(*sids) = talloc_array(mem_ctx, const struct dom_sid *, el->num_values + 1);
+	W_ERROR_HAVE_NO_MEMORY(*sids);
+
+	for (i=0; i<el->num_values; i++) {
+		struct ldb_dn *dn = ldb_dn_from_ldb_val(mem_ctx, sam_ctx, &el->values[i]);
+		NTSTATUS status;
+		struct dom_sid *sid;
+
+		sid = talloc(*sids, struct dom_sid);
+		W_ERROR_HAVE_NO_MEMORY(sid);
+		status = dsdb_get_extended_dn_sid(dn, sid, "SID");
+		if (!NT_STATUS_IS_OK(status)) {
+			return WERR_INTERNAL_DB_CORRUPTION;
+		}
+		(*sids)[i] = sid;
+	}
+	(*sids)[i] = NULL;
+
+	return WERR_OK;
+}
+
+
+/*
+ * Return an array of SIDs from a ldb_message given an attribute name assumes
+ * the SIDs are in NDR form (with additional sids applied on the end).
+ */
+static WERROR samdb_result_sid_array_ndr(struct ldb_context *sam_ctx,
+					 struct ldb_message *msg,
+					 TALLOC_CTX *mem_ctx,
+					 const char *attr,
+					 const struct dom_sid ***sids,
+					 const struct dom_sid **additional_sids,
+					 unsigned int num_additional)
+{
+	struct ldb_message_element *el;
+	unsigned int i, j;
+
+	el = ldb_msg_find_element(msg, attr);
+	if (!el) {
+		*sids = NULL;
+		return WERR_OK;
+	}
+
+	/* Make array long enough for NULL and additional SID */
+	(*sids) = talloc_array(mem_ctx, const struct dom_sid *,
+			       el->num_values + num_additional + 1);
+	W_ERROR_HAVE_NO_MEMORY(*sids);
+
+	for (i=0; i<el->num_values; i++) {
+		enum ndr_err_code ndr_err;
+		struct dom_sid *sid;
+
+		sid = talloc(*sids, struct dom_sid);
+		W_ERROR_HAVE_NO_MEMORY(sid);
+
+		ndr_err = ndr_pull_struct_blob(&el->values[i], sid, sid,
+					       (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			return WERR_INTERNAL_DB_CORRUPTION;
+		}
+		(*sids)[i] = sid;
+	}
+
+	for (j = 0; j < num_additional; j++) {
+		(*sids)[i++] = additional_sids[j];
+	}
+
+	(*sids)[i] = NULL;
+
+	return WERR_OK;
+}
+
+static bool sam_rodc_access_check(struct ldb_context *sam_ctx,
+				  TALLOC_CTX *mem_ctx,
+				  struct dom_sid *user_sid,
+				  struct ldb_dn *obj_dn)
+{
+	const char *rodc_attrs[] = { "msDS-KrbTgtLink", "msDS-NeverRevealGroup", "msDS-RevealOnDemandGroup", "objectGUID", NULL };
+	const char *obj_attrs[] = { "tokenGroups", "objectSid", "UserAccountControl", "msDS-KrbTgtLinkBL", NULL };
+	struct ldb_dn *rodc_dn;
+	int ret;
+	struct ldb_result *rodc_res = NULL, *obj_res = NULL;
+	const struct dom_sid *additional_sids[] = { NULL, NULL };
+	WERROR werr;
+	struct dom_sid *object_sid;
+	const struct dom_sid **never_reveal_sids, **reveal_sids, **token_sids;
+
+	rodc_dn = ldb_dn_new_fmt(mem_ctx, sam_ctx, "<SID=%s>",
+				 dom_sid_string(mem_ctx, user_sid));
+	if (!ldb_dn_validate(rodc_dn)) goto denied;
+
+	/* do the two searches we need */
+	ret = dsdb_search_dn(sam_ctx, mem_ctx, &rodc_res, rodc_dn, rodc_attrs,
+			     DSDB_SEARCH_SHOW_EXTENDED_DN);
+	if (ret != LDB_SUCCESS || rodc_res->count != 1) goto denied;
+
+	ret = dsdb_search_dn(sam_ctx, mem_ctx, &obj_res, obj_dn, obj_attrs, 0);
+	if (ret != LDB_SUCCESS || obj_res->count != 1) goto denied;
+
+	object_sid = samdb_result_dom_sid(mem_ctx, obj_res->msgs[0], "objectSid");
+
+	additional_sids[0] = object_sid;
+
+	werr = samdb_result_sid_array_dn(sam_ctx, rodc_res->msgs[0],
+					 mem_ctx, "msDS-NeverRevealGroup", &never_reveal_sids);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto denied;
+	}
+
+	werr = samdb_result_sid_array_dn(sam_ctx, rodc_res->msgs[0],
+					 mem_ctx, "msDS-RevealOnDemandGroup", &reveal_sids);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto denied;
+	}
+
+	/*
+	 * The SID list needs to include itself as well as the tokenGroups.
+	 *
+	 * TODO determine if sIDHistory is required for this check
+	 */
+	werr = samdb_result_sid_array_ndr(sam_ctx, obj_res->msgs[0],
+					  mem_ctx, "tokenGroups", &token_sids,
+					  additional_sids, 1);
+	if (!W_ERROR_IS_OK(werr) || token_sids==NULL) {
+		goto denied;
+	}
+
+	if (never_reveal_sids &&
+	    sid_list_match(token_sids, never_reveal_sids)) {
+		goto denied;
+	}
+
+	if (reveal_sids &&
+	    sid_list_match(token_sids, reveal_sids)) {
+		goto allowed;
+	}
+
+denied:
+	return false;
+allowed:
+	return true;
+
+}
 
 /*
   netr_NetrLogonSendToSam
@@ -2324,12 +2503,27 @@ static NTSTATUS dcesrv_netr_NetrLogonSendToSam(struct dcesrv_call_state *dce_cal
 		int ret = 0;
 
 
+		ret = ldb_transaction_start(sam_ctx);
+		if (ret != LDB_SUCCESS) {
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+
 		ret = dsdb_find_dn_by_guid(sam_ctx,
 					   mem_ctx,
 					   &base_msg.message.reset_bad_password.guid,
 					   0,
 					   &dn);
 		if (ret != LDB_SUCCESS) {
+			ldb_transaction_cancel(sam_ctx);
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		if (creds->secure_channel_type == SEC_CHAN_RODC &&
+		    !sam_rodc_access_check(sam_ctx, mem_ctx, creds->sid, dn)) {
+			DEBUG(1, ("Client asked to reset bad password on "
+				  "an arbitrary user: %s\n",
+				  ldb_dn_get_linearized(dn)));
+			ldb_transaction_cancel(sam_ctx);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
@@ -2337,12 +2531,20 @@ static NTSTATUS dcesrv_netr_NetrLogonSendToSam(struct dcesrv_call_state *dce_cal
 
 		ret = samdb_msg_add_int(sam_ctx, mem_ctx, msg, "badPwdCount", 0);
 		if (ret != LDB_SUCCESS) {
+			ldb_transaction_cancel(sam_ctx);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
 		ret = dsdb_replace(sam_ctx, msg, 0);
 		if (ret != LDB_SUCCESS) {
+			ldb_transaction_cancel(sam_ctx);
 			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		ret = ldb_transaction_commit(sam_ctx);
+		if (ret != LDB_SUCCESS) {
+			ldb_transaction_cancel(sam_ctx);
+			return NT_STATUS_INTERNAL_ERROR;
 		}
 
 		break;
