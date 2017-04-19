@@ -2186,9 +2186,23 @@ static NTSTATUS check_aapl(vfs_handle_struct *handle,
 	}
 
 	if (req_bitmap & SMB2_CRTCTX_AAPL_VOLUME_CAPS) {
-		SBVAL(p, 0,
-		      lp_case_sensitive(SNUM(handle->conn->tcon->compat)) ?
-		      SMB2_CRTCTX_AAPL_CASE_SENSITIVE : 0);
+		int val = lp_case_sensitive(SNUM(handle->conn->tcon->compat));
+		uint64_t caps = 0;
+
+		switch (val) {
+		case Auto:
+			break;
+
+		case True:
+			caps |= SMB2_CRTCTX_AAPL_CASE_SENSITIVE;
+			break;
+
+		default:
+			break;
+		}
+
+		SBVAL(p, 0, caps);
+
 		ok = data_blob_append(req, &blob, p, 8);
 		if (!ok) {
 			return NT_STATUS_UNSUCCESSFUL;
