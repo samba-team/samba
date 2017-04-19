@@ -2579,6 +2579,40 @@ static void wait_for_flags(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	}
 }
 
+static int ctdb_ctrl_modflags(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+			      struct ctdb_client_context *client,
+			      uint32_t destnode, struct timeval timeout,
+			      uint32_t set, uint32_t clear)
+{
+	struct ctdb_node_map *nodemap;
+	struct ctdb_node_flag_change flag_change;
+	struct ctdb_req_control request;
+	uint32_t *pnn_list;
+	int ret, count;
+
+	ret = ctdb_ctrl_get_nodemap(mem_ctx, ev, client, destnode,
+				    tevent_timeval_zero(), &nodemap);
+	if (ret != 0) {
+		return ret;
+	}
+
+	flag_change.pnn = destnode;
+	flag_change.old_flags = nodemap->node[destnode].flags;
+	flag_change.new_flags = flag_change.old_flags | set;
+	flag_change.new_flags &= ~clear;
+
+	count = list_of_connected_nodes(nodemap, -1, mem_ctx, &pnn_list);
+	if (count == -1) {
+		return ENOMEM;
+	}
+
+	ctdb_req_control_modify_flags(&request, &flag_change);
+	ret = ctdb_client_control_multi(mem_ctx, ev, client, pnn_list, count,
+					tevent_timeval_zero(), &request,
+					NULL, NULL);
+	return ret;
+}
+
 struct ipreallocate_state {
 	int status;
 	bool done;
