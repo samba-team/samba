@@ -187,7 +187,7 @@ static size_t ctdb_req_control_data_len(struct ctdb_req_control_data *cd)
 		break;
 
 	case CTDB_CONTROL_GET_TUNABLE:
-		len = ctdb_stringn_len(cd->data.tun_var);
+		len = ctdb_stringn_len(&cd->data.tun_var);
 		break;
 
 	case CTDB_CONTROL_LIST_TUNABLES:
@@ -527,7 +527,7 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_GET_TUNABLE:
-		ctdb_stringn_push(cd->data.tun_var, buf);
+		ctdb_stringn_push(&cd->data.tun_var, buf, &np);
 		break;
 
 	case CTDB_CONTROL_MODIFY_FLAGS:
@@ -822,7 +822,7 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_CONTROL_GET_TUNABLE:
 		ret = ctdb_stringn_pull(buf, buflen, mem_ctx,
-					&cd->data.tun_var);
+					&cd->data.tun_var, &np);
 		break;
 
 	case CTDB_CONTROL_MODIFY_FLAGS:

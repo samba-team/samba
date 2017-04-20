@@ -200,6 +200,16 @@ void verify_ctdb_string(const char **p1, const char **p2)
 	}
 }
 
+void fill_ctdb_stringn(TALLOC_CTX *mem_ctx, const char **p)
+{
+	fill_ctdb_string(mem_ctx, p);
+}
+
+void verify_ctdb_stringn(const char **p1, const char **p2)
+{
+	verify_ctdb_string(p1, p2);
+}
+
 void fill_tdb_data_nonnull(TALLOC_CTX *mem_ctx, TDB_DATA *p)
 {
 	p->dsize = rand_int(1024) + 1;

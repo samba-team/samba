@@ -232,7 +232,7 @@ static size_t ctdb_event_request_run_len(struct ctdb_event_request_run *in)
 {
 	return ctdb_event_len(in->event) +
 	       ctdb_uint32_len(&in->timeout) +
-	       ctdb_stringn_len(in->arg_str);
+	       ctdb_stringn_len(&in->arg_str);
 }
 
 static void ctdb_event_request_run_push(struct ctdb_event_request_run *in,
@@ -246,7 +246,7 @@ static void ctdb_event_request_run_push(struct ctdb_event_request_run *in,
 	ctdb_uint32_push(&in->timeout, buf+offset, &np);
 	offset += np;
 
-	ctdb_stringn_push(in->arg_str, buf+offset);
+	ctdb_stringn_push(&in->arg_str, buf+offset, &np);
 }
 
 static int ctdb_event_request_run_pull(uint8_t *buf, size_t buflen,
@@ -276,7 +276,7 @@ static int ctdb_event_request_run_pull(uint8_t *buf, size_t buflen,
 	offset += np;
 
 	ret = ctdb_stringn_pull(buf+offset, buflen-offset,
-				rdata, &rdata->arg_str);
+				rdata, &rdata->arg_str, &np);
 	if (ret != 0) {
 		goto fail;
 	}
@@ -343,14 +343,16 @@ static int ctdb_event_request_status_pull(
 static size_t ctdb_event_request_script_enable_len(
 				struct ctdb_event_request_script_enable *in)
 {
-	return ctdb_stringn_len(in->script_name);
+	return ctdb_stringn_len(&in->script_name);
 }
 
 static void ctdb_event_request_script_enable_push(
 				struct ctdb_event_request_script_enable *in,
 				uint8_t *buf)
 {
-	ctdb_stringn_push(in->script_name, buf);
+	size_t np;
+
+	ctdb_stringn_push(&in->script_name, buf, &np);
 }
 
 static int ctdb_event_request_script_enable_pull(
@@ -359,6 +361,7 @@ static int ctdb_event_request_script_enable_pull(
 				struct ctdb_event_request_script_enable **out)
 {
 	struct ctdb_event_request_script_enable *rdata;
+	size_t np;
 	int ret;
 
 	rdata = talloc(mem_ctx, struct ctdb_event_request_script_enable);
@@ -366,7 +369,7 @@ static int ctdb_event_request_script_enable_pull(
 		return ENOMEM;
 	}
 
-	ret = ctdb_stringn_pull(buf, buflen, rdata, &rdata->script_name);
+	ret = ctdb_stringn_pull(buf, buflen, rdata, &rdata->script_name, &np);
 	if (ret != 0) {
 		talloc_free(rdata);
 		return ret;
@@ -379,14 +382,16 @@ static int ctdb_event_request_script_enable_pull(
 static size_t ctdb_event_request_script_disable_len(
 				struct ctdb_event_request_script_disable *in)
 {
-	return ctdb_stringn_len(in->script_name);
+	return ctdb_stringn_len(&in->script_name);
 }
 
 static void ctdb_event_request_script_disable_push(
 				struct ctdb_event_request_script_disable *in,
 				uint8_t *buf)
 {
-	ctdb_stringn_push(in->script_name, buf);
+	size_t np;
+
+	ctdb_stringn_push(&in->script_name, buf, &np);
 }
 
 static int ctdb_event_request_script_disable_pull(
@@ -395,6 +400,7 @@ static int ctdb_event_request_script_disable_pull(
 				struct ctdb_event_request_script_disable **out)
 {
 	struct ctdb_event_request_script_disable *rdata;
+	size_t np;
 	int ret;
 
 	rdata = talloc(mem_ctx, struct ctdb_event_request_script_disable);
@@ -402,7 +408,7 @@ static int ctdb_event_request_script_disable_pull(
 		return ENOMEM;
 	}
 
-	ret = ctdb_stringn_pull(buf, buflen, rdata, &rdata->script_name);
+	ret = ctdb_stringn_pull(buf, buflen, rdata, &rdata->script_name, &np);
 	if (ret != 0) {
 		talloc_free(rdata);
 		return ret;

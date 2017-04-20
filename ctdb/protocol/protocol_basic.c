@@ -271,55 +271,51 @@ int ctdb_string_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 	return 0;
 }
 
-struct stringn_wire {
-	uint32_t length;
-	uint8_t str[1];
-};
-
-size_t ctdb_stringn_len(const char *str)
+size_t ctdb_stringn_len(const char **in)
 {
-	return sizeof(uint32_t) + ctdb_string_len(&str);
+	uint32_t u32 = ctdb_string_len(in);
+
+	return ctdb_uint32_len(&u32) + u32;
 }
 
-void ctdb_stringn_push(const char *str, uint8_t *buf)
+void ctdb_stringn_push(const char **in, uint8_t *buf, size_t *npush)
 {
-	struct stringn_wire *wire = (struct stringn_wire *)buf;
-	size_t np;
+	size_t offset = 0, np;
+	uint32_t u32 = ctdb_string_len(in);
 
-	wire->length = ctdb_string_len(&str);
-	ctdb_string_push(&str, wire->str, &np);
+	ctdb_uint32_push(&u32, buf+offset, &np);
+	offset += np;
+
+	ctdb_string_push(in, buf+offset, &np);
+	offset += np;
+
+	*npush = offset;
 }
 
 int ctdb_stringn_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-		      const char **out)
+		      const char **out, size_t *npull)
 {
-	char *str;
-	struct stringn_wire *wire = (struct stringn_wire *)buf;
+	size_t offset = 0, np;
+	uint32_t u32;
+	int ret;
 
-	if (buflen < sizeof(uint32_t)) {
-		return EMSGSIZE;
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &u32, &np);
+	if (ret != 0) {
+		return ret;
 	}
-	if (wire->length > buflen) {
-		return EMSGSIZE;
-	}
-	if (sizeof(uint32_t) + wire->length < sizeof(uint32_t)) {
-		return EMSGSIZE;
-	}
-	if (buflen < sizeof(uint32_t) + wire->length) {
+	offset += np;
+
+	if (buflen-offset < u32) {
 		return EMSGSIZE;
 	}
 
-	if (wire->length == 0) {
-		*out = NULL;
-		return 0;
+	ret = ctdb_string_pull(buf+offset, u32, mem_ctx, out, &np);
+	if (ret != 0) {
+		return ret;
 	}
+	offset += np;
 
-	str = talloc_strndup(mem_ctx, (char *)wire->str, wire->length);
-	if (str == NULL) {
-		return ENOMEM;
-	}
-
-	*out = str;
+	*npull = offset;
 	return 0;
 }
 
