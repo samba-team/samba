@@ -122,7 +122,7 @@ simple_test ()
 
 result_filter ()
 {
-	_duration="[0-9]*\.[0-9][0-9][0-9]"
+	_duration="\<[0-9][0-9]*\.[0-9][0-9][0-9]\>"
 	_day="\(Mon\|Tue\|Wed\|Thu\|Fri\|Sat\|Sun\)"
 	_month="\(Jan\|Feb\|Mar\|Apr\|May\|Jun\|Jul\|Aug\|Sep\|Oct\|Nov\|Dec\)"
 	_date="\( [0-9]\|[0-9][0-9]\)"
