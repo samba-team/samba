@@ -39,7 +39,7 @@
 #include "../libcli/named_pipe_auth/npa_tstream.h"
 #include "smbd/process_model.h"
 
-NTSTATUS server_service_rpc_init(void);
+NTSTATUS server_service_rpc_init(TALLOC_CTX *);
 
 /*
   open the dcerpc server sockets
@@ -124,7 +124,7 @@ failed:
 	task_server_terminate(task, "Failed to startup dcerpc server task", true);	
 }
 
-NTSTATUS server_service_rpc_init(void)
+NTSTATUS server_service_rpc_init(TALLOC_CTX *ctx)
 {
 	return register_server_service("rpc", dcesrv_task_init);
 }

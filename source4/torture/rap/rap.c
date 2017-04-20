@@ -241,7 +241,7 @@ bool torture_rap_scan(struct torture_context *torture, struct smbcli_state *cli)
 	return true;
 }
 
-NTSTATUS torture_rap_init(void)
+NTSTATUS torture_rap_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "rap");
 	struct torture_suite *suite_basic = torture_suite_create(suite, "basic");

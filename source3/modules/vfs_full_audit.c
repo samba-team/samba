@@ -2560,7 +2560,7 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 };
 
 static_decl_vfs;
-NTSTATUS vfs_full_audit_init(void)
+NTSTATUS vfs_full_audit_init(TALLOC_CTX *ctx)
 {
 	NTSTATUS ret;
 

@@ -1107,8 +1107,8 @@ static struct vfs_fn_pointers vfs_afsacl_fns = {
 	.sys_acl_blob_get_fd_fn = afsacl_sys_acl_blob_get_fd
 };
 
-NTSTATUS vfs_afsacl_init(void);
-NTSTATUS vfs_afsacl_init(void)
+NTSTATUS vfs_afsacl_init(TALLOC_CTX *);
+NTSTATUS vfs_afsacl_init(TALLOC_CTX *ctx)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "afsacl",
 				&vfs_afsacl_fns);

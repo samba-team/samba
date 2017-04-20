@@ -1935,7 +1935,7 @@ static bool run_birthtimetest(struct torture_context *tctx,
 }
 
 
-NTSTATUS torture_base_init(void)
+NTSTATUS torture_base_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "base");
 

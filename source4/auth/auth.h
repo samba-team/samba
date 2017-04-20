@@ -157,7 +157,7 @@ NTSTATUS auth_check_password(struct auth4_context *auth_ctx,
 			     uint8_t *pauthoritative);
 NTSTATUS auth4_init(void);
 NTSTATUS auth_register(const struct auth_operations *ops);
-NTSTATUS server_service_auth_init(void);
+NTSTATUS server_service_auth_init(TALLOC_CTX *ctx);
 NTSTATUS authenticate_ldap_simple_bind(TALLOC_CTX *mem_ctx,
 				       struct tevent_context *ev,
 				       struct imessaging_context *msg,

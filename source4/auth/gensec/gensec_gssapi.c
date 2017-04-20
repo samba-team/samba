@@ -50,7 +50,7 @@ gss_OID_desc spnego_mech_oid_desc =
 #define gss_mech_spnego (&spnego_mech_oid_desc)
 #endif
 
-_PUBLIC_ NTSTATUS gensec_gssapi_init(void);
+_PUBLIC_ NTSTATUS gensec_gssapi_init(TALLOC_CTX *);
 
 static size_t gensec_gssapi_max_input_size(struct gensec_security *gensec_security);
 static size_t gensec_gssapi_max_wrapped_size(struct gensec_security *gensec_security);
@@ -1640,7 +1640,7 @@ static const struct gensec_security_ops gensec_gssapi_sasl_krb5_security_ops = {
 	.priority         = GENSEC_GSSAPI
 };
 
-_PUBLIC_ NTSTATUS gensec_gssapi_init(void)
+_PUBLIC_ NTSTATUS gensec_gssapi_init(TALLOC_CTX *ctx)
 {
 	NTSTATUS ret;
 

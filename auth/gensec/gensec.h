@@ -107,7 +107,8 @@ struct gensec_settings {
 struct gensec_security_ops;
 struct gensec_security_ops_wrapper;
 
-#define GENSEC_INTERFACE_VERSION 0
+/* Change to 1, loadable modules now take a TALLOC_CTX * init() parameter. */
+#define GENSEC_INTERFACE_VERSION 1
 
 /* this structure is used by backends to determine the size of some critical types */
 struct gensec_critical_sizes;

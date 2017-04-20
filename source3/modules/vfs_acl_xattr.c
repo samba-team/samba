@@ -295,7 +295,7 @@ static struct vfs_fn_pointers vfs_acl_xattr_fns = {
 };
 
 static_decl_vfs;
-NTSTATUS vfs_acl_xattr_init(void)
+NTSTATUS vfs_acl_xattr_init(TALLOC_CTX *ctx)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "acl_xattr",
 				&vfs_acl_xattr_fns);

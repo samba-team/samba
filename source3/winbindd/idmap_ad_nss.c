@@ -394,7 +394,7 @@ static struct nss_info_methods nss_sfu20_methods = {
  Initialize the plugins
  ***********************************************************************/
 
-NTSTATUS idmap_ad_nss_init(void)
+NTSTATUS idmap_ad_nss_init(TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
 

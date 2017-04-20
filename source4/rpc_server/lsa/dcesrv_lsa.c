@@ -4771,15 +4771,15 @@ static WERROR dcesrv_dssetup_DsRoleAbortDownlevelServerUpgrade(struct dcesrv_cal
 /* include the generated boilerplate */
 #include "librpc/gen_ndr/ndr_dssetup_s.c"
 
-NTSTATUS dcerpc_server_lsa_init(void)
+NTSTATUS dcerpc_server_lsa_init(TALLOC_CTX *ctx)
 {
 	NTSTATUS ret;
 
-	ret = dcerpc_server_dssetup_init();
+	ret = dcerpc_server_dssetup_init(ctx);
 	if (!NT_STATUS_IS_OK(ret)) {
 		return ret;
 	}
-	ret = dcerpc_server_lsarpc_init();
+	ret = dcerpc_server_lsarpc_init(ctx);
 	if (!NT_STATUS_IS_OK(ret)) {
 		return ret;
 	}

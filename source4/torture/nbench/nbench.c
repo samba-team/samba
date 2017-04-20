@@ -284,7 +284,7 @@ bool torture_nbench(struct torture_context *torture)
 	return correct;
 }
 
-NTSTATUS torture_nbench_init(void)
+NTSTATUS torture_nbench_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(
 						   talloc_autofree_context(), "bench");

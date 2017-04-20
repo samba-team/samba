@@ -392,7 +392,7 @@ bool load_auth_module(struct auth_context *auth_context,
 
 	/* Initialise static modules if not done so yet */
 	if(!initialised_static_modules) {
-		static_init_auth;
+		static_init_auth(NULL);
 		initialised_static_modules = True;
 	}
 

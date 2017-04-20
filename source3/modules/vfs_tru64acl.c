@@ -480,8 +480,8 @@ static struct vfs_fn_pointers tru64acl_fns = {
 	.sys_acl_delete_def_file_fn = tru64acl_sys_acl_delete_def_file,
 };
 
-NTSTATUS vfs_tru64acl_init(void);
-NTSTATUS vfs_tru64acl_init(void)
+NTSTATUS vfs_tru64acl_init(TALLOC_CTX *);
+NTSTATUS vfs_tru64acl_init(TALLOC_CTX *ctx)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "tru64acl",
 				&tru64acl_fns);

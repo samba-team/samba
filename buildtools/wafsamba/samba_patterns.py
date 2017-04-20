@@ -178,6 +178,9 @@ def write_build_options(task):
                 keys_header_other.append(key)
             else:
                 keys_option_have.append(key)
+        elif key.startswith("static_init_"):
+            l = key.split("(")
+            keys_misc.append(l[0])
         else:
             keys_misc.append(key)
 

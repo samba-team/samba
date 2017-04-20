@@ -180,8 +180,8 @@ static NTSTATUS auth_init_script(struct auth_context *auth_context, const char *
 	return NT_STATUS_OK;
 }
 
-NTSTATUS auth_script_init(void);
-NTSTATUS auth_script_init(void)
+NTSTATUS auth_script_init(TALLOC_CTX *);
+NTSTATUS auth_script_init(TALLOC_CTX *ctx)
 {
 	return smb_register_auth(AUTH_INTERFACE_VERSION, "script", auth_init_script);
 }

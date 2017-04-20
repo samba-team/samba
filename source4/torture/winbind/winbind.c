@@ -290,7 +290,7 @@ static bool torture_winbind_pac_krb5(struct torture_context *tctx)
 	return torture_winbind_pac(tctx, NULL, "krb5");
 }	
 
-NTSTATUS torture_winbind_init(void)
+NTSTATUS torture_winbind_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "winbind");
 	struct torture_suite *pac_suite;

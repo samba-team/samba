@@ -24,7 +24,7 @@
 #include "libnet/libnet.h"
 #include "torture/libnet/proto.h"
 
-NTSTATUS torture_net_init(void)
+NTSTATUS torture_net_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(
 		talloc_autofree_context(), "net");

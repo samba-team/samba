@@ -339,7 +339,7 @@ static struct vfs_fn_pointers vfs_aio_linux_fns = {
 };
 
 static_decl_vfs;
-NTSTATUS vfs_aio_linux_init(void)
+NTSTATUS vfs_aio_linux_init(TALLOC_CTX *ctx)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION,
 				"aio_linux", &vfs_aio_linux_fns);

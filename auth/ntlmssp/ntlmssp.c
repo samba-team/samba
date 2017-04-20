@@ -252,7 +252,7 @@ static const struct gensec_security_ops gensec_ntlmssp_resume_ccache_ops = {
 	.priority       = GENSEC_NTLMSSP
 };
 
-_PUBLIC_ NTSTATUS gensec_ntlmssp_init(void)
+_PUBLIC_ NTSTATUS gensec_ntlmssp_init(TALLOC_CTX *ctx)
 {
 	NTSTATUS ret;
 

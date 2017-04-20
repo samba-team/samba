@@ -34,6 +34,6 @@ int pdb_nds_set_password(
 	struct smbldap_state *ldap_state,
 	char *object_dn,
 	const char *pwd );
-NTSTATUS pdb_nds_init(void);
+NTSTATUS pdb_nds_init(TALLOC_CTX *);
 
 #endif /* _PASSDB_PDB_NDS_H_ */

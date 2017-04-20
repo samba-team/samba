@@ -93,9 +93,9 @@ static void s3fs_task_init(struct task_server *task)
 }
 
 /* called at smbd startup - register ourselves as a server service */
-NTSTATUS server_service_s3fs_init(void);
+NTSTATUS server_service_s3fs_init(TALLOC_CTX *);
 
-NTSTATUS server_service_s3fs_init(void)
+NTSTATUS server_service_s3fs_init(TALLOC_CTX *ctx)
 {
 	return register_server_service("s3fs", s3fs_task_init);
 }

@@ -51,7 +51,7 @@ static void lazy_initialize_passdb(void)
 	if(initialized) {
 		return;
 	}
-	static_init_pdb;
+	static_init_pdb(NULL);
 	initialized = True;
 }
 

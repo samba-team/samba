@@ -924,7 +924,7 @@ static struct idmap_methods autorid_methods = {
 };
 
 static_decl_idmap;
-NTSTATUS idmap_autorid_init(void)
+NTSTATUS idmap_autorid_init(TALLOC_CTX *ctx)
 {
 	return smb_register_idmap(SMB_IDMAP_INTERFACE_VERSION,
 				  "autorid", &autorid_methods);

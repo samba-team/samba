@@ -64,7 +64,7 @@ struct async_info {
 	void *parms;
 };
 
-NTSTATUS ntvfs_cifs_init(void);
+NTSTATUS ntvfs_cifs_init(TALLOC_CTX *);
 
 #define CHECK_UPSTREAM_OPEN do { \
 	if (!smbXcli_conn_is_connected(p->transport->conn)) { \
@@ -1201,7 +1201,7 @@ static NTSTATUS cvfs_notify(struct ntvfs_module_context *ntvfs,
 /*
   initialise the CIFS->CIFS backend, registering ourselves with the ntvfs subsystem
  */
-NTSTATUS ntvfs_cifs_init(void)
+NTSTATUS ntvfs_cifs_init(TALLOC_CTX *ctx)
 {
 	NTSTATUS ret;
 	struct ntvfs_ops ops;

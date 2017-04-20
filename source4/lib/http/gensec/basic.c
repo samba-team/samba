@@ -26,7 +26,7 @@
 #include "auth/credentials/credentials.h"
 #include "lib/util/base64.h"
 
-_PUBLIC_ NTSTATUS gensec_http_basic_init(void);
+_PUBLIC_ NTSTATUS gensec_http_basic_init(TALLOC_CTX *);
 
 struct gensec_http_basic_state {
 	enum {
@@ -123,7 +123,7 @@ static const struct gensec_security_ops gensec_http_basic_security_ops = {
 	.priority       = GENSEC_EXTERNAL,
 };
 
-_PUBLIC_ NTSTATUS gensec_http_basic_init(void)
+_PUBLIC_ NTSTATUS gensec_http_basic_init(TALLOC_CTX *ctx)
 {
 	NTSTATUS status;
 

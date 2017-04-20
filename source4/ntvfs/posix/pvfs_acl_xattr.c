@@ -24,7 +24,7 @@
 #include "../lib/util/unix_privs.h"
 #include "librpc/gen_ndr/ndr_xattr.h"
 
-NTSTATUS pvfs_acl_xattr_init(void);
+NTSTATUS pvfs_acl_xattr_init(TALLOC_CTX *);
 
 /*
   load the current ACL from extended attributes
@@ -93,7 +93,7 @@ static NTSTATUS pvfs_acl_save_xattr(struct pvfs_state *pvfs, struct pvfs_filenam
 /*
   initialise pvfs acl xattr backend
 */
-NTSTATUS pvfs_acl_xattr_init(void)
+NTSTATUS pvfs_acl_xattr_init(TALLOC_CTX *ctx)
 {
 	struct pvfs_acl_ops ops = {
 		.name = "xattr",

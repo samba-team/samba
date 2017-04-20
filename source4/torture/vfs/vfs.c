@@ -101,7 +101,7 @@ struct torture_test *torture_suite_add_2ns_smb2_test(struct torture_suite *suite
 	return test;
 }
 
-NTSTATUS torture_vfs_init(void)
+NTSTATUS torture_vfs_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(
 		talloc_autofree_context(), "vfs");

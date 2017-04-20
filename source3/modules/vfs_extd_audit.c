@@ -371,7 +371,7 @@ static struct vfs_fn_pointers vfs_extd_audit_fns = {
 };
 
 static_decl_vfs;
-NTSTATUS vfs_extd_audit_init(void)
+NTSTATUS vfs_extd_audit_init(TALLOC_CTX *ctx)
 {
 	NTSTATUS ret = smb_register_vfs(SMB_VFS_INTERFACE_VERSION,
 					"extd_audit", &vfs_extd_audit_fns);

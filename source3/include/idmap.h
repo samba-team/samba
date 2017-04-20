@@ -27,8 +27,9 @@
 
 /* Updated to 4, completely new interface, SSS */
 /* Updated to 5, simplified interface by Volker */
+/* Updated to 6, modules now take TALLOC_CTX * init parameter. */
 
-#define SMB_IDMAP_INTERFACE_VERSION 5
+#define SMB_IDMAP_INTERFACE_VERSION 6
 
 #include "librpc/gen_ndr/idmap.h"
 

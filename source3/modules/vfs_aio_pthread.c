@@ -496,8 +496,8 @@ static struct vfs_fn_pointers vfs_aio_pthread_fns = {
 #endif
 };
 
-NTSTATUS vfs_aio_pthread_init(void);
-NTSTATUS vfs_aio_pthread_init(void)
+NTSTATUS vfs_aio_pthread_init(TALLOC_CTX *);
+NTSTATUS vfs_aio_pthread_init(TALLOC_CTX *ctx)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION,
 				"aio_pthread", &vfs_aio_pthread_fns);

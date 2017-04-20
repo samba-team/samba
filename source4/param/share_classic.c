@@ -23,7 +23,7 @@
 #include "param/share.h"
 #include "param/param.h"
 
-NTSTATUS share_classic_init(void);
+NTSTATUS share_classic_init(TALLOC_CTX *);
 
 static NTSTATUS sclassic_init(TALLOC_CTX *mem_ctx, 
 			      const struct share_ops *ops, 
@@ -383,7 +383,7 @@ static const struct share_ops ops = {
 	.get_config = sclassic_get_config
 };
 
-NTSTATUS share_classic_init(void)
+NTSTATUS share_classic_init(TALLOC_CTX *ctx)
 {
 	return share_register(&ops);
 }

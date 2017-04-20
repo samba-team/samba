@@ -67,8 +67,8 @@ static NTSTATUS auth_init_skel(struct auth_context *auth_context, const char *pa
 	return NT_STATUS_OK;
 }
 
-NTSTATUS auth_skel_init(void);
-NTSTATUS auth_skel_init(void)
+NTSTATUS auth_skel_init(TALLOC_CTX *ctx);
+NTSTATUS auth_skel_init(TALLOC_CTX *ctx)
 {
 	return smb_register_auth(AUTH_INTERFACE_VERSION, "skel", auth_init_skel);
 }

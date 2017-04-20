@@ -6726,7 +6726,7 @@ NTSTATUS pdb_ldapsam_init_common(struct pdb_methods **pdb_method,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS pdb_ldapsam_init(void)
+NTSTATUS pdb_ldapsam_init(TALLOC_CTX *ctx)
 {
 	NTSTATUS nt_status;
 
@@ -6738,7 +6738,7 @@ NTSTATUS pdb_ldapsam_init(void)
 	}
 
 	/* Let pdb_nds register backends */
-	pdb_nds_init();
+	pdb_nds_init(ctx);
 
 	return NT_STATUS_OK;
 }

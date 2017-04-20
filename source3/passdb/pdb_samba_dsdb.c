@@ -3090,8 +3090,8 @@ fail:
 	return status;
 }
 
-NTSTATUS pdb_samba_dsdb_init(void);
-NTSTATUS pdb_samba_dsdb_init(void)
+NTSTATUS pdb_samba_dsdb_init(TALLOC_CTX *);
+NTSTATUS pdb_samba_dsdb_init(TALLOC_CTX *ctx)
 {
 	NTSTATUS status = smb_register_passdb(PASSDB_INTERFACE_VERSION, "samba_dsdb",
 					      pdb_init_samba_dsdb);

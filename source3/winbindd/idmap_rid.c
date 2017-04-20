@@ -174,7 +174,7 @@ static struct idmap_methods rid_methods = {
 };
 
 static_decl_idmap;
-NTSTATUS idmap_rid_init(void)
+NTSTATUS idmap_rid_init(TALLOC_CTX *ctx)
 {
 	return smb_register_idmap(SMB_IDMAP_INTERFACE_VERSION, "rid", &rid_methods);
 }

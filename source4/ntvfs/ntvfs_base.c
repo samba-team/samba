@@ -228,7 +228,7 @@ static NTSTATUS ntvfs_add_ipc_share(struct loadparm_context *lp_ctx)
 NTSTATUS ntvfs_init(struct loadparm_context *lp_ctx)
 {
 	static bool initialized = false;
-#define _MODULE_PROTO(init) extern NTSTATUS init(void);
+#define _MODULE_PROTO(init) extern NTSTATUS init(TALLOC_CTX *);
 	STATIC_ntvfs_MODULES_PROTO;
 	init_module_fn static_init[] = { STATIC_ntvfs_MODULES };
 	init_module_fn *shared_init;
@@ -238,8 +238,8 @@ NTSTATUS ntvfs_init(struct loadparm_context *lp_ctx)
 	
 	shared_init = load_samba_modules(NULL, "ntvfs");
 
-	run_init_functions(static_init);
-	run_init_functions(shared_init);
+	run_init_functions(NULL, static_init);
+	run_init_functions(NULL, shared_init);
 
 	talloc_free(shared_init);
 

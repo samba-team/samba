@@ -25,6 +25,6 @@
 
 /* The following definitions come from passdb/pdb_smbpasswd.c  */
 
-NTSTATUS pdb_smbpasswd_init(void) ;
+NTSTATUS pdb_smbpasswd_init(TALLOC_CTX *) ;
 
 #endif /* _PASSDB_PDB_SMBPASSWD_H_ */

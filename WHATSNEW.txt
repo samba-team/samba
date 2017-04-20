@@ -60,6 +60,25 @@ was using this call please raise the issue on
 samba-technical@lists.samba.org in order to design a supported
 way of obtaining the same functionality.
 
+Change of loadable module interface
+-----------------------------------
+
+The _init function of all loadable modules in Samba has changed
+from:
+
+NTSTATUS _init(void);
+
+to:
+
+NTSTATUS _init(TALLOC_CTX *);
+
+This allows a program loading a module to pass in a long-lived
+talloc context (which must be guaranteed to be alive for the
+lifetime of the module). This allows modules to avoid use of
+the talloc_autofree_context() (which is inherently thread-unsafe)
+and still be valgrind-clean on exit. Modules that don't need to
+free long-lived data on exist should use the NULL talloc context.
+
 KNOWN ISSUES
 ============
 

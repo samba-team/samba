@@ -766,8 +766,8 @@ static struct vfs_fn_pointers solarisacl_fns = {
 	.sys_acl_delete_def_file_fn = solarisacl_sys_acl_delete_def_file,
 };
 
-NTSTATUS vfs_solarisacl_init(void);
-NTSTATUS vfs_solarisacl_init(void)
+NTSTATUS vfs_solarisacl_init(TALLOC_CTX *);
+NTSTATUS vfs_solarisacl_init(TALLOC_CTX *ctx)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "solarisacl",
 				&solarisacl_fns);

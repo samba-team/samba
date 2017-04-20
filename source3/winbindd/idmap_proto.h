@@ -40,15 +40,15 @@ struct idmap_domain *idmap_find_domain(const char *domname);
 
 /* The following definitions come from winbindd/idmap_nss.c  */
 
-NTSTATUS idmap_nss_init(void);
+NTSTATUS idmap_nss_init(TALLOC_CTX *mem_ctx);
 
 /* The following definitions come from winbindd/idmap_passdb.c  */
 
-NTSTATUS idmap_passdb_init(void);
+NTSTATUS idmap_passdb_init(TALLOC_CTX *mem_ctx);
 
 /* The following definitions come from winbindd/idmap_tdb.c  */
 
-NTSTATUS idmap_tdb_init(void);
+NTSTATUS idmap_tdb_init(TALLOC_CTX *mem_ctx);
 
 /* The following definitions come from winbindd/idmap_util.c  */
 
@@ -64,6 +64,6 @@ struct id_map **id_map_ptrs_init(TALLOC_CTX *mem_ctx, size_t num_ids);
 /* max number of ids requested per LDAP batch query */
 #define IDMAP_LDAP_MAX_IDS 30
 
-NTSTATUS idmap_ad_nss_init(void);
+NTSTATUS idmap_ad_nss_init(TALLOC_CTX *mem_ctx);
 
 #endif /* _WINBINDD_IDMAP_PROTO_H_ */

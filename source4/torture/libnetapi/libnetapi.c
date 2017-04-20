@@ -80,7 +80,7 @@ static bool torture_libnetapi_initialize(struct torture_context *tctx)
 	return true;
 }
 
-NTSTATUS torture_libnetapi_init(void)
+NTSTATUS torture_libnetapi_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite;
 

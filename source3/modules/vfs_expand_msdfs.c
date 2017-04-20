@@ -226,8 +226,8 @@ static struct vfs_fn_pointers vfs_expand_msdfs_fns = {
 	.readlink_fn = expand_msdfs_readlink
 };
 
-NTSTATUS vfs_expand_msdfs_init(void);
-NTSTATUS vfs_expand_msdfs_init(void)
+NTSTATUS vfs_expand_msdfs_init(TALLOC_CTX *);
+NTSTATUS vfs_expand_msdfs_init(TALLOC_CTX *ctx)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "expand_msdfs",
 				&vfs_expand_msdfs_fns);

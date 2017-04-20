@@ -843,7 +843,7 @@ static struct idmap_methods rfc2307_methods = {
 };
 
 static_decl_idmap;
-NTSTATUS idmap_rfc2307_init(void)
+NTSTATUS idmap_rfc2307_init(TALLOC_CTX *ctx)
 {
 	return smb_register_idmap(SMB_IDMAP_INTERFACE_VERSION, "rfc2307",
 				  &rfc2307_methods);

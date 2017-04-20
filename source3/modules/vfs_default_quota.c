@@ -225,8 +225,8 @@ static struct vfs_fn_pointers vfs_default_quota_fns = {
 	.set_quota_fn = default_quota_set_quota
 };
 
-NTSTATUS vfs_default_quota_init(void);
-NTSTATUS vfs_default_quota_init(void)
+NTSTATUS vfs_default_quota_init(TALLOC_CTX *);
+NTSTATUS vfs_default_quota_init(TALLOC_CTX *ctx)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, DEFAULT_QUOTA_NAME,
 				&vfs_default_quota_fns);

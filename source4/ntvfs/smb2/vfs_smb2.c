@@ -41,7 +41,7 @@
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
 
-NTSTATUS ntvfs_smb2_init(void);
+NTSTATUS ntvfs_smb2_init(TALLOC_CTX *);
 
 struct cvfs_file {
 	struct cvfs_file *prev, *next;
@@ -847,7 +847,7 @@ static NTSTATUS cvfs_notify(struct ntvfs_module_context *ntvfs,
 /*
   initialise the CIFS->CIFS backend, registering ourselves with the ntvfs subsystem
  */
-NTSTATUS ntvfs_smb2_init(void)
+NTSTATUS ntvfs_smb2_init(TALLOC_CTX *ctx)
 {
 	NTSTATUS ret;
 	struct ntvfs_ops ops;

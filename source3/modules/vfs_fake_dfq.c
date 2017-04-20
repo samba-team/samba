@@ -175,7 +175,7 @@ struct vfs_fn_pointers vfs_fake_dfq_fns = {
 };
 
 static_decl_vfs;
-NTSTATUS vfs_fake_dfq_init(void)
+NTSTATUS vfs_fake_dfq_init(TALLOC_CTX *ctx)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "fake_dfq",
 				&vfs_fake_dfq_fns);

@@ -108,8 +108,8 @@ static struct vfs_fn_pointers linux_xfs_sgid_fns = {
 	.chmod_acl_fn = linux_xfs_sgid_chmod_acl,
 };
 
-NTSTATUS vfs_linux_xfs_sgid_init(void);
-NTSTATUS vfs_linux_xfs_sgid_init(void)
+NTSTATUS vfs_linux_xfs_sgid_init(TALLOC_CTX *);
+NTSTATUS vfs_linux_xfs_sgid_init(TALLOC_CTX *ctx)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION,
 				"linux_xfs_sgid", &linux_xfs_sgid_fns);

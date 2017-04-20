@@ -105,8 +105,8 @@ static struct vfs_fn_pointers vfs_readonly_fns = {
 	.connect_fn = readonly_connect
 };
 
-NTSTATUS vfs_readonly_init(void);
-NTSTATUS vfs_readonly_init(void)
+NTSTATUS vfs_readonly_init(TALLOC_CTX *);
+NTSTATUS vfs_readonly_init(TALLOC_CTX *ctx)
 {
   return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, MODULE_NAME,
 			  &vfs_readonly_fns);

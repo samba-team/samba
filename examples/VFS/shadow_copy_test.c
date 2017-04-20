@@ -84,7 +84,7 @@ static struct vfs_fn_pointers vfs_test_shadow_copy_fns = {
 };
 
 static_decl_vfs;
-NTSTATUS vfs_shadow_copy_test_init(void)
+NTSTATUS vfs_shadow_copy_test_init(TALLOC_CTX *ctx)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION,
 				"shadow_copy_test",

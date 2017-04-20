@@ -201,7 +201,7 @@ bool torture_libsmbclient_options(struct torture_context *tctx)
 	return true;
 }
 
-NTSTATUS torture_libsmbclient_init(void)
+NTSTATUS torture_libsmbclient_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite;
 

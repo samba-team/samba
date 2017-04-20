@@ -1165,7 +1165,7 @@ static struct vfs_fn_pointers hpuxacl_fns = {
 	.sys_acl_delete_def_file_fn = hpuxacl_sys_acl_delete_def_file,
 };
 
-NTSTATUS vfs_hpuxacl_init(void)
+NTSTATUS vfs_hpuxacl_init(TALLOC_CTX *ctx)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "hpuxacl",
 				&hpuxacl_fns);

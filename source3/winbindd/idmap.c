@@ -143,7 +143,7 @@ static bool idmap_init(void)
 
 	DEBUG(10, ("idmap_init(): calling static_init_idmap\n"));
 
-	static_init_idmap;
+	static_init_idmap(NULL);
 
 	initialized = true;
 

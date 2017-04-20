@@ -1297,7 +1297,7 @@ static NTSTATUS ipc_ioctl(struct ntvfs_module_context *ntvfs,
 /*
   initialialise the IPC backend, registering ourselves with the ntvfs subsystem
  */
-NTSTATUS ntvfs_ipc_init(void)
+NTSTATUS ntvfs_ipc_init(TALLOC_CTX *ctx)
 {
 	NTSTATUS ret;
 	struct ntvfs_ops ops;

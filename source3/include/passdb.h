@@ -418,9 +418,10 @@ enum pdb_policy_type {
  * Changed to 23, new idmap control functions
  * Changed to 24, removed uid_to_sid and gid_to_sid, replaced with id_to_sid
  * Leave at 24, add optional get_trusteddom_creds()
+ * Change to 25, loadable modules now have a TALLOC_CTX * parameter in init.
  */
 
-#define PASSDB_INTERFACE_VERSION 24
+#define PASSDB_INTERFACE_VERSION 25
 
 struct pdb_methods 
 {

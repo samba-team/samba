@@ -90,7 +90,7 @@ NTSTATUS nss_close( const char *parameters );
 
 /* The following definitions come from winbindd/nss_info_template.c  */
 
-NTSTATUS nss_info_template_init( void );
+NTSTATUS nss_info_template_init(TALLOC_CTX *mem_ctx);
 
 #endif /* _IDMAP_NSS_H_ */
 

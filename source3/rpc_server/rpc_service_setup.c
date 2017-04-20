@@ -531,7 +531,7 @@ bool dcesrv_ep_setup(struct tevent_context *ev_ctx,
 	}
 
 	/* Initialize static subsystems */
-	static_init_rpc;
+	static_init_rpc(NULL);
 
 	/* Initialize shared modules */
 	mod_init_fns = load_samba_modules(tmp_ctx, "rpc");
@@ -547,7 +547,7 @@ bool dcesrv_ep_setup(struct tevent_context *ev_ctx,
 		goto done;
 	}
 
-	ok = run_init_functions(mod_init_fns);
+	ok = run_init_functions(NULL, mod_init_fns);
 	if (!ok) {
 		DBG_ERR("Initializing shared RPC modules failed\n");
 		goto done;

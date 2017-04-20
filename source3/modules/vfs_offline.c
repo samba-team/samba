@@ -49,8 +49,8 @@ static struct vfs_fn_pointers offline_fns = {
 	.fget_dos_attributes_fn = offline_fget_dos_attributes,
 };
 
-NTSTATUS vfs_offline_init(void);
-NTSTATUS vfs_offline_init(void)
+NTSTATUS vfs_offline_init(TALLOC_CTX *);
+NTSTATUS vfs_offline_init(TALLOC_CTX *ctx)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "offline",
 				&offline_fns);

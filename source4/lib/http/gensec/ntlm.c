@@ -25,7 +25,7 @@
 #include "auth/gensec/gensec_internal.h"
 #include "lib/util/base64.h"
 
-_PUBLIC_ NTSTATUS gensec_http_ntlm_init(void);
+_PUBLIC_ NTSTATUS gensec_http_ntlm_init(TALLOC_CTX *);
 
 struct gensec_http_ntlm_state {
 	struct gensec_security *sub;
@@ -106,7 +106,7 @@ static const struct gensec_security_ops gensec_http_ntlm_security_ops = {
 	.priority       = GENSEC_EXTERNAL,
 };
 
-_PUBLIC_ NTSTATUS gensec_http_ntlm_init(void)
+_PUBLIC_ NTSTATUS gensec_http_ntlm_init(TALLOC_CTX *ctx)
 {
 	NTSTATUS status;
 

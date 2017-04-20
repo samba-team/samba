@@ -30,7 +30,7 @@
 #include "lib/param/param.h"
 #include "tsocket.h"
 
-_PUBLIC_ NTSTATUS gensec_ncalrpc_as_system_init(void);
+_PUBLIC_ NTSTATUS gensec_ncalrpc_as_system_init(TALLOC_CTX *ctx);
 
 struct gensec_ncalrpc_state {
 	enum {
@@ -338,7 +338,7 @@ static const struct gensec_security_ops gensec_ncalrpc_security_ops = {
 	.priority       = GENSEC_EXTERNAL,
 };
 
-_PUBLIC_ NTSTATUS gensec_ncalrpc_as_system_init(void)
+_PUBLIC_ NTSTATUS gensec_ncalrpc_as_system_init(TALLOC_CTX *ctx)
 {
 	NTSTATUS status;
 

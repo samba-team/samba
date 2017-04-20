@@ -188,7 +188,7 @@ static NTSTATUS auth_init_sam_netlogon3(struct auth_context *auth_context,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS auth_sam_init(void)
+NTSTATUS auth_sam_init(TALLOC_CTX *mem_ctx)
 {
 	smb_register_auth(AUTH_INTERFACE_VERSION, "sam", auth_init_sam);
 	smb_register_auth(AUTH_INTERFACE_VERSION, "sam_ignoredomain", auth_init_sam_ignoredomain);

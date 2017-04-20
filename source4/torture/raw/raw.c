@@ -23,7 +23,7 @@
 #include "torture/smbtorture.h"
 #include "torture/raw/proto.h"
 
-NTSTATUS torture_raw_init(void)
+NTSTATUS torture_raw_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(
 		talloc_autofree_context(), "raw");

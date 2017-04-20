@@ -676,8 +676,8 @@ static struct vfs_fn_pointers btrfs_fns = {
 	.snap_delete_fn = btrfs_snap_delete,
 };
 
-NTSTATUS vfs_btrfs_init(void);
-NTSTATUS vfs_btrfs_init(void)
+NTSTATUS vfs_btrfs_init(TALLOC_CTX *);
+NTSTATUS vfs_btrfs_init(TALLOC_CTX *ctx)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION,
 				"btrfs", &btrfs_fns);

@@ -198,8 +198,8 @@ static struct vfs_fn_pointers vfs_crossrename_fns = {
 	.rename_fn = crossrename_rename
 };
 
-NTSTATUS vfs_crossrename_init(void);
-NTSTATUS vfs_crossrename_init(void)
+NTSTATUS vfs_crossrename_init(TALLOC_CTX *);
+NTSTATUS vfs_crossrename_init(TALLOC_CTX *ctx)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, MODULE,
 				&vfs_crossrename_fns);

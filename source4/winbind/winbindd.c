@@ -86,9 +86,9 @@ static void winbindd_task_init(struct task_server *task)
 }
 
 /* called at winbindd startup - register ourselves as a server service */
-NTSTATUS server_service_winbindd_init(void);
+NTSTATUS server_service_winbindd_init(TALLOC_CTX *);
 
-NTSTATUS server_service_winbindd_init(void)
+NTSTATUS server_service_winbindd_init(TALLOC_CTX *ctx)
 {
 	NTSTATUS status = register_server_service("winbindd", winbindd_task_init);
 	if (!NT_STATUS_IS_OK(status)) {

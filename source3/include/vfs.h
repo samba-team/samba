@@ -195,8 +195,9 @@
 /* Version 35 - Add bool use_ofd_locks to struct files_struct */
 /* Bump to version 36 - Samba 4.6 will ship with that */
 /* Version 36 - Remove is_offline and set_offline */
+/* Version 37 - Module init functions now take a TALLOC_CTX * parameter. */
 
-#define SMB_VFS_INTERFACE_VERSION 36
+#define SMB_VFS_INTERFACE_VERSION 37
 
 /*
     All intercepted VFS operations must be declared as static functions inside module source

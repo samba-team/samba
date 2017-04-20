@@ -931,7 +931,7 @@ static struct idmap_methods ad_methods = {
 };
 
 static_decl_idmap;
-NTSTATUS idmap_ad_init(void)
+NTSTATUS idmap_ad_init(TALLOC_CTX *ctx)
 {
 	NTSTATUS status;
 
@@ -941,7 +941,7 @@ NTSTATUS idmap_ad_init(void)
 		return status;
 	}
 
-	status = idmap_ad_nss_init();
+	status = idmap_ad_nss_init(ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

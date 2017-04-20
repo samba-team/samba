@@ -1080,8 +1080,8 @@ static struct torture_suite *dlz_bind9_suite(TALLOC_CTX *ctx)
 /**
  * DNS torture module initialization
  */
-NTSTATUS torture_bind_dns_init(void);
-NTSTATUS torture_bind_dns_init(void)
+NTSTATUS torture_bind_dns_init(TALLOC_CTX *);
+NTSTATUS torture_bind_dns_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite;
 	TALLOC_CTX *mem_ctx = talloc_autofree_context();

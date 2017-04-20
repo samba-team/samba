@@ -3104,8 +3104,8 @@ static struct vfs_fn_pointers vfs_shadow_copy2_fns = {
 	.connectpath_fn = shadow_copy2_connectpath,
 };
 
-NTSTATUS vfs_shadow_copy2_init(void);
-NTSTATUS vfs_shadow_copy2_init(void)
+NTSTATUS vfs_shadow_copy2_init(TALLOC_CTX *);
+NTSTATUS vfs_shadow_copy2_init(TALLOC_CTX *ctx)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION,
 				"shadow_copy2", &vfs_shadow_copy2_fns);

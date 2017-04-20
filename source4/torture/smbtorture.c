@@ -560,7 +560,7 @@ int main(int argc, const char *argv[])
 		if (fn == NULL) 
 			d_printf("Unable to load module from %s\n", poptGetOptArg(pc));
 		else {
-			status = fn();
+			status = fn(NULL);
 			if (NT_STATUS_IS_ERR(status)) {
 				d_printf("Error initializing module %s: %s\n", 
 					poptGetOptArg(pc), nt_errstr(status));

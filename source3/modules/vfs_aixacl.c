@@ -189,8 +189,8 @@ static struct vfs_fn_pointers vfs_aixacl_fns = {
 	.sys_acl_delete_def_file_fn = aixacl_sys_acl_delete_def_file,
 };
 
-NTSTATUS vfs_aixacl_init(void);
-NTSTATUS vfs_aixacl_init(void)
+NTSTATUS vfs_aixacl_init(TALLOC_CTX *);
+NTSTATUS vfs_aixacl_init(TALLOC_CTX *ctx)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "aixacl",
 				&vfs_aixacl_fns);

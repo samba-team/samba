@@ -1857,14 +1857,14 @@ main() {
         if p in static_list:
             decl_list=""
             for entry in static_list[p]:
-                decl_list += "extern NTSTATUS %s_init(void); " % entry
+                decl_list += "extern NTSTATUS %s_init(TALLOC_CTX *mem_ctx); " % entry
                 conf.env[static_env].append('%s' % entry)
             decl_list = decl_list.rstrip()
             conf.DEFINE('static_decl_%s' % p, decl_list)
-            conf.DEFINE('static_init_%s' % p, '{ %s_init(); }' % '_init();  '.join(static_list[p]))
+            conf.DEFINE('static_init_%s(mem_ctx)' % p, '{ %s_init((mem_ctx)); }' % '_init((mem_ctx));  '.join(static_list[p]))
         else:
             conf.DEFINE('static_decl_%s' % p, '')
-            conf.DEFINE('static_init_%s' % p, '{}')
+            conf.DEFINE('static_init_%s(mem_ctx)' % p, '{}')
         if p in shared_list:
             for entry in shared_list[p]:
                 conf.DEFINE('%s_init' % entry, 'samba_init_module')

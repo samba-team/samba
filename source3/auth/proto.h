@@ -95,12 +95,12 @@ NTSTATUS auth_check_ntlm_password(TALLOC_CTX *mem_ctx,
 
 /* The following definitions come from auth/auth_builtin.c  */
 
-NTSTATUS auth_builtin_init(void);
+NTSTATUS auth_builtin_init(TALLOC_CTX *mem_ctx);
 
 /* The following definitions come from auth/auth_domain.c  */
 
 void attempt_machine_password_change(void);
-NTSTATUS auth_domain_init(void);
+NTSTATUS auth_domain_init(TALLOC_CTX *mem_ctx);
 
 /* The following definitions come from auth/auth_generic.c  */
 
@@ -149,11 +149,11 @@ NTSTATUS check_sam_security_info3(const DATA_BLOB *challenge,
 				  TALLOC_CTX *mem_ctx,
 				  const struct auth_usersupplied_info *user_info,
 				  struct netr_SamInfo3 **pinfo3);
-NTSTATUS auth_sam_init(void);
+NTSTATUS auth_sam_init(TALLOC_CTX *mem_ctx);
 
 /* The following definitions come from auth/auth_unix.c  */
 
-NTSTATUS auth_unix_init(void);
+NTSTATUS auth_unix_init(TALLOC_CTX *mem_ctx);
 
 /* The following definitions come from auth/auth_util.c  */
 struct tsocket_address;
@@ -302,7 +302,7 @@ NTSTATUS do_map_to_guest_server_info(TALLOC_CTX *mem_ctx,
 
 /* The following definitions come from auth/auth_winbind.c  */
 
-NTSTATUS auth_winbind_init(void);
+NTSTATUS auth_winbind_init(TALLOC_CTX *mem_ctx);
 
 /* The following definitions come from auth/server_info.c  */
 
@@ -409,6 +409,6 @@ NTSTATUS make_session_info_krb5(TALLOC_CTX *mem_ctx,
 
 /* The following definitions come from auth/auth_samba4.c  */
 
-NTSTATUS auth_samba4_init(void);
+NTSTATUS auth_samba4_init(TALLOC_CTX *mem_ctx);
 
 #endif /* _AUTH_PROTO_H_ */

@@ -20,7 +20,8 @@
 #ifndef _SMB_PERFCOUNT_H_
 #define _SMB_PERFCOUNT_H_
 
-#define SMB_PERFCOUNTER_INTERFACE_VERSION	1
+/* Change to 2, loadable modules now take a TALLOC_CTX * parameter. */
+#define SMB_PERFCOUNTER_INTERFACE_VERSION	2
 
 struct smb_perfcount_data{
 	struct smb_perfcount_handlers *handlers;

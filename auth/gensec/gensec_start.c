@@ -956,7 +956,7 @@ bool gensec_setting_bool(struct gensec_settings *settings, const char *mechanism
 _PUBLIC_ NTSTATUS gensec_init(void)
 {
 	static bool initialized = false;
-#define _MODULE_PROTO(init) extern NTSTATUS init(void);
+#define _MODULE_PROTO(init) extern NTSTATUS init(TALLOC_CTX *);
 #ifdef STATIC_gensec_MODULES
 	STATIC_gensec_MODULES_PROTO;
 	init_module_fn static_init[] = { STATIC_gensec_MODULES };
@@ -970,8 +970,8 @@ _PUBLIC_ NTSTATUS gensec_init(void)
 
 	shared_init = load_samba_modules(NULL, "gensec");
 
-	run_init_functions(static_init);
-	run_init_functions(shared_init);
+	run_init_functions(NULL, static_init);
+	run_init_functions(NULL, shared_init);
 
 	talloc_free(shared_init);
 

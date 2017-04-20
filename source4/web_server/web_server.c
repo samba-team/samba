@@ -28,7 +28,7 @@
 #include "lib/socket/netif.h"
 #include "param/param.h"
 
-NTSTATUS server_service_web_init(void);
+NTSTATUS server_service_web_init(TALLOC_CTX *);
 
 /* don't allow connections to hang around forever */
 #define HTTP_TIMEOUT 120
@@ -370,7 +370,7 @@ failed:
 
 
 /* called at smbd startup - register ourselves as a server service */
-NTSTATUS server_service_web_init(void)
+NTSTATUS server_service_web_init(TALLOC_CTX *ctx)
 {
 	return register_server_service("web", websrv_task_init);
 }

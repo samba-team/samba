@@ -86,8 +86,8 @@ static struct vfs_fn_pointers vfs_worm_fns = {
 	.create_file_fn = vfs_worm_create_file,
 };
 
-NTSTATUS vfs_worm_init(void);
-NTSTATUS vfs_worm_init(void)
+NTSTATUS vfs_worm_init(TALLOC_CTX *);
+NTSTATUS vfs_worm_init(TALLOC_CTX *ctx)
 {
 	NTSTATUS ret;
 

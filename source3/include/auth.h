@@ -140,7 +140,8 @@ enum session_key_use_intent {
 /* Changed from 1 -> 2 to add the logon_parameters field. */
 /* Changed from 2 -> 3 when we reworked many auth structures to use IDL or be in common with Samba4 */
 /* Changed from 3 -> 4 when we reworked added the flags */
-#define AUTH_INTERFACE_VERSION 4
+/* Changed from 4 -> 5 as module init functions now take a TALLOC_CTX * */
+#define AUTH_INTERFACE_VERSION 5
 
 #include "auth/proto.h"
 

@@ -508,8 +508,8 @@ static struct vfs_fn_pointers vfs_fake_acls_fns = {
 	
 };
 
-NTSTATUS vfs_fake_acls_init(void);
-NTSTATUS vfs_fake_acls_init(void)
+NTSTATUS vfs_fake_acls_init(TALLOC_CTX *);
+NTSTATUS vfs_fake_acls_init(TALLOC_CTX *ctx)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "fake_acls",
 				&vfs_fake_acls_fns);

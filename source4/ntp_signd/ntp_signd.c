@@ -41,7 +41,7 @@
 #include "system/network.h"
 #include "system/passwd.h"
 
-NTSTATUS server_service_ntp_signd_init(void);
+NTSTATUS server_service_ntp_signd_init(TALLOC_CTX *);
 
 /*
   top level context structure for the ntp_signd server
@@ -552,7 +552,7 @@ static void ntp_signd_task_init(struct task_server *task)
 
 
 /* called at smbd startup - register ourselves as a server service */
-NTSTATUS server_service_ntp_signd_init(void)
+NTSTATUS server_service_ntp_signd_init(TALLOC_CTX *ctx)
 {
 	return register_server_service("ntp_signd", ntp_signd_task_init);
 }

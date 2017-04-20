@@ -34,7 +34,7 @@
 
 #undef strcasecmp
 
-_PUBLIC_ NTSTATUS gensec_spnego_init(void);
+_PUBLIC_ NTSTATUS gensec_spnego_init(TALLOC_CTX *ctx);
 
 enum spnego_state_position {
 	SPNEGO_SERVER_START,
@@ -1694,7 +1694,7 @@ static const struct gensec_security_ops gensec_spnego_security_ops = {
 	.priority         = GENSEC_SPNEGO
 };
 
-_PUBLIC_ NTSTATUS gensec_spnego_init(void)
+_PUBLIC_ NTSTATUS gensec_spnego_init(TALLOC_CTX *ctx)
 {
 	NTSTATUS ret;
 	ret = gensec_register(&gensec_spnego_security_ops);

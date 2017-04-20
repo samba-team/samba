@@ -129,7 +129,7 @@ NTSTATUS torture_ldap_close(struct ldap_connection *conn)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS torture_ldap_init(void)
+NTSTATUS torture_ldap_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "ldap");
 	torture_suite_add_simple_test(suite, "bench-cldap", torture_bench_cldap);

@@ -41,7 +41,7 @@
 #include "librpc/gen_ndr/ndr_irpc.h"
 #include "libds/common/roles.h"
 
-NTSTATUS server_service_dnsupdate_init(void);
+NTSTATUS server_service_dnsupdate_init(TALLOC_CTX *);
 
 struct dnsupdate_service {
 	struct task_server *task;
@@ -665,7 +665,7 @@ static void dnsupdate_task_init(struct task_server *task)
 /*
   register ourselves as a available server
 */
-NTSTATUS server_service_dnsupdate_init(void)
+NTSTATUS server_service_dnsupdate_init(TALLOC_CTX *ctx)
 {
 	return register_server_service("dnsupdate", dnsupdate_task_init);
 }

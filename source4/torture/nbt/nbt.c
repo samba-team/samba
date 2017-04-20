@@ -48,7 +48,7 @@ bool torture_nbt_get_name(struct torture_context *tctx,
 	return true;
 }
 
-NTSTATUS torture_nbt_init(void)
+NTSTATUS torture_nbt_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(
 		talloc_autofree_context(), "nbt");

@@ -379,7 +379,7 @@ static struct vfs_fn_pointers vfs_dirsort_fns = {
 };
 
 static_decl_vfs;
-NTSTATUS vfs_dirsort_init(void)
+NTSTATUS vfs_dirsort_init(TALLOC_CTX *ctx)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "dirsort",
 				&vfs_dirsort_fns);

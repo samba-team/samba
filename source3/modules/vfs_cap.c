@@ -694,8 +694,8 @@ static struct vfs_fn_pointers vfs_cap_fns = {
 	.fsetxattr_fn = cap_fsetxattr
 };
 
-NTSTATUS vfs_cap_init(void);
-NTSTATUS vfs_cap_init(void)
+NTSTATUS vfs_cap_init(TALLOC_CTX *);
+NTSTATUS vfs_cap_init(TALLOC_CTX *ctx)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "cap",
 				&vfs_cap_fns);

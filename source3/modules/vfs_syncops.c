@@ -295,7 +295,7 @@ static struct vfs_fn_pointers vfs_syncops_fns = {
 };
 
 static_decl_vfs;
-NTSTATUS vfs_syncops_init(void)
+NTSTATUS vfs_syncops_init(TALLOC_CTX *ctx)
 {
 	NTSTATUS ret;
 

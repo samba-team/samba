@@ -482,7 +482,7 @@ _PUBLIC_ struct torture_test *torture_rpc_tcase_add_test_ex(
 	return test;
 }
 
-NTSTATUS torture_rpc_init(void)
+NTSTATUS torture_rpc_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "rpc");
 

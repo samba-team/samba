@@ -32,7 +32,7 @@
  * layer is already mutually authenticated.
  */
 
-NTSTATUS gensec_external_init(void);
+NTSTATUS gensec_external_init(TALLOC_CTX *ctx);
 
 static NTSTATUS gensec_external_start(struct gensec_security *gensec_security)
 {
@@ -111,7 +111,7 @@ static const struct gensec_security_ops gensec_external_ops = {
 };
 
 
-NTSTATUS gensec_external_init(void)
+NTSTATUS gensec_external_init(TALLOC_CTX *ctx)
 {
 	NTSTATUS ret;
 

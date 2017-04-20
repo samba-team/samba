@@ -167,7 +167,7 @@ static NTSTATUS auth_init_name_to_ntstatus(struct auth_context *auth_context, co
 
 #endif /* DEVELOPER */
 
-NTSTATUS auth_builtin_init(void)
+NTSTATUS auth_builtin_init(TALLOC_CTX *mem_ctx)
 {
 	smb_register_auth(AUTH_INTERFACE_VERSION, "guest", auth_init_guest);
 #ifdef DEVELOPER

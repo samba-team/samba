@@ -26,7 +26,7 @@
 #include "system/filesys.h"
 #include "cluster/cluster.h"
 
-NTSTATUS process_model_single_init(void);
+NTSTATUS process_model_single_init(TALLOC_CTX *);
 
 /*
   called when the process model is selected
@@ -132,7 +132,7 @@ const struct model_ops single_ops = {
   initialise the single process model, registering ourselves with the
   process model subsystem
  */
-NTSTATUS process_model_single_init(void)
+NTSTATUS process_model_single_init(TALLOC_CTX *ctx)
 {
 	return register_process_model(&single_ops);
 }

@@ -36,7 +36,7 @@
 #include "../lib/tsocket/tsocket.h"
 #include "libds/common/roles.h"
 
-NTSTATUS server_service_cldapd_init(void);
+NTSTATUS server_service_cldapd_init(TALLOC_CTX *);
 
 /*
   handle incoming cldap requests
@@ -241,7 +241,7 @@ static void cldapd_task_init(struct task_server *task)
 /*
   register ourselves as a available server
 */
-NTSTATUS server_service_cldapd_init(void)
+NTSTATUS server_service_cldapd_init(TALLOC_CTX *ctx)
 {
 	return register_server_service("cldap", cldapd_task_init);
 }

@@ -101,7 +101,7 @@ The prototype for these functions is:
 </para>
 
 <para><programlisting>
-NTSTATUS init_module(void);
+NTSTATUS init_module(TALLOC_CTX *);
 </programlisting></para>
 
 <para>This function should call one or more 
@@ -111,13 +111,23 @@ NT_STATUS_UNSUCCESSFUL or a more useful nt error code on failure.</para>
 <para>For example, pdb_ldap_init() contains: </para>
 
 <para><programlisting>
-NTSTATUS pdb_ldap_init(void)
+NTSTATUS pdb_ldap_init(TALLOC_CTX *)
 {
 smb_register_passdb(PASSDB_INTERFACE_VERSION, "ldapsam", pdb_init_ldapsam);
 smb_register_passdb(PASSDB_INTERFACE_VERSION, "ldapsam_nua", pdb_init_ldapsam_nua);
 	return NT_STATUS_OK;
 }
 </programlisting></para>
+
+<para>
+The TALLOC_CTX pointer passed as a parameter must be a long-lived context,
+that will stay around for as long as the program that loads the module
+exists. It allows the caller to taloc_free any long lived data the
+module choses to place on this context on program exit (giving a cleaner
+valgrind trace). It should be used by modules in place of talloc_autofree_context(),
+use of which makes programs thread-unsafe. Modules that don't care about
+free on exist should use the NULL talloc context.
+</para>
 
 <sect2>
 <title>Static/Shared selection in configure.in</title>

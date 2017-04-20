@@ -20,7 +20,7 @@
 #include "includes.h"
 #include "auth/auth.h"
 
-NTSTATUS server_service_auth_init(void)
+NTSTATUS server_service_auth_init(TALLOC_CTX *ctx)
 {
 	return auth4_init();
 }

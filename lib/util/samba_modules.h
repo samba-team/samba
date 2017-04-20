@@ -22,9 +22,9 @@
 #define _SAMBA_MODULES_H
 
 /* Module support */
-typedef NTSTATUS (*init_module_fn) (void);
+typedef NTSTATUS (*init_module_fn) (TALLOC_CTX *ctx);
 
-NTSTATUS samba_init_module(void);
+NTSTATUS samba_init_module(TALLOC_CTX *ctx);
 
 /* this needs to be a string which is not in the C library. We
    previously used "init_module", but that meant that modules which
@@ -44,7 +44,7 @@ init_module_fn load_module(const char *path, bool is_probe, void **handle);
  *
  * @return true if all functions ran successfully, false otherwise
  */
-bool run_init_functions(init_module_fn *fns);
+bool run_init_functions(TALLOC_CTX *ctx, init_module_fn *fns);
 
 /**
  * Load the initialization functions from DSO files for a specific subsystem.

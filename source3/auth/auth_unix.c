@@ -98,7 +98,7 @@ static NTSTATUS auth_init_unix(struct auth_context *auth_context, const char* pa
 	return NT_STATUS_OK;
 }
 
-NTSTATUS auth_unix_init(void)
+NTSTATUS auth_unix_init(TALLOC_CTX *mem_ctx)
 {
 	return smb_register_auth(AUTH_INTERFACE_VERSION, "unix", auth_init_unix);
 }

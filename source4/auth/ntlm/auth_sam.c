@@ -923,8 +923,8 @@ static const struct auth_operations sam_failtrusts_ops = {
 	.check_password	           = authsam_failtrusts_check_password,
 };
 
-_PUBLIC_ NTSTATUS auth4_sam_init(void);
-_PUBLIC_ NTSTATUS auth4_sam_init(void)
+_PUBLIC_ NTSTATUS auth4_sam_init(TALLOC_CTX *);
+_PUBLIC_ NTSTATUS auth4_sam_init(TALLOC_CTX *ctx)
 {
 	NTSTATUS ret;
 

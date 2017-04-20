@@ -919,8 +919,8 @@ static struct vfs_fn_pointers vfs_aio_fork_fns = {
 	.fsync_recv_fn = aio_fork_fsync_recv,
 };
 
-NTSTATUS vfs_aio_fork_init(void);
-NTSTATUS vfs_aio_fork_init(void)
+NTSTATUS vfs_aio_fork_init(TALLOC_CTX *);
+NTSTATUS vfs_aio_fork_init(TALLOC_CTX *ctx)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION,
 				"aio_fork", &vfs_aio_fork_fns);

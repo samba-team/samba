@@ -173,7 +173,7 @@ static NTSTATUS nss_init(const char **nss_list)
 
 	nss_backend = nss_get_backend("template");
 	if (nss_backend == NULL) {
-		static_init_nss_info;
+		static_init_nss_info(NULL);
 	}
 
 	/* Create the list of nss_domains (loading any shared plugins

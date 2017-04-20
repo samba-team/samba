@@ -79,7 +79,7 @@
 	NULL
 };
 
-NTSTATUS torture_local_init(void)
+NTSTATUS torture_local_init(TALLOC_CTX *ctx)
 {
 	int i;
 	struct torture_suite *suite = torture_suite_create(

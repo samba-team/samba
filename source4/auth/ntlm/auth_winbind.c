@@ -32,7 +32,7 @@
 #include "libcli/security/security.h"
 #include "dsdb/samdb/samdb.h"
 
-_PUBLIC_ NTSTATUS auth4_winbind_init(void);
+_PUBLIC_ NTSTATUS auth4_winbind_init(TALLOC_CTX *);
 
 static NTSTATUS winbind_want_check(struct auth_method_context *ctx,
 				   TALLOC_CTX *mem_ctx,
@@ -313,7 +313,7 @@ static const struct auth_operations winbind_wbclient_ops = {
 	.check_password	= winbind_check_password_wbclient
 };
 
-_PUBLIC_ NTSTATUS auth4_winbind_init(void)
+_PUBLIC_ NTSTATUS auth4_winbind_init(TALLOC_CTX *ctx)
 {
 	NTSTATUS ret;
 

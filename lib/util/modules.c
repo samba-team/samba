@@ -116,7 +116,7 @@ static init_module_fn *load_modules(TALLOC_CTX *mem_ctx, const char *path)
  *
  * @return true if all functions ran successfully, false otherwise
  */
-bool run_init_functions(init_module_fn *fns)
+bool run_init_functions(TALLOC_CTX *ctx, init_module_fn *fns)
 {
 	int i;
 	bool ret = true;
@@ -124,7 +124,7 @@ bool run_init_functions(init_module_fn *fns)
 	if (fns == NULL)
 		return true;
 
-	for (i = 0; fns[i]; i++) { ret &= (bool)NT_STATUS_IS_OK(fns[i]()); }
+	for (i = 0; fns[i]; i++) { ret &= (bool)NT_STATUS_IS_OK(fns[i](ctx)); }
 
 	return ret;
 }
@@ -195,7 +195,7 @@ static NTSTATUS do_smb_load_module(const char *subsystem,
 
 	DEBUG(2, ("Module '%s' loaded\n", module_name));
 
-	status = init();
+	status = init(NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Module '%s' initialization failed: %s\n",
 			  module_name, get_friendly_nt_error_msg(status)));

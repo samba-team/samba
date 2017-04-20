@@ -62,7 +62,7 @@ static struct torture_suite * torture_drs_unit_suite(TALLOC_CTX *mem_ctx,
 /**
  * DRSUAPI torture module initialization
  */
-NTSTATUS torture_drs_init(void)
+NTSTATUS torture_drs_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite;
 	TALLOC_CTX *mem_ctx = talloc_autofree_context();

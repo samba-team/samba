@@ -893,7 +893,7 @@ static NTSTATUS pdb_init_NDS_ldapsam(struct pdb_methods **pdb_method, const char
 	return nt_status;
 }
 
-NTSTATUS pdb_nds_init(void)
+NTSTATUS pdb_nds_init(TALLOC_CTX *ctx)
 {
 	NTSTATUS nt_status;
 	if (!NT_STATUS_IS_OK(nt_status = smb_register_passdb(PASSDB_INTERFACE_VERSION, "NDS_ldapsam", pdb_init_NDS_ldapsam)))

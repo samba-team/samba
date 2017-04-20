@@ -28,7 +28,7 @@
 #include "system/filesys.h"
 #include "lib/util/sys_rw.h"
 
-NTSTATUS ntvfs_nbench_init(void);
+NTSTATUS ntvfs_nbench_init(TALLOC_CTX *);
 
 /* this is stored in ntvfs_private */
 struct nbench_private {
@@ -923,7 +923,7 @@ static NTSTATUS nbench_trans(struct ntvfs_module_context *ntvfs,
 /*
   initialise the nbench backend, registering ourselves with the ntvfs subsystem
  */
-NTSTATUS ntvfs_nbench_init(void)
+NTSTATUS ntvfs_nbench_init(TALLOC_CTX *ctx)
 {
 	NTSTATUS ret;
 	struct ntvfs_ops ops;

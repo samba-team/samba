@@ -2427,7 +2427,7 @@ static struct vfs_fn_pointers vfs_catia_fns = {
 };
 
 static_decl_vfs;
-NTSTATUS vfs_catia_init(void)
+NTSTATUS vfs_catia_init(TALLOC_CTX *ctx)
 {
 	NTSTATUS ret;
 

@@ -1720,7 +1720,7 @@ static NTSTATUS pdb_init_smbpasswd( struct pdb_methods **pdb_method, const char 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS pdb_smbpasswd_init(void) 
+NTSTATUS pdb_smbpasswd_init(TALLOC_CTX *ctx) 
 {
 	return smb_register_passdb(PASSDB_INTERFACE_VERSION, "smbpasswd", pdb_init_smbpasswd);
 }

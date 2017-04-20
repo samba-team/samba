@@ -258,8 +258,8 @@ static struct vfs_fn_pointers vfs_fileid_fns = {
 	.file_id_create_fn = fileid_file_id_create
 };
 
-NTSTATUS vfs_fileid_init(void);
-NTSTATUS vfs_fileid_init(void)
+NTSTATUS vfs_fileid_init(TALLOC_CTX *);
+NTSTATUS vfs_fileid_init(TALLOC_CTX *ctx)
 {
 	NTSTATUS ret;
 

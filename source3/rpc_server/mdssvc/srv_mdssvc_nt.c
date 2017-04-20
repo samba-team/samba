@@ -86,7 +86,7 @@ static struct rpc_module_fns rpc_module_mdssvc_fns = {
 };
 
 static_decl_rpc;
-NTSTATUS rpc_mdssvc_module_init(void)
+NTSTATUS rpc_mdssvc_module_init(TALLOC_CTX *mem_ctx)
 {
 	DBG_DEBUG("Registering mdsvc RPC service\n");
 

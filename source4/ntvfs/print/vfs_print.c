@@ -26,7 +26,7 @@
 #include "ntvfs/ntvfs.h"
 #include "param/param.h"
 
-NTSTATUS ntvfs_print_init(void);
+NTSTATUS ntvfs_print_init(TALLOC_CTX *);
 
 /*
   connect to a share - used when a tree_connect operation comes
@@ -102,7 +102,7 @@ static NTSTATUS print_ioctl(struct ntvfs_module_context *ntvfs,
 /*
   initialialise the print backend, registering ourselves with the ntvfs subsystem
  */
-NTSTATUS ntvfs_print_init(void)
+NTSTATUS ntvfs_print_init(TALLOC_CTX *ctx)
 {
 	NTSTATUS ret;
 	struct ntvfs_ops ops;

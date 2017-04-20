@@ -133,7 +133,7 @@ bool vfs_init_custom(connection_struct *conn, const char *vfs_object)
 	}
 
 	if(!backends) {
-		static_init_vfs;
+		static_init_vfs(NULL);
 	}
 
 	DEBUG(3, ("Initialising custom vfs hooks from [%s]\n", vfs_object));

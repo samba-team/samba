@@ -501,7 +501,7 @@ static bool test_low_referral_level(struct torture_context *tctx,
 	return true;
 }
 
-NTSTATUS torture_dfs_init(void)
+NTSTATUS torture_dfs_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "dfs");
 	struct torture_suite *suite_basic = torture_suite_create(suite, "domain");

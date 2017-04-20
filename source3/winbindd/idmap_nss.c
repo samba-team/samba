@@ -202,7 +202,7 @@ static struct idmap_methods nss_methods = {
 	.sids_to_unixids = idmap_nss_sids_to_unixids,
 };
 
-NTSTATUS idmap_nss_init(void)
+NTSTATUS idmap_nss_init(TALLOC_CTX *mem_ctx)
 {
 	return smb_register_idmap(SMB_IDMAP_INTERFACE_VERSION, "nss", &nss_methods);
 }

@@ -5428,8 +5428,8 @@ static struct vfs_fn_pointers vfs_fruit_fns = {
 	.fset_nt_acl_fn = fruit_fset_nt_acl,
 };
 
-NTSTATUS vfs_fruit_init(void);
-NTSTATUS vfs_fruit_init(void)
+NTSTATUS vfs_fruit_init(TALLOC_CTX *);
+NTSTATUS vfs_fruit_init(TALLOC_CTX *ctx)
 {
 	NTSTATUS ret = smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "fruit",
 					&vfs_fruit_fns);

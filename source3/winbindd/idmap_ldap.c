@@ -1074,8 +1074,8 @@ static struct idmap_methods idmap_ldap_methods = {
 	.allocate_id = idmap_ldap_allocate_id,
 };
 
-NTSTATUS idmap_ldap_init(void);
-NTSTATUS idmap_ldap_init(void)
+NTSTATUS idmap_ldap_init(TALLOC_CTX *);
+NTSTATUS idmap_ldap_init(TALLOC_CTX *ctx)
 {
 	return smb_register_idmap(SMB_IDMAP_INTERFACE_VERSION, "ldap",
 				  &idmap_ldap_methods);

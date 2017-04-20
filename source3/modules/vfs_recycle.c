@@ -662,8 +662,8 @@ static struct vfs_fn_pointers vfs_recycle_fns = {
 	.unlink_fn = recycle_unlink
 };
 
-NTSTATUS vfs_recycle_init(void);
-NTSTATUS vfs_recycle_init(void)
+NTSTATUS vfs_recycle_init(TALLOC_CTX *);
+NTSTATUS vfs_recycle_init(TALLOC_CTX *ctx)
 {
 	NTSTATUS ret = smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "recycle",
 					&vfs_recycle_fns);

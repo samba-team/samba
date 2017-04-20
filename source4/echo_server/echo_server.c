@@ -33,7 +33,7 @@
 #include "lib/tsocket/tsocket.h"
 #include "libds/common/roles.h"
 
-NTSTATUS server_service_echo_init(void);
+NTSTATUS server_service_echo_init(TALLOC_CTX *);
 
 /* Structure to hold an echo server socket */
 struct echo_socket {
@@ -341,7 +341,7 @@ static void echo_task_init(struct task_server *task)
  * This is the function you need to put into the wscript_build file as
  * init_function. All the real work happens in "echo_task_init" above.
  */
-NTSTATUS server_service_echo_init(void)
+NTSTATUS server_service_echo_init(TALLOC_CTX *ctx)
 {
 	return register_server_service("echo", echo_task_init);
 }

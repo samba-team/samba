@@ -608,8 +608,8 @@ static struct vfs_fn_pointers tsmsm_fns = {
 	.fget_dos_attributes_fn = tsmsm_fget_dos_attributes,
 };
 
-NTSTATUS vfs_tsmsm_init(void);
-NTSTATUS vfs_tsmsm_init(void)
+NTSTATUS vfs_tsmsm_init(TALLOC_CTX *);
+NTSTATUS vfs_tsmsm_init(TALLOC_CTX *ctx)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION,
 				"tsmsm", &tsmsm_fns);

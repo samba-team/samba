@@ -38,7 +38,7 @@ static bool test_skip(struct torture_context *tctx)
 	return true;
 }
 
-NTSTATUS torture_krb5_init(void)
+NTSTATUS torture_krb5_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite =
 		torture_suite_create(talloc_autofree_context(), "krb5");

@@ -22,7 +22,7 @@
 #include "lib/com/com.h"
 #include "librpc/gen_ndr/com_dcom.h"
 
-NTSTATUS com_simple_init(void);
+NTSTATUS com_simple_init(TALLOC_CTX *);
 
 static struct IClassFactory_vtable simple_classobject_vtable;
 static struct IStream_vtable simple_IStream_vtable;
@@ -107,7 +107,7 @@ static struct IStream_vtable simple_IStream_vtable = {
 	simple_IStream_Write
 };
 
-NTSTATUS com_simple_init(void)
+NTSTATUS com_simple_init(TALLOC_CTX *ctx)
 {
 	struct GUID clsid;
 	struct IUnknown *class_object = talloc(talloc_autofree_context(), struct IUnknown);

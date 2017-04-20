@@ -86,7 +86,7 @@ static struct idmap_methods passdb_methods = {
 	.sids_to_unixids = idmap_pdb_sids_to_unixids,
 };
 
-NTSTATUS idmap_passdb_init(void)
+NTSTATUS idmap_passdb_init(TALLOC_CTX *mem_ctx)
 {
 	return smb_register_idmap(SMB_IDMAP_INTERFACE_VERSION, "passdb", &passdb_methods);
 }

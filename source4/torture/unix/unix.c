@@ -21,7 +21,7 @@
 #include "torture/smbtorture.h"
 #include "torture/unix/proto.h"
 
-NTSTATUS torture_unix_init(void)
+NTSTATUS torture_unix_init(TALLOC_CTX *ctx)
 {
         struct torture_suite *suite =
                 torture_suite_create(talloc_autofree_context(), "unix");

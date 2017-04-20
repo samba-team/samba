@@ -406,7 +406,7 @@ static NTSTATUS auth_init_trustdomain(struct auth_context *auth_context, const c
 	return NT_STATUS_OK;
 }
 
-NTSTATUS auth_domain_init(void) 
+NTSTATUS auth_domain_init(TALLOC_CTX *mem_ctx)
 {
 	smb_register_auth(AUTH_INTERFACE_VERSION, "trustdomain", auth_init_trustdomain);
 	smb_register_auth(AUTH_INTERFACE_VERSION, "ntdomain", auth_init_ntdomain);

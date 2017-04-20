@@ -685,7 +685,7 @@ static bool torture_krb5_as_req_aes_rc4(struct torture_context *tctx)
 					 TORTURE_KRB5_TEST_AES_RC4);
 }
 
-NTSTATUS torture_krb5_init(void)
+NTSTATUS torture_krb5_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "krb5");
 	struct torture_suite *kdc_suite = torture_suite_create(suite, "kdc");

@@ -832,14 +832,14 @@ const struct auth_critical_sizes *auth_interface_version(void)
 _PUBLIC_ NTSTATUS auth4_init(void)
 {
 	static bool initialized = false;
-#define _MODULE_PROTO(init) extern NTSTATUS init(void);
+#define _MODULE_PROTO(init) extern NTSTATUS init(TALLOC_CTX *);
 	STATIC_auth4_MODULES_PROTO;
 	init_module_fn static_init[] = { STATIC_auth4_MODULES };
 	
 	if (initialized) return NT_STATUS_OK;
 	initialized = true;
 	
-	run_init_functions(static_init);
+	run_init_functions(NULL, static_init);
 	
 	return NT_STATUS_OK;	
 }

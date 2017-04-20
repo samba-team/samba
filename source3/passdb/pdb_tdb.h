@@ -27,6 +27,6 @@
 #ifndef _PASSDB_PDB_TDB_H_
 #define _PASSDB_PDB_TDB_H_
 
-NTSTATUS pdb_tdbsam_init(void);
+NTSTATUS pdb_tdbsam_init(TALLOC_CTX *);
 
 #endif /* _PASSDB_PDB_TDB_H_ */

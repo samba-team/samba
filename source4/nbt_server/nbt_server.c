@@ -30,7 +30,7 @@
 #include "dsdb/samdb/samdb.h"
 #include "param/param.h"
 
-NTSTATUS server_service_nbtd_init(void);
+NTSTATUS server_service_nbtd_init(TALLOC_CTX *);
 
 /*
   startup the nbtd task
@@ -98,7 +98,7 @@ static void nbtd_task_init(struct task_server *task)
 /*
   register ourselves as a available server
 */
-NTSTATUS server_service_nbtd_init(void)
+NTSTATUS server_service_nbtd_init(TALLOC_CTX *ctx)
 {
 	return register_server_service("nbt", nbtd_task_init);
 }

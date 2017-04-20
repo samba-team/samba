@@ -193,8 +193,8 @@ static struct vfs_fn_pointers shell_snap_fns = {
 	.snap_delete_fn = shell_snap_delete,
 };
 
-NTSTATUS vfs_shell_snap_init(void);
-NTSTATUS vfs_shell_snap_init(void)
+NTSTATUS vfs_shell_snap_init(TALLOC_CTX *);
+NTSTATUS vfs_shell_snap_init(TALLOC_CTX *ctx)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION,
 				"shell_snap", &shell_snap_fns);

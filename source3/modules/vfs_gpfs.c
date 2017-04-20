@@ -2513,8 +2513,8 @@ static struct vfs_fn_pointers vfs_gpfs_fns = {
 	.ftruncate_fn = vfs_gpfs_ftruncate
 };
 
-NTSTATUS vfs_gpfs_init(void);
-NTSTATUS vfs_gpfs_init(void)
+NTSTATUS vfs_gpfs_init(TALLOC_CTX *);
+NTSTATUS vfs_gpfs_init(TALLOC_CTX *ctx)
 {
 	int ret;
 

@@ -39,7 +39,7 @@ struct standard_child_state {
 	struct tevent_fd *from_child_fde;
 };
 
-NTSTATUS process_model_standard_init(void);
+NTSTATUS process_model_standard_init(TALLOC_CTX *);
 
 /* we hold a pipe open in the parent, and the any child
    processes wait for EOF on that pipe. This ensures that
@@ -502,7 +502,7 @@ static const struct model_ops standard_ops = {
 /*
   initialise the standard process model, registering ourselves with the process model subsystem
  */
-NTSTATUS process_model_standard_init(void)
+NTSTATUS process_model_standard_init(TALLOC_CTX *ctx)
 {
 	return register_process_model(&standard_ops);
 }

@@ -2680,8 +2680,8 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 };
 
 
-NTSTATUS vfs_time_audit_init(void);
-NTSTATUS vfs_time_audit_init(void)
+NTSTATUS vfs_time_audit_init(TALLOC_CTX *);
+NTSTATUS vfs_time_audit_init(TALLOC_CTX *ctx)
 {
 	smb_vfs_assert_all_fns(&vfs_time_audit_fns, "time_audit");
 

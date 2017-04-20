@@ -645,8 +645,8 @@ static struct vfs_fn_pointers nfs4acl_xattr_fns = {
 	.fset_nt_acl_fn = nfs4acl_xattr_fset_nt_acl,
 };
 
-NTSTATUS vfs_nfs4acl_xattr_init(void);
-NTSTATUS vfs_nfs4acl_xattr_init(void)
+NTSTATUS vfs_nfs4acl_xattr_init(TALLOC_CTX *);
+NTSTATUS vfs_nfs4acl_xattr_init(TALLOC_CTX *ctx)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "nfs4acl_xattr",
 				&nfs4acl_xattr_fns);

@@ -441,7 +441,7 @@ static NTSTATUS netsec_outgoing_packet(struct schannel_state *state,
 	return NT_STATUS_OK;
 }
 
-_PUBLIC_ NTSTATUS gensec_schannel_init(void);
+_PUBLIC_ NTSTATUS gensec_schannel_init(TALLOC_CTX *ctx);
 
 static size_t schannel_sig_size(struct gensec_security *gensec_security, size_t data_size)
 {
@@ -849,7 +849,7 @@ static const struct gensec_security_ops gensec_schannel_security_ops = {
 	.priority       = GENSEC_SCHANNEL
 };
 
-_PUBLIC_ NTSTATUS gensec_schannel_init(void)
+_PUBLIC_ NTSTATUS gensec_schannel_init(TALLOC_CTX *ctx)
 {
 	NTSTATUS ret;
 	ret = gensec_register(&gensec_schannel_security_ops);

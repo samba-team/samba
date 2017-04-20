@@ -434,7 +434,7 @@ static struct idmap_methods db_methods = {
 	.allocate_id = idmap_tdb_common_get_new_id,
 };
 
-NTSTATUS idmap_tdb_init(void)
+NTSTATUS idmap_tdb_init(TALLOC_CTX *mem_ctx)
 {
 	DEBUG(10, ("calling idmap_tdb_init\n"));
 

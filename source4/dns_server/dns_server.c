@@ -52,7 +52,7 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_DNS
 
-NTSTATUS server_service_dns_init(void);
+NTSTATUS server_service_dns_init(TALLOC_CTX *);
 
 /* hold information about one dns socket */
 struct dns_socket {
@@ -927,7 +927,7 @@ static void dns_task_init(struct task_server *task)
 	}
 }
 
-NTSTATUS server_service_dns_init(void)
+NTSTATUS server_service_dns_init(TALLOC_CTX *ctx)
 {
 	return register_server_service("dns", dns_task_init);
 }

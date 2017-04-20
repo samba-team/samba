@@ -60,7 +60,7 @@ struct ldapsam_privates {
 
 const char** get_userattr_list( TALLOC_CTX *mem_ctx, int schema_ver );
 NTSTATUS pdb_ldapsam_init_common(struct pdb_methods **pdb_method, const char *location);
-NTSTATUS pdb_ldapsam_init(void);
+NTSTATUS pdb_ldapsam_init(TALLOC_CTX *);
 int ldapsam_search_suffix_by_name(struct ldapsam_privates *ldap_state,
                                   const char *user,
                                   LDAPMessage ** result,

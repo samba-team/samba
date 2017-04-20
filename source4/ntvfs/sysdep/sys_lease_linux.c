@@ -30,7 +30,7 @@
 #include "../lib/util/dlinklist.h"
 #include "cluster/cluster.h"
 
-NTSTATUS sys_lease_linux_init(void);
+NTSTATUS sys_lease_linux_init(TALLOC_CTX *);
 
 #define LINUX_LEASE_RT_SIGNAL (SIGRTMIN+1)
 
@@ -208,7 +208,7 @@ static struct sys_lease_ops linux_lease_ops = {
 /*
   initialialise the linux lease module
  */
-NTSTATUS sys_lease_linux_init(void)
+NTSTATUS sys_lease_linux_init(TALLOC_CTX *ctx)
 {
 	/* register ourselves as a system lease module */
 	return sys_lease_register(&linux_lease_ops);

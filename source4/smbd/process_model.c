@@ -101,7 +101,7 @@ _PUBLIC_ NTSTATUS register_process_model(const struct model_ops *ops)
 
 _PUBLIC_ NTSTATUS process_model_init(struct loadparm_context *lp_ctx)
 {
-#define _MODULE_PROTO(init) extern NTSTATUS init(void);
+#define _MODULE_PROTO(init) extern NTSTATUS init(TALLOC_CTX *);
 	STATIC_process_model_MODULES_PROTO;
 	init_module_fn static_init[] = { STATIC_process_model_MODULES };
 	init_module_fn *shared_init;
@@ -114,8 +114,8 @@ _PUBLIC_ NTSTATUS process_model_init(struct loadparm_context *lp_ctx)
 
 	shared_init = load_samba_modules(NULL, "process_model");
 	
-	run_init_functions(static_init);
-	run_init_functions(shared_init);
+	run_init_functions(NULL, static_init);
+	run_init_functions(NULL, shared_init);
 
 	talloc_free(shared_init);
 

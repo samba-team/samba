@@ -359,7 +359,7 @@ static NTSTATUS pvfs_trans(struct ntvfs_module_context *ntvfs,
 /*
   initialialise the POSIX disk backend, registering ourselves with the ntvfs subsystem
  */
-NTSTATUS ntvfs_posix_init(void)
+NTSTATUS ntvfs_posix_init(TALLOC_CTX *ctx)
 {
 	NTSTATUS ret;
 	struct ntvfs_ops ops;

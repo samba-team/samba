@@ -1348,7 +1348,7 @@ static NTSTATUS pdb_init_tdbsam(struct pdb_methods **pdb_method, const char *loc
 	return NT_STATUS_OK;
 }
 
-NTSTATUS pdb_tdbsam_init(void)
+NTSTATUS pdb_tdbsam_init(TALLOC_CTX *ctx)
 {
 	return smb_register_passdb(PASSDB_INTERFACE_VERSION, "tdbsam", pdb_init_tdbsam);
 }

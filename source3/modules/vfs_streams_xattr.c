@@ -1158,8 +1158,8 @@ static struct vfs_fn_pointers vfs_streams_xattr_fns = {
 	.streaminfo_fn = streams_xattr_streaminfo,
 };
 
-NTSTATUS vfs_streams_xattr_init(void);
-NTSTATUS vfs_streams_xattr_init(void)
+NTSTATUS vfs_streams_xattr_init(TALLOC_CTX *);
+NTSTATUS vfs_streams_xattr_init(TALLOC_CTX *ctx)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "streams_xattr",
 				&vfs_streams_xattr_fns);

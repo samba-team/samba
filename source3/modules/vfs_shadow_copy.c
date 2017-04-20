@@ -309,8 +309,8 @@ static struct vfs_fn_pointers vfs_shadow_copy_fns = {
 	.get_shadow_copy_data_fn = shadow_copy_get_shadow_copy_data,
 };
 
-NTSTATUS vfs_shadow_copy_init(void);
-NTSTATUS vfs_shadow_copy_init(void)
+NTSTATUS vfs_shadow_copy_init(TALLOC_CTX *);
+NTSTATUS vfs_shadow_copy_init(TALLOC_CTX *ctx)
 {
 	NTSTATUS ret = smb_register_vfs(SMB_VFS_INTERFACE_VERSION,
 					"shadow_copy", &vfs_shadow_copy_fns);

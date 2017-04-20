@@ -43,7 +43,7 @@
 #include "auth/kerberos/pac_utils.h"
 #include "gensec_krb5.h"
 
-_PUBLIC_ NTSTATUS gensec_krb5_init(void);
+_PUBLIC_ NTSTATUS gensec_krb5_init(TALLOC_CTX *);
 
 enum GENSEC_KRB5_STATE {
 	GENSEC_KRB5_SERVER_START,
@@ -1082,7 +1082,7 @@ static const struct gensec_security_ops gensec_krb5_security_ops = {
 	.priority       = GENSEC_KRB5
 };
 
-_PUBLIC_ NTSTATUS gensec_krb5_init(void)
+_PUBLIC_ NTSTATUS gensec_krb5_init(TALLOC_CTX *ctx)
 {
 	NTSTATUS ret;
 

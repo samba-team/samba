@@ -26,7 +26,7 @@
 #include "librpc/gen_ndr/ndr_nfs4acl.h"
 #include "libcli/security/security.h"
 
-NTSTATUS pvfs_acl_nfs4_init(void);
+NTSTATUS pvfs_acl_nfs4_init(TALLOC_CTX *);
 
 #define ACE4_IDENTIFIER_GROUP 0x40
 
@@ -188,7 +188,7 @@ static NTSTATUS pvfs_acl_save_nfs4(struct pvfs_state *pvfs, struct pvfs_filename
 /*
   initialise pvfs acl NFS4 backend
 */
-NTSTATUS pvfs_acl_nfs4_init(void)
+NTSTATUS pvfs_acl_nfs4_init(TALLOC_CTX *ctx)
 {
 	struct pvfs_acl_ops ops = {
 		.name = "nfs4acl",

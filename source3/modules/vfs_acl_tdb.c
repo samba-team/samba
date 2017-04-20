@@ -455,7 +455,7 @@ static struct vfs_fn_pointers vfs_acl_tdb_fns = {
 };
 
 static_decl_vfs;
-NTSTATUS vfs_acl_tdb_init(void)
+NTSTATUS vfs_acl_tdb_init(TALLOC_CTX *ctx)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "acl_tdb",
 				&vfs_acl_tdb_fns);

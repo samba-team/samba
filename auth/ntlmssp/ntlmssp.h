@@ -145,7 +145,7 @@ bool ntlmssp_blob_matches_magic(const DATA_BLOB *blob);
 
 /* The following definitions come from auth/ntlmssp/gensec_ntlmssp.c  */
 
-NTSTATUS gensec_ntlmssp_init(void);
+NTSTATUS gensec_ntlmssp_init(TALLOC_CTX *ctx);
 
 uint32_t gensec_ntlmssp_neg_flags(struct gensec_security *gensec_security);
 const char *gensec_ntlmssp_server_domain(struct gensec_security *gensec_security);
