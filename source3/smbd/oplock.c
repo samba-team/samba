@@ -1043,7 +1043,7 @@ static void contend_level2_oplocks_begin_default(files_struct *fsp,
 	 * the shared memory area whilst doing this.
 	 */
 
-	if (EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
+	if (fsp_lease_type_is_exclusive(fsp)) {
 		/*
 		 * There can't be any level2 oplocks, we're alone.
 		 */
