@@ -2800,16 +2800,17 @@ static void netlogon_creds_cli_DsrUpdateReadOnlyServerDnsRecords_done(struct tev
 		return;
 	}
 
-	if (tevent_req_nterror(req, result)) {
-		netlogon_creds_cli_DsrUpdateReadOnlyServerDnsRecords_cleanup(req, result);
-		return;
-	}
-
 	*state->creds = state->tmp_creds;
 	status = netlogon_creds_cli_store(state->context,
 					  &state->creds);
+
 	if (tevent_req_nterror(req, status)) {
 		netlogon_creds_cli_DsrUpdateReadOnlyServerDnsRecords_cleanup(req, status);
+		return;
+	}
+
+	if (tevent_req_nterror(req, result)) {
+		netlogon_creds_cli_DsrUpdateReadOnlyServerDnsRecords_cleanup(req, result);
 		return;
 	}
 
@@ -3052,11 +3053,6 @@ static void netlogon_creds_cli_ServerGetTrustInfo_done(struct tevent_req *subreq
 		return;
 	}
 
-	if (tevent_req_nterror(req, result)) {
-		netlogon_creds_cli_ServerGetTrustInfo_cleanup(req, result);
-		return;
-	}
-
 	cmp = memcmp(state->new_owf_password.hash,
 		     zero.hash, sizeof(zero.hash));
 	if (cmp != 0) {
@@ -3075,6 +3071,11 @@ static void netlogon_creds_cli_ServerGetTrustInfo_done(struct tevent_req *subreq
 					  &state->creds);
 	if (tevent_req_nterror(req, status)) {
 		netlogon_creds_cli_ServerGetTrustInfo_cleanup(req, status);
+		return;
+	}
+
+	if (tevent_req_nterror(req, result)) {
+		netlogon_creds_cli_ServerGetTrustInfo_cleanup(req, result);
 		return;
 	}
 
@@ -3347,16 +3348,17 @@ static void netlogon_creds_cli_GetForestTrustInformation_done(struct tevent_req 
 		return;
 	}
 
-	if (tevent_req_nterror(req, result)) {
-		netlogon_creds_cli_GetForestTrustInformation_cleanup(req, result);
-		return;
-	}
-
 	*state->creds = state->tmp_creds;
 	status = netlogon_creds_cli_store(state->context,
 					  &state->creds);
+
 	if (tevent_req_nterror(req, status)) {
 		netlogon_creds_cli_GetForestTrustInformation_cleanup(req, status);
+		return;
+	}
+
+	if (tevent_req_nterror(req, result)) {
+		netlogon_creds_cli_GetForestTrustInformation_cleanup(req, result);
 		return;
 	}
 
