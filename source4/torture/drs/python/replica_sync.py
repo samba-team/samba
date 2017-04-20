@@ -117,7 +117,6 @@ objectClass: organizationalUnit
         """Tests that objects created in conflict become conflict DNs (honour full sync override)"""
 
         # First confirm local replication (so when we test against windows, this fails fast without creating objects)
-        self._enable_inbound_repl(self.dnsname_dc2)
         self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, local=True, forced=True, full_sync=True)
 
         self._disable_inbound_repl(self.dnsname_dc1)
@@ -129,9 +128,7 @@ objectClass: organizationalUnit
         time.sleep(1)
         self.ou2 = self._create_ou(self.ldb_dc2, "OU=Test Full Sync")
 
-        self._enable_inbound_repl(self.dnsname_dc2)
         self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, local=True, forced=True, full_sync=True)
-        self._disable_inbound_repl(self.dnsname_dc2)
 
         # Check that DC2 got the DC1 object, and OU1 was make into conflict
         res1 = self.ldb_dc2.search(base="<GUID=%s>" % self.ou1,
@@ -152,8 +149,6 @@ objectClass: organizationalUnit
         self.ldb_dc2.delete('<GUID=%s>' % self.ou1)
         self.ldb_dc2.delete('<GUID=%s>' % self.ou2)
 
-        self._enable_inbound_repl(self.dnsname_dc1)
-        self._enable_inbound_repl(self.dnsname_dc2)
         self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, forced=True, full_sync=True)
 
         self._check_deleted(self.ldb_dc1, self.ou1)
@@ -173,9 +168,7 @@ objectClass: organizationalUnit
         time.sleep(1)
         self.ou2 = self._create_ou(self.ldb_dc2, "OU=Test Remote Conflict")
 
-        self._enable_inbound_repl(self.dnsname_dc1)
         self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, forced=True, full_sync=False)
-        self._disable_inbound_repl(self.dnsname_dc1)
 
         # Check that DC2 got the DC1 object, and OU1 was make into conflict
         res1 = self.ldb_dc1.search(base="<GUID=%s>" % self.ou1,
@@ -195,8 +188,6 @@ objectClass: organizationalUnit
         self.ldb_dc1.delete('<GUID=%s>' % self.ou1)
         self.ldb_dc1.delete('<GUID=%s>' % self.ou2)
 
-        self._enable_inbound_repl(self.dnsname_dc1)
-        self._enable_inbound_repl(self.dnsname_dc2)
         self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, forced=True, full_sync=False)
 
         self._check_deleted(self.ldb_dc1, self.ou1)
@@ -216,9 +207,7 @@ objectClass: organizationalUnit
         time.sleep(1)
         self.ou1 = self._create_ou(self.ldb_dc1, "OU=Test Local Conflict")
 
-        self._enable_inbound_repl(self.dnsname_dc1)
         self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, forced=True, full_sync=False)
-        self._disable_inbound_repl(self.dnsname_dc1)
 
         # Check that DC2 got the DC1 object, and OU2 was make into conflict
         res1 = self.ldb_dc1.search(base="<GUID=%s>" % self.ou1,
@@ -238,8 +227,6 @@ objectClass: organizationalUnit
         self.ldb_dc1.delete('<GUID=%s>' % self.ou1)
         self.ldb_dc1.delete('<GUID=%s>' % self.ou2)
 
-        self._enable_inbound_repl(self.dnsname_dc1)
-        self._enable_inbound_repl(self.dnsname_dc2)
         self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, forced=True, full_sync=False)
 
         self._check_deleted(self.ldb_dc1, self.ou1)
@@ -262,9 +249,7 @@ objectClass: organizationalUnit
         ou1_child = self._create_ou(self.ldb_dc1, "OU=Test Child,OU=Test Parent Remote Conflict")
         ou2_child = self._create_ou(self.ldb_dc2, "OU=Test Child,OU=Test Parent Remote Conflict")
 
-        self._enable_inbound_repl(self.dnsname_dc1)
         self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, forced=True, full_sync=False)
-        self._disable_inbound_repl(self.dnsname_dc1)
 
         # Check that DC2 got the DC1 object, and SELF.OU1 was make into conflict
         res1 = self.ldb_dc1.search(base="<GUID=%s>" % self.ou1,
@@ -284,8 +269,6 @@ objectClass: organizationalUnit
         self.ldb_dc1.delete('<GUID=%s>' % self.ou1, ["tree_delete:1"])
         self.ldb_dc1.delete('<GUID=%s>' % self.ou2, ["tree_delete:1"])
 
-        self._enable_inbound_repl(self.dnsname_dc1)
-        self._enable_inbound_repl(self.dnsname_dc2)
         self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, forced=True, full_sync=False)
 
         self._check_deleted(self.ldb_dc1, self.ou1)
@@ -310,18 +293,14 @@ objectClass: organizationalUnit
         self.ou1 = self._create_ou(self.ldb_dc1, "OU=Test Remote Rename Conflict")
         self.ou2 = self._create_ou(self.ldb_dc2, "OU=Test Remote Rename Conflict 2")
 
-        self._enable_inbound_repl(self.dnsname_dc1)
         self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, forced=True, full_sync=False)
-        self._disable_inbound_repl(self.dnsname_dc1)
 
         self.ldb_dc1.rename("<GUID=%s>" % self.ou1, "OU=Test Remote Rename Conflict 3,%s" % self.domain_dn)
         # We have to sleep to ensure that the two objects have different timestamps
         time.sleep(1)
         self.ldb_dc2.rename("<GUID=%s>" % self.ou2, "OU=Test Remote Rename Conflict 3,%s" % self.domain_dn)
 
-        self._enable_inbound_repl(self.dnsname_dc1)
         self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, forced=True, full_sync=False)
-        self._disable_inbound_repl(self.dnsname_dc1)
 
         # Check that DC2 got the DC1 object, and SELF.OU1 was make into conflict
         res1 = self.ldb_dc1.search(base="<GUID=%s>" % self.ou1,
@@ -341,8 +320,6 @@ objectClass: organizationalUnit
         self.ldb_dc1.delete('<GUID=%s>' % self.ou1)
         self.ldb_dc1.delete('<GUID=%s>' % self.ou2)
 
-        self._enable_inbound_repl(self.dnsname_dc1)
-        self._enable_inbound_repl(self.dnsname_dc2)
         self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, forced=True, full_sync=False)
 
         self._check_deleted(self.ldb_dc1, self.ou1)
@@ -364,18 +341,14 @@ objectClass: organizationalUnit
         ou1_child = self._create_ou(self.ldb_dc1, "OU=Test Child,OU=Test Parent Remote Rename Conflict")
         ou2_child = self._create_ou(self.ldb_dc2, "OU=Test Child,OU=Test Parent Remote Rename Conflict 2")
 
-        self._enable_inbound_repl(self.dnsname_dc1)
         self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, forced=True, full_sync=False)
-        self._disable_inbound_repl(self.dnsname_dc1)
 
         self.ldb_dc1.rename("<GUID=%s>" % self.ou1, "OU=Test Parent Remote Rename Conflict 3,%s" % self.domain_dn)
         # We have to sleep to ensure that the two objects have different timestamps
         time.sleep(1)
         self.ldb_dc2.rename("<GUID=%s>" % self.ou2, "OU=Test Parent Remote Rename Conflict 3,%s" % self.domain_dn)
 
-        self._enable_inbound_repl(self.dnsname_dc1)
         self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, forced=True, full_sync=False)
-        self._disable_inbound_repl(self.dnsname_dc1)
 
         # Check that DC2 got the DC1 object, and SELF.OU1 was make into conflict
         res1 = self.ldb_dc1.search(base="<GUID=%s>" % self.ou1,
@@ -395,8 +368,6 @@ objectClass: organizationalUnit
         self.ldb_dc1.delete('<GUID=%s>' % self.ou1, ["tree_delete:1"])
         self.ldb_dc1.delete('<GUID=%s>' % self.ou2, ["tree_delete:1"])
 
-        self._enable_inbound_repl(self.dnsname_dc1)
-        self._enable_inbound_repl(self.dnsname_dc2)
         self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, forced=True, full_sync=False)
 
         self._check_deleted(self.ldb_dc1, self.ou1)
@@ -421,18 +392,14 @@ objectClass: organizationalUnit
         self.ou1 = self._create_ou(self.ldb_dc1, "OU=Test Rename Local Conflict")
         self.ou2 = self._create_ou(self.ldb_dc2, "OU=Test Rename Local Conflict 2")
 
-        self._enable_inbound_repl(self.dnsname_dc1)
         self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, forced=True, full_sync=False)
-        self._disable_inbound_repl(self.dnsname_dc1)
 
         self.ldb_dc2.rename("<GUID=%s>" % self.ou2, "OU=Test Rename Local Conflict 3,%s" % self.domain_dn)
         # We have to sleep to ensure that the two objects have different timestamps
         time.sleep(1)
         self.ldb_dc1.rename("<GUID=%s>" % self.ou1, "OU=Test Rename Local Conflict 3,%s" % self.domain_dn)
 
-        self._enable_inbound_repl(self.dnsname_dc1)
         self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, forced=True, full_sync=False)
-        self._disable_inbound_repl(self.dnsname_dc1)
 
         # Check that DC2 got the DC1 object, and OU2 was make into conflict
         res1 = self.ldb_dc1.search(base="<GUID=%s>" % self.ou1,
@@ -452,8 +419,6 @@ objectClass: organizationalUnit
         self.ldb_dc1.delete('<GUID=%s>' % self.ou1)
         self.ldb_dc1.delete('<GUID=%s>' % self.ou2)
 
-        self._enable_inbound_repl(self.dnsname_dc1)
-        self._enable_inbound_repl(self.dnsname_dc2)
         self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, forced=True, full_sync=False)
 
         self._check_deleted(self.ldb_dc1, self.ou1)
@@ -472,9 +437,7 @@ objectClass: organizationalUnit
         self.ou2 = self._create_ou(self.ldb_dc2, "OU=Deleted parent 2")
 
         # replicate them from DC2 to DC1
-        self._enable_inbound_repl(self.dnsname_dc1)
         self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, forced=True, full_sync=False)
-        self._disable_inbound_repl(self.dnsname_dc1)
 
         # Delete both objects by GUID on DC1
 
@@ -486,9 +449,7 @@ objectClass: organizationalUnit
         ou2_child = self._create_ou(self.ldb_dc2, "OU=Test Child,OU=Deleted parent 2")
 
         # Replicate from DC2
-        self._enable_inbound_repl(self.dnsname_dc1)
         self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, forced=True, full_sync=False)
-        self._disable_inbound_repl(self.dnsname_dc1)
 
         # Check the sub-OUs are now in lostAndFound and the first one is a conflict DN
 
@@ -510,8 +471,6 @@ objectClass: organizationalUnit
         self.ldb_dc1.delete('<GUID=%s>' % ou1_child)
         self.ldb_dc1.delete('<GUID=%s>' % ou2_child)
 
-        self._enable_inbound_repl(self.dnsname_dc1)
-        self._enable_inbound_repl(self.dnsname_dc2)
         self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, forced=True, full_sync=False)
 
 
@@ -536,9 +495,7 @@ objectClass: organizationalUnit
         self.ou2 = self._create_ou(self.ldb_dc2, "OU=Original parent 2")
 
         # replicate them from DC2 to DC1
-        self._enable_inbound_repl(self.dnsname_dc1)
         self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, forced=True, full_sync=False)
-        self._disable_inbound_repl(self.dnsname_dc1)
 
         # Create children on DC1
         ou1_child = self._create_ou(self.ldb_dc1, "OU=Test Child,OU=Original parent")
@@ -546,9 +503,7 @@ objectClass: organizationalUnit
         ou3_child = self._create_ou(self.ldb_dc1, "OU=Test Case Child,OU=Original parent")
 
         # replicate them from DC1 to DC2
-        self._enable_inbound_repl(self.dnsname_dc2)
         self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, forced=True, full_sync=False)
-        self._disable_inbound_repl(self.dnsname_dc2)
 
         self.ldb_dc1.rename("<GUID=%s>" % ou2_child, "OU=Test Child 3,OU=Original parent 2,%s" % self.domain_dn)
         self.ldb_dc1.rename("<GUID=%s>" % ou1_child, "OU=Test Child 2,OU=Original parent 2,%s" % self.domain_dn)
@@ -558,9 +513,7 @@ objectClass: organizationalUnit
         self.ldb_dc2.rename("<GUID=%s>" % self.ou1, "OU=Original parent 2,%s" % self.domain_dn)
 
         # replicate them from DC1 to DC2
-        self._enable_inbound_repl(self.dnsname_dc2)
         self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, forced=True, full_sync=False)
-        self._disable_inbound_repl(self.dnsname_dc2)
 
         # Check the sub-OUs are now under Original Parent 3 (original
         # parent 2 for Test CASE Child), and both have the right names
@@ -583,9 +536,7 @@ objectClass: organizationalUnit
         self.assertEqual(str(res3[0].dn), "OU=Test CASE Child,OU=Original parent 2,%s" % self.domain_dn)
 
         # replicate them from DC2 to DC1
-        self._enable_inbound_repl(self.dnsname_dc1)
         self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, forced=True, full_sync=False)
-        self._disable_inbound_repl(self.dnsname_dc1)
 
         # Check that DC1 got the DC2 object, and the renames are all correct
         res1 = self.ldb_dc1.search(base="<GUID=%s>" % ou1_child,
@@ -612,8 +563,6 @@ objectClass: organizationalUnit
         self.ldb_dc1.delete('<GUID=%s>' % self.ou1)
         self.ldb_dc1.delete('<GUID=%s>' % self.ou2)
 
-        self._enable_inbound_repl(self.dnsname_dc1)
-        self._enable_inbound_repl(self.dnsname_dc2)
         self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, forced=True, full_sync=False)
 
 
