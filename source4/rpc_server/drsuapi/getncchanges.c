@@ -32,6 +32,7 @@
 #include "libcli/security/session.h"
 #include "rpc_server/drsuapi/dcesrv_drsuapi.h"
 #include "rpc_server/dcerpc_server_proto.h"
+#include "rpc_server/common/sid_helper.h"
 #include "../libcli/drsuapi/drsuapi.h"
 #include "lib/util/binsearch.h"
 #include "lib/util/tsort.h"
@@ -1137,114 +1138,6 @@ static WERROR getncchanges_rid_alloc(struct drsuapi_bind_state *b_state,
 	ctr6->extended_ret = DRSUAPI_EXOP_ERR_SUCCESS;
 
 	return WERR_OK;
-}
-
-/*
-  return an array of SIDs from a ldb_message given an attribute name
-  assumes the SIDs are in extended DN format
- */
-static WERROR samdb_result_sid_array_dn(struct ldb_context *sam_ctx,
-					struct ldb_message *msg,
-					TALLOC_CTX *mem_ctx,
-					const char *attr,
-					const struct dom_sid ***sids)
-{
-	struct ldb_message_element *el;
-	unsigned int i;
-
-	el = ldb_msg_find_element(msg, attr);
-	if (!el) {
-		*sids = NULL;
-		return WERR_OK;
-	}
-
-	(*sids) = talloc_array(mem_ctx, const struct dom_sid *, el->num_values + 1);
-	W_ERROR_HAVE_NO_MEMORY(*sids);
-
-	for (i=0; i<el->num_values; i++) {
-		struct ldb_dn *dn = ldb_dn_from_ldb_val(mem_ctx, sam_ctx, &el->values[i]);
-		NTSTATUS status;
-		struct dom_sid *sid;
-
-		sid = talloc(*sids, struct dom_sid);
-		W_ERROR_HAVE_NO_MEMORY(sid);
-		status = dsdb_get_extended_dn_sid(dn, sid, "SID");
-		if (!NT_STATUS_IS_OK(status)) {
-			return WERR_INTERNAL_DB_CORRUPTION;
-		}
-		(*sids)[i] = sid;
-	}
-	(*sids)[i] = NULL;
-
-	return WERR_OK;
-}
-
-
-/*
- * Return an array of SIDs from a ldb_message given an attribute name assumes
- * the SIDs are in NDR form (with additional sids applied on the end).
- */
-static WERROR samdb_result_sid_array_ndr(struct ldb_context *sam_ctx,
-					 struct ldb_message *msg,
-					 TALLOC_CTX *mem_ctx,
-					 const char *attr,
-					 const struct dom_sid ***sids,
-					 const struct dom_sid **additional_sids,
-					 unsigned int num_additional)
-{
-	struct ldb_message_element *el;
-	unsigned int i, j;
-
-	el = ldb_msg_find_element(msg, attr);
-	if (!el) {
-		*sids = NULL;
-		return WERR_OK;
-	}
-
-	/* Make array long enough for NULL and additional SID */
-	(*sids) = talloc_array(mem_ctx, const struct dom_sid *,
-			       el->num_values + num_additional + 1);
-	W_ERROR_HAVE_NO_MEMORY(*sids);
-
-	for (i=0; i<el->num_values; i++) {
-		enum ndr_err_code ndr_err;
-		struct dom_sid *sid;
-
-		sid = talloc(*sids, struct dom_sid);
-		W_ERROR_HAVE_NO_MEMORY(sid);
-
-		ndr_err = ndr_pull_struct_blob(&el->values[i], sid, sid,
-					       (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
-		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			return WERR_INTERNAL_DB_CORRUPTION;
-		}
-		(*sids)[i] = sid;
-	}
-
-	for (j = 0; j < num_additional; j++) {
-		(*sids)[i++] = additional_sids[j];
-	}
-
-	(*sids)[i] = NULL;
-
-	return WERR_OK;
-}
-
-/*
-  see if any SIDs in list1 are in list2
- */
-static bool sid_list_match(const struct dom_sid **list1, const struct dom_sid **list2)
-{
-	unsigned int i, j;
-	/* do we ever have enough SIDs here to worry about O(n^2) ? */
-	for (i=0; list1[i]; i++) {
-		for (j=0; list2[j]; j++) {
-			if (dom_sid_equal(list1[i], list2[j])) {
-				return true;
-			}
-		}
-	}
-	return false;
 }
 
 /*

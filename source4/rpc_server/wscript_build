@@ -7,10 +7,17 @@ bld.SAMBA_SUBSYSTEM('DCERPC_SHARE',
 	enabled=bld.CONFIG_SET('WITH_NTVFS_FILESERVER'),
 	)
 
+bld.SAMBA_SUBSYSTEM('DCERPC_SID_HELPER',
+	source='common/sid_helper.c',
+	autoproto='common/sid_helper.h',
+	deps='ldb',
+	enabled=bld.AD_DC_BUILD_IS_ENABLED(),
+	)
+
 bld.SAMBA_SUBSYSTEM('DCERPC_COMMON',
 	source='common/server_info.c common/forward.c common/reply.c dcesrv_auth.c common/loadparm.c',
 	autoproto='common/proto.h',
-	deps='ldb DCERPC_SHARE samba_server_gensec',
+	deps='ldb DCERPC_SHARE DCERPC_SID_HELPER samba_server_gensec',
 	enabled=bld.AD_DC_BUILD_IS_ENABLED()
 	)
 
