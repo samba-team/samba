@@ -2578,8 +2578,13 @@ allowed:
 		W_ERROR_HAVE_NO_MEMORY(msg_dn);
 
 
-		/* by re-searching here we avoid having a lot of full
-		 * records in memory between calls to getncchanges
+		/*
+		 * by re-searching here we avoid having a lot of full
+		 * records in memory between calls to getncchanges.
+		 *
+		 * We expect that we may get some objects that vanish
+		 * (tombstone expunge) between the first and second
+		 * check.
 		 */
 		ret = drsuapi_search_with_extended_dn(sam_ctx, obj, &msg_res,
 						      msg_dn,
@@ -2589,6 +2594,16 @@ allowed:
 				DEBUG(1,("getncchanges: failed to fetch DN %s - %s\n",
 					 ldb_dn_get_extended_linearized(obj, msg_dn, 1), ldb_errstring(sam_ctx)));
 			}
+			talloc_free(obj);
+			continue;
+		}
+
+		if (msg_res->count == 0) {
+			DEBUG(1,("getncchanges: got LDB_SUCCESS but failed"
+				 "to get any results in fetch of DN "
+				 "%s (race with tombstone expunge?)\n",
+				 ldb_dn_get_extended_linearized(obj,
+								msg_dn, 1)));
 			talloc_free(obj);
 			continue;
 		}
