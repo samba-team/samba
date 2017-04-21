@@ -634,6 +634,9 @@ bool ctdb_db_all_frozen(struct ctdb_context *ctdb);
 void ctdb_start_keepalive(struct ctdb_context *ctdb);
 void ctdb_stop_keepalive(struct ctdb_context *ctdb);
 
+void ctdb_request_keepalive(struct ctdb_context *ctdb,
+			    struct ctdb_req_header *hdr);
+
 /* from server/ctdb_lock.c */
 
 struct lock_request;

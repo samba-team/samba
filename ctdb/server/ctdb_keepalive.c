@@ -31,10 +31,23 @@
 #include "lib/util/samba_util.h"
 
 #include "ctdb_private.h"
+#include "version.h"
 
 #include "common/common.h"
 #include "common/logging.h"
 
+
+static uint32_t keepalive_version(void)
+{
+	return (SAMBA_VERSION_MAJOR << 16) | SAMBA_VERSION_MINOR;
+}
+
+static uint32_t keepalive_uptime(struct ctdb_context *ctdb)
+{
+	struct timeval current = tevent_timeval_current();
+
+	return current.tv_sec - ctdb->ctdbd_start_time.tv_sec;
+}
 
 /*
    send a keepalive packet to the other node
@@ -55,6 +68,9 @@ static void ctdb_send_keepalive(struct ctdb_context *ctdb, uint32_t destnode)
 	CTDB_NO_MEMORY_FATAL(ctdb, r);
 	r->hdr.destnode  = destnode;
 	r->hdr.reqid     = 0;
+
+	r->version = keepalive_version();
+	r->uptime = keepalive_uptime(ctdb);
 
 	CTDB_INCREMENT_STAT(ctdb, keepalive_packets_sent);
 
@@ -145,3 +161,44 @@ void ctdb_stop_keepalive(struct ctdb_context *ctdb)
 	ctdb->keepalive_ctx = NULL;
 }
 
+void ctdb_request_keepalive(struct ctdb_context *ctdb,
+			    struct ctdb_req_header *hdr)
+{
+	struct ctdb_req_keepalive_old *c =
+		(struct ctdb_req_keepalive_old *)hdr;
+	uint32_t my_version = keepalive_version();
+	uint32_t my_uptime = keepalive_uptime(ctdb);
+
+	if (hdr->length == sizeof(struct ctdb_req_header)) {
+		/* Old keepalive */
+		goto fail1;
+	}
+
+	if (c->version != my_version) {
+		if (c->uptime > my_uptime) {
+			goto fail2;
+		} else if (c->uptime == my_uptime) {
+			if (c->version > my_version) {
+				goto fail2;
+			}
+		}
+	}
+
+	return;
+
+fail1:
+	DEBUG(DEBUG_ERR,
+	      ("Keepalive version missing from node %u\n", hdr->srcnode));
+	goto shutdown;
+
+fail2:
+	DEBUG(DEBUG_ERR,
+	      ("Keepalive version mismatch 0x%08x != 0x%08x from node %u\n",
+	       my_version, c->version, hdr->srcnode));
+	goto shutdown;
+
+shutdown:
+	DEBUG(DEBUG_ERR,
+	      ("CTDB Cluster with mixed versions, cannot continue\n"));
+	ctdb_shutdown_sequence(ctdb, 0);
+}

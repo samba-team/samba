@@ -130,6 +130,8 @@ struct ctdb_reply_control_old {
 
 struct ctdb_req_keepalive_old {
 	struct ctdb_req_header hdr;
+	uint32_t version;
+	uint32_t uptime;
 };
 
 /*

@@ -979,6 +979,12 @@ struct ctdb_req_message_data {
 	TDB_DATA data;
 };
 
+struct ctdb_req_keepalive {
+	uint32_t version;
+	uint32_t uptime;
+};
+
+
 /* This is equivalent to server_id */
 struct ctdb_server_id {
 	uint64_t pid;

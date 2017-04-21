@@ -265,6 +265,7 @@ void ctdb_input_pkt(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 
 	case CTDB_REQ_KEEPALIVE:
 		CTDB_INCREMENT_STAT(ctdb, keepalive_packets_recv);
+		ctdb_request_keepalive(ctdb, hdr);
 		break;
 
 	default:
