@@ -1,4 +1,113 @@
                    =============================
+                   Release Notes for Samba 4.6.3
+                           April 25, 2017
+                   =============================
+
+
+This is the latest stable release of the Samba 4.6 release series.
+
+
+Changes since 4.6.2:
+--------------------
+
+o  Michael Adam <obnox@samba.org>
+   * BUG 12743: s3:vfs:shadow_copy2: vfs_shadow_copy2 fails to list snapshots
+     from shares with GlusterFS backend.
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 12559: Fix for Solaris C compiler.
+   * BUG 12628: s3: locking: Update oplock optimization for the leases era.
+   * BUG 12693: Make the Solaris C compiler happy.
+   * BUG 12695: s3: libgpo: Allow skipping GPO objects that don't have the
+     expected LDAP attributes.
+   * BUG 12747: Fix buffer overflow caused by wrong use of getgroups.
+
+o  Hanno Boeck <hanno@hboeck.de>
+   * BUG 12746: lib: debug: Avoid negative array access.
+   * BUG 12748: cleanupdb: Fix a memory read error.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 7537: streams_xattr and kernel oplocks results in
+     NT_STATUS_NETWORK_BUSY.
+   * BUG 11961: winbindd: idmap_autorid allocates ids for unknown SIDs from other
+     backends.
+   * BUG 12565: vfs_fruit: Resource fork open request with
+     flags=O_CREAT|O_RDONLY.
+   * BUG 12615: manpages/vfs_fruit: Document global options.
+   * BUG 12624: lib/pthreadpool: Fix a memory leak.
+   * BUG 12727: Lookup-domain for well-known SIDs on a DC.
+   * BUG 12728: winbindd: Fix error handling in rpc_lookup_sids().
+   * BUG 12729: winbindd: Trigger possible passdb_dsdb initialisation.
+
+o  Alexander Bokovoy <ab@samba.org>
+   * BUG 12611: credentials_krb5: use gss_acquire_cred for client-side GSSAPI
+     use case.
+   * BUG 12690: lib/crypto: Implement samba.crypto Python module for RC4.
+
+o  Amitay Isaacs <amitay@gmail.com>
+   * BUG 12697: ctdb-readonly: Avoid a tight loop waiting for revoke to
+     complete.
+   * BUG 12723: ctdb_event monitor command crashes if event is not specified.
+   * BUG 12733: ctdb-docs: Fix documentation of "-n" option to 'ctdb tool'.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 12558: smbd: Fix smb1 findfirst with DFS.
+   * BUG 12610: smbd: Do an early exit on negprot failure.
+   * BUG 12699: winbindd: Fix substitution for 'template homedir'.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 12554: s4:kdc: Disable principal based autodetected referral detection.
+   * BUG 12613: idmap_autorid: Allocate new domain range if the callers knows
+     the sid is valid.
+   * BUG 12724: LINKFLAGS_PYEMBED should not contain -L/some/path.
+   * BUG 12725: PAM auth with WBFLAG_PAM_GET_PWD_POLICY returns wrong policy for
+     trusted domain.
+   * BUG 12731: rpcclient: Allow -U'OTHERDOMAIN\user' again.
+
+o  Christof Schmitt <cs@samba.org>
+   * BUG 12725: winbindd: Fix password policy for pam authentication.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 12554: s3:gse: Correctly handle external trusts with MIT.
+   * BUG 12611: auth/credentials: Always set the realm if we set the principal
+     from the ccache.
+   * BUG 12686: replace: Include sysmacros.h.
+   * BUG 12687: s3:vfs_expand_msdfs: Do not open the remote address as a file.
+   * BUG 12704: s3:libsmb: Only print error message if kerberos use is forced.
+   * BUG 12708: winbindd: Child process crashes when kerberos-authenticating
+     a user with wrong password.
+
+o  Uri Simchoni <uri@samba.org>
+   * BUG 12715: vfs_fruit: Office document opens as read-only on macOS due to
+     CNID semantics.
+   * BUG 12737: vfs_acl_xattr: Fix failure to get ACL on Linux if memory is
+     fragmented.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   =============================
                    Release Notes for Samba 4.6.2
                            March 31, 2017
                    =============================
@@ -36,8 +145,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    =============================
                    Release Notes for Samba 4.6.1
