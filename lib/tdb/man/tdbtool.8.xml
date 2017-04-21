@@ -160,6 +160,16 @@
 		</varlistentry>
 
 		<varlistentry>
+		<term><option>storehex</option>
+		<replaceable>KEY</replaceable>
+		<replaceable>DATA</replaceable>
+		</term>
+		<listitem><para>Store (replace) a record in the
+		current database where key and data are in hex format.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
 		<term><option>show</option>
 		<replaceable>KEY</replaceable>
 		</term>

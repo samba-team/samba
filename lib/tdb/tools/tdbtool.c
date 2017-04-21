@@ -48,6 +48,7 @@ enum commands {
 	CMD_DUMP,
 	CMD_INSERT,
 	CMD_MOVE,
+	CMD_STOREHEX,
 	CMD_STORE,
 	CMD_SHOW,
 	CMD_KEYS,
@@ -83,6 +84,7 @@ COMMAND_TABLE cmd_table[] = {
 	{"dump",	CMD_DUMP},
 	{"insert",	CMD_INSERT},
 	{"move",	CMD_MOVE},
+	{"storehex",	CMD_STOREHEX},
 	{"store",	CMD_STORE},
 	{"show",	CMD_SHOW},
 	{"keys",	CMD_KEYS},
@@ -229,6 +231,7 @@ static void help(void)
 "  info                 : print summary info about the database\n"
 "  insert    key  data  : insert a record\n"
 "  move      key  file  : move a record to a destination tdb\n"
+"  storehex  key  data  : store a record (replace), key/value in hex format\n"
 "  store     key  data  : store a record (replace)\n"
 "  show      key        : show a record by key\n"
 "  delete    key        : delete a record by key\n"
@@ -343,6 +346,86 @@ static void store_tdb(char *keyname, size_t keylen, char* data, size_t datalen)
 
 	if (tdb_store(tdb, key, dbuf, TDB_REPLACE) != 0) {
 		terror("store failed");
+	}
+}
+
+static bool hexchar(char c, uint8_t *v)
+{
+	if ((c >= '0') && (c <= '9')) {
+		*v = (c - '0');
+		return true;
+	}
+	if ((c >= 'A') && (c <= 'F')) {
+		*v = (c - 'A' + 10);
+		return true;
+	}
+	if ((c >= 'a') && (c <= 'f')) {
+		*v = (c - 'a' + 10);
+		return true;
+	}
+	return false;
+}
+
+static bool parse_hex(const char *src, size_t srclen, uint8_t *dst)
+{
+	size_t i=0;
+
+	if ((srclen % 2) != 0) {
+		return false;
+	}
+
+	while (i<srclen) {
+		bool ok;
+		uint8_t hi,lo;
+
+		ok = (hexchar(src[i++], &hi) && hexchar(src[i++], &lo));
+		if (!ok) {
+			return false;
+		}
+		*dst = (hi<<4)|lo;
+		dst += 1;
+	}
+
+	return true;
+}
+
+static void store_hex_tdb(char *keystr, size_t keylen,
+			  char *datastr, size_t datalen)
+{
+	if ((keystr == NULL) || (keylen == 0)) {
+		terror("need key");
+		return;
+	}
+	if ((datastr == NULL) || (datalen == 0)) {
+		terror("need data");
+		return;
+	}
+
+	{
+		uint8_t keybuf[keylen/2];
+		TDB_DATA key = { .dptr = keybuf, .dsize = sizeof(keybuf) };
+		uint8_t databuf[datalen/2];
+		TDB_DATA data = { .dptr = databuf, .dsize = sizeof(databuf) };
+		bool ok;
+
+		ok = parse_hex(keystr, keylen, keybuf);
+		if (!ok) {
+			terror("need hex key");
+			return;
+		}
+		ok = parse_hex(datastr, datalen, databuf);
+		if (!ok) {
+			terror("need hex data");
+			return;
+		}
+
+		printf("storing key/data:\n");
+		print_data((char *)key.dptr, key.dsize);
+		print_data((char *)data.dptr, data.dsize);
+
+		if (tdb_store(tdb, key, data, TDB_REPLACE) != 0) {
+			terror("store failed");
+		}
 	}
 }
 
@@ -692,6 +775,10 @@ static int do_command(void)
 		case CMD_STORE:
 			bIterate = 0;
 			store_tdb(arg1,arg1len,arg2,arg2len);
+			return 0;
+		case CMD_STOREHEX:
+			bIterate = 0;
+			store_hex_tdb(arg1,arg1len,arg2,arg2len);
 			return 0;
 		case CMD_SHOW:
 			bIterate = 0;
