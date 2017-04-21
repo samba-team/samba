@@ -105,7 +105,8 @@ class BasePasswordTestCase(samba.tests.TestCase):
                        userAccountControl=None,
                        msDSUserAccountControlComputed=None,
                        effective_bad_password_count=None,
-                       msg=None):
+                       msg=None,
+                       badPwdCountOnly=False):
         print '-=' * 36
         if msg is not None:
             print  "\033[01;32m %s \033[00m\n" % msg
@@ -128,17 +129,18 @@ class BasePasswordTestCase(samba.tests.TestCase):
         res = self.ldb.search(dn, scope=SCOPE_BASE, attrs=attrs)
         self.assertTrue(len(res) == 1)
         self._check_attribute(res, "badPwdCount", badPwdCount)
-        self._check_attribute(res, "badPasswordTime", badPasswordTime)
-        self._check_attribute(res, "logonCount", logonCount)
-        self._check_attribute(res, "lastLogon", lastLogon)
-        self._check_attribute(res, "lastLogonTimestamp", lastLogonTimestamp)
         self._check_attribute(res, "lockoutTime", lockoutTime)
-        self._check_attribute(res, "userAccountControl", userAccountControl)
-        self._check_attribute(res, "msDS-User-Account-Control-Computed",
-                              msDSUserAccountControlComputed)
+        self._check_attribute(res, "badPasswordTime", badPasswordTime)
+        if not badPwdCountOnly:
+            self._check_attribute(res, "logonCount", logonCount)
+            self._check_attribute(res, "lastLogon", lastLogon)
+            self._check_attribute(res, "lastLogonTimestamp", lastLogonTimestamp)
+            self._check_attribute(res, "userAccountControl", userAccountControl)
+            self._check_attribute(res, "msDS-User-Account-Control-Computed",
+                                  msDSUserAccountControlComputed)
 
-        lastLogon = int(res[0]["lastLogon"][0])
-        logonCount = int(res[0]["logonCount"][0])
+            lastLogon = int(res[0]["lastLogon"][0])
+            logonCount = int(res[0]["logonCount"][0])
 
         samr_user = self._open_samr_user(res)
         uinfo3 = self.samr.QueryUserInfo(samr_user, 3)
@@ -148,16 +150,21 @@ class BasePasswordTestCase(samba.tests.TestCase):
         self.samr.Close(samr_user)
 
         expected_acb_info = 0
-        if userAccountControl & dsdb.UF_NORMAL_ACCOUNT:
-            expected_acb_info |= samr.ACB_NORMAL
-        if userAccountControl & dsdb.UF_ACCOUNTDISABLE:
-            expected_acb_info |= samr.ACB_DISABLED
-        if userAccountControl & dsdb.UF_PASSWD_NOTREQD:
-            expected_acb_info |= samr.ACB_PWNOTREQ
-        if msDSUserAccountControlComputed & dsdb.UF_LOCKOUT:
-            expected_acb_info |= samr.ACB_AUTOLOCK
-        if msDSUserAccountControlComputed & dsdb.UF_PASSWORD_EXPIRED:
-            expected_acb_info |= samr.ACB_PW_EXPIRED
+        if not badPwdCountOnly:
+            if userAccountControl & dsdb.UF_NORMAL_ACCOUNT:
+                expected_acb_info |= samr.ACB_NORMAL
+            if userAccountControl & dsdb.UF_ACCOUNTDISABLE:
+                expected_acb_info |= samr.ACB_DISABLED
+            if userAccountControl & dsdb.UF_PASSWD_NOTREQD:
+                expected_acb_info |= samr.ACB_PWNOTREQ
+            if msDSUserAccountControlComputed & dsdb.UF_LOCKOUT:
+                expected_acb_info |= samr.ACB_AUTOLOCK
+            if msDSUserAccountControlComputed & dsdb.UF_PASSWORD_EXPIRED:
+                expected_acb_info |= samr.ACB_PW_EXPIRED
+
+            self.assertEquals(uinfo3.acct_flags, expected_acb_info)
+            self.assertEquals(uinfo3.last_logon, lastLogon)
+            self.assertEquals(uinfo3.logon_count, logonCount)
 
         expected_bad_password_count = 0
         if badPwdCount is not None:
@@ -165,22 +172,21 @@ class BasePasswordTestCase(samba.tests.TestCase):
         if effective_bad_password_count is None:
             effective_bad_password_count = expected_bad_password_count
 
-        self.assertEquals(uinfo3.acct_flags, expected_acb_info)
         self.assertEquals(uinfo3.bad_password_count, expected_bad_password_count)
-        self.assertEquals(uinfo3.last_logon, lastLogon)
-        self.assertEquals(uinfo3.logon_count, logonCount)
 
-        self.assertEquals(uinfo5.acct_flags, expected_acb_info)
-        self.assertEquals(uinfo5.bad_password_count, effective_bad_password_count)
-        self.assertEquals(uinfo5.last_logon, lastLogon)
-        self.assertEquals(uinfo5.logon_count, logonCount)
+        if not badPwdCountOnly:
+            self.assertEquals(uinfo5.acct_flags, expected_acb_info)
+            self.assertEquals(uinfo5.bad_password_count, effective_bad_password_count)
+            self.assertEquals(uinfo5.last_logon, lastLogon)
+            self.assertEquals(uinfo5.logon_count, logonCount)
 
-        self.assertEquals(uinfo16.acct_flags, expected_acb_info)
+            self.assertEquals(uinfo16.acct_flags, expected_acb_info)
 
-        self.assertEquals(uinfo21.acct_flags, expected_acb_info)
-        self.assertEquals(uinfo21.bad_password_count, effective_bad_password_count)
-        self.assertEquals(uinfo21.last_logon, lastLogon)
-        self.assertEquals(uinfo21.logon_count, logonCount)
+            self.assertEquals(uinfo21.acct_flags, expected_acb_info)
+            self.assertEquals(uinfo21.bad_password_count, effective_bad_password_count)
+            self.assertEquals(uinfo21.last_logon, lastLogon)
+            self.assertEquals(uinfo21.logon_count, logonCount)
+
 
         # check LDAP again and make sure the samr.QueryUserInfo
         # doesn't have any impact.
