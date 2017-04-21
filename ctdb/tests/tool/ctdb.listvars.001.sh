@@ -64,6 +64,7 @@ LockProcessesPerDB         = 200
 RecBufferSizeLimit         = 1000000
 QueueBufferSize            = 1024
 IPAllocAlgorithm           = 2
+AllowMixedVersions         = 0
 EOF
 
 simple_test

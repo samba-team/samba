@@ -53,6 +53,30 @@
     </refsect2>
 
     <refsect2>
+      <title>AllowMixedVersions</title>
+      <para>Default: 0</para>
+      <para>
+	CTDB will not allow incompatible versions to co-exist in
+	a cluster.  If a version mismatch is found, then losing CTDB
+	will shutdown.	To disable the incompatible version check,
+	set this tunable to 1.
+      </para>
+      <para>
+	For version checking, CTDB uses major and minor version.
+	For example, CTDB 4.6.1 and CTDB CTDB 4.6.2 are matching versions;
+	CTDB 4.5.x and CTDB 4.6.y do not match.
+      </para>
+      <para>
+	CTDB with version check support will lose to CTDB without
+	version check support.	Between two different CTDB versions with
+	version check support, one running for less time will lose.
+	If the running time for both CTDB versions with version check
+	support is equal (to seconds), then the older version will lose.
+	The losing CTDB daemon will shutdown.
+      </para>
+    </refsect2>
+
+    <refsect2>
       <title>AllowUnhealthyDBRead</title>
       <para>Default: 0</para>
       <para>

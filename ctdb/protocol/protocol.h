@@ -632,6 +632,7 @@ struct ctdb_tunable_list {
 	uint32_t rec_buffer_size_limit;
 	uint32_t queue_buffer_size;
 	uint32_t ip_alloc_algorithm;
+	uint32_t allow_mixed_versions;
 };
 
 struct ctdb_tickle_list {

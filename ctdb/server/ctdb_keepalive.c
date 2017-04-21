@@ -153,6 +153,11 @@ void ctdb_start_keepalive(struct ctdb_context *ctdb)
 	CTDB_NO_MEMORY_FATAL(ctdb, te);
 
 	DEBUG(DEBUG_NOTICE,("Keepalive monitoring has been started\n"));
+
+	if (ctdb->tunable.allow_mixed_versions == 1) {
+		DEBUG(DEBUG_WARNING,
+		      ("CTDB cluster with mixed versions configured\n"));
+	}
 }
 
 void ctdb_stop_keepalive(struct ctdb_context *ctdb)
@@ -168,6 +173,11 @@ void ctdb_request_keepalive(struct ctdb_context *ctdb,
 		(struct ctdb_req_keepalive_old *)hdr;
 	uint32_t my_version = keepalive_version();
 	uint32_t my_uptime = keepalive_uptime(ctdb);
+
+	/* Don't check anything if mixed versions are allowed */
+	if (ctdb->tunable.allow_mixed_versions == 1) {
+		return;
+	}
 
 	if (hdr->length == sizeof(struct ctdb_req_header)) {
 		/* Old keepalive */

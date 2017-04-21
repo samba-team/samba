@@ -155,6 +155,8 @@ static struct {
 		offsetof(struct ctdb_tunable_list, queue_buffer_size) },
 	{ "IPAllocAlgorithm", 2, false,
 		offsetof(struct ctdb_tunable_list, ip_alloc_algorithm) },
+	{ "AllowMixedVersions", 0, false,
+		offsetof(struct ctdb_tunable_list, allow_mixed_versions) },
 	{ NULL, 0, true, }
 };
 
