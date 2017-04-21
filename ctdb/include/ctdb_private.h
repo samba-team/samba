@@ -511,8 +511,6 @@ struct ctdb_call_state *ctdb_daemon_call_send_remote(
 int ctdb_daemon_call_recv(struct ctdb_call_state *state,
 			  struct ctdb_call *call);
 
-void ctdb_send_keepalive(struct ctdb_context *ctdb, uint32_t destnode);
-
 int ctdb_start_revoke_ro_record(struct ctdb_context *ctdb,
 				struct ctdb_db_context *ctdb_db,
 				TDB_DATA key, struct ctdb_ltdb_header *header,

@@ -1542,34 +1542,6 @@ int ctdb_daemon_call_recv(struct ctdb_call_state *state, struct ctdb_call *call)
 }
 
 
-/* 
-   send a keepalive packet to the other node
-*/
-void ctdb_send_keepalive(struct ctdb_context *ctdb, uint32_t destnode)
-{
-	struct ctdb_req_keepalive_old *r;
-	
-	if (ctdb->methods == NULL) {
-		DEBUG(DEBUG_INFO,(__location__ " Failed to send keepalive. Transport is DOWN\n"));
-		return;
-	}
-
-	r = ctdb_transport_allocate(ctdb, ctdb, CTDB_REQ_KEEPALIVE,
-				    sizeof(struct ctdb_req_keepalive_old), 
-				    struct ctdb_req_keepalive_old);
-	CTDB_NO_MEMORY_FATAL(ctdb, r);
-	r->hdr.destnode  = destnode;
-	r->hdr.reqid     = 0;
-	
-	CTDB_INCREMENT_STAT(ctdb, keepalive_packets_sent);
-
-	ctdb_queue_packet(ctdb, &r->hdr);
-
-	talloc_free(r);
-}
-
-
-
 struct revokechild_deferred_call {
 	struct revokechild_deferred_call *prev, *next;
 	struct ctdb_context *ctdb;

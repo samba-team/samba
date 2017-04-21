@@ -37,6 +37,33 @@
 
 
 /*
+   send a keepalive packet to the other node
+*/
+static void ctdb_send_keepalive(struct ctdb_context *ctdb, uint32_t destnode)
+{
+	struct ctdb_req_keepalive_old *r;
+
+	if (ctdb->methods == NULL) {
+		DEBUG(DEBUG_INFO,
+		      ("Failed to send keepalive. Transport is DOWN\n"));
+		return;
+	}
+
+	r = ctdb_transport_allocate(ctdb, ctdb, CTDB_REQ_KEEPALIVE,
+				    sizeof(struct ctdb_req_keepalive_old),
+				    struct ctdb_req_keepalive_old);
+	CTDB_NO_MEMORY_FATAL(ctdb, r);
+	r->hdr.destnode  = destnode;
+	r->hdr.reqid     = 0;
+
+	CTDB_INCREMENT_STAT(ctdb, keepalive_packets_sent);
+
+	ctdb_queue_packet(ctdb, &r->hdr);
+
+	talloc_free(r);
+}
+
+/*
   see if any nodes are dead
  */
 static void ctdb_check_for_dead_nodes(struct tevent_context *ev,
