@@ -287,34 +287,28 @@ def configure(conf):
             else:
                 Logs.info("  %s: no" % (m))
 
+def gen_ctdb_version(task):
+    fp = file(task.outputs[0].bldpath(task.env), 'w')
+    fp.write('/* This file is auto-generated from waf */\n')
+    fp.write('#include "version.h"\n')
+    fp.write('\n')
+    fp.write('#define CTDB_VERSION_STRING "%s"\n' % VERSION)
+    fp.close()
+
+
 def build(bld):
     if bld.env.standalone_ctdb:
         # enable building of public headers in the build tree
         bld.env.build_public_headers = 'include/public'
 
-    version_h = samba_utils.os_path_relpath(os.path.join(Options.launch_dir,
-                                                         "version.h"),
-                                            bld.curdir)
-
     if bld.env.standalone_ctdb:
-        ctdb_mkversion = '../packaging/mkversion.sh'
-        t = bld.SAMBA_GENERATOR('ctdb-version-header',
-                                target='include/ctdb_version.h',
-                                rule='%s ${TGT} %s' % (ctdb_mkversion, VERSION),
-                                dep_vars=['VERSION'])
-        t.env.VERSION = VERSION
+        bld.SAMBA_MKVERSION('version.h', '%s/VERSION' % vdir)
 
-        t = bld.SAMBA_GENERATOR('ctdb-samba-version-header',
-                                target=version_h,
-                                rule='printf "#include \\"ctdb_version.h\\" \\n#define SAMBA_VERSION_STRING CTDB_VERSION_STRING\\n" > ${TGT}',
-                                dep_vars=['VERSION'])
-        t.env.VERSION = VERSION
-    else:
-        t = bld.SAMBA_GENERATOR('ctdb-samba-version-header',
-                                target='include/ctdb_version.h',
-                                rule='printf "#include \\"%s\\" \\n#define CTDB_VERSION_STRING SAMBA_VERSION_STRING\\n" > ${TGT}' % version_h,
-                                dep_vars=['VERSION'])
-        t.env.VERSION = VERSION
+    t = bld.SAMBA_GENERATOR('ctdb-version-header',
+                            target='include/ctdb_version.h',
+                            rule=gen_ctdb_version,
+                            dep_vars=['VERSION'])
+    t.env.VERSION = VERSION
 
     bld.env.PKGCONFIGDIR = '${LIBDIR}/pkgconfig'
 
@@ -982,13 +976,11 @@ def manpages(ctx):
 def distonly(ctx):
     samba_dist.DIST_FILES('VERSION:VERSION', extend=True)
 
-    t = 'include/ctdb_version.h'
-    cmd = 'packaging/mkversion.sh %s %s' % (t, VERSION)
-    ret = samba_utils.RUN_COMMAND(cmd)
-    if ret != 0:
-        print('Command "%s" failed with exit status %d' % (cmd, ret))
-        sys.exit(ret)
-    samba_dist.DIST_FILES('ctdb/%s:%s' % (t, t), extend=True)
+    distfile = file('.distversion', 'w')
+    for field in version.vcs_fields:
+        distfile.write('%s=%s\n' % (field, str(version.vcs_fields[field])))
+    distfile.close()
+    samba_dist.DIST_FILES('ctdb/.distversion:.distversion', extend=True)
 
     t = 'ctdb.spec'
     sed_expr1 = 's/@VERSION@/%s/g' % VERSION
