@@ -28,8 +28,8 @@
  *
  * @param s The input string
  *
- * @return A string allocated with malloc(), containing the escaped string, 
- * and to be free()ed by the caller.
+ * @return A string allocated with talloc(), containing the escaped string,
+ * and to be talloc_free()ed by the caller.
  **/
 
 char *escape_ldap_string(TALLOC_CTX *mem_ctx, const char *s)
