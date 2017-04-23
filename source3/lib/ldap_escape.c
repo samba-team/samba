@@ -24,7 +24,7 @@
 
 /**
  * Escape a parameter to an LDAP filter string, so they cannot contain
- * embeded ( ) * or \ chars which may cause it not to parse correctly. 
+ * embeded ( ) * or \ chars which may cause it not to parse correctly.
  *
  * @param s The input string
  *
