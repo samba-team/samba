@@ -474,10 +474,10 @@ static bool torture_smb2_getinfo(struct torture_context *tctx)
 	return ret;
 }
 
-struct torture_suite *torture_smb2_getinfo_init(void)
+struct torture_suite *torture_smb2_getinfo_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(
-		talloc_autofree_context(), "getinfo");
+		ctx, "getinfo");
 
 	torture_suite_add_simple_test(suite, "complex", torture_smb2_getinfo);
 	torture_suite_add_simple_test(suite, "fsinfo",  torture_smb2_fsinfo);
