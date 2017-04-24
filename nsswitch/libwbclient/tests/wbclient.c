@@ -925,9 +925,9 @@ static bool test_wbc_getgroups(struct torture_context *tctx)
 	return true;
 }
 
-struct torture_suite *torture_wbclient(void)
+struct torture_suite *torture_wbclient(TALLOC_CTX *ctx)
 {
-	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "wbclient");
+	struct torture_suite *suite = torture_suite_create(ctx, "wbclient");
 
 	torture_suite_add_simple_test(suite, "wbcPing", test_wbc_ping);
 	torture_suite_add_simple_test(suite, "wbcPingDc", test_wbc_pingdc);

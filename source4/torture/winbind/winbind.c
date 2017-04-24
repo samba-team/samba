@@ -295,7 +295,7 @@ NTSTATUS torture_winbind_init(TALLOC_CTX *ctx)
 	struct torture_suite *suite = torture_suite_create(ctx, "winbind");
 	struct torture_suite *pac_suite;
 	torture_suite_add_suite(suite, torture_winbind_struct_init());
-	torture_suite_add_suite(suite, torture_wbclient());
+	torture_suite_add_suite(suite, torture_wbclient(suite));
 
 	pac_suite = torture_suite_create(ctx, "pac");
 	torture_suite_add_simple_test(pac_suite,
