@@ -3947,10 +3947,10 @@ static void levelII501_timeout_cb(struct tevent_context *ev,
 	state->done = true;
 }
 
-struct torture_suite *torture_smb2_oplocks_init(void)
+struct torture_suite *torture_smb2_oplocks_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite =
-	    torture_suite_create(talloc_autofree_context(), "oplock");
+	    torture_suite_create(ctx, "oplock");
 
 	torture_suite_add_2smb2_test(suite, "exclusive1", test_smb2_oplock_exclusive1);
 	torture_suite_add_2smb2_test(suite, "exclusive2", test_smb2_oplock_exclusive2);
@@ -4332,10 +4332,10 @@ done:
 	return ret;
 }
 
-struct torture_suite *torture_smb2_kernel_oplocks_init(void)
+struct torture_suite *torture_smb2_kernel_oplocks_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite =
-	    torture_suite_create(talloc_autofree_context(), "kernel-oplocks");
+	    torture_suite_create(ctx, "kernel-oplocks");
 
 	torture_suite_add_1smb2_test(suite, "kernel_oplocks1", test_smb2_kernel_oplocks1);
 	torture_suite_add_1smb2_test(suite, "kernel_oplocks2", test_smb2_kernel_oplocks2);
