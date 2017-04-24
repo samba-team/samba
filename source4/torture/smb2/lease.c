@@ -3909,10 +3909,10 @@ static bool test_lease_dynamic_share(struct torture_context *tctx,
 	return ret;
 }
 
-struct torture_suite *torture_smb2_lease_init(void)
+struct torture_suite *torture_smb2_lease_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite =
-	    torture_suite_create(talloc_autofree_context(), "lease");
+	    torture_suite_create(ctx, "lease");
 
 	torture_suite_add_1smb2_test(suite, "request", test_lease_request);
 	torture_suite_add_1smb2_test(suite, "break_twice",
