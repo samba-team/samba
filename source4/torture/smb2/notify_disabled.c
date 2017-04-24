@@ -108,9 +108,10 @@ done:
 /*
    basic testing of SMB2 change notify
 */
-struct torture_suite *torture_smb2_notify_disabled_init(void)
+struct torture_suite *torture_smb2_notify_disabled_init(TALLOC_CTX *ctx)
 {
-	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "change_notify_disabled");
+	struct torture_suite *suite = torture_suite_create(ctx,
+		"change_notify_disabled");
 
 	torture_suite_add_1smb2_test(suite, "notfiy_disabled", torture_smb2_notify_disabled);
 	suite->description = talloc_strdup(suite, "SMB2-CHANGE-NOTIFY-DISABLED tests");
