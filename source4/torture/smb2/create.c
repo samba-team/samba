@@ -1736,9 +1736,9 @@ done:
 /*
    basic testing of SMB2 read
 */
-struct torture_suite *torture_smb2_create_init(void)
+struct torture_suite *torture_smb2_create_init(TALLOC_CTX *ctx)
 {
-	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "create");
+	struct torture_suite *suite = torture_suite_create(ctx, "create");
 
 	torture_suite_add_1smb2_test(suite, "gentest", test_create_gentest);
 	torture_suite_add_1smb2_test(suite, "blob", test_create_blob);
