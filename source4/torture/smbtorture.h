@@ -34,7 +34,7 @@ extern int torture_failures;
 extern int torture_numasync;
 
 struct torture_test;
-int torture_init(void);
+int torture_init(TALLOC_CTX *);
 bool torture_register_suite(struct torture_suite *suite);
 void torture_shell(struct torture_context *tctx);
 void torture_print_testsuites(bool structured);

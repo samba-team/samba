@@ -584,7 +584,7 @@ int main(int argc, const char *argv[])
 			}
 		}
 	} else { 
-		torture_init();
+		torture_init(mem_ctx);
 	}
 
 	if (list_testsuites) {

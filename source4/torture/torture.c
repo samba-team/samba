@@ -44,15 +44,15 @@ bool torture_register_suite(struct torture_suite *suite)
 	return torture_suite_add_suite(torture_root, suite);
 }
 
-_PUBLIC_ int torture_init(void)
+_PUBLIC_ int torture_init(TALLOC_CTX *mem_ctx)
 {
 #define _MODULE_PROTO(init) extern NTSTATUS init(TALLOC_CTX *);
 	STATIC_smbtorture_MODULES_PROTO;
 	init_module_fn static_init[] = { STATIC_smbtorture_MODULES };
-	init_module_fn *shared_init = load_samba_modules(NULL, "smbtorture");
+	init_module_fn *shared_init = load_samba_modules(mem_ctx, "smbtorture");
 
-	run_init_functions(NULL, static_init);
-	run_init_functions(NULL, shared_init);
+	run_init_functions(mem_ctx, static_init);
+	run_init_functions(mem_ctx, shared_init);
 
 	talloc_free(shared_init);
 
