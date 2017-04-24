@@ -303,9 +303,9 @@ done:
 /*
    basic testing of vfs_acl_xattr
 */
-struct torture_suite *torture_acl_xattr(void)
+struct torture_suite *torture_acl_xattr(TALLOC_CTX *ctx)
 {
-	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "acl_xattr");
+	struct torture_suite *suite = torture_suite_create(ctx, "acl_xattr");
 
 	torture_suite_add_1smb2_test(suite, "default-acl-style-posix", test_default_acl_posix);
 	torture_suite_add_1smb2_test(suite, "default-acl-style-windows", test_default_acl_win);
