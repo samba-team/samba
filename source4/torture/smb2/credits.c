@@ -254,9 +254,9 @@ done:
 	return ret;
 }
 
-struct torture_suite *torture_smb2_crediting_init(void)
+struct torture_suite *torture_smb2_crediting_init(TALLOC_CTX *ctx)
 {
-	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "credits");
+	struct torture_suite *suite = torture_suite_create(ctx, "credits");
 
 	torture_suite_add_1smb2_test(suite, "session_setup_credits_granted", test_session_setup_credits_granted);
 	torture_suite_add_1smb2_test(suite, "single_req_credits_granted", test_single_req_credits_granted);
