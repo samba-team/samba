@@ -147,7 +147,7 @@ NTSTATUS torture_smb2_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(ctx, "smb2");
 	torture_suite_add_simple_test(suite, "connect", torture_smb2_connect);
-	torture_suite_add_suite(suite, torture_smb2_scan_init());
+	torture_suite_add_suite(suite, torture_smb2_scan_init(suite));
 	torture_suite_add_suite(suite, torture_smb2_getinfo_init());
 	torture_suite_add_simple_test(suite, "setinfo", torture_smb2_setinfo);
 	torture_suite_add_suite(suite, torture_smb2_lock_init(suite));

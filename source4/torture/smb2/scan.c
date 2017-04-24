@@ -249,9 +249,9 @@ static bool torture_smb2_scan(struct torture_context *tctx)
 	return true;
 }
 
-struct torture_suite *torture_smb2_scan_init(void)
+struct torture_suite *torture_smb2_scan_init(TALLOC_CTX *ctx)
 {
-	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "scan");
+	struct torture_suite *suite = torture_suite_create(ctx, "scan");
 
 	torture_suite_add_simple_test(suite, "scan", torture_smb2_scan);
 	torture_suite_add_simple_test(suite, "getinfo", torture_smb2_getinfo_scan);
