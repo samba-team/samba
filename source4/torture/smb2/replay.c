@@ -2427,10 +2427,10 @@ done:
 	return ret;
 }
 
-struct torture_suite *torture_smb2_replay_init(void)
+struct torture_suite *torture_smb2_replay_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite =
-		torture_suite_create(talloc_autofree_context(), "replay");
+		torture_suite_create(ctx, "replay");
 
 	torture_suite_add_1smb2_test(suite, "replay-commands", test_replay_commands);
 	torture_suite_add_1smb2_test(suite, "replay-regular", test_replay_regular);
