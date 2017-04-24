@@ -3199,6 +3199,7 @@ int main(int argc, const char *argv[])
 		POPT_COMMON_VERSION
 		{ NULL }
 	};
+	TALLOC_CTX *mem_ctx = NULL;
 
 	memset(&bad_smb2_handle, 0xFF, sizeof(bad_smb2_handle));
 
@@ -3208,14 +3209,20 @@ int main(int argc, const char *argv[])
 	options.max_open_handles = 20;
 	options.seeds_file = "gentest_seeds.dat";
 
+	mem_ctx = talloc_named_const(NULL, 0, "gentest_ctx");
+	if (mem_ctx == NULL) {
+		printf("Unable to allocate gentest_ctx\n");
+		exit(1);
+	}
+
 	pc = poptGetContext("gentest", argc, argv, long_options,
 			    POPT_CONTEXT_KEEP_FIRST);
 
 	poptSetOtherOptionHelp(pc, "<unc1> <unc2>");
 
 	lp_ctx = cmdline_lp_ctx;
-	servers[0].credentials = cli_credentials_init(talloc_autofree_context());
-	servers[1].credentials = cli_credentials_init(talloc_autofree_context());
+	servers[0].credentials = cli_credentials_init(mem_ctx);
+	servers[1].credentials = cli_credentials_init(mem_ctx);
 	cli_credentials_guess(servers[0].credentials, lp_ctx);
 	cli_credentials_guess(servers[1].credentials, lp_ctx);
 
@@ -3227,6 +3234,7 @@ int main(int argc, const char *argv[])
 		case 'U':
 			if (username_count == 2) {
 				usage(pc);
+				talloc_free(mem_ctx);
 				exit(1);
 			}
 			cli_credentials_parse_string(servers[username_count].credentials, poptGetOptArg(pc), CRED_SPECIFIED);
@@ -3250,6 +3258,7 @@ int main(int argc, const char *argv[])
 
 	if (!(argc_new >= 3)) {
 		usage(pc);
+		talloc_free(mem_ctx);
 		exit(1);
 	}
 
@@ -3259,6 +3268,7 @@ int main(int argc, const char *argv[])
 
 	if (argc < 3 || argv[1][0] == '-') {
 		usage(pc);
+		talloc_free(mem_ctx);
 		exit(1);
 	}
 
@@ -3268,12 +3278,14 @@ int main(int argc, const char *argv[])
 		const char *share = argv[1+i];
 		if (!split_unc_name(share, &servers[i].server_name, &servers[i].share_name)) {
 			printf("Invalid share name '%s'\n", share);
+			talloc_free(mem_ctx);
 			return -1;
 		}
 	}
 
 	if (username_count == 0) {
 		usage(pc);
+		talloc_free(mem_ctx);
 		return -1;
 	}
 	if (username_count == 1) {
@@ -3282,7 +3294,7 @@ int main(int argc, const char *argv[])
 
 	printf("seed=%u\n", options.seed);
 
-	ev = s4_event_context_init(talloc_autofree_context());
+	ev = s4_event_context_init(mem_ctx);
 
 	gensec_init();
 
@@ -3294,5 +3306,6 @@ int main(int argc, const char *argv[])
 		printf("gentest failed\n");
 	}
 
+	talloc_free(mem_ctx);
 	return ret?0:-1;
 }
