@@ -3114,10 +3114,10 @@ done:
 
 /* basic testing of SMB2 locking
 */
-struct torture_suite *torture_smb2_lock_init(void)
+struct torture_suite *torture_smb2_lock_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite =
-	    torture_suite_create(talloc_autofree_context(), "lock");
+	    torture_suite_create(ctx, "lock");
 	torture_suite_add_1smb2_test(suite, "valid-request",
 	    test_valid_request);
 	torture_suite_add_1smb2_test(suite, "rw-none", test_lock_rw_none);
