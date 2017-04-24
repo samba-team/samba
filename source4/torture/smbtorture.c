@@ -150,7 +150,9 @@ bool torture_run_named_tests(struct torture_context *torture, const char *name,
 	return ret;
 }
 
-bool torture_parse_target(struct loadparm_context *lp_ctx, const char *target)
+bool torture_parse_target(TALLOC_CTX *ctx,
+				struct loadparm_context *lp_ctx,
+				const char *target)
 {
 	char *host = NULL, *share = NULL;
 	struct dcerpc_binding *binding_struct;
@@ -160,7 +162,7 @@ bool torture_parse_target(struct loadparm_context *lp_ctx, const char *target)
 	if (!smbcli_parse_unc(target, NULL, &host, &share)) {
 		const char *h;
 
-		status = dcerpc_parse_binding(talloc_autofree_context(), target, &binding_struct);
+		status = dcerpc_parse_binding(ctx, target, &binding_struct);
 		if (NT_STATUS_IS_ERR(status)) {
 			d_printf("Invalid option: %s is not a valid torture target (share or binding string)\n\n", target);
 			return false;
@@ -679,8 +681,9 @@ int main(int argc, const char *argv[])
 			printf("You must specify a test to run, or 'ALL'\n");
 			usage(pc);
 			torture->results->returncode = 1;
-		} else if (!torture_parse_target(cmdline_lp_ctx, argv_new[1])) {
-		/* Take the target name or binding. */
+		} else if (!torture_parse_target(torture,
+					cmdline_lp_ctx, argv_new[1])) {
+			/* Take the target name or binding. */
 			usage(pc);
 			torture->results->returncode = 1;
 		} else {

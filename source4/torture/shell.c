@@ -285,7 +285,7 @@ static void shell_target(const struct shell_command *command,
 		printf("Target share: %s\n", share ? share : "");
 		printf("Target binding: %s\n", binding ? binding : "");
 	} else if (argc == 1) {
-		torture_parse_target(tctx->lp_ctx, argv[0]);
+		torture_parse_target(tctx, tctx->lp_ctx, argv[0]);
 	} else {
 		shell_usage(command);
 	}

@@ -40,7 +40,9 @@ void torture_shell(struct torture_context *tctx);
 void torture_print_testsuites(bool structured);
 bool torture_run_named_tests(struct torture_context *torture, const char *name,
 			    const char **restricted);
-bool torture_parse_target(struct loadparm_context *lp_ctx, const char *target);
+bool torture_parse_target(TALLOC_CTX *ctx,
+			struct loadparm_context *lp_ctx,
+			const char *target);
 
 /* Server Functionality Support */
 
