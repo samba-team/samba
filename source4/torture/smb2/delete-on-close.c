@@ -519,9 +519,9 @@ static bool test_doc_create_if_exist(struct torture_context *tctx, struct smb2_t
 /*
  *  Extreme testing of Delete On Close and permissions
  */
-struct torture_suite *torture_smb2_doc_init(void)
+struct torture_suite *torture_smb2_doc_init(TALLOC_CTX *ctx)
 {
-	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "delete-on-close-perms");
+	struct torture_suite *suite = torture_suite_create(ctx, "delete-on-close-perms");
 
 	torture_suite_add_1smb2_test(suite, "OVERWRITE_IF", test_doc_overwrite_if);
 	torture_suite_add_1smb2_test(suite, "OVERWRITE_IF Existing", test_doc_overwrite_if_exist);
