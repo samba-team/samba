@@ -4050,10 +4050,10 @@ done:
  *
  * When running against an OS X SMB server add "--option=torture:osx=true"
  */
-struct torture_suite *torture_vfs_fruit(void)
+struct torture_suite *torture_vfs_fruit(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(
-		talloc_autofree_context(), "fruit");
+		ctx, "fruit");
 
 	suite->description = talloc_strdup(suite, "vfs_fruit tests");
 
@@ -4084,10 +4084,10 @@ struct torture_suite *torture_vfs_fruit(void)
 	return suite;
 }
 
-struct torture_suite *torture_vfs_fruit_netatalk(void)
+struct torture_suite *torture_vfs_fruit_netatalk(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(
-		talloc_autofree_context(), "fruit_netatalk");
+		ctx, "fruit_netatalk");
 
 	suite->description = talloc_strdup(suite, "vfs_fruit tests for Netatalk interop that require fruit:metadata=netatalk");
 
@@ -4097,10 +4097,10 @@ struct torture_suite *torture_vfs_fruit_netatalk(void)
 	return suite;
 }
 
-struct torture_suite *torture_vfs_fruit_file_id(void)
+struct torture_suite *torture_vfs_fruit_file_id(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite =
-	    torture_suite_create(talloc_autofree_context(), "fruit_file_id");
+	    torture_suite_create(ctx, "fruit_file_id");
 
 	suite->description =
 	    talloc_strdup(suite, "vfs_fruit tests for on-disk file ID that "

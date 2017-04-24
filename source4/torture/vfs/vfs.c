@@ -108,10 +108,10 @@ NTSTATUS torture_vfs_init(TALLOC_CTX *ctx)
 
 	suite->description = talloc_strdup(suite, "VFS modules tests");
 
-	torture_suite_add_suite(suite, torture_vfs_fruit());
-	torture_suite_add_suite(suite, torture_vfs_fruit_netatalk());
+	torture_suite_add_suite(suite, torture_vfs_fruit(suite));
+	torture_suite_add_suite(suite, torture_vfs_fruit_netatalk(suite));
 	torture_suite_add_suite(suite, torture_acl_xattr(suite));
-	torture_suite_add_suite(suite, torture_vfs_fruit_file_id());
+	torture_suite_add_suite(suite, torture_vfs_fruit_file_id(suite));
 
 	torture_register_suite(ctx, suite);
 
