@@ -1074,9 +1074,9 @@ static bool torture_winbind_struct_lookup_name_sid(struct torture_context *tortu
 	return true;
 }
 
-struct torture_suite *torture_winbind_struct_init(void)
+struct torture_suite *torture_winbind_struct_init(TALLOC_CTX *ctx)
 {
-	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "struct");
+	struct torture_suite *suite = torture_suite_create(ctx, "struct");
 
 	torture_suite_add_simple_test(suite, "interface_version", torture_winbind_struct_interface_version);
 	torture_suite_add_simple_test(suite, "ping", torture_winbind_struct_ping);
