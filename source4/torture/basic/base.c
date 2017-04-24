@@ -1972,7 +1972,7 @@ NTSTATUS torture_base_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb_test(suite, "chkpath",  torture_chkpath_test);
 	torture_suite_add_1smb_test(suite, "secleak",  torture_sec_leak);
 	torture_suite_add_simple_test(suite, "disconnect",  torture_disconnect);
-	torture_suite_add_suite(suite, torture_delay_write());
+	torture_suite_add_suite(suite, torture_delay_write(suite));
 	torture_suite_add_simple_test(suite, "samba3error", torture_samba3_errorpaths);
 	torture_suite_add_1smb_test(suite, "casetable", torture_casetable);
 	torture_suite_add_1smb_test(suite, "utable", torture_utable);
