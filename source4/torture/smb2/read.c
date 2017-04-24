@@ -303,9 +303,9 @@ done:
 /* 
    basic testing of SMB2 read
 */
-struct torture_suite *torture_smb2_read_init(void)
+struct torture_suite *torture_smb2_read_init(TALLOC_CTX *ctx)
 {
-	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "read");
+	struct torture_suite *suite = torture_suite_create(ctx, "read");
 
 	torture_suite_add_1smb2_test(suite, "eof", test_read_eof);
 	torture_suite_add_1smb2_test(suite, "position", test_read_position);
