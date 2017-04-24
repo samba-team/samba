@@ -2357,9 +2357,9 @@ static bool torture_smb2_notify_rmdir4(struct torture_context *torture,
 /*
    basic testing of SMB2 change notify
 */
-struct torture_suite *torture_smb2_notify_init(void)
+struct torture_suite *torture_smb2_notify_init(TALLOC_CTX *ctx)
 {
-	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "notify");
+	struct torture_suite *suite = torture_suite_create(ctx, "notify");
 
 	torture_suite_add_1smb2_test(suite, "valid-req", test_valid_request);
 	torture_suite_add_1smb2_test(suite, "tcon", torture_smb2_notify_tcon);
