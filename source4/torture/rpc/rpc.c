@@ -484,7 +484,7 @@ _PUBLIC_ struct torture_test *torture_rpc_tcase_add_test_ex(
 
 NTSTATUS torture_rpc_init(TALLOC_CTX *ctx)
 {
-	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "rpc");
+	struct torture_suite *suite = torture_suite_create(ctx, "rpc");
 
 	ndr_table_init();
 
@@ -570,7 +570,7 @@ NTSTATUS torture_rpc_init(TALLOC_CTX *ctx)
 
 	suite->description = talloc_strdup(suite, "DCE/RPC protocol and interface tests");
 
-	torture_register_suite(suite);
+	torture_register_suite(ctx, suite);
 
 	return NT_STATUS_OK;
 }

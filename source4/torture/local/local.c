@@ -83,7 +83,7 @@ NTSTATUS torture_local_init(TALLOC_CTX *ctx)
 {
 	int i;
 	struct torture_suite *suite = torture_suite_create(
-		talloc_autofree_context(), "local");
+		ctx, "local");
 	
 	torture_suite_add_simple_test(suite, "talloc", torture_local_talloc);
 	torture_suite_add_simple_test(suite, "replace", torture_local_replace);
@@ -103,12 +103,12 @@ NTSTATUS torture_local_init(TALLOC_CTX *ctx)
 
 	for (i = 0; suite_generators[i]; i++)
 		torture_suite_add_suite(suite,
-					suite_generators[i](talloc_autofree_context()));
+					suite_generators[i](ctx));
 	
 	suite->description = talloc_strdup(suite, 
 					   "Local, Samba-specific tests");
 
-	torture_register_suite(suite);
+	torture_register_suite(ctx, suite);
 
 	return NT_STATUS_OK;
 }

@@ -84,7 +84,7 @@ NTSTATUS torture_libnetapi_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite;
 
-	suite = torture_suite_create(talloc_autofree_context(), "netapi");
+	suite = torture_suite_create(ctx, "netapi");
 
 	torture_suite_add_simple_test(suite, "server", torture_libnetapi_server);
 	torture_suite_add_simple_test(suite, "group", torture_libnetapi_group);
@@ -93,7 +93,7 @@ NTSTATUS torture_libnetapi_init(TALLOC_CTX *ctx)
 
 	suite->description = talloc_strdup(suite, "libnetapi convenience interface tests");
 
-	torture_register_suite(suite);
+	torture_register_suite(ctx, suite);
 
 	return NT_STATUS_OK;
 }

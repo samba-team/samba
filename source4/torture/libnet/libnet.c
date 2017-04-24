@@ -27,7 +27,7 @@
 NTSTATUS torture_net_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(
-		talloc_autofree_context(), "net");
+		ctx, "net");
 
 	torture_suite_add_simple_test(suite, "userinfo", torture_userinfo);
 	torture_suite_add_simple_test(suite, "useradd", torture_useradd);
@@ -64,7 +64,7 @@ NTSTATUS torture_net_init(TALLOC_CTX *ctx)
 
 	suite->description = talloc_strdup(suite, "libnet convenience interface tests");
 
-	torture_register_suite(suite);
+	torture_register_suite(ctx, suite);
 
 	return NT_STATUS_OK;
 }

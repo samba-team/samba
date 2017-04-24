@@ -503,7 +503,7 @@ static bool test_low_referral_level(struct torture_context *tctx,
 
 NTSTATUS torture_dfs_init(TALLOC_CTX *ctx)
 {
-	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "dfs");
+	struct torture_suite *suite = torture_suite_create(ctx, "dfs");
 	struct torture_suite *suite_basic = torture_suite_create(suite, "domain");
 
 	torture_suite_add_suite(suite, suite_basic);
@@ -534,7 +534,7 @@ NTSTATUS torture_dfs_init(TALLOC_CTX *ctx)
 
 	suite->description = talloc_strdup(suite, "DFS referrals calls");
 
-	torture_register_suite(suite);
+	torture_register_suite(ctx, suite);
 
 	return NT_STATUS_OK;
 }

@@ -179,12 +179,11 @@ NTSTATUS torture_internal_dns_init(TALLOC_CTX *);
 NTSTATUS torture_internal_dns_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite;
-	TALLOC_CTX *mem_ctx = talloc_autofree_context();
 
 	/* register internal DNS torture test cases */
-	suite = internal_dns_suite(mem_ctx);
+	suite = internal_dns_suite(ctx);
 	if (!suite) return NT_STATUS_NO_MEMORY;
-	torture_register_suite(suite);
+	torture_register_suite(ctx, suite);
 
 	return NT_STATUS_OK;
 }

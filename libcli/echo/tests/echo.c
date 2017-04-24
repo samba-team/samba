@@ -85,13 +85,13 @@ NTSTATUS torture_libcli_echo_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite;
 
-	suite = torture_suite_create(talloc_autofree_context(), "echo");
+	suite = torture_suite_create(ctx, "echo");
 	NT_STATUS_HAVE_NO_MEMORY(suite);
 
 	torture_suite_add_simple_test(suite, "udp", torture_echo_udp);
 
 	suite->description = talloc_strdup(suite, "libcli/echo interface tests");
-	torture_register_suite(suite);
+	torture_register_suite(ctx, suite);
 
 	return NT_STATUS_OK;
 }

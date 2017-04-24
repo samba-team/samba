@@ -131,7 +131,7 @@ NTSTATUS torture_ldap_close(struct ldap_connection *conn)
 
 NTSTATUS torture_ldap_init(TALLOC_CTX *ctx)
 {
-	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "ldap");
+	struct torture_suite *suite = torture_suite_create(ctx, "ldap");
 	torture_suite_add_simple_test(suite, "bench-cldap", torture_bench_cldap);
 	torture_suite_add_simple_test(suite, "basic", torture_ldap_basic);
 	torture_suite_add_simple_test(suite, "sort", torture_ldap_sort);
@@ -144,7 +144,7 @@ NTSTATUS torture_ldap_init(TALLOC_CTX *ctx)
 
 	suite->description = talloc_strdup(suite, "LDAP and CLDAP tests");
 
-	torture_register_suite(suite);
+	torture_register_suite(ctx, suite);
 
 	return NT_STATUS_OK;
 }

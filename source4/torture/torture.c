@@ -33,13 +33,13 @@ _PUBLIC_ int torture_numasync=100;
 
 struct torture_suite *torture_root = NULL;
 
-bool torture_register_suite(struct torture_suite *suite)
+bool torture_register_suite(TALLOC_CTX *mem_ctx, struct torture_suite *suite)
 {
 	if (!suite)
 		return true;
 
 	if (torture_root == NULL)
-		torture_root = talloc_zero(talloc_autofree_context(), struct torture_suite);
+		torture_root = talloc_zero(mem_ctx, struct torture_suite);
 
 	return torture_suite_add_suite(torture_root, suite);
 }

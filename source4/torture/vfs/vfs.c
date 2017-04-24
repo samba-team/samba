@@ -104,7 +104,7 @@ struct torture_test *torture_suite_add_2ns_smb2_test(struct torture_suite *suite
 NTSTATUS torture_vfs_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(
-		talloc_autofree_context(), "vfs");
+		ctx, "vfs");
 
 	suite->description = talloc_strdup(suite, "VFS modules tests");
 
@@ -113,7 +113,7 @@ NTSTATUS torture_vfs_init(TALLOC_CTX *ctx)
 	torture_suite_add_suite(suite, torture_acl_xattr());
 	torture_suite_add_suite(suite, torture_vfs_fruit_file_id());
 
-	torture_register_suite(suite);
+	torture_register_suite(ctx, suite);
 
 	return NT_STATUS_OK;
 }

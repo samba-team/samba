@@ -205,7 +205,7 @@ NTSTATUS torture_libsmbclient_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite;
 
-	suite = torture_suite_create(talloc_autofree_context(), "libsmbclient");
+	suite = torture_suite_create(ctx, "libsmbclient");
 
 	torture_suite_add_simple_test(suite, "version", torture_libsmbclient_version);
 	torture_suite_add_simple_test(suite, "initialize", torture_libsmbclient_initialize);
@@ -215,7 +215,7 @@ NTSTATUS torture_libsmbclient_init(TALLOC_CTX *ctx)
 
 	suite->description = talloc_strdup(suite, "libsmbclient interface tests");
 
-	torture_register_suite(suite);
+	torture_register_suite(ctx, suite);
 
 	return NT_STATUS_OK;
 }

@@ -145,7 +145,7 @@ struct torture_test *torture_suite_add_2smb2_test(struct torture_suite *suite,
 
 NTSTATUS torture_smb2_init(TALLOC_CTX *ctx)
 {
-	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "smb2");
+	struct torture_suite *suite = torture_suite_create(ctx, "smb2");
 	torture_suite_add_simple_test(suite, "connect", torture_smb2_connect);
 	torture_suite_add_suite(suite, torture_smb2_scan_init());
 	torture_suite_add_suite(suite, torture_smb2_getinfo_init());
@@ -180,7 +180,7 @@ NTSTATUS torture_smb2_init(TALLOC_CTX *ctx)
 
 	suite->description = talloc_strdup(suite, "SMB2-specific tests");
 
-	torture_register_suite(suite);
+	torture_register_suite(ctx, suite);
 
 	return NT_STATUS_OK;
 }

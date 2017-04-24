@@ -687,7 +687,7 @@ static bool torture_krb5_as_req_aes_rc4(struct torture_context *tctx)
 
 NTSTATUS torture_krb5_init(TALLOC_CTX *ctx)
 {
-	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "krb5");
+	struct torture_suite *suite = torture_suite_create(ctx, "krb5");
 	struct torture_suite *kdc_suite = torture_suite_create(suite, "kdc");
 	suite->description = talloc_strdup(suite, "Kerberos tests");
 	kdc_suite->description = talloc_strdup(kdc_suite, "Kerberos KDC tests");
@@ -719,6 +719,6 @@ NTSTATUS torture_krb5_init(TALLOC_CTX *ctx)
 	torture_suite_add_suite(kdc_suite, torture_krb5_canon(kdc_suite));
 	torture_suite_add_suite(suite, kdc_suite);
 
-	torture_register_suite(suite);
+	torture_register_suite(ctx, suite);
 	return NT_STATUS_OK;
 }

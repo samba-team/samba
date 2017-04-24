@@ -1084,12 +1084,11 @@ NTSTATUS torture_bind_dns_init(TALLOC_CTX *);
 NTSTATUS torture_bind_dns_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite;
-	TALLOC_CTX *mem_ctx = talloc_autofree_context();
 
 	/* register DNS related test cases */
-	suite = dlz_bind9_suite(mem_ctx);
+	suite = dlz_bind9_suite(ctx);
 	if (!suite) return NT_STATUS_NO_MEMORY;
-	torture_register_suite(suite);
+	torture_register_suite(ctx, suite);
 
 	return NT_STATUS_OK;
 }

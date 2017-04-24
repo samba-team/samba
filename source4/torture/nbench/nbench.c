@@ -287,12 +287,12 @@ bool torture_nbench(struct torture_context *torture)
 NTSTATUS torture_nbench_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(
-						   talloc_autofree_context(), "bench");
+						   ctx, "bench");
 
 	torture_suite_add_simple_test(suite, "nbench", torture_nbench);
 
 	suite->description = talloc_strdup(suite, "Benchmarks");
 
-	torture_register_suite(suite);
+	torture_register_suite(ctx, suite);
 	return NT_STATUS_OK;
 }

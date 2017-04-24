@@ -24,7 +24,7 @@
 NTSTATUS torture_unix_init(TALLOC_CTX *ctx)
 {
         struct torture_suite *suite =
-                torture_suite_create(talloc_autofree_context(), "unix");
+                torture_suite_create(ctx, "unix");
 
         suite->description =
                 talloc_strdup(suite, "CIFS UNIX extensions tests");
@@ -34,7 +34,7 @@ NTSTATUS torture_unix_init(TALLOC_CTX *ctx)
 	torture_suite_add_simple_test(suite,
 			"info2", unix_torture_unix_info2);
 
-        return (torture_register_suite(suite)) ? NT_STATUS_OK
+        return (torture_register_suite(ctx, suite)) ? NT_STATUS_OK
                                         : NT_STATUS_UNSUCCESSFUL;
 
 }

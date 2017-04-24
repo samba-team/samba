@@ -1937,7 +1937,7 @@ static bool run_birthtimetest(struct torture_context *tctx,
 
 NTSTATUS torture_base_init(TALLOC_CTX *ctx)
 {
-	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "base");
+	struct torture_suite *suite = torture_suite_create(ctx, "base");
 
 	torture_suite_add_2smb_test(suite, "fdpass", run_fdpasstest);
 	torture_suite_add_suite(suite, torture_base_locktest(suite));
@@ -1996,7 +1996,7 @@ NTSTATUS torture_base_init(TALLOC_CTX *ctx)
 	suite->description = talloc_strdup(suite, 
 					"Basic SMB tests (imported from the original smbtorture)");
 
-	torture_register_suite(suite);
+	torture_register_suite(ctx, suite);
 
 	return NT_STATUS_OK;
 }

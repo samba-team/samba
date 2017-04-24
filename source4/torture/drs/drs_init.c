@@ -65,17 +65,16 @@ static struct torture_suite * torture_drs_unit_suite(TALLOC_CTX *mem_ctx,
 NTSTATUS torture_drs_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite;
-	TALLOC_CTX *mem_ctx = talloc_autofree_context();
 
 	/* register RPC related test cases */
-	suite = torture_drs_rpc_suite(mem_ctx, "drs.rpc");
+	suite = torture_drs_rpc_suite(ctx, "drs.rpc");
 	if (!suite) return NT_STATUS_NO_MEMORY;
-	torture_register_suite(suite);
+	torture_register_suite(ctx, suite);
 
 	/* register DRS Unit test cases */
-	suite = torture_drs_unit_suite(mem_ctx, "drs.unit");
+	suite = torture_drs_unit_suite(ctx, "drs.unit");
 	if (!suite) return NT_STATUS_NO_MEMORY;
-	torture_register_suite(suite);
+	torture_register_suite(ctx, suite);
 
 	return NT_STATUS_OK;
 }

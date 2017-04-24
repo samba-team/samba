@@ -292,12 +292,12 @@ static bool torture_winbind_pac_krb5(struct torture_context *tctx)
 
 NTSTATUS torture_winbind_init(TALLOC_CTX *ctx)
 {
-	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "winbind");
+	struct torture_suite *suite = torture_suite_create(ctx, "winbind");
 	struct torture_suite *pac_suite;
 	torture_suite_add_suite(suite, torture_winbind_struct_init());
 	torture_suite_add_suite(suite, torture_wbclient());
 
-	pac_suite = torture_suite_create(talloc_autofree_context(), "pac");
+	pac_suite = torture_suite_create(ctx, "pac");
 	torture_suite_add_simple_test(pac_suite,
 				      "GSSAPI", torture_winbind_pac_gssapi);
 	torture_suite_add_simple_test(pac_suite,
@@ -311,7 +311,7 @@ NTSTATUS torture_winbind_init(TALLOC_CTX *ctx)
 
 	suite->description = talloc_strdup(suite, "WINBIND tests");
 
-	torture_register_suite(suite);
+	torture_register_suite(ctx, suite);
 
 	return NT_STATUS_OK;
 }

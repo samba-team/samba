@@ -286,7 +286,7 @@ static bool test_ntp_signd(struct torture_context *tctx,
 
 NTSTATUS torture_ntp_init(TALLOC_CTX *ctx)
 {
-	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "ntp");
+	struct torture_suite *suite = torture_suite_create(ctx, "ntp");
 	struct torture_rpc_tcase *tcase;
 
 	tcase = torture_suite_add_machine_workstation_rpc_iface_tcase(suite,
@@ -296,7 +296,7 @@ NTSTATUS torture_ntp_init(TALLOC_CTX *ctx)
 
 	suite->description = talloc_strdup(suite, "NTP tests");
 
-	torture_register_suite(suite);
+	torture_register_suite(ctx, suite);
 
 	return NT_STATUS_OK;
 }
