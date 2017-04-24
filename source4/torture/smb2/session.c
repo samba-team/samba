@@ -1306,10 +1306,10 @@ done:
 	return ret;
 }
 
-struct torture_suite *torture_smb2_session_init(void)
+struct torture_suite *torture_smb2_session_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite =
-	    torture_suite_create(talloc_autofree_context(), "session");
+	    torture_suite_create(ctx, "session");
 
 	torture_suite_add_1smb2_test(suite, "reconnect1", test_session_reconnect1);
 	torture_suite_add_1smb2_test(suite, "reconnect2", test_session_reconnect2);
