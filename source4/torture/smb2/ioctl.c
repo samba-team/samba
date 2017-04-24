@@ -6188,9 +6188,9 @@ static bool test_ioctl_dup_extents_dest_lck(struct torture_context *tctx,
 /*
  * testing of SMB2 ioctls
  */
-struct torture_suite *torture_smb2_ioctl_init(void)
+struct torture_suite *torture_smb2_ioctl_init(TALLOC_CTX *ctx)
 {
-	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "ioctl");
+	struct torture_suite *suite = torture_suite_create(ctx, "ioctl");
 
 	torture_suite_add_1smb2_test(suite, "shadow_copy",
 				     test_ioctl_get_shadow_copy);
