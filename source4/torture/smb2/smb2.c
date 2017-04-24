@@ -168,7 +168,7 @@ NTSTATUS torture_smb2_init(TALLOC_CTX *ctx)
 	torture_suite_add_suite(suite, torture_smb2_compound_find_init(suite));
 	torture_suite_add_suite(suite, torture_smb2_oplocks_init(suite));
 	torture_suite_add_suite(suite, torture_smb2_kernel_oplocks_init(suite));
-	torture_suite_add_suite(suite, torture_smb2_streams_init());
+	torture_suite_add_suite(suite, torture_smb2_streams_init(suite));
 	torture_suite_add_suite(suite, torture_smb2_ioctl_init(suite));
 	torture_suite_add_suite(suite, torture_smb2_rename_init(suite));
 	torture_suite_add_1smb2_test(suite, "bench-oplock", test_smb2_bench_oplock);
