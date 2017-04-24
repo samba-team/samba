@@ -2090,9 +2090,9 @@ done:
 /*
    basic testing of SMB2 ACLs
 */
-struct torture_suite *torture_smb2_acls_init(void)
+struct torture_suite *torture_smb2_acls_init(TALLOC_CTX *ctx)
 {
-	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "acls");
+	struct torture_suite *suite = torture_suite_create(ctx, "acls");
 
 	torture_suite_add_1smb2_test(suite, "CREATOR", test_creator_sid);
 	torture_suite_add_1smb2_test(suite, "GENERIC", test_generic_bits);
