@@ -462,7 +462,7 @@ static struct gp_extension_methods scripts_methods = {
 /****************************************************************
 ****************************************************************/
 
-NTSTATUS gpext_scripts_init(void)
+NTSTATUS gpext_scripts_init(TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
 

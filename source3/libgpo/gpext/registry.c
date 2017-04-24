@@ -407,7 +407,7 @@ static struct gp_extension_methods registry_methods = {
 /****************************************************************
 ****************************************************************/
 
-NTSTATUS gpext_registry_init(void)
+NTSTATUS gpext_registry_init(TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
 
