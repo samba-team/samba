@@ -1214,9 +1214,9 @@ done:
 	return ret;
 }
 
-struct torture_suite *torture_smb2_compound_init(void)
+struct torture_suite *torture_smb2_compound_init(TALLOC_CTX *ctx)
 {
-	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "compound");
+	struct torture_suite *suite = torture_suite_create(ctx, "compound");
 
 	torture_suite_add_1smb2_test(suite, "related1", test_compound_related1);
 	torture_suite_add_1smb2_test(suite, "related2", test_compound_related2);
@@ -1236,9 +1236,9 @@ struct torture_suite *torture_smb2_compound_init(void)
 	return suite;
 }
 
-struct torture_suite *torture_smb2_compound_find_init(void)
+struct torture_suite *torture_smb2_compound_find_init(TALLOC_CTX *ctx)
 {
-	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "compound_find");
+	struct torture_suite *suite = torture_suite_create(ctx, "compound_find");
 
 	torture_suite_add_1smb2_test(suite, "compound_find_related", test_compound_find_related);
 	torture_suite_add_1smb2_test(suite, "compound_find_unrelated", test_compound_find_unrelated);
