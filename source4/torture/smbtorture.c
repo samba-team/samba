@@ -387,6 +387,7 @@ int main(int argc, const char *argv[])
 	enum {OPT_LOADFILE=1000,OPT_UNCLIST,OPT_TIMELIMIT,OPT_DNS, OPT_LIST,
 	      OPT_DANGEROUS,OPT_SMB_PORTS,OPT_ASYNC,OPT_NUMPROGS,
 	      OPT_EXTRA_USER,};
+	TALLOC_CTX *mem_ctx = NULL;
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -428,6 +429,12 @@ int main(int argc, const char *argv[])
 
 	setlinebuf(stdout);
 
+	mem_ctx = talloc_named_const(NULL, 0, "torture_ctx");
+	if (mem_ctx == NULL) {
+		printf("Unable to allocate torture_ctx\n");
+		exit(1);
+	}
+
 	printf("smbtorture %s\n", samba_version_string());
 
 	/* we are never interested in SIGPIPE */
@@ -466,9 +473,15 @@ int main(int argc, const char *argv[])
 			break;
 		case OPT_EXTRA_USER:
 			{
-				char *option = talloc_asprintf(NULL, "torture:extra_user%u",
-							       ++num_extra_users);
+				char *option = talloc_asprintf(mem_ctx,
+						"torture:extra_user%u",
+						++num_extra_users);
 				const char *value = poptGetOptArg(pc);
+				if (option == NULL) {
+					printf("talloc fail\n");
+					talloc_free(mem_ctx);
+					exit(1);
+				}
 				lpcfg_set_cmdline(cmdline_lp_ctx, option, value);
 				talloc_free(option);
 			}
@@ -476,6 +489,7 @@ int main(int argc, const char *argv[])
 		default:
 			if (opt < 0) {
 				printf("bad command line option %d\n", opt);
+				talloc_free(mem_ctx);
 				exit(1);
 			}
 		}
@@ -483,10 +497,11 @@ int main(int argc, const char *argv[])
 
 	if (load_list != NULL) {
 		char **r;
-		r = file_lines_load(load_list, &num_restricted, 0, talloc_autofree_context());
+		r = file_lines_load(load_list, &num_restricted, 0, mem_ctx);
 		restricted = discard_const_p(const char *, r);
 		if (restricted == NULL) {
 			printf("Unable to read load list file '%s'\n", load_list);
+			talloc_free(mem_ctx);
 			exit(1);
 		}
 	}
@@ -560,7 +575,7 @@ int main(int argc, const char *argv[])
 		if (fn == NULL) 
 			d_printf("Unable to load module from %s\n", poptGetOptArg(pc));
 		else {
-			status = fn(NULL);
+			status = fn(mem_ctx);
 			if (NT_STATUS_IS_ERR(status)) {
 				d_printf("Error initializing module %s: %s\n", 
 					poptGetOptArg(pc), nt_errstr(status));
@@ -572,6 +587,7 @@ int main(int argc, const char *argv[])
 
 	if (list_testsuites) {
 		print_testsuite_list();
+		talloc_free(mem_ctx);
 		return 0;
 	}
 
@@ -593,6 +609,7 @@ int main(int argc, const char *argv[])
 				print_test_list(torture_root, NULL, argv_new[i]);
 			}
 		}
+		talloc_free(mem_ctx);
 		return 0;
 	}
 
@@ -608,16 +625,18 @@ int main(int argc, const char *argv[])
 		ui_ops = &torture_subunit_ui_ops;
 	} else {
 		printf("Unknown output format '%s'\n", ui_ops_name);
+		talloc_free(mem_ctx);
 		exit(1);
 	}
 
-	results = torture_results_init(talloc_autofree_context(), ui_ops);
+	results = torture_results_init(mem_ctx, ui_ops);
 
-	torture = torture_context_init(s4_event_context_init(talloc_autofree_context()),
+	torture = torture_context_init(s4_event_context_init(mem_ctx),
 	                               results);
 	if (basedir != NULL) {
 		if (basedir[0] != '/') {
 			fprintf(stderr, "Please specify an absolute path to --basedir\n");
+			talloc_free(mem_ctx);
 			return 1;
 		}
 		outputdir = talloc_asprintf(torture, "%s/smbtortureXXXXXX", basedir);
@@ -625,17 +644,21 @@ int main(int argc, const char *argv[])
 		char *pwd = talloc_size(torture, PATH_MAX);
 		if (!getcwd(pwd, PATH_MAX)) {
 			fprintf(stderr, "Unable to determine current working directory\n");
+			talloc_free(mem_ctx);
 			return 1;
 		}
 		outputdir = talloc_asprintf(torture, "%s/smbtortureXXXXXX", pwd);
 	}
 	if (!outputdir) {
 		fprintf(stderr, "Could not allocate per-run output dir\n");
+		talloc_free(mem_ctx);
 		return 1;
 	}
 	torture->outputdir = mkdtemp(outputdir);
 	if (!torture->outputdir) {
 		perror("Failed to make temp output dir");
+		talloc_free(mem_ctx);
+		return 1;
 	}
 
 	torture->lp_ctx = cmdline_lp_ctx;
@@ -674,8 +697,10 @@ int main(int argc, const char *argv[])
 	torture_deltree_outputdir(torture);
 
 	if (torture->results->returncode && correct) {
+		talloc_free(mem_ctx);
 		return(0);
 	} else {
+		talloc_free(mem_ctx);
 		return(1);
 	}
 }
