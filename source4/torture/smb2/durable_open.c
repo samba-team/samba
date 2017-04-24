@@ -2753,10 +2753,10 @@ done:
 }
 
 
-struct torture_suite *torture_smb2_durable_open_init(void)
+struct torture_suite *torture_smb2_durable_open_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite =
-	    torture_suite_create(talloc_autofree_context(), "durable-open");
+	    torture_suite_create(ctx, "durable-open");
 
 	torture_suite_add_1smb2_test(suite, "open-oplock", test_durable_open_open_oplock);
 	torture_suite_add_1smb2_test(suite, "open-lease", test_durable_open_open_lease);
@@ -2793,10 +2793,10 @@ struct torture_suite *torture_smb2_durable_open_init(void)
 	return suite;
 }
 
-struct torture_suite *torture_smb2_durable_open_disconnect_init(void)
+struct torture_suite *torture_smb2_durable_open_disconnect_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite =
-	    torture_suite_create(talloc_autofree_context(),
+	    torture_suite_create(ctx,
 				 "durable-open-disconnect");
 
 	torture_suite_add_1smb2_test(suite, "open-oplock-disconnect",
