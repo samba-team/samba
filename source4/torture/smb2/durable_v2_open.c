@@ -2004,10 +2004,10 @@ bool test_persistent_open_lease(struct torture_context *tctx,
 	return ret;
 }
 
-struct torture_suite *torture_smb2_durable_v2_open_init(void)
+struct torture_suite *torture_smb2_durable_v2_open_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite =
-	    torture_suite_create(talloc_autofree_context(), "durable-v2-open");
+	    torture_suite_create(ctx, "durable-v2-open");
 
 	torture_suite_add_1smb2_test(suite, "create-blob", test_durable_v2_open_create_blob);
 	torture_suite_add_1smb2_test(suite, "open-oplock", test_durable_v2_open_oplock);
