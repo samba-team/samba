@@ -1963,7 +1963,7 @@ NTSTATUS torture_base_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb_test(suite, "xcopy", run_xcopy);
 	torture_suite_add_1smb_test(suite, "iometer", run_iometer);
 	torture_suite_add_1smb_test(suite, "rename", torture_test_rename);
-	torture_suite_add_suite(suite, torture_test_delete());
+	torture_suite_add_suite(suite, torture_test_delete(suite));
 	torture_suite_add_1smb_test(suite, "properties", torture_test_properties);
 	torture_suite_add_1smb_test(suite, "mangle", torture_mangle);
 	torture_suite_add_1smb_test(suite, "openattr", torture_openattrtest);
