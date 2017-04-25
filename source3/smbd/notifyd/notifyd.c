@@ -734,7 +734,8 @@ static void notifyd_trigger_parser(TDB_DATA key, TDB_DATA data,
 
 {
 	struct notifyd_trigger_state *tstate = private_data;
-	struct notify_event_msg msg = { .action = tstate->msg->action };
+	struct notify_event_msg msg = { .action = tstate->msg->action,
+					.when = tstate->msg->when };
 	struct iovec iov[2];
 	size_t path_len = key.dsize;
 	struct notifyd_instance *instances = NULL;
