@@ -1848,7 +1848,7 @@ samba-tool user syncpasswords --terminate \\
 
         def sync_loop(wait):
             notify_attrs = ["name", "uSNCreated", "uSNChanged", "objectClass"]
-            notify_controls = ["notification:1"]
+            notify_controls = ["notification:1", "show_recycled:1"]
             notify_handle = self.samdb.search_iterator(expression="objectClass=*",
                                                        scope=ldb.SCOPE_SUBTREE,
                                                        attrs=notify_attrs,
