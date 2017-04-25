@@ -131,11 +131,24 @@ static pid_t level2_fork_and_wait(int child_ready_fd)
 	 * We're going to stay around until child3 exits, so lets close all fds
 	 * other then the pipe fd we may have inherited from the caller.
 	 */
-	fd = dup2(tfork_global->status_pipe[1], 0);
-	if (fd == -1) {
-		status = errno;
-		kill(tfork_global->level3_pid, SIGKILL);
-		wait = false;
+	while (true) {
+		fd = dup2(tfork_global->status_pipe[1], 0);
+		if (fd == -1) {
+			if (errno == EINTR) {
+				continue;
+			}
+			status = errno;
+
+			kill(tfork_global->level3_pid, SIGKILL);
+
+			written = sys_write(tfork_global->status_pipe[1],
+					    &status, sizeof(status));
+			if (written != sizeof(status)) {
+				abort();
+			}
+			_exit(0);
+		}
+		break;
 	}
 	closefrom(1);
 
