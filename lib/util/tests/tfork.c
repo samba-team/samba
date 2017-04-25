@@ -32,44 +32,49 @@
 
 static bool test_tfork_simple(struct torture_context *tctx)
 {
-	pid_t pid;
-	pid_t parent = getpid();
-	pid_t parent_arg;
+        pid_t parent = getpid();
+        struct tfork *t = NULL;
+        pid_t child;
+        int ret;
 
-	pid = tfork(NULL, &parent_arg);
-	if (pid == 0) {
-		torture_comment(tctx, "my parent pid is %d\n", parent);
-		torture_assert(tctx, parent == parent_arg, "tfork failed\n");
-		_exit(0);
-	}
-	if (pid == -1) {
-		torture_fail(tctx, "tfork failed\n");
-		return false;
-	}
+        t = tfork_create();
+        if (t == NULL) {
+                torture_fail(tctx, "tfork failed\n");
+                return false;
+        }
+        child = tfork_child_pid(t);
+        if (child == 0) {
+                torture_comment(tctx, "my parent pid is %d\n", parent);
+                torture_assert(tctx, getpid() != parent, "tfork failed\n");
+                _exit(0);
+        }
 
-	return true;
+        ret = tfork_destroy(&t);
+        torture_assert(tctx, ret == 0, "tfork_destroy failed\n");
+
+        return true;
 }
 
 static bool test_tfork_status(struct torture_context *tctx)
 {
-	pid_t child;
+	struct tfork *t = NULL;
 	int status;
-	ssize_t nread;
-	int status_fd = -1;
+	pid_t child;
 	bool ok = true;
 
-	child = tfork(&status_fd, NULL);
-	if (child == 0) {
-		_exit(123);
-	}
-	if (child == -1) {
+	t = tfork_create();
+	if (t == NULL) {
 		torture_fail(tctx, "tfork failed\n");
 		return false;
 	}
+	child = tfork_child_pid(t);
+	if (child == 0) {
+		_exit(123);
+	}
 
-	nread = sys_read(status_fd, &status, sizeof(status));
-	if (nread != sizeof(status)) {
-		torture_fail(tctx, "sys_read failed\n");
+	status = tfork_status(&t, true);
+	if (status == -1) {
+		torture_fail(tctx, "tfork_status failed\n");
 	}
 
 	torture_assert_goto(tctx, WIFEXITED(status) == true, ok, done,
@@ -80,10 +85,6 @@ static bool test_tfork_status(struct torture_context *tctx)
 	torture_comment(tctx, "exit status [%d]\n", WEXITSTATUS(status));
 
 done:
-	if (status_fd != -1) {
-		close(status_fd);
-	}
-
 	return ok;
 }
 
