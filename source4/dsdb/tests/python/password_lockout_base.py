@@ -351,23 +351,11 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
                                                    userpass="thatsAcomplPASS0",
                                                    kerberos_state=MUST_USE_KERBEROS)
         self.lockout1krb5_ldb = self._readd_user(self.lockout1krb5_creds)
-        self.lockout2krb5_creds = self.insta_creds(self.template_creds,
-                                                   username="lockout2krb5",
-                                                   userpass="thatsAcomplPASS0",
-                                                   kerberos_state=MUST_USE_KERBEROS)
-        self.lockout2krb5_ldb = self._readd_user(self.lockout2krb5_creds,
-                                                 lockOutObservationWindow=self.lockout_observation_window)
         self.lockout1ntlm_creds = self.insta_creds(self.template_creds,
                                                    username="lockout1ntlm",
                                                    userpass="thatsAcomplPASS0",
                                                    kerberos_state=DONT_USE_KERBEROS)
         self.lockout1ntlm_ldb = self._readd_user(self.lockout1ntlm_creds)
-        self.lockout2ntlm_creds = self.insta_creds(self.template_creds,
-                                                   username="lockout2ntlm",
-                                                   userpass="thatsAcomplPASS0",
-                                                   kerberos_state=DONT_USE_KERBEROS)
-        self.lockout2ntlm_ldb = self._readd_user(self.lockout2ntlm_creds,
-                                                 lockOutObservationWindow=self.lockout_observation_window)
 
     def tearDown(self):
         super(BasePasswordTestCase, self).tearDown()

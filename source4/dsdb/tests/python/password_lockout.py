@@ -69,6 +69,20 @@ class PasswordTests(password_lockout_base.BasePasswordTestCase):
                          credentials=self.global_creds, lp=self.lp)
         super(PasswordTests, self).setUp()
 
+        self.lockout2krb5_creds = self.insta_creds(self.template_creds,
+                                                   username="lockout2krb5",
+                                                   userpass="thatsAcomplPASS0",
+                                                   kerberos_state=MUST_USE_KERBEROS)
+        self.lockout2krb5_ldb = self._readd_user(self.lockout2krb5_creds,
+                                                 lockOutObservationWindow=self.lockout_observation_window)
+
+        self.lockout2ntlm_creds = self.insta_creds(self.template_creds,
+                                                   username="lockout2ntlm",
+                                                   userpass="thatsAcomplPASS0",
+                                                   kerberos_state=DONT_USE_KERBEROS)
+        self.lockout2ntlm_ldb = self._readd_user(self.lockout2ntlm_creds,
+                                                 lockOutObservationWindow=self.lockout_observation_window)
+
     def _reset_ldap_lockoutTime(self, res):
         self.ldb.modify_ldif("""
 dn: """ + str(res[0].dn) + """
