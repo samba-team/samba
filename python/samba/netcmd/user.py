@@ -1617,7 +1617,7 @@ samba-tool user syncpasswords --terminate \\
             return
 
         def run_sync_command(dn, ldif):
-            log_msg("Call Popen[%s] for %s\n" % (dn, self.sync_command))
+            log_msg("Call Popen[%s] for %s\n" % (self.sync_command, dn))
             sync_command_p = Popen(self.sync_command,
                                    stdin=PIPE,
                                    stdout=PIPE,
