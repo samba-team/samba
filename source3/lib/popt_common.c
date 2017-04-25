@@ -237,17 +237,15 @@ void popt_common_credentials_set_delay_post(void)
 
 void popt_common_credentials_post(void)
 {
-	struct user_auth_info *auth_info = cmdline_auth_info;
-
-	if (get_cmdline_auth_info_use_machine_account(auth_info) &&
-	    !set_cmdline_auth_info_machine_account_creds(auth_info))
+	if (get_cmdline_auth_info_use_machine_account(cmdline_auth_info) &&
+	    !set_cmdline_auth_info_machine_account_creds(cmdline_auth_info))
 	{
 		fprintf(stderr,
 			"Failed to use machine account credentials\n");
 		exit(1);
 	}
 
-	set_cmdline_auth_info_getpass(auth_info);
+	set_cmdline_auth_info_getpass(cmdline_auth_info);
 }
 
 static void popt_common_credentials_callback(poptContext con,
@@ -255,10 +253,9 @@ static void popt_common_credentials_callback(poptContext con,
 					const struct poptOption *opt,
 					const char *arg, const void *data)
 {
-	struct user_auth_info *auth_info = cmdline_auth_info;
-
 	if (reason == POPT_CALLBACK_REASON_PRE) {
-		auth_info = user_auth_info_init(talloc_autofree_context());
+		struct user_auth_info *auth_info =
+				user_auth_info_init(talloc_autofree_context());
 		if (auth_info == NULL) {
 			fprintf(stderr, "user_auth_info_init() failed\n");
 			exit(1);
@@ -287,7 +284,7 @@ static void popt_common_credentials_callback(poptContext con,
 
 		load_interfaces();
 
-		set_cmdline_auth_info_guess(auth_info);
+		set_cmdline_auth_info_guess(cmdline_auth_info);
 
 		if (popt_common_credentials_delay_post) {
 			return;
@@ -299,11 +296,11 @@ static void popt_common_credentials_callback(poptContext con,
 
 	switch(opt->val) {
 	case 'U':
-		set_cmdline_auth_info_username(auth_info, arg);
+		set_cmdline_auth_info_username(cmdline_auth_info, arg);
 		break;
 
 	case 'A':
-		set_cmdline_auth_info_from_file(auth_info, arg);
+		set_cmdline_auth_info_from_file(cmdline_auth_info, arg);
 		break;
 
 	case 'k':
@@ -311,30 +308,31 @@ static void popt_common_credentials_callback(poptContext con,
 		d_printf("No kerberos support compiled in\n");
 		exit(1);
 #else
-		set_cmdline_auth_info_use_krb5_ticket(auth_info);
+		set_cmdline_auth_info_use_krb5_ticket(cmdline_auth_info);
 #endif
 		break;
 
 	case 'S':
-		if (!set_cmdline_auth_info_signing_state(auth_info, arg)) {
+		if (!set_cmdline_auth_info_signing_state(cmdline_auth_info,
+				arg)) {
 			fprintf(stderr, "Unknown signing option %s\n", arg );
 			exit(1);
 		}
 		break;
 	case 'P':
-		set_cmdline_auth_info_use_machine_account(auth_info);
+		set_cmdline_auth_info_use_machine_account(cmdline_auth_info);
 		break;
 	case 'N':
-		set_cmdline_auth_info_password(auth_info, "");
+		set_cmdline_auth_info_password(cmdline_auth_info, "");
 		break;
 	case 'e':
-		set_cmdline_auth_info_smb_encrypt(auth_info);
+		set_cmdline_auth_info_smb_encrypt(cmdline_auth_info);
 		break;
 	case 'C':
-		set_cmdline_auth_info_use_ccache(auth_info, true);
+		set_cmdline_auth_info_use_ccache(cmdline_auth_info, true);
 		break;
 	case 'H':
-		set_cmdline_auth_info_use_pw_nt_hash(auth_info, true);
+		set_cmdline_auth_info_use_pw_nt_hash(cmdline_auth_info, true);
 		break;
 	}
 }
