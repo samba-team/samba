@@ -1510,6 +1510,343 @@ static void test_ldb_search_against_transaction(void **state)
 
 }
 
+/*
+ * This test is also complex.
+ * The purpose is to test if a modify can occur during an ldb_search()
+ * This would be a failure if if in process
+ * (1) and (2):
+ *  - (1) ltdb_search() starts and calls back for one entry
+ *  - (2) one of the entries to be matched is modified
+ *  - (1) the indexed search tries to return the modified entry, but
+ *        it is no longer found, either:
+ *          - despite it still matching (dn changed)
+ *          - it no longer matching (attrs changed)
+ *
+ * We also try un-indexed to show that the behaviour differs on this
+ * point, which it should not (an index should only impact search
+ * speed).
+ */
+
+struct modify_during_search_test_ctx {
+	struct ldbtest_ctx *test_ctx;
+	int res_count;
+	pid_t child_pid;
+	struct ldb_dn *basedn;
+	bool got_cn;
+	bool got_2_cn;
+	bool rename;
+};
+
+/*
+ * This purpose of this callback is to trigger a write in
+ * the child process while a search is in progress.
+ *
+ * In tdb 1.3.12 tdb_traverse_read() take the read transaction lock
+ * however in ldb 1.1.31 ltdb_search() forgets to take the all-record
+ * lock (except the very first time) due to a ref-counting bug.
+ *
+ * We assume that if the write will proceed, it will proceed in a 3
+ * second window after the function is called.
+ */
+
+static int test_ldb_modify_during_search_callback1(struct ldb_request *req,
+						   struct ldb_reply *ares)
+{
+	int ret;
+	int pipes[2];
+	char buf[2];
+	struct modify_during_search_test_ctx *ctx = req->context;
+	switch (ares->type) {
+	case LDB_REPLY_ENTRY:
+	{
+		const struct ldb_val *cn_val
+			= ldb_dn_get_component_val(ares->message->dn, 0);
+		const char *cn = (char *)cn_val->data;
+		ctx->res_count++;
+		if (strcmp(cn, "test_search_cn") == 0) {
+			ctx->got_cn = true;
+		} else if (strcmp(cn, "test_search_2_cn") == 0) {
+			ctx->got_2_cn = true;
+		}
+		if (ctx->res_count == 2) {
+			return LDB_SUCCESS;
+		}
+		break;
+	}
+	case LDB_REPLY_REFERRAL:
+		return LDB_SUCCESS;
+
+	case LDB_REPLY_DONE:
+		return ldb_request_done(req, LDB_SUCCESS);
+	}
+
+	ret = pipe(pipes);
+	assert_int_equal(ret, 0);
+
+	ctx->child_pid = fork();
+	if (ctx->child_pid == 0 && ctx->rename) {
+		TALLOC_CTX *tmp_ctx = NULL;
+		struct ldb_dn *dn, *new_dn;
+		TALLOC_FREE(ctx->test_ctx->ldb);
+		TALLOC_FREE(ctx->test_ctx->ev);
+		ctx->test_ctx->ev = tevent_context_init(ctx->test_ctx);
+		if (ctx->test_ctx->ev == NULL) {
+			exit(LDB_ERR_OPERATIONS_ERROR);
+		}
+
+		ctx->test_ctx->ldb = ldb_init(ctx->test_ctx,
+					      ctx->test_ctx->ev);
+		if (ctx->test_ctx->ldb == NULL) {
+			exit(LDB_ERR_OPERATIONS_ERROR);
+		}
+
+		ret = ldb_connect(ctx->test_ctx->ldb,
+				  ctx->test_ctx->dbpath, 0, NULL);
+		if (ret != LDB_SUCCESS) {
+			exit(ret);
+		}
+
+		tmp_ctx = talloc_new(ctx->test_ctx);
+		if (tmp_ctx == NULL) {
+			exit(LDB_ERR_OPERATIONS_ERROR);
+		}
+
+		if (ctx->got_cn) {
+			/* Modify the other one */
+			dn = ldb_dn_new_fmt(tmp_ctx, ctx->test_ctx->ldb,
+					    "cn=test_search_2_cn,"
+					    "dc=search_test_entry");
+		} else {
+			dn = ldb_dn_new_fmt(tmp_ctx, ctx->test_ctx->ldb,
+					    "cn=test_search_cn,"
+					    "dc=search_test_entry");
+		}
+		if (dn == NULL) {
+			exit(LDB_ERR_OPERATIONS_ERROR);
+		}
+
+		new_dn = ldb_dn_new_fmt(tmp_ctx, ctx->test_ctx->ldb,
+					"cn=test_search_cn_renamed,"
+					"dc=search_test_entry");
+		if (new_dn == NULL) {
+			exit(LDB_ERR_OPERATIONS_ERROR);
+		}
+
+		ret = ldb_transaction_start(ctx->test_ctx->ldb);
+		if (ret != 0) {
+			exit(ret);
+		}
+
+		if (write(pipes[1], "GO", 2) != 2) {
+			exit(LDB_ERR_OPERATIONS_ERROR);
+		}
+
+		ret = ldb_rename(ctx->test_ctx->ldb, dn, new_dn);
+		if (ret != 0) {
+			exit(ret);
+		}
+
+		ret = ldb_transaction_commit(ctx->test_ctx->ldb);
+		exit(ret);
+
+	} else if (ctx->child_pid == 0) {
+		TALLOC_CTX *tmp_ctx = NULL;
+		struct ldb_message *msg;
+		struct ldb_message_element *el;
+		TALLOC_FREE(ctx->test_ctx->ldb);
+		TALLOC_FREE(ctx->test_ctx->ev);
+		ctx->test_ctx->ev = tevent_context_init(ctx->test_ctx);
+		if (ctx->test_ctx->ev == NULL) {
+			exit(LDB_ERR_OPERATIONS_ERROR);
+		}
+
+		ctx->test_ctx->ldb = ldb_init(ctx->test_ctx,
+					      ctx->test_ctx->ev);
+		if (ctx->test_ctx->ldb == NULL) {
+			exit(LDB_ERR_OPERATIONS_ERROR);
+		}
+
+		ret = ldb_connect(ctx->test_ctx->ldb,
+				  ctx->test_ctx->dbpath, 0, NULL);
+		if (ret != LDB_SUCCESS) {
+			exit(ret);
+		}
+
+		tmp_ctx = talloc_new(ctx->test_ctx);
+		if (tmp_ctx == NULL) {
+			exit(LDB_ERR_OPERATIONS_ERROR);
+		}
+
+		msg = ldb_msg_new(tmp_ctx);
+		if (msg == NULL) {
+			exit(LDB_ERR_OPERATIONS_ERROR);
+		}
+
+		if (ctx->got_cn) {
+			/* Modify the other one */
+			msg->dn = ldb_dn_new_fmt(msg, ctx->test_ctx->ldb,
+						 "cn=test_search_2_cn,"
+						 "dc=search_test_entry");
+		} else {
+			msg->dn = ldb_dn_new_fmt(msg, ctx->test_ctx->ldb,
+						 "cn=test_search_cn,"
+						 "dc=search_test_entry");
+		}
+		if (msg->dn == NULL) {
+			exit(LDB_ERR_OPERATIONS_ERROR);
+		}
+
+		ret = ldb_msg_add_string(msg, "filterAttr", "TRUE");
+		if (ret != 0) {
+			exit(LDB_ERR_OPERATIONS_ERROR);
+		}
+		el = ldb_msg_find_element(msg, "filterAttr");
+		if (el == NULL) {
+			exit(LDB_ERR_OPERATIONS_ERROR);
+		}
+		el->flags = LDB_FLAG_MOD_REPLACE;
+
+		ret = ldb_transaction_start(ctx->test_ctx->ldb);
+		if (ret != 0) {
+			exit(ret);
+		}
+
+		if (write(pipes[1], "GO", 2) != 2) {
+			exit(LDB_ERR_OPERATIONS_ERROR);
+		}
+
+		ret = ldb_modify(ctx->test_ctx->ldb, msg);
+		if (ret != 0) {
+			exit(ret);
+		}
+
+		ret = ldb_transaction_commit(ctx->test_ctx->ldb);
+		exit(ret);
+	}
+
+	/*
+	 * With TDB 1.3.13 and before "tdb: Remove locking from tdb_traverse_read()"
+	 * we will hang here because the child process can not proceed to
+	 * sending the "GO" as it is blocked at ldb_transaction_start().
+	 */
+
+	ret = read(pipes[0], buf, 2);
+	assert_int_equal(ret, 2);
+
+	sleep(3);
+
+	return LDB_SUCCESS;
+}
+
+static void test_ldb_modify_during_search(void **state, bool add_index,
+					  bool rename)
+{
+	struct search_test_ctx *search_test_ctx = talloc_get_type_abort(*state,
+			struct search_test_ctx);
+	struct modify_during_search_test_ctx
+		ctx =
+		{ .res_count = 0,
+		  .test_ctx = search_test_ctx->ldb_test_ctx,
+		  .rename = rename
+		};
+
+	int ret;
+	struct ldb_request *req;
+	pid_t pid;
+	int wstatus;
+
+	if (add_index) {
+		struct ldb_message *msg;
+		struct ldb_dn *indexlist = ldb_dn_new(search_test_ctx,
+						      search_test_ctx->ldb_test_ctx->ldb,
+						      "@INDEXLIST");
+		assert_non_null(indexlist);
+
+		msg = ldb_msg_new(search_test_ctx);
+		assert_non_null(msg);
+
+		msg->dn = indexlist;
+
+		ret = ldb_msg_add_string(msg, "@IDXATTR", "cn");
+		assert_int_equal(ret, LDB_SUCCESS);
+
+		ret = ldb_add(search_test_ctx->ldb_test_ctx->ldb,
+			      msg);
+
+		assert_int_equal(ret, LDB_SUCCESS);
+	}
+
+	tevent_loop_allow_nesting(search_test_ctx->ldb_test_ctx->ev);
+
+	ctx.basedn
+		= ldb_dn_new_fmt(search_test_ctx,
+				 search_test_ctx->ldb_test_ctx->ldb,
+				 "%s",
+				 search_test_ctx->base_dn);
+	assert_non_null(ctx.basedn);
+
+
+	/*
+	 * This search must be over multiple items, and should include
+	 * the new name after a rename, to show that it would match
+	 * both before and after that modify
+	 */
+	ret = ldb_build_search_req(&req,
+				   search_test_ctx->ldb_test_ctx->ldb,
+				   search_test_ctx,
+				   ctx.basedn,
+				   LDB_SCOPE_SUBTREE,
+				   "(&(!(filterAttr=*))"
+				     "(|(cn=test_search_cn_renamed)"
+				       "(cn=test_search_cn)"
+				       "(cn=test_search_2_cn)"
+				   "))",
+				   NULL,
+				   NULL,
+				   &ctx,
+				   test_ldb_modify_during_search_callback1,
+				   NULL);
+	assert_int_equal(ret, 0);
+	ret = ldb_request(search_test_ctx->ldb_test_ctx->ldb, req);
+
+	if (ret == LDB_SUCCESS) {
+		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
+	}
+	assert_int_equal(ret, 0);
+	assert_int_equal(ctx.res_count, 2);
+	assert_int_equal(ctx.got_cn, true);
+	assert_int_equal(ctx.got_2_cn, true);
+
+	pid = waitpid(ctx.child_pid, &wstatus, 0);
+	assert_int_equal(pid, ctx.child_pid);
+
+	assert_true(WIFEXITED(wstatus));
+
+	assert_int_equal(WEXITSTATUS(wstatus), 0);
+
+
+}
+
+static void test_ldb_modify_during_indexed_search(void **state)
+{
+	return test_ldb_modify_during_search(state, true, false);
+}
+
+static void test_ldb_modify_during_unindexed_search(void **state)
+{
+	return test_ldb_modify_during_search(state, false, false);
+}
+
+static void test_ldb_rename_during_indexed_search(void **state)
+{
+	return test_ldb_modify_during_search(state, true, true);
+}
+
+static void test_ldb_rename_during_unindexed_search(void **state)
+{
+	return test_ldb_modify_during_search(state, false, true);
+}
+
 static int ldb_case_test_setup(void **state)
 {
 	int ret;
@@ -2057,6 +2394,18 @@ int main(int argc, const char **argv)
 						ldb_search_test_setup,
 						ldb_search_test_teardown),
 		cmocka_unit_test_setup_teardown(test_ldb_search_against_transaction,
+						ldb_search_test_setup,
+						ldb_search_test_teardown),
+		cmocka_unit_test_setup_teardown(test_ldb_modify_during_unindexed_search,
+						ldb_search_test_setup,
+						ldb_search_test_teardown),
+		cmocka_unit_test_setup_teardown(test_ldb_modify_during_indexed_search,
+						ldb_search_test_setup,
+						ldb_search_test_teardown),
+		cmocka_unit_test_setup_teardown(test_ldb_rename_during_unindexed_search,
+						ldb_search_test_setup,
+						ldb_search_test_teardown),
+		cmocka_unit_test_setup_teardown(test_ldb_rename_during_indexed_search,
 						ldb_search_test_setup,
 						ldb_search_test_teardown),
 		cmocka_unit_test_setup_teardown(test_ldb_attrs_case_insensitive,
