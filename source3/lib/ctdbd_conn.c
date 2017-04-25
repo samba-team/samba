@@ -440,7 +440,12 @@ static int ctdb_read_req(struct ctdbd_connection *conn, uint32_t reqid,
  **/
 int ctdbd_setup_fde(struct ctdbd_connection *conn, struct tevent_context *ev)
 {
-	set_blocking(conn->fd, false);
+	int ret;
+
+	ret = set_blocking(conn->fd, false);
+	if (ret == -1) {
+		return errno;
+	}
 
 	conn->fde = tevent_add_fd(ev,
 				  conn,
