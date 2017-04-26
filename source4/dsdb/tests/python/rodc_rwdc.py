@@ -283,6 +283,78 @@ class RodcRwdcCachedTests(password_lockout_base.BasePasswordTestCase):
 
         self._test_login_lockout_rodc_rwdc(self.lockout1ntlm_creds, userdn)
 
+    def test_login_lockout_not_revealed(self):
+        '''Test that SendToSam is restricted by preloaded users/groups'''
+
+        username = self.lockout1ntlm_creds.get_username()
+        userpass = self.lockout1ntlm_creds.get_password()
+        userdn = "cn=%s,cn=users,%s" % (username, self.base_dn)
+
+        # Preload but do not add to revealed group
+        preload_rodc_user(userdn)
+
+        self.kerberos = False
+
+        creds = self.lockout1ntlm_creds
+
+        # Open a second LDB connection with the user credentials. Use the
+        # command line credentials for informations like the domain, the realm
+        # and the workstation.
+        creds_lockout = self.insta_creds(creds)
+
+        # The wrong password
+        creds_lockout.set_password("thatsAcomplPASS1x")
+
+        self.assertLoginFailure(self.host_url, creds_lockout, self.lp)
+
+        badPasswordTime = 0
+        logonCount = 0
+        lastLogon = 0
+        lastLogonTimestamp=0
+        logoncount_relation = ''
+        lastlogon_relation = ''
+
+        res = self._check_account(userdn,
+                                  badPwdCount=1,
+                                  badPasswordTime=("greater", badPasswordTime),
+                                  logonCount=logonCount,
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
+                                  userAccountControl=
+                                    dsdb.UF_NORMAL_ACCOUNT,
+                                  msDSUserAccountControlComputed=0,
+                                  msg='lastlogontimestamp with wrong password')
+        badPasswordTime = int(res[0]["badPasswordTime"][0])
+
+        # BadPwdCount on RODC increases alongside RWDC
+        res = self.rodc_db.search(userdn, attrs=['badPwdCount'])
+        self.assertTrue('badPwdCount' in res[0])
+        self.assertEqual(int(res[0]['badPwdCount'][0]), 1)
+
+        # Correct old password
+        creds_lockout.set_password(userpass)
+
+        ldb_lockout = SamDB(url=self.host_url, credentials=creds_lockout, lp=self.lp)
+
+        # Wait for potential SendToSam...
+        time.sleep(5)
+
+        # BadPwdCount on RODC decreases, but not the RWDC
+        res = self._check_account(userdn,
+                                  badPwdCount=1,
+                                  badPasswordTime=badPasswordTime,
+                                  logonCount=(logoncount_relation, logonCount),
+                                  lastLogon=('greater', lastLogon),
+                                  lastLogonTimestamp=lastLogonTimestamp,
+                                  userAccountControl=
+                                    dsdb.UF_NORMAL_ACCOUNT,
+                                  msDSUserAccountControlComputed=0,
+                                  msg='badPwdCount not reset on RWDC')
+
+        res = self.rodc_db.search(userdn, attrs=['badPwdCount'])
+        self.assertTrue('badPwdCount' in res[0])
+        self.assertEqual(int(res[0]['badPwdCount'][0]), 0)
+
     def _test_login_lockout_rodc_rwdc(self, creds, userdn):
         username = creds.get_username()
         userpass = creds.get_password()
