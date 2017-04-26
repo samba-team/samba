@@ -26,10 +26,3 @@ bld.SAMBA_MODULE('com_simple',
 	init_function='com_simple_init'
 	)
 
-
-bld.SAMBA_PYTHON('pycom',
-	source='pycom.c',
-	deps='COM',
-	realname='samba/com.so',
-	)
-
