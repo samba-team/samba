@@ -1525,6 +1525,7 @@ static bool do_altname(const char *name)
 static int cmd_quit(void)
 {
 	cli_shutdown(cli);
+	popt_free_cmdline_auth_info();
 	exit(0);
 	/* NOTREACHED */
 	return 0;
@@ -1983,6 +1984,7 @@ static int do_put(const char *rname, const char *lname, bool reput)
 
 	if (f == stdin) {
 		cli_shutdown(cli);
+		popt_free_cmdline_auth_info();
 		exit(rc);
 	}
 
@@ -6003,6 +6005,7 @@ int main(int argc,char *argv[])
 		rc = 1;
 	}
 
+	popt_free_cmdline_auth_info();
 	TALLOC_FREE(frame);
 	return rc;
 }

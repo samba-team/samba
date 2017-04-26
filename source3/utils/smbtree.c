@@ -322,6 +322,7 @@ int main(int argc, char *argv[])
                 return 1;
 	}
 
+	popt_free_cmdline_auth_info();
 	TALLOC_FREE(frame);
 	return 0;
 }

@@ -926,6 +926,7 @@ int main(int argc, char *argv[])
 			exit(EXIT_FAILED);
 		}
 	} else {
+		popt_free_cmdline_auth_info();
 		exit(0);
 	}
 
@@ -951,6 +952,7 @@ int main(int argc, char *argv[])
 		result = cacl_dump(cli, filename, numeric);
 	}
 
+	popt_free_cmdline_auth_info();
 	TALLOC_FREE(frame);
 
 	return result;

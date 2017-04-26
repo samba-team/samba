@@ -1245,6 +1245,7 @@ done:
 	if (cli != NULL) {
 		cli_shutdown(cli);
 	}
+	popt_free_cmdline_auth_info();
 	TALLOC_FREE(frame);
 	return result;
 }

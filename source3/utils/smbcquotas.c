@@ -732,6 +732,7 @@ FSQFLAGS:QUOTA_ENABLED/DENY_DISK/LOG_SOFTLIMIT/LOG_HARD_LIMIT", "SETSTRING" },
 			exit(EXIT_FAILED);
 		}
 	} else {
+		popt_free_cmdline_auth_info();
 		exit(EXIT_OK);
 	}
 
@@ -756,6 +757,7 @@ FSQFLAGS:QUOTA_ENABLED/DENY_DISK/LOG_SOFTLIMIT/LOG_HARD_LIMIT", "SETSTRING" },
 			break;
 	}
 
+	popt_free_cmdline_auth_info();
 	talloc_free(frame);
 
 	return result;
