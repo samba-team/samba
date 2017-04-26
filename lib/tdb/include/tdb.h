@@ -656,10 +656,13 @@ void *tdb_get_logging_private(struct tdb_context *tdb);
  * All operations after the transaction start can either be committed with
  * tdb_transaction_commit() or cancelled with tdb_transaction_cancel().
  *
- * If you call tdb_transaction_start() again on the same tdb context while a
- * transaction is in progress, then the same transaction buffer is re-used. The
- * number of tdb_transaction_{commit,cancel} operations must match the number
- * of successful tdb_transaction_start() calls.
+ * If (the default) TDB_ALLOW_NESTING was specified or
+ * TDB_DISALLOW_NESTING was not specified as a flag via tdb_open() or
+ * tdb_open_ex(), you call tdb_transaction_start() again on the same
+ * tdb context while a transaction is in progress, then the same
+ * transaction buffer is re-used. The number of
+ * tdb_transaction_{commit,cancel} operations must match the number of
+ * successful tdb_transaction_start() calls.
  *
  * Note that transactions are by default disk synchronous, and use a recover
  * area in the database to automatically recover the database on the next open
