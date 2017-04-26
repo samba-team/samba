@@ -561,7 +561,9 @@ class RodcRwdcTests(password_lockout_base.BasePasswordTestCase):
 
         creds2 = make_creds(username, password)
         self.try_ldap_logon(RWDC, creds2)
-        self.try_ldap_logon(RODC, creds2, errno)
+        # We can forward WRONG_PASSWORD over NTLM.
+        # This SHOULD succeed.
+        self.try_ldap_logon(RODC, creds2)
 
 
     def test_change_password_reveal_on_demand_ntlm(self):
