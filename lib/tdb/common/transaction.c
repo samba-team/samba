@@ -412,6 +412,14 @@ static const struct tdb_methods transaction_methods = {
 	transaction_expand_file,
 };
 
+/*
+ * Is a transaction currently active on this context?
+ *
+ */
+_PUBLIC_ bool tdb_transaction_active(struct tdb_context *tdb)
+{
+	return (tdb->transaction != NULL);
+}
 
 /*
   start a tdb transaction. No token is returned, as only a single

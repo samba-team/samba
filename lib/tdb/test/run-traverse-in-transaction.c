@@ -63,7 +63,9 @@ int main(int argc, char *argv[])
 
 	ok1(external_agent_operation(agent, OPEN, tdb_name(tdb)) == SUCCESS);
 
+	ok1(tdb_transaction_active(tdb) == 0);
 	ok1(tdb_transaction_start(tdb) == 0);
+	ok1(tdb_transaction_active(tdb) == 1);
 	ok1(external_agent_operation(agent, TRANSACTION_START, tdb_name(tdb))
 	    == WOULD_HAVE_BLOCKED);
 	tdb_traverse(tdb, traverse, NULL);
@@ -77,6 +79,7 @@ int main(int argc, char *argv[])
 	ok1(external_agent_operation(agent, TRANSACTION_START, tdb_name(tdb))
 	    == WOULD_HAVE_BLOCKED);
 	ok1(tdb_transaction_commit(tdb) == 0);
+	ok1(tdb_transaction_active(tdb) == 0);
 	/* Now we should be fine. */
 	ok1(external_agent_operation(agent, TRANSACTION_START, tdb_name(tdb))
 	    == SUCCESS);

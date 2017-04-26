@@ -651,6 +651,24 @@ tdb_log_func tdb_log_fn(struct tdb_context *tdb);
 void *tdb_get_logging_private(struct tdb_context *tdb);
 
 /**
+ * @brief Is a transaction active?
+ *
+ * It is helpful for the application to know if a transaction is
+ * active, rather than needing to maintain an application-level reference
+ * count.
+ *
+ * @param[in]  tdb      The database to start the transaction.
+ *
+ * @return              true if there is a transaction active, false otherwise
+ *
+ * @see tdb_transaction_start()
+ * @see tdb_transaction_prepare_commit()
+ * @see tdb_transaction_commit()
+ * @see tdb_transaction_cancel()
+ */
+bool tdb_transaction_active(struct tdb_context *tdb);
+
+/**
  * @brief Start a transaction.
  *
  * All operations after the transaction start can either be committed with
