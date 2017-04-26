@@ -222,6 +222,16 @@ struct poptOption popt_common_option[] = {
  */
 
 struct user_auth_info *cmdline_auth_info;
+
+struct user_auth_info *popt_get_cmdline_auth_info(void)
+{
+	return cmdline_auth_info;
+}
+void popt_free_cmdline_auth_info(void)
+{
+	TALLOC_FREE(cmdline_auth_info);
+}
+
 static bool popt_common_credentials_ignore_missing_conf;
 static bool popt_common_credentials_delay_post;
 
