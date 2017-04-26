@@ -265,7 +265,7 @@ static void popt_common_credentials_callback(poptContext con,
 {
 	if (reason == POPT_CALLBACK_REASON_PRE) {
 		struct user_auth_info *auth_info =
-				user_auth_info_init(talloc_autofree_context());
+				user_auth_info_init(NULL);
 		if (auth_info == NULL) {
 			fprintf(stderr, "user_auth_info_init() failed\n");
 			exit(1);
