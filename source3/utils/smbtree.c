@@ -317,7 +317,7 @@ int main(int argc, char *argv[])
 
 	/* Now do our stuff */
 
-        if (!print_tree(cmdline_auth_info)) {
+        if (!print_tree(popt_get_cmdline_auth_info())) {
 		TALLOC_FREE(frame);
                 return 1;
 	}

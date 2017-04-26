@@ -44,7 +44,6 @@ static struct cli_state *cli_ipc;
 static struct rpc_pipe_client *global_pipe_hnd;
 static struct policy_handle pol;
 static bool got_policy_hnd;
-static struct user_auth_info *smbcquotas_auth_info;
 
 static struct cli_state *connect_one(const char *share);
 
@@ -523,7 +522,7 @@ static struct cli_state *connect_one(const char *share)
 	NTSTATUS nt_status;
 	uint32_t flags = 0;
 
-	if (get_cmdline_auth_info_use_kerberos(smbcquotas_auth_info)) {
+	if (get_cmdline_auth_info_use_kerberos(popt_get_cmdline_auth_info())) {
 		flags |= CLI_FULL_CONNECTION_USE_KERBEROS |
 			 CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS;
 
@@ -532,20 +531,25 @@ static struct cli_state *connect_one(const char *share)
 	nt_status = cli_full_connection(&c, lp_netbios_name(), server,
 					    NULL, 0,
 					    share, "?????",
-					    get_cmdline_auth_info_username(smbcquotas_auth_info),
+					    get_cmdline_auth_info_username(
+						popt_get_cmdline_auth_info()),
 					    lp_workgroup(),
-					    get_cmdline_auth_info_password(smbcquotas_auth_info),
+					    get_cmdline_auth_info_password(
+						popt_get_cmdline_auth_info()),
 					    flags,
-					    get_cmdline_auth_info_signing_state(smbcquotas_auth_info));
+					    get_cmdline_auth_info_signing_state(
+						popt_get_cmdline_auth_info()));
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("cli_full_connection failed! (%s)\n", nt_errstr(nt_status)));
 		return NULL;
 	}
 
-	if (get_cmdline_auth_info_smb_encrypt(smbcquotas_auth_info)) {
+	if (get_cmdline_auth_info_smb_encrypt(popt_get_cmdline_auth_info())) {
 		nt_status = cli_cm_force_encryption(c,
-					get_cmdline_auth_info_username(smbcquotas_auth_info),
-					get_cmdline_auth_info_password(smbcquotas_auth_info),
+					get_cmdline_auth_info_username(
+						popt_get_cmdline_auth_info()),
+					get_cmdline_auth_info_password(
+						popt_get_cmdline_auth_info()),
 					lp_workgroup(),
 					share);
 		if (!NT_STATUS_IS_OK(nt_status)) {
@@ -675,10 +679,10 @@ FSQFLAGS:QUOTA_ENABLED/DENY_DISK/LOG_SOFTLIMIT/LOG_HARD_LIMIT", "SETSTRING" },
 	if (todo == 0)
 		todo = USER_QUOTA;
 
-	smbcquotas_auth_info = cmdline_auth_info;
 	if (!fix_user) {
 		username_str = talloc_strdup(
-			frame, get_cmdline_auth_info_username(smbcquotas_auth_info));
+			frame, get_cmdline_auth_info_username(
+				popt_get_cmdline_auth_info()));
 		if (!username_str) {
 			exit(EXIT_PARSE_ERROR);
 		}

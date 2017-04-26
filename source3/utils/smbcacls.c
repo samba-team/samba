@@ -921,7 +921,7 @@ int main(int argc, char *argv[])
 	share++;
 
 	if (!test_args) {
-		cli = connect_one(cmdline_auth_info, server, share);
+		cli = connect_one(popt_get_cmdline_auth_info(), server, share);
 		if (!cli) {
 			exit(EXIT_FAILED);
 		}

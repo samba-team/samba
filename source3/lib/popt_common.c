@@ -221,7 +221,7 @@ struct poptOption popt_common_option[] = {
  * 		-C --use-ccache
  */
 
-struct user_auth_info *cmdline_auth_info;
+static struct user_auth_info *cmdline_auth_info;
 
 struct user_auth_info *popt_get_cmdline_auth_info(void)
 {

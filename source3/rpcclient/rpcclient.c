@@ -50,7 +50,6 @@ static unsigned int timeout = 0;
 static enum dcerpc_transport_t default_transport = NCACN_NP;
 
 struct messaging_context *rpcclient_msg_ctx;
-struct user_auth_info *rpcclient_auth_info;
 struct cli_state *rpcclient_cli_state;
 struct netlogon_creds_cli_context *rpcclient_netlogon_creds;
 static const char *rpcclient_netlogon_domain;
@@ -1013,7 +1012,6 @@ out_free:
 
 	poptFreeContext(pc);
 	popt_burn_cmdline_password(argc, argv);
-	rpcclient_auth_info = cmdline_auth_info;
 
 	nt_status = messaging_init_client(talloc_autofree_context(),
 					  samba_tevent_context_init(talloc_autofree_context()),
@@ -1120,7 +1118,8 @@ out_free:
 		}
 	}
 
-	signing_state = get_cmdline_auth_info_signing_state(rpcclient_auth_info);
+	signing_state = get_cmdline_auth_info_signing_state(
+			popt_get_cmdline_auth_info());
 	switch (signing_state) {
 	case SMB_SIGNING_OFF:
 		lp_set_cmdline("client ipc signing", "no");
@@ -1130,18 +1129,20 @@ out_free:
 		break;
 	}
 
-	if (get_cmdline_auth_info_use_kerberos(rpcclient_auth_info)) {
+	if (get_cmdline_auth_info_use_kerberos(popt_get_cmdline_auth_info())) {
 		flags |= CLI_FULL_CONNECTION_USE_KERBEROS |
 			 CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS;
 	}
-	if (get_cmdline_auth_info_use_ccache(rpcclient_auth_info)) {
+	if (get_cmdline_auth_info_use_ccache(popt_get_cmdline_auth_info())) {
 		flags |= CLI_FULL_CONNECTION_USE_CCACHE;
 	}
-	if (get_cmdline_auth_info_use_pw_nt_hash(rpcclient_auth_info)) {
+	if (get_cmdline_auth_info_use_pw_nt_hash(
+			popt_get_cmdline_auth_info())) {
 		flags |= CLI_FULL_CONNECTION_USE_NT_HASH;
 	}
 
-	rpcclient_netlogon_domain = get_cmdline_auth_info_domain(rpcclient_auth_info);
+	rpcclient_netlogon_domain = get_cmdline_auth_info_domain(
+			popt_get_cmdline_auth_info());
 	if (rpcclient_netlogon_domain == NULL ||
 	    rpcclient_netlogon_domain[0] == '\0')
 	{
@@ -1151,9 +1152,12 @@ out_free:
 	nt_status = cli_full_connection(&cli, lp_netbios_name(), host,
 					opt_ipaddr ? &server_ss : NULL, opt_port,
 					"IPC$", "IPC",
-					get_cmdline_auth_info_username(rpcclient_auth_info),
-					get_cmdline_auth_info_domain(rpcclient_auth_info),
-					get_cmdline_auth_info_password(rpcclient_auth_info),
+					get_cmdline_auth_info_username(
+						popt_get_cmdline_auth_info()),
+					get_cmdline_auth_info_domain(
+						popt_get_cmdline_auth_info()),
+					get_cmdline_auth_info_password(
+						popt_get_cmdline_auth_info()),
 					flags,
 					SMB_SIGNING_IPC_DEFAULT);
 
@@ -1163,11 +1167,14 @@ out_free:
 		goto done;
 	}
 
-	if (get_cmdline_auth_info_smb_encrypt(rpcclient_auth_info)) {
+	if (get_cmdline_auth_info_smb_encrypt(popt_get_cmdline_auth_info())) {
 		nt_status = cli_cm_force_encryption(cli,
-					get_cmdline_auth_info_username(rpcclient_auth_info),
-					get_cmdline_auth_info_password(rpcclient_auth_info),
-					get_cmdline_auth_info_domain(rpcclient_auth_info),
+					get_cmdline_auth_info_username(
+						popt_get_cmdline_auth_info()),
+					get_cmdline_auth_info_password(
+						popt_get_cmdline_auth_info()),
+					get_cmdline_auth_info_domain(
+						popt_get_cmdline_auth_info()),
 					"IPC$");
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			result = 1;
@@ -1205,8 +1212,9 @@ out_free:
 		result = 0;
 
                 while((cmd=next_command(&p)) != NULL) {
-                        NTSTATUS cmd_result = process_cmd(rpcclient_auth_info, cli,
-							  binding, cmd);
+                        NTSTATUS cmd_result = process_cmd(
+						popt_get_cmdline_auth_info(),
+						cli, binding, cmd);
 			SAFE_FREE(cmd);
 			result = NT_STATUS_IS_ERR(cmd_result);
                 }
@@ -1227,7 +1235,8 @@ out_free:
 		}
 
 		if (line[0] != '\n')
-			process_cmd(rpcclient_auth_info, cli, binding, line);
+			process_cmd(popt_get_cmdline_auth_info(), cli,
+				binding, line);
 		SAFE_FREE(line);
 	}
 

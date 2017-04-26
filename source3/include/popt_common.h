@@ -48,7 +48,6 @@ extern const struct poptOption popt_common_dynconfig[];
 #define POPT_COMMON_DEBUGLEVEL { NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_debuglevel, 0, "Common samba debugging:", NULL },
 #define POPT_COMMON_OPTION { NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_option, 0, "Common samba commandline config:", NULL },
 
-extern struct user_auth_info *cmdline_auth_info;
 struct user_auth_info *popt_get_cmdline_auth_info(void);
 void popt_free_cmdline_auth_info(void);
 

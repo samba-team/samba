@@ -143,7 +143,7 @@ int main(int argc, char *argv[])
 	*share = 0;
 	share++;
 
-	cli = connect_one(cmdline_auth_info, server, port, share);
+	cli = connect_one(popt_get_cmdline_auth_info(), server, port, share);
 	if (cli == NULL) {
 		return -1;
 	}
