@@ -1622,6 +1622,7 @@ sub provision_rodc($$$)
 	$ctx->{smb_conf_extra_options} = "
 	max xmit = 32K
 	server max protocol = SMB2
+	password server = $dcvars->{DC_SERVER}
 
 [sysvol]
 	path = $ctx->{statedir}/sysvol
