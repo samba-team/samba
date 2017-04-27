@@ -97,7 +97,7 @@ static uint32_t inotify_map_mask_to_filter(uint32_t mask)
 	uint32_t filter = 0;
 
 	for (i = 0; i < ARRAY_SIZE(inotify_mapping); i++) {
-		if (inotify_mapping[0].inotify_mask & mask) {
+		if (inotify_mapping[i].inotify_mask & mask) {
 			filter |= inotify_mapping[i].notify_mask;
 		}
 	}
