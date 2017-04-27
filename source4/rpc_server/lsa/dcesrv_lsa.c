@@ -99,6 +99,24 @@ struct lsa_trusted_domain_state {
 	struct ldb_dn *trusted_domain_user_dn;
 };
 
+static bool dcesrc_lsa_valid_AccountRight(const char *right)
+{
+	enum sec_privilege priv_id;
+	uint32_t right_bit;
+
+	priv_id = sec_privilege_id(right);
+	if (priv_id != SEC_PRIV_INVALID) {
+		return true;
+	}
+
+	right_bit = sec_right_bit(right);
+	if (right_bit != 0) {
+		return true;
+	}
+
+	return false;
+}
+
 /*
   this is based on the samba3 function make_lsa_object_sd()
   It uses the same logic, but with samba4 helper functions
@@ -2949,12 +2967,10 @@ static NTSTATUS dcesrv_lsa_AddRemoveAccountRights(struct dcesrv_call_state *dce_
 	}
 
 	for (i=0;i<rights->count;i++) {
-		if (sec_privilege_id(rights->names[i].string) == SEC_PRIV_INVALID) {
-			if (sec_right_bit(rights->names[i].string) == 0) {
-				talloc_free(msg);
-				return NT_STATUS_NO_SUCH_PRIVILEGE;
-			}
+		bool ok;
 
+		ok = dcesrc_lsa_valid_AccountRight(rights->names[i].string);
+		if (!ok) {
 			talloc_free(msg);
 			return NT_STATUS_NO_SUCH_PRIVILEGE;
 		}
@@ -3856,6 +3872,7 @@ static NTSTATUS dcesrv_lsa_EnumAccountsWithUserRight(struct dcesrv_call_state *d
 	struct ldb_message **res;
 	const char * const attrs[] = { "objectSid", NULL};
 	const char *privname;
+	bool ok;
 
 	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_POLICY);
 
@@ -3866,7 +3883,9 @@ static NTSTATUS dcesrv_lsa_EnumAccountsWithUserRight(struct dcesrv_call_state *d
 	}
 
 	privname = r->in.name->string;
-	if (sec_privilege_id(privname) == SEC_PRIV_INVALID && sec_right_bit(privname) == 0) {
+
+	ok = dcesrc_lsa_valid_AccountRight(privname);
+	if (!ok) {
 		return NT_STATUS_NO_SUCH_PRIVILEGE;
 	}
 
