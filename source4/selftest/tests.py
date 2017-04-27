@@ -608,6 +608,9 @@ if have_jansson_support:
                                     'SOCKET_WRAPPER_DEFAULT_IFACE': 11})
     planoldpythontestsuite("ad_dc_ntvfs:local", "samba.tests.auth_log_ncalrpc", extra_args=['-U"$USERNAME%$PASSWORD"'])
     planoldpythontestsuite("ad_dc:local", "samba.tests.auth_log_ncalrpc", extra_args=['-U"$USERNAME%$PASSWORD"'])
+planoldpythontestsuite("ad_dc:local",
+                       "samba.tests.net_join_no_spnego",
+                       extra_args=['-U"$USERNAME%$PASSWORD"'])
 # Need to test the password hashing in multiple environments to ensure that
 # all the possible options are covered
 #
