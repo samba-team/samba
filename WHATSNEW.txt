@@ -16,12 +16,6 @@ UPGRADING
 NEW FEATURES/CHANGES
 ====================
 
-The "strict sync" global parameter has been changed from
-a default of "no" to "yes". This means smbd will by default
-obey client requests to synchronize unwritten data in operating
-system buffers safely onto disk. This is a safer default setting
-for modern SMB1/2/3 clients.
-
 Authentication and Authorization audit support
 ----------------------------------------------
 
@@ -39,6 +33,15 @@ changes.  In the file server and classic/NT4 domain controller, NTLM
 authentication, SMB and RPC authorization is covered, however password
 changes are not at this stage, and this support is not currently
 backed by a testsuite.
+
+Parameter changes
+-----------------
+
+The "strict sync" global parameter has been changed from
+a default of "no" to "yes". This means smbd will by default
+obey client requests to synchronize unwritten data in operating
+system buffers safely onto disk. This is a safer default setting
+for modern SMB1/2/3 clients.
 
 smb.conf changes
 ================
