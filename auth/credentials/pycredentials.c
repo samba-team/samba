@@ -581,6 +581,20 @@ static PyObject *py_creds_get_gensec_features(PyObject *self, PyObject *args)
 	return PyInt_FromLong(gensec_features);
 }
 
+static PyObject *py_creds_set_secure_channel_type(PyObject *self, PyObject *args)
+{
+	unsigned int channel_type;
+
+	if (!PyArg_ParseTuple(args, "I", &channel_type))
+		return NULL;
+
+	cli_credentials_set_secure_channel_type(
+		PyCredentials_AsCliCredentials(self),
+		channel_type);
+
+	Py_RETURN_NONE;
+}
+
 
 static PyMethodDef py_creds_methods[] = {
 	{ "get_username", py_creds_get_username, METH_NOARGS,
@@ -683,6 +697,8 @@ static PyMethodDef py_creds_methods[] = {
 	{ "set_forced_sasl_mech", py_creds_set_forced_sasl_mech, METH_VARARGS,
 		"S.set_forced_sasl_mech(name) -> None\n"
 		"Set forced SASL mechanism." },
+	{ "set_secure_channel_type", py_creds_set_secure_channel_type,
+	  METH_VARARGS, NULL },
 	{ NULL }
 };
 
