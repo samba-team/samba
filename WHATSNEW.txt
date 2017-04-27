@@ -16,6 +16,34 @@ UPGRADING
 NEW FEATURES/CHANGES
 ====================
 
+Samba AD with MIT Kerberos
+--------------------------
+
+After four years of development, Samba finally supports compiling and
+running Samba AD with MIT Kerberos. You can enable it with:
+
+    ./configure --with-system-mitkrb5
+
+Samba requires version 1.15.1 of MIT Kerberos to build with AD DC support.
+The krb5-devel and krb5-server packages are required.
+The feature set is not on par with with the Heimdal build but the most important
+things, like forest and external trusts, are working. Samba uses the KDC binary
+provided by MIT Kerberos.
+
+Missing features, compared to Heimdal, are:
+  * PKINIT support
+  * S4U2SELF/S4U2PROXY support
+  * RODC support (not fully working with Heimdal either)
+
+The Samba AD process will take care of starting the MIT KDC and it will load a
+KDB (Kerberos Database) driver to access the Samba AD database.  When
+provisioning an AD DC using 'samba-tool' it will take care of creating a correct
+kdc.conf file for the MIT KDC. Note that 'samba-tool' will overwrite the system
+kdc.conf by default. It is possible to use a different location during
+provision. You should consult the 'samba-tool' help and smb.conf manpage for
+details.
+
+
 Authentication and Authorization audit support
 ----------------------------------------------
 
