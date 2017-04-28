@@ -39,6 +39,7 @@
 #include "auth/gensec/gensec.h"
 #include "auth/gensec/gensec_proto.h"
 #include "../libcli/auth/schannel.h"
+#include "torture/util.h"
 
 #define TEST_ACCOUNT_NAME "samrtorturetest"
 #define TEST_ACCOUNT_NAME_PWD "samrpwdlastset"
@@ -4778,6 +4779,41 @@ static bool test_DeleteUser_with_privs(struct dcerpc_pipe *p,
 	}
 
 	{
+		struct lsa_RightSet rights;
+		struct lsa_StringLarge names[2];
+		struct lsa_AddAccountRights r;
+
+		torture_comment(tctx, "Testing LSA AddAccountRights 1\n");
+
+		init_lsa_StringLarge(&names[0], "SeInteractiveLogonRight");
+		init_lsa_StringLarge(&names[1], NULL);
+
+		rights.count = 1;
+		rights.names = names;
+
+		r.in.handle = lsa_handle;
+		r.in.sid = user_sid;
+		r.in.rights = &rights;
+
+		torture_assert_ntstatus_ok(tctx, dcerpc_lsa_AddAccountRights_r(lb, tctx, &r),
+			"lsa_AddAccountRights 1 failed");
+
+		if (torture_setting_bool(tctx, "nt4_dc", false)) {
+			/*
+			 * The NT4 DC doesn't implement Rights.
+			 */
+			torture_assert_ntstatus_equal(tctx, r.out.result,
+				NT_STATUS_NO_SUCH_PRIVILEGE,
+				"Add rights failed with incorrect error");
+		} else {
+			torture_assert_ntstatus_ok(tctx, r.out.result,
+				"Failed to add rights");
+
+		}
+	}
+
+
+	{
 		struct lsa_EnumAccounts r;
 		uint32_t resume_handle = 0;
 		struct lsa_SidArray lsa_sid_array;
@@ -4810,6 +4846,14 @@ static bool test_DeleteUser_with_privs(struct dcerpc_pipe *p,
 	{
 		struct lsa_EnumAccountRights r;
 		struct lsa_RightSet user_rights;
+		uint32_t expected_count = 2;
+
+		if (torture_setting_bool(tctx, "nt4_dc", false)) {
+			/*
+			 * NT4 DC doesn't store rights.
+			 */
+			expected_count = 1;
+		}
 
 		torture_comment(tctx, "Testing LSA EnumAccountRights\n");
 
@@ -4822,7 +4866,7 @@ static bool test_DeleteUser_with_privs(struct dcerpc_pipe *p,
 		torture_assert_ntstatus_ok(tctx, r.out.result,
 			"Failed to enum rights for account");
 
-		if (user_rights.count < 1) {
+		if (user_rights.count < expected_count) {
 			torture_result(tctx, TORTURE_FAIL, "failed to find newly added rights");
 			return false;
 		}
