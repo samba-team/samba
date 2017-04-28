@@ -27,8 +27,7 @@ struct samba_runcmd_state {
 	int stderr_log_level;
 	struct tevent_fd *fde_stdout;
 	struct tevent_fd *fde_stderr;
-	struct tevent_fd *fde_status;
-	int fd_stdin, fd_stdout, fd_stderr, fd_status;
+	int fd_stdin, fd_stdout, fd_stderr;
 	char *arg0;
 	pid_t pid;
 	char buf[1024];
