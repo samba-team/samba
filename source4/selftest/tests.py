@@ -593,7 +593,7 @@ planpythontestsuite("ad_dc:local", "samba.tests.samba_tool.dnscmd")
 planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.dcerpc.rpcecho")
 planoldpythontestsuite("ad_dc_ntvfs:local", "samba.tests.dcerpc.registry", extra_args=['-U"$USERNAME%$PASSWORD"'])
 planoldpythontestsuite("ad_dc_ntvfs", "samba.tests.dcerpc.dnsserver", extra_args=['-U"$USERNAME%$PASSWORD"'])
-if have_jansson_support:
+if have_jansson_support and have_heimdal_support:
     planoldpythontestsuite("ad_dc:local", "samba.tests.auth_log", extra_args=['-U"$USERNAME%$PASSWORD"'],
                            environ={'CLIENT_IP': '127.0.0.11',
                                     'SOCKET_WRAPPER_DEFAULT_IFACE': 11})
