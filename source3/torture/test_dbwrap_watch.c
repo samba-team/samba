@@ -48,7 +48,7 @@ bool run_dbwrap_watch1(int dummy)
 		fprintf(stderr, "messaging_init failed\n");
 		goto fail;
 	}
-	backend = db_open(msg, "test_watch.tdb", 0, TDB_DEFAULT,
+	backend = db_open(msg, "test_watch.tdb", 0, TDB_CLEAR_IF_FIRST,
 			  O_CREAT|O_RDWR, 0644, DBWRAP_LOCK_ORDER_1,
 			  DBWRAP_FLAG_NONE);
 	if (backend == NULL) {
@@ -98,6 +98,7 @@ bool run_dbwrap_watch1(int dummy)
 		goto fail;
 	}
 
+	(void)unlink("test_watch.tdb");
 	ret = true;
 fail:
 	TALLOC_FREE(req);
