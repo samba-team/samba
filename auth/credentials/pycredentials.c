@@ -90,16 +90,19 @@ static PyObject *py_creds_get_ntlm_response(PyObject *self, PyObject *args, PyOb
 	DATA_BLOB lm_session_key = data_blob_null;
 	DATA_BLOB nt_session_key = data_blob_null;
 	const char *kwnames[] = { "flags", "challenge",
-				  "target_info", "server_timestamp",
+				  "target_info",
 				  NULL };
 
 	tv_now = timeval_current();
 	server_timestamp = timeval_to_nttime(&tv_now);
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs,
-					 "i" PYARG_BYTES_LEN "|" PYARG_BYTES_LEN "K",
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "is#|s#",
 					 discard_const_p(char *, kwnames),
-					 &flags, &challenge, &target_info.data, &target_info.length)) {
+					 &flags,
+					 &challenge.data,
+					 &challenge.length,
+					 &target_info.data,
+					 &target_info.length)) {
 		return NULL;
 	}
 
