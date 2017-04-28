@@ -108,3 +108,71 @@ fail:
 	TALLOC_FREE(ev);
 	return ret;
 }
+
+/*
+ * Make sure dbwrap_parse_record does not return NT_STATUS_OK on
+ * invalid data
+ */
+
+bool run_dbwrap_watch2(int dummy)
+{
+	struct tevent_context *ev = NULL;
+	struct messaging_context *msg = NULL;
+	struct db_context *backend = NULL;
+	struct db_context *db = NULL;
+	const char *keystr = "key";
+	TDB_DATA key = string_term_tdb_data(keystr);
+	NTSTATUS status;
+	bool ret = false;
+
+	ev = samba_tevent_context_init(talloc_tos());
+	if (ev == NULL) {
+		fprintf(stderr, "tevent_context_init failed\n");
+		goto fail;
+	}
+	msg = messaging_init(ev, ev);
+	if (msg == NULL) {
+		fprintf(stderr, "messaging_init failed\n");
+		goto fail;
+	}
+	backend = db_open(msg, "test_watch.tdb", 0, TDB_CLEAR_IF_FIRST,
+			  O_CREAT|O_RDWR, 0644, DBWRAP_LOCK_ORDER_1,
+			  DBWRAP_FLAG_NONE);
+	if (backend == NULL) {
+		fprintf(stderr, "db_open failed: %s\n", strerror(errno));
+		goto fail;
+	}
+
+	/*
+	 * Store invalid data (from the dbwrap_watch point of view)
+	 * directly into the backend database
+	 */
+	status = dbwrap_store_uint32_bystring(backend, keystr, UINT32_MAX);
+	if (!NT_STATUS_IS_OK(status)) {
+		fprintf(stderr, "dbwrap_store_uint32_bystring failed: %s\n",
+			nt_errstr(status));
+		goto fail;
+	}
+
+	db = db_open_watched(ev, backend, msg);
+	if (db == NULL) {
+		fprintf(stderr, "db_open_watched failed\n");
+		goto fail;
+	}
+	backend = NULL;		/* open_watch talloc_moves backend */
+
+	status = dbwrap_parse_record(db, key, NULL, NULL);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+		fprintf(stderr, "dbwrap_parse_record returned %s, expected "
+			"NT_STATUS_NOT_FOUND\n", nt_errstr(status));
+		goto fail;
+	}
+
+	(void)unlink("test_watch.tdb");
+	ret = true;
+fail:
+	TALLOC_FREE(db);
+	TALLOC_FREE(msg);
+	TALLOC_FREE(ev);
+	return ret;
+}

@@ -147,6 +147,7 @@ local_tests = [
     "LOCAL-PTHREADPOOL-TEVENT",
     "LOCAL-CANONICALIZE-PATH",
     "LOCAL-DBWRAP-WATCH1",
+    "LOCAL-DBWRAP-WATCH2",
     "LOCAL-hex_encode_buf",
     "LOCAL-remove_duplicate_addrs2"]
 
