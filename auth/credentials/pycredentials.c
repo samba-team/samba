@@ -614,8 +614,8 @@ static PyMethodDef py_creds_methods[] = {
 		"S.get_ntlm_username_domain() -> (domain, username)\n"
 		"Obtain NTLM username and domain, split up either as (DOMAIN, user) or (\"\", \"user@realm\")." },
 	{ "get_ntlm_response", (PyCFunction)py_creds_get_ntlm_response, METH_VARARGS | METH_KEYWORDS,
-		"S.get_ntlm_username_domain"
-	        "(flags, challenge, target_info[, server_timestamp]) -> "
+		"S.get_ntlm_response"
+	        "(flags, challenge[, target_info]) -> "
 	        "(flags, lm_response, nt_response, lm_session_key, nt_session_key)\n"
 		"Obtain LM or NTLM response." },
 	{ "set_password", py_creds_set_password, METH_VARARGS,
