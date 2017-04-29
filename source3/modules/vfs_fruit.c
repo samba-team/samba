@@ -3738,8 +3738,8 @@ static ssize_t fruit_pread(vfs_handle_struct *handle,
 	struct fio *fio = (struct fio *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
 	ssize_t nread;
 
-	DBG_DEBUG("Path [%s] offset=%zd, size=%zd\n",
-		  fsp_str_dbg(fsp), offset, n);
+	DBG_DEBUG("Path [%s] offset=%"PRIdMAX", size=%zd\n",
+		  fsp_str_dbg(fsp), (intmax_t)offset, n);
 
 	if (fio == NULL) {
 		return SMB_VFS_NEXT_PREAD(handle, fsp, data, n, offset);
@@ -3962,8 +3962,8 @@ static ssize_t fruit_pwrite(vfs_handle_struct *handle,
 	struct fio *fio = (struct fio *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
 	ssize_t nwritten;
 
-	DBG_DEBUG("Path [%s] offset=%zd, size=%zd\n",
-		  fsp_str_dbg(fsp), offset, n);
+	DBG_DEBUG("Path [%s] offset=%"PRIdMAX", size=%zd\n",
+		  fsp_str_dbg(fsp), (intmax_t)offset, n);
 
 	if (fio == NULL) {
 		return SMB_VFS_NEXT_PWRITE(handle, fsp, data, n, offset);
@@ -4407,8 +4407,8 @@ static int fruit_fstat(vfs_handle_struct *handle, files_struct *fsp,
 		sbuf->st_ex_blocks = sbuf->st_ex_size / STAT_ST_BLOCKSIZE + 1;
 	}
 
-	DBG_DEBUG("Path [%s] rc [%d] size [%zd]\n",
-		  fsp_str_dbg(fsp), rc, sbuf->st_ex_size);
+	DBG_DEBUG("Path [%s] rc [%d] size [%"PRIdMAX"]\n",
+		  fsp_str_dbg(fsp), rc, (intmax_t)sbuf->st_ex_size);
 	return rc;
 }
 
@@ -4441,8 +4441,9 @@ static NTSTATUS fruit_streaminfo_meta_stream(
 		return NT_STATUS_OK;
 	}
 
-	DBG_ERR("Removing invalid AFPINFO_STREAM size [%zd] from [%s]\n",
-		stream[i].size, smb_fname_str_dbg(smb_fname));
+	DBG_ERR("Removing invalid AFPINFO_STREAM size [%"PRIdMAX"] "
+		"from [%s]\n", (intmax_t)stream[i].size,
+		smb_fname_str_dbg(smb_fname));
 
 	ok = del_fruit_stream(mem_ctx, pnum_streams, pstreams, AFPINFO_STREAM);
 	if (!ok) {
@@ -4909,7 +4910,8 @@ static int fruit_ftruncate(struct vfs_handle_struct *handle,
 	struct fio *fio = (struct fio *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
 	int ret;
 
-	DBG_DEBUG("Path [%s] offset [%zd]\n", fsp_str_dbg(fsp), offset);
+	DBG_DEBUG("Path [%s] offset [%"PRIdMAX"]\n", fsp_str_dbg(fsp),
+		  (intmax_t)offset);
 
 	if (fio == NULL) {
 		return SMB_VFS_NEXT_FTRUNCATE(handle, fsp, offset);
