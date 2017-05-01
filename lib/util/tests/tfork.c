@@ -21,6 +21,7 @@
 #include <talloc.h>
 #include <tevent.h>
 #include "system/filesys.h"
+#include "system/wait.h"
 #include "libcli/util/ntstatus.h"
 #include "torture/torture.h"
 #include "lib/util/data_blob.h"
