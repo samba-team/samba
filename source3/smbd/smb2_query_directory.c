@@ -584,8 +584,8 @@ static struct tevent_req *smbd_smb2_query_directory_send(TALLOC_CTX *mem_ctx,
 last_entry_done:
 		SIVAL(state->out_output_buffer.data, last_entry_off, 0);
 		if (state->async_count > 0) {
-			DBG_DEBUG("Stopping after %zu async mtime updates\n",
-				  state->async_count);
+			DBG_DEBUG("Stopping after %"PRIu64" async mtime "
+				  "updates\n", state->async_count);
 			return req;
 		}
 
