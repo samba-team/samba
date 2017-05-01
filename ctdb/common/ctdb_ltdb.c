@@ -43,6 +43,12 @@ int ctdb_db_tdb_flags(uint8_t db_flags, bool with_valgrind, bool with_mutex)
 
 	if (db_flags & CTDB_DB_FLAGS_PERSISTENT) {
 		tdb_flags = TDB_DEFAULT;
+
+	} else if (db_flags & CTDB_DB_FLAGS_REPLICATED) {
+		tdb_flags = TDB_NOSYNC |
+			    TDB_CLEAR_IF_FIRST |
+			    TDB_INCOMPATIBLE_HASH;
+
 	} else {
 		tdb_flags = TDB_NOSYNC |
 			    TDB_CLEAR_IF_FIRST |
