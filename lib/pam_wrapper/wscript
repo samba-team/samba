@@ -80,6 +80,13 @@ def configure(conf):
                                'int pam_prompt(const pam_handle_t *_pamh, int _style, char **_resp, const char *_fmt, ...)',
                                define='HAVE_PAM_PROMPT_CONST', headers='stdio.h sys/types.h security/pam_appl.h security/pam_modules.h')
 
+        conf.CHECK_C_PROTOTYPE(
+            'pam_strerror',
+            'const char *pam_strerror(const pam_handle_t *pamh, int errnum)',
+            define='HAVE_PAM_STRERROR_CONST',
+            headers='''stdio.h sys/types.h security/pam_appl.h
+                       security/pam_modules.h''')
+
         # Find the absolute path to libpam.so.0
         libpam_path = find_library(['libpam.so.0', 'libpam.so'], conf.env.STANDARD_LIBPATH)
         conf.DEFINE('PAM_LIBRARY', ('"%s"' % libpam_path ))
