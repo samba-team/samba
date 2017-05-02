@@ -67,9 +67,9 @@ if conf.env.KRB5_CONFIG:
             krb5_version = krb5_version.split("-")[0]
 
         if parse_version(krb5_version) < parse_version(krb5_required_version):
-            Logs.error('ERROR: MIT KRB5 build with Samba AD requires at least %s. %s has been found and cannot be used' % (krb5_required_version, krb5_version))
-            Logs.error('ERROR: If you want to just build Samba FS use the option --without-ad-dc which requires version %s' % (krb5_min_required_version))
-            Logs.error('ERROR: You may try to build with embedded Heimdal Kerebros by not specifying --with-system-mitkrb5')
+            Logs.error('ERROR: The MIT KRB5 build with Samba AD requires at least %s. %s has been found and cannot be used' % (krb5_required_version, krb5_version))
+            Logs.error('ERROR: If you want to just build Samba FS (File Server) use the option --without-ad-dc which requires version %s' % (krb5_min_required_version))
+            Logs.error('ERROR: You may try to build with embedded Heimdal Kerberos by not specifying --with-system-mitkrb5')
             sys.exit(1)
         else:
             Logs.info('MIT Kerberos %s detected, MIT krb5 build can proceed' % (krb5_version))
