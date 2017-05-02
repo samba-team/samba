@@ -209,6 +209,10 @@ def cmd_testonly(opt):
         env.TESTLISTS = '--testlist=%r' % Options.options.TEST_LIST
     elif Options.options.PERF_TEST:
         env.TESTLISTS = '--testlist="${PYTHON} ${srcdir}/selftest/perf_tests.py|" '
+    elif CONFIG_SET(opt, 'EXTRA_PYTHON'):
+        env.TESTLISTS = ('--testlist="EXTRA_PYTHON=${EXTRA_PYTHON} ${PYTHON} ${srcdir}/selftest/tests.py|" ' +
+                         '--testlist="EXTRA_PYTHON=${EXTRA_PYTHON} ${PYTHON} ${srcdir}/source3/selftest/tests.py|" ' +
+                         '--testlist="EXTRA_PYTHON=${EXTRA_PYTHON} ${PYTHON} ${srcdir}/source4/selftest/tests.py|"')
     else:
         env.TESTLISTS = ('--testlist="${PYTHON} ${srcdir}/selftest/tests.py|" ' +
                          '--testlist="${PYTHON} ${srcdir}/source3/selftest/tests.py|" ' +
