@@ -5847,7 +5847,7 @@ static bool test_ioctl_dup_extents_compressed_dest(struct torture_context *tctx,
 	ZERO_STRUCT(sinfo);
 	sinfo.end_of_file_info.level = RAW_SFILEINFO_END_OF_FILE_INFORMATION;
 	sinfo.end_of_file_info.in.file.handle = dest_h;
-	sinfo.end_of_file_info.in.size = dup_ext_buf.byte_count;
+	sinfo.end_of_file_info.in.size = 4096;
 	status = smb2_setinfo_file(tree, &sinfo);
 	torture_assert_ntstatus_ok(tctx, status, "smb2_setinfo_file");
 
