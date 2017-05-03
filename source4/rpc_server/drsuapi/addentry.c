@@ -186,6 +186,8 @@ WERROR dcesrv_drsuapi_DsAddEntry(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	case 2:
 		ret = ldb_transaction_start(b_state->sam_ctx);
 		if (ret != LDB_SUCCESS) {
+			DBG_ERR("DsAddEntry start transaction failed: %s\n",
+				ldb_errstring(b_state->sam_ctx));
 			return WERR_DS_DRA_INTERNAL_ERROR;
 		}
 
