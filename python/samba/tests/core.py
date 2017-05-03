@@ -52,8 +52,8 @@ class SubstituteVarTestCase(TestCase):
 class ArcfourTestCase(TestCase):
 
     def test_arcfour_direct(self):
-        key = '12345678'
-        plain = 'abcdefghi'
+        key = b'12345678'
+        plain = b'abcdefghi'
         crypt_expected = b'\xda\x91Z\xb0l\xd7\xb9\xcf\x99'
         crypt_calculated = arcfour_encrypt(key, plain)
         self.assertEquals(crypt_expected, crypt_calculated)

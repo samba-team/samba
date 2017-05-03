@@ -25,7 +25,7 @@ text1 = "76f53846-a7c2-476a-ae2c-20e2b80d7b34"
 text2 = "344edffa-330a-4b39-b96e-2c34da52e8b1"
 
 
-if not PY3:
+if PY3:
     # cmp() exists only in Python 2
     def cmp(a, b):
         return (a > b) - (a < b)
