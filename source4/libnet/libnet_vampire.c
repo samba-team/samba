@@ -365,7 +365,7 @@ static WERROR libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s,
 	 * attach the schema we just brought over DRS to the ldb,
 	 * so we can use it in dsdb_convert_object_ex below
 	 */
-	ret = dsdb_set_schema(s->ldb, s->self_made_schema);
+	ret = dsdb_set_schema(s->ldb, s->self_made_schema, true);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0,("Failed to attach working schema from DRS.\n"));
 		return WERR_INTERNAL_ERROR;

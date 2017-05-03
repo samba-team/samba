@@ -56,7 +56,9 @@ const struct ldb_schema_attribute *dsdb_attribute_handler_override(struct ldb_co
  * are required so we can operate on a schema-less database (say the
  * backend during emergency fixes) and during the schema load.
  */
-static int dsdb_schema_set_indices_and_attributes(struct ldb_context *ldb, struct dsdb_schema *schema, bool write_indices_and_attributes)
+int dsdb_schema_set_indices_and_attributes(struct ldb_context *ldb,
+					   struct dsdb_schema *schema,
+					   bool write_indices_and_attributes)
 {
 	int ret = LDB_SUCCESS;
 	struct ldb_result *res;
@@ -468,7 +470,9 @@ int dsdb_set_schema_refresh_function(struct ldb_context *ldb,
  * Attach the schema to an opaque pointer on the ldb,
  * so ldb modules can find it
  */
-int dsdb_set_schema(struct ldb_context *ldb, struct dsdb_schema *schema)
+int dsdb_set_schema(struct ldb_context *ldb,
+		    struct dsdb_schema *schema,
+		    bool write_indices_and_attributes)
 {
 	struct dsdb_schema *old_schema;
 	int ret;
@@ -493,7 +497,8 @@ int dsdb_set_schema(struct ldb_context *ldb, struct dsdb_schema *schema)
 	talloc_steal(ldb, schema);
 
 	/* Set the new attributes based on the new schema */
-	ret = dsdb_schema_set_indices_and_attributes(ldb, schema, true);
+	ret = dsdb_schema_set_indices_and_attributes(ldb, schema,
+						     write_indices_and_attributes);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -884,7 +889,7 @@ WERROR dsdb_set_schema_from_ldif(struct ldb_context *ldb,
 		}
 	}
 
-	ret = dsdb_set_schema(ldb, schema);
+	ret = dsdb_set_schema(ldb, schema, true);
 	if (ret != LDB_SUCCESS) {
 		status = WERR_FOOBAR;
 		goto failed;
