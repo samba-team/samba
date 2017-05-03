@@ -815,18 +815,14 @@ static int partition_start_trans(struct ldb_module *module)
 	if (ldb_module_flags(ldb_module_get_ctx(module)) & LDB_FLG_ENABLE_TRACING) {
 		ldb_debug(ldb_module_get_ctx(module), LDB_DEBUG_TRACE, "partition_start_trans() -> (metadata partition)");
 	}
+
+	/* This order must match that in prepare_commit() */
 	ret = ldb_next_start_trans(module);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
 
 	ret = partition_reload_if_required(module, data, NULL);
-	if (ret != LDB_SUCCESS) {
-		ldb_next_del_trans(module);
-		return ret;
-	}
-
-	ret = partition_metadata_start_trans(module);
 	if (ret != LDB_SUCCESS) {
 		ldb_next_del_trans(module);
 		return ret;
@@ -849,6 +845,20 @@ static int partition_start_trans(struct ldb_module *module)
 		}
 	}
 
+	/*
+	 * Because in prepare_commit this must come last, to ensure
+	 * lock ordering we have to do this last here also 
+	 */
+	ret = partition_metadata_start_trans(module);
+	if (ret != LDB_SUCCESS) {
+		/* Back it out, if it fails on one */
+		for (i--; i >= 0; i--) {
+			ldb_next_del_trans(data->partitions[i]->module);
+		}
+		ldb_next_del_trans(module);
+		return ret;
+	}
+
 	data->in_transaction++;
 
 	return LDB_SUCCESS;
@@ -861,6 +871,11 @@ static int partition_prepare_commit(struct ldb_module *module)
 	struct partition_private_data *data = talloc_get_type(ldb_module_get_private(module),
 							      struct partition_private_data);
 	int ret;
+
+	ret = ldb_next_prepare_commit(module);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
 
 	for (i=0; data && data->partitions && data->partitions[i]; i++) {
 		if ((module && ldb_module_flags(ldb_module_get_ctx(module)) & LDB_FLG_ENABLE_TRACING)) {
@@ -878,11 +893,6 @@ static int partition_prepare_commit(struct ldb_module *module)
 
 	if ((module && ldb_module_flags(ldb_module_get_ctx(module)) & LDB_FLG_ENABLE_TRACING)) {
 		ldb_debug(ldb_module_get_ctx(module), LDB_DEBUG_TRACE, "partition_prepare_commit() -> (metadata partition)");
-	}
-
-	ret = ldb_next_prepare_commit(module);
-	if (ret != LDB_SUCCESS) {
-		return ret;
 	}
 
 	/* metadata prepare commit must come last, as other partitions could modify
