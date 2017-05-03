@@ -27,20 +27,14 @@ def configure(conf):
         f.write(header)
 
         data = """kdb_modules_dir = "{0}"
-kdc_default_config_dir = "{1}"
 """
 
         if conf.env.HEIMDAL_KRB5_CONFIG:
             f.write(data.format("", ""))
         else:
             modulesdir = "%s/krb5/plugins/kdb" % conf.env.LIBDIR
-            paths = [ "/var/kerberos/krb5kdc", "/var/lib/kerberos/krb5kdc" ]
-            kdc_path = None
-            for p in paths:
-                if os.path.exists(p):
-                    kdc_path = p
 
-            f.write(data.format(modulesdir, kdc_path))
+            f.write(data.format(modulesdir))
     finally:
         f.close()
 

@@ -19,12 +19,11 @@
 #
 
 from samba.provision.kerberos_implementation import (
-    kdb_modules_dir,
-    kdc_default_config_dir)
+    kdb_modules_dir)
 from samba import is_heimdal_built
 import os
 
-def make_kdcconf(realm, domain, kdcconfdir, logdir):
+def create_kdc_conf(kdcconf, realm, domain, logdir):
 
     if is_heimdal_built():
         return
@@ -37,11 +36,7 @@ def make_kdcconf(realm, domain, kdcconfdir, logdir):
     if 'SAMBA_SELFTEST' in os.environ and 'MITKRB5' in os.environ:
         return
 
-    # If not specified use the default
-    if kdcconfdir is None:
-        kdcconfdir = kdc_default_config_dir
-
-    kdcconf = "%s/kdc.conf" % kdcconfdir
+    assert kdcconf is not None
 
     assert domain is not None
     domain = domain.upper()

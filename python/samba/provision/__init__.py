@@ -56,6 +56,7 @@ from samba import (
     substitute_var,
     valid_netbios_name,
     version,
+    is_heimdal_built,
     )
 from samba.dcerpc import security, misc
 from samba.dcerpc.misc import (
@@ -118,7 +119,7 @@ import samba.registry
 from samba.schema import Schema
 from samba.samdb import SamDB
 from samba.dbchecker import dbcheck
-from samba.provision.kerberos import make_kdcconf
+from samba.provision.kerberos import create_kdc_conf
 
 DEFAULT_POLICY_GUID = "31B2F340-016D-11D2-945F-00C04FB984F9"
 DEFAULT_DC_POLICY_GUID = "6AC1786C-016F-11D2-945F-00C04FB984F9"
@@ -549,6 +550,7 @@ def provision_paths_from_lp(lp, dnsdomain):
     paths.namedconf_update = os.path.join(paths.private_dir, "named.conf.update")
     paths.namedtxt = os.path.join(paths.private_dir, "named.txt")
     paths.krb5conf = os.path.join(paths.private_dir, "krb5.conf")
+    paths.kdcconf = os.path.join(paths.private_dir, "kdc.conf")
     paths.winsdb = os.path.join(paths.private_dir, "wins.ldb")
     paths.s4_ldapi_path = os.path.join(paths.private_dir, "ldapi")
     paths.hklm = "hklm.ldb"
@@ -670,7 +672,7 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
 
 def make_smbconf(smbconf, hostname, domain, realm, targetdir,
                  serverrole=None, eadb=False, use_ntvfs=False, lp=None,
-                 global_param=None, kdcconfdir=None):
+                 global_param=None):
     """Create a new smb.conf file based on a couple of basic settings.
     """
     assert smbconf is not None
@@ -730,11 +732,6 @@ def make_smbconf(smbconf, hostname, domain, realm, targetdir,
             else:
                 statedir = lp.get("state directory")
             lp.set("xattr_tdb:file", os.path.abspath(os.path.join(statedir, "xattr.tdb")))
-
-    make_kdcconf(realm, domain, kdcconfdir, os.path.dirname(lp.get("log file")))
-    if kdcconfdir is not None:
-        kdcconf = "%s/kdc.conf" % kdcconfdir
-        lp.set("mit kdc config", kdcconf)
 
     shares = {}
     if serverrole == "active directory domain controller":
@@ -1932,7 +1929,7 @@ def provision_fake_ypserver(logger, samdb, domaindn, netbiosname, nisdomain,
         samdb.transaction_commit()
 
 
-def provision(logger, session_info, smbconf=None, kdcconfdir=None,
+def provision(logger, session_info, smbconf=None,
         targetdir=None, samdb_fill=FILL_FULL, realm=None, rootdn=None,
         domaindn=None, schemadn=None, configdn=None, serverdn=None,
         domain=None, hostname=None, hostip=None, hostip6=None, domainsid=None,
@@ -2016,13 +2013,11 @@ def provision(logger, session_info, smbconf=None, kdcconfdir=None,
             make_smbconf(smbconf, hostname, domain, realm,
                          targetdir, serverrole=serverrole,
                          eadb=useeadb, use_ntvfs=use_ntvfs,
-                         lp=lp, global_param=global_param,
-                         kdcconfdir=kdcconfdir)
+                         lp=lp, global_param=global_param)
     else:
         make_smbconf(smbconf, hostname, domain, realm, targetdir,
                      serverrole=serverrole,
-                     eadb=useeadb, use_ntvfs=use_ntvfs, lp=lp, global_param=global_param,
-                     kdcconfdir=kdcconfdir)
+                     eadb=useeadb, use_ntvfs=use_ntvfs, lp=lp, global_param=global_param)
 
     if lp is None:
         lp = samba.param.LoadParm()
@@ -2178,6 +2173,11 @@ def provision(logger, session_info, smbconf=None, kdcconfdir=None,
                     dom_for_fun_level=dom_for_fun_level, am_rodc=am_rodc,
                     lp=lp, use_ntvfs=use_ntvfs,
                            skip_sysvolacl=skip_sysvolacl)
+
+        if not is_heimdal_built():
+            create_kdc_conf(paths.kdcconf, realm, domain, os.path.dirname(lp.get("log file")))
+            logger.info("The Kerberos KDC configuration for Samba AD is "
+                        "located at %s", paths.kdcconf)
 
         create_krb5_conf(paths.krb5conf,
                          dnsdomain=names.dnsdomain, hostname=names.hostname,

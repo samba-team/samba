@@ -146,7 +146,7 @@ void mitkdc_task_init(struct task_server *task)
 	struct tevent_req *subreq;
 	const char * const *kdc_cmd;
 	struct interface *ifaces;
-	const char *kdc_config;
+	char *kdc_config = NULL;
 	struct kdc_server *kdc;
 	krb5_error_code code;
 	NTSTATUS status;
@@ -183,11 +183,17 @@ void mitkdc_task_init(struct task_server *task)
 		return;
 	}
 
-	kdc_config = lpcfg_mit_kdc_config(task->lp_ctx, task);
-	if (kdc_config != NULL && kdc_config[0] != '\0') {
-		/* Do not overwrite the variable if already set! */
-		setenv("KRB5_KDC_PROFILE", kdc_config, 0);
+	kdc_config = talloc_asprintf(task,
+				     "%s/kdc.conf",
+				     lpcfg_private_dir(task->lp_ctx));
+	if (kdc_config == NULL) {
+		task_server_terminate(task,
+				      "KDC: no memory",
+				      false);
+		return;
 	}
+	setenv("KRB5_KDC_PROFILE", kdc_config, 0);
+	TALLOC_FREE(kdc_config);
 
 	/* start it as a child process */
 	kdc_cmd = lpcfg_mit_kdc_command(task->lp_ctx);
