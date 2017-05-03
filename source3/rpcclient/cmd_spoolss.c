@@ -770,7 +770,7 @@ static void display_reg_value(const char *name, enum winreg_Type type, DATA_BLOB
 
 	switch(type) {
 	case REG_DWORD:
-		if (blob.length == sizeof(uint32_t)) {
+		if (blob.length >= sizeof(uint32_t)) {
 			printf("%s: REG_DWORD: 0x%08x\n", name, IVAL(blob.data,0));
 		} else {
 			printf("%s: REG_DWORD: <invalid>\n", name);
