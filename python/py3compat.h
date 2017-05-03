@@ -98,6 +98,10 @@
     PyMODINIT_FUNC PyInit_ ## name(void); \
     PyMODINIT_FUNC PyInit_ ## name(void)
 
+/* PyArg_ParseTuple/Py_BuildValue argument */
+
+#define PYARG_BYTES_LEN "y#"
+
 #else
 
 /***** Python 2 *****/
@@ -139,6 +143,10 @@
 #define PyBytes_Concat PyString_Concat
 #define PyBytes_ConcatAndDel PyString_ConcatAndDel
 #define _PyBytes_Resize _PyString_Resize
+
+/* PyArg_ParseTuple/Py_BuildValue argument */
+
+#define PYARG_BYTES_LEN "s#"
 
 /* Module init */
 

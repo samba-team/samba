@@ -96,7 +96,8 @@ static PyObject *py_creds_get_ntlm_response(PyObject *self, PyObject *args, PyOb
 	tv_now = timeval_current();
 	server_timestamp = timeval_to_nttime(&tv_now);
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "is#|s#K",
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs,
+					 "i" PYARG_BYTES_LEN "|" PYARG_BYTES_LEN "K",
 					 discard_const_p(char *, kwnames),
 					 &flags, &challenge, &target_info.data, &target_info.length)) {
 		return NULL;
@@ -116,7 +117,8 @@ static PyObject *py_creds_get_ntlm_response(PyObject *self, PyObject *args, PyOb
 		return NULL;
 	}
 
-	ret = Py_BuildValue("{siss#ss#ss#ss#}",
+	ret = Py_BuildValue("{sis" PYARG_BYTES_LEN "s" PYARG_BYTES_LEN
+			            "s" PYARG_BYTES_LEN "s" PYARG_BYTES_LEN "}",
 			    "flags", flags,
 			    "lm_reponse",
 			    (const char *)lm_response.data, lm_response.length,
