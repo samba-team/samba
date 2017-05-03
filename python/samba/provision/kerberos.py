@@ -21,12 +21,12 @@
 from samba.provision.kerberos_implementation import (
     kdb_modules_dir,
     kdc_default_config_dir)
-from samba import _glue
+from samba import is_heimdal_built
 import os
 
 def make_kdcconf(realm, domain, kdcconfdir, logdir):
 
-    if _glue.is_heimdal_built:
+    if is_heimdal_built():
         return
 
     # Do nothing if kdc.conf has been set
