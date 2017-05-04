@@ -165,13 +165,18 @@ bool update_num_read_oplocks(files_struct *fsp, struct share_mode_lock *lck)
 	uint32_t num_read_oplocks = 0;
 	uint32_t i;
 
-	if (EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
+	if (fsp_lease_type_is_exclusive(fsp)) {
 		/*
-		 * If we're the only one, we don't need a brlock entry
+		 * If we're fully exclusive, we don't need a brlock entry
 		 */
 		remove_stale_share_mode_entries(d);
-		SMB_ASSERT(d->num_share_modes == 1);
-		SMB_ASSERT(EXCLUSIVE_OPLOCK_TYPE(d->share_modes[0].op_type));
+
+		for (i=0; i<d->num_share_modes; i++) {
+			struct share_mode_entry *e = &d->share_modes[i];
+			uint32_t e_lease_type = get_lease_type(d, e);
+
+			SMB_ASSERT(lease_type_is_exclusive(e_lease_type));
+		}
 		return true;
 	}
 
