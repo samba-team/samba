@@ -46,7 +46,7 @@ uint32_t map_oplock_to_lease_type(uint16_t op_type)
 	return ret;
 }
 
-uint32_t fsp_lease_type(struct files_struct *fsp)
+uint32_t fsp_lease_type(const struct files_struct *fsp)
 {
 	if (fsp->oplock_type == LEASE_OPLOCK) {
 		return fsp->lease->lease.lease_state;
