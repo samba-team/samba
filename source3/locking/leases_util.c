@@ -53,3 +53,20 @@ uint32_t fsp_lease_type(const struct files_struct *fsp)
 	}
 	return map_oplock_to_lease_type(fsp->oplock_type);
 }
+
+uint32_t lease_type_is_exclusive(uint32_t lease_type)
+{
+	if ((lease_type & (SMB2_LEASE_READ | SMB2_LEASE_WRITE)) ==
+	    (SMB2_LEASE_READ | SMB2_LEASE_WRITE)) {
+		return true;
+	}
+
+	return false;
+}
+
+bool fsp_lease_type_is_exclusive(const struct files_struct *fsp)
+{
+	uint32_t lease_type = fsp_lease_type(fsp);
+
+	return lease_type_is_exclusive(lease_type);
+}
