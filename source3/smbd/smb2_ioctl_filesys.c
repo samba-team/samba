@@ -256,11 +256,13 @@ static struct tevent_req *fsctl_dup_extents_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
+	/* tell the VFS to ignore locks across the clone, matching ReFS */
 	subreq = SMB_VFS_COPY_CHUNK_SEND(dst_fsp->conn, state, ev,
 					 src_fsp, state->dup_extents.source_off,
 					 dst_fsp, state->dup_extents.target_off,
 					 state->dup_extents.byte_count,
-					 VFS_COPY_CHUNK_FL_MUST_CLONE);
+					 VFS_COPY_CHUNK_FL_MUST_CLONE
+					 | VFS_COPY_CHUNK_FL_IGNORE_LOCKS);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
