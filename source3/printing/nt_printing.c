@@ -666,16 +666,18 @@ Determine the correct cVersion associated with an architecture and driver
 static uint32_t get_correct_cversion(struct auth_session_info *session_info,
 				   const char *architecture,
 				   const char *driverpath_in,
+				   const char *driver_directory,
 				   WERROR *perr)
 {
 	int cversion = -1;
 	NTSTATUS          nt_status;
 	struct smb_filename *smb_fname = NULL;
-	char *driverpath = NULL;
 	files_struct      *fsp = NULL;
 	connection_struct *conn = NULL;
 	char *oldcwd;
 	char *printdollar = NULL;
+	char *printdollar_path = NULL;
+	char *working_dir = NULL;
 	int printdollar_snum;
 
 	*perr = WERR_INVALID_PARAMETER;
@@ -704,12 +706,33 @@ static uint32_t get_correct_cversion(struct auth_session_info *session_info,
 		return -1;
 	}
 
+	printdollar_path = lp_path(talloc_tos(), printdollar_snum);
+	if (printdollar_path == NULL) {
+		*perr = WERR_NOT_ENOUGH_MEMORY;
+		return -1;
+	}
+
+	working_dir = talloc_asprintf(talloc_tos(),
+				      "%s/%s",
+				      printdollar_path,
+				      architecture);
+	/*
+	 * If the driver has been uploaded into a temorpary driver
+	 * directory, switch to the driver directory.
+	 */
+	if (driver_directory != NULL) {
+		working_dir = talloc_asprintf(talloc_tos(), "%s/%s/%s",
+					      printdollar_path,
+					      architecture,
+					      driver_directory);
+	}
+
 	nt_status = create_conn_struct_cwd(talloc_tos(),
 					   server_event_context(),
 					   server_messaging_context(),
 					   &conn,
 					   printdollar_snum,
-					   lp_path(talloc_tos(), printdollar_snum),
+					   working_dir,
 					   session_info, &oldcwd);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("get_correct_cversion: create_conn_struct "
@@ -731,18 +754,11 @@ static uint32_t get_correct_cversion(struct auth_session_info *session_info,
 		goto error_free_conn;
 	}
 
-	/* Open the driver file (Portable Executable format) and determine the
-	 * deriver the cversion. */
-	driverpath = talloc_asprintf(talloc_tos(),
-					"%s/%s",
-					architecture,
-					driverpath_in);
-	if (!driverpath) {
-		*perr = WERR_NOT_ENOUGH_MEMORY;
-		goto error_exit;
-	}
-
-	nt_status = driver_unix_convert(conn, driverpath, &smb_fname);
+	/*
+	 * We switch to the directory where the driver files are located,
+	 * so only work on the file names
+	 */
+	nt_status = driver_unix_convert(conn, driverpath_in, &smb_fname);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		*perr = ntstatus_to_werror(nt_status);
 		goto error_exit;
@@ -956,8 +972,11 @@ static WERROR clean_up_driver_struct_level(TALLOC_CTX *mem_ctx,
 	 *	NT2K: cversion=3
 	 */
 
-	*version = get_correct_cversion(session_info, short_architecture,
-					*driver_path, &err);
+	*version = get_correct_cversion(session_info,
+					short_architecture,
+					*driver_path,
+					*driver_directory,
+					&err);
 	if (*version == -1) {
 		return err;
 	}
