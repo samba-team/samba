@@ -210,6 +210,13 @@ int ldb_register_backend(const char *url_prefix, ldb_connect_fn, bool);
 
 struct ldb_handle *ldb_handle_new(TALLOC_CTX *mem_ctx, struct ldb_context *ldb);
 
+/*
+ * This function obtains the private event context for the handle,
+ * which may have been created to avoid nested event loops during
+ * ldb_tdb with the locks held
+ */
+struct tevent_context *ldb_handle_get_event_context(struct ldb_handle *handle);
+
 int ldb_module_send_entry(struct ldb_request *req,
 			  struct ldb_message *msg,
 			  struct ldb_control **ctrls);

@@ -62,6 +62,9 @@ struct ldb_handle {
 	uint32_t custom_flags;
 	unsigned nesting;
 
+	/* Private event context (if not NULL) */
+	struct tevent_context *event_context;
+
 	/* used for debugging */
 	struct ldb_request *parent;
 	const char *location;

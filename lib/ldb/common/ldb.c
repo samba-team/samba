@@ -745,6 +745,19 @@ int ldb_request_get_status(struct ldb_request *req)
 	return req->handle->status;
 }
 
+/*
+ * This function obtains the private event context for the handle,
+ * which may have been created to avoid nested event loops during
+ * ldb_tdb with the locks held
+ */
+struct tevent_context *ldb_handle_get_event_context(struct ldb_handle *handle)
+{
+	if (handle->event_context != NULL) {
+		return handle->event_context;
+	}
+	return ldb_get_event_context(handle->ldb);
+}
+
 
 /*
   trace a ldb request
