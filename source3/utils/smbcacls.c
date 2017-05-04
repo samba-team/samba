@@ -903,6 +903,7 @@ int main(int argc, char *argv[])
 
 	poptFreeContext(pc);
 	popt_burn_cmdline_password(argc, argv);
+	popt_common_credentials_post();
 
 	string_replace(path,'/','\\');
 
