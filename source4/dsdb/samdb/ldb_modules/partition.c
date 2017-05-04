@@ -372,7 +372,7 @@ static int partition_call_first(struct partition_context *ac)
 }
 
 /**
- * Send a request down to all the partitions
+ * Send a request down to all the partitions (but not the sam.ldb file)
  */
 static int partition_send_all(struct ldb_module *module, 
 			      struct partition_context *ac, 
@@ -381,10 +381,8 @@ static int partition_send_all(struct ldb_module *module,
 	unsigned int i;
 	struct partition_private_data *data = talloc_get_type(ldb_module_get_private(module),
 							      struct partition_private_data);
-	int ret = partition_prep_request(ac, NULL);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
+	int ret;
+
 	for (i=0; data && data->partitions && data->partitions[i]; i++) {
 		ret = partition_prep_request(ac, data->partitions[i]);
 		if (ret != LDB_SUCCESS) {
