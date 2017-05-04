@@ -1146,6 +1146,41 @@ int ldb_op_default_callback(struct ldb_request *req, struct ldb_reply *ares)
 	return ldb_request_done(req, LDB_SUCCESS);
 }
 
+static struct ldb_request *ldb_build_req_common(TALLOC_CTX *mem_ctx,
+				struct ldb_context *ldb,
+				struct ldb_control **controls,
+				void *context,
+				ldb_request_callback_t callback,
+				struct ldb_request *parent)
+{
+	struct ldb_request *req = NULL;
+
+	req = talloc_zero(mem_ctx, struct ldb_request);
+	if (req == NULL) {
+		return NULL;
+	}
+	req->controls = controls;
+	req->context = context;
+	req->callback = callback;
+
+	ldb_set_timeout_from_prev_req(ldb, parent, req);
+
+	req->handle = ldb_handle_new(req, ldb);
+	if (req->handle == NULL) {
+		TALLOC_FREE(req);
+		return NULL;
+	}
+
+	if (parent != NULL) {
+		req->handle->nesting++;
+		req->handle->parent = parent;
+		req->handle->flags = parent->handle->flags;
+		req->handle->custom_flags = parent->handle->custom_flags;
+	}
+
+	return req;
+}
+
 int ldb_build_search_req_ex(struct ldb_request **ret_req,
 			struct ldb_context *ldb,
 			TALLOC_CTX *mem_ctx,
@@ -1162,7 +1197,8 @@ int ldb_build_search_req_ex(struct ldb_request **ret_req,
 
 	*ret_req = NULL;
 
-	req = talloc(mem_ctx, struct ldb_request);
+	req = ldb_build_req_common(mem_ctx, ldb, controls,
+				   context, callback, parent);
 	if (req == NULL) {
 		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -1184,25 +1220,6 @@ int ldb_build_search_req_ex(struct ldb_request **ret_req,
 	}
 
 	req->op.search.attrs = attrs;
-	req->controls = controls;
-	req->context = context;
-	req->callback = callback;
-
-	ldb_set_timeout_from_prev_req(ldb, parent, req);
-
-	req->handle = ldb_handle_new(req, ldb);
-	if (req->handle == NULL) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	if (parent) {
-		req->handle->nesting++;
-		req->handle->parent = parent;
-		req->handle->flags = parent->handle->flags;
-		req->handle->custom_flags = parent->handle->custom_flags;
-	}
-
 	*ret_req = req;
 	return LDB_SUCCESS;
 }
@@ -1250,7 +1267,8 @@ int ldb_build_add_req(struct ldb_request **ret_req,
 
 	*ret_req = NULL;
 
-	req = talloc(mem_ctx, struct ldb_request);
+	req = ldb_build_req_common(mem_ctx, ldb, controls,
+				   context, callback, parent);
 	if (req == NULL) {
 		ldb_set_errstring(ldb, "Out of Memory");
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -1258,27 +1276,7 @@ int ldb_build_add_req(struct ldb_request **ret_req,
 
 	req->operation = LDB_ADD;
 	req->op.add.message = message;
-	req->controls = controls;
-	req->context = context;
-	req->callback = callback;
-
-	ldb_set_timeout_from_prev_req(ldb, parent, req);
-
-	req->handle = ldb_handle_new(req, ldb);
-	if (req->handle == NULL) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	if (parent) {
-		req->handle->nesting++;
-		req->handle->parent = parent;
-		req->handle->flags = parent->handle->flags;
-		req->handle->custom_flags = parent->handle->custom_flags;
-	}
-
 	*ret_req = req;
-
 	return LDB_SUCCESS;
 }
 
@@ -1295,7 +1293,8 @@ int ldb_build_mod_req(struct ldb_request **ret_req,
 
 	*ret_req = NULL;
 
-	req = talloc(mem_ctx, struct ldb_request);
+	req = ldb_build_req_common(mem_ctx, ldb, controls,
+				   context, callback, parent);
 	if (req == NULL) {
 		ldb_set_errstring(ldb, "Out of Memory");
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -1303,27 +1302,8 @@ int ldb_build_mod_req(struct ldb_request **ret_req,
 
 	req->operation = LDB_MODIFY;
 	req->op.mod.message = message;
-	req->controls = controls;
-	req->context = context;
-	req->callback = callback;
-
-	ldb_set_timeout_from_prev_req(ldb, parent, req);
-
-	req->handle = ldb_handle_new(req, ldb);
-	if (req->handle == NULL) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	if (parent) {
-		req->handle->nesting++;
-		req->handle->parent = parent;
-		req->handle->flags = parent->handle->flags;
-		req->handle->custom_flags = parent->handle->custom_flags;
-	}
 
 	*ret_req = req;
-
 	return LDB_SUCCESS;
 }
 
@@ -1340,7 +1320,8 @@ int ldb_build_del_req(struct ldb_request **ret_req,
 
 	*ret_req = NULL;
 
-	req = talloc(mem_ctx, struct ldb_request);
+	req = ldb_build_req_common(mem_ctx, ldb, controls,
+				   context, callback, parent);
 	if (req == NULL) {
 		ldb_set_errstring(ldb, "Out of Memory");
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -1348,27 +1329,7 @@ int ldb_build_del_req(struct ldb_request **ret_req,
 
 	req->operation = LDB_DELETE;
 	req->op.del.dn = dn;
-	req->controls = controls;
-	req->context = context;
-	req->callback = callback;
-
-	ldb_set_timeout_from_prev_req(ldb, parent, req);
-
-	req->handle = ldb_handle_new(req, ldb);
-	if (req->handle == NULL) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	if (parent) {
-		req->handle->nesting++;
-		req->handle->parent = parent;
-		req->handle->flags = parent->handle->flags;
-		req->handle->custom_flags = parent->handle->custom_flags;
-	}
-
 	*ret_req = req;
-
 	return LDB_SUCCESS;
 }
 
@@ -1386,7 +1347,8 @@ int ldb_build_rename_req(struct ldb_request **ret_req,
 
 	*ret_req = NULL;
 
-	req = talloc(mem_ctx, struct ldb_request);
+	req = ldb_build_req_common(mem_ctx, ldb, controls,
+				   context, callback, parent);
 	if (req == NULL) {
 		ldb_set_errstring(ldb, "Out of Memory");
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -1395,27 +1357,7 @@ int ldb_build_rename_req(struct ldb_request **ret_req,
 	req->operation = LDB_RENAME;
 	req->op.rename.olddn = olddn;
 	req->op.rename.newdn = newdn;
-	req->controls = controls;
-	req->context = context;
-	req->callback = callback;
-
-	ldb_set_timeout_from_prev_req(ldb, parent, req);
-
-	req->handle = ldb_handle_new(req, ldb);
-	if (req->handle == NULL) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	if (parent) {
-		req->handle->nesting++;
-		req->handle->parent = parent;
-		req->handle->flags = parent->handle->flags;
-		req->handle->custom_flags = parent->handle->custom_flags;
-	}
-
 	*ret_req = req;
-
 	return LDB_SUCCESS;
 }
 
@@ -1462,7 +1404,8 @@ int ldb_build_extended_req(struct ldb_request **ret_req,
 
 	*ret_req = NULL;
 
-	req = talloc(mem_ctx, struct ldb_request);
+	req = ldb_build_req_common(mem_ctx, ldb, controls,
+				   context, callback, parent);
 	if (req == NULL) {
 		ldb_set_errstring(ldb, "Out of Memory");
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -1471,27 +1414,7 @@ int ldb_build_extended_req(struct ldb_request **ret_req,
 	req->operation = LDB_EXTENDED;
 	req->op.extended.oid = oid;
 	req->op.extended.data = data;
-	req->controls = controls;
-	req->context = context;
-	req->callback = callback;
-
-	ldb_set_timeout_from_prev_req(ldb, parent, req);
-
-	req->handle = ldb_handle_new(req, ldb);
-	if (req->handle == NULL) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	if (parent) {
-		req->handle->nesting++;
-		req->handle->parent = parent;
-		req->handle->flags = parent->handle->flags;
-		req->handle->custom_flags = parent->handle->custom_flags;
-	}
-
 	*ret_req = req;
-
 	return LDB_SUCCESS;
 }
 
