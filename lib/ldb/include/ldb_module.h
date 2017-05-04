@@ -230,10 +230,15 @@ int ldb_register_backend(const char *url_prefix, ldb_connect_fn, bool);
 
 struct ldb_handle *ldb_handle_new(TALLOC_CTX *mem_ctx, struct ldb_context *ldb);
 
-/*
- * This function obtains the private event context for the handle,
- * which may have been created to avoid nested event loops during
- * ldb_tdb with the locks held
+/**
+ Obtains the private event context for the handle,
+
+ A private event context may have been created to avoid nested event
+ loops during ldb_tdb with the locks held.  Otherwise return the
+ global one.
+
+ \param handle The ldb handle to obtain the event context for
+ \return the tevent event context for this handle (private or global)
  */
 struct tevent_context *ldb_handle_get_event_context(struct ldb_handle *handle);
 
