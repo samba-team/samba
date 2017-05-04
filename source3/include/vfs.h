@@ -556,8 +556,11 @@ enum vfs_fallocate_flags {
  */
 enum vfs_copy_chunk_flags {
 	VFS_COPY_CHUNK_FL_MUST_CLONE		= 0x0001,
+	VFS_COPY_CHUNK_FL_IGNORE_LOCKS		= 0x0002,
 
-	VFS_COPY_CHUNK_FL_MASK_ALL		= 0x0001,
+	VFS_COPY_CHUNK_FL_MASK_ALL		=
+					(VFS_COPY_CHUNK_FL_MUST_CLONE
+					 | VFS_COPY_CHUNK_FL_IGNORE_LOCKS),
 };
 
 struct vfs_aio_state {

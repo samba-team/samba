@@ -154,27 +154,29 @@ static struct tevent_req *btrfs_copy_chunk_send(struct vfs_handle_struct *handle
 		return tevent_req_post(req, ev);
 	}
 
-	init_strict_lock_struct(src_fsp,
-				src_fsp->op->global->open_persistent_id,
-				src_off,
-				num,
-				READ_LOCK,
-				&src_lck);
-	init_strict_lock_struct(dest_fsp,
-				dest_fsp->op->global->open_persistent_id,
-				dest_off,
-				num,
-				WRITE_LOCK,
-				&dest_lck);
+	if (!(flags & VFS_COPY_CHUNK_FL_IGNORE_LOCKS)) {
+		init_strict_lock_struct(src_fsp,
+					src_fsp->op->global->open_persistent_id,
+					src_off,
+					num,
+					READ_LOCK,
+					&src_lck);
+		init_strict_lock_struct(dest_fsp,
+				       dest_fsp->op->global->open_persistent_id,
+					dest_off,
+					num,
+					WRITE_LOCK,
+					&dest_lck);
 
-	if (!SMB_VFS_STRICT_LOCK(src_fsp->conn, src_fsp, &src_lck)) {
-		tevent_req_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
-		return tevent_req_post(req, ev);
-	}
-	if (!SMB_VFS_STRICT_LOCK(dest_fsp->conn, dest_fsp, &dest_lck)) {
-		SMB_VFS_STRICT_UNLOCK(src_fsp->conn, src_fsp, &src_lck);
-		tevent_req_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
-		return tevent_req_post(req, ev);
+		if (!SMB_VFS_STRICT_LOCK(src_fsp->conn, src_fsp, &src_lck)) {
+			tevent_req_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
+			return tevent_req_post(req, ev);
+		}
+		if (!SMB_VFS_STRICT_LOCK(dest_fsp->conn, dest_fsp, &dest_lck)) {
+			SMB_VFS_STRICT_UNLOCK(src_fsp->conn, src_fsp, &src_lck);
+			tevent_req_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
+			return tevent_req_post(req, ev);
+		}
 	}
 
 	ZERO_STRUCT(cr_args);
@@ -184,8 +186,10 @@ static struct tevent_req *btrfs_copy_chunk_send(struct vfs_handle_struct *handle
 	cr_args.src_length = (uint64_t)num;
 
 	ret = ioctl(dest_fsp->fh->fd, BTRFS_IOC_CLONE_RANGE, &cr_args);
-	SMB_VFS_STRICT_UNLOCK(dest_fsp->conn, dest_fsp, &dest_lck);
-	SMB_VFS_STRICT_UNLOCK(src_fsp->conn, src_fsp, &src_lck);
+	if (!(flags & VFS_COPY_CHUNK_FL_IGNORE_LOCKS)) {
+		SMB_VFS_STRICT_UNLOCK(dest_fsp->conn, dest_fsp, &dest_lck);
+		SMB_VFS_STRICT_UNLOCK(src_fsp->conn, src_fsp, &src_lck);
+	}
 	if (ret < 0) {
 		/*
 		 * BTRFS_IOC_CLONE_RANGE only supports 'sectorsize' aligned

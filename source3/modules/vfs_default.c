@@ -1605,6 +1605,7 @@ struct vfs_cc_state {
 	off_t to_copy;
 	off_t remaining;
 	size_t next_io_size;
+	uint32_t flags;
 };
 
 static NTSTATUS copy_chunk_loop(struct tevent_req *req);
@@ -1650,6 +1651,7 @@ static struct tevent_req *vfswrap_copy_chunk_send(struct vfs_handle_struct *hand
 		.dst_off = dest_off,
 		.to_copy = to_copy,
 		.remaining = to_copy,
+		.flags = flags,
 	};
 	state->buf = talloc_array(state, uint8_t, num);
 	if (tevent_req_nomem(state->buf, req)) {
@@ -1704,18 +1706,20 @@ static NTSTATUS copy_chunk_loop(struct tevent_req *req)
 
 	state->next_io_size = MIN(state->remaining, talloc_array_length(state->buf));
 
-	init_strict_lock_struct(state->src_fsp,
+	if (!(state->flags & VFS_COPY_CHUNK_FL_IGNORE_LOCKS)) {
+		init_strict_lock_struct(state->src_fsp,
 				state->src_fsp->op->global->open_persistent_id,
-				state->src_off,
-				state->next_io_size,
-				READ_LOCK,
-				&state->read_lck);
+					state->src_off,
+					state->next_io_size,
+					READ_LOCK,
+					&state->read_lck);
 
-	ok = SMB_VFS_STRICT_LOCK(state->src_fsp->conn,
-				 state->src_fsp,
-				 &state->read_lck);
-	if (!ok) {
-		return NT_STATUS_FILE_LOCK_CONFLICT;
+		ok = SMB_VFS_STRICT_LOCK(state->src_fsp->conn,
+					 state->src_fsp,
+					 &state->read_lck);
+		if (!ok) {
+			return NT_STATUS_FILE_LOCK_CONFLICT;
+		}
 	}
 
 	subreq = SMB_VFS_PREAD_SEND(state,
@@ -1743,10 +1747,12 @@ static void vfswrap_copy_chunk_read_done(struct tevent_req *subreq)
 	ssize_t nread;
 	bool ok;
 
-	SMB_VFS_STRICT_UNLOCK(state->src_fsp->conn,
-			      state->src_fsp,
-			      &state->read_lck);
-	ZERO_STRUCT(state->read_lck);
+	if (!(state->flags & VFS_COPY_CHUNK_FL_IGNORE_LOCKS)) {
+		SMB_VFS_STRICT_UNLOCK(state->src_fsp->conn,
+				      state->src_fsp,
+				      &state->read_lck);
+		ZERO_STRUCT(state->read_lck);
+	}
 
 	nread = SMB_VFS_PREAD_RECV(subreq, &aio_state);
 	TALLOC_FREE(subreq);
@@ -1764,19 +1770,21 @@ static void vfswrap_copy_chunk_read_done(struct tevent_req *subreq)
 
 	state->src_off += nread;
 
-	init_strict_lock_struct(state->dst_fsp,
+	if (!(state->flags & VFS_COPY_CHUNK_FL_IGNORE_LOCKS)) {
+		init_strict_lock_struct(state->dst_fsp,
 				state->dst_fsp->op->global->open_persistent_id,
-				state->dst_off,
-				state->next_io_size,
-				WRITE_LOCK,
-				&state->write_lck);
+					state->dst_off,
+					state->next_io_size,
+					WRITE_LOCK,
+					&state->write_lck);
 
-	ok = SMB_VFS_STRICT_LOCK(state->dst_fsp->conn,
-				 state->dst_fsp,
-				 &state->write_lck);
-	if (!ok) {
-		tevent_req_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
-		return;
+		ok = SMB_VFS_STRICT_LOCK(state->dst_fsp->conn,
+					 state->dst_fsp,
+					 &state->write_lck);
+		if (!ok) {
+			tevent_req_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
+			return;
+		}
 	}
 
 	subreq = SMB_VFS_PWRITE_SEND(state,
@@ -1801,10 +1809,12 @@ static void vfswrap_copy_chunk_write_done(struct tevent_req *subreq)
 	ssize_t nwritten;
 	NTSTATUS status;
 
-	SMB_VFS_STRICT_UNLOCK(state->dst_fsp->conn,
-			      state->dst_fsp,
-			      &state->write_lck);
-	ZERO_STRUCT(state->write_lck);
+	if (!(state->flags & VFS_COPY_CHUNK_FL_IGNORE_LOCKS)) {
+		SMB_VFS_STRICT_UNLOCK(state->dst_fsp->conn,
+				      state->dst_fsp,
+				      &state->write_lck);
+		ZERO_STRUCT(state->write_lck);
+	}
 
 	nwritten = SMB_VFS_PWRITE_RECV(subreq, &aio_state);
 	TALLOC_FREE(subreq);
