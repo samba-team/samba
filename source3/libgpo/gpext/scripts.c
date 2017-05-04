@@ -83,7 +83,7 @@ static NTSTATUS generate_gp_registry_entry(TALLOC_CTX *mem_ctx,
 					   const char *key,
 					   const char *value,
 					   uint32_t data_type,
-					   const void *data_p,
+					   DATA_BLOB *blob,
 					   enum gp_reg_action action,
 					   struct gp_registry_entry **entry_out)
 {
@@ -97,19 +97,7 @@ static NTSTATUS generate_gp_registry_entry(TALLOC_CTX *mem_ctx,
 	NT_STATUS_HAVE_NO_MEMORY(data);
 
 	data->type = data_type;
-	switch (data->type) {
-		case REG_QWORD:
-			data->data = data_blob_talloc(mem_ctx, NULL, 8);
-			SBVAL(data->data.data, 0, *(uint64_t *)data_p);
-			break;
-		case REG_SZ:
-			if (!push_reg_sz(mem_ctx, &data->data, (const char *)data_p)) {
-				return NT_STATUS_NO_MEMORY;
-			}
-			break;
-		default:
-			return NT_STATUS_NOT_SUPPORTED;
-	}
+	data->data = *blob;
 
 	entry->key = key;
 	entry->data = data;
@@ -141,6 +129,8 @@ static NTSTATUS scripts_parse_ini_section(struct gp_inifile_context *ini_ctx,
 		const char *script = NULL;
 		const char *count = NULL;
 		const char *parameters = NULL;
+		DATA_BLOB blob;
+		bool ok;
 
 		count = talloc_asprintf(ini_ctx->mem_ctx, "%d", i);
 		NT_STATUS_HAVE_NO_MEMORY(count);
@@ -167,11 +157,17 @@ static NTSTATUS scripts_parse_ini_section(struct gp_inifile_context *ini_ctx,
 
 		{
 			struct gp_registry_entry *entry = NULL;
+
+			ok = push_reg_sz(ini_ctx->mem_ctx, &blob, script);
+			if (!ok) {
+				return NT_STATUS_NO_MEMORY;
+			}
+
 			status = generate_gp_registry_entry(ini_ctx->mem_ctx,
 							    count,
 							    GP_SCRIPTS_REG_VAL_SCRIPT,
 							    REG_SZ,
-							    script,
+							    &blob,
 							    GP_REG_ACTION_ADD_VALUE,
 							    &entry);
 			NT_STATUS_NOT_OK_RETURN(status);
@@ -184,11 +180,17 @@ static NTSTATUS scripts_parse_ini_section(struct gp_inifile_context *ini_ctx,
 		}
 		{
 			struct gp_registry_entry *entry = NULL;
+
+			ok = push_reg_sz(ini_ctx->mem_ctx, &blob, parameters);
+			if (!ok) {
+				return NT_STATUS_NO_MEMORY;
+			}
+
 			status = generate_gp_registry_entry(ini_ctx->mem_ctx,
 							    count,
 							    GP_SCRIPTS_REG_VAL_PARAMETERS,
 							    REG_SZ,
-							    parameters,
+							    &blob,
 							    GP_REG_ACTION_ADD_VALUE,
 							    &entry);
 			NT_STATUS_NOT_OK_RETURN(status);
@@ -201,11 +203,14 @@ static NTSTATUS scripts_parse_ini_section(struct gp_inifile_context *ini_ctx,
 		}
 		{
 			struct gp_registry_entry *entry = NULL;
+
+			blob = data_blob_talloc_zero(ini_ctx->mem_ctx, 8);
+
 			status = generate_gp_registry_entry(ini_ctx->mem_ctx,
 							    count,
 							    GP_SCRIPTS_REG_VAL_EXECTIME,
 							    REG_QWORD,
-							    0,
+							    &blob,
 							    GP_REG_ACTION_ADD_VALUE,
 							    &entry);
 			NT_STATUS_NOT_OK_RETURN(status);
