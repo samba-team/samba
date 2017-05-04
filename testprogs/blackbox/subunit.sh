@@ -28,14 +28,14 @@ timestamp() {
 subunit_start_test () {
   # emit the current protocol start-marker for test $1
   timestamp
-  echo "test: $1"
+  printf 'test: %s\n' "$1"
 }
 
 
 subunit_pass_test () {
   # emit the current protocol test passed marker for test $1
   timestamp
-  echo "success: $1"
+  printf 'success: %s\n' "$1"
 }
 
 # This is just a hack as we have some broken scripts
@@ -48,7 +48,7 @@ subunit_fail_test () {
   # we use stdin because the failure message can be arbitrarily long, and this
   # makes it convenient to write in scripts (using <<END syntax.
   timestamp
-  echo "failure: $1 ["
+  printf 'failure: %s [\n' "$1"
   cat -
   echo "]"
 }
@@ -60,7 +60,7 @@ subunit_error_test () {
   # we use stdin because the failure message can be arbitrarily long, and this
   # makes it convenient to write in scripts (using <<END syntax.
   timestamp
-  echo "error: $1 ["
+  printf 'error: %s [\n' "$1"
   cat -
   echo "]"
 }
@@ -70,7 +70,7 @@ subunit_skip_test () {
   # the error text.
   # we use stdin because the failure message can be arbitrarily long, and this
   # makes it convenient to write in scripts (using <<END syntax.
-  echo "skip: $1 ["
+  printf 'skip: %s [\n' "$1"
   cat -
   echo "]"
 }
