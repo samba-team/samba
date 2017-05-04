@@ -42,6 +42,8 @@
 #define GPTTMPL_SECTION_FILE_SECURITY		"File Security"
 #define GPTTMPL_SECTION_SERVICE_GENERAL_SETTING "Service General Setting"
 
+NTSTATUS gpext_security_init(TALLOC_CTX *mem_ctx);
+
 static TALLOC_CTX *ctx = NULL;
 
 struct gpttmpl_table {

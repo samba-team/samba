@@ -44,6 +44,8 @@
 #define GP_SCRIPTS_REG_VAL_PARAMETERS "Parameters"
 #define GP_SCRIPTS_REG_VAL_EXECTIME "ExecTime"
 
+NTSTATUS gpext_scripts_init(TALLOC_CTX *mem_ctx);
+
 static TALLOC_CTX *ctx = NULL;
 
 /****************************************************************
