@@ -109,6 +109,7 @@ static int ctdb_async_ctx_init_internal(TALLOC_CTX *mem_ctx,
 		return ret;
 	}
 
+	ctdb_async_ctx.initialized = true;
 	return 0;
 }
 
