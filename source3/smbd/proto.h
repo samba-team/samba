@@ -262,7 +262,6 @@ mode_t unix_mode(connection_struct *conn, int dosmode,
 		 const char *inherit_from_dir);
 uint32_t dos_mode_msdfs(connection_struct *conn,
 		      const struct smb_filename *smb_fname);
-int dos_attributes_to_stat_dos_flags(uint32_t dosmode);
 uint32_t dos_mode(connection_struct *conn, struct smb_filename *smb_fname);
 int file_set_dosmode(connection_struct *conn, struct smb_filename *smb_fname,
 		     uint32_t dosmode, const char *parent_dir, bool newfile);
