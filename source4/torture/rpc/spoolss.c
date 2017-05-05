@@ -11157,8 +11157,13 @@ static bool test_driver_copy_from_directory(struct torture_context *tctx,
 	d->local.environment		= talloc_strdup(d, architecture);
 	torture_assert_not_null_goto(tctx, d->local.environment, ok, done, "ENOMEM");
 
-	d->local.driver_directory	=
-		talloc_asprintf(d, "/usr/share/cups/drivers/x64");
+	if (strequal(architecture, SPOOLSS_ARCHITECTURE_x64)) {
+		d->local.driver_directory =
+			talloc_strdup(d, "/usr/share/cups/drivers/x64");
+	} else {
+		d->local.driver_directory =
+			talloc_strdup(d, "/usr/share/cups/drivers/i386");
+	}
 	torture_assert_not_null_goto(tctx, d->local.driver_directory, ok, done, "ENOMEM");
 
 	d->remote.driver_upload_directory = GUID_string2(d, &guid);
@@ -11240,6 +11245,12 @@ static bool test_driver_copy_from_directory_64(struct torture_context *tctx,
 					       struct dcerpc_pipe *p)
 {
 	return test_driver_copy_from_directory(tctx, p, SPOOLSS_ARCHITECTURE_x64);
+}
+
+static bool test_driver_copy_from_directory_32(struct torture_context *tctx,
+					       struct dcerpc_pipe *p)
+{
+	return test_driver_copy_from_directory(tctx, p, SPOOLSS_ARCHITECTURE_NT_X86);
 }
 
 static bool test_del_driver_all_files(struct torture_context *tctx,
@@ -11441,6 +11452,10 @@ struct torture_suite *torture_rpc_spoolss_driver(TALLOC_CTX *mem_ctx)
 	torture_rpc_tcase_add_test(tcase,
 				   "test_driver_copy_from_directory_64",
 				   test_driver_copy_from_directory_64);
+
+	torture_rpc_tcase_add_test(tcase,
+				   "test_driver_copy_from_directory_32",
+				   test_driver_copy_from_directory_32);
 
 	torture_rpc_tcase_add_test(tcase, "del_driver_all_files", test_del_driver_all_files);
 
