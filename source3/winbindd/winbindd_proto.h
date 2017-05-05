@@ -580,34 +580,6 @@ struct tevent_req *winbindd_lookupname_send(TALLOC_CTX *mem_ctx,
 NTSTATUS winbindd_lookupname_recv(struct tevent_req *req,
 				  struct winbindd_response *response);
 
-struct tevent_req *winbindd_sid_to_uid_send(TALLOC_CTX *mem_ctx,
-					    struct tevent_context *ev,
-					    struct winbindd_cli_state *cli,
-					    struct winbindd_request *request);
-NTSTATUS winbindd_sid_to_uid_recv(struct tevent_req *req,
-				  struct winbindd_response *response);
-
-struct tevent_req *winbindd_sid_to_gid_send(TALLOC_CTX *mem_ctx,
-					    struct tevent_context *ev,
-					    struct winbindd_cli_state *cli,
-					    struct winbindd_request *request);
-NTSTATUS winbindd_sid_to_gid_recv(struct tevent_req *req,
-				  struct winbindd_response *response);
-
-struct tevent_req *winbindd_uid_to_sid_send(TALLOC_CTX *mem_ctx,
-					    struct tevent_context *ev,
-					    struct winbindd_cli_state *cli,
-					    struct winbindd_request *request);
-NTSTATUS winbindd_uid_to_sid_recv(struct tevent_req *req,
-				  struct winbindd_response *response);
-
-struct tevent_req *winbindd_gid_to_sid_send(TALLOC_CTX *mem_ctx,
-					    struct tevent_context *ev,
-					    struct winbindd_cli_state *cli,
-					    struct winbindd_request *request);
-NTSTATUS winbindd_gid_to_sid_recv(struct tevent_req *req,
-				  struct winbindd_response *response);
-
 struct tevent_req *winbindd_allocate_uid_send(TALLOC_CTX *mem_ctx,
 					      struct tevent_context *ev,
 					      struct winbindd_cli_state *cli,
