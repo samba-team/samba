@@ -9,19 +9,50 @@
 #include "libads/ads_status.h"
 #include "smb_ldap.h"
 
-struct ads_struct;
+struct ads_saslwrap;
 
 struct ads_saslwrap_ops {
 	const char *name;
-	ADS_STATUS (*wrap)(struct ads_struct *, uint8_t *buf, uint32_t len);
-	ADS_STATUS (*unwrap)(struct ads_struct *);
-	void (*disconnect)(struct ads_struct *);
+	ADS_STATUS (*wrap)(struct ads_saslwrap *, uint8_t *buf, uint32_t len);
+	ADS_STATUS (*unwrap)(struct ads_saslwrap *);
+	void (*disconnect)(struct ads_saslwrap *);
 };
 
 enum ads_saslwrap_type {
 	ADS_SASLWRAP_TYPE_PLAIN = 1,
 	ADS_SASLWRAP_TYPE_SIGN = 2,
 	ADS_SASLWRAP_TYPE_SEAL = 4
+};
+
+struct ads_saslwrap {
+	/* expected SASL wrapping type */
+	enum ads_saslwrap_type wrap_type;
+	/* SASL wrapping operations */
+	const struct ads_saslwrap_ops *wrap_ops;
+#ifdef HAVE_LDAP_SASL_WRAPPING
+	Sockbuf_IO_Desc *sbiod; /* lowlevel state for LDAP wrapping */
+#endif /* HAVE_LDAP_SASL_WRAPPING */
+	TALLOC_CTX *mem_ctx;
+	void *wrap_private_data;
+	struct {
+		uint32_t ofs;
+		uint32_t needed;
+		uint32_t left;
+#define        ADS_SASL_WRAPPING_IN_MAX_WRAPPED        0x0FFFFFFF
+		uint32_t max_wrapped;
+		uint32_t min_wrapped;
+		uint32_t size;
+		uint8_t *buf;
+	} in;
+	struct {
+		uint32_t ofs;
+		uint32_t left;
+#define        ADS_SASL_WRAPPING_OUT_MAX_WRAPPED       0x00A00000
+		uint32_t max_unwrapped;
+		uint32_t sig_size;
+		uint32_t size;
+		uint8_t *buf;
+	} out;
 };
 
 typedef struct ads_struct {
@@ -65,39 +96,12 @@ typedef struct ads_struct {
 
 	/* info about the current LDAP connection */
 #ifdef HAVE_LDAP
+	struct ads_saslwrap ldap_wrap_data;
 	struct {
 		LDAP *ld;
 		struct sockaddr_storage ss; /* the ip of the active connection, if any */
 		time_t last_attempt; /* last attempt to reconnect, monotonic clock */
 		int port;
-
-		enum ads_saslwrap_type wrap_type;
-
-#ifdef HAVE_LDAP_SASL_WRAPPING
-		Sockbuf_IO_Desc *sbiod; /* lowlevel state for LDAP wrapping */
-#endif /* HAVE_LDAP_SASL_WRAPPING */
-		TALLOC_CTX *mem_ctx;
-		const struct ads_saslwrap_ops *wrap_ops;
-		void *wrap_private_data;
-		struct {
-			uint32_t ofs;
-			uint32_t needed;
-			uint32_t left;
-#define        ADS_SASL_WRAPPING_IN_MAX_WRAPPED        0x0FFFFFFF
-			uint32_t max_wrapped;
-			uint32_t min_wrapped;
-			uint32_t size;
-			uint8_t *buf;
-		} in;
-		struct {
-			uint32_t ofs;
-			uint32_t left;
-#define        ADS_SASL_WRAPPING_OUT_MAX_WRAPPED       0x00A00000
-			uint32_t max_unwrapped;
-			uint32_t sig_size;
-			uint32_t size;
-			uint8_t *buf;
-		} out;
 	} ldap;
 #endif /* HAVE_LDAP */
 } ADS_STRUCT;

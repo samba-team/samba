@@ -30,10 +30,11 @@
 
 #ifdef HAVE_LDAP
 
-static ADS_STATUS ads_sasl_gensec_wrap(ADS_STRUCT *ads, uint8_t *buf, uint32_t len)
+static ADS_STATUS ads_sasl_gensec_wrap(struct ads_saslwrap *wrap,
+				       uint8_t *buf, uint32_t len)
 {
 	struct gensec_security *gensec_security =
-		talloc_get_type_abort(ads->ldap.wrap_private_data,
+		talloc_get_type_abort(wrap->wrap_private_data,
 		struct gensec_security);
 	NTSTATUS nt_status;
 	DATA_BLOB unwrapped, wrapped;
@@ -47,32 +48,32 @@ static ADS_STATUS ads_sasl_gensec_wrap(ADS_STRUCT *ads, uint8_t *buf, uint32_t l
 		return ADS_ERROR_NT(nt_status);
 	}
 
-	if ((ads->ldap.out.size - 4) < wrapped.length) {
+	if ((wrap->out.size - 4) < wrapped.length) {
 		TALLOC_FREE(frame);
 		return ADS_ERROR_NT(NT_STATUS_INTERNAL_ERROR);
 	}
 
 	/* copy the wrapped blob to the right location */
-	memcpy(ads->ldap.out.buf + 4, wrapped.data, wrapped.length);
+	memcpy(wrap->out.buf + 4, wrapped.data, wrapped.length);
 
 	/* set how many bytes must be written to the underlying socket */
-	ads->ldap.out.left = 4 + wrapped.length;
+	wrap->out.left = 4 + wrapped.length;
 
 	TALLOC_FREE(frame);
 
 	return ADS_SUCCESS;
 }
 
-static ADS_STATUS ads_sasl_gensec_unwrap(ADS_STRUCT *ads)
+static ADS_STATUS ads_sasl_gensec_unwrap(struct ads_saslwrap *wrap)
 {
 	struct gensec_security *gensec_security =
-		talloc_get_type_abort(ads->ldap.wrap_private_data,
+		talloc_get_type_abort(wrap->wrap_private_data,
 		struct gensec_security);
 	NTSTATUS nt_status;
 	DATA_BLOB unwrapped, wrapped;
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	wrapped = data_blob_const(ads->ldap.in.buf + 4, ads->ldap.in.ofs - 4);
+	wrapped = data_blob_const(wrap->in.buf + 4, wrap->in.ofs - 4);
 
 	nt_status = gensec_unwrap(gensec_security, frame, &wrapped, &unwrapped);
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -86,27 +87,27 @@ static ADS_STATUS ads_sasl_gensec_unwrap(ADS_STRUCT *ads)
 	}
 
 	/* copy the wrapped blob to the right location */
-	memcpy(ads->ldap.in.buf + 4, unwrapped.data, unwrapped.length);
+	memcpy(wrap->in.buf + 4, unwrapped.data, unwrapped.length);
 
 	/* set how many bytes must be written to the underlying socket */
-	ads->ldap.in.left	= unwrapped.length;
-	ads->ldap.in.ofs	= 4;
+	wrap->in.left	= unwrapped.length;
+	wrap->in.ofs	= 4;
 
 	TALLOC_FREE(frame);
 
 	return ADS_SUCCESS;
 }
 
-static void ads_sasl_gensec_disconnect(ADS_STRUCT *ads)
+static void ads_sasl_gensec_disconnect(struct ads_saslwrap *wrap)
 {
 	struct gensec_security *gensec_security =
-		talloc_get_type_abort(ads->ldap.wrap_private_data,
+		talloc_get_type_abort(wrap->wrap_private_data,
 		struct gensec_security);
 
 	TALLOC_FREE(gensec_security);
 
-	ads->ldap.wrap_ops = NULL;
-	ads->ldap.wrap_private_data = NULL;
+	wrap->wrap_ops = NULL;
+	wrap->wrap_private_data = NULL;
 }
 
 static const struct ads_saslwrap_ops ads_sasl_gensec_ops = {
@@ -136,6 +137,7 @@ static ADS_STATUS ads_sasl_spnego_gensec_bind(ADS_STRUCT *ads,
 	bool use_spnego_principal = lp_client_use_spnego_principal();
 	const char *sasl_list[] = { sasl, NULL };
 	NTTIME end_nt_time;
+	struct ads_saslwrap *wrap = &ads->ldap_wrap_data;
 
 	nt_status = auth_generic_client_prepare(NULL, &auth_generic_state);
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -185,7 +187,7 @@ static ADS_STATUS ads_sasl_spnego_gensec_bind(ADS_STRUCT *ads,
 		use_spnego_principal = false;
 	}
 
-	switch (ads->ldap.wrap_type) {
+	switch (wrap->wrap_type) {
 	case ADS_SASLWRAP_TYPE_SEAL:
 		gensec_want_feature(auth_generic_state->gensec_security, GENSEC_FEATURE_SIGN);
 		gensec_want_feature(auth_generic_state->gensec_security, GENSEC_FEATURE_SEAL);
@@ -278,7 +280,7 @@ static ADS_STATUS ads_sasl_spnego_gensec_bind(ADS_STRUCT *ads,
 	data_blob_free(&blob_in);
 	data_blob_free(&blob_out);
 
-	if (ads->ldap.wrap_type >= ADS_SASLWRAP_TYPE_SEAL) {
+	if (wrap->wrap_type >= ADS_SASLWRAP_TYPE_SEAL) {
 		bool ok;
 
 		ok = gensec_have_feature(auth_generic_state->gensec_security,
@@ -297,7 +299,7 @@ static ADS_STATUS ads_sasl_spnego_gensec_bind(ADS_STRUCT *ads,
 			return ADS_ERROR_NT(NT_STATUS_INVALID_NETWORK_RESPONSE);
 		}
 
-	} else if (ads->ldap.wrap_type >= ADS_SASLWRAP_TYPE_SIGN) {
+	} else if (wrap->wrap_type >= ADS_SASLWRAP_TYPE_SIGN) {
 		bool ok;
 
 		ok = gensec_have_feature(auth_generic_state->gensec_security,
@@ -317,20 +319,24 @@ static ADS_STATUS ads_sasl_spnego_gensec_bind(ADS_STRUCT *ads,
 		ads->auth.tgs_expire = tv.tv_sec;
 	}
 
-	if (ads->ldap.wrap_type > ADS_SASLWRAP_TYPE_PLAIN) {
-		size_t max_wrapped = gensec_max_wrapped_size(auth_generic_state->gensec_security);
-		ads->ldap.out.max_unwrapped = gensec_max_input_size(auth_generic_state->gensec_security);
+	if (wrap->wrap_type > ADS_SASLWRAP_TYPE_PLAIN) {
+		size_t max_wrapped =
+			gensec_max_wrapped_size(auth_generic_state->gensec_security);
+		wrap->out.max_unwrapped =
+			gensec_max_input_size(auth_generic_state->gensec_security);
 
-		ads->ldap.out.sig_size = max_wrapped - ads->ldap.out.max_unwrapped;
+		wrap->out.sig_size = max_wrapped - wrap->out.max_unwrapped;
 		/*
 		 * Note that we have to truncate this to 0x2C
 		 * (taken from a capture with LDAP unbind), as the
 		 * signature size is not constant for Kerberos with
 		 * arcfour-hmac-md5.
 		 */
-		ads->ldap.in.min_wrapped = MIN(ads->ldap.out.sig_size, 0x2C);
-		ads->ldap.in.max_wrapped = ADS_SASL_WRAPPING_IN_MAX_WRAPPED;
-		status = ads_setup_sasl_wrapping(ads, &ads_sasl_gensec_ops, auth_generic_state->gensec_security);
+		wrap->in.min_wrapped = MIN(wrap->out.sig_size, 0x2C);
+		wrap->in.max_wrapped = ADS_SASL_WRAPPING_IN_MAX_WRAPPED;
+		status = ads_setup_sasl_wrapping(wrap, ads->ldap.ld,
+						 &ads_sasl_gensec_ops,
+						 auth_generic_state->gensec_security);
 		if (!ADS_ERR_OK(status)) {
 			DEBUG(0, ("ads_setup_sasl_wrapping() failed: %s\n",
 				ads_errstr(status)));
@@ -387,9 +393,9 @@ done:
 	return status;
 }
 
-static ADS_STATUS ads_sasl_gssapi_wrap(ADS_STRUCT *ads, uint8_t *buf, uint32_t len)
+static ADS_STATUS ads_sasl_gssapi_wrap(struct ads_saslwrap *wrap, uint8_t *buf, uint32_t len)
 {
-	gss_ctx_id_t context_handle = (gss_ctx_id_t)ads->ldap.wrap_private_data;
+	gss_ctx_id_t context_handle = (gss_ctx_id_t)wrap->wrap_private_data;
 	ADS_STATUS status;
 	int gss_rc;
 	uint32_t minor_status;
@@ -400,7 +406,7 @@ static ADS_STATUS ads_sasl_gssapi_wrap(ADS_STRUCT *ads, uint8_t *buf, uint32_t l
 	unwrapped.length	= len;
 
 	/* for now request sign and seal */
-	conf_req_flag	= (ads->ldap.wrap_type == ADS_SASLWRAP_TYPE_SEAL);
+	conf_req_flag	= (wrap->wrap_type == ADS_SASLWRAP_TYPE_SEAL);
 
 	gss_rc = gss_wrap(&minor_status, context_handle,
 			  conf_req_flag, GSS_C_QOP_DEFAULT,
@@ -413,32 +419,32 @@ static ADS_STATUS ads_sasl_gssapi_wrap(ADS_STRUCT *ads, uint8_t *buf, uint32_t l
 		return ADS_ERROR_NT(NT_STATUS_ACCESS_DENIED);
 	}
 
-	if ((ads->ldap.out.size - 4) < wrapped.length) {
+	if ((wrap->out.size - 4) < wrapped.length) {
 		return ADS_ERROR_NT(NT_STATUS_INTERNAL_ERROR);
 	}
 
 	/* copy the wrapped blob to the right location */
-	memcpy(ads->ldap.out.buf + 4, wrapped.value, wrapped.length);
+	memcpy(wrap->out.buf + 4, wrapped.value, wrapped.length);
 
 	/* set how many bytes must be written to the underlying socket */
-	ads->ldap.out.left = 4 + wrapped.length;
+	wrap->out.left = 4 + wrapped.length;
 
 	gss_release_buffer(&minor_status, &wrapped);
 
 	return ADS_SUCCESS;
 }
 
-static ADS_STATUS ads_sasl_gssapi_unwrap(ADS_STRUCT *ads)
+static ADS_STATUS ads_sasl_gssapi_unwrap(struct ads_saslwrap *wrap)
 {
-	gss_ctx_id_t context_handle = (gss_ctx_id_t)ads->ldap.wrap_private_data;
+	gss_ctx_id_t context_handle = (gss_ctx_id_t)wrap->wrap_private_data;
 	ADS_STATUS status;
 	int gss_rc;
 	uint32_t minor_status;
 	gss_buffer_desc unwrapped, wrapped;
 	int conf_state;
 
-	wrapped.value	= ads->ldap.in.buf + 4;
-	wrapped.length	= ads->ldap.in.ofs - 4;
+	wrapped.value	= wrap->in.buf + 4;
+	wrapped.length	= wrap->in.ofs - 4;
 
 	gss_rc = gss_unwrap(&minor_status, context_handle,
 			    &wrapped, &unwrapped,
@@ -446,7 +452,7 @@ static ADS_STATUS ads_sasl_gssapi_unwrap(ADS_STRUCT *ads)
 	status = ADS_ERROR_GSS(gss_rc, minor_status);
 	if (!ADS_ERR_OK(status)) return status;
 
-	if (ads->ldap.wrap_type == ADS_SASLWRAP_TYPE_SEAL && conf_state == 0) {
+	if (wrap->wrap_type == ADS_SASLWRAP_TYPE_SEAL && conf_state == 0) {
 		return ADS_ERROR_NT(NT_STATUS_ACCESS_DENIED);
 	}
 
@@ -455,26 +461,26 @@ static ADS_STATUS ads_sasl_gssapi_unwrap(ADS_STRUCT *ads)
 	}
 
 	/* copy the wrapped blob to the right location */
-	memcpy(ads->ldap.in.buf + 4, unwrapped.value, unwrapped.length);
+	memcpy(wrap->in.buf + 4, unwrapped.value, unwrapped.length);
 
 	/* set how many bytes must be written to the underlying socket */
-	ads->ldap.in.left	= unwrapped.length;
-	ads->ldap.in.ofs	= 4;
+	wrap->in.left	= unwrapped.length;
+	wrap->in.ofs	= 4;
 
 	gss_release_buffer(&minor_status, &unwrapped);
 
 	return ADS_SUCCESS;
 }
 
-static void ads_sasl_gssapi_disconnect(ADS_STRUCT *ads)
+static void ads_sasl_gssapi_disconnect(struct ads_saslwrap *wrap)
 {
-	gss_ctx_id_t context_handle = (gss_ctx_id_t)ads->ldap.wrap_private_data;
+	gss_ctx_id_t context_handle = (gss_ctx_id_t)wrap->wrap_private_data;
 	uint32_t minor_status;
 
 	gss_delete_sec_context(&minor_status, &context_handle, GSS_C_NO_BUFFER);
 
-	ads->ldap.wrap_ops = NULL;
-	ads->ldap.wrap_private_data = NULL;
+	wrap->wrap_ops = NULL;
+	wrap->wrap_private_data = NULL;
 }
 
 static const struct ads_saslwrap_ops ads_sasl_gssapi_ops = {
@@ -827,6 +833,7 @@ static ADS_STATUS ads_sasl_gssapi_do_bind(ADS_STRUCT *ads, const gss_name_t serv
 	uint32_t max_msg_size = ADS_SASL_WRAPPING_OUT_MAX_WRAPPED;
 	uint8_t wrap_type = ADS_SASLWRAP_TYPE_PLAIN;
 	ADS_STATUS status;
+	struct ads_saslwrap *wrap = &ads->ldap_wrap_data;
 
 	input_token.value = NULL;
 	input_token.length = 0;
@@ -916,13 +923,13 @@ static ADS_STATUS ads_sasl_gssapi_do_bind(ADS_STRUCT *ads, const gss_name_t serv
 
 	gss_release_buffer(&minor_status, &output_token);
 
-	if (!(wrap_type & ads->ldap.wrap_type)) {
+	if (!(wrap_type & wrap->wrap_type)) {
 		/*
 		 * the server doesn't supports the wrap
 		 * type we want :-(
 		 */
 		DEBUG(0,("The ldap sasl wrap type doesn't match wanted[%d] server[%d]\n",
-			ads->ldap.wrap_type, wrap_type));
+			wrap->wrap_type, wrap_type));
 		DEBUGADD(0,("You may want to set the 'client ldap sasl wrapping' option\n"));
 		status = ADS_ERROR_NT(NT_STATUS_NOT_SUPPORTED);
 		goto failed;
@@ -943,7 +950,7 @@ static ADS_STATUS ads_sasl_gssapi_do_bind(ADS_STRUCT *ads, const gss_name_t serv
 	p = (uint8_t *)output_token.value;
 
 	RSIVAL(p,0,max_msg_size);
-	SCVAL(p,0,ads->ldap.wrap_type);
+	SCVAL(p,0,wrap->wrap_type);
 
 	/*
 	 * we used to add sprintf("dn:%s", ads->config.bind_path) here.
@@ -980,20 +987,22 @@ static ADS_STATUS ads_sasl_gssapi_do_bind(ADS_STRUCT *ads, const gss_name_t serv
 		goto failed;
 	}
 
-	if (ads->ldap.wrap_type > ADS_SASLWRAP_TYPE_PLAIN) {
+	if (wrap->wrap_type > ADS_SASLWRAP_TYPE_PLAIN) {
 		gss_rc = gss_wrap_size_limit(&minor_status, context_handle,
-					     (ads->ldap.wrap_type == ADS_SASLWRAP_TYPE_SEAL),
+					     (wrap->wrap_type == ADS_SASLWRAP_TYPE_SEAL),
 					     GSS_C_QOP_DEFAULT,
-					     max_msg_size, &ads->ldap.out.max_unwrapped);
+					     max_msg_size, &wrap->out.max_unwrapped);
 		if (gss_rc) {
 			status = ADS_ERROR_GSS(gss_rc, minor_status);
 			goto failed;
 		}
 
-		ads->ldap.out.sig_size = max_msg_size - ads->ldap.out.max_unwrapped;
-		ads->ldap.in.min_wrapped = 0x2C; /* taken from a capture with LDAP unbind */
-		ads->ldap.in.max_wrapped = ADS_SASL_WRAPPING_IN_MAX_WRAPPED;
-		status = ads_setup_sasl_wrapping(ads, &ads_sasl_gssapi_ops, context_handle);
+		wrap->out.sig_size = max_msg_size - wrap->out.max_unwrapped;
+		wrap->in.min_wrapped = 0x2C; /* taken from a capture with LDAP unbind */
+		wrap->in.max_wrapped = ADS_SASL_WRAPPING_IN_MAX_WRAPPED;
+		status = ads_setup_sasl_wrapping(wrap->wrap_private_data, ads->ldap.ld,
+						 &ads_sasl_gssapi_ops,
+						 context_handle);
 		if (!ADS_ERR_OK(status)) {
 			DEBUG(0, ("ads_setup_sasl_wrapping() failed: %s\n",
 				ads_errstr(status)));
@@ -1068,6 +1077,7 @@ ADS_STATUS ads_sasl_bind(ADS_STRUCT *ads)
 	ADS_STATUS status;
 	int i, j;
 	LDAPMessage *res;
+	struct ads_saslwrap *wrap = &ads->ldap_wrap_data;
 
 	/* get a list of supported SASL mechanisms */
 	status = ads_do_search(ads, "", LDAP_SCOPE_BASE, "(objectclass=*)", attrs, &res);
@@ -1076,11 +1086,11 @@ ADS_STATUS ads_sasl_bind(ADS_STRUCT *ads)
 	values = ldap_get_values(ads->ldap.ld, res, "supportedSASLMechanisms");
 
 	if (ads->auth.flags & ADS_AUTH_SASL_SEAL) {
-		ads->ldap.wrap_type = ADS_SASLWRAP_TYPE_SEAL;
+		wrap->wrap_type = ADS_SASLWRAP_TYPE_SEAL;
 	} else if (ads->auth.flags & ADS_AUTH_SASL_SIGN) {
-		ads->ldap.wrap_type = ADS_SASLWRAP_TYPE_SIGN;
+		wrap->wrap_type = ADS_SASLWRAP_TYPE_SIGN;
 	} else {
-		ads->ldap.wrap_type = ADS_SASLWRAP_TYPE_PLAIN;
+		wrap->wrap_type = ADS_SASLWRAP_TYPE_PLAIN;
 	}
 
 	/* try our supported mechanisms in order */
@@ -1093,11 +1103,11 @@ retry:
 				status = sasl_mechanisms[i].fn(ads);
 				if (status.error_type == ENUM_ADS_ERROR_LDAP &&
 				    status.err.rc == LDAP_STRONG_AUTH_REQUIRED &&
-				    ads->ldap.wrap_type == ADS_SASLWRAP_TYPE_PLAIN)
+				    wrap->wrap_type == ADS_SASLWRAP_TYPE_PLAIN)
 				{
 					DEBUG(3,("SASL bin got LDAP_STRONG_AUTH_REQUIRED "
 						 "retrying with signing enabled\n"));
-					ads->ldap.wrap_type = ADS_SASLWRAP_TYPE_SIGN;
+					wrap->wrap_type = ADS_SASLWRAP_TYPE_SIGN;
 					goto retry;
 				}
 				ldap_value_free(values);

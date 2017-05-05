@@ -87,31 +87,7 @@ void ndr_print_ads_struct(struct ndr_print *ndr, const char *name, const struct 
 	ndr_print_sockaddr_storage(ndr, "ss", &r->ldap.ss);
 	ndr_print_time_t(ndr, "last_attempt", r->ldap.last_attempt);
 	ndr_print_uint32(ndr, "port", r->ldap.port);
-	ndr_print_uint16(ndr, "wrap_type", r->ldap.wrap_type);
-#ifdef HAVE_LDAP_SASL_WRAPPING
-	ndr_print_ptr(ndr, "sbiod", r->ldap.sbiod);
-#endif /* HAVE_LDAP_SASL_WRAPPING */
-	ndr_print_ptr(ndr, "mem_ctx", r->ldap.mem_ctx);
-	ndr_print_ptr(ndr, "wrap_ops", r->ldap.wrap_ops);
-	ndr_print_ptr(ndr, "wrap_private_data", r->ldap.wrap_private_data);
-	ndr_print_struct(ndr, name, "in");
-	ndr->depth++;
-	ndr_print_uint32(ndr, "ofs", r->ldap.in.ofs);
-	ndr_print_uint32(ndr, "needed", r->ldap.in.needed);
-	ndr_print_uint32(ndr, "left", r->ldap.in.left);
-	ndr_print_uint32(ndr, "max_wrapped", r->ldap.in.max_wrapped);
-	ndr_print_uint32(ndr, "min_wrapped", r->ldap.in.min_wrapped);
-	ndr_print_uint32(ndr, "size", r->ldap.in.size);
-	ndr_print_array_uint8(ndr, "buf", r->ldap.in.buf, r->ldap.in.size);
-	ndr->depth--;
-	ndr_print_struct(ndr, name, "out");
-	ndr->depth++;
-	ndr_print_uint32(ndr, "ofs", r->ldap.out.ofs);
-	ndr_print_uint32(ndr, "left", r->ldap.out.left);
-	ndr_print_uint32(ndr, "max_unwrapped", r->ldap.out.max_unwrapped);
-	ndr_print_uint32(ndr, "sig_size", r->ldap.out.sig_size);
-	ndr_print_uint32(ndr, "size", r->ldap.out.size);
-	ndr_print_array_uint8(ndr, "buf", r->ldap.out.buf, r->ldap.out.size);
+	ndr_print_ads_saslwrap_struct(ndr, "saslwrap", &(r->ldap_wrap_data));
 	ndr->depth--;
 	ndr->depth--;
 #endif /* HAVE_LDAP */

@@ -182,12 +182,12 @@ ADS_STATUS ads_sasl_bind(ADS_STRUCT *ads);
 
 /* The following definitions come from libads/sasl_wrapping.c  */
 
-ADS_STATUS ads_setup_sasl_wrapping(ADS_STRUCT *ads,
+ADS_STATUS ads_setup_sasl_wrapping(struct ads_saslwrap *wrap, LDAP *ld,
 				   const struct ads_saslwrap_ops *ops,
 				   void *private_data);
-ADS_STATUS ads_setup_sasl_wrapping(ADS_STRUCT *ads,
-				   const struct ads_saslwrap_ops *ops,
-				   void *private_data);
+void ndr_print_ads_saslwrap_struct(struct ndr_print *ndr,
+				   const char *name,
+				   const struct ads_saslwrap *r);
 
 /* The following definitions come from libads/util.c  */
 

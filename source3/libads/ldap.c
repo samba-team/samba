@@ -566,8 +566,9 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 	char addr[INET6_ADDRSTRLEN];
 
 	ZERO_STRUCT(ads->ldap);
+	ZERO_STRUCT(ads->ldap_wrap_data);
 	ads->ldap.last_attempt	= time_mono(NULL);
-	ads->ldap.wrap_type	= ADS_SASLWRAP_TYPE_PLAIN;
+	ads->ldap_wrap_data.wrap_type	= ADS_SASLWRAP_TYPE_PLAIN;
 
 	/* try with a user specified server */
 
@@ -643,8 +644,8 @@ got_connection:
 		goto out;
 	}
 
-	ads->ldap.mem_ctx = talloc_init("ads LDAP connection memory");
-	if (!ads->ldap.mem_ctx) {
+	ads->ldap_wrap_data.mem_ctx = talloc_init("ads LDAP connection memory");
+	if (!ads->ldap_wrap_data.mem_ctx) {
 		status = ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 		goto out;
 	}
@@ -730,13 +731,15 @@ void ads_disconnect(ADS_STRUCT *ads)
 		ldap_unbind(ads->ldap.ld);
 		ads->ldap.ld = NULL;
 	}
-	if (ads->ldap.wrap_ops && ads->ldap.wrap_ops->disconnect) {
-		ads->ldap.wrap_ops->disconnect(ads);
+	if (ads->ldap_wrap_data.wrap_ops &&
+		ads->ldap_wrap_data.wrap_ops->disconnect) {
+		ads->ldap_wrap_data.wrap_ops->disconnect(&ads->ldap_wrap_data);
 	}
-	if (ads->ldap.mem_ctx) {
-		talloc_free(ads->ldap.mem_ctx);
+	if (ads->ldap_wrap_data.mem_ctx) {
+		talloc_free(ads->ldap_wrap_data.mem_ctx);
 	}
 	ZERO_STRUCT(ads->ldap);
+	ZERO_STRUCT(ads->ldap_wrap_data);
 }
 
 /*
