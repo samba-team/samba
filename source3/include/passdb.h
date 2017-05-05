@@ -895,11 +895,6 @@ NTSTATUS pdb_lookup_rids(const struct dom_sid *domain_sid,
 			 uint32_t *rids,
 			 const char **names,
 			 enum lsa_SidType *attrs);
-NTSTATUS pdb_lookup_names(const struct dom_sid *domain_sid,
-			  int num_names,
-			  const char **names,
-			  uint32_t *rids,
-			  enum lsa_SidType *attrs);
 bool pdb_get_account_policy(enum pdb_policy_type type, uint32_t *value);
 bool pdb_set_account_policy(enum pdb_policy_type type, uint32_t value);
 bool pdb_get_seq_num(time_t *seq_num);
