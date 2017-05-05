@@ -580,6 +580,23 @@ static NTSTATUS fsctl_validate_neg_info(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	enum protocol_types protocol = PROTOCOL_NONE;
 
+	if (lp_server_max_protocol() <= PROTOCOL_SMB2_02) {
+		/*
+		 * With SMB 2.02 we didn't get the
+		 * capabitities, client guid, security mode
+		 * and dialects the client would have offered.
+		 *
+		 * So we behave compatible with a true
+		 * SMB 2.02 server and return NT_STATUS_FILE_CLOSED.
+		 *
+		 * As SMB >= 2.10 offers the two phase SMB2 Negotiate
+		 * we keep supporting FSCTL_VALIDATE_NEGOTIATE_INFO
+		 * starting with SMB 2.10, while Windows only supports
+		 * it starting with SMB > 2.10.
+		 */
+		return NT_STATUS_FILE_CLOSED;
+	}
+
 	if (in_input->length < 0x18) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
