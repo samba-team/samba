@@ -99,7 +99,6 @@ NTSTATUS auth_builtin_init(TALLOC_CTX *mem_ctx);
 
 /* The following definitions come from auth/auth_domain.c  */
 
-void attempt_machine_password_change(void);
 NTSTATUS auth_domain_init(TALLOC_CTX *mem_ctx);
 
 /* The following definitions come from auth/auth_generic.c  */
@@ -128,7 +127,6 @@ NTSTATUS auth3_generate_session_info(struct auth4_context *auth_context,
 NTSTATUS auth3_get_challenge(struct auth4_context *auth4_context,
 			     uint8_t chal[8]);
 
-bool auth3_may_set_challenge(struct auth4_context *auth4_context);
 NTSTATUS auth3_set_challenge(struct auth4_context *auth4_context, const uint8_t *chal,
 			     const char *challenge_set_by);
 
@@ -270,7 +268,6 @@ NTSTATUS make_server_info_wbcAuthUserInfo(TALLOC_CTX *mem_ctx,
 					  const char *domain,
 					  const struct wbcAuthUserInfo *info,
 					  struct auth_serversupplied_info **server_info);
-void free_user_info(struct auth_usersupplied_info **user_info);
 bool is_trusted_domain(const char* dom_name);
 NTSTATUS session_extract_session_key(const struct auth_session_info *session_info, DATA_BLOB *session_key, enum session_key_use_intent intent);
 
@@ -292,7 +289,6 @@ NTSTATUS make_user_info(TALLOC_CTX *mem_ctx,
 			const struct samr_Password *nt_interactive_pwd,
 			const char *plaintext_password,
 			enum auth_password_state password_state);
-void free_user_info(struct auth_usersupplied_info **user_info);
 
 NTSTATUS do_map_to_guest_server_info(TALLOC_CTX *mem_ctx,
 				     NTSTATUS status,
@@ -333,10 +329,6 @@ NTSTATUS passwd_to_SamInfo3(TALLOC_CTX *mem_ctx,
 struct netr_SamInfo3 *copy_netr_SamInfo3(TALLOC_CTX *mem_ctx,
 					 const struct netr_SamInfo3 *orig);
 
-/* The following definitions come from auth/auth_wbc.c  */
-
-NTSTATUS auth_wbc_init(void);
-
 /* The following definitions come from auth/pampass.c  */
 
 bool smb_pam_claim_session(const char *user, const char *tty, const char *rhost);
@@ -349,7 +341,6 @@ bool smb_pam_passchange(const char *user, const char *rhost,
 
 /* The following definitions come from auth/pass_check.c  */
 
-void dfs_unlogin(void);
 NTSTATUS pass_check(const struct passwd *pass,
 		    const char *user,
 		    const char *rhost,
