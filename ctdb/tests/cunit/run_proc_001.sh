@@ -6,7 +6,7 @@
 ok <<EOF
 Process exited with error 2
 EOF
-unit_test run_proc_test 0 /a/b/c
+unit_test run_proc_test 0 -1 /a/b/c
 
 # Non-executable path
 prog=$(mktemp --tmpdir="$TEST_VAR_DIR")
@@ -17,7 +17,7 @@ EOF
 ok <<EOF
 Process exited with error 13
 EOF
-unit_test run_proc_test 0 "$prog"
+unit_test run_proc_test 0 -1 "$prog"
 
 # Executable path
 chmod +x "$prog"
@@ -25,7 +25,7 @@ chmod +x "$prog"
 ok <<EOF
 Process exited with error 8
 EOF
-unit_test run_proc_test 0 "$prog"
+unit_test run_proc_test 0 -1 "$prog"
 
 # Capture output
 cat > "$prog" <<EOF
@@ -38,7 +38,7 @@ Process exited with status 0
 Output = (hello
 )
 EOF
-unit_test run_proc_test 0 "$prog"
+unit_test run_proc_test 0 -1 "$prog"
 
 # Specify timeout
 ok <<EOF
@@ -46,7 +46,7 @@ Process exited with status 0
 Output = (hello
 )
 EOF
-unit_test run_proc_test 5 "$prog"
+unit_test run_proc_test 5 -1 "$prog"
 
 # Redirected output
 output=$(mktemp --tmpdir="$TEST_VAR_DIR")
@@ -59,7 +59,7 @@ EOF
 ok <<EOF
 Process exited with status 0
 EOF
-unit_test run_proc_test 0 "$prog"
+unit_test run_proc_test 0 -1 "$prog"
 
 ok <<EOF
 hello
@@ -75,7 +75,7 @@ EOF
 ok <<EOF
 Process exited with status 1
 EOF
-unit_test run_proc_test 0 "$prog"
+unit_test run_proc_test 0 -1 "$prog"
 
 # Exit with signal
 cat > "$prog" <<EOF
@@ -86,7 +86,7 @@ EOF
 ok <<EOF
 Process exited with signal 15
 EOF
-unit_test run_proc_test 0 "$prog"
+unit_test run_proc_test 0 -1 "$prog"
 
 # Exit with timeout
 cat > "$prog" <<EOF
@@ -107,7 +107,7 @@ Child = PID
 Output = (Sleeping for 5 seconds
 )
 EOF
-unit_test run_proc_test 1 "$prog"
+unit_test run_proc_test 1 -1 "$prog"
 
 # No zombie processes
 pidfile=$(mktemp --tmpdir="$TEST_VAR_DIR")
@@ -122,7 +122,7 @@ ok <<EOF
 Process exited with error 62
 Child = PID
 EOF
-unit_test run_proc_test 1 "$prog"
+unit_test run_proc_test 1 -1 "$prog"
 
 result_filter ()
 {
@@ -136,5 +136,23 @@ HEADER
 EOF
 unit_test ps -p "$pid"
 
+# Redirect stdin
+cat > "$prog" <<EOF
+#!/bin/sh
+cat -
+EOF
+
+cat > "$output" <<EOF
+this is sample input
+EOF
+
+ok <<EOF
+Process exited with status 0
+Output = (this is sample input
+)
+EOF
+(unit_test run_proc_test 0 4 "$prog") 4<"$output"
+
 rm -f "$pidfile"
+rm -f "$output"
 rm -f "$prog"

@@ -68,6 +68,7 @@ int run_proc_init(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
  * @param[in] run_ctx Run_proc context
  * @param[in] prog The path to the executable
  * @param[in] argv Arguments to the executable
+ * @param[in] stdin_fd Assign stdin_fd as stdin for the process, -1 if not
  * @param[in] timeout How long to wait for execution
  * @return new tevent request, or NULL on failure
  *
@@ -77,7 +78,7 @@ struct tevent_req *run_proc_send(TALLOC_CTX *mem_ctx,
 				 struct tevent_context *ev,
 				 struct run_proc_context *run_ctx,
 				 const char *prog, const char **argv,
-				 struct timeval timeout);
+				 int stdin_fd, struct timeval timeout);
 
 /**
  * @brief Async computation end to run an executable

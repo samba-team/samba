@@ -343,7 +343,7 @@ static struct tevent_req *run_debug_send(TALLOC_CTX *mem_ctx,
 		debug_script, argv[1], argv[2]);
 
 	subreq = run_proc_send(state, ev, ectx->run_ctx, debug_script, argv,
-			       tevent_timeval_zero());
+			       -1, tevent_timeval_zero());
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -709,7 +709,7 @@ static struct tevent_req *run_event_run_script(struct tevent_req *req)
 		path, state->argv[0], state->argv[1]);
 
 	subreq = run_proc_send(state, state->ev, state->ectx->run_ctx,
-			       path, state->argv, state->timeout);
+			       path, state->argv, -1, state->timeout);
 
 	talloc_free(path);
 

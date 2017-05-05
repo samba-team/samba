@@ -35,11 +35,12 @@ int main(int argc, const char **argv)
 	char *output;
 	struct run_proc_result result;
 	pid_t pid;
-	int timeout, ret;
+	int timeout, ret, fd;
 	bool status;
 
-	if (argc < 3) {
-		fprintf(stderr, "Usage: %s <timeout> <program> <args>\n",
+	if (argc < 4) {
+		fprintf(stderr,
+			"Usage: %s <timeout> <stdin-fd> <program> <args>\n",
 			argv[0]);
 		exit(1);
 	}
@@ -63,13 +64,18 @@ int main(int argc, const char **argv)
 		tv = tevent_timeval_current_ofs(timeout, 0);
 	}
 
+	fd = atoi(argv[2]);
+	if (fd < 0) {
+		fd = -1;
+	}
+
 	ret = run_proc_init(mem_ctx, ev, &run_ctx);
 	if (ret != 0) {
 		fprintf(stderr, "run_proc_init() failed, ret=%d\n", ret);
 		exit(1);
 	}
 
-	req = run_proc_send(mem_ctx, ev, run_ctx, argv[2], &argv[2], tv);
+	req = run_proc_send(mem_ctx, ev, run_ctx, argv[3], &argv[3], fd, tv);
 	if (req == NULL) {
 		fprintf(stderr, "run_proc_send() failed\n");
 		exit(1);

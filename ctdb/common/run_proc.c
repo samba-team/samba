@@ -67,7 +67,7 @@ static void proc_read_handler(struct tevent_context *ev,
 			      void *private_data);
 
 static int proc_start(struct proc_context *proc, struct tevent_context *ev,
-		      const char *path, const char **argv)
+		      const char *path, const char **argv, int stdin_fd)
 {
 	int fd[2];
 	int ret;
@@ -98,6 +98,13 @@ static int proc_start(struct proc_context *proc, struct tevent_context *ev,
 		}
 
 		close(fd[1]);
+
+		if (stdin_fd != -1) {
+			ret = dup2(stdin_fd, STDIN_FILENO);
+			if (ret == -1) {
+				exit(64 + errno);
+			}
+		}
 
 		ret = setpgid(0, 0);
 		if (ret != 0) {
@@ -382,7 +389,7 @@ struct tevent_req *run_proc_send(TALLOC_CTX *mem_ctx,
 				 struct tevent_context *ev,
 				 struct run_proc_context *run_ctx,
 				 const char *path, const char **argv,
-				 struct timeval timeout)
+				 int stdin_fd, struct timeval timeout)
 {
 	struct tevent_req *req;
 	struct run_proc_state *state;
@@ -415,7 +422,7 @@ struct tevent_req *run_proc_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	ret = proc_start(state->proc, ev, path, argv);
+	ret = proc_start(state->proc, ev, path, argv, stdin_fd);
 	if (ret != 0) {
 		tevent_req_error(req, ret);
 		return tevent_req_post(req, ev);
