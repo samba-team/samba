@@ -814,6 +814,21 @@ struct tevent_context *ldb_handle_get_event_context(struct ldb_handle *handle)
 	return ldb_get_event_context(handle->ldb);
 }
 
+/*
+ * This function forces a specific ldb handle to use the global event
+ * context.  This allows a nested event loop to operate, so any open
+ * transaction also needs to be aborted.
+ *
+ * Any events on this event context will be lost
+ *
+ * This is used in Samba when sending an IRPC to another part of the
+ * same process instead of making a local DB modification.
+ */
+void ldb_handle_use_global_event_context(struct ldb_handle *handle)
+{
+	TALLOC_FREE(handle->event_context);
+}
+
 void ldb_set_require_private_event_context(struct ldb_context *ldb)
 {
 	ldb->require_private_event_context = true;
