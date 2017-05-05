@@ -11137,7 +11137,8 @@ static bool test_multiple_drivers(struct torture_context *tctx,
 }
 
 static bool test_driver_copy_from_directory(struct torture_context *tctx,
-					    struct dcerpc_pipe *p)
+					    struct dcerpc_pipe *p,
+					    const char *architecture)
 {
 	struct torture_driver_context *d;
 	struct spoolss_StringArray *a;
@@ -11153,8 +11154,7 @@ static bool test_driver_copy_from_directory(struct torture_context *tctx,
 	d = talloc_zero(tctx, struct torture_driver_context);
 	torture_assert_not_null(tctx, d, "ENOMEM");
 
-	d->local.environment		=
-		talloc_asprintf(d, SPOOLSS_ARCHITECTURE_x64);
+	d->local.environment		= talloc_strdup(d, architecture);
 	torture_assert_not_null_goto(tctx, d->local.environment, ok, done, "ENOMEM");
 
 	d->local.driver_directory	=
@@ -11234,6 +11234,12 @@ static bool test_driver_copy_from_directory(struct torture_context *tctx,
 done:
 	talloc_free(d);
 	return ok;
+}
+
+static bool test_driver_copy_from_directory_64(struct torture_context *tctx,
+					       struct dcerpc_pipe *p)
+{
+	return test_driver_copy_from_directory(tctx, p, SPOOLSS_ARCHITECTURE_x64);
 }
 
 static bool test_del_driver_all_files(struct torture_context *tctx,
@@ -11433,8 +11439,8 @@ struct torture_suite *torture_rpc_spoolss_driver(TALLOC_CTX *mem_ctx)
 	torture_rpc_tcase_add_test(tcase, "multiple_drivers", test_multiple_drivers);
 
 	torture_rpc_tcase_add_test(tcase,
-				   "test_driver_copy_from_directory",
-				   test_driver_copy_from_directory);
+				   "test_driver_copy_from_directory_64",
+				   test_driver_copy_from_directory_64);
 
 	torture_rpc_tcase_add_test(tcase, "del_driver_all_files", test_del_driver_all_files);
 
