@@ -29,14 +29,14 @@ that they nearly all come with a system trace utility that allows you
 to monitor all system calls that a program is making. This is
 extremely using for debugging and also helps when trying to work out
 why something is slower than you expect. You can use system tracing
-without any special compilation options. 
+without any special compilation options.
 </para>
 
 <para>
 The system trace utility is called different things on different
 systems. On Linux systems its called strace. Under SunOS 4 its called
 trace. Under SVR4 style systems (including solaris) its called
-truss. Under many BSD systems its called ktrace. 
+truss. Under many BSD systems its called ktrace.
 </para>
 
 <para>
@@ -52,7 +52,7 @@ Next, try using strace on some simple commands. For example, <command>strace
 ls</command> or <command>strace echo hello</command>.
 </para>
 
-<para> 
+<para>
 You'll notice that it produces a LOT of output. It is showing you the
 arguments to every system call that the program makes and the
 result. Very little happens in a program without a system call so you
@@ -98,7 +98,7 @@ forks. This is great for finding printing problems caused by the
 <para>
 Once you are attached you then can do whatever it is on the client
 that is causing problems and you will capture all the system calls
-that smbd makes. 
+that smbd makes.
 </para>
 
 <para>
@@ -123,8 +123,8 @@ causes printing to fail with Samba:
 </programlisting></para>
 
 <para>
-The process is trying to first open <filename>/dev/null</filename> read-write 
-then read-only. Both fail. This means <filename>/dev/null</filename> has 
+The process is trying to first open <filename>/dev/null</filename> read-write
+then read-only. Both fail. This means <filename>/dev/null</filename> has
 incorrect permissions.
 </para>
 

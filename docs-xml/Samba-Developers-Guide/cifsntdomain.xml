@@ -48,7 +48,7 @@ instructive than this document.
 </para>
 
 <para>
-Also needed, to fully implement NT Domain Login Services, is the 
+Also needed, to fully implement NT Domain Login Services, is the
 document describing the cryptographic part of the NT authentication.
 This document is available from comp.protocols.smb; from the ntsecurity.net
 digest and from the samba digest, amongst other sources.
@@ -79,7 +79,7 @@ achieved by setting the following REG_SZ registry key to 0x1ffffff:
 <para><filename>HKLM\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters</filename></para>
 
 <para><emphasis>Incorrect direct editing of the registry can cause your
-machine to fail. Then again, so can incorrect implementation of this 
+machine to fail. Then again, so can incorrect implementation of this
 protocol. See "Liability:" above.</emphasis></para>
 
 <para>
@@ -103,11 +103,11 @@ include, but are not limited to:
 <listitem><para>The exact meaning/definition of various magic constants or enumerations.</para></listitem>
 
 <listitem><para>The reply error code and use of that error code when a
-workstation becomes a member of a domain (to be described later).  
-Failure to return this error code will make the workstation report 
+workstation becomes a member of a domain (to be described later).
+Failure to return this error code will make the workstation report
 that it is already a member of the domain.</para></listitem>
 
-<listitem><para>the cryptographic side of the NetrServerPasswordSet command, 
+<listitem><para>the cryptographic side of the NetrServerPasswordSet command,
 which would allow the workstation to change its password.  This password is
 used to generate the long-term session key.  [It is possible to reject this
 command, and keep the default workstation password].</para></listitem>
@@ -129,7 +129,7 @@ command, and keep the default workstation password].</para></listitem>
 <sect2>
 <title>Credits</title>
 
-<simplelist> 
+<simplelist>
 <member>Paul Ashton: loads of work with Net Monitor; understanding the NT authentication system; reference implementation of the NT domain support on which this document is originally based.</member>
 <member>Duncan Stansfield: low-level analysis of MSRPC Pipes.</member>
 <member>Linus Nordberg: producing c-code from Paul's crypto spec.</member>
@@ -1226,7 +1226,7 @@ appears a third time after the last sub-structure.
 <title>MSRPC Pipes</title>
 
 <para>
-The MSRPC is conducted over an SMB Transact Pipe with a name of 
+The MSRPC is conducted over an SMB Transact Pipe with a name of
 <filename>\PIPE\</filename>.  You must first obtain a 16 bit file handle, by
 sending a SMBopenX with the pipe name <filename>\PIPE\srvsvc</filename> for
 example.  You can then perform an SMB Trans,

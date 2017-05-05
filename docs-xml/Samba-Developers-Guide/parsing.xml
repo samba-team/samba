@@ -75,11 +75,11 @@ The lexical analyzer scans past white space at the beginning of a line.
 
 <listitem><para>
 Section and parameter names may contain internal white space.  All
-whitespace within a name is compressed to a single space character. 
+whitespace within a name is compressed to a single space character.
 </para></listitem>
 
 <listitem><para>
-Internal whitespace within a parameter value is kept verbatim with 
+Internal whitespace within a parameter value is kept verbatim with
 the exception of carriage return characters ('\r'), all of which
 are removed.
 </para></listitem>

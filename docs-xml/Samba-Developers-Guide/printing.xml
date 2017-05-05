@@ -137,11 +137,11 @@ steps ( refer to <filename>print.c:print_queue_update()</filename> ):
 </para>
 
 <orderedlist>
-	<listitem><para>Check to see if another smbd is currently in 
-	the process of updating the queue contents by checking the pid 
-	stored in <constant>LOCK/<replaceable>printer_name</replaceable></constant>.  
+	<listitem><para>Check to see if another smbd is currently in
+	the process of updating the queue contents by checking the pid
+	stored in <constant>LOCK/<replaceable>printer_name</replaceable></constant>.
 	If so, then do not update the TDB.</para></listitem>
-	
+
 	<listitem><para>Lock the mutex entry in the TDB and store our own pid.
 	Check that this succeeded, else fail.</para></listitem>
 
@@ -152,7 +152,7 @@ steps ( refer to <filename>print.c:print_queue_update()</filename> ):
 
 	<listitem><para><programlisting>
 	foreach job in the queue
-     	{
+	{
 		if the job is a UNIX job, create a new entry;
 		if the job has a Windows based jobid, then
 		{
@@ -168,9 +168,9 @@ steps ( refer to <filename>print.c:print_queue_update()</filename> ):
 	in the in the lpq listing</para></listitem>
 
 	<listitem><para>Store the print queue status in the TDB</para></listitem>
-	
+
 	<listitem><para>update the cache time stamp again</para></listitem>
-	
+
 </orderedlist>
 
 <para>
@@ -334,7 +334,7 @@ RPC.  This packet contains
 
 
 <itemizedlist>
-	
+
 <listitem><para>the printer handle registered with the
 client's spooler on which the change occurred</para></listitem>
 

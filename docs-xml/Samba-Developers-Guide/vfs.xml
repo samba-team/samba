@@ -182,41 +182,41 @@ typedef enum _vfs_op_type {
 struct vfs_ops {
 	struct vfs_fn_pointers {
 		...
-		
+
 		/* File operations */
-		
+
 		int (*open)(struct vfs_handle_struct *handle,
 			struct connection_struct *conn,
 			const char *fname, int flags, mode_t mode);
 		int (*close)(struct vfs_handle_struct *handle,
 			struct files_struct *fsp, int fd);
-		ssize_t (*read)(struct vfs_handle_struct *handle, 
+		ssize_t (*read)(struct vfs_handle_struct *handle,
 			struct files_struct *fsp, int fd, void *data, size_t n);
-		ssize_t (*write)(struct vfs_handle_struct *handle, 
-			struct files_struct *fsp, int fd, 
+		ssize_t (*write)(struct vfs_handle_struct *handle,
+			struct files_struct *fsp, int fd,
 			const void *data, size_t n);
-		SMB_OFF_T (*lseek)(struct vfs_handle_struct *handle, 
-			struct files_struct *fsp, int fd, 
+		SMB_OFF_T (*lseek)(struct vfs_handle_struct *handle,
+			struct files_struct *fsp, int fd,
 			SMB_OFF_T offset, int whence);
-		ssize_t (*sendfile)(struct vfs_handle_struct *handle, 
-			int tofd, files_struct *fsp, int fromfd, 
+		ssize_t (*sendfile)(struct vfs_handle_struct *handle,
+			int tofd, files_struct *fsp, int fromfd,
 			const DATA_BLOB *header, SMB_OFF_T offset, size_t count);
 
 		...
 	} ops;
-	
+
 	struct vfs_handles_pointers {
 		...
-		
+
 		/* File operations */
-		
+
 		struct vfs_handle_struct *open;
 		struct vfs_handle_struct *close;
 		struct vfs_handle_struct *read;
 		struct vfs_handle_struct *write;
 		struct vfs_handle_struct *lseek;
 		struct vfs_handle_struct *sendfile;
-		
+
 		...
 	} handles;
 };
@@ -227,7 +227,7 @@ This macros SHOULD be used to call any vfs operation.
 DO NOT ACCESS conn-&gt;vfs.ops.* directly !!!
 <programlisting>
 ...
-	
+
 /* File operations */
 #define SMB_VFS_OPEN(conn, fname, flags, mode) \
 	((conn)-&gt;vfs.ops.open((conn)-&gt;vfs.handles.open,\
@@ -261,8 +261,8 @@ DO NOT ACCESS conn-&gt;vfs.ops.* directly !!!
 <title>Possible VFS operation layers</title>
 
 <para>
-These values are used by the VFS subsystem when building the conn-&gt;vfs 
-and conn-&gt;vfs_opaque structs for a connection with multiple VFS modules. 
+These values are used by the VFS subsystem when building the conn-&gt;vfs
+and conn-&gt;vfs_opaque structs for a connection with multiple VFS modules.
 Internally, Samba differentiates only opaque and transparent layers at this process.
 Other types are used for providing better diagnosing facilities.
 </para>
@@ -273,8 +273,8 @@ which implement actual file system calls (like DB-based VFS). For example,
 default POSIX VFS which is built in into Samba is an opaque VFS module.
 </para>
 
-<para>    
-Other layer types (logger, splitter, scanner) were designed to provide different 
+<para>
+Other layer types (logger, splitter, scanner) were designed to provide different
 degree of transparency and for diagnosing VFS module behaviour.
 </para>
 
@@ -310,7 +310,7 @@ typedef enum _vfs_op_layer {
 <title>Initialization and registration</title>
 
 <para>
-As each Samba module a VFS module should have a 
+As each Samba module a VFS module should have a
 <programlisting>NTSTATUS vfs_example_init(void);</programlisting> function if it's staticly linked to samba or
 <programlisting>NTSTATUS init_module(void);</programlisting> function if it's a shared module.
 </para>
@@ -334,7 +334,7 @@ NTSTATUS smb_register_vfs(int version, const char *name, vfs_op_tuple *vfs_op_tu
 </varlistentry>
 
 <varlistentry><term>name</term>
-<listitem><para>this is the name witch can be listed in the 
+<listitem><para>this is the name witch can be listed in the
 <command>vfs objects</command> parameter to use this module.</para></listitem>
 </varlistentry>
 
@@ -348,7 +348,7 @@ this is an array of vfs_op_tuple's.
 </variablelist>
 
 <para>
-For each operation the module wants to provide it has a entry in the 
+For each operation the module wants to provide it has a entry in the
 vfs_op_tuple array.
 </para>
 
@@ -379,7 +379,7 @@ typedef struct _vfs_op_tuple {
 <para>A simple example:</para>
 
 <programlisting>
-static vfs_op_tuple example_op_tuples[] = {	
+static vfs_op_tuple example_op_tuples[] = {
 	{SMB_VFS_OP(example_connect),	SMB_VFS_OP_CONNECT,	SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(example_disconnect),	SMB_VFS_OP_DISCONNECT,	SMB_VFS_LAYER_TRANSPARENT},
 
@@ -582,8 +582,8 @@ e.g. SMB_VFS_NEXT_CONNECT(conn, service, user);
 </para></listitem>
 
 <listitem><para>
-(Only for 2.2.* modules) 
-Convert the old struct vfs_ops example_ops to 
+(Only for 2.2.* modules)
+Convert the old struct vfs_ops example_ops to
 a vfs_op_tuple example_op_tuples[] array.
 e.g.
 <programlisting>
@@ -658,11 +658,11 @@ struct vfs_ops example_ops = {
 };
 </programlisting>
 -&gt;
-<programlisting> 
+<programlisting>
 static vfs_op_tuple example_op_tuples[] = {
 	{SMB_VFS_OP(example_connect),	SMB_VFS_OP_CONNECT,	SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(example_disconnect),	SMB_VFS_OP_DISCONNECT,	SMB_VFS_LAYER_TRANSPARENT},
-	
+
 	{SMB_VFS_OP(example_fstat), 	SMB_VFS_OP_FSTAT,	SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(example_stat),		SMB_VFS_OP_STAT,	SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(example_lstat), 	SMB_VFS_OP_LSTAT,	SMB_VFS_LAYER_TRANSPARENT},
@@ -673,7 +673,7 @@ static vfs_op_tuple example_op_tuples[] = {
 </para></listitem>
 
 <listitem><para>
-Move the example_op_tuples[] array to the end of the file. 
+Move the example_op_tuples[] array to the end of the file.
 </para></listitem>
 
 <listitem><para>
@@ -698,7 +698,7 @@ remember the struct smb_vfs_handle_struct.
 </para></listitem>
 
 <listitem><para>
-(Only for 3.0alpha* modules) 
+(Only for 3.0alpha* modules)
 Check if your vfs_done() function contains needed code.
 <simplelist>
 <member>If NOT you can remove the vfs_done() function.</member>
@@ -716,16 +716,16 @@ Decide if it wouldn't be better to have this data on a connection basis.
 </simplelist>
 
   e.g. if you have such a struct:
-<programlisting>    
+<programlisting>
 struct example_privates {
 	char *some_string;
 	int db_connection;
 };
-</programlisting>	
+</programlisting>
 first way of doing it:
 <programlisting>
 static int example_connect(vfs_handle_struct *handle,
-	connection_struct *conn, const char *service, 
+	connection_struct *conn, const char *service,
 	const char* user)
 {
 	struct example_privates *data = NULL;
@@ -759,15 +759,15 @@ static int example_connect(vfs_handle_struct *handle,
 static int example_close(vfs_handle_struct *handle, files_struct *fsp, int fd)
 {
 	struct example_privates *data = NULL;
-	
+
 	/* get the pointer to our private data
 	 * return -1 if something failed
 	 */
 	SMB_VFS_HANDLE_GET_DATA(handle, data, struct example_privates, return -1);
-	
+
 	/* do something here...*/
 	DEBUG(0,(&quot;some_string: %s\n&quot;,data-&gt;some_string));
-	
+
 	return SMB_VFS_NEXT_CLOSE(handle, fsp, fd);
 }
 </programlisting>
@@ -776,17 +776,17 @@ second way of doing it:
 static void free_example_privates(void **datap)
 {
 	struct example_privates *data = (struct example_privates *)*datap;
-	
+
 	SAFE_FREE(data-&gt;some_string);
 	SAFE_FREE(data);
-	
+
 	*datap = NULL;
-	
+
 	return;
 }
 
-static int example_connect(vfs_handle_struct *handle, 
-	connection_struct *conn, const char *service, 
+static int example_connect(vfs_handle_struct *handle,
+	connection_struct *conn, const char *service,
 	const char* user)
 {
 	struct example_privates *data = NULL;
@@ -819,15 +819,15 @@ static int example_connect(vfs_handle_struct *handle,
 static int example_close(vfs_handle_struct *handle, files_struct *fsp, int fd)
 {
 	struct example_privates *data = NULL;
-	
+
 	/* get the pointer to our private data
 	 * return -1 if something failed
 	 */
 	SMB_VFS_HANDLE_GET_DATA(handle, data, struct example_privates, return -1);
-	
+
 	/* do something here...*/
 	DEBUG(0,(&quot;some_string: %s\n&quot;,data-&gt;some_string));
-	
+
 	return SMB_VFS_NEXT_CLOSE(handle, fsp, fd);
 }
 </programlisting>
@@ -840,14 +840,14 @@ configure.in, (configure), install.sh and Makefile.in with the module.
 </para>
 
 <para>
-The configure script accepts <option>--with-samba-source</option> to specify 
+The configure script accepts <option>--with-samba-source</option> to specify
 the path to the samba source tree.
-It also accept <option>--enable-developer</option> which lets the compiler 
-give you more warnings.  
+It also accept <option>--enable-developer</option> which lets the compiler
+give you more warnings.
 </para>
 
 <para>
-The idea is that you can extend this 
+The idea is that you can extend this
 <filename>configure.in</filename> and <filename>Makefile.in</filename> scripts
 for your module.
 </para></listitem>
@@ -892,9 +892,9 @@ Overload only the functions you really need to!
 <title>Implement OPAQUE functions</title>
 
 <para>
-If you want to just implement a better version of a 
+If you want to just implement a better version of a
 default samba opaque function
-(e.g. like a disk_free() function for a special filesystem) 
+(e.g. like a disk_free() function for a special filesystem)
 it's ok to just overload that specific function.
 </para>
 

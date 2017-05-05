@@ -47,7 +47,7 @@ the shared library. Check the chapter on modules for more information.
 </para>
 
 <para>
-In the init_module function, the library should call 
+In the init_module function, the library should call
 rpc_pipe_register_commands().  This function takes the following arguments:
 </para>
 
@@ -59,10 +59,10 @@ NTSTATUS rpc_pipe_register_commands(int version, const char *clnt, const char *s
 <variablelist>
 
 <varlistentry><term>version</term>
-<listitem><para>Version number of the RPC interface. Use the define <emphasis>SMB_RPC_INTERFACE_VERSION</emphasis> for this 
+<listitem><para>Version number of the RPC interface. Use the define <emphasis>SMB_RPC_INTERFACE_VERSION</emphasis> for this
 argument.</para></listitem>
 </varlistentry>
-		
+
 <varlistentry><term>clnt</term>
 <listitem><para>the Client name of the named pipe</para></listitem>
 </varlistentry>

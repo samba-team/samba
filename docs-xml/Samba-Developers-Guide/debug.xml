@@ -287,7 +287,7 @@ input is printed into a buffer using the vslprintf() function,
 and then passed to format_debug_text().
 
 If you use DEBUGLVL() you will probably print the body of the
-message using dbgtext(). 
+message using dbgtext().
 </para>
 </sect2>
 

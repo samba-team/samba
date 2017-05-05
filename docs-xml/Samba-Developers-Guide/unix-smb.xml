@@ -39,7 +39,7 @@ on the server.
 <para>
 Unix security is based around username/password pairs. A unix box
 should not allow clients to do any substantive operation without some
-sort of validation. 
+sort of validation.
 </para>
 
 <para>
@@ -145,7 +145,7 @@ details.
 <sect1>
 <title>Locking</title>
 <para>
-Since samba 2.2, samba supports other types of locking as well. This 
+Since samba 2.2, samba supports other types of locking as well. This
 section is outdated.
 </para>
 
@@ -204,7 +204,7 @@ the file for reading should fail.
 <para>
 Unix has no equivalent notion. To implement this Samba uses either lock
 files based on the files inode and placed in a separate lock
-directory or a shared memory implementation. The lock file method 
+directory or a shared memory implementation. The lock file method
 is clumsy and consumes processing and file resources,
 the shared memory implementation is vastly preferred and is turned on
 by default for those systems that support it.
@@ -306,12 +306,11 @@ this protocol level much easier.
 There is also a problem with the SMB specications. SMB is a X/Open
 spec, but the X/Open book is far from ideal, and fails to cover many
 important issues, leaving much to the imagination. Microsoft recently
-renamed the SMB protocol CIFS (Common Internet File System) and have 
-published new specifications. These are far superior to the old 
-X/Open documents but there are still undocumented calls and features. 
-This specification is actively being worked on by a CIFS developers 
+renamed the SMB protocol CIFS (Common Internet File System) and have
+published new specifications. These are far superior to the old
+X/Open documents but there are still undocumented calls and features.
+This specification is actively being worked on by a CIFS developers
 mailing list hosted by Microsft.
 </para>
 </sect1>
 </chapter>
-

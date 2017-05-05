@@ -18,7 +18,7 @@
 
 <para>
 The current Samba codebase possesses the capability to use groups of WINS
-servers that share a common namespace for NetBIOS name registration and 
+servers that share a common namespace for NetBIOS name registration and
 resolution.  The formal parameter syntax is
 </para>
 
@@ -60,20 +60,20 @@ interface names in the tags is only by convention and is not a technical require
 </programlisting></para>
 
 <para>
-Using this configuration, nmbd would attempt to register the server's NetBIOS name 
-with one WINS server in each group.  Because the &quot;eth0&quot; group has two servers, the 
-second server would only be used when a registration (or resolution) request to 
+Using this configuration, nmbd would attempt to register the server's NetBIOS name
+with one WINS server in each group.  Because the &quot;eth0&quot; group has two servers, the
+second server would only be used when a registration (or resolution) request to
 the first server in that group timed out.
 </para>
 
 <para>
-NetBIOS name resolution follows a similar pattern as name registration.  When resolving 
-a NetBIOS name via WINS, smbd and other Samba programs will attempt to query a single WINS 
-server in a tagged group until either a positive response is obtained at least once or 
+NetBIOS name resolution follows a similar pattern as name registration.  When resolving
+a NetBIOS name via WINS, smbd and other Samba programs will attempt to query a single WINS
+server in a tagged group until either a positive response is obtained at least once or
 until a server from every tagged group has responded negatively to the name query request.
-If a timeout occurs when querying a specific WINS server, that server is marked as down to 
-prevent further timeouts and the next server in the WINS group is contacted.  Once marked as 
-dead, Samba will not attempt to contact that server for name registration/resolution queries 
+If a timeout occurs when querying a specific WINS server, that server is marked as down to
+prevent further timeouts and the next server in the WINS group is contacted.  Once marked as
+dead, Samba will not attempt to contact that server for name registration/resolution queries
 for a period of 10 minutes.
 </para>
 

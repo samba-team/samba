@@ -18,7 +18,7 @@ This document gives a general overview of how Samba works
 internally. The Samba Team has tried to come up with a model which is
 the best possible compromise between elegance, portability, security
 and the constraints imposed by the very messy SMB and CIFS
-protocol. 
+protocol.
 </para>
 
 <para>
@@ -45,7 +45,7 @@ It also tries to answer some of the frequently asked questions such as:
 <para>
 People sometimes tout threads as a uniformly good thing. They are very
 nice in their place but are quite inappropriate for smbd. nmbd is
-another matter, and multi-threading it would be very nice. 
+another matter, and multi-threading it would be very nice.
 </para>
 
 <para>
@@ -90,7 +90,7 @@ A few problems that would arise from a threaded smbd are:
 	many of the system calls we make are blocking. Non-blocking
 	equivalents of many calls are either not available or are awkward (and
 	slow) to use. So while we block in one thread all clients are
-	waiting. Imagine if one share is a slow NFS filesystem and the others 
+	waiting. Imagine if one share is a slow NFS filesystem and the others
 	are fast, we will end up slowing all clients to the speed of NFS.
 </para></listitem>
 
@@ -179,7 +179,7 @@ wire. It's a nice format that is very amenable to processing but still
 keeps the idea of a distinct packet. See "struct packet_struct" in
 nameserv.h.  It has all the detail but none of the on-the-wire
 mess. This makes it ideal for using in disk or memory-based databases
-for browsing and WINS support. 
+for browsing and WINS support.
 </para>
 
 </sect1>
