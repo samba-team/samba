@@ -106,6 +106,7 @@ static int ctdb_async_ctx_init_internal(TALLOC_CTX *mem_ctx,
 	ret = ctdbd_setup_fde(ctdb_async_ctx.async_conn, ev);
 	if (ret != 0) {
 		DBG_ERR("ctdbd_setup_ev failed\n");
+		TALLOC_FREE(ctdb_async_ctx.async_conn);
 		return ret;
 	}
 
