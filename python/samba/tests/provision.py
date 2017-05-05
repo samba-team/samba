@@ -171,7 +171,7 @@ class ProvisionResultTests(TestCase):
         result = self.base_result()
         entries = self.report_logger(result)
         self.assertEquals(entries, [
-            ('INFO', 'Once the above files are installed, your Samba4 server '
+            ('INFO', 'Once the above files are installed, your Samba AD server '
                 'will be ready to use'),
             ('INFO', 'Server Role:           domain controller'),
             ('INFO', 'Hostname:              hostnaam'),

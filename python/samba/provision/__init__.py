@@ -1,5 +1,5 @@
 # Unix SMB/CIFS implementation.
-# backend code for provisioning a Samba4 server
+# backend code for provisioning a Samba AD server
 
 # Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2007-2012
 # Copyright (C) Andrew Bartlett <abartlet@samba.org> 2008-2009
@@ -474,7 +474,7 @@ class ProvisionResult(object):
     def report_logger(self, logger):
         """Report this provision result to a logger."""
         logger.info(
-            "Once the above files are installed, your Samba4 server will "
+            "Once the above files are installed, your Samba AD server will "
             "be ready to use")
         if self.adminpass_generated:
             logger.info("Admin password:        %s", self.adminpass)
