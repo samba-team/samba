@@ -183,8 +183,6 @@ bool smb_krb5_get_smb_session_key(TALLOC_CTX *mem_ctx,
 				  bool remote);
 
 krb5_error_code smb_krb5_kt_free_entry(krb5_context context, krb5_keytab_entry *kt_entry);
-void kerberos_set_creds_enctype(krb5_creds *pcreds, int enctype);
-bool kerberos_compatible_enctypes(krb5_context context, krb5_enctype enctype1, krb5_enctype enctype2);
 void smb_krb5_free_data_contents(krb5_context context, krb5_data *pdata);
 krb5_error_code smb_krb5_renew_ticket(const char *ccache_string, const char *client_string, const char *service_string, time_t *expire_time);
 krb5_error_code smb_krb5_gen_netbios_krb5_address(smb_krb5_addresses **kerb_addr,
