@@ -33,6 +33,7 @@
 #include "protocol/protocol_api.h"
 #include "client/client_private.h"
 #include "client/client.h"
+#include "client/client_sync.h"
 
 int ctdb_message_recd_update_ip(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 				struct ctdb_client_context *client,

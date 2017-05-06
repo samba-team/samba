@@ -38,6 +38,7 @@
 
 #include "client/client_private.h"
 #include "client/client.h"
+#include "client/client_sync.h"
 
 static int ctdb_client_connect(struct ctdb_client_context *client,
 			       struct tevent_context *ev,

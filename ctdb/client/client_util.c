@@ -33,6 +33,7 @@
 #include "protocol/protocol_api.h"
 #include "client/client_private.h"
 #include "client/client.h"
+#include "client/client_sync.h"
 
 int list_of_nodes(struct ctdb_node_map *nodemap,
 		  uint32_t flags_mask, uint32_t exclude_pnn,

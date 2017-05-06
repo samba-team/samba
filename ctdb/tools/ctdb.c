@@ -41,6 +41,7 @@
 #include "protocol/protocol_api.h"
 #include "common/system.h"
 #include "client/client.h"
+#include "client/client_sync.h"
 
 #define TIMEOUT()	timeval_current_ofs(options.timelimit, 0)
 

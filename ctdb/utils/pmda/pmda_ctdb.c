@@ -30,6 +30,7 @@
 #include "lib/util/blocking.h"
 
 #include "client/client.h"
+#include "client/client_sync.h"
 
 #include <pcp/pmapi.h>
 #include <pcp/impl.h>
