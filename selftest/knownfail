@@ -330,3 +330,17 @@
 # We currently don't send referrals for LDAP modify of non-replicated attrs
 ^samba4.ldap.rodc.python\(rodc\).__main__.RodcTests.test_modify_nonreplicated.*
 ^samba4.ldap.rodc_rwdc.python.*.__main__.RodcRwdcTests.test_change_password_reveal_on_demand_kerberos
+#
+# Tests for the retrieval of the virtualWDigest attributes
+# by the samba-tool user sub command
+^samba.tests.samba_tool.user_wdigest.samba.tests.samba_tool.user_wdigest.UserCmdWdigestTestCase.test_Wdigest01.*
+^samba.tests.samba_tool.user_wdigest.samba.tests.samba_tool.user_wdigest.UserCmdWdigestTestCase.test_Wdigest02.*
+^samba.tests.samba_tool.user_wdigest.samba.tests.samba_tool.user_wdigest.UserCmdWdigestTestCase.test_Wdigest03.*
+^samba.tests.samba_tool.user_wdigest.samba.tests.samba_tool.user_wdigest.UserCmdWdigestTestCase.test_Wdigest04.*
+^samba.tests.samba_tool.user_wdigest.samba.tests.samba_tool.user_wdigest.UserCmdWdigestTestCase.test_Wdigest05.*
+^samba.tests.samba_tool.user_wdigest.samba.tests.samba_tool.user_wdigest.UserCmdWdigestTestCase.test_Wdigest06.*
+^samba.tests.samba_tool.user_wdigest.samba.tests.samba_tool.user_wdigest.UserCmdWdigestTestCase.test_Wdigest07.*
+^samba.tests.samba_tool.user_wdigest.samba.tests.samba_tool.user_wdigest.UserCmdWdigestTestCase.test_Wdigest08.*
+^samba.tests.samba_tool.user_wdigest.samba.tests.samba_tool.user_wdigest.UserCmdWdigestTestCase.test_Wdigest09.*
+^samba.tests.samba_tool.user_wdigest.samba.tests.samba_tool.user_wdigest.UserCmdWdigestTestCase.test_Wdigest1.*
+^samba.tests.samba_tool.user_wdigest.samba.tests.samba_tool.user_wdigest.UserCmdWdigestTestCase.test_Wdigest2.*

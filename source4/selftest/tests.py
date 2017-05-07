@@ -592,6 +592,7 @@ planpythontestsuite("ad_dc:local", "samba.tests.samba_tool.gpo")
 
 planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.samba_tool.processes")
 planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.samba_tool.user")
+planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.samba_tool.user_wdigest")
 planpythontestsuite("ad_dc:local", "samba.tests.samba_tool.user")
 planpythontestsuite("chgdcpass:local", "samba.tests.samba_tool.user_check_password_script")
 planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.samba_tool.group")
