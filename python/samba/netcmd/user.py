@@ -169,6 +169,10 @@ for (alg, attr) in [("5", "virtualCryptSHA256"), ("6", "virtualCryptSHA512")]:
             "reason" : reason,
             }
 
+# Add the wDigest virtual attributes, virtualWDigest01 to virtualWDigest29
+for x in range(1, 30):
+    virtual_attributes["virtualWDigest%02d" % x] = {}
+
 virtual_attributes_help  = "The attributes to display (comma separated). "
 virtual_attributes_help += "Possible supported virtual attributes: %s" % ", ".join(sorted(virtual_attributes.keys()))
 if len(disabled_virtual_attributes) != 0:
@@ -901,6 +905,12 @@ class GetPasswordCommand(Command):
             search_attrs += [a]
             add_sAMAcountName = True
 
+        add_userPrincipalName = False
+        upn = "usePrincipalName"
+        if upn.lower() not in lower_attrs:
+            search_attrs += [upn]
+            add_userPrincipalName = True
+
         if scope == ldb.SCOPE_BASE:
             search_controls = ["show_deleted:1", "show_recycled:1"]
         else:
@@ -932,6 +942,13 @@ class GetPasswordCommand(Command):
         account_name = obj["sAMAccountName"][0]
         if add_sAMAcountName:
             del obj["sAMAccountName"]
+        if "userPrincipalName" in obj:
+            account_upn = obj["userPrincipalName"][0]
+        else:
+            realm = self.lp.get("realm")
+            account_upn = "%s@%s" % (account_name, realm.lower())
+        if add_userPrincipalName:
+            del obj["userPrincipalName"]
 
         calculated = {}
         def get_package(name, min_idx=0):
@@ -1002,6 +1019,111 @@ class GetPasswordCommand(Command):
             u8 = u.encode('utf-8')
             return u8
 
+        # Extract the WDigest hash for the value specified by i.
+        # Builds an htdigest compatible value
+        DIGEST = "Digest"
+        def get_wDigest(i, primary_wdigest, account_name, account_upn,
+                        domain, dns_domain):
+            if i == 1:
+                user  = account_name
+                realm= domain
+            elif i == 2:
+                user  = account_name.lower()
+                realm = domain.lower()
+            elif i == 3:
+                user  = account_name.upper()
+                realm = domain.upper()
+            elif i == 4:
+                user  = account_name
+                realm = domain.upper()
+            elif i == 5:
+                user  = account_name
+                realm = domain.lower()
+            elif i == 6:
+                user  = account_name.upper()
+                realm = domain.lower()
+            elif i == 7:
+                user  = account_name.lower()
+                realm = domain.upper()
+            elif i == 8:
+                user  = account_name
+                realm = dns_domain.lower()
+            elif i == 9:
+                user  = account_name.lower()
+                realm = dns_domain.lower()
+            elif i == 10:
+                user  = account_name.upper()
+                realm = dns_domain.upper()
+            elif i == 11:
+                user  = account_name
+                realm = dns_domain.upper()
+            elif i == 12:
+                user  = account_name
+                realm = dns_domain.lower()
+            elif i == 13:
+                user  = account_name.upper()
+                realm = dns_domain.lower()
+            elif i == 14:
+                user  = account_name.lower()
+                realm = dns_domain.upper()
+            elif i == 15:
+                user  = account_upn
+                realm = ""
+            elif i == 16:
+                user  = account_upn.lower()
+                realm = ""
+            elif i == 17:
+                user  = account_upn.upper()
+                realm = ""
+            elif i == 18:
+                user  = "%s\\%s" % (domain, account_name)
+                realm = ""
+            elif i == 19:
+                user  = "%s\\%s" % (domain.lower(), account_name.lower())
+                realm = ""
+            elif i == 20:
+                user  = "%s\\%s" % (domain.upper(), account_name.upper())
+                realm = ""
+            elif i == 21:
+                user  = account_name
+                realm = DIGEST
+            elif i == 22:
+                user  = account_name.lower()
+                realm = DIGEST
+            elif i == 23:
+                user  = account_name.upper()
+                realm = DIGEST
+            elif i == 24:
+                user  = account_upn
+                realm = DIGEST
+            elif i == 25:
+                user  = account_upn.lower()
+                realm = DIGEST
+            elif i == 26:
+                user  = account_upn.upper()
+                realm = DIGEST
+            elif i == 27:
+                user  = "%s\\%s" % (domain, account_name)
+                realm = DIGEST
+            elif i == 28:
+                # Differs from spec, see tests
+                user  = "%s\\%s" % (domain.lower(), account_name.lower())
+                realm = DIGEST
+            elif i == 29:
+                # Differs from spec, see tests
+                user  = "%s\\%s" % (domain.upper(), account_name.upper())
+                realm = DIGEST
+            else:
+                user  = ""
+
+            digests = ndr_unpack(drsblobs.package_PrimaryWDigestBlob,
+                                 primary_wdigest)
+            try:
+                digest = binascii.hexlify(bytearray(digests.hashes[i-1].hash))
+                return "%s:%s:%s" % (user, realm, digest)
+            except IndexError:
+                return None
+
         # We use sort here in order to have a predictable processing order
         for a in sorted(virtual_attributes.keys()):
             if not a.lower() in lower_attrs:
@@ -1057,6 +1179,20 @@ class GetPasswordCommand(Command):
                 # the begining. So we can only use the value,
                 # if it is the last one.
                 v = get_package("Primary:SambaGPG", min_idx=-1)
+                if v is None:
+                    continue
+            elif a.startswith("virtualWDigest"):
+                primary_wdigest = get_package("Primary:WDigest")
+                if primary_wdigest is None:
+                    continue
+                x = a[len("virtualWDigest"):]
+                try:
+                    i = int(x)
+                except ValueError:
+                    continue
+                domain = self.lp.get("workgroup")
+                dns_domain = samdb.domain_dns_name()
+                v = get_wDigest(i, primary_wdigest, account_name, account_upn, domain, dns_domain)
                 if v is None:
                     continue
             else:
@@ -1125,6 +1261,14 @@ for which virtual attributes are supported in your environment):
    virtualCryptSHA512:    As virtualClearTextUTF8, but a salted SHA512
                           checksum, useful for OpenLDAP's '{CRYPT}' algorithm,
                           with a $6$... salt, see crypt(3) on modern systems.
+
+   virtualWDigestNN:      The individual hash values stored in
+                          'Primary:WDigest' where NN is the hash number in
+                          the range 01 to 29.
+                          NOTE: As at 22-05-2017 the documentation:
+                          3.1.1.8.11.3.1 WDIGEST_CREDENTIALS Construction
+                        https://msdn.microsoft.com/en-us/library/cc245680.aspx
+                          is incorrect
 
    virtualSambaGPG:       The raw cleartext as stored in the
                           'Primary:SambaGPG' buffer inside of the
@@ -1258,6 +1402,14 @@ for supported virtual attributes in your environment):
    virtualCryptSHA512:    As virtualClearTextUTF8, but a salted SHA512
                           checksum, useful for OpenLDAP's '{CRYPT}' algorithm,
                           with a $6$... salt, see crypt(3) on modern systems.
+
+   virtualWDigestNN:      The individual hash values stored in
+                          'Primary:WDigest' where NN is the hash number in
+                          the range 01 to 29.
+                          NOTE: As at 22-05-2017 the documentation:
+                          3.1.1.8.11.3.1 WDIGEST_CREDENTIALS Construction
+                        https://msdn.microsoft.com/en-us/library/cc245680.aspx
+                          is incorrect.
 
    virtualSambaGPG:       The raw cleartext as stored in the
                           'Primary:SambaGPG' buffer inside of the
