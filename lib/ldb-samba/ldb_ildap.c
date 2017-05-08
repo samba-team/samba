@@ -863,7 +863,9 @@ static int ildb_connect(struct ldb_context *ldb, const char *url,
 	return LDB_SUCCESS;
 
 failed:
-	ldb_set_errstring(ldb, ldap_errstr(ildb->ldap, module, status));
+	if (ildb != NULL && ildb->ldap != NULL) {
+		ldb_set_errstring(ldb, ldap_errstr(ildb->ldap, module, status));
+	}
 	talloc_free(module);
 	if (NT_STATUS_IS_LDAP(status)) {
 		return NT_STATUS_LDAP_CODE(status);
