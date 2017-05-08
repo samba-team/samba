@@ -330,3 +330,6 @@
 # We currently don't send referrals for LDAP modify of non-replicated attrs
 ^samba4.ldap.rodc.python\(rodc\).__main__.RodcTests.test_modify_nonreplicated.*
 ^samba4.ldap.rodc_rwdc.python.*.__main__.RodcRwdcTests.test_change_password_reveal_on_demand_kerberos
+# rounds tests for samba_tool.user_virtualCryptSHA should fail until the rounds functionality is implemented
+^samba.tests.samba_tool.user_virtualCryptSHA.*.test_gpg_both_hashes_sha256_rounds_invalid\(.*
+^samba.tests.samba_tool.user_virtualCryptSHA.*.gpg_both_hashes_both_rounds\(.*
