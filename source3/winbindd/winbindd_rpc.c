@@ -46,54 +46,62 @@ NTSTATUS rpc_query_user_list(TALLOC_CTX *mem_ctx,
 	uint32_t num_rids = 0;
 	uint32_t i = 0;
 	uint32_t resume_handle = 0;
-	NTSTATUS result;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	TALLOC_CTX *tmp_ctx;
 
 	*prids = NULL;
+
+	tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	do {
 		struct samr_SamArray *sam_array = NULL;
 		uint32_t count = 0;
-		NTSTATUS status;
 		uint32_t *tmp;
 
 		status = dcerpc_samr_EnumDomainUsers(
-			b, mem_ctx, samr_policy, &resume_handle,
+			b, tmp_ctx, samr_policy, &resume_handle,
 			ACB_NORMAL, &sam_array, 0xffff, &count, &result);
 		if (!NT_STATUS_IS_OK(status)) {
-			return status;
+			goto done;
 		}
 		if (!NT_STATUS_IS_OK(result)) {
 			if (!NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES)) {
 				DBG_WARNING("EnumDomainUsers failed: %s\n",
 					    nt_errstr(result));
-				TALLOC_FREE(rids);
-				TALLOC_FREE(sam_array);
-				return result;
+				status = result;
+				goto done;
 			}
 		}
 
 		if (num_rids + count < num_rids) {
-			TALLOC_FREE(sam_array);
-			TALLOC_FREE(rids);
-			return NT_STATUS_INTEGER_OVERFLOW;
+			status = NT_STATUS_INTEGER_OVERFLOW;
+			goto done;
 		}
 
-		tmp = talloc_realloc(mem_ctx, rids, uint32_t, num_rids+count);
+		tmp = talloc_realloc(tmp_ctx, rids, uint32_t, num_rids+count);
 		if (tmp == NULL) {
-			TALLOC_FREE(sam_array);
-			TALLOC_FREE(rids);
-			return NT_STATUS_NO_MEMORY;
+			status = NT_STATUS_NO_MEMORY;
+			goto done;
 		}
 		rids = tmp;
 
 		for (i=0; i<count; i++) {
 			rids[num_rids++] = sam_array->entries[i].idx;
 		}
+
+		TALLOC_FREE(sam_array);
 	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
 
-	*prids = rids;
+	*prids = talloc_steal(mem_ctx, rids);
+	status = NT_STATUS_OK;
 
-	return NT_STATUS_OK;
+done:
+	TALLOC_FREE(tmp_ctx);
+	return status;
 }
 
 /* List all domain groups */
