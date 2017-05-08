@@ -103,7 +103,7 @@ def get_random_bytes(num):
         raise ImportError(random_reason)
     return get_random_bytes_fn(num)
 
-def get_crypt_value(alg, utf8pw):
+def get_crypt_value(alg, utf8pw, rounds=0):
     algs = {
         "5": {"length": 43},
         "6": {"length": 86},
@@ -116,8 +116,13 @@ def get_crypt_value(alg, utf8pw):
     # we can ignore the possible == at the end
     # of the base64 string
     # we just need to replace '+' by '.'
-    b64salt = base64.b64encode(salt)
-    crypt_salt = "$%s$%s$" % (alg, b64salt[0:16].replace('+', '.'))
+    b64salt = base64.b64encode(salt)[0:16].replace('+', '.')
+    crypt_salt = ""
+    if rounds != 0:
+        crypt_salt = "$%s$rounds=%s$%s$" % (alg, rounds, b64salt)
+    else:
+        crypt_salt = "$%s$%s$" % (alg, b64salt)
+
     crypt_value = crypt.crypt(utf8pw, crypt_salt)
     if crypt_value is None:
         raise NotImplementedError("crypt.crypt(%s) returned None" % (crypt_salt))
@@ -126,6 +131,24 @@ def get_crypt_value(alg, utf8pw):
         raise NotImplementedError("crypt.crypt(%s) returned a value with length %d, expected length is %d" % (
             crypt_salt, len(crypt_value), expected_len))
     return crypt_value
+
+# Extract the rounds value from the options of a virtualCrypt attribute
+# i.e. options = "rounds=20;other=ignored;" will return 20
+# if the rounds option is not found or the value is not a number, 0 is returned
+# which indicates that the default number of rounds should be used.
+def get_rounds(options):
+    if not options:
+        return 0
+
+    opts = options.split(';')
+    for o in opts:
+        if o.lower().startswith("rounds="):
+            (key, _, val) = o.partition('=')
+            try:
+                return int(val)
+            except ValueError:
+                return 0
+    return 0
 
 try:
     random_reason = check_random()
@@ -882,9 +905,19 @@ class GetPasswordCommand(Command):
     def get_account_attributes(self, samdb, username, basedn, filter, scope,
                                attrs, decrypt):
 
-        require_supplementalCredentials = False
-        search_attrs = attrs[:]
+        raw_attrs = attrs[:]
+        search_attrs = []
+        attr_opts = {}
+        for a in raw_attrs:
+            (attr, _, opts) = a.partition(';')
+            if opts:
+                attr_opts[attr] = opts
+            else:
+                attr_opts[attr] = None
+            search_attrs.append(attr)
         lower_attrs = [x.lower() for x in search_attrs]
+
+        require_supplementalCredentials = False
         for a in virtual_attributes.keys():
             if a.lower() in lower_attrs:
                 require_supplementalCredentials = True
@@ -1124,6 +1157,22 @@ class GetPasswordCommand(Command):
             except IndexError:
                 return None
 
+        def get_userPassword_hash(blob, scheme, prefix):
+            up = ndr_unpack(drsblobs.package_PrimaryUserPasswordBlob, blob)
+
+            # Check that the NT hash has not been changed without updating
+            # the user password hashes.
+            if unicodePwd != bytearray(up.current_nt_hash.hash):
+                return None
+
+
+            # Return the first hash that matches scheme
+            for h in up.hashes:
+                if h.scheme == scheme and h.value.startswith(prefix):
+                    return h.value
+
+            return None
+
         # We use sort here in order to have a predictable processing order
         for a in sorted(virtual_attributes.keys()):
             if not a.lower() in lower_attrs:
@@ -1161,7 +1210,8 @@ class GetPasswordCommand(Command):
                 u8 = get_utf8(a, b, username or account_name)
                 if u8 is None:
                     continue
-                sv = get_crypt_value("5", u8)
+                rounds = get_rounds(attr_opts[a])
+                sv = get_crypt_value("5", u8, rounds)
                 v = "{CRYPT}" + sv
             elif a == "virtualCryptSHA512":
                 b = get_package("Primary:CLEARTEXT")
@@ -1170,7 +1220,8 @@ class GetPasswordCommand(Command):
                 u8 = get_utf8(a, b, username or account_name)
                 if u8 is None:
                     continue
-                sv = get_crypt_value("6", u8)
+                rounds = get_rounds(attr_opts[a])
+                sv = get_crypt_value("6", u8, rounds)
                 v = "{CRYPT}" + sv
             elif a == "virtualSambaGPG":
                 # Samba adds 'Primary:SambaGPG' at the end.
@@ -1257,10 +1308,20 @@ for which virtual attributes are supported in your environment):
    virtualCryptSHA256:    As virtualClearTextUTF8, but a salted SHA256
                           checksum, useful for OpenLDAP's '{CRYPT}' algorithm,
                           with a $5$... salt, see crypt(3) on modern systems.
+                          The number of rounds used to calculate the hash can
+                          also be specified. By appending ";rounds=x" to the
+                          attribute name i.e. virtualCryptSHA256;rounds=10000
+                          will calculate a SHA256 hash with 10,000 rounds.
+                          non numeric values for rounds are silently ignored
 
    virtualCryptSHA512:    As virtualClearTextUTF8, but a salted SHA512
                           checksum, useful for OpenLDAP's '{CRYPT}' algorithm,
                           with a $6$... salt, see crypt(3) on modern systems.
+                          The number of rounds used to calculate the hash can
+                          also be specified. By appending ";rounds=x" to the
+                          attribute name i.e. virtualCryptSHA512;rounds=10000
+                          will calculate a SHA512 hash with 10,000 rounds.
+                          non numeric values for rounds are silently ignored
 
    virtualWDigestNN:      The individual hash values stored in
                           'Primary:WDigest' where NN is the hash number in
@@ -1398,10 +1459,20 @@ for supported virtual attributes in your environment):
    virtualCryptSHA256:    As virtualClearTextUTF8, but a salted SHA256
                           checksum, useful for OpenLDAP's '{CRYPT}' algorithm,
                           with a $5$... salt, see crypt(3) on modern systems.
+                          The number of rounds used to calculate the hash can
+                          also be specified. By appending ";rounds=x" to the
+                          attribute name i.e. virtualCryptSHA256;rounds=10000
+                          will calculate a SHA256 hash with 10,000 rounds.
+                          non numeric values for rounds are silently ignored
 
    virtualCryptSHA512:    As virtualClearTextUTF8, but a salted SHA512
                           checksum, useful for OpenLDAP's '{CRYPT}' algorithm,
                           with a $6$... salt, see crypt(3) on modern systems.
+                          The number of rounds used to calculate the hash can
+                          also be specified. By appending ";rounds=x" to the
+                          attribute name i.e. virtualCryptSHA512;rounds=10000
+                          will calculate a SHA512 hash with 10,000 rounds.
+                          non numeric values for rounds are silently ignored
 
    virtualWDigestNN:      The individual hash values stored in
                           'Primary:WDigest' where NN is the hash number in
