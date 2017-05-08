@@ -1164,7 +1164,7 @@ again:
 		ctdb_time += timeval_elapsed(&ctdb_start_time);
 
 		if (ret != 0) {
-			DEBUG(5, ("ctdb_migrate failed: %s\n",
+			DEBUG(5, ("ctdbd_migrate failed: %s\n",
 				  strerror(ret)));
 			TALLOC_FREE(result);
 			return NULL;
