@@ -677,6 +677,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_charset_to_null(struct ndr_push *ndr, int nd
 
 	if (str == NULL) {
 		str = "";
+		length = 1;
 	}
 
 	return ndr_push_charset(ndr, ndr_flags, str, length, byte_mul, chset);
