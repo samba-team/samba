@@ -342,6 +342,7 @@ static NTSTATUS registry_process_group_policy(TALLOC_CTX *mem_ctx,
 
 err_cache_path_free:
 	talloc_free(gpo_cache_path);
+	talloc_free(entries);
 	return status;
 }
 
