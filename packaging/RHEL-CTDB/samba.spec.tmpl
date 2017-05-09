@@ -100,19 +100,6 @@ packages of Samba.
 
 
 #######################################################################
-%package swat
-Summary: The Samba SMB server configuration program.
-Group: Applications/System
-Requires: samba = %{version} xinetd
-Provides: samba-swat = %{version}-%{release}
-
-%description swat
-The samba-swat package includes the new SWAT (Samba Web Administration
-Tool), for remotely managing Samba's smb.conf file using your favorite
-Web browser.
-
-
-#######################################################################
 %package doc
 Summary:      Samba Documentation
 Group:        Documentation/Other
@@ -120,9 +107,9 @@ Provides:     samba-doc = %{version}-%{release}
 Requires:       /usr/bin/find /bin/rm /usr/bin/xargs
 
 %description doc
-The samba-doc package includes the HTML versions of the Samba manpages
-utilized by SWAT as well as the HTML and PDF version of "Using Samba",
-"Samba By Example", and "The Official Samba HOWTO and Reference Guide".
+The samba-doc package includes the HTML versions of the Samba manpages as well
+as the HTML and PDF version of "Using Samba", "Samba By Example", and "The
+Official Samba HOWTO and Reference Guide".
 
 
 #######################################################################
@@ -226,7 +213,6 @@ find examples docs -type f | xargs -r chmod -x
 rm -rf $RPM_BUILD_ROOT
 
 # Create the target build directory hierarchy
-mkdir -p $RPM_BUILD_ROOT%{_datadir}/samba/swat/{help,include,using_samba/{figs,gifsa}}
 mkdir -p $RPM_BUILD_ROOT%{_includedir}
 mkdir -p $RPM_BUILD_ROOT%{_initrddir}
 mkdir -p $RPM_BUILD_ROOT{%{_libarchdir},%{_includedir}}
@@ -280,7 +266,6 @@ cp -p source3/bin/winbind_krb5_locator.so ${RPM_BUILD_ROOT}/%{_libarchdir}/krb5/
 # Install the miscellany
 echo 127.0.0.1 localhost > $RPM_BUILD_ROOT%{_sysconfdir}/samba/lmhosts
 
-install -m644 setup/swat $RPM_BUILD_ROOT%{_sysconfdir}/xinetd.d/swat
 install -m644 setup/samba.sysconfig $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/samba
 install -m755 setup/smb.init $RPM_BUILD_ROOT%{initdir}/smb
 install -m755 setup/winbind.init $RPM_BUILD_ROOT%{initdir}/winbind
@@ -338,12 +323,6 @@ fi
 exit 0
 
 #%postun
-
-%post swat
-# Add swat entry to /etc/services if not already there.
-if [ ! "`grep ^\s**swat /etc/services`" ]; then
-        echo 'swat        901/tcp     # Add swat service used via inetd' >> /etc/services
-fi
 
 %post common
 /sbin/ldconfig
@@ -460,17 +439,6 @@ exit 0
 %doc examples/misc
 %doc examples/printer-accounting
 %doc examples/printing
-
-##########
-
-%files swat
-%defattr(-,root,root)
-%config(noreplace) %{_sysconfdir}/xinetd.d/swat
-%dir %{_datadir}/samba/swat
-%{_datadir}/samba/swat/*
-%{_sbindir}/swat
-%{_mandir}/man8/swat.8*
-%attr(755,root,root) %{_datadir}/samba/codepages/*.msg
 
 ##########
 

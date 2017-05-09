@@ -44,8 +44,6 @@ CC="$CC" CFLAGS="-Wall -g -D_GNU_SOURCE -O3" ./configure -C \
 	--mandir=${_mandir} \
 	--with-piddir=/var/run \
 	--with-privatedir=${_sysconfdir}/samba \
-	--with-sambabook=${_datadir}/swat/using_samba \
-	--with-swatdir=${_datadir}/swat \
 	--disable-cups \
 	--with-acl-support \
 	--with-ads \
