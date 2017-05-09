@@ -93,19 +93,6 @@ packages of Samba.
 
 
 #######################################################################
-%package swat
-Summary: The Samba SMB server configuration program.
-Group: Applications/System
-Requires: samba = %{version} xinetd
-Provides: samba-swat = %{version}-%{release}
-
-%description swat
-The samba-swat package includes the new SWAT (Samba Web Administration
-Tool), for remotely managing Samba's smb.conf file using your favorite
-Web browser.
-
-
-#######################################################################
 %package doc
 Summary:      Samba Documentation
 Group:        Documentation/Other
@@ -113,9 +100,9 @@ Provides:     samba-doc = %{version}-%{release}
 Prereq:       /usr/bin/find /bin/rm /usr/bin/xargs
 
 %description doc
-The samba-doc package includes the HTML versions of the Samba manpages
-utilized by SWAT as well as the HTML and PDF version of "Using Samba",
-"Samba By Example", and "The Official Samba HOWTO and Reference Guide".
+The samba-doc package includes the HTML versions of the Samba manpages as well
+as the HTML and PDF version of "Using Samba", "Samba By Example", and "The
+Official Samba HOWTO and Reference Guide".
 
 
 #######################################################################
@@ -158,8 +145,6 @@ CC="$CC" CFLAGS="$RPM_OPT_FLAGS $EXTRA -D_GNU_SOURCE" ./configure \
         --with-mandir=%{_mandir} \
         --with-piddir=/var/run \
 	--with-privatedir=%{_sysconfdir}/samba \
-        --with-sambabook=%{_datadir}/swat/using_samba \
-        --with-swatdir=%{_datadir}/swat \
 	--enable-cups \
         --with-acl-support \
 	--with-ads \
@@ -198,7 +183,6 @@ find examples docs -type f | xargs -r chmod -x
 rm -rf $RPM_BUILD_ROOT
 
 # Create the target build directory hierarchy
-mkdir -p $RPM_BUILD_ROOT%{_datadir}/swat/{help,include,using_samba/{figs,gifsa}}
 mkdir -p $RPM_BUILD_ROOT%{_includedir}
 mkdir -p $RPM_BUILD_ROOT%{_initrddir}
 mkdir -p $RPM_BUILD_ROOT{%{_libarchdir},%{_includedir}}
@@ -235,7 +219,6 @@ install -m 755 nsswitch/libnss_wins.so $RPM_BUILD_ROOT/%{_libarch}/libnss_wins.s
 echo 127.0.0.1 localhost > $RPM_BUILD_ROOT%{_sysconfdir}/samba/lmhosts
 
 install -m644 setup/samba.log $RPM_BUILD_ROOT%{_sysconfdir}/logrotate.d/samba
-install -m644 setup/swat $RPM_BUILD_ROOT%{_sysconfdir}/xinetd.d/swat
 install -m644 setup/samba.sysconfig $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/samba
 install -m755 setup/smb.init $RPM_BUILD_ROOT%{initdir}/smb
 install -m755 setup/winbind.init $RPM_BUILD_ROOT%{initdir}/winbind
@@ -251,10 +234,8 @@ ln -s ../..%{initdir}/winbind  $RPM_BUILD_ROOT%{_sbindir}/winbind
 # Remove "*.old" files
 find $RPM_BUILD_ROOT -name "*.old" -exec rm -f {} \;
 
-## don't duplicate the docs.  These are installed by/with SWAT
 rm -rf docs/htmldocs
 rm -rf docs/manpages
-( cd docs; ln -s %{_prefix}/share/swat/help htmldocs )
 
 ##
 ## Clean out man pages for tools not installed here
@@ -296,12 +277,6 @@ if [ "$1" -ge "1" ]; then
 	%{initdir}/smb restart >/dev/null 2>&1
 fi	
 
-
-%post swat
-# Add swat entry to /etc/services if not already there.
-if [ ! "`grep ^\s**swat /etc/services`" ]; then
-        echo 'swat        901/tcp     # Add swat service used via inetd' >> /etc/services
-fi
 
 %post common
 /sbin/ldconfig
@@ -381,20 +356,6 @@ fi
 %doc docs
 %doc examples/autofs examples/LDAP examples/libsmbclient examples/misc examples/printer-accounting
 %doc examples/printing
-%doc %{_datadir}/swat/help
-%doc %{_datadir}/swat/using_samba
-
-##########
-
-%files swat
-%defattr(-,root,root)
-%config(noreplace) %{_sysconfdir}/xinetd.d/swat
-%dir %{_datadir}/swat
-%{_datadir}/swat/include
-%{_datadir}/swat/images
-%{_datadir}/swat/lang
-%{_sbindir}/swat
-%{_mandir}/man8/swat.8*
 
 ##########
 
