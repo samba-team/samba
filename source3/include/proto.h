@@ -243,14 +243,6 @@ void sys_srandom(unsigned int seed);
 int groups_max(void);
 int sys_getgroups(int setlen, gid_t *gidset);
 int sys_setgroups(gid_t UNUSED(primary_gid), int setlen, gid_t *gidset);
-ssize_t sys_getxattr (const char *path, const char *name, void *value, size_t size);
-ssize_t sys_fgetxattr (int filedes, const char *name, void *value, size_t size);
-ssize_t sys_listxattr (const char *path, char *list, size_t size);
-ssize_t sys_flistxattr (int filedes, char *list, size_t size);
-int sys_removexattr (const char *path, const char *name);
-int sys_fremovexattr (int filedes, const char *name);
-int sys_setxattr (const char *path, const char *name, const void *value, size_t size, int flags);
-int sys_fsetxattr (int filedes, const char *name, const void *value, size_t size, int flags);
 uint32_t unix_dev_major(SMB_DEV_T dev);
 uint32_t unix_dev_minor(SMB_DEV_T dev);
 char *sys_realpath(const char *path);
@@ -363,8 +355,6 @@ char *get_mydnsdomname(TALLOC_CTX *ctx);
 char *automount_lookup(TALLOC_CTX *ctx, const char *user_name);
 char *automount_lookup(TALLOC_CTX *ctx, const char *user_name);
 bool process_exists(const struct server_id pid);
-bool processes_exist(const struct server_id *pids, int num_pids,
-		     bool *results);
 const char *uidtoname(uid_t uid);
 char *gidtoname(gid_t gid);
 uid_t nametouid(const char *name);
@@ -433,7 +423,6 @@ bool map_open_params_to_ntcreate(const char *smb_base_fname,
 				 uint32_t *pprivate_flags);
 struct security_unix_token *copy_unix_token(TALLOC_CTX *ctx, const struct security_unix_token *tok);
 bool dir_check_ftype(uint32_t mode, uint32_t dirtype);
-void init_modules(void);
 
 /* The following definitions come from lib/util_builtin.c  */
 
