@@ -693,13 +693,15 @@ static bool test_wbc_authenticate_user_int(struct torture_context *tctx,
 	struct wbcAuthErrorInfo *error = NULL;
 	wbcErr ret;
 
-	ret = wbcAuthenticateUser(cli_credentials_get_username(cmdline_credentials), correct_password);
+	ret = wbcAuthenticateUser(cli_credentials_get_username(
+			popt_get_cmdline_credentials()), correct_password);
 	torture_assert_wbc_equal(tctx, ret, WBC_ERR_SUCCESS,
-				 "wbcAuthenticateUser of %s failed",
-				 cli_credentials_get_username(cmdline_credentials));
+		 "wbcAuthenticateUser of %s failed",
+		 cli_credentials_get_username(popt_get_cmdline_credentials()));
 
 	ZERO_STRUCT(params);
-	params.account_name		= cli_credentials_get_username(cmdline_credentials);
+	params.account_name		=
+		cli_credentials_get_username(popt_get_cmdline_credentials());
 	params.level			= WBC_AUTH_USER_LEVEL_PLAIN;
 	params.password.plaintext	= correct_password;
 
@@ -728,13 +730,15 @@ static bool test_wbc_authenticate_user_int(struct torture_context *tctx,
 
 static bool test_wbc_authenticate_user(struct torture_context *tctx)
 {
-	return test_wbc_authenticate_user_int(tctx, cli_credentials_get_password(cmdline_credentials));
+	return test_wbc_authenticate_user_int(tctx,
+		cli_credentials_get_password(popt_get_cmdline_credentials()));
 }
 
 static bool test_wbc_change_password(struct torture_context *tctx)
 {
 	wbcErr ret;
-	const char *oldpass = cli_credentials_get_password(cmdline_credentials);
+	const char *oldpass =
+		cli_credentials_get_password(popt_get_cmdline_credentials());
 	const char *newpass = "Koo8irei%$";
 
 	struct samr_CryptPassword new_nt_password;
@@ -799,8 +803,10 @@ static bool test_wbc_change_password(struct torture_context *tctx)
 	params.new_password.response.nt_data = new_nt_password.data;
 
 	params.level = WBC_CHANGE_PASSWORD_LEVEL_RESPONSE;
-	params.account_name = cli_credentials_get_username(cmdline_credentials);
-	params.domain_name = cli_credentials_get_domain(cmdline_credentials);
+	params.account_name =
+		cli_credentials_get_username(popt_get_cmdline_credentials());
+	params.domain_name =
+		cli_credentials_get_domain(popt_get_cmdline_credentials());
 
 	ret = wbcChangeUserPasswordEx(&params, NULL, NULL, NULL);
 	torture_assert_wbc_equal(tctx, ret, WBC_ERR_SUCCESS,
@@ -810,12 +816,15 @@ static bool test_wbc_change_password(struct torture_context *tctx)
 		return false;
 	}
 
-	ret = wbcChangeUserPassword(cli_credentials_get_username(cmdline_credentials), newpass,
-				    cli_credentials_get_password(cmdline_credentials));
+	ret = wbcChangeUserPassword(
+		cli_credentials_get_username(popt_get_cmdline_credentials()),
+		newpass,
+		cli_credentials_get_password(popt_get_cmdline_credentials()));
 	torture_assert_wbc_equal(tctx, ret, WBC_ERR_SUCCESS,
 				 "wbcChangeUserPassword for %s failed", params.account_name);
 
-	return test_wbc_authenticate_user_int(tctx, cli_credentials_get_password(cmdline_credentials));
+	return test_wbc_authenticate_user_int(tctx,
+		cli_credentials_get_password(popt_get_cmdline_credentials()));
 }
 
 static bool test_wbc_logon_user(struct torture_context *tctx)
@@ -837,8 +846,10 @@ static bool test_wbc_logon_user(struct torture_context *tctx)
 				 "%s", "wbcLogonUser succeeded for NULL where it should "
 				 "have failed");
 
-	params.username = cli_credentials_get_username(cmdline_credentials);
-	params.password = cli_credentials_get_password(cmdline_credentials);
+	params.username =
+		cli_credentials_get_username(popt_get_cmdline_credentials());
+	params.password =
+		cli_credentials_get_password(popt_get_cmdline_credentials());
 
 	ret = wbcAddNamedBlob(&params.num_blobs, &params.blobs,
 			      "foo", 0, discard_const_p(uint8_t, "bar"), 4);
@@ -868,7 +879,8 @@ static bool test_wbc_logon_user(struct torture_context *tctx)
 			      strlen("S-1-2-3-4")+1);
 	torture_assert_wbc_equal(tctx, ret, WBC_ERR_SUCCESS,
 				 "%s", "wbcAddNamedBlob failed");
-	params.password = cli_credentials_get_password(cmdline_credentials);
+	params.password =
+		cli_credentials_get_password(popt_get_cmdline_credentials());
 	ret = wbcLogonUser(&params, &info, &error, &policy);
 	torture_assert_wbc_equal(tctx, ret, WBC_ERR_AUTH_ERROR,
 				 "wbcLogonUser for %s should have failed with "
@@ -883,11 +895,14 @@ static bool test_wbc_logon_user(struct torture_context *tctx)
 	torture_assert_wbc_equal(tctx, ret, WBC_ERR_SUCCESS,
 				 "%s", "wbcInterfaceDetails failed");
 
-	ret = wbcLookupName(iface->netbios_domain, cli_credentials_get_username(cmdline_credentials), &sid,
-			    &sidtype);
+	ret = wbcLookupName(iface->netbios_domain,
+		cli_credentials_get_username(popt_get_cmdline_credentials()),
+		&sid,
+		&sidtype);
 	wbcFreeMemory(iface);
 	torture_assert_wbc_equal(tctx, ret, WBC_ERR_SUCCESS,
-				 "wbcLookupName for %s failed", cli_credentials_get_username(cmdline_credentials));
+		"wbcLookupName for %s failed",
+		cli_credentials_get_username(popt_get_cmdline_credentials()));
 
 	ret = wbcSidToString(&sid, &sidstr);
 	torture_assert_wbc_equal(tctx, ret, WBC_ERR_SUCCESS,
@@ -899,7 +914,8 @@ static bool test_wbc_logon_user(struct torture_context *tctx)
 	torture_assert_wbc_equal(tctx, ret, WBC_ERR_SUCCESS,
 				 "%s", "wbcAddNamedBlob failed");
 	wbcFreeMemory(sidstr);
-	params.password = cli_credentials_get_password(cmdline_credentials);
+	params.password =
+		cli_credentials_get_password(popt_get_cmdline_credentials());
 	ret = wbcLogonUser(&params, &info, &error, &policy);
 	torture_assert_wbc_equal(tctx, ret, WBC_ERR_SUCCESS,
 				 "wbcLogonUser for %s failed", params.username);
@@ -918,9 +934,13 @@ static bool test_wbc_getgroups(struct torture_context *tctx)
 	uint32_t num_groups;
 	gid_t *groups;
 
-	ret = wbcGetGroups(cli_credentials_get_username(cmdline_credentials), &num_groups, &groups);
+	ret = wbcGetGroups(
+		cli_credentials_get_username(popt_get_cmdline_credentials()),
+		&num_groups,
+		&groups);
 	torture_assert_wbc_equal(tctx, ret, WBC_ERR_SUCCESS,
-				 "wbcGetGroups for %s failed", cli_credentials_get_username(cmdline_credentials));
+		"wbcGetGroups for %s failed",
+		cli_credentials_get_username(popt_get_cmdline_credentials()));
 	wbcFreeMemory(groups);
 	return true;
 }

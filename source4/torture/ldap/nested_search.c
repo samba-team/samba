@@ -162,7 +162,7 @@ bool test_ldap_nested_search(struct torture_context *tctx)
 	torture_comment(tctx, "Connecting to: %s\n", url);
 	sctx->ldb = ldb_wrap_connect(sctx, tctx->ev, tctx->lp_ctx, url,
 	                             NULL,
-	                             cmdline_credentials,
+	                             popt_get_cmdline_credentials(),
 	                             0);
 	torture_assert(tctx, sctx->ldb, "Failed to create ldb connection");
 

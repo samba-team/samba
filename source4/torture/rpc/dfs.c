@@ -56,7 +56,7 @@ static bool test_NetShareAdd(struct torture_context *tctx,
 		return false;
 	}
 
-	libnetctx->cred = cmdline_credentials;
+	libnetctx->cred = popt_get_cmdline_credentials();
 
 	i.name			= sharename;
 	i.type			= STYPE_DISKTREE;
@@ -95,7 +95,7 @@ static bool test_NetShareDel(struct torture_context *tctx,
 		return false;
 	}
 
-	libnetctx->cred = cmdline_credentials;
+	libnetctx->cred = popt_get_cmdline_credentials();
 
 	r.in.share_name		= sharename;
 	r.in.server_name	= host;

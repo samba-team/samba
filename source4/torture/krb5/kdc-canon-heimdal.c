@@ -1423,7 +1423,8 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 	int expected_principal_flags;
 	char *got_principal_string;
 	char *assertion_message;
-	const char *password = cli_credentials_get_password(cmdline_credentials);
+	const char *password = cli_credentials_get_password(
+			popt_get_cmdline_credentials());
 	krb5_context k5_context;
 	struct torture_krb5_context *test_context;
 	bool ok;
@@ -1913,7 +1914,8 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 		torture_assert_int_equal(tctx, k5ret, 0, assertion_message);
 		client_to_server = data_blob_const(enc_ticket.data, enc_ticket.length);
 		torture_assert(tctx,
-			       test_accept_ticket(tctx, cmdline_credentials,
+			       test_accept_ticket(tctx,
+					popt_get_cmdline_credentials(),
 						  expected_unparse_principal_string,
 						  client_to_server),
 			       "test_accept_ticket failed - failed to accept the ticket we just created");
@@ -2227,10 +2229,15 @@ struct torture_suite *torture_krb5_canon(TALLOC_CTX *mem_ctx)
 
 		test_data->test_name = name;
 		test_data->real_realm
-			= strupper_talloc(test_data, cli_credentials_get_realm(cmdline_credentials));
-		test_data->real_domain = cli_credentials_get_domain(cmdline_credentials);
-		test_data->username = cli_credentials_get_username(cmdline_credentials);
-		test_data->real_username = cli_credentials_get_username(cmdline_credentials);
+			= strupper_talloc(test_data,
+				cli_credentials_get_realm(
+					popt_get_cmdline_credentials()));
+		test_data->real_domain = cli_credentials_get_domain(
+						popt_get_cmdline_credentials());
+		test_data->username = cli_credentials_get_username(
+						popt_get_cmdline_credentials());
+		test_data->real_username = cli_credentials_get_username(
+						popt_get_cmdline_credentials());
 		test_data->canonicalize = (i & TEST_CANONICALIZE) != 0;
 		test_data->enterprise = (i & TEST_ENTERPRISE) != 0;
 		test_data->upper_realm = (i & TEST_UPPER_REALM) != 0;

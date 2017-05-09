@@ -140,7 +140,7 @@ bool torture_listshares(struct torture_context *torture)
 		goto done;
 	}
 
-	libnetctx->cred = cmdline_credentials;
+	libnetctx->cred = popt_get_cmdline_credentials();
 
 	torture_comment(torture, "Testing libnet_ListShare\n");
 
@@ -221,7 +221,7 @@ bool torture_delshare(struct torture_context *torture)
 	torture_assert_ntstatus_ok(torture, status, "Failed to get binding");
 
 	libnetctx = libnet_context_init(torture->ev, torture->lp_ctx);
-	libnetctx->cred = cmdline_credentials;
+	libnetctx->cred = popt_get_cmdline_credentials();
 
 	status = torture_rpc_connection(torture,
 					&p,

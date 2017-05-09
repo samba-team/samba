@@ -114,7 +114,7 @@ bool torture_grouplist(struct torture_context *torture)
 	int i;
 
 	ctx = libnet_context_init(torture->ev, torture->lp_ctx);
-	ctx->cred = cmdline_credentials;
+	ctx->cred = popt_get_cmdline_credentials();
 
 	domain_name.string = lpcfg_workgroup(torture->lp_ctx);
 	mem_ctx = talloc_init("torture group list");
@@ -177,7 +177,7 @@ bool torture_creategroup(struct torture_context *torture)
 	mem_ctx = talloc_init("test_creategroup");
 
 	ctx = libnet_context_init(torture->ev, torture->lp_ctx);
-	ctx->cred = cmdline_credentials;
+	ctx->cred = popt_get_cmdline_credentials();
 
 	req.in.group_name = TEST_GROUPNAME;
 	req.in.domain_name = lpcfg_workgroup(torture->lp_ctx);

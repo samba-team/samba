@@ -1872,7 +1872,7 @@ static bool torture_smb2_con_share(struct torture_context *tctx,
         struct smbcli_options options;
         NTSTATUS status;
         const char *host = torture_setting_string(tctx, "host", NULL);
-        struct cli_credentials *credentials = cmdline_credentials;
+        struct cli_credentials *credentials = popt_get_cmdline_credentials();
 
         lpcfg_smbcli_options(tctx->lp_ctx, &options);
 

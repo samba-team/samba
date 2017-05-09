@@ -243,7 +243,7 @@ bool test_session_reauth1(struct torture_context *tctx, struct smb2_tree *tree)
 					"oplock_level incorrect");
 
 	status = smb2_session_setup_spnego(tree->session,
-					   cmdline_credentials,
+					   popt_get_cmdline_credentials(),
 					   0 /* previous_session_id */);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"smb2_session_setup_spnego failed");
@@ -258,7 +258,7 @@ bool test_session_reauth1(struct torture_context *tctx, struct smb2_tree *tree)
 					"smb2_getinfo_file failed");
 
 	status = smb2_session_setup_spnego(tree->session,
-					   cmdline_credentials,
+					   popt_get_cmdline_credentials(),
 					   0 /* previous_session_id */);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"smb2_session_setup_spnego failed");
@@ -341,7 +341,7 @@ bool test_session_reauth2(struct torture_context *tctx, struct smb2_tree *tree)
 	/* re-authenticate as original user again */
 
 	status = smb2_session_setup_spnego(tree->session,
-					   cmdline_credentials,
+					   popt_get_cmdline_credentials(),
 					   0 /* previous_session_id */);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"smb2_session_setup_spnego failed");
@@ -447,7 +447,7 @@ bool test_session_reauth3(struct torture_context *tctx, struct smb2_tree *tree)
 	/* re-authenticate as original user again */
 
 	status = smb2_session_setup_spnego(tree->session,
-					   cmdline_credentials,
+					   popt_get_cmdline_credentials(),
 					   0 /* previous_session_id */);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"smb2_session_setup_spnego failed");
@@ -574,7 +574,7 @@ bool test_session_reauth4(struct torture_context *tctx, struct smb2_tree *tree)
 	/* re-authenticate as original user again */
 
 	status = smb2_session_setup_spnego(tree->session,
-					   cmdline_credentials,
+					   popt_get_cmdline_credentials(),
 					   0 /* previous_session_id */);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"smb2_session_setup_spnego failed");
@@ -714,7 +714,7 @@ bool test_session_reauth5(struct torture_context *tctx, struct smb2_tree *tree)
 	/* re-authenticate as original user again */
 
 	status = smb2_session_setup_spnego(tree->session,
-					   cmdline_credentials,
+					   popt_get_cmdline_credentials(),
 					   0 /* previous_session_id */);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"smb2_session_setup_spnego failed");
@@ -847,7 +847,7 @@ bool test_session_reauth5(struct torture_context *tctx, struct smb2_tree *tree)
 	/* re-authenticate as original user - again */
 
 	status = smb2_session_setup_spnego(tree->session,
-					   cmdline_credentials,
+					   popt_get_cmdline_credentials(),
 					   0 /* previous_session_id */);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"smb2_session_setup_spnego failed");
@@ -955,7 +955,8 @@ bool test_session_reauth6(struct torture_context *tctx, struct smb2_tree *tree)
 	NTSTATUS expected;
 	enum credentials_use_kerberos krb_state;
 
-	krb_state = cli_credentials_get_kerberos_state(cmdline_credentials);
+	krb_state = cli_credentials_get_kerberos_state(
+			popt_get_cmdline_credentials());
 	if (krb_state == CRED_MUST_USE_KERBEROS) {
 		torture_skip(tctx,
 			     "Can't test failing session setup with kerberos.");
@@ -989,7 +990,7 @@ bool test_session_reauth6(struct torture_context *tctx, struct smb2_tree *tree)
 	 */
 
 	broken_creds = cli_credentials_shallow_copy(mem_ctx,
-						    cmdline_credentials);
+					    popt_get_cmdline_credentials());
 	torture_assert(tctx, (broken_creds != NULL), "talloc error");
 
 	corrupted_password = talloc_asprintf(mem_ctx, "%s%s",
@@ -1051,7 +1052,7 @@ static bool test_session_expire1(struct torture_context *tctx)
 	struct smbcli_options options;
 	const char *host = torture_setting_string(tctx, "host", NULL);
 	const char *share = torture_setting_string(tctx, "share", NULL);
-	struct cli_credentials *credentials = cmdline_credentials;
+	struct cli_credentials *credentials = popt_get_cmdline_credentials();
 	struct smb2_tree *tree = NULL;
 	enum credentials_use_kerberos use_kerberos;
 	char fname[256];
@@ -1170,7 +1171,7 @@ bool test_session_bind1(struct torture_context *tctx, struct smb2_tree *tree1)
 {
 	const char *host = torture_setting_string(tctx, "host", NULL);
 	const char *share = torture_setting_string(tctx, "share", NULL);
-	struct cli_credentials *credentials = cmdline_credentials;
+	struct cli_credentials *credentials = popt_get_cmdline_credentials();
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	char fname[256];
@@ -1240,7 +1241,7 @@ bool test_session_bind1(struct torture_context *tctx, struct smb2_tree *tree1)
 	torture_assert(tctx, session1_2 != NULL, "smb2_session_channel failed");
 
 	status = smb2_session_setup_spnego(session1_2,
-					   cmdline_credentials,
+					   popt_get_cmdline_credentials(),
 					   0 /* previous_session_id */);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"smb2_session_setup_spnego failed");
@@ -1279,7 +1280,7 @@ bool test_session_bind1(struct torture_context *tctx, struct smb2_tree *tree1)
 	torture_assert(tctx, session2_1 != NULL, "smb2_session_channel failed");
 
 	status = smb2_session_setup_spnego(session2_1,
-					   cmdline_credentials,
+					   popt_get_cmdline_credentials(),
 					   0 /* previous_session_id */);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"smb2_session_setup_spnego failed");

@@ -110,7 +110,8 @@ void torture_shell(struct torture_context *tctx)
 	 * stops the credentials system prompting when we use the "auth"
 	 * command to display the current auth parameters.
 	 */
-	cli_credentials_set_password(cmdline_credentials, "", CRED_GUESS_ENV);
+	cli_credentials_set_password(popt_get_cmdline_credentials(),
+			"", CRED_GUESS_ENV);
 
 	while (1) {
 		cline = smb_readline("torture> ", NULL, NULL);
@@ -226,11 +227,14 @@ static void shell_auth(const struct shell_command * command,
 	    const char * password;
 	    const char * principal;
 
-	    username = cli_credentials_get_username(cmdline_credentials);
-	    principal = cli_credentials_get_principal(cmdline_credentials, tctx);
-	    domain = cli_credentials_get_domain(cmdline_credentials);
-	    realm = cli_credentials_get_realm(cmdline_credentials);
-	    password = cli_credentials_get_password(cmdline_credentials);
+	    username = cli_credentials_get_username(
+			popt_get_cmdline_credentials());
+	    principal = cli_credentials_get_principal(
+				popt_get_cmdline_credentials(), tctx);
+	    domain = cli_credentials_get_domain(popt_get_cmdline_credentials());
+	    realm = cli_credentials_get_realm(popt_get_cmdline_credentials());
+	    password = cli_credentials_get_password(
+				popt_get_cmdline_credentials());
 
 	    printf("Username: %s\n", username ? username : "");
 	    printf("User Principal: %s\n", principal ? principal : "");
@@ -242,19 +246,24 @@ static void shell_auth(const struct shell_command * command,
 
 	    if (!strcmp(argv[0], "username")) {
 		    result = cli_credentials_set_username(
-			cmdline_credentials, argv[1], CRED_SPECIFIED);
+			popt_get_cmdline_credentials(),
+			argv[1], CRED_SPECIFIED);
 	    } else if (!strcmp(argv[0], "principal")) {
 		    result = cli_credentials_set_principal(
-			cmdline_credentials, argv[1], CRED_SPECIFIED);
+			popt_get_cmdline_credentials(),
+			argv[1], CRED_SPECIFIED);
 	    } else if (!strcmp(argv[0], "domain")) {
 		    result = cli_credentials_set_domain(
-			cmdline_credentials, argv[1], CRED_SPECIFIED);
+			popt_get_cmdline_credentials(),
+			argv[1], CRED_SPECIFIED);
 	    } else if (!strcmp(argv[0], "realm")) {
 		    result = cli_credentials_set_realm(
-			cmdline_credentials, argv[1], CRED_SPECIFIED);
+			popt_get_cmdline_credentials(),
+			argv[1], CRED_SPECIFIED);
 	    } else if (!strcmp(argv[0], "password")) {
 		    result = cli_credentials_set_password(
-			cmdline_credentials, argv[1], CRED_SPECIFIED);
+			popt_get_cmdline_credentials(),
+			argv[1], CRED_SPECIFIED);
 	    } else {
 		    shell_usage(command);
 		    return;

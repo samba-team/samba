@@ -586,9 +586,12 @@ int main(int argc, const char **argv)
 
 	if (remote != NULL) {
 		ctx->registry = reg_common_open_remote(remote, ev_ctx,
-					 cmdline_lp_ctx, cmdline_credentials);
+					 cmdline_lp_ctx,
+					popt_get_cmdline_credentials());
 	} else if (file != NULL) {
-		ctx->current = reg_common_open_file(file, ev_ctx, cmdline_lp_ctx, cmdline_credentials);
+		ctx->current = reg_common_open_file(file, ev_ctx,
+					cmdline_lp_ctx,
+					popt_get_cmdline_credentials());
 		if (ctx->current == NULL)
 			return 1;
 		ctx->registry = ctx->current->context;
@@ -596,7 +599,9 @@ int main(int argc, const char **argv)
 		ctx->predef = NULL;
 		ctx->root = ctx->current;
 	} else {
-		ctx->registry = reg_common_open_local(cmdline_credentials, ev_ctx, cmdline_lp_ctx);
+		ctx->registry = reg_common_open_local(
+					popt_get_cmdline_credentials(),
+					ev_ctx, cmdline_lp_ctx);
 	}
 
 	if (ctx->registry == NULL)

@@ -134,7 +134,7 @@ static bool _get_account_name_for_user_rdn(struct torture_context *tctx,
 
 	ldb = ldb_wrap_connect(tmp_ctx,
 	                       tctx->ev, tctx->lp_ctx,
-	                       url, NULL, cmdline_credentials, 0);
+	                       url, NULL, popt_get_cmdline_credentials(), 0);
 	torture_assert_goto(tctx, ldb != NULL, test_res, done, "Failed to make LDB connection");
 
 	ldb_ret = ldb_search(ldb, tmp_ctx, &ldb_res,
@@ -493,7 +493,7 @@ bool test_libnet_context_init(struct torture_context *tctx,
 	torture_assert(tctx, net_ctx != NULL, "Failed to create libnet_context");
 
 	/* Use command line credentials for testing */
-	net_ctx->cred = cmdline_credentials;
+	net_ctx->cred = popt_get_cmdline_credentials();
 
 	if (rpc_connect) {
 		/* connect SAMR pipe */

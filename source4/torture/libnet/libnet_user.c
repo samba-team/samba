@@ -466,7 +466,7 @@ bool torture_userlist(struct torture_context *torture)
 	int i;
 
 	ctx = libnet_context_init(torture->ev, torture->lp_ctx);
-	ctx->cred = cmdline_credentials;
+	ctx->cred = popt_get_cmdline_credentials();
 
 	domain_name.string = lpcfg_workgroup(torture->lp_ctx);
 	mem_ctx = talloc_init("torture user list");

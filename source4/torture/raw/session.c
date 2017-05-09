@@ -63,7 +63,7 @@ static bool test_session_reauth1(struct torture_context *tctx,
 	ZERO_STRUCT(io);
 	io.in.sesskey         = cli->transport->negotiate.sesskey;
 	io.in.capabilities    = cli->transport->negotiate.capabilities;
-	io.in.credentials     = cmdline_credentials;
+	io.in.credentials     = popt_get_cmdline_credentials();
 	io.in.workgroup       = lpcfg_workgroup(tctx->lp_ctx);
 	io.in.gensec_settings = lpcfg_gensec_settings(tctx, tctx->lp_ctx);
 	status = smb_composite_sesssetup(cli->session, &io);
@@ -205,7 +205,7 @@ static bool test_session_reauth2(struct torture_context *tctx,
 	ZERO_STRUCT(io_sesssetup);
 	io_sesssetup.in.sesskey      = cli->transport->negotiate.sesskey;
 	io_sesssetup.in.capabilities = cli->transport->negotiate.capabilities;
-	io_sesssetup.in.credentials  = cmdline_credentials;
+	io_sesssetup.in.credentials  = popt_get_cmdline_credentials();
 	io_sesssetup.in.workgroup    = lpcfg_workgroup(tctx->lp_ctx);
 	io_sesssetup.in.gensec_settings = lpcfg_gensec_settings(
 		tctx, tctx->lp_ctx);
@@ -234,7 +234,7 @@ static bool test_session_expire1(struct torture_context *tctx)
 	struct smbcli_session_options session_options;
 	const char *host = torture_setting_string(tctx, "host", NULL);
 	const char *share = torture_setting_string(tctx, "share", NULL);
-	struct cli_credentials *credentials = cmdline_credentials;
+	struct cli_credentials *credentials = popt_get_cmdline_credentials();
 	struct smbcli_state *cli = NULL;
 	enum credentials_use_kerberos use_kerberos;
 	char fname[256];

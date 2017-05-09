@@ -39,7 +39,7 @@ bool torture_lookup(struct torture_context *torture)
 	mem_ctx = talloc_init("test_lookup");
 
 	ctx = libnet_context_init(torture->ev, torture->lp_ctx);
-	ctx->cred = cmdline_credentials;
+	ctx->cred = popt_get_cmdline_credentials();
 
 	lookup.in.hostname = torture_setting_string(torture, "host", NULL);
 	if (lookup.in.hostname == NULL) {
@@ -83,7 +83,7 @@ bool torture_lookup_host(struct torture_context *torture)
 	mem_ctx = talloc_init("test_lookup_host");
 
 	ctx = libnet_context_init(torture->ev, torture->lp_ctx);
-	ctx->cred = cmdline_credentials;
+	ctx->cred = popt_get_cmdline_credentials();
 
 	lookup.in.hostname = torture_setting_string(torture, "host", NULL);
 	if (lookup.in.hostname == NULL) {
@@ -126,7 +126,7 @@ bool torture_lookup_pdc(struct torture_context *torture)
 	mem_ctx = talloc_init("test_lookup_pdc");
 
 	ctx = libnet_context_init(torture->ev, torture->lp_ctx);
-	ctx->cred = cmdline_credentials;
+	ctx->cred = popt_get_cmdline_credentials();
 
 	talloc_steal(ctx, mem_ctx);
 
@@ -171,7 +171,7 @@ bool torture_lookup_sam_name(struct torture_context *torture)
 	bool ret = true;
 
 	ctx = libnet_context_init(torture->ev, torture->lp_ctx);
-	ctx->cred = cmdline_credentials;
+	ctx->cred = popt_get_cmdline_credentials();
 
 	mem_ctx = talloc_init("torture lookup sam name");
 	if (mem_ctx == NULL) return false;

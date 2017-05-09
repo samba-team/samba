@@ -131,11 +131,14 @@ int main(int argc, const char **argv)
 	ev_ctx = s4_event_context_init(NULL);
 
 	if (remote != NULL) {
-		h = reg_common_open_remote(remote, ev_ctx, cmdline_lp_ctx, cmdline_credentials);
+		h = reg_common_open_remote(remote, ev_ctx, cmdline_lp_ctx,
+				popt_get_cmdline_credentials());
 	} else if (file != NULL) {
-		start_key = reg_common_open_file(file, ev_ctx, cmdline_lp_ctx, cmdline_credentials);
+		start_key = reg_common_open_file(file, ev_ctx, cmdline_lp_ctx,
+				popt_get_cmdline_credentials());
 	} else {
-		h = reg_common_open_local(cmdline_credentials, ev_ctx, cmdline_lp_ctx);
+		h = reg_common_open_local(popt_get_cmdline_credentials(),
+				ev_ctx, cmdline_lp_ctx);
 	}
 
 	if (h == NULL && start_key == NULL)

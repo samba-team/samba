@@ -162,7 +162,7 @@ static bool test_secrets(struct torture_context *torture, const void *_data)
 
 	status = dcerpc_pipe_connect_b(torture, &p, binding,
 				       &ndr_table_lsarpc,
-				       cmdline_credentials,
+				       popt_get_cmdline_credentials(),
 				       torture->ev,
 				       torture->lp_ctx);
 

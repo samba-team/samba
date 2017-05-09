@@ -49,9 +49,9 @@ bool torture_libnetapi_init_context(struct torture_context *tctx,
 	}
 
 	libnetapi_set_username(ctx,
-		cli_credentials_get_username(cmdline_credentials));
+		cli_credentials_get_username(popt_get_cmdline_credentials()));
 	libnetapi_set_password(ctx,
-		cli_credentials_get_password(cmdline_credentials));
+		cli_credentials_get_password(popt_get_cmdline_credentials()));
 
 	*ctx_p = ctx;
 

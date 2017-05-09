@@ -8717,7 +8717,7 @@ static bool test_print_test_smbd(struct torture_context *tctx,
 
 	struct smb2_tree *tree;
 	struct smb2_handle job_h;
-	struct cli_credentials *credentials = cmdline_credentials;
+	struct cli_credentials *credentials = popt_get_cmdline_credentials();
 	struct smbcli_options options;
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	/*
@@ -10546,7 +10546,7 @@ static bool connect_printer_driver_share(struct torture_context *tctx,
 					lpcfg_smb_ports(tctx->lp_ctx),
 					share_name, NULL,
 					lpcfg_socket_options(tctx->lp_ctx),
-					cmdline_credentials,
+					popt_get_cmdline_credentials(),
 					lpcfg_resolve_context(tctx->lp_ctx),
 					tctx->ev,
 					&smb_options,

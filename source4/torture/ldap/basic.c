@@ -724,7 +724,7 @@ static bool test_referrals(struct torture_context *tctx, TALLOC_CTX *mem_ctx,
 	}
 
 	ldb = ldb_wrap_connect(mem_ctx, tctx->ev, tctx->lp_ctx, url,
-			       NULL, cmdline_credentials, 0);
+			       NULL, popt_get_cmdline_credentials(), 0);
 
 	/* "partitions[i]" are the partitions for which we search the parents */
 	for (i = 1; partitions[i] != NULL; i++) {
@@ -968,7 +968,7 @@ bool torture_ldap_basic(struct torture_context *torture)
 		ret = false;
 	}
 
-	if (!test_bind_sasl(torture, conn, cmdline_credentials)) {
+	if (!test_bind_sasl(torture, conn, popt_get_cmdline_credentials())) {
 		ret = false;
 	}
 

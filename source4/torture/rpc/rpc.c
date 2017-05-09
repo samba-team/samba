@@ -96,7 +96,8 @@ _PUBLIC_ NTSTATUS torture_rpc_connection_with_binding(struct torture_context *tc
 
 	status = dcerpc_pipe_connect_b(tctx,
 				     p, binding, table,
-				     cmdline_credentials, tctx->ev, tctx->lp_ctx);
+				     popt_get_cmdline_credentials(),
+					tctx->ev, tctx->lp_ctx);
 
 	if (NT_STATUS_IS_ERR(status)) {
 		torture_warning(tctx, "Failed to connect to remote server: %s %s\n",
@@ -142,7 +143,7 @@ NTSTATUS torture_rpc_connection_transport(struct torture_context *tctx,
 	}
 
 	status = dcerpc_pipe_connect_b(tctx, p, binding, table,
-				       cmdline_credentials,
+				       popt_get_cmdline_credentials(),
 				       tctx->ev, tctx->lp_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		*p = NULL;
@@ -166,7 +167,7 @@ static bool torture_rpc_setup_machine_workstation(struct torture_context *tctx,
 		return false;
 
 	*data = tcase_data = talloc_zero(tctx, struct torture_rpc_tcase_data);
-	tcase_data->credentials = cmdline_credentials;
+	tcase_data->credentials = popt_get_cmdline_credentials();
 	tcase_data->join_ctx = torture_join_domain(tctx, tcase->machine_name,
 						   ACB_WSTRUST,
 						   &tcase_data->credentials);
@@ -198,7 +199,7 @@ static bool torture_rpc_setup_machine_bdc(struct torture_context *tctx,
 		return false;
 
 	*data = tcase_data = talloc_zero(tctx, struct torture_rpc_tcase_data);
-	tcase_data->credentials = cmdline_credentials;
+	tcase_data->credentials = popt_get_cmdline_credentials();
 	tcase_data->join_ctx = torture_join_domain(tctx, tcase->machine_name,
 						   ACB_SVRTRUST, 
 						   &tcase_data->credentials);
@@ -300,7 +301,7 @@ static bool torture_rpc_setup (struct torture_context *tctx, void **data)
 	struct torture_rpc_tcase_data *tcase_data;
 
 	*data = tcase_data = talloc_zero(tctx, struct torture_rpc_tcase_data);
-	tcase_data->credentials = cmdline_credentials;
+	tcase_data->credentials = popt_get_cmdline_credentials();
 	
 	status = torture_rpc_connection(tctx, 
 				&(tcase_data->pipe),

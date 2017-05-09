@@ -214,7 +214,8 @@ static bool torture_winbind_pac(struct torture_context *tctx,
 	status = gensec_set_target_hostname(gensec_client_context, cli_credentials_get_workstation(machine_credentials));
 	torture_assert_ntstatus_ok(tctx, status, "gensec_set_target_hostname (client) failed");
 
-	status = gensec_set_credentials(gensec_client_context, cmdline_credentials);
+	status = gensec_set_credentials(gensec_client_context,
+			popt_get_cmdline_credentials());
 	torture_assert_ntstatus_ok(tctx, status, "gensec_set_credentials (client) failed");
 
 	if (sasl_mech) {

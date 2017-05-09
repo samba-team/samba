@@ -196,7 +196,7 @@ static bool test_PACVerify(struct torture_context *tctx,
 	 * we will get a new clean memory cache.
 	 */
 	client_creds = cli_credentials_shallow_copy(tmp_ctx,
-						    cmdline_credentials);
+					    popt_get_cmdline_credentials());
 	torture_assert(tctx, client_creds, "Failed to copy of credentials");
 	if (!pkinit_in_use) {
 		/* Invalidate the gss creds container to allocate a new MEMORY ccache */
@@ -591,7 +591,8 @@ static bool test_PACVerify_workstation_des(struct torture_context *tctx,
 	struct smb_krb5_context *smb_krb5_context;
 	krb5_error_code ret;
 
-	ret = cli_credentials_get_krb5_context(cmdline_credentials, tctx->lp_ctx, &smb_krb5_context);
+	ret = cli_credentials_get_krb5_context(popt_get_cmdline_credentials(),
+			tctx->lp_ctx, &smb_krb5_context);
 	torture_assert_int_equal(tctx, ret, 0, "cli_credentials_get_krb5_context() failed");
 
 	if (smb_krb5_get_allowed_weak_crypto(smb_krb5_context->krb5_context) == FALSE) {
@@ -671,7 +672,7 @@ static bool test_S2U4Self(struct torture_context *tctx,
 	 * we will get a new clean memory cache.
 	 */
 	client_creds = cli_credentials_shallow_copy(tmp_ctx,
-						    cmdline_credentials);
+					    popt_get_cmdline_credentials());
 	torture_assert(tctx, client_creds, "Failed to copy of credentials");
 
 	server_creds = cli_credentials_shallow_copy(tmp_ctx,

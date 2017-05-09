@@ -195,7 +195,7 @@ static void reopen_connection(struct tevent_context *ev, struct tevent_timer *te
 	io->in.called_name  = state->called_name;
 	io->in.service      = share;
 	io->in.service_type = state->service_type;
-	io->in.credentials  = cmdline_credentials;
+	io->in.credentials  = popt_get_cmdline_credentials();
 	io->in.fallback_to_anonymous = false;
 	io->in.workgroup    = lpcfg_workgroup(state->tctx->lp_ctx);
 	lpcfg_smbcli_options(state->tctx->lp_ctx, &io->in.options);

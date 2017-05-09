@@ -174,7 +174,11 @@ static void send_message(struct smbcli_state *cli, const char *desthost)
 	int total_len = 0;
 	int grp_id;
 
-	if (!smbcli_message_start(cli->tree, desthost, cli_credentials_get_username(cmdline_credentials), &grp_id)) {
+	if (!smbcli_message_start(cli->tree,
+			desthost,
+			cli_credentials_get_username(
+				popt_get_cmdline_credentials()),
+			&grp_id)) {
 		d_printf("message start: %s\n", smbcli_errstr(cli->tree));
 		return;
 	}
@@ -2702,7 +2706,7 @@ static bool browse_host(struct loadparm_context *lp_ctx,
 
 	status = dcerpc_pipe_connect(mem_ctx, &p, binding, 
 					 &ndr_table_srvsvc,
-				     cmdline_credentials, ev_ctx,
+				     popt_get_cmdline_credentials(), ev_ctx,
 				     lp_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Failed to connect to %s - %s\n", 
@@ -3395,7 +3399,8 @@ static int do_message_op(const char *netbios_name, const char *desthost,
 	}
 
 	if (poptPeekArg(pc)) { 
-		cli_credentials_set_password(cmdline_credentials, poptGetArg(pc), CRED_SPECIFIED);
+		cli_credentials_set_password(popt_get_cmdline_credentials(),
+			poptGetArg(pc), CRED_SPECIFIED);
 	}
 
 	/*init_names(); */
@@ -3439,7 +3444,8 @@ static int do_message_op(const char *netbios_name, const char *desthost,
 	if (!do_connect(ctx, ev_ctx, lpcfg_resolve_context(cmdline_lp_ctx),
 			desthost, lpcfg_smb_ports(cmdline_lp_ctx), service,
 			lpcfg_socket_options(cmdline_lp_ctx),
-			cmdline_credentials, &smb_options, &smb_session_options,
+			popt_get_cmdline_credentials(),
+			&smb_options, &smb_session_options,
 			lpcfg_gensec_settings(ctx, cmdline_lp_ctx)))
 		return 1;
 

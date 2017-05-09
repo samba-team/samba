@@ -191,7 +191,7 @@ int main(int argc, char **argv)
 
 	parse_args(argc, argv, &args);
 
-	wmi_init(&ctx, cmdline_credentials);
+	wmi_init(&ctx, popt_get_cmdline_credentials());
 	result = WBEM_ConnectServer(ctx, args.hostname, "root\\cimv2", 0, 0, 0, 0, 0, 0, &pWS);
 	WERR_CHECK("WBEM_ConnectServer.");
 

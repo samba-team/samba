@@ -281,7 +281,7 @@ static bool open_smb2_connection_no_level2_oplocks(struct torture_context *tctx,
 	NTSTATUS status;
 	const char *host = torture_setting_string(tctx, "host", NULL);
 	const char *share = torture_setting_string(tctx, "share", NULL);
-	struct cli_credentials *credentials = cmdline_credentials;
+	struct cli_credentials *credentials = popt_get_cmdline_credentials();
 	struct smbcli_options options;
 
 	lpcfg_smbcli_options(tctx->lp_ctx, &options);

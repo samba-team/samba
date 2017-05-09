@@ -90,14 +90,16 @@ static struct smbcli_state *connect_one(struct resolve_context *resolve_ctx,
 	*share = 0;
 	share++;
 
-	cli_credentials_set_workstation(cmdline_credentials, "masktest", CRED_SPECIFIED);
+	cli_credentials_set_workstation(popt_get_cmdline_credentials(),
+			"masktest", CRED_SPECIFIED);
 
 	status = smbcli_full_connection(NULL, &c,
 					server, 
 					ports,
 					share, NULL,
 					socket_options,
-					cmdline_credentials, resolve_ctx, ev,
+					popt_get_cmdline_credentials(),
+					resolve_ctx, ev,
 					options, session_options,
 					gensec_settings);
 

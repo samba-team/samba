@@ -73,9 +73,10 @@ bool test_netlogon_ex_ops(struct dcerpc_pipe *p, struct torture_context *tctx,
 		flags |= CLI_CRED_NTLMv2_AUTH;
 	}
 
-	cli_credentials_get_ntlm_username_domain(cmdline_credentials, tctx,
-						 &ninfo.identity_info.account_name.string,
-						 &ninfo.identity_info.domain_name.string);
+	cli_credentials_get_ntlm_username_domain(popt_get_cmdline_credentials(),
+				tctx,
+				&ninfo.identity_info.account_name.string,
+				&ninfo.identity_info.domain_name.string);
 
 	generate_random_buffer(ninfo.challenge,
 			       sizeof(ninfo.challenge));
@@ -85,13 +86,15 @@ bool test_netlogon_ex_ops(struct dcerpc_pipe *p, struct torture_context *tctx,
 	names_blob = NTLMv2_generate_names_blob(tctx, cli_credentials_get_workstation(credentials),
 						cli_credentials_get_domain(credentials));
 
-	status = cli_credentials_get_ntlm_response(cmdline_credentials, tctx,
-						   &flags,
-						   chal,
-						   NULL, /* server_timestamp */
-						   names_blob,
-						   &lm_resp, &nt_resp,
-						   NULL, NULL);
+	status = cli_credentials_get_ntlm_response(
+			popt_get_cmdline_credentials(),
+			tctx,
+			&flags,
+			chal,
+			NULL, /* server_timestamp */
+			names_blob,
+			&lm_resp, &nt_resp,
+			NULL, NULL);
 	torture_assert_ntstatus_ok(tctx, status,
 				   "cli_credentials_get_ntlm_response failed");
 
@@ -942,12 +945,14 @@ bool torture_rpc_schannel_bench1(struct torture_context *torture)
 	s->nprocs = torture_setting_int(torture, "nprocs", 4);
 	s->conns = talloc_zero_array(s, struct torture_schannel_bench_conn, s->nprocs);
 
-	s->user1_creds = cli_credentials_shallow_copy(s, cmdline_credentials);
+	s->user1_creds = cli_credentials_shallow_copy(s,
+				popt_get_cmdline_credentials());
 	tmp = torture_setting_string(s->tctx, "extra_user1", NULL);
 	if (tmp) {
 		cli_credentials_parse_string(s->user1_creds, tmp, CRED_SPECIFIED);
 	}
-	s->user2_creds = cli_credentials_shallow_copy(s, cmdline_credentials);
+	s->user2_creds = cli_credentials_shallow_copy(s,
+				popt_get_cmdline_credentials());
 	tmp = torture_setting_string(s->tctx, "extra_user2", NULL);
 	if (tmp) {
 		cli_credentials_parse_string(s->user1_creds, tmp, CRED_SPECIFIED);

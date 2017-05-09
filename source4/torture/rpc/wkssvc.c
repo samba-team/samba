@@ -218,7 +218,7 @@ static bool test_NetrWkstaUserGetInfo(struct torture_context *tctx,
 	struct wkssvc_NetrWkstaUserGetInfo r;
 	union wkssvc_NetrWkstaUserInfo info;
 	const char *dom = lpcfg_workgroup(tctx->lp_ctx);
-	struct cli_credentials *creds = cmdline_credentials;
+	struct cli_credentials *creds = popt_get_cmdline_credentials();
 	const char *user = cli_credentials_get_username(creds);
 	int i;
 	struct dcerpc_binding_handle *b = p->binding_handle;
@@ -1124,7 +1124,7 @@ static bool test_NetrUnjoinDomain(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct wkssvc_NetrUnjoinDomain r;
-	struct cli_credentials *creds = cmdline_credentials;
+	struct cli_credentials *creds = popt_get_cmdline_credentials();
 	const char *user = cli_credentials_get_username(creds);
 	const char *admin_account = NULL;
 	struct dcerpc_binding_handle *b = p->binding_handle;
@@ -1153,7 +1153,7 @@ static bool test_NetrJoinDomain(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct wkssvc_NetrJoinDomain r;
-	struct cli_credentials *creds = cmdline_credentials;
+	struct cli_credentials *creds = popt_get_cmdline_credentials();
 	const char *user = cli_credentials_get_username(creds);
 	const char *admin_account = NULL;
 	struct dcerpc_binding_handle *b = p->binding_handle;

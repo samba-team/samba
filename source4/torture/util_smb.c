@@ -456,7 +456,7 @@ _PUBLIC_ bool torture_open_connection_share(TALLOC_CTX *mem_ctx,
 					lpcfg_smb_ports(tctx->lp_ctx),
 					sharename, NULL,
 					lpcfg_socket_options(tctx->lp_ctx),
-					cmdline_credentials, 
+					popt_get_cmdline_credentials(),
 					lpcfg_resolve_context(tctx->lp_ctx),
 					ev, &options, &session_options,
 					lpcfg_gensec_settings(tctx, tctx->lp_ctx));

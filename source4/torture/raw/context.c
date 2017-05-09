@@ -86,7 +86,7 @@ static bool test_session(struct torture_context *tctx,
 	setup.in.capabilities = cli->transport->negotiate.capabilities; /* ignored in secondary session setup, except by our libs, which care about the extended security bit */
 	setup.in.workgroup = lpcfg_workgroup(tctx->lp_ctx);
 
-	setup.in.credentials = cmdline_credentials;
+	setup.in.credentials = popt_get_cmdline_credentials();
 	setup.in.gensec_settings = gensec_settings;
 
 	status = smb_composite_sesssetup(session, &setup);
@@ -114,7 +114,7 @@ static bool test_session(struct torture_context *tctx,
 	setup.in.capabilities = cli->transport->negotiate.capabilities; /* ignored in secondary session setup, except by our libs, which care about the extended security bit */
 	setup.in.workgroup = lpcfg_workgroup(tctx->lp_ctx);
 
-	setup.in.credentials = cmdline_credentials;
+	setup.in.credentials = popt_get_cmdline_credentials();
 
 	torture_comment(tctx, "vuid1=%d vuid2=%d vuid3=%d\n", cli->session->vuid, session->vuid, vuid3);
 
@@ -142,7 +142,7 @@ static bool test_session(struct torture_context *tctx,
 		setup.in.capabilities &= ~CAP_EXTENDED_SECURITY; /* force a non extended security login (should fail) */
 		setup.in.workgroup = lpcfg_workgroup(tctx->lp_ctx);
 	
-		setup.in.credentials = cmdline_credentials;
+		setup.in.credentials = popt_get_cmdline_credentials();
 
 		status = smb_composite_sesssetup(session3, &setup);
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_LOGON_FAILURE)) {
@@ -239,7 +239,7 @@ static bool test_session(struct torture_context *tctx,
 		setups[i].in.capabilities = cli->transport->negotiate.capabilities; /* ignored in secondary session setup, except by our libs, which care about the extended security bit */
 		setups[i].in.workgroup = lpcfg_workgroup(tctx->lp_ctx);
 		
-		setups[i].in.credentials = cmdline_credentials;
+		setups[i].in.credentials = popt_get_cmdline_credentials();
 		setups[i].in.gensec_settings = gensec_settings;
 
 		sessions[i] = smbcli_session_init(cli->transport, tctx, false, options);
@@ -402,7 +402,7 @@ static bool test_tree_ulogoff(struct torture_context *tctx, struct smbcli_state 
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
 	setup.in.capabilities = cli->transport->negotiate.capabilities;
 	setup.in.workgroup = lpcfg_workgroup(tctx->lp_ctx);
-	setup.in.credentials = cmdline_credentials;
+	setup.in.credentials = popt_get_cmdline_credentials();
 	setup.in.gensec_settings = lpcfg_gensec_settings(tctx, tctx->lp_ctx);
 	status = smb_composite_sesssetup(session1, &setup);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -459,7 +459,7 @@ static bool test_tree_ulogoff(struct torture_context *tctx, struct smbcli_state 
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
 	setup.in.capabilities = cli->transport->negotiate.capabilities;
 	setup.in.workgroup = lpcfg_workgroup(tctx->lp_ctx);
-	setup.in.credentials = cmdline_credentials;
+	setup.in.credentials = popt_get_cmdline_credentials();
 	setup.in.gensec_settings = lpcfg_gensec_settings(tctx, tctx->lp_ctx);
 	status = smb_composite_sesssetup(session2, &setup);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -659,7 +659,7 @@ static bool test_pid_2sess(struct torture_context *tctx,
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
 	setup.in.capabilities = cli->transport->negotiate.capabilities; /* ignored in secondary session setup, except by our libs, which care about the extended security bit */
 	setup.in.workgroup = lpcfg_workgroup(tctx->lp_ctx);
-	setup.in.credentials = cmdline_credentials;
+	setup.in.credentials = popt_get_cmdline_credentials();
 	setup.in.gensec_settings = lpcfg_gensec_settings(tctx, tctx->lp_ctx);
 
 	status = smb_composite_sesssetup(session, &setup);

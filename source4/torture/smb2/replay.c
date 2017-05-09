@@ -1764,7 +1764,7 @@ static bool test_replay3(struct torture_context *tctx, struct smb2_tree *tree1)
 {
 	const char *host = torture_setting_string(tctx, "host", NULL);
 	const char *share = torture_setting_string(tctx, "share", NULL);
-	struct cli_credentials *credentials = cmdline_credentials;
+	struct cli_credentials *credentials = popt_get_cmdline_credentials();
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	struct smb2_handle _h;
@@ -1868,7 +1868,7 @@ static bool test_replay3(struct torture_context *tctx, struct smb2_tree *tree1)
 	torture_assert(tctx, session1_2 != NULL, "smb2_session_channel failed");
 
 	status = smb2_session_setup_spnego(session1_2,
-			cmdline_credentials,
+			popt_get_cmdline_credentials(),
 			0 /* previous_session_id */);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
@@ -1923,7 +1923,7 @@ static bool test_replay4(struct torture_context *tctx, struct smb2_tree *tree1)
 {
 	const char *host = torture_setting_string(tctx, "host", NULL);
 	const char *share = torture_setting_string(tctx, "share", NULL);
-	struct cli_credentials *credentials = cmdline_credentials;
+	struct cli_credentials *credentials = popt_get_cmdline_credentials();
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	struct smb2_handle _h1;
@@ -2092,7 +2092,7 @@ static bool test_replay4(struct torture_context *tctx, struct smb2_tree *tree1)
 	torture_assert(tctx, session1_2 != NULL, "smb2_session_channel failed");
 
 	status = smb2_session_setup_spnego(session1_2,
-			cmdline_credentials,
+			popt_get_cmdline_credentials(),
 			0 /* previous_session_id */);
 	CHECK_STATUS(status, NT_STATUS_OK);
 

@@ -63,7 +63,7 @@ bool torture_async_bind(struct torture_context *torture)
 	if (table == NULL) return false;
 	
 	/* credentials */
-	creds = cmdline_credentials;
+	creds = popt_get_cmdline_credentials();
 
 	/* send bind requests */
 	for (i = 0; i < torture_numasync; i++) {

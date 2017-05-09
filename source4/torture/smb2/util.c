@@ -351,7 +351,7 @@ bool torture_smb2_session_setup(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct smb2_session *session;
-	struct cli_credentials *credentials = cmdline_credentials;
+	struct cli_credentials *credentials = popt_get_cmdline_credentials();
 
 	session = smb2_session_init(transport,
 				    lpcfg_gensec_settings(tctx, tctx->lp_ctx),
@@ -385,7 +385,7 @@ bool torture_smb2_connection_ext(struct torture_context *tctx,
 	NTSTATUS status;
 	const char *host = torture_setting_string(tctx, "host", NULL);
 	const char *share = torture_setting_string(tctx, "share", NULL);
-	struct cli_credentials *credentials = cmdline_credentials;
+	struct cli_credentials *credentials = popt_get_cmdline_credentials();
 
 	status = smb2_connect_ext(tctx,
 				  host,
@@ -431,7 +431,7 @@ bool torture_smb2_con_sopt(struct torture_context *tctx,
 	NTSTATUS status;
 	const char *host = torture_setting_string(tctx, "host", NULL);
 	const char *share = torture_setting_string(tctx, soption, NULL);
-	struct cli_credentials *credentials = cmdline_credentials;
+	struct cli_credentials *credentials = popt_get_cmdline_credentials();
 
 	lpcfg_smbcli_options(tctx->lp_ctx, &options);
 

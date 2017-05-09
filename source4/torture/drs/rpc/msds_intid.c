@@ -185,7 +185,7 @@ static struct DsIntIdTestCtx *_dsintid_create_context(struct torture_context *tc
 	}
 
 	/* populate test suite context */
-	ctx->creds = cmdline_credentials;
+	ctx->creds = popt_get_cmdline_credentials();
 	ctx->dsa_bind.server_binding = server_binding;
 
 	ctx->ldap_url = talloc_asprintf(ctx, "ldap://%s",

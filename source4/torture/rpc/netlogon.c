@@ -107,7 +107,8 @@ static bool test_LogonUasLogon(struct torture_context *tctx,
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	r.in.server_name = NULL;
-	r.in.account_name = cli_credentials_get_username(cmdline_credentials);
+	r.in.account_name = cli_credentials_get_username(
+				popt_get_cmdline_credentials());
 	r.in.workstation = TEST_MACHINE_NAME;
 	r.out.info = &info;
 
@@ -126,7 +127,8 @@ static bool test_LogonUasLogoff(struct torture_context *tctx,
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	r.in.server_name = NULL;
-	r.in.account_name = cli_credentials_get_username(cmdline_credentials);
+	r.in.account_name = cli_credentials_get_username(
+				popt_get_cmdline_credentials());
 	r.in.workstation = TEST_MACHINE_NAME;
 	r.out.info = &info;
 
@@ -948,7 +950,8 @@ static bool test_netlogon_ops_args(struct dcerpc_pipe *p, struct torture_context
 		flags |= CLI_CRED_NTLMv2_AUTH;
 	}
 
-	cli_credentials_get_ntlm_username_domain(cmdline_credentials, tctx,
+	cli_credentials_get_ntlm_username_domain(popt_get_cmdline_credentials(),
+						 tctx,
 						 &ninfo.identity_info.account_name.string,
 						 &ninfo.identity_info.domain_name.string);
 
@@ -964,13 +967,14 @@ static bool test_netlogon_ops_args(struct dcerpc_pipe *p, struct torture_context
 	names_blob = NTLMv2_generate_names_blob(tctx, cli_credentials_get_workstation(credentials),
 						cli_credentials_get_domain(credentials));
 
-	status = cli_credentials_get_ntlm_response(cmdline_credentials, tctx,
-						   &flags,
-						   chal,
-						   NULL, /* server_timestamp */
-						   names_blob,
-						   &lm_resp, &nt_resp,
-						   NULL, NULL);
+	status = cli_credentials_get_ntlm_response(
+				popt_get_cmdline_credentials(), tctx,
+				&flags,
+				chal,
+				NULL, /* server_timestamp */
+				names_blob,
+				&lm_resp, &nt_resp,
+				NULL, NULL);
 	torture_assert_ntstatus_ok(tctx, status, "cli_credentials_get_ntlm_response failed");
 
 	ninfo.lm.data = lm_resp.data;
@@ -3347,7 +3351,7 @@ static bool test_netr_DsrGetDcSiteCoverageW(struct torture_context *tctx,
 		url = talloc_asprintf(tctx, "ldap://%s", dcerpc_server_name(p));
 		sam_ctx = ldb_wrap_connect(tctx, tctx->ev, tctx->lp_ctx, url,
 					   NULL,
-					   cmdline_credentials,
+					   popt_get_cmdline_credentials(),
 					   0);
 
 		torture_assert(tctx, sam_ctx, "Connection to the SAMDB on DC failed!");
@@ -3396,7 +3400,7 @@ static bool test_netr_DsRAddressToSitenamesW(struct torture_context *tctx,
 		url = talloc_asprintf(tctx, "ldap://%s", dcerpc_server_name(p));
 		sam_ctx = ldb_wrap_connect(tctx, tctx->ev, tctx->lp_ctx, url,
 					   NULL,
-					   cmdline_credentials,
+					   popt_get_cmdline_credentials(),
 					   0);
 
 		torture_assert(tctx, sam_ctx, "Connection to the SAMDB on DC failed!");
@@ -3573,7 +3577,7 @@ static bool test_netr_DsRAddressToSitenamesExW(struct torture_context *tctx,
 		url = talloc_asprintf(tctx, "ldap://%s", dcerpc_server_name(p));
 		sam_ctx = ldb_wrap_connect(tctx, tctx->ev, tctx->lp_ctx, url,
 					   NULL,
-					   cmdline_credentials,
+					   popt_get_cmdline_credentials(),
 					   0);
 
 		torture_assert(tctx, sam_ctx, "Connection to the SAMDB on DC failed!");
@@ -3852,7 +3856,7 @@ static bool test_GetDomainInfo(struct torture_context *tctx,
 		url = talloc_asprintf(tctx, "ldap://%s", dcerpc_server_name(p));
 		sam_ctx = ldb_wrap_connect(tctx, tctx->ev, tctx->lp_ctx, url,
 					   NULL,
-					   cmdline_credentials,
+					   popt_get_cmdline_credentials(),
 					   0);
 
 		torture_assert(tctx, sam_ctx, "Connection to the SAMDB on DC failed!");

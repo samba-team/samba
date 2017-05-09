@@ -236,12 +236,13 @@ static struct smbcli_state * init_smb_session(struct resolve_context *resolve_ct
 	 * each connection, but for now, we just use the same one for both.
 	 */
 	ret = smbcli_full_connection(NULL, &cli, host, ports, share,
-				     NULL /* devtype */,
-				     socket_options,
-				     cmdline_credentials, resolve_ctx,
-				     ev, options,
-				     session_options,
-				     gensec_settings);
+				NULL /* devtype */,
+				socket_options,
+				popt_get_cmdline_credentials(),
+				resolve_ctx,
+				ev, options,
+				session_options,
+				gensec_settings);
 
 	if (!NT_STATUS_IS_OK(ret)) {
 		fprintf(stderr, "%s: connecting to //%s/%s: %s\n",

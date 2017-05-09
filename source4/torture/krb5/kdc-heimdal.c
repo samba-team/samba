@@ -643,7 +643,8 @@ static bool torture_krb5_as_req_creds(struct torture_context *tctx,
 
 static bool torture_krb5_as_req_cmdline(struct torture_context *tctx)
 {
-	return torture_krb5_as_req_creds(tctx, cmdline_credentials, TORTURE_KRB5_TEST_PLAIN);
+	return torture_krb5_as_req_creds(tctx, popt_get_cmdline_credentials(),
+			TORTURE_KRB5_TEST_PLAIN);
 }
 
 static bool torture_krb5_as_req_pac_request(struct torture_context *tctx)
@@ -651,37 +652,40 @@ static bool torture_krb5_as_req_pac_request(struct torture_context *tctx)
 	if (torture_setting_bool(tctx, "expect_rodc", false)) {
 		torture_skip(tctx, "This test needs further investigation in the RODC case against a Windows DC, in particular with non-cached users");
 	}
-	return torture_krb5_as_req_creds(tctx, cmdline_credentials, TORTURE_KRB5_TEST_PAC_REQUEST);
+	return torture_krb5_as_req_creds(tctx, popt_get_cmdline_credentials(),
+			TORTURE_KRB5_TEST_PAC_REQUEST);
 }
 
 static bool torture_krb5_as_req_break_pw(struct torture_context *tctx)
 {
-	return torture_krb5_as_req_creds(tctx, cmdline_credentials, TORTURE_KRB5_TEST_BREAK_PW);
+	return torture_krb5_as_req_creds(tctx, popt_get_cmdline_credentials(),
+			TORTURE_KRB5_TEST_BREAK_PW);
 }
 
 static bool torture_krb5_as_req_clock_skew(struct torture_context *tctx)
 {
-	return torture_krb5_as_req_creds(tctx, cmdline_credentials, TORTURE_KRB5_TEST_CLOCK_SKEW);
+	return torture_krb5_as_req_creds(tctx, popt_get_cmdline_credentials(),
+			TORTURE_KRB5_TEST_CLOCK_SKEW);
 }
 
 static bool torture_krb5_as_req_aes(struct torture_context *tctx)
 {
 	return torture_krb5_as_req_creds(tctx,
-					 cmdline_credentials,
+					 popt_get_cmdline_credentials(),
 					 TORTURE_KRB5_TEST_AES);
 }
 
 static bool torture_krb5_as_req_rc4(struct torture_context *tctx)
 {
 	return torture_krb5_as_req_creds(tctx,
-					 cmdline_credentials,
+					 popt_get_cmdline_credentials(),
 					 TORTURE_KRB5_TEST_RC4);
 }
 
 static bool torture_krb5_as_req_aes_rc4(struct torture_context *tctx)
 {
 	return torture_krb5_as_req_creds(tctx,
-					 cmdline_credentials,
+					 popt_get_cmdline_credentials(),
 					 TORTURE_KRB5_TEST_AES_RC4);
 }
 

@@ -174,7 +174,8 @@ static bool test_dlz_bind9_gensec(struct torture_context *tctx, const char *mech
 	status = gensec_set_target_service(gensec_client_context, "dns");
 	torture_assert_ntstatus_ok(tctx, status, "gensec_set_target_service failed");
 
-	status = gensec_set_credentials(gensec_client_context, cmdline_credentials);
+	status = gensec_set_credentials(gensec_client_context,
+			popt_get_cmdline_credentials());
 	torture_assert_ntstatus_ok(tctx, status, "gensec_set_credentials (client) failed");
 
 	status = gensec_start_mech_by_sasl_name(gensec_client_context, mech);
@@ -188,14 +189,16 @@ static bool test_dlz_bind9_gensec(struct torture_context *tctx, const char *mech
 		torture_assert_ntstatus_ok(tctx, status, "gensec_update (client) failed");
 	}
 
-	torture_assert_int_equal(tctx, dlz_ssumatch(cli_credentials_get_username(cmdline_credentials),
-						    lpcfg_dnsdomain(tctx->lp_ctx),
-						    "127.0.0.1", "type", "key",
-						    client_to_server.length,
-						    client_to_server.data,
-						    dbdata),
-				 ISC_TRUE,
-				 "Failed to check key for update rights samba_dlz");
+	torture_assert_int_equal(tctx, dlz_ssumatch(
+					cli_credentials_get_username(
+						popt_get_cmdline_credentials()),
+					lpcfg_dnsdomain(tctx->lp_ctx),
+					"127.0.0.1", "type", "key",
+					client_to_server.length,
+					client_to_server.data,
+					dbdata),
+					ISC_TRUE,
+			 "Failed to check key for update rights samba_dlz");
 
 	dlz_destroy(dbdata);
 
@@ -653,7 +656,8 @@ static bool test_dlz_bind9_update01(struct torture_context *tctx)
 	status = gensec_set_target_service(gensec_client_context, "dns");
 	torture_assert_ntstatus_ok(tctx, status, "gensec_set_target_service failed");
 
-	status = gensec_set_credentials(gensec_client_context, cmdline_credentials);
+	status = gensec_set_credentials(gensec_client_context,
+			popt_get_cmdline_credentials());
 	torture_assert_ntstatus_ok(tctx, status, "gensec_set_credentials (client) failed");
 
 	status = gensec_start_mech_by_sasl_name(gensec_client_context, "GSS-SPNEGO");
@@ -667,16 +671,18 @@ static bool test_dlz_bind9_update01(struct torture_context *tctx)
 		torture_assert_ntstatus_ok(tctx, status, "gensec_update (client) failed");
 	}
 
-	torture_assert_int_equal(tctx, dlz_ssumatch(cli_credentials_get_username(cmdline_credentials),
-						    name,
-						    "127.0.0.1",
-						    expected1->records[0].type,
-						    "key",
-						    client_to_server.length,
-						    client_to_server.data,
-						    dbdata),
-				 ISC_TRUE,
-				 "Failed to check key for update rights samba_dlz");
+	torture_assert_int_equal(tctx, dlz_ssumatch(
+				cli_credentials_get_username(
+					popt_get_cmdline_credentials()),
+				name,
+				"127.0.0.1",
+				expected1->records[0].type,
+				"key",
+				client_to_server.length,
+				client_to_server.data,
+				dbdata),
+				ISC_TRUE,
+			 "Failed to check key for update rights samba_dlz");
 
 	/*
 	 * We test the following:

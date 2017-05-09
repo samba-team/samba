@@ -38,7 +38,8 @@ bool torture_libsmbclient_init_context(struct torture_context *tctx,
 
 	/* yes, libsmbclient API frees the username when freeing the context, so
 	 * have to pass malloced data here */
-	smbc_setUser(ctx, strdup(cli_credentials_get_username(cmdline_credentials)));
+	smbc_setUser(ctx, strdup(cli_credentials_get_username(
+			popt_get_cmdline_credentials())));
 
 	*ctx_p = ctx;
 

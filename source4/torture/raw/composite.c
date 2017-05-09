@@ -159,7 +159,7 @@ static bool test_fetchfile(struct torture_context *tctx, struct smbcli_state *cl
 	io2.in.service_type = "A:";
 	io2.in.socket_options = lpcfg_socket_options(tctx->lp_ctx);
 
-	io2.in.credentials = cmdline_credentials;
+	io2.in.credentials = popt_get_cmdline_credentials();
 	io2.in.workgroup  = lpcfg_workgroup(tctx->lp_ctx);
 	io2.in.filename = fname;
 	lpcfg_smbcli_options(tctx->lp_ctx, &io2.in.options);
@@ -348,7 +348,7 @@ static bool test_fsinfo(struct torture_context *tctx, struct smbcli_state *cli)
 	io1.in.called_name = torture_setting_string(tctx, "host", NULL);
 	io1.in.service = torture_setting_string(tctx, "share", NULL);
 	io1.in.service_type = "A:";
-	io1.in.credentials = cmdline_credentials;
+	io1.in.credentials = popt_get_cmdline_credentials();
 	io1.in.workgroup = lpcfg_workgroup(tctx->lp_ctx);
 	io1.in.level = RAW_QFS_OBJECTID_INFORMATION;
 	io1.in.gensec_settings = lpcfg_gensec_settings(tctx, tctx->lp_ctx);

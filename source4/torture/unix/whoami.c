@@ -360,7 +360,7 @@ bool torture_unix_whoami(struct torture_context *torture)
 	struct ldb_context *ldb;
 	const char *addc, *host;
 
-	cli = connect_to_server(torture, cmdline_credentials);
+	cli = connect_to_server(torture, popt_get_cmdline_credentials());
 	torture_assert(torture, cli, "connecting to server with authenticated credentials");
 
 	/* Test basic authenticated mapping. */
@@ -375,7 +375,9 @@ bool torture_unix_whoami(struct torture_context *torture)
 		bool guest = whoami.mapping_flags & SMB_WHOAMI_GUEST;
 		torture_comment(torture, "checking whether we were logged in as guest... %s\n",
 			guest ? "YES" : "NO");
-		torture_assert(torture, cli_credentials_is_anonymous(cmdline_credentials) == guest,
+		torture_assert(torture,
+			cli_credentials_is_anonymous(
+				popt_get_cmdline_credentials()) == guest,
 			       "login did not credentials map to guest");
 	} else {
 		torture_comment(torture, "server does not support SMB_WHOAMI_GUEST flag\n");
@@ -386,7 +388,7 @@ bool torture_unix_whoami(struct torture_context *torture)
 	
  	if (addc) {
 		ldb = ldb_wrap_connect(torture, torture->ev, torture->lp_ctx, talloc_asprintf(torture, "ldap://%s", addc),
-				       NULL, cmdline_credentials, 0);
+				       NULL, popt_get_cmdline_credentials(), 0);
 		torture_assert(torture, ldb, "ldb connect failed");
 
 		/* We skip this testing if we could not contact the LDAP server */

@@ -82,7 +82,8 @@ static struct dom_sid *get_user_sid(struct torture_context *tctx,
 	struct dcerpc_pipe *p2;
 	struct dcerpc_binding_handle *b;
 
-	const char *domain = cli_credentials_get_domain(cmdline_credentials);
+	const char *domain = cli_credentials_get_domain(
+				popt_get_cmdline_credentials());
 
 	torture_assert_ntstatus_ok(tctx,
 				torture_rpc_connection(tctx, &p2, &ndr_table_lsarpc),
@@ -594,7 +595,8 @@ static struct bkrp_BackupKey *createRestoreGUIDStruct(struct torture_context *tc
 		/* we take a fake user*/
 		user = "guest";
 	} else {
-		user = cli_credentials_get_username(cmdline_credentials);
+		user = cli_credentials_get_username(
+				popt_get_cmdline_credentials());
 	}
 
 
@@ -1589,7 +1591,8 @@ static bool test_ServerWrap_encrypt_decrypt_manual(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx,
 				   dcerpc_pipe_connect_b(tctx, &lsa_p,
 					lsa_binding, &ndr_table_lsarpc,
-					cmdline_credentials, tctx->ev, tctx->lp_ctx),
+					popt_get_cmdline_credentials(),
+					tctx->ev, tctx->lp_ctx),
 				   "Opening LSA pipe");
 	lsa_b = lsa_p->binding_handle;
 
@@ -1726,7 +1729,9 @@ static bool test_ServerWrap_encrypt_decrypt_manual(struct torture_context *tctx,
 				 "decrypted data is not correct");
 
 	/* Not strictly correct all the time, but good enough for this test */
-	caller_sid = get_user_sid(tctx, tctx, cli_credentials_get_username(cmdline_credentials));
+	caller_sid = get_user_sid(tctx, tctx,
+			cli_credentials_get_username(
+				popt_get_cmdline_credentials()));
 
 	torture_assert_sid_equal(tctx, &rc4payload.sid, caller_sid, "Secret saved with wrong SID");
 

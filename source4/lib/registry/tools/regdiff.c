@@ -43,10 +43,12 @@ static struct registry_context *open_backend(TALLOC_CTX *mem_ctx,
 		poptPrintUsage(pc, stderr, 0);
 		return NULL;
 	case REG_LOCAL:
-		error = reg_open_samba(mem_ctx, &ctx, ev_ctx, lp_ctx, NULL, cmdline_credentials);
+		error = reg_open_samba(mem_ctx, &ctx, ev_ctx, lp_ctx, NULL,
+				popt_get_cmdline_credentials());
 		break;
 	case REG_REMOTE:
-		error = reg_open_remote(mem_ctx, &ctx, NULL, cmdline_credentials, lp_ctx,
+		error = reg_open_remote(mem_ctx, &ctx, NULL,
+				popt_get_cmdline_credentials(), lp_ctx,
 					remote_host, ev_ctx);
 		break;
 	case REG_NULL:

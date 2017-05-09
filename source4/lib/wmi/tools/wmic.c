@@ -166,7 +166,7 @@ int main(int argc, char **argv)
 
 	parse_args(argc, argv, &args);
 
-	wmi_init(&ctx, cmdline_credentials);
+	wmi_init(&ctx, popt_get_cmdline_credentials());
 
 	if (!args.ns)
 		args.ns = "root\\cimv2";

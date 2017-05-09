@@ -1816,18 +1816,24 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 		} usercreds[] = {
 			{
 				.comment       = "domain\\user",
-				.domain        = cli_credentials_get_domain(cmdline_credentials),
-				.username      = cli_credentials_get_username(cmdline_credentials),
-				.password      = cli_credentials_get_password(cmdline_credentials),
+				.domain        = cli_credentials_get_domain(
+					popt_get_cmdline_credentials()),
+				.username      = cli_credentials_get_username(
+					popt_get_cmdline_credentials()),
+				.password      = cli_credentials_get_password(
+					popt_get_cmdline_credentials()),
 				.network_login = true,
 				.expected_interactive_error = NT_STATUS_OK,
 				.expected_network_error     = NT_STATUS_OK
 			},
 			{
 				.comment       = "realm\\user",
-				.domain        = cli_credentials_get_realm(cmdline_credentials),
-				.username      = cli_credentials_get_username(cmdline_credentials),
-				.password      = cli_credentials_get_password(cmdline_credentials),
+				.domain        = cli_credentials_get_realm(
+					popt_get_cmdline_credentials()),
+				.username      = cli_credentials_get_username(
+					popt_get_cmdline_credentials()),
+				.password      = cli_credentials_get_password(
+					popt_get_cmdline_credentials()),
 				.network_login = true,
 				.expected_interactive_error = NT_STATUS_OK,
 				.expected_network_error     = NT_STATUS_OK
@@ -1836,11 +1842,14 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 				.comment       = "user@domain",
 				.domain        = NULL,
 				.username      = talloc_asprintf(mem_ctx,
-						"%s@%s",
-						cli_credentials_get_username(cmdline_credentials),
-						cli_credentials_get_domain(cmdline_credentials)
+					"%s@%s",
+					cli_credentials_get_username(
+					popt_get_cmdline_credentials()),
+					cli_credentials_get_domain(
+					popt_get_cmdline_credentials())
 					),
-				.password      = cli_credentials_get_password(cmdline_credentials),
+				.password      = cli_credentials_get_password(
+					popt_get_cmdline_credentials()),
 				.network_login = false, /* works for some things, but not NTLMv2.  Odd */
 				.expected_interactive_error = NT_STATUS_OK,
 				.expected_network_error     = NT_STATUS_OK
@@ -1849,11 +1858,14 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 				.comment       = "user@realm",
 				.domain        = NULL,
 				.username      = talloc_asprintf(mem_ctx,
-						"%s@%s",
-						cli_credentials_get_username(cmdline_credentials),
-						cli_credentials_get_realm(cmdline_credentials)
+					"%s@%s",
+					cli_credentials_get_username(
+						popt_get_cmdline_credentials()),
+					cli_credentials_get_realm(
+						popt_get_cmdline_credentials())
 					),
-				.password      = cli_credentials_get_password(cmdline_credentials),
+				.password      = cli_credentials_get_password(
+						popt_get_cmdline_credentials()),
 				.network_login = true,
 				.expected_interactive_error = NT_STATUS_OK,
 				.expected_network_error     = NT_STATUS_OK

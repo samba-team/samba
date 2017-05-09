@@ -34,9 +34,8 @@
 #include "libcli/composite/composite.h"
 #include "param/param.h"
 #include "torture/basic/proto.h"
+#include "lib/cmdline/popt_common.h"
 
-extern struct cli_credentials *cmdline_credentials;
-	
 static bool wait_lock(struct smbcli_state *c, int fnum, uint32_t offset, uint32_t len)
 {
 	while (NT_STATUS_IS_ERR(smbcli_lock(c->tree, fnum, offset, len, -1, WRITE_LOCK))) {
@@ -873,7 +872,7 @@ static struct composite_context *torture_connect_async(
 	smb->in.socket_options = lpcfg_socket_options(tctx->lp_ctx);
 	smb->in.called_name = strupper_talloc(mem_ctx, host);
 	smb->in.service_type=NULL;
-	smb->in.credentials=cmdline_credentials;
+	smb->in.credentials=popt_get_cmdline_credentials();
 	smb->in.fallback_to_anonymous=false;
 	smb->in.gensec_settings = lpcfg_gensec_settings(mem_ctx, tctx->lp_ctx);
 	smb->in.workgroup=workgroup;
