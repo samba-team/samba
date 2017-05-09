@@ -590,6 +590,7 @@ int main(int argc, const char *argv[])
 	if (list_testsuites) {
 		print_testsuite_list();
 		talloc_free(mem_ctx);
+		popt_free_cmdline_credentials();
 		return 0;
 	}
 
@@ -612,6 +613,7 @@ int main(int argc, const char *argv[])
 			}
 		}
 		talloc_free(mem_ctx);
+		popt_free_cmdline_credentials();
 		return 0;
 	}
 
@@ -701,6 +703,7 @@ int main(int argc, const char *argv[])
 
 	if (torture->results->returncode && correct) {
 		talloc_free(mem_ctx);
+		popt_free_cmdline_credentials();
 		return(0);
 	} else {
 		talloc_free(mem_ctx);

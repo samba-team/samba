@@ -48,8 +48,7 @@ static void popt_common_credentials_callback(poptContext con,
 						const char *arg, const void *data)
 {
 	if (reason == POPT_CALLBACK_REASON_PRE) {
-		popt_set_cmdline_credentials(
-			cli_credentials_init(talloc_autofree_context()));
+		popt_set_cmdline_credentials(cli_credentials_init(NULL));
 		return;
 	}
 	
