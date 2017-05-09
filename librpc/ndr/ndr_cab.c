@@ -79,7 +79,7 @@ static uint32_t ndr_cab_compute_checksum(uint8_t *data, uint32_t length, uint32_
 	pb = data;
 
 	while (num_ulong-- > 0) {
-		ul = *pb++;
+		ul = (uint32_t)(*pb++);
 		ul |= (((uint32_t)(*pb++)) <<  8);
 		ul |= (((uint32_t)(*pb++)) << 16);
 		ul |= (((uint32_t)(*pb++)) << 24);
@@ -95,7 +95,7 @@ static uint32_t ndr_cab_compute_checksum(uint8_t *data, uint32_t length, uint32_
 	case 2:
 		ul |= (((uint32_t)(*pb++)) <<  8);
 	case 1:
-		ul |= *pb++;
+		ul |= (uint32_t)(*pb++);
 	default:
 		break;
 	}
