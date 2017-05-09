@@ -99,7 +99,7 @@ _PUBLIC_ NTSTATUS auth4_anonymous_init(TALLOC_CTX *ctx)
 {
 	NTSTATUS ret;
 
-	ret = auth_register(&anonymous_auth_ops);
+	ret = auth_register(ctx, &anonymous_auth_ops);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("Failed to register 'anonymous' auth backend!\n"));
 		return ret;

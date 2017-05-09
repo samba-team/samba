@@ -928,19 +928,19 @@ _PUBLIC_ NTSTATUS auth4_sam_init(TALLOC_CTX *ctx)
 {
 	NTSTATUS ret;
 
-	ret = auth_register(&sam_ops);
+	ret = auth_register(ctx, &sam_ops);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("Failed to register 'sam' auth backend!\n"));
 		return ret;
 	}
 
-	ret = auth_register(&sam_ignoredomain_ops);
+	ret = auth_register(ctx, &sam_ignoredomain_ops);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("Failed to register 'sam_ignoredomain' auth backend!\n"));
 		return ret;
 	}
 
-	ret = auth_register(&sam_failtrusts_ops);
+	ret = auth_register(ctx, &sam_failtrusts_ops);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("Failed to register 'sam_failtrusts' auth backend!\n"));
 		return ret;

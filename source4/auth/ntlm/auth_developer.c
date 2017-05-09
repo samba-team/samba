@@ -141,7 +141,7 @@ _PUBLIC_ NTSTATUS auth4_developer_init(TALLOC_CTX *ctx)
 {
 	NTSTATUS ret;
 
-	ret = auth_register(&name_to_ntstatus_auth_ops);
+	ret = auth_register(ctx, &name_to_ntstatus_auth_ops);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("Failed to register 'name_to_ntstatus' auth backend!\n"));
 		return ret;

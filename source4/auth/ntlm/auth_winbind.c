@@ -317,19 +317,19 @@ _PUBLIC_ NTSTATUS auth4_winbind_init(TALLOC_CTX *ctx)
 {
 	NTSTATUS ret;
 
-	ret = auth_register(&winbind_ops);
+	ret = auth_register(ctx, &winbind_ops);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("Failed to register 'winbind' auth backend!\n"));
 		return ret;
 	}
 
-	ret = auth_register(&winbind_rodc_ops);
+	ret = auth_register(ctx, &winbind_rodc_ops);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("Failed to register 'winbind_rodc' auth backend!\n"));
 		return ret;
 	}
 
-	ret = auth_register(&winbind_wbclient_ops);
+	ret = auth_register(ctx, &winbind_wbclient_ops);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("Failed to register 'winbind_wbclient' auth backend!\n"));
 		return ret;

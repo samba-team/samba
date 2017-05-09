@@ -755,7 +755,7 @@ _PUBLIC_ NTSTATUS auth4_unix_init(TALLOC_CTX *ctx)
 {
 	NTSTATUS ret;
 
-	ret = auth_register(&unix_ops);
+	ret = auth_register(ctx, &unix_ops);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("Failed to register unix auth backend!\n"));
 		return ret;

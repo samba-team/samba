@@ -764,7 +764,8 @@ static int num_backends;
   The 'name' can be later used by other backends to find the operations
   structure for this backend.
 */
-_PUBLIC_ NTSTATUS auth_register(const struct auth_operations *ops)
+_PUBLIC_ NTSTATUS auth_register(TALLOC_CTX *mem_ctx,
+			const struct auth_operations *ops)
 {
 	struct auth_operations *new_ops;
 	
@@ -775,7 +776,7 @@ _PUBLIC_ NTSTATUS auth_register(const struct auth_operations *ops)
 		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 
-	backends = talloc_realloc(talloc_autofree_context(), backends, 
+	backends = talloc_realloc(mem_ctx, backends,
 				  struct auth_backend, num_backends+1);
 	NT_STATUS_HAVE_NO_MEMORY(backends);
 
