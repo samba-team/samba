@@ -37,7 +37,8 @@ extern struct poptOption popt_common_credentials4[];
 #define POPT_COMMON_VERSION { NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_version4, 0, "Version options:", NULL },
 #define POPT_COMMON_CREDENTIALS { NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_credentials4, 0, "Authentication options:", NULL },
 
-extern struct cli_credentials *cmdline_credentials;
+struct cli_credentials;
+
 void popt_set_cmdline_credentials(struct cli_credentials *creds);
 struct cli_credentials *popt_get_cmdline_credentials(void);
 void popt_free_cmdline_credentials(void);

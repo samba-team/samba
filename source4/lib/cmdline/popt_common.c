@@ -38,7 +38,7 @@
 
 enum {OPT_OPTION=1,OPT_LEAK_REPORT,OPT_LEAK_REPORT_FULL,OPT_DEBUG_STDERR};
 
-struct cli_credentials *cmdline_credentials = NULL;
+static struct cli_credentials *cmdline_credentials = NULL;
 
 void popt_set_cmdline_credentials(struct cli_credentials *creds)
 {
