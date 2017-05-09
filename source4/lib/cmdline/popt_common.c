@@ -39,6 +39,22 @@
 enum {OPT_OPTION=1,OPT_LEAK_REPORT,OPT_LEAK_REPORT_FULL,OPT_DEBUG_STDERR};
 
 struct cli_credentials *cmdline_credentials = NULL;
+
+void popt_set_cmdline_credentials(struct cli_credentials *creds)
+{
+	cmdline_credentials = creds;
+}
+
+struct cli_credentials *popt_get_cmdline_credentials(void)
+{
+	return cmdline_credentials;
+}
+
+void popt_free_cmdline_credentials(void)
+{
+	TALLOC_FREE(cmdline_credentials);
+}
+
 struct loadparm_context *cmdline_lp_ctx = NULL;
 
 static void popt_version_callback(poptContext con,
