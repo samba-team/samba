@@ -85,7 +85,7 @@ struct tstream_tls {
 	int error;
 
 #if ENABLE_GNUTLS
-	gnutls_session tls_session;
+	gnutls_session_t tls_session;
 #endif /* ENABLE_GNUTLS */
 
 	enum tls_verify_peer_state verify_peer;
@@ -190,7 +190,7 @@ static void tstream_tls_push_trigger_write(struct tevent_context *ev,
 					   struct tevent_immediate *im,
 					   void *private_data);
 
-static ssize_t tstream_tls_push_function(gnutls_transport_ptr ptr,
+static ssize_t tstream_tls_push_function(gnutls_transport_ptr_t ptr,
 					 const void *buf, size_t size)
 {
 	struct tstream_context *stream =
@@ -329,7 +329,7 @@ static void tstream_tls_push_done(struct tevent_req *subreq)
 
 static void tstream_tls_pull_done(struct tevent_req *subreq);
 
-static ssize_t tstream_tls_pull_function(gnutls_transport_ptr ptr,
+static ssize_t tstream_tls_pull_function(gnutls_transport_ptr_t ptr,
 					 void *buf, size_t size)
 {
 	struct tstream_context *stream =
@@ -911,8 +911,8 @@ static const struct tstream_context_ops tstream_tls_ops = {
 
 struct tstream_tls_params {
 #if ENABLE_GNUTLS
-	gnutls_certificate_credentials x509_cred;
-	gnutls_dh_params dh_params;
+	gnutls_certificate_credentials_t x509_cred;
+	gnutls_dh_params_t dh_params;
 	const char *tls_priority;
 #endif /* ENABLE_GNUTLS */
 	bool tls_enabled;
@@ -1115,7 +1115,8 @@ struct tevent_req *_tstream_tls_connect_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	gnutls_transport_set_ptr(tlss->tls_session, (gnutls_transport_ptr)state->tls_stream);
+	gnutls_transport_set_ptr(tlss->tls_session,
+				 (gnutls_transport_ptr_t)state->tls_stream);
 	gnutls_transport_set_pull_function(tlss->tls_session,
 					   (gnutls_pull_func)tstream_tls_pull_function);
 	gnutls_transport_set_push_function(tlss->tls_session,
@@ -1390,7 +1391,8 @@ struct tevent_req *_tstream_tls_accept_send(TALLOC_CTX *mem_ctx,
 					      GNUTLS_CERT_REQUEST);
 	gnutls_dh_set_prime_bits(tlss->tls_session, DH_BITS);
 
-	gnutls_transport_set_ptr(tlss->tls_session, (gnutls_transport_ptr)state->tls_stream);
+	gnutls_transport_set_ptr(tlss->tls_session,
+				 (gnutls_transport_ptr_t)state->tls_stream);
 	gnutls_transport_set_pull_function(tlss->tls_session,
 					   (gnutls_pull_func)tstream_tls_pull_function);
 	gnutls_transport_set_push_function(tlss->tls_session,
