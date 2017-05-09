@@ -100,5 +100,5 @@ static void nbtd_task_init(struct task_server *task)
 */
 NTSTATUS server_service_nbtd_init(TALLOC_CTX *ctx)
 {
-	return register_server_service("nbt", nbtd_task_init);
+	return register_server_service(ctx, "nbt", nbtd_task_init);
 }

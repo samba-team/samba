@@ -126,5 +126,5 @@ failed:
 
 NTSTATUS server_service_rpc_init(TALLOC_CTX *ctx)
 {
-	return register_server_service("rpc", dcesrv_task_init);
+	return register_server_service(ctx, "rpc", dcesrv_task_init);
 }

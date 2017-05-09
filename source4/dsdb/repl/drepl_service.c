@@ -516,5 +516,5 @@ static void dreplsrv_task_init(struct task_server *task)
 */
 NTSTATUS server_service_drepl_init(TALLOC_CTX *ctx)
 {
-	return register_server_service("drepl", dreplsrv_task_init);
+	return register_server_service(ctx, "drepl", dreplsrv_task_init);
 }

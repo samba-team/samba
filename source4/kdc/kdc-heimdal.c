@@ -468,5 +468,5 @@ static void kdc_task_init(struct task_server *task)
 /* called at smbd startup - register ourselves as a server service */
 NTSTATUS server_service_kdc_init(TALLOC_CTX *ctx)
 {
-	return register_server_service("kdc", kdc_task_init);
+	return register_server_service(ctx, "kdc", kdc_task_init);
 }

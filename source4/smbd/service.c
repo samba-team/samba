@@ -36,11 +36,12 @@ static struct registered_server {
 /*
   register a server service. 
 */
-NTSTATUS register_server_service(const char *name,
-				 void (*task_init)(struct task_server *))
+NTSTATUS register_server_service(TALLOC_CTX *ctx,
+				const char *name,
+				void (*task_init)(struct task_server *))
 {
 	struct registered_server *srv;
-	srv = talloc(talloc_autofree_context(), struct registered_server);
+	srv = talloc(ctx, struct registered_server);
 	NT_STATUS_HAVE_NO_MEMORY(srv);
 	srv->service_name = name;
 	srv->task_init = task_init;

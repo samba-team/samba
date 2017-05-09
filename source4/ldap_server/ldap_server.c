@@ -1184,5 +1184,5 @@ failed:
 
 NTSTATUS server_service_ldap_init(TALLOC_CTX *ctx)
 {
-	return register_server_service("ldap", ldapsrv_task_init);
+	return register_server_service(ctx, "ldap", ldapsrv_task_init);
 }

@@ -343,5 +343,5 @@ static void echo_task_init(struct task_server *task)
  */
 NTSTATUS server_service_echo_init(TALLOC_CTX *ctx)
 {
-	return register_server_service("echo", echo_task_init);
+	return register_server_service(ctx, "echo", echo_task_init);
 }

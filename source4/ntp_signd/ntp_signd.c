@@ -554,5 +554,5 @@ static void ntp_signd_task_init(struct task_server *task)
 /* called at smbd startup - register ourselves as a server service */
 NTSTATUS server_service_ntp_signd_init(TALLOC_CTX *ctx)
 {
-	return register_server_service("ntp_signd", ntp_signd_task_init);
+	return register_server_service(ctx, "ntp_signd", ntp_signd_task_init);
 }

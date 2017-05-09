@@ -929,5 +929,5 @@ static void dns_task_init(struct task_server *task)
 
 NTSTATUS server_service_dns_init(TALLOC_CTX *ctx)
 {
-	return register_server_service("dns", dns_task_init);
+	return register_server_service(ctx, "dns", dns_task_init);
 }

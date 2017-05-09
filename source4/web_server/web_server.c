@@ -372,5 +372,5 @@ failed:
 /* called at smbd startup - register ourselves as a server service */
 NTSTATUS server_service_web_init(TALLOC_CTX *ctx)
 {
-	return register_server_service("web", websrv_task_init);
+	return register_server_service(ctx, "web", websrv_task_init);
 }

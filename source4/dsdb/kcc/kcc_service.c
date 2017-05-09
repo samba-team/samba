@@ -347,5 +347,5 @@ static void kccsrv_task_init(struct task_server *task)
 */
 NTSTATUS server_service_kcc_init(TALLOC_CTX *ctx)
 {
-	return register_server_service("kcc", kccsrv_task_init);
+	return register_server_service(ctx, "kcc", kccsrv_task_init);
 }

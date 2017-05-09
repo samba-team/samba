@@ -90,9 +90,9 @@ NTSTATUS server_service_winbindd_init(TALLOC_CTX *);
 
 NTSTATUS server_service_winbindd_init(TALLOC_CTX *ctx)
 {
-	NTSTATUS status = register_server_service("winbindd", winbindd_task_init);
+	NTSTATUS status = register_server_service(ctx, "winbindd", winbindd_task_init);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	return register_server_service("winbind", winbindd_task_init);
+	return register_server_service(ctx, "winbind", winbindd_task_init);
 }

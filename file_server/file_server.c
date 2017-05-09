@@ -97,5 +97,5 @@ NTSTATUS server_service_s3fs_init(TALLOC_CTX *);
 
 NTSTATUS server_service_s3fs_init(TALLOC_CTX *ctx)
 {
-	return register_server_service("s3fs", s3fs_task_init);
+	return register_server_service(ctx, "s3fs", s3fs_task_init);
 }

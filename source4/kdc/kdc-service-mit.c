@@ -352,5 +352,5 @@ NTSTATUS server_service_mitkdc_init(TALLOC_CTX *mem_ctx);
 
 NTSTATUS server_service_mitkdc_init(TALLOC_CTX *mem_ctx)
 {
-	return register_server_service("kdc", mitkdc_task_init);
+	return register_server_service(mem_ctx, "kdc", mitkdc_task_init);
 }
