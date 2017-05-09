@@ -6,8 +6,6 @@ i copyright=./copyright
 # i request=./request
 i preremove=./preremove
 i postinstall=./postinstall
-i i.swat=./i.swat
-i r.swat=./r.swat
 #
 # Stuff that goes into the system areas of the filesystem.
 #
@@ -16,12 +14,6 @@ d initscript /etc/init.d ? ? ?
 f initscript /etc/init.d/samba=scripts/samba.init 0744 root sys
 d initscript /etc/rc3.d ? ? ?
 f initscript /sbin/samba=scripts/samba.init 0750 root root
-#
-# Stuff to set up SWAT
-#
-d swat /etc/inet ? ? ?
-e swat /etc/inet/services=scripts/services ? ? ?
-e swat /etc/inet/inetd.conf=scripts/inetd.conf ? ? ?
 #
 # Create the samba subtree.
 #
@@ -36,7 +28,6 @@ d none lib 0755 root other
 d none lib/charset 0755 root other
 d none lib/vfs 0755 root other
 d none include 0755 root other
-d none swat 0755 root other
 d none $LOGFILEBASE 0755 root other
 d none $PIDDIR 0755 root other
 #

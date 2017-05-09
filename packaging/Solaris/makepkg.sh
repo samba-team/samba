@@ -8,7 +8,7 @@
 
 INSTALL_BASE=/opt/samba
 
-SBINPROGS="smbd nmbd winbindd swat"
+SBINPROGS="smbd nmbd winbindd"
 BINPROGS="findsmb nmblookup eventlogadm pdbedit rpcclient smbclient smbcquotas smbspool smbtar tdbbackup testparm wbinfo net ntlm_auth profiles smbcacls smbcontrol smbpasswd smbstatus smbtree tdbdump"
 MSGFILES="de.msg en.msg fi.msg fr.msg it.msg ja.msg nl.msg pl.msg tr.msg"
 VFSLIBS="audit.so default_quota.so extd_audit.so full_audit.so readonly.so shadow_copy.so cap.so expand_msdfs.so fake_perms.so netatalk.so recycle.so"
@@ -17,7 +17,7 @@ AUTHLIBS="script.so"
 
 add_dynamic_entries() 
 {
-	# Add the binaries, docs and SWAT files
+	# Add the binaries and docs
 	cd $TMPINSTALLDIR/$INSTALL_BASE
 
 	echo "#\n# Server Binaries \n#"	
@@ -80,28 +80,6 @@ add_dynamic_entries()
 			done
 		fi
 	done
-	cd ../..
-
-	echo "#\n# SWAT \n#"
-	list=`find swat -type d | grep -v "/.svn$"`
-	for dir in $list; do
-		if [ -d $dir ]; then
-			echo d none $dir 0755 root other
-		fi
-	done
-
-	list=`find swat -type f | grep -v /.svn/`
-	for file in $list; do
-		if [ -f $file ]; then
-			echo f none $file 0644 root other
-		fi
-	done
-
-	# Create entries for docs for the beginner
-	echo 's none docs/using_samba=$BASEDIR/swat/using_samba'
-	for file in docs/*pdf; do
-		echo f none $file 0644 root other
-	done
 }
 
 #####################################################################
@@ -155,7 +133,6 @@ LD_LIBRARY_PATH=$DISTR_BASE/source/bin
 export LD_LIBRARY_PATH
 SBINDIR=`bin/smbd -b | grep SBINDIR | awk '{print $2}'`
 BINDIR=`bin/smbd -b | grep BINDIR | grep -v SBINDIR |  awk '{print $2}'`
-SWATDIR=`bin/smbd -b | grep SWATDIR | awk '{print $2}'`
 CONFIGFILE=`bin/smbd -b | grep CONFIGFILE | awk '{print $2}'`
 LOCKDIR=`bin/smbd -b | grep LOCKDIR | awk '{print $2}'`
 CONFIGDIR=`dirname $CONFIGFILE`
@@ -202,7 +179,7 @@ sed -e "s|__BASEDIR__|$INSTALL_BASE|g" samba.init.master > samba.init
 ## copy over some scripts need for packagaing
 ##
 mkdir -p $TMPINSTALLDIR/$INSTALL_BASE/scripts
-for i in inetd.conf samba.init smb.conf.default services; do
+for i in samba.init smb.conf.default; do
 	cp -fp $i $TMPINSTALLDIR/$INSTALL_BASE/scripts
 done
 
@@ -223,7 +200,7 @@ cp prototype.master prototype
 ##
 ## copy packaging files 
 ##
-for i in prototype pkginfo copyright preremove postinstall request i.swat r.swat; do
+for i in prototype pkginfo copyright preremove postinstall request; do
 	cp $i $TMPINSTALLDIR/$INSTALL_BASE
 done
 

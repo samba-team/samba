@@ -6,10 +6,6 @@ resp=`ckyorn -d y -p "Do you wish to have Samba start whenever the system boots 
 $VALSTR -r "^[yY]" $resp
 [ $? -eq 0 ] && CLASSES="$CLASSES initscript"
 
-resp=`ckyorn -d y -p "Do you wish to set up the Samba Web Admin Tool (SWAT)? (default:y) " -Q`
-$VALSTR -r "^[yY]" $resp
-[ $? -eq 0 ] && CLASSES="$CLASSES swat"
-
 cat >$1 <<!
 CLASSES=$CLASSES
 !
