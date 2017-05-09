@@ -1764,7 +1764,6 @@ static bool test_replay3(struct torture_context *tctx, struct smb2_tree *tree1)
 {
 	const char *host = torture_setting_string(tctx, "host", NULL);
 	const char *share = torture_setting_string(tctx, "share", NULL);
-	struct cli_credentials *credentials = popt_get_cmdline_credentials();
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	struct smb2_handle _h;
@@ -1845,7 +1844,7 @@ static bool test_replay3(struct torture_context *tctx, struct smb2_tree *tree1)
 			lpcfg_smb_ports(tctx->lp_ctx),
 			share,
 			lpcfg_resolve_context(tctx->lp_ctx),
-			credentials,
+			popt_get_cmdline_credentials(),
 			&tree2,
 			tctx->ev,
 			&transport1->options,
@@ -1923,7 +1922,6 @@ static bool test_replay4(struct torture_context *tctx, struct smb2_tree *tree1)
 {
 	const char *host = torture_setting_string(tctx, "host", NULL);
 	const char *share = torture_setting_string(tctx, "share", NULL);
-	struct cli_credentials *credentials = popt_get_cmdline_credentials();
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	struct smb2_handle _h1;
@@ -2069,7 +2067,7 @@ static bool test_replay4(struct torture_context *tctx, struct smb2_tree *tree1)
 			lpcfg_smb_ports(tctx->lp_ctx),
 			share,
 			lpcfg_resolve_context(tctx->lp_ctx),
-			credentials,
+			popt_get_cmdline_credentials(),
 			&tree2,
 			tctx->ev,
 			&transport1->options,

@@ -351,7 +351,6 @@ bool torture_smb2_session_setup(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct smb2_session *session;
-	struct cli_credentials *credentials = popt_get_cmdline_credentials();
 
 	session = smb2_session_init(transport,
 				    lpcfg_gensec_settings(tctx, tctx->lp_ctx),
@@ -361,7 +360,8 @@ bool torture_smb2_session_setup(struct torture_context *tctx,
 		return false;
 	}
 
-	status = smb2_session_setup_spnego(session, credentials,
+	status = smb2_session_setup_spnego(session,
+					   popt_get_cmdline_credentials(),
 					   previous_session_id);
 	if (!NT_STATUS_IS_OK(status)) {
 		torture_comment(tctx, "session setup failed: %s\n", nt_errstr(status));
@@ -385,14 +385,13 @@ bool torture_smb2_connection_ext(struct torture_context *tctx,
 	NTSTATUS status;
 	const char *host = torture_setting_string(tctx, "host", NULL);
 	const char *share = torture_setting_string(tctx, "share", NULL);
-	struct cli_credentials *credentials = popt_get_cmdline_credentials();
 
 	status = smb2_connect_ext(tctx,
 				  host,
 				  lpcfg_smb_ports(tctx->lp_ctx),
 				  share,
 				  lpcfg_resolve_context(tctx->lp_ctx),
-				  credentials,
+				  popt_get_cmdline_credentials(),
 				  previous_session_id,
 				  tree,
 				  tctx->ev,
@@ -431,7 +430,6 @@ bool torture_smb2_con_sopt(struct torture_context *tctx,
 	NTSTATUS status;
 	const char *host = torture_setting_string(tctx, "host", NULL);
 	const char *share = torture_setting_string(tctx, soption, NULL);
-	struct cli_credentials *credentials = popt_get_cmdline_credentials();
 
 	lpcfg_smbcli_options(tctx->lp_ctx, &options);
 
@@ -445,7 +443,7 @@ bool torture_smb2_con_sopt(struct torture_context *tctx,
 				  lpcfg_smb_ports(tctx->lp_ctx),
 				  share,
 				  lpcfg_resolve_context(tctx->lp_ctx),
-				  credentials,
+				  popt_get_cmdline_credentials(),
 				  0,
 				  tree,
 				  tctx->ev,

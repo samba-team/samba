@@ -8717,7 +8717,6 @@ static bool test_print_test_smbd(struct torture_context *tctx,
 
 	struct smb2_tree *tree;
 	struct smb2_handle job_h;
-	struct cli_credentials *credentials = popt_get_cmdline_credentials();
 	struct smbcli_options options;
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	/*
@@ -8737,7 +8736,7 @@ static bool test_print_test_smbd(struct torture_context *tctx,
 			      lpcfg_smb_ports(tctx->lp_ctx),
 			      share,
 			      lpcfg_resolve_context(tctx->lp_ctx),
-			      credentials,
+			      popt_get_cmdline_credentials(),
 			      &tree,
 			      tctx->ev,
 			      &options,

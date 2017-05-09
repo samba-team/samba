@@ -204,7 +204,6 @@ static bool torture_smb2_scan(struct torture_context *tctx)
 	struct smb2_tree *tree;
 	const char *host = torture_setting_string(tctx, "host", NULL);
 	const char *share = torture_setting_string(tctx, "share", NULL);
-	struct cli_credentials *credentials = popt_get_cmdline_credentials();
 	NTSTATUS status;
 	int opcode;
 	struct smb2_request *req;
@@ -216,7 +215,8 @@ static bool torture_smb2_scan(struct torture_context *tctx)
 			      lpcfg_smb_ports(tctx->lp_ctx),
 			      share,
 			      lpcfg_resolve_context(tctx->lp_ctx),
-			      credentials, &tree, tctx->ev, &options,
+			      popt_get_cmdline_credentials(),
+			      &tree, tctx->ev, &options,
 			      lpcfg_socket_options(tctx->lp_ctx),
 			      lpcfg_gensec_settings(tctx, tctx->lp_ctx));
 	torture_assert_ntstatus_ok(tctx, status, "Connection failed");
@@ -233,7 +233,8 @@ static bool torture_smb2_scan(struct torture_context *tctx)
 					      lpcfg_smb_ports(tctx->lp_ctx),
 					      share,
 					      lpcfg_resolve_context(tctx->lp_ctx),
-					      credentials, &tree, tctx->ev, &options,
+					      popt_get_cmdline_credentials(),
+					      &tree, tctx->ev, &options,
 					      lpcfg_socket_options(tctx->lp_ctx),
 					      lpcfg_gensec_settings(mem_ctx, tctx->lp_ctx));
 			torture_assert_ntstatus_ok(tctx, status, "Connection failed");
