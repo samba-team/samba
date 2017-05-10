@@ -268,7 +268,6 @@ NTSTATUS gensec_sign_packet(struct gensec_security *gensec_security,
 			    const uint8_t *data, size_t length,
 			    const uint8_t *whole_pdu, size_t pdu_length,
 			    DATA_BLOB *sig);
-NTSTATUS gensec_start_mech(struct gensec_security *gensec_security);
 NTSTATUS gensec_start_mech_by_authtype(struct gensec_security *gensec_security,
 				       uint8_t auth_type, uint8_t auth_level);
 const char *gensec_get_name_by_authtype(struct gensec_security *gensec_security, uint8_t authtype);

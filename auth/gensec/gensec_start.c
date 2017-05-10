@@ -659,7 +659,7 @@ _PUBLIC_ NTSTATUS gensec_server_start(TALLOC_CTX *mem_ctx,
 	return status;
 }
 
-NTSTATUS gensec_start_mech(struct gensec_security *gensec_security)
+static NTSTATUS gensec_start_mech(struct gensec_security *gensec_security)
 {
 	NTSTATUS status;
 
