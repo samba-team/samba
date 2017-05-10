@@ -1351,6 +1351,10 @@ static NTSTATUS gensec_spnego_update_out(struct gensec_security *gensec_security
 			return spnego_state->out_status;
 		}
 
+		/*
+		 * We're completely done, further updates are not allowed.
+		 */
+		spnego_state->state_position = SPNEGO_DONE;
 		return gensec_child_ready(gensec_security,
 					  spnego_state->sub_sec_security);
 	}
@@ -1424,6 +1428,10 @@ static NTSTATUS gensec_spnego_update_wrapper(struct gensec_security *gensec_secu
 	}
 	if (!NT_STATUS_IS_OK(status) &&
 	    !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		/*
+		 * A fatal error, further updates are not allowed.
+		 */
+		spnego_state->state_position = SPNEGO_DONE;
 		return status;
 	}
 
