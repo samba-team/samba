@@ -663,6 +663,14 @@ static NTSTATUS gensec_start_mech(struct gensec_security *gensec_security)
 {
 	NTSTATUS status;
 
+	/*
+	 * Callers sometimes just reuse a context, we should
+	 * clear the internal state before starting it again.
+	 */
+	talloc_unlink(gensec_security, gensec_security->private_data);
+	gensec_security->private_data = NULL;
+
+
 	if (gensec_security->credentials) {
 		const char *forced_mech = cli_credentials_get_forced_sasl_mech(gensec_security->credentials);
 		if (forced_mech &&
