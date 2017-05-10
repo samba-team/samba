@@ -405,9 +405,7 @@ struct dcesrv_handle *dcesrv_handle_fetch(
 					  struct dcesrv_connection_context *context, 
 					  struct policy_handle *p,
 					  uint8_t handle_type);
-struct socket_address *dcesrv_connection_get_my_addr(struct dcesrv_connection *conn, TALLOC_CTX *mem_ctx);
 
-struct socket_address *dcesrv_connection_get_peer_addr(struct dcesrv_connection *conn, TALLOC_CTX *mem_ctx);
 const struct tsocket_address *dcesrv_connection_get_local_address(struct dcesrv_connection *conn);
 const struct tsocket_address *dcesrv_connection_get_remote_address(struct dcesrv_connection *conn);
 
