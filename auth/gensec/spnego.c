@@ -77,6 +77,11 @@ struct spnego_state {
 	NTSTATUS out_status;
 };
 
+static void gensec_spnego_update_sub_abort(struct spnego_state *spnego_state)
+{
+	spnego_state->sub_sec_ready = false;
+	TALLOC_FREE(spnego_state->sub_sec_security);
+}
 
 static NTSTATUS gensec_spnego_client_start(struct gensec_security *gensec_security)
 {
@@ -246,8 +251,10 @@ static NTSTATUS gensec_spnego_parse_negTokenInit(struct gensec_security *gensec_
 				nt_status = gensec_start_mech_by_ops(spnego_state->sub_sec_security,
 								     all_sec[i].op);
 				if (!NT_STATUS_IS_OK(nt_status)) {
-					talloc_free(spnego_state->sub_sec_security);
-					spnego_state->sub_sec_security = NULL;
+					/*
+					 * Pretend we never started it
+					 */
+					gensec_spnego_update_sub_abort(spnego_state);
 					break;
 				}
 
@@ -275,12 +282,14 @@ static NTSTATUS gensec_spnego_parse_negTokenInit(struct gensec_security *gensec_
 				}
 				if (NT_STATUS_EQUAL(nt_status, NT_STATUS_INVALID_PARAMETER) || 
 				    NT_STATUS_EQUAL(nt_status, NT_STATUS_CANT_ACCESS_DOMAIN_INFO)) {
-					/* Pretend we never started it (lets the first run find some incompatible demand) */
 
 					DEBUG(1, ("SPNEGO(%s) NEG_TOKEN_INIT failed to parse contents: %s\n", 
 						  spnego_state->sub_sec_security->ops->name, nt_errstr(nt_status)));
-					talloc_free(spnego_state->sub_sec_security);
-					spnego_state->sub_sec_security = NULL;
+
+					/*
+					 * Pretend we never started it
+					 */
+					gensec_spnego_update_sub_abort(spnego_state);
 					break;
 				}
 
@@ -314,8 +323,10 @@ static NTSTATUS gensec_spnego_parse_negTokenInit(struct gensec_security *gensec_
 			nt_status = gensec_start_mech_by_ops(spnego_state->sub_sec_security,
 							     all_sec[i].op);
 			if (!NT_STATUS_IS_OK(nt_status)) {
-				talloc_free(spnego_state->sub_sec_security);
-				spnego_state->sub_sec_security = NULL;
+				/*
+				 * Pretend we never started it.
+				 */
+				gensec_spnego_update_sub_abort(spnego_state);
 				continue;
 			}
 
@@ -368,9 +379,10 @@ static NTSTATUS gensec_spnego_parse_negTokenInit(struct gensec_security *gensec_
 							  principal,
 							  next, nt_errstr(nt_status)));
 
-					/* Pretend we never started it (lets the first run find some incompatible demand) */
-					talloc_free(spnego_state->sub_sec_security);
-					spnego_state->sub_sec_security = NULL;
+					/*
+					 * Pretend we never started it.
+					 */
+					gensec_spnego_update_sub_abort(spnego_state);
 					continue;
 				}
 			}
@@ -397,13 +409,12 @@ static NTSTATUS gensec_spnego_parse_negTokenInit(struct gensec_security *gensec_
 		    && !NT_STATUS_IS_OK(nt_status)) {
 			DEBUG(1, ("SPNEGO(%s) NEG_TOKEN_INIT failed: %s\n", 
 				  spnego_state->sub_sec_security->ops->name, nt_errstr(nt_status)));
-			talloc_free(spnego_state->sub_sec_security);
-			spnego_state->sub_sec_security = NULL;
 
 			/* We started the mech correctly, and the
 			 * input from the other side was valid.
 			 * Return the error (say bad password, invalid
 			 * ticket) */
+			gensec_spnego_update_sub_abort(spnego_state);
 			return nt_status;
 		}
 
@@ -457,8 +468,7 @@ static NTSTATUS gensec_spnego_create_negTokenInit(struct gensec_security *gensec
 		nt_status = gensec_start_mech_by_ops(spnego_state->sub_sec_security,
 						     all_sec[i].op);
 		if (!NT_STATUS_IS_OK(nt_status)) {
-			talloc_free(spnego_state->sub_sec_security);
-			spnego_state->sub_sec_security = NULL;
+			gensec_spnego_update_sub_abort(spnego_state);
 			continue;
 		}
 
@@ -501,10 +511,11 @@ static NTSTATUS gensec_spnego_create_negTokenInit(struct gensec_security *gensec
 					  spnego_state->sub_sec_security->ops->name,
 					  principal,
 					  next, nt_errstr(nt_status)));
-				talloc_free(spnego_state->sub_sec_security);
-				spnego_state->sub_sec_security = NULL;
-				/* Pretend we never started it (lets the first run find some incompatible demand) */
 
+				/*
+				 * Pretend we never started it
+				 */
+				gensec_spnego_update_sub_abort(spnego_state);
 				continue;
 			}
 		}
@@ -545,9 +556,8 @@ static NTSTATUS gensec_spnego_create_negTokenInit(struct gensec_security *gensec
 		spnego_state->neg_oid = all_sec[i].oid;
 
 		return NT_STATUS_MORE_PROCESSING_REQUIRED;
-	} 
-	talloc_free(spnego_state->sub_sec_security);
-	spnego_state->sub_sec_security = NULL;
+	}
+	gensec_spnego_update_sub_abort(spnego_state);
 
 	DEBUG(10, ("Failed to setup SPNEGO negTokenInit request: %s\n", nt_errstr(nt_status)));
 	return nt_status;
@@ -955,8 +965,7 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 				 gensec_get_name_by_oid(gensec_security, spnego_state->neg_oid),
 				 gensec_get_name_by_oid(gensec_security, spnego.negTokenTarg.supportedMech)));
 			spnego_state->downgraded = true;
-			spnego_state->sub_sec_ready = false;
-			talloc_free(spnego_state->sub_sec_security);
+			gensec_spnego_update_sub_abort(spnego_state);
 			nt_status = gensec_subcontext_start(spnego_state,
 							    gensec_security,
 							    &spnego_state->sub_sec_security);
