@@ -1070,13 +1070,16 @@ static void cli_session_setup_gensec_remote_done(struct tevent_req *subreq)
 			 * We can't finish the gensec handshake, we don't
 			 * have a negotiated session key.
 			 *
-			 * So just pretend we are completely done.
+			 * So just pretend we are completely done,
+			 * we need to continue as anonymous from this point,
+			 * as we can't get a session key.
 			 *
 			 * Note that smbXcli_session_is_guest()
 			 * always returns false if we require signing.
 			 */
 			state->blob_in = data_blob_null;
 			state->local_ready = true;
+			state->is_anonymous = true;
 		}
 
 		state->remote_ready = true;
