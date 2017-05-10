@@ -35,7 +35,6 @@ void idmap_cache_set_sid2unixid(const struct dom_sid *sid, struct unixid *unix_i
 
 bool idmap_cache_del_uid(uid_t uid);
 bool idmap_cache_del_gid(gid_t gid);
-bool idmap_cache_del_both(uid_t uid);
 bool idmap_cache_del_sid(const struct dom_sid *sid);
 
 #endif /* _LIB_IDMAP_CACHE_H_ */
