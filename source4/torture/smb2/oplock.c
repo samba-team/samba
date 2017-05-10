@@ -4332,6 +4332,165 @@ done:
 	return ret;
 }
 
+/**
+ * 1. 1st client opens file with oplock
+ * 2. 2nd client opens file
+ *
+ * Verify 2 triggers an oplock break
+ **/
+static bool test_smb2_kernel_oplocks3(struct torture_context *tctx,
+				      struct smb2_tree *tree,
+				      struct smb2_tree *tree2)
+{
+	const char *fname = "test_kernel_oplock3.dat";
+	NTSTATUS status;
+	bool ret = true;
+	struct smb2_create create;
+	struct smb2_handle h1 = {{0}}, h2 = {{0}};
+
+	smb2_util_unlink(tree, fname);
+	status = torture_smb2_testfile(tree, fname, &h1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"Error creating testfile\n");
+	smb2_util_close(tree, h1);
+	ZERO_STRUCT(h1);
+
+	tree->session->transport->oplock.handler = torture_oplock_handler;
+	tree->session->transport->oplock.private_data = tree;
+	ZERO_STRUCT(break_info);
+
+	/* 1 */
+	ZERO_STRUCT(create);
+	create.in.desired_access = SEC_RIGHTS_FILE_ALL;
+	create.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	create.in.share_access = NTCREATEX_SHARE_ACCESS_MASK;
+	create.in.create_disposition = NTCREATEX_DISP_OPEN_IF;
+	create.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS;
+	create.in.fname = fname;
+	create.in.oplock_level = SMB2_OPLOCK_LEVEL_EXCLUSIVE;
+
+	status = smb2_create(tree, tctx, &create);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "Error opening the file\n");
+	h1 = create.out.file.handle;
+
+	torture_assert_goto(tctx, create.out.oplock_level == SMB2_OPLOCK_LEVEL_EXCLUSIVE, ret, done,
+			    "Oplock level is not SMB2_OPLOCK_LEVEL_EXCLUSIVE\n");
+
+	/* 2 */
+	ZERO_STRUCT(create);
+	create.in.desired_access = SEC_RIGHTS_FILE_READ;
+	create.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	create.in.share_access = NTCREATEX_SHARE_ACCESS_MASK;
+	create.in.create_disposition = NTCREATEX_DISP_OPEN;
+	create.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS;
+	create.in.fname = fname;
+
+	status = smb2_create(tree2, tctx, &create);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "Error opening the file\n");
+	h2 = create.out.file.handle;
+
+	torture_wait_for_oplock_break(tctx);
+	torture_assert_goto(tctx, break_info.count == 1, ret, done, "Expected 1 oplock break\n");
+
+done:
+	if (!smb2_util_handle_empty(h1)) {
+		smb2_util_close(tree, h1);
+	}
+	if (!smb2_util_handle_empty(h2)) {
+		smb2_util_close(tree, h2);
+	}
+	smb2_util_unlink(tree, fname);
+	return ret;
+}
+
+/**
+ * 1) create testfile with stream
+ * 2) open file r/w with batch oplock, sharing read/delete
+ * 3) open stream on file for reading
+ *
+ * Verify 3) doesn't trigger an oplock break
+ **/
+static bool test_smb2_kernel_oplocks4(struct torture_context *tctx,
+				      struct smb2_tree *tree)
+{
+	const char *fname = "test_kernel_oplock4.dat";
+	const char *sname = "test_kernel_oplock4.dat:foo";
+	NTSTATUS status;
+	bool ret = true;
+	struct smb2_create create;
+	struct smb2_handle h1 = {{0}}, h2 = {{0}};
+
+	tree->session->transport->oplock.handler = torture_oplock_handler;
+	tree->session->transport->oplock.private_data = tree;
+	ZERO_STRUCT(break_info);
+	smb2_util_unlink(tree, fname);
+
+	/* 1 */
+	status = torture_smb2_testfile(tree, fname, &h1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"Error creating testfile\n");
+	smb2_util_close(tree, h1);
+	ZERO_STRUCT(h1);
+
+	ZERO_STRUCT(create);
+	create.in.desired_access = SEC_RIGHTS_FILE_READ;
+	create.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	create.in.share_access = NTCREATEX_SHARE_ACCESS_MASK;
+	create.in.create_disposition = NTCREATEX_DISP_OPEN_IF;
+	create.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS;
+	create.in.fname = sname;
+
+	status = smb2_create(tree, tctx, &create);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "Error opening the file\n");
+	h1 = create.out.file.handle;
+	smb2_util_close(tree, h1);
+	ZERO_STRUCT(h1);
+
+	/* 2 */
+	ZERO_STRUCT(create);
+	create.in.desired_access = SEC_RIGHTS_FILE_ALL;
+	create.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	create.in.share_access = NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_DELETE;
+	create.in.create_disposition = NTCREATEX_DISP_OPEN;
+	create.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS;
+	create.in.fname = fname;
+	create.in.oplock_level = SMB2_OPLOCK_LEVEL_BATCH;
+
+	status = smb2_create(tree, tctx, &create);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "Error opening the file\n");
+	h1 = create.out.file.handle;
+
+	torture_assert_goto(tctx, create.out.oplock_level == SMB2_OPLOCK_LEVEL_BATCH, ret, done,
+			    "Oplock level is not SMB2_OPLOCK_LEVEL_BATCH\n");
+
+	ZERO_STRUCT(create);
+	create.in.desired_access = SEC_RIGHTS_FILE_READ;
+	create.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	create.in.share_access = NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_DELETE;
+	create.in.create_disposition = NTCREATEX_DISP_OPEN;
+	create.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS;
+	create.in.fname = sname;
+
+	status = smb2_create(tree, tctx, &create);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "Error opening the file\n");
+	h2 = create.out.file.handle;
+
+	torture_wait_for_oplock_break(tctx);
+	if (break_info.count != 0) {
+		torture_warning(tctx, "Stream open caused oplock break\n");
+	}
+
+done:
+	if (!smb2_util_handle_empty(h1)) {
+		smb2_util_close(tree, h1);
+	}
+	if (!smb2_util_handle_empty(h2)) {
+		smb2_util_close(tree, h2);
+	}
+	smb2_util_unlink(tree, fname);
+	return ret;
+}
+
 struct torture_suite *torture_smb2_kernel_oplocks_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite =
@@ -4339,6 +4498,8 @@ struct torture_suite *torture_smb2_kernel_oplocks_init(TALLOC_CTX *ctx)
 
 	torture_suite_add_1smb2_test(suite, "kernel_oplocks1", test_smb2_kernel_oplocks1);
 	torture_suite_add_1smb2_test(suite, "kernel_oplocks2", test_smb2_kernel_oplocks2);
+	torture_suite_add_2smb2_test(suite, "kernel_oplocks3", test_smb2_kernel_oplocks3);
+	torture_suite_add_1smb2_test(suite, "kernel_oplocks4", test_smb2_kernel_oplocks4);
 
 	suite->description = talloc_strdup(suite, "SMB2-KERNEL-OPLOCK tests");
 
