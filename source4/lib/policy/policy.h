@@ -89,8 +89,6 @@ NTSTATUS gp_get_gplinks(struct gp_context *gp_ctx, const char *req_dn, struct gp
 NTSTATUS gp_list_gpos(struct gp_context *gp_ctx, struct security_token *token, const char ***ret);
 
 NTSTATUS gp_get_gpo_info(struct gp_context *gp_ctx, const char *dn_str, struct gp_object **ret);
-NTSTATUS gp_set_gpo_info(struct gp_context *gp_ctx, const char *dn_str, struct gp_object *gpo);
-NTSTATUS gp_del_gpo(struct gp_context *gp_ctx, const char *dn_str);
 
 
 NTSTATUS gp_get_gplink_options(TALLOC_CTX *mem_ctx, uint32_t flags, const char ***ret);
