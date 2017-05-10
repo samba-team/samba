@@ -272,7 +272,6 @@ struct smbcli_request *smb_raw_read_send(struct smbcli_tree *tree, union smb_rea
 NTSTATUS smb_raw_trans_recv(struct smbcli_request *req,
 			     TALLOC_CTX *mem_ctx,
 			     struct smb_trans2 *parms);
-size_t smb_raw_max_trans_data(struct smbcli_tree *tree, size_t param_size);
 struct smbcli_request *smb_raw_trans_send(struct smbcli_tree *tree, struct smb_trans2 *parms);
 NTSTATUS smbcli_request_destroy(struct smbcli_request *req);
 struct smbcli_request *smb_raw_write_send(struct smbcli_tree *tree, union smb_write *parms);
