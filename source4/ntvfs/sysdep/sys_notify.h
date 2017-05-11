@@ -43,7 +43,8 @@ struct sys_notify_backend {
 	notify_watch_t notify_watch;
 };
 
-NTSTATUS sys_notify_register(struct sys_notify_backend *backend);
+NTSTATUS sys_notify_register(TALLOC_CTX *ctx,
+			struct sys_notify_backend *backend);
 struct sys_notify_context *sys_notify_context_create(struct share_config *scfg,
 						     TALLOC_CTX *mem_ctx, 
 						     struct tevent_context *ev);
