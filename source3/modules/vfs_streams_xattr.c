@@ -25,6 +25,8 @@
 #include "smbd/smbd.h"
 #include "system/filesys.h"
 #include "../lib/crypto/md5.h"
+#include "lib/util/tevent_unix.h"
+#include "librpc/gen_ndr/ioctl.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
@@ -1123,6 +1125,410 @@ static int streams_xattr_fallocate(struct vfs_handle_struct *handle,
 	return -1;
 }
 
+static int streams_xattr_fchown(vfs_handle_struct *handle, files_struct *fsp,
+				uid_t uid, gid_t gid)
+{
+	struct stream_io *sio =
+		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+
+	if (sio == NULL) {
+		return SMB_VFS_NEXT_FCHOWN(handle, fsp, uid, gid);
+	}
+
+	return 0;
+}
+
+static int streams_xattr_fchmod(vfs_handle_struct *handle,
+				files_struct *fsp,
+				mode_t mode)
+{
+	struct stream_io *sio =
+		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+
+	if (sio == NULL) {
+		return SMB_VFS_NEXT_FCHMOD(handle, fsp, mode);
+	}
+
+	return 0;
+}
+
+static int streams_xattr_fsync(vfs_handle_struct *handle, files_struct *fsp)
+{
+	struct stream_io *sio =
+		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+
+	if (sio == NULL) {
+		return SMB_VFS_NEXT_FSYNC(handle, fsp);
+	}
+
+	return 0;
+}
+
+static ssize_t streams_xattr_fgetxattr(struct vfs_handle_struct *handle,
+				       struct files_struct *fsp,
+				       const char *name,
+				       void *value,
+				       size_t size)
+{
+	struct stream_io *sio =
+		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+
+	if (sio == NULL) {
+		return SMB_VFS_NEXT_FGETXATTR(handle, fsp, name, value, size);
+	}
+
+	errno = ENOTSUP;
+	return -1;
+}
+
+static ssize_t streams_xattr_flistxattr(struct vfs_handle_struct *handle,
+					struct files_struct *fsp,
+					char *list,
+					size_t size)
+{
+	struct stream_io *sio =
+		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+
+	if (sio == NULL) {
+		return SMB_VFS_NEXT_FLISTXATTR(handle, fsp, list, size);
+	}
+
+	errno = ENOTSUP;
+	return -1;
+}
+
+static int streams_xattr_fremovexattr(struct vfs_handle_struct *handle,
+				      struct files_struct *fsp,
+				      const char *name)
+{
+	struct stream_io *sio =
+		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+
+	if (sio == NULL) {
+		return SMB_VFS_NEXT_FREMOVEXATTR(handle, fsp, name);
+	}
+
+	errno = ENOTSUP;
+	return -1;
+}
+
+static int streams_xattr_fsetxattr(struct vfs_handle_struct *handle,
+				   struct files_struct *fsp,
+				   const char *name,
+				   const void *value,
+				   size_t size,
+				   int flags)
+{
+	struct stream_io *sio =
+		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+
+	if (sio == NULL) {
+		return SMB_VFS_NEXT_FSETXATTR(handle, fsp, name, value,
+					      size, flags);
+	}
+
+	errno = ENOTSUP;
+	return -1;
+}
+
+static int streams_xattr_fchmod_acl(vfs_handle_struct *handle,
+				    files_struct *fsp,
+				    mode_t mode)
+{
+	struct stream_io *sio =
+		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+
+	if (sio == NULL) {
+		return SMB_VFS_NEXT_FCHMOD_ACL(handle, fsp, mode);
+	}
+
+	return 0;
+}
+
+static SMB_ACL_T streams_xattr_sys_acl_get_fd(vfs_handle_struct *handle,
+					      files_struct *fsp,
+					      TALLOC_CTX *mem_ctx)
+{
+	struct stream_io *sio =
+		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+
+	if (sio == NULL) {
+		return SMB_VFS_NEXT_SYS_ACL_GET_FD(handle, fsp, mem_ctx);
+	}
+
+	return SMB_VFS_NEXT_SYS_ACL_GET_FILE(
+		handle, fsp->base_fsp->fsp_name->base_name,
+		SMB_ACL_TYPE_ACCESS, mem_ctx);
+}
+
+static int streams_xattr_sys_acl_set_fd(vfs_handle_struct *handle,
+					files_struct *fsp,
+					SMB_ACL_T theacl)
+{
+	struct stream_io *sio =
+		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+
+	if (sio == NULL) {
+		return SMB_VFS_NEXT_SYS_ACL_SET_FD(handle, fsp, theacl);
+	}
+
+	return 0;
+}
+
+static int streams_xattr_sys_acl_blob_get_fd(vfs_handle_struct *handle,
+					     files_struct *fsp,
+					     TALLOC_CTX *mem_ctx,
+					     char **blob_description,
+					     DATA_BLOB *blob)
+{
+	struct stream_io *sio =
+		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+
+	if (sio == NULL) {
+		return SMB_VFS_NEXT_SYS_ACL_BLOB_GET_FD(handle, fsp, mem_ctx,
+							blob_description, blob);
+	}
+
+	return SMB_VFS_NEXT_SYS_ACL_BLOB_GET_FILE(
+		handle, fsp->base_fsp->fsp_name->base_name, mem_ctx,
+		blob_description, blob);
+}
+
+static NTSTATUS streams_xattr_fget_nt_acl(vfs_handle_struct *handle,
+					  files_struct *fsp,
+					  uint32_t security_info,
+					  TALLOC_CTX *mem_ctx,
+					  struct security_descriptor **ppdesc)
+{
+	struct stream_io *sio =
+		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+
+	if (sio == NULL) {
+		return SMB_VFS_NEXT_FGET_NT_ACL(handle, fsp, security_info,
+						mem_ctx, ppdesc);
+	}
+
+	return SMB_VFS_NEXT_GET_NT_ACL(handle, fsp->base_fsp->fsp_name,
+				       security_info, mem_ctx, ppdesc);
+}
+
+static NTSTATUS streams_xattr_fset_nt_acl(vfs_handle_struct *handle,
+					  files_struct *fsp,
+					  uint32_t security_info_sent,
+					  const struct security_descriptor *psd)
+{
+	struct stream_io *sio =
+		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+
+	if (sio == NULL) {
+		return SMB_VFS_NEXT_FSET_NT_ACL(handle, fsp,
+						security_info_sent, psd);
+	}
+
+	return NT_STATUS_OK;
+}
+
+struct streams_xattr_fsync_state {
+	int ret;
+	struct vfs_aio_state vfs_aio_state;
+};
+
+static void streams_xattr_fsync_done(struct tevent_req *subreq);
+
+static struct tevent_req *streams_xattr_fsync_send(
+	struct vfs_handle_struct *handle,
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct files_struct *fsp)
+{
+	struct tevent_req *req = NULL;
+	struct tevent_req *subreq = NULL;
+	struct streams_xattr_fsync_state *state = NULL;
+	struct stream_io *sio =
+		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct streams_xattr_fsync_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	if (sio == NULL) {
+		subreq = SMB_VFS_NEXT_FSYNC_SEND(state, ev, handle, fsp);
+		if (tevent_req_nomem(req, subreq)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(subreq, streams_xattr_fsync_done, req);
+		return req;
+	}
+
+	/*
+	 * There's no pathname based sync variant and we don't have access to
+	 * the basefile handle, so we can't do anything here.
+	 */
+
+	tevent_req_done(req);
+	return tevent_req_post(req, ev);
+}
+
+static void streams_xattr_fsync_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct streams_xattr_fsync_state *state = tevent_req_data(
+		req, struct streams_xattr_fsync_state);
+
+	state->ret = SMB_VFS_FSYNC_RECV(subreq, &state->vfs_aio_state);
+	TALLOC_FREE(subreq);
+	if (state->ret != 0) {
+		tevent_req_error(req, errno);
+		return;
+	}
+
+	tevent_req_done(req);
+}
+
+static int streams_xattr_fsync_recv(struct tevent_req *req,
+				    struct vfs_aio_state *vfs_aio_state)
+{
+	struct streams_xattr_fsync_state *state = tevent_req_data(
+		req, struct streams_xattr_fsync_state);
+
+	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
+		return -1;
+	}
+
+	*vfs_aio_state = state->vfs_aio_state;
+	return state->ret;
+}
+
+static bool streams_xattr_lock(vfs_handle_struct *handle,
+			       files_struct *fsp,
+			       int op,
+			       off_t offset,
+			       off_t count,
+			       int type)
+{
+	struct stream_io *sio =
+		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+
+	if (sio == NULL) {
+		return SMB_VFS_NEXT_LOCK(handle, fsp, op, offset, count, type);
+	}
+
+	return true;
+}
+
+static bool streams_xattr_getlock(vfs_handle_struct *handle,
+				  files_struct *fsp,
+				  off_t *poffset,
+				  off_t *pcount,
+				  int *ptype,
+				  pid_t *ppid)
+{
+	struct stream_io *sio =
+		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+
+	if (sio == NULL) {
+		return SMB_VFS_NEXT_GETLOCK(handle, fsp, poffset,
+					    pcount, ptype, ppid);
+	}
+
+	errno = ENOTSUP;
+	return false;
+}
+
+static int streams_xattr_kernel_flock(vfs_handle_struct *handle,
+				      files_struct *fsp,
+				      uint32_t share_mode,
+				      uint32_t access_mask)
+{
+	struct stream_io *sio =
+		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+
+	if (sio == NULL) {
+		return SMB_VFS_NEXT_KERNEL_FLOCK(handle, fsp,
+						 share_mode, access_mask);
+	}
+
+	return 0;
+}
+
+static int streams_xattr_linux_setlease(vfs_handle_struct *handle,
+					files_struct *fsp,
+					int leasetype)
+{
+	struct stream_io *sio =
+		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+
+	if (sio == NULL) {
+		return SMB_VFS_NEXT_LINUX_SETLEASE(handle, fsp, leasetype);
+	}
+
+	return 0;
+}
+
+static bool streams_xattr_strict_lock(struct vfs_handle_struct *handle,
+				      files_struct *fsp,
+				      struct lock_struct *plock)
+{
+	struct stream_io *sio =
+		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+
+	if (sio != NULL) {
+		return true;
+	}
+
+	return SMB_VFS_NEXT_STRICT_LOCK(handle, fsp, plock);
+}
+
+static void streams_xattr_strict_unlock(struct vfs_handle_struct *handle,
+					files_struct *fsp,
+					struct lock_struct *plock)
+{
+	struct stream_io *sio =
+		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+
+	if (sio != NULL) {
+		return;
+	}
+
+	return SMB_VFS_NEXT_STRICT_UNLOCK(handle, fsp, plock);
+}
+
+static NTSTATUS streams_xattr_get_compression(struct vfs_handle_struct *handle,
+					      TALLOC_CTX *mem_ctx,
+					      struct files_struct *fsp,
+					      struct smb_filename *smb_fname,
+					      uint16_t *_compression_fmt)
+{
+	struct stream_io *sio =
+		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+
+	if (sio == NULL) {
+		return SMB_VFS_NEXT_GET_COMPRESSION(handle, mem_ctx, fsp,
+						    smb_fname, _compression_fmt);
+	}
+
+	*_compression_fmt = COMPRESSION_FORMAT_NONE;
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS streams_xattr_set_compression(struct vfs_handle_struct *handle,
+					      TALLOC_CTX *mem_ctx,
+					      struct files_struct *fsp,
+					      uint16_t compression_fmt)
+{
+	struct stream_io *sio =
+		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+
+	if (sio == NULL) {
+		return SMB_VFS_NEXT_SET_COMPRESSION(handle, mem_ctx, fsp,
+						    compression_fmt);
+	}
+
+	return NT_STATUS_NOT_SUPPORTED;
+}
 
 static struct vfs_fn_pointers vfs_streams_xattr_fns = {
 	.fs_capabilities_fn = streams_xattr_fs_capabilities,
@@ -1138,6 +1544,37 @@ static struct vfs_fn_pointers vfs_streams_xattr_fns = {
 	.ftruncate_fn = streams_xattr_ftruncate,
 	.fallocate_fn = streams_xattr_fallocate,
 	.streaminfo_fn = streams_xattr_streaminfo,
+
+	.fsync_send_fn = streams_xattr_fsync_send,
+	.fsync_recv_fn = streams_xattr_fsync_recv,
+
+	.lock_fn = streams_xattr_lock,
+	.getlock_fn = streams_xattr_getlock,
+	.kernel_flock_fn = streams_xattr_kernel_flock,
+	.linux_setlease_fn = streams_xattr_linux_setlease,
+	.strict_lock_fn = streams_xattr_strict_lock,
+	.strict_unlock_fn = streams_xattr_strict_unlock,
+
+	.get_compression_fn = streams_xattr_get_compression,
+	.set_compression_fn = streams_xattr_set_compression,
+
+	.fchown_fn = streams_xattr_fchown,
+	.fchmod_fn = streams_xattr_fchmod,
+	.fsync_fn = streams_xattr_fsync,
+
+	.fgetxattr_fn = streams_xattr_fgetxattr,
+	.flistxattr_fn = streams_xattr_flistxattr,
+	.fremovexattr_fn = streams_xattr_fremovexattr,
+	.fsetxattr_fn = streams_xattr_fsetxattr,
+
+	.fchmod_acl_fn = streams_xattr_fchmod_acl,
+
+	.sys_acl_get_fd_fn = streams_xattr_sys_acl_get_fd,
+	.sys_acl_blob_get_fd_fn = streams_xattr_sys_acl_blob_get_fd,
+	.sys_acl_set_fd_fn = streams_xattr_sys_acl_set_fd,
+
+	.fget_nt_acl_fn = streams_xattr_fget_nt_acl,
+	.fset_nt_acl_fn = streams_xattr_fset_nt_acl,
 };
 
 NTSTATUS vfs_streams_xattr_init(void);
