@@ -398,12 +398,11 @@ _PUBLIC_ NTSTATUS gensec_update(struct gensec_security *gensec_security,
 
 struct gensec_update_state {
 	const struct gensec_security_ops *ops;
-	struct tevent_req *subreq;
 	struct gensec_security *gensec_security;
 	DATA_BLOB out;
 };
 
-static void gensec_update_subreq_done(struct tevent_req *subreq);
+static void gensec_update_done(struct tevent_req *subreq);
 
 /**
  * Next state function for the GENSEC state machine async version
@@ -421,8 +420,9 @@ _PUBLIC_ struct tevent_req *gensec_update_send(TALLOC_CTX *mem_ctx,
 					       struct gensec_security *gensec_security,
 					       const DATA_BLOB in)
 {
-	struct tevent_req *req;
+	struct tevent_req *req = NULL;
 	struct gensec_update_state *state = NULL;
+	struct tevent_req *subreq = NULL;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct gensec_update_state);
@@ -438,19 +438,16 @@ _PUBLIC_ struct tevent_req *gensec_update_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	state->subreq = state->ops->update_send(state, ev, gensec_security, in);
-	if (tevent_req_nomem(state->subreq, req)) {
+	subreq = state->ops->update_send(state, ev, gensec_security, in);
+	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
-
-	tevent_req_set_callback(state->subreq,
-				gensec_update_subreq_done,
-				req);
+	tevent_req_set_callback(subreq, gensec_update_done, req);
 
 	return req;
 }
 
-static void gensec_update_subreq_done(struct tevent_req *subreq)
+static void gensec_update_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req =
 		tevent_req_callback_data(subreq,
@@ -459,8 +456,6 @@ static void gensec_update_subreq_done(struct tevent_req *subreq)
 		tevent_req_data(req,
 		struct gensec_update_state);
 	NTSTATUS status;
-
-	state->subreq = NULL;
 
 	status = state->ops->update_recv(subreq, state, &state->out);
 	TALLOC_FREE(subreq);
