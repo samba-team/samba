@@ -374,6 +374,8 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 	int result = 0;
 	const char *errstr=NULL;
 	NTSTATUS status = NT_STATUS_OK;
+	DATA_BLOB input = data_blob_null;
+	DATA_BLOB output = data_blob_null;
 
 	DEBUG(10, ("BindSASL dn: %s\n",req->dn));
 
@@ -410,19 +412,13 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 		}
 	}
 
-	if (NT_STATUS_IS_OK(status)) {
-		DATA_BLOB input = data_blob(NULL, 0);
-		DATA_BLOB output = data_blob(NULL, 0);
-
-		if (req->creds.SASL.secblob) {
-			input = *req->creds.SASL.secblob;
-		}
-
-		status = gensec_update_ev(conn->gensec, reply, conn->connection->event.ctx,
-					  input, &output);
-
-		*resp->SASL.secblob = output;
+	if (req->creds.SASL.secblob) {
+		input = *req->creds.SASL.secblob;
 	}
+
+	status = gensec_update_ev(conn->gensec, reply, conn->connection->event.ctx,
+				  input, &output);
+	*resp->SASL.secblob = output;
 
 	if (NT_STATUS_EQUAL(NT_STATUS_MORE_PROCESSING_REQUIRED, status)) {
 		result = LDAP_SASL_BIND_IN_PROGRESS;
