@@ -232,7 +232,7 @@ static int streams_xattr_fstat(vfs_handle_struct *handle, files_struct *fsp,
 	struct stream_io *io = (struct stream_io *)
 		VFS_FETCH_FSP_EXTENSION(handle, fsp);
 
-	DEBUG(10, ("streams_xattr_fstat called for %d\n", fsp->fh->fd));
+	DBG_DEBUG("streams_xattr_fstat called for %s\n", fsp_str_dbg(io->fsp));
 
 	if (io == NULL || fsp->base_fsp == NULL) {
 		return SMB_VFS_NEXT_FSTAT(handle, fsp, sbuf);
@@ -506,11 +506,11 @@ static int streams_xattr_open(vfs_handle_struct *handle,
 		DEBUG(10, ("creating or truncating attribute %s on file %s\n",
 			   xattr_name, smb_fname->base_name));
 
-		fsp->fh->fd = hostfd;
-		ret = SMB_VFS_FSETXATTR(fsp, xattr_name,
-					&null, sizeof(null),
-					flags & O_EXCL ? XATTR_CREATE : 0);
-		fsp->fh->fd = -1;
+		ret = SMB_VFS_SETXATTR(fsp->conn,
+				       smb_fname,
+				       xattr_name,
+				       &null, sizeof(null),
+				       flags & O_EXCL ? XATTR_CREATE : 0);
 		if (ret != 0) {
 			goto fail;
 		}
@@ -844,14 +844,7 @@ static NTSTATUS streams_xattr_streaminfo(vfs_handle_struct *handle,
 	NTSTATUS status;
 	struct streaminfo_state state;
 
-	if ((fsp != NULL) && (fsp->fh->fd != -1)) {
-		ret = SMB_VFS_FSTAT(fsp, &sbuf);
-	} else {
-		ret = vfs_stat_smb_basename(handle->conn,
-				smb_fname,
-				&sbuf);
-	}
-
+	ret = vfs_stat_smb_basename(handle->conn, smb_fname, &sbuf);
 	if (ret == -1) {
 		return map_nt_error_from_unix(errno);
 	}
@@ -1003,16 +996,10 @@ static ssize_t streams_xattr_pwrite(vfs_handle_struct *handle,
 
         memcpy(ea.value.data + offset, data, n);
 
-	if (fsp->fh->fd != -1) {
-		ret = SMB_VFS_FSETXATTR(fsp,
-				sio->xattr_name,
-				ea.value.data, ea.value.length, 0);
-	} else {
-		ret = SMB_VFS_SETXATTR(fsp->conn,
-				       fsp->fsp_name,
-				sio->xattr_name,
-				ea.value.data, ea.value.length, 0);
-	}
+	ret = SMB_VFS_SETXATTR(fsp->conn,
+			       fsp->fsp_name,
+			       sio->xattr_name,
+			       ea.value.data, ea.value.length, 0);
 	TALLOC_FREE(ea.value.data);
 
 	if (ret == -1) {
@@ -1297,17 +1284,10 @@ static int streams_xattr_ftruncate(struct vfs_handle_struct *handle,
 	ea.value.length = offset + 1;
 	ea.value.data[offset] = 0;
 
-	if (fsp->fh->fd != -1) {
-		ret = SMB_VFS_FSETXATTR(fsp,
-				sio->xattr_name,
-				ea.value.data, ea.value.length, 0);
-	} else {
-		ret = SMB_VFS_SETXATTR(fsp->conn,
-				fsp->fsp_name,
-				sio->xattr_name,
-				ea.value.data, ea.value.length, 0);
-	}
-
+	ret = SMB_VFS_SETXATTR(fsp->conn,
+			       fsp->fsp_name,
+			       sio->xattr_name,
+			       ea.value.data, ea.value.length, 0);
 	TALLOC_FREE(ea.value.data);
 
 	if (ret == -1) {
