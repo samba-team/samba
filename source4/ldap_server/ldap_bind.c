@@ -401,6 +401,7 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 			result = LDAP_OPERATIONS_ERROR;
 			errstr = talloc_asprintf(reply, "SASL: Failed to start authentication system: %s", 
 						 nt_errstr(status));
+			goto do_reply;
 		}
 	}
 
@@ -426,6 +427,7 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 	if (NT_STATUS_EQUAL(NT_STATUS_MORE_PROCESSING_REQUIRED, status)) {
 		result = LDAP_SASL_BIND_IN_PROGRESS;
 		errstr = NULL;
+		goto do_reply;
 	} else if (NT_STATUS_IS_OK(status)) {
 		struct ldapsrv_sasl_postprocess_context *context = NULL;
 
@@ -449,6 +451,7 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 			errstr = talloc_asprintf(reply,
 						 "SASL:[%s]: Sign or Seal are not allowed if TLS is used",
 						 req->creds.SASL.mechanism);
+			goto do_reply;
 		}
 
 		if (context && conn->sockets.sasl) {
@@ -458,6 +461,7 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 			errstr = talloc_asprintf(reply,
 						 "SASL:[%s]: Sign or Seal are not allowed if SASL encryption has already been set up",
 						 req->creds.SASL.mechanism);
+			goto do_reply;
 		}
 
 		if (context) {
@@ -484,14 +488,15 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 				errstr = talloc_asprintf(reply,
 						"SASL:[%s]: not allowed if TLS is used.",
 						 req->creds.SASL.mechanism);
-				break;
+				goto do_reply;
+
 			case LDAP_SERVER_REQUIRE_STRONG_AUTH_YES:
 				status = NT_STATUS_NETWORK_ACCESS_DENIED;
 				result = LDAP_STRONG_AUTH_REQUIRED;
 				errstr = talloc_asprintf(reply,
 						 "SASL:[%s]: Sign or Seal are required.",
 						 req->creds.SASL.mechanism);
-				break;
+				goto do_reply;
 			}
 		}
 
@@ -501,6 +506,7 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 			errstr = talloc_asprintf(reply, 
 						 "SASL:[%s]: Failed to setup SASL socket: %s", 
 						 req->creds.SASL.mechanism, nt_errstr(status));
+			goto do_reply;
 		} else {
 			struct auth_session_info *old_session_info=NULL;
 
@@ -513,6 +519,7 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 				errstr = talloc_asprintf(reply, 
 							 "SASL:[%s]: Failed to get session info: %s", 
 							 req->creds.SASL.mechanism, nt_errstr(status));
+				goto do_reply;
 			} else {
 				talloc_unlink(conn, old_session_info);
 				
@@ -529,6 +536,7 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 								 "SASL:[%s]: Failed to advise samdb of new credentials: %s", 
 								 req->creds.SASL.mechanism, 
 								 nt_errstr(status));
+					goto do_reply;
 				}
 			}
 		}
@@ -549,8 +557,10 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 		}
 		talloc_unlink(conn, conn->gensec);
 		conn->gensec = NULL;
+		goto do_reply;
 	}
 
+do_reply:
 	resp->response.resultcode = result;
 	resp->response.dn = NULL;
 	resp->response.errormessage = errstr;
