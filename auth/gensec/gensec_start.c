@@ -893,7 +893,8 @@ _PUBLIC_ NTSTATUS gensec_set_credentials(struct gensec_security *gensec_security
   The 'name' can be later used by other backends to find the operations
   structure for this backend.
 */
-_PUBLIC_ NTSTATUS gensec_register(const struct gensec_security_ops *ops)
+_PUBLIC_ NTSTATUS gensec_register(TALLOC_CTX *ctx,
+			const struct gensec_security_ops *ops)
 {
 	if (gensec_security_by_name(NULL, ops->name) != NULL) {
 		/* its already registered! */
@@ -902,7 +903,7 @@ _PUBLIC_ NTSTATUS gensec_register(const struct gensec_security_ops *ops)
 		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 
-	generic_security_ops = talloc_realloc(talloc_autofree_context(),
+	generic_security_ops = talloc_realloc(ctx,
 					      generic_security_ops,
 					      const struct gensec_security_ops *,
 					      gensec_num_backends+2);

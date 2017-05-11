@@ -256,14 +256,14 @@ _PUBLIC_ NTSTATUS gensec_ntlmssp_init(TALLOC_CTX *ctx)
 {
 	NTSTATUS ret;
 
-	ret = gensec_register(&gensec_ntlmssp_security_ops);
+	ret = gensec_register(ctx, &gensec_ntlmssp_security_ops);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("Failed to register '%s' gensec backend!\n",
 			gensec_ntlmssp_security_ops.name));
 		return ret;
 	}
 
-	ret = gensec_register(&gensec_ntlmssp_resume_ccache_ops);
+	ret = gensec_register(ctx, &gensec_ntlmssp_resume_ccache_ops);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("Failed to register '%s' gensec backend!\n",
 			gensec_ntlmssp_resume_ccache_ops.name));

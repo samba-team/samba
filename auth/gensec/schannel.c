@@ -852,7 +852,7 @@ static const struct gensec_security_ops gensec_schannel_security_ops = {
 _PUBLIC_ NTSTATUS gensec_schannel_init(TALLOC_CTX *ctx)
 {
 	NTSTATUS ret;
-	ret = gensec_register(&gensec_schannel_security_ops);
+	ret = gensec_register(ctx, &gensec_schannel_security_ops);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("Failed to register '%s' gensec backend!\n",
 			gensec_schannel_security_ops.name));

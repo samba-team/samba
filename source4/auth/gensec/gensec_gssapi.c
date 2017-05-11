@@ -1644,21 +1644,21 @@ _PUBLIC_ NTSTATUS gensec_gssapi_init(TALLOC_CTX *ctx)
 {
 	NTSTATUS ret;
 
-	ret = gensec_register(&gensec_gssapi_spnego_security_ops);
+	ret = gensec_register(ctx, &gensec_gssapi_spnego_security_ops);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("Failed to register '%s' gensec backend!\n",
 			gensec_gssapi_spnego_security_ops.name));
 		return ret;
 	}
 
-	ret = gensec_register(&gensec_gssapi_krb5_security_ops);
+	ret = gensec_register(ctx, &gensec_gssapi_krb5_security_ops);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("Failed to register '%s' gensec backend!\n",
 			gensec_gssapi_krb5_security_ops.name));
 		return ret;
 	}
 
-	ret = gensec_register(&gensec_gssapi_sasl_krb5_security_ops);
+	ret = gensec_register(ctx, &gensec_gssapi_sasl_krb5_security_ops);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("Failed to register '%s' gensec backend!\n",
 			gensec_gssapi_sasl_krb5_security_ops.name));

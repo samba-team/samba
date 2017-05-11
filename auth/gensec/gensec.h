@@ -181,7 +181,8 @@ NTSTATUS gensec_start_mech_by_oid(struct gensec_security *gensec_security,
 const char *gensec_get_name_by_oid(struct gensec_security *gensec_security, const char *oid_string);
 struct cli_credentials *gensec_get_credentials(struct gensec_security *gensec_security);
 NTSTATUS gensec_init(void);
-NTSTATUS gensec_register(const struct gensec_security_ops *ops);
+NTSTATUS gensec_register(TALLOC_CTX *ctx,
+		const struct gensec_security_ops *ops);
 const struct gensec_security_ops *gensec_security_by_oid(struct gensec_security *gensec_security,
 							 const char *oid_string);
 const struct gensec_security_ops *gensec_security_by_sasl_name(struct gensec_security *gensec_security,

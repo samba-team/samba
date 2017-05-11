@@ -115,7 +115,7 @@ NTSTATUS gensec_external_init(TALLOC_CTX *ctx)
 {
 	NTSTATUS ret;
 
-	ret = gensec_register(&gensec_external_ops);
+	ret = gensec_register(ctx, &gensec_external_ops);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("Failed to register '%s' gensec backend!\n",
 			 gensec_external_ops.name));

@@ -127,7 +127,7 @@ _PUBLIC_ NTSTATUS gensec_http_basic_init(TALLOC_CTX *ctx)
 {
 	NTSTATUS status;
 
-	status = gensec_register(&gensec_http_basic_security_ops);
+	status = gensec_register(ctx, &gensec_http_basic_security_ops);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to register '%s' gensec backend!\n",
 				gensec_http_basic_security_ops.name));

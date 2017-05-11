@@ -1086,14 +1086,14 @@ _PUBLIC_ NTSTATUS gensec_krb5_init(TALLOC_CTX *ctx)
 {
 	NTSTATUS ret;
 
-	ret = gensec_register(&gensec_krb5_security_ops);
+	ret = gensec_register(ctx, &gensec_krb5_security_ops);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("Failed to register '%s' gensec backend!\n",
 			gensec_krb5_security_ops.name));
 		return ret;
 	}
 
-	ret = gensec_register(&gensec_fake_gssapi_krb5_security_ops);
+	ret = gensec_register(ctx, &gensec_fake_gssapi_krb5_security_ops);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("Failed to register '%s' gensec backend!\n",
 			gensec_fake_gssapi_krb5_security_ops.name));
