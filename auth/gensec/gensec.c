@@ -325,14 +325,9 @@ _PUBLIC_ NTSTATUS gensec_update_ev(struct gensec_security *gensec_security,
 				   const DATA_BLOB in, DATA_BLOB *out)
 {
 	NTSTATUS status;
-	const struct gensec_security_ops *ops = gensec_security->ops;
 	TALLOC_CTX *frame = NULL;
 	struct tevent_req *subreq = NULL;
 	bool ok;
-
-	if (gensec_security->child_security != NULL) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
 
 	frame = talloc_stackframe();
 
@@ -350,7 +345,7 @@ _PUBLIC_ NTSTATUS gensec_update_ev(struct gensec_security *gensec_security,
 		tevent_loop_allow_nesting(ev);
 	}
 
-	subreq = ops->update_send(frame, ev, gensec_security, in);
+	subreq = gensec_update_send(frame, ev, gensec_security, in);
 	if (subreq == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
@@ -359,20 +354,7 @@ _PUBLIC_ NTSTATUS gensec_update_ev(struct gensec_security *gensec_security,
 	if (!ok) {
 		goto fail;
 	}
-	status = ops->update_recv(subreq, out_mem_ctx, out);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto fail;
-	}
-
-	/*
-	 * Because callers using the
-	 * gensec_start_mech_by_auth_type() never call
-	 * gensec_want_feature(), it isn't sensible for them
-	 * to have to call gensec_have_feature() manually, and
-	 * these are not points of negotiation, but are
-	 * asserted by the client
-	 */
-	status = gensec_verify_features(gensec_security);
+	status = gensec_update_recv(subreq, out_mem_ctx, out);
  fail:
 	TALLOC_FREE(frame);
 	return status;
