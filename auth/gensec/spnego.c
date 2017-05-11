@@ -23,6 +23,8 @@
 */
 
 #include "includes.h"
+#include <tevent.h>
+#include "lib/util/tevent_ntstatus.h"
 #include "../libcli/auth/spnego.h"
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "auth/credentials/credentials.h"
@@ -1442,6 +1444,65 @@ static NTSTATUS gensec_spnego_update_wrapper(struct gensec_security *gensec_secu
 					out);
 }
 
+struct gensec_spnego_update_state {
+	NTSTATUS status;
+	DATA_BLOB out;
+};
+
+static struct tevent_req *gensec_spnego_update_send(TALLOC_CTX *mem_ctx,
+						    struct tevent_context *ev,
+						    struct gensec_security *gensec_security,
+						    const DATA_BLOB in)
+{
+	struct tevent_req *req = NULL;
+	struct gensec_spnego_update_state *state = NULL;
+	NTSTATUS status;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct gensec_spnego_update_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	status = gensec_spnego_update_wrapper(gensec_security,
+					      state, ev, in,
+					      &state->out);
+	state->status = status;
+	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+	}
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
+
+	tevent_req_done(req);
+	return tevent_req_post(req, ev);
+}
+
+static NTSTATUS gensec_spnego_update_recv(struct tevent_req *req,
+					  TALLOC_CTX *out_mem_ctx,
+					  DATA_BLOB *out)
+{
+	struct gensec_spnego_update_state *state =
+		tevent_req_data(req,
+		struct gensec_spnego_update_state);
+	NTSTATUS status;
+
+	*out = data_blob_null;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	*out = state->out;
+	talloc_steal(out_mem_ctx, state->out.data);
+	status = state->status;
+	tevent_req_received(req);
+	return status;
+}
+
 static const char *gensec_spnego_oids[] = { 
 	GENSEC_OID_SPNEGO,
 	NULL 
@@ -1454,7 +1515,8 @@ static const struct gensec_security_ops gensec_spnego_security_ops = {
 	.oid              = gensec_spnego_oids,
 	.client_start     = gensec_spnego_client_start,
 	.server_start     = gensec_spnego_server_start,
-	.update 	  = gensec_spnego_update_wrapper,
+	.update_send	  = gensec_spnego_update_send,
+	.update_recv	  = gensec_spnego_update_recv,
 	.seal_packet	  = gensec_child_seal_packet,
 	.sign_packet	  = gensec_child_sign_packet,
 	.sig_size	  = gensec_child_sig_size,
