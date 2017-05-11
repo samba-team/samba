@@ -382,7 +382,12 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 		return NT_STATUS_NO_MEMORY;
 	}
 	resp = &reply->msg->r.BindResponse;
-	
+	/* Windows 2000 mmc doesn't like secblob == NULL and reports a decoding error */
+	resp->SASL.secblob = talloc_zero(reply, DATA_BLOB);
+	if (resp->SASL.secblob == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	conn = call->conn;
 
 	/* 
@@ -416,12 +421,7 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 		status = gensec_update_ev(conn->gensec, reply, conn->connection->event.ctx,
 					  input, &output);
 
-		/* Windows 2000 mmc doesn't like secblob == NULL and reports a decoding error */
-		resp->SASL.secblob = talloc(reply, DATA_BLOB);
-		NT_STATUS_HAVE_NO_MEMORY(resp->SASL.secblob);
 		*resp->SASL.secblob = output;
-	} else {
-		resp->SASL.secblob = NULL;
 	}
 
 	if (NT_STATUS_EQUAL(NT_STATUS_MORE_PROCESSING_REQUIRED, status)) {
