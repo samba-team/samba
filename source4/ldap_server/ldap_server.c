@@ -578,7 +578,8 @@ static void ldapsrv_call_read_done(struct tevent_req *subreq)
 	conn->active_call = subreq;
 }
 
-
+static void ldapsrv_call_wait_done(struct tevent_req *subreq);
+static void ldapsrv_call_writev_start(struct ldapsrv_call *call);
 static void ldapsrv_call_writev_done(struct tevent_req *subreq);
 
 static void ldapsrv_call_process_done(struct tevent_req *subreq)
@@ -588,7 +589,6 @@ static void ldapsrv_call_process_done(struct tevent_req *subreq)
 		struct ldapsrv_call);
 	struct ldapsrv_connection *conn = call->conn;
 	NTSTATUS status;
-	DATA_BLOB blob = data_blob_null;
 
 	conn->active_call = NULL;
 
@@ -598,6 +598,61 @@ static void ldapsrv_call_process_done(struct tevent_req *subreq)
 		ldapsrv_terminate_connection(conn, nt_errstr(status));
 		return;
 	}
+
+	if (call->wait_send != NULL) {
+		subreq = call->wait_send(call,
+					 conn->connection->event.ctx,
+					 call->wait_private);
+		if (subreq == NULL) {
+			ldapsrv_terminate_connection(conn,
+					"ldapsrv_call_process_done: "
+					"call->wait_send - no memory");
+			return;
+		}
+		tevent_req_set_callback(subreq,
+					ldapsrv_call_wait_done,
+					call);
+		conn->active_call = subreq;
+		return;
+	}
+
+	ldapsrv_call_writev_start(call);
+}
+
+static void ldapsrv_call_wait_done(struct tevent_req *subreq)
+{
+	struct ldapsrv_call *call =
+		tevent_req_callback_data(subreq,
+		struct ldapsrv_call);
+	struct ldapsrv_connection *conn = call->conn;
+	NTSTATUS status;
+
+	conn->active_call = NULL;
+
+	status = call->wait_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		const char *reason;
+
+		reason = talloc_asprintf(call, "ldapsrv_call_wait_done: "
+					 "call->wait_recv() - %s",
+					 nt_errstr(status));
+		if (reason == NULL) {
+			reason = nt_errstr(status);
+		}
+
+		ldapsrv_terminate_connection(conn, reason);
+		return;
+	}
+
+	ldapsrv_call_writev_start(call);
+}
+
+static void ldapsrv_call_writev_start(struct ldapsrv_call *call)
+{
+	struct ldapsrv_connection *conn = call->conn;
+	DATA_BLOB blob = data_blob_null;
+	struct tevent_req *subreq = NULL;
 
 	/* build all the replies into a single blob */
 	while (call->replies) {

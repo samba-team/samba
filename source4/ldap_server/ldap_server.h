@@ -73,6 +73,12 @@ struct ldapsrv_call {
 	} *replies;
 	struct iovec out_iov;
 
+	struct tevent_req *(*wait_send)(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					void *private_data);
+	NTSTATUS (*wait_recv)(struct tevent_req *req);
+	void *wait_private;
+
 	struct tevent_req *(*postprocess_send)(TALLOC_CTX *mem_ctx,
 					       struct tevent_context *ev,
 					       void *private_data);
