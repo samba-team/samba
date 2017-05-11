@@ -10,3 +10,20 @@ def build(bld):
                      source='test_krb5_samba.c',
                      deps='krb5samba cmocka',
                      install=False)
+
+    bld.SAMBA_BINARY('test_sambafs_srv_pipe',
+                     source='test_sambafs_srv_pipe.c',
+                     deps='''
+                          RPC_SERVER
+                          RPC_SAMR
+                          cmocka
+                          ''',
+                     install=False)
+
+    bld.SAMBA_MODULE('rpc_test_dummy_module',
+                     source='rpc_test_dummy_module.c',
+                     deps='ndr',
+                     subsystem='rpc',
+                     allow_undefined_symbols=True,
+                     init_function='',
+                     internal_module=False)
