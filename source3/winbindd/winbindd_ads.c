@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "winbindd.h"
+#include "winbindd_ads.h"
 #include "rpc_client/rpc_client.h"
 #include "../librpc/gen_ndr/ndr_netlogon_c.h"
 #include "../libds/common/flags.h"

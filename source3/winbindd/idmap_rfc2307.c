@@ -25,7 +25,7 @@
 
 #include "includes.h"
 #include "winbindd.h"
-#include "ads.h"
+#include "winbindd_ads.h"
 #include "idmap.h"
 #include "smbldap.h"
 #include "nsswitch/winbind_client.h"

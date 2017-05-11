@@ -23,8 +23,6 @@
 #ifndef _WINBINDD_PROTO_H_
 #define _WINBINDD_PROTO_H_
 
-#include "ads.h"
-
 /* The following definitions come from winbindd/winbindd.c  */
 struct messaging_context *winbind_messaging_context(void);
 struct imessaging_context *winbind_imessaging_context(void);
@@ -955,9 +953,6 @@ NTSTATUS open_internal_samr_conn(TALLOC_CTX *mem_ctx,
 NTSTATUS open_internal_lsa_conn(TALLOC_CTX *mem_ctx,
 				struct rpc_pipe_client **lsa_pipe,
 				struct policy_handle *lsa_hnd);
-
-/* The following definitions come from winbindd/winbindd_ads.c  */
-ADS_STATUS ads_idmap_cached_connection(ADS_STRUCT **adsp, const char *dom_name);
 
 /* The following definitions come from winbindd/winbindd_irpc.c  */
 NTSTATUS wb_irpc_register(void);

@@ -28,7 +28,7 @@
 #include "includes.h"
 #include "winbindd.h"
 #include "../libds/common/flags.h"
-#include "ads.h"
+#include "winbindd_ads.h"
 #include "libads/ldap_schema.h"
 #include "nss_info.h"
 #include "idmap.h"
