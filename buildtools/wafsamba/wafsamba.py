@@ -465,7 +465,8 @@ def SAMBA_MODULE(bld, modname, source,
                  pyembed=False,
                  manpages=None,
                  allow_undefined_symbols=False,
-                 allow_warnings=False
+                 allow_warnings=False,
+                 install=True
                  ):
     '''define a Samba module.'''
 
@@ -535,7 +536,8 @@ def SAMBA_MODULE(bld, modname, source,
                       pyembed=pyembed,
                       manpages=manpages,
                       allow_undefined_symbols=allow_undefined_symbols,
-                      allow_warnings=allow_warnings
+                      allow_warnings=allow_warnings,
+                      install=install
                       )
 
 
