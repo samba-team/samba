@@ -111,7 +111,7 @@ struct tevent_req *http_send_auth_request_send(TALLOC_CTX *,
 					       struct tevent_context *,
 					       struct tstream_context *,
 					       struct tevent_queue *,
-					       struct http_request *,
+					       const struct http_request *,
 					       struct cli_credentials *,
 					       struct loadparm_context *,
 					       enum http_auth_method);

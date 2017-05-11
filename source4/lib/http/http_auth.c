@@ -32,7 +32,7 @@
 /**
  * Copy the request headers from src to dst
  */
-static NTSTATUS http_copy_header(struct http_request *src,
+static NTSTATUS http_copy_header(const struct http_request *src,
 				 struct http_request *dst)
 {
 	struct http_header *h;
@@ -78,193 +78,182 @@ static NTSTATUS http_parse_auth_response(enum http_auth_method auth,
 	return NT_STATUS_NOT_SUPPORTED;
 }
 
-/*
- * Create the next authentication request to send to server if authentication
- * is not completed. If it is completed, attachs the 'Authorization' header
- * to the original request.
- */
-static NTSTATUS http_create_auth_request(TALLOC_CTX *mem_ctx,
-					 struct gensec_security *gensec_ctx,
-					 struct tevent_context *ev,
-					 enum http_auth_method auth,
-					 struct http_request *original_request,
-					 struct http_request *auth_response,
-					 struct http_request **auth_request)
-{
-	NTSTATUS status;
-	DATA_BLOB in, out;
+struct http_auth_state {
+	struct tevent_context *ev;
 
-	if (auth_response) {
-		status = http_parse_auth_response(auth, auth_response, &in);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-	} else {
-		in = data_blob_null;
-	}
+	struct tstream_context *stream;
+	struct tevent_queue *send_queue;
 
-	status = gensec_update_ev(gensec_ctx, mem_ctx, ev, in, &out);
-	if (NT_STATUS_IS_OK(status)) {
-		if (out.length) {
-			http_add_header(original_request,
-					&original_request->headers,
-					"Authorization", (char*)out.data);
-		}
-	}
+	enum http_auth_method auth;
 
-	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		NTSTATUS status2;
+	struct gensec_security *gensec_ctx;
+	NTSTATUS gensec_status;
 
-		*auth_request = talloc_zero(mem_ctx, struct http_request);
-		if (*auth_request == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		status2 = http_copy_header(original_request, *auth_request);
-		if (!NT_STATUS_IS_OK(status2)) {
-			talloc_free(*auth_request);
-			return status2;
-		}
-
-		http_replace_header(*auth_request, &((*auth_request)->headers),
-				    "Content-Length", "0");
-		if (out.length) {
-			http_add_header(*auth_request,
-					&((*auth_request)->headers),
-					"Authorization", (char*)out.data);
-		}
-	}
-
-	return status;
-}
-
-struct http_auth_state
-{
-	struct loadparm_context	*lp_ctx;
-	struct tevent_context	*ev;
-	struct tstream_context	*stream;
-	struct tevent_queue	*send_queue;
-	struct cli_credentials  *credentials;
-	struct http_request	*original_request;
-	struct gensec_security	*gensec_ctx;
-	NTSTATUS		gensec_status;
-	enum http_auth_method	auth;
-
-	int			sys_errno;
-	int			nwritten;
+	const struct http_request *original_request;
+	struct http_request *next_request;
+	struct http_request *auth_response;
 };
 
 
-static void http_send_auth_request_done(struct tevent_req *);
+static void http_send_auth_request_gensec_done(struct tevent_req *subreq);
+static void http_send_auth_request_http_req_done(struct tevent_req *subreq);
+static void http_send_auth_request_http_rep_done(struct tevent_req *subreq);
+
 struct tevent_req *http_send_auth_request_send(TALLOC_CTX *mem_ctx,
 					       struct tevent_context *ev,
 					       struct tstream_context *stream,
 					       struct tevent_queue *send_queue,
-					       struct http_request *original_request,
+					       const struct http_request *original_request,
 					       struct cli_credentials *credentials,
 					       struct loadparm_context *lp_ctx,
 					       enum http_auth_method auth)
 {
-	struct tevent_req *req;
-	struct tevent_req *subreq;
-	struct http_auth_state *state;
+	struct tevent_req *req = NULL;
+	struct http_auth_state *state = NULL;
+	struct tevent_req *subreq = NULL;
+	DATA_BLOB gensec_in = data_blob_null;
 	NTSTATUS status;
-	struct http_request *auth_request = NULL;
-	struct http_request *request_to_send;
+	const char *mech_name = NULL;
 
 	req = tevent_req_create(mem_ctx, &state, struct http_auth_state);
 	if (req == NULL) {
 		return NULL;
 	}
-
 	state->ev = ev;
 	state->stream = stream;
 	state->send_queue = send_queue;
-	state->original_request = original_request;
-	state->credentials = credentials;
-	state->lp_ctx = lp_ctx;
 	state->auth = auth;
+	state->original_request = original_request;
 
 	status = gensec_init();
-	if (!NT_STATUS_IS_OK(status)) {
-		goto post_status;
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
 	}
+
 	status = gensec_client_start(state, &state->gensec_ctx,
 			             lpcfg_gensec_settings(state, lp_ctx));
-	if (!NT_STATUS_IS_OK(status)) {
-		goto post_status;
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
 	}
+
 	status = gensec_set_credentials(state->gensec_ctx, credentials);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto post_status;
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
 	}
 
 	switch (state->auth) {
 	case HTTP_AUTH_BASIC:
-		status = gensec_start_mech_by_name(state->gensec_ctx,
-						   "http_basic");
-		if (!NT_STATUS_IS_OK(status)) {
-			goto post_status;
-		}
+		mech_name = "http_basic";
 		break;
 	case HTTP_AUTH_NTLM:
-		status = gensec_start_mech_by_name(state->gensec_ctx,
-						   "http_ntlm");
-		if (!NT_STATUS_IS_OK(status)) {
-			goto post_status;
-		}
+		mech_name = "http_ntlm";
 		break;
 	default:
 		tevent_req_nterror(req, NT_STATUS_NOT_SUPPORTED);
 		return tevent_req_post(req, ev);
 	}
 
-	/*
-	 * Store the gensec status to read the server response on callback
-	 * if more processing is required
-	*/
-	state->gensec_status = http_create_auth_request(state,
-							state->gensec_ctx,
-							state->ev,
-							state->auth,
-							state->original_request,
-							NULL,
-							&auth_request);
-	if (!NT_STATUS_IS_OK(state->gensec_status) &&
-	    !NT_STATUS_EQUAL(state->gensec_status,
-			     NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		goto post_status;
+	status = gensec_start_mech_by_name(state->gensec_ctx, mech_name);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
 	}
 
-	/*
-	 * If no more processing is necessary, the http_create_auth_request
-	 * function will attach the authentication header to the original
-	 * request
-	 */
-	request_to_send = NT_STATUS_IS_OK(state->gensec_status) ?
-				state->original_request : auth_request;
-
-	subreq = http_send_request_send(state, ev, stream, send_queue,
-					request_to_send);
+	subreq = gensec_update_send(state, state->ev,
+				    state->gensec_ctx,
+				    gensec_in);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
-	tevent_req_set_callback(subreq, http_send_auth_request_done, req);
+	tevent_req_set_callback(subreq, http_send_auth_request_gensec_done, req);
+
 	return req;
-post_status:
-	tevent_req_nterror(req, status);
-	return tevent_req_post(req, ev);
 }
 
-static void http_send_auth_request_done2(struct tevent_req *subreq);
-static void http_send_auth_request_done(struct tevent_req *subreq)
+static void http_send_auth_request_gensec_done(struct tevent_req *subreq)
 {
-	NTSTATUS		status;
-	struct tevent_req	*req;
-	struct http_auth_state	*state;
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
+	struct http_auth_state *state =
+		tevent_req_data(req,
+		struct http_auth_state);
+	DATA_BLOB gensec_out = data_blob_null;
+	NTSTATUS status;
+	int ret;
 
-	req = tevent_req_callback_data(subreq, struct tevent_req);
-	state = tevent_req_data(req, struct http_auth_state);
+	TALLOC_FREE(state->auth_response);
+
+	status = gensec_update_recv(subreq, state, &gensec_out);
+	TALLOC_FREE(subreq);
+	state->gensec_status = status;
+	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		status = NT_STATUS_OK;
+	}
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	state->next_request = talloc_zero(state, struct http_request);
+	if (tevent_req_nomem(state->next_request, req)) {
+		return;
+	}
+
+	status = http_copy_header(state->original_request, state->next_request);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	if (!NT_STATUS_IS_OK(state->gensec_status)) {
+		/*
+		 * More preprocessing required before we
+		 * can include the content.
+		 */
+		ret = http_replace_header(state->next_request,
+					  &state->next_request->headers,
+					  "Content-Length", "0");
+		if (ret != 0) {
+			tevent_req_oom(req);
+			return;
+		}
+	} else {
+		state->next_request->body = state->original_request->body;
+	}
+
+	if (gensec_out.length > 0) {
+		ret = http_add_header(state->next_request,
+				      &state->next_request->headers,
+				      "Authorization",
+				      (char *)gensec_out.data);
+		if (ret != 0) {
+			tevent_req_oom(req);
+			return;
+		}
+		data_blob_free(&gensec_out);
+	}
+
+	subreq = http_send_request_send(state, state->ev,
+					state->stream,
+					state->send_queue,
+					state->next_request);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq,
+				http_send_auth_request_http_req_done,
+				req);
+}
+
+static void http_send_auth_request_http_req_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
+	struct http_auth_state *state =
+		tevent_req_data(req,
+		struct http_auth_state);
+	NTSTATUS status;
+
+	TALLOC_FREE(state->next_request);
 
 	status = http_send_request_recv(subreq);
 	TALLOC_FREE(subreq);
@@ -272,83 +261,61 @@ static void http_send_auth_request_done(struct tevent_req *subreq)
 		return;
 	}
 
-	/* If no more processing required, it is done */
+	/*
+	 * If no more processing required, it is done
+	 *
+	 * The caller will use http_read_response_send/recv
+	 * in order to get the high level response.
+	 */
 	if (NT_STATUS_IS_OK(state->gensec_status)) {
 		tevent_req_done(req);
 		return;
 	}
 
 	/* If more processing required, read the response from server */
-	if (NT_STATUS_EQUAL(state->gensec_status,
-			    NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		subreq = http_read_response_send(state, state->ev,
-						 state->stream);
-		if (tevent_req_nomem(subreq, req)) {
-			return;
-		}
-		tevent_req_set_callback(subreq, http_send_auth_request_done2,
-					req);
+	subreq = http_read_response_send(state, state->ev,
+					 state->stream);
+	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
-
-	/*
-	 * If gensec status is not NT_STATUS_OK neither
-	 * NT_STATUS_MORE_PROCESSING_REQUIRED , it is an error
-	 */
-	tevent_req_nterror(req, state->gensec_status);
+	tevent_req_set_callback(subreq,
+				http_send_auth_request_http_rep_done,
+				req);
 }
 
-static void http_send_auth_request_done2(struct tevent_req *subreq)
+static void http_send_auth_request_http_rep_done(struct tevent_req *subreq)
 {
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
+	struct http_auth_state *state =
+		tevent_req_data(req,
+		struct http_auth_state);
+	DATA_BLOB gensec_in = data_blob_null;
 	NTSTATUS status;
-	struct tevent_req	*req;
-	struct http_auth_state	*state;
-	struct http_request *auth_response;
-	struct http_request *auth_request = NULL;
-	struct http_request *request_to_send;
 
-	req = tevent_req_callback_data(subreq, struct tevent_req);
-	state = tevent_req_data(req, struct http_auth_state);
-
-	status = http_read_response_recv(subreq, state, &auth_response);
+	status = http_read_response_recv(subreq, state,
+					 &state->auth_response);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 
-	state->gensec_status = http_create_auth_request(state,
-							state->gensec_ctx,
-							state->ev,
-							state->auth,
-							state->original_request,
-							auth_response,
-							&auth_request);
-	if (!NT_STATUS_IS_OK(state->gensec_status) &&
-	    !NT_STATUS_EQUAL(state->gensec_status,
-			     NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		tevent_req_nterror(req, status);
+	status = http_parse_auth_response(state->auth,
+					  state->auth_response,
+					  &gensec_in);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 
-	/*
-	 * If no more processing is necessary, the http_create_auth_request
-	 * function will attach the authentication header to the original
-	 * request
-	 */
-	request_to_send = NT_STATUS_IS_OK(state->gensec_status) ?
-				state->original_request : auth_request;
-
-	subreq = http_send_request_send(state,
-					state->ev,
-					state->stream,
-					state->send_queue,
-					request_to_send);
+	subreq = gensec_update_send(state, state->ev,
+				    state->gensec_ctx,
+				    gensec_in);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
-	tevent_req_set_callback(subreq, http_send_auth_request_done, req);
+	tevent_req_set_callback(subreq, http_send_auth_request_gensec_done, req);
 }
-
 
 NTSTATUS http_send_auth_request_recv(struct tevent_req *req)
 {
