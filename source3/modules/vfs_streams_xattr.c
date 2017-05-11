@@ -269,6 +269,7 @@ static int streams_xattr_fstat(vfs_handle_struct *handle, files_struct *fsp,
 					smb_fname_base, io->xattr_name);
 	if (sbuf->st_ex_size == -1) {
 		TALLOC_FREE(smb_fname_base);
+		SET_STAT_INVALID(*sbuf);
 		return -1;
 	}
 
@@ -322,6 +323,7 @@ static int streams_xattr_stat(vfs_handle_struct *handle,
 						  smb_fname,
 						  xattr_name);
 	if (smb_fname->st.st_ex_size == -1) {
+		SET_STAT_INVALID(smb_fname->st);
 		errno = ENOENT;
 		result = -1;
 		goto fail;
@@ -373,6 +375,7 @@ static int streams_xattr_lstat(vfs_handle_struct *handle,
 						  smb_fname,
 						  xattr_name);
 	if (smb_fname->st.st_ex_size == -1) {
+		SET_STAT_INVALID(smb_fname->st);
 		errno = ENOENT;
 		result = -1;
 		goto fail;
