@@ -744,7 +744,7 @@ static NTSTATUS walk_xattr_streams(vfs_handle_struct *handle,
 
 		status = get_ea_value(names,
 					handle->conn,
-					fsp,
+					NULL,
 					smb_fname->base_name,
 					names[i],
 					&ea);
@@ -956,7 +956,7 @@ static ssize_t streams_xattr_pwrite(vfs_handle_struct *handle,
 		return -1;
 	}
 
-	status = get_ea_value(talloc_tos(), handle->conn, fsp,
+	status = get_ea_value(talloc_tos(), handle->conn, NULL,
 			      sio->base, sio->xattr_name, &ea);
 	if (!NT_STATUS_IS_OK(status)) {
 		return -1;
@@ -1014,7 +1014,7 @@ static ssize_t streams_xattr_pread(vfs_handle_struct *handle,
 		return -1;
 	}
 
-	status = get_ea_value(talloc_tos(), handle->conn, fsp,
+	status = get_ea_value(talloc_tos(), handle->conn, NULL,
 			      sio->base, sio->xattr_name, &ea);
 	if (!NT_STATUS_IS_OK(status)) {
 		return -1;
@@ -1059,7 +1059,7 @@ static int streams_xattr_ftruncate(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
-	status = get_ea_value(talloc_tos(), handle->conn, fsp,
+	status = get_ea_value(talloc_tos(), handle->conn, NULL,
 			      sio->base, sio->xattr_name, &ea);
 	if (!NT_STATUS_IS_OK(status)) {
 		return -1;
