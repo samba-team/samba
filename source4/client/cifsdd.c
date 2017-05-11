@@ -551,6 +551,7 @@ int main(int argc, const char ** argv)
 	int i;
 	const char ** dd_args;
 	struct tevent_context *ev;
+	int rc;
 
 	poptContext pctx;
 	struct poptOption poptions[] = {
@@ -601,7 +602,7 @@ int main(int argc, const char ** argv)
 		}
 	}
 
-	ev = s4_event_context_init(talloc_autofree_context());
+	ev = s4_event_context_init(NULL);
 
 	gensec_init();
 	dump_args();
@@ -609,22 +610,27 @@ int main(int argc, const char ** argv)
 	if (check_arg_numeric("ibs") == 0 || check_arg_numeric("obs") == 0) {
 		fprintf(stderr, "%s: block sizes must be greater that zero\n",
 				PROGNAME);
+		talloc_free(ev);
 		exit(SYNTAX_EXIT_CODE);
 	}
 
 	if (check_arg_pathname("if") == NULL) {
 		fprintf(stderr, "%s: missing input filename\n", PROGNAME);
+		talloc_free(ev);
 		exit(SYNTAX_EXIT_CODE);
 	}
 
 	if (check_arg_pathname("of") == NULL) {
 		fprintf(stderr, "%s: missing output filename\n", PROGNAME);
+		talloc_free(ev);
 		exit(SYNTAX_EXIT_CODE);
 	}
 
 	CatchSignal(SIGINT, dd_handle_signal);
 	CatchSignal(SIGUSR1, dd_handle_signal);
-	return(copy_files(ev, cmdline_lp_ctx));
+	rc = copy_files(ev, cmdline_lp_ctx);
+	talloc_free(ev);
+	return rc;
 }
 
 /* vim: set sw=8 sts=8 ts=8 tw=79 : */
