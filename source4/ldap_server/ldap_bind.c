@@ -442,9 +442,8 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 	    gensec_have_feature(conn->gensec, GENSEC_FEATURE_SEAL)) {
 
 		context = talloc(call, struct ldapsrv_sasl_postprocess_context);
-
-		if (!context) {
-			status = NT_STATUS_NO_MEMORY;
+		if (context == NULL) {
+			return NT_STATUS_NO_MEMORY;
 		}
 	}
 
