@@ -424,7 +424,21 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 		result = LDAP_SASL_BIND_IN_PROGRESS;
 		errstr = NULL;
 		goto do_reply;
-	} else if (NT_STATUS_IS_OK(status)) {
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		status = nt_status_squash(status);
+		if (result == 0) {
+			result = LDAP_INVALID_CREDENTIALS;
+			errstr = ldapsrv_bind_error_msg(reply, HRES_SEC_E_LOGON_DENIED,
+							0x0C0904DC, status);
+		}
+		talloc_unlink(conn, conn->gensec);
+		conn->gensec = NULL;
+		goto do_reply;
+	}
+
+	{
 		struct ldapsrv_sasl_postprocess_context *context = NULL;
 
 		result = LDAP_SUCCESS;
@@ -544,16 +558,6 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 		}
 		talloc_unlink(conn, conn->gensec);
 		conn->gensec = NULL;
-	} else {
-		status = nt_status_squash(status);
-		if (result == 0) {
-			result = LDAP_INVALID_CREDENTIALS;
-			errstr = ldapsrv_bind_error_msg(reply, HRES_SEC_E_LOGON_DENIED,
-							0x0C0904DC, status);
-		}
-		talloc_unlink(conn, conn->gensec);
-		conn->gensec = NULL;
-		goto do_reply;
 	}
 
 do_reply:
