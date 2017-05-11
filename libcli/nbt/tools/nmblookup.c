@@ -372,7 +372,7 @@ int main(int argc, const char *argv[])
 
 	load_interface_list(NULL, cmdline_lp_ctx, &ifaces);
 
-	ev = s4_event_context_init(talloc_autofree_context());
+	ev = s4_event_context_init(NULL);
 
 	while (poptPeekArg(pc)) {
 		const char *name = poptGetArg(pc);
