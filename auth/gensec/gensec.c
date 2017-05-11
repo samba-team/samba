@@ -334,47 +334,6 @@ _PUBLIC_ NTSTATUS gensec_update_ev(struct gensec_security *gensec_security,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (ops->update_send == NULL) {
-
-		if (ev == NULL) {
-			frame = talloc_stackframe();
-
-			ev = samba_tevent_context_init(frame);
-			if (ev == NULL) {
-				status = NT_STATUS_NO_MEMORY;
-				goto fail;
-			}
-
-			/*
-			 * TODO: remove this hack once the backends
-			 * are fixed.
-			 */
-			tevent_loop_allow_nesting(ev);
-		}
-
-		status = ops->update(gensec_security, out_mem_ctx,
-				     ev, in, out);
-		TALLOC_FREE(frame);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-
-		/*
-		 * Because callers using the
-		 * gensec_start_mech_by_auth_type() never call
-		 * gensec_want_feature(), it isn't sensible for them
-		 * to have to call gensec_have_feature() manually, and
-		 * these are not points of negotiation, but are
-		 * asserted by the client
-		 */
-		status = gensec_verify_features(gensec_security);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-
-		return NT_STATUS_OK;
-	}
-
 	frame = talloc_stackframe();
 
 	if (ev == NULL) {
@@ -442,18 +401,8 @@ struct gensec_update_state {
 	struct tevent_req *subreq;
 	struct gensec_security *gensec_security;
 	DATA_BLOB out;
-
-	/*
-	 * only for sync backends, we should remove this
-	 * once all backends are async.
-	 */
-	struct tevent_immediate *im;
-	DATA_BLOB in;
 };
 
-static void gensec_update_async_trigger(struct tevent_context *ctx,
-					struct tevent_immediate *im,
-					void *private_data);
 static void gensec_update_subreq_done(struct tevent_req *subreq);
 
 /**
@@ -489,20 +438,6 @@ _PUBLIC_ struct tevent_req *gensec_update_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	if (state->ops->update_send == NULL) {
-		state->in = in;
-		state->im = tevent_create_immediate(state);
-		if (tevent_req_nomem(state->im, req)) {
-			return tevent_req_post(req, ev);
-		}
-
-		tevent_schedule_immediate(state->im, ev,
-					  gensec_update_async_trigger,
-					  req);
-
-		return req;
-	}
-
 	state->subreq = state->ops->update_send(state, ev, gensec_security, in);
 	if (tevent_req_nomem(state->subreq, req)) {
 		return tevent_req_post(req, ev);
@@ -513,25 +448,6 @@ _PUBLIC_ struct tevent_req *gensec_update_send(TALLOC_CTX *mem_ctx,
 				req);
 
 	return req;
-}
-
-static void gensec_update_async_trigger(struct tevent_context *ctx,
-					struct tevent_immediate *im,
-					void *private_data)
-{
-	struct tevent_req *req =
-		talloc_get_type_abort(private_data, struct tevent_req);
-	struct gensec_update_state *state =
-		tevent_req_data(req, struct gensec_update_state);
-	NTSTATUS status;
-
-	status = state->ops->update(state->gensec_security, state, ctx,
-				    state->in, &state->out);
-	if (tevent_req_nterror(req, status)) {
-		return;
-	}
-
-	tevent_req_done(req);
 }
 
 static void gensec_update_subreq_done(struct tevent_req *subreq)

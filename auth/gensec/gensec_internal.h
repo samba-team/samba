@@ -37,9 +37,6 @@ struct gensec_security_ops {
 	*/
 	NTSTATUS (*magic)(struct gensec_security *gensec_security,
 			  const DATA_BLOB *first_packet);
-	NTSTATUS (*update)(struct gensec_security *gensec_security, TALLOC_CTX *out_mem_ctx,
-			   struct tevent_context *ev,
-			   const DATA_BLOB in, DATA_BLOB *out);
 	struct tevent_req *(*update_send)(TALLOC_CTX *mem_ctx,
 					  struct tevent_context *ev,
 					  struct gensec_security *gensec_security,
