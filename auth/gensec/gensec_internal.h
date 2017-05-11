@@ -113,6 +113,12 @@ struct gensec_security {
 
 	struct gensec_security *parent_security;
 	struct gensec_security *child_security;
+
+	/*
+	 * This is used to mark the context as being
+	 * busy in an async gensec_update_send().
+	 */
+	struct gensec_security **update_busy_ptr;
 };
 
 /* this structure is used by backends to determine the size of some critical types */

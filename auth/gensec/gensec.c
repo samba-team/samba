@@ -403,6 +403,8 @@ struct gensec_update_state {
 	DATA_BLOB out;
 };
 
+static void gensec_update_cleanup(struct tevent_req *req,
+				  enum tevent_req_state req_state);
 static void gensec_update_done(struct tevent_req *subreq);
 
 /**
@@ -430,14 +432,21 @@ _PUBLIC_ struct tevent_req *gensec_update_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
-
 	state->ops = gensec_security->ops;
 	state->gensec_security = gensec_security;
+
+	if (gensec_security->update_busy_ptr != NULL) {
+		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+		return tevent_req_post(req, ev);
+	}
 
 	if (gensec_security->child_security != NULL) {
 		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return tevent_req_post(req, ev);
 	}
+
+	gensec_security->update_busy_ptr = &state->gensec_security;
+	tevent_req_set_cleanup_fn(req, gensec_update_cleanup);
 
 	subreq = state->ops->update_send(state, ev, gensec_security, in);
 	if (tevent_req_nomem(subreq, req)) {
@@ -446,6 +455,24 @@ _PUBLIC_ struct tevent_req *gensec_update_send(TALLOC_CTX *mem_ctx,
 	tevent_req_set_callback(subreq, gensec_update_done, req);
 
 	return req;
+}
+
+static void gensec_update_cleanup(struct tevent_req *req,
+				  enum tevent_req_state req_state)
+{
+	struct gensec_update_state *state =
+		tevent_req_data(req,
+		struct gensec_update_state);
+
+	if (state->gensec_security == NULL) {
+		return;
+	}
+
+	if (state->gensec_security->update_busy_ptr == &state->gensec_security) {
+		state->gensec_security->update_busy_ptr = NULL;
+	}
+
+	state->gensec_security = NULL;
 }
 
 static void gensec_update_done(struct tevent_req *subreq)
