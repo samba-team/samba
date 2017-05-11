@@ -20,6 +20,8 @@
 */
 
 #include "includes.h"
+#include <tevent.h>
+#include "lib/util/tevent_ntstatus.h"
 #include "auth/auth.h"
 #include "auth/gensec/gensec.h"
 #include "auth/gensec/gensec_internal.h"
@@ -50,50 +52,111 @@ static NTSTATUS gensec_http_ntlm_client_start(struct gensec_security *gensec)
 	return gensec_start_mech_by_oid(state->sub, GENSEC_OID_NTLMSSP);
 }
 
-static NTSTATUS gensec_http_ntlm_update(struct gensec_security *gensec_ctx,
-					TALLOC_CTX *mem_ctx,
-					struct tevent_context *ev,
-					const DATA_BLOB in,
-					DATA_BLOB *out)
-{
-	NTSTATUS status;
-	struct gensec_http_ntlm_state *state;
+struct gensec_http_ntlm_update_state {
 	DATA_BLOB ntlm_in;
+	NTSTATUS status;
+	DATA_BLOB out;
+};
 
-	state = talloc_get_type_abort(gensec_ctx->private_data,
+static void gensec_http_ntlm_update_done(struct tevent_req *subreq);
+
+static struct tevent_req *gensec_http_ntlm_update_send(TALLOC_CTX *mem_ctx,
+						    struct tevent_context *ev,
+						    struct gensec_security *gensec_ctx,
+						    const DATA_BLOB in)
+{
+	struct gensec_http_ntlm_state *http_ntlm =
+		talloc_get_type_abort(gensec_ctx->private_data,
 				      struct gensec_http_ntlm_state);
+	struct tevent_req *req = NULL;
+	struct gensec_http_ntlm_update_state *state = NULL;
+	struct tevent_req *subreq = NULL;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct gensec_http_ntlm_update_state);
+	if (req == NULL) {
+		return NULL;
+	}
 
 	if (in.length) {
 		if (strncasecmp((char *)in.data, "NTLM ", 5) != 0) {
-			return NT_STATUS_INVALID_PARAMETER;
+			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			return tevent_req_post(req, ev);
 		}
-		ntlm_in = base64_decode_data_blob_talloc(mem_ctx,
-							 (char *)&in.data[5]);
-	} else {
-		ntlm_in = data_blob_null;
+		state->ntlm_in = base64_decode_data_blob_talloc(state,
+							(char *)&in.data[5]);
 	}
 
-	status = gensec_update_ev(state->sub, mem_ctx, ev, ntlm_in, out);
-	if (NT_STATUS_IS_OK(status) ||
-	    NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		char *tmp, *b64;
-		b64 = base64_encode_data_blob(mem_ctx, *out);
-		if (b64 == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
+	subreq = gensec_update_send(state, ev,
+				    http_ntlm->sub,
+				    state->ntlm_in);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, gensec_http_ntlm_update_done, req);
 
-		tmp = talloc_asprintf(mem_ctx, "NTLM %s", b64);
-		TALLOC_FREE(b64);
-		if (tmp == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		*out = data_blob_string_const(tmp);
+	return req;
+}
+
+static void gensec_http_ntlm_update_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
+	struct gensec_http_ntlm_update_state *state =
+		tevent_req_data(req,
+		struct gensec_http_ntlm_update_state);
+	NTSTATUS status;
+	DATA_BLOB ntlm_out;
+	char *b64 = NULL;
+	char *str = NULL;
+
+	status = gensec_update_recv(subreq, state, &ntlm_out);
+	TALLOC_FREE(subreq);
+	state->status = status;
+	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		status = NT_STATUS_OK;
+	}
+	if (tevent_req_nterror(req, status)) {
+		return;
 	}
 
-	if (ntlm_in.data) {
-		data_blob_free(&ntlm_in);
+	b64 = base64_encode_data_blob(state, ntlm_out);
+	data_blob_free(&ntlm_out);
+	if (tevent_req_nomem(b64, req)) {
+		return;
 	}
 
+	str = talloc_asprintf(state, "NTLM %s", b64);
+	TALLOC_FREE(b64);
+	if (tevent_req_nomem(str, req)) {
+		return;
+	}
+
+	state->out = data_blob_string_const(str);
+	return;
+}
+
+static NTSTATUS gensec_http_ntlm_update_recv(struct tevent_req *req,
+					     TALLOC_CTX *out_mem_ctx,
+					     DATA_BLOB *out)
+{
+	struct gensec_http_ntlm_update_state *state =
+		tevent_req_data(req,
+		struct gensec_http_ntlm_update_state);
+	NTSTATUS status;
+
+	*out = data_blob_null;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	*out = state->out;
+	talloc_steal(out_mem_ctx, state->out.data);
+	status = state->status;
+	tevent_req_received(req);
 	return status;
 }
 
@@ -101,7 +164,8 @@ static const struct gensec_security_ops gensec_http_ntlm_security_ops = {
 	.name           = "http_ntlm",
 	.auth_type      = 0,
 	.client_start   = gensec_http_ntlm_client_start,
-	.update         = gensec_http_ntlm_update,
+	.update_send    = gensec_http_ntlm_update_send,
+	.update_recv    = gensec_http_ntlm_update_recv,
 	.enabled        = true,
 	.priority       = GENSEC_EXTERNAL,
 };
