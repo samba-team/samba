@@ -399,6 +399,7 @@ _PUBLIC_ NTSTATUS gensec_update(struct gensec_security *gensec_security,
 struct gensec_update_state {
 	const struct gensec_security_ops *ops;
 	struct gensec_security *gensec_security;
+	NTSTATUS status;
 	DATA_BLOB out;
 };
 
@@ -459,6 +460,11 @@ static void gensec_update_done(struct tevent_req *subreq)
 
 	status = state->ops->update_recv(subreq, state, &state->out);
 	TALLOC_FREE(subreq);
+	state->status = status;
+	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		tevent_req_done(req);
+		return;
+	}
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
@@ -496,18 +502,16 @@ _PUBLIC_ NTSTATUS gensec_update_recv(struct tevent_req *req,
 		tevent_req_data(req, struct gensec_update_state);
 	NTSTATUS status;
 
+	*out = data_blob_null;
+
 	if (tevent_req_is_nterror(req, &status)) {
-		if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-			tevent_req_received(req);
-			return status;
-		}
-	} else {
-		status = NT_STATUS_OK;
+		tevent_req_received(req);
+		return status;
 	}
 
 	*out = state->out;
 	talloc_steal(out_mem_ctx, out->data);
-
+	status = state->status;
 	tevent_req_received(req);
 	return status;
 }
