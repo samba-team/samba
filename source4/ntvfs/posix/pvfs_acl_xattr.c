@@ -100,5 +100,5 @@ NTSTATUS pvfs_acl_xattr_init(TALLOC_CTX *ctx)
 		.acl_load = pvfs_acl_load_xattr,
 		.acl_save = pvfs_acl_save_xattr
 	};
-	return pvfs_acl_register(&ops);
+	return pvfs_acl_register(ctx, &ops);
 }

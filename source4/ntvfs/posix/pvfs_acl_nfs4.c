@@ -195,5 +195,5 @@ NTSTATUS pvfs_acl_nfs4_init(TALLOC_CTX *ctx)
 		.acl_load = pvfs_acl_load_nfs4,
 		.acl_save = pvfs_acl_save_nfs4
 	};
-	return pvfs_acl_register(&ops);
+	return pvfs_acl_register(ctx, &ops);
 }

@@ -41,7 +41,7 @@ static int num_backends;
   The 'name' can be later used by other backends to find the operations
   structure for this backend.  
 */
-NTSTATUS pvfs_acl_register(const struct pvfs_acl_ops *ops)
+NTSTATUS pvfs_acl_register(TALLOC_CTX *ctx, const struct pvfs_acl_ops *ops)
 {
 	struct pvfs_acl_ops *new_ops;
 
@@ -50,7 +50,8 @@ NTSTATUS pvfs_acl_register(const struct pvfs_acl_ops *ops)
 		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 
-	backends = talloc_realloc(talloc_autofree_context(), backends, struct pvfs_acl_backend, num_backends+1);
+	backends = talloc_realloc(ctx, backends,
+			struct pvfs_acl_backend, num_backends+1);
 	NT_STATUS_HAVE_NO_MEMORY(backends);
 
 	new_ops = (struct pvfs_acl_ops *)talloc_memdup(backends, ops, sizeof(*ops));
