@@ -20,6 +20,8 @@
 */
 
 #include "includes.h"
+#include <tevent.h>
+#include "lib/util/tevent_ntstatus.h"
 #include "auth/auth.h"
 #include "auth/gensec/gensec.h"
 #include "auth/gensec/gensec_internal.h"
@@ -51,11 +53,51 @@ static NTSTATUS gensec_http_basic_client_start(struct gensec_security *gensec)
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS gensec_http_basic_update(struct gensec_security *gensec_ctx,
-					 TALLOC_CTX *mem_ctx,
-					 struct tevent_context *ev,
-					 const DATA_BLOB in,
-					 DATA_BLOB *out)
+struct gensec_http_basic_update_state {
+	NTSTATUS status;
+	DATA_BLOB out;
+};
+
+static NTSTATUS gensec_http_basic_update_internal(struct gensec_security *gensec_ctx,
+						  TALLOC_CTX *mem_ctx,
+						  const DATA_BLOB in,
+						  DATA_BLOB *out);
+
+static struct tevent_req *gensec_http_basic_update_send(TALLOC_CTX *mem_ctx,
+						    struct tevent_context *ev,
+						    struct gensec_security *gensec_security,
+						    const DATA_BLOB in)
+{
+	struct tevent_req *req = NULL;
+	struct gensec_http_basic_update_state *state = NULL;
+	NTSTATUS status;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct gensec_http_basic_update_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	status = gensec_http_basic_update_internal(gensec_security,
+						   state, in,
+						   &state->out);
+	state->status = status;
+	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+	}
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
+
+	tevent_req_done(req);
+	return tevent_req_post(req, ev);
+}
+
+static NTSTATUS gensec_http_basic_update_internal(struct gensec_security *gensec_ctx,
+						  TALLOC_CTX *mem_ctx,
+						  const DATA_BLOB in,
+						  DATA_BLOB *out)
 {
 	struct gensec_http_basic_state *state;
 	struct cli_credentials *creds;
@@ -114,11 +156,35 @@ static NTSTATUS gensec_http_basic_update(struct gensec_security *gensec_ctx,
 	return NT_STATUS_INTERNAL_ERROR;
 }
 
+static NTSTATUS gensec_http_basic_update_recv(struct tevent_req *req,
+					      TALLOC_CTX *out_mem_ctx,
+					      DATA_BLOB *out)
+{
+	struct gensec_http_basic_update_state *state =
+		tevent_req_data(req,
+		struct gensec_http_basic_update_state);
+	NTSTATUS status;
+
+	*out = data_blob_null;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	*out = state->out;
+	talloc_steal(out_mem_ctx, state->out.data);
+	status = state->status;
+	tevent_req_received(req);
+	return status;
+}
+
 static const struct gensec_security_ops gensec_http_basic_security_ops = {
 	.name           = "http_basic",
 	.auth_type      = 0,
 	.client_start   = gensec_http_basic_client_start,
-	.update         = gensec_http_basic_update,
+	.update_send    = gensec_http_basic_update_send,
+	.update_recv    = gensec_http_basic_update_recv,
 	.enabled        = true,
 	.priority       = GENSEC_EXTERNAL,
 };
