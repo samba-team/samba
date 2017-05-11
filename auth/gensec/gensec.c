@@ -329,6 +329,13 @@ _PUBLIC_ NTSTATUS gensec_update_ev(struct gensec_security *gensec_security,
 	struct tevent_req *subreq = NULL;
 	bool ok;
 
+	if (gensec_security->subcontext) {
+		/*
+		 * gensec modules are not allowed to call the sync version.
+		 */
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
 	frame = talloc_stackframe();
 
 	if (ev == NULL) {
