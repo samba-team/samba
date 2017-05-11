@@ -60,21 +60,107 @@ static char *ldapsrv_bind_error_msg(TALLOC_CTX *mem_ctx,
 	return msg;
 }
 
+struct ldapsrv_bind_wait_context {
+	struct ldapsrv_reply *reply;
+	struct tevent_req *req;
+	NTSTATUS status;
+	bool done;
+};
+
+struct ldapsrv_bind_wait_state {
+	uint8_t dummy;
+};
+
+static struct tevent_req *ldapsrv_bind_wait_send(TALLOC_CTX *mem_ctx,
+						 struct tevent_context *ev,
+						 void *private_data)
+{
+	struct ldapsrv_bind_wait_context *bind_wait =
+		talloc_get_type_abort(private_data,
+		struct ldapsrv_bind_wait_context);
+	struct tevent_req *req;
+	struct ldapsrv_bind_wait_state *state;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct ldapsrv_bind_wait_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	bind_wait->req = req;
+
+	tevent_req_defer_callback(req, ev);
+
+	if (!bind_wait->done) {
+		return req;
+	}
+
+	if (tevent_req_nterror(req, bind_wait->status)) {
+		return tevent_req_post(req, ev);
+	}
+
+	tevent_req_done(req);
+	return tevent_req_post(req, ev);
+}
+
+static NTSTATUS ldapsrv_bind_wait_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
+static NTSTATUS ldapsrv_bind_wait_setup(struct ldapsrv_call *call,
+					struct ldapsrv_reply *reply)
+{
+	struct ldapsrv_bind_wait_context *bind_wait = NULL;
+
+	if (call->wait_private != NULL) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	bind_wait = talloc_zero(call, struct ldapsrv_bind_wait_context);
+	if (bind_wait == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	bind_wait->reply = reply;
+
+	call->wait_private = bind_wait;
+	call->wait_send = ldapsrv_bind_wait_send;
+	call->wait_recv = ldapsrv_bind_wait_recv;
+	return NT_STATUS_OK;
+}
+
+static void ldapsrv_bind_wait_finished(struct ldapsrv_call *call,
+				       NTSTATUS status)
+{
+	struct ldapsrv_bind_wait_context *bind_wait =
+		talloc_get_type_abort(call->wait_private,
+		struct ldapsrv_bind_wait_context);
+
+	bind_wait->done = true;
+	bind_wait->status = status;
+
+	if (bind_wait->req == NULL) {
+		return;
+	}
+
+	if (tevent_req_nterror(bind_wait->req, status)) {
+		return;
+	}
+
+	tevent_req_done(bind_wait->req);
+}
+
+static void ldapsrv_BindSimple_done(struct tevent_req *subreq);
 
 static NTSTATUS ldapsrv_BindSimple(struct ldapsrv_call *call)
 {
 	struct ldap_BindRequest *req = &call->request->r.BindRequest;
-	struct ldapsrv_reply *reply;
-	struct ldap_BindResponse *resp;
-
+	struct ldapsrv_reply *reply = NULL;
+	struct ldap_BindResponse *resp = NULL;
 	int result;
-	const char *errstr;
-
-	struct auth_session_info *session_info;
-
+	const char *errstr = NULL;
 	NTSTATUS status;
-
 	bool using_tls = call->conn->sockets.active == call->conn->sockets.tls;
+	struct tevent_req *subreq = NULL;
 
 	DEBUG(10, ("BindSimple dn: %s\n",req->dn));
 
@@ -95,17 +181,61 @@ static NTSTATUS ldapsrv_BindSimple(struct ldapsrv_call *call)
 		goto do_reply;
 	}
 
-	status = authenticate_ldap_simple_bind(call,
-					       call->conn->connection->event.ctx,
-					       call->conn->connection->msg_ctx,
-					       call->conn->lp_ctx,
-					       call->conn->connection->remote_address,
-					       call->conn->connection->local_address,
-					       using_tls,
-					       req->dn,
-					       req->creds.password,
-					       &session_info);
+	subreq = authenticate_ldap_simple_bind_send(call,
+					call->conn->connection->event.ctx,
+					call->conn->connection->msg_ctx,
+					call->conn->lp_ctx,
+					call->conn->connection->remote_address,
+					call->conn->connection->local_address,
+					using_tls,
+					req->dn,
+					req->creds.password);
+	if (subreq == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	tevent_req_set_callback(subreq, ldapsrv_BindSimple_done, call);
 
+	status = ldapsrv_bind_wait_setup(call, reply);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(subreq);
+		return status;
+	}
+
+	/*
+	 * The rest will be async.
+	 */
+	return NT_STATUS_OK;
+
+do_reply:
+	resp = &reply->msg->r.BindResponse;
+	resp->response.resultcode = result;
+	resp->response.errormessage = errstr;
+	resp->response.dn = NULL;
+	resp->response.referral = NULL;
+	resp->SASL.secblob = NULL;
+
+	ldapsrv_queue_reply(call, reply);
+	return NT_STATUS_OK;
+}
+
+static void ldapsrv_BindSimple_done(struct tevent_req *subreq)
+{
+	struct ldapsrv_call *call =
+		tevent_req_callback_data(subreq,
+		struct ldapsrv_call);
+	struct ldapsrv_bind_wait_context *bind_wait =
+		talloc_get_type_abort(call->wait_private,
+		struct ldapsrv_bind_wait_context);
+	struct ldapsrv_reply *reply = bind_wait->reply;
+	struct auth_session_info *session_info = NULL;
+	NTSTATUS status;
+	struct ldap_BindResponse *resp = NULL;
+	int result;
+	const char *errstr = NULL;
+
+	status = authenticate_ldap_simple_bind_recv(subreq,
+						    call,
+						    &session_info);
 	if (NT_STATUS_IS_OK(status)) {
 		result = LDAP_SUCCESS;
 		errstr = NULL;
@@ -132,7 +262,6 @@ static NTSTATUS ldapsrv_BindSimple(struct ldapsrv_call *call)
 						0x0C0903A9, status);
 	}
 
-do_reply:
 	resp = &reply->msg->r.BindResponse;
 	resp->response.resultcode = result;
 	resp->response.errormessage = errstr;
@@ -141,7 +270,7 @@ do_reply:
 	resp->SASL.secblob = NULL;
 
 	ldapsrv_queue_reply(call, reply);
-	return NT_STATUS_OK;
+	ldapsrv_bind_wait_finished(call, NT_STATUS_OK);
 }
 
 struct ldapsrv_sasl_postprocess_context {
