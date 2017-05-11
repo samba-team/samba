@@ -1577,6 +1577,8 @@ static const struct ldb_module_ops ltdb_ops = {
 	.end_transaction   = ltdb_end_trans,
 	.prepare_commit    = ltdb_prepare_commit,
 	.del_transaction   = ltdb_del_trans,
+	.read_lock         = ltdb_lock_read,
+	.read_unlock       = ltdb_unlock_read,
 };
 
 /*
