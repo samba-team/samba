@@ -3415,7 +3415,7 @@ static int do_message_op(const char *netbios_name, const char *desthost,
 	lpcfg_smbcli_options(cmdline_lp_ctx, &smb_options);
 	lpcfg_smbcli_session_options(cmdline_lp_ctx, &smb_session_options);
 
-	ev_ctx = s4_event_context_init(talloc_autofree_context());
+	ev_ctx = s4_event_context_init(ctx);
 
 	DEBUG( 3, ( "Client started (version %s).\n", SAMBA_VERSION_STRING ) );
 
