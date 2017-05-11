@@ -399,13 +399,16 @@ static int streams_xattr_open(vfs_handle_struct *handle,
 			      files_struct *fsp, int flags, mode_t mode)
 {
 	NTSTATUS status;
-	struct smb_filename *smb_fname_base = NULL;
-	struct stream_io *sio;
+	struct streams_xattr_config *config = NULL;
+	struct stream_io *sio = NULL;
 	struct ea_struct ea;
 	char *xattr_name = NULL;
-	int baseflags;
-	int hostfd = -1;
+	int pipe_fds[2];
+	int fakefd = -1;
 	int ret;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config, struct streams_xattr_config,
+				return -1);
 
 	DEBUG(10, ("streams_xattr_open called for %s with flags 0x%x\n",
 		   smb_fname_str_dbg(smb_fname), flags));
@@ -435,44 +438,18 @@ static int streams_xattr_open(vfs_handle_struct *handle,
 		goto fail;
 	}
 
-	/* Create an smb_filename with stream_name == NULL. */
-	smb_fname_base = synthetic_smb_fname(talloc_tos(),
-				smb_fname->base_name,
-				NULL,
-				NULL,
-				smb_fname->flags);
-	if (smb_fname_base == NULL) {
-		errno = ENOMEM;
+	/*
+	 * Return a valid fd, but ensure any attempt to use it returns an error
+	 * (EPIPE).
+	 */
+	ret = pipe(pipe_fds);
+	if (ret != 0) {
 		goto fail;
 	}
 
-	/*
-	 * We use baseflags to turn off nasty side-effects when opening the
-	 * underlying file.
-         */
-        baseflags = flags;
-        baseflags &= ~O_TRUNC;
-        baseflags &= ~O_EXCL;
-        baseflags &= ~O_CREAT;
-
-        hostfd = SMB_VFS_NEXT_OPEN(handle, smb_fname_base, fsp,
-				   baseflags, mode);
-
-        /* It is legit to open a stream on a directory, but the base
-         * fd has to be read-only.
-         */
-        if ((hostfd == -1) && (errno == EISDIR)) {
-                baseflags &= ~O_ACCMODE;
-                baseflags |= O_RDONLY;
-                hostfd = SMB_VFS_NEXT_OPEN(handle, smb_fname_base, fsp, baseflags,
-					   mode);
-        }
-
-	TALLOC_FREE(smb_fname_base);
-
-        if (hostfd == -1) {
-		goto fail;
-        }
+	close(pipe_fds[1]);
+	pipe_fds[1] = -1;
+	fakefd = pipe_fds[0];
 
 	status = get_ea_value(talloc_tos(), handle->conn, NULL,
 			      smb_fname, xattr_name, &ea);
@@ -544,16 +521,12 @@ static int streams_xattr_open(vfs_handle_struct *handle,
 		goto fail;
 	}
 
-	return hostfd;
+	return fakefd;
 
  fail:
-	if (hostfd >= 0) {
-		/*
-		 * BUGBUGBUG -- we would need to call fd_close_posix here, but
-		 * we don't have a full fsp yet
-		 */
-		fsp->fh->fd = hostfd;
-		SMB_VFS_NEXT_CLOSE(handle, fsp);
+	if (fakefd >= 0) {
+		close(fakefd);
+		fakefd = -1;
 	}
 
 	return -1;
