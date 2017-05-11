@@ -419,9 +419,9 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 
 	status = gensec_update_ev(conn->gensec, reply, conn->connection->event.ctx,
 				  input, &output);
-	*resp->SASL.secblob = output;
 
 	if (NT_STATUS_EQUAL(NT_STATUS_MORE_PROCESSING_REQUIRED, status)) {
+		*resp->SASL.secblob = output;
 		result = LDAP_SASL_BIND_IN_PROGRESS;
 		errstr = NULL;
 		goto do_reply;
@@ -552,6 +552,8 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 	}
 	talloc_unlink(conn, conn->gensec);
 	conn->gensec = NULL;
+
+	*resp->SASL.secblob = output;
 
 do_reply:
 	if (result != LDAP_SASL_BIND_IN_PROGRESS) {
