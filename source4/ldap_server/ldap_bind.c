@@ -371,6 +371,7 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 	struct ldapsrv_reply *reply;
 	struct ldap_BindResponse *resp;
 	struct ldapsrv_connection *conn;
+	struct ldapsrv_sasl_postprocess_context *context = NULL;
 	int result = 0;
 	const char *errstr=NULL;
 	NTSTATUS status = NT_STATUS_OK;
@@ -434,127 +435,123 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 		goto do_reply;
 	}
 
-	{
-		struct ldapsrv_sasl_postprocess_context *context = NULL;
+	result = LDAP_SUCCESS;
+	errstr = NULL;
 
-		result = LDAP_SUCCESS;
-		errstr = NULL;
+	if (gensec_have_feature(conn->gensec, GENSEC_FEATURE_SIGN) ||
+	    gensec_have_feature(conn->gensec, GENSEC_FEATURE_SEAL)) {
 
-		if (gensec_have_feature(conn->gensec, GENSEC_FEATURE_SIGN) ||
-		    gensec_have_feature(conn->gensec, GENSEC_FEATURE_SEAL)) {
+		context = talloc(call, struct ldapsrv_sasl_postprocess_context);
 
-			context = talloc(call, struct ldapsrv_sasl_postprocess_context);
+		if (!context) {
+			status = NT_STATUS_NO_MEMORY;
+		}
+	}
 
-			if (!context) {
+	if (context && conn->sockets.tls) {
+		TALLOC_FREE(context);
+		status = NT_STATUS_NOT_SUPPORTED;
+		result = LDAP_UNWILLING_TO_PERFORM;
+		errstr = talloc_asprintf(reply,
+					 "SASL:[%s]: Sign or Seal are not allowed if TLS is used",
+					 req->creds.SASL.mechanism);
+		goto do_reply;
+	}
+
+	if (context && conn->sockets.sasl) {
+		TALLOC_FREE(context);
+		status = NT_STATUS_NOT_SUPPORTED;
+		result = LDAP_UNWILLING_TO_PERFORM;
+		errstr = talloc_asprintf(reply,
+					 "SASL:[%s]: Sign or Seal are not allowed if SASL encryption has already been set up",
+					 req->creds.SASL.mechanism);
+		goto do_reply;
+	}
+
+	if (context) {
+		context->conn = conn;
+		status = gensec_create_tstream(context,
+					       context->conn->gensec,
+					       context->conn->sockets.raw,
+					       &context->sasl);
+		if (NT_STATUS_IS_OK(status)) {
+			if (!talloc_reference(context->sasl, conn->gensec)) {
 				status = NT_STATUS_NO_MEMORY;
 			}
 		}
-
-		if (context && conn->sockets.tls) {
-			TALLOC_FREE(context);
-			status = NT_STATUS_NOT_SUPPORTED;
-			result = LDAP_UNWILLING_TO_PERFORM;
-			errstr = talloc_asprintf(reply,
-						 "SASL:[%s]: Sign or Seal are not allowed if TLS is used",
-						 req->creds.SASL.mechanism);
-			goto do_reply;
-		}
-
-		if (context && conn->sockets.sasl) {
-			TALLOC_FREE(context);
-			status = NT_STATUS_NOT_SUPPORTED;
-			result = LDAP_UNWILLING_TO_PERFORM;
-			errstr = talloc_asprintf(reply,
-						 "SASL:[%s]: Sign or Seal are not allowed if SASL encryption has already been set up",
-						 req->creds.SASL.mechanism);
-			goto do_reply;
-		}
-
-		if (context) {
-			context->conn = conn;
-			status = gensec_create_tstream(context,
-						       context->conn->gensec,
-						       context->conn->sockets.raw,
-						       &context->sasl);
-			if (NT_STATUS_IS_OK(status)) {
-				if (!talloc_reference(context->sasl, conn->gensec)) {
-					status = NT_STATUS_NO_MEMORY;
-				}
-			}
-		} else {
-			switch (call->conn->require_strong_auth) {
-			case LDAP_SERVER_REQUIRE_STRONG_AUTH_NO:
+	} else {
+		switch (call->conn->require_strong_auth) {
+		case LDAP_SERVER_REQUIRE_STRONG_AUTH_NO:
+			break;
+		case LDAP_SERVER_REQUIRE_STRONG_AUTH_ALLOW_SASL_OVER_TLS:
+			if (call->conn->sockets.active == call->conn->sockets.tls) {
 				break;
-			case LDAP_SERVER_REQUIRE_STRONG_AUTH_ALLOW_SASL_OVER_TLS:
-				if (call->conn->sockets.active == call->conn->sockets.tls) {
-					break;
-				}
-				status = NT_STATUS_NETWORK_ACCESS_DENIED;
-				result = LDAP_STRONG_AUTH_REQUIRED;
-				errstr = talloc_asprintf(reply,
-						"SASL:[%s]: not allowed if TLS is used.",
-						 req->creds.SASL.mechanism);
-				goto do_reply;
-
-			case LDAP_SERVER_REQUIRE_STRONG_AUTH_YES:
-				status = NT_STATUS_NETWORK_ACCESS_DENIED;
-				result = LDAP_STRONG_AUTH_REQUIRED;
-				errstr = talloc_asprintf(reply,
-						 "SASL:[%s]: Sign or Seal are required.",
-						 req->creds.SASL.mechanism);
-				goto do_reply;
 			}
-		}
+			status = NT_STATUS_NETWORK_ACCESS_DENIED;
+			result = LDAP_STRONG_AUTH_REQUIRED;
+			errstr = talloc_asprintf(reply,
+					"SASL:[%s]: not allowed if TLS is used.",
+					 req->creds.SASL.mechanism);
+			goto do_reply;
 
-		if (result != LDAP_SUCCESS) {
-		} else if (!NT_STATUS_IS_OK(status)) {
+		case LDAP_SERVER_REQUIRE_STRONG_AUTH_YES:
+			status = NT_STATUS_NETWORK_ACCESS_DENIED;
+			result = LDAP_STRONG_AUTH_REQUIRED;
+			errstr = talloc_asprintf(reply,
+					 "SASL:[%s]: Sign or Seal are required.",
+					 req->creds.SASL.mechanism);
+			goto do_reply;
+		}
+	}
+
+	if (result != LDAP_SUCCESS) {
+	} else if (!NT_STATUS_IS_OK(status)) {
+		result = LDAP_OPERATIONS_ERROR;
+		errstr = talloc_asprintf(reply,
+					 "SASL:[%s]: Failed to setup SASL socket: %s",
+					 req->creds.SASL.mechanism, nt_errstr(status));
+		goto do_reply;
+	} else {
+		struct auth_session_info *old_session_info=NULL;
+
+		old_session_info = conn->session_info;
+		conn->session_info = NULL;
+		status = gensec_session_info(conn->gensec, conn, &conn->session_info);
+		if (!NT_STATUS_IS_OK(status)) {
+			conn->session_info = old_session_info;
 			result = LDAP_OPERATIONS_ERROR;
 			errstr = talloc_asprintf(reply, 
-						 "SASL:[%s]: Failed to setup SASL socket: %s", 
+						 "SASL:[%s]: Failed to get session info: %s",
 						 req->creds.SASL.mechanism, nt_errstr(status));
 			goto do_reply;
 		} else {
-			struct auth_session_info *old_session_info=NULL;
+			talloc_unlink(conn, old_session_info);
 
-			old_session_info = conn->session_info;
-			conn->session_info = NULL;
-			status = gensec_session_info(conn->gensec, conn, &conn->session_info);
+			/* don't leak the old LDB */
+			talloc_unlink(conn, conn->ldb);
+
+			call->conn->authz_logged = true;
+
+			status = ldapsrv_backend_Init(conn);
+
 			if (!NT_STATUS_IS_OK(status)) {
-				conn->session_info = old_session_info;
 				result = LDAP_OPERATIONS_ERROR;
 				errstr = talloc_asprintf(reply, 
-							 "SASL:[%s]: Failed to get session info: %s", 
-							 req->creds.SASL.mechanism, nt_errstr(status));
+							 "SASL:[%s]: Failed to advise samdb of new credentials: %s",
+							 req->creds.SASL.mechanism,
+							 nt_errstr(status));
 				goto do_reply;
-			} else {
-				talloc_unlink(conn, old_session_info);
-				
-				/* don't leak the old LDB */
-				talloc_unlink(conn, conn->ldb);
-
-				call->conn->authz_logged = true;
-
-				status = ldapsrv_backend_Init(conn);		
-				
-				if (!NT_STATUS_IS_OK(status)) {
-					result = LDAP_OPERATIONS_ERROR;
-					errstr = talloc_asprintf(reply, 
-								 "SASL:[%s]: Failed to advise samdb of new credentials: %s", 
-								 req->creds.SASL.mechanism, 
-								 nt_errstr(status));
-					goto do_reply;
-				}
 			}
 		}
-
-		if (NT_STATUS_IS_OK(status) && context) {
-			call->postprocess_send = ldapsrv_sasl_postprocess_send;
-			call->postprocess_recv = ldapsrv_sasl_postprocess_recv;
-			call->postprocess_private = context;
-		}
-		talloc_unlink(conn, conn->gensec);
-		conn->gensec = NULL;
 	}
+
+	if (NT_STATUS_IS_OK(status) && context) {
+		call->postprocess_send = ldapsrv_sasl_postprocess_send;
+		call->postprocess_recv = ldapsrv_sasl_postprocess_recv;
+		call->postprocess_private = context;
+	}
+	talloc_unlink(conn, conn->gensec);
+	conn->gensec = NULL;
 
 do_reply:
 	if (result != LDAP_SASL_BIND_IN_PROGRESS) {
