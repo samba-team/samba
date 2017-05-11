@@ -22,8 +22,48 @@
 */
 
 #include "includes.h"
+#include <tevent.h>
+#include "lib/util/tevent_ntstatus.h"
 #include "auth/auth.h"
 #include "dsdb/samdb/samdb.h"
+
+struct authenticate_ldap_simple_bind_state {
+	struct auth_session_info *session_info;
+};
+
+_PUBLIC_ struct tevent_req *authenticate_ldap_simple_bind_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct imessaging_context *msg,
+					struct loadparm_context *lp_ctx,
+					struct tsocket_address *remote_address,
+					struct tsocket_address *local_address,
+					bool using_tls,
+					const char *dn,
+					const char *password)
+{
+	struct tevent_req *req = NULL;
+	struct authenticate_ldap_simple_bind_state *state = NULL;
+	NTSTATUS status;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct authenticate_ldap_simple_bind_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	status = authenticate_ldap_simple_bind(state, ev, msg, lp_ctx,
+					       remote_address,
+					       local_address,
+					       using_tls,
+					       dn, password,
+					       &state->session_info);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
+
+	tevent_req_done(req);
+	return tevent_req_post(req, ev);
+}
 
 _PUBLIC_ NTSTATUS authenticate_ldap_simple_bind(TALLOC_CTX *mem_ctx,
 						struct tevent_context *ev,
@@ -154,3 +194,23 @@ _PUBLIC_ NTSTATUS authenticate_ldap_simple_bind(TALLOC_CTX *mem_ctx,
 	return nt_status;
 }
 
+_PUBLIC_ NTSTATUS authenticate_ldap_simple_bind_recv(struct tevent_req *req,
+					TALLOC_CTX *mem_ctx,
+					struct auth_session_info **session_info)
+{
+	struct authenticate_ldap_simple_bind_state *state =
+		tevent_req_data(req,
+		struct authenticate_ldap_simple_bind_state);
+	NTSTATUS status;
+
+	*session_info = NULL;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	*session_info = talloc_move(mem_ctx, &state->session_info);
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}

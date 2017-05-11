@@ -160,6 +160,18 @@ NTSTATUS auth_check_password(struct auth4_context *auth_ctx,
 NTSTATUS auth4_init(void);
 NTSTATUS auth_register(TALLOC_CTX *mem_ctx, const struct auth_operations *ops);
 NTSTATUS server_service_auth_init(TALLOC_CTX *ctx);
+struct tevent_req *authenticate_ldap_simple_bind_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct imessaging_context *msg,
+					struct loadparm_context *lp_ctx,
+					struct tsocket_address *remote_address,
+					struct tsocket_address *local_address,
+					bool using_tls,
+					const char *dn,
+					const char *password);
+NTSTATUS authenticate_ldap_simple_bind_recv(struct tevent_req *req,
+					TALLOC_CTX *mem_ctx,
+					struct auth_session_info **session_info);
 NTSTATUS authenticate_ldap_simple_bind(TALLOC_CTX *mem_ctx,
 				       struct tevent_context *ev,
 				       struct imessaging_context *msg,
