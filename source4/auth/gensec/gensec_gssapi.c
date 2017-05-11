@@ -22,6 +22,8 @@
 */
 
 #include "includes.h"
+#include <tevent.h>
+#include "lib/util/tevent_ntstatus.h"
 #include "lib/events/events.h"
 #include "system/kerberos.h"
 #include "system/gssapi.h"
@@ -416,22 +418,10 @@ static NTSTATUS gensec_gssapi_sasl_client_start(struct gensec_security *gensec_s
 	return nt_status;
 }
 
-
-/**
- * Next state function for the GSSAPI GENSEC mechanism
- * 
- * @param gensec_gssapi_state GSSAPI State
- * @param out_mem_ctx The TALLOC_CTX for *out to be allocated on
- * @param in The request, as a DATA_BLOB
- * @param out The reply, as an talloc()ed DATA_BLOB, on *out_mem_ctx
- * @return Error, MORE_PROCESSING_REQUIRED if a reply is sent, 
- *                or NT_STATUS_OK if the user is authenticated. 
- */
-
-static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security, 
-				     TALLOC_CTX *out_mem_ctx,
-				     struct tevent_context *ev,
-				     const DATA_BLOB in, DATA_BLOB *out)
+static NTSTATUS gensec_gssapi_update_internal(struct gensec_security *gensec_security,
+					      TALLOC_CTX *out_mem_ctx,
+					      struct tevent_context *ev,
+					      const DATA_BLOB in, DATA_BLOB *out)
 {
 	struct gensec_gssapi_state *gensec_gssapi_state
 		= talloc_get_type(gensec_security->private_data, struct gensec_gssapi_state);
@@ -1040,6 +1030,65 @@ init_sec_context_done:
 	}
 }
 
+struct gensec_gssapi_update_state {
+	NTSTATUS status;
+	DATA_BLOB out;
+};
+
+static struct tevent_req *gensec_gssapi_update_send(TALLOC_CTX *mem_ctx,
+						    struct tevent_context *ev,
+						    struct gensec_security *gensec_security,
+						    const DATA_BLOB in)
+{
+	struct tevent_req *req = NULL;
+	struct gensec_gssapi_update_state *state = NULL;
+	NTSTATUS status;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct gensec_gssapi_update_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	status = gensec_gssapi_update_internal(gensec_security,
+					       state, ev, in,
+					       &state->out);
+	state->status = status;
+	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+	}
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
+
+	tevent_req_done(req);
+	return tevent_req_post(req, ev);
+}
+
+static NTSTATUS gensec_gssapi_update_recv(struct tevent_req *req,
+					  TALLOC_CTX *out_mem_ctx,
+					  DATA_BLOB *out)
+{
+	struct gensec_gssapi_update_state *state =
+		tevent_req_data(req,
+		struct gensec_gssapi_update_state);
+	NTSTATUS status;
+
+	*out = data_blob_null;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	*out = state->out;
+	talloc_steal(out_mem_ctx, state->out.data);
+	status = state->status;
+	tevent_req_received(req);
+	return status;
+}
+
 static NTSTATUS gensec_gssapi_wrap(struct gensec_security *gensec_security, 
 				   TALLOC_CTX *mem_ctx, 
 				   const DATA_BLOB *in, 
@@ -1564,7 +1613,8 @@ static const struct gensec_security_ops gensec_gssapi_spnego_security_ops = {
 	.client_start   = gensec_gssapi_client_start,
 	.server_start   = gensec_gssapi_server_start,
 	.magic  	= gensec_magic_check_krb5_oid,
-	.update 	= gensec_gssapi_update,
+	.update_send	= gensec_gssapi_update_send,
+	.update_recv	= gensec_gssapi_update_recv,
 	.session_key	= gensec_gssapi_session_key,
 	.session_info	= gensec_gssapi_session_info,
 	.sign_packet	= gensec_gssapi_sign_packet,
@@ -1591,7 +1641,8 @@ static const struct gensec_security_ops gensec_gssapi_krb5_security_ops = {
 	.client_start   = gensec_gssapi_client_start,
 	.server_start   = gensec_gssapi_server_start,
 	.magic  	= gensec_magic_check_krb5_oid,
-	.update 	= gensec_gssapi_update,
+	.update_send	= gensec_gssapi_update_send,
+	.update_recv	= gensec_gssapi_update_recv,
 	.session_key	= gensec_gssapi_session_key,
 	.session_info	= gensec_gssapi_session_info,
 	.sig_size	= gensec_gssapi_sig_size,
@@ -1617,7 +1668,8 @@ static const struct gensec_security_ops gensec_gssapi_sasl_krb5_security_ops = {
 	.sasl_name        = "GSSAPI",
 	.client_start     = gensec_gssapi_sasl_client_start,
 	.server_start     = gensec_gssapi_sasl_server_start,
-	.update 	  = gensec_gssapi_update,
+	.update_send      = gensec_gssapi_update_send,
+	.update_recv      = gensec_gssapi_update_recv,
 	.session_key	  = gensec_gssapi_session_key,
 	.session_info	  = gensec_gssapi_session_info,
 	.max_input_size	  = gensec_gssapi_max_input_size,
