@@ -103,10 +103,11 @@ _PUBLIC_ struct sys_lease_context *sys_lease_context_create(struct share_config 
 /*
   register a lease backend
 */
-_PUBLIC_ NTSTATUS sys_lease_register(const struct sys_lease_ops *backend)
+_PUBLIC_ NTSTATUS sys_lease_register(TALLOC_CTX *ctx,
+			const struct sys_lease_ops *backend)
 {
 	struct sys_lease_ops *b;
-	b = talloc_realloc(talloc_autofree_context(), backends,
+	b = talloc_realloc(ctx, backends,
 			   struct sys_lease_ops, num_backends+1);
 	NT_STATUS_HAVE_NO_MEMORY(b);
 	backends = b;

@@ -47,7 +47,7 @@ struct sys_lease_context {
 	const struct sys_lease_ops *ops;
 };
 
-NTSTATUS sys_lease_register(const struct sys_lease_ops *ops);
+NTSTATUS sys_lease_register(TALLOC_CTX *ctx, const struct sys_lease_ops *ops);
 NTSTATUS sys_lease_init(void);
 
 struct sys_lease_context *sys_lease_context_create(struct share_config *scfg,

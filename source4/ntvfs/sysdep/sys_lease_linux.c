@@ -211,5 +211,5 @@ static struct sys_lease_ops linux_lease_ops = {
 NTSTATUS sys_lease_linux_init(TALLOC_CTX *ctx)
 {
 	/* register ourselves as a system lease module */
-	return sys_lease_register(&linux_lease_ops);
+	return sys_lease_register(ctx, &linux_lease_ops);
 }
