@@ -1520,6 +1520,12 @@ static int rootdse_become_master(struct ldb_module *module,
 	 */
 	rootdse_del_trans(module);
 
+	/*
+	 * We must use the global event loop to run this IRPC in
+	 * single process mode
+	 */
+	ldb_handle_use_global_event_context(req->handle);
+
 	msg = imessaging_client_init(tmp_ctx, lp_ctx,
 				    ldb_get_event_context(ldb));
 	if (!msg) {
