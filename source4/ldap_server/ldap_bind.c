@@ -365,19 +365,19 @@ static NTSTATUS ldapsrv_setup_gensec(struct ldapsrv_connection *conn,
 	return status;
 }
 
+static void ldapsrv_BindSASL_done(struct tevent_req *subreq);
+
 static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 {
 	struct ldap_BindRequest *req = &call->request->r.BindRequest;
 	struct ldapsrv_reply *reply;
 	struct ldap_BindResponse *resp;
 	struct ldapsrv_connection *conn;
-	struct ldapsrv_sasl_postprocess_context *context = NULL;
 	int result = 0;
 	const char *errstr=NULL;
 	NTSTATUS status = NT_STATUS_OK;
 	DATA_BLOB input = data_blob_null;
-	DATA_BLOB output = data_blob_null;
-	struct auth_session_info *session_info = NULL;
+	struct tevent_req *subreq = NULL;
 
 	DEBUG(10, ("BindSASL dn: %s\n",req->dn));
 
@@ -418,8 +418,67 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 		input = *req->creds.SASL.secblob;
 	}
 
-	status = gensec_update_ev(conn->gensec, reply, conn->connection->event.ctx,
-				  input, &output);
+	subreq = gensec_update_send(call, conn->connection->event.ctx,
+				    conn->gensec, input);
+	if (subreq == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	tevent_req_set_callback(subreq, ldapsrv_BindSASL_done, call);
+
+	status = ldapsrv_bind_wait_setup(call, reply);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(subreq);
+		return status;
+	}
+
+	/*
+	 * The rest will be async.
+	 */
+	return NT_STATUS_OK;
+
+do_reply:
+	if (result != LDAP_SASL_BIND_IN_PROGRESS) {
+		/*
+		 * We should destroy the gensec context
+		 * when we hit a fatal error.
+		 *
+		 * Note: conn->gensec is already cleared
+		 * for the LDAP_SUCCESS case.
+		 */
+		talloc_unlink(conn, conn->gensec);
+		conn->gensec = NULL;
+	}
+
+	resp->response.resultcode = result;
+	resp->response.dn = NULL;
+	resp->response.errormessage = errstr;
+	resp->response.referral = NULL;
+
+	ldapsrv_queue_reply(call, reply);
+	return NT_STATUS_OK;
+}
+
+static void ldapsrv_BindSASL_done(struct tevent_req *subreq)
+{
+	struct ldapsrv_call *call =
+		tevent_req_callback_data(subreq,
+		struct ldapsrv_call);
+	struct ldapsrv_bind_wait_context *bind_wait =
+		talloc_get_type_abort(call->wait_private,
+		struct ldapsrv_bind_wait_context);
+	struct ldap_BindRequest *req = &call->request->r.BindRequest;
+	struct ldapsrv_reply *reply = bind_wait->reply;
+	struct ldap_BindResponse *resp = &reply->msg->r.BindResponse;
+	struct ldapsrv_connection *conn = call->conn;
+	struct auth_session_info *session_info = NULL;
+	struct ldapsrv_sasl_postprocess_context *context = NULL;
+	NTSTATUS status;
+	int result;
+	const char *errstr = NULL;
+	DATA_BLOB output = data_blob_null;
+
+	status = gensec_update_recv(subreq, call, &output);
+	TALLOC_FREE(subreq);
 
 	if (NT_STATUS_EQUAL(NT_STATUS_MORE_PROCESSING_REQUIRED, status)) {
 		*resp->SASL.secblob = output;
@@ -441,7 +500,8 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 
 		context = talloc_zero(call, struct ldapsrv_sasl_postprocess_context);
 		if (context == NULL) {
-			return NT_STATUS_NO_MEMORY;
+			ldapsrv_bind_wait_finished(call, NT_STATUS_NO_MEMORY);
+			return;
 		}
 	}
 
@@ -538,7 +598,8 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 
 		ptr = talloc_reparent(conn, context->sasl, conn->gensec);
 		if (ptr == NULL) {
-			return NT_STATUS_NO_MEMORY;
+			ldapsrv_bind_wait_finished(call, NT_STATUS_NO_MEMORY);
+			return;
 		}
 
 		call->postprocess_send = ldapsrv_sasl_postprocess_send;
@@ -572,7 +633,7 @@ do_reply:
 	resp->response.referral = NULL;
 
 	ldapsrv_queue_reply(call, reply);
-	return NT_STATUS_OK;
+	ldapsrv_bind_wait_finished(call, NT_STATUS_OK);
 }
 
 NTSTATUS ldapsrv_BindRequest(struct ldapsrv_call *call)
