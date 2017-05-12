@@ -540,7 +540,7 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 		goto do_reply;
 	}
 
-	if (NT_STATUS_IS_OK(status) && context) {
+	if (context != NULL) {
 		call->postprocess_send = ldapsrv_sasl_postprocess_send;
 		call->postprocess_recv = ldapsrv_sasl_postprocess_recv;
 		call->postprocess_private = context;
