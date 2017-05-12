@@ -436,9 +436,6 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 		goto do_reply;
 	}
 
-	result = LDAP_SUCCESS;
-	errstr = NULL;
-
 	if (gensec_have_feature(conn->gensec, GENSEC_FEATURE_SIGN) ||
 	    gensec_have_feature(conn->gensec, GENSEC_FEATURE_SEAL)) {
 
@@ -553,6 +550,8 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 	conn->gensec = NULL;
 
 	*resp->SASL.secblob = output;
+	result = LDAP_SUCCESS;
+	errstr = NULL;
 
 do_reply:
 	if (result != LDAP_SASL_BIND_IN_PROGRESS) {
