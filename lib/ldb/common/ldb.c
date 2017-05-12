@@ -605,7 +605,7 @@ int ldb_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 		return handle->status;
 	}
 
-	ev = ldb_get_event_context(handle->ldb);
+	ev = ldb_handle_get_event_context(handle);
 	if (NULL == ev) {
 		return ldb_oom(handle->ldb);
 	}

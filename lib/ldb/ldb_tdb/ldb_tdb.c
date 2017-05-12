@@ -1476,7 +1476,7 @@ static int ltdb_handle_request(struct ldb_module *module,
 		return LDB_ERR_TIME_LIMIT_EXCEEDED;
 	}
 
-	ev = ldb_get_event_context(ldb);
+	ev = ldb_handle_get_event_context(req->handle);
 
 	ac = talloc_zero(ldb, struct ltdb_context);
 	if (ac == NULL) {
