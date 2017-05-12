@@ -506,10 +506,6 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 					 req->creds.SASL.mechanism, nt_errstr(status));
 			goto do_reply;
 		}
-
-		if (!talloc_reference(context->sasl, conn->gensec)) {
-			return NT_STATUS_NO_MEMORY;
-		}
 	}
 
 	status = gensec_session_info(conn->gensec, call, &session_info);
@@ -541,11 +537,19 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 	}
 
 	if (context != NULL) {
+		const void *ptr = NULL;
+
+		ptr = talloc_reparent(conn, context->sasl, conn->gensec);
+		if (ptr == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
 		call->postprocess_send = ldapsrv_sasl_postprocess_send;
 		call->postprocess_recv = ldapsrv_sasl_postprocess_recv;
 		call->postprocess_private = context;
+	} else {
+		talloc_unlink(conn, conn->gensec);
 	}
-	talloc_unlink(conn, conn->gensec);
 	conn->gensec = NULL;
 
 	*resp->SASL.secblob = output;
