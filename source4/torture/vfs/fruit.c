@@ -2353,9 +2353,11 @@ static bool test_setup_create_fill(struct torture_context *torture,
 static bool test_setup_copy_chunk(struct torture_context *torture,
 				  struct smb2_tree *tree, TALLOC_CTX *mem_ctx,
 				  uint32_t nchunks,
+				  const char *src_name,
 				  struct smb2_handle *src_h,
 				  uint64_t src_size,
 				  uint32_t src_desired_access,
+				  const char *dst_name,
 				  struct smb2_handle *dest_h,
 				  uint64_t dest_size,
 				  uint32_t dest_desired_access,
@@ -2367,12 +2369,12 @@ static bool test_setup_copy_chunk(struct torture_context *torture,
 	NTSTATUS status;
 	enum ndr_err_code ndr_ret;
 
-	ok = test_setup_create_fill(torture, tree, mem_ctx, FNAME_CC_SRC,
+	ok = test_setup_create_fill(torture, tree, mem_ctx, src_name,
 				    src_h, src_size, src_desired_access,
 				    FILE_ATTRIBUTE_NORMAL);
 	torture_assert(torture, ok, "src file create fill");
 
-	ok = test_setup_create_fill(torture, tree, mem_ctx, FNAME_CC_DST,
+	ok = test_setup_create_fill(torture, tree, mem_ctx, dst_name,
 				    dest_h, dest_size, dest_desired_access,
 				    FILE_ATTRIBUTE_NORMAL);
 	torture_assert(torture, ok, "dest file create fill");
@@ -2533,8 +2535,10 @@ static bool test_copyfile(struct torture_context *torture,
 
 	ok = test_setup_copy_chunk(torture, tree, tmp_ctx,
 				   0, /* 0 chunks, copyfile semantics */
+				   FNAME_CC_SRC,
 				   &src_h, 4096, /* fill 4096 byte src file */
 				   SEC_FILE_READ_DATA | SEC_FILE_WRITE_DATA,
+				   FNAME_CC_DST,
 				   &dest_h, 0,	/* 0 byte dest file */
 				   SEC_FILE_READ_DATA | SEC_FILE_WRITE_DATA,
 				   &cc_copy,
@@ -2600,8 +2604,10 @@ static bool test_copyfile(struct torture_context *torture,
 
 	ok = test_setup_copy_chunk(torture, tree, tmp_ctx,
 				   0, /* 0 chunks, copyfile semantics */
+				   FNAME_CC_SRC,
 				   &src_h, 4096, /* fill 4096 byte src file */
 				   SEC_FILE_READ_DATA | SEC_FILE_WRITE_DATA,
+				   FNAME_CC_DST,
 				   &dest_h, 0,	/* 0 byte dest file */
 				   SEC_FILE_READ_DATA | SEC_FILE_WRITE_DATA,
 				   &cc_copy,
