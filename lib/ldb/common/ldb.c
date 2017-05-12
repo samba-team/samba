@@ -711,6 +711,62 @@ int ldb_set_timeout_from_prev_req(struct ldb_context *ldb,
 }
 
 
+struct ldb_handle *ldb_handle_new(TALLOC_CTX *mem_ctx, struct ldb_context *ldb)
+{
+	struct ldb_handle *h;
+
+	h = talloc_zero(mem_ctx, struct ldb_handle);
+	if (h == NULL) {
+		ldb_set_errstring(ldb, "Out of Memory");
+		return NULL;
+	}
+
+	h->status = LDB_SUCCESS;
+	h->state = LDB_ASYNC_INIT;
+	h->ldb = ldb;
+	h->flags = 0;
+	h->location = NULL;
+	h->parent = NULL;
+
+	if (h->ldb->require_private_event_context == true) {
+		h->event_context = tevent_context_init(h);
+		if (h->event_context == NULL) {
+			ldb_set_errstring(ldb,
+					  "Out of Memory allocating "
+					  "event context for new handle");
+			return NULL;
+		}
+		tevent_set_debug(h->event_context, ldb_tevent_debug, ldb);
+		tevent_loop_allow_nesting(h->event_context);
+	}
+
+	return h;
+}
+
+static struct ldb_handle *ldb_handle_new_child(TALLOC_CTX *mem_ctx,
+					       struct ldb_request *parent_req)
+{
+	struct ldb_handle *h;
+
+	h = talloc_zero(mem_ctx, struct ldb_handle);
+	if (h == NULL) {
+		ldb_set_errstring(parent_req->handle->ldb,
+				  "Out of Memory");
+		return NULL;
+	}
+
+	h->status = LDB_SUCCESS;
+	h->state = LDB_ASYNC_INIT;
+	h->ldb = parent_req->handle->ldb;
+	h->parent = parent_req;
+	h->nesting = parent_req->handle->nesting + 1;
+	h->flags = parent_req->handle->flags;
+	h->custom_flags = parent_req->handle->custom_flags;
+	h->event_context = parent_req->handle->event_context;
+
+	return h;
+}
+
 /*
    set the permissions for new files to be passed to open() in
    backends that use local files
@@ -1182,17 +1238,18 @@ static struct ldb_request *ldb_build_req_common(TALLOC_CTX *mem_ctx,
 
 	ldb_set_timeout_from_prev_req(ldb, parent, req);
 
-	req->handle = ldb_handle_new(req, ldb);
-	if (req->handle == NULL) {
-		TALLOC_FREE(req);
-		return NULL;
-	}
-
 	if (parent != NULL) {
-		req->handle->nesting++;
-		req->handle->parent = parent;
-		req->handle->flags = parent->handle->flags;
-		req->handle->custom_flags = parent->handle->custom_flags;
+		req->handle = ldb_handle_new_child(req, parent);
+		if (req->handle == NULL) {
+			TALLOC_FREE(req);
+			return NULL;
+		}
+	} else {
+		req->handle = ldb_handle_new(req, ldb);
+		if (req->handle == NULL) {
+			TALLOC_FREE(req);
+			return NULL;
+		}
 	}
 
 	return req;

@@ -684,26 +684,6 @@ int ldb_next_del_trans(struct ldb_module *module)
 	return ret;
 }
 
-struct ldb_handle *ldb_handle_new(TALLOC_CTX *mem_ctx, struct ldb_context *ldb)
-{
-	struct ldb_handle *h;
-
-	h = talloc_zero(mem_ctx, struct ldb_handle);
-	if (h == NULL) {
-		ldb_set_errstring(ldb, "Out of Memory");
-		return NULL;
-	}
-
-	h->status = LDB_SUCCESS;
-	h->state = LDB_ASYNC_INIT;
-	h->ldb = ldb;
-	h->flags = 0;
-	h->location = NULL;
-	h->parent = NULL;
-
-	return h;
-}
-
 /* calls the request callback to send an entry
  *
  * params:
