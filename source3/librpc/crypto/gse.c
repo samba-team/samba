@@ -1106,15 +1106,7 @@ static bool gensec_gse_have_feature(struct gensec_security *gensec_security,
 		return true;
 	}
 	if (feature & GENSEC_FEATURE_SIGN_PKT_HEADER) {
-		if (gensec_security->want_features & GENSEC_FEATURE_SEAL) {
-			return true;
-		}
-
-		if (gensec_security->want_features & GENSEC_FEATURE_SIGN) {
-			return true;
-		}
-
-		return false;
+		return true;
 	}
 	return false;
 }
