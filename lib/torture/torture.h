@@ -293,6 +293,15 @@ void torture_result(struct torture_context *test,
 	}\
 	} while(0)
 
+#define torture_assert_ndr_err_equal_goto(torture_ctx,got,expected,ret,label,cmt) \
+	do { enum ndr_err_code __got = got, __expected = expected; \
+	if (__got != __expected) { \
+		torture_result(torture_ctx, TORTURE_FAIL, __location__": "#got" was %d (%s), expected %d (%s): %s", __got, ndr_errstr(__got), __expected, __STRING(expected), cmt); \
+		ret = false; \
+		goto label; \
+	}\
+	} while(0)
+
 #define torture_assert_hresult_equal(torture_ctx, got, expected, cmt) \
 	do { HRESULT __got = got, __expected = expected; \
 	if (!HRES_IS_EQUAL(__got, __expected)) { \
@@ -646,6 +655,9 @@ static inline void torture_dump_data_str_cb(const char *buf, void *private_data)
 
 #define torture_assert_ndr_success(torture_ctx,expr,cmt) \
 		torture_assert_ndr_err_equal(torture_ctx,expr,NDR_ERR_SUCCESS,cmt)
+
+#define torture_assert_ndr_success_goto(torture_ctx,expr,ret,label,cmt) \
+		torture_assert_ndr_err_equal_goto(torture_ctx,expr,NDR_ERR_SUCCESS,ret,label,cmt)
 
 #define torture_assert_hresult_ok(torture_ctx,expr,cmt) \
 		torture_assert_hresult_equal(torture_ctx,expr,HRES_ERROR(0), cmt)
