@@ -500,7 +500,7 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 					       &context->sasl);
 		if (NT_STATUS_IS_OK(status)) {
 			if (!talloc_reference(context->sasl, conn->gensec)) {
-				status = NT_STATUS_NO_MEMORY;
+				return NT_STATUS_NO_MEMORY;
 			}
 		}
 	}
