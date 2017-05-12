@@ -1556,6 +1556,13 @@ static int ltdb_connect(struct ldb_context *ldb, const char *url,
 	int tdb_flags, open_flags;
 	struct ltdb_private *ltdb;
 
+	/*
+	 * We hold locks, so we must use a private event context
+	 * on each returned handle
+	 */
+
+	ldb_set_require_private_event_context(ldb);
+
 	/* parse the url */
 	if (strchr(url, ':')) {
 		if (strncmp(url, "tdb://", 6) != 0) {
