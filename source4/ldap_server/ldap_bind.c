@@ -428,11 +428,9 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 
 	if (!NT_STATUS_IS_OK(status)) {
 		status = nt_status_squash(status);
-		if (result == 0) {
-			result = LDAP_INVALID_CREDENTIALS;
-			errstr = ldapsrv_bind_error_msg(reply, HRES_SEC_E_LOGON_DENIED,
-							0x0C0904DC, status);
-		}
+		result = LDAP_INVALID_CREDENTIALS;
+		errstr = ldapsrv_bind_error_msg(reply, HRES_SEC_E_LOGON_DENIED,
+						0x0C0904DC, status);
 		talloc_unlink(conn, conn->gensec);
 		conn->gensec = NULL;
 		goto do_reply;
