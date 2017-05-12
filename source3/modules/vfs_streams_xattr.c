@@ -25,6 +25,7 @@
 #include "smbd/smbd.h"
 #include "system/filesys.h"
 #include "../lib/crypto/md5.h"
+#include "lib/util/tevent_unix.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
@@ -1048,6 +1049,166 @@ static ssize_t streams_xattr_pread(vfs_handle_struct *handle,
         return overlap;
 }
 
+struct streams_xattr_pread_state {
+	ssize_t nread;
+	struct vfs_aio_state vfs_aio_state;
+};
+
+static void streams_xattr_pread_done(struct tevent_req *subreq);
+
+static struct tevent_req *streams_xattr_pread_send(
+	struct vfs_handle_struct *handle,
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct files_struct *fsp,
+	void *data,
+	size_t n, off_t offset)
+{
+	struct tevent_req *req = NULL;
+	struct tevent_req *subreq = NULL;
+	struct streams_xattr_pread_state *state = NULL;
+	struct stream_io *sio =
+		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct streams_xattr_pread_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	if (sio == NULL) {
+		subreq = SMB_VFS_NEXT_PREAD_SEND(state, ev, handle, fsp,
+						 data, n, offset);
+		if (tevent_req_nomem(req, subreq)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(subreq, streams_xattr_pread_done, req);
+		return req;
+	}
+
+	state->nread = SMB_VFS_PREAD(fsp, data, n, offset);
+	if (state->nread != n) {
+		if (state->nread != -1) {
+			errno = EIO;
+		}
+		tevent_req_error(req, errno);
+		return tevent_req_post(req, ev);
+	}
+
+	tevent_req_done(req);
+	return tevent_req_post(req, ev);
+}
+
+static void streams_xattr_pread_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct streams_xattr_pread_state *state = tevent_req_data(
+		req, struct streams_xattr_pread_state);
+
+	state->nread = SMB_VFS_PREAD_RECV(subreq, &state->vfs_aio_state);
+	TALLOC_FREE(subreq);
+
+	if (tevent_req_error(req, state->vfs_aio_state.error)) {
+		return;
+	}
+	tevent_req_done(req);
+}
+
+static ssize_t streams_xattr_pread_recv(struct tevent_req *req,
+					struct vfs_aio_state *vfs_aio_state)
+{
+	struct streams_xattr_pread_state *state = tevent_req_data(
+		req, struct streams_xattr_pread_state);
+
+	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
+		return -1;
+	}
+
+	*vfs_aio_state = state->vfs_aio_state;
+	return state->nread;
+}
+
+struct streams_xattr_pwrite_state {
+	ssize_t nwritten;
+	struct vfs_aio_state vfs_aio_state;
+};
+
+static void streams_xattr_pwrite_done(struct tevent_req *subreq);
+
+static struct tevent_req *streams_xattr_pwrite_send(
+	struct vfs_handle_struct *handle,
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct files_struct *fsp,
+	const void *data,
+	size_t n, off_t offset)
+{
+	struct tevent_req *req = NULL;
+	struct tevent_req *subreq = NULL;
+	struct streams_xattr_pwrite_state *state = NULL;
+	struct stream_io *sio =
+		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct streams_xattr_pwrite_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	if (sio == NULL) {
+		subreq = SMB_VFS_NEXT_PWRITE_SEND(state, ev, handle, fsp,
+						  data, n, offset);
+		if (tevent_req_nomem(req, subreq)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(subreq, streams_xattr_pwrite_done, req);
+		return req;
+	}
+
+	state->nwritten = SMB_VFS_PWRITE(fsp, data, n, offset);
+	if (state->nwritten != n) {
+		if (state->nwritten != -1) {
+			errno = EIO;
+		}
+		tevent_req_error(req, errno);
+		return tevent_req_post(req, ev);
+	}
+
+	tevent_req_done(req);
+	return tevent_req_post(req, ev);
+}
+
+static void streams_xattr_pwrite_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct streams_xattr_pwrite_state *state = tevent_req_data(
+		req, struct streams_xattr_pwrite_state);
+
+	state->nwritten = SMB_VFS_PWRITE_RECV(subreq, &state->vfs_aio_state);
+	TALLOC_FREE(subreq);
+
+	if (tevent_req_error(req, state->vfs_aio_state.error)) {
+		return;
+	}
+	tevent_req_done(req);
+}
+
+static ssize_t streams_xattr_pwrite_recv(struct tevent_req *req,
+					 struct vfs_aio_state *vfs_aio_state)
+{
+	struct streams_xattr_pwrite_state *state = tevent_req_data(
+		req, struct streams_xattr_pwrite_state);
+
+	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
+		return -1;
+	}
+
+	*vfs_aio_state = state->vfs_aio_state;
+	return state->nwritten;
+}
+
 static int streams_xattr_ftruncate(struct vfs_handle_struct *handle,
 					struct files_struct *fsp,
 					off_t offset)
@@ -1151,6 +1312,10 @@ static struct vfs_fn_pointers vfs_streams_xattr_fns = {
 	.lstat_fn = streams_xattr_lstat,
 	.pread_fn = streams_xattr_pread,
 	.pwrite_fn = streams_xattr_pwrite,
+	.pread_send_fn = streams_xattr_pread_send,
+	.pread_recv_fn = streams_xattr_pread_recv,
+	.pwrite_send_fn = streams_xattr_pwrite_send,
+	.pwrite_recv_fn = streams_xattr_pwrite_recv,
 	.unlink_fn = streams_xattr_unlink,
 	.rename_fn = streams_xattr_rename,
 	.ftruncate_fn = streams_xattr_ftruncate,
