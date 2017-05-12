@@ -1632,6 +1632,20 @@ static bool gensec_spnego_have_feature(struct gensec_security *gensec_security,
 				       uint32_t feature) 
 {
 	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
+
+	if (feature & GENSEC_FEATURE_SIGN_PKT_HEADER) {
+		/*
+		 * All mechs with sub (child) mechs need to provide DCERPC
+		 * header signing! This is required because the negotiation
+		 * of header signing is done before the authentication
+		 * is completed.
+		 *
+		 * Currently all our backends support DCERPC with:
+		 * GENSEC_FEATURE_SIGN_PKT_HEADER.
+		 */
+		return true;
+	}
+
 	if (!spnego_state->sub_sec_security) {
 		return false;
 	}
