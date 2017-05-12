@@ -519,25 +519,25 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 					 "SASL:[%s]: Failed to get session info: %s",
 					 req->creds.SASL.mechanism, nt_errstr(status));
 		goto do_reply;
-	} else {
-		talloc_unlink(conn, conn->session_info);
-		conn->session_info = talloc_steal(conn, session_info);
+	}
 
-		/* don't leak the old LDB */
-		talloc_unlink(conn, conn->ldb);
+	talloc_unlink(conn, conn->session_info);
+	conn->session_info = talloc_steal(conn, session_info);
 
-		call->conn->authz_logged = true;
+	/* don't leak the old LDB */
+	talloc_unlink(conn, conn->ldb);
 
-		status = ldapsrv_backend_Init(conn);
+	call->conn->authz_logged = true;
 
-		if (!NT_STATUS_IS_OK(status)) {
-			result = LDAP_OPERATIONS_ERROR;
-			errstr = talloc_asprintf(reply,
-						 "SASL:[%s]: Failed to advise samdb of new credentials: %s",
-						 req->creds.SASL.mechanism,
-						 nt_errstr(status));
-			goto do_reply;
-		}
+	status = ldapsrv_backend_Init(conn);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		result = LDAP_OPERATIONS_ERROR;
+		errstr = talloc_asprintf(reply,
+					 "SASL:[%s]: Failed to advise samdb of new credentials: %s",
+					 req->creds.SASL.mechanism,
+					 nt_errstr(status));
+		goto do_reply;
 	}
 
 	if (NT_STATUS_IS_OK(status) && context) {
