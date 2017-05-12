@@ -499,21 +499,20 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 					       context->conn->gensec,
 					       context->conn->sockets.raw,
 					       &context->sasl);
-		if (NT_STATUS_IS_OK(status)) {
-			if (!talloc_reference(context->sasl, conn->gensec)) {
-				return NT_STATUS_NO_MEMORY;
-			}
+		if (!NT_STATUS_IS_OK(status)) {
+			result = LDAP_OPERATIONS_ERROR;
+			errstr = talloc_asprintf(reply,
+					 "SASL:[%s]: Failed to setup SASL socket: %s",
+					 req->creds.SASL.mechanism, nt_errstr(status));
+			goto do_reply;
+		}
+
+		if (!talloc_reference(context->sasl, conn->gensec)) {
+			return NT_STATUS_NO_MEMORY;
 		}
 	}
 
-	if (!NT_STATUS_IS_OK(status)) {
-		result = LDAP_OPERATIONS_ERROR;
-		errstr = talloc_asprintf(reply,
-					 "SASL:[%s]: Failed to setup SASL socket: %s",
-					 req->creds.SASL.mechanism, nt_errstr(status));
-		goto do_reply;
-	} else {
-
+	{
 		status = gensec_session_info(conn->gensec, call, &session_info);
 		if (!NT_STATUS_IS_OK(status)) {
 			result = LDAP_OPERATIONS_ERROR;
