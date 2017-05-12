@@ -431,8 +431,6 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 		result = LDAP_INVALID_CREDENTIALS;
 		errstr = ldapsrv_bind_error_msg(reply, HRES_SEC_E_LOGON_DENIED,
 						0x0C0904DC, status);
-		talloc_unlink(conn, conn->gensec);
-		conn->gensec = NULL;
 		goto do_reply;
 	}
 
@@ -559,6 +557,18 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 	}
 
 do_reply:
+	if (result != LDAP_SASL_BIND_IN_PROGRESS) {
+		/*
+		 * We should destroy the gensec context
+		 * when we hit a fatal error.
+		 *
+		 * Note: conn->gensec is already cleared
+		 * for the LDAP_SUCCESS case.
+		 */
+		talloc_unlink(conn, conn->gensec);
+		conn->gensec = NULL;
+	}
+
 	resp->response.resultcode = result;
 	resp->response.dn = NULL;
 	resp->response.errormessage = errstr;
