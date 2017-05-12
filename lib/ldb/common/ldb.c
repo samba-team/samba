@@ -758,6 +758,10 @@ struct tevent_context *ldb_handle_get_event_context(struct ldb_handle *handle)
 	return ldb_get_event_context(handle->ldb);
 }
 
+void ldb_set_require_private_event_context(struct ldb_context *ldb)
+{
+	ldb->require_private_event_context = true;
+}
 
 /*
   trace a ldb request

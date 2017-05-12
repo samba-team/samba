@@ -140,6 +140,13 @@ struct ldb_context {
 
 	struct tevent_context *ev_ctx;
 
+	/*
+	 * If the backend holds locks, we must not use a global event
+	 * context, so this flag will be set and ldb_handle_new() will
+	 * build a new event context
+	 */
+	bool require_private_event_context;
+
 	bool prepare_commit_done;
 
 	char *partial_debug;

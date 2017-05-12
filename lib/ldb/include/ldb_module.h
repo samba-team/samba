@@ -199,6 +199,8 @@ typedef int (*ldb_connect_fn)(struct ldb_context *ldb, const char *url,
 			      unsigned int flags, const char *options[],
 			      struct ldb_module **module);
 
+void ldb_set_require_private_event_context(struct ldb_context *ldb);
+
 struct ldb_backend_ops {
 	const char *name;
 	ldb_connect_fn connect_fn;
