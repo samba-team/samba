@@ -20,6 +20,14 @@ def build(bld):
                           ''',
                      install=False)
 
+    bld.SAMBA_BINARY('test_lib_util_modules',
+                     source='test_lib_util_modules.c',
+                     deps='''
+                          samba-modules
+                          cmocka
+                          ''',
+                     install=False)
+
     bld.SAMBA_MODULE('rpc_test_dummy_module',
                      source='rpc_test_dummy_module.c',
                      deps='ndr',
