@@ -366,7 +366,7 @@ static NTSTATUS gensec_spnego_server_try_fallback(struct gensec_security *gensec
 			return nt_status;
 		}
 		nt_status = gensec_update_ev(spnego_state->sub_sec_security,
-					  ev, out_mem_ctx, in, out);
+					     out_mem_ctx, ev, in, out);
 		return nt_status;
 	}
 	DEBUG(1, ("Failed to parse SPNEGO request\n"));
@@ -804,8 +804,8 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 
 	switch (spnego_state->state_position) {
 	case SPNEGO_FALLBACK:
-		return gensec_update_ev(spnego_state->sub_sec_security, ev,
-				     out_mem_ctx, in, out);
+		return gensec_update_ev(spnego_state->sub_sec_security,
+					out_mem_ctx, ev, in, out);
 	case SPNEGO_SERVER_START:
 	{
 		NTSTATUS nt_status;
