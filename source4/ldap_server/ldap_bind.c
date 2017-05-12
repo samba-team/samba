@@ -512,33 +512,31 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 		}
 	}
 
-	{
-		status = gensec_session_info(conn->gensec, call, &session_info);
+	status = gensec_session_info(conn->gensec, call, &session_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		result = LDAP_OPERATIONS_ERROR;
+		errstr = talloc_asprintf(reply,
+					 "SASL:[%s]: Failed to get session info: %s",
+					 req->creds.SASL.mechanism, nt_errstr(status));
+		goto do_reply;
+	} else {
+		talloc_unlink(conn, conn->session_info);
+		conn->session_info = talloc_steal(conn, session_info);
+
+		/* don't leak the old LDB */
+		talloc_unlink(conn, conn->ldb);
+
+		call->conn->authz_logged = true;
+
+		status = ldapsrv_backend_Init(conn);
+
 		if (!NT_STATUS_IS_OK(status)) {
 			result = LDAP_OPERATIONS_ERROR;
-			errstr = talloc_asprintf(reply, 
-						 "SASL:[%s]: Failed to get session info: %s",
-						 req->creds.SASL.mechanism, nt_errstr(status));
+			errstr = talloc_asprintf(reply,
+						 "SASL:[%s]: Failed to advise samdb of new credentials: %s",
+						 req->creds.SASL.mechanism,
+						 nt_errstr(status));
 			goto do_reply;
-		} else {
-			talloc_unlink(conn, conn->session_info);
-			conn->session_info = talloc_steal(conn, session_info);
-
-			/* don't leak the old LDB */
-			talloc_unlink(conn, conn->ldb);
-
-			call->conn->authz_logged = true;
-
-			status = ldapsrv_backend_Init(conn);
-
-			if (!NT_STATUS_IS_OK(status)) {
-				result = LDAP_OPERATIONS_ERROR;
-				errstr = talloc_asprintf(reply, 
-							 "SASL:[%s]: Failed to advise samdb of new credentials: %s",
-							 req->creds.SASL.mechanism,
-							 nt_errstr(status));
-				goto do_reply;
-			}
 		}
 	}
 
