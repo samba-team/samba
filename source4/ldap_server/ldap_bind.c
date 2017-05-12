@@ -505,8 +505,7 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 		}
 	}
 
-	if (result != LDAP_SUCCESS) {
-	} else if (!NT_STATUS_IS_OK(status)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		result = LDAP_OPERATIONS_ERROR;
 		errstr = talloc_asprintf(reply,
 					 "SASL:[%s]: Failed to setup SASL socket: %s",
