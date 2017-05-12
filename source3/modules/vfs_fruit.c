@@ -31,6 +31,7 @@
 #include "../libcli/smb/smb2_create_ctx.h"
 #include "lib/util/sys_rw.h"
 #include "lib/util/tevent_ntstatus.h"
+#include "lib/util/tevent_unix.h"
 
 /*
  * Enhanced OS X and Netatalk compatibility
@@ -3755,6 +3756,105 @@ static ssize_t fruit_pread(vfs_handle_struct *handle,
 	return nread;
 }
 
+static bool fruit_must_handle_aio_stream(struct fio *fio)
+{
+	if (fio == NULL) {
+		return false;
+	};
+
+	if ((fio->type == ADOUBLE_META) &&
+	    (fio->config->meta == FRUIT_META_NETATALK))
+	{
+		return true;
+	}
+
+	if ((fio->type == ADOUBLE_RSRC) &&
+	    (fio->config->rsrc == FRUIT_RSRC_ADFILE))
+	{
+		return true;
+	}
+
+	return false;
+}
+
+struct fruit_pread_state {
+	ssize_t nread;
+	struct vfs_aio_state vfs_aio_state;
+};
+
+static void fruit_pread_done(struct tevent_req *subreq);
+
+static struct tevent_req *fruit_pread_send(
+	struct vfs_handle_struct *handle,
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct files_struct *fsp,
+	void *data,
+	size_t n, off_t offset)
+{
+	struct tevent_req *req = NULL;
+	struct tevent_req *subreq = NULL;
+	struct fruit_pread_state *state = NULL;
+	struct fio *fio = (struct fio *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct fruit_pread_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	if (fruit_must_handle_aio_stream(fio)) {
+		state->nread = SMB_VFS_PREAD(fsp, data, n, offset);
+		if (state->nread != n) {
+			if (state->nread != -1) {
+				errno = EIO;
+			}
+			tevent_req_error(req, errno);
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+	}
+
+	subreq = SMB_VFS_NEXT_PREAD_SEND(state, ev, handle, fsp,
+					 data, n, offset);
+	if (tevent_req_nomem(req, subreq)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, fruit_pread_done, req);
+	return req;
+}
+
+static void fruit_pread_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct fruit_pread_state *state = tevent_req_data(
+		req, struct fruit_pread_state);
+
+	state->nread = SMB_VFS_PREAD_RECV(subreq, &state->vfs_aio_state);
+	TALLOC_FREE(subreq);
+
+	if (tevent_req_error(req, state->vfs_aio_state.error)) {
+		return;
+	}
+	tevent_req_done(req);
+}
+
+static ssize_t fruit_pread_recv(struct tevent_req *req,
+					struct vfs_aio_state *vfs_aio_state)
+{
+	struct fruit_pread_state *state = tevent_req_data(
+		req, struct fruit_pread_state);
+
+	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
+		return -1;
+	}
+
+	*vfs_aio_state = state->vfs_aio_state;
+	return state->nread;
+}
+
 static ssize_t fruit_pwrite_meta_stream(vfs_handle_struct *handle,
 					files_struct *fsp, const void *data,
 					size_t n, off_t offset)
@@ -3977,6 +4077,84 @@ static ssize_t fruit_pwrite(vfs_handle_struct *handle,
 
 	DBG_DEBUG("Path [%s] nwritten=%zd\n", fsp_str_dbg(fsp), nwritten);
 	return nwritten;
+}
+
+struct fruit_pwrite_state {
+	ssize_t nwritten;
+	struct vfs_aio_state vfs_aio_state;
+};
+
+static void fruit_pwrite_done(struct tevent_req *subreq);
+
+static struct tevent_req *fruit_pwrite_send(
+	struct vfs_handle_struct *handle,
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct files_struct *fsp,
+	const void *data,
+	size_t n, off_t offset)
+{
+	struct tevent_req *req = NULL;
+	struct tevent_req *subreq = NULL;
+	struct fruit_pwrite_state *state = NULL;
+	struct fio *fio = (struct fio *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct fruit_pwrite_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	if (fruit_must_handle_aio_stream(fio)) {
+		state->nwritten = SMB_VFS_PWRITE(fsp, data, n, offset);
+		if (state->nwritten != n) {
+			if (state->nwritten != -1) {
+				errno = EIO;
+			}
+			tevent_req_error(req, errno);
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+	}
+
+	subreq = SMB_VFS_NEXT_PWRITE_SEND(state, ev, handle, fsp,
+					  data, n, offset);
+	if (tevent_req_nomem(req, subreq)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, fruit_pwrite_done, req);
+	return req;
+}
+
+static void fruit_pwrite_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct fruit_pwrite_state *state = tevent_req_data(
+		req, struct fruit_pwrite_state);
+
+	state->nwritten = SMB_VFS_PWRITE_RECV(subreq, &state->vfs_aio_state);
+	TALLOC_FREE(subreq);
+
+	if (tevent_req_error(req, state->vfs_aio_state.error)) {
+		return;
+	}
+	tevent_req_done(req);
+}
+
+static ssize_t fruit_pwrite_recv(struct tevent_req *req,
+					 struct vfs_aio_state *vfs_aio_state)
+{
+	struct fruit_pwrite_state *state = tevent_req_data(
+		req, struct fruit_pwrite_state);
+
+	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
+		return -1;
+	}
+
+	*vfs_aio_state = state->vfs_aio_state;
+	return state->nwritten;
 }
 
 /**
@@ -5429,6 +5607,10 @@ static struct vfs_fn_pointers vfs_fruit_fns = {
 	.open_fn = fruit_open,
 	.pread_fn = fruit_pread,
 	.pwrite_fn = fruit_pwrite,
+	.pread_send_fn = fruit_pread_send,
+	.pread_recv_fn = fruit_pread_recv,
+	.pwrite_send_fn = fruit_pwrite_send,
+	.pwrite_recv_fn = fruit_pwrite_recv,
 	.stat_fn = fruit_stat,
 	.lstat_fn = fruit_lstat,
 	.fstat_fn = fruit_fstat,
