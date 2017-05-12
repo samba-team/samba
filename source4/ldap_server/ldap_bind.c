@@ -467,18 +467,7 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 		goto do_reply;
 	}
 
-	if (context) {
-		context->conn = conn;
-		status = gensec_create_tstream(context,
-					       context->conn->gensec,
-					       context->conn->sockets.raw,
-					       &context->sasl);
-		if (NT_STATUS_IS_OK(status)) {
-			if (!talloc_reference(context->sasl, conn->gensec)) {
-				status = NT_STATUS_NO_MEMORY;
-			}
-		}
-	} else {
+	if (context == NULL) {
 		switch (call->conn->require_strong_auth) {
 		case LDAP_SERVER_REQUIRE_STRONG_AUTH_NO:
 			break;
@@ -500,6 +489,19 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 					 "SASL:[%s]: Sign or Seal are required.",
 					 req->creds.SASL.mechanism);
 			goto do_reply;
+		}
+	}
+
+	if (context != NULL) {
+		context->conn = conn;
+		status = gensec_create_tstream(context,
+					       context->conn->gensec,
+					       context->conn->sockets.raw,
+					       &context->sasl);
+		if (NT_STATUS_IS_OK(status)) {
+			if (!talloc_reference(context->sasl, conn->gensec)) {
+				status = NT_STATUS_NO_MEMORY;
+			}
 		}
 	}
 
