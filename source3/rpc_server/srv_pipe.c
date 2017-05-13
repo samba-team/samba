@@ -527,22 +527,15 @@ static bool pipe_auth_generic_bind(struct pipes_struct *p,
 	status = auth_generic_server_authtype_start(p,
 						    auth_info->auth_type,
 						    auth_info->auth_level,
-						    &auth_info->credentials,
-						    response,
 						    p->remote_address,
 						    p->local_address,
 						    service_description,
 						    &gensec_security);
-	if (!NT_STATUS_IS_OK(status) &&
-	    !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED))
-	{
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, (__location__ ": auth_generic_server_authtype_start[%u/%u] failed: %s\n",
 			  auth_info->auth_type, auth_info->auth_level, nt_errstr(status)));
 		return false;
 	}
-
-	/* Make sure data is bound to the memctx, to be freed the caller */
-	talloc_steal(mem_ctx, response->data);
 
 	p->auth.auth_ctx = gensec_security;
 	p->auth.auth_type = auth_info->auth_type;
@@ -558,6 +551,19 @@ static bool pipe_auth_generic_bind(struct pipes_struct *p,
 	if (p->auth.hdr_signing) {
 		gensec_want_feature(gensec_security,
 				    GENSEC_FEATURE_SIGN_PKT_HEADER);
+	}
+
+	status = auth_generic_server_step(gensec_security, mem_ctx,
+					  &auth_info->credentials,
+					  response);
+	if (!NT_STATUS_IS_OK(status) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED))
+	{
+		DEBUG(2, (__location__ ": "
+			  "auth_generic_server_step[%u/%u] failed: %s\n",
+			  auth_info->auth_type, auth_info->auth_level,
+			  nt_errstr(status)));
+		return false;
 	}
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
