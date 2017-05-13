@@ -397,6 +397,19 @@ _PUBLIC_ NTSTATUS gensec_update_ev(struct gensec_security *gensec_security,
 		goto fail;
 	}
 	status = ops->update_recv(subreq, out_mem_ctx, out);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+
+	/*
+	 * Because callers using the
+	 * gensec_start_mech_by_auth_type() never call
+	 * gensec_want_feature(), it isn't sensible for them
+	 * to have to call gensec_have_feature() manually, and
+	 * these are not points of negotiation, but are
+	 * asserted by the client
+	 */
+	status = gensec_verify_features(gensec_security);
  fail:
 	TALLOC_FREE(frame);
 	return status;
