@@ -1257,6 +1257,8 @@ NTSTATUS ldapsrv_do_call(struct ldapsrv_call *call)
 
 		switch(call->request->type) {
 		case LDAP_TAG_BindRequest:
+		case LDAP_TAG_UnbindRequest:
+		case LDAP_TAG_AbandonRequest:
 			log = false;
 			break;
 		case LDAP_TAG_ExtendedResponse: {
