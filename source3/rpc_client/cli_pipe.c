@@ -1952,6 +1952,14 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 		return;
 	}
 
+	if (pkt->ptype == DCERPC_PKT_BIND_ACK) {
+		if (pkt->pfc_flags & DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN) {
+			if (pauth->client_hdr_signing) {
+				pauth->hdr_signing = true;
+			}
+		}
+	}
+
 	state->cli->max_xmit_frag = pkt->u.bind_ack.max_xmit_frag;
 
 	switch(pauth->auth_type) {
@@ -2017,13 +2025,6 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 	default:
 		gensec_security = pauth->auth_ctx;
 
-		if (pkt->pfc_flags & DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN) {
-			if (pauth->client_hdr_signing) {
-				pauth->hdr_signing = true;
-				gensec_want_feature(gensec_security,
-						    GENSEC_FEATURE_SIGN_PKT_HEADER);
-			}
-		}
 
 		status = gensec_update(gensec_security, state,
 				       auth.credentials, &auth_token);
@@ -2032,6 +2033,11 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 			status = rpc_bind_next_send(req, state,
 							&auth_token);
 		} else if (NT_STATUS_IS_OK(status)) {
+			if (pauth->hdr_signing) {
+				gensec_want_feature(gensec_security,
+						    GENSEC_FEATURE_SIGN_PKT_HEADER);
+			}
+
 			if (auth_token.length == 0) {
 				/* Bind complete. */
 				tevent_req_done(req);
