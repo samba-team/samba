@@ -147,8 +147,51 @@ struct tevent_req *gensec_update_send(TALLOC_CTX *mem_ctx,
 				      struct gensec_security *gensec_security,
 				      const DATA_BLOB in);
 NTSTATUS gensec_update_recv(struct tevent_req *req, TALLOC_CTX *out_mem_ctx, DATA_BLOB *out);
+/**
+ * @brief Ask for features for a following authentication
+ *
+ * Typically only one specific feature bit should be passed,
+ * but it also works to ask for more features.
+ *
+ * The features must be requested before starting the
+ * gensec_update*() loop.
+ *
+ * The current expection is GENSEC_FEATURE_SIGN_PKT_HEADER,
+ * it can also be requested once the gensec_update*() loop
+ * returned NT_STATUS_OK.
+ *
+ * The features should not be changed during the gensec_update*()
+ * loop.
+ *
+ * @param[in]  gensec_security The context to be used
+ *
+ * @param[in]  feature         The requested feature[s].
+ *
+ */
 void gensec_want_feature(struct gensec_security *gensec_security,
 			 uint32_t feature);
+/**
+ * @brief Ask for one feature after the finished authentication
+ *
+ * Because the return value is bool, the caller can only
+ * ask for one feature at a time.
+ *
+ * The features must be requested after the finished
+ * gensec_update*() loop.
+ *
+ * The current expection is GENSEC_FEATURE_SIGN_PKT_HEADER,
+ * it can also be requested before the gensec_update*() loop,
+ * as the return value only indicates if the backend supports
+ * dcerpc header signing, not if header signing will be used
+ * between client and server. It will be used only if the caller
+ * also used gensec_want_feature(GENSEC_FEATURE_SIGN_PKT_HEADER).
+ *
+ * @param[in]  gensec_security The context to be used.
+ *
+ * @param[in]  feature         The requested feature.
+ *
+ * @return                     true if the feature is supported, false if not.
+ */
 bool gensec_have_feature(struct gensec_security *gensec_security,
 			 uint32_t feature);
 NTTIME gensec_expire_time(struct gensec_security *gensec_security);
