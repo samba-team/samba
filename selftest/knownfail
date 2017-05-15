@@ -330,11 +330,3 @@
 # We currently don't send referrals for LDAP modify of non-replicated attrs
 ^samba4.ldap.rodc.python\(rodc\).__main__.RodcTests.test_modify_nonreplicated.*
 ^samba4.ldap.rodc_rwdc.python.*.__main__.RodcRwdcTests.test_change_password_reveal_on_demand_kerberos
-# Tests for samba-tool user command extracting CRYPT hashes from supplememtal
-# credetials, will fail until code implemented
-^samba.tests.samba_tool.user_virtualCryptSHA.samba.tests.samba_tool.user_virtualCryptSHA.UserCmdCryptShaTestCase.test_no_gpg_both_hashes_rounds_stored_hashes_with_rounds_no_match\(ad_dc:local\)
-^samba.tests.samba_tool.user_virtualCryptSHA.samba.tests.samba_tool.user_virtualCryptSHA.UserCmdCryptShaTestCase.test_no_gpg_both_hashes_rounds_stored_hashes\(ad_dc:local\)
-^samba.tests.samba_tool.user_virtualCryptSHA.samba.tests.samba_tool.user_virtualCryptSHA.UserCmdCryptShaTestCase.test_no_gpg_both_hashes_no_rounds_stored_hashes\(ad_dc:local\)
-^samba.tests.samba_tool.user_virtualCryptSHA.samba.tests.samba_tool.user_virtualCryptSHA.UserCmdCryptShaTestCase.test_no_gpg_both_hashes_rounds_stored_hashes_with_rounds\(ad_dc:local\)
-^samba.tests.samba_tool.user_virtualCryptSHA.samba.tests.samba_tool.user_virtualCryptSHA.UserCmdCryptShaTestCase.test_gpg_both_hashes_rounds_stored_hashes_with_rounds\(ad_dc:local\)
-^samba.tests.samba_tool.user_virtualCryptSHA.samba.tests.samba_tool.user_virtualCryptSHA.UserCmdCryptShaTestCase.test_gpg_both_hashes_no_rounds_stored_hashes\(ad_dc:local\)

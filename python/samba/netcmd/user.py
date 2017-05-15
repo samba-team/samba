@@ -1157,21 +1157,62 @@ class GetPasswordCommand(Command):
             except IndexError:
                 return None
 
-        def get_userPassword_hash(blob, scheme, prefix):
+
+        # get the value for a virtualCrypt attribute.
+        # look for an exact match on algorithm and rounds in supplemental creds
+        # if not found calculate using Primary:CLEARTEXT
+        # if no Primary:CLEARTEXT return the first supplementalCredential
+        #    that matches the algorithm.
+        def get_virtual_crypt_value(a, algorithm, rounds, username, account_name):
+            sv = None
+            fb = None
+            b = get_package("Primary:userPassword")
+            if b is not None:
+                (sv, fb) = get_userPassword_hash(b, algorithm, rounds)
+            if sv is None:
+                # No exact match on algorithm and number of rounds
+                # try and calculate one from the Primary:CLEARTEXT
+                b = get_package("Primary:CLEARTEXT")
+                if b is not None:
+                    u8 = get_utf8(a, b, username or account_name)
+                    if u8 is not None:
+                        sv = get_crypt_value(str(algorithm), u8, rounds)
+                if sv is None:
+                    # Unable to calculate a hash with the specified
+                    # number of rounds, fall back to the first hash using
+                    # the specified algorithm
+                    sv = fb
+            if sv is None:
+                return None
+            return "{CRYPT}" + sv
+
+        def get_userPassword_hash(blob, algorithm, rounds):
             up = ndr_unpack(drsblobs.package_PrimaryUserPasswordBlob, blob)
+            SCHEME = "{CRYPT}"
 
             # Check that the NT hash has not been changed without updating
-            # the user password hashes.
+            # the user password hashes. This indicates that password has been
+            # changed without updating the supplemental credentials.
             if unicodePwd != bytearray(up.current_nt_hash.hash):
                 return None
 
+            scheme_prefix = "$%d$" % algorithm
+            prefix = scheme_prefix
+            if rounds > 0:
+                prefix = "$%d$rounds=%d" % (algorithm, rounds)
+            scheme_match = None
 
-            # Return the first hash that matches scheme
             for h in up.hashes:
-                if h.scheme == scheme and h.value.startswith(prefix):
-                    return h.value
+                if (scheme_match is None and
+                      h.scheme == SCHEME and
+                      h.value.startswith(scheme_prefix)):
+                    scheme_match = h.value
+                if h.scheme == SCHEME and h.value.startswith(prefix):
+                    return (h.value, scheme_match)
 
-            return None
+            # No match on the number of rounds, return the value of the
+            # first matching scheme
+            return (None, scheme_match)
 
         # We use sort here in order to have a predictable processing order
         for a in sorted(virtual_attributes.keys()):
@@ -1204,25 +1245,17 @@ class GetPasswordCommand(Command):
                 bv = h.digest() + salt
                 v = "{SSHA}" + base64.b64encode(bv)
             elif a == "virtualCryptSHA256":
-                b = get_package("Primary:CLEARTEXT")
-                if b is None:
-                    continue
-                u8 = get_utf8(a, b, username or account_name)
-                if u8 is None:
-                    continue
                 rounds = get_rounds(attr_opts[a])
-                sv = get_crypt_value("5", u8, rounds)
-                v = "{CRYPT}" + sv
+                x = get_virtual_crypt_value(a, 5, rounds, username, account_name)
+                if x is None:
+                    continue
+                v = x
             elif a == "virtualCryptSHA512":
-                b = get_package("Primary:CLEARTEXT")
-                if b is None:
-                    continue
-                u8 = get_utf8(a, b, username or account_name)
-                if u8 is None:
-                    continue
                 rounds = get_rounds(attr_opts[a])
-                sv = get_crypt_value("6", u8, rounds)
-                v = "{CRYPT}" + sv
+                x = get_virtual_crypt_value(a, 6, rounds, username, account_name)
+                if x is None:
+                    continue
+                v = x
             elif a == "virtualSambaGPG":
                 # Samba adds 'Primary:SambaGPG' at the end.
                 # When Windows sets the password it keeps
@@ -1313,6 +1346,15 @@ for which virtual attributes are supported in your environment):
                           attribute name i.e. virtualCryptSHA256;rounds=10000
                           will calculate a SHA256 hash with 10,000 rounds.
                           non numeric values for rounds are silently ignored
+                          The value is calculated as follows:
+                          1) If a value exists in 'Primary:userPassword' with
+                             the specified number of rounds it is returned.
+                          2) If 'Primary:CLEARTEXT, or 'Primary:SambaGPG' with
+                             '--decrypt-samba-gpg'. Calculate a hash with
+                             the specified number of rounds
+                          3) Return the first CryptSHA256 value in
+                             'Primary:userPassword'
+
 
    virtualCryptSHA512:    As virtualClearTextUTF8, but a salted SHA512
                           checksum, useful for OpenLDAP's '{CRYPT}' algorithm,
@@ -1322,6 +1364,14 @@ for which virtual attributes are supported in your environment):
                           attribute name i.e. virtualCryptSHA512;rounds=10000
                           will calculate a SHA512 hash with 10,000 rounds.
                           non numeric values for rounds are silently ignored
+                          The value is calculated as follows:
+                          1) If a value exists in 'Primary:userPassword' with
+                             the specified number of rounds it is returned.
+                          2) If 'Primary:CLEARTEXT, or 'Primary:SambaGPG' with
+                             '--decrypt-samba-gpg'. Calculate a hash with
+                             the specified number of rounds
+                          3) Return the first CryptSHA512 value in
+                             'Primary:userPassword'
 
    virtualWDigestNN:      The individual hash values stored in
                           'Primary:WDigest' where NN is the hash number in
@@ -1464,6 +1514,14 @@ for supported virtual attributes in your environment):
                           attribute name i.e. virtualCryptSHA256;rounds=10000
                           will calculate a SHA256 hash with 10,000 rounds.
                           non numeric values for rounds are silently ignored
+                          The value is calculated as follows:
+                          1) If a value exists in 'Primary:userPassword' with
+                             the specified number of rounds it is returned.
+                          2) If 'Primary:CLEARTEXT, or 'Primary:SambaGPG' with
+                             '--decrypt-samba-gpg'. Calculate a hash with
+                             the specified number of rounds
+                          3) Return the first CryptSHA256 value in
+                             'Primary:userPassword'
 
    virtualCryptSHA512:    As virtualClearTextUTF8, but a salted SHA512
                           checksum, useful for OpenLDAP's '{CRYPT}' algorithm,
@@ -1473,6 +1531,14 @@ for supported virtual attributes in your environment):
                           attribute name i.e. virtualCryptSHA512;rounds=10000
                           will calculate a SHA512 hash with 10,000 rounds.
                           non numeric values for rounds are silently ignored
+                          The value is calculated as follows:
+                          1) If a value exists in 'Primary:userPassword' with
+                             the specified number of rounds it is returned.
+                          2) If 'Primary:CLEARTEXT, or 'Primary:SambaGPG' with
+                             '--decrypt-samba-gpg'. Calculate a hash with
+                             the specified number of rounds
+                          3) Return the first CryptSHA512 value in
+                             'Primary:userPassword'
 
    virtualWDigestNN:      The individual hash values stored in
                           'Primary:WDigest' where NN is the hash number in
