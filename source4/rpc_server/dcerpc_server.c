@@ -1078,6 +1078,7 @@ static NTSTATUS dcesrv_auth_reply(struct dcesrv_call_state *call)
 */
 static NTSTATUS dcesrv_auth3(struct dcesrv_call_state *call)
 {
+	struct dcesrv_auth *auth = &call->conn->auth_state;
 	NTSTATUS status;
 
 	if (!call->conn->allow_auth3) {
@@ -1105,17 +1106,48 @@ static NTSTATUS dcesrv_auth3(struct dcesrv_call_state *call)
 	}
 
 	/* handle the auth3 in the auth code */
-	if (!dcesrv_auth_auth3(call)) {
+	if (!dcesrv_auth_prepare_auth3(call)) {
+		/*
+		 * we don't send a reply to a auth3 request,
+		 * except by a fault.
+		 *
+		 * In anycase we mark the connection as
+		 * invalid.
+		 */
 		call->conn->auth_state.auth_invalid = true;
 		if (call->fault_code != 0) {
 			return dcesrv_fault_disconnect(call, call->fault_code);
 		}
+		TALLOC_FREE(call);
+		return NT_STATUS_OK;
 	}
 
-	talloc_free(call);
+	status = gensec_update_ev(auth->gensec_security,
+				  call, call->event_ctx,
+				  call->in_auth_info.credentials,
+				  &call->out_auth_info->credentials);
 
-	/* we don't send a reply to a auth3 request, except by a
-	   fault */
+	status = dcesrv_auth_complete(call, status);
+	if (!NT_STATUS_IS_OK(status)) {
+		/*
+		 * we don't send a reply to a auth3 request,
+		 * except by a fault.
+		 *
+		 * In anycase we mark the connection as
+		 * invalid.
+		 */
+		call->conn->auth_state.auth_invalid = true;
+		if (call->fault_code != 0) {
+			return dcesrv_fault_disconnect(call, call->fault_code);
+		}
+		TALLOC_FREE(call);
+		return NT_STATUS_OK;
+	}
+
+	/*
+	 * we don't send a reply to a auth3 request.
+	 */
+	TALLOC_FREE(call);
 	return NT_STATUS_OK;
 }
 
