@@ -1343,7 +1343,6 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 	bool auth_ok = false;
 	struct ncacn_packet *pkt = &call->ack_pkt;
 	uint32_t extra_flags = 0;
-	struct data_blob_list_item *rep = NULL;
 	struct dcerpc_ack_ctx *ack_ctx_list = NULL;
 	size_t i;
 
@@ -1452,28 +1451,7 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 		return dcesrv_fault_disconnect(call, DCERPC_FAULT_SEC_PKG_ERROR);
 	}
 
-	rep = talloc_zero(call, struct data_blob_list_item);
-	if (!rep) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	status = ncacn_push_auth(&rep->blob, call, pkt, call->out_auth_info);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	dcerpc_set_frag_length(&rep->blob, rep->blob.length);
-
-	DLIST_ADD_END(call->replies, rep);
-	dcesrv_call_set_list(call, DCESRV_LIST_CALL_LIST);
-
-	if (call->conn->call_list && call->conn->call_list->replies) {
-		if (call->conn->transport.report_output_data) {
-			call->conn->transport.report_output_data(call->conn);
-		}
-	}
-
-	return NT_STATUS_OK;
+	return dcesrv_auth_reply(call);
 }
 
 /*
