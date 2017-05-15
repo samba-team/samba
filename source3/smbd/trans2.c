@@ -3510,6 +3510,12 @@ NTSTATUS smbd_do_qfsinfo(struct smbXsrv_connection *xconn,
 cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_ex_dev, (unsigned int)bsize, (unsigned int)sectors_per_unit,
 				(unsigned int)bytes_per_sector, (unsigned int)dsize, (unsigned int)dfree));
 
+			/*
+			 * For large drives, return max values and not modulo.
+			 */
+			dsize = MIN(dsize, UINT32_MAX);
+			dfree = MIN(dfree, UINT32_MAX);
+
 			SIVAL(pdata,l1_idFileSystem,st.st_ex_dev);
 			SIVAL(pdata,l1_cSectorUnit,sectors_per_unit);
 			SIVAL(pdata,l1_cUnit,dsize);
