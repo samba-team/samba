@@ -2160,6 +2160,10 @@ static void dcesrv_terminate_connection(struct dcesrv_connection *dce_conn, cons
 	srv_conn = talloc_get_type(dce_conn->transport.private_data,
 				   struct stream_connection);
 
+	dce_conn->wait_send = NULL;
+	dce_conn->wait_recv = NULL;
+	dce_conn->wait_private = NULL;
+
 	dce_conn->allow_bind = false;
 	dce_conn->allow_auth3 = false;
 	dce_conn->allow_alter = false;
@@ -2513,6 +2517,8 @@ static void dcesrv_sock_accept(struct stream_connection *srv_conn)
 	return;
 }
 
+static void dcesrv_conn_wait_done(struct tevent_req *subreq);
+
 static void dcesrv_read_fragment_done(struct tevent_req *subreq)
 {
 	struct dcesrv_connection *dce_conn = tevent_req_callback_data(subreq,
@@ -2543,6 +2549,63 @@ static void dcesrv_read_fragment_done(struct tevent_req *subreq)
 	}
 
 	status = dcesrv_process_ncacn_packet(dce_conn, pkt, buffer);
+	if (!NT_STATUS_IS_OK(status)) {
+		dcesrv_terminate_connection(dce_conn, nt_errstr(status));
+		return;
+	}
+
+	/*
+	 * This is used to block the connection during
+	 * pending authentication.
+	 */
+	if (dce_conn->wait_send != NULL) {
+		subreq = dce_conn->wait_send(dce_conn,
+					     dce_conn->event_ctx,
+					     dce_conn->wait_private);
+		if (!subreq) {
+			status = NT_STATUS_NO_MEMORY;
+			dcesrv_terminate_connection(dce_conn, nt_errstr(status));
+			return;
+		}
+		tevent_req_set_callback(subreq, dcesrv_conn_wait_done, dce_conn);
+		return;
+	}
+
+	subreq = dcerpc_read_ncacn_packet_send(dce_conn,
+					       dce_conn->event_ctx,
+					       dce_conn->stream);
+	if (!subreq) {
+		status = NT_STATUS_NO_MEMORY;
+		dcesrv_terminate_connection(dce_conn, nt_errstr(status));
+		return;
+	}
+	tevent_req_set_callback(subreq, dcesrv_read_fragment_done, dce_conn);
+}
+
+static void dcesrv_conn_wait_done(struct tevent_req *subreq)
+{
+	struct dcesrv_connection *dce_conn = tevent_req_callback_data(subreq,
+					     struct dcesrv_connection);
+	struct dcesrv_context *dce_ctx = dce_conn->dce_ctx;
+	NTSTATUS status;
+
+	if (dce_conn->terminate) {
+		/*
+		 * if the current connection is broken
+		 * we need to clean it up before any other connection
+		 */
+		dcesrv_terminate_connection(dce_conn, dce_conn->terminate);
+		dcesrv_cleanup_broken_connections(dce_ctx);
+		return;
+	}
+
+	dcesrv_cleanup_broken_connections(dce_ctx);
+
+	status = dce_conn->wait_recv(subreq);
+	dce_conn->wait_send = NULL;
+	dce_conn->wait_recv = NULL;
+	dce_conn->wait_private = NULL;
+	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		dcesrv_terminate_connection(dce_conn, nt_errstr(status));
 		return;

@@ -288,6 +288,16 @@ struct dcesrv_connection {
 
 	/* the negotiated bind time features */
 	uint16_t bind_time_features;
+
+	/*
+	 * This is used to block the connection during
+	 * pending authentication.
+	 */
+	struct tevent_req *(*wait_send)(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					void *private_data);
+	NTSTATUS (*wait_recv)(struct tevent_req *req);
+	void *wait_private;
 };
 
 
