@@ -401,32 +401,13 @@ bool dcesrv_auth_auth3(struct dcesrv_call_state *call)
 			       call, call->event_ctx,
 			       call->in_auth_info.credentials,
 			       &call->out_auth_info->credentials);
-	if (NT_STATUS_IS_OK(status)) {
-		status = gensec_session_info(dce_conn->auth_state.gensec_security,
-					     dce_conn,
-					     &dce_conn->auth_state.session_info);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(1, ("Failed to establish session_info: %s\n", nt_errstr(status)));
-			return false;
-		}
-		dce_conn->auth_state.auth_finished = true;
-		dce_conn->allow_request = true;
 
-		/* Now that we are authenticated, go back to the generic session key... */
-		dce_conn->auth_state.session_key = dcesrv_generic_session_key;
-
-		if (call->out_auth_info->credentials.length != 0) {
-
-			DEBUG(4, ("GENSEC produced output token (len=%u) at bind_auth3\n",
-				  (unsigned)call->out_auth_info->credentials.length));
-			return false;
-		}
-		return true;
-	} else {
-		DEBUG(4, ("GENSEC mech rejected the incoming authentication at bind_auth3: %s\n",
-			  nt_errstr(status)));
+	status = dcesrv_auth_complete(call, status);
+	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
+
+	return true;
 }
 
 /*
