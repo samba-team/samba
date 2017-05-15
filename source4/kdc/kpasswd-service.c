@@ -206,12 +206,20 @@ kdc_code kpasswd_process(struct kdc_server *kdc,
 		goto done;
 	}
 
-	/* Accept the AP-REQ and generate the AP-REP we need for the reply */
-	status = gensec_update_ev(gensec_security,
-				  tmp_ctx,
-				  kdc->task->event_ctx,
-				  ap_req_blob,
-				  &ap_rep_blob);
+	/*
+	 * Accept the AP-REQ and generate the AP-REP we need for the reply
+	 *
+	 * We only allow KRB5 and make sure the backend to is RPC/IPC free.
+	 *
+	 * See gensec_krb5_update_internal() as GENSEC_SERVER.
+	 *
+	 * It allows gensec_update() not to block.
+	 *
+	 * If that changes in future we need to use
+	 * gensec_update_send/recv here!
+	 */
+	status = gensec_update(gensec_security, tmp_ctx,
+			       ap_req_blob, &ap_rep_blob);
 	if (!NT_STATUS_IS_OK(status) &&
 	    !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		ap_rep_blob = data_blob_null;
