@@ -513,12 +513,14 @@ static void libpam_pam_vsyslog(const pam_handle_t *pamh,
 			       const char *fmt,
 			       va_list args)
 {
+#ifdef HAVE_PAM_VSYSLOG
 	pwrap_bind_symbol_libpam(pam_vsyslog);
 
 	pwrap.libpam.symbols._libpam_pam_vsyslog.f(pamh,
 						   priority,
 						   fmt,
 						   args);
+#endif
 }
 
 /*********************************************************
@@ -551,7 +553,8 @@ static int p_copy(const char *src, const char *dst, const char *pdir, mode_t mod
 	if (mode == 0) {
 		rc = fstat(srcfd, &sb);
 		if (rc != 0) {
-			return -1;
+			rc = -1;
+			goto out;
 		}
 		mode = sb.st_mode;
 	}
