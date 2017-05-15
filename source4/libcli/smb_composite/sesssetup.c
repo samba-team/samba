@@ -173,6 +173,21 @@ static void request_handler(struct smbcli_request *req)
 					return;
 				}
 
+				nt_status = gensec_update_ev(session->gensec, state,
+							     c->event_ctx,
+							     state->setup.spnego.out.secblob,
+							     &state->setup.spnego.in.secblob);
+				if (GENSEC_UPDATE_IS_NTERROR(nt_status)) {
+					DEBUG(1, ("Failed initial gensec_update with mechanism %s: %s\n",
+						  gensec_get_name_by_oid(session->gensec,
+									 state->chosen_oid),
+						  nt_errstr(nt_status)));
+					c->status = nt_status;
+					composite_error(c, c->status);
+					return;
+				}
+				state->gensec_status = nt_status;
+
 				nt_status = session_setup_spnego(c, session, 
 								      state->io, 
 								      &state->req);
@@ -567,7 +582,6 @@ static NTSTATUS session_setup_spnego(struct composite_context *c,
 				     struct smbcli_request **req)
 {
 	struct sesssetup_state *state = talloc_get_type(c->private_data, struct sesssetup_state);
-	NTSTATUS status;
 
 	state->setup.spnego.level           = RAW_SESSSETUP_SPNEGO;
 	state->setup.spnego.in.bufsize      = session->transport->options.max_xmit;
@@ -578,21 +592,6 @@ static NTSTATUS session_setup_spnego(struct composite_context *c,
 	state->setup.spnego.in.os           = "Unix";
 	state->setup.spnego.in.lanman       = talloc_asprintf(state, "Samba %s", SAMBA_VERSION_STRING);
 	state->setup.spnego.in.workgroup    = io->in.workgroup;
-
-	status = gensec_update_ev(session->gensec, state,
-				  c->event_ctx,
-				  state->setup.spnego.out.secblob,
-				  &state->setup.spnego.in.secblob);
-
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED) && 
-	    !NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed initial gensec_update with mechanism %s: %s\n",
-			  gensec_get_name_by_oid(session->gensec,
-						 state->chosen_oid),
-			  nt_errstr(status)));
-		return status;
-	}
-	state->gensec_status = status;
 
 	*req = smb_raw_sesssetup_send(session, &state->setup);
 	if (!*req) {
@@ -657,6 +656,21 @@ struct composite_context *smb_composite_sesssetup_send(struct smbcli_session *se
 			composite_error(c, c->status);
 			return c;
 		}
+
+		status = gensec_update_ev(session->gensec, state,
+					  c->event_ctx,
+					  state->setup.spnego.out.secblob,
+					  &state->setup.spnego.in.secblob);
+		if (GENSEC_UPDATE_IS_NTERROR(status)) {
+			DEBUG(1, ("Failed initial gensec_update with mechanism %s: %s\n",
+				  gensec_get_name_by_oid(session->gensec,
+							 state->chosen_oid),
+				  nt_errstr(status)));
+			c->status = status;
+			composite_error(c, c->status);
+			return c;
+		}
+		state->gensec_status = status;
 
 		status = session_setup_spnego(c, session, io, &state->req);
 	}
