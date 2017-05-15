@@ -93,6 +93,11 @@ struct dcesrv_call_state {
 	struct ncacn_packet pkt;
 
 	/*
+	 * Used during async bind/alter_context.
+	 */
+	struct ncacn_packet ack_pkt;
+
+	/*
 	  which list this request is in, if any
 	 */
 	enum dcesrv_call_list list;

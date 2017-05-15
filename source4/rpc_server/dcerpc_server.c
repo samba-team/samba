@@ -773,7 +773,7 @@ _PUBLIC_ NTSTATUS dcesrv_interface_bind_allow_connect(struct dcesrv_call_state *
 */
 static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 {
-	struct ncacn_packet pkt;
+	struct ncacn_packet *pkt = &call->ack_pkt;
 	struct data_blob_list_item *rep;
 	NTSTATUS status;
 	uint32_t extra_flags = 0;
@@ -984,14 +984,14 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	}
 
 	/* setup a bind_ack */
-	dcesrv_init_hdr(&pkt, lpcfg_rpc_big_endian(call->conn->dce_ctx->lp_ctx));
-	pkt.auth_length = 0;
-	pkt.call_id = call->pkt.call_id;
-	pkt.ptype = DCERPC_PKT_BIND_ACK;
-	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST | extra_flags;
-	pkt.u.bind_ack.max_xmit_frag = call->conn->max_xmit_frag;
-	pkt.u.bind_ack.max_recv_frag = call->conn->max_recv_frag;
-	pkt.u.bind_ack.assoc_group_id = call->conn->assoc_group->id;
+	dcesrv_init_hdr(pkt, lpcfg_rpc_big_endian(call->conn->dce_ctx->lp_ctx));
+	pkt->auth_length = 0;
+	pkt->call_id = call->pkt.call_id;
+	pkt->ptype = DCERPC_PKT_BIND_ACK;
+	pkt->pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST | extra_flags;
+	pkt->u.bind_ack.max_xmit_frag = call->conn->max_xmit_frag;
+	pkt->u.bind_ack.max_recv_frag = call->conn->max_recv_frag;
+	pkt->u.bind_ack.assoc_group_id = call->conn->assoc_group->id;
 
 	endpoint = dcerpc_binding_get_string_option(
 				call->conn->endpoint->ep_description,
@@ -1010,18 +1010,18 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 		endpoint += 6;
 	}
 
-	pkt.u.bind_ack.secondary_address = talloc_asprintf(call, "%s%s",
+	pkt->u.bind_ack.secondary_address = talloc_asprintf(call, "%s%s",
 							   ep_prefix,
 							   endpoint);
-	if (pkt.u.bind_ack.secondary_address == NULL) {
+	if (pkt->u.bind_ack.secondary_address == NULL) {
 		TALLOC_FREE(call->context);
 		return NT_STATUS_NO_MEMORY;
 	}
-	pkt.u.bind_ack.num_results = call->pkt.u.bind.num_contexts;
-	pkt.u.bind_ack.ctx_list = ack_ctx_list;
-	pkt.u.bind_ack.auth_info = data_blob_null;
+	pkt->u.bind_ack.num_results = call->pkt.u.bind.num_contexts;
+	pkt->u.bind_ack.ctx_list = ack_ctx_list;
+	pkt->u.bind_ack.auth_info = data_blob_null;
 
-	status = dcesrv_auth_bind_ack(call, &pkt);
+	status = dcesrv_auth_bind_ack(call, pkt);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(call->context);
 		return dcesrv_bind_nak(call, 0);
@@ -1033,7 +1033,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = ncacn_push_auth(&rep->blob, call, &pkt,
+	status = ncacn_push_auth(&rep->blob, call, pkt,
 				 call->out_auth_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(call->context);
@@ -1337,7 +1337,7 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 {
 	NTSTATUS status;
 	bool auth_ok = false;
-	struct ncacn_packet pkt;
+	struct ncacn_packet *pkt = &call->ack_pkt;
 	uint32_t extra_flags = 0;
 	struct data_blob_list_item *rep = NULL;
 	struct dcerpc_ack_ctx *ack_ctx_list = NULL;
@@ -1430,20 +1430,20 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 		return dcesrv_fault_disconnect(call, DCERPC_FAULT_ACCESS_DENIED);
 	}
 
-	dcesrv_init_hdr(&pkt, lpcfg_rpc_big_endian(call->conn->dce_ctx->lp_ctx));
-	pkt.auth_length = 0;
-	pkt.call_id = call->pkt.call_id;
-	pkt.ptype = DCERPC_PKT_ALTER_RESP;
-	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST | extra_flags;
-	pkt.u.alter_resp.max_xmit_frag = call->conn->max_xmit_frag;
-	pkt.u.alter_resp.max_recv_frag = call->conn->max_recv_frag;
-	pkt.u.alter_resp.assoc_group_id = call->conn->assoc_group->id;
-	pkt.u.alter_resp.secondary_address = "";
-	pkt.u.alter_resp.num_results = call->pkt.u.alter.num_contexts;
-	pkt.u.alter_resp.ctx_list = ack_ctx_list;
-	pkt.u.alter_resp.auth_info = data_blob_null;
+	dcesrv_init_hdr(pkt, lpcfg_rpc_big_endian(call->conn->dce_ctx->lp_ctx));
+	pkt->auth_length = 0;
+	pkt->call_id = call->pkt.call_id;
+	pkt->ptype = DCERPC_PKT_ALTER_RESP;
+	pkt->pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST | extra_flags;
+	pkt->u.alter_resp.max_xmit_frag = call->conn->max_xmit_frag;
+	pkt->u.alter_resp.max_recv_frag = call->conn->max_recv_frag;
+	pkt->u.alter_resp.assoc_group_id = call->conn->assoc_group->id;
+	pkt->u.alter_resp.secondary_address = "";
+	pkt->u.alter_resp.num_results = call->pkt.u.alter.num_contexts;
+	pkt->u.alter_resp.ctx_list = ack_ctx_list;
+	pkt->u.alter_resp.auth_info = data_blob_null;
 
-	status = dcesrv_auth_alter_ack(call, &pkt);
+	status = dcesrv_auth_alter_ack(call, pkt);
 	if (!NT_STATUS_IS_OK(status)) {
 		return dcesrv_fault_disconnect(call, DCERPC_FAULT_SEC_PKG_ERROR);
 	}
@@ -1453,7 +1453,7 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = ncacn_push_auth(&rep->blob, call, &pkt, call->out_auth_info);
+	status = ncacn_push_auth(&rep->blob, call, pkt, call->out_auth_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
