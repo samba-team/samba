@@ -144,6 +144,7 @@ struct bind_auth_state {
 				 * first bind itself received? */
 };
 
+static void bind_auth_next_gensec_done(struct tevent_req *subreq);
 static void bind_auth_recv_alter(struct tevent_req *subreq);
 
 static void bind_auth_next_step(struct composite_context *c)
@@ -151,7 +152,6 @@ static void bind_auth_next_step(struct composite_context *c)
 	struct bind_auth_state *state;
 	struct dcecli_security *sec;
 	struct tevent_req *subreq;
-	bool more_processing = false;
 
 	state = talloc_get_type(c->private_data, struct bind_auth_state);
 	sec = &state->pipe->conn->security_state;
@@ -187,18 +187,29 @@ static void bind_auth_next_step(struct composite_context *c)
 	 * it doesn't like that either
 	 */
 
-	state->pipe->inhibit_timeout_processing = true;
-	state->pipe->timed_out = false;
+	subreq = gensec_update_send(state,
+				    state->pipe->conn->event_ctx,
+				    sec->generic_state,
+				    state->in_auth_info.credentials);
+	if (composite_nomem(subreq, c)) return;
+	tevent_req_set_callback(subreq, bind_auth_next_gensec_done, c);
+}
 
-	c->status = gensec_update_ev(sec->generic_state, state,
-				  state->pipe->conn->event_ctx,
-				  state->in_auth_info.credentials,
-				  &state->out_auth_info.credentials);
-	if (state->pipe->timed_out) {
-		composite_error(c, NT_STATUS_IO_TIMEOUT);
-		return;
-	}
-	state->pipe->inhibit_timeout_processing = false;
+static void bind_auth_next_gensec_done(struct tevent_req *subreq)
+{
+	struct composite_context *c =
+		tevent_req_callback_data(subreq,
+		struct composite_context);
+	struct bind_auth_state *state =
+		talloc_get_type_abort(c->private_data,
+		struct bind_auth_state);
+	struct dcerpc_pipe *p = state->pipe;
+	struct dcecli_security *sec = &p->conn->security_state;
+	bool more_processing = false;
+
+	c->status = gensec_update_recv(subreq, state,
+				       &state->out_auth_info.credentials);
+	TALLOC_FREE(subreq);
 
 	if (NT_STATUS_EQUAL(c->status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		more_processing = true;
