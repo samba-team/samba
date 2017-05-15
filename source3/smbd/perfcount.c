@@ -144,7 +144,7 @@ static bool smb_load_perfcount_module(const char *name)
 
 	/* load the perfcounter module */
 	if((entry = smb_perfcount_find_module(module_name)) ||
-	   (NT_STATUS_IS_OK(smb_probe_module("perfcount", module_path)) &&
+	   (NT_STATUS_IS_OK(smb_probe_module_absolute_path(module_path)) &&
 		(entry = smb_perfcount_find_module(module_name)))) {
 
 		DEBUG(3,("Successfully loaded perfcounter module [%s] \n", name));

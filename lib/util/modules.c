@@ -261,9 +261,73 @@ int smb_load_all_modules_absoute_path(const char **modules)
 	return success;
 }
 
+/**
+ * @brief Check if a module exist and load it.
+ *
+ * @param[in]  subsystem  The name of the subsystem the module belongs too.
+ *
+ * @param[in]  module     The name of the module
+ *
+ * @return  A NTSTATUS code
+ */
 NTSTATUS smb_probe_module(const char *subsystem, const char *module)
 {
-	return do_smb_load_module(subsystem, module, true);
+	NTSTATUS status;
+	char *module_path = NULL;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+
+	if (subsystem == NULL) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto done;
+	}
+	if (module == NULL) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto done;
+	}
+
+	if (strchr(module, '/')) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto done;
+	}
+
+	module_path = talloc_asprintf(tmp_ctx,
+				      "%s/%s.%s",
+				      modules_path(tmp_ctx, subsystem),
+				      module,
+				      shlib_ext());
+	if (module_path == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	status = load_module_absolute_path(module_path, true);
+
+done:
+	TALLOC_FREE(tmp_ctx);
+	return status;
+}
+
+/**
+ * @brief Check if a module exist and load it.
+ *
+ * Warning: Using this function can have security implecations!
+ *
+ * @param[in]  subsystem  The name of the subsystem the module belongs too.
+ *
+ * @param[in]  module     Load a module using an abolute path.
+ *
+ * @return  A NTSTATUS code
+ */
+NTSTATUS smb_probe_module_absolute_path(const char *module)
+{
+	if (module == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	if (module[0] != '/') {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	return load_module_absolute_path(module, true);
 }
 
 NTSTATUS smb_load_module(const char *subsystem, const char *module)
