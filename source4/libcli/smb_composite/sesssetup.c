@@ -466,28 +466,12 @@ static NTSTATUS session_setup_old(struct composite_context *c,
 	return (*req)->status;
 }
 
-
-/*
-  Modern, all singing, all dancing extended security (and possibly SPNEGO) request
-*/
-static NTSTATUS session_setup_spnego(struct composite_context *c,
-				     struct smbcli_session *session, 
-				     struct smb_composite_sesssetup *io,
-				     struct smbcli_request **req) 
+static NTSTATUS session_setup_spnego_restart(struct composite_context *c,
+					     struct smbcli_session *session,
+					     struct smb_composite_sesssetup *io)
 {
 	struct sesssetup_state *state = talloc_get_type(c->private_data, struct sesssetup_state);
 	NTSTATUS status;
-	const char *chosen_oid = NULL;
-
-	state->setup.spnego.level           = RAW_SESSSETUP_SPNEGO;
-	state->setup.spnego.in.bufsize      = session->transport->options.max_xmit;
-	state->setup.spnego.in.mpx_max      = session->transport->options.max_mux;
-	state->setup.spnego.in.vc_num       = 1;
-	state->setup.spnego.in.sesskey      = io->in.sesskey;
-	state->setup.spnego.in.capabilities = io->in.capabilities;
-	state->setup.spnego.in.os           = "Unix";
-	state->setup.spnego.in.lanman       = talloc_asprintf(state, "Samba %s", SAMBA_VERSION_STRING);
-	state->setup.spnego.in.workgroup    = io->in.workgroup;
 
 	status = gensec_client_start(session, &session->gensec,
 				     io->in.gensec_settings);
@@ -553,8 +537,42 @@ static NTSTATUS session_setup_spnego(struct composite_context *c,
 				  gensec_get_name_by_oid(session->gensec,
 							 state->chosen_oid),
 				  nt_errstr(status)));
+			return status;
 		}
 	}
+
+	state->gensec_status = NT_STATUS_MORE_PROCESSING_REQUIRED;
+	state->remote_status = NT_STATUS_MORE_PROCESSING_REQUIRED;
+	return NT_STATUS_OK;
+}
+
+/*
+  Modern, all singing, all dancing extended security (and possibly SPNEGO) request
+*/
+static NTSTATUS session_setup_spnego(struct composite_context *c,
+				     struct smbcli_session *session,
+				     struct smb_composite_sesssetup *io,
+				     struct smbcli_request **req)
+{
+	struct sesssetup_state *state = talloc_get_type(c->private_data, struct sesssetup_state);
+	NTSTATUS status;
+
+	status = session_setup_spnego_restart(c, session, io);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("session_setup_spnego_restart() failed: %s\n",
+			  nt_errstr(status)));
+		return status;
+	}
+
+	state->setup.spnego.level           = RAW_SESSSETUP_SPNEGO;
+	state->setup.spnego.in.bufsize      = session->transport->options.max_xmit;
+	state->setup.spnego.in.mpx_max      = session->transport->options.max_mux;
+	state->setup.spnego.in.vc_num       = 1;
+	state->setup.spnego.in.sesskey      = io->in.sesskey;
+	state->setup.spnego.in.capabilities = io->in.capabilities;
+	state->setup.spnego.in.os           = "Unix";
+	state->setup.spnego.in.lanman       = talloc_asprintf(state, "Samba %s", SAMBA_VERSION_STRING);
+	state->setup.spnego.in.workgroup    = io->in.workgroup;
 
 	status = gensec_update_ev(session->gensec, state,
 				  c->event_ctx,
