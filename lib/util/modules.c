@@ -177,64 +177,6 @@ static NTSTATUS load_module_absolute_path(const char *module_path,
 	return NT_STATUS_OK;
 }
 
-
-/* Load a dynamic module.  Only log a level 0 error if we are not checking
-   for the existence of a module (probling). */
-
-static NTSTATUS do_smb_load_module(const char *subsystem,
-				   const char *module_name, bool is_probe)
-{
-	void *handle;
-	init_module_fn init;
-	NTSTATUS status;
-
-	char *full_path = NULL;
-	TALLOC_CTX *ctx = talloc_stackframe();
-
-	if (module_name == NULL) {
-		TALLOC_FREE(ctx);
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	/* Check for absolute path */
-
-	DEBUG(5, ("%s module '%s'\n", is_probe ? "Probing" : "Loading", module_name));
-
-	if (subsystem && module_name[0] != '/') {
-		full_path = talloc_asprintf(ctx,
-					    "%s/%s.%s",
-					    modules_path(ctx, subsystem),
-					    module_name,
-					    shlib_ext());
-		if (!full_path) {
-			TALLOC_FREE(ctx);
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		DEBUG(5, ("%s module '%s': Trying to load from %s\n",
-			  is_probe ? "Probing": "Loading", module_name, full_path));
-		init = load_module(full_path, is_probe, &handle);
-	} else {
-		init = load_module(module_name, is_probe, &handle);
-	}
-
-	if (!init) {
-		TALLOC_FREE(ctx);
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	DEBUG(2, ("Module '%s' loaded\n", module_name));
-
-	status = init(NULL);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Module '%s' initialization failed: %s\n",
-			  module_name, get_friendly_nt_error_msg(status)));
-		dlclose(handle);
-	}
-	TALLOC_FREE(ctx);
-	return status;
-}
-
 /* Load all modules in list and return number of
  * modules that has been successfully loaded */
 int smb_load_all_modules_absoute_path(const char **modules)
@@ -330,7 +272,48 @@ NTSTATUS smb_probe_module_absolute_path(const char *module)
 	return load_module_absolute_path(module, true);
 }
 
+/**
+ * @brief Load a module.
+ *
+ * @param[in]  subsystem  The name of the subsystem the module belongs too.
+ *
+ * @param[in]  module     Check if a module exists and load it.
+ *
+ * @return  A NTSTATUS code
+ */
 NTSTATUS smb_load_module(const char *subsystem, const char *module)
 {
-	return do_smb_load_module(subsystem, module, false);
+	NTSTATUS status;
+	char *module_path = NULL;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+
+	if (subsystem == NULL) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto done;
+	}
+	if (module == NULL) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto done;
+	}
+
+	if (strchr(module, '/')) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto done;
+	}
+
+	module_path = talloc_asprintf(tmp_ctx,
+				      "%s/%s.%s",
+				      modules_path(tmp_ctx, subsystem),
+				      module,
+				      shlib_ext());
+	if (module_path == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	status = load_module_absolute_path(module_path, false);
+
+done:
+	TALLOC_FREE(tmp_ctx);
+	return status;
 }
