@@ -1276,6 +1276,9 @@ _PUBLIC_ isc_boolean_t dlz_ssumatch(const char *signer, const char *name, const 
 	struct ldb_result *res;
 	const char * attrs[] = { NULL };
 	uint32_t access_mask;
+	struct gensec_settings *settings = NULL;
+	const struct gensec_security_ops **backends = NULL;
+	size_t idx = 0;
 
 	/* Remove cached credentials, if any */
 	if (state->session_info) {
@@ -1316,8 +1319,27 @@ _PUBLIC_ isc_boolean_t dlz_ssumatch(const char *signer, const char *name, const 
 	}
 	talloc_free(keytab_name);
 
-	nt_status = gensec_server_start(tmp_ctx,
-					lpcfg_gensec_settings(tmp_ctx, state->lp),
+	settings = lpcfg_gensec_settings(tmp_ctx, state->lp);
+	if (settings == NULL) {
+		state->log(ISC_LOG_ERROR, "samba_dlz: lpcfg_gensec_settings failed");
+		talloc_free(tmp_ctx);
+		return ISC_FALSE;
+	}
+	backends = talloc_zero_array(settings,
+				     const struct gensec_security_ops *, 3);
+	if (backends == NULL) {
+		state->log(ISC_LOG_ERROR, "samba_dlz: talloc_zero_array gensec_security_ops failed");
+		talloc_free(tmp_ctx);
+		return ISC_FALSE;
+	}
+	settings->backends = backends;
+
+	gensec_init();
+
+	backends[idx++] = gensec_security_by_oid(NULL, GENSEC_OID_KERBEROS5);
+	backends[idx++] = gensec_security_by_oid(NULL, GENSEC_OID_SPNEGO);
+
+	nt_status = gensec_server_start(tmp_ctx, settings,
 					state->auth_context, &gensec_ctx);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		state->log(ISC_LOG_ERROR, "samba_dlz: failed to start gensec server");
@@ -1327,14 +1349,26 @@ _PUBLIC_ isc_boolean_t dlz_ssumatch(const char *signer, const char *name, const 
 
 	gensec_set_credentials(gensec_ctx, server_credentials);
 
-	nt_status = gensec_start_mech_by_name(gensec_ctx, "spnego");
+	nt_status = gensec_start_mech_by_oid(gensec_ctx, GENSEC_OID_SPNEGO);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		state->log(ISC_LOG_ERROR, "samba_dlz: failed to start spnego");
 		talloc_free(tmp_ctx);
 		return ISC_FALSE;
 	}
 
-	nt_status = gensec_update_ev(gensec_ctx, tmp_ctx, state->ev_ctx, ap_req, &ap_req);
+	/*
+	 * We only allow SPNEGO/KRB5 and make sure the backend
+	 * to is RPC/IPC free.
+	 *
+	 * See gensec_gssapi_update_internal() as
+	 * GENSEC_SERVER.
+	 *
+	 * It allows gensec_update() not to block.
+	 *
+	 * If that changes in future we need to use
+	 * gensec_update_send/recv here!
+	 */
+	nt_status = gensec_update(gensec_ctx, tmp_ctx, ap_req, &ap_req);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		state->log(ISC_LOG_ERROR, "samba_dlz: spnego update failed");
 		talloc_free(tmp_ctx);
