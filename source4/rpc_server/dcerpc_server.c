@@ -1357,6 +1357,7 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 	bool auth_ok = false;
 	struct ncacn_packet *pkt = &call->ack_pkt;
 	uint32_t extra_flags = 0;
+	struct dcesrv_auth *auth = &call->conn->auth_state;
 	struct dcerpc_ack_ctx *ack_ctx_list = NULL;
 	size_t i;
 
@@ -1460,7 +1461,21 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 	pkt->u.alter_resp.ctx_list = ack_ctx_list;
 	pkt->u.alter_resp.auth_info = data_blob_null;
 
-	status = dcesrv_auth_alter_ack(call, pkt);
+	status = dcesrv_auth_prepare_alter_ack(call, pkt);
+	if (!NT_STATUS_IS_OK(status)) {
+		return dcesrv_fault_disconnect(call, DCERPC_FAULT_SEC_PKG_ERROR);
+	}
+
+	if (auth->auth_finished) {
+		return dcesrv_auth_reply(call);
+	}
+
+	status = gensec_update_ev(auth->gensec_security,
+				  call, call->event_ctx,
+				  call->in_auth_info.credentials,
+				  &call->out_auth_info->credentials);
+
+	status = dcesrv_auth_complete(call, status);
 	if (!NT_STATUS_IS_OK(status)) {
 		return dcesrv_fault_disconnect(call, DCERPC_FAULT_SEC_PKG_ERROR);
 	}
