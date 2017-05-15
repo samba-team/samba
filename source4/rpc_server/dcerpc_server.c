@@ -1186,12 +1186,16 @@ static NTSTATUS dcesrv_auth_reply(struct dcesrv_call_state *call)
 }
 
 
+static void dcesrv_auth3_done(struct tevent_req *subreq);
+
 /*
   handle a auth3 request
 */
 static NTSTATUS dcesrv_auth3(struct dcesrv_call_state *call)
 {
+	struct dcesrv_connection *conn = call->conn;
 	struct dcesrv_auth *auth = &call->conn->auth_state;
+	struct tevent_req *subreq = NULL;
 	NTSTATUS status;
 
 	if (!call->conn->allow_auth3) {
@@ -1235,10 +1239,28 @@ static NTSTATUS dcesrv_auth3(struct dcesrv_call_state *call)
 		return NT_STATUS_OK;
 	}
 
-	status = gensec_update_ev(auth->gensec_security,
-				  call, call->event_ctx,
-				  call->in_auth_info.credentials,
-				  &call->out_auth_info->credentials);
+	subreq = gensec_update_send(call, call->event_ctx,
+				    auth->gensec_security,
+				    call->in_auth_info.credentials);
+	if (subreq == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	tevent_req_set_callback(subreq, dcesrv_auth3_done, call);
+
+	return dcesrv_conn_auth_wait_setup(conn);
+}
+
+static void dcesrv_auth3_done(struct tevent_req *subreq)
+{
+	struct dcesrv_call_state *call =
+		tevent_req_callback_data(subreq,
+		struct dcesrv_call_state);
+	struct dcesrv_connection *conn = call->conn;
+	NTSTATUS status;
+
+	status = gensec_update_recv(subreq, call,
+				    &call->out_auth_info->credentials);
+	TALLOC_FREE(subreq);
 
 	status = dcesrv_auth_complete(call, status);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1251,17 +1273,21 @@ static NTSTATUS dcesrv_auth3(struct dcesrv_call_state *call)
 		 */
 		call->conn->auth_state.auth_invalid = true;
 		if (call->fault_code != 0) {
-			return dcesrv_fault_disconnect(call, call->fault_code);
+			status = dcesrv_fault_disconnect(call, call->fault_code);
+			dcesrv_conn_auth_wait_finished(conn, status);
+			return;
 		}
 		TALLOC_FREE(call);
-		return NT_STATUS_OK;
+		dcesrv_conn_auth_wait_finished(conn, NT_STATUS_OK);
+		return;
 	}
 
 	/*
 	 * we don't send a reply to a auth3 request.
 	 */
 	TALLOC_FREE(call);
-	return NT_STATUS_OK;
+	dcesrv_conn_auth_wait_finished(conn, NT_STATUS_OK);
+	return;
 }
 
 
