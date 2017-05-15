@@ -241,6 +241,51 @@ bool dcesrv_auth_bind(struct dcesrv_call_state *call)
 	return true;
 }
 
+NTSTATUS dcesrv_auth_complete(struct dcesrv_call_state *call, NTSTATUS status)
+{
+	struct dcesrv_connection *dce_conn = call->conn;
+	const char *pdu = "<unknown>";
+
+	switch (call->pkt.ptype) {
+	case DCERPC_PKT_BIND:
+		pdu = "BIND";
+		break;
+	case DCERPC_PKT_ALTER:
+		pdu = "ALTER";
+		break;
+	case DCERPC_PKT_AUTH3:
+		pdu = "AUTH3";
+		break;
+	default:
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		return NT_STATUS_OK;
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(4, ("GENSEC mech rejected the incoming authentication "
+			  "at %s: %s\n", pdu, nt_errstr(status)));
+		return status;
+	}
+
+	status = gensec_session_info(dce_conn->auth_state.gensec_security,
+				     dce_conn,
+				     &dce_conn->auth_state.session_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to establish session_info: %s\n",
+			  nt_errstr(status)));
+		return status;
+	}
+	dce_conn->auth_state.auth_finished = true;
+	dce_conn->allow_request = true;
+
+	/* Now that we are authenticated, go back to the generic session key... */
+	dce_conn->auth_state.session_key = dcesrv_generic_session_key;
+	return NT_STATUS_OK;
+}
+
 /*
   add any auth information needed in a bind ack, and process the authentication
   information found in the bind.
@@ -279,28 +324,8 @@ NTSTATUS dcesrv_auth_bind_ack(struct dcesrv_call_state *call, struct ncacn_packe
 			       call, call->event_ctx,
 			       call->in_auth_info.credentials,
 			       &call->out_auth_info->credentials);
-	
-	if (NT_STATUS_IS_OK(status)) {
-		status = gensec_session_info(dce_conn->auth_state.gensec_security,
-					     dce_conn,
-					     &dce_conn->auth_state.session_info);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(1, ("Failed to establish session_info: %s\n", nt_errstr(status)));
-			return status;
-		}
-		dce_conn->auth_state.auth_finished = true;
-		dce_conn->allow_request = true;
 
-		/* Now that we are authenticated, go back to the generic session key... */
-		dce_conn->auth_state.session_key = dcesrv_generic_session_key;
-		return NT_STATUS_OK;
-	} else if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		return NT_STATUS_OK;
-	} else {
-		DEBUG(4, ("GENSEC mech rejected the incoming authentication at bind_ack: %s\n",
-			  nt_errstr(status)));
-		return status;
-	}
+	return dcesrv_auth_complete(call, status);
 }
 
 
