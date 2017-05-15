@@ -379,8 +379,7 @@ try_logon_again:
 		struct ldap_request *req;
 		int result = LDAP_OTHER;
 	
-		status = gensec_update_ev(conn->gensec, tmp_ctx,
-				       conn->event.event_ctx,
+		status = gensec_update(conn->gensec, tmp_ctx,
 				       input,
 				       &output);
 		/* The status value here, from GENSEC is vital to the security
