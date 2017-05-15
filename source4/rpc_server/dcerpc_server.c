@@ -1493,17 +1493,21 @@ static NTSTATUS dcesrv_negotiate_contexts(struct dcesrv_call_state *call,
 	return NT_STATUS_OK;
 }
 
+static void dcesrv_alter_done(struct tevent_req *subreq);
+
 /*
   handle a alter context request
 */
 static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 {
+	struct dcesrv_connection *conn = call->conn;
 	NTSTATUS status;
 	bool auth_ok = false;
 	struct ncacn_packet *pkt = &call->ack_pkt;
 	uint32_t extra_flags = 0;
 	struct dcesrv_auth *auth = &call->conn->auth_state;
 	struct dcerpc_ack_ctx *ack_ctx_list = NULL;
+	struct tevent_req *subreq = NULL;
 	size_t i;
 
 	if (!call->conn->allow_alter) {
@@ -1615,17 +1619,39 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 		return dcesrv_auth_reply(call);
 	}
 
-	status = gensec_update_ev(auth->gensec_security,
-				  call, call->event_ctx,
-				  call->in_auth_info.credentials,
-				  &call->out_auth_info->credentials);
+	subreq = gensec_update_send(call, call->event_ctx,
+				    auth->gensec_security,
+				    call->in_auth_info.credentials);
+	if (subreq == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	tevent_req_set_callback(subreq, dcesrv_alter_done, call);
+
+	return dcesrv_conn_auth_wait_setup(conn);
+}
+
+static void dcesrv_alter_done(struct tevent_req *subreq)
+{
+	struct dcesrv_call_state *call =
+		tevent_req_callback_data(subreq,
+		struct dcesrv_call_state);
+	struct dcesrv_connection *conn = call->conn;
+	NTSTATUS status;
+
+	status = gensec_update_recv(subreq, call,
+				    &call->out_auth_info->credentials);
+	TALLOC_FREE(subreq);
 
 	status = dcesrv_auth_complete(call, status);
 	if (!NT_STATUS_IS_OK(status)) {
-		return dcesrv_fault_disconnect(call, DCERPC_FAULT_SEC_PKG_ERROR);
+		status = dcesrv_fault_disconnect(call, DCERPC_FAULT_SEC_PKG_ERROR);
+		dcesrv_conn_auth_wait_finished(conn, status);
+		return;
 	}
 
-	return dcesrv_auth_reply(call);
+	status = dcesrv_auth_reply(call);
+	dcesrv_conn_auth_wait_finished(conn, status);
+	return;
 }
 
 /*
