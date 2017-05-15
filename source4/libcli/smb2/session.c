@@ -115,11 +115,17 @@ struct smb2_session_setup_spnego_state {
 	bool session_bind;
 	bool reauth;
 	NTSTATUS gensec_status;
+	NTSTATUS remote_status;
 	DATA_BLOB in_secblob;
 	DATA_BLOB out_secblob;
+	struct iovec *recv_iov;
 };
 
-static void smb2_session_setup_spnego_done(struct tevent_req *subreq);
+static void smb2_session_setup_spnego_gensec_next(struct tevent_req *req);
+static void smb2_session_setup_spnego_gensec_done(struct tevent_req *subreq);
+static void smb2_session_setup_spnego_smb2_next(struct tevent_req *req);
+static void smb2_session_setup_spnego_smb2_done(struct tevent_req *subreq);
+static void smb2_session_setup_spnego_both_ready(struct tevent_req *req);
 
 /*
   a composite function that does a full SPNEGO session setup
@@ -131,18 +137,15 @@ struct tevent_req *smb2_session_setup_spnego_send(
 				struct cli_credentials *credentials,
 				uint64_t previous_session_id)
 {
+	struct smb2_transport *transport = session->transport;
 	struct tevent_req *req;
 	struct smb2_session_setup_spnego_state *state;
 	uint64_t current_session_id;
 	const char *chosen_oid;
-	struct tevent_req *subreq;
 	NTSTATUS status;
 	const DATA_BLOB *server_gss_blob;
-	DATA_BLOB negprot_secblob = data_blob_null;
-	uint32_t timeout_msec;
-	uint8_t in_flags = 0;
-
-	timeout_msec = session->transport->options.request_timeout * 1000;
+	struct timeval endtime;
+	bool ok;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smb2_session_setup_spnego_state);
@@ -153,6 +156,16 @@ struct tevent_req *smb2_session_setup_spnego_send(
 	state->session = session;
 	state->credentials = credentials;
 	state->previous_session_id = previous_session_id;
+	state->gensec_status = NT_STATUS_MORE_PROCESSING_REQUIRED;
+	state->remote_status = NT_STATUS_MORE_PROCESSING_REQUIRED;
+
+	endtime = timeval_current_ofs(transport->options.request_timeout, 0);
+
+	ok = tevent_req_set_endtime(req, ev, endtime);
+	if (!ok) {
+		tevent_req_oom(req);
+		return tevent_req_post(req, ev);
+	}
 
 	current_session_id = smb2cli_session_current_id(state->session->smbXcli);
 	if (state->session->needs_bind) {
@@ -162,7 +175,7 @@ struct tevent_req *smb2_session_setup_spnego_send(
 	}
 	server_gss_blob = smbXcli_conn_server_gss_blob(session->transport->conn);
 	if (server_gss_blob) {
-		negprot_secblob = *server_gss_blob;
+		state->out_secblob = *server_gss_blob;
 	}
 
 	status = gensec_set_credentials(session->gensec, credentials);
@@ -181,7 +194,7 @@ struct tevent_req *smb2_session_setup_spnego_send(
 		return tevent_req_post(req, ev);
 	}
 
-	if (negprot_secblob.length > 0) {
+	if (state->out_secblob.length > 0) {
 		chosen_oid = GENSEC_OID_SPNEGO;
 	} else {
 		chosen_oid = GENSEC_OID_NTLMSSP;
@@ -192,41 +205,39 @@ struct tevent_req *smb2_session_setup_spnego_send(
 		return tevent_req_post(req, ev);
 	}
 
-	status = gensec_update_ev(session->gensec, state,
-			       state->ev,
-			       negprot_secblob,
-			       &state->in_secblob);
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		tevent_req_nterror(req, status);
+	smb2_session_setup_spnego_gensec_next(req);
+	if (!tevent_req_is_in_progress(req)) {
 		return tevent_req_post(req, ev);
 	}
-	state->gensec_status = status;
-
-	if (state->session_bind) {
-		in_flags |= SMB2_SESSION_FLAG_BINDING;
-	}
-
-	subreq = smb2cli_session_setup_send(state, state->ev,
-					    session->transport->conn,
-					    timeout_msec,
-					    session->smbXcli,
-					    in_flags,
-					    0, /* in_capabilities */
-					    0, /* in_channel */
-					    state->previous_session_id,
-					    &state->in_secblob);
-	if (tevent_req_nomem(subreq, req)) {
-		return tevent_req_post(req, ev);
-	}
-	tevent_req_set_callback(subreq, smb2_session_setup_spnego_done, req);
 
 	return req;
 }
 
-/*
-  handle continuations of the spnego session setup
-*/
-static void smb2_session_setup_spnego_done(struct tevent_req *subreq)
+static void smb2_session_setup_spnego_gensec_next(struct tevent_req *req)
+{
+	struct smb2_session_setup_spnego_state *state =
+		tevent_req_data(req,
+		struct smb2_session_setup_spnego_state);
+	struct smb2_session *session = state->session;
+	struct tevent_req *subreq = NULL;
+
+	if (NT_STATUS_IS_OK(state->gensec_status)) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+
+	subreq = gensec_update_send(state, state->ev,
+				    session->gensec,
+				    state->out_secblob);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq,
+				smb2_session_setup_spnego_gensec_done,
+				req);
+}
+
+static void smb2_session_setup_spnego_gensec_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req =
 		tevent_req_callback_data(subreq,
@@ -234,86 +245,43 @@ static void smb2_session_setup_spnego_done(struct tevent_req *subreq)
 	struct smb2_session_setup_spnego_state *state =
 		tevent_req_data(req,
 		struct smb2_session_setup_spnego_state);
-	struct smb2_session *session = state->session;
-	NTSTATUS peer_status;
 	NTSTATUS status;
-	struct iovec *recv_iov;
+
+	status = gensec_update_recv(subreq, state,
+				    &state->in_secblob);
+	state->gensec_status = status;
+	state->out_secblob = data_blob_null;
+	if (!NT_STATUS_IS_OK(status) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	if (NT_STATUS_IS_OK(state->remote_status) &&
+	    NT_STATUS_IS_OK(state->gensec_status)) {
+		smb2_session_setup_spnego_both_ready(req);
+		return;
+	}
+
+	smb2_session_setup_spnego_smb2_next(req);
+}
+
+static void smb2_session_setup_spnego_smb2_next(struct tevent_req *req)
+{
+	struct smb2_session_setup_spnego_state *state =
+		tevent_req_data(req,
+		struct smb2_session_setup_spnego_state);
+	struct smb2_session *session = state->session;
 	uint32_t timeout_msec;
 	uint8_t in_flags = 0;
+	struct tevent_req *subreq = NULL;
+
+	if (NT_STATUS_IS_OK(state->remote_status)) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
 
 	timeout_msec = session->transport->options.request_timeout * 1000;
-
-	status = smb2cli_session_setup_recv(subreq, state,
-					    &recv_iov,
-					    &state->out_secblob);
-	if (!NT_STATUS_IS_OK(status) &&
-	    !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		tevent_req_nterror(req, status);
-		return;
-	}
-	peer_status = status;
-
-	if (NT_STATUS_EQUAL(state->gensec_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		status = gensec_update_ev(session->gensec, state,
-				       state->ev,
-				       state->out_secblob,
-				       &state->in_secblob);
-		state->gensec_status = status;
-	}
-
-	if (!NT_STATUS_IS_OK(status) &&
-	    !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		tevent_req_nterror(req, status);
-		return;
-	}
-
-	if (NT_STATUS_IS_OK(peer_status) && NT_STATUS_IS_OK(state->gensec_status)) {
-		DATA_BLOB session_key;
-
-		if (state->reauth) {
-			tevent_req_done(req);
-			return;
-		}
-
-		if (cli_credentials_is_anonymous(state->credentials)) {
-			/*
-			 * Windows server does not set the
-			 * SMB2_SESSION_FLAG_IS_GUEST nor
-			 * SMB2_SESSION_FLAG_IS_NULL flag.
-			 *
-			 * This fix makes sure we do not try
-			 * to verify a signature on the final
-			 * session setup response.
-			 */
-			tevent_req_done(req);
-			return;
-		}
-
-		status = gensec_session_key(session->gensec, state,
-					    &session_key);
-		if (tevent_req_nterror(req, status)) {
-			return;
-		}
-
-		if (state->session_bind) {
-			status = smb2cli_session_set_channel_key(session->smbXcli,
-								 session_key,
-								 recv_iov);
-			if (tevent_req_nterror(req, status)) {
-				return;
-			}
-			session->needs_bind = false;
-		} else {
-			status = smb2cli_session_set_session_key(session->smbXcli,
-								 session_key,
-								 recv_iov);
-			if (tevent_req_nterror(req, status)) {
-				return;
-			}
-		}
-		tevent_req_done(req);
-		return;
-	}
 
 	if (state->session_bind) {
 		in_flags |= SMB2_SESSION_FLAG_BINDING;
@@ -331,7 +299,106 @@ static void smb2_session_setup_spnego_done(struct tevent_req *subreq)
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
-	tevent_req_set_callback(subreq, smb2_session_setup_spnego_done, req);
+	tevent_req_set_callback(subreq,
+				smb2_session_setup_spnego_smb2_done,
+				req);
+}
+
+/*
+  handle continuations of the spnego session setup
+*/
+static void smb2_session_setup_spnego_smb2_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
+	struct smb2_session_setup_spnego_state *state =
+		tevent_req_data(req,
+		struct smb2_session_setup_spnego_state);
+	NTSTATUS status;
+
+	status = smb2cli_session_setup_recv(subreq, state,
+					    &state->recv_iov,
+					    &state->out_secblob);
+	state->remote_status = status;
+	state->in_secblob = data_blob_null;
+	if (!NT_STATUS_IS_OK(status) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	if (NT_STATUS_IS_OK(state->remote_status) &&
+	    NT_STATUS_IS_OK(state->gensec_status)) {
+		smb2_session_setup_spnego_both_ready(req);
+		return;
+	}
+
+	smb2_session_setup_spnego_gensec_next(req);
+}
+
+static void smb2_session_setup_spnego_both_ready(struct tevent_req *req)
+{
+	struct smb2_session_setup_spnego_state *state =
+		tevent_req_data(req,
+		struct smb2_session_setup_spnego_state);
+	struct smb2_session *session = state->session;
+	NTSTATUS status;
+	DATA_BLOB session_key;
+
+	if (state->out_secblob.length != 0) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+
+	if (state->in_secblob.length != 0) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+
+	if (state->reauth) {
+		tevent_req_done(req);
+		return;
+	}
+
+	if (cli_credentials_is_anonymous(state->credentials)) {
+		/*
+		 * Windows server does not set the
+		 * SMB2_SESSION_FLAG_IS_GUEST nor
+		 * SMB2_SESSION_FLAG_IS_NULL flag.
+		 *
+		 * This fix makes sure we do not try
+		 * to verify a signature on the final
+		 * session setup response.
+		 */
+		tevent_req_done(req);
+		return;
+	}
+
+	status = gensec_session_key(session->gensec, state,
+				    &session_key);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	if (state->session_bind) {
+		status = smb2cli_session_set_channel_key(session->smbXcli,
+							 session_key,
+							 state->recv_iov);
+		if (tevent_req_nterror(req, status)) {
+			return;
+		}
+		session->needs_bind = false;
+	} else {
+		status = smb2cli_session_set_session_key(session->smbXcli,
+							 session_key,
+							 state->recv_iov);
+		if (tevent_req_nterror(req, status)) {
+			return;
+		}
+	}
+	tevent_req_done(req);
+	return;
 }
 
 /*
