@@ -965,8 +965,6 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	if (!dcesrv_auth_bind(call)) {
 		struct dcesrv_auth *auth = &call->conn->auth_state;
 
-		TALLOC_FREE(call->context);
-
 		if (auth->auth_level == DCERPC_AUTH_LEVEL_NONE) {
 			/*
 			 * With DCERPC_AUTH_LEVEL_NONE, we get the
@@ -1014,7 +1012,6 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 							   ep_prefix,
 							   endpoint);
 	if (pkt->u.bind_ack.secondary_address == NULL) {
-		TALLOC_FREE(call->context);
 		return NT_STATUS_NO_MEMORY;
 	}
 	pkt->u.bind_ack.num_results = call->pkt.u.bind.num_contexts;
@@ -1023,20 +1020,17 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 
 	status = dcesrv_auth_bind_ack(call, pkt);
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(call->context);
 		return dcesrv_bind_nak(call, 0);
 	}
 
 	rep = talloc_zero(call, struct data_blob_list_item);
 	if (!rep) {
-		TALLOC_FREE(call->context);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	status = ncacn_push_auth(&rep->blob, call, pkt,
 				 call->out_auth_info);
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(call->context);
 		return status;
 	}
 
