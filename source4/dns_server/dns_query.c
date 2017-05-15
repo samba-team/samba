@@ -725,13 +725,19 @@ static NTSTATUS create_tkey(struct dns_server *dns,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = samba_server_gensec_start(k,
-					   dns->task->event_ctx,
-					   dns->task->msg_ctx,
-					   dns->task->lp_ctx,
-					   dns->server_credentials,
-					   "dns",
-					   &k->gensec);
+	/*
+	 * We only allow SPNEGO/KRB5 currently
+	 * and rely on the backend to be RPC/IPC free.
+	 *
+	 * It allows gensec_update() not to block.
+	 */
+	status = samba_server_gensec_krb5_start(k,
+						dns->task->event_ctx,
+						dns->task->msg_ctx,
+						dns->task->lp_ctx,
+						dns->server_credentials,
+						"dns",
+						&k->gensec);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to start GENSEC server code: %s\n", nt_errstr(status)));
 		*tkey = NULL;
@@ -788,8 +794,21 @@ static NTSTATUS accept_gss_ticket(TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 
-	status = gensec_update_ev(tkey->gensec, mem_ctx, dns->task->event_ctx,
-				  *key, reply);
+	/*
+	 * We use samba_server_gensec_krb5_start(),
+	 * which only allows SPNEGO/KRB5 currently
+	 * and makes sure the backend to be RPC/IPC free.
+	 *
+	 * See gensec_gssapi_update_internal() as
+	 * GENSEC_SERVER.
+	 *
+	 * It allows gensec_update() not to block.
+	 *
+	 * If that changes in future we need to use
+	 * gensec_update_send/recv here!
+	 */
+	status = gensec_update(tkey->gensec, mem_ctx,
+			       *key, reply);
 
 	if (NT_STATUS_EQUAL(NT_STATUS_MORE_PROCESSING_REQUIRED, status)) {
 		*dns_auth_error = DNS_RCODE_OK;
