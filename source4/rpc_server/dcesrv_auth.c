@@ -363,7 +363,7 @@ NTSTATUS dcesrv_auth_bind_ack(struct dcesrv_call_state *call, struct ncacn_packe
 /*
   process the final stage of a auth request
 */
-bool dcesrv_auth_auth3(struct dcesrv_call_state *call)
+bool dcesrv_auth_prepare_auth3(struct dcesrv_call_state *call)
 {
 	struct ncacn_packet *pkt = &call->pkt;
 	struct dcesrv_connection *dce_conn = call->conn;
@@ -411,6 +411,20 @@ bool dcesrv_auth_auth3(struct dcesrv_call_state *call)
 		.auth_context_id = dce_conn->auth_state.auth_context_id,
 	};
 	call->out_auth_info = &call->_out_auth_info;
+
+	return true;
+}
+
+bool dcesrv_auth_auth3(struct dcesrv_call_state *call)
+{
+	struct dcesrv_connection *dce_conn = call->conn;
+	NTSTATUS status;
+	bool ok;
+
+	ok = dcesrv_auth_prepare_auth3(call);
+	if (!ok) {
+		return false;
+	}
 
 	/* Pass the extra data we got from the client down to gensec for processing */
 	status = gensec_update_ev(dce_conn->auth_state.gensec_security,
