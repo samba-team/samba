@@ -187,5 +187,12 @@ NTSTATUS samba_server_gensec_start(TALLOC_CTX *mem_ctx,
 				   struct cli_credentials *server_credentials,
 				   const char *target_service,
 				   struct gensec_security **gensec_context);
+NTSTATUS samba_server_gensec_krb5_start(TALLOC_CTX *mem_ctx,
+					struct tevent_context *event_ctx,
+					struct imessaging_context *msg_ctx,
+					struct loadparm_context *lp_ctx,
+					struct cli_credentials *server_credentials,
+					const char *target_service,
+					struct gensec_security **gensec_context);
 
 #endif /* _SMBAUTH_H_ */
