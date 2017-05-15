@@ -782,6 +782,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	uint16_t max_rep = 0;
 	const char *ep_prefix = "";
 	const char *endpoint = NULL;
+	struct dcesrv_auth *auth = &call->conn->auth_state;
 	struct dcerpc_ack_ctx *ack_ctx_list = NULL;
 	struct dcerpc_ack_ctx *ack_features = NULL;
 	size_t i;
@@ -964,7 +965,6 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	 * is being requested.
 	 */
 	if (!dcesrv_auth_bind(call)) {
-		struct dcesrv_auth *auth = &call->conn->auth_state;
 
 		if (auth->auth_level == DCERPC_AUTH_LEVEL_NONE) {
 			/*
@@ -1019,7 +1019,21 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	pkt->u.bind_ack.ctx_list = ack_ctx_list;
 	pkt->u.bind_ack.auth_info = data_blob_null;
 
-	status = dcesrv_auth_bind_ack(call, pkt);
+	status = dcesrv_auth_prepare_bind_ack(call, pkt);
+	if (!NT_STATUS_IS_OK(status)) {
+		return dcesrv_bind_nak(call, 0);
+	}
+
+	if (auth->auth_finished) {
+		return dcesrv_auth_reply(call);
+	}
+
+	status = gensec_update_ev(auth->gensec_security,
+				  call, call->event_ctx,
+				  call->in_auth_info.credentials,
+				  &call->out_auth_info->credentials);
+
+	status = dcesrv_auth_complete(call, status);
 	if (!NT_STATUS_IS_OK(status)) {
 		return dcesrv_bind_nak(call, 0);
 	}
