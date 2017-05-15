@@ -41,6 +41,7 @@
 #include "librpc/rpc/rpc_common.h"
 #include "lib/util/samba_modules.h"
 #include "librpc/gen_ndr/ndr_dcerpc.h"
+#include "../lib/util/tevent_ntstatus.h"
 
 static NTSTATUS dcesrv_negotiate_contexts(struct dcesrv_call_state *call,
 				const struct dcerpc_bind *b,
@@ -768,13 +769,102 @@ _PUBLIC_ NTSTATUS dcesrv_interface_bind_allow_connect(struct dcesrv_call_state *
 	return NT_STATUS_OK;
 }
 
+struct dcesrv_conn_auth_wait_context {
+	struct tevent_req *req;
+	bool done;
+	NTSTATUS status;
+};
+
+struct dcesrv_conn_auth_wait_state {
+	uint8_t dummy;
+};
+
+static struct tevent_req *dcesrv_conn_auth_wait_send(TALLOC_CTX *mem_ctx,
+						     struct tevent_context *ev,
+						     void *private_data)
+{
+	struct dcesrv_conn_auth_wait_context *auth_wait =
+		talloc_get_type_abort(private_data,
+		struct dcesrv_conn_auth_wait_context);
+	struct tevent_req *req = NULL;
+	struct dcesrv_conn_auth_wait_state *state = NULL;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct dcesrv_conn_auth_wait_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	auth_wait->req = req;
+
+	tevent_req_defer_callback(req, ev);
+
+	if (!auth_wait->done) {
+		return req;
+	}
+
+	if (tevent_req_nterror(req, auth_wait->status)) {
+		return tevent_req_post(req, ev);
+	}
+
+	tevent_req_done(req);
+	return tevent_req_post(req, ev);
+}
+
+static NTSTATUS dcesrv_conn_auth_wait_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
+static NTSTATUS dcesrv_conn_auth_wait_setup(struct dcesrv_connection *conn)
+{
+	struct dcesrv_conn_auth_wait_context *auth_wait = NULL;
+
+	if (conn->wait_send != NULL) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	auth_wait = talloc_zero(conn, struct dcesrv_conn_auth_wait_context);
+	if (auth_wait == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	conn->wait_private = auth_wait;
+	conn->wait_send = dcesrv_conn_auth_wait_send;
+	conn->wait_recv = dcesrv_conn_auth_wait_recv;
+	return NT_STATUS_OK;
+}
+
+static void dcesrv_conn_auth_wait_finished(struct dcesrv_connection *conn,
+					   NTSTATUS status)
+{
+	struct dcesrv_conn_auth_wait_context *auth_wait =
+		talloc_get_type_abort(conn->wait_private,
+		struct dcesrv_conn_auth_wait_context);
+
+	auth_wait->done = true;
+	auth_wait->status = status;
+
+	if (auth_wait->req == NULL) {
+		return;
+	}
+
+	if (tevent_req_nterror(auth_wait->req, status)) {
+		return;
+	}
+
+	tevent_req_done(auth_wait->req);
+}
+
 static NTSTATUS dcesrv_auth_reply(struct dcesrv_call_state *call);
+
+static void dcesrv_bind_done(struct tevent_req *subreq);
 
 /*
   handle a bind request
 */
 static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 {
+	struct dcesrv_connection *conn = call->conn;
 	struct ncacn_packet *pkt = &call->ack_pkt;
 	NTSTATUS status;
 	uint32_t extra_flags = 0;
@@ -785,6 +875,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	struct dcesrv_auth *auth = &call->conn->auth_state;
 	struct dcerpc_ack_ctx *ack_ctx_list = NULL;
 	struct dcerpc_ack_ctx *ack_features = NULL;
+	struct tevent_req *subreq = NULL;
 	size_t i;
 
 	status = dcerpc_verify_ncacn_packet_header(&call->pkt,
@@ -1028,17 +1119,39 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 		return dcesrv_auth_reply(call);
 	}
 
-	status = gensec_update_ev(auth->gensec_security,
-				  call, call->event_ctx,
-				  call->in_auth_info.credentials,
-				  &call->out_auth_info->credentials);
+	subreq = gensec_update_send(call, call->event_ctx,
+				    auth->gensec_security,
+				    call->in_auth_info.credentials);
+	if (subreq == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	tevent_req_set_callback(subreq, dcesrv_bind_done, call);
+
+	return dcesrv_conn_auth_wait_setup(conn);
+}
+
+static void dcesrv_bind_done(struct tevent_req *subreq)
+{
+	struct dcesrv_call_state *call =
+		tevent_req_callback_data(subreq,
+		struct dcesrv_call_state);
+	struct dcesrv_connection *conn = call->conn;
+	NTSTATUS status;
+
+	status = gensec_update_recv(subreq, call,
+				    &call->out_auth_info->credentials);
+	TALLOC_FREE(subreq);
 
 	status = dcesrv_auth_complete(call, status);
 	if (!NT_STATUS_IS_OK(status)) {
-		return dcesrv_bind_nak(call, 0);
+		status = dcesrv_bind_nak(call, 0);
+		dcesrv_conn_auth_wait_finished(conn, status);
+		return;
 	}
 
-	return dcesrv_auth_reply(call);
+	status = dcesrv_auth_reply(call);
+	dcesrv_conn_auth_wait_finished(conn, status);
+	return;
 }
 
 static NTSTATUS dcesrv_auth_reply(struct dcesrv_call_state *call)
