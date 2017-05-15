@@ -255,6 +255,10 @@ NTSTATUS dcesrv_auth_complete(struct dcesrv_call_state *call, NTSTATUS status)
 		break;
 	case DCERPC_PKT_AUTH3:
 		pdu = "AUTH3";
+		if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+			DEBUG(4, ("GENSEC not finished at at %s\n", pdu));
+			return NT_STATUS_RPC_SEC_PKG_ERROR;
+		}
 		break;
 	default:
 		return NT_STATUS_INTERNAL_ERROR;
@@ -283,6 +287,17 @@ NTSTATUS dcesrv_auth_complete(struct dcesrv_call_state *call, NTSTATUS status)
 
 	/* Now that we are authenticated, go back to the generic session key... */
 	dce_conn->auth_state.session_key = dcesrv_generic_session_key;
+
+	if (call->pkt.ptype != DCERPC_PKT_AUTH3) {
+		return NT_STATUS_OK;
+	}
+
+	if (call->out_auth_info->credentials.length != 0) {
+		DEBUG(4, ("GENSEC produced output token (len=%zu) at %s\n",
+			  call->out_auth_info->credentials.length, pdu));
+		return NT_STATUS_RPC_SEC_PKG_ERROR;
+	}
+
 	return NT_STATUS_OK;
 }
 
