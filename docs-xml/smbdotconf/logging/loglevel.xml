@@ -43,6 +43,7 @@
         <listitem><para><parameter moreinfo="none">tevent</parameter></para></listitem>
         <listitem><para><parameter moreinfo="none">auth_audit</parameter></para></listitem>
         <listitem><para><parameter moreinfo="none">auth_json_audit</parameter></para></listitem>
+        <listitem><para><parameter moreinfo="none">kerberos</parameter></para></listitem>
     </itemizedlist>
 
     <para>Authentication and authorization audit information is logged
