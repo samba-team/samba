@@ -519,19 +519,22 @@ static NTSTATUS session_setup_spnego(struct composite_context *c,
 		return status;
 	}
 
+	state->setup.spnego.out.secblob =
+			session->transport->negotiate.secblob;
 	if (session->transport->negotiate.secblob.length) {
 		chosen_oid = GENSEC_OID_SPNEGO;
 		status = gensec_start_mech_by_oid(session->gensec, chosen_oid);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("Failed to start set GENSEC client mechanism %s: %s\n",
 				  gensec_get_name_by_oid(session->gensec, chosen_oid), nt_errstr(status)));
+			state->setup.spnego.out.secblob = data_blob_null;
 			chosen_oid = GENSEC_OID_NTLMSSP;
 			status = gensec_start_mech_by_oid(session->gensec, chosen_oid);
 			if (!NT_STATUS_IS_OK(status)) {
 				DEBUG(1, ("Failed to start set (fallback) GENSEC client mechanism %s: %s\n",
 					  gensec_get_name_by_oid(session->gensec, chosen_oid), 
 					  nt_errstr(status)));
-			return status;
+				return status;
 			}
 		}
 	} else {
@@ -544,18 +547,10 @@ static NTSTATUS session_setup_spnego(struct composite_context *c,
 		}
 	}
 
-	if (strequal(chosen_oid, GENSEC_OID_SPNEGO)) {
-		status = gensec_update_ev(session->gensec, state,
-				       c->event_ctx,
-				       session->transport->negotiate.secblob,
-				       &state->setup.spnego.in.secblob);
-	} else {
-		status = gensec_update_ev(session->gensec, state,
-				       c->event_ctx,
-				       data_blob(NULL, 0),
-				       &state->setup.spnego.in.secblob);
-
-	}
+	status = gensec_update_ev(session->gensec, state,
+				  c->event_ctx,
+				  state->setup.spnego.out.secblob,
+				  &state->setup.spnego.in.secblob);
 
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED) && 
 	    !NT_STATUS_IS_OK(status)) {
