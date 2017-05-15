@@ -147,6 +147,36 @@ init_module_fn *load_samba_modules(TALLOC_CTX *mem_ctx, const char *subsystem)
 	return ret;
 }
 
+static NTSTATUS load_module_absolute_path(const char *module_path,
+					  bool is_probe)
+{
+	void *handle;
+	init_module_fn init;
+	NTSTATUS status;
+
+	DBG_INFO("%s module '%s'\n",
+		 is_probe ? "Probing" : "Loading",
+		 module_path);
+
+	init = load_module(module_path, is_probe, &handle);
+	if (init == NULL) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	DBG_NOTICE("Module '%s' loaded\n", module_path);
+
+	status = init(NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Module '%s' initialization failed: %s\n",
+			module_path,
+			get_friendly_nt_error_msg(status));
+		dlclose(handle);
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
+
 
 /* Load a dynamic module.  Only log a level 0 error if we are not checking
    for the existence of a module (probling). */
@@ -212,8 +242,16 @@ int smb_load_modules(const char **modules)
 	int i;
 	int success = 0;
 
-	for(i = 0; modules[i]; i++){
-		if(NT_STATUS_IS_OK(do_smb_load_module(NULL, modules[i], false))) {
+	for(i = 0; modules[i] != NULL; i++) {
+		const char *module = modules[i];
+		NTSTATUS status;
+
+		if (module[0] != '/') {
+			continue;
+		}
+
+		status = load_module_absolute_path(module, false);
+		if (NT_STATUS_IS_OK(status)) {
 			success++;
 		}
 	}
