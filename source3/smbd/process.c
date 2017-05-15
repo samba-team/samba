@@ -4018,7 +4018,7 @@ void smbd_process(struct tevent_context *ev_ctx,
 			   locaddr);
 
 	if (lp_preload_modules()) {
-		smb_load_modules(lp_preload_modules());
+		smb_load_all_modules_absoute_path(lp_preload_modules());
 	}
 
 	smb_perfcount_init();

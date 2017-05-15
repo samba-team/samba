@@ -53,7 +53,7 @@ bool run_init_functions(TALLOC_CTX *ctx, init_module_fn *fns);
  */
 init_module_fn *load_samba_modules(TALLOC_CTX *mem_ctx, const char *subsystem);
 
-int smb_load_modules(const char **modules);
+int smb_load_all_modules_absoute_path(const char **modules);
 NTSTATUS smb_probe_module(const char *subsystem, const char *module);
 NTSTATUS smb_load_module(const char *subsystem, const char *module);
 

@@ -237,7 +237,7 @@ static NTSTATUS do_smb_load_module(const char *subsystem,
 
 /* Load all modules in list and return number of
  * modules that has been successfully loaded */
-int smb_load_modules(const char **modules)
+int smb_load_all_modules_absoute_path(const char **modules)
 {
 	int i;
 	int success = 0;
