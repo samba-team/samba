@@ -500,10 +500,9 @@ bool dcesrv_auth_alter(struct dcesrv_call_state *call)
   add any auth information needed in a alter ack, and process the authentication
   information found in the alter.
 */
-NTSTATUS dcesrv_auth_alter_ack(struct dcesrv_call_state *call, struct ncacn_packet *pkt)
+NTSTATUS dcesrv_auth_prepare_alter_ack(struct dcesrv_call_state *call, struct ncacn_packet *pkt)
 {
 	struct dcesrv_connection *dce_conn = call->conn;
-	NTSTATUS status;
 
 	/* on a pure interface change there is no auth_info structure
 	   setup */
@@ -521,6 +520,23 @@ NTSTATUS dcesrv_auth_alter_ack(struct dcesrv_call_state *call, struct ncacn_pack
 		.auth_context_id = dce_conn->auth_state.auth_context_id,
 	};
 	call->out_auth_info = &call->_out_auth_info;
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS dcesrv_auth_alter_ack(struct dcesrv_call_state *call, struct ncacn_packet *pkt)
+{
+	struct dcesrv_connection *dce_conn = call->conn;
+	NTSTATUS status;
+
+	status = dcesrv_auth_prepare_alter_ack(call, pkt);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (dce_conn->auth_state.auth_finished) {
+		return NT_STATUS_OK;
+	}
 
 	status = gensec_update_ev(dce_conn->auth_state.gensec_security,
 			       call, call->event_ctx,
