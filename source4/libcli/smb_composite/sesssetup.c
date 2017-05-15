@@ -61,6 +61,9 @@ static NTSTATUS session_setup_nt1(struct composite_context *c,
 				  struct smbcli_session *session, 
 				  struct smb_composite_sesssetup *io,
 				  struct smbcli_request **req); 
+static NTSTATUS session_setup_spnego_restart(struct composite_context *c,
+					     struct smbcli_session *session,
+					     struct smb_composite_sesssetup *io);
 static NTSTATUS session_setup_spnego(struct composite_context *c,
 				     struct smbcli_session *session, 
 				     struct smb_composite_sesssetup *io,
@@ -161,6 +164,15 @@ static void request_handler(struct smbcli_request *req)
 			}
 			if (cli_credentials_failed_kerberos_login(state->io->in.credentials, principal, &state->logon_retries) ||
 			    cli_credentials_wrong_password(state->io->in.credentials)) {
+				nt_status = session_setup_spnego_restart(c, session, state->io);
+				if (!NT_STATUS_IS_OK(nt_status)) {
+					DEBUG(1, ("session_setup_spnego_restart() failed: %s\n",
+						  nt_errstr(nt_status)));
+					c->status = nt_status;
+					composite_error(c, c->status);
+					return;
+				}
+
 				nt_status = session_setup_spnego(c, session, 
 								      state->io, 
 								      &state->req);
@@ -557,13 +569,6 @@ static NTSTATUS session_setup_spnego(struct composite_context *c,
 	struct sesssetup_state *state = talloc_get_type(c->private_data, struct sesssetup_state);
 	NTSTATUS status;
 
-	status = session_setup_spnego_restart(c, session, io);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("session_setup_spnego_restart() failed: %s\n",
-			  nt_errstr(status)));
-		return status;
-	}
-
 	state->setup.spnego.level           = RAW_SESSSETUP_SPNEGO;
 	state->setup.spnego.in.bufsize      = session->transport->options.max_xmit;
 	state->setup.spnego.in.mpx_max      = session->transport->options.max_mux;
@@ -644,6 +649,15 @@ struct composite_context *smb_composite_sesssetup_send(struct smbcli_session *se
 		   !(io->in.capabilities & CAP_EXTENDED_SECURITY)) {
 		status = session_setup_nt1(c, session, io, &state->req);
 	} else {
+		status = session_setup_spnego_restart(c, session, io);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(1, ("session_setup_spnego_restart() failed: %s\n",
+				  nt_errstr(status)));
+			c->status = status;
+			composite_error(c, c->status);
+			return c;
+		}
+
 		status = session_setup_spnego(c, session, io, &state->req);
 	}
 
