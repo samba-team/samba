@@ -337,29 +337,6 @@ NTSTATUS dcesrv_auth_prepare_bind_ack(struct dcesrv_call_state *call, struct nca
 	return NT_STATUS_OK;
 }
 
-NTSTATUS dcesrv_auth_bind_ack(struct dcesrv_call_state *call, struct ncacn_packet *pkt)
-{
-	struct dcesrv_connection *dce_conn = call->conn;
-	NTSTATUS status;
-
-	status = dcesrv_auth_prepare_bind_ack(call, pkt);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	if (dce_conn->auth_state.auth_finished) {
-		return NT_STATUS_OK;
-	}
-
-	status = gensec_update_ev(dce_conn->auth_state.gensec_security,
-			       call, call->event_ctx,
-			       call->in_auth_info.credentials,
-			       &call->out_auth_info->credentials);
-
-	return dcesrv_auth_complete(call, status);
-}
-
-
 /*
   process the final stage of a auth request
 */
@@ -411,31 +388,6 @@ bool dcesrv_auth_prepare_auth3(struct dcesrv_call_state *call)
 		.auth_context_id = dce_conn->auth_state.auth_context_id,
 	};
 	call->out_auth_info = &call->_out_auth_info;
-
-	return true;
-}
-
-bool dcesrv_auth_auth3(struct dcesrv_call_state *call)
-{
-	struct dcesrv_connection *dce_conn = call->conn;
-	NTSTATUS status;
-	bool ok;
-
-	ok = dcesrv_auth_prepare_auth3(call);
-	if (!ok) {
-		return false;
-	}
-
-	/* Pass the extra data we got from the client down to gensec for processing */
-	status = gensec_update_ev(dce_conn->auth_state.gensec_security,
-			       call, call->event_ctx,
-			       call->in_auth_info.credentials,
-			       &call->out_auth_info->credentials);
-
-	status = dcesrv_auth_complete(call, status);
-	if (!NT_STATUS_IS_OK(status)) {
-		return false;
-	}
 
 	return true;
 }
@@ -522,28 +474,6 @@ NTSTATUS dcesrv_auth_prepare_alter_ack(struct dcesrv_call_state *call, struct nc
 	call->out_auth_info = &call->_out_auth_info;
 
 	return NT_STATUS_OK;
-}
-
-NTSTATUS dcesrv_auth_alter_ack(struct dcesrv_call_state *call, struct ncacn_packet *pkt)
-{
-	struct dcesrv_connection *dce_conn = call->conn;
-	NTSTATUS status;
-
-	status = dcesrv_auth_prepare_alter_ack(call, pkt);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	if (dce_conn->auth_state.auth_finished) {
-		return NT_STATUS_OK;
-	}
-
-	status = gensec_update_ev(dce_conn->auth_state.gensec_security,
-			       call, call->event_ctx,
-			       call->in_auth_info.credentials,
-			       &call->out_auth_info->credentials);
-
-	return dcesrv_auth_complete(call, status);
 }
 
 /*
