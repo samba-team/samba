@@ -501,27 +501,7 @@ NTSTATUS dcesrv_auth_alter_ack(struct dcesrv_call_state *call, struct ncacn_pack
 			       call->in_auth_info.credentials,
 			       &call->out_auth_info->credentials);
 
-	if (NT_STATUS_IS_OK(status)) {
-		status = gensec_session_info(dce_conn->auth_state.gensec_security,
-					     dce_conn,
-					     &dce_conn->auth_state.session_info);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(1, ("Failed to establish session_info: %s\n", nt_errstr(status)));
-			return status;
-		}
-		dce_conn->auth_state.auth_finished = true;
-		dce_conn->allow_request = true;
-
-		/* Now that we are authenticated, got back to the generic session key... */
-		dce_conn->auth_state.session_key = dcesrv_generic_session_key;
-		return NT_STATUS_OK;
-	} else if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		return NT_STATUS_OK;
-	}
-
-	DEBUG(4, ("GENSEC mech rejected the incoming authentication at auth alter_ack: %s\n",
-		  nt_errstr(status)));
-	return status;
+	return dcesrv_auth_complete(call, status);
 }
 
 /*
