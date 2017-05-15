@@ -768,13 +768,14 @@ _PUBLIC_ NTSTATUS dcesrv_interface_bind_allow_connect(struct dcesrv_call_state *
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS dcesrv_auth_reply(struct dcesrv_call_state *call);
+
 /*
   handle a bind request
 */
 static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 {
 	struct ncacn_packet *pkt = &call->ack_pkt;
-	struct data_blob_list_item *rep;
 	NTSTATUS status;
 	uint32_t extra_flags = 0;
 	uint16_t max_req = 0;
@@ -1022,6 +1023,15 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	if (!NT_STATUS_IS_OK(status)) {
 		return dcesrv_bind_nak(call, 0);
 	}
+
+	return dcesrv_auth_reply(call);
+}
+
+static NTSTATUS dcesrv_auth_reply(struct dcesrv_call_state *call)
+{
+	struct ncacn_packet *pkt = &call->ack_pkt;
+	struct data_blob_list_item *rep = NULL;
+	NTSTATUS status;
 
 	rep = talloc_zero(call, struct data_blob_list_item);
 	if (!rep) {
