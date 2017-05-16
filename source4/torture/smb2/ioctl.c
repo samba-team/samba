@@ -309,9 +309,11 @@ static bool test_setup_create_fill(struct torture_context *torture,
 static bool test_setup_copy_chunk(struct torture_context *torture,
 				  struct smb2_tree *tree, TALLOC_CTX *mem_ctx,
 				  uint32_t nchunks,
+				  const char *src_name,
 				  struct smb2_handle *src_h,
 				  uint64_t src_size,
 				  uint32_t src_desired_access,
+				  const char *dst_name,
 				  struct smb2_handle *dest_h,
 				  uint64_t dest_size,
 				  uint32_t dest_desired_access,
@@ -323,12 +325,12 @@ static bool test_setup_copy_chunk(struct torture_context *torture,
 	NTSTATUS status;
 	enum ndr_err_code ndr_ret;
 
-	ok = test_setup_create_fill(torture, tree, mem_ctx, FNAME,
+	ok = test_setup_create_fill(torture, tree, mem_ctx, src_name,
 				    src_h, src_size, src_desired_access,
 				    FILE_ATTRIBUTE_NORMAL);
 	torture_assert(torture, ok, "src file create fill");
 
-	ok = test_setup_create_fill(torture, tree, mem_ctx, FNAME2,
+	ok = test_setup_create_fill(torture, tree, mem_ctx, dst_name,
 				    dest_h, dest_size, dest_desired_access,
 				    FILE_ATTRIBUTE_NORMAL);
 	torture_assert(torture, ok, "dest file create fill");
@@ -398,8 +400,10 @@ static bool test_ioctl_copy_chunk_simple(struct torture_context *torture,
 
 	ok = test_setup_copy_chunk(torture, tree, tmp_ctx,
 				   1, /* 1 chunk */
+				   FNAME,
 				   &src_h, 4096, /* fill 4096 byte src file */
 				   SEC_RIGHTS_FILE_ALL,
+				   FNAME2,
 				   &dest_h, 0,	/* 0 byte dest file */
 				   SEC_RIGHTS_FILE_ALL,
 				   &cc_copy,
@@ -462,8 +466,10 @@ static bool test_ioctl_copy_chunk_multi(struct torture_context *torture,
 
 	ok = test_setup_copy_chunk(torture, tree, tmp_ctx,
 				   2, /* chunks */
+				   FNAME,
 				   &src_h, 8192, /* src file */
 				   SEC_RIGHTS_FILE_ALL,
+				   FNAME2,
 				   &dest_h, 0,	/* dest file */
 				   SEC_RIGHTS_FILE_ALL,
 				   &cc_copy,
@@ -525,8 +531,10 @@ static bool test_ioctl_copy_chunk_tiny(struct torture_context *torture,
 
 	ok = test_setup_copy_chunk(torture, tree, tmp_ctx,
 				   2, /* chunks */
+				   FNAME,
 				   &src_h, 96, /* src file */
 				   SEC_RIGHTS_FILE_ALL,
+				   FNAME2,
 				   &dest_h, 0,	/* dest file */
 				   SEC_RIGHTS_FILE_ALL,
 				   &cc_copy,
@@ -593,8 +601,10 @@ static bool test_ioctl_copy_chunk_over(struct torture_context *torture,
 
 	ok = test_setup_copy_chunk(torture, tree, tmp_ctx,
 				   2, /* chunks */
+				   FNAME,
 				   &src_h, 8192, /* src file */
 				   SEC_RIGHTS_FILE_ALL,
+				   FNAME2,
 				   &dest_h, 4096, /* dest file */
 				   SEC_RIGHTS_FILE_ALL,
 				   &cc_copy,
@@ -662,8 +672,10 @@ static bool test_ioctl_copy_chunk_append(struct torture_context *torture,
 
 	ok = test_setup_copy_chunk(torture, tree, tmp_ctx,
 				   2, /* chunks */
+				   FNAME,
 				   &src_h, 4096, /* src file */
 				   SEC_RIGHTS_FILE_ALL,
+				   FNAME2,
 				   &dest_h, 0,	/* dest file */
 				   SEC_RIGHTS_FILE_ALL,
 				   &cc_copy,
@@ -735,8 +747,10 @@ static bool test_ioctl_copy_chunk_limits(struct torture_context *torture,
 
 	ok = test_setup_copy_chunk(torture, tree, tmp_ctx,
 				   1, /* chunks */
+				   FNAME,
 				   &src_h, 4096, /* src file */
 				   SEC_RIGHTS_FILE_ALL,
+				   FNAME2,
 				   &dest_h, 0,	/* dest file */
 				   SEC_RIGHTS_FILE_ALL,
 				   &cc_copy,
@@ -796,8 +810,10 @@ static bool test_ioctl_copy_chunk_src_lck(struct torture_context *torture,
 
 	ok = test_setup_copy_chunk(torture, tree, tmp_ctx,
 				   1, /* chunks */
+				   FNAME,
 				   &src_h, 4096, /* src file */
 				   SEC_RIGHTS_FILE_ALL,
+				   FNAME2,
 				   &dest_h, 0,	/* dest file */
 				   SEC_RIGHTS_FILE_ALL,
 				   &cc_copy,
@@ -924,8 +940,10 @@ static bool test_ioctl_copy_chunk_dest_lck(struct torture_context *torture,
 
 	ok = test_setup_copy_chunk(torture, tree, tmp_ctx,
 				   1, /* chunks */
+				   FNAME,
 				   &src_h, 4096, /* src file */
 				   SEC_RIGHTS_FILE_ALL,
+				   FNAME2,
 				   &dest_h, 4096,	/* dest file */
 				   SEC_RIGHTS_FILE_ALL,
 				   &cc_copy,
@@ -1020,8 +1038,10 @@ static bool test_ioctl_copy_chunk_bad_key(struct torture_context *torture,
 
 	ok = test_setup_copy_chunk(torture, tree, tmp_ctx,
 				   1,
+				   FNAME,
 				   &src_h, 4096,
 				   SEC_RIGHTS_FILE_ALL,
+				   FNAME2,
 				   &dest_h, 0,
 				   SEC_RIGHTS_FILE_ALL,
 				   &cc_copy,
@@ -1070,8 +1090,10 @@ static bool test_ioctl_copy_chunk_src_is_dest(struct torture_context *torture,
 
 	ok = test_setup_copy_chunk(torture, tree, tmp_ctx,
 				   1,
+				   FNAME,
 				   &src_h, 8192,
 				   SEC_RIGHTS_FILE_ALL,
+				   FNAME2,
 				   &dest_h, 0,
 				   SEC_RIGHTS_FILE_ALL,
 				   &cc_copy,
@@ -1187,8 +1209,10 @@ test_ioctl_copy_chunk_src_is_dest_overlap(struct torture_context *torture,
 	/* exceed the vfs_default copy buffer */
 	ok = test_setup_copy_chunk(torture, tree, tmp_ctx,
 				   1,
+				   FNAME,
 				   &src_h, 2048 * 2,
 				   SEC_RIGHTS_FILE_ALL,
+				   FNAME2,
 				   &dest_h, 0,
 				   SEC_RIGHTS_FILE_ALL,
 				   &cc_copy,
@@ -1257,9 +1281,9 @@ static bool test_ioctl_copy_chunk_bad_access(struct torture_context *torture,
 	bool ok;
 	/* read permission on src */
 	ok = test_setup_copy_chunk(torture, tree, tmp_ctx, 1, /* 1 chunk */
-				   &src_h, 4096, /* fill 4096 byte src file */
+				   FNAME, &src_h, 4096, /* fill 4096 byte src file */
 				   SEC_FILE_READ_DATA | SEC_FILE_READ_ATTRIBUTE,
-				   &dest_h, 0, /* 0 byte dest file */
+				   FNAME2, &dest_h, 0, /* 0 byte dest file */
 				   SEC_RIGHTS_FILE_ALL, &cc_copy, &ioctl);
 	if (!ok) {
 		torture_fail(torture, "setup copy chunk error");
@@ -1284,9 +1308,9 @@ static bool test_ioctl_copy_chunk_bad_access(struct torture_context *torture,
 
 	/* execute permission on src */
 	ok = test_setup_copy_chunk(torture, tree, tmp_ctx, 1, /* 1 chunk */
-				   &src_h, 4096, /* fill 4096 byte src file */
+				   FNAME, &src_h, 4096, /* fill 4096 byte src file */
 				   SEC_FILE_EXECUTE | SEC_FILE_READ_ATTRIBUTE,
-				   &dest_h, 0, /* 0 byte dest file */
+				   FNAME2, &dest_h, 0, /* 0 byte dest file */
 				   SEC_RIGHTS_FILE_ALL, &cc_copy, &ioctl);
 	if (!ok) {
 		torture_fail(torture, "setup copy chunk error");
@@ -1311,8 +1335,8 @@ static bool test_ioctl_copy_chunk_bad_access(struct torture_context *torture,
 
 	/* neither read nor execute permission on src */
 	ok = test_setup_copy_chunk(torture, tree, tmp_ctx, 1, /* 1 chunk */
-				   &src_h, 4096, /* fill 4096 byte src file */
-				   SEC_FILE_READ_ATTRIBUTE, &dest_h,
+				   FNAME, &src_h, 4096, /* fill 4096 byte src file */
+				   SEC_FILE_READ_ATTRIBUTE, FNAME2, &dest_h,
 				   0, /* 0 byte dest file */
 				   SEC_RIGHTS_FILE_ALL, &cc_copy, &ioctl);
 	if (!ok) {
@@ -1340,8 +1364,8 @@ static bool test_ioctl_copy_chunk_bad_access(struct torture_context *torture,
 	/* no write permission on dest */
 	ok = test_setup_copy_chunk(
 	    torture, tree, tmp_ctx, 1, /* 1 chunk */
-	    &src_h, 4096,	      /* fill 4096 byte src file */
-	    SEC_FILE_READ_DATA | SEC_FILE_READ_ATTRIBUTE, &dest_h,
+	    FNAME, &src_h, 4096, /* fill 4096 byte src file */
+	    SEC_FILE_READ_DATA | SEC_FILE_READ_ATTRIBUTE, FNAME2, &dest_h,
 	    0, /* 0 byte dest file */
 	    (SEC_RIGHTS_FILE_ALL &
 	     ~(SEC_FILE_WRITE_DATA | SEC_FILE_APPEND_DATA)),
@@ -1370,9 +1394,9 @@ static bool test_ioctl_copy_chunk_bad_access(struct torture_context *torture,
 
 	/* no read permission on dest */
 	ok = test_setup_copy_chunk(torture, tree, tmp_ctx, 1, /* 1 chunk */
-				   &src_h, 4096, /* fill 4096 byte src file */
+				   FNAME, &src_h, 4096, /* fill 4096 byte src file */
 				   SEC_FILE_READ_DATA | SEC_FILE_READ_ATTRIBUTE,
-				   &dest_h, 0, /* 0 byte dest file */
+				   FNAME2, &dest_h, 0, /* 0 byte dest file */
 				   (SEC_RIGHTS_FILE_ALL & ~SEC_FILE_READ_DATA),
 				   &cc_copy, &ioctl);
 	if (!ok) {
@@ -1420,8 +1444,10 @@ static bool test_ioctl_copy_chunk_write_access(struct torture_context *torture,
 	/* no read permission on dest with FSCTL_SRV_COPYCHUNK_WRITE */
 	ok = test_setup_copy_chunk(torture, tree, tmp_ctx,
 				   1, /* 1 chunk */
+				   FNAME,
 				   &src_h, 4096, /* fill 4096 byte src file */
 				   SEC_RIGHTS_FILE_ALL,
+				   FNAME2,
 				   &dest_h, 0,	/* 0 byte dest file */
 				   (SEC_RIGHTS_FILE_WRITE
 				    | SEC_RIGHTS_FILE_EXECUTE),
@@ -1468,8 +1494,10 @@ static bool test_ioctl_copy_chunk_src_exceed(struct torture_context *torture,
 
 	ok = test_setup_copy_chunk(torture, tree, tmp_ctx,
 				   1, /* 1 chunk */
+				   FNAME,
 				   &src_h, 4096, /* fill 4096 byte src file */
 				   SEC_RIGHTS_FILE_ALL,
+				   FNAME2,
 				   &dest_h, 0,	/* 0 byte dest file */
 				   SEC_RIGHTS_FILE_ALL,
 				   &cc_copy,
@@ -1550,8 +1578,10 @@ test_ioctl_copy_chunk_src_exceed_multi(struct torture_context *torture,
 
 	ok = test_setup_copy_chunk(torture, tree, tmp_ctx,
 				   2, /* 2 chunks */
+				   FNAME,
 				   &src_h, 8192, /* fill 8192 byte src file */
 				   SEC_RIGHTS_FILE_ALL,
+				   FNAME2,
 				   &dest_h, 0,	/* 0 byte dest file */
 				   SEC_RIGHTS_FILE_ALL,
 				   &cc_copy,
@@ -1620,8 +1650,10 @@ static bool test_ioctl_copy_chunk_sparse_dest(struct torture_context *torture,
 
 	ok = test_setup_copy_chunk(torture, tree, tmp_ctx,
 				   1, /* 1 chunk */
+				   FNAME,
 				   &src_h, 4096, /* fill 4096 byte src file */
 				   SEC_RIGHTS_FILE_ALL,
+				   FNAME2,
 				   &dest_h, 0,	/* 0 byte dest file */
 				   SEC_RIGHTS_FILE_ALL,
 				   &cc_copy,
@@ -1703,8 +1735,10 @@ static bool test_ioctl_copy_chunk_max_output_sz(struct torture_context *torture,
 
 	ok = test_setup_copy_chunk(torture, tree, tmp_ctx,
 				   1, /* 1 chunk */
+				   FNAME,
 				   &src_h, 4096, /* fill 4096 byte src file */
 				   SEC_RIGHTS_FILE_ALL,
+				   FNAME2,
 				   &dest_h, 0,	/* 0 byte dest file */
 				   SEC_RIGHTS_FILE_ALL,
 				   &cc_copy,
@@ -1752,8 +1786,10 @@ static bool test_ioctl_copy_chunk_zero_length(struct torture_context *torture,
 
 	ok = test_setup_copy_chunk(torture, tree, tmp_ctx,
 				   1, /* 1 chunk */
+				   FNAME,
 				   &src_h, 4096, /* fill 4096 byte src file */
 				   SEC_RIGHTS_FILE_ALL,
+				   FNAME2,
 				   &dest_h, 0,	/* 0 byte dest file */
 				   SEC_RIGHTS_FILE_ALL,
 				   &cc_copy,
@@ -3885,8 +3921,10 @@ static bool test_ioctl_sparse_copy_chunk(struct torture_context *torture,
 
 	ok = test_setup_copy_chunk(torture, tree, tmp_ctx,
 				   1, /* chunks */
+				   FNAME,
 				   &src_h, 0, /* src file */
 				   SEC_RIGHTS_FILE_ALL,
+				   FNAME2,
 				   &dest_h, 0,	/* dest file */
 				   SEC_RIGHTS_FILE_ALL,
 				   &cc_copy,
