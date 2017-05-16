@@ -324,8 +324,8 @@ static struct share_mode_data *parse_share_modes(TALLOC_CTX *mem_ctx,
 	}
 
 	/*
-	 * Initialize the values that are [skip] in the idl. The NDR code does
-	 * not initialize them.
+	 * Initialize the values that are [skip] or [ignore]
+	 * in the idl. The NDR code does not initialize them.
 	 */
 
 	for (i=0; i<d->num_share_modes; i++) {
