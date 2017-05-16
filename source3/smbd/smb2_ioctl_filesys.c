@@ -186,15 +186,16 @@ static struct tevent_req *fsctl_dup_extents_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
-	*state = (struct fsctl_dup_extents_state) {
-		.conn = dst_fsp->conn,
-		.ev = ev,
-	};
 
 	if (dst_fsp == NULL) {
 		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return tevent_req_post(req, ev);
 	}
+
+	*state = (struct fsctl_dup_extents_state) {
+		.conn = dst_fsp->conn,
+		.ev = ev,
+	};
 
 	if ((dst_fsp->conn->fs_capabilities
 				& FILE_SUPPORTS_BLOCK_REFCOUNTING) == 0) {
