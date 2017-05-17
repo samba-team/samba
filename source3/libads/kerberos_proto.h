@@ -62,9 +62,6 @@ char *kerberos_fetch_salt_princ_for_host_princ(krb5_context context,
 					       const char *host_princ_s,
 					       int enctype);
 
-bool kerberos_secrets_store_salting_principal(const char *service,
-					      int enctype,
-					      const char *principal);
 int kerberos_kinit_password(const char *principal,
 			    const char *password,
 			    int time_offset,
