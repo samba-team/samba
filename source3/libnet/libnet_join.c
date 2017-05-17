@@ -987,29 +987,13 @@ static ADS_STATUS libnet_join_post_processing_ads_sync(TALLOC_CTX *mem_ctx,
 static bool libnet_join_joindomain_store_secrets(TALLOC_CTX *mem_ctx,
 						 struct libnet_JoinCtx *r)
 {
-	if (!secrets_store_domain_sid(r->out.netbios_domain_name,
-				      r->out.domain_sid))
-	{
-		DEBUG(1,("Failed to save domain sid\n"));
+	NTSTATUS status;
+
+	status = secrets_store_JoinCtx(r);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("secrets_store_JoinCtx() failed %s\n",
+			nt_errstr(status));
 		return false;
-	}
-
-	if (!secrets_store_machine_password(r->in.machine_password,
-					    r->out.netbios_domain_name,
-					    r->in.secure_channel_type))
-	{
-		DEBUG(1,("Failed to save machine password\n"));
-		return false;
-	}
-
-	if (r->out.krb5_salt != NULL) {
-		bool ok;
-
-		ok = kerberos_secrets_store_des_salt(r->out.krb5_salt);
-		if (!ok) {
-			DEBUG(1,("Failed to save krb5 salt\n"));
-			return false;
-		}
 	}
 
 	return true;
