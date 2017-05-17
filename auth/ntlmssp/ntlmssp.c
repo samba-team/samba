@@ -168,12 +168,6 @@ NTSTATUS gensec_ntlmssp_update(struct gensec_security *gensec_security,
 
 	*out = data_blob(NULL, 0);
 
-	if (!out_mem_ctx) {
-		/* if the caller doesn't want to manage/own the memory,
-		   we can put it on our context */
-		out_mem_ctx = ntlmssp_state;
-	}
-
 	status = gensec_ntlmssp_update_find(gensec_security, gensec_ntlmssp, input, &i);
 	NT_STATUS_NOT_OK_RETURN(status);
 
