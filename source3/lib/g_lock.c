@@ -45,6 +45,22 @@ struct g_lock_rec {
 	struct server_id pid;
 };
 
+#define G_LOCK_REC_LENGTH (SERVER_ID_BUF_LENGTH+1)
+
+static void g_lock_rec_put(uint8_t buf[G_LOCK_REC_LENGTH],
+			   const struct g_lock_rec rec)
+{
+	SCVAL(buf, 0, rec.lock_type);
+	server_id_put(buf+1, rec.pid);
+}
+
+static void g_lock_rec_get(struct g_lock_rec *rec,
+			   const uint8_t buf[G_LOCK_REC_LENGTH])
+{
+	rec->lock_type = CVAL(buf, 0);
+	server_id_get(&rec->pid, buf+1);
+}
+
 struct g_lock_ctx *g_lock_ctx_init(TALLOC_CTX *mem_ctx,
 				   struct messaging_context *msg)
 {
@@ -100,22 +116,83 @@ static bool g_lock_conflicts(enum g_lock_type l1, enum g_lock_type l2)
 static bool g_lock_parse(TALLOC_CTX *mem_ctx, TDB_DATA data,
 			 unsigned *pnum_locks, struct g_lock_rec **plocks)
 {
-	unsigned num_locks;
+	size_t i, num_locks;
 	struct g_lock_rec *locks;
 
-	if ((data.dsize % sizeof(struct g_lock_rec)) != 0) {
+	if ((data.dsize % G_LOCK_REC_LENGTH) != 0) {
 		DEBUG(1, ("invalid lock record length %zu\n", data.dsize));
 		return false;
 	}
-	num_locks = data.dsize / sizeof(struct g_lock_rec);
-	locks = talloc_memdup(mem_ctx, data.dptr, data.dsize);
+	num_locks = data.dsize / G_LOCK_REC_LENGTH;
+
+	locks = talloc_array(mem_ctx, struct g_lock_rec, num_locks);
 	if (locks == NULL) {
 		DEBUG(1, ("talloc_memdup failed\n"));
 		return false;
 	}
+
+	for (i=0; i<num_locks; i++) {
+		g_lock_rec_get(&locks[i], data.dptr);
+		data.dptr += G_LOCK_REC_LENGTH;
+	}
+
 	*plocks = locks;
 	*pnum_locks = num_locks;
 	return true;
+}
+
+static ssize_t g_lock_unparse(uint8_t *buf, size_t buflen,
+			      const struct g_lock_rec *locks,
+			      size_t num_locks)
+{
+	size_t i, len, ofs;
+
+	if (num_locks > UINT32_MAX/G_LOCK_REC_LENGTH) {
+		return -1;
+	}
+
+	len = num_locks * G_LOCK_REC_LENGTH;
+
+	if (len > buflen) {
+		return len;
+	}
+
+	ofs = 0;
+
+	for (i=0; i<num_locks; i++) {
+		g_lock_rec_put(buf+ofs, locks[i]);
+		ofs += G_LOCK_REC_LENGTH;
+	}
+
+	return len;
+}
+
+static NTSTATUS g_lock_record_store(struct db_record *rec,
+				    const struct g_lock_rec *locks,
+				    size_t num_locks)
+{
+	ssize_t len;
+	uint8_t *buf;
+	NTSTATUS status;
+
+	len = g_lock_unparse(NULL, 0, locks, num_locks);
+	if (len == -1) {
+		return NT_STATUS_BUFFER_TOO_SMALL;
+	}
+
+	buf = talloc_array(rec, uint8_t, len);
+	if (buf == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	g_lock_unparse(buf, len, locks, num_locks);
+
+	status = dbwrap_record_store(
+		rec, (TDB_DATA) { .dptr = buf, .dsize = len }, 0);
+
+	TALLOC_FREE(buf);
+
+	return status;
 }
 
 static NTSTATUS g_lock_trylock(struct db_record *rec, struct server_id self,
@@ -182,12 +259,10 @@ static NTSTATUS g_lock_trylock(struct db_record *rec, struct server_id self,
 done:
 	if (modified) {
 		NTSTATUS store_status;
-
-		data = make_tdb_data((uint8_t *)locks, num_locks * sizeof(*locks));
-		store_status = dbwrap_record_store(rec, data, 0);
+		store_status = g_lock_record_store(rec, locks, num_locks);
 		if (!NT_STATUS_IS_OK(store_status)) {
-			DEBUG(1, ("rec->store failed: %s\n",
-				  nt_errstr(store_status)));
+			DBG_WARNING("g_lock_record_store failed: %s\n",
+				    nt_errstr(store_status));
 			status = store_status;
 		}
 	}
@@ -393,10 +468,7 @@ NTSTATUS g_lock_unlock(struct g_lock_ctx *ctx, const char *name)
 	if (num_locks == 0) {
 		status = dbwrap_record_delete(rec);
 	} else {
-		TDB_DATA data;
-		data = make_tdb_data((uint8_t *)locks,
-				     sizeof(struct g_lock_rec) * num_locks);
-		status = dbwrap_record_store(rec, data, 0);
+		status = g_lock_record_store(rec, locks, num_locks);
 	}
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_WARNING("Could not store record: %s\n", nt_errstr(status));
