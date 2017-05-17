@@ -131,7 +131,7 @@ static NTSTATUS g_lock_trylock(struct db_record *rec, struct server_id self,
 	data = dbwrap_record_get_value(rec);
 
 	if (!g_lock_parse(talloc_tos(), data, &num_locks, &locks)) {
-		return NT_STATUS_INTERNAL_ERROR;
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
 	for (i=0; i<num_locks; i++) {
