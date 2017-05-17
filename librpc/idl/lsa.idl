@@ -368,7 +368,7 @@ import "misc.idl", "security.idl";
 		uint8 log_is_full;
 	} lsa_AuditFullQueryInfo;
 
-	typedef struct {
+	typedef [public] struct {
 		/* it's important that we use the lsa_StringLarge here,
 		 * because otherwise windows clients result with such dns hostnames
 		 * e.g. w2k3-client.samba4.samba.orgsamba4.samba.org
