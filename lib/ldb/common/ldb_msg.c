@@ -1,4 +1,4 @@
-/* 
+/*
    ldb database library
 
    Copyright (C) Andrew Tridgell  2004
@@ -6,7 +6,7 @@
      ** NOTE! The following LGPL license applies to the ldb
      ** library. This does NOT imply that all of Samba is released
      ** under the LGPL
-   
+
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
@@ -44,7 +44,7 @@ struct ldb_message *ldb_msg_new(TALLOC_CTX *mem_ctx)
 /*
   find an element in a message by attribute name
 */
-struct ldb_message_element *ldb_msg_find_element(const struct ldb_message *msg, 
+struct ldb_message_element *ldb_msg_find_element(const struct ldb_message *msg,
 						 const char *attr_name)
 {
 	unsigned int i;
@@ -77,7 +77,7 @@ int ldb_val_equal_exact(const struct ldb_val *v1, const struct ldb_val *v2)
   find a value in an element
   assumes case sensitive comparison
 */
-struct ldb_val *ldb_msg_find_val(const struct ldb_message_element *el, 
+struct ldb_val *ldb_msg_find_val(const struct ldb_message_element *el,
 				 struct ldb_val *val)
 {
 	unsigned int i;
@@ -181,8 +181,8 @@ int ldb_msg_add_empty(struct ldb_message *msg,
  *       is invalidated for some reason, this will
  *       corrupt *msg contents also
  */
-int ldb_msg_add(struct ldb_message *msg, 
-		const struct ldb_message_element *el, 
+int ldb_msg_add(struct ldb_message *msg,
+		const struct ldb_message_element *el,
 		int flags)
 {
 	int ret;
@@ -207,7 +207,7 @@ int ldb_msg_add(struct ldb_message *msg,
 /*
   add a value to a message
 */
-int ldb_msg_add_value(struct ldb_message *msg, 
+int ldb_msg_add_value(struct ldb_message *msg,
 		      const char *attr_name,
 		      const struct ldb_val *val,
 		      struct ldb_message_element **return_el)
@@ -244,7 +244,7 @@ int ldb_msg_add_value(struct ldb_message *msg,
 /*
   add a value to a message, stealing it into the 'right' place
 */
-int ldb_msg_add_steal_value(struct ldb_message *msg, 
+int ldb_msg_add_steal_value(struct ldb_message *msg,
 			    const char *attr_name,
 			    struct ldb_val *val)
 {
@@ -262,7 +262,7 @@ int ldb_msg_add_steal_value(struct ldb_message *msg,
 /*
   add a string element to a message
 */
-int ldb_msg_add_string(struct ldb_message *msg, 
+int ldb_msg_add_string(struct ldb_message *msg,
 		       const char *attr_name, const char *str)
 {
 	struct ldb_val val;
@@ -281,7 +281,7 @@ int ldb_msg_add_string(struct ldb_message *msg,
 /*
   add a string element to a message, stealing it into the 'right' place
 */
-int ldb_msg_add_steal_string(struct ldb_message *msg, 
+int ldb_msg_add_steal_string(struct ldb_message *msg,
 			     const char *attr_name, char *str)
 {
 	struct ldb_val val;
@@ -318,7 +318,7 @@ int ldb_msg_add_linearized_dn(struct ldb_message *msg, const char *attr_name,
 /*
   add a printf formatted element to a message
 */
-int ldb_msg_add_fmt(struct ldb_message *msg, 
+int ldb_msg_add_fmt(struct ldb_message *msg,
 		    const char *attr_name, const char *fmt, ...)
 {
 	struct ldb_val val;
@@ -341,7 +341,7 @@ int ldb_msg_add_fmt(struct ldb_message *msg,
   compare two ldb_message_element structures
   assumes case sensitive comparison
 */
-int ldb_msg_element_compare(struct ldb_message_element *el1, 
+int ldb_msg_element_compare(struct ldb_message_element *el1,
 			    struct ldb_message_element *el2)
 {
 	unsigned int i;
@@ -383,7 +383,7 @@ bool ldb_msg_element_equal_ordered(const struct ldb_message_element *el1,
   compare two ldb_message_element structures
   comparing by element name
 */
-int ldb_msg_element_compare_name(struct ldb_message_element *el1, 
+int ldb_msg_element_compare_name(struct ldb_message_element *el1,
 				 struct ldb_message_element *el2)
 {
 	return ldb_attr_cmp(el1->name, el2->name);
@@ -393,7 +393,7 @@ int ldb_msg_element_compare_name(struct ldb_message_element *el1,
   convenience functions to return common types from a message
   these return the first value if the attribute is multi-valued
 */
-const struct ldb_val *ldb_msg_find_ldb_val(const struct ldb_message *msg, 
+const struct ldb_val *ldb_msg_find_ldb_val(const struct ldb_message *msg,
 					   const char *attr_name)
 {
 	struct ldb_message_element *el = ldb_msg_find_element(msg, attr_name);
@@ -403,7 +403,7 @@ const struct ldb_val *ldb_msg_find_ldb_val(const struct ldb_message *msg,
 	return &el->values[0];
 }
 
-int ldb_msg_find_attr_as_int(const struct ldb_message *msg, 
+int ldb_msg_find_attr_as_int(const struct ldb_message *msg,
 			     const char *attr_name,
 			     int default_value)
 {
@@ -467,7 +467,7 @@ unsigned int ldb_msg_find_attr_as_uint(const struct ldb_message *msg,
 	return ret;
 }
 
-int64_t ldb_msg_find_attr_as_int64(const struct ldb_message *msg, 
+int64_t ldb_msg_find_attr_as_int64(const struct ldb_message *msg,
 				   const char *attr_name,
 				   int64_t default_value)
 {
@@ -531,7 +531,7 @@ uint64_t ldb_msg_find_attr_as_uint64(const struct ldb_message *msg,
 	return ret;
 }
 
-double ldb_msg_find_attr_as_double(const struct ldb_message *msg, 
+double ldb_msg_find_attr_as_double(const struct ldb_message *msg,
 				   const char *attr_name,
 				   double default_value)
 {
@@ -560,7 +560,7 @@ double ldb_msg_find_attr_as_double(const struct ldb_message *msg,
 	return ret;
 }
 
-int ldb_msg_find_attr_as_bool(const struct ldb_message *msg, 
+int ldb_msg_find_attr_as_bool(const struct ldb_message *msg,
 			      const char *attr_name,
 			      int default_value)
 {
@@ -577,7 +577,7 @@ int ldb_msg_find_attr_as_bool(const struct ldb_message *msg,
 	return default_value;
 }
 
-const char *ldb_msg_find_attr_as_string(const struct ldb_message *msg, 
+const char *ldb_msg_find_attr_as_string(const struct ldb_message *msg,
 					const char *attr_name,
 					const char *default_value)
 {
@@ -624,7 +624,7 @@ void ldb_msg_sort_elements(struct ldb_message *msg)
   shallow copy a message - copying only the elements array so that the caller
   can safely add new elements without changing the message
 */
-struct ldb_message *ldb_msg_copy_shallow(TALLOC_CTX *mem_ctx, 
+struct ldb_message *ldb_msg_copy_shallow(TALLOC_CTX *mem_ctx,
 					 const struct ldb_message *msg)
 {
 	struct ldb_message *msg2;
@@ -635,7 +635,7 @@ struct ldb_message *ldb_msg_copy_shallow(TALLOC_CTX *mem_ctx,
 
 	*msg2 = *msg;
 
-	msg2->elements = talloc_array(msg2, struct ldb_message_element, 
+	msg2->elements = talloc_array(msg2, struct ldb_message_element,
 				      msg2->num_elements);
 	if (msg2->elements == NULL) goto failed;
 
@@ -654,7 +654,7 @@ failed:
 /*
   copy a message, allocating new memory for all parts
 */
-struct ldb_message *ldb_msg_copy(TALLOC_CTX *mem_ctx, 
+struct ldb_message *ldb_msg_copy(TALLOC_CTX *mem_ctx,
 				 const struct ldb_message *msg)
 {
 	struct ldb_message *msg2;
@@ -692,7 +692,7 @@ failed:
 /**
  * Canonicalize a message, merging elements of the same name
  */
-struct ldb_message *ldb_msg_canonicalize(struct ldb_context *ldb, 
+struct ldb_message *ldb_msg_canonicalize(struct ldb_context *ldb,
 					 const struct ldb_message *msg)
 {
 	int ret;
@@ -764,7 +764,7 @@ int ldb_msg_normalize(struct ldb_context *ldb,
  * If you then use this in a ldb_modify() call,
  * it can be used to save edits to a message
  */
-struct ldb_message *ldb_msg_diff(struct ldb_context *ldb, 
+struct ldb_message *ldb_msg_diff(struct ldb_context *ldb,
 				 struct ldb_message *msg1,
 				 struct ldb_message *msg2)
 {
@@ -870,7 +870,7 @@ failed:
 }
 
 
-int ldb_msg_sanity_check(struct ldb_context *ldb, 
+int ldb_msg_sanity_check(struct ldb_context *ldb,
 			 const struct ldb_message *msg)
 {
 	unsigned int i, j;
@@ -887,7 +887,7 @@ int ldb_msg_sanity_check(struct ldb_context *ldb,
 			if (msg->elements[i].values[j].length == 0) {
 				/* an attribute cannot be empty */
 				ldb_asprintf_errstring(ldb, "Element %s has empty attribute in ldb message (%s)!",
-							    msg->elements[i].name, 
+							    msg->elements[i].name,
 							    ldb_dn_get_linearized(msg->dn));
 				return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
 			}
@@ -1069,18 +1069,18 @@ char *ldb_timestring(TALLOC_CTX *mem_ctx, time_t t)
 time_t ldb_string_to_time(const char *s)
 {
 	struct tm tm;
-	
+
 	if (s == NULL) return 0;
-	
+
 	memset(&tm, 0, sizeof(tm));
 	if (sscanf(s, "%04u%02u%02u%02u%02u%02u.0Z",
-		   &tm.tm_year, &tm.tm_mon, &tm.tm_mday, 
+		   &tm.tm_year, &tm.tm_mon, &tm.tm_mday,
 		   &tm.tm_hour, &tm.tm_min, &tm.tm_sec) != 6) {
 		return 0;
 	}
 	tm.tm_year -= 1900;
 	tm.tm_mon -= 1;
-	
+
 	return timegm(&tm);
 }
 
@@ -1182,12 +1182,12 @@ char *ldb_timestring_utc(TALLOC_CTX *mem_ctx, time_t t)
 time_t ldb_string_utc_to_time(const char *s)
 {
 	struct tm tm;
-	
+
 	if (s == NULL) return 0;
-	
+
 	memset(&tm, 0, sizeof(tm));
 	if (sscanf(s, "%02u%02u%02u%02u%02u%02uZ",
-		   &tm.tm_year, &tm.tm_mon, &tm.tm_mday, 
+		   &tm.tm_year, &tm.tm_mon, &tm.tm_mday,
 		   &tm.tm_hour, &tm.tm_min, &tm.tm_sec) != 6) {
 		return 0;
 	}
@@ -1195,7 +1195,7 @@ time_t ldb_string_utc_to_time(const char *s)
 		tm.tm_year += 100;
 	}
 	tm.tm_mon -= 1;
-	
+
 	return timegm(&tm);
 }
 
@@ -1224,7 +1224,7 @@ int ldb_msg_check_string_attribute(const struct ldb_message *msg,
 {
 	struct ldb_message_element *el;
 	struct ldb_val val;
-	
+
 	el = ldb_msg_find_element(msg, name);
 	if (el == NULL) {
 		return 0;
