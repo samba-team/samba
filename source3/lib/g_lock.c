@@ -514,9 +514,8 @@ int g_lock_locks(struct g_lock_ctx *ctx,
 	status = dbwrap_traverse_read(ctx->db, g_lock_locks_fn, &state, &count);
 	if (!NT_STATUS_IS_OK(status)) {
 		return -1;
-	} else {
-		return count;
 	}
+	return count;
 }
 
 NTSTATUS g_lock_dump(struct g_lock_ctx *ctx, const char *name,
