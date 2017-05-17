@@ -27,7 +27,7 @@ bld.SAMBA3_SUBSYSTEM('NDR_LEASES_DB',
 
 bld.SAMBA3_SUBSYSTEM('NDR_SECRETS',
 	source='gen_ndr/ndr_secrets.c',
-	public_deps='ndr'
+	public_deps='ndr NDR_SECURITY'
 	)
 
 bld.SAMBA3_SUBSYSTEM('NDR_PERFCOUNT',
