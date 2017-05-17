@@ -1369,8 +1369,8 @@ interface netlogon
 		[value(8)] uint32 size;
 		netr_TrustFlags flags;
 		uint32 parent_index;
-		uint32 trust_type;
-		uint32 trust_attributes;
+		lsa_TrustType trust_type;
+		lsa_TrustAttributes trust_attributes;
 	} netr_trust_extension;
 
 	typedef struct {
