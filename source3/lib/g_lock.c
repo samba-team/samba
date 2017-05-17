@@ -558,39 +558,6 @@ NTSTATUS g_lock_dump(struct g_lock_ctx *ctx, const char *name,
 	return NT_STATUS_OK;
 }
 
-struct g_lock_get_state {
-	bool found;
-	struct server_id *pid;
-};
-
-static int g_lock_get_fn(struct server_id pid, enum g_lock_type lock_type,
-			 void *priv)
-{
-	struct g_lock_get_state *state = (struct g_lock_get_state *)priv;
-	state->found = true;
-	*state->pid = pid;
-	return 1;
-}
-
-NTSTATUS g_lock_get(struct g_lock_ctx *ctx, const char *name,
-		    struct server_id *pid)
-{
-	struct g_lock_get_state state;
-	NTSTATUS status;
-
-	state.found = false;
-	state.pid = pid;
-
-	status = g_lock_dump(ctx, name, g_lock_get_fn, &state);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-	if (!state.found) {
-		return NT_STATUS_NOT_FOUND;
-	}
-	return NT_STATUS_OK;
-}
-
 static bool g_lock_init_all(TALLOC_CTX *mem_ctx,
 			    struct tevent_context **pev,
 			    struct messaging_context **pmsg,
