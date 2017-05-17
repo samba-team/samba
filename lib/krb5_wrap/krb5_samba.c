@@ -324,6 +324,126 @@ int smb_krb5_get_pw_salt(krb5_context context,
 #error UNKNOWN_SALT_FUNCTIONS
 #endif
 
+/**
+ * @brief This constructs the salt principal used by active directory
+ *
+ * Most Kerberos encryption types require a salt in order to
+ * calculate the long term private key for user/computer object
+ * based on a password.
+ *
+ * The returned _salt_principal is a string in forms like this:
+ * - host/somehost.example.com@EXAMPLE.COM
+ * - SomeAccount@EXAMPLE.COM
+ * - SomePrincipal@EXAMPLE.COM
+ *
+ * This is not the form that's used as salt, it's just
+ * the human readable form.
+ *
+ * @param[in]  realm              The realm the user/computer is added too.
+ *
+ * @param[in]  sAMAccountName     The sAMAccountName attribute of the object.
+ *
+ * @param[in]  userPrincipalName  The userPrincipalName attribute of the object
+ *                                or NULL is not available.
+ *
+ * @param[in]  is_computer        The indication of the object includes
+ *                                objectClass=computer.
+ *
+ * @param[in]  mem_ctx            The TALLOC_CTX to allocate _salt_principal.
+ *
+ * @param[out]  _salt_principal   The resulting principal as string.
+ *
+ * @retval 0 Success; otherwise - Kerberos error codes
+ */
+int smb_krb5_salt_principal(const char *realm,
+			    const char *sAMAccountName,
+			    const char *userPrincipalName,
+			    bool is_computer,
+			    TALLOC_CTX *mem_ctx,
+			    char **_salt_principal)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	char *upper_realm = NULL;
+	const char *principal = NULL;
+	int principal_len = 0;
+
+	*_salt_principal = NULL;
+
+	if (sAMAccountName == NULL) {
+		TALLOC_FREE(frame);
+		return EINVAL;
+	}
+
+	if (realm == NULL) {
+		TALLOC_FREE(frame);
+		return EINVAL;
+	}
+
+	upper_realm = strupper_talloc(frame, realm);
+	if (upper_realm == NULL) {
+		TALLOC_FREE(frame);
+		return ENOMEM;
+	}
+
+	/* Many, many thanks to lukeh@padl.com for this
+	 * algorithm, described in his Nov 10 2004 mail to
+	 * samba-technical@lists.samba.org */
+
+	/*
+	 * Determine a salting principal
+	 */
+	if (is_computer) {
+		int computer_len = 0;
+		char *tmp = NULL;
+
+		computer_len = strlen(sAMAccountName);
+		if (sAMAccountName[computer_len-1] == '$') {
+			computer_len -= 1;
+		}
+
+		tmp = talloc_asprintf(frame, "host/%*.*s.%s",
+				      computer_len, computer_len,
+				      sAMAccountName, realm);
+		if (tmp == NULL) {
+			TALLOC_FREE(frame);
+			return ENOMEM;
+		}
+
+		principal = strlower_talloc(frame, tmp);
+		TALLOC_FREE(tmp);
+		if (principal == NULL) {
+			TALLOC_FREE(frame);
+			return ENOMEM;
+		}
+		principal_len = strlen(principal);
+
+	} else if (userPrincipalName != NULL) {
+		char *p;
+
+		principal = userPrincipalName;
+		p = strchr(principal, '@');
+		if (p != NULL) {
+			principal_len = PTR_DIFF(p, principal);
+		} else {
+			principal_len = strlen(principal);
+		}
+	} else {
+		principal = sAMAccountName;
+		principal_len = strlen(principal);
+	}
+
+	*_salt_principal = talloc_asprintf(mem_ctx, "%*.*s@%s",
+					   principal_len, principal_len,
+					   principal, upper_realm);
+	if (*_salt_principal == NULL) {
+		TALLOC_FREE(frame);
+		return ENOMEM;
+	}
+
+	TALLOC_FREE(frame);
+	return 0;
+}
+
 #if defined(HAVE_KRB5_GET_PERMITTED_ENCTYPES)
  krb5_error_code get_kerberos_allowed_etypes(krb5_context context,
 					    krb5_enctype **enctypes)
