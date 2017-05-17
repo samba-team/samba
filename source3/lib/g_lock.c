@@ -113,8 +113,8 @@ static bool g_lock_conflicts(enum g_lock_type l1, enum g_lock_type l2)
 	return true;
 }
 
-static bool g_lock_parse(TALLOC_CTX *mem_ctx, TDB_DATA data,
-			 unsigned *pnum_locks, struct g_lock_rec **plocks)
+static bool g_lock_get(TALLOC_CTX *mem_ctx, TDB_DATA data,
+		       unsigned *pnum_locks, struct g_lock_rec **plocks)
 {
 	size_t i, num_locks;
 	struct g_lock_rec *locks;
@@ -207,7 +207,7 @@ static NTSTATUS g_lock_trylock(struct db_record *rec, struct server_id self,
 
 	data = dbwrap_record_get_value(rec);
 
-	if (!g_lock_parse(talloc_tos(), data, &num_locks, &locks)) {
+	if (!g_lock_get(talloc_tos(), data, &num_locks, &locks)) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -446,8 +446,8 @@ NTSTATUS g_lock_unlock(struct g_lock_ctx *ctx, const char *name)
 
 	value = dbwrap_record_get_value(rec);
 
-	if (!g_lock_parse(talloc_tos(), value, &num_locks, &locks)) {
-		DEBUG(10, ("g_lock_parse for %s failed\n", name));
+	if (!g_lock_get(talloc_tos(), value, &num_locks, &locks)) {
+		DEBUG(10, ("g_lock_get for %s failed\n", name));
 		status = NT_STATUS_FILE_INVALID;
 		goto done;
 	}
@@ -539,12 +539,12 @@ NTSTATUS g_lock_dump(struct g_lock_ctx *ctx, const char *name,
 		return NT_STATUS_OK;
 	}
 
-	ret = g_lock_parse(talloc_tos(), data, &num_locks, &locks);
+	ret = g_lock_get(talloc_tos(), data, &num_locks, &locks);
 
 	TALLOC_FREE(data.dptr);
 
 	if (!ret) {
-		DEBUG(10, ("g_lock_parse for %s failed\n", name));
+		DEBUG(10, ("g_lock_get for %s failed\n", name));
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
