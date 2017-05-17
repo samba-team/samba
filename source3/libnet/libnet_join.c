@@ -1122,7 +1122,6 @@ static NTSTATUS libnet_join_joindomain_rpc_unsecure(TALLOC_CTX *mem_ctx,
 	struct rpc_pipe_client *netlogon_pipe = NULL;
 	struct netlogon_creds_cli_context *netlogon_creds = NULL;
 	struct samr_Password current_nt_hash;
-	const char *account_name = NULL;
 	NTSTATUS status;
 
 	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_netlogon,
@@ -1147,16 +1146,9 @@ static NTSTATUS libnet_join_joindomain_rpc_unsecure(TALLOC_CTX *mem_ctx,
 	/* according to WKSSVC_JOIN_FLAGS_MACHINE_PWD_PASSED */
 	E_md4hash(r->in.admin_password, current_nt_hash.hash);
 
-	account_name = talloc_asprintf(frame, "%s$",
-				       r->in.machine_name);
-	if (account_name == NULL) {
-		TALLOC_FREE(frame);
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	status = rpccli_create_netlogon_creds(netlogon_pipe->desthost,
 					      r->in.domain_name,
-					      account_name,
+					      r->out.account_name,
 					      r->in.secure_channel_type,
 					      r->in.msg_ctx,
 					      frame,
@@ -2110,6 +2102,14 @@ static WERROR libnet_join_pre_processing(TALLOC_CTX *mem_ctx,
 			 (unsigned int)strlen(r->in.machine_name));
 		return WERR_INVALID_PARAMETER;
         }
+
+	r->out.account_name = talloc_asprintf(mem_ctx, "%s$",
+				       r->in.machine_name);
+	if (r->out.account_name == NULL) {
+		libnet_join_set_error_string(mem_ctx, r,
+			"Unable to construct r->out.account_name");
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
 
 	if (!libnet_parse_domain_dc(mem_ctx, r->in.domain_name,
 				    &r->in.domain_name,
