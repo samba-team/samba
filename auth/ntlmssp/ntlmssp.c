@@ -169,10 +169,14 @@ NTSTATUS gensec_ntlmssp_update(struct gensec_security *gensec_security,
 	*out = data_blob(NULL, 0);
 
 	status = gensec_ntlmssp_update_find(gensec_security, gensec_ntlmssp, input, &i);
-	NT_STATUS_NOT_OK_RETURN(status);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	status = ntlmssp_callbacks[i].sync_fn(gensec_security, out_mem_ctx, input, out);
-	NT_STATUS_NOT_OK_RETURN(status);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	return NT_STATUS_OK;
 }
