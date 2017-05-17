@@ -49,6 +49,7 @@ interface libnetjoin
 		[out] string dns_domain_name,
 		[out] string forest_name,
 		[out] string dn,
+		[out] GUID domain_guid,
 		[out] dom_sid *domain_sid,
 		[out] boolean8 modified_config,
 		[out] string error_string,
