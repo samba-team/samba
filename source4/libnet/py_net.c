@@ -36,6 +36,7 @@
 #include "dsdb/samdb/samdb.h"
 #include "py_net.h"
 #include "librpc/rpc/pyrpc_util.h"
+#include "libcli/drsuapi/drsuapi.h"
 
 static void PyErr_SetDsExtendedError(enum drsuapi_DsExtendedError ext_err, const char *error_description)
 {
@@ -608,6 +609,75 @@ static PyObject *py_net_replicate_chunk(py_net_Object *self, PyObject *args, PyO
 
 
 /*
+  just do the decryption of a DRS replicated attribute
+ */
+static PyObject *py_net_replicate_decrypt(py_net_Object *self, PyObject *args, PyObject *kwargs)
+{
+	const char *kwnames[] = { "drspipe", "attribute", "rid", NULL };
+	PyObject *py_drspipe, *py_attribute;
+	NTSTATUS status;
+        dcerpc_InterfaceObject *drs_pipe;
+	TALLOC_CTX *frame;
+	TALLOC_CTX *context;
+	DATA_BLOB gensec_skey;
+	unsigned int rid;
+	struct drsuapi_DsReplicaAttribute *attribute;
+	WERROR werr;
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OOI",
+					 discard_const_p(char *, kwnames),
+	                                 &py_drspipe,
+					 &py_attribute, &rid)) {
+		return NULL;
+	}
+
+	frame = talloc_stackframe();
+
+	if (!py_check_dcerpc_type(py_drspipe,
+				  "samba.dcerpc.base",
+				  "ClientConnection")) {
+		return NULL;
+	}
+	drs_pipe = (dcerpc_InterfaceObject *)(py_drspipe);
+
+	status = gensec_session_key(drs_pipe->pipe->conn->security_state.generic_state,
+				    frame,
+				    &gensec_skey);
+	if (!NT_STATUS_IS_OK(status)) {
+		char *error_string
+			= talloc_asprintf(frame,
+					  "Unable to get session key from drspipe: %s",
+					  nt_errstr(status));
+		PyErr_SetNTSTATUS_and_string(status, error_string);
+		talloc_free(frame);
+		return NULL;
+	}
+
+	if (!py_check_dcerpc_type(py_attribute, "samba.dcerpc.drsuapi",
+				  "DsReplicaAttribute")) {
+		return NULL;
+	}
+
+	attribute = pytalloc_get_ptr(py_attribute);
+	context   = pytalloc_get_mem_ctx(py_attribute);
+	werr = drsuapi_decrypt_attribute(context, &gensec_skey,
+					 rid, 0, attribute);
+	if (!W_ERROR_IS_OK(werr)) {
+		char *error_string = talloc_asprintf(frame,
+						     "Unable to get decrypt attribute: %s",
+						     win_errstr(werr));
+		PyErr_SetWERROR_and_string(werr, error_string);
+		talloc_free(frame);
+		return NULL;
+	}
+
+	talloc_free(frame);
+
+	Py_RETURN_NONE;
+
+}
+
+/*
   find a DC given a domain name and server type
  */
 static PyObject *py_net_finddc(py_net_Object *self, PyObject *args, PyObject *kwargs)
@@ -659,6 +729,9 @@ static const char py_net_replicate_init_doc[] = "replicate_init(samdb, lp, drspi
 static const char py_net_replicate_chunk_doc[] = "replicate_chunk(state, level, ctr, schema)\n"
 					 "Process replication for one chunk";
 
+static const char py_net_replicate_decrypt_doc[] = "replicate_decrypt(drs, attribute, rid)\n"
+					 "Decrypt (in place) a DsReplicaAttribute replicated with drs.GetNCChanges()";
+
 static const char py_net_finddc_doc[] = "finddc(flags=server_type, domain=None, address=None)\n"
 					 "Find a DC with the specified 'server_type' bits. The 'domain' and/or 'address' have to be used as additional search criteria. Returns the whole netlogon struct";
 
@@ -671,6 +744,7 @@ static PyMethodDef net_obj_methods[] = {
 	{"delete_user", (PyCFunction)py_net_user_delete, METH_VARARGS|METH_KEYWORDS, py_net_delete_user_doc},
 	{"replicate_init", (PyCFunction)py_net_replicate_init, METH_VARARGS|METH_KEYWORDS, py_net_replicate_init_doc},
 	{"replicate_chunk", (PyCFunction)py_net_replicate_chunk, METH_VARARGS|METH_KEYWORDS, py_net_replicate_chunk_doc},
+	{"replicate_decrypt", (PyCFunction)py_net_replicate_decrypt, METH_VARARGS|METH_KEYWORDS, py_net_replicate_decrypt_doc},
 	{"finddc", (PyCFunction)py_net_finddc, METH_KEYWORDS, py_net_finddc_doc},
 	{ NULL }
 };
