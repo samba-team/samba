@@ -38,7 +38,7 @@ sub get_fs_specific_conf($$)
 	my $stat_out = `stat --file-system $path` or return "";
 
 	if ($stat_out =~ m/Type:\s+btrfs/) {
-		$mods .= "btrfs ";
+		$mods .= "streams_xattr btrfs";
 	}
 
 	if ($mods) {
