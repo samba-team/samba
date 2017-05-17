@@ -141,9 +141,9 @@ static bool g_lock_get(TALLOC_CTX *mem_ctx, TDB_DATA data,
 	return true;
 }
 
-static ssize_t g_lock_unparse(uint8_t *buf, size_t buflen,
-			      const struct g_lock_rec *locks,
-			      size_t num_locks)
+static ssize_t g_lock_put(uint8_t *buf, size_t buflen,
+			  const struct g_lock_rec *locks,
+			  size_t num_locks)
 {
 	size_t i, len, ofs;
 
@@ -175,7 +175,7 @@ static NTSTATUS g_lock_record_store(struct db_record *rec,
 	uint8_t *buf;
 	NTSTATUS status;
 
-	len = g_lock_unparse(NULL, 0, locks, num_locks);
+	len = g_lock_put(NULL, 0, locks, num_locks);
 	if (len == -1) {
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
@@ -185,7 +185,7 @@ static NTSTATUS g_lock_record_store(struct db_record *rec,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	g_lock_unparse(buf, len, locks, num_locks);
+	g_lock_put(buf, len, locks, num_locks);
 
 	status = dbwrap_record_store(
 		rec, (TDB_DATA) { .dptr = buf, .dsize = len }, 0);
