@@ -1261,7 +1261,7 @@ interface netlogon
 
 	/****************/
 	/* Function 0x1d */
-	typedef [bitmap32bit] bitmap {
+	typedef [public,bitmap32bit] bitmap {
 		NETR_TRUST_FLAG_IN_FOREST = 0x00000001,
 		NETR_TRUST_FLAG_OUTBOUND  = 0x00000002,
 		NETR_TRUST_FLAG_TREEROOT  = 0x00000004,
