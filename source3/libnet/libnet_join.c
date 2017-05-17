@@ -195,15 +195,10 @@ static ADS_STATUS libnet_join_connect_ads(TALLOC_CTX *mem_ctx,
 		    r->in.machine_password == NULL) {
 			return ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 		}
-		username = talloc_strdup(mem_ctx, r->in.machine_name);
+		username = talloc_asprintf(mem_ctx, "%s$",
+					   r->in.machine_name);
 		if (username == NULL) {
 			return ADS_ERROR(LDAP_NO_MEMORY);
-		}
-		if (username[strlen(username)] != '$') {
-			username = talloc_asprintf(username, "%s$", username);
-			if (username == NULL) {
-				return ADS_ERROR(LDAP_NO_MEMORY);
-			}
 		}
 		password = r->in.machine_password;
 		ccname = "MEMORY:libnet_join_machine_creds";
