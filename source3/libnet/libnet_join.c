@@ -2237,6 +2237,10 @@ static WERROR libnet_join_post_processing(TALLOC_CTX *mem_ctx,
 		saf_join_store(r->out.dns_domain_name, r->in.dc_name);
 	}
 
+	if (!libnet_join_joindomain_store_secrets(mem_ctx, r)) {
+		return WERR_NERR_SETUPNOTJOINED;
+	}
+
 	werr = do_JoinConfig(r);
 	if (!W_ERROR_IS_OK(werr)) {
 		return werr;
@@ -2625,11 +2629,6 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 			return WERR_NERR_SETUPALREADYJOINED;
 		}
 		werr = ntstatus_to_werror(status);
-		goto done;
-	}
-
-	if (!libnet_join_joindomain_store_secrets(mem_ctx, r)) {
-		werr = WERR_NERR_SETUPNOTJOINED;
 		goto done;
 	}
 
