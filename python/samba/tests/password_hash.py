@@ -161,134 +161,135 @@ class PassWordHashTests(TestCase):
 
         self.assertEquals(29, digests.num_hashes)
 
+        # Using the n-1 pattern in the array indexes to make it easier
+        # to check the tests against the spec and the samba-tool user tests.
         self.check_digest(USER_NAME,
                           self.lp.get("workgroup"),
                           USER_PASS,
-                          digests.hashes[0].hash)
+                          digests.hashes[1-1].hash)
         self.check_digest(USER_NAME.lower(),
                           self.lp.get("workgroup").lower(),
                           USER_PASS,
-                          digests.hashes[1].hash)
+                          digests.hashes[2-1].hash)
         self.check_digest(USER_NAME.upper(),
                           self.lp.get("workgroup").upper(),
                           USER_PASS,
-                          digests.hashes[2].hash)
+                          digests.hashes[3-1].hash)
         self.check_digest(USER_NAME,
                           self.lp.get("workgroup").upper(),
                           USER_PASS,
-                          digests.hashes[3].hash)
+                          digests.hashes[4-1].hash)
         self.check_digest(USER_NAME,
                           self.lp.get("workgroup").lower(),
                           USER_PASS,
-                          digests.hashes[4].hash)
+                          digests.hashes[5-1].hash)
         self.check_digest(USER_NAME.upper(),
                           self.lp.get("workgroup").lower(),
                           USER_PASS,
-                          digests.hashes[5].hash)
+                          digests.hashes[6-1].hash)
         self.check_digest(USER_NAME.lower(),
                           self.lp.get("workgroup").upper(),
                           USER_PASS,
-                          digests.hashes[6].hash)
+                          digests.hashes[7-1].hash)
         self.check_digest(USER_NAME,
                           self.lp.get("realm").lower(),
                           USER_PASS,
-                          digests.hashes[7].hash)
+                          digests.hashes[8-1].hash)
         self.check_digest(USER_NAME.lower(),
                           self.lp.get("realm").lower(),
                           USER_PASS,
-                          digests.hashes[8].hash)
+                          digests.hashes[9-1].hash)
         self.check_digest(USER_NAME.upper(),
                           self.lp.get("realm"),
                           USER_PASS,
-                          digests.hashes[9].hash)
+                          digests.hashes[10-1].hash)
         self.check_digest(USER_NAME,
                           self.lp.get("realm"),
                           USER_PASS,
-                          digests.hashes[10].hash)
+                          digests.hashes[11-1].hash)
         self.check_digest(USER_NAME,
                           self.lp.get("realm").lower(),
                           USER_PASS,
-                          digests.hashes[11].hash)
+                          digests.hashes[12-1].hash)
         self.check_digest(USER_NAME.upper(),
                           self.lp.get("realm").lower(),
                           USER_PASS,
-                          digests.hashes[12].hash)
+                          digests.hashes[13-1].hash)
         self.check_digest(USER_NAME.lower(),
                           self.lp.get("realm"),
                           USER_PASS,
-                          digests.hashes[13].hash)
+                          digests.hashes[14-1].hash)
         self.check_digest(UPN,
                           "",
                           USER_PASS,
-                          digests.hashes[14].hash)
+                          digests.hashes[15-1].hash)
         self.check_digest(UPN.lower(),
                           "",
                           USER_PASS,
-                          digests.hashes[15].hash)
+                          digests.hashes[16-1].hash)
         self.check_digest(UPN.upper(),
                           "",
                           USER_PASS,
-                          digests.hashes[16].hash)
+                          digests.hashes[17-1].hash)
 
         name = "%s\\%s" % (self.lp.get("workgroup"), USER_NAME)
         self.check_digest(name,
                           "",
                           USER_PASS,
-                          digests.hashes[17].hash)
+                          digests.hashes[18-1].hash)
 
         name = "%s\\%s" % (self.lp.get("workgroup").lower(), USER_NAME.lower())
         self.check_digest(name,
                           "",
                           USER_PASS,
-                          digests.hashes[18].hash)
+                          digests.hashes[19-1].hash)
 
         name = "%s\\%s" % (self.lp.get("workgroup").upper(), USER_NAME.upper())
         self.check_digest(name,
                           "",
                           USER_PASS,
-                          digests.hashes[19].hash)
+                          digests.hashes[20-1].hash)
         self.check_digest(USER_NAME,
                           "Digest",
                           USER_PASS,
-                          digests.hashes[20].hash)
+                          digests.hashes[21-1].hash)
         self.check_digest(USER_NAME.lower(),
                           "Digest",
                           USER_PASS,
-                          digests.hashes[21].hash)
+                          digests.hashes[22-1].hash)
         self.check_digest(USER_NAME.upper(),
                           "Digest",
                           USER_PASS,
-                          digests.hashes[22].hash)
+                          digests.hashes[23-1].hash)
         self.check_digest(UPN,
                           "Digest",
                           USER_PASS,
-                          digests.hashes[23].hash)
+                          digests.hashes[24-1].hash)
         self.check_digest(UPN.lower(),
                           "Digest",
                           USER_PASS,
-                          digests.hashes[24].hash)
+                          digests.hashes[25-1].hash)
         self.check_digest(UPN.upper(),
                           "Digest",
                           USER_PASS,
-                          digests.hashes[25].hash)
+                          digests.hashes[26-1].hash)
         name = "%s\\%s" % (self.lp.get("workgroup"), USER_NAME)
         self.check_digest(name,
                           "Digest",
                           USER_PASS,
-                          digests.hashes[26].hash)
+                          digests.hashes[27-1].hash)
 
         name = "%s\\%s" % (self.lp.get("workgroup").lower(), USER_NAME.lower())
         self.check_digest(name,
                           "Digest",
                           USER_PASS,
-                          digests.hashes[27].hash)
+                          digests.hashes[28-1].hash)
 
         name = "%s\\%s" % (self.lp.get("workgroup").upper(), USER_NAME.upper())
         self.check_digest(name,
                           "Digest",
                           USER_PASS,
-                          digests.hashes[28].hash)
-
+                          digests.hashes[29-1].hash)
 
     def checkUserPassword(self, up, expected):
 
