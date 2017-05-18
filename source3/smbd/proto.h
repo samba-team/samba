@@ -338,6 +338,7 @@ int fsp_stat(files_struct *fsp);
 
 /* The following definitions come from smbd/filename.c  */
 
+uint32_t ucf_flags_from_smb_request(struct smb_request *req);
 uint32_t filename_create_ucf_flags(struct smb_request *req, uint32_t create_disposition);
 NTSTATUS unix_convert(TALLOC_CTX *ctx,
 		      connection_struct *conn,

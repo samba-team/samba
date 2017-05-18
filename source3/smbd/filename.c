@@ -30,13 +30,22 @@
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
 
-uint32_t filename_create_ucf_flags(struct smb_request *req, uint32_t create_disposition)
+uint32_t ucf_flags_from_smb_request(struct smb_request *req)
 {
 	uint32_t ucf_flags = 0;
 
 	if (req != NULL && req->posix_pathnames) {
 		ucf_flags |= UCF_POSIX_PATHNAMES;
 	}
+
+	return ucf_flags;
+}
+
+uint32_t filename_create_ucf_flags(struct smb_request *req, uint32_t create_disposition)
+{
+	uint32_t ucf_flags = 0;
+
+	ucf_flags |= ucf_flags_from_smb_request(req);
 
 	switch (create_disposition) {
 	case FILE_OPEN:
