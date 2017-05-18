@@ -953,6 +953,7 @@ _PUBLIC_ struct cli_credentials *cli_credentials_shallow_copy(TALLOC_CTX *mem_ct
 	return dst;
 }
 
+#if 0
 static int smb_krb5_create_salt_principal(TALLOC_CTX *mem_ctx,
 					  const char *samAccountName,
 					  const char *realm,
@@ -1029,6 +1030,7 @@ out:
 	talloc_free(tmp_ctx);
 	return rc;
 }
+#endif
 
 /* Get the keytab (actually, a container containing the krb5_keytab)
  * attached to this context.  If this hasn't been done or set before,
@@ -1045,9 +1047,10 @@ _PUBLIC_ int cli_credentials_get_keytab(struct cli_credentials *cred,
 	krb5_keytab keytab;
 	TALLOC_CTX *mem_ctx;
 	const char *username = cli_credentials_get_username(cred);
+	const char *upn = NULL;
 	const char *realm = cli_credentials_get_realm(cred);
-	const char *error_string;
-	const char *salt_principal;
+	char *salt_principal = NULL;
+	bool is_computer = false;
 
 	if (cred->keytab_obtained >= (MAX(cred->principal_obtained, 
 					  cred->username_obtained))) {
@@ -1070,16 +1073,27 @@ _PUBLIC_ int cli_credentials_get_keytab(struct cli_credentials *cred,
 		return ENOMEM;
 	}
 
-	/*
-	 * FIXME: Currently there is no better way than to create the correct
-	 * salt principal by checking if the username ends with a '$'. It would
-	 * be better if it is part of the credentials.
-	 */
-	ret = smb_krb5_create_salt_principal(mem_ctx,
-					     username,
-					     realm,
-					     &salt_principal,
-					     &error_string);
+	switch (cred->secure_channel_type) {
+	case SEC_CHAN_WKSTA:
+	case SEC_CHAN_BDC:
+	case SEC_CHAN_RODC:
+		is_computer = true;
+		break;
+	default:
+		upn = cli_credentials_get_principal(cred, mem_ctx);
+		if (upn == NULL) {
+			TALLOC_FREE(mem_ctx);
+			return ENOMEM;
+		}
+		break;
+	}
+
+	ret = smb_krb5_salt_principal(realm,
+				      username, /* sAMAccountName */
+				      upn, /* userPrincipalName */
+				      is_computer,
+				      mem_ctx,
+				      &salt_principal);
 	if (ret) {
 		talloc_free(mem_ctx);
 		return ret;
