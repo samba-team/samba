@@ -54,7 +54,8 @@ interface libnetjoin
 		[out] boolean8 modified_config,
 		[out] string error_string,
 		[out] boolean8 domain_is_ad,
-		[out] uint32 set_encryption_types
+		[out] uint32 set_encryption_types,
+		[out] string krb5_salt
 		);
 
 	[nopush,nopull,noopnum] WERROR libnet_UnjoinCtx(
