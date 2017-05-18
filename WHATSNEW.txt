@@ -1,4 +1,93 @@
                    =============================
+                   Release Notes for Samba 4.5.9
+                            May 18, 2017
+                   =============================
+
+
+This is the latest stable release of the Samba 4.5 release series.
+
+
+Changes since 4.5.8:
+--------------------
+
+o  Michael Adam <obnox@samba.org>
+   * BUG 12743: vfs_shadow_copy2 fails to list snapshots from shares with
+     GlusterFS backend.
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 12747: Wrong use of getgroups causes buffer overflow.
+
+o  Hanno Böck <hanno@hboeck.de>
+   * BUG 12746: lib: debug: Avoid negative array access.
+   * BUG 12748: cleanupdb: Fix a memory read error.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 11961: idmap_autorid allocates ids for unknown SIDs from other backends.
+   * BUG 12562: vfs_acl_common should force "create mask = 0777".
+   * BUG 12565: vfs_fruit: resource fork open request with
+     flags=O_CREAT|O_RDONLY.
+   * BUG 12727: Lookup-domain for well-known SIDs on a DC.
+   * BUG 12728: winbindd: Fix error handling in rpc_lookup_sids().
+   * BUG 12729: winbindd: Trigger possible passdb_dsdb initialisation.
+   * BUG 12749: Can't case-rename files with vfs_fruit.
+   * BUG 12766: s3/smbd: Update exclusive oplock optimisation to the lease area.
+
+o  Amitay Isaacs <amitay@gmail.com>
+   * BUG 12733: ctdb-docs: Fix documentation of "-n" option to 'ctdb tool'.
+
+o  Shilpa Krishnareddy <skrishnareddy@panzura.com>
+   * BUG 12756: notify: Fix ordering of events in notifyd.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 12276: lib: Fix CID 1373623 Dereference after null check.
+   * BUG 12558: smbd: Fix smb1 findfirst with DFS.
+   * BUG 12757: idmap_rfc2307: Fix lookup of more than two SIDs.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 12767: samba-tool: Let 'samba-tool user syncpasswords' report deletions
+     immediately.
+   * BUG 12725: pam_winbind: no longer use wbcUserPasswordPolicyInfo when
+     authenticating.
+
+o  Doug Nazar <nazard@nazar.ca>
+   * BUG 12760: s3: smbd: inotify_map_mask_to_filter incorrectly indexes an
+     array.
+
+o  Christof Schmitt <cs@samba.org>
+   * BUG 12725: winbindd: Fix password policy for pam authentication.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 12277: waf: Explicitly link libreplace against libnss_wins.so.
+
+o  Uri Simchoni <uri@samba.org>
+   * BUG 12737: vfs_acl_xattr - failure to get ACL on Linux if memory is
+     fragmented.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   =============================
                    Release Notes for Samba 4.5.8
                            March 31, 2017
                    =============================
@@ -36,8 +125,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    =============================
                    Release Notes for Samba 4.5.7
