@@ -358,6 +358,10 @@ int smb_krb5_salt_principal(const char *realm,
 			    bool is_computer,
 			    TALLOC_CTX *mem_ctx,
 			    char **_salt_principal);
+int smb_krb5_salt_principal2data(krb5_context context,
+				 const char *salt_principal,
+				 TALLOC_CTX *mem_ctx,
+				 char **_salt_data);
 
 int smb_krb5_create_key_from_string(krb5_context context,
 				    krb5_const_principal host_princ,
