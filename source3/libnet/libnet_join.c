@@ -871,8 +871,8 @@ static bool libnet_join_derive_salting_principal(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
-static ADS_STATUS libnet_join_post_processing_ads(TALLOC_CTX *mem_ctx,
-						  struct libnet_JoinCtx *r)
+static ADS_STATUS libnet_join_post_processing_ads_modify(TALLOC_CTX *mem_ctx,
+							 struct libnet_JoinCtx *r)
 {
 	ADS_STATUS status;
 	bool need_etype_update = false;
@@ -964,6 +964,12 @@ static ADS_STATUS libnet_join_post_processing_ads(TALLOC_CTX *mem_ctx,
 		return ADS_ERROR_NT(NT_STATUS_UNSUCCESSFUL);
 	}
 
+	return ADS_SUCCESS;
+}
+
+static ADS_STATUS libnet_join_post_processing_ads_sync(TALLOC_CTX *mem_ctx,
+							struct libnet_JoinCtx *r)
+{
 	if (r->out.krb5_salt != NULL) {
 		bool ok;
 
@@ -2212,6 +2218,18 @@ static WERROR libnet_join_post_processing(TALLOC_CTX *mem_ctx,
 		return WERR_OK;
 	}
 
+#ifdef HAVE_ADS
+	if (r->out.domain_is_ad &&
+	    !(r->in.join_flags & WKSSVC_JOIN_FLAGS_JOIN_UNSECURE)) {
+		ADS_STATUS ads_status;
+
+		ads_status  = libnet_join_post_processing_ads_modify(mem_ctx, r);
+		if (!ADS_ERR_OK(ads_status)) {
+			return WERR_GEN_FAILURE;
+		}
+	}
+#endif /* HAVE_ADS */
+
 	saf_join_store(r->out.netbios_domain_name, r->in.dc_name);
 	if (r->out.dns_domain_name) {
 		saf_join_store(r->out.dns_domain_name, r->in.dc_name);
@@ -2222,7 +2240,7 @@ static WERROR libnet_join_post_processing(TALLOC_CTX *mem_ctx,
 	    !(r->in.join_flags & WKSSVC_JOIN_FLAGS_JOIN_UNSECURE)) {
 		ADS_STATUS ads_status;
 
-		ads_status  = libnet_join_post_processing_ads(mem_ctx, r);
+		ads_status  = libnet_join_post_processing_ads_sync(mem_ctx, r);
 		if (!ADS_ERR_OK(ads_status)) {
 			return WERR_GENERAL_FAILURE;
 		}
