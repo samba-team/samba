@@ -49,13 +49,6 @@ struct gensec_ntlmssp_context {
 	struct ntlmssp_state *ntlmssp_state;
 };
 
-/* The following definitions come from auth/ntlmssp.c  */
-
-NTSTATUS gensec_ntlmssp_update(struct gensec_security *gensec_security,
-			       TALLOC_CTX *out_mem_ctx,
-			       struct tevent_context *ev,
-			       const DATA_BLOB input, DATA_BLOB *out);
-
 /* The following definitions come from auth/ntlmssp_util.c  */
 
 void debug_ntlmssp_flags(uint32_t neg_flags);

@@ -154,10 +154,10 @@ static NTSTATUS gensec_ntlmssp_update_find(struct gensec_security *gensec_securi
  *                or NT_STATUS_OK if the user is authenticated.
  */
 
-NTSTATUS gensec_ntlmssp_update(struct gensec_security *gensec_security,
-			       TALLOC_CTX *out_mem_ctx,
-			       struct tevent_context *ev,
-			       const DATA_BLOB in, DATA_BLOB *out)
+static NTSTATUS gensec_ntlmssp_update(struct gensec_security *gensec_security,
+				      TALLOC_CTX *out_mem_ctx,
+				      struct tevent_context *ev,
+				      const DATA_BLOB in, DATA_BLOB *out)
 {
 	struct gensec_ntlmssp_context *gensec_ntlmssp =
 		talloc_get_type_abort(gensec_security->private_data,
