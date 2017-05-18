@@ -40,11 +40,6 @@ struct g_lock_ctx {
  * structures.
  */
 
-struct g_lock_rec {
-	enum g_lock_type lock_type;
-	struct server_id pid;
-};
-
 #define G_LOCK_REC_LENGTH (SERVER_ID_BUF_LENGTH+1)
 
 static void g_lock_rec_put(uint8_t buf[G_LOCK_REC_LENGTH],
@@ -637,14 +632,18 @@ int g_lock_locks(struct g_lock_ctx *ctx,
 }
 
 NTSTATUS g_lock_dump(struct g_lock_ctx *ctx, const char *name,
-		     int (*fn)(struct server_id pid,
-			       enum g_lock_type lock_type,
-			       void *private_data),
+		     void (*fn)(const struct g_lock_rec *locks,
+				size_t num_locks,
+				const uint8_t *data,
+				size_t datalen,
+				void *private_data),
 		     void *private_data)
 {
 	TDB_DATA data;
-	size_t i, num_locks;
+	size_t num_locks;
 	struct g_lock_rec *locks = NULL;
+	uint8_t *userdata;
+	size_t userdatalen;
 	NTSTATUS status;
 
 	status = dbwrap_fetch_bystring(ctx->db, talloc_tos(), name, &data);
@@ -657,22 +656,19 @@ NTSTATUS g_lock_dump(struct g_lock_ctx *ctx, const char *name,
 	}
 
 	status = g_lock_get_talloc(talloc_tos(), data, &locks, &num_locks,
-				   NULL, NULL);
-
-	TALLOC_FREE(data.dptr);
+				   &userdata, &userdatalen);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_DEBUG("g_lock_get for %s failed: %s\n", name,
 			  nt_errstr(status));
+		TALLOC_FREE(data.dptr);
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	for (i=0; i<num_locks; i++) {
-		if (fn(locks[i].pid, locks[i].lock_type, private_data) != 0) {
-			break;
-		}
-	}
+	fn(locks, num_locks, userdata, userdatalen, private_data);
+
 	TALLOC_FREE(locks);
+	TALLOC_FREE(data.dptr);
 	return NT_STATUS_OK;
 }
 
