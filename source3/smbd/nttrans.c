@@ -538,7 +538,6 @@ void reply_ntcreate_and_X(struct smb_request *req)
 	ucf_flags = filename_create_ucf_flags(req, create_disposition);
 	status = filename_convert(ctx,
 				conn,
-				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				fname,
 				ucf_flags,
 				NULL,
@@ -1111,7 +1110,6 @@ static void call_nt_transact_create(connection_struct *conn,
 	ucf_flags = filename_create_ucf_flags(req, create_disposition);
 	status = filename_convert(ctx,
 				conn,
-				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				fname,
 				ucf_flags,
 				NULL,
@@ -1633,7 +1631,6 @@ void reply_ntrename(struct smb_request *req)
 
 	/* rename_internals() calls unix_convert(), so don't call it here. */
 	status = filename_convert(ctx, conn,
-				  req->flags2 & FLAGS2_DFS_PATHNAMES,
 				  oldname,
 				  ucf_flags_src,
 				  NULL,
@@ -1651,7 +1648,6 @@ void reply_ntrename(struct smb_request *req)
 	}
 
 	status = filename_convert(ctx, conn,
-				  req->flags2 & FLAGS2_DFS_PATHNAMES,
 				  newname,
 				  ucf_flags_dst,
 				  &dest_has_wcard,

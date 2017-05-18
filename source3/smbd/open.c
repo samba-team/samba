@@ -5459,7 +5459,6 @@ NTSTATUS get_relative_fid_filename(connection_struct *conn,
 
 	status = filename_convert(req,
 				conn,
-				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				new_base_name,
 				ucf_flags,
 				NULL,

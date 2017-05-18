@@ -405,7 +405,7 @@ static NTSTATUS smbd_smb2_create_durable_lease_check(struct smb_request *smb1req
 	}
 
 	ucf_flags = filename_create_ucf_flags(smb1req, FILE_OPEN);
-	status = filename_convert(talloc_tos(), fsp->conn, false,
+	status = filename_convert(talloc_tos(), fsp->conn,
 				  requested_filename, ucf_flags,
 				  NULL, &smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1106,7 +1106,6 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			ucf_flags = filename_create_ucf_flags(smb1req, in_create_disposition);
 			status = filename_convert(req,
 						  smb1req->conn,
-						  smb1req->flags2 & FLAGS2_DFS_PATHNAMES,
 						  fname,
 						  ucf_flags,
 						  NULL, /* ppath_contains_wcards */

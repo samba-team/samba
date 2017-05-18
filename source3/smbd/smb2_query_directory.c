@@ -392,7 +392,6 @@ static struct tevent_req *smbd_smb2_query_directory_send(TALLOC_CTX *mem_ctx,
 		}
 		status = filename_convert(state,
 				conn,
-				false, /* Not a DFS path. */
 				fullpath,
 				ucf_flags,
 				&wcard_has_wild,

@@ -1297,7 +1297,6 @@ void reply_checkpath(struct smb_request *req)
 
 	status = filename_convert(ctx,
 				conn,
-				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				name,
 				ucf_flags,
 				NULL,
@@ -1396,7 +1395,6 @@ void reply_getatr(struct smb_request *req)
 		uint32_t ucf_flags = ucf_flags_from_smb_request(req);
 		status = filename_convert(ctx,
 				conn,
-				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				fname,
 				ucf_flags,
 				NULL,
@@ -1500,7 +1498,6 @@ void reply_setatr(struct smb_request *req)
 
 	status = filename_convert(ctx,
 				conn,
-				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				fname,
 				ucf_flags,
 				NULL,
@@ -1799,7 +1796,6 @@ void reply_search(struct smb_request *req)
 		uint32_t ucf_flags = UCF_ALWAYS_ALLOW_WCARD_LCOMP |
 			ucf_flags_from_smb_request(req);
 		nt_status = filename_convert(ctx, conn,
-					     req->flags2 & FLAGS2_DFS_PATHNAMES,
 					     path,
 					     ucf_flags,
 					     &mask_contains_wcard,
@@ -2145,7 +2141,6 @@ void reply_open(struct smb_request *req)
 
 	status = filename_convert(ctx,
 				conn,
-				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				fname,
 				ucf_flags,
 				NULL,
@@ -2318,7 +2313,6 @@ void reply_open_and_X(struct smb_request *req)
 
 	status = filename_convert(ctx,
 				conn,
-				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				fname,
 				ucf_flags,
 				NULL,
@@ -2563,7 +2557,6 @@ void reply_mknew(struct smb_request *req)
 	ucf_flags = filename_create_ucf_flags(req, create_disposition);
 	status = filename_convert(ctx,
 				conn,
-				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				fname,
 				ucf_flags,
 				NULL,
@@ -2700,7 +2693,6 @@ void reply_ctemp(struct smb_request *req)
 
 		ucf_flags = filename_create_ucf_flags(req, FILE_CREATE);
 		status = filename_convert(ctx, conn,
-				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				fname,
 				ucf_flags,
 				NULL,
@@ -3240,7 +3232,6 @@ void reply_unlink(struct smb_request *req)
 	}
 
 	status = filename_convert(ctx, conn,
-				  req->flags2 & FLAGS2_DFS_PATHNAMES,
 				  name,
 				  ucf_flags,
 				  &path_contains_wcard,
@@ -6151,7 +6142,6 @@ void reply_mkdir(struct smb_request *req)
 
 	ucf_flags = filename_create_ucf_flags(req, FILE_CREATE);
 	status = filename_convert(ctx, conn,
-				 req->flags2 & FLAGS2_DFS_PATHNAMES,
 				 directory,
 				 ucf_flags,
 				 NULL,
@@ -6222,7 +6212,6 @@ void reply_rmdir(struct smb_request *req)
 	}
 
 	status = filename_convert(ctx, conn,
-				 req->flags2 & FLAGS2_DFS_PATHNAMES,
 				 directory,
 				 ucf_flags,
 				 NULL,
@@ -7342,7 +7331,6 @@ void reply_mv(struct smb_request *req)
 
 	status = filename_convert(ctx,
 				  conn,
-				  req->flags2 & FLAGS2_DFS_PATHNAMES,
 				  name,
 				  src_ucf_flags,
 				  &src_has_wcard,
@@ -7360,7 +7348,6 @@ void reply_mv(struct smb_request *req)
 
 	status = filename_convert(ctx,
 				  conn,
-				  req->flags2 & FLAGS2_DFS_PATHNAMES,
 				  newname,
 				  dst_ucf_flags,
 				  &dest_has_wcard,
@@ -7654,7 +7641,6 @@ void reply_copy(struct smb_request *req)
 	}
 
 	status = filename_convert(ctx, conn,
-				  req->flags2 & FLAGS2_DFS_PATHNAMES,
 				  fname_src,
 				  ucf_flags_src,
 				  &source_has_wild,
@@ -7670,7 +7656,6 @@ void reply_copy(struct smb_request *req)
 	}
 
 	status = filename_convert(ctx, conn,
-				  req->flags2 & FLAGS2_DFS_PATHNAMES,
 				  fname_dst,
 				  ucf_flags_dst,
 				  &dest_has_wild,

@@ -351,7 +351,6 @@ int get_real_filename(connection_struct *conn, const char *path,
 		      char **found_name);
 NTSTATUS filename_convert(TALLOC_CTX *mem_ctx,
 			connection_struct *conn,
-			bool dfs_path,
 			const char *name_in,
 			uint32_t ucf_flags,
 			bool *ppath_contains_wcard,

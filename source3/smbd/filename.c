@@ -1535,7 +1535,6 @@ static NTSTATUS build_stream_path(TALLOC_CTX *mem_ctx,
  *
  * @param ctx		talloc_ctx to allocate memory with.
  * @param conn		connection struct for vfs calls.
- * @param dfs_path	Whether this path requires dfs resolution.
  * @param smbreq	SMB request if we're using privileges.
  * @param name_in	The unconverted name.
  * @param ucf_flags	flags to pass through to unix_convert().
@@ -1552,7 +1551,6 @@ static NTSTATUS build_stream_path(TALLOC_CTX *mem_ctx,
  */
 static NTSTATUS filename_convert_internal(TALLOC_CTX *ctx,
 				connection_struct *conn,
-				bool dfs_path,
 				struct smb_request *smbreq,
 				const char *name_in,
 				uint32_t ucf_flags,
@@ -1563,7 +1561,7 @@ static NTSTATUS filename_convert_internal(TALLOC_CTX *ctx,
 
 	*pp_smb_fname = NULL;
 
-	if (dfs_path) {
+	if (ucf_flags & UCF_DFS_PATHNAME) {
 		bool path_contains_wcard = false;
 		char *fname = NULL;
 		status = resolve_dfspath_wcard(ctx, conn,
@@ -1583,6 +1581,7 @@ static NTSTATUS filename_convert_internal(TALLOC_CTX *ctx,
 		if (ppath_contains_wcard != NULL && path_contains_wcard) {
 			*ppath_contains_wcard = path_contains_wcard;
 		}
+		ucf_flags &= ~UCF_DFS_PATHNAME;
 	}
 
 	if (is_fake_file_path(name_in)) {
@@ -1647,7 +1646,6 @@ static NTSTATUS filename_convert_internal(TALLOC_CTX *ctx,
 
 NTSTATUS filename_convert(TALLOC_CTX *ctx,
 				connection_struct *conn,
-				bool dfs_path,
 				const char *name_in,
 				uint32_t ucf_flags,
 				bool *ppath_contains_wcard,
@@ -1655,7 +1653,6 @@ NTSTATUS filename_convert(TALLOC_CTX *ctx,
 {
 	return filename_convert_internal(ctx,
 					conn,
-					dfs_path,
 					NULL,
 					name_in,
 					ucf_flags,
@@ -1678,7 +1675,6 @@ NTSTATUS filename_convert_with_privilege(TALLOC_CTX *ctx,
 {
 	return filename_convert_internal(ctx,
 					conn,
-					smbreq->flags2 & FLAGS2_DFS_PATHNAMES,
 					smbreq,
 					name_in,
 					ucf_flags,
