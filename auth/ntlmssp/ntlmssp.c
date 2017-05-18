@@ -157,7 +157,7 @@ static NTSTATUS gensec_ntlmssp_update_find(struct gensec_security *gensec_securi
 NTSTATUS gensec_ntlmssp_update(struct gensec_security *gensec_security,
 			       TALLOC_CTX *out_mem_ctx,
 			       struct tevent_context *ev,
-			       const DATA_BLOB input, DATA_BLOB *out)
+			       const DATA_BLOB in, DATA_BLOB *out)
 {
 	struct gensec_ntlmssp_context *gensec_ntlmssp =
 		talloc_get_type_abort(gensec_security->private_data,
@@ -167,12 +167,16 @@ NTSTATUS gensec_ntlmssp_update(struct gensec_security *gensec_security,
 
 	*out = data_blob(NULL, 0);
 
-	status = gensec_ntlmssp_update_find(gensec_security, gensec_ntlmssp, input, &i);
+	status = gensec_ntlmssp_update_find(gensec_security,
+					    gensec_ntlmssp,
+					    in, &i);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	status = ntlmssp_callbacks[i].sync_fn(gensec_security, out_mem_ctx, input, out);
+	status = ntlmssp_callbacks[i].sync_fn(gensec_security,
+					      out_mem_ctx,
+					      in, out);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
