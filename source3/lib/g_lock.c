@@ -63,7 +63,8 @@ static void g_lock_rec_get(struct g_lock_rec *rec,
 
 static ssize_t g_lock_put(uint8_t *buf, size_t buflen,
 			  const struct g_lock_rec *locks,
-			  size_t num_locks)
+			  size_t num_locks,
+			  const uint8_t *data, size_t datalen)
 {
 	size_t i, len, ofs;
 
@@ -73,46 +74,106 @@ static ssize_t g_lock_put(uint8_t *buf, size_t buflen,
 
 	len = num_locks * G_LOCK_REC_LENGTH;
 
+	len += sizeof(uint32_t);
+	if (len < sizeof(uint32_t)) {
+		return -1;
+	}
+
+	len += datalen;
+	if (len < datalen) {
+		return -1;
+	}
+
 	if (len > buflen) {
 		return len;
 	}
 
 	ofs = 0;
+	SIVAL(buf, ofs, num_locks);
+	ofs += sizeof(uint32_t);
 
 	for (i=0; i<num_locks; i++) {
 		g_lock_rec_put(buf+ofs, locks[i]);
 		ofs += G_LOCK_REC_LENGTH;
 	}
 
+	if ((data != NULL) && (datalen != 0)) {
+		memcpy(buf+ofs, data, datalen);
+	}
+
 	return len;
 }
 
-static bool g_lock_get(TALLOC_CTX *mem_ctx, TDB_DATA data,
-		       unsigned *pnum_locks, struct g_lock_rec **plocks)
+static ssize_t g_lock_get(TDB_DATA recval,
+			  struct g_lock_rec *locks, size_t num_locks,
+			  uint8_t **data, size_t *datalen)
 {
-	size_t i, num_locks;
-	struct g_lock_rec *locks;
+	size_t found_locks;
 
-	if ((data.dsize % G_LOCK_REC_LENGTH) != 0) {
-		DEBUG(1, ("invalid lock record length %zu\n", data.dsize));
-		return false;
+	if (recval.dsize < sizeof(uint32_t)) {
+		/* Fresh or invalid record */
+		found_locks = 0;
+		goto done;
 	}
-	num_locks = data.dsize / G_LOCK_REC_LENGTH;
 
+	found_locks = IVAL(recval.dptr, 0);
+	recval.dptr += sizeof(uint32_t);
+	recval.dsize -= sizeof(uint32_t);
+
+	if (found_locks > recval.dsize/G_LOCK_REC_LENGTH) {
+		/* Invalid record */
+		return 0;
+	}
+
+	if (found_locks <= num_locks) {
+		size_t i;
+
+		for (i=0; i<found_locks; i++) {
+			g_lock_rec_get(&locks[i], recval.dptr);
+			recval.dptr += G_LOCK_REC_LENGTH;
+			recval.dsize -= G_LOCK_REC_LENGTH;
+		}
+	} else {
+		/*
+		 * Not enough space passed in by the caller, don't
+		 * parse the locks.
+		 */
+		recval.dptr += found_locks * G_LOCK_REC_LENGTH;
+		recval.dsize -= found_locks * G_LOCK_REC_LENGTH;
+	}
+
+done:
+	if (data != NULL) {
+		*data = recval.dptr;
+	}
+	if (datalen != NULL) {
+		*datalen = recval.dsize;
+	}
+	return found_locks;
+}
+
+static NTSTATUS g_lock_get_talloc(TALLOC_CTX *mem_ctx, TDB_DATA recval,
+				  struct g_lock_rec **plocks,
+				  size_t *pnum_locks,
+				  uint8_t **data, size_t *datalen)
+{
+	struct g_lock_rec *locks;
+	ssize_t num_locks;
+
+	num_locks = g_lock_get(recval, NULL, 0, NULL, NULL);
+	if (num_locks == -1) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
 	locks = talloc_array(mem_ctx, struct g_lock_rec, num_locks);
 	if (locks == NULL) {
-		DEBUG(1, ("talloc_memdup failed\n"));
-		return false;
+		return NT_STATUS_NO_MEMORY;
 	}
-
-	for (i=0; i<num_locks; i++) {
-		g_lock_rec_get(&locks[i], data.dptr);
-		data.dptr += G_LOCK_REC_LENGTH;
-	}
+	g_lock_get(recval, locks, num_locks, data, datalen);
 
 	*plocks = locks;
 	*pnum_locks = num_locks;
-	return true;
+
+	return NT_STATUS_OK;
 }
 
 struct g_lock_ctx *g_lock_ctx_init(TALLOC_CTX *mem_ctx,
@@ -175,7 +236,7 @@ static NTSTATUS g_lock_record_store(struct db_record *rec,
 	uint8_t *buf;
 	NTSTATUS status;
 
-	len = g_lock_put(NULL, 0, locks, num_locks);
+	len = g_lock_put(NULL, 0, locks, num_locks, NULL, 0);
 	if (len == -1) {
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
@@ -185,7 +246,7 @@ static NTSTATUS g_lock_record_store(struct db_record *rec,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	g_lock_put(buf, len, locks, num_locks);
+	g_lock_put(buf, len, locks, num_locks, NULL, 0);
 
 	status = dbwrap_record_store(
 		rec, (TDB_DATA) { .dptr = buf, .dsize = len }, 0);
@@ -200,15 +261,17 @@ static NTSTATUS g_lock_trylock(struct db_record *rec, struct server_id self,
 			       struct server_id *blocker)
 {
 	TDB_DATA data;
-	unsigned i, num_locks;
+	size_t i, num_locks;
 	struct g_lock_rec *locks, *tmp;
 	NTSTATUS status;
 	bool modified = false;
 
 	data = dbwrap_record_get_value(rec);
 
-	if (!g_lock_get(talloc_tos(), data, &num_locks, &locks)) {
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	status = g_lock_get_talloc(talloc_tos(), data, &locks, &num_locks,
+				   NULL, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	for (i=0; i<num_locks; i++) {
@@ -432,7 +495,7 @@ NTSTATUS g_lock_unlock(struct g_lock_ctx *ctx, const char *name)
 	struct server_id self = messaging_server_id(ctx->msg);
 	struct db_record *rec = NULL;
 	struct g_lock_rec *locks = NULL;
-	unsigned i, num_locks;
+	size_t i, num_locks;
 	NTSTATUS status;
 	TDB_DATA value;
 
@@ -446,8 +509,11 @@ NTSTATUS g_lock_unlock(struct g_lock_ctx *ctx, const char *name)
 
 	value = dbwrap_record_get_value(rec);
 
-	if (!g_lock_get(talloc_tos(), value, &num_locks, &locks)) {
-		DEBUG(10, ("g_lock_get for %s failed\n", name));
+	status = g_lock_get_talloc(talloc_tos(), value, &locks, &num_locks,
+				   NULL, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("g_lock_get for %s failed: %s\n", name,
+			  nt_errstr(status));
 		status = NT_STATUS_FILE_INVALID;
 		goto done;
 	}
@@ -457,7 +523,7 @@ NTSTATUS g_lock_unlock(struct g_lock_ctx *ctx, const char *name)
 		}
 	}
 	if (i == num_locks) {
-		DBG_DEBUG("Lock not found, num_locks=%u\n", num_locks);
+		DBG_DEBUG("Lock not found, num_locks=%zu\n", num_locks);
 		status = NT_STATUS_NOT_FOUND;
 		goto done;
 	}
@@ -525,9 +591,8 @@ NTSTATUS g_lock_dump(struct g_lock_ctx *ctx, const char *name,
 		     void *private_data)
 {
 	TDB_DATA data;
-	unsigned i, num_locks;
+	size_t i, num_locks;
 	struct g_lock_rec *locks = NULL;
-	bool ret;
 	NTSTATUS status;
 
 	status = dbwrap_fetch_bystring(ctx->db, talloc_tos(), name, &data);
@@ -539,12 +604,14 @@ NTSTATUS g_lock_dump(struct g_lock_ctx *ctx, const char *name,
 		return NT_STATUS_OK;
 	}
 
-	ret = g_lock_get(talloc_tos(), data, &num_locks, &locks);
+	status = g_lock_get_talloc(talloc_tos(), data, &locks, &num_locks,
+				   NULL, NULL);
 
 	TALLOC_FREE(data.dptr);
 
-	if (!ret) {
-		DEBUG(10, ("g_lock_get for %s failed\n", name));
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("g_lock_get for %s failed: %s\n", name,
+			  nt_errstr(status));
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
