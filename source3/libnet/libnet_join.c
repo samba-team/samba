@@ -865,7 +865,7 @@ static bool libnet_join_derive_salting_principal(TALLOC_CTX *mem_ctx,
 	}
 
 	r->out.krb5_salt = salt;
-	return kerberos_secrets_store_des_salt(salt);
+	return true;
 }
 
 /****************************************************************
@@ -962,6 +962,17 @@ static ADS_STATUS libnet_join_post_processing_ads(TALLOC_CTX *mem_ctx,
 
 	if (!libnet_join_derive_salting_principal(mem_ctx, r)) {
 		return ADS_ERROR_NT(NT_STATUS_UNSUCCESSFUL);
+	}
+
+	if (r->out.krb5_salt != NULL) {
+		bool ok;
+
+		ok = kerberos_secrets_store_des_salt(r->out.krb5_salt);
+		if (!ok) {
+			libnet_join_set_error_string(mem_ctx, r,
+				"failed to store krb5_salt");
+			return ADS_ERROR_NT(NT_STATUS_UNSUCCESSFUL);
+		}
 	}
 
 	if (!libnet_join_create_keytab(mem_ctx, r)) {
