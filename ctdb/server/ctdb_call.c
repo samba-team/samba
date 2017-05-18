@@ -1609,6 +1609,7 @@ static int deferred_call_destructor(struct revokechild_deferred_call *deferred_c
 {
 	struct ctdb_context *ctdb = deferred_call->ctdb;
 	struct revokechild_requeue_handle *requeue_handle = talloc(ctdb, struct revokechild_requeue_handle);
+	struct ctdb_req_call_old *c = (struct ctdb_req_call_old *)deferred_call->hdr;
 
 	requeue_handle->ctdb = ctdb;
 	requeue_handle->hdr  = deferred_call->hdr;
@@ -1616,12 +1617,9 @@ static int deferred_call_destructor(struct revokechild_deferred_call *deferred_c
 	requeue_handle->ctx  = deferred_call->ctx;
 	talloc_steal(requeue_handle, requeue_handle->hdr);
 
-	/* Always delay revoke requests.  Either wait for the read/write
-	 * operation to complete, or if revoking failed wait for recovery to
-	 * complete
-	 */
+	/* when revoking, any READONLY requests have 1 second grace to let read/write finish first */
 	tevent_add_timer(ctdb->ev, requeue_handle,
-			 timeval_current_ofs(1, 0),
+			 timeval_current_ofs(c->flags & CTDB_WANT_READONLY ? 1 : 0, 0),
 			 deferred_call_requeue, requeue_handle);
 
 	return 0;
