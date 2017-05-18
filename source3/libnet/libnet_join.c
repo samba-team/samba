@@ -864,6 +864,7 @@ static bool libnet_join_derive_salting_principal(TALLOC_CTX *mem_ctx,
 		}
 	}
 
+	r->out.krb5_salt = salt;
 	return kerberos_secrets_store_des_salt(salt);
 }
 
