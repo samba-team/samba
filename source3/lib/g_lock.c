@@ -61,6 +61,60 @@ static void g_lock_rec_get(struct g_lock_rec *rec,
 	server_id_get(&rec->pid, buf+1);
 }
 
+static ssize_t g_lock_put(uint8_t *buf, size_t buflen,
+			  const struct g_lock_rec *locks,
+			  size_t num_locks)
+{
+	size_t i, len, ofs;
+
+	if (num_locks > UINT32_MAX/G_LOCK_REC_LENGTH) {
+		return -1;
+	}
+
+	len = num_locks * G_LOCK_REC_LENGTH;
+
+	if (len > buflen) {
+		return len;
+	}
+
+	ofs = 0;
+
+	for (i=0; i<num_locks; i++) {
+		g_lock_rec_put(buf+ofs, locks[i]);
+		ofs += G_LOCK_REC_LENGTH;
+	}
+
+	return len;
+}
+
+static bool g_lock_get(TALLOC_CTX *mem_ctx, TDB_DATA data,
+		       unsigned *pnum_locks, struct g_lock_rec **plocks)
+{
+	size_t i, num_locks;
+	struct g_lock_rec *locks;
+
+	if ((data.dsize % G_LOCK_REC_LENGTH) != 0) {
+		DEBUG(1, ("invalid lock record length %zu\n", data.dsize));
+		return false;
+	}
+	num_locks = data.dsize / G_LOCK_REC_LENGTH;
+
+	locks = talloc_array(mem_ctx, struct g_lock_rec, num_locks);
+	if (locks == NULL) {
+		DEBUG(1, ("talloc_memdup failed\n"));
+		return false;
+	}
+
+	for (i=0; i<num_locks; i++) {
+		g_lock_rec_get(&locks[i], data.dptr);
+		data.dptr += G_LOCK_REC_LENGTH;
+	}
+
+	*plocks = locks;
+	*pnum_locks = num_locks;
+	return true;
+}
+
 struct g_lock_ctx *g_lock_ctx_init(TALLOC_CTX *mem_ctx,
 				   struct messaging_context *msg)
 {
@@ -111,60 +165,6 @@ static bool g_lock_conflicts(enum g_lock_type l1, enum g_lock_type l2)
 		return false;
 	}
 	return true;
-}
-
-static bool g_lock_get(TALLOC_CTX *mem_ctx, TDB_DATA data,
-		       unsigned *pnum_locks, struct g_lock_rec **plocks)
-{
-	size_t i, num_locks;
-	struct g_lock_rec *locks;
-
-	if ((data.dsize % G_LOCK_REC_LENGTH) != 0) {
-		DEBUG(1, ("invalid lock record length %zu\n", data.dsize));
-		return false;
-	}
-	num_locks = data.dsize / G_LOCK_REC_LENGTH;
-
-	locks = talloc_array(mem_ctx, struct g_lock_rec, num_locks);
-	if (locks == NULL) {
-		DEBUG(1, ("talloc_memdup failed\n"));
-		return false;
-	}
-
-	for (i=0; i<num_locks; i++) {
-		g_lock_rec_get(&locks[i], data.dptr);
-		data.dptr += G_LOCK_REC_LENGTH;
-	}
-
-	*plocks = locks;
-	*pnum_locks = num_locks;
-	return true;
-}
-
-static ssize_t g_lock_put(uint8_t *buf, size_t buflen,
-			  const struct g_lock_rec *locks,
-			  size_t num_locks)
-{
-	size_t i, len, ofs;
-
-	if (num_locks > UINT32_MAX/G_LOCK_REC_LENGTH) {
-		return -1;
-	}
-
-	len = num_locks * G_LOCK_REC_LENGTH;
-
-	if (len > buflen) {
-		return len;
-	}
-
-	ofs = 0;
-
-	for (i=0; i<num_locks; i++) {
-		g_lock_rec_put(buf+ofs, locks[i]);
-		ofs += G_LOCK_REC_LENGTH;
-	}
-
-	return len;
 }
 
 static NTSTATUS g_lock_record_store(struct db_record *rec,
