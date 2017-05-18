@@ -1573,8 +1573,8 @@ void reply_ntrename(struct smb_request *req)
 	bool src_has_wcard = False;
 	bool dest_has_wcard = False;
 	uint32_t attrs;
-	uint32_t ucf_flags_src = (req->posix_pathnames ? UCF_POSIX_PATHNAMES : 0);
-	uint32_t ucf_flags_dst = (req->posix_pathnames ? UCF_POSIX_PATHNAMES : 0);
+	uint32_t ucf_flags_src = ucf_flags_from_smb_request(req);
+	uint32_t ucf_flags_dst = ucf_flags_from_smb_request(req);
 	uint16_t rename_type;
 	TALLOC_CTX *ctx = talloc_tos();
 	bool stream_rename = false;

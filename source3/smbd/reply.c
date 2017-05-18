@@ -1278,7 +1278,7 @@ void reply_checkpath(struct smb_request *req)
 	struct smb_filename *smb_fname = NULL;
 	char *name = NULL;
 	NTSTATUS status;
-	uint32_t ucf_flags = (req->posix_pathnames ? UCF_POSIX_PATHNAMES : 0);
+	uint32_t ucf_flags = ucf_flags_from_smb_request(req);
 	TALLOC_CTX *ctx = talloc_tos();
 
 	START_PROFILE(SMBcheckpath);
@@ -1393,8 +1393,7 @@ void reply_getatr(struct smb_request *req)
 		size = 0;
 		mtime = 0;
 	} else {
-		uint32_t ucf_flags = (req->posix_pathnames ?
-				UCF_POSIX_PATHNAMES : 0);
+		uint32_t ucf_flags = ucf_flags_from_smb_request(req);
 		status = filename_convert(ctx,
 				conn,
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
@@ -1480,7 +1479,7 @@ void reply_setatr(struct smb_request *req)
 	time_t mtime;
 	const char *p;
 	NTSTATUS status;
-	uint32_t ucf_flags = (req->posix_pathnames ? UCF_POSIX_PATHNAMES : 0);
+	uint32_t ucf_flags = ucf_flags_from_smb_request(req);
 	TALLOC_CTX *ctx = talloc_tos();
 
 	START_PROFILE(SMBsetatr);
@@ -1798,7 +1797,7 @@ void reply_search(struct smb_request *req)
 	if (status_len == 0) {
 		struct smb_filename *smb_dname = NULL;
 		uint32_t ucf_flags = UCF_ALWAYS_ALLOW_WCARD_LCOMP |
-			(req->posix_pathnames ? UCF_POSIX_PATHNAMES : 0);
+			ucf_flags_from_smb_request(req);
 		nt_status = filename_convert(ctx, conn,
 					     req->flags2 & FLAGS2_DFS_PATHNAMES,
 					     path,
@@ -3220,7 +3219,7 @@ void reply_unlink(struct smb_request *req)
 	NTSTATUS status;
 	bool path_contains_wcard = False;
 	uint32_t ucf_flags = UCF_COND_ALLOW_WCARD_LCOMP |
-			(req->posix_pathnames ? UCF_POSIX_PATHNAMES : 0);
+			ucf_flags_from_smb_request(req);
 	TALLOC_CTX *ctx = talloc_tos();
 
 	START_PROFILE(SMBunlink);
@@ -6210,7 +6209,7 @@ void reply_rmdir(struct smb_request *req)
 	TALLOC_CTX *ctx = talloc_tos();
 	files_struct *fsp = NULL;
 	int info = 0;
-	uint32_t ucf_flags = (req->posix_pathnames ? UCF_POSIX_PATHNAMES : 0);
+	uint32_t ucf_flags = ucf_flags_from_smb_request(req);
 	struct smbd_server_connection *sconn = req->sconn;
 
 	START_PROFILE(SMBrmdir);
@@ -7294,12 +7293,15 @@ void reply_mv(struct smb_request *req)
 	TALLOC_CTX *ctx = talloc_tos();
 	struct smb_filename *smb_fname_src = NULL;
 	struct smb_filename *smb_fname_dst = NULL;
-	uint32_t src_ucf_flags = (req->posix_pathnames ?
-		(UCF_UNIX_NAME_LOOKUP|UCF_POSIX_PATHNAMES) :
-		UCF_COND_ALLOW_WCARD_LCOMP);
-	uint32_t dst_ucf_flags = UCF_SAVE_LCOMP |
-		(req->posix_pathnames ? UCF_POSIX_PATHNAMES :
-		 UCF_COND_ALLOW_WCARD_LCOMP);
+	uint32_t src_ucf_flags = ucf_flags_from_smb_request(req) |
+		(req->posix_pathnames ?
+			UCF_UNIX_NAME_LOOKUP :
+			UCF_COND_ALLOW_WCARD_LCOMP);
+	uint32_t dst_ucf_flags = ucf_flags_from_smb_request(req) |
+		UCF_SAVE_LCOMP |
+		(req->posix_pathnames ?
+			0 :
+			UCF_COND_ALLOW_WCARD_LCOMP);
 	bool stream_rename = false;
 
 	START_PROFILE(SMBmv);
@@ -7612,9 +7614,9 @@ void reply_copy(struct smb_request *req)
 	bool dest_has_wild = False;
 	NTSTATUS status;
 	uint32_t ucf_flags_src = UCF_COND_ALLOW_WCARD_LCOMP |
-		(req->posix_pathnames ? UCF_POSIX_PATHNAMES : 0);
+		ucf_flags_from_smb_request(req);
 	uint32_t ucf_flags_dst = UCF_COND_ALLOW_WCARD_LCOMP |
-		(req->posix_pathnames ? UCF_POSIX_PATHNAMES : 0);
+		ucf_flags_from_smb_request(req);
 	TALLOC_CTX *ctx = talloc_tos();
 
 	START_PROFILE(SMBcopy);
