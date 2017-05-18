@@ -925,6 +925,11 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			if (tevent_req_nomem(fname, req)) {
 				return tevent_req_post(req, ev);
 			}
+			/*
+			 * Tell filename_create_ucf_flags() this
+			 * is an @GMT path.
+			 */
+			smb1req->flags2 |= FLAGS2_REPARSE_PATH;
 		}
 
 		if (qfid) {

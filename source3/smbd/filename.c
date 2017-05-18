@@ -41,6 +41,9 @@ uint32_t ucf_flags_from_smb_request(struct smb_request *req)
 		if (req->flags2 & FLAGS2_DFS_PATHNAMES) {
 			ucf_flags |= UCF_DFS_PATHNAME;
 		}
+		if (req->flags2 & FLAGS2_REPARSE_PATH) {
+			ucf_flags |= UCF_GMT_PATHNAME;
+		}
 	}
 
 	return ucf_flags;
