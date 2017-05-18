@@ -434,6 +434,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 	bool allow_wcard_last_component =
 	    (ucf_flags & UCF_ALWAYS_ALLOW_WCARD_LCOMP);
 	bool save_last_component = ucf_flags & UCF_SAVE_LCOMP;
+	bool snapshot_path = (ucf_flags & UCF_GMT_PATHNAME);
 	NTSTATUS status;
 	int ret = -1;
 
@@ -516,7 +517,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 	}
 
 	/* Canonicalize any @GMT- paths. */
-	if (posix_pathnames == false) {
+	if (snapshot_path) {
 		status = canonicalize_snapshot_path(smb_fname);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto err;
