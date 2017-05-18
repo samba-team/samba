@@ -103,7 +103,7 @@ static bool test_tfork_cmd_send(struct torture_context *tctx)
 	torture_assert_goto(tctx, cmd[0] != NULL, ok, done,
 			    "talloc_asprintf failed\n");
 
-	req = samba_runcmd_send(tctx, ev, timeval_zero(), 1, 0,
+	req = samba_runcmd_send(tctx, ev, timeval_zero(), 0, 0,
 				cmd, "foo", NULL);
 	torture_assert_goto(tctx, req != NULL, ok, done,
 			    "samba_runcmd_send failed\n");
