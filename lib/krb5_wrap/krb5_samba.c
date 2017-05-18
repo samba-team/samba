@@ -435,7 +435,8 @@ int smb_krb5_get_pw_salt(krb5_context context,
  * - SomePrincipal@EXAMPLE.COM
  *
  * This is not the form that's used as salt, it's just
- * the human readable form.
+ * the human readable form. It needs to be converted by
+ * smb_krb5_salt_principal2data().
  *
  * @param[in]  realm              The realm the user/computer is added too.
  *
@@ -452,6 +453,8 @@ int smb_krb5_get_pw_salt(krb5_context context,
  * @param[out]  _salt_principal   The resulting principal as string.
  *
  * @retval 0 Success; otherwise - Kerberos error codes
+ *
+ * @see smb_krb5_salt_principal2data
  */
 int smb_krb5_salt_principal(const char *realm,
 			    const char *sAMAccountName,
@@ -539,6 +542,70 @@ int smb_krb5_salt_principal(const char *realm,
 	}
 
 	TALLOC_FREE(frame);
+	return 0;
+}
+
+/**
+ * @brief Converts the salt principal string into the salt data blob
+ *
+ * This function takes a salt_principal as string in forms like this:
+ * - host/somehost.example.com@EXAMPLE.COM
+ * - SomeAccount@EXAMPLE.COM
+ * - SomePrincipal@EXAMPLE.COM
+ *
+ * It generates values like:
+ * - EXAMPLE.COMhost/somehost.example.com
+ * - EXAMPLE.COMSomeAccount
+ * - EXAMPLE.COMSomePrincipal
+ *
+ * @param[in]  realm              The realm the user/computer is added too.
+ *
+ * @param[in]  sAMAccountName     The sAMAccountName attribute of the object.
+ *
+ * @param[in]  userPrincipalName  The userPrincipalName attribute of the object
+ *                                or NULL is not available.
+ *
+ * @param[in]  is_computer        The indication of the object includes
+ *                                objectClass=computer.
+ *
+ * @param[in]  mem_ctx            The TALLOC_CTX to allocate _salt_principal.
+ *
+ * @param[out]  _salt_principal   The resulting principal as string.
+ *
+ * @retval 0 Success; otherwise - Kerberos error codes
+ *
+ * @see smb_krb5_salt_principal
+ */
+int smb_krb5_salt_principal2data(krb5_context context,
+				 const char *salt_principal,
+				 TALLOC_CTX *mem_ctx,
+				 char **_salt_data)
+{
+	krb5_error_code ret;
+	krb5_principal salt_princ = NULL;
+	krb5_data salt;
+
+	*_salt_data = NULL;
+
+	ret = krb5_parse_name(context, salt_principal, &salt_princ);
+	if (ret != 0) {
+		return ret;
+	}
+
+	ret = smb_krb5_get_pw_salt(context, salt_princ, &salt);
+	krb5_free_principal(context, salt_princ);
+	if (ret != 0) {
+		return ret;
+	}
+
+	*_salt_data = talloc_strndup(mem_ctx,
+				     (char *)salt.data,
+				     salt.length);
+	smb_krb5_free_data_contents(context, &salt);
+	if (*_salt_data == NULL) {
+		return ENOMEM;
+	}
+
 	return 0;
 }
 
