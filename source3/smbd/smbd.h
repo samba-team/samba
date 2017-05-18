@@ -74,5 +74,10 @@ struct trans_state {
 #define UCF_POSIX_PATHNAMES		0x00000008
 #define UCF_UNIX_NAME_LOOKUP		0x00000010
 #define UCF_PREP_CREATEFILE		0x00000020
+/*
+ * Use the same bit as FLAGS2_DFS_PATHNAMES
+ * which means the same thing.
+ */
+#define UCF_DFS_PATHNAME		0x00001000
 
 #endif /* _SMBD_SMBD_H */
