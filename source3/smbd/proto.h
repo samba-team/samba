@@ -490,7 +490,6 @@ bool remove_msdfs_link(const struct junction_map *jucn);
 struct junction_map *enum_msdfs_links(TALLOC_CTX *ctx, size_t *p_num_jn);
 NTSTATUS resolve_dfspath_wcard(TALLOC_CTX *ctx,
 				connection_struct *conn,
-				bool dfs_pathnames,
 				const char *name_in,
 				uint32_t ucf_flags,
 				bool allow_broken_path,

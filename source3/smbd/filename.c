@@ -1550,19 +1550,22 @@ static NTSTATUS filename_convert_internal(TALLOC_CTX *ctx,
 
 	*pp_smb_fname = NULL;
 
-	status = resolve_dfspath_wcard(ctx, conn,
-				dfs_path,
+	if (dfs_path) {
+		status = resolve_dfspath_wcard(ctx, conn,
 				name_in,
 				ucf_flags,
 				!conn->sconn->using_smb2,
 				&fname,
 				ppath_contains_wcard);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10,("filename_convert_internal: resolve_dfspath failed "
-			"for name %s with %s\n",
-			name_in,
-			nt_errstr(status) ));
-		return status;
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(10,("filename_convert_internal: resolve_dfspath "
+				"failed for name %s with %s\n",
+				name_in,
+				nt_errstr(status) ));
+			return status;
+		}
+	} else {
+		fname = discard_const_p(char, name_in);
 	}
 
 	if (is_fake_file_path(name_in)) {

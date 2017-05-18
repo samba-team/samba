@@ -6968,15 +6968,16 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 	DEBUG(10,("smb_file_rename_information: got name |%s|\n",
 				newname));
 
-	status = resolve_dfspath_wcard(ctx, conn,
-				       req->flags2 & FLAGS2_DFS_PATHNAMES,
+	if (req->flags2 & FLAGS2_DFS_PATHNAMES) {
+		status = resolve_dfspath_wcard(ctx, conn,
 				       newname,
 				       UCF_COND_ALLOW_WCARD_LCOMP,
 				       !conn->sconn->using_smb2,
 				       &newname,
 				       &dest_has_wcard);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 	}
 
 	/* Check the new name has no '/' characters. */

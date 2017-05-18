@@ -1669,35 +1669,27 @@ struct junction_map *enum_msdfs_links(TALLOC_CTX *ctx, size_t *p_num_jn)
 
 NTSTATUS resolve_dfspath_wcard(TALLOC_CTX *ctx,
 				connection_struct *conn,
-				bool dfs_pathnames,
 				const char *name_in,
 				uint32_t ucf_flags,
 				bool allow_broken_path,
 				char **pp_name_out,
 				bool *ppath_contains_wcard)
 {
-	bool path_contains_wcard;
+	bool path_contains_wcard = false;
 	NTSTATUS status = NT_STATUS_OK;
 
-	if (dfs_pathnames) {
-		status = dfs_redirect(ctx,
-					conn,
-					name_in,
-					ucf_flags,
-					allow_broken_path,
-					pp_name_out,
-					&path_contains_wcard);
+	status = dfs_redirect(ctx,
+				conn,
+				name_in,
+				ucf_flags,
+				allow_broken_path,
+				pp_name_out,
+				&path_contains_wcard);
 
-		if (NT_STATUS_IS_OK(status) && ppath_contains_wcard != NULL) {
-			*ppath_contains_wcard = path_contains_wcard;
-		}
-	} else {
-		/*
-		 * Cheat and just return a copy of the in ptr.
-		 * Once srvstr_get_path() uses talloc it'll
-		 * be a talloced ptr anyway.
-		 */
-		*pp_name_out = discard_const_p(char, name_in);
+	if (NT_STATUS_IS_OK(status) &&
+				ppath_contains_wcard != NULL &&
+				path_contains_wcard) {
+		*ppath_contains_wcard = path_contains_wcard;
 	}
 	return status;
 }
