@@ -1546,11 +1546,11 @@ static NTSTATUS filename_convert_internal(TALLOC_CTX *ctx,
 				struct smb_filename **pp_smb_fname)
 {
 	NTSTATUS status;
-	char *fname = NULL;
 
 	*pp_smb_fname = NULL;
 
 	if (dfs_path) {
+		char *fname = NULL;
 		status = resolve_dfspath_wcard(ctx, conn,
 				name_in,
 				ucf_flags,
@@ -1564,8 +1564,7 @@ static NTSTATUS filename_convert_internal(TALLOC_CTX *ctx,
 				nt_errstr(status) ));
 			return status;
 		}
-	} else {
-		fname = discard_const_p(char, name_in);
+		name_in = fname;
 	}
 
 	if (is_fake_file_path(name_in)) {
@@ -1591,11 +1590,11 @@ static NTSTATUS filename_convert_internal(TALLOC_CTX *ctx,
 		ucf_flags |= UCF_ALWAYS_ALLOW_WCARD_LCOMP;
 	}
 
-	status = unix_convert(ctx, conn, fname, pp_smb_fname, ucf_flags);
+	status = unix_convert(ctx, conn, name_in, pp_smb_fname, ucf_flags);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10,("filename_convert_internal: unix_convert failed "
 			"for name %s with %s\n",
-			fname,
+			name_in,
 			nt_errstr(status) ));
 		return status;
 	}
