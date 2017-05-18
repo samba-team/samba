@@ -1571,6 +1571,7 @@ void ctdb_send_keepalive(struct ctdb_context *ctdb, uint32_t destnode)
 
 
 struct revokechild_deferred_call {
+	struct revokechild_deferred_call *prev, *next;
 	struct ctdb_context *ctdb;
 	struct ctdb_req_header *hdr;
 	deferred_requeue_fn fn;
@@ -1586,48 +1587,31 @@ struct revokechild_handle {
 	int fd[2];
 	pid_t child;
 	TDB_DATA key;
-};
-
-struct revokechild_requeue_handle {
-	struct ctdb_context *ctdb;
-	struct ctdb_req_header *hdr;
-	deferred_requeue_fn fn;
-	void *ctx;
+	struct revokechild_deferred_call *deferred_call_list;
 };
 
 static void deferred_call_requeue(struct tevent_context *ev,
 				  struct tevent_timer *te,
 				  struct timeval t, void *private_data)
 {
-	struct revokechild_requeue_handle *requeue_handle = talloc_get_type(private_data, struct revokechild_requeue_handle);
+	struct revokechild_deferred_call *dlist = talloc_get_type_abort(
+		private_data, struct revokechild_deferred_call);
 
-	requeue_handle->fn(requeue_handle->ctx, requeue_handle->hdr);
-	talloc_free(requeue_handle);
-}
+	while (dlist != NULL) {
+		struct revokechild_deferred_call *dcall = dlist;
 
-static int deferred_call_destructor(struct revokechild_deferred_call *deferred_call)
-{
-	struct ctdb_context *ctdb = deferred_call->ctdb;
-	struct revokechild_requeue_handle *requeue_handle = talloc(ctdb, struct revokechild_requeue_handle);
-	struct ctdb_req_call_old *c = (struct ctdb_req_call_old *)deferred_call->hdr;
-
-	requeue_handle->ctdb = ctdb;
-	requeue_handle->hdr  = deferred_call->hdr;
-	requeue_handle->fn   = deferred_call->fn;
-	requeue_handle->ctx  = deferred_call->ctx;
-	talloc_steal(requeue_handle, requeue_handle->hdr);
-
-	/* when revoking, any READONLY requests have 1 second grace to let read/write finish first */
-	tevent_add_timer(ctdb->ev, requeue_handle,
-			 timeval_current_ofs(c->flags & CTDB_WANT_READONLY ? 1 : 0, 0),
-			 deferred_call_requeue, requeue_handle);
-
-	return 0;
+		DLIST_REMOVE(dlist, dcall);
+		dcall->fn(dcall->ctx, dcall->hdr);
+		talloc_free(dcall);
+	}
 }
 
 
 static int revokechild_destructor(struct revokechild_handle *rc)
 {
+	struct revokechild_deferred_call *now_list = NULL;
+	struct revokechild_deferred_call *delay_list = NULL;
+
 	if (rc->fde != NULL) {
 		talloc_free(rc->fde);
 	}
@@ -1641,6 +1625,48 @@ static int revokechild_destructor(struct revokechild_handle *rc)
 	ctdb_kill(rc->ctdb, rc->child, SIGKILL);
 
 	DLIST_REMOVE(rc->ctdb_db->revokechild_active, rc);
+
+	while (rc->deferred_call_list != NULL) {
+		struct revokechild_deferred_call *dcall;
+
+		dcall = rc->deferred_call_list;
+		DLIST_REMOVE(rc->deferred_call_list, dcall);
+
+		/* If revoke is successful, then first process all the calls
+		 * that need write access, and delay readonly requests by 1
+		 * second grace.
+		 *
+		 * If revoke is unsuccessful, most likely because of node
+		 * failure, delay all the pending requests, so database can
+		 * be recovered.
+		 */
+
+		if (rc->status == 0) {
+			struct ctdb_req_call_old *c;
+
+			c = (struct ctdb_req_call_old *)dcall->hdr;
+			if (c->flags & CTDB_WANT_READONLY) {
+				DLIST_ADD(delay_list, dcall);
+			} else {
+				DLIST_ADD(now_list, dcall);
+			}
+		} else {
+			DLIST_ADD(delay_list, dcall);
+		}
+	}
+
+	if (now_list != NULL) {
+		tevent_add_timer(rc->ctdb->ev, rc->ctdb_db,
+				 tevent_timeval_current_ofs(0, 0),
+				 deferred_call_requeue, now_list);
+	}
+
+	if (delay_list != NULL) {
+		tevent_add_timer(rc->ctdb->ev, rc->ctdb_db,
+				 tevent_timeval_current_ofs(1, 0),
+				 deferred_call_requeue, delay_list);
+	}
+
 	return 0;
 }
 
@@ -1918,19 +1944,18 @@ int ctdb_add_revoke_deferred_call(struct ctdb_context *ctdb, struct ctdb_db_cont
 		return -1;
 	}
 
-	deferred_call = talloc(rc, struct revokechild_deferred_call);
+	deferred_call = talloc(ctdb_db, struct revokechild_deferred_call);
 	if (deferred_call == NULL) {
 		DEBUG(DEBUG_ERR,("Failed to allocate deferred call structure for revoking record\n"));
 		return -1;
 	}
 
 	deferred_call->ctdb = ctdb;
-	deferred_call->hdr  = hdr;
+	deferred_call->hdr  = talloc_steal(deferred_call, hdr);
 	deferred_call->fn   = fn;
 	deferred_call->ctx  = call_context;
 
-	talloc_set_destructor(deferred_call, deferred_call_destructor);
-	talloc_steal(deferred_call, hdr);
+	DLIST_ADD(rc->deferred_call_list, deferred_call);
 
 	return 0;
 }
