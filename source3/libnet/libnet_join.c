@@ -2209,12 +2209,12 @@ static WERROR libnet_join_post_processing(TALLOC_CTX *mem_ctx,
 		return r->out.result;
 	}
 
-	werr = do_JoinConfig(r);
-	if (!W_ERROR_IS_OK(werr)) {
-		return werr;
-	}
-
 	if (!(r->in.join_flags & WKSSVC_JOIN_FLAGS_JOIN_TYPE)) {
+		werr = do_JoinConfig(r);
+		if (!W_ERROR_IS_OK(werr)) {
+			return werr;
+		}
+
 		return WERR_OK;
 	}
 
@@ -2233,6 +2233,11 @@ static WERROR libnet_join_post_processing(TALLOC_CTX *mem_ctx,
 	saf_join_store(r->out.netbios_domain_name, r->in.dc_name);
 	if (r->out.dns_domain_name) {
 		saf_join_store(r->out.dns_domain_name, r->in.dc_name);
+	}
+
+	werr = do_JoinConfig(r);
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
 	}
 
 #ifdef HAVE_ADS
