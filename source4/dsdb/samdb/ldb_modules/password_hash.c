@@ -671,7 +671,8 @@ static int setup_kerberos_keys(struct setup_password_fields_io *io)
 {
 	struct ldb_context *ldb;
 	krb5_error_code krb5_ret;
-	krb5_principal salt_principal;
+	char *salt_principal = NULL;
+	char *salt_data = NULL;
 	krb5_data salt;
 	krb5_keyblock key;
 	krb5_data cleartext_data;
@@ -680,60 +681,12 @@ static int setup_kerberos_keys(struct setup_password_fields_io *io)
 	cleartext_data.data = (char *)io->n.cleartext_utf8->data;
 	cleartext_data.length = io->n.cleartext_utf8->length;
 
-	/* Many, many thanks to lukeh@padl.com for this
-	 * algorithm, described in his Nov 10 2004 mail to
-	 * samba-technical@lists.samba.org */
-
-	/*
-	 * Determine a salting principal
-	 */
-	if (io->u.is_computer) {
-		char *name;
-		char *saltbody;
-
-		name = strlower_talloc(io->ac, io->u.sAMAccountName);
-		if (!name) {
-			return ldb_oom(ldb);
-		}
-
-		if (name[strlen(name)-1] == '$') {
-			name[strlen(name)-1] = '\0';
-		}
-
-		saltbody = talloc_asprintf(io->ac, "%s.%s", name,
-					   io->ac->status->domain_data.dns_domain);
-		if (!saltbody) {
-			return ldb_oom(ldb);
-		}
-		
-		krb5_ret = smb_krb5_make_principal(io->smb_krb5_context->krb5_context,
-					       &salt_principal,
-					       io->ac->status->domain_data.realm,
-					       "host", saltbody, NULL);
-	} else if (io->u.user_principal_name) {
-		char *user_principal_name;
-		char *p;
-
-		user_principal_name = talloc_strdup(io->ac, io->u.user_principal_name);
-		if (!user_principal_name) {
-			return ldb_oom(ldb);
-		}
-
-		p = strchr(user_principal_name, '@');
-		if (p) {
-			p[0] = '\0';
-		}
-
-		krb5_ret = smb_krb5_make_principal(io->smb_krb5_context->krb5_context,
-					       &salt_principal,
-					       io->ac->status->domain_data.realm,
-					       user_principal_name, NULL);
-	} else {
-		krb5_ret = smb_krb5_make_principal(io->smb_krb5_context->krb5_context,
-					       &salt_principal,
-					       io->ac->status->domain_data.realm,
-					       io->u.sAMAccountName, NULL);
-	}
+	krb5_ret = smb_krb5_salt_principal(io->ac->status->domain_data.realm,
+					   io->u.sAMAccountName,
+					   io->u.user_principal_name,
+					   io->u.is_computer,
+					   io->ac,
+					   &salt_principal);
 	if (krb5_ret) {
 		ldb_asprintf_errstring(ldb,
 				       "setup_kerberos_keys: "
@@ -746,9 +699,8 @@ static int setup_kerberos_keys(struct setup_password_fields_io *io)
 	/*
 	 * create salt from salt_principal
 	 */
-	krb5_ret = smb_krb5_get_pw_salt(io->smb_krb5_context->krb5_context,
-				    salt_principal, &salt);
-	krb5_free_principal(io->smb_krb5_context->krb5_context, salt_principal);
+	krb5_ret = smb_krb5_salt_principal2data(io->smb_krb5_context->krb5_context,
+						salt_principal, io->ac, &salt_data);
 	if (krb5_ret) {
 		ldb_asprintf_errstring(ldb,
 				       "setup_kerberos_keys: "
@@ -757,14 +709,8 @@ static int setup_kerberos_keys(struct setup_password_fields_io *io)
 								  krb5_ret, io->ac));
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	/* create a talloc copy */
-	io->g.salt = talloc_strndup(io->ac,
-				    (char *)salt.data,
-				    salt.length);
-	smb_krb5_free_data_contents(io->smb_krb5_context->krb5_context, &salt);
-	if (!io->g.salt) {
-		return ldb_oom(ldb);
-	}
+	io->g.salt = salt_data;
+
 	/* now use the talloced copy of the salt */
 	salt.data	= discard_const(io->g.salt);
 	salt.length	= strlen(io->g.salt);
