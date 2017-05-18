@@ -1550,13 +1550,14 @@ static NTSTATUS filename_convert_internal(TALLOC_CTX *ctx,
 	*pp_smb_fname = NULL;
 
 	if (dfs_path) {
+		bool path_contains_wcard = false;
 		char *fname = NULL;
 		status = resolve_dfspath_wcard(ctx, conn,
 				name_in,
 				ucf_flags,
 				!conn->sconn->using_smb2,
 				&fname,
-				ppath_contains_wcard);
+				&path_contains_wcard);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(10,("filename_convert_internal: resolve_dfspath "
 				"failed for name %s with %s\n",
@@ -1565,6 +1566,9 @@ static NTSTATUS filename_convert_internal(TALLOC_CTX *ctx,
 			return status;
 		}
 		name_in = fname;
+		if (ppath_contains_wcard != NULL && path_contains_wcard) {
+			*ppath_contains_wcard = path_contains_wcard;
+		}
 	}
 
 	if (is_fake_file_path(name_in)) {
