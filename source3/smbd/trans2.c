@@ -7013,6 +7013,12 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 		 * the newname instead.
 		 */
 		char *base_name = NULL;
+		uint32_t ucf_flags = UCF_SAVE_LCOMP |
+			ucf_flags_from_smb_request(req);
+
+		if (dest_has_wcard) {
+			ucf_flags |= UCF_ALWAYS_ALLOW_WCARD_LCOMP;
+		}
 
 		/* newname must *not* be a stream name. */
 		if (newname[0] == ':') {
@@ -7045,10 +7051,7 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 		}
 
 		status = unix_convert(ctx, conn, base_name, &smb_fname_dst,
-				      (UCF_SAVE_LCOMP |
-					  (dest_has_wcard ?
-					      UCF_ALWAYS_ALLOW_WCARD_LCOMP :
-					      0)));
+					ucf_flags);
 
 		/* If an error we expect this to be
 		 * NT_STATUS_OBJECT_PATH_NOT_FOUND */
