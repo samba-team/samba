@@ -230,13 +230,14 @@ static bool g_lock_conflicts(enum g_lock_type l1, enum g_lock_type l2)
 
 static NTSTATUS g_lock_record_store(struct db_record *rec,
 				    const struct g_lock_rec *locks,
-				    size_t num_locks)
+				    size_t num_locks,
+				    const uint8_t *data, size_t datalen)
 {
 	ssize_t len;
 	uint8_t *buf;
 	NTSTATUS status;
 
-	len = g_lock_put(NULL, 0, locks, num_locks, NULL, 0);
+	len = g_lock_put(NULL, 0, locks, num_locks, data, datalen);
 	if (len == -1) {
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
@@ -246,7 +247,7 @@ static NTSTATUS g_lock_record_store(struct db_record *rec,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	g_lock_put(buf, len, locks, num_locks, NULL, 0);
+	g_lock_put(buf, len, locks, num_locks, data, datalen);
 
 	status = dbwrap_record_store(
 		rec, (TDB_DATA) { .dptr = buf, .dsize = len }, 0);
@@ -260,7 +261,7 @@ static NTSTATUS g_lock_trylock(struct db_record *rec, struct server_id self,
 			       enum g_lock_type type,
 			       struct server_id *blocker)
 {
-	TDB_DATA data;
+	TDB_DATA data, userdata;
 	size_t i, num_locks;
 	struct g_lock_rec *locks, *tmp;
 	NTSTATUS status;
@@ -269,7 +270,7 @@ static NTSTATUS g_lock_trylock(struct db_record *rec, struct server_id self,
 	data = dbwrap_record_get_value(rec);
 
 	status = g_lock_get_talloc(talloc_tos(), data, &locks, &num_locks,
-				   NULL, NULL);
+				   &userdata.dptr, &userdata.dsize);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -322,7 +323,8 @@ static NTSTATUS g_lock_trylock(struct db_record *rec, struct server_id self,
 done:
 	if (modified) {
 		NTSTATUS store_status;
-		store_status = g_lock_record_store(rec, locks, num_locks);
+		store_status = g_lock_record_store(
+			rec, locks, num_locks, userdata.dptr, userdata.dsize);
 		if (!NT_STATUS_IS_OK(store_status)) {
 			DBG_WARNING("g_lock_record_store failed: %s\n",
 				    nt_errstr(store_status));
@@ -497,7 +499,7 @@ NTSTATUS g_lock_unlock(struct g_lock_ctx *ctx, const char *name)
 	struct g_lock_rec *locks = NULL;
 	size_t i, num_locks;
 	NTSTATUS status;
-	TDB_DATA value;
+	TDB_DATA value, userdata;
 
 	rec = dbwrap_fetch_locked(ctx->db, talloc_tos(),
 				  string_term_tdb_data(name));
@@ -510,7 +512,7 @@ NTSTATUS g_lock_unlock(struct g_lock_ctx *ctx, const char *name)
 	value = dbwrap_record_get_value(rec);
 
 	status = g_lock_get_talloc(talloc_tos(), value, &locks, &num_locks,
-				   NULL, NULL);
+				   &userdata.dptr, &userdata.dsize);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_DEBUG("g_lock_get for %s failed: %s\n", name,
 			  nt_errstr(status));
@@ -531,10 +533,11 @@ NTSTATUS g_lock_unlock(struct g_lock_ctx *ctx, const char *name)
 	locks[i] = locks[num_locks-1];
 	num_locks -= 1;
 
-	if (num_locks == 0) {
+	if ((num_locks == 0) && (userdata.dsize == 0)) {
 		status = dbwrap_record_delete(rec);
 	} else {
-		status = g_lock_record_store(rec, locks, num_locks);
+		status = g_lock_record_store(
+			rec, locks, num_locks, userdata.dptr, userdata.dsize);
 	}
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_WARNING("Could not store record: %s\n", nt_errstr(status));
