@@ -16,8 +16,6 @@
 #include <setjmp.h>
 #include <cmocka.h>
 
-#include <cmocka.h>
-
 #include <errno.h>
 #include <unistd.h>
 #include <talloc.h>
