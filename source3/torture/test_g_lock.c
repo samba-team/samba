@@ -22,6 +22,7 @@
 #include "system/filesys.h"
 #include "g_lock.h"
 #include "messages.h"
+#include "lib/util/server_id.h"
 
 static bool get_g_lock_ctx(TALLOC_CTX *mem_ctx,
 			   struct tevent_context **ev,
@@ -190,6 +191,125 @@ bool run_g_lock2(int dummy)
 			rdata, data);
 		goto fail;
 	}
+
+	ret = true;
+fail:
+	TALLOC_FREE(ctx);
+	TALLOC_FREE(msg);
+	TALLOC_FREE(ev);
+	return ret;
+}
+
+struct lock3_parser_state {
+	struct server_id self;
+	enum g_lock_type lock_type;
+	bool ok;
+};
+
+static void lock3_parser(const struct g_lock_rec *locks,
+			 size_t num_locks,
+			 const uint8_t *data,
+			 size_t datalen,
+			 void *private_data)
+{
+	struct lock3_parser_state *state = private_data;
+
+	if (datalen != 0) {
+		fprintf(stderr, "datalen=%zu\n", datalen);
+		return;
+	}
+	if (num_locks != 1) {
+		fprintf(stderr, "num_locks=%zu\n", num_locks);
+		return;
+	}
+	if (locks[0].lock_type != state->lock_type) {
+		fprintf(stderr, "found type %d, expected %d\n",
+			(int)locks[0].lock_type, (int)state->lock_type);
+		return;
+	}
+	if (!server_id_equal(&locks[0].pid, &state->self)) {
+		struct server_id_buf tmp1, tmp2;
+		fprintf(stderr, "found pid %s, expected %s\n",
+			server_id_str_buf(locks[0].pid, &tmp1),
+			server_id_str_buf(state->self, &tmp2));
+		return;
+	}
+
+	state->ok = true;
+}
+
+/*
+ * Test lock upgrade/downgrade
+ */
+
+bool run_g_lock3(int dummy)
+{
+	struct tevent_context *ev = NULL;
+	struct messaging_context *msg = NULL;
+	struct g_lock_ctx *ctx = NULL;
+	const char *lockname = "lock3";
+	struct lock3_parser_state state;
+	NTSTATUS status;
+	bool ret = false;
+	bool ok;
+
+	ok = get_g_lock_ctx(talloc_tos(), &ev, &msg, &ctx);
+	if (!ok) {
+		goto fail;
+	}
+
+	state.self = messaging_server_id(msg);
+
+	status = g_lock_lock(ctx, lockname, G_LOCK_READ,
+			     (struct timeval) { .tv_sec = 1 });
+	if (!NT_STATUS_IS_OK(status)) {
+		fprintf(stderr, "g_lock_lock returned %s\n",
+			nt_errstr(status));
+		goto fail;
+	}
+
+	status = g_lock_lock(ctx, lockname, G_LOCK_READ,
+			     (struct timeval) { .tv_sec = 1 });
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_WAS_LOCKED)) {
+		fprintf(stderr, "g_lock_lock returned %s, expected %s\n",
+			nt_errstr(status), nt_errstr(NT_STATUS_WAS_LOCKED));
+		goto fail;
+	}
+
+	state.lock_type = G_LOCK_READ;
+	state.ok = false;
+
+	status = g_lock_dump(ctx, lockname, lock3_parser, &state);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_OK)) {
+		fprintf(stderr, "g_lock_dump returned %s\n",
+			nt_errstr(status));
+		goto fail;
+	}
+	if (!state.ok) {
+		goto fail;
+	}
+
+	status = g_lock_lock(ctx, lockname, G_LOCK_WRITE,
+			     (struct timeval) { .tv_sec = 1 });
+	if (!NT_STATUS_IS_OK(status)) {
+		fprintf(stderr, "g_lock_lock returned %s\n",
+			nt_errstr(status));
+		goto fail;
+	}
+
+	state.lock_type = G_LOCK_WRITE;
+	state.ok = false;
+
+	status = g_lock_dump(ctx, lockname, lock3_parser, &state);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_OK)) {
+		fprintf(stderr, "g_lock_dump returned %s\n",
+			nt_errstr(status));
+		goto fail;
+	}
+	if (!state.ok) {
+		goto fail;
+	}
+
 
 	ret = true;
 fail:
