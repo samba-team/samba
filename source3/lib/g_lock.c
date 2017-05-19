@@ -257,7 +257,7 @@ static NTSTATUS g_lock_trylock(struct db_record *rec, struct server_id self,
 			       struct server_id *blocker)
 {
 	TDB_DATA data, userdata;
-	size_t i, num_locks;
+	size_t i, num_locks, my_lock;
 	struct g_lock_rec *locks, *tmp;
 	NTSTATUS status;
 	bool modified = false;
@@ -270,11 +270,27 @@ static NTSTATUS g_lock_trylock(struct db_record *rec, struct server_id self,
 		return status;
 	}
 
+	my_lock = num_locks;	/* doesn't exist yet */
+
 	for (i=0; i<num_locks; i++) {
-		if (serverid_equal(&self, &locks[i].pid)) {
-			status = NT_STATUS_INTERNAL_ERROR;
-			goto done;
+		struct g_lock_rec *lock = &locks[i];
+
+		if (serverid_equal(&self, &lock->pid)) {
+			if (lock->lock_type == type) {
+				status = NT_STATUS_WAS_LOCKED;
+				goto done;
+			}
+			my_lock = i;
+			break;
 		}
+	}
+
+	for (i=0; i<num_locks; i++) {
+
+		if (i == my_lock) {
+			continue;
+		}
+
 		if (g_lock_conflicts(type, locks[i].lock_type)) {
 			struct server_id pid = locks[i].pid;
 
@@ -300,18 +316,19 @@ static NTSTATUS g_lock_trylock(struct db_record *rec, struct server_id self,
 		}
 	}
 
-	tmp = talloc_realloc(talloc_tos(), locks, struct g_lock_rec,
-			     num_locks+1);
-	if (tmp == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto done;
+	if (my_lock >= num_locks) {
+		tmp = talloc_realloc(talloc_tos(), locks, struct g_lock_rec,
+				     num_locks+1);
+		if (tmp == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+		locks = tmp;
+		my_lock = num_locks;
+		num_locks += 1;
 	}
-	locks = tmp;
 
-	ZERO_STRUCT(locks[num_locks]);
-	locks[num_locks].pid = self;
-	locks[num_locks].lock_type = type;
-	num_locks += 1;
+	locks[my_lock] = (struct g_lock_rec){ .pid = self, .lock_type = type };
 	modified = true;
 
 	status = NT_STATUS_OK;

@@ -75,7 +75,7 @@ bool run_g_lock1(int dummy)
 
 	status = g_lock_lock(ctx, lockname, G_LOCK_READ,
 			     (struct timeval) { .tv_sec = 1 });
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_INTERNAL_ERROR)) {
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_WAS_LOCKED)) {
 		fprintf(stderr, "Double lock got %s\n",
 			nt_errstr(status));
 		goto fail;
