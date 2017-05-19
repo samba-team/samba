@@ -122,6 +122,8 @@ static krb5_error_code fill_keytab_from_password(krb5_context krbctx,
 	krb5_enctype *enctypes;
 	krb5_keytab_entry kt_entry;
 	unsigned int i;
+	krb5_principal salt_princ = NULL;
+	char *salt_princ_s = NULL;
 
 	ret = get_kerberos_allowed_etypes(krbctx, &enctypes);
 	if (ret) {
@@ -130,38 +132,24 @@ static krb5_error_code fill_keytab_from_password(krb5_context krbctx,
 		return ret;
 	}
 
+	salt_princ_s = kerberos_secrets_fetch_salt_princ();
+	if (salt_princ_s == NULL) {
+		ret = ENOMEM;
+		goto out;
+	}
+	ret = krb5_parse_name(krbctx, salt_princ_s, &salt_princ);
+	SAFE_FREE(salt_princ_s);
+	if (ret != 0) {
+		goto out;
+	}
+
 	for (i = 0; enctypes[i]; i++) {
 		krb5_keyblock *key = NULL;
-		krb5_principal salt_princ = NULL;
-		char *salt_princ_s;
-		char *princ_s;
 		int rc;
 
 		if (!(key = SMB_MALLOC_P(krb5_keyblock))) {
 			ret = ENOMEM;
 			goto out;
-		}
-
-		ret = krb5_unparse_name(krbctx, princ, &princ_s);
-		if (ret != 0) {
-			SAFE_FREE(key);
-			continue;
-		}
-
-		salt_princ_s = kerberos_fetch_salt_princ_for_host_princ(krbctx,
-									princ_s,
-									enctypes[i]);
-		SAFE_FREE(princ_s);
-		if (salt_princ_s == NULL) {
-			SAFE_FREE(key);
-			continue;
-		}
-
-		ret = krb5_parse_name(krbctx, salt_princ_s, &salt_princ);
-		SAFE_FREE(salt_princ_s);
-		if (ret != 0) {
-			SAFE_FREE(key);
-			continue;
 		}
 
 		rc = create_kerberos_key_from_string(krbctx,
@@ -171,7 +159,6 @@ static krb5_error_code fill_keytab_from_password(krb5_context krbctx,
 						     key,
 						     enctypes[i],
 						     false);
-		krb5_free_principal(krbctx, salt_princ);
 		if (rc != 0) {
 			DEBUG(10, ("Failed to create key for enctype %d "
 				   "(error: %s)\n",
@@ -199,6 +186,7 @@ static krb5_error_code fill_keytab_from_password(krb5_context krbctx,
 	ret = 0;
 
 out:
+	krb5_free_principal(krbctx, salt_princ);
 	SAFE_FREE(enctypes);
 	return ret;
 }
