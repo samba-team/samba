@@ -149,6 +149,7 @@ local_tests = [
     "LOCAL-DBWRAP-WATCH1",
     "LOCAL-DBWRAP-WATCH2",
     "LOCAL-G-LOCK1",
+    "LOCAL-G-LOCK2",
     "LOCAL-hex_encode_buf",
     "LOCAL-remove_duplicate_addrs2"]
 
