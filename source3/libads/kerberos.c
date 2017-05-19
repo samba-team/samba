@@ -369,13 +369,6 @@ char *kerberos_secrets_fetch_salt_princ(void)
 	return salt_princ_s;
 }
 
-char *kerberos_fetch_salt_princ_for_host_princ(krb5_context context,
-					       const char *host_princ_s,
-					       int enctype)
-{
-	return kerberos_secrets_fetch_salt_princ();
-}
-
 int create_kerberos_key_from_string(krb5_context context,
 					krb5_principal host_princ,
 					krb5_principal salt_princ,
