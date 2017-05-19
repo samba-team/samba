@@ -29,6 +29,7 @@
 #define SECRETS_MACHINE_LAST_CHANGE_TIME "SECRETS/MACHINE_LAST_CHANGE_TIME"
 #define SECRETS_MACHINE_SEC_CHANNEL_TYPE "SECRETS/MACHINE_SEC_CHANNEL_TYPE"
 #define SECRETS_MACHINE_TRUST_ACCOUNT_NAME "SECRETS/SECRETS_MACHINE_TRUST_ACCOUNT_NAME"
+#define SECRETS_MACHINE_DOMAIN_INFO "SECRETS/MACHINE_DOMAIN_INFO"
 /* this one is for storing trusted domain account password */
 #define SECRETS_DOMTRUST_ACCT_PASS "SECRETS/$DOMTRUST.ACC"
 
@@ -110,6 +111,33 @@ bool secrets_fetch_trusted_domain_password(const char *domain, char** pwd,
                                            struct dom_sid  *sid, time_t *pass_last_set_time);
 bool secrets_store_trusted_domain_password(const char* domain, const char* pwd,
                                            const struct dom_sid  *sid);
+struct libnet_JoinCtx;
+NTSTATUS secrets_store_JoinCtx(const struct libnet_JoinCtx *r);
+struct secrets_domain_info1;
+struct secrets_domain_info1_change;
+void secrets_debug_domain_info(int lvl, const struct secrets_domain_info1 *info,
+			       const char *name);
+char *secrets_domain_info_string(TALLOC_CTX *mem_ctx, const struct secrets_domain_info1 *info1,
+				 const char *name, bool include_secrets);
+NTSTATUS secrets_fetch_or_upgrade_domain_info(const char *domain,
+					TALLOC_CTX *mem_ctx,
+					struct secrets_domain_info1 **pinfo);
+NTSTATUS secrets_prepare_password_change(const char *domain, const char *dcname,
+					 const char *cleartext_unix,
+					 TALLOC_CTX *mem_ctx,
+					 struct secrets_domain_info1 **pinfo,
+					 struct secrets_domain_info1_change **pprev);
+NTSTATUS secrets_failed_password_change(const char *change_server,
+					NTSTATUS local_status,
+					NTSTATUS remote_status,
+					const struct secrets_domain_info1 *info);
+NTSTATUS secrets_defer_password_change(const char *change_server,
+				       NTSTATUS local_status,
+				       NTSTATUS remote_status,
+				       const struct secrets_domain_info1 *info);
+NTSTATUS secrets_finish_password_change(const char *change_server,
+					NTTIME change_time,
+					const struct secrets_domain_info1 *info);
 bool secrets_delete_machine_password_ex(const char *domain, const char *realm);
 bool secrets_delete_domain_sid(const char *domain);
 bool secrets_store_machine_password(const char *pass, const char *domain, enum netr_SchannelType sec_channel);
