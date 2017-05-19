@@ -2465,11 +2465,12 @@ static char *vfswrap_realpath(vfs_handle_struct *handle, const char *path)
 	return result;
 }
 
-static int vfswrap_chflags(vfs_handle_struct *handle, const char *path,
-			   unsigned int flags)
+static int vfswrap_chflags(vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
+			unsigned int flags)
 {
 #ifdef HAVE_CHFLAGS
-	return chflags(path, flags);
+	return chflags(smb_fname->base_name, flags);
 #else
 	errno = ENOSYS;
 	return -1;

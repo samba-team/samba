@@ -336,10 +336,10 @@
 #define SMB_VFS_NEXT_REALPATH(handle, path) \
 	smb_vfs_call_realpath((handle)->next, (path))
 
-#define SMB_VFS_CHFLAGS(conn, path, flags) \
-	smb_vfs_call_chflags((conn)->vfs_handles, (path), (flags))
-#define SMB_VFS_NEXT_CHFLAGS(handle, path, flags) \
-	smb_vfs_call_chflags((handle)->next, (path), (flags))
+#define SMB_VFS_CHFLAGS(conn, smb_fname, flags) \
+	smb_vfs_call_chflags((conn)->vfs_handles, (smb_fname), (flags))
+#define SMB_VFS_NEXT_CHFLAGS(handle, smb_fname, flags) \
+	smb_vfs_call_chflags((handle)->next, (smb_fname), (flags))
 
 #define SMB_VFS_FILE_ID_CREATE(conn, sbuf) \
 	smb_vfs_call_file_id_create((conn)->vfs_handles, (sbuf))

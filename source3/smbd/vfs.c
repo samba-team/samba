@@ -2182,11 +2182,12 @@ char *smb_vfs_call_realpath(struct vfs_handle_struct *handle, const char *path)
 	return handle->fns->realpath_fn(handle, path);
 }
 
-int smb_vfs_call_chflags(struct vfs_handle_struct *handle, const char *path,
-			 unsigned int flags)
+int smb_vfs_call_chflags(struct vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
+			unsigned int flags)
 {
 	VFS_FIND(chflags);
-	return handle->fns->chflags_fn(handle, path, flags);
+	return handle->fns->chflags_fn(handle, smb_fname, flags);
 }
 
 struct file_id smb_vfs_call_file_id_create(struct vfs_handle_struct *handle,

@@ -1923,33 +1923,30 @@ out:
  * Failure: set errno, return -1
  */
 static int mh_chflags(vfs_handle_struct *handle,
-		const char *path,
+		const struct smb_filename *smb_fname,
 		unsigned int flags)
 {
 	int status;
-	char *clientPath;
+	struct smb_filename *clientFname = NULL;
 	TALLOC_CTX *ctx;
 
 	DEBUG(MH_INFO_DEBUG, ("Entering mh_chflags\n"));
-	if (!is_in_media_files(path))
-	{
-		status = SMB_VFS_NEXT_CHFLAGS(handle, path, flags);
+	if (!is_in_media_files(smb_fname->base_name)) {
+		status = SMB_VFS_NEXT_CHFLAGS(handle, smb_fname, flags);
 		goto out;
 	}
 
-	clientPath = NULL;
 	ctx = talloc_tos();
 
-	if ((status = alloc_get_client_path(handle, ctx,
-				path,
-				&clientPath)))
-	{
+	if ((status = alloc_get_client_smb_fname(handle, ctx,
+				smb_fname,
+				&clientFname))) {
 		goto err;
 	}
 
-	status = SMB_VFS_NEXT_CHFLAGS(handle, clientPath, flags);
+	status = SMB_VFS_NEXT_CHFLAGS(handle, clientFname, flags);
 err:
-	TALLOC_FREE(clientPath);
+	TALLOC_FREE(clientFname);
 out:
 	return status;
 }

@@ -596,10 +596,11 @@ static char *skel_realpath(vfs_handle_struct *handle, const char *path)
 	return SMB_VFS_NEXT_REALPATH(handle, path);
 }
 
-static int skel_chflags(vfs_handle_struct *handle, const char *path,
+static int skel_chflags(vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
 			uint flags)
 {
-	return SMB_VFS_NEXT_CHFLAGS(handle, path, flags);
+	return SMB_VFS_NEXT_CHFLAGS(handle, smb_fname, flags);
 }
 
 static struct file_id skel_file_id_create(vfs_handle_struct *handle,

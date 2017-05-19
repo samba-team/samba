@@ -1189,8 +1189,9 @@ static char *cephwrap_realpath(struct vfs_handle_struct *handle,  const char *pa
 	return result;
 }
 
-static int cephwrap_chflags(struct vfs_handle_struct *handle, const char *path,
-			   unsigned int flags)
+static int cephwrap_chflags(struct vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
+			unsigned int flags)
 {
 	errno = ENOSYS;
 	return -1;

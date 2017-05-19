@@ -1686,13 +1686,15 @@ static char *smb_full_audit_realpath(vfs_handle_struct *handle,
 }
 
 static int smb_full_audit_chflags(vfs_handle_struct *handle,
-			    const char *path, unsigned int flags)
+			const struct smb_filename *smb_fname,
+			unsigned int flags)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_CHFLAGS(handle, path, flags);
+	result = SMB_VFS_NEXT_CHFLAGS(handle, smb_fname, flags);
 
-	do_log(SMB_VFS_OP_CHFLAGS, (result != 0), handle, "%s", path);
+	do_log(SMB_VFS_OP_CHFLAGS, (result != 0), handle, "%s",
+		smb_fname->base_name);
 
 	return result;
 }

@@ -1464,27 +1464,27 @@ err:
 }
 
 static int um_chflags(vfs_handle_struct *handle,
-		      const char *path,
-		      unsigned int flags)
+			const struct smb_filename *smb_fname,
+			unsigned int flags)
 {
 	int status;
-	char *client_path = NULL;
+	struct smb_filename *client_fname = NULL;
 
-	DEBUG(10, ("Entering um_chflags\n"));
-
-	if (!is_in_media_files(path)) {
-		return SMB_VFS_NEXT_CHFLAGS(handle, path, flags);
+	DEBUG(10, ("Entering um_mknod\n"));
+	if (!is_in_media_files(smb_fname->base_name)) {
+		return SMB_VFS_NEXT_CHFLAGS(handle, smb_fname, flags);
 	}
 
-	status = alloc_get_client_path(handle, talloc_tos(),
-				       path, &client_path);
+	status = alloc_get_client_smb_fname(handle, talloc_tos(),
+					    smb_fname, &client_fname);
 	if (status != 0) {
 		goto err;
 	}
 
-	status = SMB_VFS_NEXT_CHFLAGS(handle, client_path, flags);
+	status = SMB_VFS_NEXT_CHFLAGS(handle, client_fname, flags);
+
 err:
-	TALLOC_FREE(client_path);
+	TALLOC_FREE(client_fname);
 	return status;
 }
 

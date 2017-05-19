@@ -214,6 +214,8 @@
 /* Version 37 - Change getxattr from const char *
 		to const struct smb_filename * */
 /* Version 37 - Change mknod from const char * to const struct smb_filename * */
+/* Version 37 - Change chflags from const char *
+		to const struct smb_filename * */
 
 #define SMB_VFS_INTERFACE_VERSION 37
 
@@ -734,7 +736,9 @@ struct vfs_fn_pointers {
 				mode_t mode,
 				SMB_DEV_T dev);
 	char *(*realpath_fn)(struct vfs_handle_struct *handle, const char *path);
-	int (*chflags_fn)(struct vfs_handle_struct *handle, const char *path, unsigned int flags);
+	int (*chflags_fn)(struct vfs_handle_struct *handle,
+				const struct smb_filename *smb_fname,
+				unsigned int flags);
 	struct file_id (*file_id_create_fn)(struct vfs_handle_struct *handle,
 					    const SMB_STRUCT_STAT *sbuf);
 	struct tevent_req *(*copy_chunk_send_fn)(struct vfs_handle_struct *handle,
@@ -1231,8 +1235,9 @@ int smb_vfs_call_mknod(struct vfs_handle_struct *handle,
 			mode_t mode,
 			SMB_DEV_T dev);
 char *smb_vfs_call_realpath(struct vfs_handle_struct *handle, const char *path);
-int smb_vfs_call_chflags(struct vfs_handle_struct *handle, const char *path,
-			 unsigned int flags);
+int smb_vfs_call_chflags(struct vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
+			unsigned int flags);
 struct file_id smb_vfs_call_file_id_create(struct vfs_handle_struct *handle,
 					   const SMB_STRUCT_STAT *sbuf);
 NTSTATUS smb_vfs_call_streaminfo(struct vfs_handle_struct *handle,

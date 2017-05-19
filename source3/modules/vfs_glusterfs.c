@@ -1257,7 +1257,8 @@ static int vfs_gluster_mknod(struct vfs_handle_struct *handle,
 }
 
 static int vfs_gluster_chflags(struct vfs_handle_struct *handle,
-			       const char *path, unsigned int flags)
+				const struct smb_filename *smb_fname,
+				unsigned int flags)
 {
 	errno = ENOSYS;
 	return -1;

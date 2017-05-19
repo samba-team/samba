@@ -1512,19 +1512,20 @@ static char *smb_time_audit_realpath(vfs_handle_struct *handle,
 }
 
 static int smb_time_audit_chflags(vfs_handle_struct *handle,
-				  const char *path, unsigned int flags)
+				const struct smb_filename *smb_fname,
+				unsigned int flags)
 {
 	int result;
 	struct timespec ts1,ts2;
 	double timediff;
 
 	clock_gettime_mono(&ts1);
-	result = SMB_VFS_NEXT_CHFLAGS(handle, path, flags);
+	result = SMB_VFS_NEXT_CHFLAGS(handle, smb_fname, flags);
 	clock_gettime_mono(&ts2);
 	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
-		smb_time_audit_log_fname("chflags", timediff, path);
+		smb_time_audit_log_smb_fname("chflags", timediff, smb_fname);
 	}
 
 	return result;

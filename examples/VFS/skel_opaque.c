@@ -507,7 +507,8 @@ static char *skel_realpath(vfs_handle_struct *handle, const char *path)
 	return NULL;
 }
 
-static int skel_chflags(vfs_handle_struct *handle, const char *path,
+static int skel_chflags(vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
 			uint flags)
 {
 	errno = ENOSYS;

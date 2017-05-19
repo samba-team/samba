@@ -7905,7 +7905,7 @@ static NTSTATUS smb_set_file_unix_info2(connection_struct *conn,
 			/* XXX: we should be  using SMB_VFS_FCHFLAGS here. */
 			return NT_STATUS_NOT_SUPPORTED;
 		} else {
-			if (SMB_VFS_CHFLAGS(conn, smb_fname->base_name,
+			if (SMB_VFS_CHFLAGS(conn, smb_fname,
 					    stat_fflags) != 0) {
 				return map_nt_error_from_unix(errno);
 			}
