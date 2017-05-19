@@ -241,9 +241,7 @@ static krb5_error_code libnet_keytab_add_entry(krb5_context context,
 
 	keyp = KRB5_KT_KEY(&kt_entry);
 
-	salt_princ_s = kerberos_fetch_salt_princ_for_host_princ(context,
-								princ_s,
-								enctype);
+	salt_princ_s = kerberos_secrets_fetch_salt_princ();
 	if (salt_princ_s == NULL) {
 		ret = KRB5KRB_ERR_GENERIC;
 		goto done;
