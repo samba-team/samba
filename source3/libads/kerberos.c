@@ -362,27 +362,6 @@ int ads_kdestroy(const char *cc_name)
 }
 
 /************************************************************************
- Routine to fetch the salting principal for a service.  Active
- Directory may use a non-obvious principal name to generate the salt
- when it determines the key to use for encrypting tickets for a service,
- and hopefully we detected that when we joined the domain.
- ************************************************************************/
-
-static char *kerberos_secrets_fetch_salting_principal(const char *service, int enctype)
-{
-	char *key = NULL;
-	char *ret = NULL;
-
-	if (asprintf(&key, "%s/%s/enctype=%d",
-		     SECRETS_SALTING_PRINCIPAL, service, enctype) == -1) {
-		return NULL;
-	}
-	ret = (char *)secrets_fetch(key, NULL);
-	SAFE_FREE(key);
-	return ret;
-}
-
-/************************************************************************
  Return the standard DES salt key
 ************************************************************************/
 
@@ -461,10 +440,8 @@ char* kerberos_secrets_fetch_des_salt( void )
 }
 
 /************************************************************************
- Routine to get the salting principal for this service.  This is 
- maintained for backwards compatibilty with releases prior to 3.0.24.
- Since we store the salting principal string only at join, we may have 
- to look for the older tdb keys.  Caller must free if return is not null.
+ Routine to get the salting principal for this service.
+ Caller must free if return is not null.
  ************************************************************************/
 
 char *kerberos_fetch_salt_princ_for_host_princ(krb5_context context,
@@ -476,14 +453,8 @@ char *kerberos_fetch_salt_princ_for_host_princ(krb5_context context,
 
 	salt_princ_s = kerberos_secrets_fetch_des_salt();
 	if (salt_princ_s == NULL) {
-
-		/* look under the old key.  If this fails, just use the standard key */
-		salt_princ_s = kerberos_secrets_fetch_salting_principal(host_princ_s,
-									enctype);
-		if (salt_princ_s == NULL) {
-			/* fall back to host/machine.realm@REALM */
-			salt_princ_s = kerberos_standard_des_salt();
-		}
+		/* fall back to host/machine.realm@REALM */
+		salt_princ_s = kerberos_standard_des_salt();
 	}
 
 	return salt_princ_s;
