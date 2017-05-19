@@ -56,9 +56,6 @@ int kerberos_kinit_password_ext(const char *principal,
 				time_t renewable_time,
 				NTSTATUS *ntstatus);
 int ads_kdestroy(const char *cc_name);
-char* kerberos_standard_des_salt( void );
-bool kerberos_secrets_store_des_salt( const char* salt );
-char *kerberos_secrets_fetch_salt_princ(void);
 
 int kerberos_kinit_password(const char *principal,
 			    const char *password,

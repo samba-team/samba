@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "smb_krb5.h"
 #include "ads.h"
+#include "secrets.h"
 #include "libnet/libnet_keytab.h"
 
 #ifdef HAVE_KRB5

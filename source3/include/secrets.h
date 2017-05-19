@@ -133,6 +133,10 @@ bool secrets_store_machine_pw_sync(const char *pass, const char *oldpass, const 
 				   uint32_t secure_channel,
 				   bool delete_join);
 
+char* kerberos_standard_des_salt( void );
+bool kerberos_secrets_store_des_salt( const char* salt );
+char *kerberos_secrets_fetch_salt_princ(void);
+
 /* The following definitions come from passdb/secrets_lsa.c  */
 NTSTATUS lsa_secret_get(TALLOC_CTX *mem_ctx,
 			const char *secret_name,
