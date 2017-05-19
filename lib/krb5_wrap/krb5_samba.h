@@ -408,4 +408,6 @@ int cli_krb5_get_ticket(TALLOC_CTX *mem_ctx,
 			time_t *tgs_expire,
 			const char *impersonate_princ_s);
 
+#define smb_krb5_free_data_contents(a, b) kerberos_free_data_contents(a, b)
+
 #endif /* _KRB5_SAMBA_H */
