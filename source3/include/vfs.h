@@ -213,6 +213,7 @@
 		to const struct smb_filename * */
 /* Version 37 - Change getxattr from const char *
 		to const struct smb_filename * */
+/* Version 37 - Change mknod from const char * to const struct smb_filename * */
 
 #define SMB_VFS_INTERFACE_VERSION 37
 
@@ -728,7 +729,10 @@ struct vfs_fn_pointers {
 	int (*symlink_fn)(struct vfs_handle_struct *handle, const char *oldpath, const char *newpath);
 	int (*readlink_fn)(struct vfs_handle_struct *handle, const char *path, char *buf, size_t bufsiz);
 	int (*link_fn)(struct vfs_handle_struct *handle, const char *oldpath, const char *newpath);
-	int (*mknod_fn)(struct vfs_handle_struct *handle, const char *path, mode_t mode, SMB_DEV_T dev);
+	int (*mknod_fn)(struct vfs_handle_struct *handle,
+				const struct smb_filename *smb_fname,
+				mode_t mode,
+				SMB_DEV_T dev);
 	char *(*realpath_fn)(struct vfs_handle_struct *handle, const char *path);
 	int (*chflags_fn)(struct vfs_handle_struct *handle, const char *path, unsigned int flags);
 	struct file_id (*file_id_create_fn)(struct vfs_handle_struct *handle,
@@ -1222,8 +1226,10 @@ int smb_vfs_call_readlink(struct vfs_handle_struct *handle,
 			  const char *path, char *buf, size_t bufsiz);
 int smb_vfs_call_link(struct vfs_handle_struct *handle, const char *oldpath,
 		      const char *newpath);
-int smb_vfs_call_mknod(struct vfs_handle_struct *handle, const char *path,
-		       mode_t mode, SMB_DEV_T dev);
+int smb_vfs_call_mknod(struct vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
+			mode_t mode,
+			SMB_DEV_T dev);
 char *smb_vfs_call_realpath(struct vfs_handle_struct *handle, const char *path);
 int smb_vfs_call_chflags(struct vfs_handle_struct *handle, const char *path,
 			 unsigned int flags);

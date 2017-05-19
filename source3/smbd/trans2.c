@@ -7580,7 +7580,7 @@ static NTSTATUS smb_unix_mknod(connection_struct *conn,
 		  (unsigned int)unixmode, smb_fname_str_dbg(smb_fname)));
 
 	/* Ok - do the mknod. */
-	if (SMB_VFS_MKNOD(conn, smb_fname->base_name, unixmode, dev) != 0) {
+	if (SMB_VFS_MKNOD(conn, smb_fname, unixmode, dev) != 0) {
 		return map_nt_error_from_unix(errno);
 	}
 

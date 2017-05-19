@@ -492,8 +492,10 @@ static int skel_link(vfs_handle_struct *handle, const char *oldpath,
 	return -1;
 }
 
-static int skel_mknod(vfs_handle_struct *handle, const char *path, mode_t mode,
-		      SMB_DEV_T dev)
+static int skel_mknod(vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
+			mode_t mode,
+			SMB_DEV_T dev)
 {
 	errno = ENOSYS;
 	return -1;

@@ -1659,13 +1659,16 @@ static int smb_full_audit_link(vfs_handle_struct *handle,
 }
 
 static int smb_full_audit_mknod(vfs_handle_struct *handle,
-		       const char *pathname, mode_t mode, SMB_DEV_T dev)
+			const struct smb_filename *smb_fname,
+			mode_t mode,
+			SMB_DEV_T dev)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_MKNOD(handle, pathname, mode, dev);
+	result = SMB_VFS_NEXT_MKNOD(handle, smb_fname, mode, dev);
 
-	do_log(SMB_VFS_OP_MKNOD, (result >= 0), handle, "%s", pathname);
+	do_log(SMB_VFS_OP_MKNOD, (result >= 0), handle, "%s",
+		smb_fname->base_name);
 
 	return result;
 }

@@ -1472,7 +1472,8 @@ static int smb_time_audit_link(vfs_handle_struct *handle,
 }
 
 static int smb_time_audit_mknod(vfs_handle_struct *handle,
-				const char *pathname, mode_t mode,
+				const struct smb_filename *smb_fname,
+				mode_t mode,
 				SMB_DEV_T dev)
 {
 	int result;
@@ -1480,12 +1481,12 @@ static int smb_time_audit_mknod(vfs_handle_struct *handle,
 	double timediff;
 
 	clock_gettime_mono(&ts1);
-	result = SMB_VFS_NEXT_MKNOD(handle, pathname, mode, dev);
+	result = SMB_VFS_NEXT_MKNOD(handle, smb_fname, mode, dev);
 	clock_gettime_mono(&ts2);
 	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
-		smb_time_audit_log_fname("mknod", timediff, pathname);
+		smb_time_audit_log_smb_fname("mknod", timediff, smb_fname);
 	}
 
 	return result;

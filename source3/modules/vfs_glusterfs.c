@@ -1248,10 +1248,12 @@ static int vfs_gluster_link(struct vfs_handle_struct *handle,
 	return glfs_link(handle->data, oldpath, newpath);
 }
 
-static int vfs_gluster_mknod(struct vfs_handle_struct *handle, const char *path,
-			     mode_t mode, SMB_DEV_T dev)
+static int vfs_gluster_mknod(struct vfs_handle_struct *handle,
+				const struct smb_filename *smb_fname,
+				mode_t mode,
+				SMB_DEV_T dev)
 {
-	return glfs_mknod(handle->data, path, mode, dev);
+	return glfs_mknod(handle->data, smb_fname->base_name, mode, dev);
 }
 
 static int vfs_gluster_chflags(struct vfs_handle_struct *handle,

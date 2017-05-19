@@ -488,15 +488,40 @@ static int cap_link(vfs_handle_struct *handle, const char *oldpath, const char *
 	return SMB_VFS_NEXT_LINK(handle, capold, capnew);
 }
 
-static int cap_mknod(vfs_handle_struct *handle, const char *path, mode_t mode, SMB_DEV_T dev)
+static int cap_mknod(vfs_handle_struct *handle,
+		const struct smb_filename *smb_fname,
+		mode_t mode,
+		SMB_DEV_T dev)
 {
-	char *cappath = capencode(talloc_tos(), path);
+	struct smb_filename *cap_smb_fname = NULL;
+	char *cappath = capencode(talloc_tos(), smb_fname->base_name);
+	int ret;
+	int saved_errno = 0;
 
 	if (!cappath) {
 		errno = ENOMEM;
 		return -1;
 	}
-	return SMB_VFS_NEXT_MKNOD(handle, cappath, mode, dev);
+	cap_smb_fname = synthetic_smb_fname(talloc_tos(),
+					cappath,
+					NULL,
+					NULL,
+					smb_fname->flags);
+	if (cap_smb_fname == NULL) {
+		TALLOC_FREE(cappath);
+		errno = ENOMEM;
+		return -1;
+	}
+	ret = SMB_VFS_NEXT_MKNOD(handle, cap_smb_fname, mode, dev);
+	if (ret == -1) {
+		saved_errno = errno;
+	}
+	TALLOC_FREE(cappath);
+	TALLOC_FREE(cap_smb_fname);
+	if (saved_errno != 0) {
+		errno = saved_errno;
+	}
+	return ret;
 }
 
 static char *cap_realpath(vfs_handle_struct *handle, const char *path)

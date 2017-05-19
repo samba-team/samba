@@ -1412,28 +1412,28 @@ err:
 }
 
 static int um_mknod(vfs_handle_struct *handle,
-		    const char *pathname,
+		    const struct smb_filename *smb_fname,
 		    mode_t mode,
 		    SMB_DEV_T dev)
 {
 	int status;
-	char *client_path = NULL;
+	struct smb_filename *client_fname = NULL;
 
 	DEBUG(10, ("Entering um_mknod\n"));
-	if (!is_in_media_files(pathname)) {
-		return SMB_VFS_NEXT_MKNOD(handle, pathname, mode, dev);
+	if (!is_in_media_files(smb_fname->base_name)) {
+		return SMB_VFS_NEXT_MKNOD(handle, smb_fname, mode, dev);
 	}
 
-	status = alloc_get_client_path(handle, talloc_tos(),
-				       pathname, &client_path);
+	status = alloc_get_client_smb_fname(handle, talloc_tos(),
+					    smb_fname, &client_fname);
 	if (status != 0) {
 		goto err;
 	}
 
-	status = SMB_VFS_NEXT_MKNOD(handle, client_path, mode, dev);
+	status = SMB_VFS_NEXT_MKNOD(handle, client_fname, mode, dev);
 
 err:
-	TALLOC_FREE(client_path);
+	TALLOC_FREE(client_fname);
 	return status;
 }
 

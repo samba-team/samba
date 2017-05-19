@@ -1853,34 +1853,31 @@ out:
  * Failure: set errno, return -1
  */
 static int mh_mknod(vfs_handle_struct *handle,
-		const char *pathname,
+		const struct smb_filename *smb_fname,
 		mode_t mode,
 		SMB_DEV_T dev)
 {
 	int status;
-	char *clientPath;
+	struct smb_filename *clientFname = NULL;
 	TALLOC_CTX *ctx;
 
 	DEBUG(MH_INFO_DEBUG, ("Entering mh_mknod\n"));
-	if (!is_in_media_files(pathname))
-	{
-		status = SMB_VFS_NEXT_MKNOD(handle, pathname, mode, dev);
+	if (!is_in_media_files(smb_fname->base_name)) {
+		status = SMB_VFS_NEXT_MKNOD(handle, smb_fname, mode, dev);
 		goto out;
 	}
 
-	clientPath = NULL;
 	ctx = talloc_tos();
 
-	if ((status = alloc_get_client_path(handle, ctx,
-				pathname,
-				&clientPath)))
-	{
+	if ((status = alloc_get_client_smb_fname(handle, ctx,
+				smb_fname,
+				&clientFname))) {
 		goto err;
 	}
 
-	status = SMB_VFS_NEXT_MKNOD(handle, clientPath, mode, dev);
+	status = SMB_VFS_NEXT_MKNOD(handle, clientFname, mode, dev);
 err:
-	TALLOC_FREE(clientPath);
+	TALLOC_FREE(clientFname);
 out:
 	return status;
 }

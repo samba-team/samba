@@ -1145,11 +1145,14 @@ static int cephwrap_link(struct vfs_handle_struct *handle,  const char *oldpath,
 	WRAP_RETURN(result);
 }
 
-static int cephwrap_mknod(struct vfs_handle_struct *handle,  const char *pathname, mode_t mode, SMB_DEV_T dev)
+static int cephwrap_mknod(struct vfs_handle_struct *handle,
+		const struct smb_filename *smb_fname,
+		mode_t mode,
+		SMB_DEV_T dev)
 {
 	int result = -1;
-	DBG_DEBUG("[CEPH] mknod(%p, %s)\n", handle, pathname);
-	result = ceph_mknod(handle->data, pathname, mode, dev);
+	DBG_DEBUG("[CEPH] mknod(%p, %s)\n", handle, smb_fname->base_name);
+	result = ceph_mknod(handle->data, smb_fname->base_name, mode, dev);
 	DBG_DEBUG("[CEPH] mknod(...) = %d\n", result);
 	WRAP_RETURN(result);
 }

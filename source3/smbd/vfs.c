@@ -2167,11 +2167,13 @@ int smb_vfs_call_link(struct vfs_handle_struct *handle, const char *oldpath,
 	return handle->fns->link_fn(handle, oldpath, newpath);
 }
 
-int smb_vfs_call_mknod(struct vfs_handle_struct *handle, const char *path,
-		       mode_t mode, SMB_DEV_T dev)
+int smb_vfs_call_mknod(struct vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
+			mode_t mode,
+			SMB_DEV_T dev)
 {
 	VFS_FIND(mknod);
-	return handle->fns->mknod_fn(handle, path, mode, dev);
+	return handle->fns->mknod_fn(handle, smb_fname, mode, dev);
 }
 
 char *smb_vfs_call_realpath(struct vfs_handle_struct *handle, const char *path)

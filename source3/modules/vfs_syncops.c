@@ -212,9 +212,12 @@ static int syncops_unlink(vfs_handle_struct *handle,
 }
 
 static int syncops_mknod(vfs_handle_struct *handle,
-			 const char *fname, mode_t mode, SMB_DEV_T dev)
+			const struct smb_filename *smb_fname,
+			mode_t mode,
+			SMB_DEV_T dev)
 {
-        SYNCOPS_NEXT(MKNOD, fname, (handle, fname, mode, dev));
+        SYNCOPS_NEXT_SMB_FNAME(MKNOD,
+			smb_fname, (handle, smb_fname, mode, dev));
 }
 
 static int syncops_mkdir(vfs_handle_struct *handle,

@@ -2442,12 +2442,15 @@ static int vfswrap_link(vfs_handle_struct *handle, const char *oldpath, const ch
 	return result;
 }
 
-static int vfswrap_mknod(vfs_handle_struct *handle, const char *pathname, mode_t mode, SMB_DEV_T dev)
+static int vfswrap_mknod(vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
+			mode_t mode,
+			SMB_DEV_T dev)
 {
 	int result;
 
 	START_PROFILE(syscall_mknod);
-	result = sys_mknod(pathname, mode, dev);
+	result = sys_mknod(smb_fname->base_name, mode, dev);
 	END_PROFILE(syscall_mknod);
 	return result;
 }

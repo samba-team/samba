@@ -583,10 +583,12 @@ static int skel_link(vfs_handle_struct *handle, const char *oldpath,
 	return SMB_VFS_NEXT_LINK(handle, oldpath, newpath);
 }
 
-static int skel_mknod(vfs_handle_struct *handle, const char *path, mode_t mode,
-		      SMB_DEV_T dev)
+static int skel_mknod(vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
+			mode_t mode,
+			SMB_DEV_T dev)
 {
-	return SMB_VFS_NEXT_MKNOD(handle, path, mode, dev);
+	return SMB_VFS_NEXT_MKNOD(handle, smb_fname, mode, dev);
 }
 
 static char *skel_realpath(vfs_handle_struct *handle, const char *path)
