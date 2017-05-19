@@ -188,10 +188,14 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc)
 		goto out;
 	}
 
+	salt_princ_s = kerberos_secrets_fetch_salt_princ();
+	if (salt_princ_s == NULL) {
+		DBG_WARNING("kerberos_secrets_fetch_salt_princ() failed\n");
+		ret = -1;
+		goto out;
+	}
+
 	for (i = 0; enctypes[i]; i++) {
-		salt_princ_s = kerberos_fetch_salt_princ_for_host_princ(context,
-									princ_s,
-									enctypes[i]);
 
 		/* add the fqdn principal to the keytab */
 		ret = smb_krb5_kt_add_entry(context,
@@ -205,7 +209,6 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc)
 					    false);
 		if (ret) {
 			DEBUG(1, (__location__ ": Failed to add entry to keytab\n"));
-			SAFE_FREE(salt_princ_s);
 			goto out;
 		}
 
@@ -223,14 +226,13 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc)
 			if (ret) {
 				DEBUG(1, (__location__
 					  ": Failed to add short entry to keytab\n"));
-				SAFE_FREE(salt_princ_s);
 				goto out;
 			}
 		}
-		SAFE_FREE(salt_princ_s);
 	}
 
 out:
+	SAFE_FREE(salt_princ_s);
 	TALLOC_FREE(tmpctx);
 
 	if (keytab) {
