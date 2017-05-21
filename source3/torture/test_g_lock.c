@@ -23,6 +23,7 @@
 #include "g_lock.h"
 #include "messages.h"
 #include "lib/util/server_id.h"
+#include "lib/util/sys_rw.h"
 
 static bool get_g_lock_ctx(TALLOC_CTX *mem_ctx,
 			   struct tevent_context **ev,
@@ -310,6 +311,187 @@ bool run_g_lock3(int dummy)
 		goto fail;
 	}
 
+
+	ret = true;
+fail:
+	TALLOC_FREE(ctx);
+	TALLOC_FREE(msg);
+	TALLOC_FREE(ev);
+	return ret;
+}
+
+static bool lock4_child(const char *lockname,
+			int ready_pipe, int exit_pipe)
+{
+	struct tevent_context *ev = NULL;
+	struct messaging_context *msg = NULL;
+	struct g_lock_ctx *ctx = NULL;
+	NTSTATUS status;
+	ssize_t n;
+	bool ok;
+
+	ok = get_g_lock_ctx(talloc_tos(), &ev, &msg, &ctx);
+	if (!ok) {
+		return false;
+	}
+
+	status = g_lock_lock(ctx, lockname, G_LOCK_WRITE,
+			     (struct timeval) { .tv_sec = 1 });
+	if (!NT_STATUS_IS_OK(status)) {
+		fprintf(stderr, "child: g_lock_lock returned %s\n",
+			nt_errstr(status));
+		return false;
+	}
+
+	n = sys_write(ready_pipe, &ok, sizeof(ok));
+	if (n != sizeof(ok)) {
+		fprintf(stderr, "child: write failed\n");
+		return false;
+	}
+
+	if (ok) {
+		n = sys_read(exit_pipe, &ok, sizeof(ok));
+		if (n != 0) {
+			fprintf(stderr, "child: read failed\n");
+			return false;
+		}
+	}
+
+	return true;
+}
+
+static void lock4_done(struct tevent_req *subreq)
+{
+	int *done = tevent_req_callback_data_void(subreq);
+	NTSTATUS status;
+
+	status = g_lock_lock_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		fprintf(stderr, "g_lock_lock_recv returned %s\n",
+			nt_errstr(status));
+		*done = -1;
+		return;
+	}
+	*done = 1;
+}
+
+static void lock4_waited(struct tevent_req *subreq)
+{
+        int *exit_pipe = tevent_req_callback_data_void(subreq);
+	pid_t child;
+	int status;
+	bool ok;
+
+	printf("waited\n");
+
+	ok = tevent_wakeup_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (!ok) {
+		fprintf(stderr, "tevent_wakeup_recv failed\n");
+	}
+	close(*exit_pipe);
+
+	child = wait(&status);
+
+	printf("child %d exited with %d\n", (int)child, status);
+}
+
+/*
+ * Test a lock conflict
+ */
+
+bool run_g_lock4(int dummy)
+{
+	struct tevent_context *ev = NULL;
+	struct messaging_context *msg = NULL;
+	struct g_lock_ctx *ctx = NULL;
+	const char *lockname = "lock4";
+	pid_t child;
+	int ready_pipe[2];
+	int exit_pipe[2];
+	NTSTATUS status;
+	bool ret = false;
+	struct tevent_req *req;
+	bool ok;
+	int done;
+
+	if ((pipe(ready_pipe) != 0) || (pipe(exit_pipe) != 0)) {
+		perror("pipe failed");
+		return false;
+	}
+
+	child = fork();
+
+	ok = get_g_lock_ctx(talloc_tos(), &ev, &msg, &ctx);
+	if (!ok) {
+		goto fail;
+	}
+
+	if (child == -1) {
+		perror("fork failed");
+		return false;
+	}
+
+	if (child == 0) {
+		close(ready_pipe[0]);
+		close(exit_pipe[1]);
+		ok = lock4_child(lockname, ready_pipe[1], exit_pipe[0]);
+		exit(ok ? 0 : 1);
+	}
+
+	close(ready_pipe[1]);
+	close(exit_pipe[0]);
+
+	if (sys_read(ready_pipe[0], &ok, sizeof(ok)) != sizeof(ok)) {
+		perror("read failed");
+		return false;
+	}
+
+	if (!ok) {
+		fprintf(stderr, "child returned error\n");
+		return false;
+	}
+
+	status = g_lock_lock(ctx, lockname, G_LOCK_WRITE,
+			     (struct timeval) { .tv_usec = 1 });
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+		fprintf(stderr, "g_lock_lock returned %s\n",
+			nt_errstr(status));
+		goto fail;
+	}
+
+	status = g_lock_lock(ctx, lockname, G_LOCK_READ,
+			     (struct timeval) { .tv_usec = 1 });
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+		fprintf(stderr, "g_lock_lock returned %s\n",
+			nt_errstr(status));
+		goto fail;
+	}
+
+	req = g_lock_lock_send(ev, ev, ctx, lockname, G_LOCK_WRITE);
+	if (req == NULL) {
+		fprintf(stderr, "g_lock_lock send failed\n");
+		goto fail;
+	}
+	tevent_req_set_callback(req, lock4_done, &done);
+
+	req = tevent_wakeup_send(ev, ev, timeval_current_ofs(1, 0));
+	if (req == NULL) {
+		fprintf(stderr, "tevent_wakeup_send failed\n");
+		goto fail;
+	}
+	tevent_req_set_callback(req, lock4_waited, &exit_pipe[1]);
+
+	done = 0;
+
+	while (done == 0) {
+		int tevent_ret = tevent_loop_once(ev);
+		if (tevent_ret != 0) {
+			perror("tevent_loop_once failed");
+			goto fail;
+		}
+	}
 
 	ret = true;
 fail:
