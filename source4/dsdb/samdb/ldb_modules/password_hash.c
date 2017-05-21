@@ -1229,8 +1229,17 @@ static int setup_primary_wdigest(struct setup_password_fields_io *io,
 		.user	= &sAMAccountName_l,
 		.realm	= &netbios_domain_u,
 		},
-	/* 
+	/*
 	 * sAMAccountName, dns_domain
+	 *
+	 * TODO:
+	 * Windows preserves the case of the DNS domain,
+	 * Samba lower cases the domain at provision time
+	 * This means that for mixed case Domains, the WDigest08 hash
+	 * calculated by Samba differs from that calculated by Windows.
+	 * Until we get a real world use case this will remain a known
+	 * bug, as changing the case could have unforeseen impacts.
+	 *
 	 */
 		{
 		.user	= &sAMAccountName,

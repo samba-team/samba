@@ -66,23 +66,34 @@ def calc_digest(user, realm, password):
 class PassWordHashTests(TestCase):
 
     def setUp(self):
+        self.lp = samba.tests.env_loadparm()
         super(PassWordHashTests, self).setUp()
 
     # Add a user to ldb, this will exercise the password_hash code
     # and calculate the appropriate supplemental credentials
-    def add_user(self, options=None, clear_text=False):
-        self.lp = samba.tests.env_loadparm()
+    def add_user(self, options=None, clear_text=False, ldb=None):
         # set any needed options
         if options is not None:
             for (option, value) in options:
                 self.lp.set(option, value)
 
-        self.creds = Credentials()
-        self.session = system_session()
-        self.ldb = SamDB(
-            session_info=self.session,
-            credentials=self.creds,
-            lp=self.lp)
+        if ldb is None:
+            self.creds = Credentials()
+            self.session = system_session()
+            self.creds.guess(self.lp)
+            self.session = system_session()
+            self.ldb = SamDB(session_info=self.session,
+                             credentials=self.creds,
+                             lp=self.lp)
+        else:
+            self.ldb = ldb
+
+        res = self.ldb.search(base=self.ldb.get_config_basedn(),
+                              expression="ncName=%s" % self.ldb.get_default_basedn(),
+                              attrs=["nETBIOSName"])
+        self.netbios_domain = res[0]["nETBIOSName"][0]
+        self.dns_domain = self.ldb.domain_dns_name()
+
 
         # Gets back the basedn
         base_dn = self.ldb.domain_dn()
@@ -164,59 +175,59 @@ class PassWordHashTests(TestCase):
         # Using the n-1 pattern in the array indexes to make it easier
         # to check the tests against the spec and the samba-tool user tests.
         self.check_digest(USER_NAME,
-                          self.lp.get("workgroup"),
+                          self.netbios_domain,
                           USER_PASS,
                           digests.hashes[1-1].hash)
         self.check_digest(USER_NAME.lower(),
-                          self.lp.get("workgroup").lower(),
+                          self.netbios_domain.lower(),
                           USER_PASS,
                           digests.hashes[2-1].hash)
         self.check_digest(USER_NAME.upper(),
-                          self.lp.get("workgroup").upper(),
+                          self.netbios_domain.upper(),
                           USER_PASS,
                           digests.hashes[3-1].hash)
         self.check_digest(USER_NAME,
-                          self.lp.get("workgroup").upper(),
+                          self.netbios_domain.upper(),
                           USER_PASS,
                           digests.hashes[4-1].hash)
         self.check_digest(USER_NAME,
-                          self.lp.get("workgroup").lower(),
+                          self.netbios_domain.lower(),
                           USER_PASS,
                           digests.hashes[5-1].hash)
         self.check_digest(USER_NAME.upper(),
-                          self.lp.get("workgroup").lower(),
+                          self.netbios_domain.lower(),
                           USER_PASS,
                           digests.hashes[6-1].hash)
         self.check_digest(USER_NAME.lower(),
-                          self.lp.get("workgroup").upper(),
+                          self.netbios_domain.upper(),
                           USER_PASS,
                           digests.hashes[7-1].hash)
         self.check_digest(USER_NAME,
-                          self.lp.get("realm").lower(),
+                          self.dns_domain,
                           USER_PASS,
                           digests.hashes[8-1].hash)
         self.check_digest(USER_NAME.lower(),
-                          self.lp.get("realm").lower(),
+                          self.dns_domain.lower(),
                           USER_PASS,
                           digests.hashes[9-1].hash)
         self.check_digest(USER_NAME.upper(),
-                          self.lp.get("realm"),
+                          self.dns_domain.upper(),
                           USER_PASS,
                           digests.hashes[10-1].hash)
         self.check_digest(USER_NAME,
-                          self.lp.get("realm"),
+                          self.dns_domain.upper(),
                           USER_PASS,
                           digests.hashes[11-1].hash)
         self.check_digest(USER_NAME,
-                          self.lp.get("realm").lower(),
+                          self.dns_domain.lower(),
                           USER_PASS,
                           digests.hashes[12-1].hash)
         self.check_digest(USER_NAME.upper(),
-                          self.lp.get("realm").lower(),
+                          self.dns_domain.lower(),
                           USER_PASS,
                           digests.hashes[13-1].hash)
         self.check_digest(USER_NAME.lower(),
-                          self.lp.get("realm"),
+                          self.dns_domain.upper(),
                           USER_PASS,
                           digests.hashes[14-1].hash)
         self.check_digest(UPN,
@@ -232,19 +243,19 @@ class PassWordHashTests(TestCase):
                           USER_PASS,
                           digests.hashes[17-1].hash)
 
-        name = "%s\\%s" % (self.lp.get("workgroup"), USER_NAME)
+        name = "%s\\%s" % (self.netbios_domain, USER_NAME)
         self.check_digest(name,
                           "",
                           USER_PASS,
                           digests.hashes[18-1].hash)
 
-        name = "%s\\%s" % (self.lp.get("workgroup").lower(), USER_NAME.lower())
+        name = "%s\\%s" % (self.netbios_domain.lower(), USER_NAME.lower())
         self.check_digest(name,
                           "",
                           USER_PASS,
                           digests.hashes[19-1].hash)
 
-        name = "%s\\%s" % (self.lp.get("workgroup").upper(), USER_NAME.upper())
+        name = "%s\\%s" % (self.netbios_domain.upper(), USER_NAME.upper())
         self.check_digest(name,
                           "",
                           USER_PASS,
@@ -273,19 +284,19 @@ class PassWordHashTests(TestCase):
                           "Digest",
                           USER_PASS,
                           digests.hashes[26-1].hash)
-        name = "%s\\%s" % (self.lp.get("workgroup"), USER_NAME)
+        name = "%s\\%s" % (self.netbios_domain, USER_NAME)
         self.check_digest(name,
                           "Digest",
                           USER_PASS,
                           digests.hashes[27-1].hash)
 
-        name = "%s\\%s" % (self.lp.get("workgroup").lower(), USER_NAME.lower())
+        name = "%s\\%s" % (self.netbios_domain.lower(), USER_NAME.lower())
         self.check_digest(name,
                           "Digest",
                           USER_PASS,
                           digests.hashes[28-1].hash)
 
-        name = "%s\\%s" % (self.lp.get("workgroup").upper(), USER_NAME.upper())
+        name = "%s\\%s" % (self.netbios_domain.upper(), USER_NAME.upper())
         self.check_digest(name,
                           "Digest",
                           USER_PASS,

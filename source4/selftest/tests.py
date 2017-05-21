@@ -638,6 +638,10 @@ planoldpythontestsuite("ad_dc_ntvfs:local",
 planoldpythontestsuite("fl2003dc:local",
                        "samba.tests.password_hash_fl2003",
                        extra_args=['-U"$USERNAME%$PASSWORD"'])
+# ad_dc: wDigest values over ldap
+planoldpythontestsuite("ad_dc",
+                       "samba.tests.password_hash_ldap",
+                       extra_args=['-U"$USERNAME%$PASSWORD"'])
 planoldpythontestsuite("ad_dc", "samba.tests.dcerpc.dnsserver", extra_args=['-U"$USERNAME%$PASSWORD"'])
 planoldpythontestsuite("ad_dc", "samba.tests.dcerpc.raw_protocol", extra_args=['-U"$USERNAME%$PASSWORD"'])
 plantestsuite_loadlist("samba4.ldap.python(ad_dc_ntvfs)", "ad_dc_ntvfs", [python, os.path.join(samba4srcdir, "dsdb/tests/python/ldap.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
