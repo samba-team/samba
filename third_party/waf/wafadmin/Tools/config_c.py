@@ -752,3 +752,4 @@ def cc_load_tools(conf):
 @conftest
 def cxx_load_tools(conf):
 	conf.check_tool('cxx')
+
