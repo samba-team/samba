@@ -172,6 +172,15 @@ class RodcRwdcCachedTests(password_lockout_base.BasePasswordTestCase):
             print stderr
             raise RodcRwdcTestException()
 
+    def _change_password(self, user_dn, old_password, new_password):
+        self.rwdc_db.modify_ldif(
+            "dn: %s\n"
+            "changetype: modify\n"
+            "delete: userPassword\n"
+            "userPassword: %s\n"
+            "add: userPassword\n"
+            "userPassword: %s\n" % (user_dn, old_password, new_password))
+
     def tearDown(self):
         super(RodcRwdcCachedTests, self).tearDown()
         set_auto_replication(RWDC, True)
@@ -214,6 +223,31 @@ class RodcRwdcCachedTests(password_lockout_base.BasePasswordTestCase):
 
         # make sure DCs are synchronized before the test
         self.force_replication()
+
+    def test_cache_and_flush_password(self):
+        username = self.lockout1krb5_creds.get_username()
+        userpass = self.lockout1krb5_creds.get_password()
+        userdn = "cn=%s,cn=users,%s" % (username, self.base_dn)
+
+        ldb_system = SamDB(session_info=system_session(self.lp),
+                           credentials=self.global_creds, lp=self.lp)
+
+        res = ldb_system.search(userdn, attrs=['unicodePwd'])
+        self.assertFalse('unicodePwd' in res[0])
+
+        preload_rodc_user(userdn)
+
+        res = ldb_system.search(userdn, attrs=['unicodePwd'])
+        self.assertTrue('unicodePwd' in res[0])
+
+        newpass = userpass + '!'
+
+        # Forcing replication should blank out password (when changed)
+        self._change_password(userdn, userpass, newpass)
+        self.force_replication()
+
+        res = ldb_system.search(userdn, attrs=['unicodePwd'])
+        self.assertFalse('unicodePwd' in res[0])
 
     def test_login_lockout_krb5(self):
         username = self.lockout1krb5_creds.get_username()
