@@ -537,9 +537,16 @@ bool secrets_store_machine_pw_sync(const char *pass, const char *oldpass, const 
 		return ret;
 	}
 
-	if (realm && salting_principal) {
+	if (realm != NULL) {
 		char *key = des_salt_key(realm);
-		ret = secrets_store(key, salting_principal, strlen(salting_principal)+1 );
+
+		if (salting_principal != NULL) {
+			ret = secrets_store(key,
+					    salting_principal,
+					    strlen(salting_principal)+1);
+		} else {
+			ret = secrets_delete(key);
+		}
 	}
 
 	TALLOC_FREE(frame);
