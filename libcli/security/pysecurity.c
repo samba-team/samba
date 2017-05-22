@@ -18,12 +18,11 @@
 */
 
 #include <Python.h>
+#include "python/py3compat.h"
 #include "includes.h"
 #include "libcli/util/pyerrors.h"
 #include "libcli/security/security.h"
 #include "pytalloc.h"
-
-void initsecurity(void);
 
 static PyObject *py_se_access_check(PyObject *module, PyObject *args, PyObject *kwargs)
 {
@@ -65,7 +64,7 @@ static PyObject *py_se_access_check(PyObject *module, PyObject *args, PyObject *
 		PyErr_NTSTATUS_IS_ERR_RAISE(nt_status);
 	}
 
-	return PyLong_FromLong(access_granted);
+	return PyInt_FromLong(access_granted);
 }
 
 static PyMethodDef py_security_methods[] = {
@@ -74,12 +73,21 @@ static PyMethodDef py_security_methods[] = {
 	{ NULL },
 };
 
-void initsecurity(void)
+static struct PyModuleDef moduledef = {
+	PyModuleDef_HEAD_INIT,
+	.m_name = "security",
+	.m_doc = "Security support.",
+	.m_size = -1,
+	.m_methods = py_security_methods,
+};
+
+MODULE_INIT_FUNC(security)
 {
 	PyObject *m;
 
-	m = Py_InitModule3("security", py_security_methods,
-			   "Security support.");
+	m = PyModule_Create(&moduledef);
 	if (m == NULL)
-		return;
+		return NULL;
+
+	return m;
 }
