@@ -831,6 +831,7 @@ static NTSTATUS cmd_netlogon_change_trust_pw(struct rpc_pipe_client *cli,
 					     const char **argv)
 {
         NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	const char *dcname = cli->desthost;
 
         /* Check arguments */
 
@@ -843,6 +844,7 @@ static NTSTATUS cmd_netlogon_change_trust_pw(struct rpc_pipe_client *cli,
 				 rpcclient_msg_ctx,
 				 cli->binding_handle,
 				 lp_workgroup(),
+				 dcname,
 				 true); /* force */
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
