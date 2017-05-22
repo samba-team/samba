@@ -160,6 +160,9 @@ NTSTATUS rpccli_setup_netlogon_creds(struct cli_state *cli,
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct rpc_pipe_client *netlogon_pipe = NULL;
 	struct netlogon_creds_CredentialState *creds = NULL;
+	uint8_t num_nt_hashes = 0;
+	const struct samr_Password *nt_hashes[2] = { NULL, NULL };
+	uint8_t idx_nt_hashes = 0;
 	NTSTATUS status;
 
 	status = netlogon_creds_cli_get(netlogon_creds,
@@ -196,10 +199,18 @@ NTSTATUS rpccli_setup_netlogon_creds(struct cli_state *cli,
 	}
 	talloc_steal(frame, netlogon_pipe);
 
+	nt_hashes[0] = &current_nt_hash;
+	num_nt_hashes = 1;
+	if (previous_nt_hash != NULL) {
+		nt_hashes[1] = previous_nt_hash;
+		num_nt_hashes = 2;
+	}
+
 	status = netlogon_creds_cli_auth(netlogon_creds,
 					 netlogon_pipe->binding_handle,
-					 current_nt_hash,
-					 previous_nt_hash);
+					 num_nt_hashes,
+					 nt_hashes,
+					 &idx_nt_hashes);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
 		return status;
