@@ -158,6 +158,25 @@ bool secrets_delete_entry(const char *key)
 	return NT_STATUS_IS_OK(status);
 }
 
+/*
+ * Deletes the key if it exists.
+ */
+bool secrets_delete(const char *key)
+{
+	bool exists;
+
+	if (!secrets_init()) {
+		return false;
+	}
+
+	exists = dbwrap_exists(db_ctx, string_tdb_data(key));
+	if (!exists) {
+		return true;
+	}
+
+	return secrets_delete_entry(key);
+}
+
 /**
  * Form a key for fetching a trusted domain password
  *
