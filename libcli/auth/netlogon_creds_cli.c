@@ -942,9 +942,10 @@ struct netlogon_creds_cli_auth_state {
 	struct tevent_context *ev;
 	struct netlogon_creds_cli_context *context;
 	struct dcerpc_binding_handle *binding_handle;
-	struct samr_Password current_nt_hash;
-	struct samr_Password previous_nt_hash;
-	struct samr_Password used_nt_hash;
+	uint8_t num_nt_hashes;
+	uint8_t idx_nt_hashes;
+	const struct samr_Password * const *nt_hashes;
+	const struct samr_Password *used_nt_hash;
 	char *srv_name_slash;
 	uint32_t current_flags;
 	struct netr_Credential client_challenge;
@@ -956,7 +957,6 @@ struct netlogon_creds_cli_auth_state {
 	bool try_auth3;
 	bool try_auth2;
 	bool require_auth2;
-	bool try_previous_nt_hash;
 	struct netlogon_creds_cli_locked_state *locked_state;
 };
 
@@ -967,8 +967,8 @@ struct tevent_req *netlogon_creds_cli_auth_send(TALLOC_CTX *mem_ctx,
 				struct tevent_context *ev,
 				struct netlogon_creds_cli_context *context,
 				struct dcerpc_binding_handle *b,
-				struct samr_Password current_nt_hash,
-				const struct samr_Password *previous_nt_hash)
+				uint8_t num_nt_hashes,
+				const struct samr_Password * const *nt_hashes)
 {
 	struct tevent_req *req;
 	struct netlogon_creds_cli_auth_state *state;
@@ -984,11 +984,18 @@ struct tevent_req *netlogon_creds_cli_auth_send(TALLOC_CTX *mem_ctx,
 	state->ev = ev;
 	state->context = context;
 	state->binding_handle = b;
-	state->current_nt_hash = current_nt_hash;
-	if (previous_nt_hash != NULL) {
-		state->previous_nt_hash = *previous_nt_hash;
-		state->try_previous_nt_hash = true;
+	if (num_nt_hashes < 1) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER_MIX);
+		return tevent_req_post(req, ev);
 	}
+	if (num_nt_hashes > 4) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER_MIX);
+		return tevent_req_post(req, ev);
+	}
+
+	state->num_nt_hashes = num_nt_hashes;
+	state->idx_nt_hashes = 0;
+	state->nt_hashes = nt_hashes;
 
 	if (context->db.locked_state != NULL) {
 		tevent_req_nterror(req, NT_STATUS_LOCK_NOT_GRANTED);
@@ -1019,7 +1026,7 @@ struct tevent_req *netlogon_creds_cli_auth_send(TALLOC_CTX *mem_ctx,
 		state->require_auth2 = true;
 	}
 
-	state->used_nt_hash = state->current_nt_hash;
+	state->used_nt_hash = state->nt_hashes[state->idx_nt_hashes];
 	state->current_flags = context->client.proposed_flags;
 
 	if (context->db.g_ctx != NULL) {
@@ -1141,7 +1148,7 @@ static void netlogon_creds_cli_auth_challenge_done(struct tevent_req *subreq)
 						  state->context->client.type,
 						  &state->client_challenge,
 						  &state->server_challenge,
-						  &state->used_nt_hash,
+						  state->used_nt_hash,
 						  &state->client_credential,
 						  state->current_flags);
 	if (tevent_req_nomem(state->creds, req)) {
@@ -1283,7 +1290,8 @@ static void netlogon_creds_cli_auth_srvauth_done(struct tevent_req *subreq)
 			return;
 		}
 
-		if (!state->try_previous_nt_hash) {
+		state->idx_nt_hashes += 1;
+		if (state->idx_nt_hashes >= state->num_nt_hashes) {
 			/*
 			 * we already retried, giving up...
 			 */
@@ -1294,8 +1302,7 @@ static void netlogon_creds_cli_auth_srvauth_done(struct tevent_req *subreq)
 		/*
 		 * lets retry with the old nt hash.
 		 */
-		state->try_previous_nt_hash = false;
-		state->used_nt_hash = state->previous_nt_hash;
+		state->used_nt_hash = state->nt_hashes[state->idx_nt_hashes];
 		state->current_flags = state->context->client.proposed_flags;
 		netlogon_creds_cli_auth_challenge_start(req);
 		return;
@@ -1330,43 +1337,52 @@ static void netlogon_creds_cli_auth_srvauth_done(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
-NTSTATUS netlogon_creds_cli_auth_recv(struct tevent_req *req)
+NTSTATUS netlogon_creds_cli_auth_recv(struct tevent_req *req,
+				      uint8_t *idx_nt_hashes)
 {
+	struct netlogon_creds_cli_auth_state *state =
+		tevent_req_data(req,
+		struct netlogon_creds_cli_auth_state);
 	NTSTATUS status;
+
+	*idx_nt_hashes = 0;
 
 	if (tevent_req_is_nterror(req, &status)) {
 		tevent_req_received(req);
 		return status;
 	}
 
+	*idx_nt_hashes = state->idx_nt_hashes;
 	tevent_req_received(req);
 	return NT_STATUS_OK;
 }
 
 NTSTATUS netlogon_creds_cli_auth(struct netlogon_creds_cli_context *context,
 				 struct dcerpc_binding_handle *b,
-				 struct samr_Password current_nt_hash,
-				 const struct samr_Password *previous_nt_hash)
+				 uint8_t num_nt_hashes,
+				 const struct samr_Password * const *nt_hashes,
+				 uint8_t *idx_nt_hashes)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
+	*idx_nt_hashes = 0;
+
 	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		goto fail;
 	}
 	req = netlogon_creds_cli_auth_send(frame, ev, context, b,
-					   current_nt_hash,
-					   previous_nt_hash);
+					   num_nt_hashes, nt_hashes);
 	if (req == NULL) {
 		goto fail;
 	}
 	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
 		goto fail;
 	}
-	status = netlogon_creds_cli_auth_recv(req);
+	status = netlogon_creds_cli_auth_recv(req, idx_nt_hashes);
  fail:
 	TALLOC_FREE(frame);
 	return status;

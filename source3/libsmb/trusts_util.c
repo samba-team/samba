@@ -115,7 +115,9 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 	struct trust_pw_change_state *state;
 	struct cli_credentials *creds = NULL;
 	const struct samr_Password *current_nt_hash = NULL;
-	const struct samr_Password *previous_nt_hash = NULL;
+	uint8_t num_nt_hashes = 0;
+	const struct samr_Password *nt_hashes[1] = { NULL, };
+	uint8_t idx_nt_hashes = 0;
 	enum netr_SchannelType sec_channel_type = SEC_CHAN_NULL;
 	time_t pass_last_set_time;
 	uint32_t old_version = 0;
@@ -245,6 +247,9 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	nt_hashes[0] = current_nt_hash;
+	num_nt_hashes = 1;
+
 	/*
 	 * We could use cli_credentials_get_old_nt_hash(creds, frame) to
 	 * set previous_nt_hash.
@@ -259,8 +264,9 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 	 * local secrets before doing the change.
 	 */
 	status = netlogon_creds_cli_auth(context, b,
-					 *current_nt_hash,
-					 previous_nt_hash);
+					 num_nt_hashes,
+					 nt_hashes,
+					 &idx_nt_hashes);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("netlogon_creds_cli_auth(%s) failed for old password - %s!\n",
 			  context_name, nt_errstr(status)));
@@ -349,9 +355,12 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 	/*
 	 * Now we verify the new password.
 	 */
+	nt_hashes[0] = current_nt_hash;
+	num_nt_hashes = 1;
 	status = netlogon_creds_cli_auth(context, b,
-					 *current_nt_hash,
-					 NULL); /* previous_nt_hash */
+					 num_nt_hashes,
+					 nt_hashes,
+					 &idx_nt_hashes);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("netlogon_creds_cli_auth(%s) failed for new password - %s!\n",
 			  context_name, nt_errstr(status)));
