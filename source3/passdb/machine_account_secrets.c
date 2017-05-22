@@ -571,16 +571,15 @@ char* kerberos_standard_des_salt( void )
 /************************************************************************
 ************************************************************************/
 
-static char* des_salt_key( void )
+static char *des_salt_key(const char *realm)
 {
-	char *key;
+	char *keystr;
 
-	if (asprintf(&key, "%s/DES/%s", SECRETS_SALTING_PRINCIPAL,
-		     lp_realm()) == -1) {
-		return NULL;
-	}
-
-	return key;
+	keystr = talloc_asprintf_strupper_m(talloc_tos(), "%s/DES/%s",
+					    SECRETS_SALTING_PRINCIPAL,
+					    realm);
+	SMB_ASSERT(keystr != NULL);
+	return keystr;
 }
 
 /************************************************************************
@@ -591,7 +590,8 @@ bool kerberos_secrets_store_des_salt( const char* salt )
 	char* key;
 	bool ret;
 
-	if ( (key = des_salt_key()) == NULL ) {
+	key = des_salt_key(lp_realm());
+	if (key == NULL) {
 		DEBUG(0,("kerberos_secrets_store_des_salt: failed to generate key!\n"));
 		return False;
 	}
@@ -606,7 +606,7 @@ bool kerberos_secrets_store_des_salt( const char* salt )
 
 	ret = secrets_store( key, salt, strlen(salt)+1 );
 
-	SAFE_FREE( key );
+	TALLOC_FREE(key);
 
 	return ret;
 }
@@ -619,14 +619,15 @@ char* kerberos_secrets_fetch_des_salt( void )
 {
 	char *salt, *key;
 
-	if ( (key = des_salt_key()) == NULL ) {
+	key = des_salt_key(lp_realm());
+	if (key == NULL) {
 		DEBUG(0,("kerberos_secrets_fetch_des_salt: failed to generate key!\n"));
 		return NULL;
 	}
 
 	salt = (char*)secrets_fetch( key, NULL );
 
-	SAFE_FREE( key );
+	TALLOC_FREE(key);
 
 	return salt;
 }
