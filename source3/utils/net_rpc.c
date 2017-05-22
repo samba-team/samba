@@ -279,11 +279,19 @@ static NTSTATUS rpc_changetrustpw_internals(struct net_context *c,
 					const char **argv)
 {
 	NTSTATUS status;
+	const char *dcname = NULL;
+
+	if (cli == NULL) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	dcname = smbXcli_conn_remote_name(cli->conn);
 
 	status = trust_pw_change(c->netlogon_creds,
 				 c->msg_ctx,
 				 pipe_hnd->binding_handle,
 				 c->opt_target_workgroup,
+				 dcname,
 				 true); /* force */
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, _("Failed to change machine account password: %s\n"),
