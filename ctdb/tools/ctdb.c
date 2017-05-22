@@ -4804,7 +4804,7 @@ static int control_pfetch(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	TDB_DATA key, data;
 	int ret;
 
-	if (argc < 2 || argc > 3) {
+	if (argc != 2) {
 		usage("pfetch");
 	}
 
@@ -5973,7 +5973,7 @@ static const struct ctdb_cmd {
 	{ "setdbsticky", control_setdbsticky, false, true,
 		"enable sticky records", "<dbname|dbid>"},
 	{ "pfetch", control_pfetch, false, false,
-		"fetch record from persistent database", "<dbname|dbid> <key> [<file>]" },
+		"fetch record from persistent database", "<dbname|dbid> <key>" },
 	{ "pstore", control_pstore, false, false,
 		"write record to persistent database", "<dbname|dbid> <key> <value>" },
 	{ "pdelete", control_pdelete, false, false,
