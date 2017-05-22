@@ -1709,11 +1709,10 @@ static WERROR libnet_join_post_verify(TALLOC_CTX *mem_ctx,
 static bool libnet_join_unjoindomain_remove_secrets(TALLOC_CTX *mem_ctx,
 						    struct libnet_UnjoinCtx *r)
 {
-	if (!secrets_delete_machine_password_ex(lp_workgroup())) {
-		return false;
-	}
-
-	return true;
+	/*
+	 * TODO: use values from 'struct libnet_UnjoinCtx' ?
+	 */
+	return secrets_delete_machine_password_ex(lp_workgroup(), lp_realm());
 }
 
 /****************************************************************
