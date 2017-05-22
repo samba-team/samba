@@ -1705,10 +1705,6 @@ static bool libnet_join_unjoindomain_remove_secrets(TALLOC_CTX *mem_ctx,
 		return false;
 	}
 
-	if (!secrets_delete_domain_sid(lp_workgroup())) {
-		return false;
-	}
-
 	return true;
 }
 
