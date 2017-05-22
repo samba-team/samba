@@ -1,0 +1,16 @@
+<samba:parameter name="allow unsafe cluster upgrade"
+                 context="G"
+                 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>If set to no (the default), smbd checks at startup if
+	other smbd versions are running in the cluster and refuses to
+	start if so. This is done to protect data corruption in
+	internal data structures due to incompatible Samba versions
+	running concurrently in the same cluster. Setting this
+	parameter to <value type="example">yes</value> disables this
+	safety check.
+	</para>
+</description>
+<value type="default">no</value>
+</samba:parameter>

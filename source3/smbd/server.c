@@ -53,6 +53,7 @@
 #include "smbd/smbd_cleanupd.h"
 #include "lib/util/sys_rw.h"
 #include "cleanupdb.h"
+#include "g_lock.h"
 
 #ifdef CLUSTER_SUPPORT
 #include "ctdb_protocol.h"
@@ -1442,6 +1443,110 @@ static void smbd_parent_sig_hup_handler(struct tevent_context *ev,
 	printing_subsystem_update(parent->ev_ctx, parent->msg_ctx, true);
 }
 
+struct smbd_claim_version_state {
+	TALLOC_CTX *mem_ctx;
+	char *version;
+};
+
+static void smbd_claim_version_parser(const struct g_lock_rec *locks,
+				      size_t num_locks,
+				      const uint8_t *data,
+				      size_t datalen,
+				      void *private_data)
+{
+	struct smbd_claim_version_state *state = private_data;
+
+	if (datalen == 0) {
+		state->version = NULL;
+		return;
+	}
+	if (data[datalen-1] != '\0') {
+		DBG_WARNING("Invalid samba version\n");
+		dump_data(DBGLVL_WARNING, data, datalen);
+		state->version = NULL;
+		return;
+	}
+	state->version = talloc_strdup(state->mem_ctx, (const char *)data);
+}
+
+static NTSTATUS smbd_claim_version(struct messaging_context *msg,
+				   const char *version)
+{
+	const char *name = "samba_version_string";
+	struct smbd_claim_version_state state;
+	struct g_lock_ctx *ctx;
+	NTSTATUS status;
+
+	ctx = g_lock_ctx_init(msg, msg);
+	if (ctx == NULL) {
+		DBG_WARNING("g_lock_ctx_init failed\n");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	status = g_lock_lock(ctx, name, G_LOCK_READ,
+			     (struct timeval) { .tv_sec = 60 });
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("g_lock_lock(G_LOCK_READ) failed: %s\n",
+			    nt_errstr(status));
+		TALLOC_FREE(ctx);
+		return status;
+	}
+
+	state = (struct smbd_claim_version_state) { .mem_ctx = ctx };
+
+	status = g_lock_dump(ctx, name, smbd_claim_version_parser, &state);
+	if (!NT_STATUS_IS_OK(status) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+		DBG_ERR("Could not read samba_version_string\n");
+		g_lock_unlock(ctx, name);
+		TALLOC_FREE(ctx);
+		return status;
+	}
+
+	if ((state.version != NULL) && (strcmp(version, state.version) == 0)) {
+		/*
+		 * Leave the read lock for us around. Someone else already
+		 * set the version correctly
+		 */
+		TALLOC_FREE(ctx);
+		return NT_STATUS_OK;
+	}
+
+	status = g_lock_lock(ctx, name, G_LOCK_WRITE,
+			     (struct timeval) { .tv_sec = 60 });
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("g_lock_lock(G_LOCK_WRITE) failed: %s\n",
+			    nt_errstr(status));
+		DBG_ERR("smbd %s already running, refusing to start "
+			"version %s\n", state.version, version);
+		TALLOC_FREE(ctx);
+		return NT_STATUS_SXS_VERSION_CONFLICT;
+	}
+
+	status = g_lock_write_data(ctx, name, (const uint8_t *)version,
+				   strlen(version)+1);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("g_lock_write_data failed: %s\n",
+			    nt_errstr(status));
+		TALLOC_FREE(ctx);
+		return status;
+	}
+
+	status = g_lock_lock(ctx, name, G_LOCK_READ,
+			     (struct timeval) { .tv_sec = 60 });
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("g_lock_lock(G_LOCK_READ) failed: %s\n",
+			    nt_errstr(status));
+		TALLOC_FREE(ctx);
+		return status;
+	}
+
+	/*
+	 * Leave "ctx" dangling so that g_lock.tdb keeps opened.
+	 */
+	return NT_STATUS_OK;
+}
+
 /****************************************************************************
  main program.
 ****************************************************************************/
@@ -1903,6 +2008,15 @@ extern void build_options(bool screen);
 	status = smbXsrv_open_global_init();
 	if (!NT_STATUS_IS_OK(status)) {
 		exit_daemon("Samba cannot init global open", map_errno_from_nt_status(status));
+	}
+
+	if (lp_clustering() && !lp_allow_unsafe_cluster_upgrade()) {
+		status = smbd_claim_version(msg_ctx, samba_version_string());
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_WARNING("Could not claim version: %s\n",
+				    nt_errstr(status));
+			return -1;
+		}
 	}
 
 	/* This MUST be done before start_epmd() because otherwise
