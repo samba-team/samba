@@ -30,12 +30,12 @@ static bool get_g_lock_ctx(TALLOC_CTX *mem_ctx,
 			   struct messaging_context **msg,
 			   struct g_lock_ctx **ctx)
 {
-	*ev = samba_tevent_context_init(mem_ctx);
+	*ev = server_event_context();
 	if (*ev == NULL) {
 		fprintf(stderr, "tevent_context_init failed\n");
 		return false;
 	}
-	*msg = messaging_init(*ev, *ev);
+	*msg = server_messaging_context();
 	if (*msg == NULL) {
 		fprintf(stderr, "messaging_init failed\n");
 		TALLOC_FREE(*ev);
@@ -558,8 +558,8 @@ bool run_g_lock5(int dummy)
 
 		if (child == 0) {
 			TALLOC_FREE(ctx);
-			TALLOC_FREE(msg);
-			TALLOC_FREE(ev);
+
+			status = reinit_after_fork(msg, ev, false, "");
 
 			close(ready_pipe[0]);
 			close(exit_pipe[1]);
@@ -641,4 +641,96 @@ bool run_g_lock5(int dummy)
 
 
 	return true;
+}
+
+extern int torture_numops;
+extern int torture_nprocs;
+
+static struct timeval tp1, tp2;
+
+static void start_timer(void)
+{
+	gettimeofday(&tp1,NULL);
+}
+
+static double end_timer(void)
+{
+	gettimeofday(&tp2,NULL);
+	return (tp2.tv_sec + (tp2.tv_usec*1.0e-6)) -
+		(tp1.tv_sec + (tp1.tv_usec*1.0e-6));
+}
+
+/*
+ * g_lock ping_pong
+ */
+
+bool run_g_lock_ping_pong(int dummy)
+{
+	struct tevent_context *ev = NULL;
+	struct messaging_context *msg = NULL;
+	struct g_lock_ctx *ctx = NULL;
+	fstring name;
+	NTSTATUS status;
+	int i = 0;
+	bool ret = false;
+	bool ok;
+	unsigned count = 0;
+
+	torture_nprocs = MAX(2, torture_nprocs);
+
+	ok = get_g_lock_ctx(talloc_tos(), &ev, &msg, &ctx);
+	if (!ok) {
+		goto fail;
+	}
+
+	start_timer();
+
+	snprintf(name, sizeof(name), "ping_pong_%d", i);
+
+	status = g_lock_lock(ctx, name, G_LOCK_WRITE,
+			     (struct timeval) { .tv_sec = 60 });
+	if (!NT_STATUS_IS_OK(status)) {
+		fprintf(stderr, "g_lock_lock failed: %s\n",
+			nt_errstr(status));
+		goto fail;
+	}
+
+	for (i=0; i<torture_numops; i++) {
+
+		name[10] = '0' + ((i+1) % torture_nprocs);
+
+		status = g_lock_lock(ctx, name, G_LOCK_WRITE,
+				     (struct timeval) { .tv_sec = 60 });
+		if (!NT_STATUS_IS_OK(status)) {
+			fprintf(stderr, "g_lock_lock failed: %s\n",
+				nt_errstr(status));
+			goto fail;
+		}
+
+		name[10] = '0' + ((i) % torture_nprocs);
+
+		status = g_lock_unlock(ctx, name);
+		if (!NT_STATUS_IS_OK(status)) {
+			fprintf(stderr, "g_lock_unlock failed: %s\n",
+				nt_errstr(status));
+			goto fail;
+		}
+
+		count++;
+
+		if (end_timer() > 1.0) {
+			printf("%8u locks/sec\r",
+			       (unsigned)(2*count/end_timer()));
+			fflush(stdout);
+			start_timer();
+			count=0;
+		}
+	}
+
+	ret = true;
+fail:
+	TALLOC_FREE(ctx);
+	TALLOC_FREE(msg);
+	TALLOC_FREE(ev);
+	return ret;
 }
