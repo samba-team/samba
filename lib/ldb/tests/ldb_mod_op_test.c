@@ -1847,6 +1847,241 @@ static void test_ldb_rename_during_unindexed_search(void **state)
 	return test_ldb_modify_during_search(state, false, true);
 }
 
+/*
+ * This test is also complex.
+ *
+ * The purpose is to test if a modify can occur during an ldb_search()
+ * before the end of the callback
+ *
+ * This would be a failure if if in process
+ * (1) and (2):
+ *  - (1) ldb_search() starts and calls back for a number of entries
+ *  - (2) an entry in the DB is allowed to change before the callback returns
+ *  - (1) the callback can see the modification
+ *
+ */
+
+/*
+ * This purpose of this callback is to trigger a write in
+ * the child process while a search DONE callback is in progress.
+ *
+ * In ldb 1.1.31 ldb_search() omitted to take a all-record
+ * lock for the full duration of the search and callbacks
+ *
+ * We assume that if the write will proceed, it will proceed in a 3
+ * second window after the function is called.
+ */
+
+static int test_ldb_modify_during_whole_search_callback1(struct ldb_request *req,
+							 struct ldb_reply *ares)
+{
+	int ret;
+	int pipes[2];
+	char buf[2];
+	struct modify_during_search_test_ctx *ctx = req->context;
+	struct ldb_dn *search_dn;
+	struct ldb_result *res2;
+	unsigned res_count;
+	switch (ares->type) {
+	case LDB_REPLY_ENTRY:
+	case LDB_REPLY_REFERRAL:
+		return LDB_SUCCESS;
+
+	case LDB_REPLY_DONE:
+		break;
+	}
+
+	ret = pipe(pipes);
+	assert_int_equal(ret, 0);
+
+	ctx->child_pid = fork();
+	if (ctx->child_pid == 0) {
+		TALLOC_CTX *tmp_ctx = NULL;
+		struct ldb_message *msg;
+		struct ldb_message_element *el;
+		TALLOC_FREE(ctx->test_ctx->ldb);
+		TALLOC_FREE(ctx->test_ctx->ev);
+		ctx->test_ctx->ev = tevent_context_init(ctx->test_ctx);
+		if (ctx->test_ctx->ev == NULL) {
+			exit(LDB_ERR_OPERATIONS_ERROR);
+		}
+
+		ctx->test_ctx->ldb = ldb_init(ctx->test_ctx,
+					      ctx->test_ctx->ev);
+		if (ctx->test_ctx->ldb == NULL) {
+			exit(LDB_ERR_OPERATIONS_ERROR);
+		}
+
+		ret = ldb_connect(ctx->test_ctx->ldb,
+				  ctx->test_ctx->dbpath, 0, NULL);
+		if (ret != LDB_SUCCESS) {
+			exit(ret);
+		}
+
+		tmp_ctx = talloc_new(ctx->test_ctx);
+		if (tmp_ctx == NULL) {
+			exit(LDB_ERR_OPERATIONS_ERROR);
+		}
+
+		msg = ldb_msg_new(tmp_ctx);
+		if (msg == NULL) {
+			exit(LDB_ERR_OPERATIONS_ERROR);
+		}
+
+		msg->dn = ldb_dn_new_fmt(msg, ctx->test_ctx->ldb,
+					 "cn=test_search_cn,"
+					 "dc=search_test_entry");
+		if (msg->dn == NULL) {
+			exit(LDB_ERR_OPERATIONS_ERROR);
+		}
+
+		ret = ldb_msg_add_string(msg, "filterAttr", "TRUE");
+		if (ret != 0) {
+			exit(LDB_ERR_OPERATIONS_ERROR);
+		}
+		el = ldb_msg_find_element(msg, "filterAttr");
+		if (el == NULL) {
+			exit(LDB_ERR_OPERATIONS_ERROR);
+		}
+		el->flags = LDB_FLAG_MOD_REPLACE;
+
+		ret = ldb_transaction_start(ctx->test_ctx->ldb);
+		if (ret != 0) {
+			exit(ret);
+		}
+
+		if (write(pipes[1], "GO", 2) != 2) {
+			exit(LDB_ERR_OPERATIONS_ERROR);
+		}
+
+		ret = ldb_modify(ctx->test_ctx->ldb, msg);
+		if (ret != 0) {
+			exit(ret);
+		}
+
+		ret = ldb_transaction_commit(ctx->test_ctx->ldb);
+		exit(ret);
+	}
+
+	ret = read(pipes[0], buf, 2);
+	assert_int_equal(ret, 2);
+
+	sleep(3);
+
+	/*
+	 * If writes are not blocked until after this function, we
+	 * will be able to successfully search for this modification
+	 * here
+	 */
+
+	search_dn = ldb_dn_new_fmt(ares, ctx->test_ctx->ldb,
+				   "cn=test_search_cn,"
+				   "dc=search_test_entry");
+
+	ret = ldb_search(ctx->test_ctx->ldb, ares,
+			 &res2, search_dn, LDB_SCOPE_BASE, NULL,
+			 "filterAttr=TRUE");
+
+	/*
+	 * We do this in an unusual order, because if we fail an assert before
+	 * ldb_request_done(), we will also fail to clean up as we hold locks.
+	 */
+
+	res_count = res2->count;
+	ldb_request_done(req, LDB_SUCCESS);
+	assert_int_equal(ret, 0);
+
+	/*
+	 * We got the result because of this
+	 * tests wants to demonstrate.
+	 *
+	 * Once the bug is fixed, it should
+	 * change to assert_int_equal(res_count, 0);
+	 */
+	assert_int_equal(res_count, 1);
+
+	return ret;
+}
+
+static void test_ldb_modify_during_whole_search(void **state)
+{
+	struct search_test_ctx *search_test_ctx = talloc_get_type_abort(*state,
+			struct search_test_ctx);
+	struct modify_during_search_test_ctx
+		ctx =
+		{
+		  .test_ctx = search_test_ctx->ldb_test_ctx,
+		};
+
+	int ret;
+	struct ldb_request *req;
+	pid_t pid;
+	int wstatus;
+	struct ldb_dn *search_dn;
+	struct ldb_result *res2;
+
+	tevent_loop_allow_nesting(search_test_ctx->ldb_test_ctx->ev);
+
+	ctx.basedn
+		= ldb_dn_new_fmt(search_test_ctx,
+				 search_test_ctx->ldb_test_ctx->ldb,
+				 "%s",
+				 search_test_ctx->base_dn);
+	assert_non_null(ctx.basedn);
+
+
+	/*
+	 * The search just needs to call DONE, we don't care about the
+	 * contents of the search for this test
+	 */
+	ret = ldb_build_search_req(&req,
+				   search_test_ctx->ldb_test_ctx->ldb,
+				   search_test_ctx,
+				   ctx.basedn,
+				   LDB_SCOPE_SUBTREE,
+				   "(&(!(filterAttr=*))"
+				   "(cn=test_search_cn))",
+				   NULL,
+				   NULL,
+				   &ctx,
+				   test_ldb_modify_during_whole_search_callback1,
+				   NULL);
+	assert_int_equal(ret, 0);
+	ret = ldb_request(search_test_ctx->ldb_test_ctx->ldb, req);
+
+	if (ret == LDB_SUCCESS) {
+		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
+	}
+	assert_int_equal(ret, 0);
+
+	pid = waitpid(ctx.child_pid, &wstatus, 0);
+	assert_int_equal(pid, ctx.child_pid);
+
+	assert_true(WIFEXITED(wstatus));
+
+	assert_int_equal(WEXITSTATUS(wstatus), 0);
+
+	/*
+	 * If writes are blocked until after the search function, we
+	 * will be able to successfully search for this modification
+	 * now
+	 */
+
+	search_dn = ldb_dn_new_fmt(search_test_ctx,
+				   search_test_ctx->ldb_test_ctx->ldb,
+				   "cn=test_search_cn,"
+				   "dc=search_test_entry");
+
+	ret = ldb_search(search_test_ctx->ldb_test_ctx->ldb,
+			 search_test_ctx,
+			 &res2, search_dn, LDB_SCOPE_BASE, NULL,
+			 "filterAttr=TRUE");
+	assert_int_equal(ret, 0);
+
+	/* We got the result */
+	assert_int_equal(res2->count, 1);
+}
+
 static int ldb_case_test_setup(void **state)
 {
 	int ret;
@@ -2406,6 +2641,9 @@ int main(int argc, const char **argv)
 						ldb_search_test_setup,
 						ldb_search_test_teardown),
 		cmocka_unit_test_setup_teardown(test_ldb_rename_during_indexed_search,
+						ldb_search_test_setup,
+						ldb_search_test_teardown),
+		cmocka_unit_test_setup_teardown(test_ldb_modify_during_whole_search,
 						ldb_search_test_setup,
 						ldb_search_test_teardown),
 		cmocka_unit_test_setup_teardown(test_ldb_attrs_case_insensitive,
