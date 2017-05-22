@@ -374,10 +374,18 @@ bool secrets_fetch_trust_account_password(const char *domain, uint8_t ret_pwd[16
  Routine to delete all information related to the domain joined machine.
 ************************************************************************/
 
-bool secrets_delete_machine_password_ex(const char *domain)
+bool secrets_delete_machine_password_ex(const char *domain, const char *realm)
 {
 	const char *tmpkey = NULL;
 	bool ok;
+
+	if (realm != NULL) {
+		tmpkey = des_salt_key(domain);
+		ok = secrets_delete(tmpkey);
+		if (!ok) {
+			return false;
+		}
+	}
 
 	tmpkey = domain_guid_keystr(domain);
 	ok = secrets_delete(tmpkey);
@@ -495,7 +503,7 @@ bool secrets_store_machine_pw_sync(const char *pass, const char *oldpass, const 
 	uint8_t sec_channel_bytes[4];
 
 	if (delete_join) {
-		secrets_delete_machine_password_ex(domain);
+		secrets_delete_machine_password_ex(domain, realm);
 		TALLOC_FREE(frame);
 		return true;
 	}
