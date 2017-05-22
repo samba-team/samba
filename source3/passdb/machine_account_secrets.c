@@ -377,16 +377,34 @@ bool secrets_fetch_trust_account_password(const char *domain, uint8_t ret_pwd[16
 
 bool secrets_delete_machine_password_ex(const char *domain)
 {
-	if (!secrets_delete(machine_prev_password_keystr(domain))) {
+	const char *tmpkey = NULL;
+	bool ok;
+
+	tmpkey = machine_prev_password_keystr(domain);
+	ok = secrets_delete(tmpkey);
+	if (!ok) {
 		return false;
 	}
-	if (!secrets_delete_entry(machine_password_keystr(domain))) {
+
+	tmpkey = machine_password_keystr(domain);
+	ok = secrets_delete_entry(tmpkey);
+	if (!ok) {
 		return false;
 	}
-	if (!secrets_delete_entry(machine_sec_channel_type_keystr(domain))) {
+
+	tmpkey = machine_sec_channel_type_keystr(domain);
+	ok = secrets_delete_entry(tmpkey);
+	if (!ok) {
 		return false;
 	}
-	return secrets_delete_entry(machine_last_change_time_keystr(domain));
+
+	tmpkey = machine_last_change_time_keystr(domain);
+	ok = secrets_delete_entry(tmpkey);
+	if (!ok) {
+		return false;
+	}
+
+	return true;
 }
 
 /************************************************************************
