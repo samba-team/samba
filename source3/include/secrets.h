@@ -110,7 +110,7 @@ bool secrets_fetch_trusted_domain_password(const char *domain, char** pwd,
                                            struct dom_sid  *sid, time_t *pass_last_set_time);
 bool secrets_store_trusted_domain_password(const char* domain, const char* pwd,
                                            const struct dom_sid  *sid);
-bool secrets_delete_machine_password_ex(const char *domain);
+bool secrets_delete_machine_password_ex(const char *domain, const char *realm);
 bool secrets_delete_domain_sid(const char *domain);
 bool secrets_store_machine_password(const char *pass, const char *domain, enum netr_SchannelType sec_channel);
 char *secrets_fetch_prev_machine_password(const char *domain);
