@@ -853,6 +853,7 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 			 struct messaging_context *msg_ctx,
 			 struct dcerpc_binding_handle *b,
 			 const char *domain,
+			 const char *dcname,
 			 bool force);
 
 /* The following definitions come from param/loadparm.c  */

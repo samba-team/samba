@@ -1095,6 +1095,7 @@ static void machine_password_change_handler(struct tevent_context *ctx,
 				 msg_ctx,
 				 netlogon_pipe->binding_handle,
 				 child->domain->name,
+				 child->domain->dcname,
 				 false); /* force */
 
 	DEBUG(10, ("machine_password_change_handler: "

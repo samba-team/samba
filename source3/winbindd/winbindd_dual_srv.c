@@ -734,6 +734,7 @@ NTSTATUS _wbint_ChangeMachineAccount(struct pipes_struct *p,
 				 msg_ctx,
 				 netlogon_pipe->binding_handle,
 				 domain->name,
+				 domain->dcname,
 				 true); /* force */
 
 	/* Pass back result code - zero for success, other values for
@@ -1416,6 +1417,7 @@ reconnect:
 
 	status = trust_pw_change(domain->conn.netlogon_creds,
 				 msg_ctx, b, domain->name,
+				 domain->dcname,
 				 true); /* force */
 	if (!NT_STATUS_IS_OK(status)) {
 		if (!retry && dcerpc_binding_handle_is_connected(b)) {
