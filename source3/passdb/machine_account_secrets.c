@@ -478,7 +478,6 @@ bool secrets_store_machine_pw_sync(const char *pass, const char *oldpass, const 
 	uint8_t last_change_time_store[4];
 	TALLOC_CTX *frame = talloc_stackframe();
 	uint8_t sec_channel_bytes[4];
-	void *value;
 
 	if (delete_join) {
 		secrets_delete_machine_password_ex(domain);
@@ -496,11 +495,7 @@ bool secrets_store_machine_pw_sync(const char *pass, const char *oldpass, const 
 	if (oldpass) {
 		ret = secrets_store(machine_prev_password_keystr(domain), oldpass, strlen(oldpass)+1);
 	} else {
-		value = secrets_fetch_prev_machine_password(domain);
-		if (value) {
-			SAFE_FREE(value);
-			ret = secrets_delete_prev_machine_password(domain);
-		}
+		ret = secrets_delete(machine_prev_password_keystr(domain));
 	}
 	if (!ret) {
 		TALLOC_FREE(frame);
@@ -511,14 +506,10 @@ bool secrets_store_machine_pw_sync(const char *pass, const char *oldpass, const 
 		/* We delete this and instead have the read code fall back to
 		 * a default based on server role, as our caller can't specify
 		 * this with any more certainty */
-		value = secrets_fetch(machine_sec_channel_type_keystr(domain), NULL);
-		if (value) {
-			SAFE_FREE(value);
-			ret = secrets_delete_entry(machine_sec_channel_type_keystr(domain));
-			if (!ret) {
-				TALLOC_FREE(frame);
-				return ret;
-			}
+		ret = secrets_delete(machine_sec_channel_type_keystr(domain));
+		if (!ret) {
+			TALLOC_FREE(frame);
+			return ret;
 		}
 	} else {
 		SIVAL(&sec_channel_bytes, 0, secure_channel_type);
