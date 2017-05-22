@@ -24,6 +24,7 @@
 #include "rpc_client/cli_netlogon.h"
 #include "rpc_client/cli_pipe.h"
 #include "../librpc/gen_ndr/ndr_netlogon.h"
+#include "librpc/gen_ndr/secrets.h"
 #include "secrets.h"
 #include "passdb.h"
 #include "libsmb/libsmb.h"
@@ -114,11 +115,13 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 	const char *context_name = NULL;
 	struct trust_pw_change_state *state;
 	struct cli_credentials *creds = NULL;
+	struct secrets_domain_info1 *info = NULL;
+	struct secrets_domain_info1_change *prev = NULL;
 	const struct samr_Password *current_nt_hash = NULL;
 	const struct samr_Password *previous_nt_hash = NULL;
 	uint8_t num_nt_hashes = 0;
 	uint8_t idx = 0;
-	const struct samr_Password *nt_hashes[1+1] = { NULL, };
+	const struct samr_Password *nt_hashes[1+3] = { NULL, };
 	uint8_t idx_nt_hashes = 0;
 	uint8_t idx_current = UINT8_MAX;
 	enum netr_SchannelType sec_channel_type = SEC_CHAN_NULL;
@@ -270,10 +273,75 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 		return status;
 	}
 
-	idx_current = idx;
-	nt_hashes[idx++] = current_nt_hash;
-	if (previous_nt_hash != NULL) {
-		nt_hashes[idx++] = previous_nt_hash;
+	switch (sec_channel_type) {
+
+	case SEC_CHAN_WKSTA:
+	case SEC_CHAN_BDC:
+		status = secrets_prepare_password_change(domain, dcname,
+							 new_trust_pw_str,
+							 frame, &info, &prev);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("secrets_prepare_password_change() failed for domain %s!\n",
+				  domain));
+			TALLOC_FREE(frame);
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+		TALLOC_FREE(new_trust_pw_str);
+
+		if (prev != NULL) {
+			/*
+			 * We had a failure before we changed the password.
+			 */
+			nt_hashes[idx++] = &prev->password->nt_hash;
+
+			DEBUG(0,("%s : %s(%s): A password change was already "
+				 "started against '%s' at %s. Trying to "
+				 "recover...\n",
+				 current_timestring(talloc_tos(), false),
+				 __func__, domain,
+				 prev->password->change_server,
+				 nt_time_string(talloc_tos(),
+				 prev->password->change_time)));
+			DEBUG(0,("%s : %s(%s): Last failure local[%s] remote[%s] "
+				 "against '%s' at %s.\n",
+				 current_timestring(talloc_tos(), false),
+				 __func__, domain,
+				 nt_errstr(prev->local_status),
+				 nt_errstr(prev->remote_status),
+				 prev->change_server,
+				 nt_time_string(talloc_tos(),
+				 prev->change_time)));
+		}
+
+		idx_current = idx;
+		nt_hashes[idx++] = &info->password->nt_hash;
+		if (info->old_password != NULL) {
+			nt_hashes[idx++] = &info->old_password->nt_hash;
+		}
+		if (info->older_password != NULL) {
+			nt_hashes[idx++] = &info->older_password->nt_hash;
+		}
+
+		/*
+		 * We use the password that's already persitent in
+		 * our database in order to handle failures.
+		 */
+		data_blob_clear_free(&new_trust_pw_blob);
+		new_trust_pw_blob = info->next_change->password->cleartext_blob;
+		break;
+
+	case SEC_CHAN_DNS_DOMAIN:
+	case SEC_CHAN_DOMAIN:
+		idx_current = idx;
+		nt_hashes[idx++] = current_nt_hash;
+		if (previous_nt_hash != NULL) {
+			nt_hashes[idx++] = previous_nt_hash;
+		}
+		break;
+
+	default:
+		smb_panic("Unsupported secure channel type");
+		break;
 	}
 	num_nt_hashes = idx;
 
@@ -301,11 +369,50 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 		return status;
 	}
 
+	if (prev != NULL && idx_nt_hashes == 0) {
+		DEBUG(0,("%s : %s(%s): Verified new password remotely "
+			 "without changing %s\n",
+			 current_timestring(talloc_tos(), false),
+			 __func__, domain, context_name));
+
+		status = secrets_finish_password_change(prev->password->change_server,
+							prev->password->change_time,
+							info);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("secrets_prepare_password_change() failed for domain %s!\n",
+				  domain));
+			TALLOC_FREE(frame);
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+
+		DEBUG(0,("%s : %s(%s): Recovered previous password change.\n",
+			 current_timestring(talloc_tos(), false),
+			 __func__, domain));
+		TALLOC_FREE(frame);
+		return NT_STATUS_OK;
+	}
+
 	if (idx_nt_hashes != idx_current) {
 		DEBUG(0,("%s : %s(%s): Verified older password remotely "
 			 "skip changing %s\n",
 			 current_timestring(talloc_tos(), false),
 			 __func__, domain, context_name));
+
+		if (info == NULL) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_TRUSTED_RELATIONSHIP_FAILURE;
+		}
+
+		status = secrets_defer_password_change(dcname,
+					NT_STATUS_TRUSTED_RELATIONSHIP_FAILURE,
+					NT_STATUS_NOT_COMMITTED,
+					info);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("secrets_defer_password_change() failed for domain %s!\n",
+				  domain));
+			TALLOC_FREE(frame);
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
 		TALLOC_FREE(frame);
 		return NT_STATUS_TRUSTED_RELATIONSHIP_FAILURE;
 	}
@@ -323,16 +430,9 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 
 	case SEC_CHAN_WKSTA:
 	case SEC_CHAN_BDC:
-		ok = secrets_store_machine_password(new_trust_pw_str,
-						    domain,
-						    sec_channel_type);
-		if (!ok) {
-			DEBUG(0, ("secrets_store_machine_password failed for domain %s!\n",
-				  domain));
-			TALLOC_FREE(frame);
-			return NT_STATUS_INTERNAL_DB_CORRUPTION;
-		}
-		TALLOC_FREE(new_trust_pw_str);
+		/*
+		 * we called secrets_prepare_password_change() above.
+		 */
 		break;
 
 	case SEC_CHAN_DNS_DOMAIN:
@@ -364,10 +464,48 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 						      &new_trust_pw_blob,
 						      new_trust_version);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("%s : %s(%s) remote password change set with %s failed - %s\n",
+		NTSTATUS status2;
+		const char *fn = NULL;
+
+		ok = dcerpc_binding_handle_is_connected(b);
+
+		DEBUG(0,("%s : %s(%s) remote password change with %s failed "
+			 "- %s (%s)\n",
 			 current_timestring(talloc_tos(), false),
 			 __func__, domain, context_name,
-			 nt_errstr(status)));
+			 nt_errstr(status),
+			 ok ? "connected": "disconnected"));
+
+		if (!ok) {
+			/*
+			 * The connection is broken, we don't
+			 * know if the password was changed,
+			 * we hope to have more luck next time.
+			 */
+			status2 = secrets_failed_password_change(dcname,
+							NT_STATUS_NOT_COMMITTED,
+							status,
+							info);
+			fn = "secrets_failed_password_change";
+		} else {
+			/*
+			 * The server rejected the change, we don't
+			 * retry and defer the change to the next
+			 * "machine password timeout" interval.
+			 */
+			status2 = secrets_defer_password_change(dcname,
+							NT_STATUS_NOT_COMMITTED,
+							status,
+							info);
+			fn = "secrets_defer_password_change";
+		}
+		if (!NT_STATUS_IS_OK(status2)) {
+			DEBUG(0, ("%s() failed for domain %s!\n",
+				  fn, domain));
+			TALLOC_FREE(frame);
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+
 		TALLOC_FREE(frame);
 		return status;
 	}
@@ -375,6 +513,38 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 	DEBUG(0,("%s : %s(%s): Changed password remotely using %s\n",
 		 current_timestring(talloc_tos(), false),
 		 __func__, domain, context_name));
+
+	switch (sec_channel_type) {
+
+	case SEC_CHAN_WKSTA:
+	case SEC_CHAN_BDC:
+		status = secrets_finish_password_change(
+					info->next_change->change_server,
+					info->next_change->change_time,
+					info);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("secrets_finish_password_change() failed for domain %s!\n",
+				  domain));
+			TALLOC_FREE(frame);
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+
+		DEBUG(0,("%s : %s(%s): Finished password change.\n",
+			 current_timestring(talloc_tos(), false),
+			 __func__, domain));
+		break;
+
+	case SEC_CHAN_DNS_DOMAIN:
+	case SEC_CHAN_DOMAIN:
+		/*
+		 * we used pdb_set_trusteddom_pw().
+		 */
+		break;
+
+	default:
+		smb_panic("Unsupported secure channel type");
+		break;
+	}
 
 	ok = cli_credentials_set_utf16_password(creds,
 						&new_trust_pw_blob,
