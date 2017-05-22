@@ -51,6 +51,16 @@ static const char *domain_sid_keystr(const char *domain)
 	return keystr;
 }
 
+static const char *domain_guid_keystr(const char *domain)
+{
+	char *keystr;
+
+	keystr = talloc_asprintf_strupper_m(talloc_tos(), "%s/%s",
+					    SECRETS_DOMAIN_GUID, domain);
+	SMB_ASSERT(keystr != NULL);
+	return keystr;
+}
+
 static const char *protect_ids_keystr(const char *domain)
 {
 	char *keystr;
@@ -139,7 +149,7 @@ bool secrets_fetch_domain_sid(const char *domain, struct dom_sid  *sid)
 bool secrets_store_domain_guid(const char *domain, struct GUID *guid)
 {
 	char *protect_ids;
-	fstring key;
+	const char *key;
 
 	protect_ids = secrets_fetch(protect_ids_keystr(domain), NULL);
 	if (protect_ids) {
@@ -152,24 +162,18 @@ bool secrets_store_domain_guid(const char *domain, struct GUID *guid)
 	}
 	SAFE_FREE(protect_ids);
 
-	slprintf(key, sizeof(key)-1, "%s/%s", SECRETS_DOMAIN_GUID, domain);
-	if (!strupper_m(key)) {
-		return false;
-	}
+	key = domain_guid_keystr(domain);
 	return secrets_store(key, guid, sizeof(struct GUID));
 }
 
 bool secrets_fetch_domain_guid(const char *domain, struct GUID *guid)
 {
 	struct GUID *dyn_guid;
-	fstring key;
+	const char *key;
 	size_t size = 0;
 	struct GUID new_guid;
 
-	slprintf(key, sizeof(key)-1, "%s/%s", SECRETS_DOMAIN_GUID, domain);
-	if (!strupper_m(key)) {
-		return false;
-	}
+	key = domain_guid_keystr(domain);
 	dyn_guid = (struct GUID *)secrets_fetch(key, &size);
 
 	if (!dyn_guid) {
