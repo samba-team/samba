@@ -371,14 +371,19 @@ bool secrets_fetch_trust_account_password(const char *domain, uint8_t ret_pwd[16
 }
 
 /************************************************************************
- Routine to delete the plaintext machine account password, old password,
- sec channel type and last change time from secrets database
+ Routine to delete all information related to the domain joined machine.
 ************************************************************************/
 
 bool secrets_delete_machine_password_ex(const char *domain)
 {
 	const char *tmpkey = NULL;
 	bool ok;
+
+	tmpkey = domain_guid_keystr(domain);
+	ok = secrets_delete(tmpkey);
+	if (!ok) {
+		return false;
+	}
 
 	tmpkey = machine_prev_password_keystr(domain);
 	ok = secrets_delete(tmpkey);
@@ -399,6 +404,12 @@ bool secrets_delete_machine_password_ex(const char *domain)
 	}
 
 	tmpkey = machine_last_change_time_keystr(domain);
+	ok = secrets_delete_entry(tmpkey);
+	if (!ok) {
+		return false;
+	}
+
+	tmpkey = domain_sid_keystr(domain);
 	ok = secrets_delete_entry(tmpkey);
 	if (!ok) {
 		return false;
@@ -485,7 +496,6 @@ bool secrets_store_machine_pw_sync(const char *pass, const char *oldpass, const 
 
 	if (delete_join) {
 		secrets_delete_machine_password_ex(domain);
-		secrets_delete_domain_sid(domain);
 		TALLOC_FREE(frame);
 		return true;
 	}
