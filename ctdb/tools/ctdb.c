@@ -587,7 +587,7 @@ static int h2i(char h)
 		return h - 'a' + 10;
 	}
 	if (h >= 'A' && h <= 'F') {
-		return h - 'f' + 10;
+		return h - 'A' + 10;
 	}
 	return h - '0';
 }
