@@ -272,6 +272,22 @@ static NTSTATUS g_lock_trylock(struct db_record *rec, struct server_id self,
 
 	my_lock = num_locks;	/* doesn't exist yet */
 
+	if ((type == G_LOCK_READ) && (num_locks > 0)) {
+		/*
+		 * Read locks can stay around forever if the process
+		 * dies. Do a heuristic check for process existence:
+		 * Check one random process for existence. Hopefully
+		 * this will keep runaway read locks under control.
+		 */
+		i = generate_random() % num_locks;
+
+		if (!serverid_exists(&locks[i].pid)) {
+			locks[i] = locks[num_locks-1];
+			num_locks -=1;
+			modified = true;
+		}
+	}
+
 	for (i=0; i<num_locks; i++) {
 		struct g_lock_rec *lock = &locks[i];
 
