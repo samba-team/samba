@@ -34,6 +34,8 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_PASSDB
 
+static char *des_salt_key(const char *realm);
+
 /**
  * Form a key for fetching the domain sid
  *
@@ -545,11 +547,7 @@ bool secrets_store_machine_pw_sync(const char *pass, const char *oldpass, const 
 	}
 
 	if (realm && salting_principal) {
-		char *key = talloc_asprintf(frame, "%s/DES/%s", SECRETS_SALTING_PRINCIPAL, realm);
-		if (!key) {
-			TALLOC_FREE(frame);
-			return false;
-		}
+		char *key = des_salt_key(realm);
 		ret = secrets_store(key, salting_principal, strlen(salting_principal)+1 );
 	}
 
