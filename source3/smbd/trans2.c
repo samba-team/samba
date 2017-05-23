@@ -289,7 +289,7 @@ NTSTATUS get_ea_names_from_file(TALLOC_CTX *mem_ctx,
 					     ea_namelist_size);
 	} else {
 		sizeret = SMB_VFS_LISTXATTR(conn,
-					    smb_fname->base_name,
+					    smb_fname,
 					    ea_namelist,
 					    ea_namelist_size);
 	}
@@ -307,7 +307,7 @@ NTSTATUS get_ea_names_from_file(TALLOC_CTX *mem_ctx,
 						     ea_namelist_size);
 		} else {
 			sizeret = SMB_VFS_LISTXATTR(conn,
-						    smb_fname->base_name,
+						    smb_fname,
 						    ea_namelist,
 						    ea_namelist_size);
 		}

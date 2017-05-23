@@ -1316,9 +1316,11 @@ static ssize_t vfs_gluster_fgetxattr(struct vfs_handle_struct *handle,
 }
 
 static ssize_t vfs_gluster_listxattr(struct vfs_handle_struct *handle,
-				     const char *path, char *list, size_t size)
+				const struct smb_filename *smb_fname,
+				char *list,
+				size_t size)
 {
-	return glfs_listxattr(handle->data, path, list, size);
+	return glfs_listxattr(handle->data, smb_fname->base_name, list, size);
 }
 
 static ssize_t vfs_gluster_flistxattr(struct vfs_handle_struct *handle,

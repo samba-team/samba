@@ -752,17 +752,19 @@ static size_t vxfs_filter_list(char *list, size_t size)
 	return size;
 }
 
-static ssize_t vxfs_listxattr(vfs_handle_struct *handle, const char *path,
-                              char *list, size_t size)
+static ssize_t vxfs_listxattr(vfs_handle_struct *handle,
+				const struct smb_filename *smb_fname,
+				char *list,
+				size_t size)
 {
 	ssize_t result;
 
-	result = vxfs_listxattr_path(path, list, size);
+	result = vxfs_listxattr_path(smb_fname->base_name, list, size);
 	if (result >= 0 || ((errno != ENOTSUP) && (errno != ENOSYS))) {
 		return result;
 	}
 
-	result = SMB_VFS_NEXT_LISTXATTR(handle, path, list, size);
+	result = SMB_VFS_NEXT_LISTXATTR(handle, smb_fname, list, size);
 
 	if (result <= 0) {
 		return result;

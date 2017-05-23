@@ -2757,9 +2757,12 @@ static ssize_t vfswrap_fgetxattr(struct vfs_handle_struct *handle, struct files_
 	return fgetxattr(fsp->fh->fd, name, value, size);
 }
 
-static ssize_t vfswrap_listxattr(struct vfs_handle_struct *handle, const char *path, char *list, size_t size)
+static ssize_t vfswrap_listxattr(struct vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
+			char *list,
+			size_t size)
 {
-	return listxattr(path, list, size);
+	return listxattr(smb_fname->base_name, list, size);
 }
 
 static ssize_t vfswrap_flistxattr(struct vfs_handle_struct *handle, struct files_struct *fsp, char *list, size_t size)

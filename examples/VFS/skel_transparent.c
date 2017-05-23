@@ -946,10 +946,12 @@ static ssize_t skel_fgetxattr(vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_FGETXATTR(handle, fsp, name, value, size);
 }
 
-static ssize_t skel_listxattr(vfs_handle_struct *handle, const char *path,
-			      char *list, size_t size)
+static ssize_t skel_listxattr(vfs_handle_struct *handle,
+				const struct smb_filename *smb_fname,
+				char *list,
+				size_t size)
 {
-	return SMB_VFS_NEXT_LISTXATTR(handle, path, list, size);
+	return SMB_VFS_NEXT_LISTXATTR(handle, smb_fname, list, size);
 }
 
 static ssize_t skel_flistxattr(vfs_handle_struct *handle,

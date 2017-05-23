@@ -205,6 +205,8 @@
 		to const struct smb_filename * */
 /* Version 37 - Change sys_acl_set_file from const char *
 		to const struct smb_filename * */
+/* Version 37 - Change listxattr from const char *
+		to const struct smb_filename * */
 
 #define SMB_VFS_INTERFACE_VERSION 37
 
@@ -889,7 +891,10 @@ struct vfs_fn_pointers {
 	/* EA operations. */
 	ssize_t (*getxattr_fn)(struct vfs_handle_struct *handle,const char *path, const char *name, void *value, size_t size);
 	ssize_t (*fgetxattr_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name, void *value, size_t size);
-	ssize_t (*listxattr_fn)(struct vfs_handle_struct *handle, const char *path, char *list, size_t size);
+	ssize_t (*listxattr_fn)(struct vfs_handle_struct *handle,
+					const struct smb_filename *smb_fname,
+					char *list,
+					size_t size);
 	ssize_t (*flistxattr_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, char *list, size_t size);
 	int (*removexattr_fn)(struct vfs_handle_struct *handle, const char *path, const char *name);
 	int (*fremovexattr_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name);
@@ -1354,7 +1359,9 @@ ssize_t smb_vfs_call_fgetxattr(struct vfs_handle_struct *handle,
 			       struct files_struct *fsp, const char *name,
 			       void *value, size_t size);
 ssize_t smb_vfs_call_listxattr(struct vfs_handle_struct *handle,
-			       const char *path, char *list, size_t size);
+				const struct smb_filename *smb_fname,
+				char *list,
+				size_t size);
 ssize_t smb_vfs_call_llistxattr(struct vfs_handle_struct *handle,
 				const char *path, char *list, size_t size);
 ssize_t smb_vfs_call_flistxattr(struct vfs_handle_struct *handle,

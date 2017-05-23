@@ -812,8 +812,10 @@ static ssize_t skel_fgetxattr(vfs_handle_struct *handle,
 	return -1;
 }
 
-static ssize_t skel_listxattr(vfs_handle_struct *handle, const char *path,
-			      char *list, size_t size)
+static ssize_t skel_listxattr(vfs_handle_struct *handle,
+				const struct smb_filename *smb_fname,
+				char *list,
+				size_t size)
 {
 	errno = ENOSYS;
 	return -1;

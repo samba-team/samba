@@ -2519,10 +2519,12 @@ ssize_t smb_vfs_call_fgetxattr(struct vfs_handle_struct *handle,
 }
 
 ssize_t smb_vfs_call_listxattr(struct vfs_handle_struct *handle,
-			       const char *path, char *list, size_t size)
+				const struct smb_filename *smb_fname,
+				char *list,
+				size_t size)
 {
 	VFS_FIND(listxattr);
-	return handle->fns->listxattr_fn(handle, path, list, size);
+	return handle->fns->listxattr_fn(handle, smb_fname, list, size);
 }
 
 ssize_t smb_vfs_call_flistxattr(struct vfs_handle_struct *handle,

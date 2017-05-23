@@ -1750,31 +1750,33 @@ err:
 }
 
 static ssize_t um_listxattr(struct vfs_handle_struct *handle,
-			    const char *path,
+			    const struct smb_filename *smb_fname,
 			    char *list,
 			    size_t size)
 {
 	ssize_t ret;
-	char *client_path = NULL;
+	struct smb_filename *client_fname = NULL;
 	int status;
 
 	DEBUG(10, ("Entering um_listxattr\n"));
 
-	if (!is_in_media_files(path)) {
-		return SMB_VFS_NEXT_LISTXATTR(handle, path, list, size);
+	if (!is_in_media_files(smb_fname->base_name)) {
+		return SMB_VFS_NEXT_LISTXATTR(handle, smb_fname, list, size);
 	}
 
-	status = alloc_get_client_path(handle, talloc_tos(),
-				       path, &client_path);
+	status = alloc_get_client_smb_fname(handle,
+				talloc_tos(),
+				smb_fname,
+				&client_fname);
 	if (status != 0) {
 		ret = -1;
 		goto err;
 	}
 
-	ret = SMB_VFS_NEXT_LISTXATTR(handle, client_path, list, size);
+	ret = SMB_VFS_NEXT_LISTXATTR(handle, client_fname, list, size);
 
 err:
-	TALLOC_FREE(client_path);
+	TALLOC_FREE(client_fname);
 	return ret;
 }
 

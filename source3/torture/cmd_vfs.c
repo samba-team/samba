@@ -1344,6 +1344,7 @@ static NTSTATUS cmd_listxattr(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 {
 	char *buf, *p;
 	ssize_t ret;
+	struct smb_filename *smb_fname = NULL;
 
 	if (argc != 2) {
 		printf("Usage: listxattr <path>\n");
@@ -1352,7 +1353,14 @@ static NTSTATUS cmd_listxattr(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 
 	buf = NULL;
 
-	ret = SMB_VFS_LISTXATTR(vfs->conn, argv[1], buf, talloc_get_size(buf));
+	smb_fname = synthetic_smb_fname_split(mem_ctx,
+					argv[1],
+					lp_posix_pathnames());
+	if (smb_fname == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	ret = SMB_VFS_LISTXATTR(vfs->conn, smb_fname,
+				buf, talloc_get_size(buf));
 	if (ret == -1) {
 		int err = errno;
 		printf("listxattr returned (%s)\n", strerror(err));
@@ -1362,7 +1370,8 @@ static NTSTATUS cmd_listxattr(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 	if (buf == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	ret = SMB_VFS_LISTXATTR(vfs->conn, argv[1], buf, talloc_get_size(buf));
+	ret = SMB_VFS_LISTXATTR(vfs->conn, smb_fname,
+				buf, talloc_get_size(buf));
 	if (ret == -1) {
 		int err = errno;
 		printf("listxattr returned (%s)\n", strerror(err));

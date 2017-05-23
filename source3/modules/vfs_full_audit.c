@@ -2284,13 +2284,16 @@ static ssize_t smb_full_audit_fgetxattr(struct vfs_handle_struct *handle,
 }
 
 static ssize_t smb_full_audit_listxattr(struct vfs_handle_struct *handle,
-			       const char *path, char *list, size_t size)
+				const struct smb_filename *smb_fname,
+				char *list,
+				size_t size)
 {
 	ssize_t result;
 
-	result = SMB_VFS_NEXT_LISTXATTR(handle, path, list, size);
+	result = SMB_VFS_NEXT_LISTXATTR(handle, smb_fname, list, size);
 
-	do_log(SMB_VFS_OP_LISTXATTR, (result >= 0), handle, "%s", path);
+	do_log(SMB_VFS_OP_LISTXATTR, (result >= 0), handle, "%s",
+			smb_fname->base_name);
 
 	return result;
 }

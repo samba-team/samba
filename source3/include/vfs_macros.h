@@ -525,10 +525,10 @@
 #define SMB_VFS_NEXT_FGETXATTR(handle,fsp,name,value,size) \
 	smb_vfs_call_fgetxattr((handle)->next,(fsp),(name),(value),(size))
 
-#define SMB_VFS_LISTXATTR(conn,path,list,size) \
-	smb_vfs_call_listxattr((conn)->vfs_handles,(path),(list),(size))
-#define SMB_VFS_NEXT_LISTXATTR(handle,path,list,size) \
-	smb_vfs_call_listxattr((handle)->next,(path),(list),(size))
+#define SMB_VFS_LISTXATTR(conn,smb_fname,list,size) \
+	smb_vfs_call_listxattr((conn)->vfs_handles,(smb_fname),(list),(size))
+#define SMB_VFS_NEXT_LISTXATTR(handle,smb_fname,list,size) \
+	smb_vfs_call_listxattr((handle)->next,(smb_fname),(list),(size))
 
 #define SMB_VFS_FLISTXATTR(fsp,list,size) \
 	smb_vfs_call_flistxattr((fsp)->conn->vfs_handles, (fsp), (list),(size))

@@ -2245,35 +2245,32 @@ out:
  * Failure: set errno, return -1
  */
 static ssize_t mh_listxattr(struct vfs_handle_struct *handle,
-		const char *path,
+		const struct smb_filename *smb_fname,
 		char *list,
 		size_t size)
 {
 	ssize_t ret;
-	char *clientPath;
-	TALLOC_CTX *ctx;
+	struct smb_filename *clientFname = NULL;
+	int status;
 
 	DEBUG(MH_INFO_DEBUG, ("Entering mh_listxattr\n"));
-	if (!is_in_media_files(path))
-	{
-		ret = SMB_VFS_NEXT_LISTXATTR(handle, path, list, size);
+	if (!is_in_media_files(smb_fname->base_name)) {
+		ret = SMB_VFS_NEXT_LISTXATTR(handle, smb_fname, list, size);
 		goto out;
 	}
 
-	clientPath = NULL;
-	ctx = talloc_tos();
-
-	if (alloc_get_client_path(handle, ctx,
-				path,
-				&clientPath))
-	{
+	status = alloc_get_client_smb_fname(handle,
+				talloc_tos(),
+				smb_fname,
+				&clientFname);
+	if (status != 0) {
 		ret = -1;
 		goto err;
 	}
 
-	ret = SMB_VFS_NEXT_LISTXATTR(handle, clientPath, list, size);
+	ret = SMB_VFS_NEXT_LISTXATTR(handle, clientFname, list, size);
 err:
-	TALLOC_FREE(clientPath);
+	TALLOC_FREE(clientFname);
 out:
 	return ret;
 }

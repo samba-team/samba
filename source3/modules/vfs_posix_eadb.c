@@ -179,13 +179,15 @@ static ssize_t posix_eadb_listattr(struct tdb_wrap *db_ctx,
 }
 
 static ssize_t posix_eadb_listxattr(struct vfs_handle_struct *handle,
-				   const char *path, char *list, size_t size)
+				const struct smb_filename *smb_fname,
+				char *list,
+				size_t size)
 {
 	struct tdb_wrap *db;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, db, struct tdb_wrap, return -1);
 
-	return posix_eadb_listattr(db, path, -1, list, size);
+	return posix_eadb_listattr(db, smb_fname->base_name, -1, list, size);
 }
 
 static ssize_t posix_eadb_flistxattr(struct vfs_handle_struct *handle,
