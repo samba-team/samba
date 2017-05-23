@@ -221,8 +221,8 @@ static enum ndr_err_code ndr_push_compression_mszip_chunk(struct ndr_push *ndrpu
 		z_ret = deflateInit2(z,
 				     Z_DEFAULT_COMPRESSION,
 				     Z_DEFLATED,
-				     -15,
-				     9,
+				     -MAX_WBITS,
+				     8, /* memLevel */
 				     Z_DEFAULT_STRATEGY);
 		if (z_ret != Z_OK) {
 			return ndr_push_error(ndrpush, NDR_ERR_COMPRESSION,
