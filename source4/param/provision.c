@@ -217,6 +217,9 @@ NTSTATUS provision_store_self_join(TALLOC_CTX *mem_ctx, struct loadparm_context 
 	PyObject *provision_mod, *provision_dict, *provision_fn, *py_result, *parameters, *py_sid;
 	struct ldb_context *ldb;
 	TALLOC_CTX *tmp_mem = talloc_new(mem_ctx);
+
+	*error_string = NULL;
+
 	if (!tmp_mem) {
 		return NT_STATUS_NO_MEMORY;
 	}
