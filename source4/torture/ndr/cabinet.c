@@ -4233,10 +4233,9 @@ static bool cab_file_MSZIP_check(struct torture_context *tctx,
 
 	blob = data_blob(NULL, r->cfdata[0].cbUncomp);
 	memset(blob.data, 'A', blob.length);
-#if 0
-	/* once we have MSZIP compression working we can enable this test */
+
 	torture_assert_data_blob_equal(tctx, r->cfdata[0].ab, blob, "ab");
-#endif
+
 	return true;
 }
 

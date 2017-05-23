@@ -47,6 +47,261 @@ static void  ndr_zlib_free(voidpf opaque, voidpf address)
 	talloc_free(address);
 }
 
+static enum ndr_err_code ndr_pull_compression_mszip_cab_chunk(struct ndr_pull *ndrpull,
+							      struct ndr_push *ndrpush,
+							      struct ndr_compression_state *state,
+							      ssize_t decompressed_len,
+							      ssize_t compressed_len)
+{
+	DATA_BLOB comp_chunk;
+	uint32_t comp_chunk_offset;
+	uint32_t comp_chunk_size;
+	DATA_BLOB plain_chunk;
+	uint32_t plain_chunk_offset;
+	uint32_t plain_chunk_size;
+	z_stream *z = state->mszip.z;
+	int z_ret;
+
+	plain_chunk_size = decompressed_len;
+
+	if (plain_chunk_size > 0x00008000) {
+		return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION,
+				      "Bad MSZIP CAB plain chunk size %08X > 0x00008000 (PULL)",
+				      plain_chunk_size);
+	}
+
+
+	comp_chunk_size = compressed_len;
+
+	DEBUG(9,("MSZIP CAB plain_chunk_size: %08X (%u) comp_chunk_size: %08X (%u)\n",
+		 plain_chunk_size, plain_chunk_size, comp_chunk_size, comp_chunk_size));
+
+	comp_chunk_offset = ndrpull->offset;
+	NDR_CHECK(ndr_pull_advance(ndrpull, comp_chunk_size));
+	comp_chunk.length = comp_chunk_size;
+	comp_chunk.data = ndrpull->data + comp_chunk_offset;
+
+	plain_chunk_offset = ndrpush->offset;
+	NDR_CHECK(ndr_push_zero(ndrpush, plain_chunk_size));
+	plain_chunk.length = plain_chunk_size;
+	plain_chunk.data = ndrpush->data + plain_chunk_offset;
+
+	if (comp_chunk.length < 2) {
+		return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION,
+				      "Bad MSZIP CAB comp chunk size %u < 2 (PULL)",
+				      (unsigned int)comp_chunk.length);
+	}
+	/* CK = Chris Kirmse, official Microsoft purloiner */
+	if (comp_chunk.data[0] != 'C' ||
+	    comp_chunk.data[1] != 'K') {
+		return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION,
+				      "Bad MSZIP CAB invalid prefix [%c%c] != [CK]",
+				      comp_chunk.data[0], comp_chunk.data[1]);
+	}
+
+	/*
+	 * This is a MSZIP block. It is actually using the deflate
+	 * algorithm which can be decompressed by zlib. zlib will try
+	 * to decompress as much as it can in each run. If we provide
+	 * all the input and enough room for the uncompressed output,
+	 * one call is enough. It will loop over all the sub-blocks
+	 * that make up a deflate block.
+	 *
+	 * See corresponding push function for more info.
+	 */
+
+	z->next_in = comp_chunk.data + 2;
+	z->avail_in = comp_chunk.length - 2;
+	z->next_out = plain_chunk.data;
+	z->avail_out = plain_chunk.length;
+
+	/*
+	 * Each MSZIP CDATA contains a complete deflate stream
+	 * i.e. the stream starts and ends in the CFDATA but the
+	 * _dictionnary_ is shared between all CFDATA of a CFFOLDER.
+	 *
+	 * When decompressing, the initial dictionnary of the first
+	 * CDATA is empty. All other CFDATA use the previous CFDATA
+	 * uncompressed output as dictionnary.
+	 */
+
+	if (state->mszip.dict_size) {
+		z_ret = inflateSetDictionary(z, state->mszip.dict, state->mszip.dict_size);
+		if (z_ret != Z_OK) {
+			return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION,
+					      "zlib inflateSetDictionary error %s (%d) %s (PULL)",
+					      zError(z_ret), z_ret, z->msg);
+		}
+	}
+
+	z_ret = inflate(z, Z_FINISH);
+	if (z_ret == Z_OK) {
+		/*
+		 * Z_OK here means there was no error but the stream
+		 * hasn't been fully decompressed because there was
+		 * not enough room for the output, which should not
+		 * happen
+		 */
+		return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION,
+				      "zlib inflate error not enough space for ouput (PULL)");
+	}
+	if (z_ret != Z_STREAM_END) {
+		return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION,
+				      "zlib inflate error %s (%d) %s (PULL)", zError(z_ret), z_ret, z->msg);
+	}
+
+	if (z->total_out < plain_chunk.length) {
+		return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION,
+				      "zlib uncompressed output is smaller than expected (%lu < %zu) (PULL)",
+				      z->total_out, plain_chunk.length);
+	}
+
+	/*
+	 * Keep a copy of the output to set as dictionnary for the
+	 * next decompression call.
+	 *
+	 * The input pointer seems to be still valid between calls, so
+	 * we can just store that instead of copying the memory over
+	 * the dict temp buffer.
+	 */
+	state->mszip.dict = plain_chunk.data;
+	state->mszip.dict_size = plain_chunk.length;
+
+	z_ret = inflateReset(z);
+	if (z_ret != Z_OK) {
+		return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION,
+				      "zlib inflateReset error %s (%d) %s (PULL)",
+				      zError(z_ret), z_ret, z->msg);
+	}
+
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_push_compression_mszip_cab_chunk(struct ndr_push *ndrpush,
+							      struct ndr_pull *ndrpull,
+							      struct ndr_compression_state *state)
+{
+	DATA_BLOB comp_chunk;
+	uint32_t comp_chunk_size;
+	DATA_BLOB plain_chunk;
+	uint32_t plain_chunk_size;
+	uint32_t plain_chunk_offset;
+	uint32_t max_plain_size = 0x00008000;
+	/*
+	 * The maximum compressed size of each MSZIP block is 32k + 12 bytes
+	 * header size.
+	 */
+	uint32_t max_comp_size = 0x00008000 + 12;
+	int z_ret;
+	z_stream *z;
+
+	if (ndrpull->data_size <= ndrpull->offset) {
+		return ndr_push_error(ndrpush, NDR_ERR_COMPRESSION,
+				      "strange NDR pull size and offset (integer overflow?)");
+
+	}
+
+	plain_chunk_size = MIN(max_plain_size, ndrpull->data_size - ndrpull->offset);
+	plain_chunk_offset = ndrpull->offset;
+	NDR_CHECK(ndr_pull_advance(ndrpull, plain_chunk_size));
+
+	plain_chunk.data = ndrpull->data + plain_chunk_offset;
+	plain_chunk.length = plain_chunk_size;
+
+	NDR_CHECK(ndr_push_expand(ndrpush, max_comp_size));
+
+	comp_chunk.data = ndrpush->data + ndrpush->offset;
+	comp_chunk.length = max_comp_size;
+
+	/* CK = Chris Kirmse, official Microsoft purloiner */
+	comp_chunk.data[0] = 'C';
+	comp_chunk.data[1] = 'K';
+
+	z = state->mszip.z;
+	z->next_in	= plain_chunk.data;
+	z->avail_in	= plain_chunk.length;
+	z->total_in	= 0;
+
+	z->next_out	= comp_chunk.data + 2;
+	z->avail_out	= comp_chunk.length;
+	z->total_out	= 0;
+
+	/*
+	 * See pull function for explanations of the MSZIP format.
+	 *
+	 * The CFDATA block contains a full deflate stream. Each stream
+	 * uses the uncompressed input of the previous CFDATA in the
+	 * same CFFOLDER as a dictionnary for the compression.
+	 */
+
+	if (state->mszip.dict_size) {
+		z_ret = deflateSetDictionary(z, state->mszip.dict, state->mszip.dict_size);
+		if (z_ret != Z_OK) {
+			return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION,
+					      "zlib deflateSetDictionary error %s (%d) %s (PUSH)",
+					      zError(z_ret), z_ret, z->msg);
+		}
+	}
+
+	/*
+	 * Z_FINISH should make deflate process all of the input in
+	 * one call. If the stream is not finished there was an error
+	 * e.g. not enough room to store the compressed output.
+	 */
+	z_ret = deflate(z, Z_FINISH);
+	if (z_ret != Z_STREAM_END) {
+		return ndr_push_error(ndrpush, NDR_ERR_COMPRESSION,
+				      "zlib deflate error %s (%d) %s (PUSH)",
+				      zError(z_ret), z_ret, z->msg);
+	}
+
+	if (z->avail_in) {
+		return ndr_push_error(ndrpush, NDR_ERR_COMPRESSION,
+				      "MSZIP not all avail_in[%u] bytes consumed (PUSH)",
+				      z->avail_in);
+	}
+
+	comp_chunk_size = 2 + z->total_out;
+	if (comp_chunk_size < z->total_out) {
+		return ndr_push_error(ndrpush, NDR_ERR_COMPRESSION,
+				      "strange NDR push compressed size (integer overflow?)");
+	}
+
+	z_ret = deflateReset(z);
+	if (z_ret != Z_OK) {
+		return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION,
+				      "zlib deflateReset error %s (%d) %s (PUSH)",
+				      zError(z_ret), z_ret, z->msg);
+	}
+
+	if (plain_chunk.length > talloc_array_length(state->mszip.dict)) {
+		return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION,
+				      "zlib dict buffer is too big (PUSH)");
+	}
+
+	/*
+	 * Keep a copy of the input to set as dictionnary for the next
+	 * compression call.
+	 *
+	 * Ideally we would just store the input pointer and length
+	 * without copying but the memory gets invalidated between the
+	 * calls, so we just copy to a dedicated buffer we now is
+	 * still going to been valid for the lifetime of the
+	 * compressions state object.
+	 */
+	memcpy(state->mszip.dict, plain_chunk.data, plain_chunk.length);
+	state->mszip.dict_size = plain_chunk.length;
+
+	DEBUG(9,("MSZIP comp plain_chunk_size: %08X (%u) comp_chunk_size: %08X (%u)\n",
+		 (unsigned int)plain_chunk.length,
+		 (unsigned int)plain_chunk.length,
+		 comp_chunk_size, comp_chunk_size));
+
+	ndrpush->offset += comp_chunk_size;
+	return NDR_ERR_SUCCESS;
+}
+
+
 static enum ndr_err_code ndr_pull_compression_mszip_chunk(struct ndr_pull *ndrpull,
 						 struct ndr_push *ndrpush,
 						 z_stream *z,
@@ -411,6 +666,12 @@ enum ndr_err_code ndr_pull_compression_start(struct ndr_pull *subndr,
 	NDR_ERR_HAVE_NO_MEMORY(ndrpush);
 
 	switch (compression_alg) {
+	case NDR_COMPRESSION_MSZIP_CAB:
+		NDR_CHECK(ndr_pull_compression_mszip_cab_chunk(subndr, ndrpush,
+							       subndr->cstate,
+							       decompressed_len,
+							       compressed_len));
+		break;
 	case NDR_COMPRESSION_MSZIP:
 		ZERO_STRUCT(z);
 		while (!last) {
@@ -470,6 +731,7 @@ enum ndr_err_code ndr_push_compression_start(struct ndr_push *subndr,
 	struct ndr_push *uncomndr;
 
 	switch (compression_alg) {
+	case NDR_COMPRESSION_MSZIP_CAB:
 	case NDR_COMPRESSION_MSZIP:
 	case NDR_COMPRESSION_XPRESS:
 		break;
@@ -507,6 +769,10 @@ enum ndr_err_code ndr_push_compression_end(struct ndr_push *subndr,
 	ndrpull->offset		= 0;
 
 	switch (compression_alg) {
+	case NDR_COMPRESSION_MSZIP_CAB:
+		NDR_CHECK(ndr_push_compression_mszip_cab_chunk(subndr, ndrpull, subndr->cstate));
+		break;
+
 	case NDR_COMPRESSION_MSZIP:
 		ZERO_STRUCT(z);
 		while (!last) {
