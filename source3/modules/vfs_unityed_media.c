@@ -1668,27 +1668,37 @@ err:
 }
 
 static int um_sys_acl_delete_def_file(vfs_handle_struct *handle,
-				      const char *path)
+				const struct smb_filename *smb_fname)
 {
 	int status;
-	char *client_path = NULL;
+	int saved_errno = 0;
+	struct smb_filename *client_fname = NULL;
 
 	DEBUG(10, ("Entering um_sys_acl_delete_def_file\n"));
 
-	if (!is_in_media_files(path)) {
-		return SMB_VFS_NEXT_SYS_ACL_DELETE_DEF_FILE(handle, path);
+	if (!is_in_media_files(smb_fname->base_name)) {
+		return SMB_VFS_NEXT_SYS_ACL_DELETE_DEF_FILE(handle,
+				smb_fname);
 	}
 
-	status = alloc_get_client_path(handle, talloc_tos(),
-					    path, &client_path);
+	status = alloc_get_client_smb_fname(handle,
+				talloc_tos(),
+				smb_fname,
+				&client_fname);
 	if (status != 0) {
 		goto err;
 	}
 
-	status = SMB_VFS_NEXT_SYS_ACL_DELETE_DEF_FILE(handle, client_path);
+	status = SMB_VFS_NEXT_SYS_ACL_DELETE_DEF_FILE(handle, client_fname);
 
 err:
-	TALLOC_FREE(client_path);
+	if (status == -1) {
+		saved_errno = errno;
+	}
+	TALLOC_FREE(client_fname);
+	if (saved_errno != 0) {
+		errno = saved_errno;
+	}
 	return status;
 }
 

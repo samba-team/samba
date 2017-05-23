@@ -1279,7 +1279,7 @@ static int gpfsacl_sys_acl_set_fd(vfs_handle_struct *handle,
 }
 
 static int gpfsacl_sys_acl_delete_def_file(vfs_handle_struct *handle,
-					   const char *path)
+				const struct smb_filename *smb_fname)
 {
 	struct gpfs_config_data *config;
 
@@ -1288,7 +1288,7 @@ static int gpfsacl_sys_acl_delete_def_file(vfs_handle_struct *handle,
 				return -1);
 
 	if (!config->acl) {
-		return SMB_VFS_NEXT_SYS_ACL_DELETE_DEF_FILE(handle, path);
+		return SMB_VFS_NEXT_SYS_ACL_DELETE_DEF_FILE(handle, smb_fname);
 	}
 
 	errno = ENOTSUP;

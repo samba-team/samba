@@ -2734,9 +2734,10 @@ static int vfswrap_sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp, 
 	return sys_acl_set_fd(handle, fsp, theacl);
 }
 
-static int vfswrap_sys_acl_delete_def_file(vfs_handle_struct *handle, const char *path)
+static int vfswrap_sys_acl_delete_def_file(vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname)
 {
-	return sys_acl_delete_def_file(handle, path);
+	return sys_acl_delete_def_file(handle, smb_fname);
 }
 
 /****************************************************************

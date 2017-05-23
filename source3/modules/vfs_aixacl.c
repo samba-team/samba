@@ -174,7 +174,7 @@ int aixacl_sys_acl_set_fd(vfs_handle_struct *handle,
 }
 
 int aixacl_sys_acl_delete_def_file(vfs_handle_struct *handle,
-				     const char *path)
+				const struct smb_filename *smb_fname)
 {
 	return 0; /* otherwise you can't set acl at upper level */
 }

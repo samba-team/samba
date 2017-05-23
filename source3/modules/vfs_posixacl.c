@@ -129,9 +129,9 @@ int posixacl_sys_acl_set_fd(vfs_handle_struct *handle,
 }
 
 int posixacl_sys_acl_delete_def_file(vfs_handle_struct *handle,
-				     const char *path)
+				const struct smb_filename *smb_fname)
 {
-	return acl_delete_def_file(path);
+	return acl_delete_def_file(smb_fname->base_name);
 }
 
 

@@ -783,8 +783,8 @@ int chmod_acl(connection_struct *conn, const char *name, mode_t mode);
 int inherit_access_posix_acl(connection_struct *conn, const char *inherit_from_dir,
 		       const char *name, mode_t mode);
 int fchmod_acl(files_struct *fsp, mode_t mode);
-bool set_unix_posix_default_acl(connection_struct *conn, const char *fname,
-				const SMB_STRUCT_STAT *psbuf,
+bool set_unix_posix_default_acl(connection_struct *conn,
+				const struct smb_filename *smb_fname,
 				uint16_t num_def_acls, const char *pdata);
 bool set_unix_posix_acl(connection_struct *conn, files_struct *fsp, const char *fname, uint16_t num_acls, const char *pdata);
 NTSTATUS get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fname,

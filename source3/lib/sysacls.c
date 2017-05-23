@@ -385,9 +385,9 @@ int sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp,
 }
 
 int sys_acl_delete_def_file(vfs_handle_struct *handle,
-			    const char *path)
+			const struct smb_filename *smb_fname)
 {
-	return posixacl_sys_acl_delete_def_file(handle, path);
+	return posixacl_sys_acl_delete_def_file(handle, smb_fname);
 }
 
 #elif defined(HAVE_AIX_ACLS)
@@ -418,9 +418,9 @@ int sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp,
 }
 
 int sys_acl_delete_def_file(vfs_handle_struct *handle,
-			    const char *path)
+				const struct smb_filename *smb_fname)
 {
-	return aixacl_sys_acl_delete_def_file(handle, path);
+	return aixacl_sys_acl_delete_def_file(handle, smb_fname);
 }
 
 #elif defined(HAVE_TRU64_ACLS)
@@ -452,9 +452,9 @@ int sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp,
 }
 
 int sys_acl_delete_def_file(vfs_handle_struct *handle,
-			    const char *path)
+				const struct smb_filename *smb_fname)
 {
-	return tru64acl_sys_acl_delete_def_file(handle, path);
+	return tru64acl_sys_acl_delete_def_file(handle, smb_fname);
 }
 
 #elif defined(HAVE_SOLARIS_UNIXWARE_ACLS)
@@ -487,9 +487,9 @@ int sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp,
 }
 
 int sys_acl_delete_def_file(vfs_handle_struct *handle,
-			    const char *path)
+				const struct smb_filename *smb_fname)
 {
-	return solarisacl_sys_acl_delete_def_file(handle, path);
+	return solarisacl_sys_acl_delete_def_file(handle, smb_fname);
 }
 
 #elif defined(HAVE_HPUX_ACLS)
@@ -520,9 +520,9 @@ int sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp,
 }
 
 int sys_acl_delete_def_file(vfs_handle_struct *handle,
-			    const char *path)
+				const struct smb_filename *smb_fname)
 {
-	return hpuxacl_sys_acl_delete_def_file(handle, path);
+	return hpuxacl_sys_acl_delete_def_file(handle, smb_fname);
 }
 
 #else /* No ACLs. */
@@ -573,7 +573,7 @@ int sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp,
 }
 
 int sys_acl_delete_def_file(vfs_handle_struct *handle,
-			    const char *path)
+				const struct smb_filename *smb_fname)
 {
 #ifdef ENOTSUP
 	errno = ENOTSUP;

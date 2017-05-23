@@ -358,7 +358,7 @@ int hpuxacl_sys_acl_set_fd(vfs_handle_struct *handle,
  * check is considered unnecessary. --- Agreed? XXX
  */
 int hpuxacl_sys_acl_delete_def_file(vfs_handle_struct *handle,
-				    const char *path)
+				const struct smb_filename *smb_fname)
 {
 	SMB_ACL_T smb_acl;
 	int ret = -1;
@@ -367,7 +367,7 @@ int hpuxacl_sys_acl_delete_def_file(vfs_handle_struct *handle,
 
 	DEBUG(10, ("entering hpuxacl_sys_acl_delete_def_file.\n"));
 
-	smb_acl = hpuxacl_sys_acl_get_file(handle, path, 
+	smb_acl = hpuxacl_sys_acl_get_file(handle, smb_fname->base_name,
 					   SMB_ACL_TYPE_ACCESS);
 	if (smb_acl == NULL) {
 		DEBUG(10, ("getting file acl failed!\n"));
@@ -383,7 +383,8 @@ int hpuxacl_sys_acl_delete_def_file(vfs_handle_struct *handle,
 		DEBUG(10, ("resulting acl is not valid!\n"));
 		goto done;
 	}
-	ret = acl(discard_const_p(char, path), ACL_SET, count, hpux_acl);
+	ret = acl(discard_const_p(char, smb_fname->base_name),
+				ACL_SET, count, hpux_acl);
 	if (ret != 0) {
 		DEBUG(10, ("settinge file acl failed!\n"));
 	}

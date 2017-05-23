@@ -498,7 +498,9 @@ int posixacl_xattr_acl_set_fd(vfs_handle_struct *handle,
 }
 
 int posixacl_xattr_acl_delete_def_file(vfs_handle_struct *handle,
-				       const char *path_p)
+				const struct smb_filename *smb_fname)
 {
-	return SMB_VFS_REMOVEXATTR(handle->conn, path_p, ACL_EA_DEFAULT);
+	return SMB_VFS_REMOVEXATTR(handle->conn,
+			smb_fname->base_name,
+			ACL_EA_DEFAULT);
 }

@@ -615,7 +615,7 @@ static int nfs4acl_xattr_fail__sys_acl_set_fd(vfs_handle_struct *handle,
 }
 
 static int nfs4acl_xattr_fail__sys_acl_delete_def_file(vfs_handle_struct *handle,
-						const char *path)
+			const struct smb_filename *smb_fname)
 {
 	return -1;
 }

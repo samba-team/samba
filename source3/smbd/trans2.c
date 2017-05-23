@@ -7157,7 +7157,7 @@ static NTSTATUS smb_set_posix_acl(connection_struct *conn,
 	}
 
 	if (valid_def_acls && !set_unix_posix_default_acl(conn,
-		smb_fname->base_name, &smb_fname->st, num_def_acls,
+		smb_fname, num_def_acls,
 		pdata + SMB_POSIX_ACL_HEADER_SIZE +
 		(num_file_acls*SMB_POSIX_ACL_ENTRY_SIZE))) {
 		return map_nt_error_from_unix(errno);

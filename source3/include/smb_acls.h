@@ -24,6 +24,7 @@
 
 struct vfs_handle_struct;
 struct files_struct;
+struct smb_filename;
 
 typedef int			SMB_ACL_TYPE_T;
 typedef mode_t			*SMB_ACL_PERMSET_T;
@@ -61,7 +62,7 @@ int sys_acl_set_file(struct vfs_handle_struct *handle,
 int sys_acl_set_fd(struct vfs_handle_struct *handle, struct files_struct *fsp,
 		   SMB_ACL_T acl_d);
 int sys_acl_delete_def_file(struct vfs_handle_struct *handle,
-			    const char *path);
+			const struct smb_filename *smb_fname);
 int no_acl_syscall_error(int err);
 
 #endif /* _SMB_ACLS_H */

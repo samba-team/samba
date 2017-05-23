@@ -148,9 +148,9 @@ int tru64acl_sys_acl_set_fd(vfs_handle_struct *handle,
 }
 
 int tru64acl_sys_acl_delete_def_file(vfs_handle_struct *handle,
-				     const char *path)
+				const struct smb_filename *smb_fname)
 {
-	return acl_delete_def_file((char *)path);
+	return acl_delete_def_file((char *)smb_fname->base_name);
 }
 
 

@@ -3927,7 +3927,7 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32_t security_info_sent, const struct
 				become_root();
 			}
 			sret = SMB_VFS_SYS_ACL_DELETE_DEF_FILE(conn,
-			    fsp->fsp_name->base_name);
+			    fsp->fsp_name);
 			if (set_acl_as_root) {
 				unbecome_root();
 			}
@@ -3943,7 +3943,7 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32_t security_info_sent, const struct
 					sret =
 					    SMB_VFS_SYS_ACL_DELETE_DEF_FILE(
 						    conn,
-						    fsp->fsp_name->base_name);
+						    fsp->fsp_name);
 					unbecome_root();
 				}
 
@@ -4410,14 +4410,18 @@ static SMB_ACL_T create_posix_acl_from_wire(connection_struct *conn,
  on the directory.
 ****************************************************************************/
 
-bool set_unix_posix_default_acl(connection_struct *conn, const char *fname, const SMB_STRUCT_STAT *psbuf,
-				uint16_t num_def_acls, const char *pdata)
+bool set_unix_posix_default_acl(connection_struct *conn,
+				const struct smb_filename *smb_fname,
+				uint16_t num_def_acls,
+				const char *pdata)
 {
 	SMB_ACL_T def_acl = NULL;
 
-	if (!S_ISDIR(psbuf->st_ex_mode)) {
+	if (!S_ISDIR(smb_fname->st.st_ex_mode)) {
 		if (num_def_acls) {
-			DEBUG(5,("set_unix_posix_default_acl: Can't set default ACL on non-directory file %s\n", fname ));
+			DEBUG(5,("set_unix_posix_default_acl: Can't "
+				"set default ACL on non-directory file %s\n",
+				smb_fname->base_name ));
 			errno = EISDIR;
 			return False;
 		} else {
@@ -4427,9 +4431,9 @@ bool set_unix_posix_default_acl(connection_struct *conn, const char *fname, cons
 
 	if (!num_def_acls) {
 		/* Remove the default ACL. */
-		if (SMB_VFS_SYS_ACL_DELETE_DEF_FILE(conn, fname) == -1) {
+		if (SMB_VFS_SYS_ACL_DELETE_DEF_FILE(conn, smb_fname) == -1) {
 			DEBUG(5,("set_unix_posix_default_acl: acl_delete_def_file failed on directory %s (%s)\n",
-				fname, strerror(errno) ));
+				smb_fname->base_name, strerror(errno) ));
 			return False;
 		}
 		return True;
@@ -4441,14 +4445,16 @@ bool set_unix_posix_default_acl(connection_struct *conn, const char *fname, cons
 		return False;
 	}
 
-	if (SMB_VFS_SYS_ACL_SET_FILE(conn, fname, SMB_ACL_TYPE_DEFAULT, def_acl) == -1) {
+	if (SMB_VFS_SYS_ACL_SET_FILE(conn, smb_fname->base_name,
+				SMB_ACL_TYPE_DEFAULT, def_acl) == -1) {
 		DEBUG(5,("set_unix_posix_default_acl: acl_set_file failed on directory %s (%s)\n",
-			fname, strerror(errno) ));
+			smb_fname->base_name, strerror(errno) ));
 	        TALLOC_FREE(def_acl);
 		return False;
 	}
 
-	DEBUG(10,("set_unix_posix_default_acl: set default acl for file %s\n", fname ));
+	DEBUG(10,("set_unix_posix_default_acl: set default acl for file %s\n",
+		smb_fname->base_name ));
 	TALLOC_FREE(def_acl);
 	return True;
 }

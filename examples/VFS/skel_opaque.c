@@ -787,7 +787,7 @@ static int skel_sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp,
 }
 
 static int skel_sys_acl_delete_def_file(vfs_handle_struct *handle,
-					const char *path)
+					const struct smb_filename *smb_fname)
 {
 	errno = ENOSYS;
 	return -1;

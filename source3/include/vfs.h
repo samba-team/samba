@@ -197,6 +197,8 @@
 /* Version 36 - Remove is_offline and set_offline */
 /* Version 37 - Module init functions now take a TALLOC_CTX * parameter. */
 /* Version 37 - Add vfs_copy_chunk_flags for DUP_EXTENTS_TO_FILE */
+/* Version 37 - Change sys_acl_delete_def_file from const char *
+		to const struct smb_filename * */
 
 #define SMB_VFS_INTERFACE_VERSION 37
 
@@ -872,7 +874,8 @@ struct vfs_fn_pointers {
 				      DATA_BLOB *blob);
 	int (*sys_acl_set_file_fn)(struct vfs_handle_struct *handle, const char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl);
 	int (*sys_acl_set_fd_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_ACL_T theacl);
-	int (*sys_acl_delete_def_file_fn)(struct vfs_handle_struct *handle, const char *path);
+	int (*sys_acl_delete_def_file_fn)(struct vfs_handle_struct *handle,
+					const struct smb_filename *smb_fname);
 
 	/* EA operations. */
 	ssize_t (*getxattr_fn)(struct vfs_handle_struct *handle,const char *path, const char *name, void *value, size_t size);
@@ -1333,7 +1336,7 @@ int smb_vfs_call_sys_acl_set_file(struct vfs_handle_struct *handle,
 int smb_vfs_call_sys_acl_set_fd(struct vfs_handle_struct *handle,
 				struct files_struct *fsp, SMB_ACL_T theacl);
 int smb_vfs_call_sys_acl_delete_def_file(struct vfs_handle_struct *handle,
-					 const char *path);
+				const struct smb_filename *smb_fname);
 ssize_t smb_vfs_call_getxattr(struct vfs_handle_struct *handle,
 			      const char *path, const char *name, void *value,
 			      size_t size);

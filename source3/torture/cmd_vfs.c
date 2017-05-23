@@ -1778,17 +1778,29 @@ static NTSTATUS cmd_sys_acl_delete_def_file(struct vfs_state *vfs, TALLOC_CTX *m
 					    int argc, const char **argv)
 {
 	int ret;
+	struct smb_filename *smb_fname = NULL;
 
 	if (argc != 2) {
 		printf("Usage: sys_acl_delete_def_file <path>\n");
 		return NT_STATUS_OK;
 	}
 
-	ret = SMB_VFS_SYS_ACL_DELETE_DEF_FILE(vfs->conn, argv[1]);
+	smb_fname = synthetic_smb_fname(talloc_tos(),
+					argv[1],
+					NULL,
+					NULL,
+					ssf_flags());
+
+	if (smb_fname == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	ret = SMB_VFS_SYS_ACL_DELETE_DEF_FILE(vfs->conn, smb_fname);
 	if (ret == -1) {
 		printf("sys_acl_delete_def_file failed (%s)\n", strerror(errno));
+		TALLOC_FREE(smb_fname);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
+	TALLOC_FREE(smb_fname);
 	return NT_STATUS_OK;
 }
 

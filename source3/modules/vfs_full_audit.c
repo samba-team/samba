@@ -2241,15 +2241,14 @@ static int smb_full_audit_sys_acl_set_fd(vfs_handle_struct *handle, files_struct
 }
 
 static int smb_full_audit_sys_acl_delete_def_file(vfs_handle_struct *handle,
-
-					 const char *path)
+				const struct smb_filename *smb_fname)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_SYS_ACL_DELETE_DEF_FILE(handle, path);
+	result = SMB_VFS_NEXT_SYS_ACL_DELETE_DEF_FILE(handle, smb_fname);
 
 	do_log(SMB_VFS_OP_SYS_ACL_DELETE_DEF_FILE, (result >= 0), handle,
-	       "%s", path);
+	       "%s", smb_fname->base_name);
 
 	return result;
 }

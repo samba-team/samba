@@ -923,9 +923,9 @@ static int skel_sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp,
 }
 
 static int skel_sys_acl_delete_def_file(vfs_handle_struct *handle,
-					const char *path)
+					const struct smb_filename *smb_fname)
 {
-	return SMB_VFS_NEXT_SYS_ACL_DELETE_DEF_FILE(handle, path);
+	return SMB_VFS_NEXT_SYS_ACL_DELETE_DEF_FILE(handle, smb_fname);
 }
 
 static ssize_t skel_getxattr(vfs_handle_struct *handle, const char *path,

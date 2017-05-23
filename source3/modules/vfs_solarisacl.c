@@ -298,7 +298,7 @@ int solarisacl_sys_acl_set_fd(vfs_handle_struct *handle,
  * check is considered unnecessary. --- Agreed? XXX
  */
 int solarisacl_sys_acl_delete_def_file(vfs_handle_struct *handle,
-				       const char *path)
+				struct smb_filename *smb_fname)
 {
 	SMB_ACL_T smb_acl;
 	int ret = -1;
@@ -307,7 +307,7 @@ int solarisacl_sys_acl_delete_def_file(vfs_handle_struct *handle,
 
 	DEBUG(10, ("entering solarisacl_sys_acl_delete_def_file.\n"));
 	
-	smb_acl = solarisacl_sys_acl_get_file(handle, path, 
+	smb_acl = solarisacl_sys_acl_get_file(handle, smb_fname->base_name,
 					      SMB_ACL_TYPE_ACCESS, talloc_tos());
 	if (smb_acl == NULL) {
 		DEBUG(10, ("getting file acl failed!\n"));
@@ -323,7 +323,7 @@ int solarisacl_sys_acl_delete_def_file(vfs_handle_struct *handle,
 		DEBUG(10, ("resulting acl is not valid!\n"));
 		goto done;
 	}
-	ret = acl(path, SETACL, count, solaris_acl);
+	ret = acl(smb_fname->base_name, SETACL, count, solaris_acl);
 	if (ret != 0) {
 		DEBUG(10, ("settinge file acl failed!\n"));
 	}
