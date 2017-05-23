@@ -863,13 +863,6 @@ exit:
 	return ealen;
 }
 
-static int ad_open_meta(const struct smb_filename *smb_fname,
-			int flags,
-			mode_t mode)
-{
-	return open(smb_fname->base_name, flags, mode);
-}
-
 static int ad_open_rsrc_xattr(const struct smb_filename *smb_fname,
 				int flags,
 				mode_t mode)
@@ -923,34 +916,45 @@ static int ad_open_rsrc(vfs_handle_struct *handle,
 	return fd;
 }
 
+/*
+ * Here's the deal: for ADOUBLE_META we can do without an fd as we can issue
+ * path based xattr calls. For ADOUBLE_RSRC however we need a full-fledged fd
+ * for file IO on the ._ file.
+ */
 static int ad_open(vfs_handle_struct *handle,
 		   struct adouble *ad,
+		   files_struct *fsp,
 		   const struct smb_filename *smb_fname,
-		   adouble_type_t t,
 		   int flags,
 		   mode_t mode)
 {
 	int fd;
 
-	DBG_DEBUG("Path [%s] type [%s]\n",
-		  smb_fname->base_name, t == ADOUBLE_META ? "meta" : "rsrc");
+	DBG_DEBUG("Path [%s] type [%s]\n", smb_fname->base_name,
+		  ad->ad_type == ADOUBLE_META ? "meta" : "rsrc");
 
-	if (t == ADOUBLE_META) {
-		fd = ad_open_meta(smb_fname, flags, mode);
-	} else {
-		fd = ad_open_rsrc(handle, smb_fname, flags, mode);
+	if (ad->ad_type == ADOUBLE_META) {
+		return 0;
 	}
 
-	if (fd != -1) {
-		ad->ad_opened = true;
-		ad->ad_fd = fd;
+	if ((fsp != NULL) && (fsp->fh != NULL) && (fsp->fh->fd != -1)) {
+		ad->ad_fd = fsp->fh->fd;
+		ad->ad_opened = false;
+		return 0;
 	}
+
+	fd = ad_open_rsrc(handle, smb_fname, flags, mode);
+	if (fd == -1) {
+		return -1;
+	}
+	ad->ad_opened = true;
+	ad->ad_fd = fd;
 
 	DBG_DEBUG("Path [%s] type [%s] fd [%d]\n",
 		  smb_fname->base_name,
-		  t == ADOUBLE_META ? "meta" : "rsrc", fd);
+		  ad->ad_type == ADOUBLE_META ? "meta" : "rsrc", fd);
 
-	return fd;
+	return 0;
 }
 
 static ssize_t ad_read_rsrc_xattr(struct adouble *ad)
@@ -1254,7 +1258,6 @@ static struct adouble *ad_get(TALLOC_CTX *ctx, vfs_handle_struct *handle,
 	int rc = 0;
 	ssize_t len;
 	struct adouble *ad = NULL;
-	int fd;
 	int mode;
 
 	DEBUG(10, ("ad_get(%s) called for %s\n",
@@ -1267,29 +1270,20 @@ static struct adouble *ad_get(TALLOC_CTX *ctx, vfs_handle_struct *handle,
 		goto exit;
 	}
 
-	/*
-	 * Here's the deal: for ADOUBLE_META we can do without an fd
-	 * as we can issue path based xattr calls. For ADOUBLE_RSRC
-	 * however we need a full-fledged fd for file IO on the ._
-	 * file.
-	 */
-	if (type == ADOUBLE_RSRC) {
-		/* Try rw first so we can use the fd in ad_convert() */
-		mode = O_RDWR;
+	/* Try rw first so we can use the fd in ad_convert() */
+	mode = O_RDWR;
 
-		fd = ad_open(handle, ad, smb_fname, ADOUBLE_RSRC, mode, 0);
-		if (fd == -1 && ((errno == EROFS) || (errno == EACCES))) {
-			mode = O_RDONLY;
-			fd = ad_open(handle, ad, smb_fname,
-					ADOUBLE_RSRC, mode, 0);
-		}
+	rc = ad_open(handle, ad, NULL, smb_fname, mode, 0);
+	if (rc == -1 && ((errno == EROFS) || (errno == EACCES))) {
+		mode = O_RDONLY;
+		rc = ad_open(handle, ad, NULL, smb_fname, mode, 0);
+	}
 
-		if (fd == -1) {
-			DBG_DEBUG("ad_open [%s] error [%s]\n",
-				  smb_fname->base_name, strerror(errno));
-			rc = -1;
-			goto exit;
-		}
+	if (rc == -1) {
+		DBG_DEBUG("ad_open [%s] error [%s]\n",
+			  smb_fname->base_name, strerror(errno));
+		goto exit;
+
 	}
 
 	len = ad_read(ad, smb_fname);
@@ -1327,6 +1321,7 @@ static struct adouble *ad_fget(TALLOC_CTX *ctx, vfs_handle_struct *handle,
 	int rc = 0;
 	ssize_t len;
 	struct adouble *ad = NULL;
+	int mode;
 
 	DBG_DEBUG("ad_get(%s) path [%s]\n",
 		  type == ADOUBLE_META ? "meta" : "rsrc",
@@ -1338,40 +1333,17 @@ static struct adouble *ad_fget(TALLOC_CTX *ctx, vfs_handle_struct *handle,
 		goto exit;
 	}
 
-	if ((fsp->fh != NULL) && (fsp->fh->fd != -1)) {
-		ad->ad_fd = fsp->fh->fd;
-	} else {
-		/*
-		 * Here's the deal: for ADOUBLE_META we can do without an fd
-		 * as we can issue path based xattr calls. For ADOUBLE_RSRC
-		 * however we need a full-fledged fd for file IO on the ._
-		 * file.
-		 */
-		int fd;
-		int mode;
+	/* Try rw first so we can use the fd in ad_convert() */
+	mode = O_RDWR;
 
-		if (type == ADOUBLE_RSRC) {
-			/* Try rw first so we can use the fd in ad_convert() */
-			mode = O_RDWR;
-
-			fd = ad_open(handle, ad, fsp->base_fsp->fsp_name,
-					ADOUBLE_RSRC, mode, 0);
-			if (fd == -1 &&
-			    ((errno == EROFS) || (errno == EACCES)))
-			{
-				mode = O_RDONLY;
-				fd = ad_open(handle, ad,
-					fsp->base_fsp->fsp_name, ADOUBLE_RSRC,
-					mode, 0);
-			}
-
-			if (fd == -1) {
-				DBG_DEBUG("error opening AppleDouble for %s\n",
-					fsp_str_dbg(fsp));
-				rc = -1;
-				goto exit;
-			}
-		}
+	rc = ad_open(handle, ad, fsp, fsp->base_fsp->fsp_name, mode, 0);
+	if (rc == -1 && ((errno == EROFS) || (errno == EACCES))) {
+		mode = O_RDONLY;
+		rc = ad_open(handle, ad, fsp, fsp->base_fsp->fsp_name, mode, 0);
+	}
+	if (rc == -1) {
+		DBG_DEBUG("error opening AppleDouble [%s]\n", fsp_str_dbg(fsp));
+		goto exit;
 	}
 
 	len = ad_read(ad, fsp->base_fsp->fsp_name);
