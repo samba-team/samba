@@ -2684,56 +2684,24 @@ static int fruit_open_meta_netatalk(vfs_handle_struct *handle,
 				    int flags,
 				    mode_t mode)
 {
-	int rc = 0;
-	struct smb_filename *smb_fname_base = NULL;
-	int baseflags;
-	int hostfd = -1;
+	int rc;
+	int fakefd = -1;
 	struct adouble *ad = NULL;
+	int fds[2];
 
 	DBG_DEBUG("Path [%s]\n", smb_fname_str_dbg(smb_fname));
 
-	/* Create an smb_filename with stream_name == NULL. */
-	smb_fname_base = synthetic_smb_fname(talloc_tos(),
-					smb_fname->base_name,
-					NULL,
-					NULL,
-					smb_fname->flags);
-
-	if (smb_fname_base == NULL) {
-		errno = ENOMEM;
-		rc = -1;
+	/*
+	 * Return a valid fd, but ensure any attempt to use it returns an error
+	 * (EPIPE). All operations on the smb_fname or the fsp will use path
+	 * based syscalls.
+	 */
+	rc = pipe(fds);
+	if (rc != 0) {
 		goto exit;
 	}
-
-	/*
-	 * We use baseflags to turn off nasty side-effects when opening the
-	 * underlying file.
-	 */
-	baseflags = flags;
-	baseflags &= ~O_TRUNC;
-	baseflags &= ~O_EXCL;
-	baseflags &= ~O_CREAT;
-
-	hostfd = SMB_VFS_NEXT_OPEN(handle, smb_fname_base, fsp,
-				   baseflags, mode);
-
-	/*
-	 * It is legit to open a stream on a directory, but the base
-	 * fd has to be read-only.
-	 */
-	if ((hostfd == -1) && (errno == EISDIR)) {
-		baseflags &= ~O_ACCMODE;
-		baseflags |= O_RDONLY;
-		hostfd = SMB_VFS_NEXT_OPEN(handle, smb_fname_base, fsp,
-					   baseflags, mode);
-	}
-
-	TALLOC_FREE(smb_fname_base);
-
-	if (hostfd == -1) {
-		rc = -1;
-		goto exit;
-	}
+	fakefd = fds[0];
+	close(fds[1]);
 
 	if (flags & (O_CREAT | O_TRUNC)) {
 		/*
@@ -2746,10 +2714,7 @@ static int fruit_open_meta_netatalk(vfs_handle_struct *handle,
 			goto exit;
 		}
 
-		fsp->fh->fd = hostfd;
-
-		rc = ad_fset(ad, fsp);
-		fsp->fh->fd = -1;
+		rc = ad_set(ad, fsp->fsp_name->base_name);
 		if (rc != 0) {
 			rc = -1;
 			goto exit;
@@ -2759,22 +2724,16 @@ static int fruit_open_meta_netatalk(vfs_handle_struct *handle,
 	}
 
 exit:
-	DEBUG(10, ("fruit_open meta rc=%d, fd=%d\n", rc, hostfd));
+	DEBUG(10, ("fruit_open meta rc=%d, fd=%d\n", rc, fakefd));
 	if (rc != 0) {
 		int saved_errno = errno;
-		if (hostfd >= 0) {
-			/*
-			 * BUGBUGBUG -- we would need to call
-			 * fd_close_posix here, but we don't have a
-			 * full fsp yet
-			 */
-			fsp->fh->fd = hostfd;
-			SMB_VFS_NEXT_CLOSE(handle, fsp);
+		if (fakefd >= 0) {
+			close(fakefd);
 		}
-		hostfd = -1;
+		fakefd = -1;
 		errno = saved_errno;
 	}
-	return hostfd;
+	return fakefd;
 }
 
 static int fruit_open_meta(vfs_handle_struct *handle,
