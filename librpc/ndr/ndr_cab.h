@@ -21,4 +21,3 @@
 
 uint32_t ndr_count_cfdata(const struct cab_file *r);
 uint32_t ndr_cab_generate_checksum(const struct CFDATA *r);
-enum cf_compress_type ndr_cab_get_compression(const struct cab_file *r);
