@@ -116,57 +116,11 @@ uint32_t ndr_cab_generate_checksum(const struct CFDATA *r)
 					csumPartial);
 }
 
-static bool ndr_size_cab_file(const struct cab_file *r, uint32_t *psize)
-{
-	uint32_t size = 0;
-	int i;
-
-	/* header */
-	size += 36;
-
-	/* folder */
-	for (i = 0; i < r->cfheader.cFolders; i++) {
-		if (size + 8 < size) {
-			/* Integer wrap. */
-			return false;
-		}
-		size += 8;
-	}
-
-	/* files */
-	for (i = 0; i < r->cfheader.cFiles; i++) {
-		uint32_t cfsize = ndr_size_CFFILE(&r->cffiles[i], 0);
-		if (size + cfsize < size) {
-			/* Integer wrap. */
-			return false;
-		}
-		size += cfsize;
-	}
-
-	/* data */
-	for (i = 0; i < ndr_count_cfdata(r); i++) {
-		if (size + 8 < size) {
-			/* Integer wrap. */
-			return false;
-		}
-		size += 8;
-		if (size + r->cfdata[i].cbData < size) {
-			/* Integer wrap. */
-			return false;
-		}
-		size += r->cfdata[i].cbData;
-	}
-
-	*psize = size;
-	return true;
-}
-
 _PUBLIC_ enum ndr_err_code ndr_push_cab_file(struct ndr_push *ndr, int ndr_flags, const struct cab_file *r)
 {
 	uint32_t cntr_cffolders_0;
 	uint32_t cntr_cffiles_0;
 	uint32_t cntr_cfdata_0;
-	uint32_t cab_size = 0;
 	{
 		uint32_t _flags_save_STRUCT = ndr->flags;
 		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX|LIBNDR_FLAG_LITTLE_ENDIAN|LIBNDR_FLAG_NOALIGN);
@@ -199,10 +153,9 @@ _PUBLIC_ enum ndr_err_code ndr_push_cab_file(struct ndr_push *ndr, int ndr_flags
 		ndr->flags = _flags_save_STRUCT;
 	}
 
-	if (ndr_size_cab_file(r, &cab_size) == false) {
-		return NDR_ERR_VALIDATE;
-	}
-	SIVAL(ndr->data, 8, cab_size);
+
+	/* write total file size in header */
+	SIVAL(ndr->data, 8, ndr->offset);
 
 	return NDR_ERR_SUCCESS;
 }
