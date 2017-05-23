@@ -457,10 +457,11 @@ static NTSTATUS gensec_gssapi_update_internal(struct gensec_security *gensec_sec
 		switch (gensec_security->gensec_role) {
 		case GENSEC_CLIENT:
 		{
-			bool fallback = false;
 #ifdef SAMBA4_USES_HEIMDAL
 			struct gsskrb5_send_to_kdc send_to_kdc;
 			krb5_error_code ret;
+#else
+			bool fallback = false;
 #endif
 
 			nt_status = gensec_gssapi_client_creds(gensec_security, ev);
@@ -581,10 +582,12 @@ static NTSTATUS gensec_gssapi_update_internal(struct gensec_security *gensec_sec
 					return NT_STATUS_NO_MEMORY;
 				}
 
+#ifndef SAMBA4_USES_HEIMDAL
 				if (fallback &&
 				    strequal(client_realm, server_realm)) {
 					goto init_sec_context_done;
 				}
+#endif /* !SAMBA4_USES_HEIMDAL */
 
 				nt_status = gensec_gssapi_setup_server_principal(gensec_gssapi_state,
 										 target_principal,
