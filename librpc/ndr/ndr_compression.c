@@ -524,3 +524,148 @@ enum ndr_err_code ndr_push_compression_end(struct ndr_push *subndr,
 	talloc_free(uncomndr);
 	return NDR_ERR_SUCCESS;
 }
+
+static enum ndr_err_code generic_mszip_init(TALLOC_CTX *mem_ctx,
+					    struct ndr_compression_state *state)
+{
+	z_stream *z = talloc_zero(mem_ctx, z_stream);
+	NDR_ERR_HAVE_NO_MEMORY(z);
+
+	z->zalloc = ndr_zlib_alloc;
+	z->zfree  = ndr_zlib_free;
+	z->opaque = mem_ctx;
+
+	state->mszip.z = z;
+	state->mszip.dict_size = 0;
+	/* pre-alloc dictionnary */
+	state->mszip.dict = talloc_array(mem_ctx, uint8_t, 0x8000);
+	NDR_ERR_HAVE_NO_MEMORY(state->mszip.dict);
+
+	return NDR_ERR_SUCCESS;
+}
+
+static void generic_mszip_free(struct ndr_compression_state *state)
+{
+	if (state == NULL) {
+		return;
+	}
+
+	TALLOC_FREE(state->mszip.z);
+	TALLOC_FREE(state->mszip.dict);
+}
+
+
+enum ndr_err_code ndr_pull_compression_state_init(struct ndr_pull *ndr,
+						  enum ndr_compression_alg compression_alg,
+						  struct ndr_compression_state **state)
+{
+	struct ndr_compression_state *s;
+	int z_ret;
+
+	s = talloc_zero(ndr, struct ndr_compression_state);
+	NDR_ERR_HAVE_NO_MEMORY(s);
+	s->type = compression_alg;
+
+	switch (compression_alg) {
+	case NDR_COMPRESSION_MSZIP:
+	case NDR_COMPRESSION_XPRESS:
+		break;
+	case NDR_COMPRESSION_MSZIP_CAB:
+		NDR_CHECK(generic_mszip_init(ndr, s));
+		z_ret = inflateInit2(s->mszip.z, -MAX_WBITS);
+		if (z_ret != Z_OK) {
+			return ndr_pull_error(ndr, NDR_ERR_COMPRESSION,
+					      "zlib inflateinit2 error %s (%d) %s (PULL)",
+					      zError(z_ret), z_ret, s->mszip.z->msg);
+		}
+		break;
+	default:
+		return ndr_pull_error(ndr, NDR_ERR_COMPRESSION,
+				      "Bad compression algorithm %d (PULL)",
+				      compression_alg);
+		break;
+	}
+
+	*state = s;
+
+	return NDR_ERR_SUCCESS;
+}
+
+void ndr_pull_compression_state_free(struct ndr_compression_state *state)
+{
+	if (state == NULL) {
+		return;
+	}
+
+	switch (state->type) {
+	case NDR_COMPRESSION_MSZIP:
+	case NDR_COMPRESSION_XPRESS:
+		break;
+	case NDR_COMPRESSION_MSZIP_CAB:
+		generic_mszip_free(state);
+		break;
+	default:
+		break;
+	}
+	TALLOC_FREE(state);
+}
+
+enum ndr_err_code ndr_push_compression_state_init(struct ndr_push *ndr,
+						  enum ndr_compression_alg compression_alg,
+						  struct ndr_compression_state **state)
+{
+	struct ndr_compression_state *s;
+	int z_ret;
+
+	s = talloc_zero(ndr, struct ndr_compression_state);
+	NDR_ERR_HAVE_NO_MEMORY(s);
+	s->type = compression_alg;
+
+	switch (compression_alg) {
+	case NDR_COMPRESSION_XPRESS:
+	case NDR_COMPRESSION_MSZIP:
+		break;
+	case NDR_COMPRESSION_MSZIP_CAB:
+		NDR_CHECK(generic_mszip_init(ndr, s));
+		z_ret = deflateInit2(s->mszip.z,
+				     Z_DEFAULT_COMPRESSION,
+				     Z_DEFLATED,
+				     -MAX_WBITS,
+				     8, /* memLevel */
+				     Z_DEFAULT_STRATEGY);
+		if (z_ret != Z_OK) {
+			return ndr_push_error(ndr, NDR_ERR_COMPRESSION,
+					      "zlib inflateinit2 error %s (%d) %s (PUSH)",
+					      zError(z_ret), z_ret, s->mszip.z->msg);
+		}
+		break;
+	default:
+		return ndr_push_error(ndr, NDR_ERR_COMPRESSION,
+				      "Bad compression algorithm %d (PUSH)",
+				      compression_alg);
+		break;
+	}
+
+	*state = s;
+
+	return NDR_ERR_SUCCESS;
+}
+
+void ndr_push_compression_state_free(struct ndr_compression_state *state)
+{
+	if (state == NULL) {
+		return;
+	}
+
+	switch (state->type) {
+	case NDR_COMPRESSION_MSZIP:
+	case NDR_COMPRESSION_XPRESS:
+		break;
+	case NDR_COMPRESSION_MSZIP_CAB:
+		generic_mszip_free(state);
+		break;
+	default:
+		break;
+	}
+	TALLOC_FREE(state);
+}
