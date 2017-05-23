@@ -20,42 +20,116 @@
 #include "includes.h"
 #include "ads.h"
 #include "secrets.h"
+#include "librpc/gen_ndr/ndr_secrets.h"
 
 #ifdef HAVE_KRB5
-
 ADS_STATUS ads_change_trust_account_password(ADS_STRUCT *ads, char *host_principal)
 {
-	char *password;
-	char *new_password;
+	const char *password = NULL;
+	const char *new_password = NULL;
 	ADS_STATUS ret;
-	enum netr_SchannelType sec_channel_type;
-    
-	if ((password = secrets_fetch_machine_password(lp_workgroup(), NULL, &sec_channel_type)) == NULL) {
-		DEBUG(1,("Failed to retrieve password for principal %s\n", host_principal));
-		return ADS_ERROR_SYSTEM(ENOENT);
+	const char *domain = lp_workgroup();
+	struct secrets_domain_info1 *info = NULL;
+	struct secrets_domain_info1_change *prev = NULL;
+	const DATA_BLOB *cleartext_blob = NULL;
+	DATA_BLOB pw_blob = data_blob_null;
+	DATA_BLOB new_pw_blob = data_blob_null;
+	NTSTATUS status;
+	struct timeval tv = timeval_current();
+	NTTIME now = timeval_to_nttime(&tv);
+	int role = lp_server_role();
+	bool ok;
+
+	if (role != ROLE_DOMAIN_MEMBER) {
+		DBG_ERR("Machine account password change only supported on a DOMAIN_MEMBER.\n");
+		return ADS_ERROR_NT(NT_STATUS_INVALID_SERVER_STATE);
 	}
 
 	new_password = trust_pw_new_value(talloc_tos(), SEC_CHAN_WKSTA, SEC_ADS);
 	if (new_password == NULL) {
 		ret = ADS_ERROR_SYSTEM(errno);
 		DEBUG(1,("Failed to generate machine password\n"));
-		goto failed;
+		return ret;
 	}
+
+	status = secrets_prepare_password_change(domain,
+						 ads->auth.kdc_server,
+						 new_password,
+						 talloc_tos(),
+						 &info, &prev);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ADS_ERROR_NT(status);
+	}
+	if (prev != NULL) {
+		status = NT_STATUS_REQUEST_NOT_ACCEPTED;
+		secrets_failed_password_change("localhost",
+					       status,
+					       NT_STATUS_NOT_COMMITTED,
+					       info);
+		return ADS_ERROR_NT(status);
+	}
+
+	cleartext_blob = &info->password->cleartext_blob;
+	ok = convert_string_talloc(talloc_tos(), CH_UTF16MUNGED, CH_UNIX,
+				   cleartext_blob->data,
+				   cleartext_blob->length,
+				   (void **)&pw_blob.data,
+				   &pw_blob.length);
+	if (!ok) {
+		status = NT_STATUS_UNMAPPABLE_CHARACTER;
+		if (errno == ENOMEM) {
+			status = NT_STATUS_NO_MEMORY;
+		}
+		DBG_ERR("convert_string_talloc(CH_UTF16MUNGED, CH_UNIX) "
+			"failed for password of %s - %s\n",
+			domain, nt_errstr(status));
+		return ADS_ERROR_NT(status);
+	}
+	password = (const char *)pw_blob.data;
+
+	cleartext_blob = &info->next_change->password->cleartext_blob;
+	ok = convert_string_talloc(talloc_tos(), CH_UTF16MUNGED, CH_UNIX,
+				   cleartext_blob->data,
+				   cleartext_blob->length,
+				   (void **)&new_pw_blob.data,
+				   &new_pw_blob.length);
+	if (!ok) {
+		status = NT_STATUS_UNMAPPABLE_CHARACTER;
+		if (errno == ENOMEM) {
+			status = NT_STATUS_NO_MEMORY;
+		}
+		DBG_ERR("convert_string_talloc(CH_UTF16MUNGED, CH_UNIX) "
+			"failed for new_password of %s - %s\n",
+			domain, nt_errstr(status));
+		secrets_failed_password_change("localhost",
+					       status,
+					       NT_STATUS_NOT_COMMITTED,
+					       info);
+		return ADS_ERROR_NT(status);
+	}
+	new_password = (const char *)new_pw_blob.data;
 
 	ret = kerberos_set_password(ads->auth.kdc_server, host_principal, password, host_principal, new_password, ads->auth.time_offset);
 
 	if (!ADS_ERR_OK(ret)) {
-		goto failed;
+		status = ads_ntstatus(ret);
+		DBG_ERR("kerberos_set_password(%s, %s) "
+			"failed for new_password of %s - %s\n",
+			ads->auth.kdc_server, host_principal,
+			domain, nt_errstr(status));
+		secrets_failed_password_change(ads->auth.kdc_server,
+					       NT_STATUS_NOT_COMMITTED,
+					       status,
+					       info);
+		return ret;
 	}
 
-	if (!secrets_store_machine_password(new_password, lp_workgroup(), sec_channel_type)) {
+	status = secrets_finish_password_change(ads->auth.kdc_server, now, info);
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1,("Failed to save machine password\n"));
-		ret = ADS_ERROR_SYSTEM(EACCES);
-		goto failed;
+		return ADS_ERROR_NT(status);
 	}
 
-failed:
-	SAFE_FREE(password);
-	return ret;
+	return ADS_SUCCESS;
 }
 #endif
