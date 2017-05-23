@@ -172,9 +172,23 @@ static int net_changesecretpw(struct net_context *c, int argc,
 			      const char **argv)
 {
         char *trust_pw;
-        enum netr_SchannelType sec_channel_type = SEC_CHAN_WKSTA;
+	int role = lp_server_role();
+
+	if (role != ROLE_DOMAIN_MEMBER) {
+		d_printf(_("Machine account password change only supported on a DOMAIN_MEMBER.\n"
+			   "Do NOT use this function unless you know what it does!\n"
+		           "This function will change the ADS Domain member "
+			   "machine account password in the secrets.tdb file!\n"));
+		return 1;
+	}
 
 	if(c->opt_force) {
+		struct secrets_domain_info1 *info = NULL;
+		struct secrets_domain_info1_change *prev = NULL;
+		NTSTATUS status;
+		struct timeval tv = timeval_current();
+		NTTIME now = timeval_to_nttime(&tv);
+
 		if (c->opt_stdin) {
 			set_line_buffering(stdin);
 			set_line_buffering(stdout);
@@ -188,14 +202,37 @@ static int net_changesecretpw(struct net_context *c, int argc,
 			    return 1;
 		}
 
-		if (!secrets_store_machine_password(trust_pw, lp_workgroup(), sec_channel_type)) {
-			    d_fprintf(stderr,
-				      _("Unable to write the machine account password in the secrets database"));
-			    return 1;
+		status = secrets_prepare_password_change(lp_workgroup(),
+							 "localhost",
+							 trust_pw,
+							 talloc_tos(),
+							 &info, &prev);
+		if (!NT_STATUS_IS_OK(status)) {
+			d_fprintf(stderr,
+			        _("Unable to write the machine account password in the secrets database"));
+			return 1;
 		}
-		else {
-		    d_printf(_("Modified trust account password in secrets database\n"));
+		if (prev != NULL) {
+			d_fprintf(stderr,
+			        _("Pending machine account password change found - aborting."));
+			status = secrets_failed_password_change("localhost",
+						NT_STATUS_REQUEST_NOT_ACCEPTED,
+						NT_STATUS_NOT_COMMITTED,
+						info);
+			if (!NT_STATUS_IS_OK(status)) {
+				d_fprintf(stderr,
+				        _("Failed to abort machine account password change"));
+			}
+			return 1;
 		}
+		status = secrets_finish_password_change("localhost", now, info);
+		if (!NT_STATUS_IS_OK(status)) {
+			d_fprintf(stderr,
+			        _("Unable to write the machine account password in the secrets database"));
+			return 1;
+		}
+
+		d_printf(_("Modified trust account password in secrets database\n"));
 	}
 	else {
 		d_printf(_("Machine account password change requires the -f flag.\n"
