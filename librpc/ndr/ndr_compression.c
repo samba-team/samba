@@ -26,6 +26,17 @@
 #include "../librpc/ndr/ndr_compression.h"
 #include <zlib.h>
 
+struct ndr_compression_state {
+	enum ndr_compression_alg type;
+	union {
+		struct {
+			struct z_stream_s *z;
+			uint8_t *dict;
+			size_t dict_size;
+		} mszip;
+	};
+};
+
 static voidpf ndr_zlib_alloc(voidpf opaque, uInt items, uInt size)
 {
 	return talloc_zero_size(opaque, items * size);

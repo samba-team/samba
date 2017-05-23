@@ -47,6 +47,8 @@ struct ndr_token_list {
 	uint32_t count;
 };
 
+struct ndr_compression_state;
+
 /* this is the base structure passed to routines that
    parse MSRPC formatted data
 
@@ -70,6 +72,8 @@ struct ndr_pull {
 	struct ndr_token_list array_size_list;
 	struct ndr_token_list array_length_list;
 	struct ndr_token_list switch_list;
+
+	struct ndr_compression_state *cstate;
 
 	TALLOC_CTX *current_mem_ctx;
 
@@ -96,6 +100,8 @@ struct ndr_push {
 	struct ndr_token_list nbt_string_list;
 	struct ndr_token_list dns_string_list;
 	struct ndr_token_list full_ptr_list;
+
+	struct ndr_compression_state *cstate;
 
 	/* this is used to ensure we generate unique reference IDs */
 	uint32_t ptr_count;
