@@ -117,7 +117,7 @@ import "misc.idl";
 #if 0
 		uint8 abReserve[];	/* (optional) per-datablock reserved area */
 #endif
-		uint8 ab[cbData];	/* compressed data bytes */
+		DATA_BLOB ab;	/* compressed data bytes */
 	} CFDATA;
 
 	typedef [nopush,nopull,public,flag(NDR_PAHEX|NDR_LITTLE_ENDIAN|NDR_NOALIGN)] struct {

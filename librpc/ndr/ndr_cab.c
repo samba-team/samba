@@ -109,7 +109,7 @@ uint32_t ndr_cab_generate_checksum(const struct CFDATA *r)
 {
 	uint32_t csumPartial;
 
-	csumPartial = ndr_cab_compute_checksum(&r->ab[0], r->cbData, 0);
+	csumPartial = ndr_cab_compute_checksum(&r->ab.data[0], r->cbData, 0);
 
 	return ndr_cab_compute_checksum((uint8_t *)discard_const(&r->cbData),
 					sizeof(r->cbData) + sizeof(r->cbUncomp),
