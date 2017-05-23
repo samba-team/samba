@@ -17,7 +17,7 @@
 #
 
 """
-Detect null pointer exception in /source3/smbd/sessetup.c
+Confirm that net.join_member works
 """
 
 import samba.tests
@@ -27,10 +27,10 @@ from samba.credentials import DONT_USE_KERBEROS
 from samba import NTSTATUSError, ntstatus
 import ctypes
 
-class NetJoinNoSpnegoTests(samba.tests.TestCaseInTempDir):
+class NetJoinTests(samba.tests.TestCaseInTempDir):
 
     def setUp(self):
-        super(NetJoinNoSpnegoTests, self).setUp()
+        super(NetJoinTests, self).setUp()
         self.domain = os.environ["DOMAIN"]
         self.server = os.environ["SERVER"]
         self.lp = self.get_loadparm()
@@ -39,35 +39,10 @@ class NetJoinNoSpnegoTests(samba.tests.TestCaseInTempDir):
         self.lp.set("state directory", self.tempdir)
 
     def tearDown(self):
-        super(NetJoinNoSpnegoTests, self).tearDown()
+        super(NetJoinTests, self).tearDown()
 
-    def test_net_join_no_spnego(self):
-        self.lp.set("client use spnego", "no")
-        netbios_name = "NetJoinNoSpnego"
-        machinepass  = "abcdefghij"
-        creds = self.insta_creds(template=self.get_credentials(),
-                                 kerberos_state=DONT_USE_KERBEROS)
-
-        net = Net(creds, self.lp, server=self.server)
-
-        try:
-            (join_password, sid, domain_name) = net.join_member(
-                self.domain, netbios_name, LIBNET_JOIN_AUTOMATIC,
-                machinepass=machinepass)
-        except NTSTATUSError as e:
-            code = ctypes.c_uint32(e[0]).value
-            if code == ntstatus.NT_STATUS_CONNECTION_DISCONNECTED:
-                self.fail("Connection failure")
-            elif code == ntstatus.NT_STATUS_ACCESS_DENIED:
-                return
-            else:
-                raise
-        self.fail("Shoud have rejected NTLMv2 without SPNEGO")
-
-    def test_net_join_no_spnego_ntlmv1(self):
-        self.lp.set("client use spnego", "no")
-        self.lp.set("client ntlmv2 auth", "no")
-        netbios_name = "NetJoinNoSpnego"
+    def test_net_join(self):
+        netbios_name = "NetJoinTest"
         machinepass  = "abcdefghij"
         creds = self.insta_creds(template=self.get_credentials(),
                                  kerberos_state=DONT_USE_KERBEROS)

@@ -630,8 +630,11 @@ if have_jansson_support and have_heimdal_support:
                            extra_args=['-U"$USERNAME%$PASSWORD"'],
                            environ={'CLIENT_IP': '127.0.0.11',
                                     'SOCKET_WRAPPER_DEFAULT_IFACE': 11})
-planoldpythontestsuite("ad_dc:local",
+planoldpythontestsuite("ad_dc",
                        "samba.tests.net_join_no_spnego",
+                       extra_args=['-U"$USERNAME%$PASSWORD"'])
+planoldpythontestsuite("ad_dc",
+                       "samba.tests.net_join",
                        extra_args=['-U"$USERNAME%$PASSWORD"'])
 # Need to test the password hashing in multiple environments to ensure that
 # all the possible options are covered

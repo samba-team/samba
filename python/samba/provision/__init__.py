@@ -898,7 +898,10 @@ def secretsdb_self_join(secretsdb, domain,
 
     if len(res) == 1:
         msg["priorSecret"] = [res[0]["secret"][0]]
-        msg["priorWhenChanged"] = [res[0]["whenChanged"][0]]
+        try:
+            msg["priorWhenChanged"] = [res[0]["whenChanged"][0]]
+        except KeyError:
+            pass
 
         try:
             msg["privateKeytab"] = [res[0]["privateKeytab"][0]]
