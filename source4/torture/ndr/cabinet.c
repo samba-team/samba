@@ -4318,5 +4318,12 @@ struct torture_suite *ndr_cabinet_suite(TALLOC_CTX *ctx)
 
 	torture_suite_add_ndr_pull_validate_test(suite, cab_file, cab_file_plain_data, cab_file_plain_check);
 
+	/*
+	 * we cannot validate, as libz' compression routines currently create a
+	 * slightly different result
+	 */
+
+	/* torture_suite_add_ndr_pull_validate_test(suite, cab_file, cab_file_MSZIP_data, cab_file_MSZIP_check); */
+
 	return suite;
 }
