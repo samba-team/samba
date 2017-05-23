@@ -2742,40 +2742,53 @@ done:
 }
 
 static uint64_t shadow_copy2_disk_free(vfs_handle_struct *handle,
-				       const char *path, uint64_t *bsize,
-				       uint64_t *dfree, uint64_t *dsize)
+				const struct smb_filename *smb_fname,
+				uint64_t *bsize,
+				uint64_t *dfree,
+				uint64_t *dsize)
 {
 	time_t timestamp = 0;
 	char *stripped = NULL;
-	ssize_t ret;
 	int saved_errno = 0;
-	char *conv;
+	char *conv = NULL;
+	struct smb_filename *conv_smb_fname = NULL;
+	uint64_t ret = (uint64_t)-1;
 
-	if (!shadow_copy2_strip_snapshot(talloc_tos(), handle, path,
-					 &timestamp, &stripped)) {
-		return -1;
+	if (!shadow_copy2_strip_snapshot(talloc_tos(),
+				handle,
+				smb_fname->base_name,
+				&timestamp,
+				&stripped)) {
+		return (uint64_t)-1;
 	}
 	if (timestamp == 0) {
-		return SMB_VFS_NEXT_DISK_FREE(handle, path,
+		return SMB_VFS_NEXT_DISK_FREE(handle, smb_fname,
 					      bsize, dfree, dsize);
 	}
-
 	conv = shadow_copy2_convert(talloc_tos(), handle, stripped, timestamp);
 	TALLOC_FREE(stripped);
 	if (conv == NULL) {
-		return -1;
+		return (uint64_t)-1;
 	}
-
-	ret = SMB_VFS_NEXT_DISK_FREE(handle, conv, bsize, dfree, dsize);
-
-	if (ret == -1) {
+	conv_smb_fname = synthetic_smb_fname(talloc_tos(),
+					conv,
+					NULL,
+					NULL,
+					smb_fname->flags);
+	if (conv_smb_fname == NULL) {
+		TALLOC_FREE(conv);
+		return (uint64_t)-1;
+	}
+	ret = SMB_VFS_NEXT_DISK_FREE(handle, conv_smb_fname,
+				bsize, dfree, dsize);
+	if (ret == (uint64_t)-1) {
 		saved_errno = errno;
 	}
 	TALLOC_FREE(conv);
+	TALLOC_FREE(conv_smb_fname);
 	if (saved_errno != 0) {
 		errno = saved_errno;
 	}
-
 	return ret;
 }
 

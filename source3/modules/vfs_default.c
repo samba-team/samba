@@ -55,11 +55,13 @@ static void vfswrap_disconnect(vfs_handle_struct *handle)
 
 /* Disk operations */
 
-static uint64_t vfswrap_disk_free(vfs_handle_struct *handle, const char *path,
-				  uint64_t *bsize, uint64_t *dfree,
-				  uint64_t *dsize)
+static uint64_t vfswrap_disk_free(vfs_handle_struct *handle,
+				const struct smb_filename *smb_fname,
+				uint64_t *bsize,
+				uint64_t *dfree,
+				uint64_t *dsize)
 {
-	if (sys_fsusage(path, dfree, dsize) != 0) {
+	if (sys_fsusage(smb_fname->base_name, dfree, dsize) != 0) {
 		return (uint64_t)-1;
 	}
 

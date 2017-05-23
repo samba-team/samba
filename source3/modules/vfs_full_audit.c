@@ -676,16 +676,18 @@ static void smb_full_audit_disconnect(vfs_handle_struct *handle)
 }
 
 static uint64_t smb_full_audit_disk_free(vfs_handle_struct *handle,
-				    const char *path, uint64_t *bsize,
-				    uint64_t *dfree, uint64_t *dsize)
+				const struct smb_filename *smb_fname,
+				uint64_t *bsize,
+				uint64_t *dfree,
+				uint64_t *dsize)
 {
 	uint64_t result;
 
-	result = SMB_VFS_NEXT_DISK_FREE(handle, path, bsize, dfree, dsize);
+	result = SMB_VFS_NEXT_DISK_FREE(handle, smb_fname, bsize, dfree, dsize);
 
 	/* Don't have a reasonable notion of failure here */
 
-	do_log(SMB_VFS_OP_DISK_FREE, True, handle, "%s", path);
+	do_log(SMB_VFS_OP_DISK_FREE, True, handle, "%s", smb_fname->base_name);
 
 	return result;
 }

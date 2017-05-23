@@ -175,13 +175,16 @@ static void cephwrap_disconnect(struct vfs_handle_struct *handle)
 /* Disk operations */
 
 static uint64_t cephwrap_disk_free(struct vfs_handle_struct *handle,
-				   const char *path, uint64_t *bsize,
-				   uint64_t *dfree, uint64_t *dsize)
+				const struct smb_filename *smb_fname,
+				uint64_t *bsize,
+				uint64_t *dfree,
+				uint64_t *dsize)
 {
 	struct statvfs statvfs_buf;
 	int ret;
 
-	if (!(ret = ceph_statfs(handle->data, path, &statvfs_buf))) {
+	if (!(ret = ceph_statfs(handle->data, smb_fname->base_name,
+			&statvfs_buf))) {
 		/*
 		 * Provide all the correct values.
 		 */

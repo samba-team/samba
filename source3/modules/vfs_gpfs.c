@@ -2160,9 +2160,11 @@ static void vfs_gpfs_disk_free_quota(struct gpfs_quotaInfo qi, time_t cur_time,
 	}
 }
 
-static uint64_t vfs_gpfs_disk_free(vfs_handle_struct *handle, const char *path,
-				   uint64_t *bsize,
-				   uint64_t *dfree, uint64_t *dsize)
+static uint64_t vfs_gpfs_disk_free(vfs_handle_struct *handle,
+				const struct smb_filename *smb_fname,
+				uint64_t *bsize,
+				uint64_t *dfree,
+				uint64_t *dsize)
 {
 	struct security_unix_token *utok;
 	struct gpfs_quotaInfo qi_user = { 0 }, qi_group = { 0 };
@@ -2173,14 +2175,14 @@ static uint64_t vfs_gpfs_disk_free(vfs_handle_struct *handle, const char *path,
 	SMB_VFS_HANDLE_GET_DATA(handle, config, struct gpfs_config_data,
 				return (uint64_t)-1);
 	if (!config->dfreequota) {
-		return SMB_VFS_NEXT_DISK_FREE(handle, path,
+		return SMB_VFS_NEXT_DISK_FREE(handle, smb_fname,
 					      bsize, dfree, dsize);
 	}
 
-	err = sys_fsusage(path, dfree, dsize);
+	err = sys_fsusage(smb_fname->base_name, dfree, dsize);
 	if (err) {
 		DEBUG (0, ("Could not get fs usage, errno %d\n", errno));
-		return SMB_VFS_NEXT_DISK_FREE(handle, path,
+		return SMB_VFS_NEXT_DISK_FREE(handle, smb_fname,
 					      bsize, dfree, dsize);
 	}
 
@@ -2192,15 +2194,17 @@ static uint64_t vfs_gpfs_disk_free(vfs_handle_struct *handle, const char *path,
 
 	utok = handle->conn->session_info->unix_token;
 
-	err = get_gpfs_quota(path, GPFS_USRQUOTA, utok->uid, &qi_user);
+	err = get_gpfs_quota(smb_fname->base_name,
+			GPFS_USRQUOTA, utok->uid, &qi_user);
 	if (err) {
-		return SMB_VFS_NEXT_DISK_FREE(handle, path,
+		return SMB_VFS_NEXT_DISK_FREE(handle, smb_fname,
 					      bsize, dfree, dsize);
 	}
 
-	err = get_gpfs_quota(path, GPFS_GRPQUOTA, utok->gid, &qi_group);
+	err = get_gpfs_quota(smb_fname->base_name,
+			GPFS_GRPQUOTA, utok->gid, &qi_group);
 	if (err) {
-		return SMB_VFS_NEXT_DISK_FREE(handle, path,
+		return SMB_VFS_NEXT_DISK_FREE(handle, smb_fname,
 					      bsize, dfree, dsize);
 	}
 

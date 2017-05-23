@@ -48,11 +48,13 @@ static void skel_disconnect(vfs_handle_struct *handle)
 	SMB_VFS_NEXT_DISCONNECT(handle);
 }
 
-static uint64_t skel_disk_free(vfs_handle_struct *handle, const char *path,
-			       uint64_t *bsize,
-			       uint64_t *dfree, uint64_t *dsize)
+static uint64_t skel_disk_free(vfs_handle_struct *handle,
+				const struct smb_filename *smb_fname,
+				uint64_t *bsize,
+				uint64_t *dfree,
+				uint64_t *dsize)
 {
-	return SMB_VFS_NEXT_DISK_FREE(handle, path, bsize, dfree, dsize);
+	return SMB_VFS_NEXT_DISK_FREE(handle, smb_fname, bsize, dfree, dsize);
 }
 
 static int skel_get_quota(vfs_handle_struct *handle, const char *path,

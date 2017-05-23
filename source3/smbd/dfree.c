@@ -118,7 +118,7 @@ uint64_t sys_disk_free(connection_struct *conn, struct smb_filename *fname,
 			   syscmd, strerror(errno) ));
 	}
 
-	if (SMB_VFS_DISK_FREE(conn, path, bsize, dfree, dsize) ==
+	if (SMB_VFS_DISK_FREE(conn, fname, bsize, dfree, dsize) ==
 	    (uint64_t)-1) {
 		DBG_ERR("VFS disk_free failed. Error was : %s\n",
 			strerror(errno));

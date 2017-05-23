@@ -375,13 +375,15 @@ static void vfs_gluster_disconnect(struct vfs_handle_struct *handle)
 }
 
 static uint64_t vfs_gluster_disk_free(struct vfs_handle_struct *handle,
-				      const char *path, uint64_t *bsize_p,
-				      uint64_t *dfree_p, uint64_t *dsize_p)
+				const struct smb_filename *smb_fname,
+				uint64_t *bsize_p,
+				uint64_t *dfree_p,
+				uint64_t *dsize_p)
 {
 	struct statvfs statvfs = { 0, };
 	int ret;
 
-	ret = glfs_statvfs(handle->data, path, &statvfs);
+	ret = glfs_statvfs(handle->data, smb_fname->base_name, &statvfs);
 	if (ret < 0) {
 		return -1;
 	}

@@ -216,6 +216,8 @@
 /* Version 37 - Change mknod from const char * to const struct smb_filename * */
 /* Version 37 - Change chflags from const char *
 		to const struct smb_filename * */
+/* Version 37 - Change disk_free from const char *
+		to const struct smb_filename * */
 
 #define SMB_VFS_INTERFACE_VERSION 37
 
@@ -600,8 +602,11 @@ struct vfs_fn_pointers {
 
 	int (*connect_fn)(struct vfs_handle_struct *handle, const char *service, const char *user);
 	void (*disconnect_fn)(struct vfs_handle_struct *handle);
-	uint64_t (*disk_free_fn)(struct vfs_handle_struct *handle, const char *path, uint64_t *bsize,
-			      uint64_t *dfree, uint64_t *dsize);
+	uint64_t (*disk_free_fn)(struct vfs_handle_struct *handle,
+				const struct smb_filename *smb_fname,
+				uint64_t *bsize,
+				uint64_t *dfree,
+				uint64_t *dsize);
 	int (*get_quota_fn)(struct vfs_handle_struct *handle, const char *path,
 			    enum SMB_QUOTA_TYPE qtype, unid_t id,
 			    SMB_DISK_QUOTA *qt);
@@ -1056,8 +1061,10 @@ int smb_vfs_call_connect(struct vfs_handle_struct *handle,
 			 const char *service, const char *user);
 void smb_vfs_call_disconnect(struct vfs_handle_struct *handle);
 uint64_t smb_vfs_call_disk_free(struct vfs_handle_struct *handle,
-				const char *path, uint64_t *bsize,
-				uint64_t *dfree, uint64_t *dsize);
+				const struct smb_filename *smb_filename,
+				uint64_t *bsize,
+				uint64_t *dfree,
+				uint64_t *dsize);
 int smb_vfs_call_get_quota(struct vfs_handle_struct *handle, const char *path,
 			   enum SMB_QUOTA_TYPE qtype, unid_t id,
 			   SMB_DISK_QUOTA *qt);

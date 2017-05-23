@@ -29,16 +29,31 @@
 static char *capencode(TALLOC_CTX *ctx, const char *from);
 static char *capdecode(TALLOC_CTX *ctx, const char *from);
 
-static uint64_t cap_disk_free(vfs_handle_struct *handle, const char *path,
-			      uint64_t *bsize, uint64_t *dfree, uint64_t *dsize)
+static uint64_t cap_disk_free(vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
+			uint64_t *bsize,
+			uint64_t *dfree,
+			uint64_t *dsize)
 {
-	char *cappath = capencode(talloc_tos(), path);
+	char *capname = capencode(talloc_tos(), smb_fname->base_name);
+	struct smb_filename *cap_smb_fname = NULL;
 
-	if (!cappath) {
+	if (!capname) {
 		errno = ENOMEM;
 		return (uint64_t)-1;
 	}
-	return SMB_VFS_NEXT_DISK_FREE(handle, cappath, bsize, dfree, dsize);
+	cap_smb_fname = synthetic_smb_fname(talloc_tos(),
+					capname,
+					NULL,
+					NULL,
+					smb_fname->flags);
+	if (cap_smb_fname == NULL) {
+		TALLOC_FREE(capname);
+		errno = ENOMEM;
+		return (uint64_t)-1;
+	}
+	return SMB_VFS_NEXT_DISK_FREE(handle, cap_smb_fname,
+			bsize, dfree, dsize);
 }
 
 static int cap_get_quota(vfs_handle_struct *handle, const char *path,

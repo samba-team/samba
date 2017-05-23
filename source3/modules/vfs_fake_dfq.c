@@ -50,8 +50,11 @@ static uint64_t dfq_load_param(int snum, const char *path, const char *section,
 	return ret;
 }
 
-static uint64_t dfq_disk_free(vfs_handle_struct *handle, const char *path,
-			      uint64_t *bsize, uint64_t *dfree, uint64_t *dsize)
+static uint64_t dfq_disk_free(vfs_handle_struct *handle,
+				const struct smb_filename *smb_fname,
+				uint64_t *bsize,
+				uint64_t *dfree,
+				uint64_t *dsize)
 {
 	uint64_t free_1k;
 	int snum = SNUM(handle->conn);
@@ -61,13 +64,13 @@ static uint64_t dfq_disk_free(vfs_handle_struct *handle, const char *path,
 	/* look up the params based on real path to be resilient
 	 * to refactoring of path<->realpath
 	 */
-	rpath = SMB_VFS_NEXT_REALPATH(handle, path);
+	rpath = SMB_VFS_NEXT_REALPATH(handle, smb_fname->base_name);
 	if (rpath != NULL) {
 		dfq_bsize = dfq_load_param(snum, rpath, "df", "block size", 0);
 	}
 	if (dfq_bsize == 0) {
 		SAFE_FREE(rpath);
-		return SMB_VFS_NEXT_DISK_FREE(handle, path, bsize, dfree,
+		return SMB_VFS_NEXT_DISK_FREE(handle, smb_fname, bsize, dfree,
 					      dsize);
 	}
 
