@@ -893,6 +893,8 @@ WERROR dsdb_set_schema_from_ldif(struct ldb_context *ldb,
 	ret = dsdb_set_schema(ldb, schema, true);
 	if (ret != LDB_SUCCESS) {
 		status = WERR_FOOBAR;
+		DEBUG(0,("ERROR: dsdb_set_schema() failed with %s / %s\n",
+			 ldb_strerror(ret), ldb_errstring(ldb)));
 		goto failed;
 	}
 
