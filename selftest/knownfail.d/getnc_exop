@@ -1,0 +1,4 @@
+# This test fails because Samba doesn't support the GET_TGT option
+samba4.drs.getnc_exop.python\(vampire_dc\).getnc_exop.DrsReplicaSyncTestCase.test_link_utdv_hwm\(vampire_dc\)
+samba4.drs.getnc_exop.python\(promoted_dc\).getnc_exop.DrsReplicaSyncTestCase.test_link_utdv_hwm\(promoted_dc\)
+

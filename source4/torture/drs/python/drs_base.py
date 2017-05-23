@@ -279,7 +279,8 @@ class DrsBaseTestCase(SambaToolCmdTest):
                                   nc_dn_str=nc_dn_str,
                                   exop=exop,
                                   max_objects=max_objects,
-                                  replica_flags=replica_flags)
+                                  replica_flags=replica_flags,
+                                  more_flags=more_flags)
         req10.highwatermark = highwatermark
         if uptodateness_vector is not None:
             uptodateness_vector_v1 = drsuapi.DsReplicaCursorCtrEx()
