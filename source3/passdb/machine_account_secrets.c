@@ -450,55 +450,6 @@ bool secrets_delete_domain_sid(const char *domain)
 }
 
 /************************************************************************
- Routine to store the previous machine password (by storing the current password
- as the old)
-************************************************************************/
-
-static bool secrets_store_prev_machine_password(const char *domain)
-{
-	char *oldpass;
-	bool ret;
-
-	oldpass = (char *)secrets_fetch(machine_password_keystr(domain), NULL);
-	if (oldpass == NULL) {
-		return true;
-	}
-	ret = secrets_store(machine_prev_password_keystr(domain), oldpass, strlen(oldpass)+1);
-	SAFE_FREE(oldpass);
-	return ret;
-}
-
-/************************************************************************
- Routine to set the plaintext machine account password for a realm
- the password is assumed to be a null terminated ascii string.
- Before storing
-************************************************************************/
-
-bool secrets_store_machine_password(const char *pass, const char *domain,
-				    enum netr_SchannelType sec_channel)
-{
-	bool ret;
-	uint32_t last_change_time;
-	uint32_t sec_channel_type;
-
-	if (!secrets_store_prev_machine_password(domain)) {
-		return false;
-	}
-
-	ret = secrets_store(machine_password_keystr(domain), pass, strlen(pass)+1);
-	if (!ret)
-		return ret;
-
-	SIVAL(&last_change_time, 0, time(NULL));
-	ret = secrets_store(machine_last_change_time_keystr(domain), &last_change_time, sizeof(last_change_time));
-
-	SIVAL(&sec_channel_type, 0, sec_channel);
-	ret = secrets_store(machine_sec_channel_type_keystr(domain), &sec_channel_type, sizeof(sec_channel_type));
-
-	return ret;
-}
-
-/************************************************************************
  Set the machine trust account password, the old pw and last change
  time, domain SID and salting principals based on values passed in
  (added to supprt the secrets_tdb_sync module on secrets.ldb)
