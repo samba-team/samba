@@ -1437,11 +1437,11 @@ static int ad_fset(struct adouble *ad, files_struct *fsp)
 
 	switch (ad->ad_type) {
 	case ADOUBLE_META:
-		rc = SMB_VFS_NEXT_FSETXATTR(ad->ad_handle,
-					    fsp,
-					    AFPINFO_EA_NETATALK,
-					    ad->ad_data,
-					    AD_DATASZ_XATTR, 0);
+		rc = SMB_VFS_NEXT_SETXATTR(ad->ad_handle,
+					   fsp->fsp_name->base_name,
+					   AFPINFO_EA_NETATALK,
+					   ad->ad_data,
+					   AD_DATASZ_XATTR, 0);
 		break;
 
 	case ADOUBLE_RSRC:
