@@ -1000,7 +1000,14 @@ NTSTATUS libnet_Join_member(struct libnet_context *ctx,
 	
 	status = provision_store_self_join(ctx, ctx->lp_ctx, ctx->event_ctx, set_secrets, &error_string);
 	if (!NT_STATUS_IS_OK(status)) {
-		r->out.error_string = talloc_steal(mem_ctx, error_string);
+		if (r->out.error_string) {
+			r->out.error_string = talloc_steal(mem_ctx, error_string);
+		} else {
+			r->out.error_string
+				= talloc_asprintf(mem_ctx,
+						  "provision_store_self_join failed with %s",
+						  nt_errstr(status));
+		}
 		talloc_free(tmp_mem);
 		return status;
 	}
