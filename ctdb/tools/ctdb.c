@@ -5663,11 +5663,6 @@ static int control_nodestatus(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return 1;
 	}
 
-	nodemap = get_nodemap(ctdb, false);
-	if (nodemap == NULL) {
-		return 1;
-	}
-
 	if (options.machinereadable) {
 		print_nodemap_machine(mem_ctx, ctdb, nodemap, ctdb->cmd_pnn);
 	} else {
