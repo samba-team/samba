@@ -147,6 +147,6 @@ NTSTATUS samba_server_gensec_krb5_start(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	talloc_steal(*gensec_context, settings);
+	talloc_reparent(mem_ctx, *gensec_context, settings);
 	return NT_STATUS_OK;
 }
