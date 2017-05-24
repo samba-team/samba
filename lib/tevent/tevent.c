@@ -341,6 +341,11 @@ int tevent_common_context_destructor(struct tevent_context *ev)
 
 		DLIST_REMOVE(ev->threaded_contexts, tctx);
 	}
+
+	ret = pthread_mutex_destroy(&ev->scheduled_mutex);
+	if (ret != 0) {
+		abort();
+	}
 #endif
 
 	tevent_common_wakeup_fini(ev);
