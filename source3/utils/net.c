@@ -91,6 +91,83 @@ static void set_line_buffering(FILE *f)
 	setvbuf(f, NULL, _IOLBF, 0);
 }
 
+static int net_primarytrust_dumpinfo(struct net_context *c, int argc,
+				     const char **argv)
+{
+	int role = lp_server_role();
+	const char *domain = lp_workgroup();
+	struct secrets_domain_info1 *info = NULL;
+	bool include_secrets = c->opt_force;
+	char *str = NULL;
+	NTSTATUS status;
+
+	if (role >= ROLE_ACTIVE_DIRECTORY_DC) {
+		d_printf(_("net primarytrust dumpinfo is only supported "
+			 "on a DOMAIN_MEMBER for now.\n"));
+		return 1;
+	}
+
+	if (c->opt_stdin) {
+		set_line_buffering(stdin);
+		set_line_buffering(stdout);
+		set_line_buffering(stderr);
+	}
+
+	status = secrets_fetch_or_upgrade_domain_info(domain,
+						      talloc_tos(),
+						      &info);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr,
+			  _("Unable to fetch the information for domain[%s] "
+			  "in the secrets database.\n"),
+			  domain);
+		return 1;
+	}
+
+	str = secrets_domain_info_string(info, info, domain, include_secrets);
+	if (str == NULL) {
+		d_fprintf(stderr, "secrets_domain_info_string() failed.\n");
+		return 1;
+	}
+
+	d_printf("%s", str);
+	if (!c->opt_force) {
+		d_printf(_("The password values are only included using "
+			 "-f flag.\n"));
+	}
+
+	TALLOC_FREE(info);
+	return 0;
+}
+
+/**
+ * Entrypoint for 'net primarytrust' code.
+ *
+ * @param argc Standard argc.
+ * @param argv Standard argv without initial components.
+ *
+ * @return Integer status (0 means success).
+ */
+
+static int net_primarytrust(struct net_context *c, int argc, const char **argv)
+{
+	struct functable func[] = {
+		{
+			"dumpinfo",
+			net_primarytrust_dumpinfo,
+			NET_TRANSPORT_LOCAL,
+			N_("Dump the details of the workstation trust"),
+			N_("  net [options] primarytrust dumpinfo'\n"
+			   "    Dump the details of the workstation trust "
+			   "in secrets.tdb.\n"
+			   "    Requires the -f flag to include the password values.")
+		},
+		{NULL, NULL, 0, NULL, NULL}
+	};
+
+	return net_run_function(c, argc, argv, "net primarytrust", func);
+}
+
 static int net_changesecretpw(struct net_context *c, int argc,
 			      const char **argv)
 {
@@ -569,6 +646,14 @@ static struct functable net_func[] = {
 		N_("Change user password on target server"),
 		N_("  Use 'net help password' to get more information about "
 		   "'net password' commands.")
+	},
+	{
+		"primarytrust",
+		net_primarytrust,
+		NET_TRANSPORT_RPC,
+		N_("Run functions related to the primary workstation trust."),
+		N_("  Use 'net help primarytrust' to get more extensive information "
+		   "about 'net primarytrust' commands.")
 	},
 	{	"changetrustpw",
 		net_changetrustpw,
