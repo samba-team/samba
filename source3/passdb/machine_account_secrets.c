@@ -371,27 +371,13 @@ bool secrets_fetch_trust_account_password(const char *domain, uint8_t ret_pwd[16
 }
 
 /************************************************************************
- Routine to delete the old plaintext machine account password if any
-************************************************************************/
-
-static bool secrets_delete_prev_machine_password(const char *domain)
-{
-	char *oldpass = (char *)secrets_fetch(machine_prev_password_keystr(domain), NULL);
-	if (oldpass == NULL) {
-		return true;
-	}
-	SAFE_FREE(oldpass);
-	return secrets_delete_entry(machine_prev_password_keystr(domain));
-}
-
-/************************************************************************
  Routine to delete the plaintext machine account password, old password,
  sec channel type and last change time from secrets database
 ************************************************************************/
 
 bool secrets_delete_machine_password_ex(const char *domain)
 {
-	if (!secrets_delete_prev_machine_password(domain)) {
+	if (!secrets_delete(machine_prev_password_keystr(domain))) {
 		return false;
 	}
 	if (!secrets_delete_entry(machine_password_keystr(domain))) {
