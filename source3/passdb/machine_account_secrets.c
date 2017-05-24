@@ -400,25 +400,25 @@ bool secrets_delete_machine_password_ex(const char *domain, const char *realm)
 	}
 
 	tmpkey = machine_password_keystr(domain);
-	ok = secrets_delete_entry(tmpkey);
+	ok = secrets_delete(tmpkey);
 	if (!ok) {
 		return false;
 	}
 
 	tmpkey = machine_sec_channel_type_keystr(domain);
-	ok = secrets_delete_entry(tmpkey);
+	ok = secrets_delete(tmpkey);
 	if (!ok) {
 		return false;
 	}
 
 	tmpkey = machine_last_change_time_keystr(domain);
-	ok = secrets_delete_entry(tmpkey);
+	ok = secrets_delete(tmpkey);
 	if (!ok) {
 		return false;
 	}
 
 	tmpkey = domain_sid_keystr(domain);
-	ok = secrets_delete_entry(tmpkey);
+	ok = secrets_delete(tmpkey);
 	if (!ok) {
 		return false;
 	}
