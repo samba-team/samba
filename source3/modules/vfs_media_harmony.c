@@ -2101,35 +2101,33 @@ out:
  * Failure: set errno, return NULL
  */
 static SMB_ACL_T mh_sys_acl_get_file(vfs_handle_struct *handle,
-				     const char *path_p,
-				     SMB_ACL_TYPE_T type,
-				     TALLOC_CTX *mem_ctx)
+				const struct smb_filename *smb_fname,
+				SMB_ACL_TYPE_T type,
+				TALLOC_CTX *mem_ctx)
 {
 	SMB_ACL_T ret;
-	char *clientPath;
-	TALLOC_CTX *ctx;
+	int status;
+	struct smb_filename *clientFname = NULL;
 
 	DEBUG(MH_INFO_DEBUG, ("Entering mh_sys_acl_get_file\n"));
-	if (!is_in_media_files(path_p))
-	{
-		ret = SMB_VFS_NEXT_SYS_ACL_GET_FILE(handle, path_p, type, mem_ctx);
+	if (!is_in_media_files(smb_fname->base_name)) {
+		ret = SMB_VFS_NEXT_SYS_ACL_GET_FILE(handle, smb_fname,
+				type, mem_ctx);
 		goto out;
 	}
 
-	clientPath = NULL;
-	ctx = talloc_tos();
-
-	if (alloc_get_client_path(handle, ctx,
-				path_p,
-				&clientPath))
-	{
-		ret = NULL;
+	status = alloc_get_client_smb_fname(handle,
+				talloc_tos(),
+				smb_fname,
+				&clientFname);
+	if (status != 0) {
+		ret = (SMB_ACL_T)NULL;
 		goto err;
 	}
 
-	ret = SMB_VFS_NEXT_SYS_ACL_GET_FILE(handle, clientPath, type, mem_ctx);
+	ret = SMB_VFS_NEXT_SYS_ACL_GET_FILE(handle, clientFname, type, mem_ctx);
 err:
-	TALLOC_FREE(clientPath);
+	TALLOC_FREE(clientFname);
 out:
 	return ret;
 }

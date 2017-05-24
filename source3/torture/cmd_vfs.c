@@ -1683,13 +1683,22 @@ static NTSTATUS cmd_sys_acl_get_file(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 	SMB_ACL_T acl;
 	char *acl_text;
 	int type;
+	struct smb_filename *smb_fname = NULL;
+
 	if (argc != 3) {
 		printf("Usage: sys_acl_get_file <path> <type>\n");
 		return NT_STATUS_OK;
 	}
 
+	smb_fname = synthetic_smb_fname_split(talloc_tos(),
+					argv[1],
+					lp_posix_pathnames());
+	if (smb_fname == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 	type = atoi(argv[2]);
-	acl = SMB_VFS_SYS_ACL_GET_FILE(vfs->conn, argv[1], type, talloc_tos());
+	acl = SMB_VFS_SYS_ACL_GET_FILE(vfs->conn, smb_fname,
+				type, talloc_tos());
 	if (!acl) {
 		printf("sys_acl_get_file failed (%s)\n", strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;

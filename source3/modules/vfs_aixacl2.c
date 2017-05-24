@@ -291,9 +291,9 @@ static SMB_ACL_T aixjfs2_get_posix_acl(const char *path, acl_type_t type, TALLOC
 }
 
 SMB_ACL_T aixjfs2_sys_acl_get_file(vfs_handle_struct *handle,
-                                    const char *path_p,
-				   SMB_ACL_TYPE_T type,
-				   TALLOC_CTX *mem_ctx)
+				const struct smb_filename *smb_fname,
+				SMB_ACL_TYPE_T type,
+				TALLOC_CTX *mem_ctx)
 {
         acl_type_t aixjfs2_type;
 
@@ -309,7 +309,8 @@ SMB_ACL_T aixjfs2_sys_acl_get_file(vfs_handle_struct *handle,
                 smb_panic("exiting");
         }
 
-        return aixjfs2_get_posix_acl(path_p, aixjfs2_type, mem_ctx);
+        return aixjfs2_get_posix_acl(smb_fname->base_name,
+			aixjfs2_type, mem_ctx);
 }
 
 SMB_ACL_T aixjfs2_sys_acl_get_fd(vfs_handle_struct *handle,

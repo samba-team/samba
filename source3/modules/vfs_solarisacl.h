@@ -21,9 +21,9 @@
 #define __VFS_SOLARISACL_H__
 
 SMB_ACL_T solarisacl_sys_acl_get_file(vfs_handle_struct *handle,
-				      const char *path_p,
-				      SMB_ACL_TYPE_T type, 
-				      TALLOC_CTX *mem_ctx);
+				const struct smb_filename *smb_fname,
+				SMB_ACL_TYPE_T type,
+				TALLOC_CTX *mem_ctx);
 
 SMB_ACL_T solarisacl_sys_acl_get_fd(vfs_handle_struct *handle,
 				    files_struct *fsp, 

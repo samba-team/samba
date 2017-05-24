@@ -679,8 +679,8 @@ int file_set_dosmode(connection_struct *conn, struct smb_filename *smb_fname,
 
 	unixmode = smb_fname->st.st_ex_mode;
 
-	get_acl_group_bits(conn, smb_fname->base_name,
-			   &smb_fname->st.st_ex_mode);
+	get_acl_group_bits(conn, smb_fname,
+			&smb_fname->st.st_ex_mode);
 
 	if (S_ISDIR(smb_fname->st.st_ex_mode))
 		dosmode |= FILE_ATTRIBUTE_DIRECTORY;

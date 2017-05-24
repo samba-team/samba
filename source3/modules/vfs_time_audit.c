@@ -2169,21 +2169,23 @@ static int smb_time_audit_fchmod_acl(vfs_handle_struct *handle,
 }
 
 static SMB_ACL_T smb_time_audit_sys_acl_get_file(vfs_handle_struct *handle,
-						 const char *path_p,
-						 SMB_ACL_TYPE_T type,
-						 TALLOC_CTX *mem_ctx)
+					const struct smb_filename *smb_fname,
+					SMB_ACL_TYPE_T type,
+					TALLOC_CTX *mem_ctx)
 {
 	SMB_ACL_T result;
 	struct timespec ts1,ts2;
 	double timediff;
 
 	clock_gettime_mono(&ts1);
-	result = SMB_VFS_NEXT_SYS_ACL_GET_FILE(handle, path_p, type, mem_ctx);
+	result = SMB_VFS_NEXT_SYS_ACL_GET_FILE(handle, smb_fname,
+				type, mem_ctx);
 	clock_gettime_mono(&ts2);
 	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
-		smb_time_audit_log_fname("sys_acl_get_file", timediff, path_p);
+		smb_time_audit_log_fname("sys_acl_get_file", timediff,
+			smb_fname->base_name);
 	}
 
 	return result;

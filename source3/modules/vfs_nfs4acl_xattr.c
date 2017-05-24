@@ -585,9 +585,9 @@ static NTSTATUS nfs4acl_xattr_fset_nt_acl(vfs_handle_struct *handle,
 */
 
 static SMB_ACL_T nfs4acl_xattr_fail__sys_acl_get_file(vfs_handle_struct *handle,
-						      const char *path_p,
-						      SMB_ACL_TYPE_T type,
-						      TALLOC_CTX *mem_ctx)
+					const struct smb_filename *smb_fname,
+					SMB_ACL_TYPE_T type,
+					TALLOC_CTX *mem_ctx)
 {
 	return (SMB_ACL_T)NULL;
 }

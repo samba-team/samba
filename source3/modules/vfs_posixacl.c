@@ -34,9 +34,9 @@ static acl_t smb_acl_to_posix(const struct smb_acl_t *acl);
 /* public functions - the api */
 
 SMB_ACL_T posixacl_sys_acl_get_file(vfs_handle_struct *handle,
-				    const char *path_p,
-				    SMB_ACL_TYPE_T type,
-				    TALLOC_CTX *mem_ctx)
+				const struct smb_filename *smb_fname,
+				SMB_ACL_TYPE_T type,
+				TALLOC_CTX *mem_ctx)
 {
 	struct smb_acl_t *result;
 	acl_type_t acl_type;
@@ -54,7 +54,7 @@ SMB_ACL_T posixacl_sys_acl_get_file(vfs_handle_struct *handle,
 		return NULL;
 	}
 
-	acl = acl_get_file(path_p, acl_type);
+	acl = acl_get_file(smb_fname->base_name, acl_type);
 
 	if (acl == NULL) {
 		return NULL;

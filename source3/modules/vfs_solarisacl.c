@@ -63,12 +63,14 @@ static bool solaris_acl_check(SOLARIS_ACL_T solaris_acl, int count);
 /* public functions - the api */
 
 SMB_ACL_T solarisacl_sys_acl_get_file(vfs_handle_struct *handle,
-				      const char *path_p,
-				      SMB_ACL_TYPE_T type, TALLOC_CTX *mem_ctx)
+				const struct smb_filename *smb_fname,
+				SMB_ACL_TYPE_T type,
+				TALLOC_CTX *mem_ctx)
 {
 	SMB_ACL_T result = NULL;
 	int count;
 	SOLARIS_ACL_T solaris_acl = NULL;
+	const char *path_p = smb_fname->base_name;
 	
 	DEBUG(10, ("solarisacl_sys_acl_get_file called for file '%s'.\n", 
 		   path_p));

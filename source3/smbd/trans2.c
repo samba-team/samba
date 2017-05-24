@@ -5519,7 +5519,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 				} else {
 					file_acl =
 					    SMB_VFS_SYS_ACL_GET_FILE(conn,
-						smb_fname->base_name,
+						smb_fname,
 						SMB_ACL_TYPE_ACCESS,
 						talloc_tos());
 				}
@@ -5537,14 +5537,14 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 						def_acl =
 						    SMB_VFS_SYS_ACL_GET_FILE(
 							    conn,
-							    fsp->fsp_name->base_name,
+							    fsp->fsp_name,
 							    SMB_ACL_TYPE_DEFAULT,
 							    talloc_tos());
 					} else {
 						def_acl =
 						    SMB_VFS_SYS_ACL_GET_FILE(
 							    conn,
-							    smb_fname->base_name,
+							    smb_fname,
 							    SMB_ACL_TYPE_DEFAULT,
 							    talloc_tos());
 					}
@@ -7151,7 +7151,7 @@ static NTSTATUS smb_set_posix_acl(connection_struct *conn,
 		(unsigned int)num_def_acls));
 
 	if (valid_file_acls && !set_unix_posix_acl(conn, fsp,
-		smb_fname->base_name, num_file_acls,
+		smb_fname, num_file_acls,
 		pdata + SMB_POSIX_ACL_HEADER_SIZE)) {
 		return map_nt_error_from_unix(errno);
 	}
@@ -7590,7 +7590,7 @@ static NTSTATUS smb_unix_mknod(connection_struct *conn,
 				    &parent, NULL)) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		inherit_access_posix_acl(conn, parent, smb_fname->base_name,
+		inherit_access_posix_acl(conn, parent, smb_fname,
 					 unixmode);
 		TALLOC_FREE(parent);
 	}

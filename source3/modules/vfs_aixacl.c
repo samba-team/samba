@@ -23,10 +23,11 @@
 #include "vfs_aixacl_util.h"
 
 SMB_ACL_T aixacl_sys_acl_get_file(vfs_handle_struct *handle,
-				  const char *path_p,
+				  const struct smb_filename *smb_fname,
 				  SMB_ACL_TYPE_T type,
 				  TALLOC_CTX *mem_ctx)
 {
+	const char *path_p = smb_fname->base_name;
 	struct acl *file_acl = (struct acl *)NULL;
 	struct smb_acl_t *result = (struct smb_acl_t *)NULL;
 	

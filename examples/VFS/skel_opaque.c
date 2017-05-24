@@ -741,7 +741,7 @@ static int skel_fchmod_acl(vfs_handle_struct *handle, files_struct *fsp,
 }
 
 static SMB_ACL_T skel_sys_acl_get_file(vfs_handle_struct *handle,
-				       const char *path_p,
+				       const struct smb_filename *smb_fname,
 				       SMB_ACL_TYPE_T type,
 				       TALLOC_CTX *mem_ctx)
 {

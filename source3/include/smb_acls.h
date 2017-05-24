@@ -53,8 +53,9 @@ int sys_acl_set_permset(SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T permset_d);
 int sys_acl_free_text(char *text);
 int sys_acl_valid(SMB_ACL_T acl_d);
 SMB_ACL_T sys_acl_get_file(struct vfs_handle_struct *handle,
-			   const char *path_p, SMB_ACL_TYPE_T type,
-			   TALLOC_CTX *mem_ctx);
+			const struct smb_filename *smb_fname,
+			SMB_ACL_TYPE_T type,
+			TALLOC_CTX *mem_ctx);
 SMB_ACL_T sys_acl_get_fd(struct vfs_handle_struct *handle, struct files_struct *fsp,
 			 TALLOC_CTX *mem_ctx);
 int sys_acl_set_file(struct vfs_handle_struct *handle,

@@ -1609,32 +1609,42 @@ err:
 }
 
 static SMB_ACL_T um_sys_acl_get_file(vfs_handle_struct *handle,
-				     const char *path_p,
-				     SMB_ACL_TYPE_T type,
-				     TALLOC_CTX *mem_ctx)
+				const struct smb_filename *smb_fname,
+				SMB_ACL_TYPE_T type,
+				TALLOC_CTX *mem_ctx)
 {
 	SMB_ACL_T ret;
-	char *client_path = NULL;
+	int saved_errno = 0;
+	struct smb_filename *client_fname = NULL;
 	int status;
 
 	DEBUG(10, ("Entering um_sys_acl_get_file\n"));
 
-	if (!is_in_media_files(path_p)) {
-		return SMB_VFS_NEXT_SYS_ACL_GET_FILE(handle, path_p,
+	if (!is_in_media_files(smb_fname->base_name)) {
+		return SMB_VFS_NEXT_SYS_ACL_GET_FILE(handle, smb_fname,
 						     type, mem_ctx);
 	}
 
-	status = alloc_get_client_path(handle, talloc_tos(),
-				       path_p, &client_path);
+	status = alloc_get_client_smb_fname(handle,
+				talloc_tos(),
+				smb_fname,
+				&client_fname);
 	if (status != 0) {
-		ret = NULL;
+		ret = (SMB_ACL_T)NULL;
 		goto err;
 	}
 
-	ret = SMB_VFS_NEXT_SYS_ACL_GET_FILE(handle, client_path, type, mem_ctx);
+	ret = SMB_VFS_NEXT_SYS_ACL_GET_FILE(handle, client_fname,
+				type, mem_ctx);
 
 err:
-	TALLOC_FREE(client_path);
+	if (ret == (SMB_ACL_T)NULL) {
+		saved_errno = errno;
+	}
+	TALLOC_FREE(client_fname);
+	if (saved_errno != 0) {
+		errno = saved_errno;
+	}
 	return ret;
 }
 

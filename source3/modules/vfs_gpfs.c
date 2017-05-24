@@ -961,7 +961,7 @@ static SMB_ACL_T gpfsacl_get_posix_acl(const char *path, gpfs_aclType_t type,
 }
 
 static SMB_ACL_T gpfsacl_sys_acl_get_file(vfs_handle_struct *handle,
-					  const char *path_p,
+					  const struct smb_filename *smb_fname,
 					  SMB_ACL_TYPE_T type,
 					  TALLOC_CTX *mem_ctx)
 {
@@ -973,7 +973,7 @@ static SMB_ACL_T gpfsacl_sys_acl_get_file(vfs_handle_struct *handle,
 				return NULL);
 
 	if (!config->acl) {
-		return SMB_VFS_NEXT_SYS_ACL_GET_FILE(handle, path_p,
+		return SMB_VFS_NEXT_SYS_ACL_GET_FILE(handle, smb_fname,
 						     type, mem_ctx);
 	}
 
@@ -989,7 +989,7 @@ static SMB_ACL_T gpfsacl_sys_acl_get_file(vfs_handle_struct *handle,
 		smb_panic("exiting");
 	}
 
-	return gpfsacl_get_posix_acl(path_p, gpfs_type, mem_ctx);
+	return gpfsacl_get_posix_acl(smb_fname->base_name, gpfs_type, mem_ctx);
 }
 
 static SMB_ACL_T gpfsacl_sys_acl_get_fd(vfs_handle_struct *handle,

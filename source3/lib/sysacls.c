@@ -362,9 +362,11 @@ int sys_acl_valid(SMB_ACL_T acl_d)
 #if defined(HAVE_POSIX_ACLS)
 
 SMB_ACL_T sys_acl_get_file(vfs_handle_struct *handle,
-			   const char *path_p, SMB_ACL_TYPE_T type, TALLOC_CTX *mem_ctx)
+			const struct smb_filename *smb_fname,
+			SMB_ACL_TYPE_T type,
+			TALLOC_CTX *mem_ctx)
 {
-	return posixacl_sys_acl_get_file(handle, path_p, type, mem_ctx);
+	return posixacl_sys_acl_get_file(handle, smb_fname, type, mem_ctx);
 }
 
 SMB_ACL_T sys_acl_get_fd(vfs_handle_struct *handle, files_struct *fsp, TALLOC_CTX *mem_ctx)
@@ -393,10 +395,11 @@ int sys_acl_delete_def_file(vfs_handle_struct *handle,
 #elif defined(HAVE_AIX_ACLS)
 
 SMB_ACL_T sys_acl_get_file(vfs_handle_struct *handle,
-			   const char *path_p, SMB_ACL_TYPE_T type,
-			   TALLOC_CTX *mem_ctx)
+			const struct smb_filename *smb_fname,
+			SMB_ACL_TYPE_T type,
+			TALLOC_CTX *mem_ctx)
 {
-	return aixacl_sys_acl_get_file(handle, path_p, type, mem_ctx);
+	return aixacl_sys_acl_get_file(handle, smb_fname, type, mem_ctx);
 }
 
 SMB_ACL_T sys_acl_get_fd(vfs_handle_struct *handle, files_struct *fsp,
@@ -426,10 +429,11 @@ int sys_acl_delete_def_file(vfs_handle_struct *handle,
 #elif defined(HAVE_TRU64_ACLS)
 
 SMB_ACL_T sys_acl_get_file(vfs_handle_struct *handle,
-			   const char *path_p, SMB_ACL_TYPE_T type,
-			   TALLOC_CTX *mem_ctx)
+			const struct smb_filename *smb_fname,
+			SMB_ACL_TYPE_T type,
+			TALLOC_CTX *mem_ctx)
 {
-	return tru64acl_sys_acl_get_file(handle, path_p, type,
+	return tru64acl_sys_acl_get_file(handle, smb_fname, type,
 					 mem_ctx);
 }
 
@@ -460,10 +464,11 @@ int sys_acl_delete_def_file(vfs_handle_struct *handle,
 #elif defined(HAVE_SOLARIS_UNIXWARE_ACLS)
 
 SMB_ACL_T sys_acl_get_file(vfs_handle_struct *handle,
-			   const char *path_p, SMB_ACL_TYPE_T type,
-			   TALLOC_CTX *mem_ctx)
+			const struct smb_filename *smb_fname,
+			SMB_ACL_TYPE_T type,
+			TALLOC_CTX *mem_ctx)
 {
-	return solarisacl_sys_acl_get_file(handle, path_p, type,
+	return solarisacl_sys_acl_get_file(handle, smb_fname, type,
 					   mem_ctx);
 }
 
@@ -495,10 +500,11 @@ int sys_acl_delete_def_file(vfs_handle_struct *handle,
 #elif defined(HAVE_HPUX_ACLS)
 
 SMB_ACL_T sys_acl_get_file(vfs_handle_struct *handle,
-			   const char *path_p, SMB_ACL_TYPE_T type,
-			   TALLOC_CTX *mem_ctx)
+			const struct smb_filename *smb_fname,
+			SMB_ACL_TYPE_T type,
+			TALLOC_CTX *mem_ctx)
 {
-	return hpuxacl_sys_acl_get_file(handle, path_p, type, mem_ctx);
+	return hpuxacl_sys_acl_get_file(handle, smb_fname, type, mem_ctx);
 }
 
 SMB_ACL_T sys_acl_get_fd(vfs_handle_struct *handle, files_struct *fsp,
@@ -528,8 +534,9 @@ int sys_acl_delete_def_file(vfs_handle_struct *handle,
 #else /* No ACLs. */
 
 SMB_ACL_T sys_acl_get_file(vfs_handle_struct *handle,
-			   const char *path_p, SMB_ACL_TYPE_T type,
-			   TALLOC_CTX *mem_ctx)
+			const struct smb_filename *smb_fname,
+			SMB_ACL_TYPE_T type,
+			TALLOC_CTX *mem_ctx)
 {
 #ifdef ENOTSUP
 	errno = ENOTSUP;

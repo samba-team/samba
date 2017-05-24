@@ -199,6 +199,8 @@
 /* Version 37 - Add vfs_copy_chunk_flags for DUP_EXTENTS_TO_FILE */
 /* Version 37 - Change sys_acl_delete_def_file from const char *
 		to const struct smb_filename * */
+/* Version 37 - Change sys_acl_get_file from const char *
+		to const struct smb_filename * */
 
 #define SMB_VFS_INTERFACE_VERSION 37
 
@@ -858,7 +860,7 @@ struct vfs_fn_pointers {
 	int (*fchmod_acl_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, mode_t mode);
 
 	SMB_ACL_T (*sys_acl_get_file_fn)(struct vfs_handle_struct *handle,
-					 const char *path_p,
+					 const struct smb_filename *smb_fname,
 					 SMB_ACL_TYPE_T type,
 					 TALLOC_CTX *mem_ctx);
 	SMB_ACL_T (*sys_acl_get_fd_fn)(struct vfs_handle_struct *handle,
@@ -1314,7 +1316,7 @@ int smb_vfs_call_chmod_acl(struct vfs_handle_struct *handle,
 int smb_vfs_call_fchmod_acl(struct vfs_handle_struct *handle,
 			    struct files_struct *fsp, mode_t mode);
 SMB_ACL_T smb_vfs_call_sys_acl_get_file(struct vfs_handle_struct *handle,
-					const char *path_p,
+					const struct smb_filename *smb_fname,
 					SMB_ACL_TYPE_T type,
 					TALLOC_CTX *mem_ctx);
 SMB_ACL_T smb_vfs_call_sys_acl_get_fd(struct vfs_handle_struct *handle,

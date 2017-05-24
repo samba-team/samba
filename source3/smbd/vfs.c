@@ -2441,12 +2441,12 @@ int smb_vfs_call_fchmod_acl(struct vfs_handle_struct *handle,
 }
 
 SMB_ACL_T smb_vfs_call_sys_acl_get_file(struct vfs_handle_struct *handle,
-					const char *path_p,
+					const struct smb_filename *smb_fname,
 					SMB_ACL_TYPE_T type,
 					TALLOC_CTX *mem_ctx)
 {
 	VFS_FIND(sys_acl_get_file);
-	return handle->fns->sys_acl_get_file_fn(handle, path_p, type, mem_ctx);
+	return handle->fns->sys_acl_get_file_fn(handle, smb_fname, type, mem_ctx);
 }
 
 SMB_ACL_T smb_vfs_call_sys_acl_get_fd(struct vfs_handle_struct *handle,

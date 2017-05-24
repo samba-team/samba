@@ -545,16 +545,40 @@ static int cap_chmod_acl(vfs_handle_struct *handle,
 }
 
 static SMB_ACL_T cap_sys_acl_get_file(vfs_handle_struct *handle,
-				      const char *path, SMB_ACL_TYPE_T type,
-				      TALLOC_CTX *mem_ctx)
+				const struct smb_filename *smb_fname,
+				SMB_ACL_TYPE_T type,
+				TALLOC_CTX *mem_ctx)
 {
-	char *cappath = capencode(talloc_tos(), path);
+	struct smb_filename *cap_smb_fname = NULL;
+	char *cappath = capencode(talloc_tos(), smb_fname->base_name);
+	SMB_ACL_T ret;
+	int saved_errno = 0;
 
 	if (!cappath) {
 		errno = ENOMEM;
 		return (SMB_ACL_T)NULL;
 	}
-	return SMB_VFS_NEXT_SYS_ACL_GET_FILE(handle, cappath, type, mem_ctx);
+	cap_smb_fname = synthetic_smb_fname(talloc_tos(),
+					cappath,
+					NULL,
+					NULL,
+					smb_fname->flags);
+	if (cap_smb_fname == NULL) {
+		TALLOC_FREE(cappath);
+		errno = ENOMEM;
+		return (SMB_ACL_T)NULL;
+	}
+	ret = SMB_VFS_NEXT_SYS_ACL_GET_FILE(handle, cap_smb_fname,
+				type, mem_ctx);
+	if (ret == NULL) {
+		saved_errno = errno;
+	}
+	TALLOC_FREE(cappath);
+	TALLOC_FREE(cap_smb_fname);
+	if (saved_errno != 0) {
+		errno = saved_errno;
+	}
+	return ret;
 }
 
 static int cap_sys_acl_set_file(vfs_handle_struct *handle, const char *path, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl)

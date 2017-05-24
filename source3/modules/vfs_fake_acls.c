@@ -242,14 +242,15 @@ static DATA_BLOB fake_acls_acl2blob(TALLOC_CTX *mem_ctx, SMB_ACL_T acl)
 }
 
 static SMB_ACL_T fake_acls_sys_acl_get_file(struct vfs_handle_struct *handle,
-					    const char *path,
-					    SMB_ACL_TYPE_T type,
-					    TALLOC_CTX *mem_ctx)
+				const struct smb_filename *smb_fname,
+				SMB_ACL_TYPE_T type,
+				TALLOC_CTX *mem_ctx)
 {
 	DATA_BLOB blob = data_blob_null;
 	ssize_t length;
 	const char *name = NULL;
 	struct smb_acl_t *acl = NULL;
+	const char *path = smb_fname->base_name;
 	TALLOC_CTX *frame = talloc_stackframe();
 	switch (type) {
 	case SMB_ACL_TYPE_ACCESS:

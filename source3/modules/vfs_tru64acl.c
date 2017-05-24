@@ -38,9 +38,9 @@ static SMB_ACL_PERM_T tru64_permset_to_smb(const acl_perm_t tru64_permset);
 /* public functions - the api */
 
 SMB_ACL_T tru64acl_sys_acl_get_file(vfs_handle_struct *handle,
-				    const char *path_p,
-				    SMB_ACL_TYPE_T type,
-				    TALLOC_CTX *mem_ctx)
+				const struct smb_filename *smb_fname,
+				SMB_ACL_TYPE_T type,
+				TALLOC_CTX *mem_ctx)
 {
         struct smb_acl_t *result;
         acl_type_t the_acl_type;
@@ -60,7 +60,7 @@ SMB_ACL_T tru64acl_sys_acl_get_file(vfs_handle_struct *handle,
                 return NULL;
         }
 
-        tru64_acl = acl_get_file((char *)path_p, the_acl_type);
+        tru64_acl = acl_get_file((char *)smb_fname->base_name, the_acl_type);
 
         if (tru64_acl == NULL) {
                 return NULL;

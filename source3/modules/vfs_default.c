@@ -2688,7 +2688,7 @@ static int vfswrap_chmod_acl(vfs_handle_struct *handle,
 	int result;
 
 	START_PROFILE(chmod_acl);
-	result = chmod_acl(handle->conn, smb_fname->base_name, mode);
+	result = chmod_acl(handle->conn, smb_fname, mode);
 	END_PROFILE(chmod_acl);
 	return result;
 #endif
@@ -2710,11 +2710,11 @@ static int vfswrap_fchmod_acl(vfs_handle_struct *handle, files_struct *fsp, mode
 }
 
 static SMB_ACL_T vfswrap_sys_acl_get_file(vfs_handle_struct *handle,
-					  const char *path_p,
+					  const struct smb_filename *smb_fname,
 					  SMB_ACL_TYPE_T type,
 					  TALLOC_CTX *mem_ctx)
 {
-	return sys_acl_get_file(handle, path_p, type, mem_ctx);
+	return sys_acl_get_file(handle, smb_fname, type, mem_ctx);
 }
 
 static SMB_ACL_T vfswrap_sys_acl_get_fd(vfs_handle_struct *handle,

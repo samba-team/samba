@@ -2152,16 +2152,17 @@ static int smb_full_audit_fchmod_acl(vfs_handle_struct *handle, files_struct *fs
 }
 
 static SMB_ACL_T smb_full_audit_sys_acl_get_file(vfs_handle_struct *handle,
-					const char *path_p,
-						 SMB_ACL_TYPE_T type,
-						 TALLOC_CTX *mem_ctx)
+				const struct smb_filename *smb_fname,
+				SMB_ACL_TYPE_T type,
+				TALLOC_CTX *mem_ctx)
 {
 	SMB_ACL_T result;
 
-	result = SMB_VFS_NEXT_SYS_ACL_GET_FILE(handle, path_p, type, mem_ctx);
+	result = SMB_VFS_NEXT_SYS_ACL_GET_FILE(handle, smb_fname,
+				type, mem_ctx);
 
 	do_log(SMB_VFS_OP_SYS_ACL_GET_FILE, (result != NULL), handle,
-	       "%s", path_p);
+	       "%s", smb_fname->base_name);
 
 	return result;
 }

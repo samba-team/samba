@@ -778,15 +778,24 @@ NTSTATUS posix_get_nt_acl(struct connection_struct *conn,
 			struct security_descriptor **ppdesc);
 NTSTATUS try_chown(files_struct *fsp, uid_t uid, gid_t gid);
 NTSTATUS set_nt_acl(files_struct *fsp, uint32_t security_info_sent, const struct security_descriptor *psd);
-int get_acl_group_bits( connection_struct *conn, const char *fname, mode_t *mode );
-int chmod_acl(connection_struct *conn, const char *name, mode_t mode);
-int inherit_access_posix_acl(connection_struct *conn, const char *inherit_from_dir,
-		       const char *name, mode_t mode);
+int get_acl_group_bits( connection_struct *conn,
+			const struct smb_filename *smb_fname,
+			mode_t *mode);
+int chmod_acl(connection_struct *conn,
+			const struct smb_filename *smb_fname,
+			mode_t mode);
+int inherit_access_posix_acl(connection_struct *conn,
+			const char *inherit_from_dir,
+			const struct smb_filename *smb_fname,
+			mode_t mode);
 int fchmod_acl(files_struct *fsp, mode_t mode);
 bool set_unix_posix_default_acl(connection_struct *conn,
 				const struct smb_filename *smb_fname,
 				uint16_t num_def_acls, const char *pdata);
-bool set_unix_posix_acl(connection_struct *conn, files_struct *fsp, const char *fname, uint16_t num_acls, const char *pdata);
+bool set_unix_posix_acl(connection_struct *conn, files_struct *fsp,
+				const struct smb_filename *smb_fname,
+				uint16_t num_acls,
+				const char *pdata);
 NTSTATUS get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fname,
 			     uint32_t security_info_wanted,
 			     struct security_descriptor **sd);
