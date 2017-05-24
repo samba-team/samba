@@ -1331,9 +1331,10 @@ static ssize_t vfs_gluster_flistxattr(struct vfs_handle_struct *handle,
 }
 
 static int vfs_gluster_removexattr(struct vfs_handle_struct *handle,
-				   const char *path, const char *name)
+				const struct smb_filename *smb_fname,
+				const char *name)
 {
-	return glfs_removexattr(handle->data, path, name);
+	return glfs_removexattr(handle->data, smb_fname->base_name, name);
 }
 
 static int vfs_gluster_fremovexattr(struct vfs_handle_struct *handle,

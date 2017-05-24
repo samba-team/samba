@@ -2313,15 +2313,15 @@ static ssize_t smb_full_audit_flistxattr(struct vfs_handle_struct *handle,
 }
 
 static int smb_full_audit_removexattr(struct vfs_handle_struct *handle,
-			     const char *path,
+			     const struct smb_filename *smb_fname,
 			     const char *name)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_REMOVEXATTR(handle, path, name);
+	result = SMB_VFS_NEXT_REMOVEXATTR(handle, smb_fname, name);
 
 	do_log(SMB_VFS_OP_REMOVEXATTR, (result >= 0), handle,
-	       "%s|%s", path, name);
+	       "%s|%s", smb_fname->base_name, name);
 
 	return result;
 }

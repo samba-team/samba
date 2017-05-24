@@ -2770,9 +2770,11 @@ static ssize_t vfswrap_flistxattr(struct vfs_handle_struct *handle, struct files
 	return flistxattr(fsp->fh->fd, list, size);
 }
 
-static int vfswrap_removexattr(struct vfs_handle_struct *handle, const char *path, const char *name)
+static int vfswrap_removexattr(struct vfs_handle_struct *handle,
+				const struct smb_filename *smb_fname,
+				const char *name)
 {
-	return removexattr(path, name);
+	return removexattr(smb_fname->base_name, name);
 }
 
 static int vfswrap_fremovexattr(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name)

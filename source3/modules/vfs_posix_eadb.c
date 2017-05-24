@@ -221,13 +221,14 @@ static int posix_eadb_removeattr(struct tdb_wrap *db_ctx,
 }
 
 static int posix_eadb_removexattr(struct vfs_handle_struct *handle,
-				 const char *path, const char *name)
+				const struct smb_filename *smb_fname,
+				const char *name)
 {
 	struct tdb_wrap *db;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, db, struct tdb_wrap, return -1);
 
-	return posix_eadb_removeattr(db, path, -1, name);
+	return posix_eadb_removeattr(db, smb_fname->base_name, -1, name);
 }
 
 static int posix_eadb_fremovexattr(struct vfs_handle_struct *handle,

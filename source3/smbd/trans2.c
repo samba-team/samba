@@ -800,7 +800,7 @@ NTSTATUS set_ea(connection_struct *conn, files_struct *fsp,
 				DEBUG(10,("set_ea: deleting ea name %s on file %s.\n",
 					unix_ea_name, smb_fname->base_name));
 				ret = SMB_VFS_REMOVEXATTR(conn,
-						smb_fname->base_name,
+						smb_fname,
 						unix_ea_name);
 			}
 #ifdef ENOATTR

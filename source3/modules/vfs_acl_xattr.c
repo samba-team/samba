@@ -181,7 +181,7 @@ static int sys_acl_set_file_xattr(vfs_handle_struct *handle,
 	}
 
 	become_root();
-	SMB_VFS_REMOVEXATTR(handle->conn, smb_fname->base_name,
+	SMB_VFS_REMOVEXATTR(handle->conn, smb_fname,
 			XATTR_NTACL_NAME);
 	unbecome_root();
 

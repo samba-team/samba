@@ -3150,7 +3150,7 @@ static int fruit_unlink_meta_netatalk(vfs_handle_struct *handle,
 				      const struct smb_filename *smb_fname)
 {
 	return SMB_VFS_REMOVEXATTR(handle->conn,
-				   smb_fname->base_name,
+				   smb_fname,
 				   AFPINFO_EA_NETATALK);
 }
 
@@ -3870,7 +3870,7 @@ static ssize_t fruit_pwrite_meta_netatalk(vfs_handle_struct *handle,
 
 	if (ai_empty_finderinfo(ai)) {
 		ret = SMB_VFS_REMOVEXATTR(handle->conn,
-					  fsp->fsp_name->base_name,
+					  fsp->fsp_name,
 					  AFPINFO_EA_NETATALK);
 
 		if (ret != 0 && errno != ENOENT && errno != ENOATTR) {

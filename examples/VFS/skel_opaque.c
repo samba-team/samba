@@ -829,8 +829,9 @@ static ssize_t skel_flistxattr(vfs_handle_struct *handle,
 	return -1;
 }
 
-static int skel_removexattr(vfs_handle_struct *handle, const char *path,
-			    const char *name)
+static int skel_removexattr(vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
+			const char *name)
 {
 	errno = ENOSYS;
 	return -1;

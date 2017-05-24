@@ -1296,11 +1296,14 @@ static ssize_t cephwrap_flistxattr(struct vfs_handle_struct *handle, struct file
 	}
 }
 
-static int cephwrap_removexattr(struct vfs_handle_struct *handle, const char *path, const char *name)
+static int cephwrap_removexattr(struct vfs_handle_struct *handle,
+				const struct smb_filename *smb_fname,
+				const char *name)
 {
 	int ret;
-	DBG_DEBUG("[CEPH] removexattr(%p, %s, %s)\n", handle, path, name);
-	ret = ceph_removexattr(handle->data, path, name);
+	DBG_DEBUG("[CEPH] removexattr(%p, %s, %s)\n", handle,
+			smb_fname->base_name, name);
+	ret = ceph_removexattr(handle->data, smb_fname->base_name, name);
 	DBG_DEBUG("[CEPH] removexattr(...) = %d\n", ret);
 	WRAP_RETURN(ret);
 }

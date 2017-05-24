@@ -588,7 +588,7 @@ static int streams_xattr_unlink(vfs_handle_struct *handle,
 		goto fail;
 	}
 
-	ret = SMB_VFS_REMOVEXATTR(handle->conn, smb_fname->base_name, xattr_name);
+	ret = SMB_VFS_REMOVEXATTR(handle->conn, smb_fname, xattr_name);
 
 	if ((ret == -1) && (errno == ENOATTR)) {
 		errno = ENOENT;
@@ -672,7 +672,7 @@ static int streams_xattr_rename(vfs_handle_struct *handle,
 	}
 
 	/* remove the old stream */
-	oret = SMB_VFS_REMOVEXATTR(handle->conn, smb_fname_src->base_name,
+	oret = SMB_VFS_REMOVEXATTR(handle->conn, smb_fname_src,
 				   src_xattr_name);
 	if (oret < 0) {
 		if (errno == ENOATTR) {

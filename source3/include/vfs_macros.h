@@ -535,10 +535,10 @@
 #define SMB_VFS_NEXT_FLISTXATTR(handle,fsp,list,size) \
 	smb_vfs_call_flistxattr((handle)->next,(fsp),(list),(size))
 
-#define SMB_VFS_REMOVEXATTR(conn,path,name) \
-	smb_vfs_call_removexattr((conn)->vfs_handles,(path),(name))
-#define SMB_VFS_NEXT_REMOVEXATTR(handle,path,name) \
-	smb_vfs_call_removexattr((handle)->next,(path),(name))
+#define SMB_VFS_REMOVEXATTR(conn,smb_fname,name) \
+	smb_vfs_call_removexattr((conn)->vfs_handles,(smb_fname),(name))
+#define SMB_VFS_NEXT_REMOVEXATTR(handle,smb_fname,name) \
+	smb_vfs_call_removexattr((handle)->next,(smb_fname),(name))
 
 #define SMB_VFS_FREMOVEXATTR(fsp,name) \
 	smb_vfs_call_fremovexattr((fsp)->conn->vfs_handles, (fsp), (name))

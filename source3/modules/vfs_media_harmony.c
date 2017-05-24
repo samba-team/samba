@@ -2281,33 +2281,28 @@ out:
  * In this case, "name" is an attr name.
  */
 static int mh_removexattr(struct vfs_handle_struct *handle,
-		const char *path,
+		const struct smb_filename *smb_fname,
 		const char *name)
 {
 	int status;
-	char *clientPath;
-	TALLOC_CTX *ctx;
+	struct smb_filename *clientFname = NULL;
 
 	DEBUG(MH_INFO_DEBUG, ("Entering mh_removexattr\n"));
-	if (!is_in_media_files(path))
-	{
-		status = SMB_VFS_NEXT_REMOVEXATTR(handle, path, name);
+	if (!is_in_media_files(smb_fname->base_name)) {
+		status = SMB_VFS_NEXT_REMOVEXATTR(handle, smb_fname, name);
 		goto out;
 	}
 
-	clientPath = NULL;
-	ctx = talloc_tos();
-
-	if ((status = alloc_get_client_path(handle, ctx,
-				path,
-				&clientPath)))
-	{
+	status = alloc_get_client_smb_fname(handle,
+				talloc_tos(),
+				smb_fname,
+				&clientFname);
+	if (status != 0) {
 		goto err;
 	}
-
-	status = SMB_VFS_NEXT_REMOVEXATTR(handle, clientPath, name);
+	status = SMB_VFS_NEXT_REMOVEXATTR(handle, clientFname, name);
 err:
-	TALLOC_FREE(clientPath);
+	TALLOC_FREE(clientFname);
 out:
 	return status;
 }

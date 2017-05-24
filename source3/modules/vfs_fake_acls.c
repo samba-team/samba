@@ -389,7 +389,7 @@ static int fake_acls_sys_acl_delete_def_file(vfs_handle_struct *handle,
 		return -1;
 	}
 
-	ret = SMB_VFS_NEXT_REMOVEXATTR(handle, smb_fname->base_name, name);
+	ret = SMB_VFS_NEXT_REMOVEXATTR(handle, smb_fname, name);
 	if (ret == -1 && errno == ENOATTR) {
 		ret = 0;
 		errno = 0;

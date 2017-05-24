@@ -2536,10 +2536,11 @@ ssize_t smb_vfs_call_flistxattr(struct vfs_handle_struct *handle,
 }
 
 int smb_vfs_call_removexattr(struct vfs_handle_struct *handle,
-			     const char *path, const char *name)
+				const struct smb_filename *smb_fname,
+				const char *name)
 {
 	VFS_FIND(removexattr);
-	return handle->fns->removexattr_fn(handle, path, name);
+	return handle->fns->removexattr_fn(handle, smb_fname, name);
 }
 
 int smb_vfs_call_fremovexattr(struct vfs_handle_struct *handle,

@@ -961,10 +961,11 @@ static ssize_t skel_flistxattr(vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_FLISTXATTR(handle, fsp, list, size);
 }
 
-static int skel_removexattr(vfs_handle_struct *handle, const char *path,
-			    const char *name)
+static int skel_removexattr(vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
+			const char *name)
 {
-	return SMB_VFS_NEXT_REMOVEXATTR(handle, path, name);
+	return SMB_VFS_NEXT_REMOVEXATTR(handle, smb_fname, name);
 }
 
 static int skel_fremovexattr(vfs_handle_struct *handle,

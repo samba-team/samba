@@ -711,16 +711,42 @@ static ssize_t cap_listxattr(vfs_handle_struct *handle,
 	return ret;
 }
 
-static int cap_removexattr(vfs_handle_struct *handle, const char *path, const char *name)
+static int cap_removexattr(vfs_handle_struct *handle,
+				const struct smb_filename *smb_fname,
+				const char *name)
 {
-	char *cappath = capencode(talloc_tos(), path);
+	struct smb_filename *cap_smb_fname = NULL;
+	char *cappath = capencode(talloc_tos(), smb_fname->base_name);
 	char *capname = capencode(talloc_tos(), name);
+	int ret;
+	int saved_errno = 0;
 
 	if (!cappath || !capname) {
 		errno = ENOMEM;
 		return -1;
 	}
-        return SMB_VFS_NEXT_REMOVEXATTR(handle, cappath, capname);
+	cap_smb_fname = synthetic_smb_fname(talloc_tos(),
+					cappath,
+					NULL,
+					NULL,
+					smb_fname->flags);
+	if (cap_smb_fname == NULL) {
+		TALLOC_FREE(cappath);
+		TALLOC_FREE(capname);
+		errno = ENOMEM;
+		return -1;
+	}
+        ret = SMB_VFS_NEXT_REMOVEXATTR(handle, cap_smb_fname, capname);
+	if (ret == -1) {
+		saved_errno = errno;
+	}
+	TALLOC_FREE(cappath);
+	TALLOC_FREE(capname);
+	TALLOC_FREE(cap_smb_fname);
+	if (saved_errno) {
+		errno = saved_errno;
+	}
+	return ret;
 }
 
 static int cap_fremovexattr(vfs_handle_struct *handle, struct files_struct *fsp, const char *path)
