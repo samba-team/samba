@@ -122,7 +122,8 @@
 /* shall we support browse requests via a FIFO to nmbd? */
 #define ENABLE_FIFO 1
 
-/* how long (in miliseconds) to wait for a socket connect to happen */
+/* How long (in milliseconds) to wait for a socket connect to happen. 
+   Also defined in source4/lib/socket/socket.h */
 #define LONG_CONNECT_TIMEOUT 30000
 #define SHORT_CONNECT_TIMEOUT 5000
 

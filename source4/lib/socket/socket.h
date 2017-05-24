@@ -20,6 +20,9 @@
 #ifndef _SAMBA_SOCKET_H
 #define _SAMBA_SOCKET_H
 
+/* See source3/include/local.h for source3 socket timeout definitions. */
+#define LONG_CONNECT_TIMEOUT 30000
+
 struct tevent_context;
 struct tevent_fd;
 struct socket_context;

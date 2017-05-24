@@ -298,7 +298,7 @@ static struct tevent_req *smbcli_sock_establish_send(TALLOC_CTX *mem_ctx,
 	struct sock_connect_state *state =
 		talloc_get_type_abort(private_data,
 		struct sock_connect_state);
-	uint32_t timeout_msec = 15 * 1000;
+	uint32_t timeout_msec = LONG_CONNECT_TIMEOUT;
 
 	return smbcli_transport_connect_send(state,
 					     ev,
