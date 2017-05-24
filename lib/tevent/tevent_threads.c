@@ -443,15 +443,14 @@ void _tevent_threaded_schedule_immediate(struct tevent_threaded_context *tctx,
 
 	ev = tctx->event_ctx;
 
-	ret = pthread_mutex_unlock(&tctx->event_ctx_mutex);
-	if (ret != 0) {
-		abort();
-	}
-
 	if (ev == NULL) {
 		/*
 		 * Our event context is already gone.
 		 */
+		ret = pthread_mutex_unlock(&tctx->event_ctx_mutex);
+		if (ret != 0) {
+			abort();
+		}
 		return;
 	}
 
@@ -475,6 +474,11 @@ void _tevent_threaded_schedule_immediate(struct tevent_threaded_context *tctx,
 	DLIST_ADD_END(ev->scheduled_immediates, im);
 
 	ret = pthread_mutex_unlock(&ev->scheduled_mutex);
+	if (ret != 0) {
+		abort();
+	}
+
+	ret = pthread_mutex_unlock(&tctx->event_ctx_mutex);
 	if (ret != 0) {
 		abort();
 	}
