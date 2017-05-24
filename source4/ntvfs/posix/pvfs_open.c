@@ -407,6 +407,12 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
+	if (io->generic.in.query_on_disk_id) {
+		ZERO_ARRAY(io->generic.out.on_disk_id);
+		SIVAL(io->generic.out.on_disk_id, 0, name->st.st_ino);
+		SIVAL(io->generic.out.on_disk_id, 8, name->st.st_dev);
+	}
+
 	/* the open succeeded, keep this handle permanently */
 	status = ntvfs_handle_set_backend_data(h, pvfs->ntvfs, f);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -720,6 +726,12 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 		if (!NT_STATUS_IS_OK(status)) {
 			goto cleanup_delete;
 		}
+	}
+
+	if (io->generic.in.query_on_disk_id) {
+		ZERO_ARRAY(io->generic.out.on_disk_id);
+		SIVAL(io->generic.out.on_disk_id, 0, name->st.st_ino);
+		SIVAL(io->generic.out.on_disk_id, 8, name->st.st_dev);
 	}
 
 	/* form the lock context used for byte range locking and
@@ -1432,6 +1444,12 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		status = pvfs_access_maximal_allowed(pvfs, req, name, 
 						     &io->generic.out.maximal_access);
 		NT_STATUS_NOT_OK_RETURN(status);
+	}
+
+	if (io->generic.in.query_on_disk_id) {
+		ZERO_ARRAY(io->generic.out.on_disk_id);
+		SIVAL(io->generic.out.on_disk_id, 0, name->st.st_ino);
+		SIVAL(io->generic.out.on_disk_id, 8, name->st.st_dev);
 	}
 
 	status = ntvfs_handle_new(pvfs->ntvfs, req, &h);

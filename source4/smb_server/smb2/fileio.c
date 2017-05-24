@@ -44,6 +44,11 @@ static void smb2srv_create_send(struct ntvfs_request *ntvfs)
 						   data_blob_const(data, 8)));
 	}
 	
+	if (IVAL(io->smb2.out.on_disk_id, 0) != 0) {
+		SMB2SRV_CHECK(smb2_create_blob_add(req, &io->smb2.out.blobs,
+						   SMB2_CREATE_TAG_QFID,
+						   data_blob_const(io->smb2.out.on_disk_id, 32)));
+	}
 
 	SMB2SRV_CHECK(smb2_create_blob_push(req, &blob, io->smb2.out.blobs));
 	SMB2SRV_CHECK(smb2srv_setup_reply(req, 0x58, true, blob.length));
