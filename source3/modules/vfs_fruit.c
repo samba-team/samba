@@ -1230,23 +1230,20 @@ static struct adouble *ad_init(TALLOC_CTX *ctx, vfs_handle_struct *handle,
 	return ad;
 }
 
-/**
- * Return AppleDouble data for a file
- *
- * @param[in] ctx      talloc context
- * @param[in] handle   vfs handle
- * @param[in] path     pathname to file or directory
- * @param[in] type     type of AppleDouble, ADOUBLE_META or ADOUBLE_RSRC
- *
- * @return             talloced struct adouble or NULL on error
- **/
-static struct adouble *ad_get(TALLOC_CTX *ctx, vfs_handle_struct *handle,
-			      const char *path, adouble_type_t type)
+static struct adouble *ad_get_internal(TALLOC_CTX *ctx,
+				       vfs_handle_struct *handle,
+				       files_struct *fsp,
+				       const char *path,
+				       adouble_type_t type)
 {
 	int rc = 0;
 	ssize_t len;
 	struct adouble *ad = NULL;
 	int mode;
+
+	if (fsp != NULL) {
+		path = fsp->base_fsp->fsp_name->base_name;
+	}
 
 	DEBUG(10, ("ad_get(%s) called for %s\n",
 		   type == ADOUBLE_META ? "meta" : "rsrc", path));
@@ -1260,12 +1257,11 @@ static struct adouble *ad_get(TALLOC_CTX *ctx, vfs_handle_struct *handle,
 	/* Try rw first so we can use the fd in ad_convert() */
 	mode = O_RDWR;
 
-	rc = ad_open(handle, ad, NULL, path, mode, 0);
+	rc = ad_open(handle, ad, fsp, path, mode, 0);
 	if (rc == -1 && ((errno == EROFS) || (errno == EACCES))) {
 		mode = O_RDONLY;
-		rc = ad_open(handle, ad, NULL, path, mode, 0);
+		rc = ad_open(handle, ad, fsp, path, mode, 0);
 	}
-
 	if (rc == -1) {
 		DBG_DEBUG("ad_open [%s] error [%s]\n",
 			  path, strerror(errno));
@@ -1294,6 +1290,24 @@ exit:
  *
  * @param[in] ctx      talloc context
  * @param[in] handle   vfs handle
+ * @param[in] path     pathname to file or directory
+ * @param[in] type     type of AppleDouble, ADOUBLE_META or ADOUBLE_RSRC
+ *
+ * @return             talloced struct adouble or NULL on error
+ **/
+static struct adouble *ad_get(TALLOC_CTX *ctx,
+			      vfs_handle_struct *handle,
+			      const char *path,
+			      adouble_type_t type)
+{
+	return ad_get_internal(ctx, handle, NULL, path, type);
+}
+
+/**
+ * Return AppleDouble data for a file
+ *
+ * @param[in] ctx      talloc context
+ * @param[in] handle   vfs handle
  * @param[in] fsp      fsp to use for IO
  * @param[in] type     type of AppleDouble, ADOUBLE_META or ADOUBLE_RSRC
  *
@@ -1302,51 +1316,7 @@ exit:
 static struct adouble *ad_fget(TALLOC_CTX *ctx, vfs_handle_struct *handle,
 			       files_struct *fsp, adouble_type_t type)
 {
-	int rc = 0;
-	ssize_t len;
-	struct adouble *ad = NULL;
-	char *path = fsp->base_fsp->fsp_name->base_name;
-	int mode;
-
-	DBG_DEBUG("ad_get(%s) path [%s]\n",
-		  type == ADOUBLE_META ? "meta" : "rsrc",
-		  fsp_str_dbg(fsp));
-
-	ad = ad_alloc(ctx, handle, type);
-	if (ad == NULL) {
-		rc = -1;
-		goto exit;
-	}
-
-	/* Try rw first so we can use the fd in ad_convert() */
-	mode = O_RDWR;
-
-	rc = ad_open(handle, ad, fsp, path, mode, 0);
-	if (rc == -1 && ((errno == EROFS) || (errno == EACCES))) {
-		mode = O_RDONLY;
-		rc = ad_open(handle, ad, fsp, path, mode, 0);
-	}
-	if (rc == -1) {
-		DBG_DEBUG("error opening AppleDouble [%s]\n", fsp_str_dbg(fsp));
-		goto exit;
-	}
-
-	len = ad_read(ad, path);
-	if (len == -1) {
-		DBG_DEBUG("error reading AppleDouble for %s\n", path);
-		rc = -1;
-		goto exit;
-	}
-
-exit:
-	DBG_DEBUG("ad_get(%s) path [%s] rc [%d]\n",
-		  type == ADOUBLE_META ? "meta" : "rsrc",
-		  fsp_str_dbg(fsp), rc);
-
-	if (rc != 0) {
-		TALLOC_FREE(ad);
-	}
-	return ad;
+	return ad_get_internal(ctx, handle, fsp, NULL, type);
 }
 
 /**
