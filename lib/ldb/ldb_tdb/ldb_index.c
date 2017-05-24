@@ -129,6 +129,23 @@ static struct dn_list *ltdb_index_idxptr(struct ldb_module *module, TDB_DATA rec
 	return list;
 }
 
+struct ltdb_parse_data_idxptr_ctx {
+	struct dn_list *list2;
+	struct ldb_module *module;
+};
+
+static int ltdb_parse_data_idxptr(TDB_DATA key, TDB_DATA data,
+				  void *private_data)
+{
+	struct ltdb_parse_data_idxptr_ctx *ctx = private_data;
+
+	ctx->list2 = ltdb_index_idxptr(ctx->module, data, true);
+	if (ctx->list2 == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	return LDB_SUCCESS;
+}
+
 /*
   return the @IDX list in an index entry for a dn as a
   struct dn_list
@@ -140,9 +157,11 @@ static int ltdb_dn_list_load(struct ldb_module *module,
 	int ret;
 	struct ldb_message_element *el;
 	struct ltdb_private *ltdb = talloc_get_type(ldb_module_get_private(module), struct ltdb_private);
-	TDB_DATA rec;
-	struct dn_list *list2;
 	TDB_DATA key;
+	struct ltdb_parse_data_idxptr_ctx ctx = {
+		.list2 = NULL,
+		.module = module
+	};
 
 	list->dn = NULL;
 	list->count = 0;
@@ -156,20 +175,24 @@ static int ltdb_dn_list_load(struct ldb_module *module,
 	key.dptr = discard_const_p(unsigned char, ldb_dn_get_linearized(dn));
 	key.dsize = strlen((char *)key.dptr);
 
-	rec = tdb_fetch(ltdb->idxptr->itdb, key);
-	if (rec.dptr == NULL) {
-		goto normal_index;
-	}
-
-	/* we've found an in-memory index entry */
-	list2 = ltdb_index_idxptr(module, rec, true);
-	if (list2 == NULL) {
-		free(rec.dptr);
+	/* We use the callback base tdb_parse_record() here so that
+	 * loading the index from the in-memory tdb involves no
+	 * allocation other than what ldb_dn_get_linearized() does */
+	ret = tdb_parse_record(ltdb->tdb, key, 
+			       ltdb_parse_data_idxptr, &ctx); 
+	
+	if (ret == -1) {
+		if (tdb_error(ltdb->tdb) == TDB_ERR_NOEXIST) {
+			goto normal_index;
+		}
 		return LDB_ERR_OPERATIONS_ERROR;
+	} else if (ret != LDB_SUCCESS) {
+		return ret;
 	}
-	free(rec.dptr);
+	
+	/* we've found an in-memory index entry */
 
-	*list = *list2;
+	*list = *ctx.list2;
 	return LDB_SUCCESS;
 
 normal_index:
