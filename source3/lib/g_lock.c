@@ -382,7 +382,7 @@ NTSTATUS g_lock_unlock(struct g_lock_ctx *ctx, const char *name)
 		}
 	}
 	if (i == num_locks) {
-		DEBUG(10, ("g_lock_force_unlock: Lock not found\n"));
+		DBG_DEBUG("Lock not found, num_locks=%u\n", num_locks);
 		status = NT_STATUS_NOT_FOUND;
 		goto done;
 	}
@@ -399,8 +399,7 @@ NTSTATUS g_lock_unlock(struct g_lock_ctx *ctx, const char *name)
 		status = dbwrap_record_store(rec, data, 0);
 	}
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("g_lock_force_unlock: Could not store record: %s\n",
-			  nt_errstr(status)));
+		DBG_WARNING("Could not store record: %s\n", nt_errstr(status));
 		goto done;
 	}
 
