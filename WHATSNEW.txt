@@ -1,4 +1,56 @@
                    ==============================
+                   Release Notes for Samba 4.4.14
+                            May 24, 2017
+                   ==============================
+
+
+This is a security release in order to address the following defect:
+
+o  CVE-2017-7494 (Remote code execution from a writable share)
+
+=======
+Details
+=======
+
+o  CVE-2017-7494:
+   All versions of Samba from 3.5.0 onwards are vulnerable to a remote
+   code execution vulnerability, allowing a malicious client to upload a
+   shared library to a writable share, and then cause the server to load
+   and execute it.
+
+
+Changes since 4.4.13:
+---------------------
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 12780: CVE-2017-7494: Avoid remote code execution from a writable
+     share.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ==============================
                    Release Notes for Samba 4.4.13
                            March 31, 2017
                    ==============================
@@ -36,8 +88,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+---------------------------------------------------------------------
+
 
                    ==============================
                    Release Notes for Samba 4.4.12
@@ -564,7 +616,7 @@ o  Jeremy Allison <jra@samba.org>
      == NULL.
    * BUG 11986: s3: libsmb: Correctly trim a trailing \\ character in
      cli_smb2_create_fnum_send() when passing a pathname to SMB2 create.
-   * BUG 12021: Fix smbd crash (Signal 4) on File Delete.
+   * BUG 12021: Fix smbd crash ( 4) on File Delete.
    * BUG 12135: libgpo: Correctly use the 'server' parameter after parsing it
      out of the GPO path.
    * BUG 12139: s3: oplock: Fix race condition when closing an oplocked file.
