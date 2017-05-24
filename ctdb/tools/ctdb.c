@@ -774,7 +774,8 @@ static void print_nodemap_machine(TALLOC_CTX *mem_ctx,
 }
 
 static void print_nodemap(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			  struct ctdb_node_map *nodemap, uint32_t mypnn)
+			  struct ctdb_node_map *nodemap, uint32_t mypnn,
+			  bool print_header)
 {
 	struct ctdb_node_and_flags *node;
 	int num_deleted_nodes = 0;
@@ -786,11 +787,14 @@ static void print_nodemap(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		}
 	}
 
-	if (num_deleted_nodes == 0) {
-		printf("Number of nodes:%d\n", nodemap->num);
-	} else {
-		printf("Number of nodes:%d (including %d deleted nodes)\n",
-		       nodemap->num, num_deleted_nodes);
+	if (print_header) {
+		if (num_deleted_nodes == 0) {
+			printf("Number of nodes:%d\n", nodemap->num);
+		} else {
+			printf("Number of nodes:%d "
+			       "(including %d deleted nodes)\n",
+			       nodemap->num, num_deleted_nodes);
+		}
 	}
 
 	for (i=0; i<nodemap->num; i++) {
@@ -816,7 +820,7 @@ static void print_status(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 {
 	int i;
 
-	print_nodemap(mem_ctx, ctdb, nodemap, mypnn);
+	print_nodemap(mem_ctx, ctdb, nodemap, mypnn, true);
 
 	if (vnnmap->generation == INVALID_GENERATION) {
 		printf("Generation:INVALID\n");
@@ -5813,6 +5817,7 @@ static int control_nodestatus(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	const char *nodestring = NULL;
 	struct ctdb_node_map *nodemap;
 	int ret, i;
+	bool print_hdr = false;
 
 	if (argc > 1) {
 		usage("nodestatus");
@@ -5820,6 +5825,9 @@ static int control_nodestatus(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 
 	if (argc == 1) {
 		nodestring = argv[0];
+		if (strcmp(nodestring, "all") == 0) {
+			print_hdr = true;
+		}
 	}
 
 	if (! parse_nodestring(mem_ctx, ctdb, nodestring, &nodemap)) {
@@ -5829,7 +5837,7 @@ static int control_nodestatus(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	if (options.machinereadable) {
 		print_nodemap_machine(mem_ctx, ctdb, nodemap, ctdb->cmd_pnn);
 	} else {
-		print_nodemap(mem_ctx, ctdb, nodemap, ctdb->cmd_pnn);
+		print_nodemap(mem_ctx, ctdb, nodemap, ctdb->cmd_pnn, print_hdr);
 	}
 
 	ret = 0;
