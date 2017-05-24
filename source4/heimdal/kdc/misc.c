@@ -106,12 +106,6 @@ _kdc_db_fetch(krb5_context context,
 	     * between trusts.
 	     */
 	    /* fall through */
-	case 0:
-	    if (db)
-		*db = config->db[i];
-	    *h = ent;
-            ent = NULL;
-            goto out;
 
 	case HDB_ERR_NOENTRY:
 	    /* Check the other databases */

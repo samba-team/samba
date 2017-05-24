@@ -1531,14 +1531,38 @@ static krb5_error_code samba_kdc_lookup_client(krb5_context context,
 						struct ldb_message **msg)
 {
 	NTSTATUS nt_status;
+<<<<<<< HEAD
+	char *principal_string;
+
+	if (principal->name.name_type == KRB5_NT_ENTERPRISE_PRINCIPAL) {
+=======
 	char *principal_string = NULL;
 
 	if (smb_krb5_principal_get_type(context, principal) == KRB5_NT_ENTERPRISE_PRINCIPAL) {
+>>>>>>> replmetadata-sort-minimal
 		principal_string = smb_krb5_principal_get_comp_string(mem_ctx, context,
 								      principal, 0);
 		if (principal_string == NULL) {
 			return ENOMEM;
 		}
+<<<<<<< HEAD
+		nt_status = sam_get_results_principal(kdc_db_ctx->samdb,
+						      mem_ctx, principal_string, attrs,
+						      realm_dn, msg);
+		TALLOC_FREE(principal_string);
+	} else {
+		krb5_error_code ret;
+		ret = krb5_unparse_name(context, principal, &principal_string);
+		if (ret != 0) {
+			return ret;
+		}
+		nt_status = sam_get_results_principal(kdc_db_ctx->samdb,
+						      mem_ctx, principal_string, attrs,
+						      realm_dn, msg);
+		free(principal_string);
+	}
+
+=======
 	} else {
 		char *principal_string_m = NULL;
 		krb5_error_code ret;
@@ -1558,6 +1582,7 @@ static krb5_error_code samba_kdc_lookup_client(krb5_context context,
 	nt_status = sam_get_results_principal(kdc_db_ctx->samdb,
 					      mem_ctx, principal_string, attrs,
 					      realm_dn, msg);
+>>>>>>> replmetadata-sort-minimal
 	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_SUCH_USER)) {
 		krb5_principal fallback_principal = NULL;
 		unsigned int num_comp;
