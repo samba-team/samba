@@ -168,12 +168,12 @@ static NTSTATUS store_acl_blob_fsp(vfs_handle_struct *handle,
 *********************************************************************/
 
 static int sys_acl_set_file_xattr(vfs_handle_struct *handle,
-                              const char *name,
-                              SMB_ACL_TYPE_T type,
-                              SMB_ACL_T theacl)
+				const struct smb_filename *smb_fname,
+				SMB_ACL_TYPE_T type,
+				SMB_ACL_T theacl)
 {
 	int ret = SMB_VFS_NEXT_SYS_ACL_SET_FILE(handle,
-						name,
+						smb_fname,
 						type,
 						theacl);
 	if (ret == -1) {
@@ -181,7 +181,8 @@ static int sys_acl_set_file_xattr(vfs_handle_struct *handle,
 	}
 
 	become_root();
-	SMB_VFS_REMOVEXATTR(handle->conn, name, XATTR_NTACL_NAME);
+	SMB_VFS_REMOVEXATTR(handle->conn, smb_fname->base_name,
+			XATTR_NTACL_NAME);
 	unbecome_root();
 
 	return ret;

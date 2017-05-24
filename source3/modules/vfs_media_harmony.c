@@ -2138,36 +2138,32 @@ out:
  * In this case, "name" is a path.
  */
 static int mh_sys_acl_set_file(vfs_handle_struct *handle,
-		const char *name,
+		const struct smb_filename *smb_fname,
 		SMB_ACL_TYPE_T acltype,
 		SMB_ACL_T theacl)
 {
 	int status;
-	char *clientPath;
-	TALLOC_CTX *ctx;
+	struct smb_filename *clientFname = NULL;
 
 	DEBUG(MH_INFO_DEBUG, ("Entering mh_sys_acl_set_file\n"));
-	if (!is_in_media_files(name))
-	{
-		status = SMB_VFS_NEXT_SYS_ACL_SET_FILE(handle, name,
+	if (!is_in_media_files(smb_fname->base_name)) {
+		status = SMB_VFS_NEXT_SYS_ACL_SET_FILE(handle, smb_fname,
 				acltype, theacl);
 		goto out;
 	}
 
-	clientPath = NULL;
-	ctx = talloc_tos();
-
-	if ((status = alloc_get_client_path(handle, ctx,
-				name,
-				&clientPath)))
-	{
+	status = alloc_get_client_smb_fname(handle,
+				talloc_tos(),
+				smb_fname,
+				&clientFname);
+	if (status != 0) {
 		goto err;
 	}
 
-	status = SMB_VFS_NEXT_SYS_ACL_SET_FILE(handle, clientPath,
+	status = SMB_VFS_NEXT_SYS_ACL_SET_FILE(handle, clientFname,
 			acltype, theacl);
 err:
-	TALLOC_FREE(clientPath);
+	TALLOC_FREE(clientFname);
 out:
 	return status;
 }

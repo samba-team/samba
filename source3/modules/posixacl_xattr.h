@@ -31,7 +31,7 @@ SMB_ACL_T posixacl_xattr_acl_get_fd(vfs_handle_struct *handle,
 				    TALLOC_CTX *mem_ctx);
 
 int posixacl_xattr_acl_set_file(vfs_handle_struct *handle,
-				const char *name,
+				const struct smb_filename *smb_fname,
 				SMB_ACL_TYPE_T type,
 				SMB_ACL_T theacl);
 

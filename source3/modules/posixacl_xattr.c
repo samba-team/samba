@@ -444,7 +444,7 @@ SMB_ACL_T posixacl_xattr_acl_get_fd(vfs_handle_struct *handle,
 }
 
 int posixacl_xattr_acl_set_file(vfs_handle_struct *handle,
-				const char *path_p,
+				const struct smb_filename *smb_fname,
 				SMB_ACL_TYPE_T type,
 				SMB_ACL_T theacl)
 {
@@ -474,7 +474,8 @@ int posixacl_xattr_acl_set_file(vfs_handle_struct *handle,
 		return -1;
 	}
 
-	return SMB_VFS_SETXATTR(handle->conn, path_p, name, buf, size, 0);
+	return SMB_VFS_SETXATTR(handle->conn, smb_fname->base_name,
+			name, buf, size, 0);
 }
 
 int posixacl_xattr_acl_set_fd(vfs_handle_struct *handle,

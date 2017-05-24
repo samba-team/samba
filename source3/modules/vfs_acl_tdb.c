@@ -246,7 +246,7 @@ static int unlink_acl_tdb(vfs_handle_struct *handle,
 	struct db_context *db = acl_db;
 	int ret = -1;
 
-	smb_fname_tmp = cp_smb_filename(talloc_tos(), smb_fname);
+	smb_fname_tmp = cp_smb_filename_nostream(talloc_tos(), smb_fname);
 	if (smb_fname_tmp == NULL) {
 		errno = ENOMEM;
 		goto out;
@@ -383,31 +383,44 @@ static int connect_acl_tdb(struct vfs_handle_struct *handle,
 *********************************************************************/
 
 static int sys_acl_set_file_tdb(vfs_handle_struct *handle,
-                              const char *path,
-                              SMB_ACL_TYPE_T type,
-                              SMB_ACL_T theacl)
+			const struct smb_filename *smb_fname_in,
+			SMB_ACL_TYPE_T type,
+			SMB_ACL_T theacl)
 {
 	struct db_context *db = acl_db;
 	int ret = -1;
-	struct smb_filename smb_fname = {
-		.base_name = discard_const_p(char, path)
+	int saved_errno = 0;
+	struct smb_filename *smb_fname = NULL;
+
+	smb_fname = cp_smb_filename_nostream(talloc_tos(), smb_fname_in);
+	if (smb_fname == NULL) {
+		return -1;
 	};
 
-	ret = SMB_VFS_STAT(handle->conn, &smb_fname);
+	ret = SMB_VFS_STAT(handle->conn, smb_fname);
 	if (ret == -1) {
-		return -1;
+		saved_errno = errno;
+		goto fail;
 	}
 
 	ret = SMB_VFS_NEXT_SYS_ACL_SET_FILE(handle,
-						path,
+						smb_fname,
 						type,
 						theacl);
 	if (ret == -1) {
-		return -1;
+		saved_errno = errno;
+		goto fail;
 	}
 
-	acl_tdb_delete(handle, db, &smb_fname.st);
-	return 0;
+	acl_tdb_delete(handle, db, &smb_fname->st);
+
+fail:
+	TALLOC_FREE(smb_fname);
+
+	if (saved_errno != 0) {
+		errno = saved_errno;
+	}
+	return ret;
 }
 
 /*********************************************************************

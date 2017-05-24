@@ -203,6 +203,8 @@
 		to const struct smb_filename * */
 /* Version 37 - Change sys_acl_blob_get_file from const char *
 		to const struct smb_filename * */
+/* Version 37 - Change sys_acl_set_file from const char *
+		to const struct smb_filename * */
 
 #define SMB_VFS_INTERFACE_VERSION 37
 
@@ -876,7 +878,10 @@ struct vfs_fn_pointers {
 	int (*sys_acl_blob_get_fd_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp,
 				      TALLOC_CTX *mem_ctx, char **blob_description,
 				      DATA_BLOB *blob);
-	int (*sys_acl_set_file_fn)(struct vfs_handle_struct *handle, const char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl);
+	int (*sys_acl_set_file_fn)(struct vfs_handle_struct *handle,
+					const struct smb_filename *smb_fname,
+					SMB_ACL_TYPE_T acltype,
+					SMB_ACL_T theacl);
 	int (*sys_acl_set_fd_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_ACL_T theacl);
 	int (*sys_acl_delete_def_file_fn)(struct vfs_handle_struct *handle,
 					const struct smb_filename *smb_fname);
@@ -1335,8 +1340,9 @@ int smb_vfs_call_sys_acl_blob_get_fd(struct vfs_handle_struct *handle,
 				     char **blob_description,
 				     DATA_BLOB *blob);
 int smb_vfs_call_sys_acl_set_file(struct vfs_handle_struct *handle,
-				  const char *name, SMB_ACL_TYPE_T acltype,
-				  SMB_ACL_T theacl);
+				const struct smb_filename *smb_fname,
+				SMB_ACL_TYPE_T acltype,
+				SMB_ACL_T theacl);
 int smb_vfs_call_sys_acl_set_fd(struct vfs_handle_struct *handle,
 				struct files_struct *fsp, SMB_ACL_T theacl);
 int smb_vfs_call_sys_acl_delete_def_file(struct vfs_handle_struct *handle,

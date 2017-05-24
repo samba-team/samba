@@ -2970,7 +2970,7 @@ static bool set_canon_ace_list(files_struct *fsp,
 	 */
 
 	if(default_ace || fsp->is_directory || fsp->fh->fd == -1) {
-		if (SMB_VFS_SYS_ACL_SET_FILE(conn, fsp->fsp_name->base_name,
+		if (SMB_VFS_SYS_ACL_SET_FILE(conn, fsp->fsp_name,
 					     the_acl_type, the_acl) == -1) {
 			/*
 			 * Some systems allow all the above calls and only fail with no ACL support
@@ -2990,7 +2990,7 @@ static bool set_canon_ace_list(files_struct *fsp,
 
 				become_root();
 				sret = SMB_VFS_SYS_ACL_SET_FILE(conn,
-				    fsp->fsp_name->base_name, the_acl_type,
+				    fsp->fsp_name, the_acl_type,
 				    the_acl);
 				unbecome_root();
 				if (sret == 0) {
@@ -4173,7 +4173,7 @@ static int copy_access_posix_acl(connection_struct *conn,
 	if ((ret = chmod_acl_internals(conn, posix_acl, mode)) == -1)
 		goto done;
 
-	ret = SMB_VFS_SYS_ACL_SET_FILE(conn, smb_fname_to->base_name,
+	ret = SMB_VFS_SYS_ACL_SET_FILE(conn, smb_fname_to,
 			SMB_ACL_TYPE_ACCESS, posix_acl);
 
  done:
@@ -4466,7 +4466,7 @@ bool set_unix_posix_default_acl(connection_struct *conn,
 		return False;
 	}
 
-	if (SMB_VFS_SYS_ACL_SET_FILE(conn, smb_fname->base_name,
+	if (SMB_VFS_SYS_ACL_SET_FILE(conn, smb_fname,
 				SMB_ACL_TYPE_DEFAULT, def_acl) == -1) {
 		DEBUG(5,("set_unix_posix_default_acl: acl_set_file failed on directory %s (%s)\n",
 			smb_fname->base_name, strerror(errno) ));
@@ -4603,7 +4603,10 @@ static bool remove_posix_acl(connection_struct *conn,
 			goto done;
 		}
 	} else {
-		if (SMB_VFS_SYS_ACL_SET_FILE(conn, fname, SMB_ACL_TYPE_ACCESS, new_file_acl) == -1) {
+		if (SMB_VFS_SYS_ACL_SET_FILE(conn,
+					smb_fname,
+					SMB_ACL_TYPE_ACCESS,
+					new_file_acl) == -1) {
 			DEBUG(5,("remove_posix_acl: acl_set_file failed on %s (%s)\n",
 				fname, strerror(errno) ));
 			goto done;
@@ -4657,7 +4660,8 @@ bool set_unix_posix_acl(connection_struct *conn, files_struct *fsp,
 			return False;
 		}
 	} else {
-		if (SMB_VFS_SYS_ACL_SET_FILE(conn, fname, SMB_ACL_TYPE_ACCESS, file_acl) == -1) {
+		if (SMB_VFS_SYS_ACL_SET_FILE(conn, smb_fname,
+					SMB_ACL_TYPE_ACCESS, file_acl) == -1) {
 			DEBUG(5,("set_unix_posix_acl: acl_set_file failed on %s (%s)\n",
 				fname, strerror(errno) ));
 		        TALLOC_FREE(file_acl);

@@ -2724,9 +2724,12 @@ static SMB_ACL_T vfswrap_sys_acl_get_fd(vfs_handle_struct *handle,
 	return sys_acl_get_fd(handle, fsp, mem_ctx);
 }
 
-static int vfswrap_sys_acl_set_file(vfs_handle_struct *handle, const char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl)
+static int vfswrap_sys_acl_set_file(vfs_handle_struct *handle,
+				const struct smb_filename *smb_fname,
+				SMB_ACL_TYPE_T acltype,
+				SMB_ACL_T theacl)
 {
-	return sys_acl_set_file(handle, name, acltype, theacl);
+	return sys_acl_set_file(handle, smb_fname, acltype, theacl);
 }
 
 static int vfswrap_sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp, SMB_ACL_T theacl)

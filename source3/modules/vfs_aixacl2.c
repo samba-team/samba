@@ -468,9 +468,9 @@ NTSTATUS aixjfs2_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp, uint3
 }
 
 int aixjfs2_sys_acl_set_file(vfs_handle_struct *handle,
-			      const char *name,
-			      SMB_ACL_TYPE_T type,
-			      SMB_ACL_T theacl)
+				const struct smb_filename *smb_fname,
+				SMB_ACL_TYPE_T type,
+				SMB_ACL_T theacl)
 {
 	struct acl	*acl_aixc;
 	acl_type_t	acl_type_info;
@@ -478,7 +478,8 @@ int aixjfs2_sys_acl_set_file(vfs_handle_struct *handle,
 
 	DEBUG(10, ("aixjfs2_sys_acl_set_file invoked for %s", name));
 
-	rc = aixjfs2_query_acl_support((char *)name, ACL_AIXC, &acl_type_info);
+	rc = aixjfs2_query_acl_support((char *)smb_fname->base_name,
+			ACL_AIXC, &acl_type_info);
 	if (rc) {
 		DEBUG(8, ("jfs2_set_nt_acl: AIXC support not found\n"));
 		return -1;
@@ -498,7 +499,7 @@ int aixjfs2_sys_acl_set_file(vfs_handle_struct *handle,
 	);
 	if (rc) {
 		DEBUG(2, ("aclx_put failed with %s for %s\n",
-			strerror(errno), name));
+			strerror(errno), smb_fname->base_name));
 		return -1;
 	}
 

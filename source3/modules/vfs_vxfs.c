@@ -499,14 +499,18 @@ static int vxfs_sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp,
 	return SMB_VFS_NEXT_SYS_ACL_SET_FD(handle, fsp, theacl);
 }
 
-static int vxfs_sys_acl_set_file(vfs_handle_struct *handle,  const char *name,
-				 SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl)
+static int vxfs_sys_acl_set_file(vfs_handle_struct *handle,
+				const struct smb_filename *smb_fname,
+				SMB_ACL_TYPE_T acltype,
+				SMB_ACL_T theacl)
 {
-	if (vxfs_compare(handle->conn, (char *)name, theacl, acltype)) {
+	if (vxfs_compare(handle->conn, (char *)smb_fname->base_name,
+			theacl, acltype)) {
 		return 0;
 	}
 
-	return SMB_VFS_NEXT_SYS_ACL_SET_FILE(handle, name, acltype, theacl);
+	return SMB_VFS_NEXT_SYS_ACL_SET_FILE(handle, smb_fname,
+			acltype, theacl);
 }
 
 static int vxfs_set_xattr(struct vfs_handle_struct *handle,  const char *path,

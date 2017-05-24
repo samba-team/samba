@@ -28,7 +28,7 @@ SMB_ACL_T tru64acl_sys_acl_get_fd(vfs_handle_struct *handle,
 				  files_struct *fsp);
 
 int tru64acl_sys_acl_set_file(vfs_handle_struct *handle,
-			      const char *name,
+			      const struct smb_filename *smb_fname,
 			      SMB_ACL_TYPE_T type,
 			      SMB_ACL_T theacl);
 

@@ -134,9 +134,9 @@ SMB_ACL_T aixacl_sys_acl_get_fd(vfs_handle_struct *handle,
 }
 
 int aixacl_sys_acl_set_file(vfs_handle_struct *handle,
-			      const char *name,
-			      SMB_ACL_TYPE_T type,
-			      SMB_ACL_T theacl)
+			const struct smb_filename *smb_fname,
+			SMB_ACL_TYPE_T type,
+			SMB_ACL_T theacl)
 {
 	struct acl *file_acl = NULL;
 	unsigned int rc;
@@ -145,7 +145,7 @@ int aixacl_sys_acl_set_file(vfs_handle_struct *handle,
 	if (!file_acl)
 		return -1;
 
-	rc = chacl((char *)name,file_acl,file_acl->acl_len);
+	rc = chacl((char *)smb_fname->base_name,file_acl,file_acl->acl_len);
 	DEBUG(10,("errno is %d\n",errno));
 	DEBUG(10,("return code is %d\n",rc));
 	SAFE_FREE(file_acl);

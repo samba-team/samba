@@ -2214,17 +2214,17 @@ static int smb_full_audit_sys_acl_blob_get_fd(vfs_handle_struct *handle,
 }
 
 static int smb_full_audit_sys_acl_set_file(vfs_handle_struct *handle,
-
-				  const char *name, SMB_ACL_TYPE_T acltype,
-				  SMB_ACL_T theacl)
+				const struct smb_filename *smb_fname,
+				SMB_ACL_TYPE_T acltype,
+				SMB_ACL_T theacl)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_SYS_ACL_SET_FILE(handle, name, acltype,
+	result = SMB_VFS_NEXT_SYS_ACL_SET_FILE(handle, smb_fname, acltype,
 					       theacl);
 
 	do_log(SMB_VFS_OP_SYS_ACL_SET_FILE, (result >= 0), handle,
-	       "%s", name);
+	       "%s", smb_fname->base_name);
 
 	return result;
 }

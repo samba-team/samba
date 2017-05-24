@@ -1649,31 +1649,40 @@ err:
 }
 
 static int um_sys_acl_set_file(vfs_handle_struct *handle,
-			       const char *name,
+			       const struct smb_filename *smb_fname,
 			       SMB_ACL_TYPE_T acltype,
 			       SMB_ACL_T theacl)
 {
 	int status;
-	char *client_path = NULL;
+	int saved_errno = 0;
+	struct smb_filename *client_fname = NULL;
 
 	DEBUG(10, ("Entering um_sys_acl_set_file\n"));
 
-	if (!is_in_media_files(name)) {
-		return SMB_VFS_NEXT_SYS_ACL_SET_FILE(handle, name,
+	if (!is_in_media_files(smb_fname->base_name)) {
+		return SMB_VFS_NEXT_SYS_ACL_SET_FILE(handle, smb_fname,
 						     acltype, theacl);
 	}
 
-	status = alloc_get_client_path(handle, talloc_tos(),
-				       name, &client_path);
+	status = alloc_get_client_smb_fname(handle,
+				talloc_tos(),
+				smb_fname,
+				&client_fname);
 	if (status != 0) {
 		goto err;
 	}
 
-	status = SMB_VFS_NEXT_SYS_ACL_SET_FILE(handle, client_path,
+	status = SMB_VFS_NEXT_SYS_ACL_SET_FILE(handle, client_fname,
 					       acltype, theacl);
 
 err:
-	TALLOC_FREE(client_path);
+	if (status == -1) {
+		saved_errno = errno;
+	}
+	TALLOC_FREE(client_fname);
+	if (saved_errno != 0) {
+		errno = saved_errno;
+	}
 	return status;
 }
 

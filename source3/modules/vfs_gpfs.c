@@ -1233,7 +1233,7 @@ static struct gpfs_acl *smb2gpfs_acl(const SMB_ACL_T pacl,
 }
 
 static int gpfsacl_sys_acl_set_file(vfs_handle_struct *handle,
-				    const char *name,
+				    const struct smb_filename *smb_fname,
 				    SMB_ACL_TYPE_T type,
 				    SMB_ACL_T theacl)
 {
@@ -1246,7 +1246,8 @@ static int gpfsacl_sys_acl_set_file(vfs_handle_struct *handle,
 				return -1);
 
 	if (!config->acl) {
-		return SMB_VFS_NEXT_SYS_ACL_SET_FILE(handle, name, type, theacl);
+		return SMB_VFS_NEXT_SYS_ACL_SET_FILE(handle, smb_fname,
+				type, theacl);
 	}
 
 	gpfs_acl = smb2gpfs_acl(theacl, type);
@@ -1254,7 +1255,7 @@ static int gpfsacl_sys_acl_set_file(vfs_handle_struct *handle,
 		return -1;
 	}
 
-	result = gpfswrap_putacl(discard_const_p(char, name),
+	result = gpfswrap_putacl(discard_const_p(char, smb_fname->base_name),
 				 GPFS_PUTACL_STRUCT|GPFS_ACL_SAMBA, gpfs_acl);
 
 	SAFE_FREE(gpfs_acl);

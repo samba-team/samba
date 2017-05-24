@@ -209,7 +209,7 @@ SMB_ACL_T hpuxacl_sys_acl_get_fd(vfs_handle_struct *handle,
 
 
 int hpuxacl_sys_acl_set_file(vfs_handle_struct *handle,
-			     const char *name,
+			     const struct smb_filename *smb_fname_in,
 			     SMB_ACL_TYPE_T type,
 			     SMB_ACL_T theacl)
 {
@@ -222,7 +222,7 @@ int hpuxacl_sys_acl_set_file(vfs_handle_struct *handle,
 	DEBUG(10, ("hpuxacl_sys_acl_set_file called for file '%s'\n",
 		   name));
 
-	smb_fname = synthetic_smb_fname(talloc_tos(), name, NULL, NULL, 0);
+	smb_fname = cp_smb_filename(talloc_tos(), smb_fname_in);
 	if (smb_fname == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto done;

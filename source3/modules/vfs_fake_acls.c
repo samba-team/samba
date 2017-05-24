@@ -316,7 +316,10 @@ static SMB_ACL_T fake_acls_sys_acl_get_fd(struct vfs_handle_struct *handle,
 }
 
 
-static int fake_acls_sys_acl_set_file(vfs_handle_struct *handle, const char *path, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl)
+static int fake_acls_sys_acl_set_file(vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
+			SMB_ACL_TYPE_T acltype,
+			SMB_ACL_T theacl)
 {
 	int ret;
 	const char *name = NULL;
@@ -336,7 +339,8 @@ static int fake_acls_sys_acl_set_file(vfs_handle_struct *handle, const char *pat
 		name = FAKE_ACL_DEFAULT_XATTR;
 		break;
 	}
-	ret = SMB_VFS_NEXT_SETXATTR(handle, path, name, blob.data, blob.length, 0);
+	ret = SMB_VFS_NEXT_SETXATTR(handle, smb_fname->base_name,
+			name, blob.data, blob.length, 0);
 	TALLOC_FREE(frame);
 	return ret;
 }
