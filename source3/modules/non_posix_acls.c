@@ -22,20 +22,19 @@
 #include "modules/non_posix_acls.h"
 
 int non_posix_sys_acl_blob_get_file_helper(vfs_handle_struct *handle,
-					   const char *path_p,
-					   DATA_BLOB acl_as_blob,
-					   TALLOC_CTX *mem_ctx,
-					   DATA_BLOB *blob)
+				   const struct smb_filename *smb_fname_in,
+				   DATA_BLOB acl_as_blob,
+				   TALLOC_CTX *mem_ctx,
+				   DATA_BLOB *blob)
 {
 	int ret;
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct xattr_sys_acl_hash_wrapper acl_wrapper = {};
-	struct smb_filename *smb_fname;
+	struct smb_filename *smb_fname = cp_smb_filename_nostream(frame,
+						smb_fname_in);
 
-	smb_fname = synthetic_smb_fname(frame, path_p, NULL, NULL, 0);
 	if (smb_fname == NULL) {
 		TALLOC_FREE(frame);
-		errno = ENOMEM;
 		return -1;
 	}
 

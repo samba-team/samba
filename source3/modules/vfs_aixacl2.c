@@ -221,16 +221,21 @@ static NTSTATUS aixjfs2_get_nt_acl(vfs_handle_struct *handle,
 				pacl);
 }
 
-static int aixjfs2_sys_acl_blob_get_file(vfs_handle_struct *handle, const char *path_p, TALLOC_CTX *mem_ctx, char **blob_description, DATA_BLOB *blob)
+static int aixjfs2_sys_acl_blob_get_file(vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
+			TALLOC_CTX *mem_ctx,
+			char **blob_description,
+			DATA_BLOB *blob)
 {
 	struct SMB4ACL_T *pacl = NULL;
+	const char *path_p = smb_fname->base_name;
 	bool	result;
 	bool	retryPosix = False;
 
 	result = aixjfs2_get_nfs4_acl(mem_ctx, path_p, &pacl, &retryPosix);
 	if (retryPosix)
 	{
-		return posix_sys_acl_blob_get_file(handle, path_p, mem_ctx,
+		return posix_sys_acl_blob_get_file(handle, smb_fname, mem_ctx,
 						   blob_description, blob);
 	}
 	/* Now way to linarlise NFS4 ACLs at the moment, but the NT ACL is pretty close in this case */

@@ -800,7 +800,7 @@ NTSTATUS get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fname,
 			     uint32_t security_info_wanted,
 			     struct security_descriptor **sd);
 int posix_sys_acl_blob_get_file(vfs_handle_struct *handle,
-				const char *path_p,
+				const struct smb_filename *smb_fname,
 				TALLOC_CTX *mem_ctx,
 				char **blob_description,
 				DATA_BLOB *blob);

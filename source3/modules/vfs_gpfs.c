@@ -1011,7 +1011,7 @@ static SMB_ACL_T gpfsacl_sys_acl_get_fd(vfs_handle_struct *handle,
 }
 
 static int gpfsacl_sys_acl_blob_get_file(vfs_handle_struct *handle,
-				      const char *path_p,
+				      const struct smb_filename *smb_fname,
 				      TALLOC_CTX *mem_ctx,
 				      char **blob_description,
 				      DATA_BLOB *blob)
@@ -1020,13 +1020,14 @@ static int gpfsacl_sys_acl_blob_get_file(vfs_handle_struct *handle,
 	struct gpfs_opaque_acl *acl = NULL;
 	DATA_BLOB aclblob;
 	int result;
+	const char *path_p = smb_fname->base_name;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
 				struct gpfs_config_data,
 				return -1);
 
 	if (!config->acl) {
-		return SMB_VFS_NEXT_SYS_ACL_BLOB_GET_FILE(handle, path_p,
+		return SMB_VFS_NEXT_SYS_ACL_BLOB_GET_FILE(handle, smb_fname,
 							  mem_ctx,
 							  blob_description,
 							  blob);
@@ -1068,7 +1069,7 @@ static int gpfsacl_sys_acl_blob_get_file(vfs_handle_struct *handle,
 			return -1;
 		}
 
-		result = non_posix_sys_acl_blob_get_file_helper(handle, path_p,
+		result = non_posix_sys_acl_blob_get_file_helper(handle, smb_fname,
 								aclblob,
 								mem_ctx, blob);
 
@@ -1077,7 +1078,7 @@ static int gpfsacl_sys_acl_blob_get_file(vfs_handle_struct *handle,
 	}
 
 	/* fall back to POSIX ACL */
-	return posix_sys_acl_blob_get_file(handle, path_p, mem_ctx,
+	return posix_sys_acl_blob_get_file(handle, smb_fname, mem_ctx,
 					   blob_description, blob);
 }
 

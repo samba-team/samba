@@ -1718,13 +1718,20 @@ static NTSTATUS cmd_sys_acl_blob_get_file(struct vfs_state *vfs,
 	DATA_BLOB blob;
 	int ret;
 	size_t i;
+	struct smb_filename *smb_fname = NULL;
 
 	if (argc != 2) {
 		printf("Usage: sys_acl_get_file <path>\n");
 		return NT_STATUS_OK;
 	}
 
-	ret = SMB_VFS_SYS_ACL_BLOB_GET_FILE(vfs->conn, argv[1], talloc_tos(),
+	smb_fname = synthetic_smb_fname_split(talloc_tos(),
+					argv[1],
+					lp_posix_pathnames());
+	if (smb_fname == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	ret = SMB_VFS_SYS_ACL_BLOB_GET_FILE(vfs->conn, smb_fname, talloc_tos(),
 					    &description, &blob);
 	if (ret != 0) {
 		printf("sys_acl_blob_get_file failed (%s)\n", strerror(errno));

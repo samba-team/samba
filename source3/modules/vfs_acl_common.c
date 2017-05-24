@@ -711,7 +711,7 @@ static NTSTATUS validate_nt_acl_blob(TALLOC_CTX *mem_ctx,
 		} else {
 			/* Get the full underlying sd, then hash. */
 			ret = SMB_VFS_NEXT_SYS_ACL_BLOB_GET_FILE(handle,
-						 smb_fname->base_name,
+						 smb_fname,
 						 mem_ctx,
 						 &sys_acl_blob_description,
 						 &sys_acl_blob);

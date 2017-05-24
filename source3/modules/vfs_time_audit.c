@@ -2213,17 +2213,18 @@ static SMB_ACL_T smb_time_audit_sys_acl_get_fd(vfs_handle_struct *handle,
 
 
 static int smb_time_audit_sys_acl_blob_get_file(vfs_handle_struct *handle,
-						const char *path_p,
-						TALLOC_CTX *mem_ctx, 
-						char **blob_description,
-						DATA_BLOB *blob)
+				const struct smb_filename *smb_fname,
+				TALLOC_CTX *mem_ctx,
+				char **blob_description,
+				DATA_BLOB *blob)
 {
 	int result;
 	struct timespec ts1,ts2;
 	double timediff;
 
 	clock_gettime_mono(&ts1);
-	result = SMB_VFS_NEXT_SYS_ACL_BLOB_GET_FILE(handle, path_p, mem_ctx, blob_description, blob);
+	result = SMB_VFS_NEXT_SYS_ACL_BLOB_GET_FILE(handle, smb_fname,
+				mem_ctx, blob_description, blob);
 	clock_gettime_mono(&ts2);
 	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 

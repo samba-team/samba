@@ -2458,13 +2458,14 @@ SMB_ACL_T smb_vfs_call_sys_acl_get_fd(struct vfs_handle_struct *handle,
 }
 
 int smb_vfs_call_sys_acl_blob_get_file(struct vfs_handle_struct *handle,
-				       const char *path_p,
-				       TALLOC_CTX *mem_ctx, 
-				       char **blob_description,
-				       DATA_BLOB *blob)
+				const struct smb_filename *smb_fname,
+				TALLOC_CTX *mem_ctx,
+				char **blob_description,
+				DATA_BLOB *blob)
 {
 	VFS_FIND(sys_acl_blob_get_file);
-	return handle->fns->sys_acl_blob_get_file_fn(handle, path_p, mem_ctx, blob_description, blob);
+	return handle->fns->sys_acl_blob_get_file_fn(handle, smb_fname,
+			mem_ctx, blob_description, blob);
 }
 
 int smb_vfs_call_sys_acl_blob_get_fd(struct vfs_handle_struct *handle,

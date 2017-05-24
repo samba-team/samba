@@ -201,6 +201,8 @@
 		to const struct smb_filename * */
 /* Version 37 - Change sys_acl_get_file from const char *
 		to const struct smb_filename * */
+/* Version 37 - Change sys_acl_blob_get_file from const char *
+		to const struct smb_filename * */
 
 #define SMB_VFS_INTERFACE_VERSION 37
 
@@ -867,7 +869,7 @@ struct vfs_fn_pointers {
 				       struct files_struct *fsp,
 				       TALLOC_CTX *mem_ctx);
 	int (*sys_acl_blob_get_file_fn)(struct vfs_handle_struct *handle,
-					const char *path_p,
+					const struct smb_filename *smb_fname,
 					TALLOC_CTX *mem_ctx,
 					char **blob_description,
 					DATA_BLOB *blob);
@@ -1323,7 +1325,7 @@ SMB_ACL_T smb_vfs_call_sys_acl_get_fd(struct vfs_handle_struct *handle,
 				      struct files_struct *fsp,
 				      TALLOC_CTX *mem_ctx);
 int smb_vfs_call_sys_acl_blob_get_file(struct vfs_handle_struct *handle,
-				       const char *path_p,
+				       const struct smb_filename *smb_fname,
 				       TALLOC_CTX *mem_ctx,
 				       char **blob_description,
 				       DATA_BLOB *blob);

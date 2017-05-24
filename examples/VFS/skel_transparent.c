@@ -895,10 +895,12 @@ static SMB_ACL_T skel_sys_acl_get_fd(vfs_handle_struct *handle,
 }
 
 static int skel_sys_acl_blob_get_file(vfs_handle_struct *handle,
-				      const char *path_p, TALLOC_CTX *mem_ctx,
-				      char **blob_description, DATA_BLOB *blob)
+				const struct smb_filename *smb_fname,
+				TALLOC_CTX *mem_ctx,
+				char **blob_description,
+				DATA_BLOB *blob)
 {
-	return SMB_VFS_NEXT_SYS_ACL_BLOB_GET_FILE(handle, path_p, mem_ctx,
+	return SMB_VFS_NEXT_SYS_ACL_BLOB_GET_FILE(handle, smb_fname, mem_ctx,
 						  blob_description, blob);
 }
 

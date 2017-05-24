@@ -18,7 +18,7 @@
 */
 
 int non_posix_sys_acl_blob_get_file_helper(vfs_handle_struct *handle,
-					   const char *path_p,
+					   const struct smb_filename *smb_fname,
 					   DATA_BLOB acl_as_blob,
 					   TALLOC_CTX *mem_ctx,
 					   DATA_BLOB *blob);

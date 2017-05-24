@@ -620,7 +620,11 @@ static int nfs4acl_xattr_fail__sys_acl_delete_def_file(vfs_handle_struct *handle
 	return -1;
 }
 
-static int nfs4acl_xattr_fail__sys_acl_blob_get_file(vfs_handle_struct *handle, const char *path_p, TALLOC_CTX *mem_ctx, char **blob_description, DATA_BLOB *blob)
+static int nfs4acl_xattr_fail__sys_acl_blob_get_file(vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
+			TALLOC_CTX *mem_ctx,
+			char **blob_description,
+			DATA_BLOB *blob)
 {
 	return -1;
 }

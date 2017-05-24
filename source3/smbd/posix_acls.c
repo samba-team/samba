@@ -4734,7 +4734,7 @@ NTSTATUS get_nt_acl_no_snum(TALLOC_CTX *ctx, const char *fname,
 }
 
 int posix_sys_acl_blob_get_file(vfs_handle_struct *handle,
-				const char *path_p,
+				const struct smb_filename *smb_fname_in,
 				TALLOC_CTX *mem_ctx,
 				char **blob_description,
 				DATA_BLOB *blob)
@@ -4745,9 +4745,8 @@ int posix_sys_acl_blob_get_file(vfs_handle_struct *handle,
 	struct smb_acl_wrapper acl_wrapper = {
 		NULL
 	};
-	struct smb_filename *smb_fname;
-
-	smb_fname = synthetic_smb_fname(frame, path_p, NULL, NULL, 0);
+	struct smb_filename *smb_fname = cp_smb_filename_nostream(frame,
+						smb_fname_in);
 	if (smb_fname == NULL) {
 		TALLOC_FREE(frame);
 		errno = ENOMEM;
@@ -4810,8 +4809,11 @@ int posix_sys_acl_blob_get_fd(vfs_handle_struct *handle,
 
 	/* This ensures that we also consider the default ACL */
 	if (fsp->is_directory ||  fsp->fh->fd == -1) {
-		return posix_sys_acl_blob_get_file(handle, fsp->fsp_name->base_name,
-						   mem_ctx, blob_description, blob);
+		return posix_sys_acl_blob_get_file(handle,
+						fsp->fsp_name,
+						mem_ctx,
+						blob_description,
+						blob);
 	}
 	frame = talloc_stackframe();
 
