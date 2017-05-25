@@ -87,14 +87,15 @@ static bool file_is_valid(vfs_handle_struct *handle, const char *path)
 	return true;
 }
 
-static bool mark_file_valid(vfs_handle_struct *handle, const char *path)
+static bool mark_file_valid(vfs_handle_struct *handle,
+				const struct smb_filename *smb_fname)
 {
 	char buf = '1';
 	int ret;
 
-	DEBUG(10, ("marking file %s as valid\n", path));
+	DEBUG(10, ("marking file %s as valid\n", smb_fname->base_name));
 
-	ret = SMB_VFS_SETXATTR(handle->conn, path, SAMBA_XATTR_MARKER,
+	ret = SMB_VFS_SETXATTR(handle->conn, smb_fname, SAMBA_XATTR_MARKER,
 				    &buf, sizeof(buf), 0);
 
 	if (ret == -1) {
@@ -350,7 +351,7 @@ static char *stream_dir(vfs_handle_struct *handle,
 		goto fail;
 	}
 
-	if (check_valid && !mark_file_valid(handle, smb_fname->base_name)) {
+	if (check_valid && !mark_file_valid(handle, smb_fname)) {
 		goto fail;
 	}
 

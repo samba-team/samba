@@ -275,7 +275,7 @@ static void store_inheritance_attributes(files_struct *fsp,
 		ret = SMB_VFS_FSETXATTR(fsp, SAMBA_POSIX_INHERITANCE_EA_NAME,
 				pai_buf, store_size, 0);
 	} else {
-		ret = SMB_VFS_SETXATTR(fsp->conn, fsp->fsp_name->base_name,
+		ret = SMB_VFS_SETXATTR(fsp->conn, fsp->fsp_name,
 				       SAMBA_POSIX_INHERITANCE_EA_NAME,
 				       pai_buf, store_size, 0);
 	}

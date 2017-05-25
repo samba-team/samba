@@ -209,6 +209,9 @@
 		to const struct smb_filename * */
 /* Version 37 - Change removexattr from const char *
 		to const struct smb_filename * */
+/* Version 37 - Change setxattr from const char *
+		to const struct smb_filename * */
+
 
 #define SMB_VFS_INTERFACE_VERSION 37
 
@@ -902,7 +905,12 @@ struct vfs_fn_pointers {
 					const struct smb_filename *smb_fname,
 					const char *name);
 	int (*fremovexattr_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name);
-	int (*setxattr_fn)(struct vfs_handle_struct *handle, const char *path, const char *name, const void *value, size_t size, int flags);
+	int (*setxattr_fn)(struct vfs_handle_struct *handle,
+					const struct smb_filename *smb_fname,
+					const char *name,
+					const void *value,
+					size_t size,
+					int flags);
 	int (*fsetxattr_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name, const void *value, size_t size, int flags);
 
 	/* aio operations */
@@ -1376,9 +1384,12 @@ int smb_vfs_call_removexattr(struct vfs_handle_struct *handle,
 				const char *name);
 int smb_vfs_call_fremovexattr(struct vfs_handle_struct *handle,
 			      struct files_struct *fsp, const char *name);
-int smb_vfs_call_setxattr(struct vfs_handle_struct *handle, const char *path,
-			  const char *name, const void *value, size_t size,
-			  int flags);
+int smb_vfs_call_setxattr(struct vfs_handle_struct *handle,
+				const struct smb_filename *smb_fname,
+				const char *name,
+				const void *value,
+				size_t size,
+				int flags);
 int smb_vfs_call_lsetxattr(struct vfs_handle_struct *handle, const char *path,
 			   const char *name, const void *value, size_t size,
 			   int flags);

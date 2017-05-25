@@ -1809,33 +1809,35 @@ err:
 }
 
 static int um_setxattr(struct vfs_handle_struct *handle,
-		       const char *path,
+		       const struct smb_filename *smb_fname,
 		       const char *name,
 		       const void *value,
 		       size_t size,
 		       int flags)
 {
 	int status;
-	char *client_path = NULL;
+	struct smb_filename *client_fname = NULL;
 
 	DEBUG(10, ("Entering um_setxattr\n"));
 
-	if (!is_in_media_files(path)) {
-		return SMB_VFS_NEXT_SETXATTR(handle, path, name, value,
+	if (!is_in_media_files(smb_fname->base_name)) {
+		return SMB_VFS_NEXT_SETXATTR(handle, smb_fname, name, value,
 					     size, flags);
 	}
 
-	status = alloc_get_client_path(handle, talloc_tos(),
-				       path, &client_path);
+	status = alloc_get_client_smb_fname(handle,
+				talloc_tos(),
+				smb_fname,
+				&client_fname);
 	if (status != 0) {
 		goto err;
 	}
 
-	status = SMB_VFS_NEXT_SETXATTR(handle, client_path, name, value,
+	status = SMB_VFS_NEXT_SETXATTR(handle, client_fname, name, value,
 				       size, flags);
 
 err:
-	TALLOC_FREE(client_path);
+	TALLOC_FREE(client_fname);
 	return status;
 }
 

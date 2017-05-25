@@ -2313,38 +2313,33 @@ out:
  * In this case, "name" is an attr name.
  */
 static int mh_setxattr(struct vfs_handle_struct *handle,
-		const char *path,
+		const struct smb_filename *smb_fname,
 		const char *name,
 		const void *value,
 		size_t size,
 		int flags)
 {
 	int status;
-	char *clientPath;
-	TALLOC_CTX *ctx;
+	struct smb_filename *clientFname = NULL;
 
 	DEBUG(MH_INFO_DEBUG, ("Entering mh_setxattr\n"));
-	if (!is_in_media_files(path))
-	{
-		status = SMB_VFS_NEXT_SETXATTR(handle, path, name, value,
+	if (!is_in_media_files(smb_fname->base_name)) {
+		status = SMB_VFS_NEXT_SETXATTR(handle, smb_fname, name, value,
 				size, flags);
 		goto out;
 	}
 
-	clientPath = NULL;
-	ctx = talloc_tos();
-
-	if ((status = alloc_get_client_path(handle, ctx,
-				path,
-				&clientPath)))
-	{
+	status = alloc_get_client_smb_fname(handle,
+				talloc_tos(),
+				smb_fname,
+				&clientFname);
+	if (status != 0) {
 		goto err;
 	}
-
-	status = SMB_VFS_NEXT_SETXATTR(handle, clientPath, name, value,
+	status = SMB_VFS_NEXT_SETXATTR(handle, clientFname, name, value,
 			size, flags);
 err:
-	TALLOC_FREE(clientPath);
+	TALLOC_FREE(clientFname);
 out:
 	return status;
 }

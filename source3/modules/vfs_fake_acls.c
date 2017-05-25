@@ -339,7 +339,7 @@ static int fake_acls_sys_acl_set_file(vfs_handle_struct *handle,
 		name = FAKE_ACL_DEFAULT_XATTR;
 		break;
 	}
-	ret = SMB_VFS_NEXT_SETXATTR(handle, smb_fname->base_name,
+	ret = SMB_VFS_NEXT_SETXATTR(handle, smb_fname,
 			name, blob.data, blob.length, 0);
 	TALLOC_FREE(frame);
 	return ret;
@@ -409,7 +409,7 @@ static int fake_acls_chown(vfs_handle_struct *handle,
 	if (uid != -1) {
 		SIVAL(id_buf, 0, uid);
 		ret = SMB_VFS_NEXT_SETXATTR(handle,
-				smb_fname->base_name,
+				smb_fname,
 				FAKE_UID,
 				id_buf,
 				sizeof(id_buf),
@@ -421,7 +421,7 @@ static int fake_acls_chown(vfs_handle_struct *handle,
 	if (gid != -1) {
 		SIVAL(id_buf, 0, gid);
 		ret = SMB_VFS_NEXT_SETXATTR(handle,
-				smb_fname->base_name,
+				smb_fname,
 				FAKE_GID,
 				id_buf,
 				sizeof(id_buf),
@@ -451,7 +451,7 @@ static int fake_acls_lchown(vfs_handle_struct *handle,
 		 */
 		SIVAL(id_buf, 0, uid);
 		ret = SMB_VFS_NEXT_SETXATTR(handle,
-				smb_fname->base_name,
+				smb_fname,
 				FAKE_UID,
 				id_buf,
 				sizeof(id_buf),
@@ -463,7 +463,7 @@ static int fake_acls_lchown(vfs_handle_struct *handle,
 	if (gid != -1) {
 		SIVAL(id_buf, 0, gid);
 		ret = SMB_VFS_NEXT_SETXATTR(handle,
-				smb_fname->base_name,
+				smb_fname,
 				FAKE_GID,
 				id_buf,
 				sizeof(id_buf),

@@ -144,7 +144,7 @@ static NTSTATUS store_acl_blob_fsp(vfs_handle_struct *handle,
 		ret = SMB_VFS_FSETXATTR(fsp, XATTR_NTACL_NAME,
 			pblob->data, pblob->length, 0);
 	} else {
-		ret = SMB_VFS_SETXATTR(fsp->conn, fsp->fsp_name->base_name,
+		ret = SMB_VFS_SETXATTR(fsp->conn, fsp->fsp_name,
 				XATTR_NTACL_NAME,
 				pblob->data, pblob->length, 0);
 	}

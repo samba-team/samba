@@ -124,14 +124,18 @@ static int posix_eadb_setattr(struct tdb_wrap *db_ctx,
 }
 
 static int posix_eadb_setxattr(struct vfs_handle_struct *handle,
-			      const char *path, const char *name,
-			      const void *value, size_t size, int flags)
+				const struct smb_filename *smb_fname,
+				const char *name,
+				const void *value,
+				size_t size,
+				int flags)
 {
 	struct tdb_wrap *db;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, db, struct tdb_wrap, return -1);
 
-	return posix_eadb_setattr(db, path, -1, name, value, size, flags);
+	return posix_eadb_setattr(db, smb_fname->base_name,
+			-1, name, value, size, flags);
 }
 
 static int posix_eadb_fsetxattr(struct vfs_handle_struct *handle,

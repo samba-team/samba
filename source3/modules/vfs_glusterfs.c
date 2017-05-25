@@ -1344,10 +1344,11 @@ static int vfs_gluster_fremovexattr(struct vfs_handle_struct *handle,
 }
 
 static int vfs_gluster_setxattr(struct vfs_handle_struct *handle,
-				const char *path, const char *name,
+				const struct smb_filename *smb_fname,
+				const char *name,
 				const void *value, size_t size, int flags)
 {
-	return glfs_setxattr(handle->data, path, name, value, size, flags);
+	return glfs_setxattr(handle->data, smb_fname->base_name, name, value, size, flags);
 }
 
 static int vfs_gluster_fsetxattr(struct vfs_handle_struct *handle,

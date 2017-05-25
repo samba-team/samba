@@ -2445,22 +2445,25 @@ static int smb_time_audit_fremovexattr(struct vfs_handle_struct *handle,
 }
 
 static int smb_time_audit_setxattr(struct vfs_handle_struct *handle,
-				   const char *path, const char *name,
-				   const void *value, size_t size,
-				   int flags)
+				const struct smb_filename *smb_fname,
+				const char *name,
+				const void *value,
+				size_t size,
+				int flags)
 {
 	int result;
 	struct timespec ts1,ts2;
 	double timediff;
 
 	clock_gettime_mono(&ts1);
-	result = SMB_VFS_NEXT_SETXATTR(handle, path, name, value, size,
+	result = SMB_VFS_NEXT_SETXATTR(handle, smb_fname, name, value, size,
 				       flags);
 	clock_gettime_mono(&ts2);
 	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
-		smb_time_audit_log_fname("setxattr", timediff, path);
+		smb_time_audit_log_fname("setxattr", timediff,
+				smb_fname->base_name);
 	}
 
 	return result;

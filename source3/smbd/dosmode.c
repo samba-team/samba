@@ -420,7 +420,7 @@ NTSTATUS set_ea_dos_attribute(connection_struct *conn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (SMB_VFS_SETXATTR(conn, smb_fname->base_name,
+	if (SMB_VFS_SETXATTR(conn, smb_fname,
 			     SAMBA_XATTR_DOS_ATTRIB, blob.data, blob.length,
 			     0) == -1) {
 		NTSTATUS status = NT_STATUS_OK;

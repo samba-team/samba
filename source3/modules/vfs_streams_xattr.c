@@ -661,7 +661,7 @@ static int streams_xattr_rename(vfs_handle_struct *handle,
 	}
 
 	/* (over)write the new stream */
-	nret = SMB_VFS_SETXATTR(handle->conn, smb_fname_src->base_name,
+	nret = SMB_VFS_SETXATTR(handle->conn, smb_fname_src,
 				dst_xattr_name, ea.value.data, ea.value.length,
 				0);
 	if (nret < 0) {
@@ -992,7 +992,7 @@ static ssize_t streams_xattr_pwrite(vfs_handle_struct *handle,
 				ea.value.data, ea.value.length, 0);
 	} else {
 		ret = SMB_VFS_SETXATTR(fsp->conn,
-				       fsp->fsp_name->base_name,
+				       fsp->fsp_name,
 				sio->xattr_name,
 				ea.value.data, ea.value.length, 0);
 	}
@@ -1262,7 +1262,7 @@ static int streams_xattr_ftruncate(struct vfs_handle_struct *handle,
 				ea.value.data, ea.value.length, 0);
 	} else {
 		ret = SMB_VFS_SETXATTR(fsp->conn,
-				fsp->fsp_name->base_name,
+				fsp->fsp_name,
 				sio->xattr_name,
 				ea.value.data, ea.value.length, 0);
 	}

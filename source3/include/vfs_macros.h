@@ -545,10 +545,10 @@
 #define SMB_VFS_NEXT_FREMOVEXATTR(handle,fsp,name) \
 	smb_vfs_call_fremovexattr((handle)->next,(fsp),(name))
 
-#define SMB_VFS_SETXATTR(conn,path,name,value,size,flags) \
-	smb_vfs_call_setxattr((conn)->vfs_handles,(path),(name),(value),(size),(flags))
-#define SMB_VFS_NEXT_SETXATTR(handle,path,name,value,size,flags) \
-	smb_vfs_call_setxattr((handle)->next,(path),(name),(value),(size),(flags))
+#define SMB_VFS_SETXATTR(conn,smb_fname,name,value,size,flags) \
+	smb_vfs_call_setxattr((conn)->vfs_handles,(smb_fname),(name),(value),(size),(flags))
+#define SMB_VFS_NEXT_SETXATTR(handle,smb_fname,name,value,size,flags) \
+	smb_vfs_call_setxattr((handle)->next,(smb_fname),(name),(value),(size),(flags))
 
 #define SMB_VFS_FSETXATTR(fsp,name,value,size,flags) \
 	smb_vfs_call_fsetxattr((fsp)->conn->vfs_handles, (fsp), (name),(value),(size),(flags))

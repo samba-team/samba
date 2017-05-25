@@ -474,7 +474,7 @@ int posixacl_xattr_acl_set_file(vfs_handle_struct *handle,
 		return -1;
 	}
 
-	return SMB_VFS_SETXATTR(handle->conn, smb_fname->base_name,
+	return SMB_VFS_SETXATTR(handle->conn, smb_fname,
 			name, buf, size, 0);
 }
 

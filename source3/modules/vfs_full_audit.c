@@ -2341,17 +2341,17 @@ static int smb_full_audit_fremovexattr(struct vfs_handle_struct *handle,
 }
 
 static int smb_full_audit_setxattr(struct vfs_handle_struct *handle,
-			  const char *path,
+			  const struct smb_filename *smb_fname,
 			  const char *name, const void *value, size_t size,
 			  int flags)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_SETXATTR(handle, path, name, value, size,
+	result = SMB_VFS_NEXT_SETXATTR(handle, smb_fname, name, value, size,
 				       flags);
 
 	do_log(SMB_VFS_OP_SETXATTR, (result >= 0), handle,
-	       "%s|%s", path, name);
+	       "%s|%s", smb_fname->base_name, name);
 
 	return result;
 }

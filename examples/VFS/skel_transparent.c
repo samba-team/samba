@@ -974,11 +974,15 @@ static int skel_fremovexattr(vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_FREMOVEXATTR(handle, fsp, name);
 }
 
-static int skel_setxattr(vfs_handle_struct *handle, const char *path,
-			 const char *name, const void *value, size_t size,
-			 int flags)
+static int skel_setxattr(vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
+			const char *name,
+			const void *value,
+			size_t size,
+			int flags)
 {
-	return SMB_VFS_NEXT_SETXATTR(handle, path, name, value, size, flags);
+	return SMB_VFS_NEXT_SETXATTR(handle, smb_fname,
+			name, value, size, flags);
 }
 
 static int skel_fsetxattr(vfs_handle_struct *handle, struct files_struct *fsp,

@@ -2782,9 +2782,14 @@ static int vfswrap_fremovexattr(struct vfs_handle_struct *handle, struct files_s
 	return fremovexattr(fsp->fh->fd, name);
 }
 
-static int vfswrap_setxattr(struct vfs_handle_struct *handle, const char *path, const char *name, const void *value, size_t size, int flags)
+static int vfswrap_setxattr(struct vfs_handle_struct *handle,
+				const struct smb_filename *smb_fname,
+				const char *name,
+				const void *value,
+				size_t size,
+				int flags)
 {
-	return setxattr(path, name, value, size, flags);
+	return setxattr(smb_fname->base_name, name, value, size, flags);
 }
 
 static int vfswrap_fsetxattr(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name, const void *value, size_t size, int flags)

@@ -1399,6 +1399,7 @@ static NTSTATUS cmd_setxattr(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 {
 	ssize_t ret;
 	int flags = 0;
+	struct smb_filename *smb_fname = NULL;
 
 	if ((argc < 4) || (argc > 5)) {
 		printf("Usage: setxattr <path> <xattr> <value> [flags]\n");
@@ -1409,7 +1410,13 @@ static NTSTATUS cmd_setxattr(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 		flags = atoi(argv[4]);
 	}
 
-	ret = SMB_VFS_SETXATTR(vfs->conn, argv[1], argv[2],
+	smb_fname = synthetic_smb_fname_split(mem_ctx,
+					argv[1],
+					lp_posix_pathnames());
+	if (smb_fname == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	ret = SMB_VFS_SETXATTR(vfs->conn, smb_fname, argv[2],
 			       argv[3], strlen(argv[3]), flags);
 	if (ret == -1) {
 		int err = errno;

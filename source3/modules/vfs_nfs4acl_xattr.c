@@ -251,7 +251,7 @@ static bool nfs4acl_smb4acl2nfs4acl(TALLOC_CTX *mem_ctx,
 }
 
 static bool nfs4acl_xattr_set_smb4acl(vfs_handle_struct *handle,
-				      const char *path,
+				      const struct smb_filename *smb_fname,
 				      struct SMB4ACL_T *smbacl)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -278,7 +278,7 @@ static bool nfs4acl_xattr_set_smb4acl(vfs_handle_struct *handle,
 		errno = EINVAL;
 		return false;
 	}
-	ret = SMB_VFS_NEXT_SETXATTR(handle, path, NFS4ACL_XATTR_NAME,
+	ret = SMB_VFS_NEXT_SETXATTR(handle, smb_fname, NFS4ACL_XATTR_NAME,
 				    blob.data, blob.length, 0);
 	if (ret != 0) {
 		DEBUG(0, ("can't store acl in xattr: %s\n", strerror(errno)));
@@ -509,7 +509,7 @@ static struct SMB4ACL_T *nfs4acls_inheritacl(vfs_handle_struct *handle,
 
 	/* store the returned ACL to get it directly in the
 	   future and avoid dynamic inheritance behavior. */
-	nfs4acl_xattr_set_smb4acl(handle, path, pchildacl);
+	nfs4acl_xattr_set_smb4acl(handle, smb_fname, pchildacl);
 
 	TALLOC_FREE(frame);
 	return pchildacl;

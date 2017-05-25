@@ -1419,7 +1419,7 @@ static int ad_set(struct adouble *ad, const struct smb_filename *smb_fname)
 	}
 
 	ret = SMB_VFS_SETXATTR(ad->ad_handle->conn,
-			       smb_fname->base_name,
+			       smb_fname,
 			       AFPINFO_EA_NETATALK,
 			       ad->ad_data,
 			       AD_DATASZ_XATTR, 0);

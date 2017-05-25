@@ -1321,11 +1321,18 @@ static int cephwrap_fremovexattr(struct vfs_handle_struct *handle, struct files_
 	WRAP_RETURN(ret);
 }
 
-static int cephwrap_setxattr(struct vfs_handle_struct *handle, const char *path, const char *name, const void *value, size_t size, int flags)
+static int cephwrap_setxattr(struct vfs_handle_struct *handle,
+				const struct smb_filename *smb_fname,
+				const char *name,
+				const void *value,
+				size_t size,
+				int flags)
 {
 	int ret;
-	DBG_DEBUG("[CEPH] setxattr(%p, %s, %s, %p, %llu, %d)\n", handle, path, name, value, llu(size), flags);
-	ret = ceph_setxattr(handle->data, path, name, value, size, flags);
+	DBG_DEBUG("[CEPH] setxattr(%p, %s, %s, %p, %llu, %d)\n", handle,
+			smb_fname->base_name, name, value, llu(size), flags);
+	ret = ceph_setxattr(handle->data, smb_fname->base_name,
+			name, value, size, flags);
 	DBG_DEBUG("[CEPH] setxattr(...) = %d\n", ret);
 	WRAP_RETURN(ret);
 }
