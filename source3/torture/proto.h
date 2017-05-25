@@ -128,5 +128,6 @@ bool run_g_lock1(int dummy);
 bool run_g_lock2(int dummy);
 bool run_g_lock3(int dummy);
 bool run_g_lock4(int dummy);
+bool run_g_lock5(int dummy);
 
 #endif /* __TORTURE_H__ */

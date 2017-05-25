@@ -11481,6 +11481,7 @@ static struct {
 	{ "LOCAL-G-LOCK2", run_g_lock2, 0 },
 	{ "LOCAL-G-LOCK3", run_g_lock3, 0 },
 	{ "LOCAL-G-LOCK4", run_g_lock4, 0 },
+	{ "LOCAL-G-LOCK5", run_g_lock5, 0 },
 	{ "LOCAL-CANONICALIZE-PATH", run_local_canonicalize_path, 0 },
 	{ "qpathinfo-bufsize", run_qpathinfo_bufsize, 0 },
 	{NULL, NULL, 0}};
