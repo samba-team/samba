@@ -1143,8 +1143,10 @@ uint64_t get_FileIndex(connection_struct *conn, const SMB_STRUCT_STAT *psbuf);
 void aapl_force_zero_file_id(struct smbd_server_connection *sconn);
 bool samba_private_attr_name(const char *unix_ea_name);
 NTSTATUS get_ea_value(TALLOC_CTX *mem_ctx, connection_struct *conn,
-		      files_struct *fsp, const char *fname,
-		      const char *ea_name, struct ea_struct *pea);
+			files_struct *fsp,
+			const struct smb_filename *smb_fname,
+			const char *ea_name,
+			struct ea_struct *pea);
 NTSTATUS get_ea_names_from_file(TALLOC_CTX *mem_ctx,
 			connection_struct *conn,
 			files_struct *fsp,

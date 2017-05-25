@@ -2256,15 +2256,15 @@ static int smb_full_audit_sys_acl_delete_def_file(vfs_handle_struct *handle,
 }
 
 static ssize_t smb_full_audit_getxattr(struct vfs_handle_struct *handle,
-			      const char *path,
+			      const struct smb_filename *smb_fname,
 			      const char *name, void *value, size_t size)
 {
 	ssize_t result;
 
-	result = SMB_VFS_NEXT_GETXATTR(handle, path, name, value, size);
+	result = SMB_VFS_NEXT_GETXATTR(handle, smb_fname, name, value, size);
 
 	do_log(SMB_VFS_OP_GETXATTR, (result >= 0), handle,
-	       "%s|%s", path, name);
+	       "%s|%s", smb_fname->base_name, name);
 
 	return result;
 }

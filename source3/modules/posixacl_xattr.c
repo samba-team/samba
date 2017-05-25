@@ -360,10 +360,10 @@ SMB_ACL_T posixacl_xattr_acl_get_file(vfs_handle_struct *handle,
 		return NULL;
 	}
 
-	ret = SMB_VFS_GETXATTR(handle->conn, smb_fname->base_name,
+	ret = SMB_VFS_GETXATTR(handle->conn, smb_fname,
 				name, buf, size);
 	if (ret < 0 && errno == ERANGE) {
-		size = SMB_VFS_GETXATTR(handle->conn, smb_fname->base_name,
+		size = SMB_VFS_GETXATTR(handle->conn, smb_fname,
 					name, NULL, 0);
 		if (size > 0) {
 			buf = alloca(size);
@@ -371,7 +371,7 @@ SMB_ACL_T posixacl_xattr_acl_get_file(vfs_handle_struct *handle,
 				return NULL;
 			}
 			ret = SMB_VFS_GETXATTR(handle->conn,
-						smb_fname->base_name, name,
+						smb_fname, name,
 						buf, size);
 		}
 	}

@@ -51,7 +51,7 @@ static ssize_t getxattr_do(vfs_handle_struct *handle,
 	if (fsp && fsp->fh->fd != -1) {
 		sizeret = SMB_VFS_FGETXATTR(fsp, xattr_name, val, size);
 	} else {
-		sizeret = SMB_VFS_GETXATTR(handle->conn, smb_fname->base_name,
+		sizeret = SMB_VFS_GETXATTR(handle->conn, smb_fname,
 					   XATTR_NTACL_NAME, val, size);
 	}
 	if (sizeret == -1) {

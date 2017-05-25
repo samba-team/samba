@@ -1217,11 +1217,17 @@ static const char *cephwrap_connectpath(struct vfs_handle_struct *handle,
  Extended attribute operations.
 *****************************************************************/
 
-static ssize_t cephwrap_getxattr(struct vfs_handle_struct *handle,const char *path, const char *name, void *value, size_t size)
+static ssize_t cephwrap_getxattr(struct vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
+			const char *name,
+			void *value,
+			size_t size)
 {
 	int ret;
-	DBG_DEBUG("[CEPH] getxattr(%p, %s, %s, %p, %llu)\n", handle, path, name, value, llu(size));
-	ret = ceph_getxattr(handle->data, path, name, value, size);
+	DBG_DEBUG("[CEPH] getxattr(%p, %s, %s, %p, %llu)\n", handle,
+			smb_fname->base_name, name, value, llu(size));
+	ret = ceph_getxattr(handle->data,
+			smb_fname->base_name, name, value, size);
 	DBG_DEBUG("[CEPH] getxattr(...) = %d\n", ret);
 	if (ret < 0) {
 		WRAP_RETURN(ret);

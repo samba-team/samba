@@ -1302,10 +1302,13 @@ static const char *vfs_gluster_connectpath(struct vfs_handle_struct *handle,
 /* EA Operations */
 
 static ssize_t vfs_gluster_getxattr(struct vfs_handle_struct *handle,
-				    const char *path, const char *name,
-				    void *value, size_t size)
+				const struct smb_filename *smb_fname,
+				const char *name,
+				void *value,
+				size_t size)
 {
-	return glfs_getxattr(handle->data, path, name, value, size);
+	return glfs_getxattr(handle->data, smb_fname->base_name,
+			name, value, size);
 }
 
 static ssize_t vfs_gluster_fgetxattr(struct vfs_handle_struct *handle,

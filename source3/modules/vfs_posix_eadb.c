@@ -77,14 +77,17 @@ static ssize_t posix_eadb_getattr(struct tdb_wrap *db_ctx,
 }
 
 static ssize_t posix_eadb_getxattr(struct vfs_handle_struct *handle,
-				  const char *path, const char *name,
-				  void *value, size_t size)
+				const struct smb_filename *smb_fname,
+				const char *name,
+				void *value,
+				size_t size)
 {
 	struct tdb_wrap *db;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, db, struct tdb_wrap, return -1);
 
-	return posix_eadb_getattr(db, path, -1, name, value, size);
+	return posix_eadb_getattr(db, smb_fname->base_name,
+			-1, name, value, size);
 }
 
 static ssize_t posix_eadb_fgetxattr(struct vfs_handle_struct *handle,

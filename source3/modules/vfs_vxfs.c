@@ -621,12 +621,14 @@ static int vxfs_fset_xattr(struct vfs_handle_struct *handle,
 }
 
 static ssize_t vxfs_get_xattr(struct vfs_handle_struct *handle,
-			      const char *path, const char *name,
-			      void *value, size_t size){
+				const struct smb_filename *smb_fname,
+				const char *name,
+				void *value,
+				size_t size){
 	int ret;
 
 	DEBUG(10, ("In vxfs_get_xattr\n"));
-	ret = vxfs_getxattr_path(path, name, value, size);
+	ret = vxfs_getxattr_path(smb_fname->base_name, name, value, size);
 	if ((ret != -1) || ((errno != ENOTSUP) &&
 			    (errno != ENOSYS) && (errno != ENODATA))) {
 		return ret;
@@ -634,8 +636,8 @@ static ssize_t vxfs_get_xattr(struct vfs_handle_struct *handle,
 
 	DEBUG(10, ("Fallback to xattr\n"));
 	if (strcmp(name, XATTR_NTACL_NAME) == 0) {
-		return SMB_VFS_NEXT_GETXATTR(handle, path, XATTR_USER_NTACL,
-					     value, size);
+		return SMB_VFS_NEXT_GETXATTR(handle, smb_fname,
+				XATTR_USER_NTACL, value, size);
 	}
 
 	/* Clients can't see XATTR_USER_NTACL directly. */
@@ -644,7 +646,7 @@ static ssize_t vxfs_get_xattr(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
-	return SMB_VFS_NEXT_GETXATTR(handle, path, name, value, size);
+	return SMB_VFS_NEXT_GETXATTR(handle, smb_fname, name, value, size);
 }
 
 static ssize_t vxfs_fget_xattr(struct vfs_handle_struct *handle,

@@ -797,8 +797,11 @@ static int skel_sys_acl_delete_def_file(vfs_handle_struct *handle,
 	return -1;
 }
 
-static ssize_t skel_getxattr(vfs_handle_struct *handle, const char *path,
-			     const char *name, void *value, size_t size)
+static ssize_t skel_getxattr(vfs_handle_struct *handle,
+				const struct smb_filename *smb_fname,
+				const char *name,
+				void *value,
+				size_t size)
 {
 	errno = ENOSYS;
 	return -1;

@@ -211,7 +211,8 @@
 		to const struct smb_filename * */
 /* Version 37 - Change setxattr from const char *
 		to const struct smb_filename * */
-
+/* Version 37 - Change getxattr from const char *
+		to const struct smb_filename * */
 
 #define SMB_VFS_INTERFACE_VERSION 37
 
@@ -894,7 +895,11 @@ struct vfs_fn_pointers {
 					const struct smb_filename *smb_fname);
 
 	/* EA operations. */
-	ssize_t (*getxattr_fn)(struct vfs_handle_struct *handle,const char *path, const char *name, void *value, size_t size);
+	ssize_t (*getxattr_fn)(struct vfs_handle_struct *handle,
+					const struct smb_filename *smb_fname,
+					const char *name,
+					void *value,
+					size_t size);
 	ssize_t (*fgetxattr_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name, void *value, size_t size);
 	ssize_t (*listxattr_fn)(struct vfs_handle_struct *handle,
 					const struct smb_filename *smb_fname,
@@ -1365,8 +1370,10 @@ int smb_vfs_call_sys_acl_set_fd(struct vfs_handle_struct *handle,
 int smb_vfs_call_sys_acl_delete_def_file(struct vfs_handle_struct *handle,
 				const struct smb_filename *smb_fname);
 ssize_t smb_vfs_call_getxattr(struct vfs_handle_struct *handle,
-			      const char *path, const char *name, void *value,
-			      size_t size);
+				const struct smb_filename *smb_fname,
+				const char *name,
+				void *value,
+				size_t size);
 ssize_t smb_vfs_call_fgetxattr(struct vfs_handle_struct *handle,
 			       struct files_struct *fsp, const char *name,
 			       void *value, size_t size);

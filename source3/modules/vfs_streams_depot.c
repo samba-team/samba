@@ -67,13 +67,14 @@ static uint32_t hash_fn(DATA_BLOB key)
  * an option to put in a special ACL entry for a non-existing group.
  */
 
-static bool file_is_valid(vfs_handle_struct *handle, const char *path)
+static bool file_is_valid(vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname)
 {
 	char buf;
 
-	DEBUG(10, ("file_is_valid (%s) called\n", path));
+	DEBUG(10, ("file_is_valid (%s) called\n", smb_fname->base_name));
 
-	if (SMB_VFS_GETXATTR(handle->conn, path, SAMBA_XATTR_MARKER,
+	if (SMB_VFS_GETXATTR(handle->conn, smb_fname, SAMBA_XATTR_MARKER,
 				  &buf, sizeof(buf)) != sizeof(buf)) {
 		DEBUG(10, ("GETXATTR failed: %s\n", strerror(errno)));
 		return false;
@@ -228,7 +229,7 @@ static char *stream_dir(vfs_handle_struct *handle,
 		}
 
 		if (!check_valid ||
-		    file_is_valid(handle, smb_fname->base_name)) {
+		    file_is_valid(handle, smb_fname)) {
 			return result;
 		}
 

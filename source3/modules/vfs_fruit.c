@@ -796,7 +796,7 @@ static ssize_t ad_read_meta(struct adouble *ad,
 
 	DEBUG(10, ("reading meta xattr for %s\n", smb_fname->base_name));
 
-	ealen = SMB_VFS_GETXATTR(ad->ad_handle->conn, smb_fname->base_name,
+	ealen = SMB_VFS_GETXATTR(ad->ad_handle->conn, smb_fname,
 				 AFPINFO_EA_NETATALK, ad->ad_data,
 				 AD_DATASZ_XATTR);
 	if (ealen == -1) {

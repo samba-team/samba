@@ -2503,11 +2503,13 @@ int smb_vfs_call_sys_acl_delete_def_file(struct vfs_handle_struct *handle,
 }
 
 ssize_t smb_vfs_call_getxattr(struct vfs_handle_struct *handle,
-			      const char *path, const char *name, void *value,
-			      size_t size)
+				const struct smb_filename *smb_fname,
+				const char *name,
+				void *value,
+				size_t size)
 {
 	VFS_FIND(getxattr);
-	return handle->fns->getxattr_fn(handle, path, name, value, size);
+	return handle->fns->getxattr_fn(handle, smb_fname, name, value, size);
 }
 
 ssize_t smb_vfs_call_fgetxattr(struct vfs_handle_struct *handle,

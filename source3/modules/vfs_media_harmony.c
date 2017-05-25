@@ -2205,37 +2205,33 @@ out:
  * In this case, "name" is an attr name.
  */
 static ssize_t mh_getxattr(struct vfs_handle_struct *handle,
-		const char *path,
+		const struct smb_filename *smb_fname,
 		const char *name,
 		void *value,
 		size_t size)
 {
+	int status;
+	struct smb_filename *clientFname = NULL;
 	ssize_t ret;
-	char *clientPath;
-	TALLOC_CTX *ctx;
 
 	DEBUG(MH_INFO_DEBUG, ("Entering mh_getxattr\n"));
-	if (!is_in_media_files(path))
-	{
-		ret = SMB_VFS_NEXT_GETXATTR(handle, path, name, value,
-				size);
+	if (!is_in_media_files(smb_fname->base_name)) {
+		ret = SMB_VFS_NEXT_GETXATTR(handle, smb_fname,
+					name, value, size);
 		goto out;
 	}
 
-	clientPath = NULL;
-	ctx = talloc_tos();
-
-	if (alloc_get_client_path(handle, ctx,
-				path,
-				&clientPath))
-	{
+	status = alloc_get_client_smb_fname(handle,
+				talloc_tos(),
+				smb_fname,
+				&clientFname);
+	if (status != 0) {
 		ret = -1;
 		goto err;
 	}
-
-	ret = SMB_VFS_NEXT_GETXATTR(handle, clientPath, name, value, size);
+	ret = SMB_VFS_NEXT_GETXATTR(handle, clientFname, name, value, size);
 err:
-	TALLOC_FREE(clientPath);
+	TALLOC_FREE(clientFname);
 out:
 	return ret;
 }

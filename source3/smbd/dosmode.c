@@ -278,7 +278,7 @@ NTSTATUS get_ea_dos_attribute(connection_struct *conn,
 	/* Don't reset pattr to zero as we may already have filename-based attributes we
 	   need to preserve. */
 
-	sizeret = SMB_VFS_GETXATTR(conn, smb_fname->base_name,
+	sizeret = SMB_VFS_GETXATTR(conn, smb_fname,
 				   SAMBA_XATTR_DOS_ATTRIB, attrstr,
 				   sizeof(attrstr));
 	if (sizeret == -1) {

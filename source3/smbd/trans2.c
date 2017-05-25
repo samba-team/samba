@@ -203,9 +203,12 @@ bool samba_private_attr_name(const char *unix_ea_name)
  Get one EA value. Fill in a struct ea_struct.
 ****************************************************************************/
 
-NTSTATUS get_ea_value(TALLOC_CTX *mem_ctx, connection_struct *conn,
-		      files_struct *fsp, const char *fname,
-		      const char *ea_name, struct ea_struct *pea)
+NTSTATUS get_ea_value(TALLOC_CTX *mem_ctx,
+			connection_struct *conn,
+			files_struct *fsp,
+			const struct smb_filename *smb_fname,
+			const char *ea_name,
+			struct ea_struct *pea)
 {
 	/* Get the value of this xattr. Max size is 64k. */
 	size_t attr_size = 256;
@@ -222,7 +225,8 @@ NTSTATUS get_ea_value(TALLOC_CTX *mem_ctx, connection_struct *conn,
 	if (fsp && fsp->fh->fd != -1) {
 		sizeret = SMB_VFS_FGETXATTR(fsp, ea_name, val, attr_size);
 	} else {
-		sizeret = SMB_VFS_GETXATTR(conn, fname, ea_name, val, attr_size);
+		sizeret = SMB_VFS_GETXATTR(conn, smb_fname,
+				ea_name, val, attr_size);
 	}
 
 	if (sizeret == -1 && errno == ERANGE && attr_size != 65536) {
@@ -458,7 +462,7 @@ static NTSTATUS get_ea_list_from_file_path(TALLOC_CTX *mem_ctx,
 		status = get_ea_value(listp,
 					conn,
 					fsp,
-					smb_fname->base_name,
+					smb_fname,
 					names[i],
 					&listp->ea);
 

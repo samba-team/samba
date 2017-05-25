@@ -629,7 +629,7 @@ static struct pai_val *fload_inherited_info(files_struct *fsp)
 					pai_buf, pai_buf_size);
 		} else {
 			ret = SMB_VFS_GETXATTR(fsp->conn,
-					       fsp->fsp_name->base_name,
+					       fsp->fsp_name,
 					       SAMBA_POSIX_INHERITANCE_EA_NAME,
 					       pai_buf, pai_buf_size);
 		}
@@ -681,7 +681,7 @@ static struct pai_val *fload_inherited_info(files_struct *fsp)
 ************************************************************************/
 
 static struct pai_val *load_inherited_info(const struct connection_struct *conn,
-					   const char *fname)
+					   const struct smb_filename *smb_fname)
 {
 	char *pai_buf;
 	size_t pai_buf_size = 1024;
@@ -697,7 +697,7 @@ static struct pai_val *load_inherited_info(const struct connection_struct *conn,
 	}
 
 	do {
-		ret = SMB_VFS_GETXATTR(conn, fname,
+		ret = SMB_VFS_GETXATTR(conn, smb_fname,
 				       SAMBA_POSIX_INHERITANCE_EA_NAME,
 				       pai_buf, pai_buf_size);
 
@@ -716,7 +716,8 @@ static struct pai_val *load_inherited_info(const struct connection_struct *conn,
 		}
 	} while (ret == -1);
 
-	DEBUG(10,("load_inherited_info: ret = %lu for file %s\n", (unsigned long)ret, fname));
+	DEBUG(10,("load_inherited_info: ret = %lu for file %s\n",
+			(unsigned long)ret, smb_fname->base_name));
 
 	if (ret == -1) {
 		/* No attribute or not supported. */
@@ -736,7 +737,7 @@ static struct pai_val *load_inherited_info(const struct connection_struct *conn,
 	if (paiv) {
 		DEBUG(10,("load_inherited_info: ACL type 0x%x for file %s\n",
 			(unsigned int)paiv->sd_type,
-			fname));
+			smb_fname->base_name));
 	}
 
 	TALLOC_FREE(pai_buf);
@@ -3593,7 +3594,7 @@ NTSTATUS posix_get_nt_acl(struct connection_struct *conn,
 		def_acl = free_empty_sys_acl(conn, def_acl);
 	}
 
-	pal = load_inherited_info(conn, smb_fname->base_name);
+	pal = load_inherited_info(conn, smb_fname);
 
 	status = posix_get_nt_acl_common(conn,
 					smb_fname->base_name,

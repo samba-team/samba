@@ -2321,20 +2321,23 @@ static int smb_time_audit_sys_acl_delete_def_file(vfs_handle_struct *handle,
 }
 
 static ssize_t smb_time_audit_getxattr(struct vfs_handle_struct *handle,
-				       const char *path, const char *name,
-				       void *value, size_t size)
+				const struct smb_filename *smb_fname,
+				const char *name,
+				void *value,
+				size_t size)
 {
 	ssize_t result;
 	struct timespec ts1,ts2;
 	double timediff;
 
 	clock_gettime_mono(&ts1);
-	result = SMB_VFS_NEXT_GETXATTR(handle, path, name, value, size);
+	result = SMB_VFS_NEXT_GETXATTR(handle, smb_fname, name, value, size);
 	clock_gettime_mono(&ts2);
 	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
-		smb_time_audit_log_fname("getxattr", timediff, path);
+		smb_time_audit_log_fname("getxattr", timediff,
+			smb_fname->base_name);
 	}
 
 	return result;

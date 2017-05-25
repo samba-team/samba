@@ -36,12 +36,13 @@
 #define FAKE_ACL_DEFAULT_XATTR "system.fake_default_acl"
 
 static int fake_acls_uid(vfs_handle_struct *handle,
-			 const char *path,
+			 struct smb_filename *smb_fname,
 			 uid_t *uid)
 {
 	ssize_t size;
 	uint8_t uid_buf[4];
-	size = SMB_VFS_NEXT_GETXATTR(handle, path, FAKE_UID, uid_buf, sizeof(uid_buf));
+	size = SMB_VFS_NEXT_GETXATTR(handle, smb_fname,
+			FAKE_UID, uid_buf, sizeof(uid_buf));
 	if (size == -1 && errno == ENOATTR) {
 		return 0;
 	}
@@ -53,13 +54,14 @@ static int fake_acls_uid(vfs_handle_struct *handle,
 }
 
 static int fake_acls_gid(vfs_handle_struct *handle,
-			 const char *path,
+			 struct smb_filename *smb_fname,
 			 uid_t *gid)
 {
 	ssize_t size;
 	uint8_t gid_buf[4];
 
-	size = SMB_VFS_NEXT_GETXATTR(handle, path, FAKE_GID, gid_buf, sizeof(gid_buf));
+	size = SMB_VFS_NEXT_GETXATTR(handle, smb_fname,
+			FAKE_GID, gid_buf, sizeof(gid_buf));
 	if (size == -1 && errno == ENOATTR) {
 		return 0;
 	}
@@ -131,12 +133,14 @@ static int fake_acls_stat(vfs_handle_struct *handle,
 			return -1;
 		}
 		
-		ret = fake_acls_uid(handle, path, &smb_fname->st.st_ex_uid);
+		ret = fake_acls_uid(handle, &smb_fname_base,
+					&smb_fname->st.st_ex_uid);
 		if (ret != 0) {
 			TALLOC_FREE(frame);
 			return ret;
 		}
-		ret = fake_acls_gid(handle, path, &smb_fname->st.st_ex_gid);
+		ret = fake_acls_gid(handle, &smb_fname_base,
+					&smb_fname->st.st_ex_gid);
 		if (ret != 0) {
 			TALLOC_FREE(frame);
 			return ret;
@@ -179,8 +183,10 @@ static int fake_acls_lstat(vfs_handle_struct *handle,
 		 * because linux doesn't support using them, but we
 		 * could fake them in xattr_tdb if we really wanted
 		 * to.  We ignore errors because the link might not point anywhere */
-		fake_acls_uid(handle, path, &smb_fname->st.st_ex_uid);
-		fake_acls_gid(handle, path, &smb_fname->st.st_ex_gid);
+		fake_acls_uid(handle, &smb_fname_base,
+			&smb_fname->st.st_ex_uid);
+		fake_acls_gid(handle, &smb_fname_base,
+			&smb_fname->st.st_ex_gid);
 		TALLOC_FREE(frame);
 	}
 
@@ -250,7 +256,6 @@ static SMB_ACL_T fake_acls_sys_acl_get_file(struct vfs_handle_struct *handle,
 	ssize_t length;
 	const char *name = NULL;
 	struct smb_acl_t *acl = NULL;
-	const char *path = smb_fname->base_name;
 	TALLOC_CTX *frame = talloc_stackframe();
 	switch (type) {
 	case SMB_ACL_TYPE_ACCESS:
@@ -269,7 +274,8 @@ static SMB_ACL_T fake_acls_sys_acl_get_file(struct vfs_handle_struct *handle,
 			TALLOC_FREE(frame);
 			return NULL;
 		}
-		length = SMB_VFS_NEXT_GETXATTR(handle, path, name, blob.data, blob.length);
+		length = SMB_VFS_NEXT_GETXATTR(handle, smb_fname,
+				name, blob.data, blob.length);
 		blob.length = length;
 	} while (length == -1 && errno == ERANGE);
 	if (length == -1 && errno == ENOATTR) {

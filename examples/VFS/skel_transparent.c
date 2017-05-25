@@ -933,10 +933,13 @@ static int skel_sys_acl_delete_def_file(vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_SYS_ACL_DELETE_DEF_FILE(handle, smb_fname);
 }
 
-static ssize_t skel_getxattr(vfs_handle_struct *handle, const char *path,
-			     const char *name, void *value, size_t size)
+static ssize_t skel_getxattr(vfs_handle_struct *handle,
+				const struct smb_filename *smb_fname,
+				const char *name,
+				void *value,
+				size_t size)
 {
-	return SMB_VFS_NEXT_GETXATTR(handle, path, name, value, size);
+	return SMB_VFS_NEXT_GETXATTR(handle, smb_fname, name, value, size);
 }
 
 static ssize_t skel_fgetxattr(vfs_handle_struct *handle,
