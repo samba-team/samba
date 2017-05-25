@@ -3,6 +3,7 @@
 # Co-Edited by Matthieu Pattou July 2013 from original August 2013
 # Edited by Garming Sam Feb. 2014
 # Edited by Luke Morrison April 2014
+# Edited by David Mulder May 2017
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,15 +23,10 @@ and sorts them by container. Then, it applies the ones that haven't been
 applied, have changed, or is in the right container'''
 
 import os
-import fcntl
 import sys
-import tempfile
-import subprocess
-import tdb
 
 sys.path.insert(0, "bin/python")
 
-import samba
 import optparse
 from samba import getopt as options
 from samba.gpclass import *
@@ -39,215 +35,92 @@ from samba.dcerpc import nbt
 from samba import smb
 import logging
 
+''' Fetch the hostname of a writable DC '''
+def get_dc_hostname():
+    net = Net(creds=creds, lp=lp)
+    cldap_ret = net.finddc(domain=lp.get('realm'), flags=(nbt.NBT_SERVER_LDAP |
+        nbt.NBT_SERVER_DS))
+    return cldap_ret.pdc_dns_name
 
-# Finds all GPO Files ending in inf
-def gp_path_list(path):
+''' Fetch a list of GUIDs for applicable GPOs '''
+def get_gpo_list(dc_hostname, creds, lp):
+    gpos = []
+    ads = gpo.ADS_STRUCT(dc_hostname, lp, creds)
+    if ads.connect():
+        gpos = ads.get_gpo_list(creds.get_username())
+    return gpos
 
-    GPO_LIST = []
-    for ext in gp_extensions:
-        GPO_LIST.append((ext, ext.list(path)))
-    return GPO_LIST
+if __name__ == "__main__":
+    parser = optparse.OptionParser('samba_gpoupdate [options]')
+    sambaopts = options.SambaOptions(parser)
 
+    # Get the command line options
+    parser.add_option_group(sambaopts)
+    parser.add_option_group(options.VersionOptions(parser))
+    credopts = options.CredentialsOptions(parser)
+    parser.add_option('-H', '--url', dest='url', help='URL for the samdb')
+    parser.add_option_group(credopts)
 
-def gpo_parser(GPO_LIST, ldb, conn, attr_log, lp):
-    '''The API method to parse the GPO
-    :param GPO_LIST:
-    :param ldb: Live instance of an LDB object AKA Samba
-    :param conn: Live instance of a CIFS connection
-    :param attr_log: backlog path for GPO and attribute to be written
-    no return except a newly updated Samba
-    '''
+    # Set the options and the arguments
+    (opts, args) = parser.parse_args()
 
-    ret = False
-    for entry in GPO_LIST:
-        (ext, thefile) = entry
-        if ret == False:
-            ret = ext.parse(thefile, ldb, conn, attr_log, lp)
-        else:
-            temp = ext.parse(thefile, ldb, conn, attr_log, lp)
-    return ret
+    # Set the loadparm context
+    lp = sambaopts.get_loadparm()
+    if not opts.url:
+        url = lp.samdb_url()
+    else:
+        url = opts.url
 
+    # Initialize the session
+    creds = credopts.get_credentials(lp, fallback_machine=True)
+    session = system_session()
 
-class GPOServiceSetup:
-    def __init__(self):
-        """Initialize all components necessary to return instances of
-        a Samba lp context (smb.conf) and Samba LDB context
-        """
+    # Set up logging
+    logger = logging.getLogger('samba_gpoupdate')
+    logger.addHandler(logging.StreamHandler(sys.stdout))
+    logger.setLevel(logging.CRITICAL)
+    log_level = lp.log_level()
+    if log_level == 1:
+        logger.setLevel(logging.ERROR)
+    elif log_level == 2:
+        logger.setLevel(logging.WARNING)
+    elif log_level == 3:
+        logger.setLevel(logging.INFO)
+    elif log_level >= 4:
+        logger.setLevel(logging.DEBUG)
 
-        self.parser = optparse.OptionParser("samba_gpoupdate [options]")
-        self.sambaopts = options.SambaOptions(self.parser)
-        self.credopts = None
-        self.opts = None
-        self.args = None
-        self.lp = None
-        self.smbconf = None
-        self.creds = None
-        self.url = None
+    '''Return a live instance of Samba'''
+    test_ldb = SamDB(url, session_info=session, credentials=creds, lp=lp)
 
-    # Setters or Initializers
-    def init_parser(self):
-        '''Get the command line options'''
-        self.parser.add_option_group(self.sambaopts)
-        self.parser.add_option_group(options.VersionOptions(self.parser))
-        self.init_credopts()
-        self.parser.add_option("-H", dest="url", help="URL for the samdb")
-        self.parser.add_option_group(self.credopts)
+    # Read the readable backLog into a hashmap
+    # then open writable backLog in same location
+    sysvol_log = os.path.join(lp.get('cache directory'), 'gpo.tdb')
 
-    def init_argsopts(self):
-        '''Set the options and the arguments'''
-        (opts, args) = self.parser.parse_args()
+    backlog = Backlog(sysvol_log)
 
-        self.opts = opts
-        self.args = args
-
-    def init_credopts(self):
-        '''Set Credential operations'''
-        self.credopts = options.CredentialsOptions(self.parser)
-
-    def init_lp(self):
-        '''Set the loadparm context'''
-        self.lp = self.sambaopts.get_loadparm()
-        self.smbconf = self.lp.configfile
-        if (not self.opts.url):
-            self.url = self.lp.samdb_url()
-        else:
-            self.url = self.opts.url
-
-    def init_session(self):
-        '''Initialize the session'''
-        self.creds = self.credopts.get_credentials(self.lp,
-            fallback_machine=True)
-        self.session = system_session()
-
-    def InitializeService(self):
-        '''Inializer for the thread'''
-        self.init_parser()
-        self.init_argsopts()
-        self.init_lp()
-        self.init_session()
-
-    # Getters
-    def Get_LDB(self):
-        '''Return a live instance of Samba'''
-        SambaDB = SamDB(self.url, session_info=self.session,
-            credentials=self.creds, lp=self.lp)
-        return SambaDB
-
-    def Get_lp_Content(self):
-        '''Return an instance of a local lp context'''
-        return self.lp
-
-    def Get_Creds(self):
-        '''Return an instance of a local creds'''
-        return self.creds
-
-
-# Set up the GPO service
-GPOService = GPOServiceSetup()
-GPOService.InitializeService()
-
-# Get the Samba Instance
-test_ldb = GPOService.Get_LDB()
-
-# Get The lp context
-lp = GPOService.Get_lp_Content()
-
-# Set up logging
-logger = logging.getLogger('samba_gpoupdate')
-logger.addHandler(logging.StreamHandler(sys.stdout))
-logger.setLevel(logging.CRITICAL)
-log_level = lp.log_level()
-if log_level == 1:
-    logger.setLevel(logging.ERROR)
-elif log_level == 2:
-    logger.setLevel(logging.WARNING)
-elif log_level == 3:
-    logger.setLevel(logging.INFO)
-elif log_level >= 4:
-    logger.setLevel(logging.DEBUG)
-
-# Get the CREDS
-creds = GPOService.Get_Creds()
-
-# Read the readable backLog into a hashmap
-# then open writable backLog in same location
-BackLoggedGPO = None
-sys_log = '%s/%s' % (lp.get("path", "sysvol"), 'gpo.tdb')
-attr_log = '%s/%s' % (lp.get("path", "sysvol"), 'attrlog.txt')
-
-
-if os.path.isfile(sys_log):
-    BackLog = tdb.open(sys_log)
-else:
-    BackLog = tdb.Tdb(sys_log, 0, tdb.DEFAULT, os.O_CREAT|os.O_RDWR)
-BackLoggedGPO = scan_log(BackLog)
-
-
-# We need to know writable DC to setup SMB connection
-net = Net(creds=creds, lp=lp)
-cldap_ret = net.finddc(domain=lp.get('realm'), flags=(nbt.NBT_SERVER_LDAP |
-    nbt.NBT_SERVER_DS))
-dc_hostname = cldap_ret.pdc_dns_name
-
-try:
-    conn = smb.SMB(dc_hostname, 'sysvol', lp=lp, creds=creds)
-except Exception, e:
-    raise Exception("Error connecting to '%s' using SMB" % dc_hostname, e)
-
-# Get the dn of the domain, and the dn of readable/writable DC
-global_dn = test_ldb.domain_dn()
-DC_OU = "OU=Domain Controllers" + ',' + global_dn
-
-# Set up a List of the GUID for all GPO's
-guid_list = [x['name'] for x in conn.list('%s/Policies' % lp.get("realm").lower())]
-SYSV_PATH = '%s/%s/%s' % (lp.get("path", "sysvol"), lp.get("realm"), 'Policies')
-
-hierarchy_gpos = establish_hierarchy(test_ldb, guid_list, DC_OU, global_dn)
-change_backlog = False
-
-# Take a local list of all current GPO list and run it against previous GPO's
-# to see if something has changed. If so reset default and re-apply GPO.
-Applicable_GPO = []
-for i in hierarchy_gpos:
-    Applicable_GPO += i
-
-# Flag gets set when
-GPO_Changed = False
-GPO_Deleted = check_deleted(Applicable_GPO, BackLoggedGPO)
-if (GPO_Deleted):
-    # Null the backlog
-    BackLoggedGPO = {}
-    # Reset defaults then overwrite them
-    Reset_Defaults(test_ldb)
-    GPO_Changed = False
-
-BackLog.transaction_start()
-for guid_eval in hierarchy_gpos:
-    guid = guid_eval[0]
-    gp_extensions = [gp_sec_ext(logger)]
-    local_path = '%s/Policies' % lp.get("realm").lower() + '/' + guid + '/'
-    version = int(gpo.gpo_get_sysvol_gpt_version(lp.get("path", "sysvol") + '/' + local_path)[1])
+    dc_hostname = get_dc_hostname()
     try:
-        old_version = int(BackLoggedGPO.get(guid))
+        conn =  smb.SMB(dc_hostname, 'sysvol', lp=lp, creds=creds)
     except:
-        old_version = -1
-    gpolist = gp_path_list(local_path)
-    if version != old_version:
-        GPO_Changed = True
-    # If the GPO has a dn that is applicable to Samba
-    if guid_eval[1]:
-        # If it has a GPO file that could apply to Samba
-        if gpolist[0][1]:
-            # If it we have not read it before and is not empty
-            # Rewrite entire logfile here
-            if  (version != 0) and GPO_Changed == True:
-                logger.info('GPO %s has changed' % guid)
-                try:
-                    change_backlog = gpo_parser(gpolist, test_ldb, conn, attr_log, lp)
-                except:
-                    logger.error('Failed to parse gpo %s' % guid)
-                    continue
-    BackLog.store(guid, '%i' % version)
-BackLog.transaction_commit()
-BackLog.close()
+        logger.error('Error connecting to \'%s\' using SMB' % dc_hostname)
+        raise
+    gpos = get_gpo_list(dc_hostname, creds, lp)
+
+    for gpo_obj in gpos:
+        guid = gpo_obj.name
+        if guid == 'Local Policy':
+            continue
+        gp_extensions = [gp_sec_ext(logger)]
+        local_path = os.path.join(lp.get('realm').lower(), 'Policies', guid)
+        version = int(gpo.gpo_get_sysvol_gpt_version(os.path.join(lp.get("path", "sysvol"), local_path))[1])
+        if version != backlog.version(guid):
+            logger.info('GPO %s has changed' % guid)
+            try:
+                for ext in gp_extensions:
+                    ext.parse(ext.list(local_path), test_ldb, conn, lp)
+            except:
+                logger.error('Failed to parse gpo %s' % guid)
+                continue
+        backlog.store(guid, version)
+    backlog.commit()
 

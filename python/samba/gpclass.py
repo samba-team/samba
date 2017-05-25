@@ -17,6 +17,7 @@
 
 import sys
 import os
+import tdb
 sys.path.insert(0, "bin/python")
 import samba.gpo as gpo
 import optparse
@@ -31,6 +32,30 @@ from ConfigParser import ConfigParser
 from StringIO import StringIO
 from abc import ABCMeta, abstractmethod
 
+class Backlog:
+    def __init__(self, sysvol_log):
+        if os.path.isfile(sysvol_log):
+            self.backlog = tdb.open(sysvol_log)
+        else:
+            self.backlog = tdb.Tdb(sysvol_log, 0, tdb.DEFAULT, os.O_CREAT|os.O_RDWR)
+        self.backlog.transaction_start()
+
+    def version(self, guid):
+        try:
+            old_version = int(self.backlog.get(guid))
+        except TypeError:
+            old_version = -1
+        return old_version
+
+    def store(self, guid, version):
+        self.backlog.store(guid, '%i' % version)
+
+    def commit(self):
+        self.backlog.transaction_commit()
+
+    def __del__(self):
+        self.backlog.close()
+
 class gp_ext(object):
     __metaclass__ = ABCMeta
 
@@ -39,7 +64,7 @@ class gp_ext(object):
         pass
 
     @abstractmethod
-    def parse(self, afile, ldb, conn, attr_log, lp):
+    def parse(self, afile, ldb, conn, lp):
         pass
 
     @abstractmethod
@@ -50,10 +75,9 @@ class gp_ext(object):
 class inf_to():
     __metaclass__ = ABCMeta
 
-    def __init__(self, logger, ldb, dn, lp, attribute, val):
+    def __init__(self, logger, ldb, lp, attribute, val):
         self.logger = logger
         self.ldb = ldb
-        self.dn = dn
         self.attribute = attribute
         self.val = val
         self.lp = lp
@@ -126,16 +150,13 @@ class gp_sec_ext(gp_ext):
         return "Security GPO extension"
 
     def list(self, rootpath):
-        path = "%s%s" % (rootpath, "MACHINE/Microsoft/Windows NT/SecEdit/GptTmpl.inf")
-        return path
+        return os.path.join(rootpath, "MACHINE/Microsoft/Windows NT/SecEdit/GptTmpl.inf")
 
     def listmachpol(self, rootpath):
-        path = "%s%s" % (rootpath, "Machine/Registry.pol")
-        return path
+        return os.path.join(rootpath, "Machine/Registry.pol")
 
     def listuserpol(self, rootpath):
-        path = "%s%s" % (rootpath, "User/Registry.pol")
-        return path
+        return os.path.join(rootpath, "User/Registry.pol")
 
     def populate_inf(self):
         return {"System Access": {"MinimumPasswordAge": ("minPwdAge", inf_to_ldb),
@@ -145,14 +166,12 @@ class gp_sec_ext(gp_ext):
                                  }
                }
 
-    def read_inf(self, path, conn, attr_log):
+    def read_inf(self, path, conn):
         ret = False
         inftable = self.populate_inf()
 
         policy = conn.loadfile(path.replace('/', '\\')).decode('utf-16')
         current_section = None
-        LOG = open(attr_log, "a")
-        LOG.write(str(path.split('/')[2]) + '\n')
 
         # So here we would declare a boolean,
         # that would get changed to TRUE.
@@ -173,13 +192,12 @@ class gp_sec_ext(gp_ext):
                     (att, setter) = current_section.get(key)
                     value = value.encode('ascii', 'ignore')
                     ret = True
-                    setter(self.logger, self.ldb, self.dn, self.lp, att, value).update_samba()
+                    setter(self.logger, self.ldb, self.lp, att, value).update_samba()
         return ret
 
-    def parse(self, afile, ldb, conn, attr_log, lp):
+    def parse(self, afile, ldb, conn, lp):
         self.ldb = ldb
         self.lp = lp
-        self.dn = ldb.get_default_basedn()
 
         # Fixing the bug where only some Linux Boxes capitalize MACHINE
         if afile.endswith('inf'):
@@ -189,149 +207,12 @@ class gp_sec_ext(gp_ext):
                 for case in [blist[idx].upper(), blist[idx].capitalize(), blist[idx].lower()]:
                     bfile = '/'.join(blist[:idx]) + '/' + case + '/' + '/'.join(blist[idx+1:])
                     try:
-                        return self.read_inf(bfile, conn, attr_log)
+                        return self.read_inf(bfile, conn)
                     except NTSTATUSError:
                         continue
             except ValueError:
                 try:
-                    return self.read_inf(afile, conn, attr_log)
+                    return self.read_inf(afile, conn)
                 except:
                     return None
 
-
-def scan_log(sysvol_tdb):
-    data = {}
-    for key in sysvol_tdb.iterkeys():
-        data[key] = sysvol_tdb.get(key)
-    return data
-
-
-def Reset_Defaults(test_ldb):
-    test_ldb.set_minPwdAge(str(-25920000000000))
-    test_ldb.set_maxPwdAge(str(-38016000000000))
-    test_ldb.set_minPwdLength(str(7))
-    test_ldb.set_pwdProperties(str(1))
-
-
-def check_deleted(guid_list, backloggpo):
-    if backloggpo is None:
-        return False
-    for guid in backloggpo:
-        if guid not in guid_list:
-            return True
-    return False
-
-
-# The hierarchy is as per MS http://msdn.microsoft.com/en-us/library/windows/desktop/aa374155%28v=vs.85%29.aspx
-#
-# It does not care about local GPO, because GPO and snap-ins are not made in Linux yet.
-# It follows the linking order and children GPO are last written format.
-#
-# Also, couple further testing with call scripts entitled informant and informant2.
-# They explicitly show the returned hierarchically sorted list.
-
-
-def container_indexes(GUID_LIST):
-    '''So the original list will need to be seperated into containers.
-    Returns indexed list of when the container changes after hierarchy
-    '''
-    count = 0
-    container_indexes = []
-    while count < (len(GUID_LIST)-1):
-        if GUID_LIST[count][2] != GUID_LIST[count+1][2]:
-            container_indexes.append(count+1)
-        count += 1
-    container_indexes.append(len(GUID_LIST))
-    return container_indexes
-
-
-def sort_linked(SAMDB, guid_list, start, end):
-    '''So GPO in same level need to have link level.
-    This takes a container and sorts it.
-
-    TODO:  Small small problem, it is backwards
-    '''
-    containers = gpo_user.get_gpo_containers(SAMDB, guid_list[start][0])
-    for right_container in containers:
-        if right_container.get('dn') == guid_list[start][2]:
-            break
-    gplink = str(right_container.get('gPLink'))
-    gplink_split = gplink.split('[')
-    linked_order = []
-    ret_list = []
-    for ldap_guid in gplink_split:
-        linked_order.append(str(ldap_guid[10:48]))
-    count = len(linked_order) - 1
-    while count > 0:
-        ret_list.append([linked_order[count], guid_list[start][1], guid_list[start][2]])
-        count -= 1
-    return ret_list
-
-
-def establish_hierarchy(SamDB, GUID_LIST, DC_OU, global_dn):
-    '''Takes a list of GUID from gpo, and sorts them based on OU, and realm.
-    See http://msdn.microsoft.com/en-us/library/windows/desktop/aa374155%28v=vs.85%29.aspx
-    '''
-    final_list = []
-    count_unapplied_GPO = 0
-    for GUID in GUID_LIST:
-
-        container_iteration = 0
-        # Assume first it is not applied
-        applied = False
-        # Realm only written on last call, if the GPO is linked to multiple places
-        gpo_realm = False
-
-        # A very important call. This gets all of the linked information.
-        GPO_CONTAINERS = gpo_user.get_gpo_containers(SamDB, GUID)
-        for GPO_CONTAINER in GPO_CONTAINERS:
-
-            container_iteration += 1
-
-            if DC_OU == str(GPO_CONTAINER.get('dn')):
-                applied = True
-                insert_gpo = [GUID, applied, str(GPO_CONTAINER.get('dn'))]
-                final_list.append(insert_gpo)
-                break
-
-            if global_dn == str(GPO_CONTAINER.get('dn')) and (len(GPO_CONTAINERS) == 1):
-                gpo_realm = True
-                applied = True
-
-
-            if global_dn == str(GPO_CONTAINER.get('dn')) and (len(GPO_CONTAINERS) > 1):
-                gpo_realm = True
-                applied = True
-
-
-            if container_iteration == len(GPO_CONTAINERS):
-                if gpo_realm == False:
-                    insert_dud = [GUID, applied, str(GPO_CONTAINER.get('dn'))]
-                    final_list.insert(0, insert_dud)
-                    count_unapplied_GPO += 1
-                else:
-                    REALM_GPO = [GUID, applied, str(GPO_CONTAINER.get('dn'))]
-                    final_list.insert(count_unapplied_GPO, REALM_GPO)
-
-    # After GPO are sorted into containers, let's sort the containers themselves.
-    # But first we can get the GPO that we don't care about, out of the way.
-    indexed_places = container_indexes(final_list)
-    count = 0
-    unapplied_gpo = []
-    # Sorted by container
-    sorted_gpo_list = []
-
-    # Unapplied GPO live at start of list, append them to final list
-    while final_list[0][1] == False:
-        unapplied_gpo.append(final_list[count])
-        count += 1
-    count = 0
-    sorted_gpo_list += unapplied_gpo
-
-    # A single container call gets the linked order for all GPO in container.
-    # So we need one call per container - > index of the Original list
-    indexed_places.insert(0, 0)
-    while count < (len(indexed_places)-1):
-        sorted_gpo_list += (sort_linked(SamDB, final_list, indexed_places[count], indexed_places[count+1]))
-        count += 1
-    return sorted_gpo_list
