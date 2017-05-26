@@ -29,6 +29,10 @@
 #include "lib/util/tfork.h"
 #include "lib/util/samba_util.h"
 #include "lib/util/sys_rw.h"
+#ifdef HAVE_PTHREAD
+#include <pthread.h>
+#include <sys/syscall.h>
+#endif
 
 static bool test_tfork_simple(struct torture_context *tctx)
 {
@@ -88,6 +92,416 @@ done:
 	return ok;
 }
 
+static bool test_tfork_sigign(struct torture_context *tctx)
+{
+	struct tfork *t = NULL;
+	struct sigaction act;
+	pid_t child;
+	int status;
+	bool ok = true;
+	int ret;
+
+	act = (struct sigaction) {
+		.sa_flags = SA_NOCLDWAIT,
+		.sa_handler = SIG_IGN,
+	};
+
+	ret = sigaction(SIGCHLD, &act, NULL);
+	torture_assert_goto(tctx, ret == 0, ok, done, "sigaction failed\n");
+
+	t = tfork_create();
+	if (t == NULL) {
+		torture_fail(tctx, "tfork failed\n");
+		return false;
+	}
+	child = tfork_child_pid(t);
+	if (child == 0) {
+		sleep(1);
+		_exit(123);
+	}
+
+	child = fork();
+	if (child == -1) {
+		torture_fail(tctx, "fork failed\n");
+		return false;
+	}
+	if (child == 0) {
+		_exit(0);
+	}
+
+	status = tfork_status(&t, true);
+	if (status == -1) {
+		torture_fail(tctx, "tfork_status failed\n");
+	}
+
+	torture_assert_goto(tctx, WIFEXITED(status) == true, ok, done,
+			    "tfork failed\n");
+	torture_assert_goto(tctx, WEXITSTATUS(status) == 123, ok, done,
+			    "tfork failed\n");
+	torture_comment(tctx, "exit status [%d]\n", WEXITSTATUS(status));
+
+done:
+	return ok;
+}
+
+static void sigchld_handler1(int signum, siginfo_t *si, void *u)
+{
+	pid_t pid;
+	int status;
+
+	if (signum != SIGCHLD) {
+		abort();
+	}
+
+	pid = waitpid(si->si_pid, &status, 0);
+	if (pid != si->si_pid) {
+		abort();
+	}
+}
+
+static bool test_tfork_sighandler(struct torture_context *tctx)
+{
+	struct tfork *t = NULL;
+	struct sigaction act;
+	struct sigaction oldact;
+	pid_t child;
+	int status;
+	bool ok = true;
+	int ret;
+
+	act = (struct sigaction) {
+		.sa_flags = SA_SIGINFO,
+		.sa_sigaction = sigchld_handler1,
+	};
+
+	ret = sigaction(SIGCHLD, &act, &oldact);
+	torture_assert_goto(tctx, ret == 0, ok, done, "sigaction failed\n");
+
+	t = tfork_create();
+	if (t == NULL) {
+		torture_fail(tctx, "tfork failed\n");
+		return false;
+	}
+	child = tfork_child_pid(t);
+	if (child == 0) {
+		sleep(1);
+		_exit(123);
+	}
+
+	child = fork();
+	if (child == -1) {
+		torture_fail(tctx, "fork failed\n");
+		return false;
+	}
+	if (child == 0) {
+		_exit(0);
+	}
+
+	status = tfork_status(&t, true);
+	if (status == -1) {
+		torture_fail(tctx, "tfork_status failed\n");
+	}
+
+	torture_assert_goto(tctx, WIFEXITED(status) == true, ok, done,
+			    "tfork failed\n");
+	torture_assert_goto(tctx, WEXITSTATUS(status) == 123, ok, done,
+			    "tfork failed\n");
+	torture_comment(tctx, "exit status [%d]\n", WEXITSTATUS(status));
+
+done:
+	sigaction(SIGCHLD, &oldact, NULL);
+
+	return ok;
+}
+
+static bool test_tfork_process_hierarchy(struct torture_context *tctx)
+{
+	struct tfork *t = NULL;
+	pid_t pid = getpid();
+	pid_t child;
+	pid_t pgid = getpgid(0);
+	pid_t sid = getsid(0);
+	char *procpath = NULL;
+	int status;
+	struct stat st;
+	int ret;
+	bool ok = true;
+
+	procpath = talloc_asprintf(tctx, "/proc/%d/status", getpid());
+	torture_assert_not_null(tctx, procpath, "talloc_asprintf failed\n");
+
+	ret = stat(procpath, &st);
+	TALLOC_FREE(procpath);
+	if (ret != 0) {
+		if (errno == ENOENT) {
+			torture_skip(tctx, "/proc missing\n");
+		}
+		torture_fail(tctx, "stat failed\n");
+	}
+
+	t = tfork_create();
+	if (t == NULL) {
+		torture_fail(tctx, "tfork failed\n");
+		return false;
+	}
+	child = tfork_child_pid(t);
+	if (child == 0) {
+		char *cmd = NULL;
+		FILE *fp = NULL;
+		char line[64];
+		char *p;
+		pid_t ppid;
+
+		torture_assert_goto(tctx, pgid == getpgid(0), ok, child_fail, "tfork failed\n");
+		torture_assert_goto(tctx, sid == getsid(0), ok, child_fail, "tfork failed\n");
+
+		cmd = talloc_asprintf(tctx, "cat /proc/%d/status | awk '/^PPid:/ {print $2}'", getppid());
+		torture_assert_goto(tctx, cmd != NULL, ok, child_fail, "talloc_asprintf failed\n");
+
+		fp = popen(cmd, "r");
+		torture_assert_goto(tctx, fp != NULL, ok, child_fail, "popen failed\n");
+
+		p = fgets(line, sizeof(line) - 1, fp);
+		pclose(fp);
+		torture_assert_goto(tctx, p != NULL, ok, child_fail, "popen failed\n");
+
+		ret = sscanf(line, "%d", &ppid);
+		torture_assert_goto(tctx, ret == 1, ok, child_fail, "sscanf failed\n");
+		torture_assert_goto(tctx, ppid == pid, ok, child_fail, "process hierachy not rooted at caller\n");
+
+		_exit(0);
+
+	child_fail:
+		_exit(1);
+	}
+
+	status = tfork_status(&t, true);
+	if (status == -1) {
+		torture_fail(tctx, "tfork_status failed\n");
+	}
+
+	torture_assert_goto(tctx, WIFEXITED(status) == true, ok, done,
+			    "tfork failed\n");
+	torture_assert_goto(tctx, WEXITSTATUS(status) == 0, ok, done,
+			    "tfork failed\n");
+	torture_comment(tctx, "exit status [%d]\n", WEXITSTATUS(status));
+
+done:
+	return ok;
+}
+
+static bool test_tfork_pipe(struct torture_context *tctx)
+{
+	struct tfork *t = NULL;
+	int status;
+	pid_t child;
+	int up[2];
+	int down[2];
+	char c;
+	int ret;
+	bool ok = true;
+
+	ret = pipe(&up[0]);
+	torture_assert(tctx, ret == 0, "pipe failed\n");
+
+	ret = pipe(&down[0]);
+	torture_assert(tctx, ret == 0, "pipe failed\n");
+
+	t = tfork_create();
+	if (t == NULL) {
+		torture_fail(tctx, "tfork failed\n");
+		return false;
+	}
+	child = tfork_child_pid(t);
+	if (child == 0) {
+		close(up[0]);
+		close(down[1]);
+
+		ret = read(down[0], &c, 1);
+		torture_assert_goto(tctx, ret == 1, ok, child_fail, "read failed\n");
+		torture_assert_goto(tctx, c == 1, ok, child_fail, "read failed\n");
+
+		ret = write(up[1], &(char){2}, 1);
+		torture_assert_goto(tctx, ret == 1, ok, child_fail, "write failed\n");
+
+		_exit(0);
+
+	child_fail:
+		_exit(1);
+	}
+
+	close(up[1]);
+	close(down[0]);
+
+	ret = write(down[1], &(char){1}, 1);
+	torture_assert(tctx, ret == 1, "read failed\n");
+
+	ret = read(up[0], &c, 1);
+	torture_assert(tctx, ret == 1, "read failed\n");
+	torture_assert(tctx, c == 2, "read failed\n");
+
+	status = tfork_status(&t, true);
+	if (status == -1) {
+		torture_fail(tctx, "tfork_status failed\n");
+	}
+
+	torture_assert_goto(tctx, WIFEXITED(status) == true, ok, done,
+			    "tfork failed\n");
+	torture_assert_goto(tctx, WEXITSTATUS(status) == 0, ok, done,
+			    "tfork failed\n");
+done:
+	return ok;
+}
+
+static bool test_tfork_twice(struct torture_context *tctx)
+{
+	struct tfork *t = NULL;
+	int status;
+	pid_t child;
+	pid_t pid;
+	int up[2];
+	int ret;
+	bool ok = true;
+
+	ret = pipe(&up[0]);
+	torture_assert(tctx, ret == 0, "pipe failed\n");
+
+	t = tfork_create();
+	if (t == NULL) {
+		torture_fail(tctx, "tfork failed\n");
+		return false;
+	}
+	child = tfork_child_pid(t);
+	if (child == 0) {
+		close(up[0]);
+
+		t = tfork_create();
+		if (t == NULL) {
+			torture_fail(tctx, "tfork failed\n");
+			return false;
+		}
+		child = tfork_child_pid(t);
+		if (child == 0) {
+			sleep(1);
+			pid = getpid();
+			ret = write(up[1], &pid, sizeof(pid_t));
+			torture_assert_goto(tctx, ret == sizeof(pid_t), ok, child_fail, "write failed\n");
+
+			_exit(0);
+
+		child_fail:
+			_exit(1);
+		}
+
+		_exit(0);
+	}
+
+	close(up[1]);
+
+	ret = read(up[0], &pid, sizeof(pid_t));
+	torture_assert(tctx, ret == sizeof(pid_t), "read failed\n");
+
+	status = tfork_status(&t, true);
+	torture_assert_goto(tctx, status != -1, ok, done, "tfork_status failed\n");
+
+	torture_assert_goto(tctx, WIFEXITED(status) == true, ok, done,
+			    "tfork failed\n");
+	torture_assert_goto(tctx, WEXITSTATUS(status) == 0, ok, done,
+			    "tfork failed\n");
+done:
+	return ok;
+}
+
+static void *tfork_thread(void *p)
+{
+	struct tfork *t = NULL;
+	int status;
+	pid_t child;
+	pthread_t *ptid = (pthread_t *)p;
+	uint64_t tid;
+	uint64_t *result = NULL;
+	int up[2];
+	ssize_t nread;
+	int ret;
+
+	ret = pipe(up);
+	if (ret != 0) {
+		pthread_exit(NULL);
+	}
+
+	tid = (uint64_t)*ptid;
+
+	t = tfork_create();
+	if (t == NULL) {
+		pthread_exit(NULL);
+	}
+	child = tfork_child_pid(t);
+	if (child == 0) {
+		ssize_t nwritten;
+
+		close(up[0]);
+		tid++;
+		nwritten = sys_write(up[1], &tid, sizeof(uint64_t));
+		if (nwritten != sizeof(uint64_t)) {
+			_exit(1);
+		}
+		_exit(0);
+	}
+	close(up[1]);
+
+	result = malloc(sizeof(uint64_t));
+	if (result == NULL) {
+		pthread_exit(NULL);
+	}
+
+	nread = sys_read(up[0], result, sizeof(uint64_t));
+	if (nread != sizeof(uint64_t)) {
+		pthread_exit(NULL);
+	}
+
+	status = tfork_status(&t, true);
+	if (status == -1) {
+		pthread_exit(NULL);
+	}
+
+	pthread_exit(result);
+}
+
+static bool test_tfork_threads(struct torture_context *tctx)
+{
+	int ret;
+	bool ok = true;
+	const int num_threads = 64;
+	pthread_t threads[num_threads];
+	int i;
+
+#ifndef HAVE_PTHREAD
+	torture_skip(tctx, "no pthread support\n");
+#endif
+
+	for (i = 0; i < num_threads; i++) {
+		ret = pthread_create(&threads[i], NULL, tfork_thread, &threads[i]);
+		torture_assert_goto(tctx, ret == 0, ok, done,
+				    "pthread_create failed\n");
+	}
+
+	for (i = 0; i < num_threads; i++) {
+		void *p;
+		uint64_t *result;
+
+		ret = pthread_join(threads[i], &p);
+		torture_assert_goto(tctx, ret == 0, ok, done,
+				    "pthread_join failed\n");
+		result = (uint64_t *)p;
+		torture_assert_goto(tctx, *result == (uint64_t)threads[i] + 1,
+				    ok, done, "thread failed\n");
+		free(p);
+	}
+
+done:
+	return ok;
+}
+
 static bool test_tfork_cmd_send(struct torture_context *tctx)
 {
 	struct tevent_context *ev = NULL;
@@ -131,6 +545,30 @@ struct torture_suite *torture_local_tfork(TALLOC_CTX *mem_ctx)
 	torture_suite_add_simple_test(suite,
 				      "tfork_status",
 				      test_tfork_status);
+
+	torture_suite_add_simple_test(suite,
+				      "tfork_sigign",
+				      test_tfork_sigign);
+
+	torture_suite_add_simple_test(suite,
+				      "tfork_sighandler",
+				      test_tfork_sighandler);
+
+	torture_suite_add_simple_test(suite,
+				      "tfork_process_hierarchy",
+				      test_tfork_process_hierarchy);
+
+	torture_suite_add_simple_test(suite,
+				      "tfork_pipe",
+				      test_tfork_pipe);
+
+	torture_suite_add_simple_test(suite,
+				      "tfork_twice",
+				      test_tfork_twice);
+
+	torture_suite_add_simple_test(suite,
+				      "tfork_threads",
+				      test_tfork_threads);
 
 	torture_suite_add_simple_test(suite,
 				      "tfork_cmd_send",
