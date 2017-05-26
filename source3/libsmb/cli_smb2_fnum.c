@@ -41,6 +41,7 @@
 #include "lib/util_ea.h"
 #include "librpc/gen_ndr/ndr_ioctl.h"
 #include "ntioctl.h"
+#include "librpc/gen_ndr/ndr_quota.h"
 
 struct smb2_hnd {
 	uint64_t fid_persistent;
@@ -2908,12 +2909,16 @@ NTSTATUS cli_smb2_get_user_quota(struct cli_state *cli,
 {
 	NTSTATUS status;
 	DATA_BLOB inbuf = data_blob_null;
+	DATA_BLOB info_blob = data_blob_null;
 	DATA_BLOB outbuf = data_blob_null;
 	struct smb2_hnd *ph = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 	unsigned sid_len;
 	unsigned int offset;
-	uint8_t *buf;
+	struct smb2_query_quota_info query = {0};
+	struct file_get_quota_info info = {0};
+	enum ndr_err_code err;
+	struct ndr_push *ndr_push = NULL;
 
 	if (smbXcli_conn_has_async_calls(cli->conn)) {
 		/*
@@ -2935,27 +2940,52 @@ NTSTATUS cli_smb2_get_user_quota(struct cli_state *cli,
 
 	sid_len = ndr_size_dom_sid(&pqt->sid, 0);
 
-	inbuf = data_blob_talloc_zero(frame, 24 + sid_len);
-	if (inbuf.data == NULL) {
+	query.return_single = 1;
+	if (sid_len < 0) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+
+	info.next_entry_offset = 0;
+	info.sid_length = sid_len;
+	info.sid = pqt->sid;
+
+	err = ndr_push_struct_blob(
+			&info_blob,
+			frame,
+			&info,
+			(ndr_push_flags_fn_t)ndr_push_file_get_quota_info);
+
+	if (!NDR_ERR_CODE_IS_SUCCESS(err)) {
+		status = NT_STATUS_INTERNAL_ERROR;
+		goto fail;
+	}
+
+	query.sid_list_length = info_blob.length;
+	ndr_push = ndr_push_init_ctx(frame);
+	if (!ndr_push) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
 	}
 
-	buf = inbuf.data;
+	err = ndr_push_smb2_query_quota_info(ndr_push,
+					     NDR_SCALARS | NDR_BUFFERS,
+					     &query);
 
-	SCVAL(buf, 0, 1);	   /* ReturnSingle */
-	SCVAL(buf, 1, 0);	   /* RestartScan */
-	SSVAL(buf, 2, 0);	   /* Reserved */
-	if (8 + sid_len < 8) {
-		status = NT_STATUS_INVALID_PARAMETER;
+	if (!NDR_ERR_CODE_IS_SUCCESS(err)) {
+		status = NT_STATUS_INTERNAL_ERROR;
 		goto fail;
 	}
-	SIVAL(buf, 4, 8 + sid_len); /* SidListLength */
-	SIVAL(buf, 8, 0);	   /* StartSidLength */
-	SIVAL(buf, 12, 0);	  /* StartSidOffset */
-	SIVAL(buf, 16, 0);	  /* NextEntryOffset */
-	SIVAL(buf, 20, sid_len);    /* SidLength */
-	sid_linearize(buf + 24, sid_len, &pqt->sid);
+
+	err = ndr_push_array_uint8(ndr_push, NDR_SCALARS, info_blob.data,
+				   info_blob.length);
+
+	if (!NDR_ERR_CODE_IS_SUCCESS(err)) {
+		status = NT_STATUS_INTERNAL_ERROR;
+		goto fail;
+	}
+	inbuf.data = ndr_push->data;
+	inbuf.length = ndr_push->offset;
 
 	status = smb2cli_query_info(cli->conn, cli->timeout, cli->smb2.session,
 				    cli->smb2.tcon, 4, /* in_info_type */
@@ -3000,7 +3030,8 @@ NTSTATUS cli_smb2_list_user_quota_step(struct cli_state *cli,
 	DATA_BLOB outbuf = data_blob_null;
 	struct smb2_hnd *ph = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
-	uint8_t *buf;
+	struct smb2_query_quota_info info = {0};
+	enum ndr_err_code err;
 
 	if (smbXcli_conn_has_async_calls(cli->conn)) {
 		/*
@@ -3020,20 +3051,19 @@ NTSTATUS cli_smb2_list_user_quota_step(struct cli_state *cli,
 		goto cleanup;
 	}
 
-	inbuf = data_blob_talloc_zero(frame, 16);
-	if (inbuf.data == NULL) {
-		status = NT_STATUS_NO_MEMORY;
+
+	info.restart_scan = first ? 1 : 0;
+
+	err = ndr_push_struct_blob(
+			&inbuf,
+			frame,
+			&info,
+			(ndr_push_flags_fn_t)ndr_push_smb2_query_quota_info);
+
+	if (!NDR_ERR_CODE_IS_SUCCESS(err)) {
+		status = NT_STATUS_INTERNAL_ERROR;
 		goto cleanup;
 	}
-
-	buf = inbuf.data;
-
-	SCVAL(buf, 0, 0);	     /* ReturnSingle */
-	SCVAL(buf, 1, first ? 1 : 0); /* RestartScan */
-	SSVAL(buf, 2, 0);	     /* Reserved */
-	SIVAL(buf, 4, 0);	     /* SidListLength */
-	SIVAL(buf, 8, 0);	     /* StartSidLength */
-	SIVAL(buf, 12, 0);	    /* StartSidOffset */
 
 	status = smb2cli_query_info(cli->conn, cli->timeout, cli->smb2.session,
 				    cli->smb2.tcon, 4, /* in_info_type */
