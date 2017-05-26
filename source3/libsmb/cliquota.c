@@ -254,10 +254,10 @@ NTSTATUS cli_get_user_quota(struct cli_state *cli, int quota_fnum,
 	struct nttrans_query_quota_params get_quota = {0};
 	struct file_get_quota_info info =  {0};
 	enum ndr_err_code err;
-	struct ndr_push *ndr_push = NULL;
 	NTSTATUS status;
 	TALLOC_CTX *frame = talloc_stackframe();
 	DATA_BLOB data_blob = data_blob_null;
+	DATA_BLOB param_blob = data_blob_null;
 
 	if (!cli||!pqt) {
 		smb_panic("cli_get_user_quota() called with NULL Pointer!");
@@ -292,16 +292,11 @@ NTSTATUS cli_get_user_quota(struct cli_state *cli, int quota_fnum,
 	get_quota.sid_list_length = data_blob.length;
 	get_quota.start_sid_offset = data_blob.length;
 
-	ndr_push = ndr_push_init_ctx(frame);
-
-	if (!ndr_push) {
-		status = NT_STATUS_NO_MEMORY;
-		goto out;
-	}
-
-	err = ndr_push_nttrans_query_quota_params(ndr_push,
-					     NDR_SCALARS | NDR_BUFFERS,
-					     &get_quota);
+	err = ndr_push_struct_blob(
+		&param_blob,
+		frame,
+		&get_quota,
+		(ndr_push_flags_fn_t)ndr_push_nttrans_query_quota_params);
 
 	if (!NDR_ERR_CODE_IS_SUCCESS(err)) {
 		status = NT_STATUS_INTERNAL_ERROR;
@@ -312,7 +307,7 @@ NTSTATUS cli_get_user_quota(struct cli_state *cli, int quota_fnum,
 			   NULL, -1, /* name, fid */
 			   NT_TRANSACT_GET_USER_QUOTA, 0,
 			   setup, 1, 0, /* setup */
-			   ndr_push->data, ndr_push->offset, 4, /* params */
+			   param_blob.data, param_blob.length, 4, /* params */
 			   data_blob.data, data_blob.length, 112, /* data */
 			   NULL,		/* recv_flags2 */
 			   NULL, 0, NULL,	/* rsetup */
