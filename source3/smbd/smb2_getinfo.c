@@ -25,6 +25,8 @@
 #include "../libcli/smb/smb_common.h"
 #include "trans2.h"
 #include "../lib/util/tevent_ntstatus.h"
+#include "librpc/gen_ndr/ndr_quota.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_SMB2
@@ -520,9 +522,87 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 		break;
 	}
 
-	case SMB2_GETINFO_QUOTA:
-		tevent_req_nterror(req, NT_STATUS_NOT_SUPPORTED);
-		return tevent_req_post(req, ev);
+	case SMB2_GETINFO_QUOTA: {
+		struct smb2_query_quota_info info;
+		enum ndr_err_code err;
+		uint8_t *data = NULL;
+		uint32_t data_size = 0;
+		struct ndr_pull *ndr_pull = NULL;
+		DATA_BLOB sid_buf = data_blob_null;
+		TALLOC_CTX *tmp_ctx = talloc_init("geninfo_quota");
+
+		if (!tmp_ctx) {
+			tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
+			return tevent_req_post(req, ev);
+		}
+
+		ndr_pull = ndr_pull_init_blob(&in_input_buffer, tmp_ctx);
+		if (!ndr_pull) {
+			TALLOC_FREE(tmp_ctx);
+			tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
+			return tevent_req_post(req, ev);
+		}
+
+		err = ndr_pull_smb2_query_quota_info(ndr_pull,
+						     NDR_SCALARS | NDR_BUFFERS,
+						     &info);
+
+		if (!NDR_ERR_CODE_IS_SUCCESS(err)) {
+			DBG_DEBUG("failed to pull smb2_query_quota_info\n");
+			TALLOC_FREE(tmp_ctx);
+			tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+			return tevent_req_post(req, ev);
+		}
+
+		DBG_DEBUG("quota list returnsingle %u, restartscan %u, "
+			  "sid_list_length %u, start_sid_length %u, "
+			  "startsidoffset %u\n",
+			  (unsigned int)info.return_single,
+			  (unsigned int)info.restart_scan,
+			  (unsigned int)info.sid_list_length,
+			  (unsigned int)info.start_sid_length,
+			  (unsigned int)info.start_sid_offset);
+
+		/* Currently we do not support the single start sid format */
+		if (info.start_sid_length != 0 || info.start_sid_offset != 0 ) {
+			DBG_INFO("illegal single sid query\n");
+			TALLOC_FREE(tmp_ctx);
+			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			return tevent_req_post(req, ev);
+		}
+
+		if (in_input_buffer.length < ndr_pull->offset) {
+			DBG_INFO("Invalid buffer length\n");
+			TALLOC_FREE(tmp_ctx);
+			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			return tevent_req_post(req, ev);
+		}
+
+		sid_buf.data = in_input_buffer.data + ndr_pull->offset;
+		sid_buf.length = in_input_buffer.length - ndr_pull->offset;
+
+		status = smbd_do_query_getinfo_quota(tmp_ctx,
+				  fsp,
+				  info.restart_scan,
+				  info.return_single,
+				  info.sid_list_length,
+				  &sid_buf,
+				  in_output_buffer_length,
+				  &data,
+				  &data_size);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(tmp_ctx);
+			tevent_req_nterror(req, status);
+			return tevent_req_post(req, ev);
+		}
+
+		state->out_output_buffer =
+			data_blob_talloc(state, data, data_size);
+		status  = NT_STATUS_OK;
+		TALLOC_FREE(tmp_ctx);
+		break;
+	}
 
 	default:
 		DEBUG(10,("smbd_smb2_getinfo_send: "
