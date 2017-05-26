@@ -1,4 +1,4 @@
-SRC = '''dbwrap.c dbwrap_util.c dbwrap_rbt.c dbwrap_cache.c dbwrap_tdb.c
+SRC = '''dbwrap.c dbwrap_util.c dbwrap_rbt.c dbwrap_tdb.c
          dbwrap_local_open.c'''
 DEPS= '''samba-util util_tdb samba-errors tdb tdb-wrap samba-hostconfig tevent tevent-util'''
 
