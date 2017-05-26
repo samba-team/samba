@@ -469,6 +469,7 @@ bld.SAMBA3_LIBRARY('libsmb',
                         LIBTSOCKET
                         KRBCLIENT
                         NDR_IOCTL
+			NDR_QUOTA
                         cli_smb_common
                         util_cmdline
                         tevent
