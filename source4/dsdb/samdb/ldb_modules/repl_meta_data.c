@@ -911,9 +911,21 @@ static int replmd_add_fix_la(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 	/* We will take a reference to the schema in replmd_add_backlink */
 	const struct dsdb_schema *schema = dsdb_get_schema(ldb, NULL);
 	struct ldb_val *new_values = NULL;
+	int ret;
+
+	if (dsdb_check_single_valued_link(sa, el) == LDB_SUCCESS) {
+		el->flags |= LDB_FLAG_INTERNAL_DISABLE_SINGLE_VALUE_CHECK;
+	} else {
+		ldb_asprintf_errstring(ldb,
+				       "Attribute %s is single valued but "
+				       "more than one value has been supplied",
+				       el->name);
+		talloc_free(tmp_ctx);
+		return LDB_ERR_CONSTRAINT_VIOLATION;
+	}
 	
-	int ret = get_parsed_dns(module, tmp_ctx, el, &pdn,
-				 sa->syntax->ldap_oid, parent);
+	ret = get_parsed_dns(module, tmp_ctx, el, &pdn,
+			     sa->syntax->ldap_oid, parent);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;

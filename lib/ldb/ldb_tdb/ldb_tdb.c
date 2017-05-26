@@ -355,7 +355,9 @@ static int ltdb_add_internal(struct ldb_module *module,
 			continue;
 		}
 
-		if (check_single_value) {
+		if (check_single_value &&
+		    !(el->flags &
+		      LDB_FLAG_INTERNAL_DISABLE_SINGLE_VALUE_CHECK)) {
 			struct ldb_val *duplicate = NULL;
 
 			ret = ldb_msg_find_duplicate_val(ldb, discard_const(msg),
