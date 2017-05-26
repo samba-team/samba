@@ -632,6 +632,20 @@ NTSTATUS smbd_do_query_security_desc(connection_struct *conn,
 					uint32_t max_data_count,
 					uint8_t **ppmarshalled_sd,
 					size_t *psd_size);
+#ifdef HAVE_SYS_QUOTAS
+
+struct smb2_query_quota_info;
+
+NTSTATUS smbd_do_query_getinfo_quota(TALLOC_CTX *mem_ctx,
+				     files_struct *fsp,
+				     bool restart_scan,
+				     bool return_single,
+				     uint32_t sid_list_length,
+				     DATA_BLOB *sidbuffer,
+				     uint32_t max_data_count,
+				     uint8_t **p_data,
+				     uint32_t *p_data_size);
+#endif
 void reply_nttrans(struct smb_request *req);
 void reply_nttranss(struct smb_request *req);
 

@@ -30,6 +30,8 @@
 #include "smbprofile.h"
 #include "libsmb/libsmb.h"
 #include "lib/util_ea.h"
+#include "librpc/gen_ndr/ndr_quota.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 extern const struct generic_mapping file_generic_mapping;
 
@@ -2293,6 +2295,263 @@ static void call_nt_transact_ioctl(connection_struct *conn,
 
 
 #ifdef HAVE_SYS_QUOTAS
+static enum ndr_err_code fill_qtlist_from_sids(TALLOC_CTX *mem_ctx,
+					       struct files_struct *fsp,
+					       SMB_NTQUOTA_HANDLE *qt_handle,
+					       struct dom_sid *sids,
+					       uint32_t elems)
+{
+	int i;
+	TALLOC_CTX *list_ctx = NULL;
+
+	list_ctx = talloc_init("quota_sid_list");
+
+	if (list_ctx == NULL) {
+		DBG_ERR("failed to allocate\n");
+		return NDR_ERR_ALLOC;
+	}
+
+	if (qt_handle->quota_list!=NULL) {
+		free_ntquota_list(&(qt_handle->quota_list));
+	}
+	for (i = 0; i < elems; i++) {
+		SMB_NTQUOTA_STRUCT qt;
+		SMB_NTQUOTA_LIST *list_item;
+
+		if (!NT_STATUS_IS_OK(vfs_get_ntquota(fsp,
+						     SMB_USER_QUOTA_TYPE,
+						     &sids[i], &qt))) {
+			/* non fatal error, return empty item in result */
+			ZERO_STRUCT(qt);
+			continue;
+		}
+
+
+		list_item = talloc_zero(list_ctx, SMB_NTQUOTA_LIST);
+		if (list_item == NULL) {
+			DBG_ERR("failed to allocate\n");
+			return NDR_ERR_ALLOC;
+		}
+
+		sid_to_uid(&sids[i], &list_item->uid);
+		list_item->quotas = talloc_zero(list_item, SMB_NTQUOTA_STRUCT);
+		if (list_item->quotas == NULL) {
+			DBG_ERR("failed to allocate\n");
+			return NDR_ERR_ALLOC;
+		}
+
+		*list_item->quotas = qt;
+		list_item->mem_ctx = list_ctx;
+		DLIST_ADD(qt_handle->quota_list, list_item);
+	}
+	qt_handle->tmp_list = qt_handle->quota_list;
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code extract_sids_from_buf(TALLOC_CTX *mem_ctx,
+				  uint32_t sidlistlength,
+				  DATA_BLOB *sid_buf,
+				  struct dom_sid **sids,
+				  uint32_t *num)
+{
+	DATA_BLOB blob;
+	uint32_t i = 0;
+	enum ndr_err_code err;
+
+	struct sid_list_elem {
+		struct sid_list_elem *prev, *next;
+		struct dom_sid sid;
+	};
+
+	struct sid_list_elem *sid_list = NULL;
+	struct sid_list_elem *iter = NULL;
+	TALLOC_CTX *list_ctx = talloc_init("sid_list");
+	if (!list_ctx) {
+		DBG_ERR("OOM\n");
+		err = NDR_ERR_ALLOC;
+		goto done;
+	}
+
+	*num = 0;
+	*sids = NULL;
+
+	if (sidlistlength) {
+		uint32_t offset = 0;
+		struct ndr_pull *ndr_pull = NULL;
+
+		if (sidlistlength > sid_buf->length) {
+			DBG_ERR("sid_list_length 0x%x exceeds "
+				"available bytes %zx\n",
+				sidlistlength,
+				sid_buf->length);
+			err = NDR_ERR_OFFSET;
+			goto done;
+		}
+		while (true) {
+			struct file_get_quota_info info;
+			struct sid_list_elem *item = NULL;
+			uint32_t new_offset = 0;
+			blob.data = sid_buf->data + offset;
+			blob.length = sidlistlength - offset;
+			ndr_pull = ndr_pull_init_blob(&blob, list_ctx);
+			if (!ndr_pull) {
+				DBG_ERR("OOM\n");
+				err = NDR_ERR_ALLOC;
+				goto done;
+			}
+			err = ndr_pull_file_get_quota_info(ndr_pull,
+					   NDR_SCALARS | NDR_BUFFERS, &info);
+			if (!NDR_ERR_CODE_IS_SUCCESS(err)) {
+				DBG_ERR("Failed to pull file_get_quota_info "
+					"from sidlist buffer\n");
+				goto done;
+			}
+			item = talloc_zero(list_ctx, struct sid_list_elem);
+			if (!item) {
+				DBG_ERR("OOM\n");
+				err = NDR_ERR_ALLOC;
+				goto done;
+			}
+			item->sid = info.sid;
+			DLIST_ADD(sid_list, item);
+			i++;
+			if (i == UINT32_MAX) {
+				DBG_ERR("Integer overflow\n");
+				err = NDR_ERR_ARRAY_SIZE;
+				goto done;
+			}
+			new_offset = info.next_entry_offset;
+
+			/* if new_offset == 0 no more sid(s) to read. */
+			if (new_offset == 0) {
+				break;
+			}
+
+			/* Integer wrap? */
+			if ((offset + new_offset) < offset) {
+				DBG_ERR("Integer wrap while adding "
+					"new_offset 0x%x to current "
+					"buffer offset 0x%x\n",
+					new_offset, offset);
+				err = NDR_ERR_OFFSET;
+				goto done;
+			}
+
+			offset += new_offset;
+
+			/* check if new offset is outside buffer boundry. */
+			if (offset >= sidlistlength) {
+				DBG_ERR("bufsize 0x%x exceeded by "
+                                        "new offset 0x%x)\n",
+					sidlistlength,
+					offset);
+				err = NDR_ERR_OFFSET;
+				goto done;
+			}
+		}
+		*sids = talloc_zero_array(mem_ctx, struct dom_sid, i);
+		if (!sids) {
+			DBG_ERR("OOM\n");
+			err = NDR_ERR_ALLOC;
+			goto done;
+		}
+
+		*num = i;
+
+		for (iter = sid_list, i = 0; iter; iter = iter->next, i++) {
+			(*sids)[i] = iter->sid;
+			DBG_DEBUG("quota SID[%u] %s\n",
+				(unsigned int)i,
+				sid_string_dbg(&iter->sid));
+		}
+	}
+	err = NDR_ERR_SUCCESS;
+done:
+	TALLOC_FREE(list_ctx);
+	return err;
+}
+
+NTSTATUS smbd_do_query_getinfo_quota(TALLOC_CTX *mem_ctx,
+				     files_struct *fsp,
+				     bool restart_scan,
+				     bool return_single,
+				     uint32_t sid_list_length,
+				     DATA_BLOB *sid_buf,
+				     uint32_t max_data_count,
+				     uint8_t **p_data,
+				     uint32_t *p_data_size)
+{
+	NTSTATUS status;
+	SMB_NTQUOTA_HANDLE *qt_handle = NULL;
+	SMB_NTQUOTA_LIST *qt_list = NULL;
+	DATA_BLOB blob = data_blob_null;
+	enum ndr_err_code err;
+
+	qt_handle =
+		(SMB_NTQUOTA_HANDLE *)fsp->fake_file_handle->private_data;
+
+	if (sid_list_length ) {
+		struct dom_sid *sids;
+		uint32_t elems = 0;
+		/*
+		 * error check pulled offsets and lengths for wrap and
+		 * exceeding available bytes.
+		 */
+		if (sid_list_length > sid_buf->length) {
+			DBG_ERR("sid_list_length 0x%x exceeds "
+				"available bytes %zx\n",
+				sid_list_length,
+				sid_buf->length);
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		err = extract_sids_from_buf(mem_ctx, sid_list_length,
+					    sid_buf, &sids, &elems);
+		if (!NDR_ERR_CODE_IS_SUCCESS(err) || elems == 0) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		err = fill_qtlist_from_sids(mem_ctx,
+					    fsp,
+					    qt_handle,
+					    sids,
+					    elems);
+		if (!NDR_ERR_CODE_IS_SUCCESS(err)) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+	} else if (restart_scan) {
+		if (vfs_get_user_ntquota_list(fsp,
+					      &(qt_handle->quota_list))!=0) {
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+	} else {
+		if (qt_handle->quota_list!=NULL &&
+			qt_handle->tmp_list==NULL) {
+			free_ntquota_list(&(qt_handle->quota_list));
+		}
+	}
+
+	if (restart_scan !=0 ) {
+		qt_list = qt_handle->quota_list;
+	} else {
+		qt_list = qt_handle->tmp_list;
+	}
+	status = fill_quota_buffer(mem_ctx, qt_list,
+				   return_single != 0,
+				   max_data_count,
+				   &blob,
+				   &qt_handle->tmp_list);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	if (blob.length > max_data_count) {
+		return NT_STATUS_BUFFER_TOO_SMALL;
+	}
+
+	*p_data = blob.data;
+	*p_data_size = blob.length;
+	return NT_STATUS_OK;
+}
+
 /****************************************************************************
  Reply to get user quota
 ****************************************************************************/
@@ -2310,267 +2569,117 @@ static void call_nt_transact_get_user_quota(connection_struct *conn,
 	NTSTATUS nt_status = NT_STATUS_OK;
 	char *params = *ppparams;
 	char *pdata = *ppdata;
-	char *entry;
-	int data_len=0,param_len=0;
-	int qt_len=0;
-	int entry_len = 0;
+	int data_len = 0;
+	int param_len = 0;
 	files_struct *fsp = NULL;
-	uint16_t level = 0;
-	size_t sid_len;
-	struct dom_sid sid;
-	bool start_enum = True;
-	SMB_NTQUOTA_STRUCT qt;
-	SMB_NTQUOTA_LIST *tmp_list;
-	SMB_NTQUOTA_HANDLE *qt_handle = NULL;
+	DATA_BLOB blob = data_blob_null;
+	struct nttrans_query_quota_params info = {0};
+	enum ndr_err_code err;
+	TALLOC_CTX *tmp_ctx = NULL;
+	uint32_t resp_len = 0;
+	uint8_t *resp_data = 0;
 
-	ZERO_STRUCT(qt);
+	tmp_ctx = talloc_init("ntquota_list");
+	if (!tmp_ctx) {
+		nt_status = NT_STATUS_NO_MEMORY;
+		goto error;
+	}
 
 	/* access check */
 	if (get_current_uid(conn) != sec_initial_uid()) {
 		DEBUG(1,("get_user_quota: access_denied service [%s] user "
 			 "[%s]\n", lp_servicename(talloc_tos(), SNUM(conn)),
 			 conn->session_info->unix_info->unix_name));
-		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
-		return;
+		nt_status = NT_STATUS_ACCESS_DENIED;
+		goto error;
 	}
 
-	/*
-	 * Ensure minimum number of parameters sent.
-	 */
+	blob.data = (uint8_t*)params;
+	blob.length = parameter_count;
 
-	if (parameter_count < 4) {
-		DEBUG(0,("TRANSACT_GET_USER_QUOTA: requires %d >= 4 bytes parameters\n",parameter_count));
-		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		return;
+	err = ndr_pull_struct_blob(&blob, tmp_ctx, &info,
+		(ndr_pull_flags_fn_t)ndr_pull_nttrans_query_quota_params);
+
+	if (!NDR_ERR_CODE_IS_SUCCESS(err)) {
+		DEBUG(0,("TRANSACT_GET_USER_QUOTA: failed to pull "
+			 "query_quota_params."));
+		nt_status = NT_STATUS_INVALID_PARAMETER;
+		goto error;
+	}
+	DBG_DEBUG("info.return_single_entry = %u, info.restart_scan = %u, "
+		  "info.sid_list_length = %u, info.start_sid_length = %u, "
+		  "info.start_sid_offset = %u\n",
+		  (unsigned int)info.return_single_entry,
+		  (unsigned int)info.restart_scan,
+		  (unsigned int)info.sid_list_length,
+		  (unsigned int)info.start_sid_length,
+		  (unsigned int)info.start_sid_offset);
+
+	/* set blob to point at data for further parsing */
+	blob.data = (uint8_t*)pdata;
+	blob.length = data_count;
+	/*
+	 * Although MS-SMB ref is ambiguous here, a microsoft client will
+	 * only ever send a start sid (as part of a list) with
+	 * sid_list_length & start_sid_offset both set to the actual list
+	 * length. Note: Only a single result is returned in this case
+	 * In the case where either start_sid_offset or start_sid_length
+	 * are set alone or if both set (but have different values) then
+	 * it seems windows will return a number of entries from the start
+	 * of the list of users with quotas set. This behaviour is undocumented
+	 * and windows clients do not send messages of that type. As such we
+	 * currently will reject these requests.
+	 */
+	if (info.start_sid_length
+	|| (info.sid_list_length != info.start_sid_offset)) {
+		DBG_ERR("TRANSACT_GET_USER_QUOTA: unsupported single or "
+                        "compound sid format\n");
+		nt_status = NT_STATUS_INVALID_PARAMETER;
+		goto error;
 	}
 
 	/* maybe we can check the quota_fnum */
-	fsp = file_fsp(req, SVAL(params,0));
+	fsp = file_fsp(req, info.fid);
 	if (!check_fsp_ntquota_handle(conn, req, fsp)) {
 		DEBUG(3,("TRANSACT_GET_USER_QUOTA: no valid QUOTA HANDLE\n"));
-		reply_nterror(req, NT_STATUS_INVALID_HANDLE);
-		return;
+		nt_status = NT_STATUS_INVALID_HANDLE;
+		goto error;
+	}
+	nt_status = smbd_do_query_getinfo_quota(tmp_ctx,
+				  fsp,
+				  info.restart_scan,
+				  info.return_single_entry,
+				  info.sid_list_length,
+				  &blob,
+				  max_data_count,
+				  &resp_data,
+				  &resp_len);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_MORE_ENTRIES)) {
+			goto error;
+		}
+		nt_status = NT_STATUS_OK;
 	}
 
-	/* the NULL pointer checking for fsp->fake_file_handle->pd
-	 * is done by CHECK_NTQUOTA_HANDLE_OK()
-	 */
-	qt_handle = (SMB_NTQUOTA_HANDLE *)fsp->fake_file_handle->private_data;
-
-	level = SVAL(params,2);
-
-	/* unknown 12 bytes leading in params */
-
-	switch (level) {
-		case TRANSACT_GET_USER_QUOTA_LIST_CONTINUE:
-			/* seems that we should continue with the enum here --metze */
-
-			if (qt_handle->quota_list!=NULL &&
-			    qt_handle->tmp_list==NULL) {
-
-				/* free the list */
-				free_ntquota_list(&(qt_handle->quota_list));
-
-				/* Realloc the size of parameters and data we will return */
-				param_len = 4;
-				params = nttrans_realloc(ppparams, param_len);
-				if(params == NULL) {
-					reply_nterror(req, NT_STATUS_NO_MEMORY);
-					return;
-				}
-
-				data_len = 0;
-				SIVAL(params,0,data_len);
-
-				break;
-			}
-
-			start_enum = False;
-
-		case TRANSACT_GET_USER_QUOTA_LIST_START:
-
-			if (qt_handle->quota_list==NULL &&
-				qt_handle->tmp_list==NULL) {
-				start_enum = True;
-			}
-
-			if (start_enum && vfs_get_user_ntquota_list(fsp,&(qt_handle->quota_list))!=0) {
-				reply_nterror(req, NT_STATUS_INTERNAL_ERROR);
-				return;
-			}
-
-			/* Realloc the size of parameters and data we will return */
-			param_len = 4;
-			params = nttrans_realloc(ppparams, param_len);
-			if(params == NULL) {
-				reply_nterror(req, NT_STATUS_NO_MEMORY);
-				return;
-			}
-
-			/* we should not trust the value in max_data_count*/
-			max_data_count = MIN(max_data_count,2048);
-
-			pdata = nttrans_realloc(ppdata, max_data_count);/* should be max data count from client*/
-			if(pdata == NULL) {
-				reply_nterror(req, NT_STATUS_NO_MEMORY);
-				return;
-			}
-
-			entry = pdata;
-
-			/* set params Size of returned Quota Data 4 bytes*/
-			/* but set it later when we know it */
-
-			/* for each entry push the data */
-
-			if (start_enum) {
-				qt_handle->tmp_list = qt_handle->quota_list;
-			}
-
-			tmp_list = qt_handle->tmp_list;
-
-			for (;((tmp_list!=NULL)&&((qt_len +40+SID_MAX_SIZE)<max_data_count));
-				tmp_list=tmp_list->next,entry+=entry_len,qt_len+=entry_len) {
-
-				sid_len = ndr_size_dom_sid(
-					&tmp_list->quotas->sid, 0);
-				entry_len = 40 + sid_len;
-
-				/* nextoffset entry 4 bytes */
-				SIVAL(entry,0,entry_len);
-
-				/* then the len of the SID 4 bytes */
-				SIVAL(entry,4,sid_len);
-
-				/* unknown data 8 bytes uint64_t */
-				SBIG_UINT(entry,8,(uint64_t)0); /* this is not 0 in windows...-metze*/
-
-				/* the used disk space 8 bytes uint64_t */
-				SBIG_UINT(entry,16,tmp_list->quotas->usedspace);
-
-				/* the soft quotas 8 bytes uint64_t */
-				SBIG_UINT(entry,24,tmp_list->quotas->softlim);
-
-				/* the hard quotas 8 bytes uint64_t */
-				SBIG_UINT(entry,32,tmp_list->quotas->hardlim);
-
-				/* and now the SID */
-				sid_linearize((uint8_t *)(entry+40), sid_len,
-					      &tmp_list->quotas->sid);
-			}
-
-			qt_handle->tmp_list = tmp_list;
-
-			/* overwrite the offset of the last entry */
-			SIVAL(entry-entry_len,0,0);
-
-			data_len = 4+qt_len;
-			/* overwrite the params quota_data_len */
-			SIVAL(params,0,data_len);
-
-			break;
-
-		case TRANSACT_GET_USER_QUOTA_FOR_SID:
-
-			/* unknown 4 bytes IVAL(pdata,0) */
-
-			if (data_count < 8) {
-				DEBUG(0,("TRANSACT_GET_USER_QUOTA_FOR_SID: requires %d >= %d bytes data\n",data_count,8));
-				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
-				return;
-			}
-
-			sid_len = IVAL(pdata,4);
-			/* Ensure this is less than 1mb. */
-			if (sid_len > (1024*1024)) {
-				reply_nterror(req, NT_STATUS_NO_MEMORY);
-				return;
-			}
-
-			if (data_count < 8+sid_len) {
-				DEBUG(0,("TRANSACT_GET_USER_QUOTA_FOR_SID: requires %d >= %lu bytes data\n",data_count,(unsigned long)(8+sid_len)));
-				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
-				return;
-			}
-
-			data_len = 4+40+sid_len;
-
-			if (max_data_count < data_len) {
-				DEBUG(0,("TRANSACT_GET_USER_QUOTA_FOR_SID: max_data_count(%d) < data_len(%d)\n",
-					max_data_count, data_len));
-				param_len = 4;
-				SIVAL(params,0,data_len);
-				data_len = 0;
-				nt_status = NT_STATUS_BUFFER_TOO_SMALL;
-				break;
-			}
-
-			if (!sid_parse((const uint8_t *)(pdata+8), sid_len,
-				       &sid)) {
-				reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
-				return;
-			}
-
-			nt_status = vfs_get_ntquota(fsp, SMB_USER_QUOTA_TYPE,
-						    &sid, &qt);
-			if (!NT_STATUS_IS_OK(nt_status)) {
-				reply_nterror(req, nt_status);
-				return;
-			}
-
-			/* Realloc the size of parameters and data we will return */
-			param_len = 4;
-			params = nttrans_realloc(ppparams, param_len);
-			if(params == NULL) {
-				reply_nterror(req, NT_STATUS_NO_MEMORY);
-				return;
-			}
-
-			pdata = nttrans_realloc(ppdata, data_len);
-			if(pdata == NULL) {
-				reply_nterror(req, NT_STATUS_NO_MEMORY);
-				return;
-			}
-
-			entry = pdata;
-
-			/* set params Size of returned Quota Data 4 bytes*/
-			SIVAL(params,0,data_len);
-
-			/* nextoffset entry 4 bytes */
-			SIVAL(entry,0,0);
-
-			/* then the len of the SID 4 bytes */
-			SIVAL(entry,4,sid_len);
-
-			/* unknown data 8 bytes uint64_t */
-			SBIG_UINT(entry,8,(uint64_t)0); /* this is not 0 in windows...-mezte*/
-
-			/* the used disk space 8 bytes uint64_t */
-			SBIG_UINT(entry,16,qt.usedspace);
-
-			/* the soft quotas 8 bytes uint64_t */
-			SBIG_UINT(entry,24,qt.softlim);
-
-			/* the hard quotas 8 bytes uint64_t */
-			SBIG_UINT(entry,32,qt.hardlim);
-
-			/* and now the SID */
-			sid_linearize((uint8_t *)(entry+40), sid_len, &sid);
-
-			break;
-
-		default:
-			DEBUG(0, ("do_nt_transact_get_user_quota: %s: unknown "
-				  "level 0x%04hX\n",
-				  fsp_fnum_dbg(fsp), level));
-			reply_nterror(req, NT_STATUS_INVALID_LEVEL);
-			return;
-			break;
+	param_len = 4;
+	params = nttrans_realloc(ppparams, param_len);
+	if(params == NULL) {
+		nt_status = NT_STATUS_NO_MEMORY;
+		goto error;
 	}
 
+	data_len = resp_len;
+	SIVAL(params, 0, data_len);
+	pdata = nttrans_realloc(ppdata, data_len);
+	memcpy(pdata, resp_data, data_len);
+
+	TALLOC_FREE(tmp_ctx);
 	send_nt_replies(conn, req, nt_status, params, param_len,
 			pdata, data_len);
+	return;
+error:
+	TALLOC_FREE(tmp_ctx);
+	reply_nterror(req, nt_status);
 }
 
 /****************************************************************************
@@ -2591,10 +2700,13 @@ static void call_nt_transact_set_user_quota(connection_struct *conn,
 	char *pdata = *ppdata;
 	int data_len=0,param_len=0;
 	SMB_NTQUOTA_STRUCT qt;
-	size_t sid_len;
+	struct file_quota_information info = {0};
+	enum ndr_err_code err;
 	struct dom_sid sid;
+	DATA_BLOB inblob;
 	files_struct *fsp = NULL;
-
+	TALLOC_CTX *ctx = NULL;
+	NTSTATUS status = NT_STATUS_OK;
 	ZERO_STRUCT(qt);
 
 	/* access check */
@@ -2602,8 +2714,8 @@ static void call_nt_transact_set_user_quota(connection_struct *conn,
 		DEBUG(1,("set_user_quota: access_denied service [%s] user "
 			 "[%s]\n", lp_servicename(talloc_tos(), SNUM(conn)),
 			 conn->session_info->unix_info->unix_name));
-		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
-		return;
+		status = NT_STATUS_ACCESS_DENIED;
+		goto error;
 	}
 
 	/*
@@ -2612,67 +2724,58 @@ static void call_nt_transact_set_user_quota(connection_struct *conn,
 
 	if (parameter_count < 2) {
 		DEBUG(0,("TRANSACT_SET_USER_QUOTA: requires %d >= 2 bytes parameters\n",parameter_count));
-		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		return;
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto error;
 	}
 
 	/* maybe we can check the quota_fnum */
 	fsp = file_fsp(req, SVAL(params,0));
 	if (!check_fsp_ntquota_handle(conn, req, fsp)) {
 		DEBUG(3,("TRANSACT_GET_USER_QUOTA: no valid QUOTA HANDLE\n"));
-		reply_nterror(req, NT_STATUS_INVALID_HANDLE);
-		return;
+		status = NT_STATUS_INVALID_HANDLE;
+		goto error;
 	}
 
-	if (data_count < 40) {
-		DEBUG(0,("TRANSACT_SET_USER_QUOTA: requires %d >= %d bytes data\n",data_count,40));
-		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		return;
+	ctx = talloc_init("set_user_quota");
+	if (!ctx) {
+		status = NT_STATUS_NO_MEMORY;
+		goto error;
 	}
+	inblob.data = (uint8_t*)pdata;
+	inblob.length = data_count;
 
-	/* offset to next quota record.
-	 * 4 bytes IVAL(pdata,0)
-	 * unused here...
-	 */
+	err = ndr_pull_struct_blob(
+			&inblob,
+			ctx,
+			&info,
+			(ndr_pull_flags_fn_t)ndr_pull_file_quota_information);
 
-	/* sid len */
-	sid_len = IVAL(pdata,4);
-
-	if (data_count < 40+sid_len || (40+sid_len < sid_len)) {
-		DEBUG(0,("TRANSACT_SET_USER_QUOTA: requires %d >= %lu bytes data\n",data_count,(unsigned long)40+sid_len));
-		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		return;
+	if (!NDR_ERR_CODE_IS_SUCCESS(err)) {
+		DEBUG(0,("TRANSACT_SET_USER_QUOTA: failed to pull "
+			 "file_quota_information\n"));
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto error;
 	}
+	qt.usedspace = info.quota_used;
 
-	/* unknown 8 bytes in pdata
-	 * maybe its the change time in NTTIME
-	 */
+	qt.softlim = info.quota_threshold;
 
-	/* the used space 8 bytes (uint64_t)*/
-	qt.usedspace = BVAL(pdata,16);
+	qt.hardlim = info.quota_limit;
 
-	/* the soft quotas 8 bytes (uint64_t)*/
-	qt.softlim = BVAL(pdata,24);
-
-	/* the hard quotas 8 bytes (uint64_t)*/
-	qt.hardlim = BVAL(pdata,32);
-
-	if (!sid_parse((const uint8_t *)(pdata+40), sid_len, &sid)) {
-		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		return;
-	}
-
-	DEBUGADD(8,("SID: %s\n", sid_string_dbg(&sid)));
-
-	/* 44 unknown bytes left... */
+	sid = info.sid;
 
 	if (vfs_set_ntquota(fsp, SMB_USER_QUOTA_TYPE, &sid, &qt)!=0) {
-		reply_nterror(req, NT_STATUS_INTERNAL_ERROR);
-		return;
+		status = NT_STATUS_INTERNAL_ERROR;
+		goto error;
 	}
 
 	send_nt_replies(conn, req, NT_STATUS_OK, params, param_len,
 			pdata, data_len);
+	TALLOC_FREE(ctx);
+	return;
+error:
+	TALLOC_FREE(ctx);
+	reply_nterror(req, status);
 }
 #endif /* HAVE_SYS_QUOTAS */
 
