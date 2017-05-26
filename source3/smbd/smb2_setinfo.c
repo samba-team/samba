@@ -28,6 +28,7 @@
 #include "../librpc/gen_ndr/open_files.h"
 #include "source3/lib/dbwrap/dbwrap_watch.h"
 #include "messages.h"
+#include "librpc/gen_ndr/ndr_quota.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_SMB2
@@ -553,6 +554,41 @@ static struct tevent_req *smbd_smb2_setinfo_send(TALLOC_CTX *mem_ctx,
 		break;
 	}
 
+	case 0x04:/* SMB2_SETINFO_QUOTA */
+	{
+		struct file_quota_information info = {0};
+		SMB_NTQUOTA_STRUCT qt = {0};
+		enum ndr_err_code err;
+		int ret;
+
+		if (!fsp->fake_file_handle) {
+			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			return tevent_req_post(req, ev);
+		}
+		err = ndr_pull_struct_blob(
+			&in_input_buffer, state, &info,
+			(ndr_pull_flags_fn_t)ndr_pull_file_quota_information);
+		if (!NDR_ERR_CODE_IS_SUCCESS(err)) {
+			tevent_req_nterror(req, NT_STATUS_UNSUCCESSFUL);
+			return tevent_req_post(req, ev);
+		}
+
+		qt.usedspace = info.quota_used;
+
+		qt.softlim = info.quota_threshold;
+
+		qt.hardlim = info.quota_limit;
+
+		qt.sid = info.sid;
+		ret = vfs_set_ntquota(fsp, SMB_USER_QUOTA_TYPE, &qt.sid, &qt);
+		if (ret !=0 ) {
+			status = map_nt_error_from_unix(errno);
+			tevent_req_nterror(req, status);
+			return tevent_req_post(req, ev);
+		}
+		status = NT_STATUS_OK;
+		break;
+	}
 	default:
 		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return tevent_req_post(req, ev);
