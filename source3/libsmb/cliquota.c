@@ -24,6 +24,7 @@
 #include "../libcli/security/security.h"
 #include "trans2.h"
 #include "../libcli/smb/smbXcli_base.h"
+#include "librpc/gen_ndr/ndr_quota.h"
 
 NTSTATUS cli_get_quota_handle(struct cli_state *cli, uint16_t *quota_fnum)
 {
@@ -75,61 +76,39 @@ bool parse_user_quota_record(const uint8_t *rdata,
 			     unsigned int *offset,
 			     SMB_NTQUOTA_STRUCT *pqt)
 {
-	int sid_len;
-	SMB_NTQUOTA_STRUCT qt;
+	struct file_quota_information info = {0};
+	TALLOC_CTX *frame = talloc_stackframe();
+	DATA_BLOB blob;
+	enum ndr_err_code err;
+	bool result = false;
 
-	ZERO_STRUCT(qt);
+	blob.data = discard_const_p(uint8_t, rdata);
+	blob.length = rdata_count;
+	err = ndr_pull_struct_blob(
+			&blob,
+			frame,
+			&info,
+			(ndr_pull_flags_fn_t)ndr_pull_file_quota_information);
 
-	if (!rdata||!offset||!pqt) {
-		smb_panic("parse_quota_record: called with NULL POINTER!");
+	if (!NDR_ERR_CODE_IS_SUCCESS(err)) {
+		goto out;
 	}
 
-	if (rdata_count < 40) {
-		return False;
-	}
+	*offset = info.next_entry_offset;
 
-	/* offset to next quota record.
-	 * 4 bytes IVAL(rdata,0)
-	 * unused here...
-	 */
-	*offset = IVAL(rdata,0);
+	ZERO_STRUCTP(pqt);
+	pqt->usedspace = info.quota_used;
 
-	/* sid len */
-	sid_len = IVAL(rdata,4);
-	if (40 + sid_len < 40) {
-		return false;
-	}
+	pqt->softlim = info.quota_threshold;
 
-	if (rdata_count < 40+sid_len) {
-		return False;		
-	}
+	pqt->hardlim = info.quota_limit;
 
-	if (*offset != 0 && *offset < 40 + sid_len) {
-		return false;
-	}
-
-	/* unknown 8 bytes in pdata 
-	 * maybe its the change time in NTTIME
-	 */
-
-	/* the used space 8 bytes (uint64_t)*/
-	qt.usedspace = BVAL(rdata,16);
-
-	/* the soft quotas 8 bytes (uint64_t)*/
-	qt.softlim = BVAL(rdata,24);
-
-	/* the hard quotas 8 bytes (uint64_t)*/
-	qt.hardlim = BVAL(rdata,32);
-
-	if (!sid_parse(rdata+40,sid_len,&qt.sid)) {
-		return false;
-	}
-
-	qt.qtype = SMB_USER_QUOTA_TYPE;
-
-	*pqt = qt;
-
-	return True;
+	pqt->qtype = SMB_USER_QUOTA_TYPE;
+	pqt->sid = info.sid;
+	result = true;
+out:
+	TALLOC_FREE(frame);
+	return result;
 }
 
 NTSTATUS parse_user_quota_list(const uint8_t *curdata,
@@ -217,111 +196,12 @@ NTSTATUS build_user_quota_buffer(SMB_NTQUOTA_LIST *qt_list,
 				 DATA_BLOB *outbuf,
 				 SMB_NTQUOTA_LIST **end_ptr)
 {
-	uint32_t qt_len = 0;
-	uint8_t *entry;
-	uint32_t entry_len;
-	int sid_len;
-	SMB_NTQUOTA_LIST *qtl;
-	DATA_BLOB qbuf = data_blob_null;
-	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-
-	if (qt_list == NULL) {
-		status = NT_STATUS_OK;
-		*outbuf = data_blob_null;
-		if (end_ptr) {
-			*end_ptr = NULL;
-		}
-		return NT_STATUS_OK;
-	}
-
-	for (qtl = qt_list; qtl != NULL; qtl = qtl->next) {
-
-		sid_len = ndr_size_dom_sid(&qtl->quotas->sid, 0);
-		if (47 + sid_len < 47) {
-			status = NT_STATUS_INVALID_PARAMETER;
-			goto fail;
-		}
-		entry_len = 40 + sid_len;
-		entry_len = ((entry_len + 7) / 8) * 8;
-
-		if (qt_len + entry_len < qt_len) {
-			status = NT_STATUS_INVALID_PARAMETER;
-			goto fail;
-		}
-		qt_len += entry_len;
-	}
-
-	if (maxlen > 0 && qt_len > maxlen) {
-		qt_len = maxlen;
-	}
-
-	qbuf = data_blob_talloc_zero(mem_ctx, qt_len);
-	if (qbuf.data == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto fail;
-	}
-
-	for (qt_len = 0, entry = qbuf.data; qt_list != NULL;
-	     qt_list = qt_list->next, qt_len += entry_len, entry += entry_len) {
-
-		sid_len = ndr_size_dom_sid(&qt_list->quotas->sid, 0);
-		entry_len = 40 + sid_len;
-		entry_len = ((entry_len + 7) / 8) * 8;
-
-		if (qt_len + entry_len > qbuf.length) {
-			/* check for not-enough room even for a single
-			 * entry
-			 */
-			if (qt_len == 0) {
-				status = NT_STATUS_BUFFER_TOO_SMALL;
-				goto fail;
-			}
-
-			break;
-		}
-
-		/* nextoffset entry 4 bytes */
-		SIVAL(entry, 0, entry_len);
-
-		/* then the len of the SID 4 bytes */
-		SIVAL(entry, 4, sid_len);
-
-		/* NTTIME of last record change */
-		SBIG_UINT(entry, 8, (uint64_t)0);
-
-		/* the used disk space 8 bytes uint64_t */
-		SBIG_UINT(entry, 16, qt_list->quotas->usedspace);
-
-		/* the soft quotas 8 bytes uint64_t */
-		SBIG_UINT(entry, 24, qt_list->quotas->softlim);
-
-		/* the hard quotas 8 bytes uint64_t */
-		SBIG_UINT(entry, 32, qt_list->quotas->hardlim);
-
-		/* and now the SID */
-		sid_linearize((uint8_t *)(entry + 40), sid_len,
-			      &qt_list->quotas->sid);
-	}
-
-	/* overwrite the offset of the last entry */
-	SIVAL(entry - entry_len, 0, 0);
-
-	/*potentially shrink the buffer if max was given
-	 * and we haven't quite reached the max
-	 */
-	qbuf.length = qt_len;
-	*outbuf = qbuf;
-	qbuf = data_blob_null;
-	status = NT_STATUS_OK;
-
-	if (end_ptr) {
-		*end_ptr = qt_list;
-	}
-
-fail:
-	data_blob_free(&qbuf);
-
-	return status;
+	return fill_quota_buffer(mem_ctx,
+				 qt_list,
+				 false,
+				 maxlen,
+				 outbuf,
+				 end_ptr);
 }
 
 NTSTATUS build_fs_quota_buffer(TALLOC_CTX *mem_ctx,
@@ -367,43 +247,73 @@ NTSTATUS cli_get_user_quota(struct cli_state *cli, int quota_fnum,
 			    SMB_NTQUOTA_STRUCT *pqt)
 {
 	uint16_t setup[1];
-	uint8_t params[16];
-	unsigned int data_len;
-	uint8_t data[SID_MAX_SIZE+8];
-	uint8_t *rparam, *rdata;
+	uint8_t *rparam = NULL, *rdata = NULL;
 	uint32_t rparam_count, rdata_count;
 	unsigned int sid_len;
 	unsigned int offset;
+	struct nttrans_query_quota_params get_quota = {0};
+	struct file_get_quota_info info =  {0};
+	enum ndr_err_code err;
+	struct ndr_push *ndr_push = NULL;
 	NTSTATUS status;
+	TALLOC_CTX *frame = talloc_stackframe();
+	DATA_BLOB data_blob = data_blob_null;
 
 	if (!cli||!pqt) {
 		smb_panic("cli_get_user_quota() called with NULL Pointer!");
 	}
 
 	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+		TALLOC_FREE(frame);
 		return cli_smb2_get_user_quota(cli, quota_fnum, pqt);
 	}
 
-	SSVAL(setup + 0, 0, NT_TRANSACT_GET_USER_QUOTA);
-
-	SSVAL(params, 0,quota_fnum);
-	SSVAL(params, 2,TRANSACT_GET_USER_QUOTA_FOR_SID);
-	SIVAL(params, 4,0x00000024);
-	SIVAL(params, 8,0x00000000);
-	SIVAL(params,12,0x00000024);
+	get_quota.fid = quota_fnum;
+	get_quota.return_single_entry = 1;
+	get_quota.restart_scan = 0;
 
 	sid_len = ndr_size_dom_sid(&pqt->sid, 0);
-	data_len = sid_len+8;
-	SIVAL(data, 0, 0x00000000);
-	SIVAL(data, 4, sid_len);
-	sid_linearize(data+8, sid_len, &pqt->sid);
+
+	info.next_entry_offset = 0;
+	info.sid_length = sid_len;
+	info.sid = pqt->sid;
+
+	err = ndr_push_struct_blob(
+			&data_blob,
+			frame,
+			&info,
+			(ndr_push_flags_fn_t)ndr_push_file_get_quota_info);
+
+	if (!NDR_ERR_CODE_IS_SUCCESS(err)) {
+		status = NT_STATUS_INTERNAL_ERROR;
+		goto out;
+	}
+
+	get_quota.sid_list_length = data_blob.length;
+	get_quota.start_sid_offset = data_blob.length;
+
+	ndr_push = ndr_push_init_ctx(frame);
+
+	if (!ndr_push) {
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
+	}
+
+	err = ndr_push_nttrans_query_quota_params(ndr_push,
+					     NDR_SCALARS | NDR_BUFFERS,
+					     &get_quota);
+
+	if (!NDR_ERR_CODE_IS_SUCCESS(err)) {
+		status = NT_STATUS_INTERNAL_ERROR;
+		goto out;
+	}
 
 	status = cli_trans(talloc_tos(), cli, SMBnttrans,
 			   NULL, -1, /* name, fid */
 			   NT_TRANSACT_GET_USER_QUOTA, 0,
 			   setup, 1, 0, /* setup */
-			   params, 16, 4, /* params */
-			   data, data_len, 112, /* data */
+			   ndr_push->data, ndr_push->offset, 4, /* params */
+			   data_blob.data, data_blob.length, 112, /* data */
 			   NULL,		/* recv_flags2 */
 			   NULL, 0, NULL,	/* rsetup */
 			   &rparam, 4, &rparam_count,
@@ -411,7 +321,7 @@ NTSTATUS cli_get_user_quota(struct cli_state *cli, int quota_fnum,
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("NT_TRANSACT_GET_USER_QUOTA failed: %s\n",
 			  nt_errstr(status)));
-		return status;
+		goto out;
 	}
 
 	if (!parse_user_quota_record(rdata, rdata_count, &offset, pqt)) {
@@ -419,8 +329,10 @@ NTSTATUS cli_get_user_quota(struct cli_state *cli, int quota_fnum,
 		DEBUG(0,("Got INVALID NT_TRANSACT_GET_USER_QUOTA reply.\n"));
 	}
 
+out:
 	TALLOC_FREE(rparam);
 	TALLOC_FREE(rdata);
+	TALLOC_FREE(frame);
 	return status;
 }
 
@@ -442,7 +354,15 @@ cli_set_user_quota(struct cli_state *cli, int quota_fnum, SMB_NTQUOTA_LIST *qtl)
 
 	status = build_user_quota_buffer(qtl, 0, talloc_tos(), &data, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
-		goto cleanup;
+		/*
+		 * smb1 doesn't send NT_STATUS_NO_MORE_ENTRIES so swallow
+		 * this status.
+		 */
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NO_MORE_ENTRIES)) {
+			status = NT_STATUS_OK;
+		} else {
+			goto cleanup;
+		}
 	}
 
 	SSVAL(setup + 0, 0, NT_TRANSACT_SET_USER_QUOTA);
@@ -477,31 +397,42 @@ static NTSTATUS cli_list_user_quota_step(struct cli_state *cli,
 					 bool first)
 {
 	uint16_t setup[1];
-	uint8_t params[16];
+	DATA_BLOB params_blob = data_blob_null;
 	uint8_t *rparam=NULL, *rdata=NULL;
 	uint32_t rparam_count=0, rdata_count=0;
 	NTSTATUS status;
-	uint16_t op = first ? TRANSACT_GET_USER_QUOTA_LIST_START
-			    : TRANSACT_GET_USER_QUOTA_LIST_CONTINUE;
+	struct nttrans_query_quota_params quota_params = {0};
+	enum ndr_err_code err;
 
+	TALLOC_CTX *frame = NULL;
 	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
 		return cli_smb2_list_user_quota_step(cli, mem_ctx, quota_fnum,
 						     pqt_list, first);
 	}
+	frame = talloc_stackframe();
 
 	SSVAL(setup + 0, 0, NT_TRANSACT_GET_USER_QUOTA);
 
-	SSVAL(params, 0,quota_fnum);
-	SSVAL(params, 2, op);
-	SIVAL(params, 4,0x00000000);
-	SIVAL(params, 8,0x00000000);
-	SIVAL(params,12,0x00000000);
+	quota_params.fid = quota_fnum;
+	if (first) {
+		quota_params.restart_scan = 1;
+	}
+	err = ndr_push_struct_blob(
+		&params_blob,
+		frame,
+		&quota_params,
+		(ndr_push_flags_fn_t)ndr_push_nttrans_query_quota_params);
+
+	if (!NDR_ERR_CODE_IS_SUCCESS(err)) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto cleanup;
+	}
 
 	status = cli_trans(talloc_tos(), cli, SMBnttrans,
 			   NULL, -1, /* name, fid */
 			   NT_TRANSACT_GET_USER_QUOTA, 0,
 			   setup, 1, 0, /* setup */
-			   params, 16, 4, /* params */
+			   params_blob.data, params_blob.length, 4, /* params */
 			   NULL, 0, 2048, /* data */
 			   NULL,		/* recv_flags2 */
 			   NULL, 0, NULL,	/* rsetup */
@@ -524,6 +455,7 @@ static NTSTATUS cli_list_user_quota_step(struct cli_state *cli,
 cleanup:
 	TALLOC_FREE(rparam);
 	TALLOC_FREE(rdata);
+	TALLOC_FREE(frame);
 
 	return status;
 }
@@ -650,4 +582,109 @@ NTSTATUS cli_set_fs_quota_info(struct cli_state *cli, int quota_fnum,
 	}
 
 	return status;
+}
+
+NTSTATUS fill_quota_buffer(TALLOC_CTX *mem_ctx,
+			      SMB_NTQUOTA_LIST *qlist,
+			      bool return_single,
+			      uint32_t max_data,
+			      DATA_BLOB *blob,
+			      SMB_NTQUOTA_LIST **end_ptr)
+{
+	int ndr_flags = NDR_SCALARS | NDR_BUFFERS;
+	struct ndr_push *qndr = ndr_push_init_ctx(mem_ctx);
+	uint32_t start_offset = 0;
+	uint32_t padding = 0;
+	if (qlist == NULL) {
+		/* We must push at least one. */
+		return NT_STATUS_NO_MORE_ENTRIES;
+	}
+	for (;qlist != NULL; qlist = qlist->next) {
+		struct file_quota_information info = {0};
+		enum ndr_err_code err;
+		uint32_t dsize = sizeof(info.next_entry_offset)
+			+ sizeof(info.sid_length)
+			+ sizeof(info.change_time)
+			+ sizeof(info.quota_used)
+			+ sizeof(info.quota_threshold)
+			+ sizeof(info.quota_limit);
+
+
+		info.sid_length = ndr_size_dom_sid(&qlist->quotas->sid, 0);
+
+		if (max_data) {
+			uint32_t curr_pos_no_padding = qndr->offset - padding;
+			uint32_t payload = dsize + info.sid_length;
+			uint32_t new_pos = (curr_pos_no_padding + payload);
+			if (new_pos < curr_pos_no_padding) {
+				/* Detect unlikely integer wrap */
+				DBG_ERR("Integer wrap while adjusting pos "
+					"0x%x by offset 0x%x\n",
+					curr_pos_no_padding, payload);
+				return NT_STATUS_INTERNAL_ERROR;
+			}
+			if (new_pos > max_data) {
+				DBG_WARNING("Max data will be exceeded "
+					    "writing next query info. "
+					    "cur_pos 0x%x, sid_length 0x%x, "
+					    "dsize 0x%x, max_data 0x%x\n",
+					    curr_pos_no_padding,
+					    info.sid_length,
+					    dsize,
+					    max_data);
+				break;
+			}
+		}
+
+		start_offset = qndr->offset;
+		info.sid = qlist->quotas->sid;
+		info.quota_used = qlist->quotas->usedspace;
+		info.quota_threshold = qlist->quotas->softlim;
+		info.quota_limit = qlist->quotas->hardlim;
+
+		err = ndr_push_file_quota_information(qndr,
+						      ndr_flags,
+						      &info);
+
+		if (!NDR_ERR_CODE_IS_SUCCESS(err)) {
+			DBG_DEBUG("Failed to push the quota sid\n");
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+
+		/* pidl will align to 8 bytes due to 8 byte members*/
+		/* Remember how much align padding we've used. */
+		padding = qndr->offset;
+		ndr_push_align(qndr, 8);
+		padding = qndr->offset - padding;
+
+		/*
+		 * Overwrite next_entry_offset for this entry now
+		 * we know what it should be. We know we're using
+		 * LIBNDR_FLAG_LITTLE_ENDIAN here so we can use
+		 * SIVAL.
+		 */
+		info.next_entry_offset = qndr->offset - start_offset;
+		SIVAL(qndr->data, start_offset, info.next_entry_offset);
+
+		if (return_single) {
+			break;
+		}
+	}
+
+	if (end_ptr != NULL) {
+		*end_ptr = qlist;
+	}
+
+	/* Remove the padding alignment on the last element pushed. */
+	blob->length = qndr->offset - padding;
+	blob->data = qndr->data;
+
+	/*
+	 * Terminate the pushed array by setting next_entry_offset
+	 * for the last element to zero.
+	 */
+	if (blob->length >= sizeof(uint32_t)) {
+		SIVAL(qndr->data, start_offset, 0);
+	}
+	return NT_STATUS_OK;
 }

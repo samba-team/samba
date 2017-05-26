@@ -974,6 +974,12 @@ NTSTATUS cli_readlink(struct cli_state *cli, const char *fname,
 		       TALLOC_CTX *mem_ctx, char **psubstitute_name,
 		      char **pprint_name, uint32_t *pflags);
 
+NTSTATUS fill_quota_buffer(TALLOC_CTX *mem_ctx,
+			   SMB_NTQUOTA_LIST *tmp_list,
+			   bool return_single,
+			   uint32_t max_data,
+			   DATA_BLOB *blob,
+			   SMB_NTQUOTA_LIST **end_ptr);
 /* The following definitions come from libsmb/passchange.c  */
 
 NTSTATUS remote_password_change(const char *remote_machine,
