@@ -711,6 +711,78 @@ class BasicTests(samba.tests.TestCase):
 
         delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
+    def test_multivalued_attributes(self):
+        """Test multi-valued attributes"""
+        ou = 'OU=mvattr,%s' % (self.base_dn)
+        delete_force(self.ldb, ou, controls=['tree_delete:1'])
+        self.ldb.add({'objectclass': 'organizationalUnit',
+                      'dn': ou})
+
+        # beyond 1210, Win2012r2 gives LDAP_ADMIN_LIMIT_EXCEEDED
+        ranges = (3, 30, 300, 1210)
+
+        for n in ranges:
+            self.ldb.add({
+                "dn": "cn=ldaptestuser%d,%s" % (n, ou),
+                "objectclass": "user",
+                "carLicense": ["car%d" % x for x in range(n)]})
+
+        # add some more
+        for n in ranges:
+            m = Message()
+            m.dn = Dn(ldb, "cn=ldaptestuser%d,%s" % (n, ou))
+            m["carLicense"] = MessageElement(["another"],
+                                             FLAG_MOD_ADD,
+                                             "carLicense")
+            ldb.modify(m)
+
+            m = Message()
+            m.dn = Dn(ldb, "cn=ldaptestuser%d,%s" % (n, ou))
+            m["carLicense"] = MessageElement(["foo%d" % x for x in range(4)],
+                                             FLAG_MOD_ADD,
+                                             "carLicense")
+            ldb.modify(m)
+
+            m = Message()
+            m.dn = Dn(ldb, "cn=ldaptestuser%d,%s" % (n, ou))
+            m["carLicense"] = MessageElement(["bar%d" % x for x in range(40)],
+                                             FLAG_MOD_ADD,
+                                             "carLicense")
+            ldb.modify(m)
+
+        for n in ranges:
+            m = Message()
+            dn = "cn=ldaptestuser%d,%s" % (n, ou)
+            m.dn = Dn(ldb, dn)
+            m["carLicense"] = MessageElement(["replacement"],
+                                             FLAG_MOD_REPLACE,
+                                             "carLicense")
+            ldb.modify(m)
+
+            m = Message()
+            m.dn = Dn(ldb, dn)
+            m["carLicense"] = MessageElement(["replacement%d" % x for x in range(n)],
+                                             FLAG_MOD_REPLACE,
+                                             "carLicense")
+            ldb.modify(m)
+
+            m = Message()
+            m.dn = Dn(ldb, dn)
+            m["carLicense"] = MessageElement(["again%d" % x for x in range(n)],
+                                             FLAG_MOD_REPLACE,
+                                             "carLicense")
+            ldb.modify(m)
+
+            m = Message()
+            m.dn = Dn(ldb, dn)
+            m["carLicense"] = MessageElement(["andagain%d" % x for x in range(n)],
+                                             FLAG_MOD_REPLACE,
+                                             "carLicense")
+            ldb.modify(m)
+
+        self.ldb.delete(ou, ['tree_delete:1'])
+
+
     def test_attribute_ranges(self):
         """Test attribute ranges"""
         # Too short (min. 1)
