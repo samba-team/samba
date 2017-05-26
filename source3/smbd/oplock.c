@@ -26,6 +26,7 @@
 #include "smbd/globals.h"
 #include "messages.h"
 #include "../librpc/gen_ndr/open_files.h"
+#include "../librpc/gen_ndr/ndr_open_files.h"
 
 /*
  * helper function used by the kernel oplock backends to post the break message
@@ -167,17 +168,38 @@ bool update_num_read_oplocks(files_struct *fsp, struct share_mode_lock *lck)
 	uint32_t i;
 
 	if (fsp_lease_type_is_exclusive(fsp)) {
+		const struct share_mode_entry *e = NULL;
+		uint32_t e_lease_type = 0;
+
 		/*
 		 * If we're fully exclusive, we don't need a brlock entry
 		 */
 		remove_stale_share_mode_entries(d);
 
-		for (i=0; i<d->num_share_modes; i++) {
-			struct share_mode_entry *e = &d->share_modes[i];
-			uint32_t e_lease_type = get_lease_type(d, e);
-
-			SMB_ASSERT(lease_type_is_exclusive(e_lease_type));
+		e = find_share_mode_entry(lck, fsp);
+		if (e != NULL) {
+			e_lease_type = get_lease_type(d, e);
 		}
+
+		if (!lease_type_is_exclusive(e_lease_type)) {
+			char *timestr = NULL;
+
+			timestr = timeval_string(talloc_tos(),
+						 &fsp->open_time,
+						 true);
+
+			NDR_PRINT_DEBUG(share_mode_data, d);
+			DBG_ERR("file [%s] file_id [%s] gen_id [%lu] "
+				"open_time[%s] lease_type [0x%x] "
+				"oplock_type [0x%x]\n",
+				fsp_str_dbg(fsp),
+				file_id_string_tos(&fsp->file_id),
+				fsp->fh->gen_id, timestr,
+				e_lease_type, fsp->oplock_type);
+
+			smb_panic("Found non-exclusive lease");
+		}
+
 		return true;
 	}
 
