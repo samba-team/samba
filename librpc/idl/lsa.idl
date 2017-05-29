@@ -9,6 +9,7 @@ import "misc.idl", "security.idl";
 [ uuid("12345778-1234-abcd-ef00-0123456789ab"),
   version(0.0),
   endpoint("ncacn_np:[\\pipe\\lsarpc]","ncacn_np:[\\pipe\\lsass]", "ncacn_ip_tcp:", "ncalrpc:"),
+  pyhelper("librpc/ndr/py_lsa.c"),
   pointer_default(unique),
   helpstring("Local Security Authority")
 ] interface lsarpc

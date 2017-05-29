@@ -1,5 +1,0 @@
-# Tests for String constructor on lsa.String
-# Currently failing as the constructor has not been implemented.
-^samba.tests.lsa_string.samba.tests.lsa_string.LsaStringTests.test_repr\(ad_dc_ntvfs:local\)
-^samba.tests.lsa_string.samba.tests.lsa_string.LsaStringTests.test_string_constructor\(ad_dc_ntvfs:local\)
-^samba.tests.lsa_string.samba.tests.lsa_string.LsaStringTests.test_to_string\(ad_dc_ntvfs:local\)
