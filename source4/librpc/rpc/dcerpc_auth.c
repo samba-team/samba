@@ -187,6 +187,9 @@ static void bind_auth_next_step(struct composite_context *c)
 	 * it doesn't like that either
 	 */
 
+	state->pipe->inhibit_timeout_processing = true;
+	state->pipe->timed_out = false;
+
 	subreq = gensec_update_send(state,
 				    state->pipe->conn->event_ctx,
 				    sec->generic_state,
@@ -206,6 +209,8 @@ static void bind_auth_next_gensec_done(struct tevent_req *subreq)
 	struct dcerpc_pipe *p = state->pipe;
 	struct dcecli_security *sec = &p->conn->security_state;
 	bool more_processing = false;
+
+	state->pipe->inhibit_timeout_processing = false;
 
 	c->status = gensec_update_recv(subreq, state,
 				       &state->out_auth_info.credentials);
@@ -434,6 +439,9 @@ struct composite_context *dcerpc_bind_auth_send(TALLOC_CTX *mem_ctx,
 	 * it doesn't like that either
 	 */
 
+	state->pipe->inhibit_timeout_processing = true;
+	state->pipe->timed_out = false;
+
 	subreq = gensec_update_send(state,
 				    p->conn->event_ctx,
 				    sec->generic_state,
@@ -454,6 +462,8 @@ static void dcerpc_bind_auth_gensec_done(struct tevent_req *subreq)
 		struct bind_auth_state);
 	struct dcerpc_pipe *p = state->pipe;
 	struct dcecli_security *sec = &p->conn->security_state;
+
+	state->pipe->inhibit_timeout_processing = false;
 
 	c->status = gensec_update_recv(subreq, state,
 				       &state->out_auth_info.credentials);
