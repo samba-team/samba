@@ -37,13 +37,19 @@ ssize_t msghdr_prep_fds(struct msghdr *msg, uint8_t *buf, size_t bufsize,
 			msg->msg_control = NULL;
 			msg->msg_controllen = 0;
 		}
-		return 0;
+		/*
+		 * C99 doesn't allow 0-length arrays
+		 */
+		return 1;
 	}
 	if (num_fds > INT8_MAX) {
 		return -1;
 	}
 	if ((msg == NULL) || (cmsg_space > bufsize)) {
-		return cmsg_space;
+		/*
+		 * C99 doesn't allow 0-length arrays
+		 */
+		return MAX(cmsg_space, 1);
 	}
 
 	msg->msg_control = buf;
