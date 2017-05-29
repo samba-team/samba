@@ -381,7 +381,8 @@ static void command_run_trigger(struct tevent_req *req, void *private_data)
 	talloc_free(pending);
 
 	D_DEBUG("Running event %s with args \"%s\"\n",
-		ctdb_event_to_string(state->event), state->arg_str);
+		ctdb_event_to_string(state->event),
+		state->arg_str == NULL ? "(null)" : state->arg_str);
 
 	state->subreq = run_event_send(state, state->ev,
 				       eventd_run_context(state->ectx),
