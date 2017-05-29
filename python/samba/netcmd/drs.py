@@ -241,7 +241,8 @@ class cmd_drs_kcc(Command):
 
 
 
-def drs_local_replicate(self, SOURCE_DC, NC, full_sync=False, single_object=False):
+def drs_local_replicate(self, SOURCE_DC, NC, full_sync=False, single_object=False,
+                        sync_forced=False):
     '''replicate from a source DC to the local SAM'''
 
     self.server = SOURCE_DC
@@ -284,7 +285,7 @@ def drs_local_replicate(self, SOURCE_DC, NC, full_sync=False, single_object=Fals
         (num_objects, num_links) = repl.replicate(NC,
                                                   source_dsa_invocation_id, destination_dsa_guid,
                                                   rodc=rodc, full_sync=full_sync,
-                                                  exop=exop)
+                                                  exop=exop, sync_forced=sync_forced)
     except Exception, e:
         raise CommandError("Error replicating DN %s" % NC, e)
     self.samdb.transaction_commit()
@@ -332,7 +333,9 @@ class cmd_drs_replicate(Command):
         self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
 
         if local:
-            drs_local_replicate(self, SOURCE_DC, NC, full_sync=full_sync, single_object=single_object)
+            drs_local_replicate(self, SOURCE_DC, NC, full_sync=full_sync,
+                                single_object=single_object,
+                                sync_forced=sync_forced)
             return
 
         if local_online:
