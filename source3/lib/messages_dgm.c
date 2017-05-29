@@ -363,7 +363,7 @@ static ssize_t messaging_dgm_sendmsg(int sock,
 		msghdr_prep_fds(&msg, buf, fdlen, fds, num_fds);
 
 		do {
-			ret = sendmsg(sock, &msg, MSG_NOSIGNAL);
+			ret = sendmsg(sock, &msg, 0);
 		} while ((ret == -1) && (errno == EINTR));
 	}
 
