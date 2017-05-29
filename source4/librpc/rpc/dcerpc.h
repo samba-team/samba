@@ -136,6 +136,14 @@ struct dcerpc_pipe {
 	/** timeout for individual rpc requests, in seconds */
 	uint32_t request_timeout;
 
+	/*
+	 * Set for the timeout in dcerpc_pipe_connect_b_send(), to
+	 * allow the timeout not to destory the stack during a nested
+	 * event loop caused by gensec_update()
+	 */
+	bool inhibit_timeout_processing;
+	bool timed_out;
+
 	bool verified_pcontext;
 };
 
