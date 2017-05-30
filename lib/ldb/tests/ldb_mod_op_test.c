@@ -1463,6 +1463,30 @@ static int ldb_case_test_teardown(void **state)
 	return 0;
 }
 
+static void test_ldb_attrs_case_insensitive(void **state)
+{
+	int cnt;
+	struct ldbtest_ctx *ldb_test_ctx = talloc_get_type_abort(*state,
+			struct ldbtest_ctx);
+
+	/* cn matches exact case */
+	cnt = sub_search_count(ldb_test_ctx, "", "cn=CaseInsensitiveValue");
+	assert_int_equal(cnt, 1);
+
+	/* cn matches lower case */
+	cnt = sub_search_count(ldb_test_ctx, "", "cn=caseinsensitivevalue");
+	assert_int_equal(cnt, 1);
+
+	/* uid matches exact case */
+	cnt = sub_search_count(ldb_test_ctx, "", "uid=CaseSensitiveValue");
+	assert_int_equal(cnt, 1);
+
+	/* uid does not match lower case */
+	cnt = sub_search_count(ldb_test_ctx, "", "uid=casesensitivevalue");
+	assert_int_equal(cnt, 0);
+}
+
+
 struct rename_test_ctx {
 	struct ldbtest_ctx *ldb_test_ctx;
 
@@ -1524,29 +1548,6 @@ static int ldb_rename_test_teardown(void **state)
 
 	ldbtest_teardown((void **) &ldb_test_ctx);
 	return 0;
-}
-
-static void test_ldb_attrs_case_insensitive(void **state)
-{
-	int cnt;
-	struct ldbtest_ctx *ldb_test_ctx = talloc_get_type_abort(*state,
-			struct ldbtest_ctx);
-
-	/* cn matches exact case */
-	cnt = sub_search_count(ldb_test_ctx, "", "cn=CaseInsensitiveValue");
-	assert_int_equal(cnt, 1);
-
-	/* cn matches lower case */
-	cnt = sub_search_count(ldb_test_ctx, "", "cn=caseinsensitivevalue");
-	assert_int_equal(cnt, 1);
-
-	/* uid matches exact case */
-	cnt = sub_search_count(ldb_test_ctx, "", "uid=CaseSensitiveValue");
-	assert_int_equal(cnt, 1);
-
-	/* uid does not match lower case */
-	cnt = sub_search_count(ldb_test_ctx, "", "uid=casesensitivevalue");
-	assert_int_equal(cnt, 0);
 }
 
 static void test_ldb_rename(void **state)
