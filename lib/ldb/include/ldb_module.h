@@ -492,15 +492,19 @@ int ldb_unpack_data_only_attr_list_flags(struct ldb_context *ldb,
 #define LDB_UNPACK_DATA_FLAG_NO_DN           0x0002
 #define LDB_UNPACK_DATA_FLAG_NO_VALUES_ALLOC 0x0004
 
-/*
- * This function forces a specific ldb handle to use the global event
- * context.  This allows a nested event loop to operate, so any open
- * transaction also needs to be aborted.
- *
- * Any events on this event context will be lost
- *
- * This is used in Samba when sending an IRPC to another part of the
- * same process instead of making a local DB modification.
+/**
+ Forces a specific ldb handle to use the global event context.
+
+ This allows a nested event loop to operate, so any open
+ transaction also needs to be aborted.
+
+ Any events on this event context will be lost.
+
+ This is used in Samba when sending an IRPC to another part of the
+ same process instead of making a local DB modification.
+
+ \param handle The ldb handle to force to use the global context
+
  */
 void ldb_handle_use_global_event_context(struct ldb_handle *handle);
 
