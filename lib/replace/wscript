@@ -466,6 +466,7 @@ removeea setea
             conf.DEFINE('HAVE_ROBUST_MUTEXES', 1)
 
     conf.CHECK_FUNCS_IN('crypt', 'crypt', checklibc=True)
+    conf.CHECK_FUNCS_IN('crypt_r', 'crypt', checklibc=True)
 
     conf.CHECK_VARIABLE('rl_event_hook', define='HAVE_DECL_RL_EVENT_HOOK', always=True,
                         headers='readline.h readline/readline.h readline/history.h')
