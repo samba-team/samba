@@ -72,6 +72,22 @@ struct smb_filename *synthetic_smb_fname(TALLOC_CTX *mem_ctx,
 }
 
 /**
+ * Utility function used by VFS calls that must *NOT* operate
+ * on a stream filename, only the base_name.
+ */
+struct smb_filename *cp_smb_filename_nostream(TALLOC_CTX *mem_ctx,
+					const struct smb_filename *smb_fname_in)
+{
+	struct smb_filename *smb_fname = cp_smb_filename(mem_ctx,
+							smb_fname_in);
+	if (smb_fname == NULL) {
+		return NULL;
+	}
+	TALLOC_FREE(smb_fname->stream_name);
+	return smb_fname;
+}
+
+/**
  * There are a few legitimate users of this.
  */
 struct smb_filename *synthetic_smb_fname_split(TALLOC_CTX *ctx,

@@ -1114,6 +1114,8 @@ const char *fsp_str_dbg(const struct files_struct *fsp);
 const char *fsp_fnum_dbg(const struct files_struct *fsp);
 struct smb_filename *cp_smb_filename(TALLOC_CTX *mem_ctx,
 				     const struct smb_filename *in);
+struct smb_filename *cp_smb_filename_nostream(TALLOC_CTX *mem_ctx,
+				     const struct smb_filename *in);
 bool is_ntfs_stream_smb_fname(const struct smb_filename *smb_fname);
 bool is_ntfs_default_stream_smb_fname(const struct smb_filename *smb_fname);
 bool is_invalid_windows_ea_name(const char *name);
