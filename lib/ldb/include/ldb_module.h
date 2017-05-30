@@ -217,6 +217,15 @@ typedef int (*ldb_connect_fn)(struct ldb_context *ldb, const char *url,
 			      unsigned int flags, const char *options[],
 			      struct ldb_module **module);
 
+/**
+ Require that LDB use a private event context for each request
+
+ A private event context may need to be created to avoid nested event
+ loops during ldb_tdb with the locks held.  This indicates that a
+ backend is in use that requires this to hold locks safely.
+
+ \param handle The ldb handle to set the flag on
+ */
 void ldb_set_require_private_event_context(struct ldb_context *ldb);
 
 struct ldb_backend_ops {
