@@ -247,19 +247,32 @@ void ldb_set_default_dns(struct ldb_context *ldb);
 int ldb_reply_add_control(struct ldb_reply *ares, const char *oid, bool critical, void *data);
 
 /**
-  mark a request as untrusted. This tells the rootdse module to remove
-  unregistered controls
- */
+  mark a request as untrusted.
+
+  This tells the rootdse module to remove unregistered controls
+
+  \param req the request to mark as untrusted
+*/
 void ldb_req_mark_untrusted(struct ldb_request *req);
 
 /**
   mark a request as trusted.
- */
+
+  This tells the rootdse module to allow unregistered controls
+
+  \param req the request to mark as trusted
+*/
 void ldb_req_mark_trusted(struct ldb_request *req);
 
 /**
    return true is a request is untrusted
- */
+
+   This indicates the request came across a trust boundary
+   for example over LDAP
+
+  \param req the request check
+  \return is req trusted
+*/
 bool ldb_req_is_untrusted(struct ldb_request *req);
 
 /**
