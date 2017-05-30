@@ -315,11 +315,11 @@ def build(bld):
                           deps='ldb dl popt',
                           private_library=True)
 
-    bld.SAMBA_BINARY('ldb_tdb_mod_op_test',
-                     source='tests/ldb_mod_op_test.c',
-                     cflags='-DTEST_BE=\"tdb\"',
-                     deps='cmocka ldb',
-                     install=False)
+        bld.SAMBA_BINARY('ldb_tdb_mod_op_test',
+                         source='tests/ldb_mod_op_test.c',
+                         cflags='-DTEST_BE=\"tdb\"',
+                         deps='cmocka ldb',
+                         install=False)
 
 def test(ctx):
     '''run ldb testsuite'''

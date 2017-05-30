@@ -26,6 +26,8 @@
 #include <tevent.h>
 
 #include <ldb.h>
+#include <ldb_module.h>
+#include <ldb_private.h>
 #include <string.h>
 #include <ctype.h>
 
@@ -1486,6 +1488,194 @@ static void test_ldb_attrs_case_insensitive(void **state)
 	assert_int_equal(cnt, 0);
 }
 
+static struct ldb_schema_attribute cn_attr_1;
+static struct ldb_schema_attribute cn_attr_2;
+static struct ldb_schema_attribute default_attr;
+
+/*
+  override the name to attribute handler function
+ */
+static const struct ldb_schema_attribute *ldb_test_attribute_handler_override(struct ldb_context *ldb,
+									      void *private_data,
+									      const char *name)
+{
+	if (private_data != NULL && ldb_attr_cmp(name, "cn") == 0) {
+		return &cn_attr_1;
+	} else if (private_data == NULL && ldb_attr_cmp(name, "cn") == 0) {
+		return &cn_attr_2;
+	} else if (ldb_attr_cmp(name, "uid") == 0) {
+		return &cn_attr_2;
+	}
+	return &default_attr;
+}
+
+static void test_ldb_attrs_case_handler(void **state)
+{
+	int cnt;
+	int ret;
+	const struct ldb_schema_syntax *syntax;
+
+	struct ldbtest_ctx *ldb_test_ctx = talloc_get_type_abort(*state,
+			struct ldbtest_ctx);
+	struct ldb_context *ldb = ldb_test_ctx->ldb;
+
+	/* cn matches lower case */
+	cnt = sub_search_count(ldb_test_ctx, "", "cn=caseinsensitivevalue");
+	assert_int_equal(cnt, 1);
+
+	syntax = ldb_standard_syntax_by_name(ldb, LDB_SYNTAX_OCTET_STRING);
+	assert_non_null(syntax);
+
+	ret = ldb_schema_attribute_fill_with_syntax(ldb, ldb,
+						    "*", 0,
+						    syntax, &default_attr);
+	assert_int_equal(ret, LDB_SUCCESS);
+
+	syntax = ldb_standard_syntax_by_name(ldb, LDB_SYNTAX_OCTET_STRING);
+	assert_non_null(syntax);
+
+	ret = ldb_schema_attribute_fill_with_syntax(ldb, ldb,
+						    "cn", 0,
+						    syntax, &cn_attr_1);
+	assert_int_equal(ret, LDB_SUCCESS);
+
+	/*
+	 * Set an attribute handler, which will fail to match as we
+	 * force case sensitive
+	 */
+	ldb_schema_attribute_set_override_handler(ldb,
+						  ldb_test_attribute_handler_override,
+						  (void *)1);
+
+	/* cn does not matche lower case */
+	cnt = sub_search_count(ldb_test_ctx, "", "cn=caseinsensitivevalue");
+	assert_int_equal(cnt, 0);
+
+	syntax = ldb_standard_syntax_by_name(ldb, LDB_SYNTAX_DIRECTORY_STRING);
+	assert_non_null(syntax);
+
+	ret = ldb_schema_attribute_fill_with_syntax(ldb, ldb,
+						    "cn", 0,
+						    syntax, &cn_attr_2);
+	assert_int_equal(ret, LDB_SUCCESS);
+
+	/*
+	 * Set an attribute handler, which will match as we
+	 * force case insensitive
+	 */
+	ldb_schema_attribute_set_override_handler(ldb,
+						  ldb_test_attribute_handler_override,
+						  NULL);
+
+	/* cn matches lower case */
+	cnt = sub_search_count(ldb_test_ctx, "", "cn=caseinsensitivevalue");
+	assert_int_equal(cnt, 1);
+
+}
+
+
+static void test_ldb_attrs_index_handler(void **state)
+{
+	int cnt;
+	int ret;
+	const struct ldb_schema_syntax *syntax;
+	struct ldb_ldif *ldif;
+
+	const char *index_ldif =  \
+		"dn: @INDEXLIST\n"
+		"@IDXATTR: cn\n"
+		"\n";
+
+	struct ldbtest_ctx *ldb_test_ctx = talloc_get_type_abort(*state,
+			struct ldbtest_ctx);
+	struct ldb_context *ldb = ldb_test_ctx->ldb;
+
+	/* cn matches lower case */
+	cnt = sub_search_count(ldb_test_ctx, "", "cn=caseinsensitivevalue");
+	assert_int_equal(cnt, 1);
+
+	syntax = ldb_standard_syntax_by_name(ldb, LDB_SYNTAX_OCTET_STRING);
+	assert_non_null(syntax);
+
+	ret = ldb_schema_attribute_fill_with_syntax(ldb, ldb,
+						    "cn", 0,
+						    syntax, &cn_attr_1);
+	assert_int_equal(ret, LDB_SUCCESS);
+
+	syntax = ldb_standard_syntax_by_name(ldb, LDB_SYNTAX_DIRECTORY_STRING);
+	assert_non_null(syntax);
+
+	ret = ldb_schema_attribute_fill_with_syntax(ldb, ldb,
+						    "cn", LDB_ATTR_FLAG_INDEXED,
+						    syntax, &cn_attr_2);
+	assert_int_equal(ret, LDB_SUCCESS);
+
+	/*
+	 * Set an attribute handler
+	 */
+	ldb_schema_attribute_set_override_handler(ldb,
+						  ldb_test_attribute_handler_override,
+						  NULL);
+
+	/* cn matches lower case */
+	cnt = sub_search_count(ldb_test_ctx, "", "cn=caseinsensitivevalue");
+	assert_int_equal(cnt, 1);
+
+	/* Add the index (actually any modify will do) */
+	while ((ldif = ldb_ldif_read_string(ldb_test_ctx->ldb, &index_ldif))) {
+		ret = ldb_add(ldb_test_ctx->ldb, ldif->msg);
+		assert_int_equal(ret, LDB_SUCCESS);
+	}
+
+	ldb_schema_set_override_indexlist(ldb, false);
+
+	/* cn does match as there is an index now */
+	cnt = sub_search_count(ldb_test_ctx, "", "cn=caseinsensitivevalue");
+	assert_int_equal(cnt, 1);
+
+	/*
+	 * Set an attribute handler, which will later fail to match as we
+	 * didn't re-index the DB
+	 */
+	ldb_schema_attribute_set_override_handler(ldb,
+						  ldb_test_attribute_handler_override,
+						  (void *)1);
+
+	/*
+	 * cn does not match as we changed the case sensitivity, but
+	 * didn't re-index
+	 *
+	 * This shows that the override is in control
+	 */
+	cnt = sub_search_count(ldb_test_ctx, "", "cn=caseinsensitivevalue");
+	assert_int_equal(cnt, 0);
+
+}
+
+static int ldb_case_attrs_index_test_teardown(void **state)
+{
+	int ret;
+	struct ldbtest_ctx *ldb_test_ctx = talloc_get_type_abort(*state,
+			struct ldbtest_ctx);
+	struct ldb_dn *del_dn;
+
+	del_dn = ldb_dn_new_fmt(ldb_test_ctx,
+				ldb_test_ctx->ldb,
+				"@INDEXLIST");
+	assert_non_null(del_dn);
+
+	ret = ldb_delete(ldb_test_ctx->ldb, del_dn);
+	if (ret != LDB_ERR_NO_SUCH_OBJECT) {
+		assert_int_equal(ret, LDB_SUCCESS);
+	}
+
+	assert_dn_doesnt_exist(ldb_test_ctx,
+			       "@INDEXLIST");
+
+	ldb_case_test_teardown(state);
+	return 0;
+}
+
 
 struct rename_test_ctx {
 	struct ldbtest_ctx *ldb_test_ctx;
@@ -1763,6 +1953,12 @@ int main(int argc, const char **argv)
 		cmocka_unit_test_setup_teardown(test_ldb_attrs_case_insensitive,
 						ldb_case_test_setup,
 						ldb_case_test_teardown),
+		cmocka_unit_test_setup_teardown(test_ldb_attrs_case_handler,
+						ldb_case_test_setup,
+						ldb_case_test_teardown),
+		cmocka_unit_test_setup_teardown(test_ldb_attrs_index_handler,
+						ldb_case_test_setup,
+						ldb_case_attrs_index_test_teardown),
 		cmocka_unit_test_setup_teardown(test_ldb_rename,
 						ldb_rename_test_setup,
 						ldb_rename_test_teardown),
