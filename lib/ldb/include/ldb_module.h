@@ -122,6 +122,14 @@ void ldb_schema_attribute_remove(struct ldb_context *ldb, const char *name);
 /* we allow external code to override the name -> schema_attribute function */
 typedef const struct ldb_schema_attribute *(*ldb_attribute_handler_override_fn_t)(struct ldb_context *, void *, const char *);
 
+/**
+  Allow the caller to define a callback for the attribute handler
+
+  \param ldb The ldb context
+  \param override The callback to be used for attribute lookups
+  \param private_data Private data for the callback
+
+*/
 void ldb_schema_attribute_set_override_handler(struct ldb_context *ldb,
 					       ldb_attribute_handler_override_fn_t override,
 					       void *private_data);
