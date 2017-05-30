@@ -5321,6 +5321,21 @@ static void smb2cli_validate_negotiate_info_done(struct tevent_req *subreq)
 		tevent_req_done(req);
 		return;
 	}
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
+		/*
+		 * The response was signed, but not supported
+		 *
+		 * This might be returned by older Windows versions or by
+		 * NetApp SMB server implementations.
+		 *
+		 * See
+		 *
+		 * https://blogs.msdn.microsoft.com/openspecification/2012/06/28/smb3-secure-dialect-negotiation/
+		 *
+		 */
+		tevent_req_done(req);
+		return;
+	}
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
