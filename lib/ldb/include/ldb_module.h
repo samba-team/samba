@@ -133,6 +133,16 @@ typedef const struct ldb_schema_attribute *(*ldb_attribute_handler_override_fn_t
 void ldb_schema_attribute_set_override_handler(struct ldb_context *ldb,
 					       ldb_attribute_handler_override_fn_t override,
 					       void *private_data);
+
+/**
+  Allow the caller to define that the callback for the attribute handler
+  also overrides the index list
+
+  \param ldb The ldb context
+  \param one_level_indexes Indicates that the index for SCOPE_ONELEVEL
+         should also be maintained
+
+*/
 void ldb_schema_set_override_indexlist(struct ldb_context *ldb,
 				       bool one_level_indexes);
 
