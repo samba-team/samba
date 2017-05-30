@@ -326,17 +326,19 @@ int ldb_error_at(struct ldb_context *ldb, int ecode,
 
 
 #define FIRST_OP_NOERR(ldb, op) do { \
-	module = ldb->modules;					\
-	while (module && module->ops->op == NULL) module = module->next; \
-	if ((ldb->flags & LDB_FLG_ENABLE_TRACING) && module) { \
+	next_module = ldb->modules;					\
+	while (next_module && next_module->ops->op == NULL) {		\
+		next_module = next_module->next;			    \
+	};							    \
+	if ((ldb->flags & LDB_FLG_ENABLE_TRACING) && next_module) { \
 		ldb_debug(ldb, LDB_DEBUG_TRACE, "ldb_trace_request: (%s)->" #op, \
-			  module->ops->name);				\
+			  next_module->ops->name);				\
 	}								\
 } while (0)
 
 #define FIRST_OP(ldb, op) do { \
 	FIRST_OP_NOERR(ldb, op); \
-	if (module == NULL) {	       				\
+	if (next_module == NULL) {	       				\
 		ldb_asprintf_errstring(ldb, "unable to find module or backend to handle operation: " #op); \
 		return LDB_ERR_OPERATIONS_ERROR;			\
 	} \
@@ -348,7 +350,7 @@ int ldb_error_at(struct ldb_context *ldb, int ecode,
 */
 int ldb_transaction_start(struct ldb_context *ldb)
 {
-	struct ldb_module *module;
+	struct ldb_module *next_module;
 	int status;
 
 	ldb_debug(ldb, LDB_DEBUG_TRACE,
@@ -369,7 +371,7 @@ int ldb_transaction_start(struct ldb_context *ldb)
 
 	ldb_reset_err_string(ldb);
 
-	status = module->ops->start_transaction(module);
+	status = next_module->ops->start_transaction(next_module);
 	if (status != LDB_SUCCESS) {
 		if (ldb->err_string == NULL) {
 			/* no error string was setup by the backend */
@@ -378,13 +380,13 @@ int ldb_transaction_start(struct ldb_context *ldb)
 				ldb_strerror(status),
 				status);
 		}
-		if ((module && module->ldb->flags & LDB_FLG_ENABLE_TRACING)) {
-			ldb_debug(module->ldb, LDB_DEBUG_TRACE, "start ldb transaction error: %s",
-				  ldb_errstring(module->ldb));
+		if ((next_module && next_module->ldb->flags & LDB_FLG_ENABLE_TRACING)) {
+			ldb_debug(next_module->ldb, LDB_DEBUG_TRACE, "start ldb transaction error: %s",
+				  ldb_errstring(next_module->ldb));
 		}
 	} else {
-		if ((module && module->ldb->flags & LDB_FLG_ENABLE_TRACING)) {
-			ldb_debug(module->ldb, LDB_DEBUG_TRACE, "start ldb transaction success");
+		if ((next_module && next_module->ldb->flags & LDB_FLG_ENABLE_TRACING)) {
+			ldb_debug(next_module->ldb, LDB_DEBUG_TRACE, "start ldb transaction success");
 		}
 	}
 	return status;
@@ -395,7 +397,7 @@ int ldb_transaction_start(struct ldb_context *ldb)
 */
 int ldb_transaction_prepare_commit(struct ldb_context *ldb)
 {
-	struct ldb_module *module;
+	struct ldb_module *next_module;
 	int status;
 
 	if (ldb->prepare_commit_done) {
@@ -418,17 +420,17 @@ int ldb_transaction_prepare_commit(struct ldb_context *ldb)
 
 	/* call prepare transaction if available */
 	FIRST_OP_NOERR(ldb, prepare_commit);
-	if (module == NULL) {
+	if (next_module == NULL) {
 		return LDB_SUCCESS;
 	}
 
-	status = module->ops->prepare_commit(module);
+	status = next_module->ops->prepare_commit(next_module);
 	if (status != LDB_SUCCESS) {
 		ldb->transaction_active--;
-		/* if a module fails the prepare then we need
+		/* if a next_module fails the prepare then we need
 		   to call the end transaction for everyone */
 		FIRST_OP(ldb, del_transaction);
-		module->ops->del_transaction(module);
+		next_module->ops->del_transaction(next_module);
 		if (ldb->err_string == NULL) {
 			/* no error string was setup by the backend */
 			ldb_asprintf_errstring(ldb,
@@ -436,9 +438,9 @@ int ldb_transaction_prepare_commit(struct ldb_context *ldb)
 					       ldb_strerror(status),
 					       status);
 		}
-		if ((module && module->ldb->flags & LDB_FLG_ENABLE_TRACING)) { 
-			ldb_debug(module->ldb, LDB_DEBUG_TRACE, "prepare commit transaction error: %s", 
-				  ldb_errstring(module->ldb));				
+		if ((next_module && next_module->ldb->flags & LDB_FLG_ENABLE_TRACING)) {
+			ldb_debug(next_module->ldb, LDB_DEBUG_TRACE, "prepare commit transaction error: %s",
+				  ldb_errstring(next_module->ldb));
 		}
 	}
 
@@ -451,7 +453,7 @@ int ldb_transaction_prepare_commit(struct ldb_context *ldb)
 */
 int ldb_transaction_commit(struct ldb_context *ldb)
 {
-	struct ldb_module *module;
+	struct ldb_module *next_module;
 	int status;
 
 	status = ldb_transaction_prepare_commit(ldb);
@@ -480,7 +482,7 @@ int ldb_transaction_commit(struct ldb_context *ldb)
 	ldb_reset_err_string(ldb);
 
 	FIRST_OP(ldb, end_transaction);
-	status = module->ops->end_transaction(module);
+	status = next_module->ops->end_transaction(next_module);
 	if (status != LDB_SUCCESS) {
 		if (ldb->err_string == NULL) {
 			/* no error string was setup by the backend */
@@ -489,13 +491,13 @@ int ldb_transaction_commit(struct ldb_context *ldb)
 				ldb_strerror(status),
 				status);
 		}
-		if ((module && module->ldb->flags & LDB_FLG_ENABLE_TRACING)) { 
-			ldb_debug(module->ldb, LDB_DEBUG_TRACE, "commit ldb transaction error: %s", 
-				  ldb_errstring(module->ldb));				
+		if ((next_module && next_module->ldb->flags & LDB_FLG_ENABLE_TRACING)) {
+			ldb_debug(next_module->ldb, LDB_DEBUG_TRACE, "commit ldb transaction error: %s",
+				  ldb_errstring(next_module->ldb));
 		}
 		/* cancel the transaction */
 		FIRST_OP(ldb, del_transaction);
-		module->ops->del_transaction(module);
+		next_module->ops->del_transaction(next_module);
 	}
 	return status;
 }
@@ -506,7 +508,7 @@ int ldb_transaction_commit(struct ldb_context *ldb)
 */
 int ldb_transaction_cancel(struct ldb_context *ldb)
 {
-	struct ldb_module *module;
+	struct ldb_module *next_module;
 	int status;
 
 	ldb->transaction_active--;
@@ -529,7 +531,7 @@ int ldb_transaction_cancel(struct ldb_context *ldb)
 
 	FIRST_OP(ldb, del_transaction);
 
-	status = module->ops->del_transaction(module);
+	status = next_module->ops->del_transaction(next_module);
 	if (status != LDB_SUCCESS) {
 		if (ldb->err_string == NULL) {
 			/* no error string was setup by the backend */
@@ -538,9 +540,9 @@ int ldb_transaction_cancel(struct ldb_context *ldb)
 				ldb_strerror(status),
 				status);
 		}
-		if ((module && module->ldb->flags & LDB_FLG_ENABLE_TRACING)) { 
-			ldb_debug(module->ldb, LDB_DEBUG_TRACE, "cancel ldb transaction error: %s", 
-				  ldb_errstring(module->ldb));				
+		if ((next_module && next_module->ldb->flags & LDB_FLG_ENABLE_TRACING)) {
+			ldb_debug(next_module->ldb, LDB_DEBUG_TRACE, "cancel ldb transaction error: %s",
+				  ldb_errstring(next_module->ldb));
 		}
 	}
 	return status;
@@ -972,7 +974,7 @@ static int ldb_msg_check_element_flags(struct ldb_context *ldb,
 */
 int ldb_request(struct ldb_context *ldb, struct ldb_request *req)
 {
-	struct ldb_module *module;
+	struct ldb_module *next_module;
 	int ret;
 
 	if (req->callback == NULL) {
@@ -996,7 +998,7 @@ int ldb_request(struct ldb_context *ldb, struct ldb_request *req)
 			return LDB_ERR_INVALID_DN_SYNTAX;
 		}
 		FIRST_OP(ldb, search);
-		ret = module->ops->search(module, req);
+		ret = next_module->ops->search(next_module, req);
 		break;
 	case LDB_ADD:
 		if (!ldb_dn_validate(req->op.add.message->dn)) {
@@ -1024,7 +1026,7 @@ int ldb_request(struct ldb_context *ldb, struct ldb_request *req)
 			 */
 			return ret;
 		}
-		ret = module->ops->add(module, req);
+		ret = next_module->ops->add(next_module, req);
 		break;
 	case LDB_MODIFY:
 		if (!ldb_dn_validate(req->op.mod.message->dn)) {
@@ -1041,7 +1043,7 @@ int ldb_request(struct ldb_context *ldb, struct ldb_request *req)
 			 */
 			return ret;
 		}
-		ret = module->ops->modify(module, req);
+		ret = next_module->ops->modify(next_module, req);
 		break;
 	case LDB_DELETE:
 		if (!ldb_dn_validate(req->op.del.dn)) {
@@ -1050,7 +1052,7 @@ int ldb_request(struct ldb_context *ldb, struct ldb_request *req)
 			return LDB_ERR_INVALID_DN_SYNTAX;
 		}
 		FIRST_OP(ldb, del);
-		ret = module->ops->del(module, req);
+		ret = next_module->ops->del(next_module, req);
 		break;
 	case LDB_RENAME:
 		if (!ldb_dn_validate(req->op.rename.olddn)) {
@@ -1064,15 +1066,15 @@ int ldb_request(struct ldb_context *ldb, struct ldb_request *req)
 			return LDB_ERR_INVALID_DN_SYNTAX;
 		}
 		FIRST_OP(ldb, rename);
-		ret = module->ops->rename(module, req);
+		ret = next_module->ops->rename(next_module, req);
 		break;
 	case LDB_EXTENDED:
 		FIRST_OP(ldb, extended);
-		ret = module->ops->extended(module, req);
+		ret = next_module->ops->extended(next_module, req);
 		break;
 	default:
 		FIRST_OP(ldb, request);
-		ret = module->ops->request(module, req);
+		ret = next_module->ops->request(next_module, req);
 		break;
 	}
 
