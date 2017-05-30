@@ -1127,6 +1127,7 @@ out:
 
 void mit_samba_zero_bad_password_count(krb5_db_entry *db_entry)
 {
+	struct netr_SendToSamBase *send_to_sam = NULL;
 	struct samba_kdc_entry *p;
 	struct ldb_dn *domain_dn;
 
@@ -1137,7 +1138,9 @@ void mit_samba_zero_bad_password_count(krb5_db_entry *db_entry)
 	authsam_logon_success_accounting(p->kdc_db_ctx->samdb,
 					 p->msg,
 					 domain_dn,
-					 true);
+					 true,
+					 &send_to_sam);
+	/* TODO: RODC support */
 }
 
 
