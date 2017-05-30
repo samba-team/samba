@@ -367,6 +367,57 @@ static void test_ldb_del_noexist(void **state)
 	assert_int_equal(ret, LDB_ERR_NO_SUCH_OBJECT);
 }
 
+static void test_ldb_handle(void **state)
+{
+	int ret;
+	struct ldbtest_ctx *test_ctx = talloc_get_type_abort(*state,
+							struct ldbtest_ctx);
+	TALLOC_CTX *tmp_ctx;
+	struct ldb_dn *basedn;
+	struct ldb_request *request = NULL;
+	struct ldb_request *request2 = NULL;
+	struct ldb_result *res = NULL;
+	const char *attrs[] = { "cn", NULL };
+
+	tmp_ctx = talloc_new(test_ctx);
+	assert_non_null(tmp_ctx);
+
+	basedn = ldb_dn_new_fmt(tmp_ctx, test_ctx->ldb, "dc=test");
+	assert_non_null(basedn);
+
+	res = talloc_zero(tmp_ctx, struct ldb_result);
+	assert_non_null(res);
+
+	ret = ldb_build_search_req(&request, test_ctx->ldb, tmp_ctx,
+				   basedn, LDB_SCOPE_BASE,
+				   NULL, attrs, NULL, res,
+				   ldb_search_default_callback,
+				   NULL);
+	assert_int_equal(ret, 0);
+
+	/* We are against ldb_tdb, so expect private event contexts */
+	assert_ptr_not_equal(ldb_handle_get_event_context(request->handle),
+			     ldb_get_event_context(test_ctx->ldb));
+
+	ret = ldb_build_search_req(&request2, test_ctx->ldb, tmp_ctx,
+				   basedn, LDB_SCOPE_BASE,
+				   NULL, attrs, NULL, res,
+				   ldb_search_default_callback,
+				   request);
+	assert_int_equal(ret, 0);
+
+	/* Expect that same event context will be chained */
+	assert_ptr_equal(ldb_handle_get_event_context(request->handle),
+			 ldb_handle_get_event_context(request2->handle));
+
+	/* Now force this to use the global context */
+	ldb_handle_use_global_event_context(request2->handle);
+	assert_ptr_equal(ldb_handle_get_event_context(request2->handle),
+			 ldb_get_event_context(test_ctx->ldb));
+
+	talloc_free(tmp_ctx);
+}
+
 static void add_keyval(struct ldbtest_ctx *test_ctx,
 		       const char *key,
 		       const char *val)
@@ -1900,6 +1951,9 @@ int main(int argc, const char **argv)
 						ldbtest_setup,
 						ldbtest_teardown),
 		cmocka_unit_test_setup_teardown(test_ldb_del_noexist,
+						ldbtest_setup,
+						ldbtest_teardown),
+		cmocka_unit_test_setup_teardown(test_ldb_handle,
 						ldbtest_setup,
 						ldbtest_teardown),
 		cmocka_unit_test_setup_teardown(test_transactions,
