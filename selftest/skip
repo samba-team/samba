@@ -64,6 +64,8 @@
 ^samba3.*raw.qfsinfo
 ^samba3.*raw.sfileinfo.base
 ^samba3.smb2.hold-oplock                # Not a test, but a way to block other clients for a test
+^samba3.smb2.hold-sharemode             # Not a test, but a way to block other clients for a test
+^samba3.smb2.check-sharemode            # Not a test, but a way to test sharemodes outside of Samba
 ^samba3.smb2.durable-open-disconnect    # Not a test, but a way to create a disconnected durable
 ^samba3.smb2.scan                       # No tests
 ^samba3.smb2.oplock.levelii501		# No test yet
@@ -75,6 +77,8 @@
 ^samba4.raw.eas
 ^samba4.raw.hold-oplock 		# Not a test, but a way to block other clients for a test
 ^samba4.smb2.hold-oplock 		# Not a test, but a way to block other clients for a test
+^samba4.smb2.hold-sharemode 		# Not a test, but a way to block other clients for a test
+^samba4.smb2.check-sharemode            # Not a test, but a way to test sharemodes outside of Samba
 ^samba4.raw.ping.pong		# Needs second server to test
 ^samba4.rpc.samr.accessmask
 ^samba4.rpc.samr.passwords.*ncacn_np\(ad_dc_ntvfs\) # currently fails, possibly config issue

@@ -140,6 +140,7 @@
 ^samba4.smb2.getinfo.qfs_buffercheck # S4 does not do the INFO_LENGTH_MISMATCH/BUFFER_OVERFLOW thingy
 ^samba4.smb2.getinfo.qfile_buffercheck # S4 does not do the INFO_LENGTH_MISMATCH/BUFFER_OVERFLOW thingy
 ^samba4.smb2.getinfo.qsec_buffercheck # S4 does not do the BUFFER_TOO_SMALL thingy
+^samba4.smb2.sharemode
 ^samba4.ntvfs.cifs.krb5.base.createx_access.createx_access\(.*\)$
 ^samba4.rpc.lsa.forest.trust #Not fully provided by Samba4
 ^samba4.blackbox.upgradeprovision.alpha13.ldapcmp_sd\(none\) # Due to something rewriting the NT ACL on DNS objects
