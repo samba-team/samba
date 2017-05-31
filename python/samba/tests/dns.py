@@ -60,14 +60,6 @@ server_name = args[0]
 server_ip = args[1]
 creds.set_krb_forwardable(credentials.NO_KRB_FORWARDABLE)
 
-def make_txt_record(records):
-    rdata_txt = dns.txt_record()
-    s_list = dnsp.string_list()
-    s_list.count = len(records)
-    s_list.str = records
-    rdata_txt.txt = s_list
-    return rdata_txt
-
 class DNSTest(TestCase):
 
     def setUp(self):
@@ -131,6 +123,14 @@ class DNSTest(TestCase):
         q.question_class = qclass
         return q
 
+    def make_txt_record(self, records):
+        rdata_txt = dns.txt_record()
+        s_list = dnsp.string_list()
+        s_list.count = len(records)
+        s_list.str = records
+        rdata_txt.txt = s_list
+        return rdata_txt
+
     def get_dns_domain(self):
         "Helper to get dns domain"
         return self.creds.get_realm().lower()
@@ -193,7 +193,7 @@ class DNSTest(TestCase):
         r.rr_class = dns.DNS_QCLASS_IN
         r.ttl = 900
         r.length = 0xffff
-        rdata = make_txt_record(txt_array)
+        rdata = self.make_txt_record(txt_array)
         r.rdata = rdata
         updates.append(r)
         p.nscount = len(updates)
@@ -560,7 +560,7 @@ class TestDNSUpdates(DNSTest):
         r.rr_class = dns.DNS_QCLASS_IN
         r.ttl = 900
         r.length = 0xffff
-        rdata = make_txt_record(['"This is a test"'])
+        rdata = self.make_txt_record(['"This is a test"'])
         r.rdata = rdata
         updates.append(r)
         p.nscount = len(updates)
@@ -596,7 +596,7 @@ class TestDNSUpdates(DNSTest):
         r.rr_class = dns.DNS_QCLASS_NONE
         r.ttl = 0
         r.length = 0xffff
-        rdata = make_txt_record(['"This is a test"'])
+        rdata = self.make_txt_record(['"This is a test"'])
         r.rdata = rdata
         updates.append(r)
         p.nscount = len(updates)
@@ -638,7 +638,7 @@ class TestDNSUpdates(DNSTest):
         r.rr_class = dns.DNS_QCLASS_IN
         r.ttl = 900
         r.length = 0xffff
-        rdata = make_txt_record(['"This is a test"'])
+        rdata = self.make_txt_record(['"This is a test"'])
         r.rdata = rdata
         updates.append(r)
         p.nscount = len(updates)
@@ -674,7 +674,7 @@ class TestDNSUpdates(DNSTest):
         r.rr_class = dns.DNS_QCLASS_NONE
         r.ttl = 0
         r.length = 0xffff
-        rdata = make_txt_record(['"This is a test"'])
+        rdata = self.make_txt_record(['"This is a test"'])
         r.rdata = rdata
         updates.append(r)
         p.nscount = len(updates)
@@ -711,7 +711,7 @@ class TestDNSUpdates(DNSTest):
         r.rr_class = dns.DNS_QCLASS_IN
         r.ttl = 900
         r.length = 0xffff
-        rdata = make_txt_record(['"This is a test"'])
+        rdata = self.make_txt_record(['"This is a test"'])
         r.rdata = rdata
         updates.append(r)
         p.nscount = len(updates)
