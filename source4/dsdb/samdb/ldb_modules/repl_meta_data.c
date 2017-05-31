@@ -886,6 +886,8 @@ static int replmd_build_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct ds
 			       const struct GUID *invocation_id, uint64_t seq_num,
 			       uint64_t local_usn, NTTIME nttime, uint32_t version, bool deleted);
 
+static int parsed_dn_compare(struct parsed_dn *pdn1, struct parsed_dn *pdn2);
+
 static int get_parsed_dns(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 			  struct ldb_message_element *el, struct parsed_dn **pdn,
 			  const char *ldap_oid, struct ldb_request *parent);
@@ -940,6 +942,13 @@ static int replmd_add_fix_la(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 
 	for (i = 0; i < el->num_values; i++) {
 		struct parsed_dn *p = &pdn[i];
+		if (i > 0 && parsed_dn_compare(p, &pdn[i - 1]) == 0) {
+			ldb_asprintf_errstring(ldb,
+					"Linked attribute %s has "
+					"multiple identical values", el->name);
+			talloc_free(tmp_ctx);
+			return LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
+		}
 		ret = replmd_build_la_val(el->values, p->v, p->dsdb_dn,
 					  &ac->our_invocation_id,
 					  ac->seq_num, ac->seq_num, now, 0, false);

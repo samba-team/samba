@@ -1,5 +1,0 @@
-#
-# These fail because we don't handle multi-/single- constraints very well.
-#
-samba4.ldap.linked_attributes.python.*LATests.test_add_all_at_once
-samba4.ldap.python.*single_valued_linked_attributes
