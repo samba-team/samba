@@ -382,11 +382,20 @@ class LATests(samba.tests.TestCase):
 
     def test_multiple_links(self):
         u1, u2, u3, u4 = self.add_objects(4, 'user', 'u_multiple_links')
-        g1, g2, g3 = self.add_objects(3, 'group', 'g_multiple_links')
+        g1, g2, g3, g4 = self.add_objects(4, 'group', 'g_multiple_links')
 
         self.add_linked_attribute(g1, [u1, u2, u3, u4])
         self.add_linked_attribute(g2, [u3, u1])
         self.add_linked_attribute(g3, u2)
+
+        try:
+            # adding u2 twice should be an error
+            self.add_linked_attribute(g2, [u1, u2, u3, u2])
+        except ldb.LdbError as (num, msg):
+            if num != ldb.ERR_ENTRY_ALREADY_EXISTS:
+                self.fail("adding duplicate values, expected "
+                          "ERR_ENTRY_ALREADY_EXISTS, (%d) "
+                          "got %d" % (ldb.ERR_ENTRY_ALREADY_EXISTS, num))
 
         self.assert_forward_links(g1, [u1, u2, u3, u4])
         self.assert_forward_links(g2, [u3, u1])
@@ -580,6 +589,15 @@ class LATests(samba.tests.TestCase):
                                   more_attrs={'member': users})
         (g2,) = self.add_objects(1, 'group', 'g_all_at_once2',
                                  more_attrs={'member': users[:5]})
+
+        try:
+            self.add_objects(1, 'group', 'g_with_duplicate_links',
+                             more_attrs={'member': users[:5] + users[1:2]})
+        except ldb.LdbError as (num, msg):
+            if num != ldb.ERR_ENTRY_ALREADY_EXISTS:
+                self.fail("adding duplicate values, expected "
+                          "ERR_ENTRY_ALREADY_EXISTS, (%d) "
+                          "got %d" % (ldb.ERR_ENTRY_ALREADY_EXISTS, num))
 
         self.assert_forward_links(g1, users)
         self.assert_forward_links(g2, users[:5])
