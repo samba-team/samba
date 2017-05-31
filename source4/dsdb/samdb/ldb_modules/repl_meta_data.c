@@ -947,7 +947,11 @@ static int replmd_add_fix_la(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 					"Linked attribute %s has "
 					"multiple identical values", el->name);
 			talloc_free(tmp_ctx);
-			return LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
+			if (ldb_attr_cmp(el->name, "member") == 0) {
+				return LDB_ERR_ENTRY_ALREADY_EXISTS;
+			} else {
+				return LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
+			}
 		}
 		ret = replmd_build_la_val(el->values, p->v, p->dsdb_dn,
 					  &ac->our_invocation_id,
