@@ -179,7 +179,7 @@ static int dsdb_notification_filter_search(struct ldb_module *module,
 		 * It's the first time, let the caller comeback later
 		 * as we won't find any new objects.
 		 */
-		return ldb_request_done(req, LDB_SUCCESS);
+		return ldb_module_done(req, NULL, NULL, LDB_SUCCESS);
 	}
 
 	down_tree = talloc_zero(req, struct ldb_parse_tree);
