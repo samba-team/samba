@@ -627,6 +627,13 @@ removeea setea
 
     conf.RECURSE('system')
     conf.SAMBA_CONFIG_H()
+    if conf.CHECK_FUNCS('strerror_r'):
+        # Check if strerror_r is XSI-Compatable, the default GNU implementation
+        # is not
+        conf.CHECK_CODE('int strerror_r(int errnum, char *buf, size_t buflen);',
+                        'STRERROR_R_XSI_NOT_GNU',
+                        headers='string.h', addmain=False, link=False,
+                        msg="Checking for XSI (rather than GNU) prototype for strerror_r")
 
 
 REPLACEMENT_FUNCTIONS = {

@@ -820,6 +820,24 @@ int rep_strerror_r(int errnum, char *buf, size_t buflen)
 	strncpy(buf, s, buflen);
 	return 0;
 }
+#elif (!defined(STRERROR_R_XSI_NOT_GNU))
+#undef strerror_r
+int rep_strerror_r(int errnum, char *buf, size_t buflen)
+{
+	char *s = strerror_r(errnum, buf, buflen);
+	if (s == NULL) {
+		/* Shouldn't happen, should always get a string */
+		return EINVAL;
+	}
+	if (s != buf) {
+		strlcpy(buf, s, buflen);
+		if (strlen(s) > buflen - 1) {
+			return ERANGE;
+		}
+	}
+	return 0;
+
+}
 #endif
 
 #ifndef HAVE_CLOCK_GETTIME
