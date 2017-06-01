@@ -239,6 +239,7 @@ struct syslog_log_state {
 	/* RFC3164 says: The total length of the packet MUST be 1024
 	   bytes or less. */
 	char buffer[1024];
+	unsigned int dropped_count;
 };
 
 /* Format messages as per RFC3164
@@ -307,19 +308,66 @@ static void syslog_log(void *private_data, int level, const char *msg)
 	syslog(debug_level_to_priority(level), "%s", msg);
 }
 
-static void syslog_log_sock(void *private_data, int level, const char *msg)
+static int syslog_log_sock_maybe(struct syslog_log_state *state,
+				 int level, const char *msg)
 {
-	struct syslog_log_state *state = talloc_get_type_abort(
-		private_data, struct syslog_log_state);
 	int n;
+	ssize_t ret;
 
 	n = state->format(level, state, msg, state->buffer,
 			  sizeof(state->buffer));
 	if (n == -1) {
-		return;
+		return E2BIG;
 	}
 
-	sys_write_v(state->fd, state->buffer, n);
+	do {
+		ret = write(state->fd, state->buffer, n);
+	} while (ret == -1 && errno == EINTR);
+
+	if (ret == -1) {
+		return errno;
+	}
+
+	return 0;
+
+}
+static void syslog_log_sock(void *private_data, int level, const char *msg)
+{
+	struct syslog_log_state *state = talloc_get_type_abort(
+		private_data, struct syslog_log_state);
+	int ret;
+
+	if (state->dropped_count > 0) {
+		char t[64] = { 0 };
+		snprintf(t, sizeof(t),
+			 "[Dropped %u log messages]\n",
+			 state->dropped_count);
+		t[sizeof(t)-1] = '\0';
+		ret = syslog_log_sock_maybe(state, level, t);
+		if (ret == EAGAIN || ret == EWOULDBLOCK) {
+			state->dropped_count++;
+			/*
+			 * If above failed then actually drop the
+			 * message that would be logged below, since
+			 * it would have been dropped anyway and it is
+			 * also likely to fail.  Falling through and
+			 * attempting to log the message also means
+			 * that the dropped message count will be
+			 * logged out of order.
+			 */
+			return;
+		}
+		if (ret != 0) {
+			/* Silent failure on any other error */
+			return;
+		}
+		state->dropped_count = 0;
+	}
+
+	ret = syslog_log_sock_maybe(state, level, msg);
+	if (ret == EAGAIN || ret == EWOULDBLOCK) {
+		state->dropped_count++;
+	}
 }
 
 static int syslog_log_setup_syslog(TALLOC_CTX *mem_ctx, const char *app_name)
