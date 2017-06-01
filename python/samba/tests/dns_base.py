@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from samba.tests import TestCase
+from samba.tests import TestCaseInTempDir
 from samba.dcerpc import dns, dnsp
 from samba import gensec, tests
 from samba import credentials
@@ -27,7 +27,7 @@ import socket
 import uuid
 import time
 
-class DNSTest(TestCase):
+class DNSTest(TestCaseInTempDir):
 
     def setUp(self):
         super(DNSTest, self).setUp()
