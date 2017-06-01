@@ -209,11 +209,17 @@ struct ctdb_call {
  */
 #define CTDB_SRVID_TOOL_RANGE  0xCE00000000000000LL
 
+/* A range of ports reserved by client (top 8 bits)
+ * All ports matching the 8 top bits are reserved for exclusive use by
+ * CTDB client code
+ */
+#define CTDB_SRVID_CLIENT_RANGE  0xBE00000000000000LL
+
 /* Range of ports reserved for test applications (top 8 bits)
  * All ports matching the 8 top bits are reserved for exclusive use by
  * test applications
  */
-#define CTDB_SRVID_TEST_RANGE  0xBE00000000000000LL
+#define CTDB_SRVID_TEST_RANGE  0xAE00000000000000LL
 
 
 enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
