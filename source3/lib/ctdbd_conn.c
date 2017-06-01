@@ -574,7 +574,8 @@ int ctdbd_conn_get_fd(struct ctdbd_connection *conn)
 /*
  * Packet handler to receive and handle a ctdb message
  */
-static int ctdb_handle_message(struct ctdbd_connection *conn,
+static int ctdb_handle_message(struct tevent_context *ev,
+			       struct ctdbd_connection *conn,
 			       struct ctdb_req_header *hdr)
 {
 	struct ctdb_req_message_old *msg;
@@ -587,7 +588,7 @@ static int ctdb_handle_message(struct ctdbd_connection *conn,
 
 	msg = (struct ctdb_req_message_old *)hdr;
 
-	ctdbd_msg_call_back(NULL, conn, msg);
+	ctdbd_msg_call_back(ev, conn, msg);
 
 	return 0;
 }
@@ -603,7 +604,7 @@ void ctdbd_socket_readable(struct ctdbd_connection *conn)
 		cluster_fatal("ctdbd died\n");
 	}
 
-	ret = ctdb_handle_message(conn, hdr);
+	ret = ctdb_handle_message(NULL, conn, hdr);
 
 	TALLOC_FREE(hdr);
 
