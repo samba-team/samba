@@ -121,7 +121,11 @@ def cmd_testonly(opt):
             env.SUBUNIT_FORMATTER = '${PYTHON} -u ${srcdir}/selftest/format-subunit-json --prefix=${SELFTEST_PREFIX}'
         else:
             env.SUBUNIT_FORMATTER = '${PYTHON} -u ${srcdir}/selftest/format-subunit --prefix=${SELFTEST_PREFIX} --immediate'
-    env.FILTER_XFAIL = '${PYTHON} -u ${srcdir}/selftest/filter-subunit --expected-failures=${srcdir}/selftest/knownfail --flapping=${srcdir}/selftest/flapping'
+    env.FILTER_XFAIL = ('${PYTHON} -u ${srcdir}/selftest/filter-subunit '
+                        '--expected-failures=${srcdir}/selftest/knownfail '
+                        '--expected-failures=${srcdir}/selftest/knownfail.d '
+                        '--flapping=${srcdir}/selftest/flapping '
+                        '--flapping=${srcdir}/selftest/flapping.d')
 
     if Options.options.FAIL_IMMEDIATELY:
         env.FILTER_XFAIL += ' --fail-immediately'

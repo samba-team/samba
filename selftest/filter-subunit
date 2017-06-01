@@ -27,11 +27,12 @@ sys.path.insert(0, "bin/python")
 import subunithelper
 
 parser = optparse.OptionParser("filter-subunit [options] < instream > outstream")
-parser.add_option("--expected-failures", type="string",
-    help="File containing list of regexes matching tests to consider known "
-         "failures")
-parser.add_option("--flapping", type="string",
-    help="File containing list of flapping tests, of which to ignore results.")
+parser.add_option("--expected-failures", type="string", action="append",
+    help=("File or directory containing lists of regexes matching tests "
+          "to consider known failures"))
+parser.add_option("--flapping", type="string", action="append",
+    help=("File or directory containing lists of flapping tests, "
+          "of which to ignore results."))
 parser.add_option("--strip-passed-output", action="store_true",
     help="Whether to strip output from tests that passed")
 parser.add_option("--fail-immediately", action="store_true",
@@ -66,13 +67,13 @@ if opts.perf_test_output:
         sys.exit(1)
 
 if opts.expected_failures:
-    expected_failures = subunithelper.read_test_regexes(opts.expected_failures)
+    expected_failures = subunithelper.read_test_regexes(*opts.expected_failures)
 else:
     expected_failures = {}
 
 
 if opts.flapping:
-    flapping = subunithelper.read_test_regexes(opts.flapping)
+    flapping = subunithelper.read_test_regexes(*opts.flapping)
 else:
     flapping = {}
 

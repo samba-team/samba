@@ -20,6 +20,7 @@ __all__ = ['parse_results']
 import datetime
 import re
 import sys
+import os
 from samba import subunit
 from samba.subunit.run import TestProtocolClient
 from samba.subunit import iso8601
@@ -228,21 +229,33 @@ class SubunitOps(TestProtocolClient,TestsuiteEnabledTestResult):
         self._stream.write(msg)
 
 
-def read_test_regexes(name):
+def read_test_regexes(*names):
     ret = {}
-    f = open(name, 'r')
-    try:
-        for l in f:
-            l = l.strip()
-            if l == "" or l[0] == "#":
-                continue
-            if "#" in l:
-                (regex, reason) = l.split("#", 1)
-                ret[regex.strip()] = reason.strip()
-            else:
-                ret[l] = None
-    finally:
-        f.close()
+    files = []
+    for name in names:
+        # if we are given a directory, we read all the files it contains
+        # (except the ones that end with "~").
+        if os.path.isdir(name):
+            files.extend([os.path.join(name, x)
+                          for x in os.listdir(name)
+                          if x[-1] != '~'])
+        else:
+            files.append(name)
+
+    for filename in files:
+        f = open(filename, 'r')
+        try:
+            for l in f:
+                l = l.strip()
+                if l == "" or l[0] == "#":
+                    continue
+                if "#" in l:
+                    (regex, reason) = l.split("#", 1)
+                    ret[regex.strip()] = reason.strip()
+                else:
+                    ret[l] = None
+        finally:
+            f.close()
     return ret
 
 

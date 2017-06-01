@@ -1,0 +1,14 @@
+# Files in this directory contain lists of regular expressions
+# matching the names of tests that are that are flapping. In other
+# words, they sometimes succeed and sometimes fail, depending on
+# external factors.
+#
+# "make test" will not report failures or successes for tests listed here.
+#
+# DO NOT ADD TESTS HERE UNLESS THEY ARE ACTUALLY FLAPPING
+#
+# It is much better to add known failing tests to 'knownfail', so the
+# test system can warn when they actually start passing.
+#
+# Empty lines and lines begining with '#' are ignored.
+# Please don't add tests to this README!
