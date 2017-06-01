@@ -63,7 +63,7 @@ static int os2_delete(DIR *d)
 	off_t offsets[READDIR_SIZE];
 	int i, j;
 	struct dirent *de;
-	char names[READDIR_SIZE][30];
+	char names[READDIR_SIZE][256];
 
 	/* scan, remembering offsets */
 	for (i=0, de=readdir(d); 
