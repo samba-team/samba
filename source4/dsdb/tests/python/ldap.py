@@ -711,6 +711,73 @@ class BasicTests(samba.tests.TestCase):
 
         delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
+    def test_single_valued_linked_attributes(self):
+        """Test managedBy, a single-valued linked attribute.
+
+        (The single-valuedness of this is enforced differently, in
+        repl_meta_data.c)
+        """
+        ou = 'OU=svla,%s' % (self.base_dn)
+
+        delete_force(self.ldb, ou, controls=['tree_delete:1'])
+
+        self.ldb.add({'objectclass': 'organizationalUnit',
+                      'dn': ou})
+
+
+        managers = []
+        for x in range(3):
+            m = "cn=manager%d,%s" % (x, ou)
+            self.ldb.add({
+                "dn": m,
+                "objectclass": "user"})
+            managers.append(m)
+
+        try:
+            self.ldb.add({
+                "dn": "cn=group1," + ou,
+                "objectclass": "group",
+                "managedBy": managers
+            })
+            self.fail("failed to fail to add multiple managedBy attributes")
+        except LdbError as (num, _):
+            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+
+        managee = "cn=group2," + ou
+        self.ldb.add({
+            "dn": managee,
+            "objectclass": "group",
+            "managedBy": [managers[0]]})
+
+        m = Message()
+        m.dn = Dn(ldb, managee)
+        m["managedBy"] = MessageElement(managers, FLAG_MOD_REPLACE,
+                                        "managedBy")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+
+        m = Message()
+        m.dn = Dn(ldb, managee)
+        m["managedBy"] = MessageElement(managers[1], FLAG_MOD_REPLACE,
+                                        "managedBy")
+        ldb.modify(m)
+
+        m = Message()
+        m.dn = Dn(ldb, managee)
+        m["managedBy"] = MessageElement(managers[2], FLAG_MOD_ADD,
+                                        "managedBy")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_ATTRIBUTE_OR_VALUE_EXISTS)
+
+        self.ldb.delete(ou, ['tree_delete:1'])
+
+
     def test_multivalued_attributes(self):
         """Test multi-valued attributes"""
         ou = 'OU=mvattr,%s' % (self.base_dn)
