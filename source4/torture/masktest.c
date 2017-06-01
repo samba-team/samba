@@ -160,7 +160,7 @@ static void get_real_name(TALLOC_CTX *mem_ctx, struct smbcli_state *cli,
 		*long_name = strlower_talloc(mem_ctx, last_hit.long_name);
 	}
 
-	if (*short_name == '\0') {
+	if (*short_name[0] == '\0') {
 		*short_name = talloc_strdup(mem_ctx, *long_name);
 	}
 }
