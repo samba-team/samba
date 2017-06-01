@@ -19,6 +19,7 @@
 
 #include "replace.h"
 #include "notifyd.h"
+#include "lib/messages_ctdbd.h"
 #include <tevent.h>
 #include "lib/util/tevent_unix.h"
 

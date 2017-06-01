@@ -28,6 +28,7 @@
 #include "lib/param/param.h"
 #include "ctdbd_conn.h"
 #include "messages.h"
+#include "lib/messages_ctdbd.h"
 #include "lib/messages_dgm.h"
 
 struct serverid_key {

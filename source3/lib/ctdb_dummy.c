@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "messages.h"
+#include "lib/messages_ctdbd.h"
 #include "ctdbd_conn.h"
 #include "lib/dbwrap/dbwrap.h"
 #include "lib/dbwrap/dbwrap_ctdb.h"

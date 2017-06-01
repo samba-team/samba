@@ -65,14 +65,6 @@ struct messaging_backend {
 	void *private_data;
 };
 
-int messaging_ctdbd_init(struct messaging_context *msg_ctx,
-			 TALLOC_CTX *mem_ctx,
-			 struct messaging_backend **presult);
-int messaging_ctdbd_reinit(struct messaging_context *msg_ctx,
-			   TALLOC_CTX *mem_ctx,
-			   struct messaging_backend *backend);
-struct ctdbd_connection *messaging_ctdbd_connection(void);
-
 struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx, 
 					 struct tevent_context *ev);
 NTSTATUS messaging_init_client(TALLOC_CTX *mem_ctx,

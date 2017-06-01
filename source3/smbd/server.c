@@ -40,6 +40,7 @@
 #include "passdb.h"
 #include "auth.h"
 #include "messages.h"
+#include "messages_ctdbd.h"
 #include "smbprofile.h"
 #include "lib/id_cache.h"
 #include "lib/param/param.h"

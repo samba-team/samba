@@ -32,6 +32,7 @@
 #include "passdb.h"
 #include "auth.h"
 #include "messages.h"
+#include "lib/messages_ctdbd.h"
 #include "smbprofile.h"
 #include "rpc_server/spoolss/srv_spoolss_nt.h"
 #include "libsmb/libsmb.h"

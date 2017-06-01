@@ -23,6 +23,7 @@
 #include "lib/dbwrap/dbwrap.h"
 #include "lib/dbwrap/dbwrap_ctdb.h"
 #include "messages.h"
+#include "lib/messages_ctdbd.h"
 
 bool run_local_dbwrap_ctdb(int dummy)
 {

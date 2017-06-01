@@ -121,6 +121,7 @@ struct notify_event_msg {
 };
 
 struct sys_notify_context;
+struct ctdbd_connection;
 
 typedef int (*sys_notify_watch_fn)(TALLOC_CTX *mem_ctx,
 				   struct sys_notify_context *ctx,
