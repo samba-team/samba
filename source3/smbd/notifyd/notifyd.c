@@ -179,7 +179,8 @@ static int sys_notify_watch_dummy(
 #ifdef CLUSTER_SUPPORT
 static void notifyd_broadcast_reclog_finished(struct tevent_req *subreq);
 static void notifyd_clean_peers_finished(struct tevent_req *subreq);
-static int notifyd_snoop_broadcast(uint32_t src_vnn, uint32_t dst_vnn,
+static int notifyd_snoop_broadcast(struct tevent_context *ev,
+				   uint32_t src_vnn, uint32_t dst_vnn,
 				   uint64_t dst_srvid,
 				   const uint8_t *msg, size_t msglen,
 				   void *private_data);
@@ -1387,7 +1388,8 @@ fail:
  * broadcast, which will then trigger a fresh database pull.
  */
 
-static int notifyd_snoop_broadcast(uint32_t src_vnn, uint32_t dst_vnn,
+static int notifyd_snoop_broadcast(struct tevent_context *ev,
+				   uint32_t src_vnn, uint32_t dst_vnn,
 				   uint64_t dst_srvid,
 				   const uint8_t *msg, size_t msglen,
 				   void *private_data)

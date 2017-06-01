@@ -276,6 +276,7 @@ static void smbd_parent_id_cache_delete(struct messaging_context *ctx,
 
 #ifdef CLUSTER_SUPPORT
 static int smbd_parent_ctdb_reconfigured(
+	struct tevent_context *ev,
 	uint32_t src_vnn, uint32_t dst_vnn, uint64_t dst_srvid,
 	const uint8_t *msg, size_t msglen, void *private_data)
 {

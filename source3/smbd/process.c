@@ -2695,7 +2695,8 @@ static void smbd_release_ip_immediate(struct tevent_context *ctx,
 /****************************************************************************
 received when we should release a specific IP
 ****************************************************************************/
-static int release_ip(uint32_t src_vnn, uint32_t dst_vnn,
+static int release_ip(struct tevent_context *ev,
+		      uint32_t src_vnn, uint32_t dst_vnn,
 		      uint64_t dst_srvid,
 		      const uint8_t *msg, size_t msglen,
 		      void *private_data)

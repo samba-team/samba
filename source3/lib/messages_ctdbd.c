@@ -109,6 +109,7 @@ static int messaging_ctdbd_destructor(struct messaging_ctdbd_context *ctx)
 }
 
 static int messaging_ctdb_recv(
+	struct tevent_context *ev,
 	uint32_t src_vnn, uint32_t dst_vnn, uint64_t dst_srvid,
 	const uint8_t *msg, size_t msg_len, void *private_data)
 {

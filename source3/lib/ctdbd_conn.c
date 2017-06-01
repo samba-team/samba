@@ -41,7 +41,8 @@
 
 struct ctdbd_srvid_cb {
 	uint64_t srvid;
-	int (*cb)(uint32_t src_vnn, uint32_t dst_vnn,
+	int (*cb)(struct tevent_context *ev,
+		  uint32_t src_vnn, uint32_t dst_vnn,
 		  uint64_t dst_srvid,
 		  const uint8_t *msg, size_t msglen,
 		  void *private_data);
@@ -143,7 +144,8 @@ static void ctdb_packet_dump(struct ctdb_req_header *hdr)
  * Register a srvid with ctdbd
  */
 int register_with_ctdbd(struct ctdbd_connection *conn, uint64_t srvid,
-			int (*cb)(uint32_t src_vnn, uint32_t dst_vnn,
+			int (*cb)(struct tevent_context *ev,
+				  uint32_t src_vnn, uint32_t dst_vnn,
 				  uint64_t dst_srvid,
 				  const uint8_t *msg, size_t msglen,
 				  void *private_data),
@@ -204,7 +206,8 @@ static int ctdbd_msg_call_back(struct ctdbd_connection *conn,
 		if ((cb->srvid == msg->srvid) && (cb->cb != NULL)) {
 			int ret;
 
-			ret = cb->cb(msg->hdr.srcnode, msg->hdr.destnode,
+			ret = cb->cb(NULL,
+				     msg->hdr.srcnode, msg->hdr.destnode,
 				     msg->srvid, msg->data, msg->datalen,
 				     cb->private_data);
 			if (ret != 0) {
@@ -1138,7 +1141,8 @@ static void smbd_ctdb_canonicalize_ip(const struct sockaddr_storage *in,
 int ctdbd_register_ips(struct ctdbd_connection *conn,
 		       const struct sockaddr_storage *_server,
 		       const struct sockaddr_storage *_client,
-		       int (*cb)(uint32_t src_vnn, uint32_t dst_vnn,
+		       int (*cb)(struct tevent_context *ev,
+				 uint32_t src_vnn, uint32_t dst_vnn,
 				 uint64_t dst_srvid,
 				 const uint8_t *msg, size_t msglen,
 				 void *private_data),
