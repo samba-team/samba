@@ -81,6 +81,11 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 
 int messaging_ctdbd_init(struct messaging_context *msg_ctx,
 			 TALLOC_CTX *mem_ctx,
+			 void (*recv_cb)(struct tevent_context *ev,
+					 const uint8_t *msg, size_t msg_len,
+					 int *fds, size_t num_fds,
+					 void *private_data),
+			 void *private_data,
 			      struct messaging_backend **presult)
 {
 	return ENOSYS;
@@ -88,6 +93,11 @@ int messaging_ctdbd_init(struct messaging_context *msg_ctx,
 
 int messaging_ctdbd_reinit(struct messaging_context *msg_ctx,
 			   TALLOC_CTX *mem_ctx,
+			   void (*recv_cb)(struct tevent_context *ev,
+					   const uint8_t *msg, size_t msg_len,
+					   int *fds, size_t num_fds,
+					   void *private_data),
+			   void *private_data,
 			   struct messaging_backend *backend)
 {
 	return ENOSYS;

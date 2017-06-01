@@ -513,7 +513,8 @@ static NTSTATUS messaging_init_internal(TALLOC_CTX *mem_ctx,
 	talloc_set_destructor(ctx, messaging_context_destructor);
 
 	if (lp_clustering()) {
-		ret = messaging_ctdbd_init(ctx, ctx, &ctx->remote);
+		ret = messaging_ctdbd_init(
+			ctx, ctx, messaging_recv_cb, ctx, &ctx->remote);
 
 		if (ret != 0) {
 			DEBUG(2, ("messaging_ctdbd_init failed: %s\n",
@@ -627,8 +628,10 @@ NTSTATUS messaging_reinit(struct messaging_context *msg_ctx)
 	if (lp_clustering()) {
 		TALLOC_FREE(msg_ctx->cluster_fde);
 
-		ret = messaging_ctdbd_reinit(msg_ctx, msg_ctx,
-					     msg_ctx->remote);
+		ret = messaging_ctdbd_reinit(
+			msg_ctx, msg_ctx, messaging_recv_cb, msg_ctx,
+			msg_ctx->remote);
+
 		if (ret != 0) {
 			DEBUG(1, ("messaging_ctdbd_init failed: %s\n",
 				  strerror(ret)));
