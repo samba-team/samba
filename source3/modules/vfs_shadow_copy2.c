@@ -2792,22 +2792,28 @@ static uint64_t shadow_copy2_disk_free(vfs_handle_struct *handle,
 	return ret;
 }
 
-static int shadow_copy2_get_quota(vfs_handle_struct *handle, const char *path,
-				  enum SMB_QUOTA_TYPE qtype, unid_t id,
-				  SMB_DISK_QUOTA *dq)
+static int shadow_copy2_get_quota(vfs_handle_struct *handle,
+				const struct smb_filename *smb_fname,
+				enum SMB_QUOTA_TYPE qtype,
+				unid_t id,
+				SMB_DISK_QUOTA *dq)
 {
 	time_t timestamp = 0;
 	char *stripped = NULL;
 	int ret;
 	int saved_errno = 0;
 	char *conv;
+	struct smb_filename *conv_smb_fname = NULL;
 
-	if (!shadow_copy2_strip_snapshot(talloc_tos(), handle, path, &timestamp,
-					 &stripped)) {
+	if (!shadow_copy2_strip_snapshot(talloc_tos(),
+				handle,
+				smb_fname->base_name,
+				&timestamp,
+				&stripped)) {
 		return -1;
 	}
 	if (timestamp == 0) {
-		return SMB_VFS_NEXT_GET_QUOTA(handle, path, qtype, id, dq);
+		return SMB_VFS_NEXT_GET_QUOTA(handle, smb_fname, qtype, id, dq);
 	}
 
 	conv = shadow_copy2_convert(talloc_tos(), handle, stripped, timestamp);
@@ -2815,13 +2821,22 @@ static int shadow_copy2_get_quota(vfs_handle_struct *handle, const char *path,
 	if (conv == NULL) {
 		return -1;
 	}
-
-	ret = SMB_VFS_NEXT_GET_QUOTA(handle, conv, qtype, id, dq);
+	conv_smb_fname = synthetic_smb_fname(talloc_tos(),
+					conv,
+					NULL,
+					NULL,
+					smb_fname->flags);
+	if (conv_smb_fname == NULL) {
+		TALLOC_FREE(conv);
+		return -1;
+	}
+	ret = SMB_VFS_NEXT_GET_QUOTA(handle, conv_smb_fname, qtype, id, dq);
 
 	if (ret == -1) {
 		saved_errno = errno;
 	}
 	TALLOC_FREE(conv);
+	TALLOC_FREE(conv_smb_fname);
 	if (saved_errno != 0) {
 		errno = saved_errno;
 	}

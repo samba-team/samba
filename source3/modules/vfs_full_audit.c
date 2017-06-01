@@ -693,14 +693,17 @@ static uint64_t smb_full_audit_disk_free(vfs_handle_struct *handle,
 }
 
 static int smb_full_audit_get_quota(struct vfs_handle_struct *handle,
-				    const char *path, enum SMB_QUOTA_TYPE qtype,
-				    unid_t id, SMB_DISK_QUOTA *qt)
+				const struct smb_filename *smb_fname,
+				enum SMB_QUOTA_TYPE qtype,
+				unid_t id,
+				SMB_DISK_QUOTA *qt)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_GET_QUOTA(handle, path, qtype, id, qt);
+	result = SMB_VFS_NEXT_GET_QUOTA(handle, smb_fname, qtype, id, qt);
 
-	do_log(SMB_VFS_OP_GET_QUOTA, (result >= 0), handle, "%s", path);
+	do_log(SMB_VFS_OP_GET_QUOTA, (result >= 0), handle, "%s",
+			smb_fname->base_name);
 
 	return result;
 }

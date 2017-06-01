@@ -57,11 +57,13 @@ static uint64_t skel_disk_free(vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_DISK_FREE(handle, smb_fname, bsize, dfree, dsize);
 }
 
-static int skel_get_quota(vfs_handle_struct *handle, const char *path,
-			  enum SMB_QUOTA_TYPE qtype, unid_t id,
-			  SMB_DISK_QUOTA *dq)
+static int skel_get_quota(vfs_handle_struct *handle,
+				const struct smb_filename *smb_fname,
+				enum SMB_QUOTA_TYPE qtype,
+				unid_t id,
+				SMB_DISK_QUOTA *dq)
 {
-	return SMB_VFS_NEXT_GET_QUOTA(handle, path, qtype, id, dq);
+	return SMB_VFS_NEXT_GET_QUOTA(handle, smb_fname, qtype, id, dq);
 }
 
 static int skel_set_quota(vfs_handle_struct *handle, enum SMB_QUOTA_TYPE qtype,

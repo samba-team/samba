@@ -56,17 +56,30 @@ static uint64_t cap_disk_free(vfs_handle_struct *handle,
 			bsize, dfree, dsize);
 }
 
-static int cap_get_quota(vfs_handle_struct *handle, const char *path,
-			 enum SMB_QUOTA_TYPE qtype, unid_t id,
-			 SMB_DISK_QUOTA *dq)
+static int cap_get_quota(vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
+			enum SMB_QUOTA_TYPE qtype,
+			unid_t id,
+			SMB_DISK_QUOTA *dq)
 {
-	char *cappath = capencode(talloc_tos(), path);
+	char *cappath = capencode(talloc_tos(), smb_fname->base_name);
+	struct smb_filename *cap_smb_fname = NULL;
 
 	if (!cappath) {
 		errno = ENOMEM;
 		return -1;
 	}
-	return SMB_VFS_NEXT_GET_QUOTA(handle, cappath, qtype, id, dq);
+	cap_smb_fname = synthetic_smb_fname(talloc_tos(),
+					cappath,
+					NULL,
+					NULL,
+					smb_fname->flags);
+	if (cap_smb_fname == NULL) {
+		TALLOC_FREE(cappath);
+		errno = ENOMEM;
+		return -1;
+	}
+	return SMB_VFS_NEXT_GET_QUOTA(handle, cap_smb_fname, qtype, id, dq);
 }
 
 static DIR *cap_opendir(vfs_handle_struct *handle,

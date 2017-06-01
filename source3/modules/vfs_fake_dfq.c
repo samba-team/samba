@@ -27,9 +27,11 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
 
-static int dfq_get_quota(struct vfs_handle_struct *handle, const char *path,
-			 enum SMB_QUOTA_TYPE qtype, unid_t id,
-			 SMB_DISK_QUOTA *qt);
+static int dfq_get_quota(struct vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
+			enum SMB_QUOTA_TYPE qtype,
+			unid_t id,
+			SMB_DISK_QUOTA *qt);
 
 static uint64_t dfq_load_param(int snum, const char *path, const char *section,
 			       const char *param, uint64_t def_val)
@@ -88,9 +90,11 @@ static uint64_t dfq_disk_free(vfs_handle_struct *handle,
 	return free_1k;
 }
 
-static int dfq_get_quota(struct vfs_handle_struct *handle, const char *path,
-			 enum SMB_QUOTA_TYPE qtype, unid_t id,
-			 SMB_DISK_QUOTA *qt)
+static int dfq_get_quota(struct vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
+			enum SMB_QUOTA_TYPE qtype,
+			unid_t id,
+			SMB_DISK_QUOTA *qt)
 {
 	int rc = 0;
 	int save_errno;
@@ -99,7 +103,7 @@ static int dfq_get_quota(struct vfs_handle_struct *handle, const char *path,
 	uint64_t bsize = 0;
 	char *rpath = NULL;
 
-	rpath = SMB_VFS_NEXT_REALPATH(handle, path);
+	rpath = SMB_VFS_NEXT_REALPATH(handle, smb_fname->base_name);
 	if (rpath == NULL) {
 		goto dflt;
 	}
@@ -160,7 +164,7 @@ static int dfq_get_quota(struct vfs_handle_struct *handle, const char *path,
 	goto out;
 
 dflt:
-	rc = SMB_VFS_NEXT_GET_QUOTA(handle, path, qtype, id, qt);
+	rc = SMB_VFS_NEXT_GET_QUOTA(handle, smb_fname, qtype, id, qt);
 
 out:
 	save_errno = errno;

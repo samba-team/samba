@@ -69,15 +69,17 @@ static uint64_t vfswrap_disk_free(vfs_handle_struct *handle,
 	return *dfree / 2;
 }
 
-static int vfswrap_get_quota(struct vfs_handle_struct *handle, const char *path,
-			     enum SMB_QUOTA_TYPE qtype, unid_t id,
-			     SMB_DISK_QUOTA *qt)
+static int vfswrap_get_quota(struct vfs_handle_struct *handle,
+				const struct smb_filename *smb_fname,
+				enum SMB_QUOTA_TYPE qtype,
+				unid_t id,
+				SMB_DISK_QUOTA *qt)
 {
 #ifdef HAVE_SYS_QUOTAS
 	int result;
 
 	START_PROFILE(syscall_get_quota);
-	result = sys_get_quota(path, qtype, id, qt);
+	result = sys_get_quota(smb_fname->base_name, qtype, id, qt);
 	END_PROFILE(syscall_get_quota);
 	return result;
 #else
