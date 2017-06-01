@@ -27,7 +27,7 @@
 #include "lib/util/debug.h"
 
 #include "protocol/protocol_api.h"
-#include "client/client.h"
+#include "client/client_event.h"
 #include "common/logging.h"
 
 struct tool_context {

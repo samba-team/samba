@@ -33,7 +33,7 @@
 
 #include "protocol/protocol_api.h"
 
-#include "client/client.h"
+#include "client/client_event.h"
 
 struct ctdb_event_context {
 	struct reqid_context *idr;
