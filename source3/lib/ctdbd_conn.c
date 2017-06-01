@@ -179,7 +179,8 @@ int register_with_ctdbd(struct ctdbd_connection *conn, uint64_t srvid,
 	return 0;
 }
 
-static int ctdbd_msg_call_back(struct ctdbd_connection *conn,
+static int ctdbd_msg_call_back(struct tevent_context *ev,
+			       struct ctdbd_connection *conn,
 			       struct ctdb_req_message_old *msg)
 {
 	uint32_t msg_len;
@@ -206,7 +207,7 @@ static int ctdbd_msg_call_back(struct ctdbd_connection *conn,
 		if ((cb->srvid == msg->srvid) && (cb->cb != NULL)) {
 			int ret;
 
-			ret = cb->cb(NULL,
+			ret = cb->cb(ev,
 				     msg->hdr.srcnode, msg->hdr.destnode,
 				     msg->srvid, msg->data, msg->datalen,
 				     cb->private_data);
@@ -414,7 +415,7 @@ static int ctdb_read_req(struct ctdbd_connection *conn, uint32_t reqid,
 	if (hdr->operation == CTDB_REQ_MESSAGE) {
 		struct ctdb_req_message_old *msg = (struct ctdb_req_message_old *)hdr;
 
-		ret = ctdbd_msg_call_back(conn, msg);
+		ret = ctdbd_msg_call_back(NULL, conn, msg);
 		if (ret != 0) {
 			TALLOC_FREE(hdr);
 			return ret;
@@ -586,7 +587,7 @@ static int ctdb_handle_message(struct ctdbd_connection *conn,
 
 	msg = (struct ctdb_req_message_old *)hdr;
 
-	ctdbd_msg_call_back(conn, msg);
+	ctdbd_msg_call_back(NULL, conn, msg);
 
 	return 0;
 }
