@@ -354,6 +354,7 @@ static int syslog_log_setup_common(TALLOC_CTX *mem_ctx, const char *app_name,
 	state->app_name = app_name;
 	talloc_set_destructor(state, syslog_log_state_destructor);
 
+	*result = state;
 	return 0;
 }
 
