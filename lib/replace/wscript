@@ -708,7 +708,7 @@ def build(bld):
                         source='''test/testsuite.c test/strptime.c
                         test/os2_delete.c test/getifaddrs.c''',
                         deps='replace',
-                        cflags="-Wno-format-zero-length")
+                        cflags="-Wno-format-zero-length -Wno-format-truncation")
 
     if bld.env.standalone_replace:
         bld.SAMBA_BINARY('replace_testsuite',
