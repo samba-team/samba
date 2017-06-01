@@ -1381,8 +1381,6 @@ ssize_t smb_vfs_call_listxattr(struct vfs_handle_struct *handle,
 				const struct smb_filename *smb_fname,
 				char *list,
 				size_t size);
-ssize_t smb_vfs_call_llistxattr(struct vfs_handle_struct *handle,
-				const char *path, char *list, size_t size);
 ssize_t smb_vfs_call_flistxattr(struct vfs_handle_struct *handle,
 				struct files_struct *fsp, char *list,
 				size_t size);

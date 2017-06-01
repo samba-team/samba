@@ -1270,21 +1270,6 @@ static ssize_t cephwrap_listxattr(struct vfs_handle_struct *handle,
 	}
 }
 
-#if 0
-static ssize_t cephwrap_llistxattr(struct vfs_handle_struct *handle, const char *path, char *list, size_t size)
-{
-	int ret;
-	DBG_DEBUG("[CEPH] llistxattr(%p, %s, %p, %llu)\n", handle, path, list, llu(size));
-	ret = ceph_llistxattr(handle->data, path, list, size);
-	DBG_DEBUG("[CEPH] listxattr(...) = %d\n", ret);
-	if (ret < 0) {
-		WRAP_RETURN(ret);
-	} else {
-		return (ssize_t)ret;
-	}
-}
-#endif
-
 static ssize_t cephwrap_flistxattr(struct vfs_handle_struct *handle, struct files_struct *fsp, char *list, size_t size)
 {
 	int ret;
