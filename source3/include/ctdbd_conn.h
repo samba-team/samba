@@ -42,7 +42,8 @@ int ctdbd_setup_fde(struct ctdbd_connection *conn, struct tevent_context *ev);
 uint32_t ctdbd_vnn(const struct ctdbd_connection *conn);
 
 int ctdbd_conn_get_fd(struct ctdbd_connection *conn);
-void ctdbd_socket_readable(struct ctdbd_connection *conn);
+void ctdbd_socket_readable(struct tevent_context *ev,
+			   struct ctdbd_connection *conn);
 
 int ctdbd_messaging_send_iov(struct ctdbd_connection *conn,
 			     uint32_t dst_vnn, uint64_t dst_srvid,

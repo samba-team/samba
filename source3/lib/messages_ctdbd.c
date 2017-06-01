@@ -174,7 +174,7 @@ static void messaging_ctdbd_readable(struct tevent_context *ev,
 	if ((flags & TEVENT_FD_READ) == 0) {
 		return;
 	}
-	ctdbd_socket_readable(conn);
+	ctdbd_socket_readable(ev, conn);
 }
 
 static int messaging_ctdbd_init_internal(struct messaging_context *msg_ctx,

@@ -593,7 +593,8 @@ static int ctdb_handle_message(struct tevent_context *ev,
 	return 0;
 }
 
-void ctdbd_socket_readable(struct ctdbd_connection *conn)
+void ctdbd_socket_readable(struct tevent_context *ev,
+			   struct ctdbd_connection *conn)
 {
 	struct ctdb_req_header *hdr = NULL;
 	int ret;
@@ -604,7 +605,7 @@ void ctdbd_socket_readable(struct ctdbd_connection *conn)
 		cluster_fatal("ctdbd died\n");
 	}
 
-	ret = ctdb_handle_message(NULL, conn, hdr);
+	ret = ctdb_handle_message(ev, conn, hdr);
 
 	TALLOC_FREE(hdr);
 
