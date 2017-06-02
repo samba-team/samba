@@ -1,4 +1,87 @@
                    =============================
+                   Release Notes for Samba 4.6.5
+                            June 6, 2017
+                   =============================
+
+
+This is the latest stable release of the Samba 4.6 release series.
+
+
+Changes since 4.6.4:
+---------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 12804: s3: VFS: Catia: Ensure path name is also converted.
+
+o  Christian Ambach <ambi@samba.org>
+   * BUG 12765: s3:smbcacls add prompt for password.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 12562: vfs_acl_xattr|tdb: Ensure create mask is at least 0666 if
+     ignore_system_acls is set.
+   * BUG 12702: Wrong sid->uid mapping for SIDs residing in sIDHistory.
+   * BUG 12749: vfs_fruit: lp_case_sensitive() does not return a bool.
+   * BUG 12766: s3/smbd: Update exclusive oplock optimisation to the lease area.
+   * BUG 12798: s3/smbd: Fix exclusive lease optimisation.
+
+o  Alexander Bokovoy <ab@samba.org>
+   * BUG 12751: Allow passing trusted domain password as plain-text to PASSDB
+     layer.
+   * BUG 12764: systemd: Fix detection of libsystemd.
+
+o  Amitay Isaacs <amitay@gmail.com>
+   * BUG 12697: ctdb-readonly: Avoid a tight loop waiting for revoke to
+     complete.
+   * BUG 12770: ctdb-logging: Initialize DEBUGLEVEL before changing the value.
+
+o  Shilpa Krishnareddy <skrishnareddy@panzura.com>
+   * BUG 12756: notify: Fix ordering of events in notifyd.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 12757: idmap_rfc2307: Lookup of more than two SIDs fails.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 12767: samba-tool: Let 'samba-tool user syncpasswords' report deletions
+     immediately.
+
+o  Doug Nazar <nazard@nazar.ca>
+   * BUG 12760: s3: smbd: inotify_map_mask_to_filter incorrectly indexes an
+     array.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 12687: vfs_expand_msdfs tries to open the remote address as a file
+     path.
+
+o  Martin Schwenke <martin@meltin.net>
+   * BUG 12802: 'ctdb nodestatus' incorrectly displays status for all nodes with
+     wrong exit code.
+   * BUG 12814: ctdb-common: Fix crash in logging initialisation.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   =============================
                    Release Notes for Samba 4.6.4
                             May 24, 2017
                    =============================
@@ -47,8 +130,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    =============================
                    Release Notes for Samba 4.6.3
