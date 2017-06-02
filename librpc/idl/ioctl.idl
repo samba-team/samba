@@ -49,8 +49,8 @@ interface copychunk
 		uint8 reserved[2];
 	} device_copy_offload_descriptor;
 
-	/* XXX: 0x00000001 is unconfirmed */
-	const uint32 STORAGE_OFFLOAD_TOKEN_TYPE_ZERO_DATA = 0x00000001;
+	const uint32 STORAGE_OFFLOAD_TOKEN_TYPE_ZERO_DATA = 0xffff0001;
+
 	typedef [public] struct {
 		uint32 token_type;
 		uint8 reserved[2];
