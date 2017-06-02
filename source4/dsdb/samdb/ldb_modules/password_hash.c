@@ -1543,13 +1543,12 @@ static int setup_primary_userPassword_hash(
 	hash = crypt((char *)io->n.cleartext_utf8->data, cmd);
 #endif
 	if (hash == NULL) {
-		char buf[1024];
 		ldb_asprintf_errstring(
 			ldb,
 			"setup_primary_userPassword: generation of a %s "
 			"password hash failed: (%s)",
 			scheme,
-			strerror_r(errno, buf, sizeof(buf)));
+			strerror(errno));
 		TALLOC_FREE(frame);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
