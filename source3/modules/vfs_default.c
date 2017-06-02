@@ -2436,12 +2436,14 @@ static int vfswrap_readlink(vfs_handle_struct *handle, const char *path, char *b
 	return result;
 }
 
-static int vfswrap_link(vfs_handle_struct *handle, const char *oldpath, const char *newpath)
+static int vfswrap_link(vfs_handle_struct *handle,
+			const struct smb_filename *old_smb_fname,
+			const struct smb_filename *new_smb_fname)
 {
 	int result;
 
 	START_PROFILE(syscall_link);
-	result = link(oldpath, newpath);
+	result = link(old_smb_fname->base_name, new_smb_fname->base_name);
 	END_PROFILE(syscall_link);
 	return result;
 }

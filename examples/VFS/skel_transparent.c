@@ -581,10 +581,11 @@ static int skel_vfs_readlink(vfs_handle_struct *handle, const char *path,
 	return SMB_VFS_NEXT_READLINK(handle, path, buf, bufsiz);
 }
 
-static int skel_link(vfs_handle_struct *handle, const char *oldpath,
-		     const char *newpath)
+static int skel_link(vfs_handle_struct *handle,
+			const struct smb_filename *old_smb_fname,
+			const struct smb_filename *new_smb_fname)
 {
-	return SMB_VFS_NEXT_LINK(handle, oldpath, newpath);
+	return SMB_VFS_NEXT_LINK(handle, old_smb_fname, new_smb_fname);
 }
 
 static int skel_mknod(vfs_handle_struct *handle,

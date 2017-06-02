@@ -192,9 +192,22 @@ static int syncops_symlink(vfs_handle_struct *handle,
 }
 
 static int syncops_link(vfs_handle_struct *handle,
-			 const char *oldname, const char *newname)
+			const struct smb_filename *old_smb_fname,
+			const struct smb_filename *new_smb_fname)
 {
-	SYNCOPS_NEXT(LINK, newname, (handle, oldname, newname));
+	int ret;
+	struct syncops_config_data *config;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct syncops_config_data,
+				return -1);
+
+	ret = SMB_VFS_NEXT_LINK(handle, old_smb_fname, new_smb_fname);
+	if (ret == 0 && config->onmeta && !config->disable) {
+		syncops_two_names(old_smb_fname->base_name,
+				  new_smb_fname->base_name);
+	}
+	return ret;
 }
 
 static int syncops_open(vfs_handle_struct *handle,

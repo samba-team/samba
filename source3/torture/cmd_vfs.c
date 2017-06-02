@@ -1251,12 +1251,28 @@ static NTSTATUS cmd_readlink(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int arg
 
 static NTSTATUS cmd_link(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
+	struct smb_filename *old_smb_fname = NULL;
+	struct smb_filename *new_smb_fname = NULL;
+
 	if (argc != 3) {
 		printf("Usage: link <path> <link>\n");
 		return NT_STATUS_OK;
 	}
 
-	if (SMB_VFS_LINK(vfs->conn, argv[1], argv[2]) == -1) {
+	old_smb_fname = synthetic_smb_fname_split(mem_ctx,
+					argv[1],
+					lp_posix_pathnames());
+	if (old_smb_fname == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	new_smb_fname = synthetic_smb_fname_split(mem_ctx,
+					argv[2],
+					lp_posix_pathnames());
+	if (new_smb_fname == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (SMB_VFS_LINK(vfs->conn, old_smb_fname, new_smb_fname) == -1) {
 		printf("link: error=%d (%s)\n", errno, strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;
 	}

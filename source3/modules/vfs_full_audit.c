@@ -1651,14 +1651,15 @@ static int smb_full_audit_readlink(vfs_handle_struct *handle,
 }
 
 static int smb_full_audit_link(vfs_handle_struct *handle,
-		      const char *oldpath, const char *newpath)
+			const struct smb_filename *old_smb_fname,
+			const struct smb_filename *new_smb_fname)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_LINK(handle, oldpath, newpath);
+	result = SMB_VFS_NEXT_LINK(handle, old_smb_fname, new_smb_fname);
 
 	do_log(SMB_VFS_OP_LINK, (result >= 0), handle,
-	       "%s|%s", oldpath, newpath);
+	       "%s|%s", old_smb_fname->base_name, new_smb_fname->base_name);
 
 	return result;
 }

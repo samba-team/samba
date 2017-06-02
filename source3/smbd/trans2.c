@@ -6149,8 +6149,7 @@ NTSTATUS hardlink_internals(TALLOC_CTX *ctx,
 	DEBUG(10,("hardlink_internals: doing hard link %s -> %s\n",
 		  smb_fname_old->base_name, smb_fname_new->base_name));
 
-	if (SMB_VFS_LINK(conn, smb_fname_old->base_name,
-			 smb_fname_new->base_name) != 0) {
+	if (SMB_VFS_LINK(conn, smb_fname_old, smb_fname_new) != 0) {
 		status = map_nt_error_from_unix(errno);
 		DEBUG(3,("hardlink_internals: Error %s hard link %s -> %s\n",
 			 nt_errstr(status), smb_fname_old->base_name,

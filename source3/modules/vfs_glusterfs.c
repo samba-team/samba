@@ -1246,9 +1246,12 @@ static int vfs_gluster_readlink(struct vfs_handle_struct *handle,
 }
 
 static int vfs_gluster_link(struct vfs_handle_struct *handle,
-			    const char *oldpath, const char *newpath)
+				const struct smb_filename *old_smb_fname,
+				const struct smb_filename *new_smb_fname)
 {
-	return glfs_link(handle->data, oldpath, newpath);
+	return glfs_link(handle->data,
+			old_smb_fname->base_name,
+			new_smb_fname->base_name);
 }
 
 static int vfs_gluster_mknod(struct vfs_handle_struct *handle,

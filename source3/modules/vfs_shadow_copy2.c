@@ -1180,19 +1180,28 @@ static int shadow_copy2_symlink(vfs_handle_struct *handle,
 }
 
 static int shadow_copy2_link(vfs_handle_struct *handle,
-			     const char *oldname, const char *newname)
+			const struct smb_filename *old_smb_fname,
+			const struct smb_filename *new_smb_fname)
 {
 	time_t timestamp_old = 0;
 	time_t timestamp_new = 0;
 	char *snappath_old = NULL;
 	char *snappath_new = NULL;
 
-	if (!shadow_copy2_strip_snapshot_internal(talloc_tos(), handle, oldname,
-					 &timestamp_old, NULL, &snappath_old)) {
+	if (!shadow_copy2_strip_snapshot_internal(talloc_tos(),
+				handle,
+				old_smb_fname->base_name,
+				&timestamp_old,
+				NULL,
+				&snappath_old)) {
 		return -1;
 	}
-	if (!shadow_copy2_strip_snapshot_internal(talloc_tos(), handle, newname,
-					 &timestamp_new, NULL, &snappath_new)) {
+	if (!shadow_copy2_strip_snapshot_internal(talloc_tos(),
+				handle,
+				new_smb_fname->base_name,
+				&timestamp_new,
+				NULL,
+				&snappath_new)) {
 		return -1;
 	}
 	if ((timestamp_old != 0) || (timestamp_new != 0)) {
@@ -1206,7 +1215,7 @@ static int shadow_copy2_link(vfs_handle_struct *handle,
 		errno = EROFS;
 		return -1;
 	}
-	return SMB_VFS_NEXT_LINK(handle, oldname, newname);
+	return SMB_VFS_NEXT_LINK(handle, old_smb_fname, new_smb_fname);
 }
 
 static int shadow_copy2_stat(vfs_handle_struct *handle,
