@@ -139,6 +139,34 @@ const char *ctdb_sock_addr_to_string(TALLOC_CTX *mem_ctx, ctdb_sock_addr *addr)
 	return cip;
 }
 
+unsigned int ctdb_sock_addr_port(ctdb_sock_addr *addr)
+{
+	switch (addr->sa.sa_family) {
+	case AF_INET:
+		return ntohs(addr->ip.sin_port);
+		break;
+	case AF_INET6:
+		return ntohs(addr->ip6.sin6_port);
+		break;
+	default:
+		return 0;
+	}
+}
+
+void ctdb_sock_addr_set_port(ctdb_sock_addr *addr, unsigned int port)
+{
+	switch (addr->sa.sa_family) {
+	case AF_INET:
+		addr->ip.sin_port = htons(port);
+		break;
+	case AF_INET6:
+		addr->ip6.sin6_port = htons(port);
+		break;
+	default:
+		break;
+	}
+}
+
 int ctdb_sock_addr_cmp_ip(const ctdb_sock_addr *addr1,
 			  const ctdb_sock_addr *addr2)
 {

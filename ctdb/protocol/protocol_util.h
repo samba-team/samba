@@ -31,6 +31,8 @@ const char *ctdb_event_to_string(enum ctdb_event event);
 enum ctdb_event ctdb_event_from_string(const char *event_str);
 
 const char *ctdb_sock_addr_to_string(TALLOC_CTX *mem_ctx, ctdb_sock_addr *addr);
+unsigned int ctdb_sock_addr_port(ctdb_sock_addr *addr);
+void ctdb_sock_addr_set_port(ctdb_sock_addr *addr, unsigned int port);
 int ctdb_sock_addr_cmp_ip(const ctdb_sock_addr *addr1,
 			  const ctdb_sock_addr *addr2);
 int ctdb_sock_addr_cmp(const ctdb_sock_addr *addr1,
