@@ -67,19 +67,22 @@ interface copychunk
 		hyper length;
 	} fsctl_offload_read_input;
 
-	const uint32 OFFLOAD_READ_FLAG_FILE_TOO_SMALL = 0x00000001;
-	const uint32 OFFLOAD_READ_FLAG_ALL_ZERO_BEYOND_RANGE = 0x00000002;
-	const uint32 OFFLOAD_READ_FLAG_CANNOT_OFFLOAD_BEYOND_RANGE = 0x00000004;
+	typedef [public,bitmap32bit] bitmap {
+		OFFLOAD_READ_FLAG_FILE_TOO_SMALL = 0x01,
+		OFFLOAD_READ_FLAG_ALL_ZERO_BEYOND_RANGE = 0x02,
+		OFFLOAD_READ_FLAG_CANNOT_OFFLOAD_BEYOND_RANGE = 0x04
+	} offload_flags;
+
 	typedef [public] struct {
 		uint32 size;
-		uint32 flags;
+		offload_flags flags;
 		hyper xfer_length;
 		uint8 token[512];
 	} fsctl_offload_read_output;
 
 	typedef [public] struct {
 		uint32 size;
-		uint32 flags;
+		offload_flags flags;
 		hyper file_offset;
 		hyper copy_length;
 		hyper xfer_offset;
