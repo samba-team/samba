@@ -47,13 +47,14 @@
 
 /* state of a partially completed getncchanges call */
 struct drsuapi_getncchanges_state {
-	struct db_context *anc_cache;
+	struct db_context *obj_cache;
 	struct GUID *guids;
 	uint32_t num_records;
 	uint32_t num_processed;
 	struct ldb_dn *ncRoot_dn;
 	struct GUID ncRoot_guid;
 	bool is_schema_nc;
+	bool is_get_anc;
 	uint64_t min_usn;
 	uint64_t max_usn;
 	struct drsuapi_DsReplicaHighWaterMark last_hwm;
@@ -1935,7 +1936,12 @@ static void dcesrv_drsuapi_update_highwatermark(const struct ldb_message *msg,
 	hwm->reserved_usn = 0;
 }
 
-static WERROR dcesrv_drsuapi_anc_cache_add(struct db_context *anc_cache,
+/**
+ * Adds an object's GUID to the cache of objects already sent.
+ * This avoids us sending the same object multiple times when
+ * the GetNCChanges request uses a flag like GET_ANC.
+ */
+static WERROR dcesrv_drsuapi_obj_cache_add(struct db_context *obj_cache,
 					   const struct GUID *guid)
 {
 	enum ndr_err_code ndr_err;
@@ -1960,7 +1966,7 @@ static WERROR dcesrv_drsuapi_anc_cache_add(struct db_context *anc_cache,
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
 
-	status = dbwrap_store(anc_cache, key, val, TDB_REPLACE);
+	status = dbwrap_store(obj_cache, key, val, TDB_REPLACE);
 	if (!NT_STATUS_IS_OK(status)) {
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
@@ -1968,7 +1974,11 @@ static WERROR dcesrv_drsuapi_anc_cache_add(struct db_context *anc_cache,
 	return WERR_OK;
 }
 
-static WERROR dcesrv_drsuapi_anc_cache_exists(struct db_context *anc_cache,
+/**
+ * Checks if the object with the GUID specified already exists in the
+ * object cache, i.e. it's already been sent in a GetNCChanges response.
+ */
+static WERROR dcesrv_drsuapi_obj_cache_exists(struct db_context *obj_cache,
 					      const struct GUID *guid)
 {
 	enum ndr_err_code ndr_err;
@@ -1989,7 +1999,7 @@ static WERROR dcesrv_drsuapi_anc_cache_exists(struct db_context *anc_cache,
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
 
-	exists = dbwrap_exists(anc_cache, key);
+	exists = dbwrap_exists(obj_cache, key);
 	if (!exists) {
 		return WERR_OBJECT_NOT_FOUND;
 	}
@@ -2497,10 +2507,11 @@ allowed:
 		if (req10->extended_op != DRSUAPI_EXOP_NONE) {
 			/* Do nothing */
 		} else if (req10->replica_flags & DRSUAPI_DRS_GET_ANC) {
-			getnc_state->anc_cache = db_open_rbt(getnc_state);
-			if (getnc_state->anc_cache == NULL) {
+			getnc_state->obj_cache = db_open_rbt(getnc_state);
+			if (getnc_state->obj_cache == NULL) {
 				return WERR_NOT_ENOUGH_MEMORY;
 			}
+			getnc_state->is_get_anc = true;
 		}
 	}
 
@@ -2650,8 +2661,8 @@ allowed:
 		 * an object, we don't need to do anything more,
 		 * as we've already added the links.
 		 */
-		if (getnc_state->anc_cache != NULL) {
-			werr = dcesrv_drsuapi_anc_cache_exists(getnc_state->anc_cache,
+		if (getnc_state->obj_cache != NULL) {
+			werr = dcesrv_drsuapi_obj_cache_exists(getnc_state->obj_cache,
 							       &getnc_state->guids[i]);
 			if (W_ERROR_EQUAL(werr, WERR_OBJECT_NAME_EXISTS)) {
 				dcesrv_drsuapi_update_highwatermark(msg,
@@ -2707,14 +2718,16 @@ allowed:
 
 		new_objs = obj;
 
-		if (getnc_state->anc_cache != NULL) {
-			werr = dcesrv_drsuapi_anc_cache_add(getnc_state->anc_cache,
+		if (getnc_state->obj_cache != NULL) {
+			werr = dcesrv_drsuapi_obj_cache_add(getnc_state->obj_cache,
 							    &getnc_state->guids[i]);
 			if (!W_ERROR_IS_OK(werr)) {
 				return werr;
 			}
 
-			next_anc_guid = obj->parent_object_guid;
+			if (getnc_state->is_get_anc) {
+				next_anc_guid = obj->parent_object_guid;
+			}
 		}
 
 		while (next_anc_guid != NULL) {
@@ -2723,7 +2736,7 @@ allowed:
 			struct ldb_result *anc_res = NULL;
 			struct ldb_dn *anc_dn = NULL;
 
-			werr = dcesrv_drsuapi_anc_cache_exists(getnc_state->anc_cache,
+			werr = dcesrv_drsuapi_obj_cache_exists(getnc_state->obj_cache,
 							       next_anc_guid);
 			if (W_ERROR_EQUAL(werr, WERR_OBJECT_NAME_EXISTS)) {
 				/*
@@ -2810,7 +2823,7 @@ allowed:
 			 * Regardless of if we actually use it or not,
 			 * we add it to the cache so we don't look at it again
 			 */
-			werr = dcesrv_drsuapi_anc_cache_add(getnc_state->anc_cache,
+			werr = dcesrv_drsuapi_obj_cache_add(getnc_state->obj_cache,
 							    next_anc_guid);
 			if (!W_ERROR_IS_OK(werr)) {
 				return werr;
