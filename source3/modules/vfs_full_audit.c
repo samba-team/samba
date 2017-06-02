@@ -736,12 +736,12 @@ static int smb_full_audit_get_shadow_copy_data(struct vfs_handle_struct *handle,
 }
 
 static int smb_full_audit_statvfs(struct vfs_handle_struct *handle,
-				const char *path,
+				const struct smb_filename *smb_fname,
 				struct vfs_statvfs_struct *statbuf)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_STATVFS(handle, path, statbuf);
+	result = SMB_VFS_NEXT_STATVFS(handle, smb_fname, statbuf);
 
 	do_log(SMB_VFS_OP_STATVFS, (result >= 0), handle, "");
 

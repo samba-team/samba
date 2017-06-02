@@ -420,16 +420,16 @@ vfs_gluster_set_quota(struct vfs_handle_struct *handle,
 }
 
 static int vfs_gluster_statvfs(struct vfs_handle_struct *handle,
-			       const char *path,
-			       struct vfs_statvfs_struct *vfs_statvfs)
+				const struct smb_filename *smb_fname,
+				struct vfs_statvfs_struct *vfs_statvfs)
 {
 	struct statvfs statvfs = { 0, };
 	int ret;
 
-	ret = glfs_statvfs(handle->data, path, &statvfs);
+	ret = glfs_statvfs(handle->data, smb_fname->base_name, &statvfs);
 	if (ret < 0) {
 		DEBUG(0, ("glfs_statvfs(%s) failed: %s\n",
-			  path, strerror(errno)));
+			  smb_fname->base_name, strerror(errno)));
 		return -1;
 	}
 

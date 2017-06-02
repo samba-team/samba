@@ -3905,7 +3905,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 				return NT_STATUS_INVALID_LEVEL;
 			}
 
-			rc = SMB_VFS_STATVFS(conn, filename, &svfs);
+			rc = SMB_VFS_STATVFS(conn, &smb_fname, &svfs);
 
 			if (!rc) {
 				data_len = 56;

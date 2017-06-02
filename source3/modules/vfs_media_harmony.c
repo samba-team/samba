@@ -632,36 +632,35 @@ out:
  * Failure: set errno, return -1
  */
 static int mh_statvfs(struct vfs_handle_struct *handle,
-		const char *path,
+		const struct smb_filename *smb_fname,
 		struct vfs_statvfs_struct *statbuf)
 {
 	int status;
-	char *clientPath;
-	TALLOC_CTX *ctx;
+	struct smb_filename *clientFname = NULL;
 
-	DEBUG(MH_INFO_DEBUG, ("Entering with path '%s'\n", path));
+	DEBUG(MH_INFO_DEBUG, ("Entering with path '%s'\n",
+			smb_fname->base_name));
 
-	if (!is_in_media_files(path))
+	if (!is_in_media_files(smb_fname->base_name))
 	{
-		status = SMB_VFS_NEXT_STATVFS(handle, path, statbuf);
+		status = SMB_VFS_NEXT_STATVFS(handle, smb_fname, statbuf);
 		goto out;
 	}
 
-	clientPath = NULL;
-	ctx = talloc_tos();
-
-	if ((status = alloc_get_client_path(handle, ctx,
-				path,
-				&clientPath)))
-	{
+	status = alloc_get_client_smb_fname(handle,
+				talloc_tos(),
+				smb_fname,
+				&clientFname);
+	if (status != 0) {
 		goto err;
 	}
 
-	status = SMB_VFS_NEXT_STATVFS(handle, clientPath, statbuf);
+	status = SMB_VFS_NEXT_STATVFS(handle, clientFname, statbuf);
 err:
-	TALLOC_FREE(clientPath);
+	TALLOC_FREE(clientFname);
 out:
-	DEBUG(MH_INFO_DEBUG, ("Leaving with path '%s'\n", path));
+	DEBUG(MH_INFO_DEBUG, ("Leaving with path '%s'\n",
+			smb_fname->base_name));
 	return status;
 }
 

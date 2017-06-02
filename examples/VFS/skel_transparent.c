@@ -81,10 +81,11 @@ static int skel_get_shadow_copy_data(vfs_handle_struct *handle,
 						 labels);
 }
 
-static int skel_statvfs(struct vfs_handle_struct *handle, const char *path,
+static int skel_statvfs(struct vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
 			struct vfs_statvfs_struct *statbuf)
 {
-	return SMB_VFS_NEXT_STATVFS(handle, path, statbuf);
+	return SMB_VFS_NEXT_STATVFS(handle, smb_fname, statbuf);
 }
 
 static uint32_t skel_fs_capabilities(struct vfs_handle_struct *handle,

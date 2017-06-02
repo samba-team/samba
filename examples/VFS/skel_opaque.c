@@ -83,7 +83,8 @@ static int skel_get_shadow_copy_data(vfs_handle_struct *handle,
 }
 
 static int skel_statvfs(struct vfs_handle_struct *handle,
-			const char *path, struct vfs_statvfs_struct *statbuf)
+				const struct smb_filename *smb_fname,
+				struct vfs_statvfs_struct *statbuf)
 {
 	errno = ENOSYS;
 	return -1;

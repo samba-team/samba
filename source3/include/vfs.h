@@ -222,6 +222,8 @@
 		to const struct smb_filename * */
 /* Version 37 - Change link from const char *
 		to const struct smb_filename * */
+/* Version 37 - Change statvfs from const char *
+		to const struct smb_filename * */
 
 #define SMB_VFS_INTERFACE_VERSION 37
 
@@ -618,7 +620,9 @@ struct vfs_fn_pointers {
 				SMB_DISK_QUOTA *qt);
 	int (*set_quota_fn)(struct vfs_handle_struct *handle, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *qt);
 	int (*get_shadow_copy_data_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, struct shadow_copy_data *shadow_copy_data, bool labels);
-	int (*statvfs_fn)(struct vfs_handle_struct *handle, const char *path, struct vfs_statvfs_struct *statbuf);
+	int (*statvfs_fn)(struct vfs_handle_struct *handle,
+				const struct smb_filename *smb_fname,
+				struct vfs_statvfs_struct *statbuf);
 	uint32_t (*fs_capabilities_fn)(struct vfs_handle_struct *handle, enum timestamp_set_resolution *p_ts_res);
 
 	/*
@@ -1085,8 +1089,9 @@ int smb_vfs_call_get_shadow_copy_data(struct vfs_handle_struct *handle,
 				      struct files_struct *fsp,
 				      struct shadow_copy_data *shadow_copy_data,
 				      bool labels);
-int smb_vfs_call_statvfs(struct vfs_handle_struct *handle, const char *path,
-			 struct vfs_statvfs_struct *statbuf);
+int smb_vfs_call_statvfs(struct vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
+			struct vfs_statvfs_struct *statbuf);
 uint32_t smb_vfs_call_fs_capabilities(struct vfs_handle_struct *handle,
 				      enum timestamp_set_resolution *p_ts_res);
 /*

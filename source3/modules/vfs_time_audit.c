@@ -247,7 +247,7 @@ static int smb_time_audit_get_shadow_copy_data(struct vfs_handle_struct *handle,
 }
 
 static int smb_time_audit_statvfs(struct vfs_handle_struct *handle,
-				  const char *path,
+				  const struct smb_filename *smb_fname,
 				  struct vfs_statvfs_struct *statbuf)
 {
 	int result;
@@ -255,12 +255,13 @@ static int smb_time_audit_statvfs(struct vfs_handle_struct *handle,
 	double timediff;
 
 	clock_gettime_mono(&ts1);
-	result = SMB_VFS_NEXT_STATVFS(handle, path, statbuf);
+	result = SMB_VFS_NEXT_STATVFS(handle, smb_fname, statbuf);
 	clock_gettime_mono(&ts2);
 	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
-		smb_time_audit_log_fname("statvfs", timediff, path);
+		smb_time_audit_log_fname("statvfs", timediff,
+			smb_fname->base_name);
 	}
 
 	return result;
