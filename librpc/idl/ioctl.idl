@@ -77,7 +77,7 @@ interface copychunk
 		uint32 size;
 		offload_flags flags;
 		hyper xfer_length;
-		uint8 token[512];
+		storage_offload_token token;
 	} fsctl_offload_read_output;
 
 	typedef [public] struct {
@@ -86,7 +86,7 @@ interface copychunk
 		hyper file_offset;
 		hyper copy_length;
 		hyper xfer_offset;
-		uint8 token[512];
+		storage_offload_token token;
 	} fsctl_offload_write_input;
 
 	typedef [public] struct {
