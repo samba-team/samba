@@ -1038,6 +1038,9 @@ static const smb_socket_option socket_options[] = {
 #ifdef TCP_DEFER_ACCEPT
   {"TCP_DEFER_ACCEPT", IPPROTO_TCP, TCP_DEFER_ACCEPT, 0, OPT_INT},
 #endif
+#ifdef TCP_FASTOPEN
+  {"TCP_FASTOPEN", IPPROTO_TCP, TCP_FASTOPEN, 0, OPT_INT},
+#endif
   {NULL,0,0,0,0}};
 
 /****************************************************************************
