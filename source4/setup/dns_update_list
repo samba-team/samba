@@ -41,6 +41,8 @@ ${IF_GC}SRV            _gc._tcp.${SITE}._sites.${DNSFOREST}                  ${H
 ${IF_GC}SRV            _ldap._tcp.${SITE}._sites.gc._msdcs.${DNSFOREST}      ${HOSTNAME} 3268
 
 # RW DNS servers
+${IF_RWDNS_DOMAIN}A    ${DNSDOMAIN}                                          $IP
+${IF_RWDNS_DOMAIN}NS   ${DNSDOMAIN}                                          ${HOSTNAME}
 ${IF_RWDNS_DOMAIN}A    DomainDnsZones.${DNSDOMAIN}                           $IP
 ${IF_RWDNS_DOMAIN}AAAA DomainDnsZones.${DNSDOMAIN}                           $IP
 ${IF_RWDNS_DOMAIN}SRV  _ldap._tcp.DomainDnsZones.${DNSDOMAIN}                ${HOSTNAME} 389
@@ -48,6 +50,7 @@ ${IF_RWDNS_DOMAIN}SRV  _ldap._tcp.DomainDnsZones.${DNSDOMAIN}                ${H
 ${IF_DNS_DOMAIN}SRV    _ldap._tcp.${SITE}._sites.DomainDnsZones.${DNSDOMAIN} ${HOSTNAME} 389
 
 # RW DNS servers
+${IF_RWDNS_FOREST}NS   _msdcs.${DNSFOREST}                                   ${HOSTNAME}
 ${IF_RWDNS_FOREST}A    ForestDnsZones.${DNSFOREST}                           $IP
 ${IF_RWDNS_FOREST}AAAA ForestDnsZones.${DNSFOREST}                           $IP
 ${IF_RWDNS_FOREST}SRV  _ldap._tcp.ForestDnsZones.${DNSFOREST}                ${HOSTNAME} 389
