@@ -168,6 +168,8 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_STRICT_UNLOCK,
 	SMB_VFS_OP_TRANSLATE_NAME,
 	SMB_VFS_OP_FSCTL,
+	SMB_VFS_OP_OFFLOAD_READ_SEND,
+	SMB_VFS_OP_OFFLOAD_READ_RECV,
 	SMB_VFS_OP_COPY_CHUNK_SEND,
 	SMB_VFS_OP_COPY_CHUNK_RECV,
 	SMB_VFS_OP_GET_COMPRESSION,
@@ -310,6 +312,8 @@ static struct {
 	{ SMB_VFS_OP_STRICT_UNLOCK, "strict_unlock" },
 	{ SMB_VFS_OP_TRANSLATE_NAME,	"translate_name" },
 	{ SMB_VFS_OP_FSCTL,		"fsctl" },
+	{ SMB_VFS_OP_OFFLOAD_READ_SEND,	"offload_read_send" },
+	{ SMB_VFS_OP_OFFLOAD_READ_RECV,	"offload_read_recv" },
 	{ SMB_VFS_OP_COPY_CHUNK_SEND,	"copy_chunk_send" },
 	{ SMB_VFS_OP_COPY_CHUNK_RECV,	"copy_chunk_recv" },
 	{ SMB_VFS_OP_GET_COMPRESSION,	"get_compression" },
@@ -1901,6 +1905,42 @@ static NTSTATUS smb_full_audit_fsctl(struct vfs_handle_struct *handle,
 	return result;
 }
 
+static struct tevent_req *smb_full_audit_offload_read_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct vfs_handle_struct *handle,
+	struct files_struct *fsp,
+	uint32_t fsctl,
+	uint32_t ttl,
+	off_t offset,
+	size_t to_copy)
+{
+	struct tevent_req *req = NULL;
+
+	req = SMB_VFS_NEXT_OFFLOAD_READ_SEND(mem_ctx, ev, handle, fsp,
+					     fsctl, ttl, offset, to_copy);
+
+	do_log(SMB_VFS_OP_OFFLOAD_READ_SEND, req, handle, "");
+
+	return req;
+}
+
+static NTSTATUS smb_full_audit_offload_read_recv(
+	struct tevent_req *req,
+	struct vfs_handle_struct *handle,
+	TALLOC_CTX *mem_ctx,
+	DATA_BLOB *_token_blob)
+{
+	NTSTATUS status;
+
+	status = SMB_VFS_NEXT_OFFLOAD_READ_RECV(req, handle, mem_ctx,
+						_token_blob);
+
+	do_log(SMB_VFS_OP_OFFLOAD_READ_RECV, NT_STATUS_IS_OK(status), handle, "");
+
+	return status;
+}
+
 static struct tevent_req *smb_full_audit_copy_chunk_send(struct vfs_handle_struct *handle,
 							 TALLOC_CTX *mem_ctx,
 							 struct tevent_context *ev,
@@ -2534,6 +2574,8 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.realpath_fn = smb_full_audit_realpath,
 	.chflags_fn = smb_full_audit_chflags,
 	.file_id_create_fn = smb_full_audit_file_id_create,
+	.offload_read_send_fn = smb_full_audit_offload_read_send,
+	.offload_read_recv_fn = smb_full_audit_offload_read_recv,
 	.copy_chunk_send_fn = smb_full_audit_copy_chunk_send,
 	.copy_chunk_recv_fn = smb_full_audit_copy_chunk_recv,
 	.get_compression_fn = smb_full_audit_get_compression,

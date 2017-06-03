@@ -622,6 +622,94 @@ static struct file_id skel_file_id_create(vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_FILE_ID_CREATE(handle, sbuf);
 }
 
+struct skel_offload_read_state {
+	struct vfs_handle_struct *handle;
+	DATA_BLOB token;
+};
+
+static void skel_offload_read_done(struct tevent_req *subreq);
+
+static struct tevent_req *skel_offload_read_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct vfs_handle_struct *handle,
+	struct files_struct *fsp,
+	uint32_t fsctl,
+	uint32_t ttl,
+	off_t offset,
+	size_t to_copy)
+{
+	struct tevent_req *req = NULL;
+	struct skel_offload_read_state *state = NULL;
+	struct tevent_req *subreq = NULL;
+
+	req = tevent_req_create(mem_ctx, &state, struct skel_offload_read_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	*state = (struct skel_offload_read_state) {
+		.handle = handle,
+	};
+
+	subreq = SMB_VFS_NEXT_OFFLOAD_READ_SEND(mem_ctx, ev, handle, fsp,
+						fsctl, ttl, offset, to_copy);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, skel_offload_read_done, req);
+	return req;
+}
+
+static void skel_offload_read_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct skel_offload_read_state *state = tevent_req_data(
+		req, struct skel_offload_read_state);
+	NTSTATUS status;
+
+	status = SMB_VFS_NEXT_OFFLOAD_READ_RECV(subreq,
+						state->handle,
+						state,
+						&state->token);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	tevent_req_done(req);
+	return;
+}
+
+static NTSTATUS skel_offload_read_recv(struct tevent_req *req,
+				       struct vfs_handle_struct *handle,
+				       TALLOC_CTX *mem_ctx,
+				       DATA_BLOB *_token)
+{
+	struct skel_offload_read_state *state = tevent_req_data(
+		req, struct skel_offload_read_state);
+	DATA_BLOB token;
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	token = data_blob_talloc(mem_ctx,
+				 state->token.data,
+				 state->token.length);
+
+	tevent_req_received(req);
+
+	if (token.data == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	*_token = token;
+	return NT_STATUS_OK;
+}
+
 struct skel_cc_state {
 	struct vfs_handle_struct *handle;
 	off_t copied;
@@ -1094,6 +1182,8 @@ struct vfs_fn_pointers skel_transparent_fns = {
 	.realpath_fn = skel_realpath,
 	.chflags_fn = skel_chflags,
 	.file_id_create_fn = skel_file_id_create,
+	.offload_read_send_fn = skel_offload_read_send,
+	.offload_read_recv_fn = skel_offload_read_recv,
 	.copy_chunk_send_fn = skel_copy_chunk_send,
 	.copy_chunk_recv_fn = skel_copy_chunk_recv,
 	.get_compression_fn = skel_get_compression,

@@ -27,9 +27,11 @@
 #include "system/filesys.h"
 #include "includes.h"
 #include "smbd/smbd.h"
+#include "smbd/globals.h"
 #include "librpc/gen_ndr/smbXsrv.h"
 #include "librpc/gen_ndr/ioctl.h"
 #include "lib/util/tevent_ntstatus.h"
+#include "offload_token.h"
 
 static uint32_t btrfs_fs_capabilities(struct vfs_handle_struct *handle,
 				      enum timestamp_set_resolution *_ts_res)
@@ -78,6 +80,121 @@ struct btrfs_ioctl_clone_range_args {
 				    struct btrfs_ioctl_vol_args)
 #define BTRFS_IOC_SNAP_CREATE_V2 _IOW(BTRFS_IOCTL_MAGIC, 23, \
 				      struct btrfs_ioctl_vol_args_v2)
+
+static struct vfs_offload_ctx *btrfs_offload_ctx;
+
+struct btrfs_offload_read_state {
+	struct vfs_handle_struct *handle;
+	files_struct *fsp;
+	DATA_BLOB token;
+};
+
+static void btrfs_offload_read_done(struct tevent_req *subreq);
+
+static struct tevent_req *btrfs_offload_read_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct vfs_handle_struct *handle,
+	files_struct *fsp,
+	uint32_t fsctl,
+	uint32_t ttl,
+	off_t offset,
+	size_t to_copy)
+{
+	struct tevent_req *req = NULL;
+	struct tevent_req *subreq = NULL;
+	struct btrfs_offload_read_state *state = NULL;
+	NTSTATUS status;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct btrfs_offload_read_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	*state = (struct btrfs_offload_read_state) {
+		.handle = handle,
+		.fsp = fsp,
+	};
+
+	status = vfs_offload_token_ctx_init(fsp->conn->sconn->client,
+					    &btrfs_offload_ctx);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
+
+	if (fsctl == FSCTL_DUP_EXTENTS_TO_FILE) {
+		status = vfs_offload_token_create_blob(state, fsp, fsctl,
+						       &state->token);
+		if (tevent_req_nterror(req, status)) {
+			return tevent_req_post(req, ev);
+		}
+
+		status = vfs_offload_token_db_store_fsp(btrfs_offload_ctx, fsp,
+							&state->token);
+		if (tevent_req_nterror(req, status)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+	}
+
+	subreq = SMB_VFS_NEXT_OFFLOAD_READ_SEND(mem_ctx, ev, handle, fsp,
+						fsctl, ttl, offset, to_copy);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, btrfs_offload_read_done, req);
+	return req;
+}
+
+static void btrfs_offload_read_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct btrfs_offload_read_state *state = tevent_req_data(
+		req, struct btrfs_offload_read_state);
+	NTSTATUS status;
+
+	status = SMB_VFS_NEXT_OFFLOAD_READ_RECV(subreq,
+						state->handle,
+						state,
+						&state->token);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	status = vfs_offload_token_db_store_fsp(btrfs_offload_ctx,
+						state->fsp,
+						&state->token);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	tevent_req_done(req);
+	return;
+}
+
+static NTSTATUS btrfs_offload_read_recv(struct tevent_req *req,
+					struct vfs_handle_struct *handle,
+					TALLOC_CTX *mem_ctx,
+					DATA_BLOB *token)
+{
+	struct btrfs_offload_read_state *state = tevent_req_data(
+		req, struct btrfs_offload_read_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	token->length = state->token.length;
+	token->data = talloc_move(mem_ctx, &state->token.data);
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
 
 struct btrfs_cc_state {
 	struct vfs_handle_struct *handle;
@@ -681,6 +798,8 @@ static NTSTATUS btrfs_snap_delete(struct vfs_handle_struct *handle,
 
 static struct vfs_fn_pointers btrfs_fns = {
 	.fs_capabilities_fn = btrfs_fs_capabilities,
+	.offload_read_send_fn = btrfs_offload_read_send,
+	.offload_read_recv_fn = btrfs_offload_read_recv,
 	.copy_chunk_send_fn = btrfs_copy_chunk_send,
 	.copy_chunk_recv_fn = btrfs_copy_chunk_recv,
 	.get_compression_fn = btrfs_get_compression,

@@ -32,6 +32,7 @@
 #include "lib/util/sys_rw.h"
 #include "lib/util/tevent_ntstatus.h"
 #include "lib/util/tevent_unix.h"
+#include "offload_token.h"
 
 /*
  * Enhanced OS X and Netatalk compatibility
@@ -5365,6 +5366,113 @@ static NTSTATUS fruit_fset_nt_acl(vfs_handle_struct *handle,
 	return NT_STATUS_OK;
 }
 
+static struct vfs_offload_ctx *fruit_offload_ctx;
+
+struct fruit_offload_read_state {
+	struct vfs_handle_struct *handle;
+	struct tevent_context *ev;
+	files_struct *fsp;
+	uint32_t fsctl;
+	DATA_BLOB token;
+};
+
+static void fruit_offload_read_done(struct tevent_req *subreq);
+
+static struct tevent_req *fruit_offload_read_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct vfs_handle_struct *handle,
+	files_struct *fsp,
+	uint32_t fsctl,
+	uint32_t ttl,
+	off_t offset,
+	size_t to_copy)
+{
+	struct tevent_req *req = NULL;
+	struct tevent_req *subreq = NULL;
+	struct fruit_offload_read_state *state = NULL;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct fruit_offload_read_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	*state = (struct fruit_offload_read_state) {
+		.handle = handle,
+		.ev = ev,
+		.fsp = fsp,
+		.fsctl = fsctl,
+	};
+
+	subreq = SMB_VFS_NEXT_OFFLOAD_READ_SEND(mem_ctx, ev, handle, fsp,
+						fsctl, ttl, offset, to_copy);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, fruit_offload_read_done, req);
+	return req;
+}
+
+static void fruit_offload_read_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct fruit_offload_read_state *state = tevent_req_data(
+		req, struct fruit_offload_read_state);
+	NTSTATUS status;
+
+	status = SMB_VFS_NEXT_OFFLOAD_READ_RECV(subreq,
+						state->handle,
+						state,
+						&state->token);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	if (state->fsctl != FSCTL_SRV_REQUEST_RESUME_KEY) {
+		tevent_req_done(req);
+		return;
+	}
+
+	status = vfs_offload_token_ctx_init(state->fsp->conn->sconn->client,
+					    &fruit_offload_ctx);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	status = vfs_offload_token_db_store_fsp(fruit_offload_ctx,
+						state->fsp,
+						&state->token);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	tevent_req_done(req);
+	return;
+}
+
+static NTSTATUS fruit_offload_read_recv(struct tevent_req *req,
+					struct vfs_handle_struct *handle,
+					TALLOC_CTX *mem_ctx,
+					DATA_BLOB *token)
+{
+	struct fruit_offload_read_state *state = tevent_req_data(
+		req, struct fruit_offload_read_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	token->length = state->token.length;
+	token->data = talloc_move(mem_ctx, &state->token.data);
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
 struct fruit_copy_chunk_state {
 	struct vfs_handle_struct *handle;
 	off_t copied;
@@ -5590,6 +5698,8 @@ static struct vfs_fn_pointers vfs_fruit_fns = {
 	.fallocate_fn = fruit_fallocate,
 	.create_file_fn = fruit_create_file,
 	.readdir_attr_fn = fruit_readdir_attr,
+	.offload_read_send_fn = fruit_offload_read_send,
+	.offload_read_recv_fn = fruit_offload_read_recv,
 	.copy_chunk_send_fn = fruit_copy_chunk_send,
 	.copy_chunk_recv_fn = fruit_copy_chunk_recv,
 

@@ -537,6 +537,48 @@ static struct file_id skel_file_id_create(vfs_handle_struct *handle,
 	return id;
 }
 
+struct skel_offload_read_state {
+	bool dummy;
+};
+
+static struct tevent_req *skel_offload_read_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct vfs_handle_struct *handle,
+	struct files_struct *fsp,
+	uint32_t fsctl,
+	uint32_t ttl,
+	off_t offset,
+	size_t to_copy)
+{
+	struct tevent_req *req = NULL;
+	struct skel_offload_read_state *state = NULL;
+
+	req = tevent_req_create(mem_ctx, &state, struct skel_offload_read_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	tevent_req_nterror(req, NT_STATUS_NOT_IMPLEMENTED);
+	return tevent_req_post(req, ev);
+}
+
+static NTSTATUS skel_offload_read_recv(struct tevent_req *req,
+				       struct vfs_handle_struct *handle,
+				       TALLOC_CTX *mem_ctx,
+				       DATA_BLOB *_token_blob)
+{
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+	tevent_req_received(req);
+
+	return NT_STATUS_OK;
+}
+
 struct skel_cc_state {
 	uint64_t unused;
 };
@@ -967,6 +1009,8 @@ struct vfs_fn_pointers skel_opaque_fns = {
 	.realpath_fn = skel_realpath,
 	.chflags_fn = skel_chflags,
 	.file_id_create_fn = skel_file_id_create,
+	.offload_read_send_fn = skel_offload_read_send,
+	.offload_read_recv_fn = skel_offload_read_recv,
 	.copy_chunk_send_fn = skel_copy_chunk_send,
 	.copy_chunk_recv_fn = skel_copy_chunk_recv,
 	.get_compression_fn = skel_get_compression,

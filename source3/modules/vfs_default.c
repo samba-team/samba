@@ -34,6 +34,7 @@
 #include "lib/util/sys_rw.h"
 #include "lib/pthreadpool/pthreadpool_tevent.h"
 #include "librpc/gen_ndr/ndr_ioctl.h"
+#include "offload_token.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
@@ -1607,6 +1608,80 @@ static NTSTATUS vfswrap_fset_dos_attributes(struct vfs_handle_struct *handle,
 	return set_ea_dos_attribute(handle->conn, fsp->fsp_name, dosmode);
 }
 
+static struct vfs_offload_ctx *vfswrap_offload_ctx;
+
+struct vfswrap_offload_read_state {
+	DATA_BLOB token;
+};
+
+static struct tevent_req *vfswrap_offload_read_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct vfs_handle_struct *handle,
+	struct files_struct *fsp,
+	uint32_t fsctl,
+	uint32_t ttl,
+	off_t offset,
+	size_t to_copy)
+{
+	struct tevent_req *req = NULL;
+	struct vfswrap_offload_read_state *state = NULL;
+	NTSTATUS status;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct vfswrap_offload_read_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	status = vfs_offload_token_ctx_init(fsp->conn->sconn->client,
+					    &vfswrap_offload_ctx);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
+
+	if (fsctl != FSCTL_SRV_REQUEST_RESUME_KEY) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_DEVICE_REQUEST);
+		return tevent_req_post(req, ev);
+	}
+
+	status = vfs_offload_token_create_blob(state, fsp, fsctl,
+					       &state->token);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
+
+	status = vfs_offload_token_db_store_fsp(vfswrap_offload_ctx, fsp,
+						&state->token);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
+
+	tevent_req_done(req);
+	return tevent_req_post(req, ev);
+}
+
+static NTSTATUS vfswrap_offload_read_recv(struct tevent_req *req,
+					  struct vfs_handle_struct *handle,
+					  TALLOC_CTX *mem_ctx,
+					  DATA_BLOB *token)
+{
+	struct vfswrap_offload_read_state *state = tevent_req_data(
+		req, struct vfswrap_offload_read_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	token->length = state->token.length;
+	token->data = talloc_move(mem_ctx, &state->token.data);
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
 struct vfs_cc_state {
 	struct tevent_context *ev;
 	uint8_t *buf;
@@ -3002,6 +3077,8 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.fset_dos_attributes_fn = vfswrap_fset_dos_attributes,
 	.get_dos_attributes_fn = vfswrap_get_dos_attributes,
 	.fget_dos_attributes_fn = vfswrap_fget_dos_attributes,
+	.offload_read_send_fn = vfswrap_offload_read_send,
+	.offload_read_recv_fn = vfswrap_offload_read_recv,
 	.copy_chunk_send_fn = vfswrap_copy_chunk_send,
 	.copy_chunk_recv_fn = vfswrap_copy_chunk_recv,
 	.get_compression_fn = vfswrap_get_compression,

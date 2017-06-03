@@ -22,10 +22,14 @@ bld.SAMBA3_SUBSYSTEM('vfs',
                     source='',
                     deps='smbd_base')
 
+bld.SAMBA3_SUBSYSTEM('OFFLOAD_TOKEN',
+                    source='offload_token.c',
+                    deps='samba-util')
+
 bld.SAMBA3_MODULE('vfs_default',
                  subsystem='vfs',
                  source='vfs_default.c',
-                 deps='samba-util NDR_DFSBLOBS',
+                 deps='samba-util NDR_DFSBLOBS OFFLOAD_TOKEN',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_default'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_default'))
@@ -89,7 +93,7 @@ bld.SAMBA3_MODULE('vfs_netatalk',
 bld.SAMBA3_MODULE('vfs_fruit',
                  subsystem='vfs',
                  source='vfs_fruit.c',
-                 deps='samba-util',
+                 deps='samba-util OFFLOAD_TOKEN',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_fruit'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_fruit'))
@@ -425,7 +429,7 @@ bld.SAMBA3_MODULE('vfs_dfs_samba4',
 bld.SAMBA3_MODULE('vfs_btrfs',
                  subsystem='vfs',
                  source='vfs_btrfs.c',
-                 deps='samba-util',
+                 deps='samba-util OFFLOAD_TOKEN',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_btrfs'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_btrfs'))

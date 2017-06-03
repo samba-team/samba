@@ -238,6 +238,7 @@
 		to struct smb_filename * */
 /* Version 37 - Change connectpath from char *
 		to struct smb_filename * */
+/* Version 37 - Add SMB_VFS_OFFLOAD_READ_SEND/RECV */
 
 #define SMB_VFS_INTERFACE_VERSION 37
 
@@ -781,6 +782,18 @@ struct vfs_fn_pointers {
 				unsigned int flags);
 	struct file_id (*file_id_create_fn)(struct vfs_handle_struct *handle,
 					    const SMB_STRUCT_STAT *sbuf);
+	struct tevent_req *(*offload_read_send_fn)(TALLOC_CTX *mem_ctx,
+						   struct tevent_context *ev,
+						   struct vfs_handle_struct *handle,
+						   struct files_struct *fsp,
+						   uint32_t fsctl,
+						   uint32_t ttl,
+						   off_t offset,
+						   size_t to_copy);
+	NTSTATUS (*offload_read_recv_fn)(struct tevent_req *req,
+					 struct vfs_handle_struct *handle,
+					 TALLOC_CTX *mem_ctx,
+					 DATA_BLOB *token_blob);
 	struct tevent_req *(*copy_chunk_send_fn)(struct vfs_handle_struct *handle,
 						 TALLOC_CTX *mem_ctx,
 						 struct tevent_context *ev,
@@ -1348,6 +1361,19 @@ NTSTATUS smb_vfs_call_set_dos_attributes(struct vfs_handle_struct *handle,
 NTSTATUS smb_vfs_call_fset_dos_attributes(struct vfs_handle_struct *handle,
 					  struct files_struct *fsp,
 					  uint32_t dosmode);
+struct tevent_req *smb_vfs_call_offload_read_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct vfs_handle_struct *handle,
+	struct files_struct *fsp,
+	uint32_t fsctl,
+	uint32_t ttl,
+	off_t offset,
+	size_t to_copy);
+NTSTATUS smb_vfs_call_offload_read_recv(struct tevent_req *req,
+					struct vfs_handle_struct *handle,
+					TALLOC_CTX *mem_ctx,
+					DATA_BLOB *token_blob);
 struct tevent_req *smb_vfs_call_copy_chunk_send(struct vfs_handle_struct *handle,
 						TALLOC_CTX *mem_ctx,
 						struct tevent_context *ev,

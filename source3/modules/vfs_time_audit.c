@@ -1898,6 +1898,103 @@ static NTSTATUS smb_time_fset_dos_attributes(struct vfs_handle_struct *handle,
 	return result;
 }
 
+struct time_audit_offload_read_state {
+	struct vfs_handle_struct *handle;
+	struct timespec ts_send;
+	DATA_BLOB token_blob;
+};
+
+static void smb_time_audit_offload_read_done(struct tevent_req *subreq);
+
+static struct tevent_req *smb_time_audit_offload_read_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct vfs_handle_struct *handle,
+	struct files_struct *fsp,
+	uint32_t fsctl,
+	uint32_t ttl,
+	off_t offset,
+	size_t to_copy)
+{
+	struct tevent_req *req = NULL;
+	struct tevent_req *subreq = NULL;
+	struct time_audit_offload_read_state *state = NULL;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct time_audit_offload_read_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->handle = handle;
+	clock_gettime_mono(&state->ts_send);
+
+	subreq = SMB_VFS_NEXT_OFFLOAD_READ_SEND(mem_ctx, ev,
+						handle, fsp,
+						fsctl, ttl,
+						offset, to_copy);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	tevent_req_set_callback(subreq, smb_time_audit_offload_read_done, req);
+	return req;
+}
+
+static void smb_time_audit_offload_read_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct time_audit_offload_read_state *state = tevent_req_data(
+		req, struct time_audit_offload_read_state);
+	NTSTATUS status;
+
+	status = SMB_VFS_NEXT_OFFLOAD_READ_RECV(subreq,
+						state->handle,
+						state,
+						&state->token_blob);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	tevent_req_done(req);
+}
+
+static NTSTATUS smb_time_audit_offload_read_recv(
+	struct tevent_req *req,
+	struct vfs_handle_struct *handle,
+	TALLOC_CTX *mem_ctx,
+	DATA_BLOB *_token_blob)
+{
+	struct time_audit_offload_read_state *state = tevent_req_data(
+		req, struct time_audit_offload_read_state);
+	struct timespec ts_recv;
+	double timediff;
+	DATA_BLOB token_blob;
+	NTSTATUS status;
+
+	clock_gettime_mono(&ts_recv);
+	timediff = nsec_time_diff(&ts_recv, &state->ts_send) * 1.0e-9;
+	if (timediff > audit_timeout) {
+		smb_time_audit_log("offload_read", timediff);
+	}
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	token_blob = data_blob_talloc(mem_ctx,
+				      state->token_blob.data,
+				      state->token_blob.length);
+	if (token_blob.data == NULL) {
+		tevent_req_received(req);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
 struct time_audit_cc_state {
 	struct timespec ts_send;
 	struct vfs_handle_struct *handle;
@@ -2672,6 +2769,8 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.realpath_fn = smb_time_audit_realpath,
 	.chflags_fn = smb_time_audit_chflags,
 	.file_id_create_fn = smb_time_audit_file_id_create,
+	.offload_read_send_fn = smb_time_audit_offload_read_send,
+	.offload_read_recv_fn = smb_time_audit_offload_read_recv,
 	.copy_chunk_send_fn = smb_time_audit_copy_chunk_send,
 	.copy_chunk_recv_fn = smb_time_audit_copy_chunk_recv,
 	.get_compression_fn = smb_time_audit_get_compression,
