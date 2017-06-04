@@ -170,8 +170,8 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_FSCTL,
 	SMB_VFS_OP_OFFLOAD_READ_SEND,
 	SMB_VFS_OP_OFFLOAD_READ_RECV,
-	SMB_VFS_OP_COPY_CHUNK_SEND,
-	SMB_VFS_OP_COPY_CHUNK_RECV,
+	SMB_VFS_OP_OFFLOAD_WRITE_SEND,
+	SMB_VFS_OP_OFFLOAD_WRITE_RECV,
 	SMB_VFS_OP_GET_COMPRESSION,
 	SMB_VFS_OP_SET_COMPRESSION,
 	SMB_VFS_OP_SNAP_CHECK_PATH,
@@ -314,8 +314,8 @@ static struct {
 	{ SMB_VFS_OP_FSCTL,		"fsctl" },
 	{ SMB_VFS_OP_OFFLOAD_READ_SEND,	"offload_read_send" },
 	{ SMB_VFS_OP_OFFLOAD_READ_RECV,	"offload_read_recv" },
-	{ SMB_VFS_OP_COPY_CHUNK_SEND,	"copy_chunk_send" },
-	{ SMB_VFS_OP_COPY_CHUNK_RECV,	"copy_chunk_recv" },
+	{ SMB_VFS_OP_OFFLOAD_WRITE_SEND,	"offload_write_send" },
+	{ SMB_VFS_OP_OFFLOAD_WRITE_RECV,	"offload_write_recv" },
 	{ SMB_VFS_OP_GET_COMPRESSION,	"get_compression" },
 	{ SMB_VFS_OP_SET_COMPRESSION,	"set_compression" },
 	{ SMB_VFS_OP_SNAP_CHECK_PATH, "snap_check_path" },
@@ -1941,7 +1941,7 @@ static NTSTATUS smb_full_audit_offload_read_recv(
 	return status;
 }
 
-static struct tevent_req *smb_full_audit_copy_chunk_send(struct vfs_handle_struct *handle,
+static struct tevent_req *smb_full_audit_offload_write_send(struct vfs_handle_struct *handle,
 							 TALLOC_CTX *mem_ctx,
 							 struct tevent_context *ev,
 							 struct files_struct *src_fsp,
@@ -1953,24 +1953,24 @@ static struct tevent_req *smb_full_audit_copy_chunk_send(struct vfs_handle_struc
 {
 	struct tevent_req *req;
 
-	req = SMB_VFS_NEXT_COPY_CHUNK_SEND(handle, mem_ctx, ev, src_fsp,
+	req = SMB_VFS_NEXT_OFFLOAD_WRITE_SEND(handle, mem_ctx, ev, src_fsp,
 					   src_off, dest_fsp, dest_off, num,
 					   flags);
 
-	do_log(SMB_VFS_OP_COPY_CHUNK_SEND, req, handle, "");
+	do_log(SMB_VFS_OP_OFFLOAD_WRITE_SEND, req, handle, "");
 
 	return req;
 }
 
-static NTSTATUS smb_full_audit_copy_chunk_recv(struct vfs_handle_struct *handle,
+static NTSTATUS smb_full_audit_offload_write_recv(struct vfs_handle_struct *handle,
 					       struct tevent_req *req,
 					       off_t *copied)
 {
 	NTSTATUS result;
 
-	result = SMB_VFS_NEXT_COPY_CHUNK_RECV(handle, req, copied);
+	result = SMB_VFS_NEXT_OFFLOAD_WRITE_RECV(handle, req, copied);
 
-	do_log(SMB_VFS_OP_COPY_CHUNK_RECV, NT_STATUS_IS_OK(result), handle, "");
+	do_log(SMB_VFS_OP_OFFLOAD_WRITE_RECV, NT_STATUS_IS_OK(result), handle, "");
 
 	return result;
 }
@@ -2576,8 +2576,8 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.file_id_create_fn = smb_full_audit_file_id_create,
 	.offload_read_send_fn = smb_full_audit_offload_read_send,
 	.offload_read_recv_fn = smb_full_audit_offload_read_recv,
-	.copy_chunk_send_fn = smb_full_audit_copy_chunk_send,
-	.copy_chunk_recv_fn = smb_full_audit_copy_chunk_recv,
+	.offload_write_send_fn = smb_full_audit_offload_write_send,
+	.offload_write_recv_fn = smb_full_audit_offload_write_recv,
 	.get_compression_fn = smb_full_audit_get_compression,
 	.set_compression_fn = smb_full_audit_set_compression,
 	.snap_check_path_fn =  smb_full_audit_snap_check_path,

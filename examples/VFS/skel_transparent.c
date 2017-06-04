@@ -710,13 +710,13 @@ static NTSTATUS skel_offload_read_recv(struct tevent_req *req,
 	return NT_STATUS_OK;
 }
 
-struct skel_cc_state {
+struct skel_offload_write_state {
 	struct vfs_handle_struct *handle;
 	off_t copied;
 };
-static void skel_copy_chunk_done(struct tevent_req *subreq);
+static void skel_offload_write_done(struct tevent_req *subreq);
 
-static struct tevent_req *skel_copy_chunk_send(struct vfs_handle_struct *handle,
+static struct tevent_req *skel_offload_write_send(struct vfs_handle_struct *handle,
 					       TALLOC_CTX *mem_ctx,
 					       struct tevent_context *ev,
 					       struct files_struct *src_fsp,
@@ -728,36 +728,36 @@ static struct tevent_req *skel_copy_chunk_send(struct vfs_handle_struct *handle,
 {
 	struct tevent_req *req;
 	struct tevent_req *subreq;
-	struct skel_cc_state *cc_state;
+	struct skel_offload_write_state *state;
 
-	req = tevent_req_create(mem_ctx, &cc_state, struct skel_cc_state);
+	req = tevent_req_create(mem_ctx, &state, struct skel_offload_write_state);
 	if (req == NULL) {
 		return NULL;
 	}
 
-	cc_state->handle = handle;
-	subreq = SMB_VFS_NEXT_COPY_CHUNK_SEND(handle, cc_state, ev,
+	state->handle = handle;
+	subreq = SMB_VFS_NEXT_OFFLOAD_WRITE_SEND(handle, state, ev,
 					      src_fsp, src_off,
 					      dest_fsp, dest_off, num, flags);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
 
-	tevent_req_set_callback(subreq, skel_copy_chunk_done, req);
+	tevent_req_set_callback(subreq, skel_offload_write_done, req);
 	return req;
 }
 
-static void skel_copy_chunk_done(struct tevent_req *subreq)
+static void skel_offload_write_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
-	struct skel_cc_state *cc_state
-			= tevent_req_data(req, struct skel_cc_state);
+	struct skel_offload_write_state *state
+			= tevent_req_data(req, struct skel_offload_write_state);
 	NTSTATUS status;
 
-	status = SMB_VFS_NEXT_COPY_CHUNK_RECV(cc_state->handle,
+	status = SMB_VFS_NEXT_OFFLOAD_WRITE_RECV(state->handle,
 					      subreq,
-					      &cc_state->copied);
+					      &state->copied);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
@@ -765,15 +765,15 @@ static void skel_copy_chunk_done(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
-static NTSTATUS skel_copy_chunk_recv(struct vfs_handle_struct *handle,
+static NTSTATUS skel_offload_write_recv(struct vfs_handle_struct *handle,
 				     struct tevent_req *req,
 				     off_t *copied)
 {
-	struct skel_cc_state *cc_state
-			= tevent_req_data(req, struct skel_cc_state);
+	struct skel_offload_write_state *state
+			= tevent_req_data(req, struct skel_offload_write_state);
 	NTSTATUS status;
 
-	*copied = cc_state->copied;
+	*copied = state->copied;
 	if (tevent_req_is_nterror(req, &status)) {
 		tevent_req_received(req);
 		return status;
@@ -1184,8 +1184,8 @@ struct vfs_fn_pointers skel_transparent_fns = {
 	.file_id_create_fn = skel_file_id_create,
 	.offload_read_send_fn = skel_offload_read_send,
 	.offload_read_recv_fn = skel_offload_read_recv,
-	.copy_chunk_send_fn = skel_copy_chunk_send,
-	.copy_chunk_recv_fn = skel_copy_chunk_recv,
+	.offload_write_send_fn = skel_offload_write_send,
+	.offload_write_recv_fn = skel_offload_write_recv,
 	.get_compression_fn = skel_get_compression,
 	.set_compression_fn = skel_set_compression,
 

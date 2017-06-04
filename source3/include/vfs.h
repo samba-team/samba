@@ -239,6 +239,8 @@
 /* Version 37 - Change connectpath from char *
 		to struct smb_filename * */
 /* Version 37 - Add SMB_VFS_OFFLOAD_READ_SEND/RECV */
+/* Version 37 - Rename SMB_VFS_COPY_CHUNK_SEND/RECV to
+                SMB_VFS_OFFLOAD_READ_SEND/RECV */
 
 #define SMB_VFS_INTERFACE_VERSION 37
 
@@ -592,17 +594,17 @@ enum vfs_fallocate_flags {
 };
 
 /*
- * @VFS_COPY_CHUNK_FL_MUST_CLONE: indicates that copy_chunk_send_fn() copy must
+ * @VFS_OFFLOAD_WRITE_FL_MUST_CLONE: indicates that offload_write_send_fn() copy must
  *				  be handled as a COW clone, AKA reflink.
- * @VFS_COPY_CHUNK_FL_MASK_ALL: all valid copychunk flags.
+ * @VFS_OFFLOAD_WRITE_FL_MASK_ALL: all valid flags.
  */
-enum vfs_copy_chunk_flags {
-	VFS_COPY_CHUNK_FL_MUST_CLONE		= 0x0001,
-	VFS_COPY_CHUNK_FL_IGNORE_LOCKS		= 0x0002,
+enum vfs_offload_write_flags {
+	VFS_OFFLOAD_WRITE_FL_MUST_CLONE		= 0x0001,
+	VFS_OFFLOAD_WRITE_FL_IGNORE_LOCKS	= 0x0002,
 
-	VFS_COPY_CHUNK_FL_MASK_ALL		=
-					(VFS_COPY_CHUNK_FL_MUST_CLONE
-					 | VFS_COPY_CHUNK_FL_IGNORE_LOCKS),
+	VFS_OFFLOAD_WRITE_FL_MASK_ALL		=
+					(VFS_OFFLOAD_WRITE_FL_MUST_CLONE
+					 | VFS_OFFLOAD_WRITE_FL_IGNORE_LOCKS),
 };
 
 struct vfs_aio_state {
@@ -794,18 +796,18 @@ struct vfs_fn_pointers {
 					 struct vfs_handle_struct *handle,
 					 TALLOC_CTX *mem_ctx,
 					 DATA_BLOB *token_blob);
-	struct tevent_req *(*copy_chunk_send_fn)(struct vfs_handle_struct *handle,
-						 TALLOC_CTX *mem_ctx,
-						 struct tevent_context *ev,
-						 struct files_struct *src_fsp,
-						 off_t src_off,
-						 struct files_struct *dest_fsp,
-						 off_t dest_off,
-						 off_t to_copy,
-						 uint32_t flags);
-	NTSTATUS (*copy_chunk_recv_fn)(struct vfs_handle_struct *handle,
-				       struct tevent_req *req,
-				       off_t *copied);
+	struct tevent_req *(*offload_write_send_fn)(struct vfs_handle_struct *handle,
+						    TALLOC_CTX *mem_ctx,
+						    struct tevent_context *ev,
+						    struct files_struct *src_fsp,
+						    off_t src_off,
+						    struct files_struct *dest_fsp,
+						    off_t dest_off,
+						    off_t to_copy,
+						    uint32_t flags);
+	NTSTATUS (*offload_write_recv_fn)(struct vfs_handle_struct *handle,
+					  struct tevent_req *req,
+					  off_t *copied);
 	NTSTATUS (*get_compression_fn)(struct vfs_handle_struct *handle,
 				       TALLOC_CTX *mem_ctx,
 				       struct files_struct *fsp,
@@ -1374,18 +1376,18 @@ NTSTATUS smb_vfs_call_offload_read_recv(struct tevent_req *req,
 					struct vfs_handle_struct *handle,
 					TALLOC_CTX *mem_ctx,
 					DATA_BLOB *token_blob);
-struct tevent_req *smb_vfs_call_copy_chunk_send(struct vfs_handle_struct *handle,
-						TALLOC_CTX *mem_ctx,
-						struct tevent_context *ev,
-						struct files_struct *src_fsp,
-						off_t src_off,
-						struct files_struct *dest_fsp,
-						off_t dest_off,
-						off_t num,
-						uint32_t flags);
-NTSTATUS smb_vfs_call_copy_chunk_recv(struct vfs_handle_struct *handle,
-				      struct tevent_req *req,
-				      off_t *copied);
+struct tevent_req *smb_vfs_call_offload_write_send(struct vfs_handle_struct *handle,
+						   TALLOC_CTX *mem_ctx,
+						   struct tevent_context *ev,
+						   struct files_struct *src_fsp,
+						   off_t src_off,
+						   struct files_struct *dest_fsp,
+						   off_t dest_off,
+						   off_t num,
+						   uint32_t flags);
+NTSTATUS smb_vfs_call_offload_write_recv(struct vfs_handle_struct *handle,
+					 struct tevent_req *req,
+					 off_t *copied);
 NTSTATUS smb_vfs_call_get_compression(struct vfs_handle_struct *handle,
 				      TALLOC_CTX *mem_ctx,
 				      struct files_struct *fsp,

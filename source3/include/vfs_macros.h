@@ -425,15 +425,15 @@
 #define SMB_VFS_NEXT_OFFLOAD_READ_RECV(req, handle, mem_ctx, token_blob) \
 	smb_vfs_call_offload_read_recv((req), (handle)->next, (mem_ctx), (token_blob))
 
-#define SMB_VFS_COPY_CHUNK_SEND(conn, mem_ctx, ev, src_fsp, src_off, dest_fsp, dest_off, num, flags) \
-	smb_vfs_call_copy_chunk_send((conn)->vfs_handles, (mem_ctx), (ev), (src_fsp), (src_off), (dest_fsp), (dest_off), (num), (flags))
-#define SMB_VFS_NEXT_COPY_CHUNK_SEND(handle, mem_ctx, ev, src_fsp, src_off, dest_fsp, dest_off, num, flags) \
-	smb_vfs_call_copy_chunk_send((handle)->next, (mem_ctx), (ev), (src_fsp), (src_off), (dest_fsp), (dest_off), (num), (flags))
+#define SMB_VFS_OFFLOAD_WRITE_SEND(conn, mem_ctx, ev, src_fsp, src_off, dest_fsp, dest_off, num, flags) \
+	smb_vfs_call_offload_write_send((conn)->vfs_handles, (mem_ctx), (ev), (src_fsp), (src_off), (dest_fsp), (dest_off), (num), (flags))
+#define SMB_VFS_NEXT_OFFLOAD_WRITE_SEND(handle, mem_ctx, ev, src_fsp, src_off, dest_fsp, dest_off, num, flags) \
+	smb_vfs_call_offload_write_send((handle)->next, (mem_ctx), (ev), (src_fsp), (src_off), (dest_fsp), (dest_off), (num), (flags))
 
-#define SMB_VFS_COPY_CHUNK_RECV(conn, req, copied) \
-	smb_vfs_call_copy_chunk_recv((conn)->vfs_handles, (req), (copied))
-#define SMB_VFS_NEXT_COPY_CHUNK_RECV(handle, req, copied) \
-	smb_vfs_call_copy_chunk_recv((handle)->next, (req), (copied))
+#define SMB_VFS_OFFLOAD_WRITE_RECV(conn, req, copied) \
+	smb_vfs_call_offload_write_recv((conn)->vfs_handles, (req), (copied))
+#define SMB_VFS_NEXT_OFFLOAD_WRITE_RECV(handle, req, copied) \
+	smb_vfs_call_offload_write_recv((handle)->next, (req), (copied))
 
 #define SMB_VFS_GET_COMPRESSION(conn, mem_ctx, fsp, smb_fname, _compression_fmt)		\
 	smb_vfs_call_get_compression((conn)->vfs_handles, (mem_ctx), (fsp), (smb_fname), (_compression_fmt))

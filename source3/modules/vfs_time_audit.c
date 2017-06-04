@@ -1995,14 +1995,14 @@ static NTSTATUS smb_time_audit_offload_read_recv(
 	return NT_STATUS_OK;
 }
 
-struct time_audit_cc_state {
+struct time_audit_offload_write_state {
 	struct timespec ts_send;
 	struct vfs_handle_struct *handle;
 	off_t copied;
 };
-static void smb_time_audit_copy_chunk_done(struct tevent_req *subreq);
+static void smb_time_audit_offload_write_done(struct tevent_req *subreq);
 
-static struct tevent_req *smb_time_audit_copy_chunk_send(struct vfs_handle_struct *handle,
+static struct tevent_req *smb_time_audit_offload_write_send(struct vfs_handle_struct *handle,
 							 TALLOC_CTX *mem_ctx,
 							 struct tevent_context *ev,
 							 struct files_struct *src_fsp,
@@ -2014,37 +2014,38 @@ static struct tevent_req *smb_time_audit_copy_chunk_send(struct vfs_handle_struc
 {
 	struct tevent_req *req;
 	struct tevent_req *subreq;
-	struct time_audit_cc_state *cc_state;
+	struct time_audit_offload_write_state *state;
 
-	req = tevent_req_create(mem_ctx, &cc_state, struct time_audit_cc_state);
+	req = tevent_req_create(mem_ctx, &state,
+				struct time_audit_offload_write_state);
 	if (req == NULL) {
 		return NULL;
 	}
 
-	cc_state->handle = handle;
-	clock_gettime_mono(&cc_state->ts_send);
-	subreq = SMB_VFS_NEXT_COPY_CHUNK_SEND(handle, cc_state, ev,
+	state->handle = handle;
+	clock_gettime_mono(&state->ts_send);
+	subreq = SMB_VFS_NEXT_OFFLOAD_WRITE_SEND(handle, state, ev,
 					      src_fsp, src_off,
 					      dest_fsp, dest_off, num, flags);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
 
-	tevent_req_set_callback(subreq, smb_time_audit_copy_chunk_done, req);
+	tevent_req_set_callback(subreq, smb_time_audit_offload_write_done, req);
 	return req;
 }
 
-static void smb_time_audit_copy_chunk_done(struct tevent_req *subreq)
+static void smb_time_audit_offload_write_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
-	struct time_audit_cc_state *cc_state
-			= tevent_req_data(req, struct time_audit_cc_state);
+	struct time_audit_offload_write_state *state = tevent_req_data(
+		req, struct time_audit_offload_write_state);
 	NTSTATUS status;
 
-	status = SMB_VFS_NEXT_COPY_CHUNK_RECV(cc_state->handle,
+	status = SMB_VFS_NEXT_OFFLOAD_WRITE_RECV(state->handle,
 					      subreq,
-					      &cc_state->copied);
+					      &state->copied);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
@@ -2052,23 +2053,23 @@ static void smb_time_audit_copy_chunk_done(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
-static NTSTATUS smb_time_audit_copy_chunk_recv(struct vfs_handle_struct *handle,
+static NTSTATUS smb_time_audit_offload_write_recv(struct vfs_handle_struct *handle,
 					       struct tevent_req *req,
 					       off_t *copied)
 {
-	struct time_audit_cc_state *cc_state
-			= tevent_req_data(req, struct time_audit_cc_state);
+	struct time_audit_offload_write_state *state = tevent_req_data(
+		req, struct time_audit_offload_write_state);
 	struct timespec ts_recv;
 	double timediff;
 	NTSTATUS status;
 
 	clock_gettime_mono(&ts_recv);
-	timediff = nsec_time_diff(&ts_recv, &cc_state->ts_send)*1.0e-9;
+	timediff = nsec_time_diff(&ts_recv, &state->ts_send)*1.0e-9;
 	if (timediff > audit_timeout) {
-		smb_time_audit_log("copy_chunk", timediff);
+		smb_time_audit_log("offload_write", timediff);
 	}
 
-	*copied = cc_state->copied;
+	*copied = state->copied;
 	if (tevent_req_is_nterror(req, &status)) {
 		tevent_req_received(req);
 		return status;
@@ -2771,8 +2772,8 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.file_id_create_fn = smb_time_audit_file_id_create,
 	.offload_read_send_fn = smb_time_audit_offload_read_send,
 	.offload_read_recv_fn = smb_time_audit_offload_read_recv,
-	.copy_chunk_send_fn = smb_time_audit_copy_chunk_send,
-	.copy_chunk_recv_fn = smb_time_audit_copy_chunk_recv,
+	.offload_write_send_fn = smb_time_audit_offload_write_send,
+	.offload_write_recv_fn = smb_time_audit_offload_write_recv,
 	.get_compression_fn = smb_time_audit_get_compression,
 	.set_compression_fn = smb_time_audit_set_compression,
 	.snap_check_path_fn = smb_time_audit_snap_check_path,

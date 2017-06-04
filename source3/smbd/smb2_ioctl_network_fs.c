@@ -340,7 +340,7 @@ static NTSTATUS fsctl_srv_copychunk_loop(struct tevent_req *req)
 		}
 		state->aapl_copyfile = true;
 
-		subreq = SMB_VFS_COPY_CHUNK_SEND(state->dst_fsp->conn,
+		subreq = SMB_VFS_OFFLOAD_WRITE_SEND(state->dst_fsp->conn,
 						 state,
 						 state->ev,
 						 state->src_fsp,
@@ -360,7 +360,7 @@ static NTSTATUS fsctl_srv_copychunk_loop(struct tevent_req *req)
 	chunk = &state->cc_copy.chunks[state->current_chunk];
 	length = next_merged_io(state);
 
-	subreq = SMB_VFS_COPY_CHUNK_SEND(state->dst_fsp->conn,
+	subreq = SMB_VFS_OFFLOAD_WRITE_SEND(state->dst_fsp->conn,
 					 state,
 					 state->ev,
 					 state->src_fsp,
@@ -386,7 +386,7 @@ static void fsctl_srv_copychunk_vfs_done(struct tevent_req *subreq)
 	off_t chunk_nwritten;
 	NTSTATUS status;
 
-	status = SMB_VFS_COPY_CHUNK_RECV(state->conn, subreq,
+	status = SMB_VFS_OFFLOAD_WRITE_RECV(state->conn, subreq,
 					 &chunk_nwritten);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {

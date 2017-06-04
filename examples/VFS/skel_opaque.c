@@ -582,7 +582,7 @@ static NTSTATUS skel_offload_read_recv(struct tevent_req *req,
 struct skel_cc_state {
 	uint64_t unused;
 };
-static struct tevent_req *skel_copy_chunk_send(struct vfs_handle_struct *handle,
+static struct tevent_req *skel_offload_write_send(struct vfs_handle_struct *handle,
 					       TALLOC_CTX *mem_ctx,
 					       struct tevent_context *ev,
 					       struct files_struct *src_fsp,
@@ -604,7 +604,7 @@ static struct tevent_req *skel_copy_chunk_send(struct vfs_handle_struct *handle,
 	return tevent_req_post(req, ev);
 }
 
-static NTSTATUS skel_copy_chunk_recv(struct vfs_handle_struct *handle,
+static NTSTATUS skel_offload_write_recv(struct vfs_handle_struct *handle,
 				     struct tevent_req *req,
 				     off_t *copied)
 {
@@ -1011,8 +1011,8 @@ struct vfs_fn_pointers skel_opaque_fns = {
 	.file_id_create_fn = skel_file_id_create,
 	.offload_read_send_fn = skel_offload_read_send,
 	.offload_read_recv_fn = skel_offload_read_recv,
-	.copy_chunk_send_fn = skel_copy_chunk_send,
-	.copy_chunk_recv_fn = skel_copy_chunk_recv,
+	.offload_write_send_fn = skel_offload_write_send,
+	.offload_write_recv_fn = skel_offload_write_recv,
 	.get_compression_fn = skel_get_compression,
 	.set_compression_fn = skel_set_compression,
 

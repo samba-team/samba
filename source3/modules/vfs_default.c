@@ -1682,7 +1682,7 @@ static NTSTATUS vfswrap_offload_read_recv(struct tevent_req *req,
 	return NT_STATUS_OK;
 }
 
-struct vfs_cc_state {
+struct vfswrap_offload_write_state {
 	struct tevent_context *ev;
 	uint8_t *buf;
 	bool read_lck_locked;
@@ -1699,42 +1699,44 @@ struct vfs_cc_state {
 	uint32_t flags;
 };
 
-static NTSTATUS copy_chunk_loop(struct tevent_req *req);
+static NTSTATUS vfswrap_offload_write_loop(struct tevent_req *req);
 
-static struct tevent_req *vfswrap_copy_chunk_send(struct vfs_handle_struct *handle,
-						  TALLOC_CTX *mem_ctx,
-						  struct tevent_context *ev,
-						  struct files_struct *src_fsp,
-						  off_t src_off,
-						  struct files_struct *dest_fsp,
-						  off_t dest_off,
-						  off_t to_copy,
-						  uint32_t flags)
+static struct tevent_req *vfswrap_offload_write_send(
+	struct vfs_handle_struct *handle,
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct files_struct *src_fsp,
+	off_t src_off,
+	struct files_struct *dest_fsp,
+	off_t dest_off,
+	off_t to_copy,
+	uint32_t flags)
 {
 	struct tevent_req *req;
-	struct vfs_cc_state *state = NULL;
+	struct vfswrap_offload_write_state *state = NULL;
 	size_t num = MIN(to_copy, COPYCHUNK_MAX_TOTAL_LEN);
 	NTSTATUS status;
 
 	DBG_DEBUG("server side copy chunk of length %" PRIu64 "\n", to_copy);
 
-	req = tevent_req_create(mem_ctx, &state, struct vfs_cc_state);
+	req = tevent_req_create(mem_ctx, &state,
+				struct vfswrap_offload_write_state);
 	if (req == NULL) {
 		return NULL;
 	}
 
-	if (flags & ~VFS_COPY_CHUNK_FL_MASK_ALL) {
+	if (flags & ~VFS_OFFLOAD_WRITE_FL_MASK_ALL) {
 		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return tevent_req_post(req, ev);
 	}
 
-	if (flags & VFS_COPY_CHUNK_FL_MUST_CLONE) {
+	if (flags & VFS_OFFLOAD_WRITE_FL_MUST_CLONE) {
 		DEBUG(10, ("COW clones not supported by vfs_default\n"));
 		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return tevent_req_post(req, ev);
 	}
 
-	*state = (struct vfs_cc_state) {
+	*state = (struct vfswrap_offload_write_state) {
 		.ev = ev,
 		.src_fsp = src_fsp,
 		.src_off = src_off,
@@ -1778,7 +1780,7 @@ static struct tevent_req *vfswrap_copy_chunk_send(struct vfs_handle_struct *hand
 		return tevent_req_post(req, ev);
 	}
 
-	status = copy_chunk_loop(req);
+	status = vfswrap_offload_write_loop(req);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
 		return tevent_req_post(req, ev);
@@ -1787,17 +1789,18 @@ static struct tevent_req *vfswrap_copy_chunk_send(struct vfs_handle_struct *hand
 	return req;
 }
 
-static void vfswrap_copy_chunk_read_done(struct tevent_req *subreq);
+static void vfswrap_offload_write_read_done(struct tevent_req *subreq);
 
-static NTSTATUS copy_chunk_loop(struct tevent_req *req)
+static NTSTATUS vfswrap_offload_write_loop(struct tevent_req *req)
 {
-	struct vfs_cc_state *state = tevent_req_data(req, struct vfs_cc_state);
+	struct vfswrap_offload_write_state *state = tevent_req_data(
+		req, struct vfswrap_offload_write_state);
 	struct tevent_req *subreq = NULL;
 	bool ok;
 
 	state->next_io_size = MIN(state->remaining, talloc_array_length(state->buf));
 
-	if (!(state->flags & VFS_COPY_CHUNK_FL_IGNORE_LOCKS)) {
+	if (!(state->flags & VFS_OFFLOAD_WRITE_FL_IGNORE_LOCKS)) {
 		init_strict_lock_struct(state->src_fsp,
 				state->src_fsp->op->global->open_persistent_id,
 					state->src_off,
@@ -1822,23 +1825,24 @@ static NTSTATUS copy_chunk_loop(struct tevent_req *req)
 	if (subreq == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	tevent_req_set_callback(subreq, vfswrap_copy_chunk_read_done, req);
+	tevent_req_set_callback(subreq, vfswrap_offload_write_read_done, req);
 
 	return NT_STATUS_OK;
 }
 
-static void vfswrap_copy_chunk_write_done(struct tevent_req *subreq);
+static void vfswrap_offload_write_write_done(struct tevent_req *subreq);
 
-static void vfswrap_copy_chunk_read_done(struct tevent_req *subreq)
+static void vfswrap_offload_write_read_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
-	struct vfs_cc_state *state = tevent_req_data(req, struct vfs_cc_state);
+	struct vfswrap_offload_write_state *state = tevent_req_data(
+		req, struct vfswrap_offload_write_state);
 	struct vfs_aio_state aio_state;
 	ssize_t nread;
 	bool ok;
 
-	if (!(state->flags & VFS_COPY_CHUNK_FL_IGNORE_LOCKS)) {
+	if (!(state->flags & VFS_OFFLOAD_WRITE_FL_IGNORE_LOCKS)) {
 		SMB_VFS_STRICT_UNLOCK(state->src_fsp->conn,
 				      state->src_fsp,
 				      &state->read_lck);
@@ -1861,7 +1865,7 @@ static void vfswrap_copy_chunk_read_done(struct tevent_req *subreq)
 
 	state->src_off += nread;
 
-	if (!(state->flags & VFS_COPY_CHUNK_FL_IGNORE_LOCKS)) {
+	if (!(state->flags & VFS_OFFLOAD_WRITE_FL_IGNORE_LOCKS)) {
 		init_strict_lock_struct(state->dst_fsp,
 				state->dst_fsp->op->global->open_persistent_id,
 					state->dst_off,
@@ -1888,19 +1892,20 @@ static void vfswrap_copy_chunk_read_done(struct tevent_req *subreq)
 		tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
 		return;
 	}
-	tevent_req_set_callback(subreq, vfswrap_copy_chunk_write_done, req);
+	tevent_req_set_callback(subreq, vfswrap_offload_write_write_done, req);
 }
 
-static void vfswrap_copy_chunk_write_done(struct tevent_req *subreq)
+static void vfswrap_offload_write_write_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
-	struct vfs_cc_state *state = tevent_req_data(req, struct vfs_cc_state);
+	struct vfswrap_offload_write_state *state = tevent_req_data(
+		req, struct vfswrap_offload_write_state);
 	struct vfs_aio_state aio_state;
 	ssize_t nwritten;
 	NTSTATUS status;
 
-	if (!(state->flags & VFS_COPY_CHUNK_FL_IGNORE_LOCKS)) {
+	if (!(state->flags & VFS_OFFLOAD_WRITE_FL_IGNORE_LOCKS)) {
 		SMB_VFS_STRICT_UNLOCK(state->dst_fsp->conn,
 				      state->dst_fsp,
 				      &state->write_lck);
@@ -1933,7 +1938,7 @@ static void vfswrap_copy_chunk_write_done(struct tevent_req *subreq)
 		return;
 	}
 
-	status = copy_chunk_loop(req);
+	status = vfswrap_offload_write_loop(req);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
 		return;
@@ -1942,11 +1947,12 @@ static void vfswrap_copy_chunk_write_done(struct tevent_req *subreq)
 	return;
 }
 
-static NTSTATUS vfswrap_copy_chunk_recv(struct vfs_handle_struct *handle,
+static NTSTATUS vfswrap_offload_write_recv(struct vfs_handle_struct *handle,
 					struct tevent_req *req,
 					off_t *copied)
 {
-	struct vfs_cc_state *state = tevent_req_data(req, struct vfs_cc_state);
+	struct vfswrap_offload_write_state *state = tevent_req_data(
+		req, struct vfswrap_offload_write_state);
 	NTSTATUS status;
 
 	if (tevent_req_is_nterror(req, &status)) {
@@ -3079,8 +3085,8 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.fget_dos_attributes_fn = vfswrap_fget_dos_attributes,
 	.offload_read_send_fn = vfswrap_offload_read_send,
 	.offload_read_recv_fn = vfswrap_offload_read_recv,
-	.copy_chunk_send_fn = vfswrap_copy_chunk_send,
-	.copy_chunk_recv_fn = vfswrap_copy_chunk_recv,
+	.offload_write_send_fn = vfswrap_offload_write_send,
+	.offload_write_recv_fn = vfswrap_offload_write_recv,
 	.get_compression_fn = vfswrap_get_compression,
 	.set_compression_fn = vfswrap_set_compression,
 

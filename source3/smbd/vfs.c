@@ -2374,28 +2374,28 @@ NTSTATUS smb_vfs_call_offload_read_recv(struct tevent_req *req,
 	return handle->fns->offload_read_recv_fn(req, handle, mem_ctx, token_blob);
 }
 
-struct tevent_req *smb_vfs_call_copy_chunk_send(struct vfs_handle_struct *handle,
-						TALLOC_CTX *mem_ctx,
-						struct tevent_context *ev,
-						struct files_struct *src_fsp,
-						off_t src_off,
-						struct files_struct *dest_fsp,
-						off_t dest_off,
-						off_t num,
-						uint32_t flags)
+struct tevent_req *smb_vfs_call_offload_write_send(struct vfs_handle_struct *handle,
+						   TALLOC_CTX *mem_ctx,
+						   struct tevent_context *ev,
+						   struct files_struct *src_fsp,
+						   off_t src_off,
+						   struct files_struct *dest_fsp,
+						   off_t dest_off,
+						   off_t num,
+						   uint32_t flags)
 {
-	VFS_FIND(copy_chunk_send);
-	return handle->fns->copy_chunk_send_fn(handle, mem_ctx, ev, src_fsp,
+	VFS_FIND(offload_write_send);
+	return handle->fns->offload_write_send_fn(handle, mem_ctx, ev, src_fsp,
 					       src_off, dest_fsp, dest_off, num,
 					       flags);
 }
 
-NTSTATUS smb_vfs_call_copy_chunk_recv(struct vfs_handle_struct *handle,
-				      struct tevent_req *req,
-				      off_t *copied)
+NTSTATUS smb_vfs_call_offload_write_recv(struct vfs_handle_struct *handle,
+					 struct tevent_req *req,
+					 off_t *copied)
 {
-	VFS_FIND(copy_chunk_recv);
-	return handle->fns->copy_chunk_recv_fn(handle, req, copied);
+	VFS_FIND(offload_write_recv);
+	return handle->fns->offload_write_recv_fn(handle, req, copied);
 }
 
 NTSTATUS smb_vfs_call_get_compression(vfs_handle_struct *handle,

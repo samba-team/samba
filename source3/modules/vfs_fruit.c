@@ -5473,7 +5473,7 @@ static NTSTATUS fruit_offload_read_recv(struct tevent_req *req,
 	return NT_STATUS_OK;
 }
 
-struct fruit_copy_chunk_state {
+struct fruit_offload_write_state {
 	struct vfs_handle_struct *handle;
 	off_t copied;
 	struct files_struct *src_fsp;
@@ -5481,8 +5481,8 @@ struct fruit_copy_chunk_state {
 	bool is_copyfile;
 };
 
-static void fruit_copy_chunk_done(struct tevent_req *subreq);
-static struct tevent_req *fruit_copy_chunk_send(struct vfs_handle_struct *handle,
+static void fruit_offload_write_done(struct tevent_req *subreq);
+static struct tevent_req *fruit_offload_write_send(struct vfs_handle_struct *handle,
 						TALLOC_CTX *mem_ctx,
 						struct tevent_context *ev,
 						struct files_struct *src_fsp,
@@ -5493,7 +5493,7 @@ static struct tevent_req *fruit_copy_chunk_send(struct vfs_handle_struct *handle
 						uint32_t flags)
 {
 	struct tevent_req *req, *subreq;
-	struct fruit_copy_chunk_state *fruit_copy_chunk_state;
+	struct fruit_offload_write_state *state;
 	NTSTATUS status;
 	struct fruit_config_data *config;
 	off_t to_copy = num;
@@ -5505,19 +5505,19 @@ static struct tevent_req *fruit_copy_chunk_send(struct vfs_handle_struct *handle
 				struct fruit_config_data,
 				return NULL);
 
-	req = tevent_req_create(mem_ctx, &fruit_copy_chunk_state,
-				struct fruit_copy_chunk_state);
+	req = tevent_req_create(mem_ctx, &state,
+				struct fruit_offload_write_state);
 	if (req == NULL) {
 		return NULL;
 	}
-	fruit_copy_chunk_state->handle = handle;
-	fruit_copy_chunk_state->src_fsp = src_fsp;
-	fruit_copy_chunk_state->dst_fsp = dest_fsp;
+	state->handle = handle;
+	state->src_fsp = src_fsp;
+	state->dst_fsp = dest_fsp;
 
 	/*
 	 * Check if this a OS X copyfile style copychunk request with
 	 * a requested chunk count of 0 that was translated to a
-	 * copy_chunk_send VFS call overloading the parameters src_off
+	 * offload_write_send VFS call overloading the parameters src_off
 	 * = dest_off = num = 0.
 	 */
 	if ((src_off == 0) && (dest_off == 0) && (num == 0) &&
@@ -5530,10 +5530,10 @@ static struct tevent_req *fruit_copy_chunk_send(struct vfs_handle_struct *handle
 		}
 
 		to_copy = src_fsp->fsp_name->st.st_ex_size;
-		fruit_copy_chunk_state->is_copyfile = true;
+		state->is_copyfile = true;
 	}
 
-	subreq = SMB_VFS_NEXT_COPY_CHUNK_SEND(handle,
+	subreq = SMB_VFS_NEXT_OFFLOAD_WRITE_SEND(handle,
 					      mem_ctx,
 					      ev,
 					      src_fsp,
@@ -5546,16 +5546,16 @@ static struct tevent_req *fruit_copy_chunk_send(struct vfs_handle_struct *handle
 		return tevent_req_post(req, ev);
 	}
 
-	tevent_req_set_callback(subreq, fruit_copy_chunk_done, req);
+	tevent_req_set_callback(subreq, fruit_offload_write_done, req);
 	return req;
 }
 
-static void fruit_copy_chunk_done(struct tevent_req *subreq)
+static void fruit_offload_write_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
-	struct fruit_copy_chunk_state *state = tevent_req_data(
-		req, struct fruit_copy_chunk_state);
+	struct fruit_offload_write_state *state = tevent_req_data(
+		req, struct fruit_offload_write_state);
 	NTSTATUS status;
 	unsigned int num_streams = 0;
 	struct stream_struct *streams = NULL;
@@ -5563,7 +5563,7 @@ static void fruit_copy_chunk_done(struct tevent_req *subreq)
 	struct smb_filename *src_fname_tmp = NULL;
 	struct smb_filename *dst_fname_tmp = NULL;
 
-	status = SMB_VFS_NEXT_COPY_CHUNK_RECV(state->handle,
+	status = SMB_VFS_NEXT_OFFLOAD_WRITE_RECV(state->handle,
 					      subreq,
 					      &state->copied);
 	TALLOC_FREE(subreq);
@@ -5651,12 +5651,12 @@ static void fruit_copy_chunk_done(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
-static NTSTATUS fruit_copy_chunk_recv(struct vfs_handle_struct *handle,
+static NTSTATUS fruit_offload_write_recv(struct vfs_handle_struct *handle,
 				      struct tevent_req *req,
 				      off_t *copied)
 {
-	struct fruit_copy_chunk_state *fruit_copy_chunk_state = tevent_req_data(
-		req, struct fruit_copy_chunk_state);
+	struct fruit_offload_write_state *state = tevent_req_data(
+		req, struct fruit_offload_write_state);
 	NTSTATUS status;
 
 	if (tevent_req_is_nterror(req, &status)) {
@@ -5667,7 +5667,7 @@ static NTSTATUS fruit_copy_chunk_recv(struct vfs_handle_struct *handle,
 		return status;
 	}
 
-	*copied = fruit_copy_chunk_state->copied;
+	*copied = state->copied;
 	tevent_req_received(req);
 
 	return NT_STATUS_OK;
@@ -5700,8 +5700,8 @@ static struct vfs_fn_pointers vfs_fruit_fns = {
 	.readdir_attr_fn = fruit_readdir_attr,
 	.offload_read_send_fn = fruit_offload_read_send,
 	.offload_read_recv_fn = fruit_offload_read_recv,
-	.copy_chunk_send_fn = fruit_copy_chunk_send,
-	.copy_chunk_recv_fn = fruit_copy_chunk_recv,
+	.offload_write_send_fn = fruit_offload_write_send,
+	.offload_write_recv_fn = fruit_offload_write_recv,
 
 	/* NT ACL operations */
 	.fget_nt_acl_fn = fruit_fget_nt_acl,

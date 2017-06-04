@@ -289,16 +289,16 @@ static void fsctl_dup_extents_offload_read_done(struct tevent_req *subreq)
 	}
 
 	/* tell the VFS to ignore locks across the clone, matching ReFS */
-	subreq = SMB_VFS_COPY_CHUNK_SEND(state->dst_fsp->conn,
-					 state,
-					 state->ev,
-					 state->src_fsp,
-					 state->dup_extents.source_off,
-					 state->dst_fsp,
-					 state->dup_extents.target_off,
-					 state->dup_extents.byte_count,
-					 VFS_COPY_CHUNK_FL_MUST_CLONE
-					 | VFS_COPY_CHUNK_FL_IGNORE_LOCKS);
+	subreq = SMB_VFS_OFFLOAD_WRITE_SEND(state->dst_fsp->conn,
+					    state,
+					    state->ev,
+					    state->src_fsp,
+					    state->dup_extents.source_off,
+					    state->dst_fsp,
+					    state->dup_extents.target_off,
+					    state->dup_extents.byte_count,
+					    VFS_OFFLOAD_WRITE_FL_MUST_CLONE
+					    | VFS_OFFLOAD_WRITE_FL_IGNORE_LOCKS);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -315,7 +315,7 @@ static void fsctl_dup_extents_vfs_done(struct tevent_req *subreq)
 	off_t nb_chunk;
 	NTSTATUS status;
 
-	status = SMB_VFS_COPY_CHUNK_RECV(state->conn, subreq, &nb_chunk);
+	status = SMB_VFS_OFFLOAD_WRITE_RECV(state->conn, subreq, &nb_chunk);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;

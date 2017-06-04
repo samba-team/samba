@@ -201,9 +201,9 @@ struct btrfs_cc_state {
 	off_t copied;
 	struct tevent_req *subreq;	/* non-null if passed to next VFS fn */
 };
-static void btrfs_copy_chunk_done(struct tevent_req *subreq);
+static void btrfs_offload_write_done(struct tevent_req *subreq);
 
-static struct tevent_req *btrfs_copy_chunk_send(struct vfs_handle_struct *handle,
+static struct tevent_req *btrfs_offload_write_send(struct vfs_handle_struct *handle,
 						TALLOC_CTX *mem_ctx,
 						struct tevent_context *ev,
 						struct files_struct *src_fsp,
@@ -226,7 +226,7 @@ static struct tevent_req *btrfs_copy_chunk_send(struct vfs_handle_struct *handle
 		return NULL;
 	}
 
-	if (flags & ~VFS_COPY_CHUNK_FL_MASK_ALL) {
+	if (flags & ~VFS_OFFLOAD_WRITE_FL_MASK_ALL) {
 		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return tevent_req_post(req, ev);
 	}
@@ -239,7 +239,7 @@ static struct tevent_req *btrfs_copy_chunk_send(struct vfs_handle_struct *handle
 		 * all data from @src_offset->EOF! This is certainly not what
 		 * the caller expects, and not what vfs_default does.
 		 */
-		cc_state->subreq = SMB_VFS_NEXT_COPY_CHUNK_SEND(handle,
+		cc_state->subreq = SMB_VFS_NEXT_OFFLOAD_WRITE_SEND(handle,
 								cc_state, ev,
 								src_fsp,
 								src_off,
@@ -250,7 +250,7 @@ static struct tevent_req *btrfs_copy_chunk_send(struct vfs_handle_struct *handle
 			return tevent_req_post(req, ev);
 		}
 		tevent_req_set_callback(cc_state->subreq,
-					btrfs_copy_chunk_done,
+					btrfs_offload_write_done,
 					req);
 		return req;
 	}
@@ -271,7 +271,7 @@ static struct tevent_req *btrfs_copy_chunk_send(struct vfs_handle_struct *handle
 		return tevent_req_post(req, ev);
 	}
 
-	if (!(flags & VFS_COPY_CHUNK_FL_IGNORE_LOCKS)) {
+	if (!(flags & VFS_OFFLOAD_WRITE_FL_IGNORE_LOCKS)) {
 		init_strict_lock_struct(src_fsp,
 					src_fsp->op->global->open_persistent_id,
 					src_off,
@@ -303,7 +303,7 @@ static struct tevent_req *btrfs_copy_chunk_send(struct vfs_handle_struct *handle
 	cr_args.src_length = (uint64_t)num;
 
 	ret = ioctl(dest_fsp->fh->fd, BTRFS_IOC_CLONE_RANGE, &cr_args);
-	if (!(flags & VFS_COPY_CHUNK_FL_IGNORE_LOCKS)) {
+	if (!(flags & VFS_OFFLOAD_WRITE_FL_IGNORE_LOCKS)) {
 		SMB_VFS_STRICT_UNLOCK(dest_fsp->conn, dest_fsp, &dest_lck);
 		SMB_VFS_STRICT_UNLOCK(src_fsp->conn, src_fsp, &src_lck);
 	}
@@ -321,7 +321,7 @@ static struct tevent_req *btrfs_copy_chunk_send(struct vfs_handle_struct *handle
 			  (unsigned long long)cr_args.src_offset,
 			  dest_fsp->fh->fd,
 			  (unsigned long long)cr_args.dest_offset));
-		cc_state->subreq = SMB_VFS_NEXT_COPY_CHUNK_SEND(handle,
+		cc_state->subreq = SMB_VFS_NEXT_OFFLOAD_WRITE_SEND(handle,
 								cc_state, ev,
 								src_fsp,
 								src_off,
@@ -333,7 +333,7 @@ static struct tevent_req *btrfs_copy_chunk_send(struct vfs_handle_struct *handle
 		}
 		/* wait for subreq completion */
 		tevent_req_set_callback(cc_state->subreq,
-					btrfs_copy_chunk_done,
+					btrfs_offload_write_done,
 					req);
 		return req;
 	}
@@ -346,7 +346,7 @@ static struct tevent_req *btrfs_copy_chunk_send(struct vfs_handle_struct *handle
 }
 
 /* only used if the request is passed through to next VFS module */
-static void btrfs_copy_chunk_done(struct tevent_req *subreq)
+static void btrfs_offload_write_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
@@ -354,7 +354,7 @@ static void btrfs_copy_chunk_done(struct tevent_req *subreq)
 							struct btrfs_cc_state);
 	NTSTATUS status;
 
-	status = SMB_VFS_NEXT_COPY_CHUNK_RECV(cc_state->handle,
+	status = SMB_VFS_NEXT_OFFLOAD_WRITE_RECV(cc_state->handle,
 					      cc_state->subreq,
 					      &cc_state->copied);
 	if (tevent_req_nterror(req, status)) {
@@ -363,7 +363,7 @@ static void btrfs_copy_chunk_done(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
-static NTSTATUS btrfs_copy_chunk_recv(struct vfs_handle_struct *handle,
+static NTSTATUS btrfs_offload_write_recv(struct vfs_handle_struct *handle,
 				      struct tevent_req *req,
 				      off_t *copied)
 {
@@ -800,8 +800,8 @@ static struct vfs_fn_pointers btrfs_fns = {
 	.fs_capabilities_fn = btrfs_fs_capabilities,
 	.offload_read_send_fn = btrfs_offload_read_send,
 	.offload_read_recv_fn = btrfs_offload_read_recv,
-	.copy_chunk_send_fn = btrfs_copy_chunk_send,
-	.copy_chunk_recv_fn = btrfs_copy_chunk_recv,
+	.offload_write_send_fn = btrfs_offload_write_send,
+	.offload_write_recv_fn = btrfs_offload_write_recv,
 	.get_compression_fn = btrfs_get_compression,
 	.set_compression_fn = btrfs_set_compression,
 	.snap_check_path_fn = btrfs_snap_check_path,
