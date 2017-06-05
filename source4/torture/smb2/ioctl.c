@@ -1984,6 +1984,89 @@ done:
 	return ok;
 }
 
+static bool test_copy_chunk_across_shares(struct torture_context *tctx,
+					  struct smb2_tree *tree)
+{
+	TALLOC_CTX *mem_ctx = NULL;
+	struct smb2_tree *tree2 = NULL;
+	struct smb2_handle src_h = {{0}};
+	struct smb2_handle dest_h = {{0}};
+	union smb_ioctl ioctl;
+	struct srv_copychunk_copy cc_copy;
+	struct srv_copychunk_rsp cc_rsp;
+	enum ndr_err_code ndr_ret;
+	NTSTATUS status;
+	bool ok = false;
+
+	mem_ctx = talloc_new(tctx);
+	torture_assert_not_null_goto(tctx, mem_ctx, ok, done,
+				     "talloc_new\n");
+
+	ok = torture_smb2_tree_connect(tctx, tree->session, tctx, &tree2);
+	torture_assert_goto(tctx, ok == true, ok, done,
+			    "torture_smb2_tree_connect failed\n");
+
+	ok = test_setup_copy_chunk(tctx, tree, tree2, mem_ctx,
+				   1, /* 1 chunk */
+				   FNAME,
+				   &src_h, 4096, /* fill 4096 byte src file */
+				   SEC_RIGHTS_FILE_ALL,
+				   FNAME2,
+				   &dest_h, 0,	/* 0 byte dest file */
+				   SEC_RIGHTS_FILE_ALL,
+				   &cc_copy,
+				   &ioctl);
+	torture_assert_goto(tctx, ok == true, ok, done,
+			    "test_setup_copy_chunk failed\n");
+
+	cc_copy.chunks[0].source_off = 0;
+	cc_copy.chunks[0].target_off = 0;
+	cc_copy.chunks[0].length = 4096;
+
+	ndr_ret = ndr_push_struct_blob(
+		&ioctl.smb2.in.out, mem_ctx, &cc_copy,
+		(ndr_push_flags_fn_t)ndr_push_srv_copychunk_copy);
+	torture_assert_ndr_success_goto(tctx, ndr_ret, ok, done,
+					"ndr_push_srv_copychunk_copy\n");
+
+	status = smb2_ioctl(tree2, mem_ctx, &ioctl.smb2);
+	torture_assert_ntstatus_ok_goto(tctx, status, ok, done,
+					"FSCTL_SRV_COPYCHUNK\n");
+
+	ndr_ret = ndr_pull_struct_blob(
+		&ioctl.smb2.out.out, mem_ctx, &cc_rsp,
+		(ndr_pull_flags_fn_t)ndr_pull_srv_copychunk_rsp);
+
+	torture_assert_ndr_success_goto(tctx, ndr_ret, ok, done,
+				   "ndr_pull_srv_copychunk_rsp\n");
+
+	ok = check_copy_chunk_rsp(tctx, &cc_rsp,
+				  1,	/* chunks written */
+				  0,	/* chunk bytes unsuccessfully written */
+				  4096); /* total bytes written */
+	torture_assert_goto(tctx, ok == true, ok, done,
+			    "bad copy chunk response data\n");
+
+	ok = check_pattern(tctx, tree2, mem_ctx, dest_h, 0, 4096, 0);
+	torture_assert_goto(tctx, ok == true, ok, done,
+			    "inconsistent file data\n");
+
+done:
+	TALLOC_FREE(mem_ctx);
+	if (!smb2_util_handle_empty(src_h)) {
+		smb2_util_close(tree, src_h);
+	}
+	if (!smb2_util_handle_empty(dest_h)) {
+		smb2_util_close(tree2, dest_h);
+	}
+	smb2_util_unlink(tree, FNAME);
+	smb2_util_unlink(tree2, FNAME2);
+	if (tree2 != NULL) {
+		smb2_tdis(tree2);
+	}
+	return ok;
+}
+
 static NTSTATUS test_ioctl_compress_fs_supported(struct torture_context *torture,
 						 struct smb2_tree *tree,
 						 TALLOC_CTX *mem_ctx,
@@ -6427,6 +6510,8 @@ struct torture_suite *torture_smb2_ioctl_init(TALLOC_CTX *ctx)
 				     test_ioctl_copy_chunk_zero_length);
 	torture_suite_add_1smb2_test(suite, "copy-chunk streams",
 				     test_copy_chunk_streams);
+	torture_suite_add_1smb2_test(suite, "copy_chunk_across_shares",
+				     test_copy_chunk_across_shares);
 	torture_suite_add_1smb2_test(suite, "compress_file_flag",
 				     test_ioctl_compress_file_flag);
 	torture_suite_add_1smb2_test(suite, "compress_dir_inherit",
