@@ -1777,7 +1777,7 @@ void tevent_thread_proxy_schedule(struct tevent_thread_proxy *tp,
  *
  * It is the duty of the caller of tevent_threaded_context_create() to
  * keep the event context around longer than any
- * tevent_threaded_context. tevent will abort if ev is talllc_free'ed
+ * tevent_threaded_context. tevent will abort if ev is talloc_free'ed
  * with an active tevent_threaded_context.
  *
  * If tevent is build without pthread support, this always returns
