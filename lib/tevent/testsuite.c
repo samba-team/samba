@@ -1207,6 +1207,14 @@ static bool test_multi_tevent_threaded_2(struct torture_context *test,
 	ev = tevent_context_init(test);
 	torture_assert(test, ev != NULL, "tevent_context_init failed");
 
+	/*
+	 * tevent_re_initialise used to have a bug where it did not
+	 * re-initialise the thread support after taking it
+	 * down. Excercise that code path.
+	 */
+	ret = tevent_re_initialise(ev);
+	torture_assert(test, ret == 0, "tevent_re_initialise failed");
+
 	tctx = tevent_threaded_context_create(ev, ev);
 	torture_assert(test, tctx != NULL,
 		       "tevent_threaded_context_create failed");
