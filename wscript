@@ -62,11 +62,11 @@ def set_options(opt):
                    action='store_true', dest='without_ad_dc', default=False)
 
     opt.add_option('--with-ntvfs-fileserver',
-                   help='enable the depricated NTVFS file server from the original Samba4 branch (default if --enable-selftest specicifed).  Conflicts with --with-system-mitkrb5 and --without-ad-dc',
+                   help='enable the deprecated NTVFS file server from the original Samba4 branch (default if --enable-selftest specified).  Conflicts with --with-system-mitkrb5 and --without-ad-dc',
                    action='store_true', dest='with_ntvfs_fileserver')
 
     opt.add_option('--without-ntvfs-fileserver',
-                   help='disable the depricated NTVFS file server from the original Samba4 branch',
+                   help='disable the deprecated NTVFS file server from the original Samba4 branch',
                    action='store_false', dest='with_ntvfs_fileserver')
 
     opt.add_option('--with-pie',
