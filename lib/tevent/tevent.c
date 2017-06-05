@@ -392,6 +392,41 @@ int tevent_common_context_destructor(struct tevent_context *ev)
 	return 0;
 }
 
+static int tevent_common_context_constructor(struct tevent_context *ev)
+{
+	int ret;
+
+#ifdef HAVE_PTHREAD
+
+	ret = pthread_once(&tevent_atfork_initialized, tevent_prep_atfork);
+	if (ret != 0) {
+		return ret;
+	}
+
+	ret = pthread_mutex_init(&ev->scheduled_mutex, NULL);
+	if (ret != 0) {
+		return ret;
+	}
+
+	ret = pthread_mutex_lock(&tevent_contexts_mutex);
+	if (ret != 0) {
+		pthread_mutex_destroy(&ev->scheduled_mutex);
+		return ret;
+	}
+
+	DLIST_ADD(tevent_contexts, ev);
+
+	ret = pthread_mutex_unlock(&tevent_contexts_mutex);
+	if (ret != 0) {
+		abort();
+	}
+#endif
+
+	talloc_set_destructor(ev, tevent_common_context_destructor);
+
+	return 0;
+}
+
 /*
   create a event_context structure for a specific implemementation.
   This must be the first events call, and all subsequent calls pass
@@ -413,37 +448,11 @@ struct tevent_context *tevent_context_init_ops(TALLOC_CTX *mem_ctx,
 	ev = talloc_zero(mem_ctx, struct tevent_context);
 	if (!ev) return NULL;
 
-#ifdef HAVE_PTHREAD
-
-	ret = pthread_once(&tevent_atfork_initialized, tevent_prep_atfork);
+	ret = tevent_common_context_constructor(ev);
 	if (ret != 0) {
 		talloc_free(ev);
 		return NULL;
 	}
-
-	ret = pthread_mutex_init(&ev->scheduled_mutex, NULL);
-	if (ret != 0) {
-		talloc_free(ev);
-		return NULL;
-	}
-
-	ret = pthread_mutex_lock(&tevent_contexts_mutex);
-	if (ret != 0) {
-		pthread_mutex_destroy(&ev->scheduled_mutex);
-		talloc_free(ev);
-		return NULL;
-	}
-
-	DLIST_ADD(tevent_contexts, ev);
-
-	ret = pthread_mutex_unlock(&tevent_contexts_mutex);
-	if (ret != 0) {
-		abort();
-	}
-
-#endif
-
-	talloc_set_destructor(ev, tevent_common_context_destructor);
 
 	ev->ops = ops;
 	ev->additional_data = additional_data;
