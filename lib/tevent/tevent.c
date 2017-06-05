@@ -884,6 +884,8 @@ int tevent_re_initialise(struct tevent_context *ev)
 {
 	tevent_common_context_destructor(ev);
 
+	tevent_common_context_constructor(ev);
+
 	return ev->ops->context_init(ev);
 }
 
