@@ -68,6 +68,9 @@ class DrsBaseTestCase(SambaToolCmdTest):
         self.dnsname_dc1 = self.info_dc1["dnsHostName"][0]
         self.dnsname_dc2 = self.info_dc2["dnsHostName"][0]
 
+        # for debugging the test code
+        self._debug = False
+
     def tearDown(self):
         super(DrsBaseTestCase, self).tearDown()
 
@@ -194,6 +197,27 @@ class DrsBaseTestCase(SambaToolCmdTest):
         id.dn = str(res[0].dn)
         return id
 
+    def _ctr6_debug(self, ctr6):
+        """
+        Displays basic info contained in a DsGetNCChanges response.
+        Having this debug code allows us to see the difference in behaviour
+        between Samba and Windows easier. Turn on the self._debug flag to see it.
+        """
+
+        if self._debug:
+            print("------------ recvd CTR6 -------------")
+
+            next_object = ctr6.first_object
+            for i in range(0, ctr6.object_count):
+                print("Obj %d: %s %s" %(i, next_object.object.identifier.dn[:22],
+                                        next_object.object.identifier.guid))
+                next_object = next_object.next_object
+
+            print("Linked Attributes: %d" % ctr6.linked_attributes_count)
+            print("HWM:     %d" %(ctr6.new_highwatermark.highest_usn))
+            print("Tmp HWM: %d" %(ctr6.new_highwatermark.tmp_highest_usn))
+            print("More data: %d" %(ctr6.more_data))
+
     def _get_replication(self, replica_flags,
                           drs_error=drsuapi.DRSUAPI_EXOP_ERR_NONE, drs=None, drs_handle=None,
                           highwatermark=None, uptodateness_vector=None,
@@ -242,6 +266,7 @@ class DrsBaseTestCase(SambaToolCmdTest):
             uptodateness_vector_v1.cursors = cursors
             req10.uptodateness_vector = uptodateness_vector_v1
         (level, ctr) = drs.DsGetNCChanges(drs_handle, 10, req10)
+        self._ctr6_debug(ctr)
 
         self.assertEqual(level, 6, "expected level 6 response!")
         self.assertEqual(ctr.source_dsa_guid, misc.GUID(source_dsa))
