@@ -201,32 +201,33 @@ class dc_join(object):
         except Exception:
             pass
 
-    def cleanup_old_accounts(ctx):
+    def cleanup_old_accounts(ctx, force=False):
         res = ctx.samdb.search(base=ctx.samdb.get_default_basedn(),
                                expression='sAMAccountName=%s' % ldb.binary_encode(ctx.samname),
                                attrs=["msDS-krbTgtLink", "objectSID"])
         if len(res) == 0:
             return
 
-        creds = Credentials()
-        creds.guess(ctx.lp)
-        try:
-            creds.set_machine_account(ctx.lp)
-            creds.set_kerberos_state(ctx.creds.get_kerberos_state())
-            machine_samdb = SamDB(url="ldap://%s" % ctx.server,
-                                  session_info=system_session(),
-                                credentials=creds, lp=ctx.lp)
-        except:
-            pass
-        else:
-            token_res = machine_samdb.search(scope=ldb.SCOPE_BASE, base="", attrs=["tokenGroups"])
-            if token_res[0]["tokenGroups"][0] \
-               == res[0]["objectSID"][0]:
-                raise DCJoinException("Not removing account %s which "
-                                   "looks like a Samba DC account "
-                                   "maching the password we already have.  "
-                                   "To override, remove secrets.ldb and secrets.tdb"
-                                % ctx.samname)
+        if not force:
+            creds = Credentials()
+            creds.guess(ctx.lp)
+            try:
+                creds.set_machine_account(ctx.lp)
+                creds.set_kerberos_state(ctx.creds.get_kerberos_state())
+                machine_samdb = SamDB(url="ldap://%s" % ctx.server,
+                                      session_info=system_session(),
+                                    credentials=creds, lp=ctx.lp)
+            except:
+                pass
+            else:
+                token_res = machine_samdb.search(scope=ldb.SCOPE_BASE, base="", attrs=["tokenGroups"])
+                if token_res[0]["tokenGroups"][0] \
+                   == res[0]["objectSID"][0]:
+                    raise DCJoinException("Not removing account %s which "
+                                       "looks like a Samba DC account "
+                                       "maching the password we already have.  "
+                                       "To override, remove secrets.ldb and secrets.tdb"
+                                    % ctx.samname)
 
         ctx.del_noerror(res[0].dn, recursive=True)
 
@@ -253,11 +254,11 @@ class dc_join(object):
                                 ldb.binary_encode("dns/%s" % ctx.dnshostname)))
 
 
-    def cleanup_old_join(ctx):
+    def cleanup_old_join(ctx, force=False):
         """Remove any DNs from a previous join."""
         # find the krbtgt link
         if not ctx.subdomain:
-            ctx.cleanup_old_accounts()
+            ctx.cleanup_old_accounts(force=force)
 
         if ctx.connection_dn is not None:
             ctx.del_noerror(ctx.connection_dn)
