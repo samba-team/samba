@@ -174,7 +174,12 @@ int dsdb_schema_set_indices_and_attributes(struct ldb_context *ldb,
 			goto op_error;
 		}
 		if (mod_msg->num_elements > 0) {
-			ret = dsdb_replace(ldb, mod_msg, 0);
+			/*
+			 * Do the replace with the constructed message,
+			 * to avoid needing a lock between this search
+			 * and the replace
+			 */
+			ret = dsdb_replace(ldb, msg, 0);
 		}
 		talloc_free(mod_msg);
 	}
@@ -210,7 +215,12 @@ int dsdb_schema_set_indices_and_attributes(struct ldb_context *ldb,
 			goto op_error;
 		}
 		if (mod_msg->num_elements > 0) {
-			ret = dsdb_replace(ldb, mod_msg, 0);
+			/*
+			 * Do the replace with the constructed message,
+			 * to avoid needing a lock between this search
+			 * and the replace
+			 */
+			ret = dsdb_replace(ldb, msg_idx, 0);
 		}
 		talloc_free(mod_msg);
 	}
