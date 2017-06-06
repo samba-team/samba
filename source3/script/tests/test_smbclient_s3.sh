@@ -1212,6 +1212,36 @@ EOF
     fi
 }
 
+test_server_os_message()
+{
+    tmpfile=$PREFIX/smbclient_interactive_prompt_commands
+    cat > $tmpfile <<EOF
+ls
+quit
+EOF
+    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/tmp -I $SERVER_IP $ADDARGS < $tmpfile 2>&1'
+    eval echo "$cmd"
+    out=`eval $cmd`
+    ret=$?
+    rm -f $tmpfile
+
+    if [ $ret -ne 0 ] ; then
+       echo "$out"
+       echo "failed to connect error $ret"
+       false
+       return
+    fi
+
+    echo "$out" | grep 'Domain=\[SAMBA.*\] OS=\[Windows [0-9]\.[0-9]\] Server=\[Samba'
+    ret=$?
+    if [ $ret -ne 0 ] ; then
+       echo "$out"
+       echo "failed - should get: Domain=[SAMBA-TEST] OS=[Windows 6.1] Server=..."
+       false
+       return
+    fi
+}
+
 LOGDIR_PREFIX=test_smbclient_s3
 
 # possibly remove old logdirs:
@@ -1313,6 +1343,10 @@ testit "streams_depot can delete correctly" \
 
 testit "follow symlinks = no" \
     test_nosymlinks || \
+    failed=`expr $failed + 1`
+
+testit "server os message" \
+    test_server_os_message || \
     failed=`expr $failed + 1`
 
 testit "rm -rf $LOGDIR" \
