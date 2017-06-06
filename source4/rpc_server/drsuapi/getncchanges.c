@@ -69,7 +69,7 @@ struct drsuapi_getncchanges_state {
 
 /* We must keep the GUIDs in NDR form for sorting */
 struct la_for_sorting {
-	struct drsuapi_DsReplicaLinkedAttribute *link;
+	const struct drsuapi_DsReplicaLinkedAttribute *link;
 	uint8_t target_guid[16];
         uint8_t source_guid[16];
 };
@@ -2007,6 +2007,82 @@ static WERROR dcesrv_drsuapi_obj_cache_exists(struct db_context *obj_cache,
 	return WERR_OBJECT_NAME_EXISTS;
 }
 
+/**
+ * Copies the la_list specified into a sorted array, ready to be sent in a
+ * GetNCChanges response.
+ */
+static WERROR getncchanges_get_sorted_array(const struct drsuapi_DsReplicaLinkedAttribute *la_list,
+					    const uint32_t link_count,
+					    struct ldb_context *sam_ctx,
+					    TALLOC_CTX *mem_ctx,
+					    const struct dsdb_schema *schema,
+					    struct la_for_sorting **ret_array)
+{
+	int j;
+	struct la_for_sorting *guid_array;
+	WERROR werr = WERR_OK;
+
+	*ret_array = NULL;
+	guid_array = talloc_array(mem_ctx, struct la_for_sorting, link_count);
+	if (guid_array == NULL) {
+		DEBUG(0, ("Out of memory allocating %u linked attributes for sorting", link_count));
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
+
+	for (j = 0; j < link_count; j++) {
+
+		/* we need to get the target GUIDs to compare */
+		struct dsdb_dn *dn;
+		const struct drsuapi_DsReplicaLinkedAttribute *la = &la_list[j];
+		const struct dsdb_attribute *schema_attrib;
+		const struct ldb_val *target_guid;
+		DATA_BLOB source_guid;
+		TALLOC_CTX *frame = talloc_stackframe();
+		NTSTATUS status;
+
+		schema_attrib = dsdb_attribute_by_attributeID_id(schema, la->attid);
+
+		werr = dsdb_dn_la_from_blob(sam_ctx, schema_attrib, schema, frame, la->value.blob, &dn);
+		if (!W_ERROR_IS_OK(werr)) {
+			DEBUG(0,(__location__ ": Bad la blob in sort\n"));
+			TALLOC_FREE(frame);
+			return werr;
+		}
+
+		/* Extract the target GUID in NDR form */
+		target_guid = ldb_dn_get_extended_component(dn->dn, "GUID");
+		if (target_guid == NULL
+				|| target_guid->length != sizeof(guid_array[0].target_guid)) {
+			status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		} else {
+			/* Repack the source GUID as NDR for sorting */
+			status = GUID_to_ndr_blob(&la->identifier->guid,
+						  frame,
+						  &source_guid);
+		}
+
+		if (!NT_STATUS_IS_OK(status)
+				|| source_guid.length != sizeof(guid_array[0].source_guid)) {
+			DEBUG(0,(__location__ ": Bad la guid in sort\n"));
+			TALLOC_FREE(frame);
+			return ntstatus_to_werror(status);
+		}
+
+		guid_array[j].link = &la_list[j];
+		memcpy(guid_array[j].target_guid, target_guid->data,
+		       sizeof(guid_array[j].target_guid));
+		memcpy(guid_array[j].source_guid, source_guid.data,
+		       sizeof(guid_array[j].source_guid));
+		TALLOC_FREE(frame);
+	}
+
+	LDB_TYPESAFE_QSORT(guid_array, link_count, NULL, linked_attribute_compare);
+
+	*ret_array = guid_array;
+
+	return werr;
+}
+
 /* 
   drsuapi_DsGetNCChanges
 
@@ -2925,59 +3001,14 @@ allowed:
 	} else {
 		/* sort the whole array the first time */
 		if (getnc_state->la_sorted == NULL) {
-			int j;
-			struct la_for_sorting *guid_array = talloc_array(getnc_state, struct la_for_sorting, getnc_state->la_count);
-			if (guid_array == NULL) {
-				DEBUG(0, ("Out of memory allocating %u linked attributes for sorting", getnc_state->la_count));
-				return WERR_NOT_ENOUGH_MEMORY;
+			werr = getncchanges_get_sorted_array(getnc_state->la_list,
+							     getnc_state->la_count,
+							     sam_ctx, getnc_state,
+							     schema,
+							     &getnc_state->la_sorted);
+			if (!W_ERROR_IS_OK(werr)) {
+				return werr;
 			}
-			for (j = 0; j < getnc_state->la_count; j++) {
-				/* we need to get the target GUIDs to compare */
-				struct dsdb_dn *dn;
-				const struct drsuapi_DsReplicaLinkedAttribute *la = &getnc_state->la_list[j];
-				const struct dsdb_attribute *schema_attrib;
-				const struct ldb_val *target_guid;
-				DATA_BLOB source_guid;
-				TALLOC_CTX *frame = talloc_stackframe();
-
-				schema_attrib = dsdb_attribute_by_attributeID_id(schema, la->attid);
-
-				werr = dsdb_dn_la_from_blob(sam_ctx, schema_attrib, schema, frame, la->value.blob, &dn);
-				if (!W_ERROR_IS_OK(werr)) {
-					DEBUG(0,(__location__ ": Bad la blob in sort\n"));
-					TALLOC_FREE(frame);
-					return werr;
-				}
-
-				/* Extract the target GUID in NDR form */
-				target_guid = ldb_dn_get_extended_component(dn->dn, "GUID");
-				if (target_guid == NULL
-				    || target_guid->length != sizeof(guid_array[0].target_guid)) {
-					status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
-				} else {
-					/* Repack the source GUID as NDR for sorting */
-					status = GUID_to_ndr_blob(&la->identifier->guid,
-								  frame,
-								  &source_guid);
-				}
-
-				if (!NT_STATUS_IS_OK(status)
-				    || source_guid.length != sizeof(guid_array[0].source_guid)) {
-					DEBUG(0,(__location__ ": Bad la guid in sort\n"));
-					TALLOC_FREE(frame);
-					return ntstatus_to_werror(status);
-				}
-
-				guid_array[j].link = &getnc_state->la_list[j];
-				memcpy(guid_array[j].target_guid, target_guid->data,
-				       sizeof(guid_array[j].target_guid));
-				memcpy(guid_array[j].source_guid, source_guid.data,
-				       sizeof(guid_array[j].source_guid));
-				TALLOC_FREE(frame);
-			}
-
-			LDB_TYPESAFE_QSORT(guid_array, getnc_state->la_count, NULL, linked_attribute_compare);
-			getnc_state->la_sorted = guid_array;
 		}
 
 		link_count = getnc_state->la_count - getnc_state->la_idx;
