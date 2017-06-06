@@ -104,19 +104,6 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	cli->server_domain = talloc_strdup(cli, "");
-	if (!cli->server_domain) {
-		goto error;
-	}
-	cli->server_os = talloc_strdup(cli, "");
-	if (!cli->server_os) {
-		goto error;
-	}
-	cli->server_type = talloc_strdup(cli, "");
-	if (!cli->server_type) {
-		goto error;
-	}
-
 	cli->dfs_mountpoint = talloc_strdup(cli, "");
 	if (!cli->dfs_mountpoint) {
 		goto error;

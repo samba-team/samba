@@ -259,13 +259,31 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 		return status;
 	}
 
-	if ( show_sessetup ) {
-		if (*c->server_domain) {
-			DEBUG(0,("Domain=[%s] OS=[%s] Server=[%s]\n",
-				c->server_domain,c->server_os,c->server_type));
-		} else if (*c->server_os || *c->server_type) {
-			DEBUG(0,("OS=[%s] Server=[%s]\n",
-				 c->server_os,c->server_type));
+	if (show_sessetup) {
+		const char *server_os = "unknown";
+		const char *server_type = "unknown";
+		bool do_print = false;
+
+		if (c->server_os != NULL && c->server_os[0] != '\0') {
+			server_os = c->server_os;
+			do_print = true;
+		}
+		if (c->server_type != NULL && c->server_type[0] != '\0') {
+			server_type = c->server_type;
+			do_print = true;
+		}
+
+		if (c->server_domain != NULL && c->server_domain[0] != '\0') {
+			DEBUG(0, ("Domain=[%s] OS=[%s] Server=[%s]\n",
+				  c->server_domain,
+				  server_os,
+				  server_type));
+		} else {
+			if (do_print) {
+				DEBUG(0, ("OS=[%s] Server=[%s]\n",
+					  server_os,
+					  server_type));
+			}
 		}
 	}
 	DEBUG(4,(" session setup ok\n"));

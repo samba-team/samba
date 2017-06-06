@@ -212,7 +212,9 @@ static struct cli_state *connect_one(char *share)
 	 * mode to turn these on/off ? JRA.
 	 */
 
-	if (*c->server_domain || *c->server_os || *c->server_type)
+	if (c->server_domain != NULL ||
+	    c->server_os != NULL ||
+	    c->server_type != NULL)
 		DEBUG(1,("Domain=[%s] OS=[%s] Server=[%s]\n",
 			c->server_domain,c->server_os,c->server_type));
 

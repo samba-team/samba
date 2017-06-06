@@ -1122,7 +1122,8 @@ static void cli_session_setup_gensec_ready(struct tevent_req *req)
 	server_domain = gensec_ntlmssp_server_domain(
 				state->auth_generic->gensec_security);
 
-	if (state->cli->server_domain[0] == '\0' && server_domain != NULL) {
+	if ((state->cli->server_domain == NULL ||
+	     state->cli->server_domain[0] == '\0') && server_domain != NULL) {
 		TALLOC_FREE(state->cli->server_domain);
 		state->cli->server_domain = talloc_strdup(state->cli,
 					server_domain);
