@@ -866,6 +866,16 @@ for env in ['vampire_dc', 'promoted_dc', 'vampire_2000_dc']:
                            environ={'DC1': "$DC_SERVER", 'DC2': '$%s_SERVER' % env.upper()},
                            extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
 
+# A side-effect of the getncchanges tests is that they will create hundreds of
+# tombstone objects, so run them last to avoid interferring with (and slowing
+# down) the other DRS tests
+for env in ['vampire_dc', 'promoted_dc']:
+    planoldpythontestsuite(env, "getncchanges",
+			   extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
+			   name="samba4.drs.getncchanges.python(%s)" % env,
+			   environ={'DC1': "$DC_SERVER", 'DC2': '$%s_SERVER' % env.upper()},
+			   extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
+
 for env in ['ad_dc_ntvfs']:
     planoldpythontestsuite(env, "repl_rodc",
                            extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],

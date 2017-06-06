@@ -194,17 +194,15 @@ class DrsBaseTestCase(SambaToolCmdTest):
         id.dn = str(res[0].dn)
         return id
 
-    def _check_replication(self, expected_dns, replica_flags, expected_links=[],
-                           drs_error=drsuapi.DRSUAPI_EXOP_ERR_NONE, drs=None, drs_handle=None,
-                           highwatermark=None, uptodateness_vector=None,
-                           more_flags=0, more_data=False,
-                           dn_ordered=True, links_ordered=True,
-                           max_objects=133, exop=0,
-                           dest_dsa=drsuapi.DRSUAPI_DS_BIND_GUID_W2K3,
-                           source_dsa=None, invocation_id=None, nc_dn_str=None,
-                           nc_object_count=0, nc_linked_attributes_count=0):
+    def _get_replication(self, replica_flags,
+                          drs_error=drsuapi.DRSUAPI_EXOP_ERR_NONE, drs=None, drs_handle=None,
+                          highwatermark=None, uptodateness_vector=None,
+                          more_flags=0, max_objects=133, exop=0,
+                          dest_dsa=drsuapi.DRSUAPI_DS_BIND_GUID_W2K3,
+                          source_dsa=None, invocation_id=None, nc_dn_str=None):
         """
-        Makes sure that replication returns the specific error given.
+        Builds a DsGetNCChanges request based on the information provided
+        and returns the response received from the DC.
         """
         if source_dsa is None:
             source_dsa = self.ldb_dc1.get_ntds_GUID()
@@ -248,11 +246,50 @@ class DrsBaseTestCase(SambaToolCmdTest):
         self.assertEqual(level, 6, "expected level 6 response!")
         self.assertEqual(ctr.source_dsa_guid, misc.GUID(source_dsa))
         self.assertEqual(ctr.source_dsa_invocation_id, misc.GUID(invocation_id))
-        ctr6 = ctr
-        self.assertEqual(ctr6.extended_ret, drs_error)
+        self.assertEqual(ctr.extended_ret, drs_error)
+
+        return ctr
+
+    def _check_replication(self, expected_dns, replica_flags, expected_links=[],
+                           drs_error=drsuapi.DRSUAPI_EXOP_ERR_NONE, drs=None, drs_handle=None,
+                           highwatermark=None, uptodateness_vector=None,
+                           more_flags=0, more_data=False,
+                           dn_ordered=True, links_ordered=True,
+                           max_objects=133, exop=0,
+                           dest_dsa=drsuapi.DRSUAPI_DS_BIND_GUID_W2K3,
+                           source_dsa=None, invocation_id=None, nc_dn_str=None,
+                           nc_object_count=0, nc_linked_attributes_count=0):
+        """
+        Makes sure that replication returns the specific error given.
+        """
+
+        # send a DsGetNCChanges to the DC
+        ctr6 = self._get_replication(replica_flags,
+                                     drs_error, drs, drs_handle,
+                                     highwatermark, uptodateness_vector,
+                                     more_flags, max_objects, exop, dest_dsa,
+                                     source_dsa, invocation_id, nc_dn_str)
+
+        # check the response is what we expect
         self._check_ctr6(ctr6, expected_dns, expected_links,
-                         nc_object_count=nc_object_count)
+                         nc_object_count=nc_object_count, more_data=more_data,
+                         dn_ordered=dn_ordered)
         return (ctr6.new_highwatermark, ctr6.uptodateness_vector)
+
+
+    def _get_ctr6_dn_list(self, ctr6):
+        """
+        Returns the DNs contained in a DsGetNCChanges response.
+        """
+        dn_list = []
+        next_object = ctr6.first_object
+        for i in range(0, ctr6.object_count):
+            dn_list.append(next_object.object.identifier.dn)
+            next_object = next_object.next_object
+        self.assertEqual(next_object, None)
+
+        return dn_list
+
 
     def _check_ctr6(self, ctr6, expected_dns=[], expected_links=[],
                     dn_ordered=True, links_ordered=True,
@@ -268,12 +305,7 @@ class DrsBaseTestCase(SambaToolCmdTest):
         self.assertEqual(ctr6.nc_linked_attributes_count, nc_linked_attributes_count)
         self.assertEqual(ctr6.drs_error[0], drs_error)
 
-        ctr6_dns = []
-        next_object = ctr6.first_object
-        for i in range(0, ctr6.object_count):
-            ctr6_dns.append(next_object.object.identifier.dn)
-            next_object = next_object.next_object
-        self.assertEqual(next_object, None)
+        ctr6_dns = self._get_ctr6_dn_list(ctr6)
 
         i = 0
         for dn in expected_dns:
