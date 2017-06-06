@@ -21,6 +21,7 @@
 ## 1.3.6.1.4.1.7165.4.6.1.5.x - repl_schema.py
 ## 1.3.6.1.4.1.7165.4.6.1.6.x - ldap_schema.py
 ## 1.3.6.1.4.1.7165.4.6.1.7.x - dsdb_schema_info.py
+## 1.3.6.1.4.1.7165.4.6.1.8.x - dsdb_schema_attributes.py
 
 ## 1.3.6.1.4.1.7165.4.6.2.x - SELFTEST random classes
 ## 1.3.6.1.4.1.7165.4.6.2.1.x - ldap_syntaxes.py
