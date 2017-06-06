@@ -53,6 +53,9 @@ class dc_join(object):
                  netbios_name=None, targetdir=None, domain=None,
                  machinepass=None, use_ntvfs=False, dns_backend=None,
                  promote_existing=False, clone_only=False):
+        if site is None:
+            site = "Default-First-Site-Name"
+
         ctx.clone_only=clone_only
 
         ctx.logger = logger

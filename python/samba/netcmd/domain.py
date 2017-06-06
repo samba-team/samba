@@ -551,9 +551,6 @@ class cmd_domain_dcpromo(Command):
         creds = credopts.get_credentials(lp)
         net = Net(creds, lp, server=credopts.ipaddress)
 
-        if site is None:
-            site = "Default-First-Site-Name"
-
         logger = self.get_logger()
         if verbose:
             logger.setLevel(logging.DEBUG)
