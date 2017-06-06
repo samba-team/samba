@@ -1288,9 +1288,12 @@ sub provision_vampire_dc($$$)
 	my ($self, $prefix, $dcvars, $fl) = @_;
 	print "PROVISIONING VAMPIRE DC @ FL $fl...\n";
 	my $name = "localvampiredc";
+	my $extra_conf = "";
 
 	if ($fl == "2000") {
-	    $name = "vampire2000dc";
+		$name = "vampire2000dc";
+	} else {
+		$extra_conf = "drs: immediate link sync = yes";
 	}
 
 	# We do this so that we don't run the provision.  That's the job of 'net vampire'.
@@ -1310,6 +1313,7 @@ sub provision_vampire_dc($$$)
 	server max protocol = SMB2
 
         ntlm auth = mschapv2-and-ntlmv2-only
+	$extra_conf
 
 [sysvol]
 	path = $ctx->{statedir}/sysvol
