@@ -169,7 +169,8 @@ struct ctdb_log_state *ctdb_vfork_with_logging(TALLOC_CTX *mem_ctx,
 	log->logfn_private = logfn_private;
 
 	if (pipe(p) != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Failed to setup pipe for child logging\n"));
+		DEBUG(DEBUG_ERR, (__location__ " Failed to setup pipe for child logging:"
+				" %s\n", strerror(errno)));
 		goto free_log;
 	}
 
