@@ -672,42 +672,8 @@ static NTSTATUS fsctl_validate_neg_info(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS fsctl_srv_req_resume_key(TALLOC_CTX *mem_ctx,
-					 struct tevent_context *ev,
-					 struct files_struct *fsp,
-					 uint32_t in_max_output,
-					 DATA_BLOB *out_output)
-{
-	struct req_resume_key_rsp rkey_rsp;
-	enum ndr_err_code ndr_ret;
-	DATA_BLOB output;
-
-	if (fsp == NULL) {
-		return NT_STATUS_FILE_CLOSED;
-	}
-
-	ZERO_STRUCT(rkey_rsp);
-	/* combine persistent and volatile handles for the resume key */
-	SBVAL(rkey_rsp.resume_key, 0, fsp->op->global->open_persistent_id);
-	SBVAL(rkey_rsp.resume_key, 8, fsp->op->global->open_volatile_id);
-
-	ndr_ret = ndr_push_struct_blob(&output, mem_ctx, &rkey_rsp,
-			(ndr_push_flags_fn_t)ndr_push_req_resume_key_rsp);
-	if (ndr_ret != NDR_ERR_SUCCESS) {
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
-	if (in_max_output < output.length) {
-		DEBUG(1, ("max output %u too small for resume key rsp %ld\n",
-			  (unsigned int)in_max_output, (long int)output.length));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-	*out_output = output;
-
-	return NT_STATUS_OK;
-}
-
 static void smb2_ioctl_network_fs_copychunk_done(struct tevent_req *subreq);
+static void smb2_ioctl_network_fs_offload_read_done(struct tevent_req *subreq);
 
 struct tevent_req *smb2_ioctl_network_fs(uint32_t ctl_code,
 					 struct tevent_context *ev,
@@ -777,14 +743,18 @@ struct tevent_req *smb2_ioctl_network_fs(uint32_t ctl_code,
 		return tevent_req_post(req, ev);
 		break;
 	case FSCTL_SRV_REQUEST_RESUME_KEY:
-		status = fsctl_srv_req_resume_key(state, ev, state->fsp,
-						  state->in_max_output,
-						  &state->out_output);
-		if (!tevent_req_nterror(req, status)) {
-			tevent_req_done(req);
+		subreq = SMB_VFS_OFFLOAD_READ_SEND(state,
+						   ev,
+						   state->fsp,
+						   FSCTL_SRV_REQUEST_RESUME_KEY,
+						   0, 0, 0);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
 		}
-		return tevent_req_post(req, ev);
-		break;
+		tevent_req_set_callback(
+			subreq, smb2_ioctl_network_fs_offload_read_done, req);
+		return req;
+
 	default: {
 		uint8_t *out_data = NULL;
 		uint32_t out_data_len = 0;
@@ -853,4 +823,43 @@ static void smb2_ioctl_network_fs_copychunk_done(struct tevent_req *subreq)
 	if (!tevent_req_nterror(req, status)) {
 		tevent_req_done(req);
 	}
+}
+
+static void smb2_ioctl_network_fs_offload_read_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct smbd_smb2_ioctl_state *state = tevent_req_data(
+		req, struct smbd_smb2_ioctl_state);
+	struct req_resume_key_rsp rkey_rsp;
+	enum ndr_err_code ndr_ret;
+	DATA_BLOB token;
+	NTSTATUS status;
+
+	status = SMB_VFS_OFFLOAD_READ_RECV(subreq,
+					   state->fsp->conn,
+					   state,
+					   &token);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	if (token.length != sizeof(rkey_rsp.resume_key)) {
+		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+		return;
+	}
+
+	ZERO_STRUCT(rkey_rsp);
+	memcpy(rkey_rsp.resume_key, token.data, token.length);
+
+	ndr_ret = ndr_push_struct_blob(&state->out_output, state, &rkey_rsp,
+			(ndr_push_flags_fn_t)ndr_push_req_resume_key_rsp);
+	if (ndr_ret != NDR_ERR_SUCCESS) {
+		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+		return;
+	}
+
+	tevent_req_done(req);
+	return;
 }

@@ -161,9 +161,12 @@ static NTSTATUS fsctl_dup_extents_check_sparse(struct files_struct *src_fsp,
 struct fsctl_dup_extents_state {
 	struct tevent_context *ev;
 	struct connection_struct *conn;
+	struct files_struct *src_fsp;
+	struct files_struct *dst_fsp;
 	struct fsctl_dup_extents_to_file dup_extents;
 };
 
+static void fsctl_dup_extents_offload_read_done(struct tevent_req *subreq);
 static void fsctl_dup_extents_vfs_done(struct tevent_req *subreq);
 
 static struct tevent_req *fsctl_dup_extents_send(TALLOC_CTX *mem_ctx,
@@ -195,6 +198,7 @@ static struct tevent_req *fsctl_dup_extents_send(TALLOC_CTX *mem_ctx,
 	*state = (struct fsctl_dup_extents_state) {
 		.conn = dst_fsp->conn,
 		.ev = ev,
+		.dst_fsp = dst_fsp,
 	};
 
 	if ((dst_fsp->conn->fs_capabilities
@@ -230,6 +234,7 @@ static struct tevent_req *fsctl_dup_extents_send(TALLOC_CTX *mem_ctx,
 		tevent_req_nterror(req, NT_STATUS_INVALID_HANDLE);
 		return tevent_req_post(req, ev);
 	}
+	state->src_fsp = src_fsp;
 
 	status = fsctl_dup_extents_check_lengths(src_fsp, dst_fsp,
 						 &state->dup_extents);
@@ -257,20 +262,48 @@ static struct tevent_req *fsctl_dup_extents_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
+	subreq = SMB_VFS_OFFLOAD_READ_SEND(state, ev, src_fsp,
+					   FSCTL_DUP_EXTENTS_TO_FILE,
+					   0, 0, 0);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, fsctl_dup_extents_offload_read_done,
+				req);
+	return req;
+}
+
+static void fsctl_dup_extents_offload_read_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct fsctl_dup_extents_state *state = tevent_req_data(
+		req, struct fsctl_dup_extents_state);
+	DATA_BLOB token_blob;
+	NTSTATUS status;
+
+	status = SMB_VFS_OFFLOAD_READ_RECV(subreq, state->dst_fsp->conn,
+					   state, &token_blob);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
 	/* tell the VFS to ignore locks across the clone, matching ReFS */
-	subreq = SMB_VFS_COPY_CHUNK_SEND(dst_fsp->conn, state, ev,
-					 src_fsp, state->dup_extents.source_off,
-					 dst_fsp, state->dup_extents.target_off,
+	subreq = SMB_VFS_COPY_CHUNK_SEND(state->dst_fsp->conn,
+					 state,
+					 state->ev,
+					 state->src_fsp,
+					 state->dup_extents.source_off,
+					 state->dst_fsp,
+					 state->dup_extents.target_off,
 					 state->dup_extents.byte_count,
 					 VFS_COPY_CHUNK_FL_MUST_CLONE
 					 | VFS_COPY_CHUNK_FL_IGNORE_LOCKS);
 	if (tevent_req_nomem(subreq, req)) {
-		return tevent_req_post(req, ev);
+		return;
 	}
-
 	tevent_req_set_callback(subreq, fsctl_dup_extents_vfs_done, req);
-
-	return subreq;
+	return;
 }
 
 static void fsctl_dup_extents_vfs_done(struct tevent_req *subreq)
