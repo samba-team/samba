@@ -9919,6 +9919,12 @@ ERROR_FAIL_REBOOT_INITIATED
 
 The requested operation failed. A system reboot has been initiated to roll back changes made.
 
+0x00000BCB
+ERROR_PRINTER_DRIVER_DOWNLOAD_NEEDED
+
+
+The specified printer driver was not found on the system and needs to be downloaded.
+
 0x00000F6E
 
 ERROR_IO_REISSUE_AS_CACHED
@@ -12924,7 +12930,7 @@ The specified directory service attribute or value does not exist.
 
 0x0000200B
 
-ERROR_DS_INVALID_ATTRIBUTE_YNTAX
+ERROR_DS_INVALID_ATTRIBUTE_SYNTAX
 	
 
 The attribute syntax specified to the directory service is invalid.

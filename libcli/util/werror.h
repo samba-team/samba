@@ -140,9 +140,6 @@ typedef uint32_t WERROR;
 #define WERR_DNS_ERROR_DNAME_COLLISION  W_ERROR(0x000025F9)
 #define WERR_DNS_ERROR_ALIAS_LOOP       W_ERROR(0x000025FA)
 
-/* Typo in the windows error table.. */
-#define WERR_DS_INVALID_ATTRIBUTE_SYNTAX        WERR_DS_INVALID_ATTRIBUTE_YNTAX
-
 /* Configuration Manager Errors */
 /* Basically Win32 errors meanings are specific to the \ntsvcs pipe */
 #define WERR_CM_INVALID_POINTER W_ERROR(3)
