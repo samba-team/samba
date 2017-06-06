@@ -146,20 +146,20 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
             "dn": ou1,
             "objectclass": "organizationalUnit"
             })
-        ou1_id = self._get_indentifier(self.ldb_dc1, ou1)
+        ou1_id = self._get_identifier(self.ldb_dc1, ou1)
         ou2 = "OU=get_anc2,%s" % ou1
         self.ldb_dc1.add({
             "dn": ou2,
             "objectclass": "organizationalUnit"
             })
-        ou2_id = self._get_indentifier(self.ldb_dc1, ou2)
+        ou2_id = self._get_identifier(self.ldb_dc1, ou2)
         dc3 = "CN=test_anc_dc_%u,%s" % (random.randint(0, 4294967295), ou2)
         self.ldb_dc1.add({
             "dn": dc3,
             "objectclass": "computer",
             "userAccountControl": "%d" % (samba.dsdb.UF_ACCOUNTDISABLE | samba.dsdb.UF_SERVER_TRUST_ACCOUNT)
             })
-        dc3_id = self._get_indentifier(self.ldb_dc1, dc3)
+        dc3_id = self._get_identifier(self.ldb_dc1, dc3)
 
         req8 = self._exop_req8(dest_dsa=None,
                                invocation_id=self.ldb_dc1.get_invocation_id(),
@@ -201,20 +201,20 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
             "dn": ou1,
             "objectclass": "organizationalUnit"
             })
-        ou1_id = self._get_indentifier(self.ldb_dc1, ou1)
+        ou1_id = self._get_identifier(self.ldb_dc1, ou1)
         ou2 = "OU=get_anc2,%s" % ou1
         self.ldb_dc1.add({
             "dn": ou2,
             "objectclass": "organizationalUnit"
             })
-        ou2_id = self._get_indentifier(self.ldb_dc1, ou2)
+        ou2_id = self._get_identifier(self.ldb_dc1, ou2)
         dc3 = "CN=test_anc_dc_%u,%s" % (random.randint(0, 4294967295), ou2)
         self.ldb_dc1.add({
             "dn": dc3,
             "objectclass": "computer",
             "userAccountControl": "%d" % (samba.dsdb.UF_ACCOUNTDISABLE | samba.dsdb.UF_SERVER_TRUST_ACCOUNT)
             })
-        dc3_id = self._get_indentifier(self.ldb_dc1, dc3)
+        dc3_id = self._get_identifier(self.ldb_dc1, dc3)
 
         (hwm1, utdv1) = self._check_replication([ou1,ou2,dc3],
                                                 drsuapi.DRSUAPI_DRS_WRIT_REP)
@@ -325,7 +325,7 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
             "dn": cn3,
             "objectclass": "container",
             })
-        cn3_id = self._get_indentifier(self.ldb_dc1, cn3)
+        cn3_id = self._get_identifier(self.ldb_dc1, cn3)
 
         (hwm5, utdv5) = self._check_replication([dc3,ou1,ou2,self.ou,cn3],
                             drsuapi.DRSUAPI_DRS_WRIT_REP)

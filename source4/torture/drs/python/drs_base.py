@@ -184,7 +184,7 @@ class DrsBaseTestCase(SambaToolCmdTest):
         utdv.cursors = cursors
         return (hwm, utdv)
 
-    def _get_indentifier(self, ldb_conn, dn):
+    def _get_identifier(self, ldb_conn, dn):
         res = ldb_conn.search(dn, scope=ldb.SCOPE_BASE,
                 attrs=["objectGUID", "objectSid"])
         id = drsuapi.DsReplicaObjectIdentifier()
