@@ -199,6 +199,8 @@ This command adds one or more members to an existing Active Directory group. The
 
 When a member is added to a group the member may inherit permissions and rights from the group.  Likewise, when permission or rights of a group are changed, the changes may reflect in the members through inheritance.
 
+The member names specified on the command must be the sAMaccountName.
+
 Example1:
 samba-tool group addmembers supergroup Group1,Group2,User1 -H ldap://samba.samdom.example.com -Uadministrator%passw0rd
 

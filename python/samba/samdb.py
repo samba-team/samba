@@ -266,9 +266,12 @@ changetype: modify
 """ % (str(targetgroup[0].dn))
 
             for member in members:
-                targetmember = self.search(base=self.domain_dn(), scope=ldb.SCOPE_SUBTREE,
-                                    expression="(|(sAMAccountName=%s)(CN=%s))" % (
-                    ldb.binary_encode(member), ldb.binary_encode(member)), attrs=[])
+                filter = ('(&(sAMAccountName=%s)(|(objectclass=user)'
+                          '(objectclass=group)))' % ldb.binary_encode(member))
+                targetmember = self.search(base=self.domain_dn(),
+                                           scope=ldb.SCOPE_SUBTREE,
+                                           expression="%s" % filter,
+                                           attrs=[])
 
                 if len(targetmember) != 1:
                     raise Exception('Unable to find "%s". Operation cancelled.' % member)
