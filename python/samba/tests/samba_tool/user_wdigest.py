@@ -33,9 +33,15 @@ from samba.dcerpc import drsblobs
 import binascii
 import md5
 import re
+import random
+import string
 
 USER_NAME = "WdigestTestUser"
-USER_PASS = samba.generate_random_password(32, 32)
+# Create a random 32 character password, containing only letters and
+# digits to avoid issues when used on the command line.
+USER_PASS = ''.join(random.choice(string.ascii_uppercase +
+                                  string.ascii_lowercase +
+                                  string.digits) for _ in range(32))
 
 # Calculate the MD5 password digest from the supplied user, realm and password
 #

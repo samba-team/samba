@@ -31,9 +31,15 @@ from samba import dsdb
 import binascii
 import md5
 import re
+import random
+import string
 
-USER_NAME = "CyyptSHATestUser"
-USER_PASS = samba.generate_random_password(32,32)
+USER_NAME = "CryptSHATestUser"
+# Create a random 32 character password, containing only letters and
+# digits to avoid issues when used on the command line.
+USER_PASS = ''.join(random.choice(string.ascii_uppercase +
+                                  string.ascii_lowercase +
+                                  string.digits) for _ in range(32))
 HASH_OPTION = "password hash userPassword schemes"
 
 # Get the value of an attribute from the output string
