@@ -381,6 +381,129 @@ static void ctdb_lock_handler(struct tevent_context *ev,
 	process_callbacks(lock_ctx, locked);
 }
 
+struct lock_log_entry {
+	struct db_hash_context *lock_log;
+	TDB_DATA key;
+	unsigned long log_sec;
+	struct tevent_timer *timer;
+};
+
+static int lock_log_fetch_parser(uint8_t *keybuf, size_t keylen,
+				 uint8_t *databuf, size_t datalen,
+				 void *private_data)
+{
+	struct lock_log_entry **entry =
+		(struct lock_log_entry **)private_data;
+
+	if (datalen != sizeof(struct lock_log_entry *)) {
+		return EINVAL;
+	}
+
+	*entry = talloc_get_type_abort(*(void **)databuf,
+				       struct lock_log_entry);
+	return 0;
+}
+
+static void lock_log_cleanup(struct tevent_context *ev,
+			     struct tevent_timer *ttimer,
+			     struct timeval current_time,
+			     void *private_data)
+{
+	struct lock_log_entry *entry = talloc_get_type_abort(
+		private_data, struct lock_log_entry);
+	int ret;
+
+	entry->timer = NULL;
+
+	ret = db_hash_delete(entry->lock_log, entry->key.dptr,
+			     entry->key.dsize);
+	if (ret != 0) {
+		return;
+	}
+	talloc_free(entry);
+}
+
+static bool lock_log_skip(struct tevent_context *ev,
+			  struct db_hash_context *lock_log,
+			  TDB_DATA key, unsigned long elapsed_sec)
+{
+	struct lock_log_entry *entry = NULL;
+	int ret;
+
+	ret = db_hash_fetch(lock_log, key.dptr, key.dsize,
+			    lock_log_fetch_parser, &entry);
+	if (ret == ENOENT) {
+
+		entry = talloc_zero(lock_log, struct lock_log_entry);
+		if (entry == NULL) {
+			goto fail;
+		}
+
+		entry->lock_log = lock_log;
+
+		entry->key.dptr = talloc_memdup(entry, key.dptr, key.dsize);
+		if (entry->key.dptr == NULL) {
+			talloc_free(entry);
+			goto fail;
+		}
+		entry->key.dsize = key.dsize;
+
+		entry->log_sec = elapsed_sec;
+		entry->timer = tevent_add_timer(ev, entry,
+						timeval_current_ofs(30, 0),
+						lock_log_cleanup, entry);
+		if (entry->timer == NULL) {
+			talloc_free(entry);
+			goto fail;
+		}
+
+		ret = db_hash_add(lock_log, key.dptr, key.dsize,
+				  (uint8_t *)&entry,
+				  sizeof(struct lock_log_entry *));
+		if (ret != 0) {
+			talloc_free(entry);
+			goto fail;
+		}
+
+		return false;
+
+	} else if (ret == EINVAL) {
+
+		ret = db_hash_delete(lock_log, key.dptr, key.dsize);
+		if (ret != 0) {
+			goto fail;
+		}
+
+		return false;
+
+	} else if (ret == 0) {
+
+		if (elapsed_sec <= entry->log_sec) {
+			return true;
+		}
+
+		entry->log_sec = elapsed_sec;
+
+		TALLOC_FREE(entry->timer);
+		entry->timer = tevent_add_timer(ev, entry,
+						timeval_current_ofs(30, 0),
+						lock_log_cleanup, entry);
+		if (entry->timer == NULL) {
+			ret = db_hash_delete(lock_log, key.dptr, key.dsize);
+			if (ret != 0) {
+				goto fail;
+			}
+			talloc_free(entry);
+		}
+
+		return false;
+	}
+
+
+fail:
+	return false;
+
+}
 
 /*
  * Callback routine when required locks are not obtained within timeout
@@ -392,21 +515,35 @@ static void ctdb_lock_timeout_handler(struct tevent_context *ev,
 				    void *private_data)
 {
 	static char debug_locks[PATH_MAX+1] = "";
-	static struct timeval last_debug_time;
 	struct lock_context *lock_ctx;
 	struct ctdb_context *ctdb;
-	struct timeval now;
 	pid_t pid;
 	double elapsed_time;
-	int new_timer;
+	bool skip;
 
 	lock_ctx = talloc_get_type_abort(private_data, struct lock_context);
 	ctdb = lock_ctx->ctdb;
 
 	elapsed_time = timeval_elapsed(&lock_ctx->start_time);
+
+	/* For database locks, always log */
+	if (lock_ctx->type == LOCK_DB) {
+		DEBUG(DEBUG_WARNING,
+		      ("Unable to get DB lock on database %s for "
+		       "%.0lf seconds\n",
+		       lock_ctx->ctdb_db->db_name, elapsed_time));
+		goto lock_debug;
+	}
+
+	/* For record locks, check if we have already logged */
+	skip = lock_log_skip(ev, lock_ctx->ctdb_db->lock_log,
+			     lock_ctx->key, (unsigned long)elapsed_time);
+	if (skip) {
+		goto skip_lock_debug;
+	}
+
 	DEBUG(DEBUG_WARNING,
-	      ("Unable to get %s lock on database %s for %.0lf seconds\n",
-	       (lock_ctx->type == LOCK_RECORD ? "RECORD" : "DB"),
+	      ("Unable to get RECORD lock on database %s for %.0lf seconds\n",
 	       lock_ctx->ctdb_db->db_name, elapsed_time));
 
 	/* If a node stopped/banned, don't spam the logs */
@@ -414,13 +551,7 @@ static void ctdb_lock_timeout_handler(struct tevent_context *ev,
 		goto skip_lock_debug;
 	}
 
-	/* Restrict log debugging to once per second */
-	now = timeval_current();
-	if (last_debug_time.tv_sec == now.tv_sec) {
-		goto skip_lock_debug;
-	}
-
-	last_debug_time.tv_sec = now.tv_sec;
+lock_debug:
 
 	if (ctdb_set_helper("lock debugging helper",
 			    debug_locks, sizeof(debug_locks),
@@ -440,20 +571,11 @@ static void ctdb_lock_timeout_handler(struct tevent_context *ev,
 
 skip_lock_debug:
 
-	/* Back-off logging if lock is not obtained for a long time */
-	if (elapsed_time < 100.0) {
-		new_timer = 10;
-	} else if (elapsed_time < 1000.0) {
-		new_timer = 100;
-	} else {
-		new_timer = 1000;
-	}
-
 	/* reset the timeout timer */
 	// talloc_free(lock_ctx->ttimer);
 	lock_ctx->ttimer = tevent_add_timer(ctdb->ev,
 					    lock_ctx,
-					    timeval_current_ofs(new_timer, 0),
+					    timeval_current_ofs(10, 0),
 					    ctdb_lock_timeout_handler,
 					    (void *)lock_ctx);
 }

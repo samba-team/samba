@@ -1034,6 +1034,16 @@ again:
 		return -1;
 	}
 
+	ret = db_hash_init(ctdb_db, "lock_log", 2048, DB_HASH_COMPLEX,
+			   &ctdb_db->lock_log);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,
+		      ("Failed to setup lock logging for db '%s'\n",
+		       ctdb_db->db_name));
+		talloc_free(ctdb_db);
+		return -1;
+	}
+
 	ctdb_db->generation = ctdb->vnn_map->generation;
 
 	DEBUG(DEBUG_NOTICE,("Attached to database '%s' with flags 0x%x\n",

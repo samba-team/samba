@@ -23,6 +23,8 @@
 #include "ctdb_client.h"
 #include <sys/socket.h>
 
+#include "common/db_hash.h"
+
 /*
   array of tcp connections
  */
@@ -376,6 +378,7 @@ struct ctdb_db_context {
 	struct lock_context *lock_current;
 	struct lock_context *lock_pending;
 	int lock_num_current;
+	struct db_hash_context *lock_log;
 
 	struct ctdb_call_state *pending_calls;
 
