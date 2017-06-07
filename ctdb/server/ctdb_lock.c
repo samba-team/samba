@@ -404,16 +404,10 @@ static void ctdb_lock_timeout_handler(struct tevent_context *ev,
 	ctdb = lock_ctx->ctdb;
 
 	elapsed_time = timeval_elapsed(&lock_ctx->start_time);
-	if (lock_ctx->ctdb_db) {
-		DEBUG(DEBUG_WARNING,
-		      ("Unable to get %s lock on database %s for %.0lf seconds\n",
-		       (lock_ctx->type == LOCK_RECORD ? "RECORD" : "DB"),
-		       lock_ctx->ctdb_db->db_name, elapsed_time));
-	} else {
-		DEBUG(DEBUG_WARNING,
-		      ("Unable to get ALLDB locks for %.0lf seconds\n",
-		       elapsed_time));
-	}
+	DEBUG(DEBUG_WARNING,
+	      ("Unable to get %s lock on database %s for %.0lf seconds\n",
+	       (lock_ctx->type == LOCK_RECORD ? "RECORD" : "DB"),
+	       lock_ctx->ctdb_db->db_name, elapsed_time));
 
 	/* If a node stopped/banned, don't spam the logs */
 	if (ctdb->nodes[ctdb->pnn]->flags & NODE_FLAGS_INACTIVE) {
