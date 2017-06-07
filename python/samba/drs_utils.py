@@ -211,7 +211,13 @@ class drs_Replicate(object):
         req8.naming_context = drsuapi.DsReplicaObjectIdentifier()
         req8.naming_context.dn = dn
 
+        # Default to a full replication if we don't find an upToDatenessVector
         udv = None
+        hwm = drsuapi.DsReplicaHighWaterMark()
+        hwm.tmp_highest_usn = 0
+        hwm.reserved_usn = 0
+        hwm.highest_usn = 0
+
         if not full_sync:
             res = self.samdb.search(base=dn, scope=ldb.SCOPE_BASE,
                                     attrs=["repsFrom"])
@@ -237,12 +243,6 @@ class drs_Replicate(object):
 
             udv.cursors = cursors_v1
             udv.count = len(cursors_v1)
-
-        # If we can't find an upToDateVector, or where told not to, replicate fully
-        hwm = drsuapi.DsReplicaHighWaterMark()
-        hwm.tmp_highest_usn = 0
-        hwm.reserved_usn = 0
-        hwm.highest_usn = 0
 
         req8.highwatermark = hwm
         req8.uptodateness_vector = udv
