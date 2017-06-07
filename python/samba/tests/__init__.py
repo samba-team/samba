@@ -411,9 +411,9 @@ def connect_samdb_env(env_url, env_username, env_password, lp=None):
     return connect_samdb(samdb_url, credentials=creds, lp=lp)
 
 
-def delete_force(samdb, dn):
+def delete_force(samdb, dn, **kwargs):
     try:
-        samdb.delete(dn)
+        samdb.delete(dn, **kwargs)
     except ldb.LdbError as error:
         (num, errstr) = error.args
         assert num == ldb.ERR_NO_SUCH_OBJECT, "ldb.delete() failed: %s" % errstr
