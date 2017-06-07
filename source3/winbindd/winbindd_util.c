@@ -1619,9 +1619,6 @@ void set_auth_errors(struct winbindd_response *resp, NTSTATUS result)
 
 bool is_domain_offline(const struct winbindd_domain *domain)
 {
-	if (!lp_winbind_offline_logon()) {
-		return false;
-	}
 	if (get_global_winbindd_state_offline()) {
 		return true;
 	}
