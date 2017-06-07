@@ -1134,11 +1134,15 @@ static int cephwrap_symlink(struct vfs_handle_struct *handle,  const char *oldpa
 	WRAP_RETURN(result);
 }
 
-static int cephwrap_readlink(struct vfs_handle_struct *handle,  const char *path, char *buf, size_t bufsiz)
+static int cephwrap_readlink(struct vfs_handle_struct *handle,
+		const struct smb_filename *smb_fname,
+		char *buf,
+		size_t bufsiz)
 {
 	int result = -1;
-	DBG_DEBUG("[CEPH] readlink(%p, %s, %p, %llu)\n", handle, path, buf, llu(bufsiz));
-	result = ceph_readlink(handle->data, path, buf, bufsiz);
+	DBG_DEBUG("[CEPH] readlink(%p, %s, %p, %llu)\n", handle,
+			smb_fname->base_name, buf, llu(bufsiz));
+	result = ceph_readlink(handle->data, smb_fname->base_name, buf, bufsiz);
 	DBG_DEBUG("[CEPH] readlink(...) = %d\n", result);
 	WRAP_RETURN(result);
 }

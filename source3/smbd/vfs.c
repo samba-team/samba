@@ -2160,10 +2160,12 @@ int smb_vfs_call_symlink(struct vfs_handle_struct *handle, const char *oldpath,
 }
 
 int smb_vfs_call_readlink(struct vfs_handle_struct *handle,
-			      const char *path, char *buf, size_t bufsiz)
+			const struct smb_filename *smb_fname,
+			char *buf,
+			size_t bufsiz)
 {
 	VFS_FIND(readlink);
-	return handle->fns->readlink_fn(handle, path, buf, bufsiz);
+	return handle->fns->readlink_fn(handle, smb_fname, buf, bufsiz);
 }
 
 int smb_vfs_call_link(struct vfs_handle_struct *handle,

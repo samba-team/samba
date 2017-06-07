@@ -1769,34 +1769,28 @@ out:
  * Failure: set errno, return -1
  */
 static int mh_readlink(vfs_handle_struct *handle,
-		const char *path,
+		const struct smb_filename *smb_fname,
 		char *buf,
 		size_t bufsiz)
 {
 	int status;
-	char *clientPath;
-	TALLOC_CTX *ctx;
+	struct smb_filename *clientFname = NULL;
 
 	DEBUG(MH_INFO_DEBUG, ("Entering mh_readlink\n"));
-	if (!is_in_media_files(path))
-	{
-		status = SMB_VFS_NEXT_READLINK(handle, path, buf, bufsiz);
+	if (!is_in_media_files(smb_fname->base_name)) {
+		status = SMB_VFS_NEXT_READLINK(handle, smb_fname, buf, bufsiz);
 		goto out;
 	}
 
-	clientPath = NULL;
-	ctx = talloc_tos();
-
-	if ((status = alloc_get_client_path(handle, ctx,
-				path,
-				&clientPath)))
-	{
+	if ((status = alloc_get_client_smb_fname(handle, talloc_tos(),
+				smb_fname,
+				&clientFname))) {
 		goto err;
 	}
 
-	status = SMB_VFS_NEXT_READLINK(handle, clientPath, buf, bufsiz);
+	status = SMB_VFS_NEXT_READLINK(handle, clientFname, buf, bufsiz);
 err:
-	TALLOC_FREE(clientPath);
+	TALLOC_FREE(clientFname);
 out:
 	return status;
 }

@@ -576,10 +576,12 @@ static int skel_symlink(vfs_handle_struct *handle, const char *oldpath,
 	return SMB_VFS_NEXT_SYMLINK(handle, oldpath, newpath);
 }
 
-static int skel_vfs_readlink(vfs_handle_struct *handle, const char *path,
-			     char *buf, size_t bufsiz)
+static int skel_vfs_readlink(vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
+			char *buf,
+			size_t bufsiz)
 {
-	return SMB_VFS_NEXT_READLINK(handle, path, buf, bufsiz);
+	return SMB_VFS_NEXT_READLINK(handle, smb_fname, buf, bufsiz);
 }
 
 static int skel_link(vfs_handle_struct *handle,

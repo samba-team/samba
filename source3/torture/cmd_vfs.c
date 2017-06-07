@@ -1231,6 +1231,7 @@ static NTSTATUS cmd_symlink(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc
 static NTSTATUS cmd_readlink(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	char buffer[PATH_MAX];
+	struct smb_filename *smb_fname = NULL;
 	int size;
 
 	if (argc != 2) {
@@ -1238,7 +1239,14 @@ static NTSTATUS cmd_readlink(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int arg
 		return NT_STATUS_OK;
 	}
 
-	if ((size = SMB_VFS_READLINK(vfs->conn, argv[1], buffer, PATH_MAX)) == -1) {
+	smb_fname = synthetic_smb_fname_split(mem_ctx,
+					argv[1],
+					lp_posix_pathnames());
+	if (smb_fname == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	if ((size = SMB_VFS_READLINK(vfs->conn, smb_fname,
+				buffer, PATH_MAX)) == -1) {
 		printf("readlink: error=%d (%s)\n", errno, strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;
 	}

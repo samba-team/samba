@@ -1443,19 +1443,23 @@ static int smb_time_audit_symlink(vfs_handle_struct *handle,
 }
 
 static int smb_time_audit_readlink(vfs_handle_struct *handle,
-			  const char *path, char *buf, size_t bufsiz)
+				const struct smb_filename *smb_fname,
+				char *buf,
+				size_t bufsiz)
 {
 	int result;
 	struct timespec ts1,ts2;
 	double timediff;
 
 	clock_gettime_mono(&ts1);
-	result = SMB_VFS_NEXT_READLINK(handle, path, buf, bufsiz);
+	result = SMB_VFS_NEXT_READLINK(handle, smb_fname,
+				buf, bufsiz);
 	clock_gettime_mono(&ts2);
 	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
-		smb_time_audit_log_fname("readlink", timediff, path);
+		smb_time_audit_log_fname("readlink", timediff,
+				smb_fname->base_name);
 	}
 
 	return result;

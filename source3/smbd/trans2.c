@@ -1577,18 +1577,18 @@ static NTSTATUS unix_perms_from_wire( connection_struct *conn,
 ****************************************************************************/
 
 static bool check_msdfs_link(connection_struct *conn,
-				const char *pathname,
-				SMB_STRUCT_STAT *psbuf)
+				struct smb_filename *smb_fname)
 {
 	int saved_errno = errno;
 	if(lp_host_msdfs() &&
 		lp_msdfs_root(SNUM(conn)) &&
-		is_msdfs_link(conn, pathname, psbuf)) {
+		is_msdfs_link(conn, smb_fname)) {
 
 		DEBUG(5,("check_msdfs_link: Masquerading msdfs link %s "
 			"as a directory\n",
-			pathname));
-		psbuf->st_ex_mode = (psbuf->st_ex_mode & 0xFFF) | S_IFDIR;
+			smb_fname->base_name));
+		smb_fname->st.st_ex_mode =
+			(smb_fname->st.st_ex_mode & 0xFFF) | S_IFDIR;
 		errno = saved_errno;
 		return true;
 	}
@@ -1729,8 +1729,7 @@ static bool smbd_dirptr_lanman2_mode_fn(TALLOC_CTX *ctx,
 		 * directories */
 
 		ms_dfs_link = check_msdfs_link(state->conn,
-					       smb_fname->base_name,
-					       &smb_fname->st);
+					       smb_fname);
 		if (!ms_dfs_link) {
 			DEBUG(5,("smbd_dirptr_lanman2_mode_fn: "
 				 "Couldn't stat [%s] (%s)\n",
@@ -5483,7 +5482,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 				return NT_STATUS_DOS(ERRDOS, ERRbadlink);
 #endif
 				link_len = SMB_VFS_READLINK(conn,
-						       smb_fname->base_name,
+						       smb_fname,
 						       buffer, PATH_MAX);
 				if (link_len == -1) {
 					return map_nt_error_from_unix(errno);

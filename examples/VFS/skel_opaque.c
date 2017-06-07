@@ -483,8 +483,10 @@ static int skel_symlink(vfs_handle_struct *handle, const char *oldpath,
 	return -1;
 }
 
-static int skel_vfs_readlink(vfs_handle_struct *handle, const char *path,
-			     char *buf, size_t bufsiz)
+static int skel_vfs_readlink(vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
+			char *buf,
+			size_t bufsiz)
 {
 	errno = ENOSYS;
 	return -1;

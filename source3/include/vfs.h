@@ -224,6 +224,8 @@
 		to const struct smb_filename * */
 /* Version 37 - Change statvfs from const char *
 		to const struct smb_filename * */
+/* Version 37 - Change readlink from const char *
+		to const struct smb_filename * */
 
 #define SMB_VFS_INTERFACE_VERSION 37
 
@@ -744,7 +746,10 @@ struct vfs_fn_pointers {
 	int (*linux_setlease_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, int leasetype);
 	bool (*getlock_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, off_t *poffset, off_t *pcount, int *ptype, pid_t *ppid);
 	int (*symlink_fn)(struct vfs_handle_struct *handle, const char *oldpath, const char *newpath);
-	int (*readlink_fn)(struct vfs_handle_struct *handle, const char *path, char *buf, size_t bufsiz);
+	int (*readlink_fn)(struct vfs_handle_struct *handle,
+				const struct smb_filename *smb_fname,
+				char *buf,
+				size_t bufsiz);
 	int (*link_fn)(struct vfs_handle_struct *handle,
 				const struct smb_filename *old_smb_fname,
 				const struct smb_filename *new_smb_fname);
@@ -1249,7 +1254,9 @@ bool smb_vfs_call_getlock(struct vfs_handle_struct *handle,
 int smb_vfs_call_symlink(struct vfs_handle_struct *handle, const char *oldpath,
 			 const char *newpath);
 int smb_vfs_call_readlink(struct vfs_handle_struct *handle,
-			  const char *path, char *buf, size_t bufsiz);
+			const struct smb_filename *smb_fname,
+			char *buf,
+			size_t bufsiz);
 int smb_vfs_call_link(struct vfs_handle_struct *handle,
 			const struct smb_filename *old_smb_fname,
 			const struct smb_filename *new_smb_fname);

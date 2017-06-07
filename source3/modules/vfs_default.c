@@ -2428,12 +2428,15 @@ static int vfswrap_symlink(vfs_handle_struct *handle, const char *oldpath, const
 	return result;
 }
 
-static int vfswrap_readlink(vfs_handle_struct *handle, const char *path, char *buf, size_t bufsiz)
+static int vfswrap_readlink(vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
+			char *buf,
+			size_t bufsiz)
 {
 	int result;
 
 	START_PROFILE(syscall_readlink);
-	result = readlink(path, buf, bufsiz);
+	result = readlink(smb_fname->base_name, buf, bufsiz);
 	END_PROFILE(syscall_readlink);
 	return result;
 }

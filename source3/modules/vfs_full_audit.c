@@ -1639,13 +1639,16 @@ static int smb_full_audit_symlink(vfs_handle_struct *handle,
 }
 
 static int smb_full_audit_readlink(vfs_handle_struct *handle,
-			  const char *path, char *buf, size_t bufsiz)
+			const struct smb_filename *smb_fname,
+			char *buf,
+			size_t bufsiz)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_READLINK(handle, path, buf, bufsiz);
+	result = SMB_VFS_NEXT_READLINK(handle, smb_fname, buf, bufsiz);
 
-	do_log(SMB_VFS_OP_READLINK, (result >= 0), handle, "%s", path);
+	do_log(SMB_VFS_OP_READLINK, (result >= 0), handle, "%s",
+			smb_fname->base_name);
 
 	return result;
 }

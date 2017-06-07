@@ -468,8 +468,7 @@ void reply_sendend(struct smb_request *req);
 /* The following definitions come from smbd/msdfs.c  */
 
 bool is_msdfs_link(connection_struct *conn,
-		const char *path,
-		SMB_STRUCT_STAT *sbufp);
+		struct smb_filename *smb_fname);
 struct junction_map;
 NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 			   const char *dfs_path,

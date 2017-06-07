@@ -1354,29 +1354,30 @@ err:
 }
 
 static int um_readlink(vfs_handle_struct *handle,
-		       const char *path,
-		       char *buf,
-		       size_t bufsiz)
+			const struct smb_filename *smb_fname,
+			char *buf,
+			size_t bufsiz)
 {
 	int status;
-	char *client_path = NULL;
+	struct smb_filename *client_fname = NULL;
 
 	DEBUG(10, ("Entering um_readlink\n"));
 
-	if (!is_in_media_files(path)) {
-		return SMB_VFS_NEXT_READLINK(handle, path, buf, bufsiz);
+	if (!is_in_media_files(smb_fname->base_name)) {
+		return SMB_VFS_NEXT_READLINK(handle, smb_fname,
+				buf, bufsiz);
 	}
 
-	status = alloc_get_client_path(handle, talloc_tos(),
-				       path, &client_path);
+	status = alloc_get_client_smb_fname(handle, talloc_tos(),
+					    smb_fname, &client_fname);
 	if (status != 0) {
 		goto err;
 	}
 
-	status = SMB_VFS_NEXT_READLINK(handle, client_path, buf, bufsiz);
+	status = SMB_VFS_NEXT_READLINK(handle, client_fname, buf, bufsiz);
 
 err:
-	TALLOC_FREE(client_path);
+	TALLOC_FREE(client_fname);
 	return status;
 }
 

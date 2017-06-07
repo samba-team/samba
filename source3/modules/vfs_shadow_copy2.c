@@ -1633,24 +1633,34 @@ static int shadow_copy2_ntimes(vfs_handle_struct *handle,
 }
 
 static int shadow_copy2_readlink(vfs_handle_struct *handle,
-				 const char *fname, char *buf, size_t bufsiz)
+				const struct smb_filename *smb_fname,
+				char *buf,
+				size_t bufsiz)
 {
 	time_t timestamp = 0;
 	char *stripped = NULL;
 	int saved_errno = 0;
 	int ret;
-	char *conv;
+	struct smb_filename *conv = NULL;
 
-	if (!shadow_copy2_strip_snapshot(talloc_tos(), handle, fname,
+	if (!shadow_copy2_strip_snapshot(talloc_tos(), handle,
+					 smb_fname->base_name,
 					 &timestamp, &stripped)) {
 		return -1;
 	}
 	if (timestamp == 0) {
-		return SMB_VFS_NEXT_READLINK(handle, fname, buf, bufsiz);
+		return SMB_VFS_NEXT_READLINK(handle, smb_fname, buf, bufsiz);
 	}
-	conv = shadow_copy2_convert(talloc_tos(), handle, stripped, timestamp);
-	TALLOC_FREE(stripped);
+	conv = cp_smb_filename(talloc_tos(), smb_fname);
 	if (conv == NULL) {
+		TALLOC_FREE(stripped);
+		errno = ENOMEM;
+		return -1;
+	}
+	conv->base_name = shadow_copy2_convert(
+		conv, handle, stripped, timestamp);
+	TALLOC_FREE(stripped);
+	if (conv->base_name == NULL) {
 		return -1;
 	}
 	ret = SMB_VFS_NEXT_READLINK(handle, conv, buf, bufsiz);

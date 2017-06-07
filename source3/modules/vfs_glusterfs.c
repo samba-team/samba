@@ -1240,9 +1240,11 @@ static int vfs_gluster_symlink(struct vfs_handle_struct *handle,
 }
 
 static int vfs_gluster_readlink(struct vfs_handle_struct *handle,
-				const char *path, char *buf, size_t bufsiz)
+				const struct smb_filename *smb_fname,
+				char *buf,
+				size_t bufsiz)
 {
-	return glfs_readlink(handle->data, path, buf, bufsiz);
+	return glfs_readlink(handle->data, smb_fname->base_name, buf, bufsiz);
 }
 
 static int vfs_gluster_link(struct vfs_handle_struct *handle,

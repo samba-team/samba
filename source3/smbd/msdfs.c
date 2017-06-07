@@ -567,9 +567,8 @@ static bool parse_msdfs_symlink(TALLOC_CTX *ctx,
 
 static bool is_msdfs_link_internal(TALLOC_CTX *ctx,
 			connection_struct *conn,
-			const char *path,
-			char **pp_link_target,
-			SMB_STRUCT_STAT *sbufp)
+			struct smb_filename *smb_fname,
+			char **pp_link_target)
 {
 	int referral_len = 0;
 #if defined(HAVE_BROKEN_READLINK)
@@ -579,7 +578,6 @@ static bool is_msdfs_link_internal(TALLOC_CTX *ctx,
 #endif
 	size_t bufsize = 0;
 	char *link_target = NULL;
-	struct smb_filename smb_fname;
 
 	if (pp_link_target) {
 		bufsize = 1024;
@@ -593,33 +591,28 @@ static bool is_msdfs_link_internal(TALLOC_CTX *ctx,
 		link_target = link_target_buf;
 	}
 
-	ZERO_STRUCT(smb_fname);
-	smb_fname.base_name = discard_const_p(char, path);
-
-	if (SMB_VFS_LSTAT(conn, &smb_fname) != 0) {
+	if (SMB_VFS_LSTAT(conn, smb_fname) != 0) {
 		DEBUG(5,("is_msdfs_link_read_target: %s does not exist.\n",
-			path));
+			smb_fname->base_name));
 		goto err;
 	}
-	if (!S_ISLNK(smb_fname.st.st_ex_mode)) {
+	if (!S_ISLNK(smb_fname->st.st_ex_mode)) {
 		DEBUG(5,("is_msdfs_link_read_target: %s is not a link.\n",
-					path));
+			smb_fname->base_name));
 		goto err;
-	}
-	if (sbufp != NULL) {
-		*sbufp = smb_fname.st;
 	}
 
-	referral_len = SMB_VFS_READLINK(conn, path, link_target, bufsize - 1);
+	referral_len = SMB_VFS_READLINK(conn, smb_fname,
+				link_target, bufsize - 1);
 	if (referral_len == -1) {
 		DEBUG(0,("is_msdfs_link_read_target: Error reading "
 			"msdfs link %s: %s\n",
-			path, strerror(errno)));
+			smb_fname->base_name, strerror(errno)));
 		goto err;
 	}
 	link_target[referral_len] = '\0';
 
-	DEBUG(5,("is_msdfs_link_internal: %s -> %s\n",path,
+	DEBUG(5,("is_msdfs_link_internal: %s -> %s\n", smb_fname->base_name,
 				link_target));
 
 	if (!strnequal(link_target, "msdfs:", 6)) {
@@ -640,14 +633,12 @@ static bool is_msdfs_link_internal(TALLOC_CTX *ctx,
 **********************************************************************/
 
 bool is_msdfs_link(connection_struct *conn,
-		const char *path,
-		SMB_STRUCT_STAT *sbufp)
+		struct smb_filename *smb_fname)
 {
 	return is_msdfs_link_internal(talloc_tos(),
 					conn,
-					path,
-					NULL,
-					sbufp);
+					smb_fname,
+					NULL);
 }
 
 /*****************************************************************
@@ -706,8 +697,7 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 
 	/* Optimization - check if we can redirect the whole path. */
 
-	if (is_msdfs_link_internal(ctx, conn, smb_fname->base_name,
-				   pp_targetpath, NULL)) {
+	if (is_msdfs_link_internal(ctx, conn, smb_fname, pp_targetpath)) {
 		/* XX_ALLOW_WCARD_XXX is called from search functions. */
 		if (ucf_flags &
 				(UCF_COND_ALLOW_WCARD_LCOMP|
@@ -770,8 +760,7 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 		}
 
 		if (is_msdfs_link_internal(ctx, conn,
-					   smb_fname->base_name, pp_targetpath,
-					   NULL)) {
+					   smb_fname, pp_targetpath)) {
 			DEBUG(4, ("dfs_path_lookup: Redirecting %s because "
 				  "parent %s is dfs link\n", dfspath,
 				  smb_fname_str_dbg(smb_fname)));
@@ -1481,12 +1470,20 @@ static int count_dfs_links(TALLOC_CTX *ctx, int snum)
 
 	while ((dname = vfs_readdirname(conn, dirp, NULL, &talloced))
 	       != NULL) {
-		if (is_msdfs_link(conn,
-				dname,
-				NULL)) {
+		struct smb_filename *smb_dname =
+			synthetic_smb_fname(talloc_tos(),
+					dname,
+					NULL,
+					NULL,
+					0);
+		if (smb_dname == NULL) {
+			goto out;
+		}
+		if (is_msdfs_link(conn, smb_dname)) {
 			cnt++;
 		}
 		TALLOC_FREE(talloced);
+		TALLOC_FREE(smb_dname);
 	}
 
 	SMB_VFS_CLOSEDIR(conn,dirp);
@@ -1600,16 +1597,26 @@ static int form_junctions(TALLOC_CTX *ctx,
 	while ((dname = vfs_readdirname(conn, dirp, NULL, &talloced))
 	       != NULL) {
 		char *link_target = NULL;
+		struct smb_filename *smb_dname = NULL;
+
 		if (cnt >= jn_remain) {
 			DEBUG(2, ("form_junctions: ran out of MSDFS "
 				"junction slots"));
 			TALLOC_FREE(talloced);
 			goto out;
 		}
+		smb_dname = synthetic_smb_fname(talloc_tos(),
+				dname,
+				NULL,
+				NULL,
+				0);
+		if (smb_dname == NULL) {
+			TALLOC_FREE(talloced);
+			goto out;
+		}
 		if (is_msdfs_link_internal(ctx,
 					conn,
-					dname, &link_target,
-					NULL)) {
+					smb_dname, &link_target)) {
 			if (parse_msdfs_symlink(ctx, snum,
 					link_target,
 					&jucn[cnt].referral_list,
@@ -1630,6 +1637,7 @@ static int form_junctions(TALLOC_CTX *ctx,
 			TALLOC_FREE(link_target);
 		}
 		TALLOC_FREE(talloced);
+		TALLOC_FREE(smb_dname);
 	}
 
 out:
