@@ -3113,6 +3113,7 @@ static int replmd_modify_handle_linked_attribs(struct ldb_module *module,
 	for (i=0; i<msg->num_elements; i++) {
 		struct ldb_message_element *el = &msg->elements[i];
 		struct ldb_message_element *old_el, *new_el;
+		unsigned int mod_type = LDB_FLAG_MOD_TYPE(el->flags);
 		const struct dsdb_attribute *schema_attr
 			= dsdb_attribute_by_lDAPDisplayName(schema, el->name);
 		if (!schema_attr) {
@@ -3134,7 +3135,7 @@ static int replmd_modify_handle_linked_attribs(struct ldb_module *module,
 			return LDB_ERR_UNWILLING_TO_PERFORM;
 		}
 		old_el = ldb_msg_find_element(old_msg, el->name);
-		switch (el->flags & LDB_FLAG_MOD_MASK) {
+		switch (mod_type) {
 		case LDB_FLAG_MOD_REPLACE:
 			ret = replmd_modify_la_replace(module, replmd_private,
 						       schema, msg, el, old_el,
@@ -3166,12 +3167,15 @@ static int replmd_modify_handle_linked_attribs(struct ldb_module *module,
 			ldb_asprintf_errstring(ldb,
 					       "Attribute %s is single valued but more than one value has been supplied",
 					       el->name);
-			return LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
+			/* Return codes as found on Windows 2012r2 */
+			if (mod_type == LDB_FLAG_MOD_REPLACE) {
+				return LDB_ERR_CONSTRAINT_VIOLATION;
+			} else {
+				return LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
+			}
 		} else {
 			el->flags |= LDB_FLAG_INTERNAL_DISABLE_SINGLE_VALUE_CHECK;
 		}
-
-
 
 		if (ret != LDB_SUCCESS) {
 			return ret;
