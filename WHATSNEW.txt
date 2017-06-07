@@ -43,6 +43,20 @@ kdc.conf by default. It is possible to use a different location during
 provision. You should consult the 'samba-tool' help and smb.conf manpage for
 details.
 
+Dynamic RPC port range
+----------------------
+
+The dynamic port range for RPC services has been changed from the old default
+value 1024-1300 to 49152-65535. This port range is not only used by a
+Samba AD DC but also applies to all other server roles including NT4-style
+domain controllers. The new value has been defined by Microsoft in Windows
+Server 2008 and newer versions. To make it easier for Administrators to control
+those port ranges we use the same default and make it configureable with the
+option: 'rpc server dynamic port range'.
+
+The 'rpc server port' option sets the first available port from the new
+'rpc server dynamic port range' option. The option 'rpc server port' only
+applies to Samba provisioned as an AD DC.
 
 Authentication and Authorization audit support
 ----------------------------------------------
