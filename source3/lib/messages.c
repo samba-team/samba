@@ -302,7 +302,7 @@ static NTSTATUS messaging_init_internal(TALLOC_CTX *mem_ctx,
 					     &ret);
 	if (ctx->msg_dgm_ref == NULL) {
 		DEBUG(2, ("messaging_dgm_ref failed: %s\n", strerror(ret)));
-		status = NT_STATUS_INTERNAL_ERROR;
+		status = map_nt_error_from_unix(ret);
 		goto done;
 	}
 	talloc_set_destructor(ctx, messaging_context_destructor);
@@ -313,7 +313,7 @@ static NTSTATUS messaging_init_internal(TALLOC_CTX *mem_ctx,
 		if (ret != 0) {
 			DEBUG(2, ("messaging_ctdbd_init failed: %s\n",
 				  strerror(ret)));
-			status = NT_STATUS_INTERNAL_ERROR;
+			status = map_nt_error_from_unix(ret);
 			goto done;
 		}
 	}
@@ -326,7 +326,7 @@ static NTSTATUS messaging_init_internal(TALLOC_CTX *mem_ctx,
 					  TDB_INCOMPATIBLE_HASH|TDB_CLEAR_IF_FIRST);
 	if (ctx->names_db == NULL) {
 		DBG_DEBUG("server_id_db_init failed\n");
-		status = NT_STATUS_INTERNAL_ERROR;
+		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
 
