@@ -202,6 +202,8 @@ static void wb_queryuser_done(struct tevent_req *subreq)
 		req, struct wb_queryuser_state);
 	struct wbint_userinfo *info = state->info;
 	NTSTATUS status, result;
+	bool need_group_name = false;
+	const char *tmpl = NULL;
 
 	status = dcerpc_wbint_GetNssInfo_recv(subreq, info, &result);
 	TALLOC_FREE(subreq);
@@ -236,7 +238,16 @@ static void wb_queryuser_done(struct tevent_req *subreq)
 		return;
 	}
 
-	if (state->info->primary_group_name == NULL) {
+	tmpl = lp_template_homedir();
+	if(strstr_m(tmpl, "%g") || strstr_m(tmpl, "%G")) {
+		need_group_name = true;
+	}
+	tmpl = lp_template_shell();
+	if(strstr_m(tmpl, "%g") || strstr_m(tmpl, "%G")) {
+		need_group_name = true;
+	}
+
+	if (need_group_name && state->info->primary_group_name == NULL) {
 		subreq = wb_lookupsid_send(state, state->ev, &info->group_sid);
 		if (tevent_req_nomem(subreq, req)) {
 			return;
@@ -291,6 +302,8 @@ static void wb_queryuser_got_gid(struct tevent_req *subreq)
 		req, struct wb_queryuser_state);
 	struct unixid xid;
 	NTSTATUS status;
+	bool need_group_name = false;
+	const char *tmpl = NULL;
 
 	status = wb_sids2xids_recv(subreq, &xid, 1);
 	TALLOC_FREE(subreq);
@@ -305,7 +318,16 @@ static void wb_queryuser_got_gid(struct tevent_req *subreq)
 
 	state->info->primary_gid = xid.id;
 
-	if (state->info->primary_group_name == NULL) {
+	tmpl = lp_template_homedir();
+	if(strstr_m(tmpl, "%g") || strstr_m(tmpl, "%G")) {
+		need_group_name = true;
+	}
+	tmpl = lp_template_shell();
+	if(strstr_m(tmpl, "%g") || strstr_m(tmpl, "%G")) {
+		need_group_name = true;
+	}
+
+	if (need_group_name && state->info->primary_group_name == NULL) {
 		subreq = wb_lookupsid_send(state, state->ev,
 					   &state->info->group_sid);
 		if (tevent_req_nomem(subreq, req)) {
