@@ -856,6 +856,20 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 
 	*r->out.authoritative = 1;
 
+	if (*r->in.flags & NETLOGON_SAMLOGON_FLAG_PASS_TO_FOREST_ROOT) {
+		/*
+		 * Currently we're always the forest root ourself.
+		 */
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	if (*r->in.flags & NETLOGON_SAMLOGON_FLAG_PASS_CROSS_FOREST_HOP) {
+		/*
+		 * Currently we don't support trusts correctly yet.
+		 */
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
 	user_info = talloc_zero(mem_ctx, struct auth_usersupplied_info);
 	NT_STATUS_HAVE_NO_MEMORY(user_info);
 
