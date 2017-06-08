@@ -420,6 +420,8 @@ SMBC_fstatvfs_ctx(SMBCCTX *context,
                                 (fsblkcnt_t) total_allocation_units;
                         st->f_bfree =
                                 (fsblkcnt_t) actual_allocation_units;
+                        st->f_bavail =
+                                (fsblkcnt_t) caller_allocation_units;
                 }
 
                 flags |= SMBC_VFS_FEATURE_NO_UNIXCIFS;
