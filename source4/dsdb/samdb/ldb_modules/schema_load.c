@@ -358,29 +358,15 @@ failed:
 	return ret;
 }	
 
-
-static int schema_load_init(struct ldb_module *module)
+static int schema_load(struct ldb_context *ldb,
+		       struct ldb_module *module)
 {
-	struct schema_load_private_data *private_data;
-	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct dsdb_schema *schema;
 	void *readOnlySchema;
 	int ret, metadata_ret;
-
-	private_data = talloc_zero(module, struct schema_load_private_data);
-	if (private_data == NULL) {
-		return ldb_oom(ldb);
-	}
-	private_data->module = module;
+	TALLOC_CTX *frame = talloc_stackframe();
 	
-	ldb_module_set_private(module, private_data);
-
-	ret = ldb_next_init(module);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-
-	schema = dsdb_get_schema(ldb, NULL);
+	schema = dsdb_get_schema(ldb, frame);
 
 	metadata_ret = schema_metadata_open(module);
 
@@ -394,10 +380,12 @@ static int schema_load_init(struct ldb_module *module)
 				ldb_debug_set(ldb, LDB_DEBUG_FATAL,
 					      "schema_load_init: dsdb_set_schema_refresh_fns() failed: %d:%s: %s",
 					      ret, ldb_strerror(ret), ldb_errstring(ldb));
+				TALLOC_FREE(frame);
 				return ret;
 			}
 		}
 
+		TALLOC_FREE(frame);
 		return LDB_SUCCESS;
 	}
 
@@ -408,11 +396,12 @@ static int schema_load_init(struct ldb_module *module)
 	 * have to update the backend server schema too */
 	if (readOnlySchema != NULL) {
 		struct dsdb_schema *new_schema;
-		ret = dsdb_schema_from_db(module, private_data, 0, &new_schema);
+		ret = dsdb_schema_from_db(module, frame, 0, &new_schema);
 		if (ret != LDB_SUCCESS) {
 			ldb_debug_set(ldb, LDB_DEBUG_FATAL,
 				      "schema_load_init: dsdb_schema_from_db() failed: %d:%s: %s",
 				      ret, ldb_strerror(ret), ldb_errstring(ldb));
+			TALLOC_FREE(frame);
 			return ret;
 		}
 
@@ -422,6 +411,7 @@ static int schema_load_init(struct ldb_module *module)
 			ldb_debug_set(ldb, LDB_DEBUG_FATAL,
 				      "schema_load_init: dsdb_set_schema() failed: %d:%s: %s",
 				      ret, ldb_strerror(ret), ldb_errstring(ldb));
+			TALLOC_FREE(frame);
 			return ret;
 		}
 
@@ -432,20 +422,23 @@ static int schema_load_init(struct ldb_module *module)
 			ldb_debug_set(ldb, LDB_DEBUG_FATAL,
 				      "schema_load_init: dsdb_set_schema_refresh_fns() failed: %d:%s: %s",
 				      ret, ldb_strerror(ret), ldb_errstring(ldb));
+			TALLOC_FREE(frame);
 			return ret;
 		}
 	} else {
 		ldb_debug_set(ldb, LDB_DEBUG_FATAL,
 			      "schema_load_init: failed to open metadata.tdb");
+		TALLOC_FREE(frame);
 		return metadata_ret;
 	}
 
-	schema = dsdb_get_schema(ldb, NULL);
+	schema = dsdb_get_schema(ldb, frame);
 
 	/* We do this, invoking the refresh handler, so we know that it works */
 	if (schema == NULL) {
 		ldb_debug_set(ldb, LDB_DEBUG_FATAL,
 			      "schema_load_init: dsdb_get_schema failed");
+		TALLOC_FREE(frame);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -457,6 +450,35 @@ static int schema_load_init(struct ldb_module *module)
 				       "@INDEXLIST and @ATTRIBUTES "
 				       "records to match database schema: %s",
 				       ldb_errstring(ldb));
+		TALLOC_FREE(frame);
+		return ret;
+	}
+
+	TALLOC_FREE(frame);
+	return LDB_SUCCESS;
+}
+
+static int schema_load_init(struct ldb_module *module)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	struct schema_load_private_data *private_data;
+	int ret;
+
+	private_data = talloc_zero(module, struct schema_load_private_data);
+	if (private_data == NULL) {
+		return ldb_oom(ldb);
+	}
+	private_data->module = module;
+
+	ldb_module_set_private(module, private_data);
+
+	ret = ldb_next_init(module);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	ret = schema_load(ldb, module);
+	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
 
