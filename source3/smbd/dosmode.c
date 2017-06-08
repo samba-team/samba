@@ -617,7 +617,12 @@ uint32_t dos_mode(connection_struct *conn, struct smb_filename *smb_fname)
 	/* Get the DOS attributes via the VFS if we can */
 	status = SMB_VFS_GET_DOS_ATTRIBUTES(conn, smb_fname, &result);
 	if (!NT_STATUS_IS_OK(status)) {
-		result |= dos_mode_from_sbuf(conn, smb_fname);
+		/*
+		 * Only fall back to using UNIX modes if we get NOT_IMPLEMENTED.
+		 */
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
+			result |= dos_mode_from_sbuf(conn, smb_fname);
+		}
 	}
 
 	offline = SMB_VFS_IS_OFFLINE(conn, smb_fname, &smb_fname->st);
