@@ -123,6 +123,7 @@ static void net_g_lock_dump_fn(const struct g_lock_rec *locks,
 		d_printf("%s: %s\n", server_id_str_buf(l->pid, &idbuf),
 			 (l->lock_type & 1) ? "WRITE" : "READ");
 	}
+	dump_data_file(data, datalen, true, stdout);
 }
 
 static int net_g_lock_dump(struct net_context *c, int argc, const char **argv)
