@@ -149,3 +149,6 @@ if with_cmocka:
                   [os.path.join(bindir(), "default/testsuite/unittests/test_sambafs_srv_pipe")])
     plantestsuite("samba.unittests.lib_util_modules", "none",
                   [os.path.join(bindir(), "default/testsuite/unittests/test_lib_util_modules")])
+
+    plantestsuite("samba.unittests.smb1cli_session", "none",
+                  [os.path.join(bindir(), "default/libcli/smb/test_smb1cli_session")])

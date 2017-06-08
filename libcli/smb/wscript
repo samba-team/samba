@@ -64,3 +64,8 @@ def build(bld):
                     tstream_smbXcli_np.h
     ''',
     )
+
+    bld.SAMBA_BINARY('test_smb1cli_session',
+                     source='test_smb1cli_session.c',
+                     deps='cmocka cli_smb_common',
+                     install=False)
