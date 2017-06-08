@@ -27,10 +27,26 @@
 #include "ctdbd_conn.h"
 #include "lib/cluster_support.h"
 
+struct messaging_ctdbd_context;
+
+struct messaging_ctdbd_fde_ev {
+	struct messaging_ctdbd_fde_ev *prev, *next;
+
+	/*
+	 * Backreference to enable DLIST_REMOVE from our
+	 * destructor. Also, set to NULL when the dgm_context dies
+	 * before the messaging_dgm_fde_ev.
+	 */
+	struct messaging_ctdbd_context *ctx;
+
+	struct tevent_context *ev;
+	struct tevent_fd *fde;
+};
 
 struct messaging_ctdbd_context {
 	struct ctdbd_connection *conn;
-	struct tevent_fd *fde;
+
+	struct messaging_ctdbd_fde_ev *fde_evs;
 };
 
 /*
@@ -182,12 +198,9 @@ static int messaging_ctdbd_init_internal(struct messaging_context *msg_ctx,
 					 struct messaging_ctdbd_context *ctx,
 					 bool reinit)
 {
-	struct tevent_context *ev;
-	int ret, ctdb_fd;
+	int ret;
 
 	if (reinit) {
-		TALLOC_FREE(ctx->fde);
-
 		ret = ctdbd_reinit_connection(ctx,
 					      lp_ctdbd_socket(),
 					      lp_ctdb_timeout(),
@@ -224,15 +237,6 @@ static int messaging_ctdbd_init_internal(struct messaging_context *msg_ctx,
 		return ret;
 	}
 
-	ctdb_fd = ctdbd_conn_get_fd(ctx->conn);
-	ev = messaging_tevent_context(msg_ctx);
-
-	ctx->fde = tevent_add_fd(ev, ctx, ctdb_fd, TEVENT_FD_READ,
-				 messaging_ctdbd_readable, ctx->conn);
-	if (ctx->fde == NULL) {
-		return ENOMEM;
-	}
-
 	global_ctdb_connection_pid = getpid();
 	global_ctdbd_connection = ctx->conn;
 	talloc_set_destructor(ctx, messaging_ctdbd_destructor);
@@ -255,7 +259,7 @@ int messaging_ctdbd_init(struct messaging_context *msg_ctx,
 		return ENOMEM;
 	}
 
-	if (!(ctx = talloc(result, struct messaging_ctdbd_context))) {
+	if (!(ctx = talloc_zero(result, struct messaging_ctdbd_context))) {
 		DEBUG(0, ("talloc failed\n"));
 		TALLOC_FREE(result);
 		return ENOMEM;
@@ -288,4 +292,79 @@ int messaging_ctdbd_reinit(struct messaging_context *msg_ctx,
 	}
 
 	return 0;
+}
+
+struct messaging_ctdbd_fde {
+	struct tevent_fd *fde;
+};
+
+static int messaging_ctdbd_fde_ev_destructor(
+	struct messaging_ctdbd_fde_ev *fde_ev)
+{
+	if (fde_ev->ctx != NULL) {
+		DLIST_REMOVE(fde_ev->ctx->fde_evs, fde_ev);
+		fde_ev->ctx = NULL;
+	}
+	return 0;
+}
+
+struct messaging_ctdbd_fde *messaging_ctdbd_register_tevent_context(
+	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+	struct messaging_backend *backend)
+{
+	struct messaging_ctdbd_context *ctx = talloc_get_type_abort(
+		backend->private_data, struct messaging_ctdbd_context);
+	struct messaging_ctdbd_fde_ev *fde_ev;
+	struct messaging_ctdbd_fde *fde;
+
+	if (ctx == NULL) {
+		return NULL;
+	}
+
+	fde = talloc(mem_ctx, struct messaging_ctdbd_fde);
+	if (fde == NULL) {
+		return NULL;
+	}
+
+	for (fde_ev = ctx->fde_evs; fde_ev != NULL; fde_ev = fde_ev->next) {
+		if ((fde_ev->ev == ev) &&
+		    (tevent_fd_get_flags(fde_ev->fde) != 0)) {
+			break;
+		}
+	}
+
+	if (fde_ev == NULL) {
+		int fd = ctdbd_conn_get_fd(ctx->conn);
+
+		fde_ev = talloc(fde, struct messaging_ctdbd_fde_ev);
+		if (fde_ev == NULL) {
+			return NULL;
+		}
+		fde_ev->fde = tevent_add_fd(
+			ev, fde_ev, fd, TEVENT_FD_READ,
+			messaging_ctdbd_readable, ctx->conn);
+		if (fde_ev->fde == NULL) {
+			TALLOC_FREE(fde);
+			return NULL;
+		}
+		fde_ev->ev = ev;
+		fde_ev->ctx = ctx;
+		DLIST_ADD(ctx->fde_evs, fde_ev);
+		talloc_set_destructor(
+			fde_ev, messaging_ctdbd_fde_ev_destructor);
+	} else {
+		/*
+		 * Same trick as with tdb_wrap: The caller will never
+		 * see the talloc_referenced object, the
+		 * messaging_ctdbd_fde_ev, so problems with
+		 * talloc_unlink will not happen.
+		 */
+		if (talloc_reference(fde, fde_ev) == NULL) {
+			TALLOC_FREE(fde);
+			return NULL;
+		}
+	}
+
+	fde->fde = fde_ev->fde;
+	return fde;
 }

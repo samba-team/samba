@@ -91,6 +91,7 @@ struct messaging_context {
 
 	void *msg_dgm_ref;
 	struct messaging_backend *remote;
+	struct messaging_ctdbd_fde *cluster_fde;
 
 	struct server_id_db *names_db;
 };
@@ -520,6 +521,14 @@ static NTSTATUS messaging_init_internal(TALLOC_CTX *mem_ctx,
 			status = map_nt_error_from_unix(ret);
 			goto done;
 		}
+		ctx->cluster_fde = messaging_ctdbd_register_tevent_context(
+			ctx, ctx->event_ctx, ctx->remote);
+		if (ctx->cluster_fde == NULL) {
+			DBG_WARNING("messaging_ctdbd_register_tevent_context "
+				    "failed\n");
+			status = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
 	}
 	ctx->id.vnn = get_my_vnn();
 
@@ -616,13 +625,22 @@ NTSTATUS messaging_reinit(struct messaging_context *msg_ctx)
 	}
 
 	if (lp_clustering()) {
+		TALLOC_FREE(msg_ctx->cluster_fde);
+
 		ret = messaging_ctdbd_reinit(msg_ctx, msg_ctx,
 					     msg_ctx->remote);
-
 		if (ret != 0) {
 			DEBUG(1, ("messaging_ctdbd_init failed: %s\n",
 				  strerror(ret)));
 			return map_nt_error_from_unix(ret);
+		}
+
+		msg_ctx->cluster_fde = messaging_ctdbd_register_tevent_context(
+			msg_ctx, msg_ctx->event_ctx, msg_ctx->remote);
+		if (msg_ctx->cluster_fde == NULL) {
+			DBG_WARNING("messaging_ctdbd_register_tevent_context "
+				    "failed\n");
+			return NT_STATUS_NO_MEMORY;
 		}
 	}
 
@@ -869,6 +887,7 @@ struct messaging_filtered_read_state {
 	struct tevent_context *ev;
 	struct messaging_context *msg_ctx;
 	struct messaging_dgm_fde *fde;
+	struct messaging_ctdbd_fde *cluster_fde;
 
 	bool (*filter)(struct messaging_rec *rec, void *private_data);
 	void *private_data;
@@ -909,6 +928,14 @@ struct tevent_req *messaging_filtered_read_send(
 	state->fde = messaging_dgm_register_tevent_context(state, ev);
 	if (tevent_req_nomem(state->fde, req)) {
 		return tevent_req_post(req, ev);
+	}
+
+	if (msg_ctx->remote != NULL) {
+		state->cluster_fde = messaging_ctdbd_register_tevent_context(
+			state, ev, msg_ctx->remote);
+		if (tevent_req_nomem(state->cluster_fde, req)) {
+			return tevent_req_post(req, ev);
+		}
 	}
 
 	/*
@@ -957,6 +984,7 @@ static void messaging_filtered_read_cleanup(struct tevent_req *req,
 	tevent_req_set_cleanup_fn(req, NULL);
 
 	TALLOC_FREE(state->fde);
+	TALLOC_FREE(state->cluster_fde);
 
 	ok = messaging_deregister_event_context(msg_ctx, state->ev);
 	if (!ok) {

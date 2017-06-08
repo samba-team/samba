@@ -93,6 +93,13 @@ int messaging_ctdbd_reinit(struct messaging_context *msg_ctx,
 	return ENOSYS;
 }
 
+struct messaging_ctdbd_fde *messaging_ctdbd_register_tevent_context(
+	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+	struct messaging_backend *backend)
+{
+	return NULL;
+}
+
 struct ctdbd_connection *messaging_ctdbd_connection(void)
 {
 	return NULL;
