@@ -26,7 +26,7 @@ from samba.tests import TestCase
 from samba.dcerpc import dns, dnsp, dnsserver
 from samba.netcmd.dns import TXTRecord, dns_record_match, data_to_dns_record
 from samba.tests.subunitrun import SubunitOptions, TestProgram
-from samba import werror
+from samba import werror, WERRORError
 import samba.getopt as options
 import optparse
 
@@ -800,57 +800,70 @@ class TestComplexQueries(DNSTest):
 
     def setUp(self):
         super(TestComplexQueries, self).setUp()
+
+    def tearDown(self):
+        super(TestComplexQueries, self).tearDown()
+
+    def test_one_a_query(self):
+        "create a query packet containing one query record"
+
         name = "cname_test.%s" % self.get_dns_domain()
         rdata = "%s.%s" % (self.server, self.get_dns_domain())
         self.make_dns_update(name, rdata, dns.DNS_QTYPE_CNAME)
 
-    def tearDown(self):
-        super(TestComplexQueries, self).tearDown()
-        p = self.make_name_packet(dns.DNS_OPCODE_UPDATE)
-        updates = []
+        try:
 
-        name = self.get_dns_domain()
+            # Create the record
+            name = "cname_test.%s" % self.get_dns_domain()
+            rdata = "%s.%s" % (self.server, self.get_dns_domain())
+            self.make_dns_update(name, rdata, dns.DNS_QTYPE_CNAME)
 
-        u = self.make_name_question(name, dns.DNS_QTYPE_SOA, dns.DNS_QCLASS_IN)
-        updates.append(u)
-        self.finish_name_packet(p, updates)
+            p = self.make_name_packet(dns.DNS_OPCODE_QUERY)
+            questions = []
 
-        updates = []
-        r = dns.res_rec()
-        r.name = "cname_test.%s" % self.get_dns_domain()
-        r.rr_type = dns.DNS_QTYPE_CNAME
-        r.rr_class = dns.DNS_QCLASS_NONE
-        r.ttl = 0
-        r.length = 0xffff
-        r.rdata = "%s.%s" % (self.server, self.get_dns_domain())
-        updates.append(r)
-        p.nscount = len(updates)
-        p.nsrecs = updates
+            # Check the record
+            name = "cname_test.%s" % self.get_dns_domain()
+            q = self.make_name_question(name, dns.DNS_QTYPE_A, dns.DNS_QCLASS_IN)
+            print "asking for ", q.name
+            questions.append(q)
 
-        response = self.dns_transaction_udp(p)
-        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
+            self.finish_name_packet(p, questions)
+            response = self.dns_transaction_udp(p)
+            self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
+            self.assert_dns_opcode_equals(response, dns.DNS_OPCODE_QUERY)
+            self.assertEquals(response.ancount, 2)
+            self.assertEquals(response.answers[0].rr_type, dns.DNS_QTYPE_CNAME)
+            self.assertEquals(response.answers[0].rdata, "%s.%s" %
+                              (self.server, self.get_dns_domain()))
+            self.assertEquals(response.answers[1].rr_type, dns.DNS_QTYPE_A)
+            self.assertEquals(response.answers[1].rdata,
+                              self.server_ip)
 
-    def test_one_a_query(self):
-        "create a query packet containing one query record"
-        p = self.make_name_packet(dns.DNS_OPCODE_QUERY)
-        questions = []
+        finally:
+            # Delete the record
+            p = self.make_name_packet(dns.DNS_OPCODE_UPDATE)
+            updates = []
 
-        name = "cname_test.%s" % self.get_dns_domain()
-        q = self.make_name_question(name, dns.DNS_QTYPE_A, dns.DNS_QCLASS_IN)
-        print "asking for ", q.name
-        questions.append(q)
+            name = self.get_dns_domain()
 
-        self.finish_name_packet(p, questions)
-        response = self.dns_transaction_udp(p)
-        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
-        self.assert_dns_opcode_equals(response, dns.DNS_OPCODE_QUERY)
-        self.assertEquals(response.ancount, 2)
-        self.assertEquals(response.answers[0].rr_type, dns.DNS_QTYPE_CNAME)
-        self.assertEquals(response.answers[0].rdata, "%s.%s" %
-                          (self.server, self.get_dns_domain()))
-        self.assertEquals(response.answers[1].rr_type, dns.DNS_QTYPE_A)
-        self.assertEquals(response.answers[1].rdata,
-                          self.server_ip)
+            u = self.make_name_question(name, dns.DNS_QTYPE_SOA, dns.DNS_QCLASS_IN)
+            updates.append(u)
+            self.finish_name_packet(p, updates)
+
+            updates = []
+            r = dns.res_rec()
+            r.name = "cname_test.%s" % self.get_dns_domain()
+            r.rr_type = dns.DNS_QTYPE_CNAME
+            r.rr_class = dns.DNS_QCLASS_NONE
+            r.ttl = 0
+            r.length = 0xffff
+            r.rdata = "%s.%s" % (self.server, self.get_dns_domain())
+            updates.append(r)
+            p.nscount = len(updates)
+            p.nsrecs = updates
+
+            response = self.dns_transaction_udp(p)
+            self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
 
     def test_cname_two_chain(self):
         name0 = "cnamechain0.%s" % self.get_dns_domain()
@@ -1012,14 +1025,17 @@ class TestZones(DNSTest):
         zone_create.fAllowUpdate = dnsp.DNS_ZONE_UPDATE_SECURE
         zone_create.fAging = 0
         zone_create.dwDpFlags = dnsserver.DNS_DP_DOMAIN_DEFAULT
-        self.rpc_conn.DnssrvOperation2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
-                                       0,
-                                       self.server_ip,
-                                       None,
-                                       0,
-                                       'ZoneCreate',
-                                       dnsserver.DNSSRV_TYPEID_ZONE_CREATE,
-                                       zone_create)
+        try:
+            self.rpc_conn.DnssrvOperation2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
+                                           0,
+                                           self.server_ip,
+                                           None,
+                                           0,
+                                           'ZoneCreate',
+                                           dnsserver.DNSSRV_TYPEID_ZONE_CREATE,
+                                           zone_create)
+        except WERRORError as e:
+            self.fail(str(e))
 
     def delete_zone(self, zone):
         self.rpc_conn.DnssrvOperation2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
@@ -1080,7 +1096,10 @@ class TestRPCRoundtrip(DNSTest):
             self.rpc_conn.DnssrvUpdateRecord2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
                                      0, self.server_ip, self.get_dns_domain(),
                                      name, add_rec_buf, None)
+        except WERRORError as e:
+            self.fail(str(e))
 
+        try:
             self.check_query_txt(prefix, txt)
         finally:
             self.rpc_conn.DnssrvUpdateRecord2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
@@ -1132,6 +1151,10 @@ class TestRPCRoundtrip(DNSTest):
                                      0, self.server_ip, self.get_dns_domain(),
                                      name, add_rec_buf, None)
 
+        except WERRORError as e:
+            self.fail(str(e))
+
+        try:
             self.check_query_txt(prefix, txt)
         finally:
             self.rpc_conn.DnssrvUpdateRecord2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
@@ -1150,6 +1173,10 @@ class TestRPCRoundtrip(DNSTest):
                                      0, self.server_ip, self.get_dns_domain(),
                                      name, add_rec_buf, None)
 
+        except WERRORError as e:
+            self.fail(str(e))
+
+        try:
             self.check_query_txt(prefix, txt)
         finally:
             self.rpc_conn.DnssrvUpdateRecord2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
@@ -1167,7 +1194,10 @@ class TestRPCRoundtrip(DNSTest):
             self.rpc_conn.DnssrvUpdateRecord2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
                                      0, self.server_ip, self.get_dns_domain(),
                                      name, add_rec_buf, None)
+        except WERRORError as e:
+            self.fail(str(e))
 
+        try:
             self.check_query_txt(prefix, txt)
         finally:
             self.rpc_conn.DnssrvUpdateRecord2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
@@ -1210,7 +1240,11 @@ class TestRPCRoundtrip(DNSTest):
                                      0, self.server_ip, self.get_dns_domain(),
                                      name, add_rec_buf, None)
 
-            self.check_query_txt(prefix, ['NULL'])
+        except WERRORError as e:
+            self.fail(str(e))
+
+        try:
+           self.check_query_txt(prefix, ['NULL'])
         finally:
             self.rpc_conn.DnssrvUpdateRecord2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
                                               0, self.server_ip, self.get_dns_domain(),
@@ -1241,7 +1275,11 @@ class TestRPCRoundtrip(DNSTest):
                                      0, self.server_ip, self.get_dns_domain(),
                                      name, add_rec_buf, None)
 
-            self.check_query_txt(prefix, txt)
+        except WERRORError as e:
+            self.fail(str(e))
+
+        try:
+           self.check_query_txt(prefix, txt)
         finally:
             self.rpc_conn.DnssrvUpdateRecord2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
                                               0, self.server_ip, self.get_dns_domain(),
@@ -1275,7 +1313,12 @@ class TestRPCRoundtrip(DNSTest):
                                      0, self.server_ip, self.get_dns_domain(),
                                      name, add_rec_buf, None)
 
+        except WERRORError as e:
+            self.fail(str(e))
+
+        try:
             self.check_query_txt(prefix, txt)
+
         finally:
             self.rpc_conn.DnssrvUpdateRecord2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
                                               0, self.server_ip, self.get_dns_domain(),
@@ -1311,6 +1354,10 @@ class TestRPCRoundtrip(DNSTest):
                                      0, self.server_ip, self.get_dns_domain(),
                                      name, add_rec_buf, None)
 
+        except WERRORError as e:
+            self.fail(str(e))
+
+        try:
             self.check_query_txt(prefix, txt)
         finally:
             self.rpc_conn.DnssrvUpdateRecord2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
@@ -1341,7 +1388,10 @@ class TestRPCRoundtrip(DNSTest):
             self.rpc_conn.DnssrvUpdateRecord2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
                                      0, self.server_ip, self.get_dns_domain(),
                                      name, add_rec_buf, None)
+        except WERRORError as e:
+            self.fail(str(e))
 
+        try:
             self.check_query_txt(prefix, txt)
         finally:
             self.rpc_conn.DnssrvUpdateRecord2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
