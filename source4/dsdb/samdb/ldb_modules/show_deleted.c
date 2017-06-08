@@ -51,6 +51,11 @@ static int show_deleted_search(struct ldb_module *module, struct ldb_request *re
 	int ret;
 	const char *attr_filter = NULL;
 
+	/* do not manipulate our control entries */
+	if (ldb_dn_is_special(req->op.search.base)) {
+		return ldb_next_request(module, req);
+	}
+
 	ldb = ldb_module_get_ctx(module);
 
 	state = talloc_get_type(ldb_module_get_private(module), struct show_deleted_state);
