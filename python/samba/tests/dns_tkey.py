@@ -29,6 +29,7 @@ from samba import credentials
 from samba.dcerpc import dns, dnsp
 from samba.tests.subunitrun import SubunitOptions, TestProgram
 from samba import gensec, tests
+from samba.tests import TestCase
 
 parser = optparse.OptionParser("dns.py <server name> <server ip> [options]")
 sambaopts = options.SambaOptions(parser)
@@ -56,21 +57,11 @@ server_name = args[0]
 server_ip = args[1]
 
 
-class DNSTest(tests.TestCase):
+class DNSTest(TestCase):
+
     def setUp(self):
         super(DNSTest, self).setUp()
-        self.server = server_name
-        self.server_ip = server_ip
-        self.settings = {}
-        self.settings["lp_ctx"] = self.lp_ctx = tests.env_loadparm()
-        self.settings["target_hostname"] = self.server
-
-        self.creds = credentials.Credentials()
-        self.creds.guess(self.lp_ctx)
-        self.creds.set_username(tests.env_get_var_value('USERNAME'))
-        self.creds.set_password(tests.env_get_var_value('PASSWORD'))
-        self.creds.set_kerberos_state(credentials.MUST_USE_KERBEROS)
-        self.newrecname = "tkeytsig.%s" % self.get_dns_domain()
+        self.timeout = None
 
     def errstr(self, errcode):
         "Return a readable error code"
@@ -150,9 +141,11 @@ class DNSTest(tests.TestCase):
         return self.creds.get_realm().lower()
 
     def dns_transaction_udp(self, packet, host,
-                            dump=False, timeout=timeout):
+                            dump=False, timeout=None):
         "send a DNS query and read the reply"
         s = None
+        if timeout is None:
+            timeout = self.timeout
         try:
             send_packet = ndr.ndr_pack(packet)
             if dump:
@@ -171,9 +164,11 @@ class DNSTest(tests.TestCase):
                 s.close()
 
     def dns_transaction_tcp(self, packet, host,
-                            dump=False, timeout=timeout):
+                            dump=False, timeout=None):
         "send a DNS query and read the reply, also return the raw packet"
         s = None
+        if timeout is None:
+            timeout = self.timeout
         try:
             send_packet = ndr.ndr_pack(packet)
             if dump:
@@ -199,6 +194,61 @@ class DNSTest(tests.TestCase):
         self.assertEquals(my_packet, recv_packet[2:])
 
         return (response, recv_packet[2:])
+
+    def make_txt_update(self, prefix, txt_array):
+        p = self.make_name_packet(dns.DNS_OPCODE_UPDATE)
+        updates = []
+
+        name = self.get_dns_domain()
+        u = self.make_name_question(name, dns.DNS_QTYPE_SOA, dns.DNS_QCLASS_IN)
+        updates.append(u)
+        self.finish_name_packet(p, updates)
+
+        updates = []
+        r = dns.res_rec()
+        r.name = "%s.%s" % (prefix, self.get_dns_domain())
+        r.rr_type = dns.DNS_QTYPE_TXT
+        r.rr_class = dns.DNS_QCLASS_IN
+        r.ttl = 900
+        r.length = 0xffff
+        rdata = self.make_txt_record(txt_array)
+        r.rdata = rdata
+        updates.append(r)
+        p.nscount = len(updates)
+        p.nsrecs = updates
+
+        return p
+
+    def check_query_txt(self, prefix, txt_array):
+        name = "%s.%s" % (prefix, self.get_dns_domain())
+        p = self.make_name_packet(dns.DNS_OPCODE_QUERY)
+        questions = []
+
+        q = self.make_name_question(name, dns.DNS_QTYPE_TXT, dns.DNS_QCLASS_IN)
+        questions.append(q)
+
+        self.finish_name_packet(p, questions)
+        (response, response_packet) = self.dns_transaction_udp(p, host=self.server_ip)
+        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
+        self.assertEquals(response.ancount, 1)
+        self.assertEquals(response.answers[0].rdata.txt.str, txt_array)
+
+
+class DNSTKeyTest(DNSTest):
+    def setUp(self):
+        super(DNSTKeyTest, self).setUp()
+        self.server = server_name
+        self.server_ip = server_ip
+        self.settings = {}
+        self.settings["lp_ctx"] = self.lp_ctx = tests.env_loadparm()
+        self.settings["target_hostname"] = self.server
+
+        self.creds = credentials.Credentials()
+        self.creds.guess(self.lp_ctx)
+        self.creds.set_username(tests.env_get_var_value('USERNAME'))
+        self.creds.set_password(tests.env_get_var_value('PASSWORD'))
+        self.creds.set_kerberos_state(credentials.MUST_USE_KERBEROS)
+        self.newrecname = "tkeytsig.%s" % self.get_dns_domain()
 
     def tkey_trans(self):
         "Do a TKEY transaction and establish a gensec context"
@@ -410,7 +460,7 @@ class DNSTest(tests.TestCase):
         return p
 
 
-class TestDNSUpdates(DNSTest):
+class TestDNSUpdates(DNSTKeyTest):
     def test_tkey(self):
         "test DNS TKEY handshake"
 
