@@ -60,7 +60,7 @@ struct ctdbd_connection {
 	int fd;
 	int timeout;
 
-	/* For async connections, enabled via ctdbd_setup_ev() */
+	/* For async connections, enabled via ctdbd_setup_fde() */
 	struct tevent_fd *fde;
 
 	/* State to track in-progress read */
