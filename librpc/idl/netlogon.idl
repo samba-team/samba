@@ -1597,6 +1597,17 @@ interface netlogon
 
 	/****************/
 	/* Function 0x27 */
+	typedef [public,bitmap32bit] bitmap {
+		/* Request MUST be passed to the domain controller at the root of the forest. */
+		NETLOGON_SAMLOGON_FLAG_PASS_TO_FOREST_ROOT = 0x00000001,
+		/* Request MUST be passed to the DC at the end of the first hop over a cross-forest trust. */
+		NETLOGON_SAMLOGON_FLAG_PASS_CROSS_FOREST_HOP = 0x00000002,
+		/* Request was passed by an RODC to a DC in a different domain. */
+		NETLOGON_SAMLOGON_FLAG_RODC_TO_OTHER_DOMAIN = 0x00000004,
+		/* Request is an NTLM authentication package request passed by an RODC. */
+		NETLOGON_SAMLOGON_FLAG_RODC_NTLM_REQUEST = 0x00000008
+	} netr_LogonSamLogon_flags;
+
 	NTSTATUS netr_LogonSamLogonEx(
 		[in,unique] [string,charset(UTF16)] uint16 *server_name,
 		[in,unique] [string,charset(UTF16)] uint16 *computer_name,
@@ -1605,7 +1616,7 @@ interface netlogon
 		[in]  uint16 validation_level,
 		[out,ref] [switch_is(validation_level)] netr_Validation *validation,
 		[out,ref] uint8 *authoritative,
-		[in,out,ref] uint32 *flags
+		[in,out,ref] netr_LogonSamLogon_flags *flags
 		);
 
 	/****************/
@@ -1678,7 +1689,7 @@ interface netlogon
 		[in]  uint16 validation_level,
 		[out,ref] [switch_is(validation_level)] netr_Validation *validation,
 		[out,ref] uint8 *authoritative,
-		[in,out,ref] uint32 *flags
+		[in,out,ref] netr_LogonSamLogon_flags *flags
 		);
 
 	/****************/
