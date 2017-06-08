@@ -235,6 +235,24 @@ class TestSimpleQueries(DNSTest):
         self.assertEquals(response.answers[0].rdata,
                           self.server_ip)
 
+    def test_one_SOA_query(self):
+        "create a query packet containing one query record for the SOA"
+        p = self.make_name_packet(dns.DNS_OPCODE_QUERY)
+        questions = []
+
+        name = "%s" % (self.get_dns_domain())
+        q = self.make_name_question(name, dns.DNS_QTYPE_SOA, dns.DNS_QCLASS_IN)
+        print "asking for ", q.name
+        questions.append(q)
+
+        self.finish_name_packet(p, questions)
+        response = self.dns_transaction_udp(p)
+        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
+        self.assert_dns_opcode_equals(response, dns.DNS_OPCODE_QUERY)
+        self.assertEquals(response.ancount, 1)
+        self.assertEquals(response.answers[0].rdata.mname.upper(),
+                          ("%s.%s" % (self.server, self.get_dns_domain())).upper())
+
     def test_one_a_query_tcp(self):
         "create a query packet containing one query record via TCP"
         p = self.make_name_packet(dns.DNS_OPCODE_QUERY)
