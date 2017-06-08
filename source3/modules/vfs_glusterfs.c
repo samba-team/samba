@@ -1234,9 +1234,12 @@ static bool vfs_gluster_getlock(struct vfs_handle_struct *handle,
 }
 
 static int vfs_gluster_symlink(struct vfs_handle_struct *handle,
-			       const char *oldpath, const char *newpath)
+				const char *link_target,
+				const struct smb_filename *new_smb_fname)
 {
-	return glfs_symlink(handle->data, oldpath, newpath);
+	return glfs_symlink(handle->data,
+			link_target,
+			new_smb_fname->base_name);
 }
 
 static int vfs_gluster_readlink(struct vfs_handle_struct *handle,

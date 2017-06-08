@@ -2152,11 +2152,12 @@ int smb_vfs_call_linux_setlease(struct vfs_handle_struct *handle,
 	return handle->fns->linux_setlease_fn(handle, fsp, leasetype);
 }
 
-int smb_vfs_call_symlink(struct vfs_handle_struct *handle, const char *oldpath,
-			 const char *newpath)
+int smb_vfs_call_symlink(struct vfs_handle_struct *handle,
+			const char *link_target,
+			const struct smb_filename *new_smb_fname)
 {
 	VFS_FIND(symlink);
-	return handle->fns->symlink_fn(handle, oldpath, newpath);
+	return handle->fns->symlink_fn(handle, link_target, new_smb_fname);
 }
 
 int smb_vfs_call_readlink(struct vfs_handle_struct *handle,

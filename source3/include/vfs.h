@@ -226,6 +226,8 @@
 		to const struct smb_filename * */
 /* Version 37 - Change readlink from const char *
 		to const struct smb_filename * */
+/* Version 37 - Change symlink from const char *
+		to const struct smb_filename * */
 
 #define SMB_VFS_INTERFACE_VERSION 37
 
@@ -745,7 +747,9 @@ struct vfs_fn_pointers {
 			       uint32_t share_mode, uint32_t access_mask);
 	int (*linux_setlease_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, int leasetype);
 	bool (*getlock_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, off_t *poffset, off_t *pcount, int *ptype, pid_t *ppid);
-	int (*symlink_fn)(struct vfs_handle_struct *handle, const char *oldpath, const char *newpath);
+	int (*symlink_fn)(struct vfs_handle_struct *handle,
+				const char *link_contents,
+				const struct smb_filename *new_smb_fname);
 	int (*readlink_fn)(struct vfs_handle_struct *handle,
 				const struct smb_filename *smb_fname,
 				char *buf,
@@ -1251,8 +1255,9 @@ int smb_vfs_call_linux_setlease(struct vfs_handle_struct *handle,
 bool smb_vfs_call_getlock(struct vfs_handle_struct *handle,
 			  struct files_struct *fsp, off_t *poffset,
 			  off_t *pcount, int *ptype, pid_t *ppid);
-int smb_vfs_call_symlink(struct vfs_handle_struct *handle, const char *oldpath,
-			 const char *newpath);
+int smb_vfs_call_symlink(struct vfs_handle_struct *handle,
+			const char *link_contents,
+			const struct smb_filename *new_smb_fname);
 int smb_vfs_call_readlink(struct vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
 			char *buf,

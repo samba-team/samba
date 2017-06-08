@@ -1213,12 +1213,20 @@ static NTSTATUS cmd_lock(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 
 static NTSTATUS cmd_symlink(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
+	struct smb_filename *new_smb_fname = NULL;
+
 	if (argc != 3) {
 		printf("Usage: symlink <path> <link>\n");
 		return NT_STATUS_OK;
 	}
 
-	if (SMB_VFS_SYMLINK(vfs->conn, argv[1], argv[2]) == -1) {
+	new_smb_fname = synthetic_smb_fname_split(mem_ctx,
+					argv[2],
+					lp_posix_pathnames());
+	if (new_smb_fname == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	if (SMB_VFS_SYMLINK(vfs->conn, argv[1], new_smb_fname) == -1) {
 		printf("symlink: error=%d (%s)\n", errno, strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;
 	}

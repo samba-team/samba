@@ -6607,10 +6607,9 @@ static NTSTATUS smb_set_file_unix_link(connection_struct *conn,
 				       struct smb_request *req,
 				       const char *pdata,
 				       int total_data,
-				       const struct smb_filename *smb_fname)
+				       const struct smb_filename *new_smb_fname)
 {
 	char *link_target = NULL;
-	const char *newname = smb_fname->base_name;
 	TALLOC_CTX *ctx = talloc_tos();
 
 	/* Set a symbolic link. */
@@ -6632,9 +6631,9 @@ static NTSTATUS smb_set_file_unix_link(connection_struct *conn,
 	}
 
 	DEBUG(10,("smb_set_file_unix_link: SMB_SET_FILE_UNIX_LINK doing symlink %s -> %s\n",
-			newname, link_target ));
+			new_smb_fname->base_name, link_target ));
 
-	if (SMB_VFS_SYMLINK(conn,link_target,newname) != 0) {
+	if (SMB_VFS_SYMLINK(conn,link_target,new_smb_fname) != 0) {
 		return map_nt_error_from_unix(errno);
 	}
 

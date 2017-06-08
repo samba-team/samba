@@ -2418,12 +2418,14 @@ static int vfswrap_linux_setlease(vfs_handle_struct *handle, files_struct *fsp,
 	return result;
 }
 
-static int vfswrap_symlink(vfs_handle_struct *handle, const char *oldpath, const char *newpath)
+static int vfswrap_symlink(vfs_handle_struct *handle,
+			const char *link_target,
+			const struct smb_filename *new_smb_fname)
 {
 	int result;
 
 	START_PROFILE(syscall_symlink);
-	result = symlink(oldpath, newpath);
+	result = symlink(link_target, new_smb_fname->base_name);
 	END_PROFILE(syscall_symlink);
 	return result;
 }

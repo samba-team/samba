@@ -2037,23 +2037,31 @@ static int snapper_gmt_rename(vfs_handle_struct *handle,
 }
 
 static int snapper_gmt_symlink(vfs_handle_struct *handle,
-			       const char *oldname, const char *newname)
+				const char *link_contents,
+				const struct smb_filename *new_smb_fname)
 {
-	time_t timestamp_old, timestamp_new;
+	time_t timestamp_old = 0;
+	time_t timestamp_new = 0;
 
-	if (!snapper_gmt_strip_snapshot(talloc_tos(), handle, oldname,
-					&timestamp_old, NULL)) {
+	if (!snapper_gmt_strip_snapshot(talloc_tos(),
+				handle,
+				link_contents,
+				&timestamp_old,
+				NULL)) {
 		return -1;
 	}
-	if (!snapper_gmt_strip_snapshot(talloc_tos(), handle, newname,
-					&timestamp_new, NULL)) {
+	if (!snapper_gmt_strip_snapshot(talloc_tos(),
+				handle,
+				new_smb_fname->base_name,
+				&timestamp_new,
+				NULL)) {
 		return -1;
 	}
 	if ((timestamp_old != 0) || (timestamp_new != 0)) {
 		errno = EROFS;
 		return -1;
 	}
-	return SMB_VFS_NEXT_SYMLINK(handle, oldname, newname);
+	return SMB_VFS_NEXT_SYMLINK(handle, link_contents, new_smb_fname);
 }
 
 static int snapper_gmt_link(vfs_handle_struct *handle,

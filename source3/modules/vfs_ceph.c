@@ -1125,11 +1125,17 @@ static int cephwrap_linux_setlease(struct vfs_handle_struct *handle, files_struc
 	return result;
 }
 
-static int cephwrap_symlink(struct vfs_handle_struct *handle,  const char *oldpath, const char *newpath)
+static int cephwrap_symlink(struct vfs_handle_struct *handle,
+		const char *link_target,
+		const struct smb_filename *new_smb_fname)
 {
 	int result = -1;
-	DBG_DEBUG("[CEPH] symlink(%p, %s, %s)\n", handle, oldpath, newpath);
-	result = ceph_symlink(handle->data, oldpath, newpath);
+	DBG_DEBUG("[CEPH] symlink(%p, %s, %s)\n", handle,
+			link_target,
+			new_smb_fname->base_name);
+	result = ceph_symlink(handle->data,
+			link_target,
+			new_smb_fname->base_name);
 	DBG_DEBUG("[CEPH] symlink(...) = %d\n", result);
 	WRAP_RETURN(result);
 }

@@ -1297,6 +1297,7 @@ bool create_msdfs_link(const struct junction_map *jucn)
 	int i=0;
 	bool insert_comma = False;
 	bool ret = False;
+	struct smb_filename *smb_fname = NULL;
 
 	if(!junction_to_local_path(jucn, &path, &conn, &cwd)) {
 		return False;
@@ -1339,27 +1340,24 @@ bool create_msdfs_link(const struct junction_map *jucn)
 	DEBUG(5,("create_msdfs_link: Creating new msdfs link: %s -> %s\n",
 		path, msdfs_link));
 
-	if(SMB_VFS_SYMLINK(conn, msdfs_link, path) < 0) {
+	smb_fname = synthetic_smb_fname(talloc_tos(),
+				path,
+				NULL,
+				NULL,
+				0);
+	if (smb_fname == NULL) {
+		errno = ENOMEM;
+		goto out;
+	}
+
+	if(SMB_VFS_SYMLINK(conn, msdfs_link, smb_fname) < 0) {
 		if (errno == EEXIST) {
-			struct smb_filename *smb_fname;
-
-			smb_fname = synthetic_smb_fname(talloc_tos(),
-						path,
-						NULL,
-						NULL,
-						0);
-			if (smb_fname == NULL) {
-				errno = ENOMEM;
-				goto out;
-			}
-
 			if(SMB_VFS_UNLINK(conn, smb_fname)!=0) {
 				TALLOC_FREE(smb_fname);
 				goto out;
 			}
-			TALLOC_FREE(smb_fname);
 		}
-		if (SMB_VFS_SYMLINK(conn, msdfs_link, path) < 0) {
+		if (SMB_VFS_SYMLINK(conn, msdfs_link, smb_fname) < 0) {
 			DEBUG(1,("create_msdfs_link: symlink failed "
 				 "%s -> %s\nError: %s\n",
 				 path, msdfs_link, strerror(errno)));
@@ -1370,6 +1368,7 @@ bool create_msdfs_link(const struct junction_map *jucn)
 	ret = True;
 
 out:
+	TALLOC_FREE(smb_fname);
 	vfs_ChDir(conn, cwd);
 	SMB_VFS_DISCONNECT(conn);
 	conn_free(conn);

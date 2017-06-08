@@ -476,8 +476,9 @@ static bool skel_getlock(vfs_handle_struct *handle, files_struct *fsp,
 	return false;
 }
 
-static int skel_symlink(vfs_handle_struct *handle, const char *oldpath,
-			const char *newpath)
+static int skel_symlink(vfs_handle_struct *handle,
+			const char *link_contents,
+			const struct smb_filename *new_smb_fname)
 {
 	errno = ENOSYS;
 	return -1;

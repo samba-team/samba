@@ -570,10 +570,11 @@ static bool skel_getlock(vfs_handle_struct *handle, files_struct *fsp,
 	return SMB_VFS_NEXT_GETLOCK(handle, fsp, poffset, pcount, ptype, ppid);
 }
 
-static int skel_symlink(vfs_handle_struct *handle, const char *oldpath,
-			const char *newpath)
+static int skel_symlink(vfs_handle_struct *handle,
+			const char *link_contents,
+			const struct smb_filename *new_smb_fname)
 {
-	return SMB_VFS_NEXT_SYMLINK(handle, oldpath, newpath);
+	return SMB_VFS_NEXT_SYMLINK(handle, link_contents, new_smb_fname);
 }
 
 static int skel_vfs_readlink(vfs_handle_struct *handle,

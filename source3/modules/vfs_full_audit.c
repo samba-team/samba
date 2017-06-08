@@ -1626,14 +1626,15 @@ static bool smb_full_audit_getlock(vfs_handle_struct *handle, files_struct *fsp,
 }
 
 static int smb_full_audit_symlink(vfs_handle_struct *handle,
-			 const char *oldpath, const char *newpath)
+			const char *link_contents,
+			const struct smb_filename *new_smb_fname)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_SYMLINK(handle, oldpath, newpath);
+	result = SMB_VFS_NEXT_SYMLINK(handle, link_contents, new_smb_fname);
 
 	do_log(SMB_VFS_OP_SYMLINK, (result >= 0), handle,
-	       "%s|%s", oldpath, newpath);
+	       "%s|%s", link_contents, new_smb_fname->base_name);
 
 	return result;
 }

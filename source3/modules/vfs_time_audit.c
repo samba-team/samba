@@ -1424,19 +1424,21 @@ static bool smb_time_audit_getlock(vfs_handle_struct *handle,
 }
 
 static int smb_time_audit_symlink(vfs_handle_struct *handle,
-				  const char *oldpath, const char *newpath)
+				const char *link_contents,
+				const struct smb_filename *new_smb_fname)
 {
 	int result;
 	struct timespec ts1,ts2;
 	double timediff;
 
 	clock_gettime_mono(&ts1);
-	result = SMB_VFS_NEXT_SYMLINK(handle, oldpath, newpath);
+	result = SMB_VFS_NEXT_SYMLINK(handle, link_contents, new_smb_fname);
 	clock_gettime_mono(&ts2);
 	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
-		smb_time_audit_log_fname("symlink", timediff, newpath);
+		smb_time_audit_log_fname("symlink", timediff,
+			new_smb_fname->base_name);
 	}
 
 	return result;

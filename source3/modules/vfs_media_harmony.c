@@ -1719,47 +1719,41 @@ out:
  * Success: return 0
  * Failure: set errno, return -1
  */
+
 static int mh_symlink(vfs_handle_struct *handle,
-		const char *oldpath,
-		const char *newpath)
+		const char *link_contents,
+		const struct smb_filename *new_smb_fname)
 {
-	int status;
-	char *oldClientPath;
-	char *newClientPath;
-	TALLOC_CTX *ctx;
+	int status = -1;
+	char *client_link_contents = NULL;
+	struct smb_filename *newclientFname = NULL;
 
 	DEBUG(MH_INFO_DEBUG, ("Entering mh_symlink\n"));
-	if (!is_in_media_files(oldpath) && !is_in_media_files(newpath))
-	{
-		status = SMB_VFS_NEXT_SYMLINK(handle, oldpath, newpath);
+	if (!is_in_media_files(link_contents) &&
+			!is_in_media_files(new_smb_fname->base_name)) {
+		status = SMB_VFS_NEXT_SYMLINK(handle,
+				link_contents,
+				new_smb_fname);
 		goto out;
 	}
 
-	oldClientPath = NULL;
-	newClientPath = NULL;
-	ctx = talloc_tos();
-
-	if ((status = alloc_get_client_path(handle, ctx,
-				oldpath,
-				&oldClientPath)))
-	{
+	if ((status = alloc_get_client_path(handle, talloc_tos(),
+				link_contents,
+				&client_link_contents))) {
 		goto err;
 	}
-
-	if ((status = alloc_get_client_path(handle, ctx,
-				newpath,
-				&newClientPath)))
-	{
+	if ((status = alloc_get_client_smb_fname(handle, talloc_tos(),
+				new_smb_fname,
+				&newclientFname))) {
 		goto err;
 	}
 
 	status = SMB_VFS_NEXT_SYMLINK(handle,
-			oldClientPath,
-			newClientPath);
-
+				client_link_contents,
+				newclientFname);
 err:
-	TALLOC_FREE(newClientPath);
-	TALLOC_FREE(oldClientPath);
+	TALLOC_FREE(client_link_contents);
+	TALLOC_FREE(newclientFname);
 out:
 	return status;
 }
