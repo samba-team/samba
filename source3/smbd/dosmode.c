@@ -281,6 +281,42 @@ NTSTATUS get_ea_dos_attribute(connection_struct *conn,
 	sizeret = SMB_VFS_GETXATTR(conn, smb_fname,
 				   SAMBA_XATTR_DOS_ATTRIB, attrstr,
 				   sizeof(attrstr));
+	if (sizeret == -1 && errno == EACCES) {
+		int saved_errno = 0;
+
+		/*
+		 * According to MS-FSA 2.1.5.1.2.1 "Algorithm to Check Access to
+		 * an Existing File" FILE_LIST_DIRECTORY on a directory implies
+		 * FILE_READ_ATTRIBUTES for directory entries. Being able to
+		 * stat() a file implies FILE_LIST_DIRECTORY for the directory
+		 * containing the file.
+		 */
+
+		if (!VALID_STAT(smb_fname->st)) {
+			/*
+			 * Safety net: dos_mode() already checks this, but as we
+			 * become root based on this, add an additional layer of
+			 * defense.
+			 */
+			DBG_ERR("Rejecting root override, invalid stat [%s]\n",
+				smb_fname_str_dbg(smb_fname));
+			return NT_STATUS_ACCESS_DENIED;
+		}
+
+		become_root();
+		sizeret = SMB_VFS_GETXATTR(conn, smb_fname,
+					   SAMBA_XATTR_DOS_ATTRIB,
+					   attrstr,
+					   sizeof(attrstr));
+		if (sizeret == -1) {
+			saved_errno = errno;
+		}
+		unbecome_root();
+
+		if (saved_errno != 0) {
+			errno = saved_errno;
+		}
+	}
 	if (sizeret == -1) {
 		DBG_INFO("Cannot get attribute "
 			 "from EA on file %s: Error = %s\n",
