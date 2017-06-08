@@ -119,7 +119,7 @@ uint32_t ctdb_client_pnn(struct ctdb_client_context *client);
 /**
  * @brief Client event loop waiting for a flag
  *
- * This can used to wait for asynchronous comptuations to complete.
+ * This can used to wait for asynchronous computations to complete.
  * When this function is called, it will run tevent event loop and wait
  * till the done flag is set to true.  This function will block and will
  * not return as long as the done flag is false.
@@ -151,7 +151,7 @@ int ctdb_client_wait_timeout(struct tevent_context *ev, bool *done,
 /**
  * @brief Async computation start to wait till recovery is completed
  *
- * CTDB deamon does not perform many operations while in recovery (specially
+ * CTDB daemon does not perform many operations while in recovery (especially
  * database operations).  This computation allows to wait till ctdb daemon has
  * finished recovery.
  *
