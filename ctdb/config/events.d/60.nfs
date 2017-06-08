@@ -258,20 +258,20 @@ ctdb_service_check_reconfigure
 
 case "$1" in
 startup)
-	nfs_callout "$@"
+	nfs_callout "$@" || exit $?
 	;;
 
 shutdown)
-	 nfs_callout "$@"
+	nfs_callout "$@" || exit $?
 	;;
 
 takeip)
-	nfs_callout "$@"
+	nfs_callout "$@" || exit $?
 	ctdb_service_set_reconfigure
 	;;
 
 releaseip)
-	nfs_callout "$@"
+	nfs_callout "$@" || exit $?
 	ctdb_service_set_reconfigure
 	;;
 
