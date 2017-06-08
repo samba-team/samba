@@ -372,6 +372,6 @@ NTSTATUS smb_bytes_pull_str(TALLOC_CTX *mem_ctx, char **_str, bool ucs2,
 			    const uint8_t *buf, size_t buf_len,
 			    size_t *_buf_consumed)
 {
-	return internal_bytes_pull_str(mem_ctx, _str, ucs2, false,
+	return internal_bytes_pull_str(mem_ctx, _str, ucs2, true,
 				       buf, buf_len, _buf_consumed);
 }
