@@ -864,7 +864,7 @@ NTSTATUS _winbind_SamLogon(struct pipes_struct *p,
 	struct winbindd_domain *domain;
 	NTSTATUS status;
 	DATA_BLOB lm_response, nt_response;
-	uint32_t flags;
+	uint32_t flags = 0;
 
 	domain = wb_child_domain();
 	if (domain == NULL) {

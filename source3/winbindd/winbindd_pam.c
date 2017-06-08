@@ -2118,8 +2118,8 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 	const char *name_user = NULL;
 	const char *name_domain = NULL;
 	const char *workstation;
-	uint8_t authoritative;
-	uint32_t flags;
+	uint8_t authoritative = 0;
+	uint32_t flags = 0;
 
 	DATA_BLOB lm_resp, nt_resp;
 
