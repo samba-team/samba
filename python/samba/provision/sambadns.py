@@ -317,15 +317,16 @@ def add_dns_container(samdb, domaindn, prefix, domain_sid, dnsadmins_sid, forest
 
 
 def add_rootservers(samdb, domaindn, prefix):
+    # https://www.internic.net/zones/named.root
     rootservers = {}
     rootservers["a.root-servers.net"] = "198.41.0.4"
     rootservers["b.root-servers.net"] = "192.228.79.201"
     rootservers["c.root-servers.net"] = "192.33.4.12"
-    rootservers["d.root-servers.net"] = "128.8.10.90"
+    rootservers["d.root-servers.net"] = "199.7.91.13"
     rootservers["e.root-servers.net"] = "192.203.230.10"
     rootservers["f.root-servers.net"] = "192.5.5.241"
     rootservers["g.root-servers.net"] = "192.112.36.4"
-    rootservers["h.root-servers.net"] = "128.63.2.53"
+    rootservers["h.root-servers.net"] = "198.97.190.53"
     rootservers["i.root-servers.net"] = "192.36.148.17"
     rootservers["j.root-servers.net"] = "192.58.128.30"
     rootservers["k.root-servers.net"] = "193.0.14.129"
@@ -334,10 +335,17 @@ def add_rootservers(samdb, domaindn, prefix):
 
     rootservers_v6 = {}
     rootservers_v6["a.root-servers.net"] = "2001:503:ba3e::2:30"
+    rootservers_v6["b.root-servers.net"] = "2001:500:84::b"
+    rootservers_v6["c.root-servers.net"] = "2001:500:2::c"
+    rootservers_v6["d.root-servers.net"] = "2001:500:2d::d"
+    rootservers_v6["e.root-servers.net"] = "2001:500:a8::e"
     rootservers_v6["f.root-servers.net"] = "2001:500:2f::f"
-    rootservers_v6["h.root-servers.net"] = "2001:500:1::803f:235"
+    rootservers_v6["g.root-servers.net"] = "2001:500:12::d0d"
+    rootservers_v6["h.root-servers.net"] = "2001:500:1::53"
+    rootservers_v6["i.root-servers.net"] = "2001:7fe::53"
     rootservers_v6["j.root-servers.net"] = "2001:503:c27::2:30"
     rootservers_v6["k.root-servers.net"] = "2001:7fd::1"
+    rootservers_v6["l.root-servers.net"] = "2001:500:9f::42"
     rootservers_v6["m.root-servers.net"] = "2001:dc3::35"
 
     container_dn = "DC=RootDNSServers,CN=MicrosoftDNS,%s,%s" % (prefix, domaindn)
