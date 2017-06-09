@@ -1761,9 +1761,6 @@ static int ctdb_pkt_recv_recv(struct tevent_req *req,
 
 static int ctdbd_connection_destructor(struct ctdbd_connection *c)
 {
-	struct ctdb_pkt_recv_state *recv_state = NULL;
-	struct ctdb_pkt_send_state *send_state = NULL;
-
 	TALLOC_FREE(c->fde);
 	if (c->fd != -1) {
 		close(c->fd);
@@ -1773,14 +1770,16 @@ static int ctdbd_connection_destructor(struct ctdbd_connection *c)
 	TALLOC_FREE(c->read_state.hdr);
 	ZERO_STRUCT(c->read_state);
 
-	for (send_state = c->send_list; send_state != NULL;) {
+	while (c->send_list != NULL) {
+		struct ctdb_pkt_send_state *send_state = c->send_list;
 		DLIST_REMOVE(c->send_list, send_state);
 		send_state->conn = NULL;
 		tevent_req_defer_callback(send_state->req, send_state->ev);
 		tevent_req_error(send_state->req, EIO);
 	}
 
-	for (recv_state = c->recv_list; recv_state != NULL;) {
+	while (c->recv_list != NULL) {
+		struct ctdb_pkt_recv_state *recv_state = c->recv_list;
 		DLIST_REMOVE(c->recv_list, recv_state);
 		recv_state->conn = NULL;
 		tevent_req_defer_callback(recv_state->req, recv_state->ev);
