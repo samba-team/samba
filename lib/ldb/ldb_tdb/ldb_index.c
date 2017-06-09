@@ -1179,9 +1179,22 @@ static int ltdb_index_add1(struct ldb_module *module, const char *dn,
 
 	if (list->count > 0 &&
 	    a->flags & LDB_ATTR_FLAG_UNIQUE_INDEX) {
-		talloc_free(list);
+		/*
+		 * We do not want to print info about a possibly
+		 * confidential DN that the conflict was with in the
+		 * user-visible error string
+		 */
+		ldb_debug(ldb, LDB_DEBUG_WARNING,
+			  __location__ ": unique index violation on %s in %s, "
+			  "conficts with %*.*s in %s",
+			  el->name, dn,
+			  (int)list->dn[0].length,
+			  (int)list->dn[0].length,
+			  list->dn[0].data,
+			  ldb_dn_get_linearized(dn_key));
 		ldb_asprintf_errstring(ldb, __location__ ": unique index violation on %s in %s",
 				       el->name, dn);
+		talloc_free(list);
 		return LDB_ERR_ENTRY_ALREADY_EXISTS;
 	}
 
