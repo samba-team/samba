@@ -431,7 +431,6 @@ struct smbd_smb2_create_state {
 	struct smbd_smb2_request *smb2req;
 	struct smb_request *smb1req;
 	bool open_was_deferred;
-	struct tevent_timer *te;
 	struct tevent_immediate *im;
 	struct timeval request_time;
 	struct file_id id;
@@ -1566,8 +1565,6 @@ static void remove_deferred_open_message_smb2_internal(struct smbd_smb2_request 
 		(unsigned long long)mid ));
 
 	state->open_was_deferred = false;
-	/* Ensure we don't have any outstanding timer event. */
-	TALLOC_FREE(state->te);
 	/* Ensure we don't have any outstanding immediate event. */
 	TALLOC_FREE(state->im);
 }
@@ -1635,8 +1632,6 @@ bool schedule_deferred_open_message_smb2(
 		return false;
 	}
 
-	/* Ensure we don't have any outstanding timer event. */
-	TALLOC_FREE(state->te);
 	/* Ensure we don't have any outstanding immediate event. */
 	TALLOC_FREE(state->im);
 
