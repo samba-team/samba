@@ -141,7 +141,8 @@ planpythontestsuite("none", "samba.tests.glue", py3_compatible=True)
 if with_pam:
     plantestsuite("samba.tests.pam_winbind", "ad_member",
                   [os.path.join(srcdir(), "python/samba/tests/test_pam_winbind.sh"),
-                   valgrindify(python), pam_wrapper_so_path, "$DOMAIN", "alice", "Secret007"])
+                   valgrindify(python), pam_wrapper_so_path,
+                   "$DOMAIN", "$DC_USERNAME", "$DC_PASSWORD"])
 
 if with_cmocka:
     plantestsuite("samba.unittests.krb5samba", "none",
