@@ -55,6 +55,7 @@ void stream_terminate_connection(struct stream_connection *srv_conn, const char 
 	struct tevent_context *event_ctx = srv_conn->event.ctx;
 	const struct model_ops *model_ops = srv_conn->model_ops;
 	struct loadparm_context *lp_ctx = srv_conn->lp_ctx;
+	TALLOC_CTX *frame = NULL;
 
 	if (!reason) reason = "unknown reason";
 
@@ -77,11 +78,20 @@ void stream_terminate_connection(struct stream_connection *srv_conn, const char 
 		return;
 	}
 
+	frame = talloc_stackframe();
+
+	reason = talloc_strdup(frame, reason);
+	if (reason == NULL) {
+		reason = "OOM - unknown reason";
+	}
+
 	talloc_free(srv_conn->event.fde);
 	srv_conn->event.fde = NULL;
 	imessaging_cleanup(srv_conn->msg_ctx);
 	TALLOC_FREE(srv_conn);
 	model_ops->terminate(event_ctx, lp_ctx, reason);
+
+	TALLOC_FREE(frame);
 }
 
 /**
