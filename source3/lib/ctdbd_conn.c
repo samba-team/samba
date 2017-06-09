@@ -1783,7 +1783,7 @@ static int ctdbd_connection_destructor(struct ctdbd_connection *c)
 	for (recv_state = c->recv_list; recv_state != NULL;) {
 		DLIST_REMOVE(c->recv_list, recv_state);
 		recv_state->conn = NULL;
-		tevent_req_defer_callback(send_state->req, recv_state->ev);
+		tevent_req_defer_callback(recv_state->req, recv_state->ev);
 		tevent_req_error(recv_state->req, EIO);
 	}
 
