@@ -49,21 +49,6 @@ struct smb_request *smbd_smb2_fake_smb_request(struct smbd_smb2_request *req)
 			 FLAGS2_LONG_PATH_COMPONENTS |
 			 FLAGS2_IS_LONG_NAME;
 
-	/* This is not documented in revision 49 of [MS-SMB2] but should be
-	 * added in a later revision (and torture test smb2.read.access
-	 * as well as smb2.ioctl_copy_chunk_bad_access against
-	 * Server 2012R2 confirms this)
-	 *
-	 * If FILE_EXECUTE is granted to a handle then the SMB2 server
-	 * acts as if FILE_READ_DATA has also been granted. We must still
-	 * keep the original granted mask, because with ioctl requests,
-	 * access checks are made on the file handle, "below" the SMB2
-	 * server, and the object store below the SMB layer is not aware
-	 * of this arrangement (see smb2.ioctl.copy_chunk_bad_access
-	 * torture test).
-	 */
-	smbreq->flags2 |= FLAGS2_READ_PERMIT_EXECUTE;
-
 	if (IVAL(inhdr, SMB2_HDR_FLAGS) & SMB2_HDR_FLAG_DFS) {
 		smbreq->flags2 |= FLAGS2_DFS_PATHNAMES;
 	}

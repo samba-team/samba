@@ -125,7 +125,7 @@ static NTSTATUS copychunk_check_handles(uint32_t ctl_code,
 	 * - The Open.GrantedAccess of the source file does not include
 	 *   FILE_READ_DATA access.
 	 */
-	if (!CHECK_READ(src_fsp, smb1req)) {
+	if (!CHECK_READ_SMB2(src_fsp)) {
 		DEBUG(5, ("copy chunk no read on src handle (%s).\n",
 			smb_fname_str_dbg(src_fsp->fsp_name) ));
 		return NT_STATUS_ACCESS_DENIED;
