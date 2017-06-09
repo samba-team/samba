@@ -139,7 +139,11 @@ plantestsuite(
 planpythontestsuite("none", "samba.tests.glue", py3_compatible=True)
 
 if with_pam:
-    plantestsuite("samba.tests.pam_winbind", "ad_member",
+    plantestsuite("samba.tests.pam_winbind(local)", "ad_member",
+                  [os.path.join(srcdir(), "python/samba/tests/test_pam_winbind.sh"),
+                   valgrindify(python), pam_wrapper_so_path,
+                   "$SERVER", "$USERNAME", "$PASSWORD"])
+    plantestsuite("samba.tests.pam_winbind(domain)", "ad_member",
                   [os.path.join(srcdir(), "python/samba/tests/test_pam_winbind.sh"),
                    valgrindify(python), pam_wrapper_so_path,
                    "$DOMAIN", "$DC_USERNAME", "$DC_PASSWORD"])
