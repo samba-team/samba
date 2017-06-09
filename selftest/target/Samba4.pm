@@ -2203,7 +2203,7 @@ sub check_env($$)
 
 	fl2008r2dc           => ["ad_dc"],
 	fl2003dc             => ["ad_dc"],
-	fl2000dc             => ["dns_hub"],
+	fl2000dc             => ["ad_dc"],
 
 	vampire_2000_dc      => ["fl2000dc"],
 	vampire_dc           => ["ad_dc_ntvfs"],
@@ -2373,13 +2373,15 @@ sub setup_chgdcpass
 
 sub setup_fl2000dc
 {
-	my ($self, $path) = @_;
+	my ($self, $path, $dc_vars) = @_;
 
 	my $env = $self->provision_fl2000dc($path);
 	if (defined $env) {
 	        if (not defined($self->check_or_start($env, "standard"))) {
 		        return undef;
 		}
+
+		$env = $self->setup_trust($env, $dc_vars, "external", "--no-aes-keys --direction=outgoing");
 	}
 
 	return $env;

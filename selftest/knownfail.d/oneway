@@ -1,0 +1,9 @@
+# One way trust, the first one is weird (smbclient4), the rest are logical
+^samba4.blackbox.kinit_trust.Test login with user kerberos ccache \(smbclient4\)\(fl2000dc:local\)
+^samba4.blackbox.kinit_trust.Test user login with the first outgoing secret\(fl2000dc:local\)
+^samba4.blackbox.kinit_trust.Test user login with the changed outgoing secret\(fl2000dc:local\)
+# More one-way trust
+^samba4.blackbox.trust_utils\(fl2000dc:local\).validate trust default both\(fl2000dc:local\)
+^samba4.blackbox.trust_utils\(fl2000dc:local\).validate trust reverse both\(fl2000dc:local\)
+^samba4.blackbox.trust_utils\(fl2000dc:local\).validate trust reverse local\(fl2000dc:local\)
+^samba4.blackbox.trust_utils\(fl2000dc:local\).namespaces own default\(fl2000dc:local\)

@@ -82,7 +82,7 @@ $samba_kdestroy
 smbclient="$samba_bindir/smbclient4"
 
 testit "kinit with password" $samba_texpect $PREFIX/tmpkinitscript $samba_kinit $TRUST_USERNAME@$TRUST_REALM || failed=`expr $failed + 1`
-test_smbclient "Test login with kerberos ccache (smbclient4)" 'ls' --use-krb5-ccache=$KRB5CCNAME || failed=`expr $failed + 1`
+test_smbclient "Test login with user kerberos ccache (smbclient4)" 'ls' --use-krb5-ccache=$KRB5CCNAME || failed=`expr $failed + 1`
 $samba_kdestroy
 
 smbclient="$samba_bindir/smbclient"
