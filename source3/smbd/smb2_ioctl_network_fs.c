@@ -248,54 +248,35 @@ static NTSTATUS fsctl_srv_copychunk_loop(struct tevent_req *req)
 	struct fsctl_srv_copychunk_state *state = tevent_req_data(
 		req, struct fsctl_srv_copychunk_state);
 	struct tevent_req *subreq = NULL;
-	struct srv_copychunk *chunk = NULL;
+	uint32_t length = 0;
+	off_t source_off = 0;
+	off_t target_off = 0;
 
-	if (state->cc_copy.chunk_count == 0) {
-		/*
-		 * Process as OS X copyfile request. This is currently
-		 * the only copychunk request with a chunk count of 0
-		 * we will process.
-		 */
-		if (!state->src_fsp->aapl_copyfile_supported ||
-		    !state->dst_fsp->aapl_copyfile_supported)
-		{
-			/*
-			 * This must not produce an error but just return a
-			 * chunk count of 0 in the response.
-			 */
-			tevent_req_done(req);
-			tevent_req_post(req, state->ev);
-			return NT_STATUS_OK;
-		}
-		state->aapl_copyfile = true;
+	/*
+	 * chunk_count can be 0 which must either just do nothing returning
+	 * success saying number of copied chunks is 0 (verified against
+	 * Windows).
+	 *
+	 * Or it can be a special macOS copyfile request, so we send this into
+	 * the VFS, vfs_fruit if loaded implements the macOS copyile semantics.
+	 */
+	if (state->cc_copy.chunk_count > 0) {
+		struct srv_copychunk *chunk = NULL;
 
-		subreq = SMB_VFS_OFFLOAD_WRITE_SEND(state->dst_fsp->conn,
-						 state,
-						 state->ev,
-						 state->src_fsp,
-						 0,
-						 state->dst_fsp,
-						 0,
-						 0,
-						 0);
-		if (subreq == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		tevent_req_set_callback(subreq,
-					fsctl_srv_copychunk_vfs_done, req);
-		return NT_STATUS_OK;
+		chunk = &state->cc_copy.chunks[state->current_chunk];
+		length = chunk->length;
+		source_off = chunk->source_off;
+		target_off = chunk->target_off;
 	}
-
-	chunk = &state->cc_copy.chunks[state->current_chunk];
 
 	subreq = SMB_VFS_OFFLOAD_WRITE_SEND(state->dst_fsp->conn,
 					 state,
 					 state->ev,
 					 state->src_fsp,
-					 chunk->source_off,
+					 source_off,
 					 state->dst_fsp,
-					 chunk->target_off,
-					 chunk->length,
+					 target_off,
+					 length,
 					 0);
 	if (tevent_req_nomem(subreq, req)) {
 		return NT_STATUS_NO_MEMORY;
@@ -331,6 +312,15 @@ static void fsctl_srv_copychunk_vfs_done(struct tevent_req *subreq)
 		  (unsigned int)state->cc_copy.chunk_count);
 	state->total_written += chunk_nwritten;
 
+	if (state->cc_copy.chunk_count == 0) {
+		/*
+		 * This must not produce an error but just return a chunk count
+		 * of 0 in the response.
+		 */
+		tevent_req_done(req);
+		return;
+	}
+
 	state->current_chunk++;
 	if (state->current_chunk == state->cc_copy.chunk_count) {
 		tevent_req_done(req);
@@ -361,11 +351,7 @@ static NTSTATUS fsctl_srv_copychunk_recv(struct tevent_req *req,
 		*pack_rsp = true;
 		break;
 	case COPYCHUNK_OUT_RSP:
-		if (state->aapl_copyfile == true) {
-			cc_rsp->chunks_written = 0;
-		} else {
-			cc_rsp->chunks_written = state->current_chunk;
-		}
+		cc_rsp->chunks_written = state->current_chunk;
 		cc_rsp->chunk_bytes_written = 0;
 		cc_rsp->total_bytes_written = state->total_written;
 		*pack_rsp = true;

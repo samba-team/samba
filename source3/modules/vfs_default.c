@@ -1746,6 +1746,12 @@ static struct tevent_req *vfswrap_offload_write_send(
 		.remaining = to_copy,
 		.flags = flags,
 	};
+
+	if (to_copy == 0) {
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+	}
+
 	state->buf = talloc_array(state, uint8_t, num);
 	if (tevent_req_nomem(state->buf, req)) {
 		return tevent_req_post(req, ev);
