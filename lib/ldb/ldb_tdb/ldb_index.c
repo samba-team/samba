@@ -1655,6 +1655,18 @@ int ltdb_reindex(struct ldb_module *module)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
+	/*
+	 * Ensure we read (and so remove) the entries from the real
+	 * DB, no values stored so far are any use as we want to do a
+	 * re-index
+	 */
+	ltdb_index_transaction_cancel(module);
+
+	ret = ltdb_index_transaction_start(module);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
 	/* first traverse the database deleting any @INDEX records by
 	 * putting NULL entries in the in-memory tdb
 	 */
