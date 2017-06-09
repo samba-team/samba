@@ -124,8 +124,7 @@ setup_generic ()
     export FAKE_TDB_IS_OK
     export FAKE_DATE_OUTPUT
 
-    export FAKE_NETSTAT_TCP_ESTABLISHED FAKE_TCP_LISTEN FAKE_NETSTAT_UNIX_LISTEN
-    export FAKE_NETSTAT_TCP_ESTABLISHED_FILE=$(mktemp --tmpdir="$EVENTSCRIPTS_TESTS_VAR_DIR")
+    export FAKE_TCP_LISTEN FAKE_NETSTAT_UNIX_LISTEN
 }
 
 tcp_port_down ()
@@ -134,6 +133,42 @@ tcp_port_down ()
 	debug "Marking TCP port \"${_i}\" as not listening"
 	FAKE_TCP_LISTEN=$(echo "$FAKE_TCP_LISTEN" | sed -r -e "s@[[:space:]]*[\.0-9]+:${_i}@@g")
     done
+}
+
+_tcp_connections ()
+{
+	_count="$1"
+	_sip="$2"
+	_sport="$3"
+	_cip_base="$4"
+	_cport_base="$5"
+
+	_cip_prefix="${_cip_base%.*}"
+	_cip_suffix="${_cip_base##*.}"
+
+	for _i in $(seq 1 $_count) ; do
+		_cip_last=$((_cip_suffix + _i))
+		_cip="${_cip_prefix}.${_cip_last}"
+		_cport=$((_cport_base + _i))
+		echo "${_sip}:${_sport} ${_cip}:${_cport}"
+	done
+}
+
+setup_tcp_connections ()
+{
+	_t==$(mktemp --tmpdir="$EVENTSCRIPTS_TESTS_VAR_DIR")
+	export FAKE_NETSTAT_TCP_ESTABLISHED_FILE"$_t"
+	_tcp_connections "$@" >"$FAKE_NETSTAT_TCP_ESTABLISHED_FILE"
+}
+
+setup_tcp_connections_unkillable ()
+{
+	# These connections are listed by the "ss" stub but are not
+	# killed by the "ctdb killtcp" stub.  So killing these
+	# connections will never succeed... and will look like a time
+	# out.
+	_t=$(_tcp_connections "$@" | sed -e 's/ /|/g')
+	export FAKE_NETSTAT_TCP_ESTABLISHED="$_t"
 }
 
 shares_missing ()

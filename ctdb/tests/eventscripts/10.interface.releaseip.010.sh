@@ -8,25 +8,15 @@ setup_ctdb
 
 ctdb_get_1_public_address |
 while read dev ip bits ; do
-    ip addr add "${ip}/${bits}" dev "$dev"
+	ip addr add "${ip}/${bits}" dev "$dev"
 
-    # Setup 10 fake connections...
-    count=10
-    out=""
-    nl="
-"
-    i=0
-    while [ $i -lt $count ] ; do
-	echo "${ip}:445 10.254.254.1:1230${i}"
-	# Expected output for killing this connection
-	out="${out}${out:+${nl}}Killing TCP connection 10.254.254.1:1230${i} ${ip}:445"
-	i=$(($i + 1))
-    done >"$FAKE_NETSTAT_TCP_ESTABLISHED_FILE"
+	count=10
+	setup_tcp_connections $count \
+			      "$ip" 445 10.254.254.0 12300
 
-    ok <<EOF
-$out
-Killed $count TCP connections to released IP $ip
+	ok <<EOF
+Killed ${count}/${count} TCP connections to released IP $ip
 EOF
 
-    simple_test $dev $ip $bits
+	simple_test $dev $ip $bits
 done

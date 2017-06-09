@@ -77,6 +77,10 @@ ss_tcp_established ()
 	    echo 0 0 "$src" "$dst"
 	fi
     done
+
+    if [ -z "$FAKE_NETSTAT_TCP_ESTABLISHED_FILE" ] ; then
+	    return
+    fi
     while read src dst ; do
 	if filter_socket "$srcs" "$sports" "$src" ; then
 	    echo 0 0 "$src" "$dst"

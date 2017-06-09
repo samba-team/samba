@@ -414,7 +414,6 @@ kill_tcp_connections ()
 		139|445) __oneway=true ;;
 	    esac
 
-	    echo "Killing TCP connection $_src $_dst"
 	    _connections="${_connections}${_nl}${_src} ${_dst}"
 	    if ! $__oneway ; then
 		_connections="${_connections}${_nl}${_dst} ${_src}"
@@ -433,15 +432,22 @@ kill_tcp_connections ()
 		return
 	}
 
-	_remaining=$(get_tcp_connections_for_ip "$_ip" | wc -l)
-
-	if [ "$_remaining" -eq 0 ] ; then
-		echo "Killed $_killcount TCP connections to released IP $_ip"
-		return
+	_connections=$(get_tcp_connections_for_ip "$_ip")
+	if [ -z "$_connections" ] ; then
+		_remaining=0
+	else
+		_remaining=$(echo "$_connections" | wc -l)
 	fi
 
-	_t="${_remaining}/${_killcount}"
-	echo "Failed to kill TCP connections for IP $_ip (${_t} remaining)"
+	_actually_killed=$((_killcount - _remaining))
+
+	_t="${_actually_killed}/${_killcount}"
+	echo "Killed ${_t} TCP connections to released IP $_ip"
+
+	if [ -n "$_connections" ] ; then
+		echo "Remaining connections:"
+		echo "$_connections" | sed -e 's|^|  |'
+	fi
     }
 }
 
