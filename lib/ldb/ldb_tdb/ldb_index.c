@@ -54,6 +54,10 @@ int ltdb_index_transaction_start(struct ldb_module *module)
 {
 	struct ltdb_private *ltdb = talloc_get_type(ldb_module_get_private(module), struct ltdb_private);
 	ltdb->idxptr = talloc_zero(ltdb, struct ltdb_idxptr);
+	if (ltdb->idxptr == NULL) {
+		return ldb_oom(ldb_module_get_ctx(module));
+	}
+
 	return LDB_SUCCESS;
 }
 
