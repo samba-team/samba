@@ -335,7 +335,6 @@ typedef struct files_struct {
 	bool is_sparse;
 	bool backup_intent; /* Handle was successfully opened with backup intent
 				and opener has privilege to do so. */
-	bool aapl_copyfile_supported;
 	bool use_ofd_locks; /* Are we using open file description locks ? */
 	struct smb_filename *fsp_name;
 	uint32_t name_hash;		/* Jenkins hash of full pathname. */

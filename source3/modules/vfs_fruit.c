@@ -5124,17 +5124,6 @@ static NTSTATUS fruit_create_file(vfs_handle_struct *handle,
 	fsp = *result;
 
 	if (global_fruit_config.nego_aapl) {
-		if (config->copyfile_enabled) {
-			/*
-			 * Set a flag in the fsp. Gets used in
-			 * copychunk to check whether the special
-			 * Apple copyfile semantics for copychunk
-			 * should be allowed in a copychunk request
-			 * with a count of 0.
-			 */
-			fsp->aapl_copyfile_supported = true;
-		}
-
 		if (config->posix_rename && fsp->is_directory) {
 			/*
 			 * Enable POSIX directory rename behaviour
@@ -5500,6 +5489,7 @@ static struct tevent_req *fruit_offload_write_send(struct vfs_handle_struct *han
 	off_t src_off = transfer_offset;
 	files_struct *src_fsp = NULL;
 	off_t to_copy = num;
+	bool copyfile_enabled = false;
 
 	DEBUG(10,("soff: %ju, doff: %ju, len: %ju\n",
 		  (uintmax_t)src_off, (uintmax_t)dest_off, (uintmax_t)num));
@@ -5519,12 +5509,7 @@ static struct tevent_req *fruit_offload_write_send(struct vfs_handle_struct *han
 	switch (fsctl) {
 	case FSCTL_SRV_COPYCHUNK:
 	case FSCTL_SRV_COPYCHUNK_WRITE:
-		status = vfs_offload_token_db_fetch_fsp(fruit_offload_ctx,
-							token, &src_fsp);
-		if (tevent_req_nterror(req, status)) {
-			return tevent_req_post(req, ev);
-		}
-		state->src_fsp = src_fsp;
+		copyfile_enabled = config->copyfile_enabled;
 		break;
 	default:
 		break;
@@ -5536,10 +5521,14 @@ static struct tevent_req *fruit_offload_write_send(struct vfs_handle_struct *han
 	 * offload_write_send VFS call overloading the parameters src_off
 	 * = dest_off = num = 0.
 	 */
-	if ((src_off == 0) && (dest_off == 0) && (num == 0) &&
-	    src_fsp != NULL && src_fsp->aapl_copyfile_supported &&
-	    dest_fsp->aapl_copyfile_supported)
-	{
+	if (copyfile_enabled && num == 0 && src_off == 0 && dest_off == 0) {
+		status = vfs_offload_token_db_fetch_fsp(
+			fruit_offload_ctx, token, &src_fsp);
+		if (tevent_req_nterror(req, status)) {
+			return tevent_req_post(req, ev);
+		}
+		state->src_fsp = src_fsp;
+
 		status = vfs_stat_fsp(src_fsp);
 		if (tevent_req_nterror(req, status)) {
 			return tevent_req_post(req, ev);
