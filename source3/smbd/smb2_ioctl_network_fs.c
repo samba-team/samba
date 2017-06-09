@@ -116,7 +116,7 @@ static NTSTATUS copychunk_check_handles(uint32_t ctl_code,
 	 *   FILE_READ_DATA, and the CtlCode is FSCTL_SRV_COPYCHUNK.
 	 */
 	if ((ctl_code == FSCTL_SRV_COPYCHUNK) &&
-	    !CHECK_READ_IOCTL(dst_fsp, smb1req)) {
+	    !CHECK_READ_IOCTL(dst_fsp)) {
 		DEBUG(5, ("copy chunk no read on dest handle (%s).\n",
 			smb_fname_str_dbg(dst_fsp->fsp_name) ));
 		return NT_STATUS_ACCESS_DENIED;

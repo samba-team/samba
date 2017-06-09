@@ -62,7 +62,7 @@
  * ). On Windows servers, this is done by the IO manager, which is unaware of
  * the "if execute is granted then also grant read" arrangement.
  */
-#define CHECK_READ_IOCTL(fsp, req) (((fsp)->fh->fd != -1) && ((fsp)->can_read))
+#define CHECK_READ_IOCTL(fsp) (((fsp)->fh->fd != -1) && ((fsp)->can_read))
 
 #define CHECK_WRITE(fsp) ((fsp)->can_write && ((fsp)->fh->fd != -1))
 
