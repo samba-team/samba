@@ -27,7 +27,7 @@
 #include "dbwrap/dbwrap_rbt.h"
 #include "lib/param/param.h"
 
-#include "ctdb_private.h"
+#include "ctdb/include/ctdb_protocol.h"
 #include "ctdbd_conn.h"
 #include "dbwrap/dbwrap.h"
 #include "dbwrap/dbwrap_private.h"

@@ -35,10 +35,9 @@
 #include "lib/util/tevent_unix.c"
 #include "lib/util/sys_rw.h"
 #include "lib/util/blocking.h"
+#include "ctdb/include/ctdb_protocol.h"
 
 /* paths to these include files come from --with-ctdb= in configure */
-
-#include "ctdb_private.h"
 
 struct ctdbd_srvid_cb {
 	uint64_t srvid;
