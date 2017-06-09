@@ -96,8 +96,7 @@ static void fsctl_srv_copychunk_vfs_done(struct tevent_req *subreq);
 
 static NTSTATUS copychunk_check_handles(uint32_t ctl_code,
 					struct files_struct *src_fsp,
-					struct files_struct *dst_fsp,
-					struct smb_request *smb1req)
+					struct files_struct *dst_fsp)
 {
 	/*
 	 * [MS-SMB2] 3.3.5.15.6 Handling a Server-Side Data Copy Request
@@ -220,8 +219,7 @@ static struct tevent_req *fsctl_srv_copychunk_send(TALLOC_CTX *mem_ctx,
 
 	state->status = copychunk_check_handles(ctl_code,
 						state->src_fsp,
-						state->dst_fsp,
-						smb2req->smb1req);
+						state->dst_fsp);
 	if (!NT_STATUS_IS_OK(state->status)) {
 		tevent_req_nterror(req, state->status);
 		return tevent_req_post(req, ev);
