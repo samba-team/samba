@@ -62,7 +62,14 @@ WERROR dns_common_name2dn(struct ldb_context *samdb,
 			  TALLOC_CTX *mem_ctx,
 			  const char *name,
 			  struct ldb_dn **_dn);
+
+/*
+ * For this routine, base_dn is generally NULL.  The exception comes
+ * from the python bindings to support setting ACLs on DNS objects
+ * when joining Windows
+ */
 NTSTATUS dns_common_zones(struct ldb_context *samdb,
 			  TALLOC_CTX *mem_ctx,
+			  struct ldb_dn *base_dn,
 			  struct dns_server_zone **zones_ret);
 #endif /* __DNSSERVER_COMMON_H__ */

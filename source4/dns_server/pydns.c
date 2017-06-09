@@ -93,27 +93,40 @@ static int py_dnsp_DnssrvRpcRecord_get_array(PyObject *value,
 	return 0;
 }
 
-static PyObject *py_dsdb_dns_lookup(PyObject *self, PyObject *args)
+static PyObject *py_dsdb_dns_lookup(PyObject *self,
+				    PyObject *args, PyObject *kwargs)
 {
 	struct ldb_context *samdb;
 	PyObject *py_ldb, *ret, *pydn;
+	PyObject *py_dns_partition = NULL;
 	char *dns_name;
 	TALLOC_CTX *frame;
 	NTSTATUS status;
 	WERROR werr;
 	struct dns_server_zone *zones_list;
-	struct ldb_dn *dn;
+	struct ldb_dn *dn, *dns_partition = NULL;
 	struct dnsp_DnssrvRpcRecord *records;
 	uint16_t num_records;
+	const char * const kwnames[] = { "ldb", "dns_name",
+					 "dns_partition", NULL };
 
-	if (!PyArg_ParseTuple(args, "Os", &py_ldb, &dns_name)) {
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "Os|O",
+					 discard_const_p(char *, kwnames),
+					 &py_ldb, &dns_name,
+					 &py_dns_partition)) {
 		return NULL;
 	}
 	PyErr_LDB_OR_RAISE(py_ldb, samdb);
 
+	if (py_dns_partition) {
+		PyErr_LDB_DN_OR_RAISE(py_dns_partition,
+				      dns_partition);
+	}
+
 	frame = talloc_stackframe();
 
-	status = dns_common_zones(samdb, frame, &zones_list);
+	status = dns_common_zones(samdb, frame, dns_partition,
+				  &zones_list);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(frame);
 		PyErr_SetNTSTATUS(status);
@@ -210,7 +223,7 @@ static PyObject *py_dsdb_dns_replace(PyObject *self, PyObject *args)
 
 	frame = talloc_stackframe();
 
-	status = dns_common_zones(samdb, frame, &zones_list);
+	status = dns_common_zones(samdb, frame, NULL, &zones_list);
 	if (!NT_STATUS_IS_OK(status)) {
 		PyErr_SetNTSTATUS(status);
 		talloc_free(frame);
@@ -305,7 +318,8 @@ static PyObject *py_dsdb_dns_replace_by_dn(PyObject *self, PyObject *args)
 static PyMethodDef py_dsdb_dns_methods[] = {
 
 	{ "lookup", (PyCFunction)py_dsdb_dns_lookup,
-		METH_VARARGS, "Get the DNS database entries for a DNS name"},
+	        METH_VARARGS|METH_KEYWORDS,
+	        "Get the DNS database entries for a DNS name"},
 	{ "replace", (PyCFunction)py_dsdb_dns_replace,
 		METH_VARARGS, "Replace the DNS database entries for a DNS name"},
 	{ "replace_by_dn", (PyCFunction)py_dsdb_dns_replace_by_dn,

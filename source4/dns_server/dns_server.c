@@ -764,7 +764,7 @@ static NTSTATUS dns_server_reload_zones(struct dns_server *dns)
 	struct dns_server_zone *new_list = NULL;
 	struct dns_server_zone *old_list = NULL;
 	struct dns_server_zone *old_zone;
-	status = dns_common_zones(dns->samdb, dns, &new_list);
+	status = dns_common_zones(dns->samdb, dns, NULL, &new_list);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

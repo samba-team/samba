@@ -930,9 +930,13 @@ accountExpires: %u
         res = self.search(base="", scope=ldb.SCOPE_BASE, attrs=["serverName"])
         return res[0]["serverName"][0]
 
-    def dns_lookup(self, dns_name):
+    def dns_lookup(self, dns_name, dns_partition=None):
         '''Do a DNS lookup in the database, returns the NDR database structures'''
-        return dsdb_dns.lookup(self, dns_name)
+        if dns_partition is None:
+            return dsdb_dns.lookup(self, dns_name)
+        else:
+            return dsdb_dns.lookup(self, dns_name,
+                                   dns_partition=dns_partition)
 
     def dns_extract(self, el):
         '''Return the NDR database structures from a dnsRecord element'''

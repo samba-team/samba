@@ -560,6 +560,7 @@ static int dns_common_sort_zones(struct ldb_message **m1, struct ldb_message **m
 
 NTSTATUS dns_common_zones(struct ldb_context *samdb,
 			  TALLOC_CTX *mem_ctx,
+			  struct ldb_dn *base_dn,
 			  struct dns_server_zone **zones_ret)
 {
 	int ret;
@@ -569,9 +570,19 @@ NTSTATUS dns_common_zones(struct ldb_context *samdb,
 	struct dns_server_zone *new_list = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	/* TODO: this search does not work against windows */
-	ret = dsdb_search(samdb, frame, &res, NULL, LDB_SCOPE_SUBTREE,
-			  attrs, DSDB_SEARCH_SEARCH_ALL_PARTITIONS, "(objectClass=dnsZone)");
+	if (base_dn) {
+		/* This search will work against windows */
+		ret = dsdb_search(samdb, frame, &res,
+				  base_dn, LDB_SCOPE_SUBTREE,
+				  attrs, 0, "(objectClass=dnsZone)");
+	} else {
+		/* TODO: this search does not work against windows */
+		ret = dsdb_search(samdb, frame, &res, NULL,
+				  LDB_SCOPE_SUBTREE,
+				  attrs,
+				  DSDB_SEARCH_SEARCH_ALL_PARTITIONS,
+				  "(objectClass=dnsZone)");
+	}
 	if (ret != LDB_SUCCESS) {
 		TALLOC_FREE(frame);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
