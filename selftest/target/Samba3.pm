@@ -385,26 +385,26 @@ sub setup_admember($$$$)
 	my $share_dir="$prefix_abs/share";
 	push(@dirs, $share_dir);
 
-	my $substitution_path = "$share_dir/D_SAMBADOMAIN";
+	my $substitution_path = "$share_dir/D_$dcvars->{DOMAIN}";
 	push(@dirs, $substitution_path);
 
-	$substitution_path = "$share_dir/D_SAMBADOMAIN/U_alice";
+	$substitution_path = "$share_dir/D_$dcvars->{DOMAIN}/U_alice";
 	push(@dirs, $substitution_path);
 
-	$substitution_path = "$share_dir/D_SAMBADOMAIN/U_alice/G_domain users";
+	$substitution_path = "$share_dir/D_$dcvars->{DOMAIN}/U_alice/G_domain users";
 	push(@dirs, $substitution_path);
 
 	# Using '/' as the winbind separator is a bad idea ...
-	$substitution_path = "$share_dir/D_SAMBADOMAIN/u_SAMBADOMAIN";
+	$substitution_path = "$share_dir/D_$dcvars->{DOMAIN}/u_$dcvars->{DOMAIN}";
 	push(@dirs, $substitution_path);
 
-	$substitution_path = "$share_dir/D_SAMBADOMAIN/u_SAMBADOMAIN/alice";
+	$substitution_path = "$share_dir/D_$dcvars->{DOMAIN}/u_$dcvars->{DOMAIN}/alice";
 	push(@dirs, $substitution_path);
 
-	$substitution_path = "$share_dir/D_SAMBADOMAIN/u_SAMBADOMAIN/alice/g_SAMBADOMAIN";
+	$substitution_path = "$share_dir/D_$dcvars->{DOMAIN}/u_$dcvars->{DOMAIN}/alice/g_$dcvars->{DOMAIN}";
 	push(@dirs, $substitution_path);
 
-	$substitution_path = "$share_dir/D_SAMBADOMAIN/u_SAMBADOMAIN/alice/g_SAMBADOMAIN/domain users";
+	$substitution_path = "$share_dir/D_$dcvars->{DOMAIN}/u_$dcvars->{DOMAIN}/alice/g_$dcvars->{DOMAIN}/domain users";
 	push(@dirs, $substitution_path);
 
 	my $member_options = "
