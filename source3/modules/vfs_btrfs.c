@@ -206,8 +206,9 @@ static void btrfs_offload_write_done(struct tevent_req *subreq);
 static struct tevent_req *btrfs_offload_write_send(struct vfs_handle_struct *handle,
 						TALLOC_CTX *mem_ctx,
 						struct tevent_context *ev,
-						struct files_struct *src_fsp,
-						off_t src_off,
+						uint32_t fsctl,
+						DATA_BLOB *token,
+						off_t transfer_offset,
 						struct files_struct *dest_fsp,
 						off_t dest_off,
 						off_t num,
@@ -218,7 +219,10 @@ static struct tevent_req *btrfs_offload_write_send(struct vfs_handle_struct *han
 	struct btrfs_ioctl_clone_range_args cr_args;
 	struct lock_struct src_lck;
 	struct lock_struct dest_lck;
+	off_t src_off = transfer_offset;
+	files_struct *src_fsp = NULL;
 	int ret;
+	bool handle_offload_write = true;
 	NTSTATUS status;
 
 	req = tevent_req_create(mem_ctx, &cc_state, struct btrfs_cc_state);
@@ -233,16 +237,38 @@ static struct tevent_req *btrfs_offload_write_send(struct vfs_handle_struct *han
 
 	cc_state->handle = handle;
 
+	status = vfs_offload_token_db_fetch_fsp(btrfs_offload_ctx,
+						token, &src_fsp);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
+
+	switch (fsctl) {
+	case FSCTL_SRV_COPYCHUNK:
+	case FSCTL_SRV_COPYCHUNK_WRITE:
+	case FSCTL_DUP_EXTENTS_TO_FILE:
+		break;
+
+	default:
+		handle_offload_write = false;
+		break;
+	}
+
 	if (num == 0) {
 		/*
 		 * With a @src_length of zero, BTRFS_IOC_CLONE_RANGE clones
 		 * all data from @src_offset->EOF! This is certainly not what
 		 * the caller expects, and not what vfs_default does.
 		 */
+		handle_offload_write = false;
+	}
+
+	if (!handle_offload_write) {
 		cc_state->subreq = SMB_VFS_NEXT_OFFLOAD_WRITE_SEND(handle,
 								cc_state, ev,
-								src_fsp,
-								src_off,
+								fsctl,
+								token,
+								transfer_offset,
 								dest_fsp,
 								dest_off,
 								num, flags);
@@ -253,6 +279,13 @@ static struct tevent_req *btrfs_offload_write_send(struct vfs_handle_struct *han
 					btrfs_offload_write_done,
 					req);
 		return req;
+	}
+
+	status = vfs_offload_token_check_handles(
+		fsctl, src_fsp, dest_fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return tevent_req_post(req, ev);
 	}
 
 	status = vfs_stat_fsp(src_fsp);
@@ -323,8 +356,9 @@ static struct tevent_req *btrfs_offload_write_send(struct vfs_handle_struct *han
 			  (unsigned long long)cr_args.dest_offset));
 		cc_state->subreq = SMB_VFS_NEXT_OFFLOAD_WRITE_SEND(handle,
 								cc_state, ev,
-								src_fsp,
-								src_off,
+								fsctl,
+								token,
+								transfer_offset,
 								dest_fsp,
 								dest_off,
 								num, flags);

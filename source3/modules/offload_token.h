@@ -34,4 +34,7 @@ NTSTATUS vfs_offload_token_create_blob(TALLOC_CTX *mem_ctx,
 				       const files_struct *fsp,
 				       uint32_t fsctl,
 				       DATA_BLOB *token_blob);
+NTSTATUS vfs_offload_token_check_handles(uint32_t fsctl,
+					 files_struct *src_fsp,
+					 files_struct *dst_fsp);
 #endif

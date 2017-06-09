@@ -161,7 +161,6 @@ static NTSTATUS fsctl_dup_extents_check_sparse(struct files_struct *src_fsp,
 struct fsctl_dup_extents_state {
 	struct tevent_context *ev;
 	struct connection_struct *conn;
-	struct files_struct *src_fsp;
 	struct files_struct *dst_fsp;
 	struct fsctl_dup_extents_to_file dup_extents;
 };
@@ -234,7 +233,6 @@ static struct tevent_req *fsctl_dup_extents_send(TALLOC_CTX *mem_ctx,
 		tevent_req_nterror(req, NT_STATUS_INVALID_HANDLE);
 		return tevent_req_post(req, ev);
 	}
-	state->src_fsp = src_fsp;
 
 	status = fsctl_dup_extents_check_lengths(src_fsp, dst_fsp,
 						 &state->dup_extents);
@@ -279,11 +277,11 @@ static void fsctl_dup_extents_offload_read_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct fsctl_dup_extents_state *state = tevent_req_data(
 		req, struct fsctl_dup_extents_state);
-	DATA_BLOB token_blob;
+	DATA_BLOB token;
 	NTSTATUS status;
 
 	status = SMB_VFS_OFFLOAD_READ_RECV(subreq, state->dst_fsp->conn,
-					   state, &token_blob);
+					   state, &token);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
@@ -292,7 +290,8 @@ static void fsctl_dup_extents_offload_read_done(struct tevent_req *subreq)
 	subreq = SMB_VFS_OFFLOAD_WRITE_SEND(state->dst_fsp->conn,
 					    state,
 					    state->ev,
-					    state->src_fsp,
+					    FSCTL_DUP_EXTENTS_TO_FILE,
+					    &token,
 					    state->dup_extents.source_off,
 					    state->dst_fsp,
 					    state->dup_extents.target_off,

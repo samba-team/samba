@@ -1689,6 +1689,7 @@ struct vfswrap_offload_write_state {
 	struct lock_struct read_lck;
 	bool write_lck_locked;
 	struct lock_struct write_lck;
+	DATA_BLOB *token;
 	struct files_struct *src_fsp;
 	off_t src_off;
 	struct files_struct *dst_fsp;
@@ -1705,8 +1706,9 @@ static struct tevent_req *vfswrap_offload_write_send(
 	struct vfs_handle_struct *handle,
 	TALLOC_CTX *mem_ctx,
 	struct tevent_context *ev,
-	struct files_struct *src_fsp,
-	off_t src_off,
+	uint32_t fsctl,
+	DATA_BLOB *token,
+	off_t transfer_offset,
 	struct files_struct *dest_fsp,
 	off_t dest_off,
 	off_t to_copy,
@@ -1715,9 +1717,8 @@ static struct tevent_req *vfswrap_offload_write_send(
 	struct tevent_req *req;
 	struct vfswrap_offload_write_state *state = NULL;
 	size_t num = MIN(to_copy, COPYCHUNK_MAX_TOTAL_LEN);
+	files_struct *src_fsp = NULL;
 	NTSTATUS status;
-
-	DBG_DEBUG("server side copy chunk of length %" PRIu64 "\n", to_copy);
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct vfswrap_offload_write_state);
@@ -1738,8 +1739,8 @@ static struct tevent_req *vfswrap_offload_write_send(
 
 	*state = (struct vfswrap_offload_write_state) {
 		.ev = ev,
-		.src_fsp = src_fsp,
-		.src_off = src_off,
+		.token = token,
+		.src_off = transfer_offset,
 		.dst_fsp = dest_fsp,
 		.dst_off = dest_off,
 		.to_copy = to_copy,
@@ -1747,8 +1748,41 @@ static struct tevent_req *vfswrap_offload_write_send(
 		.flags = flags,
 	};
 
+	switch (fsctl) {
+	case FSCTL_SRV_COPYCHUNK:
+	case FSCTL_SRV_COPYCHUNK_WRITE:
+		break;
+
+	case FSCTL_OFFLOAD_WRITE:
+		tevent_req_nterror(req, NT_STATUS_NOT_IMPLEMENTED);
+		return tevent_req_post(req, ev);
+
+	default:
+		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+		return tevent_req_post(req, ev);
+	}
+
+	/*
+	 * From here on we assume a copy-chunk fsctl
+	 */
+
 	if (to_copy == 0) {
 		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+	}
+
+	status = vfs_offload_token_db_fetch_fsp(vfswrap_offload_ctx,
+						token, &src_fsp);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
+	state->src_fsp = src_fsp;
+
+	DBG_DEBUG("server side copy chunk of length %" PRIu64 "\n", to_copy);
+
+	status = vfs_offload_token_check_handles(fsctl, src_fsp, dest_fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
 		return tevent_req_post(req, ev);
 	}
 
@@ -1762,7 +1796,7 @@ static struct tevent_req *vfswrap_offload_write_send(
 		return tevent_req_post(req, ev);
 	}
 
-	if (src_fsp->fsp_name->st.st_ex_size < src_off + num) {
+	if (src_fsp->fsp_name->st.st_ex_size < state->src_off + num) {
 		/*
 		 * [MS-SMB2] 3.3.5.15.6 Handling a Server-Side Data Copy Request
 		 *   If the SourceOffset or SourceOffset + Length extends beyond

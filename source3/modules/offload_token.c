@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
+#include "../libcli/security/security.h"
 #include "dbwrap/dbwrap.h"
 #include "dbwrap/dbwrap_rbt.h"
 #include "dbwrap/dbwrap_open.h"
@@ -220,3 +221,92 @@ NTSTATUS vfs_offload_token_create_blob(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+
+NTSTATUS vfs_offload_token_check_handles(uint32_t fsctl,
+					 files_struct *src_fsp,
+					 files_struct *dst_fsp)
+{
+	if (src_fsp->vuid != dst_fsp->vuid) {
+		DBG_INFO("copy chunk handles not in the same session.\n");
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (!NT_STATUS_IS_OK(src_fsp->op->status)) {
+		DBG_INFO("copy chunk source handle invalid: %s\n",
+			 nt_errstr(src_fsp->op->status));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (!NT_STATUS_IS_OK(dst_fsp->op->status)) {
+		DBG_INFO("copy chunk destination handle invalid: %s\n",
+			 nt_errstr(dst_fsp->op->status));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (src_fsp->deferred_close != NULL) {
+		DBG_INFO("copy chunk src handle with deferred close.\n");
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (dst_fsp->deferred_close != NULL) {
+		DBG_INFO("copy chunk dst handle with deferred close.\n");
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (src_fsp->is_directory) {
+		DBG_INFO("copy chunk no read on src directory handle (%s).\n",
+			 smb_fname_str_dbg(src_fsp->fsp_name));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (dst_fsp->is_directory) {
+		DBG_INFO("copy chunk no read on dst directory handle (%s).\n",
+			 smb_fname_str_dbg(dst_fsp->fsp_name));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (IS_IPC(src_fsp->conn) || IS_IPC(dst_fsp->conn)) {
+		DBG_INFO("copy chunk no access on IPC$ handle.\n");
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (IS_PRINT(src_fsp->conn) || IS_PRINT(dst_fsp->conn)) {
+		DBG_INFO("copy chunk no access on PRINT handle.\n");
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	/*
+	 * [MS-SMB2] 3.3.5.15.6 Handling a Server-Side Data Copy Request
+	 * The server MUST fail the request with STATUS_ACCESS_DENIED if any of
+	 * the following are true:
+	 * - The Open.GrantedAccess of the destination file does not include
+	 *   FILE_WRITE_DATA or FILE_APPEND_DATA.
+	 *
+	 * A non writable dst handle also doesn't make sense for other fsctls.
+	 */
+	if (!CHECK_WRITE(dst_fsp)) {
+		DBG_INFO("dest handle not writable (%s).\n",
+			smb_fname_str_dbg(dst_fsp->fsp_name));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+	/*
+	 * - The Open.GrantedAccess of the destination file does not include
+	 *   FILE_READ_DATA, and the CtlCode is FSCTL_SRV_COPYCHUNK.
+	 */
+	if ((fsctl == FSCTL_SRV_COPYCHUNK) && !CHECK_READ_IOCTL(dst_fsp)) {
+		DBG_INFO("copy chunk no read on dest handle (%s).\n",
+			 smb_fname_str_dbg(dst_fsp->fsp_name));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+	/*
+	 * - The Open.GrantedAccess of the source file does not include
+	 *   FILE_READ_DATA access.
+	 */
+	if (!CHECK_READ_SMB2(src_fsp)) {
+		DBG_INFO("src handle not readable (%s).\n",
+			 smb_fname_str_dbg(src_fsp->fsp_name));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	return NT_STATUS_OK;
+}

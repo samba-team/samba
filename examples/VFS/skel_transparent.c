@@ -719,8 +719,9 @@ static void skel_offload_write_done(struct tevent_req *subreq);
 static struct tevent_req *skel_offload_write_send(struct vfs_handle_struct *handle,
 					       TALLOC_CTX *mem_ctx,
 					       struct tevent_context *ev,
-					       struct files_struct *src_fsp,
-					       off_t src_off,
+					       uint32_t fsctl,
+					       DATA_BLOB *token,
+					       off_t transfer_offset,
 					       struct files_struct *dest_fsp,
 					       off_t dest_off,
 					       off_t num,
@@ -737,7 +738,7 @@ static struct tevent_req *skel_offload_write_send(struct vfs_handle_struct *hand
 
 	state->handle = handle;
 	subreq = SMB_VFS_NEXT_OFFLOAD_WRITE_SEND(handle, state, ev,
-					      src_fsp, src_off,
+					      fsctl, token, transfer_offset,
 					      dest_fsp, dest_off, num, flags);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);

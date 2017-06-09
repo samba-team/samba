@@ -82,6 +82,8 @@ struct fsctl_srv_copychunk_state {
 	uint32_t current_chunk;
 	NTSTATUS status;
 	off_t total_written;
+	uint32_t ctl_code;
+	DATA_BLOB token;
 	struct files_struct *src_fsp;
 	struct files_struct *dst_fsp;
 	enum {
@@ -92,67 +94,6 @@ struct fsctl_srv_copychunk_state {
 	bool aapl_copyfile;
 };
 static void fsctl_srv_copychunk_vfs_done(struct tevent_req *subreq);
-
-static NTSTATUS copychunk_check_handles(uint32_t ctl_code,
-					struct files_struct *src_fsp,
-					struct files_struct *dst_fsp)
-{
-	/*
-	 * [MS-SMB2] 3.3.5.15.6 Handling a Server-Side Data Copy Request
-	 * The server MUST fail the request with STATUS_ACCESS_DENIED if any of
-	 * the following are true:
-	 * - The Open.GrantedAccess of the destination file does not include
-	 *   FILE_WRITE_DATA or FILE_APPEND_DATA.
-	 */
-	if (!CHECK_WRITE(dst_fsp)) {
-		DEBUG(5, ("copy chunk no write on dest handle (%s).\n",
-			smb_fname_str_dbg(dst_fsp->fsp_name) ));
-		return NT_STATUS_ACCESS_DENIED;
-	}
-	/*
-	 * - The Open.GrantedAccess of the destination file does not include
-	 *   FILE_READ_DATA, and the CtlCode is FSCTL_SRV_COPYCHUNK.
-	 */
-	if ((ctl_code == FSCTL_SRV_COPYCHUNK) &&
-	    !CHECK_READ_IOCTL(dst_fsp)) {
-		DEBUG(5, ("copy chunk no read on dest handle (%s).\n",
-			smb_fname_str_dbg(dst_fsp->fsp_name) ));
-		return NT_STATUS_ACCESS_DENIED;
-	}
-	/*
-	 * - The Open.GrantedAccess of the source file does not include
-	 *   FILE_READ_DATA access.
-	 */
-	if (!CHECK_READ_SMB2(src_fsp)) {
-		DEBUG(5, ("copy chunk no read on src handle (%s).\n",
-			smb_fname_str_dbg(src_fsp->fsp_name) ));
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	if (src_fsp->is_directory) {
-		DEBUG(5, ("copy chunk no read on src directory handle (%s).\n",
-			smb_fname_str_dbg(src_fsp->fsp_name) ));
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	if (dst_fsp->is_directory) {
-		DEBUG(5, ("copy chunk no read on dst directory handle (%s).\n",
-			smb_fname_str_dbg(dst_fsp->fsp_name) ));
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	if (IS_IPC(src_fsp->conn) || IS_IPC(dst_fsp->conn)) {
-		DEBUG(5, ("copy chunk no access on IPC$ handle.\n"));
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	if (IS_PRINT(src_fsp->conn) || IS_PRINT(dst_fsp->conn)) {
-		DEBUG(5, ("copy chunk no access on PRINT handle.\n"));
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	return NT_STATUS_OK;
-}
 
 static NTSTATUS fsctl_srv_copychunk_loop(struct tevent_req *req);
 
@@ -166,8 +107,6 @@ static struct tevent_req *fsctl_srv_copychunk_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req = NULL;
 	struct fsctl_srv_copychunk_state *state = NULL;
-	uint64_t src_persistent_h;
-	uint64_t src_volatile_h;
 	enum ndr_err_code ndr_ret;
 	NTSTATUS status;
 
@@ -183,6 +122,8 @@ static struct tevent_req *fsctl_srv_copychunk_send(TALLOC_CTX *mem_ctx,
 	*state = (struct fsctl_srv_copychunk_state) {
 		.conn = dst_fsp->conn,
 		.ev = ev,
+		.ctl_code = ctl_code,
+		.dst_fsp = dst_fsp,
 	};
 
 	if (in_max_output < sizeof(struct srv_copychunk_rsp)) {
@@ -203,26 +144,8 @@ static struct tevent_req *fsctl_srv_copychunk_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	/* persistent/volatile keys sent as the resume key */
-	src_persistent_h = BVAL(state->cc_copy.source_key, 0);
-	src_volatile_h = BVAL(state->cc_copy.source_key, 8);
-	state->src_fsp = file_fsp_get(smb2req, src_persistent_h, src_volatile_h);
-	if (state->src_fsp == NULL) {
-		DEBUG(3, ("invalid resume key in copy chunk req\n"));
-		state->status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
-		tevent_req_nterror(req, state->status);
-		return tevent_req_post(req, ev);
-	}
-
-	state->dst_fsp = dst_fsp;
-
-	state->status = copychunk_check_handles(ctl_code,
-						state->src_fsp,
-						state->dst_fsp);
-	if (!NT_STATUS_IS_OK(state->status)) {
-		tevent_req_nterror(req, state->status);
-		return tevent_req_post(req, ev);
-	}
+	state->token = data_blob_const(state->cc_copy.source_key,
+				       sizeof(state->cc_copy.source_key));
 
 	state->status = copychunk_check_limits(&state->cc_copy);
 	if (!NT_STATUS_IS_OK(state->status)) {
@@ -272,7 +195,8 @@ static NTSTATUS fsctl_srv_copychunk_loop(struct tevent_req *req)
 	subreq = SMB_VFS_OFFLOAD_WRITE_SEND(state->dst_fsp->conn,
 					 state,
 					 state->ev,
-					 state->src_fsp,
+					 state->ctl_code,
+					 &state->token,
 					 source_off,
 					 state->dst_fsp,
 					 target_off,

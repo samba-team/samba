@@ -1,2 +1,0 @@
-^samba3.smb2.ioctl.copy_chunk_across_shares
-^samba3.smb2.ioctl fs_specific.copy_chunk_across_shares
