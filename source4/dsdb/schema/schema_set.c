@@ -184,6 +184,8 @@ int dsdb_schema_set_indices_and_attributes(struct ldb_context *ldb,
 		ret = LDB_SUCCESS;
 	}
 	if (ret != LDB_SUCCESS) {
+		DBG_ERR("Failed to set schema into @ATTRIBUTES: %s\n",
+			ldb_errstring(ldb));
 		talloc_free(mem_ctx);
 		return ret;
 	}
@@ -216,6 +218,12 @@ int dsdb_schema_set_indices_and_attributes(struct ldb_context *ldb,
 		/* We might be on a read-only DB */
 		ret = LDB_SUCCESS;
 	}
+
+	if (ret != LDB_SUCCESS) {
+		DBG_ERR("Failed to set schema into @INDEXLIST: %s\n",
+			ldb_errstring(ldb));
+	}
+
 	talloc_free(mem_ctx);
 	return ret;
 
