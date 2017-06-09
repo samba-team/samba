@@ -4,6 +4,14 @@ PYTHON="$1"
 PAM_WRAPPER_SO_PATH="$2"
 shift 2
 
+DOMAIN="$1"
+export DOMAIN
+USERNAME="$2"
+export USERNAME
+PASSWORD="$3"
+export PASSWORD
+shift 3
+
 PAM_WRAPPER_PATH="$BINDIR/default/lib/pam_wrapper"
 
 pam_winbind="$BINDIR/shared/pam_winbind.so"

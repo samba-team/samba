@@ -18,22 +18,29 @@
 
 import samba.tests
 import pypamtest
+import os
 
 class SimplePamTests(samba.tests.TestCase):
     def test_authenticate(self):
-        alice_password = "Secret007"
+        domain = os.environ["DOMAIN"]
+        username = os.environ["USERNAME"]
+        password = os.environ["PASSWORD"]
+        unix_username = "%s/%s" % (domain, username)
         expected_rc = 0 # PAM_SUCCESS
 
         tc = pypamtest.TestCase(pypamtest.PAMTEST_AUTHENTICATE, expected_rc)
-        res = pypamtest.run_pamtest("SAMBADOMAIN/alice", "samba", [tc], [alice_password])
+        res = pypamtest.run_pamtest(unix_username, "samba", [tc], [password])
 
         self.assertTrue(res != None)
 
     def test_authenticate_error(self):
-        alice_password = "WrongPassword"
+        domain = os.environ["DOMAIN"]
+        username = os.environ["USERNAME"]
+        password = "WrongPassword"
+        unix_username = "%s/%s" % (domain, username)
         expected_rc = 7 # PAM_AUTH_ERR
 
         tc = pypamtest.TestCase(pypamtest.PAMTEST_AUTHENTICATE, expected_rc)
-        res = pypamtest.run_pamtest("SAMBADOMAIN/alice", "samba", [tc], [alice_password])
+        res = pypamtest.run_pamtest(unix_username, "samba", [tc], [password])
 
         self.assertTrue(res != None)
