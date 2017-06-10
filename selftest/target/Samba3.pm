@@ -231,7 +231,7 @@ sub setup_nt4_dc($$)
 	fss: sequence timeout = 1
 ";
 
-	my $vars = $self->provision($path,
+	my $vars = $self->provision($path, "SAMBA-TEST",
 				    "LOCALNT4DC2",
 				    "localntdc2pass",
 				    $nt4_dc_options);
@@ -279,7 +279,7 @@ sub setup_nt4_dc_schannel($$)
 	server schannel = yes
 ";
 
-	my $vars = $self->provision($path,
+	my $vars = $self->provision($path, "NT4SCHANNEL",
 				    "LOCALNT4DC9",
 				    "localntdc9pass",
 				    $pdc_options);
@@ -318,7 +318,7 @@ sub setup_nt4_member($$$)
 	dbwrap_tdb_mutexes:* = yes
 	${require_mutexes}
 ";
-	my $ret = $self->provision($prefix,
+	my $ret = $self->provision($prefix, $nt4_dc_vars->{DOMAIN},
 				   "LOCALNT4MEMBER3",
 				   "localnt4member3pass",
 				   $member_options);
@@ -424,7 +424,7 @@ sub setup_admember($$$$)
 
 ";
 
-	my $ret = $self->provision($prefix,
+	my $ret = $self->provision($prefix, $dcvars->{DOMAIN},
 				   "LOCALADMEMBER",
 				   "loCalMemberPass",
 				   $member_options,
@@ -519,7 +519,7 @@ sub setup_admember_rfc2307($$$$)
         idmap config $dcvars->{DOMAIN} : bind_path_group = ou=idmap,dc=samba,dc=example,dc=com
 ";
 
-	my $ret = $self->provision($prefix,
+	my $ret = $self->provision($prefix, $dcvars->{DOMAIN},
 				   "RFC2307MEMBER",
 				   "loCalMemberPass",
 				   $member_options,
@@ -607,7 +607,7 @@ sub setup_ad_member_idmap_rid($$$$)
 	idmap config $dcvars->{DOMAIN} : range = 2000000-2999999
 ";
 
-	my $ret = $self->provision($prefix,
+	my $ret = $self->provision($prefix, $dcvars->{DOMAIN},
 				   "IDMAPRIDMEMBER",
 				   "loCalMemberPass",
 				   $member_options,
@@ -712,7 +712,7 @@ sub setup_simpleserver($$)
 	smb encrypt = desired
 ";
 
-	my $vars = $self->provision($path,
+	my $vars = $self->provision($path, "WORKGROUP",
 				    "LOCALSHARE4",
 				    "local4pass",
 				    $simpleserver_options);
@@ -822,7 +822,7 @@ sub setup_fileserver($$)
 	acl_xattr:ignore system acls = yes
 ";
 
-	my $vars = $self->provision($path,
+	my $vars = $self->provision($path, "WORKGROUP",
 				    "FILESERVER",
 				    "fileserver",
 				    $fileserver_options,
@@ -909,7 +909,7 @@ sub setup_ktest($$$)
 	client max protocol = SMB3
 ";
 
-	my $ret = $self->provision($prefix,
+	my $ret = $self->provision($prefix, "KTEST",
 				   "LOCALKTEST6",
 				   "localktest6pass",
 				   $ktest_options);
@@ -999,7 +999,7 @@ map to guest = bad user
 ntlm auth = yes
 ";
 
-	my $vars = $self->provision($path,
+	my $vars = $self->provision($path, "WORKGROUP",
 				    "maptoguest",
 				    "maptoguestpass",
 				    $options);
@@ -1262,9 +1262,9 @@ sub createuser($$$$)
 	}
 }
 
-sub provision($$$$$$$$)
+sub provision($$$$$$$$$)
 {
-	my ($self, $prefix, $server, $password, $extra_options, $dc_server_ip, $dc_server_ipv6, $no_delete_prefix) = @_;
+	my ($self, $prefix, $domain, $server, $password, $extra_options, $dc_server_ip, $dc_server_ipv6, $no_delete_prefix) = @_;
 
 	##
 	## setup the various environment variables we need
@@ -1274,7 +1274,6 @@ sub provision($$$$$$$$)
 	my %ret = ();
 	my $server_ip = "127.0.0.$swiface";
 	my $server_ipv6 = sprintf("fd00:0000:0000:0000:0000:0000:5357:5f%02x", $swiface);
-	my $domain = "SAMBA-TEST";
 
 	my $unix_name = ($ENV{USER} or $ENV{LOGNAME} or `PATH=/usr/ucb:$ENV{PATH} whoami`);
 	chomp $unix_name;
