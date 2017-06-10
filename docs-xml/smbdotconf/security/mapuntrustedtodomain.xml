@@ -5,27 +5,22 @@
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>
-    If a client connects to smbd using an untrusted domain name, such as
-    BOGUS\user, smbd replaces the BOGUS domain with it's SAM name before
+    By default, and with <smbconfoption name="map untrusted to domain">no</smbconfoption>,
+    if a client connects to smbd using an untrusted domain name, such as
+    BOGUS\user, smbd replaces the BOGUS domain with it's SAM name
+    (forcing local authentication) before
     attempting to authenticate that user.  In the case where smbd is acting as
-    a PDC this will be DOMAIN\user.  In the case where smbd is acting as a
+    a NT4 PDC/BDC this will be DOMAIN\user.  In the case where smbd is acting as a
     domain member server or a standalone server this will be WORKSTATION\user.
     </para>
 
     <para>
-    In previous versions of Samba (pre 3.4), if smbd was acting as a domain
-    member server, the BOGUS domain name would instead be replaced by the
-    primary domain which smbd was a member of.  In this case authentication
-    would be deferred off to a DC using the credentials DOMAIN\user.
+    With <smbconfoption name="map untrusted to domain">yes</smbconfoption>,
+    smbd provides the legacy behavior matching that of versions of Samba pre 3.4:
+    the BOGUS domain name would always be replaced by the
+    primary domain before attempting to authenticate that user.
+    This will be DOMAIN\user in all server roles except active directory domain controller.
     </para>
-
-    <para>
-    When this parameter is set to <constant>yes</constant> smbd provides the
-    legacy behavior of mapping untrusted domain names to the primary domain.
-    When smbd is not acting as a domain member server, this parameter has no
-    effect.
-    </para>
-
 </description>
 
 <value type="default">no</value>
