@@ -211,8 +211,7 @@ static struct tevent_req *btrfs_offload_write_send(struct vfs_handle_struct *han
 						off_t transfer_offset,
 						struct files_struct *dest_fsp,
 						off_t dest_off,
-						off_t num,
-						uint32_t flags)
+						off_t num)
 {
 	struct tevent_req *req;
 	struct btrfs_cc_state *cc_state;
@@ -223,16 +222,12 @@ static struct tevent_req *btrfs_offload_write_send(struct vfs_handle_struct *han
 	files_struct *src_fsp = NULL;
 	int ret;
 	bool handle_offload_write = true;
+	bool do_locking = false;
 	NTSTATUS status;
 
 	req = tevent_req_create(mem_ctx, &cc_state, struct btrfs_cc_state);
 	if (req == NULL) {
 		return NULL;
-	}
-
-	if (flags & ~VFS_OFFLOAD_WRITE_FL_MASK_ALL) {
-		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		return tevent_req_post(req, ev);
 	}
 
 	cc_state->handle = handle;
@@ -246,7 +241,11 @@ static struct tevent_req *btrfs_offload_write_send(struct vfs_handle_struct *han
 	switch (fsctl) {
 	case FSCTL_SRV_COPYCHUNK:
 	case FSCTL_SRV_COPYCHUNK_WRITE:
+		do_locking = true;
+		break;
+
 	case FSCTL_DUP_EXTENTS_TO_FILE:
+		/* dup extents does not use locking */
 		break;
 
 	default:
@@ -271,7 +270,7 @@ static struct tevent_req *btrfs_offload_write_send(struct vfs_handle_struct *han
 								transfer_offset,
 								dest_fsp,
 								dest_off,
-								num, flags);
+								num);
 		if (tevent_req_nomem(cc_state->subreq, req)) {
 			return tevent_req_post(req, ev);
 		}
@@ -304,7 +303,7 @@ static struct tevent_req *btrfs_offload_write_send(struct vfs_handle_struct *han
 		return tevent_req_post(req, ev);
 	}
 
-	if (!(flags & VFS_OFFLOAD_WRITE_FL_IGNORE_LOCKS)) {
+	if (do_locking) {
 		init_strict_lock_struct(src_fsp,
 					src_fsp->op->global->open_persistent_id,
 					src_off,
@@ -336,7 +335,7 @@ static struct tevent_req *btrfs_offload_write_send(struct vfs_handle_struct *han
 	cr_args.src_length = (uint64_t)num;
 
 	ret = ioctl(dest_fsp->fh->fd, BTRFS_IOC_CLONE_RANGE, &cr_args);
-	if (!(flags & VFS_OFFLOAD_WRITE_FL_IGNORE_LOCKS)) {
+	if (do_locking) {
 		SMB_VFS_STRICT_UNLOCK(dest_fsp->conn, dest_fsp, &dest_lck);
 		SMB_VFS_STRICT_UNLOCK(src_fsp->conn, src_fsp, &src_lck);
 	}
@@ -361,7 +360,7 @@ static struct tevent_req *btrfs_offload_write_send(struct vfs_handle_struct *han
 								transfer_offset,
 								dest_fsp,
 								dest_off,
-								num, flags);
+								num);
 		if (tevent_req_nomem(cc_state->subreq, req)) {
 			return tevent_req_post(req, ev);
 		}

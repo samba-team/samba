@@ -425,10 +425,10 @@
 #define SMB_VFS_NEXT_OFFLOAD_READ_RECV(req, handle, mem_ctx, token_blob) \
 	smb_vfs_call_offload_read_recv((req), (handle)->next, (mem_ctx), (token_blob))
 
-#define SMB_VFS_OFFLOAD_WRITE_SEND(conn, mem_ctx, ev, fsctl, token, transfer_offset, dest_fsp, dest_off, num, flags) \
-	smb_vfs_call_offload_write_send((conn)->vfs_handles, (mem_ctx), (ev), (fsctl), (token), (transfer_offset), (dest_fsp), (dest_off), (num), (flags))
-#define SMB_VFS_NEXT_OFFLOAD_WRITE_SEND(handle, mem_ctx, ev, fsctl, token, transfer_offset, dest_fsp, dest_off, num, flags) \
-	smb_vfs_call_offload_write_send((handle)->next, (mem_ctx), (ev), (fsctl), (token), (transfer_offset), (dest_fsp), (dest_off), (num), (flags))
+#define SMB_VFS_OFFLOAD_WRITE_SEND(conn, mem_ctx, ev, fsctl, token, transfer_offset, dest_fsp, dest_off, num) \
+	smb_vfs_call_offload_write_send((conn)->vfs_handles, (mem_ctx), (ev), (fsctl), (token), (transfer_offset), (dest_fsp), (dest_off), (num))
+#define SMB_VFS_NEXT_OFFLOAD_WRITE_SEND(handle, mem_ctx, ev, fsctl, token, transfer_offset, dest_fsp, dest_off, num) \
+	smb_vfs_call_offload_write_send((handle)->next, (mem_ctx), (ev), (fsctl), (token), (transfer_offset), (dest_fsp), (dest_off), (num))
 
 #define SMB_VFS_OFFLOAD_WRITE_RECV(conn, req, copied) \
 	smb_vfs_call_offload_write_recv((conn)->vfs_handles, (req), (copied))

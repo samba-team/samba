@@ -1949,15 +1949,13 @@ static struct tevent_req *smb_full_audit_offload_write_send(struct vfs_handle_st
 							 off_t transfer_offset,
 							 struct files_struct *dest_fsp,
 							 off_t dest_off,
-							 off_t num,
-							 uint32_t flags)
+							    off_t num)
 {
 	struct tevent_req *req;
 
 	req = SMB_VFS_NEXT_OFFLOAD_WRITE_SEND(handle, mem_ctx, ev,
 					   fsctl, token, transfer_offset,
-					   dest_fsp, dest_off, num,
-					   flags);
+					   dest_fsp, dest_off, num);
 
 	do_log(SMB_VFS_OP_OFFLOAD_WRITE_SEND, req, handle, "");
 

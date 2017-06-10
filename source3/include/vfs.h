@@ -592,20 +592,6 @@ enum vfs_fallocate_flags {
 	VFS_FALLOCATE_FL_PUNCH_HOLE		= 0x0002,
 };
 
-/*
- * @VFS_OFFLOAD_WRITE_FL_MUST_CLONE: indicates that offload_write_send_fn() copy must
- *				  be handled as a COW clone, AKA reflink.
- * @VFS_OFFLOAD_WRITE_FL_MASK_ALL: all valid flags.
- */
-enum vfs_offload_write_flags {
-	VFS_OFFLOAD_WRITE_FL_MUST_CLONE		= 0x0001,
-	VFS_OFFLOAD_WRITE_FL_IGNORE_LOCKS	= 0x0002,
-
-	VFS_OFFLOAD_WRITE_FL_MASK_ALL		=
-					(VFS_OFFLOAD_WRITE_FL_MUST_CLONE
-					 | VFS_OFFLOAD_WRITE_FL_IGNORE_LOCKS),
-};
-
 struct vfs_aio_state {
 	int error;
 	uint64_t duration;
@@ -803,8 +789,7 @@ struct vfs_fn_pointers {
 						    off_t transfer_offset,
 						    struct files_struct *dest_fsp,
 						    off_t dest_off,
-						    off_t to_copy,
-						    uint32_t flags);
+						    off_t to_copy);
 	NTSTATUS (*offload_write_recv_fn)(struct vfs_handle_struct *handle,
 					  struct tevent_req *req,
 					  off_t *copied);
@@ -1384,8 +1369,7 @@ struct tevent_req *smb_vfs_call_offload_write_send(struct vfs_handle_struct *han
 						   off_t transfer_offset,
 						   struct files_struct *dest_fsp,
 						   off_t dest_off,
-						   off_t num,
-						   uint32_t flags);
+						   off_t num);
 NTSTATUS smb_vfs_call_offload_write_recv(struct vfs_handle_struct *handle,
 					 struct tevent_req *req,
 					 off_t *copied);

@@ -590,8 +590,7 @@ static struct tevent_req *skel_offload_write_send(struct vfs_handle_struct *hand
 					       off_t transfer_offset,
 					       struct files_struct *dest_fsp,
 					       off_t dest_off,
-					       off_t num,
-					       uint32_t flags)
+					       off_t num)
 {
 	struct tevent_req *req;
 	struct skel_cc_state *cc_state;

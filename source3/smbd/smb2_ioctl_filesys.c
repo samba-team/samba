@@ -295,9 +295,7 @@ static void fsctl_dup_extents_offload_read_done(struct tevent_req *subreq)
 					    state->dup_extents.source_off,
 					    state->dst_fsp,
 					    state->dup_extents.target_off,
-					    state->dup_extents.byte_count,
-					    VFS_OFFLOAD_WRITE_FL_MUST_CLONE
-					    | VFS_OFFLOAD_WRITE_FL_IGNORE_LOCKS);
+					    state->dup_extents.byte_count);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}

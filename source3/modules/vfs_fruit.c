@@ -5479,8 +5479,7 @@ static struct tevent_req *fruit_offload_write_send(struct vfs_handle_struct *han
 						off_t transfer_offset,
 						struct files_struct *dest_fsp,
 						off_t dest_off,
-						off_t num,
-						uint32_t flags)
+						off_t num)
 {
 	struct tevent_req *req, *subreq;
 	struct fruit_offload_write_state *state;
@@ -5546,8 +5545,7 @@ static struct tevent_req *fruit_offload_write_send(struct vfs_handle_struct *han
 					      transfer_offset,
 					      dest_fsp,
 					      dest_off,
-					      to_copy,
-					      flags);
+					      to_copy);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}

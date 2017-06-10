@@ -2382,14 +2382,12 @@ struct tevent_req *smb_vfs_call_offload_write_send(struct vfs_handle_struct *han
 						   off_t transfer_offset,
 						   struct files_struct *dest_fsp,
 						   off_t dest_off,
-						   off_t num,
-						   uint32_t flags)
+						   off_t num)
 {
 	VFS_FIND(offload_write_send);
 	return handle->fns->offload_write_send_fn(handle, mem_ctx, ev, fsctl,
 					       token, transfer_offset,
-					       dest_fsp, dest_off, num,
-					       flags);
+					       dest_fsp, dest_off, num);
 }
 
 NTSTATUS smb_vfs_call_offload_write_recv(struct vfs_handle_struct *handle,

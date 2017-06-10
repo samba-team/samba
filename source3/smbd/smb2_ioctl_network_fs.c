@@ -200,8 +200,7 @@ static NTSTATUS fsctl_srv_copychunk_loop(struct tevent_req *req)
 					 source_off,
 					 state->dst_fsp,
 					 target_off,
-					 length,
-					 0);
+					 length);
 	if (tevent_req_nomem(subreq, req)) {
 		return NT_STATUS_NO_MEMORY;
 	}

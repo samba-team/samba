@@ -2010,8 +2010,7 @@ static struct tevent_req *smb_time_audit_offload_write_send(struct vfs_handle_st
 							 off_t transfer_offset,
 							 struct files_struct *dest_fsp,
 							 off_t dest_off,
-							 off_t num,
-							 uint32_t flags)
+							 off_t num)
 {
 	struct tevent_req *req;
 	struct tevent_req *subreq;
@@ -2027,7 +2026,7 @@ static struct tevent_req *smb_time_audit_offload_write_send(struct vfs_handle_st
 	clock_gettime_mono(&state->ts_send);
 	subreq = SMB_VFS_NEXT_OFFLOAD_WRITE_SEND(handle, state, ev,
 					      fsctl, token, transfer_offset,
-					      dest_fsp, dest_off, num, flags);
+					      dest_fsp, dest_off, num);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}

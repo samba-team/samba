@@ -1697,7 +1697,6 @@ struct vfswrap_offload_write_state {
 	off_t to_copy;
 	off_t remaining;
 	size_t next_io_size;
-	uint32_t flags;
 };
 
 static NTSTATUS vfswrap_offload_write_loop(struct tevent_req *req);
@@ -1711,8 +1710,7 @@ static struct tevent_req *vfswrap_offload_write_send(
 	off_t transfer_offset,
 	struct files_struct *dest_fsp,
 	off_t dest_off,
-	off_t to_copy,
-	uint32_t flags)
+	off_t to_copy)
 {
 	struct tevent_req *req;
 	struct vfswrap_offload_write_state *state = NULL;
@@ -1726,17 +1724,6 @@ static struct tevent_req *vfswrap_offload_write_send(
 		return NULL;
 	}
 
-	if (flags & ~VFS_OFFLOAD_WRITE_FL_MASK_ALL) {
-		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		return tevent_req_post(req, ev);
-	}
-
-	if (flags & VFS_OFFLOAD_WRITE_FL_MUST_CLONE) {
-		DEBUG(10, ("COW clones not supported by vfs_default\n"));
-		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		return tevent_req_post(req, ev);
-	}
-
 	*state = (struct vfswrap_offload_write_state) {
 		.ev = ev,
 		.token = token,
@@ -1745,7 +1732,6 @@ static struct tevent_req *vfswrap_offload_write_send(
 		.dst_off = dest_off,
 		.to_copy = to_copy,
 		.remaining = to_copy,
-		.flags = flags,
 	};
 
 	switch (fsctl) {
@@ -1755,6 +1741,11 @@ static struct tevent_req *vfswrap_offload_write_send(
 
 	case FSCTL_OFFLOAD_WRITE:
 		tevent_req_nterror(req, NT_STATUS_NOT_IMPLEMENTED);
+		return tevent_req_post(req, ev);
+
+	case FSCTL_DUP_EXTENTS_TO_FILE:
+		DBG_DEBUG("COW clones not supported by vfs_default\n");
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return tevent_req_post(req, ev);
 
 	default:
@@ -1840,20 +1831,18 @@ static NTSTATUS vfswrap_offload_write_loop(struct tevent_req *req)
 
 	state->next_io_size = MIN(state->remaining, talloc_array_length(state->buf));
 
-	if (!(state->flags & VFS_OFFLOAD_WRITE_FL_IGNORE_LOCKS)) {
-		init_strict_lock_struct(state->src_fsp,
+	init_strict_lock_struct(state->src_fsp,
 				state->src_fsp->op->global->open_persistent_id,
-					state->src_off,
-					state->next_io_size,
-					READ_LOCK,
-					&state->read_lck);
+				state->src_off,
+				state->next_io_size,
+				READ_LOCK,
+				&state->read_lck);
 
-		ok = SMB_VFS_STRICT_LOCK(state->src_fsp->conn,
-					 state->src_fsp,
-					 &state->read_lck);
-		if (!ok) {
-			return NT_STATUS_FILE_LOCK_CONFLICT;
-		}
+	ok = SMB_VFS_STRICT_LOCK(state->src_fsp->conn,
+				 state->src_fsp,
+				 &state->read_lck);
+	if (!ok) {
+		return NT_STATUS_FILE_LOCK_CONFLICT;
 	}
 
 	subreq = SMB_VFS_PREAD_SEND(state,
@@ -1882,12 +1871,10 @@ static void vfswrap_offload_write_read_done(struct tevent_req *subreq)
 	ssize_t nread;
 	bool ok;
 
-	if (!(state->flags & VFS_OFFLOAD_WRITE_FL_IGNORE_LOCKS)) {
-		SMB_VFS_STRICT_UNLOCK(state->src_fsp->conn,
-				      state->src_fsp,
-				      &state->read_lck);
-		ZERO_STRUCT(state->read_lck);
-	}
+	SMB_VFS_STRICT_UNLOCK(state->src_fsp->conn,
+			      state->src_fsp,
+			      &state->read_lck);
+	ZERO_STRUCT(state->read_lck);
 
 	nread = SMB_VFS_PREAD_RECV(subreq, &aio_state);
 	TALLOC_FREE(subreq);
@@ -1905,21 +1892,19 @@ static void vfswrap_offload_write_read_done(struct tevent_req *subreq)
 
 	state->src_off += nread;
 
-	if (!(state->flags & VFS_OFFLOAD_WRITE_FL_IGNORE_LOCKS)) {
-		init_strict_lock_struct(state->dst_fsp,
+	init_strict_lock_struct(state->dst_fsp,
 				state->dst_fsp->op->global->open_persistent_id,
-					state->dst_off,
-					state->next_io_size,
-					WRITE_LOCK,
-					&state->write_lck);
+				state->dst_off,
+				state->next_io_size,
+				WRITE_LOCK,
+				&state->write_lck);
 
-		ok = SMB_VFS_STRICT_LOCK(state->dst_fsp->conn,
-					 state->dst_fsp,
-					 &state->write_lck);
-		if (!ok) {
-			tevent_req_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
-			return;
-		}
+	ok = SMB_VFS_STRICT_LOCK(state->dst_fsp->conn,
+				 state->dst_fsp,
+				 &state->write_lck);
+	if (!ok) {
+		tevent_req_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
+		return;
 	}
 
 	subreq = SMB_VFS_PWRITE_SEND(state,
@@ -1945,12 +1930,10 @@ static void vfswrap_offload_write_write_done(struct tevent_req *subreq)
 	ssize_t nwritten;
 	NTSTATUS status;
 
-	if (!(state->flags & VFS_OFFLOAD_WRITE_FL_IGNORE_LOCKS)) {
-		SMB_VFS_STRICT_UNLOCK(state->dst_fsp->conn,
-				      state->dst_fsp,
-				      &state->write_lck);
-		ZERO_STRUCT(state->write_lck);
-	}
+	SMB_VFS_STRICT_UNLOCK(state->dst_fsp->conn,
+			      state->dst_fsp,
+			      &state->write_lck);
+	ZERO_STRUCT(state->write_lck);
 
 	nwritten = SMB_VFS_PWRITE_RECV(subreq, &aio_state);
 	TALLOC_FREE(subreq);
