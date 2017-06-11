@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "messages.h"
 #include "lib/messages_ctdbd.h"
+#include "lib/messages_ctdb.h"
 #include "ctdbd_conn.h"
 #include "lib/dbwrap/dbwrap.h"
 #include "lib/dbwrap/dbwrap_ctdb.h"
@@ -89,6 +90,18 @@ int messaging_ctdbd_init(struct messaging_context *msg_ctx,
 			      struct messaging_backend **presult)
 {
 	return ENOSYS;
+}
+
+int messaging_ctdb_send(uint32_t dst_vnn, uint64_t dst_srvid,
+			const struct iovec *iov, int iovlen)
+{
+	return ENOSYS;
+}
+
+struct messaging_ctdb_fde *messaging_ctdb_register_tevent_context(
+	TALLOC_CTX *mem_ctx, struct tevent_context *ev)
+{
+	return NULL;
 }
 
 int messaging_ctdbd_reinit(struct messaging_context *msg_ctx,
