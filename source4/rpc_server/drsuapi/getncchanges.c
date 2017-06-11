@@ -2022,7 +2022,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	uint32_t link_total = 0;
 	uint32_t link_given = 0;
 	struct ldb_dn *search_dn = NULL;
-	bool am_rodc, null_scope=false;
+	bool am_rodc;
 	enum security_user_level security_level;
 	struct ldb_context *sam_ctx;
 	struct dom_sid *user_sid;
@@ -2553,7 +2553,6 @@ allowed:
 
 	for (i=getnc_state->num_processed;
 	     i<getnc_state->num_records &&
-		     !null_scope &&
 		     (r->out.ctr->ctr6.object_count < max_objects)
 		     && !max_wait_reached;
 	    i++) {
