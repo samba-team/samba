@@ -1232,11 +1232,11 @@ EOF
        return
     fi
 
-    echo "$out" | grep 'Domain=\[SAMBA.*\] OS=\[Windows [0-9]\.[0-9]\] Server=\[Samba'
+    echo "$out" | grep "Domain=\[[a-zA-Z][a-zA-Z0-9.-]*\] OS=\[Windows [0-9]\.[0-9]\] Server=\[Samba"
     ret=$?
     if [ $ret -ne 0 ] ; then
        echo "$out"
-       echo "failed - should get: Domain=[SAMBA-TEST] OS=[Windows 6.1] Server=..."
+       echo "failed - should get: Domain=[...] OS=[Windows 6.1] Server=..."
        false
        return
     fi
