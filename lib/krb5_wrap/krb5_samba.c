@@ -2669,6 +2669,10 @@ char *smb_krb5_get_realm_from_hostname(TALLOC_CTX *mem_ctx,
 	}
 
 	kerr = krb5_get_host_realm(ctx, hostname, &realm_list);
+	if (kerr == KRB5_ERR_HOST_REALM_UNKNOWN) {
+		realm_list = NULL;
+		kerr = 0;
+	}
 	if (kerr != 0) {
 		DEBUG(3,("kerberos_get_realm_from_hostname %s: "
 			"failed %s\n",
