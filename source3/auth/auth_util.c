@@ -110,12 +110,6 @@ NTSTATUS make_user_info_map(TALLOC_CTX *mem_ctx,
 	NTSTATUS result;
 	bool was_mapped;
 	char *internal_username = NULL;
-	bool upn_form = false;
-	int map_untrusted = lp_map_untrusted_to_domain();
-
-	if (client_domain[0] == '\0' && strchr(smb_name, '@')) {
-		upn_form = true;
-	}
 
 	was_mapped = map_username(talloc_tos(), smb_name, &internal_username);
 	if (!internal_username) {
@@ -125,34 +119,11 @@ NTSTATUS make_user_info_map(TALLOC_CTX *mem_ctx,
 	DEBUG(5, ("Mapping user [%s]\\[%s] from workstation [%s]\n",
 		 client_domain, smb_name, workstation_name));
 
+	/*
+	 * We let the auth stack canonicalize, username
+	 * and domain.
+	 */
 	domain = client_domain;
-
-	/* If you connect to a Windows domain member using a bogus domain name,
-	 * the Windows box will map the BOGUS\user to SAMNAME\user.  Thus, if
-	 * the Windows box is a DC the name will become DOMAIN\user and be
-	 * authenticated against AD, if the Windows box is a member server but
-	 * not a DC the name will become WORKSTATION\user.  A standalone
-	 * non-domain member box will also map to WORKSTATION\user.
-	 * This also deals with the client passing in a "" domain */
-
-	if (map_untrusted != Auto && !upn_form &&
-	    !strequal(domain, my_sam_name()) &&
-	    !strequal(domain, get_global_sam_name()) &&
-	    !is_trusted_domain(domain))
-	{
-		if (map_untrusted) {
-			domain = my_sam_name();
-		} else {
-			domain = get_global_sam_name();
-		}
-		DEBUG(5, ("Mapped domain from [%s] to [%s] for user [%s] from "
-			  "workstation [%s]\n",
-			  client_domain, domain, smb_name, workstation_name));
-	}
-
-	/* We know that the given domain is trusted (and we are allowing them),
-	 * it is our global SAM name, or for legacy behavior it is our
-	 * primary domain name */
 
 	result = make_user_info(mem_ctx, user_info, smb_name, internal_username,
 				client_domain, domain, workstation_name,
