@@ -46,7 +46,7 @@ class GensecTests(samba.tests.TestCase):
     def test_info_uninitialized(self):
         self.assertRaises(RuntimeError, self.gensec.session_info)
 
-    def _test_update(self, mech):
+    def _test_update(self, mech, client_mech=None):
         """Test GENSEC by doing an exchange with ourselves using GSSAPI against a KDC"""
 
         """Start up a client and server GENSEC instance to test things with"""
@@ -54,7 +54,10 @@ class GensecTests(samba.tests.TestCase):
         self.gensec_client = gensec.Security.start_client(self.settings)
         self.gensec_client.set_credentials(self.get_credentials())
         self.gensec_client.want_feature(gensec.FEATURE_SEAL)
-        self.gensec_client.start_mech_by_sasl_name(mech)
+        if client_mech is not None:
+            self.gensec_client.start_mech_by_name(client_mech)
+        else:
+            self.gensec_client.start_mech_by_sasl_name(mech)
 
         self.gensec_server = gensec.Security.start_server(settings=self.settings,
                                                           auth_context=auth.AuthContext(lp_ctx=self.lp_ctx))
@@ -138,6 +141,12 @@ class GensecTests(samba.tests.TestCase):
         self.gensec = gensec.Security.start_client(self.settings)
 
         self._test_update("GSS-SPNEGO")
+
+    def test_update_gss_krb5_to_spnego(self):
+        self._test_update("GSS-SPNEGO", "gssapi_krb5")
+
+    def test_update_ntlmssp_to_spnego(self):
+        self._test_update("GSS-SPNEGO", "ntlmssp")
 
 
     def test_max_update_size(self):
