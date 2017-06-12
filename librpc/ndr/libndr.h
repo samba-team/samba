@@ -108,6 +108,7 @@ struct ndr_print {
 	void (*print)(struct ndr_print *, const char *, ...) PRINTF_ATTRIBUTE(2,3);
 	void *private_data;
 	bool no_newline;
+	bool print_secrets;
 };
 
 #define LIBNDR_FLAG_BIGENDIAN  (1<<0)
@@ -137,6 +138,12 @@ struct ndr_print {
 		LIBNDR_FLAG_STR_UTF8 | \
 		LIBNDR_FLAG_STR_RAW8 | \
 		0)
+
+/*
+ * Mark an element as SECRET, it won't be printed by
+ * via ndr_print* unless NDR_PRINT_SECRETS is specified.
+ */
+#define LIBNDR_FLAG_IS_SECRET		(1<<14)
 
 /* Disable string token compression  */
 #define LIBNDR_FLAG_NO_COMPRESSION	(1<<15)
@@ -208,6 +215,9 @@ struct ndr_print {
 #define NDR_PRINT_BOTH_STRING(ctx, type, p) NDR_PRINT_FUNCTION_STRING(ctx, type, NDR_BOTH, p)
 #define NDR_PRINT_OUT_STRING(ctx, type, p) NDR_PRINT_FUNCTION_STRING(ctx, type, NDR_OUT, p)
 #define NDR_PRINT_IN_STRING(ctx, type, p) NDR_PRINT_FUNCTION_STRING(ctx, type, NDR_IN | NDR_SET_VALUES, p)
+
+#define NDR_HIDE_SECRET(ndr) \
+	(unlikely(((ndr)->flags & LIBNDR_FLAG_IS_SECRET) && !(ndr)->print_secrets))
 
 #define NDR_BE(ndr) (unlikely(((ndr)->flags & (LIBNDR_FLAG_BIGENDIAN|LIBNDR_FLAG_LITTLE_ENDIAN)) == LIBNDR_FLAG_BIGENDIAN))
 

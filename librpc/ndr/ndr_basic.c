@@ -1064,41 +1064,73 @@ _PUBLIC_ void ndr_print_bitmap_flag(struct ndr_print *ndr, size_t size, const ch
 
 _PUBLIC_ void ndr_print_int8(struct ndr_print *ndr, const char *name, int8_t v)
 {
+	if (NDR_HIDE_SECRET(ndr)) {
+		ndr->print(ndr, "%-25s: <REDACTED SECRET VALUE>", name);
+		return;
+	}
 	ndr->print(ndr, "%-25s: %d", name, v);
 }
 
 _PUBLIC_ void ndr_print_uint8(struct ndr_print *ndr, const char *name, uint8_t v)
 {
+	if (NDR_HIDE_SECRET(ndr)) {
+		ndr->print(ndr, "%-25s: <REDACTED SECRET VALUE>", name);
+		return;
+	}
 	ndr->print(ndr, "%-25s: 0x%02x (%u)", name, v, v);
 }
 
 _PUBLIC_ void ndr_print_int16(struct ndr_print *ndr, const char *name, int16_t v)
 {
+	if (NDR_HIDE_SECRET(ndr)) {
+		ndr->print(ndr, "%-25s: <REDACTED SECRET VALUE>", name);
+		return;
+	}
 	ndr->print(ndr, "%-25s: %d", name, v);
 }
 
 _PUBLIC_ void ndr_print_uint16(struct ndr_print *ndr, const char *name, uint16_t v)
 {
+	if (NDR_HIDE_SECRET(ndr)) {
+		ndr->print(ndr, "%-25s: <REDACTED SECRET VALUE>", name);
+		return;
+	}
 	ndr->print(ndr, "%-25s: 0x%04x (%u)", name, v, v);
 }
 
 _PUBLIC_ void ndr_print_int32(struct ndr_print *ndr, const char *name, int32_t v)
 {
+	if (NDR_HIDE_SECRET(ndr)) {
+		ndr->print(ndr, "%-25s: <REDACTED SECRET VALUE>", name);
+		return;
+	}
 	ndr->print(ndr, "%-25s: %d", name, v);
 }
 
 _PUBLIC_ void ndr_print_uint32(struct ndr_print *ndr, const char *name, uint32_t v)
 {
+	if (NDR_HIDE_SECRET(ndr)) {
+		ndr->print(ndr, "%-25s: <REDACTED SECRET VALUE>", name);
+		return;
+	}
 	ndr->print(ndr, "%-25s: 0x%08x (%u)", name, v, v);
 }
 
 _PUBLIC_ void ndr_print_int3264(struct ndr_print *ndr, const char *name, int32_t v)
 {
+	if (NDR_HIDE_SECRET(ndr)) {
+		ndr->print(ndr, "%-25s: <REDACTED SECRET VALUE>", name);
+		return;
+	}
 	ndr->print(ndr, "%-25s: %d", name, v);
 }
 
 _PUBLIC_ void ndr_print_uint3264(struct ndr_print *ndr, const char *name, uint32_t v)
 {
+	if (NDR_HIDE_SECRET(ndr)) {
+		ndr->print(ndr, "%-25s: <REDACTED SECRET VALUE>", name);
+		return;
+	}
 	ndr->print(ndr, "%-25s: 0x%08x (%u)", name, v, v);
 }
 
@@ -1114,6 +1146,10 @@ _PUBLIC_ void ndr_print_udlongr(struct ndr_print *ndr, const char *name, uint64_
 
 _PUBLIC_ void ndr_print_dlong(struct ndr_print *ndr, const char *name, int64_t v)
 {
+	if (NDR_HIDE_SECRET(ndr)) {
+		ndr->print(ndr, "%-25s: <REDACTED SECRET VALUE>", name);
+		return;
+	}
 	ndr->print(ndr, "%-25s: 0x%016llx (%lld)", name, (unsigned long long)v, (long long)v);
 }
 
@@ -1203,6 +1239,11 @@ _PUBLIC_ void ndr_print_array_uint8(struct ndr_print *ndr, const char *name,
 		return;
 	}
 
+	if (NDR_HIDE_SECRET(ndr)) {
+		ndr->print(ndr, "%s: ARRAY(%d): <REDACTED SECRET VALUES>", name, count);
+		return;
+	}
+
 	if (count <= _ONELINE_LIMIT && (ndr->flags & LIBNDR_PRINT_ARRAY_HEX)) {
 		char s[(_ONELINE_LIMIT + 1) * 2];
 		for (i=0;i<count;i++) {
@@ -1243,6 +1284,9 @@ static void ndr_print_dump_data_cb(const char *buf, void *private_data)
  */
 static void ndr_dump_data(struct ndr_print *ndr, const uint8_t *buf, int len)
 {
+	if (NDR_HIDE_SECRET(ndr)) {
+		return;
+	}
 	ndr->no_newline = true;
 	dump_data_cb(buf, len, true, ndr_print_dump_data_cb, ndr);
 	ndr->no_newline = false;
