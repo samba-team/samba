@@ -21,6 +21,7 @@
 #include "messages.h"
 #include "lib/messages_ctdbd.h"
 #include "lib/messages_ctdb.h"
+#include "lib/messages_ctdb_ref.h"
 #include "ctdbd_conn.h"
 #include "lib/dbwrap/dbwrap.h"
 #include "lib/dbwrap/dbwrap_ctdb.h"
@@ -96,6 +97,18 @@ int messaging_ctdb_send(uint32_t dst_vnn, uint64_t dst_srvid,
 			const struct iovec *iov, int iovlen)
 {
 	return ENOSYS;
+}
+
+void *messaging_ctdb_ref(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+			 const char *sockname, int timeout, uint64_t unique_id,
+			 void (*recv_cb)(struct tevent_context *ev,
+					 const uint8_t *msg, size_t msg_len,
+					 int *fds, size_t num_fds,
+					 void *private_data),
+			 void *private_data,
+			 int *err)
+{
+	return NULL;
 }
 
 struct messaging_ctdb_fde *messaging_ctdb_register_tevent_context(
