@@ -52,6 +52,12 @@
 */
 #define NDR_PAHEX LIBNDR_PRINT_ARRAY_HEX
 
+/*
+ * Mark an element as SECRET, it won't be printed by
+ * via ndr_print* unless NDR_PRINT_SECRETS is specified.
+ */
+#define NDR_SECRET LIBNDR_FLAG_IS_SECRET
+
 #define NDR_RELATIVE_REVERSE LIBNDR_FLAG_RELATIVE_REVERSE
 #define NDR_NO_RELATIVE_REVERSE LIBNDR_FLAG_NO_RELATIVE_REVERSE
 
