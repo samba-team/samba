@@ -3,7 +3,7 @@
 # Copyright (C) 2006-2007 Jelmer Vernooij <jelmer@samba.org>
 # Copyright (C) 2006-2008 Andrew Bartlett <abartlet@samba.org>
 
-if [ $# -lt 4 ]; then
+if [ $# -lt 6 ]; then
 cat <<EOF
 Usage: test_net_ads_dns.sh SERVER DC_USERNAME DC_PASSWORD REALM USER PASS
 EOF
@@ -33,6 +33,8 @@ samba4kpasswd=kpasswd
 if test -x $BINDIR/samba4kpasswd; then
 	samba4kpasswd=$BINDIR/samba4kpasswd
 fi
+ldbsearch="$samba4bindir/ldbsearch"
+ldbmodify="$samba4bindir/ldbmodify"
 
 newuser="$samba_tool user create"
 groupaddmem="$samba_tool group addmembers"
@@ -69,9 +71,11 @@ testit "The name $NAME.$REALM should not be there any longer" test X"`$net_tool 
 # This should be an expect_failure test ...
 testit "Adding an unprivileged user" $VALGRIND $net_tool user add $UNPRIVUSER $UNPRIVPASS -U$DC_USERNAME%$DC_PASSWORD || failed=`expr $failed + 1`
 
-LDIF="dn: CN=$UNPRIVUSER,CN=users,DC=samba,DC=example,DC=com+changetype: modify+replace: userAccountControl+userAccountControl: 512"
+BASEDN=$($VALGRIND $ldbsearch -U$DC_USERNAME%$DC_PASSWORD -H ldap://$SERVER.$REALM -b '' -s base defaultNamingContext | grep defaultNamingContext | sed -e 's!^defaultNamingContext: !!')
 
-echo $LDIF | tr '+' '\n' | ./bin/ldbmodify -Uadministrator%locDCpass1 -H ldap://localdc.samba.example.com -i
+LDIF="dn: CN=$UNPRIVUSER,CN=users,${BASEDN}+changetype: modify+replace: userAccountControl+userAccountControl: 512"
+
+echo $LDIF | tr '+' '\n' | $VALGRIND $ldbmodify -U$DC_USERNAME%$DC_PASSWORD -H ldap://$SERVER.$REALM -i
 STATUS=$?
 
 testit "We should have enabled the account" test $STATUS -eq 0 || failed=`expr $failed + 1`
