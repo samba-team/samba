@@ -250,16 +250,16 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
             binding = "[%s]" % binding
 
         if service == "dnsserver":
-            dnsserver.dnsserver("ncacn_ip_tcp:%s%s" % (self.server, binding),
-                                self.get_loadparm(),
-                                creds)
+            conn = dnsserver.dnsserver("ncacn_ip_tcp:%s%s" % (self.server, binding),
+                                       self.get_loadparm(),
+                                       creds)
         elif service == "srvsvc":
-           srvsvc.srvsvc("ncacn_ip_tcp:%s%s" % (self.server, binding),
-                         self.get_loadparm(),
-                         creds)
+            conn = srvsvc.srvsvc("ncacn_ip_tcp:%s%s" % (self.server, binding),
+                                 self.get_loadparm(),
+                                 creds)
 
 
-        messages = self.waitForMessages(isLastExpectedMessage)
+        messages = self.waitForMessages(isLastExpectedMessage, conn)
         checkFunction(messages, authTypes, service, binding, protection)
 
     def rpc_ncacn_ip_tcp_ntlm_check(self, messages, authTypes, service,

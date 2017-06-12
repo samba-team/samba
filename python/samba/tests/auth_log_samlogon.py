@@ -152,7 +152,7 @@ class AuthLogTestsSamLogon(samba.tests.auth_log_base.AuthLogTestBase):
         (validation, authoritative, netr_flags_out) = result
 
 
-        messages = self.waitForMessages(isLastExpectedMessage)
+        messages = self.waitForMessages(isLastExpectedMessage, netlogon_conn)
         checkFunction(messages)
 
     def samlogon_check(self, messages):
