@@ -33,6 +33,15 @@ from StringIO import StringIO
 from abc import ABCMeta, abstractmethod
 import xml.etree.ElementTree as etree
 
+try:
+    from enum import Enum
+    GPOSTATE = Enum('GPOSTATE', 'APPLY ENFORCE UNAPPLY')
+except ImportError:
+    class GPOSTATE:
+        APPLY = 1
+        ENFORCE = 2
+        UNAPPLY = 3
+
 class gp_log:
     ''' Log settings overwritten by gpo apply
     The gp_log is an xml file that stores a history of gpo changes (and the original setting value).
@@ -75,6 +84,7 @@ class gp_log:
         param gpostore      - the GPOStorage obj which references the tdb which contains gp_logs
         param db_log        - (optional) a string to initialize the gp_log
         '''
+        self._state = GPOSTATE.APPLY
         self.gpostore = gpostore
         self.username = user
         if db_log:
@@ -86,6 +96,26 @@ class gp_log:
             self.user = etree.SubElement(self.gpdb, 'user')
             self.user.attrib['name'] = user
 
+    def state(self, value):
+        ''' Policy application state
+        param value         - APPLY, ENFORCE, or UNAPPLY
+
+        The behavior of the gp_log depends on whether we are applying policy, enforcing policy,
+        or unapplying policy. During an apply, old settings are recorded in the log. During an
+        enforce, settings are being applied but the gp_log does not change. During an unapply,
+        additions to the log should be ignored (since function calls to apply settings are actually
+        reverting policy), but removals from the log are allowed.
+        '''
+        # If we're enforcing, but we've unapplied, apply instead
+        if value == GPOSTATE.ENFORCE:
+            apply_log = self.user.find('applylog')
+            if apply_log is None or len(apply_log) == 0:
+                self._state = GPOSTATE.APPLY
+            else:
+                self._state = value
+        else:
+            self._state = value
+
     def set_guid(self, guid):
         ''' Log to a different GPO guid
         param guid          - guid value of the GPO from which we're applying policy
@@ -94,12 +124,13 @@ class gp_log:
         if self.guid is None:
             self.guid = etree.SubElement(self.user, 'guid')
             self.guid.attrib['value'] = guid
-        apply_log = self.user.find('applylog')
-        if apply_log is None:
-            apply_log = etree.SubElement(self.user, 'applylog')
-        item = etree.SubElement(apply_log, 'guid')
-        item.attrib['count'] = '%d' % (len(apply_log)-1)
-        item.attrib['value'] = guid
+        if self._state == GPOSTATE.APPLY:
+            apply_log = self.user.find('applylog')
+            if apply_log is None:
+                apply_log = etree.SubElement(self.user, 'applylog')
+            item = etree.SubElement(apply_log, 'guid')
+            item.attrib['count'] = '%d' % (len(apply_log)-1)
+            item.attrib['value'] = guid
 
     def apply_log_pop(self):
         ''' Pop a GPO guid from the applylog
@@ -123,6 +154,8 @@ class gp_log:
         param attribute     - The attribute being modified
         param old_val       - The value of the attribute prior to policy application
         '''
+        if self._state == GPOSTATE.UNAPPLY or self._state == GPOSTATE.ENFORCE:
+            return None
         assert self.guid is not None, "gpo guid was not set"
         ext = self.guid.find('gp_ext[@name="%s"]' % gp_ext_name)
         if ext is None:
