@@ -399,6 +399,12 @@ _PUBLIC_ void ndr_print_debugc(int dbgc_class, ndr_print_fn_t fn, const char *na
 	ndr->print = ndr_print_debugc_helper;
 	ndr->depth = 1;
 	ndr->flags = 0;
+#ifdef DEBUG_PASSWORD
+	if (CHECK_DEBUGLVL(100)) {
+		ndr->print_secrets = true;
+	}
+#endif
+
 	fn(ndr, name, ptr);
 	talloc_free(ndr);
 }
@@ -417,6 +423,12 @@ _PUBLIC_ void ndr_print_debug(ndr_print_fn_t fn, const char *name, void *ptr)
 	ndr->print = ndr_print_debug_helper;
 	ndr->depth = 1;
 	ndr->flags = 0;
+#ifdef DEBUG_PASSWORD
+	if (CHECK_DEBUGLVL(100)) {
+		ndr->print_secrets = true;
+	}
+#endif
+
 	fn(ndr, name, ptr);
 	talloc_free(ndr);
 }
@@ -435,6 +447,12 @@ _PUBLIC_ void ndr_print_union_debug(ndr_print_fn_t fn, const char *name, uint32_
 	ndr->print = ndr_print_debug_helper;
 	ndr->depth = 1;
 	ndr->flags = 0;
+#ifdef DEBUG_PASSWORD
+	if (CHECK_DEBUGLVL(100)) {
+		ndr->print_secrets = true;
+	}
+#endif
+
 	ndr_print_set_switch_value(ndr, ptr, level);
 	fn(ndr, name, ptr);
 	talloc_free(ndr);
@@ -454,6 +472,11 @@ _PUBLIC_ void ndr_print_function_debug(ndr_print_function_t fn, const char *name
 	ndr->print = ndr_print_debug_helper;
 	ndr->depth = 1;
 	ndr->flags = 0;
+#ifdef DEBUG_PASSWORD
+	if (CHECK_DEBUGLVL(100)) {
+		ndr->print_secrets = true;
+	}
+#endif
 
 	fn(ndr, name, flags, ptr);
 	talloc_free(ndr);
