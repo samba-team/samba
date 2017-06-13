@@ -4673,7 +4673,10 @@ static int cmd_tid(void)
 			d_printf("no tcon currently\n");
 		}
 	} else {
-		uint16_t tid = atoi(tid_str);
+		uint32_t tid = atoi(tid_str);
+		if (!cli_state_has_tcon(cli)) {
+			d_printf("no tcon currently\n");
+		}
 		cli_state_set_tid(cli, tid);
 	}
 

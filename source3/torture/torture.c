@@ -1309,7 +1309,7 @@ static bool run_tcon_test(int dummy)
 	static struct cli_state *cli;
 	const char *fname = "\\tcontest.tmp";
 	uint16_t fnum1;
-	uint16_t cnum1, cnum2, cnum3;
+	uint32_t cnum1, cnum2, cnum3;
 	uint16_t vuid1, vuid2;
 	char buf[4];
 	bool ret = True;
@@ -2769,8 +2769,8 @@ static bool run_fdsesstest(int dummy)
 	struct cli_state *cli;
 	uint16_t new_vuid;
 	uint16_t saved_vuid;
-	uint16_t new_cnum;
-	uint16_t saved_cnum;
+	uint32_t new_cnum;
+	uint32_t saved_cnum;
 	const char *fname = "\\fdsess.tst";
 	const char *fname1 = "\\fdsess1.tst";
 	uint16_t fnum1;
@@ -8873,7 +8873,7 @@ static bool run_uid_regression_test(int dummy)
 {
 	static struct cli_state *cli;
 	int16_t old_vuid;
-	int16_t old_cnum;
+	int32_t old_cnum;
 	bool correct = True;
 	NTSTATUS status;
 

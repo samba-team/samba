@@ -1179,7 +1179,7 @@ bool cli_check_msdfs_proxy(TALLOC_CTX *ctx,
 	size_t consumed = 0;
 	char *fullpath = NULL;
 	bool res;
-	uint16_t cnum;
+	uint32_t cnum;
 	char *newextrapath = NULL;
 	NTSTATUS status;
 	const char *remote_name;
