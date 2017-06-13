@@ -1,8 +1,21 @@
 <samba:parameter name="profile acls"
                  context="S"
                  type="boolean"
+                 deprecated="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
+	<para>
+	As most system support support posix acls and extended attributes
+	today. The "acl_xattr" vfs module should be used instead of
+	using <smbconfoption name="profile acls">yes</smbconfoption>.
+	Using an vfs module that provides nfs4 acls may also work.
+	</para>
+
+	<para>
+	With modern clients (as of 2017) it's not possible to
+	use <smbconfoption name="profile acls">yes</smbconfoption> anymore.
+	</para>
+
 	<para>
 	This boolean parameter was added to fix the problems that people have been
 	having with storing user profiles on Samba shares from Windows 2000 or
@@ -40,6 +53,9 @@
 	On other shares, it might cause incorrect file ownerships.
 	</para>
 
+	<para>
+	This parameter is deprecated with Samba 4.7 and will be removed in future versions.
+	</para>
 </description>
 
 <value type="default">no</value>
