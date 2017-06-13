@@ -496,6 +496,8 @@ NTSTATUS smb2cli_session_set_channel_key(struct smbXcli_session *session,
 NTSTATUS smb2cli_session_encryption_on(struct smbXcli_session *session);
 
 struct smbXcli_tcon *smbXcli_tcon_create(TALLOC_CTX *mem_ctx);
+struct smbXcli_tcon *smbXcli_tcon_copy(TALLOC_CTX *mem_ctx,
+				const struct smbXcli_tcon *tcon_in);
 void smbXcli_tcon_set_fs_attributes(struct smbXcli_tcon *tcon,
 				    uint32_t fs_attributes);
 uint32_t smbXcli_tcon_get_fs_attributes(struct smbXcli_tcon *tcon);
