@@ -37,6 +37,7 @@
 #include "source3/include/messages.h"
 #include "source3/include/g_lock.h"
 #include "libds/common/roles.h"
+#include "lib/crypto/crypto.h"
 
 struct netlogon_creds_cli_locked_state;
 
@@ -1751,7 +1752,7 @@ struct tevent_req *netlogon_creds_cli_ServerPasswordSet_send(TALLOC_CTX *mem_ctx
 				struct tevent_context *ev,
 				struct netlogon_creds_cli_context *context,
 				struct dcerpc_binding_handle *b,
-				const char *new_password,
+				const DATA_BLOB *new_password,
 				const uint32_t *new_version)
 {
 	struct tevent_req *req;
@@ -1769,20 +1770,21 @@ struct tevent_req *netlogon_creds_cli_ServerPasswordSet_send(TALLOC_CTX *mem_ctx
 	state->context = context;
 	state->binding_handle = b;
 
-	/*
-	 * netr_ServerPasswordSet
-	 */
-	ok = E_md4hash(new_password, state->samr_password.hash);
-	if (!ok) {
+	if (new_password->length < 14) {
 		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER_MIX);
 		return tevent_req_post(req, ev);
 	}
 
 	/*
+	 * netr_ServerPasswordSet
+	 */
+	mdfour(state->samr_password.hash, new_password->data, new_password->length);
+
+	/*
 	 * netr_ServerPasswordSet2
 	 */
-	ok = encode_pw_buffer(state->samr_crypt_password.data,
-			      new_password, STR_UNICODE);
+	ok = set_pw_in_buffer(state->samr_crypt_password.data,
+			      new_password);
 	if (!ok) {
 		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER_MIX);
 		return tevent_req_post(req, ev);
@@ -2052,7 +2054,7 @@ NTSTATUS netlogon_creds_cli_ServerPasswordSet_recv(struct tevent_req *req)
 NTSTATUS netlogon_creds_cli_ServerPasswordSet(
 				struct netlogon_creds_cli_context *context,
 				struct dcerpc_binding_handle *b,
-				const char *new_password,
+				const DATA_BLOB *new_password,
 				const uint32_t *new_version)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
