@@ -795,6 +795,10 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 	if (state->op->options & DRSUAPI_DRS_SPECIAL_SECRET_PROCESSING) {
 		dsdb_repl_flags |= DSDB_REPL_FLAG_EXPECT_NO_SECRETS;
 	}
+	if (state->op->options & DRSUAPI_DRS_CRITICAL_ONLY ||
+	    state->op->extended_op != DRSUAPI_EXOP_NONE) {
+		dsdb_repl_flags |= DSDB_REPL_FLAG_OBJECT_SUBSET;
+	}
 
 	if (state->op->extended_op != DRSUAPI_EXOP_NONE) {
 		ret = dsdb_find_nc_root(service->samdb, partition,

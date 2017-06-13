@@ -660,6 +660,7 @@ WERROR libnet_vampire_cb_store_chunk(void *private_data,
 		 */
 		ZERO_STRUCT(s_dsa->highwatermark);
 		uptodateness_vector = NULL;
+		dsdb_repl_flags |= DSDB_REPL_FLAG_OBJECT_SUBSET;
 	}
 
 	/* TODO: avoid hardcoded flags */

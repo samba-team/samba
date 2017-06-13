@@ -74,6 +74,7 @@ struct replmd_private {
 struct la_entry {
 	struct la_entry *next, *prev;
 	struct drsuapi_DsReplicaLinkedAttribute *la;
+	bool incomplete_replica;
 };
 
 struct replmd_replicated_request {
@@ -6535,6 +6536,7 @@ static int replmd_extended_replicated_objects(struct ldb_module *module, struct 
 	struct ldb_control **ctrls;
 	int ret;
 	uint32_t i;
+	bool incomplete_subset;
 	struct replmd_private *replmd_private =
 		talloc_get_type(ldb_module_get_private(module), struct replmd_private);
 
@@ -6592,6 +6594,7 @@ static int replmd_extended_replicated_objects(struct ldb_module *module, struct 
 
 	ar->controls = req->controls;
 	req->controls = ctrls;
+	incomplete_subset = (ar->objs->dsdb_repl_flags & DSDB_REPL_FLAG_OBJECT_SUBSET);
 
 	DEBUG(4,("linked_attributes_count=%u\n", objs->linked_attributes_count));
 
@@ -6616,6 +6619,13 @@ static int replmd_extended_replicated_objects(struct ldb_module *module, struct 
 		}
 		*la_entry->la = ar->objs->linked_attributes[i];
 
+		/*
+		 * we may not be able to resolve link targets properly when
+		 * dealing with subsets of objects, e.g. the source is a
+		 * critical object and the target isn't
+		 */
+		la_entry->incomplete_replica = incomplete_subset;
+
 		/* we need to steal the non-scalars so they stay
 		   around until the end of the transaction */
 		talloc_steal(la_entry->la, la_entry->la->identifier);
@@ -6625,6 +6635,46 @@ static int replmd_extended_replicated_objects(struct ldb_module *module, struct 
 	}
 
 	return replmd_replicated_apply_next(ar);
+}
+
+/**
+ * Returns True if the source and target DNs both have the same naming context,
+ * i.e. they're both in the same partition.
+ */
+static bool replmd_objects_have_same_nc(struct ldb_context *ldb,
+					TALLOC_CTX *mem_ctx,
+					struct ldb_dn *source_dn,
+					struct ldb_dn *target_dn)
+{
+	TALLOC_CTX *tmp_ctx;
+	struct ldb_dn *source_nc;
+	struct ldb_dn *target_nc;
+	int ret;
+	bool same_nc = true;
+
+	tmp_ctx = talloc_new(mem_ctx);
+
+	ret = dsdb_find_nc_root(ldb, tmp_ctx, source_dn, &source_nc);
+	if (ret != LDB_SUCCESS) {
+		DBG_ERR("Failed to find base DN for source %s\n",
+			ldb_dn_get_linearized(source_dn));
+		talloc_free(tmp_ctx);
+		return true;
+	}
+
+	ret = dsdb_find_nc_root(ldb, tmp_ctx, target_dn, &target_nc);
+	if (ret != LDB_SUCCESS) {
+		DBG_ERR("Failed to find base DN for target %s\n",
+			ldb_dn_get_linearized(target_dn));
+		talloc_free(tmp_ctx);
+		return true;
+	}
+
+	same_nc = (ldb_dn_compare(source_nc, target_nc) == 0);
+
+	talloc_free(tmp_ctx);
+
+	return same_nc;
 }
 
 /**
@@ -6705,9 +6755,45 @@ static int replmd_check_target_exists(struct ldb_module *module,
 	}
 
 	if (target_res->count == 0) {
-		DEBUG(2,(__location__ ": WARNING: Failed to re-resolve GUID %s - using %s\n",
-			 GUID_string(tmp_ctx, guid),
-			 ldb_dn_get_linearized(dsdb_dn->dn)));
+
+		/*
+		 * TODO:
+		 * When we implement Trusted Domains we need to consider
+		 * whether they get treated as an incomplete replica here or not
+		 */
+		if (la_entry->incomplete_replica) {
+
+			/*
+			 * If we're only replicating a subset of objects (e.g.
+			 * critical-only, single-object), then an unknown target
+			 * is probably not a critical problem. We don't increase
+			 * the highwater-mark so subsequent replications should
+			 * resolve any missing links
+			 */
+			DEBUG(2,(__location__
+				 ": Failed to find target %s linked from %s\n",
+				 ldb_dn_get_linearized(dsdb_dn->dn),
+				 ldb_dn_get_linearized(source_dn)));
+
+		} else if (replmd_objects_have_same_nc(ldb, tmp_ctx, source_dn,
+						       dsdb_dn->dn)) {
+			ldb_asprintf_errstring(ldb, "Unknown target %s GUID %s linked from %s\n",
+					       ldb_dn_get_linearized(dsdb_dn->dn),
+					       GUID_string(tmp_ctx, guid),
+					       ldb_dn_get_linearized(source_dn));
+			ret = LDB_ERR_NO_SUCH_OBJECT;
+		} else {
+
+			/*
+			 * TODO:
+			 * We don't handle cross-partition links well here (we
+			 * could potentially lose them), but don't fail the
+			 * replication.
+			 */
+			DEBUG(2,("Failed to resolve cross-partition link between %s and %s\n",
+				 ldb_dn_get_linearized(source_dn),
+				 ldb_dn_get_linearized(dsdb_dn->dn)));
+		}
 	} else if (target_res->count != 1) {
 		ldb_asprintf_errstring(ldb, "More than one object found matching objectGUID %s\n",
 				       GUID_string(tmp_ctx, guid));
