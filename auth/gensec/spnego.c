@@ -1327,7 +1327,8 @@ static void gensec_spnego_update_cleanup(struct tevent_req *req,
 }
 
 static NTSTATUS gensec_spnego_update_in(struct gensec_security *gensec_security,
-					const DATA_BLOB in, DATA_BLOB *full_in);
+					const DATA_BLOB in, TALLOC_CTX *mem_ctx,
+					DATA_BLOB *full_in);
 
 static struct tevent_req *gensec_spnego_update_send(TALLOC_CTX *mem_ctx,
 						    struct tevent_context *ev,
@@ -1371,8 +1372,8 @@ static struct tevent_req *gensec_spnego_update_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	status = gensec_spnego_update_in(gensec_security,
-					 in, &state->full_in);
+	status = gensec_spnego_update_in(gensec_security, in,
+					 state, &state->full_in);
 	state->status = status;
 	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		tevent_req_done(req);
@@ -1386,8 +1387,6 @@ static struct tevent_req *gensec_spnego_update_send(TALLOC_CTX *mem_ctx,
 				      state, ev,
 				      state->full_in,
 				      &spnego_state->out_frag);
-	data_blob_free(&spnego_state->in_frag);
-	spnego_state->in_needed = 0;
 	if (NT_STATUS_IS_OK(status)) {
 		bool reset_full = true;
 
@@ -1420,7 +1419,8 @@ static struct tevent_req *gensec_spnego_update_send(TALLOC_CTX *mem_ctx,
 }
 
 static NTSTATUS gensec_spnego_update_in(struct gensec_security *gensec_security,
-					const DATA_BLOB in, DATA_BLOB *full_in)
+					const DATA_BLOB in, TALLOC_CTX *mem_ctx,
+					DATA_BLOB *full_in)
 {
 	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
 	size_t expected;
@@ -1488,6 +1488,7 @@ static NTSTATUS gensec_spnego_update_in(struct gensec_security *gensec_security,
 		 *       more than expected.
 		 */
 		*full_in = in;
+		spnego_state->in_needed = 0;
 		return NT_STATUS_OK;
 	}
 
@@ -1502,6 +1503,9 @@ static NTSTATUS gensec_spnego_update_in(struct gensec_security *gensec_security,
 	}
 
 	*full_in = spnego_state->in_frag;
+	talloc_steal(mem_ctx, full_in->data);
+	spnego_state->in_frag = data_blob_null;
+	spnego_state->in_needed = 0;
 	return NT_STATUS_OK;
 }
 
