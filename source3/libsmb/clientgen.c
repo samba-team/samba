@@ -341,7 +341,7 @@ uint32_t cli_getpid(struct cli_state *cli)
 
 bool cli_state_has_tcon(struct cli_state *cli)
 {
-	uint16_t tid = cli_state_get_tid(cli);
+	uint32_t tid = cli_state_get_tid(cli);
 
 	if (tid == UINT16_MAX) {
 		return false;
@@ -350,15 +350,25 @@ bool cli_state_has_tcon(struct cli_state *cli)
 	return true;
 }
 
-uint16_t cli_state_get_tid(struct cli_state *cli)
+uint32_t cli_state_get_tid(struct cli_state *cli)
 {
-	return smb1cli_tcon_current_id(cli->smb1.tcon);
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+		return smb2cli_tcon_current_id(cli->smb2.tcon);
+	} else {
+		return (uint32_t)smb1cli_tcon_current_id(cli->smb1.tcon);
+	}
 }
 
-uint16_t cli_state_set_tid(struct cli_state *cli, uint16_t tid)
+uint32_t cli_state_set_tid(struct cli_state *cli, uint32_t tid)
 {
-	uint16_t ret = smb1cli_tcon_current_id(cli->smb1.tcon);
-	smb1cli_tcon_set_id(cli->smb1.tcon, tid);
+	uint32_t ret;
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+		ret = smb2cli_tcon_current_id(cli->smb2.tcon);
+		smb2cli_tcon_set_id(cli->smb1.tcon, tid);
+	} else {
+		ret = smb1cli_tcon_current_id(cli->smb1.tcon);
+		smb1cli_tcon_set_id(cli->smb1.tcon, tid);
+	}
 	return ret;
 }
 
