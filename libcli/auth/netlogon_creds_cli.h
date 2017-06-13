@@ -106,13 +106,13 @@ struct tevent_req *netlogon_creds_cli_ServerPasswordSet_send(TALLOC_CTX *mem_ctx
 				struct tevent_context *ev,
 				struct netlogon_creds_cli_context *context,
 				struct dcerpc_binding_handle *b,
-				const char *new_password,
+				const DATA_BLOB *new_password,
 				const uint32_t *new_version);
 NTSTATUS netlogon_creds_cli_ServerPasswordSet_recv(struct tevent_req *req);
 NTSTATUS netlogon_creds_cli_ServerPasswordSet(
 				struct netlogon_creds_cli_context *context,
 				struct dcerpc_binding_handle *b,
-				const char *new_password,
+				const DATA_BLOB *new_password,
 				const uint32_t *new_version);
 
 struct tevent_req *netlogon_creds_cli_LogonSamLogon_send(TALLOC_CTX *mem_ctx,
