@@ -804,7 +804,7 @@ void encode_or_decode_arc4_passwd_buffer(unsigned char pw_buf[532], const DATA_B
  encode a password buffer with an already unicode password.  The
  rest of the buffer is filled with random data to make it harder to attack.
 ************************************************************/
-bool set_pw_in_buffer(uint8_t buffer[516], DATA_BLOB *password)
+bool set_pw_in_buffer(uint8_t buffer[516], const DATA_BLOB *password)
 {
 	if (password->length > 512) {
 		return false;
