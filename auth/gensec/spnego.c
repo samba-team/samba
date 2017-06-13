@@ -1238,92 +1238,6 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 	return NT_STATUS_INVALID_PARAMETER;
 }
 
-static NTSTATUS gensec_spnego_update_in(struct gensec_security *gensec_security,
-					const DATA_BLOB in, DATA_BLOB *full_in)
-{
-	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
-	size_t expected;
-	bool ok;
-
-	*full_in = data_blob_null;
-
-	if (spnego_state->in_needed == 0) {
-		size_t size = 0;
-		int ret;
-
-		/*
-		 * try to work out the size of the full
-		 * input token, it might be fragmented
-		 */
-		ret = asn1_peek_full_tag(in,  ASN1_APPLICATION(0), &size);
-		if ((ret != 0) && (ret != EAGAIN)) {
-			ret = asn1_peek_full_tag(in, ASN1_CONTEXT(1), &size);
-		}
-
-		if ((ret == 0) || (ret == EAGAIN)) {
-			spnego_state->in_needed = size;
-		} else {
-			/*
-			 * If it is not an asn1 message
-			 * just call the next layer.
-			 */
-			spnego_state->in_needed = in.length;
-		}
-	}
-
-	if (spnego_state->in_needed > UINT16_MAX) {
-		/*
-		 * limit the incoming message to 0xFFFF
-		 * to avoid DoS attacks.
-		 */
-		return NT_STATUS_INVALID_BUFFER_SIZE;
-	}
-
-	if ((spnego_state->in_needed > 0) && (in.length == 0)) {
-		/*
-		 * If we reach this, we know we got at least
-		 * part of an asn1 message, getting 0 means
-		 * the remote peer wants us to spin.
-		 */
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	expected = spnego_state->in_needed - spnego_state->in_frag.length;
-	if (in.length > expected) {
-		/*
-		 * we got more than expected
-		 */
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	if (in.length == spnego_state->in_needed) {
-		/*
-		 * if the in.length contains the full blob
-		 * we are done.
-		 *
-		 * Note: this implies spnego_state->in_frag.length == 0,
-		 *       but we do not need to check this explicitly
-		 *       because we already know that we did not get
-		 *       more than expected.
-		 */
-		*full_in = in;
-		return NT_STATUS_OK;
-	}
-
-	ok = data_blob_append(spnego_state, &spnego_state->in_frag,
-			      in.data, in.length);
-	if (!ok) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (spnego_state->in_needed > spnego_state->in_frag.length) {
-		return NT_STATUS_MORE_PROCESSING_REQUIRED;
-	}
-
-	*full_in = spnego_state->in_frag;
-	return NT_STATUS_OK;
-}
-
 static NTSTATUS gensec_spnego_update_out(struct gensec_security *gensec_security,
 					 TALLOC_CTX *out_mem_ctx,
 					 DATA_BLOB *_out)
@@ -1411,6 +1325,9 @@ static void gensec_spnego_update_cleanup(struct tevent_req *req,
 		break;
 	}
 }
+
+static NTSTATUS gensec_spnego_update_in(struct gensec_security *gensec_security,
+					const DATA_BLOB in, DATA_BLOB *full_in);
 
 static struct tevent_req *gensec_spnego_update_send(TALLOC_CTX *mem_ctx,
 						    struct tevent_context *ev,
@@ -1500,6 +1417,92 @@ static struct tevent_req *gensec_spnego_update_send(TALLOC_CTX *mem_ctx,
 
 	tevent_req_done(req);
 	return tevent_req_post(req, ev);
+}
+
+static NTSTATUS gensec_spnego_update_in(struct gensec_security *gensec_security,
+					const DATA_BLOB in, DATA_BLOB *full_in)
+{
+	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
+	size_t expected;
+	bool ok;
+
+	*full_in = data_blob_null;
+
+	if (spnego_state->in_needed == 0) {
+		size_t size = 0;
+		int ret;
+
+		/*
+		 * try to work out the size of the full
+		 * input token, it might be fragmented
+		 */
+		ret = asn1_peek_full_tag(in,  ASN1_APPLICATION(0), &size);
+		if ((ret != 0) && (ret != EAGAIN)) {
+			ret = asn1_peek_full_tag(in, ASN1_CONTEXT(1), &size);
+		}
+
+		if ((ret == 0) || (ret == EAGAIN)) {
+			spnego_state->in_needed = size;
+		} else {
+			/*
+			 * If it is not an asn1 message
+			 * just call the next layer.
+			 */
+			spnego_state->in_needed = in.length;
+		}
+	}
+
+	if (spnego_state->in_needed > UINT16_MAX) {
+		/*
+		 * limit the incoming message to 0xFFFF
+		 * to avoid DoS attacks.
+		 */
+		return NT_STATUS_INVALID_BUFFER_SIZE;
+	}
+
+	if ((spnego_state->in_needed > 0) && (in.length == 0)) {
+		/*
+		 * If we reach this, we know we got at least
+		 * part of an asn1 message, getting 0 means
+		 * the remote peer wants us to spin.
+		 */
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	expected = spnego_state->in_needed - spnego_state->in_frag.length;
+	if (in.length > expected) {
+		/*
+		 * we got more than expected
+		 */
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (in.length == spnego_state->in_needed) {
+		/*
+		 * if the in.length contains the full blob
+		 * we are done.
+		 *
+		 * Note: this implies spnego_state->in_frag.length == 0,
+		 *       but we do not need to check this explicitly
+		 *       because we already know that we did not get
+		 *       more than expected.
+		 */
+		*full_in = in;
+		return NT_STATUS_OK;
+	}
+
+	ok = data_blob_append(spnego_state, &spnego_state->in_frag,
+			      in.data, in.length);
+	if (!ok) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (spnego_state->in_needed > spnego_state->in_frag.length) {
+		return NT_STATUS_MORE_PROCESSING_REQUIRED;
+	}
+
+	*full_in = spnego_state->in_frag;
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS gensec_spnego_update_recv(struct tevent_req *req,
