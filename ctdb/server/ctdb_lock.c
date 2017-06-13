@@ -520,6 +520,7 @@ static void ctdb_lock_timeout_handler(struct tevent_context *ev,
 	pid_t pid;
 	double elapsed_time;
 	bool skip;
+	char *keystr;
 
 	lock_ctx = talloc_get_type_abort(private_data, struct lock_context);
 	ctdb = lock_ctx->ctdb;
@@ -542,9 +543,14 @@ static void ctdb_lock_timeout_handler(struct tevent_context *ev,
 		goto skip_lock_debug;
 	}
 
+	keystr = hex_encode_talloc(lock_ctx, lock_ctx->key.dptr,
+				   lock_ctx->key.dsize);
 	DEBUG(DEBUG_WARNING,
-	      ("Unable to get RECORD lock on database %s for %.0lf seconds\n",
-	       lock_ctx->ctdb_db->db_name, elapsed_time));
+	      ("Unable to get RECORD lock on database %s for %.0lf seconds"
+	       " (key %s)\n",
+	       lock_ctx->ctdb_db->db_name, elapsed_time,
+	       keystr ? keystr : ""));
+	TALLOC_FREE(keystr);
 
 	/* If a node stopped/banned, don't spam the logs */
 	if (ctdb->nodes[ctdb->pnn]->flags & NODE_FLAGS_INACTIVE) {
