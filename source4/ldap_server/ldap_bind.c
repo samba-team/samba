@@ -23,6 +23,7 @@
 #include "smbd/service.h"
 #include <ldb.h>
 #include <ldb_errors.h>
+#include "../lib/util/dlinklist.h"
 #include "dsdb/samdb/samdb.h"
 #include "auth/gensec/gensec.h"
 #include "auth/gensec/gensec_tstream.h"
@@ -481,8 +482,73 @@ NTSTATUS ldapsrv_BindRequest(struct ldapsrv_call *call)
 	return NT_STATUS_OK;
 }
 
+struct ldapsrv_unbind_wait_context {
+	uint8_t dummy;
+};
+
+struct ldapsrv_unbind_wait_state {
+	uint8_t dummy;
+};
+
+static struct tevent_req *ldapsrv_unbind_wait_send(TALLOC_CTX *mem_ctx,
+						 struct tevent_context *ev,
+						 void *private_data)
+{
+	struct ldapsrv_unbind_wait_context *unbind_wait =
+		talloc_get_type_abort(private_data,
+		struct ldapsrv_unbind_wait_context);
+	struct tevent_req *req;
+	struct ldapsrv_unbind_wait_state *state;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct ldapsrv_unbind_wait_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	(void)unbind_wait;
+
+	tevent_req_nterror(req, NT_STATUS_LOCAL_DISCONNECT);
+	return tevent_req_post(req, ev);
+}
+
+static NTSTATUS ldapsrv_unbind_wait_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
+static NTSTATUS ldapsrv_unbind_wait_setup(struct ldapsrv_call *call)
+{
+	struct ldapsrv_unbind_wait_context *unbind_wait = NULL;
+
+	if (call->wait_private != NULL) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	unbind_wait = talloc_zero(call, struct ldapsrv_unbind_wait_context);
+	if (unbind_wait == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	call->wait_private = unbind_wait;
+	call->wait_send = ldapsrv_unbind_wait_send;
+	call->wait_recv = ldapsrv_unbind_wait_recv;
+	return NT_STATUS_OK;
+}
+
 NTSTATUS ldapsrv_UnbindRequest(struct ldapsrv_call *call)
 {
+	struct ldapsrv_call *c = NULL;
+	struct ldapsrv_call *n = NULL;
+
 	DEBUG(10, ("UnbindRequest\n"));
-	return NT_STATUS_OK;
+
+	for (c = call->conn->pending_calls; c != NULL; c = n) {
+		n = c->next;
+
+		DLIST_REMOVE(call->conn->pending_calls, c);
+		TALLOC_FREE(c);
+	}
+
+	return ldapsrv_unbind_wait_setup(call);
 }
