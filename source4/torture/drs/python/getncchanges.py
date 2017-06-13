@@ -557,6 +557,53 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
         # Check we received links for all the reportees
         self.assert_expected_links(expected_links)
 
+    def test_repl_integrity_link_attr(self):
+        """
+        Tests adding links to new objects while a replication is in progress.
+        """
+
+        # create some source objects for the linked attributes, sandwiched
+        # between 2 blocks of filler objects
+        filler = self.create_object_range(0, 100, prefix="filler")
+        reportees = self.create_object_range(0, 100, prefix="reportee")
+        filler += self.create_object_range(100, 200, prefix="filler")
+
+        # Start the replication and get the first block of filler objects
+        # (We're being mean here and setting the GET_TGT flag right from the
+        # start. On earlier Samba versions, if the client encountered an
+        # unknown target object and retried with GET_TGT, it would restart the
+        # replication cycle from scratch, which avoids the problem).
+        self.repl_get_next(get_tgt=True)
+
+        # create the target objects and add the links. These objects should be
+        # outside the scope of the Samba replication cycle, but the links should
+        # still get sent with the source object
+        managers = self.create_object_range(0, 100, prefix="manager")
+
+        for i in range(0, 100):
+            self.modify_object(reportees[i], "managedBy", managers[i])
+
+        expected_objects = managers + reportees + filler
+        expected_links = reportees
+
+        # complete the replication
+        while not self.replication_complete():
+            self.repl_get_next(get_tgt=True)
+
+        # If we didn't receive the most recently created objects in the last
+        # replication cycle, then kick off another replication to get them
+        if len(self.rxd_dn_list) < len(expected_objects):
+            self.repl_get_next()
+
+            while not self.replication_complete():
+                self.repl_get_next()
+
+        # Check we get all the objects we're expecting
+        self.assert_expected_data(expected_objects)
+
+        # Check we received links for all the parents
+        self.assert_expected_links(expected_links)
+
     def test_repl_get_anc_link_attr(self):
         """
         A basic GET_ANC test where the parents have linked attributes
