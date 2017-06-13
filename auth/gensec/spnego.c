@@ -1077,8 +1077,15 @@ static NTSTATUS gensec_spnego_update_server(struct gensec_security *gensec_secur
 	case SPNEGO_SERVER_START:
 	{
 		NTSTATUS nt_status;
-		if (in.length) {
 
+		if (in.length == 0) {
+			return gensec_spnego_create_negTokenInit(gensec_security,
+								 spnego_state,
+								 out_mem_ctx,
+								 ev, out);
+		}
+
+		{
 			len = spnego_read_data(gensec_security, in, &spnego);
 			if (len == -1) {
 				return gensec_spnego_server_try_fallback(gensec_security, spnego_state,
@@ -1125,11 +1132,6 @@ static NTSTATUS gensec_spnego_update_server(struct gensec_security *gensec_secur
 			spnego_free_data(&spnego);
 
 			return nt_status;
-		} else {
-			return gensec_spnego_create_negTokenInit(gensec_security,
-								 spnego_state,
-								 out_mem_ctx,
-								 ev, out);
 		}
 	}
 
