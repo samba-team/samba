@@ -51,11 +51,19 @@ static NTSTATUS cli_lsa_lookup_domain_sid(struct cli_state *cli,
 					  struct dom_sid *sid)
 {
 	union lsa_PolicyInformation *info = NULL;
-	uint16_t orig_cnum = cli_state_get_tid(cli);
+	struct smbXcli_tcon *orig_tcon = NULL;
 	struct rpc_pipe_client *rpc_pipe = NULL;
 	struct policy_handle handle;
 	NTSTATUS status, result;
 	TALLOC_CTX *frame = talloc_stackframe();
+
+	if (cli_state_has_tcon(cli)) {
+		orig_tcon = cli_state_save_tcon(cli);
+		if (orig_tcon == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+	}
 
 	status = cli_tree_connect(cli, "IPC$", "?????", NULL);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -88,7 +96,7 @@ tdis:
 	TALLOC_FREE(rpc_pipe);
 	cli_tdis(cli);
 done:
-	cli_state_set_tid(cli, orig_cnum);
+	cli_state_restore_tcon(cli, orig_tcon);
 	TALLOC_FREE(frame);
 	return status;
 }
