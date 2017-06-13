@@ -377,6 +377,7 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 	NTSTATUS status = NT_STATUS_OK;
 	DATA_BLOB input = data_blob_null;
 	DATA_BLOB output = data_blob_null;
+	struct auth_session_info *session_info = NULL;
 
 	DEBUG(10, ("BindSASL dn: %s\n",req->dn));
 
@@ -512,20 +513,17 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 					 req->creds.SASL.mechanism, nt_errstr(status));
 		goto do_reply;
 	} else {
-		struct auth_session_info *old_session_info=NULL;
 
-		old_session_info = conn->session_info;
-		conn->session_info = NULL;
-		status = gensec_session_info(conn->gensec, conn, &conn->session_info);
+		status = gensec_session_info(conn->gensec, call, &session_info);
 		if (!NT_STATUS_IS_OK(status)) {
-			conn->session_info = old_session_info;
 			result = LDAP_OPERATIONS_ERROR;
 			errstr = talloc_asprintf(reply, 
 						 "SASL:[%s]: Failed to get session info: %s",
 						 req->creds.SASL.mechanism, nt_errstr(status));
 			goto do_reply;
 		} else {
-			talloc_unlink(conn, old_session_info);
+			talloc_unlink(conn, conn->session_info);
+			conn->session_info = talloc_steal(conn, session_info);
 
 			/* don't leak the old LDB */
 			talloc_unlink(conn, conn->ldb);
