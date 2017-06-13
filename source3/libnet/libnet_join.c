@@ -1140,6 +1140,9 @@ static NTSTATUS libnet_join_joindomain_rpc_unsecure(TALLOC_CTX *mem_ctx,
 	struct rpc_pipe_client *netlogon_pipe = NULL;
 	struct netlogon_creds_cli_context *netlogon_creds = NULL;
 	struct samr_Password current_nt_hash;
+	size_t len = 0;
+	bool ok;
+	DATA_BLOB new_trust_blob = data_blob_null;
 	NTSTATUS status;
 
 	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_netlogon,
@@ -1186,9 +1189,23 @@ static NTSTATUS libnet_join_joindomain_rpc_unsecure(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
+	len = strlen(r->in.machine_password);
+	ok = convert_string_talloc(frame, CH_UNIX, CH_UTF16,
+				   r->in.machine_password, len,
+				   (void **)&new_trust_blob.data,
+				   &new_trust_blob.length);
+	if (!ok) {
+		status = NT_STATUS_UNMAPPABLE_CHARACTER;
+		if (errno == ENOMEM) {
+			status = NT_STATUS_NO_MEMORY;
+		}
+		TALLOC_FREE(frame);
+		return status;
+	}
+
 	status = netlogon_creds_cli_ServerPasswordSet(netlogon_creds,
 						      netlogon_pipe->binding_handle,
-						      r->in.machine_password,
+						      &new_trust_blob,
 						      NULL); /* new_version */
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
