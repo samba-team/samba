@@ -6627,6 +6627,105 @@ static int replmd_extended_replicated_objects(struct ldb_module *module, struct 
 	return replmd_replicated_apply_next(ar);
 }
 
+/**
+ * Checks that the target object for a linked attribute exists.
+ * If it exists, its GUID and deletion-state are returned
+ */
+static int replmd_check_target_exists(struct ldb_module *module,
+				      struct dsdb_dn *dsdb_dn,
+				      struct la_entry *la_entry,
+				      struct ldb_dn *source_dn,
+				      struct GUID *guid,
+				      enum deletion_state *target_deletion_state)
+{
+	struct drsuapi_DsReplicaLinkedAttribute *la = la_entry->la;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	struct ldb_result *target_res;
+	TALLOC_CTX *tmp_ctx = talloc_new(la_entry);
+	const char *attrs[] = { "isDeleted", "isRecycled", NULL };
+	NTSTATUS ntstatus;
+	int ret;
+	bool active = (la->flags & DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE) ? true : false;
+
+	*target_deletion_state = OBJECT_REMOVED;
+
+	ntstatus = dsdb_get_extended_dn_guid(dsdb_dn->dn, guid, "GUID");
+
+	if (!NT_STATUS_IS_OK(ntstatus) && !active) {
+
+		/*
+		 * This strange behaviour (allowing a NULL/missing
+		 * GUID) originally comes from:
+		 *
+		 * commit e3054ce0fe0f8f62d2f5b2a77893e7a1479128bd
+		 * Author: Andrew Tridgell <tridge@samba.org>
+		 * Date:   Mon Dec 21 21:21:55 2009 +1100
+		 *
+		 *  s4-drs: cope better with NULL GUIDS from DRS
+		 *
+		 *  It is valid to get a NULL GUID over DRS for a deleted forward link. We
+		 *  need to match by DN if possible when seeing if we should update an
+		 *  existing link.
+		 *
+		 *  Pair-Programmed-With: Andrew Bartlett <abartlet@samba.org>
+		 */
+		ret = dsdb_module_search_dn(module, tmp_ctx, &target_res,
+					    dsdb_dn->dn, attrs,
+					    DSDB_FLAG_NEXT_MODULE |
+					    DSDB_SEARCH_SHOW_RECYCLED |
+					    DSDB_SEARCH_SEARCH_ALL_PARTITIONS |
+					    DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT,
+					    NULL);
+	} else if (!NT_STATUS_IS_OK(ntstatus)) {
+		ldb_asprintf_errstring(ldb, "Failed to find GUID in linked attribute 0x%x blob for %s from %s",
+				       la->attid,
+				       ldb_dn_get_linearized(dsdb_dn->dn),
+				       ldb_dn_get_linearized(source_dn));
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	} else {
+		ret = dsdb_module_search(module, tmp_ctx, &target_res,
+					 NULL, LDB_SCOPE_SUBTREE,
+					 attrs,
+					 DSDB_FLAG_NEXT_MODULE |
+					 DSDB_SEARCH_SHOW_RECYCLED |
+					 DSDB_SEARCH_SEARCH_ALL_PARTITIONS |
+					 DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT,
+					 NULL,
+					 "objectGUID=%s",
+					 GUID_string(tmp_ctx, guid));
+	}
+
+	if (ret != LDB_SUCCESS) {
+		ldb_asprintf_errstring(ldb, "Failed to re-resolve GUID %s: %s\n",
+				       GUID_string(tmp_ctx, guid),
+				       ldb_errstring(ldb));
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	if (target_res->count == 0) {
+		DEBUG(2,(__location__ ": WARNING: Failed to re-resolve GUID %s - using %s\n",
+			 GUID_string(tmp_ctx, guid),
+			 ldb_dn_get_linearized(dsdb_dn->dn)));
+	} else if (target_res->count != 1) {
+		ldb_asprintf_errstring(ldb, "More than one object found matching objectGUID %s\n",
+				       GUID_string(tmp_ctx, guid));
+		ret = LDB_ERR_OPERATIONS_ERROR;
+	} else {
+		struct ldb_message *target_msg = target_res->msgs[0];
+
+		dsdb_dn->dn = talloc_steal(dsdb_dn, target_msg->dn);
+
+		/* Get the object's state (i.e. Not Deleted, Tombstone, etc) */
+		replmd_deletion_state(module, target_msg,
+				      target_deletion_state, NULL);
+	}
+
+	talloc_free(tmp_ctx);
+	return ret;
+}
+
 /*
   process one linked attribute structure
  */
@@ -6638,7 +6737,6 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 	struct drsuapi_DsReplicaLinkedAttribute *la = la_entry->la;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct ldb_message *msg;
-	struct ldb_message *target_msg = NULL;
 	TALLOC_CTX *tmp_ctx = talloc_new(la_entry);
 	const struct dsdb_schema *schema = dsdb_get_schema(ldb, tmp_ctx);
 	int ret;
@@ -6649,16 +6747,14 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 	WERROR status;
 	time_t t = time(NULL);
 	struct ldb_result *res;
-	struct ldb_result *target_res;
 	const char *attrs[4];
-	const char *attrs2[] = { "isDeleted", "isRecycled", NULL };
 	struct parsed_dn *pdn_list, *pdn, *next;
 	struct GUID guid = GUID_zero();
-	NTSTATUS ntstatus;
 	bool active = (la->flags & DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE)?true:false;
 
 	enum deletion_state deletion_state = OBJECT_NOT_DELETED;
 	enum deletion_state target_deletion_state = OBJECT_NOT_DELETED;
+
 
 /*
 linked_attributes[0]:
@@ -6779,72 +6875,12 @@ linked_attributes[0]:
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ntstatus = dsdb_get_extended_dn_guid(dsdb_dn->dn, &guid, "GUID");
-	if (!NT_STATUS_IS_OK(ntstatus) && !active) {
-		/*
-		 * This strange behaviour (allowing a NULL/missing
-		 * GUID) originally comes from:
-		 *
-		 * commit e3054ce0fe0f8f62d2f5b2a77893e7a1479128bd
-		 * Author: Andrew Tridgell <tridge@samba.org>
-		 * Date:   Mon Dec 21 21:21:55 2009 +1100
-		 *
-		 *  s4-drs: cope better with NULL GUIDS from DRS
-		 *
-		 *  It is valid to get a NULL GUID over DRS for a deleted forward link. We
-		 *  need to match by DN if possible when seeing if we should update an
-		 *  existing link.
-		 *
-		 *  Pair-Programmed-With: Andrew Bartlett <abartlet@samba.org>
-		 */
-
-		ret = dsdb_module_search_dn(module, tmp_ctx, &target_res,
-					    dsdb_dn->dn, attrs2,
-					    DSDB_FLAG_NEXT_MODULE |
-					    DSDB_SEARCH_SHOW_RECYCLED |
-					    DSDB_SEARCH_SEARCH_ALL_PARTITIONS |
-					    DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT,
-					    parent);
-	} else if (!NT_STATUS_IS_OK(ntstatus)) {
-		ldb_asprintf_errstring(ldb, "Failed to find GUID in linked attribute blob for %s on %s from %s",
-				       old_el->name,
-				       ldb_dn_get_linearized(dsdb_dn->dn),
-				       ldb_dn_get_linearized(msg->dn));
-		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
-	} else {
-		ret = dsdb_module_search(module, tmp_ctx, &target_res,
-					 NULL, LDB_SCOPE_SUBTREE,
-					 attrs2,
-					 DSDB_FLAG_NEXT_MODULE |
-					 DSDB_SEARCH_SHOW_RECYCLED |
-					 DSDB_SEARCH_SEARCH_ALL_PARTITIONS |
-					 DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT,
-					 parent,
-					 "objectGUID=%s",
-					 GUID_string(tmp_ctx, &guid));
-	}
+	ret = replmd_check_target_exists(module, dsdb_dn, la_entry, msg->dn,
+					 &guid, &target_deletion_state);
 
 	if (ret != LDB_SUCCESS) {
-		ldb_asprintf_errstring(ldb_module_get_ctx(module), "Failed to re-resolve GUID %s: %s\n",
-				       GUID_string(tmp_ctx, &guid),
-				       ldb_errstring(ldb_module_get_ctx(module)));
 		talloc_free(tmp_ctx);
 		return ret;
-	}
-
-	if (target_res->count == 0) {
-		DEBUG(2,(__location__ ": WARNING: Failed to re-resolve GUID %s - using %s\n",
-			 GUID_string(tmp_ctx, &guid),
-			 ldb_dn_get_linearized(dsdb_dn->dn)));
-	} else if (target_res->count != 1) {
-		ldb_asprintf_errstring(ldb_module_get_ctx(module), "More than one object found matching objectGUID %s\n",
-				       GUID_string(tmp_ctx, &guid));
-		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
-	} else {
-		target_msg = target_res->msgs[0];
-		dsdb_dn->dn = talloc_steal(dsdb_dn, target_msg->dn);
 	}
 
 	/*
@@ -6854,9 +6890,6 @@ linked_attributes[0]:
 	 * any existing link, that should have happened when the
 	 * object deletion was replicated or initiated.
 	 */
-	replmd_deletion_state(module, target_msg,
-			      &target_deletion_state, NULL);
-
 	if (target_deletion_state >= OBJECT_RECYCLED) {
 		talloc_free(tmp_ctx);
 		return LDB_SUCCESS;
