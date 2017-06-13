@@ -1238,65 +1238,6 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 	return NT_STATUS_INVALID_PARAMETER;
 }
 
-static NTSTATUS gensec_spnego_update_out(struct gensec_security *gensec_security,
-					 TALLOC_CTX *out_mem_ctx,
-					 DATA_BLOB *_out)
-{
-	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
-	DATA_BLOB out = data_blob_null;
-	bool ok;
-
-	*_out = data_blob_null;
-
-	if (spnego_state->out_frag.length <= spnego_state->out_max_length) {
-		/*
-		 * Fast path, we can deliver everything
-		 */
-
-		*_out = spnego_state->out_frag;
-		if (spnego_state->out_frag.length > 0) {
-			talloc_steal(out_mem_ctx, _out->data);
-			spnego_state->out_frag = data_blob_null;
-		}
-
-		if (!NT_STATUS_IS_OK(spnego_state->out_status)) {
-			return spnego_state->out_status;
-		}
-
-		/*
-		 * We're completely done, further updates are not allowed.
-		 */
-		spnego_state->state_position = SPNEGO_DONE;
-		return gensec_child_ready(gensec_security,
-					  spnego_state->sub_sec_security);
-	}
-
-	out = spnego_state->out_frag;
-
-	/*
-	 * copy the remaining bytes
-	 */
-	spnego_state->out_frag = data_blob_talloc(spnego_state,
-					out.data + spnego_state->out_max_length,
-					out.length - spnego_state->out_max_length);
-	if (spnego_state->out_frag.data == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	/*
-	 * truncate the buffer
-	 */
-	ok = data_blob_realloc(spnego_state, &out,
-			       spnego_state->out_max_length);
-	if (!ok) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	talloc_steal(out_mem_ctx, out.data);
-	*_out = out;
-	return NT_STATUS_MORE_PROCESSING_REQUIRED;
-}
-
 struct gensec_spnego_update_state {
 	struct gensec_security *gensec;
 	struct spnego_state *spnego;
@@ -1329,6 +1270,9 @@ static void gensec_spnego_update_cleanup(struct tevent_req *req,
 static NTSTATUS gensec_spnego_update_in(struct gensec_security *gensec_security,
 					const DATA_BLOB in, TALLOC_CTX *mem_ctx,
 					DATA_BLOB *full_in);
+static NTSTATUS gensec_spnego_update_out(struct gensec_security *gensec_security,
+					 TALLOC_CTX *out_mem_ctx,
+					 DATA_BLOB *_out);
 
 static struct tevent_req *gensec_spnego_update_send(TALLOC_CTX *mem_ctx,
 						    struct tevent_context *ev,
@@ -1507,6 +1451,65 @@ static NTSTATUS gensec_spnego_update_in(struct gensec_security *gensec_security,
 	spnego_state->in_frag = data_blob_null;
 	spnego_state->in_needed = 0;
 	return NT_STATUS_OK;
+}
+
+static NTSTATUS gensec_spnego_update_out(struct gensec_security *gensec_security,
+					 TALLOC_CTX *out_mem_ctx,
+					 DATA_BLOB *_out)
+{
+	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
+	DATA_BLOB out = data_blob_null;
+	bool ok;
+
+	*_out = data_blob_null;
+
+	if (spnego_state->out_frag.length <= spnego_state->out_max_length) {
+		/*
+		 * Fast path, we can deliver everything
+		 */
+
+		*_out = spnego_state->out_frag;
+		if (spnego_state->out_frag.length > 0) {
+			talloc_steal(out_mem_ctx, _out->data);
+			spnego_state->out_frag = data_blob_null;
+		}
+
+		if (!NT_STATUS_IS_OK(spnego_state->out_status)) {
+			return spnego_state->out_status;
+		}
+
+		/*
+		 * We're completely done, further updates are not allowed.
+		 */
+		spnego_state->state_position = SPNEGO_DONE;
+		return gensec_child_ready(gensec_security,
+					  spnego_state->sub_sec_security);
+	}
+
+	out = spnego_state->out_frag;
+
+	/*
+	 * copy the remaining bytes
+	 */
+	spnego_state->out_frag = data_blob_talloc(spnego_state,
+					out.data + spnego_state->out_max_length,
+					out.length - spnego_state->out_max_length);
+	if (spnego_state->out_frag.data == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/*
+	 * truncate the buffer
+	 */
+	ok = data_blob_realloc(spnego_state, &out,
+			       spnego_state->out_max_length);
+	if (!ok) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	talloc_steal(out_mem_ctx, out.data);
+	*_out = out;
+	return NT_STATUS_MORE_PROCESSING_REQUIRED;
 }
 
 static NTSTATUS gensec_spnego_update_recv(struct tevent_req *req,
