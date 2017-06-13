@@ -84,7 +84,7 @@ static NTSTATUS cli_lsa_lookup_sid(struct cli_state *cli,
 				   enum lsa_SidType *type,
 				   char **domain, char **name)
 {
-	uint16_t orig_cnum = cli_state_get_tid(cli);
+	uint32_t orig_cnum = cli_state_get_tid(cli);
 	struct rpc_pipe_client *p = NULL;
 	struct policy_handle handle;
 	NTSTATUS status;
@@ -165,7 +165,7 @@ static NTSTATUS cli_lsa_lookup_name(struct cli_state *cli,
 				    enum lsa_SidType *type,
 				    struct dom_sid *sid)
 {
-	uint16_t orig_cnum = cli_state_get_tid(cli);
+	uint32_t orig_cnum = cli_state_get_tid(cli);
 	struct rpc_pipe_client *p;
 	struct policy_handle handle;
 	NTSTATUS status;
