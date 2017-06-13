@@ -170,7 +170,10 @@ bool run_smb2_basic(int dummy)
 	}
 
 	saved_tid = smb2cli_tcon_current_id(cli->smb2.tcon);
-	saved_tcon = cli->smb2.tcon;
+	saved_tcon = cli_state_save_tcon(cli);
+	if (saved_tcon == NULL) {
+		return false;
+	}
 	cli->smb2.tcon = smbXcli_tcon_create(cli);
 	smb2cli_tcon_set_values(cli->smb2.tcon,
 				NULL, /* session */
@@ -187,8 +190,7 @@ bool run_smb2_basic(int dummy)
 		printf("smb2cli_tdis returned %s\n", nt_errstr(status));
 		return false;
 	}
-	talloc_free(cli->smb2.tcon);
-	cli->smb2.tcon = saved_tcon;
+	cli_state_restore_tcon(cli, saved_tcon);
 
 	status = smb2cli_tdis(cli->conn,
 			      cli->timeout,
