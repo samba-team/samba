@@ -2437,6 +2437,13 @@ struct tevent_req *cli_tcon_andx_create(TALLOC_CTX *mem_ctx,
 	state->cli = cli;
 	vwv = state->vwv;
 
+	TALLOC_FREE(cli->smb1.tcon);
+	cli->smb1.tcon = smbXcli_tcon_create(cli);
+	if (tevent_req_nomem(cli->smb1.tcon, req)) {
+		return tevent_req_post(req, ev);
+	}
+	smb1cli_tcon_set_id(cli->smb1.tcon, UINT16_MAX);
+
 	cli->share = talloc_strdup(cli, share);
 	if (!cli->share) {
 		return NULL;
@@ -2740,6 +2747,7 @@ static struct tevent_req *cli_tree_connect_send(
 	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
 		char *unc;
 
+		TALLOC_FREE(cli->smb2.tcon);
 		cli->smb2.tcon = smbXcli_tcon_create(cli);
 		if (tevent_req_nomem(cli->smb2.tcon, req)) {
 			return tevent_req_post(req, ev);
@@ -2899,7 +2907,7 @@ static void cli_tdis_done(struct tevent_req *subreq)
 		tevent_req_nterror(req, status);
 		return;
 	}
-	cli_state_set_tid(state->cli, UINT16_MAX);
+	TALLOC_FREE(state->cli->smb1.tcon);
 	tevent_req_done(req);
 }
 
@@ -2915,10 +2923,14 @@ NTSTATUS cli_tdis(struct cli_state *cli)
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
 	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
-		return smb2cli_tdis(cli->conn,
+		status = smb2cli_tdis(cli->conn,
 				    cli->timeout,
 				    cli->smb2.session,
 				    cli->smb2.tcon);
+		if (NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(cli->smb2.tcon);
+		}
+		return status;
 	}
 
 	if (smbXcli_conn_has_async_calls(cli->conn)) {
@@ -3578,6 +3590,13 @@ static struct tevent_req *cli_raw_tcon_send(
 		tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
 		return tevent_req_post(req, ev);
 	}
+
+	TALLOC_FREE(cli->smb1.tcon);
+	cli->smb1.tcon = smbXcli_tcon_create(cli);
+	if (tevent_req_nomem(cli->smb1.tcon, req)) {
+		return tevent_req_post(req, ev);
+	}
+	smb1cli_tcon_set_id(cli->smb1.tcon, UINT16_MAX);
 
 	bytes = talloc_array(state, uint8_t, 0);
 	bytes = smb_bytes_push_bytes(bytes, 4, NULL, 0);

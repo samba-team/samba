@@ -227,11 +227,6 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 
 	cli->smb1.pid = (uint32_t)getpid();
 	cli->smb1.vc_num = cli->smb1.pid;
-	cli->smb1.tcon = smbXcli_tcon_create(cli);
-	if (cli->smb1.tcon == NULL) {
-		goto error;
-	}
-	smb1cli_tcon_set_id(cli->smb1.tcon, UINT16_MAX);
 	cli->smb1.session = smbXcli_session_create(cli, cli->conn);
 	if (cli->smb1.session == NULL) {
 		goto error;
