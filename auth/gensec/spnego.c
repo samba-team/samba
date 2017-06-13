@@ -1383,36 +1383,69 @@ static NTSTATUS gensec_spnego_update_out(struct gensec_security *gensec_security
 	return NT_STATUS_MORE_PROCESSING_REQUIRED;
 }
 
-static NTSTATUS gensec_spnego_update_wrapper(struct gensec_security *gensec_security,
-					     TALLOC_CTX *out_mem_ctx,
-					     struct tevent_context *ev,
-					     const DATA_BLOB in, DATA_BLOB *out)
+struct gensec_spnego_update_state {
+	struct gensec_security *gensec;
+	struct spnego_state *spnego;
+	DATA_BLOB full_in;
+	NTSTATUS status;
+	DATA_BLOB out;
+};
+
+static struct tevent_req *gensec_spnego_update_send(TALLOC_CTX *mem_ctx,
+						    struct tevent_context *ev,
+						    struct gensec_security *gensec_security,
+						    const DATA_BLOB in)
 {
-	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
-	DATA_BLOB full_in = data_blob_null;
+	struct spnego_state *spnego_state =
+		talloc_get_type_abort(gensec_security->private_data,
+		struct spnego_state);
+	struct tevent_req *req = NULL;
+	struct gensec_spnego_update_state *state = NULL;
 	NTSTATUS status;
 
-	*out = data_blob_null;
+	req = tevent_req_create(mem_ctx, &state,
+				struct gensec_spnego_update_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->gensec = gensec_security;
+	state->spnego = spnego_state;
 
 	if (spnego_state->out_frag.length > 0) {
 		if (in.length > 0) {
-			return NT_STATUS_INVALID_PARAMETER;
+			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			return tevent_req_post(req, ev);
 		}
 
-		return gensec_spnego_update_out(gensec_security,
-						out_mem_ctx,
-						out);
+		status = gensec_spnego_update_out(gensec_security,
+						  state, &state->out);
+		state->status = status;
+		if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+			tevent_req_done(req);
+			return tevent_req_post(req, ev);
+		}
+		if (tevent_req_nterror(req, status)) {
+			return tevent_req_post(req, ev);
+		}
+
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
 	}
 
 	status = gensec_spnego_update_in(gensec_security,
-					 in, &full_in);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+					 in, &state->full_in);
+	state->status = status;
+	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+	}
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
 	}
 
 	status = gensec_spnego_update(gensec_security,
-				      spnego_state, ev,
-				      full_in,
+				      state, ev,
+				      state->full_in,
 				      &spnego_state->out_frag);
 	data_blob_free(&spnego_state->in_frag);
 	spnego_state->in_needed = 0;
@@ -1430,39 +1463,14 @@ static NTSTATUS gensec_spnego_update_wrapper(struct gensec_security *gensec_secu
 		 * A fatal error, further updates are not allowed.
 		 */
 		spnego_state->state_position = SPNEGO_DONE;
-		return status;
+		tevent_req_nterror(req, status);
+		return tevent_req_post(req, ev);
 	}
 
 	spnego_state->out_status = status;
 
-	return gensec_spnego_update_out(gensec_security,
-					out_mem_ctx,
-					out);
-}
-
-struct gensec_spnego_update_state {
-	NTSTATUS status;
-	DATA_BLOB out;
-};
-
-static struct tevent_req *gensec_spnego_update_send(TALLOC_CTX *mem_ctx,
-						    struct tevent_context *ev,
-						    struct gensec_security *gensec_security,
-						    const DATA_BLOB in)
-{
-	struct tevent_req *req = NULL;
-	struct gensec_spnego_update_state *state = NULL;
-	NTSTATUS status;
-
-	req = tevent_req_create(mem_ctx, &state,
-				struct gensec_spnego_update_state);
-	if (req == NULL) {
-		return NULL;
-	}
-
-	status = gensec_spnego_update_wrapper(gensec_security,
-					      state, ev, in,
-					      &state->out);
+	status = gensec_spnego_update_out(gensec_security,
+					  state, &state->out);
 	state->status = status;
 	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		tevent_req_done(req);
