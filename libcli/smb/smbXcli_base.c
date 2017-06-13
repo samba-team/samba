@@ -5989,6 +5989,38 @@ struct smbXcli_tcon *smbXcli_tcon_create(TALLOC_CTX *mem_ctx)
 	return tcon;
 }
 
+/*
+ * Return a deep structure copy of a struct smbXcli_tcon *
+ */
+
+struct smbXcli_tcon *smbXcli_tcon_copy(TALLOC_CTX *mem_ctx,
+				const struct smbXcli_tcon *tcon_in)
+{
+	struct smbXcli_tcon *tcon;
+
+	tcon = talloc_memdup(mem_ctx, tcon_in, sizeof(struct smbXcli_tcon));
+	if (tcon == NULL) {
+		return NULL;
+	}
+
+	/* Deal with the SMB1 strings. */
+	if (tcon_in->smb1.service != NULL) {
+		tcon->smb1.service = talloc_strdup(tcon, tcon_in->smb1.service);
+		if (tcon->smb1.service == NULL) {
+			TALLOC_FREE(tcon);
+			return NULL;
+		}
+	}
+	if (tcon->smb1.fs_type != NULL) {
+		tcon->smb1.fs_type = talloc_strdup(tcon, tcon_in->smb1.fs_type);
+		if (tcon->smb1.fs_type == NULL) {
+			TALLOC_FREE(tcon);
+			return NULL;
+		}
+	}
+	return tcon;
+}
+
 void smbXcli_tcon_set_fs_attributes(struct smbXcli_tcon *tcon,
 				    uint32_t fs_attributes)
 {
