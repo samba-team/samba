@@ -84,7 +84,7 @@ static NTSTATUS cli_lsa_lookup_sid(struct cli_state *cli,
 				   enum lsa_SidType *type,
 				   char **domain, char **name)
 {
-	uint32_t orig_cnum = cli_state_get_tid(cli);
+	struct smbXcli_tcon *orig_tcon = NULL;
 	struct rpc_pipe_client *p = NULL;
 	struct policy_handle handle;
 	NTSTATUS status;
@@ -92,6 +92,14 @@ static NTSTATUS cli_lsa_lookup_sid(struct cli_state *cli,
 	enum lsa_SidType *types;
 	char **domains;
 	char **names;
+
+	if (cli_state_has_tcon(cli)) {
+		orig_tcon = cli_state_save_tcon(cli);
+		if (orig_tcon == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto tcon_fail;
+		}
+	}
 
 	status = cli_tree_connect(cli, "IPC$", "?????", "", 0);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -125,7 +133,7 @@ static NTSTATUS cli_lsa_lookup_sid(struct cli_state *cli,
 	TALLOC_FREE(p);
 	cli_tdis(cli);
  tcon_fail:
-	cli_state_set_tid(cli, orig_cnum);
+	cli_state_restore_tcon(cli, orig_tcon);
 	TALLOC_FREE(frame);
 	return status;
 }
@@ -165,13 +173,21 @@ static NTSTATUS cli_lsa_lookup_name(struct cli_state *cli,
 				    enum lsa_SidType *type,
 				    struct dom_sid *sid)
 {
-	uint32_t orig_cnum = cli_state_get_tid(cli);
+	struct smbXcli_tcon *orig_tcon = NULL;
 	struct rpc_pipe_client *p;
 	struct policy_handle handle;
 	NTSTATUS status;
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct dom_sid *sids;
 	enum lsa_SidType *types;
+
+	if (cli_state_has_tcon(cli)) {
+		orig_tcon = cli_state_save_tcon(cli);
+		if (orig_tcon == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto tcon_fail;
+		}
+	}
 
 	status = cli_tree_connect(cli, "IPC$", "?????", "", 0);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -204,7 +220,7 @@ static NTSTATUS cli_lsa_lookup_name(struct cli_state *cli,
 	TALLOC_FREE(p);
 	cli_tdis(cli);
  tcon_fail:
-	cli_state_set_tid(cli, orig_cnum);
+	cli_state_restore_tcon(cli, orig_tcon);
 	TALLOC_FREE(frame);
 	return status;
 }

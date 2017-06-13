@@ -1310,6 +1310,7 @@ static bool run_tcon_test(int dummy)
 	const char *fname = "\\tcontest.tmp";
 	uint16_t fnum1;
 	uint32_t cnum1, cnum2, cnum3;
+	struct smbXcli_tcon *orig_tcon = NULL;
 	uint16_t vuid1, vuid2;
 	char buf[4];
 	bool ret = True;
@@ -1339,6 +1340,11 @@ static bool run_tcon_test(int dummy)
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("initial write failed (%s)", nt_errstr(status));
 		return False;
+	}
+
+	orig_tcon = cli_state_save_tcon(cli);
+	if (orig_tcon == NULL) {
+		return false;
 	}
 
 	status = cli_tree_connect(cli, share, "?????",
@@ -1408,6 +1414,8 @@ static bool run_tcon_test(int dummy)
 		printf("secondary tdis failed (%s)\n", nt_errstr(status));
 		return False;
 	}
+
+	cli_state_restore_tcon(cli, orig_tcon);
 
 	cli_state_set_tid(cli, cnum1);
 
@@ -8875,6 +8883,7 @@ static bool run_uid_regression_test(int dummy)
 	int16_t old_vuid;
 	int32_t old_cnum;
 	bool correct = True;
+	struct smbXcli_tcon *orig_tcon = NULL;
 	NTSTATUS status;
 
 	printf("starting uid regression test\n");
@@ -8915,6 +8924,11 @@ static bool run_uid_regression_test(int dummy)
 	}
 
 	old_cnum = cli_state_get_tid(cli);
+	orig_tcon = cli_state_save_tcon(cli);
+	if (orig_tcon == NULL) {
+		correct = false;
+		goto out;
+	}
 
 	/* Now try a SMBtdis with the invald vuid set to zero. */
 	cli_state_set_uid(cli, 0);
@@ -8927,9 +8941,11 @@ static bool run_uid_regression_test(int dummy)
 	} else {
 		d_printf("First tdis failed (%s)\n", nt_errstr(status));
 		correct = false;
+		cli_state_restore_tcon(cli, orig_tcon);
 		goto out;
 	}
 
+	cli_state_restore_tcon(cli, orig_tcon);
 	cli_state_set_uid(cli, old_vuid);
 	cli_state_set_tid(cli, old_cnum);
 

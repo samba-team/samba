@@ -1179,7 +1179,7 @@ bool cli_check_msdfs_proxy(TALLOC_CTX *ctx,
 	size_t consumed = 0;
 	char *fullpath = NULL;
 	bool res;
-	uint32_t cnum;
+	struct smbXcli_tcon *orig_tcon = NULL;
 	char *newextrapath = NULL;
 	NTSTATUS status;
 	const char *remote_name;
@@ -1189,7 +1189,6 @@ bool cli_check_msdfs_proxy(TALLOC_CTX *ctx,
 	}
 
 	remote_name = smbXcli_conn_remote_name(cli->conn);
-	cnum = cli_state_get_tid(cli);
 
 	/* special case.  never check for a referral on the IPC$ share */
 
@@ -1204,9 +1203,18 @@ bool cli_check_msdfs_proxy(TALLOC_CTX *ctx,
 		return false;
 	}
 
+	/* Store tcon state. */
+	if (cli_state_has_tcon(cli)) {
+		orig_tcon = cli_state_save_tcon(cli);
+		if (orig_tcon == NULL) {
+			return false;
+		}
+	}
+
 	/* check for the referral */
 
 	if (!NT_STATUS_IS_OK(cli_tree_connect(cli, "IPC$", "IPC", NULL, 0))) {
+		cli_state_restore_tcon(cli, orig_tcon);
 		return false;
 	}
 
@@ -1217,6 +1225,7 @@ bool cli_check_msdfs_proxy(TALLOC_CTX *ctx,
 					domain,
 					"IPC$");
 		if (!NT_STATUS_IS_OK(status)) {
+			cli_state_restore_tcon(cli, orig_tcon);
 			return false;
 		}
 	}
@@ -1226,11 +1235,12 @@ bool cli_check_msdfs_proxy(TALLOC_CTX *ctx,
 	res = NT_STATUS_IS_OK(status);
 
 	status = cli_tdis(cli);
+
+	cli_state_restore_tcon(cli, orig_tcon);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
-
-	cli_state_set_tid(cli, cnum);
 
 	if (!res || !num_refs) {
 		return false;
