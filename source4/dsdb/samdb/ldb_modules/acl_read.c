@@ -58,6 +58,10 @@ struct aclread_context {
 
 struct aclread_private {
 	bool enabled;
+
+	/* cache of the last SD we read during any search */
+	struct security_descriptor *sd_cached;
+	struct ldb_val sd_cached_blob;
 };
 
 static void aclread_mark_inaccesslible(struct ldb_message_element *el) {
@@ -149,6 +153,81 @@ static int aclread_check_parent(struct aclread_context *ac,
 	return ret;
 }
 
+/*
+ * The sd returned from this function is valid until the next call on
+ * this module context
+ *
+ * This helper function uses a cache on the module private data to
+ * speed up repeated use of the same SD.
+ */
+
+static int aclread_get_sd_from_ldb_message(struct aclread_context *ac,
+					   struct ldb_message *acl_res,
+					   struct security_descriptor **sd)
+{
+	struct ldb_message_element *sd_element;
+	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
+	struct aclread_private *private_data
+		= talloc_get_type(ldb_module_get_private(ac->module),
+				  struct aclread_private);
+	enum ndr_err_code ndr_err;
+
+	sd_element = ldb_msg_find_element(acl_res, "nTSecurityDescriptor");
+	if (sd_element == NULL) {
+		return ldb_error(ldb, LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS,
+				 "nTSecurityDescriptor is missing");
+	}
+
+	if (sd_element->num_values != 1) {
+		return ldb_operr(ldb);
+	}
+
+	/*
+	 * The time spent in ndr_pull_security_descriptor() is quite
+	 * expensive, so we check if this is the same binary blob as last
+	 * time, and if so return the memory tree from that previous parse.
+	 */
+
+	if (private_data->sd_cached != NULL &&
+	    private_data->sd_cached_blob.data != NULL &&
+	    ldb_val_equal_exact(&sd_element->values[0],
+				&private_data->sd_cached_blob)) {
+		*sd = private_data->sd_cached;
+		return LDB_SUCCESS;
+	}
+
+	*sd = talloc(private_data, struct security_descriptor);
+	if(!*sd) {
+		return ldb_oom(ldb);
+	}
+	ndr_err = ndr_pull_struct_blob(&sd_element->values[0], *sd, *sd,
+			     (ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
+
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		TALLOC_FREE(*sd);
+		return ldb_operr(ldb);
+	}
+
+	talloc_unlink(private_data, private_data->sd_cached_blob.data);
+	if (ac->added_nTSecurityDescriptor) {
+		private_data->sd_cached_blob = sd_element->values[0];
+		talloc_steal(private_data, sd_element->values[0].data);
+	} else {
+		private_data->sd_cached_blob = ldb_val_dup(private_data,
+							   &sd_element->values[0]);
+		if (private_data->sd_cached_blob.data == NULL) {
+			TALLOC_FREE(*sd);
+			return ldb_operr(ldb);
+		}
+	}
+
+	talloc_unlink(private_data, private_data->sd_cached);
+	private_data->sd_cached = *sd;
+
+	return LDB_SUCCESS;
+}
+
+
 static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
 	struct ldb_context *ldb;
@@ -157,7 +236,7 @@ static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 	struct ldb_message *msg;
 	int ret, num_of_attrs = 0;
 	unsigned int i, k = 0;
-	struct security_descriptor *sd;
+	struct security_descriptor *sd = NULL;
 	struct dom_sid *sid = NULL;
 	TALLOC_CTX *tmp_ctx;
 	uint32_t instanceType;
@@ -176,7 +255,7 @@ static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 	switch (ares->type) {
 	case LDB_REPLY_ENTRY:
 		msg = ares->message;
-		ret = dsdb_get_sd_from_ldb_message(ldb, tmp_ctx, msg, &sd);
+		ret = aclread_get_sd_from_ldb_message(ac, msg, &sd);
 		if (ret != LDB_SUCCESS) {
 			ldb_debug_set(ldb, LDB_DEBUG_FATAL,
 				      "acl_read: cannot get descriptor of %s: %s\n",
