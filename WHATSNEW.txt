@@ -103,6 +103,7 @@ smb.conf changes
   auth event notification       New parameter           no
   auth methods                  Deprecated
   map untrusted to domain       Deprecated
+  profile acls                  Deprecated
   strict sync                   Default changed         yes
 
 Removal of lpcfg_register_defaults_hook()
