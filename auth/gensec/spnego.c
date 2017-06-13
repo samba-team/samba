@@ -1168,9 +1168,18 @@ struct gensec_spnego_update_state {
 	struct tevent_context *ev;
 	struct gensec_security *gensec;
 	struct spnego_state *spnego;
+
 	DATA_BLOB full_in;
 	struct spnego_data _spnego_in;
 	struct spnego_data *spnego_in;
+
+	struct {
+		bool needed;
+		DATA_BLOB in;
+		NTSTATUS status;
+		DATA_BLOB out;
+	} sub;
+
 	NTSTATUS status;
 	DATA_BLOB out;
 };
@@ -1200,6 +1209,7 @@ static NTSTATUS gensec_spnego_update_in(struct gensec_security *gensec_security,
 					const DATA_BLOB in, TALLOC_CTX *mem_ctx,
 					DATA_BLOB *full_in);
 static void gensec_spnego_update_pre(struct tevent_req *req);
+static void gensec_spnego_update_done(struct tevent_req *subreq);
 static void gensec_spnego_update_post(struct tevent_req *req);
 static NTSTATUS gensec_spnego_update_out(struct gensec_security *gensec_security,
 					 TALLOC_CTX *out_mem_ctx,
@@ -1334,9 +1344,24 @@ static struct tevent_req *gensec_spnego_update_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	/*
-	 * TODO: prepare async processing here in future.
-	 */
+	if (state->sub.needed) {
+		struct tevent_req *subreq = NULL;
+
+		/*
+		 * We may need one more roundtrip...
+		 */
+		subreq = gensec_update_send(state, state->ev,
+					    spnego_state->sub_sec_security,
+					    state->sub.in);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(subreq,
+					gensec_spnego_update_done,
+					req);
+		state->sub.needed = false;
+		return req;
+	}
 
 	gensec_spnego_update_post(req);
 	if (!tevent_req_is_in_progress(req)) {
@@ -1464,15 +1489,15 @@ static void gensec_spnego_update_pre(struct tevent_req *req)
 	struct tevent_context *ev = state->ev;
 	NTSTATUS status;
 
+	state->sub.needed = false;
+	state->sub.in = data_blob_null;
+	state->sub.status = NT_STATUS_INTERNAL_ERROR;
+	state->sub.out = data_blob_null;
+
 	if (spnego_state->state_position == SPNEGO_FALLBACK) {
-		status = gensec_update_ev(spnego_state->sub_sec_security,
-					  state, ev,
-					  state->full_in,
-					  &spnego_state->out_frag);
-		/*
-		 * We don't check status here.
-		 */
-		spnego_state->out_status = status;
+		state->sub.in = state->full_in;
+		state->full_in = data_blob_null;
+		state->sub.needed = true;
 		return;
 	}
 
@@ -1549,6 +1574,25 @@ static void gensec_spnego_update_pre(struct tevent_req *req)
 	spnego_state->out_status = status;
 }
 
+static void gensec_spnego_update_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
+	struct gensec_spnego_update_state *state =
+		tevent_req_data(req,
+		struct gensec_spnego_update_state);
+	struct spnego_state *spnego_state = state->spnego;
+
+	state->sub.status = gensec_update_recv(subreq, state, &state->sub.out);
+	TALLOC_FREE(subreq);
+	if (NT_STATUS_IS_OK(state->sub.status)) {
+		spnego_state->sub_sec_ready = true;
+	}
+
+	gensec_spnego_update_post(req);
+}
+
 static void gensec_spnego_update_post(struct tevent_req *req)
 {
 	struct gensec_spnego_update_state *state =
@@ -1557,8 +1601,14 @@ static void gensec_spnego_update_post(struct tevent_req *req)
 	struct spnego_state *spnego_state = state->spnego;
 	NTSTATUS status;
 
+	state->sub.in = data_blob_null;
+	state->sub.needed = false;
+
 	if (spnego_state->state_position == SPNEGO_FALLBACK) {
-		status = spnego_state->out_status;
+		status = state->sub.status;
+		spnego_state->out_frag = state->sub.out;
+		talloc_steal(spnego_state, spnego_state->out_frag.data);
+		state->sub.out = data_blob_null;
 		goto respond;
 	}
 
