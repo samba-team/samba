@@ -341,12 +341,24 @@ uint32_t cli_getpid(struct cli_state *cli)
 
 bool cli_state_has_tcon(struct cli_state *cli)
 {
-	uint32_t tid = cli_state_get_tid(cli);
-
-	if (tid == UINT16_MAX) {
-		return false;
+	uint32_t tid;
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+		if (cli->smb2.tcon == NULL) {
+			return false;
+		}
+		tid = cli_state_get_tid(cli);
+		if (tid == UINT32_MAX) {
+			return false;
+		}
+	} else {
+		if (cli->smb1.tcon == NULL) {
+			return false;
+		}
+		tid = cli_state_get_tid(cli);
+		if (tid == UINT16_MAX) {
+			return false;
+		}
 	}
-
 	return true;
 }
 
