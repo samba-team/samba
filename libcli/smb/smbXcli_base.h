@@ -447,6 +447,7 @@ bool smb1cli_tcon_set_values(struct smbXcli_tcon *tcon,
 			     const char *service,
 			     const char *fs_type);
 uint32_t smb2cli_tcon_current_id(struct smbXcli_tcon *tcon);
+void smb2cli_tcon_set_id(struct smbXcli_tcon *tcon, uint32_t tcon_id);
 uint32_t smb2cli_tcon_capabilities(struct smbXcli_tcon *tcon);
 uint32_t smb2cli_tcon_flags(struct smbXcli_tcon *tcon);
 void smb2cli_tcon_set_values(struct smbXcli_tcon *tcon,
