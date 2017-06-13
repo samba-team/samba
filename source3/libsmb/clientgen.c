@@ -362,6 +362,26 @@ uint16_t cli_state_set_tid(struct cli_state *cli, uint16_t tid)
 	return ret;
 }
 
+struct smbXcli_tcon *cli_state_save_tcon(struct cli_state *cli)
+{
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+		return smbXcli_tcon_copy(cli, cli->smb2.tcon);
+	} else {
+		return smbXcli_tcon_copy(cli, cli->smb1.tcon);
+	}
+}
+
+void cli_state_restore_tcon(struct cli_state *cli, struct smbXcli_tcon *tcon)
+{
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+		TALLOC_FREE(cli->smb2.tcon);
+		cli->smb2.tcon = tcon;
+	} else {
+		TALLOC_FREE(cli->smb1.tcon);
+		cli->smb1.tcon = tcon;
+	}
+}
+
 uint16_t cli_state_get_uid(struct cli_state *cli)
 {
 	return smb1cli_session_current_id(cli->smb1.session);
