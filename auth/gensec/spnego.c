@@ -1085,54 +1085,52 @@ static NTSTATUS gensec_spnego_update_server(struct gensec_security *gensec_secur
 								 ev, out);
 		}
 
-		{
-			len = spnego_read_data(gensec_security, in, &spnego);
-			if (len == -1) {
-				return gensec_spnego_server_try_fallback(gensec_security, spnego_state,
-									 ev, out_mem_ctx, in, out);
-			}
-			/* client sent NegTargetInit, we send NegTokenTarg */
-
-			/* OK, so it's real SPNEGO, check the packet's the one we expect */
-			if (spnego.type != spnego_state->expected_packet) {
-				DEBUG(1, ("Invalid SPNEGO request: %d, expected %d\n", spnego.type,
-					  spnego_state->expected_packet));
-				dump_data(1, in.data, in.length);
-				spnego_free_data(&spnego);
-				return NT_STATUS_INVALID_PARAMETER;
-			}
-
-			nt_status = gensec_spnego_parse_negTokenInit(gensec_security,
-								     spnego_state,
-								     out_mem_ctx,
-								     ev,
-								     spnego.negTokenInit.mechTypes,
-								     spnego.negTokenInit.mechToken,
-								     &unwrapped_out);
-
-			if (spnego_state->simulate_w2k) {
-				/*
-				 * Windows 2000 returns the unwrapped token
-				 * also in the mech_list_mic field.
-				 *
-				 * In order to verify our client code,
-				 * we need a way to have a server with this
-				 * broken behaviour
-				 */
-				mech_list_mic = unwrapped_out;
-			}
-
-			nt_status = gensec_spnego_server_response(spnego_state,
-								  out_mem_ctx,
-								  nt_status,
-								  unwrapped_out,
-								  mech_list_mic,
-								  out);
-
-			spnego_free_data(&spnego);
-
-			return nt_status;
+		len = spnego_read_data(gensec_security, in, &spnego);
+		if (len == -1) {
+			return gensec_spnego_server_try_fallback(gensec_security, spnego_state,
+								 ev, out_mem_ctx, in, out);
 		}
+		/* client sent NegTargetInit, we send NegTokenTarg */
+
+		/* OK, so it's real SPNEGO, check the packet's the one we expect */
+		if (spnego.type != spnego_state->expected_packet) {
+			DEBUG(1, ("Invalid SPNEGO request: %d, expected %d\n", spnego.type,
+				  spnego_state->expected_packet));
+			dump_data(1, in.data, in.length);
+			spnego_free_data(&spnego);
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		nt_status = gensec_spnego_parse_negTokenInit(gensec_security,
+							     spnego_state,
+							     out_mem_ctx,
+							     ev,
+							     spnego.negTokenInit.mechTypes,
+							     spnego.negTokenInit.mechToken,
+							     &unwrapped_out);
+
+		if (spnego_state->simulate_w2k) {
+			/*
+			 * Windows 2000 returns the unwrapped token
+			 * also in the mech_list_mic field.
+			 *
+			 * In order to verify our client code,
+			 * we need a way to have a server with this
+			 * broken behaviour
+			 */
+			mech_list_mic = unwrapped_out;
+		}
+
+		nt_status = gensec_spnego_server_response(spnego_state,
+							  out_mem_ctx,
+							  nt_status,
+							  unwrapped_out,
+							  mech_list_mic,
+							  out);
+
+		spnego_free_data(&spnego);
+
+		return nt_status;
 	}
 
 	case SPNEGO_SERVER_TARG:
