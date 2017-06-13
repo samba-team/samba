@@ -50,6 +50,10 @@ struct aclread_context {
 	bool added_objectSid;
 	bool added_objectClass;
 	bool indirsync;
+
+	/* cache on the last parent we checked in this search */
+	struct ldb_dn *last_parent_dn;
+	int last_parent_check_ret;
 };
 
 struct aclread_private {
@@ -62,6 +66,87 @@ static void aclread_mark_inaccesslible(struct ldb_message_element *el) {
 
 static bool aclread_is_inaccessible(struct ldb_message_element *el) {
 	return el->flags & LDB_FLAG_INTERNAL_INACCESSIBLE_ATTRIBUTE;
+}
+
+/*
+ * the object has a parent, so we have to check for visibility
+ *
+ * This helper function uses a per-search cache to avoid checking the
+ * parent object for each of many possible children.  This is likely
+ * to help on SCOPE_ONE searches and on typical tree structures for
+ * SCOPE_SUBTREE, where an OU has many users as children.
+ *
+ * We rely for safety on the DB being locked for reads during the full
+ * search.
+ */
+static int aclread_check_parent(struct aclread_context *ac,
+				struct ldb_message *msg,
+				struct ldb_request *req)
+{
+	int ret;
+	struct ldb_dn *parent_dn = NULL;
+
+	/* We may have a cached result from earlier in this search */
+	if (ac->last_parent_dn != NULL) {
+		/*
+		 * We try the no-allocation ldb_dn_compare_base()
+		 * first however it will not tell parents and
+		 * grand-parents apart
+		 */
+		int cmp_base = ldb_dn_compare_base(ac->last_parent_dn,
+						   msg->dn);
+		if (cmp_base == 0) {
+			/* Now check if it is a direct parent */
+			parent_dn = ldb_dn_get_parent(ac, msg->dn);
+			if (parent_dn == NULL) {
+				return ldb_oom(ldb_module_get_ctx(ac->module));
+			}
+			if (ldb_dn_compare(ac->last_parent_dn,
+					   parent_dn) == 0) {
+				TALLOC_FREE(parent_dn);
+
+				/*
+				 * If we checked the same parent last
+				 * time, then return the cached
+				 * result.
+				 *
+				 * The cache is valid as long as the
+				 * search as the DB is read locked and
+				 * the session_info (connected user)
+				 * is constant.
+				 */
+				return ac->last_parent_check_ret;
+			}
+		}
+	}
+
+	{
+		TALLOC_CTX *frame = NULL;
+		frame = talloc_stackframe();
+
+		/*
+		 * This may have been set in the block above, don't
+		 * re-parse
+		 */
+		if (parent_dn == NULL) {
+			parent_dn = ldb_dn_get_parent(ac, msg->dn);
+			if (parent_dn == NULL) {
+				TALLOC_FREE(frame);
+				return ldb_oom(ldb_module_get_ctx(ac->module));
+			}
+		}
+		ret = dsdb_module_check_access_on_dn(ac->module,
+						     frame,
+						     parent_dn,
+						     SEC_ADS_LIST,
+						     NULL, req);
+		talloc_unlink(ac, ac->last_parent_dn);
+		ac->last_parent_dn = parent_dn;
+		ac->last_parent_check_ret = ret;
+
+		TALLOC_FREE(frame);
+	}
+	return ret;
 }
 
 static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
@@ -123,13 +208,8 @@ static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 		if (!ldb_dn_is_null(msg->dn) && !(instanceType & INSTANCE_TYPE_IS_NC_HEAD))
 		{
 			/* the object has a parent, so we have to check for visibility */
-			struct ldb_dn *parent_dn = ldb_dn_get_parent(tmp_ctx, msg->dn);
-
-			ret = dsdb_module_check_access_on_dn(ac->module,
-							     tmp_ctx,
-							     parent_dn,
-							     SEC_ADS_LIST,
-							     NULL, req);
+			ret = aclread_check_parent(ac, msg, req);
+			
 			if (ret == LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS) {
 				talloc_free(tmp_ctx);
 				return LDB_SUCCESS;
