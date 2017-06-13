@@ -1268,39 +1268,6 @@ static NTSTATUS gensec_spnego_update_server(struct gensec_security *gensec_secur
 	return NT_STATUS_INTERNAL_ERROR;
 }
 
-
-static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TALLOC_CTX *out_mem_ctx,
-				     struct tevent_context *ev,
-				     const DATA_BLOB in, DATA_BLOB *out)
-{
-	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
-
-	*out = data_blob_null;
-
-	/* and switch into the state machine */
-
-	switch (spnego_state->state_position) {
-	case SPNEGO_FALLBACK:
-		return gensec_update_ev(spnego_state->sub_sec_security,
-					out_mem_ctx, ev, in, out);
-
-	case SPNEGO_CLIENT_START:
-	case SPNEGO_CLIENT_TARG:
-		return gensec_spnego_update_client(gensec_security, out_mem_ctx,
-						   ev, in, out);
-
-	case SPNEGO_SERVER_START:
-	case SPNEGO_SERVER_TARG:
-		return gensec_spnego_update_server(gensec_security, out_mem_ctx,
-						   ev, in, out);
-
-	case SPNEGO_DONE:
-		/* We should not be called after we are 'done' */
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-	return NT_STATUS_INVALID_PARAMETER;
-}
-
 struct gensec_spnego_update_state {
 	struct gensec_security *gensec;
 	struct spnego_state *spnego;
@@ -1390,10 +1357,42 @@ static struct tevent_req *gensec_spnego_update_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	status = gensec_spnego_update(gensec_security,
-				      state, ev,
-				      state->full_in,
-				      &spnego_state->out_frag);
+	/* and switch into the state machine */
+
+	switch (spnego_state->state_position) {
+	case SPNEGO_FALLBACK:
+		status = gensec_update_ev(spnego_state->sub_sec_security,
+					  state, ev,
+					  state->full_in,
+					  &spnego_state->out_frag);
+		break;
+
+	case SPNEGO_CLIENT_START:
+	case SPNEGO_CLIENT_TARG:
+		status = gensec_spnego_update_client(gensec_security,
+						     state, ev,
+						     state->full_in,
+						     &spnego_state->out_frag);
+		break;
+
+	case SPNEGO_SERVER_START:
+	case SPNEGO_SERVER_TARG:
+		status = gensec_spnego_update_server(gensec_security,
+						     state, ev,
+						     state->full_in,
+						     &spnego_state->out_frag);
+		break;
+
+	case SPNEGO_DONE:
+		/* We should not be called after we are 'done' */
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return tevent_req_post(req, ev);
+
+	default:
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return tevent_req_post(req, ev);
+	}
+
 	if (NT_STATUS_IS_OK(status)) {
 		bool reset_full = true;
 
