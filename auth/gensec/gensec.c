@@ -319,13 +319,23 @@ static NTSTATUS gensec_verify_features(struct gensec_security *gensec_security)
 	return NT_STATUS_OK;
 }
 
-_PUBLIC_ NTSTATUS gensec_update_ev(struct gensec_security *gensec_security,
-				   TALLOC_CTX *out_mem_ctx,
-				   struct tevent_context *ev,
-				   const DATA_BLOB in, DATA_BLOB *out)
+/**
+ * Next state function for the GENSEC state machine
+ *
+ * @param gensec_security GENSEC State
+ * @param out_mem_ctx The TALLOC_CTX for *out to be allocated on
+ * @param in The request, as a DATA_BLOB
+ * @param out The reply, as an talloc()ed DATA_BLOB, on *out_mem_ctx
+ * @return Error, MORE_PROCESSING_REQUIRED if a reply is sent,
+ *                or NT_STATUS_OK if the user is authenticated.
+ */
+_PUBLIC_ NTSTATUS gensec_update(struct gensec_security *gensec_security,
+				TALLOC_CTX *out_mem_ctx,
+				const DATA_BLOB in, DATA_BLOB *out)
 {
 	NTSTATUS status;
 	TALLOC_CTX *frame = NULL;
+	struct tevent_context *ev = NULL;
 	struct tevent_req *subreq = NULL;
 	bool ok;
 
@@ -338,19 +348,17 @@ _PUBLIC_ NTSTATUS gensec_update_ev(struct gensec_security *gensec_security,
 
 	frame = talloc_stackframe();
 
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
-		ev = samba_tevent_context_init(frame);
-		if (ev == NULL) {
-			status = NT_STATUS_NO_MEMORY;
-			goto fail;
-		}
-
-		/*
-		 * TODO: remove this hack once the backends
-		 * are fixed.
-		 */
-		tevent_loop_allow_nesting(ev);
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
 	}
+
+	/*
+	 * TODO: remove this hack once the backends
+	 * are fixed.
+	 */
+	tevent_loop_allow_nesting(ev);
 
 	subreq = gensec_update_send(frame, ev, gensec_security, in);
 	if (subreq == NULL) {
@@ -365,24 +373,6 @@ _PUBLIC_ NTSTATUS gensec_update_ev(struct gensec_security *gensec_security,
  fail:
 	TALLOC_FREE(frame);
 	return status;
-}
-
-/**
- * Next state function for the GENSEC state machine
- *
- * @param gensec_security GENSEC State
- * @param out_mem_ctx The TALLOC_CTX for *out to be allocated on
- * @param in The request, as a DATA_BLOB
- * @param out The reply, as an talloc()ed DATA_BLOB, on *out_mem_ctx
- * @return Error, MORE_PROCESSING_REQUIRED if a reply is sent,
- *                or NT_STATUS_OK if the user is authenticated.
- */
-
-_PUBLIC_ NTSTATUS gensec_update(struct gensec_security *gensec_security,
-				TALLOC_CTX *out_mem_ctx,
-				const DATA_BLOB in, DATA_BLOB *out)
-{
-	return gensec_update_ev(gensec_security, out_mem_ctx, NULL, in, out);
 }
 
 struct gensec_update_state {

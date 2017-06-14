@@ -138,10 +138,6 @@ size_t gensec_max_update_size(struct gensec_security *gensec_security);
 NTSTATUS gensec_update(struct gensec_security *gensec_security,
 		       TALLOC_CTX *out_mem_ctx,
 		       const DATA_BLOB in, DATA_BLOB *out);
-NTSTATUS gensec_update_ev(struct gensec_security *gensec_security,
-			  TALLOC_CTX *out_mem_ctx,
-			  struct tevent_context *ev,
-			  const DATA_BLOB in, DATA_BLOB *out);
 struct tevent_req *gensec_update_send(TALLOC_CTX *mem_ctx,
 				      struct tevent_context *ev,
 				      struct gensec_security *gensec_security,
