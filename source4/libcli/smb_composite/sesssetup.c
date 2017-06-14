@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include <tevent.h>
 #include "libcli/raw/libcliraw.h"
 #include "libcli/raw/raw_proto.h"
 #include "libcli/composite/composite.h"
@@ -34,6 +35,7 @@
 #include "libcli/smb/smbXcli_base.h"
 
 struct sesssetup_state {
+	struct smbcli_session *session;
 	union smb_sesssetup setup;
 	const char *chosen_oid;
 	NTSTATUS remote_status;
@@ -68,6 +70,8 @@ static NTSTATUS session_setup_spnego(struct composite_context *c,
 				     struct smbcli_session *session, 
 				     struct smb_composite_sesssetup *io,
 				     struct smbcli_request **req);
+static void smb_composite_sesssetup_spnego_done1(struct tevent_req *subreq);
+
 
 /*
   handler for completion of a smbcli_request sub-request
@@ -164,6 +168,8 @@ static void request_handler(struct smbcli_request *req)
 			}
 			if (cli_credentials_failed_kerberos_login(state->io->in.credentials, principal, &state->logon_retries) ||
 			    cli_credentials_wrong_password(state->io->in.credentials)) {
+				struct tevent_req *subreq = NULL;
+
 				nt_status = session_setup_spnego_restart(c, session, state->io);
 				if (!NT_STATUS_IS_OK(nt_status)) {
 					DEBUG(1, ("session_setup_spnego_restart() failed: %s\n",
@@ -173,30 +179,16 @@ static void request_handler(struct smbcli_request *req)
 					return;
 				}
 
-				nt_status = gensec_update_ev(session->gensec, state,
-							     c->event_ctx,
-							     state->setup.spnego.out.secblob,
-							     &state->setup.spnego.in.secblob);
-				if (GENSEC_UPDATE_IS_NTERROR(nt_status)) {
-					DEBUG(1, ("Failed initial gensec_update with mechanism %s: %s\n",
-						  gensec_get_name_by_oid(session->gensec,
-									 state->chosen_oid),
-						  nt_errstr(nt_status)));
-					c->status = nt_status;
-					composite_error(c, c->status);
+				subreq = gensec_update_send(state, c->event_ctx,
+							    session->gensec,
+							    state->setup.spnego.out.secblob);
+				if (composite_nomem(subreq, c)) {
 					return;
 				}
-				state->gensec_status = nt_status;
-
-				nt_status = session_setup_spnego(c, session, 
-								      state->io, 
-								      &state->req);
-				if (NT_STATUS_IS_OK(nt_status)) {
-					talloc_free(check_req);
-					c->status = nt_status;
-					composite_continue_smb(c, state->req, request_handler, c);
-					return;
-				}
+				tevent_req_set_callback(subreq,
+							smb_composite_sesssetup_spnego_done1,
+							c);
+				return;
 			}
 		}
 		if (!NT_STATUS_EQUAL(c->status, NT_STATUS_MORE_PROCESSING_REQUIRED) && 
@@ -630,6 +622,7 @@ struct composite_context *smb_composite_sesssetup_send(struct smbcli_session *se
 	if (composite_nomem(state, c)) return c;
 	c->private_data = state;
 
+	state->session = session;
 	state->io = io;
 
 	talloc_set_destructor(state, sesssetup_state_destructor);
@@ -648,6 +641,8 @@ struct composite_context *smb_composite_sesssetup_send(struct smbcli_session *se
 		   !(io->in.capabilities & CAP_EXTENDED_SECURITY)) {
 		status = session_setup_nt1(c, session, io, &state->req);
 	} else {
+		struct tevent_req *subreq = NULL;
+
 		status = session_setup_spnego_restart(c, session, io);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("session_setup_spnego_restart() failed: %s\n",
@@ -657,22 +652,16 @@ struct composite_context *smb_composite_sesssetup_send(struct smbcli_session *se
 			return c;
 		}
 
-		status = gensec_update_ev(session->gensec, state,
-					  c->event_ctx,
-					  state->setup.spnego.out.secblob,
-					  &state->setup.spnego.in.secblob);
-		if (GENSEC_UPDATE_IS_NTERROR(status)) {
-			DEBUG(1, ("Failed initial gensec_update with mechanism %s: %s\n",
-				  gensec_get_name_by_oid(session->gensec,
-							 state->chosen_oid),
-				  nt_errstr(status)));
-			c->status = status;
-			composite_error(c, c->status);
+		subreq = gensec_update_send(state, c->event_ctx,
+					    session->gensec,
+					    state->setup.spnego.out.secblob);
+		if (composite_nomem(subreq, c)) {
 			return c;
 		}
-		state->gensec_status = status;
-
-		status = session_setup_spnego(c, session, io, &state->req);
+		tevent_req_set_callback(subreq,
+					smb_composite_sesssetup_spnego_done1,
+					c);
+		return c;
 	}
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED) || 
@@ -685,6 +674,39 @@ struct composite_context *smb_composite_sesssetup_send(struct smbcli_session *se
 	return c;
 }
 
+static void smb_composite_sesssetup_spnego_done1(struct tevent_req *subreq)
+{
+	struct composite_context *c =
+		tevent_req_callback_data(subreq,
+		struct composite_context);
+	struct sesssetup_state *state =
+		talloc_get_type_abort(c->private_data,
+		struct sesssetup_state);
+	NTSTATUS status;
+
+	status = gensec_update_recv(subreq, state,
+				    &state->setup.spnego.in.secblob);
+	TALLOC_FREE(subreq);
+	if (GENSEC_UPDATE_IS_NTERROR(status)) {
+		DEBUG(1, ("Failed initial gensec_update with mechanism %s: %s\n",
+			  gensec_get_name_by_oid(state->session->gensec,
+						 state->chosen_oid),
+			  nt_errstr(status)));
+		c->status = status;
+		composite_error(c, c->status);
+		return;
+	}
+	state->gensec_status = status;
+
+	status = session_setup_spnego(c, state->session, state->io, &state->req);
+	if (!NT_STATUS_IS_OK(status)) {
+		c->status = status;
+		composite_error(c, c->status);
+		return;
+	}
+
+	composite_continue_smb(c, state->req, request_handler, c);
+}
 
 /*
   receive a composite session setup reply
