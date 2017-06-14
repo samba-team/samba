@@ -638,15 +638,13 @@ static NTSTATUS gensec_spnego_server_response(struct spnego_state *spnego_state,
 static NTSTATUS gensec_spnego_update_client(struct gensec_security *gensec_security,
 					    TALLOC_CTX *out_mem_ctx,
 					    struct tevent_context *ev,
-					    const DATA_BLOB in, DATA_BLOB *out)
+					    struct spnego_data *spnego_in,
+					    DATA_BLOB *out)
 {
 	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
 	DATA_BLOB mech_list_mic = data_blob_null;
 	DATA_BLOB unwrapped_out = data_blob_null;
 	struct spnego_data spnego_out;
-	struct spnego_data spnego;
-	struct spnego_data *spnego_in = NULL;
-	ssize_t len;
 
 	*out = data_blob_null;
 
@@ -662,31 +660,13 @@ static NTSTATUS gensec_spnego_update_client(struct gensec_security *gensec_secur
 		bool ok;
 		const char *tp = NULL;
 
-		if (!in.length) {
+		if (spnego_in == NULL) {
 			/* client to produce negTokenInit */
 			return gensec_spnego_create_negTokenInit(gensec_security,
 								 spnego_state,
 								 out_mem_ctx,
 								 ev, out);
 		}
-
-		len = spnego_read_data(gensec_security, in, &spnego);
-
-		if (len == -1) {
-			DEBUG(1, ("Invalid SPNEGO request:\n"));
-			dump_data(1, in.data, in.length);
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-
-		/* OK, so it's real SPNEGO, check the packet's the one we expect */
-		if (spnego.type != spnego_state->expected_packet) {
-			DEBUG(1, ("Invalid SPNEGO request: %d, expected %d\n", spnego.type, 
-				  spnego_state->expected_packet));
-			dump_data(1, in.data, in.length);
-			spnego_free_data(&spnego);
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-		spnego_in = &spnego;
 
 		tp = spnego_in->negTokenInit.targetPrincipal;
 		if (tp != NULL && strcmp(tp, ADS_IGNORE_PRINCIPAL) != 0) {
@@ -704,7 +684,6 @@ static NTSTATUS gensec_spnego_update_client(struct gensec_security *gensec_secur
 							     &unwrapped_out);
 
 		if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED) && !NT_STATUS_IS_OK(nt_status)) {
-			spnego_free_data(&spnego);
 			return nt_status;
 		}
 
@@ -734,37 +713,14 @@ static NTSTATUS gensec_spnego_update_client(struct gensec_security *gensec_secur
 		spnego_state->expected_packet = SPNEGO_NEG_TOKEN_TARG;
 		spnego_state->state_position = SPNEGO_CLIENT_TARG;
 
-		spnego_free_data(&spnego);
 		return NT_STATUS_MORE_PROCESSING_REQUIRED;
 	}
 
 	case SPNEGO_CLIENT_TARG:
 	{
 		NTSTATUS nt_status = NT_STATUS_INTERNAL_ERROR;
-		const struct spnego_negTokenTarg *ta = NULL;
-
-		if (!in.length) {
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-
-		len = spnego_read_data(gensec_security, in, &spnego);
-
-		if (len == -1) {
-			DEBUG(1, ("Invalid SPNEGO request:\n"));
-			dump_data(1, in.data, in.length);
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-
-		/* OK, so it's real SPNEGO, check the packet's the one we expect */
-		if (spnego.type != spnego_state->expected_packet) {
-			DEBUG(1, ("Invalid SPNEGO request: %d, expected %d\n", spnego.type, 
-				  spnego_state->expected_packet));
-			dump_data(1, in.data, in.length);
-			spnego_free_data(&spnego);
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-		spnego_in = &spnego;
-		ta = &spnego_in->negTokenTarg;
+		const struct spnego_negTokenTarg *ta =
+			&spnego_in->negTokenTarg;
 
 		spnego_state->num_targs++;
 
@@ -790,21 +746,18 @@ static NTSTATUS gensec_spnego_update_client(struct gensec_security *gensec_secur
 							    gensec_security,
 							    &spnego_state->sub_sec_security);
 			if (!NT_STATUS_IS_OK(nt_status)) {
-				spnego_free_data(&spnego);
 				return nt_status;
 			}
 			/* select the sub context */
 			nt_status = gensec_start_mech_by_oid(spnego_state->sub_sec_security,
 							     ta->supportedMech);
 			if (!NT_STATUS_IS_OK(nt_status)) {
-				spnego_free_data(&spnego);
 				return nt_status;
 			}
 
 			spnego_state->neg_oid = talloc_strdup(spnego_state,
 						ta->supportedMech);
 			if (spnego_state->neg_oid == NULL) {
-				spnego_free_data(&spnego);
 				return NT_STATUS_NO_MEMORY;
 			};
 		}
@@ -836,7 +789,6 @@ static NTSTATUS gensec_spnego_update_client(struct gensec_security *gensec_secur
 		if (spnego_state->needs_mic_check) {
 			if (spnego_in->negTokenTarg.responseToken.length != 0) {
 				DEBUG(1, ("SPNEGO: Did not setup a mech in NEG_TOKEN_INIT\n"));
-				spnego_free_data(&spnego);
 				return NT_STATUS_INVALID_PARAMETER;
 			}
 
@@ -866,7 +818,6 @@ static NTSTATUS gensec_spnego_update_client(struct gensec_security *gensec_secur
 			if (!NT_STATUS_IS_OK(nt_status)) {
 				DEBUG(2,("GENSEC SPNEGO: failed to verify mechListMIC: %s\n",
 					nt_errstr(nt_status)));
-				spnego_free_data(&spnego);
 				return nt_status;
 			}
 			spnego_state->needs_mic_check = false;
@@ -992,7 +943,6 @@ static NTSTATUS gensec_spnego_update_client(struct gensec_security *gensec_secur
 			if (!NT_STATUS_IS_OK(nt_status)) {
 				DEBUG(2,("GENSEC SPNEGO: failed to verify mechListMIC: %s\n",
 					nt_errstr(nt_status)));
-				spnego_free_data(&spnego);
 				return nt_status;
 			}
 			spnego_state->needs_mic_check = false;
@@ -1010,7 +960,6 @@ static NTSTATUS gensec_spnego_update_client(struct gensec_security *gensec_secur
 			if (!NT_STATUS_IS_OK(nt_status)) {
 				DEBUG(2,("GENSEC SPNEGO: failed to sign mechListMIC: %s\n",
 					nt_errstr(nt_status)));
-				spnego_free_data(&spnego);
 				return nt_status;
 			}
 			spnego_state->needs_mic_sign = false;
@@ -1021,8 +970,6 @@ static NTSTATUS gensec_spnego_update_client(struct gensec_security *gensec_secur
 		}
 
  client_response:
-		spnego_free_data(&spnego);
-
 		if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)
 			&& !NT_STATUS_IS_OK(nt_status)) {
 			DEBUG(1, ("SPNEGO(%s) login failed: %s\n", 
@@ -1075,14 +1022,12 @@ static NTSTATUS gensec_spnego_update_client(struct gensec_security *gensec_secur
 static NTSTATUS gensec_spnego_update_server(struct gensec_security *gensec_security,
 					    TALLOC_CTX *out_mem_ctx,
 					    struct tevent_context *ev,
-					    const DATA_BLOB in, DATA_BLOB *out)
+					    struct spnego_data *spnego_in,
+					    DATA_BLOB *out)
 {
 	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
 	DATA_BLOB mech_list_mic = data_blob_null;
 	DATA_BLOB unwrapped_out = data_blob_null;
-	struct spnego_data spnego;
-	struct spnego_data *spnego_in = NULL;
-	ssize_t len;
 
 	/* and switch into the state machine */
 
@@ -1091,43 +1036,12 @@ static NTSTATUS gensec_spnego_update_server(struct gensec_security *gensec_secur
 	{
 		NTSTATUS nt_status;
 
-		if (in.length == 0) {
+		if (spnego_in == NULL) {
 			return gensec_spnego_create_negTokenInit(gensec_security,
 								 spnego_state,
 								 out_mem_ctx,
 								 ev, out);
 		}
-
-		len = spnego_read_data(gensec_security, in, &spnego);
-		if (len == -1) {
-			/*
-			 * This is the 'fallback' case, where we don't get
-			 * SPNEGO, and have to try all the other options (and
-			 * hope they all have a magic string they check)
-			 */
-			nt_status = gensec_spnego_server_try_fallback(gensec_security,
-								      spnego_state,
-								      out_mem_ctx,
-								      in);
-			if (!NT_STATUS_IS_OK(nt_status)) {
-				return nt_status;
-			}
-
-			return gensec_update_ev(spnego_state->sub_sec_security,
-						out_mem_ctx, ev,
-						in, out);
-		}
-		/* client sent NegTargetInit, we send NegTokenTarg */
-
-		/* OK, so it's real SPNEGO, check the packet's the one we expect */
-		if (spnego.type != spnego_state->expected_packet) {
-			DEBUG(1, ("Invalid SPNEGO request: %d, expected %d\n", spnego.type,
-				  spnego_state->expected_packet));
-			dump_data(1, in.data, in.length);
-			spnego_free_data(&spnego);
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-		spnego_in = &spnego;
 
 		nt_status = gensec_spnego_parse_negTokenInit(gensec_security,
 							     spnego_state,
@@ -1155,8 +1069,6 @@ static NTSTATUS gensec_spnego_update_server(struct gensec_security *gensec_secur
 							  mech_list_mic,
 							  out);
 
-		spnego_free_data(&spnego);
-
 		return nt_status;
 	}
 
@@ -1166,40 +1078,16 @@ static NTSTATUS gensec_spnego_update_server(struct gensec_security *gensec_secur
 		bool have_sign = true;
 		bool new_spnego = false;
 
-		if (!in.length) {
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-
-		len = spnego_read_data(gensec_security, in, &spnego);
-
-		if (len == -1) {
-			DEBUG(1, ("Invalid SPNEGO request:\n"));
-			dump_data(1, in.data, in.length);
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-
-		/* OK, so it's real SPNEGO, check the packet's the one we expect */
-		if (spnego.type != spnego_state->expected_packet) {
-			DEBUG(1, ("Invalid SPNEGO request: %d, expected %d\n", spnego.type,
-				  spnego_state->expected_packet));
-			dump_data(1, in.data, in.length);
-			spnego_free_data(&spnego);
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-		spnego_in = &spnego;
-
 		spnego_state->num_targs++;
 
 		if (!spnego_state->sub_sec_security) {
 			DEBUG(1, ("SPNEGO: Did not setup a mech in NEG_TOKEN_INIT\n"));
-			spnego_free_data(&spnego);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
 		if (spnego_state->needs_mic_check) {
 			if (spnego_in->negTokenTarg.responseToken.length != 0) {
 				DEBUG(1, ("SPNEGO: Did not setup a mech in NEG_TOKEN_INIT\n"));
-				spnego_free_data(&spnego);
 				return NT_STATUS_INVALID_PARAMETER;
 			}
 
@@ -1295,8 +1183,6 @@ static NTSTATUS gensec_spnego_update_server(struct gensec_security *gensec_secur
 							  mech_list_mic,
 							  out);
 
-		spnego_free_data(&spnego);
-
 		return nt_status;
 	}
 
@@ -1312,6 +1198,8 @@ struct gensec_spnego_update_state {
 	struct gensec_security *gensec;
 	struct spnego_state *spnego;
 	DATA_BLOB full_in;
+	struct spnego_data _spnego_in;
+	struct spnego_data *spnego_in;
 	NTSTATUS status;
 	DATA_BLOB out;
 };
@@ -1355,6 +1243,7 @@ static struct tevent_req *gensec_spnego_update_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req = NULL;
 	struct gensec_spnego_update_state *state = NULL;
 	NTSTATUS status;
+	ssize_t len;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct gensec_spnego_update_state);
@@ -1397,6 +1286,78 @@ static struct tevent_req *gensec_spnego_update_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
+	/* Check if we got a valid SPNEGO blob... */
+
+	switch (spnego_state->state_position) {
+	case SPNEGO_FALLBACK:
+		break;
+
+	case SPNEGO_CLIENT_TARG:
+	case SPNEGO_SERVER_TARG:
+		if (state->full_in.length == 0) {
+			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			return tevent_req_post(req, ev);
+		}
+
+		/* fall through */
+	case SPNEGO_CLIENT_START:
+	case SPNEGO_SERVER_START:
+
+		if (state->full_in.length == 0) {
+			/* create_negTokenInit later */
+			break;
+		}
+
+		len = spnego_read_data(state,
+				       state->full_in,
+				       &state->_spnego_in);
+		if (len == -1) {
+			if (spnego_state->state_position != SPNEGO_SERVER_START) {
+				DEBUG(1, ("Invalid SPNEGO request:\n"));
+				dump_data(1, state->full_in.data,
+					  state->full_in.length);
+				tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+				return tevent_req_post(req, ev);
+			}
+
+			/*
+			 * This is the 'fallback' case, where we don't get
+			 * SPNEGO, and have to try all the other options (and
+			 * hope they all have a magic string they check)
+			 */
+			status = gensec_spnego_server_try_fallback(gensec_security,
+								   spnego_state,
+								   state,
+								   state->full_in);
+			if (tevent_req_nterror(req, status)) {
+				return tevent_req_post(req, ev);
+			}
+
+			/*
+			 * We'll continue with SPNEGO_FALLBACK below...
+			 */
+			break;
+		}
+		state->spnego_in = &state->_spnego_in;
+
+		/* OK, so it's real SPNEGO, check the packet's the one we expect */
+		if (state->spnego_in->type != spnego_state->expected_packet) {
+			DEBUG(1, ("Invalid SPNEGO request: %d, expected %d\n",
+				  state->spnego_in->type,
+				  spnego_state->expected_packet));
+			dump_data(1, state->full_in.data,
+				  state->full_in.length);
+			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			return tevent_req_post(req, ev);
+		}
+
+		break;
+
+	default:
+		smb_panic(__location__);
+		return NULL;
+	}
+
 	/* and switch into the state machine */
 
 	switch (spnego_state->state_position) {
@@ -1411,7 +1372,7 @@ static struct tevent_req *gensec_spnego_update_send(TALLOC_CTX *mem_ctx,
 	case SPNEGO_CLIENT_TARG:
 		status = gensec_spnego_update_client(gensec_security,
 						     state, ev,
-						     state->full_in,
+						     state->spnego_in,
 						     &spnego_state->out_frag);
 		break;
 
@@ -1419,7 +1380,7 @@ static struct tevent_req *gensec_spnego_update_send(TALLOC_CTX *mem_ctx,
 	case SPNEGO_SERVER_TARG:
 		status = gensec_spnego_update_server(gensec_security,
 						     state, ev,
-						     state->full_in,
+						     state->spnego_in,
 						     &spnego_state->out_frag);
 		break;
 
