@@ -641,6 +641,7 @@ static NTSTATUS gensec_spnego_update_client(struct gensec_security *gensec_secur
 		const char *my_mechs[] = {NULL, NULL};
 		NTSTATUS nt_status = NT_STATUS_INVALID_PARAMETER;
 		bool ok;
+		const char *tp = NULL;
 
 		if (!in.length) {
 			/* client to produce negTokenInit */
@@ -668,11 +669,11 @@ static NTSTATUS gensec_spnego_update_client(struct gensec_security *gensec_secur
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
-		if (spnego.negTokenInit.targetPrincipal
-		    && strcmp(spnego.negTokenInit.targetPrincipal, ADS_IGNORE_PRINCIPAL) != 0) {
-			DEBUG(5, ("Server claims it's principal name is %s\n", spnego.negTokenInit.targetPrincipal));
+		tp = spnego.negTokenInit.targetPrincipal;
+		if (tp != NULL && strcmp(tp, ADS_IGNORE_PRINCIPAL) != 0) {
+			DEBUG(5, ("Server claims it's principal name is %s\n", tp));
 			if (lpcfg_client_use_spnego_principal(gensec_security->settings->lp_ctx)) {
-				gensec_set_target_principal(gensec_security, spnego.negTokenInit.targetPrincipal);
+				gensec_set_target_principal(gensec_security, tp);
 			}
 		}
 
