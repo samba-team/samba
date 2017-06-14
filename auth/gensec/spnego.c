@@ -723,6 +723,7 @@ static NTSTATUS gensec_spnego_update_client(struct gensec_security *gensec_secur
 	case SPNEGO_CLIENT_TARG:
 	{
 		NTSTATUS nt_status = NT_STATUS_INTERNAL_ERROR;
+		const struct spnego_negTokenTarg *ta = NULL;
 
 		if (!in.length) {
 			return NT_STATUS_INVALID_PARAMETER;
@@ -744,11 +745,11 @@ static NTSTATUS gensec_spnego_update_client(struct gensec_security *gensec_secur
 			spnego_free_data(&spnego);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
+		ta = &spnego.negTokenTarg;
 
 		spnego_state->num_targs++;
 
-		if (spnego.negTokenTarg.negResult == SPNEGO_REJECT) {
-			spnego_free_data(&spnego);
+		if (ta->negResult == SPNEGO_REJECT) {
 			return NT_STATUS_LOGON_FAILURE;
 		}
 
@@ -757,13 +758,13 @@ static NTSTATUS gensec_spnego_update_client(struct gensec_security *gensec_secur
 		}
 
 		/* Server didn't like our choice of mech, and chose something else */
-		if (((spnego.negTokenTarg.negResult == SPNEGO_ACCEPT_INCOMPLETE) ||
-		     (spnego.negTokenTarg.negResult == SPNEGO_REQUEST_MIC)) &&
-		    spnego.negTokenTarg.supportedMech &&
-		    strcmp(spnego.negTokenTarg.supportedMech, spnego_state->neg_oid) != 0) {
+		if (((ta->negResult == SPNEGO_ACCEPT_INCOMPLETE) ||
+		     (ta->negResult == SPNEGO_REQUEST_MIC)) &&
+		    ta->supportedMech != NULL&&
+		    strcmp(ta->supportedMech, spnego_state->neg_oid) != 0) {
 			DEBUG(3,("GENSEC SPNEGO: client preferred mech (%s) not accepted, server wants: %s\n",
 				 gensec_get_name_by_oid(gensec_security, spnego_state->neg_oid),
-				 gensec_get_name_by_oid(gensec_security, spnego.negTokenTarg.supportedMech)));
+				 gensec_get_name_by_oid(gensec_security, ta->supportedMech)));
 			spnego_state->downgraded = true;
 			gensec_spnego_update_sub_abort(spnego_state);
 			nt_status = gensec_subcontext_start(spnego_state,
@@ -775,14 +776,14 @@ static NTSTATUS gensec_spnego_update_client(struct gensec_security *gensec_secur
 			}
 			/* select the sub context */
 			nt_status = gensec_start_mech_by_oid(spnego_state->sub_sec_security,
-							     spnego.negTokenTarg.supportedMech);
+							     ta->supportedMech);
 			if (!NT_STATUS_IS_OK(nt_status)) {
 				spnego_free_data(&spnego);
 				return nt_status;
 			}
 
 			spnego_state->neg_oid = talloc_strdup(spnego_state,
-						spnego.negTokenTarg.supportedMech);
+						ta->supportedMech);
 			if (spnego_state->neg_oid == NULL) {
 				spnego_free_data(&spnego);
 				return NT_STATUS_NO_MEMORY;
@@ -1032,7 +1033,7 @@ static NTSTATUS gensec_spnego_update_client(struct gensec_security *gensec_secur
 			/* all done - server has accepted, and we agree */
 			*out = data_blob_null;
 
-			if (spnego.negTokenTarg.negResult != SPNEGO_ACCEPT_COMPLETED) {
+			if (ta->negResult != SPNEGO_ACCEPT_COMPLETED) {
 				/* unless of course it did not accept */
 				DEBUG(1,("gensec_update ok but not accepted\n"));
 				nt_status = NT_STATUS_INVALID_PARAMETER;
