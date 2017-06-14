@@ -1391,6 +1391,27 @@ struct gensec_spnego_update_state {
 	DATA_BLOB out;
 };
 
+static void gensec_spnego_update_cleanup(struct tevent_req *req,
+					 enum tevent_req_state req_state)
+{
+	struct gensec_spnego_update_state *state =
+		tevent_req_data(req,
+		struct gensec_spnego_update_state);
+
+	switch (req_state) {
+	case TEVENT_REQ_USER_ERROR:
+	case TEVENT_REQ_TIMED_OUT:
+	case TEVENT_REQ_NO_MEMORY:
+		/*
+		 * A fatal error, further updates are not allowed.
+		 */
+		state->spnego->state_position = SPNEGO_DONE;
+		break;
+	default:
+		break;
+	}
+}
+
 static struct tevent_req *gensec_spnego_update_send(TALLOC_CTX *mem_ctx,
 						    struct tevent_context *ev,
 						    struct gensec_security *gensec_security,
@@ -1410,6 +1431,7 @@ static struct tevent_req *gensec_spnego_update_send(TALLOC_CTX *mem_ctx,
 	}
 	state->gensec = gensec_security;
 	state->spnego = spnego_state;
+	tevent_req_set_cleanup_fn(req, gensec_spnego_update_cleanup);
 
 	if (spnego_state->out_frag.length > 0) {
 		if (in.length > 0) {
@@ -1459,10 +1481,6 @@ static struct tevent_req *gensec_spnego_update_send(TALLOC_CTX *mem_ctx,
 	}
 	if (!NT_STATUS_IS_OK(status) &&
 	    !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		/*
-		 * A fatal error, further updates are not allowed.
-		 */
-		spnego_state->state_position = SPNEGO_DONE;
 		tevent_req_nterror(req, status);
 		return tevent_req_post(req, ev);
 	}
