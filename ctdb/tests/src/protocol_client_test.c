@@ -592,6 +592,10 @@ static void fill_ctdb_req_control_data(TALLOC_CTX *mem_ctx,
 		cd->data.db_id = rand32();
 		break;
 
+	case CTDB_CONTROL_DB_OPEN_FLAGS:
+		cd->data.db_id = rand32();
+		break;
+
 	}
 }
 
@@ -985,6 +989,10 @@ static void verify_ctdb_req_control_data(struct ctdb_req_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_DB_PUSH_CONFIRM:
+		assert(cd->data.db_id == cd2->data.db_id);
+		break;
+
+	case CTDB_CONTROL_DB_OPEN_FLAGS:
 		assert(cd->data.db_id == cd2->data.db_id);
 		break;
 
@@ -1395,6 +1403,10 @@ static void fill_ctdb_reply_control_data(TALLOC_CTX *mem_ctx,
 		cd->data.num_records = rand32();
 		break;
 
+	case CTDB_CONTROL_DB_OPEN_FLAGS:
+		cd->data.tdb_flags = rand32();
+		break;
+
 	}
 }
 
@@ -1730,6 +1742,10 @@ static void verify_ctdb_reply_control_data(struct ctdb_reply_control_data *cd,
 
 	case CTDB_CONTROL_DB_PUSH_CONFIRM:
 		assert(cd->data.num_records == cd2->data.num_records);
+		break;
+
+	case CTDB_CONTROL_DB_OPEN_FLAGS:
+		assert(cd->data.tdb_flags == cd2->data.tdb_flags);
 		break;
 
 	}
@@ -2174,7 +2190,7 @@ static void test_ctdb_reply_dmaster(void)
 	talloc_free(mem_ctx);
 }
 
-#define NUM_CONTROLS	149
+#define NUM_CONTROLS	150
 
 static void test_ctdb_req_control_data(void)
 {

@@ -2,7 +2,7 @@
 
 . "${TEST_SCRIPTS_DIR}/unit.sh"
 
-last_control=148
+last_control=149
 
 control_output=$(
     for i in $(seq 0 $last_control) ; do

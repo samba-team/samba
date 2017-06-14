@@ -2332,3 +2332,31 @@ int ctdb_reply_control_db_push_confirm(struct ctdb_reply_control *reply,
 	}
 	return reply->status;
 }
+
+/* CTDB_CONTROL_DB_OPEN_FLAGS */
+
+void ctdb_req_control_db_open_flags(struct ctdb_req_control *request,
+				    uint32_t db_id)
+{
+	request->opcode = CTDB_CONTROL_DB_OPEN_FLAGS;
+	request->pad = 0;
+	request->srvid = 0;
+	request->client_id = 0;
+	request->flags = 0;
+
+	request->rdata.opcode = CTDB_CONTROL_DB_OPEN_FLAGS;
+	request->rdata.data.db_id = db_id;
+}
+
+int ctdb_reply_control_db_open_flags(struct ctdb_reply_control *reply,
+				     int *tdb_flags)
+{
+	if (reply->rdata.opcode != CTDB_CONTROL_DB_OPEN_FLAGS) {
+		return EPROTO;
+	}
+
+	if (reply->status == 0) {
+		*tdb_flags = reply->rdata.data.tdb_flags;
+	}
+	return reply->status;
+}
