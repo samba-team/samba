@@ -367,6 +367,7 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_DB_PULL                 = 146,
 		    CTDB_CONTROL_DB_PUSH_START           = 147,
 		    CTDB_CONTROL_DB_PUSH_CONFIRM         = 148,
+		    CTDB_CONTROL_DB_OPEN_FLAGS           = 149,
 };
 
 #define CTDB_MONITORING_ENABLED		0
@@ -911,6 +912,7 @@ struct ctdb_reply_control_data {
 		struct ctdb_db_statistics *dbstats;
 		enum ctdb_runstate runstate;
 		uint32_t num_records;
+		int tdb_flags;
 	} data;
 };
 
