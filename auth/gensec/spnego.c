@@ -776,21 +776,16 @@ static NTSTATUS gensec_spnego_client_negTokenInit(struct gensec_security *gensec
 				      ev, spnego_in, out_mem_ctx, out);
 }
 
-static NTSTATUS gensec_spnego_client_negTokenTarg(struct gensec_security *gensec_security,
-						  struct spnego_state *spnego_state,
-						  struct tevent_context *ev,
-						  struct spnego_data *spnego_in,
-						  TALLOC_CTX *out_mem_ctx,
-						  DATA_BLOB *out)
+static NTSTATUS gensec_spnego_client_negTokenTarg_start(
+					struct gensec_security *gensec_security,
+					struct spnego_state *spnego_state,
+					struct spnego_neg_state *n,
+					struct spnego_data *spnego_in,
+					TALLOC_CTX *in_mem_ctx,
+					DATA_BLOB *in_next)
 {
 	struct spnego_negTokenTarg *ta = &spnego_in->negTokenTarg;
-	DATA_BLOB sub_in = ta->responseToken;
-	DATA_BLOB mech_list_mic = data_blob_null;
-	DATA_BLOB sub_out = data_blob_null;
-	struct spnego_data spnego_out;
 	NTSTATUS status;
-
-	*out = data_blob_null;
 
 	spnego_state->num_targs++;
 
@@ -891,8 +886,7 @@ static NTSTATUS gensec_spnego_client_negTokenTarg(struct gensec_security *gensec
 			 * https://bugzilla.samba.org/show_bug.cgi?id=11994
 			 */
 			spnego_state->needs_mic_check = false;
-			status = NT_STATUS_OK;
-			goto client_response;
+			return NT_STATUS_OK;
 		}
 
 		status = gensec_check_packet(spnego_state->sub_sec_security,
@@ -908,22 +902,93 @@ static NTSTATUS gensec_spnego_client_negTokenTarg(struct gensec_security *gensec
 		}
 		spnego_state->needs_mic_check = false;
 		spnego_state->done_mic_check = true;
-		goto client_response;
+		return NT_STATUS_OK;
 	}
 
 	if (!spnego_state->sub_sec_ready) {
-		status = gensec_update_ev(spnego_state->sub_sec_security,
-					  out_mem_ctx, ev,
-					  sub_in,
-					  &sub_out);
-		if (NT_STATUS_IS_OK(status)) {
-			spnego_state->sub_sec_ready = true;
-		}
-		if (!NT_STATUS_IS_OK(status)) {
-			goto client_response;
-		}
-	} else {
-		status = NT_STATUS_OK;
+		*in_next = ta->responseToken;
+		return NT_STATUS_MORE_PROCESSING_REQUIRED;
+	}
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS gensec_spnego_client_negTokenTarg_step(
+					struct gensec_security *gensec_security,
+					struct spnego_state *spnego_state,
+					struct spnego_neg_state *n,
+					struct spnego_data *spnego_in,
+					NTSTATUS last_status,
+					TALLOC_CTX *in_mem_ctx,
+					DATA_BLOB *in_next)
+{
+	if (GENSEC_UPDATE_IS_NTERROR(last_status)) {
+		DBG_WARNING("SPNEGO(%s) login failed: %s\n",
+			    spnego_state->sub_sec_security->ops->name,
+			    nt_errstr(last_status));
+		return last_status;
+	}
+
+	/*
+	 * This should never be reached!
+	 * The step function is only called on errors!
+	 */
+	smb_panic(__location__);
+	return NT_STATUS_INTERNAL_ERROR;
+}
+
+static NTSTATUS gensec_spnego_client_negTokenTarg_finish(
+					struct gensec_security *gensec_security,
+					struct spnego_state *spnego_state,
+					struct spnego_neg_state *n,
+					struct spnego_data *spnego_in,
+					NTSTATUS sub_status,
+					const DATA_BLOB sub_out,
+					TALLOC_CTX *out_mem_ctx,
+					DATA_BLOB *out)
+{
+	const struct spnego_negTokenTarg *ta =
+		&spnego_in->negTokenTarg;
+	DATA_BLOB mech_list_mic = data_blob_null;
+	NTSTATUS status;
+	struct spnego_data spnego_out;
+
+	status = sub_status;
+
+	if (!spnego_state->sub_sec_ready) {
+		/*
+		 * We're not yet ready to deal with signatures.
+		 */
+		goto client_response;
+	}
+
+	if (spnego_state->done_mic_check) {
+		/*
+		 * We already checked the mic,
+		 * either the in last round here
+		 * in gensec_spnego_client_negTokenTarg_finish()
+		 * or during this round in
+		 * gensec_spnego_client_negTokenTarg_start().
+		 *
+		 * Both cases we're sure we don't have to
+		 * call gensec_sign_packet().
+		 */
+		goto client_response;
+	}
+
+	if (spnego_state->may_skip_mic_check) {
+		/*
+		 * This can only be set during
+		 * the last round here in
+		 * gensec_spnego_client_negTokenTarg_finish()
+		 * below. And during this round
+		 * we already passed the checks in
+		 * gensec_spnego_client_negTokenTarg_start().
+		 *
+		 * So we need to skip to deal with
+		 * any signatures now.
+		 */
+		goto client_response;
 	}
 
 	if (!spnego_state->done_mic_check) {
@@ -1037,7 +1102,7 @@ static NTSTATUS gensec_spnego_client_negTokenTarg(struct gensec_security *gensec
 
 	if (spnego_state->needs_mic_sign) {
 		status = gensec_sign_packet(spnego_state->sub_sec_security,
-					    out_mem_ctx,
+					    n,
 					    spnego_state->mech_types.data,
 					    spnego_state->mech_types.length,
 					    spnego_state->mech_types.data,
@@ -1052,13 +1117,6 @@ static NTSTATUS gensec_spnego_client_negTokenTarg(struct gensec_security *gensec
 	}
 
  client_response:
-	if (GENSEC_UPDATE_IS_NTERROR(status)) {
-		DBG_WARNING("SPNEGO(%s) login failed: %s\n",
-			    spnego_state->sub_sec_security->ops->name,
-			    nt_errstr(status));
-		return status;
-	}
-
 	if (sub_out.length == 0 && mech_list_mic.length == 0) {
 		*out = data_blob_null;
 
@@ -1101,6 +1159,24 @@ static NTSTATUS gensec_spnego_client_negTokenTarg(struct gensec_security *gensec
 	return NT_STATUS_MORE_PROCESSING_REQUIRED;
 }
 
+static const struct spnego_neg_ops gensec_spnego_client_negTokenTarg_ops = {
+	.name      = "client_negTokenTarg",
+	.start_fn  = gensec_spnego_client_negTokenTarg_start,
+	.step_fn   = gensec_spnego_client_negTokenTarg_step,
+	.finish_fn = gensec_spnego_client_negTokenTarg_finish,
+};
+
+static NTSTATUS gensec_spnego_client_negTokenTarg(struct gensec_security *gensec_security,
+						  struct spnego_state *spnego_state,
+						  struct tevent_context *ev,
+						  struct spnego_data *spnego_in,
+						  TALLOC_CTX *out_mem_ctx,
+						  DATA_BLOB *out)
+{
+	return gensec_spnego_neg_loop(gensec_security, spnego_state,
+				      &gensec_spnego_client_negTokenTarg_ops,
+				      ev, spnego_in, out_mem_ctx, out);
+}
 /** create a server negTokenTarg 
  *
  * This is the case, where the client is the first one who sends data
