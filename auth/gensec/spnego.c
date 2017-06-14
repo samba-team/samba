@@ -140,14 +140,13 @@ static NTSTATUS gensec_spnego_server_start(struct gensec_security *gensec_securi
 
 static NTSTATUS gensec_spnego_server_try_fallback(struct gensec_security *gensec_security, 
 						  struct spnego_state *spnego_state,
-						  struct tevent_context *ev,
-						  TALLOC_CTX *out_mem_ctx, 
-						  const DATA_BLOB in, DATA_BLOB *out) 
+						  TALLOC_CTX *mem_ctx,
+						  const DATA_BLOB in)
 {
 	int i,j;
 	const struct gensec_security_ops **all_ops;
 
-	all_ops = gensec_security_mechs(gensec_security, out_mem_ctx);
+	all_ops = gensec_security_mechs(gensec_security, mem_ctx);
 
 	for (i=0; all_ops && all_ops[i]; i++) {
 		bool is_spnego;
@@ -197,9 +196,8 @@ static NTSTATUS gensec_spnego_server_try_fallback(struct gensec_security *gensec
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			return nt_status;
 		}
-		nt_status = gensec_update_ev(spnego_state->sub_sec_security,
-					     out_mem_ctx, ev, in, out);
-		return nt_status;
+
+		return NT_STATUS_OK;
 	}
 	DEBUG(1, ("Failed to parse SPNEGO request\n"));
 	return NT_STATUS_INVALID_PARAMETER;
@@ -1098,8 +1096,22 @@ static NTSTATUS gensec_spnego_update_server(struct gensec_security *gensec_secur
 
 		len = spnego_read_data(gensec_security, in, &spnego);
 		if (len == -1) {
-			return gensec_spnego_server_try_fallback(gensec_security, spnego_state,
-								 ev, out_mem_ctx, in, out);
+			/*
+			 * This is the 'fallback' case, where we don't get
+			 * SPNEGO, and have to try all the other options (and
+			 * hope they all have a magic string they check)
+			 */
+			nt_status = gensec_spnego_server_try_fallback(gensec_security,
+								      spnego_state,
+								      out_mem_ctx,
+								      in);
+			if (!NT_STATUS_IS_OK(nt_status)) {
+				return nt_status;
+			}
+
+			return gensec_update_ev(spnego_state->sub_sec_security,
+						out_mem_ctx, ev,
+						in, out);
 		}
 		/* client sent NegTargetInit, we send NegTokenTarg */
 
