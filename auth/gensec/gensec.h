@@ -147,6 +147,12 @@ struct tevent_req *gensec_update_send(TALLOC_CTX *mem_ctx,
 				      struct gensec_security *gensec_security,
 				      const DATA_BLOB in);
 NTSTATUS gensec_update_recv(struct tevent_req *req, TALLOC_CTX *out_mem_ctx, DATA_BLOB *out);
+
+#define GENSEC_UPDATE_IS_NTERROR(status) ( \
+	!NT_STATUS_IS_OK(status) && \
+	!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED) \
+	)
+
 /**
  * @brief Ask for features for a following authentication
  *
