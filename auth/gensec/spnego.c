@@ -159,60 +159,6 @@ static struct spnego_neg_state *gensec_spnego_neg_state(TALLOC_CTX *mem_ctx,
 	return n;
 }
 
-static NTSTATUS gensec_spnego_neg_loop(struct gensec_security *gensec_security,
-				       struct spnego_state *spnego_state,
-				       const const struct spnego_neg_ops *ops,
-				       struct tevent_context *ev,
-				       struct spnego_data *spnego_in,
-				       TALLOC_CTX *out_mem_ctx,
-				       DATA_BLOB *out)
-{
-	struct spnego_neg_state *n = NULL;
-	NTSTATUS status;
-	DATA_BLOB sub_in = data_blob_null;
-	DATA_BLOB sub_out = data_blob_null;
-
-	*out = data_blob_null;
-
-	n = gensec_spnego_neg_state(out_mem_ctx, ops);
-	if (n == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	status = n->ops->start_fn(gensec_security, spnego_state, n,
-				  spnego_in, n, &sub_in);
-	if (GENSEC_UPDATE_IS_NTERROR(status)) {
-		TALLOC_FREE(n);
-		return status;
-	}
-
-	while (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		status = gensec_update_ev(spnego_state->sub_sec_security,
-					  n, ev, sub_in, &sub_out);
-		sub_in = data_blob_null;
-		if (NT_STATUS_IS_OK(status)) {
-			spnego_state->sub_sec_ready = true;
-		}
-		if (!GENSEC_UPDATE_IS_NTERROR(status)) {
-			break;
-		}
-		sub_out = data_blob_null;
-
-		status = n->ops->step_fn(gensec_security, spnego_state, n,
-					 spnego_in, status, n, &sub_in);
-		if (GENSEC_UPDATE_IS_NTERROR(status)) {
-			TALLOC_FREE(n);
-			return status;
-		}
-	}
-
-	status = n->ops->finish_fn(gensec_security, spnego_state, n,
-				   spnego_in, status, sub_out,
-				   out_mem_ctx, out);
-	TALLOC_FREE(n);
-	return status;
-}
-
 static void gensec_spnego_update_sub_abort(struct spnego_state *spnego_state)
 {
 	spnego_state->sub_sec_ready = false;
@@ -541,22 +487,6 @@ static const struct spnego_neg_ops gensec_spnego_create_negTokenInit_ops = {
 	.finish_fn = gensec_spnego_create_negTokenInit_finish,
 };
 
-/** create a negTokenInit
- *
- * This is the same packet, no matter if the client or server sends it first, but it is always the first packet
-*/
-static NTSTATUS gensec_spnego_create_negTokenInit(struct gensec_security *gensec_security,
-						  struct spnego_state *spnego_state,
-						  TALLOC_CTX *out_mem_ctx,
-						  struct tevent_context *ev,
-						  DATA_BLOB *out)
-{
-	struct spnego_data *spnego_in = NULL;
-	return gensec_spnego_neg_loop(gensec_security, spnego_state,
-				      &gensec_spnego_create_negTokenInit_ops,
-				      ev, spnego_in, out_mem_ctx, out);
-}
-
 static NTSTATUS gensec_spnego_client_negTokenInit_start(
 					struct gensec_security *gensec_security,
 					struct spnego_state *spnego_state,
@@ -763,18 +693,6 @@ static const struct spnego_neg_ops gensec_spnego_client_negTokenInit_ops = {
 	.step_fn   = gensec_spnego_client_negTokenInit_step,
 	.finish_fn = gensec_spnego_client_negTokenInit_finish,
 };
-
-static NTSTATUS gensec_spnego_client_negTokenInit(struct gensec_security *gensec_security,
-						  struct spnego_state *spnego_state,
-						  struct tevent_context *ev,
-						  struct spnego_data *spnego_in,
-						  TALLOC_CTX *out_mem_ctx,
-						  DATA_BLOB *out)
-{
-	return gensec_spnego_neg_loop(gensec_security, spnego_state,
-				      &gensec_spnego_client_negTokenInit_ops,
-				      ev, spnego_in, out_mem_ctx, out);
-}
 
 static NTSTATUS gensec_spnego_client_negTokenTarg_start(
 					struct gensec_security *gensec_security,
@@ -1166,17 +1084,6 @@ static const struct spnego_neg_ops gensec_spnego_client_negTokenTarg_ops = {
 	.finish_fn = gensec_spnego_client_negTokenTarg_finish,
 };
 
-static NTSTATUS gensec_spnego_client_negTokenTarg(struct gensec_security *gensec_security,
-						  struct spnego_state *spnego_state,
-						  struct tevent_context *ev,
-						  struct spnego_data *spnego_in,
-						  TALLOC_CTX *out_mem_ctx,
-						  DATA_BLOB *out)
-{
-	return gensec_spnego_neg_loop(gensec_security, spnego_state,
-				      &gensec_spnego_client_negTokenTarg_ops,
-				      ev, spnego_in, out_mem_ctx, out);
-}
 /** create a server negTokenTarg 
  *
  * This is the case, where the client is the first one who sends data
@@ -1440,18 +1347,6 @@ static const struct spnego_neg_ops gensec_spnego_server_negTokenInit_ops = {
 	.finish_fn = gensec_spnego_server_negTokenInit_finish,
 };
 
-static NTSTATUS gensec_spnego_server_negTokenInit(struct gensec_security *gensec_security,
-						  struct spnego_state *spnego_state,
-						  struct tevent_context *ev,
-						  struct spnego_data *spnego_in,
-						  TALLOC_CTX *out_mem_ctx,
-						  DATA_BLOB *out)
-{
-	return gensec_spnego_neg_loop(gensec_security, spnego_state,
-				      &gensec_spnego_server_negTokenInit_ops,
-				      ev, spnego_in, out_mem_ctx, out);
-}
-
 static NTSTATUS gensec_spnego_server_negTokenTarg_start(
 					struct gensec_security *gensec_security,
 					struct spnego_state *spnego_state,
@@ -1633,18 +1528,6 @@ static const struct spnego_neg_ops gensec_spnego_server_negTokenTarg_ops = {
 	.finish_fn = gensec_spnego_server_negTokenTarg_finish,
 };
 
-static NTSTATUS gensec_spnego_server_negTokenTarg(struct gensec_security *gensec_security,
-						  struct spnego_state *spnego_state,
-						  struct tevent_context *ev,
-						  struct spnego_data *spnego_in,
-						  TALLOC_CTX *out_mem_ctx,
-						  DATA_BLOB *out)
-{
-	return gensec_spnego_neg_loop(gensec_security, spnego_state,
-				      &gensec_spnego_server_negTokenTarg_ops,
-				      ev, spnego_in, out_mem_ctx, out);
-}
-
 struct gensec_spnego_update_state {
 	struct tevent_context *ev;
 	struct gensec_security *gensec;
@@ -1660,6 +1543,8 @@ struct gensec_spnego_update_state {
 		NTSTATUS status;
 		DATA_BLOB out;
 	} sub;
+
+	struct spnego_neg_state *n;
 
 	NTSTATUS status;
 	DATA_BLOB out;
@@ -1965,9 +1850,8 @@ static void gensec_spnego_update_pre(struct tevent_req *req)
 	struct gensec_spnego_update_state *state =
 		tevent_req_data(req,
 		struct gensec_spnego_update_state);
-	struct gensec_security *gensec_security = state->gensec;
 	struct spnego_state *spnego_state = state->spnego;
-	struct tevent_context *ev = state->ev;
+	const struct spnego_neg_ops *ops = NULL;
 	NTSTATUS status;
 
 	state->sub.needed = false;
@@ -1986,65 +1870,29 @@ static void gensec_spnego_update_pre(struct tevent_req *req)
 	case SPNEGO_CLIENT_START:
 		if (state->spnego_in == NULL) {
 			/* client to produce negTokenInit */
-			status = gensec_spnego_create_negTokenInit(gensec_security,
-							spnego_state, state, ev,
-							&spnego_state->out_frag);
-			if (GENSEC_UPDATE_IS_NTERROR(status)) {
-				tevent_req_nterror(req, status);
-				return;
-			}
+			ops = &gensec_spnego_create_negTokenInit_ops;
 			break;
 		}
 
-		status = gensec_spnego_client_negTokenInit(gensec_security,
-							spnego_state, ev,
-							state->spnego_in, state,
-							&spnego_state->out_frag);
+		ops = &gensec_spnego_client_negTokenInit_ops;
 		break;
 
 	case SPNEGO_CLIENT_TARG:
-		status = gensec_spnego_client_negTokenTarg(gensec_security,
-							spnego_state, ev,
-							state->spnego_in, state,
-							&spnego_state->out_frag);
-		if (GENSEC_UPDATE_IS_NTERROR(status)) {
-			tevent_req_nterror(req, status);
-			return;
-		}
+		ops = &gensec_spnego_client_negTokenTarg_ops;
 		break;
 
 	case SPNEGO_SERVER_START:
 		if (state->spnego_in == NULL) {
 			/* server to produce negTokenInit */
-			status = gensec_spnego_create_negTokenInit(gensec_security,
-							spnego_state, state, ev,
-							&spnego_state->out_frag);
-			if (GENSEC_UPDATE_IS_NTERROR(status)) {
-				tevent_req_nterror(req, status);
-				return;
-			}
+			ops = &gensec_spnego_create_negTokenInit_ops;
 			break;
 		}
 
-		status = gensec_spnego_server_negTokenInit(gensec_security,
-							spnego_state, ev,
-							state->spnego_in, state,
-							&spnego_state->out_frag);
-		if (GENSEC_UPDATE_IS_NTERROR(status)) {
-			tevent_req_nterror(req, status);
-			return;
-		}
+		ops = &gensec_spnego_server_negTokenInit_ops;
 		break;
 
 	case SPNEGO_SERVER_TARG:
-		status = gensec_spnego_server_negTokenTarg(gensec_security,
-							spnego_state, ev,
-							state->spnego_in, state,
-							&spnego_state->out_frag);
-		if (GENSEC_UPDATE_IS_NTERROR(status)) {
-			tevent_req_nterror(req, status);
-			return;
-		}
+		ops = &gensec_spnego_server_negTokenTarg_ops;
 		break;
 
 	default:
@@ -2052,7 +1900,31 @@ static void gensec_spnego_update_pre(struct tevent_req *req)
 		return;
 	}
 
-	spnego_state->out_status = status;
+	state->n = gensec_spnego_neg_state(state, ops);
+	if (tevent_req_nomem(state->n, req)) {
+		return;
+	}
+
+	status = ops->start_fn(state->gensec, spnego_state, state->n,
+			       state->spnego_in, state, &state->sub.in);
+	if (GENSEC_UPDATE_IS_NTERROR(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	if (NT_STATUS_IS_OK(status)) {
+		/*
+		 * Call finish_fn() with an empty
+		 * blob and NT_STATUS_OK.
+		 */
+		state->sub.status = NT_STATUS_OK;
+	} else {
+		/*
+		 * MORE_PROCESSING_REQUIRED =>
+		 * we need to call gensec_update_send().
+		 */
+		state->sub.needed = true;
+	}
 }
 
 static void gensec_spnego_update_done(struct tevent_req *subreq)
@@ -2080,6 +1952,7 @@ static void gensec_spnego_update_post(struct tevent_req *req)
 		tevent_req_data(req,
 		struct gensec_spnego_update_state);
 	struct spnego_state *spnego_state = state->spnego;
+	const struct spnego_neg_ops *ops = NULL;
 	NTSTATUS status;
 
 	state->sub.in = data_blob_null;
@@ -2093,11 +1966,78 @@ static void gensec_spnego_update_post(struct tevent_req *req)
 		goto respond;
 	}
 
-	/*
-	 * For now just handle the sync processing done
-	 * in gensec_spnego_update_pre()
-	 */
-	status = spnego_state->out_status;
+	ops = state->n->ops;
+
+	if (GENSEC_UPDATE_IS_NTERROR(state->sub.status)) {
+
+
+		/*
+		 * gensec_update_recv() returned an error,
+		 * let's see if the step_fn() want to
+		 * handle it and negotiate something else.
+		 */
+
+		status = ops->step_fn(state->gensec,
+				      spnego_state,
+				      state->n,
+				      state->spnego_in,
+				      state->sub.status,
+				      state,
+				      &state->sub.in);
+		if (GENSEC_UPDATE_IS_NTERROR(status)) {
+			tevent_req_nterror(req, status);
+			return;
+		}
+
+		state->sub.out = data_blob_null;
+		state->sub.status = NT_STATUS_INTERNAL_ERROR;
+
+		if (NT_STATUS_IS_OK(status)) {
+			/*
+			 * Call finish_fn() with an empty
+			 * blob and NT_STATUS_OK.
+			 */
+			state->sub.status = NT_STATUS_OK;
+		} else {
+			/*
+			 * MORE_PROCESSING_REQUIRED...
+			 */
+			state->sub.needed = true;
+		}
+	}
+
+	if (state->sub.needed) {
+		struct tevent_req *subreq = NULL;
+
+		/*
+		 * We may need one more roundtrip...
+		 */
+		subreq = gensec_update_send(state, state->ev,
+					    spnego_state->sub_sec_security,
+					    state->sub.in);
+		if (tevent_req_nomem(subreq, req)) {
+			return;
+		}
+		tevent_req_set_callback(subreq,
+					gensec_spnego_update_done,
+					req);
+		state->sub.needed = false;
+		return;
+	}
+
+	status = ops->finish_fn(state->gensec,
+				spnego_state,
+				state->n,
+				state->spnego_in,
+				state->sub.status,
+				state->sub.out,
+				spnego_state,
+				&spnego_state->out_frag);
+	TALLOC_FREE(state->n);
+	if (GENSEC_UPDATE_IS_NTERROR(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
 
 	if (NT_STATUS_IS_OK(status)) {
 		bool reset_full = true;
