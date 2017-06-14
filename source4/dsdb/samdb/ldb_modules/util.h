@@ -38,3 +38,4 @@ struct netlogon_samlogon_response;
 #define DSDB_FLAG_OWN_MODULE		      0x00400000
 #define DSDB_FLAG_TOP_MODULE		      0x00800000
 #define DSDB_FLAG_TRUSTED		      0x01000000
+#define DSDB_FLAG_REPLICATED_UPDATE           0x02000000

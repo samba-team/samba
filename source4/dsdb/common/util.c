@@ -49,6 +49,12 @@
 #include "lib/util/access.h"
 
 /*
+ * This included to allow us to handle DSDB_FLAG_REPLICATED_UPDATE in
+ * dsdb_request_add_controls()
+ */
+#include "dsdb/samdb/ldb_modules/util.h"
+
+/*
   search the sam for the specified attributes in a specific domain, filter on
   objectSid being in domain_sid.
 */
@@ -4304,6 +4310,13 @@ int dsdb_request_add_controls(struct ldb_request *req, uint32_t dsdb_flags)
 
 	if (dsdb_flags & DSDB_MODIFY_PARTIAL_REPLICA) {
 		ret = ldb_request_add_control(req, DSDB_CONTROL_PARTIAL_REPLICA, false, NULL);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+
+	if (dsdb_flags & DSDB_FLAG_REPLICATED_UPDATE) {
+		ret = ldb_request_add_control(req, DSDB_CONTROL_REPLICATED_UPDATE_OID, false, NULL);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}

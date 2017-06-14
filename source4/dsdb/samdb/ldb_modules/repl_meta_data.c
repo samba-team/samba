@@ -4519,7 +4519,14 @@ static int replmd_name_modify(struct replmd_replicated_request *ar,
 		goto failed;
 	}
 
-	ret = dsdb_module_modify(ar->module, msg, DSDB_FLAG_OWN_MODULE, req);
+	/*
+	 * We have to mark this as a replicated update otherwise
+	 * schema_data may reject a rename in the schema partition
+	 */
+
+	ret = dsdb_module_modify(ar->module, msg,
+				 DSDB_FLAG_OWN_MODULE|DSDB_FLAG_REPLICATED_UPDATE,
+				 req);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0,(__location__ ": Failed to modify rDN/name of conflict DN '%s' - %s",
 			 ldb_dn_get_linearized(dn),

@@ -417,3 +417,34 @@ class DrsReplSchemaTestCase(drs_base.DrsBaseTestCase):
                                 nc_dn=self.schema_dn, forced=True)
         self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1,
                                 nc_dn=self.domain_dn, forced=True)
+
+    def test_rename(self):
+        """Basic plan is to create a classSchema
+           and attributeSchema objects, replicate Schema NC
+           and then check all objects are replicated correctly"""
+
+        # add new classSchema object
+        (c_ldn, c_dn) = self._schema_new_class(self.ldb_dc1, "cls-B", 20)
+
+        self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1,
+                                nc_dn=self.schema_dn, forced=True)
+
+        # check objects are replicated
+        self._check_object(c_dn)
+
+        # rename the Class CN
+        c_dn_new = ldb.Dn(self.ldb_dc1, str(c_dn))
+        c_dn_new.set_component(0,
+                               "CN",
+                               c_dn.get_component_value(0) + "-NEW")
+        try:
+            self.ldb_dc1.rename(c_dn, c_dn_new)
+        except LdbError, (num, _):
+            self.fail("failed to change CN for %s: %s" % (c_dn, _))
+
+        # force replication from DC1 to DC2
+        self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1,
+                                nc_dn=self.schema_dn, forced=True)
+
+        # check objects are replicated
+        self._check_object(c_dn_new)
