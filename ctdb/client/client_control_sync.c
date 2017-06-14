@@ -2658,7 +2658,7 @@ int ctdb_ctrl_db_push_start(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 				  &request, &reply);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,
-		      ("Control DB_PUSH failed to node %u, ret=%d\n",
+		      ("Control DB_PUSH_START failed to node %u, ret=%d\n",
 		       destnode, ret));
 		return ret;
 	}
@@ -2666,7 +2666,7 @@ int ctdb_ctrl_db_push_start(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	ret = ctdb_reply_control_db_push_start(reply);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,
-		      ("Control DB_PUSH failed, ret=%d\n", ret));
+		      ("Control DB_PUSH_START failed, ret=%d\n", ret));
 		return ret;
 	}
 
@@ -2687,7 +2687,7 @@ int ctdb_ctrl_db_push_confirm(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 				  &request, &reply);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,
-		      ("Control DB_PUSH failed to node %u, ret=%d\n",
+		      ("Control DB_PUSH_CONFIRM failed to node %u, ret=%d\n",
 		       destnode, ret));
 		return ret;
 	}
@@ -2695,7 +2695,7 @@ int ctdb_ctrl_db_push_confirm(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	ret = ctdb_reply_control_db_push_confirm(reply, num_records);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,
-		      ("Control DB_PUSH failed, ret=%d\n", ret));
+		      ("Control DB_PUSH_CONFIRM failed, ret=%d\n", ret));
 		return ret;
 	}
 
