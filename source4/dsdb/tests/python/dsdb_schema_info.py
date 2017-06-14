@@ -141,7 +141,7 @@ systemOnly: FALSE
         try:
             self.sam_db.rename(attr_dn, attr_dn_new)
         except LdbError, (num, _):
-            self.fail("failed to change lDAPDisplayName for %s: %s" % (attr_name, _))
+            self.fail("failed to change CN for %s: %s" % (attr_name, _))
 
         # compare resulting schemaInfo
         schi_after = self._getSchemaInfo()
@@ -187,7 +187,7 @@ systemOnly: FALSE
         try:
             self.sam_db.rename(class_dn, class_dn_new)
         except LdbError, (num, _):
-            self.fail("failed to change lDAPDisplayName for %s: %s" % (class_name, _))
+            self.fail("failed to change CN for %s: %s" % (class_name, _))
 
         # compare resulting schemaInfo
         schi_after = self._getSchemaInfo()
