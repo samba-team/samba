@@ -1452,20 +1452,16 @@ static NTSTATUS gensec_spnego_server_negTokenInit(struct gensec_security *gensec
 				      ev, spnego_in, out_mem_ctx, out);
 }
 
-static NTSTATUS gensec_spnego_server_negTokenTarg(struct gensec_security *gensec_security,
-						  struct spnego_state *spnego_state,
-						  struct tevent_context *ev,
-						  struct spnego_data *spnego_in,
-						  TALLOC_CTX *out_mem_ctx,
-						  DATA_BLOB *out)
+static NTSTATUS gensec_spnego_server_negTokenTarg_start(
+					struct gensec_security *gensec_security,
+					struct spnego_state *spnego_state,
+					struct spnego_neg_state *n,
+					struct spnego_data *spnego_in,
+					TALLOC_CTX *in_mem_ctx,
+					DATA_BLOB *in_next)
 {
 	const struct spnego_negTokenTarg *ta = &spnego_in->negTokenTarg;
-	DATA_BLOB sub_in = ta->responseToken;
-	DATA_BLOB mech_list_mic = data_blob_null;
-	DATA_BLOB sub_out = data_blob_null;
 	NTSTATUS status;
-	bool have_sign = true;
-	bool new_spnego = false;
 
 	spnego_state->num_targs++;
 
@@ -1494,26 +1490,78 @@ static NTSTATUS gensec_spnego_server_negTokenTarg(struct gensec_security *gensec
 
 		spnego_state->needs_mic_check = false;
 		spnego_state->done_mic_check = true;
-		goto server_response;
+		return NT_STATUS_OK;
 	}
 
 	if (!spnego_state->sub_sec_ready) {
-		status = gensec_update_ev(spnego_state->sub_sec_security,
-					  out_mem_ctx, ev,
-					  sub_in, &sub_out);
-		if (GENSEC_UPDATE_IS_NTERROR(status)) {
-			DEBUG(2, ("SPNEGO login failed: %s\n",
-				  nt_errstr(status)));
-			return status;
-		}
-		if (NT_STATUS_IS_OK(status)) {
-			spnego_state->sub_sec_ready = true;
-		}
-		if (!NT_STATUS_IS_OK(status)) {
-			goto server_response;
-		}
-	} else {
-		status = NT_STATUS_OK;
+		*in_next = ta->responseToken;
+		return NT_STATUS_MORE_PROCESSING_REQUIRED;
+	}
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS gensec_spnego_server_negTokenTarg_step(
+					struct gensec_security *gensec_security,
+					struct spnego_state *spnego_state,
+					struct spnego_neg_state *n,
+					struct spnego_data *spnego_in,
+					NTSTATUS last_status,
+					TALLOC_CTX *in_mem_ctx,
+					DATA_BLOB *in_next)
+{
+	if (GENSEC_UPDATE_IS_NTERROR(last_status)) {
+		DBG_NOTICE("SPNEGO(%s) login failed: %s\n",
+			   spnego_state->sub_sec_security->ops->name,
+			   nt_errstr(last_status));
+		return last_status;
+	}
+
+	/*
+	 * This should never be reached!
+	 * The step function is only called on errors!
+	 */
+	smb_panic(__location__);
+	return NT_STATUS_INTERNAL_ERROR;
+}
+
+static NTSTATUS gensec_spnego_server_negTokenTarg_finish(
+					struct gensec_security *gensec_security,
+					struct spnego_state *spnego_state,
+					struct spnego_neg_state *n,
+					struct spnego_data *spnego_in,
+					NTSTATUS sub_status,
+					const DATA_BLOB sub_out,
+					TALLOC_CTX *out_mem_ctx,
+					DATA_BLOB *out)
+{
+	const struct spnego_negTokenTarg *ta = &spnego_in->negTokenTarg;
+	DATA_BLOB mech_list_mic = data_blob_null;
+	NTSTATUS status;
+	bool have_sign = true;
+	bool new_spnego = false;
+
+	status = sub_status;
+
+	if (!spnego_state->sub_sec_ready) {
+		/*
+		 * We're not yet ready to deal with signatures.
+		 */
+		goto server_response;
+	}
+
+	if (spnego_state->done_mic_check) {
+		/*
+		 * We already checked the mic,
+		 * either the in last round here
+		 * in gensec_spnego_server_negTokenTarg_finish()
+		 * or during this round in
+		 * gensec_spnego_server_negTokenTarg_start().
+		 *
+		 * Both cases we're sure we don't have to
+		 * call gensec_sign_packet().
+		 */
+		goto server_response;
 	}
 
 	have_sign = gensec_have_feature(spnego_state->sub_sec_security,
@@ -1551,7 +1599,7 @@ static NTSTATUS gensec_spnego_server_negTokenTarg(struct gensec_security *gensec
 
 	if (spnego_state->needs_mic_sign) {
 		status = gensec_sign_packet(spnego_state->sub_sec_security,
-					    out_mem_ctx,
+					    n,
 					    spnego_state->mech_types.data,
 					    spnego_state->mech_types.length,
 					    spnego_state->mech_types.data,
@@ -1576,6 +1624,25 @@ static NTSTATUS gensec_spnego_server_negTokenTarg(struct gensec_security *gensec
 					     sub_out,
 					     mech_list_mic,
 					     out);
+}
+
+static const struct spnego_neg_ops gensec_spnego_server_negTokenTarg_ops = {
+	.name      = "server_negTokenTarg",
+	.start_fn  = gensec_spnego_server_negTokenTarg_start,
+	.step_fn   = gensec_spnego_server_negTokenTarg_step,
+	.finish_fn = gensec_spnego_server_negTokenTarg_finish,
+};
+
+static NTSTATUS gensec_spnego_server_negTokenTarg(struct gensec_security *gensec_security,
+						  struct spnego_state *spnego_state,
+						  struct tevent_context *ev,
+						  struct spnego_data *spnego_in,
+						  TALLOC_CTX *out_mem_ctx,
+						  DATA_BLOB *out)
+{
+	return gensec_spnego_neg_loop(gensec_security, spnego_state,
+				      &gensec_spnego_server_negTokenTarg_ops,
+				      ev, spnego_in, out_mem_ctx, out);
 }
 
 struct gensec_spnego_update_state {
