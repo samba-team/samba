@@ -1383,14 +1383,9 @@ static struct tevent_req *gensec_spnego_update_send(TALLOC_CTX *mem_ctx,
 						     &spnego_state->out_frag);
 		break;
 
-	case SPNEGO_DONE:
-		/* We should not be called after we are 'done' */
-		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		return tevent_req_post(req, ev);
-
 	default:
-		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		return tevent_req_post(req, ev);
+		smb_panic(__location__);
+		return NULL;
 	}
 
 	if (NT_STATUS_IS_OK(status)) {
@@ -1433,6 +1428,23 @@ static NTSTATUS gensec_spnego_update_in(struct gensec_security *gensec_security,
 	bool ok;
 
 	*full_in = data_blob_null;
+
+	switch (spnego_state->state_position) {
+	case SPNEGO_FALLBACK:
+		*full_in = in;
+		spnego_state->in_needed = 0;
+		return NT_STATUS_OK;
+
+	case SPNEGO_CLIENT_START:
+	case SPNEGO_CLIENT_TARG:
+	case SPNEGO_SERVER_START:
+	case SPNEGO_SERVER_TARG:
+		break;
+
+	case SPNEGO_DONE:
+	default:
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	if (spnego_state->in_needed == 0) {
 		size_t size = 0;
