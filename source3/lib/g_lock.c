@@ -193,7 +193,7 @@ struct g_lock_ctx *g_lock_ctx_init(TALLOC_CTX *mem_ctx,
 	backend = db_open(result, db_path, 0,
 			  TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH,
 			  O_RDWR|O_CREAT, 0600,
-			  DBWRAP_LOCK_ORDER_2,
+			  DBWRAP_LOCK_ORDER_3,
 			  DBWRAP_FLAG_NONE);
 	TALLOC_FREE(db_path);
 	if (backend == NULL) {
