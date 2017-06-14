@@ -125,6 +125,10 @@ static void request_handler(struct smbcli_request *req)
 				}
 			}
 		}
+		if (!NT_STATUS_IS_OK(c->status)) {
+			composite_error(c, c->status);
+			return;
+		}
 		os = state->setup.old.out.os;
 		lanman = state->setup.old.out.lanman;
 		break;
@@ -145,6 +149,10 @@ static void request_handler(struct smbcli_request *req)
 					return;
 				}
 			}
+		}
+		if (!NT_STATUS_IS_OK(c->status)) {
+			composite_error(c, c->status);
+			return;
 		}
 		os = state->setup.nt1.out.os;
 		lanman = state->setup.nt1.out.lanman;
@@ -191,9 +199,9 @@ static void request_handler(struct smbcli_request *req)
 				return;
 			}
 		}
-		if (!NT_STATUS_EQUAL(c->status, NT_STATUS_MORE_PROCESSING_REQUIRED) && 
-		    !NT_STATUS_IS_OK(c->status)) {
-			break;
+		if (GENSEC_UPDATE_IS_NTERROR(c->status)) {
+			composite_error(c, c->status);
+			return;
 		}
 		if (NT_STATUS_EQUAL(state->gensec_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 
@@ -208,9 +216,9 @@ static void request_handler(struct smbcli_request *req)
 							 state->setup.spnego.out.secblob,
 							 &state->setup.spnego.in.secblob);
 			c->status = state->gensec_status;
-			if (!NT_STATUS_EQUAL(c->status, NT_STATUS_MORE_PROCESSING_REQUIRED) && 
-			    !NT_STATUS_IS_OK(c->status)) {
-				break;
+			if (GENSEC_UPDATE_IS_NTERROR(c->status)) {
+				composite_error(c, c->status);
+				return;
 			}
 		} else {
 			state->setup.spnego.in.secblob = data_blob(NULL, 0);
@@ -225,7 +233,8 @@ static void request_handler(struct smbcli_request *req)
 
 			if (state->setup.spnego.in.secblob.length) {
 				c->status = NT_STATUS_INTERNAL_ERROR;
-				break;
+				composite_error(c, c->status);
+				return;
 			}
 			session_key_err = gensec_session_key(session->gensec, session, &session_key);
 			if (NT_STATUS_IS_OK(session_key_err)) {
@@ -238,7 +247,8 @@ static void request_handler(struct smbcli_request *req)
 								    session_key);
 			data_blob_free(&session_key);
 			if (!NT_STATUS_IS_OK(c->status)) {
-				break;
+				composite_error(c, c->status);
+				return;
 			}
 		}
 
@@ -264,7 +274,8 @@ static void request_handler(struct smbcli_request *req)
 
 	case RAW_SESSSETUP_SMB2:
 		c->status = NT_STATUS_INTERNAL_ERROR;
-		break;
+		composite_error(c, c->status);
+		return;
 	}
 
 	if (check_req) {
@@ -274,11 +285,12 @@ static void request_handler(struct smbcli_request *req)
 
 		ok = smb1cli_conn_check_signing(check_req->transport->conn,
 						check_req->in.buffer, 1);
+		TALLOC_FREE(check_req);
 		if (!ok) {
 			c->status = NT_STATUS_ACCESS_DENIED;
+			composite_error(c, c->status);
+			return;
 		}
-		talloc_free(check_req);
-		check_req = NULL;
 	}
 
 	if (!NT_STATUS_IS_OK(c->status)) {
