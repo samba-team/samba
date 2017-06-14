@@ -18,6 +18,7 @@ autom4te.cache
 *.pyc
 semantic.cache
 /selftest/gnupg/random_seed
+/selftest/gnupg/.gpg-*
 /pidl/blib
 /pidl/cover_db
 /pidl/Makefile
