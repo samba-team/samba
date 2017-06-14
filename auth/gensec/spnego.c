@@ -438,7 +438,7 @@ static NTSTATUS gensec_spnego_create_negTokenInit(struct gensec_security *gensec
 						  struct spnego_state *spnego_state,
 						  TALLOC_CTX *out_mem_ctx, 
 						  struct tevent_context *ev,
-						  const DATA_BLOB in, DATA_BLOB *out) 
+						  DATA_BLOB *out)
 {
 	int i;
 	NTSTATUS nt_status = NT_STATUS_INVALID_PARAMETER;
@@ -646,7 +646,7 @@ static NTSTATUS gensec_spnego_update_client(struct gensec_security *gensec_secur
 		if (!in.length) {
 			/* client to produce negTokenInit */
 			nt_status = gensec_spnego_create_negTokenInit(gensec_security, spnego_state, 
-								      out_mem_ctx, ev, in, out);
+								      out_mem_ctx, ev, out);
 			spnego_state->state_position = SPNEGO_CLIENT_TARG;
 			spnego_state->expected_packet = SPNEGO_NEG_TOKEN_TARG;
 			return nt_status;
@@ -1120,7 +1120,7 @@ static NTSTATUS gensec_spnego_update_server(struct gensec_security *gensec_secur
 			return nt_status;
 		} else {
 			nt_status = gensec_spnego_create_negTokenInit(gensec_security, spnego_state,
-								      out_mem_ctx, ev, in, out);
+								      out_mem_ctx, ev, out);
 			spnego_state->state_position = SPNEGO_SERVER_START;
 			spnego_state->expected_packet = SPNEGO_NEG_TOKEN_INIT;
 			return nt_status;
