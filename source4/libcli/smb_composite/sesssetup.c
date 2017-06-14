@@ -35,6 +35,7 @@
 
 struct sesssetup_state {
 	union smb_sesssetup setup;
+	const char *chosen_oid;
 	NTSTATUS remote_status;
 	NTSTATUS gensec_status;
 	struct smb_composite_sesssetup *io;
@@ -522,28 +523,36 @@ static NTSTATUS session_setup_spnego(struct composite_context *c,
 	state->setup.spnego.out.secblob =
 			session->transport->negotiate.secblob;
 	if (session->transport->negotiate.secblob.length) {
-		chosen_oid = GENSEC_OID_SPNEGO;
-		status = gensec_start_mech_by_oid(session->gensec, chosen_oid);
+		state->chosen_oid = GENSEC_OID_SPNEGO;
+		status = gensec_start_mech_by_oid(session->gensec,
+						  state->chosen_oid);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("Failed to start set GENSEC client mechanism %s: %s\n",
-				  gensec_get_name_by_oid(session->gensec, chosen_oid), nt_errstr(status)));
+				  gensec_get_name_by_oid(session->gensec,
+							 state->chosen_oid),
+				  nt_errstr(status)));
 			state->setup.spnego.out.secblob = data_blob_null;
-			chosen_oid = GENSEC_OID_NTLMSSP;
-			status = gensec_start_mech_by_oid(session->gensec, chosen_oid);
+			state->chosen_oid = GENSEC_OID_NTLMSSP;
+			status = gensec_start_mech_by_oid(session->gensec,
+							  state->chosen_oid);
 			if (!NT_STATUS_IS_OK(status)) {
 				DEBUG(1, ("Failed to start set (fallback) GENSEC client mechanism %s: %s\n",
-					  gensec_get_name_by_oid(session->gensec, chosen_oid), 
+					  gensec_get_name_by_oid(session->gensec,
+								 state->chosen_oid),
 					  nt_errstr(status)));
 				return status;
 			}
 		}
 	} else {
 		/* without a sec blob, means raw NTLMSSP */
-		chosen_oid = GENSEC_OID_NTLMSSP;
-		status = gensec_start_mech_by_oid(session->gensec, chosen_oid);
+		state->chosen_oid = GENSEC_OID_NTLMSSP;
+		status = gensec_start_mech_by_oid(session->gensec,
+						  state->chosen_oid);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("Failed to start set GENSEC client mechanism %s: %s\n",
-				  gensec_get_name_by_oid(session->gensec, chosen_oid), nt_errstr(status)));
+				  gensec_get_name_by_oid(session->gensec,
+							 state->chosen_oid),
+				  nt_errstr(status)));
 		}
 	}
 
@@ -555,7 +564,8 @@ static NTSTATUS session_setup_spnego(struct composite_context *c,
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED) && 
 	    !NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed initial gensec_update with mechanism %s: %s\n",
-			  gensec_get_name_by_oid(session->gensec, chosen_oid), 
+			  gensec_get_name_by_oid(session->gensec,
+						 state->chosen_oid),
 			  nt_errstr(status)));
 		return status;
 	}
