@@ -616,6 +616,7 @@ _PUBLIC_ NTSTATUS gensec_subcontext_start(TALLOC_CTX *mem_ctx,
 	(**gensec_security) = *parent;
 	(*gensec_security)->ops = NULL;
 	(*gensec_security)->private_data = NULL;
+	(*gensec_security)->update_busy_ptr = NULL;
 
 	(*gensec_security)->subcontext = true;
 	(*gensec_security)->want_features = parent->want_features;
