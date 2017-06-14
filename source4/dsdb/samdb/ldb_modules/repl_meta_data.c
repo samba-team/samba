@@ -4528,7 +4528,7 @@ static int replmd_name_modify(struct replmd_replicated_request *ar,
 				 DSDB_FLAG_OWN_MODULE|DSDB_FLAG_REPLICATED_UPDATE,
 				 req);
 	if (ret != LDB_SUCCESS) {
-		DEBUG(0,(__location__ ": Failed to modify rDN/name of conflict DN '%s' - %s",
+		DEBUG(0,(__location__ ": Failed to modify rDN/name of DN being DRS renamed '%s' - %s",
 			 ldb_dn_get_linearized(dn),
 			 ldb_errstring(ldb_module_get_ctx(ar->module))));
 		return ret;
@@ -4540,7 +4540,7 @@ static int replmd_name_modify(struct replmd_replicated_request *ar,
 
 failed:
 	talloc_free(msg);
-	DEBUG(0,(__location__ ": Failed to setup modify rDN/name of conflict DN '%s'",
+	DEBUG(0,(__location__ ": Failed to setup modify rDN/name of DN being DRS renamed '%s'",
 		 ldb_dn_get_linearized(dn)));
 	return LDB_ERR_OPERATIONS_ERROR;
 }
