@@ -1152,12 +1152,24 @@ static int lsql_modify(struct lsql_context *ctx)
 		switch (flags) {
 
 		case LDB_FLAG_MOD_REPLACE:
+			struct ldb_val *duplicate = NULL;
 
-			for (j=0; j<el->num_values; j++) {
-				if (ldb_msg_find_val(el, &el->values[j]) != &el->values[j]) {
-					ldb_asprintf_errstring(ldb, "%s: value #%d provided more than once", el->name, j);
-					return LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
-				}
+			ret = ldb_msg_find_duplicate_val(ldb, el, el,
+							 &duplicate, 0);
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
+			if (duplicate != NULL) {
+				ldb_asprintf_errstring(
+					ldb,
+					"attribute '%s': value '%.*s' "
+					"on '%s' provided more than "
+					"once in REPLACE",
+					el->name,
+					(int)duplicate->length,
+					duplicate->data,
+					ldb_dn_get_linearized(msg2->dn));
+				return LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
 			}
 
 			/* remove all attributes before adding the replacements */

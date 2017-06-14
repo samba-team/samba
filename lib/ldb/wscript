@@ -321,6 +321,11 @@ def build(bld):
                          deps='cmocka ldb',
                          install=False)
 
+        bld.SAMBA_BINARY('ldb_msg_test',
+                         source='tests/ldb_msg.c',
+                         deps='cmocka ldb',
+                         install=False)
+
 def test(ctx):
     '''run ldb testsuite'''
     import Utils, samba_utils, shutil
@@ -346,8 +351,11 @@ def test(ctx):
 
     os.environ['LDB_MODULES_PATH'] = Utils.g_module.blddir + '/modules/ldb'
     os.environ['LD_LIBRARY_PATH'] = Utils.g_module.blddir + '/bin/default/lib/ldb'
-    cmd = Utils.g_module.blddir + '/ldb_tdb_mod_op_test'
-    cmocka_ret = samba_utils.RUN_COMMAND(cmd)
+    cmocka_ret = 0
+    for test_exe in ['ldb_tdb_mod_op_test',
+                     'ldb_msg_test']:
+            cmd = os.path.join(Utils.g_module.blddir, test_exe)
+            cmocka_ret = cmocka_ret or samba_utils.RUN_COMMAND(cmd)
 
     sys.exit(ret or pyret or cmocka_ret)
 

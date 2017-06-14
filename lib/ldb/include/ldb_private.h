@@ -237,4 +237,55 @@ char *ldb_ldif_write_redacted_trace_string(struct ldb_context *ldb, TALLOC_CTX *
  */
 struct ldb_context *ldb_dn_get_ldb_context(struct ldb_dn *dn);
 
+#define LDB_MSG_FIND_COMMON_REMOVE_DUPLICATES 1
+
+/**
+  Determine whether any values in an element are also in another element,
+  and optionally fix that.
+
+  \param ldb      an ldb context
+  \param mem_ctx  a talloc context
+  \param el       an element
+  \param other_el another element
+  \param options  flags controlling the function behaviour
+
+  Without the LDB_MSG_FIND_COMMON_REMOVE_DUPLICATES flag, return
+  LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS if the elements share values, and
+  LDB_SUCCESS if they don't. That is, determine whether there is an
+  intersection without changing anything.
+
+  With the LDB_MSG_FIND_COMMON_REMOVE_DUPLICATES flag, any values in common
+  are removed from the first element and LDB_SUCCESS is returned.
+
+  LDB_ERR_OPERATIONS_ERROR indicates an allocation failure or an unknown option.
+  LDB_ERR_INAPPROPRIATE_MATCHING means the elements differ in name.
+*/
+
+int ldb_msg_find_common_values(struct ldb_context *ldb,
+			       TALLOC_CTX *mem_ctx,
+			       struct ldb_message_element *el,
+			       struct ldb_message_element *other_el,
+			       uint32_t options);
+
+/**
+   Detect whether an element contains duplicate values
+
+   \param ldb a currently unused ldb_context struct
+   \param mem_ctx a talloc context
+   \param el the element to search
+   \param duplicate will point to a duplicate value if there are duplicates,
+   or NULL otherwise.
+   \param options is a flags field. All values are reserved.
+
+   \return an ldb error code. LDB_ERR_OPERATIONS_ERROR indicates an allocation
+   failure or an unknown option flag. Otherwise LDB_SUCCESS.
+
+   \note This search is case sensitive
+*/
+int ldb_msg_find_duplicate_val(struct ldb_context *ldb,
+			       TALLOC_CTX *mem_ctx,
+			       const struct ldb_message_element *el,
+			       struct ldb_val **duplicate,
+			       uint32_t options);
+
 #endif

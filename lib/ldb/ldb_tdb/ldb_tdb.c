@@ -330,7 +330,7 @@ static int ltdb_add_internal(struct ldb_module *module,
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	int ret = LDB_SUCCESS;
-	unsigned int i, j;
+	unsigned int i;
 
 	for (i=0;i<msg->num_elements;i++) {
 		struct ldb_message_element *el = &msg->elements[i];
@@ -356,16 +356,23 @@ static int ltdb_add_internal(struct ldb_module *module,
 		}
 
 		if (check_single_value) {
-			/* TODO: This is O(n^2) - replace with more efficient check */
-			for (j=0; j<el->num_values; j++) {
-				if (ldb_msg_find_val(el, &el->values[j]) != &el->values[j]) {
-					ldb_asprintf_errstring(ldb,
-							       "attribute '%s': value #%u on '%s' "
-							       "provided more than once in ADD object",
-							       el->name, j, 
-							       ldb_dn_get_linearized(msg->dn));
-					return LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
-				}
+			struct ldb_val *duplicate = NULL;
+
+			ret = ldb_msg_find_duplicate_val(ldb, discard_const(msg),
+							 el, &duplicate, 0);
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
+			if (duplicate != NULL) {
+				ldb_asprintf_errstring(
+					ldb,
+					"attribute '%s': value '%.*s' on '%s' "
+					"provided more than once in ADD object",
+					el->name,
+					(int)duplicate->length,
+					duplicate->data,
+					ldb_dn_get_linearized(msg->dn));
+				return LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
 			}
 		}
 	}
@@ -681,7 +688,7 @@ int ltdb_modify_internal(struct ldb_module *module,
 	TDB_DATA tdb_key, tdb_data;
 	struct ldb_val ldb_data;
 	struct ldb_message *msg2;
-	unsigned int i, j, k;
+	unsigned int i, j;
 	int ret = LDB_SUCCESS, idx;
 	struct ldb_control *control_permissive = NULL;
 
@@ -727,6 +734,10 @@ int ltdb_modify_internal(struct ldb_module *module,
 		struct ldb_val *vals;
 		const struct ldb_schema_attribute *a = ldb_schema_attribute_by_name(ldb, el->name);
 		const char *dn;
+		uint32_t options = 0;
+		if (control_permissive != NULL) {
+			options |= LDB_MSG_FIND_COMMON_REMOVE_DUPLICATES;
+		}
 
 		switch (msg->elements[i].flags & LDB_FLAG_MOD_MASK) {
 		case LDB_FLAG_MOD_ADD:
@@ -795,34 +806,45 @@ int ltdb_modify_internal(struct ldb_module *module,
 
 				/* Check that values don't exist yet on multi-
 				   valued attributes or aren't provided twice */
-				/* TODO: This is O(n^2) - replace with more efficient check */
-				if (!(el->flags & LDB_FLAG_INTERNAL_DISABLE_SINGLE_VALUE_CHECK)) {
-					for (j = 0; j < el->num_values; j++) {
-						if (ldb_msg_find_val(el2, &el->values[j]) != NULL) {
-							if (control_permissive) {
-								/* remove this one as if it was never added */
-								el->num_values--;
-								for (k = j; k < el->num_values; k++) {
-									el->values[k] = el->values[k + 1];
-								}
-								j--; /* rewind */
+				if (!(el->flags &
+				      LDB_FLAG_INTERNAL_DISABLE_SINGLE_VALUE_CHECK)) {
+					struct ldb_val *duplicate = NULL;
+					ret = ldb_msg_find_common_values(ldb,
+									 msg2,
+									 el,
+									 el2,
+									 options);
 
-								continue;
-							}
+					if (ret ==
+					    LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS) {
+						ldb_asprintf_errstring(ldb,
+							"attribute '%s': value "
+							"#%u on '%s' already "
+							"exists", el->name, j,
+							ldb_dn_get_linearized(msg2->dn));
+						goto done;
+					} else if (ret != LDB_SUCCESS) {
+						goto done;
+					}
 
-							ldb_asprintf_errstring(ldb,
-									       "attribute '%s': value #%u on '%s' already exists",
-									       el->name, j, ldb_dn_get_linearized(msg2->dn));
-							ret = LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
-							goto done;
-						}
-						if (ldb_msg_find_val(el, &el->values[j]) != &el->values[j]) {
-							ldb_asprintf_errstring(ldb,
-									       "attribute '%s': value #%u on '%s' provided more than once in ADD",
-									       el->name, j, ldb_dn_get_linearized(msg2->dn));
-							ret = LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
-							goto done;
-						}
+					ret = ldb_msg_find_duplicate_val(
+						ldb, msg2, el, &duplicate, 0);
+					if (ret != LDB_SUCCESS) {
+						goto done;
+					}
+					if (duplicate != NULL) {
+						ldb_asprintf_errstring(
+							ldb,
+							"attribute '%s': value "
+							"'%.*s' on '%s' "
+							"provided more than "
+							"once in ADD",
+							el->name,
+							(int)duplicate->length,
+							duplicate->data,
+							ldb_dn_get_linearized(msg->dn));
+						ret = LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
+						goto done;
 					}
 				}
 
@@ -868,16 +890,26 @@ int ltdb_modify_internal(struct ldb_module *module,
 			 * in Samba, or someone else who can claim to
 			 * know what they are doing. 
 			 */
-			if (!(el->flags & LDB_FLAG_INTERNAL_DISABLE_SINGLE_VALUE_CHECK)) { 
-				/* TODO: This is O(n^2) - replace with more efficient check */
-				for (j=0; j<el->num_values; j++) {
-					if (ldb_msg_find_val(el, &el->values[j]) != &el->values[j]) {
-						ldb_asprintf_errstring(ldb,
-								       "attribute '%s': value #%u on '%s' provided more than once in REPLACE",
-								       el->name, j, ldb_dn_get_linearized(msg2->dn));
-						ret = LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
-						goto done;
-					}
+			if (!(el->flags & LDB_FLAG_INTERNAL_DISABLE_SINGLE_VALUE_CHECK)) {
+				struct ldb_val *duplicate = NULL;
+
+				ret = ldb_msg_find_duplicate_val(ldb, msg2, el,
+								 &duplicate, 0);
+				if (ret != LDB_SUCCESS) {
+					goto done;
+				}
+				if (duplicate != NULL) {
+					ldb_asprintf_errstring(
+						ldb,
+						"attribute '%s': value '%.*s' "
+						"on '%s' provided more than "
+						"once in REPLACE",
+						el->name,
+						(int)duplicate->length,
+						duplicate->data,
+						ldb_dn_get_linearized(msg2->dn));
+					ret = LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
+					goto done;
 				}
 			}
 

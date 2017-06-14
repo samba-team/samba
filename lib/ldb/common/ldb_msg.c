@@ -89,6 +89,224 @@ struct ldb_val *ldb_msg_find_val(const struct ldb_message_element *el,
 	return NULL;
 }
 
+
+static int ldb_val_cmp(const struct ldb_val *v1, const struct ldb_val *v2)
+{
+	if (v1->length != v2->length) {
+		return v1->length - v2->length;
+	}
+	return memcmp(v1->data, v2->data, v1->length);
+}
+
+
+/*
+  ldb_msg_find_duplicate_val() will set the **duplicate pointer to the first
+  duplicate value it finds. It does a case sensitive comparison (memcmp).
+
+  LDB_ERR_OPERATIONS_ERROR indicates an allocation failure or an unknown
+  options flag, otherwise LDB_SUCCESS.
+*/
+#define LDB_DUP_QUADRATIC_THRESHOLD 10
+
+int ldb_msg_find_duplicate_val(struct ldb_context *ldb,
+			       TALLOC_CTX *mem_ctx,
+			       const struct ldb_message_element *el,
+			       struct ldb_val **duplicate,
+			       uint32_t options)
+{
+	unsigned int i, j;
+	struct ldb_val *val;
+
+	if (options != 0) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	*duplicate = NULL;
+
+	/*
+	   If there are not many values, it is best to avoid the talloc
+	   overhead and just do a brute force search.
+	 */
+	if (el->num_values < LDB_DUP_QUADRATIC_THRESHOLD) {
+		for (j = 0; j < el->num_values; j++) {
+			val = &el->values[j];
+			for ( i = j + 1; i < el->num_values; i++) {
+				if (ldb_val_equal_exact(val, &el->values[i])) {
+					*duplicate = val;
+					return LDB_SUCCESS;
+				}
+			}
+		}
+	} else {
+		struct ldb_val *values;
+		values = talloc_array(mem_ctx, struct ldb_val, el->num_values);
+		if (values == NULL) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+		memcpy(values, el->values,
+		       el->num_values * sizeof(struct ldb_val));
+		TYPESAFE_QSORT(values, el->num_values, ldb_val_cmp);
+		for (i = 1; i < el->num_values; i++) {
+			if (ldb_val_equal_exact(&values[i],
+						&values[i - 1])) {
+				/* find the original location */
+				for (j = 0; j < el->num_values; j++) {
+					if (ldb_val_equal_exact(&values[i],
+								&el->values[j])
+						) {
+						*duplicate = &el->values[j];
+						break;
+					}
+				}
+				talloc_free(values);
+				if (*duplicate == NULL) {
+					/* how we got here, I don't know */
+					return LDB_ERR_OPERATIONS_ERROR;
+				}
+				return LDB_SUCCESS;
+			}
+		}
+		talloc_free(values);
+	}
+	return LDB_SUCCESS;
+}
+
+
+/*
+  Determine whether the values in an element are also in another element.
+
+  Without any flags, return LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS if the elements
+  share values, or LDB_SUCCESS if they don't. In this case, the function
+  simply determines the set intersection and it doesn't matter in which order
+  the elements are provided.
+
+  With the LDB_MSG_FIND_COMMON_REMOVE_DUPLICATES flag, any values in common are
+  removed from the first element and LDB_SUCCESS is returned.
+
+  LDB_ERR_OPERATIONS_ERROR indicates an allocation failure or an unknown option.
+  LDB_ERR_INAPPROPRIATE_MATCHING is returned if the elements differ in name.
+*/
+
+int ldb_msg_find_common_values(struct ldb_context *ldb,
+			       TALLOC_CTX *mem_ctx,
+			       struct ldb_message_element *el,
+			       struct ldb_message_element *el2,
+			       uint32_t options)
+{
+	struct ldb_val *values;
+	struct ldb_val *values2;
+	unsigned int i, j, k, n_values;
+
+	bool remove_duplicates = options & LDB_MSG_FIND_COMMON_REMOVE_DUPLICATES;
+
+	if ((options & ~LDB_MSG_FIND_COMMON_REMOVE_DUPLICATES) != 0) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	if (strcmp(el->name, el2->name) != 0) {
+		return LDB_ERR_INAPPROPRIATE_MATCHING;
+	}
+	/*
+	   With few values, it is better to do the brute-force search than the
+	   clever search involving tallocs, memcpys, sorts, etc.
+	*/
+	if (MIN(el->num_values, el2->num_values) == 1 ||
+	    MAX(el->num_values, el2->num_values) < LDB_DUP_QUADRATIC_THRESHOLD) {
+		for (i = 0; i < el2->num_values; i++) {
+			for (j = 0; j < el->num_values; j++) {
+				if (ldb_val_equal_exact(&el->values[j],
+							&el2->values[i])) {
+					if (! remove_duplicates) {
+					    return			\
+					      LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
+					}
+					/*
+					  With the remove_duplicates flag, we
+					  resolve the intersection by removing
+					  the offending one from el.
+					*/
+					el->num_values--;
+					for (k = j; k < el->num_values; k++) {
+						el->values[k] = \
+							el->values[k + 1];
+					}
+					j--; /* rewind */
+				}
+			}
+		}
+		return LDB_SUCCESS;
+	}
+
+	values = talloc_array(mem_ctx, struct ldb_val, el->num_values);
+	if (values == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	values2 = talloc_array(mem_ctx, struct ldb_val,
+				    el2->num_values);
+	if (values2 == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	memcpy(values, el->values,
+	       el->num_values * sizeof(struct ldb_val));
+	memcpy(values2, el2->values,
+	       el2->num_values * sizeof(struct ldb_val));
+	TYPESAFE_QSORT(values, el->num_values, ldb_val_cmp);
+	TYPESAFE_QSORT(values2, el2->num_values, ldb_val_cmp);
+
+	/*
+	   el->n_values may diverge from the number of values in the sorted
+	   list when the remove_duplicates flag is used.
+	*/
+	n_values = el->num_values;
+	i = 0;
+	j = 0;
+	while (i != n_values) {
+		int ret = ldb_val_cmp(&values[i], &values2[j]);
+		if (ret < 0) {
+			i++;
+		} else if (ret > 0) {
+			j++;
+			if (j == el2->num_values) {
+				/*
+				  We have walked past the end of the second
+				  list, meaning the remainder of the first
+				  list cannot collide and we're done.
+				*/
+				break;
+			}
+		} else {
+			/* we have a collision */
+			if (! remove_duplicates) {
+				TALLOC_FREE(values);
+				TALLOC_FREE(values2);
+				return LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
+			}
+			/*
+			   With the remove_duplicates flag we need to find
+			   this in the original list and remove it, which is
+			   inefficient but hopefully rare.
+			*/
+			for (k = 0; k < el->num_values; k++) {
+				if (ldb_val_equal_exact(&el->values[k],
+							&values[i])) {
+					break;
+				}
+			}
+			el->num_values--;
+			for (; k < el->num_values; k++) {
+				el->values[k] = el->values[k + 1];
+			}
+			i++;
+		}
+	}
+	TALLOC_FREE(values);
+	TALLOC_FREE(values2);
+
+	return LDB_SUCCESS;
+}
+
 /*
   duplicate a ldb_val structure
 */
