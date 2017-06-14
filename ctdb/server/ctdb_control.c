@@ -669,6 +669,30 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));
 		return ctdb_control_db_push_confirm(ctdb, indata, outdata);
 
+	case CTDB_CONTROL_DB_OPEN_FLAGS: {
+		uint32_t db_id;
+		struct ctdb_db_context *ctdb_db;
+		int tdb_flags;
+
+		CHECK_CONTROL_DATA_SIZE(sizeof(db_id));
+		db_id = *(uint32_t *)indata.dptr;
+		ctdb_db = find_ctdb_db(ctdb, db_id);
+		if (ctdb_db == NULL) {
+			return -1;
+		}
+
+		tdb_flags = tdb_get_flags(ctdb_db->ltdb->tdb);
+
+		outdata->dptr = talloc_size(outdata, sizeof(tdb_flags));
+		if (outdata->dptr == NULL) {
+			return -1;
+		}
+
+		outdata->dsize = sizeof(tdb_flags);
+		memcpy(outdata->dptr, &tdb_flags, outdata->dsize);
+		return 0;
+	}
+
 	default:
 		DEBUG(DEBUG_CRIT,(__location__ " Unknown CTDB control opcode %u\n", opcode));
 		return -1;
