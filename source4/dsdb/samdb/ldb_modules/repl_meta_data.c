@@ -6961,6 +6961,17 @@ static int replmd_verify_linked_attributes(struct replmd_replicated_request *ar)
 		ret = replmd_extract_la_entry_details(module, la, tmp_ctx, &attr,
 						      &src_msg, &tgt_dsdb_dn);
 
+		/*
+		 * When we fail to find the source object, the error code we pass
+		 * back here is really important. It flags back to the callers to
+		 * retry this request with DRSUAPI_DRS_GET_ANC. This case should
+		 * never happen if we're replicating from a Samba DC, but it is
+		 * needed to talk to a Windows DC
+		 */
+		if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+			ret = replmd_replicated_request_werror(ar, WERR_DS_DRA_MISSING_PARENT);
+		}
+
 		if (ret != LDB_SUCCESS) {
 			break;
 		}
