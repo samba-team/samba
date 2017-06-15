@@ -1991,14 +1991,8 @@ static int test_ldb_modify_during_whole_search_callback1(struct ldb_request *req
 	ldb_request_done(req, LDB_SUCCESS);
 	assert_int_equal(ret, 0);
 
-	/*
-	 * We got the result because of this
-	 * tests wants to demonstrate.
-	 *
-	 * Once the bug is fixed, it should
-	 * change to assert_int_equal(res_count, 0);
-	 */
-	assert_int_equal(res_count, 1);
+	/* We should not have got the result */
+	assert_int_equal(res_count, 0);
 
 	return ret;
 }
