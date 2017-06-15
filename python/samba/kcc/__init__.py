@@ -541,8 +541,9 @@ class KCC(object):
                 if s_dnstr not in local_dsas:
                     from_dsa = self.get_dsa(s_dnstr)
                     # Samba ONLY: ISTG removes connections to dead DCs
-                    if from_dsa is None and '\\0ADEL' in s_dnstr:
-                        logger.info("DSA appears deleted, removing connection %s" % s_dnstr)
+                    if from_dsa is None or '\\0ADEL' in s_dnstr:
+                        logger.info("DSA appears deleted, removing connection %s"
+                                    % s_dnstr)
                         cn.to_be_deleted = True
                         continue
                     connections_and_dsas.append((cn, dsa, from_dsa))
