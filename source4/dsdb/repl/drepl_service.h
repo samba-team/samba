@@ -130,6 +130,8 @@ struct dreplsrv_out_operation {
 	enum drsuapi_DsExtendedError extended_ret;
 	dreplsrv_extended_callback_t callback;
 	void *cb_data;
+	/* more replication flags - used by DsReplicaSync GET_TGT */
+	uint32_t more_flags;
 };
 
 struct dreplsrv_notify_operation {

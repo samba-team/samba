@@ -70,7 +70,9 @@ interface drsuapi
         } drsuapi_DrsUpdate;
 
 	/*****************/
-        /* Function 0x00 */
+        /* Function 0x00 drsuapi_DsBind() */
+
+        /* MS-DRSR 5.39 DRS_EXTENSIONS_INT */
         typedef [bitmap32bit] bitmap {
 		DRSUAPI_SUPPORTED_EXTENSION_BASE			= 0x00000001,
 		DRSUAPI_SUPPORTED_EXTENSION_ASYNC_REPLICATION		= 0x00000002,
