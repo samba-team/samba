@@ -483,6 +483,7 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 	global_client_caps |= (CAP_LEVEL_II_OPLOCKS|CAP_STATUS32);
 
 	*out_session_id = session->global->session_wire_id;
+	smb2req->last_session_id = session->global->session_wire_id;
 
 	return NT_STATUS_OK;
 }
