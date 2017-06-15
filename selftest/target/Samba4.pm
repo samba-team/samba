@@ -245,6 +245,28 @@ sub wait_for_start($$)
 			sleep(1);
 		}
 	}
+
+	my $wbinfo =  Samba::bindir_path($self, "wbinfo");
+
+	$count = 0;
+	do {
+		my $cmd = "NSS_WRAPPER_PASSWD=$testenv_vars->{NSS_WRAPPER_PASSWD} ";
+		$cmd .= "NSS_WRAPPER_GROUP=$testenv_vars->{NSS_WRAPPER_GROUP} ";
+		$cmd .= "SELFTEST_WINBINDD_SOCKET_DIR=$testenv_vars->{SELFTEST_WINBINDD_SOCKET_DIR} ";
+		$cmd .= "$wbinfo -p";
+		$ret = system($cmd);
+
+		if ($ret != 0) {
+			sleep(1);
+		}
+		$count++;
+	} while ($ret != 0 && $count < 20);
+	if ($count == 20) {
+		warn("winbind not reachable after 20 retries\n");
+		teardown_env($self, $testenv_vars);
+		return 0;
+	}
+
 	print $self->getlog_env($testenv_vars);
 
 	return $ret
