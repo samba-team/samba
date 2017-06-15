@@ -26,6 +26,8 @@
 #include "libcli/util/pyerrors.h"
 #include "param/pyparam.h"
 #include <tevent.h>
+#include "libcli/auth/libcli_auth.h"
+#include "auth/credentials/credentials_internal.h"
 
 void initcredentials(void);
 
@@ -584,6 +586,39 @@ static PyObject *py_creds_get_gensec_features(PyObject *self, PyObject *args)
 	return PyInt_FromLong(gensec_features);
 }
 
+static PyObject *py_creds_new_client_authenticator(PyObject *self,
+						   PyObject *args)
+{
+	struct netr_Authenticator auth;
+	struct cli_credentials *creds = NULL;
+	struct netlogon_creds_CredentialState *nc = NULL;
+	PyObject *ret = NULL;
+
+	creds = PyCredentials_AsCliCredentials(self);
+	if (creds == NULL) {
+		PyErr_SetString(PyExc_RuntimeError,
+				"Failed to get credentials from python");
+		return NULL;
+	}
+
+	nc = creds->netlogon_creds;
+	if (nc == NULL) {
+		PyErr_SetString(PyExc_ValueError,
+				"No netlogon credentials cannot make "
+				"client authenticator");
+		return NULL;
+	}
+
+	netlogon_creds_client_authenticator(
+		nc,
+		&auth);
+	ret = Py_BuildValue("{ss#si}",
+			    "credential",
+			    (const char *) &auth.cred, sizeof(auth.cred),
+			    "timestamp", auth.timestamp);
+	return ret;
+}
+
 static PyObject *py_creds_set_secure_channel_type(PyObject *self, PyObject *args)
 {
 	unsigned int channel_type;
@@ -700,6 +735,11 @@ static PyMethodDef py_creds_methods[] = {
 	{ "set_forced_sasl_mech", py_creds_set_forced_sasl_mech, METH_VARARGS,
 		"S.set_forced_sasl_mech(name) -> None\n"
 		"Set forced SASL mechanism." },
+	{ "new_client_authenticator",
+		py_creds_new_client_authenticator,
+		METH_NOARGS,
+		"S.new_client_authenticator() -> Authenticator\n"
+		"Get a new client NETLOGON_AUTHENTICATOR"},
 	{ "set_secure_channel_type", py_creds_set_secure_channel_type,
 	  METH_VARARGS, NULL },
 	{ NULL }
