@@ -1335,7 +1335,7 @@ static int test_ldb_search_against_transaction_callback2(struct ldb_request *req
 static int test_ldb_search_against_transaction_callback1(struct ldb_request *req,
 							 struct ldb_reply *ares)
 {
-	int ret;
+	int ret, ret2;
 	int pipes[2];
 	char buf[2];
 	struct search_against_transaction_ctx *ctx = req->context;
@@ -1430,13 +1430,18 @@ static int test_ldb_search_against_transaction_callback1(struct ldb_request *req
 				   ctx,
 				   test_ldb_search_against_transaction_callback2,
 				   NULL);
-	assert_int_equal(ret, 0);
-	ret = ldb_request(ctx->test_ctx->ldb, req);
+	/*
+	 * we don't assert on these return codes until after the search is
+	 * finished, or the clean up will fail because we hold locks.
+	 */
 
-	if (ret == LDB_SUCCESS) {
-		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
+	ret2 = ldb_request(ctx->test_ctx->ldb, req);
+
+	if (ret2 == LDB_SUCCESS) {
+		ret2 = ldb_wait(req->handle, LDB_WAIT_ALL);
 	}
 	assert_int_equal(ret, 0);
+	assert_int_equal(ret2, 0);
 	assert_int_equal(ctx->res_count, 2);
 
 	return LDB_SUCCESS;
