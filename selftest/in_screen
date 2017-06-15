@@ -77,6 +77,10 @@ if [[ "$TMUX" ]]; then
     fi
 
     $TMUX_CMD new-window -n test:$SERVERNAME "bash $basedir/$SERVERNAME.launch"
+
+    # tmux seems to lag a bit for new sessions. Don't create them too
+    # quickly one after another
+    sleep .1
 else
     screen -r -X screen -t test:$SERVERNAME bash $basedir/$SERVERNAME.launch
 fi
