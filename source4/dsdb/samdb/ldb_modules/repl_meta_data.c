@@ -114,6 +114,7 @@ static int replmd_check_upgrade_links(struct ldb_context *ldb,
 				      struct parsed_dn *dns, uint32_t count,
 				      struct ldb_message_element *el,
 				      const char *ldap_oid);
+static int replmd_verify_linked_attributes(struct replmd_replicated_request *ar);
 
 enum urgent_situation {
 	REPL_URGENT_ON_CREATE = 1,
@@ -6057,7 +6058,18 @@ static int replmd_replicated_apply_next(struct replmd_replicated_request *ar)
 	struct GUID_txt_buf guid_str_buf;
 
 	if (ar->index_current >= ar->objs->num_objects) {
-		/* done with it, go to next stage */
+
+		/*
+		 * Now that we've applied all the objects, check that the new
+		 * linked attributes only reference objects we know about
+		 */
+		ret = replmd_verify_linked_attributes(ar);
+
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+
+		/* done applying objects, move on to the next stage */
 		return replmd_replicated_uptodate_vector(ar);
 	}
 
@@ -6812,35 +6824,29 @@ static int replmd_check_target_exists(struct ldb_module *module,
 	return ret;
 }
 
-/*
-  process one linked attribute structure
+/**
+ * Extracts the key details about the source/target object for a
+ * linked-attribute entry.
+ * This returns the following details:
+ * @param ret_attr the schema details for the linked attribute
+ * @param source_msg the search result for the source object
+ * @param target_dsdb_dn the unpacked DN info for the target object
  */
-static int replmd_process_linked_attribute(struct ldb_module *module,
-					   struct replmd_private *replmd_private,
+static int replmd_extract_la_entry_details(struct ldb_module *module,
 					   struct la_entry *la_entry,
-					   struct ldb_request *parent)
+					   TALLOC_CTX *mem_ctx,
+					   const struct dsdb_attribute **ret_attr,
+					   struct ldb_message **source_msg,
+					   struct dsdb_dn **target_dsdb_dn)
 {
 	struct drsuapi_DsReplicaLinkedAttribute *la = la_entry->la;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
-	struct ldb_message *msg;
-	TALLOC_CTX *tmp_ctx = talloc_new(la_entry);
-	const struct dsdb_schema *schema = dsdb_get_schema(ldb, tmp_ctx);
+	const struct dsdb_schema *schema = dsdb_get_schema(ldb, mem_ctx);
 	int ret;
 	const struct dsdb_attribute *attr;
-	struct dsdb_dn *dsdb_dn;
-	uint64_t seq_num = 0;
-	struct ldb_message_element *old_el;
 	WERROR status;
-	time_t t = time(NULL);
 	struct ldb_result *res;
 	const char *attrs[4];
-	struct parsed_dn *pdn_list, *pdn, *next;
-	struct GUID guid = GUID_zero();
-	bool active = (la->flags & DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE)?true:false;
-
-	enum deletion_state deletion_state = OBJECT_NOT_DELETED;
-	enum deletion_state target_deletion_state = OBJECT_NOT_DELETED;
-
 
 /*
 linked_attributes[0]:
@@ -6885,7 +6891,6 @@ linked_attributes[0]:
 				       la->attid,
 				       GUID_buf_string(&la->identifier->guid,
 						       &guid_str));
-		talloc_free(tmp_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -6894,28 +6899,130 @@ linked_attributes[0]:
 	attrs[2] = "isRecycled";
 	attrs[3] = NULL;
 
-	/* get the existing message from the db for the object with
-	   this GUID, returning attribute being modified. We will then
-	   use this msg as the basis for a modify call */
-	ret = dsdb_module_search(module, tmp_ctx, &res, NULL, LDB_SCOPE_SUBTREE, attrs,
+	/*
+	 * get the existing message from the db for the object with
+	 * this GUID, returning attribute being modified. We will then
+	 * use this msg as the basis for a modify call
+	 */
+	ret = dsdb_module_search(module, mem_ctx, &res, NULL, LDB_SCOPE_SUBTREE, attrs,
 	                         DSDB_FLAG_NEXT_MODULE |
 				 DSDB_SEARCH_SEARCH_ALL_PARTITIONS |
 				 DSDB_SEARCH_SHOW_RECYCLED |
 				 DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT |
 				 DSDB_SEARCH_REVEAL_INTERNALS,
-				 parent,
-				 "objectGUID=%s", GUID_string(tmp_ctx, &la->identifier->guid));
+				 NULL,
+				 "objectGUID=%s", GUID_string(mem_ctx, &la->identifier->guid));
 	if (ret != LDB_SUCCESS) {
-		talloc_free(tmp_ctx);
 		return ret;
 	}
 	if (res->count != 1) {
 		ldb_asprintf_errstring(ldb, "DRS linked attribute for GUID %s - DN not found",
-				       GUID_string(tmp_ctx, &la->identifier->guid));
-		talloc_free(tmp_ctx);
+				       GUID_string(mem_ctx, &la->identifier->guid));
 		return LDB_ERR_NO_SUCH_OBJECT;
 	}
-	msg = res->msgs[0];
+
+	*source_msg = res->msgs[0];
+
+	/* the value blob for the attribute holds the target object DN */
+	status = dsdb_dn_la_from_blob(ldb, attr, schema, mem_ctx, la->value.blob, target_dsdb_dn);
+	if (!W_ERROR_IS_OK(status)) {
+		ldb_asprintf_errstring(ldb, "Failed to parsed linked attribute blob for %s on %s - %s\n",
+				       attr->lDAPDisplayName,
+				       ldb_dn_get_linearized(res->msgs[0]->dn),
+				       win_errstr(status));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	*ret_attr = attr;
+
+	return LDB_SUCCESS;
+}
+
+/**
+ * Verifies that the source and target objects are known for each linked
+ * attribute in the current transaction.
+ */
+static int replmd_verify_linked_attributes(struct replmd_replicated_request *ar)
+{
+	int ret = LDB_SUCCESS;
+	struct la_entry *la;
+	struct ldb_module *module = ar->module;
+	TALLOC_CTX *tmp_ctx = talloc_new(ar);
+	struct replmd_private *replmd_private =
+		talloc_get_type(ldb_module_get_private(module), struct replmd_private);
+
+	for (la = DLIST_TAIL(replmd_private->la_list); la; la = DLIST_PREV(la)) {
+		struct ldb_message *src_msg;
+		const struct dsdb_attribute *attr;
+		struct dsdb_dn *tgt_dsdb_dn;
+		enum deletion_state del_state = OBJECT_NOT_DELETED;
+		struct GUID guid = GUID_zero();
+
+		ret = replmd_extract_la_entry_details(module, la, tmp_ctx, &attr,
+						      &src_msg, &tgt_dsdb_dn);
+
+		if (ret != LDB_SUCCESS) {
+			break;
+		}
+
+		ret = replmd_check_target_exists(module, tgt_dsdb_dn, la,
+						 src_msg->dn, &guid, &del_state);
+
+		/*
+		 * When we fail to find the target object, the error code we pass
+		 * back here is really important. It flags back to the callers to
+		 * retry this request with DRSUAPI_DRS_GET_TGT
+		 */
+		if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+			ret = replmd_replicated_request_werror(ar, WERR_DS_DRA_RECYCLED_TARGET);
+		}
+
+		if (ret != LDB_SUCCESS) {
+			break;
+		}
+	}
+
+	talloc_free(tmp_ctx);
+	return ret;
+}
+
+/*
+  process one linked attribute structure
+ */
+static int replmd_process_linked_attribute(struct ldb_module *module,
+					   struct replmd_private *replmd_private,
+					   struct la_entry *la_entry,
+					   struct ldb_request *parent)
+{
+	struct drsuapi_DsReplicaLinkedAttribute *la = la_entry->la;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	struct ldb_message *msg;
+	TALLOC_CTX *tmp_ctx = talloc_new(la_entry);
+	const struct dsdb_schema *schema = dsdb_get_schema(ldb, tmp_ctx);
+	int ret;
+	const struct dsdb_attribute *attr;
+	struct dsdb_dn *dsdb_dn;
+	uint64_t seq_num = 0;
+	struct ldb_message_element *old_el;
+	time_t t = time(NULL);
+	struct parsed_dn *pdn_list, *pdn, *next;
+	struct GUID guid = GUID_zero();
+	bool active = (la->flags & DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE)?true:false;
+
+	enum deletion_state deletion_state = OBJECT_NOT_DELETED;
+	enum deletion_state target_deletion_state = OBJECT_NOT_DELETED;
+
+	/*
+	 * get the attribute being modified, the search result for the source object,
+	 * and the target object's DN details
+	 */
+	ret = replmd_extract_la_entry_details(module, la_entry, tmp_ctx, &attr,
+					      &msg, &dsdb_dn);
+
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
 
 	/*
 	 * Check for deleted objects per MS-DRSR 4.1.10.6.13
@@ -6924,7 +7031,6 @@ linked_attributes[0]:
 	 * any existing link, that should have happened when the
 	 * object deletion was replicated or initiated.
 	 */
-
 	replmd_deletion_state(module, msg, &deletion_state, NULL);
 
 	if (deletion_state >= OBJECT_RECYCLED) {
@@ -6951,14 +7057,6 @@ linked_attributes[0]:
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
-	}
-
-	status = dsdb_dn_la_from_blob(ldb, attr, schema, tmp_ctx, la->value.blob, &dsdb_dn);
-	if (!W_ERROR_IS_OK(status)) {
-		ldb_asprintf_errstring(ldb, "Failed to parsed linked attribute blob for %s on %s - %s\n",
-				       old_el->name, ldb_dn_get_linearized(msg->dn), win_errstr(status));
-		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	ret = replmd_check_target_exists(module, dsdb_dn, la_entry, msg->dn,

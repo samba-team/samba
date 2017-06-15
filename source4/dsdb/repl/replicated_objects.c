@@ -884,12 +884,15 @@ WERROR dsdb_replicated_objects_commit(struct ldb_context *ldb,
 			dsdb_reference_schema(ldb, cur_schema, false);
 		}
 
-		if (!W_ERROR_EQUAL(objects->error, WERR_DS_DRA_MISSING_PARENT)) {
-			DEBUG(1,("Failed to apply records: %s: %s\n",
-				 ldb_errstring(ldb), ldb_strerror(ret)));
-		} else {
+		if (W_ERROR_EQUAL(objects->error, WERR_DS_DRA_RECYCLED_TARGET)) {
+			DEBUG(3,("Missing target while attempting to apply records: %s\n",
+				 ldb_errstring(ldb)));
+		} else if (W_ERROR_EQUAL(objects->error, WERR_DS_DRA_MISSING_PARENT)) {
 			DEBUG(3,("Missing parent while attempting to apply records: %s\n",
 				 ldb_errstring(ldb)));
+		} else {
+			DEBUG(1,("Failed to apply records: %s: %s\n",
+				 ldb_errstring(ldb), ldb_strerror(ret)));
 		}
 		ldb_transaction_cancel(ldb);
 		TALLOC_FREE(tmp_ctx);
