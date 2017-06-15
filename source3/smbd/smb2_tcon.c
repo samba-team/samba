@@ -381,6 +381,8 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 	*out_maximal_access = tcon->compat->share_access;
 
 	*out_tree_id = tcon->global->tcon_wire_id;
+	req->last_tid = tcon->global->tcon_wire_id;
+
 	return NT_STATUS_OK;
 }
 
