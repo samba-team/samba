@@ -207,7 +207,7 @@ sub wait_for_start($$)
 		}
 		$count++;
 	} while ($ret != 0 && $count < 20);
-	if ($count == 10) {
+	if ($count == 20) {
 		warn("nbt not reachable after 20 retries\n");
 		teardown_env($self, $testenv_vars);
 		return 0;
