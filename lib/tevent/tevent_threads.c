@@ -381,6 +381,23 @@ static int tevent_threaded_context_destructor(
 		DLIST_REMOVE(tctx->event_ctx->threaded_contexts, tctx);
 	}
 
+	/*
+	 * We have to coordinate with _tevent_threaded_schedule_immediate's
+	 * unlock of the event_ctx_mutex. We're in the main thread here,
+	 * and we can be scheduled before the helper thread finalizes its
+	 * call _tevent_threaded_schedule_immediate. This means we would
+	 * pthreadpool_destroy a locked mutex, which is illegal.
+	 */
+	ret = pthread_mutex_lock(&tctx->event_ctx_mutex);
+	if (ret != 0) {
+		abort();
+	}
+
+	ret = pthread_mutex_unlock(&tctx->event_ctx_mutex);
+	if (ret != 0) {
+		abort();
+	}
+
 	ret = pthread_mutex_destroy(&tctx->event_ctx_mutex);
 	if (ret != 0) {
 		abort();
