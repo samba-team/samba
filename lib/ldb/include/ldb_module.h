@@ -77,6 +77,8 @@ struct ldb_module_ops {
 	int (*end_transaction)(struct ldb_module *);
 	int (*del_transaction)(struct ldb_module *);
 	int (*sequence_number)(struct ldb_module *, struct ldb_request *);
+	int (*read_lock)(struct ldb_module *);
+	int (*read_unlock)(struct ldb_module *);
 	void *private_data;
 };
 
@@ -203,6 +205,8 @@ int ldb_next_end_trans(struct ldb_module *module);
 int ldb_next_del_trans(struct ldb_module *module);
 int ldb_next_prepare_commit(struct ldb_module *module);
 int ldb_next_init(struct ldb_module *module);
+int ldb_next_read_lock(struct ldb_module *module);
+int ldb_next_read_unlock(struct ldb_module *module);
 
 void ldb_set_errstring(struct ldb_context *ldb, const char *err_string);
 void ldb_asprintf_errstring(struct ldb_context *ldb, const char *format, ...) PRINTF_ATTRIBUTE(2,3);

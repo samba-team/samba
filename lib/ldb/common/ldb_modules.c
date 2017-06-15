@@ -641,6 +641,52 @@ int ldb_next_end_trans(struct ldb_module *module)
 	return ret;
 }
 
+int ldb_next_read_lock(struct ldb_module *module)
+{
+	int ret;
+	FIND_OP(module, read_lock);
+	ret = module->ops->read_lock(module);
+	if (ret == LDB_SUCCESS) {
+		return ret;
+	}
+	if (!ldb_errstring(module->ldb)) {
+		/* Set a default error string, to place the blame somewhere */
+		ldb_asprintf_errstring(module->ldb,
+				       "read_lock error in module %s: %s (%d)",
+				       module->ops->name, ldb_strerror(ret),
+				       ret);
+	}
+	if ((module && module->ldb->flags & LDB_FLG_ENABLE_TRACING)) {
+		ldb_debug(module->ldb, LDB_DEBUG_TRACE,
+			  "ldb_next_read_lock error: %s",
+			  ldb_errstring(module->ldb));
+	}
+	return ret;
+}
+
+int ldb_next_read_unlock(struct ldb_module *module)
+{
+	int ret;
+	FIND_OP(module, read_unlock);
+	ret = module->ops->read_unlock(module);
+	if (ret == LDB_SUCCESS) {
+		return ret;
+	}
+	if (!ldb_errstring(module->ldb)) {
+		/* Set a default error string, to place the blame somewhere */
+		ldb_asprintf_errstring(module->ldb,
+				       "read_unlock error in module %s: %s (%d)",
+				       module->ops->name, ldb_strerror(ret),
+				       ret);
+	}
+	if ((module && module->ldb->flags & LDB_FLG_ENABLE_TRACING)) {
+		ldb_debug(module->ldb, LDB_DEBUG_TRACE,
+			  "ldb_next_read_unlock error: %s",
+			  ldb_errstring(module->ldb));
+	}
+	return ret;
+}
+
 int ldb_next_prepare_commit(struct ldb_module *module)
 {
 	int ret;
