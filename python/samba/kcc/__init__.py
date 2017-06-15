@@ -524,7 +524,7 @@ class KCC(object):
         :return: None
         """
         # TODO Figure out how best to handle the RODC case
-        # The RODC is ITSG, but shouldn't act on anyone's behalf.
+        # The RODC is ISTG, but shouldn't act on anyone's behalf.
         if self.my_dsa.is_ro():
             return
 
