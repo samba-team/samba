@@ -1393,16 +1393,13 @@ class LdbResultTests(TestCase):
 
         (r2, w2) = os.pipe()
 
-        l = next(res)
-        if str(l.dn) == "OU=OU10,DC=SAMBA,DC=ORG":
-            found = True
-
         # For the first element, with the sequence open (which
         # means with ldb locks held), fork a child that will
         # write to the DB
         pid = os.fork()
         if pid == 0:
             # In the child, re-open
+            del(res)
             del(self.l)
             gc.collect()
 
@@ -1439,24 +1436,25 @@ class LdbResultTests(TestCase):
 
         os.write(w2, b"search")
 
-        # Now wait for the transaction to be done.  This should
-        # deadlock, but the search doesn't hold a read lock for the
-        # iterator lifetime currently.
-        self.assertEqual(os.read(r1, 11), b"transaction")
+        # allow the transaction to start
+        time.sleep(1)
 
         # This should not turn up until the search finishes and
         # removed the read lock, but for ldb_tdb that happened as soon
         # as we called the first res.next()
         res11 = self.l.search(base="OU=OU11,DC=SAMBA,DC=ORG",
                             scope=ldb.SCOPE_BASE)
-        self.assertEqual(len(res11), 1)
+        self.assertEqual(len(res11), 0)
 
-        # These results were actually collected at the first next(res) call
+        # These results are all collected at the first next(res) call
         for l in res:
             if str(l.dn) == "OU=OU10,DC=SAMBA,DC=ORG":
                 found = True
             if str(l.dn) == "OU=OU11,DC=SAMBA,DC=ORG":
                 found11 = True
+
+        # Now wait for the transaction to be done.
+        self.assertEqual(os.read(r1, 11), b"transaction")
 
         # This should now turn up, as the transaction is over and all
         # read locks are gone
