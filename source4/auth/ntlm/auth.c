@@ -187,6 +187,7 @@ _PUBLIC_ NTSTATUS auth_check_password(struct auth4_context *auth_ctx,
 }
 
 struct auth_check_password_state {
+	struct tevent_context *ev;
 	struct auth4_context *auth_ctx;
 	const struct auth_usersupplied_info *user_info;
 	struct auth_user_info_dc *user_info_dc;
@@ -247,6 +248,7 @@ _PUBLIC_ struct tevent_req *auth_check_password_send(TALLOC_CTX *mem_ctx,
 	/*
 	 * We are authoritative by default.
 	 */
+	state->ev		= ev;
 	state->auth_ctx		= auth_ctx;
 	state->user_info	= user_info;
 	state->authoritative	= 1;
@@ -319,6 +321,8 @@ _PUBLIC_ struct tevent_req *auth_check_password_send(TALLOC_CTX *mem_ctx,
 	return req;
 }
 
+static void auth_check_password_done(struct tevent_req *subreq);
+
 static void auth_check_password_next(struct tevent_req *req)
 {
 	struct auth_check_password_state *state =
@@ -349,6 +353,20 @@ static void auth_check_password_next(struct tevent_req *req)
 		return;
 	}
 
+	if (state->method->ops->check_password_send != NULL) {
+		subreq = state->method->ops->check_password_send(state,
+								 state->ev,
+								 state->method,
+								 state->user_info);
+		if (tevent_req_nomem(subreq, req)) {
+			return;
+		}
+		tevent_req_set_callback(subreq,
+					auth_check_password_done,
+					req);
+		return;
+	}
+
 	if (state->method->ops->check_password == NULL) {
 		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
 		return;
@@ -359,6 +377,40 @@ static void auth_check_password_next(struct tevent_req *req)
 						    state->user_info,
 						    &state->user_info_dc,
 						    &authoritative);
+	if (!authoritative ||
+	    NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
+		DEBUG(11,("auth_check_password_send: "
+			  "%s passes to the next method\n",
+			  state->method->ops->name));
+		state->method = state->method->next;
+		auth_check_password_next(req);
+		return;
+	}
+
+	/* the backend has handled the request */
+
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	tevent_req_done(req);
+}
+
+static void auth_check_password_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
+	struct auth_check_password_state *state =
+		tevent_req_data(req,
+		struct auth_check_password_state);
+	bool authoritative = true;
+	NTSTATUS status;
+
+	status = state->method->ops->check_password_recv(subreq, state,
+							 &state->user_info_dc,
+							 &authoritative);
+	TALLOC_FREE(subreq);
 	if (!authoritative ||
 	    NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
 		DEBUG(11,("auth_check_password_send: "

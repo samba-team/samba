@@ -65,7 +65,14 @@ struct auth_operations {
 				   const struct auth_usersupplied_info *user_info,
 				   struct auth_user_info_dc **interim_info,
 				   bool *authoritative);
-
+	struct tevent_req *(*check_password_send)(TALLOC_CTX *mem_ctx,
+				struct tevent_context *ev,
+				struct auth_method_context *ctx,
+				const struct auth_usersupplied_info *user_info);
+	NTSTATUS (*check_password_recv)(struct tevent_req *subreq,
+				TALLOC_CTX *mem_ctx,
+				struct auth_user_info_dc **interim_info,
+				bool *authoritative);
 
 	/* Lookup a 'session info interim' return based only on the principal or DN */
 	NTSTATUS (*get_user_info_dc_principal)(TALLOC_CTX *mem_ctx,
