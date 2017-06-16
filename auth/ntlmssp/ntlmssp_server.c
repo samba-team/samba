@@ -310,11 +310,6 @@ static NTSTATUS ntlmssp_server_preauth(struct gensec_security *gensec_security,
 				       struct gensec_ntlmssp_context *gensec_ntlmssp,
 				       struct ntlmssp_server_auth_state *state,
 				       const DATA_BLOB request);
-static NTSTATUS ntlmssp_server_check_password(struct gensec_security *gensec_security,
-					      struct gensec_ntlmssp_context *gensec_ntlmssp,
-					      const struct auth_usersupplied_info *user_info,
-					      TALLOC_CTX *mem_ctx,
-					      DATA_BLOB *user_session_key, DATA_BLOB *lm_session_key);
 static NTSTATUS ntlmssp_server_postauth(struct gensec_security *gensec_security,
 					struct gensec_ntlmssp_context *gensec_ntlmssp,
 					struct ntlmssp_server_auth_state *state,
@@ -328,8 +323,10 @@ struct tevent_req *ntlmssp_server_auth_send(TALLOC_CTX *mem_ctx,
 	struct gensec_ntlmssp_context *gensec_ntlmssp =
 		talloc_get_type_abort(gensec_security->private_data,
 				      struct gensec_ntlmssp_context);
+	struct auth4_context *auth_context = gensec_security->auth_context;
 	struct tevent_req *req = NULL;
 	struct ntlmssp_server_auth_state *state = NULL;
+	uint8_t authoritative = 0;
 	NTSTATUS status;
 
 	req = tevent_req_create(mem_ctx, &state,
@@ -345,15 +342,29 @@ struct tevent_req *ntlmssp_server_auth_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	status = ntlmssp_server_check_password(gensec_security,
-					       gensec_ntlmssp,
-					       state->user_info,
-					       state,
-					       &state->user_session_key,
-					       &state->lm_session_key);
+	if (auth_context->check_ntlm_password == NULL) {
+		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+		return tevent_req_post(req, ev);
+	}
+
+	status = auth_context->check_ntlm_password(auth_context,
+						   gensec_ntlmssp,
+						   state->user_info,
+						   &authoritative,
+						   &gensec_ntlmssp->server_returned_info,
+						   &state->user_session_key,
+						   &state->lm_session_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_INFO("Checking NTLMSSP password for %s\\%s failed: %s\n",
+			 state->user_info->client.domain_name,
+			 state->user_info->client.account_name,
+			 nt_errstr(status));
+	}
 	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, ev);
 	}
+	talloc_steal(state, state->user_session_key.data);
+	talloc_steal(state, state->lm_session_key.data);
 
 	status = ntlmssp_server_postauth(gensec_security,
 					 gensec_ntlmssp,
@@ -781,43 +792,6 @@ static NTSTATUS ntlmssp_server_preauth(struct gensec_security *gensec_security,
 
 	state->user_info = user_info;
 	return NT_STATUS_OK;
-}
-
-/**
- * Check the password on an NTLMSSP login.
- *
- * Return the session keys used on the connection.
- */
-
-static NTSTATUS ntlmssp_server_check_password(struct gensec_security *gensec_security,
-					      struct gensec_ntlmssp_context *gensec_ntlmssp,
-					      const struct auth_usersupplied_info *user_info,
-					      TALLOC_CTX *mem_ctx,
-					      DATA_BLOB *user_session_key, DATA_BLOB *lm_session_key)
-{
-	struct auth4_context *auth_context = gensec_security->auth_context;
-	NTSTATUS nt_status = NT_STATUS_NOT_IMPLEMENTED;
-
-	if (auth_context->check_ntlm_password) {
-		uint8_t authoritative = 0;
-
-		nt_status = auth_context->check_ntlm_password(auth_context,
-							      gensec_ntlmssp,
-							      user_info,
-							      &authoritative,
-							      &gensec_ntlmssp->server_returned_info,
-							      user_session_key, lm_session_key);
-	}
-
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(5, (__location__ ": Checking NTLMSSP password for %s\\%s failed: %s\n", user_info->client.domain_name, user_info->client.account_name, nt_errstr(nt_status)));
-	}
-	NT_STATUS_NOT_OK_RETURN(nt_status);
-
-	talloc_steal(mem_ctx, user_session_key->data);
-	talloc_steal(mem_ctx, lm_session_key->data);
-
-	return nt_status;
 }
 
 /**
