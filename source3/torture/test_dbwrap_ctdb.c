@@ -33,16 +33,10 @@ bool run_local_dbwrap_ctdb(int dummy)
 	NTSTATUS status;
 	uint32_t val;
 	struct messaging_context *msg_ctx;
-	struct ctdbd_connection *conn;
 
 	msg_ctx = server_messaging_context();
-	conn = messaging_ctdbd_connection();
-	if (conn == NULL) {
-		fprintf(stderr, "no ctdbd connection\n");
-		goto fail;
-	}
 
-	db = db_open_ctdb(talloc_tos(), msg_ctx, conn, "torture.tdb",
+	db = db_open_ctdb(talloc_tos(), msg_ctx, "torture.tdb",
 			  0, TDB_DEFAULT,
 			  O_RDWR, 0755, DBWRAP_LOCK_ORDER_1, DBWRAP_FLAG_NONE);
 	if (db == NULL) {

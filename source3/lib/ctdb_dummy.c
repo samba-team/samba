@@ -70,7 +70,6 @@ bool ctdbd_process_exists(struct ctdbd_connection *conn, uint32_t vnn, pid_t pid
 
 struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 				struct messaging_context *msg_ctx,
-				struct ctdbd_connection *conn,
 				const char *name,
 				int hash_size, int tdb_flags,
 				int open_flags, mode_t mode,

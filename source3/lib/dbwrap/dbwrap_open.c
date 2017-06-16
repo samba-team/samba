@@ -156,7 +156,7 @@ struct db_context *db_open(TALLOC_CTX *mem_ctx,
 			}
 			msg_ctx = server_messaging_context();
 
-			result = db_open_ctdb(mem_ctx, msg_ctx, conn, partname,
+			result = db_open_ctdb(mem_ctx, msg_ctx, partname,
 					      hash_size,
 					      tdb_flags, open_flags, mode,
 					      lock_order, dbwrap_flags);
