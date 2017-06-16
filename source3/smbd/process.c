@@ -32,7 +32,7 @@
 #include "passdb.h"
 #include "auth.h"
 #include "messages.h"
-#include "lib/messages_ctdbd.h"
+#include "lib/messages_ctdb.h"
 #include "smbprofile.h"
 #include "rpc_server/spoolss/srv_spoolss_nt.h"
 #include "libsmb/libsmb.h"
@@ -2775,7 +2775,7 @@ static NTSTATUS smbd_register_ips(struct smbXsrv_connection *xconn,
 	struct ctdbd_connection *cconn;
 	int ret;
 
-	cconn = messaging_ctdbd_connection();
+	cconn = messaging_ctdb_connection();
 	if (cconn == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}

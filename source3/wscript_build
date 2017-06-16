@@ -322,7 +322,6 @@ if bld.env.with_ctdb:
     SAMBA_CLUSTER_SUPPORT_SOURCES='''
                      lib/cluster_support.c
                      lib/dbwrap/dbwrap_ctdb.c
-                     lib/messages_ctdbd.c
                      lib/messages_ctdb.c
                      lib/messages_ctdb_ref.c
                      lib/ctdbd_conn.c

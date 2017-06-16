@@ -26,7 +26,7 @@
 #include "dbwrap/dbwrap_ctdb.h"
 #include "lib/param/param.h"
 #include "lib/cluster_support.h"
-#include "lib/messages_ctdbd.h"
+#include "lib/messages_ctdb.h"
 #include "util_tdb.h"
 #include "ctdbd_conn.h"
 #include "messages.h"
@@ -148,7 +148,7 @@ struct db_context *db_open(TALLOC_CTX *mem_ctx,
 			struct messaging_context *msg_ctx;
 			struct ctdbd_connection *conn;
 
-			conn = messaging_ctdbd_connection();
+			conn = messaging_ctdb_connection();
 			if (conn == NULL) {
 				DBG_WARNING("No ctdb connection\n");
 				errno = EIO;

@@ -135,7 +135,7 @@ struct messaging_ctdbd_fde *messaging_ctdbd_register_tevent_context(
 	return NULL;
 }
 
-struct ctdbd_connection *messaging_ctdbd_connection(void)
+struct ctdbd_connection *messaging_ctdb_connection(void)
 {
 	return NULL;
 }

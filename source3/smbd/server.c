@@ -40,7 +40,7 @@
 #include "passdb.h"
 #include "auth.h"
 #include "messages.h"
-#include "messages_ctdbd.h"
+#include "messages_ctdb.h"
 #include "smbprofile.h"
 #include "lib/id_cache.h"
 #include "lib/param/param.h"
@@ -361,7 +361,7 @@ static struct tevent_req *notifyd_req(struct messaging_context *msg_ctx,
 	}
 
 	if (lp_clustering()) {
-		ctdbd_conn = messaging_ctdbd_connection();
+		ctdbd_conn = messaging_ctdb_connection();
 	}
 
 	req = notifyd_send(msg_ctx, ev, msg_ctx, ctdbd_conn,
@@ -1302,7 +1302,7 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 
 #ifdef CLUSTER_SUPPORT
 	if (lp_clustering()) {
-		struct ctdbd_connection *conn = messaging_ctdbd_connection();
+		struct ctdbd_connection *conn = messaging_ctdb_connection();
 
 		register_with_ctdbd(conn, CTDB_SRVID_RECONFIGURE,
 				    smbd_parent_ctdb_reconfigured, msg_ctx);

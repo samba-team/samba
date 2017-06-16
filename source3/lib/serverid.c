@@ -28,7 +28,7 @@
 #include "lib/param/param.h"
 #include "ctdbd_conn.h"
 #include "messages.h"
-#include "lib/messages_ctdbd.h"
+#include "lib/messages_ctdb.h"
 #include "lib/messages_dgm.h"
 
 struct serverid_key {
@@ -124,7 +124,7 @@ bool serverid_register(const struct server_id id, uint32_t msg_flags)
 	}
 
 	if (lp_clustering()) {
-		register_with_ctdbd(messaging_ctdbd_connection(), id.unique_id,
+		register_with_ctdbd(messaging_ctdb_connection(), id.unique_id,
 				    NULL, NULL);
 	}
 
@@ -198,7 +198,7 @@ bool serverid_exists(const struct server_id *id)
 	}
 
 	if (lp_clustering()) {
-		return ctdbd_process_exists(messaging_ctdbd_connection(),
+		return ctdbd_process_exists(messaging_ctdb_connection(),
 					    id->vnn, id->pid);
 	}
 

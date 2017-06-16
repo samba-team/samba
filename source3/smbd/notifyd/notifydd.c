@@ -19,7 +19,7 @@
 
 #include "replace.h"
 #include "notifyd.h"
-#include "lib/messages_ctdbd.h"
+#include "lib/messages_ctdb.h"
 #include <tevent.h>
 #include "lib/util/tevent_unix.h"
 
@@ -59,7 +59,7 @@ int main(int argc, const char *argv[])
 		return 1;
 	}
 
-	req = notifyd_send(ev, ev, msg, messaging_ctdbd_connection(),
+	req = notifyd_send(ev, ev, msg, messaging_ctdb_connection(),
 			   NULL, NULL);
 	if (req == NULL) {
 		fprintf(stderr, "notifyd_send failed\n");

@@ -34,7 +34,7 @@
 #include "dbwrap/dbwrap_ctdb.h"
 #include "g_lock.h"
 #include "messages.h"
-#include "messages_ctdbd.h"
+#include "messages_ctdb.h"
 #include "lib/cluster_support.h"
 #include "lib/util/tevent_ntstatus.h"
 
@@ -821,7 +821,7 @@ static int db_ctdb_transaction_commit(struct db_context *db)
 
 again:
 	/* tell ctdbd to commit to the other nodes */
-	ret = ctdbd_control_local(messaging_ctdbd_connection(),
+	ret = ctdbd_control_local(messaging_ctdb_connection(),
 				  CTDB_CONTROL_TRANS3_COMMIT,
 				  h->ctx->db_id, 0,
 				  db_ctdb_marshall_finish(h->m_write),
@@ -938,7 +938,7 @@ static NTSTATUS db_ctdb_send_schedule_for_deletion(struct db_record *rec)
 	dd->keylen = rec->key.dsize;
 	memcpy(dd->key, rec->key.dptr, rec->key.dsize);
 
-	ret = ctdbd_control_local(messaging_ctdbd_connection(),
+	ret = ctdbd_control_local(messaging_ctdb_connection(),
 				  CTDB_CONTROL_SCHEDULE_FOR_DELETION,
 				  crec->ctdb_ctx->db_id,
 				  CTDB_CTRL_FLAG_NOREPLY, /* flags */
@@ -1176,7 +1176,7 @@ again:
 			   ((struct ctdb_ltdb_header *)ctdb_data.dptr)->flags : 0));
 
 		GetTimeOfDay(&ctdb_start_time);
-		ret = ctdbd_migrate(messaging_ctdbd_connection(), ctx->db_id,
+		ret = ctdbd_migrate(messaging_ctdb_connection(), ctx->db_id,
 				    key);
 		ctdb_time += timeval_elapsed(&ctdb_start_time);
 
@@ -1405,7 +1405,7 @@ static NTSTATUS db_ctdb_parse_record(struct db_context *db, TDB_DATA key,
 		return status;
 	}
 
-	ret = ctdbd_parse(messaging_ctdbd_connection(), ctx->db_id, key,
+	ret = ctdbd_parse(messaging_ctdb_connection(), ctx->db_id, key,
 			  state.ask_for_readonly_copy, parser, private_data);
 	if (ret != 0) {
 		if (ret == ENOENT) {
@@ -1828,7 +1828,7 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 	db_ctdb->transaction = NULL;
 	db_ctdb->db = result;
 
-	ret = ctdbd_db_attach(messaging_ctdbd_connection(), name,
+	ret = ctdbd_db_attach(messaging_ctdb_connection(), name,
 			      &db_ctdb->db_id, persistent);
 	if (ret != 0) {
 		DEBUG(0, ("ctdbd_db_attach failed for %s: %s\n", name,
@@ -1841,7 +1841,7 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 		data.dptr = (uint8_t *)&db_ctdb->db_id;
 		data.dsize = sizeof(db_ctdb->db_id);
 
-		ret = ctdbd_control_local(messaging_ctdbd_connection(),
+		ret = ctdbd_control_local(messaging_ctdb_connection(),
 					  CTDB_CONTROL_ENABLE_SEQNUM,
 					  0, 0, data,
 					  NULL, NULL, &cstatus);
@@ -1853,7 +1853,7 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	db_path = ctdbd_dbpath(messaging_ctdbd_connection(), db_ctdb,
+	db_path = ctdbd_dbpath(messaging_ctdb_connection(), db_ctdb,
 			       db_ctdb->db_id);
 
 	result->persistent = persistent;
@@ -1862,7 +1862,7 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 	data.dptr = (uint8_t *)&db_ctdb->db_id;
 	data.dsize = sizeof(db_ctdb->db_id);
 
-	ret = ctdbd_control_local(messaging_ctdbd_connection(),
+	ret = ctdbd_control_local(messaging_ctdb_connection(),
 				  CTDB_CONTROL_DB_OPEN_FLAGS,
 				  0, 0, data, NULL, &data, &cstatus);
 	if (ret != 0) {
@@ -1898,7 +1898,7 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 				       sizeof(db_ctdb->db_id));
 
 		ret = ctdbd_control_local(
-			messaging_ctdbd_connection(),
+			messaging_ctdb_connection(),
 			CTDB_CONTROL_SET_DB_READONLY, 0, 0,
 			indata, NULL, NULL, &cstatus);
 		if ((ret != 0) || (cstatus != 0)) {
