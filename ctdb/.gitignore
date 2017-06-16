@@ -27,7 +27,6 @@ tests/takeover/ctdb_takeover.pyc
 tests/eventscripts/var
 tests/eventscripts/etc/iproute2
 tests/eventscripts/etc-ctdb/policy_routing
-include/ctdb_version.h
 packaging/RPM/ctdb.spec
 doc/*.[1-7]
 doc/*.[1-7].html
