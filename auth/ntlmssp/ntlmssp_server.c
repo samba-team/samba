@@ -294,6 +294,7 @@ NTSTATUS gensec_ntlmssp_server_negotiate(struct gensec_security *gensec_security
 }
 
 struct ntlmssp_server_auth_state {
+	struct auth_usersupplied_info *user_info;
 	DATA_BLOB user_session_key;
 	DATA_BLOB lm_session_key;
 	/* internal variables used by KEY_EXCH (client-supplied user session key */
@@ -318,6 +319,7 @@ static NTSTATUS ntlmssp_server_preauth(struct gensec_security *gensec_security,
 {
 	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
 	struct auth4_context *auth_context = gensec_security->auth_context;
+	struct auth_usersupplied_info *user_info = NULL;
 	uint32_t ntlmssp_command, auth_flags;
 	NTSTATUS nt_status;
 	const unsigned int version_len = 8;
@@ -686,27 +688,8 @@ static NTSTATUS ntlmssp_server_preauth(struct gensec_security *gensec_security,
 			ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_LM_KEY;
 		}
 	}
-	return NT_STATUS_OK;
-}
 
-/**
- * Check the password on an NTLMSSP login.
- *
- * Return the session keys used on the connection.
- */
-
-static NTSTATUS ntlmssp_server_check_password(struct gensec_security *gensec_security,
-					      struct gensec_ntlmssp_context *gensec_ntlmssp,
-					      TALLOC_CTX *mem_ctx,
-					      DATA_BLOB *user_session_key, DATA_BLOB *lm_session_key)
-{
-	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
-	struct auth4_context *auth_context = gensec_security->auth_context;
-	NTSTATUS nt_status = NT_STATUS_NOT_IMPLEMENTED;
-	struct auth_session_info *session_info = NULL;
-	struct auth_usersupplied_info *user_info;
-
-	user_info = talloc_zero(ntlmssp_state, struct auth_usersupplied_info);
+	user_info = talloc_zero(state, struct auth_usersupplied_info);
 	if (!user_info) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -734,6 +717,25 @@ static NTSTATUS ntlmssp_server_check_password(struct gensec_security *gensec_sec
 	user_info->password.response.lanman = ntlmssp_state->lm_resp;
 	user_info->password.response.nt = ntlmssp_state->nt_resp;
 
+	state->user_info = user_info;
+	return NT_STATUS_OK;
+}
+
+/**
+ * Check the password on an NTLMSSP login.
+ *
+ * Return the session keys used on the connection.
+ */
+
+static NTSTATUS ntlmssp_server_check_password(struct gensec_security *gensec_security,
+					      struct gensec_ntlmssp_context *gensec_ntlmssp,
+					      const struct auth_usersupplied_info *user_info,
+					      TALLOC_CTX *mem_ctx,
+					      DATA_BLOB *user_session_key, DATA_BLOB *lm_session_key)
+{
+	struct auth4_context *auth_context = gensec_security->auth_context;
+	NTSTATUS nt_status = NT_STATUS_NOT_IMPLEMENTED;
+
 	if (auth_context->check_ntlm_password) {
 		uint8_t authoritative = 0;
 
@@ -748,9 +750,36 @@ static NTSTATUS ntlmssp_server_check_password(struct gensec_security *gensec_sec
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(5, (__location__ ": Checking NTLMSSP password for %s\\%s failed: %s\n", user_info->client.domain_name, user_info->client.account_name, nt_errstr(nt_status)));
 	}
-	TALLOC_FREE(user_info);
-
 	NT_STATUS_NOT_OK_RETURN(nt_status);
+
+	talloc_steal(mem_ctx, user_session_key->data);
+	talloc_steal(mem_ctx, lm_session_key->data);
+
+	return nt_status;
+}
+
+/**
+ * Next state function for the Authenticate packet
+ * (after authentication - figures out the session keys etc)
+ *
+ * @param ntlmssp_state NTLMSSP State
+ * @return Errors or NT_STATUS_OK.
+ */
+
+static NTSTATUS ntlmssp_server_postauth(struct gensec_security *gensec_security,
+					struct gensec_ntlmssp_context *gensec_ntlmssp,
+					struct ntlmssp_server_auth_state *state,
+					DATA_BLOB request)
+{
+	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
+	struct auth4_context *auth_context = gensec_security->auth_context;
+	DATA_BLOB user_session_key = state->user_session_key;
+	DATA_BLOB lm_session_key = state->lm_session_key;
+	NTSTATUS nt_status = NT_STATUS_OK;
+	DATA_BLOB session_key = data_blob(NULL, 0);
+	struct auth_session_info *session_info = NULL;
+
+	TALLOC_FREE(state->user_info);
 
 	if (lpcfg_map_to_guest(gensec_security->settings->lp_ctx) != NEVER_MAP_TO_GUEST
 	    && auth_context->generate_session_info != NULL)
@@ -760,7 +789,7 @@ static NTSTATUS ntlmssp_server_check_password(struct gensec_security *gensec_sec
 		/*
 		 * We need to check if the auth is anonymous or mapped to guest
 		 */
-		tmp_status = auth_context->generate_session_info(auth_context, mem_ctx,
+		tmp_status = auth_context->generate_session_info(auth_context, state,
 								 gensec_ntlmssp->server_returned_info,
 								 gensec_ntlmssp->ntlmssp_state->user,
 								 AUTH_SESSION_INFO_SIMPLE_PRIVILEGES,
@@ -787,31 +816,6 @@ static NTSTATUS ntlmssp_server_check_password(struct gensec_security *gensec_sec
 		}
 		TALLOC_FREE(session_info);
 	}
-
-	talloc_steal(mem_ctx, user_session_key->data);
-	talloc_steal(mem_ctx, lm_session_key->data);
-
-	return nt_status;
-}
-
-/**
- * Next state function for the Authenticate packet
- * (after authentication - figures out the session keys etc)
- *
- * @param ntlmssp_state NTLMSSP State
- * @return Errors or NT_STATUS_OK.
- */
-
-static NTSTATUS ntlmssp_server_postauth(struct gensec_security *gensec_security,
-					struct gensec_ntlmssp_context *gensec_ntlmssp,
-					struct ntlmssp_server_auth_state *state,
-					DATA_BLOB request)
-{
-	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
-	DATA_BLOB user_session_key = state->user_session_key;
-	DATA_BLOB lm_session_key = state->lm_session_key;
-	NTSTATUS nt_status = NT_STATUS_OK;
-	DATA_BLOB session_key = data_blob(NULL, 0);
 
 	dump_data_pw("NT session key:\n", user_session_key.data, user_session_key.length);
 	dump_data_pw("LM first-8:\n", lm_session_key.data, lm_session_key.length);
@@ -1029,7 +1033,7 @@ NTSTATUS gensec_ntlmssp_server_auth(struct gensec_security *gensec_security,
 
 	/* Finally, actually ask if the password is OK */
 	nt_status = ntlmssp_server_check_password(gensec_security, gensec_ntlmssp,
-						  state,
+						  state->user_info, state,
 						  &state->user_session_key,
 						  &state->lm_session_key);
 	if (!NT_STATUS_IS_OK(nt_status)) {
