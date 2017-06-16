@@ -21,6 +21,8 @@ from samba.dcerpc import drsuapi, misc, drsblobs
 from samba.net import Net
 from samba.ndr import ndr_unpack
 from samba import dsdb
+from samba import werror
+from samba import WERRORError
 import samba, ldb
 
 
@@ -198,18 +200,37 @@ class drs_Replicate(object):
             raise RuntimeError("Must not set GUID 00000000-0000-0000-0000-000000000000 as invocation_id")
         self.replication_state = self.net.replicate_init(self.samdb, lp, self.drs, invocation_id)
 
+    def _should_retry_with_get_tgt(self, error_code, req):
+
+        # If the error indicates we fail to resolve a target object for a
+        # linked attribute, then we should retry the request with GET_TGT
+        # (if we support it and haven't already tried that)
+
+        # TODO fix up the below line when we next update werror_err_table.txt
+        # and pull in the new error-code
+        # return (error_code == werror.WERR_DS_DRA_RECYCLED_TARGET and
+        return (error_code == 0x21bf and
+                (req.more_flags & drsuapi.DRSUAPI_DRS_GET_TGT) == 0 and
+                self.supported_extensions & drsuapi.DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V10)
+
     def replicate(self, dn, source_dsa_invocation_id, destination_dsa_guid,
                   schema=False, exop=drsuapi.DRSUAPI_EXOP_NONE, rodc=False,
-                  replica_flags=None, full_sync=True, sync_forced=False):
+                  replica_flags=None, full_sync=True, sync_forced=False, more_flags=0):
         '''replicate a single DN'''
 
         # setup for a GetNCChanges call
-        req8 = drsuapi.DsGetNCChangesRequest8()
+        if self.supported_extensions & drsuapi.DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V10:
+            req = drsuapi.DsGetNCChangesRequest10()
+            req.more_flags = more_flags
+            req_level = 10
+        else:
+            req_level = 8
+            req = drsuapi.DsGetNCChangesRequest8()
 
-        req8.destination_dsa_guid = destination_dsa_guid
-        req8.source_dsa_invocation_id = source_dsa_invocation_id
-        req8.naming_context = drsuapi.DsReplicaObjectIdentifier()
-        req8.naming_context.dn = dn
+        req.destination_dsa_guid = destination_dsa_guid
+        req.source_dsa_invocation_id = source_dsa_invocation_id
+        req.naming_context = drsuapi.DsReplicaObjectIdentifier()
+        req.naming_context.dn = dn
 
         # Default to a full replication if we don't find an upToDatenessVector
         udv = None
@@ -244,49 +265,46 @@ class drs_Replicate(object):
             udv.cursors = cursors_v1
             udv.count = len(cursors_v1)
 
-        req8.highwatermark = hwm
-        req8.uptodateness_vector = udv
+        req.highwatermark = hwm
+        req.uptodateness_vector = udv
 
         if replica_flags is not None:
-            req8.replica_flags = replica_flags
+            req.replica_flags = replica_flags
         elif exop == drsuapi.DRSUAPI_EXOP_REPL_SECRET:
-            req8.replica_flags = 0
+            req.replica_flags = 0
         else:
-            req8.replica_flags = (drsuapi.DRSUAPI_DRS_INIT_SYNC |
-                                  drsuapi.DRSUAPI_DRS_PER_SYNC |
-                                  drsuapi.DRSUAPI_DRS_GET_ANC |
-                                  drsuapi.DRSUAPI_DRS_NEVER_SYNCED |
-                                  drsuapi.DRSUAPI_DRS_GET_ALL_GROUP_MEMBERSHIP)
+            req.replica_flags = (drsuapi.DRSUAPI_DRS_INIT_SYNC |
+                                 drsuapi.DRSUAPI_DRS_PER_SYNC |
+                                 drsuapi.DRSUAPI_DRS_GET_ANC |
+                                 drsuapi.DRSUAPI_DRS_NEVER_SYNCED |
+                                 drsuapi.DRSUAPI_DRS_GET_ALL_GROUP_MEMBERSHIP)
             if rodc:
-                req8.replica_flags |= (
-                    drsuapi.DRSUAPI_DRS_SPECIAL_SECRET_PROCESSING)
+                req.replica_flags |= (
+                     drsuapi.DRSUAPI_DRS_SPECIAL_SECRET_PROCESSING)
             else:
-                req8.replica_flags |= drsuapi.DRSUAPI_DRS_WRIT_REP
+                req.replica_flags |= drsuapi.DRSUAPI_DRS_WRIT_REP
 
         if sync_forced:
-            req8.replica_flags |= drsuapi.DRSUAPI_DRS_SYNC_FORCED
+            req.replica_flags |= drsuapi.DRSUAPI_DRS_SYNC_FORCED
 
-        req8.max_object_count = 402
-        req8.max_ndr_size = 402116
-        req8.extended_op = exop
-        req8.fsmo_info = 0
-        req8.partial_attribute_set = None
-        req8.partial_attribute_set_ex = None
-        req8.mapping_ctr.num_mappings = 0
-        req8.mapping_ctr.mappings = None
+        req.max_object_count = 402
+        req.max_ndr_size = 402116
+        req.extended_op = exop
+        req.fsmo_info = 0
+        req.partial_attribute_set = None
+        req.partial_attribute_set_ex = None
+        req.mapping_ctr.num_mappings = 0
+        req.mapping_ctr.mappings = None
 
         if not schema and rodc:
-            req8.partial_attribute_set = drs_get_rodc_partial_attribute_set(self.samdb)
+            req.partial_attribute_set = drs_get_rodc_partial_attribute_set(self.samdb)
 
-        if self.supported_extensions & drsuapi.DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V8:
-            req_level = 8
-            req = req8
-        else:
+        if not self.supported_extensions & drsuapi.DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V8:
             req_level = 5
             req5 = drsuapi.DsGetNCChangesRequest5()
             for a in dir(req5):
                 if a[0] != '_':
-                    setattr(req5, a, getattr(req8, a))
+                    setattr(req5, a, getattr(req, a))
             req = req5
 
         num_objects = 0
@@ -295,8 +313,21 @@ class drs_Replicate(object):
             (level, ctr) = self.drs.DsGetNCChanges(self.drs_handle, req_level, req)
             if ctr.first_object is None and ctr.object_count != 0:
                 raise RuntimeError("DsGetNCChanges: NULL first_object with object_count=%u" % (ctr.object_count))
-            self.net.replicate_chunk(self.replication_state, level, ctr,
-                schema=schema, req_level=req_level, req=req)
+
+            try:
+                self.net.replicate_chunk(self.replication_state, level, ctr,
+                    schema=schema, req_level=req_level, req=req)
+            except WERRORError as e:
+                # Check if retrying with the GET_TGT flag set might resolve this error
+                if self._should_retry_with_get_tgt(e[0], req):
+
+                    print("Missing target object - retrying with DRS_GET_TGT")
+                    req.more_flags |= drsuapi.DRSUAPI_DRS_GET_TGT
+
+                    # try sending the request again
+                    continue
+                else:
+                    raise e
 
             num_objects += ctr.object_count
 
