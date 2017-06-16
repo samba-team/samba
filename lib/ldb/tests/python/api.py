@@ -1315,6 +1315,72 @@ class LdbResultTests(TestCase):
                 found = True
         self.assertTrue(found)
 
+
+    # Show that search results can't see into a transaction
+    def test_search_against_trans(self):
+        found11 = False
+
+        (r1, w1) = os.pipe()
+
+        (r2, w2) = os.pipe()
+
+        # For the first element, fork a child that will
+        # write to the DB
+        pid = os.fork()
+        if pid == 0:
+            # In the child, re-open
+            del(self.l)
+            gc.collect()
+
+            child_ldb = ldb.Ldb(self.filename)
+            # start a transaction
+            child_ldb.transaction_start()
+
+            # write to it
+            child_ldb.add({"dn": "OU=OU11,DC=SAMBA,DC=ORG",
+                           "name": b"samba.org"})
+
+            os.write(w1, b"added")
+
+            # Now wait for the search to be done
+            os.read(r2, 6)
+
+            # and commit
+            try:
+                child_ldb.transaction_commit()
+            except LdbError as err:
+                # We print this here to see what went wrong in the child
+                print(err)
+                os._exit(1)
+
+            os.write(w1, b"transaction")
+            os._exit(0)
+
+        self.assertEqual(os.read(r1, 5), b"added")
+
+        # This should not turn up until the transaction is concluded
+        res11 = self.l.search(base="OU=OU11,DC=SAMBA,DC=ORG",
+                            scope=ldb.SCOPE_BASE)
+        self.assertEqual(len(res11), 0)
+
+        os.write(w2, b"search")
+
+        # Now wait for the transaction to be done.  This should
+        # deadlock, but the search doesn't hold a read lock for the
+        # iterator lifetime currently.
+        self.assertEqual(os.read(r1, 11), b"transaction")
+
+        # This should now turn up, as the transaction is over
+        res11 = self.l.search(base="OU=OU11,DC=SAMBA,DC=ORG",
+                            scope=ldb.SCOPE_BASE)
+        self.assertEqual(len(res11), 1)
+
+        self.assertFalse(found11)
+
+        (got_pid, status) = os.waitpid(pid, 0)
+        self.assertEqual(got_pid, pid)
+
+
     def test_search_iter_against_trans(self):
         found = False
         found11 = False
