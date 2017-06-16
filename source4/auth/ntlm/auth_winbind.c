@@ -103,9 +103,9 @@ static NTSTATUS winbind_check_password(struct auth_method_context *ctx,
 				       struct auth_user_info_dc **user_info_dc,
 				       bool *authoritative)
 {
+	struct winbind_check_password_state *state = NULL;
 	NTSTATUS status;
 	struct dcerpc_binding_handle *irpc_handle;
-	struct winbind_check_password_state *s;
 	const struct auth_usersupplied_info *user_info_new;
 	struct netr_IdentityInfo *identity_info;
 	struct ldb_dn *domain_dn;
@@ -118,10 +118,10 @@ static NTSTATUS winbind_check_password(struct auth_method_context *ctx,
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	s = talloc(mem_ctx, struct winbind_check_password_state);
-	NT_STATUS_HAVE_NO_MEMORY(s);
+	state = talloc(mem_ctx, struct winbind_check_password_state);
+	NT_STATUS_HAVE_NO_MEMORY(state);
 
-	irpc_handle = irpc_binding_handle_by_name(s, ctx->auth_ctx->msg_ctx,
+	irpc_handle = irpc_binding_handle_by_name(state, ctx->auth_ctx->msg_ctx,
 						  "winbind_server",
 						  &ndr_table_winbind);
 	if (irpc_handle == NULL) {
@@ -134,30 +134,30 @@ static NTSTATUS winbind_check_password(struct auth_method_context *ctx,
 	if (user_info->flags & USER_INFO_INTERACTIVE_LOGON) {
 		struct netr_PasswordInfo *password_info;
 
-		status = encrypt_user_info(s, ctx->auth_ctx, AUTH_PASSWORD_HASH,
+		status = encrypt_user_info(state, ctx->auth_ctx, AUTH_PASSWORD_HASH,
 					   user_info, &user_info_new);
 		NT_STATUS_NOT_OK_RETURN(status);
 		user_info = user_info_new;
 
-		password_info = talloc(s, struct netr_PasswordInfo);
+		password_info = talloc_zero(state, struct netr_PasswordInfo);
 		NT_STATUS_HAVE_NO_MEMORY(password_info);
 
 		password_info->lmpassword = *user_info->password.hash.lanman;
 		password_info->ntpassword = *user_info->password.hash.nt;
 
 		identity_info = &password_info->identity_info;
-		s->req.in.logon_level	= 1;
-		s->req.in.logon.password= password_info;
+		state->req.in.logon_level	= 1;
+		state->req.in.logon.password= password_info;
 	} else {
 		struct netr_NetworkInfo *network_info;
 		uint8_t chal[8];
 
-		status = encrypt_user_info(s, ctx->auth_ctx, AUTH_PASSWORD_RESPONSE,
+		status = encrypt_user_info(state, ctx->auth_ctx, AUTH_PASSWORD_RESPONSE,
 					   user_info, &user_info_new);
 		NT_STATUS_NOT_OK_RETURN(status);
 		user_info = user_info_new;
 
-		network_info = talloc(s, struct netr_NetworkInfo);
+		network_info = talloc_zero(state, struct netr_NetworkInfo);
 		NT_STATUS_HAVE_NO_MEMORY(network_info);
 
 		status = auth_get_challenge(ctx->auth_ctx, chal);
@@ -172,8 +172,8 @@ static NTSTATUS winbind_check_password(struct auth_method_context *ctx,
 		network_info->lm.data	= user_info->password.response.lanman.data;
 
 		identity_info = &network_info->identity_info;
-		s->req.in.logon_level	= 2;
-		s->req.in.logon.network = network_info;
+		state->req.in.logon_level	= 2;
+		state->req.in.logon.network = network_info;
 	}
 
 	identity_info->domain_name.string	= user_info->client.domain_name;
@@ -183,18 +183,18 @@ static NTSTATUS winbind_check_password(struct auth_method_context *ctx,
 	identity_info->account_name.string	= user_info->client.account_name;
 	identity_info->workstation.string	= user_info->workstation_name;
 
-	s->req.in.validation_level	= 3;
+	state->req.in.validation_level = 3;
 
 	/* Note: this makes use of nested event loops... */
 	dcerpc_binding_handle_set_sync_ev(irpc_handle, ctx->auth_ctx->event_ctx);
-	status = dcerpc_winbind_SamLogon_r(irpc_handle, s, &s->req);
+	status = dcerpc_winbind_SamLogon_r(irpc_handle, state, &state->req);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	if (!NT_STATUS_IS_OK(s->req.out.result)) {
-		if (!s->req.out.authoritative) {
+	if (!NT_STATUS_IS_OK(state->req.out.result)) {
+		if (!state->req.out.authoritative) {
 			*authoritative = false;
 		}
-		return s->req.out.result;
+		return state->req.out.result;
 	}
 
 	/*
@@ -234,8 +234,8 @@ static NTSTATUS winbind_check_password(struct auth_method_context *ctx,
 
 	status = make_user_info_dc_netlogon_validation(mem_ctx,
 						      user_info->client.account_name,
-						      s->req.in.validation_level,
-						      &s->req.out.validation,
+						      state->req.in.validation_level,
+						      &state->req.out.validation,
 						       true, /* This user was authenticated */
 						      user_info_dc);
 	NT_STATUS_NOT_OK_RETURN(status);
