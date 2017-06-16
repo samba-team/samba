@@ -603,6 +603,10 @@ int main(int argc, char **argv)
 
 	setup_logging("smbpasswd", DEBUG_STDERR);
 
+	if (server_messaging_context() == NULL) {
+		return 1;
+	}
+
 	/*
 	 * Set the machine NETBIOS name if not already
 	 * set from the config file. 
