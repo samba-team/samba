@@ -502,22 +502,81 @@ _PUBLIC_ NTSTATUS auth_check_password_recv(struct tevent_req *req,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS auth_check_password_wrapper(struct auth4_context *auth_ctx,
-					    TALLOC_CTX *mem_ctx,
-					    const struct auth_usersupplied_info *user_info,
-					    uint8_t *pauthoritative,
-					    void **server_returned_info,
-					    DATA_BLOB *user_session_key, DATA_BLOB *lm_session_key)
-{
+struct auth_check_password_wrapper_state {
+	uint8_t authoritative;
 	struct auth_user_info_dc *user_info_dc;
+};
+
+static void auth_check_password_wrapper_done(struct tevent_req *subreq);
+
+static struct tevent_req *auth_check_password_wrapper_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct auth4_context *auth_ctx,
+					const struct auth_usersupplied_info *user_info)
+{
+	struct tevent_req *req = NULL;
+	struct auth_check_password_wrapper *state = NULL;
+	struct tevent_req *subreq = NULL;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct auth_check_password_wrapper_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	subreq = auth_check_password_send(state, ev, auth_ctx, user_info);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq,
+				auth_check_password_wrapper_done,
+				req);
+
+	return req;
+}
+
+static void auth_check_password_wrapper_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
+	struct auth_check_password_wrapper_state *state =
+		tevent_req_data(req,
+		struct auth_check_password_wrapper_state);
 	NTSTATUS status;
 
-	status = auth_check_password(auth_ctx, mem_ctx, user_info,
-				     &user_info_dc, pauthoritative);
-	if (!NT_STATUS_IS_OK(status)) {
+	status = auth_check_password_recv(subreq, state,
+					  &state->user_info_dc,
+					  &state->authoritative);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	tevent_req_done(req);
+}
+
+static NTSTATUS auth_check_password_wrapper_recv(struct tevent_req *req,
+					TALLOC_CTX *mem_ctx,
+					uint8_t *pauthoritative,
+					void **server_returned_info,
+					DATA_BLOB *user_session_key,
+					DATA_BLOB *lm_session_key)
+{
+	struct auth_check_password_wrapper_state *state =
+		tevent_req_data(req,
+		struct auth_check_password_wrapper_state);
+	struct auth_user_info_dc *user_info_dc = state->user_info_dc;
+	NTSTATUS status = NT_STATUS_OK;
+
+	*pauthoritative = state->authoritative;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
 		return status;
 	}
 
+	talloc_steal(mem_ctx, user_info_dc);
 	*server_returned_info = user_info_dc;
 
 	if (user_session_key) {
@@ -536,6 +595,7 @@ static NTSTATUS auth_check_password_wrapper(struct auth4_context *auth_ctx,
 		user_info_dc->lm_session_key = data_blob_null;
 	}
 
+	tevent_req_received(req);
 	return NT_STATUS_OK;
 }
 
@@ -673,7 +733,8 @@ _PUBLIC_ NTSTATUS auth_context_create_methods(TALLOC_CTX *mem_ctx, const char * 
 		DLIST_ADD_END(ctx->methods, method);
 	}
 
-	ctx->check_ntlm_password = auth_check_password_wrapper;
+	ctx->check_ntlm_password_send = auth_check_password_wrapper_send;
+	ctx->check_ntlm_password_recv = auth_check_password_wrapper_recv;
 	ctx->get_ntlm_challenge = auth_get_challenge;
 	ctx->set_ntlm_challenge = auth_context_set_challenge;
 	ctx->generate_session_info = auth_generate_session_info_wrapper;
