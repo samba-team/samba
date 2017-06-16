@@ -189,9 +189,11 @@ static NTSTATUS winbind_check_password(struct auth_method_context *ctx,
 	status = dcerpc_winbind_SamLogon_r(irpc_handle, s, &s->req);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	if (NT_STATUS_EQUAL(s->req.out.result, NT_STATUS_NO_SUCH_USER) &&
-	    !s->req.out.authoritative) {
-		return NT_STATUS_NOT_IMPLEMENTED;
+	if (!NT_STATUS_IS_OK(s->req.out.result)) {
+		if (!s->req.out.authoritative) {
+			*authoritative = false;
+		}
+		return s->req.out.result;
 	}
 
 	/*
@@ -199,7 +201,7 @@ static NTSTATUS winbind_check_password(struct auth_method_context *ctx,
 	 * This means that lockouts happen at a badPwdCount earlier than
 	 * normal, but makes it more fault tolerant.
 	 */
-	if (NT_STATUS_IS_OK(s->req.out.result)) {
+	{
 		const char *account_name = user_info->mapped.account_name;
 		const char *p = NULL;
 		p = strchr_m(account_name, '@');
