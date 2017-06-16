@@ -1285,7 +1285,7 @@ static void test_search_match_basedn(void **state)
  *  - (2) the ldb_transaction_commit() is called.
  *        This returns LDB_ERR_BUSY if the deadlock is detected
  *
- * With ldb 1.1.29 and tdb 1.3.12 we avoid this only due to a missing
+ * With ldb 1.1.31 and tdb 1.3.12 we avoid this only due to a missing
  * lock call in ltdb_search() due to a refcounting bug in
  * ltdb_lock_read()
  */
@@ -1327,7 +1327,7 @@ static int test_ldb_search_against_transaction_callback2(struct ldb_request *req
  * we take any locks in the tdb_traverse_read() handler.
  *
  * In tdb 1.3.12 tdb_traverse_read() take the read transaction lock
- * however in ldb 1.1.29 ltdb_search() forgets to take the all-record
+ * however in ldb 1.1.31 ltdb_search() forgets to take the all-record
  * lock (except the very first time) due to a ref-counting bug.
  *
  */
