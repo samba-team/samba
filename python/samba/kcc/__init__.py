@@ -2015,7 +2015,7 @@ class KCC(object):
 
         if not needed:
             debug.DEBUG_RED("%s lacks 'should be present' status, "
-                            "aborting construct_intersite_graph!" %
+                            "aborting construct_intrasite_graph!" %
                             nc_x.nc_dnstr)
             return
 
