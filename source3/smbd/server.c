@@ -331,6 +331,7 @@ static struct tevent_req *notifyd_req(struct messaging_context *msg_ctx,
 	struct tevent_req *req;
 	sys_notify_watch_fn sys_notify_watch = NULL;
 	struct sys_notify_context *sys_notify_ctx = NULL;
+	struct ctdbd_connection *ctdbd_conn = NULL;
 
 	if (lp_kernel_change_notify()) {
 
@@ -355,8 +356,11 @@ static struct tevent_req *notifyd_req(struct messaging_context *msg_ctx,
 		}
 	}
 
-	req = notifyd_send(msg_ctx, ev, msg_ctx,
-			   messaging_ctdbd_connection(),
+	if (lp_clustering()) {
+		ctdbd_conn = messaging_ctdbd_connection();
+	}
+
+	req = notifyd_send(msg_ctx, ev, msg_ctx, ctdbd_conn,
 			   sys_notify_watch, sys_notify_ctx);
 	if (req == NULL) {
 		TALLOC_FREE(sys_notify_ctx);
