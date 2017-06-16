@@ -194,9 +194,8 @@ struct auth_check_password_state {
 	uint8_t authoritative;
 };
 
-static void auth_check_password_async_trigger(struct tevent_context *ev,
-					      struct tevent_immediate *im,
-					      void *private_data);
+static void auth_check_password_next(struct tevent_req *req);
+
 /**
  * Check a user's Plaintext, LM or NTLM password.
  * async send hook
@@ -233,7 +232,6 @@ _PUBLIC_ struct tevent_req *auth_check_password_send(TALLOC_CTX *mem_ctx,
 	/* if all the modules say 'not for me' this is reasonable */
 	NTSTATUS nt_status;
 	uint8_t chal[8];
-	struct tevent_immediate *im;
 
 	DEBUG(3,("auth_check_password_send: "
 		 "Checking password for unmapped user [%s]\\[%s]@[%s]\n",
@@ -249,9 +247,9 @@ _PUBLIC_ struct tevent_req *auth_check_password_send(TALLOC_CTX *mem_ctx,
 	/*
 	 * We are authoritative by default.
 	 */
-	state->authoritative	= 1;
 	state->auth_ctx		= auth_ctx;
 	state->user_info	= user_info;
+	state->authoritative	= 1;
 
 	if (!user_info->mapped_state) {
 		struct auth_usersupplied_info *user_info_tmp;
@@ -312,74 +310,66 @@ _PUBLIC_ struct tevent_req *auth_check_password_send(TALLOC_CTX *mem_ctx,
 	dump_data(5, auth_ctx->challenge.data.data,
 		  auth_ctx->challenge.data.length);
 
-	im = tevent_create_immediate(state);
-	if (tevent_req_nomem(im, req)) {
+	state->method = state->auth_ctx->methods;
+	auth_check_password_next(req);
+	if (!tevent_req_is_in_progress(req)) {
 		return tevent_req_post(req, ev);
 	}
 
-	tevent_schedule_immediate(im,
-				  auth_ctx->event_ctx,
-				  auth_check_password_async_trigger,
-				  req);
 	return req;
 }
 
-static void auth_check_password_async_trigger(struct tevent_context *ev,
-					      struct tevent_immediate *im,
-					      void *private_data)
+static void auth_check_password_next(struct tevent_req *req)
 {
-	struct tevent_req *req =
-		talloc_get_type_abort(private_data, struct tevent_req);
 	struct auth_check_password_state *state =
 		tevent_req_data(req, struct auth_check_password_state);
-	NTSTATUS status;
-	struct auth_method_context *method;
+	struct tevent_req *subreq = NULL;
 	bool authoritative = true;
+	NTSTATUS status;
 
-	status = NT_STATUS_OK;
-
-	for (method=state->auth_ctx->methods; method; method = method->next) {
-		authoritative = true;
-
-		/* we fill in state->method here so debug messages in
-		   the callers know which method failed */
-		state->method = method;
-
-		/* check if the module wants to check the password */
-		status = method->ops->want_check(method, req, state->user_info);
-		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
-			DEBUG(11,("auth_check_password_send: "
-				  "%s doesn't want to check\n",
-				  method->ops->name));
-			continue;
-		}
-
-		if (tevent_req_nterror(req, status)) {
-			return;
-		}
-
-		status = method->ops->check_password(method,
-						     state,
-						     state->user_info,
-						     &state->user_info_dc,
-						     &authoritative);
-		if (!authoritative ||
-		    NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
-			DEBUG(11,("auth_check_password_send: "
-				  "%s passes to the next method\n",
-				  method->ops->name));
-			continue;
-		}
-
-		/* the backend has handled the request */
-		break;
+	if (state->method == NULL) {
+		state->authoritative = 0;
+		tevent_req_nterror(req, NT_STATUS_NO_SUCH_USER);
+		return;
 	}
 
+	/* check if the module wants to check the password */
+	status = state->method->ops->want_check(state->method, state,
+						state->user_info);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
+		DEBUG(11,("auth_check_password_send: "
+			  "%s doesn't want to check\n",
+			  state->method->ops->name));
+		state->method = state->method->next;
+		auth_check_password_next(req);
+		return;
+	}
+
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	if (state->method->ops->check_password == NULL) {
+		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+		return;
+	}
+
+	status = state->method->ops->check_password(state->method,
+						    state,
+						    state->user_info,
+						    &state->user_info_dc,
+						    &authoritative);
 	if (!authoritative ||
 	    NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
-		state->authoritative = 0;
-		status = NT_STATUS_NO_SUCH_USER;
+		DEBUG(11,("auth_check_password_send: "
+			  "%s passes to the next method\n",
+			  state->method->ops->name));
+		state->method = state->method->next;
+		auth_check_password_next(req);
+		return;
 	}
+
+	/* the backend has handled the request */
 
 	if (tevent_req_nterror(req, status)) {
 		return;
