@@ -325,13 +325,11 @@
 #
 ^samba.tests.auth_log_pass_change.samba.tests.auth_log_pass_change.AuthLogPassChangeTests.test_rap_change_password\(ad_dc_ntvfs:local\)
 #
-# The following should pass once we have trust support
-^samba4.blackbox.trust_ntlm.Test07.*client.*with.ADDOMAIN\\Administrator%locDCpass1\(fl2008r2dc:local\)
-^samba4.blackbox.trust_ntlm.Test08.*client.*with.ADDOM.SAMBA.EXAMPLE.COM\\Administrator%locDCpass1\(fl2008r2dc:local\)
+# winbindd doesn't handle routing for domain="" and
+# account="Administrator@ADDOMAIN" yet.
+#
 ^samba4.blackbox.trust_ntlm.Test09.*client.*with.Administrator@ADDOMAIN%locDCpass1\(fl2008r2dc:local\)
 ^samba4.blackbox.trust_ntlm.Test10.*client.*with.Administrator@ADDOM.SAMBA.EXAMPLE.COM%locDCpass1\(fl2008r2dc:local\)
-^samba4.blackbox.trust_ntlm.Test07.*client.*with.ADDOMAIN\\Administrator%locDCpass1\(fl2003dc:local\)
-^samba4.blackbox.trust_ntlm.Test08.*client.*with.ADDOM.SAMBA.EXAMPLE.COM\\Administrator%locDCpass1\(fl2003dc:local\)
 ^samba4.blackbox.trust_ntlm.Test09.*client.*with.Administrator@ADDOMAIN%locDCpass1\(fl2003dc:local\)
 ^samba4.blackbox.trust_ntlm.Test10.*client.*with.Administrator@ADDOM.SAMBA.EXAMPLE.COM%locDCpass1\(fl2003dc:local\)
 # We currently don't send referrals for LDAP modify of non-replicated attrs

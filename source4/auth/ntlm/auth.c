@@ -768,25 +768,10 @@ const char **auth_methods_from_lp(TALLOC_CTX *mem_ctx, struct loadparm_context *
 		auth_methods = str_list_make(mem_ctx, "anonymous sam_ignoredomain", NULL);
 		break;
 	case ROLE_DOMAIN_MEMBER:
-		auth_methods = str_list_make(mem_ctx, "anonymous sam winbind sam_ignoredomain", NULL);
-		break;
 	case ROLE_DOMAIN_BDC:
 	case ROLE_DOMAIN_PDC:
 	case ROLE_ACTIVE_DIRECTORY_DC:
-		/*
-		 * TODO: we should replace "winbind_rodc sam_failtrusts" with "winbind"
-		 * if everything (gensec/auth4) is fully async without nested
-		 * event loops!
-		 *
-		 * But for now we'll fail authentications for trusted
-		 * domain consistently with NT_STATUS_NO_TRUST_LSA_SECRET,
-		 * instead of silently mapping to local users.
-		 */
-		auth_methods = str_list_make(mem_ctx,
-					     "anonymous sam "
-					     "winbind_rodc sam_failtrusts "
-					     "sam_ignoredomain",
-					     NULL);
+		auth_methods = str_list_make(mem_ctx, "anonymous sam winbind sam_ignoredomain", NULL);
 		break;
 	}
 	return discard_const_p(const char *, auth_methods);
