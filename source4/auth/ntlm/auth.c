@@ -186,43 +186,6 @@ _PUBLIC_ NTSTATUS auth_check_password(struct auth4_context *auth_ctx,
 	return status;
 }
 
-static NTSTATUS auth_check_password_wrapper(struct auth4_context *auth_ctx,
-					    TALLOC_CTX *mem_ctx,
-					    const struct auth_usersupplied_info *user_info,
-					    uint8_t *pauthoritative,
-					    void **server_returned_info,
-					    DATA_BLOB *user_session_key, DATA_BLOB *lm_session_key)
-{
-	struct auth_user_info_dc *user_info_dc;
-	NTSTATUS status;
-
-	status = auth_check_password(auth_ctx, mem_ctx, user_info,
-				     &user_info_dc, pauthoritative);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	*server_returned_info = user_info_dc;
-
-	if (user_session_key) {
-		DEBUG(10, ("Got NT session key of length %u\n",
-			   (unsigned)user_info_dc->user_session_key.length));
-		*user_session_key = user_info_dc->user_session_key;
-		talloc_steal(mem_ctx, user_session_key->data);
-		user_info_dc->user_session_key = data_blob_null;
-	}
-
-	if (lm_session_key) {
-		DEBUG(10, ("Got LM session key of length %u\n",
-			   (unsigned)user_info_dc->lm_session_key.length));
-		*lm_session_key = user_info_dc->lm_session_key;
-		talloc_steal(mem_ctx, lm_session_key->data);
-		user_info_dc->lm_session_key = data_blob_null;
-	}
-
-	return NT_STATUS_OK;
-}
-
 struct auth_check_password_state {
 	struct auth4_context *auth_ctx;
 	const struct auth_usersupplied_info *user_info;
@@ -494,6 +457,43 @@ _PUBLIC_ NTSTATUS auth_check_password_recv(struct tevent_req *req,
 	*user_info_dc = talloc_move(mem_ctx, &state->user_info_dc);
 
 	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS auth_check_password_wrapper(struct auth4_context *auth_ctx,
+					    TALLOC_CTX *mem_ctx,
+					    const struct auth_usersupplied_info *user_info,
+					    uint8_t *pauthoritative,
+					    void **server_returned_info,
+					    DATA_BLOB *user_session_key, DATA_BLOB *lm_session_key)
+{
+	struct auth_user_info_dc *user_info_dc;
+	NTSTATUS status;
+
+	status = auth_check_password(auth_ctx, mem_ctx, user_info,
+				     &user_info_dc, pauthoritative);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	*server_returned_info = user_info_dc;
+
+	if (user_session_key) {
+		DEBUG(10, ("Got NT session key of length %u\n",
+			   (unsigned)user_info_dc->user_session_key.length));
+		*user_session_key = user_info_dc->user_session_key;
+		talloc_steal(mem_ctx, user_session_key->data);
+		user_info_dc->user_session_key = data_blob_null;
+	}
+
+	if (lm_session_key) {
+		DEBUG(10, ("Got LM session key of length %u\n",
+			   (unsigned)user_info_dc->lm_session_key.length));
+		*lm_session_key = user_info_dc->lm_session_key;
+		talloc_steal(mem_ctx, lm_session_key->data);
+		user_info_dc->lm_session_key = data_blob_null;
+	}
+
 	return NT_STATUS_OK;
 }
 
