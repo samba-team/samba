@@ -732,9 +732,7 @@ static NTSTATUS ntlmssp_server_check_password(struct gensec_security *gensec_sec
 
 	user_info->password_state = AUTH_PASSWORD_RESPONSE;
 	user_info->password.response.lanman = ntlmssp_state->lm_resp;
-	user_info->password.response.lanman.data = talloc_steal(user_info, ntlmssp_state->lm_resp.data);
 	user_info->password.response.nt = ntlmssp_state->nt_resp;
-	user_info->password.response.nt.data = talloc_steal(user_info, ntlmssp_state->nt_resp.data);
 
 	if (auth_context->check_ntlm_password) {
 		uint8_t authoritative = 0;
@@ -976,6 +974,11 @@ static NTSTATUS ntlmssp_server_postauth(struct gensec_security *gensec_security,
 	if (gensec_ntlmssp_have_feature(gensec_security, GENSEC_FEATURE_SIGN)) {
 		nt_status = ntlmssp_sign_init(ntlmssp_state);
 	}
+
+	data_blob_clear_free(&ntlmssp_state->internal_chal);
+	data_blob_clear_free(&ntlmssp_state->chal);
+	data_blob_clear_free(&ntlmssp_state->lm_resp);
+	data_blob_clear_free(&ntlmssp_state->nt_resp);
 
 	ntlmssp_state->expected_state = NTLMSSP_DONE;
 
