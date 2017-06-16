@@ -112,9 +112,7 @@ systemOnly: FALSE
         self.assertIn(attr_ldap_name, [str(x) for x in idx_res[0]["@IDXATTR"]])
 
 
-
     def test_AddUnIndexedAttribute(self):
-
         # create names for an attribute to add
         (attr_name, attr_ldap_name, attr_dn) = self._make_obj_names("schemaAttributes-Attr-")
         ldif = self._make_attr_ldif(attr_name, attr_dn, 2)
@@ -136,3 +134,42 @@ systemOnly: FALSE
         idx_res = self.samdb.search(base="@INDEXLIST", scope=ldb.SCOPE_BASE)
 
         self.assertNotIn(attr_ldap_name, [str(x) for x in idx_res[0]["@IDXATTR"]])
+
+
+    def test_AddTwoIndexedAttributes(self):
+        # create names for an attribute to add
+        (attr_name, attr_ldap_name, attr_dn) = self._make_obj_names("schemaAttributes-Attr-")
+        ldif = self._make_attr_ldif(attr_name, attr_dn, 3,
+                                    "searchFlags: %d" % samba.dsdb.SEARCH_FLAG_ATTINDEX)
+
+        # add the new attribute
+        self.samdb.add_ldif(ldif)
+        self._ldap_schemaUpdateNow()
+
+        # create names for an attribute to add
+        (attr_name2, attr_ldap_name2, attr_dn2) = self._make_obj_names("schemaAttributes-Attr-")
+        ldif = self._make_attr_ldif(attr_name2, attr_dn2, 4,
+                                    "searchFlags: %d" % samba.dsdb.SEARCH_FLAG_ATTINDEX)
+
+        # add the new attribute
+        self.samdb.add_ldif(ldif)
+        self._ldap_schemaUpdateNow()
+
+        # Check @ATTRIBUTES
+
+        attr_res = self.samdb.search(base="@ATTRIBUTES", scope=ldb.SCOPE_BASE)
+
+        self.assertIn(attr_ldap_name, attr_res[0])
+        self.assertEquals(len(attr_res[0][attr_ldap_name]), 1)
+        self.assertEquals(attr_res[0][attr_ldap_name][0], "CASE_INSENSITIVE")
+
+        self.assertIn(attr_ldap_name2, attr_res[0])
+        self.assertEquals(len(attr_res[0][attr_ldap_name2]), 1)
+        self.assertEquals(attr_res[0][attr_ldap_name2][0], "CASE_INSENSITIVE")
+
+        # Check @INDEXLIST
+
+        idx_res = self.samdb.search(base="@INDEXLIST", scope=ldb.SCOPE_BASE)
+
+        self.assertIn(attr_ldap_name, [str(x) for x in idx_res[0]["@IDXATTR"]])
+        self.assertIn(attr_ldap_name2, [str(x) for x in idx_res[0]["@IDXATTR"]])
