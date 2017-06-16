@@ -71,7 +71,8 @@ static const struct ntlmssp_callbacks {
 	},{
 		.role		= NTLMSSP_SERVER,
 		.command	= NTLMSSP_AUTH,
-		.sync_fn	= gensec_ntlmssp_server_auth,
+		.send_fn	= ntlmssp_server_auth_send,
+		.recv_fn	= ntlmssp_server_auth_recv,
 	}
 };
 
