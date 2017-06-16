@@ -340,15 +340,6 @@ def configure(conf):
             else:
                 Logs.info("  %s: no" % (m))
 
-def gen_ctdb_version(task):
-    fp = open(task.outputs[0].bldpath(task.env), 'w')
-    fp.write('/* This file is auto-generated from waf */\n')
-    fp.write('#include "version.h"\n')
-    fp.write('\n')
-    fp.write('#define CTDB_VERSION_STRING "%s"\n' % get_version_string())
-    fp.close()
-
-
 def build(bld):
     if bld.env.standalone_ctdb:
         # enable building of public headers in the build tree
@@ -356,12 +347,6 @@ def build(bld):
 
     if bld.env.standalone_ctdb:
         bld.SAMBA_MKVERSION('version.h', '%s/VERSION' % vdir)
-
-    t = bld.SAMBA_GENERATOR('ctdb-version-header',
-                            target='include/ctdb_version.h',
-                            rule=gen_ctdb_version,
-                            dep_vars=['VERSION'])
-    t.env.VERSION = get_version_string()
 
     bld.env.PKGCONFIGDIR = '${LIBDIR}/pkgconfig'
 
