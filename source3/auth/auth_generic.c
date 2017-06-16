@@ -22,6 +22,8 @@
 */
 
 #include "includes.h"
+#include <tevent.h>
+#include "../lib/util/tevent_ntstatus.h"
 #include "auth.h"
 #include "../lib/tsocket/tsocket.h"
 #include "auth/gensec/gensec.h"
@@ -413,14 +415,47 @@ NTSTATUS auth_check_password_session_info(struct auth4_context *auth_context,
 	void *server_info;
 	uint8_t authoritative = 0;
 
-	nt_status = auth_context->check_ntlm_password(auth_context,
-						      talloc_tos(),
-						      user_info,
-						      &authoritative,
-						      &server_info, NULL, NULL);
+	if (auth_context->check_ntlm_password_send != NULL) {
+		struct tevent_context *ev = NULL;
+		struct tevent_req *subreq = NULL;
+		bool ok;
 
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		return nt_status;
+		ev = samba_tevent_context_init(talloc_tos());
+		if (ev == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		subreq = auth_context->check_ntlm_password_send(ev, ev,
+								auth_context,
+								user_info);
+		if (subreq == NULL) {
+			TALLOC_FREE(ev);
+			return NT_STATUS_NO_MEMORY;
+		}
+		ok = tevent_req_poll_ntstatus(subreq, ev, &nt_status);
+		if (!ok) {
+			TALLOC_FREE(ev);
+			return nt_status;
+		}
+		nt_status = auth_context->check_ntlm_password_recv(subreq,
+								   talloc_tos(),
+								   &authoritative,
+								   &server_info,
+								   NULL, NULL);
+		TALLOC_FREE(ev);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			return nt_status;
+		}
+	} else {
+		nt_status = auth_context->check_ntlm_password(auth_context,
+							      talloc_tos(),
+							      user_info,
+							      &authoritative,
+							      &server_info,
+							      NULL, NULL);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			return nt_status;
+		}
 	}
 
 	nt_status = auth_context->generate_session_info(auth_context,
