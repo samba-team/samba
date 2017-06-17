@@ -87,6 +87,9 @@ struct messaging_context {
 
 static struct messaging_rec *messaging_rec_dup(TALLOC_CTX *mem_ctx,
 					       struct messaging_rec *rec);
+static bool messaging_dispatch_waiters(struct messaging_context *msg_ctx,
+				       struct tevent_context *ev,
+				       struct messaging_rec *rec);
 static void messaging_dispatch_rec(struct messaging_context *msg_ctx,
 				   struct tevent_context *ev,
 				   struct messaging_rec *rec);
@@ -966,32 +969,14 @@ static bool messaging_dispatch_classic(struct messaging_context *msg_ctx,
 	return false;
 }
 
-/*
-  Dispatch one messaging_rec
-*/
-static void messaging_dispatch_rec(struct messaging_context *msg_ctx,
-				   struct tevent_context *ev,
-				   struct messaging_rec *rec)
+static bool messaging_dispatch_waiters(struct messaging_context *msg_ctx,
+				       struct tevent_context *ev,
+				       struct messaging_rec *rec)
 {
 	size_t i;
-	bool consumed;
-
-	if (ev == msg_ctx->event_ctx) {
-		consumed = messaging_dispatch_classic(msg_ctx, rec);
-		if (consumed) {
-			return;
-		}
-	}
 
 	if (!messaging_append_new_waiters(msg_ctx)) {
-		size_t j;
-		for (j=0; j < rec->num_fds; j++) {
-			int fd = rec->fds[j];
-			close(fd);
-		}
-		rec->num_fds = 0;
-		rec->fds = NULL;
-		return;
+		return false;
 	}
 
 	i = 0;
@@ -1022,10 +1007,35 @@ static void messaging_dispatch_rec(struct messaging_context *msg_ctx,
 		if ((ev == state->ev) &&
 		    state->filter(rec, state->private_data)) {
 			messaging_filtered_read_done(req, rec);
-			return;
+			return true;
 		}
 
 		i += 1;
+	}
+
+	return false;
+}
+
+/*
+  Dispatch one messaging_rec
+*/
+static void messaging_dispatch_rec(struct messaging_context *msg_ctx,
+				   struct tevent_context *ev,
+				   struct messaging_rec *rec)
+{
+	bool consumed;
+	size_t i;
+
+	if (ev == msg_ctx->event_ctx) {
+		consumed = messaging_dispatch_classic(msg_ctx, rec);
+		if (consumed) {
+			return;
+		}
+	}
+
+	consumed = messaging_dispatch_waiters(msg_ctx, ev, rec);
+	if (consumed) {
+		return;
 	}
 
 	if (ev != msg_ctx->event_ctx) {
