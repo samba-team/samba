@@ -122,7 +122,7 @@ bool run_messaging_read1(int dummy)
 		goto fail;
 	}
 
-	for (i=0; i<3; i++) {
+	for (i=0; i<2; i++) {
 		if (tevent_loop_once(ev) != 0) {
 			fprintf(stderr, "tevent_loop_once failed\n");
 			goto fail;
@@ -131,8 +131,8 @@ bool run_messaging_read1(int dummy)
 
 	printf("%u/%u\n", count1, count2);
 
-	if ((count1 != 1) || (count2 != 1)){
-		fprintf(stderr, "Got %u/%u msgs, expected 1 each\n",
+	if ((count1 != 1) || (count2 != 0)) {
+		fprintf(stderr, "Got %u/%u msgs, expected 1/0\n",
 			count1, count2);
 		goto fail;
 	}

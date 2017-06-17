@@ -1015,7 +1015,7 @@ static bool messaging_append_new_waiters(struct messaging_context *msg_ctx)
 	return true;
 }
 
-static void messaging_dispatch_classic(struct messaging_context *msg_ctx,
+static bool messaging_dispatch_classic(struct messaging_context *msg_ctx,
 				       struct messaging_rec *rec)
 {
 	struct messaging_callback *cb, *next;
@@ -1041,13 +1041,10 @@ static void messaging_dispatch_classic(struct messaging_context *msg_ctx,
 		cb->fn(msg_ctx, cb->private_data, rec->msg_type,
 		       rec->src, &rec->buf);
 
-		/*
-		 * we continue looking for matching messages after finding
-		 * one. This matters for subsystems like the internal notify
-		 * code which register more than one handler for the same
-		 * message type
-		 */
+		return true;
 	}
+
+	return false;
 }
 
 /*
@@ -1058,9 +1055,13 @@ static void messaging_dispatch_rec(struct messaging_context *msg_ctx,
 				   struct messaging_rec *rec)
 {
 	size_t i;
+	bool consumed;
 
 	if (ev == msg_ctx->event_ctx) {
-		messaging_dispatch_classic(msg_ctx, rec);
+		consumed = messaging_dispatch_classic(msg_ctx, rec);
+		if (consumed) {
+			return;
+		}
 	}
 
 	if (!messaging_append_new_waiters(msg_ctx)) {
@@ -1102,12 +1103,7 @@ static void messaging_dispatch_rec(struct messaging_context *msg_ctx,
 		if ((ev == state->ev) &&
 		    state->filter(rec, state->private_data)) {
 			messaging_filtered_read_done(req, rec);
-
-			/*
-			 * Only the first one gets the fd-array
-			 */
-			rec->num_fds = 0;
-			rec->fds = NULL;
+			return;
 		}
 
 		i += 1;
