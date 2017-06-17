@@ -159,6 +159,8 @@ interface messaging
 	/* messaging struct sent across the sockets and stored in the tdb */
 
 	typedef [public] struct {
+		[skip] messaging_rec *prev;
+		[skip] messaging_rec *next;
 		uint32 msg_version;
 		messaging_type msg_type;
 		server_id dest;
