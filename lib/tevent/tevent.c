@@ -616,16 +616,7 @@ struct tevent_immediate *_tevent_create_immediate(TALLOC_CTX *mem_ctx,
 	im = talloc(mem_ctx, struct tevent_immediate);
 	if (im == NULL) return NULL;
 
-	im->prev		= NULL;
-	im->next		= NULL;
-	im->event_ctx		= NULL;
-	im->create_location	= location;
-	im->handler		= NULL;
-	im->private_data	= NULL;
-	im->handler_name	= NULL;
-	im->schedule_location	= NULL;
-	im->cancel_fn		= NULL;
-	im->additional_data	= NULL;
+	*im = (struct tevent_immediate) { .create_location = location };
 
 	return im;
 }
