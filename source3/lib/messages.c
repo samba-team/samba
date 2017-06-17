@@ -73,10 +73,10 @@ struct messaging_context {
 	struct messaging_callback *callbacks;
 
 	struct tevent_req **new_waiters;
-	unsigned num_new_waiters;
+	size_t num_new_waiters;
 
 	struct tevent_req **waiters;
-	unsigned num_waiters;
+	size_t num_waiters;
 
 	void *msg_dgm_ref;
 	struct messaging_backend *remote;
@@ -212,7 +212,7 @@ close_fail:
 
 static int messaging_context_destructor(struct messaging_context *ctx)
 {
-	unsigned i;
+	size_t i;
 
 	for (i=0; i<ctx->num_new_waiters; i++) {
 		if (ctx->new_waiters[i] != NULL) {
@@ -768,7 +768,7 @@ static void messaging_filtered_read_cleanup(struct tevent_req *req,
 	struct messaging_filtered_read_state *state = tevent_req_data(
 		req, struct messaging_filtered_read_state);
 	struct messaging_context *msg_ctx = state->msg_ctx;
-	unsigned i;
+	size_t i;
 
 	tevent_req_set_cleanup_fn(req, NULL);
 
@@ -1056,14 +1056,14 @@ static void messaging_dispatch_rec(struct messaging_context *msg_ctx,
 				   struct tevent_context *ev,
 				   struct messaging_rec *rec)
 {
-	unsigned i;
-	size_t j;
+	size_t i;
 
 	if (ev == msg_ctx->event_ctx) {
 		messaging_dispatch_classic(msg_ctx, rec);
 	}
 
 	if (!messaging_append_new_waiters(msg_ctx)) {
+		size_t j;
 		for (j=0; j < rec->num_fds; j++) {
 			int fd = rec->fds[j];
 			close(fd);
@@ -1141,8 +1141,8 @@ static void messaging_dispatch_rec(struct messaging_context *msg_ctx,
 	/*
 	 * If the fd-array isn't used, just close it.
 	 */
-	for (j=0; j < rec->num_fds; j++) {
-		int fd = rec->fds[j];
+	for (i=0; i < rec->num_fds; i++) {
+		int fd = rec->fds[i];
 		close(fd);
 	}
 	rec->num_fds = 0;
