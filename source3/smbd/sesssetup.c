@@ -937,9 +937,8 @@ void reply_sesssetup_and_X(struct smb_request *req)
 				nt_status = NT_STATUS_NO_MEMORY;
 			}
 
-			user_info->auth_description = "plaintext";
-
 			if (NT_STATUS_IS_OK(nt_status)) {
+				user_info->auth_description = "plaintext";
 				nt_status = auth_check_password_session_info(plaintext_auth_context, 
 									     req, user_info, &session_info);
 			}
