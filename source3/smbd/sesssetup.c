@@ -557,6 +557,8 @@ static void setup_new_vc_session(struct smbd_server_connection *sconn)
 
 struct reply_sesssetup_and_X_state {
 	struct smb_request *req;
+	struct auth4_context *auth_context;
+	struct auth_usersupplied_info *user_info;
 	const char *user;
 	const char *domain;
 	DATA_BLOB lm_resp;
@@ -583,7 +585,6 @@ void reply_sesssetup_and_X(struct smb_request *req)
 	const char *native_os;
 	const char *native_lanman;
 	const char *primary_domain;
-	struct auth_usersupplied_info *user_info = NULL;
 	struct auth_session_info *session_info = NULL;
 	uint16_t smb_flag2 = req->flags2;
 	uint16_t action = 0;
@@ -871,37 +872,29 @@ void reply_sesssetup_and_X(struct smb_request *req)
 	reload_services(sconn, conn_snum_used, true);
 
 	if (!*state->user) {
-		struct auth4_context *auth_context = NULL;
-
 		DEBUG(3,("Got anonymous request\n"));
 
-		nt_status = make_auth4_context(state, &auth_context);
+		nt_status = make_auth4_context(state, &state->auth_context);
 		if (NT_STATUS_IS_OK(nt_status)) {
 			uint8_t chal[8];
 
-			auth_context->get_ntlm_challenge(auth_context,
-							 chal);
+			state->auth_context->get_ntlm_challenge(
+					state->auth_context, chal);
 
 			if (!make_user_info_guest(state,
 						  sconn->remote_address,
 						  sconn->local_address,
-						  "SMB", &user_info)) {
+						  "SMB", &state->user_info)) {
 				nt_status =  NT_STATUS_NO_MEMORY;
 			}
 
 			if (NT_STATUS_IS_OK(nt_status)) {
-				user_info->auth_description = "guest";
-				nt_status = auth_check_password_session_info(
-								auth_context,
-								req, user_info,
-								&session_info);
+				state->user_info->auth_description = "guest";
 			}
-			TALLOC_FREE(auth_context);
 		}
 	} else if (doencrypt) {
-		struct auth4_context *negprot_auth_context = NULL;
-		negprot_auth_context = xconn->smb1.negprot.auth_context;
-		if (!negprot_auth_context) {
+		state->auth_context = xconn->smb1.negprot.auth_context;
+		if (state->auth_context == NULL) {
 			DEBUG(0, ("reply_sesssetup_and_X:  Attempted encrypted "
 				"session setup without negprot denied!\n"));
 			reply_nterror(req, nt_status_squash(
@@ -910,7 +903,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 			return;
 		}
 		nt_status = make_user_info_for_reply_enc(state,
-							 &user_info,
+							 &state->user_info,
 							 state->user,
 							 state->domain,
 							 sconn->remote_address,
@@ -920,24 +913,18 @@ void reply_sesssetup_and_X(struct smb_request *req)
 							 state->nt_resp);
 
 		if (NT_STATUS_IS_OK(nt_status)) {
-			user_info->auth_description = "bare-NTLM";
-			nt_status = auth_check_password_session_info(negprot_auth_context, 
-								     req, user_info, &session_info);
+			state->user_info->auth_description = "bare-NTLM";
 		}
 	} else {
-		struct auth4_context *plaintext_auth_context = NULL;
-
-		nt_status = make_auth4_context(
-			state, &plaintext_auth_context);
-
+		nt_status = make_auth4_context(state, &state->auth_context);
 		if (NT_STATUS_IS_OK(nt_status)) {
 			uint8_t chal[8];
 
-			plaintext_auth_context->get_ntlm_challenge(
-					plaintext_auth_context, chal);
+			state->auth_context->get_ntlm_challenge(
+					state->auth_context, chal);
 
 			if (!make_user_info_for_reply(state,
-						      &user_info,
+						      &state->user_info,
 						      state->user,
 						      state->domain,
 						      sconn->remote_address,
@@ -949,16 +936,21 @@ void reply_sesssetup_and_X(struct smb_request *req)
 			}
 
 			if (NT_STATUS_IS_OK(nt_status)) {
-				user_info->auth_description = "plaintext";
-				nt_status = auth_check_password_session_info(plaintext_auth_context, 
-									     req, user_info, &session_info);
+				state->user_info->auth_description = "plaintext";
 			}
-			TALLOC_FREE(plaintext_auth_context);
 		}
 	}
 
-	TALLOC_FREE(user_info);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		reply_nterror(req, nt_status_squash(nt_status));
+		END_PROFILE(SMBsesssetupX);
+		return;
+	}
 
+	nt_status = auth_check_password_session_info(state->auth_context,
+						     req, state->user_info,
+						     &session_info);
+	TALLOC_FREE(state->user_info);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		reply_nterror(req, nt_status_squash(nt_status));
 		END_PROFILE(SMBsesssetupX);
