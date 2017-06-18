@@ -2673,7 +2673,7 @@ static WERROR becomeDC_drsuapi_pull_partition_recv(struct libnet_BecomeDC_state 
 						   struct libnet_BecomeDC_Partition *partition,
 						   struct drsuapi_DsGetNCChanges *r)
 {
-	uint32_t req_level = 0;
+	uint32_t req_level = r->in.level;
 	struct drsuapi_DsGetNCChangesRequest5 *req5 = NULL;
 	struct drsuapi_DsGetNCChangesRequest8 *req8 = NULL;
 	struct drsuapi_DsGetNCChangesRequest10 *req10 = NULL;
