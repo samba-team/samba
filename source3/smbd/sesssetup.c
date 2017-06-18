@@ -75,45 +75,6 @@ static int push_signature(uint8_t **outbuf)
 }
 
 /****************************************************************************
- Do a 'guest' logon, getting back the
-****************************************************************************/
-
-static NTSTATUS check_guest_password(const struct tsocket_address *remote_address,
-				     const struct tsocket_address *local_address,
-				     TALLOC_CTX *mem_ctx, 
-				     struct auth_session_info **session_info)
-{
-	struct auth4_context *auth_context;
-	struct auth_usersupplied_info *user_info = NULL;
-	uint8_t chal[8];
-	NTSTATUS nt_status;
-
-	DEBUG(3,("Got anonymous request\n"));
-
-	nt_status = make_auth4_context(talloc_tos(), &auth_context);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		return nt_status;
-	}
-
-	auth_context->get_ntlm_challenge(auth_context,
-					 chal);
-
-	if (!make_user_info_guest(talloc_tos(), remote_address, local_address,
-				  "SMB", &user_info)) {
-		TALLOC_FREE(auth_context);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	user_info->auth_description = "guest";
-
-	nt_status = auth_check_password_session_info(auth_context, 
-						     mem_ctx, user_info, session_info);
-	TALLOC_FREE(user_info);
-	TALLOC_FREE(auth_context);
-	return nt_status;
-}
-
-/****************************************************************************
  Reply to a session setup command.
  conn POINTER CAN BE NULL HERE !
 ****************************************************************************/
@@ -885,11 +846,33 @@ void reply_sesssetup_and_X(struct smb_request *req)
 	reload_services(sconn, conn_snum_used, true);
 
 	if (!*user) {
+		struct auth4_context *auth_context = NULL;
 
-		nt_status = check_guest_password(sconn->remote_address,
-						 sconn->local_address,
-						 req, &session_info);
+		DEBUG(3,("Got anonymous request\n"));
 
+		nt_status = make_auth4_context(talloc_tos(), &auth_context);
+		if (NT_STATUS_IS_OK(nt_status)) {
+			uint8_t chal[8];
+
+			auth_context->get_ntlm_challenge(auth_context,
+							 chal);
+
+			if (!make_user_info_guest(talloc_tos(),
+						  sconn->remote_address,
+						  sconn->local_address,
+						  "SMB", &user_info)) {
+				nt_status =  NT_STATUS_NO_MEMORY;
+			}
+
+			if (NT_STATUS_IS_OK(nt_status)) {
+				user_info->auth_description = "guest";
+				nt_status = auth_check_password_session_info(
+								auth_context,
+								req, user_info,
+								&session_info);
+			}
+			TALLOC_FREE(auth_context);
+		}
 	} else if (doencrypt) {
 		struct auth4_context *negprot_auth_context = NULL;
 		negprot_auth_context = xconn->smb1.negprot.auth_context;
