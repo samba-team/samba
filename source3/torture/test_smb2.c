@@ -246,40 +246,12 @@ bool run_smb2_negprot(int dummy)
 	}
 
 	protocol = smbXcli_conn_protocol(cli->conn);
+	name = smb_protocol_types_string(protocol);
 
-	switch (protocol) {
-	case PROTOCOL_SMB2_02:
-		name = "SMB2_02";
-		break;
-	case PROTOCOL_SMB2_10:
-		name = "SMB2_10";
-		break;
-	case PROTOCOL_SMB2_22:
-		name = "SMB2_22";
-		break;
-	case PROTOCOL_SMB2_24:
-		name = "SMB2_24";
-		break;
-	case PROTOCOL_SMB3_00:
-		name = "SMB3_00";
-		break;
-	case PROTOCOL_SMB3_02:
-		name = "SMB3_02";
-		break;
-	case PROTOCOL_SMB3_10:
-		name = "SMB3_10";
-		break;
-	case PROTOCOL_SMB3_11:
-		name = "SMB3_11";
-		break;
-	default:
-		break;
-	}
-
-	if (name) {
+	if (protocol >= PROTOCOL_SMB2_02) {
 		printf("Server supports %s\n", name);
 	} else {
-		printf("Server DOES NOT support SMB2\n");
+		printf("Server DOES NOT support SMB2, only %s\n", name);
 		return false;
 	}
 
