@@ -1505,6 +1505,8 @@ NTSTATUS make_server_info_wbcAuthUserInfo(TALLOC_CTX *mem_ctx,
 /**
  * Verify whether or not given domain is trusted.
  *
+ * This should only be used on a DC.
+ *
  * @param domain_name name of the domain to be verified
  * @return true if domain is one of the trusted ones or
  *         false if otherwise
@@ -1512,13 +1514,11 @@ NTSTATUS make_server_info_wbcAuthUserInfo(TALLOC_CTX *mem_ctx,
 
 bool is_trusted_domain(const char* dom_name)
 {
-	struct dom_sid trustdom_sid;
 	bool ret;
 
-	/* no trusted domains for a standalone server */
-
-	if ( lp_server_role() == ROLE_STANDALONE )
+	if (!IS_DC) {
 		return false;
+	}
 
 	if (dom_name == NULL || dom_name[0] == '\0') {
 		return false;
@@ -1528,52 +1528,13 @@ bool is_trusted_domain(const char* dom_name)
 		return false;
 	}
 
-	/* if we are a DC, then check for a direct trust relationships */
+	become_root();
+	DEBUG (5,("is_trusted_domain: Checking for domain trust with "
+		  "[%s]\n", dom_name ));
+	ret = pdb_get_trusteddom_pw(dom_name, NULL, NULL, NULL);
+	unbecome_root();
 
-	if ( IS_DC ) {
-		become_root();
-		DEBUG (5,("is_trusted_domain: Checking for domain trust with "
-			  "[%s]\n", dom_name ));
-		ret = pdb_get_trusteddom_pw(dom_name, NULL, NULL, NULL);
-		unbecome_root();
-		if (ret)
-			return true;
-	}
-	else {
-		wbcErr result;
-
-		/* If winbind is around, ask it */
-
-		result = wb_is_trusted_domain(dom_name);
-
-		if (result == WBC_ERR_SUCCESS) {
-			return true;
-		}
-
-		if (result == WBC_ERR_DOMAIN_NOT_FOUND) {
-			/* winbind could not find the domain */
-			return false;
-		}
-
-		DEBUG(10, ("wb_is_trusted_domain returned error: %s\n",
-			  wbcErrorString(result)));
-
-		/* The only other possible result is that winbind is not up
-		   and running. We need to update the trustdom_cache
-		   ourselves */
-
-		update_trustdom_cache();
-	}
-
-	/* now the trustdom cache should be available a DC could still
-	 * have a transitive trust so fall back to the cache of trusted
-	 * domains (like a domain member would use  */
-
-	if ( trustdom_cache_fetch(dom_name, &trustdom_sid) ) {
-		return true;
-	}
-
-	return false;
+	return ret;
 }
 
 
