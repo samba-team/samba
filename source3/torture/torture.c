@@ -328,7 +328,7 @@ static bool torture_open_connection_share(struct cli_state **c,
 				   const char *hostname, 
 				   const char *sharename)
 {
-	int flags = 0;
+	int flags = CLI_FULL_CONNECTION_FORCE_SMB1;
 	NTSTATUS status;
 
 	if (use_oplocks)
