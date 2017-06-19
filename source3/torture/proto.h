@@ -65,6 +65,7 @@ bool torture_nttrans_scan(int dummy);
 
 bool smbcli_parse_unc(const char *unc_name, TALLOC_CTX *mem_ctx,
 		      char **hostname, char **sharename);
+bool torture_open_connection_flags(struct cli_state **c, int conn_index, int flags);
 bool torture_open_connection(struct cli_state **c, int conn_index);
 bool torture_init_connection(struct cli_state **pcli);
 bool torture_cli_session_setup2(struct cli_state *cli, uint16_t *new_vuid);

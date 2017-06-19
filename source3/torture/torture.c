@@ -356,19 +356,11 @@ static bool torture_open_connection_share(struct cli_state **c,
 	return True;
 }
 
-bool torture_open_connection(struct cli_state **c, int conn_index)
+bool torture_open_connection_flags(struct cli_state **c, int conn_index, int flags)
 {
 	char **unc_list = NULL;
 	int num_unc_names = 0;
 	bool result;
-	int flags = CLI_FULL_CONNECTION_FORCE_SMB1;
-
-	if (use_oplocks) {
-		flags |= CLI_FULL_CONNECTION_OPLOCKS;
-	}
-	if (use_level_II_oplocks) {
-		flags |= CLI_FULL_CONNECTION_LEVEL_II_OPLOCKS;
-	}
 
 	if (use_multishare_conn==True) {
 		char *h, *s;
@@ -394,6 +386,20 @@ bool torture_open_connection(struct cli_state **c, int conn_index)
 	}
 
 	return torture_open_connection_share(c, host, share, flags);
+}
+
+bool torture_open_connection(struct cli_state **c, int conn_index)
+{
+	int flags = CLI_FULL_CONNECTION_FORCE_SMB1;
+
+	if (use_oplocks) {
+		flags |= CLI_FULL_CONNECTION_OPLOCKS;
+	}
+	if (use_level_II_oplocks) {
+		flags |= CLI_FULL_CONNECTION_LEVEL_II_OPLOCKS;
+	}
+
+	return torture_open_connection_flags(c, conn_index, flags);
 }
 
 bool torture_init_connection(struct cli_state **pcli)
