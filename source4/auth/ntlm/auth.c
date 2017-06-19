@@ -524,9 +524,9 @@ static NTSTATUS auth_generate_session_info_wrapper(struct auth4_context *auth_co
 
 	if ((session_info_flags & AUTH_SESSION_INFO_UNIX_TOKEN)
 	    && NT_STATUS_IS_OK(status)) {
-		status = auth_session_info_fill_unix(auth_context->event_ctx,
-						     auth_context->lp_ctx,
-						     original_user_name, *session_info);
+		status = auth_session_info_fill_unix(auth_context->lp_ctx,
+						     original_user_name,
+						     *session_info);
 		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(*session_info);
 		}
