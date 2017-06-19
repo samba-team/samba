@@ -89,11 +89,9 @@ WERROR dns_common_extract(struct ldb_context *samdb,
 	for (ri = 0; ri < el->num_values; ri++) {
 		bool am_rodc;
 		int ret;
-		const char *attrs[] = { "dnsHostName", NULL };
-		const char *dnsHostName;
+		const char *dnsHostName = NULL;
 		struct ldb_val *v = &el->values[ri];
 		enum ndr_err_code ndr_err;
-		struct ldb_result *res = NULL;
 		ndr_err = ndr_pull_struct_blob(v, recs, &recs[ri],
 				(ndr_pull_flags_fn_t)ndr_pull_dnsp_DnssrvRpcRecord);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -121,27 +119,13 @@ WERROR dns_common_extract(struct ldb_context *samdb,
 			continue;
 		}
 
-		ret = dsdb_search_dn(samdb, mem_ctx, &res, NULL,
-				     attrs, 0);
-
-		if (res->count != 1 || ret != LDB_SUCCESS) {
-			DEBUG(0, ("Failed to get rootDSE for dnsHostName: %s",
-				  ldb_errstring(samdb)));
-			return DNS_ERR(SERVER_FAILURE);
-		}
-
-		dnsHostName
-			= ldb_msg_find_attr_as_string(res->msgs[0],
-						      "dnsHostName",
-						      NULL);
-
-		if (dnsHostName == NULL) {
+		ret = samdb_dns_host_name(samdb, &dnsHostName);
+		if (ret != LDB_SUCCESS || dnsHostName == NULL) {
 			DEBUG(0, ("Failed to get dnsHostName from rootDSE"));
 			return DNS_ERR(SERVER_FAILURE);
 		}
 
-		recs[ri].data.soa.mname
-			= talloc_steal(recs, dnsHostName);
+		recs[ri].data.soa.mname = talloc_strdup(recs, dnsHostName);
 	}
 
 	*records = recs;
