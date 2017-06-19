@@ -3485,6 +3485,53 @@ int samdb_rodc(struct ldb_context *sam_ctx, bool *am_rodc)
 	return LDB_SUCCESS;
 }
 
+int samdb_dns_host_name(struct ldb_context *sam_ctx, const char **host_name)
+{
+	const char *_host_name = NULL;
+	const char *attrs[] = { "dnsHostName", NULL };
+	TALLOC_CTX *tmp_ctx = NULL;
+	int ret;
+	struct ldb_result *res = NULL;
+
+	_host_name = (const char *)ldb_get_opaque(sam_ctx, "cache.dns_host_name");
+	if (_host_name != NULL) {
+		*host_name = _host_name;
+		return LDB_SUCCESS;
+	}
+
+	tmp_ctx = talloc_new(sam_ctx);
+
+	ret = dsdb_search_dn(sam_ctx, tmp_ctx, &res, NULL, attrs, 0);
+
+	if (res->count != 1 || ret != LDB_SUCCESS) {
+		DEBUG(0, ("Failed to get rootDSE for dnsHostName: %s",
+			  ldb_errstring(sam_ctx)));
+		TALLOC_FREE(tmp_ctx);
+		return ret;
+	}
+
+
+	_host_name = ldb_msg_find_attr_as_string(res->msgs[0],
+						 "dnsHostName",
+						 NULL);
+	if (_host_name == NULL) {
+		DEBUG(0, ("Failed to get dnsHostName from rootDSE"));
+		TALLOC_FREE(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	ret = ldb_set_opaque(sam_ctx, "cache.dns_host_name",
+			     discard_const_p(char *, _host_name));
+	if (ret != LDB_SUCCESS) {
+		TALLOC_FREE(tmp_ctx);
+		return ldb_operr(sam_ctx);
+	}
+
+	*host_name = talloc_steal(sam_ctx, _host_name);
+
+	TALLOC_FREE(tmp_ctx);
+	return LDB_SUCCESS;
+}
+
 bool samdb_set_am_rodc(struct ldb_context *ldb, bool am_rodc)
 {
 	TALLOC_CTX *tmp_ctx;
