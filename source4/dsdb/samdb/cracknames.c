@@ -1378,15 +1378,13 @@ NTSTATUS crack_service_principal_name(struct ldb_context *sam_ctx,
 }
 
 NTSTATUS crack_name_to_nt4_name(TALLOC_CTX *mem_ctx, 
-				struct tevent_context *ev_ctx, 
-				struct loadparm_context *lp_ctx,
+				struct ldb_context *ldb,
 				enum drsuapi_DsNameFormat format_offered,
 				const char *name, 
 				const char **nt4_domain, const char **nt4_account)
 {
 	WERROR werr;
 	struct drsuapi_DsNameInfo1 info1;
-	struct ldb_context *ldb;
 	char *p;
 
 	/* Handle anonymous bind */
@@ -1394,11 +1392,6 @@ NTSTATUS crack_name_to_nt4_name(TALLOC_CTX *mem_ctx,
 		*nt4_domain = "";
 		*nt4_account = "";
 		return NT_STATUS_OK;
-	}
-
-	ldb = samdb_connect(mem_ctx, ev_ctx, lp_ctx, system_session(lp_ctx), 0);
-	if (ldb == NULL) {
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
 	werr = DsCrackNameOneName(ldb, mem_ctx, 0,
@@ -1447,6 +1440,7 @@ NTSTATUS crack_auto_name_to_nt4_name(TALLOC_CTX *mem_ctx,
 				     const char **nt4_domain,
 				     const char **nt4_account)
 {
+	struct ldb_context *ldb = NULL;
 	enum drsuapi_DsNameFormat format_offered = DRSUAPI_DS_NAME_FORMAT_UNKNOWN;
 
 	/* Handle anonymous bind */
@@ -1468,7 +1462,11 @@ NTSTATUS crack_auto_name_to_nt4_name(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	return crack_name_to_nt4_name(mem_ctx, ev_ctx, lp_ctx, format_offered, name, nt4_domain, nt4_account);
+	ldb = samdb_connect(mem_ctx, ev_ctx, lp_ctx, system_session(lp_ctx), 0);
+	if (ldb == NULL) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+	return crack_name_to_nt4_name(mem_ctx, ldb, format_offered, name, nt4_domain, nt4_account);
 }
 
 

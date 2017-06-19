@@ -263,7 +263,10 @@ static NTSTATUS dcesrv_lsa_lookup_name(struct tevent_context *ev_ctx,
 		}
 		username = p + 1;
 	} else if (strchr_m(name, '@')) {
-		status = crack_name_to_nt4_name(mem_ctx, ev_ctx, lp_ctx, DRSUAPI_DS_NAME_FORMAT_USER_PRINCIPAL, name, &domain, &username);
+		status = crack_name_to_nt4_name(mem_ctx,
+						state->sam_ldb,
+						DRSUAPI_DS_NAME_FORMAT_USER_PRINCIPAL,
+						name, &domain, &username);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3, ("Failed to crack name %s into an NT4 name: %s\n", name, nt_errstr(status)));
 			return status;

@@ -208,8 +208,7 @@ static NTSTATUS winbind_check_password(struct auth_method_context *ctx,
 			const char *nt4_account = NULL;
 
 			status = crack_name_to_nt4_name(mem_ctx,
-							ctx->auth_ctx->event_ctx,
-							ctx->auth_ctx->lp_ctx,
+							ctx->auth_ctx->sam_ctx,
 							DRSUAPI_DS_NAME_FORMAT_USER_PRINCIPAL,
 							account_name,
 							&nt4_domain, &nt4_account);

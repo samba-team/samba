@@ -648,8 +648,7 @@ static NTSTATUS authsam_check_password_internals(struct auth_method_context *ctx
 		bool is_my_domain = false;
 
 		nt_status = crack_name_to_nt4_name(mem_ctx,
-						   ctx->auth_ctx->event_ctx,
-						   ctx->auth_ctx->lp_ctx,
+						   ctx->auth_ctx->sam_ctx,
 						   /*
 						    * DRSUAPI_DS_NAME_FORMAT_UPN_FOR_LOGON ?
 						    */
