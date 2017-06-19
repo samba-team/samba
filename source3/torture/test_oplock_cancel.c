@@ -113,15 +113,22 @@ bool run_oplock_cancel(int dummy)
 	const char *fname = "oplock-cancel";
 	uint16_t fnum1;
 	NTSTATUS status;
+	/*
+	 * Currently this test seems to work only
+	 * with SMB2/3 and only against Samba.
+	 *
+	 * TODO: we should change our server
+	 * to ignore cancel for SMB2 Create
+	 * and behave like Windows.
+	 */
+	int flags = CLI_FULL_CONNECTION_DISABLE_SMB1;
 
-	lp_set_cmdline("client max protocol", "smb3");
-
-	if (!torture_open_connection(&cli1, 0)) {
+	if (!torture_open_connection_flags(&cli1, 0, flags)) {
 		return false;
 	}
 	cli1->use_oplocks = true;
 
-	if (!torture_open_connection(&cli2, 0)) {
+	if (!torture_open_connection_flags(&cli2, 0, flags)) {
 		return false;
 	}
 	cli2->use_oplocks = true;
