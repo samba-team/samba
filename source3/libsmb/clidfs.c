@@ -919,6 +919,13 @@ NTSTATUS cli_resolve_path(TALLOC_CTX *ctx,
 		root_tcon = rootcli->smb1.tcon;
 	}
 
+	/*
+	 * Avoid more than one leading directory separator
+	 */
+	while (IS_DIRECTORY_SEP(path[0]) && IS_DIRECTORY_SEP(path[1])) {
+		path++;
+	}
+
 	if (!smbXcli_tcon_is_dfs_share(root_tcon)) {
 		*targetcli = rootcli;
 		*pp_targetpath = talloc_strdup(ctx, path);
