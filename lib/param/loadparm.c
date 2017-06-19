@@ -2840,8 +2840,6 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 
 	lpcfg_do_global_parameter(lp_ctx, "guest account", GUEST_ACCOUNT);
 
-	lpcfg_do_global_parameter(lp_ctx, "map untrusted to domain", "auto");
-
 	lpcfg_do_global_parameter(lp_ctx, "client schannel", "auto");
 
 	lpcfg_do_global_parameter(lp_ctx, "smb encrypt", "default");

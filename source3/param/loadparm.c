@@ -867,7 +867,6 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 
 	Globals.min_receivefile_size = 0;
 
-	Globals.map_untrusted_to_domain = Auto;
 	Globals.multicast_dns_register = true;
 
 	Globals.smb2_max_read = DEFAULT_SMB2_MAX_READ;
