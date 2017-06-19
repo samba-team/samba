@@ -2784,6 +2784,11 @@ static struct tevent_req *cli_start_connection_send(
 		state->max_protocol = MIN(state->max_protocol, PROTOCOL_NT1);
 	}
 
+	if (flags & CLI_FULL_CONNECTION_DISABLE_SMB1) {
+		state->min_protocol = MAX(state->max_protocol, PROTOCOL_SMB2_02);
+		state->max_protocol = MAX(state->max_protocol, PROTOCOL_LATEST);
+	}
+
 	subreq = cli_connect_nb_send(state, ev, dest_host, dest_ss, port,
 				     0x20, my_name, signing_state, flags);
 	if (tevent_req_nomem(subreq, req)) {
