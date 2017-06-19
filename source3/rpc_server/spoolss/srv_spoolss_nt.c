@@ -2460,7 +2460,7 @@ static bool spoolss_connect_to_client(struct rpc_pipe_client **pp_pipe, struct c
 		return false;
 	}
 
-	if ( smbXcli_conn_protocol((*pp_cli)->conn) != PROTOCOL_NT1 ) {
+	if ( smbXcli_conn_protocol((*pp_cli)->conn) < PROTOCOL_NT1 ) {
 		DEBUG(0,("spoolss_connect_to_client: machine %s didn't negotiate NT protocol.\n", remote_machine));
 		cli_shutdown(*pp_cli);
 		return false;
