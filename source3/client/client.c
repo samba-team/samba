@@ -5646,16 +5646,21 @@ static int do_host_query(const char *query_host)
 		goto out;
 	}
 
-	if (port != NBT_SMB_PORT) {
+	if (port != NBT_SMB_PORT ||
+	    smbXcli_conn_protocol(cli->conn) > PROTOCOL_NT1)
+	{
+		int max_proto = MIN(max_protocol, PROTOCOL_NT1);
 
-		/* Workgroups simply don't make sense over anything
-		   else but port 139... */
+		/*
+		 * Workgroups simply don't make sense over anything
+		 * else but port 139 and SMB1.
+		 */
 
 		cli_shutdown(cli);
 		status = cli_cm_open(talloc_tos(), NULL,
 				     have_ip ? dest_ss_str : query_host,
 				     "IPC$", popt_get_cmdline_auth_info(),
-				     true, smb_encrypt, max_protocol,
+				     true, smb_encrypt, max_proto,
 				     NBT_SMB_PORT, name_type, &cli);
 		if (!NT_STATUS_IS_OK(status)) {
 			cli = NULL;
