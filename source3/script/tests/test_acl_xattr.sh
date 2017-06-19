@@ -37,9 +37,9 @@ nt_affects_posix() {
     local b4
     local af
     local fname="$share.$$"
-    b4=$($SMBCLIENT //$SERVER/$share -U $USERNAME%$PASSWORD -c "getfacl $fname" 2>/dev/null) || exit 1
+    b4=$($SMBCLIENT //$SERVER/$share -U $USERNAME%$PASSWORD -mNT1 -c "getfacl $fname" 2>/dev/null) || exit 1
     $SMBCACLS //$SERVER/$share $fname -U $USERNAME%$PASSWORD -a "ACL:$SERVER\force_user:ALLOWED/0x0/READ" 2>/dev/null || exit 1
-    af=$($SMBCLIENT //$SERVER/$share -U $USERNAME%$PASSWORD -c "getfacl $fname" 2>/dev/null) || exit 1
+    af=$($SMBCLIENT //$SERVER/$share -U $USERNAME%$PASSWORD -mNT1 -c "getfacl $fname" 2>/dev/null) || exit 1
     echo "before: $b4"
     echo "after: $af"
     if test "$expected" = "true" ; then
@@ -70,10 +70,10 @@ nt_affects_chown() {
     #basic sanity...
     test "$b4_expected != $af_expected" || exit 1
 
-    b4_actual=$($SMBCLIENT //$SERVER/$share -U $USERNAME%$PASSWORD -c "getfacl $fname" 2>/dev/null) || exit 1
+    b4_actual=$($SMBCLIENT //$SERVER/$share -U $USERNAME%$PASSWORD -mNT1 -c "getfacl $fname" 2>/dev/null) || exit 1
     b4_actual=$(echo "$b4_actual" | sed -rn 's/^# owner: (.*)/\1/p')
     $SMBCACLS //$SERVER/$share $fname -U $USERNAME%$PASSWORD -C force_user 2>/dev/null || exit 1
-    af_actual=$($SMBCLIENT //$SERVER/$share -U $USERNAME%$PASSWORD -c "getfacl $fname" 2>/dev/null) || exit 1
+    af_actual=$($SMBCLIENT //$SERVER/$share -U $USERNAME%$PASSWORD -mNT1 -c "getfacl $fname" 2>/dev/null) || exit 1
     af_actual=$(echo "$af_actual" | sed -rn 's/^# owner: (.*)/\1/p')
     echo "before: $b4_actual"
     echo "after: $af_actual"
@@ -101,10 +101,10 @@ nt_affects_chgrp() {
     #basic sanity...
     test "$b4_expected != $af_expected" || exit 1
 
-    b4_actual=$($SMBCLIENT //$SERVER/$share -U $USERNAME%$PASSWORD -c "getfacl $fname" 2>/dev/null) || exit 1
+    b4_actual=$($SMBCLIENT //$SERVER/$share -U $USERNAME%$PASSWORD -mNT1 -c "getfacl $fname" 2>/dev/null) || exit 1
     b4_actual=$(echo "$b4_actual" | sed -rn 's/^# group: (.*)/\1/p')
     $SMBCACLS //$SERVER/$share $fname -U $USERNAME%$PASSWORD -G domadmins 2>/dev/null || exit 1
-    af_actual=$($SMBCLIENT //$SERVER/$share -U $USERNAME%$PASSWORD -c "getfacl $fname" 2>/dev/null) || exit 1
+    af_actual=$($SMBCLIENT //$SERVER/$share -U $USERNAME%$PASSWORD -mNT1 -c "getfacl $fname" 2>/dev/null) || exit 1
     af_actual=$(echo "$af_actual" | sed -rn 's/^# group: (.*)/\1/p')
     echo "before: $b4_actual"
     echo "after: $af_actual"
