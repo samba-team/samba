@@ -748,20 +748,6 @@ _PUBLIC_ NTSTATUS auth_context_create_methods(TALLOC_CTX *mem_ctx, const char * 
 const char **auth_methods_from_lp(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
 {
 	char **auth_methods = NULL;
-	const char **const_auth_methods = NULL;
-
-	/*
-	 * As 'auth methods' is deprecated it will be removed
-	 * in future releases again, but for now give
-	 * admins the flexibility to configure, the behavior
-	 * from Samba 4.6: "auth methods = anonymous sam_ignoredomain",
-	 * for a while.
-	 */
-	const_auth_methods = lpcfg_auth_methods(lp_ctx);
-	if (const_auth_methods != NULL) {
-		DBG_NOTICE("using deprecated 'auth methods' values.\n");
-		return const_auth_methods;
-	}
 
 	switch (lpcfg_server_role(lp_ctx)) {
 	case ROLE_STANDALONE:
@@ -814,27 +800,15 @@ _PUBLIC_ NTSTATUS auth_context_create_for_netlogon(TALLOC_CTX *mem_ctx,
 	const char **auth_methods = NULL;
 
 	/*
-	 * As 'auth methods' is deprecated it will be removed
-	 * in future releases again, but for now give
-	 * admins the flexibility to configure, the behavior
-	 * from Samba 4.6: "auth methods = anonymous sam_ignoredomain",
-	 * for a while.
+	 * Here we only allow 'sam winbind' instead of
+	 * the 'anonymous sam winbind sam_ignoredomain'
+	 * we typically use for authentication from clients.
 	 */
-	auth_methods = lpcfg_auth_methods(lp_ctx);
-	if (auth_methods != NULL) {
-		DBG_NOTICE("using deprecated 'auth methods' values.\n");
-	} else {
-		/*
-		 * Here we only allow 'sam winbind' instead of
-		 * the 'anonymous sam winbind sam_ignoredomain'
-		 * we typically use for authentication from clients.
-		 */
-		_auth_methods = str_list_make(mem_ctx, "sam winbind", NULL);
-		if (_auth_methods == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		auth_methods = discard_const_p(const char *, _auth_methods);
+	_auth_methods = str_list_make(mem_ctx, "sam winbind", NULL);
+	if (_auth_methods == NULL) {
+		return NT_STATUS_NO_MEMORY;
 	}
+	auth_methods = discard_const_p(const char *, _auth_methods);
 
 	status = auth_context_create_methods(mem_ctx, auth_methods, ev, msg,
 					     lp_ctx, NULL, auth_ctx);
