@@ -247,6 +247,8 @@ void popt_common_credentials_set_delay_post(void)
 
 void popt_common_credentials_post(void)
 {
+	const char *username = NULL;
+
 	if (get_cmdline_auth_info_use_machine_account(cmdline_auth_info) &&
 	    !set_cmdline_auth_info_machine_account_creds(cmdline_auth_info))
 	{
@@ -256,6 +258,20 @@ void popt_common_credentials_post(void)
 	}
 
 	set_cmdline_auth_info_getpass(cmdline_auth_info);
+
+	/*
+	 * When we set the username during the handling of the options passed to
+	 * the binary we haven't loaded the config yet. This means that we
+	 * didnn't take the 'winbind separator' into account.
+	 *
+	 * The username might contain the domain name and thus it hasn't been
+	 * correctly parsed yet. If we have a username we need to set it again
+	 * to run the string parser for the username correctly.
+	 */
+	username = get_cmdline_auth_info_username(cmdline_auth_info);
+	if (username != NULL && username[0] != '\0') {
+		set_cmdline_auth_info_username(cmdline_auth_info, username);
+	}
 }
 
 static void popt_common_credentials_callback(poptContext con,
