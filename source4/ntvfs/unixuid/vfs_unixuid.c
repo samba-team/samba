@@ -156,9 +156,7 @@ static NTSTATUS nt_token_to_unix_security(struct ntvfs_module_context *ntvfs,
 					  struct security_token *token,
 					  struct security_unix_token **sec)
 {
-	return security_token_to_unix_token(req,
-					    ntvfs->ctx->event_ctx,
-					    token, sec);
+	return security_token_to_unix_token(req, token, sec);
 }
 
 /*

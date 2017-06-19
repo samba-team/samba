@@ -29,7 +29,6 @@
   form a security_unix_token from the current security_token
 */
 NTSTATUS security_token_to_unix_token(TALLOC_CTX *mem_ctx,
-				      struct tevent_context *ev,
 				      struct security_token *token,
 				      struct security_unix_token **sec)
 {
@@ -128,7 +127,7 @@ NTSTATUS auth_session_info_fill_unix(struct tevent_context *ev,
 {
 	char *su;
 	size_t len;
-	NTSTATUS status = security_token_to_unix_token(session_info, ev,
+	NTSTATUS status = security_token_to_unix_token(session_info,
 						       session_info->security_token,
 						       &session_info->unix_token);
 	if (!NT_STATUS_IS_OK(status)) {
