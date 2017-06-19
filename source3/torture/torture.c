@@ -1513,7 +1513,7 @@ static bool tcon_devtest(struct cli_state *cli,
 static bool run_tcon_devtype_test(int dummy)
 {
 	static struct cli_state *cli1 = NULL;
-	int flags = 0;
+	int flags = CLI_FULL_CONNECTION_FORCE_SMB1;
 	NTSTATUS status;
 	bool ret = True;
 
