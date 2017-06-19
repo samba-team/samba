@@ -6,6 +6,7 @@
 #include "replace.h"
 #include <talloc.h>
 #include "libcli/util/ntstatus.h"
+#include "smb_constants.h"
 #include "smb_util.h"
 
 static const uint8_t smb1_session_setup_bytes[] = {

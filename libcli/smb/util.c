@@ -23,6 +23,44 @@
 #include "libcli/smb/smb_common.h"
 #include "system/filesys.h"
 
+const char *smb_protocol_types_string(enum protocol_types protocol)
+{
+	switch (protocol) {
+	case PROTOCOL_DEFAULT:
+		return "DEFAULT";
+	case PROTOCOL_NONE:
+		return "NONE";
+	case PROTOCOL_CORE:
+		return "CORE";
+	case PROTOCOL_COREPLUS:
+		return "COREPLUS";
+	case PROTOCOL_LANMAN1:
+		return "LANMAN1";
+	case PROTOCOL_LANMAN2:
+		return "LANMAN2";
+	case PROTOCOL_NT1:
+		return "NT1";
+	case PROTOCOL_SMB2_02:
+		return "SMB2_02";
+	case PROTOCOL_SMB2_10:
+		return "SMB2_10";
+	case PROTOCOL_SMB2_22:
+		return "SMB2_22";
+	case PROTOCOL_SMB2_24:
+		return "SMB2_24";
+	case PROTOCOL_SMB3_00:
+		return "SMB3_00";
+	case PROTOCOL_SMB3_02:
+		return "SMB3_02";
+	case PROTOCOL_SMB3_10:
+		return "SMB3_10";
+	case PROTOCOL_SMB3_11:
+		return "SMB3_11";
+	}
+
+	return "Invalid protocol_types value";
+}
+
 /**
  Return a string representing a CIFS attribute for a file.
 **/
