@@ -326,15 +326,10 @@ bool smbcli_parse_unc(const char *unc_name, TALLOC_CTX *mem_ctx,
 
 static bool torture_open_connection_share(struct cli_state **c,
 				   const char *hostname, 
-				   const char *sharename)
+				   const char *sharename,
+				   int flags)
 {
-	int flags = CLI_FULL_CONNECTION_FORCE_SMB1;
 	NTSTATUS status;
-
-	if (use_oplocks)
-		flags |= CLI_FULL_CONNECTION_OPLOCKS;
-	if (use_level_II_oplocks)
-		flags |= CLI_FULL_CONNECTION_LEVEL_II_OPLOCKS;
 
 	status = cli_full_connection_creds(c,
 					   myname,
@@ -366,6 +361,14 @@ bool torture_open_connection(struct cli_state **c, int conn_index)
 	char **unc_list = NULL;
 	int num_unc_names = 0;
 	bool result;
+	int flags = CLI_FULL_CONNECTION_FORCE_SMB1;
+
+	if (use_oplocks) {
+		flags |= CLI_FULL_CONNECTION_OPLOCKS;
+	}
+	if (use_level_II_oplocks) {
+		flags |= CLI_FULL_CONNECTION_LEVEL_II_OPLOCKS;
+	}
 
 	if (use_multishare_conn==True) {
 		char *h, *s;
@@ -383,14 +386,14 @@ bool torture_open_connection(struct cli_state **c, int conn_index)
 			exit(1);
 		}
 
-		result = torture_open_connection_share(c, h, s);
+		result = torture_open_connection_share(c, h, s, flags);
 
 		/* h, s were copied earlier */
 		TALLOC_FREE(unc_list);
 		return result;
 	}
 
-	return torture_open_connection_share(c, host, share);
+	return torture_open_connection_share(c, host, share, flags);
 }
 
 bool torture_init_connection(struct cli_state **pcli)
