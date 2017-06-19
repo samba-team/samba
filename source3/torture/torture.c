@@ -7963,10 +7963,11 @@ static bool run_chain2(int dummy)
 	struct tevent_req *reqs[2], *smbreqs[2];
 	bool done = false;
 	NTSTATUS status;
+	int flags = CLI_FULL_CONNECTION_FORCE_SMB1;
 
 	printf("starting chain2 test\n");
 	status = cli_start_connection(&cli1, lp_netbios_name(), host, NULL,
-				      port_to_use, SMB_SIGNING_DEFAULT, 0);
+				      port_to_use, SMB_SIGNING_DEFAULT, flags);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
