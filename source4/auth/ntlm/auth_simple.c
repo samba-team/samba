@@ -105,8 +105,8 @@ _PUBLIC_ struct tevent_req *authenticate_ldap_simple_bind_send(TALLOC_CTX *mem_c
 		MSV1_0_CLEARTEXT_PASSWORD_ALLOWED |
 		MSV1_0_CLEARTEXT_PASSWORD_SUPPLIED;
 
-	status = crack_auto_name_to_nt4_name(state, ev, lp_ctx, dn,
-					     &nt4_domain, &nt4_username);
+	status = crack_auto_name_to_nt4_name(state, state->auth_context->sam_ctx,
+					     dn, &nt4_domain, &nt4_username);
 	if (!NT_STATUS_IS_OK(status)) {
 		log_authentication_event(msg, lp_ctx,
 					 user_info, status,
