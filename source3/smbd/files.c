@@ -552,9 +552,7 @@ void file_free(struct smb_request *req, files_struct *fsp)
 	 * Clear all possible chained fsp
 	 * pointers in the SMB2 request queue.
 	 */
-	if (req != NULL && req->smb2req) {
-		remove_smb2_chained_fsp(fsp);
-	}
+	remove_smb2_chained_fsp(fsp);
 
 	/* Drop all remaining extensions. */
 	vfs_remove_all_fsp_extensions(fsp);
