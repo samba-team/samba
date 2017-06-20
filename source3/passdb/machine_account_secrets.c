@@ -92,7 +92,7 @@ bool secrets_clear_domain_protection(const char *domain)
 	
 	if (protection) {
 		SAFE_FREE(protection);
-		ret = secrets_delete(protect_ids_keystr(domain));
+		ret = secrets_delete_entry(protect_ids_keystr(domain));
 		if (!ret) {
 			DEBUG(0, ("Failed to remove Domain IDs protection\n"));
 		}
@@ -381,7 +381,7 @@ static bool secrets_delete_prev_machine_password(const char *domain)
 		return true;
 	}
 	SAFE_FREE(oldpass);
-	return secrets_delete(machine_prev_password_keystr(domain));
+	return secrets_delete_entry(machine_prev_password_keystr(domain));
 }
 
 /************************************************************************
@@ -394,13 +394,13 @@ bool secrets_delete_machine_password_ex(const char *domain)
 	if (!secrets_delete_prev_machine_password(domain)) {
 		return false;
 	}
-	if (!secrets_delete(machine_password_keystr(domain))) {
+	if (!secrets_delete_entry(machine_password_keystr(domain))) {
 		return false;
 	}
-	if (!secrets_delete(machine_sec_channel_type_keystr(domain))) {
+	if (!secrets_delete_entry(machine_sec_channel_type_keystr(domain))) {
 		return false;
 	}
-	return secrets_delete(machine_last_change_time_keystr(domain));
+	return secrets_delete_entry(machine_last_change_time_keystr(domain));
 }
 
 /************************************************************************
@@ -409,7 +409,7 @@ bool secrets_delete_machine_password_ex(const char *domain)
 
 bool secrets_delete_domain_sid(const char *domain)
 {
-	return secrets_delete(domain_sid_keystr(domain));
+	return secrets_delete_entry(domain_sid_keystr(domain));
 }
 
 /************************************************************************
@@ -514,7 +514,7 @@ bool secrets_store_machine_pw_sync(const char *pass, const char *oldpass, const 
 		value = secrets_fetch(machine_sec_channel_type_keystr(domain), NULL);
 		if (value) {
 			SAFE_FREE(value);
-			ret = secrets_delete(machine_sec_channel_type_keystr(domain));
+			ret = secrets_delete_entry(machine_sec_channel_type_keystr(domain));
 			if (!ret) {
 				TALLOC_FREE(frame);
 				return ret;
@@ -600,7 +600,7 @@ bool kerberos_secrets_store_des_salt( const char* salt )
 
 	if ( !salt ) {
 		DEBUG(8,("kerberos_secrets_store_des_salt: deleting salt\n"));
-		secrets_delete( key );
+		secrets_delete_entry( key );
 		return True;
 	}
 

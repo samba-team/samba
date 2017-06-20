@@ -88,7 +88,7 @@ struct db_context *secrets_db_ctx(void);
 void secrets_shutdown(void);
 void *secrets_fetch(const char *key, size_t *size);
 bool secrets_store(const char *key, const void *data, size_t size);
-bool secrets_delete(const char *key);
+bool secrets_delete_entry(const char *key);
 
 /* The following definitions come from passdb/machine_account_secrets.c */
 bool secrets_mark_domain_protected(const char *domain);
