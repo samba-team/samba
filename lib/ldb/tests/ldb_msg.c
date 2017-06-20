@@ -84,7 +84,8 @@ static void test_ldb_msg_find_duplicate_val(void **state)
 	struct ldb_val dummy;
 	struct ldb_val *dupe = &dummy;  /* so we can tell it was modified to NULL, not left as NULL */
 
-	ldb_msg_add_empty(msg, "el1", 0, &el);
+	ret = ldb_msg_add_empty(msg, "el1", 0, &el);
+	assert_int_equal(ret, LDB_SUCCESS);
 
 	for (i = 0; i < 5; i++) {
 		add_uint_value(test_ctx, msg, "el1", i);
