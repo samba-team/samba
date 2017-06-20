@@ -2,9 +2,9 @@
 
 # this runs the file serving tests that are expected to pass with samba3
 
-if [ $# -lt 11 ]; then
+if [ $# -lt 13 ]; then
 cat <<EOF
-Usage: test_smbclient_s3.sh SERVER SERVER_IP DOMAIN USERNAME PASSWORD USERID LOCAL_PATH PREFIX SMBCLIENT WBINFO NET
+Usage: test_smbclient_s3.sh SERVER SERVER_IP DOMAIN USERNAME PASSWORD USERID LOCAL_PATH PREFIX SMBCLIENT WBINFO NET CONFIGURATION PROTOCOL
 EOF
 exit 1;
 fi
@@ -20,10 +20,13 @@ PREFIX="${8}"
 SMBCLIENT="${9}"
 WBINFO="${10}"
 NET="${11}"
+CONFIGURATION="${12}"
+PROTOCOL="${13}"
 SMBCLIENT="$VALGRIND ${SMBCLIENT}"
 WBINFO="$VALGRIND ${WBINFO}"
-shift 11
-ADDARGS="$*"
+shift 13
+RAWARGS="${CONFIGURATION} -m${PROTOCOL}"
+ADDARGS="${RAWARGS} $*"
 
 incdir=`dirname $0`/../../../testprogs/blackbox
 . $incdir/subunit.sh
@@ -613,8 +616,7 @@ test_ccache_access()
 	return
     fi
 
-    $SMBCLIENT //$SERVER_IP/tmp -C -U "${USERNAME}" \
-	-c quit 2>&1
+    $SMBCLIENT //$SERVER_IP/tmp -C -U "${USERNAME}" $ADDARGS -c quit 2>&1
     ret=$?
 
     if [ $ret != 0 ] ; then
@@ -632,8 +634,7 @@ test_ccache_access()
 	return
     fi
 
-    $SMBCLIENT //$SERVER_IP/tmp -C -U "${USERNAME}" \
-	-c quit 2>&1
+    $SMBCLIENT //$SERVER_IP/tmp -C -U "${USERNAME}" $ADDARGS -c quit 2>&1
     ret=$?
 
     if [ $ret -eq 0 ] ; then
@@ -654,8 +655,7 @@ username=${USERNAME}
 password=${PASSWORD}
 domain=${DOMAIN}
 EOF
-    $SMBCLIENT //$SERVER_IP/tmp --authentication-file=$tmpfile \
-	-c quit 2>&1
+    $SMBCLIENT //$SERVER_IP/tmp --authentication-file=$tmpfile $ADDARGS -c quit 2>&1
     ret=$?
     rm $tmpfile
 
@@ -670,8 +670,7 @@ username=${USERNAME}
 password=xxxx
 domain=${DOMAIN}
 EOF
-    $SMBCLIENT //$SERVER_IP/tmp --authentication-file=$tmpfile\
-	-c quit 2>&1
+    $SMBCLIENT //$SERVER_IP/tmp --authentication-file=$tmpfile $ADDARGS -c quit 2>&1
     ret=$?
     rm $tmpfile
 
@@ -1258,8 +1257,8 @@ done
 LOGDIR=$(mktemp -d ${PREFIX}/${LOGDIR_PREFIX}_XXXXXX)
 
 
-testit "smbclient -L $SERVER_IP" $SMBCLIENT -L $SERVER_IP -N -p 139 || failed=`expr $failed + 1`
-testit "smbclient -L $SERVER -I $SERVER_IP" $SMBCLIENT -L $SERVER -I $SERVER_IP -N -p 139 -c quit || failed=`expr $failed + 1`
+testit "smbclient -L $SERVER_IP" $SMBCLIENT -L $SERVER_IP -N -p 139 ${RAWARGS} || failed=`expr $failed + 1`
+testit "smbclient -L $SERVER -I $SERVER_IP" $SMBCLIENT -L $SERVER -I $SERVER_IP -N -p 139 ${RAWARGS} -c quit || failed=`expr $failed + 1`
 
 testit "noninteractive smbclient does not prompt" \
     test_noninteractive_no_prompt || \
