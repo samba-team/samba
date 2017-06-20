@@ -541,6 +541,53 @@ static bool test_netlogon_extra_attrs(struct torture_context *tctx,
 	return true;
 }
 
+/*
+  Bug #11392: Huawei Unified Storage System S5500 V3 sends no NtVer
+  [MS-ADTS] Section 7.3.3.2 "Domain Controller Response to an LDAP Ping"
+*/
+static bool test_netlogon_huawei(struct torture_context *tctx,
+				      request_rootdse_t request_rootdse,
+				      void *conn)
+{
+	struct cldap_search io;
+	struct netlogon_samlogon_response n1;
+	NTSTATUS status;
+	const char *attrs[] = {
+		"netlogon",
+		NULL
+	};
+	struct ldb_message ldbmsg = { NULL, 0, NULL };
+
+	ZERO_STRUCT(io);
+	io.in.dest_address = NULL;
+	io.in.dest_port = 0;
+	io.in.timeout   = 2;
+	io.in.retries   = 2;
+
+	torture_comment(tctx, "Requesting netlogon without NtVer filter\n");
+	io.in.filter = talloc_asprintf(tctx, "(&(DnsDomain=%s))",
+				lpcfg_dnsdomain(tctx->lp_ctx));
+	torture_assert(tctx, io.in.filter != NULL, "OOM");
+	io.in.attributes = attrs;
+	status = request_rootdse(conn, tctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	torture_assert(tctx, io.out.response != NULL, "No Entries found.");
+	CHECK_VAL(io.out.response->num_attributes, 1);
+
+	ldbmsg.num_elements = io.out.response->num_attributes;
+	ldbmsg.elements = io.out.response->attributes;
+	torture_assert(tctx, ldb_msg_find_element(&ldbmsg, "netlogon") != NULL,
+		       "Attribute netlogon not found in Result Entry\n");
+
+	status = pull_netlogon_samlogon_response(
+			io.out.response->attributes[0].values,
+			tctx,
+			&n1);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VAL(n1.ntver, NETLOGON_NT_VERSION_1);
+
+	return true;
+}
 
 bool torture_netlogon_tcp(struct torture_context *tctx)
 {
@@ -609,6 +656,7 @@ bool torture_netlogon_udp(struct torture_context *tctx)
 	ret &= test_ldap_netlogon(tctx, udp_ldap_netlogon, cldap, host);
 	ret &= test_ldap_netlogon_flags(tctx, udp_ldap_netlogon, cldap, host);
 	ret &= test_netlogon_extra_attrs(tctx, udp_ldap_rootdse, cldap);
+	ret &= test_netlogon_huawei(tctx, udp_ldap_rootdse, cldap);
 
 	return ret;
 }
