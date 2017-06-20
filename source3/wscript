@@ -1706,7 +1706,7 @@ main() {
 
     if conf.CONFIG_SET('AD_DC_BUILD_IS_ENABLED'):
         default_static_modules.extend(TO_LIST('pdb_samba_dsdb auth_samba4 vfs_dfs_samba4'))
-        default_shared_modules.extend('vfs_posix_eadb')
+        default_shared_modules.extend(TO_LIST('vfs_posix_eadb'))
 
     if conf.CONFIG_SET('HAVE_FREEBSD_SUNACL_H'):
         default_shared_modules.extend(TO_LIST('vfs_zfsacl'))
