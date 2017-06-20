@@ -293,4 +293,8 @@ void *_cli_credentials_callback_data(struct cli_credentials *cred);
  */
 struct netlogon_creds_CredentialState *cli_credentials_get_netlogon_creds(struct cli_credentials *cred);
 
+NTSTATUS netlogon_creds_session_encrypt(
+	struct netlogon_creds_CredentialState *state,
+	DATA_BLOB data);
+
 #endif /* __CREDENTIALS_H__ */

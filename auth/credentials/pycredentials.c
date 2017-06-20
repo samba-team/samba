@@ -22,8 +22,11 @@
 #include "pycredentials.h"
 #include "param/param.h"
 #include "lib/cmdline/credentials.h"
+#include "auth/credentials/credentials_internal.h"
 #include "librpc/gen_ndr/samr.h" /* for struct samr_Password */
+#include "librpc/gen_ndr/netlogon.h"
 #include "libcli/util/pyerrors.h"
+#include "libcli/auth/libcli_auth.h"
 #include "param/pyparam.h"
 #include <tevent.h>
 #include "libcli/auth/libcli_auth.h"
@@ -633,6 +636,29 @@ static PyObject *py_creds_set_secure_channel_type(PyObject *self, PyObject *args
 	Py_RETURN_NONE;
 }
 
+static PyObject *py_creds_encrypt_netr_crypt_password(PyObject *self,
+						      PyObject *args)
+{
+	DATA_BLOB data = data_blob_null;
+	struct cli_credentials    *creds  = NULL;
+	struct netr_CryptPassword *pwd    = NULL;
+	NTSTATUS status;
+	PyObject *py_cp = Py_None;
+
+	creds = PyCredentials_AsCliCredentials(self);
+
+	if (!PyArg_ParseTuple(args, "|O", &py_cp)) {
+		return NULL;
+	}
+	pwd = pytalloc_get_type(py_cp, struct netr_CryptPassword);
+	data.length = sizeof(struct netr_CryptPassword);
+	data.data   = (uint8_t *)pwd;
+	status = netlogon_creds_session_encrypt(creds->netlogon_creds, data);
+
+	PyErr_NTSTATUS_IS_ERR_RAISE(status);
+
+	Py_RETURN_NONE;
+}
 
 static PyMethodDef py_creds_methods[] = {
 	{ "get_username", py_creds_get_username, METH_NOARGS,
@@ -742,6 +768,13 @@ static PyMethodDef py_creds_methods[] = {
 		"Get a new client NETLOGON_AUTHENTICATOR"},
 	{ "set_secure_channel_type", py_creds_set_secure_channel_type,
 	  METH_VARARGS, NULL },
+	{ "encrypt_netr_crypt_password",
+		py_creds_encrypt_netr_crypt_password,
+		METH_VARARGS,
+		"S.encrypt_netr_crypt_password(password) -> NTSTATUS\n"
+		"Encrypt the supplied password using the session key and\n"
+		"the negotiated encryption algorithm in place\n"
+		"i.e. it overwrites the original data"},
 	{ NULL }
 };
 

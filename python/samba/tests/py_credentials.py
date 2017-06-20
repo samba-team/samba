@@ -92,10 +92,52 @@ class PyCredentialsTests(TestCase):
         (authenticator, subsequent) = self.get_authenticator(c)
         self.do_NetrLogonGetDomainInfo(c, authenticator, subsequent)
 
+    # Test Credentials.encrypt_netr_crypt_password
+    # By performing a NetrServerPasswordSet2
+    # And the logging on using the new password.
+    def test_encrypt_netr_password(self):
+        # Change the password
+        self.do_Netr_ServerPasswordSet2()
+        # Now use the new password to perform an operation
+        self.do_DsrEnumerateDomainTrusts()
 
 
+   # Change the current machine account pazssword with a
+   # netr_ServerPasswordSet2 call.
+
+    def do_Netr_ServerPasswordSet2(self):
+        c = self.get_netlogon_connection()
+        (authenticator, subsequent) = self.get_authenticator(c)
+        PWD_LEN  = 32
+        DATA_LEN = 512
+        newpass = samba.generate_random_password(PWD_LEN, PWD_LEN)
+        filler  = [ord(x) for x in os.urandom(DATA_LEN-PWD_LEN)]
+        pwd = netlogon.netr_CryptPassword()
+        pwd.length = PWD_LEN
+        pwd.data = filler + [ord(x) for x in newpass]
+        self.machine_creds.encrypt_netr_crypt_password(pwd)
+        c.netr_ServerPasswordSet2(self.server,
+                                  self.machine_creds.get_workstation(),
+                                  SEC_CHAN_WKSTA,
+                                  self.machine_name,
+                                  authenticator,
+                                  pwd)
+
+        self.machine_pass = newpass
+        self.machine_creds.set_password(newpass)
+
+    # Perform a DsrEnumerateDomainTrusts, this provides confirmation that
+    # a netlogon connection has been correctly established
+    def do_DsrEnumerateDomainTrusts(self):
+        c = self.get_netlogon_connection()
+        trusts = c.netr_DsrEnumerateDomainTrusts(
+            self.server,
+            netlogon.NETR_TRUST_FLAG_IN_FOREST |
+            netlogon.NETR_TRUST_FLAG_OUTBOUND  |
+            netlogon.NETR_TRUST_FLAG_INBOUND)
+
+    # Establish sealed schannel netlogon connection over TCP/IP
     #
-    # Establish aealed schannel netlogon connection over TCP/IP
     def get_netlogon_connection(self):
         return netlogon.netlogon("ncacn_ip_tcp:%s[schannel,seal]" % self.server,
                                  self.lp,
@@ -128,6 +170,7 @@ class PyCredentialsTests(TestCase):
         self.machine_creds.set_secure_channel_type(SEC_CHAN_WKSTA)
         self.machine_creds.set_password(self.machine_pass)
         self.machine_creds.set_username(self.machine_name + "$")
+        self.machine_creds.set_workstation(self.machine_name)
 
     #
     # Create a test user account
@@ -154,6 +197,7 @@ class PyCredentialsTests(TestCase):
         self.user_creds.guess(self.get_loadparm())
         self.user_creds.set_password(self.user_pass)
         self.user_creds.set_username(self.user_name)
+        self.user_creds.set_workstation(self.machine_name)
         pass
 
     #

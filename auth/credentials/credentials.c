@@ -1283,3 +1283,43 @@ _PUBLIC_ bool cli_credentials_parse_password_fd(struct cli_credentials *credenti
 }
 
 
+/**
+ * Encrypt a data blob using the session key and the negotiated encryption
+ * algorithm
+ *
+ * @param state Credential state, contains the session key and algorithm
+ * @param data Data blob containing the data to be encrypted.
+ *
+ */
+_PUBLIC_ NTSTATUS netlogon_creds_session_encrypt(
+	struct netlogon_creds_CredentialState *state,
+	DATA_BLOB data)
+{
+	if (data.data == NULL || data.length == 0) {
+		DBG_ERR("Nothing to encrypt "
+			"data.data == NULL or data.length == 0");
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	/*
+	 * Don't crypt an all-zero password it will give away the
+	 * NETLOGON pipe session key .
+	 */
+	if (all_zero(data.data, data.length)) {
+		DBG_ERR("Supplied data all zeros, could leak session key");
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	if (state->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
+		netlogon_creds_aes_encrypt(state,
+					   data.data,
+					   data.length);
+	} else if (state->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
+		netlogon_creds_arcfour_crypt(state,
+					     data.data,
+					     data.length);
+	} else {
+		DBG_ERR("Unsupported encryption option negotiated");
+		return NT_STATUS_NOT_SUPPORTED;
+	}
+	return NT_STATUS_OK;
+}
+
