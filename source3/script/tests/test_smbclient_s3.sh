@@ -736,7 +736,8 @@ EOF
 # Test accessing an share with bad names (won't convert).
 test_bad_names()
 {
-    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/badname-tmp -I $SERVER_IP $ADDARGS -c ls 2>&1'
+    # First with SMB1
+    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/badname-tmp -I $SERVER_IP $ADDARGS -mNT1 -c ls 2>&1'
     eval echo "$cmd"
     out=`eval $cmd`
     ret=$?
@@ -805,7 +806,7 @@ test_bad_names()
     fi
 
     # Now check again with -mSMB3
-    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/badname-tmp -I $SERVER_IP -mSMB3 $ADDARGS -c ls 2>&1'
+    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/badname-tmp -I $SERVER_IP $ADDARGS -mSMB3 -c ls 2>&1'
     eval echo "$cmd"
     out=`eval $cmd`
     ret=$?
@@ -923,7 +924,8 @@ del smbclient
 del scopy_file
 quit
 EOF
-    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -mSMB3 -U$USERNAME%$PASSWORD //$SERVER/tmp -I $SERVER_IP $ADDARGS < $tmpfile 2>&1'
+    # First SMB3
+    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/tmp -I $SERVER_IP $ADDARGS -mSMB3 < $tmpfile 2>&1'
     eval echo "$cmd"
     out=`eval $cmd`
     ret=$?
@@ -959,7 +961,7 @@ del smbclient
 del scopy_file
 quit
 EOF
-    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -mNT1 -U$USERNAME%$PASSWORD //$SERVER/tmp -I $SERVER_IP $ADDARGS < $tmpfile 2>&1'
+    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/tmp -I $SERVER_IP $ADDARGS -mNT1 < $tmpfile 2>&1'
     eval echo "$cmd"
     out=`eval $cmd`
     ret=$?
@@ -992,7 +994,8 @@ allinfo \\
 setmode \\ -a
 quit
 EOF
-    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/tmp -I $SERVER_IP -mSMB3 $ADDARGS < $tmpfile 2>&1'
+    # Only with SMB3???
+    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/tmp -I $SERVER_IP $ADDARGS -mSMB3 < $tmpfile 2>&1'
     eval echo "$cmd"
     out=`eval $cmd`
     ret=$?
@@ -1083,7 +1086,8 @@ del foo
 ls lost*
 quit
 EOF
-    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/tmp -I $SERVER_IP -mSMB3 $ADDARGS < $tmpfile 2>&1'
+    # This only works with SMB3?
+    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/tmp -I $SERVER_IP $ADDARGS -mSMB3 < $tmpfile 2>&1'
     eval echo "$cmd"
     out=`eval $cmd`
     ret=$?
