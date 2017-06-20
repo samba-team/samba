@@ -411,6 +411,13 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 	struct cli_credentials *cli_creds;
 	struct tevent_req *req;
 	bool ret;
+	/*
+	 * For now we only support SMB1,
+	 * as most of the cli_*_send() function
+	 * don't support SMB2, it's only plugged
+	 * into the sync wrapper functions currently.
+	 */
+	int flags = CLI_FULL_CONNECTION_FORCE_SMB1;
 
 	static const char *kwlist[] = {
 		"host", "share", "credentials", NULL
@@ -444,7 +451,7 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 
 	req = cli_full_connection_creds_send(
 		NULL, self->ev, "myname", host, NULL, 0, share, "?????",
-		cli_creds, 0, 0);
+		cli_creds, flags, 0);
 	if (!py_tevent_req_wait_exc(self->ev, req)) {
 		return -1;
 	}
