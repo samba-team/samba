@@ -1803,12 +1803,8 @@ struct doc_state {
 	uint8_t data[1];
 };
 
-static void cli_nt_delete_on_close_done(struct tevent_req *subreq)
-{
-	NTSTATUS status = cli_trans_recv(subreq, NULL, NULL, NULL, 0, NULL,
-					 NULL, 0, NULL, NULL, 0, NULL);
-	tevent_req_simple_finish_ntstatus(subreq, status);
-}
+static void cli_nt_delete_on_close_smb1_done(struct tevent_req *subreq);
+static void cli_nt_delete_on_close_smb2_done(struct tevent_req *subreq);
 
 struct tevent_req *cli_nt_delete_on_close_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
@@ -1822,6 +1818,18 @@ struct tevent_req *cli_nt_delete_on_close_send(TALLOC_CTX *mem_ctx,
 	req = tevent_req_create(mem_ctx, &state, struct doc_state);
 	if (req == NULL) {
 		return NULL;
+	}
+
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+		subreq = cli_smb2_delete_on_close_send(state, ev, cli,
+						       fnum, flag);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(subreq,
+					cli_nt_delete_on_close_smb2_done,
+					req);
+		return req;
 	}
 
 	/* Setup setup word. */
@@ -1856,8 +1864,23 @@ struct tevent_req *cli_nt_delete_on_close_send(TALLOC_CTX *mem_ctx,
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
-	tevent_req_set_callback(subreq, cli_nt_delete_on_close_done, req);
+	tevent_req_set_callback(subreq,
+				cli_nt_delete_on_close_smb1_done,
+				req);
 	return req;
+}
+
+static void cli_nt_delete_on_close_smb1_done(struct tevent_req *subreq)
+{
+	NTSTATUS status = cli_trans_recv(subreq, NULL, NULL, NULL, 0, NULL,
+					 NULL, 0, NULL, NULL, 0, NULL);
+	tevent_req_simple_finish_ntstatus(subreq, status);
+}
+
+static void cli_nt_delete_on_close_smb2_done(struct tevent_req *subreq)
+{
+	NTSTATUS status = cli_smb2_delete_on_close_recv(subreq);
+	tevent_req_simple_finish_ntstatus(subreq, status);
 }
 
 NTSTATUS cli_nt_delete_on_close_recv(struct tevent_req *req)
