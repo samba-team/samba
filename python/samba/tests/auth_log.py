@@ -700,7 +700,7 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                           len(messages),
                           "Did not receive the expected number of messages")
 
-    def test_smb_anonymous(self):
+    def test_smb1_anonymous(self):
         def isLastExpectedMessage(msg):
             return (msg["type"] == "Authorization" and
                     msg["Authorization"]["serviceDescription"] == "SMB" and
@@ -712,7 +712,7 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
 
         path = "//%s/IPC$" % server
         auth = "-N"
-        call(["bin/smbclient", path, auth, "-c quit"])
+        call(["bin/smbclient", path, auth, "-mNT1", "-c quit"])
 
         messages = self.waitForMessages(isLastExpectedMessage)
         self.assertEquals(3,
@@ -737,6 +737,51 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
         self.assertEquals("NT_STATUS_OK",
                           msg["Authentication"]["status"])
         self.assertEquals("SMB",
+                          msg["Authentication"]["serviceDescription"])
+        self.assertEquals("NTLMSSP",
+                          msg["Authentication"]["authDescription"])
+        self.assertEquals("No-Password",
+                          msg["Authentication"]["passwordType"])
+        self.assertEquals("ANONYMOUS LOGON",
+                          msg["Authentication"]["becameAccount"])
+
+    def test_smb2_anonymous(self):
+        def isLastExpectedMessage(msg):
+            return (msg["type"] == "Authorization" and
+                    msg["Authorization"]["serviceDescription"] == "SMB2" and
+                    msg["Authorization"]["authType"] == "NTLMSSP" and
+                    msg["Authorization"]["account"] == "ANONYMOUS LOGON" and
+                    msg["Authorization"]["transportProtection"] == "SMB")
+
+        server   = os.environ["SERVER"]
+
+        path = "//%s/IPC$" % server
+        auth = "-N"
+        call(["bin/smbclient", path, auth, "-mSMB3", "-c quit"])
+
+        messages = self.waitForMessages(isLastExpectedMessage)
+        self.assertEquals(3,
+                          len(messages),
+                          "Did not receive the expected number of messages")
+
+        # Check the first message it should be an Authentication
+        msg = messages[0]
+        self.assertEquals("Authentication", msg["type"])
+        self.assertEquals("NT_STATUS_NO_SUCH_USER",
+                          msg["Authentication"]["status"])
+        self.assertEquals("SMB2",
+                          msg["Authentication"]["serviceDescription"])
+        self.assertEquals("NTLMSSP",
+                          msg["Authentication"]["authDescription"])
+        self.assertEquals("No-Password",
+                          msg["Authentication"]["passwordType"])
+
+        # Check the second message it should be an Authentication
+        msg = messages[1]
+        self.assertEquals("Authentication", msg["type"])
+        self.assertEquals("NT_STATUS_OK",
+                          msg["Authentication"]["status"])
+        self.assertEquals("SMB2",
                           msg["Authentication"]["serviceDescription"])
         self.assertEquals("NTLMSSP",
                           msg["Authentication"]["authDescription"])
