@@ -156,9 +156,9 @@ static int net_setauthuser(struct net_context *c, int argc, const char **argv)
 				    "        Delete the auth user setting.\n"));
 			return 1;
 		}
-		secrets_delete(SECRETS_AUTH_USER);
-		secrets_delete(SECRETS_AUTH_DOMAIN);
-		secrets_delete(SECRETS_AUTH_PASSWORD);
+		secrets_delete_entry(SECRETS_AUTH_USER);
+		secrets_delete_entry(SECRETS_AUTH_DOMAIN);
+		secrets_delete_entry(SECRETS_AUTH_PASSWORD);
 		return 0;
 	}
 
