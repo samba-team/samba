@@ -1975,7 +1975,19 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 						     r->out.return_authenticator,
 						     &creds);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,(__location__ " Bad credentials - error\n"));
+		char* local  = NULL;
+		char* remote = NULL;
+		TALLOC_CTX *frame = talloc_stackframe();
+		remote = tsocket_address_string(dce_call->conn->remote_address,
+						frame);
+		local  = tsocket_address_string(dce_call->conn->local_address,
+						frame);
+		DBG_ERR(("Bad credentials - "
+		         "computer[%s] remote[%s] local[%s]\n"),
+			 r->in.computer_name,
+			 remote,
+			 local);
+		talloc_free(frame);
 	}
 	NT_STATUS_NOT_OK_RETURN(status);
 
