@@ -223,7 +223,7 @@ NTSTATUS lsa_secret_delete(const char *secret_name)
 		return status;
 	}
 
-	if (!secrets_delete(key)) {
+	if (!secrets_delete_entry(key)) {
 		talloc_free(key);
 		return NT_STATUS_ACCESS_DENIED;
 	}
