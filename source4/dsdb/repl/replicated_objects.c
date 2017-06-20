@@ -835,8 +835,6 @@ WERROR dsdb_replicated_objects_commit(struct ldb_context *ldb,
 		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
-	/* TODO: handle linked attributes */
-
 	/* wrap the extended operation in a transaction 
 	   See [MS-DRSR] 3.3.2 Transactions
 	 */
