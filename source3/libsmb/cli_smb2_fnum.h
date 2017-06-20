@@ -54,6 +54,13 @@ struct tevent_req *cli_smb2_close_fnum_send(TALLOC_CTX *mem_ctx,
 					    uint16_t fnum);
 NTSTATUS cli_smb2_close_fnum_recv(struct tevent_req *req);
 NTSTATUS cli_smb2_close_fnum(struct cli_state *cli, uint16_t fnum);
+struct tevent_req *cli_smb2_delete_on_close_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct cli_state *cli,
+					uint16_t fnum,
+					bool flag);
+NTSTATUS cli_smb2_delete_on_close_recv(struct tevent_req *req);
+NTSTATUS cli_smb2_delete_on_close(struct cli_state *cli, uint16_t fnum, bool flag);
 NTSTATUS cli_smb2_mkdir(struct cli_state *cli, const char *dirname);
 NTSTATUS cli_smb2_rmdir(struct cli_state *cli, const char *dirname);
 NTSTATUS cli_smb2_unlink(struct cli_state *cli,const char *fname);
