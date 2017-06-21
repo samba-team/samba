@@ -115,9 +115,12 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 	struct trust_pw_change_state *state;
 	struct cli_credentials *creds = NULL;
 	const struct samr_Password *current_nt_hash = NULL;
+	const struct samr_Password *previous_nt_hash = NULL;
 	uint8_t num_nt_hashes = 0;
-	const struct samr_Password *nt_hashes[1] = { NULL, };
+	uint8_t idx = 0;
+	const struct samr_Password *nt_hashes[1+1] = { NULL, };
 	uint8_t idx_nt_hashes = 0;
+	uint8_t idx_current = UINT8_MAX;
 	enum netr_SchannelType sec_channel_type = SEC_CHAN_NULL;
 	time_t pass_last_set_time;
 	uint32_t old_version = 0;
@@ -181,6 +184,7 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 		TALLOC_FREE(frame);
 		return NT_STATUS_TRUSTED_RELATIONSHIP_FAILURE;
 	}
+	previous_nt_hash = cli_credentials_get_old_nt_hash(creds, frame);
 
 	old_version = cli_credentials_get_kvno(creds);
 	pass_last_set_time = cli_credentials_get_password_last_changed_time(creds);
@@ -266,15 +270,19 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 		return status;
 	}
 
-	nt_hashes[0] = current_nt_hash;
-	num_nt_hashes = 1;
+	idx_current = idx;
+	nt_hashes[idx++] = current_nt_hash;
+	if (previous_nt_hash != NULL) {
+		nt_hashes[idx++] = previous_nt_hash;
+	}
+	num_nt_hashes = idx;
+
+	DEBUG(0,("%s : %s(%s): Verifying passwords remotely %s.\n",
+		 current_timestring(talloc_tos(), false),
+		 __func__, domain, context_name));
 
 	/*
-	 * We could use cli_credentials_get_old_nt_hash(creds, frame) to
-	 * set previous_nt_hash.
-	 *
-	 * But we want to check if the dc has our current password and only do
-	 * a change if that's the case. So we keep previous_nt_hash = NULL.
+	 * Check which password the dc knows about.
 	 *
 	 * TODO:
 	 * If the previous password is the only password in common with the dc,
@@ -287,10 +295,19 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 					 nt_hashes,
 					 &idx_nt_hashes);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("netlogon_creds_cli_auth(%s) failed for old password - %s!\n",
-			  context_name, nt_errstr(status)));
+		DEBUG(0, ("netlogon_creds_cli_auth(%s) failed for old passwords (%u) - %s!\n",
+			  context_name, num_nt_hashes, nt_errstr(status)));
 		TALLOC_FREE(frame);
 		return status;
+	}
+
+	if (idx_nt_hashes != idx_current) {
+		DEBUG(0,("%s : %s(%s): Verified older password remotely "
+			 "skip changing %s\n",
+			 current_timestring(talloc_tos(), false),
+			 __func__, domain, context_name));
+		TALLOC_FREE(frame);
+		return NT_STATUS_TRUSTED_RELATIONSHIP_FAILURE;
 	}
 
 	DEBUG(0,("%s : %s(%s): Verified old password remotely using %s\n",
@@ -380,8 +397,10 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 	/*
 	 * Now we verify the new password.
 	 */
-	nt_hashes[0] = current_nt_hash;
-	num_nt_hashes = 1;
+	idx = 0;
+	idx_current = idx;
+	nt_hashes[idx++] = current_nt_hash;
+	num_nt_hashes = idx;
 	status = netlogon_creds_cli_auth(context, b,
 					 num_nt_hashes,
 					 nt_hashes,
