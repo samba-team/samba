@@ -36,7 +36,7 @@ interface ntprinting
 	 * "dffffffff" followed by a remaining buffer of "f" array */
 
 	typedef [flag(NDR_NOALIGN),public] struct {
-		[skip] uint32 string_flags;
+		[skip_noinit] uint32 string_flags;
 
 		uint32 version;
 		[flag(ndr_ntprinting_string_flags(r->string_flags))] string name;
@@ -61,7 +61,7 @@ interface ntprinting
 	 * "B" private data blob */
 
 	typedef [flag(NDR_NOALIGN),public] struct {
-		[skip] uint32 string_flags;
+		[skip_noinit] uint32 string_flags;
 
 		/* uint32 devicemode_ptr; */
 		[flag(ndr_ntprinting_string_flags(r->string_flags))] string devicename;
@@ -108,7 +108,7 @@ interface ntprinting
 	 * "fdB" */
 
 	typedef [flag(NDR_NOALIGN),public] struct {
-		[skip] uint32 string_flags;
+		[skip_noinit] uint32 string_flags;
 
 		uint32 ptr;
 		[flag(ndr_ntprinting_string_flags(r->string_flags))] string name;
@@ -123,7 +123,7 @@ interface ntprinting
 	 */
 
 	typedef [flag(NDR_NOALIGN),public] struct {
-		[skip] uint32 string_flags;
+		[skip_noinit] uint32 string_flags;
 
 		uint32 attributes;
 		uint32 priority;
