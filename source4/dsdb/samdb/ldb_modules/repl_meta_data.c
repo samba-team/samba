@@ -114,7 +114,8 @@ static int replmd_check_upgrade_links(struct ldb_context *ldb,
 				      struct parsed_dn *dns, uint32_t count,
 				      struct ldb_message_element *el,
 				      const char *ldap_oid);
-static int replmd_verify_linked_attributes(struct replmd_replicated_request *ar);
+static int replmd_verify_linked_attribute(struct replmd_replicated_request *ar,
+					  struct la_entry *la);
 
 enum urgent_situation {
 	REPL_URGENT_ON_CREATE = 1,
@@ -6042,6 +6043,70 @@ static int replmd_replicated_apply_search_callback(struct ldb_request *req,
 	return LDB_SUCCESS;
 }
 
+/**
+ * Stores the linked attributes received in the replication chunk - these get
+ * applied at the end of the transaction. We also check that each linked
+ * attribute is valid, i.e. source and target objects are known.
+ */
+static int replmd_store_linked_attributes(struct replmd_replicated_request *ar)
+{
+	int ret = LDB_SUCCESS;
+	uint32_t i;
+	bool incomplete_subset;
+	struct ldb_module *module = ar->module;
+	struct replmd_private *replmd_private =
+		talloc_get_type(ldb_module_get_private(module), struct replmd_private);
+	struct ldb_context *ldb;
+
+	ldb = ldb_module_get_ctx(module);
+	incomplete_subset = (ar->objs->dsdb_repl_flags & DSDB_REPL_FLAG_OBJECT_SUBSET);
+
+	DEBUG(4,("linked_attributes_count=%u\n", ar->objs->linked_attributes_count));
+
+	/* save away the linked attributes for the end of the transaction */
+	for (i = 0; i < ar->objs->linked_attributes_count; i++) {
+		struct la_entry *la_entry;
+
+		if (replmd_private->la_ctx == NULL) {
+			replmd_private->la_ctx = talloc_new(replmd_private);
+		}
+		la_entry = talloc(replmd_private->la_ctx, struct la_entry);
+		if (la_entry == NULL) {
+			ldb_oom(ldb);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		la_entry->la = talloc(la_entry, struct drsuapi_DsReplicaLinkedAttribute);
+		if (la_entry->la == NULL) {
+			talloc_free(la_entry);
+			ldb_oom(ldb);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		*la_entry->la = ar->objs->linked_attributes[i];
+
+		/*
+		 * we may not be able to resolve link targets properly when
+		 * dealing with subsets of objects, e.g. the source is a
+		 * critical object and the target isn't
+		 */
+		la_entry->incomplete_replica = incomplete_subset;
+
+		/* we need to steal the non-scalars so they stay
+		   around until the end of the transaction */
+		talloc_steal(la_entry->la, la_entry->la->identifier);
+		talloc_steal(la_entry->la, la_entry->la->value.blob);
+
+		ret = replmd_verify_linked_attribute(ar, la_entry);
+
+		if (ret != LDB_SUCCESS) {
+			break;
+		}
+
+		DLIST_ADD(replmd_private->la_list, la_entry);
+	}
+
+	return ret;
+}
+
 static int replmd_replicated_uptodate_vector(struct replmd_replicated_request *ar);
 
 static int replmd_replicated_apply_next(struct replmd_replicated_request *ar)
@@ -6060,10 +6125,10 @@ static int replmd_replicated_apply_next(struct replmd_replicated_request *ar)
 	if (ar->index_current >= ar->objs->num_objects) {
 
 		/*
-		 * Now that we've applied all the objects, check that the new
-		 * linked attributes only reference objects we know about
+		 * Now that we've applied all the objects, check the new linked
+		 * attributes and store them (we apply them in .prepare_commit)
 		 */
-		ret = replmd_verify_linked_attributes(ar);
+		ret = replmd_store_linked_attributes(ar);
 
 		if (ret != LDB_SUCCESS) {
 			return ret;
@@ -6547,10 +6612,6 @@ static int replmd_extended_replicated_objects(struct ldb_module *module, struct 
 	struct replmd_replicated_request *ar;
 	struct ldb_control **ctrls;
 	int ret;
-	uint32_t i;
-	bool incomplete_subset;
-	struct replmd_private *replmd_private =
-		talloc_get_type(ldb_module_get_private(module), struct replmd_private);
 
 	ldb = ldb_module_get_ctx(module);
 
@@ -6606,45 +6667,6 @@ static int replmd_extended_replicated_objects(struct ldb_module *module, struct 
 
 	ar->controls = req->controls;
 	req->controls = ctrls;
-	incomplete_subset = (ar->objs->dsdb_repl_flags & DSDB_REPL_FLAG_OBJECT_SUBSET);
-
-	DEBUG(4,("linked_attributes_count=%u\n", objs->linked_attributes_count));
-
-	/* save away the linked attributes for the end of the
-	   transaction */
-	for (i=0; i<ar->objs->linked_attributes_count; i++) {
-		struct la_entry *la_entry;
-
-		if (replmd_private->la_ctx == NULL) {
-			replmd_private->la_ctx = talloc_new(replmd_private);
-		}
-		la_entry = talloc(replmd_private->la_ctx, struct la_entry);
-		if (la_entry == NULL) {
-			ldb_oom(ldb);
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-		la_entry->la = talloc(la_entry, struct drsuapi_DsReplicaLinkedAttribute);
-		if (la_entry->la == NULL) {
-			talloc_free(la_entry);
-			ldb_oom(ldb);
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-		*la_entry->la = ar->objs->linked_attributes[i];
-
-		/*
-		 * we may not be able to resolve link targets properly when
-		 * dealing with subsets of objects, e.g. the source is a
-		 * critical object and the target isn't
-		 */
-		la_entry->incomplete_replica = incomplete_subset;
-
-		/* we need to steal the non-scalars so they stay
-		   around until the end of the transaction */
-		talloc_steal(la_entry->la, la_entry->la->identifier);
-		talloc_steal(la_entry->la, la_entry->la->value.blob);
-
-		DLIST_ADD(replmd_private->la_list, la_entry);
-	}
 
 	return replmd_replicated_apply_next(ar);
 }
@@ -6939,58 +6961,49 @@ linked_attributes[0]:
 }
 
 /**
- * Verifies that the source and target objects are known for each linked
- * attribute in the current transaction.
+ * Verifies the source and target objects are known for a linked attribute
  */
-static int replmd_verify_linked_attributes(struct replmd_replicated_request *ar)
+static int replmd_verify_linked_attribute(struct replmd_replicated_request *ar,
+					  struct la_entry *la)
 {
 	int ret = LDB_SUCCESS;
-	struct la_entry *la;
+	TALLOC_CTX *tmp_ctx = talloc_new(la);
 	struct ldb_module *module = ar->module;
-	TALLOC_CTX *tmp_ctx = talloc_new(ar);
-	struct replmd_private *replmd_private =
-		talloc_get_type(ldb_module_get_private(module), struct replmd_private);
+	struct ldb_message *src_msg;
+	const struct dsdb_attribute *attr;
+	struct dsdb_dn *tgt_dsdb_dn;
+	enum deletion_state del_state = OBJECT_NOT_DELETED;
+	struct GUID guid = GUID_zero();
 
-	for (la = DLIST_TAIL(replmd_private->la_list); la; la = DLIST_PREV(la)) {
-		struct ldb_message *src_msg;
-		const struct dsdb_attribute *attr;
-		struct dsdb_dn *tgt_dsdb_dn;
-		enum deletion_state del_state = OBJECT_NOT_DELETED;
-		struct GUID guid = GUID_zero();
+	ret = replmd_extract_la_entry_details(module, la, tmp_ctx, &attr,
+					      &src_msg, &tgt_dsdb_dn);
 
-		ret = replmd_extract_la_entry_details(module, la, tmp_ctx, &attr,
-						      &src_msg, &tgt_dsdb_dn);
+	/*
+	 * When we fail to find the source object, the error code we pass
+	 * back here is really important. It flags back to the callers to
+	 * retry this request with DRSUAPI_DRS_GET_ANC. This case should
+	 * never happen if we're replicating from a Samba DC, but it is
+	 * needed to talk to a Windows DC
+	 */
+	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+		ret = replmd_replicated_request_werror(ar, WERR_DS_DRA_MISSING_PARENT);
+	}
 
-		/*
-		 * When we fail to find the source object, the error code we pass
-		 * back here is really important. It flags back to the callers to
-		 * retry this request with DRSUAPI_DRS_GET_ANC. This case should
-		 * never happen if we're replicating from a Samba DC, but it is
-		 * needed to talk to a Windows DC
-		 */
-		if (ret == LDB_ERR_NO_SUCH_OBJECT) {
-			ret = replmd_replicated_request_werror(ar, WERR_DS_DRA_MISSING_PARENT);
-		}
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
 
-		if (ret != LDB_SUCCESS) {
-			break;
-		}
+	ret = replmd_check_target_exists(module, tgt_dsdb_dn, la,
+					 src_msg->dn, &guid, &del_state);
 
-		ret = replmd_check_target_exists(module, tgt_dsdb_dn, la,
-						 src_msg->dn, &guid, &del_state);
-
-		/*
-		 * When we fail to find the target object, the error code we pass
-		 * back here is really important. It flags back to the callers to
-		 * retry this request with DRSUAPI_DRS_GET_TGT
-		 */
-		if (ret == LDB_ERR_NO_SUCH_OBJECT) {
-			ret = replmd_replicated_request_werror(ar, WERR_DS_DRA_RECYCLED_TARGET);
-		}
-
-		if (ret != LDB_SUCCESS) {
-			break;
-		}
+	/*
+	 * When we fail to find the target object, the error code we pass
+	 * back here is really important. It flags back to the callers to
+	 * retry this request with DRSUAPI_DRS_GET_TGT
+	 */
+	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+		ret = replmd_replicated_request_werror(ar, WERR_DS_DRA_RECYCLED_TARGET);
 	}
 
 	talloc_free(tmp_ctx);
