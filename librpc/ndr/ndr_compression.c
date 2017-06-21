@@ -175,7 +175,11 @@ static enum ndr_err_code ndr_push_compression_mszip_chunk(struct ndr_push *ndrpu
 	uint32_t plain_chunk_size;
 	uint32_t plain_chunk_offset;
 	uint32_t max_plain_size = 0x00008000;
-	uint32_t max_comp_size = 0x00008000 + 2 + 12 /*TODO: what value do we really need here?*/;
+	/*
+	 * The maximum compressed size of each MSZIP block is 32k + 12 bytes
+	 * header size.
+	 */
+	uint32_t max_comp_size = 0x00008000 + 12;
 	uint32_t tmp_offset;
 	int z_ret;
 
@@ -208,7 +212,7 @@ static enum ndr_err_code ndr_push_compression_mszip_chunk(struct ndr_push *ndrpu
 	z->total_in	= 0;
 
 	z->next_out	= comp_chunk.data + 2;
-	z->avail_out	= comp_chunk.length - 2;
+	z->avail_out	= comp_chunk.length;
 	z->total_out	= 0;
 
 	if (!z->opaque) {
