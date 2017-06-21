@@ -146,7 +146,7 @@ bool secrets_fetch_domain_sid(const char *domain, struct dom_sid  *sid)
 	return True;
 }
 
-bool secrets_store_domain_guid(const char *domain, struct GUID *guid)
+bool secrets_store_domain_guid(const char *domain, const struct GUID *guid)
 {
 	char *protect_ids;
 	const char *key;
