@@ -352,6 +352,16 @@ sub setup_nt4_member($$$)
 	    return undef;
 	}
 
+	my $cmd = "";
+	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$ret->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
+	$cmd .= "SELFTEST_WINBINDD_SOCKET_DIR=\"$ret->{SELFTEST_WINBINDD_SOCKET_DIR}\" ";
+	$cmd .= "$net $ret->{CONFIGURATION} primarytrust dumpinfo | grep -q 'REDACTED SECRET VALUES'";
+
+	if (system($cmd) != 0) {
+	    warn("check failed\n$cmd");
+	    return undef;
+	}
+
 	if (not $self->check_or_start($ret, "yes", "yes", "yes")) {
 	       return undef;
 	}
