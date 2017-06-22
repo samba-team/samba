@@ -425,7 +425,7 @@ NTSTATUS parse_netlogon_request(struct ldb_parse_tree *tree,
 	*domain_guid = NULL;
 	*domain_sid = NULL;
 	*acct_control = -1;
-	*version = -1;
+	*version = 0;
 
 	if (tree->operation != LDB_OP_AND) goto failed;
 
@@ -484,10 +484,6 @@ NTSTATUS parse_netlogon_request(struct ldb_parse_tree *tree,
 
 	if ((*domain == NULL) && (*domain_guid == NULL) && (*domain_sid == NULL)) {
 		*domain = lpcfg_dnsdomain(lp_ctx);
-	}
-
-	if (*version == -1) {
-		goto failed;
 	}
 
 	return NT_STATUS_OK;
