@@ -258,6 +258,8 @@ for env in ["fileserver"]:
                        '-d', '$PREFIX', '-b', smbclient3,
                        '--subunit', '--', configuration])
 
+plantestsuite("samba3.blackbox.net_usershare", "fileserver:local", [os.path.join(samba3srcdir, "script/tests/test_net_usershare.sh"), '$SERVER', '$SERVER_IP', '$USERNAME', '$PASSWORD', smbclient3])
+
 #TODO encrypted against member, with member creds, and with DC creds
 plantestsuite("samba3.blackbox.net.misc", "nt4_dc:local",
               [os.path.join(samba3srcdir, "script/tests/test_net_misc.sh"),

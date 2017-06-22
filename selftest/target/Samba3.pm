@@ -10,6 +10,7 @@ use Cwd qw(abs_path);
 use FindBin qw($RealBin);
 use POSIX;
 use target::Samba;
+use File::Path 'remove_tree';
 
 sub have_ads($) {
         my ($self) = @_;
@@ -740,6 +741,12 @@ sub setup_fileserver($$)
 
 	mkdir($prefix_abs, 0777);
 
+	my $usershare_dir="$prefix_abs/lib/usershare";
+
+	mkdir("$prefix_abs/lib", 0755);
+	remove_tree($usershare_dir);
+	mkdir($usershare_dir, 01770);
+
 	my $share_dir="$prefix_abs/share";
 
 	# Create share directory structure
@@ -770,7 +777,15 @@ sub setup_fileserver($$)
 	my $tarmode_sharedir="$share_dir/tarmode";
 	push(@dirs,$tarmode_sharedir);
 
+	my $usershare_sharedir="$share_dir/usershares";
+	push(@dirs,$usershare_sharedir);
+
 	my $fileserver_options = "
+	usershare path = $usershare_dir
+	usershare max shares = 10
+	usershare allow guests = yes
+	usershare prefix allow list = $usershare_sharedir
+
 [lowercase]
 	path = $lower_case_share_dir
 	comment = smb username is [%U]
