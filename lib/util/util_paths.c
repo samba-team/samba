@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "dynconfig/dynconfig.h"
+#include "lib/util/util_paths.h"
 
 /**
  * @brief Returns an absolute path to a file in the Samba modules directory.

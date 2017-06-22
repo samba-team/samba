@@ -33,6 +33,7 @@
 #include "torture/drs/proto.h"
 #include "lib/tsocket/tsocket.h"
 #include "libcli/resolve/resolve.h"
+#include "lib/util/util_paths.h"
 
 struct DsSyncBindInfo {
 	struct dcerpc_pipe *drs_pipe;

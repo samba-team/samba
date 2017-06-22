@@ -696,31 +696,6 @@ int samba_runcmd_recv(struct tevent_req *req, int *perrno);
 void samba_start_debugger(void);
 #endif
 
-/**
- * @brief Returns an absolute path to a file in the Samba modules directory.
- *
- * @param name File to find, relative to MODULESDIR.
- *
- * @retval Pointer to a string containing the full path.
- **/
-char *modules_path(TALLOC_CTX *mem_ctx, const char *name);
-
-/**
- * @brief Returns an absolute path to a file in the Samba data directory.
- *
- * @param name File to find, relative to CODEPAGEDIR.
- *
- * @retval Pointer to a talloc'ed string containing the full path.
- **/
-char *data_path(TALLOC_CTX *mem_ctx, const char *name);
-
-/**
- * @brief Returns the platform specific shared library extension.
- *
- * @retval Pointer to a const char * containing the extension.
- **/
-const char *shlib_ext(void);
-
 /*
  * Samba code should use samba_tevent_context_init() instead of
  * tevent_context_init() in order to get the debug output.

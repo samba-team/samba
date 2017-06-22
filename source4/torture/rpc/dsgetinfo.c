@@ -31,6 +31,7 @@
 #include "dsdb/samdb/samdb.h"
 #include "torture/rpc/torture_rpc.h"
 #include "torture/drs/proto.h"
+#include "lib/util/util_paths.h"
 
 
 struct DsGetinfoBindInfo {

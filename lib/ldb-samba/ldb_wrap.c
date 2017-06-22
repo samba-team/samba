@@ -35,6 +35,7 @@
 #include "dsdb/samdb/samdb.h"
 #include "param/param.h"
 #include "../lib/util/dlinklist.h"
+#include "lib/util/util_paths.h"
 #include <tdb.h>
 
 #undef DBGC_CLASS

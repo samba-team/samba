@@ -21,6 +21,7 @@
 #include "system/filesys.h"
 #include "intl/lang_tdb.h"
 #include "util_tdb.h"
+#include "lib/util/util_paths.h"
 
 static TDB_CONTEXT *tdb;
 

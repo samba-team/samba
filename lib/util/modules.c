@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "dynconfig/dynconfig.h"
 #include "lib/util/samba_modules.h"
+#include "lib/util/util_paths.h"
 #include "system/filesys.h"
 #include "system/dir.h"
 

@@ -26,6 +26,7 @@
 #include "libgpo/gpo_proto.h"
 #include "registry.h"
 #include "registry/reg_api.h"
+#include "lib/util/util_paths.h"
 
 static struct gp_extension *extensions = NULL;
 
