@@ -856,6 +856,12 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 	struct set_recmode_state *state;
 	struct ctdb_cluster_mutex_handle *h;
 
+	if (recmode == ctdb->recovery_mode) {
+		D_INFO("Recovery mode already set to %s\n",
+		       recmode == CTDB_RECOVERY_NORMAL ? "NORMAL" : "ACTIVE");
+		return 0;
+	}
+
 	/* if we enter recovery but stay in recovery for too long
 	   we will eventually drop all our ip addresses
 	*/
