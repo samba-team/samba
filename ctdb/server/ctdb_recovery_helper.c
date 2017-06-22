@@ -1647,6 +1647,7 @@ static void recover_db_freeze_done(struct tevent_req *subreq)
 		if (ret2 != 0) {
 			LOG("control FREEZE_DB failed for db %s on node %u,"
 			    " ret=%d\n", state->db_name, pnn, ret2);
+			state->ban_credits[pnn] += 1;
 		} else {
 			LOG("control FREEZE_DB failed for db %s, ret=%d\n",
 			    state->db_name, ret);
