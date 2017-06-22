@@ -3513,6 +3513,19 @@ static bool usershare_exists(int iService, struct timespec *last_mod)
 	return true;
 }
 
+static bool usershare_directory_is_root(uid_t uid)
+{
+	if (uid == 0) {
+		return true;
+	}
+
+	if (uid_wrapper_enabled()) {
+		return true;
+	}
+
+	return false;
+}
+
 /***************************************************************************
  Load a usershare service by name. Returns a valid servicenumber or -1.
 ***************************************************************************/
@@ -3546,9 +3559,11 @@ int load_usershare_service(const char *servicename)
 	 */
 
 #ifdef S_ISVTX
-	if (sbuf.st_ex_uid != 0 || !(sbuf.st_ex_mode & S_ISVTX) || (sbuf.st_ex_mode & S_IWOTH)) {
+	if (!usershare_directory_is_root(sbuf.st_ex_uid) ||
+	    !(sbuf.st_ex_mode & S_ISVTX) || (sbuf.st_ex_mode & S_IWOTH)) {
 #else
-	if (sbuf.st_ex_uid != 0 || (sbuf.st_ex_mode & S_IWOTH)) {
+	if (!usershare_directory_is_root(sbuf.st_ex_uid) ||
+	    (sbuf.st_ex_mode & S_IWOTH)) {
 #endif
 		DEBUG(0,("load_usershare_service: directory %s is not owned by root "
 			"or does not have the sticky bit 't' set or is writable by anyone.\n",
