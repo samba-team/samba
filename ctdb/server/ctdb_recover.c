@@ -863,6 +863,10 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 		return 0;
 	}
 
+	DEBUG(DEBUG_NOTICE,
+	      ("Recovery mode set to %s\n",
+	       recmode == CTDB_RECOVERY_NORMAL ? "NORMAL" : "ACTIVE"));
+
 	/* if we enter recovery but stay in recovery for too long
 	   we will eventually drop all our ip addresses
 	*/
@@ -873,11 +877,6 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 		if (ctdb_deferred_drop_all_ips(ctdb) != 0) {
 			DEBUG(DEBUG_ERR,("Failed to set up deferred drop all ips\n"));
 		}
-	}
-
-	if (recmode != ctdb->recovery_mode) {
-		DEBUG(DEBUG_NOTICE,(__location__ " Recovery mode set to %s\n", 
-			 recmode==CTDB_RECOVERY_NORMAL?"NORMAL":"ACTIVE"));
 	}
 
 	if (recmode != CTDB_RECOVERY_NORMAL ||
