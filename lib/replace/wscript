@@ -81,6 +81,9 @@ def configure(conf):
     conf.CHECK_HEADERS('sys/atomic.h')
     conf.CHECK_HEADERS('libgen.h')
 
+    if conf.CHECK_CFLAGS('-Wno-format-truncation'):
+        conf.define('HAVE_WNO_FORMAT_TRUNCATION', '1')
+
     # Check for process set name support
     conf.CHECK_CODE('''
                     #include <sys/prctl.h>
@@ -711,11 +714,14 @@ def build(bld):
                       private_library=True,
                       deps='crypt dl nsl socket rt attr' + extra_libs)
 
+    replace_test_cflags="-Wno-format-zero-length"
+    if bld.CONFIG_SET('HAVE_WNO_FORMAT_TRUNCATION'):
+        replace_test_cflags += " -Wno-format-truncation"
     bld.SAMBA_SUBSYSTEM('replace-test',
                         source='''test/testsuite.c test/strptime.c
                         test/os2_delete.c test/getifaddrs.c''',
                         deps='replace',
-                        cflags="-Wno-format-zero-length -Wno-format-truncation")
+                        cflags=replace_test_cflags)
 
     if bld.env.standalone_replace:
         bld.SAMBA_BINARY('replace_testsuite',
