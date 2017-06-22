@@ -868,18 +868,12 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 	/* if we enter recovery but stay in recovery for too long
 	   we will eventually drop all our ip addresses
 	*/
-	if (recmode == CTDB_RECOVERY_NORMAL) {
-		talloc_free(ctdb->release_ips_ctx);
-		ctdb->release_ips_ctx = NULL;
-	} else {
+	if (recmode == CTDB_RECOVERY_ACTIVE) {
 		if (ctdb_deferred_drop_all_ips(ctdb) != 0) {
-			DEBUG(DEBUG_ERR,("Failed to set up deferred drop all ips\n"));
+			D_ERR("Failed to set up deferred drop all ips\n");
 		}
-	}
 
-	if (recmode != CTDB_RECOVERY_NORMAL ||
-	    ctdb->recovery_mode != CTDB_RECOVERY_ACTIVE) {
-		ctdb->recovery_mode = recmode;
+		ctdb->recovery_mode = CTDB_RECOVERY_ACTIVE;
 		return 0;
 	}
 
@@ -887,6 +881,8 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 	 *
 	 * Therefore, what follows is special handling when setting
 	 * recovery mode back to normal */
+
+	TALLOC_FREE(ctdb->release_ips_ctx);
 
 	for (ctdb_db = ctdb->db_list; ctdb_db != NULL; ctdb_db = ctdb_db->next) {
 		if (ctdb_db->generation != ctdb->vnn_map->generation) {
