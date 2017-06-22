@@ -2658,9 +2658,11 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 		return;
 	}
 
-	/* Check if an IP takeover run is needed and trigger one if
-	 * necessary */
-	verify_local_ip_allocation(ctdb, rec, pnn, nodemap);
+	if (ctdb->recovery_mode == CTDB_RECOVERY_NORMAL) {
+		/* Check if an IP takeover run is needed and trigger one if
+		 * necessary */
+		verify_local_ip_allocation(ctdb, rec, pnn, nodemap);
+	}
 
 	/* if we are not the recmaster then we do not need to check
 	   if recovery is needed
