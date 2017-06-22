@@ -8572,9 +8572,13 @@ static bool torture_rpc_spoolss_printer_teardown_common(struct torture_context *
 {
 	bool found = false;
 	struct dcerpc_pipe *p = t->spoolss_pipe;
-	struct dcerpc_binding_handle *b = p->binding_handle;
-	const char *printer_name = t->info2.printername;
+	struct dcerpc_binding_handle *b = NULL;
 	const char *server_name_slash;
+
+	if (p == NULL) {
+		return true;
+	}
+	b = p->binding_handle;
 
 	server_name_slash = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 
@@ -8594,7 +8598,8 @@ static bool torture_rpc_spoolss_printer_teardown_common(struct torture_context *
 			"failed to delete printer driver via spoolss");
 	}
 
-	if (p && !t->wellknown) {
+	if (!t->wellknown) {
+		const char *printer_name = t->info2.printername;
 
 		torture_assert(tctx,
 			test_DeletePrinter(tctx, b, &t->handle),
