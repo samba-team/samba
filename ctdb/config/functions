@@ -130,7 +130,7 @@ script_log ()
 	*)
 	    # Handle all syslog:* variants here too.  There's no tool to do
 	    # the lossy things, so just use logger.
-	    logger -t "ctdbd: ${_tag}" "$*"
+	    logger -t "ctdbd: ${_tag}" "$@"
 	    ;;
     esac
 }
