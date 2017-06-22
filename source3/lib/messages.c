@@ -68,10 +68,17 @@ struct messaging_callback {
 	void *private_data;
 };
 
+struct messaging_registered_ev {
+	struct tevent_context *ev;
+	size_t refcount;
+};
+
 struct messaging_context {
 	struct server_id id;
 	struct tevent_context *event_ctx;
 	struct messaging_callback *callbacks;
+
+	struct messaging_registered_ev *event_contexts;
 
 	struct tevent_req **new_waiters;
 	size_t num_new_waiters;
@@ -158,6 +165,76 @@ struct messaging_rec *messaging_rec_create(
 	TALLOC_FREE(buf);
 
 	return result;
+}
+
+static bool messaging_register_event_context(struct messaging_context *ctx,
+					     struct tevent_context *ev)
+{
+	size_t i, num_event_contexts;
+	struct messaging_registered_ev *free_reg = NULL;
+	struct messaging_registered_ev *tmp;
+
+	num_event_contexts = talloc_array_length(ctx->event_contexts);
+
+	for (i=0; i<num_event_contexts; i++) {
+		struct messaging_registered_ev *reg = &ctx->event_contexts[i];
+
+		if (reg->ev == ev) {
+			reg->refcount += 1;
+			return true;
+		}
+		if (reg->refcount == 0) {
+			if (reg->ev != NULL) {
+				abort();
+			}
+			free_reg = reg;
+		}
+	}
+
+	if (free_reg == NULL) {
+		tmp = talloc_realloc(ctx, ctx->event_contexts,
+				     struct messaging_registered_ev,
+				     num_event_contexts+1);
+		if (tmp == NULL) {
+			return false;
+		}
+		ctx->event_contexts = tmp;
+
+		free_reg = &ctx->event_contexts[num_event_contexts];
+	}
+
+	*free_reg = (struct messaging_registered_ev) { .ev = ev, .refcount = 1 };
+
+	return true;
+}
+
+static bool messaging_deregister_event_context(struct messaging_context *ctx,
+					       struct tevent_context *ev)
+{
+	size_t i, num_event_contexts;
+
+	num_event_contexts = talloc_array_length(ctx->event_contexts);
+
+	for (i=0; i<num_event_contexts; i++) {
+		struct messaging_registered_ev *reg = &ctx->event_contexts[i];
+
+		if (reg->ev == ev) {
+			if (reg->refcount == 0) {
+				return false;
+			}
+			reg->refcount -= 1;
+
+			if (reg->refcount == 0) {
+				/*
+				 * Not strictly necessary, just
+				 * paranoia
+				 */
+				reg->ev = NULL;
+			}
+			return true;
+		}
+	}
+	return false;
 }
 
 static void messaging_recv_cb(struct tevent_context *ev,
@@ -294,6 +371,12 @@ static NTSTATUS messaging_init_internal(TALLOC_CTX *mem_ctx,
 	};
 
 	ctx->event_ctx = ev;
+
+	ok = messaging_register_event_context(ctx, ev);
+	if (!ok) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
 
 	sec_init();
 
@@ -716,6 +799,7 @@ struct tevent_req *messaging_filtered_read_send(
 	struct tevent_req *req;
 	struct messaging_filtered_read_state *state;
 	size_t new_waiters_len;
+	bool ok;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct messaging_filtered_read_state);
@@ -763,6 +847,12 @@ struct tevent_req *messaging_filtered_read_send(
 	msg_ctx->num_new_waiters += 1;
 	tevent_req_set_cleanup_fn(req, messaging_filtered_read_cleanup);
 
+	ok = messaging_register_event_context(msg_ctx, ev);
+	if (!ok) {
+		tevent_req_oom(req);
+		return tevent_req_post(req, ev);
+	}
+
 	return req;
 }
 
@@ -773,10 +863,16 @@ static void messaging_filtered_read_cleanup(struct tevent_req *req,
 		req, struct messaging_filtered_read_state);
 	struct messaging_context *msg_ctx = state->msg_ctx;
 	size_t i;
+	bool ok;
 
 	tevent_req_set_cleanup_fn(req, NULL);
 
 	TALLOC_FREE(state->fde);
+
+	ok = messaging_deregister_event_context(msg_ctx, state->ev);
+	if (!ok) {
+		abort();
+	}
 
 	/*
 	 * Just set the [new_]waiters entry to NULL, be careful not to mess
