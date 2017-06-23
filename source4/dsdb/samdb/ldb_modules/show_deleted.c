@@ -49,7 +49,7 @@ static int show_deleted_search(struct ldb_module *module, struct ldb_request *re
 	struct ldb_parse_tree *new_tree = req->op.search.tree;
 	struct show_deleted_state *state;
 	int ret;
-	const char *attr_filter = NULL;
+	const char *exclude_filter = NULL;
 
 	/* do not manipulate our control entries */
 	if (ldb_dn_is_special(req->op.search.base)) {
@@ -87,7 +87,7 @@ static int show_deleted_search(struct ldb_module *module, struct ldb_request *re
 	if (show_rec == NULL && show_del == NULL) {
 		/* We don't want deleted or recycled objects,
 		 * which we get by filtering on isDeleted */
-		attr_filter = "isDeleted";
+		exclude_filter = "isDeleted";
 	} else {
 		state = talloc_get_type(ldb_module_get_private(module), struct show_deleted_state);
 
@@ -117,12 +117,12 @@ static int show_deleted_search(struct ldb_module *module, struct ldb_request *re
 			 * recycled.
 			 */
 			if (show_rec == NULL) {
-				attr_filter = "isRecycled";
+				exclude_filter = "isRecycled";
 			}
 		}
 	}
 
-	if (attr_filter != NULL) {
+	if (exclude_filter != NULL) {
 		new_tree = talloc(req, struct ldb_parse_tree);
 		if (!new_tree) {
 			return ldb_oom(ldb);
@@ -142,7 +142,7 @@ static int show_deleted_search(struct ldb_module *module, struct ldb_request *re
 			return ldb_oom(ldb);
 		}
 		new_tree->u.list.elements[0]->u.isnot.child->operation = LDB_OP_EQUALITY;
-		new_tree->u.list.elements[0]->u.isnot.child->u.equality.attr = attr_filter;
+		new_tree->u.list.elements[0]->u.isnot.child->u.equality.attr = exclude_filter;
 		new_tree->u.list.elements[0]->u.isnot.child->u.equality.value = data_blob_string_const("TRUE");
 		new_tree->u.list.elements[1] = req->op.search.tree;
 	}
