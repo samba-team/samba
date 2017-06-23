@@ -2134,7 +2134,7 @@ struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb,
 	tdb_flags = ctdb_db_tdb_flags(db_flags, ctdb->valgrinding, with_mutex);
 
 	/* tell ctdb daemon to attach */
-	ret = ctdb_control(ctdb, CTDB_CURRENT_NODE, tdb_flags, 
+	ret = ctdb_control(ctdb, CTDB_CURRENT_NODE, 0,
 			   persistent?CTDB_CONTROL_DB_ATTACH_PERSISTENT:CTDB_CONTROL_DB_ATTACH,
 			   0, data, ctdb_db, &data, &res, NULL, NULL);
 	if (ret != 0 || res != 0 || data.dsize != sizeof(uint32_t)) {
