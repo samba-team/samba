@@ -2123,9 +2123,7 @@ struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb,
 	TDB_DATA data;
 	int ret;
 	int32_t res;
-	uint8_t db_flags = 0;
 	int tdb_flags;
-	bool with_mutex = false;
 
 	ctdb_db = ctdb_db_handle(ctdb, name);
 	if (ctdb_db) {
@@ -2141,29 +2139,6 @@ struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb,
 
 	data.dptr = discard_const(name);
 	data.dsize = strlen(name)+1;
-
-#ifdef TDB_MUTEX_LOCKING
-	if (!persistent) {
-		uint32_t mutex_enabled = 0;
-
-		ret = ctdb_ctrl_get_tunable(ctdb, timeval_current_ofs(3,0),
-					    CTDB_CURRENT_NODE,
-					    "TDBMutexEnabled",
-					    &mutex_enabled);
-		if (ret != 0) {
-			DEBUG(DEBUG_WARNING, ("Assuming no mutex support.\n"));
-		}
-
-		if (mutex_enabled == 1) {
-			with_mutex = true;
-		}
-	}
-#endif
-
-	if (persistent) {
-		db_flags = CTDB_DB_FLAGS_PERSISTENT;
-	}
-	tdb_flags = ctdb_db_tdb_flags(db_flags, ctdb->valgrinding, with_mutex);
 
 	/* tell ctdb daemon to attach */
 	ret = ctdb_control(ctdb, CTDB_CURRENT_NODE, 0,
@@ -2181,6 +2156,13 @@ struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb,
 	ret = ctdb_ctrl_getdbpath(ctdb, timeout, CTDB_CURRENT_NODE, ctdb_db->db_id, ctdb_db, &ctdb_db->db_path);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,("Failed to get dbpath for database '%s'\n", name));
+		talloc_free(ctdb_db);
+		return NULL;
+	}
+
+	ret = ctdb_ctrl_db_open_flags(ctdb, ctdb_db->db_id, &tdb_flags);
+	if (ret != 0) {
+		D_ERR("Failed to get tdb_flags for database '%s'\n", name);
 		talloc_free(ctdb_db);
 		return NULL;
 	}
