@@ -5155,7 +5155,7 @@ static int process_command_string(const char *cmd_in)
 		status = cli_cm_open(talloc_tos(), NULL,
 				     have_ip ? dest_ss_str : desthost,
 				     service, popt_get_cmdline_auth_info(),
-				     false, smb_encrypt,
+				     smb_encrypt,
 				     max_protocol, port, name_type,
 				     &cli);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -5586,7 +5586,7 @@ static int process(const char *base_directory)
 	status = cli_cm_open(talloc_tos(), NULL,
 			     have_ip ? dest_ss_str : desthost,
 			     service, popt_get_cmdline_auth_info(),
-			     false, smb_encrypt, max_protocol, port,
+			     smb_encrypt, max_protocol, port,
 			     name_type, &cli);
 	if (!NT_STATUS_IS_OK(status)) {
 		return 1;
@@ -5623,7 +5623,7 @@ static int do_host_query(const char *query_host)
 	status = cli_cm_open(talloc_tos(), NULL,
 			     have_ip ? dest_ss_str : query_host,
 			     "IPC$", popt_get_cmdline_auth_info(),
-			     false, smb_encrypt, max_protocol, port,
+			     smb_encrypt, max_protocol, port,
 			     name_type, &cli);
 	if (!NT_STATUS_IS_OK(status)) {
 		return 1;
@@ -5662,7 +5662,7 @@ static int do_host_query(const char *query_host)
 		status = cli_cm_open(talloc_tos(), NULL,
 				     have_ip ? dest_ss_str : query_host,
 				     "IPC$", popt_get_cmdline_auth_info(),
-				     false, smb_encrypt, max_proto,
+				     smb_encrypt, max_proto,
 				     NBT_SMB_PORT, name_type, &cli);
 		if (!NT_STATUS_IS_OK(status)) {
 			cli = NULL;
@@ -5698,7 +5698,7 @@ static int do_tar_op(const char *base_directory)
 		status = cli_cm_open(talloc_tos(), NULL,
 				     have_ip ? dest_ss_str : desthost,
 				     service, popt_get_cmdline_auth_info(),
-				     false, smb_encrypt, max_protocol,
+				     smb_encrypt, max_protocol,
 				     port, name_type, &cli);
 		if (!NT_STATUS_IS_OK(status)) {
             ret = 1;
