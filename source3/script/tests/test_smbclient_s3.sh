@@ -701,7 +701,7 @@ test_bad_names()
 	return 1
     fi
 
-    echo "$out" | wc -l 2>&1 | grep 6
+    echo "$out" | wc -l 2>&1 | grep 5
     ret=$?
     if [ $ret != 0 ] ; then
 	echo "$out"
@@ -709,7 +709,7 @@ test_bad_names()
 	return 1
     fi
 
-    echo "$out" | grep 'Domain=.*OS=.*Server='
+    echo "$out" | grep '^  \. *D'
     ret=$?
     if [ $ret != 0 ] ; then
 	echo "$out"
@@ -717,7 +717,7 @@ test_bad_names()
 	return 1
     fi
 
-    echo "$out" | grep '^  \. *D'
+    echo "$out" | grep '^  \.\. *D'
     ret=$?
     if [ $ret != 0 ] ; then
 	echo "$out"
@@ -725,7 +725,7 @@ test_bad_names()
 	return 1
     fi
 
-    echo "$out" | grep '^  \.\. *D'
+    echo "$out" | grep '^  blank.txt *N'
     ret=$?
     if [ $ret != 0 ] ; then
 	echo "$out"
@@ -733,7 +733,7 @@ test_bad_names()
 	return 1
     fi
 
-    echo "$out" | grep '^  blank.txt *N'
+    echo "$out" | grep '^ *$'
     ret=$?
     if [ $ret != 0 ] ; then
 	echo "$out"
@@ -741,19 +741,11 @@ test_bad_names()
 	return 1
     fi
 
-    echo "$out" | grep '^ *$'
-    ret=$?
-    if [ $ret != 0 ] ; then
-	echo "$out"
-	echo "failed listing \\badname-tmp - grep (5) failed with $ret"
-	return 1
-    fi
-
     echo "$out" | grep 'blocks of size.*blocks available'
     ret=$?
     if [ $ret != 0 ] ; then
 	echo "$out"
-	echo "failed listing \\badname-tmp - grep (6) failed with $ret"
+	echo "failed listing \\badname-tmp - grep (5) failed with $ret"
 	return 1
     fi
 
@@ -769,7 +761,7 @@ test_bad_names()
 	return 1
     fi
 
-    echo "$out" | wc -l 2>&1 | grep 6
+    echo "$out" | wc -l 2>&1 | grep 5
     ret=$?
     if [ $ret != 0 ] ; then
 	echo "$out"
@@ -777,7 +769,7 @@ test_bad_names()
 	return 1
     fi
 
-    echo "$out" | grep 'Domain=.*OS=.*Server='
+    echo "$out" | grep '^  \. *D'
     ret=$?
     if [ $ret != 0 ] ; then
 	echo "$out"
@@ -785,7 +777,7 @@ test_bad_names()
 	return 1
     fi
 
-    echo "$out" | grep '^  \. *D'
+    echo "$out" | grep '^  \.\. *D'
     ret=$?
     if [ $ret != 0 ] ; then
 	echo "$out"
@@ -793,7 +785,7 @@ test_bad_names()
 	return 1
     fi
 
-    echo "$out" | grep '^  \.\. *D'
+    echo "$out" | grep '^  blank.txt *N'
     ret=$?
     if [ $ret != 0 ] ; then
 	echo "$out"
@@ -801,7 +793,7 @@ test_bad_names()
 	return 1
     fi
 
-    echo "$out" | grep '^  blank.txt *N'
+    echo "$out" | grep '^ *$'
     ret=$?
     if [ $ret != 0 ] ; then
 	echo "$out"
@@ -809,19 +801,11 @@ test_bad_names()
 	return 1
     fi
 
-    echo "$out" | grep '^ *$'
-    ret=$?
-    if [ $ret != 0 ] ; then
-	echo "$out"
-	echo "failed listing \\badname-tmp - SMB3 grep (5) failed with $ret"
-	return 1
-    fi
-
     echo "$out" | grep 'blocks of size.*blocks available'
     ret=$?
     if [ $ret != 0 ] ; then
 	echo "$out"
-	echo "failed listing \\badname-tmp - SMB3 grep (6) failed with $ret"
+	echo "failed listing \\badname-tmp - SMB3 grep (5) failed with $ret"
 	return 1
     fi
 }
@@ -1224,11 +1208,11 @@ EOF
        return 1
     fi
 
-    echo "$out" | grep "Domain=\[[a-zA-Z][a-zA-Z0-9.-]*\] OS=\[Windows [0-9]\.[0-9]\] Server=\[Samba"
+    echo "$out" | grep 'Try "help" do get a list of possible commands.'
     ret=$?
     if [ $ret -ne 0 ] ; then
        echo "$out"
-       echo "failed - should get: Domain=[...] OS=[Windows 6.1] Server=..."
+       echo 'failed - should get: Try "help" do get a list of possible commands.'
        return 1
     fi
 
