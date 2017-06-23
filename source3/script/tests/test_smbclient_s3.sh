@@ -1215,6 +1215,57 @@ EOF
     fi
 }
 
+# Test we can follow normal symlinks.
+# Bug: https://bugzilla.samba.org/show_bug.cgi?id=12860
+# Note - this needs to be tested over SMB3, not SMB1.
+
+test_local_symlinks()
+{
+# Setup test dirs.
+    LOCAL_RAWARGS="${CONFIGURATION} -mSMB3"
+    LOCAL_ADDARGS="${LOCAL_RAWARGS} $*"
+
+    test_dir="$LOCAL_PATH/local_symlinks/test"
+
+    slink_name="$test_dir/sym_name"
+    slink_target_dir="$test_dir/dir1"
+
+    rm -rf $test_dir
+
+    mkdir -p $test_dir
+    mkdir $slink_target_dir
+    ln -s $slink_target_dir $slink_name
+
+# Can we cd into the symlink name and ls ?
+    tmpfile=$PREFIX/smbclient_interactive_prompt_commands
+    cat > $tmpfile <<EOF
+cd test\\sym_name
+ls
+quit
+EOF
+    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/local_symlinks -I $SERVER_IP $LOCAL_ADDARGS < $tmpfile 2>&1'
+    eval echo "$cmd"
+    out=`eval $cmd`
+    ret=$?
+    rm -f $tmpfile
+
+    if [ $ret -ne 0 ] ; then
+       echo "$out"
+       echo "failed accessing local_symlinks with error $ret"
+       false
+       return
+    fi
+
+    echo "$out" | grep 'NT_STATUS_'
+    ret=$?
+    if [ $ret -eq 0 ] ; then
+       echo "$out"
+       echo "failed - got an NT_STATUS error"
+       false
+       return
+    fi
+}
+
 test_server_os_message()
 {
     tmpfile=$PREFIX/smbclient_interactive_prompt_commands
@@ -1346,6 +1397,10 @@ testit "streams_depot can delete correctly" \
 
 testit "follow symlinks = no" \
     test_nosymlinks || \
+    failed=`expr $failed + 1`
+
+testit "follow local symlinks" \
+    test_local_symlinks || \
     failed=`expr $failed + 1`
 
 testit "server os message" \

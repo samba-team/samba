@@ -1355,6 +1355,9 @@ sub provision($$$$$$$$$)
 	my $nosymlinks_shrdir="$shrdir/nosymlinks";
 	push(@dirs,$nosymlinks_shrdir);
 
+	my $local_symlinks_shrdir="$shrdir/local_symlinks";
+	push(@dirs,$local_symlinks_shrdir);
+
 	# this gets autocreated by winbindd
 	my $wbsockdir="$prefix_abs/winbindd";
 
@@ -1975,6 +1978,11 @@ sub provision($$$$$$$$$)
 	copy = tmp
 	path = $nosymlinks_shrdir
 	follow symlinks = no
+
+[local_symlinks]
+	copy = tmp
+	path = $local_symlinks_shrdir
+	follow symlinks = yes
 
 [kernel_oplocks]
 	copy = tmp
