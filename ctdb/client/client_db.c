@@ -253,11 +253,9 @@ struct ctdb_attach_state {
 	struct timeval timeout;
 	uint32_t destnode;
 	uint8_t db_flags;
-	uint32_t tdb_flags;
 	struct ctdb_db_context *db;
 };
 
-static void ctdb_attach_mutex_done(struct tevent_req *subreq);
 static void ctdb_attach_dbid_done(struct tevent_req *subreq);
 static void ctdb_attach_dbpath_done(struct tevent_req *subreq);
 static void ctdb_attach_health_done(struct tevent_req *subreq);
@@ -305,71 +303,22 @@ struct tevent_req *ctdb_attach_send(TALLOC_CTX *mem_ctx,
 		state->db->persistent = true;
 	}
 
-	ctdb_req_control_get_tunable(&request, "TDBMutexEnabled");
-	subreq = ctdb_client_control_send(state, ev, client,
-					  ctdb_client_pnn(client), timeout,
-					  &request);
-	if (tevent_req_nomem(subreq, req)) {
-		return tevent_req_post(req, ev);
-	}
-	tevent_req_set_callback(subreq, ctdb_attach_mutex_done, req);
-
-	return req;
-}
-
-static void ctdb_attach_mutex_done(struct tevent_req *subreq)
-{
-	struct tevent_req *req = tevent_req_callback_data(
-		subreq, struct tevent_req);
-	struct ctdb_attach_state *state = tevent_req_data(
-		req, struct ctdb_attach_state);
-	struct ctdb_reply_control *reply;
-	struct ctdb_req_control request;
-	uint32_t mutex_enabled;
-	int ret;
-	bool status;
-
-	status = ctdb_client_control_recv(subreq, &ret, state, &reply);
-	TALLOC_FREE(subreq);
-	if (! status) {
-		DEBUG(DEBUG_ERR, ("attach: %s GET_TUNABLE failed, ret=%d\n",
-				  state->db->db_name, ret));
-		tevent_req_error(req, ret);
-		return;
-	}
-
-	ret = ctdb_reply_control_get_tunable(reply, &mutex_enabled);
-	if (ret != 0) {
-		/* Treat error as mutex support not available */
-		mutex_enabled = 0;
-	}
-
-	if (state->db->persistent) {
-		state->tdb_flags = TDB_DEFAULT;
-	} else {
-		state->tdb_flags = (TDB_NOSYNC | TDB_INCOMPATIBLE_HASH |
-				    TDB_CLEAR_IF_FIRST);
-		if (mutex_enabled == 1) {
-			state->tdb_flags |= TDB_MUTEX_LOCKING;
-		}
-	}
-
 	if (state->db->persistent) {
 		ctdb_req_control_db_attach_persistent(&request,
-						      state->db->db_name,
-						      state->tdb_flags);
+						      state->db->db_name, 0);
 	} else {
-		ctdb_req_control_db_attach(&request, state->db->db_name,
-					   state->tdb_flags);
+		ctdb_req_control_db_attach(&request, state->db->db_name, 0);
 	}
 
 	subreq = ctdb_client_control_send(state, state->ev, state->client,
 					  state->destnode, state->timeout,
 					  &request);
 	if (tevent_req_nomem(subreq, req)) {
-		return;
+		return tevent_req_post(req, ev);
 	}
 	tevent_req_set_callback(subreq, ctdb_attach_dbid_done, req);
+
+	return req;
 }
 
 static void ctdb_attach_dbid_done(struct tevent_req *subreq)
