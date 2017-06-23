@@ -134,7 +134,6 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 					const char *server,
 					const char *share,
 					const struct user_auth_info *auth_info,
-					bool show_sessetup,
 					bool force_encrypt,
 					int max_protocol,
 					int port,
@@ -259,15 +258,6 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 		return status;
 	}
 
-	if ( show_sessetup ) {
-		if (*c->server_domain) {
-			DEBUG(0,("Domain=[%s] OS=[%s] Server=[%s]\n",
-				c->server_domain,c->server_os,c->server_type));
-		} else if (*c->server_os || *c->server_type) {
-			DEBUG(0,("OS=[%s] Server=[%s]\n",
-				 c->server_os,c->server_type));
-		}
-	}
 	DEBUG(4,(" session setup ok\n"));
 
 	/* here's the fun part....to support 'msdfs proxy' shares
@@ -281,7 +271,7 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 				force_encrypt, creds)) {
 		cli_shutdown(c);
 		return do_connect(ctx, newserver,
-				newshare, auth_info, false,
+				newshare, auth_info,
 				force_encrypt, max_protocol,
 				port, name_type, pcli);
 	}
@@ -348,7 +338,7 @@ static NTSTATUS cli_cm_connect(TALLOC_CTX *ctx,
 
 	status = do_connect(ctx, server, share,
 				auth_info,
-				show_hdr, force_encrypt, max_protocol,
+				force_encrypt, max_protocol,
 				port, name_type, &cli);
 
 	if (!NT_STATUS_IS_OK(status)) {
