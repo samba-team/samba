@@ -151,7 +151,7 @@ class DsdbTests(TestCase):
         self.samdb.set_attribute_replmetadata_version(dn, "description", version + 2)
         self.assertEqual(self.samdb.get_attribute_replmetadata_version(dn, "description"), version + 2)
 
-    def test_db_lock(self):
+    def test_db_lock1(self):
         basedn = self.samdb.get_default_basedn()
         (r1, w1) = os.pipe()
 
@@ -166,21 +166,23 @@ class DsdbTests(TestCase):
 
             self.samdb.transaction_start()
 
+            dn = "cn=test_db_lock_user,cn=users," + str(basedn)
             self.samdb.add({
-                 "dn": "cn=test_db_lock_user,cn=users," + str(basedn),
+                 "dn": dn,
                  "objectclass": "user",
             })
+            self.samdb.delete(dn)
 
             # Obtain a write lock
             self.samdb.transaction_prepare_commit()
-            os.write(w1, b"added")
+            os.write(w1, b"prepared")
             time.sleep(2)
 
             # Drop the write lock
             self.samdb.transaction_cancel()
             os._exit(0)
 
-        self.assertEqual(os.read(r1, 5), b"added")
+        self.assertEqual(os.read(r1, 8), b"prepared")
 
         start = time.time()
 
@@ -202,8 +204,81 @@ class DsdbTests(TestCase):
         self.assertTrue(os.WIFEXITED(status))
         self.assertEqual(os.WEXITSTATUS(status), 0)
 
+    def test_db_lock2(self):
+        basedn = self.samdb.get_default_basedn()
+        (r1, w1) = os.pipe()
+        (r2, w2) = os.pipe()
 
-    def test_full_db_lock(self):
+        pid = os.fork()
+        if pid == 0:
+            # In the child, close the main DB, re-open
+            del(self.samdb)
+            gc.collect()
+            self.samdb = SamDB(session_info=self.session,
+                           credentials=self.creds,
+                           lp=self.lp)
+
+            # We need to hold this iterator open to hold the all-record lock.
+            res = self.samdb.search_iterator()
+
+            os.write(w2, b"start")
+            if (os.read(r1, 7) != b"started"):
+                os._exit(1)
+
+            os.write(w2, b"add")
+            if (os.read(r1, 5) != b"added"):
+                os._exit(2)
+
+            # Wait 2 seconds to block prepare_commit() in the child.
+            os.write(w2, b"prepare")
+            time.sleep(2)
+
+            # Release the locks
+            for l in res:
+                pass
+
+            if (os.read(r1, 8) != b"prepared"):
+                os._exit(3)
+
+            os._exit(0)
+
+        # We can start the transaction during the search
+        # because both just grab the all-record read lock.
+        self.assertEqual(os.read(r2, 5), b"start")
+        self.samdb.transaction_start()
+        os.write(w1, b"started")
+
+        self.assertEqual(os.read(r2, 3), b"add")
+        dn = "cn=test_db_lock_user,cn=users," + str(basedn)
+        self.samdb.add({
+             "dn": dn,
+             "objectclass": "user",
+        })
+        self.samdb.delete(dn)
+        os.write(w1, b"added")
+
+        # Obtain a write lock, this will block until
+        # the parent releases the read lock.
+        self.assertEqual(os.read(r2, 7), b"prepare")
+        start = time.time()
+        self.samdb.transaction_prepare_commit()
+        end = time.time()
+        try:
+            self.assertGreater(end - start, 1.9)
+        except:
+            raise
+        finally:
+            os.write(w1, b"prepared")
+
+            # Drop the write lock
+            self.samdb.transaction_cancel()
+
+            (got_pid, status) = os.waitpid(pid, 0)
+            self.assertEqual(got_pid, pid)
+            self.assertTrue(os.WIFEXITED(status))
+            self.assertEqual(os.WEXITSTATUS(status), 0)
+
+    def test_full_db_lock1(self):
         basedn = self.samdb.get_default_basedn()
         backend_filename = "%s.ldb" % basedn.get_casefold()
         backend_subpath = os.path.join("sam.ldb.d",
@@ -227,14 +302,14 @@ class DsdbTests(TestCase):
 
             # Obtain a write lock
             backenddb.transaction_prepare_commit()
-            os.write(w1, b"added")
+            os.write(w1, b"prepared")
             time.sleep(2)
 
             # Drop the write lock
             backenddb.transaction_cancel()
             os._exit(0)
 
-        self.assertEqual(os.read(r1, 5), b"added")
+        self.assertEqual(os.read(r1, 8), b"prepared")
 
         start = time.time()
 
@@ -255,3 +330,83 @@ class DsdbTests(TestCase):
         self.assertEqual(got_pid, pid)
         self.assertTrue(os.WIFEXITED(status))
         self.assertEqual(os.WEXITSTATUS(status), 0)
+
+    def test_full_db_lock2(self):
+        basedn = self.samdb.get_default_basedn()
+        backend_filename = "%s.ldb" % basedn.get_casefold()
+        backend_subpath = os.path.join("sam.ldb.d",
+                                       backend_filename)
+        backend_path = self.lp.private_path(backend_subpath)
+        (r1, w1) = os.pipe()
+        (r2, w2) = os.pipe()
+
+        pid = os.fork()
+        if pid == 0:
+
+            # In the child, close the main DB, re-open
+            del(self.samdb)
+            gc.collect()
+            self.samdb = SamDB(session_info=self.session,
+                           credentials=self.creds,
+                           lp=self.lp)
+
+            # We need to hold this iterator open to hold the all-record lock.
+            res = self.samdb.search_iterator()
+
+            os.write(w2, b"start")
+            if (os.read(r1, 7) != b"started"):
+                os._exit(1)
+            os.write(w2, b"add")
+            if (os.read(r1, 5) != b"added"):
+                os._exit(2)
+
+            # Wait 2 seconds to block prepare_commit() in the child.
+            os.write(w2, b"prepare")
+            time.sleep(2)
+
+            # Release the locks
+            for l in res:
+                pass
+
+            if (os.read(r1, 8) != b"prepared"):
+                os._exit(3)
+
+            os._exit(0)
+
+        # In the parent, close the main DB, re-open just one DB
+        del(self.samdb)
+        gc.collect()
+        backenddb = ldb.Ldb(backend_path)
+
+        # We can start the transaction during the search
+        # because both just grab the all-record read lock.
+        self.assertEqual(os.read(r2, 5), b"start")
+        backenddb.transaction_start()
+        os.write(w1, b"started")
+
+        self.assertEqual(os.read(r2, 3), b"add")
+        backenddb.add({"dn":"@DSDB_LOCK_TEST"})
+        backenddb.delete("@DSDB_LOCK_TEST")
+        os.write(w1, b"added")
+
+        # Obtain a write lock, this will block until
+        # the child releases the read lock.
+        self.assertEqual(os.read(r2, 7), b"prepare")
+        start = time.time()
+        backenddb.transaction_prepare_commit()
+        end = time.time()
+
+        try:
+            self.assertGreater(end - start, 1.9)
+        except:
+            raise
+        finally:
+            os.write(w1, b"prepared")
+
+            # Drop the write lock
+            backenddb.transaction_cancel()
+
+            (got_pid, status) = os.waitpid(pid, 0)
+            self.assertEqual(got_pid, pid)
+            self.assertTrue(os.WIFEXITED(status))
+            self.assertEqual(os.WEXITSTATUS(status), 0)
