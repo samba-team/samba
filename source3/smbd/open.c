@@ -579,7 +579,18 @@ static int non_widelink_open(struct connection_struct *conn,
 
 	if (fd == -1) {
 		saved_errno = link_errno_convert(errno);
-		if (saved_errno == ELOOP) {
+		/*
+		 * Trying to open a symlink to a directory with O_NOFOLLOW and
+		 * O_DIRECTORY can return either of ELOOP and ENOTDIR. So
+		 * ENOTDIR really means: might be a symlink, but we're not sure.
+		 * In this case, we just assume there's a symlink. If we were
+		 * wrong, process_symlink_open() will return EINVAL. We check
+		 * this below, and fall back to returning the initial
+		 * saved_errno.
+		 *
+		 * BUG: https://bugzilla.samba.org/show_bug.cgi?id=12860
+		 */
+		if (saved_errno == ELOOP || saved_errno == ENOTDIR) {
 			if (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN) {
 				/* Never follow symlinks on posix open. */
 				goto out;
@@ -589,7 +600,7 @@ static int non_widelink_open(struct connection_struct *conn,
 				goto out;
 			}
 			/*
-			 * We have a symlink. Follow in userspace
+			 * We may have a symlink. Follow in userspace
 			 * to ensure it's under the share definition.
 			 */
 			fd = process_symlink_open(conn,
@@ -600,6 +611,15 @@ static int non_widelink_open(struct connection_struct *conn,
 					mode,
 					link_depth);
 			if (fd == -1) {
+				if (saved_errno == ENOTDIR &&
+						errno == EINVAL) {
+					/*
+					 * O_DIRECTORY on neither a directory,
+					 * nor a symlink. Just return
+					 * saved_errno from initial open()
+					 */
+					goto out;
+				}
 				saved_errno =
 					link_errno_convert(errno);
 			}
