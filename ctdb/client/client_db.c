@@ -262,6 +262,7 @@ static void ctdb_attach_dbid_done(struct tevent_req *subreq);
 static void ctdb_attach_dbpath_done(struct tevent_req *subreq);
 static void ctdb_attach_health_done(struct tevent_req *subreq);
 static void ctdb_attach_flags_done(struct tevent_req *subreq);
+static void ctdb_attach_open_flags_done(struct tevent_req *subreq);
 
 struct tevent_req *ctdb_attach_send(TALLOC_CTX *mem_ctx,
 				    struct tevent_context *ev,
@@ -511,6 +512,7 @@ static void ctdb_attach_flags_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct ctdb_attach_state *state = tevent_req_data(
 		req, struct ctdb_attach_state);
+	struct ctdb_req_control request;
 	bool status;
 	int ret;
 
@@ -523,8 +525,46 @@ static void ctdb_attach_flags_done(struct tevent_req *subreq)
 		return;
 	}
 
+	ctdb_req_control_db_open_flags(&request, state->db->db_id);
+	subreq = ctdb_client_control_send(state, state->ev, state->client,
+					  state->destnode, state->timeout,
+					  &request);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, ctdb_attach_open_flags_done, req);
+}
+
+static void ctdb_attach_open_flags_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct ctdb_attach_state *state = tevent_req_data(
+		req, struct ctdb_attach_state);
+	struct ctdb_reply_control *reply;
+	bool status;
+	int ret, tdb_flags;
+
+	status = ctdb_client_control_recv(subreq, &ret, state, &reply);
+	TALLOC_FREE(subreq);
+	if (! status) {
+		DEBUG(DEBUG_ERR, ("attach: %s DB_OPEN_FLAGS failed, ret=%d\n",
+				  state->db->db_name, ret));
+		tevent_req_error(req, ret);
+		return;
+	}
+
+	ret = ctdb_reply_control_db_open_flags(reply, &tdb_flags);
+	talloc_free(reply);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("attach: %s DB_OPEN_FLAGS parse failed,"
+				  " ret=%d\n", state->db->db_name, ret));
+		tevent_req_error(req, ret);
+		return;
+	}
+
 	state->db->ltdb = tdb_wrap_open(state->db, state->db->db_path, 0,
-					state->tdb_flags, O_RDWR, 0);
+					tdb_flags, O_RDWR, 0);
 	if (tevent_req_nomem(state->db->ltdb, req)) {
 		DEBUG(DEBUG_ERR, ("attach: %s tdb_wrap_open failed\n",
 				  state->db->db_name));
