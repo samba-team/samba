@@ -78,12 +78,20 @@ static int show_deleted_search(struct ldb_module *module, struct ldb_request *re
 	/* check if there's a show recycled control */
 	show_rec = ldb_request_get_control(req, LDB_CONTROL_SHOW_RECYCLED_OID);
 
+	/*
+	 * When recycle bin is not enabled, then all we look
+	 * at is the isDeleted attribute. We hide objects with this
+	 * attribute set to TRUE when the client has not specified either
+	 * SHOW_DELETED or SHOW_RECYCLED
+	 */
 	if (show_rec == NULL && show_del == NULL) {
+		/* We don't want deleted or recycled objects,
+		 * which we get by filtering on isDeleted */
 		attr_filter = "isDeleted";
 	} else {
 		state = talloc_get_type(ldb_module_get_private(module), struct show_deleted_state);
 
-		/* note that state may be NULL during initialisation */
+		/* Note that state may be NULL during initialisation */
 		if (state != NULL && state->need_refresh) {
 			/* Do not move this assignment, it can cause recursion loops! */
 			state->need_refresh = false;
@@ -103,33 +111,17 @@ static int show_deleted_search(struct ldb_module *module, struct ldb_request *re
 			}
 		}
 
-		if (state == NULL || !state->recycle_bin_enabled) {
-			/* when recycle bin is not enabled, then all we look
-			   at is the isDeleted attribute. We hide objects with this
-			   attribute set to TRUE when the client has not specified either
-			   SHOW_DELETED or SHOW_RECYCLED
-			*/
-			if (show_del != NULL || show_rec != NULL) {
-				attr_filter = NULL;
-			} else {
-				attr_filter = "isDeleted";
-			}
-		} else {
-			/* the recycle bin is enabled
+		if (state != NULL && state->recycle_bin_enabled) {
+			/*
+			 * The recycle bin is enabled, so we want deleted not
+			 * recycled.
 			 */
-			if (show_rec != NULL) {
-				attr_filter = NULL;
-			} else if (show_del != NULL) {
-				/* we want deleted but not recycled objects */
+			if (show_rec == NULL) {
 				attr_filter = "isRecycled";
-			} else {
-				/* we don't want deleted or recycled objects,
-				 * which we get by filtering on isDeleted */
-				attr_filter = "isDeleted";
 			}
 		}
-
 	}
+
 	if (attr_filter != NULL) {
 		new_tree = talloc(req, struct ldb_parse_tree);
 		if (!new_tree) {
