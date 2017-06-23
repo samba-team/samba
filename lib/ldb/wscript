@@ -205,8 +205,24 @@ def build(bld):
                           abi_match = abi_match)
 
         # generate a include/ldb_version.h
+        def generate_ldb_version_h(t):
+            '''generate a vscript file for our public libraries'''
+
+            tgt = t.outputs[0].bldpath(t.env)
+
+            v = t.env.LDB_VERSION.split('.')
+
+            f = open(tgt, mode='w')
+            try:
+                f.write('#define LDB_VERSION "%s"\n' % t.env.LDB_VERSION)
+                f.write('#define LDB_VERSION_MAJOR %d\n' % int(v[0]))
+                f.write('#define LDB_VERSION_MINOR %d\n' % int(v[1]))
+                f.write('#define LDB_VERSION_RELEASE %d\n' % int(v[2]))
+            finally:
+                f.close()
+            return
         t = bld.SAMBA_GENERATOR('ldb_version.h',
-                                rule='echo "#define LDB_VERSION \\"${LDB_VERSION}\\"" > ${TGT}',
+                                rule=generate_ldb_version_h,
                                 dep_vars=['LDB_VERSION'],
                                 target='include/ldb_version.h',
                                 public_headers='include/ldb_version.h',
