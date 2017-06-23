@@ -284,6 +284,12 @@ testit "wbinfo -K against $TARGET with domain creds" $wbinfo --krb5ccname=$KRB5C
 
 testit "wbinfo --separator against $TARGET" $wbinfo --separator || failed=`expr $failed + 1`
 
+if test "$TARGET" = "ad_member"; then
+	testit "wbinfo --domain-info=$DOMAIN" $wbinfo --domain-info=$DOMAIN || failed=`expr $failed + 1`
+
+	testit "wbinfo --dc-info=$DOMAIN" $wbinfo --dc-info=$DOMAIN || failed=`expr $failed + 1`
+fi
+
 testit_expect_failure "wbinfo -a against $TARGET with invalid password" $wbinfo -a "$DOMAIN/$USERNAME%InvalidPassword" && failed=`expr $failed + 1`
 
 testit_expect_failure "wbinfo -K against $TARGET with invalid password" $wbinfo -K "$DOMAIN/$USERNAME%InvalidPassword" && failed=`expr $failed + 1`
