@@ -270,6 +270,9 @@ int ctdb_statistics_reset(struct ctdb_context *ctdb, uint32_t destnode);
 /*
   attach to a ctdb database
 */
+int ctdb_ctrl_db_open_flags(struct ctdb_context *ctdb, uint32_t db_id,
+			    int *tdb_flags);
+
 struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb,
 				    struct timeval timeout,
 				    const char *name,

@@ -2079,6 +2079,39 @@ int ctdb_statistics_reset(struct ctdb_context *ctdb, uint32_t destnode)
 }
 
 /*
+ * Get db open flags
+ */
+int ctdb_ctrl_db_open_flags(struct ctdb_context *ctdb, uint32_t db_id,
+			    int *tdb_flags)
+{
+	TDB_DATA indata, outdata;
+	int ret;
+	int32_t res;
+
+	indata.dptr = (uint8_t *)&db_id;
+	indata.dsize = sizeof(db_id);
+
+	ret = ctdb_control(ctdb, CTDB_CURRENT_NODE, 0,
+			   CTDB_CONTROL_DB_OPEN_FLAGS, 0, indata,
+			   ctdb, &outdata, &res, NULL, NULL);
+	if (ret != 0 || res != 0) {
+		D_ERR("ctdb control for db open flags failed\n");
+		return  -1;
+	}
+
+	if (outdata.dsize != sizeof(int32_t)) {
+		D_ERR(__location__ " expected %zi bytes, received %zi bytes\n",
+		      sizeof(int32_t), outdata.dsize);
+		talloc_free(outdata.dptr);
+		return -1;
+	}
+
+	*tdb_flags = *(int32_t *)outdata.dptr;
+	talloc_free(outdata.dptr);
+	return 0;
+}
+
+/*
   attach to a specific database - client call
 */
 struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb,
