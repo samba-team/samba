@@ -688,7 +688,7 @@ static void vacuum_fetch_handler(uint64_t srvid, TDB_DATA data,
 	}
 
 	/* attach to it */
-	ctdb_db = ctdb_attach(ctdb, CONTROL_TIMEOUT(), name, persistent, 0);
+	ctdb_db = ctdb_attach(ctdb, CONTROL_TIMEOUT(), name, persistent);
 	if (ctdb_db == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to attach to database '%s'\n", name));
 		goto done;

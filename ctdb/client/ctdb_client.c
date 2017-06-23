@@ -2084,8 +2084,7 @@ int ctdb_statistics_reset(struct ctdb_context *ctdb, uint32_t destnode)
 struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb,
 				    struct timeval timeout,
 				    const char *name,
-				    bool persistent,
-				    uint32_t tdb_flags_unused)
+				    bool persistent)
 {
 	struct ctdb_db_context *ctdb_db;
 	TDB_DATA data;
@@ -3908,7 +3907,7 @@ struct ctdb_transaction_handle *ctdb_transaction_start(struct ctdb_db_context *c
 	}
 
 	h->g_lock_db = ctdb_attach(h->ctdb_db->ctdb, timeval_current_ofs(3,0),
-				   "g_lock.tdb", false, 0);
+				   "g_lock.tdb", false);
 	if (!h->g_lock_db) {
 		DEBUG(DEBUG_ERR, (__location__ " unable to attach to g_lock.tdb\n"));
 		talloc_free(h);

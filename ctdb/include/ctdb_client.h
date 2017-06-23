@@ -273,8 +273,7 @@ int ctdb_statistics_reset(struct ctdb_context *ctdb, uint32_t destnode);
 struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb,
 				    struct timeval timeout,
 				    const char *name,
-				    bool persistent,
-				    uint32_t tdb_flags);
+				    bool persistent);
 
 int ctdb_detach(struct ctdb_context *ctdb, uint32_t db_id);
 
