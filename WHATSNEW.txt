@@ -12,6 +12,15 @@ Samba 4.7 will be the next version of the Samba suite.
 UPGRADING
 =========
 
+smbclient changes
+-----------------
+
+smbclient no longer prints a 'Domain=[...] OS=[Windows 6.1] Server=[...]'
+banner when connecting to the first server. With SMB2 and Kerberos
+there's no way to print this information reliable. Now we avoid it at all
+consistently. In interactive session the following banner is now presented
+to the user: 'Try "help" do get a list of possible commands.'.
+
 
 NEW FEATURES/CHANGES
 ====================
