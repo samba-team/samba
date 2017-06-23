@@ -58,28 +58,6 @@ static int show_deleted_search(struct ldb_module *module, struct ldb_request *re
 
 	ldb = ldb_module_get_ctx(module);
 
-	state = talloc_get_type(ldb_module_get_private(module), struct show_deleted_state);
-
-	/* note that state may be NULL during initialisation */
-	if (state != NULL && state->need_refresh) {
-		/* Do not move this assignment, it can cause recursion loops! */
-		state->need_refresh = false;
-		ret = dsdb_recyclebin_enabled(module, &state->recycle_bin_enabled);
-		if (ret != LDB_SUCCESS) {
-			state->recycle_bin_enabled = false;
-			/*
-			 * We can fail to find the feature object
-			 * during provision. Ignore any such error and
-			 * assume the recycle bin cannot be enabled at
-			 * this point in time.
-			 */
-			if (ret != LDB_ERR_NO_SUCH_OBJECT) {
-				state->need_refresh = true;
-				return LDB_ERR_UNWILLING_TO_PERFORM;
-			}
-		}
-	}
-
 	/* This is the logic from MS-ADTS 3.1.1.3.4.1.14 that
 	   determines if objects are visible
 
@@ -100,34 +78,58 @@ static int show_deleted_search(struct ldb_module *module, struct ldb_request *re
 	/* check if there's a show recycled control */
 	show_rec = ldb_request_get_control(req, LDB_CONTROL_SHOW_RECYCLED_OID);
 
-
-	if (state == NULL || !state->recycle_bin_enabled) {
-		/* when recycle bin is not enabled, then all we look
-		   at is the isDeleted attribute. We hide objects with this
-		   attribute set to TRUE when the client has not specified either
-		   SHOW_DELETED or SHOW_RECYCLED
-		*/
-		if (show_del != NULL || show_rec != NULL) {
-			attr_filter = NULL;
-		} else {
-			attr_filter = "isDeleted";
-		}
+	if (show_rec == NULL && show_del == NULL) {
+		attr_filter = "isDeleted";
 	} else {
-		/* the recycle bin is enabled
-		 */
-		if (show_rec != NULL) {
-			attr_filter = NULL;
-		} else if (show_del != NULL) {
-			/* we want deleted but not recycled objects */
-			attr_filter = "isRecycled";
-		} else {
-			/* we don't want deleted or recycled objects,
-			 * which we get by filtering on isDeleted */
-			attr_filter = "isDeleted";
+		state = talloc_get_type(ldb_module_get_private(module), struct show_deleted_state);
+
+		/* note that state may be NULL during initialisation */
+		if (state != NULL && state->need_refresh) {
+			/* Do not move this assignment, it can cause recursion loops! */
+			state->need_refresh = false;
+			ret = dsdb_recyclebin_enabled(module, &state->recycle_bin_enabled);
+			if (ret != LDB_SUCCESS) {
+				state->recycle_bin_enabled = false;
+				/*
+				 * We can fail to find the feature object
+				 * during provision. Ignore any such error and
+				 * assume the recycle bin cannot be enabled at
+				 * this point in time.
+				 */
+				if (ret != LDB_ERR_NO_SUCH_OBJECT) {
+					state->need_refresh = true;
+					return LDB_ERR_UNWILLING_TO_PERFORM;
+				}
+			}
 		}
+
+		if (state == NULL || !state->recycle_bin_enabled) {
+			/* when recycle bin is not enabled, then all we look
+			   at is the isDeleted attribute. We hide objects with this
+			   attribute set to TRUE when the client has not specified either
+			   SHOW_DELETED or SHOW_RECYCLED
+			*/
+			if (show_del != NULL || show_rec != NULL) {
+				attr_filter = NULL;
+			} else {
+				attr_filter = "isDeleted";
+			}
+		} else {
+			/* the recycle bin is enabled
+			 */
+			if (show_rec != NULL) {
+				attr_filter = NULL;
+			} else if (show_del != NULL) {
+				/* we want deleted but not recycled objects */
+				attr_filter = "isRecycled";
+			} else {
+				/* we don't want deleted or recycled objects,
+				 * which we get by filtering on isDeleted */
+				attr_filter = "isDeleted";
+			}
+		}
+
 	}
-
-
 	if (attr_filter != NULL) {
 		new_tree = talloc(req, struct ldb_parse_tree);
 		if (!new_tree) {
