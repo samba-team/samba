@@ -171,7 +171,7 @@ if not krb5_config:
     krb5_config = conf.find_program("krb5-config", var="HEIMDAL_KRB5_CONFIG")
 if krb5_config:
     # Not ideal, but seems like the best way to get at these paths:
-    f = open(krb5_config, 'r')
+    f = open(krb5_config[0], 'r')
     try:
         for l in f:
             if l.startswith("libdir="):
@@ -214,10 +214,10 @@ if check_system_heimdal_lib("roken", "rk_socket_set_reuseaddr", "roken.h"):
 # and include config.h if it is set, resulting in failure (since config.h
 # doesn't yet exist)
 
-CCDEFINES = list(conf.env.CCDEFINES)
+DEFINES = list(conf.env.DEFINES)
 conf.undefine("HAVE_CONFIG_H")
-while "HAVE_CONFIG_H=1" in conf.env.CCDEFINES:
-    conf.env.CCDEFINES.remove("HAVE_CONFIG_H=1")
+while "HAVE_CONFIG_H=1" in conf.env.DEFINES:
+    conf.env.DEFINES.remove("HAVE_CONFIG_H=1")
 try:
     check_system_heimdal_lib("wind", "wind_stringprep", "wind.h", onlyif="roken")
     check_system_heimdal_lib("hx509", "hx509_bitstring_print", "hx509.h", onlyif="roken wind")
@@ -247,7 +247,7 @@ try:
     check_system_heimdal_lib("kdc", "kdc_log", "kdc.h",
         onlyif="roken krb5 hdb asn1 heimntlm hcrypto com_err wind heimbase")
 finally:
-    conf.env.CCDEFINES = CCDEFINES
+    conf.env.DEFINES = DEFINES
 
 # With the proper checks in place we should be able to build against the system libtommath.
 #if conf.CHECK_BUNDLED_SYSTEM('tommath', checkfunctions='mp_init', headers='tommath.h'):

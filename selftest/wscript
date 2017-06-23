@@ -296,5 +296,6 @@ def cmd_test(opt):
     # if running all tests, then force a symbol check
     env = LOAD_ENVIRONMENT()
     CHECK_MAKEFLAGS(env)
-    Scripting.commands.append('build')
-    Scripting.commands.append('testonly')
+    Options.commands.append('build')
+    Options.commands.append('testonly')
+

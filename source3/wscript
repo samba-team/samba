@@ -1571,7 +1571,7 @@ main() {
         conf.CHECK_DECLS('FS_IOC_GETFLAGS FS_COMPR_FL', headers='linux/fs.h')):
             conf.DEFINE('HAVE_LINUX_IOCTL', '1')
 
-    conf.env['CCFLAGS_CEPHFS'] = "-D_FILE_OFFSET_BITS=64"
+    conf.env['CFLAGS_CEPHFS'] = "-D_FILE_OFFSET_BITS=64"
     if Options.options.libcephfs_dir:
         conf.env['CPPPATH_CEPHFS'] = Options.options.libcephfs_dir + '/include'
         conf.env['LIBPATH_CEPHFS'] = Options.options.libcephfs_dir + '/lib'

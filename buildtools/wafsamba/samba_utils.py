@@ -1,11 +1,11 @@
 # a waf tool to add autoconf-like macros to the configure section
 # and for SAMBA_ macros for building libraries, binaries etc
 
-import os, sys, re, fnmatch, shlex
+import os, sys, re, fnmatch, shlex, inspect
 from optparse import SUPPRESS_HELP
-import Build, Options, Utils, Task, Logs, Configure
+from waflib import Build, Options, Utils, Task, Logs, Configure, Errors
 from TaskGen import feature, before, after
-from Configure import conf, ConfigurationContext
+from Configure import ConfigurationContext
 from Logs import debug
 
 # TODO: make this a --option
@@ -15,6 +15,30 @@ LIB_PATH="shared"
 # sigh, python octal constants are a mess
 MODE_644 = int('644', 8)
 MODE_755 = int('755', 8)
+
+def conf(f):
+    # override in order to propagate the argument "mandatory"
+    def fun(*k, **kw):
+        mandatory = True
+        if 'mandatory' in kw:
+            mandatory = kw['mandatory']
+            del kw['mandatory']
+
+        try:
+            return f(*k, **kw)
+        except Errors.ConfigurationError:
+            if mandatory:
+                raise
+
+    fun.__name__ = f.__name__
+    if 'mandatory' in inspect.getsource(f):
+        fun = f
+
+    setattr(Configure.ConfigurationContext, f.__name__, fun)
+    setattr(Build.BuildContext, f.__name__, fun)
+    return f
+Configure.conf = conf
+Configure.conftest = conf
 
 @conf
 def SET_TARGET_TYPE(ctx, target, value):
@@ -201,6 +225,8 @@ def subst_vars_error(string, env):
             if not vname in env:
                 raise KeyError("Failed to find variable %s in %s" % (vname, string))
             v = env[vname]
+            if isinstance(v, list):
+                v = ' '.join(v)
         out.append(v)
     return ''.join(out)
 
@@ -355,6 +381,8 @@ def RUN_PYTHON_TESTS(testfiles, pythonpath=None, extra_env=None):
         pythonpath = os.path.join(Utils.g_module.blddir, 'python')
     result = 0
     for interp in env.python_interpreters:
+        if not isinstance(interp, str):
+            interp = ' '.join(interp)
         for testfile in testfiles:
             cmd = "PYTHONPATH=%s %s %s" % (pythonpath, interp, testfile)
             if extra_env:
@@ -412,9 +440,8 @@ def LOAD_ENVIRONMENT():
     import Environment
     env = Environment.Environment()
     try:
-        env.load('.lock-wscript')
-        env.load(env.blddir + '/c4che/default.cache.py')
-    except:
+        env.load('bin/c4che/default_cache.py')
+    except (OSError, IOError):
         pass
     return env
 
@@ -446,6 +473,8 @@ def RECURSE(ctx, directory):
         return
     visited_dirs.add(key)
     relpath = os_path_relpath(abspath, ctx.curdir)
+    if 'waflib.extras.compat15' in sys.modules:
+        return ctx.recurse(relpath)
     if ctxclass == 'Handler':
         return ctx.sub_options(relpath)
     if ctxclass == 'ConfigurationContext':
@@ -561,7 +590,7 @@ def map_shlib_extension(ctx, name, python=False):
     if python:
         return ctx.env.pyext_PATTERN % root1
     else:
-        (root2, ext2) = os.path.splitext(ctx.env.shlib_PATTERN)
+        (root2, ext2) = os.path.splitext(ctx.env.cshlib_PATTERN)
     return root1+ext2
 Build.BuildContext.map_shlib_extension = map_shlib_extension
 
@@ -583,7 +612,7 @@ def make_libname(ctx, name, nolibprefix=False, version=None, python=False):
     if python:
         libname = apply_pattern(name, ctx.env.pyext_PATTERN)
     else:
-        libname = apply_pattern(name, ctx.env.shlib_PATTERN)
+        libname = apply_pattern(name, ctx.env.cshlib_PATTERN)
     if nolibprefix and libname[0:3] == 'lib':
         libname = libname[3:]
     if version:

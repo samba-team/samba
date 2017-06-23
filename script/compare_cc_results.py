@@ -26,6 +26,9 @@ for fname in sys.argv[1:]:
     lines = list()
     f = open(fname, 'r')
     for line in f:
+        if line.startswith("cfg_files ="):
+            # waf writes configuration files as absolute paths
+            continue
         if len(line.split('=', 1)) == 2:
             key = line.split('=', 1)[0].strip()
             if key in exceptions:

@@ -17,7 +17,7 @@ def check_system_perl_module(conf, module, version=None):
         return False
 
     # Check for system perl module
-    if not conf.check_perl_module(module_check):
+    if conf.check_perl_module(module_check) is None:
         return False
 
     conf.define('USING_SYSTEM_%s' % bundle_name.upper(), 1)

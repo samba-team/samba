@@ -77,7 +77,7 @@ planpythontestsuite("none", "samba.tests.samba3sam")
 planpythontestsuite(
     "none", "wafsamba.tests.test_suite",
     extra_path=[os.path.join(samba4srcdir, "..", "buildtools"),
-                os.path.join(samba4srcdir, "..", "third_party", "waf", "wafadmin")])
+                os.path.join(samba4srcdir, "..", "third_party", "waf", "waflib")])
 plantestsuite(
     "samba4.blackbox.demote-saveddb", "none",
     ["PYTHON=%s" % python, os.path.join(bbdir, "demote-saveddb.sh"),

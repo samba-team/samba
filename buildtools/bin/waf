@@ -1,6 +1,6 @@
 #!/usr/bin/env python
-# encoding: ISO-8859-1
-# Thomas Nagy, 2005-2010
+# encoding: ISO8859-1
+# Thomas Nagy, 2005-2015
 
 """
 Redistribution and use in source and binary forms, with or without
@@ -30,25 +30,22 @@ IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 """
 
-import os, sys
-if sys.hexversion<0x203000f: raise ImportError("Waf requires Python >= 2.3")
+import os, sys, inspect
 
-if 'PSYCOWAF' in os.environ:
-	try:import psyco;psyco.full()
-	except:pass
-
-VERSION="1.5.19"
+VERSION="1.9.10"
 REVISION="x"
-INSTALL="x"
-C1='x'
-C2='x'
+GIT="x"
+INSTALL=''
+C1='#>'
+C2='#6'
+C3='#4'
 cwd = os.getcwd()
 join = os.path.join
+
 
 WAF='waf'
 def b(x):
 	return x
-
 if sys.hexversion>0x300000f:
 	WAF='waf3'
 	def b(x):
@@ -58,20 +55,110 @@ def err(m):
 	print(('\033[91mError: %s\033[0m' % m))
 	sys.exit(1)
 
-def test(dir):
-	try: os.stat(join(dir, 'wafadmin')); return os.path.abspath(dir)
+def unpack_wafdir(dir, src):
+	f = open(src,'rb')
+	c = 'corrupt archive (%d)'
+	while 1:
+		line = f.readline()
+		if not line: err('run waf-light from a folder containing waflib')
+		if line == b('#==>\n'):
+			txt = f.readline()
+			if not txt: err(c % 1)
+			if f.readline() != b('#<==\n'): err(c % 2)
+			break
+	if not txt: err(c % 3)
+	txt = txt[1:-1].replace(b(C1), b('\n')).replace(b(C2), b('\r')).replace(b(C3), b('\x00'))
+
+	import shutil, tarfile
+	try: shutil.rmtree(dir)
 	except OSError: pass
+	try:
+		for x in ('Tools', 'extras'):
+			os.makedirs(join(dir, 'waflib', x))
+	except OSError:
+		err("Cannot unpack waf lib into %s\nMove waf in a writable directory" % dir)
+
+	os.chdir(dir)
+	tmp = 't.bz2'
+	t = open(tmp,'wb')
+	try: t.write(txt)
+	finally: t.close()
+
+	try:
+		t = tarfile.open(tmp)
+	except:
+		try:
+			os.system('bunzip2 t.bz2')
+			t = tarfile.open('t')
+			tmp = 't'
+		except:
+			os.chdir(cwd)
+			try: shutil.rmtree(dir)
+			except OSError: pass
+			err("Waf cannot be unpacked, check that bzip2 support is present")
+
+	try:
+		for x in t: t.extract(x)
+	finally:
+		t.close()
+
+	for x in ('Tools', 'extras'):
+		os.chmod(join('waflib',x), 493)
+
+	if sys.hexversion<0x300000f:
+		sys.path = [join(dir, 'waflib')] + sys.path
+		import fixpy2
+		fixpy2.fixdir(dir)
+
+	os.remove(tmp)
+	os.chdir(cwd)
+
+	try: dir = unicode(dir, 'mbcs')
+	except: pass
+	try:
+		from ctypes import windll
+		windll.kernel32.SetFileAttributesW(dir, 2)
+	except:
+		pass
+
+def test(dir):
+	try:
+		os.stat(join(dir, 'waflib'))
+		return os.path.abspath(dir)
+	except OSError:
+		pass
 
 def find_lib():
 	return os.path.abspath(os.path.join(os.path.dirname(__file__), '../../third_party/waf'))
 
 wafdir = find_lib()
-w = join(wafdir, 'wafadmin')
-t = join(w, 'Tools')
-f = join(w, '3rdparty')
-sys.path = [w, t, f] + sys.path
+sys.path.insert(0, wafdir)
 
 if __name__ == '__main__':
-	import Scripting
-	Scripting.prepare(t, cwd, VERSION, wafdir)
+
+	# TODO: remove these when possible
+	from waflib.extras import compat15
+	import sys
+
+	from waflib.Tools import ccroot, c, ar, compiler_c, gcc
+	sys.modules['cc'] = c
+	sys.modules['ccroot'] = ccroot
+	sys.modules['ar'] = ar
+	sys.modules['compiler_cc'] = compiler_c
+	sys.modules['gcc'] = gcc
+
+        from waflib import Options
+	Options.lockfile = os.environ.get('WAFLOCK', '.lock-wscript')
+	if os.path.isfile(Options.lockfile) and os.stat(Options.lockfile).st_size == 0:
+		os.environ['NOCLIMB'] = "1"
+	# there is a single top-level, but libraries must build independently
+	os.environ['NO_LOCK_IN_TOP'] = "1"
+
+	from waflib import Task
+	class o(object):
+		display = None
+	Task.classes['cc_link'] = o
+
+	from waflib import Scripting
+	Scripting.waf_entry_point(cwd, VERSION, wafdir)
 

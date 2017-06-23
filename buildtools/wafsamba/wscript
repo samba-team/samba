@@ -14,7 +14,7 @@ from optparse import SUPPRESS_HELP
 # are resolved related to WAFCACHE. It will need a lot of testing
 # before it is enabled by default.
 if '--enable-auto-reconfigure' in sys.argv:
-    Configure.autoconfig = True
+    Configure.autoconfig = 'clobber'
 
 def set_options(opt):
     opt.tool_options('compiler_cc')
@@ -239,28 +239,7 @@ def configure(conf):
         p = os.path.join(conf.srcdir, 'buildtools/wafsamba/gccdeps.pyc')
         if os.path.exists(p):
             os.remove(p)
-
-        from TaskGen import feature, after
-        @feature('testd')
-        @after('apply_core')
-        def check_d(self):
-            tsk = self.compiled_tasks[0]
-            tsk.outputs.append(tsk.outputs[0].change_ext('.d'))
-
-        import Task
-        cc = Task.TaskBase.classes['cc']
-        oldmeth = cc.run
-
-        cc.run = Task.compile_fun_noshell('cc', '${CC} ${CCFLAGS} ${CPPFLAGS} ${_CCINCFLAGS} ${_CCDEFFLAGS} ${CC_SRC_F}${SRC} ${CC_TGT_F}${TGT[0].abspath(env)}')[0]
-        try:
-            try:
-                conf.check(features='c testd', fragment='int main() {return 0;}\n', ccflags=['-MD'], mandatory=True, msg='Check for -MD')
-            except:
-                pass
-            else:
-                conf.check_tool('gccdeps', tooldir=conf.srcdir + "/buildtools/wafsamba")
-        finally:
-            cc.run = oldmeth
+        conf.load('gccdeps')
 
     # make the install paths available in environment
     conf.env.LIBDIR = Options.options.LIBDIR or '${PREFIX}/lib'
@@ -511,7 +490,7 @@ struct foo bar = { .y = 'X', .x = 1 };
         conf.DEFINE('TIME_WITH_SYS_TIME', 1)
 
     # cope with different extensions for libraries
-    (root, ext) = os.path.splitext(conf.env.shlib_PATTERN)
+    (root, ext) = os.path.splitext(conf.env.cshlib_PATTERN)
     if ext[0] == '.':
         conf.define('SHLIBEXT', ext[1:], quote=True)
     else:

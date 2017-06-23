@@ -211,7 +211,7 @@ def testonly(ctx):
         # Symlink back to source dir so it can find tests in test/
         link = os.path.join(testdir, 'test')
         if not os.path.exists(link):
-            os.symlink(os.path.abspath(os.path.join(env.cwd, 'test')), link)
+            os.symlink(ctx.path.make_node('test').abspath(), link)
 
         for t in tdb1_unit_tests:
             f = "tdb1-" + t
@@ -238,9 +238,9 @@ def testonly(ctx):
 # WAF doesn't build the unit tests for this, maybe because they don't link with tdb?
 # This forces it
 def test(ctx):
-    import Scripting
-    Scripting.commands.append('build')
-    Scripting.commands.append('testonly')
+    import Options
+    Options.commands.append('build')
+    Options.commands.append('testonly')
 
 def dist():
     '''makes a tarball for distribution'''

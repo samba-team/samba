@@ -8,7 +8,6 @@ from samba_utils import SUBST_VARS_RECURSIVE
 TaskGen.task_gen.apply_verif = Utils.nada
 
 # bring in the other samba modules
-from samba_optimisation import *
 from samba_utils import *
 from samba_version import *
 from samba_autoconf import *
@@ -31,10 +30,10 @@ import hpuxcc
 import generic_cc
 import samba_dist
 import samba_wildcard
-import stale_files
 import symbols
 import pkgconfig
 import configure_file
+import samba_waf18
 
 # some systems have broken threading in python
 if os.environ.get('WAF_NOTHREADS') == '1':
@@ -44,8 +43,7 @@ LIB_PATH="shared"
 
 os.environ['PYTHONUNBUFFERED'] = '1'
 
-
-if Constants.HEXVERSION < 0x105019:
+if Constants.HEXVERSION not in (0x105019, 0x1090a00):
     Logs.error('''
 Please use the version of waf that comes with Samba, not
 a system installed version. See http://wiki.samba.org/index.php/Waf
@@ -280,7 +278,7 @@ def SAMBA_LIBRARY(bld, libname, source,
             vscript = "%s.vscript" % libname
             bld.ABI_VSCRIPT(version_libname, abi_directory, version, vscript,
                             abi_match)
-            fullname = apply_pattern(bundled_name, bld.env.shlib_PATTERN)
+            fullname = apply_pattern(bundled_name, bld.env.cshlib_PATTERN)
             fullpath = bld.path.find_or_declare(fullname)
             vscriptpath = bld.path.find_or_declare(vscript)
             if not fullpath:
@@ -290,7 +288,7 @@ def SAMBA_LIBRARY(bld, libname, source,
             bld.add_manual_dependency(fullpath, vscriptpath)
             if bld.is_install:
                 # also make the .inst file depend on the vscript
-                instname = apply_pattern(bundled_name + '.inst', bld.env.shlib_PATTERN)
+                instname = apply_pattern(bundled_name + '.inst', bld.env.cshlib_PATTERN)
                 bld.add_manual_dependency(bld.path.find_or_declare(instname), bld.path.find_or_declare(vscript))
             vscript = os.path.join(bld.path.abspath(bld.env), vscript)
 
@@ -325,6 +323,8 @@ def SAMBA_LIBRARY(bld, libname, source,
         link_name = 'shared/%s' % realname
 
     if link_name:
+        if 'waflib.extras.compat15' in sys.modules:
+            link_name = 'default/' + link_name
         t.link_name = link_name
 
     if pc_files is not None and not private_library:
@@ -667,7 +667,7 @@ def SAMBA_GENERATOR(bld, name, rule, source='', target='',
         target=target,
         shell=isinstance(rule, str),
         update_outputs=True,
-        before='cc',
+        before='c',
         ext_out='.c',
         samba_type='GENERATOR',
         dep_vars = dep_vars,
@@ -827,6 +827,8 @@ def install_file(bld, destdir, file, chmod=MODE_644, flat=False,
                  python_fixup=False, perl_fixup=False,
                  destname=None, base_name=None):
     '''install a file'''
+    if not isinstance(file, str):
+        file = file.abspath()
     destdir = bld.EXPAND_VARIABLES(destdir)
     if not destname:
         destname = file
@@ -933,59 +935,6 @@ def SAMBAMANPAGES(bld, manpages, extra_source=None):
                             )
         bld.INSTALL_FILES('${MANDIR}/man%s' % m[-1], m, flat=True)
 Build.BuildContext.SAMBAMANPAGES = SAMBAMANPAGES
-
-#############################################################
-# give a nicer display when building different types of files
-def progress_display(self, msg, fname):
-    col1 = Logs.colors(self.color)
-    col2 = Logs.colors.NORMAL
-    total = self.position[1]
-    n = len(str(total))
-    fs = '[%%%dd/%%%dd] %s %%s%%s%%s\n' % (n, n, msg)
-    return fs % (self.position[0], self.position[1], col1, fname, col2)
-
-def link_display(self):
-    if Options.options.progress_bar != 0:
-        return Task.Task.old_display(self)
-    fname = self.outputs[0].bldpath(self.env)
-    return progress_display(self, 'Linking', fname)
-Task.TaskBase.classes['cc_link'].display = link_display
-
-def samba_display(self):
-    if Options.options.progress_bar != 0:
-        return Task.Task.old_display(self)
-
-    targets    = LOCAL_CACHE(self, 'TARGET_TYPE')
-    if self.name in targets:
-        target_type = targets[self.name]
-        type_map = { 'GENERATOR' : 'Generating',
-                     'PROTOTYPE' : 'Generating'
-                     }
-        if target_type in type_map:
-            return progress_display(self, type_map[target_type], self.name)
-
-    if len(self.inputs) == 0:
-        return Task.Task.old_display(self)
-
-    fname = self.inputs[0].bldpath(self.env)
-    if fname[0:3] == '../':
-        fname = fname[3:]
-    ext_loc = fname.rfind('.')
-    if ext_loc == -1:
-        return Task.Task.old_display(self)
-    ext = fname[ext_loc:]
-
-    ext_map = { '.idl' : 'Compiling IDL',
-                '.et'  : 'Compiling ERRTABLE',
-                '.asn1': 'Compiling ASN1',
-                '.c'   : 'Compiling' }
-    if ext in ext_map:
-        return progress_display(self, ext_map[ext], fname)
-    return Task.Task.old_display(self)
-
-Task.TaskBase.classes['Task'].old_display = Task.TaskBase.classes['Task'].display
-Task.TaskBase.classes['Task'].display = samba_display
-
 
 @after('apply_link')
 @feature('cshlib')

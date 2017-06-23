@@ -125,7 +125,7 @@ def configure(conf):
         if not conf.CHECK_SHLIB_W_PYTHON("Checking if -fno-common is needed"):
             conf.ADD_CFLAGS('-fno-common')
         if not conf.CHECK_SHLIB_W_PYTHON("Checking if -undefined dynamic_lookup is not need"):
-            conf.env.append_value('shlib_LINKFLAGS', ['-undefined', 'dynamic_lookup'])
+            conf.env.append_value('cshlib_LINKFLAGS', ['-undefined', 'dynamic_lookup'])
 
     if sys.platform == 'darwin':
         conf.ADD_LDFLAGS('-framework CoreFoundation')
@@ -362,9 +362,6 @@ def dist():
 def distcheck():
     '''test that distribution tarball builds and installs'''
     samba_version.load_version(env=None)
-    import Scripting
-    d = Scripting.distcheck
-    d()
 
 def wildcard_cmd(cmd):
     '''called on a unknown command'''
