@@ -45,8 +45,7 @@ test_noninteractive_no_prompt()
     if [ $? != 0 ] ; then
 	echo "$out"
 	echo "command failed"
-	false
-	return
+	return 1
     fi
 
     echo "$out" | grep $prompt >/dev/null 2>&1
@@ -54,10 +53,10 @@ test_noninteractive_no_prompt()
     if [ $? = 0 ] ; then
 	# got a prompt .. fail
 	echo matched interactive prompt in non-interactive mode
-	false
-    else
-	true
+	return 1
     fi
+
+    return 0
 }
 
 # Test that an interactive smbclient prompts to stdout
@@ -80,19 +79,17 @@ EOF
     if [ $ret != 0 ] ; then
 	echo "$out"
 	echo "command failed"
-	false
-	return
+	return 1
     fi
 
     echo "$out" | grep $prompt >/dev/null 2>&1
 
-    if [ $? = 0 ] ; then
-	# got a prompt .. succeed
-	true
-    else
+    if [ $? != 0 ] ; then
 	echo failed to match interactive prompt on stdout
-	false
+	return 1
     fi
+
+    return 0
 }
 
 # Test creating a bad symlink and deleting it.
@@ -118,21 +115,19 @@ EOF
     if [ $ret != 0 ] ; then
 	echo "$out"
 	echo "failed create then delete bad symlink with error $ret"
-	false
-	return
+	return 1
     fi
 
     echo "$out" | grep "$prompt" >/dev/null 2>&1
 
     ret=$?
-    if [ $ret = 0 ] ; then
-	# got the correct prompt .. succeed
-	true
-    else
+    if [ $ret != 0 ] ; then
 	echo "$out"
 	echo "failed create then delete bad symlink - grep failed with $ret"
-	false
+	return 1
     fi
+
+    return 0
 }
 
 # Test creating a good symlink and deleting it by path.
@@ -160,28 +155,25 @@ EOF
 	echo "failed delete good symlink with error $ret"
 	rm $slink_target
 	rm $slink_name
-	false
-	return
+	return 1
     fi
 
     if [ ! -e $slink_target ] ; then
 	echo "failed delete good symlink - symlink target deleted !"
 	rm $slink_target
 	rm $slink_name
-	false
-	return
+	return 1
     fi
 
     if [ -e $slink_name ] ; then
 	echo "failed delete good symlink - symlink still exists"
 	rm $slink_target
 	rm $slink_name
-	false
-    else
-	# got the correct prompt .. succeed
-	rm $slink_target
-	true
+	return 1
     fi
+
+    rm $slink_target
+    return 0
 }
 
 # Test writing into a read-only directory (logon as guest) fails.
@@ -196,8 +188,7 @@ test_read_only_dir()
 ##
     if [ "$USERID" != 0 ] ; then
 	echo "skipping test_read_only_dir as non-root"
-	true
-	return
+	return 0
     fi
 
 ##
@@ -206,8 +197,7 @@ test_read_only_dir()
 ##
     if [ "$ADDARGS" = "-e" ] ; then
 	echo "skipping test_read_only_dir with encrypted connection"
-	true
-	return
+	return 0
     fi
 
     cat > $tmpfile <<EOF
@@ -225,21 +215,19 @@ EOF
 	echo "$out"
 	echo "failed writing into read-only directory with error $ret"
 
-	false
-	return
+	return 1
     fi
 
     echo "$out" | grep "$prompt" >/dev/null 2>&1
 
     ret=$?
-    if [ $ret = 0 ] ; then
-	# got the correct prompt .. succeed
-	true
-    else
+    if [ $ret != 0 ] ; then
 	echo "$out"
 	echo "failed writing into read-only directory - grep failed with $ret"
-	false
+	return 1
     fi
+
+    return 0
 }
 
 
@@ -260,9 +248,8 @@ EOF
     if [ $ret != 0 ] ; then
 	echo "$out"
 	echo "failed sending message to $SERVER with error $ret"
-	false
 	rm -f $tmpfile
-	return
+	return 1
     fi
 
     # The server writes this into a file message.msgtest, via message.%m to test the % sub code
@@ -274,16 +261,15 @@ EOF
     if [ $ret != 0 ] ; then
 	echo "$out"
 	echo "failed getting sent message from $SERVER with error $ret"
-	false
-	return
+	return 1
     fi
 
     if [ cmp $PREFIX/message_out.$$ $tmpfile != 0 ] ; then
 	echo "failed comparison of message from $SERVER"
-	false
-	return
+	return 1
     fi
-    true
+
+    return 0
 }
 
 # Test reading an owner-only file (logon as guest) fails.
@@ -298,8 +284,7 @@ test_owner_only_file()
 ##
     if [ "$USERID" != 0 ] ; then
 	echo "skipping test_owner_only_file as non-root"
-	true
-	return
+	return 0
     fi
 
 ##
@@ -308,8 +293,7 @@ test_owner_only_file()
 ##
     if [ "$ADDARGS" = "-e" ] ; then
 	echo "skipping test_owner_only_file with encrypted connection"
-	true
-	return
+	return 0
     fi
 
     cat > $tmpfile <<EOF
@@ -326,21 +310,19 @@ EOF
     if [ $ret != 0 ] ; then
 	echo "$out"
 	echo "failed reading owner-only file with error $ret"
-	false
-	return
+	return 1
     fi
 
     echo "$out" | grep "$prompt" >/dev/null 2>&1
 
     ret=$?
-    if [ $ret = 0 ] ; then
-	# got the correct prompt .. succeed
-	true
-    else
+    if [ $ret != 0 ] ; then
 	echo "$out"
 	echo "failed reading owner-only file - grep failed with $ret"
-	false
+	return 1
     fi
+
+    return 0
 }
 
 # Test accessing an msdfs path.
@@ -356,8 +338,7 @@ test_msdfs_link()
     if [ $ret != 0 ] ; then
 	echo "$out"
 	echo "failed listing msfds-share\ with error $ret"
-	false
-	return
+	return 1
     fi
 
     cat > $tmpfile <<EOF
@@ -376,8 +357,7 @@ EOF
     if [ $ret != 0 ] ; then
 	echo "$out"
 	echo "failed accessing \\msdfs-src1 link with error $ret"
-	false
-	return
+	return 1
     fi
 
     echo "$out" | grep "$prompt" >/dev/null 2>&1
@@ -386,7 +366,7 @@ EOF
     if [ $ret != 0 ] ; then
 	echo "$out"
 	echo "failed listing \\msdfs-src1 - grep failed with $ret"
-	false
+	return 1
     fi
 
     cat > $tmpfile <<EOF
@@ -405,8 +385,7 @@ EOF
     if [ $ret != 0 ] ; then
 	echo "$out"
 	echo "failed accessing \\deeppath\\msdfs-src2 link with error $ret"
-	false
-	return
+	return 1
     fi
 
     echo "$out" | grep "$prompt" >/dev/null 2>&1
@@ -415,12 +394,10 @@ EOF
     if [ $ret != 0 ] ; then
 	echo "$out"
 	echo "failed listing \\deeppath\\msdfs-src2 - grep failed with $ret"
-	false
-	return
-    else
-	true
-	return
+	return 1
     fi
+
+    return 0
 }
 
 # Archive bits are correctly set on file/dir creation and rename.
@@ -462,8 +439,7 @@ EOF
     if [ $ret != 0 ] ; then
 	echo "$out"
 	echo "failed creating file $filename with error $ret"
-	false
-	return
+	return 1
     fi
 
     echo "$out" | grep "$prompt_file" >/dev/null 2>&1
@@ -474,13 +450,10 @@ EOF
     rm -f $local_name1
     rm -f $local_name2
 
-    if [ $ret = 0 ] ; then
-	# got the correct prompt .. succeed
-	true
-    else
+    if [ $ret != 0 ] ; then
 	echo "$out"
 	echo "Attributes incorrect on new file $ret"
-	false
+	return 1
     fi
 
 # Now check if we remove 'A' and rename, the A comes back.
@@ -504,8 +477,7 @@ EOF
     if [ $ret != 0 ] ; then
 	echo "$out"
 	echo "failed creating file and renaming $filename with error $ret"
-	false
-	return
+	return 1
     fi
 
     echo "$out" | grep "$prompt_file" >/dev/null 2>&1
@@ -516,13 +488,10 @@ EOF
     rm -f $local_name1
     rm -f $local_name2
 
-    if [ $ret = 0 ] ; then
-	# got the correct prompt .. succeed
-	true
-    else
+    if [ $ret != 0 ] ; then
 	echo "$out"
 	echo "Attributes incorrect on renamed file $ret"
-	false
+	return 1
     fi
 
     rm -rf $local_dir_name1
@@ -545,8 +514,7 @@ EOF
     if [ $ret != 0 ] ; then
 	echo "$out"
 	echo "failed creating directory $dirname with error $ret"
-	false
-	return
+	return 1
     fi
 
     echo "$out" | grep "$prompt_dir" >/dev/null 2>&1
@@ -556,13 +524,10 @@ EOF
     rm -rf $local_dir_name1
     rm -rf $local_dir_name2
 
-    if [ $ret = 0 ] ; then
-	# got the correct prompt .. succeed
-	true
-    else
+    if [ $ret != 0 ] ; then
 	echo "$out"
 	echo "Attributes incorrect on new directory $ret"
-	false
+	return 1
     fi
 
 # Now check if we rename, we still only have 'D' attributes
@@ -583,8 +548,7 @@ EOF
     if [ $ret != 0 ] ; then
 	echo "$out"
 	echo "failed creating directory $dirname and renaming with error $ret"
-	false
-	return
+	return 1
     fi
 
     echo "$out" | grep "$prompt_dir" >/dev/null 2>&1
@@ -594,14 +558,13 @@ EOF
     rm -f $local_name1
     rm -f $local_name2
 
-    if [ $ret = 0 ] ; then
-	# got the correct prompt .. succeed
-	true
-    else
+    if [ $ret != 0 ] ; then
 	echo "$out"
 	echo "Attributes incorrect on renamed directory $ret"
-	false
+	return 1
     fi
+
+    return 0
 }
 
 # Test authenticating using the winbind ccache
@@ -612,8 +575,7 @@ test_ccache_access()
 
     if [ $ret != 0 ] ; then
 	echo "wbinfo failed to store creds in cache (user='${USERNAME}', pass='${PASSWORD}')"
-	false
-	return
+	return 1
     fi
 
     $SMBCLIENT //$SERVER_IP/tmp -C -U "${USERNAME}" $ADDARGS -c quit 2>&1
@@ -621,8 +583,7 @@ test_ccache_access()
 
     if [ $ret != 0 ] ; then
 	echo "smbclient failed to use cached credentials"
-	false
-	return
+	return 1
     fi
 
     $WBINFO --ccache-save="${USERNAME}%GarBage"
@@ -630,8 +591,7 @@ test_ccache_access()
 
     if [ $ret != 0 ] ; then
 	echo "wbinfo failed to store creds in cache (user='${USERNAME}', pass='GarBage')"
-	false
-	return
+	return 1
     fi
 
     $SMBCLIENT //$SERVER_IP/tmp -C -U "${USERNAME}" $ADDARGS -c quit 2>&1
@@ -639,8 +599,7 @@ test_ccache_access()
 
     if [ $ret -eq 0 ] ; then
 	echo "smbclient succeeded with wrong cached credentials"
-	false
-	return
+	return 1
     fi
 
     $WBINFO --logoff
@@ -661,8 +620,7 @@ EOF
 
     if [ $ret != 0 ] ; then
 	echo "smbclient failed to use auth file"
-	false
-	return
+	return 1
     fi
 
     cat > $tmpfile <<EOF
@@ -676,8 +634,7 @@ EOF
 
     if [ $ret -eq 0 ] ; then
 	echo "smbclient succeeded with wrong auth file credentials"
-	false
-	return
+	return 1
     fi
 }
 
@@ -699,8 +656,7 @@ test_backup_privilege_list()
     ret=$?
     if [ $ret != 0 ] ; then
 	echo "Failed to add SeBackupPrivilege to user $priv_username - $ret"
-	false
-	return
+	return 1
     fi
 
     cat > $tmpfile <<EOF
@@ -718,8 +674,7 @@ EOF
     if [ $ret != 0 ] ; then
 	echo "$out"
 	echo "failed backup privilege list $ret"
-	false
-	return
+	return 1
     fi
 
 # Now remove all privileges from this SID.
@@ -727,8 +682,7 @@ EOF
     ret=$?
     if [ $ret != 0 ] ; then
 	echo "failed to remove SeBackupPrivilege from user $priv_username - $ret"
-	false
-	return
+	return 1
     fi
 }
 
@@ -744,8 +698,7 @@ test_bad_names()
     if [ $ret != 0 ] ; then
 	echo "$out"
 	echo "failed accessing badname-tmp (SMB1) with error $ret"
-	false
-	return
+	return 1
     fi
 
     echo "$out" | wc -l 2>&1 | grep 6
@@ -753,7 +706,7 @@ test_bad_names()
     if [ $ret != 0 ] ; then
 	echo "$out"
 	echo "failed listing \\badname-tmp - grep of number of lines (1) failed with $ret"
-	false
+	return 1
     fi
 
     echo "$out" | grep 'Domain=.*OS=.*Server='
@@ -761,7 +714,7 @@ test_bad_names()
     if [ $ret != 0 ] ; then
 	echo "$out"
 	echo "failed listing \\badname-tmp - grep (1) failed with $ret"
-	false
+	return 1
     fi
 
     echo "$out" | grep '^  \. *D'
@@ -769,7 +722,7 @@ test_bad_names()
     if [ $ret != 0 ] ; then
 	echo "$out"
 	echo "failed listing \\badname-tmp - grep (2) failed with $ret"
-	false
+	return 1
     fi
 
     echo "$out" | grep '^  \.\. *D'
@@ -777,7 +730,7 @@ test_bad_names()
     if [ $ret != 0 ] ; then
 	echo "$out"
 	echo "failed listing \\badname-tmp - grep (3) failed with $ret"
-	false
+	return 1
     fi
 
     echo "$out" | grep '^  blank.txt *N'
@@ -785,7 +738,7 @@ test_bad_names()
     if [ $ret != 0 ] ; then
 	echo "$out"
 	echo "failed listing \\badname-tmp - grep (4) failed with $ret"
-	false
+	return 1
     fi
 
     echo "$out" | grep '^ *$'
@@ -793,7 +746,7 @@ test_bad_names()
     if [ $ret != 0 ] ; then
 	echo "$out"
 	echo "failed listing \\badname-tmp - grep (5) failed with $ret"
-	false
+	return 1
     fi
 
     echo "$out" | grep 'blocks of size.*blocks available'
@@ -801,7 +754,7 @@ test_bad_names()
     if [ $ret != 0 ] ; then
 	echo "$out"
 	echo "failed listing \\badname-tmp - grep (6) failed with $ret"
-	false
+	return 1
     fi
 
     # Now check again with -mSMB3
@@ -813,8 +766,7 @@ test_bad_names()
     if [ $ret != 0 ] ; then
 	echo "$out"
 	echo "failed accessing badname-tmp (SMB3) with error $ret"
-	false
-	return
+	return 1
     fi
 
     echo "$out" | wc -l 2>&1 | grep 6
@@ -822,7 +774,7 @@ test_bad_names()
     if [ $ret != 0 ] ; then
 	echo "$out"
 	echo "failed listing \\badname-tmp - SMB3 grep of number of lines (1) failed with $ret"
-	false
+	return 1
     fi
 
     echo "$out" | grep 'Domain=.*OS=.*Server='
@@ -830,7 +782,7 @@ test_bad_names()
     if [ $ret != 0 ] ; then
 	echo "$out"
 	echo "failed listing \\badname-tmp - SMB3 grep (1) failed with $ret"
-	false
+	return 1
     fi
 
     echo "$out" | grep '^  \. *D'
@@ -838,7 +790,7 @@ test_bad_names()
     if [ $ret != 0 ] ; then
 	echo "$out"
 	echo "failed listing \\badname-tmp - SMB3 grep (2) failed with $ret"
-	false
+	return 1
     fi
 
     echo "$out" | grep '^  \.\. *D'
@@ -846,7 +798,7 @@ test_bad_names()
     if [ $ret != 0 ] ; then
 	echo "$out"
 	echo "failed listing \\badname-tmp - SMB3 grep (3) failed with $ret"
-	false
+	return 1
     fi
 
     echo "$out" | grep '^  blank.txt *N'
@@ -854,7 +806,7 @@ test_bad_names()
     if [ $ret != 0 ] ; then
 	echo "$out"
 	echo "failed listing \\badname-tmp - SMB3 grep (4) failed with $ret"
-	false
+	return 1
     fi
 
     echo "$out" | grep '^ *$'
@@ -862,7 +814,7 @@ test_bad_names()
     if [ $ret != 0 ] ; then
 	echo "$out"
 	echo "failed listing \\badname-tmp - SMB3 grep (5) failed with $ret"
-	false
+	return 1
     fi
 
     echo "$out" | grep 'blocks of size.*blocks available'
@@ -870,7 +822,7 @@ test_bad_names()
     if [ $ret != 0 ] ; then
 	echo "$out"
 	echo "failed listing \\badname-tmp - SMB3 grep (6) failed with $ret"
-	false
+	return 1
     fi
 }
 
@@ -894,8 +846,7 @@ EOF
     if [ $ret != 0 ] ; then
 	echo "$out"
 	echo "failed accessing manglenames_share with error $ret"
-	false
-	return
+	return 1
     fi
 
     echo "$out" | grep 'NT_STATUS'
@@ -903,7 +854,7 @@ EOF
     if [ $ret == 0 ] ; then
 	echo "$out"
 	echo "failed - NT_STATUS_XXXX listing \\manglenames_share\\FF4GBY~Q"
-	false
+	return 1
     fi
 }
 
@@ -936,14 +887,13 @@ EOF
     if [ $ret != 0 ] ; then
 	echo "$out"
 	echo "failed scopy test (1) with output $ret"
-	false
-	return
+	return 1
     fi
 
     if [ $out1 != $out2 ] ; then
 	echo "$out1 $out2"
 	echo "failed md5sum (1)"
-	false
+	return 1
     fi
 
 #
@@ -972,14 +922,13 @@ EOF
     if [ $ret != 0 ] ; then
 	echo "$out"
 	echo "failed scopy test (2) with output $ret"
-	false
-	return
+	return 1
     fi
 
     if [ $out1 != $out2 ] ; then
 	echo "$out1 $out2"
 	echo "failed md5sum (2)"
-	false
+	return 1
     fi
 }
 
@@ -1003,8 +952,7 @@ EOF
     if [ $ret != 0 ] ; then
 	echo "$out"
 	echo "failed creating toplevel stream :foobar with error $ret"
-	false
-	return
+	return 1
     fi
 
     echo "$out" | grep '^stream:.*:foobar'
@@ -1012,7 +960,7 @@ EOF
     if [ $ret != 0 ] ; then
 	echo "$out"
 	echo "failed creating toplevel stream :foobar"
-	false
+	return 1
     fi
 }
 
@@ -1034,8 +982,7 @@ EOF
     if [ $ret != 0 ] ; then
 	echo "$out"
 	echo "failed accessing widelinks_share with error $ret"
-	false
-	return
+	return 1
     fi
 
     echo "$out" | grep 'NT_STATUS'
@@ -1043,7 +990,7 @@ EOF
     if [ $ret == 0 ] ; then
 	echo "$out"
 	echo "failed - NT_STATUS_XXXX listing \\widelinks_share\\dot"
-	false
+	return 1
     fi
 
     cat > $tmpfile <<EOF
@@ -1059,8 +1006,7 @@ EOF
     if [ $ret != 0 ] ; then
 	echo "$out"
 	echo "failed accessing widelinks_share with error $ret"
-	false
-	return
+	return 1
     fi
 
 # This should fail with NT_STATUS_ACCESS_DENIED
@@ -1069,7 +1015,7 @@ EOF
     if [ $ret != 0 ] ; then
 	echo "$out"
 	echo "failed - should get NT_STATUS_ACCESS_DENIED listing \\widelinks_share\\source"
-	false
+	return 1
     fi
 }
 
@@ -1095,8 +1041,7 @@ EOF
     if [ $ret != 0 ] ; then
 	echo "$out"
 	echo "failed creating then deleting foo:bar with error $ret"
-	false
-	return
+	return 1
     fi
 
     echo "$out" | grep 'NT_STATUS_NO_SUCH_FILE listing \\lost\*'
@@ -1105,8 +1050,7 @@ EOF
 	echo "$out"
 	echo "deleting foo:bar left lost-XXX directory"
 	rm -rf "$LOCAL_PATH/lost-*"
-	false
-	return
+	return 1
     fi
 }
 
@@ -1145,8 +1089,7 @@ EOF
     if [ $ret -ne 0 ] ; then
        echo "$out"
        echo "failed accessing nosymlinks with error $ret"
-       false
-       return
+       return 1
     fi
 
     echo "$out" | grep 'NT_STATUS_ACCESS_DENIED'
@@ -1154,8 +1097,7 @@ EOF
     if [ $ret -ne 0 ] ; then
        echo "$out"
        echo "failed - should get NT_STATUS_ACCESS_DENIED getting \\nosymlinks\\source"
-       false
-       return
+       return 1
     fi
 
 # But we should be able to create and delete directories.
@@ -1173,8 +1115,7 @@ EOF
     if [ $ret -ne 0 ] ; then
        echo "$out"
        echo "failed accessing nosymlinks with error $ret"
-       false
-       return
+       return 1
     fi
 
     echo "$out" | grep 'NT_STATUS'
@@ -1182,7 +1123,7 @@ EOF
     if [ $ret -eq 0 ] ; then
 	echo "$out"
 	echo "failed - NT_STATUS_XXXX doing mkdir a; mkdir a\\b on \\nosymlinks"
-	false
+	return 1
     fi
 
 # Ensure regular file/directory access also works.
@@ -1201,8 +1142,7 @@ EOF
     if [ $ret -ne 0 ] ; then
        echo "$out"
        echo "failed accessing nosymlinks with error $ret"
-       false
-       return
+       return 1
     fi
 
     echo "$out" | grep 'NT_STATUS'
@@ -1210,8 +1150,7 @@ EOF
     if [ $ret -eq 0 ] ; then
        echo "$out"
        echo "failed - NT_STATUS_XXXX doing cd foo\\bar; get testfile on \\nosymlinks"
-       false
-       return
+       return 1
     fi
 }
 
@@ -1282,8 +1221,7 @@ EOF
     if [ $ret -ne 0 ] ; then
        echo "$out"
        echo "failed to connect error $ret"
-       false
-       return
+       return 1
     fi
 
     echo "$out" | grep "Domain=\[[a-zA-Z][a-zA-Z0-9.-]*\] OS=\[Windows [0-9]\.[0-9]\] Server=\[Samba"
@@ -1291,9 +1229,10 @@ EOF
     if [ $ret -ne 0 ] ; then
        echo "$out"
        echo "failed - should get: Domain=[...] OS=[Windows 6.1] Server=..."
-       false
-       return
+       return 1
     fi
+
+    return 0
 }
 
 LOGDIR_PREFIX=test_smbclient_s3
