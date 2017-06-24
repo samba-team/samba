@@ -8,7 +8,7 @@ include Makefile.settings
 
 # Docs to build
 MAIN_DOCS = $(patsubst %/index.xml,%,$(wildcard */index.xml))
-MANPAGES = $(wildcard $(MANPAGEDIR)/*.?.xml)
+MANPAGES = $(sort $(wildcard $(MANPAGEDIR)/*.?.xml))
 
 # Lists of files to process
 MANPAGES_PLUCKER = $(patsubst $(MANPAGEDIR)/%.xml,$(PLUCKERDIR)/%.pdb,$(MANPAGES))
