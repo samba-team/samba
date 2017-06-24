@@ -134,9 +134,9 @@ static void notifyd_get_db(struct messaging_context *msg_ctx,
 			   struct server_id src, DATA_BLOB *data);
 
 #ifdef CLUSTER_SUPPORT
-static bool notifyd_got_db(struct messaging_context *msg_ctx,
-			   struct messaging_rec **prec,
-			   void *private_data);
+static void notifyd_got_db(struct messaging_context *msg_ctx,
+			   void *private_data, uint32_t msg_type,
+			   struct server_id src, DATA_BLOB *data);
 static void notifyd_broadcast_reclog(struct ctdbd_connection *ctdbd_conn,
 				     struct server_id src,
 				     struct messaging_reclog *log);
@@ -193,7 +193,10 @@ struct tevent_req *notifyd_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 				sys_notify_watch_fn sys_notify_watch,
 				struct sys_notify_context *sys_notify_ctx)
 {
-	struct tevent_req *req, *subreq;
+	struct tevent_req *req;
+#ifdef CLUSTER_SUPPORT
+	struct tevent_req *subreq;
+#endif
 	struct notifyd_state *state;
 	struct server_id_db *names_db;
 	NTSTATUS status;
@@ -256,17 +259,15 @@ struct tevent_req *notifyd_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	}
 
 #ifdef CLUSTER_SUPPORT
-	subreq = messaging_handler_send(state, ev, msg_ctx,
-					MSG_SMB_NOTIFY_DB,
-					notifyd_got_db, state);
-	if (tevent_req_nomem(subreq, req)) {
+	status = messaging_register(msg_ctx, state, MSG_SMB_NOTIFY_DB,
+				    notifyd_got_db);
+	if (tevent_req_nterror(req, status)) {
 		goto deregister_get_db;
 	}
-	tevent_req_set_callback(subreq, notifyd_handler_done, req);
 
 	state->log = talloc_zero(state, struct messaging_reclog);
 	if (tevent_req_nomem(state->log, req)) {
-		goto deregister_get_db;
+		goto deregister_db;
 	}
 
 	subreq = notifyd_broadcast_reclog_send(
@@ -274,7 +275,7 @@ struct tevent_req *notifyd_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 		messaging_server_id(msg_ctx),
 		state->log);
 	if (tevent_req_nomem(subreq, req)) {
-		goto deregister_get_db;
+		goto deregister_db;
 	}
 	tevent_req_set_callback(subreq,
 				notifyd_broadcast_reclog_finished,
@@ -282,7 +283,7 @@ struct tevent_req *notifyd_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 
 	subreq = notifyd_clean_peers_send(state, ev, state);
 	if (tevent_req_nomem(subreq, req)) {
-		goto deregister_get_db;
+		goto deregister_db;
 	}
 	tevent_req_set_callback(subreq, notifyd_clean_peers_finished,
 				req);
@@ -292,12 +293,16 @@ struct tevent_req *notifyd_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 				  notifyd_snoop_broadcast, state);
 	if (ret != 0) {
 		tevent_req_error(req, ret);
-		goto deregister_get_db;
+		goto deregister_db;
 	}
 #endif
 
 	return req;
 
+#ifdef CLUSTER_SUPPORT
+deregister_db:
+	messaging_deregister(msg_ctx, MSG_SMB_NOTIFY_DB, state);
+#endif
 deregister_get_db:
 	messaging_deregister(msg_ctx, MSG_SMB_NOTIFY_GET_DB, state);
 deregister_trigger:
@@ -914,13 +919,12 @@ static void notifyd_get_db(struct messaging_context *msg_ctx,
 static int notifyd_add_proxy_syswatches(struct db_record *rec,
 					void *private_data);
 
-static bool notifyd_got_db(struct messaging_context *msg_ctx,
-			   struct messaging_rec **prec,
-			   void *private_data)
+static void notifyd_got_db(struct messaging_context *msg_ctx,
+			   void *private_data, uint32_t msg_type,
+			   struct server_id src, DATA_BLOB *data)
 {
 	struct notifyd_state *state = talloc_get_type_abort(
 		private_data, struct notifyd_state);
-	struct messaging_rec *rec = *prec;
 	struct notifyd_peer *p = NULL;
 	struct server_id_buf idbuf;
 	NTSTATUS status;
@@ -928,52 +932,49 @@ static bool notifyd_got_db(struct messaging_context *msg_ctx,
 	size_t i;
 
 	for (i=0; i<state->num_peers; i++) {
-		if (server_id_equal(&rec->src, &state->peers[i]->pid)) {
+		if (server_id_equal(&src, &state->peers[i]->pid)) {
 			p = state->peers[i];
 			break;
 		}
 	}
 
 	if (p == NULL) {
-		DEBUG(10, ("%s: Did not find peer for db from %s\n",
-			   __func__, server_id_str_buf(rec->src, &idbuf)));
-		return true;
+		DBG_DEBUG("Did not find peer for db from %s\n",
+			  server_id_str_buf(src, &idbuf));
+		return;
 	}
 
-	if (rec->buf.length < 8) {
-		DEBUG(10, ("%s: Got short db length %u from %s\n", __func__,
-			   (unsigned)rec->buf.length,
-			   server_id_str_buf(rec->src, &idbuf)));
+	if (data->length < 8) {
+		DBG_DEBUG("Got short db length %zu from %s\n", data->length,
+			   server_id_str_buf(src, &idbuf));
 		TALLOC_FREE(p);
-		return true;
+		return;
 	}
 
-	p->rec_index = BVAL(rec->buf.data, 0);
+	p->rec_index = BVAL(data->data, 0);
 
 	p->db = db_open_rbt(p);
 	if (p->db == NULL) {
 		DEBUG(10, ("%s: db_open_rbt failed\n", __func__));
 		TALLOC_FREE(p);
-		return true;
+		return;
 	}
 
-	status = dbwrap_unmarshall(p->db, rec->buf.data + 8,
-				   rec->buf.length - 8);
+	status = dbwrap_unmarshall(p->db, data->data + 8,
+				   data->length - 8);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("%s: dbwrap_unmarshall returned %s for db %s\n",
 			   __func__, nt_errstr(status),
-			   server_id_str_buf(rec->src, &idbuf)));
+			   server_id_str_buf(src, &idbuf)));
 		TALLOC_FREE(p);
-		return true;
+		return;
 	}
 
 	dbwrap_traverse_read(p->db, notifyd_add_proxy_syswatches, state,
 			     &count);
 
 	DEBUG(10, ("%s: Database from %s contained %d records\n", __func__,
-		   server_id_str_buf(rec->src, &idbuf), count));
-
-	return true;
+		   server_id_str_buf(src, &idbuf), count));
 }
 
 static void notifyd_broadcast_reclog(struct ctdbd_connection *ctdbd_conn,
