@@ -75,6 +75,27 @@ NTSTATUS ntlmssp_handle_neg_flags(struct ntlmssp_state *ntlmssp_state,
 {
 	uint32_t missing_flags = ntlmssp_state->required_flags;
 
+	if (ntlmssp_state->use_ntlmv2) {
+		/*
+		 * Using NTLMv2 as a client implies
+		 * using NTLMSSP_NEGOTIATE_NTLM2
+		 * (NTLMSSP_NEGOTIATE_EXTENDED_SESSIONSECURITY)
+		 *
+		 * Note that 'use_ntlmv2' is only set
+		 * true in the client case.
+		 *
+		 * Even if the server has a bug and does not announce
+		 * it, we need to assume it's present.
+		 *
+		 * Note that we also have the flag
+		 * in ntlmssp_state->required_flags,
+		 * see gensec_ntlmssp_client_start().
+		 *
+		 * See bug #12862.
+		 */
+		flags |= NTLMSSP_NEGOTIATE_NTLM2;
+	}
+
 	if (flags & NTLMSSP_NEGOTIATE_UNICODE) {
 		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_UNICODE;
 		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_OEM;
