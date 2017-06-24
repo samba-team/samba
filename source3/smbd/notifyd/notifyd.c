@@ -128,9 +128,9 @@ static void notifyd_rec_change(struct messaging_context *msg_ctx,
 static void notifyd_trigger(struct messaging_context *msg_ctx,
 			    void *private_data, uint32_t msg_type,
 			    struct server_id src, DATA_BLOB *data);
-static bool notifyd_get_db(struct messaging_context *msg_ctx,
-			   struct messaging_rec **prec,
-			   void *private_data);
+static void notifyd_get_db(struct messaging_context *msg_ctx,
+			   void *private_data, uint32_t msg_type,
+			   struct server_id src, DATA_BLOB *data);
 
 #ifdef CLUSTER_SUPPORT
 static bool notifyd_got_db(struct messaging_context *msg_ctx,
@@ -230,13 +230,11 @@ struct tevent_req *notifyd_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 		goto deregister_rec_change;
 	}
 
-	subreq = messaging_handler_send(state, ev, msg_ctx,
-					MSG_SMB_NOTIFY_GET_DB,
-					notifyd_get_db, state);
-	if (tevent_req_nomem(subreq, req)) {
+	status = messaging_register(msg_ctx, state, MSG_SMB_NOTIFY_GET_DB,
+				    notifyd_get_db);
+	if (tevent_req_nterror(req, status)) {
 		goto deregister_trigger;
 	}
-	tevent_req_set_callback(subreq, notifyd_handler_done, req);
 
 	names_db = messaging_names_db(msg_ctx);
 
@@ -245,7 +243,7 @@ struct tevent_req *notifyd_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 		DEBUG(10, ("%s: server_id_db_add failed: %s\n",
 			   __func__, strerror(ret)));
 		tevent_req_error(req, ret);
-		goto deregister_trigger;
+		goto deregister_get_db;
 	}
 
 	if (ctdbd_conn == NULL) {
@@ -261,13 +259,13 @@ struct tevent_req *notifyd_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 					MSG_SMB_NOTIFY_DB,
 					notifyd_got_db, state);
 	if (tevent_req_nomem(subreq, req)) {
-		goto deregister_trigger;
+		goto deregister_get_db;
 	}
 	tevent_req_set_callback(subreq, notifyd_handler_done, req);
 
 	state->log = talloc_zero(state, struct messaging_reclog);
 	if (tevent_req_nomem(state->log, req)) {
-		goto deregister_trigger;
+		goto deregister_get_db;
 	}
 
 	subreq = notifyd_broadcast_reclog_send(
@@ -275,7 +273,7 @@ struct tevent_req *notifyd_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 		messaging_server_id(msg_ctx),
 		state->log);
 	if (tevent_req_nomem(subreq, req)) {
-		goto deregister_trigger;
+		goto deregister_get_db;
 	}
 	tevent_req_set_callback(subreq,
 				notifyd_broadcast_reclog_finished,
@@ -283,7 +281,7 @@ struct tevent_req *notifyd_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 
 	subreq = notifyd_clean_peers_send(state, ev, state);
 	if (tevent_req_nomem(subreq, req)) {
-		goto deregister_trigger;
+		goto deregister_get_db;
 	}
 	tevent_req_set_callback(subreq, notifyd_clean_peers_finished,
 				req);
@@ -293,12 +291,14 @@ struct tevent_req *notifyd_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 				  notifyd_snoop_broadcast, state);
 	if (ret != 0) {
 		tevent_req_error(req, ret);
-		goto deregister_trigger;
+		goto deregister_get_db;
 	}
 #endif
 
 	return req;
 
+deregister_get_db:
+	messaging_deregister(msg_ctx, MSG_SMB_NOTIFY_GET_DB, state);
 deregister_trigger:
 	messaging_deregister(msg_ctx, MSG_SMB_NOTIFY_TRIGGER, state);
 deregister_rec_change:
@@ -851,13 +851,12 @@ static void notifyd_send_delete(struct messaging_context *msg_ctx,
 	}
 }
 
-static bool notifyd_get_db(struct messaging_context *msg_ctx,
-			   struct messaging_rec **prec,
-			   void *private_data)
+static void notifyd_get_db(struct messaging_context *msg_ctx,
+			   void *private_data, uint32_t msg_type,
+			   struct server_id src, DATA_BLOB *data)
 {
 	struct notifyd_state *state = talloc_get_type_abort(
 		private_data, struct notifyd_state);
-	struct messaging_rec *rec = *prec;
 	struct server_id_buf id1, id2;
 	NTSTATUS status;
 	uint64_t rec_index = UINT64_MAX;
@@ -868,11 +867,11 @@ static bool notifyd_get_db(struct messaging_context *msg_ctx,
 
 	dbsize = dbwrap_marshall(state->entries, NULL, 0);
 
-	buf = talloc_array(rec, uint8_t, dbsize);
+	buf = talloc_array(talloc_tos(), uint8_t, dbsize);
 	if (buf == NULL) {
 		DEBUG(1, ("%s: talloc_array(%ju) failed\n",
 			  __func__, (uintmax_t)dbsize));
-		return true;
+		return;
 	}
 
 	dbsize = dbwrap_marshall(state->entries, buf, dbsize);
@@ -882,7 +881,7 @@ static bool notifyd_get_db(struct messaging_context *msg_ctx,
 			  (uintmax_t)talloc_get_size(buf),
 			  (uintmax_t)dbsize));
 		TALLOC_FREE(buf);
-		return true;
+		return;
 	}
 
 	if (state->log != NULL) {
@@ -898,17 +897,15 @@ static bool notifyd_get_db(struct messaging_context *msg_ctx,
 	DEBUG(10, ("%s: Sending %ju bytes to %s->%s\n", __func__,
 		   (uintmax_t)iov_buflen(iov, ARRAY_SIZE(iov)),
 		   server_id_str_buf(messaging_server_id(msg_ctx), &id1),
-		   server_id_str_buf(rec->src, &id2)));
+		   server_id_str_buf(src, &id2)));
 
-	status = messaging_send_iov(msg_ctx, rec->src, MSG_SMB_NOTIFY_DB,
+	status = messaging_send_iov(msg_ctx, src, MSG_SMB_NOTIFY_DB,
 				    iov, ARRAY_SIZE(iov), NULL, 0);
 	TALLOC_FREE(buf);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("%s: messaging_send_iov failed: %s\n",
 			  __func__, nt_errstr(status)));
 	}
-
-	return true;
 }
 
 #ifdef CLUSTER_SUPPORT
