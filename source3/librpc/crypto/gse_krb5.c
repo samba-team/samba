@@ -437,6 +437,14 @@ static krb5_error_code fill_mem_keytab_from_system_keytab(krb5_context krbctx,
 	if (ret) {
 		DEBUG(1, (__location__ ": krb5_kt_start_seq_get failed (%s)\n",
 			  error_message(ret)));
+		/*
+		 * krb5_kt_start_seq_get() may leaves bogus data
+		 * in kt_cursor. And we want to use the all_zero()
+		 * logic below.
+		 *
+		 * See bug #10490
+		 */
+		ZERO_STRUCT(kt_cursor);
 		goto out;
 	}
 
