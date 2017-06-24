@@ -126,9 +126,9 @@ struct notifyd_peer {
 static void notifyd_rec_change(struct messaging_context *msg_ctx,
 			       void *private_data, uint32_t msg_type,
 			       struct server_id src, DATA_BLOB *data);
-static bool notifyd_trigger(struct messaging_context *msg_ctx,
-			    struct messaging_rec **prec,
-			    void *private_data);
+static void notifyd_trigger(struct messaging_context *msg_ctx,
+			    void *private_data, uint32_t msg_type,
+			    struct server_id src, DATA_BLOB *data);
 static bool notifyd_get_db(struct messaging_context *msg_ctx,
 			   struct messaging_rec **prec,
 			   void *private_data);
@@ -225,19 +225,17 @@ struct tevent_req *notifyd_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 		return tevent_req_post(req, ev);
 	}
 
-	subreq = messaging_handler_send(state, ev, msg_ctx,
-					MSG_SMB_NOTIFY_TRIGGER,
-					notifyd_trigger, state);
-	if (tevent_req_nomem(subreq, req)) {
+	status = messaging_register(msg_ctx, state, MSG_SMB_NOTIFY_TRIGGER,
+				    notifyd_trigger);
+	if (tevent_req_nterror(req, status)) {
 		goto deregister_rec_change;
 	}
-	tevent_req_set_callback(subreq, notifyd_handler_done, req);
 
 	subreq = messaging_handler_send(state, ev, msg_ctx,
 					MSG_SMB_NOTIFY_GET_DB,
 					notifyd_get_db, state);
 	if (tevent_req_nomem(subreq, req)) {
-		goto deregister_rec_change;
+		goto deregister_trigger;
 	}
 	tevent_req_set_callback(subreq, notifyd_handler_done, req);
 
@@ -248,7 +246,7 @@ struct tevent_req *notifyd_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 		DEBUG(10, ("%s: server_id_db_add failed: %s\n",
 			   __func__, strerror(ret)));
 		tevent_req_error(req, ret);
-		goto deregister_rec_change;
+		goto deregister_trigger;
 	}
 
 	if (ctdbd_conn == NULL) {
@@ -264,13 +262,13 @@ struct tevent_req *notifyd_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 					MSG_SMB_NOTIFY_DB,
 					notifyd_got_db, state);
 	if (tevent_req_nomem(subreq, req)) {
-		goto deregister_rec_change;
+		goto deregister_trigger;
 	}
 	tevent_req_set_callback(subreq, notifyd_handler_done, req);
 
 	state->log = talloc_zero(state, struct messaging_reclog);
 	if (tevent_req_nomem(state->log, req)) {
-		goto deregister_rec_change;
+		goto deregister_trigger;
 	}
 
 	subreq = notifyd_broadcast_reclog_send(
@@ -278,7 +276,7 @@ struct tevent_req *notifyd_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 		messaging_server_id(msg_ctx),
 		state->log);
 	if (tevent_req_nomem(subreq, req)) {
-		goto deregister_rec_change;
+		goto deregister_trigger;
 	}
 	tevent_req_set_callback(subreq,
 				notifyd_broadcast_reclog_finished,
@@ -286,7 +284,7 @@ struct tevent_req *notifyd_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 
 	subreq = notifyd_clean_peers_send(state, ev, state);
 	if (tevent_req_nomem(subreq, req)) {
-		goto deregister_rec_change;
+		goto deregister_trigger;
 	}
 	tevent_req_set_callback(subreq, notifyd_clean_peers_finished,
 				req);
@@ -296,12 +294,14 @@ struct tevent_req *notifyd_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 				  notifyd_snoop_broadcast, state);
 	if (ret != 0) {
 		tevent_req_error(req, ret);
-		goto deregister_rec_change;
+		goto deregister_trigger;
 	}
 #endif
 
 	return req;
 
+deregister_trigger:
+	messaging_deregister(msg_ctx, MSG_SMB_NOTIFY_TRIGGER, state);
 deregister_rec_change:
 	messaging_deregister(msg_ctx, MSG_SMB_NOTIFY_REC_CHANGE, state);
 	return tevent_req_post(req, ev);
@@ -656,34 +656,33 @@ struct notifyd_trigger_state {
 static void notifyd_trigger_parser(TDB_DATA key, TDB_DATA data,
 				   void *private_data);
 
-static bool notifyd_trigger(struct messaging_context *msg_ctx,
-			    struct messaging_rec **prec,
-			    void *private_data)
+static void notifyd_trigger(struct messaging_context *msg_ctx,
+			    void *private_data, uint32_t msg_type,
+			    struct server_id src, DATA_BLOB *data)
 {
 	struct notifyd_state *state = talloc_get_type_abort(
 		private_data, struct notifyd_state);
 	struct server_id my_id = messaging_server_id(msg_ctx);
-	struct messaging_rec *rec = *prec;
 	struct notifyd_trigger_state tstate;
 	const char *path;
 	const char *p, *next_p;
 
-	if (rec->buf.length < offsetof(struct notify_trigger_msg, path) + 1) {
-		DEBUG(1, ("message too short, ignoring: %u\n",
-			  (unsigned)rec->buf.length));
-		return true;
+	if (data->length < offsetof(struct notify_trigger_msg, path) + 1) {
+		DBG_WARNING("message too short, ignoring: %zu\n",
+			    data->length);
+		return;
 	}
-	if (rec->buf.data[rec->buf.length-1] != 0) {
+	if (data->data[data->length-1] != 0) {
 		DEBUG(1, ("%s: path not 0-terminated, ignoring\n", __func__));
-		return true;
+		return;
 	}
 
 	tstate.msg_ctx = msg_ctx;
 
-	tstate.covered_by_sys_notify = (rec->src.vnn == my_id.vnn);
-	tstate.covered_by_sys_notify &= !server_id_equal(&rec->src, &my_id);
+	tstate.covered_by_sys_notify = (src.vnn == my_id.vnn);
+	tstate.covered_by_sys_notify &= !server_id_equal(&src, &my_id);
 
-	tstate.msg = (struct notify_trigger_msg *)rec->buf.data;
+	tstate.msg = (struct notify_trigger_msg *)data->data;
 	path = tstate.msg->path;
 
 	DEBUG(10, ("%s: Got trigger_msg action=%u, filter=%u, path=%s\n",
@@ -693,7 +692,7 @@ static bool notifyd_trigger(struct messaging_context *msg_ctx,
 	if (path[0] != '/') {
 		DEBUG(1, ("%s: path %s does not start with /, ignoring\n",
 			  __func__, path));
-		return true;
+		return;
 	}
 
 	for (p = strchr(path+1, '/'); p != NULL; p = next_p) {
@@ -717,7 +716,7 @@ static bool notifyd_trigger(struct messaging_context *msg_ctx,
 			continue;
 		}
 
-		if (rec->src.vnn != my_id.vnn) {
+		if (src.vnn != my_id.vnn) {
 			continue;
 		}
 
@@ -732,8 +731,6 @@ static bool notifyd_trigger(struct messaging_context *msg_ctx,
 					    notifyd_trigger_parser, &tstate);
 		}
 	}
-
-	return true;
 }
 
 static void notifyd_send_delete(struct messaging_context *msg_ctx,
