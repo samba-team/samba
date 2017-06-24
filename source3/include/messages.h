@@ -153,6 +153,11 @@ int messaging_cleanup(struct messaging_context *msg_ctx, pid_t pid);
 
 bool messaging_parent_dgm_cleanup_init(struct messaging_context *msg);
 
+struct messaging_rec *messaging_rec_create(
+	TALLOC_CTX *mem_ctx, struct server_id src, struct server_id dst,
+	uint32_t msg_type, const struct iovec *iov, int iovlen,
+	const int *fds, size_t num_fds);
+
 #include "librpc/gen_ndr/ndr_messaging.h"
 
 #endif

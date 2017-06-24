@@ -108,7 +108,7 @@ static void ping_message(struct messaging_context *msg_ctx,
 	messaging_send(msg_ctx, src, MSG_PONG, data);
 }
 
-static struct messaging_rec *messaging_rec_create(
+struct messaging_rec *messaging_rec_create(
 	TALLOC_CTX *mem_ctx, struct server_id src, struct server_id dst,
 	uint32_t msg_type, const struct iovec *iov, int iovlen,
 	const int *fds, size_t num_fds)
