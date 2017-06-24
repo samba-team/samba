@@ -31,6 +31,7 @@
 #include "notifyd.h"
 #include "lib/util/server_id_db.h"
 #include "lib/util/tevent_unix.h"
+#include "lib/util/tevent_ntstatus.h"
 #include "ctdbd_conn.h"
 #include "ctdb_srvids.h"
 #include "server_id_db_util.h"
@@ -121,9 +122,9 @@ struct notifyd_peer {
 	time_t last_broadcast;
 };
 
-static bool notifyd_rec_change(struct messaging_context *msg_ctx,
-			       struct messaging_rec **prec,
-			       void *private_data);
+static void notifyd_rec_change(struct messaging_context *msg_ctx,
+			       void *private_data, uint32_t msg_type,
+			       struct server_id src, DATA_BLOB *data);
 static bool notifyd_trigger(struct messaging_context *msg_ctx,
 			    struct messaging_rec **prec,
 			    void *private_data);
@@ -194,6 +195,7 @@ struct tevent_req *notifyd_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	struct tevent_req *req, *subreq;
 	struct notifyd_state *state;
 	struct server_id_db *names_db;
+	NTSTATUS status;
 	int ret;
 
 	req = tevent_req_create(mem_ctx, &state, struct notifyd_state);
@@ -216,19 +218,17 @@ struct tevent_req *notifyd_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 		return tevent_req_post(req, ev);
 	}
 
-	subreq = messaging_handler_send(state, ev, msg_ctx,
-					MSG_SMB_NOTIFY_REC_CHANGE,
-					notifyd_rec_change, state);
-	if (tevent_req_nomem(subreq, req)) {
+	status = messaging_register(msg_ctx, state, MSG_SMB_NOTIFY_REC_CHANGE,
+				    notifyd_rec_change);
+	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, ev);
 	}
-	tevent_req_set_callback(subreq, notifyd_handler_done, req);
 
 	subreq = messaging_handler_send(state, ev, msg_ctx,
 					MSG_SMB_NOTIFY_TRIGGER,
 					notifyd_trigger, state);
 	if (tevent_req_nomem(subreq, req)) {
-		return tevent_req_post(req, ev);
+		goto deregister_rec_change;
 	}
 	tevent_req_set_callback(subreq, notifyd_handler_done, req);
 
@@ -236,7 +236,7 @@ struct tevent_req *notifyd_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 					MSG_SMB_NOTIFY_GET_DB,
 					notifyd_get_db, state);
 	if (tevent_req_nomem(subreq, req)) {
-		return tevent_req_post(req, ev);
+		goto deregister_rec_change;
 	}
 	tevent_req_set_callback(subreq, notifyd_handler_done, req);
 
@@ -247,7 +247,7 @@ struct tevent_req *notifyd_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 		DEBUG(10, ("%s: server_id_db_add failed: %s\n",
 			   __func__, strerror(ret)));
 		tevent_req_error(req, ret);
-		return tevent_req_post(req, ev);
+		goto deregister_rec_change;
 	}
 
 	if (ctdbd_conn == NULL) {
@@ -263,13 +263,13 @@ struct tevent_req *notifyd_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 					MSG_SMB_NOTIFY_DB,
 					notifyd_got_db, state);
 	if (tevent_req_nomem(subreq, req)) {
-		return tevent_req_post(req, ev);
+		goto deregister_rec_change;
 	}
 	tevent_req_set_callback(subreq, notifyd_handler_done, req);
 
 	state->log = talloc_zero(state, struct messaging_reclog);
 	if (tevent_req_nomem(state->log, req)) {
-		return tevent_req_post(req, ev);
+		goto deregister_rec_change;
 	}
 
 	subreq = notifyd_broadcast_reclog_send(
@@ -277,7 +277,7 @@ struct tevent_req *notifyd_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 		messaging_server_id(msg_ctx),
 		state->log);
 	if (tevent_req_nomem(subreq, req)) {
-		return tevent_req_post(req, ev);
+		goto deregister_rec_change;
 	}
 	tevent_req_set_callback(subreq,
 				notifyd_broadcast_reclog_finished,
@@ -285,7 +285,7 @@ struct tevent_req *notifyd_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 
 	subreq = notifyd_clean_peers_send(state, ev, state);
 	if (tevent_req_nomem(subreq, req)) {
-		return tevent_req_post(req, ev);
+		goto deregister_rec_change;
 	}
 	tevent_req_set_callback(subreq, notifyd_clean_peers_finished,
 				req);
@@ -295,11 +295,15 @@ struct tevent_req *notifyd_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 				  notifyd_snoop_broadcast, state);
 	if (ret != 0) {
 		tevent_req_error(req, ret);
-		return tevent_req_post(req, ev);
+		goto deregister_rec_change;
 	}
 #endif
 
 	return req;
+
+deregister_rec_change:
+	messaging_deregister(msg_ctx, MSG_SMB_NOTIFY_REC_CHANGE, state);
+	return tevent_req_post(req, ev);
 }
 
 static void notifyd_handler_done(struct tevent_req *subreq)
@@ -567,40 +571,38 @@ static bool notifyd_parse_rec_change(uint8_t *buf, size_t bufsize,
 	return true;
 }
 
-static bool notifyd_rec_change(struct messaging_context *msg_ctx,
-			       struct messaging_rec **prec,
-			       void *private_data)
+static void notifyd_rec_change(struct messaging_context *msg_ctx,
+			       void *private_data, uint32_t msg_type,
+			       struct server_id src, DATA_BLOB *data)
 {
 	struct notifyd_state *state = talloc_get_type_abort(
 		private_data, struct notifyd_state);
 	struct server_id_buf idbuf;
-	struct messaging_rec *rec = *prec;
 	struct notify_rec_change_msg *msg;
 	size_t pathlen;
 	bool ok;
 
-	DEBUG(10, ("%s: Got %d bytes from %s\n", __func__,
-		   (unsigned)rec->buf.length,
-		   server_id_str_buf(rec->src, &idbuf)));
+	DBG_DEBUG("Got %zu bytes from %s\n", data->length,
+		  server_id_str_buf(src, &idbuf));
 
-	ok = notifyd_parse_rec_change(rec->buf.data, rec->buf.length,
+	ok = notifyd_parse_rec_change(data->data, data->length,
 				      &msg, &pathlen);
 	if (!ok) {
-		return true;
+		return;
 	}
 
 	ok = notifyd_apply_rec_change(
-		&rec->src, msg->path, pathlen, &msg->instance,
+		&src, msg->path, pathlen, &msg->instance,
 		state->entries, state->sys_notify_watch, state->sys_notify_ctx,
 		state->msg_ctx);
 	if (!ok) {
 		DEBUG(1, ("%s: notifyd_apply_rec_change failed, ignoring\n",
 			  __func__));
-		return true;
+		return;
 	}
 
 	if ((state->log == NULL) || (state->ctdbd_conn == NULL)) {
-		return true;
+		return;
 	}
 
 #ifdef CLUSTER_SUPPORT
@@ -608,6 +610,7 @@ static bool notifyd_rec_change(struct messaging_context *msg_ctx,
 
 	struct messaging_rec **tmp;
 	struct messaging_reclog *log;
+	struct iovec iov = { .iov_base = data->data, .iov_len = data->length };
 
 	log = state->log;
 
@@ -615,11 +618,19 @@ static bool notifyd_rec_change(struct messaging_context *msg_ctx,
 			     log->num_recs+1);
 	if (tmp == NULL) {
 		DEBUG(1, ("%s: talloc_realloc failed, ignoring\n", __func__));
-		return true;
+		return;
 	}
 	log->recs = tmp;
 
-	log->recs[log->num_recs] = talloc_move(log->recs, prec);
+	log->recs[log->num_recs] = messaging_rec_create(
+		log->recs, src, messaging_server_id(msg_ctx),
+		msg_type, &iov, 1, NULL, 0);
+
+	if (log->recs[log->num_recs] == NULL) {
+		DBG_WARNING("messaging_rec_create failed, ignoring\n");
+		return;
+	}
+
 	log->num_recs += 1;
 
 	if (log->num_recs >= 100) {
@@ -632,8 +643,6 @@ static bool notifyd_rec_change(struct messaging_context *msg_ctx,
 
 	}
 #endif
-
-	return true;
 }
 
 struct notifyd_trigger_state {
