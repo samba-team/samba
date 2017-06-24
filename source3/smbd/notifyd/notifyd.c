@@ -175,8 +175,6 @@ static int sys_notify_watch_dummy(
 	return 0;
 }
 
-static void notifyd_handler_done(struct tevent_req *subreq);
-
 #ifdef CLUSTER_SUPPORT
 static void notifyd_broadcast_reclog_finished(struct tevent_req *subreq);
 static void notifyd_clean_peers_finished(struct tevent_req *subreq);
@@ -309,17 +307,6 @@ deregister_trigger:
 deregister_rec_change:
 	messaging_deregister(msg_ctx, MSG_SMB_NOTIFY_REC_CHANGE, state);
 	return tevent_req_post(req, ev);
-}
-
-static void notifyd_handler_done(struct tevent_req *subreq)
-{
-	struct tevent_req *req = tevent_req_callback_data(
-		subreq, struct tevent_req);
-	int ret;
-
-	ret = messaging_handler_recv(subreq);
-	TALLOC_FREE(subreq);
-	tevent_req_error(req, ret);
 }
 
 #ifdef CLUSTER_SUPPORT
