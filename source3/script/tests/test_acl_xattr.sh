@@ -15,8 +15,10 @@ PASSWORD="$3"
 PREFIX="$4"
 SMBCLIENT="$5"
 SMBCACLS="$6"
-SMBCLIENT="$VALGRIND ${SMBCLIENT}"
-SMBCACLS="$VALGRIND ${SMBCACLS}"
+shift 6
+ADDARGS="$*"
+SMBCLIENT="$VALGRIND ${SMBCLIENT} ${ADDARGS}"
+SMBCACLS="$VALGRIND ${SMBCACLS} ${ADDARGS}"
 
 incdir=`dirname $0`/../../../testprogs/blackbox
 . $incdir/subunit.sh
