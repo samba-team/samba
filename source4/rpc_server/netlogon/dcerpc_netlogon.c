@@ -2011,9 +2011,9 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 						frame);
 		DBG_ERR(("Bad credentials - "
 		         "computer[%s] remote[%s] local[%s]\n"),
-			 r->in.computer_name,
-			 remote,
-			 local);
+			log_escape(frame, r->in.computer_name),
+			remote,
+			local);
 		talloc_free(frame);
 	}
 	NT_STATUS_NOT_OK_RETURN(status);
