@@ -2728,3 +2728,33 @@ int ctdb_ctrl_db_open_flags(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 
 	return 0;
 }
+
+int ctdb_ctrl_db_attach_replicated(TALLOC_CTX *mem_ctx,
+				   struct tevent_context *ev,
+				   struct ctdb_client_context *client,
+				   int destnode, struct timeval timeout,
+				   const char *db_name, uint32_t *db_id)
+{
+	struct ctdb_req_control request;
+	struct ctdb_reply_control *reply;
+	int ret;
+
+	ctdb_req_control_db_attach_replicated(&request, db_name);
+	ret = ctdb_client_control(mem_ctx, ev, client, destnode, timeout,
+				  &request, &reply);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,
+		      ("Control DB_ATTACH_REPLICATED failed to node %u,"
+		       " ret=%d\n", destnode, ret));
+		return ret;
+	}
+
+	ret = ctdb_reply_control_db_attach_replicated(reply, db_id);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,
+		      ("Control DB_ATTACH_REPLICATED failed, ret=%d\n", ret));
+		return ret;
+	}
+
+	return 0;
+}

@@ -488,6 +488,12 @@ int ctdb_ctrl_db_open_flags(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			    int destnode, struct timeval timeout,
 			    uint32_t db_id, int *tdb_flags);
 
+int ctdb_ctrl_db_attach_replicated(TALLOC_CTX *mem_ctx,
+				   struct tevent_context *ev,
+				   struct ctdb_client_context *client,
+				   int destnode, struct timeval timeout,
+				   const char *db_name, uint32_t *db_id);
+
 /* from client/client_message_sync.c */
 
 int ctdb_message_recd_update_ip(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
