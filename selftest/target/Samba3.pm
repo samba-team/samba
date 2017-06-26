@@ -278,6 +278,8 @@ sub setup_nt4_dc_schannel($$)
 	rpc_daemon:lsasd = fork
 
 	server schannel = yes
+	# used to reproduce bug #12772
+	server max protocol = SMB2_02
 ";
 
 	my $vars = $self->provision($path, "NT4SCHANNEL",

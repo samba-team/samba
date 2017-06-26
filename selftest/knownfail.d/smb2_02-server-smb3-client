@@ -1,0 +1,3 @@
+^samba3.blackbox.smbclient_basic.SMB2_10.smbclient.*\(nt4_dc_schannel\)
+^samba3.blackbox.smbclient_basic.SMB3_02.smbclient.*\(nt4_dc_schannel\)
+^samba3.blackbox.smbclient_basic.SMB3_11.smbclient.*\(nt4_dc_schannel\)
