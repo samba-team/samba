@@ -1,3 +1,5 @@
 samba.tests.dsdb.samba.tests.dsdb.DsdbTests.test_full_db_lock1\(ad_dc_ntvfs:local\)
+samba.tests.dsdb.samba.tests.dsdb.DsdbTests.test_full_db_lock1_config\(ad_dc_ntvfs:local\)
 samba.tests.dsdb.samba.tests.dsdb.DsdbTests.test_full_db_lock2\(ad_dc_ntvfs:local\)
+samba.tests.dsdb.samba.tests.dsdb.DsdbTests.test_full_db_lock2_config\(ad_dc_ntvfs:local\)
 samba.tests.dsdb.samba.tests.dsdb.DsdbTests.test_db_lock2\(ad_dc_ntvfs:local\)

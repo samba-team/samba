@@ -349,12 +349,7 @@ class DsdbTests(TestCase):
         self.assertEqual(got_pid, pid)
 
 
-    def test_full_db_lock1(self):
-        basedn = self.samdb.get_default_basedn()
-        backend_filename = "%s.ldb" % basedn.get_casefold()
-        backend_subpath = os.path.join("sam.ldb.d",
-                                       backend_filename)
-        backend_path = self.lp.private_path(backend_subpath)
+    def _test_full_db_lock1(self, backend_path):
         (r1, w1) = os.pipe()
 
         pid = os.fork()
@@ -402,12 +397,25 @@ class DsdbTests(TestCase):
         self.assertTrue(os.WIFEXITED(status))
         self.assertEqual(os.WEXITSTATUS(status), 0)
 
-    def test_full_db_lock2(self):
+    def test_full_db_lock1(self):
         basedn = self.samdb.get_default_basedn()
         backend_filename = "%s.ldb" % basedn.get_casefold()
         backend_subpath = os.path.join("sam.ldb.d",
                                        backend_filename)
         backend_path = self.lp.private_path(backend_subpath)
+        self._test_full_db_lock1(backend_path)
+
+
+    def test_full_db_lock1_config(self):
+        basedn = self.samdb.get_config_basedn()
+        backend_filename = "%s.ldb" % basedn.get_casefold()
+        backend_subpath = os.path.join("sam.ldb.d",
+                                       backend_filename)
+        backend_path = self.lp.private_path(backend_subpath)
+        self._test_full_db_lock1(backend_path)
+
+
+    def _test_full_db_lock2(self, backend_path):
         (r1, w1) = os.pipe()
         (r2, w2) = os.pipe()
 
@@ -481,3 +489,19 @@ class DsdbTests(TestCase):
             self.assertEqual(got_pid, pid)
             self.assertTrue(os.WIFEXITED(status))
             self.assertEqual(os.WEXITSTATUS(status), 0)
+
+    def test_full_db_lock2(self):
+        basedn = self.samdb.get_default_basedn()
+        backend_filename = "%s.ldb" % basedn.get_casefold()
+        backend_subpath = os.path.join("sam.ldb.d",
+                                       backend_filename)
+        backend_path = self.lp.private_path(backend_subpath)
+        self._test_full_db_lock2(backend_path)
+
+    def test_full_db_lock2_config(self):
+        basedn = self.samdb.get_config_basedn()
+        backend_filename = "%s.ldb" % basedn.get_casefold()
+        backend_subpath = os.path.join("sam.ldb.d",
+                                       backend_filename)
+        backend_path = self.lp.private_path(backend_subpath)
+        self._test_full_db_lock2(backend_path)
