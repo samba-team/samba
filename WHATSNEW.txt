@@ -51,7 +51,7 @@ value 1024-1300 to 49152-65535. This port range is not only used by a
 Samba AD DC but also applies to all other server roles including NT4-style
 domain controllers. The new value has been defined by Microsoft in Windows
 Server 2008 and newer versions. To make it easier for Administrators to control
-those port ranges we use the same default and make it configureable with the
+those port ranges we use the same default and make it configurable with the
 option: 'rpc server dynamic port range'.
 
 The 'rpc server port' option sets the first available port from the new
@@ -76,7 +76,6 @@ authentication, SMB and RPC authorization is covered, however password
 changes are not at this stage, and this support is not currently
 backed by a testsuite.
 
-
 Query record for open file or directory
 ---------------------------------------
 
@@ -84,29 +83,6 @@ The record attached to an open file or directory in Samba can be
 queried through the 'net tdb locking' command. In clustered Samba this
 can be useful to determine the file or directory triggering
 corresponding "hot" record warnings in ctdb.
-
-
-Parameter changes
------------------
-
-The "strict sync" global parameter has been changed from
-a default of "no" to "yes". This means smbd will by default
-obey client requests to synchronize unwritten data in operating
-system buffers safely onto disk. This is a safer default setting
-for modern SMB1/2/3 clients.
-
-smb.conf changes
-================
-
-  Parameter Name                Description             Default
-  --------------                -----------             -------
-  auth event notification       New parameter           no
-  auth methods                  Deprecated
-  map untrusted to domain       New value/              auto
-                                Default changed/
-                                Deprecated
-  profile acls                  Deprecated
-  strict sync                   Default changed         yes
 
 Removal of lpcfg_register_defaults_hook()
 -----------------------------------------
@@ -136,6 +112,32 @@ lifetime of the module). This allows modules to avoid use of
 the talloc_autofree_context() (which is inherently thread-unsafe)
 and still be valgrind-clean on exit. Modules that don't need to
 free long-lived data on exist should use the NULL talloc context.
+
+Parameter changes
+-----------------
+
+The "strict sync" global parameter has been changed from
+a default of "no" to "yes". This means smbd will by default
+obey client requests to synchronize unwritten data in operating
+system buffers safely onto disk. This is a safer default setting
+for modern SMB1/2/3 clients.
+
+smb.conf changes
+================
+
+  Parameter Name                Description             Default
+  --------------                -----------             -------
+  allow unsafe cluster upgrade	New parameter		no
+  auth event notification       New parameter           no
+  auth methods                  Deprecated
+  map untrusted to domain       New value/              auto
+                                Default changed/
+                                Deprecated
+  mit kdc command		New parameter
+  profile acls                  Deprecated
+  rpc server dynamic port range New parameter		49152-65535
+  strict sync                   Default changed         yes
+
 
 KNOWN ISSUES
 ============
