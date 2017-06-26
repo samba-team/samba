@@ -2,3 +2,4 @@
 ^samba3.blackbox.acl_xattr.SMB3.nt_affects_posix
 ^samba3.blackbox.acl_xattr.SMB3.nt_affects_chown
 ^samba3.blackbox.acl_xattr.SMB3.nt_affects_chgrp
+^samba3.blackbox.inherit_owner.*.SMB3.*unix.owner
