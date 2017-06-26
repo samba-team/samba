@@ -1,0 +1,4 @@
+# This test passes against Windows 2008R2, but not Samba as we
+# keep a per-socket cache in addition to the name cache, which is
+# not invalidated if the name-based global cache is used.
+^samba4\.rpc\.netlogon.*\.netlogon\.ServerReqChallengeReuseGlobal3
