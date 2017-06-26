@@ -44,6 +44,8 @@ nt_affects_posix() {
     af=$($SMBCLIENT //$SERVER/$share -U $USERNAME%$PASSWORD -c "getfacl $fname" 2>/dev/null) || exit 1
     echo "before: $b4"
     echo "after: $af"
+    echo "${b4}" | grep -q "^# owner:" || exit 1
+    echo "${af}" | grep -q "^# owner:" || exit 1
     if test "$expected" = "true" ; then
         test "$b4" != "$af"
     else
@@ -73,9 +75,11 @@ nt_affects_chown() {
     test "$b4_expected != $af_expected" || exit 1
 
     b4_actual=$($SMBCLIENT //$SERVER/$share -U $USERNAME%$PASSWORD -c "getfacl $fname" 2>/dev/null) || exit 1
+    echo "${b4_actual}" | grep -q "^# owner:" || exit 1
     b4_actual=$(echo "$b4_actual" | sed -rn 's/^# owner: (.*)/\1/p')
     $SMBCACLS //$SERVER/$share $fname -U $USERNAME%$PASSWORD -C force_user 2>/dev/null || exit 1
     af_actual=$($SMBCLIENT //$SERVER/$share -U $USERNAME%$PASSWORD -c "getfacl $fname" 2>/dev/null) || exit 1
+    echo "${af_actual}" | grep -q "^# owner:" || exit 1
     af_actual=$(echo "$af_actual" | sed -rn 's/^# owner: (.*)/\1/p')
     echo "before: $b4_actual"
     echo "after: $af_actual"
@@ -101,12 +105,14 @@ nt_affects_chgrp() {
     echo "$af_expected"
 
     #basic sanity...
-    test "$b4_expected != $af_expected" || exit 1
+    test "$b4_expected" != "$af_expected" || exit 1
 
     b4_actual=$($SMBCLIENT //$SERVER/$share -U $USERNAME%$PASSWORD -c "getfacl $fname" 2>/dev/null) || exit 1
     b4_actual=$(echo "$b4_actual" | sed -rn 's/^# group: (.*)/\1/p')
+    echo "${b4_actual}" | grep -q "^# group:" || exit 1
     $SMBCACLS //$SERVER/$share $fname -U $USERNAME%$PASSWORD -G domadmins 2>/dev/null || exit 1
     af_actual=$($SMBCLIENT //$SERVER/$share -U $USERNAME%$PASSWORD -c "getfacl $fname" 2>/dev/null) || exit 1
+    echo "${af_actual}" | grep -q "^# group:" || exit 1
     af_actual=$(echo "$af_actual" | sed -rn 's/^# group: (.*)/\1/p')
     echo "before: $b4_actual"
     echo "after: $af_actual"
