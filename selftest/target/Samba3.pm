@@ -767,6 +767,9 @@ sub setup_fileserver($$)
 	my $smbget_sharedir="$share_dir/smbget";
 	push(@dirs,$smbget_sharedir);
 
+	my $tarmode_sharedir="$share_dir/tarmode";
+	push(@dirs,$tarmode_sharedir);
+
 	my $fileserver_options = "
 [lowercase]
 	path = $lower_case_share_dir
