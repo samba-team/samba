@@ -43,6 +43,7 @@
 #include "librpc/gen_ndr/ndr_winbind_c.h"
 #include "lib/socket/netif.h"
 #include "rpc_server/common/sid_helper.h"
+#include "lib/util/util_str_escape.h"
 
 #define DCESRV_INTERFACE_NETLOGON_BIND(call, iface) \
        dcesrv_interface_netlogon_bind(call, iface)
@@ -467,8 +468,34 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 						   r->out.return_credentials,
 						   negotiate_flags);
 	}
-	if (creds == NULL) {
-		return NT_STATUS_ACCESS_DENIED;
+
+	{
+		char* local  = NULL;
+		char* remote = NULL;
+		TALLOC_CTX *frame = talloc_stackframe();
+
+		remote = tsocket_address_string(dce_call->conn->remote_address,
+						frame);
+		local  = tsocket_address_string(dce_call->conn->local_address,
+						frame);
+		if (creds == NULL) {
+			DEBUG(2, ("Failed to authenticate NETLOGON "
+				  "account[%s] workstation[%s] "
+				  "remote[%s] local[%s]\n",
+				  log_escape(frame, r->in.account_name),
+				  log_escape(frame, r->in.computer_name),
+				  remote, local));
+			TALLOC_FREE(frame);
+			return NT_STATUS_ACCESS_DENIED;
+		} else {
+			DEBUG(3, ("Successful authenticate of NETLOGON "
+				  "account[%s] workstation[%s] "
+				  "remote[%s] local[%s]\n",
+				  log_escape(frame, r->in.account_name),
+				  log_escape(frame, r->in.computer_name),
+				  remote, local));
+			TALLOC_FREE(frame);
+		}
 	}
 
 	creds->sid = samdb_result_dom_sid(creds, msgs[0], "objectSid");
