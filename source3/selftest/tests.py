@@ -592,18 +592,13 @@ for options in options_list:
                    "$PREFIX/ktest/krb5_ccache-3",
                    smbclient3, "$SERVER", options, configuration])
 
-    plantestsuite("samba3.blackbox.smbclient_large_file %s" % options, "ktest:local",
-                  [os.path.join(samba3srcdir, "script/tests/test_smbclient_posix_large.sh"),
+    plantestsuite("samba3.blackbox.smbclient_large_file %s krb5" % options, "ktest:local",
+                  [os.path.join(samba3srcdir, "script/tests/test_smbclient_large_file.sh"),
                    "$PREFIX/ktest/krb5_ccache-3",
                    smbclient3, "$SERVER", "$PREFIX", options, "-k " + configuration])
 
-    plantestsuite("samba3.blackbox.smbclient_posix_large %s krb5" % options, "ktest:local",
-                  [os.path.join(samba3srcdir, "script/tests/test_smbclient_posix_large.sh"),
-                   "$PREFIX/ktest/krb5_ccache-3",
-                   smbclient3, "$SERVER", "$PREFIX", options, "-k " + configuration])
-
-    plantestsuite("samba3.blackbox.smbclient_posix_large %s NTLM" % options, "nt4_dc:local",
-                  [os.path.join(samba3srcdir, "script/tests/test_smbclient_posix_large.sh"),
+    plantestsuite("samba3.blackbox.smbclient_large_file %s NTLM" % options, "nt4_dc:local",
+                  [os.path.join(samba3srcdir, "script/tests/test_smbclient_large_file.sh"),
                    "none",
                    smbclient3, "$SERVER", "$PREFIX", options, "-U$USERNAME%$PASSWORD " + configuration])
 
