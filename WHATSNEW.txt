@@ -21,6 +21,26 @@ there's no way to print this information reliable. Now we avoid it at all
 consistently. In interactive session the following banner is now presented
 to the user: 'Try "help" do get a list of possible commands.'.
 
+The default for "client max protocol" has changed to "SMB3_11",
+which means that smbclient (and related commands) will work against
+servers without SMB1 support.
+
+It's possible to use the '-m/--max-protocol' option to overwrite
+the "client max protocol" option temporary.
+
+Note that the '-e/--encrypt' option also works with most SMB3 servers
+(e.g. Windows >= 2012 and Samba >= 4.0.0), so the SMB1 unix extensions
+are not required for encryption.
+
+The change to SMB3_11 as default also  means smbclient no longer
+negotiates SMB1 unix extensions by default, when talking to a Samba server with
+"unix extensions = yes".  As a result some commands are not available, e.g.
+posix_encrypt, posix_open, posix_mkdir, posix_rmdir, posix_unlink, posix_whoami,
+getfacl and symlink. Using "-mNT1" reenabled them, if the server supports SMB1.
+
+Note the default ("CORE") for "client min protocol" hasn't changed,
+so it's still possible to connect to SMB1-only servers by default.
+
 
 NEW FEATURES/CHANGES
 ====================
@@ -136,15 +156,17 @@ smb.conf changes
 
   Parameter Name                Description             Default
   --------------                -----------             -------
-  allow unsafe cluster upgrade	New parameter		no
+  allow unsafe cluster upgrade  New parameter           no
   auth event notification       New parameter           no
   auth methods                  Deprecated
+  client max protocol           Effective               SMB3_11
+                                default changed
   map untrusted to domain       New value/              auto
                                 Default changed/
                                 Deprecated
-  mit kdc command		New parameter
+  mit kdc command               New parameter
   profile acls                  Deprecated
-  rpc server dynamic port range New parameter		49152-65535
+  rpc server dynamic port range New parameter           49152-65535
   strict sync                   Default changed         yes
 
 
