@@ -79,7 +79,7 @@
     negotiation phase in the SMB protocol takes care of choosing 
     the appropriate protocol.</para>
 
-    <para>The value <constant>default</constant> refers to <constant>NT1</constant>.</para>
+    <para>The value <constant>default</constant> refers to <constant>SMB3_11</constant>.</para>
 
     <para>IPC$ connections for DCERPC e.g. in winbindd, are handled by the
     <smbconfoption name="client ipc max protocol"/> option.</para>

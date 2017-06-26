@@ -3401,7 +3401,7 @@ int lpcfg_client_max_protocol(struct loadparm_context *lp_ctx)
 {
 	int client_max_protocol = lpcfg__client_max_protocol(lp_ctx);
 	if (client_max_protocol == PROTOCOL_DEFAULT) {
-		return PROTOCOL_NT1;
+		return PROTOCOL_LATEST;
 	}
 	return client_max_protocol;
 }
