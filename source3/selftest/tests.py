@@ -587,9 +587,9 @@ for options in options_list:
                    "$PREFIX/ktest/krb5_ccache-2",
                    smbclient3, "$SERVER", options, configuration])
 
-    plantestsuite("samba3.blackbox.smbclient_krb5 old ccache %s" % options, "ktest:local",
+    plantestsuite("samba3.blackbox.smbclient_krb5 new ccache %s" % options, "ktest:local",
                   [os.path.join(samba3srcdir, "script/tests/test_smbclient_krb5.sh"),
-                   "$PREFIX/ktest/krb5_ccache-2",
+                   "$PREFIX/ktest/krb5_ccache-3",
                    smbclient3, "$SERVER", options, configuration])
 
     plantestsuite("samba3.blackbox.smbclient_large_file %s" % options, "ktest:local",
