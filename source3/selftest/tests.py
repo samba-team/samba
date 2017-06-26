@@ -580,6 +580,9 @@ plantestsuite("samba3.blackbox.smbclient.encryption_off", "simpleserver",
                "$USERNAME", "$PASSWORD", "$SERVER",
                smbclient3])
 
+# The ktest environment uses:
+# server min protocol = SMB3_00
+# client max protocol = SMB3
 options_list = ["", "-e"]
 for options in options_list:
     plantestsuite("samba3.blackbox.smbclient_krb5 old ccache %s" % options, "ktest:local",
@@ -597,6 +600,8 @@ for options in options_list:
                    "$PREFIX/ktest/krb5_ccache-3",
                    smbclient3, "$SERVER", "$PREFIX", options, "-k " + configuration])
 
+options_list = ["-mNT1", "-mNT1 -e", "-mSMB3", "-mSMB3 -e"]
+for options in options_list:
     plantestsuite("samba3.blackbox.smbclient_large_file %s NTLM" % options, "nt4_dc:local",
                   [os.path.join(samba3srcdir, "script/tests/test_smbclient_large_file.sh"),
                    "none",
