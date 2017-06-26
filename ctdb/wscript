@@ -821,7 +821,8 @@ def build(bld):
         'update_record',
         'update_record_persistent',
         'lock_tdb',
-        'dummy_client'
+        'dummy_client',
+        'tunnel_test',
     ]
 
     for target in ctdb_tests:
