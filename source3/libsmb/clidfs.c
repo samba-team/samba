@@ -662,9 +662,10 @@ static bool cli_dfs_check_error(struct cli_state *cli, NTSTATUS expected,
  Get the dfs referral link.
 ********************************************************************/
 
-NTSTATUS cli_dfs_get_referral(TALLOC_CTX *ctx,
+NTSTATUS cli_dfs_get_referral_ex(TALLOC_CTX *ctx,
 			struct cli_state *cli,
 			const char *path,
+			uint16_t max_referral_level,
 			struct client_dfs_referral **refs,
 			size_t *num_refs,
 			size_t *consumed)
@@ -691,7 +692,7 @@ NTSTATUS cli_dfs_get_referral(TALLOC_CTX *ctx,
 		status = NT_STATUS_NO_MEMORY;
 		goto out;
 	}
-	SSVAL(param, 0, 0x03);	/* max referral level */
+	SSVAL(param, 0, max_referral_level);
 
 	param = trans2_bytes_push_str(param, smbXcli_conn_use_unicode(cli->conn),
 				      path, strlen(path)+1,
@@ -855,6 +856,22 @@ NTSTATUS cli_dfs_get_referral(TALLOC_CTX *ctx,
 
 	TALLOC_FREE(frame);
 	return status;
+}
+
+NTSTATUS cli_dfs_get_referral(TALLOC_CTX *ctx,
+			struct cli_state *cli,
+			const char *path,
+			struct client_dfs_referral **refs,
+			size_t *num_refs,
+			size_t *consumed)
+{
+	return cli_dfs_get_referral_ex(ctx,
+				cli,
+				path,
+				3,
+				refs, /* Max referral level we want */
+				num_refs,
+				consumed);
 }
 
 /********************************************************************

@@ -152,6 +152,13 @@ NTSTATUS cli_cm_open(TALLOC_CTX *ctx,
 				struct cli_state **pcli);
 void cli_cm_display(struct cli_state *c);
 struct client_dfs_referral;
+NTSTATUS cli_dfs_get_referral_ex(TALLOC_CTX *ctx,
+			struct cli_state *cli,
+			const char *path,
+			uint16_t max_referral_level,
+			struct client_dfs_referral **refs,
+			size_t *num_refs,
+			size_t *consumed);
 NTSTATUS cli_dfs_get_referral(TALLOC_CTX *ctx,
 			struct cli_state *cli,
 			const char *path,
