@@ -21,7 +21,7 @@ import os
 import samba
 from samba.auth import system_session
 from samba.credentials import Credentials, CLI_CRED_NTLMv2_AUTH
-from samba.dcerpc import netlogon, ntlmssp
+from samba.dcerpc import netlogon, ntlmssp, srvsvc
 from samba.dcerpc.netlogon import netr_Authenticator, netr_WorkstationInformation
 from samba.dcerpc.misc import SEC_CHAN_WKSTA
 from samba.dsdb import (
@@ -99,10 +99,12 @@ class PyCredentialsTests(TestCase):
         # Change the password
         self.do_Netr_ServerPasswordSet2()
         # Now use the new password to perform an operation
-        self.do_DsrEnumerateDomainTrusts()
+        srvsvc.srvsvc("ncacn_np:%s" % (self.server),
+                      self.lp,
+                      self.machine_creds)
 
 
-   # Change the current machine account pazssword with a
+   # Change the current machine account password with a
    # netr_ServerPasswordSet2 call.
 
     def do_Netr_ServerPasswordSet2(self):
@@ -111,10 +113,12 @@ class PyCredentialsTests(TestCase):
         PWD_LEN  = 32
         DATA_LEN = 512
         newpass = samba.generate_random_password(PWD_LEN, PWD_LEN)
-        filler  = [ord(x) for x in os.urandom(DATA_LEN-PWD_LEN)]
+        encoded = newpass.encode('utf-16-le')
+        pwd_len = len(encoded)
+        filler  = [ord(x) for x in os.urandom(DATA_LEN-pwd_len)]
         pwd = netlogon.netr_CryptPassword()
-        pwd.length = PWD_LEN
-        pwd.data = filler + [ord(x) for x in newpass]
+        pwd.length = pwd_len
+        pwd.data = filler + [ord(x) for x in encoded]
         self.machine_creds.encrypt_netr_crypt_password(pwd)
         c.netr_ServerPasswordSet2(self.server,
                                   self.machine_creds.get_workstation(),
@@ -125,16 +129,6 @@ class PyCredentialsTests(TestCase):
 
         self.machine_pass = newpass
         self.machine_creds.set_password(newpass)
-
-    # Perform a DsrEnumerateDomainTrusts, this provides confirmation that
-    # a netlogon connection has been correctly established
-    def do_DsrEnumerateDomainTrusts(self):
-        c = self.get_netlogon_connection()
-        trusts = c.netr_DsrEnumerateDomainTrusts(
-            self.server,
-            netlogon.NETR_TRUST_FLAG_IN_FOREST |
-            netlogon.NETR_TRUST_FLAG_OUTBOUND  |
-            netlogon.NETR_TRUST_FLAG_INBOUND)
 
     # Establish sealed schannel netlogon connection over TCP/IP
     #
