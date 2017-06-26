@@ -94,10 +94,10 @@ test_tarmode_creation() {
 	# Clear temp data
 	rm -rf -- "$PREFIX"/tarmode > /dev/null 2>&1
 	rm -f "$PREFIX"/tarmode.tar > /dev/null 2>&1
-	rm -rf "$LOCAL_PATH"/tarmode > /dev/null 2>&1
+	rm -rf "$LOCAL_PATH" > /dev/null 2>&1
 
 	# Build the test data
-	if ! create_test_data "$LOCAL_PATH/tarmode"; then
+	if ! create_test_data "$LOCAL_PATH"; then
 		echo "Test data creation failed"
 		false
 		return
@@ -119,7 +119,7 @@ test_tarmode_creation() {
 	fi
 
 	# Verify data
-	if ! validate_data "$PREFIX/tarmode" "$LOCAL_PATH/tarmode"; then
+	if ! validate_data "$PREFIX/tarmode" "$LOCAL_PATH"; then
 		echo "Data not equivalent"
 		false
 		return
@@ -136,7 +136,7 @@ test_tarmode_extraction() {
 	# Clear temp data
 	rm -rf -- "$PREFIX"/tarmode > /dev/null 2>&1
 	rm -f "$PREFIX"/tarmode.tar > /dev/null 2>&1
-	rm -rf "$LOCAL_PATH"/tarmode > /dev/null 2>&1
+	rm -rf "$LOCAL_PATH" > /dev/null 2>&1
 
 	# Build the test data
 	if ! create_test_data "$PREFIX/tarmode"; then
@@ -161,7 +161,7 @@ test_tarmode_extraction() {
 	fi
 
 	# Verify data
-	if ! validate_data "$PREFIX/tarmode" "$LOCAL_PATH/tarmode"; then
+	if ! validate_data "$PREFIX/tarmode" "$LOCAL_PATH"; then
 		echo "Data not equivalent"
 		false
 		return
