@@ -65,6 +65,9 @@ static void do_locked1_del(struct db_record *rec, void *private_data)
 
 bool run_dbwrap_do_locked1(int dummy)
 {
+	struct tevent_context *ev;
+	struct messaging_context *msg;
+	struct db_context *backend;
 	struct db_context *db;
 	const char *dbname = "test_do_locked.tdb";
 	const char *keystr = "key";
@@ -75,11 +78,29 @@ bool run_dbwrap_do_locked1(int dummy)
 	int ret = false;
 	NTSTATUS status;
 
-	db = db_open(talloc_tos(), dbname, 0, TDB_CLEAR_IF_FIRST,
-		     O_CREAT|O_RDWR, 0644, DBWRAP_LOCK_ORDER_1,
-		     DBWRAP_FLAG_NONE);
-	if (db == NULL) {
+	ev = server_event_context();
+	if (ev == NULL) {
+		fprintf(stderr, "server_event_context() failed\n");
+		return false;
+	}
+	msg = server_messaging_context();
+	if (msg == NULL) {
+		fprintf(stderr, "server_messaging_context() failed\n");
+		return false;
+	}
+
+	backend = db_open(talloc_tos(), dbname, 0,
+			  TDB_CLEAR_IF_FIRST, O_CREAT|O_RDWR, 0644,
+			  DBWRAP_LOCK_ORDER_1, DBWRAP_FLAG_NONE);
+	if (backend == NULL) {
 		fprintf(stderr, "db_open failed: %s\n", strerror(errno));
+		return false;
+	}
+
+	db = db_open_watched(talloc_tos(), backend, msg);
+	if (db == NULL) {
+		fprintf(stderr, "db_open_watched failed: %s\n",
+			strerror(errno));
 		return false;
 	}
 
@@ -90,7 +111,8 @@ bool run_dbwrap_do_locked1(int dummy)
 		goto fail;
 	}
 	if (!NT_STATUS_IS_OK(state.status)) {
-		fprintf(stderr, "store returned %s\n", nt_errstr(status));
+		fprintf(stderr, "store returned %s\n",
+			nt_errstr(state.status));
 		goto fail;
 	}
 
