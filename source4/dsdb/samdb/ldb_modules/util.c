@@ -719,7 +719,7 @@ int dsdb_check_optional_feature(struct ldb_module *module, struct GUID op_featur
 				"Could not find the feature object - dn: %s\n",
 				ldb_dn_get_linearized(feature_dn));
 		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return LDB_ERR_NO_SUCH_OBJECT;
 	}
 	if (res->msgs[0]->num_elements > 0) {
 		const char *attrs2[] = {"msDS-OptionalFeatureGUID", NULL};
@@ -1055,7 +1055,7 @@ int dsdb_recyclebin_enabled(struct ldb_module *module, bool *enabled)
 	ret = dsdb_check_optional_feature(module, recyclebin_guid, enabled);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb, "Could not verify if Recycle Bin is enabled \n");
-		return LDB_ERR_UNWILLING_TO_PERFORM;
+		return ret;
 	}
 
 	return LDB_SUCCESS;

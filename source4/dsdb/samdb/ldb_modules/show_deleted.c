@@ -62,10 +62,21 @@ static int show_deleted_search(struct ldb_module *module, struct ldb_request *re
 
 	/* note that state may be NULL during initialisation */
 	if (state != NULL && state->need_refresh) {
+		/* Do not move this assignment, it can cause recursion loops! */
 		state->need_refresh = false;
 		ret = dsdb_recyclebin_enabled(module, &state->recycle_bin_enabled);
 		if (ret != LDB_SUCCESS) {
-			return ret;
+			state->recycle_bin_enabled = false;
+			/*
+			 * We can fail to find the feature object
+			 * during provision. Ignore any such error and
+			 * assume the recycle bin cannot be enabled at
+			 * this point in time.
+			 */
+			if (ret != LDB_ERR_NO_SUCH_OBJECT) {
+				state->need_refresh = true;
+				return LDB_ERR_UNWILLING_TO_PERFORM;
+			}
 		}
 	}
 
