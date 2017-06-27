@@ -37,5 +37,10 @@ bool netsamlogon_cache_store(const char *username,
 struct netr_SamInfo3 *netsamlogon_cache_get(TALLOC_CTX *mem_ctx,
 					    const struct dom_sid *user_sid);
 bool netsamlogon_cache_have(const struct dom_sid *sid);
+int netsamlog_cache_for_all(int (*cb)(const char *sid_str,
+				      time_t when_cached,
+				      struct netr_SamInfo3 *,
+				      void *private_data),
+			    void *private_data);
 
 #endif

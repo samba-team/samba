@@ -291,3 +291,105 @@ bool netsamlogon_cache_have(const struct dom_sid *sid)
 	ok = tdb_exists(netsamlogon_tdb, string_term_tdb_data(keystr));
 	return ok;
 }
+
+struct netsamlog_cache_forall_state {
+	TALLOC_CTX *mem_ctx;
+	int (*cb)(const char *sid_str,
+		  time_t when_cached,
+		  struct netr_SamInfo3 *,
+		  void *private_data);
+	void *private_data;
+};
+
+static int netsamlog_cache_traverse_cb(struct tdb_context *tdb,
+				       TDB_DATA key,
+				       TDB_DATA data,
+				       void *private_data)
+{
+	struct netsamlog_cache_forall_state *state =
+		(struct netsamlog_cache_forall_state *)private_data;
+	TALLOC_CTX *mem_ctx = NULL;
+	DATA_BLOB blob;
+	const char *sid_str = NULL;
+	struct dom_sid sid;
+	struct netsamlogoncache_entry r;
+	enum ndr_err_code ndr_err;
+	int ret;
+	bool ok;
+
+	if (key.dsize == 0) {
+		return 0;
+	}
+	if (key.dptr[key.dsize - 1] != '\0') {
+		return 0;
+	}
+	if (data.dptr == NULL) {
+		return 0;
+	}
+	sid_str = (char *)key.dptr;
+
+	ok = string_to_sid(&sid, sid_str);
+	if (!ok) {
+		DBG_ERR("String to SID failed for %s\n", sid_str);
+		return -1;
+	}
+
+	if (sid.num_auths != 5) {
+		return 0;
+	}
+
+	mem_ctx = talloc_new(state->mem_ctx);
+	if (mem_ctx == NULL) {
+		return -1;
+	}
+
+	blob = data_blob_const(data.dptr, data.dsize);
+
+	ndr_err = ndr_pull_struct_blob(
+		&blob, state->mem_ctx, &r,
+		(ndr_pull_flags_fn_t)ndr_pull_netsamlogoncache_entry);
+
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DBG_ERR("failed to pull entry from cache\n");
+		return -1;
+	}
+
+	ret = state->cb(sid_str, r.timestamp, &r.info3, state->private_data);
+
+	TALLOC_FREE(mem_ctx);
+	return ret;
+}
+
+int netsamlog_cache_for_all(int (*cb)(const char *sid_str,
+				      time_t when_cached,
+				      struct netr_SamInfo3 *,
+				      void *private_data),
+			    void *private_data)
+{
+	int ret;
+	TALLOC_CTX *mem_ctx = NULL;
+	struct netsamlog_cache_forall_state state;
+
+	if (!netsamlogon_cache_init()) {
+		DBG_ERR("Cannot open %s\n", NETSAMLOGON_TDB);
+		return -1;
+	}
+
+	mem_ctx = talloc_init("netsamlog_cache_for_all");
+	if (mem_ctx == NULL) {
+		return -1;
+	}
+
+	state = (struct netsamlog_cache_forall_state) {
+		.mem_ctx = mem_ctx,
+		.cb = cb,
+		.private_data = private_data,
+	};
+
+	ret = tdb_traverse_read(netsamlogon_tdb,
+				netsamlog_cache_traverse_cb,
+				&state);
+
+	TALLOC_FREE(state.mem_ctx);
+	return ret;
+}
