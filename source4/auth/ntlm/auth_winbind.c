@@ -110,7 +110,8 @@ static NTSTATUS winbind_check_password(struct auth_method_context *ctx,
 	struct netr_IdentityInfo *identity_info;
 	struct ldb_dn *domain_dn;
 	struct ldb_message *msg;
-
+	const char *account_name = user_info->mapped.account_name;
+	const char *p = NULL;
 
 	if (!ctx->auth_ctx->msg_ctx) {
 		DEBUG(0,("winbind_check_password: auth_context_create was called with out messaging context\n"));
@@ -201,34 +202,33 @@ static NTSTATUS winbind_check_password(struct auth_method_context *ctx,
 	 * This means that lockouts happen at a badPwdCount earlier than
 	 * normal, but makes it more fault tolerant.
 	 */
-	{
-		const char *account_name = user_info->mapped.account_name;
-		const char *p = NULL;
-		p = strchr_m(account_name, '@');
-		if (p != NULL) {
-			const char *nt4_domain = NULL;
-			const char *nt4_account = NULL;
+	p = strchr_m(account_name, '@');
+	if (p != NULL) {
+		const char *nt4_domain = NULL;
+		const char *nt4_account = NULL;
 
-			status = crack_name_to_nt4_name(mem_ctx,
-							ctx->auth_ctx->sam_ctx,
-							DRSUAPI_DS_NAME_FORMAT_USER_PRINCIPAL,
-							account_name,
-							&nt4_domain, &nt4_account);
-			if (NT_STATUS_IS_OK(status) &&
-			    lpcfg_is_mydomain(ctx->auth_ctx->lp_ctx, nt4_domain)) {
-				account_name = nt4_account;
-			}
+		status = crack_name_to_nt4_name(mem_ctx,
+						ctx->auth_ctx->sam_ctx,
+						DRSUAPI_DS_NAME_FORMAT_USER_PRINCIPAL,
+						account_name,
+						&nt4_domain, &nt4_account);
+		if (NT_STATUS_IS_OK(status) &&
+		    lpcfg_is_mydomain(ctx->auth_ctx->lp_ctx, nt4_domain))
+		{
+			account_name = nt4_account;
 		}
+	}
 
-		domain_dn = ldb_get_default_basedn(ctx->auth_ctx->sam_ctx);
-		if (domain_dn != NULL) {
-			status = authsam_search_account(mem_ctx, ctx->auth_ctx->sam_ctx, account_name, domain_dn, &msg);
-			if (NT_STATUS_IS_OK(status)) {
-			    authsam_logon_success_accounting(ctx->auth_ctx->sam_ctx, msg,
-							     domain_dn,
-							     user_info->flags & USER_INFO_INTERACTIVE_LOGON,
-							     NULL);
-			}
+	domain_dn = ldb_get_default_basedn(ctx->auth_ctx->sam_ctx);
+	if (domain_dn != NULL) {
+		status = authsam_search_account(mem_ctx, ctx->auth_ctx->sam_ctx,
+						account_name, domain_dn, &msg);
+		if (NT_STATUS_IS_OK(status)) {
+			authsam_logon_success_accounting(
+				ctx->auth_ctx->sam_ctx, msg,
+				domain_dn,
+				user_info->flags & USER_INFO_INTERACTIVE_LOGON,
+				NULL);
 		}
 	}
 
