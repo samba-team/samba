@@ -627,14 +627,9 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 	DATA_BLOB unwrapped_out = data_blob_null;
 	struct spnego_data spnego_out;
 	struct spnego_data spnego;
-
 	ssize_t len;
 
 	*out = data_blob_null;
-
-	if (!out_mem_ctx) {
-		out_mem_ctx = spnego_state;
-	}
 
 	/* and switch into the state machine */
 
