@@ -25,6 +25,7 @@
 #include "lib/util/util_tdb.h"
 #include "system/filesys.h"
 #include "lib/param/param.h"
+#include "libcli/util/error.h"
 
 struct db_tdb_ctx {
 	struct tdb_wrap *wtdb;
@@ -172,6 +173,51 @@ static struct db_record *db_tdb_try_fetch_locked(
 		return NULL;
 	}
 	return db_tdb_fetch_locked_internal(db, mem_ctx, key);
+}
+
+static NTSTATUS db_tdb_do_locked(struct db_context *db, TDB_DATA key,
+				 void (*fn)(struct db_record *rec,
+					    void *private_data),
+				 void *private_data)
+{
+	struct db_tdb_ctx *ctx = talloc_get_type_abort(
+		db->private_data, struct db_tdb_ctx);
+	uint8_t *buf = NULL;
+	struct db_record rec;
+	int ret;
+
+	ret = tdb_chainlock(ctx->wtdb->tdb, key);
+	if (ret == -1) {
+		enum TDB_ERROR err = tdb_error(ctx->wtdb->tdb);
+		DBG_DEBUG("tdb_chainlock failed: %s\n",
+			  tdb_errorstr(ctx->wtdb->tdb));
+		return map_nt_error_from_tdb(err);
+	}
+
+	ret = tdb_fetch_talloc(ctx->wtdb->tdb, key, ctx, &buf);
+
+	if ((ret != 0) && (ret != ENOENT)) {
+		DBG_DEBUG("tdb_fetch_talloc failed: %s\n",
+			  strerror(errno));
+		tdb_chainunlock(ctx->wtdb->tdb, key);
+		return map_nt_error_from_unix_common(ret);
+	}
+
+	rec = (struct db_record) {
+		.db = db, .key = key,
+		.value = (struct TDB_DATA) { .dptr = buf,
+					     .dsize = talloc_get_size(buf) },
+		.storev = db_tdb_storev, .delete_rec = db_tdb_delete,
+		.private_data = ctx
+	};
+
+	fn(&rec, private_data);
+
+	talloc_free(buf);
+
+	tdb_chainunlock(ctx->wtdb->tdb, key);
+
+	return NT_STATUS_OK;
 }
 
 static int db_tdb_exists(struct db_context *db, TDB_DATA key)
@@ -446,6 +492,7 @@ struct db_context *db_open_tdb(TALLOC_CTX *mem_ctx,
 
 	result->fetch_locked = db_tdb_fetch_locked;
 	result->try_fetch_locked = db_tdb_try_fetch_locked;
+	result->do_locked = db_tdb_do_locked;
 	result->traverse = db_tdb_traverse;
 	result->traverse_read = db_tdb_traverse_read;
 	result->parse_record = db_tdb_parse;
