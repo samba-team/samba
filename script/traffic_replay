@@ -1,0 +1,362 @@
+#!/usr/bin/env python
+# Generates samba network traffic
+#
+# Copyright (C) Catalyst IT Ltd. 2017
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+import sys
+import os
+import optparse
+import tempfile
+import shutil
+
+sys.path.insert(0, "bin/python")
+
+from samba.emulate import traffic
+import samba.getopt as options
+
+
+def main():
+
+    desc = ("Generates network traffic 'conversations' based on <summary-file>"
+            " (which should the output file produced by either traffic_learner"
+            " or traffic_summary.pl). This traffic is sent to <dns-hostname>,"
+            " which is the full DNS hostname of the DC being tested.")
+
+    parser = optparse.OptionParser(
+        "%prog [--help|options] <summary-file> <dns-hostname>",
+        description=desc)
+
+    parser.add_option('--dns-rate', type='float', default=0,
+                      help='fire extra DNS packets at this rate')
+    parser.add_option('-B', '--badpassword-frequency',
+                      type='float', default=0.0,
+                      help='frequency of connections with bad passwords')
+    parser.add_option('-K', '--prefer-kerberos',
+                      action="store_true",
+                      help='prefer kerberos when authenticating test users')
+    parser.add_option('-I', '--instance-id', type='int', default=0,
+                      help='Instance number, when running multiple instances')
+    parser.add_option('-t', '--timing-data',
+                      help=('write individual message timing data here '
+                            '(- for stdout)'))
+    parser.add_option('--preserve-tempdir', default=False, action="store_true",
+                      help='do not delete temporary files')
+    parser.add_option('-F', '--fixed-password',
+                      type='string', default=None,
+                      help=('Password used for the test users created. '
+                            'Required'))
+    parser.add_option('-c', '--clean-up',
+                      action="store_true",
+                      help='Clean up the generated groups and user accounts')
+
+    model_group = optparse.OptionGroup(parser, 'Traffic Model Options',
+                                       'These options alter the traffic '
+                                       'generated when the summary-file is a '
+                                       'traffic-model (produced by '
+                                       'traffic_learner)')
+    model_group.add_option('-S', '--scale-traffic', type='float', default=1.0,
+                           help='Increase the number of conversations by '
+                           'this factor')
+    model_group.add_option('-D', '--duration', type='float', default=None,
+                           help=('Run model for this long (approx). '
+                                 'Default 60s for models'))
+    model_group.add_option('-r', '--replay-rate', type='float', default=1.0,
+                           help='Replay the traffic faster by this factor')
+    model_group.add_option('--traffic-summary',
+                           help=('Generate a traffic summary file and write '
+                                 'it here (- for stdout)'))
+    parser.add_option_group(model_group)
+
+    user_gen_group = optparse.OptionGroup(parser, 'Generate User Options',
+                                          "Add extra user/groups on the DC to "
+                                          "increase the DB size. These extra "
+                                          "users aren't used for traffic "
+                                          "generation.")
+    user_gen_group.add_option('-G', '--generate-users-only',
+                              action="store_true",
+                              help='Generate the users, but do not replay '
+                              'the traffic')
+    user_gen_group.add_option('-n', '--number-of-users', type='int', default=0,
+                              help='Total number of test users to create')
+    user_gen_group.add_option('--number-of-groups', type='int', default=0,
+                              help='Create this many groups')
+    user_gen_group.add_option('--average-groups-per-user',
+                              type='int', default=0,
+                              help='Assign the test users to this '
+                              'many groups on average')
+    user_gen_group.add_option('--group-memberships', type='int', default=0,
+                              help='Total memberships to assign across all '
+                              'test users and all groups')
+    parser.add_option_group(user_gen_group)
+
+    sambaopts = options.SambaOptions(parser)
+    parser.add_option_group(sambaopts)
+    parser.add_option_group(options.VersionOptions(parser))
+    credopts = options.CredentialsOptions(parser)
+    parser.add_option_group(credopts)
+
+    # the --no-password credential doesn't make sense for this tool
+    if parser.has_option('-N'):
+        parser.remove_option('-N')
+
+    opts, args = parser.parse_args()
+
+    # First ensure we have reasonable arguments
+
+    if len(args) == 1:
+        summary = None
+        host    = args[0]
+    elif len(args) == 2:
+        summary, host = args
+    else:
+        parser.print_usage()
+        return
+
+    if opts.clean_up:
+        print >>sys.stderr, "Removing user and machine accounts"
+        lp    = sambaopts.get_loadparm()
+        creds = credopts.get_credentials(lp)
+        ldb   = traffic.openLdb(host, creds, lp)
+        traffic.clean_up_accounts(ldb, opts.instance_id)
+        exit(0)
+
+    if summary:
+        if not os.path.exists(summary):
+            print >>sys.stderr, "Summary file %s doesn't exist" % summary
+            sys.exit(1)
+    # the summary-file can be ommitted for --generate-users-only and
+    # --cleanup-up, but it should be specified in all other cases
+    elif not opts.generate_users_only:
+        print >>sys.stderr, "No summary-file specified to replay traffic from"
+        sys.exit(1)
+
+    if not opts.fixed_password:
+        print >>sys.stderr, ("Please use --fixed-password to specify a password"
+                             " for the users created as part of this test")
+        sys.exit(1)
+
+    lp = sambaopts.get_loadparm()
+    creds = credopts.get_credentials(lp)
+
+    domain = opts.workgroup
+    if domain:
+        lp.set("workgroup", domain)
+    else:
+        domain = lp.get("workgroup")
+        if domain == "WORKGROUP":
+            print >>sys.stderr, ("NETBIOS domain does not appear to be "
+                                 "specified, use the --workgroup option")
+            sys.exit(1)
+
+    if not opts.realm and not lp.get('realm'):
+        print >>sys.stderr, "Realm not specified, use the --realm option"
+        sys.exit(1)
+
+    if opts.generate_users_only and not (opts.number_of_users or
+                                         opts.number_of_groups):
+        print >>sys.stderr, ("Please specify the number of users and/or groups "
+                             "to generate.")
+        sys.exit(1)
+
+    if opts.group_memberships and opts.average_groups_per_user:
+        print >>sys.stderr, ("--group-memberships and --average-groups-per-user"
+                             " are incompatible options - use one or the other")
+        sys.exit(1)
+
+    if not opts.number_of_groups and opts.average_groups_per_user:
+        print >>sys.stderr, ("--average-groups-per-user requires "
+                             "--number-of-groups")
+        sys.exit(1)
+
+    if not opts.number_of_groups and opts.group_memberships:
+        print >>sys.stderr, "--group-memberships requires --number-of-groups"
+        sys.exit(1)
+
+    if opts.timing_data not in ('-', None):
+        try:
+            open(opts.timing_data, 'w').close()
+        except IOError as e:
+            print >> sys.stderr, ("the supplied timing data destination "
+                                  "(%s) is not writable" % opts.timing_data)
+            print >> sys.stderr, e
+            sys.exit()
+
+    if opts.traffic_summary not in ('-', None):
+        try:
+            open(opts.traffic_summary, 'w').close()
+        except IOError as e:
+            print >> sys.stderr, ("the supplied traffic summary destination "
+                                  "(%s) is not writable" % opts.traffic_summary)
+            print >> sys.stderr, e
+            sys.exit()
+
+    traffic.DEBUG_LEVEL = opts.debuglevel
+
+    duration = opts.duration
+    if duration is None:
+        duration = 60.0
+
+    # ingest the model or traffic summary
+    if summary:
+        try:
+            conversations, interval, duration, dns_counts = \
+                                            traffic.ingest_summaries([summary])
+
+            print >>sys.stderr, ("Using conversations from the traffic summary "
+                                 "file specified")
+
+            # honour the specified duration if it's different to the
+            # capture duration
+            if opts.duration is not None:
+                duration = opts.duration
+
+        except ValueError as e:
+            if not e.message.startswith('need more than'):
+                raise
+
+            model = traffic.TrafficModel()
+
+            try:
+                model.load(summary)
+            except ValueError:
+                print >>sys.stderr, ("Could not parse %s. The summary file "
+                                     "should be the output from either the "
+                                     "traffic_summary.pl or "
+                                     "traffic_learner scripts."
+                                     % summary)
+                sys.exit()
+
+            print >>sys.stderr, ("Using the specified model file to "
+                                 "generate conversations")
+
+            conversations = model.generate_conversations(opts.scale_traffic,
+                                                         duration,
+                                                         opts.replay_rate)
+
+    else:
+        conversations = []
+
+    if opts.debuglevel > 5:
+        for c in conversations:
+            for p in c.packets:
+                print "    ", p
+
+        print '=' * 72
+
+    if opts.number_of_users and opts.number_of_users < len(conversations):
+        print >>sys.stderr, ("--number-of-users (%d) is less than the "
+                             "number of conversations to replay (%d)"
+                             % (opts.number_of_users, len(conversations)))
+        sys.exit(1)
+
+    number_of_users = max(opts.number_of_users, len(conversations))
+    max_memberships = number_of_users * opts.number_of_groups
+
+    if not opts.group_memberships and opts.average_groups_per_user:
+        opts.group_memberships = opts.average_groups_per_user * number_of_users
+        print >>sys.stderr, ("Using %d group-memberships based on %u average "
+                             "memberships for %d users"
+                             % (opts.group_memberships,
+                                opts.average_groups_per_user, number_of_users))
+
+    if opts.group_memberships > max_memberships:
+        print >>sys.stderr, ("The group memberships specified (%d) exceeds "
+                             "the total users (%d) * total groups (%d)"
+                             % (opts.group_memberships, number_of_users,
+                                opts.number_of_groups))
+        sys.exit(1)
+
+    try:
+        ldb = traffic.openLdb(host, creds, lp)
+    except:
+        print >>sys.stderr, ("\nInitial LDAP connection failed! Did you supply "
+                             "a DNS host name and the correct credentials?")
+        sys.exit(1)
+
+    if opts.generate_users_only:
+        traffic.generate_users_and_groups(ldb,
+                                          opts.instance_id,
+                                          opts.fixed_password,
+                                          opts.number_of_users,
+                                          opts.number_of_groups,
+                                          opts.group_memberships)
+        sys.exit()
+
+    tempdir = tempfile.mkdtemp(prefix="samba_tg_")
+    print >>sys.stderr, "Using temp dir %s" % tempdir
+
+    traffic.generate_users_and_groups(ldb,
+                                      opts.instance_id,
+                                      opts.fixed_password,
+                                      number_of_users,
+                                      opts.number_of_groups,
+                                      opts.group_memberships)
+
+    accounts = traffic.generate_replay_accounts(ldb,
+                                                opts.instance_id,
+                                                len(conversations),
+                                                opts.fixed_password)
+
+    statsdir = traffic.mk_masked_dir(tempdir, 'stats')
+
+    if opts.traffic_summary:
+        if opts.traffic_summary == '-':
+            summary_dest = sys.stdout
+        else:
+            summary_dest = open(opts.traffic_summary, 'w')
+
+        print >>sys.stderr, "Writing traffic summary"
+        summaries = []
+        for c in conversations:
+            summaries += c.replay_as_summary_lines()
+
+        summaries.sort()
+        for (time, line) in summaries:
+            print >>summary_dest, line
+
+        exit(0)
+
+    traffic.replay(conversations, host,
+                   lp=lp,
+                   creds=creds,
+                   accounts=accounts,
+                   dns_rate=opts.dns_rate,
+                   duration=duration,
+                   badpassword_frequency=opts.badpassword_frequency,
+                   prefer_kerberos=opts.prefer_kerberos,
+                   statsdir=statsdir,
+                   domain=domain,
+                   base_dn=ldb.domain_dn(),
+                   ou=traffic.ou_name(ldb, opts.instance_id),
+                   tempdir=tempdir,
+                   domain_sid=ldb.get_domain_sid())
+
+    if opts.timing_data == '-':
+        timing_dest = sys.stdout
+    elif opts.timing_data is None:
+        timing_dest = None
+    else:
+        timing_dest = open(opts.timing_data, 'w')
+
+    print >>sys.stderr, "Generating statistics"
+    traffic.generate_stats(statsdir, timing_dest)
+
+    if not opts.preserve_tempdir:
+        print >>sys.stderr, "Removing temporary directory"
+        shutil.rmtree(tempdir)
+
+
+main()

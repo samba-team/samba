@@ -1,0 +1,10 @@
+0.000000	06	3	5	1	ldap	3	searchRequest	2	DC,DC		cn			
+0.127127	11		6	1	cldap	3	searchRequest				Netlogon			
+0.127391	11		6	1	cldap	3	searchRequest				Netlogon			
+0.127689	11		6	1	cldap	3	searchRequest				Netlogon			
+0.227072	06	3	5	1	ldap	2	unbindRequest							
+0.282995	06	16	6	1	rpc_netlogon	29	NetrLogonGetDomainInfo	
+0.287553	06	18	6	1	kerberos			
+0.287759	06	16	1	6	rpc_netlogon	29	NetrLogonGetDomainInfo	
+0.291161	06	19	6	1	ldap	3	searchRequest				subschemaSubentry,dsServiceName,namingContexts,defaultNamingContext,schemaNamingContext,configurationNamingContext,rootDomainNamingContext,supportedControl,supportedLDAPVersion,supportedLDAPPolicies,supportedSASLMechanisms,dnsHostName,ldapServiceName,serverName,supportedCapabilities			
+0.292488	06	18	1	6	kerberos			
