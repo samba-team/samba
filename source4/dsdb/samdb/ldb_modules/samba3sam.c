@@ -934,8 +934,44 @@ static const struct ldb_module_ops ldb_samba3sam_module_ops = {
 	.init_context	   = samba3sam_init,
 };
 
+
+/* A dummy module to help the samba3sam tests */
+static int show_deleted_ignore_search(struct ldb_module *module, struct ldb_request *req)
+{
+	struct ldb_control *show_del, *show_rec;
+
+	/* check if there's a show deleted control */
+	show_del = ldb_request_get_control(req, LDB_CONTROL_SHOW_DELETED_OID);
+	/* check if there's a show recycled control */
+	show_rec = ldb_request_get_control(req, LDB_CONTROL_SHOW_RECYCLED_OID);
+
+	/* mark the controls as done */
+	if (show_del != NULL) {
+		show_del->critical = 0;
+	}
+	if (show_rec != NULL) {
+		show_rec->critical = 0;
+	}
+
+	/* perform the search */
+	return ldb_next_request(module, req);
+}
+
+static const struct ldb_module_ops ldb_show_deleted_module_ops = {
+	.name		   = "show_deleted_ignore",
+	.search            = show_deleted_ignore_search
+};
+
 int ldb_samba3sam_module_init(const char *version)
 {
+	int ret;
+	
 	LDB_MODULE_CHECK_VERSION(version);
+	ret = ldb_register_module(&ldb_show_deleted_module_ops);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
 	return ldb_register_module(&ldb_samba3sam_module_ops);
 }
+
