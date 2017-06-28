@@ -56,6 +56,95 @@ static void g_lock_rec_get(struct g_lock_rec *rec,
 	server_id_get(&rec->pid, buf+1);
 }
 
+#if 0
+
+struct g_lock {
+	uint8_t *recsbuf;
+	size_t num_recs;
+	uint8_t *data;
+	size_t datalen;
+};
+
+static bool g_lock_parse(uint8_t *buf, size_t buflen, struct g_lock *lck)
+{
+	size_t found_recs, data_ofs;
+
+	if (buflen < sizeof(uint32_t)) {
+		*lck = (struct g_lock) {0};
+		return true;
+	}
+
+	found_recs = IVAL(buf, 0);
+
+	if (found_recs > buflen/G_LOCK_REC_LENGTH) {
+		return false;
+	}
+
+	buf += sizeof(uint32_t);
+	buflen -= sizeof(uint32_t);
+	data_ofs = found_recs * G_LOCK_REC_LENGTH;
+
+	*lck = (struct g_lock) {
+		.recsbuf = buf, .num_recs = found_recs,
+		.data = buf+data_ofs, .datalen = buflen-data_ofs
+	};
+
+	return true;
+}
+
+static void g_lock_get_rec(struct g_lock *lck, size_t i,
+			   struct g_lock_rec *rec)
+{
+	if (i >= lck->num_recs) {
+		abort();
+	}
+	g_lock_rec_get(rec, lck->recsbuf + i*G_LOCK_REC_LENGTH);
+}
+
+static void g_lock_rec_del(struct g_lock *lck, size_t i)
+{
+	if (i >= lck->num_recs) {
+		abort();
+	}
+	lck->num_recs -= 1;
+	if (i < lck->num_recs) {
+		uint8_t *recptr = lck->recsbuf + i*G_LOCK_REC_LENGTH;
+		memcpy(recptr, lck->recsbuf + lck->num_recs*G_LOCK_REC_LENGTH,
+		       G_LOCK_REC_LENGTH);
+	}
+}
+
+static NTSTATUS g_lock_store(struct db_record *rec, struct g_lock *lck,
+			     struct g_lock_rec *add)
+{
+	uint8_t sizebuf[4];
+	uint8_t addbuf[G_LOCK_REC_LENGTH];
+
+	struct TDB_DATA dbufs[] = {
+		{ .dptr = sizebuf, .dsize = sizeof(sizebuf) },
+		{ .dptr = lck->recsbuf,
+		  .dsize = lck->num_recs * G_LOCK_REC_LENGTH },
+		{ 0 },
+		{ .dptr = lck->data, .dsize = lck->datalen }
+	};
+
+	if (add != NULL) {
+		g_lock_rec_put(addbuf, *add);
+
+		dbufs[2] = (TDB_DATA) {
+			.dptr = addbuf, .dsize = G_LOCK_REC_LENGTH
+		};
+
+		lck->num_recs += 1;
+	}
+
+	SIVAL(sizebuf, 0, lck->num_recs);
+
+	return dbwrap_record_storev(rec, dbufs, ARRAY_SIZE(dbufs), 0);
+}
+
+#endif
+
 static ssize_t g_lock_put(uint8_t *buf, size_t buflen,
 			  const struct g_lock_rec *locks,
 			  size_t num_locks,
