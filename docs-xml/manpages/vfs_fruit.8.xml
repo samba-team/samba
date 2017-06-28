@@ -162,6 +162,15 @@
 	    </listitem>
 	  </varlistentry>
 
+	  <varlistentry>
+	    <term>fruit:model = MacSamba</term>
+	    <listitem>
+	      <para>This option defines the model string inside the AAPL
+	      extension and will determine the appearance of the icon representing the
+	      Samba server in the Finder window.</para>
+	      <para>The default is <emphasis>MacSamba</emphasis>.</para>
+	    </listitem>
+	  </varlistentry>
 	</variablelist>
 </refsect1>
 
