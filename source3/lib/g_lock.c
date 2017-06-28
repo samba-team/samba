@@ -56,8 +56,6 @@ static void g_lock_rec_get(struct g_lock_rec *rec,
 	server_id_get(&rec->pid, buf+1);
 }
 
-#if 0
-
 struct g_lock {
 	uint8_t *recsbuf;
 	size_t num_recs;
@@ -142,8 +140,6 @@ static NTSTATUS g_lock_store(struct db_record *rec, struct g_lock *lck,
 
 	return dbwrap_record_storev(rec, dbufs, ARRAY_SIZE(dbufs), 0);
 }
-
-#endif
 
 static ssize_t g_lock_put(uint8_t *buf, size_t buflen,
 			  const struct g_lock_rec *locks,
@@ -605,63 +601,72 @@ NTSTATUS g_lock_lock(struct g_lock_ctx *ctx, const char *name,
 	return status;
 }
 
-NTSTATUS g_lock_unlock(struct g_lock_ctx *ctx, const char *name)
-{
-	struct server_id self = messaging_server_id(ctx->msg);
-	struct db_record *rec = NULL;
-	struct g_lock_rec *locks = NULL;
-	size_t i, num_locks;
+struct g_lock_unlock_state {
+	const char *name;
+	struct server_id self;
 	NTSTATUS status;
-	TDB_DATA value, userdata;
+};
 
-	rec = dbwrap_fetch_locked(ctx->db, talloc_tos(),
-				  string_term_tdb_data(name));
-	if (rec == NULL) {
-		DEBUG(10, ("fetch_locked(\"%s\") failed\n", name));
-		status = NT_STATUS_INTERNAL_ERROR;
-		goto done;
-	}
+static void g_lock_unlock_fn(struct db_record *rec,
+			     void *private_data)
+{
+	struct g_lock_unlock_state *state = private_data;
+	TDB_DATA value;
+	struct g_lock lck;
+	size_t i;
+	bool ok;
 
 	value = dbwrap_record_get_value(rec);
 
-	status = g_lock_get_talloc(talloc_tos(), value, &locks, &num_locks,
-				   &userdata.dptr, &userdata.dsize);
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG_DEBUG("g_lock_get for %s failed: %s\n", name,
-			  nt_errstr(status));
-		status = NT_STATUS_FILE_INVALID;
-		goto done;
+	ok = g_lock_parse(value.dptr, value.dsize, &lck);
+	if (!ok) {
+		DBG_DEBUG("g_lock_get for %s failed\n", state->name);
+		state->status = NT_STATUS_FILE_INVALID;
+		return;
 	}
-	for (i=0; i<num_locks; i++) {
-		if (serverid_equal(&self, &locks[i].pid)) {
+	for (i=0; i<lck.num_recs; i++) {
+		struct g_lock_rec lockrec;
+		g_lock_get_rec(&lck, i, &lockrec);
+		if (serverid_equal(&state->self, &lockrec.pid)) {
 			break;
 		}
 	}
-	if (i == num_locks) {
-		DBG_DEBUG("Lock not found, num_locks=%zu\n", num_locks);
-		status = NT_STATUS_NOT_FOUND;
-		goto done;
+	if (i == lck.num_recs) {
+		DBG_DEBUG("Lock not found, num_rec=%zu\n", lck.num_recs);
+		state->status = NT_STATUS_NOT_FOUND;
+		return;
 	}
 
-	locks[i] = locks[num_locks-1];
-	num_locks -= 1;
+	g_lock_rec_del(&lck, i);
 
-	if ((num_locks == 0) && (userdata.dsize == 0)) {
-		status = dbwrap_record_delete(rec);
-	} else {
-		status = g_lock_record_store(
-			rec, locks, num_locks, userdata.dptr, userdata.dsize);
+	if ((lck.num_recs == 0) && (lck.datalen == 0)) {
+		state->status = dbwrap_record_delete(rec);
+		return;
 	}
+	state->status = g_lock_store(rec, &lck, NULL);
+}
+
+NTSTATUS g_lock_unlock(struct g_lock_ctx *ctx, const char *name)
+{
+	struct g_lock_unlock_state state = {
+		.self = messaging_server_id(ctx->msg), .name = name
+	};
+	NTSTATUS status;
+
+	status = dbwrap_do_locked(ctx->db, string_term_tdb_data(name),
+				  g_lock_unlock_fn, &state);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_WARNING("Could not store record: %s\n", nt_errstr(status));
-		goto done;
+		DBG_WARNING("dbwrap_do_locked failed: %s\n",
+			    nt_errstr(status));
+		return status;
+	}
+	if (!NT_STATUS_IS_OK(state.status)) {
+		DBG_WARNING("g_lock_unlock_fn failed: %s\n",
+			    nt_errstr(state.status));
+		return state.status;
 	}
 
-	status = NT_STATUS_OK;
-done:
-	TALLOC_FREE(rec);
-	TALLOC_FREE(locks);
-	return status;
+	return NT_STATUS_OK;
 }
 
 NTSTATUS g_lock_write_data(struct g_lock_ctx *ctx, const char *name,
