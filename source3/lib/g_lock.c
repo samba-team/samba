@@ -341,41 +341,46 @@ static NTSTATUS g_lock_trylock(struct db_record *rec, struct server_id self,
 			       enum g_lock_type type,
 			       struct server_id *blocker)
 {
-	TDB_DATA data, userdata;
-	size_t i, num_locks;
-	struct g_lock_rec *locks, *tmp;
+	TDB_DATA data;
+	size_t i;
+	struct g_lock lck;
 	NTSTATUS status;
 	bool modified = false;
+	bool ok;
 
 	data = dbwrap_record_get_value(rec);
 
-	status = g_lock_get_talloc(talloc_tos(), data, &locks, &num_locks,
-				   &userdata.dptr, &userdata.dsize);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	ok = g_lock_parse(data.dptr, data.dsize, &lck);
+	if (!ok) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	if ((type == G_LOCK_READ) && (num_locks > 0)) {
+	if ((type == G_LOCK_READ) && (lck.num_recs > 0)) {
+		struct g_lock_rec check_rec;
+
 		/*
 		 * Read locks can stay around forever if the process
 		 * dies. Do a heuristic check for process existence:
 		 * Check one random process for existence. Hopefully
 		 * this will keep runaway read locks under control.
 		 */
-		i = generate_random() % num_locks;
+		i = generate_random() % lck.num_recs;
 
-		if (!serverid_exists(&locks[i].pid)) {
-			locks[i] = locks[num_locks-1];
-			num_locks -=1;
+		g_lock_get_rec(&lck, i, &check_rec);
+
+		if (!serverid_exists(&check_rec.pid)) {
+			g_lock_rec_del(&lck, i);
 			modified = true;
 		}
 	}
 
-	for (i=0; i<num_locks; i++) {
-		struct g_lock_rec *lock = &locks[i];
+	for (i=0; i<lck.num_recs; i++) {
+		struct g_lock_rec lock;
 
-		if (serverid_equal(&self, &lock->pid)) {
-			if (lock->lock_type == type) {
+		g_lock_get_rec(&lck, i, &lock);
+
+		if (serverid_equal(&self, &lock.pid)) {
+			if (lock.lock_type == type) {
 				status = NT_STATUS_WAS_LOCKED;
 				goto done;
 			}
@@ -383,13 +388,12 @@ static NTSTATUS g_lock_trylock(struct db_record *rec, struct server_id self,
 			 * Remove "our" lock entry. Re-add it later
 			 * with our new lock type.
 			 */
-			locks[i] = locks[num_locks-1];
-			num_locks -= 1;
+			g_lock_rec_del(&lck, i);
 			continue;
 		}
 
-		if (g_lock_conflicts(type, lock->lock_type)) {
-			struct server_id pid = lock->pid;
+		if (g_lock_conflicts(type, lock.lock_type)) {
+			struct server_id pid = lock.pid;
 
 			/*
 			 * As the serverid_exists might recurse into
@@ -400,47 +404,32 @@ static NTSTATUS g_lock_trylock(struct db_record *rec, struct server_id self,
 
 			if (serverid_exists(&pid)) {
 				status = NT_STATUS_LOCK_NOT_GRANTED;
-				*blocker = lock->pid;
+				*blocker = lock.pid;
 				goto done;
 			}
 
 			/*
 			 * Delete stale conflicting entry
 			 */
-			locks[i] = locks[num_locks-1];
-			num_locks -= 1;
+			g_lock_rec_del(&lck, i);
 			modified = true;
 		}
 	}
-
-	tmp = talloc_realloc(talloc_tos(), locks, struct g_lock_rec,
-			     num_locks+1);
-	if (tmp == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
-	locks = tmp;
-
-	locks[num_locks] = (struct g_lock_rec) {
-		.pid = self, .lock_type = type
-	};
-	num_locks +=1 ;
 
 	modified = true;
 
 	status = NT_STATUS_OK;
 done:
 	if (modified) {
+		struct g_lock_rec mylock = { .pid = self, .lock_type = type };
 		NTSTATUS store_status;
-		store_status = g_lock_record_store(
-			rec, locks, num_locks, userdata.dptr, userdata.dsize);
+		store_status = g_lock_store(rec, &lck, &mylock);
 		if (!NT_STATUS_IS_OK(store_status)) {
 			DBG_WARNING("g_lock_record_store failed: %s\n",
 				    nt_errstr(store_status));
 			status = store_status;
 		}
 	}
-	TALLOC_FREE(locks);
 	return status;
 }
 
