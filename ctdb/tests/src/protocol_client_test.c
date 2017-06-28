@@ -1191,6 +1191,7 @@ static void fill_ctdb_reply_control_data(TALLOC_CTX *mem_ctx,
 		break;
 
 	case CTDB_CONTROL_DB_ATTACH_PERSISTENT:
+		cd->data.db_id = rand32();
 		break;
 
 	case CTDB_CONTROL_UPDATE_RECORD:
@@ -1560,6 +1561,7 @@ static void verify_ctdb_reply_control_data(struct ctdb_reply_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_DB_ATTACH_PERSISTENT:
+		assert(cd->data.db_id == cd2->data.db_id);
 		break;
 
 	case CTDB_CONTROL_UPDATE_RECORD:
