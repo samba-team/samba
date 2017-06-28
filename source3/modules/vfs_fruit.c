@@ -138,6 +138,7 @@ struct fruit_config_data {
 	bool veto_appledouble;
 	bool posix_rename;
 	bool aapl_zero_file_id;
+	const char *model;
 
 	/*
 	 * Additional options, all enabled by default,
@@ -1589,6 +1590,9 @@ static int init_fruit_config(vfs_handle_struct *handle)
 	config->readdir_attr_max_access = lp_parm_bool(
 		SNUM(handle->conn), "readdir_attr", "aapl_max_access", true);
 
+	config->model = lp_parm_const_string(
+		-1, FRUIT_PARAM_TYPE_NAME, "model", "MacSamba");
+
 	SMB_VFS_HANDLE_SET_DATA(handle, config,
 				NULL, struct fruit_config_data,
 				return -1);
@@ -2212,7 +2216,7 @@ static NTSTATUS check_aapl(vfs_handle_struct *handle,
 	if (req_bitmap & SMB2_CRTCTX_AAPL_MODEL_INFO) {
 		ok = convert_string_talloc(req,
 					   CH_UNIX, CH_UTF16LE,
-					   "Samba", strlen("Samba"),
+					   config->model, strlen(config->model),
 					   &model, &modellen);
 		if (!ok) {
 			return NT_STATUS_UNSUCCESSFUL;
