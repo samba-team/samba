@@ -297,18 +297,11 @@ static NTSTATUS g_lock_trylock(struct db_record *rec, struct server_id self,
 				goto done;
 			}
 			my_lock = i;
-			break;
-		}
-	}
-
-	for (i=0; i<num_locks; i++) {
-
-		if (i == my_lock) {
 			continue;
 		}
 
-		if (g_lock_conflicts(type, locks[i].lock_type)) {
-			struct server_id pid = locks[i].pid;
+		if (g_lock_conflicts(type, lock->lock_type)) {
+			struct server_id pid = lock->pid;
 
 			/*
 			 * As the serverid_exists might recurse into
@@ -319,7 +312,7 @@ static NTSTATUS g_lock_trylock(struct db_record *rec, struct server_id self,
 
 			if (serverid_exists(&pid)) {
 				status = NT_STATUS_LOCK_NOT_GRANTED;
-				*blocker = locks[i].pid;
+				*blocker = lock->pid;
 				goto done;
 			}
 
