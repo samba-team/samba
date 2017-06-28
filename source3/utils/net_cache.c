@@ -19,6 +19,10 @@
 
 #include "includes.h"
 #include "net.h"
+#include "libsmb/samlogon_cache.h"
+#include "../librpc/gen_ndr/netlogon.h"
+#include "../librpc/gen_ndr/ndr_netlogon.h"
+#include "libcli/security/dom_sid.h"
 
 /**
  * @file net_cache.c
@@ -340,6 +344,226 @@ static int net_cache_stabilize(struct net_context *c, int argc,
 	}
 	return 0;
 }
+
+static int netsamlog_cache_for_all_cb(const char *sid_str,
+				      time_t when_cached,
+				      struct netr_SamInfo3 *info3,
+				      void *private_data)
+{
+	struct net_context *c = (struct net_context *)private_data;
+	char *name = NULL;
+
+	name = talloc_asprintf(c, "%s\\%s",
+			       info3->base.logon_domain.string,
+			       info3->base.account_name.string);
+	if (name == NULL) {
+		return -1;
+	}
+
+	d_printf("%-50s %-40s When cached\n", "SID", "Name");
+	d_printf("------------------------------------------------------------"
+		 "------------------------------------------------------------"
+		 "----\n");
+	d_printf("%-50s %-40s %s\n",
+		 sid_str,
+		 name,
+		 timestring(c, when_cached));
+
+	return 0;
+}
+
+static int net_cache_samlogon_list(struct net_context *c,
+				   int argc,
+				   const char **argv)
+{
+	int ret;
+
+	ret = netsamlog_cache_for_all(netsamlog_cache_for_all_cb, c);
+	if (ret == -1) {
+		return -1;
+	}
+
+	return 0;
+}
+
+static int net_cache_samlogon_show(struct net_context *c,
+				   int argc,
+				   const char **argv)
+{
+	const char *sid_str = argv[0];
+	struct dom_sid sid;
+	struct dom_sid *user_sids = NULL;
+	uint32_t num_user_sids;
+	struct netr_SamInfo3 *info3 = NULL;
+	char *name = NULL;
+	uint32_t i;
+	NTSTATUS status;
+	bool ok;
+
+	if (argc != 1 || c->display_usage) {
+		d_printf("%s\n"
+			 "net cache samlogon show SID\n"
+			 "    %s\n",
+			 _("Usage:"),
+			 _("Show samlogon cache entry for SID."));
+		return 0;
+	}
+
+	ok = string_to_sid(&sid, sid_str);
+	if (!ok) {
+		d_printf("String to SID failed for %s\n", sid_str);
+		return -1;
+	}
+
+	info3 = netsamlogon_cache_get(c, &sid);
+	if (info3 == NULL) {
+		d_printf("SID %s not found in samlogon cache\n", sid_str);
+		return -1;
+	}
+
+	name = talloc_asprintf(c, "%s\\%s",
+			       info3->base.logon_domain.string,
+			       info3->base.account_name.string);
+	if (name == NULL) {
+		return -1;
+	}
+
+	d_printf("Name: %s\n", name);
+
+	status = sid_array_from_info3(c,
+				      info3,
+				      &user_sids,
+				      &num_user_sids,
+				      true);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("sid_array_from_info3 failed for %s\n", sid_str);
+		return -1;
+	}
+
+	for (i = 0; i < num_user_sids; i++) {
+		d_printf("SID %2" PRIu32 ": %s\n",
+			 i, sid_string_dbg(&user_sids[i]));
+	}
+
+	return 0;
+}
+
+static int net_cache_samlogon_ndrdump(struct net_context *c,
+				      int argc,
+				      const char **argv)
+{
+	const char *sid_str = NULL;
+	struct dom_sid sid;
+	struct netr_SamInfo3 *info3 = NULL;
+	struct ndr_print *ndr_print = NULL;
+	bool ok;
+
+	if (argc != 1 || c->display_usage) {
+		d_printf(  "%s\n"
+			   "net cache samlogon ndrdump SID\n"
+			   "    %s\n",
+			   _("Usage:"),
+			   _("Show samlogon cache entry for SID."));
+		return 0;
+	}
+
+	sid_str = argv[0];
+
+	ok = string_to_sid(&sid, sid_str);
+	if (!ok) {
+		d_printf("String to SID failed for %s\n", sid_str);
+		return -1;
+	}
+
+	info3 = netsamlogon_cache_get(c, &sid);
+	if (info3 == NULL) {
+		d_printf("SID %s not found in samlogon cache\n", sid_str);
+		return -1;
+	}
+
+	ndr_print = talloc_zero(c, struct ndr_print);
+	if (ndr_print == NULL) {
+		d_printf("Could not allocate memory.\n");
+		return -1;
+	}
+
+	ndr_print->print = ndr_print_printf_helper;
+	ndr_print->depth = 1;
+	ndr_print_netr_SamInfo3(ndr_print, "netr_SamInfo3", info3);
+	TALLOC_FREE(ndr_print);
+
+	return 0;
+}
+
+static int net_cache_samlogon_delete(struct net_context *c,
+				     int argc,
+				     const char **argv)
+{
+	const char *sid_str = argv[0];
+	struct dom_sid sid;
+	bool ok;
+
+	if (argc != 1 || c->display_usage) {
+		d_printf(  "%s\n"
+			   "net cache samlogon delete SID\n"
+			   "    %s\n",
+			 _("Usage:"),
+			 _("Delete samlogon cache entry for SID."));
+		return 0;
+	}
+
+	ok = string_to_sid(&sid, sid_str);
+	if (!ok) {
+		d_printf("String to SID failed for %s\n", sid_str);
+		return -1;
+	}
+
+	netsamlogon_clear_cached_user(&sid);
+
+	return 0;
+}
+
+static int net_cache_samlogon(struct net_context *c, int argc, const char **argv)
+{
+	struct functable func[] = {
+		{
+			"list",
+			net_cache_samlogon_list,
+			NET_TRANSPORT_LOCAL,
+			N_("List samlogon cache"),
+			N_("net cache samlogon list\n"
+			   "    List samlogon cachen\n")
+		},
+		{
+			"show",
+			net_cache_samlogon_show,
+			NET_TRANSPORT_LOCAL,
+			N_("Show samlogon cache entry"),
+			N_("net cache samlogon show SID\n"
+			   "    Show samlogon cache entry\n")
+		},
+		{
+			"ndrdump",
+			net_cache_samlogon_ndrdump,
+			NET_TRANSPORT_LOCAL,
+			N_("Dump the samlogon cache entry NDR blob"),
+			N_("net cache samlogon ndrdump SID\n"
+			   "    Dump the samlogon cache entry NDR blob\n")
+		},
+		{
+			"delete",
+			net_cache_samlogon_delete,
+			NET_TRANSPORT_LOCAL,
+			N_("Delete samlogon cache entry"),
+			N_("net cache samlogon delete SID\n"
+			   "    Delete samlogon cache entry\n")
+		},
+		{NULL, NULL, 0, NULL, NULL}
+	};
+
+	return net_run_function(c, argc, argv, "net cache samlogon", func);
+}
+
 /**
  * Entry point to 'net cache' subfunctionality
  *
@@ -412,6 +636,14 @@ int net_cache(struct net_context *c, int argc, const char **argv)
 			N_("Move transient cache content to stable storage"),
 			N_("net cache stabilize\n"
 			   "  Move transient cache content to stable storage")
+		},
+		{
+			"samlogon",
+			net_cache_samlogon,
+			NET_TRANSPORT_LOCAL,
+			N_("List contents of the samlogon cache"),
+			N_("net cache samlogon\n"
+			   "  List contents of the samlogon cache")
 		},
 		{NULL, NULL, 0, NULL, NULL}
 	};
