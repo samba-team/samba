@@ -442,16 +442,38 @@ struct g_lock_lock_state {
 
 static void g_lock_lock_retry(struct tevent_req *subreq);
 
+struct g_lock_lock_fn_state {
+	struct g_lock_lock_state *state;
+	struct server_id self;
+
+	struct tevent_req *watch_req;
+	NTSTATUS status;
+};
+
+static void g_lock_lock_fn(struct db_record *rec, void *private_data)
+{
+	struct g_lock_lock_fn_state *state = private_data;
+	struct server_id blocker;
+
+	state->status = g_lock_trylock(rec, state->self, state->state->type,
+				       &blocker);
+	if (!NT_STATUS_EQUAL(state->status, NT_STATUS_LOCK_NOT_GRANTED)) {
+		return;
+	}
+
+	state->watch_req = dbwrap_watched_watch_send(
+		state->state, state->state->ev, rec, blocker);
+}
+
 struct tevent_req *g_lock_lock_send(TALLOC_CTX *mem_ctx,
 				    struct tevent_context *ev,
 				    struct g_lock_ctx *ctx,
 				    const char *name,
 				    enum g_lock_type type)
 {
-	struct tevent_req *req, *subreq;
+	struct tevent_req *req;
 	struct g_lock_lock_state *state;
-	struct db_record *rec;
-	struct server_id self, blocker;
+	struct g_lock_lock_fn_state fn_state;
 	NTSTATUS status;
 
 	req = tevent_req_create(mem_ctx, &state, struct g_lock_lock_state);
@@ -463,39 +485,39 @@ struct tevent_req *g_lock_lock_send(TALLOC_CTX *mem_ctx,
 	state->name = name;
 	state->type = type;
 
-	rec = dbwrap_fetch_locked(ctx->db, talloc_tos(),
-				  string_term_tdb_data(state->name));
-	if (rec == NULL) {
-		DEBUG(10, ("fetch_locked(\"%s\") failed\n", name));
-		tevent_req_nterror(req, NT_STATUS_LOCK_NOT_GRANTED);
+	fn_state = (struct g_lock_lock_fn_state) {
+		.state = state, .self = messaging_server_id(ctx->msg)
+	};
+
+	status = dbwrap_do_locked(ctx->db, string_term_tdb_data(name),
+				  g_lock_lock_fn, &fn_state);
+	if (tevent_req_nterror(req, status)) {
+		DBG_DEBUG("dbwrap_do_locked failed: %s\n",
+			  nt_errstr(status));
 		return tevent_req_post(req, ev);
 	}
 
-	self = messaging_server_id(state->ctx->msg);
-
-	status = g_lock_trylock(rec, self, state->type, &blocker);
-	if (NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(rec);
+	if (NT_STATUS_IS_OK(fn_state.status)) {
 		tevent_req_done(req);
 		return tevent_req_post(req, ev);
 	}
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_LOCK_NOT_GRANTED)) {
-		TALLOC_FREE(rec);
-		tevent_req_nterror(req, status);
+	if (!NT_STATUS_EQUAL(fn_state.status, NT_STATUS_LOCK_NOT_GRANTED)) {
+		tevent_req_nterror(req, fn_state.status);
 		return tevent_req_post(req, ev);
 	}
-	subreq = dbwrap_watched_watch_send(state, state->ev, rec, blocker);
-	TALLOC_FREE(rec);
-	if (tevent_req_nomem(subreq, req)) {
+
+	if (tevent_req_nomem(fn_state.watch_req, req)) {
 		return tevent_req_post(req, ev);
 	}
+
+
 	if (!tevent_req_set_endtime(
-		    subreq, state->ev,
+		    fn_state.watch_req, state->ev,
 		    timeval_current_ofs(5 + sys_random() % 5, 0))) {
 		tevent_req_oom(req);
 		return tevent_req_post(req, ev);
 	}
-	tevent_req_set_callback(subreq, g_lock_lock_retry, req);
+	tevent_req_set_callback(fn_state.watch_req, g_lock_lock_retry, req);
 	return req;
 }
 
