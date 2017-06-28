@@ -2248,7 +2248,7 @@ sub wait_for_start($$$$$)
 	    }
 	    my $count = 0;
 	    do {
-		system(Samba::bindir_path($self, "net") . " $envvars->{CONFIGURATION} cache flush");
+		system(Samba::bindir_path($self, "net") . " $envvars->{CONFIGURATION} cache del IDMAP/SID2XID/S-1-5-32-545");
 		$ret = system("SELFTEST_WINBINDD_SOCKET_DIR=" . $envvars->{SELFTEST_WINBINDD_SOCKET_DIR} . " " . Samba::bindir_path($self, "wbinfo") . " --sid-to-gid=S-1-5-32-545");
 		if ($ret != 0) {
 		    sleep(2);
