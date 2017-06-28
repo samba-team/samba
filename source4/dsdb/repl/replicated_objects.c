@@ -842,7 +842,8 @@ WERROR dsdb_replicated_objects_commit(struct ldb_context *ldb,
 	 */
 	ret = ldb_transaction_start(ldb);
 	if (ret != LDB_SUCCESS) {
-		DEBUG(0,(__location__ " Failed to start transaction\n"));
+		DEBUG(0,(__location__ " Failed to start transaction: %s\n",
+			 ldb_errstring(ldb)));
 		return WERR_FOOBAR;
 	}
 
