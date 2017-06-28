@@ -636,6 +636,20 @@ int ctdb_req_message_data_pull(uint8_t *buf, size_t buflen,
 			       TALLOC_CTX *mem_ctx,
 			       struct ctdb_req_message_data *c);
 
+/* From protocol/protocol_keepalive.c */
+
+size_t ctdb_req_keepalive_len(struct ctdb_req_header *h,
+			      struct ctdb_req_keepalive *c);
+
+int ctdb_req_keepalive_push(struct ctdb_req_header *h,
+			    struct ctdb_req_keepalive *c,
+			    uint8_t *buf, size_t *buflen);
+
+int ctdb_req_keepalive_pull(uint8_t *buf, size_t buflen,
+			    struct ctdb_req_header *h,
+			    TALLOC_CTX *mem_ctx,
+			    struct ctdb_req_keepalive *c);
+
 /* From protocol/protocol_event.c */
 
 void ctdb_event_header_fill(struct ctdb_event_header *h, uint32_t reqid);

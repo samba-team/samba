@@ -1948,3 +1948,17 @@ void verify_ctdb_req_message_data(struct ctdb_req_message_data *c,
 	assert(c->srvid == c2->srvid);
 	verify_tdb_data(&c->data, &c2->data);
 }
+
+void fill_ctdb_req_keepalive(TALLOC_CTX *mem_ctx,
+				    struct ctdb_req_keepalive *c)
+{
+	c->version = rand32();
+	c->uptime = rand32();
+}
+
+void verify_ctdb_req_keepalive(struct ctdb_req_keepalive *c,
+				      struct ctdb_req_keepalive *c2)
+{
+	assert(c->version == c2->version);
+	assert(c->uptime == c2->uptime);
+}

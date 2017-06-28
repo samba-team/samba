@@ -461,6 +461,14 @@ static void ctdb_reply_control_print(struct ctdb_reply_control *c, FILE *fp)
 	fprintf(fp, "\n");
 }
 
+static void ctdb_req_keepalive_print(struct ctdb_req_keepalive *c, FILE *fp)
+{
+	fprintf(fp, "Data\n");
+	fprintf(fp, "  version:0x%"PRIx32, c->version);
+	fprintf(fp, "  uptime:%"PRIu32, c->uptime);
+	fprintf(fp, "\n");
+}
+
 /*
  * Parse routines
  */
@@ -585,6 +593,21 @@ static void ctdb_reply_control_parse(uint8_t *buf, size_t buflen, FILE *fp,
 	ctdb_reply_control_print(&c, fp);
 }
 
+static void ctdb_req_keepalive_parse(uint8_t *buf, size_t buflen, FILE *fp,
+				     TALLOC_CTX *mem_ctx)
+{
+	struct ctdb_req_keepalive c;
+	int ret;
+
+	ret = ctdb_req_keepalive_pull(buf, buflen, NULL, mem_ctx, &c);
+	if (ret != 0) {
+		fprintf(fp, "Failed to parse CTDB_REQ_KEEPALIVE\n");
+		return;
+	}
+
+	ctdb_req_keepalive_print(&c, fp);
+}
+
 /*
  * Packet print
  */
@@ -650,6 +673,7 @@ void ctdb_packet_print(uint8_t *buf, size_t buflen, FILE *fp)
 			break;
 
 		case CTDB_REQ_KEEPALIVE:
+			ctdb_req_keepalive_parse(buf, buflen, fp, mem_ctx);
 			break;
 
 		default:

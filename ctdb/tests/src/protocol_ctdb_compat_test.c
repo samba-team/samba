@@ -28,6 +28,7 @@
 #include "protocol/protocol_call.c"
 #include "protocol/protocol_control.c"
 #include "protocol/protocol_message.c"
+#include "protocol/protocol_keepalive.c"
 
 #include "tests/src/protocol_common.h"
 #include "tests/src/protocol_common_ctdb.h"
@@ -1042,6 +1043,70 @@ static int ctdb_req_message_data_pull_old(uint8_t *buf, size_t buflen,
 	return 0;
 }
 
+struct ctdb_req_keepalive_wire {
+	struct ctdb_req_header hdr;
+	uint32_t version;
+	uint32_t uptime;
+};
+
+static size_t ctdb_req_keepalive_len_old(struct ctdb_req_header *h,
+					 struct ctdb_req_keepalive *c)
+{
+	return sizeof(struct ctdb_req_keepalive_wire);
+}
+
+static int ctdb_req_keepalive_push_old(struct ctdb_req_header *h,
+				       struct ctdb_req_keepalive *c,
+				       uint8_t *buf, size_t *buflen)
+{
+	struct ctdb_req_keepalive_wire *wire =
+		(struct ctdb_req_keepalive_wire *)buf;
+	size_t length;
+
+	length = ctdb_req_keepalive_len_old(h, c);
+	if (*buflen < length) {
+		*buflen = length;
+		return EMSGSIZE;
+	}
+
+	h->length = *buflen;
+	ctdb_req_header_push_old(h, (uint8_t *)&wire->hdr);
+
+	wire->version = c->version;
+	wire->uptime = c->uptime;
+
+	return 0;
+}
+
+static int ctdb_req_keepalive_pull_old(uint8_t *buf, size_t buflen,
+				       struct ctdb_req_header *h,
+				       TALLOC_CTX *mem_ctx,
+				       struct ctdb_req_keepalive *c)
+{
+	struct ctdb_req_keepalive_wire *wire =
+		(struct ctdb_req_keepalive_wire *)buf;
+	size_t length;
+	int ret;
+
+	length = sizeof(struct ctdb_req_keepalive_wire);
+	if (buflen < length) {
+		return EMSGSIZE;
+	}
+
+	if (h != NULL) {
+		ret = ctdb_req_header_pull_old((uint8_t *)&wire->hdr, buflen,
+					       h);
+		if (ret != 0) {
+			return ret;
+		}
+	}
+
+	c->version = wire->version;
+	c->uptime = wire->uptime;
+
+	return 0;
+}
+
 
 COMPAT_CTDB1_TEST(struct ctdb_req_header, ctdb_req_header);
 
@@ -1056,6 +1121,8 @@ COMPAT_CTDB6_TEST(struct ctdb_reply_control, ctdb_reply_control, CTDB_REPLY_CONT
 
 COMPAT_CTDB7_TEST(struct ctdb_req_message, ctdb_req_message, CTDB_REQ_MESSAGE);
 COMPAT_CTDB4_TEST(struct ctdb_req_message_data, ctdb_req_message_data, CTDB_REQ_MESSAGE);
+
+COMPAT_CTDB4_TEST(struct ctdb_req_keepalive, ctdb_req_keepalive, CTDB_REQ_KEEPALIVE);
 
 #define NUM_CONTROLS	151
 
@@ -1109,6 +1176,8 @@ int main(int argc, char *argv[])
 		COMPAT_TEST_FUNC(ctdb_req_message)(test_srvid[i]);
 	}
 	COMPAT_TEST_FUNC(ctdb_req_message_data)();
+
+	COMPAT_TEST_FUNC(ctdb_req_keepalive)();
 
 	return 0;
 }

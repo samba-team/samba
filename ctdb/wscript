@@ -396,6 +396,7 @@ def build(bld):
                                              protocol_call.c
                                              protocol_message.c
                                              protocol_control.c
+                                             protocol_keepalive.c
                                              protocol_client.c
                                              protocol_debug.c
                                              protocol_util.c

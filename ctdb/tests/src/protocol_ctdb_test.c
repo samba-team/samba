@@ -25,6 +25,7 @@
 #include "protocol/protocol_call.c"
 #include "protocol/protocol_control.c"
 #include "protocol/protocol_message.c"
+#include "protocol/protocol_keepalive.c"
 #include "protocol/protocol_packet.c"
 
 #include "tests/src/protocol_common.h"
@@ -305,6 +306,9 @@ PROTOCOL_CTDB7_TEST(struct ctdb_req_message, ctdb_req_message,
 PROTOCOL_CTDB4_TEST(struct ctdb_req_message_data, ctdb_req_message_data,
 			CTDB_REQ_MESSAGE);
 
+PROTOCOL_CTDB4_TEST(struct ctdb_req_keepalive, ctdb_req_keepalive,
+			CTDB_REQ_KEEPALIVE);
+
 int main(int argc, char *argv[])
 {
 	uint32_t opcode;
@@ -365,6 +369,8 @@ int main(int argc, char *argv[])
 		TEST_FUNC(ctdb_req_message)(test_srvid[i]);
 	}
 	TEST_FUNC(ctdb_req_message_data)();
+
+	TEST_FUNC(ctdb_req_keepalive)();
 
 	return 0;
 }

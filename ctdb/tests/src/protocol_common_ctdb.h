@@ -89,4 +89,9 @@ void fill_ctdb_req_message_data(TALLOC_CTX *mem_ctx,
 void verify_ctdb_req_message_data(struct ctdb_req_message_data *c,
 				  struct ctdb_req_message_data *c2);
 
+void fill_ctdb_req_keepalive(TALLOC_CTX *mem_ctx,
+			     struct ctdb_req_keepalive *c);
+void verify_ctdb_req_keepalive(struct ctdb_req_keepalive *c,
+			       struct ctdb_req_keepalive *c2);
+
 #endif /* __CTDB_PROTOCOL_COMMON_CTDB_H__ */
