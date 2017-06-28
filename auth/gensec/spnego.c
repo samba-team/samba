@@ -1245,15 +1245,12 @@ static struct tevent_req *gensec_spnego_update_send(TALLOC_CTX *mem_ctx,
 
 		status = gensec_spnego_update_out(gensec_security,
 						  state, &state->out);
-		state->status = status;
-		if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-			tevent_req_done(req);
-			return tevent_req_post(req, ev);
-		}
-		if (tevent_req_nterror(req, status)) {
+		if (GENSEC_UPDATE_IS_NTERROR(status)) {
+			tevent_req_nterror(req, status);
 			return tevent_req_post(req, ev);
 		}
 
+		state->status = status;
 		tevent_req_done(req);
 		return tevent_req_post(req, ev);
 	}
@@ -1390,6 +1387,11 @@ static struct tevent_req *gensec_spnego_update_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
+	if (GENSEC_UPDATE_IS_NTERROR(status)) {
+		tevent_req_nterror(req, status);
+		return tevent_req_post(req, ev);
+	}
+
 	if (NT_STATUS_IS_OK(status)) {
 		bool reset_full = true;
 
@@ -1397,26 +1399,21 @@ static struct tevent_req *gensec_spnego_update_send(TALLOC_CTX *mem_ctx,
 
 		status = gensec_may_reset_crypto(spnego_state->sub_sec_security,
 						 reset_full);
-	}
-	if (!NT_STATUS_IS_OK(status) &&
-	    !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		tevent_req_nterror(req, status);
-		return tevent_req_post(req, ev);
+		if (tevent_req_nterror(req, status)) {
+			return tevent_req_post(req, ev);
+		}
 	}
 
 	spnego_state->out_status = status;
 
 	status = gensec_spnego_update_out(gensec_security,
 					  state, &state->out);
-	state->status = status;
-	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		tevent_req_done(req);
-		return tevent_req_post(req, ev);
-	}
-	if (tevent_req_nterror(req, status)) {
+	if (GENSEC_UPDATE_IS_NTERROR(status)) {
+		tevent_req_nterror(req, status);
 		return tevent_req_post(req, ev);
 	}
 
+	state->status = status;
 	tevent_req_done(req);
 	return tevent_req_post(req, ev);
 }
