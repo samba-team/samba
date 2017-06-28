@@ -237,6 +237,7 @@ static void ctdb_opcode_print(uint32_t opcode, FILE *fp)
 		{ CTDB_CONTROL_DB_PULL, "DB_PULL" },
 		{ CTDB_CONTROL_DB_PUSH_START, "DB_PUSH_START" },
 		{ CTDB_CONTROL_DB_PUSH_CONFIRM, "DB_PUSH_CONFIRM" },
+		{ CTDB_CONTROL_DB_OPEN_FLAGS, "DB_OPEN_FLAGS" },
 		{ MAP_END, "" },
 	};
 
