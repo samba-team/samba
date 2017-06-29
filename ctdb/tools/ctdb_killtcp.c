@@ -49,6 +49,81 @@ struct ctdb_kill_tcp {
 };
 
 
+static void capture_tcp_handler(struct tevent_context *ev,
+				struct tevent_fd *fde,
+				uint16_t flags, void *private_data);
+
+static int ctdb_kill_tcp_init(TALLOC_CTX *mem_ctx,
+			      struct tevent_context *ev,
+			      const char *iface,
+			      struct ctdb_connection_list *conn_list,
+			      struct ctdb_kill_tcp **out)
+{
+	struct ctdb_kill_tcp *state;
+	int i, ret;
+
+	state = talloc_zero(mem_ctx, struct ctdb_kill_tcp);
+	if (state == NULL) {
+		D_ERR("Out of memory\n");
+		return ENOMEM;
+	}
+
+	ret = db_hash_init(state, "connections", 2048, DB_HASH_SIMPLE,
+			   &state->connections);
+	if (ret != 0) {
+		D_ERR("Failed to initialise connection hash (%s)\n",
+		      strerror(ret));
+		talloc_free(state);
+		return ret;
+	}
+
+	for (i = 0; i < conn_list->num; i++) {
+		struct ctdb_connection *c = &conn_list->conn[i];
+
+		/* Connection is stored as a key in the connections hash */
+		ret = db_hash_add(state->connections,
+				  (uint8_t *)discard_const(c), sizeof(*c),
+				  NULL, 0);
+		if (ret != 0) {
+			D_ERR("Error adding connection to hash (%s)\n",
+			      strerror(ret));
+			talloc_free(state);
+			return ret;
+		}
+	}
+
+	state->attempts = 0;
+	state->max_attempts = 50;
+
+	state->retry_interval.tv_sec = 0;
+	state->retry_interval.tv_usec = 100 * 1000;
+
+	state->batch_count = 0;
+	state->batch_size = 300;
+
+	state->capture_fd =
+		ctdb_sys_open_capture_socket(iface, &state->private_data);
+	if (state->capture_fd == -1) {
+		D_ERR("Failed to open capture socket on iface '%s' (%s)\n",
+		      iface, strerror(errno));
+		talloc_free(state);
+		return EIO;
+	}
+
+	state->fde = tevent_add_fd(ev, state, state->capture_fd,
+				   TEVENT_FD_READ, capture_tcp_handler,
+				   state);
+	if (state->fde == NULL) {
+		D_ERR("Out of memory\n");
+		talloc_free(state);
+		return ENOMEM;
+	}
+	tevent_fd_set_auto_close(state->fde);
+
+	*out = state;
+	return 0;
+}
+
 /*
   called when we get a read event on the raw socket
  */
@@ -184,92 +259,6 @@ static void ctdb_tickle_sentenced_connections(struct tevent_context *ev,
 			 ctdb_tickle_sentenced_connections, killtcp);
 }
 
-/* Add a TCP socket to the list of connections we want to RST.  The
- * list is attached to *killtcp_arg.  If this is NULL then allocate
- * the structure.  */
-static int ctdb_killtcp(struct tevent_context *ev,
-			TALLOC_CTX *mem_ctx,
-			const char *iface,
-			struct ctdb_connection *conn,
-			struct ctdb_kill_tcp **killtcp_arg)
-{
-	struct ctdb_kill_tcp *killtcp;
-	int ret;
-
-	if (killtcp_arg == NULL) {
-		DEBUG(DEBUG_ERR, (__location__ " killtcp_arg is NULL!\n"));
-		return -1;
-	}
-
-	killtcp = *killtcp_arg;
-
-	/* Allocate a new structure if necessary.  The structure is
-	 * only freed when mem_ctx is freed. */
-	if (killtcp == NULL) {
-		killtcp = talloc_zero(mem_ctx, struct ctdb_kill_tcp);
-		if (killtcp == NULL) {
-			DEBUG(DEBUG_ERR, (__location__ " out of memory\n"));
-			return -1;
-		}
-
-		killtcp->capture_fd  = -1;
-		ret = db_hash_init(killtcp, "connections", 2048, DB_HASH_SIMPLE,
-				   &killtcp->connections);
-		if (ret != 0) {
-			D_ERR("Failed to initialise connection hash (%s)\n",
-			      strerror(ret));
-			talloc_free(killtcp);
-			return -1;
-		}
-
-		killtcp->attempts = 0;
-		killtcp->max_attempts = 50;
-
-		killtcp->retry_interval.tv_sec = 0;
-		killtcp->retry_interval.tv_usec = 100 * 1000;
-
-		killtcp->batch_count = 0;
-		killtcp->batch_size = 300;
-
-		*killtcp_arg = killtcp;
-	}
-
-	/* Connection is stored as a key in the connections hash */
-	ret = db_hash_add(killtcp->connections,
-			  (uint8_t *)conn, sizeof(*conn),
-			  NULL, 0);
-	if (ret != 0) {
-		D_ERR("Error adding connection to hash (%s)\n", strerror(ret));
-		return -1;
-	}
-
-	/*
-	   If we don't have a socket to listen on yet we must create it
-	 */
-	if (killtcp->capture_fd == -1) {
-		killtcp->capture_fd =
-			ctdb_sys_open_capture_socket(iface,
-						     &killtcp->private_data);
-		if (killtcp->capture_fd == -1) {
-			DEBUG(DEBUG_CRIT,(__location__ " Failed to open capturing "
-					  "socket on iface '%s' for killtcp (%s)\n",
-					  iface, strerror(errno)));
-			return -1;
-		}
-	}
-
-
-	if (killtcp->fde == NULL) {
-		killtcp->fde = tevent_add_fd(ev, killtcp,
-					     killtcp->capture_fd,
-					     TEVENT_FD_READ,
-					     capture_tcp_handler, killtcp);
-		tevent_fd_set_auto_close(killtcp->fde);
-	}
-
-	return 0;
-}
-
 static int ctdb_killtcp_destructor(struct ctdb_kill_tcp *killtcp)
 {
 	bool *done = killtcp->destructor_data;
@@ -294,7 +283,7 @@ int main(int argc, char **argv)
 	const char *t;
 	int debug_level;
 	bool done;
-	int i, ret;
+	int ret;
 
 	/* Set the debug level */
 	t = getenv("CTDB_DEBUGLEVEL");
@@ -362,13 +351,9 @@ int main(int argc, char **argv)
 		return 0;
 	}
 
-	for (i = 0; i < conn_list->num; i++) {
-		ret = ctdb_killtcp(ev, mem_ctx, argv[1],
-				   &conn_list->conn[i], &killtcp);
-		if (ret != 0) {
-			DEBUG(DEBUG_ERR, ("Unable to killtcp\n"));
-			goto fail;
-		}
+	ret = ctdb_kill_tcp_init(mem_ctx, ev, argv[1], conn_list, &killtcp);
+	if (ret != 0) {
+		goto fail;
 	}
 
 	done = false;
