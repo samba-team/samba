@@ -515,9 +515,10 @@ static int skel_lchown(vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_LCHOWN(handle, smb_fname, uid, gid);
 }
 
-static int skel_chdir(vfs_handle_struct *handle, const char *path)
+static int skel_chdir(vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname)
 {
-	return SMB_VFS_NEXT_CHDIR(handle, path);
+	return SMB_VFS_NEXT_CHDIR(handle, smb_fname);
 }
 
 static char *skel_getwd(vfs_handle_struct *handle)

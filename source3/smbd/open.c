@@ -389,7 +389,7 @@ static int link_errno_convert(int err)
 }
 
 static int non_widelink_open(struct connection_struct *conn,
-			const char *conn_rootdir,
+			const struct smb_filename *conn_rootdir_fname,
 			files_struct *fsp,
 			struct smb_filename *smb_fname,
 			int flags,
@@ -401,7 +401,7 @@ static int non_widelink_open(struct connection_struct *conn,
 ****************************************************************************/
 
 static int process_symlink_open(struct connection_struct *conn,
-			const char *conn_rootdir,
+			const struct smb_filename *conn_rootdir_fname,
 			files_struct *fsp,
 			struct smb_filename *smb_fname,
 			int flags,
@@ -412,6 +412,7 @@ static int process_symlink_open(struct connection_struct *conn,
 	char *link_target = NULL;
 	int link_len = -1;
 	char *oldwd = NULL;
+	struct smb_filename oldwd_fname = {0};
 	size_t rootdir_len = 0;
 	char *resolved_name = NULL;
 	bool matched = false;
@@ -456,9 +457,11 @@ static int process_symlink_open(struct connection_struct *conn,
 	 * does not end in '/'. FIXME ! Should we
 	 * smb_assert this ?
 	 */
-	rootdir_len = strlen(conn_rootdir);
+	rootdir_len = strlen(conn_rootdir_fname->base_name);
 
-	matched = (strncmp(conn_rootdir, resolved_name, rootdir_len) == 0);
+	matched = (strncmp(conn_rootdir_fname->base_name,
+				resolved_name,
+				rootdir_len) == 0);
 	if (!matched) {
 		errno = EACCES;
 		goto out;
@@ -486,14 +489,16 @@ static int process_symlink_open(struct connection_struct *conn,
 		goto out;
 	}
 
+	oldwd_fname = (struct smb_filename) { .base_name = oldwd };
+
 	/* Ensure we operate from the root of the share. */
-	if (vfs_ChDir(conn, conn_rootdir) == -1) {
+	if (vfs_ChDir(conn, conn_rootdir_fname) == -1) {
 		goto out;
 	}
 
 	/* And do it all again.. */
 	fd = non_widelink_open(conn,
-				conn_rootdir,
+				conn_rootdir_fname,
 				fsp,
 				smb_fname,
 				flags,
@@ -508,7 +513,7 @@ static int process_symlink_open(struct connection_struct *conn,
 	SAFE_FREE(resolved_name);
 	TALLOC_FREE(link_target);
 	if (oldwd != NULL) {
-		int ret = vfs_ChDir(conn, oldwd);
+		int ret = vfs_ChDir(conn, &oldwd_fname);
 		if (ret == -1) {
 			smb_panic("unable to get back to old directory\n");
 		}
@@ -525,7 +530,7 @@ static int process_symlink_open(struct connection_struct *conn,
 ****************************************************************************/
 
 static int non_widelink_open(struct connection_struct *conn,
-			const char *conn_rootdir,
+			const struct smb_filename *conn_rootdir_fname,
 			files_struct *fsp,
 			struct smb_filename *smb_fname,
 			int flags,
@@ -537,7 +542,9 @@ static int non_widelink_open(struct connection_struct *conn,
 	struct smb_filename *smb_fname_rel = NULL;
 	int saved_errno = 0;
 	char *oldwd = NULL;
+	struct smb_filename oldwd_fname = {0};
 	char *parent_dir = NULL;
+	struct smb_filename parent_dir_fname = {0};
 	const char *final_component = NULL;
 
 	if (!parent_dirname(talloc_tos(),
@@ -547,13 +554,17 @@ static int non_widelink_open(struct connection_struct *conn,
 		goto out;
 	}
 
+	parent_dir_fname = (struct smb_filename) { .base_name = parent_dir };
+
 	oldwd = vfs_GetWd(talloc_tos(), conn);
 	if (oldwd == NULL) {
 		goto out;
 	}
 
+	oldwd_fname = (struct smb_filename) { .base_name = oldwd };
+
 	/* Pin parent directory in place. */
-	if (vfs_ChDir(conn, parent_dir) == -1) {
+	if (vfs_ChDir(conn, &parent_dir_fname) == -1) {
 		goto out;
 	}
 
@@ -606,7 +617,7 @@ static int non_widelink_open(struct connection_struct *conn,
 			 * to ensure it's under the share definition.
 			 */
 			fd = process_symlink_open(conn,
-					conn_rootdir,
+					conn_rootdir_fname,
 					fsp,
 					smb_fname_rel,
 					flags,
@@ -634,7 +645,7 @@ static int non_widelink_open(struct connection_struct *conn,
 	TALLOC_FREE(smb_fname_rel);
 
 	if (oldwd != NULL) {
-		int ret = vfs_ChDir(conn, oldwd);
+		int ret = vfs_ChDir(conn, &oldwd_fname);
 		if (ret == -1) {
 			smb_panic("unable to get back to old directory\n");
 		}
@@ -669,22 +680,41 @@ NTSTATUS fd_open(struct connection_struct *conn,
 
 	/* Ensure path is below share definition. */
 	if (!lp_widelinks(SNUM(conn))) {
+		struct smb_filename *conn_rootdir_fname = NULL;
 		const char *conn_rootdir = SMB_VFS_CONNECTPATH(conn,
 						smb_fname->base_name);
+		int saved_errno = 0;
+
 		if (conn_rootdir == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
+		conn_rootdir_fname = synthetic_smb_fname(talloc_tos(),
+						conn_rootdir,
+						NULL,
+						NULL,
+						0);
+		if (conn_rootdir_fname == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
 		/*
 		 * Only follow symlinks within a share
 		 * definition.
 		 */
 		fsp->fh->fd = non_widelink_open(conn,
-					conn_rootdir,
+					conn_rootdir_fname,
 					fsp,
 					smb_fname,
 					flags,
 					mode,
 					0);
+		if (fsp->fh->fd == -1) {
+			saved_errno = errno;
+		}
+		TALLOC_FREE(conn_rootdir_fname);
+		if (saved_errno != 0) {
+			errno = saved_errno;
+		}
 	} else {
 		fsp->fh->fd = SMB_VFS_OPEN(conn, smb_fname, fsp, flags, mode);
 	}
@@ -800,14 +830,15 @@ void change_file_owner_to_parent(connection_struct *conn,
 	TALLOC_FREE(smb_fname_parent);
 }
 
-NTSTATUS change_dir_owner_to_parent(connection_struct *conn,
-				       const char *inherit_from_dir,
-				       const char *fname,
-				       SMB_STRUCT_STAT *psbuf)
+static NTSTATUS change_dir_owner_to_parent(connection_struct *conn,
+					const char *inherit_from_dir,
+					struct smb_filename *smb_dname,
+					SMB_STRUCT_STAT *psbuf)
 {
 	struct smb_filename *smb_fname_parent;
 	struct smb_filename *smb_fname_cwd = NULL;
 	char *saved_dir = NULL;
+	struct smb_filename smb_fname_saved_dir = {0};
 	TALLOC_CTX *ctx = talloc_tos();
 	NTSTATUS status = NT_STATUS_OK;
 	int ret;
@@ -847,12 +878,14 @@ NTSTATUS change_dir_owner_to_parent(connection_struct *conn,
 		goto out;
 	}
 
+	smb_fname_saved_dir = (struct smb_filename) { .base_name = saved_dir };
+
 	/* Chdir into the new path. */
-	if (vfs_ChDir(conn, fname) == -1) {
+	if (vfs_ChDir(conn, smb_dname) == -1) {
 		status = map_nt_error_from_unix(errno);
 		DEBUG(0,("change_dir_owner_to_parent: failed to change "
 			 "current working directory to %s. Error "
-			 "was %s\n", fname, strerror(errno) ));
+			 "was %s\n", smb_dname->base_name, strerror(errno) ));
 		goto chdir;
 	}
 
@@ -867,7 +900,7 @@ NTSTATUS change_dir_owner_to_parent(connection_struct *conn,
 		status = map_nt_error_from_unix(errno);
 		DEBUG(0,("change_dir_owner_to_parent: failed to stat "
 			 "directory '.' (%s) Error was %s\n",
-			 fname, strerror(errno)));
+			 smb_dname->base_name, strerror(errno)));
 		goto chdir;
 	}
 
@@ -876,7 +909,8 @@ NTSTATUS change_dir_owner_to_parent(connection_struct *conn,
 	    smb_fname_cwd->st.st_ex_ino != psbuf->st_ex_ino) {
 		DEBUG(0,("change_dir_owner_to_parent: "
 			 "device/inode on directory %s changed. "
-			 "Refusing to chown !\n", fname ));
+			 "Refusing to chown !\n",
+			smb_dname->base_name ));
 		status = NT_STATUS_ACCESS_DENIED;
 		goto chdir;
 	}
@@ -885,7 +919,7 @@ NTSTATUS change_dir_owner_to_parent(connection_struct *conn,
 		/* Already this uid - no need to change. */
 		DEBUG(10,("change_dir_owner_to_parent: directory %s "
 			"is already owned by uid %d\n",
-			fname,
+			smb_dname->base_name,
 			(int)smb_fname_cwd->st.st_ex_uid ));
 		status = NT_STATUS_OK;
 		goto chdir;
@@ -901,20 +935,23 @@ NTSTATUS change_dir_owner_to_parent(connection_struct *conn,
 		status = map_nt_error_from_unix(errno);
 		DEBUG(10,("change_dir_owner_to_parent: failed to chown "
 			  "directory %s to parent directory uid %u. "
-			  "Error was %s\n", fname,
+			  "Error was %s\n",
+			  smb_dname->base_name,
 			  (unsigned int)smb_fname_parent->st.st_ex_uid,
 			  strerror(errno) ));
 	} else {
 		DEBUG(10,("change_dir_owner_to_parent: changed ownership of new "
 			"directory %s to parent directory uid %u.\n",
-			fname, (unsigned int)smb_fname_parent->st.st_ex_uid ));
+			smb_dname->base_name,
+			(unsigned int)smb_fname_parent->st.st_ex_uid ));
 		/* Ensure the uid entry is updated. */
 		psbuf->st_ex_uid = smb_fname_parent->st.st_ex_uid;
 	}
 
  chdir:
-	vfs_ChDir(conn,saved_dir);
+	vfs_ChDir(conn, &smb_fname_saved_dir);
  out:
+	TALLOC_FREE(saved_dir);
 	TALLOC_FREE(smb_fname_parent);
 	TALLOC_FREE(smb_fname_cwd);
 	return status;
@@ -3875,7 +3912,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 	/* Change the owner if required. */
 	if (lp_inherit_owner(SNUM(conn)) != INHERIT_OWNER_NO) {
 		change_dir_owner_to_parent(conn, parent_dir,
-					   smb_dname->base_name,
+					   smb_dname,
 					   &smb_dname->st);
 		need_re_stat = true;
 	}

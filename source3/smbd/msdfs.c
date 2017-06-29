@@ -400,10 +400,12 @@ NTSTATUS create_conn_struct_cwd(TALLOC_CTX *ctx,
 				int snum,
 				const char *path,
 				const struct auth_session_info *session_info,
-				char **poldcwd)
+				struct smb_filename **poldcwd_fname)
 {
 	connection_struct *conn;
-	char *oldcwd;
+	char *oldcwd = NULL;
+	struct smb_filename *smb_fname_oldcwd = NULL;
+	struct smb_filename smb_fname_connectpath = {0};
 
 	NTSTATUS status = create_conn_struct(ctx, ev,
 					     msg, &conn,
@@ -427,17 +429,33 @@ NTSTATUS create_conn_struct_cwd(TALLOC_CTX *ctx,
 		return status;
 	}
 
-	if (vfs_ChDir(conn,conn->connectpath) != 0) {
+	smb_fname_oldcwd = synthetic_smb_fname(ctx,
+				oldcwd,
+				NULL,
+				NULL,
+				0);
+	if (smb_fname_oldcwd == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		conn_free(conn);
+		return status;
+	}
+
+	smb_fname_connectpath = (struct smb_filename) {
+		.base_name = conn->connectpath
+	};
+
+	if (vfs_ChDir(conn, &smb_fname_connectpath) != 0) {
 		status = map_nt_error_from_unix(errno);
 		DEBUG(3,("create_conn_struct: Can't ChDir to new conn path %s. "
 			"Error was %s\n",
 			conn->connectpath, strerror(errno) ));
+		TALLOC_FREE(smb_fname_oldcwd);
 		conn_free(conn);
 		return status;
 	}
 
 	*pconn = conn;
-	*poldcwd = oldcwd;
+	*poldcwd_fname = smb_fname_oldcwd;
 
 	return NT_STATUS_OK;
 }
@@ -957,7 +975,7 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 	NTSTATUS status = NT_STATUS_NOT_FOUND;
 	bool dummy;
 	struct dfs_path *pdp = talloc(ctx, struct dfs_path);
-	char *oldpath;
+	struct smb_filename *oldcwd_fname = NULL;
 
 	if (!pdp) {
 		return NT_STATUS_NO_MEMORY;
@@ -1054,8 +1072,11 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 	status = create_conn_struct_cwd(ctx,
 					server_event_context(),
 					server_messaging_context(),
-					&conn, snum,
-					lp_path(talloc_tos(), snum), NULL, &oldpath);
+					&conn,
+					snum,
+					lp_path(talloc_tos(), snum),
+					NULL,
+					&oldcwd_fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(pdp);
 		return status;
@@ -1121,7 +1142,8 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 
 	status = NT_STATUS_OK;
  err_exit:
-	vfs_ChDir(conn, oldpath);
+	vfs_ChDir(conn, oldcwd_fname);
+	TALLOC_FREE(oldcwd_fname);
 	SMB_VFS_DISCONNECT(conn);
 	conn_free(conn);
 	TALLOC_FREE(pdp);
@@ -1257,7 +1279,7 @@ bool create_junction(TALLOC_CTX *ctx,
 static bool junction_to_local_path(const struct junction_map *jucn,
 				   char **pp_path_out,
 				   connection_struct **conn_out,
-				   char **oldpath)
+				   struct smb_filename **oldpath_fname)
 {
 	int snum;
 	NTSTATUS status;
@@ -1270,7 +1292,10 @@ static bool junction_to_local_path(const struct junction_map *jucn,
 					server_event_context(),
 					server_messaging_context(),
 					conn_out,
-					snum, lp_path(talloc_tos(), snum), NULL, oldpath);
+					snum,
+					lp_path(talloc_tos(), snum),
+					NULL,
+					oldpath_fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
@@ -1280,7 +1305,7 @@ static bool junction_to_local_path(const struct junction_map *jucn,
 			lp_path(talloc_tos(), snum),
 			jucn->volume_name);
 	if (!*pp_path_out) {
-		vfs_ChDir(*conn_out, *oldpath);
+		vfs_ChDir(*conn_out, *oldpath_fname);
 		SMB_VFS_DISCONNECT(*conn_out);
 		conn_free(*conn_out);
 		return False;
@@ -1291,7 +1316,7 @@ static bool junction_to_local_path(const struct junction_map *jucn,
 bool create_msdfs_link(const struct junction_map *jucn)
 {
 	char *path = NULL;
-	char *cwd;
+	struct smb_filename *cwd_fname = NULL;
 	char *msdfs_link = NULL;
 	connection_struct *conn;
 	int i=0;
@@ -1299,7 +1324,7 @@ bool create_msdfs_link(const struct junction_map *jucn)
 	bool ret = False;
 	struct smb_filename *smb_fname = NULL;
 
-	if(!junction_to_local_path(jucn, &path, &conn, &cwd)) {
+	if(!junction_to_local_path(jucn, &path, &conn, &cwd_fname)) {
 		return False;
 	}
 
@@ -1369,7 +1394,8 @@ bool create_msdfs_link(const struct junction_map *jucn)
 
 out:
 	TALLOC_FREE(smb_fname);
-	vfs_ChDir(conn, cwd);
+	vfs_ChDir(conn, cwd_fname);
+	TALLOC_FREE(cwd_fname);
 	SMB_VFS_DISCONNECT(conn);
 	conn_free(conn);
 	return ret;
@@ -1378,12 +1404,12 @@ out:
 bool remove_msdfs_link(const struct junction_map *jucn)
 {
 	char *path = NULL;
-	char *cwd;
+	struct smb_filename *cwd_fname = NULL;
 	connection_struct *conn;
 	bool ret = False;
 	struct smb_filename *smb_fname;
 
-	if (!junction_to_local_path(jucn, &path, &conn, &cwd)) {
+	if (!junction_to_local_path(jucn, &path, &conn, &cwd_fname)) {
 		return false;
 	}
 
@@ -1402,7 +1428,8 @@ bool remove_msdfs_link(const struct junction_map *jucn)
 	}
 
 	TALLOC_FREE(smb_fname);
-	vfs_ChDir(conn, cwd);
+	vfs_ChDir(conn, cwd_fname);
+	TALLOC_FREE(cwd_fname);
 	SMB_VFS_DISCONNECT(conn);
 	conn_free(conn);
 	return ret;
@@ -1422,7 +1449,7 @@ static int count_dfs_links(TALLOC_CTX *ctx, int snum)
 	const char *msdfs_proxy = lp_msdfs_proxy(talloc_tos(), snum);
 	connection_struct *conn;
 	NTSTATUS status;
-	char *cwd;
+	struct smb_filename *cwd_fname = NULL;
 	struct smb_filename *smb_fname = NULL;
 
 	if(*connect_path == '\0') {
@@ -1437,7 +1464,10 @@ static int count_dfs_links(TALLOC_CTX *ctx, int snum)
 					server_event_context(),
 					server_messaging_context(),
 					&conn,
-					snum, connect_path, NULL, &cwd);
+					snum,
+					connect_path,
+					NULL,
+					&cwd_fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("create_conn_struct failed: %s\n",
 			  nt_errstr(status)));
@@ -1489,7 +1519,8 @@ static int count_dfs_links(TALLOC_CTX *ctx, int snum)
 
 out:
 	TALLOC_FREE(smb_fname);
-	vfs_ChDir(conn, cwd);
+	vfs_ChDir(conn, cwd_fname);
+	TALLOC_FREE(cwd_fname);
 	SMB_VFS_DISCONNECT(conn);
 	conn_free(conn);
 	return cnt;
@@ -1512,7 +1543,7 @@ static int form_junctions(TALLOC_CTX *ctx,
 	const char *msdfs_proxy = lp_msdfs_proxy(talloc_tos(), snum);
 	connection_struct *conn;
 	struct referral *ref = NULL;
-	char *cwd;
+	struct smb_filename *cwd_fname = NULL;
 	struct smb_filename *smb_fname = NULL;
 	NTSTATUS status;
 
@@ -1531,8 +1562,11 @@ static int form_junctions(TALLOC_CTX *ctx,
 	status = create_conn_struct_cwd(ctx,
 					server_event_context(),
 					server_messaging_context(),
-					&conn, snum, connect_path, NULL,
-					&cwd);
+					&conn,
+					snum,
+					connect_path,
+					NULL,
+					&cwd_fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("create_conn_struct failed: %s\n",
 			  nt_errstr(status)));
@@ -1646,7 +1680,8 @@ out:
 	}
 
 	TALLOC_FREE(smb_fname);
-	vfs_ChDir(conn, cwd);
+	vfs_ChDir(conn, cwd_fname);
+	TALLOC_FREE(cwd_fname);
 	conn_free(conn);
 	return cnt;
 }

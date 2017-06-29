@@ -228,6 +228,8 @@
 		to const struct smb_filename * */
 /* Version 37 - Change symlink from const char *
 		to const struct smb_filename * */
+/* Version 37 - Change chdir from const char *
+		to const struct smb_filename * */
 
 #define SMB_VFS_INTERFACE_VERSION 37
 
@@ -731,7 +733,8 @@ struct vfs_fn_pointers {
 			const struct smb_filename *smb_fname,
 			uid_t uid,
 			gid_t gid);
-	int (*chdir_fn)(struct vfs_handle_struct *handle, const char *path);
+	int (*chdir_fn)(struct vfs_handle_struct *handle,
+			 const struct smb_filename *smb_fname);
 	char *(*getwd_fn)(struct vfs_handle_struct *handle);
 	int (*ntimes_fn)(struct vfs_handle_struct *handle,
 			 const struct smb_filename *smb_fname,
@@ -1232,7 +1235,8 @@ int smb_vfs_call_lchown(struct vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
 			uid_t uid,
 			gid_t gid);
-int smb_vfs_call_chdir(struct vfs_handle_struct *handle, const char *path);
+int smb_vfs_call_chdir(struct vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname);
 char *smb_vfs_call_getwd(struct vfs_handle_struct *handle);
 int smb_vfs_call_ntimes(struct vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,

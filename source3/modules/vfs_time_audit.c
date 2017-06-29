@@ -1236,19 +1236,22 @@ static int smb_time_audit_lchown(vfs_handle_struct *handle,
 	return result;
 }
 
-static int smb_time_audit_chdir(vfs_handle_struct *handle, const char *path)
+static int smb_time_audit_chdir(vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname)
 {
 	int result;
 	struct timespec ts1,ts2;
 	double timediff;
 
 	clock_gettime_mono(&ts1);
-	result = SMB_VFS_NEXT_CHDIR(handle, path);
+	result = SMB_VFS_NEXT_CHDIR(handle, smb_fname);
 	clock_gettime_mono(&ts2);
 	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
-		smb_time_audit_log_fname("chdir", timediff, path);
+		smb_time_audit_log_fname("chdir",
+			timediff,
+			smb_fname->base_name);
 	}
 
 	return result;

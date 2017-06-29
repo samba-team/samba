@@ -1509,13 +1509,14 @@ static int smb_full_audit_lchown(vfs_handle_struct *handle,
 }
 
 static int smb_full_audit_chdir(vfs_handle_struct *handle,
-		       const char *path)
+			const struct smb_filename *smb_fname)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_CHDIR(handle, path);
+	result = SMB_VFS_NEXT_CHDIR(handle, smb_fname);
 
-	do_log(SMB_VFS_OP_CHDIR, (result >= 0), handle, "chdir|%s", path);
+	do_log(SMB_VFS_OP_CHDIR, (result >= 0), handle, "chdir|%s",
+		smb_fname->base_name);
 
 	return result;
 }

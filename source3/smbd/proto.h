@@ -510,7 +510,7 @@ NTSTATUS create_conn_struct_cwd(TALLOC_CTX *ctx,
 				int snum,
 				const char *path,
 				const struct auth_session_info *session_info,
-				char **poldcwd);
+				struct smb_filename **poldcwd_fname);
 
 /* The following definitions come from smbd/negprot.c  */
 
@@ -649,10 +649,6 @@ NTSTATUS fd_close(files_struct *fsp);
 void change_file_owner_to_parent(connection_struct *conn,
 				 const char *inherit_from_dir,
 				 files_struct *fsp);
-NTSTATUS change_dir_owner_to_parent(connection_struct *conn,
-				    const char *inherit_from_dir,
-				    const char *fname,
-				    SMB_STRUCT_STAT *psbuf);
 bool is_stat_open(uint32_t access_mask);
 NTSTATUS send_break_message(struct messaging_context *msg_ctx,
 				const struct share_mode_entry *exclusive,
@@ -1234,7 +1230,8 @@ int vfs_fill_sparse(files_struct *fsp, off_t len);
 off_t vfs_transfer_file(files_struct *in, files_struct *out, off_t n);
 const char *vfs_readdirname(connection_struct *conn, void *p,
 			    SMB_STRUCT_STAT *sbuf, char **talloced);
-int vfs_ChDir(connection_struct *conn, const char *path);
+int vfs_ChDir(connection_struct *conn,
+			const struct smb_filename *smb_fname);
 char *vfs_GetWd(TALLOC_CTX *ctx, connection_struct *conn);
 NTSTATUS check_reduced_name(connection_struct *conn,
 			const char *cwd_name,

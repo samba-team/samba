@@ -1288,7 +1288,7 @@ static NTSTATUS fset_nt_acl_common(vfs_handle_struct *handle, files_struct *fsp,
 }
 
 static int acl_common_remove_object(vfs_handle_struct *handle,
-					const char *path,
+					const struct smb_filename *smb_fname,
 					bool is_directory)
 {
 	connection_struct *conn = handle->conn;
@@ -1297,17 +1297,20 @@ static int acl_common_remove_object(vfs_handle_struct *handle,
 	int ret = 0;
 	char *parent_dir = NULL;
 	const char *final_component = NULL;
-	struct smb_filename local_fname;
+	struct smb_filename local_fname = {0};
+	struct smb_filename parent_dir_fname = {0};
 	int saved_errno = 0;
 	char *saved_dir = NULL;
+	struct smb_filename saved_dir_fname = {0};
 
 	saved_dir = vfs_GetWd(talloc_tos(),conn);
 	if (!saved_dir) {
 		saved_errno = errno;
 		goto out;
 	}
+	saved_dir_fname = (struct smb_filename) { .base_name = saved_dir };
 
-	if (!parent_dirname(talloc_tos(), path,
+	if (!parent_dirname(talloc_tos(), smb_fname->base_name,
 			&parent_dir, &final_component)) {
 		saved_errno = ENOMEM;
 		goto out;
@@ -1316,14 +1319,15 @@ static int acl_common_remove_object(vfs_handle_struct *handle,
 	DBG_DEBUG("removing %s %s/%s\n", is_directory ? "directory" : "file",
 		  parent_dir, final_component);
 
+	parent_dir_fname = (struct smb_filename) { .base_name = parent_dir };
+
  	/* cd into the parent dir to pin it. */
-	ret = vfs_ChDir(conn, parent_dir);
+	ret = vfs_ChDir(conn, &parent_dir_fname);
 	if (ret == -1) {
 		saved_errno = errno;
 		goto out;
 	}
 
-	ZERO_STRUCT(local_fname);
 	local_fname.base_name = discard_const_p(char, final_component);
 
 	/* Must use lstat here. */
@@ -1371,7 +1375,7 @@ static int acl_common_remove_object(vfs_handle_struct *handle,
 	TALLOC_FREE(parent_dir);
 
 	if (saved_dir) {
-		vfs_ChDir(conn, saved_dir);
+		vfs_ChDir(conn, &saved_dir_fname);
 	}
 	if (saved_errno) {
 		errno = saved_errno;
@@ -1393,7 +1397,7 @@ static int rmdir_acl_common(struct vfs_handle_struct *handle,
 		/* Failed due to access denied,
 		   see if we need to root override. */
 		return acl_common_remove_object(handle,
-						smb_fname->base_name,
+						smb_fname,
 						true);
 	}
 
@@ -1422,7 +1426,7 @@ static int unlink_acl_common(struct vfs_handle_struct *handle,
 			return -1;
 		}
 		return acl_common_remove_object(handle,
-					smb_fname->base_name,
+					smb_fname,
 					false);
 	}
 

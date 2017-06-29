@@ -674,7 +674,7 @@ static uint32_t get_correct_cversion(struct auth_session_info *session_info,
 	struct smb_filename *smb_fname = NULL;
 	files_struct      *fsp = NULL;
 	connection_struct *conn = NULL;
-	char *oldcwd;
+	struct smb_filename *oldcwd_fname = NULL;
 	char *printdollar = NULL;
 	char *printdollar_path = NULL;
 	char *working_dir = NULL;
@@ -733,7 +733,7 @@ static uint32_t get_correct_cversion(struct auth_session_info *session_info,
 					   &conn,
 					   printdollar_snum,
 					   working_dir,
-					   session_info, &oldcwd);
+					   session_info, &oldcwd_fname);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("get_correct_cversion: create_conn_struct "
 			 "returned %s\n", nt_errstr(nt_status)));
@@ -851,7 +851,8 @@ static uint32_t get_correct_cversion(struct auth_session_info *session_info,
 		close_file(NULL, fsp, NORMAL_CLOSE);
 	}
 	if (conn != NULL) {
-		vfs_ChDir(conn, oldcwd);
+		vfs_ChDir(conn, oldcwd_fname);
+		TALLOC_FREE(oldcwd_fname);
 		SMB_VFS_DISCONNECT(conn);
 		conn_free(conn);
 	}
@@ -1168,7 +1169,7 @@ WERROR move_driver_to_download_area(struct auth_session_info *session_info,
 	int i;
 	TALLOC_CTX *ctx = talloc_tos();
 	int ver = 0;
-	char *oldcwd;
+	struct smb_filename *oldcwd_fname = NULL;
 	char *printdollar = NULL;
 	int printdollar_snum;
 	WERROR err = WERR_OK;
@@ -1209,7 +1210,7 @@ WERROR move_driver_to_download_area(struct auth_session_info *session_info,
 					   &conn,
 					   printdollar_snum,
 					   lp_path(talloc_tos(), printdollar_snum),
-					   session_info, &oldcwd);
+					   session_info, &oldcwd_fname);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("move_driver_to_download_area: create_conn_struct "
 			 "returned %s\n", nt_errstr(nt_status)));
@@ -1374,7 +1375,8 @@ WERROR move_driver_to_download_area(struct auth_session_info *session_info,
 	TALLOC_FREE(smb_dname);
 
 	if (conn != NULL) {
-		vfs_ChDir(conn, oldcwd);
+		vfs_ChDir(conn, oldcwd_fname);
+		TALLOC_FREE(oldcwd_fname);
 		SMB_VFS_DISCONNECT(conn);
 		conn_free(conn);
 	}
@@ -1728,7 +1730,7 @@ bool delete_driver_files(const struct auth_session_info *session_info,
 	const char *short_arch;
 	connection_struct *conn;
 	NTSTATUS nt_status;
-	char *oldcwd;
+	struct smb_filename *oldcwd_fname = NULL;
 	char *printdollar = NULL;
 	int printdollar_snum;
 	bool ret = false;
@@ -1754,7 +1756,7 @@ bool delete_driver_files(const struct auth_session_info *session_info,
 					   &conn,
 					   printdollar_snum,
 					   lp_path(talloc_tos(), printdollar_snum),
-					   session_info, &oldcwd);
+					   session_info, &oldcwd_fname);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("delete_driver_files: create_conn_struct "
 			 "returned %s\n", nt_errstr(nt_status)));
@@ -1823,7 +1825,8 @@ bool delete_driver_files(const struct auth_session_info *session_info,
 	unbecome_user();
  err_free_conn:
 	if (conn != NULL) {
-		vfs_ChDir(conn, oldcwd);
+		vfs_ChDir(conn, oldcwd_fname);
+		TALLOC_FREE(oldcwd_fname);
 		SMB_VFS_DISCONNECT(conn);
 		conn_free(conn);
 	}

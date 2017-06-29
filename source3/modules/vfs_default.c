@@ -228,10 +228,18 @@ static NTSTATUS vfswrap_get_dfs_referrals(struct vfs_handle_struct *handle,
 				   !handle->conn->sconn->using_smb2,
 				   junction, &consumedcnt, &self_referral);
 	if (!NT_STATUS_IS_OK(status)) {
-		vfs_ChDir(handle->conn, handle->conn->connectpath);
+		struct smb_filename connectpath_fname = {
+			.base_name = handle->conn->connectpath
+		};
+		vfs_ChDir(handle->conn, &connectpath_fname);
 		return status;
 	}
-	vfs_ChDir(handle->conn, handle->conn->connectpath);
+	{
+		struct smb_filename connectpath_fname = {
+			.base_name = handle->conn->connectpath
+		};
+		vfs_ChDir(handle->conn, &connectpath_fname);
+	}
 
 	if (!self_referral) {
 		pathnamep[consumedcnt] = '\0';
@@ -2080,12 +2088,13 @@ static int vfswrap_lchown(vfs_handle_struct *handle,
 	return result;
 }
 
-static int vfswrap_chdir(vfs_handle_struct *handle, const char *path)
+static int vfswrap_chdir(vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname)
 {
 	int result;
 
 	START_PROFILE(syscall_chdir);
-	result = chdir(path);
+	result = chdir(smb_fname->base_name);
 	END_PROFILE(syscall_chdir);
 	return result;
 }

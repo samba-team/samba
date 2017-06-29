@@ -931,18 +931,20 @@ static int cephwrap_lchown(struct vfs_handle_struct *handle,
 	WRAP_RETURN(result);
 }
 
-static int cephwrap_chdir(struct vfs_handle_struct *handle,  const char *path)
+static int cephwrap_chdir(struct vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname)
 {
 	int result = -1;
-	DBG_DEBUG("[CEPH] chdir(%p, %s)\n", handle, path);
+	DBG_DEBUG("[CEPH] chdir(%p, %s)\n", handle, smb_fname->base_name);
 	/*
 	 * If the path is just / use chdir because Ceph is below / and
 	 * cannot deal with changing directory above its mount point
 	 */
-	if (path && !strcmp(path, "/"))
-		return chdir(path);
+	if (!strcmp(smb_fname->base_name, "/")) {
+		return chdir(smb_fname->base_name);
+	}
 
-	result = ceph_chdir(handle->data, path);
+	result = ceph_chdir(handle->data, smb_fname->base_name);
 	DBG_DEBUG("[CEPH] chdir(...) = %d\n", result);
 	WRAP_RETURN(result);
 }

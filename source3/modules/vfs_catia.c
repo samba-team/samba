@@ -991,21 +991,35 @@ static int catia_mkdir(vfs_handle_struct *handle,
 }
 
 static int catia_chdir(vfs_handle_struct *handle,
-		       const char *path)
+			const struct smb_filename *smb_fname)
 {
 	char *name = NULL;
+	struct smb_filename *catia_smb_fname = NULL;
 	NTSTATUS status;
 	int ret;
 
-	status = catia_string_replace_allocate(handle->conn, path,
-					&name, vfs_translate_to_unix);
+	status = catia_string_replace_allocate(handle->conn,
+					smb_fname->base_name,
+					&name,
+					vfs_translate_to_unix);
 	if (!NT_STATUS_IS_OK(status)) {
 		errno = map_errno_from_nt_status(status);
 		return -1;
 	}
 
-	ret = SMB_VFS_NEXT_CHDIR(handle, name);
+	catia_smb_fname = synthetic_smb_fname(talloc_tos(),
+					name,
+					NULL,
+					NULL,
+					smb_fname->flags);
+	if (catia_smb_fname == NULL) {
+		TALLOC_FREE(name);
+		errno = ENOMEM;
+		return -1;
+	}
+	ret = SMB_VFS_NEXT_CHDIR(handle, catia_smb_fname);
 	TALLOC_FREE(name);
+	TALLOC_FREE(catia_smb_fname);
 
 	return ret;
 }

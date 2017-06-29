@@ -855,7 +855,7 @@ const char *vfs_readdirname(connection_struct *conn, void *p,
  A wrapper for vfs_chdir().
 ********************************************************************/
 
-int vfs_ChDir(connection_struct *conn, const char *path)
+int vfs_ChDir(connection_struct *conn, const struct smb_filename *smb_fname)
 {
 	int ret;
 
@@ -863,21 +863,22 @@ int vfs_ChDir(connection_struct *conn, const char *path)
 		LastDir = SMB_STRDUP("");
 	}
 
-	if (ISDOT(path)) {
+	if (ISDOT(smb_fname->base_name)) {
 		return 0;
 	}
 
-	if (*path == '/' && strcsequal(LastDir,path)) {
+	if (*smb_fname->base_name == '/' &&
+			strcsequal(LastDir,smb_fname->base_name)) {
 		return 0;
 	}
 
-	DEBUG(4,("vfs_ChDir to %s\n",path));
+	DEBUG(4,("vfs_ChDir to %s\n", smb_fname->base_name));
 
-	ret = SMB_VFS_CHDIR(conn,path);
+	ret = SMB_VFS_CHDIR(conn, smb_fname);
 	if (ret == 0) {
 		/* Global cache. */
 		SAFE_FREE(LastDir);
-		LastDir = SMB_STRDUP(path);
+		LastDir = SMB_STRDUP(smb_fname->base_name);
 
 		/* conn cache. */
 		TALLOC_FREE(conn->cwd);
@@ -1009,6 +1010,7 @@ NTSTATUS check_reduced_name_with_privilege(connection_struct *conn,
 	const char *last_component = NULL;
 	char *resolved_name = NULL;
 	char *saved_dir = NULL;
+	struct smb_filename *saved_dir_fname = NULL;
 	struct smb_filename *smb_fname_cwd = NULL;
 	struct privilege_paths *priv_paths = NULL;
 	int ret;
@@ -1049,8 +1051,18 @@ NTSTATUS check_reduced_name_with_privilege(connection_struct *conn,
 		goto err;
 	}
 
+	saved_dir_fname = synthetic_smb_fname(ctx,
+					saved_dir,
+					NULL,
+					NULL,
+					0);
+	if (saved_dir_fname == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto err;
+	}
+
 	/* Go to the parent directory to lock in memory. */
-	if (vfs_ChDir(conn, priv_paths->parent_name.base_name) == -1) {
+	if (vfs_ChDir(conn, &priv_paths->parent_name) == -1) {
 		status = map_nt_error_from_unix(errno);
 		goto err;
 	}
@@ -1165,8 +1177,10 @@ NTSTATUS check_reduced_name_with_privilege(connection_struct *conn,
 
   err:
 
-	if (saved_dir) {
-		vfs_ChDir(conn, saved_dir);
+	if (saved_dir_fname) {
+		vfs_ChDir(conn, saved_dir_fname);
+		TALLOC_FREE(saved_dir);
+		TALLOC_FREE(saved_dir_fname);
 	}
 	SAFE_FREE(resolved_name);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2014,6 +2028,8 @@ NTSTATUS vfs_chown_fsp(files_struct *fsp, uid_t uid, gid_t gid)
 		char *parent_dir = NULL;
 		const char *final_component = NULL;
 		struct smb_filename *local_smb_fname = NULL;
+		struct smb_filename parent_dir_fname = {0};
+		struct smb_filename saved_dir_fname = {0};
 
 		saved_dir = vfs_GetWd(talloc_tos(),fsp->conn);
 		if (!saved_dir) {
@@ -2024,6 +2040,10 @@ NTSTATUS vfs_chown_fsp(files_struct *fsp, uid_t uid, gid_t gid)
 			return status;
 		}
 
+		saved_dir_fname = (struct smb_filename) {
+			.base_name = saved_dir
+		};
+
 		if (!parent_dirname(talloc_tos(),
 				fsp->fsp_name->base_name,
 				&parent_dir,
@@ -2031,8 +2051,13 @@ NTSTATUS vfs_chown_fsp(files_struct *fsp, uid_t uid, gid_t gid)
 			return NT_STATUS_NO_MEMORY;
 		}
 
+		parent_dir_fname = (struct smb_filename) {
+			.base_name = parent_dir,
+			.flags = fsp->fsp_name->flags
+		};
+
 		/* cd into the parent dir to pin it. */
-		ret = vfs_ChDir(fsp->conn, parent_dir);
+		ret = vfs_ChDir(fsp->conn, &parent_dir_fname);
 		if (ret == -1) {
 			return map_nt_error_from_unix(errno);
 		}
@@ -2073,7 +2098,7 @@ NTSTATUS vfs_chown_fsp(files_struct *fsp, uid_t uid, gid_t gid)
 
   out:
 
-		vfs_ChDir(fsp->conn,saved_dir);
+		vfs_ChDir(fsp->conn, &saved_dir_fname);
 		TALLOC_FREE(local_smb_fname);
 		TALLOC_FREE(saved_dir);
 		TALLOC_FREE(parent_dir);
@@ -2099,10 +2124,11 @@ NTSTATUS vfs_chown_fsp(files_struct *fsp, uid_t uid, gid_t gid)
 	return status;
 }
 
-int smb_vfs_call_chdir(struct vfs_handle_struct *handle, const char *path)
+int smb_vfs_call_chdir(struct vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname)
 {
 	VFS_FIND(chdir);
-	return handle->fns->chdir_fn(handle, path);
+	return handle->fns->chdir_fn(handle, smb_fname);
 }
 
 char *smb_vfs_call_getwd(struct vfs_handle_struct *handle)

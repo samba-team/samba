@@ -1550,7 +1550,7 @@ static void store_cwd_data(vfs_handle_struct *handle,
 }
 
 static int shadow_copy2_chdir(vfs_handle_struct *handle,
-			      const char *fname)
+			       const struct smb_filename *smb_fname)
 {
 	time_t timestamp = 0;
 	char *stripped = NULL;
@@ -1559,9 +1559,14 @@ static int shadow_copy2_chdir(vfs_handle_struct *handle,
 	int saved_errno = 0;
 	char *conv = NULL;
 	size_t rootpath_len = 0;
+	struct smb_filename *conv_smb_fname = NULL;
 
-	if (!shadow_copy2_strip_snapshot_internal(talloc_tos(), handle, fname,
-					&timestamp, &stripped, &snappath)) {
+	if (!shadow_copy2_strip_snapshot_internal(talloc_tos(),
+					handle,
+					smb_fname->base_name,
+					&timestamp,
+					&stripped,
+					&snappath)) {
 		return -1;
 	}
 	if (stripped != NULL) {
@@ -1574,10 +1579,22 @@ static int shadow_copy2_chdir(vfs_handle_struct *handle,
 		if (conv == NULL) {
 			return -1;
 		}
-		fname = conv;
+		conv_smb_fname = synthetic_smb_fname(talloc_tos(),
+					conv,
+					NULL,
+					NULL,
+					smb_fname->flags);
+	} else {
+		conv_smb_fname = cp_smb_filename(talloc_tos(), smb_fname);
 	}
 
-	ret = SMB_VFS_NEXT_CHDIR(handle, fname);
+	if (conv_smb_fname == NULL) {
+		TALLOC_FREE(conv);
+		errno = ENOMEM;
+		return -1;
+	}
+
+	ret = SMB_VFS_NEXT_CHDIR(handle, conv_smb_fname);
 	if (ret == -1) {
 		saved_errno = errno;
 	}
@@ -1594,6 +1611,7 @@ static int shadow_copy2_chdir(vfs_handle_struct *handle,
 
 	TALLOC_FREE(stripped);
 	TALLOC_FREE(conv);
+	TALLOC_FREE(conv_smb_fname);
 
 	if (saved_errno != 0) {
 		errno = saved_errno;

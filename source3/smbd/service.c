@@ -95,12 +95,22 @@ bool set_current_service(connection_struct *conn, uint16_t flags, bool do_chdir)
 
 	snum = SNUM(conn);
 
-	if (do_chdir &&
-	    vfs_ChDir(conn,conn->connectpath) != 0 &&
-	    vfs_ChDir(conn,conn->origpath) != 0) {
-                DEBUG(((errno!=EACCES)?0:3),("chdir (%s) failed, reason: %s\n",
-                         conn->connectpath, strerror(errno)));
-		return(False);
+	{
+		struct smb_filename connectpath_fname = {
+			.base_name = conn->connectpath
+		};
+		struct smb_filename origpath_fname = {
+			.base_name = conn->origpath
+		};
+
+		if (do_chdir &&
+		    vfs_ChDir(conn, &connectpath_fname) != 0 &&
+		    vfs_ChDir(conn, &origpath_fname) != 0) {
+			DEBUG(((errno!=EACCES)?0:3),
+				("chdir (%s) failed, reason: %s\n",
+				conn->connectpath, strerror(errno)));
+			return(False);
+		}
 	}
 
 	if ((conn == last_conn) && (last_flags == flags)) {
@@ -1083,6 +1093,9 @@ connection_struct *make_connection(struct smb_request *req,
 
 void close_cnum(connection_struct *conn, uint64_t vuid)
 {
+	char rootpath[2] = { '/', '\0'};
+	struct smb_filename root_fname = { .base_name = rootpath };
+
 	file_close_conn(conn);
 
 	if (!IS_IPC(conn)) {
@@ -1098,7 +1111,7 @@ void close_cnum(connection_struct *conn, uint64_t vuid)
 				 lp_servicename(talloc_tos(), SNUM(conn))));
 
 	/* make sure we leave the directory available for unmount */
-	vfs_ChDir(conn, "/");
+	vfs_ChDir(conn, &root_fname);
 
 	/* Call VFS disconnect hook */
 	SMB_VFS_DISCONNECT(conn);
