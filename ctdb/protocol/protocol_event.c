@@ -513,17 +513,17 @@ static int ctdb_event_request_data_pull(uint8_t *buf, size_t buflen,
 
 static size_t ctdb_event_reply_status_len(struct ctdb_event_reply_status *in)
 {
-	return ctdb_int32_len(in->status) +
+	return ctdb_int32_len(&in->status) +
 	       ctdb_script_list_len(in->script_list);
 }
 
 static void ctdb_event_reply_status_push(struct ctdb_event_reply_status *in,
 					 uint8_t *buf)
 {
-	size_t offset = 0;
+	size_t offset = 0, np;
 
-	ctdb_int32_push(in->status, buf);
-	offset += ctdb_int32_len(in->status);
+	ctdb_int32_push(&in->status, buf, &np);
+	offset += np;
 
 	ctdb_script_list_push(in->script_list, buf+offset);
 }
@@ -533,7 +533,7 @@ static int ctdb_event_reply_status_pull(uint8_t *buf, size_t buflen,
 					struct ctdb_event_reply_status **out)
 {
 	struct ctdb_event_reply_status *rdata;
-	size_t offset = 0;
+	size_t offset = 0, np;
 	int ret;
 
 	rdata = talloc(mem_ctx, struct ctdb_event_reply_status);
@@ -541,12 +541,12 @@ static int ctdb_event_reply_status_pull(uint8_t *buf, size_t buflen,
 		return ENOMEM;
 	}
 
-	ret = ctdb_int32_pull(buf, buflen, rdata, &rdata->status);
+	ret = ctdb_int32_pull(buf, buflen, &rdata->status, &np);
 	if (ret != 0) {
 		talloc_free(rdata);
 		return ret;
 	}
-	offset += ctdb_int32_len(rdata->status);
+	offset += np;
 
 	ret = ctdb_script_list_pull(buf+offset, buflen-offset,
 				    rdata, &rdata->script_list);
@@ -600,7 +600,7 @@ static size_t ctdb_event_reply_data_len(struct ctdb_event_reply_data *in)
 	size_t len = 0;
 
 	len += ctdb_event_command_len(in->command);
-	len += ctdb_int32_len(in->result);
+	len += ctdb_int32_len(&in->result);
 
 	switch (in->command) {
 	case CTDB_EVENT_COMMAND_RUN:
@@ -627,13 +627,13 @@ static size_t ctdb_event_reply_data_len(struct ctdb_event_reply_data *in)
 static void ctdb_event_reply_data_push(struct ctdb_event_reply_data *in,
 				       uint8_t *buf)
 {
-	size_t offset = 0;
+	size_t offset = 0, np;
 
 	ctdb_event_command_push(in->command, buf);
 	offset += ctdb_event_command_len(in->command);
 
-	ctdb_int32_push(in->result, buf+offset);
-	offset += ctdb_int32_len(in->result);
+	ctdb_int32_push(&in->result, buf+offset, &np);
+	offset += np;
 
 	switch (in->command) {
 	case CTDB_EVENT_COMMAND_RUN:
@@ -660,7 +660,7 @@ static int ctdb_event_reply_data_pull(uint8_t *buf, size_t buflen,
 				      TALLOC_CTX *mem_ctx,
 				      struct ctdb_event_reply_data *out)
 {
-	size_t offset = 0;
+	size_t offset = 0, np;
 	int ret;
 
 	ret = ctdb_event_command_pull(buf, buflen, mem_ctx, &out->command);
@@ -669,12 +669,11 @@ static int ctdb_event_reply_data_pull(uint8_t *buf, size_t buflen,
 	}
 	offset += ctdb_event_command_len(out->command);
 
-	ret = ctdb_int32_pull(buf+offset, buflen-offset,
-			      mem_ctx, &out->result);
+	ret = ctdb_int32_pull(buf+offset, buflen-offset, &out->result, &np);
 	if (ret != 0) {
 		return ret;
 	}
-	offset += ctdb_int32_len(out->result);
+	offset += np;
 
 	switch (out->command) {
 	case CTDB_EVENT_COMMAND_RUN:

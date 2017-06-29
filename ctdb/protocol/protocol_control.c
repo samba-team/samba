@@ -1408,7 +1408,7 @@ static size_t ctdb_reply_control_data_len(struct ctdb_reply_control_data *cd)
 		break;
 
 	case CTDB_CONTROL_DB_OPEN_FLAGS:
-		len = ctdb_int32_len(cd->data.tdb_flags);
+		len = ctdb_int32_len(&cd->data.tdb_flags);
 		break;
 
 	case CTDB_CONTROL_DB_ATTACH_REPLICATED:
@@ -1422,6 +1422,8 @@ static size_t ctdb_reply_control_data_len(struct ctdb_reply_control_data *cd)
 static void ctdb_reply_control_data_push(struct ctdb_reply_control_data *cd,
 					 uint8_t *buf)
 {
+	size_t np;
+
 	switch (cd->opcode) {
 	case CTDB_CONTROL_STATISTICS:
 		ctdb_statistics_push(cd->data.stats, buf);
@@ -1567,7 +1569,7 @@ static void ctdb_reply_control_data_push(struct ctdb_reply_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_DB_OPEN_FLAGS:
-		ctdb_int32_push(cd->data.tdb_flags, buf);
+		ctdb_int32_push(&cd->data.tdb_flags, buf, &np);
 		break;
 
 	case CTDB_CONTROL_DB_ATTACH_REPLICATED:
@@ -1580,7 +1582,9 @@ static int ctdb_reply_control_data_pull(uint8_t *buf, size_t buflen,
 					uint32_t opcode, TALLOC_CTX *mem_ctx,
 					struct ctdb_reply_control_data *cd)
 {
+	size_t np;
 	int ret = 0;
+
 	cd->opcode = opcode;
 
 	switch (opcode) {
@@ -1760,8 +1764,7 @@ static int ctdb_reply_control_data_pull(uint8_t *buf, size_t buflen,
 		break;
 
 	case CTDB_CONTROL_DB_OPEN_FLAGS:
-		ret = ctdb_int32_pull(buf, buflen, mem_ctx,
-				      &cd->data.tdb_flags);
+		ret = ctdb_int32_pull(buf, buflen, &cd->data.tdb_flags, &np);
 		break;
 
 	case CTDB_CONTROL_DB_ATTACH_REPLICATED:

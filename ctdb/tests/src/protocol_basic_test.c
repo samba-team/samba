@@ -27,20 +27,7 @@
 
 PROTOCOL_TYPE1_TEST(uint8_t, ctdb_uint8);
 PROTOCOL_TYPE1_TEST(uint16_t, ctdb_uint16);
-
-static void test_ctdb_int32(void)
-{
-	int32_t p1, p2;
-	size_t buflen;
-	int ret;
-
-	p1 = rand32i();
-	buflen = ctdb_int32_len(p1);
-	ctdb_int32_push(p1, BUFFER);
-	ret = ctdb_int32_pull(BUFFER, buflen, NULL, &p2);
-	assert(ret == 0);
-	assert(p1 == p2);
-}
+PROTOCOL_TYPE1_TEST(int32_t, ctdb_int32);
 
 static void test_ctdb_uint32(void)
 {
@@ -139,8 +126,8 @@ int main(int argc, char *argv[])
 
 	TEST_FUNC(ctdb_uint8)();
 	TEST_FUNC(ctdb_uint16)();
+	TEST_FUNC(ctdb_int32)();
 
-	test_ctdb_int32();
 	test_ctdb_uint32();
 	test_ctdb_uint64();
 	test_ctdb_double();
