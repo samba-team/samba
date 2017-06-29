@@ -15,6 +15,7 @@ env:
   - TASK=samba-none-env
   - TASK=samba-nopython
   - TASK=samba-systemkrb5
+  - TASK=samba-nt4
   - TASK=ldb
   - TASK=tdb
   - TASK=talloc
