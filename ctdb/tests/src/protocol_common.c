@@ -82,6 +82,16 @@ void verify_buffer(void *p1, void *p2, size_t len)
 	}
 }
 
+void fill_ctdb_uint8(uint8_t *p)
+{
+	*p = rand8();
+}
+
+void verify_ctdb_uint8(uint8_t *p1, uint8_t *p2)
+{
+	assert(*p1 == *p2);
+}
+
 void fill_ctdb_string(TALLOC_CTX *mem_ctx, const char **out)
 {
 	char *p;

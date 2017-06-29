@@ -151,6 +151,9 @@ double rand_double(void);
 void fill_buffer(void *p, size_t len);
 void verify_buffer(void *p1, void *p2, size_t len);
 
+void fill_ctdb_uint8(uint8_t *p);
+void verify_ctdb_uint8(uint8_t *p1, uint8_t *p2);
+
 void fill_ctdb_string(TALLOC_CTX *mem_ctx, const char **out);
 void verify_ctdb_string(const char *p1, const char *p2);
 

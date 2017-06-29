@@ -30,6 +30,28 @@
  * Basic data types
  */
 
+size_t ctdb_uint8_len(uint8_t *in)
+{
+	return sizeof(uint8_t);
+}
+
+void ctdb_uint8_push(uint8_t *in, uint8_t *buf, size_t *npush)
+{
+	*buf = *in;
+	*npush = sizeof(uint8_t);
+}
+
+int ctdb_uint8_pull(uint8_t *buf, size_t buflen, uint8_t *out, size_t *npull)
+{
+	if (buflen < sizeof(uint8_t)) {
+		return EMSGSIZE;
+	}
+
+	*out = *buf;
+	*npull = sizeof(uint8_t);
+	return 0;
+}
+
 size_t ctdb_int32_len(int32_t val)
 {
 	return sizeof(int32_t);

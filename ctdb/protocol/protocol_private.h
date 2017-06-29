@@ -26,6 +26,10 @@
  * From protocol/protocol_basic.c
  */
 
+size_t ctdb_uint8_len(uint8_t *in);
+void ctdb_uint8_push(uint8_t *in, uint8_t *buf, size_t *npush);
+int ctdb_uint8_pull(uint8_t *buf, size_t buflen, uint8_t *out, size_t *npull);
+
 size_t ctdb_int32_len(int32_t val);
 void ctdb_int32_push(int32_t val, uint8_t *buf);
 int ctdb_int32_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,

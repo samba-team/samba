@@ -25,6 +25,8 @@
 #include "tests/src/protocol_common.h"
 
 
+PROTOCOL_TYPE1_TEST(uint8_t, ctdb_uint8);
+
 static void test_ctdb_int32(void)
 {
 	int32_t p1, p2;
@@ -133,6 +135,8 @@ int main(int argc, char *argv[])
 		int seed = atoi(argv[1]);
 		srandom(seed);
 	}
+
+	TEST_FUNC(ctdb_uint8)();
 
 	test_ctdb_int32();
 	test_ctdb_uint32();
