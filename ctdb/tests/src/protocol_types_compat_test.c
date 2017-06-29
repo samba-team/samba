@@ -554,6 +554,36 @@ static int ctdb_traverse_start_pull_old(uint8_t *buf, size_t buflen,
 	return 0;
 }
 
+static size_t ctdb_traverse_all_len_old(struct ctdb_traverse_all *in)
+{
+	return sizeof(struct ctdb_traverse_all);
+}
+
+static void ctdb_traverse_all_push_old(struct ctdb_traverse_all *in,
+				       uint8_t *buf)
+{
+	memcpy(buf, in, sizeof(struct ctdb_traverse_all));
+}
+
+static int ctdb_traverse_all_pull_old(uint8_t *buf, size_t buflen,
+				      TALLOC_CTX *mem_ctx,
+				      struct ctdb_traverse_all **out)
+{
+	struct ctdb_traverse_all *val;
+
+	if (buflen < sizeof(struct ctdb_traverse_all)) {
+		return EMSGSIZE;
+	}
+
+	val = talloc_memdup(mem_ctx, buf, sizeof(struct ctdb_traverse_all));
+	if (val == NULL) {
+		return ENOMEM;
+	}
+
+	*out = val;
+	return 0;
+}
+
 
 COMPAT_TYPE3_TEST(struct ctdb_statistics, ctdb_statistics);
 COMPAT_TYPE3_TEST(struct ctdb_vnn_map, ctdb_vnn_map);
@@ -566,6 +596,7 @@ COMPAT_TYPE1_TEST(struct ctdb_ltdb_header, ctdb_ltdb_header);
 COMPAT_TYPE3_TEST(struct ctdb_rec_data, ctdb_rec_data);
 COMPAT_TYPE3_TEST(struct ctdb_rec_buffer, ctdb_rec_buffer);
 COMPAT_TYPE3_TEST(struct ctdb_traverse_start, ctdb_traverse_start);
+COMPAT_TYPE3_TEST(struct ctdb_traverse_all, ctdb_traverse_all);
 
 int main(int argc, char *argv[])
 {
@@ -583,6 +614,7 @@ int main(int argc, char *argv[])
 	COMPAT_TEST_FUNC(ctdb_rec_data)();
 	COMPAT_TEST_FUNC(ctdb_rec_buffer)();
 	COMPAT_TEST_FUNC(ctdb_traverse_start)();
+	COMPAT_TEST_FUNC(ctdb_traverse_all)();
 
 	return 0;
 }

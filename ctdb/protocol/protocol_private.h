@@ -150,10 +150,11 @@ void ctdb_traverse_start_push(struct ctdb_traverse_start *in, uint8_t *buf,
 int ctdb_traverse_start_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 			     struct ctdb_traverse_start **out, size_t *npull);
 
-size_t ctdb_traverse_all_len(struct ctdb_traverse_all *traverse);
-void ctdb_traverse_all_push(struct ctdb_traverse_all *traverse, uint8_t *buf);
+size_t ctdb_traverse_all_len(struct ctdb_traverse_all *in);
+void ctdb_traverse_all_push(struct ctdb_traverse_all *in, uint8_t *buf,
+			    size_t *npush);
 int ctdb_traverse_all_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			   struct ctdb_traverse_all **out);
+			   struct ctdb_traverse_all **out, size_t *npull);
 
 size_t ctdb_traverse_start_ext_len(struct ctdb_traverse_start_ext *traverse);
 void ctdb_traverse_start_ext_push(struct ctdb_traverse_start_ext *traverse,

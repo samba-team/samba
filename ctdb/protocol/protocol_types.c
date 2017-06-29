@@ -1756,33 +1756,88 @@ fail:
 	return ret;
 }
 
-size_t ctdb_traverse_all_len(struct ctdb_traverse_all *traverse)
+size_t ctdb_traverse_all_len(struct ctdb_traverse_all *in)
 {
-	return sizeof(struct ctdb_traverse_all);
+	return ctdb_uint32_len(&in->db_id) +
+		ctdb_uint32_len(&in->reqid) +
+		ctdb_uint32_len(&in->pnn) +
+		ctdb_uint32_len(&in->client_reqid) +
+		ctdb_uint64_len(&in->srvid);
 }
 
-void ctdb_traverse_all_push(struct ctdb_traverse_all *traverse, uint8_t *buf)
+void ctdb_traverse_all_push(struct ctdb_traverse_all *in, uint8_t *buf,
+			    size_t *npush)
 {
-	memcpy(buf, traverse, sizeof(struct ctdb_traverse_all));
+	size_t offset = 0, np;
+
+	ctdb_uint32_push(&in->db_id, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->reqid, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->pnn, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->client_reqid, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint64_push(&in->srvid, buf+offset, &np);
+	offset += np;
+
+	*npush = offset;
 }
 
 int ctdb_traverse_all_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			   struct ctdb_traverse_all **out)
+			   struct ctdb_traverse_all **out, size_t *npull)
 {
-	struct ctdb_traverse_all *traverse;
+	struct ctdb_traverse_all *val;
+	size_t offset = 0, np;
+	int ret;
 
-	if (buflen < sizeof(struct ctdb_traverse_all)) {
-		return EMSGSIZE;
-	}
-
-	traverse = talloc_memdup(mem_ctx, buf,
-				 sizeof(struct ctdb_traverse_all));
-	if (traverse == NULL) {
+	val = talloc(mem_ctx, struct ctdb_traverse_all);
+	if (val == NULL) {
 		return ENOMEM;
 	}
 
-	*out = traverse;
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &val->db_id, &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &val->reqid, &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &val->pnn, &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &val->client_reqid,
+			       &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
+
+	ret = ctdb_uint64_pull(buf+offset, buflen-offset, &val->srvid, &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
+
+	*out = val;
+	*npull = offset;
 	return 0;
+
+fail:
+	talloc_free(val);
+	return ret;
 }
 
 size_t ctdb_traverse_start_ext_len(struct ctdb_traverse_start_ext *traverse)

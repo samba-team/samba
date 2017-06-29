@@ -487,7 +487,7 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_TRAVERSE_ALL:
-		ctdb_traverse_all_push(cd->data.traverse_all, buf);
+		ctdb_traverse_all_push(cd->data.traverse_all, buf, &np);
 		break;
 
 	case CTDB_CONTROL_TRAVERSE_DATA:
@@ -775,7 +775,7 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_CONTROL_TRAVERSE_ALL:
 		ret = ctdb_traverse_all_pull(buf, buflen, mem_ctx,
-					     &cd->data.traverse_all);
+					     &cd->data.traverse_all, &np);
 		break;
 
 	case CTDB_CONTROL_TRAVERSE_DATA:
