@@ -1134,32 +1134,67 @@ int ctdb_pulldb_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 	return 0;
 }
 
-size_t ctdb_pulldb_ext_len(struct ctdb_pulldb_ext *pulldb)
+size_t ctdb_pulldb_ext_len(struct ctdb_pulldb_ext *in)
 {
-	return sizeof(struct ctdb_pulldb_ext);
+	return ctdb_uint32_len(&in->db_id) +
+		ctdb_uint32_len(&in->lmaster) +
+		ctdb_uint64_len(&in->srvid);
 }
 
-void ctdb_pulldb_ext_push(struct ctdb_pulldb_ext *pulldb, uint8_t *buf)
+void ctdb_pulldb_ext_push(struct ctdb_pulldb_ext *in, uint8_t *buf,
+			  size_t *npush)
 {
-	memcpy(buf, pulldb, sizeof(struct ctdb_pulldb_ext));
+	size_t offset = 0, np;
+
+	ctdb_uint32_push(&in->db_id, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->lmaster, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint64_push(&in->srvid, buf+offset, &np);
+	offset += np;
+
+	*npush = offset;
 }
 
 int ctdb_pulldb_ext_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			 struct ctdb_pulldb_ext **out)
+			 struct ctdb_pulldb_ext **out, size_t *npull)
 {
-	struct ctdb_pulldb_ext *pulldb;
+	struct ctdb_pulldb_ext *val;
+	size_t offset = 0, np;
+	int ret;
 
-	if (buflen < sizeof(struct ctdb_pulldb_ext)) {
-		return EMSGSIZE;
-	}
-
-	pulldb = talloc_memdup(mem_ctx, buf, sizeof(struct ctdb_pulldb_ext));
-	if (pulldb == NULL) {
+	val = talloc(mem_ctx, struct ctdb_pulldb_ext);
+	if (val == NULL) {
 		return ENOMEM;
 	}
 
-	*out = pulldb;
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &val->db_id, &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &val->lmaster, &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
+
+	ret = ctdb_uint64_pull(buf+offset, buflen-offset, &val->srvid, &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
+
+	*out = val;
+	*npull = offset;
 	return 0;
+
+fail:
+	talloc_free(val);
+	return ret;
 }
 
 size_t ctdb_ltdb_header_len(struct ctdb_ltdb_header *header)

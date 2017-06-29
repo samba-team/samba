@@ -138,10 +138,11 @@ void ctdb_pulldb_push(struct ctdb_pulldb *in, uint8_t *buf, size_t *npush);
 int ctdb_pulldb_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 		     struct ctdb_pulldb **out, size_t *npull);
 
-size_t ctdb_pulldb_ext_len(struct ctdb_pulldb_ext *pulldb);
-void ctdb_pulldb_ext_push(struct ctdb_pulldb_ext *pulldb, uint8_t *buf);
+size_t ctdb_pulldb_ext_len(struct ctdb_pulldb_ext *in);
+void ctdb_pulldb_ext_push(struct ctdb_pulldb_ext *in, uint8_t *buf,
+			  size_t *npush);
 int ctdb_pulldb_ext_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			 struct ctdb_pulldb_ext **out);
+			 struct ctdb_pulldb_ext **out, size_t *npull);
 
 size_t ctdb_traverse_start_len(struct ctdb_traverse_start *traverse);
 void ctdb_traverse_start_push(struct ctdb_traverse_start *traverse,

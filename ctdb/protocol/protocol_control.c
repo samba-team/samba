@@ -696,11 +696,11 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_DB_PULL:
-		ctdb_pulldb_ext_push(cd->data.pulldb_ext, buf);
+		ctdb_pulldb_ext_push(cd->data.pulldb_ext, buf, &np);
 		break;
 
 	case CTDB_CONTROL_DB_PUSH_START:
-		ctdb_pulldb_ext_push(cd->data.pulldb_ext, buf);
+		ctdb_pulldb_ext_push(cd->data.pulldb_ext, buf, &np);
 		break;
 
 	case CTDB_CONTROL_DB_PUSH_CONFIRM:
@@ -1019,12 +1019,12 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_CONTROL_DB_PULL:
 		ret = ctdb_pulldb_ext_pull(buf, buflen, mem_ctx,
-					   &cd->data.pulldb_ext);
+					   &cd->data.pulldb_ext, &np);
 		break;
 
 	case CTDB_CONTROL_DB_PUSH_START:
 		ret = ctdb_pulldb_ext_pull(buf, buflen, mem_ctx,
-					   &cd->data.pulldb_ext);
+					   &cd->data.pulldb_ext, &np);
 		break;
 
 	case CTDB_CONTROL_DB_PUSH_CONFIRM:
