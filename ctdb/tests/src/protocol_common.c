@@ -468,7 +468,7 @@ void fill_ctdb_dbid_map(TALLOC_CTX *mem_ctx, struct ctdb_dbid_map *p)
 
 	p->num = rand_int(40);
 	if (p->num > 0) {
-		p->dbs = talloc_array(mem_ctx, struct ctdb_dbid, p->num);
+		p->dbs = talloc_zero_array(mem_ctx, struct ctdb_dbid, p->num);
 		assert(p->dbs != NULL);
 		for (i=0; i<p->num; i++) {
 			fill_ctdb_dbid(mem_ctx, &p->dbs[i]);

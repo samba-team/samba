@@ -1007,60 +1007,81 @@ int ctdb_dbid_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 	return 0;
 }
 
-struct ctdb_dbid_map_wire {
-	uint32_t num;
-	struct ctdb_dbid dbs[1];
-};
-
-size_t ctdb_dbid_map_len(struct ctdb_dbid_map *dbmap)
+size_t ctdb_dbid_map_len(struct ctdb_dbid_map *in)
 {
-	return sizeof(uint32_t) + dbmap->num * sizeof(struct ctdb_dbid);
+	size_t len;
+
+	len = ctdb_uint32_len(&in->num);
+	if (in->num > 0) {
+		len += in->num * ctdb_dbid_len(&in->dbs[0]);
+	}
+
+	return len;
 }
 
-void ctdb_dbid_map_push(struct ctdb_dbid_map *dbmap, uint8_t *buf)
+void ctdb_dbid_map_push(struct ctdb_dbid_map *in, uint8_t *buf, size_t *npush)
 {
-	struct ctdb_dbid_map_wire *wire = (struct ctdb_dbid_map_wire *)buf;
+	size_t offset = 0, np;
+	uint32_t i;
 
-	wire->num = dbmap->num;
-	memcpy(wire->dbs, dbmap->dbs, dbmap->num * sizeof(struct ctdb_dbid));
+	ctdb_uint32_push(&in->num, buf+offset, &np);
+	offset += np;
+
+	for (i=0; i<in->num; i++) {
+		ctdb_dbid_push(&in->dbs[i], buf+offset, &np);
+		offset += np;
+	}
+
+	*npush = offset;
 }
 
 int ctdb_dbid_map_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-		       struct ctdb_dbid_map **out)
+		       struct ctdb_dbid_map **out, size_t *npull)
 {
-	struct ctdb_dbid_map *dbmap;
-	struct ctdb_dbid_map_wire *wire = (struct ctdb_dbid_map_wire *)buf;
+	struct ctdb_dbid_map *val;
+	size_t offset = 0, np;
+	uint32_t i;
+	int ret;
 
-	if (buflen < sizeof(uint32_t)) {
-		return EMSGSIZE;
-	}
-	if (wire->num > buflen / sizeof(struct ctdb_dbid)) {
-		return EMSGSIZE;
-	}
-	if (sizeof(uint32_t) + wire->num * sizeof(struct ctdb_dbid) <
-	    sizeof(uint32_t)) {
-		return EMSGSIZE;
-	}
-	if (buflen < sizeof(uint32_t) + wire->num * sizeof(struct ctdb_dbid)) {
-		return EMSGSIZE;
-	}
-
-	dbmap = talloc(mem_ctx, struct ctdb_dbid_map);
-	if (dbmap == NULL) {
+	val = talloc(mem_ctx, struct ctdb_dbid_map);
+	if (val == NULL) {
 		return ENOMEM;
 	}
 
-	dbmap->num = wire->num;
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &val->num, &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
 
-	dbmap->dbs = talloc_memdup(dbmap, wire->dbs,
-				   wire->num * sizeof(struct ctdb_dbid));
-	if (dbmap->dbs == NULL) {
-		talloc_free(dbmap);
-		return ENOMEM;
+	if (val->num == 0) {
+		val->dbs = NULL;
+		goto done;
 	}
 
-	*out = dbmap;
+	val->dbs = talloc_array(val, struct ctdb_dbid, val->num);
+	if (val->dbs == NULL) {
+		ret = ENOMEM;
+		goto fail;
+	}
+
+	for (i=0; i<val->num; i++) {
+		ret = ctdb_dbid_pull_elems(buf+offset, buflen-offset, val,
+					   &val->dbs[i], &np);
+		if (ret != 0) {
+			goto fail;
+		}
+		offset += np;
+	}
+
+done:
+	*out = val;
+	*npull = offset;
 	return 0;
+
+fail:
+	talloc_free(val);
+	return ret;
 }
 
 size_t ctdb_pulldb_len(struct ctdb_pulldb *pulldb)

@@ -185,9 +185,67 @@ static int ctdb_vnn_map_pull_old(uint8_t *buf, size_t buflen,
 	return 0;
 }
 
+struct ctdb_dbid_map_wire {
+	uint32_t num;
+	struct ctdb_dbid dbs[1];
+};
+
+static size_t ctdb_dbid_map_len_old(struct ctdb_dbid_map *in)
+{
+	return sizeof(uint32_t) + in->num * sizeof(struct ctdb_dbid);
+}
+
+static void ctdb_dbid_map_push_old(struct ctdb_dbid_map *in, uint8_t *buf)
+{
+	struct ctdb_dbid_map_wire *wire = (struct ctdb_dbid_map_wire *)buf;
+
+	wire->num = in->num;
+	memcpy(wire->dbs, in->dbs, in->num * sizeof(struct ctdb_dbid));
+}
+
+static int ctdb_dbid_map_pull_old(uint8_t *buf, size_t buflen,
+				  TALLOC_CTX *mem_ctx,
+				  struct ctdb_dbid_map **out)
+{
+	struct ctdb_dbid_map *val;
+	struct ctdb_dbid_map_wire *wire = (struct ctdb_dbid_map_wire *)buf;
+
+	if (buflen < sizeof(uint32_t)) {
+		return EMSGSIZE;
+	}
+	if (wire->num > buflen / sizeof(struct ctdb_dbid)) {
+		return EMSGSIZE;
+	}
+	if (sizeof(uint32_t) + wire->num * sizeof(struct ctdb_dbid) <
+	    sizeof(uint32_t)) {
+		return EMSGSIZE;
+	}
+	if (buflen < sizeof(uint32_t) + wire->num * sizeof(struct ctdb_dbid)) {
+		return EMSGSIZE;
+	}
+
+	val = talloc(mem_ctx, struct ctdb_dbid_map);
+	if (val == NULL) {
+		return ENOMEM;
+	}
+
+	val->num = wire->num;
+
+	val->dbs = talloc_memdup(val, wire->dbs,
+				 wire->num * sizeof(struct ctdb_dbid));
+	if (val->dbs == NULL) {
+		talloc_free(val);
+		return ENOMEM;
+	}
+
+	*out = val;
+	return 0;
+}
+
 
 COMPAT_TYPE3_TEST(struct ctdb_statistics, ctdb_statistics);
 COMPAT_TYPE3_TEST(struct ctdb_vnn_map, ctdb_vnn_map);
+COMPAT_TYPE3_TEST(struct ctdb_dbid_map, ctdb_dbid_map);
 
 int main(int argc, char *argv[])
 {
@@ -198,6 +256,7 @@ int main(int argc, char *argv[])
 
 	COMPAT_TEST_FUNC(ctdb_statistics)();
 	COMPAT_TEST_FUNC(ctdb_vnn_map)();
+	COMPAT_TEST_FUNC(ctdb_dbid_map)();
 
 	return 0;
 }

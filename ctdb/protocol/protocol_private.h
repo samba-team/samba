@@ -127,10 +127,11 @@ void ctdb_dbid_push(struct ctdb_dbid *in, uint8_t *buf, size_t *npush);
 int ctdb_dbid_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 		   struct ctdb_dbid **out, size_t *npull);
 
-size_t ctdb_dbid_map_len(struct ctdb_dbid_map *dbmap);
-void ctdb_dbid_map_push(struct ctdb_dbid_map *dbmap, uint8_t *buf);
+size_t ctdb_dbid_map_len(struct ctdb_dbid_map *in);
+void ctdb_dbid_map_push(struct ctdb_dbid_map *in, uint8_t *buf,
+			size_t *npush);
 int ctdb_dbid_map_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-		       struct ctdb_dbid_map **out);
+		       struct ctdb_dbid_map **out, size_t *npull);
 
 size_t ctdb_pulldb_len(struct ctdb_pulldb *pulldb);
 void ctdb_pulldb_push(struct ctdb_pulldb *pulldb, uint8_t *buf);

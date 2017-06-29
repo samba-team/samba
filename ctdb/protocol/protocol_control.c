@@ -1435,7 +1435,7 @@ static void ctdb_reply_control_data_push(struct ctdb_reply_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_GET_DBMAP:
-		ctdb_dbid_map_push(cd->data.dbmap, buf);
+		ctdb_dbid_map_push(cd->data.dbmap, buf, &np);
 		break;
 
 	case CTDB_CONTROL_PULL_DB:
@@ -1602,7 +1602,7 @@ static int ctdb_reply_control_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_CONTROL_GET_DBMAP:
 		ret = ctdb_dbid_map_pull(buf, buflen, mem_ctx,
-					 &cd->data.dbmap);
+					 &cd->data.dbmap, &np);
 		break;
 
 	case CTDB_CONTROL_PULL_DB:
