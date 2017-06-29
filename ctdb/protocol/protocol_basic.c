@@ -162,6 +162,45 @@ int ctdb_double_pull(uint8_t *buf, size_t buflen, double *out, size_t *npull)
 	return 0;
 }
 
+size_t ctdb_bool_len(bool *in)
+{
+	uint8_t u8 = *in;
+
+	return ctdb_uint8_len(&u8);
+}
+
+void ctdb_bool_push(bool *in, uint8_t *buf, size_t *npush)
+{
+	size_t np;
+	uint8_t u8 = *in;
+
+	ctdb_uint8_push(&u8, buf, &np);
+	*npush = np;
+}
+
+int ctdb_bool_pull(uint8_t *buf, size_t buflen, bool *out, size_t *npull)
+{
+	size_t np;
+	uint8_t u8;
+	int ret;
+
+	ret = ctdb_uint8_pull(buf, buflen, &u8, &np);
+	if (ret != 0) {
+		return ret;
+	}
+
+	if (u8 == 0) {
+		*out = false;
+	} else if (u8 == 1) {
+		*out = true;
+	} else {
+		return EINVAL;
+	}
+
+	*npull = np;
+	return 0;
+}
+
 size_t ctdb_string_len(const char *str)
 {
 	if (str == NULL) {

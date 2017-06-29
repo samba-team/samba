@@ -31,6 +31,7 @@ PROTOCOL_TYPE1_TEST(int32_t, ctdb_int32);
 PROTOCOL_TYPE1_TEST(uint32_t, ctdb_uint32);
 PROTOCOL_TYPE1_TEST(uint64_t, ctdb_uint64);
 PROTOCOL_TYPE1_TEST(double, ctdb_double);
+PROTOCOL_TYPE1_TEST(bool, ctdb_bool);
 
 static void test_ctdb_string(void)
 {
@@ -91,6 +92,7 @@ int main(int argc, char *argv[])
 	TEST_FUNC(ctdb_uint32)();
 	TEST_FUNC(ctdb_uint64)();
 	TEST_FUNC(ctdb_double)();
+	TEST_FUNC(ctdb_bool)();
 
 	test_ctdb_string();
 	test_ctdb_stringn();

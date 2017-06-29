@@ -148,6 +148,20 @@ void verify_ctdb_double(double *p1, double *p2)
 	assert(*p1 == *p2);
 }
 
+void fill_ctdb_bool(bool *p)
+{
+	if (rand_int(2) == 0) {
+		*p = true;
+	} else {
+		*p = false;
+	}
+}
+
+void verify_ctdb_bool(bool *p1, bool *p2)
+{
+	assert(*p1 == *p2);
+}
+
 void fill_ctdb_string(TALLOC_CTX *mem_ctx, const char **out)
 {
 	char *p;
