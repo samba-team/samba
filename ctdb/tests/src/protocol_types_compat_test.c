@@ -825,6 +825,98 @@ static int ctdb_node_flag_change_pull_old(uint8_t *buf, size_t buflen,
 	return 0;
 }
 
+struct ctdb_var_list_wire {
+	uint32_t length;
+	char list_str[1];
+};
+
+static size_t ctdb_var_list_len_old(struct ctdb_var_list *in)
+{
+	int i;
+	size_t len = sizeof(uint32_t);
+
+	for (i=0; i<in->count; i++) {
+		len += strlen(in->var[i]) + 1;
+	}
+	return len;
+}
+
+static void ctdb_var_list_push_old(struct ctdb_var_list *in, uint8_t *buf)
+{
+	struct ctdb_var_list_wire *wire = (struct ctdb_var_list_wire *)buf;
+	int i, n;
+	size_t offset = 0;
+
+	if (in->count > 0) {
+		n = sprintf(wire->list_str, "%s", in->var[0]);
+		offset += n;
+	}
+	for (i=1; i<in->count; i++) {
+		n = sprintf(&wire->list_str[offset], ":%s", in->var[i]);
+		offset += n;
+	}
+	wire->length = offset + 1;
+}
+
+static int ctdb_var_list_pull_old(uint8_t *buf, size_t buflen,
+				  TALLOC_CTX *mem_ctx,
+				  struct ctdb_var_list **out)
+{
+	struct ctdb_var_list *val = NULL;
+	struct ctdb_var_list_wire *wire = (struct ctdb_var_list_wire *)buf;
+	char *str, *s, *tok, *ptr;
+	const char **list;
+
+	if (buflen < sizeof(uint32_t)) {
+		return EMSGSIZE;
+	}
+	if (wire->length > buflen) {
+		return EMSGSIZE;
+	}
+	if (sizeof(uint32_t) + wire->length < sizeof(uint32_t)) {
+		return EMSGSIZE;
+	}
+	if (buflen < sizeof(uint32_t) + wire->length) {
+		return EMSGSIZE;
+	}
+
+	str = talloc_strndup(mem_ctx, (char *)wire->list_str, wire->length);
+	if (str == NULL) {
+		return ENOMEM;
+	}
+
+	val = talloc_zero(mem_ctx, struct ctdb_var_list);
+	if (val == NULL) {
+		goto fail;
+	}
+
+	s = str;
+	while ((tok = strtok_r(s, ":", &ptr)) != NULL) {
+		s = NULL;
+		list = talloc_realloc(val, val->var, const char *,
+				      val->count+1);
+		if (list == NULL) {
+			goto fail;
+		}
+
+		val->var = list;
+		val->var[val->count] = talloc_strdup(val, tok);
+		if (val->var[val->count] == NULL) {
+			goto fail;
+		}
+		val->count++;
+	}
+
+	talloc_free(str);
+	*out = val;
+	return 0;
+
+fail:
+	talloc_free(str);
+	talloc_free(val);
+	return ENOMEM;
+}
+
 
 COMPAT_TYPE3_TEST(struct ctdb_statistics, ctdb_statistics);
 COMPAT_TYPE3_TEST(struct ctdb_vnn_map, ctdb_vnn_map);
@@ -844,6 +936,7 @@ COMPAT_TYPE3_TEST(ctdb_sock_addr, ctdb_sock_addr);
 COMPAT_TYPE3_TEST(struct ctdb_connection, ctdb_connection);
 COMPAT_TYPE3_TEST(struct ctdb_tunable, ctdb_tunable);
 COMPAT_TYPE3_TEST(struct ctdb_node_flag_change, ctdb_node_flag_change);
+COMPAT_TYPE3_TEST(struct ctdb_var_list, ctdb_var_list);
 
 int main(int argc, char *argv[])
 {
@@ -868,6 +961,7 @@ int main(int argc, char *argv[])
 	COMPAT_TEST_FUNC(ctdb_connection)();
 	COMPAT_TEST_FUNC(ctdb_tunable)();
 	COMPAT_TEST_FUNC(ctdb_node_flag_change)();
+	COMPAT_TEST_FUNC(ctdb_var_list)();
 
 	return 0;
 }

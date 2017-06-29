@@ -1472,7 +1472,7 @@ static void ctdb_reply_control_data_push(struct ctdb_reply_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_LIST_TUNABLES:
-		ctdb_var_list_push(cd->data.tun_var_list, buf);
+		ctdb_var_list_push(cd->data.tun_var_list, buf, &np);
 		break;
 
 	case CTDB_CONTROL_GET_ALL_TUNABLES:
@@ -1644,7 +1644,7 @@ static int ctdb_reply_control_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_CONTROL_LIST_TUNABLES:
 		ret = ctdb_var_list_pull(buf, buflen, mem_ctx,
-					 &cd->data.tun_var_list);
+					 &cd->data.tun_var_list, &np);
 		break;
 
 	case CTDB_CONTROL_GET_ALL_TUNABLES:

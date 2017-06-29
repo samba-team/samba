@@ -2270,95 +2270,110 @@ fail:
 	return ret;
 }
 
-struct ctdb_var_list_wire {
-	uint32_t length;
-	char list_str[1];
-};
-
-size_t ctdb_var_list_len(struct ctdb_var_list *var_list)
+size_t ctdb_var_list_len(struct ctdb_var_list *in)
 {
+	uint32_t u32 = 0;
 	int i;
-	size_t len = sizeof(uint32_t);
 
-	for (i=0; i<var_list->count; i++) {
-		len += strlen(var_list->var[i]) + 1;
+	for (i=0; i<in->count; i++) {
+		u32 += ctdb_string_len(&in->var[i]);
 	}
-	return len;
+
+	return ctdb_uint32_len(&u32) + u32;
 }
 
-void ctdb_var_list_push(struct ctdb_var_list *var_list, uint8_t *buf)
+void ctdb_var_list_push(struct ctdb_var_list *in, uint8_t *buf, size_t *npush)
 {
-	struct ctdb_var_list_wire *wire = (struct ctdb_var_list_wire *)buf;
-	int i, n;
-	size_t offset = 0;
+	size_t offset = 0, np;
+	uint32_t u32;
+	int i;
+	uint8_t sep = ':';
 
-	if (var_list->count > 0) {
-		n = sprintf(wire->list_str, "%s", var_list->var[0]);
-		offset += n;
+	/* The length only corresponds to the payload size */
+	u32 = ctdb_var_list_len(in);
+	u32 -= ctdb_uint32_len(&u32);
+
+	ctdb_uint32_push(&u32, buf+offset, &np);
+	offset += np;
+
+	/* The variables are separated by ':' and the complete string is null
+	 * terminated.
+	 */
+	for (i=0; i<in->count; i++) {
+		ctdb_string_push(&in->var[i], buf+offset, &np);
+		offset += np;
+
+		if (i < in->count - 1) {
+			/* Replace '\0' with ':' */
+			ctdb_uint8_push(&sep, buf+offset-1, &np);
+		}
 	}
-	for (i=1; i<var_list->count; i++) {
-		n = sprintf(&wire->list_str[offset], ":%s", var_list->var[i]);
-		offset += n;
-	}
-	wire->length = offset + 1;
+
+	*npush = offset;
 }
 
 int ctdb_var_list_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-		       struct ctdb_var_list **out)
+		       struct ctdb_var_list **out, size_t *npull)
 {
-	struct ctdb_var_list *var_list = NULL;
-	struct ctdb_var_list_wire *wire = (struct ctdb_var_list_wire *)buf;
-	char *str, *s, *tok, *ptr;
-	const char **list;
+	struct ctdb_var_list *val;
+	const char *str, **list;
+	char *s, *tok, *ptr = NULL;
+	size_t offset = 0, np;
+	uint32_t u32;
+	int ret;
 
-	if (buflen < sizeof(uint32_t)) {
-		return EMSGSIZE;
-	}
-	if (wire->length > buflen) {
-		return EMSGSIZE;
-	}
-	if (sizeof(uint32_t) + wire->length < sizeof(uint32_t)) {
-		return EMSGSIZE;
-	}
-	if (buflen < sizeof(uint32_t) + wire->length) {
-		return EMSGSIZE;
-	}
-
-	str = talloc_strndup(mem_ctx, (char *)wire->list_str, wire->length);
-	if (str == NULL) {
+	val = talloc_zero(mem_ctx, struct ctdb_var_list);
+	if (val == NULL) {
 		return ENOMEM;
 	}
 
-	var_list = talloc_zero(mem_ctx, struct ctdb_var_list);
-	if (var_list == NULL) {
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &u32, &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
+
+	if (buflen-offset < u32) {
+		ret = EMSGSIZE;
 		goto fail;
 	}
 
-	s = str;
+	ret = ctdb_string_pull(buf+offset, u32, val, &str, &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
+
+	s = discard_const(str);
 	while ((tok = strtok_r(s, ":", &ptr)) != NULL) {
-		s = NULL;
-		list = talloc_realloc(var_list, var_list->var, const char *,
-				      var_list->count+1);
+		list = talloc_realloc(val, val->var, const char *,
+				      val->count+1);
 		if (list == NULL) {
+			ret = ENOMEM;
 			goto fail;
 		}
 
-		var_list->var = list;
-		var_list->var[var_list->count] = talloc_strdup(var_list, tok);
-		if (var_list->var[var_list->count] == NULL) {
+		val->var = list;
+
+		s = talloc_strdup(val, tok);
+		if (s == NULL) {
+			ret = ENOMEM;
 			goto fail;
 		}
-		var_list->count++;
+
+		val->var[val->count] = s;
+		val->count += 1;
+		s = NULL;
 	}
 
-	talloc_free(str);
-	*out = var_list;
+	talloc_free(discard_const(str));
+	*out = val;
+	*npull = offset;
 	return 0;
 
 fail:
-	talloc_free(str);
-	talloc_free(var_list);
-	return ENOMEM;
+	talloc_free(val);
+	return ret;
 }
 
 size_t ctdb_tunable_list_len(struct ctdb_tunable_list *tun_list)
