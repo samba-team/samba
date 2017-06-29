@@ -385,7 +385,8 @@ def build(bld):
                                              pkt_read.c pkt_write.c comm.c
                                              logging.c rb_tree.c tunable.c
                                              pidfile.c run_proc.c
-                                             hash_count.c run_event.c'''),
+                                             hash_count.c run_event.c
+                                             sock_client.c'''),
                         deps='''samba-util sys_rw tevent-util
                                 replace talloc tevent tdb''')
 
