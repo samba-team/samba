@@ -192,6 +192,9 @@ void verify_tdb_data(TDB_DATA *p1, TDB_DATA *p2);
 void fill_ctdb_tdb_data(TALLOC_CTX *mem_ctx, TDB_DATA *p);
 void verify_ctdb_tdb_data(TDB_DATA *p1, TDB_DATA *p2);
 
+void fill_ctdb_tdb_datan(TALLOC_CTX *mem_ctx, TDB_DATA *p);
+void verify_ctdb_tdb_datan(TDB_DATA *p1, TDB_DATA *p2);
+
 void fill_ctdb_statistics(TALLOC_CTX *mem_ctx, struct ctdb_statistics *p);
 void verify_ctdb_statistics(struct ctdb_statistics *p1,
 			    struct ctdb_statistics *p2);

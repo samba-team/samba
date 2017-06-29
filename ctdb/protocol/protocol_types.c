@@ -67,6 +67,54 @@ int ctdb_tdb_data_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 	return 0;
 }
 
+size_t ctdb_tdb_datan_len(TDB_DATA *in)
+{
+	uint32_t u32 = ctdb_tdb_data_len(in);
+
+	return ctdb_uint32_len(&u32) + u32;
+}
+
+void ctdb_tdb_datan_push(TDB_DATA *in, uint8_t *buf, size_t *npush)
+{
+	size_t offset = 0, np;
+	uint32_t u32 = ctdb_tdb_data_len(in);
+
+	ctdb_uint32_push(&u32, buf+offset, &np);
+	offset += np;
+
+	ctdb_tdb_data_push(in, buf+offset, &np);
+	offset += np;
+
+	*npush = offset;
+}
+
+int ctdb_tdb_datan_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
+			TDB_DATA *out, size_t *npull)
+{
+	size_t offset = 0, np;
+	uint32_t u32;
+	int ret;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &u32, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	if (buflen-offset < u32) {
+		return EMSGSIZE;
+	}
+
+	ret = ctdb_tdb_data_pull(buf+offset, u32, mem_ctx, out, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	*npull = offset;
+	return 0;
+}
+
 size_t ctdb_statistics_len(struct ctdb_statistics *stats)
 {
 	return sizeof(struct ctdb_statistics);

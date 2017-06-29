@@ -28,6 +28,7 @@
 #include "tests/src/protocol_common.h"
 
 PROTOCOL_TYPE2_TEST(TDB_DATA, ctdb_tdb_data);
+PROTOCOL_TYPE2_TEST(TDB_DATA, ctdb_tdb_datan);
 
 static void test_ctdb_ltdb_header(void)
 {
@@ -155,6 +156,7 @@ int main(int argc, char *argv[])
 	}
 
 	TEST_FUNC(ctdb_tdb_data)();
+	TEST_FUNC(ctdb_tdb_datan)();
 	test_ctdb_ltdb_header();
 	test_ctdb_g_lock();
 
