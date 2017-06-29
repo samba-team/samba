@@ -180,10 +180,11 @@ int ctdb_sock_addr_pull_elems(uint8_t *buf, size_t buflen,
 int ctdb_sock_addr_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 			ctdb_sock_addr **out, size_t *npull);
 
-size_t ctdb_connection_len(struct ctdb_connection *conn);
-void ctdb_connection_push(struct ctdb_connection *conn, uint8_t *buf);
+size_t ctdb_connection_len(struct ctdb_connection *in);
+void ctdb_connection_push(struct ctdb_connection *in, uint8_t *buf,
+			  size_t *npush);
 int ctdb_connection_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			 struct ctdb_connection **out);
+			 struct ctdb_connection **out, size_t *npull);
 
 size_t ctdb_tunable_len(struct ctdb_tunable *tunable);
 void ctdb_tunable_push(struct ctdb_tunable *tunable, uint8_t *buf);

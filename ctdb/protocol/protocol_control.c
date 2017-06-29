@@ -511,15 +511,15 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_TCP_CLIENT:
-		ctdb_connection_push(cd->data.conn, buf);
+		ctdb_connection_push(cd->data.conn, buf, &np);
 		break;
 
 	case CTDB_CONTROL_TCP_ADD:
-		ctdb_connection_push(cd->data.conn, buf);
+		ctdb_connection_push(cd->data.conn, buf, &np);
 		break;
 
 	case CTDB_CONTROL_TCP_REMOVE:
-		ctdb_connection_push(cd->data.conn, buf);
+		ctdb_connection_push(cd->data.conn, buf, &np);
 		break;
 
 	case CTDB_CONTROL_SET_TUNABLE:
@@ -637,7 +637,7 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_TCP_ADD_DELAYED_UPDATE:
-		ctdb_connection_push(cd->data.conn, buf);
+		ctdb_connection_push(cd->data.conn, buf, &np);
 		break;
 
 	case CTDB_CONTROL_SCHEDULE_FOR_DELETION:
@@ -803,17 +803,17 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_CONTROL_TCP_CLIENT:
 		ret = ctdb_connection_pull(buf, buflen, mem_ctx,
-					   &cd->data.conn);
+					   &cd->data.conn, &np);
 		break;
 
 	case CTDB_CONTROL_TCP_ADD:
 		ret = ctdb_connection_pull(buf, buflen, mem_ctx,
-					   &cd->data.conn);
+					   &cd->data.conn, &np);
 		break;
 
 	case CTDB_CONTROL_TCP_REMOVE:
 		ret = ctdb_connection_pull(buf, buflen, mem_ctx,
-					   &cd->data.conn);
+					   &cd->data.conn, &np);
 		break;
 
 	case CTDB_CONTROL_SET_TUNABLE:
@@ -955,7 +955,7 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_CONTROL_TCP_ADD_DELAYED_UPDATE:
 		ret = ctdb_connection_pull(buf, buflen, mem_ctx,
-					   &cd->data.conn);
+					   &cd->data.conn, &np);
 		break;
 
 	case CTDB_CONTROL_SCHEDULE_FOR_DELETION:
