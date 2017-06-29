@@ -45,6 +45,37 @@ so it's still possible to connect to SMB1-only servers by default.
 NEW FEATURES/CHANGES
 ====================
 
+Whole DB read locks: Improved LDAP and replication consistency
+--------------------------------------------------------------
+
+Prior to Samba 4.7 and ldb 1.2.0, the LDB database layer used by Samba
+erronously did not take whole-DB read locks to protect search
+and DRS replication operations.
+
+While each object returned remained subject to a record-level lock (so
+would remain consistent to itself), under a race condition with a
+rename or delete, it and any links (like the member attribute) to it
+would not be returned.
+
+The symptoms of this issue include:
+
+Replication failures with this error showing in the client side logs:
+ error during DRS repl ADD: No objectClass found in replPropertyMetaData for
+ Failed to commit objects:
+ WERR_GEN_FAILURE/NT_STATUS_INVALID_NETWORK_RESPONSE
+
+A crash of the server, in particular the rpc_server process with
+ INTERNAL ERROR: Signal 11
+
+LDAP read inconsistency
+ A DN subject to a search at the same time as it is being renamed
+ may not appear under either the old or new name, but will re-appear
+ for a subsequent search.
+
+See https://bugzilla.samba.org/show_bug.cgi?id=12858 for more details
+and updated advise on database recovery for affected installations.
+
+
 Samba AD with MIT Kerberos
 --------------------------
 
