@@ -845,64 +845,91 @@ int ctdb_statistics_list_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 	return 0;
 }
 
-struct ctdb_vnn_map_wire {
-	uint32_t generation;
-	uint32_t size;
-	uint32_t map[1];
-};
-
-size_t ctdb_vnn_map_len(struct ctdb_vnn_map *vnnmap)
+size_t ctdb_vnn_map_len(struct ctdb_vnn_map *in)
 {
-	return offsetof(struct ctdb_vnn_map, map) +
-	       vnnmap->size * sizeof(uint32_t);
+	size_t len;
+
+	len = ctdb_uint32_len(&in->generation) + ctdb_uint32_len(&in->size);
+	if (in->size > 0) {
+		len += in->size * ctdb_uint32_len(&in->map[0]);
+	}
+
+	return len;
 }
 
-void ctdb_vnn_map_push(struct ctdb_vnn_map *vnnmap, uint8_t *buf)
+void ctdb_vnn_map_push(struct ctdb_vnn_map *in, uint8_t *buf, size_t *npush)
 {
-	struct ctdb_vnn_map_wire *wire = (struct ctdb_vnn_map_wire *)buf;
+	size_t offset = 0, np;
+	uint32_t i;
 
-	memcpy(wire, vnnmap, offsetof(struct ctdb_vnn_map, map));
-	memcpy(wire->map, vnnmap->map, vnnmap->size * sizeof(uint32_t));
+	ctdb_uint32_push(&in->generation, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->size, buf+offset, &np);
+	offset += np;
+
+	for (i=0; i<in->size; i++) {
+		ctdb_uint32_push(&in->map[i], buf+offset, &np);
+		offset += np;
+	}
+
+	*npush = offset;
 }
 
 int ctdb_vnn_map_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-		      struct ctdb_vnn_map **out)
+		      struct ctdb_vnn_map **out, size_t *npull)
 {
-	struct ctdb_vnn_map *vnnmap;
-	struct ctdb_vnn_map_wire *wire = (struct ctdb_vnn_map_wire *)buf;
+	struct ctdb_vnn_map *val;
+	size_t offset = 0, np;
+	uint32_t i;
+	int ret;
 
-	if (buflen < offsetof(struct ctdb_vnn_map_wire, map)) {
-		return EMSGSIZE;
-	}
-	if (wire->size > buflen / sizeof(uint32_t)) {
-		return EMSGSIZE;
-	}
-	if (offsetof(struct ctdb_vnn_map_wire, map) +
-	    wire->size * sizeof(uint32_t) <
-	    offsetof(struct ctdb_vnn_map_wire, map)) {
-		    return EMSGSIZE;
-	}
-	if (buflen < offsetof(struct ctdb_vnn_map_wire, map) +
-		     wire->size * sizeof(uint32_t)) {
-		return EMSGSIZE;
-	}
-
-	vnnmap = talloc(mem_ctx, struct ctdb_vnn_map);
-	if (vnnmap == NULL) {
+	val = talloc(mem_ctx, struct ctdb_vnn_map);
+	if (val == NULL) {
 		return ENOMEM;
 	}
 
-	memcpy(vnnmap, wire, offsetof(struct ctdb_vnn_map, map));
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &val->generation,
+			       &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
 
-	vnnmap->map = talloc_memdup(vnnmap, wire->map,
-				    wire->size * sizeof(uint32_t));
-	if (vnnmap->map == NULL) {
-		talloc_free(vnnmap);
-		return ENOMEM;
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &val->size, &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
+
+	if (val->size == 0) {
+		val->map = NULL;
+		goto done;
 	}
 
-	*out = vnnmap;
+	val->map = talloc_array(val, uint32_t, val->size);
+	if (val->map == NULL) {
+		ret = ENOMEM;
+		goto fail;
+	}
+
+	for (i=0; i<val->size; i++) {
+		ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+				       &val->map[i], &np);
+		if (ret != 0) {
+			goto fail;
+		}
+		offset += np;
+	}
+
+done:
+	*out = val;
+	*npull = offset;
 	return 0;
+
+fail:
+	talloc_free(val);
+	return ret;
 }
 
 struct ctdb_dbid_map_wire {

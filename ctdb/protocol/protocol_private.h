@@ -117,10 +117,10 @@ void ctdb_statistics_list_push(struct ctdb_statistics_list *stats_list,
 int ctdb_statistics_list_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 			      struct ctdb_statistics_list **out);
 
-size_t ctdb_vnn_map_len(struct ctdb_vnn_map *vnnmap);
-void ctdb_vnn_map_push(struct ctdb_vnn_map *vnnmap, uint8_t *buf);
+size_t ctdb_vnn_map_len(struct ctdb_vnn_map *in);
+void ctdb_vnn_map_push(struct ctdb_vnn_map *in, uint8_t *buf, size_t *npush);
 int ctdb_vnn_map_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-		      struct ctdb_vnn_map **out);
+		      struct ctdb_vnn_map **out, size_t  *npull);
 
 size_t ctdb_dbid_map_len(struct ctdb_dbid_map *dbmap);
 void ctdb_dbid_map_push(struct ctdb_dbid_map *dbmap, uint8_t *buf);

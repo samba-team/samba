@@ -456,7 +456,7 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_SETVNNMAP:
-		ctdb_vnn_map_push(cd->data.vnnmap, buf);
+		ctdb_vnn_map_push(cd->data.vnnmap, buf, &np);
 		break;
 
 	case CTDB_CONTROL_SET_DEBUG:
@@ -739,7 +739,7 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_CONTROL_SETVNNMAP:
 		ret = ctdb_vnn_map_pull(buf, buflen, mem_ctx,
-					&cd->data.vnnmap);
+					&cd->data.vnnmap, &np);
 		break;
 
 	case CTDB_CONTROL_SET_DEBUG:
@@ -1427,7 +1427,7 @@ static void ctdb_reply_control_data_push(struct ctdb_reply_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_GETVNNMAP:
-		ctdb_vnn_map_push(cd->data.vnnmap, buf);
+		ctdb_vnn_map_push(cd->data.vnnmap, buf, &np);
 		break;
 
 	case CTDB_CONTROL_GET_DEBUG:
@@ -1593,7 +1593,7 @@ static int ctdb_reply_control_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_CONTROL_GETVNNMAP:
 		ret = ctdb_vnn_map_pull(buf, buflen, mem_ctx,
-					&cd->data.vnnmap);
+					&cd->data.vnnmap, &np);
 		break;
 
 	case CTDB_CONTROL_GET_DEBUG:

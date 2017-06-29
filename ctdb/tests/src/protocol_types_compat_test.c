@@ -124,8 +124,70 @@ static int ctdb_statistics_pull_old(uint8_t *buf, size_t buflen,
 	return 0;
 }
 
+struct ctdb_vnn_map_wire {
+	uint32_t generation;
+	uint32_t size;
+	uint32_t map[1];
+};
+
+static size_t ctdb_vnn_map_len_old(struct ctdb_vnn_map *in)
+{
+	return offsetof(struct ctdb_vnn_map, map) +
+	       in->size * sizeof(uint32_t);
+}
+
+static void ctdb_vnn_map_push_old(struct ctdb_vnn_map *in, uint8_t *buf)
+{
+	struct ctdb_vnn_map_wire *wire = (struct ctdb_vnn_map_wire *)buf;
+
+	memcpy(wire, in, offsetof(struct ctdb_vnn_map, map));
+	memcpy(wire->map, in->map, in->size * sizeof(uint32_t));
+}
+
+static int ctdb_vnn_map_pull_old(uint8_t *buf, size_t buflen,
+				 TALLOC_CTX *mem_ctx,
+				 struct ctdb_vnn_map **out)
+{
+	struct ctdb_vnn_map *val;
+	struct ctdb_vnn_map_wire *wire = (struct ctdb_vnn_map_wire *)buf;
+
+	if (buflen < offsetof(struct ctdb_vnn_map_wire, map)) {
+		return EMSGSIZE;
+	}
+	if (wire->size > buflen / sizeof(uint32_t)) {
+		return EMSGSIZE;
+	}
+	if (offsetof(struct ctdb_vnn_map_wire, map) +
+	    wire->size * sizeof(uint32_t) <
+	    offsetof(struct ctdb_vnn_map_wire, map)) {
+		    return EMSGSIZE;
+	}
+	if (buflen < offsetof(struct ctdb_vnn_map_wire, map) +
+		     wire->size * sizeof(uint32_t)) {
+		return EMSGSIZE;
+	}
+
+	val = talloc(mem_ctx, struct ctdb_vnn_map);
+	if (val == NULL) {
+		return ENOMEM;
+	}
+
+	memcpy(val, wire, offsetof(struct ctdb_vnn_map, map));
+
+	val->map = talloc_memdup(val, wire->map,
+				 wire->size * sizeof(uint32_t));
+	if (val->map == NULL) {
+		talloc_free(val);
+		return ENOMEM;
+	}
+
+	*out = val;
+	return 0;
+}
+
 
 COMPAT_TYPE3_TEST(struct ctdb_statistics, ctdb_statistics);
+COMPAT_TYPE3_TEST(struct ctdb_vnn_map, ctdb_vnn_map);
 
 int main(int argc, char *argv[])
 {
@@ -135,6 +197,7 @@ int main(int argc, char *argv[])
 	}
 
 	COMPAT_TEST_FUNC(ctdb_statistics)();
+	COMPAT_TEST_FUNC(ctdb_vnn_map)();
 
 	return 0;
 }
