@@ -279,7 +279,7 @@ static size_t ctdb_req_control_data_len(struct ctdb_req_control_data *cd)
 		break;
 
 	case CTDB_CONTROL_RECD_RECLOCK_LATENCY:
-		len = ctdb_double_len(cd->data.reclock_latency);
+		len = ctdb_double_len(&cd->data.reclock_latency);
 		break;
 
 	case CTDB_CONTROL_GET_RECLOCK_FILE:
@@ -583,7 +583,7 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_RECD_RECLOCK_LATENCY:
-		ctdb_double_push(cd->data.reclock_latency, buf);
+		ctdb_double_push(&cd->data.reclock_latency, buf, &np);
 		break;
 
 	case CTDB_CONTROL_SET_LMASTERROLE:
@@ -891,8 +891,8 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 		break;
 
 	case CTDB_CONTROL_RECD_RECLOCK_LATENCY:
-		ret = ctdb_double_pull(buf, buflen, mem_ctx,
-				       &cd->data.reclock_latency);
+		ret = ctdb_double_pull(buf, buflen, &cd->data.reclock_latency,
+				       &np);
 		break;
 
 	case CTDB_CONTROL_SET_LMASTERROLE:

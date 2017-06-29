@@ -49,10 +49,9 @@ void ctdb_uint64_push(uint64_t *in, uint8_t *buf, size_t *npush);
 int ctdb_uint64_pull(uint8_t *buf, size_t buflen, uint64_t *out,
 		     size_t *npull);
 
-size_t ctdb_double_len(double val);
-void ctdb_double_push(double val, uint8_t *buf);
-int ctdb_double_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-		     double *out);
+size_t ctdb_double_len(double *in);
+void ctdb_double_push(double *in, uint8_t *buf, size_t *npush);
+int ctdb_double_pull(uint8_t *buf, size_t buflen, double *out, size_t *npull);
 
 size_t ctdb_string_len(const char *str);
 void ctdb_string_push(const char *str, uint8_t *buf);

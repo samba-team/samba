@@ -138,6 +138,16 @@ void verify_ctdb_uint64(uint64_t *p1, uint64_t *p2)
 	assert(*p1 == *p2);
 }
 
+void fill_ctdb_double(double *p)
+{
+	*p = rand_double();
+}
+
+void verify_ctdb_double(double *p1, double *p2)
+{
+	assert(*p1 == *p2);
+}
+
 void fill_ctdb_string(TALLOC_CTX *mem_ctx, const char **out)
 {
 	char *p;

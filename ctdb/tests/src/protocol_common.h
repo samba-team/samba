@@ -167,6 +167,9 @@ void verify_ctdb_uint32(uint32_t *p1, uint32_t *p2);
 void fill_ctdb_uint64(uint64_t *p);
 void verify_ctdb_uint64(uint64_t *p1, uint64_t *p2);
 
+void fill_ctdb_double(double *p);
+void verify_ctdb_double(double *p1, double *p2);
+
 void fill_ctdb_string(TALLOC_CTX *mem_ctx, const char **out);
 void verify_ctdb_string(const char *p1, const char *p2);
 
