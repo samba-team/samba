@@ -28,7 +28,7 @@
 #include "protocol/protocol.h"
 #include "protocol/protocol_util.h"
 
-#include "common/rb_tree.h"
+#include "common/db_hash.h"
 #include "common/system.h"
 #include "common/logging.h"
 
@@ -38,7 +38,7 @@
 struct ctdb_kill_tcp {
 	int capture_fd;
 	struct tevent_fd *fde;
-	trbt_tree_t *connections;
+	struct db_hash_context *connections;
 	void *private_data;
 	void *destructor_data;
 	unsigned int attempts;
@@ -50,61 +50,6 @@ struct ctdb_kill_tcp {
 
 static const char *prog;
 
-/* TCP connection to be killed */
-struct ctdb_killtcp_con {
-	struct ctdb_connection conn;
-	struct ctdb_kill_tcp *killtcp;
-};
-
-/* this function is used to create a key to represent this socketpair
-   in the killtcp tree.
-   this key is used to insert and lookup matching socketpairs that are
-   to be tickled and RST
-*/
-#define KILLTCP_KEYLEN	10
-static uint32_t *killtcp_key(ctdb_sock_addr *src, ctdb_sock_addr *dst)
-{
-	static uint32_t key[KILLTCP_KEYLEN];
-
-	bzero(key, sizeof(key));
-
-	if (src->sa.sa_family != dst->sa.sa_family) {
-		DEBUG(DEBUG_ERR, (__location__ " ERROR, different families passed :%u vs %u\n", src->sa.sa_family, dst->sa.sa_family));
-		return key;
-	}
-
-	switch (src->sa.sa_family) {
-	case AF_INET:
-		key[0]	= dst->ip.sin_addr.s_addr;
-		key[1]	= src->ip.sin_addr.s_addr;
-		key[2]	= dst->ip.sin_port;
-		key[3]	= src->ip.sin_port;
-		break;
-	case AF_INET6: {
-		uint32_t *dst6_addr32 =
-			(uint32_t *)&(dst->ip6.sin6_addr.s6_addr);
-		uint32_t *src6_addr32 =
-			(uint32_t *)&(src->ip6.sin6_addr.s6_addr);
-		key[0]	= dst6_addr32[3];
-		key[1]	= src6_addr32[3];
-		key[2]	= dst6_addr32[2];
-		key[3]	= src6_addr32[2];
-		key[4]	= dst6_addr32[1];
-		key[5]	= src6_addr32[1];
-		key[6]	= dst6_addr32[0];
-		key[7]	= src6_addr32[0];
-		key[8]	= dst->ip6.sin6_port;
-		key[9]	= src->ip6.sin6_port;
-		break;
-	}
-	default:
-		DEBUG(DEBUG_ERR, (__location__ " ERROR, unknown family passed :%u\n", src->sa.sa_family));
-		return key;
-	}
-
-	return key;
-}
-
 /*
   called when we get a read event on the raw socket
  */
@@ -113,12 +58,12 @@ static void capture_tcp_handler(struct tevent_context *ev,
 				uint16_t flags, void *private_data)
 {
 	struct ctdb_kill_tcp *killtcp = talloc_get_type(private_data, struct ctdb_kill_tcp);
-	struct ctdb_killtcp_con *con;
 	/* 0 the parts that don't get set by ctdb_sys_read_tcp_packet */
 	struct ctdb_connection conn;
 	uint32_t ack_seq, seq;
 	int rst;
 	uint16_t window;
+	int ret;
 
 	if (ctdb_sys_read_tcp_packet(killtcp->capture_fd,
 				     killtcp->private_data,
@@ -138,74 +83,86 @@ static void capture_tcp_handler(struct tevent_context *ev,
 		return;
 	}
 
-	/* check if we have this guy in our list of connections
-	   to kill
-	*/
-	con = trbt_lookuparray32(killtcp->connections,
-				 KILLTCP_KEYLEN,
-				 killtcp_key(&conn.server, &conn.client));
-	if (con == NULL) {
-		/* no this was some other packet we can just ignore */
+	/* Check if this connection is one being reset, if found then delete */
+	ret = db_hash_delete(killtcp->connections,
+			     (uint8_t*)&conn, sizeof(conn));
+	if (ret == ENOENT) {
+		/* Packet for some other connection, ignore */
+		return;
+	}
+	if (ret != 0) {
+		DBG_WARNING("Internal error (%s)\n", strerror(ret));
 		return;
 	}
 
-	/* This connection has been tickled!  RST it and remove it
-	 * from the list. */
 	D_INFO("Sending a TCP RST to kill connection %s\n",
-	       ctdb_connection_to_string(killtcp, &con->conn, true));
+	       ctdb_connection_to_string(killtcp, &conn, true));
 
-	ctdb_sys_send_tcp(&con->conn.server, &con->conn.client,
-			  ack_seq, seq, 1);
-	talloc_free(con);
+	ctdb_sys_send_tcp(&conn.server, &conn.client, ack_seq, seq, 1);
 }
 
 
-/* when traversing the list of all tcp connections to send tickle acks to
-   (so that we can capture the ack coming back and kill the connection
-    by a RST)
-   this callback is called for each connection we are currently trying to kill
-*/
-static int tickle_connection_traverse(void *param, void *data)
+static int tickle_connection_parser(uint8_t *keybuf, size_t keylen,
+				    uint8_t *databuf, size_t datalen,
+				    void *private_data)
 {
-	struct ctdb_killtcp_con *con = talloc_get_type(data, struct ctdb_killtcp_con);
+	struct ctdb_kill_tcp *killtcp = talloc_get_type_abort(
+		private_data, struct ctdb_kill_tcp);
+	struct ctdb_connection *conn;
 
-	con->killtcp->batch_count++;
-	if (con->killtcp->batch_count > con->killtcp->batch_size) {
-		/* Terminate the traverse */
-		return -1;
+	if (keylen != sizeof(*conn)) {
+		DBG_WARNING("Unexpected data in connection hash\n");
+		return 0;
 	}
 
-	ctdb_sys_send_tcp(&con->conn.server, &con->conn.client, 0, 0, 0);
+	conn = (struct ctdb_connection *)keybuf;
+
+	killtcp->batch_count++;
+	if (killtcp->batch_count > killtcp->batch_size) {
+		/* Terminate the traverse */
+		return 1;
+	}
+
+	ctdb_sys_send_tcp(&conn->server, &conn->client, 0, 0, 0);
 
 	return 0;
 }
 
-
 /*
-   called every second until all sentenced connections have been reset
+ * Called periodically until all sentenced connections have been reset
+ * or enough attempts have been made
  */
 static void ctdb_tickle_sentenced_connections(struct tevent_context *ev,
 					      struct tevent_timer *te,
 					      struct timeval t, void *private_data)
 {
 	struct ctdb_kill_tcp *killtcp = talloc_get_type(private_data, struct ctdb_kill_tcp);
-	void *delete_cons = talloc_new(NULL);
+	int count, ret;
 
 	/* loop over up to batch_size connections sending tickle ACKs */
 	killtcp->batch_count = 0;
-	trbt_traversearray32(killtcp->connections, KILLTCP_KEYLEN, tickle_connection_traverse, delete_cons);
-
-	/* now we've finished traverse, it's safe to do deletion. */
-	talloc_free(delete_cons);
+	ret = db_hash_traverse(killtcp->connections,
+			       tickle_connection_parser, killtcp, NULL);
+	if (ret != 0) {
+		DBG_WARNING("Unexpected error traversing connections (%s)\n",
+			    strerror(ret));
+	}
 
 	killtcp->attempts++;
 
-	/* If there are no more connections to kill or we have tried
-	   too many times we can remove the entire killtcp structure
+	/*
+	 * If there are no more connections to kill or we have tried
+	 * too many times we can remove the entire killtcp structure
 	 */
-	if (killtcp->connections == NULL ||
-	    killtcp->connections->root == NULL ||
-		killtcp->attempts >= killtcp->max_attempts) {
+	ret = db_hash_traverse(killtcp->connections, NULL, NULL, &count);
+	if (ret != 0) {
+		/* What now?  Try again until max_attempts reached */
+		DBG_WARNING("Unexpected error traversing connections (%s)\n",
+			    strerror(ret));
+		count = 1;
+	}
+	if (count == 0 ||
+	    killtcp->attempts >= killtcp->max_attempts) {
 		talloc_free(killtcp);
 		return;
 	}
@@ -219,18 +176,6 @@ static void ctdb_tickle_sentenced_connections(struct tevent_context *ev,
 			 ctdb_tickle_sentenced_connections, killtcp);
 }
 
-/* nothing fancy here, just unconditionally replace any existing
-   connection structure with the new one.
-
-   don't even free the old one if it did exist, that one is talloc_stolen
-   by the same node in the tree anyway and will be deleted when the new data
-   is deleted
-*/
-static void *add_killtcp_callback(void *parm, void *data)
-{
-	return parm;
-}
-
 /* Add a TCP socket to the list of connections we want to RST.  The
  * list is attached to *killtcp_arg.  If this is NULL then allocate
  * the structure.  */
@@ -241,7 +186,7 @@ static int ctdb_killtcp(struct tevent_context *ev,
 			struct ctdb_kill_tcp **killtcp_arg)
 {
 	struct ctdb_kill_tcp *killtcp;
-	struct ctdb_killtcp_con *con;
+	int ret;
 
 	if (killtcp_arg == NULL) {
 		DEBUG(DEBUG_ERR, (__location__ " killtcp_arg is NULL!\n"));
@@ -260,7 +205,14 @@ static int ctdb_killtcp(struct tevent_context *ev,
 		}
 
 		killtcp->capture_fd  = -1;
-		killtcp->connections = trbt_create(killtcp, 0);
+		ret = db_hash_init(killtcp, "connections", 2048, DB_HASH_SIMPLE,
+				   &killtcp->connections);
+		if (ret != 0) {
+			D_ERR("Failed to initialise connection hash (%s)\n",
+			      strerror(ret));
+			talloc_free(killtcp);
+			return -1;
+		}
 
 		killtcp->attempts = 0;
 		killtcp->max_attempts = 50;
@@ -274,24 +226,14 @@ static int ctdb_killtcp(struct tevent_context *ev,
 		*killtcp_arg = killtcp;
 	}
 
-	/* create a structure that describes this connection we want to
-	   RST and store it in killtcp->connections
-	*/
-	con = talloc(killtcp, struct ctdb_killtcp_con);
-	if (con == NULL) {
-		DEBUG(DEBUG_ERR, (__location__ " out of memory\n"));
+	/* Connection is stored as a key in the connections hash */
+	ret = db_hash_add(killtcp->connections,
+			  (uint8_t *)conn, sizeof(*conn),
+			  NULL, 0);
+	if (ret != 0) {
+		D_ERR("Error adding connection to hash (%s)\n", strerror(ret));
 		return -1;
 	}
-	con->conn.client = conn->client;
-	con->conn.server = conn->server;
-	con->killtcp  = killtcp;
-
-
-	trbt_insertarray32_callback(killtcp->connections,
-				    KILLTCP_KEYLEN,
-				    killtcp_key(&con->conn.server,
-						&con->conn.client),
-				    add_killtcp_callback, con);
 
 	/*
 	   If we don't have a socket to listen on yet we must create it
