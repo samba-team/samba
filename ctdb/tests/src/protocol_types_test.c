@@ -58,7 +58,7 @@ PROTOCOL_TYPE3_TEST(struct ctdb_rec_data, ctdb_rec_data);
 PROTOCOL_TYPE3_TEST(struct ctdb_rec_buffer, ctdb_rec_buffer);
 PROTOCOL_TYPE3_TEST(struct ctdb_traverse_start, ctdb_traverse_start);
 PROTOCOL_TYPE3_TEST(struct ctdb_traverse_all, ctdb_traverse_all);
-DEFINE_TEST(struct ctdb_traverse_start_ext, ctdb_traverse_start_ext);
+PROTOCOL_TYPE3_TEST(struct ctdb_traverse_start_ext, ctdb_traverse_start_ext);
 DEFINE_TEST(struct ctdb_traverse_all_ext, ctdb_traverse_all_ext);
 DEFINE_TEST(ctdb_sock_addr, ctdb_sock_addr);
 DEFINE_TEST(struct ctdb_connection, ctdb_connection);
