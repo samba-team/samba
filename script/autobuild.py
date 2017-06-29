@@ -34,6 +34,7 @@ builddirs = {
     "samba-static"  : ".",
     "samba-test-only"  : ".",
     "samba-none-env"  : ".",
+    "samba-ad-dc"  : ".",
     "samba-systemkrb5"  : ".",
     "samba-nopython"  : ".",
     "ldb"     : "lib/ldb",
@@ -56,6 +57,7 @@ defaulttasks = [ "ctdb",
                  "samba-libs",
                  "samba-static",
                  "samba-none-env",
+                 "samba-ad-dc",
                  "samba-systemkrb5",
                  "samba-nopython",
                  "ldb",
@@ -98,7 +100,8 @@ tasks = {
                 ("test", "make test FAIL_IMMEDIATELY=1 "
                  "TESTS='--exclude-env=none "
                  "--exclude-env=nt4_dc "
-                 "--exclude-env=nt4_member'", "text/plain"),
+                 "--exclude-env=nt4_member "
+                 "--exclude-env=ad_dc ", "text/plain"),
                 ("install", "make install", "text/plain"),
                 ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
                 ("clean", "make clean", "text/plain") ],
@@ -110,6 +113,13 @@ tasks = {
                        ("install", "make install", "text/plain"),
                        ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
                        ("clean", "make clean", "text/plain") ],
+
+    # We split out this so the isolated ad_dc tests do not wait for ad_dc_ntvfs tests (which are long)
+    "samba-ad-dc" : [ ("random-sleep", "../script/random-sleep.sh 60 600", "text/plain"),
+                      ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
+                      ("make", "make -j", "text/plain"),
+                      ("test", "make test FAIL_IMMEDIATELY=1 TESTS='--include-env=ad_dc'", "text/plain"),
+                      ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
 
     "samba-test-only" : [ ("configure", "./configure.developer --with-selftest-prefix=./bin/ab  --abi-check-disable" + samba_configure_params, "text/plain"),
                           ("make", "make -j", "text/plain"),
