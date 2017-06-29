@@ -5281,6 +5281,7 @@ static int control_tstore(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	TDB_DATA key, data[2], value;
 	struct ctdb_ltdb_header header;
 	uint8_t header_buf[sizeof(struct ctdb_ltdb_header)];
+	size_t np;
 	int ret;
 
 	if (argc < 3 || argc > 5) {
@@ -5319,9 +5320,9 @@ static int control_tstore(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		header.flags = (uint32_t)atol(argv[5]);
 	}
 
-	ctdb_ltdb_header_push(&header, header_buf);
+	ctdb_ltdb_header_push(&header, header_buf, &np);
 
-	data[0].dsize = ctdb_ltdb_header_len(&header);
+	data[0].dsize = np;
 	data[0].dptr = header_buf;
 
 	data[1].dsize = value.dsize;

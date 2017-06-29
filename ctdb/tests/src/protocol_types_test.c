@@ -31,22 +31,6 @@ PROTOCOL_TYPE2_TEST(TDB_DATA, ctdb_tdb_data);
 PROTOCOL_TYPE2_TEST(TDB_DATA, ctdb_tdb_datan);
 PROTOCOL_TYPE1_TEST(struct ctdb_latency_counter, ctdb_latency_counter);
 
-static void test_ctdb_ltdb_header(void)
-{
-	TALLOC_CTX *mem_ctx = talloc_new(NULL);
-	struct ctdb_ltdb_header p1, p2;
-	size_t buflen;
-	int ret;
-
-	fill_ctdb_ltdb_header(mem_ctx, &p1);
-	buflen = ctdb_ltdb_header_len(&p1);
-	ctdb_ltdb_header_push(&p1, BUFFER);
-	ret = ctdb_ltdb_header_pull(BUFFER, buflen, &p2);
-	assert(ret == 0);
-	verify_ctdb_ltdb_header(&p1, &p2);
-	talloc_free(mem_ctx);
-}
-
 static void test_ctdb_g_lock(void)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
@@ -69,6 +53,7 @@ PROTOCOL_TYPE3_TEST(struct ctdb_dbid, ctdb_dbid);
 PROTOCOL_TYPE3_TEST(struct ctdb_dbid_map, ctdb_dbid_map);
 PROTOCOL_TYPE3_TEST(struct ctdb_pulldb, ctdb_pulldb);
 PROTOCOL_TYPE3_TEST(struct ctdb_pulldb_ext, ctdb_pulldb_ext);
+PROTOCOL_TYPE1_TEST(struct ctdb_ltdb_header, ctdb_ltdb_header);
 DEFINE_TEST(struct ctdb_rec_data, ctdb_rec_data);
 DEFINE_TEST(struct ctdb_rec_buffer, ctdb_rec_buffer);
 DEFINE_TEST(struct ctdb_traverse_start, ctdb_traverse_start);
@@ -160,7 +145,6 @@ int main(int argc, char *argv[])
 	TEST_FUNC(ctdb_tdb_data)();
 	TEST_FUNC(ctdb_tdb_datan)();
 	TEST_FUNC(ctdb_latency_counter)();
-	test_ctdb_ltdb_header();
 	test_ctdb_g_lock();
 
 	TEST_FUNC(ctdb_statistics)();
@@ -169,6 +153,7 @@ int main(int argc, char *argv[])
 	TEST_FUNC(ctdb_dbid_map)();
 	TEST_FUNC(ctdb_pulldb)();
 	TEST_FUNC(ctdb_pulldb_ext)();
+	TEST_FUNC(ctdb_ltdb_header)();
 	TEST_FUNC(ctdb_rec_data)();
 	TEST_FUNC(ctdb_rec_buffer)();
 	TEST_FUNC(ctdb_traverse_start)();

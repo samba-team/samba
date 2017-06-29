@@ -26,10 +26,11 @@
 
 /* From protocol/protocol_types.c */
 
-size_t ctdb_ltdb_header_len(struct ctdb_ltdb_header *header);
-void ctdb_ltdb_header_push(struct ctdb_ltdb_header *header, uint8_t *buf);
+size_t ctdb_ltdb_header_len(struct ctdb_ltdb_header *in);
+void ctdb_ltdb_header_push(struct ctdb_ltdb_header *in, uint8_t *buf,
+			   size_t *npush);
 int ctdb_ltdb_header_pull(uint8_t *buf, size_t buflen,
-			  struct ctdb_ltdb_header *header);
+			  struct ctdb_ltdb_header *out, size_t *npull);
 
 int ctdb_ltdb_header_extract(TDB_DATA *data, struct ctdb_ltdb_header *header);
 

@@ -219,7 +219,7 @@ void fill_ctdb_pulldb_ext(TALLOC_CTX *mem_ctx, struct ctdb_pulldb_ext *p);
 void verify_ctdb_pulldb_ext(struct ctdb_pulldb_ext *p1,
 			    struct ctdb_pulldb_ext *p2);
 
-void fill_ctdb_ltdb_header(TALLOC_CTX *mem_ctx, struct ctdb_ltdb_header *p);
+void fill_ctdb_ltdb_header(struct ctdb_ltdb_header *p);
 void verify_ctdb_ltdb_header(struct ctdb_ltdb_header *p1,
 			     struct ctdb_ltdb_header *p2);
 

@@ -1197,38 +1197,91 @@ fail:
 	return ret;
 }
 
-size_t ctdb_ltdb_header_len(struct ctdb_ltdb_header *header)
+size_t ctdb_ltdb_header_len(struct ctdb_ltdb_header *in)
 {
-	return sizeof(struct ctdb_ltdb_header);
+	return ctdb_uint64_len(&in->rsn) +
+		ctdb_uint32_len(&in->dmaster) +
+		ctdb_uint32_len(&in->reserved1) +
+		ctdb_uint32_len(&in->flags) +
+		ctdb_padding_len(4);
 }
 
-void ctdb_ltdb_header_push(struct ctdb_ltdb_header *header, uint8_t *buf)
+void ctdb_ltdb_header_push(struct ctdb_ltdb_header *in, uint8_t *buf,
+			   size_t *npush)
 {
-	memcpy(buf, header, sizeof(struct ctdb_ltdb_header));
+	size_t offset = 0, np;
+
+	ctdb_uint64_push(&in->rsn, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->dmaster, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->reserved1, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->flags, buf+offset, &np);
+	offset += np;
+
+	ctdb_padding_push(4, buf+offset, &np);
+	offset += np;
+
+	*npush = offset;
 }
 
 int ctdb_ltdb_header_pull(uint8_t *buf, size_t buflen,
-			  struct ctdb_ltdb_header *header)
+			  struct ctdb_ltdb_header *out, size_t *npull)
 {
-	if (buflen < sizeof(struct ctdb_ltdb_header)) {
-		return EMSGSIZE;
-	}
+	size_t offset = 0, np;
+	int ret;
 
-	memcpy(header, buf, sizeof(struct ctdb_ltdb_header));
+	ret = ctdb_uint64_pull(buf+offset, buflen-offset, &out->rsn, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &out->dmaster, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &out->reserved1,
+			       &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &out->flags, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_padding_pull(buf+offset, buflen-offset, 4, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	*npull = offset;
 	return 0;
 }
 
 int ctdb_ltdb_header_extract(TDB_DATA *data, struct ctdb_ltdb_header *header)
 {
+	size_t np;
 	int ret;
 
-	ret = ctdb_ltdb_header_pull(data->dptr, data->dsize, header);
+	ret = ctdb_ltdb_header_pull(data->dptr, data->dsize, header, &np);
 	if (ret != 0) {
 		return ret;
 	}
 
-	data->dptr += sizeof(struct ctdb_ltdb_header);
-	data->dsize -= sizeof(struct ctdb_ltdb_header);
+	data->dptr += np;
+	data->dsize -= np;
 
 	return 0;
 }

@@ -299,12 +299,36 @@ static int ctdb_pulldb_ext_pull_old(uint8_t *buf, size_t buflen,
 	return 0;
 }
 
+static size_t ctdb_ltdb_header_len_old(struct ctdb_ltdb_header *in)
+{
+	return sizeof(struct ctdb_ltdb_header);
+}
+
+static void ctdb_ltdb_header_push_old(struct ctdb_ltdb_header *in,
+				      uint8_t *buf)
+{
+	memcpy(buf, in, sizeof(struct ctdb_ltdb_header));
+}
+
+static int ctdb_ltdb_header_pull_old(uint8_t *buf, size_t buflen,
+				     struct ctdb_ltdb_header *out)
+{
+	if (buflen < sizeof(struct ctdb_ltdb_header)) {
+		return EMSGSIZE;
+	}
+
+	memcpy(out, buf, sizeof(struct ctdb_ltdb_header));
+	return 0;
+}
+
 
 COMPAT_TYPE3_TEST(struct ctdb_statistics, ctdb_statistics);
 COMPAT_TYPE3_TEST(struct ctdb_vnn_map, ctdb_vnn_map);
 COMPAT_TYPE3_TEST(struct ctdb_dbid_map, ctdb_dbid_map);
 COMPAT_TYPE3_TEST(struct ctdb_pulldb, ctdb_pulldb);
 COMPAT_TYPE3_TEST(struct ctdb_pulldb_ext, ctdb_pulldb_ext);
+
+COMPAT_TYPE1_TEST(struct ctdb_ltdb_header, ctdb_ltdb_header);
 
 int main(int argc, char *argv[])
 {
@@ -318,6 +342,7 @@ int main(int argc, char *argv[])
 	COMPAT_TEST_FUNC(ctdb_dbid_map)();
 	COMPAT_TEST_FUNC(ctdb_pulldb)();
 	COMPAT_TEST_FUNC(ctdb_pulldb_ext)();
+	COMPAT_TEST_FUNC(ctdb_ltdb_header)();
 
 	return 0;
 }

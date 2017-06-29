@@ -515,10 +515,11 @@ void verify_ctdb_pulldb_ext(struct ctdb_pulldb_ext *p1,
 	assert(p1->srvid == p2->srvid);
 }
 
-void fill_ctdb_ltdb_header(TALLOC_CTX *mem_ctx, struct ctdb_ltdb_header *p)
+void fill_ctdb_ltdb_header(struct ctdb_ltdb_header *p)
 {
 	p->rsn = rand64();
 	p->dmaster = rand32();
+	p->reserved1 = rand32();
 	p->flags = rand32();
 }
 
@@ -527,6 +528,7 @@ void verify_ctdb_ltdb_header(struct ctdb_ltdb_header *p1,
 {
 	assert(p1->rsn == p2->rsn);
 	assert(p1->dmaster == p2->dmaster);
+	assert(p1->reserved1 == p2->reserved1);
 	assert(p1->flags == p2->flags);
 }
 
@@ -536,7 +538,7 @@ void fill_ctdb_rec_data(TALLOC_CTX *mem_ctx, struct ctdb_rec_data *p)
 	if (p->reqid % 5 == 0) {
 		p->header = talloc(mem_ctx, struct ctdb_ltdb_header);
 		assert(p->header != NULL);
-		fill_ctdb_ltdb_header(mem_ctx, p->header);
+		fill_ctdb_ltdb_header(p->header);
 	} else {
 		p->header = NULL;
 	}
@@ -1071,7 +1073,7 @@ void verify_ctdb_statistics_list(struct ctdb_statistics_list *p1,
 void fill_ctdb_key_data(TALLOC_CTX *mem_ctx, struct ctdb_key_data *p)
 {
 	p->db_id = rand32();
-	fill_ctdb_ltdb_header(mem_ctx, &p->header);
+	fill_ctdb_ltdb_header(&p->header);
 	fill_tdb_data_nonnull(mem_ctx, &p->key);
 }
 
