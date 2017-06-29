@@ -55,21 +55,7 @@ static void test_ctdb_chararray(void)
 	assert(strncmp(p1, p2, len) == 0);
 }
 
-static void test_ctdb_string(void)
-{
-	TALLOC_CTX *mem_ctx = talloc_new(NULL);
-	const char *p1, *p2;
-	size_t buflen;
-	int ret;
-
-	fill_ctdb_string(mem_ctx, &p1);
-	buflen = ctdb_string_len(p1);
-	ctdb_string_push(p1, BUFFER);
-	ret = ctdb_string_pull(BUFFER, buflen, mem_ctx, &p2);
-	assert(ret == 0);
-	verify_ctdb_string(p1, p2);
-	talloc_free(mem_ctx);
-}
+PROTOCOL_TYPE2_TEST(const char *, ctdb_string);
 
 static void test_ctdb_stringn(void)
 {
@@ -83,7 +69,7 @@ static void test_ctdb_stringn(void)
 	ctdb_stringn_push(p1, BUFFER);
 	ret = ctdb_stringn_pull(BUFFER, buflen, mem_ctx, &p2);
 	assert(ret == 0);
-	verify_ctdb_string(p1, p2);
+	verify_ctdb_string(&p1, &p2);
 	talloc_free(mem_ctx);
 }
 
@@ -118,7 +104,7 @@ int main(int argc, char *argv[])
 
 	test_ctdb_chararray();
 
-	test_ctdb_string();
+	TEST_FUNC(ctdb_string)();
 	test_ctdb_stringn();
 
 	test_ctdb_pid();

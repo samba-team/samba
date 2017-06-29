@@ -52,11 +52,11 @@ static size_t ctdb_message_data_len(union ctdb_message_data *mdata,
 		break;
 
 	case CTDB_SRVID_RELEASE_IP:
-		len = ctdb_string_len(mdata->ipaddr);
+		len = ctdb_string_len(&mdata->ipaddr);
 		break;
 
 	case CTDB_SRVID_TAKE_IP:
-		len = ctdb_string_len(mdata->ipaddr);
+		len = ctdb_string_len(&mdata->ipaddr);
 		break;
 
 	case CTDB_SRVID_SET_NODE_FLAGS:
@@ -132,11 +132,11 @@ static void ctdb_message_data_push(union ctdb_message_data *mdata,
 		break;
 
 	case CTDB_SRVID_RELEASE_IP:
-		ctdb_string_push(mdata->ipaddr, buf);
+		ctdb_string_push(&mdata->ipaddr, buf, &np);
 		break;
 
 	case CTDB_SRVID_TAKE_IP:
-		ctdb_string_push(mdata->ipaddr, buf);
+		ctdb_string_push(&mdata->ipaddr, buf, &np);
 		break;
 
 	case CTDB_SRVID_SET_NODE_FLAGS:
@@ -213,11 +213,13 @@ static int ctdb_message_data_pull(uint8_t *buf, size_t buflen,
 		break;
 
 	case CTDB_SRVID_RELEASE_IP:
-		ret = ctdb_string_pull(buf, buflen, mem_ctx, &mdata->ipaddr);
+		ret = ctdb_string_pull(buf, buflen, mem_ctx, &mdata->ipaddr,
+				       &np);
 		break;
 
 	case CTDB_SRVID_TAKE_IP:
-		ret = ctdb_string_pull(buf, buflen, mem_ctx, &mdata->ipaddr);
+		ret = ctdb_string_pull(buf, buflen, mem_ctx, &mdata->ipaddr,
+				       &np);
 		break;
 
 	case CTDB_SRVID_SET_NODE_FLAGS:

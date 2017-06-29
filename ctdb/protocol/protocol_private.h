@@ -62,10 +62,10 @@ void ctdb_chararray_push(char *in, size_t len, uint8_t *buf, size_t *npush);
 int ctdb_chararray_pull(uint8_t *buf, size_t buflen, char *out, size_t len,
 			size_t *npull);
 
-size_t ctdb_string_len(const char *str);
-void ctdb_string_push(const char *str, uint8_t *buf);
+size_t ctdb_string_len(const char **in);
+void ctdb_string_push(const char **in, uint8_t *buf, size_t *npush);
 int ctdb_string_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-		     const char **out);
+		     const char **out, size_t *npull);
 
 size_t ctdb_stringn_len(const char *str);
 void ctdb_stringn_push(const char *str, uint8_t *buf);

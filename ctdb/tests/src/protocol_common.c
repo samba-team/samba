@@ -88,6 +88,22 @@ void verify_buffer(void *p1, void *p2, size_t len)
 	}
 }
 
+static void fill_string(char *p, size_t len)
+{
+	int i;
+
+	for (i=0; i<len-1; i++) {
+		p[i] = 'A' + rand_int(26);
+	}
+	p[len-1] = '\0';
+}
+
+static void verify_string(const char *p1, const char *p2)
+{
+	assert(strlen(p1) == strlen(p2));
+	assert(strcmp(p1, p2) == 0);
+}
+
 void fill_ctdb_uint8(uint8_t *p)
 {
 	*p = rand8();
@@ -162,29 +178,25 @@ void verify_ctdb_bool(bool *p1, bool *p2)
 	assert(*p1 == *p2);
 }
 
-void fill_ctdb_string(TALLOC_CTX *mem_ctx, const char **out)
+void fill_ctdb_string(TALLOC_CTX *mem_ctx, const char **p)
 {
-	char *p;
-	int len, i;
+	char *str;
+	int len;
 
-	len = rand_int(1024) + 1;
-	p = talloc_size(mem_ctx, len+1);
-	assert(p != NULL);
+	len = rand_int(1024) + 2;
+	str = talloc_size(mem_ctx, len+1);
+	assert(str != NULL);
 
-	for (i=0; i<len; i++) {
-		p[i] = 'A' + rand_int(26);
-	}
-	p[len] = '\0';
-	*out = p;
+	fill_string(str, len);
+	*p = str;
 }
 
-void verify_ctdb_string(const char *p1, const char *p2)
+void verify_ctdb_string(const char **p1, const char **p2)
 {
-	if (p1 == NULL || p2 == NULL) {
-		assert(p1 == p2);
+	if (*p1 == NULL || *p2 == NULL) {
+		assert(*p1 == *p2);
 	} else {
-		assert(strlen(p1) == strlen(p2));
-		assert(strcmp(p1, p2) == 0);
+		verify_string(*p1, *p2);
 	}
 }
 
@@ -509,13 +521,13 @@ void verify_ctdb_connection(struct ctdb_connection *p1,
 
 void fill_ctdb_tunable(TALLOC_CTX *mem_ctx, struct ctdb_tunable *p)
 {
-	fill_ctdb_string(mem_ctx, discard_const(&p->name));
+	fill_ctdb_string(mem_ctx, &p->name);
 	p->value = rand32();
 }
 
 void verify_ctdb_tunable(struct ctdb_tunable *p1, struct ctdb_tunable *p2)
 {
-	verify_ctdb_string(discard_const(p1->name), discard_const(p2->name));
+	verify_ctdb_string(&p1->name, &p2->name);
 	assert(p1->value == p2->value);
 }
 
@@ -542,7 +554,7 @@ void fill_ctdb_var_list(TALLOC_CTX *mem_ctx, struct ctdb_var_list *p)
 	p->count = rand_int(100) + 1;
 	p->var = talloc_array(mem_ctx, const char *, p->count);
 	for (i=0; i<p->count; i++) {
-		fill_ctdb_string(p->var, discard_const(&p->var[i]));
+		fill_ctdb_string(p->var, &p->var[i]);
 	}
 }
 
@@ -552,8 +564,7 @@ void verify_ctdb_var_list(struct ctdb_var_list *p1, struct ctdb_var_list *p2)
 
 	assert(p1->count == p2->count);
 	for (i=0; i<p1->count; i++) {
-		verify_ctdb_string(discard_const(p1->var[i]),
-				   discard_const(p2->var[i]));
+		verify_ctdb_string(&p1->var[i], &p2->var[i]);
 	}
 }
 
@@ -613,7 +624,7 @@ void verify_ctdb_addr_info(struct ctdb_addr_info *p1,
 {
 	verify_ctdb_sock_addr(&p1->addr, &p2->addr);
 	assert(p1->mask == p2->mask);
-	verify_ctdb_string(p1->iface, p2->iface);
+	verify_ctdb_string(&p1->iface, &p2->iface);
 }
 
 void fill_ctdb_transdb(TALLOC_CTX *mem_ctx, struct ctdb_transdb *p)

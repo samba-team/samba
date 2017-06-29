@@ -106,7 +106,7 @@ static size_t ctdb_req_control_data_len(struct ctdb_req_control_data *cd)
 		break;
 
 	case CTDB_CONTROL_DB_ATTACH:
-		len = ctdb_string_len(cd->data.db_name);
+		len = ctdb_string_len(&cd->data.db_name);
 		break;
 
 	case CTDB_CONTROL_SET_CALL:
@@ -209,7 +209,7 @@ static size_t ctdb_req_control_data_len(struct ctdb_req_control_data *cd)
 		break;
 
 	case CTDB_CONTROL_DB_ATTACH_PERSISTENT:
-		len = ctdb_string_len(cd->data.db_name);
+		len = ctdb_string_len(&cd->data.db_name);
 		break;
 
 	case CTDB_CONTROL_UPDATE_RECORD:
@@ -433,7 +433,7 @@ static size_t ctdb_req_control_data_len(struct ctdb_req_control_data *cd)
 		break;
 
 	case CTDB_CONTROL_DB_ATTACH_REPLICATED:
-		len = ctdb_string_len(cd->data.db_name);
+		len = ctdb_string_len(&cd->data.db_name);
 		break;
 	}
 
@@ -476,7 +476,7 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_DB_ATTACH:
-		ctdb_string_push(cd->data.db_name, buf);
+		ctdb_string_push(&cd->data.db_name, buf, &np);
 		break;
 
 	case CTDB_CONTROL_SET_CALL:
@@ -543,7 +543,7 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_DB_ATTACH_PERSISTENT:
-		ctdb_string_push(cd->data.db_name, buf);
+		ctdb_string_push(&cd->data.db_name, buf, &np);
 		break;
 
 	case CTDB_CONTROL_UPDATE_RECORD:
@@ -712,7 +712,7 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_DB_ATTACH_REPLICATED:
-		ctdb_string_push(cd->data.db_name, buf);
+		ctdb_string_push(&cd->data.db_name, buf, &np);
 		break;
 	}
 }
@@ -763,7 +763,7 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_CONTROL_DB_ATTACH:
 		ret = ctdb_string_pull(buf, buflen, mem_ctx,
-				       &cd->data.db_name);
+				       &cd->data.db_name, &np);
 		break;
 
 	case CTDB_CONTROL_SET_CALL:
@@ -842,7 +842,7 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_CONTROL_DB_ATTACH_PERSISTENT:
 		ret = ctdb_string_pull(buf, buflen, mem_ctx,
-				       &cd->data.db_name);
+				       &cd->data.db_name, &np);
 		break;
 
 	case CTDB_CONTROL_UPDATE_RECORD:
@@ -1038,7 +1038,7 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_CONTROL_DB_ATTACH_REPLICATED:
 		ret = ctdb_string_pull(buf, buflen, mem_ctx,
-				       &cd->data.db_name);
+				       &cd->data.db_name, &np);
 		break;
 	}
 
@@ -1065,7 +1065,7 @@ static size_t ctdb_reply_control_data_len(struct ctdb_reply_control_data *cd)
 		break;
 
 	case CTDB_CONTROL_GETDBPATH:
-		len = ctdb_string_len(cd->data.db_path);
+		len = ctdb_string_len(&cd->data.db_path);
 		break;
 
 	case CTDB_CONTROL_GETVNNMAP:
@@ -1125,7 +1125,7 @@ static size_t ctdb_reply_control_data_len(struct ctdb_reply_control_data *cd)
 		break;
 
 	case CTDB_CONTROL_GET_DBNAME:
-		len = ctdb_string_len(cd->data.db_name);
+		len = ctdb_string_len(&cd->data.db_name);
 		break;
 
 	case CTDB_CONTROL_ENABLE_SEQNUM:
@@ -1135,7 +1135,7 @@ static size_t ctdb_reply_control_data_len(struct ctdb_reply_control_data *cd)
 		break;
 
 	case CTDB_CONTROL_DUMP_MEMORY:
-		len = ctdb_string_len(cd->data.mem_str);
+		len = ctdb_string_len(&cd->data.mem_str);
 		break;
 
 	case CTDB_CONTROL_GET_PID:
@@ -1266,7 +1266,7 @@ static size_t ctdb_reply_control_data_len(struct ctdb_reply_control_data *cd)
 		break;
 
 	case CTDB_CONTROL_GET_RECLOCK_FILE:
-		len = ctdb_string_len(cd->data.reclock_file);
+		len = ctdb_string_len(&cd->data.reclock_file);
 		break;
 
 	case CTDB_CONTROL_STOP_NODE:
@@ -1311,7 +1311,7 @@ static size_t ctdb_reply_control_data_len(struct ctdb_reply_control_data *cd)
 		break;
 
 	case CTDB_CONTROL_DB_GET_HEALTH:
-		len = ctdb_string_len(cd->data.reason);
+		len = ctdb_string_len(&cd->data.reason);
 		break;
 
 	case CTDB_CONTROL_GET_PUBLIC_IP_INFO:
@@ -1424,7 +1424,7 @@ static void ctdb_reply_control_data_push(struct ctdb_reply_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_GETDBPATH:
-		ctdb_string_push(cd->data.db_path, buf);
+		ctdb_string_push(&cd->data.db_path, buf, &np);
 		break;
 
 	case CTDB_CONTROL_GETVNNMAP:
@@ -1451,11 +1451,11 @@ static void ctdb_reply_control_data_push(struct ctdb_reply_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_GET_DBNAME:
-		ctdb_string_push(cd->data.db_name, buf);
+		ctdb_string_push(&cd->data.db_name, buf, &np);
 		break;
 
 	case CTDB_CONTROL_DUMP_MEMORY:
-		ctdb_string_push(cd->data.mem_str, buf);
+		ctdb_string_push(&cd->data.mem_str, buf, &np);
 		break;
 
 	case CTDB_CONTROL_GET_PID:
@@ -1505,7 +1505,7 @@ static void ctdb_reply_control_data_push(struct ctdb_reply_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_GET_RECLOCK_FILE:
-		ctdb_string_push(cd->data.reclock_file, buf);
+		ctdb_string_push(&cd->data.reclock_file, buf, &np);
 		break;
 
 	case CTDB_CONTROL_GET_BAN_STATE:
@@ -1520,7 +1520,7 @@ static void ctdb_reply_control_data_push(struct ctdb_reply_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_DB_GET_HEALTH:
-		ctdb_string_push(cd->data.reason, buf);
+		ctdb_string_push(&cd->data.reason, buf, &np);
 		break;
 
 	case CTDB_CONTROL_GET_PUBLIC_IP_INFO:
@@ -1589,7 +1589,7 @@ static int ctdb_reply_control_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_CONTROL_GETDBPATH:
 		ret = ctdb_string_pull(buf, buflen, mem_ctx,
-				       &cd->data.db_path);
+				       &cd->data.db_path, &np);
 		break;
 
 	case CTDB_CONTROL_GETVNNMAP:
@@ -1620,12 +1620,12 @@ static int ctdb_reply_control_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_CONTROL_GET_DBNAME:
 		ret = ctdb_string_pull(buf, buflen, mem_ctx,
-				       &cd->data.db_name);
+				       &cd->data.db_name, &np);
 		break;
 
 	case CTDB_CONTROL_DUMP_MEMORY:
 		ret = ctdb_string_pull(buf, buflen, mem_ctx,
-				       &cd->data.mem_str);
+				       &cd->data.mem_str, &np);
 		break;
 
 	case CTDB_CONTROL_GET_PID:
@@ -1684,7 +1684,7 @@ static int ctdb_reply_control_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_CONTROL_GET_RECLOCK_FILE:
 		ret = ctdb_string_pull(buf, buflen, mem_ctx,
-				       &cd->data.reclock_file);
+				       &cd->data.reclock_file, &np);
 		break;
 
 	case CTDB_CONTROL_GET_BAN_STATE:
@@ -1701,7 +1701,7 @@ static int ctdb_reply_control_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_CONTROL_DB_GET_HEALTH:
 		ret = ctdb_string_pull(buf, buflen, mem_ctx,
-				       &cd->data.reason);
+				       &cd->data.reason, &np);
 		break;
 
 	case CTDB_CONTROL_GET_PUBLIC_IP_INFO:
@@ -1851,7 +1851,7 @@ size_t ctdb_reply_control_len(struct ctdb_req_header *h,
 	return offsetof(struct ctdb_reply_control_wire, data) +
 		(c->status == 0 ?
 			ctdb_reply_control_data_len(&c->rdata) :
-			ctdb_string_len(c->errmsg));
+			ctdb_string_len(&c->errmsg));
 }
 
 int ctdb_reply_control_push(struct ctdb_req_header *h,
@@ -1860,7 +1860,7 @@ int ctdb_reply_control_push(struct ctdb_req_header *h,
 {
 	struct ctdb_reply_control_wire *wire =
 		(struct ctdb_reply_control_wire *)buf;
-	size_t length;
+	size_t length, np;
 
 	length = ctdb_reply_control_len(h, reply);
 	if (*buflen < length) {
@@ -1879,8 +1879,9 @@ int ctdb_reply_control_push(struct ctdb_req_header *h,
 		ctdb_reply_control_data_push(&reply->rdata, wire->data);
 	} else {
 		wire->datalen = 0;
-		wire->errorlen = ctdb_string_len(reply->errmsg);
-		ctdb_string_push(reply->errmsg, wire->data + wire->datalen);
+		wire->errorlen = ctdb_string_len(&reply->errmsg);
+		ctdb_string_push(&reply->errmsg, wire->data + wire->datalen,
+				 &np);
 	}
 
 	return 0;
@@ -1893,7 +1894,7 @@ int ctdb_reply_control_pull(uint8_t *buf, size_t buflen, uint32_t opcode,
 {
 	struct ctdb_reply_control_wire *wire =
 		(struct ctdb_reply_control_wire *)buf;
-	size_t length;
+	size_t length, np;
 	int ret;
 
 	length = offsetof(struct ctdb_reply_control_wire, data);
@@ -1932,7 +1933,7 @@ int ctdb_reply_control_pull(uint8_t *buf, size_t buflen, uint32_t opcode,
 	}
 
 	ret = ctdb_string_pull(wire->data + wire->datalen, wire->errorlen,
-			       mem_ctx, &c->errmsg);
+			       mem_ctx, &c->errmsg, &np);
 	if (ret != 0) {
 		return ret;
 	}

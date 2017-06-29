@@ -643,7 +643,7 @@ void verify_ctdb_req_control_data(struct ctdb_req_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_DB_ATTACH:
-		verify_ctdb_string(cd->data.db_name, cd2->data.db_name);
+		verify_ctdb_string(&cd->data.db_name, &cd2->data.db_name);
 		break;
 
 	case CTDB_CONTROL_SET_CALL:
@@ -726,7 +726,7 @@ void verify_ctdb_req_control_data(struct ctdb_req_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_GET_TUNABLE:
-		verify_ctdb_string(cd->data.tun_var, cd2->data.tun_var);
+		verify_ctdb_string(&cd->data.tun_var, &cd2->data.tun_var);
 		break;
 
 	case CTDB_CONTROL_LIST_TUNABLES:
@@ -749,7 +749,7 @@ void verify_ctdb_req_control_data(struct ctdb_req_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_DB_ATTACH_PERSISTENT:
-		verify_ctdb_string(cd->data.db_name, cd2->data.db_name);
+		verify_ctdb_string(&cd->data.db_name, &cd2->data.db_name);
 		break;
 
 	case CTDB_CONTROL_UPDATE_RECORD:
@@ -983,7 +983,7 @@ void verify_ctdb_req_control_data(struct ctdb_req_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_DB_ATTACH_REPLICATED:
-		verify_ctdb_string(cd->data.db_name, cd2->data.db_name);
+		verify_ctdb_string(&cd->data.db_name, &cd2->data.db_name);
 		break;
 
 	}
@@ -1418,7 +1418,7 @@ void verify_ctdb_reply_control_data(struct ctdb_reply_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_GETDBPATH:
-		verify_ctdb_string(cd->data.db_path, cd2->data.db_path);
+		verify_ctdb_string(&cd->data.db_path, &cd2->data.db_path);
 		break;
 
 	case CTDB_CONTROL_GETVNNMAP:
@@ -1478,7 +1478,7 @@ void verify_ctdb_reply_control_data(struct ctdb_reply_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_GET_DBNAME:
-		verify_ctdb_string(cd->data.db_name, cd2->data.db_name);
+		verify_ctdb_string(&cd->data.db_name, &cd2->data.db_name);
 		break;
 
 	case CTDB_CONTROL_ENABLE_SEQNUM:
@@ -1488,7 +1488,7 @@ void verify_ctdb_reply_control_data(struct ctdb_reply_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_DUMP_MEMORY:
-		verify_ctdb_string(cd->data.mem_str, cd2->data.mem_str);
+		verify_ctdb_string(&cd->data.mem_str, &cd2->data.mem_str);
 		break;
 
 	case CTDB_CONTROL_GET_PID:
@@ -1621,8 +1621,8 @@ void verify_ctdb_reply_control_data(struct ctdb_reply_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_GET_RECLOCK_FILE:
-		verify_ctdb_string(cd->data.reclock_file,
-				   cd2->data.reclock_file);
+		verify_ctdb_string(&cd->data.reclock_file,
+				   &cd2->data.reclock_file);
 		break;
 
 	case CTDB_CONTROL_STOP_NODE:
@@ -1661,7 +1661,7 @@ void verify_ctdb_reply_control_data(struct ctdb_reply_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_DB_GET_HEALTH:
-		verify_ctdb_string(cd->data.reason, cd2->data.reason);
+		verify_ctdb_string(&cd->data.reason, &cd2->data.reason);
 		break;
 
 	case CTDB_CONTROL_GET_PUBLIC_IP_INFO:
@@ -1762,7 +1762,7 @@ void verify_ctdb_reply_control(struct ctdb_reply_control *c,
 			       struct ctdb_reply_control *c2)
 {
 	assert(c->status == c2->status);
-	verify_ctdb_string(c->errmsg, c2->errmsg);
+	verify_ctdb_string(&c->errmsg, &c2->errmsg);
 	if (c->status == 0) {
 		verify_ctdb_reply_control_data(&c->rdata, &c2->rdata);
 	}

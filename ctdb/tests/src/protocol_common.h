@@ -173,8 +173,8 @@ void verify_ctdb_double(double *p1, double *p2);
 void fill_ctdb_bool(bool *p);
 void verify_ctdb_bool(bool *p1, bool *p2);
 
-void fill_ctdb_string(TALLOC_CTX *mem_ctx, const char **out);
-void verify_ctdb_string(const char *p1, const char *p2);
+void fill_ctdb_string(TALLOC_CTX *mem_ctx, const char **p);
+void verify_ctdb_string(const char **p1, const char **p2);
 
 void fill_tdb_data_nonnull(TALLOC_CTX *mem_ctx, TDB_DATA *p);
 void fill_tdb_data(TALLOC_CTX *mem_ctx, TDB_DATA *p);

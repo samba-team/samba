@@ -42,7 +42,7 @@ void verify_ctdb_event_request_run(struct ctdb_event_request_run *p1,
 {
 	assert(p1->event == p2->event);
 	assert(p1->timeout == p2->timeout);
-	verify_ctdb_string(p1->arg_str, p2->arg_str);
+	verify_ctdb_string(&p1->arg_str, &p2->arg_str);
 }
 
 void fill_ctdb_event_request_status(TALLOC_CTX *mem_ctx,
@@ -69,7 +69,7 @@ void verify_ctdb_event_request_script_enable(
 				struct ctdb_event_request_script_enable *p1,
 				struct ctdb_event_request_script_enable *p2)
 {
-	verify_ctdb_string(p1->script_name, p2->script_name);
+	verify_ctdb_string(&p1->script_name, &p2->script_name);
 }
 
 void fill_ctdb_event_request_script_disable(TALLOC_CTX *mem_ctx,
@@ -82,7 +82,7 @@ void verify_ctdb_event_request_script_disable(
 				struct ctdb_event_request_script_disable *p1,
 				struct ctdb_event_request_script_disable *p2)
 {
-	verify_ctdb_string(p1->script_name, p2->script_name);
+	verify_ctdb_string(&p1->script_name, &p2->script_name);
 }
 
 void fill_ctdb_event_reply_status(TALLOC_CTX *mem_ctx,

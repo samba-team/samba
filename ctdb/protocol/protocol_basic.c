@@ -225,29 +225,39 @@ int ctdb_chararray_pull(uint8_t *buf, size_t buflen, char *out, size_t len,
 	return 0;
 }
 
-size_t ctdb_string_len(const char *str)
+size_t ctdb_string_len(const char **in)
 {
-	if (str == NULL) {
+	if (*in == NULL) {
 		return 0;
 	}
-	return strlen(str) + 1;
+
+	return strlen(*in) + 1;
 }
 
-void ctdb_string_push(const char *str, uint8_t *buf)
+void ctdb_string_push(const char **in, uint8_t *buf, size_t *npush)
 {
-	if (str == NULL) {
-		return;
+	size_t len;
+
+	len = ctdb_string_len(in);
+	if (len > 0) {
+		memcpy(buf, *in, len);
 	}
-	memcpy(buf, str, strlen(str)+1);
+
+	*npush = len;
 }
 
 int ctdb_string_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-		     const char **out)
+		     const char **out, size_t *npull)
 {
-	char *str;
+	const char *str;
+
+	if (buflen > UINT32_MAX) {
+		return EMSGSIZE;
+	}
 
 	if (buflen == 0) {
 		*out = NULL;
+		*npull = 0;
 		return 0;
 	}
 
@@ -257,6 +267,7 @@ int ctdb_string_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 	}
 
 	*out = str;
+	*npull = ctdb_string_len(&str);
 	return 0;
 }
 
@@ -267,15 +278,16 @@ struct stringn_wire {
 
 size_t ctdb_stringn_len(const char *str)
 {
-	return sizeof(uint32_t) + ctdb_string_len(str);
+	return sizeof(uint32_t) + ctdb_string_len(&str);
 }
 
 void ctdb_stringn_push(const char *str, uint8_t *buf)
 {
 	struct stringn_wire *wire = (struct stringn_wire *)buf;
+	size_t np;
 
-	wire->length = ctdb_string_len(str);
-	ctdb_string_push(str, wire->str);
+	wire->length = ctdb_string_len(&str);
+	ctdb_string_push(&str, wire->str, &np);
 }
 
 int ctdb_stringn_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
