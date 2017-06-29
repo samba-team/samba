@@ -794,6 +794,37 @@ static int ctdb_tunable_pull_old(uint8_t *buf, size_t buflen,
 	return 0;
 }
 
+static size_t ctdb_node_flag_change_len_old(struct ctdb_node_flag_change *in)
+{
+	return sizeof(struct ctdb_node_flag_change);
+}
+
+static void ctdb_node_flag_change_push_old(struct ctdb_node_flag_change *in,
+					   uint8_t *buf)
+{
+	memcpy(buf, in, sizeof(struct ctdb_node_flag_change));
+}
+
+static int ctdb_node_flag_change_pull_old(uint8_t *buf, size_t buflen,
+					  TALLOC_CTX *mem_ctx,
+					  struct ctdb_node_flag_change **out)
+{
+	struct ctdb_node_flag_change *val;
+
+	if (buflen < sizeof(struct ctdb_node_flag_change)) {
+		return EMSGSIZE;
+	}
+
+	val = talloc_memdup(mem_ctx, buf,
+			    sizeof(struct ctdb_node_flag_change));
+	if (val == NULL) {
+		return ENOMEM;
+	}
+
+	*out = val;
+	return 0;
+}
+
 
 COMPAT_TYPE3_TEST(struct ctdb_statistics, ctdb_statistics);
 COMPAT_TYPE3_TEST(struct ctdb_vnn_map, ctdb_vnn_map);
@@ -812,6 +843,7 @@ COMPAT_TYPE3_TEST(struct ctdb_traverse_all_ext, ctdb_traverse_all_ext);
 COMPAT_TYPE3_TEST(ctdb_sock_addr, ctdb_sock_addr);
 COMPAT_TYPE3_TEST(struct ctdb_connection, ctdb_connection);
 COMPAT_TYPE3_TEST(struct ctdb_tunable, ctdb_tunable);
+COMPAT_TYPE3_TEST(struct ctdb_node_flag_change, ctdb_node_flag_change);
 
 int main(int argc, char *argv[])
 {
@@ -835,6 +867,7 @@ int main(int argc, char *argv[])
 	COMPAT_TEST_FUNC(ctdb_sock_addr)();
 	COMPAT_TEST_FUNC(ctdb_connection)();
 	COMPAT_TEST_FUNC(ctdb_tunable)();
+	COMPAT_TEST_FUNC(ctdb_node_flag_change)();
 
 	return 0;
 }

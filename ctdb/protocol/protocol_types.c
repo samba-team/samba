@@ -2203,34 +2203,71 @@ fail:
 	return ret;
 }
 
-size_t ctdb_node_flag_change_len(struct ctdb_node_flag_change *flag_change)
+size_t ctdb_node_flag_change_len(struct ctdb_node_flag_change *in)
 {
-	return sizeof(struct ctdb_node_flag_change);
+	return ctdb_uint32_len(&in->pnn) +
+		ctdb_uint32_len(&in->new_flags) +
+		ctdb_uint32_len(&in->old_flags);
 }
 
-void ctdb_node_flag_change_push(struct ctdb_node_flag_change *flag_change,
-				uint8_t *buf)
+void ctdb_node_flag_change_push(struct ctdb_node_flag_change *in,
+				uint8_t *buf, size_t *npush)
 {
-	memcpy(buf, flag_change, sizeof(struct ctdb_node_flag_change));
+	size_t offset = 0, np;
+
+	ctdb_uint32_push(&in->pnn, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->new_flags, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->old_flags, buf+offset, &np);
+	offset += np;
+
+	*npush = offset;
 }
 
-int ctdb_node_flag_change_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			       struct ctdb_node_flag_change **out)
+int ctdb_node_flag_change_pull(uint8_t *buf, size_t buflen,
+			       TALLOC_CTX *mem_ctx,
+			       struct ctdb_node_flag_change **out,
+			       size_t *npull)
 {
-	struct ctdb_node_flag_change *flag_change;
+	struct ctdb_node_flag_change *val;
+	size_t offset = 0, np;
+	int ret;
 
-	if (buflen < sizeof(struct ctdb_node_flag_change)) {
-		return EMSGSIZE;
-	}
-
-	flag_change = talloc_memdup(mem_ctx, buf,
-				    sizeof(struct ctdb_node_flag_change));
-	if (flag_change == NULL) {
+	val = talloc(mem_ctx, struct ctdb_node_flag_change);
+	if (val == NULL) {
 		return ENOMEM;
 	}
 
-	*out = flag_change;
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &val->pnn, &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &val->new_flags,
+			       &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &val->old_flags,
+			       &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
+
+	*out = val;
+	*npull = offset;
 	return 0;
+
+fail:
+	talloc_free(val);
+	return ret;
 }
 
 struct ctdb_var_list_wire {

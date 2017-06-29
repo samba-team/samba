@@ -191,11 +191,12 @@ void ctdb_tunable_push(struct ctdb_tunable *in, uint8_t *buf, size_t *npush);
 int ctdb_tunable_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 		      struct ctdb_tunable **out, size_t *npull);
 
-size_t ctdb_node_flag_change_len(struct ctdb_node_flag_change *flag_change);
-void ctdb_node_flag_change_push(struct ctdb_node_flag_change *flag_change,
-				uint8_t *buf);
+size_t ctdb_node_flag_change_len(struct ctdb_node_flag_change *in);
+void ctdb_node_flag_change_push(struct ctdb_node_flag_change *in,
+				uint8_t *buf, size_t *npush);
 int ctdb_node_flag_change_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			       struct ctdb_node_flag_change **out);
+			       struct ctdb_node_flag_change **out,
+			       size_t *npull);
 
 size_t ctdb_var_list_len(struct ctdb_var_list *var_list);
 void ctdb_var_list_push(struct ctdb_var_list *var_list, uint8_t *buf);

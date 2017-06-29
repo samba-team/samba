@@ -140,7 +140,7 @@ static void ctdb_message_data_push(union ctdb_message_data *mdata,
 		break;
 
 	case CTDB_SRVID_SET_NODE_FLAGS:
-		ctdb_node_flag_change_push(mdata->flag_change, buf);
+		ctdb_node_flag_change_push(mdata->flag_change, buf, &np);
 		break;
 
 	case CTDB_SRVID_RECD_UPDATE_IP:
@@ -160,7 +160,7 @@ static void ctdb_message_data_push(union ctdb_message_data *mdata,
 		break;
 
 	case CTDB_SRVID_PUSH_NODE_FLAGS:
-		ctdb_node_flag_change_push(mdata->flag_change, buf);
+		ctdb_node_flag_change_push(mdata->flag_change, buf, &np);
 		break;
 
 	case CTDB_SRVID_RELOAD_NODES:
@@ -224,7 +224,7 @@ static int ctdb_message_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_SRVID_SET_NODE_FLAGS:
 		ret = ctdb_node_flag_change_pull(buf, buflen, mem_ctx,
-						 &mdata->flag_change);
+						 &mdata->flag_change, &np);
 		break;
 
 	case CTDB_SRVID_RECD_UPDATE_IP:
@@ -248,7 +248,7 @@ static int ctdb_message_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_SRVID_PUSH_NODE_FLAGS:
 		ret = ctdb_node_flag_change_pull(buf, buflen, mem_ctx,
-						 &mdata->flag_change);
+						 &mdata->flag_change, &np);
 		break;
 
 	case CTDB_SRVID_RELOAD_NODES:
