@@ -41,7 +41,7 @@ static size_t ctdb_message_data_len(union ctdb_message_data *mdata,
 
 	switch (srvid) {
 	case CTDB_SRVID_BANNING:
-		len = ctdb_uint32_len(mdata->pnn);
+		len = ctdb_uint32_len(&mdata->pnn);
 		break;
 
 	case CTDB_SRVID_ELECTION:
@@ -72,7 +72,7 @@ static size_t ctdb_message_data_len(union ctdb_message_data *mdata,
 		break;
 
 	case CTDB_SRVID_DETACH_DATABASE:
-		len = ctdb_uint32_len(mdata->db_id);
+		len = ctdb_uint32_len(&mdata->db_id);
 		break;
 
 	case CTDB_SRVID_MEM_DUMP:
@@ -91,7 +91,7 @@ static size_t ctdb_message_data_len(union ctdb_message_data *mdata,
 		break;
 
 	case CTDB_SRVID_REBALANCE_NODE:
-		len = ctdb_uint32_len(mdata->pnn);
+		len = ctdb_uint32_len(&mdata->pnn);
 		break;
 
 	case CTDB_SRVID_DISABLE_TAKEOVER_RUNS:
@@ -103,7 +103,7 @@ static size_t ctdb_message_data_len(union ctdb_message_data *mdata,
 		break;
 
 	case CTDB_SRVID_DISABLE_IP_CHECK:
-		len = ctdb_uint32_len(mdata->timeout);
+		len = ctdb_uint32_len(&mdata->timeout);
 		break;
 
 	default:
@@ -117,9 +117,11 @@ static size_t ctdb_message_data_len(union ctdb_message_data *mdata,
 static void ctdb_message_data_push(union ctdb_message_data *mdata,
 				   uint64_t srvid, uint8_t *buf)
 {
+	size_t np;
+
 	switch (srvid) {
 	case CTDB_SRVID_BANNING:
-		ctdb_uint32_push(mdata->pnn, buf);
+		ctdb_uint32_push(&mdata->pnn, buf, &np);
 		break;
 
 	case CTDB_SRVID_ELECTION:
@@ -150,7 +152,7 @@ static void ctdb_message_data_push(union ctdb_message_data *mdata,
 		break;
 
 	case CTDB_SRVID_DETACH_DATABASE:
-		ctdb_uint32_push(mdata->db_id, buf);
+		ctdb_uint32_push(&mdata->db_id, buf, &np);
 		break;
 
 	case CTDB_SRVID_MEM_DUMP:
@@ -169,7 +171,7 @@ static void ctdb_message_data_push(union ctdb_message_data *mdata,
 		break;
 
 	case CTDB_SRVID_REBALANCE_NODE:
-		ctdb_uint32_push(mdata->pnn, buf);
+		ctdb_uint32_push(&mdata->pnn, buf, &np);
 		break;
 
 	case CTDB_SRVID_DISABLE_TAKEOVER_RUNS:
@@ -181,7 +183,7 @@ static void ctdb_message_data_push(union ctdb_message_data *mdata,
 		break;
 
 	case CTDB_SRVID_DISABLE_IP_CHECK:
-		ctdb_uint32_push(mdata->timeout, buf);
+		ctdb_uint32_push(&mdata->timeout, buf, &np);
 		break;
 
 	default:
@@ -195,10 +197,11 @@ static int ctdb_message_data_pull(uint8_t *buf, size_t buflen,
 				  union ctdb_message_data *mdata)
 {
 	int ret = 0;
+	size_t np;
 
 	switch (srvid) {
 	case CTDB_SRVID_BANNING:
-		ret = ctdb_uint32_pull(buf, buflen, mem_ctx, &mdata->pnn);
+		ret = ctdb_uint32_pull(buf, buflen, &mdata->pnn, &np);
 		break;
 
 	case CTDB_SRVID_ELECTION:
@@ -233,7 +236,7 @@ static int ctdb_message_data_pull(uint8_t *buf, size_t buflen,
 		break;
 
 	case CTDB_SRVID_DETACH_DATABASE:
-		ret = ctdb_uint32_pull(buf, buflen, mem_ctx, &mdata->db_id);
+		ret = ctdb_uint32_pull(buf, buflen, &mdata->db_id, &np);
 		break;
 
 	case CTDB_SRVID_MEM_DUMP:
@@ -255,7 +258,7 @@ static int ctdb_message_data_pull(uint8_t *buf, size_t buflen,
 		break;
 
 	case CTDB_SRVID_REBALANCE_NODE:
-		ret = ctdb_uint32_pull(buf, buflen, mem_ctx, &mdata->pnn);
+		ret = ctdb_uint32_pull(buf, buflen, &mdata->pnn, &np);
 		break;
 
 	case CTDB_SRVID_DISABLE_TAKEOVER_RUNS:
@@ -269,7 +272,7 @@ static int ctdb_message_data_pull(uint8_t *buf, size_t buflen,
 		break;
 
 	case CTDB_SRVID_DISABLE_IP_CHECK:
-		ret = ctdb_uint32_pull(buf, buflen, mem_ctx, &mdata->timeout);
+		ret = ctdb_uint32_pull(buf, buflen, &mdata->timeout, &np);
 		break;
 
 	default:

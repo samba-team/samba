@@ -96,24 +96,25 @@ int ctdb_int32_pull(uint8_t *buf, size_t buflen, int32_t *out, size_t *npull)
 	return 0;
 }
 
-size_t ctdb_uint32_len(uint32_t val)
+size_t ctdb_uint32_len(uint32_t *in)
 {
 	return sizeof(uint32_t);
 }
 
-void ctdb_uint32_push(uint32_t val, uint8_t *buf)
+void ctdb_uint32_push(uint32_t *in, uint8_t *buf, size_t *npush)
 {
-	memcpy(buf, &val, sizeof(uint32_t));
+	memcpy(buf, in, sizeof(uint32_t));
+	*npush = sizeof(uint32_t);
 }
 
-int ctdb_uint32_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-		     uint32_t *out)
+int ctdb_uint32_pull(uint8_t *buf, size_t buflen, uint32_t *out, size_t *npull)
 {
 	if (buflen < sizeof(uint32_t)) {
 		return EMSGSIZE;
 	}
 
-	*out = *(uint32_t *)buf;
+	memcpy(out, buf, sizeof(uint32_t));
+	*npull = sizeof(uint32_t);
 	return 0;
 }
 

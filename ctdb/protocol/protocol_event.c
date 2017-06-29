@@ -28,12 +28,17 @@
 
 static size_t ctdb_event_len(enum ctdb_event in)
 {
-	return ctdb_uint32_len((uint32_t)in);
+	uint32_t u32 = in;
+
+	return ctdb_uint32_len(&u32);
 }
 
 static void ctdb_event_push(enum ctdb_event in, uint8_t *buf)
 {
-	ctdb_uint32_push((uint32_t)in, buf);
+	size_t np;
+	uint32_t u32 = in;
+
+	ctdb_uint32_push(&u32, buf, &np);
 }
 
 static int ctdb_event_pull(uint8_t *buf, size_t buflen,
@@ -41,9 +46,10 @@ static int ctdb_event_pull(uint8_t *buf, size_t buflen,
 {
 	uint32_t uint32_value;
 	enum ctdb_event value;
+	size_t np;
 	int ret;
 
-	ret = ctdb_uint32_pull(buf, buflen, mem_ctx, &uint32_value);
+	ret = ctdb_uint32_pull(buf, buflen, &uint32_value, &np);
 	if (ret != 0) {
 		return ret;
 	}
@@ -115,12 +121,17 @@ static int ctdb_event_pull(uint8_t *buf, size_t buflen,
 
 static size_t ctdb_event_command_len(enum ctdb_event_command in)
 {
-	return ctdb_uint32_len((uint32_t)in);
+	uint32_t u32 = in;
+
+	return ctdb_uint32_len(&u32);
 }
 
 static void ctdb_event_command_push(enum ctdb_event_command in, uint8_t *buf)
 {
-	ctdb_uint32_push((uint32_t)in, buf);
+	size_t np;
+	uint32_t u32 = in;
+
+	ctdb_uint32_push(&u32, buf, &np);
 }
 
 static int ctdb_event_command_pull(uint8_t *buf, size_t buflen,
@@ -129,9 +140,10 @@ static int ctdb_event_command_pull(uint8_t *buf, size_t buflen,
 {
 	uint32_t uint32_value;
 	enum ctdb_event_command value;
+	size_t np;
 	int ret;
 
-	ret = ctdb_uint32_pull(buf, buflen, mem_ctx, &uint32_value);
+	ret = ctdb_uint32_pull(buf, buflen, &uint32_value, &np);
 	if (ret != 0) {
 		return ret;
 	}
@@ -167,13 +179,18 @@ static int ctdb_event_command_pull(uint8_t *buf, size_t buflen,
 
 static size_t ctdb_event_status_state_len(enum ctdb_event_status_state in)
 {
-	return ctdb_uint32_len((uint32_t)in);
+	uint32_t u32 = in;
+
+	return ctdb_uint32_len(&u32);
 }
 
 static void ctdb_event_status_state_push(enum ctdb_event_status_state in,
 					 uint8_t *buf)
 {
-	ctdb_uint32_push((uint32_t)in, buf);
+	size_t np;
+	uint32_t u32 = in;
+
+	ctdb_uint32_push(&u32, buf, &np);
 }
 
 static int ctdb_event_status_state_pull(uint8_t *buf, size_t buflen,
@@ -182,9 +199,10 @@ static int ctdb_event_status_state_pull(uint8_t *buf, size_t buflen,
 {
 	uint32_t uint32_value;
 	enum ctdb_event_status_state value;
+	size_t np;
 	int ret;
 
-	ret = ctdb_uint32_pull(buf, buflen, mem_ctx, &uint32_value);
+	ret = ctdb_uint32_pull(buf, buflen, &uint32_value, &np);
 	if (ret != 0) {
 		return ret;
 	}
@@ -213,20 +231,20 @@ static int ctdb_event_status_state_pull(uint8_t *buf, size_t buflen,
 static size_t ctdb_event_request_run_len(struct ctdb_event_request_run *in)
 {
 	return ctdb_event_len(in->event) +
-	       ctdb_uint32_len(in->timeout) +
+	       ctdb_uint32_len(&in->timeout) +
 	       ctdb_stringn_len(in->arg_str);
 }
 
 static void ctdb_event_request_run_push(struct ctdb_event_request_run *in,
 					uint8_t *buf)
 {
-	size_t offset = 0;
+	size_t offset = 0, np;
 
 	ctdb_event_push(in->event, buf);
 	offset += ctdb_event_len(in->event);
 
-	ctdb_uint32_push(in->timeout, buf+offset);
-	offset += ctdb_uint32_len(in->timeout);
+	ctdb_uint32_push(&in->timeout, buf+offset, &np);
+	offset += np;
 
 	ctdb_stringn_push(in->arg_str, buf+offset);
 }
@@ -236,7 +254,7 @@ static int ctdb_event_request_run_pull(uint8_t *buf, size_t buflen,
 				       struct ctdb_event_request_run **out)
 {
 	struct ctdb_event_request_run *rdata;
-	size_t offset = 0;
+	size_t offset = 0, np;
 	int ret;
 
 	rdata = talloc(mem_ctx, struct ctdb_event_request_run);
@@ -250,12 +268,12 @@ static int ctdb_event_request_run_pull(uint8_t *buf, size_t buflen,
 	}
 	offset += ctdb_event_len(rdata->event);
 
-	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
-			       rdata, &rdata->timeout);
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &rdata->timeout,
+			       &np);
 	if (ret != 0) {
 		goto fail;
 	}
-	offset += ctdb_uint32_len(rdata->timeout);
+	offset += np;
 
 	ret = ctdb_stringn_pull(buf+offset, buflen-offset,
 				rdata, &rdata->arg_str);
@@ -707,34 +725,33 @@ static int ctdb_event_reply_data_pull(uint8_t *buf, size_t buflen,
 
 static size_t ctdb_event_header_len(struct ctdb_event_header *in)
 {
-	return ctdb_uint32_len(in->length) + ctdb_uint32_len(in->reqid);
+	return ctdb_uint32_len(&in->length) + ctdb_uint32_len(&in->reqid);
 }
 
 static void ctdb_event_header_push(struct ctdb_event_header *in, uint8_t *buf)
 {
-	size_t offset = 0;
+	size_t offset = 0, np;
 
-	ctdb_uint32_push(in->length, buf);
-	offset += ctdb_uint32_len(in->length);
+	ctdb_uint32_push(&in->length, buf, &np);
+	offset += np;
 
-	ctdb_uint32_push(in->reqid, buf+offset);
+	ctdb_uint32_push(&in->reqid, buf+offset, &np);
 }
 
 static int ctdb_event_header_pull(uint8_t *buf, size_t buflen,
 				  TALLOC_CTX *mem_ctx,
 				  struct ctdb_event_header *out)
 {
-	size_t offset = 0;
+	size_t offset = 0, np;
 	int ret;
 
-	ret = ctdb_uint32_pull(buf, buflen, mem_ctx, &out->length);
+	ret = ctdb_uint32_pull(buf, buflen, &out->length, &np);
 	if (ret != 0) {
 		return ret;
 	}
-	offset += ctdb_uint32_len(out->length);
+	offset += np;
 
-	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
-			       mem_ctx, &out->reqid);
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &out->reqid, &np);
 	if (ret != 0) {
 		return ret;
 	}

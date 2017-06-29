@@ -49,6 +49,7 @@ struct ctdb_reply_control_wire {
 static size_t ctdb_req_control_data_len(struct ctdb_req_control_data *cd)
 {
 	size_t len = 0;
+	uint32_t u32;
 
 	if (cd == NULL) {
 		return 0;
@@ -66,7 +67,7 @@ static size_t ctdb_req_control_data_len(struct ctdb_req_control_data *cd)
 		break;
 
 	case CTDB_CONTROL_GETDBPATH:
-		len = ctdb_uint32_len(cd->data.db_id);
+		len = ctdb_uint32_len(&cd->data.db_id);
 		break;
 
 	case CTDB_CONTROL_GETVNNMAP:
@@ -80,7 +81,7 @@ static size_t ctdb_req_control_data_len(struct ctdb_req_control_data *cd)
 		break;
 
 	case CTDB_CONTROL_SET_DEBUG:
-		len = ctdb_uint32_len(cd->data.loglevel);
+		len = ctdb_uint32_len(&cd->data.loglevel);
 		break;
 
 	case CTDB_CONTROL_GET_DBMAP:
@@ -98,7 +99,7 @@ static size_t ctdb_req_control_data_len(struct ctdb_req_control_data *cd)
 		break;
 
 	case CTDB_CONTROL_SET_RECMODE:
-		len = ctdb_uint32_len(cd->data.recmode);
+		len = ctdb_uint32_len(&cd->data.recmode);
 		break;
 
 	case CTDB_CONTROL_STATISTICS_RESET:
@@ -130,15 +131,15 @@ static size_t ctdb_req_control_data_len(struct ctdb_req_control_data *cd)
 		break;
 
 	case CTDB_CONTROL_GET_DBNAME:
-		len = ctdb_uint32_len(cd->data.db_id);
+		len = ctdb_uint32_len(&cd->data.db_id);
 		break;
 
 	case CTDB_CONTROL_ENABLE_SEQNUM:
-		len = ctdb_uint32_len(cd->data.db_id);
+		len = ctdb_uint32_len(&cd->data.db_id);
 		break;
 
 	case CTDB_CONTROL_UPDATE_SEQNUM:
-		len = ctdb_uint32_len(cd->data.db_id);
+		len = ctdb_uint32_len(&cd->data.db_id);
 		break;
 
 	case CTDB_CONTROL_DUMP_MEMORY:
@@ -151,7 +152,7 @@ static size_t ctdb_req_control_data_len(struct ctdb_req_control_data *cd)
 		break;
 
 	case CTDB_CONTROL_SET_RECMASTER:
-		len = ctdb_uint32_len(cd->data.recmaster);
+		len = ctdb_uint32_len(&cd->data.recmaster);
 		break;
 
 	case CTDB_CONTROL_FREEZE:
@@ -291,11 +292,11 @@ static size_t ctdb_req_control_data_len(struct ctdb_req_control_data *cd)
 		break;
 
 	case CTDB_CONTROL_SET_LMASTERROLE:
-		len = ctdb_uint32_len(cd->data.role);
+		len = ctdb_uint32_len(&cd->data.role);
 		break;
 
 	case CTDB_CONTROL_SET_RECMASTERROLE:
-		len = ctdb_uint32_len(cd->data.role);
+		len = ctdb_uint32_len(&cd->data.role);
 		break;
 
 	case CTDB_CONTROL_SET_BAN_STATE:
@@ -318,15 +319,16 @@ static size_t ctdb_req_control_data_len(struct ctdb_req_control_data *cd)
 		break;
 
 	case CTDB_CONTROL_GET_DB_SEQNUM:
-		len = ctdb_uint32_len(cd->data.db_id) + ctdb_uint32_len(0);
+		u32 = 0;
+		len = ctdb_uint32_len(&cd->data.db_id) + ctdb_uint32_len(&u32);
 		break;
 
 	case CTDB_CONTROL_DB_SET_HEALTHY:
-		len = ctdb_uint32_len(cd->data.db_id);
+		len = ctdb_uint32_len(&cd->data.db_id);
 		break;
 
 	case CTDB_CONTROL_DB_GET_HEALTH:
-		len = ctdb_uint32_len(cd->data.db_id);
+		len = ctdb_uint32_len(&cd->data.db_id);
 		break;
 
 	case CTDB_CONTROL_GET_PUBLIC_IP_INFO:
@@ -352,7 +354,7 @@ static size_t ctdb_req_control_data_len(struct ctdb_req_control_data *cd)
 		break;
 
 	case CTDB_CONTROL_SET_DB_READONLY:
-		len = ctdb_uint32_len(cd->data.db_id);
+		len = ctdb_uint32_len(&cd->data.db_id);
 		break;
 
 	case CTDB_CONTROL_CHECK_SRVIDS:
@@ -363,11 +365,11 @@ static size_t ctdb_req_control_data_len(struct ctdb_req_control_data *cd)
 		break;
 
 	case CTDB_CONTROL_GET_DB_STATISTICS:
-		len = ctdb_uint32_len(cd->data.db_id);
+		len = ctdb_uint32_len(&cd->data.db_id);
 		break;
 
 	case CTDB_CONTROL_SET_DB_STICKY:
-		len = ctdb_uint32_len(cd->data.db_id);
+		len = ctdb_uint32_len(&cd->data.db_id);
 		break;
 
 	case CTDB_CONTROL_RELOAD_PUBLIC_IPS:
@@ -388,18 +390,18 @@ static size_t ctdb_req_control_data_len(struct ctdb_req_control_data *cd)
 		break;
 
 	case CTDB_CONTROL_DB_DETACH:
-		len = ctdb_uint32_len(cd->data.db_id);
+		len = ctdb_uint32_len(&cd->data.db_id);
 		break;
 
 	case CTDB_CONTROL_GET_NODES_FILE:
 		break;
 
 	case CTDB_CONTROL_DB_FREEZE:
-		len = ctdb_uint32_len(cd->data.db_id);
+		len = ctdb_uint32_len(&cd->data.db_id);
 		break;
 
 	case CTDB_CONTROL_DB_THAW:
-		len = ctdb_uint32_len(cd->data.db_id);
+		len = ctdb_uint32_len(&cd->data.db_id);
 		break;
 
 	case CTDB_CONTROL_DB_TRANSACTION_START:
@@ -411,7 +413,7 @@ static size_t ctdb_req_control_data_len(struct ctdb_req_control_data *cd)
 		break;
 
 	case CTDB_CONTROL_DB_TRANSACTION_CANCEL:
-		len = ctdb_uint32_len(cd->data.db_id);
+		len = ctdb_uint32_len(&cd->data.db_id);
 		break;
 
 	case CTDB_CONTROL_DB_PULL:
@@ -423,11 +425,11 @@ static size_t ctdb_req_control_data_len(struct ctdb_req_control_data *cd)
 		break;
 
 	case CTDB_CONTROL_DB_PUSH_CONFIRM:
-		len = ctdb_uint32_len(cd->data.db_id);
+		len = ctdb_uint32_len(&cd->data.db_id);
 		break;
 
 	case CTDB_CONTROL_DB_OPEN_FLAGS:
-		len = ctdb_uint32_len(cd->data.db_id);
+		len = ctdb_uint32_len(&cd->data.db_id);
 		break;
 
 	case CTDB_CONTROL_DB_ATTACH_REPLICATED:
@@ -441,13 +443,16 @@ static size_t ctdb_req_control_data_len(struct ctdb_req_control_data *cd)
 static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 				       uint8_t *buf)
 {
+	size_t np, offset;
+	uint32_t u32;
+
 	switch (cd->opcode) {
 	case CTDB_CONTROL_PROCESS_EXISTS:
 		ctdb_pid_push(cd->data.pid, buf);
 		break;
 
 	case CTDB_CONTROL_GETDBPATH:
-		ctdb_uint32_push(cd->data.db_id, buf);
+		ctdb_uint32_push(&cd->data.db_id, buf, &np);
 		break;
 
 	case CTDB_CONTROL_SETVNNMAP:
@@ -455,7 +460,7 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_SET_DEBUG:
-		ctdb_uint32_push(cd->data.loglevel, buf);
+		ctdb_uint32_push(&cd->data.loglevel, buf, &np);
 		break;
 
 	case CTDB_CONTROL_PULL_DB:
@@ -467,7 +472,7 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_SET_RECMODE:
-		ctdb_uint32_push(cd->data.recmode, buf);
+		ctdb_uint32_push(&cd->data.recmode, buf, &np);
 		break;
 
 	case CTDB_CONTROL_DB_ATTACH:
@@ -490,19 +495,19 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_GET_DBNAME:
-		ctdb_uint32_push(cd->data.db_id, buf);
+		ctdb_uint32_push(&cd->data.db_id, buf, &np);
 		break;
 
 	case CTDB_CONTROL_ENABLE_SEQNUM:
-		ctdb_uint32_push(cd->data.db_id, buf);
+		ctdb_uint32_push(&cd->data.db_id, buf, &np);
 		break;
 
 	case CTDB_CONTROL_UPDATE_SEQNUM:
-		ctdb_uint32_push(cd->data.db_id, buf);
+		ctdb_uint32_push(&cd->data.db_id, buf, &np);
 		break;
 
 	case CTDB_CONTROL_SET_RECMASTER:
-		ctdb_uint32_push(cd->data.recmaster, buf);
+		ctdb_uint32_push(&cd->data.recmaster, buf, &np);
 		break;
 
 	case CTDB_CONTROL_TCP_CLIENT:
@@ -582,11 +587,11 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_SET_LMASTERROLE:
-		ctdb_uint32_push(cd->data.role, buf);
+		ctdb_uint32_push(&cd->data.role, buf, &np);
 		break;
 
 	case CTDB_CONTROL_SET_RECMASTERROLE:
-		ctdb_uint32_push(cd->data.role, buf);
+		ctdb_uint32_push(&cd->data.role, buf, &np);
 		break;
 
 	case CTDB_CONTROL_SET_BAN_STATE:
@@ -606,16 +611,21 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_GET_DB_SEQNUM:
-		ctdb_uint32_push(cd->data.db_id, buf);
-		ctdb_uint32_push(0, buf+4);
+		u32 = 0;
+		offset = 0;
+		ctdb_uint32_push(&cd->data.db_id, buf, &np);
+		offset += np;
+		ctdb_uint32_push(&u32, buf+offset, &np);
+		offset += np;
+		np = offset;
 		break;
 
 	case CTDB_CONTROL_DB_SET_HEALTHY:
-		ctdb_uint32_push(cd->data.db_id, buf);
+		ctdb_uint32_push(&cd->data.db_id, buf, &np);
 		break;
 
 	case CTDB_CONTROL_DB_GET_HEALTH:
-		ctdb_uint32_push(cd->data.db_id, buf);
+		ctdb_uint32_push(&cd->data.db_id, buf, &np);
 		break;
 
 	case CTDB_CONTROL_GET_PUBLIC_IP_INFO:
@@ -635,7 +645,7 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_SET_DB_READONLY:
-		ctdb_uint32_push(cd->data.db_id, buf);
+		ctdb_uint32_push(&cd->data.db_id, buf, &np);
 		break;
 
 	case CTDB_CONTROL_CHECK_SRVIDS:
@@ -646,11 +656,11 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_GET_DB_STATISTICS:
-		ctdb_uint32_push(cd->data.db_id, buf);
+		ctdb_uint32_push(&cd->data.db_id, buf, &np);
 		break;
 
 	case CTDB_CONTROL_SET_DB_STICKY:
-		ctdb_uint32_push(cd->data.db_id, buf);
+		ctdb_uint32_push(&cd->data.db_id, buf, &np);
 		break;
 
 	case CTDB_CONTROL_TRAVERSE_ALL_EXT:
@@ -662,15 +672,15 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_DB_DETACH:
-		ctdb_uint32_push(cd->data.db_id, buf);
+		ctdb_uint32_push(&cd->data.db_id, buf, &np);
 		break;
 
 	case CTDB_CONTROL_DB_FREEZE:
-		ctdb_uint32_push(cd->data.db_id, buf);
+		ctdb_uint32_push(&cd->data.db_id, buf, &np);
 		break;
 
 	case CTDB_CONTROL_DB_THAW:
-		ctdb_uint32_push(cd->data.db_id, buf);
+		ctdb_uint32_push(&cd->data.db_id, buf, &np);
 		break;
 
 	case CTDB_CONTROL_DB_TRANSACTION_START:
@@ -682,7 +692,7 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_DB_TRANSACTION_CANCEL:
-		ctdb_uint32_push(cd->data.db_id, buf);
+		ctdb_uint32_push(&cd->data.db_id, buf, &np);
 		break;
 
 	case CTDB_CONTROL_DB_PULL:
@@ -694,11 +704,11 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_DB_PUSH_CONFIRM:
-		ctdb_uint32_push(cd->data.db_id, buf);
+		ctdb_uint32_push(&cd->data.db_id, buf, &np);
 		break;
 
 	case CTDB_CONTROL_DB_OPEN_FLAGS:
-		ctdb_uint32_push(cd->data.db_id, buf);
+		ctdb_uint32_push(&cd->data.db_id, buf, &np);
 		break;
 
 	case CTDB_CONTROL_DB_ATTACH_REPLICATED:
@@ -712,6 +722,7 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 				      TALLOC_CTX *mem_ctx,
 				      struct ctdb_req_control_data *cd)
 {
+	size_t np, offset;
 	uint32_t u32;
 	int ret = 0;
 
@@ -724,8 +735,7 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 		break;
 
 	case CTDB_CONTROL_GETDBPATH:
-		ret = ctdb_uint32_pull(buf, buflen, mem_ctx,
-				     &cd->data.db_id);
+		ret = ctdb_uint32_pull(buf, buflen, &cd->data.db_id, &np);
 		break;
 
 	case CTDB_CONTROL_SETVNNMAP:
@@ -734,8 +744,7 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 		break;
 
 	case CTDB_CONTROL_SET_DEBUG:
-		ret = ctdb_uint32_pull(buf, buflen, mem_ctx,
-				     &cd->data.loglevel);
+		ret = ctdb_uint32_pull(buf, buflen, &cd->data.loglevel, &np);
 		break;
 
 	case CTDB_CONTROL_PULL_DB:
@@ -749,8 +758,7 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 		break;
 
 	case CTDB_CONTROL_SET_RECMODE:
-		ret = ctdb_uint32_pull(buf, buflen, mem_ctx,
-				     &cd->data.recmode);
+		ret = ctdb_uint32_pull(buf, buflen, &cd->data.recmode, &np);
 		break;
 
 	case CTDB_CONTROL_DB_ATTACH:
@@ -777,23 +785,19 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 		break;
 
 	case CTDB_CONTROL_GET_DBNAME:
-		ret = ctdb_uint32_pull(buf, buflen, mem_ctx,
-				     &cd->data.db_id);
+		ret = ctdb_uint32_pull(buf, buflen, &cd->data.db_id, &np);
 		break;
 
 	case CTDB_CONTROL_ENABLE_SEQNUM:
-		ret = ctdb_uint32_pull(buf, buflen, mem_ctx,
-				     &cd->data.db_id);
+		ret = ctdb_uint32_pull(buf, buflen, &cd->data.db_id, &np);
 		break;
 
 	case CTDB_CONTROL_UPDATE_SEQNUM:
-		ret = ctdb_uint32_pull(buf, buflen, mem_ctx,
-				     &cd->data.db_id);
+		ret = ctdb_uint32_pull(buf, buflen, &cd->data.db_id, &np);
 		break;
 
 	case CTDB_CONTROL_SET_RECMASTER:
-		ret = ctdb_uint32_pull(buf, buflen, mem_ctx,
-				     &cd->data.recmaster);
+		ret = ctdb_uint32_pull(buf, buflen, &cd->data.recmaster, &np);
 		break;
 
 	case CTDB_CONTROL_TCP_CLIENT:
@@ -892,13 +896,11 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 		break;
 
 	case CTDB_CONTROL_SET_LMASTERROLE:
-		ret = ctdb_uint32_pull(buf, buflen, mem_ctx,
-				     &cd->data.role);
+		ret = ctdb_uint32_pull(buf, buflen, &cd->data.role, &np);
 		break;
 
 	case CTDB_CONTROL_SET_RECMASTERROLE:
-		ret = ctdb_uint32_pull(buf, buflen, mem_ctx,
-				     &cd->data.role);
+		ret = ctdb_uint32_pull(buf, buflen, &cd->data.role, &np);
 		break;
 
 	case CTDB_CONTROL_SET_BAN_STATE:
@@ -922,21 +924,23 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 		break;
 
 	case CTDB_CONTROL_GET_DB_SEQNUM:
-		ret = ctdb_uint32_pull(buf, buflen, mem_ctx, &cd->data.db_id);
+		offset = 0;
+		ret = ctdb_uint32_pull(buf, buflen, &cd->data.db_id, &np);
 		if (ret != 0) {
 			break;
 		}
-		ret = ctdb_uint32_pull(buf+4, buflen-4, mem_ctx, &u32);
+		offset += np;
+		ret = ctdb_uint32_pull(buf+offset, buflen-offset, &u32, &np);
+		offset += np;
+		np = offset;
 		break;
 
 	case CTDB_CONTROL_DB_SET_HEALTHY:
-		ret = ctdb_uint32_pull(buf, buflen, mem_ctx,
-				     &cd->data.db_id);
+		ret = ctdb_uint32_pull(buf, buflen, &cd->data.db_id, &np);
 		break;
 
 	case CTDB_CONTROL_DB_GET_HEALTH:
-		ret = ctdb_uint32_pull(buf, buflen, mem_ctx,
-				     &cd->data.db_id);
+		ret = ctdb_uint32_pull(buf, buflen, &cd->data.db_id, &np);
 		break;
 
 	case CTDB_CONTROL_GET_PUBLIC_IP_INFO:
@@ -960,8 +964,7 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 		break;
 
 	case CTDB_CONTROL_SET_DB_READONLY:
-		ret = ctdb_uint32_pull(buf, buflen, mem_ctx,
-				     &cd->data.db_id);
+		ret = ctdb_uint32_pull(buf, buflen, &cd->data.db_id, &np);
 		break;
 
 	case CTDB_CONTROL_CHECK_SRVIDS:
@@ -973,13 +976,11 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 		break;
 
 	case CTDB_CONTROL_GET_DB_STATISTICS:
-		ret = ctdb_uint32_pull(buf, buflen, mem_ctx,
-				       &cd->data.db_id);
+		ret = ctdb_uint32_pull(buf, buflen, &cd->data.db_id, &np);
 		break;
 
 	case CTDB_CONTROL_SET_DB_STICKY:
-		ret = ctdb_uint32_pull(buf, buflen, mem_ctx,
-				       &cd->data.db_id);
+		ret = ctdb_uint32_pull(buf, buflen, &cd->data.db_id, &np);
 		break;
 
 	case CTDB_CONTROL_TRAVERSE_ALL_EXT:
@@ -993,18 +994,15 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 		break;
 
 	case CTDB_CONTROL_DB_DETACH:
-		ret = ctdb_uint32_pull(buf, buflen, mem_ctx,
-				       &cd->data.db_id);
+		ret = ctdb_uint32_pull(buf, buflen, &cd->data.db_id, &np);
 		break;
 
 	case CTDB_CONTROL_DB_FREEZE:
-		ret = ctdb_uint32_pull(buf, buflen, mem_ctx,
-				       &cd->data.db_id);
+		ret = ctdb_uint32_pull(buf, buflen, &cd->data.db_id, &np);
 		break;
 
 	case CTDB_CONTROL_DB_THAW:
-		ret = ctdb_uint32_pull(buf, buflen, mem_ctx,
-				       &cd->data.db_id);
+		ret = ctdb_uint32_pull(buf, buflen, &cd->data.db_id, &np);
 		break;
 
 	case CTDB_CONTROL_DB_TRANSACTION_START:
@@ -1018,8 +1016,7 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 		break;
 
 	case CTDB_CONTROL_DB_TRANSACTION_CANCEL:
-		ret = ctdb_uint32_pull(buf, buflen, mem_ctx,
-					&cd->data.db_id);
+		ret = ctdb_uint32_pull(buf, buflen, &cd->data.db_id, &np);
 		break;
 
 	case CTDB_CONTROL_DB_PULL:
@@ -1033,13 +1030,11 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 		break;
 
 	case CTDB_CONTROL_DB_PUSH_CONFIRM:
-		ret = ctdb_uint32_pull(buf, buflen, mem_ctx,
-				       &cd->data.db_id);
+		ret = ctdb_uint32_pull(buf, buflen, &cd->data.db_id, &np);
 		break;
 
 	case CTDB_CONTROL_DB_OPEN_FLAGS:
-		ret = ctdb_uint32_pull(buf, buflen, mem_ctx,
-				       &cd->data.db_id);
+		ret = ctdb_uint32_pull(buf, buflen, &cd->data.db_id, &np);
 		break;
 
 	case CTDB_CONTROL_DB_ATTACH_REPLICATED:
@@ -1082,7 +1077,7 @@ static size_t ctdb_reply_control_data_len(struct ctdb_reply_control_data *cd)
 		break;
 
 	case CTDB_CONTROL_GET_DEBUG:
-		len = ctdb_uint32_len(cd->data.loglevel);
+		len = ctdb_uint32_len(&cd->data.loglevel);
 		break;
 
 	case CTDB_CONTROL_SET_DEBUG:
@@ -1109,7 +1104,7 @@ static size_t ctdb_reply_control_data_len(struct ctdb_reply_control_data *cd)
 		break;
 
 	case CTDB_CONTROL_DB_ATTACH:
-		len = ctdb_uint32_len(cd->data.db_id);
+		len = ctdb_uint32_len(&cd->data.db_id);
 		break;
 
 	case CTDB_CONTROL_SET_CALL:
@@ -1181,7 +1176,7 @@ static size_t ctdb_reply_control_data_len(struct ctdb_reply_control_data *cd)
 		break;
 
 	case CTDB_CONTROL_GET_TUNABLE:
-		len = ctdb_uint32_len(cd->data.tun_value);
+		len = ctdb_uint32_len(&cd->data.tun_value);
 		break;
 
 	case CTDB_CONTROL_LIST_TUNABLES:
@@ -1203,7 +1198,7 @@ static size_t ctdb_reply_control_data_len(struct ctdb_reply_control_data *cd)
 		break;
 
 	case CTDB_CONTROL_DB_ATTACH_PERSISTENT:
-		len = ctdb_uint32_len(cd->data.db_id);
+		len = ctdb_uint32_len(&cd->data.db_id);
 		break;
 
 	case CTDB_CONTROL_UPDATE_RECORD:
@@ -1245,7 +1240,7 @@ static size_t ctdb_reply_control_data_len(struct ctdb_reply_control_data *cd)
 		break;
 
 	case CTDB_CONTROL_GET_CAPABILITIES:
-		len = ctdb_uint32_len(cd->data.caps);
+		len = ctdb_uint32_len(&cd->data.caps);
 		break;
 
 	case CTDB_CONTROL_RECD_PING:
@@ -1371,7 +1366,7 @@ static size_t ctdb_reply_control_data_len(struct ctdb_reply_control_data *cd)
 		break;
 
 	case CTDB_CONTROL_GET_RUNSTATE:
-		len = ctdb_uint32_len(cd->data.runstate);
+		len = ctdb_uint32_len(&cd->data.runstate);
 		break;
 
 	case CTDB_CONTROL_DB_DETACH:
@@ -1397,14 +1392,14 @@ static size_t ctdb_reply_control_data_len(struct ctdb_reply_control_data *cd)
 		break;
 
 	case CTDB_CONTROL_DB_PULL:
-		len = ctdb_uint32_len(cd->data.num_records);
+		len = ctdb_uint32_len(&cd->data.num_records);
 		break;
 
 	case CTDB_CONTROL_DB_PUSH_START:
 		break;
 
 	case CTDB_CONTROL_DB_PUSH_CONFIRM:
-		len = ctdb_uint32_len(cd->data.num_records);
+		len = ctdb_uint32_len(&cd->data.num_records);
 		break;
 
 	case CTDB_CONTROL_DB_OPEN_FLAGS:
@@ -1412,7 +1407,7 @@ static size_t ctdb_reply_control_data_len(struct ctdb_reply_control_data *cd)
 		break;
 
 	case CTDB_CONTROL_DB_ATTACH_REPLICATED:
-		len = ctdb_uint32_len(cd->data.db_id);
+		len = ctdb_uint32_len(&cd->data.db_id);
 		break;
 	}
 
@@ -1438,7 +1433,7 @@ static void ctdb_reply_control_data_push(struct ctdb_reply_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_GET_DEBUG:
-		ctdb_uint32_push(cd->data.loglevel, buf);
+		ctdb_uint32_push(&cd->data.loglevel, buf, &np);
 		break;
 
 	case CTDB_CONTROL_GET_DBMAP:
@@ -1453,7 +1448,7 @@ static void ctdb_reply_control_data_push(struct ctdb_reply_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_DB_ATTACH:
-		ctdb_uint32_push(cd->data.db_id, buf);
+		ctdb_uint32_push(&cd->data.db_id, buf, &np);
 		break;
 
 	case CTDB_CONTROL_GET_DBNAME:
@@ -1471,7 +1466,7 @@ static void ctdb_reply_control_data_push(struct ctdb_reply_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_GET_TUNABLE:
-		ctdb_uint32_push(cd->data.tun_value, buf);
+		ctdb_uint32_push(&cd->data.tun_value, buf, &np);
 		break;
 
 	case CTDB_CONTROL_LIST_TUNABLES:
@@ -1487,7 +1482,7 @@ static void ctdb_reply_control_data_push(struct ctdb_reply_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_DB_ATTACH_PERSISTENT:
-		ctdb_uint32_push(cd->data.db_id, buf);
+		ctdb_uint32_push(&cd->data.db_id, buf, &np);
 		break;
 
 	case CTDB_CONTROL_UPTIME:
@@ -1499,7 +1494,7 @@ static void ctdb_reply_control_data_push(struct ctdb_reply_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_GET_CAPABILITIES:
-		ctdb_uint32_push(cd->data.caps, buf);
+		ctdb_uint32_push(&cd->data.caps, buf, &np);
 		break;
 
 	case CTDB_CONTROL_GET_PUBLIC_IPS:
@@ -1553,7 +1548,7 @@ static void ctdb_reply_control_data_push(struct ctdb_reply_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_GET_RUNSTATE:
-		ctdb_uint32_push(cd->data.runstate, buf);
+		ctdb_uint32_push(&cd->data.runstate, buf, &np);
 		break;
 
 	case CTDB_CONTROL_GET_NODES_FILE:
@@ -1561,11 +1556,11 @@ static void ctdb_reply_control_data_push(struct ctdb_reply_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_DB_PULL:
-		ctdb_uint32_push(cd->data.num_records, buf);
+		ctdb_uint32_push(&cd->data.num_records, buf, &np);
 		break;
 
 	case CTDB_CONTROL_DB_PUSH_CONFIRM:
-		ctdb_uint32_push(cd->data.num_records, buf);
+		ctdb_uint32_push(&cd->data.num_records, buf, &np);
 		break;
 
 	case CTDB_CONTROL_DB_OPEN_FLAGS:
@@ -1573,7 +1568,7 @@ static void ctdb_reply_control_data_push(struct ctdb_reply_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_DB_ATTACH_REPLICATED:
-		ctdb_uint32_push(cd->data.db_id, buf);
+		ctdb_uint32_push(&cd->data.db_id, buf, &np);
 		break;
 	}
 }
@@ -1604,8 +1599,7 @@ static int ctdb_reply_control_data_pull(uint8_t *buf, size_t buflen,
 		break;
 
 	case CTDB_CONTROL_GET_DEBUG:
-		ret = ctdb_uint32_pull(buf, buflen, mem_ctx,
-				     &cd->data.loglevel);
+		ret = ctdb_uint32_pull(buf, buflen, &cd->data.loglevel, &np);
 		break;
 
 	case CTDB_CONTROL_GET_DBMAP:
@@ -1622,8 +1616,7 @@ static int ctdb_reply_control_data_pull(uint8_t *buf, size_t buflen,
 		break;
 
 	case CTDB_CONTROL_DB_ATTACH:
-		ret = ctdb_uint32_pull(buf, buflen, mem_ctx,
-				       &cd->data.db_id);
+		ret = ctdb_uint32_pull(buf, buflen, &cd->data.db_id, &np);
 		break;
 
 	case CTDB_CONTROL_GET_DBNAME:
@@ -1643,8 +1636,8 @@ static int ctdb_reply_control_data_pull(uint8_t *buf, size_t buflen,
 		break;
 
 	case CTDB_CONTROL_GET_TUNABLE:
-		ret = ctdb_uint32_pull(buf, buflen, mem_ctx,
-				     &cd->data.tun_value);
+		ret = ctdb_uint32_pull(buf, buflen, &cd->data.tun_value,
+				       &np);
 		break;
 
 	case CTDB_CONTROL_LIST_TUNABLES:
@@ -1663,8 +1656,7 @@ static int ctdb_reply_control_data_pull(uint8_t *buf, size_t buflen,
 		break;
 
 	case CTDB_CONTROL_DB_ATTACH_PERSISTENT:
-		ret = ctdb_uint32_pull(buf, buflen, mem_ctx,
-				       &cd->data.db_id);
+		ret = ctdb_uint32_pull(buf, buflen, &cd->data.db_id, &np);
 		break;
 
 	case CTDB_CONTROL_UPTIME:
@@ -1678,8 +1670,7 @@ static int ctdb_reply_control_data_pull(uint8_t *buf, size_t buflen,
 		break;
 
 	case CTDB_CONTROL_GET_CAPABILITIES:
-		ret = ctdb_uint32_pull(buf, buflen, mem_ctx,
-				     &cd->data.caps);
+		ret = ctdb_uint32_pull(buf, buflen, &cd->data.caps, &np);
 		break;
 
 	case CTDB_CONTROL_GET_PUBLIC_IPS:
@@ -1744,8 +1735,7 @@ static int ctdb_reply_control_data_pull(uint8_t *buf, size_t buflen,
 		break;
 
 	case CTDB_CONTROL_GET_RUNSTATE:
-		ret = ctdb_uint32_pull(buf, buflen, mem_ctx,
-				       &cd->data.runstate);
+		ret = ctdb_uint32_pull(buf, buflen, &cd->data.runstate, &np);
 		break;
 
 	case CTDB_CONTROL_GET_NODES_FILE:
@@ -1754,13 +1744,13 @@ static int ctdb_reply_control_data_pull(uint8_t *buf, size_t buflen,
 		break;
 
 	case CTDB_CONTROL_DB_PULL:
-		ret = ctdb_uint32_pull(buf, buflen, mem_ctx,
-				       &cd->data.num_records);
+		ret = ctdb_uint32_pull(buf, buflen, &cd->data.num_records,
+				       &np);
 		break;
 
 	case CTDB_CONTROL_DB_PUSH_CONFIRM:
-		ret = ctdb_uint32_pull(buf, buflen, mem_ctx,
-				       &cd->data.num_records);
+		ret = ctdb_uint32_pull(buf, buflen, &cd->data.num_records,
+				       &np);
 		break;
 
 	case CTDB_CONTROL_DB_OPEN_FLAGS:
@@ -1768,8 +1758,7 @@ static int ctdb_reply_control_data_pull(uint8_t *buf, size_t buflen,
 		break;
 
 	case CTDB_CONTROL_DB_ATTACH_REPLICATED:
-		ret = ctdb_uint32_pull(buf, buflen, mem_ctx,
-				       &cd->data.db_id);
+		ret = ctdb_uint32_pull(buf, buflen, &cd->data.db_id, &np);
 		break;
 	}
 
