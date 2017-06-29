@@ -242,10 +242,39 @@ static int ctdb_dbid_map_pull_old(uint8_t *buf, size_t buflen,
 	return 0;
 }
 
+static size_t ctdb_pulldb_len_old(struct ctdb_pulldb *in)
+{
+	return sizeof(struct ctdb_pulldb);
+}
+
+static void ctdb_pulldb_push_old(struct ctdb_pulldb *in, uint8_t *buf)
+{
+	memcpy(buf, in, sizeof(struct ctdb_pulldb));
+}
+
+static int ctdb_pulldb_pull_old(uint8_t *buf, size_t buflen,
+				TALLOC_CTX *mem_ctx, struct ctdb_pulldb **out)
+{
+	struct ctdb_pulldb *val;
+
+	if (buflen < sizeof(struct ctdb_pulldb)) {
+		return EMSGSIZE;
+	}
+
+	val = talloc_memdup(mem_ctx, buf, sizeof(struct ctdb_pulldb));
+	if (val == NULL) {
+		return ENOMEM;
+	}
+
+	*out = val;
+	return 0;
+}
+
 
 COMPAT_TYPE3_TEST(struct ctdb_statistics, ctdb_statistics);
 COMPAT_TYPE3_TEST(struct ctdb_vnn_map, ctdb_vnn_map);
 COMPAT_TYPE3_TEST(struct ctdb_dbid_map, ctdb_dbid_map);
+COMPAT_TYPE3_TEST(struct ctdb_pulldb, ctdb_pulldb);
 
 int main(int argc, char *argv[])
 {
@@ -257,6 +286,7 @@ int main(int argc, char *argv[])
 	COMPAT_TEST_FUNC(ctdb_statistics)();
 	COMPAT_TEST_FUNC(ctdb_vnn_map)();
 	COMPAT_TEST_FUNC(ctdb_dbid_map)();
+	COMPAT_TEST_FUNC(ctdb_pulldb)();
 
 	return 0;
 }

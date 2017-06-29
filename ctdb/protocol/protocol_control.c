@@ -464,7 +464,7 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_PULL_DB:
-		ctdb_pulldb_push(cd->data.pulldb, buf);
+		ctdb_pulldb_push(cd->data.pulldb, buf, &np);
 		break;
 
 	case CTDB_CONTROL_PUSH_DB:
@@ -748,7 +748,7 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_CONTROL_PULL_DB:
 		ret = ctdb_pulldb_pull(buf, buflen, mem_ctx,
-				       &cd->data.pulldb);
+				       &cd->data.pulldb, &np);
 		break;
 
 	case CTDB_CONTROL_PUSH_DB:
