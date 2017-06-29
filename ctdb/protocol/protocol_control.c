@@ -483,7 +483,7 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_TRAVERSE_START:
-		ctdb_traverse_start_push(cd->data.traverse_start, buf);
+		ctdb_traverse_start_push(cd->data.traverse_start, buf, &np);
 		break;
 
 	case CTDB_CONTROL_TRAVERSE_ALL:
@@ -579,7 +579,7 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_TRAVERSE_KILL:
-		ctdb_traverse_start_push(cd->data.traverse_start, buf);
+		ctdb_traverse_start_push(cd->data.traverse_start, buf, &np);
 		break;
 
 	case CTDB_CONTROL_RECD_RECLOCK_LATENCY:
@@ -770,7 +770,7 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_CONTROL_TRAVERSE_START:
 		ret = ctdb_traverse_start_pull(buf, buflen, mem_ctx,
-					       &cd->data.traverse_start);
+					       &cd->data.traverse_start, &np);
 		break;
 
 	case CTDB_CONTROL_TRAVERSE_ALL:
@@ -886,7 +886,7 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_CONTROL_TRAVERSE_KILL:
 		ret = ctdb_traverse_start_pull(buf, buflen, mem_ctx,
-					       &cd->data.traverse_start);
+					       &cd->data.traverse_start, &np);
 		break;
 
 	case CTDB_CONTROL_RECD_RECLOCK_LATENCY:
