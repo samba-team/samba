@@ -58,19 +58,7 @@ static void test_ctdb_chararray(void)
 PROTOCOL_TYPE2_TEST(const char *, ctdb_string);
 PROTOCOL_TYPE2_TEST(const char *, ctdb_stringn);
 
-static void test_ctdb_pid(void)
-{
-	pid_t p1, p2;
-	size_t buflen;
-	int ret;
-
-	p1 = rand32();
-	buflen = ctdb_pid_len(p1);
-	ctdb_pid_push(p1, BUFFER);
-	ret = ctdb_pid_pull(BUFFER, buflen, NULL, &p2);
-	assert(ret == 0);
-	assert(p1 == p2);
-}
+PROTOCOL_TYPE1_TEST(pid_t, ctdb_pid);
 
 int main(int argc, char *argv[])
 {
@@ -92,7 +80,7 @@ int main(int argc, char *argv[])
 	TEST_FUNC(ctdb_string)();
 	TEST_FUNC(ctdb_stringn)();
 
-	test_ctdb_pid();
+	TEST_FUNC(ctdb_pid)();
 
 	return 0;
 }

@@ -57,7 +57,7 @@ static size_t ctdb_req_control_data_len(struct ctdb_req_control_data *cd)
 
 	switch (cd->opcode) {
 	case CTDB_CONTROL_PROCESS_EXISTS:
-		len = ctdb_pid_len(cd->data.pid);
+		len = ctdb_pid_len(&cd->data.pid);
 		break;
 
 	case CTDB_CONTROL_STATISTICS:
@@ -448,7 +448,7 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 
 	switch (cd->opcode) {
 	case CTDB_CONTROL_PROCESS_EXISTS:
-		ctdb_pid_push(cd->data.pid, buf);
+		ctdb_pid_push(&cd->data.pid, buf, &np);
 		break;
 
 	case CTDB_CONTROL_GETDBPATH:
@@ -730,8 +730,7 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 
 	switch (opcode) {
 	case CTDB_CONTROL_PROCESS_EXISTS:
-		ret = ctdb_pid_pull(buf, buflen, mem_ctx,
-				    &cd->data.pid);
+		ret = ctdb_pid_pull(buf, buflen, &cd->data.pid, &np);
 		break;
 
 	case CTDB_CONTROL_GETDBPATH:

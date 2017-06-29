@@ -323,23 +323,24 @@ int ctdb_stringn_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
  * System defined data types
  */
 
-size_t ctdb_pid_len(pid_t pid)
+size_t ctdb_pid_len(pid_t *in)
 {
 	return sizeof(pid_t);
 }
 
-void ctdb_pid_push(pid_t pid, uint8_t *buf)
+void ctdb_pid_push(pid_t *in, uint8_t *buf, size_t *npush)
 {
-	memcpy(buf, &pid, sizeof(pid_t));
+	memcpy(buf, in, sizeof(pid_t));
+	*npush = sizeof(pid_t);
 }
 
-int ctdb_pid_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-		  pid_t *out)
+int ctdb_pid_pull(uint8_t *buf, size_t buflen, pid_t *out, size_t *npull)
 {
 	if (buflen < sizeof(pid_t)) {
 		return EMSGSIZE;
 	}
 
-	*out = *(pid_t *)buf;
+	memcpy(out, buf, sizeof(pid_t));
+	*npull = sizeof(pid_t);
 	return 0;
 }

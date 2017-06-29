@@ -72,10 +72,9 @@ void ctdb_stringn_push(const char **in, uint8_t *buf, size_t *npush);
 int ctdb_stringn_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 		      const char **out, size_t *npull);
 
-size_t ctdb_pid_len(pid_t pid);
-void ctdb_pid_push(pid_t pid, uint8_t *buf);
-int ctdb_pid_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-		  pid_t *out);
+size_t ctdb_pid_len(pid_t *in);
+void ctdb_pid_push(pid_t *in, uint8_t *buf, size_t *npush);
+int ctdb_pid_pull(uint8_t *buf, size_t buflen, pid_t *out, size_t *npull);
 
 /*
  * From protocol/protocol_types.c

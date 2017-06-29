@@ -179,6 +179,9 @@ void verify_ctdb_string(const char **p1, const char **p2);
 void fill_ctdb_stringn(TALLOC_CTX *mem_ctx, const char **p);
 void verify_ctdb_stringn(const char **p1, const char **p2);
 
+void fill_ctdb_pid(pid_t *p);
+void verify_ctdb_pid(pid_t *p1, pid_t *p2);
+
 void fill_tdb_data_nonnull(TALLOC_CTX *mem_ctx, TDB_DATA *p);
 void fill_tdb_data(TALLOC_CTX *mem_ctx, TDB_DATA *p);
 void verify_tdb_data(TDB_DATA *p1, TDB_DATA *p2);

@@ -210,6 +210,16 @@ void verify_ctdb_stringn(const char **p1, const char **p2)
 	verify_ctdb_string(p1, p2);
 }
 
+void fill_ctdb_pid(pid_t *p)
+{
+	*p = rand32();
+}
+
+void verify_ctdb_pid(pid_t *p1, pid_t *p2)
+{
+	assert(*p1 == *p2);
+}
+
 void fill_tdb_data_nonnull(TALLOC_CTX *mem_ctx, TDB_DATA *p)
 {
 	p->dsize = rand_int(1024) + 1;
