@@ -164,12 +164,13 @@ int ctdb_traverse_start_ext_pull(uint8_t *buf, size_t buflen,
 				 struct ctdb_traverse_start_ext **out,
 				 size_t *npull);
 
-size_t ctdb_traverse_all_ext_len(struct ctdb_traverse_all_ext *traverse);
-void ctdb_traverse_all_ext_push(struct ctdb_traverse_all_ext *traverse,
-				uint8_t *buf);
+size_t ctdb_traverse_all_ext_len(struct ctdb_traverse_all_ext *in);
+void ctdb_traverse_all_ext_push(struct ctdb_traverse_all_ext *in,
+				uint8_t *buf, size_t *npush);
 int ctdb_traverse_all_ext_pull(uint8_t *buf, size_t buflen,
 			       TALLOC_CTX *mem_ctx,
-			       struct ctdb_traverse_all_ext **out);
+			       struct ctdb_traverse_all_ext **out,
+			       size_t *npull);
 
 size_t ctdb_sock_addr_len(ctdb_sock_addr *addr);
 void ctdb_sock_addr_push(ctdb_sock_addr *addr, uint8_t *buf);
