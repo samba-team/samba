@@ -321,6 +321,155 @@ static int ctdb_ltdb_header_pull_old(uint8_t *buf, size_t buflen,
 	return 0;
 }
 
+struct ctdb_rec_data_wire {
+	uint32_t length;
+	uint32_t reqid;
+	uint32_t keylen;
+	uint32_t datalen;
+	uint8_t data[1];
+};
+
+static size_t ctdb_rec_data_len_old(struct ctdb_rec_data *in)
+{
+	return offsetof(struct ctdb_rec_data_wire, data) +
+	       in->key.dsize + in->data.dsize +
+	       (in->header == NULL ? 0 : sizeof(struct ctdb_ltdb_header));
+}
+
+static void ctdb_rec_data_push_old(struct ctdb_rec_data *in, uint8_t *buf)
+{
+	struct ctdb_rec_data_wire *wire = (struct ctdb_rec_data_wire *)buf;
+	size_t offset;
+
+	wire->length = ctdb_rec_data_len(in);
+	wire->reqid = in->reqid;
+	wire->keylen = in->key.dsize;
+	wire->datalen = in->data.dsize;
+	if (in->header != NULL) {
+		wire->datalen += sizeof(struct ctdb_ltdb_header);
+	}
+
+	memcpy(wire->data, in->key.dptr, in->key.dsize);
+	offset = in->key.dsize;
+	if (in->header != NULL) {
+		memcpy(&wire->data[offset], in->header,
+		       sizeof(struct ctdb_ltdb_header));
+		offset += sizeof(struct ctdb_ltdb_header);
+	}
+	if (in->data.dsize > 0) {
+		memcpy(&wire->data[offset], in->data.dptr, in->data.dsize);
+	}
+}
+
+static int ctdb_rec_data_pull_data_old(uint8_t *buf, size_t buflen,
+				       uint32_t *reqid,
+				       struct ctdb_ltdb_header **header,
+				       TDB_DATA *key, TDB_DATA *data,
+				       size_t *reclen)
+{
+	struct ctdb_rec_data_wire *wire = (struct ctdb_rec_data_wire *)buf;
+	size_t offset;
+
+	if (buflen < offsetof(struct ctdb_rec_data_wire, data)) {
+		return EMSGSIZE;
+	}
+	if (wire->keylen > buflen || wire->datalen > buflen) {
+		return EMSGSIZE;
+	}
+	if (offsetof(struct ctdb_rec_data_wire, data) + wire->keylen <
+	    offsetof(struct ctdb_rec_data_wire, data)) {
+		return EMSGSIZE;
+	}
+	if (offsetof(struct ctdb_rec_data_wire, data) +
+		wire->keylen + wire->datalen <
+	    offsetof(struct ctdb_rec_data_wire, data)) {
+		return EMSGSIZE;
+	}
+	if (buflen < offsetof(struct ctdb_rec_data_wire, data) +
+			wire->keylen + wire->datalen) {
+		return EMSGSIZE;
+	}
+
+	*reqid = wire->reqid;
+
+	key->dsize = wire->keylen;
+	key->dptr = wire->data;
+	offset = wire->keylen;
+
+	/* Always set header to NULL.  If it is required, exact it using
+	 * ctdb_rec_data_extract_header()
+	 */
+	*header = NULL;
+
+	data->dsize = wire->datalen;
+	data->dptr = &wire->data[offset];
+
+	*reclen = offsetof(struct ctdb_rec_data_wire, data) +
+			wire->keylen + wire->datalen;
+
+	return 0;
+}
+
+static int ctdb_rec_data_pull_elems_old(uint8_t *buf, size_t buflen,
+					TALLOC_CTX *mem_ctx,
+					struct ctdb_rec_data *out)
+{
+	uint32_t reqid;
+	struct ctdb_ltdb_header *header;
+	TDB_DATA key, data;
+	size_t reclen;
+	int ret;
+
+	ret = ctdb_rec_data_pull_data_old(buf, buflen, &reqid, &header,
+					  &key, &data, &reclen);
+	if (ret != 0) {
+		return ret;
+	}
+
+	out->reqid = reqid;
+	out->header = NULL;
+
+	out->key.dsize = key.dsize;
+	if (key.dsize > 0) {
+		out->key.dptr = talloc_memdup(mem_ctx, key.dptr, key.dsize);
+		if (out->key.dptr == NULL) {
+			return ENOMEM;
+		}
+	}
+
+	out->data.dsize = data.dsize;
+	if (data.dsize > 0) {
+		out->data.dptr = talloc_memdup(mem_ctx, data.dptr, data.dsize);
+		if (out->data.dptr == NULL) {
+			return ENOMEM;
+		}
+	}
+
+	return 0;
+}
+
+static int ctdb_rec_data_pull_old(uint8_t *buf, size_t buflen,
+				  TALLOC_CTX *mem_ctx,
+				  struct ctdb_rec_data **out)
+{
+	struct ctdb_rec_data *val;
+	int ret;
+
+	val = talloc(mem_ctx, struct ctdb_rec_data);
+	if (val == NULL) {
+		return ENOMEM;
+	}
+
+	ret = ctdb_rec_data_pull_elems_old(buf, buflen, val, val);
+	if (ret != 0) {
+		TALLOC_FREE(val);
+		return ret;
+	}
+
+	*out = val;
+	return ret;
+}
+
 
 COMPAT_TYPE3_TEST(struct ctdb_statistics, ctdb_statistics);
 COMPAT_TYPE3_TEST(struct ctdb_vnn_map, ctdb_vnn_map);
@@ -329,6 +478,8 @@ COMPAT_TYPE3_TEST(struct ctdb_pulldb, ctdb_pulldb);
 COMPAT_TYPE3_TEST(struct ctdb_pulldb_ext, ctdb_pulldb_ext);
 
 COMPAT_TYPE1_TEST(struct ctdb_ltdb_header, ctdb_ltdb_header);
+
+COMPAT_TYPE3_TEST(struct ctdb_rec_data, ctdb_rec_data);
 
 int main(int argc, char *argv[])
 {
@@ -343,6 +494,7 @@ int main(int argc, char *argv[])
 	COMPAT_TEST_FUNC(ctdb_pulldb)();
 	COMPAT_TEST_FUNC(ctdb_pulldb_ext)();
 	COMPAT_TEST_FUNC(ctdb_ltdb_header)();
+	COMPAT_TEST_FUNC(ctdb_rec_data)();
 
 	return 0;
 }

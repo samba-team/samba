@@ -54,7 +54,7 @@ PROTOCOL_TYPE3_TEST(struct ctdb_dbid_map, ctdb_dbid_map);
 PROTOCOL_TYPE3_TEST(struct ctdb_pulldb, ctdb_pulldb);
 PROTOCOL_TYPE3_TEST(struct ctdb_pulldb_ext, ctdb_pulldb_ext);
 PROTOCOL_TYPE1_TEST(struct ctdb_ltdb_header, ctdb_ltdb_header);
-DEFINE_TEST(struct ctdb_rec_data, ctdb_rec_data);
+PROTOCOL_TYPE3_TEST(struct ctdb_rec_data, ctdb_rec_data);
 DEFINE_TEST(struct ctdb_rec_buffer, ctdb_rec_buffer);
 DEFINE_TEST(struct ctdb_traverse_start, ctdb_traverse_start);
 DEFINE_TEST(struct ctdb_traverse_all, ctdb_traverse_all);

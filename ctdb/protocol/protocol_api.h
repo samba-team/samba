@@ -34,10 +34,10 @@ int ctdb_ltdb_header_pull(uint8_t *buf, size_t buflen,
 
 int ctdb_ltdb_header_extract(TDB_DATA *data, struct ctdb_ltdb_header *header);
 
-size_t ctdb_rec_data_len(struct ctdb_rec_data *rec);
-void ctdb_rec_data_push(struct ctdb_rec_data *rec, uint8_t *buf);
+size_t ctdb_rec_data_len(struct ctdb_rec_data *in);
+void ctdb_rec_data_push(struct ctdb_rec_data *in, uint8_t *buf, size_t *npush);
 int ctdb_rec_data_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-		       struct ctdb_rec_data **out);
+		       struct ctdb_rec_data **out, size_t *npull);
 
 size_t ctdb_rec_buffer_len(struct ctdb_rec_buffer *recbuf);
 void ctdb_rec_buffer_push(struct ctdb_rec_buffer *recbuf, uint8_t *buf);

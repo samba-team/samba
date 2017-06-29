@@ -984,9 +984,10 @@ static void ctdb_db_traverse_handler(uint64_t srvid, TDB_DATA data,
 		req, struct ctdb_db_traverse_state);
 	struct ctdb_rec_data *rec;
 	struct ctdb_ltdb_header header;
+	size_t np;
 	int ret;
 
-	ret = ctdb_rec_data_pull(data.dptr, data.dsize, state, &rec);
+	ret = ctdb_rec_data_pull(data.dptr, data.dsize, state, &rec, &np);
 	if (ret != 0) {
 		return;
 	}

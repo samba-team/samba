@@ -491,7 +491,7 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_TRAVERSE_DATA:
-		ctdb_rec_data_push(cd->data.rec_data, buf);
+		ctdb_rec_data_push(cd->data.rec_data, buf, &np);
 		break;
 
 	case CTDB_CONTROL_GET_DBNAME:
@@ -780,7 +780,7 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_CONTROL_TRAVERSE_DATA:
 		ret = ctdb_rec_data_pull(buf, buflen, mem_ctx,
-					 &cd->data.rec_data);
+					 &cd->data.rec_data, &np);
 		break;
 
 	case CTDB_CONTROL_GET_DBNAME:

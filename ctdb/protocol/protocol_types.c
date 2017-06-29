@@ -1286,100 +1286,129 @@ int ctdb_ltdb_header_extract(TDB_DATA *data, struct ctdb_ltdb_header *header)
 	return 0;
 }
 
-struct ctdb_rec_data_wire {
-	uint32_t length;
-	uint32_t reqid;
-	uint32_t keylen;
-	uint32_t datalen;
-	uint8_t data[1];
-};
-
-size_t ctdb_rec_data_len(struct ctdb_rec_data *rec)
+size_t ctdb_rec_data_len(struct ctdb_rec_data *in)
 {
-	return offsetof(struct ctdb_rec_data_wire, data) +
-	       rec->key.dsize + rec->data.dsize +
-	       (rec->header == NULL ? 0 : sizeof(struct ctdb_ltdb_header));
+	uint32_t u32;
+
+	u32 = ctdb_uint32_len(&in->reqid) +
+		ctdb_tdb_datan_len(&in->key) +
+		ctdb_tdb_datan_len(&in->data);
+
+	if (in->header != NULL) {
+		u32 += ctdb_ltdb_header_len(in->header);
+	}
+
+	return ctdb_uint32_len(&u32) + u32;
 }
 
-void ctdb_rec_data_push(struct ctdb_rec_data *rec, uint8_t *buf)
+void ctdb_rec_data_push(struct ctdb_rec_data *in, uint8_t *buf, size_t *npush)
 {
-	struct ctdb_rec_data_wire *wire = (struct ctdb_rec_data_wire *)buf;
-	size_t offset;
+	size_t offset = 0, np;
+	uint32_t u32;
 
-	wire->length = ctdb_rec_data_len(rec);
-	wire->reqid = rec->reqid;
-	wire->keylen = rec->key.dsize;
-	wire->datalen = rec->data.dsize;
-	if (rec->header != NULL) {
-		wire->datalen += sizeof(struct ctdb_ltdb_header);
+	u32 = ctdb_rec_data_len(in);
+	ctdb_uint32_push(&u32, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->reqid, buf+offset, &np);
+	offset += np;
+
+	u32 = ctdb_tdb_data_len(&in->key);
+	ctdb_uint32_push(&u32, buf+offset, &np);
+	offset += np;
+
+	u32 = ctdb_tdb_data_len(&in->data);
+	if (in->header != NULL) {
+		u32 += ctdb_ltdb_header_len(in->header);
 	}
 
-	memcpy(wire->data, rec->key.dptr, rec->key.dsize);
-	offset = rec->key.dsize;
-	if (rec->header != NULL) {
-		memcpy(&wire->data[offset], rec->header,
-		       sizeof(struct ctdb_ltdb_header));
-		offset += sizeof(struct ctdb_ltdb_header);
+	ctdb_uint32_push(&u32, buf+offset, &np);
+	offset += np;
+
+	ctdb_tdb_data_push(&in->key, buf+offset, &np);
+	offset += np;
+
+	/* If ltdb header is not NULL, then it is pushed as part of the data */
+	if (in->header != NULL) {
+		ctdb_ltdb_header_push(in->header, buf+offset, &np);
+		offset += np;
 	}
-	if (rec->data.dsize > 0) {
-		memcpy(&wire->data[offset], rec->data.dptr, rec->data.dsize);
-	}
+	ctdb_tdb_data_push(&in->data, buf+offset, &np);
+	offset += np;
+
+	*npush = offset;
 }
 
 static int ctdb_rec_data_pull_data(uint8_t *buf, size_t buflen,
 				   uint32_t *reqid,
 				   TDB_DATA *key, TDB_DATA *data,
-				   size_t *reclen)
+				   size_t *npull)
 {
-	struct ctdb_rec_data_wire *wire = (struct ctdb_rec_data_wire *)buf;
-	size_t offset;
+	size_t offset = 0, np;
+	size_t len;
+	uint32_t u32;
+	int ret;
 
-	if (buflen < offsetof(struct ctdb_rec_data_wire, data)) {
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &u32, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	if (buflen < u32) {
 		return EMSGSIZE;
 	}
-	if (wire->keylen > buflen || wire->datalen > buflen) {
+	len = u32;
+
+	ret = ctdb_uint32_pull(buf+offset, len-offset, reqid, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, len-offset, &u32, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+	key->dsize = u32;
+
+	ret = ctdb_uint32_pull(buf+offset, len-offset, &u32, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+	data->dsize = u32;
+
+	if (len-offset < key->dsize) {
 		return EMSGSIZE;
 	}
-	if (offsetof(struct ctdb_rec_data_wire, data) + wire->keylen <
-	    offsetof(struct ctdb_rec_data_wire, data)) {
-		return EMSGSIZE;
-	}
-	if (offsetof(struct ctdb_rec_data_wire, data) +
-		wire->keylen + wire->datalen <
-	    offsetof(struct ctdb_rec_data_wire, data)) {
-		return EMSGSIZE;
-	}
-	if (buflen < offsetof(struct ctdb_rec_data_wire, data) +
-			wire->keylen + wire->datalen) {
+
+	key->dptr = buf+offset;
+	offset += key->dsize;
+
+	if (len-offset < data->dsize) {
 		return EMSGSIZE;
 	}
 
-	*reqid = wire->reqid;
+	data->dptr = buf+offset;
+	offset += data->dsize;
 
-	key->dsize = wire->keylen;
-	key->dptr = wire->data;
-	offset = wire->keylen;
-
-	data->dsize = wire->datalen;
-	data->dptr = &wire->data[offset];
-
-	*reclen = offsetof(struct ctdb_rec_data_wire, data) +
-			wire->keylen + wire->datalen;
-
+	*npull = offset;
 	return 0;
 }
 
 static int ctdb_rec_data_pull_elems(uint8_t *buf, size_t buflen,
 				    TALLOC_CTX *mem_ctx,
-				    struct ctdb_rec_data *out)
+				    struct ctdb_rec_data *out,
+				    size_t *npull)
 {
 	uint32_t reqid;
 	TDB_DATA key, data;
-	size_t reclen;
+	size_t np;
 	int ret;
 
-	ret = ctdb_rec_data_pull_data(buf, buflen, &reqid,
-				      &key, &data, &reclen);
+	ret = ctdb_rec_data_pull_data(buf, buflen, &reqid, &key, &data, &np);
 	if (ret != 0) {
 		return ret;
 	}
@@ -1407,26 +1436,30 @@ static int ctdb_rec_data_pull_elems(uint8_t *buf, size_t buflen,
 		}
 	}
 
+	*npull = np;
 	return 0;
 }
 
 int ctdb_rec_data_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-		       struct ctdb_rec_data **out)
+		       struct ctdb_rec_data **out, size_t *npull)
 {
-	struct ctdb_rec_data *rec;
+	struct ctdb_rec_data *val;
+	size_t np;
 	int ret;
 
-	rec = talloc(mem_ctx, struct ctdb_rec_data);
-	if (rec == NULL) {
+	val = talloc(mem_ctx, struct ctdb_rec_data);
+	if (val == NULL) {
 		return ENOMEM;
 	}
 
-	ret = ctdb_rec_data_pull_elems(buf, buflen, rec, rec);
+	ret = ctdb_rec_data_pull_elems(buf, buflen, val, val, &np);
 	if (ret != 0) {
-		TALLOC_FREE(rec);
+		TALLOC_FREE(val);
+		return ret;
 	}
 
-	*out = rec;
+	*out = val;
+	*npull = np;
 	return ret;
 }
 
@@ -1503,7 +1536,7 @@ int ctdb_rec_buffer_add(TALLOC_CTX *mem_ctx, struct ctdb_rec_buffer *recbuf,
 			TDB_DATA key, TDB_DATA data)
 {
 	struct ctdb_rec_data recdata;
-	size_t len;
+	size_t len, np;
 	uint8_t *ptr;
 
 	recdata.reqid = reqid;
@@ -1519,11 +1552,11 @@ int ctdb_rec_buffer_add(TALLOC_CTX *mem_ctx, struct ctdb_rec_buffer *recbuf,
 		return ENOMEM;
 	}
 
-	ctdb_rec_data_push(&recdata, &ptr[recbuf->buflen]);
+	ctdb_rec_data_push(&recdata, &ptr[recbuf->buflen], &np);
 
 	recbuf->count++;
 	recbuf->buf = ptr;
-	recbuf->buflen += len;
+	recbuf->buflen += np;
 	return 0;
 }
 
