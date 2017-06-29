@@ -311,7 +311,7 @@ static size_t ctdb_req_control_data_len(struct ctdb_req_control_data *cd)
 		break;
 
 	case CTDB_CONTROL_DEREGISTER_NOTIFY:
-		len = ctdb_uint64_len(cd->data.srvid);
+		len = ctdb_uint64_len(&cd->data.srvid);
 		break;
 
 	case CTDB_CONTROL_TRANS3_COMMIT:
@@ -603,7 +603,7 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_DEREGISTER_NOTIFY:
-		ctdb_uint64_push(cd->data.srvid, buf);
+		ctdb_uint64_push(&cd->data.srvid, buf, &np);
 		break;
 
 	case CTDB_CONTROL_TRANS3_COMMIT:
@@ -914,8 +914,7 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 		break;
 
 	case CTDB_CONTROL_DEREGISTER_NOTIFY:
-		ctdb_uint64_pull(buf, buflen, mem_ctx,
-				 &cd->data.srvid);
+		ctdb_uint64_pull(buf, buflen, &cd->data.srvid, &np);
 		break;
 
 	case CTDB_CONTROL_TRANS3_COMMIT:
@@ -1305,7 +1304,7 @@ static size_t ctdb_reply_control_data_len(struct ctdb_reply_control_data *cd)
 		break;
 
 	case CTDB_CONTROL_GET_DB_SEQNUM:
-		len = ctdb_uint64_len(cd->data.seqnum);
+		len = ctdb_uint64_len(&cd->data.seqnum);
 		break;
 
 	case CTDB_CONTROL_DB_SET_HEALTHY:
@@ -1517,7 +1516,7 @@ static void ctdb_reply_control_data_push(struct ctdb_reply_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_GET_DB_SEQNUM:
-		ctdb_uint64_push(cd->data.seqnum, buf);
+		ctdb_uint64_push(&cd->data.seqnum, buf, &np);
 		break;
 
 	case CTDB_CONTROL_DB_GET_HEALTH:
@@ -1697,8 +1696,7 @@ static int ctdb_reply_control_data_pull(uint8_t *buf, size_t buflen,
 		break;
 
 	case CTDB_CONTROL_GET_DB_SEQNUM:
-		ret = ctdb_uint64_pull(buf, buflen, mem_ctx,
-				       &cd->data.seqnum);
+		ret = ctdb_uint64_pull(buf, buflen, &cd->data.seqnum, &np);
 		break;
 
 	case CTDB_CONTROL_DB_GET_HEALTH:

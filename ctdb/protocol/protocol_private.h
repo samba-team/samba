@@ -44,10 +44,10 @@ void ctdb_uint32_push(uint32_t *in, uint8_t *buf, size_t *npush);
 int ctdb_uint32_pull(uint8_t *buf, size_t buflen, uint32_t *out,
 		     size_t *npull);
 
-size_t ctdb_uint64_len(uint64_t val);
-void ctdb_uint64_push(uint64_t val, uint8_t *buf);
-int ctdb_uint64_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-		     uint64_t *out);
+size_t ctdb_uint64_len(uint64_t *in);
+void ctdb_uint64_push(uint64_t *in, uint8_t *buf, size_t *npush);
+int ctdb_uint64_pull(uint8_t *buf, size_t buflen, uint64_t *out,
+		     size_t *npull);
 
 size_t ctdb_double_len(double val);
 void ctdb_double_push(double val, uint8_t *buf);
