@@ -555,6 +555,14 @@ static NTSTATUS gensec_spnego_create_negTokenInit(struct gensec_security *gensec
 		/* set next state */
 		spnego_state->neg_oid = all_sec[i].oid;
 
+		if (spnego_state->state_position == SPNEGO_SERVER_START) {
+			spnego_state->state_position = SPNEGO_SERVER_START;
+			spnego_state->expected_packet = SPNEGO_NEG_TOKEN_INIT;
+		} else {
+			spnego_state->state_position = SPNEGO_CLIENT_TARG;
+			spnego_state->expected_packet = SPNEGO_NEG_TOKEN_TARG;
+		}
+
 		return NT_STATUS_MORE_PROCESSING_REQUIRED;
 	}
 	gensec_spnego_update_sub_abort(spnego_state);
@@ -645,11 +653,10 @@ static NTSTATUS gensec_spnego_update_client(struct gensec_security *gensec_secur
 
 		if (!in.length) {
 			/* client to produce negTokenInit */
-			nt_status = gensec_spnego_create_negTokenInit(gensec_security, spnego_state, 
-								      out_mem_ctx, ev, out);
-			spnego_state->state_position = SPNEGO_CLIENT_TARG;
-			spnego_state->expected_packet = SPNEGO_NEG_TOKEN_TARG;
-			return nt_status;
+			return gensec_spnego_create_negTokenInit(gensec_security,
+								 spnego_state,
+								 out_mem_ctx,
+								 ev, out);
 		}
 
 		len = spnego_read_data(gensec_security, in, &spnego);
@@ -1119,11 +1126,10 @@ static NTSTATUS gensec_spnego_update_server(struct gensec_security *gensec_secur
 
 			return nt_status;
 		} else {
-			nt_status = gensec_spnego_create_negTokenInit(gensec_security, spnego_state,
-								      out_mem_ctx, ev, out);
-			spnego_state->state_position = SPNEGO_SERVER_START;
-			spnego_state->expected_packet = SPNEGO_NEG_TOKEN_INIT;
-			return nt_status;
+			return gensec_spnego_create_negTokenInit(gensec_security,
+								 spnego_state,
+								 out_mem_ctx,
+								 ev, out);
 		}
 	}
 
