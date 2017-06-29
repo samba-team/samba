@@ -1463,57 +1463,87 @@ int ctdb_rec_data_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
-struct ctdb_rec_buffer_wire {
-	uint32_t db_id;
-	uint32_t count;
-	uint8_t data[1];
-};
-
-size_t ctdb_rec_buffer_len(struct ctdb_rec_buffer *recbuf)
+size_t ctdb_rec_buffer_len(struct ctdb_rec_buffer *in)
 {
-	return offsetof(struct ctdb_rec_buffer_wire, data) + recbuf->buflen;
+	return ctdb_uint32_len(&in->db_id) +
+		ctdb_uint32_len(&in->count) +
+		in->buflen;
 }
 
-void ctdb_rec_buffer_push(struct ctdb_rec_buffer *recbuf, uint8_t *buf)
+void ctdb_rec_buffer_push(struct ctdb_rec_buffer *in, uint8_t *buf,
+			  size_t *npush)
 {
-	struct ctdb_rec_buffer_wire *wire = (struct ctdb_rec_buffer_wire *)buf;
+	size_t offset = 0, np;
 
-	wire->db_id = recbuf->db_id;
-	wire->count = recbuf->count;
-	if (recbuf->buflen > 0) {
-		memcpy(wire->data, recbuf->buf, recbuf->buflen);
-	}
+	ctdb_uint32_push(&in->db_id, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->count, buf+offset, &np);
+	offset += np;
+
+	memcpy(buf+offset, in->buf, in->buflen);
+	offset += in->buflen;
+
+	*npush = offset;
 }
 
 int ctdb_rec_buffer_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			 struct ctdb_rec_buffer **out)
+			 struct ctdb_rec_buffer **out, size_t *npull)
 {
-	struct ctdb_rec_buffer *recbuf;
-	struct ctdb_rec_buffer_wire *wire = (struct ctdb_rec_buffer_wire *)buf;
-	size_t offset;
+	struct ctdb_rec_buffer *val;
+	size_t offset = 0, np;
+	size_t length;
+	int ret;
 
-	if (buflen < offsetof(struct ctdb_rec_buffer_wire, data)) {
-		return EMSGSIZE;
-	}
-
-	recbuf = talloc(mem_ctx, struct ctdb_rec_buffer);
-	if (recbuf == NULL) {
+	val = talloc(mem_ctx, struct ctdb_rec_buffer);
+	if (val == NULL) {
 		return ENOMEM;
 	}
 
-	recbuf->db_id = wire->db_id;
-	recbuf->count = wire->count;
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &val->db_id, &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
 
-	offset = offsetof(struct ctdb_rec_buffer_wire, data);
-	recbuf->buflen = buflen - offset;
-	recbuf->buf = talloc_memdup(recbuf, wire->data, recbuf->buflen);
-	if (recbuf->buf == NULL) {
-		talloc_free(recbuf);
-		return ENOMEM;
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &val->count, &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
+
+	/* Since there is no buflen provided, walk the records to
+	 * validate the length of the buffer.
+	 */
+	val->buf = buf+offset;
+	val->buflen = buflen-offset;
+
+	length = 0;
+	ret = ctdb_rec_buffer_traverse(val, NULL, &length);
+	if (ret != 0) {
+		goto fail;
 	}
 
-	*out = recbuf;
+	if (length > buflen-offset) {
+		ret = EMSGSIZE;
+		goto fail;
+	}
+
+	val->buf = talloc_memdup(val, buf+offset, length);
+	if (val->buf == NULL) {
+		ret = ENOMEM;
+		goto fail;
+	}
+	val->buflen = length;
+	offset += length;
+
+	*out = val;
+	*npull = offset;
 	return 0;
+
+fail:
+	talloc_free(val);
+	return ret;
 }
 
 struct ctdb_rec_buffer *ctdb_rec_buffer_init(TALLOC_CTX *mem_ctx,

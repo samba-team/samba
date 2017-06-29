@@ -4256,6 +4256,7 @@ static int control_restoredb(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	for (i=0; i<db_hdr.nbuf; i++) {
 		struct ctdb_req_message message;
 		TDB_DATA data;
+		size_t np;
 
 		ret = ctdb_rec_buffer_read(fd, mem_ctx, &recbuf);
 		if (ret != 0) {
@@ -4268,7 +4269,7 @@ static int control_restoredb(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 			goto failed;
 		}
 
-		ctdb_rec_buffer_push(recbuf, data.dptr);
+		ctdb_rec_buffer_push(recbuf, data.dptr, &np);
 
 		message.srvid = pulldb.srvid;
 		message.data.data = data;

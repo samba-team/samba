@@ -468,7 +468,7 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_PUSH_DB:
-		ctdb_rec_buffer_push(cd->data.recbuf, buf);
+		ctdb_rec_buffer_push(cd->data.recbuf, buf, &np);
 		break;
 
 	case CTDB_CONTROL_SET_RECMODE:
@@ -547,7 +547,7 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_UPDATE_RECORD:
-		ctdb_rec_buffer_push(cd->data.recbuf, buf);
+		ctdb_rec_buffer_push(cd->data.recbuf, buf, &np);
 		break;
 
 	case CTDB_CONTROL_SEND_GRATUITOUS_ARP:
@@ -559,7 +559,7 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_TRY_DELETE_RECORDS:
-		ctdb_rec_buffer_push(cd->data.recbuf, buf);
+		ctdb_rec_buffer_push(cd->data.recbuf, buf, &np);
 		break;
 
 	case CTDB_CONTROL_ADD_PUBLIC_IP:
@@ -607,7 +607,7 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_TRANS3_COMMIT:
-		ctdb_rec_buffer_push(cd->data.recbuf, buf);
+		ctdb_rec_buffer_push(cd->data.recbuf, buf, &np);
 		break;
 
 	case CTDB_CONTROL_GET_DB_SEQNUM:
@@ -668,7 +668,7 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_RECEIVE_RECORDS:
-		ctdb_rec_buffer_push(cd->data.recbuf, buf);
+		ctdb_rec_buffer_push(cd->data.recbuf, buf, &np);
 		break;
 
 	case CTDB_CONTROL_DB_DETACH:
@@ -753,7 +753,7 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_CONTROL_PUSH_DB:
 		ret = ctdb_rec_buffer_pull(buf, buflen, mem_ctx,
-					   &cd->data.recbuf);
+					   &cd->data.recbuf, &np);
 		break;
 
 	case CTDB_CONTROL_SET_RECMODE:
@@ -846,7 +846,7 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_CONTROL_UPDATE_RECORD:
 		ret = ctdb_rec_buffer_pull(buf, buflen, mem_ctx,
-					   &cd->data.recbuf);
+					   &cd->data.recbuf, &np);
 		break;
 
 	case CTDB_CONTROL_SEND_GRATUITOUS_ARP:
@@ -861,7 +861,7 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_CONTROL_TRY_DELETE_RECORDS:
 		ret = ctdb_rec_buffer_pull(buf, buflen, mem_ctx,
-					   &cd->data.recbuf);
+					   &cd->data.recbuf, &np);
 		break;
 
 	case CTDB_CONTROL_ADD_PUBLIC_IP:
@@ -918,7 +918,7 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_CONTROL_TRANS3_COMMIT:
 		ret = ctdb_rec_buffer_pull(buf, buflen, mem_ctx,
-					   &cd->data.recbuf);
+					   &cd->data.recbuf, &np);
 		break;
 
 	case CTDB_CONTROL_GET_DB_SEQNUM:
@@ -988,7 +988,7 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_CONTROL_RECEIVE_RECORDS:
 		ret = ctdb_rec_buffer_pull(buf, buflen, mem_ctx,
-					   &cd->data.recbuf);
+					   &cd->data.recbuf, &np);
 		break;
 
 	case CTDB_CONTROL_DB_DETACH:
@@ -1439,7 +1439,7 @@ static void ctdb_reply_control_data_push(struct ctdb_reply_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_PULL_DB:
-		ctdb_rec_buffer_push(cd->data.recbuf, buf);
+		ctdb_rec_buffer_push(cd->data.recbuf, buf, &np);
 		break;
 
 	case CTDB_CONTROL_PUSH_DB:
@@ -1488,7 +1488,7 @@ static void ctdb_reply_control_data_push(struct ctdb_reply_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_TRY_DELETE_RECORDS:
-		ctdb_rec_buffer_push(cd->data.recbuf, buf);
+		ctdb_rec_buffer_push(cd->data.recbuf, buf, &np);
 		break;
 
 	case CTDB_CONTROL_GET_CAPABILITIES:
@@ -1542,7 +1542,7 @@ static void ctdb_reply_control_data_push(struct ctdb_reply_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_RECEIVE_RECORDS:
-		ctdb_rec_buffer_push(cd->data.recbuf, buf);
+		ctdb_rec_buffer_push(cd->data.recbuf, buf, &np);
 		break;
 
 	case CTDB_CONTROL_GET_RUNSTATE:
@@ -1607,7 +1607,7 @@ static int ctdb_reply_control_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_CONTROL_PULL_DB:
 		ret = ctdb_rec_buffer_pull(buf, buflen, mem_ctx,
-					   &cd->data.recbuf);
+					   &cd->data.recbuf, &np);
 		break;
 
 	case CTDB_CONTROL_PUSH_DB:
@@ -1664,7 +1664,7 @@ static int ctdb_reply_control_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_CONTROL_TRY_DELETE_RECORDS:
 		ctdb_rec_buffer_pull(buf, buflen, mem_ctx,
-				     &cd->data.recbuf);
+				     &cd->data.recbuf, &np);
 		break;
 
 	case CTDB_CONTROL_GET_CAPABILITIES:
@@ -1728,7 +1728,7 @@ static int ctdb_reply_control_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_CONTROL_RECEIVE_RECORDS:
 		ret = ctdb_rec_buffer_pull(buf, buflen, mem_ctx,
-					   &cd->data.recbuf);
+					   &cd->data.recbuf, &np);
 		break;
 
 	case CTDB_CONTROL_GET_RUNSTATE:

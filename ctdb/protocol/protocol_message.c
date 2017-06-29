@@ -148,7 +148,7 @@ static void ctdb_message_data_push(union ctdb_message_data *mdata,
 		break;
 
 	case CTDB_SRVID_VACUUM_FETCH:
-		ctdb_rec_buffer_push(mdata->recbuf, buf);
+		ctdb_rec_buffer_push(mdata->recbuf, buf, &np);
 		break;
 
 	case CTDB_SRVID_DETACH_DATABASE:
@@ -234,7 +234,7 @@ static int ctdb_message_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_SRVID_VACUUM_FETCH:
 		ret = ctdb_rec_buffer_pull(buf, buflen, mem_ctx,
-					   &mdata->recbuf);
+					   &mdata->recbuf, &np);
 		break;
 
 	case CTDB_SRVID_DETACH_DATABASE:

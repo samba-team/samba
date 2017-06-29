@@ -39,10 +39,11 @@ void ctdb_rec_data_push(struct ctdb_rec_data *in, uint8_t *buf, size_t *npush);
 int ctdb_rec_data_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 		       struct ctdb_rec_data **out, size_t *npull);
 
-size_t ctdb_rec_buffer_len(struct ctdb_rec_buffer *recbuf);
-void ctdb_rec_buffer_push(struct ctdb_rec_buffer *recbuf, uint8_t *buf);
+size_t ctdb_rec_buffer_len(struct ctdb_rec_buffer *in);
+void ctdb_rec_buffer_push(struct ctdb_rec_buffer *in, uint8_t *buf,
+			  size_t *npush);
 int ctdb_rec_buffer_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-		      struct ctdb_rec_buffer **out);
+			 struct ctdb_rec_buffer **out, size_t *npull);
 
 struct ctdb_rec_buffer *ctdb_rec_buffer_init(TALLOC_CTX *mem_ctx,
 					     uint32_t db_id);

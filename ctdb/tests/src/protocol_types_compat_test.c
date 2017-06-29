@@ -470,6 +470,60 @@ static int ctdb_rec_data_pull_old(uint8_t *buf, size_t buflen,
 	return ret;
 }
 
+struct ctdb_rec_buffer_wire {
+	uint32_t db_id;
+	uint32_t count;
+	uint8_t data[1];
+};
+
+static size_t ctdb_rec_buffer_len_old(struct ctdb_rec_buffer *in)
+{
+	return offsetof(struct ctdb_rec_buffer_wire, data) + in->buflen;
+}
+
+static void ctdb_rec_buffer_push_old(struct ctdb_rec_buffer *in, uint8_t *buf)
+{
+	struct ctdb_rec_buffer_wire *wire = (struct ctdb_rec_buffer_wire *)buf;
+
+	wire->db_id = in->db_id;
+	wire->count = in->count;
+	if (in->buflen > 0) {
+		memcpy(wire->data, in->buf, in->buflen);
+	}
+}
+
+static int ctdb_rec_buffer_pull_old(uint8_t *buf, size_t buflen,
+				    TALLOC_CTX *mem_ctx,
+				    struct ctdb_rec_buffer **out)
+{
+	struct ctdb_rec_buffer *val;
+	struct ctdb_rec_buffer_wire *wire = (struct ctdb_rec_buffer_wire *)buf;
+	size_t offset;
+
+	if (buflen < offsetof(struct ctdb_rec_buffer_wire, data)) {
+		return EMSGSIZE;
+	}
+
+	val = talloc(mem_ctx, struct ctdb_rec_buffer);
+	if (val == NULL) {
+		return ENOMEM;
+	}
+
+	val->db_id = wire->db_id;
+	val->count = wire->count;
+
+	offset = offsetof(struct ctdb_rec_buffer_wire, data);
+	val->buflen = buflen - offset;
+	val->buf = talloc_memdup(val, wire->data, val->buflen);
+	if (val->buf == NULL) {
+		talloc_free(val);
+		return ENOMEM;
+	}
+
+	*out = val;
+	return 0;
+}
+
 
 COMPAT_TYPE3_TEST(struct ctdb_statistics, ctdb_statistics);
 COMPAT_TYPE3_TEST(struct ctdb_vnn_map, ctdb_vnn_map);
@@ -480,6 +534,7 @@ COMPAT_TYPE3_TEST(struct ctdb_pulldb_ext, ctdb_pulldb_ext);
 COMPAT_TYPE1_TEST(struct ctdb_ltdb_header, ctdb_ltdb_header);
 
 COMPAT_TYPE3_TEST(struct ctdb_rec_data, ctdb_rec_data);
+COMPAT_TYPE3_TEST(struct ctdb_rec_buffer, ctdb_rec_buffer);
 
 int main(int argc, char *argv[])
 {
@@ -495,6 +550,7 @@ int main(int argc, char *argv[])
 	COMPAT_TEST_FUNC(ctdb_pulldb_ext)();
 	COMPAT_TEST_FUNC(ctdb_ltdb_header)();
 	COMPAT_TEST_FUNC(ctdb_rec_data)();
+	COMPAT_TEST_FUNC(ctdb_rec_buffer)();
 
 	return 0;
 }

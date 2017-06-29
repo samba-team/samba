@@ -468,6 +468,7 @@ static void pull_database_handler(uint64_t srvid, TDB_DATA data,
 	struct pull_database_state *state = tevent_req_data(
 		req, struct pull_database_state);
 	struct ctdb_rec_buffer *recbuf;
+	size_t np;
 	int ret;
 	bool status;
 
@@ -475,7 +476,7 @@ static void pull_database_handler(uint64_t srvid, TDB_DATA data,
 		return;
 	}
 
-	ret = ctdb_rec_buffer_pull(data.dptr, data.dsize, state, &recbuf);
+	ret = ctdb_rec_buffer_pull(data.dptr, data.dsize, state, &recbuf, &np);
 	if (ret != 0) {
 		D_ERR("Invalid data received for DB_PULL messages\n");
 		return;
@@ -892,6 +893,7 @@ static void push_database_new_send_msg(struct tevent_req *req)
 	struct ctdb_rec_buffer *recbuf;
 	struct ctdb_req_message message;
 	TDB_DATA data;
+	size_t np;
 	int ret;
 
 	if (state->num_buffers_sent == state->num_buffers) {
@@ -924,7 +926,7 @@ static void push_database_new_send_msg(struct tevent_req *req)
 		return;
 	}
 
-	ctdb_rec_buffer_push(recbuf, data.dptr);
+	ctdb_rec_buffer_push(recbuf, data.dptr, &np);
 
 	message.srvid = state->srvid;
 	message.data.data = data;
