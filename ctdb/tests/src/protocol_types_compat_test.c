@@ -736,6 +736,64 @@ static int ctdb_connection_pull_old(uint8_t *buf, size_t buflen,
 	return ret;
 }
 
+struct ctdb_tunable_wire {
+	uint32_t value;
+	uint32_t length;
+	uint8_t name[1];
+};
+
+static size_t ctdb_tunable_len_old(struct ctdb_tunable *in)
+{
+	return offsetof(struct ctdb_tunable_wire, name) +
+	       strlen(in->name) + 1;
+}
+
+static void ctdb_tunable_push_old(struct ctdb_tunable *in, uint8_t *buf)
+{
+	struct ctdb_tunable_wire *wire = (struct ctdb_tunable_wire *)buf;
+
+	wire->value = in->value;
+	wire->length = strlen(in->name) + 1;
+	memcpy(wire->name, in->name, wire->length);
+}
+
+static int ctdb_tunable_pull_old(uint8_t *buf, size_t buflen,
+				 TALLOC_CTX *mem_ctx,
+				 struct ctdb_tunable **out)
+{
+	struct ctdb_tunable *val;
+	struct ctdb_tunable_wire *wire = (struct ctdb_tunable_wire *)buf;
+
+	if (buflen < offsetof(struct ctdb_tunable_wire, name)) {
+		return EMSGSIZE;
+	}
+	if (wire->length > buflen) {
+		return EMSGSIZE;
+	}
+	if (offsetof(struct ctdb_tunable_wire, name) + wire->length <
+	    offsetof(struct ctdb_tunable_wire, name)) {
+		return EMSGSIZE;
+	}
+	if (buflen < offsetof(struct ctdb_tunable_wire, name) + wire->length) {
+		return EMSGSIZE;
+	}
+
+	val = talloc(mem_ctx, struct ctdb_tunable);
+	if (val == NULL) {
+		return ENOMEM;
+	}
+
+	val->value = wire->value;
+	val->name = talloc_memdup(val, wire->name, wire->length);
+	if (val->name == NULL) {
+		talloc_free(val);
+		return ENOMEM;
+	}
+
+	*out = val;
+	return 0;
+}
+
 
 COMPAT_TYPE3_TEST(struct ctdb_statistics, ctdb_statistics);
 COMPAT_TYPE3_TEST(struct ctdb_vnn_map, ctdb_vnn_map);
@@ -753,6 +811,7 @@ COMPAT_TYPE3_TEST(struct ctdb_traverse_start_ext, ctdb_traverse_start_ext);
 COMPAT_TYPE3_TEST(struct ctdb_traverse_all_ext, ctdb_traverse_all_ext);
 COMPAT_TYPE3_TEST(ctdb_sock_addr, ctdb_sock_addr);
 COMPAT_TYPE3_TEST(struct ctdb_connection, ctdb_connection);
+COMPAT_TYPE3_TEST(struct ctdb_tunable, ctdb_tunable);
 
 int main(int argc, char *argv[])
 {
@@ -775,6 +834,7 @@ int main(int argc, char *argv[])
 	COMPAT_TEST_FUNC(ctdb_traverse_all_ext)();
 	COMPAT_TEST_FUNC(ctdb_sock_addr)();
 	COMPAT_TEST_FUNC(ctdb_connection)();
+	COMPAT_TEST_FUNC(ctdb_tunable)();
 
 	return 0;
 }

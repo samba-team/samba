@@ -2150,61 +2150,57 @@ int ctdb_connection_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
-struct ctdb_tunable_wire {
-	uint32_t value;
-	uint32_t length;
-	uint8_t name[1];
-};
-
-size_t ctdb_tunable_len(struct ctdb_tunable *tunable)
+size_t ctdb_tunable_len(struct ctdb_tunable *in)
 {
-	return offsetof(struct ctdb_tunable_wire, name) +
-	       strlen(tunable->name) + 1;
+	return ctdb_uint32_len(&in->value) +
+		ctdb_stringn_len(&in->name);
 }
 
-void ctdb_tunable_push(struct ctdb_tunable *tunable, uint8_t *buf)
+void ctdb_tunable_push(struct ctdb_tunable *in, uint8_t *buf, size_t *npush)
 {
-	struct ctdb_tunable_wire *wire = (struct ctdb_tunable_wire *)buf;
+	size_t offset = 0, np;
 
-	wire->value = tunable->value;
-	wire->length = strlen(tunable->name) + 1;
-	memcpy(wire->name, tunable->name, wire->length);
+	ctdb_uint32_push(&in->value, buf+offset, &np);
+	offset += np;
+
+	ctdb_stringn_push(&in->name, buf+offset, &np);
+	offset += np;
+
+	*npush = offset;
 }
 
 int ctdb_tunable_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-		      struct ctdb_tunable **out)
+		      struct ctdb_tunable **out, size_t *npull)
 {
-	struct ctdb_tunable *tunable;
-	struct ctdb_tunable_wire *wire = (struct ctdb_tunable_wire *)buf;
+	struct ctdb_tunable *val;
+	size_t offset = 0, np;
+	int ret;
 
-	if (buflen < offsetof(struct ctdb_tunable_wire, name)) {
-		return EMSGSIZE;
-	}
-	if (wire->length > buflen) {
-		return EMSGSIZE;
-	}
-	if (offsetof(struct ctdb_tunable_wire, name) + wire->length <
-	    offsetof(struct ctdb_tunable_wire, name)) {
-		return EMSGSIZE;
-	}
-	if (buflen < offsetof(struct ctdb_tunable_wire, name) + wire->length) {
-		return EMSGSIZE;
-	}
-
-	tunable = talloc(mem_ctx, struct ctdb_tunable);
-	if (tunable == NULL) {
+	val = talloc(mem_ctx, struct ctdb_tunable);
+	if (val == NULL) {
 		return ENOMEM;
 	}
 
-	tunable->value = wire->value;
-	tunable->name = talloc_memdup(tunable, wire->name, wire->length);
-	if (tunable->name == NULL) {
-		talloc_free(tunable);
-		return ENOMEM;
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &val->value, &np);
+	if (ret != 0) {
+		goto fail;
 	}
+	offset += np;
 
-	*out = tunable;
+	ret = ctdb_stringn_pull(buf+offset, buflen-offset, mem_ctx,
+				&val->name, &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
+
+	*out = val;
+	*npull = offset;
 	return 0;
+
+fail:
+	talloc_free(val);
+	return ret;
 }
 
 size_t ctdb_node_flag_change_len(struct ctdb_node_flag_change *flag_change)

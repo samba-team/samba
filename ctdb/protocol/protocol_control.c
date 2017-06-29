@@ -523,7 +523,7 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_SET_TUNABLE:
-		ctdb_tunable_push(cd->data.tunable, buf);
+		ctdb_tunable_push(cd->data.tunable, buf, &np);
 		break;
 
 	case CTDB_CONTROL_GET_TUNABLE:
@@ -818,7 +818,7 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_CONTROL_SET_TUNABLE:
 		ret = ctdb_tunable_pull(buf, buflen, mem_ctx,
-					&cd->data.tunable);
+					&cd->data.tunable, &np);
 		break;
 
 	case CTDB_CONTROL_GET_TUNABLE:
