@@ -1057,14 +1057,14 @@ static NTSTATUS cmd_fchown(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc,
 
 static NTSTATUS cmd_getwd(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
-	char *buf = SMB_VFS_GETWD(vfs->conn);
-	if (buf == NULL) {
+	struct smb_filename *smb_fname = SMB_VFS_GETWD(vfs->conn, talloc_tos());
+	if (smb_fname == NULL) {
 		printf("getwd: error=%d (%s)\n", errno, strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	printf("getwd: %s\n", buf);
-	SAFE_FREE(buf);
+	printf("getwd: %s\n", smb_fname->base_name);
+	TALLOC_FREE(smb_fname);
 	return NT_STATUS_OK;
 }
 

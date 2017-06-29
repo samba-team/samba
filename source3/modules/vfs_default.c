@@ -2099,14 +2099,24 @@ static int vfswrap_chdir(vfs_handle_struct *handle,
 	return result;
 }
 
-static char *vfswrap_getwd(vfs_handle_struct *handle)
+static struct smb_filename *vfswrap_getwd(vfs_handle_struct *handle,
+				TALLOC_CTX *ctx)
 {
 	char *result;
+	struct smb_filename *smb_fname = NULL;
 
 	START_PROFILE(syscall_getwd);
 	result = sys_getwd();
 	END_PROFILE(syscall_getwd);
-	return result;
+	smb_fname = synthetic_smb_fname(ctx,
+				result,
+				NULL,
+				NULL,
+				0);
+	if (smb_fname == NULL) {
+		SAFE_FREE(result);
+	}
+	return smb_fname;
 }
 
 /*********************************************************************

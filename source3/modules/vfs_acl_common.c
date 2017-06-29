@@ -1300,15 +1300,13 @@ static int acl_common_remove_object(vfs_handle_struct *handle,
 	struct smb_filename local_fname = {0};
 	struct smb_filename parent_dir_fname = {0};
 	int saved_errno = 0;
-	char *saved_dir = NULL;
-	struct smb_filename saved_dir_fname = {0};
+	struct smb_filename *saved_dir_fname = NULL;
 
-	saved_dir = vfs_GetWd(talloc_tos(),conn);
-	if (!saved_dir) {
+	saved_dir_fname = vfs_GetWd(talloc_tos(),conn);
+	if (saved_dir_fname == NULL) {
 		saved_errno = errno;
 		goto out;
 	}
-	saved_dir_fname = (struct smb_filename) { .base_name = saved_dir };
 
 	if (!parent_dirname(talloc_tos(), smb_fname->base_name,
 			&parent_dir, &final_component)) {
@@ -1374,8 +1372,9 @@ static int acl_common_remove_object(vfs_handle_struct *handle,
 
 	TALLOC_FREE(parent_dir);
 
-	if (saved_dir) {
-		vfs_ChDir(conn, &saved_dir_fname);
+	if (saved_dir_fname) {
+		vfs_ChDir(conn, saved_dir_fname);
+		TALLOC_FREE(saved_dir_fname);
 	}
 	if (saved_errno) {
 		errno = saved_errno;

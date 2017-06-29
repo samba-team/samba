@@ -419,7 +419,8 @@ static int skel_chdir(vfs_handle_struct *handle,
 	return -1;
 }
 
-static char *skel_getwd(vfs_handle_struct *handle)
+static struct smb_filename *skel_getwd(vfs_handle_struct *handle,
+				TALLOC_CTX *ctx)
 {
 	errno = ENOSYS;
 	return NULL;

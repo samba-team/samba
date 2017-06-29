@@ -68,10 +68,17 @@ bool set_conn_connectpath(connection_struct *conn, const char *connectpath)
 
 	talloc_free(conn->connectpath);
 	conn->connectpath = destname;
-	/* Ensure conn->cwd is initialized - start as conn->connectpath. */
-	TALLOC_FREE(conn->cwd);
-	conn->cwd = talloc_strdup(conn, conn->connectpath);
-	if (!conn->cwd) {
+	/*
+	 * Ensure conn->cwd_fname is initialized.
+	 * start as conn->connectpath.
+	 */
+	TALLOC_FREE(conn->cwd_fname);
+	conn->cwd_fname = synthetic_smb_fname(conn,
+				conn->connectpath,
+				NULL,
+				NULL,
+				0);
+	if (conn->cwd_fname == NULL) {
 		return false;
 	}
 	return true;

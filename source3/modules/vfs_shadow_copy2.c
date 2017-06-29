@@ -1523,19 +1523,19 @@ static void store_cwd_data(vfs_handle_struct *handle,
 				const char *connectpath)
 {
 	struct shadow_copy2_private *priv = NULL;
-	char *cwd = NULL;
+	struct smb_filename *cwd_fname = NULL;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, priv, struct shadow_copy2_private,
 				return);
 
 	TALLOC_FREE(priv->shadow_cwd);
-	cwd = SMB_VFS_NEXT_GETWD(handle);
-	if (cwd == NULL) {
+	cwd_fname = SMB_VFS_NEXT_GETWD(handle, talloc_tos());
+	if (cwd_fname == NULL) {
 		smb_panic("getwd failed\n");
 	}
-	DBG_DEBUG("shadow cwd = %s\n", cwd);
-	priv->shadow_cwd = talloc_strdup(priv, cwd);
-	SAFE_FREE(cwd);
+	DBG_DEBUG("shadow cwd = %s\n", cwd_fname->base_name);
+	priv->shadow_cwd = talloc_strdup(priv, cwd_fname->base_name);
+	TALLOC_FREE(cwd_fname);
 	if (priv->shadow_cwd == NULL) {
 		smb_panic("talloc failed\n");
 	}

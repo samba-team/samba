@@ -521,9 +521,10 @@ static int skel_chdir(vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_CHDIR(handle, smb_fname);
 }
 
-static char *skel_getwd(vfs_handle_struct *handle)
+static struct smb_filename *skel_getwd(vfs_handle_struct *handle,
+					TALLOC_CTX *ctx)
 {
-	return SMB_VFS_NEXT_GETWD(handle);
+	return SMB_VFS_NEXT_GETWD(handle, ctx);
 }
 
 static int skel_ntimes(vfs_handle_struct *handle,

@@ -400,16 +400,13 @@ static struct smb_Dir *open_dir_with_privilege(connection_struct *conn,
 {
 	struct smb_Dir *dir_hnd = NULL;
 	struct smb_filename *smb_fname_cwd = NULL;
-	struct smb_filename saved_dir_fname = {0};
-	char *saved_dir = vfs_GetWd(talloc_tos(), conn);
+	struct smb_filename *saved_dir_fname = vfs_GetWd(talloc_tos(), conn);
 	struct privilege_paths *priv_paths = req->priv_paths;
 	int ret;
 
-	if (saved_dir == NULL) {
+	if (saved_dir_fname == NULL) {
 		return NULL;
 	}
-
-	saved_dir_fname = (struct smb_filename) { .base_name = saved_dir };
 
 	if (vfs_ChDir(conn, smb_dname) == -1) {
 		return NULL;
@@ -441,8 +438,8 @@ static struct smb_Dir *open_dir_with_privilege(connection_struct *conn,
 
   out:
 
-	vfs_ChDir(conn, &saved_dir_fname);
-	TALLOC_FREE(saved_dir);
+	vfs_ChDir(conn, saved_dir_fname);
+	TALLOC_FREE(saved_dir_fname);
 	return dir_hnd;
 }
 
@@ -1683,15 +1680,12 @@ static struct smb_Dir *open_dir_safely(TALLOC_CTX *ctx,
 {
 	struct smb_Dir *dir_hnd = NULL;
 	struct smb_filename *smb_fname_cwd = NULL;
-	struct smb_filename saved_dir_fname = {0};
-	char *saved_dir = vfs_GetWd(ctx, conn);
+	struct smb_filename *saved_dir_fname = vfs_GetWd(ctx, conn);
 	NTSTATUS status;
 
-	if (saved_dir == NULL) {
+	if (saved_dir_fname == NULL) {
 		return NULL;
 	}
-
-	saved_dir_fname = (struct smb_filename) { .base_name = saved_dir };
 
 	if (vfs_ChDir(conn, smb_dname) == -1) {
 		goto out;
@@ -1738,8 +1732,8 @@ static struct smb_Dir *open_dir_safely(TALLOC_CTX *ctx,
 
   out:
 
-	vfs_ChDir(conn, &saved_dir_fname);
-	TALLOC_FREE(saved_dir);
+	vfs_ChDir(conn, saved_dir_fname);
+	TALLOC_FREE(saved_dir_fname);
 	return dir_hnd;
 }
 

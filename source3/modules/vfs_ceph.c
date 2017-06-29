@@ -949,11 +949,16 @@ static int cephwrap_chdir(struct vfs_handle_struct *handle,
 	WRAP_RETURN(result);
 }
 
-static char *cephwrap_getwd(struct vfs_handle_struct *handle)
+static struct smb_filename *cephwrap_getwd(struct vfs_handle_struct *handle,
+			TALLOC_CTX *ctx)
 {
 	const char *cwd = ceph_getcwd(handle->data);
 	DBG_DEBUG("[CEPH] getwd(%p) = %s\n", handle, cwd);
-	return SMB_STRDUP(cwd);
+	return synthetic_smb_fname(ctx,
+				cwd,
+				NULL,
+				NULL,
+				0);
 }
 
 static int strict_allocate_ftruncate(struct vfs_handle_struct *handle, files_struct *fsp, off_t len)

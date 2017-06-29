@@ -403,8 +403,7 @@ NTSTATUS create_conn_struct_cwd(TALLOC_CTX *ctx,
 				struct smb_filename **poldcwd_fname)
 {
 	connection_struct *conn;
-	char *oldcwd = NULL;
-	struct smb_filename *smb_fname_oldcwd = NULL;
+	struct smb_filename *oldcwd_fname = NULL;
 	struct smb_filename smb_fname_connectpath = {0};
 
 	NTSTATUS status = create_conn_struct(ctx, ev,
@@ -421,21 +420,10 @@ NTSTATUS create_conn_struct_cwd(TALLOC_CTX *ctx,
 	 * user we will fail.... WTF ? JRA.
 	 */
 
-	oldcwd = vfs_GetWd(ctx, conn);
-	if (oldcwd == NULL) {
+	oldcwd_fname = vfs_GetWd(ctx, conn);
+	if (oldcwd_fname == NULL) {
 		status = map_nt_error_from_unix(errno);
 		DEBUG(3, ("vfs_GetWd failed: %s\n", strerror(errno)));
-		conn_free(conn);
-		return status;
-	}
-
-	smb_fname_oldcwd = synthetic_smb_fname(ctx,
-				oldcwd,
-				NULL,
-				NULL,
-				0);
-	if (smb_fname_oldcwd == NULL) {
-		status = NT_STATUS_NO_MEMORY;
 		conn_free(conn);
 		return status;
 	}
@@ -449,13 +437,13 @@ NTSTATUS create_conn_struct_cwd(TALLOC_CTX *ctx,
 		DEBUG(3,("create_conn_struct: Can't ChDir to new conn path %s. "
 			"Error was %s\n",
 			conn->connectpath, strerror(errno) ));
-		TALLOC_FREE(smb_fname_oldcwd);
+		TALLOC_FREE(oldcwd_fname);
 		conn_free(conn);
 		return status;
 	}
 
 	*pconn = conn;
-	*poldcwd_fname = smb_fname_oldcwd;
+	*poldcwd_fname = oldcwd_fname;
 
 	return NT_STATUS_OK;
 }

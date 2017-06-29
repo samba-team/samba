@@ -1257,14 +1257,15 @@ static int smb_time_audit_chdir(vfs_handle_struct *handle,
 	return result;
 }
 
-static char *smb_time_audit_getwd(vfs_handle_struct *handle)
+static struct smb_filename *smb_time_audit_getwd(vfs_handle_struct *handle,
+					TALLOC_CTX *mem_ctx)
 {
-	char *result;
+	struct smb_filename *result;
 	struct timespec ts1,ts2;
 	double timediff;
 
 	clock_gettime_mono(&ts1);
-	result = SMB_VFS_NEXT_GETWD(handle);
+	result = SMB_VFS_NEXT_GETWD(handle, mem_ctx);
 	clock_gettime_mono(&ts2);
 	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 

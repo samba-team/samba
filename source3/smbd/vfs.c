@@ -881,9 +881,14 @@ int vfs_ChDir(connection_struct *conn, const struct smb_filename *smb_fname)
 		LastDir = SMB_STRDUP(smb_fname->base_name);
 
 		/* conn cache. */
-		TALLOC_FREE(conn->cwd);
-		conn->cwd = vfs_GetWd(conn, conn);
-		DEBUG(4,("vfs_ChDir got %s\n",conn->cwd));
+		TALLOC_FREE(conn->cwd_fname);
+		conn->cwd_fname = vfs_GetWd(conn, conn);
+		if (conn->cwd_fname == NULL) {
+			smb_panic("con->cwd getwd failed\n");
+			/* NOTREACHED */
+			return -1;
+		}
+		DEBUG(4,("vfs_ChDir got %s\n",conn->cwd_fname->base_name));
 	}
 	return ret;
 }
@@ -894,14 +899,13 @@ int vfs_ChDir(connection_struct *conn, const struct smb_filename *smb_fname)
  format. Note this can be called with conn == NULL.
 ********************************************************************/
 
-char *vfs_GetWd(TALLOC_CTX *ctx, connection_struct *conn)
+struct smb_filename *vfs_GetWd(TALLOC_CTX *ctx, connection_struct *conn)
 {
-        char *current_dir = NULL;
-	char *result = NULL;
-	DATA_BLOB cache_value;
+        struct smb_filename *current_dir_fname = NULL;
 	struct file_id key;
 	struct smb_filename *smb_fname_dot = NULL;
 	struct smb_filename *smb_fname_full = NULL;
+	struct smb_filename *result = NULL;
 
 	if (!lp_getwd_cache()) {
 		goto nocache;
@@ -925,20 +929,13 @@ char *vfs_GetWd(TALLOC_CTX *ctx, connection_struct *conn)
 
 	key = vfs_file_id_from_sbuf(conn, &smb_fname_dot->st);
 
-	if (!memcache_lookup(smbd_memcache(), GETWD_CACHE,
-			     data_blob_const(&key, sizeof(key)),
-			     &cache_value)) {
-		goto nocache;
-	}
+	smb_fname_full = (struct smb_filename *)memcache_lookup_talloc(
+					smbd_memcache(),
+					GETWD_CACHE,
+					data_blob_const(&key, sizeof(key)));
 
-	SMB_ASSERT((cache_value.length > 0)
-		   && (cache_value.data[cache_value.length-1] == '\0'));
-
-	smb_fname_full = synthetic_smb_fname(ctx, (char *)cache_value.data,
-					     NULL, NULL, 0);
 	if (smb_fname_full == NULL) {
-		errno = ENOMEM;
-		goto out;
+		goto nocache;
 	}
 
 	if ((SMB_VFS_STAT(conn, smb_fname_full) == 0) &&
@@ -947,8 +944,10 @@ char *vfs_GetWd(TALLOC_CTX *ctx, connection_struct *conn)
 	    (S_ISDIR(smb_fname_dot->st.st_ex_mode))) {
 		/*
 		 * Ok, we're done
+		 * Note: smb_fname_full is owned by smbd_memcache()
+		 * so we must make a copy to return.
 		 */
-		result = talloc_strdup(ctx, smb_fname_full->base_name);
+		result = cp_smb_filename(ctx, smb_fname_full);
 		if (result == NULL) {
 			errno = ENOMEM;
 		}
@@ -963,8 +962,8 @@ char *vfs_GetWd(TALLOC_CTX *ctx, connection_struct *conn)
 	 * systems, or the not quite so bad getwd.
 	 */
 
-	current_dir = SMB_VFS_GETWD(conn);
-	if (current_dir == NULL) {
+	current_dir_fname = SMB_VFS_GETWD(conn, ctx);
+	if (current_dir_fname == NULL) {
 		DEBUG(0, ("vfs_GetWd: SMB_VFS_GETWD call failed: %s\n",
 			  strerror(errno)));
 		goto out;
@@ -973,21 +972,39 @@ char *vfs_GetWd(TALLOC_CTX *ctx, connection_struct *conn)
 	if (lp_getwd_cache() && VALID_STAT(smb_fname_dot->st)) {
 		key = vfs_file_id_from_sbuf(conn, &smb_fname_dot->st);
 
-		memcache_add(smbd_memcache(), GETWD_CACHE,
-			     data_blob_const(&key, sizeof(key)),
-			     data_blob_const(current_dir,
-						strlen(current_dir)+1));
-	}
+		/*
+		 * smbd_memcache() will own current_dir_fname after the
+		 * memcache_add_talloc call, so we must make
+		 * a copy on ctx to return.
+		 */
+		result = cp_smb_filename(ctx, current_dir_fname);
+		if (result == NULL) {
+			errno = ENOMEM;
+		}
 
-	result = talloc_strdup(ctx, current_dir);
-	if (result == NULL) {
-		errno = ENOMEM;
+		/*
+		 * Ensure the memory going into the cache
+		 * doesn't have a destructor so it can be
+		 * cleanly freed.
+		 */
+		talloc_set_destructor(current_dir_fname, NULL);
+
+		memcache_add_talloc(smbd_memcache(),
+				GETWD_CACHE,
+				data_blob_const(&key, sizeof(key)),
+				&current_dir_fname);
+		/* current_dir_fname is now == NULL here. */
+	} else {
+		/* current_dir_fname is already allocated on ctx. */
+		result = current_dir_fname;
 	}
 
  out:
 	TALLOC_FREE(smb_fname_dot);
-	TALLOC_FREE(smb_fname_full);
-	SAFE_FREE(current_dir);
+	/*
+	 * Don't free current_dir_fname here. It's either been moved
+	 * to the memcache or is being returned in result.
+	 */
 	return result;
 }
 
@@ -1009,7 +1026,6 @@ NTSTATUS check_reduced_name_with_privilege(connection_struct *conn,
 	char *dir_name = NULL;
 	const char *last_component = NULL;
 	char *resolved_name = NULL;
-	char *saved_dir = NULL;
 	struct smb_filename *saved_dir_fname = NULL;
 	struct smb_filename *smb_fname_cwd = NULL;
 	struct privilege_paths *priv_paths = NULL;
@@ -1045,23 +1061,12 @@ NTSTATUS check_reduced_name_with_privilege(connection_struct *conn,
 		goto err;
 	}
 	/* Remember where we were. */
-	saved_dir = vfs_GetWd(ctx, conn);
-	if (!saved_dir) {
+	saved_dir_fname = vfs_GetWd(ctx, conn);
+	if (!saved_dir_fname) {
 		status = map_nt_error_from_unix(errno);
 		goto err;
 	}
 
-	saved_dir_fname = synthetic_smb_fname(ctx,
-					saved_dir,
-					NULL,
-					NULL,
-					0);
-	if (saved_dir_fname == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto err;
-	}
-
-	/* Go to the parent directory to lock in memory. */
 	if (vfs_ChDir(conn, &priv_paths->parent_name) == -1) {
 		status = map_nt_error_from_unix(errno);
 		goto err;
@@ -1177,9 +1182,8 @@ NTSTATUS check_reduced_name_with_privilege(connection_struct *conn,
 
   err:
 
-	if (saved_dir_fname) {
+	if (saved_dir_fname != NULL) {
 		vfs_ChDir(conn, saved_dir_fname);
-		TALLOC_FREE(saved_dir);
 		TALLOC_FREE(saved_dir_fname);
 	}
 	SAFE_FREE(resolved_name);
@@ -2024,25 +2028,20 @@ NTSTATUS vfs_chown_fsp(files_struct *fsp, uid_t uid, gid_t gid)
 		 * and always act using lchown to ensure we
 		 * don't deref any symbolic links.
 		 */
-		char *saved_dir = NULL;
 		char *parent_dir = NULL;
 		const char *final_component = NULL;
 		struct smb_filename *local_smb_fname = NULL;
 		struct smb_filename parent_dir_fname = {0};
-		struct smb_filename saved_dir_fname = {0};
+		struct smb_filename *saved_dir_fname = NULL;
 
-		saved_dir = vfs_GetWd(talloc_tos(),fsp->conn);
-		if (!saved_dir) {
+		saved_dir_fname = vfs_GetWd(talloc_tos(),fsp->conn);
+		if (!saved_dir_fname) {
 			status = map_nt_error_from_unix(errno);
 			DEBUG(0,("vfs_chown_fsp: failed to get "
 				"current working directory. Error was %s\n",
 				strerror(errno)));
 			return status;
 		}
-
-		saved_dir_fname = (struct smb_filename) {
-			.base_name = saved_dir
-		};
 
 		if (!parent_dirname(talloc_tos(),
 				fsp->fsp_name->base_name,
@@ -2098,9 +2097,9 @@ NTSTATUS vfs_chown_fsp(files_struct *fsp, uid_t uid, gid_t gid)
 
   out:
 
-		vfs_ChDir(fsp->conn, &saved_dir_fname);
+		vfs_ChDir(fsp->conn, saved_dir_fname);
 		TALLOC_FREE(local_smb_fname);
-		TALLOC_FREE(saved_dir);
+		TALLOC_FREE(saved_dir_fname);
 		TALLOC_FREE(parent_dir);
 
 		return status;
@@ -2131,10 +2130,11 @@ int smb_vfs_call_chdir(struct vfs_handle_struct *handle,
 	return handle->fns->chdir_fn(handle, smb_fname);
 }
 
-char *smb_vfs_call_getwd(struct vfs_handle_struct *handle)
+struct smb_filename *smb_vfs_call_getwd(struct vfs_handle_struct *handle,
+				TALLOC_CTX *ctx)
 {
 	VFS_FIND(getwd);
-	return handle->fns->getwd_fn(handle);
+	return handle->fns->getwd_fn(handle, ctx);
 }
 
 int smb_vfs_call_ntimes(struct vfs_handle_struct *handle,

@@ -230,6 +230,10 @@
 		to const struct smb_filename * */
 /* Version 37 - Change chdir from const char *
 		to const struct smb_filename * */
+/* Version 37 - Change getwd from char *
+		to const struct smb_filename * */
+/* Version 37 - Change conn->cwd from char *
+		to struct smb_filename * */
 
 #define SMB_VFS_INTERFACE_VERSION 37
 
@@ -419,7 +423,7 @@ typedef struct connection_struct {
 	enum timestamp_set_resolution ts_res;
 	char *connectpath;
 	char *origpath;
-	char *cwd; /* Working directory. */
+	struct smb_filename *cwd_fname; /* Working directory. */
 
 	struct vfs_handle_struct *vfs_handles;		/* for the new plugins */
 
@@ -735,7 +739,8 @@ struct vfs_fn_pointers {
 			gid_t gid);
 	int (*chdir_fn)(struct vfs_handle_struct *handle,
 			 const struct smb_filename *smb_fname);
-	char *(*getwd_fn)(struct vfs_handle_struct *handle);
+	struct smb_filename *(*getwd_fn)(struct vfs_handle_struct *handle,
+				TALLOC_CTX *mem_ctx);
 	int (*ntimes_fn)(struct vfs_handle_struct *handle,
 			 const struct smb_filename *smb_fname,
 			 struct smb_file_time *ft);
@@ -1237,7 +1242,8 @@ int smb_vfs_call_lchown(struct vfs_handle_struct *handle,
 			gid_t gid);
 int smb_vfs_call_chdir(struct vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname);
-char *smb_vfs_call_getwd(struct vfs_handle_struct *handle);
+struct smb_filename *smb_vfs_call_getwd(struct vfs_handle_struct *handle,
+				TALLOC_CTX *ctx);
 int smb_vfs_call_ntimes(struct vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
 			struct smb_file_time *ft);

@@ -411,8 +411,7 @@ static int process_symlink_open(struct connection_struct *conn,
 	int fd = -1;
 	char *link_target = NULL;
 	int link_len = -1;
-	char *oldwd = NULL;
-	struct smb_filename oldwd_fname = {0};
+	struct smb_filename *oldwd_fname = NULL;
 	size_t rootdir_len = 0;
 	char *resolved_name = NULL;
 	bool matched = false;
@@ -484,12 +483,10 @@ static int process_symlink_open(struct connection_struct *conn,
 		goto out;
 	}
 
-	oldwd = vfs_GetWd(talloc_tos(), conn);
-	if (oldwd == NULL) {
+	oldwd_fname = vfs_GetWd(talloc_tos(), conn);
+	if (oldwd_fname == NULL) {
 		goto out;
 	}
-
-	oldwd_fname = (struct smb_filename) { .base_name = oldwd };
 
 	/* Ensure we operate from the root of the share. */
 	if (vfs_ChDir(conn, conn_rootdir_fname) == -1) {
@@ -512,12 +509,12 @@ static int process_symlink_open(struct connection_struct *conn,
 
 	SAFE_FREE(resolved_name);
 	TALLOC_FREE(link_target);
-	if (oldwd != NULL) {
-		int ret = vfs_ChDir(conn, &oldwd_fname);
+	if (oldwd_fname != NULL) {
+		int ret = vfs_ChDir(conn, oldwd_fname);
 		if (ret == -1) {
 			smb_panic("unable to get back to old directory\n");
 		}
-		TALLOC_FREE(oldwd);
+		TALLOC_FREE(oldwd_fname);
 	}
 	if (saved_errno != 0) {
 		errno = saved_errno;
@@ -541,8 +538,7 @@ static int non_widelink_open(struct connection_struct *conn,
 	int fd = -1;
 	struct smb_filename *smb_fname_rel = NULL;
 	int saved_errno = 0;
-	char *oldwd = NULL;
-	struct smb_filename oldwd_fname = {0};
+	struct smb_filename *oldwd_fname = NULL;
 	char *parent_dir = NULL;
 	struct smb_filename parent_dir_fname = {0};
 	const char *final_component = NULL;
@@ -556,12 +552,10 @@ static int non_widelink_open(struct connection_struct *conn,
 
 	parent_dir_fname = (struct smb_filename) { .base_name = parent_dir };
 
-	oldwd = vfs_GetWd(talloc_tos(), conn);
-	if (oldwd == NULL) {
+	oldwd_fname = vfs_GetWd(talloc_tos(), conn);
+	if (oldwd_fname == NULL) {
 		goto out;
 	}
-
-	oldwd_fname = (struct smb_filename) { .base_name = oldwd };
 
 	/* Pin parent directory in place. */
 	if (vfs_ChDir(conn, &parent_dir_fname) == -1) {
@@ -644,12 +638,12 @@ static int non_widelink_open(struct connection_struct *conn,
 	TALLOC_FREE(parent_dir);
 	TALLOC_FREE(smb_fname_rel);
 
-	if (oldwd != NULL) {
-		int ret = vfs_ChDir(conn, &oldwd_fname);
+	if (oldwd_fname != NULL) {
+		int ret = vfs_ChDir(conn, oldwd_fname);
 		if (ret == -1) {
 			smb_panic("unable to get back to old directory\n");
 		}
-		TALLOC_FREE(oldwd);
+		TALLOC_FREE(oldwd_fname);
 	}
 	if (saved_errno != 0) {
 		errno = saved_errno;
@@ -837,8 +831,7 @@ static NTSTATUS change_dir_owner_to_parent(connection_struct *conn,
 {
 	struct smb_filename *smb_fname_parent;
 	struct smb_filename *smb_fname_cwd = NULL;
-	char *saved_dir = NULL;
-	struct smb_filename smb_fname_saved_dir = {0};
+	struct smb_filename *saved_dir_fname = NULL;
 	TALLOC_CTX *ctx = talloc_tos();
 	NTSTATUS status = NT_STATUS_OK;
 	int ret;
@@ -869,16 +862,14 @@ static NTSTATUS change_dir_owner_to_parent(connection_struct *conn,
 	   should work on any UNIX (thanks tridge :-). JRA.
 	*/
 
-	saved_dir = vfs_GetWd(ctx,conn);
-	if (!saved_dir) {
+	saved_dir_fname = vfs_GetWd(ctx,conn);
+	if (!saved_dir_fname) {
 		status = map_nt_error_from_unix(errno);
 		DEBUG(0,("change_dir_owner_to_parent: failed to get "
 			 "current working directory. Error was %s\n",
 			 strerror(errno)));
 		goto out;
 	}
-
-	smb_fname_saved_dir = (struct smb_filename) { .base_name = saved_dir };
 
 	/* Chdir into the new path. */
 	if (vfs_ChDir(conn, smb_dname) == -1) {
@@ -949,9 +940,9 @@ static NTSTATUS change_dir_owner_to_parent(connection_struct *conn,
 	}
 
  chdir:
-	vfs_ChDir(conn, &smb_fname_saved_dir);
+	vfs_ChDir(conn, saved_dir_fname);
  out:
-	TALLOC_FREE(saved_dir);
+	TALLOC_FREE(saved_dir_fname);
 	TALLOC_FREE(smb_fname_parent);
 	TALLOC_FREE(smb_fname_cwd);
 	return status;

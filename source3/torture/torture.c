@@ -10580,14 +10580,24 @@ static bool data_blob_equal(DATA_BLOB a, DATA_BLOB b)
 static bool run_local_memcache(int dummy)
 {
 	struct memcache *cache;
-	DATA_BLOB k1, k2;
-	DATA_BLOB d1, d2, d3;
-	DATA_BLOB v1, v2, v3;
+	DATA_BLOB k1, k2, k3;
+	DATA_BLOB d1, d3;
+	DATA_BLOB v1, v3;
 
 	TALLOC_CTX *mem_ctx;
+	char *ptr1 = NULL;
+	char *ptr2 = NULL;
+
 	char *str1, *str2;
 	size_t size1, size2;
 	bool ret = false;
+
+	mem_ctx = talloc_init("foo");
+	if (mem_ctx == NULL) {
+		return false;
+	}
+
+	/* STAT_CACHE TESTS */
 
 	cache = memcache_init(NULL, sizeof(void *) == 8 ? 200 : 100);
 
@@ -10597,28 +10607,19 @@ static bool run_local_memcache(int dummy)
 	}
 
 	d1 = data_blob_const("d1", 2);
-	d2 = data_blob_const("d2", 2);
 	d3 = data_blob_const("d3", 2);
 
 	k1 = data_blob_const("d1", 2);
 	k2 = data_blob_const("d2", 2);
+	k3 = data_blob_const("d3", 2);
 
 	memcache_add(cache, STAT_CACHE, k1, d1);
-	memcache_add(cache, GETWD_CACHE, k2, d2);
 
 	if (!memcache_lookup(cache, STAT_CACHE, k1, &v1)) {
 		printf("could not find k1\n");
 		return false;
 	}
 	if (!data_blob_equal(d1, v1)) {
-		return false;
-	}
-
-	if (!memcache_lookup(cache, GETWD_CACHE, k2, &v2)) {
-		printf("could not find k2\n");
-		return false;
-	}
-	if (!data_blob_equal(d2, v2)) {
 		return false;
 	}
 
@@ -10632,22 +10633,69 @@ static bool run_local_memcache(int dummy)
 		return false;
 	}
 
-	memcache_add(cache, GETWD_CACHE, k1, d1);
+	TALLOC_FREE(cache);
 
-	if (memcache_lookup(cache, GETWD_CACHE, k2, &v2)) {
+	/* GETWD_CACHE TESTS */
+	str1 = talloc_strdup(mem_ctx, "string1");
+	if (str1 == NULL) {
+		return false;
+	}
+	ptr2 = str1; /* Keep an alias for comparison. */
+
+	str2 = talloc_strdup(mem_ctx, "string2");
+	if (str2 == NULL) {
+		return false;
+	}
+
+	cache = memcache_init(NULL, sizeof(void *) == 8 ? 200 : 100);
+	if (cache == NULL) {
+		printf("memcache_init failed\n");
+		return false;
+	}
+
+	memcache_add_talloc(cache, GETWD_CACHE, k2, &str1);
+	/* str1 == NULL now. */
+	ptr1 = memcache_lookup_talloc(cache, GETWD_CACHE, k2);
+	if (ptr1 == NULL) {
+		printf("could not find k2\n");
+		return false;
+	}
+	if (ptr1 != ptr2) {
+		printf("fetch of k2 got wrong string\n");
+		return false;
+	}
+
+	/* Add a blob to ensure k2 gets purged. */
+	d3 = data_blob_talloc_zero(mem_ctx, 180);
+	memcache_add(cache, STAT_CACHE, k3, d3);
+
+	ptr2 = memcache_lookup_talloc(cache, GETWD_CACHE, k2);
+	if (ptr2 != NULL) {
 		printf("Did find k2, should have been purged\n");
 		return false;
 	}
 
 	TALLOC_FREE(cache);
-
-	cache = memcache_init(NULL, 0);
+	TALLOC_FREE(mem_ctx);
 
 	mem_ctx = talloc_init("foo");
+	if (mem_ctx == NULL) {
+		return false;
+	}
+
+	cache = memcache_init(NULL, 0);
+	if (cache == NULL) {
+		return false;
+	}
 
 	str1 = talloc_strdup(mem_ctx, "string1");
+	if (str1 == NULL) {
+		return false;
+	}
 	str2 = talloc_strdup(mem_ctx, "string2");
-
+	if (str2 == NULL) {
+		return false;
+	}
 	memcache_add_talloc(cache, SINGLETON_CACHE_TALLOC,
 			    data_blob_string_const("torture"), &str1);
 	size1 = talloc_total_size(cache);

@@ -1521,14 +1521,15 @@ static int smb_full_audit_chdir(vfs_handle_struct *handle,
 	return result;
 }
 
-static char *smb_full_audit_getwd(vfs_handle_struct *handle)
+static struct smb_filename *smb_full_audit_getwd(vfs_handle_struct *handle,
+				TALLOC_CTX *ctx)
 {
-	char *result;
+	struct smb_filename *result;
 
-	result = SMB_VFS_NEXT_GETWD(handle);
+	result = SMB_VFS_NEXT_GETWD(handle, ctx);
 	
 	do_log(SMB_VFS_OP_GETWD, (result != NULL), handle, "%s",
-		result == NULL? "" : result);
+		result == NULL? "" : result->base_name);
 
 	return result;
 }

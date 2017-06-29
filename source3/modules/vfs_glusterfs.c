@@ -1076,10 +1076,12 @@ static int vfs_gluster_chdir(struct vfs_handle_struct *handle,
 	return glfs_chdir(handle->data, smb_fname->base_name);
 }
 
-static char *vfs_gluster_getwd(struct vfs_handle_struct *handle)
+static struct smb_filename *vfs_gluster_getwd(struct vfs_handle_struct *handle,
+				TALLOC_CTX *ctx)
 {
 	char *cwd;
 	char *ret;
+	struct smb_filename *smb_fname = NULL;
 
 	cwd = SMB_CALLOC_ARRAY(char, PATH_MAX);
 	if (cwd == NULL) {
@@ -1090,7 +1092,13 @@ static char *vfs_gluster_getwd(struct vfs_handle_struct *handle)
 	if (ret == 0) {
 		free(cwd);
 	}
-	return ret;
+	smb_fname = synthetic_smb_fname(ctx,
+					ret,
+					NULL,
+					NULL,
+					0);
+	free(cwd);
+	return smb_fname;
 }
 
 static int vfs_gluster_ntimes(struct vfs_handle_struct *handle,

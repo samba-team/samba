@@ -1232,7 +1232,7 @@ const char *vfs_readdirname(connection_struct *conn, void *p,
 			    SMB_STRUCT_STAT *sbuf, char **talloced);
 int vfs_ChDir(connection_struct *conn,
 			const struct smb_filename *smb_fname);
-char *vfs_GetWd(TALLOC_CTX *ctx, connection_struct *conn);
+struct smb_filename *vfs_GetWd(TALLOC_CTX *ctx, connection_struct *conn);
 NTSTATUS check_reduced_name(connection_struct *conn,
 			const char *cwd_name,
 			const char *fname);
