@@ -48,7 +48,6 @@ struct ctdb_kill_tcp {
 	unsigned int batch_size;
 };
 
-static const char *prog;
 
 /*
   called when we get a read event on the raw socket
@@ -270,7 +269,7 @@ static int ctdb_killtcp_destructor(struct ctdb_kill_tcp *killtcp)
 	return 0;
 }
 
-static void usage(void)
+static void usage(const char *prog)
 {
 	printf("usage: %s <interface> [ <srcip:port> <dstip:port> ]\n", prog);
 	exit(1);
@@ -298,10 +297,8 @@ int main(int argc, char **argv)
 		}
 	}
 
-	prog = argv[0];
-
 	if (argc != 2 && argc != 4) {
-		usage();
+		usage(argv[0]);
 	}
 
 	if (argc == 4) {
