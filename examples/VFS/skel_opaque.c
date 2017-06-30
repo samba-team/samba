@@ -614,7 +614,7 @@ static int skel_get_real_filename(struct vfs_handle_struct *handle,
 }
 
 static const char *skel_connectpath(struct vfs_handle_struct *handle,
-				    const char *filename)
+				const struct smb_filename *smb_fname)
 {
 	errno = ENOSYS;
 	return NULL;

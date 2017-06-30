@@ -2700,11 +2700,12 @@ static int shadow_copy2_get_real_filename(struct vfs_handle_struct *handle,
 }
 
 static const char *shadow_copy2_connectpath(struct vfs_handle_struct *handle,
-					    const char *fname)
+					const struct smb_filename *smb_fname_in)
 {
 	time_t timestamp = 0;
 	char *stripped = NULL;
 	char *tmp = NULL;
+	const char *fname = smb_fname_in->base_name;
 	struct smb_filename smb_fname = {0};
 	struct smb_filename *result_fname = NULL;
 	char *result = NULL;
@@ -2729,7 +2730,7 @@ static const char *shadow_copy2_connectpath(struct vfs_handle_struct *handle,
 		goto done;
 	}
 	if (timestamp == 0) {
-		return SMB_VFS_NEXT_CONNECTPATH(handle, fname);
+		return SMB_VFS_NEXT_CONNECTPATH(handle, smb_fname_in);
 	}
 
 	tmp = shadow_copy2_do_convert(talloc_tos(), handle, stripped, timestamp,

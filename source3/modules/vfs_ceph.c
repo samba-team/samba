@@ -1252,7 +1252,7 @@ static int cephwrap_get_real_filename(struct vfs_handle_struct *handle,
 }
 
 static const char *cephwrap_connectpath(struct vfs_handle_struct *handle,
-				       const char *fname)
+				       const struct smb_filename *smb_fname)
 {
 	return handle->conn->connectpath;
 }

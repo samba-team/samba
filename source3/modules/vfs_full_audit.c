@@ -1766,14 +1766,14 @@ static int smb_full_audit_get_real_filename(struct vfs_handle_struct *handle,
 }
 
 static const char *smb_full_audit_connectpath(vfs_handle_struct *handle,
-					      const char *fname)
+					const struct smb_filename *smb_fname)
 {
 	const char *result;
 
-	result = SMB_VFS_NEXT_CONNECTPATH(handle, fname);
+	result = SMB_VFS_NEXT_CONNECTPATH(handle, smb_fname);
 
 	do_log(SMB_VFS_OP_CONNECTPATH, result != NULL, handle,
-	       "%s", fname);
+	       "%s", smb_fname->base_name);
 
 	return result;
 }

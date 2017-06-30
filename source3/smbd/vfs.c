@@ -1026,7 +1026,6 @@ NTSTATUS check_reduced_name_with_privilege(connection_struct *conn,
 	char *dir_name = NULL;
 	char *resolved_name = NULL;
 	const char *last_component = NULL;
-	const char *fname = smb_fname->base_name;
 	struct smb_filename *resolved_fname = NULL;
 	struct smb_filename *saved_dir_fname = NULL;
 	struct smb_filename *smb_fname_cwd = NULL;
@@ -1034,7 +1033,7 @@ NTSTATUS check_reduced_name_with_privilege(connection_struct *conn,
 	int ret;
 
 	DEBUG(3,("check_reduced_name_with_privilege [%s] [%s]\n",
-			fname,
+			smb_fname->base_name,
 			conn->connectpath));
 
 
@@ -1044,7 +1043,8 @@ NTSTATUS check_reduced_name_with_privilege(connection_struct *conn,
 		goto err;
 	}
 
-	if (!parent_dirname(ctx, fname, &dir_name, &last_component)) {
+	if (!parent_dirname(ctx, smb_fname->base_name,
+			&dir_name, &last_component)) {
 		status = NT_STATUS_NO_MEMORY;
 		goto err;
 	}
@@ -1117,7 +1117,7 @@ NTSTATUS check_reduced_name_with_privilege(connection_struct *conn,
 
 	/* Ensure we're below the connect path. */
 
-	conn_rootdir = SMB_VFS_CONNECTPATH(conn, fname);
+	conn_rootdir = SMB_VFS_CONNECTPATH(conn, smb_fname);
 	if (conn_rootdir == NULL) {
 		DEBUG(2, ("check_reduced_name_with_privilege: Could not get "
 			"conn_rootdir\n"));
@@ -1302,7 +1302,7 @@ NTSTATUS check_reduced_name(connection_struct *conn,
 		const char *conn_rootdir;
 		size_t rootdir_len;
 
-		conn_rootdir = SMB_VFS_CONNECTPATH(conn, fname);
+		conn_rootdir = SMB_VFS_CONNECTPATH(conn, smb_fname);
 		if (conn_rootdir == NULL) {
 			DEBUG(2, ("check_reduced_name: Could not get "
 				"conn_rootdir\n"));
@@ -2268,10 +2268,10 @@ int smb_vfs_call_get_real_filename(struct vfs_handle_struct *handle,
 }
 
 const char *smb_vfs_call_connectpath(struct vfs_handle_struct *handle,
-				     const char *filename)
+				 const struct smb_filename *smb_fname)
 {
 	VFS_FIND(connectpath);
-	return handle->fns->connectpath_fn(handle, filename);
+	return handle->fns->connectpath_fn(handle, smb_fname);
 }
 
 bool smb_vfs_call_strict_lock(struct vfs_handle_struct *handle,

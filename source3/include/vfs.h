@@ -236,6 +236,8 @@
 		to struct smb_filename * */
 /* Version 37 - Change realpath from char *
 		to struct smb_filename * */
+/* Version 37 - Change connectpath from char *
+		to struct smb_filename * */
 
 #define SMB_VFS_INTERFACE_VERSION 37
 
@@ -830,7 +832,7 @@ struct vfs_fn_pointers {
 				    char **found_name);
 
 	const char *(*connectpath_fn)(struct vfs_handle_struct *handle,
-				      const char *filename);
+				      const struct smb_filename *smb_fname);
 
 	NTSTATUS (*brl_lock_windows_fn)(struct vfs_handle_struct *handle,
 					struct byte_range_lock *br_lck,
@@ -1301,7 +1303,7 @@ int smb_vfs_call_get_real_filename(struct vfs_handle_struct *handle,
 				   const char *path, const char *name,
 				   TALLOC_CTX *mem_ctx, char **found_name);
 const char *smb_vfs_call_connectpath(struct vfs_handle_struct *handle,
-				     const char *filename);
+				     const struct smb_filename *smb_fname);
 NTSTATUS smb_vfs_call_brl_lock_windows(struct vfs_handle_struct *handle,
 				       struct byte_range_lock *br_lck,
 				       struct lock_struct *plock,

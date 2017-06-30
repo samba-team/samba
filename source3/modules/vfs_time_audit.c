@@ -1624,19 +1624,20 @@ static int smb_time_audit_get_real_filename(struct vfs_handle_struct *handle,
 }
 
 static const char *smb_time_audit_connectpath(vfs_handle_struct *handle,
-					      const char *fname)
+					const struct smb_filename *smb_fname)
 {
 	const char *result;
 	struct timespec ts1,ts2;
 	double timediff;
 
 	clock_gettime_mono(&ts1);
-	result = SMB_VFS_NEXT_CONNECTPATH(handle, fname);
+	result = SMB_VFS_NEXT_CONNECTPATH(handle, smb_fname);
 	clock_gettime_mono(&ts2);
 	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
-		smb_time_audit_log_fname("connectpath", timediff, fname);
+		smb_time_audit_log_fname("connectpath", timediff,
+			smb_fname->base_name);
 	}
 
 	return result;

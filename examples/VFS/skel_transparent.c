@@ -739,9 +739,9 @@ static int skel_get_real_filename(struct vfs_handle_struct *handle,
 }
 
 static const char *skel_connectpath(struct vfs_handle_struct *handle,
-				    const char *filename)
+				const struct smb_filename *smb_fname)
 {
-	return SMB_VFS_NEXT_CONNECTPATH(handle, filename);
+	return SMB_VFS_NEXT_CONNECTPATH(handle, smb_fname);
 }
 
 static NTSTATUS skel_brl_lock_windows(struct vfs_handle_struct *handle,

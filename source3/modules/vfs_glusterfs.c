@@ -1322,7 +1322,7 @@ static int vfs_gluster_get_real_filename(struct vfs_handle_struct *handle,
 }
 
 static const char *vfs_gluster_connectpath(struct vfs_handle_struct *handle,
-					   const char *filename)
+				const struct smb_filename *smb_fname)
 {
 	return handle->conn->connectpath;
 }

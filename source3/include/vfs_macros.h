@@ -356,10 +356,10 @@
 #define SMB_VFS_NEXT_GET_REAL_FILENAME(handle, path, name, mem_ctx, found_name) \
 	smb_vfs_call_get_real_filename((handle)->next, (path), (name), (mem_ctx), (found_name))
 
-#define SMB_VFS_CONNECTPATH(conn, fname) \
-	smb_vfs_call_connectpath((conn)->vfs_handles, (fname))
-#define SMB_VFS_NEXT_CONNECTPATH(conn, fname) \
-	smb_vfs_call_connectpath((conn)->next, (fname))
+#define SMB_VFS_CONNECTPATH(conn, smb_fname) \
+	smb_vfs_call_connectpath((conn)->vfs_handles, (smb_fname))
+#define SMB_VFS_NEXT_CONNECTPATH(conn, smb_fname) \
+	smb_vfs_call_connectpath((conn)->next, (smb_fname))
 
 #define SMB_VFS_BRL_LOCK_WINDOWS(conn, br_lck, plock, blocking_lock) \
 	smb_vfs_call_brl_lock_windows((conn)->vfs_handles, (br_lck), (plock), (blocking_lock))

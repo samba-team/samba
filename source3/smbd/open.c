@@ -688,7 +688,7 @@ NTSTATUS fd_open(struct connection_struct *conn,
 	if (!lp_widelinks(SNUM(conn))) {
 		struct smb_filename *conn_rootdir_fname = NULL;
 		const char *conn_rootdir = SMB_VFS_CONNECTPATH(conn,
-						smb_fname->base_name);
+						smb_fname);
 		int saved_errno = 0;
 
 		if (conn_rootdir == NULL) {
