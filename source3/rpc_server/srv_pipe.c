@@ -844,7 +844,9 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 		p->auth.auth_level = DCERPC_AUTH_LEVEL_NONE;
 		p->auth.auth_context_id = 0;
 
+		become_root();
 		status = make_auth4_context(frame, &auth4_context);
+		unbecome_root();
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("Unable to make auth context for authz log.\n"));
 			TALLOC_FREE(frame);
