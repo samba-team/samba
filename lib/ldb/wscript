@@ -91,6 +91,12 @@ def configure(conf):
                                          implied_deps='replace talloc tdb tevent'):
                 conf.define('USING_SYSTEM_LDB', 1)
 
+    if conf.CONFIG_SET('USING_SYSTEM_LDB'):
+        v = VERSION.split('.')
+        conf.DEFINE('EXPECTED_SYSTEM_LDB_VERSION_MAJOR', int(v[0]))
+        conf.DEFINE('EXPECTED_SYSTEM_LDB_VERSION_MINOR', int(v[1]))
+        conf.DEFINE('EXPECTED_SYSTEM_LDB_VERSION_RELEASE', int(v[2]))
+
     if conf.env.standalone_ldb:
         conf.CHECK_XSLTPROC_MANPAGES()
 
