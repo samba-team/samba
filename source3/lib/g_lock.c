@@ -510,7 +510,6 @@ struct tevent_req *g_lock_lock_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-
 	if (!tevent_req_set_endtime(
 		    fn_state.watch_req, state->ev,
 		    timeval_current_ofs(5 + sys_random() % 5, 0))) {
@@ -527,54 +526,52 @@ static void g_lock_lock_retry(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct g_lock_lock_state *state = tevent_req_data(
 		req, struct g_lock_lock_state);
-	struct server_id self = messaging_server_id(state->ctx->msg);
-	struct server_id blocker;
-	struct db_record *rec;
+	struct g_lock_lock_fn_state fn_state;
 	NTSTATUS status;
 
-	status = dbwrap_watched_watch_recv(subreq, talloc_tos(), &rec, NULL,
-					   NULL);
+	status = dbwrap_watched_watch_recv(subreq, NULL, NULL, NULL, NULL);
+	DBG_DEBUG("watch_recv returned %s\n", nt_errstr(status));
 	TALLOC_FREE(subreq);
 
-	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
-		rec = dbwrap_fetch_locked(
-			state->ctx->db, talloc_tos(),
-			string_term_tdb_data(state->name));
-		if (rec == NULL) {
-			status = map_nt_error_from_unix(errno);
-		} else {
-			status = NT_STATUS_OK;
-		}
-	}
-
-	if (tevent_req_nterror(req, status)) {
-		return;
-	}
-	status = g_lock_trylock(rec, self, state->type, &blocker);
-	if (NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(rec);
-		tevent_req_done(req);
-		return;
-	}
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_LOCK_NOT_GRANTED)) {
-		TALLOC_FREE(rec);
+	if (!NT_STATUS_IS_OK(status) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
 		tevent_req_nterror(req, status);
 		return;
 	}
-	subreq = dbwrap_watched_watch_send(state, state->ev, rec, blocker);
-	TALLOC_FREE(rec);
-	if (tevent_req_nomem(subreq, req)) {
+
+	fn_state = (struct g_lock_lock_fn_state) {
+		.state = state, .self = messaging_server_id(state->ctx->msg)
+	};
+
+	status = dbwrap_do_locked(state->ctx->db,
+				  string_term_tdb_data(state->name),
+				  g_lock_lock_fn, &fn_state);
+	if (tevent_req_nterror(req, status)) {
+		DBG_DEBUG("dbwrap_do_locked failed: %s\n",
+			  nt_errstr(status));
 		return;
 	}
+
+	if (NT_STATUS_IS_OK(fn_state.status)) {
+		tevent_req_done(req);
+		return;
+	}
+	if (!NT_STATUS_EQUAL(fn_state.status, NT_STATUS_LOCK_NOT_GRANTED)) {
+		tevent_req_nterror(req, fn_state.status);
+		return;
+	}
+
+	if (tevent_req_nomem(fn_state.watch_req, req)) {
+		return;
+	}
+
 	if (!tevent_req_set_endtime(
-		    subreq, state->ev,
+		    fn_state.watch_req, state->ev,
 		    timeval_current_ofs(5 + sys_random() % 5, 0))) {
 		tevent_req_oom(req);
 		return;
 	}
-	tevent_req_set_callback(subreq, g_lock_lock_retry, req);
-	return;
-
+	tevent_req_set_callback(fn_state.watch_req, g_lock_lock_retry, req);
 }
 
 NTSTATUS g_lock_lock_recv(struct tevent_req *req)
