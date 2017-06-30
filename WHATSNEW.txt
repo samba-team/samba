@@ -136,6 +136,16 @@ authentication, SMB and RPC authorization is covered, however password
 changes are not at this stage, and this support is not currently
 backed by a testsuite.
 
+Multi-process LDAP Server
+-------------------------
+
+The LDAP server in the AD DC now honours the process model used for
+the rest of the samba process, rather than being forced into a single
+process.  This aids in Samba's ability to scale to larger numbers of AD
+clients and the AD DC's overall resiliency, but will mean that there is a
+fork()ed child for every LDAP client, which may be more resource
+intensive in some situations.
+
 Query record for open file or directory
 ---------------------------------------
 
