@@ -55,11 +55,26 @@ def configure(conf):
     conf.env.standalone_ldb = conf.IN_LAUNCH_DIR()
 
     if not conf.env.standalone_ldb:
-        if conf.CHECK_BUNDLED_SYSTEM_PKG('pyldb-util', minversion=VERSION,
+        #
+        # ldb >= 1.2.0 (as well as 1.1.30 and 1.1.31) are
+        # incompatible with Samba < 4.7
+        #
+        # See https://bugzilla.samba.org/show_bug.cgi?id=12859
+        #
+        maxversion = "1.1.99"
+        version_blacklist = ["1.1.30", "1.1.31"]
+
+        if conf.CHECK_BUNDLED_SYSTEM_PKG('pyldb-util',
+                                     minversion=VERSION,
+                                     maxversion=maxversion,
+                                     version_blacklist=version_blacklist,
                                      onlyif='talloc tdb tevent',
                                      implied_deps='replace talloc tdb tevent ldb'):
             conf.define('USING_SYSTEM_PYLDB_UTIL', 1)
-            if conf.CHECK_BUNDLED_SYSTEM_PKG('ldb', minversion=VERSION,
+            if conf.CHECK_BUNDLED_SYSTEM_PKG('ldb',
+                                         minversion=VERSION,
+                                         maxversion=maxversion,
+                                         version_blacklist=version_blacklist,
                                          onlyif='talloc tdb tevent pyldb-util',
                                          implied_deps='replace talloc tdb tevent'):
                 conf.define('USING_SYSTEM_LDB', 1)
