@@ -1704,7 +1704,7 @@ static struct smb_Dir *open_dir_safely(TALLOC_CTX *ctx,
 	 * Now the directory is pinned, use
 	 * REALPATH to ensure we can access it.
 	 */
-	status = check_name(conn, ".");
+	status = check_name(conn, smb_fname_cwd);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
 	}

@@ -1231,8 +1231,11 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
  Ensure a path is not vetoed.
 ****************************************************************************/
 
-static NTSTATUS check_veto_path(connection_struct *conn, const char *name)
+static NTSTATUS check_veto_path(connection_struct *conn,
+			const struct smb_filename *smb_fname)
 {
+	const char *name = smb_fname->base_name;
+
 	if (IS_VETO_PATH(conn, name))  {
 		/* Is it not dot or dot dot. */
 		if (!(ISDOT(name) || ISDOTDOT(name))) {
@@ -1251,19 +1254,21 @@ static NTSTATUS check_veto_path(connection_struct *conn, const char *name)
  a valid one for the user to access.
 ****************************************************************************/
 
-NTSTATUS check_name(connection_struct *conn, const char *name)
+NTSTATUS check_name(connection_struct *conn,
+			const struct smb_filename *smb_fname)
 {
-	NTSTATUS status = check_veto_path(conn, name);
+	NTSTATUS status = check_veto_path(conn, smb_fname);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
 	if (!lp_widelinks(SNUM(conn)) || !lp_follow_symlinks(SNUM(conn))) {
-		status = check_reduced_name(conn, NULL, name);
+		status = check_reduced_name(conn, NULL, smb_fname);
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(5,("check_name: name %s failed with %s\n",name,
-						nt_errstr(status)));
+			DEBUG(5,("check_name: name %s failed with %s\n",
+					smb_fname->base_name,
+					nt_errstr(status)));
 			return status;
 		}
 	}
@@ -1278,15 +1283,15 @@ NTSTATUS check_name(connection_struct *conn, const char *name)
 
 static NTSTATUS check_name_with_privilege(connection_struct *conn,
 		struct smb_request *smbreq,
-		const char *name)
+		const struct smb_filename *smb_fname)
 {
-	NTSTATUS status = check_veto_path(conn, name);
+	NTSTATUS status = check_veto_path(conn, smb_fname);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	return check_reduced_name_with_privilege(conn,
-			name,
+			smb_fname,
 			smbreq);
 }
 
@@ -1623,13 +1628,14 @@ static NTSTATUS filename_convert_internal(TALLOC_CTX *ctx,
 	if ((ucf_flags & UCF_UNIX_NAME_LOOKUP) &&
 			VALID_STAT((*pp_smb_fname)->st) &&
 			S_ISLNK((*pp_smb_fname)->st.st_ex_mode)) {
-		return check_veto_path(conn, (*pp_smb_fname)->base_name);
+		return check_veto_path(conn, (*pp_smb_fname));
 	}
 
 	if (!smbreq) {
-		status = check_name(conn, (*pp_smb_fname)->base_name);
+		status = check_name(conn, (*pp_smb_fname));
 	} else {
-		status = check_name_with_privilege(conn, smbreq, (*pp_smb_fname)->base_name);
+		status = check_name_with_privilege(conn, smbreq,
+				(*pp_smb_fname));
 	}
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3,("filename_convert_internal: check_name failed "

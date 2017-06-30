@@ -1016,7 +1016,7 @@ struct smb_filename *vfs_GetWd(TALLOC_CTX *ctx, connection_struct *conn)
 ********************************************************************/
 
 NTSTATUS check_reduced_name_with_privilege(connection_struct *conn,
-			const char *fname,
+			const struct smb_filename *smb_fname,
 			struct smb_request *smbreq)
 {
 	NTSTATUS status;
@@ -1026,6 +1026,7 @@ NTSTATUS check_reduced_name_with_privilege(connection_struct *conn,
 	char *dir_name = NULL;
 	char *resolved_name = NULL;
 	const char *last_component = NULL;
+	const char *fname = smb_fname->base_name;
 	struct smb_filename *resolved_fname = NULL;
 	struct smb_filename *saved_dir_fname = NULL;
 	struct smb_filename *smb_fname_cwd = NULL;
@@ -1208,11 +1209,12 @@ NTSTATUS check_reduced_name_with_privilege(connection_struct *conn,
 ********************************************************************/
 
 NTSTATUS check_reduced_name(connection_struct *conn,
-				const char *cwd_name,
-				const char *fname)
+				const struct smb_filename *cwd_fname,
+				const struct smb_filename *smb_fname)
 {
 	TALLOC_CTX *ctx = talloc_tos();
-	struct smb_filename smb_fname = { .base_name = discard_const(fname) };
+	const char *cwd_name = cwd_fname ? cwd_fname->base_name : NULL;
+	const char *fname = smb_fname->base_name;
 	struct smb_filename *resolved_fname;
 	char *resolved_name = NULL;
 	char *new_fname = NULL;
@@ -1221,7 +1223,7 @@ NTSTATUS check_reduced_name(connection_struct *conn,
 
 	DBG_DEBUG("check_reduced_name [%s] [%s]\n", fname, conn->connectpath);
 
-	resolved_fname = SMB_VFS_REALPATH(conn, ctx, &smb_fname);
+	resolved_fname = SMB_VFS_REALPATH(conn, ctx, smb_fname);
 
 	if (resolved_fname == NULL) {
 		switch (errno) {

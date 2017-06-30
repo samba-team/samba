@@ -3053,7 +3053,7 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 			dirtype = FILE_ATTRIBUTE_NORMAL;
 		}
 
-		status = check_name(conn, smb_fname->base_name);
+		status = check_name(conn, smb_fname);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto out;
 		}
@@ -3087,11 +3087,6 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 			}
 		}
 
-		status = check_name(conn, fname_dir);
-		if (!NT_STATUS_IS_OK(status)) {
-			goto out;
-		}
-
 		smb_fname_dir = synthetic_smb_fname(talloc_tos(),
 					fname_dir,
 					NULL,
@@ -3099,6 +3094,11 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 					smb_fname->flags);
 		if (smb_fname_dir == NULL) {
 			status = NT_STATUS_NO_MEMORY;
+			goto out;
+		}
+
+		status = check_name(conn, smb_fname_dir);
+		if (!NT_STATUS_IS_OK(status)) {
 			goto out;
 		}
 
@@ -3161,7 +3161,7 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 				goto out;
 			}
 
-			status = check_name(conn, smb_fname->base_name);
+			status = check_name(conn, smb_fname);
 			if (!NT_STATUS_IS_OK(status)) {
 				TALLOC_FREE(dir_hnd);
 				TALLOC_FREE(frame);
@@ -6609,7 +6609,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 	uint32_t access_mask = SEC_DIR_ADD_FILE;
 	bool dst_exists, old_is_stream, new_is_stream;
 
-	status = check_name(conn, smb_fname_dst_in->base_name);
+	status = check_name(conn, smb_fname_dst_in);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -7088,11 +7088,6 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 		}
 	}
 
-	status = check_name(conn, fname_src_dir);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
-	}
-
 	smb_fname_src_dir = synthetic_smb_fname(talloc_tos(),
 				fname_src_dir,
 				NULL,
@@ -7100,6 +7095,11 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 				smb_fname_src->flags);
 	if (smb_fname_src_dir == NULL) {
 		status = NT_STATUS_NO_MEMORY;
+		goto out;
+	}
+
+	status = check_name(conn, smb_fname_src_dir);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
 	}
 
@@ -7754,13 +7754,13 @@ void reply_copy(struct smb_request *req)
 			smb_fname_dst->base_name = fname_dst_mod;
 		}
 
-		status = check_name(conn, smb_fname_src->base_name);
+		status = check_name(conn, smb_fname_src);
 		if (!NT_STATUS_IS_OK(status)) {
 			reply_nterror(req, status);
 			goto out;
 		}
 
-		status = check_name(conn, smb_fname_dst->base_name);
+		status = check_name(conn, smb_fname_dst);
 		if (!NT_STATUS_IS_OK(status)) {
 			reply_nterror(req, status);
 			goto out;
@@ -7802,12 +7802,6 @@ void reply_copy(struct smb_request *req)
 			}
 		}
 
-		status = check_name(conn, fname_src_dir);
-		if (!NT_STATUS_IS_OK(status)) {
-			reply_nterror(req, status);
-			goto out;
-		}
-
 		smb_fname_src_dir = synthetic_smb_fname(talloc_tos(),
 					fname_src_dir,
 					NULL,
@@ -7815,6 +7809,12 @@ void reply_copy(struct smb_request *req)
 					smb_fname_src->flags);
 		if (smb_fname_src_dir == NULL) {
 			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			goto out;
+		}
+
+		status = check_name(conn, smb_fname_src_dir);
+		if (!NT_STATUS_IS_OK(status)) {
+			reply_nterror(req, status);
 			goto out;
 		}
 
@@ -7891,7 +7891,7 @@ void reply_copy(struct smb_request *req)
 			TALLOC_FREE(smb_fname_dst->base_name);
 			smb_fname_dst->base_name = destname;
 
-			status = check_name(conn, smb_fname_src->base_name);
+			status = check_name(conn, smb_fname_src);
 			if (!NT_STATUS_IS_OK(status)) {
 				TALLOC_FREE(dir_hnd);
 				TALLOC_FREE(talloced);
@@ -7899,7 +7899,7 @@ void reply_copy(struct smb_request *req)
 				goto out;
 			}
 
-			status = check_name(conn, smb_fname_dst->base_name);
+			status = check_name(conn, smb_fname_dst);
 			if (!NT_STATUS_IS_OK(status)) {
 				TALLOC_FREE(dir_hnd);
 				TALLOC_FREE(talloced);

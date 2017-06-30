@@ -570,13 +570,6 @@ static int non_widelink_open(struct connection_struct *conn,
 		goto out;
 	}
 
-	/* Ensure the relative path is below the share. */
-	status = check_reduced_name(conn, parent_dir, final_component);
-	if (!NT_STATUS_IS_OK(status)) {
-		saved_errno = map_errno_from_nt_status(status);
-		goto out;
-	}
-
 	smb_fname_rel = synthetic_smb_fname(talloc_tos(),
 				final_component,
 				smb_fname->stream_name,
@@ -584,6 +577,13 @@ static int non_widelink_open(struct connection_struct *conn,
 				smb_fname->flags);
 	if (smb_fname_rel == NULL) {
 		saved_errno = ENOMEM;
+		goto out;
+	}
+
+	/* Ensure the relative path is below the share. */
+	status = check_reduced_name(conn, &parent_dir_fname, smb_fname_rel);
+	if (!NT_STATUS_IS_OK(status)) {
+		saved_errno = map_errno_from_nt_status(status);
 		goto out;
 	}
 
