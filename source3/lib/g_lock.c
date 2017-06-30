@@ -141,6 +141,8 @@ static NTSTATUS g_lock_store(struct db_record *rec, struct g_lock *lck,
 	return dbwrap_record_storev(rec, dbufs, ARRAY_SIZE(dbufs), 0);
 }
 
+#if 0
+
 static ssize_t g_lock_get(TDB_DATA recval,
 			  struct g_lock_rec *locks, size_t num_locks,
 			  uint8_t **data, size_t *datalen)
@@ -212,6 +214,8 @@ static NTSTATUS g_lock_get_talloc(TALLOC_CTX *mem_ctx, TDB_DATA recval,
 
 	return NT_STATUS_OK;
 }
+
+#endif
 
 struct g_lock_ctx *g_lock_ctx_init(TALLOC_CTX *mem_ctx,
 				   struct messaging_context *msg)
@@ -710,6 +714,54 @@ int g_lock_locks(struct g_lock_ctx *ctx,
 	return count;
 }
 
+struct g_lock_dump_state {
+	TALLOC_CTX *mem_ctx;
+	const char *name;
+	void (*fn)(const struct g_lock_rec *locks,
+		   size_t num_locks,
+		   const uint8_t *data,
+		   size_t datalen,
+		   void *private_data);
+	void *private_data;
+	NTSTATUS status;
+};
+
+static void g_lock_dump_fn(TDB_DATA key, TDB_DATA data,
+			   void *private_data)
+{
+	struct g_lock_dump_state *state = private_data;
+	struct g_lock_rec *recs;
+	struct g_lock lck;
+	size_t i;
+	bool ok;
+
+	ok = g_lock_parse(data.dptr, data.dsize, &lck);
+	if (!ok) {
+		DBG_DEBUG("g_lock_parse failed for %s\n",
+			  state->name);
+		state->status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		return;
+	}
+
+	recs = talloc_array(state->mem_ctx, struct g_lock_rec, lck.num_recs);
+	if (recs == NULL) {
+		DBG_DEBUG("talloc failed\n");
+		state->status = NT_STATUS_NO_MEMORY;
+		return;
+	}
+
+	for (i=0; i<lck.num_recs; i++) {
+		g_lock_get_rec(&lck, i, &recs[i]);
+	}
+
+	state->fn(recs, lck.num_recs, lck.data, lck.datalen,
+		  state->private_data);
+
+	TALLOC_FREE(recs);
+
+	state->status = NT_STATUS_OK;
+}
+
 NTSTATUS g_lock_dump(struct g_lock_ctx *ctx, const char *name,
 		     void (*fn)(const struct g_lock_rec *locks,
 				size_t num_locks,
@@ -718,36 +770,24 @@ NTSTATUS g_lock_dump(struct g_lock_ctx *ctx, const char *name,
 				void *private_data),
 		     void *private_data)
 {
-	TDB_DATA data;
-	size_t num_locks;
-	struct g_lock_rec *locks = NULL;
-	uint8_t *userdata = NULL;
-	size_t userdatalen = 0;
+	struct g_lock_dump_state state = {
+		.mem_ctx = ctx, .name = name,
+		.fn = fn, .private_data = private_data
+	};
 	NTSTATUS status;
 
-	status = dbwrap_fetch_bystring(ctx->db, talloc_tos(), name, &data);
+	status = dbwrap_parse_record(ctx->db, string_term_tdb_data(name),
+				     g_lock_dump_fn, &state);
 	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("dbwrap_parse_record returned %s\n",
+			  nt_errstr(status));
 		return status;
 	}
-
-	if ((data.dsize == 0) || (data.dptr == NULL)) {
-		return NT_STATUS_OK;
+	if (!NT_STATUS_IS_OK(state.status)) {
+		DBG_DEBUG("g_lock_dump_fn returned %s\n",
+			  nt_errstr(state.status));
+		return state.status;
 	}
-
-	status = g_lock_get_talloc(talloc_tos(), data, &locks, &num_locks,
-				   &userdata, &userdatalen);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG_DEBUG("g_lock_get for %s failed: %s\n", name,
-			  nt_errstr(status));
-		TALLOC_FREE(data.dptr);
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
-	fn(locks, num_locks, userdata, userdatalen, private_data);
-
-	TALLOC_FREE(locks);
-	TALLOC_FREE(data.dptr);
 	return NT_STATUS_OK;
 }
 
