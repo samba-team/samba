@@ -2487,14 +2487,21 @@ static int vfswrap_mknod(vfs_handle_struct *handle,
 	return result;
 }
 
-static char *vfswrap_realpath(vfs_handle_struct *handle, const char *path)
+static struct smb_filename *vfswrap_realpath(vfs_handle_struct *handle,
+			TALLOC_CTX *ctx,
+			const struct smb_filename *smb_fname)
 {
 	char *result;
+	struct smb_filename *result_fname = NULL;
 
 	START_PROFILE(syscall_realpath);
-	result = sys_realpath(path);
+	result = sys_realpath(smb_fname->base_name);
 	END_PROFILE(syscall_realpath);
-	return result;
+	if (result) {
+		result_fname = synthetic_smb_fname(ctx, result, NULL, NULL, 0);
+		SAFE_FREE(result);
+	}
+	return result_fname;
 }
 
 static int vfswrap_chflags(vfs_handle_struct *handle,

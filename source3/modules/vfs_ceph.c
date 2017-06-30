@@ -1191,10 +1191,14 @@ static int cephwrap_mknod(struct vfs_handle_struct *handle,
  * This is a simple version of real-path ... a better version is needed to
  * ask libceph about symbolic links.
  */
-static char *cephwrap_realpath(struct vfs_handle_struct *handle,  const char *path)
+static struct smb_filename *cephwrap_realpath(struct vfs_handle_struct *handle,
+				TALLOC_CTX *ctx,
+				const struct smb_filename *smb_fname)
 {
 	char *result;
+	const char *path = smb_fname->base_name;
 	size_t len = strlen(path);
+	struct smb_filename *result_fname = NULL;
 
 	result = SMB_MALLOC_ARRAY(char, PATH_MAX+1);
 	if (len && (path[0] == '/')) {
@@ -1216,7 +1220,13 @@ static char *cephwrap_realpath(struct vfs_handle_struct *handle,  const char *pa
 		if (r < 0) return NULL;
 	}
 	DBG_DEBUG("[CEPH] realpath(%p, %s) = %s\n", handle, path, result);
-	return result;
+	result_fname = synthetic_smb_fname(ctx,
+				result,
+				NULL,
+				NULL,
+				0);
+	SAFE_FREE(result);
+	return result_fname;
 }
 
 static int cephwrap_chflags(struct vfs_handle_struct *handle,

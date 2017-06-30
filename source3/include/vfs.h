@@ -234,6 +234,8 @@
 		to const struct smb_filename * */
 /* Version 37 - Change conn->cwd from char *
 		to struct smb_filename * */
+/* Version 37 - Change realpath from char *
+		to struct smb_filename * */
 
 #define SMB_VFS_INTERFACE_VERSION 37
 
@@ -769,7 +771,9 @@ struct vfs_fn_pointers {
 				const struct smb_filename *smb_fname,
 				mode_t mode,
 				SMB_DEV_T dev);
-	char *(*realpath_fn)(struct vfs_handle_struct *handle, const char *path);
+	struct smb_filename *(*realpath_fn)(struct vfs_handle_struct *handle,
+				TALLOC_CTX *ctx,
+				const struct smb_filename *smb_fname);
 	int (*chflags_fn)(struct vfs_handle_struct *handle,
 				const struct smb_filename *smb_fname,
 				unsigned int flags);
@@ -1279,7 +1283,9 @@ int smb_vfs_call_mknod(struct vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
 			mode_t mode,
 			SMB_DEV_T dev);
-char *smb_vfs_call_realpath(struct vfs_handle_struct *handle, const char *path);
+struct smb_filename *smb_vfs_call_realpath(struct vfs_handle_struct *handle,
+			TALLOC_CTX *ctx,
+			const struct smb_filename *smb_fname);
 int smb_vfs_call_chflags(struct vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
 			unsigned int flags);

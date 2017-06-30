@@ -602,9 +602,11 @@ static int skel_mknod(vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_MKNOD(handle, smb_fname, mode, dev);
 }
 
-static char *skel_realpath(vfs_handle_struct *handle, const char *path)
+static struct smb_filename *skel_realpath(vfs_handle_struct *handle,
+			TALLOC_CTX *ctx,
+			const struct smb_filename *smb_fname)
 {
-	return SMB_VFS_NEXT_REALPATH(handle, path);
+	return SMB_VFS_NEXT_REALPATH(handle, ctx, smb_fname);
 }
 
 static int skel_chflags(vfs_handle_struct *handle,

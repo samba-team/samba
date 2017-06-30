@@ -512,7 +512,9 @@ static int skel_mknod(vfs_handle_struct *handle,
 	return -1;
 }
 
-static char *skel_realpath(vfs_handle_struct *handle, const char *path)
+static struct smb_filename *skel_realpath(vfs_handle_struct *handle,
+			TALLOC_CTX *ctx,
+			const struct smb_filename *smb_fname)
 {
 	errno = ENOSYS;
 	return NULL;

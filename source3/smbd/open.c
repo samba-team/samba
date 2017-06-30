@@ -410,9 +410,11 @@ static int process_symlink_open(struct connection_struct *conn,
 {
 	int fd = -1;
 	char *link_target = NULL;
+	struct smb_filename target_fname = {0};
 	int link_len = -1;
 	struct smb_filename *oldwd_fname = NULL;
 	size_t rootdir_len = 0;
+	struct smb_filename *resolved_fname = NULL;
 	char *resolved_name = NULL;
 	bool matched = false;
 	int saved_errno = 0;
@@ -444,12 +446,14 @@ static int process_symlink_open(struct connection_struct *conn,
 
 	/* Ensure it's at least null terminated. */
 	link_target[link_len] = '\0';
+	target_fname = (struct smb_filename){ .base_name = link_target };
 
 	/* Convert to an absolute path. */
-	resolved_name = SMB_VFS_REALPATH(conn, link_target);
-	if (resolved_name == NULL) {
+	resolved_fname = SMB_VFS_REALPATH(conn, talloc_tos(), &target_fname);
+	if (resolved_fname == NULL) {
 		goto out;
 	}
+	resolved_name = resolved_fname->base_name;
 
 	/*
 	 * We know conn_rootdir starts with '/' and
@@ -471,15 +475,19 @@ static int process_symlink_open(struct connection_struct *conn,
 	 */
 	if (resolved_name[rootdir_len] == '\0') {
 		/* Link to the root of the share. */
-		smb_fname->base_name = talloc_strdup(talloc_tos(), ".");
-		if (smb_fname->base_name == NULL) {
-			errno = ENOMEM;
-			goto out;
-		}
+		TALLOC_FREE(smb_fname->base_name);
+		smb_fname->base_name = talloc_strdup(smb_fname, ".");
 	} else if (resolved_name[rootdir_len] == '/') {
-		smb_fname->base_name = &resolved_name[rootdir_len+1];
+		TALLOC_FREE(smb_fname->base_name);
+		smb_fname->base_name = talloc_strdup(smb_fname,
+					&resolved_name[rootdir_len+1]);
 	} else {
 		errno = EACCES;
+		goto out;
+	}
+
+	if (smb_fname->base_name == NULL) {
+		errno = ENOMEM;
 		goto out;
 	}
 
@@ -507,7 +515,7 @@ static int process_symlink_open(struct connection_struct *conn,
 
   out:
 
-	SAFE_FREE(resolved_name);
+	TALLOC_FREE(resolved_fname);
 	TALLOC_FREE(link_target);
 	if (oldwd_fname != NULL) {
 		int ret = vfs_ChDir(conn, oldwd_fname);

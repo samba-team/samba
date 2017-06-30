@@ -2507,39 +2507,47 @@ static int snapper_gmt_mknod(vfs_handle_struct *handle,
 	return ret;
 }
 
-static char *snapper_gmt_realpath(vfs_handle_struct *handle,
-				  const char *fname)
+static struct smb_filename *snapper_gmt_realpath(vfs_handle_struct *handle,
+				TALLOC_CTX *ctx,
+				const struct smb_filename *smb_fname)
 {
-	time_t timestamp;
+	time_t timestamp = 0;
 	char *stripped = NULL;
-	char *tmp = NULL;
-	char *result = NULL;
-	int saved_errno;
+	struct smb_filename *result_fname = NULL;
+	struct smb_filename *conv_smb_fname = NULL;
+	int saved_errno = 0;
 
-	if (!snapper_gmt_strip_snapshot(talloc_tos(), handle, fname,
+	if (!snapper_gmt_strip_snapshot(talloc_tos(), handle,
+					smb_fname->base_name,
 					&timestamp, &stripped)) {
 		goto done;
 	}
 	if (timestamp == 0) {
-		return SMB_VFS_NEXT_REALPATH(handle, fname);
+		return SMB_VFS_NEXT_REALPATH(handle, ctx, smb_fname);
 	}
 
-	tmp = snapper_gmt_convert(talloc_tos(), handle, stripped, timestamp);
-	if (tmp == NULL) {
+	conv_smb_fname = cp_smb_filename(talloc_tos(), smb_fname);
+	if (conv_smb_fname == NULL) {
+		goto done;
+	}
+	conv_smb_fname->base_name = snapper_gmt_convert(conv_smb_fname, handle,
+					      stripped, timestamp);
+	if (conv_smb_fname->base_name == NULL) {
 		goto done;
 	}
 
-	result = SMB_VFS_NEXT_REALPATH(handle, tmp);
-	if (result == NULL) {
-		goto done;
-	}
+	result_fname = SMB_VFS_NEXT_REALPATH(handle, ctx, conv_smb_fname);
 
 done:
-	saved_errno = errno;
-	TALLOC_FREE(tmp);
+	if (result_fname == NULL) {
+		saved_errno = errno;
+	}
+	TALLOC_FREE(conv_smb_fname);
 	TALLOC_FREE(stripped);
-	errno = saved_errno;
-	return result;
+	if (saved_errno != 0) {
+		errno = saved_errno;
+	}
+	return result_fname;
 }
 
 static NTSTATUS snapper_gmt_fget_nt_acl(vfs_handle_struct *handle,

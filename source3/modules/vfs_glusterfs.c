@@ -1149,10 +1149,12 @@ static int vfs_gluster_fallocate(struct vfs_handle_struct *handle,
 	return -1;
 }
 
-static char *vfs_gluster_realpath(struct vfs_handle_struct *handle,
-				  const char *path)
+static struct smb_filename *vfs_gluster_realpath(struct vfs_handle_struct *handle,
+				TALLOC_CTX *ctx,
+				const struct smb_filename *smb_fname)
 {
 	char *result = NULL;
+	struct smb_filename *result_fname = NULL;
 	char *resolved_path = SMB_MALLOC_ARRAY(char, PATH_MAX+1);
 
 	if (resolved_path == NULL) {
@@ -1160,12 +1162,15 @@ static char *vfs_gluster_realpath(struct vfs_handle_struct *handle,
 		return NULL;
 	}
 
-	result = glfs_realpath(handle->data, path, resolved_path);
-	if (result == NULL) {
-		SAFE_FREE(resolved_path);
+	result = glfs_realpath(handle->data,
+			smb_fname->base_name,
+			resolved_path);
+	if (result != NULL) {
+		result_fname = synthetic_smb_fname(ctx, result, NULL, NULL, 0);
 	}
 
-	return result;
+	SAFE_FREE(resolved_path);
+	return result_fname;
 }
 
 static bool vfs_gluster_lock(struct vfs_handle_struct *handle,

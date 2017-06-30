@@ -78,8 +78,8 @@ struct shadow_copy2_private {
 	char *shadow_cwd; /* Absolute $cwd path. */
 	/* Absolute connectpath - can vary depending on $cwd. */
 	char *shadow_connectpath;
-	/* malloc'ed realpath return. */
-	char *shadow_realpath;
+	/* talloc'ed realpath return. */
+	struct smb_filename *shadow_realpath;
 };
 
 static int shadow_copy2_get_shadow_copy_data(
@@ -1742,40 +1742,47 @@ static int shadow_copy2_mknod(vfs_handle_struct *handle,
 	return ret;
 }
 
-static char *shadow_copy2_realpath(vfs_handle_struct *handle,
-				   const char *fname)
+static struct smb_filename *shadow_copy2_realpath(vfs_handle_struct *handle,
+				TALLOC_CTX *ctx,
+				const struct smb_filename *smb_fname)
 {
 	time_t timestamp = 0;
 	char *stripped = NULL;
-	char *tmp = NULL;
-	char *result = NULL;
+	struct smb_filename *result_fname = NULL;
+	struct smb_filename *conv_fname = NULL;
 	int saved_errno = 0;
 
-	if (!shadow_copy2_strip_snapshot(talloc_tos(), handle, fname,
-					 &timestamp, &stripped)) {
+	if (!shadow_copy2_strip_snapshot(talloc_tos(), handle,
+				smb_fname->base_name,
+				&timestamp, &stripped)) {
 		goto done;
 	}
 	if (timestamp == 0) {
-		return SMB_VFS_NEXT_REALPATH(handle, fname);
+		return SMB_VFS_NEXT_REALPATH(handle, ctx, smb_fname);
 	}
 
-	tmp = shadow_copy2_convert(talloc_tos(), handle, stripped, timestamp);
-	if (tmp == NULL) {
+	conv_fname = cp_smb_filename(talloc_tos(), smb_fname);
+	if (conv_fname == NULL) {
+		goto done;
+	}
+	conv_fname->base_name = shadow_copy2_convert(
+		conv_fname, handle, stripped, timestamp);
+	if (conv_fname->base_name == NULL) {
 		goto done;
 	}
 
-	result = SMB_VFS_NEXT_REALPATH(handle, tmp);
+	result_fname = SMB_VFS_NEXT_REALPATH(handle, ctx, conv_fname);
 
 done:
-	if (result == NULL) {
+	if (result_fname == NULL) {
 		saved_errno = errno;
 	}
-	TALLOC_FREE(tmp);
+	TALLOC_FREE(conv_fname);
 	TALLOC_FREE(stripped);
 	if (saved_errno != 0) {
 		errno = saved_errno;
 	}
-	return result;
+	return result_fname;
 }
 
 /**
@@ -2698,6 +2705,8 @@ static const char *shadow_copy2_connectpath(struct vfs_handle_struct *handle,
 	time_t timestamp = 0;
 	char *stripped = NULL;
 	char *tmp = NULL;
+	struct smb_filename smb_fname = {0};
+	struct smb_filename *result_fname = NULL;
 	char *result = NULL;
 	char *parent_dir = NULL;
 	int saved_errno = 0;
@@ -2760,17 +2769,20 @@ static const char *shadow_copy2_connectpath(struct vfs_handle_struct *handle,
 		  (int)rootpath_len, tmp);
 
 	tmp[rootpath_len] = '\0';
-	result = SMB_VFS_NEXT_REALPATH(handle, tmp);
-	if (result == NULL) {
+	smb_fname = (struct smb_filename) { .base_name = tmp };
+
+	result_fname = SMB_VFS_NEXT_REALPATH(handle, priv, &smb_fname);
+	if (result_fname == NULL) {
 		goto done;
 	}
 
 	/*
-	 * SMB_VFS_NEXT_REALPATH returns a malloc'ed string.
+	 * SMB_VFS_NEXT_REALPATH returns a talloc'ed string.
 	 * Don't leak memory.
 	 */
-	SAFE_FREE(priv->shadow_realpath);
-	priv->shadow_realpath = result;
+	TALLOC_FREE(priv->shadow_realpath);
+	priv->shadow_realpath = result_fname;
+	result = priv->shadow_realpath->base_name;
 
 	DBG_DEBUG("connect path is [%s]\n", result);
 
@@ -2890,12 +2902,6 @@ static int shadow_copy2_get_quota(vfs_handle_struct *handle,
 	return ret;
 }
 
-static int shadow_copy2_private_destructor(struct shadow_copy2_private *priv)
-{
-	SAFE_FREE(priv->shadow_realpath);
-	return 0;
-}
-
 static int shadow_copy2_connect(struct vfs_handle_struct *handle,
 				const char *service, const char *user)
 {
@@ -2926,8 +2932,6 @@ static int shadow_copy2_connect(struct vfs_handle_struct *handle,
 		errno = ENOMEM;
 		return -1;
 	}
-
-	talloc_set_destructor(priv, shadow_copy2_private_destructor);
 
 	priv->snaps = talloc_zero(priv, struct shadow_copy2_snaplist_info);
 	if (priv->snaps == NULL) {

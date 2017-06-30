@@ -667,16 +667,40 @@ static int cap_mknod(vfs_handle_struct *handle,
 	return ret;
 }
 
-static char *cap_realpath(vfs_handle_struct *handle, const char *path)
+static struct smb_filename *cap_realpath(vfs_handle_struct *handle,
+			TALLOC_CTX *ctx,
+			const struct smb_filename *smb_fname)
 {
         /* monyo need capencode'ed and capdecode'ed? */
-	char *cappath = capencode(talloc_tos(), path);
+	struct smb_filename *cap_smb_fname = NULL;
+	struct smb_filename *return_fname = NULL;
+	char *cappath = capencode(talloc_tos(), smb_fname->base_name);
+	int saved_errno = 0;
 
 	if (!cappath) {
 		errno = ENOMEM;
 		return NULL;
 	}
-	return SMB_VFS_NEXT_REALPATH(handle, cappath);
+	cap_smb_fname = synthetic_smb_fname(ctx,
+					cappath,
+					NULL,
+					NULL,
+					smb_fname->flags);
+	if (cap_smb_fname == NULL) {
+		TALLOC_FREE(cappath);
+		errno = ENOMEM;
+		return NULL;
+	}
+	return_fname = SMB_VFS_NEXT_REALPATH(handle, ctx, cap_smb_fname);
+	if (return_fname == NULL) {
+		saved_errno = errno;
+	}
+	TALLOC_FREE(cappath);
+	TALLOC_FREE(cap_smb_fname);
+	if (saved_errno != 0) {
+		errno = saved_errno;
+	}
+	return return_fname;
 }
 
 static int cap_chmod_acl(vfs_handle_struct *handle,

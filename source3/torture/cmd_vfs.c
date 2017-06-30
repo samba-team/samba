@@ -1340,12 +1340,20 @@ static NTSTATUS cmd_mknod(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 
 static NTSTATUS cmd_realpath(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
+	struct smb_filename *smb_fname = NULL;
+
 	if (argc != 2) {
 		printf("Usage: realpath <path>\n");
 		return NT_STATUS_OK;
 	}
 
-	if (SMB_VFS_REALPATH(vfs->conn, argv[1]) == NULL) {
+	smb_fname = synthetic_smb_fname_split(mem_ctx,
+					argv[1],
+					lp_posix_pathnames());
+	if (smb_fname == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	if (SMB_VFS_REALPATH(vfs->conn, mem_ctx, smb_fname) == NULL) {
 		printf("realpath: error=%d (%s)\n", errno, strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;
 	}

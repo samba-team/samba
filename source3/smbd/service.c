@@ -36,12 +36,14 @@
 static bool canonicalize_connect_path(connection_struct *conn)
 {
 	bool ret;
-	char *resolved_name = SMB_VFS_REALPATH(conn,conn->connectpath);
-	if (!resolved_name) {
+	struct smb_filename con_fname = { .base_name = conn->connectpath };
+	struct smb_filename *resolved_fname = SMB_VFS_REALPATH(conn, talloc_tos(),
+						&con_fname);
+	if (resolved_fname == NULL) {
 		return false;
 	}
-	ret = set_conn_connectpath(conn,resolved_name);
-	SAFE_FREE(resolved_name);
+	ret = set_conn_connectpath(conn,resolved_fname->base_name);
+	TALLOC_FREE(resolved_fname);
 	return ret;
 }
 

@@ -1024,8 +1024,9 @@ NTSTATUS check_reduced_name_with_privilege(connection_struct *conn,
 	const char *conn_rootdir;
 	size_t rootdir_len;
 	char *dir_name = NULL;
-	const char *last_component = NULL;
 	char *resolved_name = NULL;
+	const char *last_component = NULL;
+	struct smb_filename *resolved_fname = NULL;
 	struct smb_filename *saved_dir_fname = NULL;
 	struct smb_filename *smb_fname_cwd = NULL;
 	struct privilege_paths *priv_paths = NULL;
@@ -1072,12 +1073,19 @@ NTSTATUS check_reduced_name_with_privilege(connection_struct *conn,
 		goto err;
 	}
 
+	smb_fname_cwd = synthetic_smb_fname(talloc_tos(), ".", NULL, NULL, 0);
+	if (smb_fname_cwd == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto err;
+	}
+
 	/* Get the absolute path of the parent directory. */
-	resolved_name = SMB_VFS_REALPATH(conn,".");
-	if (!resolved_name) {
+	resolved_fname = SMB_VFS_REALPATH(conn, ctx, smb_fname_cwd);
+	if (resolved_fname == NULL) {
 		status = map_nt_error_from_unix(errno);
 		goto err;
 	}
+	resolved_name = resolved_fname->base_name;
 
 	if (*resolved_name != '/') {
 		DEBUG(0,("check_reduced_name_with_privilege: realpath "
@@ -1091,12 +1099,6 @@ NTSTATUS check_reduced_name_with_privilege(connection_struct *conn,
 		resolved_name));
 
 	/* Now check the stat value is the same. */
-	smb_fname_cwd = synthetic_smb_fname(talloc_tos(), ".", NULL, NULL, 0);
-	if (smb_fname_cwd == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto err;
-	}
-
 	if (SMB_VFS_LSTAT(conn, smb_fname_cwd) != 0) {
 		status = map_nt_error_from_unix(errno);
 		goto err;
@@ -1186,7 +1188,7 @@ NTSTATUS check_reduced_name_with_privilege(connection_struct *conn,
 		vfs_ChDir(conn, saved_dir_fname);
 		TALLOC_FREE(saved_dir_fname);
 	}
-	SAFE_FREE(resolved_name);
+	TALLOC_FREE(resolved_fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(priv_paths);
 	}
@@ -1209,6 +1211,9 @@ NTSTATUS check_reduced_name(connection_struct *conn,
 				const char *cwd_name,
 				const char *fname)
 {
+	TALLOC_CTX *ctx = talloc_tos();
+	struct smb_filename smb_fname = { .base_name = discard_const(fname) };
+	struct smb_filename *resolved_fname;
 	char *resolved_name = NULL;
 	char *new_fname = NULL;
 	bool allow_symlinks = true;
@@ -1216,9 +1221,9 @@ NTSTATUS check_reduced_name(connection_struct *conn,
 
 	DBG_DEBUG("check_reduced_name [%s] [%s]\n", fname, conn->connectpath);
 
-	resolved_name = SMB_VFS_REALPATH(conn,fname);
+	resolved_fname = SMB_VFS_REALPATH(conn, ctx, &smb_fname);
 
-	if (!resolved_name) {
+	if (resolved_fname == NULL) {
 		switch (errno) {
 			case ENOTDIR:
 				DEBUG(3,("check_reduced_name: Component not a "
@@ -1227,11 +1232,9 @@ NTSTATUS check_reduced_name(connection_struct *conn,
 				return NT_STATUS_OBJECT_PATH_NOT_FOUND;
 			case ENOENT:
 			{
-				TALLOC_CTX *ctx = talloc_tos();
 				char *dir_name = NULL;
+				struct smb_filename dir_fname = {0};
 				const char *last_component = NULL;
-				char *new_name = NULL;
-				int ret;
 
 				/* Last component didn't exist.
 				   Remove it and try and canonicalise
@@ -1242,8 +1245,12 @@ NTSTATUS check_reduced_name(connection_struct *conn,
 					return NT_STATUS_NO_MEMORY;
 				}
 
-				resolved_name = SMB_VFS_REALPATH(conn,dir_name);
-				if (!resolved_name) {
+				dir_fname = (struct smb_filename)
+					{ .base_name = dir_name };
+				resolved_fname = SMB_VFS_REALPATH(conn,
+							ctx,
+							&dir_fname);
+				if (resolved_fname == NULL) {
 					NTSTATUS status = map_nt_error_from_unix(errno);
 
 					if (errno == ENOENT || errno == ENOTDIR) {
@@ -1257,13 +1264,13 @@ NTSTATUS check_reduced_name(connection_struct *conn,
 						nt_errstr(status)));
 					return status;
 				}
-				ret = asprintf(&new_name, "%s/%s",
-					       resolved_name, last_component);
-				SAFE_FREE(resolved_name);
-				if (ret == -1) {
+				resolved_name = talloc_asprintf(ctx,
+						"%s/%s",
+						resolved_fname->base_name,
+						last_component);
+				if (resolved_name == NULL) {
 					return NT_STATUS_NO_MEMORY;
 				}
-				resolved_name = new_name;
 				break;
 			}
 			default:
@@ -1271,6 +1278,8 @@ NTSTATUS check_reduced_name(connection_struct *conn,
 					 "realpath for %s\n", fname));
 				return map_nt_error_from_unix(errno);
 		}
+	} else {
+		resolved_name = resolved_fname->base_name;
 	}
 
 	DEBUG(10,("check_reduced_name realpath [%s] -> [%s]\n", fname,
@@ -1279,7 +1288,7 @@ NTSTATUS check_reduced_name(connection_struct *conn,
 	if (*resolved_name != '/') {
 		DEBUG(0,("check_reduced_name: realpath doesn't return "
 			 "absolute paths !\n"));
-		SAFE_FREE(resolved_name);
+		TALLOC_FREE(resolved_fname);
 		return NT_STATUS_OBJECT_NAME_INVALID;
 	}
 
@@ -1295,7 +1304,7 @@ NTSTATUS check_reduced_name(connection_struct *conn,
 		if (conn_rootdir == NULL) {
 			DEBUG(2, ("check_reduced_name: Could not get "
 				"conn_rootdir\n"));
-			SAFE_FREE(resolved_name);
+			TALLOC_FREE(resolved_fname);
 			return NT_STATUS_ACCESS_DENIED;
 		}
 
@@ -1324,7 +1333,7 @@ NTSTATUS check_reduced_name(connection_struct *conn,
 					     conn_rootdir));
 				DEBUGADD(2, ("resolved_name=%s\n",
 					     resolved_name));
-				SAFE_FREE(resolved_name);
+				TALLOC_FREE(resolved_fname);
 				return NT_STATUS_ACCESS_DENIED;
 			}
 		}
@@ -1347,7 +1356,7 @@ NTSTATUS check_reduced_name(connection_struct *conn,
 					"in resolved_name: %s\n",
 					*p,
 					fname));
-				SAFE_FREE(resolved_name);
+				TALLOC_FREE(resolved_fname);
 				return NT_STATUS_ACCESS_DENIED;
 			}
 
@@ -1361,12 +1370,12 @@ NTSTATUS check_reduced_name(connection_struct *conn,
 			 * sent (cwd_name+fname).
 			 */
 			if (cwd_name != NULL && !ISDOT(cwd_name)) {
-				new_fname = talloc_asprintf(talloc_tos(),
+				new_fname = talloc_asprintf(ctx,
 							"%s/%s",
 							cwd_name,
 							fname);
 				if (new_fname == NULL) {
-					SAFE_FREE(resolved_name);
+					TALLOC_FREE(resolved_fname);
 					return NT_STATUS_NO_MEMORY;
 				}
 				fname = new_fname;
@@ -1376,7 +1385,7 @@ NTSTATUS check_reduced_name(connection_struct *conn,
 				DEBUG(2, ("check_reduced_name: Bad access "
 					"attempt: %s is a symlink to %s\n",
 					  fname, p));
-				SAFE_FREE(resolved_name);
+				TALLOC_FREE(resolved_fname);
 				TALLOC_FREE(new_fname);
 				return NT_STATUS_ACCESS_DENIED;
 			}
@@ -1386,7 +1395,7 @@ NTSTATUS check_reduced_name(connection_struct *conn,
   out:
 
 	DBG_INFO("%s reduced to %s\n", fname, resolved_name);
-	SAFE_FREE(resolved_name);
+	TALLOC_FREE(resolved_fname);
 	TALLOC_FREE(new_fname);
 	return NT_STATUS_OK;
 }
@@ -2212,10 +2221,12 @@ int smb_vfs_call_mknod(struct vfs_handle_struct *handle,
 	return handle->fns->mknod_fn(handle, smb_fname, mode, dev);
 }
 
-char *smb_vfs_call_realpath(struct vfs_handle_struct *handle, const char *path)
+struct smb_filename *smb_vfs_call_realpath(struct vfs_handle_struct *handle,
+			TALLOC_CTX *ctx,
+			const struct smb_filename *smb_fname)
 {
 	VFS_FIND(realpath);
-	return handle->fns->realpath_fn(handle, path);
+	return handle->fns->realpath_fn(handle, ctx, smb_fname);
 }
 
 int smb_vfs_call_chflags(struct vfs_handle_struct *handle,

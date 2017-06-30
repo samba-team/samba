@@ -1055,24 +1055,38 @@ static int catia_ntimes(vfs_handle_struct *handle,
 	return ret;
 }
 
-static char *
-catia_realpath(vfs_handle_struct *handle, const char *path)
+static struct smb_filename *
+catia_realpath(vfs_handle_struct *handle,
+		TALLOC_CTX *ctx,
+		const struct smb_filename *smb_fname)
 {
 	char *mapped_name = NULL;
+	struct smb_filename *catia_smb_fname = NULL;
+	struct smb_filename *return_fname = NULL;
 	NTSTATUS status;
-	char *ret = NULL;
 
-	status = catia_string_replace_allocate(handle->conn, path,
+	status = catia_string_replace_allocate(handle->conn,
+					smb_fname->base_name,
 				        &mapped_name, vfs_translate_to_unix);
 	if (!NT_STATUS_IS_OK(status)) {
 		errno = map_errno_from_nt_status(status);
 		return NULL;
 	}
 
-	ret = SMB_VFS_NEXT_REALPATH(handle, mapped_name);
+	catia_smb_fname = synthetic_smb_fname(talloc_tos(),
+					mapped_name,
+					NULL,
+					NULL,
+					smb_fname->flags);
+	if (catia_smb_fname == NULL) {
+		TALLOC_FREE(mapped_name);
+		errno = ENOMEM;
+		return NULL;
+	}
+	return_fname = SMB_VFS_NEXT_REALPATH(handle, ctx, catia_smb_fname);
 	TALLOC_FREE(mapped_name);
-
-	return ret;
+	TALLOC_FREE(catia_smb_fname);
+	return return_fname;
 }
 
 static int catia_chflags(struct vfs_handle_struct *handle,

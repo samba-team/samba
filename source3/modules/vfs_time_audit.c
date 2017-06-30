@@ -1513,23 +1513,25 @@ static int smb_time_audit_mknod(vfs_handle_struct *handle,
 	return result;
 }
 
-static char *smb_time_audit_realpath(vfs_handle_struct *handle,
-				     const char *path)
+static struct smb_filename *smb_time_audit_realpath(vfs_handle_struct *handle,
+				TALLOC_CTX *ctx,
+				const struct smb_filename *smb_fname)
 {
-	char *result;
+	struct smb_filename *result_fname;
 	struct timespec ts1,ts2;
 	double timediff;
 
 	clock_gettime_mono(&ts1);
-	result = SMB_VFS_NEXT_REALPATH(handle, path);
+	result_fname = SMB_VFS_NEXT_REALPATH(handle, ctx, smb_fname);
 	clock_gettime_mono(&ts2);
 	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
-		smb_time_audit_log_fname("realpath", timediff, path);
+		smb_time_audit_log_fname("realpath", timediff,
+				smb_fname->base_name);
 	}
 
-	return result;
+	return result_fname;
 }
 
 static int smb_time_audit_chflags(vfs_handle_struct *handle,

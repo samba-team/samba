@@ -1685,16 +1685,18 @@ static int smb_full_audit_mknod(vfs_handle_struct *handle,
 	return result;
 }
 
-static char *smb_full_audit_realpath(vfs_handle_struct *handle,
-			    const char *path)
+static struct smb_filename *smb_full_audit_realpath(vfs_handle_struct *handle,
+				TALLOC_CTX *ctx,
+				const struct smb_filename *smb_fname)
 {
-	char *result;
+	struct smb_filename *result_fname = NULL;
 
-	result = SMB_VFS_NEXT_REALPATH(handle, path);
+	result_fname = SMB_VFS_NEXT_REALPATH(handle, ctx, smb_fname);
 
-	do_log(SMB_VFS_OP_REALPATH, (result != NULL), handle, "%s", path);
+	do_log(SMB_VFS_OP_REALPATH, (result_fname != NULL), handle, "%s",
+			smb_fname->base_name);
 
-	return result;
+	return result_fname;
 }
 
 static int smb_full_audit_chflags(vfs_handle_struct *handle,

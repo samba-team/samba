@@ -1444,30 +1444,31 @@ err:
 	return status;
 }
 
-static char *um_realpath(vfs_handle_struct *handle,
-			 const char *path)
+static struct smb_filename *um_realpath(vfs_handle_struct *handle,
+				TALLOC_CTX *ctx,
+				const struct smb_filename *smb_fname)
 {
-	char *buf = NULL;
-	char *client_path = NULL;
+	struct smb_filename *client_fname = NULL;
+	struct smb_filename *result_fname = NULL;
 	int status;
 
 	DEBUG(10, ("Entering um_realpath\n"));
 
-	if (!is_in_media_files(path)) {
-		return SMB_VFS_NEXT_REALPATH(handle, path);
+	if (!is_in_media_files(smb_fname->base_name)) {
+		return SMB_VFS_NEXT_REALPATH(handle, ctx, smb_fname);
 	}
 
-	status = alloc_get_client_path(handle, talloc_tos(),
-				       path, &client_path);
+	status = alloc_get_client_smb_fname(handle, talloc_tos(),
+					    smb_fname, &client_fname);
 	if (status != 0) {
 		goto err;
 	}
 
-	buf = SMB_VFS_NEXT_REALPATH(handle, client_path);
+	result_fname = SMB_VFS_NEXT_REALPATH(handle, ctx, client_fname);
 
 err:
-	TALLOC_FREE(client_path);
-	return buf;
+	TALLOC_FREE(client_fname);
+	return result_fname;
 }
 
 static int um_chflags(vfs_handle_struct *handle,

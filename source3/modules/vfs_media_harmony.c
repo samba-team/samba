@@ -1863,36 +1863,28 @@ out:
  * Success: return path pointer
  * Failure: set errno, return NULL pointer
  */
-static char *mh_realpath(vfs_handle_struct *handle,
-		const char *path)
+static struct smb_filename *mh_realpath(vfs_handle_struct *handle,
+				TALLOC_CTX *ctx,
+				const struct smb_filename *smb_fname)
 {
-	char *buf;
-	char *clientPath;
-	TALLOC_CTX *ctx;
+	struct smb_filename *result_fname = NULL;
+	struct smb_filename *clientFname = NULL;
 
 	DEBUG(MH_INFO_DEBUG, ("Entering mh_realpath\n"));
-	if (!is_in_media_files(path))
-	{
-		buf = SMB_VFS_NEXT_REALPATH(handle, path);
-		goto out;
+	if (!is_in_media_files(smb_fname->base_name)) {
+		return SMB_VFS_NEXT_REALPATH(handle, ctx, smb_fname);
 	}
 
-	clientPath = NULL;
-	ctx = talloc_tos();
-
-	if (alloc_get_client_path(handle, ctx,
-				path,
-				&clientPath))
-	{
-		buf = NULL;
+	if (alloc_get_client_smb_fname(handle, ctx,
+				smb_fname,
+				&clientFname) != 0) {
 		goto err;
 	}
 
-	buf = SMB_VFS_NEXT_REALPATH(handle, clientPath);
+	result_fname = SMB_VFS_NEXT_REALPATH(handle, ctx, clientFname);
 err:
-	TALLOC_FREE(clientPath);
-out:
-	return buf;
+	TALLOC_FREE(clientFname);
+	return result_fname;
 }
 
 /*
