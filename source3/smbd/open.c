@@ -582,6 +582,10 @@ static int non_widelink_open(struct connection_struct *conn,
 				smb_fname->stream_name,
 				&smb_fname->st,
 				smb_fname->flags);
+	if (smb_fname_rel == NULL) {
+		saved_errno = ENOMEM;
+		goto out;
+	}
 
 	flags |= O_NOFOLLOW;
 
