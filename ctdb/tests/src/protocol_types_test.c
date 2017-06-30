@@ -27,6 +27,8 @@
 
 #include "tests/src/protocol_common.h"
 
+PROTOCOL_TYPE2_TEST(TDB_DATA, ctdb_tdb_data);
+
 static void test_ctdb_ltdb_header(void)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
@@ -152,6 +154,7 @@ int main(int argc, char *argv[])
 		srandom(seed);
 	}
 
+	TEST_FUNC(ctdb_tdb_data)();
 	test_ctdb_ltdb_header();
 	test_ctdb_g_lock();
 

@@ -107,7 +107,7 @@ static size_t ctdb_message_data_len(union ctdb_message_data *mdata,
 		break;
 
 	default:
-		len = ctdb_tdb_data_len(mdata->data);
+		len = ctdb_tdb_data_len(&mdata->data);
 		break;
 	}
 
@@ -187,7 +187,7 @@ static void ctdb_message_data_push(union ctdb_message_data *mdata,
 		break;
 
 	default:
-		ctdb_tdb_data_push(mdata->data, buf);
+		ctdb_tdb_data_push(&mdata->data, buf, &np);
 		break;
 	}
 }
@@ -278,7 +278,8 @@ static int ctdb_message_data_pull(uint8_t *buf, size_t buflen,
 		break;
 
 	default:
-		ret = ctdb_tdb_data_pull(buf, buflen, mem_ctx, &mdata->data);
+		ret = ctdb_tdb_data_pull(buf, buflen, mem_ctx, &mdata->data,
+					 &np);
 		break;
 	}
 
@@ -357,7 +358,7 @@ size_t ctdb_req_message_data_len(struct ctdb_req_header *h,
 				 struct ctdb_req_message_data *c)
 {
 	return offsetof(struct ctdb_req_message_wire, data) +
-		ctdb_tdb_data_len(c->data);
+		ctdb_tdb_data_len(&c->data);
 }
 
 int ctdb_req_message_data_push(struct ctdb_req_header *h,
@@ -366,7 +367,7 @@ int ctdb_req_message_data_push(struct ctdb_req_header *h,
 {
 	struct ctdb_req_message_wire *wire =
 		(struct ctdb_req_message_wire *)buf;
-	size_t length;
+	size_t length, np;
 
 	length = ctdb_req_message_data_len(h, message);
 	if (*buflen < length) {
@@ -378,8 +379,8 @@ int ctdb_req_message_data_push(struct ctdb_req_header *h,
 	ctdb_req_header_push(h, (uint8_t *)&wire->hdr);
 
 	wire->srvid = message->srvid;
-	wire->datalen = ctdb_tdb_data_len(message->data);
-	ctdb_tdb_data_push(message->data, wire->data);
+	wire->datalen = ctdb_tdb_data_len(&message->data);
+	ctdb_tdb_data_push(&message->data, wire->data, &np);
 
 	return 0;
 }
@@ -391,7 +392,7 @@ int ctdb_req_message_data_pull(uint8_t *buf, size_t buflen,
 {
 	struct ctdb_req_message_wire *wire =
 		(struct ctdb_req_message_wire *)buf;
-	size_t length;
+	size_t length, np;
 	int ret;
 
 	length = offsetof(struct ctdb_req_message_wire, data);
@@ -418,7 +419,7 @@ int ctdb_req_message_data_pull(uint8_t *buf, size_t buflen,
 	c->srvid = wire->srvid;
 
 	ret = ctdb_tdb_data_pull(wire->data, wire->datalen,
-				 mem_ctx, &c->data);
+				 mem_ctx, &c->data, &np);
 	if (ret != 0) {
 		return ret;
 	}

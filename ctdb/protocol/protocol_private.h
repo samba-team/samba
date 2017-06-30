@@ -89,10 +89,10 @@ int ctdb_padding_pull(uint8_t *buf, size_t buflen, int count, size_t *npull);
  * From protocol/protocol_types.c
  */
 
-size_t ctdb_tdb_data_len(TDB_DATA data);
-void ctdb_tdb_data_push(TDB_DATA data, uint8_t *buf);
+size_t ctdb_tdb_data_len(TDB_DATA *in);
+void ctdb_tdb_data_push(TDB_DATA *in, uint8_t *buf, size_t *npush);
 int ctdb_tdb_data_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-		       TDB_DATA *out);
+		       TDB_DATA *out, size_t *npull);
 
 size_t ctdb_statistics_len(struct ctdb_statistics *stats);
 void ctdb_statistics_push(struct ctdb_statistics *stats, uint8_t *buf);

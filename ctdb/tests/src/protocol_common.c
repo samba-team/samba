@@ -256,6 +256,16 @@ void verify_tdb_data(TDB_DATA *p1, TDB_DATA *p2)
 	verify_buffer(p1->dptr, p2->dptr, p1->dsize);
 }
 
+void fill_ctdb_tdb_data(TALLOC_CTX *mem_ctx, TDB_DATA *p)
+{
+	fill_tdb_data(mem_ctx, p);
+}
+
+void verify_ctdb_tdb_data(TDB_DATA *p1, TDB_DATA *p2)
+{
+	verify_tdb_data(p1, p2);
+}
+
 void fill_ctdb_statistics(TALLOC_CTX *mem_ctx, struct ctdb_statistics *p)
 {
 	fill_buffer((uint8_t *)p, sizeof(struct ctdb_statistics));

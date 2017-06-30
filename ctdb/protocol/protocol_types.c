@@ -27,34 +27,43 @@
 #include "protocol_private.h"
 #include "protocol_api.h"
 
-size_t ctdb_tdb_data_len(TDB_DATA data)
+size_t ctdb_tdb_data_len(TDB_DATA *in)
 {
-	return data.dsize;
+	return in->dsize > UINT32_MAX ? UINT32_MAX : in->dsize;
 }
 
-void ctdb_tdb_data_push(TDB_DATA data, uint8_t *buf)
+void ctdb_tdb_data_push(TDB_DATA *in, uint8_t *buf, size_t *npush)
 {
-	if (data.dsize > 0) {
-		memcpy(buf, data.dptr, data.dsize);
+	size_t len = ctdb_tdb_data_len(in);
+
+	if (len > 0) {
+		memcpy(buf, in->dptr, len);
 	}
+
+	*npush = len;
 }
 
 int ctdb_tdb_data_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-		       TDB_DATA *out)
+		       TDB_DATA *out, size_t *npull)
 {
-	TDB_DATA data;
+	TDB_DATA val;
 
-	data.dsize = buflen;
-	if (data.dsize > 0) {
-		data.dptr = talloc_memdup(mem_ctx, buf, buflen);
-		if (data.dptr == NULL) {
+	if (buflen > UINT32_MAX) {
+		return EMSGSIZE;
+	}
+
+	val.dsize = buflen;
+	if (val.dsize > 0) {
+		val.dptr = talloc_memdup(mem_ctx, buf, buflen);
+		if (val.dptr == NULL) {
 			return ENOMEM;
 		}
 	} else {
-		data.dptr = NULL;
+		val.dptr = NULL;
 	}
 
-	*out = data;
+	*out = val;
+	*npull = buflen;
 	return 0;
 }
 
