@@ -110,6 +110,7 @@ def LIB_MUST_BE_PRIVATE(conf, libname):
 
 @conf
 def CHECK_BUNDLED_SYSTEM_PKG(conf, libname, minversion='0.0.0',
+        maxversion=None, version_blacklist=[],
         onlyif=None, implied_deps=None, pkg=None):
     '''check if a library is available as a system library.
 
@@ -117,12 +118,15 @@ def CHECK_BUNDLED_SYSTEM_PKG(conf, libname, minversion='0.0.0',
     '''
     return conf.CHECK_BUNDLED_SYSTEM(libname,
                                      minversion=minversion,
+                                     maxversion=maxversion,
+                                     version_blacklist=version_blacklist,
                                      onlyif=onlyif,
                                      implied_deps=implied_deps,
                                      pkg=pkg)
 
 @conf
 def CHECK_BUNDLED_SYSTEM(conf, libname, minversion='0.0.0',
+                         maxversion=None, version_blacklist=[],
                          checkfunctions=None, headers=None, checkcode=None,
                          onlyif=None, implied_deps=None,
                          require_headers=True, pkg=None, set_target=True):
@@ -181,16 +185,29 @@ def CHECK_BUNDLED_SYSTEM(conf, libname, minversion='0.0.0',
     minversion = minimum_library_version(conf, libname, minversion)
 
     msg = 'Checking for system %s' % libname
+    msg_ver = []
     if minversion != '0.0.0':
-        msg += ' >= %s' % minversion
+        msg_ver.append('>=%s' % minversion)
+    if maxversion is not None:
+        msg_ver.append('<=%s' % maxversion)
+    for v in version_blacklist:
+        msg_ver.append('!=%s' % v)
+    if msg_ver != []:
+        msg += " (%s)" % (" ".join(msg_ver))
 
     uselib_store=libname.upper()
     if pkg is None:
         pkg = libname
 
+    version_checks = '%s >= %s' % (pkg, minversion)
+    if maxversion is not None:
+        version_checks += ' %s <= %s' % (pkg, maxversion)
+    for v in version_blacklist:
+        version_checks += ' %s != %s' % (pkg, v)
+
     # try pkgconfig first
     if (conf.CHECK_CFG(package=pkg,
-                      args='"%s >= %s" --cflags --libs' % (pkg, minversion),
+                      args='"%s" --cflags --libs' % (version_checks),
                       msg=msg, uselib_store=uselib_store) and
         check_functions_headers_code()):
         if set_target:
