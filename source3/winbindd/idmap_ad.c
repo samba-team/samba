@@ -502,9 +502,26 @@ static NTSTATUS idmap_ad_query_user(struct idmap_domain *domain,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS idmap_ad_query_user_retry(struct idmap_domain *domain,
+				          struct wbint_userinfo *info)
+{
+	const NTSTATUS status_server_down =
+		NT_STATUS_LDAP(TLDAP_RC_V(TLDAP_SERVER_DOWN));
+	NTSTATUS status;
+
+	status = idmap_ad_query_user(domain, info);
+
+	if (NT_STATUS_EQUAL(status, status_server_down)) {
+		TALLOC_FREE(domain->private_data);
+		status = idmap_ad_query_user(domain, info);
+	}
+
+	return status;
+}
+
 static NTSTATUS idmap_ad_initialize(struct idmap_domain *dom)
 {
-	dom->query_user = idmap_ad_query_user;
+	dom->query_user = idmap_ad_query_user_retry;
 	dom->private_data = NULL;
 	return NT_STATUS_OK;
 }
