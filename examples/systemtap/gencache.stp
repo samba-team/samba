@@ -1,0 +1,124 @@
+#!/usr/bin/stap
+#
+# Systemtap script to instrument the Samba gencache subsystem
+#
+# Usage:
+#
+# Instrument all smbd processes:
+# # stap gencache.stp smbd
+#
+# Instrument all winbindd processes:
+# # stap gencache.stp winbindd
+#
+# Instrument a specific smbd process:
+# # stap -x PID gencache.stp smbd
+#
+# Instrument a specific winbindd process:
+# # stap -x PID gencache.stp winbindd
+#
+
+global running, intervals
+
+probe begin {
+	printf("Collecting data, press ctrl-C to stop... ")
+}
+
+probe process(@1).library("*").function("gencache_parse") {
+	running["gencache_parse", tid()] = gettimeofday_us()
+}
+
+probe process(@1).library("*").function("gencache_parse").return {
+	if (!(["gencache_parse", tid()] in running))
+		next
+
+	end = gettimeofday_us()
+	begin = running["gencache_parse", tid()]
+	delete running["gencache_parse", tid()]
+
+	duration = end - begin
+	intervals["gencache_parse"] <<< duration
+}
+
+probe process(@1).library("*").function("gencache_get_data_blob") {
+	running["gencache_get_data_blob", tid()] = gettimeofday_us()
+}
+
+probe process(@1).library("*").function("gencache_get_data_blob").return {
+	if (!(["gencache_get_data_blob", tid()] in running))
+		next
+
+	end = gettimeofday_us()
+	begin = running["gencache_get_data_blob", tid()]
+	delete running["gencache_get_data_blob", tid()]
+
+	duration = end - begin
+	intervals["gencache_get_data_blob"] <<< duration
+}
+
+probe process(@1).library("*").function("gencache_set_data_blob") {
+	running["gencache_set_data_blob", tid()] = gettimeofday_us()
+}
+
+probe process(@1).library("*").function("gencache_set_data_blob").return {
+	if (!(["gencache_set_data_blob", tid()] in running))
+		next
+
+	end = gettimeofday_us()
+	begin = running["gencache_set_data_blob", tid()]
+	delete running["gencache_set_data_blob", tid()]
+
+	duration = end - begin
+	intervals["gencache_set_data_blob"] <<< duration
+}
+
+probe process(@1).library("*").function("gencache_del") {
+	running["gencache_del", tid()] = gettimeofday_us()
+}
+
+probe process(@1).library("*").function("gencache_del").return {
+	if (!(["gencache_del", tid()] in running))
+		next
+
+	end = gettimeofday_us()
+	begin = running["gencache_del", tid()]
+	delete running["gencache_del", tid()]
+
+	duration = end - begin
+	intervals["gencache_del"] <<< duration
+}
+
+probe process(@1).library("*").function("gencache_stabilize") {
+	running["gencache_stabilize", tid()] = gettimeofday_us()
+}
+
+probe process(@1).library("*").function("gencache_stabilize").return {
+	if (!(["gencache_stabilize", tid()] in running))
+		next
+
+	end = gettimeofday_us()
+	begin = running["gencache_stabilize", tid()]
+	delete running["gencache_stabilize", tid()]
+
+	duration = end - begin
+	intervals["gencache_stabilize"] <<< duration
+}
+
+probe end {
+	printf("\n\n")
+
+	foreach ([name] in intervals) {
+		printf("%-30s count: %d sum: %d us (min: %d us avg: %d us max: %d us)\n",
+		       name,
+		       @count(intervals[name]),
+		       @sum(intervals[name]),
+		       @min(intervals[name]),
+		       @avg(intervals[name]),
+		       @max(intervals[name]))
+	}
+
+	printf("\n")
+	foreach ([name] in intervals) {
+		printf("%s time distribution histogram:\n", name)
+		println(@hist_log(intervals[name]))
+	}
+}
