@@ -97,7 +97,7 @@ static enum ndr_err_code ndr_pull_compression_mszip_chunk(struct ndr_pull *ndrpu
 		z->zfree	= ndr_zlib_free;
 		z->opaque	= ndrpull;
 
-		z_ret = inflateInit2(z, -15);
+		z_ret = inflateInit2(z, -MAX_WBITS);
 		if (z_ret != Z_OK) {
 			return ndr_pull_error(ndrpull, NDR_ERR_COMPRESSION,
 					      "Bad inflateInit2 error %s(%d) (PULL)",
