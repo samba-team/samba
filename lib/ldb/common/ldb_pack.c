@@ -274,7 +274,10 @@ int ldb_unpack_data_only_attr_list_flags(struct ldb_context *ldb,
 		if (flags & LDB_UNPACK_DATA_FLAG_NO_DN) {
 			message->dn = NULL;
 		} else {
-			message->dn = ldb_dn_new(message, ldb, (char *)p);
+			struct ldb_val blob;
+			blob.data = discard_const_p(uint8_t, p);
+			blob.length = dn_len;
+			message->dn = ldb_dn_from_ldb_val(message, ldb, &blob);
 			if (message->dn == NULL) {
 				errno = ENOMEM;
 				goto failed;
