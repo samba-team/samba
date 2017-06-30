@@ -569,12 +569,12 @@ static NTSTATUS gensec_spnego_create_negTokenInit(struct gensec_security *gensec
  * This is the case, where the client is the first one who sends data
 */
 
-static NTSTATUS gensec_spnego_server_negTokenTarg(struct spnego_state *spnego_state,
-						  TALLOC_CTX *out_mem_ctx, 
-						  NTSTATUS nt_status,
-						  const DATA_BLOB unwrapped_out,
-						  DATA_BLOB mech_list_mic,
-						  DATA_BLOB *out)
+static NTSTATUS gensec_spnego_server_response(struct spnego_state *spnego_state,
+					      TALLOC_CTX *out_mem_ctx,
+					      NTSTATUS nt_status,
+					      const DATA_BLOB unwrapped_out,
+					      DATA_BLOB mech_list_mic,
+					      DATA_BLOB *out)
 {
 	struct spnego_data spnego_out;
 
@@ -1106,12 +1106,12 @@ static NTSTATUS gensec_spnego_update_server(struct gensec_security *gensec_secur
 				mech_list_mic = unwrapped_out;
 			}
 
-			nt_status = gensec_spnego_server_negTokenTarg(spnego_state,
-								      out_mem_ctx,
-								      nt_status,
-								      unwrapped_out,
-								      mech_list_mic,
-								      out);
+			nt_status = gensec_spnego_server_response(spnego_state,
+								  out_mem_ctx,
+								  nt_status,
+								  unwrapped_out,
+								  mech_list_mic,
+								  out);
 
 			spnego_free_data(&spnego);
 
@@ -1248,12 +1248,12 @@ static NTSTATUS gensec_spnego_update_server(struct gensec_security *gensec_secur
 		}
 
  server_response:
-		nt_status = gensec_spnego_server_negTokenTarg(spnego_state,
-							      out_mem_ctx,
-							      nt_status,
-							      unwrapped_out,
-							      mech_list_mic,
-							      out);
+		nt_status = gensec_spnego_server_response(spnego_state,
+							  out_mem_ctx,
+							  nt_status,
+							  unwrapped_out,
+							  mech_list_mic,
+							  out);
 
 		spnego_free_data(&spnego);
 
