@@ -35,6 +35,41 @@
 
 #include <ldb.h>
 
+#if defined(_SAMBA_BUILD_) && defined(USING_SYSTEM_LDB)
+
+/*
+ * Versions before 1.2.0 doesn't define these values
+ * so we assime 1.1.29 (which was used in Samba 4.6)
+ *
+ * See https://bugzilla.samba.org/show_bug.cgi?id=12859
+ */
+#ifndef EXPECTED_SYSTEM_LDB_VERSION_MAJOR
+#define EXPECTED_SYSTEM_LDB_VERSION_MAJOR 1
+#endif
+#ifndef EXPECTED_SYSTEM_LDB_VERSION_MINOR
+#define EXPECTED_SYSTEM_LDB_VERSION_MINOR 1
+#endif
+#ifndef EXPECTED_SYSTEM_LDB_VERSION_MINOR
+#define EXPECTED_SYSTEM_LDB_VERSION_MINOR 29
+#endif
+
+/*
+ * Only Samba versions which expect ldb >= 1.2.0
+ * are compatible with read_[un]lock() behaviour.
+ *
+ * See https://bugzilla.samba.org/show_bug.cgi?id=12859
+ */
+#if EXPECTED_SYSTEM_LDB_VERSION_MAJOR > 1
+#define __LDB_READ_LOCK_COMPATIBLE__ 1
+#elif EXPECTED_SYSTEM_LDB_VERSION_MINOR > 1
+#define __LDB_READ_LOCK_COMPATIBLE__ 1
+#endif
+#ifndef __LDB_READ_LOCK_COMPATIBLE__
+#error "Samba < 4.7 is not compatible with this version of ldb due to assumptions around read locks"
+#endif
+
+#endif /* defined(_SAMBA_BUILD_) && defined(USING_SYSTEM_LDB) */
+
 struct ldb_context;
 struct ldb_module;
 
