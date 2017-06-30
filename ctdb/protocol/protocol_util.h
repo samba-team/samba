@@ -30,6 +30,12 @@ enum ctdb_runstate ctdb_runstate_from_string(const char *runstate_str);
 const char *ctdb_event_to_string(enum ctdb_event event);
 enum ctdb_event ctdb_event_from_string(const char *event_str);
 
+/*
+ * buflen must be long enough to hold the longest possible address.
+ * For example, 1122:3344:5566:7788:99aa:bbcc:ddee:ff00.
+ * 64 is sane value for buflen.
+ */
+int ctdb_sock_addr_to_buf(char *buf, socklen_t buflen, ctdb_sock_addr *addr);
 const char *ctdb_sock_addr_to_string(TALLOC_CTX *mem_ctx, ctdb_sock_addr *addr);
 unsigned int ctdb_sock_addr_port(ctdb_sock_addr *addr);
 void ctdb_sock_addr_set_port(ctdb_sock_addr *addr, unsigned int port);
