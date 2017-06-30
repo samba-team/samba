@@ -52,7 +52,7 @@ manpages='''
          manpages/vfs_aio_linux.8
          manpages/vfs_aio_pthread.8
          manpages/vfs_audit.8
-	 manpages/vfs_btrfs.8
+         manpages/vfs_btrfs.8
          manpages/vfs_cacheprime.8
          manpages/vfs_cap.8
          manpages/vfs_catia.8
@@ -79,14 +79,17 @@ manpages='''
          manpages/vfs_recycle.8
          manpages/vfs_shadow_copy.8
          manpages/vfs_shadow_copy2.8
-	 manpages/vfs_shell_snap.8
-	 manpages/vfs_snapper.8
+         manpages/vfs_shell_snap.8
+         manpages/vfs_snapper.8
          manpages/vfs_streams_depot.8
          manpages/vfs_streams_xattr.8
          manpages/vfs_syncops.8
          manpages/vfs_time_audit.8
          manpages/vfs_tsmsm.8
          manpages/vfs_unityed_media.8
+         manpages/vfs_virusfilter_clamav.8
+         manpages/vfs_virusfilter_fsav.8
+         manpages/vfs_virusfilter_sophos.8
          manpages/vfs_worm.8
          manpages/vfs_xattr_tdb.8
          manpages/vfstest.1

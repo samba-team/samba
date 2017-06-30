@@ -20,6 +20,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <poll.h>
 #include "replace.h"
 #include "system/filesys.h"
 #include "lib/util/sys_rw_data.h"
@@ -114,4 +115,108 @@ ssize_t read_data(int fd, void *buffer, size_t n)
 	}
 
 	return nread;
+}
+
+/****************************************************************************
+ Write all data from an iov array, with msec timeout (per write)
+ NB. This can be called with a non-socket fd, don't add dependencies
+ on socket calls.
+****************************************************************************/
+
+ssize_t write_data_iov_timeout(int fd, const struct iovec *orig_iov,
+	int iovcnt, int msec_timeout, int cont_eintr)
+{
+	ssize_t to_send;
+	ssize_t thistime;
+	size_t sent;
+	struct iovec iov_copy[iovcnt];
+	struct iovec *iov;
+	struct pollfd pollfd;
+
+	pollfd.fd = fd;
+	pollfd.events = POLLOUT;
+
+	to_send = iov_buflen(orig_iov, iovcnt);
+	if (to_send == -1) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	switch (poll(&pollfd, 1, msec_timeout)) {
+	case -1:
+		if (errno == EINTR && cont_eintr) {
+			errno = 0;
+		}
+		else return -1;
+	case 0:
+		errno = ETIMEDOUT;
+		return -1;
+	}
+
+	thistime = sys_writev(fd, orig_iov, iovcnt);
+	if ((thistime <= 0) || (thistime == to_send)) {
+		if (thistime <= 0 && errno == EINTR && cont_eintr) {
+			errno = 0;
+		}
+		else return thistime;
+	}
+	sent = thistime;
+
+	/*
+	 * We could not send everything in one call. Make a copy of iov that
+	 * we can mess with.
+	 */
+
+	memcpy(iov_copy, orig_iov, sizeof(struct iovec) * iovcnt);
+	iov = iov_copy;
+
+	while (sent < to_send) {
+		bool ok;
+
+		ok = iov_advance(&iov, &iovcnt, thistime);
+		if (!ok) {
+			errno = EIO;
+			return -1;
+		}
+
+		switch (poll(&pollfd, 1, msec_timeout)) {
+		case -1:
+			if (errno == EINTR) {
+				errno = 0;
+				continue;
+			}
+			return -1;
+		case 0:
+			errno = ETIMEDOUT;
+			return -1;
+		}
+
+		thistime = sys_writev(fd, iov, iovcnt);
+		if (thistime <= 0) {
+			if (errno == EINTR && cont_eintr) {
+				errno = 0;
+				continue;
+			}
+			break;
+		}
+		sent += thistime;
+	}
+
+	return sent;
+}
+
+/****************************************************************************
+ Write data to a fd, with msec timeout (per write)
+ NB. This can be called with a non-socket fd, don't add dependencies
+ on socket calls.
+****************************************************************************/
+
+ssize_t write_data_timeout(int fd, const void *buffer, size_t n, int timeout,
+	int cont_eintr)
+{
+	struct iovec iov;
+
+	iov.iov_base = discard_const_p(void, buffer);
+	iov.iov_len = n;
+	return write_data_iov_timeout(fd, &iov, 1, timeout, cont_eintr);
 }

@@ -31,4 +31,9 @@ ssize_t write_data_iov(int fd, const struct iovec *iov, int iovcnt);
 ssize_t write_data(int fd, const void *buffer, size_t n);
 ssize_t read_data(int fd, void *buffer, size_t n);
 
+ssize_t write_data_iov_timeout(int fd, const struct iovec *orig_iov,
+	int iovcnt, int msec_timeout, int cont_eintr);
+ssize_t write_data_timeout(int fd, const void *buffer, size_t n, int timeout,
+	int cont_eintr);
+
 #endif

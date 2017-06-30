@@ -44,7 +44,8 @@ enum memcache_number {
 	SINGLETON_CACHE_TALLOC,	/* talloc */
 	SINGLETON_CACHE,
 	SMB1_SEARCH_OFFSET_MAP,
-	SHARE_MODE_LOCK_CACHE	/* talloc */
+	SHARE_MODE_LOCK_CACHE,	/* talloc */
+	VIRUSFILTER_SCAN_RESULTS_CACHE_TALLOC /* talloc */
 };
 
 /*
