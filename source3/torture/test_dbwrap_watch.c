@@ -90,8 +90,7 @@ bool run_dbwrap_watch1(int dummy)
 		goto fail;
 	}
 
-	status = dbwrap_watched_watch_recv(req, talloc_tos(), &rec, NULL,
-					   NULL);
+	status = dbwrap_watched_watch_recv(req, NULL, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		fprintf(stderr, "dbwrap_record_watch_recv failed: %s\n",
 			nt_errstr(status));

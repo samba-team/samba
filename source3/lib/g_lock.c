@@ -385,7 +385,7 @@ static void g_lock_lock_retry(struct tevent_req *subreq)
 	struct g_lock_lock_fn_state fn_state;
 	NTSTATUS status;
 
-	status = dbwrap_watched_watch_recv(subreq, NULL, NULL, NULL, NULL);
+	status = dbwrap_watched_watch_recv(subreq, NULL, NULL);
 	DBG_DEBUG("watch_recv returned %s\n", nt_errstr(status));
 	TALLOC_FREE(subreq);
 

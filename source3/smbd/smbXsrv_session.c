@@ -1129,7 +1129,7 @@ static void smb2srv_session_close_previous_modified(struct tevent_req *subreq)
 	uint32_t global_id;
 	NTSTATUS status;
 
-	status = dbwrap_watched_watch_recv(subreq, state, NULL, NULL, NULL);
+	status = dbwrap_watched_watch_recv(subreq, NULL, NULL);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;

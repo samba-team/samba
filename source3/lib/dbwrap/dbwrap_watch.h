@@ -32,8 +32,6 @@ struct tevent_req *dbwrap_watched_watch_send(TALLOC_CTX *mem_ctx,
 					     struct db_record *rec,
 					     struct server_id blocker);
 NTSTATUS dbwrap_watched_watch_recv(struct tevent_req *req,
-				   TALLOC_CTX *mem_ctx,
-				   struct db_record **prec,
 				   bool *blockerdead,
 				   struct server_id *blocker);
 

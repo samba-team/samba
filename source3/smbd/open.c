@@ -2390,8 +2390,7 @@ static void defer_open_done(struct tevent_req *req)
 	NTSTATUS status;
 	bool ret;
 
-	status = dbwrap_watched_watch_recv(req, talloc_tos(), NULL, NULL,
-					  NULL);
+	status = dbwrap_watched_watch_recv(req, NULL, NULL);
 	TALLOC_FREE(req);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5, ("dbwrap_watched_watch_recv returned %s\n",

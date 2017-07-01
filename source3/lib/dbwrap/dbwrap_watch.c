@@ -1003,18 +1003,12 @@ static void dbwrap_watched_watch_done(struct tevent_req *subreq)
 }
 
 NTSTATUS dbwrap_watched_watch_recv(struct tevent_req *req,
-				   TALLOC_CTX *mem_ctx,
-				   struct db_record **prec,
 				   bool *blockerdead,
 				   struct server_id *blocker)
 {
 	struct dbwrap_watched_watch_state *state = tevent_req_data(
 		req, struct dbwrap_watched_watch_state);
-	struct db_watched_subrec *subrec;
 	NTSTATUS status;
-	TDB_DATA key;
-	struct db_record *rec;
-	bool ok;
 
 	if (tevent_req_is_nterror(req, &status)) {
 		return status;
@@ -1025,35 +1019,6 @@ NTSTATUS dbwrap_watched_watch_recv(struct tevent_req *req,
 	if (blocker != NULL) {
 		*blocker = state->blocker;
 	}
-	if (prec == NULL) {
-		return NT_STATUS_OK;
-	}
-
-	ok = dbwrap_record_watchers_key_parse(state->w_key, NULL, NULL, &key);
-	if (!ok) {
-		return NT_STATUS_INTERNAL_DB_ERROR;
-	}
-
-	rec = dbwrap_fetch_locked(state->db, mem_ctx, key);
-	if (rec == NULL) {
-		return NT_STATUS_INTERNAL_DB_ERROR;
-	}
-
-	talloc_set_destructor(state, NULL);
-
-	subrec = talloc_get_type_abort(
-		rec->private_data, struct db_watched_subrec);
-
-	ok = dbwrap_watched_remove_waiter(&subrec->wrec, state->me);
-	if (ok) {
-		status = dbwrap_watched_save(subrec->subrec, &subrec->wrec,
-					     NULL, &subrec->wrec.data, 1, 0);
-		if (!NT_STATUS_IS_OK(status)) {
-			DBG_WARNING("dbwrap_watched_save failed: %s\n",
-				    nt_errstr(status));
-		}
-	}
-
-	*prec = rec;
 	return NT_STATUS_OK;
 }
+
