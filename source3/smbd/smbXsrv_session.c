@@ -956,6 +956,7 @@ struct smb2srv_session_close_previous_state {
 	struct tevent_context *ev;
 	struct smbXsrv_connection *connection;
 	struct dom_sid *current_sid;
+	uint64_t previous_session_id;
 	uint64_t current_session_id;
 	struct db_record *db_rec;
 };
@@ -984,6 +985,7 @@ struct tevent_req *smb2srv_session_close_previous_send(TALLOC_CTX *mem_ctx,
 	}
 	state->ev = ev;
 	state->connection = conn;
+	state->previous_session_id = previous_session_id;
 	state->current_session_id = current_session_id;
 
 	if (global_zeros != 0) {
@@ -1124,14 +1126,20 @@ static void smb2srv_session_close_previous_modified(struct tevent_req *subreq)
 	struct smb2srv_session_close_previous_state *state =
 		tevent_req_data(req,
 		struct smb2srv_session_close_previous_state);
+	uint32_t global_id;
 	NTSTATUS status;
 
-	status = dbwrap_watched_watch_recv(subreq, state, &state->db_rec, NULL,
-					   NULL);
+	status = dbwrap_watched_watch_recv(subreq, state, NULL, NULL, NULL);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
+
+	global_id = state->previous_session_id & UINT32_MAX;
+
+	state->db_rec = smbXsrv_session_global_fetch_locked(
+		state->connection->client->session_table->global.db_ctx,
+		global_id, state /* TALLOC_CTX */);
 
 	smb2srv_session_close_previous_check(req);
 }
