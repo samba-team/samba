@@ -530,6 +530,8 @@ sub setup_admember_rfc2307($$$$)
         idmap config $dcvars->{DOMAIN} : ldap_server = ad
         idmap config $dcvars->{DOMAIN} : bind_path_user = ou=idmap,dc=samba,dc=example,dc=com
         idmap config $dcvars->{DOMAIN} : bind_path_group = ou=idmap,dc=samba,dc=example,dc=com
+
+        password server = $dcvars->{SERVER}
 ";
 
 	my $ret = $self->provision($prefix, $dcvars->{DOMAIN},
