@@ -185,6 +185,12 @@ testit "Count number of valid sids found" \
        test ${NUM_VALID_SIDS} = ${NUMGROUPS} ||
        failed=$(expr $failed + 1)
 
+# Prime the cache so we test idmap, not the harder problem of
+# consistent group memberships for users without a login.
+
+testit "Authenticate the user to prime the netlogon cache" \
+       $wbinfo -a $DOMAIN/$DC_USERNAME%$DC_PASSWORD || failed=$(expr $failed + 1)
+
 # Test whether wbinfo -r shows all groups
 
 EXPECTED_USERGROUPS="1000000/1000001/2000002/"
