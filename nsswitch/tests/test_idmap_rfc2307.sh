@@ -47,12 +47,7 @@ failed=0
 . `dirname $0`/../../testprogs/blackbox/subunit.sh
 
 # Delete LDAP records
-$VALGRIND $ldbsearch -H ldap://$DC_SERVER -U$DOMAIN/$DC_USERNAME%$DC_PASSWORD \
-	  -s one -b "$LDAPPREFIX" | grep '^dn:' | cut -d ' ' -f 2- |
-    xargs -d '\n' -n 1 -IDEL_DN \
-	  $ldbdel -H ldap://$DC_SERVER -U$DOMAIN/$DC_USERNAME%$DC_PASSWORD \
-	  "DEL_DN"
-$VALGRIND $ldbdel -H ldap://$DC_SERVER -U$DOMAIN/$DC_USERNAME%$DC_PASSWORD "$LDAPPREFIX"
+$VALGRIND $ldbdel -H ldap://$DC_SERVER -U$DOMAIN/$DC_USERNAME%$DC_PASSWORD "$LDAPPREFIX" --controls="tree_delete:1"
 
 # Add id mapping information to LDAP
 
@@ -215,11 +210,6 @@ while [ ${i} -lt ${NUMGROUPS} ] ; do
 done
 
 # Delete LDAP records
-$VALGRIND $ldbsearch -H ldap://$DC_SERVER -U$DOMAIN/$DC_USERNAME%$DC_PASSWORD \
-	  -s one -b "$LDAPPREFIX" | grep '^dn:' | cut -d ' ' -f 2- |
-    xargs -d '\n' -n 1 -IDEL_DN \
-	  $ldbdel -H ldap://$DC_SERVER -U$DOMAIN/$DC_USERNAME%$DC_PASSWORD \
-	  "DEL_DN"
-$VALGRIND $ldbdel -H ldap://$DC_SERVER -U$DOMAIN/$DC_USERNAME%$DC_PASSWORD "$LDAPPREFIX"
+$VALGRIND $ldbdel -H ldap://$DC_SERVER -U$DOMAIN/$DC_USERNAME%$DC_PASSWORD "$LDAPPREFIX" --controls="tree_delete:1"
 
 exit $failed
