@@ -178,7 +178,7 @@ struct tdb_lock_type {
 struct tdb_traverse_lock {
 	struct tdb_traverse_lock *next;
 	uint32_t off;
-	uint32_t hash;
+	uint32_t list;
 	int lock_rw;
 };
 
