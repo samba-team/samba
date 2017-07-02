@@ -47,6 +47,7 @@ enum rpc_service_mode_e rpc_service_mode(const char *name)
 	const char *rpcsrv_type;
 	enum rpc_service_mode_e state;
 	const char *def;
+	enum server_role server_role = lp_server_role();
 	int i;
 
 	/* Handle pipes with multiple names */
@@ -68,6 +69,21 @@ enum rpc_service_mode_e rpc_service_mode(const char *name)
 		/* if the default is unspecified then use 'embedded' */
 		if (def == NULL) {
 			def = "embedded";
+		}
+	}
+
+	/*
+	 * Only enable the netlogon server by default if we are a
+	 * classic/NT4 domain controller
+	 */
+	if (strcasecmp_m(name, "netlogon") == 0) {
+		switch (server_role) {
+		case ROLE_STANDALONE:
+		case ROLE_DOMAIN_MEMBER:
+			def = "disabled";
+			break;
+		default:
+			break;
 		}
 	}
 
