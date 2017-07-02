@@ -146,6 +146,26 @@ clients and the AD DC's overall resiliency, but will mean that there is a
 fork()ed child for every LDAP client, which may be more resource
 intensive in some situations.
 
+Improved Read-Only Domain Controller (RODC) Support
+---------------------------------------------------
+
+Support for RODCs in Samba AD until now has been experimental. With this latest
+version, many of the critical bugs have been fixed and the RODC can be used in
+DC environments requiring no writable behaviour. RODCs now correctly support
+bad password lockouts and password disclosure auditing through the
+msDS-RevealedUsers attribute.
+
+The fixes made to the RWDC will also allow Windows RODC to function more
+correctly and to avoid strange data omissions such as failures to replicate
+groups or updated passwords. Password changes are currently rejected at the
+RODC, although referrals should be given over LDAP. While any bad passwords can
+trigger domain-wide lockout, good passwords which have not been replicated yet
+for a password change can only be used via NTLM on the RODC (and not Kerberos).
+
+The reliability of RODCs locating a writable partner still requires some
+improvements and so the 'password server' configuration option is generally
+recommended on the RODC.
+
 Query record for open file or directory
 ---------------------------------------
 
