@@ -137,7 +137,33 @@ static int fcntl_unlock(struct tdb_context *tdb, int rw, off_t off, off_t len)
 	return fcntl(tdb->fd, F_SETLKW, &fl);
 }
 
-/* list -1 is the alloc list, otherwise a hash chain. */
+/*
+ * Calculate the lock offset for a list
+ *
+ * list -1 is the freelist, otherwise a hash chain.
+ *
+ * Note that we consistently (but without real reason) lock hash chains at an
+ * offset that is 4 bytes below the real offset of the corresponding list head
+ * in the db.
+ *
+ * This is the memory layout of the hashchain array:
+ *
+ * FREELIST_TOP + 0 = freelist
+ * FREELIST_TOP + 4 = hashtbale list 0
+ * FREELIST_TOP + 8 = hashtbale list 1
+ * ...
+ *
+ * Otoh lock_offset computes:
+ *
+ * freelist = FREELIST_TOP - 4
+ * list 0   = FREELIST_TOP + 0
+ * list 1   = FREELIST_TOP + 4
+ * ...
+ *
+ * Unfortunately we can't change this calculation in order to align the locking
+ * offset with the memory layout, as that would make the locking incompatible
+ * between different tdb versions.
+ */
 static tdb_off_t lock_offset(int list)
 {
 	return FREELIST_TOP + 4*list;
