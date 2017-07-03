@@ -156,6 +156,7 @@
 ^samba3.smb2.durable-open.reopen1a-lease\(ad_dc\)$
 ^samba3.smb2.durable-v2-open.reopen1a-lease\(ad_dc\)$
 ^samba4.smb2.ioctl.req_resume_key\(ad_dc_ntvfs\) # not supported by s4 ntvfs server
+^samba4.smb2.ioctl.req_two_resume_keys\(ad_dc_ntvfs\) # not supported by s4 ntvfs server
 ^samba4.smb2.ioctl.copy_chunk_\w*\(ad_dc_ntvfs\)	# not supported by s4 ntvfs server
 ^samba4.smb2.ioctl.copy-chunk streams\(ad_dc_ntvfs\) # not supported by s4 ntvfs server
 ^samba3.smb2.dir.one

@@ -114,6 +114,67 @@ static bool test_ioctl_req_resume_key(struct torture_context *torture,
 	return true;
 }
 
+/*
+   testing fetching a resume key twice for one file handle
+*/
+static bool test_ioctl_req_two_resume_keys(struct torture_context *torture,
+					   struct smb2_tree *tree)
+{
+	struct smb2_handle h;
+	uint8_t buf[100];
+	NTSTATUS status;
+	union smb_ioctl ioctl;
+	TALLOC_CTX *tmp_ctx = talloc_new(tree);
+	struct req_resume_key_rsp res_key;
+	enum ndr_err_code ndr_ret;
+
+	smb2_util_unlink(tree, FNAME);
+
+	status = torture_smb2_testfile(tree, FNAME, &h);
+	torture_assert_ntstatus_ok(torture, status, "create write");
+
+	ZERO_ARRAY(buf);
+	status = smb2_util_write(tree, h, buf, 0, ARRAY_SIZE(buf));
+	torture_assert_ntstatus_ok(torture, status, "write");
+
+	ZERO_STRUCT(ioctl);
+	ioctl.smb2.level = RAW_IOCTL_SMB2;
+	ioctl.smb2.in.file.handle = h;
+	ioctl.smb2.in.function = FSCTL_SRV_REQUEST_RESUME_KEY;
+	ioctl.smb2.in.max_response_size = 32;
+	ioctl.smb2.in.flags = SMB2_IOCTL_FLAG_IS_FSCTL;
+
+	status = smb2_ioctl(tree, tmp_ctx, &ioctl.smb2);
+	torture_assert_ntstatus_ok(torture, status, "FSCTL_SRV_REQUEST_RESUME_KEY");
+
+	ndr_ret = ndr_pull_struct_blob(&ioctl.smb2.out.out, tmp_ctx, &res_key,
+			(ndr_pull_flags_fn_t)ndr_pull_req_resume_key_rsp);
+	torture_assert_ndr_success(torture, ndr_ret,
+				   "ndr_pull_req_resume_key_rsp");
+
+	ndr_print_debug((ndr_print_fn_t)ndr_print_req_resume_key_rsp, "yo", &res_key);
+
+	ZERO_STRUCT(ioctl);
+	ioctl.smb2.level = RAW_IOCTL_SMB2;
+	ioctl.smb2.in.file.handle = h;
+	ioctl.smb2.in.function = FSCTL_SRV_REQUEST_RESUME_KEY;
+	ioctl.smb2.in.max_response_size = 32;
+	ioctl.smb2.in.flags = SMB2_IOCTL_FLAG_IS_FSCTL;
+
+	status = smb2_ioctl(tree, tmp_ctx, &ioctl.smb2);
+	torture_assert_ntstatus_ok(torture, status, "FSCTL_SRV_REQUEST_RESUME_KEY");
+
+	ndr_ret = ndr_pull_struct_blob(&ioctl.smb2.out.out, tmp_ctx, &res_key,
+			(ndr_pull_flags_fn_t)ndr_pull_req_resume_key_rsp);
+	torture_assert_ndr_success(torture, ndr_ret,
+				   "ndr_pull_req_resume_key_rsp");
+
+	ndr_print_debug((ndr_print_fn_t)ndr_print_req_resume_key_rsp, "yo", &res_key);
+
+	talloc_free(tmp_ctx);
+	return true;
+}
+
 static uint64_t patt_hash(uint64_t off)
 {
 	return off;
@@ -6634,6 +6695,8 @@ struct torture_suite *torture_smb2_ioctl_init(TALLOC_CTX *ctx)
 				     test_ioctl_get_shadow_copy);
 	torture_suite_add_1smb2_test(suite, "req_resume_key",
 				     test_ioctl_req_resume_key);
+	torture_suite_add_1smb2_test(suite, "req_two_resume_keys",
+				     test_ioctl_req_two_resume_keys);
 	torture_suite_add_1smb2_test(suite, "copy_chunk_simple",
 				     test_ioctl_copy_chunk_simple);
 	torture_suite_add_1smb2_test(suite, "copy_chunk_multi",
