@@ -1214,6 +1214,8 @@ sub provision_promoted_dc($$$)
 	max xmit = 32K
 	server max protocol = SMB2
 
+        ntlm auth = ntlmv2-only
+
 [sysvol]
 	path = $ctx->{statedir}/sysvol
 	read only = yes
@@ -1302,6 +1304,8 @@ sub provision_vampire_dc($$$)
 	$ctx->{smb_conf_extra_options} = "
 	max xmit = 32K
 	server max protocol = SMB2
+
+        ntlm auth = mschapv2-and-ntlmv2-only
 
 [sysvol]
 	path = $ctx->{statedir}/sysvol

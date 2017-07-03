@@ -1,0 +1,5 @@
+# These tests should fail in these environments, as we restrict NTLMv1
+# in both of these, with vampire_dc however allowing MSCHAPv2
+samba.tests.py_credentials.samba.tests.py_credentials.PyCredentialsTests.test_SamLogonExNTLM\(vampire_dc\)
+samba.tests.py_credentials.samba.tests.py_credentials.PyCredentialsTests.test_SamLogonExMSCHAPv2\(promoted_dc\)
+samba.tests.py_credentials.samba.tests.py_credentials.PyCredentialsTests.test_SamLogonExNTLM\(promoted_dc\)
