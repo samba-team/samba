@@ -46,8 +46,7 @@ struct smbldap_state {
 	bool anonymous;
 	char *bind_dn;
 	char *bind_secret;
-	int (*bind_callback)(LDAP *ldap_struct,
-			     struct smbldap_state *ldap_state, void *data);
+	smbldap_bind_callback_fn bind_callback;
 	void *bind_callback_data;
 
 	bool paged_results;
@@ -77,6 +76,13 @@ void smbldap_set_paged_results(struct smbldap_state *state,
 	state->paged_results = paged_results;
 }
 
+void smbldap_set_bind_callback(struct smbldap_state *state,
+			       smbldap_bind_callback_fn callback,
+			       void *callback_data)
+{
+	state->bind_callback = callback;
+	state->bind_callback_data = callback_data;
+}
 /*******************************************************************
  Search an attribute and return the first value found.
 ******************************************************************/
@@ -1726,8 +1732,7 @@ void smbldap_free_struct(struct smbldap_state **ldap_state)
 
 	SAFE_FREE((*ldap_state)->bind_dn);
 	SAFE_FREE((*ldap_state)->bind_secret);
-	(*ldap_state)->bind_callback = NULL;
-	(*ldap_state)->bind_callback_data = NULL;
+	smbldap_set_bind_callback(*ldap_state, NULL, NULL);
 
 	TALLOC_FREE(*ldap_state);
 
@@ -1907,8 +1912,7 @@ bool smbldap_set_creds(struct smbldap_state *ldap_state, bool anon, const char *
 	/* free any previously set credential */
 
 	SAFE_FREE(ldap_state->bind_dn);
-	ldap_state->bind_callback = NULL;
-	ldap_state->bind_callback_data = NULL;
+	smbldap_set_bind_callback(ldap_state, NULL, NULL);
 
 	if (ldap_state->bind_secret) {
 		/* make sure secrets are zeroed out of memory */

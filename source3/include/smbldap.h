@@ -34,6 +34,9 @@
  */
 
 struct smbldap_state;
+typedef int (*smbldap_bind_callback_fn)(LDAP *ldap_struct,
+					struct smbldap_state *ldap_state,
+					void *data);
 
 /* The following definitions come from lib/smbldap.c  */
 
@@ -49,6 +52,10 @@ LDAP *smbldap_get_ldap(struct smbldap_state *state);
 bool smbldap_get_paged_results(struct smbldap_state *state);
 void smbldap_set_paged_results(struct smbldap_state *state,
 			       bool paged_results);
+
+void smbldap_set_bind_callback(struct smbldap_state *state,
+			       smbldap_bind_callback_fn callback,
+			       void *callback_data);
 
 void smbldap_set_mod (LDAPMod *** modlist, int modop, const char *attribute, const char *value);
 void smbldap_set_mod_blob(LDAPMod *** modlist, int modop, const char *attribute, const DATA_BLOB *newblob);
