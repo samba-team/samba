@@ -683,6 +683,14 @@ static NTSTATUS check_oem_password(const char *user,
 
 	bool nt_pass_set = (password_encrypted_with_nt_hash && old_nt_hash_encrypted);
 	bool lm_pass_set = (password_encrypted_with_lm_hash && old_lm_hash_encrypted);
+	enum ntlm_auth_level ntlm_auth_level = lp_ntlm_auth();
+
+	/* this call should be disabled without NTLM auth */
+	if (ntlm_auth_level == NTLM_AUTH_DISABLED) {
+		DBG_WARNING("NTLM password changes not"
+			    "permitted by configuration.\n");
+		return NT_STATUS_NTLM_BLOCKED;
+	}
 
 	acct_ctrl = pdb_get_acct_ctrl(sampass);
 #if 0

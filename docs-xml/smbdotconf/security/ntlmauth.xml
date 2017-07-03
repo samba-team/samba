@@ -42,7 +42,8 @@
 
         <listitem>
           <para><constant>disabled</constant> - Do not allow NTLM (or
-          LanMan) authentication of any level as a server.</para>
+          LanMan) authentication of any level as a server, nor permit
+          NTLM password changes.</para>
         </listitem>
 
     </itemizedlist>

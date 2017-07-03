@@ -307,9 +307,18 @@ NTSTATUS dcesrv_samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 	struct samr_Password nt_verifier, lm_verifier;
 	const char *user_samAccountName = NULL;
 	struct dom_sid *user_objectSid = NULL;
+	enum ntlm_auth_level ntlm_auth_level
+		= lpcfg_ntlm_auth(dce_call->conn->dce_ctx->lp_ctx);
 
 	*r->out.dominfo = NULL;
 	*r->out.reject = NULL;
+
+	/* this call should be disabled without NTLM auth */
+	if (ntlm_auth_level == NTLM_AUTH_DISABLED) {
+		DBG_WARNING("NTLM password changes not"
+			    "permitted by configuration.\n");
+		return NT_STATUS_NTLM_BLOCKED;
+	}
 
 	if (r->in.nt_password == NULL ||
 	    r->in.nt_verifier == NULL) {
