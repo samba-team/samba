@@ -893,6 +893,11 @@ for env in [
                            extra_path=[os.path.join(srcdir(), "samba/python"), ]
                            )
 
+for env in [ "simpleserver", "fileserver", "nt4_dc", "ad_dc", "ad_dc_ntvfs", "ad_member"]:
+    planoldpythontestsuite(env, "netlogonsvc",
+                           extra_path=[os.path.join(srcdir(), 'python/samba/tests')],
+                           name="samba.tests.netlogonsvc.python(%s)" % env)
+
 # Demote the vampire DC, it must be the last test each DC, before the dbcheck
 for env in ['vampire_dc', 'promoted_dc', 'rodc']:
     plantestsuite("samba4.blackbox.samba_tool_demote(%s)" % env, env, [os.path.join(samba4srcdir, "utils/tests/test_demote.sh"), '$SERVER', '$SERVER_IP', '$USERNAME', '$PASSWORD', '$DOMAIN', '$DC_SERVER', '$PREFIX/%s' % env, smbclient4])
