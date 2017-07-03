@@ -397,6 +397,41 @@ static void lock4_waited(struct tevent_req *subreq)
 	printf("child %d exited with %d\n", (int)child, status);
 }
 
+struct lock4_check_state {
+	struct server_id me;
+	bool ok;
+};
+
+static void lock4_check(const struct g_lock_rec *locks,
+			size_t num_locks,
+			const uint8_t *data,
+			size_t datalen,
+			void *private_data)
+{
+	struct lock4_check_state *state = private_data;
+
+	if (num_locks != 1) {
+		fprintf(stderr, "num_locks=%zu\n", num_locks);
+		return;
+	}
+
+	if (!serverid_equal(&state->me, &locks[0].pid)) {
+		struct server_id_buf buf1, buf2;
+		fprintf(stderr, "me=%s, locker=%s\n",
+			server_id_str_buf(state->me, &buf1),
+			server_id_str_buf(locks[0].pid, &buf2));
+		return;
+	}
+
+	if (locks[0].lock_type != G_LOCK_WRITE) {
+		fprintf(stderr, "wrong lock type: %d\n",
+			(int)locks[0].lock_type);
+		return;
+	}
+
+	state->ok = true;
+}
+
 /*
  * Test a lock conflict
  */
@@ -489,6 +524,23 @@ bool run_g_lock4(int dummy)
 		int tevent_ret = tevent_loop_once(ev);
 		if (tevent_ret != 0) {
 			perror("tevent_loop_once failed");
+			goto fail;
+		}
+	}
+
+	{
+		struct lock4_check_state state = {
+			.me = messaging_server_id(msg)
+		};
+
+		status = g_lock_dump(ctx, lockname, lock4_check, &state);
+		if (!NT_STATUS_IS_OK(status)) {
+			fprintf(stderr, "g_lock_dump failed: %s\n",
+				nt_errstr(status));
+			goto fail;
+		}
+		if (!state.ok) {
+			fprintf(stderr, "lock4_check failed\n");
 			goto fail;
 		}
 	}
