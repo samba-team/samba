@@ -70,6 +70,7 @@
 #include "librpc/gen_ndr/nbt.h"
 #include "libds/common/roles.h"
 #include "lib/util/samba_util.h"
+#include "libcli/auth/ntlm_check.h"
 
 #ifdef HAVE_HTTPCONNECTENCRYPT
 #include <cups/http.h>
@@ -2709,7 +2710,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lpcfg_do_global_parameter(lp_ctx, "ClientLanManAuth", "False");
 	lpcfg_do_global_parameter(lp_ctx, "ClientNTLMv2Auth", "True");
 	lpcfg_do_global_parameter(lp_ctx, "LanmanAuth", "False");
-	lpcfg_do_global_parameter(lp_ctx, "NTLMAuth", "False");
+	lpcfg_do_global_parameter(lp_ctx, "NTLMAuth", "ntlmv2-only");
 	lpcfg_do_global_parameter(lp_ctx, "RawNTLMv2Auth", "False");
 	lpcfg_do_global_parameter(lp_ctx, "client use spnego principal", "False");
 

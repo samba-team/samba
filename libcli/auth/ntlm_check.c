@@ -280,7 +280,7 @@ NTSTATUS hash_password_check(TALLOC_CTX *mem_ctx,
 
 NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 			     bool lanman_auth,
-			     bool ntlm_auth,
+			     enum ntlm_auth_level ntlm_auth,
 			     uint32_t logon_parameters,
 			     const DATA_BLOB *challenge,
 			     const DATA_BLOB *lm_response,
@@ -397,7 +397,8 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 			DEBUG(3,("ntlm_password_check: NTLMv2 password check failed\n"));
 		}
 	} else if (nt_response->length == 24 && stored_nt) {
-		if (ntlm_auth) {		
+		if (ntlm_auth == NTLM_AUTH_ON
+		    || (ntlm_auth == NTLM_AUTH_MSCHAPv2_NTLMV2_ONLY && (logon_parameters & MSV1_0_ALLOW_MSVCHAPV2))) {
 			/* We have the NT MD4 hash challenge available - see if we can
 			   use it (ie. does it exist in the smbpasswd file).
 			*/

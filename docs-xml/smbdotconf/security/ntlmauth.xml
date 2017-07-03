@@ -1,6 +1,7 @@
 <samba:parameter name="ntlm auth"
                  context="G"
-                 type="boolean"
+                 type="enum"
+                 enumlist="enum_ntlm_auth"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This parameter determines whether or not <citerefentry><refentrytitle>smbd</refentrytitle>
@@ -9,17 +10,46 @@
     If disabled, either the lanman password hash or an NTLMv2 response
     will need to be sent by the client.</para>
 
-    <para>If this option, and <command moreinfo="none">lanman
-    auth</command> are both disabled, then only NTLMv2 logins will be
-    permited.  Not all clients support NTLMv2, and most will require
-    special configuration to use it.</para>
+    <para>By default with <command moreinfo="none">lanman
+    auth</command> set to <constant>no</constant> and
+    <command moreinfo="none">ntlm auth</command> set to
+    <constant>ntlmv2-only</constant> only NTLMv2 logins will be
+    permited.  Most clients support NTLMv2 by default, but some older
+    clients will require special configuration to use it.</para>
 
     <para>The primary user of NTLMv1 is MSCHAPv2 for VPNs and 802.1x.</para>
 
-    <para>The default changed from "yes" to "no" with Samba 4.5.</para>
+    <para>The available settings are:</para>
+
+    <itemizedlist>
+        <listitem>
+          <para><constant>ntlmv1-permitted</constant>
+	  (alias <constant>yes</constant>) - Allow NTLMv1 and above for all clients.</para>
+
+        </listitem>
+
+        <listitem>
+          <para><constant>ntlmv2-only</constant>
+	  (alias <constant>no</constant>) - Do not allow NTLMv1 to be used,
+	  but permit NTLMv2.</para>
+        </listitem>
+
+        <listitem>
+            <para><constant>mschapv2-and-ntlmv2-only</constant> - Only
+            allow NTLMv1 when the client promises that it is providing
+            MSCHAPv2 authentication (such as the <command
+            moreinfo="none">ntlm_auth</command> tool).</para>
+        </listitem>
+
+    </itemizedlist>
+
+    <para>The default changed from <constant>yes</constant> to
+    <constant>no</constant> with Samba 4.5.  The default chagned again
+    to <constant>ntlmv2-only</constant> with Samba 4.7, however the
+    behaviour is unchanged.</para>
 </description>
 
 <related>lanman auth</related>
 <related>raw NTLMv2 auth</related>
-<value type="default">no</value>
+<value type="default">ntlmv2-only</value>
 </samba:parameter>

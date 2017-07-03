@@ -18,7 +18,15 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+#ifndef __LIBCLI_AUTH_NTLM_CHECK_H__
+#define __LIBCLI_AUTH_NTLM_CHECK_H__
 
+/* mangled names options */
+enum ntlm_auth_level {NTLM_AUTH_ON,
+		      NTLM_AUTH_NTLMV2_ONLY,
+		      NTLM_AUTH_MSCHAPv2_NTLMV2_ONLY};
+
+struct samr_Password;
 
 /**
  * Compare password hashes against those from the SAM
@@ -62,7 +70,7 @@ NTSTATUS hash_password_check(TALLOC_CTX *mem_ctx,
 
 NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 				 bool lanman_auth,
-				 bool ntlm_auth,
+				 enum ntlm_auth_level ntlm_auth,
 			     uint32_t logon_parameters,
 			     const DATA_BLOB *challenge,
 			     const DATA_BLOB *lm_response,
@@ -74,3 +82,5 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 			     const struct samr_Password *stored_nt, 
 			     DATA_BLOB *user_sess_key, 
 			     DATA_BLOB *lm_sess_key);
+
+#endif /* __LIBCLI_AUTH_NTLM_CHECK_H__ */

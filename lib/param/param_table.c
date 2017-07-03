@@ -31,6 +31,7 @@
 #include "lib/param/param.h"
 #include "lib/param/loadparm.h"
 #include "lib/param/param_global.h"
+#include "libcli/auth/ntlm_check.h"
 #include "libcli/smb/smb_constants.h"
 #include "libds/common/roles.h"
 #include "source4/lib/tls/tls.h"
@@ -327,6 +328,19 @@ static const struct enum_list enum_mangled_names[] = {
 	{MANGLED_NAMES_YES, "yes"},
 	{MANGLED_NAMES_YES, "true"},
 	{MANGLED_NAMES_YES, "1"},
+	{-1, NULL}
+};
+
+static const struct enum_list enum_ntlm_auth[] = {
+	{NTLM_AUTH_NTLMV2_ONLY, "ntlmv2-only"},
+	{NTLM_AUTH_NTLMV2_ONLY, "no"},
+	{NTLM_AUTH_NTLMV2_ONLY, "false"},
+	{NTLM_AUTH_NTLMV2_ONLY, "0"},
+	{NTLM_AUTH_ON, "ntlmv1-permitted"},
+	{NTLM_AUTH_ON, "yes"},
+	{NTLM_AUTH_ON, "true"},
+	{NTLM_AUTH_ON, "1"},
+	{NTLM_AUTH_MSCHAPv2_NTLMV2_ONLY, "mschapv2-and-ntlmv2-only"},
 	{-1, NULL}
 };
 

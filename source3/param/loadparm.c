@@ -71,6 +71,7 @@
 #include "../lib/util/bitmap.h"
 #include "librpc/gen_ndr/nbt.h"
 #include "source4/lib/tls/tls.h"
+#include "libcli/auth/ntlm_check.h"
 
 #ifdef HAVE_SYS_SYSCTL_H
 #include <sys/sysctl.h>
@@ -693,7 +694,7 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 	Globals.client_lanman_auth = false;	/* Do NOT use the LanMan hash if it is available */
 	Globals.client_plaintext_auth = false;	/* Do NOT use a plaintext password even if is requested by the server */
 	Globals.lanman_auth = false;	/* Do NOT use the LanMan hash, even if it is supplied */
-	Globals.ntlm_auth = false;	/* Do NOT use NTLMv1 if it is supplied by the client (otherwise NTLMv2) */
+	Globals.ntlm_auth = NTLM_AUTH_NTLMV2_ONLY;	/* Do NOT use NTLMv1 if it is supplied by the client (otherwise NTLMv2) */
 	Globals.raw_ntlmv2_auth = false; /* Reject NTLMv2 without NTLMSSP */
 	Globals.client_ntlmv2_auth = true; /* Client should always use use NTLMv2, as we can't tell that the server supports it, but most modern servers do */
 	/* Note, that we will also use NTLM2 session security (which is different), if it is available */
