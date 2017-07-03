@@ -3511,3 +3511,19 @@ int lpcfg_tdb_flags(struct loadparm_context *lp_ctx, int tdb_flags)
 	}
 	return tdb_flags;
 }
+
+/*
+ * Do not allow LanMan auth if unless NTLMv1 is also allowed
+ *
+ * This also ensures it is disabled if NTLM is totally disabled
+ */
+bool lpcfg_lanman_auth(struct loadparm_context *lp_ctx)
+{
+	enum ntlm_auth_level ntlm_auth_level = lpcfg_ntlm_auth(lp_ctx);
+
+	if (ntlm_auth_level == NTLM_AUTH_ON) {
+		return lpcfg__lanman_auth(lp_ctx);
+	} else {
+		return false;
+	}
+}

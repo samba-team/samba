@@ -1,6 +1,7 @@
 <samba:parameter name="lanman auth"
                  context="G"
                  type="boolean"
+		 function="_lanman_auth"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This parameter determines whether or not <citerefentry><refentrytitle>smbd</refentrytitle>

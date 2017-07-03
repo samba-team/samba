@@ -7,8 +7,7 @@
     <para>This parameter determines whether or not <citerefentry><refentrytitle>smbd</refentrytitle>
     <manvolnum>8</manvolnum></citerefentry> will attempt to
     authenticate users using the NTLM encrypted password response.
-    If disabled, either the lanman password hash or an NTLMv2 response
-    will need to be sent by the client.</para>
+    If disabled, NTLM and LanMan authencication is disabled server-wide.</para>
 
     <para>By default with <command moreinfo="none">lanman
     auth</command> set to <constant>no</constant> and

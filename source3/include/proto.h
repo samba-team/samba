@@ -879,6 +879,7 @@ int lp_cups_encrypt(void);
 bool lp_widelinks(int );
 int lp_rpc_low_port(void);
 int lp_rpc_high_port(void);
+bool lp_lanman_auth(void);
 
 int lp_wi_scan_global_parametrics(
 	const char *regex, size_t max_matches,

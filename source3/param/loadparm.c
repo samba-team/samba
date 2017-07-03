@@ -693,7 +693,7 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 	Globals.restrict_anonymous = 0;
 	Globals.client_lanman_auth = false;	/* Do NOT use the LanMan hash if it is available */
 	Globals.client_plaintext_auth = false;	/* Do NOT use a plaintext password even if is requested by the server */
-	Globals.lanman_auth = false;	/* Do NOT use the LanMan hash, even if it is supplied */
+	Globals._lanman_auth = false;	/* Do NOT use the LanMan hash, even if it is supplied */
 	Globals.ntlm_auth = NTLM_AUTH_NTLMV2_ONLY;	/* Do NOT use NTLMv1 if it is supplied by the client (otherwise NTLMv2) */
 	Globals.raw_ntlmv2_auth = false; /* Reject NTLMv2 without NTLMSSP */
 	Globals.client_ntlmv2_auth = true; /* Client should always use use NTLMv2, as we can't tell that the server supports it, but most modern servers do */
@@ -4590,6 +4590,22 @@ int lp_rpc_low_port(void)
 int lp_rpc_high_port(void)
 {
 	return Globals.rpc_high_port;
+}
+
+/*
+ * Do not allow LanMan auth if unless NTLMv1 is also allowed
+ *
+ * This also ensures it is disabled if NTLM is totally disabled
+ */
+bool lp_lanman_auth(void)
+{
+	enum ntlm_auth_level ntlm_auth_level = lp_ntlm_auth();
+
+	if (ntlm_auth_level == NTLM_AUTH_ON) {
+		return lp__lanman_auth();
+	} else {
+		return false;
+	}
 }
 
 struct loadparm_global * get_globals(void)
