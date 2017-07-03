@@ -358,7 +358,10 @@ def test(ctx):
     shutil.rmtree(test_prefix, ignore_errors=True)
     os.makedirs(test_prefix)
     os.environ['TEST_DATA_PREFIX'] = test_prefix
-    os.environ['LD_LIBRARY_PATH'] = Utils.g_module.blddir + '/bin/default/lib/ldb'
+    os.environ['LDB_MODULES_PATH'] = Utils.g_module.blddir + "/modules/ldb"
+    samba_utils.ADD_LD_LIBRARY_PATH('bin/shared')
+    samba_utils.ADD_LD_LIBRARY_PATH('bin/shared/private')
+
     cmd = 'tests/test-tdb.sh %s' % Utils.g_module.blddir
     ret = samba_utils.RUN_COMMAND(cmd)
     print("testsuite returned %d" % ret)
@@ -371,8 +374,6 @@ def test(ctx):
         extra_env={'SELFTEST_PREFIX': test_prefix})
     print("Python testsuite returned %d" % pyret)
 
-    os.environ['LDB_MODULES_PATH'] = Utils.g_module.blddir + '/modules/ldb'
-    os.environ['LD_LIBRARY_PATH'] = Utils.g_module.blddir + '/bin/default/lib/ldb'
     cmocka_ret = 0
     for test_exe in ['ldb_tdb_mod_op_test',
                      'ldb_msg_test']:
