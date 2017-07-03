@@ -181,6 +181,8 @@ def test(ctx):
     magic_helper_cmd = os.path.join(Utils.g_module.blddir, 'talloc_test_magic_differs_helper')
     magic_cmd = os.path.join(srcdir, 'lib', 'talloc',
                              'test_magic_differs.sh')
+    if not os.path.exists(magic_cmd):
+        magic_cmd = os.path.join(srcdir, 'test_magic_differs.sh')
 
     magic_ret = samba_utils.RUN_COMMAND(magic_cmd + " " +  magic_helper_cmd)
     print("magic differs test returned %d" % magic_ret)
