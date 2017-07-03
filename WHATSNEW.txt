@@ -166,6 +166,18 @@ The reliability of RODCs locating a writable partner still requires some
 improvements and so the 'password server' configuration option is generally
 recommended on the RODC.
 
+Additional password hashes stored in supplementalCredentials
+------------------------------------------------------------
+
+A new config option 'password hash userPassword schemes' has been added to
+enable generation of SHA-256 and SHA-512 hashes (without storing the plaintext
+password with reversible encryption). This builds upon previous work to improve
+password sync for the AD DC (originally using GPG).
+
+The user command of 'samba-tool' has been updated in order to be able to
+extract these additional hashes, as well as extracting the (HTTP) WDigest
+hashes that we had also been storing in supplementalCredentials.
+
 Query record for open file or directory
 ---------------------------------------
 
@@ -215,20 +227,21 @@ for modern SMB1/2/3 clients.
 smb.conf changes
 ================
 
-  Parameter Name                Description             Default
-  --------------                -----------             -------
-  allow unsafe cluster upgrade  New parameter           no
-  auth event notification       New parameter           no
-  auth methods                  Deprecated
-  client max protocol           Effective               SMB3_11
-                                default changed
-  map untrusted to domain       New value/              auto
-                                Default changed/
-                                Deprecated
-  mit kdc command               New parameter
-  profile acls                  Deprecated
-  rpc server dynamic port range New parameter           49152-65535
-  strict sync                   Default changed         yes
+  Parameter Name                     Description             Default
+  --------------                     -----------             -------
+  allow unsafe cluster upgrade       New parameter           no
+  auth event notification            New parameter           no
+  auth methods                       Deprecated
+  client max protocol                Effective               SMB3_11
+                                     default changed
+  map untrusted to domain            New value/              auto
+                                     Default changed/
+                                     Deprecated
+  mit kdc command                    New parameter
+  profile acls                       Deprecated
+  rpc server dynamic port range      New parameter           49152-65535
+  strict sync                        Default changed         yes
+  password hash userPassword schemes New parameter
 
 
 KNOWN ISSUES
