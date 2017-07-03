@@ -1,286 +1,33 @@
 Release Announcements
 =====================
 
-This is the first release candidate of Samba 4.7.  This is *not*
+This is the first preview release of Samba 4.8.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
 
-Samba 4.7 will be the next version of the Samba suite.
+Samba 4.8 will be the next version of the Samba suite.
 
 
 UPGRADING
 =========
 
-smbclient changes
------------------
-
-smbclient no longer prints a 'Domain=[...] OS=[Windows 6.1] Server=[...]'
-banner when connecting to the first server. With SMB2 and Kerberos
-there's no way to print this information reliable. Now we avoid it at all
-consistently. In interactive session the following banner is now presented
-to the user: 'Try "help" do get a list of possible commands.'.
-
-The default for "client max protocol" has changed to "SMB3_11",
-which means that smbclient (and related commands) will work against
-servers without SMB1 support.
-
-It's possible to use the '-m/--max-protocol' option to overwrite
-the "client max protocol" option temporary.
-
-Note that the '-e/--encrypt' option also works with most SMB3 servers
-(e.g. Windows >= 2012 and Samba >= 4.0.0), so the SMB1 unix extensions
-are not required for encryption.
-
-The change to SMB3_11 as default also  means smbclient no longer
-negotiates SMB1 unix extensions by default, when talking to a Samba server with
-"unix extensions = yes".  As a result some commands are not available, e.g.
-posix_encrypt, posix_open, posix_mkdir, posix_rmdir, posix_unlink, posix_whoami,
-getfacl and symlink. Using "-mNT1" reenabled them, if the server supports SMB1.
-
-Note the default ("CORE") for "client min protocol" hasn't changed,
-so it's still possible to connect to SMB1-only servers by default.
-
 
 NEW FEATURES/CHANGES
 ====================
 
-Whole DB read locks: Improved LDAP and replication consistency
---------------------------------------------------------------
-
-Prior to Samba 4.7 and ldb 1.2.0, the LDB database layer used by Samba
-erronously did not take whole-DB read locks to protect search
-and DRS replication operations.
-
-While each object returned remained subject to a record-level lock (so
-would remain consistent to itself), under a race condition with a
-rename or delete, it and any links (like the member attribute) to it
-would not be returned.
-
-The symptoms of this issue include:
-
-Replication failures with this error showing in the client side logs:
- error during DRS repl ADD: No objectClass found in replPropertyMetaData for
- Failed to commit objects:
- WERR_GEN_FAILURE/NT_STATUS_INVALID_NETWORK_RESPONSE
-
-A crash of the server, in particular the rpc_server process with
- INTERNAL ERROR: Signal 11
-
-LDAP read inconsistency
- A DN subject to a search at the same time as it is being renamed
- may not appear under either the old or new name, but will re-appear
- for a subsequent search.
-
-See https://bugzilla.samba.org/show_bug.cgi?id=12858 for more details
-and updated advise on database recovery for affected installations.
-
-
-Samba AD with MIT Kerberos
---------------------------
-
-After four years of development, Samba finally supports compiling and
-running Samba AD with MIT Kerberos. You can enable it with:
-
-    ./configure --with-system-mitkrb5
-
-Samba requires version 1.15.1 of MIT Kerberos to build with AD DC support.
-The krb5-devel and krb5-server packages are required.
-The feature set is not on par with with the Heimdal build but the most important
-things, like forest and external trusts, are working. Samba uses the KDC binary
-provided by MIT Kerberos.
-
-Missing features, compared to Heimdal, are:
-  * PKINIT support
-  * S4U2SELF/S4U2PROXY support
-  * RODC support (not fully working with Heimdal either)
-
-The Samba AD process will take care of starting the MIT KDC and it will load a
-KDB (Kerberos Database) driver to access the Samba AD database.  When
-provisioning an AD DC using 'samba-tool' it will take care of creating a correct
-kdc.conf file for the MIT KDC. Note that 'samba-tool' will overwrite the system
-kdc.conf by default. It is possible to use a different location during
-provision. You should consult the 'samba-tool' help and smb.conf manpage for
-details.
-
-Dynamic RPC port range
-----------------------
-
-The dynamic port range for RPC services has been changed from the old default
-value 1024-1300 to 49152-65535. This port range is not only used by a
-Samba AD DC but also applies to all other server roles including NT4-style
-domain controllers. The new value has been defined by Microsoft in Windows
-Server 2008 and newer versions. To make it easier for Administrators to control
-those port ranges we use the same default and make it configurable with the
-option: 'rpc server dynamic port range'.
-
-The 'rpc server port' option sets the first available port from the new
-'rpc server dynamic port range' option. The option 'rpc server port' only
-applies to Samba provisioned as an AD DC.
-
-Authentication and Authorization audit support
-----------------------------------------------
-
-Detailed authentication and authorization audit information is now
-logged to Samba's debug logs under the "auth_audit" debug class,
-including in particular the client IP address triggering the audit
-line.  Additionally, if Samba is compiled against the jansson JSON
-library, a JSON representation is logged under the "auth_json_audit"
-debug class.
-
-Audit support is comprehensive for all authentication and
-authorisation of user accounts in the Samba Active Directory Domain
-Controller, as well as the implicit authentication in password
-changes.  In the file server and classic/NT4 domain controller, NTLM
-authentication, SMB and RPC authorization is covered, however password
-changes are not at this stage, and this support is not currently
-backed by a testsuite.
-
-Multi-process LDAP Server
--------------------------
-
-The LDAP server in the AD DC now honours the process model used for
-the rest of the samba process, rather than being forced into a single
-process.  This aids in Samba's ability to scale to larger numbers of AD
-clients and the AD DC's overall resiliency, but will mean that there is a
-fork()ed child for every LDAP client, which may be more resource
-intensive in some situations.
-
-Improved Read-Only Domain Controller (RODC) Support
----------------------------------------------------
-
-Support for RODCs in Samba AD until now has been experimental. With this latest
-version, many of the critical bugs have been fixed and the RODC can be used in
-DC environments requiring no writable behaviour. RODCs now correctly support
-bad password lockouts and password disclosure auditing through the
-msDS-RevealedUsers attribute.
-
-The fixes made to the RWDC will also allow Windows RODC to function more
-correctly and to avoid strange data omissions such as failures to replicate
-groups or updated passwords. Password changes are currently rejected at the
-RODC, although referrals should be given over LDAP. While any bad passwords can
-trigger domain-wide lockout, good passwords which have not been replicated yet
-for a password change can only be used via NTLM on the RODC (and not Kerberos).
-
-The reliability of RODCs locating a writable partner still requires some
-improvements and so the 'password server' configuration option is generally
-recommended on the RODC.
-
-Additional password hashes stored in supplementalCredentials
-------------------------------------------------------------
-
-A new config option 'password hash userPassword schemes' has been added to
-enable generation of SHA-256 and SHA-512 hashes (without storing the plaintext
-password with reversible encryption). This builds upon previous work to improve
-password sync for the AD DC (originally using GPG).
-
-The user command of 'samba-tool' has been updated in order to be able to
-extract these additional hashes, as well as extracting the (HTTP) WDigest
-hashes that we had also been storing in supplementalCredentials.
-
-Improvements to DNS during Active Directory domain join
--------------------------------------------------------
-
-The 'samba-tool' domain join command will now add the A and GUID DNS records
-(on both the local and remote servers) during a join if possible via RPC. This
-should allow replication to proceed more smoothly post-join.
-
-The mname element of the SOA record will now also be dynamically generated to
-point to the local read-write server. 'samba_dnsupdate' should now be more
-reliable as it will now find the appropriate name server even when resolv.conf
-points to a forwarder.
-
-Significant AD performance and replication improvements
--------------------------------------------------------
-
-Previously, replication of group memberships was been an incredibly expensive
-process for the AD DC. This was mostly due to unnecessary CPU time being spent
-parsing member linked attributes. The database now stores these linked
-attributes in sorted form to perform efficient searches for existing members.
-In domains with a large number of group memberships, a join can now be
-completed in half the time compared with Samba 4.6.
-
-LDAP search performance has also improved, particularly in the unindexed search
-case. Parsing and processing of security descriptors should now be more
-efficient, improving replication but also overall performance.
-
-Query record for open file or directory
----------------------------------------
-
-The record attached to an open file or directory in Samba can be
-queried through the 'net tdb locking' command. In clustered Samba this
-can be useful to determine the file or directory triggering
-corresponding "hot" record warnings in ctdb.
-
-Removal of lpcfg_register_defaults_hook()
------------------------------------------
-
-The undocumented and unsupported function lpcfg_register_defaults_hook()
-that was used by external projects to call into Samba and modify
-smb.conf default parameter settings has been removed. If your project
-was using this call please raise the issue on
-samba-technical@lists.samba.org in order to design a supported
-way of obtaining the same functionality.
-
-Change of loadable module interface
------------------------------------
-
-The _init function of all loadable modules in Samba has changed
-from:
-
-NTSTATUS _init(void);
-
-to:
-
-NTSTATUS _init(TALLOC_CTX *);
-
-This allows a program loading a module to pass in a long-lived
-talloc context (which must be guaranteed to be alive for the
-lifetime of the module). This allows modules to avoid use of
-the talloc_autofree_context() (which is inherently thread-unsafe)
-and still be valgrind-clean on exit. Modules that don't need to
-free long-lived data on exit should use the NULL talloc context.
-
-Parameter changes
------------------
-
-The "strict sync" global parameter has been changed from
-a default of "no" to "yes". This means smbd will by default
-obey client requests to synchronize unwritten data in operating
-system buffers safely onto disk. This is a safer default setting
-for modern SMB1/2/3 clients.
-
-The 'ntlm auth' option default is renamed to 'ntlmv2-only', reflecting
-the previous behaviour.  Two new values have been provided,
-'mschapv2-and-ntlmv2-only' (allowing MSCHAPv2 while denying NTLMv1)
-and 'disabled', totally disabling NTLM authentication and password
-changes.
 
 smb.conf changes
 ================
 
   Parameter Name                     Description             Default
   --------------                     -----------             -------
-  allow unsafe cluster upgrade       New parameter           no
-  auth event notification            New parameter           no
-  auth methods                       Deprecated
-  client max protocol                Effective               SMB3_11
-                                     default changed
-  map untrusted to domain            New value/              auto
-                                     Default changed/
-                                     Deprecated
-  mit kdc command                    New parameter
-  profile acls                       Deprecated
-  rpc server dynamic port range      New parameter           49152-65535
-  strict sync                        Default changed         yes
-  password hash userPassword schemes New parameter
-  ntlm auth                          New values              ntlmv2-only
 
 
 KNOWN ISSUES
 ============
 
-https://wiki.samba.org/index.php/Release_Planning_for_Samba_4.7#Release_blocking_bugs
+https://wiki.samba.org/index.php/Release_Planning_for_Samba_4.8#Release_blocking_bugs
 
 
 #######################################
