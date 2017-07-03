@@ -231,11 +231,11 @@ interface netlogon
 		uint32 primary_gid;
 		samr_RidWithAttributeArray groups;
 		netr_UserFlags user_flags;
-		netr_UserSessionKey key;
+		[flag(NDR_SECRET)] netr_UserSessionKey key;
 		lsa_StringLarge logon_server;
 		lsa_StringLarge logon_domain;
 		dom_sid2 *domain_sid;
-		netr_LMSessionKey LMSessKey;
+		[flag(NDR_SECRET)] netr_LMSessionKey LMSessKey;
 		samr_AcctFlags acct_flags;
 		uint32 sub_auth_status;
 		NTTIME last_successful_logon;
