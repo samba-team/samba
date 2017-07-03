@@ -178,6 +178,18 @@ The user command of 'samba-tool' has been updated in order to be able to
 extract these additional hashes, as well as extracting the (HTTP) WDigest
 hashes that we had also been storing in supplementalCredentials.
 
+Improvements to DNS during Active Directory domain join
+-------------------------------------------------------
+
+The 'samba-tool' domain join command will now add the A and GUID DNS records
+(on both the local and remote servers) during a join if possible via RPC. This
+should allow replication to proceed more smoothly post-join.
+
+The mname element of the SOA record will now also be dynamically generated to
+point to the local read-write server. 'samba_dnsupdate' should now be more
+reliable as it will now find the appropriate name server even when resolv.conf
+points to a forwarder.
+
 Query record for open file or directory
 ---------------------------------------
 
