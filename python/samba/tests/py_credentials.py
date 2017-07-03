@@ -20,9 +20,17 @@ import os
 
 import samba
 from samba.auth import system_session
-from samba.credentials import Credentials, CLI_CRED_NTLMv2_AUTH
+from samba.credentials import (
+    Credentials,
+    CLI_CRED_NTLMv2_AUTH,
+    CLI_CRED_NTLM_AUTH,
+    DONT_USE_KERBEROS)
 from samba.dcerpc import netlogon, ntlmssp, srvsvc
-from samba.dcerpc.netlogon import netr_Authenticator, netr_WorkstationInformation
+from samba.dcerpc.netlogon import (
+    netr_Authenticator,
+    netr_WorkstationInformation,
+    MSV1_0_ALLOW_MSVCHAPV2
+    )
 from samba.dcerpc.misc import SEC_CHAN_WKSTA
 from samba.dsdb import (
     UF_WORKSTATION_TRUST_ACCOUNT,
@@ -30,6 +38,9 @@ from samba.dsdb import (
     UF_NORMAL_ACCOUNT)
 from samba.ndr import ndr_pack
 from samba.samdb import SamDB
+from samba import NTSTATUSError, ntstatus
+import ctypes
+
 """
 Integration tests for pycredentials
 """
@@ -91,6 +102,87 @@ class PyCredentialsTests(TestCase):
         self.do_NetrLogonGetDomainInfo(c, authenticator, subsequent)
         (authenticator, subsequent) = self.get_authenticator(c)
         self.do_NetrLogonGetDomainInfo(c, authenticator, subsequent)
+
+
+    def test_SamLogonEx(self):
+        c = self.get_netlogon_connection()
+
+        logon = samlogon_logon_info(self.domain,
+                                    self.machine_name,
+                                    self.user_creds)
+
+        logon_level = netlogon.NetlogonNetworkTransitiveInformation
+        validation_level = netlogon.NetlogonValidationSamInfo4
+        netr_flags = 0
+
+        try:
+            c.netr_LogonSamLogonEx(self.server,
+                                   self.user_creds.get_workstation(),
+                                   logon_level,
+                                   logon,
+                                   validation_level,
+                                   netr_flags)
+        except NTSTATUSError as e:
+            enum = ctypes.c_uint32(e[0]).value
+            if enum == ntstatus.NT_STATUS_WRONG_PASSWORD:
+                self.fail("got wrong password error")
+            else:
+                raise
+
+    def test_SamLogonExNTLM(self):
+        c = self.get_netlogon_connection()
+
+        logon = samlogon_logon_info(self.domain,
+                                    self.machine_name,
+                                    self.user_creds,
+                                    flags=CLI_CRED_NTLM_AUTH)
+
+        logon_level = netlogon.NetlogonNetworkTransitiveInformation
+        validation_level = netlogon.NetlogonValidationSamInfo4
+        netr_flags = 0
+
+        try:
+            c.netr_LogonSamLogonEx(self.server,
+                                   self.user_creds.get_workstation(),
+                                   logon_level,
+                                   logon,
+                                   validation_level,
+                                   netr_flags)
+        except NTSTATUSError as e:
+            enum = ctypes.c_uint32(e[0]).value
+            if enum == ntstatus.NT_STATUS_WRONG_PASSWORD:
+                self.fail("got wrong password error")
+            else:
+                raise
+
+    def test_SamLogonExMSCHAPv2(self):
+        c = self.get_netlogon_connection()
+
+        logon = samlogon_logon_info(self.domain,
+                                    self.machine_name,
+                                    self.user_creds,
+                                    flags=CLI_CRED_NTLM_AUTH)
+
+        logon.identity_info.parameter_control = MSV1_0_ALLOW_MSVCHAPV2
+
+        logon_level = netlogon.NetlogonNetworkTransitiveInformation
+        validation_level = netlogon.NetlogonValidationSamInfo4
+        netr_flags = 0
+
+        try:
+            c.netr_LogonSamLogonEx(self.server,
+                                   self.user_creds.get_workstation(),
+                                   logon_level,
+                                   logon,
+                                   validation_level,
+                                   netr_flags)
+        except NTSTATUSError as e:
+            enum = ctypes.c_uint32(e[0]).value
+            if enum == ntstatus.NT_STATUS_WRONG_PASSWORD:
+                self.fail("got wrong password error")
+            else:
+                raise
+
 
     # Test Credentials.encrypt_netr_crypt_password
     # By performing a NetrServerPasswordSet2
@@ -162,6 +254,7 @@ class PyCredentialsTests(TestCase):
         self.machine_creds = Credentials()
         self.machine_creds.guess(self.get_loadparm())
         self.machine_creds.set_secure_channel_type(SEC_CHAN_WKSTA)
+        self.machine_creds.set_kerberos_state(DONT_USE_KERBEROS)
         self.machine_creds.set_password(self.machine_pass)
         self.machine_creds.set_username(self.machine_name + "$")
         self.machine_creds.set_workstation(self.machine_name)
@@ -234,13 +327,14 @@ class PyCredentialsTests(TestCase):
 
 #
 # Build the logon data required by NetrLogonSamLogonWithFlags
-def samlogon_logon_info(domain_name, computer_name, creds):
+def samlogon_logon_info(domain_name, computer_name, creds,
+                        flags=CLI_CRED_NTLMv2_AUTH):
 
     target_info_blob = samlogon_target(domain_name, computer_name)
 
     challenge = b"abcdefgh"
     # User account under test
-    response = creds.get_ntlm_response(flags=CLI_CRED_NTLMv2_AUTH,
+    response = creds.get_ntlm_response(flags=flags,
                                        challenge=challenge,
                                        target_info=target_info_blob)
 
