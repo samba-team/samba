@@ -296,6 +296,12 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 	DATA_BLOB tmp_sess_key;
 	const char *upper_client_domain = NULL;
 
+	if (ntlm_auth == NTLM_AUTH_DISABLED) {
+		DBG_WARNING("ntlm_password_check: NTLM authentication not "
+			    "permitted by configuration.\n");
+		return NT_STATUS_NTLM_BLOCKED;
+	}
+
 	if (client_domain != NULL) {
 		upper_client_domain = talloc_strdup_upper(mem_ctx, client_domain);
 		if (upper_client_domain == NULL) {

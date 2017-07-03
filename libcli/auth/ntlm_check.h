@@ -22,7 +22,7 @@
 #define __LIBCLI_AUTH_NTLM_CHECK_H__
 
 /* mangled names options */
-enum ntlm_auth_level {NTLM_AUTH_ON,
+enum ntlm_auth_level {NTLM_AUTH_DISABLED, NTLM_AUTH_ON,
 		      NTLM_AUTH_NTLMV2_ONLY,
 		      NTLM_AUTH_MSCHAPv2_NTLMV2_ONLY};
 

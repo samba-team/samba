@@ -40,6 +40,11 @@
             moreinfo="none">ntlm_auth</command> tool).</para>
         </listitem>
 
+        <listitem>
+          <para><constant>disabled</constant> - Do not allow NTLM (or
+          LanMan) authentication of any level as a server.</para>
+        </listitem>
+
     </itemizedlist>
 
     <para>The default changed from <constant>yes</constant> to

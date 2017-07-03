@@ -332,6 +332,7 @@ static const struct enum_list enum_mangled_names[] = {
 };
 
 static const struct enum_list enum_ntlm_auth[] = {
+	{NTLM_AUTH_DISABLED, "disabled"},
 	{NTLM_AUTH_NTLMV2_ONLY, "ntlmv2-only"},
 	{NTLM_AUTH_NTLMV2_ONLY, "no"},
 	{NTLM_AUTH_NTLMV2_ONLY, "false"},
