@@ -171,6 +171,10 @@ def build(bld):
 def test(ctx):
     '''run talloc testsuite'''
     import Utils, samba_utils
+
+    samba_utils.ADD_LD_LIBRARY_PATH('bin/shared')
+    samba_utils.ADD_LD_LIBRARY_PATH('bin/shared/private')
+
     cmd = os.path.join(Utils.g_module.blddir, 'talloc_testsuite')
     ret = samba_utils.RUN_COMMAND(cmd)
     print("testsuite returned %d" % ret)
