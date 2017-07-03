@@ -190,6 +190,20 @@ point to the local read-write server. 'samba_dnsupdate' should now be more
 reliable as it will now find the appropriate name server even when resolv.conf
 points to a forwarder.
 
+Significant AD performance and replication improvements
+-------------------------------------------------------
+
+Previously, replication of group memberships was been an incredibly expensive
+process for the AD DC. This was mostly due to unnecessary CPU time being spent
+parsing member linked attributes. The database now stores these linked
+attributes in sorted form to perform efficient searches for existing members.
+In domains with a large number of group memberships, a join can now be
+completed in half the time compared with Samba 4.6.
+
+LDAP search performance has also improved, particularly in the unindexed search
+case. Parsing and processing of security descriptors should now be more
+efficient, improving replication but also overall performance.
+
 Query record for open file or directory
 ---------------------------------------
 
