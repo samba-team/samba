@@ -34,6 +34,7 @@
 #include "param/param.h"
 #include "auth/gensec/gensec_toplevel_proto.h"
 #include "lib/crypto/crypto.h"
+#include "libds/common/roles.h"
 
 struct schannel_state {
 	struct gensec_security *gensec;
@@ -723,9 +724,23 @@ static NTSTATUS schannel_session_info(struct gensec_security *gensec_security,
 	return NT_STATUS_OK;
 }
 
+/*
+ * Reduce the attack surface by ensuring schannel is not availble when
+ * we are not a DC
+ */
 static NTSTATUS schannel_server_start(struct gensec_security *gensec_security)
 {
-	return NT_STATUS_OK;
+	enum server_role server_role
+		= lpcfg_server_role(gensec_security->settings->lp_ctx);
+
+	switch (server_role) {
+	case ROLE_DOMAIN_BDC:
+	case ROLE_DOMAIN_PDC:
+	case ROLE_ACTIVE_DIRECTORY_DC:
+		return NT_STATUS_OK;
+	default:
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
 }
 
 static NTSTATUS schannel_client_start(struct gensec_security *gensec_security)
