@@ -1594,13 +1594,13 @@ int32_t ctdb_control_set_recmaster(struct ctdb_context *ctdb, uint32_t opcode, T
 	new_recmaster = ((uint32_t *)(&indata.dptr[0]))[0];
 
 	if (ctdb->pnn != new_recmaster && ctdb->recovery_master == ctdb->pnn) {
-		DEBUG(DEBUG_NOTICE,
+		DEBUG(DEBUG_ERR,
 		      ("Remote node (%u) is now the recovery master\n",
 		       new_recmaster));
 	}
 
 	if (ctdb->pnn == new_recmaster && ctdb->recovery_master != new_recmaster) {
-		DEBUG(DEBUG_NOTICE,
+		DEBUG(DEBUG_ERR,
 		      ("This node (%u) is now the recovery master\n",
 		       ctdb->pnn));
 	}
