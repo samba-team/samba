@@ -586,6 +586,10 @@ planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.samba_tool.join")
 for env in ["ad_dc_ntvfs", "fl2000dc", "fl2003dc", "fl2008r2dc"]:
     planpythontestsuite(env + ":local", "samba.tests.samba_tool.fsmo")
 
+# test user.edit
+for env in ["ad_dc:local", "ad_dc_ntvfs:local", "fl2000dc:local", "fl2003dc:local", "fl2008r2dc:local"]:
+    plantestsuite("samba.tests.samba_tool.edit", env, [os.path.join(srcdir(), "python/samba/tests/samba_tool/edit.sh"), '$SERVER', '$USERNAME', '$PASSWORD'])
+
 # We run this test against both AD DC implemetnations because it is
 # the only test we have of GPO get/set behaviour, and this involves
 # the file server as well as the LDAP server.
