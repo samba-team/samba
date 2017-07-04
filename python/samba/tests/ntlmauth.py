@@ -19,13 +19,13 @@ from samba.tests import TestCase
 import os
 
 import samba
-from samba.credentials import Credentials, DONT_USE_KERBEROS
+from samba.credentials import Credentials, DONT_USE_KERBEROS, MUST_USE_KERBEROS
 
 from samba import NTSTATUSError, ntstatus
 import ctypes
 
 from samba import credentials
-from samba.dcerpc import srvsvc
+from samba.dcerpc import srvsvc, samr, lsa
 
 """
 Tests basic NTLM authentication
@@ -37,24 +37,21 @@ class NtlmAuthTests(TestCase):
         super(NtlmAuthTests, self).setUp()
 
         self.lp          = self.get_loadparm()
+        self.server      = os.getenv("SERVER")
 
-
+        self.creds = Credentials()
+        self.creds.guess(self.lp)
+        self.creds.set_username(os.getenv("USERNAME"))
+        self.creds.set_domain(self.server)
+        self.creds.set_password(os.getenv("PASSWORD"))
+        self.creds.set_kerberos_state(DONT_USE_KERBEROS)
 
     def tearDown(self):
         super(NtlmAuthTests, self).tearDown()
 
     def test_ntlm_connection(self):
-        server = os.getenv("SERVER")
-
-        creds = credentials.Credentials()
-        creds.guess(self.lp)
-        creds.set_username(os.getenv("USERNAME"))
-        creds.set_domain(server)
-        creds.set_password(os.getenv("PASSWORD"))
-        creds.set_kerberos_state(DONT_USE_KERBEROS)
-
         try:
-            conn = srvsvc.srvsvc("ncacn_np:%s[smb2,ntlm]" % server, self.lp, creds)
+            conn = srvsvc.srvsvc("ncacn_np:%s[smb2,ntlm]" % self.server, self.lp, self.creds)
 
             self.assertIsNotNone(conn)
         except NTSTATUSError as e:
@@ -65,4 +62,27 @@ class NtlmAuthTests(TestCase):
             else:
                 raise
 
+    def test_samr_change_password(self):
+        self.creds.set_kerberos_state(MUST_USE_KERBEROS)
+        conn = samr.samr("ncacn_np:%s[krb5,seal,smb2]" % os.getenv("SERVER"))
+
+        # we want to check whether this gets rejected outright because NTLM is
+        # disabled, so we don't actually need to encrypt a valid password here
+        server = lsa.String()
+        server.string = self.server
+        username = lsa.String()
+        username.string = os.getenv("USERNAME")
+
+        try:
+            conn.ChangePasswordUser2(server, username, None, None, True, None, None)
+        except NTSTATUSError as e:
+            # changing passwords is rejected when NTLM is disabled
+            enum = ctypes.c_uint32(e[0]).value
+            if enum == ntstatus.NT_STATUS_NTLM_BLOCKED:
+                self.fail("NTLM is disabled on this server")
+            elif enum == ntstatus.NT_STATUS_WRONG_PASSWORD:
+                # expected error case when NTLM is enabled
+                pass
+            else:
+                raise
 
