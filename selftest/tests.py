@@ -137,6 +137,7 @@ plantestsuite(
     [os.path.join(srcdir(), "script/tests/test_traffic_summary.sh"),
      configuration])
 planpythontestsuite("none", "samba.tests.glue", py3_compatible=True)
+planpythontestsuite("none", "samba.tests.tdb_util", py3_compatible=True)
 
 if with_pam:
     plantestsuite("samba.tests.pam_winbind(local)", "ad_member",
