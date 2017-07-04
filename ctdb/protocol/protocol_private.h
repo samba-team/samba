@@ -215,10 +215,11 @@ void ctdb_tickle_list_push(struct ctdb_tickle_list *in, uint8_t *buf,
 int ctdb_tickle_list_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 			  struct ctdb_tickle_list **out, size_t *npull);
 
-size_t ctdb_addr_info_len(struct ctdb_addr_info *addr_info);
-void ctdb_addr_info_push(struct ctdb_addr_info *addr_info, uint8_t *buf);
+size_t ctdb_addr_info_len(struct ctdb_addr_info *in);
+void ctdb_addr_info_push(struct ctdb_addr_info *in, uint8_t *buf,
+			 size_t *npush);
 int ctdb_addr_info_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			struct ctdb_addr_info **out);
+			struct ctdb_addr_info **out, size_t *npull);
 
 size_t ctdb_transdb_len(struct ctdb_transdb *transdb);
 void ctdb_transdb_push(struct ctdb_transdb *transdb, uint8_t *buf);

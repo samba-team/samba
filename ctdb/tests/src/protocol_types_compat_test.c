@@ -1033,6 +1033,82 @@ static int ctdb_tickle_list_pull_old(uint8_t *buf, size_t buflen,
 	return 0;
 }
 
+struct ctdb_addr_info_wire {
+	ctdb_sock_addr addr;
+	uint32_t mask;
+	uint32_t len;
+	char iface[1];
+};
+
+static size_t ctdb_addr_info_len_old(struct ctdb_addr_info *in)
+{
+	uint32_t len;
+
+	len = offsetof(struct ctdb_addr_info_wire, iface);
+	if (in->iface != NULL) {
+	       len += strlen(in->iface)+1;
+	}
+
+	return len;
+}
+
+static void ctdb_addr_info_push_old(struct ctdb_addr_info *in, uint8_t *buf)
+{
+	struct ctdb_addr_info_wire *wire = (struct ctdb_addr_info_wire *)buf;
+
+	wire->addr = in->addr;
+	wire->mask = in->mask;
+	if (in->iface == NULL) {
+		wire->len = 0;
+	} else {
+		wire->len = strlen(in->iface)+1;
+		memcpy(wire->iface, in->iface, wire->len);
+	}
+}
+
+static int ctdb_addr_info_pull_old(uint8_t *buf, size_t buflen,
+				   TALLOC_CTX *mem_ctx,
+				   struct ctdb_addr_info **out)
+{
+	struct ctdb_addr_info *val;
+	struct ctdb_addr_info_wire *wire = (struct ctdb_addr_info_wire *)buf;
+
+	if (buflen < offsetof(struct ctdb_addr_info_wire, iface)) {
+		return EMSGSIZE;
+	}
+	if (wire->len > buflen) {
+		return EMSGSIZE;
+	}
+	if (offsetof(struct ctdb_addr_info_wire, iface) + wire->len <
+	    offsetof(struct ctdb_addr_info_wire, iface)) {
+		return EMSGSIZE;
+	}
+	if (buflen < offsetof(struct ctdb_addr_info_wire, iface) + wire->len) {
+		return EMSGSIZE;
+	}
+
+	val = talloc(mem_ctx, struct ctdb_addr_info);
+	if (val == NULL) {
+		return ENOMEM;
+	}
+
+	val->addr = wire->addr;
+	val->mask = wire->mask;
+
+	if (wire->len == 0) {
+		val->iface = NULL;
+	} else {
+		val->iface = talloc_strndup(val, wire->iface, wire->len);
+		if (val->iface == NULL) {
+			talloc_free(val);
+			return ENOMEM;
+		}
+	}
+
+	*out = val;
+	return 0;
+}
+
 
 COMPAT_TYPE3_TEST(struct ctdb_statistics, ctdb_statistics);
 COMPAT_TYPE3_TEST(struct ctdb_vnn_map, ctdb_vnn_map);
@@ -1055,6 +1131,7 @@ COMPAT_TYPE3_TEST(struct ctdb_node_flag_change, ctdb_node_flag_change);
 COMPAT_TYPE3_TEST(struct ctdb_var_list, ctdb_var_list);
 COMPAT_TYPE3_TEST(struct ctdb_tunable_list, ctdb_tunable_list);
 COMPAT_TYPE3_TEST(struct ctdb_tickle_list, ctdb_tickle_list);
+COMPAT_TYPE3_TEST(struct ctdb_addr_info, ctdb_addr_info);
 
 int main(int argc, char *argv[])
 {
@@ -1082,6 +1159,7 @@ int main(int argc, char *argv[])
 	COMPAT_TEST_FUNC(ctdb_var_list)();
 	COMPAT_TEST_FUNC(ctdb_tunable_list)();
 	COMPAT_TEST_FUNC(ctdb_tickle_list)();
+	COMPAT_TEST_FUNC(ctdb_addr_info)();
 
 	return 0;
 }

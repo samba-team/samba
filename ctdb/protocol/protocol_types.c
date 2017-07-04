@@ -3194,80 +3194,69 @@ fail:
 	return ret;
 }
 
-struct ctdb_addr_info_wire {
-	ctdb_sock_addr addr;
-	uint32_t mask;
-	uint32_t len;
-	char iface[1];
-};
-
-size_t ctdb_addr_info_len(struct ctdb_addr_info *arp)
+size_t ctdb_addr_info_len(struct ctdb_addr_info *in)
 {
-	uint32_t len;
-
-	len = offsetof(struct ctdb_addr_info_wire, iface);
-	if (arp->iface != NULL) {
-	       len += strlen(arp->iface)+1;
-	}
-
-	return len;
+	return ctdb_sock_addr_len(&in->addr) +
+		ctdb_uint32_len(&in->mask) +
+		ctdb_stringn_len(&in->iface);
 }
 
-void ctdb_addr_info_push(struct ctdb_addr_info *addr_info, uint8_t *buf)
+void ctdb_addr_info_push(struct ctdb_addr_info *in, uint8_t *buf,
+			 size_t *npush)
 {
-	struct ctdb_addr_info_wire *wire = (struct ctdb_addr_info_wire *)buf;
+	size_t offset = 0, np;
 
-	wire->addr = addr_info->addr;
-	wire->mask = addr_info->mask;
-	if (addr_info->iface == NULL) {
-		wire->len = 0;
-	} else {
-		wire->len = strlen(addr_info->iface)+1;
-		memcpy(wire->iface, addr_info->iface, wire->len);
-	}
+	ctdb_sock_addr_push(&in->addr, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->mask, buf+offset, &np);
+	offset += np;
+
+	ctdb_stringn_push(&in->iface, buf+offset, &np);
+	offset += np;
+
+	*npush = offset;
 }
 
 int ctdb_addr_info_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			struct ctdb_addr_info **out)
+			struct ctdb_addr_info **out, size_t *npull)
 {
-	struct ctdb_addr_info *addr_info;
-	struct ctdb_addr_info_wire *wire = (struct ctdb_addr_info_wire *)buf;
+	struct ctdb_addr_info *val;
+	size_t offset = 0, np;
+	int ret;
 
-	if (buflen < offsetof(struct ctdb_addr_info_wire, iface)) {
-		return EMSGSIZE;
-	}
-	if (wire->len > buflen) {
-		return EMSGSIZE;
-	}
-	if (offsetof(struct ctdb_addr_info_wire, iface) + wire->len <
-	    offsetof(struct ctdb_addr_info_wire, iface)) {
-		return EMSGSIZE;
-	}
-	if (buflen < offsetof(struct ctdb_addr_info_wire, iface) + wire->len) {
-		return EMSGSIZE;
-	}
-
-	addr_info = talloc(mem_ctx, struct ctdb_addr_info);
-	if (addr_info == NULL) {
+	val = talloc(mem_ctx, struct ctdb_addr_info);
+	if (val == NULL) {
 		return ENOMEM;
 	}
 
-	addr_info->addr = wire->addr;
-	addr_info->mask = wire->mask;
-
-	if (wire->len == 0) {
-		addr_info->iface = NULL;
-	} else {
-		addr_info->iface = talloc_strndup(addr_info, wire->iface,
-						  wire->len);
-		if (addr_info->iface == NULL) {
-			talloc_free(addr_info);
-			return ENOMEM;
-		}
+	ret = ctdb_sock_addr_pull_elems(buf+offset, buflen-offset, val,
+					&val->addr, &np);
+	if (ret != 0) {
+		goto fail;
 	}
+	offset += np;
 
-	*out = addr_info;
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &val->mask, &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
+
+	ret = ctdb_stringn_pull(buf+offset, buflen-offset, val, &val->iface,
+				&np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
+
+	*out = val;
+	*npull = offset;
 	return 0;
+
+fail:
+	talloc_free(val);
+	return ret;
 }
 
 size_t ctdb_transdb_len(struct ctdb_transdb *transdb)

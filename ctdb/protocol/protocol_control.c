@@ -551,7 +551,7 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_SEND_GRATUITOUS_ARP:
-		ctdb_addr_info_push(cd->data.addr_info, buf);
+		ctdb_addr_info_push(cd->data.addr_info, buf, &np);
 		break;
 
 	case CTDB_CONTROL_WIPE_DATABASE:
@@ -563,11 +563,11 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_ADD_PUBLIC_IP:
-		ctdb_addr_info_push(cd->data.addr_info, buf);
+		ctdb_addr_info_push(cd->data.addr_info, buf, &np);
 		break;
 
 	case CTDB_CONTROL_DEL_PUBLIC_IP:
-		ctdb_addr_info_push(cd->data.addr_info, buf);
+		ctdb_addr_info_push(cd->data.addr_info, buf, &np);
 		break;
 
 	case CTDB_CONTROL_RELEASE_IP:
@@ -853,7 +853,7 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_CONTROL_SEND_GRATUITOUS_ARP:
 		ret = ctdb_addr_info_pull(buf, buflen, mem_ctx,
-					  &cd->data.addr_info);
+					  &cd->data.addr_info, &np);
 		break;
 
 	case CTDB_CONTROL_WIPE_DATABASE:
@@ -868,12 +868,12 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_CONTROL_ADD_PUBLIC_IP:
 		ret = ctdb_addr_info_pull(buf, buflen, mem_ctx,
-					  &cd->data.addr_info);
+					  &cd->data.addr_info, &np);
 		break;
 
 	case CTDB_CONTROL_DEL_PUBLIC_IP:
 		ret = ctdb_addr_info_pull(buf, buflen, mem_ctx,
-					  &cd->data.addr_info);
+					  &cd->data.addr_info, &np);
 		break;
 
 	case CTDB_CONTROL_RELEASE_IP:
