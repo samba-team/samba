@@ -7,6 +7,7 @@
    Copyright (C) Stefan Metzmacher 2004
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2004-2005
    Copyright (C) Matthieu Patou <mat@matws.net> 2012
+   Copyright (C) Catalyst .Net Ltd 2017
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -980,7 +981,7 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 		} else {
 			real_search_dn = ldb_get_default_basedn(sam_ctx);
 		}
-		if (format_desired == DRSUAPI_DS_NAME_FORMAT_GUID){
+		if (format_offered == DRSUAPI_DS_NAME_FORMAT_GUID){
 			 dsdb_flags |= DSDB_SEARCH_SHOW_RECYCLED;
 		}
 		/* search with the 'phantom root' flag */
