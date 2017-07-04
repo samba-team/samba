@@ -360,10 +360,6 @@ static int netsamlog_cache_for_all_cb(const char *sid_str,
 		return -1;
 	}
 
-	d_printf("%-50s %-40s When cached\n", "SID", "Name");
-	d_printf("------------------------------------------------------------"
-		 "------------------------------------------------------------"
-		 "----\n");
 	d_printf("%-50s %-40s %s\n",
 		 sid_str,
 		 name,
@@ -377,6 +373,11 @@ static int net_cache_samlogon_list(struct net_context *c,
 				   const char **argv)
 {
 	int ret;
+
+	d_printf("%-50s %-40s When cached\n", "SID", "Name");
+	d_printf("------------------------------------------------------------"
+		 "------------------------------------------------------------"
+		 "----\n");
 
 	ret = netsamlog_cache_for_all(netsamlog_cache_for_all_cb, c);
 	if (ret == -1) {
