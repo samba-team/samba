@@ -250,6 +250,12 @@ obey client requests to synchronize unwritten data in operating
 system buffers safely onto disk. This is a safer default setting
 for modern SMB1/2/3 clients.
 
+The 'ntlm auth' option default is renamed to 'ntlmv2-only', reflecting
+the previous behaviour.  Two new values have been provided,
+'mschapv2-and-ntlmv2-only' (allowing MSCHAPv2 while denying NTLMv1)
+and 'disabled', totally disabling NTLM authentication and password
+changes.
+
 smb.conf changes
 ================
 
@@ -268,6 +274,7 @@ smb.conf changes
   rpc server dynamic port range      New parameter           49152-65535
   strict sync                        Default changed         yes
   password hash userPassword schemes New parameter
+  ntlm auth                          New values              ntlmv2-only
 
 
 KNOWN ISSUES
