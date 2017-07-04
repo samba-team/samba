@@ -340,3 +340,5 @@
 ^samba.tests.netlogonsvc.python\(ad_member\)
 ^samba.tests.netlogonsvc.python\(simpleserver\)
 ^samba.tests.netlogonsvc.python\(fileserver\)
+# NTLM authentication is (intentionally) disabled in ktest
+^samba.tests.ntlmauth.python\(ktest\).ntlmauth.NtlmAuthTests.test_ntlm_connection\(ktest\)

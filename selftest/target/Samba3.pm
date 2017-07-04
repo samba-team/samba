@@ -939,6 +939,10 @@ sub setup_ktest($$$)
         server signing = required
 	server min protocol = SMB3_00
 	client max protocol = SMB3
+
+        # This disables NTLM auth against the local SAM, which
+        # we use can then test this setting by.
+        ntlm auth = disabled
 ";
 
 	my $ret = $self->provision($prefix, "KTEST",
