@@ -539,7 +539,7 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_SET_TCP_TICKLE_LIST:
-		ctdb_tickle_list_push(cd->data.tickles, buf);
+		ctdb_tickle_list_push(cd->data.tickles, buf, &np);
 		break;
 
 	case CTDB_CONTROL_DB_ATTACH_PERSISTENT:
@@ -838,7 +838,7 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_CONTROL_SET_TCP_TICKLE_LIST:
 		ret = ctdb_tickle_list_pull(buf, buflen, mem_ctx,
-					    &cd->data.tickles);
+					    &cd->data.tickles, &np);
 		break;
 
 	case CTDB_CONTROL_DB_ATTACH_PERSISTENT:
@@ -1480,7 +1480,7 @@ static void ctdb_reply_control_data_push(struct ctdb_reply_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_GET_TCP_TICKLE_LIST:
-		ctdb_tickle_list_push(cd->data.tickles, buf);
+		ctdb_tickle_list_push(cd->data.tickles, buf, &np);
 		break;
 
 	case CTDB_CONTROL_DB_ATTACH_PERSISTENT:
@@ -1654,7 +1654,7 @@ static int ctdb_reply_control_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_CONTROL_GET_TCP_TICKLE_LIST:
 		ret = ctdb_tickle_list_pull(buf, buflen, mem_ctx,
-					    &cd->data.tickles);
+					    &cd->data.tickles, &np);
 		break;
 
 	case CTDB_CONTROL_DB_ATTACH_PERSISTENT:

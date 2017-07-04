@@ -66,7 +66,7 @@ PROTOCOL_TYPE3_TEST(struct ctdb_tunable, ctdb_tunable);
 PROTOCOL_TYPE3_TEST(struct ctdb_node_flag_change, ctdb_node_flag_change);
 PROTOCOL_TYPE3_TEST(struct ctdb_var_list, ctdb_var_list);
 PROTOCOL_TYPE3_TEST(struct ctdb_tunable_list, ctdb_tunable_list);
-DEFINE_TEST(struct ctdb_tickle_list, ctdb_tickle_list);
+PROTOCOL_TYPE3_TEST(struct ctdb_tickle_list, ctdb_tickle_list);
 DEFINE_TEST(struct ctdb_addr_info, ctdb_addr_info);
 DEFINE_TEST(struct ctdb_transdb, ctdb_transdb);
 DEFINE_TEST(struct ctdb_uptime, ctdb_uptime);

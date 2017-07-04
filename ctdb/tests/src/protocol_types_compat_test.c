@@ -947,6 +947,92 @@ static int ctdb_tunable_list_pull_old(uint8_t *buf, size_t buflen,
 	return 0;
 }
 
+struct ctdb_tickle_list_wire {
+	ctdb_sock_addr addr;
+	uint32_t num;
+	struct ctdb_connection conn[1];
+};
+
+static size_t ctdb_tickle_list_len_old(struct ctdb_tickle_list *in)
+{
+	return offsetof(struct ctdb_tickle_list, conn) +
+	       in->num * sizeof(struct ctdb_connection);
+}
+
+static void ctdb_tickle_list_push_old(struct ctdb_tickle_list *in,
+				      uint8_t *buf)
+{
+	struct ctdb_tickle_list_wire *wire =
+		(struct ctdb_tickle_list_wire *)buf;
+	size_t offset;
+	int i;
+
+	memcpy(&wire->addr, &in->addr, sizeof(ctdb_sock_addr));
+	wire->num = in->num;
+
+	offset = offsetof(struct ctdb_tickle_list_wire, conn);
+	for (i=0; i<in->num; i++) {
+		ctdb_connection_push_old(&in->conn[i], &buf[offset]);
+		offset += ctdb_connection_len_old(&in->conn[i]);
+	}
+}
+
+static int ctdb_tickle_list_pull_old(uint8_t *buf, size_t buflen,
+				     TALLOC_CTX *mem_ctx,
+				     struct ctdb_tickle_list **out)
+{
+	struct ctdb_tickle_list *val;
+	struct ctdb_tickle_list_wire *wire =
+		(struct ctdb_tickle_list_wire *)buf;
+	size_t offset;
+	int i, ret;
+
+	if (buflen < offsetof(struct ctdb_tickle_list_wire, conn)) {
+		return EMSGSIZE;
+	}
+	if (wire->num > buflen / sizeof(struct ctdb_connection)) {
+		return EMSGSIZE;
+	}
+	if (offsetof(struct ctdb_tickle_list_wire, conn) +
+	    wire->num * sizeof(struct ctdb_connection) <
+	    offsetof(struct ctdb_tickle_list_wire, conn)) {
+		return EMSGSIZE;
+	}
+	if (buflen < offsetof(struct ctdb_tickle_list_wire, conn) +
+		     wire->num * sizeof(struct ctdb_connection)) {
+		return EMSGSIZE;
+	}
+
+	val = talloc(mem_ctx, struct ctdb_tickle_list);
+	if (val == NULL) {
+		return ENOMEM;
+	}
+
+	offset = offsetof(struct ctdb_tickle_list, conn);
+	memcpy(val, wire, offset);
+
+	val->conn = talloc_array(val, struct ctdb_connection, wire->num);
+	if (val->conn == NULL) {
+		talloc_free(val);
+		return ENOMEM;
+	}
+
+	for (i=0; i<wire->num; i++) {
+		ret = ctdb_connection_pull_elems_old(&buf[offset],
+						     buflen-offset,
+						     val->conn,
+						     &val->conn[i]);
+		if (ret != 0) {
+			talloc_free(val);
+			return ret;
+		}
+		offset += ctdb_connection_len_old(&val->conn[i]);
+	}
+
+	*out = val;
+	return 0;
+}
+
 
 COMPAT_TYPE3_TEST(struct ctdb_statistics, ctdb_statistics);
 COMPAT_TYPE3_TEST(struct ctdb_vnn_map, ctdb_vnn_map);
@@ -968,6 +1054,7 @@ COMPAT_TYPE3_TEST(struct ctdb_tunable, ctdb_tunable);
 COMPAT_TYPE3_TEST(struct ctdb_node_flag_change, ctdb_node_flag_change);
 COMPAT_TYPE3_TEST(struct ctdb_var_list, ctdb_var_list);
 COMPAT_TYPE3_TEST(struct ctdb_tunable_list, ctdb_tunable_list);
+COMPAT_TYPE3_TEST(struct ctdb_tickle_list, ctdb_tickle_list);
 
 int main(int argc, char *argv[])
 {
@@ -994,6 +1081,7 @@ int main(int argc, char *argv[])
 	COMPAT_TEST_FUNC(ctdb_node_flag_change)();
 	COMPAT_TEST_FUNC(ctdb_var_list)();
 	COMPAT_TEST_FUNC(ctdb_tunable_list)();
+	COMPAT_TEST_FUNC(ctdb_tickle_list)();
 
 	return 0;
 }

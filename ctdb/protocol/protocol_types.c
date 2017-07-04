@@ -3105,88 +3105,93 @@ int ctdb_tunable_list_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 	return 0;
 }
 
-struct ctdb_tickle_list_wire {
-	ctdb_sock_addr addr;
-	uint32_t num;
-	struct ctdb_connection conn[1];
-};
-
-size_t ctdb_tickle_list_len(struct ctdb_tickle_list *tickles)
+size_t ctdb_tickle_list_len(struct ctdb_tickle_list *in)
 {
-	return offsetof(struct ctdb_tickle_list, conn) +
-	       tickles->num * sizeof(struct ctdb_connection);
+	size_t len;
+
+	len = ctdb_sock_addr_len(&in->addr) +
+		ctdb_uint32_len(&in->num);
+	if (in->num > 0) {
+		len += in->num * ctdb_connection_len(&in->conn[0]);
+	}
+
+	return len;
 }
 
-void ctdb_tickle_list_push(struct ctdb_tickle_list *tickles, uint8_t *buf)
+void ctdb_tickle_list_push(struct ctdb_tickle_list *in, uint8_t *buf,
+			   size_t *npush)
 {
-	struct ctdb_tickle_list_wire *wire =
-		(struct ctdb_tickle_list_wire *)buf;
-	size_t offset, np;
-	int i;
+	size_t offset = 0, np;
+	uint32_t i;
 
-	memcpy(&wire->addr, &tickles->addr, sizeof(ctdb_sock_addr));
-	wire->num = tickles->num;
+	ctdb_sock_addr_push(&in->addr, buf+offset, &np);
+	offset += np;
 
-	offset = offsetof(struct ctdb_tickle_list_wire, conn);
-	for (i=0; i<tickles->num; i++) {
-		ctdb_connection_push(&tickles->conn[i], &buf[offset], &np);
+	ctdb_uint32_push(&in->num, buf+offset, &np);
+	offset += np;
+
+	for (i=0; i<in->num; i++) {
+		ctdb_connection_push(&in->conn[i], buf+offset, &np);
 		offset += np;
 	}
+
+	*npush = offset;
 }
 
 int ctdb_tickle_list_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			   struct ctdb_tickle_list **out)
+			   struct ctdb_tickle_list **out, size_t *npull)
 {
-	struct ctdb_tickle_list *tickles;
-	struct ctdb_tickle_list_wire *wire =
-		(struct ctdb_tickle_list_wire *)buf;
-	size_t offset, np;
-	int i, ret;
+	struct ctdb_tickle_list *val;
+	size_t offset = 0, np;
+	uint32_t i;
+	int ret;
 
-	if (buflen < offsetof(struct ctdb_tickle_list_wire, conn)) {
-		return EMSGSIZE;
-	}
-	if (wire->num > buflen / sizeof(struct ctdb_connection)) {
-		return EMSGSIZE;
-	}
-	if (offsetof(struct ctdb_tickle_list_wire, conn) +
-	    wire->num * sizeof(struct ctdb_connection) <
-	    offsetof(struct ctdb_tickle_list_wire, conn)) {
-		return EMSGSIZE;
-	}
-	if (buflen < offsetof(struct ctdb_tickle_list_wire, conn) +
-		     wire->num * sizeof(struct ctdb_connection)) {
-		return EMSGSIZE;
-	}
-
-	tickles = talloc(mem_ctx, struct ctdb_tickle_list);
-	if (tickles == NULL) {
+	val = talloc(mem_ctx, struct ctdb_tickle_list);
+	if (val == NULL) {
 		return ENOMEM;
 	}
 
-	offset = offsetof(struct ctdb_tickle_list, conn);
-	memcpy(tickles, wire, offset);
+	ret = ctdb_sock_addr_pull_elems(buf+offset, buflen-offset, val,
+					&val->addr, &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
 
-	tickles->conn = talloc_array(tickles, struct ctdb_connection,
-				     wire->num);
-	if (tickles->conn == NULL) {
-		talloc_free(tickles);
-		return ENOMEM;
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &val->num, &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
+
+	if (val->num == 0) {
+		val->conn = NULL;
+		goto done;
 	}
 
-	for (i=0; i<wire->num; i++) {
-		ret = ctdb_connection_pull_elems(&buf[offset], buflen-offset,
-						 tickles->conn,
-						 &tickles->conn[i], &np);
+	val->conn = talloc_array(val, struct ctdb_connection, val->num);
+	if (val->conn == NULL) {
+		ret = ENOMEM;
+		goto fail;
+	}
+
+	for (i=0; i<val->num; i++) {
+		ret = ctdb_connection_pull_elems(buf+offset, buflen-offset,
+						 val, &val->conn[i], &np);
 		if (ret != 0) {
-			talloc_free(tickles);
-			return ret;
+			goto fail;
 		}
 		offset += np;
 	}
 
-	*out = tickles;
+done:
+	*out = val;
+	*npull = offset;
 	return 0;
+
+fail:
+	talloc_free(val);
+	return ret;
 }
 
 struct ctdb_addr_info_wire {
