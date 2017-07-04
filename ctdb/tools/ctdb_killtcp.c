@@ -76,6 +76,12 @@ static struct tevent_req *reset_connections_send(
 
 	state->ev = ev;
 
+	if (conn_list->num == 0) {
+		/* No connections, done! */
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+	}
+
 	ret = db_hash_init(state, "connections", 2048, DB_HASH_SIMPLE,
 			   &state->connections);
 	if (ret != 0) {
@@ -376,12 +382,6 @@ int main(int argc, char **argv)
 	if (ev == NULL) {
 		DEBUG(DEBUG_ERR, ("Failed to initialise tevent\n"));
 		goto fail;
-	}
-
-	if (conn_list->num == 0) {
-		/* No connections, done! */
-		talloc_free(mem_ctx);
-		return 0;
 	}
 
 	req = reset_connections_send(mem_ctx, ev, argv[1], conn_list);
