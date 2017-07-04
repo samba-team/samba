@@ -365,7 +365,7 @@ static int traverse_sessionid(const char *key, struct sessionid *session,
 			      void *private_data)
 {
 	TALLOC_CTX *mem_ctx = (TALLOC_CTX *)private_data;
-	fstring uid_str, gid_str;
+	fstring uid_gid_str;
 	struct server_id_buf tmp;
 	char *machine_hostname = NULL;
 	int result = 0;
@@ -380,33 +380,40 @@ static int traverse_sessionid(const char *key, struct sessionid *session,
 
 	Ucrit_addPid(session->pid);
 
-	fstrcpy(uid_str, "-1");
-
-	if (session->uid != -1) {
-		if (numeric_only) {
-			fstr_sprintf(uid_str, "%u", (unsigned int)session->uid);
+	if (numeric_only) {
+		fstr_sprintf(uid_gid_str, "%-12u %-12u",
+			     (unsigned int)session->uid,
+			     (unsigned int)session->gid);
+	} else {
+		if (session->uid == -1 && session->gid == -1) {
+			/*
+			 * The session is not fully authenticated yet.
+			 */
+			fstrcpy(uid_gid_str, "(auth in progress)");
 		} else {
-			const char *uid_name = uidtoname(session->uid);
+			/*
+			 * In theory it should not happen that one of
+			 * session->uid and session->gid is valid (ie != -1)
+			 * while the other is not (ie = -1), so we a check for
+			 * that case that bails out would be reasonable.
+			 */
+			const char *uid_name = "-1";
+			const char *gid_name = "-1";
 
-			if (uid_name == NULL) {
-				return -1;
+			if (session->uid != -1) {
+				uid_name = uidtoname(session->uid);
+				if (uid_name == NULL) {
+					return -1;
+				}
 			}
-			fstrcpy(uid_str, uid_name);
-		}
-	}
-
-	fstrcpy(gid_str, "-1");
-
-	if (session->gid != -1) {
-		if (numeric_only) {
-			fstr_sprintf(gid_str, "%u", (unsigned int)session->gid);
-		} else {
-			const char *gid_name = gidtoname(session->gid);
-
-			if (gid_name == NULL) {
-				return -1;
+			if (session->gid != -1) {
+				gid_name = gidtoname(session->gid);
+				if (gid_name == NULL) {
+					return -1;
+				}
 			}
-			fstrcpy(gid_str, gidtoname(session->gid));
+			fstr_sprintf(uid_gid_str, "%-12s %-12s",
+				     uid_name, gid_name);
 		}
 	}
 
@@ -467,9 +474,9 @@ static int traverse_sessionid(const char *key, struct sessionid *session,
 	}
 
 
-	d_printf("%-7s %-12s %-12s %-41s %-17s %-20s %-21s\n",
+	d_printf("%-7s %-25s %-41s %-17s %-20s %-21s\n",
 		 server_id_str_buf(session->pid, &tmp),
-		 uid_str, gid_str,
+		 uid_gid_str,
 		 machine_hostname,
 		 session_dialect_str(session->connection_dialect),
 		 encryption,
