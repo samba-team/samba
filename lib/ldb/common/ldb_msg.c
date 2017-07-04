@@ -262,20 +262,12 @@ int ldb_msg_find_common_values(struct ldb_context *ldb,
 	n_values = el->num_values;
 	i = 0;
 	j = 0;
-	while (i != n_values) {
+	while (i != n_values && j < el2->num_values) {
 		int ret = ldb_val_cmp(&values[i], &values2[j]);
 		if (ret < 0) {
 			i++;
 		} else if (ret > 0) {
 			j++;
-			if (j == el2->num_values) {
-				/*
-				  We have walked past the end of the second
-				  list, meaning the remainder of the first
-				  list cannot collide and we're done.
-				*/
-				break;
-			}
 		} else {
 			/* we have a collision */
 			if (! remove_duplicates) {
