@@ -239,7 +239,7 @@ talloc context (which must be guaranteed to be alive for the
 lifetime of the module). This allows modules to avoid use of
 the talloc_autofree_context() (which is inherently thread-unsafe)
 and still be valgrind-clean on exit. Modules that don't need to
-free long-lived data on exist should use the NULL talloc context.
+free long-lived data on exit should use the NULL talloc context.
 
 Parameter changes
 -----------------
