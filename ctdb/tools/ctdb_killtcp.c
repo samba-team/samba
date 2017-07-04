@@ -91,8 +91,12 @@ static struct tevent_req *reset_connections_send(
 		return tevent_req_post(req, ev);
 	}
 
+	DBG_DEBUG("Adding %u connections to hash\n", conn_list->num);
 	for (i = 0; i < conn_list->num; i++) {
 		struct ctdb_connection *c = &conn_list->conn[i];
+
+		DBG_DEBUG("Adding connection to hash: %s\n",
+			  ctdb_connection_to_string(conn_list, c, true));
 
 		/* Connection is stored as a key in the connections hash */
 		ret = db_hash_add(state->connections,
@@ -183,6 +187,8 @@ static void reset_connections_capture_tcp_handler(struct tevent_context *ev,
 			     (uint8_t*)&conn, sizeof(conn));
 	if (ret == ENOENT) {
 		/* Packet for some other connection, ignore */
+		DBG_DEBUG("Ignoring packet for unknown connection: %s\n",
+			  ctdb_connection_to_string(state, &conn, true));
 		return;
 	}
 	if (ret != 0) {
@@ -283,6 +289,8 @@ static int reset_connections_tickle_connection(
 		return 1;
 	}
 
+	DBG_DEBUG("Sending tickle ACK for connection '%s'\n",
+		  ctdb_connection_to_string(state, conn, true));
 	ret = ctdb_sys_send_tcp(&conn->server, &conn->client, 0, 0, 0);
 	if (ret != 0) {
 		DBG_ERR("Error sending tickle ACK\n");
