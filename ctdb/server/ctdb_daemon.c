@@ -1833,7 +1833,7 @@ void ctdb_shutdown_sequence(struct ctdb_context *ctdb, int exit_code)
 		return;
 	}
 
-	DEBUG(DEBUG_NOTICE,("Shutdown sequence commencing.\n"));
+	DEBUG(DEBUG_ERR,("Shutdown sequence commencing.\n"));
 	ctdb_set_runstate(ctdb, CTDB_RUNSTATE_SHUTDOWN);
 	ctdb_stop_recoverd(ctdb);
 	ctdb_stop_keepalive(ctdb);
@@ -1845,7 +1845,7 @@ void ctdb_shutdown_sequence(struct ctdb_context *ctdb, int exit_code)
 		ctdb->methods->shutdown(ctdb);
 	}
 
-	DEBUG(DEBUG_NOTICE,("Shutdown sequence complete, exiting.\n"));
+	DEBUG(DEBUG_ERR,("Shutdown sequence complete, exiting.\n"));
 	exit(exit_code);
 }
 
