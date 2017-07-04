@@ -1074,7 +1074,7 @@ int32_t ctdb_control_end_recovery(struct ctdb_context *ctdb,
 	int ret;
 	struct recovery_callback_state *state;
 
-	DEBUG(DEBUG_NOTICE,("Recovery has finished\n"));
+	DEBUG(DEBUG_ERR,("Recovery has finished\n"));
 
 	ctdb_persistent_finish_trans3_commits(ctdb);
 
@@ -1200,7 +1200,7 @@ int32_t ctdb_control_start_recovery(struct ctdb_context *ctdb,
 	struct recovery_callback_state *state;
 	uint32_t recmaster = c->hdr.srcnode;
 
-	DEBUG(DEBUG_NOTICE, ("Recovery has started\n"));
+	DEBUG(DEBUG_ERR, ("Recovery has started\n"));
 	gettimeofday(&ctdb->last_recovery_started, NULL);
 
 	state = talloc(ctdb, struct recovery_callback_state);
