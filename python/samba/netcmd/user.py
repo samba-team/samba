@@ -21,6 +21,9 @@ import samba.getopt as options
 import ldb
 import pwd
 import os
+import re
+import tempfile
+import difflib
 import sys
 import fcntl
 import signal
@@ -28,7 +31,7 @@ import errno
 import time
 import base64
 import binascii
-from subprocess import Popen, PIPE, STDOUT
+from subprocess import Popen, PIPE, STDOUT, check_call, CalledProcessError
 from getpass import getpass
 from samba.auth import system_session
 from samba.samdb import SamDB
@@ -2283,6 +2286,139 @@ samba-tool user syncpasswords --terminate \\
         update_pid(None)
         return
 
+class cmd_user_edit(Command):
+    """Modify User AD object.
+
+This command will allow editing of a user account in the Active Directory
+domain. You will then be able to add or change attributes and their values.
+
+The username specified on the command is the sAMAccountName.
+
+The command may be run from the root userid or another authorized userid.
+
+The -H or --URL= option can be used to execute the command against a remote
+server.
+
+Example1:
+samba-tool user edit User1 -H ldap://samba.samdom.example.com \
+-U administrator --password=passw1rd
+
+Example1 shows how to edit a users attributes in the domain against a remote
+LDAP server.
+
+The -H parameter is used to specify the remote target server.
+
+Example2:
+samba-tool user edit User2
+
+Example2 shows how to edit a users attributes in the domain against a local
+LDAP server.
+
+Example3:
+samba-tool user edit User3 --editor=nano
+
+Example3 shows how to edit a users attributes in the domain against a local
+LDAP server using the 'nano' editor.
+
+"""
+    synopsis = "%prog <username> [options]"
+
+    takes_options = [
+        Option("-H", "--URL", help="LDB URL for database or target server",
+               type=str, metavar="URL", dest="H"),
+        Option("--editor", help="Editor to use instead of the system default,"
+               " or 'vi' if no system default is set.", type=str),
+    ]
+
+    takes_args = ["username"]
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "credopts": options.CredentialsOptions,
+        "versionopts": options.VersionOptions,
+        }
+
+    def run(self, username, credopts=None, sambaopts=None, versionopts=None,
+            H=None, editor=None):
+
+        lp = sambaopts.get_loadparm()
+        creds = credopts.get_credentials(lp, fallback_machine=True)
+        samdb = SamDB(url=H, session_info=system_session(),
+                      credentials=creds, lp=lp)
+
+        filter = ("(&(sAMAccountType=%d)(sAMAccountName=%s))" %
+                  (dsdb.ATYPE_NORMAL_ACCOUNT, ldb.binary_encode(username)))
+
+        domaindn = samdb.domain_dn()
+
+        try:
+            res = samdb.search(base=domaindn,
+                               expression=filter,
+                               scope=ldb.SCOPE_SUBTREE)
+            user_dn = res[0].dn
+        except IndexError:
+            raise CommandError('Unable to find user "%s"' % (username))
+
+        for msg in res:
+            r_ldif = samdb.write_ldif(msg, 1)
+            # remove 'changetype' line
+            result_ldif = re.sub('changetype: add\n', '', r_ldif)
+
+            if editor is None:
+                editor = os.environ.get('EDITOR')
+                if editor is None:
+                    editor = 'vi'
+
+            with tempfile.NamedTemporaryFile(suffix=".tmp") as t_file:
+                t_file.write(result_ldif)
+                t_file.flush()
+                try:
+                    check_call([editor, t_file.name])
+                except CalledProcessError as e:
+                    raise CalledProcessError("ERROR: ", e)
+                with open(t_file.name) as edited_file:
+                    edited_message = edited_file.read()
+
+        if result_ldif != edited_message:
+            diff = difflib.ndiff(result_ldif.splitlines(),
+                                 edited_message.splitlines())
+            minus_lines = []
+            plus_lines = []
+            for line in diff:
+                if line.startswith('-'):
+                    line = line[2:]
+                    minus_lines.append(line)
+                elif line.startswith('+'):
+                    line = line[2:]
+                    plus_lines.append(line)
+
+            user_ldif="dn: %s\n" % user_dn
+            user_ldif += "changetype: modify\n"
+
+            for line in minus_lines:
+                attr, val = line.split(':', 1)
+                search_attr="%s:" % attr
+                if not re.search(r'^' + search_attr, str(plus_lines)):
+                    user_ldif += "delete: %s\n" % attr
+                    user_ldif += "%s: %s\n" % (attr, val)
+
+            for line in plus_lines:
+                attr, val = line.split(':', 1)
+                search_attr="%s:" % attr
+                if re.search(r'^' + search_attr, str(minus_lines)):
+                    user_ldif += "replace: %s\n" % attr
+                    user_ldif += "%s: %s\n" % (attr, val)
+                if not re.search(r'^' + search_attr, str(minus_lines)):
+                    user_ldif += "add: %s\n" % attr
+                    user_ldif += "%s: %s\n" % (attr, val)
+
+            try:
+                samdb.modify_ldif(user_ldif)
+            except Exception as e:
+                raise CommandError("Failed to modify user '%s': " %
+                                   username, e)
+
+            self.outf.write("Modified User '%s' successfully\n" % username)
+
 class cmd_user(SuperCommand):
     """User management."""
 
@@ -2298,3 +2434,4 @@ class cmd_user(SuperCommand):
     subcommands["setpassword"] = cmd_user_setpassword()
     subcommands["getpassword"] = cmd_user_getpassword()
     subcommands["syncpasswords"] = cmd_user_syncpasswords()
+    subcommands["edit"] = cmd_user_edit()
