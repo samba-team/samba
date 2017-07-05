@@ -19,7 +19,6 @@
 
 #include "includes.h"
 #include "messages.h"
-#include "lib/messages_ctdbd.h"
 #include "lib/messages_ctdb.h"
 #include "lib/messages_ctdb_ref.h"
 #include "ctdbd_conn.h"
@@ -80,18 +79,6 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 	return NULL;
 }
 
-int messaging_ctdbd_init(struct messaging_context *msg_ctx,
-			 TALLOC_CTX *mem_ctx,
-			 void (*recv_cb)(struct tevent_context *ev,
-					 const uint8_t *msg, size_t msg_len,
-					 int *fds, size_t num_fds,
-					 void *private_data),
-			 void *private_data,
-			      struct messaging_backend **presult)
-{
-	return ENOSYS;
-}
-
 int messaging_ctdb_send(uint32_t dst_vnn, uint64_t dst_srvid,
 			const struct iovec *iov, int iovlen)
 {
@@ -112,25 +99,6 @@ void *messaging_ctdb_ref(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 
 struct messaging_ctdb_fde *messaging_ctdb_register_tevent_context(
 	TALLOC_CTX *mem_ctx, struct tevent_context *ev)
-{
-	return NULL;
-}
-
-int messaging_ctdbd_reinit(struct messaging_context *msg_ctx,
-			   TALLOC_CTX *mem_ctx,
-			   void (*recv_cb)(struct tevent_context *ev,
-					   const uint8_t *msg, size_t msg_len,
-					   int *fds, size_t num_fds,
-					   void *private_data),
-			   void *private_data,
-			   struct messaging_backend *backend)
-{
-	return ENOSYS;
-}
-
-struct messaging_ctdbd_fde *messaging_ctdbd_register_tevent_context(
-	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-	struct messaging_backend *backend)
 {
 	return NULL;
 }
