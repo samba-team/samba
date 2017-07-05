@@ -34,4 +34,5 @@ def build(bld):
                      subsystem='rpc',
                      allow_undefined_symbols=True,
                      init_function='',
-                     internal_module=False)
+                     internal_module=False,
+                     install=False)
