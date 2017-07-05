@@ -53,11 +53,13 @@
 #include "lib/util/tevent_unix.h"
 #include "lib/background.h"
 #include "lib/messages_dgm.h"
-#include "lib/messages_ctdbd.h"
 #include "lib/util/iov_buf.h"
 #include "lib/util/server_id_db.h"
 #include "lib/messages_dgm_ref.h"
+#include "lib/messages_ctdb.h"
+#include "lib/messages_ctdb_ref.h"
 #include "lib/messages_util.h"
+#include "cluster_support.h"
 
 struct messaging_callback {
 	struct messaging_callback *prev, *next;
@@ -90,8 +92,7 @@ struct messaging_context {
 	size_t num_waiters;
 
 	void *msg_dgm_ref;
-	struct messaging_backend *remote;
-	struct messaging_ctdbd_fde *cluster_fde;
+	void *msg_ctdb_ref;
 
 	struct server_id_db *names_db;
 };
@@ -513,21 +514,14 @@ static NTSTATUS messaging_init_internal(TALLOC_CTX *mem_ctx,
 	talloc_set_destructor(ctx, messaging_context_destructor);
 
 	if (lp_clustering()) {
-		ret = messaging_ctdbd_init(
-			ctx, ctx, messaging_recv_cb, ctx, &ctx->remote);
-
-		if (ret != 0) {
-			DEBUG(2, ("messaging_ctdbd_init failed: %s\n",
-				  strerror(ret)));
+		ctx->msg_ctdb_ref = messaging_ctdb_ref(
+			ctx, ctx->event_ctx,
+			lp_ctdbd_socket(), lp_ctdb_timeout(),
+			ctx->id.unique_id, messaging_recv_cb, ctx, &ret);
+		if (ctx->msg_ctdb_ref == NULL) {
+			DBG_NOTICE("messaging_ctdb_ref failed: %s\n",
+				   strerror(ret));
 			status = map_nt_error_from_unix(ret);
-			goto done;
-		}
-		ctx->cluster_fde = messaging_ctdbd_register_tevent_context(
-			ctx, ctx->event_ctx, ctx->remote);
-		if (ctx->cluster_fde == NULL) {
-			DBG_WARNING("messaging_ctdbd_register_tevent_context "
-				    "failed\n");
-			status = NT_STATUS_NO_MEMORY;
 			goto done;
 		}
 	}
@@ -605,6 +599,7 @@ NTSTATUS messaging_reinit(struct messaging_context *msg_ctx)
 	char *lck_path;
 
 	TALLOC_FREE(msg_ctx->msg_dgm_ref);
+	TALLOC_FREE(msg_ctx->msg_ctdb_ref);
 
 	msg_ctx->id = (struct server_id) {
 		.pid = getpid(), .vnn = msg_ctx->id.vnn
@@ -626,24 +621,15 @@ NTSTATUS messaging_reinit(struct messaging_context *msg_ctx)
 	}
 
 	if (lp_clustering()) {
-		TALLOC_FREE(msg_ctx->cluster_fde);
-
-		ret = messaging_ctdbd_reinit(
-			msg_ctx, msg_ctx, messaging_recv_cb, msg_ctx,
-			msg_ctx->remote);
-
-		if (ret != 0) {
-			DEBUG(1, ("messaging_ctdbd_init failed: %s\n",
-				  strerror(ret)));
+		msg_ctx->msg_ctdb_ref = messaging_ctdb_ref(
+			msg_ctx, msg_ctx->event_ctx,
+			lp_ctdbd_socket(), lp_ctdb_timeout(),
+			msg_ctx->id.unique_id, messaging_recv_cb, msg_ctx,
+			&ret);
+		if (msg_ctx->msg_ctdb_ref == NULL) {
+			DBG_NOTICE("messaging_ctdb_ref failed: %s\n",
+				   strerror(ret));
 			return map_nt_error_from_unix(ret);
-		}
-
-		msg_ctx->cluster_fde = messaging_ctdbd_register_tevent_context(
-			msg_ctx, msg_ctx->event_ctx, msg_ctx->remote);
-		if (msg_ctx->cluster_fde == NULL) {
-			DBG_WARNING("messaging_ctdbd_register_tevent_context "
-				    "failed\n");
-			return NT_STATUS_NO_MEMORY;
 		}
 	}
 
@@ -793,18 +779,6 @@ int messaging_send_iov_from(struct messaging_context *msg_ctx,
 		return EINVAL;
 	}
 
-	if (dst.vnn != msg_ctx->id.vnn) {
-		if (num_fds > 0) {
-			return ENOSYS;
-		}
-
-		ret = msg_ctx->remote->send_fn(src, dst,
-					       msg_type, iov, iovlen,
-					       NULL, 0,
-					       msg_ctx->remote);
-		return ret;
-	}
-
 	if (server_id_equal(&dst, &msg_ctx->id)) {
 		ret = messaging_post_self(msg_ctx, src, dst, msg_type,
 					  iov, iovlen, fds, num_fds);
@@ -814,6 +788,15 @@ int messaging_send_iov_from(struct messaging_context *msg_ctx,
 	message_hdr_put(hdr, msg_type, src, dst);
 	iov2[0] = (struct iovec){ .iov_base = hdr, .iov_len = sizeof(hdr) };
 	memcpy(&iov2[1], iov, iovlen * sizeof(*iov));
+
+	if (dst.vnn != msg_ctx->id.vnn) {
+		if (num_fds > 0) {
+			return ENOSYS;
+		}
+
+		ret = messaging_ctdb_send(dst.vnn, dst.pid, iov2, iovlen+1);
+		return ret;
+	}
 
 	ret = messaging_dgm_send(dst.pid, iov2, iovlen+1, fds, num_fds);
 
@@ -890,7 +873,7 @@ struct messaging_filtered_read_state {
 	struct tevent_context *ev;
 	struct messaging_context *msg_ctx;
 	struct messaging_dgm_fde *fde;
-	struct messaging_ctdbd_fde *cluster_fde;
+	struct messaging_ctdb_fde *cluster_fde;
 
 	bool (*filter)(struct messaging_rec *rec, void *private_data);
 	void *private_data;
@@ -933,9 +916,9 @@ struct tevent_req *messaging_filtered_read_send(
 		return tevent_req_post(req, ev);
 	}
 
-	if (msg_ctx->remote != NULL) {
-		state->cluster_fde = messaging_ctdbd_register_tevent_context(
-			state, ev, msg_ctx->remote);
+	if (lp_clustering()) {
+		state->cluster_fde =
+			messaging_ctdb_register_tevent_context(state, ev);
 		if (tevent_req_nomem(state->cluster_fde, req)) {
 			return tevent_req_post(req, ev);
 		}
