@@ -56,15 +56,6 @@
 struct messaging_context;
 struct messaging_rec;
 
-struct messaging_backend {
-	int (*send_fn)(struct server_id src,
-		       struct server_id pid, int msg_type,
-		       const struct iovec *iov, int iovlen,
-		       const int *fds, size_t num_fds,
-		       struct messaging_backend *backend);
-	void *private_data;
-};
-
 struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx, 
 					 struct tevent_context *ev);
 NTSTATUS messaging_init_client(TALLOC_CTX *mem_ctx,
