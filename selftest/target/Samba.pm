@@ -346,6 +346,7 @@ sub get_interface($)
 
     # 11-16 used by selftest.pl for client interfaces
 
+    $interfaces{"addc_no_ntlm"} = 18;
     $interfaces{"idmapadmember"} = 19;
     $interfaces{"idmapridmember"} = 20;
     $interfaces{"localdc"} = 21;

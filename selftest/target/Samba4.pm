@@ -1757,9 +1757,9 @@ sub read_config_h($)
 	return \%ret;
 }
 
-sub provision_ad_dc($$)
+sub provision_ad_dc($$$$$$)
 {
-	my ($self, $prefix) = @_;
+	my ($self, $prefix, $hostname, $domain, $realm, $smbconf_args) = @_;
 
 	my $prefix_abs = abs_path($prefix);
 
@@ -1823,6 +1823,7 @@ sub provision_ad_dc($$)
 	print notify backchannel = yes
 
         auth event notification = true
+        $smbconf_args
 ";
 
 	my $extra_smbconf_shares = "
@@ -1867,9 +1868,9 @@ sub provision_ad_dc($$)
 	print "PROVISIONING AD DC...\n";
 	my $ret = $self->provision($prefix,
 				   "domain controller",
-				   "addc",
-				   "ADDOMAIN",
-				   "addom.samba.example.com",
+				   $hostname,
+				   $domain,
+				   $realm,
 				   "2008",
 				   "locDCpass1",
 				   undef,
@@ -2127,6 +2128,8 @@ sub setup_env($$$)
 		return $self->setup_ad_dc("$path/ad_dc");
 	} elsif ($envname eq "ad_dc_no_nss") {
 		return $self->setup_ad_dc("$path/ad_dc_no_nss", "no_nss");
+	} elsif ($envname eq "ad_dc_no_ntlm") {
+		return $self->setup_ad_dc_no_ntlm("$path/ad_dc_no_ntlm");
 	} elsif ($envname eq "ad_member_rfc2307") {
 		if (not defined($self->{vars}->{ad_dc_ntvfs})) {
 			$self->setup_ad_dc_ntvfs("$path/ad_dc_ntvfs");
@@ -2506,7 +2509,8 @@ sub setup_ad_dc($$)
 	       return "UNKNOWN";
 	}
 
-	my $env = $self->provision_ad_dc($path);
+	my $env = $self->provision_ad_dc($path, "addc", "ADDOMAIN",
+					 "addom.samba.example.com", "");
 	unless ($env) {
 		return undef;
 	}
@@ -2526,6 +2530,35 @@ sub setup_ad_dc($$)
 	$self->setup_namespaces($env, $upn_array, $spn_array);
 
 	$self->{vars}->{ad_dc} = $env;
+	return $env;
+}
+
+sub setup_ad_dc_no_ntlm($$)
+{
+	my ($self, $path) = @_;
+
+	# If we didn't build with ADS, pretend this env was never available
+	if (not $self->{target3}->have_ads()) {
+	       return "UNKNOWN";
+	}
+
+	my $env = $self->provision_ad_dc($path, "addc_no_ntlm", "ADNONTLMDOMAIN",
+					 "adnontlmdom.samba.example.com",
+					 "ntlm auth = disabled");
+	unless ($env) {
+		return undef;
+	}
+
+	if (not defined($self->check_or_start($env, "single"))) {
+	    return undef;
+	}
+
+	my $upn_array = ["$env->{REALM}.upn"];
+	my $spn_array = ["$env->{REALM}.spn"];
+
+	$self->setup_namespaces($env, $upn_array, $spn_array);
+
+	$self->{vars}->{ad_dc_no_ntlm} = $env;
 	return $env;
 }
 

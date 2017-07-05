@@ -334,5 +334,7 @@
 ^samba.tests.netlogonsvc.python\(fileserver\)
 # NTLM authentication is (intentionally) disabled in ktest
 ^samba.tests.ntlmauth.python\(ktest\).ntlmauth.NtlmAuthTests.test_ntlm_connection\(ktest\)
+^samba.tests.ntlmauth.python\(ad_dc_no_ntlm\).ntlmauth.NtlmAuthTests.test_samr_change_password\(ad_dc_no_ntlm\)
 # Disabling NTLM means you can't use samr to change the password
 ^samba.tests.ntlmauth.python\(ktest\).ntlmauth.NtlmAuthTests.test_samr_change_password\(ktest\)
+^samba.tests.ntlmauth.python\(ad_dc_no_ntlm\).ntlmauth.NtlmAuthTests.test_ntlm_connection\(ad_dc_no_ntlm\)
