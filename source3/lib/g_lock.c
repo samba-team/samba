@@ -765,8 +765,8 @@ NTSTATUS g_lock_dump(struct g_lock_ctx *ctx, const char *name,
 	TDB_DATA data;
 	size_t num_locks;
 	struct g_lock_rec *locks = NULL;
-	uint8_t *userdata;
-	size_t userdatalen;
+	uint8_t *userdata = NULL;
+	size_t userdatalen = 0;
 	NTSTATUS status;
 
 	status = dbwrap_fetch_bystring(ctx->db, talloc_tos(), name, &data);
