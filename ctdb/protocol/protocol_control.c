@@ -555,7 +555,7 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_WIPE_DATABASE:
-		ctdb_transdb_push(cd->data.transdb, buf);
+		ctdb_transdb_push(cd->data.transdb, buf, &np);
 		break;
 
 	case CTDB_CONTROL_TRY_DELETE_RECORDS:
@@ -686,11 +686,11 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_DB_TRANSACTION_START:
-		ctdb_transdb_push(cd->data.transdb, buf);
+		ctdb_transdb_push(cd->data.transdb, buf, &np);
 		break;
 
 	case CTDB_CONTROL_DB_TRANSACTION_COMMIT:
-		ctdb_transdb_push(cd->data.transdb, buf);
+		ctdb_transdb_push(cd->data.transdb, buf, &np);
 		break;
 
 	case CTDB_CONTROL_DB_TRANSACTION_CANCEL:
@@ -858,7 +858,7 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_CONTROL_WIPE_DATABASE:
 		ret = ctdb_transdb_pull(buf, buflen, mem_ctx,
-				       &cd->data.transdb);
+				       &cd->data.transdb, &np);
 		break;
 
 	case CTDB_CONTROL_TRY_DELETE_RECORDS:
@@ -1009,12 +1009,12 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_CONTROL_DB_TRANSACTION_START:
 		ret = ctdb_transdb_pull(buf, buflen, mem_ctx,
-					&cd->data.transdb);
+					&cd->data.transdb, &np);
 		break;
 
 	case CTDB_CONTROL_DB_TRANSACTION_COMMIT:
 		ret = ctdb_transdb_pull(buf, buflen, mem_ctx,
-					&cd->data.transdb);
+					&cd->data.transdb, &np);
 		break;
 
 	case CTDB_CONTROL_DB_TRANSACTION_CANCEL:

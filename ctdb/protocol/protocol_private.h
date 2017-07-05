@@ -221,10 +221,10 @@ void ctdb_addr_info_push(struct ctdb_addr_info *in, uint8_t *buf,
 int ctdb_addr_info_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 			struct ctdb_addr_info **out, size_t *npull);
 
-size_t ctdb_transdb_len(struct ctdb_transdb *transdb);
-void ctdb_transdb_push(struct ctdb_transdb *transdb, uint8_t *buf);
+size_t ctdb_transdb_len(struct ctdb_transdb *in);
+void ctdb_transdb_push(struct ctdb_transdb *in, uint8_t *buf, size_t *npush);
 int ctdb_transdb_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-		     struct ctdb_transdb **out);
+		     struct ctdb_transdb **out, size_t *npull);
 
 size_t ctdb_uptime_len(struct ctdb_uptime *uptime);
 void ctdb_uptime_push(struct ctdb_uptime *uptime, uint8_t *buf);

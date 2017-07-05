@@ -3259,32 +3259,56 @@ fail:
 	return ret;
 }
 
-size_t ctdb_transdb_len(struct ctdb_transdb *transdb)
+size_t ctdb_transdb_len(struct ctdb_transdb *in)
 {
-	return sizeof(struct ctdb_transdb);
+	return ctdb_uint32_len(&in->db_id) +
+		ctdb_uint32_len(&in->tid);
 }
 
-void ctdb_transdb_push(struct ctdb_transdb *transdb, uint8_t *buf)
+void ctdb_transdb_push(struct ctdb_transdb *in, uint8_t *buf, size_t *npush)
 {
-	memcpy(buf, transdb, sizeof(struct ctdb_transdb));
+	size_t offset = 0, np;
+
+	ctdb_uint32_push(&in->db_id, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->tid, buf+offset, &np);
+	offset += np;
+
+	*npush = offset;
 }
 
 int ctdb_transdb_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-		     struct ctdb_transdb **out)
+		     struct ctdb_transdb **out, size_t *npull)
 {
-	struct ctdb_transdb *transdb;
+	struct ctdb_transdb *val;
+	size_t offset = 0, np;
+	int ret;
 
-	if (buflen < sizeof(struct ctdb_transdb)) {
-		return EMSGSIZE;
-	}
-
-	transdb = talloc_memdup(mem_ctx, buf, sizeof(struct ctdb_transdb));
-	if (transdb == NULL) {
+	val = talloc(mem_ctx, struct ctdb_transdb);
+	if (val == NULL) {
 		return ENOMEM;
 	}
 
-	*out = transdb;
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &val->db_id, &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &val->tid, &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
+
+	*out = val;
+	*npull = offset;
 	return 0;
+
+fail:
+	talloc_free(val);
+	return ret;
 }
 
 size_t ctdb_uptime_len(struct ctdb_uptime *uptime)
