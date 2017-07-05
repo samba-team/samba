@@ -260,46 +260,43 @@ struct tevent_req *notifyd_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	}
 
 #ifdef CLUSTER_SUPPORT
-	if (ctdbd_conn != NULL) {
+	subreq = messaging_handler_send(state, ev, msg_ctx,
+					MSG_SMB_NOTIFY_DB,
+					notifyd_got_db, state);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, notifyd_handler_done, req);
 
-		subreq = messaging_handler_send(state, ev, msg_ctx,
-						MSG_SMB_NOTIFY_DB,
-						notifyd_got_db, state);
-		if (tevent_req_nomem(subreq, req)) {
-			return tevent_req_post(req, ev);
-		}
-		tevent_req_set_callback(subreq, notifyd_handler_done, req);
+	state->log = talloc_zero(state, struct messaging_reclog);
+	if (tevent_req_nomem(state->log, req)) {
+		return tevent_req_post(req, ev);
+	}
 
-		state->log = talloc_zero(state, struct messaging_reclog);
-		if (tevent_req_nomem(state->log, req)) {
-			return tevent_req_post(req, ev);
-		}
+	subreq = notifyd_broadcast_reclog_send(
+		state->log, ev, ctdbd_conn,
+		messaging_server_id(msg_ctx),
+		state->log);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq,
+				notifyd_broadcast_reclog_finished,
+				req);
 
-		subreq = notifyd_broadcast_reclog_send(
-			state->log, ev, ctdbd_conn,
-			messaging_server_id(msg_ctx),
-			state->log);
-		if (tevent_req_nomem(subreq, req)) {
-			return tevent_req_post(req, ev);
-		}
-		tevent_req_set_callback(subreq,
-					notifyd_broadcast_reclog_finished,
-					req);
+	subreq = notifyd_clean_peers_send(state, ev, state);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, notifyd_clean_peers_finished,
+				req);
 
-		subreq = notifyd_clean_peers_send(state, ev, state);
-		if (tevent_req_nomem(subreq, req)) {
-			return tevent_req_post(req, ev);
-		}
-		tevent_req_set_callback(subreq, notifyd_clean_peers_finished,
-					req);
-
-		ret = register_with_ctdbd(ctdbd_conn,
-					  CTDB_SRVID_SAMBA_NOTIFY_PROXY,
-					  notifyd_snoop_broadcast, state);
-		if (ret != 0) {
-			tevent_req_error(req, ret);
-			return tevent_req_post(req, ev);
-		}
+	ret = register_with_ctdbd(ctdbd_conn,
+				  CTDB_SRVID_SAMBA_NOTIFY_PROXY,
+				  notifyd_snoop_broadcast, state);
+	if (ret != 0) {
+		tevent_req_error(req, ret);
+		return tevent_req_post(req, ev);
 	}
 #endif
 
