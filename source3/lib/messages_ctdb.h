@@ -39,4 +39,6 @@ struct messaging_ctdb_fde *messaging_ctdb_register_tevent_context(
 	TALLOC_CTX *mem_ctx, struct tevent_context *ev);
 bool messaging_ctdb_fde_active(struct messaging_ctdb_fde *fde);
 
+struct ctdbd_connection *messaging_ctdb_connection(void);
+
 #endif

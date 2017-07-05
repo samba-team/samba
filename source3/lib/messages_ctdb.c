@@ -258,3 +258,11 @@ bool messaging_ctdb_fde_active(struct messaging_ctdb_fde *fde)
 	flags = tevent_fd_get_flags(fde->fde);
 	return (flags != 0);
 }
+
+struct ctdbd_connection *messaging_ctdb_connection(void)
+{
+	if (global_ctdb_context == NULL) {
+		smb_panic("messaging not initialized\n");
+	}
+	return global_ctdb_context->conn;
+}
