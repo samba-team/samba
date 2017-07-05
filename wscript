@@ -195,6 +195,7 @@ def configure(conf):
         if Options.options.with_ntvfs_fileserver == False:
             if not (Options.options.without_ad_dc):
                 raise Utils.WafError('--without-ntvfs-fileserver conflicts with --enable-selftest while building the AD DC')
+        conf.RECURSE('testsuite/unittests')
 
     if Options.options.with_ntvfs_fileserver == True:
         if Options.options.without_ad_dc:
@@ -214,7 +215,6 @@ def configure(conf):
     if conf.env.with_ctdb:
         conf.RECURSE('ctdb')
     conf.RECURSE('lib/socket')
-    conf.RECURSE('testsuite/unittests')
     conf.RECURSE('auth')
 
     conf.SAMBA_CHECK_UNDEFINED_SYMBOL_FLAGS()
