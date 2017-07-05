@@ -276,6 +276,50 @@ smb.conf changes
   password hash userPassword schemes New parameter
   ntlm auth                          New values              ntlmv2-only
 
+CTDB changes
+------------
+
+* CTDB no longer allows mixed minor versions in a cluster
+
+  See the AllowMixedVersions tunable option in ctdb-tunables(7) and also
+  https://wiki.samba.org/index.php/Upgrading_a_CTDB_cluster#Policy
+
+* CTDB now ignores hints from Samba about TDB flags when attaching to databases
+
+  CTDB will use the correct flags depending on the type of database.
+  For clustered databases, the smb.conf setting
+  dbwrap_tdb_mutexes:*=true will be ignored. Instead, CTDB continues
+  to use the TDBMutexEnabled tunable.
+
+* New configuration variable CTDB_NFS_CHECKS_DIR
+
+  See ctdbd.conf(5) for more details.
+
+* The CTDB_SERVICE_AUTOSTARTSTOP configuration variable has been
+  removed
+
+  To continue to manage/unmanage services while CTDB is running:
+
+  - Start service by hand and then flag it as managed
+
+  - Mark service as unmanaged and shut it down by hand
+
+  - In some cases CTDB does something fancy - e.g. start Samba under
+    "nice", so care is needed. One technique is to disable the
+    eventscript, mark as managed, run the startup event by hand and then
+    re-enable the eventscript.
+
+* The CTDB_SCRIPT_DEBUGLEVEL configuration variable has been removed
+
+* The example NFS Ganesha call-out has been improved
+
+* A new "replicated" database type is available
+
+  Replicated databases are intended for CTDB's internal use to
+  replicate state data across the cluster, but may find other
+  uses. The data in replicated databases is valid for the lifetime of
+  CTDB and cleared on first attach.
+
 
 KNOWN ISSUES
 ============
