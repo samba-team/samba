@@ -881,6 +881,12 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 	const char * const _domain_attrs_guid[] = { "ncName", "dnsRoot", NULL};
 	const char * const _result_attrs_guid[] = { "objectGUID", NULL};
 
+	const char * const _domain_attrs_upn[] = { "ncName", "dnsRoot", NULL};
+	const char * const _result_attrs_upn[] = { "userPrincipalName", NULL};
+
+	const char * const _domain_attrs_spn[] = { "ncName", "dnsRoot", NULL};
+	const char * const _result_attrs_spn[] = { "servicePrincipalName", NULL};
+
 	const char * const _domain_attrs_display[] = { "ncName", "dnsRoot", NULL};
 	const char * const _result_attrs_display[] = { "displayName", "samAccountName", NULL};
 
@@ -909,6 +915,14 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 	case DRSUAPI_DS_NAME_FORMAT_DISPLAY:		
 		domain_attrs = _domain_attrs_display;
 		result_attrs = _result_attrs_display;
+		break;
+	case DRSUAPI_DS_NAME_FORMAT_USER_PRINCIPAL:
+		domain_attrs = _domain_attrs_upn;
+		result_attrs = _result_attrs_upn;
+		break;
+	case DRSUAPI_DS_NAME_FORMAT_SERVICE_PRINCIPAL:
+		domain_attrs = _domain_attrs_spn;
+		result_attrs = _result_attrs_spn;
 		break;
 	default:
 		domain_attrs = _domain_attrs_none;
@@ -1239,13 +1253,32 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 		return WERR_OK;
 	}
 	case DRSUAPI_DS_NAME_FORMAT_SERVICE_PRINCIPAL: {
-		info1->status = DRSUAPI_DS_NAME_STATUS_NOT_UNIQUE;
+		if (result->elements[0].num_values > 1) {
+			info1->status = DRSUAPI_DS_NAME_STATUS_NOT_UNIQUE;
+			return WERR_OK;
+		}
+
+		info1->result_name = ldb_msg_find_attr_as_string(result, "servicePrincipalName", NULL);
+		if (!info1->result_name) {
+			info1->status = DRSUAPI_DS_NAME_STATUS_NO_MAPPING;
+		} else {
+			info1->status = DRSUAPI_DS_NAME_STATUS_OK;
+		}
 		return WERR_OK;
 	}
 	case DRSUAPI_DS_NAME_FORMAT_DNS_DOMAIN:	
 	case DRSUAPI_DS_NAME_FORMAT_SID_OR_SID_HISTORY: {
 		info1->dns_domain_name = NULL;
 		info1->status = DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR;
+		return WERR_OK;
+	}
+	case DRSUAPI_DS_NAME_FORMAT_USER_PRINCIPAL: {
+		info1->result_name = ldb_msg_find_attr_as_string(result, "userPrincipalName", NULL);
+		if (!info1->result_name) {
+			info1->status = DRSUAPI_DS_NAME_STATUS_NO_MAPPING;
+		} else {
+			info1->status = DRSUAPI_DS_NAME_STATUS_OK;
+		}
 		return WERR_OK;
 	}
 	default:
