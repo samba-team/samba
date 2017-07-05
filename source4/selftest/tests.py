@@ -965,9 +965,9 @@ for env in [ "simpleserver", "fileserver", "nt4_dc", "ad_dc", "ad_dc_ntvfs", "ad
                            name="samba.tests.netlogonsvc.python(%s)" % env)
 
 for env in [ "ktest", "ad_member", "ad_dc_no_ntlm" ]:
-    planoldpythontestsuite(env, "ntlmauth",
+    planoldpythontestsuite(env, "ntlmdisabled",
                            extra_path=[os.path.join(srcdir(), 'python/samba/tests')],
-                           name="samba.tests.ntlmauth.python(%s)" % env)
+                           name="samba.tests.ntlmdisabled.python(%s)" % env)
 
 # Demote the vampire DC, it must be the last test each DC, before the dbcheck
 for env in ['vampire_dc', 'promoted_dc', 'rodc']:

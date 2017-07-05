@@ -1,4 +1,4 @@
-# Tests to check basic NTLM authentication
+# Tests basic behaviour when NTLM is disabled
 #
 # Copyright (C) Catalyst IT Ltd. 2017
 #
@@ -28,13 +28,13 @@ from samba import credentials
 from samba.dcerpc import srvsvc, samr, lsa
 
 """
-Tests basic NTLM authentication
+Tests behaviour when NTLM is disabled
 """
 
-class NtlmAuthTests(TestCase):
+class NtlmDisabledTests(TestCase):
 
     def setUp(self):
-        super(NtlmAuthTests, self).setUp()
+        super(NtlmDisabledTests, self).setUp()
 
         self.lp          = self.get_loadparm()
         self.server      = os.getenv("SERVER")
@@ -47,7 +47,7 @@ class NtlmAuthTests(TestCase):
         self.creds.set_kerberos_state(DONT_USE_KERBEROS)
 
     def tearDown(self):
-        super(NtlmAuthTests, self).tearDown()
+        super(NtlmDisabledTests, self).tearDown()
 
     def test_ntlm_connection(self):
         try:
@@ -76,7 +76,7 @@ class NtlmAuthTests(TestCase):
         try:
             conn.ChangePasswordUser2(server, username, None, None, True, None, None)
         except NTSTATUSError as e:
-            # changing passwords is rejected when NTLM is disabled
+            # changing passwords should be rejected when NTLM is disabled
             enum = ctypes.c_uint32(e[0]).value
             if enum == ntstatus.NT_STATUS_NTLM_BLOCKED:
                 self.fail("NTLM is disabled on this server")
