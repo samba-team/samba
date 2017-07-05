@@ -2061,8 +2061,7 @@ static void free_file_list (struct file_list *l_head)
 	for (list = l_head; list; list = next) {
 		next = list->next;
 		DLIST_REMOVE(l_head, list);
-		SAFE_FREE(list->file_path);
-		SAFE_FREE(list);
+		TALLOC_FREE(list);
 	}
 }
 
@@ -2107,8 +2106,11 @@ static int cmd_select(void)
   match must be always set to true when calling this function
 ****************************************************************************/
 
-static int file_find(struct file_list **list, const char *directory,
-		      const char *expression, bool match)
+static int file_find(TALLOC_CTX *ctx,
+			struct file_list **list,
+			const char *directory,
+			const char *expression,
+			bool match)
 {
 	DIR *dir;
 	struct file_list *entry;
@@ -2128,7 +2130,8 @@ static int file_find(struct file_list **list, const char *directory,
 		if (!strcmp(".", dname))
 			continue;
 
-		if (asprintf(&path, "%s/%s", directory, dname) <= 0) {
+		path = talloc_asprintf(ctx, "%s/%s", directory, dname);
+		if (path == NULL) {
 			continue;
 		}
 
@@ -2139,29 +2142,33 @@ static int file_find(struct file_list **list, const char *directory,
 				if (ret == 0) {
 					if (S_ISDIR(statbuf.st_mode)) {
 						isdir = true;
-						ret = file_find(list, path, expression, false);
+						ret = file_find(ctx,
+								list,
+								path,
+								expression,
+								false);
 					}
 				} else {
 					d_printf("file_find: cannot stat file %s\n", path);
 				}
 
 				if (ret == -1) {
-					SAFE_FREE(path);
+					TALLOC_FREE(path);
 					closedir(dir);
 					return -1;
 				}
 			}
-			entry = SMB_MALLOC_P(struct file_list);
+			entry = talloc_zero(ctx, struct file_list);
 			if (!entry) {
 				d_printf("Out of memory in file_find\n");
 				closedir(dir);
 				return -1;
 			}
-			entry->file_path = path;
+			entry->file_path = talloc_move(entry, &path);
 			entry->isdir = isdir;
                         DLIST_ADD(*list, entry);
 		} else {
-			SAFE_FREE(path);
+			TALLOC_FREE(path);
 		}
         }
 
@@ -2185,7 +2192,7 @@ static int cmd_mput(void)
 
 		file_list = NULL;
 
-		ret = file_find(&file_list, ".", p, true);
+		ret = file_find(ctx, &file_list, ".", p, true);
 		if (ret) {
 			free_file_list(file_list);
 			continue;
