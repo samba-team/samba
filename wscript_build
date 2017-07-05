@@ -124,7 +124,8 @@ bld.RECURSE('libcli/samsync')
 bld.RECURSE('libcli/registry')
 bld.RECURSE('source4/lib/policy')
 bld.RECURSE('libcli/named_pipe_auth')
-bld.RECURSE('testsuite/unittests')
+if bld.CONFIG_GET('ENABLE_SELFTEST'):
+    bld.RECURSE('testsuite/unittests')
 
 if bld.CONFIG_GET('KRB5_VENDOR') in (None, 'heimdal'):
     if bld.CONFIG_GET("HEIMDAL_KRB5_CONFIG") and bld.CONFIG_GET("USING_SYSTEM_KRB5"):
