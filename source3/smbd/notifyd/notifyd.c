@@ -240,18 +240,6 @@ struct tevent_req *notifyd_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	}
 	tevent_req_set_callback(subreq, notifyd_handler_done, req);
 
-#ifdef CLUSTER_SUPPORT
-	if (ctdbd_conn != NULL) {
-		subreq = messaging_handler_send(state, ev, msg_ctx,
-						MSG_SMB_NOTIFY_DB,
-						notifyd_got_db, state);
-		if (tevent_req_nomem(subreq, req)) {
-			return tevent_req_post(req, ev);
-		}
-		tevent_req_set_callback(subreq, notifyd_handler_done, req);
-	}
-#endif
-
 	names_db = messaging_names_db(msg_ctx);
 
 	ret = server_id_db_set_exclusive(names_db, "notify-daemon");
@@ -272,6 +260,15 @@ struct tevent_req *notifyd_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 
 #ifdef CLUSTER_SUPPORT
 	if (ctdbd_conn != NULL) {
+
+		subreq = messaging_handler_send(state, ev, msg_ctx,
+						MSG_SMB_NOTIFY_DB,
+						notifyd_got_db, state);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(subreq, notifyd_handler_done, req);
+
 		state->log = talloc_zero(state, struct messaging_reclog);
 		if (tevent_req_nomem(state->log, req)) {
 			return tevent_req_post(req, ev);
