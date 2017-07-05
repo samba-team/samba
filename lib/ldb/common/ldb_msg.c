@@ -207,6 +207,9 @@ int ldb_msg_find_common_values(struct ldb_context *ldb,
 	if (strcmp(el->name, el2->name) != 0) {
 		return LDB_ERR_INAPPROPRIATE_MATCHING;
 	}
+	if (el->num_values == 0 || el2->num_values == 0) {
+		return LDB_SUCCESS;
+	}
 	/*
 	   With few values, it is better to do the brute-force search than the
 	   clever search involving tallocs, memcpys, sorts, etc.
