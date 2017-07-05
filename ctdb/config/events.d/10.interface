@@ -38,7 +38,7 @@ get_all_interfaces ()
     # That is, for all but the 1st line, get the 1st field.
     ctdb_ifaces=$($CTDB -X ifaces | sed -e '1d' -e 's@^|@@' -e 's@|.*@@')
 
-    # Add $ctdb_interfaces and uniquify
+    # Add $ctdb_ifaces and make $all_interfaces unique
     # Use word splitting to squash whitespace
     # shellcheck disable=SC2086
     all_interfaces=$(echo $all_interfaces $ctdb_ifaces | tr ' ' '\n' | sort -u)
