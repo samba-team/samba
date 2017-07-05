@@ -1081,6 +1081,7 @@ static NTSTATUS gensec_spnego_update_server(struct gensec_security *gensec_secur
 	DATA_BLOB mech_list_mic = data_blob_null;
 	DATA_BLOB unwrapped_out = data_blob_null;
 	struct spnego_data spnego;
+	struct spnego_data *spnego_in = NULL;
 	ssize_t len;
 
 	/* and switch into the state machine */
@@ -1126,12 +1127,13 @@ static NTSTATUS gensec_spnego_update_server(struct gensec_security *gensec_secur
 			spnego_free_data(&spnego);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
+		spnego_in = &spnego;
 
 		nt_status = gensec_spnego_parse_negTokenInit(gensec_security,
 							     spnego_state,
 							     out_mem_ctx,
 							     ev,
-							     &spnego,
+							     spnego_in,
 							     &unwrapped_out);
 
 		if (spnego_state->simulate_w2k) {
@@ -1184,6 +1186,7 @@ static NTSTATUS gensec_spnego_update_server(struct gensec_security *gensec_secur
 			spnego_free_data(&spnego);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
+		spnego_in = &spnego;
 
 		spnego_state->num_targs++;
 
@@ -1194,7 +1197,7 @@ static NTSTATUS gensec_spnego_update_server(struct gensec_security *gensec_secur
 		}
 
 		if (spnego_state->needs_mic_check) {
-			if (spnego.negTokenTarg.responseToken.length != 0) {
+			if (spnego_in->negTokenTarg.responseToken.length != 0) {
 				DEBUG(1, ("SPNEGO: Did not setup a mech in NEG_TOKEN_INIT\n"));
 				spnego_free_data(&spnego);
 				return NT_STATUS_INVALID_PARAMETER;
@@ -1205,7 +1208,7 @@ static NTSTATUS gensec_spnego_update_server(struct gensec_security *gensec_secur
 							spnego_state->mech_types.length,
 							spnego_state->mech_types.data,
 							spnego_state->mech_types.length,
-							&spnego.negTokenTarg.mechListMIC);
+							&spnego_in->negTokenTarg.mechListMIC);
 			if (NT_STATUS_IS_OK(nt_status)) {
 				spnego_state->needs_mic_check = false;
 				spnego_state->done_mic_check = true;
@@ -1219,7 +1222,7 @@ static NTSTATUS gensec_spnego_update_server(struct gensec_security *gensec_secur
 		if (!spnego_state->sub_sec_ready) {
 			nt_status = gensec_update_ev(spnego_state->sub_sec_security,
 						     out_mem_ctx, ev,
-						     spnego.negTokenTarg.responseToken,
+						     spnego_in->negTokenTarg.responseToken,
 						     &unwrapped_out);
 			if (NT_STATUS_IS_OK(nt_status)) {
 				spnego_state->sub_sec_ready = true;
@@ -1238,7 +1241,7 @@ static NTSTATUS gensec_spnego_update_server(struct gensec_security *gensec_secur
 		}
 		new_spnego = gensec_have_feature(spnego_state->sub_sec_security,
 						 GENSEC_FEATURE_NEW_SPNEGO);
-		if (spnego.negTokenTarg.mechListMIC.length > 0) {
+		if (spnego_in->negTokenTarg.mechListMIC.length > 0) {
 			new_spnego = true;
 		}
 
@@ -1247,13 +1250,13 @@ static NTSTATUS gensec_spnego_update_server(struct gensec_security *gensec_secur
 			spnego_state->needs_mic_sign = true;
 		}
 
-		if (have_sign && spnego.negTokenTarg.mechListMIC.length > 0) {
+		if (have_sign && spnego_in->negTokenTarg.mechListMIC.length > 0) {
 			nt_status = gensec_check_packet(spnego_state->sub_sec_security,
 							spnego_state->mech_types.data,
 							spnego_state->mech_types.length,
 							spnego_state->mech_types.data,
 							spnego_state->mech_types.length,
-							&spnego.negTokenTarg.mechListMIC);
+							&spnego_in->negTokenTarg.mechListMIC);
 			if (!NT_STATUS_IS_OK(nt_status)) {
 				DEBUG(2,("GENSEC SPNEGO: failed to verify mechListMIC: %s\n",
 					nt_errstr(nt_status)));
