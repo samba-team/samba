@@ -645,6 +645,7 @@ static NTSTATUS gensec_spnego_update_client(struct gensec_security *gensec_secur
 	DATA_BLOB unwrapped_out = data_blob_null;
 	struct spnego_data spnego_out;
 	struct spnego_data spnego;
+	struct spnego_data *spnego_in = NULL;
 	ssize_t len;
 
 	*out = data_blob_null;
@@ -685,8 +686,9 @@ static NTSTATUS gensec_spnego_update_client(struct gensec_security *gensec_secur
 			spnego_free_data(&spnego);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
+		spnego_in = &spnego;
 
-		tp = spnego.negTokenInit.targetPrincipal;
+		tp = spnego_in->negTokenInit.targetPrincipal;
 		if (tp != NULL && strcmp(tp, ADS_IGNORE_PRINCIPAL) != 0) {
 			DEBUG(5, ("Server claims it's principal name is %s\n", tp));
 			if (lpcfg_client_use_spnego_principal(gensec_security->settings->lp_ctx)) {
@@ -698,7 +700,7 @@ static NTSTATUS gensec_spnego_update_client(struct gensec_security *gensec_secur
 							     spnego_state,
 							     out_mem_ctx, 
 							     ev,
-							     &spnego,
+							     spnego_in,
 							     &unwrapped_out);
 
 		if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED) && !NT_STATUS_IS_OK(nt_status)) {
@@ -761,7 +763,8 @@ static NTSTATUS gensec_spnego_update_client(struct gensec_security *gensec_secur
 			spnego_free_data(&spnego);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
-		ta = &spnego.negTokenTarg;
+		spnego_in = &spnego;
+		ta = &spnego_in->negTokenTarg;
 
 		spnego_state->num_targs++;
 
@@ -769,7 +772,7 @@ static NTSTATUS gensec_spnego_update_client(struct gensec_security *gensec_secur
 			return NT_STATUS_LOGON_FAILURE;
 		}
 
-		if (spnego.negTokenTarg.negResult == SPNEGO_REQUEST_MIC) {
+		if (spnego_in->negTokenTarg.negResult == SPNEGO_REQUEST_MIC) {
 			spnego_state->mic_requested = true;
 		}
 
@@ -806,9 +809,9 @@ static NTSTATUS gensec_spnego_update_client(struct gensec_security *gensec_secur
 			};
 		}
 
-		if (spnego.negTokenTarg.mechListMIC.length > 0) {
-			DATA_BLOB *m = &spnego.negTokenTarg.mechListMIC;
-			const DATA_BLOB *r = &spnego.negTokenTarg.responseToken;
+		if (spnego_in->negTokenTarg.mechListMIC.length > 0) {
+			DATA_BLOB *m = &spnego_in->negTokenTarg.mechListMIC;
+			const DATA_BLOB *r = &spnego_in->negTokenTarg.responseToken;
 
 			/*
 			 * Windows 2000 has a bug, it repeats the
@@ -824,20 +827,20 @@ static NTSTATUS gensec_spnego_update_client(struct gensec_security *gensec_secur
 			}
 		}
 
-		if (spnego.negTokenTarg.mechListMIC.length > 0) {
+		if (spnego_in->negTokenTarg.mechListMIC.length > 0) {
 			if (spnego_state->sub_sec_ready) {
 				spnego_state->needs_mic_check = true;
 			}
 		}
 
 		if (spnego_state->needs_mic_check) {
-			if (spnego.negTokenTarg.responseToken.length != 0) {
+			if (spnego_in->negTokenTarg.responseToken.length != 0) {
 				DEBUG(1, ("SPNEGO: Did not setup a mech in NEG_TOKEN_INIT\n"));
 				spnego_free_data(&spnego);
 				return NT_STATUS_INVALID_PARAMETER;
 			}
 
-			if (spnego.negTokenTarg.mechListMIC.length == 0
+			if (spnego_in->negTokenTarg.mechListMIC.length == 0
 			    && spnego_state->may_skip_mic_check) {
 				/*
 				 * In this case we don't require
@@ -859,7 +862,7 @@ static NTSTATUS gensec_spnego_update_client(struct gensec_security *gensec_secur
 							spnego_state->mech_types.length,
 							spnego_state->mech_types.data,
 							spnego_state->mech_types.length,
-							&spnego.negTokenTarg.mechListMIC);
+							&spnego_in->negTokenTarg.mechListMIC);
 			if (!NT_STATUS_IS_OK(nt_status)) {
 				DEBUG(2,("GENSEC SPNEGO: failed to verify mechListMIC: %s\n",
 					nt_errstr(nt_status)));
@@ -874,7 +877,7 @@ static NTSTATUS gensec_spnego_update_client(struct gensec_security *gensec_secur
 		if (!spnego_state->sub_sec_ready) {
 			nt_status = gensec_update_ev(spnego_state->sub_sec_security,
 						  out_mem_ctx, ev,
-						  spnego.negTokenTarg.responseToken, 
+						  spnego_in->negTokenTarg.responseToken,
 						  &unwrapped_out);
 			if (NT_STATUS_IS_OK(nt_status)) {
 				spnego_state->sub_sec_ready = true;
@@ -898,7 +901,7 @@ static NTSTATUS gensec_spnego_update_client(struct gensec_security *gensec_secur
 			new_spnego = gensec_have_feature(spnego_state->sub_sec_security,
 							 GENSEC_FEATURE_NEW_SPNEGO);
 
-			switch (spnego.negTokenTarg.negResult) {
+			switch (spnego_in->negTokenTarg.negResult) {
 			case SPNEGO_ACCEPT_COMPLETED:
 			case SPNEGO_NONE_RESULT:
 				if (spnego_state->num_targs == 1) {
@@ -912,7 +915,7 @@ static NTSTATUS gensec_spnego_update_client(struct gensec_security *gensec_secur
 				break;
 
 			case SPNEGO_ACCEPT_INCOMPLETE:
-				if (spnego.negTokenTarg.mechListMIC.length > 0) {
+				if (spnego_in->negTokenTarg.mechListMIC.length > 0) {
 					new_spnego = true;
 					break;
 				}
@@ -959,7 +962,7 @@ static NTSTATUS gensec_spnego_update_client(struct gensec_security *gensec_secur
 				break;
 
 			case SPNEGO_REQUEST_MIC:
-				if (spnego.negTokenTarg.mechListMIC.length > 0) {
+				if (spnego_in->negTokenTarg.mechListMIC.length > 0) {
 					new_spnego = true;
 				}
 				break;
@@ -979,13 +982,13 @@ static NTSTATUS gensec_spnego_update_client(struct gensec_security *gensec_secur
 			}
 		}
 
-		if (spnego.negTokenTarg.mechListMIC.length > 0) {
+		if (spnego_in->negTokenTarg.mechListMIC.length > 0) {
 			nt_status = gensec_check_packet(spnego_state->sub_sec_security,
 							spnego_state->mech_types.data,
 							spnego_state->mech_types.length,
 							spnego_state->mech_types.data,
 							spnego_state->mech_types.length,
-							&spnego.negTokenTarg.mechListMIC);
+							&spnego_in->negTokenTarg.mechListMIC);
 			if (!NT_STATUS_IS_OK(nt_status)) {
 				DEBUG(2,("GENSEC SPNEGO: failed to verify mechListMIC: %s\n",
 					nt_errstr(nt_status)));
