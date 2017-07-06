@@ -2439,6 +2439,183 @@ static int cmd_del(void)
 }
 
 /****************************************************************************
+ Delete some files.
+****************************************************************************/
+
+static NTSTATUS delete_remote_files_list(struct cli_state *cli_state,
+					 struct file_list *flist)
+{
+	NTSTATUS status = NT_STATUS_OK;
+	struct file_list *deltree_list_iter = NULL;
+
+	for (deltree_list_iter = flist;
+			deltree_list_iter != NULL;
+			deltree_list_iter = deltree_list_iter->next) {
+		if (CLI_DIRSEP_CHAR == '/') {
+			/* POSIX. */
+			status = cli_posix_unlink(cli_state,
+					deltree_list_iter->file_path);
+		} else if (deltree_list_iter->isdir) {
+			status = cli_rmdir(cli_state,
+					deltree_list_iter->file_path);
+		} else {
+			status = cli_unlink(cli_state,
+					deltree_list_iter->file_path,
+					FILE_ATTRIBUTE_SYSTEM |
+					FILE_ATTRIBUTE_HIDDEN);
+		}
+		if (!NT_STATUS_IS_OK(status)) {
+			d_printf("%s deleting remote %s %s\n",
+				nt_errstr(status),
+				deltree_list_iter->isdir ?
+				"directory" : "file",
+				deltree_list_iter->file_path);
+			return status;
+		}
+	}
+	return NT_STATUS_OK;
+}
+
+/****************************************************************************
+ Save a list of files to delete.
+****************************************************************************/
+
+static struct file_list *deltree_list_head;
+
+static NTSTATUS do_deltree_list(struct cli_state *cli_state,
+				struct file_info *finfo,
+				const char *dir)
+{
+	struct file_list **file_list_head_pp = &deltree_list_head;
+	struct file_list *dt = NULL;
+
+	if (!do_this_one(finfo)) {
+		return NT_STATUS_OK;
+	}
+
+	/* skip if this is . or .. */
+	if (ISDOT(finfo->name) || ISDOTDOT(finfo->name)) {
+		return NT_STATUS_OK;
+	}
+
+	dt = talloc_zero(NULL, struct file_list);
+	if (dt == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* create absolute filename for cli_ntcreate() */
+	dt->file_path = talloc_asprintf(dt,
+					"%s%s%s",
+					dir,
+					CLI_DIRSEP_STR,
+					finfo->name);
+	if (dt->file_path == NULL) {
+		TALLOC_FREE(dt);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (finfo->mode & FILE_ATTRIBUTE_DIRECTORY) {
+		dt->isdir = true;
+	}
+
+	DLIST_ADD(*file_list_head_pp, dt);
+	return NT_STATUS_OK;
+}
+
+static int cmd_deltree(void)
+{
+	TALLOC_CTX *ctx = talloc_tos();
+	char *buf = NULL;
+	NTSTATUS status = NT_STATUS_OK;
+	struct file_list *deltree_list_norecurse = NULL;
+	struct file_list *deltree_list_iter = NULL;
+	uint16_t attribute = FILE_ATTRIBUTE_SYSTEM |
+			     FILE_ATTRIBUTE_HIDDEN |
+			     FILE_ATTRIBUTE_DIRECTORY;
+	bool ok;
+	char *mask = talloc_strdup(ctx, client_get_cur_dir());
+	if (mask == NULL) {
+		return 1;
+	}
+	ok = next_token_talloc(ctx, &cmd_ptr, &buf, NULL);
+	if (!ok) {
+		d_printf("deltree <filename>\n");
+		return 1;
+	}
+	mask = talloc_asprintf_append(mask, "%s", buf);
+	if (mask == NULL) {
+		return 1;
+	}
+
+	deltree_list_head = NULL;
+
+	/*
+	 * Get the list of directories to
+	 * delete (in case mask has a wildcard).
+	 */
+	status = do_list(mask, attribute, do_deltree_list, false, true);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto err;
+	}
+	deltree_list_norecurse = deltree_list_head;
+	deltree_list_head = NULL;
+
+	for (deltree_list_iter = deltree_list_norecurse;
+	     deltree_list_iter != NULL;
+	     deltree_list_iter = deltree_list_iter->next) {
+
+		if (deltree_list_iter->isdir == false) {
+			/* Just a regular file. */
+			if (CLI_DIRSEP_CHAR == '/') {
+				/* POSIX. */
+				status = cli_posix_unlink(cli,
+					deltree_list_iter->file_path);
+			} else {
+				status = cli_unlink(cli,
+					deltree_list_iter->file_path,
+					FILE_ATTRIBUTE_SYSTEM |
+					FILE_ATTRIBUTE_HIDDEN);
+			}
+			if (!NT_STATUS_IS_OK(status)) {
+				goto err;
+			}
+			continue;
+		}
+
+		/*
+		 * Get the list of files or directories to
+		 * delete in depth order.
+		 */
+		status = do_list(deltree_list_iter->file_path,
+				 attribute,
+				 do_deltree_list,
+				 true,
+				 true);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto err;
+		}
+		status = delete_remote_files_list(cli, deltree_list_head);
+		free_file_list(deltree_list_head);
+		deltree_list_head = NULL;
+		if (!NT_STATUS_IS_OK(status)) {
+			goto err;
+		}
+	}
+
+	free_file_list(deltree_list_norecurse);
+	free_file_list(deltree_list_head);
+	return 0;
+
+  err:
+
+	free_file_list(deltree_list_norecurse);
+	free_file_list(deltree_list_head);
+	deltree_list_head = NULL;
+	return 1;
+}
+
+
+/****************************************************************************
  Wildcard delete some files.
 ****************************************************************************/
 
@@ -5005,6 +5182,7 @@ static struct {
   {"chown",cmd_chown,"<src> <uid> <gid> chown a file using UNIX uids and gids",{COMPL_REMOTE,COMPL_NONE}},
   {"close",cmd_close,"<fid> close a file given a fid",{COMPL_REMOTE,COMPL_NONE}},
   {"del",cmd_del,"<mask> delete all matching files",{COMPL_REMOTE,COMPL_NONE}},
+  {"deltree",cmd_deltree,"<mask> recursively delete all matching files and directories",{COMPL_REMOTE,COMPL_NONE}},
   {"dir",cmd_dir,"<mask> list the contents of the current directory",{COMPL_REMOTE,COMPL_NONE}},
   {"du",cmd_du,"<mask> computes the total size of the current directory",{COMPL_REMOTE,COMPL_NONE}},
   {"echo",cmd_echo,"ping the server",{COMPL_NONE,COMPL_NONE}},
