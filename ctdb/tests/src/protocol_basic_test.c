@@ -33,6 +33,28 @@ PROTOCOL_TYPE1_TEST(uint64_t, ctdb_uint64);
 PROTOCOL_TYPE1_TEST(double, ctdb_double);
 PROTOCOL_TYPE1_TEST(bool, ctdb_bool);
 
+static void test_ctdb_chararray(void)
+{
+	size_t len = rand_int(1000) + 1;
+	char p1[len], p2[len];
+	size_t buflen, np = 0;
+	int i, ret;
+
+	for (i=0; i<len-1; i++) {
+		p1[i] = 'A' + rand_int(26);
+	}
+	p1[len-1] = '\0';
+	buflen = ctdb_chararray_len(p1, len);
+	assert(buflen < sizeof(BUFFER));
+	ctdb_chararray_push(p1, len, BUFFER, &np);
+	assert(np == buflen);
+	np = 0;
+	ret = ctdb_chararray_pull(BUFFER, buflen, p2, len, &np);
+	assert(ret == 0);
+	assert(np == buflen);
+	assert(strncmp(p1, p2, len) == 0);
+}
+
 static void test_ctdb_string(void)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
@@ -93,6 +115,8 @@ int main(int argc, char *argv[])
 	TEST_FUNC(ctdb_uint64)();
 	TEST_FUNC(ctdb_double)();
 	TEST_FUNC(ctdb_bool)();
+
+	test_ctdb_chararray();
 
 	test_ctdb_string();
 	test_ctdb_stringn();

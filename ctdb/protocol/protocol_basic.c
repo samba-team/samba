@@ -201,6 +201,30 @@ int ctdb_bool_pull(uint8_t *buf, size_t buflen, bool *out, size_t *npull)
 	return 0;
 }
 
+size_t ctdb_chararray_len(char *in, size_t len)
+{
+	return len;
+}
+
+void ctdb_chararray_push(char *in, size_t len, uint8_t *buf, size_t *npush)
+{
+	memcpy(buf, in, len);
+	*npush = len;
+}
+
+int ctdb_chararray_pull(uint8_t *buf, size_t buflen, char *out, size_t len,
+			size_t *npull)
+{
+	if (buflen < len) {
+		return EMSGSIZE;
+	}
+
+	memcpy(out, buf, len);
+	out[len-1] = '\0';
+	*npull = len;
+	return 0;
+}
+
 size_t ctdb_string_len(const char *str)
 {
 	if (str == NULL) {
