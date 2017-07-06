@@ -571,6 +571,48 @@ static PyObject *py_creds_get_named_ccache(PyObject *self, PyObject *args)
 	return NULL;
 }
 
+static PyObject *py_creds_set_named_ccache(PyObject *self, PyObject *args)
+{
+	struct loadparm_context *lp_ctx = NULL;
+	enum credentials_obtained obt = CRED_SPECIFIED;
+	const char *error_string = NULL;
+	TALLOC_CTX *mem_ctx = NULL;
+	char *newval = NULL;
+	PyObject *py_lp_ctx = Py_None;
+	int _obt = obt;
+	int ret;
+
+	if (!PyArg_ParseTuple(args, "s|iO", &newval, &_obt, &py_lp_ctx))
+		return NULL;
+
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	lp_ctx = lpcfg_from_py_object(mem_ctx, py_lp_ctx);
+	if (lp_ctx == NULL) {
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+
+	ret = cli_credentials_set_ccache(PyCredentials_AsCliCredentials(self),
+					 lp_ctx,
+					 newval, CRED_SPECIFIED,
+					 &error_string);
+
+	if (ret != 0) {
+		PyErr_SetString(PyExc_RuntimeError,
+				error_string != NULL ? error_string : "NULL");
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+
+	talloc_free(mem_ctx);
+	Py_RETURN_NONE;
+}
+
 static PyObject *py_creds_set_gensec_features(PyObject *self, PyObject *args)
 {
 	unsigned int gensec_features;
@@ -756,6 +798,9 @@ static PyMethodDef py_creds_methods[] = {
 	{ "guess", py_creds_guess, METH_VARARGS, NULL },
 	{ "set_machine_account", py_creds_set_machine_account, METH_VARARGS, NULL },
 	{ "get_named_ccache", py_creds_get_named_ccache, METH_VARARGS, NULL },
+	{ "set_named_ccache", py_creds_set_named_ccache, METH_VARARGS,
+		"S.set_named_ccache(krb5_ccache_name, obtained, lp) -> None\n"
+		"Set credentials to KRB5 Credentials Cache (by name)." },
 	{ "set_gensec_features", py_creds_set_gensec_features, METH_VARARGS, NULL },
 	{ "get_gensec_features", py_creds_get_gensec_features, METH_NOARGS, NULL },
 	{ "get_forced_sasl_mech", py_creds_get_forced_sasl_mech, METH_NOARGS,

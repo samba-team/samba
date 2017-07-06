@@ -74,6 +74,15 @@ class PyKrb5CredentialsTests(TestCase):
         ccache = self.machine_creds.get_named_ccache(self.lp)
         self.assertIsNotNone(ccache.get_name())
 
+    def test_set_named_ccache(self):
+        ccache = self.machine_creds.get_named_ccache(self.lp)
+
+        creds = Credentials()
+        creds.set_named_ccache(ccache.get_name())
+
+        ccache2 = creds.get_named_ccache(self.lp)
+        self.assertEqual(ccache.get_name(), ccache2.get_name())
+
     #
     # Create the machine account
     def create_machine_account(self):
