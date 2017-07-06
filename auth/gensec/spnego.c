@@ -660,14 +660,6 @@ static NTSTATUS gensec_spnego_update_client(struct gensec_security *gensec_secur
 		bool ok;
 		const char *tp = NULL;
 
-		if (spnego_in == NULL) {
-			/* client to produce negTokenInit */
-			return gensec_spnego_create_negTokenInit(gensec_security,
-								 spnego_state,
-								 out_mem_ctx,
-								 ev, out);
-		}
-
 		tp = spnego_in->negTokenInit.targetPrincipal;
 		if (tp != NULL && strcmp(tp, ADS_IGNORE_PRINCIPAL) != 0) {
 			DEBUG(5, ("Server claims it's principal name is %s\n", tp));
@@ -1036,13 +1028,6 @@ static NTSTATUS gensec_spnego_update_server(struct gensec_security *gensec_secur
 	{
 		NTSTATUS nt_status;
 
-		if (spnego_in == NULL) {
-			return gensec_spnego_create_negTokenInit(gensec_security,
-								 spnego_state,
-								 out_mem_ctx,
-								 ev, out);
-		}
-
 		nt_status = gensec_spnego_parse_negTokenInit(gensec_security,
 							     spnego_state,
 							     out_mem_ctx,
@@ -1369,6 +1354,15 @@ static struct tevent_req *gensec_spnego_update_send(TALLOC_CTX *mem_ctx,
 		break;
 
 	case SPNEGO_CLIENT_START:
+		if (state->spnego_in == NULL) {
+			/* client to produce negTokenInit */
+			status = gensec_spnego_create_negTokenInit(gensec_security,
+							spnego_state, state, ev,
+							&spnego_state->out_frag);
+			break;
+		}
+
+		/* fall through */
 	case SPNEGO_CLIENT_TARG:
 		status = gensec_spnego_update_client(gensec_security,
 						     state, ev,
@@ -1377,6 +1371,15 @@ static struct tevent_req *gensec_spnego_update_send(TALLOC_CTX *mem_ctx,
 		break;
 
 	case SPNEGO_SERVER_START:
+		if (state->spnego_in == NULL) {
+			/* server to produce negTokenInit */
+			status = gensec_spnego_create_negTokenInit(gensec_security,
+							spnego_state, state, ev,
+							&spnego_state->out_frag);
+			break;
+		}
+
+		/* fall through */
 	case SPNEGO_SERVER_TARG:
 		status = gensec_spnego_update_server(gensec_security,
 						     state, ev,
