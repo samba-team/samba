@@ -1166,6 +1166,51 @@ static int ctdb_uptime_pull_old(uint8_t *buf, size_t buflen,
 	return 0;
 }
 
+static size_t ctdb_public_ip_len_old(struct ctdb_public_ip *in)
+{
+	return sizeof(struct ctdb_public_ip);
+}
+
+static void ctdb_public_ip_push_old(struct ctdb_public_ip *in, uint8_t *buf)
+{
+	memcpy(buf, in, sizeof(struct ctdb_public_ip));
+}
+
+static int ctdb_public_ip_pull_elems_old(uint8_t *buf, size_t buflen,
+					 TALLOC_CTX *mem_ctx,
+					 struct ctdb_public_ip *out)
+{
+	if (buflen < sizeof(struct ctdb_public_ip)) {
+		return EMSGSIZE;
+	}
+
+	memcpy(out, buf, sizeof(struct ctdb_public_ip));
+
+	return 0;
+}
+
+static int ctdb_public_ip_pull_old(uint8_t *buf, size_t buflen,
+				   TALLOC_CTX *mem_ctx,
+				   struct ctdb_public_ip **out)
+{
+	struct ctdb_public_ip *val;
+	int ret;
+
+	val = talloc(mem_ctx, struct ctdb_public_ip);
+	if (val == NULL) {
+		return ENOMEM;
+	}
+
+	ret = ctdb_public_ip_pull_elems_old(buf, buflen, val, val);
+	if (ret != 0) {
+		TALLOC_FREE(val);
+		return ret;
+	}
+
+	*out = val;
+	return ret;
+}
+
 
 COMPAT_TYPE3_TEST(struct ctdb_statistics, ctdb_statistics);
 COMPAT_TYPE3_TEST(struct ctdb_vnn_map, ctdb_vnn_map);
@@ -1191,6 +1236,7 @@ COMPAT_TYPE3_TEST(struct ctdb_tickle_list, ctdb_tickle_list);
 COMPAT_TYPE3_TEST(struct ctdb_addr_info, ctdb_addr_info);
 COMPAT_TYPE3_TEST(struct ctdb_transdb, ctdb_transdb);
 COMPAT_TYPE3_TEST(struct ctdb_uptime, ctdb_uptime);
+COMPAT_TYPE3_TEST(struct ctdb_public_ip, ctdb_public_ip);
 
 int main(int argc, char *argv[])
 {
@@ -1221,6 +1267,7 @@ int main(int argc, char *argv[])
 	COMPAT_TEST_FUNC(ctdb_addr_info)();
 	COMPAT_TEST_FUNC(ctdb_transdb)();
 	COMPAT_TEST_FUNC(ctdb_uptime)();
+	COMPAT_TEST_FUNC(ctdb_public_ip)();
 
 	return 0;
 }

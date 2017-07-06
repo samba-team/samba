@@ -144,7 +144,7 @@ static void ctdb_message_data_push(union ctdb_message_data *mdata,
 		break;
 
 	case CTDB_SRVID_RECD_UPDATE_IP:
-		ctdb_public_ip_push(mdata->pubip, buf);
+		ctdb_public_ip_push(mdata->pubip, buf, &np);
 		break;
 
 	case CTDB_SRVID_VACUUM_FETCH:
@@ -229,7 +229,7 @@ static int ctdb_message_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_SRVID_RECD_UPDATE_IP:
 		ret = ctdb_public_ip_pull(buf, buflen, mem_ctx,
-					  &mdata->pubip);
+					  &mdata->pubip, &np);
 		break;
 
 	case CTDB_SRVID_VACUUM_FETCH:

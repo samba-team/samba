@@ -231,10 +231,11 @@ void ctdb_uptime_push(struct ctdb_uptime *in, uint8_t *buf, size_t *npush);
 int ctdb_uptime_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 		     struct ctdb_uptime **out, size_t *npull);
 
-size_t ctdb_public_ip_len(struct ctdb_public_ip *public_ip);
-void ctdb_public_ip_push(struct ctdb_public_ip *public_ip, uint8_t *buf);
+size_t ctdb_public_ip_len(struct ctdb_public_ip *in);
+void ctdb_public_ip_push(struct ctdb_public_ip *in, uint8_t *buf,
+			 size_t *npush);
 int ctdb_public_ip_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			struct ctdb_public_ip **out);
+			struct ctdb_public_ip **out, size_t *npull);
 
 size_t ctdb_public_ip_list_len(struct ctdb_public_ip_list *pubip_list);
 void ctdb_public_ip_list_push(struct ctdb_public_ip_list *pubip_list,
