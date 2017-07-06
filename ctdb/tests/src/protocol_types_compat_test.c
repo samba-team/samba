@@ -1138,6 +1138,34 @@ static int ctdb_transdb_pull_old(uint8_t *buf, size_t buflen,
 	return 0;
 }
 
+static size_t ctdb_uptime_len_old(struct ctdb_uptime *in)
+{
+	return sizeof(struct ctdb_uptime);
+}
+
+static void ctdb_uptime_push_old(struct ctdb_uptime *in, uint8_t *buf)
+{
+	memcpy(buf, in, sizeof(struct ctdb_uptime));
+}
+
+static int ctdb_uptime_pull_old(uint8_t *buf, size_t buflen,
+				TALLOC_CTX *mem_ctx, struct ctdb_uptime **out)
+{
+	struct ctdb_uptime *val;
+
+	if (buflen < sizeof(struct ctdb_uptime)) {
+		return EMSGSIZE;
+	}
+
+	val = talloc_memdup(mem_ctx, buf, sizeof(struct ctdb_uptime));
+	if (val == NULL) {
+		return ENOMEM;
+	}
+
+	*out = val;
+	return 0;
+}
+
 
 COMPAT_TYPE3_TEST(struct ctdb_statistics, ctdb_statistics);
 COMPAT_TYPE3_TEST(struct ctdb_vnn_map, ctdb_vnn_map);
@@ -1162,6 +1190,7 @@ COMPAT_TYPE3_TEST(struct ctdb_tunable_list, ctdb_tunable_list);
 COMPAT_TYPE3_TEST(struct ctdb_tickle_list, ctdb_tickle_list);
 COMPAT_TYPE3_TEST(struct ctdb_addr_info, ctdb_addr_info);
 COMPAT_TYPE3_TEST(struct ctdb_transdb, ctdb_transdb);
+COMPAT_TYPE3_TEST(struct ctdb_uptime, ctdb_uptime);
 
 int main(int argc, char *argv[])
 {
@@ -1191,6 +1220,7 @@ int main(int argc, char *argv[])
 	COMPAT_TEST_FUNC(ctdb_tickle_list)();
 	COMPAT_TEST_FUNC(ctdb_addr_info)();
 	COMPAT_TEST_FUNC(ctdb_transdb)();
+	COMPAT_TEST_FUNC(ctdb_uptime)();
 
 	return 0;
 }

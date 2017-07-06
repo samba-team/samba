@@ -951,12 +951,20 @@ void verify_ctdb_transdb(struct ctdb_transdb *p1, struct ctdb_transdb *p2)
 
 void fill_ctdb_uptime(TALLOC_CTX *mem_ctx, struct ctdb_uptime *p)
 {
-	fill_buffer(p, sizeof(struct ctdb_uptime));
+	fill_ctdb_timeval(&p->current_time);
+	fill_ctdb_timeval(&p->ctdbd_start_time);
+	fill_ctdb_timeval(&p->last_recovery_started);
+	fill_ctdb_timeval(&p->last_recovery_finished);
 }
 
 void verify_ctdb_uptime(struct ctdb_uptime *p1, struct ctdb_uptime *p2)
 {
-	verify_buffer(p1, p2, sizeof(struct ctdb_uptime));
+	verify_ctdb_timeval(&p1->current_time, &p2->current_time);
+	verify_ctdb_timeval(&p1->ctdbd_start_time, &p2->ctdbd_start_time);
+	verify_ctdb_timeval(&p1->last_recovery_started,
+			    &p2->last_recovery_started);
+	verify_ctdb_timeval(&p1->last_recovery_finished,
+			    &p2->last_recovery_finished);
 }
 
 void fill_ctdb_public_ip(TALLOC_CTX *mem_ctx, struct ctdb_public_ip *p)

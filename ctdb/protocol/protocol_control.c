@@ -1488,7 +1488,7 @@ static void ctdb_reply_control_data_push(struct ctdb_reply_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_UPTIME:
-		ctdb_uptime_push(cd->data.uptime, buf);
+		ctdb_uptime_push(cd->data.uptime, buf, &np);
 		break;
 
 	case CTDB_CONTROL_TRY_DELETE_RECORDS:
@@ -1663,7 +1663,7 @@ static int ctdb_reply_control_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_CONTROL_UPTIME:
 		ret = ctdb_uptime_pull(buf, buflen, mem_ctx,
-				       &cd->data.uptime);
+				       &cd->data.uptime, &np);
 		break;
 
 	case CTDB_CONTROL_TRY_DELETE_RECORDS:

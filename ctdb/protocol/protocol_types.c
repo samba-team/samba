@@ -3311,32 +3311,80 @@ fail:
 	return ret;
 }
 
-size_t ctdb_uptime_len(struct ctdb_uptime *uptime)
+size_t ctdb_uptime_len(struct ctdb_uptime *in)
 {
-	return sizeof(struct ctdb_uptime);
+	return ctdb_timeval_len(&in->current_time) +
+		ctdb_timeval_len(&in->ctdbd_start_time) +
+		ctdb_timeval_len(&in->last_recovery_started) +
+		ctdb_timeval_len(&in->last_recovery_finished);
 }
 
-void ctdb_uptime_push(struct ctdb_uptime *uptime, uint8_t *buf)
+void ctdb_uptime_push(struct ctdb_uptime *in, uint8_t *buf, size_t *npush)
 {
-	memcpy(buf, uptime, sizeof(struct ctdb_uptime));
+	size_t offset = 0, np;
+
+	ctdb_timeval_push(&in->current_time, buf+offset, &np);
+	offset += np;
+
+	ctdb_timeval_push(&in->ctdbd_start_time, buf+offset, &np);
+	offset += np;
+
+	ctdb_timeval_push(&in->last_recovery_started, buf+offset, &np);
+	offset += np;
+
+	ctdb_timeval_push(&in->last_recovery_finished, buf+offset, &np);
+	offset += np;
+
+	*npush = offset;
 }
 
 int ctdb_uptime_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-		     struct ctdb_uptime **out)
+		     struct ctdb_uptime **out, size_t *npull)
 {
-	struct ctdb_uptime *uptime;
+	struct ctdb_uptime *val;
+	size_t offset = 0, np;
+	int ret;
 
-	if (buflen < sizeof(struct ctdb_uptime)) {
-		return EMSGSIZE;
-	}
-
-	uptime = talloc_memdup(mem_ctx, buf, sizeof(struct ctdb_uptime));
-	if (uptime == NULL) {
+	val = talloc(mem_ctx, struct ctdb_uptime);
+	if (val == NULL) {
 		return ENOMEM;
 	}
 
-	*out = uptime;
+	ret = ctdb_timeval_pull(buf+offset, buflen-offset, &val->current_time,
+				&np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
+
+	ret = ctdb_timeval_pull(buf+offset, buflen-offset,
+				&val->ctdbd_start_time, &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
+
+	ret = ctdb_timeval_pull(buf+offset, buflen-offset,
+				&val->last_recovery_started, &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
+
+	ret = ctdb_timeval_pull(buf+offset, buflen-offset,
+				&val->last_recovery_finished, &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
+
+	*out = val;
+	*npull = offset;
 	return 0;
+
+fail:
+	talloc_free(val);
+	return ret;
 }
 
 size_t ctdb_public_ip_len(struct ctdb_public_ip *pubip)
