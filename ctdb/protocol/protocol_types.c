@@ -932,6 +932,81 @@ fail:
 	return ret;
 }
 
+size_t ctdb_dbid_len(struct ctdb_dbid *in)
+{
+	return ctdb_uint32_len(&in->db_id) +
+		ctdb_uint8_len(&in->flags) +
+		ctdb_padding_len(3);
+}
+
+void ctdb_dbid_push(struct ctdb_dbid *in, uint8_t *buf, size_t *npush)
+{
+	size_t offset = 0, np;
+
+	ctdb_uint32_push(&in->db_id, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint8_push(&in->flags, buf+offset, &np);
+	offset += np;
+
+	ctdb_padding_push(3, buf+offset, &np);
+	offset += np;
+
+	*npush = offset;
+}
+
+static int ctdb_dbid_pull_elems(uint8_t *buf, size_t buflen,
+				TALLOC_CTX *mem_ctx, struct ctdb_dbid *out,
+				size_t *npull)
+{
+	size_t offset = 0, np;
+	int ret;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &out->db_id, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint8_pull(buf+offset, buflen-offset, &out->flags, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_padding_pull(buf+offset, buflen-offset, 3, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	*npull = offset;
+	return 0;
+}
+
+int ctdb_dbid_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
+		   struct ctdb_dbid **out, size_t *npull)
+{
+	struct ctdb_dbid *val;
+	size_t np;
+	int ret;
+
+	val = talloc(mem_ctx, struct ctdb_dbid);
+	if (val == NULL) {
+		return ENOMEM;
+	}
+
+	ret = ctdb_dbid_pull_elems(buf, buflen, val, val, &np);
+	if (ret != 0) {
+		talloc_free(val);
+		return ret;
+	}
+
+	*out = val;
+	*npull = np;
+	return 0;
+}
+
 struct ctdb_dbid_map_wire {
 	uint32_t num;
 	struct ctdb_dbid dbs[1];

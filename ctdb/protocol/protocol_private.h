@@ -122,6 +122,11 @@ void ctdb_vnn_map_push(struct ctdb_vnn_map *in, uint8_t *buf, size_t *npush);
 int ctdb_vnn_map_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 		      struct ctdb_vnn_map **out, size_t  *npull);
 
+size_t ctdb_dbid_len(struct ctdb_dbid *in);
+void ctdb_dbid_push(struct ctdb_dbid *in, uint8_t *buf, size_t *npush);
+int ctdb_dbid_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
+		   struct ctdb_dbid **out, size_t *npull);
+
 size_t ctdb_dbid_map_len(struct ctdb_dbid_map *dbmap);
 void ctdb_dbid_map_push(struct ctdb_dbid_map *dbmap, uint8_t *buf);
 int ctdb_dbid_map_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,

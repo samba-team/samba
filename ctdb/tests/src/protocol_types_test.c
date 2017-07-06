@@ -65,6 +65,7 @@ static void test_ctdb_g_lock(void)
 
 PROTOCOL_TYPE3_TEST(struct ctdb_statistics, ctdb_statistics);
 PROTOCOL_TYPE3_TEST(struct ctdb_vnn_map, ctdb_vnn_map);
+PROTOCOL_TYPE3_TEST(struct ctdb_dbid, ctdb_dbid);
 DEFINE_TEST(struct ctdb_dbid_map, ctdb_dbid_map);
 DEFINE_TEST(struct ctdb_pulldb, ctdb_pulldb);
 DEFINE_TEST(struct ctdb_pulldb_ext, ctdb_pulldb_ext);
@@ -164,6 +165,7 @@ int main(int argc, char *argv[])
 
 	TEST_FUNC(ctdb_statistics)();
 	TEST_FUNC(ctdb_vnn_map)();
+	TEST_FUNC(ctdb_dbid)();
 	TEST_FUNC(ctdb_dbid_map)();
 	TEST_FUNC(ctdb_pulldb)();
 	TEST_FUNC(ctdb_pulldb_ext)();
