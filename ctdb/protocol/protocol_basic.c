@@ -367,3 +367,36 @@ int ctdb_timeval_pull(uint8_t *buf, size_t buflen, struct timeval *out,
 	*npull = sizeof(struct timeval);
 	return 0;
 }
+
+/*
+ * Dummy type to tackle structure padding
+ */
+
+size_t ctdb_padding_len(int count)
+{
+	return count % SIZEOF_VOID_P;
+}
+
+void ctdb_padding_push(int count, uint8_t *buf, size_t *npush)
+{
+	uint8_t padding[count];
+	size_t aligned_count = count % SIZEOF_VOID_P;
+
+	if (aligned_count > 0) {
+		memset(padding, 0, aligned_count);
+		memcpy(buf, padding, aligned_count);
+	}
+	*npush = aligned_count;
+}
+
+int ctdb_padding_pull(uint8_t *buf, size_t buflen, int count, size_t *npull)
+{
+	size_t aligned_count = count % SIZEOF_VOID_P;
+
+	if (buflen < aligned_count) {
+		return EMSGSIZE;
+	}
+
+	*npull = aligned_count;
+	return 0;
+}

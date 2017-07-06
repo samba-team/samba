@@ -61,6 +61,24 @@ PROTOCOL_TYPE2_TEST(const char *, ctdb_stringn);
 PROTOCOL_TYPE1_TEST(pid_t, ctdb_pid);
 PROTOCOL_TYPE1_TEST(struct timeval, ctdb_timeval);
 
+static void test_ctdb_padding(void)
+{
+	int padding;
+	size_t buflen, np = 0;
+	int ret;
+
+	padding = rand_int(8);
+
+	buflen = ctdb_padding_len(padding);
+	assert(buflen < sizeof(BUFFER));
+	ctdb_padding_push(padding, BUFFER, &np);
+	assert(np == buflen);
+	np = 0;
+	ret = ctdb_padding_pull(BUFFER, buflen, padding, &np);
+	assert(ret == 0);
+	assert(np == buflen);
+}
+
 int main(int argc, char *argv[])
 {
 	if (argc == 2) {
@@ -83,6 +101,8 @@ int main(int argc, char *argv[])
 
 	TEST_FUNC(ctdb_pid)();
 	TEST_FUNC(ctdb_timeval)();
+
+	test_ctdb_padding();
 
 	return 0;
 }

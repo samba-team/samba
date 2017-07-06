@@ -81,6 +81,10 @@ void ctdb_timeval_push(struct timeval *in, uint8_t *buf, size_t *npush);
 int ctdb_timeval_pull(uint8_t *buf, size_t buflen, struct timeval *out,
 		      size_t *npull);
 
+size_t ctdb_padding_len(int count);
+void ctdb_padding_push(int count, uint8_t *buf, size_t *npush);
+int ctdb_padding_pull(uint8_t *buf, size_t buflen, int count, size_t *npull);
+
 /*
  * From protocol/protocol_types.c
  */
