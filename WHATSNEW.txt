@@ -1,4 +1,94 @@
                    ==============================
+                   Release Notes for Samba 4.5.11
+                            July 6, 2017
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.5 release series.
+
+
+Changes since 4.5.10:
+---------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 12793: s3: smbd: Fix open_files.idl to correctly ignore
+     share_mode_lease *lease in share_mode_entry.
+   * BUG 12804: s3: VFS: Catia: Ensure path name is also converted.
+   * BUG 12818: s3: smbd: When deleting an fsp pointer ensure we don't keep
+     any references to it around.
+   * BUG 12831: s3: libsmb: Correctly save and restore connection tcon
+     in 'smbclient', 'smbcacls' and 'smbtorture3'.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 12798: s3/smbd: Fix exclusive lease optimisation.
+
+o  Amitay Isaacs <amitay@gmail.com>
+   * BUG 12856: ctdb-scripts: Don't send empty argument string to logger.
+   * BUG 12857: ctdb-recovery: Do not run local ip verification when in
+     recovery.
+
+o  Daniel Kobras <d.kobras@science-computing.de>
+   * BUG 12860: s3: smbd: Fix regression with non-wide symlinks to directories
+     over SMB3.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 12768: samba-tool: Fix log message of 'samba-tool user syncpasswords'.
+   * BUG 12772: s3:smbd: unimplement FSCTL_VALIDATE_NEGOTIATE_INFO with
+     "server max protocol = SMB2_02".
+   * BUG 12788: auth/spnego: Fix gensec_update_ev() argument order for
+     the SPNEGO_FALLBACK case.
+   * BUG 12832: s3:smb2_create: Avoid reusing the 'tevent_req' within
+     smbd_smb2_create_send().
+   * BUG 12844: Related requests with TreeConnect fail with
+     NETWORK_NAME_DELETED.
+   * BUG 12845: Related requests with SessionSetup fail with INTERNAL_ERROR.
+   * BUG 12859: ldb: protect Samba < 4.7 against incompatible ldb
+     versions and require ldb < 1.2.0.
+   * BUG 12862: auth/ntlmssp: Enforce NTLMSSP_NEGOTIATE_NTLM2 for the NTLMv2
+     client case.
+
+o  Michael Saxl <mike@mwsys.mine.bz>
+   * BUG 10490: s3:gse_krb5: Fix a possible crash in
+     fill_mem_keytab_from_system_keytab().
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 12808: libcli:smb2: Gracefully handle not supported for
+     FSCTL_VALIDATE_NEGOTIATE_INFO.
+
+o  Martin Schwenke <martin@meltin.net>
+   * BUG 12802: 'ctdb nodestatus' incorrectly displays status for all nodes
+     with wrong exit code.
+   * BUG 12837: ctdb-scripts: NFS call-out failures should cause event failure.
+
+o  Richard Sharpe <richard.sharpe@primarydata.com>
+   * BUG 15852: There are valid paths where conn->lsa_pipe_tcp->transport
+     is NULL.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ==============================
                    Release Notes for Samba 4.5.10
                             May 24, 2017
                    ==============================
@@ -47,8 +137,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    =============================
                    Release Notes for Samba 4.5.9
