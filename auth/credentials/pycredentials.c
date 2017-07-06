@@ -31,6 +31,8 @@
 #include <tevent.h>
 #include "libcli/auth/libcli_auth.h"
 #include "auth/credentials/credentials_internal.h"
+#include "system/kerberos.h"
+#include "auth/kerberos/kerberos.h"
 
 void initcredentials(void);
 
@@ -793,10 +795,38 @@ PyTypeObject PyCredentials = {
 	.tp_methods = py_creds_methods,
 };
 
+static PyObject *py_ccache_name(PyObject *self, PyObject *unused)
+{
+	struct ccache_container *ccc = NULL;
+	char *name = NULL;
+	PyObject *py_name = NULL;
+	int ret;
+
+	ccc = pytalloc_get_type(self, struct ccache_container);
+
+	ret = krb5_cc_get_full_name(ccc->smb_krb5_context->krb5_context,
+				    ccc->ccache, &name);
+	if (ret == 0) {
+		py_name = PyString_FromStringOrNULL(name);
+		SAFE_FREE(name);
+	} else {
+		PyErr_SetString(PyExc_RuntimeError,
+				"Failed to get ccache name");
+		return NULL;
+	}
+	return py_name;
+}
+
+static PyMethodDef py_ccache_container_methods[] = {
+	{ "get_name", py_ccache_name, METH_NOARGS,
+	  "S.get_name() -> name\nObtain KRB5 credentials cache name." },
+	{ NULL }
+};
 
 PyTypeObject PyCredentialCacheContainer = {
 	.tp_name = "credentials.CredentialCacheContainer",
 	.tp_flags = Py_TPFLAGS_DEFAULT,
+	.tp_methods = py_ccache_container_methods,
 };
 
 MODULE_INIT_FUNC(credentials)
