@@ -40,7 +40,6 @@ from samba.drs_utils import drs_DsBind
 from samba.samdb import SamDB
 
 import shutil, tempfile, os
-from samba.netcmd.main import cmd_sambatool
 from samba.auth import system_session, admin_session
 from samba.dbchecker import dbcheck
 from samba.ndr import ndr_pack
