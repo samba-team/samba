@@ -101,9 +101,7 @@ class DrsBaseTestCase(SambaToolCmdTest):
     def _samba_tool_cmd_list(self, drs_command):
         # make command line credentials string
 
-        creds = self.get_credentials()
-        ccache = creds.get_named_ccache(self.get_loadparm())
-        ccache_name = ccache.get_name()
+        ccache_name = self.get_creds_ccache_name()
 
         # Tunnel the command line credentials down to the
         # subcommand to avoid a new kinit
