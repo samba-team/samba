@@ -249,10 +249,10 @@ void ctdb_node_and_flags_push(struct ctdb_node_and_flags *in, uint8_t *buf,
 int ctdb_node_and_flags_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 			     struct ctdb_node_and_flags **out, size_t *npull);
 
-size_t ctdb_node_map_len(struct ctdb_node_map *nodemap);
-void ctdb_node_map_push(struct ctdb_node_map *nodemap, uint8_t *buf);
+size_t ctdb_node_map_len(struct ctdb_node_map *in);
+void ctdb_node_map_push(struct ctdb_node_map *in, uint8_t *buf, size_t *npush);
 int ctdb_node_map_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-		       struct ctdb_node_map **out);
+		       struct ctdb_node_map **out, size_t *npull);
 
 size_t ctdb_script_len(struct ctdb_script *script);
 void ctdb_script_push(struct ctdb_script *script, uint8_t *buf);

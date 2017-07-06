@@ -1351,6 +1351,86 @@ static int ctdb_node_and_flags_pull_old(uint8_t *buf, size_t buflen,
 	return ret;
 }
 
+struct ctdb_node_map_wire {
+	uint32_t num;
+	struct ctdb_node_and_flags node[1];
+};
+
+static size_t ctdb_node_map_len_old(struct ctdb_node_map *in)
+{
+	return sizeof(uint32_t) +
+	       in->num * sizeof(struct ctdb_node_and_flags);
+}
+
+static void ctdb_node_map_push_old(struct ctdb_node_map *in, uint8_t *buf)
+{
+	struct ctdb_node_map_wire *wire = (struct ctdb_node_map_wire *)buf;
+	size_t offset;
+	int i;
+
+	wire->num = in->num;
+
+	offset = offsetof(struct ctdb_node_map_wire, node);
+	for (i=0; i<in->num; i++) {
+		ctdb_node_and_flags_push_old(&in->node[i], &buf[offset]);
+		offset += ctdb_node_and_flags_len_old(&in->node[i]);
+	}
+}
+
+static int ctdb_node_map_pull_old(uint8_t *buf, size_t buflen,
+				  TALLOC_CTX *mem_ctx,
+				  struct ctdb_node_map **out)
+{
+	struct ctdb_node_map *val;
+	struct ctdb_node_map_wire *wire = (struct ctdb_node_map_wire *)buf;
+	size_t offset;
+	int i;
+	bool ret;
+
+	if (buflen < sizeof(uint32_t)) {
+		return EMSGSIZE;
+	}
+	if (wire->num > buflen / sizeof(struct ctdb_node_and_flags)) {
+		return EMSGSIZE;
+	}
+	if (sizeof(uint32_t) + wire->num * sizeof(struct ctdb_node_and_flags) <
+	    sizeof(uint32_t)) {
+		return EMSGSIZE;
+	}
+	if (buflen < sizeof(uint32_t) +
+		     wire->num * sizeof(struct ctdb_node_and_flags)) {
+		return EMSGSIZE;
+	}
+
+	val = talloc(mem_ctx, struct ctdb_node_map);
+	if (val == NULL) {
+		return ENOMEM;
+	}
+
+	val->num = wire->num;
+	val->node = talloc_array(val, struct ctdb_node_and_flags, wire->num);
+	if (val->node == NULL) {
+		talloc_free(val);
+		return ENOMEM;
+	}
+
+	offset = offsetof(struct ctdb_node_map_wire, node);
+	for (i=0; i<wire->num; i++) {
+		ret = ctdb_node_and_flags_pull_elems_old(val->node,
+							 &buf[offset],
+							 buflen-offset,
+							 &val->node[i]);
+		if (ret != 0) {
+			talloc_free(val);
+			return ret;
+		}
+		offset += ctdb_node_and_flags_len_old(&val->node[i]);
+	}
+
+	*out = val;
+	return 0;
+}
+
 
 COMPAT_TYPE3_TEST(struct ctdb_statistics, ctdb_statistics);
 COMPAT_TYPE3_TEST(struct ctdb_vnn_map, ctdb_vnn_map);
@@ -1379,6 +1459,7 @@ COMPAT_TYPE3_TEST(struct ctdb_uptime, ctdb_uptime);
 COMPAT_TYPE3_TEST(struct ctdb_public_ip, ctdb_public_ip);
 COMPAT_TYPE3_TEST(struct ctdb_public_ip_list, ctdb_public_ip_list);
 COMPAT_TYPE3_TEST(struct ctdb_node_and_flags, ctdb_node_and_flags);
+COMPAT_TYPE3_TEST(struct ctdb_node_map, ctdb_node_map);
 
 int main(int argc, char *argv[])
 {
@@ -1412,6 +1493,7 @@ int main(int argc, char *argv[])
 	COMPAT_TEST_FUNC(ctdb_public_ip)();
 	COMPAT_TEST_FUNC(ctdb_public_ip_list)();
 	COMPAT_TEST_FUNC(ctdb_node_and_flags)();
+	COMPAT_TEST_FUNC(ctdb_node_map)();
 
 	return 0;
 }

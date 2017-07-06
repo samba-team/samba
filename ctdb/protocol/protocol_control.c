@@ -1504,7 +1504,7 @@ static void ctdb_reply_control_data_push(struct ctdb_reply_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_GET_NODEMAP:
-		ctdb_node_map_push(cd->data.nodemap, buf);
+		ctdb_node_map_push(cd->data.nodemap, buf, &np);
 		break;
 
 	case CTDB_CONTROL_GET_RECLOCK_FILE:
@@ -1554,7 +1554,7 @@ static void ctdb_reply_control_data_push(struct ctdb_reply_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_GET_NODES_FILE:
-		ctdb_node_map_push(cd->data.nodemap, buf);
+		ctdb_node_map_push(cd->data.nodemap, buf, &np);
 		break;
 
 	case CTDB_CONTROL_DB_PULL:
@@ -1682,7 +1682,7 @@ static int ctdb_reply_control_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_CONTROL_GET_NODEMAP:
 		ret = ctdb_node_map_pull(buf, buflen, mem_ctx,
-					 &cd->data.nodemap);
+					 &cd->data.nodemap, &np);
 		break;
 
 	case CTDB_CONTROL_GET_RECLOCK_FILE:
@@ -1741,7 +1741,7 @@ static int ctdb_reply_control_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_CONTROL_GET_NODES_FILE:
 		ret = ctdb_node_map_pull(buf, buflen, mem_ctx,
-					 &cd->data.nodemap);
+					 &cd->data.nodemap, &np);
 		break;
 
 	case CTDB_CONTROL_DB_PULL:

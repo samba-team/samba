@@ -73,7 +73,7 @@ PROTOCOL_TYPE3_TEST(struct ctdb_uptime, ctdb_uptime);
 PROTOCOL_TYPE3_TEST(struct ctdb_public_ip, ctdb_public_ip);
 PROTOCOL_TYPE3_TEST(struct ctdb_public_ip_list, ctdb_public_ip_list);
 PROTOCOL_TYPE3_TEST(struct ctdb_node_and_flags, ctdb_node_and_flags);
-DEFINE_TEST(struct ctdb_node_map, ctdb_node_map);
+PROTOCOL_TYPE3_TEST(struct ctdb_node_map, ctdb_node_map);
 DEFINE_TEST(struct ctdb_script, ctdb_script);
 DEFINE_TEST(struct ctdb_script_list, ctdb_script_list);
 DEFINE_TEST(struct ctdb_ban_state, ctdb_ban_state);
