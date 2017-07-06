@@ -220,6 +220,18 @@ void verify_ctdb_pid(pid_t *p1, pid_t *p2)
 	assert(*p1 == *p2);
 }
 
+void fill_ctdb_timeval(struct timeval *p)
+{
+	p->tv_sec = rand32();
+	p->tv_usec = rand_int(1000000);
+}
+
+void verify_ctdb_timeval(struct timeval *p1, struct timeval *p2)
+{
+	assert(p1->tv_sec == p2->tv_sec);
+	assert(p1->tv_usec == p2->tv_usec);
+}
+
 void fill_tdb_data_nonnull(TALLOC_CTX *mem_ctx, TDB_DATA *p)
 {
 	p->dsize = rand_int(1024) + 1;

@@ -59,6 +59,7 @@ PROTOCOL_TYPE2_TEST(const char *, ctdb_string);
 PROTOCOL_TYPE2_TEST(const char *, ctdb_stringn);
 
 PROTOCOL_TYPE1_TEST(pid_t, ctdb_pid);
+PROTOCOL_TYPE1_TEST(struct timeval, ctdb_timeval);
 
 int main(int argc, char *argv[])
 {
@@ -81,6 +82,7 @@ int main(int argc, char *argv[])
 	TEST_FUNC(ctdb_stringn)();
 
 	TEST_FUNC(ctdb_pid)();
+	TEST_FUNC(ctdb_timeval)();
 
 	return 0;
 }

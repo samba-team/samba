@@ -76,6 +76,11 @@ size_t ctdb_pid_len(pid_t *in);
 void ctdb_pid_push(pid_t *in, uint8_t *buf, size_t *npush);
 int ctdb_pid_pull(uint8_t *buf, size_t buflen, pid_t *out, size_t *npull);
 
+size_t ctdb_timeval_len(struct timeval *in);
+void ctdb_timeval_push(struct timeval *in, uint8_t *buf, size_t *npush);
+int ctdb_timeval_pull(uint8_t *buf, size_t buflen, struct timeval *out,
+		      size_t *npull);
+
 /*
  * From protocol/protocol_types.c
  */

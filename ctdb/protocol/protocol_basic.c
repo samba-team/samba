@@ -344,3 +344,26 @@ int ctdb_pid_pull(uint8_t *buf, size_t buflen, pid_t *out, size_t *npull)
 	*npull = sizeof(pid_t);
 	return 0;
 }
+
+size_t ctdb_timeval_len(struct timeval *in)
+{
+	return sizeof(struct timeval);
+}
+
+void ctdb_timeval_push(struct timeval *in, uint8_t *buf, size_t *npush)
+{
+	memcpy(buf, in, sizeof(struct timeval));
+	*npush = sizeof(struct timeval);
+}
+
+int ctdb_timeval_pull(uint8_t *buf, size_t buflen, struct timeval *out,
+		      size_t *npull)
+{
+	if (buflen < sizeof(struct timeval)) {
+		return EMSGSIZE;
+	}
+
+	memcpy(out, buf, sizeof(struct timeval));
+	*npull = sizeof(struct timeval);
+	return 0;
+}
