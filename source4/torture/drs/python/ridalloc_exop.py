@@ -305,14 +305,14 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
     def _test_join(self, server, netbios_name):
         tmpdir = os.path.join(self.tempdir, "targetdir")
         creds = self.get_credentials()
-        cmd = cmd_sambatool.subcommands['domain'].subcommands['join']
-        result = cmd._run("samba-tool domain join",
-                          creds.get_realm(),
-                          "dc", "-U%s%%%s" % (creds.get_username(),
-                                              creds.get_password()),
-                          '--targetdir=%s' % tmpdir,
-                          '--server=%s' % server,
-                          "--option=netbios name = %s" % netbios_name)
+        (result, out, err) = self.runsubcmd("domain", "join",
+                                            creds.get_realm(),
+                                            "dc", "-U%s%%%s" % (creds.get_username(),
+                                                                creds.get_password()),
+                                            '--targetdir=%s' % tmpdir,
+                                            '--server=%s' % server,
+                                            "--option=netbios name = %s" % netbios_name)
+        self.assertCmdSuccess(result, out, err)
         return tmpdir
 
     def _test_force_demote(self, server, netbios_name):
