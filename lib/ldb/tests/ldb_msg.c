@@ -87,6 +87,11 @@ static void test_ldb_msg_find_duplicate_val(void **state)
 	ret = ldb_msg_add_empty(msg, "el1", 0, &el);
 	assert_int_equal(ret, LDB_SUCCESS);
 
+	/* An empty message contains no duplicates */
+	ret = ldb_msg_find_duplicate_val(NULL, test_ctx, el, &dupe, 0);
+	assert_int_equal(ret, LDB_SUCCESS);
+	assert_null(dupe);
+
 	for (i = 0; i < 5; i++) {
 		add_uint_value(test_ctx, msg, "el1", i);
 	}
@@ -176,19 +181,19 @@ static void _assert_element_equal(struct ldb_message_element *a,
 static void test_ldb_msg_find_common_values(void **state)
 {
 	/* we only use the state as a talloc context */
-	struct ldb_message_element *el, *el2, *el3, *el4, *el2b;
+	struct ldb_message_element *el, *el2, *el3, *el4, *el2b, *empty;
 	struct ldb_message_element *orig, *orig2, *orig3, *orig4;
 	int ret;
 	const uint32_t remove_dupes = LDB_MSG_FIND_COMMON_REMOVE_DUPLICATES;
 	el = new_msg_element(*state, "test", 0, 4);
 	el2 = new_msg_element(*state, "test", 4, 4);
 	el3 = new_msg_element(*state, "test", 6, 4);
+	empty = new_msg_element(*state, "test", 0, 0);
 	orig = new_msg_element(*state, "test", 0, 4);
 	orig2 = new_msg_element(*state, "test", 4, 4);
 	orig3 = new_msg_element(*state, "test", 6, 4);
 
 	/* first round is with short value arrays, using quadratic method */
-
 	/* we expect no collisions here */
 	ret = ldb_msg_find_common_values(NULL, *state, el, el2, 0);
 	assert_int_equal(ret, LDB_SUCCESS);
@@ -256,7 +261,7 @@ static void test_ldb_msg_find_common_values(void **state)
 	assert_element_equal(el2, orig2);
 	assert_int_equal(el3->num_values, 0);
 
-	/* seeing as we have an empty element, try permutations therewith.
+	/* permutations involving empty elements.
 	   everything should succeed. */
 	ret = ldb_msg_find_common_values(NULL, *state, el3, el2, 0);
 	assert_int_equal(ret, LDB_SUCCESS);
@@ -264,9 +269,18 @@ static void test_ldb_msg_find_common_values(void **state)
 	assert_int_equal(ret, LDB_SUCCESS);
 	ret = ldb_msg_find_common_values(NULL, *state, el2, el3, 0);
 	assert_int_equal(ret, LDB_SUCCESS);
+	assert_int_equal(el2->num_values, orig2->num_values);
 	ret = ldb_msg_find_common_values(NULL, *state, el3, el2, remove_dupes);
 	assert_int_equal(ret, LDB_SUCCESS);
+	assert_int_equal(el2->num_values, orig2->num_values);
+	assert_int_equal(el3->num_values, 0); /* el3 is now empty */
 	ret = ldb_msg_find_common_values(NULL, *state, el2, el3, remove_dupes);
+	assert_int_equal(ret, LDB_SUCCESS);
+	ret = ldb_msg_find_common_values(NULL, *state, el3, empty, 0);
+	assert_int_equal(ret, LDB_SUCCESS);
+	ret = ldb_msg_find_common_values(NULL, *state, empty, empty, 0);
+	assert_int_equal(ret, LDB_SUCCESS);
+	ret = ldb_msg_find_common_values(NULL, *state, empty, el3, 0);
 	assert_int_equal(ret, LDB_SUCCESS);
 
 	assert_element_equal(el2, orig2);
@@ -328,6 +342,18 @@ static void test_ldb_msg_find_common_values(void **state)
 	assert_int_not_equal(el2->num_values, orig2->num_values);
 	orig2 = new_msg_element(*state, "test", 12, 2);
 	assert_element_equal(el2, orig2);
+
+	/* test the empty el against the full elements */
+	ret = ldb_msg_find_common_values(NULL, *state, el, empty, 0);
+	assert_int_equal(ret, LDB_SUCCESS);
+	ret = ldb_msg_find_common_values(NULL, *state, empty, el, 0);
+	assert_int_equal(ret, LDB_SUCCESS);
+	ret = ldb_msg_find_common_values(NULL, *state, el, empty, remove_dupes);
+	assert_int_equal(ret, LDB_SUCCESS);
+	ret = ldb_msg_find_common_values(NULL, *state, empty, el, remove_dupes);
+	assert_int_equal(ret, LDB_SUCCESS);
+	assert_element_equal(el, orig);
+	assert_element_equal(empty, el3);
 
 	/* make sure an identical element with a different name is rejected */
 	el2 = new_msg_element(*state, "fish", 12, 2);
