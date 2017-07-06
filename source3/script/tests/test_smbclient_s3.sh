@@ -1189,6 +1189,49 @@ EOF
     fi
 }
 
+# Test smbclient deltree command
+test_deltree()
+{
+    tmpfile=$PREFIX/smbclient_interactive_prompt_commands
+    deltree_dir=$PREFIX/deltree_dir
+
+    rm -rf $deltree_dir
+    cat > $tmpfile <<EOF
+mkdir deltree_dir
+mkdir deltree_dir/foo
+mkdir deltree_dir/foo/bar
+put ${SMBCLIENT} deltree_dir/foo/bar/client
+deltree deltree_dir
+quit
+EOF
+    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/tmp -I $SERVER_IP $ADDARGS < $tmpfile 2>&1'
+    eval echo "$cmd"
+    out=`eval $cmd`
+    ret=$?
+
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed deltree test with output $ret"
+	false
+	return
+    fi
+
+    echo "$out" | grep 'NT_STATUS_'
+    ret=$?
+    if [ $ret -eq 0 ] ; then
+       echo "$out"
+       echo "failed - got an NT_STATUS error"
+       false
+       return
+    fi
+
+    if [ -d $deltree_dir ] ; then
+	echo "deltree did not delete everything"
+	false
+	return
+    fi
+}
+
 test_server_os_message()
 {
     tmpfile=$PREFIX/smbclient_interactive_prompt_commands
@@ -1324,6 +1367,10 @@ testit "follow symlinks = no" \
 
 testit "follow local symlinks" \
     test_local_symlinks || \
+    failed=`expr $failed + 1`
+
+testit "smbclient deltree command" \
+    test_deltree || \
     failed=`expr $failed + 1`
 
 testit "server os message" \
