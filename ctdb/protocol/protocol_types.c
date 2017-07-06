@@ -3532,46 +3532,81 @@ fail:
 	return ret;
 }
 
-size_t ctdb_node_and_flags_len(struct ctdb_node_and_flags *node)
+size_t ctdb_node_and_flags_len(struct ctdb_node_and_flags *in)
 {
-	return sizeof(struct ctdb_node_and_flags);
+	return ctdb_uint32_len(&in->pnn) +
+		ctdb_uint32_len(&in->flags) +
+		ctdb_sock_addr_len(&in->addr);
 }
 
-void ctdb_node_and_flags_push(struct ctdb_node_and_flags *node, uint8_t *buf)
+void ctdb_node_and_flags_push(struct ctdb_node_and_flags *in, uint8_t *buf,
+			      size_t *npush)
 {
-	memcpy(buf, node, sizeof(struct ctdb_node_and_flags));
+	size_t offset = 0, np;
+
+	ctdb_uint32_push(&in->pnn, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->flags, buf+offset, &np);
+	offset += np;
+
+	ctdb_sock_addr_push(&in->addr, buf+offset, &np);
+	offset += np;
+
+	*npush = offset;
 }
 
-static int ctdb_node_and_flags_pull_elems(TALLOC_CTX *mem_ctx,
-					  uint8_t *buf, size_t buflen,
-					  struct ctdb_node_and_flags *out)
+static int ctdb_node_and_flags_pull_elems(uint8_t *buf, size_t buflen,
+					  TALLOC_CTX *mem_ctx,
+					  struct ctdb_node_and_flags *out,
+					  size_t *npull)
 {
-	if (buflen < sizeof(struct ctdb_node_and_flags)) {
-		return EMSGSIZE;
+	size_t offset = 0, np;
+	int ret;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &out->pnn, &np);
+	if (ret != 0) {
+		return ret;
 	}
+	offset += np;
 
-	memcpy(out, buf, sizeof(struct ctdb_node_and_flags));
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &out->flags, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
 
+	ret = ctdb_sock_addr_pull_elems(buf+offset, buflen-offset, mem_ctx,
+					&out->addr, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	*npull = offset;
 	return 0;
 }
 
 int ctdb_node_and_flags_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			      struct ctdb_node_and_flags **out)
+			      struct ctdb_node_and_flags **out, size_t *npull)
 {
-	struct ctdb_node_and_flags *node;
+	struct ctdb_node_and_flags *val;
+	size_t np;
 	int ret;
 
-	node = talloc(mem_ctx, struct ctdb_node_and_flags);
-	if (node == NULL) {
+	val = talloc(mem_ctx, struct ctdb_node_and_flags);
+	if (val == NULL) {
 		return ENOMEM;
 	}
 
-	ret = ctdb_node_and_flags_pull_elems(node, buf, buflen, node);
+	ret = ctdb_node_and_flags_pull_elems(buf, buflen, val, val, &np);
 	if (ret != 0) {
-		TALLOC_FREE(node);
+		TALLOC_FREE(val);
+		return ret;
 	}
 
-	*out = node;
+	*out = val;
+	*npull = np;
 	return ret;
 }
 
@@ -3589,15 +3624,15 @@ size_t ctdb_node_map_len(struct ctdb_node_map *nodemap)
 void ctdb_node_map_push(struct ctdb_node_map *nodemap, uint8_t *buf)
 {
 	struct ctdb_node_map_wire *wire = (struct ctdb_node_map_wire *)buf;
-	size_t offset;
+	size_t offset, np;
 	int i;
 
 	wire->num = nodemap->num;
 
 	offset = offsetof(struct ctdb_node_map_wire, node);
 	for (i=0; i<nodemap->num; i++) {
-		ctdb_node_and_flags_push(&nodemap->node[i], &buf[offset]);
-		offset += ctdb_node_and_flags_len(&nodemap->node[i]);
+		ctdb_node_and_flags_push(&nodemap->node[i], &buf[offset], &np);
+		offset += np;
 	}
 }
 
@@ -3606,7 +3641,7 @@ int ctdb_node_map_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 {
 	struct ctdb_node_map *nodemap;
 	struct ctdb_node_map_wire *wire = (struct ctdb_node_map_wire *)buf;
-	size_t offset;
+	size_t offset, np;
 	int i;
 	bool ret;
 
@@ -3640,15 +3675,15 @@ int ctdb_node_map_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 
 	offset = offsetof(struct ctdb_node_map_wire, node);
 	for (i=0; i<wire->num; i++) {
-		ret = ctdb_node_and_flags_pull_elems(nodemap->node,
-						     &buf[offset],
+		ret = ctdb_node_and_flags_pull_elems(&buf[offset],
 						     buflen-offset,
-						     &nodemap->node[i]);
+						     nodemap->node,
+						     &nodemap->node[i], &np);
 		if (ret != 0) {
 			talloc_free(nodemap);
 			return ret;
 		}
-		offset += ctdb_node_and_flags_len(&nodemap->node[i]);
+		offset += np;
 	}
 
 	*out = nodemap;
