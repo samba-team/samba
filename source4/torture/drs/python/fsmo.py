@@ -58,9 +58,8 @@ class DrsFsmoTestCase(drs_base.DrsBaseTestCase):
         # find out where is samba-tool command
         net_cmd = os.path.abspath("./bin/samba-tool")
         # make command line credentials string
-        creds = self.get_credentials()
-        cmd_line_auth = "-U%s/%s%%%s" % (creds.get_domain(),
-                                         creds.get_username(), creds.get_password())
+        ccache_name = self.get_creds_ccache_name()
+        cmd_line_auth = "--krb5-ccache=%s" % ccache_name
         (result, out, err) = self.runsubcmd("fsmo", "transfer",
                                             "--role=%s" % role,
                                             "-H", "ldap://%s:389" % DC,
