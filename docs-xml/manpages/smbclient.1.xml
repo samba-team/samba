@@ -655,6 +655,16 @@
 		</varlistentry>
 
 		<varlistentry>
+		<term>deltree &lt;mask&gt;</term>
+		<listitem><para>The client will request that the server attempt
+		to delete all files and directories matching <replaceable>mask</replaceable> from the current working
+		directory on the server. Note this will recursively delete files and directories within
+		the directories selected even without the recurse command being set. If any of the delete
+		requests fail the command will stop processing at that point, leaving files and directories
+		not yet processed untouched. This is by design.</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
 		<term>dir &lt;mask&gt;</term>
 		<listitem><para>A list of the files matching <replaceable>mask</replaceable> in the current
 		working directory on the server will be retrieved from the server
