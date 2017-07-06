@@ -98,16 +98,6 @@ class DrsBaseTestCase(SambaToolCmdTest):
     def _make_obj_name(self, prefix):
         return prefix + time.strftime("%s", time.gmtime())
 
-    def _samba_tool_cmdline(self, drs_command):
-        # find out where is net command
-        samba_tool_cmd = os.path.abspath("./bin/samba-tool")
-        # make command line credentials string
-        creds = self.get_credentials()
-        cmdline_auth = "-U%s/%s%%%s" % (creds.get_domain(),
-                                        creds.get_username(), creds.get_password())
-        # bin/samba-tool drs <drs_command> <cmdline_auth>
-        return "%s drs %s %s" % (samba_tool_cmd, drs_command, cmdline_auth)
-
     def _samba_tool_cmd_list(self, drs_command):
         # make command line credentials string
         creds = self.get_credentials()
@@ -154,18 +144,24 @@ class DrsBaseTestCase(SambaToolCmdTest):
         self.assertEquals(err,"","Shouldn't be any error messages")
 
     def _enable_all_repl(self, DC):
+        self._enable_inbound_repl(DC)
         # make base command line
-        samba_tool_cmd = self._samba_tool_cmdline("options")
-        # disable replication
-        self.check_run("%s %s --dsa-option=-DISABLE_INBOUND_REPL" %(samba_tool_cmd, DC))
-        self.check_run("%s %s --dsa-option=-DISABLE_OUTBOUND_REPL" %(samba_tool_cmd, DC))
+        samba_tool_cmd = self._samba_tool_cmd_list("options")
+        # enable replication
+        samba_tool_cmd += [DC, "--dsa-option=-DISABLE_OUTBOUND_REPL"]
+        (result, out, err) = self.runsubcmd(*samba_tool_cmd)
+        self.assertCmdSuccess(result, out, err)
+        self.assertEquals(err,"","Shouldn't be any error messages")
 
     def _disable_all_repl(self, DC):
+        self._disable_inbound_repl(DC)
         # make base command line
-        samba_tool_cmd = self._samba_tool_cmdline("options")
+        samba_tool_cmd = self._samba_tool_cmd_list("options")
         # disable replication
-        self.check_run("%s %s --dsa-option=+DISABLE_INBOUND_REPL" %(samba_tool_cmd, DC))
-        self.check_run("%s %s --dsa-option=+DISABLE_OUTBOUND_REPL" %(samba_tool_cmd, DC))
+        samba_tool_cmd += [DC, "--dsa-option=+DISABLE_OUTBOUND_REPL"]
+        (result, out, err) = self.runsubcmd(*samba_tool_cmd)
+        self.assertCmdSuccess(result, out, err)
+        self.assertEquals(err,"","Shouldn't be any error messages")
 
     def _get_highest_hwm_utdv(self, ldb_conn):
         res = ldb_conn.search("", scope=ldb.SCOPE_BASE, attrs=["highestCommittedUSN"])
