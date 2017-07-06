@@ -108,20 +108,32 @@ class DrsBaseTestCase(SambaToolCmdTest):
         # bin/samba-tool drs <drs_command> <cmdline_auth>
         return "%s drs %s %s" % (samba_tool_cmd, drs_command, cmdline_auth)
 
+    def _samba_tool_cmd_list(self, drs_command):
+        # make command line credentials string
+        creds = self.get_credentials()
+        cmdline_auth = "-U%s/%s%%%s" % (creds.get_domain(),
+                                        creds.get_username(), creds.get_password())
+        # bin/samba-tool drs <drs_command> <cmdline_auth>
+        return ["drs", drs_command, cmdline_auth]
+
     def _net_drs_replicate(self, DC, fromDC, nc_dn=None, forced=True, local=False, full_sync=False):
         if nc_dn is None:
             nc_dn = self.domain_dn
         # make base command line
-        samba_tool_cmdline = self._samba_tool_cmdline("replicate")
-        if forced:
-            samba_tool_cmdline += " --sync-forced"
-        if local:
-            samba_tool_cmdline += " --local"
-        if full_sync:
-            samba_tool_cmdline += " --full-sync"
+        samba_tool_cmdline = self._samba_tool_cmd_list("replicate")
         # bin/samba-tool drs replicate <Dest_DC_NAME> <Src_DC_NAME> <Naming Context>
-        cmd_line = "%s %s %s %s" % (samba_tool_cmdline, DC, fromDC, nc_dn)
-        return self.check_output(cmd_line)
+        samba_tool_cmdline += [DC, fromDC, nc_dn]
+
+        if forced:
+            samba_tool_cmdline += ["--sync-forced"]
+        if local:
+            samba_tool_cmdline += ["--local"]
+        if full_sync:
+            samba_tool_cmdline += ["--full-sync"]
+
+        (result, out, err) = self.runsubcmd(*samba_tool_cmdline)
+        self.assertCmdSuccess(result, out, err)
+        self.assertEquals(err,"","Shouldn't be any error messages")
 
     def _enable_inbound_repl(self, DC):
         # make base command line
