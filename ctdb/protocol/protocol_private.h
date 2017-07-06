@@ -237,11 +237,11 @@ void ctdb_public_ip_push(struct ctdb_public_ip *in, uint8_t *buf,
 int ctdb_public_ip_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 			struct ctdb_public_ip **out, size_t *npull);
 
-size_t ctdb_public_ip_list_len(struct ctdb_public_ip_list *pubip_list);
-void ctdb_public_ip_list_push(struct ctdb_public_ip_list *pubip_list,
-			      uint8_t *buf);
+size_t ctdb_public_ip_list_len(struct ctdb_public_ip_list *in);
+void ctdb_public_ip_list_push(struct ctdb_public_ip_list *in, uint8_t *buf,
+			      size_t *npush);
 int ctdb_public_ip_list_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			     struct ctdb_public_ip_list **out);
+			     struct ctdb_public_ip_list **out, size_t *npull);
 
 size_t ctdb_node_and_flags_len(struct ctdb_node_and_flags *node);
 void ctdb_node_and_flags_push(struct ctdb_node_and_flags *node, uint8_t *buf);

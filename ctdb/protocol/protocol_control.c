@@ -1500,7 +1500,7 @@ static void ctdb_reply_control_data_push(struct ctdb_reply_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_GET_PUBLIC_IPS:
-		ctdb_public_ip_list_push(cd->data.pubip_list, buf);
+		ctdb_public_ip_list_push(cd->data.pubip_list, buf, &np);
 		break;
 
 	case CTDB_CONTROL_GET_NODEMAP:
@@ -1677,7 +1677,7 @@ static int ctdb_reply_control_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_CONTROL_GET_PUBLIC_IPS:
 		ret = ctdb_public_ip_list_pull(buf, buflen, mem_ctx,
-					       &cd->data.pubip_list);
+					       &cd->data.pubip_list, &np);
 		break;
 
 	case CTDB_CONTROL_GET_NODEMAP:

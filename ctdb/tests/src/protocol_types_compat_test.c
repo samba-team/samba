@@ -1211,6 +1211,100 @@ static int ctdb_public_ip_pull_old(uint8_t *buf, size_t buflen,
 	return ret;
 }
 
+struct ctdb_public_ip_list_wire {
+	uint32_t num;
+	struct ctdb_public_ip ip[1];
+};
+
+static size_t ctdb_public_ip_list_len_old(struct ctdb_public_ip_list *in)
+{
+	int i;
+	size_t len;
+
+	len = sizeof(uint32_t);
+	for (i=0; i<in->num; i++) {
+		len += ctdb_public_ip_len_old(&in->ip[i]);
+	}
+	return len;
+}
+
+static void ctdb_public_ip_list_push_old(struct ctdb_public_ip_list *in,
+					 uint8_t *buf)
+{
+	struct ctdb_public_ip_list_wire *wire =
+		(struct ctdb_public_ip_list_wire *)buf;
+	size_t offset;
+	int i;
+
+	wire->num = in->num;
+
+	offset = offsetof(struct ctdb_public_ip_list_wire, ip);
+	for (i=0; i<in->num; i++) {
+		ctdb_public_ip_push_old(&in->ip[i], &buf[offset]);
+		offset += ctdb_public_ip_len_old(&in->ip[i]);
+	}
+}
+
+static int ctdb_public_ip_list_pull_old(uint8_t *buf, size_t buflen,
+					TALLOC_CTX *mem_ctx,
+					struct ctdb_public_ip_list **out)
+{
+	struct ctdb_public_ip_list *val;
+	struct ctdb_public_ip_list_wire *wire =
+		(struct ctdb_public_ip_list_wire *)buf;
+	size_t offset;
+	int i;
+	bool ret;
+
+	if (buflen < sizeof(uint32_t)) {
+		return EMSGSIZE;
+	}
+	if (wire->num > buflen / sizeof(struct ctdb_public_ip)) {
+		return EMSGSIZE;
+	}
+	if (sizeof(uint32_t) + wire->num * sizeof(struct ctdb_public_ip) <
+	    sizeof(uint32_t)) {
+		return EMSGSIZE;
+	}
+	if (buflen < sizeof(uint32_t) +
+		     wire->num * sizeof(struct ctdb_public_ip)) {
+		return EMSGSIZE;
+	}
+
+	val = talloc(mem_ctx, struct ctdb_public_ip_list);
+	if (val == NULL) {
+		return ENOMEM;
+	}
+
+	val->num = wire->num;
+	if (wire->num == 0) {
+		val->ip = NULL;
+		*out = val;
+		return 0;
+	}
+	val->ip = talloc_array(val, struct ctdb_public_ip, wire->num);
+	if (val->ip == NULL) {
+		talloc_free(val);
+		return ENOMEM;
+	}
+
+	offset = offsetof(struct ctdb_public_ip_list_wire, ip);
+	for (i=0; i<wire->num; i++) {
+		ret = ctdb_public_ip_pull_elems_old(&buf[offset],
+						    buflen-offset,
+						    val->ip,
+						    &val->ip[i]);
+		if (ret != 0) {
+			talloc_free(val);
+			return ret;
+		}
+		offset += ctdb_public_ip_len_old(&val->ip[i]);
+	}
+
+	*out = val;
+	return 0;
+}
+
 
 COMPAT_TYPE3_TEST(struct ctdb_statistics, ctdb_statistics);
 COMPAT_TYPE3_TEST(struct ctdb_vnn_map, ctdb_vnn_map);
@@ -1237,6 +1331,7 @@ COMPAT_TYPE3_TEST(struct ctdb_addr_info, ctdb_addr_info);
 COMPAT_TYPE3_TEST(struct ctdb_transdb, ctdb_transdb);
 COMPAT_TYPE3_TEST(struct ctdb_uptime, ctdb_uptime);
 COMPAT_TYPE3_TEST(struct ctdb_public_ip, ctdb_public_ip);
+COMPAT_TYPE3_TEST(struct ctdb_public_ip_list, ctdb_public_ip_list);
 
 int main(int argc, char *argv[])
 {
@@ -1268,6 +1363,7 @@ int main(int argc, char *argv[])
 	COMPAT_TEST_FUNC(ctdb_transdb)();
 	COMPAT_TEST_FUNC(ctdb_uptime)();
 	COMPAT_TEST_FUNC(ctdb_public_ip)();
+	COMPAT_TEST_FUNC(ctdb_public_ip_list)();
 
 	return 0;
 }
