@@ -158,6 +158,10 @@ class CredentialsOptions(optparse.OptionGroup):
                         action="callback",
                         help="Use stored machine account password",
                         callback=self._set_machine_pass)
+        self._add_option("--krb5-ccache", metavar="KRB5CCNAME",
+                         action="callback", type=str,
+                         help="Kerberos Credentials cache",
+                         callback=self._set_krb5_ccache)
         self.creds = Credentials()
 
     def _add_option(self, *args1, **kwargs):
@@ -197,6 +201,9 @@ class CredentialsOptions(optparse.OptionGroup):
 
     def _set_simple_bind_dn(self, option, opt_str, arg, parser):
         self.creds.set_bind_dn(arg)
+
+    def _set_krb5_ccache(self, option, opt_str, arg, parser):
+        self.creds.set_named_ccache(arg)
 
     def get_credentials(self, lp, fallback_machine=False):
         """Obtain the credentials set on the command-line.
