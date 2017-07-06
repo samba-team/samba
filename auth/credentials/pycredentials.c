@@ -526,7 +526,7 @@ static PyObject *PyCredentialCacheContainer_from_ccache_container(struct ccache_
 static PyObject *py_creds_get_named_ccache(PyObject *self, PyObject *args)
 {
 	PyObject *py_lp_ctx = Py_None;
-	char *ccache_name;
+	char *ccache_name = NULL;
 	struct loadparm_context *lp_ctx;
 	struct ccache_container *ccc;
 	struct tevent_context *event_ctx;
