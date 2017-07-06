@@ -100,9 +100,15 @@ class DrsBaseTestCase(SambaToolCmdTest):
 
     def _samba_tool_cmd_list(self, drs_command):
         # make command line credentials string
+
         creds = self.get_credentials()
-        cmdline_auth = "-U%s/%s%%%s" % (creds.get_domain(),
-                                        creds.get_username(), creds.get_password())
+        ccache = creds.get_named_ccache(self.get_loadparm())
+        ccache_name = ccache.get_name()
+
+        # Tunnel the command line credentials down to the
+        # subcommand to avoid a new kinit
+        cmdline_auth = "--krb5-ccache=%s" % ccache_name
+
         # bin/samba-tool drs <drs_command> <cmdline_auth>
         return ["drs", drs_command, cmdline_auth]
 
