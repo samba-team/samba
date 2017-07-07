@@ -95,17 +95,26 @@ int main(int argc, char *argv[])
 
         /* If not set, then just call smbspool. */
 	if (env == NULL) {
-		CUPS_SMB_ERROR("AUTH_INFO_REQUIRED is not set");
-                goto smbspool;
+		CUPS_SMB_DEBUG("AUTH_INFO_REQUIRED is not set - "
+			       "execute smbspool");
+		goto smbspool;
 	} else {
-                CUPS_SMB_DEBUG("AUTH_INFO_REQUIRED=%s", env);
-                cmp = strcmp(env, "negotiate");
-                /* If AUTH_INFO_REQUIRED != "negotiate" then call smbspool. */
-                if (cmp != 0) {
-                          CUPS_SMB_ERROR(
-                            "AUTH_INFO_REQUIRED is not set to negotiate");
-                          goto smbspool;
-                }
+		CUPS_SMB_DEBUG("AUTH_INFO_REQUIRED=%s", env);
+
+		cmp = strcmp(env, "username,password");
+		if (cmp == 0) {
+			CUPS_SMB_DEBUG("Authenticate using username/password - "
+				       "execute smbspool");
+			goto smbspool;
+		}
+
+		/* if AUTH_INFO_REQUIRED=none */
+		cmp = strcmp(env, "negotiate");
+		if (cmp != 0) {
+			CUPS_SMB_ERROR("Authentication unsupported");
+			fprintf(stderr, "ATTR: auth-info-required=negotiate\n");
+			return CUPS_BACKEND_AUTH_REQUIRED;
+		}
 	}
 
 	uid = getuid();
