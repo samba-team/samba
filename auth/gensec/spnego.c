@@ -592,8 +592,12 @@ static NTSTATUS gensec_spnego_client_negTokenInit(struct gensec_security *gensec
 						  TALLOC_CTX *out_mem_ctx,
 						  DATA_BLOB *out)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	DATA_BLOB sub_out = data_blob_null;
 	const char *tp = NULL;
+	const char * const *mech_types = NULL;
+	size_t all_idx = 0;
+	const struct gensec_security_ops_wrapper *all_sec = NULL;
 	struct spnego_data spnego_out;
 	const char *my_mechs[] = {NULL, NULL};
 	NTSTATUS status;
@@ -611,16 +615,123 @@ static NTSTATUS gensec_spnego_client_negTokenInit(struct gensec_security *gensec
 		}
 	}
 
-	status = gensec_spnego_parse_negTokenInit(gensec_security,
-						  spnego_state,
-						  out_mem_ctx,
-						  ev,
-						  spnego_in,
-						  &sub_out);
-	if (GENSEC_UPDATE_IS_NTERROR(status)) {
+	mech_types = spnego_in->negTokenInit.mechTypes;
+	if (mech_types == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	all_sec = gensec_security_by_oid_list(gensec_security,
+					      frame, mech_types,
+					      GENSEC_OID_SPNEGO);
+	if (all_sec == NULL) {
+		DBG_WARNING("gensec_security_by_oid_list() failed\n");
+		TALLOC_FREE(frame);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	for (; all_sec[all_idx].op; all_idx++) {
+		const struct gensec_security_ops_wrapper *cur_sec =
+			&all_sec[all_idx];
+		const char *next = NULL;
+		const char *principal = NULL;
+		int dbg_level = DBGLVL_WARNING;
+		bool allow_fallback = false;
+
+		status = gensec_subcontext_start(spnego_state,
+						 gensec_security,
+						 &spnego_state->sub_sec_security);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(frame);
+			return status;
+		}
+
+		/* select the sub context */
+		status = gensec_start_mech_by_ops(spnego_state->sub_sec_security,
+						  cur_sec->op);
+		if (!NT_STATUS_IS_OK(status)) {
+			/*
+			 * Pretend we never started it.
+			 */
+			gensec_spnego_update_sub_abort(spnego_state);
+			continue;
+		}
+
+		spnego_state->neg_oid = cur_sec->oid;
+
+		/*
+		 * As client we don't use an optimistic token from the server.
+		 */
+		status = gensec_update_ev(spnego_state->sub_sec_security,
+					  frame, ev, data_blob_null, &sub_out);
+		if (NT_STATUS_IS_OK(status)) {
+			spnego_state->sub_sec_ready = true;
+		}
+
+		if (!GENSEC_UPDATE_IS_NTERROR(status)) {
+			/* OK or MORE_PROCESSING_REQUIRED */
+			goto reply;
+		}
+
+		/*
+		 * it is likely that a NULL input token will
+		 * not be liked by most server mechs, but if
+		 * we are in the client, we want the first
+		 * update packet to be able to abort the use
+		 * of this mech
+		 */
+		if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER) ||
+		    NT_STATUS_EQUAL(status, NT_STATUS_NO_LOGON_SERVERS) ||
+		    NT_STATUS_EQUAL(status, NT_STATUS_TIME_DIFFERENCE_AT_DC) ||
+		    NT_STATUS_EQUAL(status, NT_STATUS_CANT_ACCESS_DOMAIN_INFO))
+		{
+			allow_fallback = true;
+		}
+
+		if (allow_fallback && cur_sec[1].op != NULL) {
+			next = cur_sec[1].op->name;
+			dbg_level = DBGLVL_NOTICE;
+		}
+
+		if (gensec_security->target.principal != NULL) {
+			principal = gensec_security->target.principal;
+		} else if (gensec_security->target.service != NULL &&
+			   gensec_security->target.hostname != NULL)
+		{
+			principal = talloc_asprintf(spnego_state->sub_sec_security,
+						    "%s/%s",
+						    gensec_security->target.service,
+						    gensec_security->target.hostname);
+		} else {
+			principal = gensec_security->target.hostname;
+		}
+
+		DBG_PREFIX(dbg_level, (
+			   "%s: creating NEG_TOKEN_INIT "
+			   "for %s failed (next[%s]): %s\n",
+			   spnego_state->sub_sec_security->ops->name,
+			   principal, next, nt_errstr(status)));
+
+		if (allow_fallback && next != NULL) {
+			/*
+			 * Pretend we never started it.
+			 */
+			gensec_spnego_update_sub_abort(spnego_state);
+			continue;
+		}
+
+		/*
+		 * Hard error.
+		 */
+		TALLOC_FREE(frame);
 		return status;
 	}
 
+	DBG_WARNING("Could not find a suitable mechtype in NEG_TOKEN_INIT\n");
+	TALLOC_FREE(frame);
+	return NT_STATUS_INVALID_PARAMETER;
+
+ reply:
 	my_mechs[0] = spnego_state->neg_oid;
 	/* compose reply */
 	spnego_out.type = SPNEGO_NEG_TOKEN_INIT;
@@ -632,6 +743,7 @@ static NTSTATUS gensec_spnego_client_negTokenInit(struct gensec_security *gensec
 
 	if (spnego_write_data(out_mem_ctx, out, &spnego_out) == -1) {
 		DBG_ERR("Failed to write SPNEGO reply to NEG_TOKEN_INIT\n");
+		TALLOC_FREE(frame);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -640,6 +752,7 @@ static NTSTATUS gensec_spnego_client_negTokenInit(struct gensec_security *gensec
 				     &spnego_state->mech_types);
 	if (!ok) {
 		DBG_ERR("failed to write mechTypes\n");
+		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -647,6 +760,7 @@ static NTSTATUS gensec_spnego_client_negTokenInit(struct gensec_security *gensec
 	spnego_state->expected_packet = SPNEGO_NEG_TOKEN_TARG;
 	spnego_state->state_position = SPNEGO_CLIENT_TARG;
 
+	TALLOC_FREE(frame);
 	return NT_STATUS_MORE_PROCESSING_REQUIRED;
 }
 
