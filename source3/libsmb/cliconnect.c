@@ -3746,6 +3746,8 @@ struct cli_state *get_ipc_connect(char *server,
 		flags |= CLI_FULL_CONNECTION_USE_KERBEROS;
 	}
 
+	flags |= CLI_FULL_CONNECTION_FORCE_SMB1;
+
 	nt_status = cli_full_connection(&cli, NULL, server, server_ss, 0, "IPC$", "IPC", 
 					get_cmdline_auth_info_username(user_info),
 					lp_workgroup(),
