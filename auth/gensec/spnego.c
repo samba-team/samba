@@ -227,12 +227,19 @@ static NTSTATUS gensec_spnego_parse_negTokenInit(struct gensec_security *gensec_
 	}
 
 	mechType = spnego_in->negTokenInit.mechTypes;
+	if (mechType == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 	unwrapped_in = spnego_in->negTokenInit.mechToken;
 
 	all_sec = gensec_security_by_oid_list(gensec_security,
 					      out_mem_ctx, 
 					      mechType,
 					      GENSEC_OID_SPNEGO);
+	if (all_sec == NULL) {
+		DBG_WARNING("gensec_security_by_oid_list() failed\n");
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	ok = spnego_write_mech_types(spnego_state,
 				     mechType,
