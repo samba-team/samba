@@ -672,7 +672,7 @@ static NTSTATUS gensec_spnego_update_client(struct gensec_security *gensec_secur
 							     spnego_in,
 							     &unwrapped_out);
 
-		if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED) && !NT_STATUS_IS_OK(nt_status)) {
+		if (GENSEC_UPDATE_IS_NTERROR(nt_status)) {
 			return nt_status;
 		}
 
@@ -959,8 +959,7 @@ static NTSTATUS gensec_spnego_update_client(struct gensec_security *gensec_secur
 		}
 
  client_response:
-		if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)
-			&& !NT_STATUS_IS_OK(nt_status)) {
+		if (GENSEC_UPDATE_IS_NTERROR(nt_status)) {
 			DEBUG(1, ("SPNEGO(%s) login failed: %s\n", 
 				  spnego_state->sub_sec_security->ops->name, 
 				  nt_errstr(nt_status)));
