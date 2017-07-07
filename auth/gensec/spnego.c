@@ -328,7 +328,7 @@ static NTSTATUS gensec_spnego_parse_negTokenInit(struct gensec_security *gensec_
 		}
 
 		spnego_state->neg_oid = cur_sec->oid;
-		break;
+		return nt_status; /* OK or MORE PROCESSING */
 	}
 
 	if (!spnego_state->sub_sec_security) {
