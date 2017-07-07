@@ -3088,7 +3088,6 @@ struct torture_suite *torture_delay_write(TALLOC_CTX *ctx)
 	torture_suite_add_2smb_test(suite, "delayed update of write time 5b", test_delayed_write_update5b);
 	torture_suite_add_2smb_test(suite, "delayed update of write time 6", test_delayed_write_update6);
 	torture_suite_add_1smb_test(suite, "timestamp resolution test", test_delayed_write_update7);
-	torture_suite_add_1smb_test(suite, "timestamp resolution test", test_delayed_write_update7);
 	torture_suite_add_1smb_test(suite, "directory timestamp update test", test_directory_update8);
 
 	return suite;
