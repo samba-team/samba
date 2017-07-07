@@ -414,9 +414,7 @@ static NTSTATUS gensec_spnego_parse_negTokenInit(struct gensec_security *gensec_
 			nt_status = NT_STATUS_MORE_PROCESSING_REQUIRED;
 		}
 
-		if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_INVALID_PARAMETER) 
-		    && !NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED) 
-		    && !NT_STATUS_IS_OK(nt_status)) {
+		if (GENSEC_UPDATE_IS_NTERROR(nt_status)) {
 			DEBUG(1, ("SPNEGO(%s) NEG_TOKEN_INIT failed: %s\n", 
 				  spnego_state->sub_sec_security->ops->name, nt_errstr(nt_status)));
 
@@ -428,7 +426,7 @@ static NTSTATUS gensec_spnego_parse_negTokenInit(struct gensec_security *gensec_
 			return nt_status;
 		}
 
-		return nt_status; /* OK, INVALID_PARAMETER ore MORE PROCESSING */
+		return nt_status; /* OK or MORE PROCESSING */
 	}
 
 	DEBUG(1, ("SPNEGO: Could not find a suitable mechtype in NEG_TOKEN_INIT\n"));
