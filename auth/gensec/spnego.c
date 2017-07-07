@@ -696,6 +696,44 @@ static NTSTATUS gensec_spnego_server_response(struct spnego_state *spnego_state,
 	return nt_status;
 }
 
+static NTSTATUS gensec_spnego_server_negTokenInit(struct gensec_security *gensec_security,
+						  struct spnego_state *spnego_state,
+						  struct tevent_context *ev,
+						  struct spnego_data *spnego_in,
+						  TALLOC_CTX *out_mem_ctx,
+						  DATA_BLOB *out)
+{
+	DATA_BLOB sub_out = data_blob_null;
+	DATA_BLOB mech_list_mic = data_blob_null;
+	NTSTATUS status;
+
+	status = gensec_spnego_parse_negTokenInit(gensec_security,
+						  spnego_state,
+						  out_mem_ctx,
+						  ev,
+						  spnego_in,
+						  &sub_out);
+
+	if (spnego_state->simulate_w2k) {
+		/*
+		 * Windows 2000 returns the unwrapped token
+		 * also in the mech_list_mic field.
+		 *
+		 * In order to verify our client code,
+		 * we need a way to have a server with this
+		 * broken behaviour
+		 */
+		mech_list_mic = sub_out;
+	}
+
+	return gensec_spnego_server_response(spnego_state,
+					     out_mem_ctx,
+					     status,
+					     sub_out,
+					     mech_list_mic,
+					     out);
+}
+
 static NTSTATUS gensec_spnego_update_client(struct gensec_security *gensec_security,
 					    TALLOC_CTX *out_mem_ctx,
 					    struct tevent_context *ev,
@@ -1034,37 +1072,10 @@ static NTSTATUS gensec_spnego_update_server(struct gensec_security *gensec_secur
 
 	switch (spnego_state->state_position) {
 	case SPNEGO_SERVER_START:
-	{
-		NTSTATUS nt_status;
-
-		nt_status = gensec_spnego_parse_negTokenInit(gensec_security,
-							     spnego_state,
-							     out_mem_ctx,
-							     ev,
-							     spnego_in,
-							     &unwrapped_out);
-
-		if (spnego_state->simulate_w2k) {
-			/*
-			 * Windows 2000 returns the unwrapped token
-			 * also in the mech_list_mic field.
-			 *
-			 * In order to verify our client code,
-			 * we need a way to have a server with this
-			 * broken behaviour
-			 */
-			mech_list_mic = unwrapped_out;
-		}
-
-		nt_status = gensec_spnego_server_response(spnego_state,
-							  out_mem_ctx,
-							  nt_status,
-							  unwrapped_out,
-							  mech_list_mic,
-							  out);
-
-		return nt_status;
-	}
+		return gensec_spnego_server_negTokenInit(gensec_security,
+							 spnego_state,
+							 ev, spnego_in,
+							 out_mem_ctx, out);
 
 	case SPNEGO_SERVER_TARG:
 	{
