@@ -221,6 +221,26 @@ test_fetch_snap_file()
         -c "get ${SNAPSHOTS[$snapidx]}/$path $WORKDIR/foo"
 }
 
+# Test fetching a previous version of a file
+test_fetch_snap_dir()
+{
+    local share
+    local path
+    local snapidx
+
+    share=$1
+    path=$2
+    snapidx=$3
+
+    # This first command is not strictly needed, but it causes the snapshots to
+    # appear in a network trace which helps debugging...
+    $SMBCLIENT -U$USERNAME%$PASSWORD "//$SERVER/$share" -I $SERVER_IP \
+        -c "allinfo $path"
+
+    $SMBCLIENT -U$USERNAME%$PASSWORD "//$SERVER/$share" -I $SERVER_IP \
+        -c "ls ${SNAPSHOTS[$snapidx]}/$path/*"
+}
+
 test_shadow_copy_fixed()
 {
     local share     #share to contact
@@ -329,6 +349,9 @@ test_shadow_copy_everywhere()
         test_fetch_snap_file $share "bar/lfoo" 3 || \
         failed=`expr $failed + 1`
 
+    testit "list a previous version directory" \
+        test_fetch_snap_dir $share "bar" 6 || \
+        failed=`expr $failed + 1`
 }
 
 test_shadow_copy_format()
