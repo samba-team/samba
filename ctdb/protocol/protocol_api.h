@@ -677,6 +677,19 @@ int ctdb_event_reply_pull(uint8_t *buf, size_t buflen,
 int ctdb_allocate_pkt(TALLOC_CTX *mem_ctx, size_t datalen,
 		      uint8_t **buf, size_t *buflen);
 
+/* From protocol/protocol_sock.c */
+
+size_t sock_packet_header_len(struct sock_packet_header *in);
+void sock_packet_header_push(struct sock_packet_header *in, uint8_t *buf,
+			     size_t *npush);
+int sock_packet_header_pull(uint8_t *buf, size_t buflen,
+			    struct sock_packet_header *out, size_t *npull);
+
+void sock_packet_header_set_reqid(struct sock_packet_header *h,
+				  uint32_t reqid);
+void sock_packet_header_set_length(struct sock_packet_header *h,
+				   uint32_t length);
+
 /* From protocol/protocol_util.c */
 
 const char *ctdb_runstate_to_string(enum ctdb_runstate runstate);

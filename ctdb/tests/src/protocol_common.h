@@ -350,4 +350,8 @@ void fill_ctdb_g_lock_list(TALLOC_CTX *mem_ctx, struct ctdb_g_lock_list *p);
 void verify_ctdb_g_lock_list(struct ctdb_g_lock_list *p1,
 			     struct ctdb_g_lock_list *p2);
 
+void fill_sock_packet_header(struct sock_packet_header *p);
+void verify_sock_packet_header(struct sock_packet_header *p1,
+			       struct sock_packet_header *p2);
+
 #endif /* __CTDB_PROTOCOL_COMMON_H__ */

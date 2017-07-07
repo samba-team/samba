@@ -1008,6 +1008,15 @@ struct ctdb_g_lock_list {
 };
 
 /*
+ * Generic packet header
+ */
+
+struct sock_packet_header {
+	uint32_t length;
+	uint32_t reqid;
+};
+
+/*
  * Eventd protocol
  */
 

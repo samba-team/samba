@@ -1383,3 +1383,16 @@ void verify_ctdb_g_lock_list(struct ctdb_g_lock_list *p1,
 		verify_ctdb_g_lock(&p1->lock[i], &p2->lock[i]);
 	}
 }
+
+void fill_sock_packet_header(struct sock_packet_header *p)
+{
+	p->length = rand32();
+	p->reqid = rand32();
+}
+
+void verify_sock_packet_header(struct sock_packet_header *p1,
+			       struct sock_packet_header *p2)
+{
+	assert(p1->length == p2->length);
+	assert(p1->reqid == p2->reqid);
+}

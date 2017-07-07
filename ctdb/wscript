@@ -400,7 +400,8 @@ def build(bld):
                                              protocol_client.c
                                              protocol_debug.c
                                              protocol_util.c
-                                             protocol_event.c'''),
+                                             protocol_event.c
+                                             protocol_sock.c'''),
                         includes='include',
                         deps='replace talloc tdb')
 

@@ -24,6 +24,7 @@
 
 #include "protocol/protocol_basic.c"
 #include "protocol/protocol_types.c"
+#include "protocol/protocol_sock.c"
 
 #include "tests/src/protocol_common.h"
 
@@ -74,6 +75,8 @@ PROTOCOL_TYPE3_TEST(struct ctdb_disable_message, ctdb_disable_message);
 PROTOCOL_TYPE1_TEST(struct ctdb_server_id, ctdb_server_id);
 PROTOCOL_TYPE1_TEST(struct ctdb_g_lock, ctdb_g_lock);
 PROTOCOL_TYPE3_TEST(struct ctdb_g_lock_list, ctdb_g_lock_list);
+
+PROTOCOL_TYPE1_TEST(struct sock_packet_header, sock_packet_header);
 
 static void test_ctdb_rec_buffer_read_write(void)
 {
@@ -175,6 +178,8 @@ int main(int argc, char *argv[])
 	TEST_FUNC(ctdb_server_id)();
 	TEST_FUNC(ctdb_g_lock)();
 	TEST_FUNC(ctdb_g_lock_list)();
+
+	TEST_FUNC(sock_packet_header)();
 
 	test_ctdb_rec_buffer_read_write();
 
