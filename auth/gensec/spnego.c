@@ -221,6 +221,11 @@ static NTSTATUS gensec_spnego_parse_negTokenInit(struct gensec_security *gensec_
 	DATA_BLOB unwrapped_in = data_blob_null;
 	bool ok;
 	const struct gensec_security_ops_wrapper *all_sec = NULL;
+	uint32_t j;
+
+	if (spnego_state->state_position != SPNEGO_SERVER_START) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
 
 	if (spnego_in->type != SPNEGO_NEG_TOKEN_INIT) {
 		return NT_STATUS_INTERNAL_ERROR;
@@ -249,78 +254,75 @@ static NTSTATUS gensec_spnego_parse_negTokenInit(struct gensec_security *gensec_
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (spnego_state->state_position == SPNEGO_SERVER_START) {
-		uint32_t j;
-		for (j=0; mechType && mechType[j]; j++) {
-			for (i=0; all_sec && all_sec[i].op; i++) {
-				if (strcmp(mechType[j], all_sec[i].oid) != 0) {
-					continue;
-				}
+	for (j=0; mechType && mechType[j]; j++) {
+		for (i=0; all_sec && all_sec[i].op; i++) {
+			if (strcmp(mechType[j], all_sec[i].oid) != 0) {
+				continue;
+			}
 
-				nt_status = gensec_subcontext_start(spnego_state,
-								    gensec_security,
-								    &spnego_state->sub_sec_security);
-				if (!NT_STATUS_IS_OK(nt_status)) {
-					return nt_status;
-				}
-				/* select the sub context */
-				nt_status = gensec_start_mech_by_ops(spnego_state->sub_sec_security,
-								     all_sec[i].op);
-				if (!NT_STATUS_IS_OK(nt_status)) {
-					/*
-					 * Pretend we never started it
-					 */
-					gensec_spnego_update_sub_abort(spnego_state);
-					break;
-				}
+			nt_status = gensec_subcontext_start(spnego_state,
+							    gensec_security,
+							    &spnego_state->sub_sec_security);
+			if (!NT_STATUS_IS_OK(nt_status)) {
+				return nt_status;
+			}
+			/* select the sub context */
+			nt_status = gensec_start_mech_by_ops(spnego_state->sub_sec_security,
+							     all_sec[i].op);
+			if (!NT_STATUS_IS_OK(nt_status)) {
+				/*
+				 * Pretend we never started it
+				 */
+				gensec_spnego_update_sub_abort(spnego_state);
+				break;
+			}
 
-				if (j > 0) {
-					/* no optimistic token */
-					spnego_state->neg_oid = all_sec[i].oid;
-					*unwrapped_out = data_blob_null;
-					nt_status = NT_STATUS_MORE_PROCESSING_REQUIRED;
-					/*
-					 * Indicate the downgrade and request a
-					 * mic.
-					 */
-					spnego_state->downgraded = true;
-					spnego_state->mic_requested = true;
-					break;
-				}
-
-				nt_status = gensec_update_ev(spnego_state->sub_sec_security,
-							  out_mem_ctx, 
-							  ev,
-							  unwrapped_in,
-							  unwrapped_out);
-				if (NT_STATUS_IS_OK(nt_status)) {
-					spnego_state->sub_sec_ready = true;
-				}
-				if (NT_STATUS_EQUAL(nt_status, NT_STATUS_INVALID_PARAMETER) || 
-				    NT_STATUS_EQUAL(nt_status, NT_STATUS_CANT_ACCESS_DOMAIN_INFO)) {
-
-					DEBUG(1, ("SPNEGO(%s) NEG_TOKEN_INIT failed to parse contents: %s\n", 
-						  spnego_state->sub_sec_security->ops->name, nt_errstr(nt_status)));
-
-					/*
-					 * Pretend we never started it
-					 */
-					gensec_spnego_update_sub_abort(spnego_state);
-					break;
-				}
-
+			if (j > 0) {
+				/* no optimistic token */
 				spnego_state->neg_oid = all_sec[i].oid;
+				*unwrapped_out = data_blob_null;
+				nt_status = NT_STATUS_MORE_PROCESSING_REQUIRED;
+				/*
+				 * Indicate the downgrade and request a
+				 * mic.
+				 */
+				spnego_state->downgraded = true;
+				spnego_state->mic_requested = true;
 				break;
 			}
-			if (spnego_state->sub_sec_security) {
-				break;
-			}
-		}
 
-		if (!spnego_state->sub_sec_security) {
-			DEBUG(1, ("SPNEGO: Could not find a suitable mechtype in NEG_TOKEN_INIT\n"));
-			return NT_STATUS_INVALID_PARAMETER;
+			nt_status = gensec_update_ev(spnego_state->sub_sec_security,
+						  out_mem_ctx,
+						  ev,
+						  unwrapped_in,
+						  unwrapped_out);
+			if (NT_STATUS_IS_OK(nt_status)) {
+				spnego_state->sub_sec_ready = true;
+			}
+			if (NT_STATUS_EQUAL(nt_status, NT_STATUS_INVALID_PARAMETER) ||
+			    NT_STATUS_EQUAL(nt_status, NT_STATUS_CANT_ACCESS_DOMAIN_INFO)) {
+
+				DEBUG(1, ("SPNEGO(%s) NEG_TOKEN_INIT failed to parse contents: %s\n",
+					  spnego_state->sub_sec_security->ops->name, nt_errstr(nt_status)));
+
+				/*
+				 * Pretend we never started it
+				 */
+				gensec_spnego_update_sub_abort(spnego_state);
+				break;
+			}
+
+			spnego_state->neg_oid = all_sec[i].oid;
+			break;
 		}
+		if (spnego_state->sub_sec_security) {
+			break;
+		}
+	}
+
+	if (!spnego_state->sub_sec_security) {
+		DEBUG(1, ("SPNEGO: Could not find a suitable mechtype in NEG_TOKEN_INIT\n"));
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/* Having tried any optimistic token from the client (if we
