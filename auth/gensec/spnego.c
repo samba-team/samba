@@ -320,6 +320,13 @@ static NTSTATUS gensec_spnego_parse_negTokenInit(struct gensec_security *gensec_
 			continue;
 		}
 
+		if (GENSEC_UPDATE_IS_NTERROR(nt_status)) {
+			DEBUG(1, ("SPNEGO(%s) NEG_TOKEN_INIT failed: %s\n",
+				  spnego_state->sub_sec_security->ops->name,
+				  nt_errstr(nt_status)));
+			return nt_status;
+		}
+
 		spnego_state->neg_oid = cur_sec->oid;
 		break;
 	}
