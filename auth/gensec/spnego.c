@@ -331,46 +331,8 @@ static NTSTATUS gensec_spnego_parse_negTokenInit(struct gensec_security *gensec_
 		return nt_status; /* OK or MORE PROCESSING */
 	}
 
-	if (!spnego_state->sub_sec_security) {
-		DEBUG(1, ("SPNEGO: Could not find a suitable mechtype in NEG_TOKEN_INIT\n"));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	if (spnego_state->sub_sec_security) {
-		/* it is likely that a NULL input token will
-		 * not be liked by most server mechs, but this
-		 * does the right thing in the CIFS client.
-		 * just push us along the merry-go-round
-		 * again, and hope for better luck next
-		 * time */
-
-		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_INVALID_PARAMETER)) {
-			*unwrapped_out = data_blob_null;
-			nt_status = NT_STATUS_MORE_PROCESSING_REQUIRED;
-		}
-
-		if (GENSEC_UPDATE_IS_NTERROR(nt_status)) {
-			DEBUG(1, ("SPNEGO(%s) NEG_TOKEN_INIT failed: %s\n", 
-				  spnego_state->sub_sec_security->ops->name, nt_errstr(nt_status)));
-
-			/* We started the mech correctly, and the
-			 * input from the other side was valid.
-			 * Return the error (say bad password, invalid
-			 * ticket) */
-			gensec_spnego_update_sub_abort(spnego_state);
-			return nt_status;
-		}
-
-		return nt_status; /* OK or MORE PROCESSING */
-	}
-
 	DEBUG(1, ("SPNEGO: Could not find a suitable mechtype in NEG_TOKEN_INIT\n"));
-	/* we could re-negotiate here, but it would only work
-	 * if the client or server lied about what it could
-	 * support the first time.  Lets keep this code to
-	 * reality */
-
-	return nt_status;
+	return NT_STATUS_INVALID_PARAMETER;
 }
 
 /** create a negTokenInit 
