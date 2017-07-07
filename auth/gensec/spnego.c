@@ -578,6 +578,70 @@ static NTSTATUS gensec_spnego_create_negTokenInit(struct gensec_security *gensec
 	return nt_status;
 }
 
+static NTSTATUS gensec_spnego_client_negTokenInit(struct gensec_security *gensec_security,
+						  struct spnego_state *spnego_state,
+						  struct tevent_context *ev,
+						  struct spnego_data *spnego_in,
+						  TALLOC_CTX *out_mem_ctx,
+						  DATA_BLOB *out)
+{
+	DATA_BLOB sub_out = data_blob_null;
+	const char *tp = NULL;
+	struct spnego_data spnego_out;
+	const char *my_mechs[] = {NULL, NULL};
+	NTSTATUS status;
+	bool ok;
+
+	*out = data_blob_null;
+
+	/* The server offers a list of mechanisms */
+
+	tp = spnego_in->negTokenInit.targetPrincipal;
+	if (tp != NULL && strcmp(tp, ADS_IGNORE_PRINCIPAL) != 0) {
+		DBG_INFO("Server claims it's principal name is %s\n", tp);
+		if (lpcfg_client_use_spnego_principal(gensec_security->settings->lp_ctx)) {
+			gensec_set_target_principal(gensec_security, tp);
+		}
+	}
+
+	status = gensec_spnego_parse_negTokenInit(gensec_security,
+						  spnego_state,
+						  out_mem_ctx,
+						  ev,
+						  spnego_in,
+						  &sub_out);
+	if (GENSEC_UPDATE_IS_NTERROR(status)) {
+		return status;
+	}
+
+	my_mechs[0] = spnego_state->neg_oid;
+	/* compose reply */
+	spnego_out.type = SPNEGO_NEG_TOKEN_INIT;
+	spnego_out.negTokenInit.mechTypes = my_mechs;
+	spnego_out.negTokenInit.reqFlags = data_blob_null;
+	spnego_out.negTokenInit.reqFlagsPadding = 0;
+	spnego_out.negTokenInit.mechListMIC = data_blob_null;
+	spnego_out.negTokenInit.mechToken = sub_out;
+
+	if (spnego_write_data(out_mem_ctx, out, &spnego_out) == -1) {
+		DBG_ERR("Failed to write SPNEGO reply to NEG_TOKEN_INIT\n");
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	ok = spnego_write_mech_types(spnego_state,
+				     my_mechs,
+				     &spnego_state->mech_types);
+	if (!ok) {
+		DBG_ERR("failed to write mechTypes\n");
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* set next state */
+	spnego_state->expected_packet = SPNEGO_NEG_TOKEN_TARG;
+	spnego_state->state_position = SPNEGO_CLIENT_TARG;
+
+	return NT_STATUS_MORE_PROCESSING_REQUIRED;
+}
 
 /** create a server negTokenTarg 
  *
@@ -649,61 +713,10 @@ static NTSTATUS gensec_spnego_update_client(struct gensec_security *gensec_secur
 
 	switch (spnego_state->state_position) {
 	case SPNEGO_CLIENT_START:
-	{
-		/* The server offers a list of mechanisms */
-
-		const char *my_mechs[] = {NULL, NULL};
-		NTSTATUS nt_status = NT_STATUS_INVALID_PARAMETER;
-		bool ok;
-		const char *tp = NULL;
-
-		tp = spnego_in->negTokenInit.targetPrincipal;
-		if (tp != NULL && strcmp(tp, ADS_IGNORE_PRINCIPAL) != 0) {
-			DEBUG(5, ("Server claims it's principal name is %s\n", tp));
-			if (lpcfg_client_use_spnego_principal(gensec_security->settings->lp_ctx)) {
-				gensec_set_target_principal(gensec_security, tp);
-			}
-		}
-
-		nt_status = gensec_spnego_parse_negTokenInit(gensec_security,
-							     spnego_state,
-							     out_mem_ctx, 
-							     ev,
-							     spnego_in,
-							     &unwrapped_out);
-
-		if (GENSEC_UPDATE_IS_NTERROR(nt_status)) {
-			return nt_status;
-		}
-
-		my_mechs[0] = spnego_state->neg_oid;
-		/* compose reply */
-		spnego_out.type = SPNEGO_NEG_TOKEN_INIT;
-		spnego_out.negTokenInit.mechTypes = my_mechs;
-		spnego_out.negTokenInit.reqFlags = data_blob_null;
-		spnego_out.negTokenInit.reqFlagsPadding = 0;
-		spnego_out.negTokenInit.mechListMIC = data_blob_null;
-		spnego_out.negTokenInit.mechToken = unwrapped_out;
-
-		if (spnego_write_data(out_mem_ctx, out, &spnego_out) == -1) {
-			DEBUG(1, ("Failed to write SPNEGO reply to NEG_TOKEN_INIT\n"));
-				return NT_STATUS_INVALID_PARAMETER;
-		}
-
-		ok = spnego_write_mech_types(spnego_state,
-					     my_mechs,
-					     &spnego_state->mech_types);
-		if (!ok) {
-			DEBUG(1, ("SPNEGO: Failed to write mechTypes\n"));
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		/* set next state */
-		spnego_state->expected_packet = SPNEGO_NEG_TOKEN_TARG;
-		spnego_state->state_position = SPNEGO_CLIENT_TARG;
-
-		return NT_STATUS_MORE_PROCESSING_REQUIRED;
-	}
+		return gensec_spnego_client_negTokenInit(gensec_security,
+							 spnego_state,
+							 ev, spnego_in,
+							 out_mem_ctx, out);
 
 	case SPNEGO_CLIENT_TARG:
 	{
