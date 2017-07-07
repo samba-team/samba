@@ -537,12 +537,32 @@ static int non_widelink_open(struct connection_struct *conn,
 	char *oldwd = NULL;
 	char *parent_dir = NULL;
 	const char *final_component = NULL;
+	bool is_directory = false;
+	bool ok;
 
-	if (!parent_dirname(talloc_tos(),
-			smb_fname->base_name,
-			&parent_dir,
-			&final_component)) {
-		goto out;
+#ifdef O_DIRECTORY
+	if (flags & O_DIRECTORY) {
+		is_directory = true;
+	}
+#endif
+
+	if (is_directory) {
+		parent_dir = talloc_strdup(talloc_tos(), smb_fname->base_name);
+		if (parent_dir == NULL) {
+			saved_errno = errno;
+			goto out;
+		}
+
+		final_component = ".";
+	} else {
+		ok = parent_dirname(talloc_tos(),
+				    smb_fname->base_name,
+				    &parent_dir,
+				    &final_component);
+		if (!ok) {
+			saved_errno = errno;
+			goto out;
+		}
 	}
 
 	oldwd = vfs_GetWd(talloc_tos(), conn);
