@@ -296,7 +296,7 @@ static NTSTATUS gensec_spnego_parse_negTokenInit(struct gensec_security *gensec_
 			 */
 			spnego_state->downgraded = true;
 			spnego_state->mic_requested = true;
-			break;
+			return nt_status;
 		}
 
 		nt_status = gensec_update_ev(spnego_state->sub_sec_security,
