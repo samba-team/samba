@@ -70,12 +70,23 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
     def test_ReplDisabled(self):
         """Tests we cann't replicate when replication is disabled"""
         self._disable_inbound_repl(self.dnsname_dc1)
-        try:
-            self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, forced=False)
-        except samba.tests.BlackboxProcessError, e:
-            self.assertTrue('WERR_DS_DRA_SINK_DISABLED' in e.stderr)
-        else:
-            self.fail("'drs replicate' command should have failed!")
+
+        ccache_name = self.get_creds_ccache_name()
+
+        # Tunnel the command line credentials down to the
+        # subcommand to avoid a new kinit
+        cmdline_auth = "--krb5-ccache=%s" % ccache_name
+
+        # bin/samba-tool drs <drs_command> <cmdline_auth>
+        cmd_list = ["drs", "replicate", cmdline_auth]
+
+        nc_dn = self.domain_dn
+        # bin/samba-tool drs replicate <Dest_DC_NAME> <Src_DC_NAME> <Naming Context>
+        cmd_list += [self.dnsname_dc1, self.dnsname_dc2, nc_dn]
+
+        (result, out, err) = self.runsubcmd(*cmd_list)
+        self.assertCmdFail(result)
+        self.assertTrue('WERR_DS_DRA_SINK_DISABLED' in err)
 
     def test_ReplDisabledForced(self):
         """Tests we can force replicate when replication is disabled"""
