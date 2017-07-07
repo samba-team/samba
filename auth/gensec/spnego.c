@@ -1175,37 +1175,6 @@ static NTSTATUS gensec_spnego_server_negTokenTarg(struct gensec_security *gensec
 					     out);
 }
 
-static NTSTATUS gensec_spnego_update_server(struct gensec_security *gensec_security,
-					    TALLOC_CTX *out_mem_ctx,
-					    struct tevent_context *ev,
-					    struct spnego_data *spnego_in,
-					    DATA_BLOB *out)
-{
-	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
-
-	/* and switch into the state machine */
-
-	switch (spnego_state->state_position) {
-	case SPNEGO_SERVER_START:
-		return gensec_spnego_server_negTokenInit(gensec_security,
-							 spnego_state,
-							 ev, spnego_in,
-							 out_mem_ctx, out);
-
-	case SPNEGO_SERVER_TARG:
-		return gensec_spnego_server_negTokenTarg(gensec_security,
-							 spnego_state,
-							 ev, spnego_in,
-							 out_mem_ctx, out);
-
-	default:
-		break;
-	}
-
-	smb_panic(__location__);
-	return NT_STATUS_INTERNAL_ERROR;
-}
-
 struct gensec_spnego_update_state {
 	struct gensec_security *gensec;
 	struct spnego_state *spnego;
@@ -1408,12 +1377,17 @@ static struct tevent_req *gensec_spnego_update_send(TALLOC_CTX *mem_ctx,
 			break;
 		}
 
-		/* fall through */
+		status = gensec_spnego_server_negTokenInit(gensec_security,
+							spnego_state, ev,
+							state->spnego_in, state,
+							&spnego_state->out_frag);
+		break;
+
 	case SPNEGO_SERVER_TARG:
-		status = gensec_spnego_update_server(gensec_security,
-						     state, ev,
-						     state->spnego_in,
-						     &spnego_state->out_frag);
+		status = gensec_spnego_server_negTokenTarg(gensec_security,
+							spnego_state, ev,
+							state->spnego_in, state,
+							&spnego_state->out_frag);
 		break;
 
 	default:
