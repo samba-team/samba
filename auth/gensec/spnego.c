@@ -643,6 +643,326 @@ static NTSTATUS gensec_spnego_client_negTokenInit(struct gensec_security *gensec
 	return NT_STATUS_MORE_PROCESSING_REQUIRED;
 }
 
+static NTSTATUS gensec_spnego_client_negTokenTarg(struct gensec_security *gensec_security,
+						  struct spnego_state *spnego_state,
+						  struct tevent_context *ev,
+						  struct spnego_data *spnego_in,
+						  TALLOC_CTX *out_mem_ctx,
+						  DATA_BLOB *out)
+{
+	struct spnego_negTokenTarg *ta = &spnego_in->negTokenTarg;
+	DATA_BLOB sub_in = ta->responseToken;
+	DATA_BLOB mech_list_mic = data_blob_null;
+	DATA_BLOB sub_out = data_blob_null;
+	struct spnego_data spnego_out;
+	NTSTATUS status;
+
+	*out = data_blob_null;
+
+	spnego_state->num_targs++;
+
+	if (ta->negResult == SPNEGO_REJECT) {
+		return NT_STATUS_LOGON_FAILURE;
+	}
+
+	if (ta->negResult == SPNEGO_REQUEST_MIC) {
+		spnego_state->mic_requested = true;
+	}
+
+	if (ta->mechListMIC.length > 0) {
+		DATA_BLOB *m = &ta->mechListMIC;
+		const DATA_BLOB *r = &ta->responseToken;
+
+		/*
+		 * Windows 2000 has a bug, it repeats the
+		 * responseToken in the mechListMIC field.
+		 */
+		if (m->length == r->length) {
+			int cmp;
+
+			cmp = memcmp(m->data, r->data, m->length);
+			if (cmp == 0) {
+				data_blob_free(m);
+			}
+		}
+	}
+
+	/* Server didn't like our choice of mech, and chose something else */
+	if (((ta->negResult == SPNEGO_ACCEPT_INCOMPLETE) ||
+	     (ta->negResult == SPNEGO_REQUEST_MIC)) &&
+	    ta->supportedMech != NULL &&
+	    strcmp(ta->supportedMech, spnego_state->neg_oid) != 0)
+	{
+		const char *client_mech = NULL;
+		const char *client_oid = NULL;
+		const char *server_mech = NULL;
+		const char *server_oid = NULL;
+
+		client_mech = gensec_get_name_by_oid(gensec_security,
+						     spnego_state->neg_oid);
+		client_oid = spnego_state->neg_oid;
+		server_mech = gensec_get_name_by_oid(gensec_security,
+						     ta->supportedMech);
+		server_oid = ta->supportedMech;
+
+		DBG_NOTICE("client preferred mech (%s[%s]) not accepted, "
+			   "server wants: %s[%s]\n",
+			   client_mech, client_oid, server_mech, server_oid);
+
+		spnego_state->downgraded = true;
+		gensec_spnego_update_sub_abort(spnego_state);
+
+		status = gensec_subcontext_start(spnego_state,
+						 gensec_security,
+						 &spnego_state->sub_sec_security);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		/* select the sub context */
+		status = gensec_start_mech_by_oid(spnego_state->sub_sec_security,
+						  ta->supportedMech);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		spnego_state->neg_oid = talloc_strdup(spnego_state,
+					ta->supportedMech);
+		if (spnego_state->neg_oid == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	if (ta->mechListMIC.length > 0) {
+		if (spnego_state->sub_sec_ready) {
+			spnego_state->needs_mic_check = true;
+		}
+	}
+
+	if (spnego_state->needs_mic_check) {
+		if (ta->responseToken.length != 0) {
+			DBG_WARNING("non empty response token not expected\n");
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		if (ta->mechListMIC.length == 0
+		    && spnego_state->may_skip_mic_check) {
+			/*
+			 * In this case we don't require
+			 * a mechListMIC from the server.
+			 *
+			 * This works around bugs in the Azure
+			 * and Apple spnego implementations.
+			 *
+			 * See
+			 * https://bugzilla.samba.org/show_bug.cgi?id=11994
+			 */
+			spnego_state->needs_mic_check = false;
+			status = NT_STATUS_OK;
+			goto client_response;
+		}
+
+		status = gensec_check_packet(spnego_state->sub_sec_security,
+					     spnego_state->mech_types.data,
+					     spnego_state->mech_types.length,
+					     spnego_state->mech_types.data,
+					     spnego_state->mech_types.length,
+					     &ta->mechListMIC);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_WARNING("failed to verify mechListMIC: %s\n",
+				    nt_errstr(status));
+			return status;
+		}
+		spnego_state->needs_mic_check = false;
+		spnego_state->done_mic_check = true;
+		goto client_response;
+	}
+
+	if (!spnego_state->sub_sec_ready) {
+		status = gensec_update_ev(spnego_state->sub_sec_security,
+					  out_mem_ctx, ev,
+					  sub_in,
+					  &sub_out);
+		if (NT_STATUS_IS_OK(status)) {
+			spnego_state->sub_sec_ready = true;
+		}
+		if (!NT_STATUS_IS_OK(status)) {
+			goto client_response;
+		}
+	} else {
+		status = NT_STATUS_OK;
+	}
+
+	if (!spnego_state->done_mic_check) {
+		bool have_sign = true;
+		bool new_spnego = false;
+
+		have_sign = gensec_have_feature(spnego_state->sub_sec_security,
+						GENSEC_FEATURE_SIGN);
+		if (spnego_state->simulate_w2k) {
+			have_sign = false;
+		}
+		new_spnego = gensec_have_feature(spnego_state->sub_sec_security,
+						 GENSEC_FEATURE_NEW_SPNEGO);
+
+		switch (ta->negResult) {
+		case SPNEGO_ACCEPT_COMPLETED:
+		case SPNEGO_NONE_RESULT:
+			if (spnego_state->num_targs == 1) {
+				/*
+				 * the first exchange doesn't require
+				 * verification
+				 */
+				new_spnego = false;
+			}
+
+			break;
+
+		case SPNEGO_ACCEPT_INCOMPLETE:
+			if (ta->mechListMIC.length > 0) {
+				new_spnego = true;
+				break;
+			}
+
+			if (spnego_state->downgraded) {
+				/*
+				 * A downgrade should be protected if
+				 * supported
+				 */
+				break;
+			}
+
+			/*
+			 * The caller may just asked for
+			 * GENSEC_FEATURE_SESSION_KEY, this
+			 * is only reflected in the want_features.
+			 *
+			 * As it will imply
+			 * gensec_have_features(GENSEC_FEATURE_SIGN)
+			 * to return true.
+			 */
+			if (gensec_security->want_features & GENSEC_FEATURE_SIGN) {
+				break;
+			}
+			if (gensec_security->want_features & GENSEC_FEATURE_SEAL) {
+				break;
+			}
+			/*
+			 * Here we're sure our preferred mech was
+			 * selected by the server and our caller doesn't
+			 * need GENSEC_FEATURE_SIGN nor
+			 * GENSEC_FEATURE_SEAL support.
+			 *
+			 * In this case we don't require
+			 * a mechListMIC from the server.
+			 *
+			 * This works around bugs in the Azure
+			 * and Apple spnego implementations.
+			 *
+			 * See
+			 * https://bugzilla.samba.org/show_bug.cgi?id=11994
+			 */
+			spnego_state->may_skip_mic_check = true;
+			break;
+
+		case SPNEGO_REQUEST_MIC:
+			if (ta->mechListMIC.length > 0) {
+				new_spnego = true;
+			}
+			break;
+		default:
+			break;
+		}
+
+		if (spnego_state->mic_requested) {
+			if (have_sign) {
+				new_spnego = true;
+			}
+		}
+
+		if (have_sign && new_spnego) {
+			spnego_state->needs_mic_check = true;
+			spnego_state->needs_mic_sign = true;
+		}
+	}
+
+	if (ta->mechListMIC.length > 0) {
+		status = gensec_check_packet(spnego_state->sub_sec_security,
+					     spnego_state->mech_types.data,
+					     spnego_state->mech_types.length,
+					     spnego_state->mech_types.data,
+					     spnego_state->mech_types.length,
+					     &ta->mechListMIC);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_WARNING("failed to verify mechListMIC: %s\n",
+				    nt_errstr(status));
+			return status;
+		}
+		spnego_state->needs_mic_check = false;
+		spnego_state->done_mic_check = true;
+	}
+
+	if (spnego_state->needs_mic_sign) {
+		status = gensec_sign_packet(spnego_state->sub_sec_security,
+					    out_mem_ctx,
+					    spnego_state->mech_types.data,
+					    spnego_state->mech_types.length,
+					    spnego_state->mech_types.data,
+					    spnego_state->mech_types.length,
+					    &mech_list_mic);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_WARNING("failed to sign mechListMIC: %s\n",
+				    nt_errstr(status));
+			return status;
+		}
+		spnego_state->needs_mic_sign = false;
+	}
+
+	if (spnego_state->needs_mic_check) {
+		status = NT_STATUS_MORE_PROCESSING_REQUIRED;
+	}
+
+ client_response:
+	if (GENSEC_UPDATE_IS_NTERROR(status)) {
+		DBG_WARNING("SPNEGO(%s) login failed: %s\n",
+			    spnego_state->sub_sec_security->ops->name,
+			    nt_errstr(status));
+		return status;
+	}
+
+	if (sub_out.length || mech_list_mic.length) {
+		/* compose reply */
+		spnego_out.type = SPNEGO_NEG_TOKEN_TARG;
+		spnego_out.negTokenTarg.negResult = SPNEGO_NONE_RESULT;
+		spnego_out.negTokenTarg.supportedMech = NULL;
+		spnego_out.negTokenTarg.responseToken = sub_out;
+		spnego_out.negTokenTarg.mechListMIC = mech_list_mic;
+
+		if (spnego_write_data(out_mem_ctx, out, &spnego_out) == -1) {
+			DBG_WARNING("Failed to write NEG_TOKEN_TARG\n");
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		spnego_state->num_targs++;
+		spnego_state->state_position = SPNEGO_CLIENT_TARG;
+		status = NT_STATUS_MORE_PROCESSING_REQUIRED;
+	} else {
+
+		/* all done - server has accepted, and we agree */
+		*out = data_blob_null;
+
+		if (ta->negResult != SPNEGO_ACCEPT_COMPLETED) {
+			/* unless of course it did not accept */
+			DBG_WARNING("gensec_update ok but not accepted\n");
+			status = NT_STATUS_INVALID_PARAMETER;
+		}
+
+		spnego_state->state_position = SPNEGO_DONE;
+	}
+
+	return status;
+}
+
 /** create a server negTokenTarg 
  *
  * This is the case, where the client is the first one who sends data
@@ -741,9 +1061,6 @@ static NTSTATUS gensec_spnego_update_client(struct gensec_security *gensec_secur
 					    DATA_BLOB *out)
 {
 	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
-	DATA_BLOB mech_list_mic = data_blob_null;
-	DATA_BLOB unwrapped_out = data_blob_null;
-	struct spnego_data spnego_out;
 
 	*out = data_blob_null;
 
@@ -757,298 +1074,10 @@ static NTSTATUS gensec_spnego_update_client(struct gensec_security *gensec_secur
 							 out_mem_ctx, out);
 
 	case SPNEGO_CLIENT_TARG:
-	{
-		NTSTATUS nt_status = NT_STATUS_INTERNAL_ERROR;
-		struct spnego_negTokenTarg *ta =
-			&spnego_in->negTokenTarg;
-
-		spnego_state->num_targs++;
-
-		if (ta->negResult == SPNEGO_REJECT) {
-			return NT_STATUS_LOGON_FAILURE;
-		}
-
-		if (ta->negResult == SPNEGO_REQUEST_MIC) {
-			spnego_state->mic_requested = true;
-		}
-
-		/* Server didn't like our choice of mech, and chose something else */
-		if (((ta->negResult == SPNEGO_ACCEPT_INCOMPLETE) ||
-		     (ta->negResult == SPNEGO_REQUEST_MIC)) &&
-		    ta->supportedMech != NULL&&
-		    strcmp(ta->supportedMech, spnego_state->neg_oid) != 0) {
-			DEBUG(3,("GENSEC SPNEGO: client preferred mech (%s) not accepted, server wants: %s\n",
-				 gensec_get_name_by_oid(gensec_security, spnego_state->neg_oid),
-				 gensec_get_name_by_oid(gensec_security, ta->supportedMech)));
-			spnego_state->downgraded = true;
-			gensec_spnego_update_sub_abort(spnego_state);
-			nt_status = gensec_subcontext_start(spnego_state,
-							    gensec_security,
-							    &spnego_state->sub_sec_security);
-			if (!NT_STATUS_IS_OK(nt_status)) {
-				return nt_status;
-			}
-			/* select the sub context */
-			nt_status = gensec_start_mech_by_oid(spnego_state->sub_sec_security,
-							     ta->supportedMech);
-			if (!NT_STATUS_IS_OK(nt_status)) {
-				return nt_status;
-			}
-
-			spnego_state->neg_oid = talloc_strdup(spnego_state,
-						ta->supportedMech);
-			if (spnego_state->neg_oid == NULL) {
-				return NT_STATUS_NO_MEMORY;
-			};
-		}
-
-		if (ta->mechListMIC.length > 0) {
-			DATA_BLOB *m = &ta->mechListMIC;
-			const DATA_BLOB *r = &ta->responseToken;
-
-			/*
-			 * Windows 2000 has a bug, it repeats the
-			 * responseToken in the mechListMIC field.
-			 */
-			if (m->length == r->length) {
-				int cmp;
-
-				cmp = memcmp(m->data, r->data, m->length);
-				if (cmp == 0) {
-					data_blob_free(m);
-				}
-			}
-		}
-
-		if (ta->mechListMIC.length > 0) {
-			if (spnego_state->sub_sec_ready) {
-				spnego_state->needs_mic_check = true;
-			}
-		}
-
-		if (spnego_state->needs_mic_check) {
-			if (ta->responseToken.length != 0) {
-				DEBUG(1, ("SPNEGO: Did not setup a mech in NEG_TOKEN_INIT\n"));
-				return NT_STATUS_INVALID_PARAMETER;
-			}
-
-			if (ta->mechListMIC.length == 0
-			    && spnego_state->may_skip_mic_check) {
-				/*
-				 * In this case we don't require
-				 * a mechListMIC from the server.
-				 *
-				 * This works around bugs in the Azure
-				 * and Apple spnego implementations.
-				 *
-				 * See
-				 * https://bugzilla.samba.org/show_bug.cgi?id=11994
-				 */
-				spnego_state->needs_mic_check = false;
-				nt_status = NT_STATUS_OK;
-				goto client_response;
-			}
-
-			nt_status = gensec_check_packet(spnego_state->sub_sec_security,
-							spnego_state->mech_types.data,
-							spnego_state->mech_types.length,
-							spnego_state->mech_types.data,
-							spnego_state->mech_types.length,
-							&ta->mechListMIC);
-			if (!NT_STATUS_IS_OK(nt_status)) {
-				DEBUG(2,("GENSEC SPNEGO: failed to verify mechListMIC: %s\n",
-					nt_errstr(nt_status)));
-				return nt_status;
-			}
-			spnego_state->needs_mic_check = false;
-			spnego_state->done_mic_check = true;
-			goto client_response;
-		}
-
-		if (!spnego_state->sub_sec_ready) {
-			nt_status = gensec_update_ev(spnego_state->sub_sec_security,
-						  out_mem_ctx, ev,
-						  ta->responseToken,
-						  &unwrapped_out);
-			if (NT_STATUS_IS_OK(nt_status)) {
-				spnego_state->sub_sec_ready = true;
-			}
-			if (!NT_STATUS_IS_OK(nt_status)) {
-				goto client_response;
-			}
-		} else {
-			nt_status = NT_STATUS_OK;
-		}
-
-		if (!spnego_state->done_mic_check) {
-			bool have_sign = true;
-			bool new_spnego = false;
-
-			have_sign = gensec_have_feature(spnego_state->sub_sec_security,
-							GENSEC_FEATURE_SIGN);
-			if (spnego_state->simulate_w2k) {
-				have_sign = false;
-			}
-			new_spnego = gensec_have_feature(spnego_state->sub_sec_security,
-							 GENSEC_FEATURE_NEW_SPNEGO);
-
-			switch (ta->negResult) {
-			case SPNEGO_ACCEPT_COMPLETED:
-			case SPNEGO_NONE_RESULT:
-				if (spnego_state->num_targs == 1) {
-					/*
-					 * the first exchange doesn't require
-					 * verification
-					 */
-					new_spnego = false;
-				}
-
-				break;
-
-			case SPNEGO_ACCEPT_INCOMPLETE:
-				if (ta->mechListMIC.length > 0) {
-					new_spnego = true;
-					break;
-				}
-
-				if (spnego_state->downgraded) {
-					/*
-					 * A downgrade should be protected if
-					 * supported
-					 */
-					break;
-				}
-
-				/*
-				 * The caller may just asked for
-				 * GENSEC_FEATURE_SESSION_KEY, this
-				 * is only reflected in the want_features.
-				 *
-				 * As it will imply
-				 * gensec_have_features(GENSEC_FEATURE_SIGN)
-				 * to return true.
-				 */
-				if (gensec_security->want_features & GENSEC_FEATURE_SIGN) {
-					break;
-				}
-				if (gensec_security->want_features & GENSEC_FEATURE_SEAL) {
-					break;
-				}
-				/*
-				 * Here we're sure our preferred mech was
-				 * selected by the server and our caller doesn't
-				 * need GENSEC_FEATURE_SIGN nor
-				 * GENSEC_FEATURE_SEAL support.
-				 *
-				 * In this case we don't require
-				 * a mechListMIC from the server.
-				 *
-				 * This works around bugs in the Azure
-				 * and Apple spnego implementations.
-				 *
-				 * See
-				 * https://bugzilla.samba.org/show_bug.cgi?id=11994
-				 */
-				spnego_state->may_skip_mic_check = true;
-				break;
-
-			case SPNEGO_REQUEST_MIC:
-				if (ta->mechListMIC.length > 0) {
-					new_spnego = true;
-				}
-				break;
-			default:
-				break;
-			}
-
-			if (spnego_state->mic_requested) {
-				if (have_sign) {
-					new_spnego = true;
-				}
-			}
-
-			if (have_sign && new_spnego) {
-				spnego_state->needs_mic_check = true;
-				spnego_state->needs_mic_sign = true;
-			}
-		}
-
-		if (ta->mechListMIC.length > 0) {
-			nt_status = gensec_check_packet(spnego_state->sub_sec_security,
-							spnego_state->mech_types.data,
-							spnego_state->mech_types.length,
-							spnego_state->mech_types.data,
-							spnego_state->mech_types.length,
-							&ta->mechListMIC);
-			if (!NT_STATUS_IS_OK(nt_status)) {
-				DEBUG(2,("GENSEC SPNEGO: failed to verify mechListMIC: %s\n",
-					nt_errstr(nt_status)));
-				return nt_status;
-			}
-			spnego_state->needs_mic_check = false;
-			spnego_state->done_mic_check = true;
-		}
-
-		if (spnego_state->needs_mic_sign) {
-			nt_status = gensec_sign_packet(spnego_state->sub_sec_security,
-						       out_mem_ctx,
-						       spnego_state->mech_types.data,
-						       spnego_state->mech_types.length,
-						       spnego_state->mech_types.data,
-						       spnego_state->mech_types.length,
-						       &mech_list_mic);
-			if (!NT_STATUS_IS_OK(nt_status)) {
-				DEBUG(2,("GENSEC SPNEGO: failed to sign mechListMIC: %s\n",
-					nt_errstr(nt_status)));
-				return nt_status;
-			}
-			spnego_state->needs_mic_sign = false;
-		}
-
-		if (spnego_state->needs_mic_check) {
-			nt_status = NT_STATUS_MORE_PROCESSING_REQUIRED;
-		}
-
- client_response:
-		if (GENSEC_UPDATE_IS_NTERROR(nt_status)) {
-			DEBUG(1, ("SPNEGO(%s) login failed: %s\n", 
-				  spnego_state->sub_sec_security->ops->name, 
-				  nt_errstr(nt_status)));
-			return nt_status;
-		}
-
-		if (unwrapped_out.length || mech_list_mic.length) {
-			/* compose reply */
-			spnego_out.type = SPNEGO_NEG_TOKEN_TARG;
-			spnego_out.negTokenTarg.negResult = SPNEGO_NONE_RESULT;
-			spnego_out.negTokenTarg.supportedMech = NULL;
-			spnego_out.negTokenTarg.responseToken = unwrapped_out;
-			spnego_out.negTokenTarg.mechListMIC = mech_list_mic;
-
-			if (spnego_write_data(out_mem_ctx, out, &spnego_out) == -1) {
-				DEBUG(1, ("Failed to write SPNEGO reply to NEG_TOKEN_TARG\n"));
-				return NT_STATUS_INVALID_PARAMETER;
-			}
-
-			spnego_state->num_targs++;
-			spnego_state->state_position = SPNEGO_CLIENT_TARG;
-			nt_status = NT_STATUS_MORE_PROCESSING_REQUIRED;
-		} else {
-
-			/* all done - server has accepted, and we agree */
-			*out = data_blob_null;
-
-			if (ta->negResult != SPNEGO_ACCEPT_COMPLETED) {
-				/* unless of course it did not accept */
-				DEBUG(1,("gensec_update ok but not accepted\n"));
-				nt_status = NT_STATUS_INVALID_PARAMETER;
-			}
-
-			spnego_state->state_position = SPNEGO_DONE;
-		}
-
-		return nt_status;
-	}
+		return gensec_spnego_client_negTokenTarg(gensec_security,
+							 spnego_state,
+							 ev, spnego_in,
+							 out_mem_ctx, out);
 
 	default:
 		break;
