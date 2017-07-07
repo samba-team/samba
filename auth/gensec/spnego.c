@@ -491,8 +491,7 @@ static NTSTATUS gensec_spnego_create_negTokenInit(struct gensec_security *gensec
 				spnego_state->sub_sec_ready = true;
 			}
 
-			if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED) 
-			    && !NT_STATUS_IS_OK(nt_status)) {
+			if (GENSEC_UPDATE_IS_NTERROR(nt_status)) {
 				const char *next = NULL;
 				const char *principal = NULL;
 				int dbg_level = DBGLVL_WARNING;
