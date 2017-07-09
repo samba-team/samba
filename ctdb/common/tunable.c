@@ -145,7 +145,7 @@ static struct {
 		offsetof(struct ctdb_tunable_list, no_ip_host_on_all_disabled) },
 	{ "Samba3AvoidDeadlocks", 0, true,
 		offsetof(struct ctdb_tunable_list, samba3_hack) },
-	{ "TDBMutexEnabled", 0, false,
+	{ "TDBMutexEnabled", 1, false,
 		offsetof(struct ctdb_tunable_list, mutex_enabled) },
 	{ "LockProcessesPerDB", 200, false,
 		offsetof(struct ctdb_tunable_list, lock_processes_per_db) },
