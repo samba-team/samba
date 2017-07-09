@@ -227,7 +227,7 @@ NTSTATUS schedule_aio_read_and_X(connection_struct *conn,
 		&aio_ex->lock);
 
 	/* Take the lock until the AIO completes. */
-	if (!SMB_VFS_STRICT_LOCK(conn, fsp, &aio_ex->lock)) {
+	if (!SMB_VFS_STRICT_LOCK_CHECK(conn, fsp, &aio_ex->lock)) {
 		TALLOC_FREE(aio_ex);
 		return NT_STATUS_FILE_LOCK_CONFLICT;
 	}
@@ -472,7 +472,7 @@ NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 		&aio_ex->lock);
 
 	/* Take the lock until the AIO completes. */
-	if (!SMB_VFS_STRICT_LOCK(conn, fsp, &aio_ex->lock)) {
+	if (!SMB_VFS_STRICT_LOCK_CHECK(conn, fsp, &aio_ex->lock)) {
 		TALLOC_FREE(aio_ex);
 		return NT_STATUS_FILE_LOCK_CONFLICT;
 	}
@@ -712,7 +712,7 @@ NTSTATUS schedule_smb2_aio_read(connection_struct *conn,
 		&aio_ex->lock);
 
 	/* Take the lock until the AIO completes. */
-	if (!SMB_VFS_STRICT_LOCK(conn, fsp, &aio_ex->lock)) {
+	if (!SMB_VFS_STRICT_LOCK_CHECK(conn, fsp, &aio_ex->lock)) {
 		TALLOC_FREE(aio_ex);
 		return NT_STATUS_FILE_LOCK_CONFLICT;
 	}
@@ -857,7 +857,7 @@ NTSTATUS schedule_aio_smb2_write(connection_struct *conn,
 		&aio_ex->lock);
 
 	/* Take the lock until the AIO completes. */
-	if (!SMB_VFS_STRICT_LOCK(conn, fsp, &aio_ex->lock)) {
+	if (!SMB_VFS_STRICT_LOCK_CHECK(conn, fsp, &aio_ex->lock)) {
 		TALLOC_FREE(aio_ex);
 		return NT_STATUS_FILE_LOCK_CONFLICT;
 	}

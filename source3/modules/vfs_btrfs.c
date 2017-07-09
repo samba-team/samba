@@ -317,11 +317,11 @@ static struct tevent_req *btrfs_offload_write_send(struct vfs_handle_struct *han
 					WRITE_LOCK,
 					&dest_lck);
 
-		if (!SMB_VFS_STRICT_LOCK(src_fsp->conn, src_fsp, &src_lck)) {
+		if (!SMB_VFS_STRICT_LOCK_CHECK(src_fsp->conn, src_fsp, &src_lck)) {
 			tevent_req_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
 			return tevent_req_post(req, ev);
 		}
-		if (!SMB_VFS_STRICT_LOCK(dest_fsp->conn, dest_fsp, &dest_lck)) {
+		if (!SMB_VFS_STRICT_LOCK_CHECK(dest_fsp->conn, dest_fsp, &dest_lck)) {
 			tevent_req_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
 			return tevent_req_post(req, ev);
 		}

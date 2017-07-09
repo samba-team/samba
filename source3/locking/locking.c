@@ -104,7 +104,7 @@ void init_strict_lock_struct(files_struct *fsp,
         plock->lock_flav = lp_posix_cifsu_locktype(fsp);
 }
 
-bool strict_lock_default(files_struct *fsp, struct lock_struct *plock)
+bool strict_lock_check_default(files_struct *fsp, struct lock_struct *plock)
 {
 	struct byte_range_lock *br_lck;
 	int strict_locking = lp_strict_locking(fsp->conn->params);

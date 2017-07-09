@@ -856,11 +856,11 @@ static bool skel_brl_cancel_windows(struct vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_BRL_CANCEL_WINDOWS(handle, br_lck, plock);
 }
 
-static bool skel_strict_lock(struct vfs_handle_struct *handle,
-			     struct files_struct *fsp,
-			     struct lock_struct *plock)
+static bool skel_strict_lock_check(struct vfs_handle_struct *handle,
+				   struct files_struct *fsp,
+				   struct lock_struct *plock)
 {
-	return SMB_VFS_NEXT_STRICT_LOCK(handle, fsp, plock);
+	return SMB_VFS_NEXT_STRICT_LOCK_CHECK(handle, fsp, plock);
 }
 
 static NTSTATUS skel_translate_name(struct vfs_handle_struct *handle,
@@ -1188,7 +1188,7 @@ struct vfs_fn_pointers skel_transparent_fns = {
 	.brl_lock_windows_fn = skel_brl_lock_windows,
 	.brl_unlock_windows_fn = skel_brl_unlock_windows,
 	.brl_cancel_windows_fn = skel_brl_cancel_windows,
-	.strict_lock_fn = skel_strict_lock,
+	.strict_lock_check_fn = skel_strict_lock_check,
 	.translate_name_fn = skel_translate_name,
 	.fsctl_fn = skel_fsctl,
 	.readdir_attr_fn = skel_readdir_attr,

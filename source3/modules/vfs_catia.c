@@ -2370,9 +2370,9 @@ static bool catia_getlock(vfs_handle_struct *handle,
 	return ok;
 }
 
-static bool catia_strict_lock(struct vfs_handle_struct *handle,
-			      struct files_struct *fsp,
-			      struct lock_struct *plock)
+static bool catia_strict_lock_check(struct vfs_handle_struct *handle,
+				    struct files_struct *fsp,
+				    struct lock_struct *plock)
 {
 	struct catia_cache *cc = NULL;
 	int ret;
@@ -2383,7 +2383,7 @@ static bool catia_strict_lock(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
-	ok = SMB_VFS_NEXT_STRICT_LOCK(handle, fsp, plock);
+	ok = SMB_VFS_NEXT_STRICT_LOCK_CHECK(handle, fsp, plock);
 
 	CATIA_FETCH_FSP_POST_NEXT(&cc, fsp);
 
@@ -2606,7 +2606,7 @@ static struct vfs_fn_pointers vfs_catia_fns = {
 	.realpath_fn = catia_realpath,
 	.chflags_fn = catia_chflags,
 	.streaminfo_fn = catia_streaminfo,
-	.strict_lock_fn = catia_strict_lock,
+	.strict_lock_check_fn = catia_strict_lock_check,
 	.translate_name_fn = catia_translate_name,
 	.fsctl_fn = catia_fsctl,
 	.get_dos_attributes_fn = catia_get_dos_attributes,

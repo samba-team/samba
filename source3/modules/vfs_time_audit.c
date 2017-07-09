@@ -1710,21 +1710,21 @@ static bool smb_time_audit_brl_cancel_windows(struct vfs_handle_struct *handle,
 	return result;
 }
 
-static bool smb_time_audit_strict_lock(struct vfs_handle_struct *handle,
-				       struct files_struct *fsp,
-				       struct lock_struct *plock)
+static bool smb_time_audit_strict_lock_check(struct vfs_handle_struct *handle,
+					     struct files_struct *fsp,
+					     struct lock_struct *plock)
 {
 	bool result;
 	struct timespec ts1,ts2;
 	double timediff;
 
 	clock_gettime_mono(&ts1);
-	result = SMB_VFS_NEXT_STRICT_LOCK(handle, fsp, plock);
+	result = SMB_VFS_NEXT_STRICT_LOCK_CHECK(handle, fsp, plock);
 	clock_gettime_mono(&ts2);
 	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
-		smb_time_audit_log_fsp("strict_lock", timediff, fsp);
+		smb_time_audit_log_fsp("strict_lock_check", timediff, fsp);
 	}
 
 	return result;
@@ -2768,7 +2768,7 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.brl_lock_windows_fn = smb_time_audit_brl_lock_windows,
 	.brl_unlock_windows_fn = smb_time_audit_brl_unlock_windows,
 	.brl_cancel_windows_fn = smb_time_audit_brl_cancel_windows,
-	.strict_lock_fn = smb_time_audit_strict_lock,
+	.strict_lock_check_fn = smb_time_audit_strict_lock_check,
 	.translate_name_fn = smb_time_audit_translate_name,
 	.fsctl_fn = smb_time_audit_fsctl,
 	.get_dos_attributes_fn = smb_time_get_dos_attributes,
