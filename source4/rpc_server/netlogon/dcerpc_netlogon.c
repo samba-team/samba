@@ -105,8 +105,15 @@ static NTSTATUS dcesrv_netr_ServerReqChallenge(struct dcesrv_call_state *dce_cal
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-					 struct netr_ServerAuthenticate3 *r)
+/*
+ * Do the actual processing of a netr_ServerAuthenticate3 message.
+ * called from dcesrv_netr_ServerAuthenticate3, which handles the logging.
+ */
+static NTSTATUS dcesrv_netr_ServerAuthenticate3_helper(
+	struct dcesrv_call_state *dce_call,
+	 TALLOC_CTX *mem_ctx,
+	struct netr_ServerAuthenticate3 *r,
+	struct dom_sid **sid)
 {
 	struct netlogon_server_pipe_state *pipe_state =
 		talloc_get_type(dce_call->context->private_data, struct netlogon_server_pipe_state);
@@ -469,36 +476,11 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 						   negotiate_flags);
 	}
 
-	{
-		char* local  = NULL;
-		char* remote = NULL;
-		TALLOC_CTX *frame = talloc_stackframe();
-
-		remote = tsocket_address_string(dce_call->conn->remote_address,
-						frame);
-		local  = tsocket_address_string(dce_call->conn->local_address,
-						frame);
-		if (creds == NULL) {
-			DEBUG(2, ("Failed to authenticate NETLOGON "
-				  "account[%s] workstation[%s] "
-				  "remote[%s] local[%s]\n",
-				  log_escape(frame, r->in.account_name),
-				  log_escape(frame, r->in.computer_name),
-				  remote, local));
-			TALLOC_FREE(frame);
-			return NT_STATUS_ACCESS_DENIED;
-		} else {
-			DEBUG(3, ("Successful authenticate of NETLOGON "
-				  "account[%s] workstation[%s] "
-				  "remote[%s] local[%s]\n",
-				  log_escape(frame, r->in.account_name),
-				  log_escape(frame, r->in.computer_name),
-				  remote, local));
-			TALLOC_FREE(frame);
-		}
+	if (creds == NULL) {
+		return NT_STATUS_ACCESS_DENIED;
 	}
-
 	creds->sid = samdb_result_dom_sid(creds, msgs[0], "objectSid");
+	*sid = talloc_memdup(mem_ctx, creds->sid, sizeof(struct dom_sid));
 
 	nt_status = schannel_save_creds_state(mem_ctx,
 					      dce_call->conn->dce_ctx->lp_ctx,
@@ -514,6 +496,54 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 	return NT_STATUS_OK;
 }
 
+/*
+ * Log a netr_ServerAuthenticate3 request, and then invoke
+ * dcesrv_netr_ServerAuthenticate3_helper to perform the actual processing
+ */
+static NTSTATUS dcesrv_netr_ServerAuthenticate3(
+	struct dcesrv_call_state *dce_call,
+	TALLOC_CTX *mem_ctx,
+	struct netr_ServerAuthenticate3 *r)
+{
+	NTSTATUS status;
+	struct dom_sid *sid = NULL;
+	struct auth_usersupplied_info ui = {
+		.local_host = dce_call->conn->local_address,
+		.remote_host = dce_call->conn->remote_address,
+		.client = {
+			.account_name = r->in.account_name,
+			.domain_name = lpcfg_workgroup(dce_call->conn->dce_ctx->lp_ctx),
+		},
+		.service_description = "NETLOGON",
+		.auth_description = "ServerAuthenticate",
+		.netlogon_trust_account = {
+			.computer_name = r->in.computer_name,
+			.account_name = r->in.account_name,
+			.negotiate_flags = *r->in.negotiate_flags,
+			.secure_channel_type = r->in.secure_channel_type,
+		},
+		.mapped = {
+			.account_name = r->in.account_name,
+		}
+	};
+
+	status = dcesrv_netr_ServerAuthenticate3_helper(dce_call,
+							mem_ctx,
+							r,
+							&sid);
+	ui.netlogon_trust_account.sid = sid;
+	log_authentication_event(
+		dce_call->conn->msg_ctx,
+		dce_call->conn->dce_ctx->lp_ctx,
+		&ui,
+		status,
+		lpcfg_workgroup(dce_call->conn->dce_ctx->lp_ctx),
+		r->in.account_name,
+		NULL,
+		sid);
+
+	return status;
+}
 static NTSTATUS dcesrv_netr_ServerAuthenticate(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					struct netr_ServerAuthenticate *r)
 {
