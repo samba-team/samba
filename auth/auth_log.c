@@ -639,6 +639,18 @@ static const char* get_password_type(const struct auth_usersupplied_info *ui)
 
 	if (ui->password_type != NULL) {
 		password_type = ui->password_type;
+	} else if (ui->auth_description != NULL &&
+		   strncmp("ServerAuthenticate", ui->auth_description, 18) == 0)
+	{
+		if (ui->netlogon_trust_account.negotiate_flags
+		    & NETLOGON_NEG_SUPPORTS_AES) {
+			password_type = "HMAC-SHA256";
+		} else if (ui->netlogon_trust_account.negotiate_flags
+		           & NETLOGON_NEG_STRONG_KEYS) {
+			password_type = "HMAC-MD5";
+		} else {
+			password_type = "DES";
+		}
 	} else if (ui->password_state == AUTH_PASSWORD_RESPONSE &&
 		   (ui->logon_parameters & MSV1_0_ALLOW_MSVCHAPV2) &&
 		   ui->password.response.nt.length == 24) {
