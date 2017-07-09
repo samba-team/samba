@@ -62,6 +62,10 @@ class AuthLogTestBase(samba.tests.TestCase):
 
 
     def waitForMessages(self, isLastExpectedMessage, connection=None):
+        """Wait for all the expected messages to arrive
+        The connection is passed through to keep the connection alive
+        until all the logging messages have been received.
+        """
 
         def completed( messages):
             for message in messages:
@@ -102,3 +106,16 @@ class AuthLogTestBase(samba.tests.TestCase):
         while len( self.context["messages"]):
             self.msg_ctx.loop_once(0.001)
         self.context["messages"] = []
+
+    # Remove any NETLOGON authentication messages
+    # NETLOGON is only performed once per session, so to avoid ordering
+    # dependencies within the tests it's best to strip out NETLOGON messages.
+    #
+    def remove_netlogon_messages(self, messages):
+        def is_not_netlogon(msg):
+            if "Authentication" not in msg:
+                return True
+            sd = msg["Authentication"]["serviceDescription"]
+            return sd != "NETLOGON"
+
+        return list(filter(is_not_netlogon, messages))

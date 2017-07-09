@@ -158,6 +158,7 @@ class AuthLogTestsSamLogon(samba.tests.auth_log_base.AuthLogTestBase):
 
     def samlogon_check(self, messages):
 
+        messages = self.remove_netlogon_messages(messages)
         expected_messages = 5
         self.assertEquals(expected_messages,
                           len(messages),
