@@ -658,7 +658,7 @@
 
     <refsect2>
       <title>TDBMutexEnabled</title>
-      <para>Default: 0</para>
+      <para>Default: 1</para>
       <para>
 	This parameter enables TDB_MUTEX_LOCKING feature on volatile
 	databases if the robust mutexes are supported. This optimizes the
