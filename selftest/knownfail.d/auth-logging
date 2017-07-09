@@ -1,0 +1,8 @@
+# NETLOGON authentication logging tests, currently fail as the
+# code has not been implemented
+^samba.tests.auth_log_netlogon_bad_creds.samba.tests.auth_log_netlogon_bad_creds.AuthLogTestsNetLogonBadCreds.test_netlogon_bad_password\(ad_dc_ntvfs:local\)
+^samba.tests.auth_log_netlogon_bad_creds.samba.tests.auth_log_netlogon_bad_creds.AuthLogTestsNetLogonBadCreds.test_netlogon_bad_machine_name\(ad_dc_ntvfs:local\)
+^samba.tests.auth_log_netlogon_bad_creds.samba.tests.auth_log_netlogon_bad_creds.AuthLogTestsNetLogonBadCreds.test_netlogon_bad_password\(ad_dc:local\)
+^samba.tests.auth_log_netlogon_bad_creds.samba.tests.auth_log_netlogon_bad_creds.AuthLogTestsNetLogonBadCreds.test_netlogon_bad_machine_name\(ad_dc:local\)
+^samba.tests.auth_log_netlogon.samba.tests.auth_log_netlogon.AuthLogTestsNetLogon.test_netlogon\(ad_dc_ntvfs:local\)
+^samba.tests.auth_log_netlogon.samba.tests.auth_log_netlogon.AuthLogTestsNetLogon.test_netlogon\(ad_dc:local\)
