@@ -97,7 +97,7 @@
 		Mac relevant filesystem metadata (UNIX mode,
 		FinderInfo, resource fork size and effective
 		permission), as a result the Mac client doesn't need
-		to fetch this metadata individuallly per directory
+		to fetch this metadata individually per directory
 		entry resulting in an often tremendous performance
 		increase.</para></listitem>
 
