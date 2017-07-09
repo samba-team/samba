@@ -991,6 +991,7 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
         call(["bin/rpcclient", "-c", samlogon, "-U%", server])
 
         messages = self.waitForMessages( isLastExpectedMessage)
+        messages = self.remove_netlogon_messages(messages)
         received = len(messages)
         self.assertIs(True,
                       (received == 5 or received == 6),
@@ -1020,6 +1021,7 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
         call(["bin/rpcclient", "-c", samlogon, "-U%", server])
 
         messages = self.waitForMessages( isLastExpectedMessage)
+        messages = self.remove_netlogon_messages(messages)
         received = len(messages)
         self.assertIs(True,
                       (received == 5 or received == 6),
@@ -1049,6 +1051,7 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
         call(["bin/rpcclient", "-c", samlogon, "-U%", server])
 
         messages = self.waitForMessages( isLastExpectedMessage)
+        messages = self.remove_netlogon_messages(messages)
         received = len(messages)
         self.assertIs(True,
                       (received == 5 or received == 6),
@@ -1077,6 +1080,7 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
         call(["bin/rpcclient", "-c", samlogon, "-U%", server])
 
         messages = self.waitForMessages( isLastExpectedMessage)
+        messages = self.remove_netlogon_messages(messages)
         received = len(messages)
         self.assertIs(True,
                       (received == 5 or received == 6),
@@ -1106,6 +1110,7 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
         call(["bin/rpcclient", "-c", samlogon, "-U%", server])
 
         messages = self.waitForMessages( isLastExpectedMessage)
+        messages = self.remove_netlogon_messages(messages)
         received = len(messages)
         self.assertIs(True,
                       (received == 5 or received == 6),
@@ -1135,6 +1140,7 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
         call(["bin/rpcclient", "-c", samlogon, "-U%", server])
 
         messages = self.waitForMessages( isLastExpectedMessage)
+        messages = self.remove_netlogon_messages(messages)
         received = len(messages)
         self.assertIs(True,
                       (received == 5 or received == 6),
@@ -1164,6 +1170,7 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
         call(["bin/rpcclient", "-c", samlogon, "-U%", server])
 
         messages = self.waitForMessages( isLastExpectedMessage)
+        messages = self.remove_netlogon_messages(messages)
         received = len(messages)
         self.assertIs(True,
                       (received == 5 or received == 6),
@@ -1194,6 +1201,7 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
         call(["bin/rpcclient", "-c", samlogon, "-U%", server])
 
         messages = self.waitForMessages( isLastExpectedMessage)
+        messages = self.remove_netlogon_messages(messages)
         received = len(messages)
         self.assertIs(True,
                       (received == 5 or received == 6),
@@ -1224,6 +1232,7 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
         call(["bin/rpcclient", "-c", samlogon, "-U%", server])
 
         messages = self.waitForMessages( isLastExpectedMessage)
+        messages = self.remove_netlogon_messages(messages)
         received = len(messages)
         self.assertIs(True,
                       (received == 5 or received == 6),
@@ -1252,6 +1261,7 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
         call(["bin/rpcclient", "-c", samlogon, "-U%", server])
 
         messages = self.waitForMessages( isLastExpectedMessage)
+        messages = self.remove_netlogon_messages(messages)
         received = len(messages)
         self.assertIs(True,
                       (received == 5 or received == 6),
@@ -1290,6 +1300,7 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
         call(["bin/rpcclient", "-c", samlogon, "-U%", server])
 
         messages = self.waitForMessages( isLastExpectedMessage)
+        messages = self.remove_netlogon_messages(messages)
         received = len(messages)
         self.assertIs(True,
                       (received == 5 or received == 6),
