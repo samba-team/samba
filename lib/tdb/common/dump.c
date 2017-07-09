@@ -62,7 +62,11 @@ static int tdb_dump_chain(struct tdb_context *tdb, int i)
 {
 	tdb_off_t rec_ptr, top;
 
-	top = TDB_HASH_TOP(i);
+	if (i == -1) {
+		top = FREELIST_TOP;
+	} else {
+		top = TDB_HASH_TOP(i);
+	}
 
 	if (tdb_lock(tdb, i, F_WRLCK) != 0)
 		return -1;
