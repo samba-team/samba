@@ -483,7 +483,7 @@ static NTSTATUS fsctl_zero_data(TALLOC_CTX *mem_ctx,
 				WRITE_LOCK,
 				&lck);
 
-	if (!SMB_VFS_STRICT_LOCK(fsp->conn, fsp, &lck)) {
+	if (!SMB_VFS_STRICT_LOCK_CHECK(fsp->conn, fsp, &lck)) {
 		DEBUG(2, ("failed to lock range for zero-data\n"));
 		return NT_STATUS_FILE_LOCK_CONFLICT;
 	}

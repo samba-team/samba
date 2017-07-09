@@ -2274,12 +2274,12 @@ const char *smb_vfs_call_connectpath(struct vfs_handle_struct *handle,
 	return handle->fns->connectpath_fn(handle, smb_fname);
 }
 
-bool smb_vfs_call_strict_lock(struct vfs_handle_struct *handle,
-			      struct files_struct *fsp,
-			      struct lock_struct *plock)
+bool smb_vfs_call_strict_lock_check(struct vfs_handle_struct *handle,
+				    struct files_struct *fsp,
+				    struct lock_struct *plock)
 {
-	VFS_FIND(strict_lock);
-	return handle->fns->strict_lock_fn(handle, fsp, plock);
+	VFS_FIND(strict_lock_check);
+	return handle->fns->strict_lock_check_fn(handle, fsp, plock);
 }
 
 NTSTATUS smb_vfs_call_translate_name(struct vfs_handle_struct *handle,

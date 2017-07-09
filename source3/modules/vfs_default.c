@@ -1837,7 +1837,7 @@ static NTSTATUS vfswrap_offload_write_loop(struct tevent_req *req)
 				READ_LOCK,
 				&read_lck);
 
-	ok = SMB_VFS_STRICT_LOCK(state->src_fsp->conn,
+	ok = SMB_VFS_STRICT_LOCK_CHECK(state->src_fsp->conn,
 				 state->src_fsp,
 				 &read_lck);
 	if (!ok) {
@@ -1894,7 +1894,7 @@ static void vfswrap_offload_write_read_done(struct tevent_req *subreq)
 				WRITE_LOCK,
 				&write_lck);
 
-	ok = SMB_VFS_STRICT_LOCK(state->dst_fsp->conn,
+	ok = SMB_VFS_STRICT_LOCK_CHECK(state->dst_fsp->conn,
 				 state->dst_fsp,
 				 &write_lck);
 	if (!ok) {
@@ -2740,14 +2740,14 @@ static bool vfswrap_brl_cancel_windows(struct vfs_handle_struct *handle,
 	return brl_lock_cancel_default(br_lck, plock);
 }
 
-static bool vfswrap_strict_lock(struct vfs_handle_struct *handle,
-				files_struct *fsp,
-				struct lock_struct *plock)
+static bool vfswrap_strict_lock_check(struct vfs_handle_struct *handle,
+				      files_struct *fsp,
+				      struct lock_struct *plock)
 {
 	SMB_ASSERT(plock->lock_type == READ_LOCK ||
 	    plock->lock_type == WRITE_LOCK);
 
-	return strict_lock_default(fsp, plock);
+	return strict_lock_check_default(fsp, plock);
 }
 
 /* NT ACL operations. */
@@ -3078,7 +3078,7 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.brl_lock_windows_fn = vfswrap_brl_lock_windows,
 	.brl_unlock_windows_fn = vfswrap_brl_unlock_windows,
 	.brl_cancel_windows_fn = vfswrap_brl_cancel_windows,
-	.strict_lock_fn = vfswrap_strict_lock,
+	.strict_lock_check_fn = vfswrap_strict_lock_check,
 	.translate_name_fn = vfswrap_translate_name,
 	.fsctl_fn = vfswrap_fsctl,
 	.set_dos_attributes_fn = vfswrap_set_dos_attributes,

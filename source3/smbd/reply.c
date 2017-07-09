@@ -3679,7 +3679,7 @@ void reply_readbraw(struct smb_request *req)
 	    (uint64_t)startpos, (uint64_t)maxcount, READ_LOCK,
 	    &lock);
 
-	if (!SMB_VFS_STRICT_LOCK(conn, fsp, &lock)) {
+	if (!SMB_VFS_STRICT_LOCK_CHECK(conn, fsp, &lock)) {
 		reply_readbraw_error(xconn);
 		END_PROFILE(SMBreadbraw);
 		return;
@@ -3890,7 +3890,7 @@ Returning short read of maximum allowed for compatibility with Windows 2000.\n",
 	    (uint64_t)startpos, (uint64_t)numtoread, READ_LOCK,
 	    &lock);
 
-	if (!SMB_VFS_STRICT_LOCK(conn, fsp, &lock)) {
+	if (!SMB_VFS_STRICT_LOCK_CHECK(conn, fsp, &lock)) {
 		reply_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
 		END_PROFILE(SMBread);
 		return;
@@ -3966,7 +3966,7 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 	    (uint64_t)startpos, (uint64_t)smb_maxcnt, READ_LOCK,
 	    &lock);
 
-	if (!SMB_VFS_STRICT_LOCK(conn, fsp, &lock)) {
+	if (!SMB_VFS_STRICT_LOCK_CHECK(conn, fsp, &lock)) {
 		reply_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
 		return;
 	}
@@ -4486,7 +4486,7 @@ void reply_writebraw(struct smb_request *req)
 		    (uint64_t)startpos, (uint64_t)tcount, WRITE_LOCK,
 		    &lock);
 
-		if (!SMB_VFS_STRICT_LOCK(conn, fsp, &lock)) {
+		if (!SMB_VFS_STRICT_LOCK_CHECK(conn, fsp, &lock)) {
 			reply_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
 			error_to_writebrawerr(req);
 			END_PROFILE(SMBwritebraw);
@@ -4684,7 +4684,7 @@ void reply_writeunlock(struct smb_request *req)
 		    (uint64_t)startpos, (uint64_t)numtowrite, WRITE_LOCK,
 		    &lock);
 
-		if (!SMB_VFS_STRICT_LOCK(conn, fsp, &lock)) {
+		if (!SMB_VFS_STRICT_LOCK_CHECK(conn, fsp, &lock)) {
 			reply_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
 			END_PROFILE(SMBwriteunlock);
 			return;
@@ -4801,7 +4801,7 @@ void reply_write(struct smb_request *req)
 			(uint64_t)startpos, (uint64_t)numtowrite, WRITE_LOCK,
 			&lock);
 
-		if (!SMB_VFS_STRICT_LOCK(conn, fsp, &lock)) {
+		if (!SMB_VFS_STRICT_LOCK_CHECK(conn, fsp, &lock)) {
 			reply_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
 			END_PROFILE(SMBwrite);
 			return;
@@ -5090,7 +5090,7 @@ void reply_write_and_X(struct smb_request *req)
 		    (uint64_t)startpos, (uint64_t)numtowrite, WRITE_LOCK,
 		    &lock);
 
-		if (!SMB_VFS_STRICT_LOCK(conn, fsp, &lock)) {
+		if (!SMB_VFS_STRICT_LOCK_CHECK(conn, fsp, &lock)) {
 			reply_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
 			goto out;
 		}
@@ -5482,7 +5482,7 @@ void reply_writeclose(struct smb_request *req)
 		    (uint64_t)startpos, (uint64_t)numtowrite, WRITE_LOCK,
 		    &lock);
 
-		if (!SMB_VFS_STRICT_LOCK(conn, fsp, &lock)) {
+		if (!SMB_VFS_STRICT_LOCK_CHECK(conn, fsp, &lock)) {
 			reply_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
 			END_PROFILE(SMBwriteclose);
 			return;

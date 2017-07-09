@@ -543,7 +543,7 @@ static struct tevent_req *smbd_smb2_read_send(TALLOC_CTX *mem_ctx,
 				READ_LOCK,
 				&lock);
 
-	if (!SMB_VFS_STRICT_LOCK(conn, fsp, &lock)) {
+	if (!SMB_VFS_STRICT_LOCK_CHECK(conn, fsp, &lock)) {
 		tevent_req_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
 		return tevent_req_post(req, ev);
 	}
