@@ -324,8 +324,6 @@ normal_read:
 				READ_LOCK,
 				&lock);
 
-	SMB_VFS_STRICT_UNLOCK(fsp->conn, fsp, &lock);
-
 	*pstatus = NT_STATUS_OK;
 	return 0;
 }
@@ -557,7 +555,6 @@ static struct tevent_req *smbd_smb2_read_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	} else {
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_RETRY)) {
-			SMB_VFS_STRICT_UNLOCK(conn, fsp, &lock);
 			tevent_req_nterror(req, status);
 			return tevent_req_post(req, ev);
 		}
@@ -566,7 +563,6 @@ static struct tevent_req *smbd_smb2_read_send(TALLOC_CTX *mem_ctx,
 	/* Ok, read into memory. Allocate the out buffer. */
 	state->out_data = data_blob_talloc(state, NULL, in_length);
 	if (in_length > 0 && tevent_req_nomem(state->out_data.data, req)) {
-		SMB_VFS_STRICT_UNLOCK(conn, fsp, &lock);
 		return tevent_req_post(req, ev);
 	}
 
@@ -576,8 +572,6 @@ static struct tevent_req *smbd_smb2_read_send(TALLOC_CTX *mem_ctx,
 			  in_length);
 
 	saved_errno = errno;
-
-	SMB_VFS_STRICT_UNLOCK(conn, fsp, &lock);
 
 	DEBUG(10,("smbd_smb2_read: file %s, %s, offset=%llu "
 		"len=%llu returned %lld\n",

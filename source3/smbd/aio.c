@@ -242,7 +242,6 @@ NTSTATUS schedule_aio_read_and_X(connection_struct *conn,
 	if (req == NULL) {
 		DEBUG(0,("schedule_aio_read_and_X: aio_read failed. "
 			 "Error %s\n", strerror(errno) ));
-		SMB_VFS_STRICT_UNLOCK(conn, fsp, &aio_ex->lock);
 		TALLOC_FREE(aio_ex);
 		return NT_STATUS_RETRY;
 	}
@@ -250,7 +249,6 @@ NTSTATUS schedule_aio_read_and_X(connection_struct *conn,
 
 	if (!aio_add_req_to_fsp(fsp, req)) {
 		DEBUG(1, ("Could not add req to fsp\n"));
-		SMB_VFS_STRICT_UNLOCK(conn, fsp, &aio_ex->lock);
 		TALLOC_FREE(aio_ex);
 		return NT_STATUS_RETRY;
 	}
@@ -288,9 +286,6 @@ static void aio_pread_smb1_done(struct tevent_req *req)
 		TALLOC_FREE(aio_ex);
 		return;
 	}
-
-	/* Unlock now we're done. */
-	SMB_VFS_STRICT_UNLOCK(fsp->conn, fsp, &aio_ex->lock);
 
 	if (nread < 0) {
 		DEBUG( 3, ("handle_aio_read_complete: file %s nread == %d. "
@@ -491,7 +486,6 @@ NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 	if (req == NULL) {
 		DEBUG(3,("schedule_aio_wrote_and_X: aio_write failed. "
 			 "Error %s\n", strerror(errno) ));
-		SMB_VFS_STRICT_UNLOCK(conn, fsp, &aio_ex->lock);
 		TALLOC_FREE(aio_ex);
 		return NT_STATUS_RETRY;
 	}
@@ -499,7 +493,6 @@ NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 
 	if (!aio_add_req_to_fsp(fsp, req)) {
 		DEBUG(1, ("Could not add req to fsp\n"));
-		SMB_VFS_STRICT_UNLOCK(conn, fsp, &aio_ex->lock);
 		TALLOC_FREE(aio_ex);
 		return NT_STATUS_RETRY;
 	}
@@ -562,9 +555,6 @@ static void aio_pwrite_smb1_done(struct tevent_req *req)
 		TALLOC_FREE(aio_ex);
 		return;
 	}
-
-	/* Unlock now we're done. */
-	SMB_VFS_STRICT_UNLOCK(fsp->conn, fsp, &aio_ex->lock);
 
 	mark_file_modified(fsp);
 
@@ -735,7 +725,6 @@ NTSTATUS schedule_smb2_aio_read(connection_struct *conn,
 	if (req == NULL) {
 		DEBUG(0, ("smb2: SMB_VFS_PREAD_SEND failed. "
 			  "Error %s\n", strerror(errno)));
-		SMB_VFS_STRICT_UNLOCK(conn, fsp, &aio_ex->lock);
 		TALLOC_FREE(aio_ex);
 		return NT_STATUS_RETRY;
 	}
@@ -743,7 +732,6 @@ NTSTATUS schedule_smb2_aio_read(connection_struct *conn,
 
 	if (!aio_add_req_to_fsp(fsp, req)) {
 		DEBUG(1, ("Could not add req to fsp\n"));
-		SMB_VFS_STRICT_UNLOCK(conn, fsp, &aio_ex->lock);
 		TALLOC_FREE(aio_ex);
 		return NT_STATUS_RETRY;
 	}
@@ -784,9 +772,6 @@ static void aio_pread_smb2_done(struct tevent_req *req)
 		tevent_req_nterror(subreq, NT_STATUS_INTERNAL_ERROR);
 		return;
 	}
-
-	/* Unlock now we're done. */
-	SMB_VFS_STRICT_UNLOCK(fsp->conn, fsp, &aio_ex->lock);
 
 	/* Common error or success code processing for async or sync
 	   read returns. */
@@ -886,7 +871,6 @@ NTSTATUS schedule_aio_smb2_write(connection_struct *conn,
 	if (req == NULL) {
 		DEBUG(3, ("smb2: SMB_VFS_PWRITE_SEND failed. "
 			  "Error %s\n", strerror(errno)));
-		SMB_VFS_STRICT_UNLOCK(conn, fsp, &aio_ex->lock);
 		TALLOC_FREE(aio_ex);
 		return NT_STATUS_RETRY;
 	}
@@ -894,7 +878,6 @@ NTSTATUS schedule_aio_smb2_write(connection_struct *conn,
 
 	if (!aio_add_req_to_fsp(fsp, req)) {
 		DEBUG(1, ("Could not add req to fsp\n"));
-		SMB_VFS_STRICT_UNLOCK(conn, fsp, &aio_ex->lock);
 		TALLOC_FREE(aio_ex);
 		return NT_STATUS_RETRY;
 	}
@@ -950,9 +933,6 @@ static void aio_pwrite_smb2_done(struct tevent_req *req)
 		tevent_req_nterror(subreq, NT_STATUS_INTERNAL_ERROR);
 		return;
 	}
-
-	/* Unlock now we're done. */
-	SMB_VFS_STRICT_UNLOCK(fsp->conn, fsp, &aio_ex->lock);
 
 	mark_file_modified(fsp);
 

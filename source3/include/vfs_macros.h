@@ -381,11 +381,6 @@
 #define SMB_VFS_NEXT_STRICT_LOCK(handle, fsp, plock) \
 	smb_vfs_call_strict_lock((handle)->next, (fsp), (plock))
 
-#define SMB_VFS_STRICT_UNLOCK(conn, fsp, plock) \
-	smb_vfs_call_strict_unlock((conn)->vfs_handles, (fsp), (plock))
-#define SMB_VFS_NEXT_STRICT_UNLOCK(handle, fsp, plock) \
-	smb_vfs_call_strict_unlock((handle)->next, (fsp), (plock))
-
 #define SMB_VFS_TRANSLATE_NAME(conn, name, direction, mem_ctx, mapped_name) \
 	smb_vfs_call_translate_name((conn)->vfs_handles, (name), (direction), (mem_ctx), (mapped_name))
 #define SMB_VFS_NEXT_TRANSLATE_NAME(handle, name, direction, mem_ctx, mapped_name) \

@@ -3711,8 +3711,6 @@ void reply_readbraw(struct smb_request *req)
 
 	DEBUG(5,("reply_readbraw finished\n"));
 
-	SMB_VFS_STRICT_UNLOCK(conn, fsp, &lock);
-
 	END_PROFILE(SMBreadbraw);
 	return;
 }
@@ -3903,7 +3901,7 @@ Returning short read of maximum allowed for compatibility with Windows 2000.\n",
 
 	if (nread < 0) {
 		reply_nterror(req, map_nt_error_from_unix(errno));
-		goto strict_unlock;
+		goto out;
 	}
 
 	srv_set_message((char *)req->outbuf, 5, nread+3, False);
@@ -3916,9 +3914,7 @@ Returning short read of maximum allowed for compatibility with Windows 2000.\n",
 	DEBUG(3, ("read %s num=%d nread=%d\n",
 		  fsp_fnum_dbg(fsp), (int)numtoread, (int)nread));
 
-strict_unlock:
-	SMB_VFS_STRICT_UNLOCK(conn, fsp, &lock);
-
+out:
 	END_PROFILE(SMBread);
 	return;
 }
@@ -3991,7 +3987,7 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 
 		if(fsp_stat(fsp) == -1) {
 			reply_nterror(req, map_nt_error_from_unix(errno));
-			goto strict_unlock;
+			goto out;
 		}
 
 		if (!S_ISREG(fsp->fsp_name->st.st_ex_mode) ||
@@ -4053,7 +4049,7 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 				DEBUG(3, ("send_file_readX: fake_sendfile %s max=%d nread=%d\n",
 					  fsp_fnum_dbg(fsp), (int)smb_maxcnt, (int)nread));
 				/* No outbuf here means successful sendfile. */
-				goto strict_unlock;
+				goto out;
 			}
 
 			DEBUG(0,("send_file_readX: sendfile failed for file "
@@ -4094,7 +4090,7 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 		/* No outbuf here means successful sendfile. */
 		SMB_PERFCOUNT_SET_MSGLEN_OUT(&req->pcd, nread);
 		SMB_PERFCOUNT_END(&req->pcd);
-		goto strict_unlock;
+		goto out;
 	}
 
 normal_read:
@@ -4144,7 +4140,7 @@ normal_read:
 			errno = saved_errno;
 			exit_server_cleanly("send_file_readX: fake_sendfile failed");
 		}
-		goto strict_unlock;
+		goto out;
 	}
 
 nosendfile_read:
@@ -4157,8 +4153,6 @@ nosendfile_read:
 			  startpos, smb_maxcnt);
 	saved_errno = errno;
 
-	SMB_VFS_STRICT_UNLOCK(conn, fsp, &lock);
-
 	if (nread < 0) {
 		reply_nterror(req, map_nt_error_from_unix(saved_errno));
 		return;
@@ -4170,8 +4164,7 @@ nosendfile_read:
 		  fsp_fnum_dbg(fsp), (int)smb_maxcnt, (int)nread));
 	return;
 
- strict_unlock:
-	SMB_VFS_STRICT_UNLOCK(conn, fsp, &lock);
+out:
 	TALLOC_FREE(req->outbuf);
 	return;
 }
@@ -4513,7 +4506,7 @@ void reply_writebraw(struct smb_request *req)
 	if (nwritten < (ssize_t)numtowrite)  {
 		reply_nterror(req, NT_STATUS_DISK_FULL);
 		error_to_writebrawerr(req);
-		goto strict_unlock;
+		goto out;
 	}
 
 	total_written = nwritten;
@@ -4523,7 +4516,7 @@ void reply_writebraw(struct smb_request *req)
 	if (!buf) {
 		reply_nterror(req, NT_STATUS_NO_MEMORY);
 		error_to_writebrawerr(req);
-		goto strict_unlock;
+		goto out;
 	}
 
 	/* Return a SMBwritebraw message to the redirector to tell
@@ -4586,7 +4579,7 @@ void reply_writebraw(struct smb_request *req)
 			TALLOC_FREE(buf);
 			reply_nterror(req, map_nt_error_from_unix(errno));
 			error_to_writebrawerr(req);
-			goto strict_unlock;
+			goto out;
 		}
 
 		if (nwritten < (ssize_t)numtowrite) {
@@ -4608,17 +4601,13 @@ void reply_writebraw(struct smb_request *req)
 			 fsp_str_dbg(fsp), nt_errstr(status)));
 		reply_nterror(req, status);
 		error_to_writebrawerr(req);
-		goto strict_unlock;
+		goto out;
 	}
 
 	DEBUG(3,("reply_writebraw: secondart write %s start=%.0f num=%d "
 		"wrote=%d\n",
 		fsp_fnum_dbg(fsp), (double)startpos, (int)numtowrite,
 		(int)total_written));
-
-	if (!fsp->print_file) {
-		SMB_VFS_STRICT_UNLOCK(conn, fsp, &lock);
-	}
 
 	/* We won't return a status if write through is not selected - this
 	 * follows what WfWg does */
@@ -4641,11 +4630,7 @@ void reply_writebraw(struct smb_request *req)
 	}
 	return;
 
-strict_unlock:
-	if (!fsp->print_file) {
-		SMB_VFS_STRICT_UNLOCK(conn, fsp, &lock);
-	}
-
+out:
 	END_PROFILE(SMBwritebraw);
 	return;
 }
@@ -4721,17 +4706,17 @@ void reply_writeunlock(struct smb_request *req)
 		DEBUG(5,("reply_writeunlock: sync_file for %s returned %s\n",
 			 fsp_str_dbg(fsp), nt_errstr(status)));
 		reply_nterror(req, status);
-		goto strict_unlock;
+		goto out;
 	}
 
 	if(nwritten < 0) {
 		reply_nterror(req, map_nt_error_from_unix(saved_errno));
-		goto strict_unlock;
+		goto out;
 	}
 
 	if((nwritten < numtowrite) && (numtowrite != 0)) {
 		reply_nterror(req, NT_STATUS_DISK_FULL);
-		goto strict_unlock;
+		goto out;
 	}
 
 	if (numtowrite && !fsp->print_file) {
@@ -4744,7 +4729,7 @@ void reply_writeunlock(struct smb_request *req)
 
 		if (NT_STATUS_V(status)) {
 			reply_nterror(req, status);
-			goto strict_unlock;
+			goto out;
 		}
 	}
 
@@ -4755,11 +4740,7 @@ void reply_writeunlock(struct smb_request *req)
 	DEBUG(3, ("writeunlock %s num=%d wrote=%d\n",
 		  fsp_fnum_dbg(fsp), (int)numtowrite, (int)nwritten));
 
-strict_unlock:
-	if (numtowrite && !fsp->print_file) {
-		SMB_VFS_STRICT_UNLOCK(conn, fsp, &lock);
-	}
-
+out:
 	END_PROFILE(SMBwriteunlock);
 	return;
 }
@@ -4840,12 +4821,12 @@ void reply_write(struct smb_request *req)
 		nwritten = vfs_allocate_file_space(fsp, (off_t)startpos);
 		if (nwritten < 0) {
 			reply_nterror(req, NT_STATUS_DISK_FULL);
-			goto strict_unlock;
+			goto out;
 		}
 		nwritten = vfs_set_filelen(fsp, (off_t)startpos);
 		if (nwritten < 0) {
 			reply_nterror(req, NT_STATUS_DISK_FULL);
-			goto strict_unlock;
+			goto out;
 		}
 		trigger_write_time_update_immediate(fsp);
 	} else {
@@ -4857,17 +4838,17 @@ void reply_write(struct smb_request *req)
 		DEBUG(5,("reply_write: sync_file for %s returned %s\n",
 			 fsp_str_dbg(fsp), nt_errstr(status)));
 		reply_nterror(req, status);
-		goto strict_unlock;
+		goto out;
 	}
 
 	if(nwritten < 0) {
 		reply_nterror(req, map_nt_error_from_unix(saved_errno));
-		goto strict_unlock;
+		goto out;
 	}
 
 	if((nwritten == 0) && (numtowrite != 0)) {
 		reply_nterror(req, NT_STATUS_DISK_FULL);
-		goto strict_unlock;
+		goto out;
 	}
 
 	reply_outbuf(req, 1, 0);
@@ -4881,11 +4862,7 @@ void reply_write(struct smb_request *req)
 
 	DEBUG(3, ("write %s num=%d wrote=%d\n", fsp_fnum_dbg(fsp), (int)numtowrite, (int)nwritten));
 
-strict_unlock:
-	if (!fsp->print_file) {
-		SMB_VFS_STRICT_UNLOCK(conn, fsp, &lock);
-	}
-
+out:
 	END_PROFILE(SMBwrite);
 	return;
 }
@@ -5120,8 +5097,6 @@ void reply_write_and_X(struct smb_request *req)
 
 		nwritten = write_file(req,fsp,data,startpos,numtowrite);
 		saved_errno = errno;
-
-		SMB_VFS_STRICT_UNLOCK(conn, fsp, &lock);
 	}
 
 	if(nwritten < 0) {
@@ -5515,10 +5490,6 @@ void reply_writeclose(struct smb_request *req)
 	}
 
 	nwritten = write_file(req,fsp,data,startpos,numtowrite);
-
-	if (fsp->print_file == NULL) {
-		SMB_VFS_STRICT_UNLOCK(conn, fsp, &lock);
-	}
 
 	set_close_write_time(fsp, mtime);
 

@@ -241,6 +241,7 @@
 /* Version 37 - Add SMB_VFS_OFFLOAD_READ_SEND/RECV */
 /* Version 37 - Rename SMB_VFS_COPY_CHUNK_SEND/RECV to
                 SMB_VFS_OFFLOAD_READ_SEND/RECV */
+/* Version 37 - Remove SMB_VFS_STRICT_UNLOCK */
 
 #define SMB_VFS_INTERFACE_VERSION 37
 
@@ -852,10 +853,6 @@ struct vfs_fn_pointers {
 			       struct files_struct *fsp,
 			       struct lock_struct *plock);
 
-	void (*strict_unlock_fn)(struct vfs_handle_struct *handle,
-				 struct files_struct *fsp,
-				 struct lock_struct *plock);
-
 	NTSTATUS (*translate_name_fn)(struct vfs_handle_struct *handle,
 				      const char *name,
 				      enum vfs_translate_direction direction,
@@ -1318,9 +1315,6 @@ bool smb_vfs_call_brl_cancel_windows(struct vfs_handle_struct *handle,
 bool smb_vfs_call_strict_lock(struct vfs_handle_struct *handle,
 			      struct files_struct *fsp,
 			      struct lock_struct *plock);
-void smb_vfs_call_strict_unlock(struct vfs_handle_struct *handle,
-				struct files_struct *fsp,
-				struct lock_struct *plock);
 NTSTATUS smb_vfs_call_translate_name(struct vfs_handle_struct *handle,
 				     const char *name,
 				     enum vfs_translate_direction direction,

@@ -322,7 +322,6 @@ static struct tevent_req *btrfs_offload_write_send(struct vfs_handle_struct *han
 			return tevent_req_post(req, ev);
 		}
 		if (!SMB_VFS_STRICT_LOCK(dest_fsp->conn, dest_fsp, &dest_lck)) {
-			SMB_VFS_STRICT_UNLOCK(src_fsp->conn, src_fsp, &src_lck);
 			tevent_req_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
 			return tevent_req_post(req, ev);
 		}
@@ -335,10 +334,6 @@ static struct tevent_req *btrfs_offload_write_send(struct vfs_handle_struct *han
 	cr_args.src_length = (uint64_t)num;
 
 	ret = ioctl(dest_fsp->fh->fd, BTRFS_IOC_CLONE_RANGE, &cr_args);
-	if (do_locking) {
-		SMB_VFS_STRICT_UNLOCK(dest_fsp->conn, dest_fsp, &dest_lck);
-		SMB_VFS_STRICT_UNLOCK(src_fsp->conn, src_fsp, &src_lck);
-	}
 	if (ret < 0) {
 		/*
 		 * BTRFS_IOC_CLONE_RANGE only supports 'sectorsize' aligned
