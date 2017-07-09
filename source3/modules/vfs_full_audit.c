@@ -165,7 +165,6 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_BRL_UNLOCK_WINDOWS,
 	SMB_VFS_OP_BRL_CANCEL_WINDOWS,
 	SMB_VFS_OP_STRICT_LOCK,
-	SMB_VFS_OP_STRICT_UNLOCK,
 	SMB_VFS_OP_TRANSLATE_NAME,
 	SMB_VFS_OP_FSCTL,
 	SMB_VFS_OP_OFFLOAD_READ_SEND,
@@ -309,7 +308,6 @@ static struct {
 	{ SMB_VFS_OP_BRL_UNLOCK_WINDOWS, "brl_unlock_windows" },
 	{ SMB_VFS_OP_BRL_CANCEL_WINDOWS, "brl_cancel_windows" },
 	{ SMB_VFS_OP_STRICT_LOCK, "strict_lock" },
-	{ SMB_VFS_OP_STRICT_UNLOCK, "strict_unlock" },
 	{ SMB_VFS_OP_TRANSLATE_NAME,	"translate_name" },
 	{ SMB_VFS_OP_FSCTL,		"fsctl" },
 	{ SMB_VFS_OP_OFFLOAD_READ_SEND,	"offload_read_send" },
@@ -1849,17 +1847,6 @@ static bool smb_full_audit_strict_lock(struct vfs_handle_struct *handle,
 	return result;
 }
 
-static void smb_full_audit_strict_unlock(struct vfs_handle_struct *handle,
-					 struct files_struct *fsp,
-					 struct lock_struct *plock)
-{
-	SMB_VFS_NEXT_STRICT_UNLOCK(handle, fsp, plock);
-
-	do_log(SMB_VFS_OP_STRICT_UNLOCK, true, handle,
-	    "%s:%llu-%llu:%d", fsp_str_do_log(fsp), plock->start,
-	    plock->size, plock->lock_type);
-}
-
 static NTSTATUS smb_full_audit_translate_name(struct vfs_handle_struct *handle,
 					      const char *name,
 					      enum vfs_translate_direction direction,
@@ -2590,7 +2577,6 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.brl_unlock_windows_fn = smb_full_audit_brl_unlock_windows,
 	.brl_cancel_windows_fn = smb_full_audit_brl_cancel_windows,
 	.strict_lock_fn = smb_full_audit_strict_lock,
-	.strict_unlock_fn = smb_full_audit_strict_unlock,
 	.translate_name_fn = smb_full_audit_translate_name,
 	.fsctl_fn = smb_full_audit_fsctl,
 	.get_dos_attributes_fn = smb_full_audit_get_dos_attributes,

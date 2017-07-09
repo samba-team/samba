@@ -503,7 +503,6 @@ static NTSTATUS fsctl_zero_data(TALLOC_CTX *mem_ctx,
 		status = map_nt_error_from_unix_common(errno);
 		DEBUG(2, ("zero-data fallocate(0x%x) failed: %s\n", mode,
 		      strerror(errno)));
-		SMB_VFS_STRICT_UNLOCK(fsp->conn, fsp, &lck);
 		return status;
 	}
 
@@ -522,12 +521,10 @@ static NTSTATUS fsctl_zero_data(TALLOC_CTX *mem_ctx,
 		if (ret == -1)  {
 			status = map_nt_error_from_unix_common(errno);
 			DEBUG(0, ("fallocate failed: %s\n", strerror(errno)));
-			SMB_VFS_STRICT_UNLOCK(fsp->conn, fsp, &lck);
 			return status;
 		}
 	}
 
-	SMB_VFS_STRICT_UNLOCK(fsp->conn, fsp, &lck);
 	return NT_STATUS_OK;
 }
 

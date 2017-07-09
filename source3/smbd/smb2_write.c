@@ -369,8 +369,6 @@ static struct tevent_req *smbd_smb2_write_send(TALLOC_CTX *mem_ctx,
 
 	status = smb2_write_complete(req, nwritten, errno);
 
-	SMB_VFS_STRICT_UNLOCK(conn, fsp, &lock);
-
 	DEBUG(10,("smb2: write on "
 		"file %s, offset %.0f, requested %u, written = %u\n",
 		fsp_str_dbg(fsp),

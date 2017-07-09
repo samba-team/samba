@@ -107,8 +107,6 @@ void init_strict_lock_struct(files_struct *fsp,
 				struct lock_struct *plock);
 bool strict_lock_default(files_struct *fsp,
 				struct lock_struct *plock);
-void strict_unlock_default(files_struct *fsp,
-				struct lock_struct *plock);
 NTSTATUS query_lock(files_struct *fsp,
 			uint64_t *psmblctx,
 			uint64_t *pcount,

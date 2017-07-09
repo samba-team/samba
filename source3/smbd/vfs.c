@@ -2282,14 +2282,6 @@ bool smb_vfs_call_strict_lock(struct vfs_handle_struct *handle,
 	return handle->fns->strict_lock_fn(handle, fsp, plock);
 }
 
-void smb_vfs_call_strict_unlock(struct vfs_handle_struct *handle,
-				struct files_struct *fsp,
-				struct lock_struct *plock)
-{
-	VFS_FIND(strict_unlock);
-	handle->fns->strict_unlock_fn(handle, fsp, plock);
-}
-
 NTSTATUS smb_vfs_call_translate_name(struct vfs_handle_struct *handle,
 				     const char *name,
 				     enum vfs_translate_direction direction,

@@ -1686,9 +1686,7 @@ struct vfswrap_offload_write_state {
 	struct tevent_context *ev;
 	uint8_t *buf;
 	bool read_lck_locked;
-	struct lock_struct read_lck;
 	bool write_lck_locked;
-	struct lock_struct write_lck;
 	DATA_BLOB *token;
 	struct files_struct *src_fsp;
 	off_t src_off;
@@ -1827,6 +1825,7 @@ static NTSTATUS vfswrap_offload_write_loop(struct tevent_req *req)
 	struct vfswrap_offload_write_state *state = tevent_req_data(
 		req, struct vfswrap_offload_write_state);
 	struct tevent_req *subreq = NULL;
+	struct lock_struct read_lck;
 	bool ok;
 
 	state->next_io_size = MIN(state->remaining, talloc_array_length(state->buf));
@@ -1836,11 +1835,11 @@ static NTSTATUS vfswrap_offload_write_loop(struct tevent_req *req)
 				state->src_off,
 				state->next_io_size,
 				READ_LOCK,
-				&state->read_lck);
+				&read_lck);
 
 	ok = SMB_VFS_STRICT_LOCK(state->src_fsp->conn,
 				 state->src_fsp,
-				 &state->read_lck);
+				 &read_lck);
 	if (!ok) {
 		return NT_STATUS_FILE_LOCK_CONFLICT;
 	}
@@ -1868,13 +1867,9 @@ static void vfswrap_offload_write_read_done(struct tevent_req *subreq)
 	struct vfswrap_offload_write_state *state = tevent_req_data(
 		req, struct vfswrap_offload_write_state);
 	struct vfs_aio_state aio_state;
+	struct lock_struct write_lck;
 	ssize_t nread;
 	bool ok;
-
-	SMB_VFS_STRICT_UNLOCK(state->src_fsp->conn,
-			      state->src_fsp,
-			      &state->read_lck);
-	ZERO_STRUCT(state->read_lck);
 
 	nread = SMB_VFS_PREAD_RECV(subreq, &aio_state);
 	TALLOC_FREE(subreq);
@@ -1897,11 +1892,11 @@ static void vfswrap_offload_write_read_done(struct tevent_req *subreq)
 				state->dst_off,
 				state->next_io_size,
 				WRITE_LOCK,
-				&state->write_lck);
+				&write_lck);
 
 	ok = SMB_VFS_STRICT_LOCK(state->dst_fsp->conn,
 				 state->dst_fsp,
-				 &state->write_lck);
+				 &write_lck);
 	if (!ok) {
 		tevent_req_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
 		return;
@@ -1929,11 +1924,6 @@ static void vfswrap_offload_write_write_done(struct tevent_req *subreq)
 	struct vfs_aio_state aio_state;
 	ssize_t nwritten;
 	NTSTATUS status;
-
-	SMB_VFS_STRICT_UNLOCK(state->dst_fsp->conn,
-			      state->dst_fsp,
-			      &state->write_lck);
-	ZERO_STRUCT(state->write_lck);
 
 	nwritten = SMB_VFS_PWRITE_RECV(subreq, &aio_state);
 	TALLOC_FREE(subreq);
@@ -2760,16 +2750,6 @@ static bool vfswrap_strict_lock(struct vfs_handle_struct *handle,
 	return strict_lock_default(fsp, plock);
 }
 
-static void vfswrap_strict_unlock(struct vfs_handle_struct *handle,
-				files_struct *fsp,
-				struct lock_struct *plock)
-{
-	SMB_ASSERT(plock->lock_type == READ_LOCK ||
-	    plock->lock_type == WRITE_LOCK);
-
-	strict_unlock_default(fsp, plock);
-}
-
 /* NT ACL operations. */
 
 static NTSTATUS vfswrap_fget_nt_acl(vfs_handle_struct *handle,
@@ -3099,7 +3079,6 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.brl_unlock_windows_fn = vfswrap_brl_unlock_windows,
 	.brl_cancel_windows_fn = vfswrap_brl_cancel_windows,
 	.strict_lock_fn = vfswrap_strict_lock,
-	.strict_unlock_fn = vfswrap_strict_unlock,
 	.translate_name_fn = vfswrap_translate_name,
 	.fsctl_fn = vfswrap_fsctl,
 	.set_dos_attributes_fn = vfswrap_set_dos_attributes,

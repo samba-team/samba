@@ -164,10 +164,6 @@ bool strict_lock_default(files_struct *fsp, struct lock_struct *plock)
 	return ret;
 }
 
-void strict_unlock_default(files_struct *fsp, struct lock_struct *plock)
-{
-}
-
 /****************************************************************************
  Find out if a lock could be granted - return who is blocking us if we can't.
 ****************************************************************************/

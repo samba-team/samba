@@ -1730,23 +1730,6 @@ static bool smb_time_audit_strict_lock(struct vfs_handle_struct *handle,
 	return result;
 }
 
-static void smb_time_audit_strict_unlock(struct vfs_handle_struct *handle,
-					 struct files_struct *fsp,
-					 struct lock_struct *plock)
-{
-	struct timespec ts1,ts2;
-	double timediff;
-
-	clock_gettime_mono(&ts1);
-	SMB_VFS_NEXT_STRICT_UNLOCK(handle, fsp, plock);
-	clock_gettime_mono(&ts2);
-	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
-
-	if (timediff > audit_timeout) {
-		smb_time_audit_log_fsp("strict_unlock", timediff, fsp);
-	}
-}
-
 static NTSTATUS smb_time_audit_translate_name(struct vfs_handle_struct *handle,
 					      const char *name,
 					      enum vfs_translate_direction direction,
@@ -2786,7 +2769,6 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.brl_unlock_windows_fn = smb_time_audit_brl_unlock_windows,
 	.brl_cancel_windows_fn = smb_time_audit_brl_cancel_windows,
 	.strict_lock_fn = smb_time_audit_strict_lock,
-	.strict_unlock_fn = smb_time_audit_strict_unlock,
 	.translate_name_fn = smb_time_audit_translate_name,
 	.fsctl_fn = smb_time_audit_fsctl,
 	.get_dos_attributes_fn = smb_time_get_dos_attributes,
