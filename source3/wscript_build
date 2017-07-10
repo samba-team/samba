@@ -9,14 +9,6 @@ config_h = "../include/config.h"
 
 bld.SAMBA_BLDOPTIONS('smbd/build_options.c')
 
-t = bld.SAMBA_GENERATOR('build_env.h',
-                        source='script/build_env.sh',
-                        target='include/build_env.h',
-                        rule='${SRC} ${SRCDIR} ${BUILDDIR} ${CC} > ${TGT}')
-# todo: work out what is really wanted here
-t.env.SRCDIR = bld.path.abspath()
-t.env.BUILDDIR = bld.path.abspath()
-
 bld.SETUP_BUILD_GROUPS()
 
 ######################## SUBSYSTEMS #################################
