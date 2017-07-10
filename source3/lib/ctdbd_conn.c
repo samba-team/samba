@@ -832,7 +832,7 @@ int ctdbd_db_attach(struct ctdbd_connection *conn,
 				  persistent
 				  ? CTDB_CONTROL_DB_ATTACH_PERSISTENT
 				  : CTDB_CONTROL_DB_ATTACH,
-				  tdb_flags, 0, data, NULL, &data, &cstatus);
+				  0, 0, data, NULL, &data, &cstatus);
 	if (ret != 0) {
 		DEBUG(0, (__location__ " ctdb_control for db_attach "
 			  "failed: %s\n", strerror(ret)));
