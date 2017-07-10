@@ -12,7 +12,6 @@ generate_output ()
 }
 
 output=$(
-    echo "ctdb_event_header"
     generate_output "ctdb_event_request_data"
     generate_output "ctdb_event_reply_data"
     generate_output "ctdb_event_request"

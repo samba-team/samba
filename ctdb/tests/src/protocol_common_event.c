@@ -256,19 +256,6 @@ void verify_ctdb_event_reply_data(struct ctdb_event_reply_data *r,
 	}
 }
 
-void fill_ctdb_event_header(struct ctdb_event_header *h)
-{
-	h->length = rand32();
-	h->reqid = rand32();
-}
-
-void verify_ctdb_event_header(struct ctdb_event_header *h,
-			      struct ctdb_event_header *h2)
-{
-	assert(h->length == h2->length);
-	assert(h->reqid == h2->reqid);
-}
-
 void fill_ctdb_event_request(TALLOC_CTX *mem_ctx,
 			     struct ctdb_event_request *r, uint32_t command)
 {

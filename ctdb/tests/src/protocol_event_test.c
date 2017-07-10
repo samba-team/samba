@@ -94,35 +94,6 @@ static void TEST_FUNC(NAME)(uint32_t command) \
 	talloc_free(mem_ctx); \
 }
 
-static void test_ctdb_event_header(void)
-{
-	TALLOC_CTX *mem_ctx;
-	size_t buflen, np = 0;
-	struct ctdb_event_header h, h2;
-	int ret;
-
-	printf("ctdb_event_header\n");
-	fflush(stdout);
-
-	mem_ctx = talloc_new(NULL);
-	assert(mem_ctx != NULL);
-
-	ctdb_event_header_fill(&h, REQID);
-
-	buflen = ctdb_event_header_len(&h);
-	assert(buflen < sizeof(BUFFER));
-	ctdb_event_header_push(&h, BUFFER, &np);
-	assert(np == buflen);
-	np = 0;
-	ret = ctdb_event_header_pull(BUFFER, buflen, mem_ctx, &h2, &np);
-	assert(ret == 0);
-	assert(np == buflen);
-
-	verify_ctdb_event_header(&h, &h2);
-
-	talloc_free(mem_ctx);
-}
-
 #define NUM_COMMANDS	5
 
 PROTOCOL_TYPE3_TEST(struct ctdb_event_request_run, ctdb_event_request_run);
@@ -156,8 +127,6 @@ int main(int argc, char *argv[])
 	TEST_FUNC(ctdb_event_request_script_disable)();
 	TEST_FUNC(ctdb_event_reply_status)();
 	TEST_FUNC(ctdb_event_reply_script_list)();
-
-	test_ctdb_event_header();
 
 	for (command=1; command<=NUM_COMMANDS; command++) {
 		TEST_FUNC(ctdb_event_request_data)(command);

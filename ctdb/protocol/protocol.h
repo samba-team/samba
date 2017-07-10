@@ -1081,11 +1081,6 @@ struct ctdb_event_reply_data {
 	} data;
 };
 
-struct ctdb_event_header {
-	uint32_t length;
-	uint32_t reqid;
-};
-
 struct ctdb_event_request {
 	struct sock_packet_header header;
 	struct ctdb_event_request_data rdata;

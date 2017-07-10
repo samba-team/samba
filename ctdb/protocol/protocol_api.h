@@ -652,8 +652,6 @@ int ctdb_req_keepalive_pull(uint8_t *buf, size_t buflen,
 
 /* From protocol/protocol_event.c */
 
-void ctdb_event_header_fill(struct ctdb_event_header *h, uint32_t reqid);
-
 size_t ctdb_event_request_len(struct ctdb_event_request *in);
 
 int ctdb_event_request_push(struct ctdb_event_request *in,

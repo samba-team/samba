@@ -73,10 +73,6 @@ void fill_ctdb_event_reply_data(TALLOC_CTX *mem_ctx,
 void verify_ctdb_event_reply_data(struct ctdb_event_reply_data *r,
 				  struct ctdb_event_reply_data *r2);
 
-void fill_ctdb_event_header(struct ctdb_event_header *h);
-void verify_ctdb_event_header(struct ctdb_event_header *h,
-			      struct ctdb_event_header *h2);
-
 void fill_ctdb_event_request(TALLOC_CTX *mem_ctx,
 			     struct ctdb_event_request *r, uint32_t command);
 void verify_ctdb_event_request(struct ctdb_event_request *r,
