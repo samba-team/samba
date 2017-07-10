@@ -831,7 +831,7 @@ static bool api_DosPrintQGetInfo(struct smbd_server_connection *sconn,
 		goto out;
 	}
 
-	status = rpc_pipe_open_interface(conn,
+	status = rpc_pipe_open_interface(mem_ctx,
 					 &ndr_table_spoolss,
 					 conn->session_info,
 					 conn->sconn->remote_address,
@@ -1029,7 +1029,7 @@ static bool api_DosPrintQEnum(struct smbd_server_connection *sconn,
 		return(True);
 	}
 
-	status = rpc_pipe_open_interface(conn,
+	status = rpc_pipe_open_interface(mem_ctx,
 					 &ndr_table_spoolss,
 					 conn->session_info,
 					 conn->sconn->remote_address,
@@ -3144,7 +3144,7 @@ static bool api_RDosPrintJobDel(struct smbd_server_connection *sconn,
 
 	ZERO_STRUCT(handle);
 
-	status = rpc_pipe_open_interface(conn,
+	status = rpc_pipe_open_interface(mem_ctx,
 					 &ndr_table_spoolss,
 					 conn->session_info,
 					 conn->sconn->remote_address,
@@ -3273,7 +3273,7 @@ static bool api_WPrintQueueCtrl(struct smbd_server_connection *sconn,
 
 	ZERO_STRUCT(handle);
 
-	status = rpc_pipe_open_interface(conn,
+	status = rpc_pipe_open_interface(mem_ctx,
 					 &ndr_table_spoolss,
 					 conn->session_info,
 					 conn->sconn->remote_address,
@@ -3456,7 +3456,7 @@ static bool api_PrintJobInfo(struct smbd_server_connection *sconn,
 
 	ZERO_STRUCT(handle);
 
-	status = rpc_pipe_open_interface(conn,
+	status = rpc_pipe_open_interface(mem_ctx,
 					 &ndr_table_spoolss,
 					 conn->session_info,
 					 conn->sconn->remote_address,
@@ -4601,7 +4601,7 @@ static bool api_WPrintJobGetInfo(struct smbd_server_connection *sconn,
 
 	ZERO_STRUCT(handle);
 
-	status = rpc_pipe_open_interface(conn,
+	status = rpc_pipe_open_interface(mem_ctx,
 					 &ndr_table_spoolss,
 					 conn->session_info,
 					 conn->sconn->remote_address,
@@ -4744,7 +4744,7 @@ static bool api_WPrintJobEnumerate(struct smbd_server_connection *sconn,
 
 	ZERO_STRUCT(handle);
 
-	status = rpc_pipe_open_interface(conn,
+	status = rpc_pipe_open_interface(mem_ctx,
 					 &ndr_table_spoolss,
 					 conn->session_info,
 					 conn->sconn->remote_address,
@@ -4945,7 +4945,7 @@ static bool api_WPrintDestGetInfo(struct smbd_server_connection *sconn,
 
 	ZERO_STRUCT(handle);
 
-	status = rpc_pipe_open_interface(conn,
+	status = rpc_pipe_open_interface(mem_ctx,
 					 &ndr_table_spoolss,
 					 conn->session_info,
 					 conn->sconn->remote_address,
@@ -5078,7 +5078,7 @@ static bool api_WPrintDestEnum(struct smbd_server_connection *sconn,
 
 	queuecnt = 0;
 
-	status = rpc_pipe_open_interface(conn,
+	status = rpc_pipe_open_interface(mem_ctx,
 					 &ndr_table_spoolss,
 					 conn->session_info,
 					 conn->sconn->remote_address,
@@ -5390,7 +5390,7 @@ static bool api_RNetSessionEnum(struct smbd_server_connection *sconn,
 		return False;
 	}
 
-	status = rpc_pipe_open_interface(conn,
+	status = rpc_pipe_open_interface(mem_ctx,
 					 &ndr_table_srvsvc,
 					 conn->session_info,
 					 conn->sconn->remote_address,
