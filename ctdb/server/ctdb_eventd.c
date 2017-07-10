@@ -1019,7 +1019,8 @@ static void client_process_reply(struct tevent_req *req,
 	size_t buflen;
 	int ret;
 
-	ctdb_event_header_fill(&reply->header, state->request.header.reqid);
+	sock_packet_header_set_reqid(&reply->header,
+				     state->request.header.reqid);
 
 	buflen = ctdb_event_reply_len(reply);
 	buf = talloc_zero_size(state, buflen);

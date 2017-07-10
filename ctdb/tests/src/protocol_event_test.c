@@ -23,6 +23,7 @@
 #include "protocol/protocol_types.c"
 #include "protocol/protocol_event.c"
 #include "protocol/protocol_packet.c"
+#include "protocol/protocol_sock.c"
 
 #include "tests/src/protocol_common.h"
 #include "tests/src/protocol_common_event.h"

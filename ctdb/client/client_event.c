@@ -224,7 +224,7 @@ struct tevent_req *ctdb_event_msg_send(TALLOC_CTX *mem_ctx,
 
 	talloc_set_destructor(state, ctdb_event_msg_state_destructor);
 
-	ctdb_event_header_fill(&request->header, state->reqid);
+	sock_packet_header_set_reqid(&request->header, state->reqid);
 
 	buflen = ctdb_event_request_len(request);
 	buf = talloc_size(state, buflen);

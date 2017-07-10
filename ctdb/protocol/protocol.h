@@ -1087,12 +1087,12 @@ struct ctdb_event_header {
 };
 
 struct ctdb_event_request {
-	struct ctdb_event_header header;
+	struct sock_packet_header header;
 	struct ctdb_event_request_data rdata;
 };
 
 struct ctdb_event_reply {
-	struct ctdb_event_header header;
+	struct sock_packet_header header;
 	struct ctdb_event_reply_data rdata;
 };
 

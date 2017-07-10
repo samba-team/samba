@@ -272,27 +272,27 @@ void verify_ctdb_event_header(struct ctdb_event_header *h,
 void fill_ctdb_event_request(TALLOC_CTX *mem_ctx,
 			     struct ctdb_event_request *r, uint32_t command)
 {
-	fill_ctdb_event_header(&r->header);
+	fill_sock_packet_header(&r->header);
 	fill_ctdb_event_request_data(mem_ctx, &r->rdata, command);
 }
 
 void verify_ctdb_event_request(struct ctdb_event_request *r,
 			       struct ctdb_event_request *r2)
 {
-	verify_ctdb_event_header(&r->header, &r2->header);
+	verify_sock_packet_header(&r->header, &r2->header);
 	verify_ctdb_event_request_data(&r->rdata, &r2->rdata);
 }
 
 void fill_ctdb_event_reply(TALLOC_CTX *mem_ctx, struct ctdb_event_reply *r,
 			   uint32_t command)
 {
-	fill_ctdb_event_header(&r->header);
+	fill_sock_packet_header(&r->header);
 	fill_ctdb_event_reply_data(mem_ctx, &r->rdata, command);
 }
 
 void verify_ctdb_event_reply(struct ctdb_event_reply *r,
 			     struct ctdb_event_reply *r2)
 {
-	verify_ctdb_event_header(&r->header, &r2->header);
+	verify_sock_packet_header(&r->header, &r2->header);
 	verify_ctdb_event_reply_data(&r->rdata, &r2->rdata);
 }

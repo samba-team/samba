@@ -367,7 +367,8 @@ static int eventd_client_write(struct eventd_context *ectx,
 
 	talloc_set_destructor(state, eventd_client_state_destructor);
 
-	ctdb_event_header_fill(&request->header, state->reqid);
+	sock_packet_header_set_reqid(&request->header, state->reqid);
+
 	state->buflen = ctdb_event_request_len(request);
 	state->buf = talloc_size(state, state->buflen);
 	if (state->buf == NULL) {
