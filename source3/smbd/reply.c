@@ -5942,7 +5942,7 @@ void reply_printqueue(struct smb_request *req)
 
 		ZERO_STRUCT(handle);
 
-		status = rpc_pipe_open_interface(conn,
+		status = rpc_pipe_open_interface(mem_ctx,
 						 &ndr_table_spoolss,
 						 conn->session_info,
 						 conn->sconn->remote_address,
