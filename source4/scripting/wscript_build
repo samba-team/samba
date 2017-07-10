@@ -5,11 +5,14 @@ from samba_utils import MODE_755
 sbin_files = None
 if bld.CONFIG_SET('AD_DC_BUILD_IS_ENABLED'):
     sbin_files = 'bin/samba_dnsupdate bin/samba_spnupdate bin/samba_upgradedns bin/samba_kcc bin/samba_gpoupdate'
+    man_files = 'man/samba_gpoupdate.8'
 
 if sbin_files:
     bld.INSTALL_FILES('${SBINDIR}',
                       sbin_files,
                       chmod=MODE_755, python_fixup=True, flat=True)
+    if 'XSLTPROC_MANPAGES' in bld.env and bld.env['XSLTPROC_MANPAGES']:
+        bld.MANPAGES(man_files, True)
 
 if bld.CONFIG_SET('AD_DC_BUILD_IS_ENABLED'):
     bld.INSTALL_FILES('${BINDIR}',

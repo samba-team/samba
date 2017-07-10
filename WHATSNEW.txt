@@ -35,6 +35,19 @@ external crypto library performance reaches parity.
 The default is to build without setting --accel-aes, which uses the
 existing Samba software AES implementation.
 
+KDC GPO application
+-------------------
+
+Adds Group Policy support for the samba kdc. Applies password policies
+(minimum/maximum password age, minimum password length, and password
+complexity) and kerberos policies (user/service ticket lifetime and
+renew lifetime).
+
+Adds the samba_gpoupdate script for applying and unapplying
+policy. Can be applied automatically by setting
+
+ 'server services = +gpoupdate'.
+
 smb.conf changes
 ================
 
