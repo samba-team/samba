@@ -904,10 +904,24 @@ int dsdb_load_ldb_results_into_schema(TALLOC_CTX *mem_ctx, struct ldb_context *l
 				      char **error_string)
 {
 	unsigned int i;
+	WERROR status;
 
 	schema->ts_last_change = 0;
 	for (i=0; i < attrs_class_res->count; i++) {
-		WERROR status = dsdb_schema_set_el_from_ldb_msg(ldb, schema, attrs_class_res->msgs[i]);
+		const char *prefixMap = NULL;
+		/*
+		 * attrs_class_res also includes the schema object;
+		 * we only want to process classes & attributes
+		 */
+		prefixMap = ldb_msg_find_attr_as_string(
+				attrs_class_res->msgs[i],
+				"prefixMap", NULL);
+		if (prefixMap != NULL) {
+			continue;
+		}
+
+		status = dsdb_schema_set_el_from_ldb_msg(ldb, schema,
+							 attrs_class_res->msgs[i]);
 		if (!W_ERROR_IS_OK(status)) {
 			*error_string = talloc_asprintf(mem_ctx,
 				      "dsdb_load_ldb_results_into_schema: failed to load attribute or class definition: %s:%s",
@@ -928,7 +942,7 @@ int dsdb_load_ldb_results_into_schema(TALLOC_CTX *mem_ctx, struct ldb_context *l
 */
 
 int dsdb_schema_from_ldb_results(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
-				 struct ldb_result *schema_res,
+				 struct ldb_message *schema_msg,
 				 struct ldb_result *attrs_class_res,
 				 struct dsdb_schema **schema_out,
 				 char **error_string)
@@ -961,7 +975,7 @@ int dsdb_schema_from_ldb_results(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 							      false);
 	}
 
-	prefix_val = ldb_msg_find_ldb_val(schema_res->msgs[0], "prefixMap");
+	prefix_val = ldb_msg_find_ldb_val(schema_msg, "prefixMap");
 	if (!prefix_val) {
 		*error_string = talloc_asprintf(mem_ctx, 
 						"schema_fsmo_init: no prefixMap attribute found");
@@ -969,7 +983,7 @@ int dsdb_schema_from_ldb_results(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 		talloc_free(tmp_ctx);
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
-	info_val = ldb_msg_find_ldb_val(schema_res->msgs[0], "schemaInfo");
+	info_val = ldb_msg_find_ldb_val(schema_msg, "schemaInfo");
 	if (!info_val) {
 		status = dsdb_schema_info_blob_new(mem_ctx, &info_val_default);
 		if (!W_ERROR_IS_OK(status)) {
@@ -999,7 +1013,7 @@ int dsdb_schema_from_ldb_results(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 		return ret;
 	}
 
-	schema->fsmo.master_dn = ldb_msg_find_attr_as_dn(ldb, schema, schema_res->msgs[0], "fSMORoleOwner");
+	schema->fsmo.master_dn = ldb_msg_find_attr_as_dn(ldb, schema, schema_msg, "fSMORoleOwner");
 	if (ldb_dn_compare(samdb_ntds_settings_dn(ldb, tmp_ctx), schema->fsmo.master_dn) == 0) {
 		schema->fsmo.we_are_master = true;
 	} else {

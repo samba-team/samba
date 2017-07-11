@@ -296,20 +296,17 @@ static int dsdb_schema_from_db(struct ldb_module *module,
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	TALLOC_CTX *tmp_ctx;
 	char *error_string;
-	int ret;
+	int ret, i;
 	struct ldb_dn *schema_dn = ldb_get_schema_basedn(ldb);
-	struct ldb_result *schema_res;
 	struct ldb_result *res;
-	static const char *schema_head_attrs[] = {
-		"prefixMap",
-		"schemaInfo",
-		"fSMORoleOwner",
-		NULL
-	};
+	struct ldb_message *schema_msg = NULL;
 	static const char *schema_attrs[] = {
 		DSDB_SCHEMA_COMMON_ATTRS,
 		DSDB_SCHEMA_ATTR_ATTRS,
 		DSDB_SCHEMA_CLASS_ATTRS,
+		"prefixMap",
+		"schemaInfo",
+		"fSMORoleOwner",
 		NULL
 	};
 	unsigned flags;
@@ -324,33 +321,20 @@ static int dsdb_schema_from_db(struct ldb_module *module,
 	ldb_set_flags(ldb, flags & ~LDB_FLG_ENABLE_TRACING);
 
 	/*
-	 * setup the prefix mappings and schema info
-	 */
-	ret = dsdb_module_search_dn(module, tmp_ctx, &schema_res,
-				    schema_dn, schema_head_attrs,
-				    DSDB_FLAG_NEXT_MODULE, NULL);
-	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
-		ldb_reset_err_string(ldb);
-		ldb_debug(ldb, LDB_DEBUG_WARNING,
-			  "schema_load_init: no schema head present: (skip schema loading)\n");
-		goto failed;
-	} else if (ret != LDB_SUCCESS) {
-		ldb_asprintf_errstring(ldb, 
-				       "dsdb_schema: failed to search the schema head: %s",
-				       ldb_errstring(ldb));
-		goto failed;
-	}
-
-	/*
-	 * load the attribute definitions.
+	 * Load the attribute and class definitions, as well as
+	 * the schema object. We do this in one search and then
+	 * split it so that there isn't a race condition when
+	 * the schema is changed between two searches.
 	 */
 	ret = dsdb_module_search(module, tmp_ctx, &res,
-				 schema_dn, LDB_SCOPE_ONELEVEL,
+				 schema_dn, LDB_SCOPE_SUBTREE,
 				 schema_attrs,
 				 DSDB_FLAG_NEXT_MODULE |
 				 DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT,
 				 NULL,
-				 "(|(objectClass=attributeSchema)(objectClass=classSchema))");
+				 "(|(objectClass=attributeSchema)"
+				 "(objectClass=classSchema)"
+				 "(objectClass=dMD))");
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb, 
 				       "dsdb_schema: failed to search attributeSchema and classSchema objects: %s",
@@ -358,8 +342,26 @@ static int dsdb_schema_from_db(struct ldb_module *module,
 		goto failed;
 	}
 
+	/*
+	 * Separate the schema object from the attribute and
+	 * class objects.
+	 */
+	for (i = 0; i < res->count; i++) {
+		if (ldb_msg_find_element(res->msgs[i], "prefixMap")) {
+			schema_msg = res->msgs[i];
+			break;
+		}
+	}
+
+	if (schema_msg == NULL) {
+		ldb_asprintf_errstring(ldb,
+				       "dsdb_schema load failed: failed to find prefixMap");
+		ret = LDB_ERR_NO_SUCH_ATTRIBUTE;
+		goto failed;
+	}
+
 	ret = dsdb_schema_from_ldb_results(tmp_ctx, ldb,
-					   schema_res, res, schema, &error_string);
+					   schema_msg, res, schema, &error_string);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb, 
 				       "dsdb_schema load failed: %s",
