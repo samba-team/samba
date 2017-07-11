@@ -45,6 +45,9 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
         (self.drs, self.drs_handle) = self._ds_bind(self.dnsname_dc1)
         (self.default_hwm, self.default_utdv) = self._get_highest_hwm_utdv(self.ldb_dc1)
 
+        self.rxd_dn_list = []
+        self.rxd_links = []
+
         # 100 is the minimum max_objects that Microsoft seems to honour
         # (the max honoured is 400ish), so we use that in these tests
         self.max_objects = 100
@@ -114,11 +117,12 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
 
         return dn_list
 
-    def assert_expected_data(self, received_list, expected_list):
+    def assert_expected_data(self, expected_list):
         """
         Asserts that we received all the DNs that we expected and
         none are missing.
         """
+        received_list = self.rxd_dn_list
 
         # Note that with GET_ANC Windows can end up sending the same parent
         # object multiple times, so this might be noteworthy but doesn't
@@ -150,9 +154,7 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
         # We ask for the first page of 100 objects.
         # For this test, we don't care what order we receive the objects in,
         # so long as by the end we've received everything
-        rxd_dn_list = []
-        ctr6 = self.repl_get_next(rxd_dn_list)
-        rxd_dn_list = self._get_ctr6_dn_list(ctr6)
+        self.repl_get_next()
 
         # Modify some of the second page of objects. This should bump the highwatermark
         for x in range(100, 200):
@@ -163,11 +165,10 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
 
         # Get the remaining blocks of data
         while not self.replication_complete():
-            ctr6 = self.repl_get_next(rxd_dn_list)
-            rxd_dn_list += self._get_ctr6_dn_list(ctr6)
+            self.repl_get_next()
 
         # Check we still receive all the objects we're expecting
-        self.assert_expected_data(rxd_dn_list, expected_dn_list)
+        self.assert_expected_data(expected_dn_list)
 
     def is_parent_known(self, dn, known_dn_list):
         """
@@ -189,12 +190,8 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
         # test object), or its parent has been seen previously
         return parent_dn == self.ou or parent_dn in known_dn_list
 
-    def repl_get_next(self, initial_objects, get_anc=False):
-        """
-        Requests the next block of replication data. This tries to simulate
-        client behaviour - if we receive a replicated object that we don't know
-        the parent of, then re-request the block with the GET_ANC flag set.
-        """
+    def _repl_send_request(self, get_anc=False):
+        """Sends a GetNCChanges request for the next block of replication data."""
 
         # we're just trying to mimic regular client behaviour here, so just
         # use the highwatermark in the last response we received
@@ -202,12 +199,9 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
             highwatermark = self.last_ctr.new_highwatermark
             uptodateness_vector = self.last_ctr.uptodateness_vector
         else:
-            # this is the initial replication, so we're starting from the start
+            # this is the first replication chunk
             highwatermark = None
             uptodateness_vector = None
-
-        # we'll add new objects as we discover them, so take a copy to modify
-        known_objects = initial_objects[:]
 
         # Ask for the next block of replication data
         replica_flags = drsuapi.DRSUAPI_DRS_WRIT_REP
@@ -216,14 +210,30 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
             replica_flags = drsuapi.DRSUAPI_DRS_WRIT_REP | drsuapi.DRSUAPI_DRS_GET_ANC
             self.used_get_anc = True
 
-        ctr6 = self._get_replication(replica_flags,
+        # return the response from the DC
+        return self._get_replication(replica_flags,
                                      max_objects=self.max_objects,
                                      highwatermark=highwatermark,
                                      uptodateness_vector=uptodateness_vector)
 
+    def repl_get_next(self, get_anc=False):
+        """
+        Requests the next block of replication data. This tries to simulate
+        client behaviour - if we receive a replicated object that we don't know
+        the parent of, then re-request the block with the GET_ANC flag set.
+        """
+
+        # send a request to the DC and get the response
+        ctr6 = self._repl_send_request(get_anc=get_anc)
+
         # check that we know the parent for every object received
         rxd_dn_list = self._get_ctr6_dn_list(ctr6)
 
+        # we'll add new objects as we discover them, so take a copy of the
+        # ones we already know about, so we can modify the list safely
+        known_objects = self.rxd_dn_list[:]
+
+        # check that we know the parent for every object received
         for i in range(0, len(rxd_dn_list)):
 
             dn = rxd_dn_list[i]
@@ -245,6 +255,10 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
 
         # store the last successful result so we know what HWM to request next
         self.last_ctr = ctr6
+
+        # store the objects and links we received
+        self.rxd_dn_list += self._get_ctr6_dn_list(ctr6)
+        self.rxd_links += self._get_ctr6_links(ctr6)
 
         return ctr6
 
@@ -300,9 +314,7 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
         # GET_ANC set because we won't know about the first child's parent.
         # On samba GET_ANC essentially starts the sync from scratch again, so
         # we get this over with early before we learn too many parents
-        rxd_dn_list = []
-        ctr6 = self.repl_get_next(rxd_dn_list)
-        rxd_dn_list = self._get_ctr6_dn_list(ctr6)
+        self.repl_get_next()
 
         # modify the last chunk of parents. They should now have a USN higher
         # than the highwater-mark for the replication cycle
@@ -312,8 +324,7 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
         # Get the remaining blocks of data - this will resend the request with
         # GET_ANC if it encounters an object it doesn't have the parent for.
         while not self.replication_complete():
-            ctr6 = self.repl_get_next(rxd_dn_list)
-            rxd_dn_list += self._get_ctr6_dn_list(ctr6)
+            self.repl_get_next()
 
         # The way the test objects have been created should force
         # self.repl_get_next() to use the GET_ANC flag. If this doesn't
@@ -322,5 +333,96 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
                         "Test didn't use the GET_ANC flag as expected")
 
         # Check we get all the objects we're expecting
-        self.assert_expected_data(rxd_dn_list, expected_dn_list)
+        self.assert_expected_data(expected_dn_list)
+
+    def assert_expected_links(self, objects_with_links, link_attr="managedBy"):
+        """
+        Asserts that a GetNCChanges response contains any expected links
+        for the objects it contains.
+        """
+        received_links = self.rxd_links
+
+        num_expected = len(objects_with_links)
+
+        self.assertTrue(len(received_links) == num_expected,
+                        "Received %d links but expected %d"
+                        %(len(received_links), num_expected))
+
+        for dn in objects_with_links:
+            self.assert_object_has_link(dn, link_attr, received_links)
+
+    def assert_object_has_link(self, dn, link_attr, received_links):
+        """
+        Queries the object in the DB and asserts there is a link in the
+        GetNCChanges response that matches.
+        """
+
+        # Look up the link attribute in the DB
+        # The extended_dn option will dump the GUID info for the link
+        # attribute (as a hex blob)
+        res = self.ldb_dc1.search(ldb.Dn(self.ldb_dc1, dn), attrs=[link_attr],
+                                  controls=['extended_dn:1:0'], scope=ldb.SCOPE_BASE)
+
+        # We didn't find the expected link attribute in the DB for the object.
+        # Something has gone wrong somewhere...
+        self.assertTrue(link_attr in res[0], "%s in DB doesn't have attribute %s"
+                        %(dn, link_attr))
+
+        # find the received link in the list and assert that the target and
+        # source GUIDs match what's in the DB
+        for val in res[0][link_attr]:
+            # Work out the expected source and target GUIDs for the DB link
+            target_dn = ldb.Dn(self.ldb_dc1, val)
+            targetGUID_blob = target_dn.get_extended_component("GUID")
+            sourceGUID_blob = res[0].dn.get_extended_component("GUID")
+
+            found = False
+
+            for link in received_links:
+                if link.selfGUID_blob == sourceGUID_blob and \
+                   link.targetGUID_blob == targetGUID_blob:
+
+                    found = True
+
+                    if self._debug:
+                        print("Link %s --> %s" %(dn[:25], link.targetDN[:25]))
+                    break
+
+            self.assertTrue(found, "Did not receive expected link for DN %s" % dn)
+
+    def test_repl_get_anc_link_attr(self):
+        """
+        A basic GET_ANC test where the parents have linked attributes
+        """
+
+        # Create a block of 100 parents and 100 children
+        parent_dn_list = []
+        expected_dn_list = self.create_object_range(0, 100, prefix="parent",
+                                                    children=("A"),
+                                                    parent_list=parent_dn_list)
+
+        # Add links from the parents to the children
+        for x in range(0, 100):
+            self.modify_object(parent_dn_list[x], "managedBy", expected_dn_list[x + 100])
+
+        # add some filler objects at the end. This allows us to easily see
+        # which chunk the links get sent in
+        expected_dn_list += self.create_object_range(0, 100, prefix="filler")
+
+        # We've now got objects in the following order:
+        # [100 x children][100 x parents][100 x filler]
+
+        # Get the replication data - because the block of children come first,
+        # this should retry the request with GET_ANC
+        while not self.replication_complete():
+            self.repl_get_next()
+
+        self.assertTrue(self.used_get_anc,
+                        "Test didn't use the GET_ANC flag as expected")
+
+        # Check we get all the objects we're expecting
+        self.assert_expected_data(expected_dn_list)
+
+        # Check we received links for all the parents
+        self.assert_expected_links(parent_dn_list)
 

@@ -197,6 +197,27 @@ class DrsBaseTestCase(SambaToolCmdTest):
         id.dn = str(res[0].dn)
         return id
 
+    def _get_ctr6_links(self, ctr6):
+        """
+        Unpacks the linked attributes from a DsGetNCChanges response
+        and returns them as a list.
+        """
+        ctr6_links = []
+        for lidx in range(0, ctr6.linked_attributes_count):
+            l = ctr6.linked_attributes[lidx]
+            try:
+                target = ndr_unpack(drsuapi.DsReplicaObjectIdentifier3,
+                                    l.value.blob)
+            except:
+                target = ndr_unpack(drsuapi.DsReplicaObjectIdentifier3Binary,
+                                    l.value.blob)
+            al = AbstractLink(l.attid, l.flags,
+                              l.identifier.guid,
+                              target.guid, target.dn)
+            ctr6_links.append(al)
+
+        return ctr6_links
+
     def _ctr6_debug(self, ctr6):
         """
         Displays basic info contained in a DsGetNCChanges response.
@@ -214,6 +235,11 @@ class DrsBaseTestCase(SambaToolCmdTest):
                 next_object = next_object.next_object
 
             print("Linked Attributes: %d" % ctr6.linked_attributes_count)
+            ctr6_links = self._get_ctr6_links(ctr6)
+            for link in ctr6_links:
+                print("Link Tgt %s... <-- Src %s"
+                      %(link.targetDN[:22], link.identifier))
+
             print("HWM:     %d" %(ctr6.new_highwatermark.highest_usn))
             print("Tmp HWM: %d" %(ctr6.new_highwatermark.tmp_highest_usn))
             print("More data: %d" %(ctr6.more_data))
@@ -343,21 +369,9 @@ class DrsBaseTestCase(SambaToolCmdTest):
             else:
                 self.assertTrue(dn in ctr6_dns, "Couldn't find DN '%s' anywhere in ctr6 response." % dn)
 
-        ctr6_links = []
+        # Extract the links from the response
+        ctr6_links = self._get_ctr6_links(ctr6)
         expected_links.sort()
-        lidx = 0
-        for lidx in range(0, ctr6.linked_attributes_count):
-            l = ctr6.linked_attributes[lidx]
-            try:
-                target = ndr_unpack(drsuapi.DsReplicaObjectIdentifier3,
-                                    l.value.blob)
-            except:
-                target = ndr_unpack(drsuapi.DsReplicaObjectIdentifier3Binary,
-                                    l.value.blob)
-            al = AbstractLink(l.attid, l.flags,
-                              l.identifier.guid,
-                              target.guid)
-            ctr6_links.append(al)
 
         lidx = 0
         for el in expected_links:
@@ -438,13 +452,15 @@ class DrsBaseTestCase(SambaToolCmdTest):
 
 
 class AbstractLink:
-    def __init__(self, attid, flags, identifier, targetGUID):
+    def __init__(self, attid, flags, identifier, targetGUID,
+                 targetDN=""):
         self.attid = attid
         self.flags = flags
         self.identifier = str(identifier)
         self.selfGUID_blob = ndr_pack(identifier)
         self.targetGUID = str(targetGUID)
         self.targetGUID_blob = ndr_pack(targetGUID)
+        self.targetDN = targetDN
 
     def __repr__(self):
         return "AbstractLink(0x%08x, 0x%08x, %s, %s)" % (
