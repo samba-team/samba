@@ -100,16 +100,6 @@ main(int argc,			/* I - Number of command-line arguments */
 
 	null_str[0] = '\0';
 
-	/*
-	 * we expect the URI in argv[0]. Detect the case where it is in
-	 * argv[1] and cope
-	 */
-	if (argc > 2 && strncmp(argv[0], "smb://", 6) &&
-	    strncmp(argv[1], "smb://", 6) == 0) {
-		argv++;
-		argc--;
-	}
-
 	if (argc == 1) {
 		/*
 	         * NEW!  In CUPS 1.1 the backends are run with no arguments
@@ -124,7 +114,7 @@ main(int argc,			/* I - Number of command-line arguments */
 		goto done;
 	}
 
-	if (argc < 6 || argc > 7) {
+	if (argc < 7 || argc > 8) {
 		fprintf(stderr,
 "Usage: %s [DEVICE_URI] job-id user title copies options [file]\n"
 "       The DEVICE_URI environment variable can also contain the\n"
@@ -140,18 +130,18 @@ main(int argc,			/* I - Number of command-line arguments */
          * Otherwise, print data from stdin...
          */
 
-	if (argc == 6) {
+	if (argc == 7) {
 		/*
 	         * Print from Copy stdin to a temporary file...
 	         */
 
 		fp = stdin;
 		copies = 1;
-	} else if ((fp = fopen(argv[6], "rb")) == NULL) {
+	} else if ((fp = fopen(argv[7], "rb")) == NULL) {
 		perror("ERROR: Unable to open print file");
 		goto done;
 	} else {
-		char *p = argv[4];
+		char *p = argv[5];
 		char *endp;
 
 		copies = strtol(p, &endp, 10);
@@ -168,10 +158,10 @@ main(int argc,			/* I - Number of command-line arguments */
 	dev_uri = getenv("DEVICE_URI");
 	if (dev_uri) {
 		strncpy(uri, dev_uri, sizeof(uri) - 1);
-	} else if (strncmp(argv[0], "smb://", 6) == 0) {
-		strncpy(uri, argv[0], sizeof(uri) - 1);
+	} else if (strncmp(argv[1], "smb://", 6) == 0) {
+		strncpy(uri, argv[1], sizeof(uri) - 1);
 	} else {
-		fputs("ERROR: No device URI found in DEVICE_URI environment variable or argv[0] !\n", stderr);
+		fputs("ERROR: No device URI found in DEVICE_URI environment variable or arg1 !\n", stderr);
 		goto done;
 	}
 
@@ -267,7 +257,7 @@ main(int argc,			/* I - Number of command-line arguments */
 
 	do {
 		cli = smb_connect(workgroup, server, port, printer,
-			username, password, argv[2], &need_auth);
+			username, password, argv[3], &need_auth);
 		if (cli == NULL) {
 			if (need_auth) {
 				exit(2);
@@ -303,7 +293,7 @@ main(int argc,			/* I - Number of command-line arguments */
          */
 
 	for (i = 0; i < copies; i++) {
-		status = smb_print(cli, argv[3] /* title */ , fp);
+		status = smb_print(cli, argv[4] /* title */ , fp);
 		if (status != 0) {
 			break;
 		}
