@@ -25,6 +25,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "system/passwd.h"
+#include "system/kerberos.h"
 #include "libsmb/libsmb.h"
 #include "lib/param/param.h"
 
@@ -481,6 +482,45 @@ smb_complete_connection(const char *myname,
 	return cli;
 }
 
+static bool kerberos_ccache_is_valid(void) {
+	krb5_context ctx;
+	const char *ccache_name = NULL;
+	krb5_ccache ccache = NULL;
+	krb5_error_code code;
+
+	code = krb5_init_context(&ctx);
+	if (code != 0) {
+		return false;
+	}
+
+	ccache_name = krb5_cc_default_name(ctx);
+	if (ccache_name == NULL) {
+		return false;
+	}
+
+	code = krb5_cc_resolve(ctx, ccache_name, &ccache);
+	if (code != 0) {
+		krb5_free_context(ctx);
+		return false;
+	} else {
+		krb5_principal default_princ = NULL;
+
+		code = krb5_cc_get_principal(ctx,
+					     ccache,
+					     &default_princ);
+		if (code != 0) {
+			krb5_cc_close(ctx, ccache);
+			krb5_free_context(ctx);
+			return false;
+		}
+		krb5_free_principal(ctx, default_princ);
+	}
+	krb5_cc_close(ctx, ccache);
+	krb5_free_context(ctx);
+
+	return true;
+}
+
 /*
  * 'smb_connect()' - Return a connection to a server.
  */
@@ -512,15 +552,27 @@ smb_connect(const char *workgroup,	/* I - Workgroup */
 	 * behavior with 3.0.14a
 	 */
 
-	if (username && *username && !getenv("KRB5CCNAME")) {
-		cli = smb_complete_connection(myname, server, port, username,
-				    password, workgroup, share, 0, need_auth);
-		if (cli) {
-			fputs("DEBUG: Connected with username/password...\n", stderr);
-			return (cli);
+	if (username != NULL && username[0] != '\0') {
+		if (kerberos_ccache_is_valid()) {
+			goto kerberos_auth;
 		}
 	}
 
+	cli = smb_complete_connection(myname,
+				      server,
+				      port,
+				      username,
+				      password,
+				      workgroup,
+				      share,
+				      0,
+				      need_auth);
+	if (cli != NULL) {
+		fputs("DEBUG: Connected with username/password...\n", stderr);
+		return (cli);
+	}
+
+kerberos_auth:
 	/*
 	 * Try to use the user kerberos credentials (if any) to authenticate
 	 */
