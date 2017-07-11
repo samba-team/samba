@@ -812,7 +812,7 @@ wbcErr wbcCtxGetSidAliases(struct wbcContext *ctx,
 
 	rids = (uint32_t *)wbcAllocateMemory(response.data.num_entries,
 					     sizeof(uint32_t), NULL);
-	BAIL_ON_PTR_ERROR(sids, wbc_status);
+	BAIL_ON_PTR_ERROR(rids, wbc_status);
 
 	s = (const char *)response.extra_data.data;
 	for (i = 0; i < response.data.num_entries; i++) {
