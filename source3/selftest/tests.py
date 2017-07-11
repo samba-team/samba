@@ -184,6 +184,9 @@ for options in ["--option=clientntlmv2auth=no", "--option=clientusespnego=no --o
         plantestsuite("samba3.blackbox.smbclient_auth.plain (%s) %s" % (env, options), env, [os.path.join(samba3srcdir, "script/tests/test_smbclient_auth.sh"), '$SERVER', '$SERVER_IP', '$DC_USERNAME', '$DC_PASSWORD', smbclient3, configuration, options])
         plantestsuite("samba3.blackbox.smbclient_auth.plain (%s) %s member creds" % (env, options), env, [os.path.join(samba3srcdir, "script/tests/test_smbclient_auth.sh"), '$SERVER', '$SERVER_IP', '$SERVER/$USERNAME', '$PASSWORD', smbclient3, configuration, options])
 
+env="ad_dc"
+plantestsuite("samba3.blackbox.smbspool", env, [os.path.join(samba3srcdir, "script/tests/test_smbspool.sh"), '$SERVER', '$SERVER_IP', '$DC_USERNAME', '$DC_PASSWORD', env])
+
 env="nt4_dc"
 plantestsuite("samba3.blackbox.smbclient_auth.plain (%s) ipv6" % env, env, [os.path.join(samba3srcdir, "script/tests/test_smbclient_auth.sh"), '$SERVER', '$SERVER_IPV6', '$SERVER/$USERNAME', '$PASSWORD', smbclient3, configuration])
 
