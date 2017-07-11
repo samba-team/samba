@@ -1780,6 +1780,7 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 	char *db_path;
 	struct loadparm_context *lp_ctx;
 	TDB_DATA data;
+	bool persistent = (tdb_flags & TDB_CLEAR_IF_FIRST);
 	int32_t cstatus;
 	int ret;
 
@@ -1811,7 +1812,7 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 	db_ctdb->db = result;
 	db_ctdb->conn = conn;
 
-	ret = ctdbd_db_attach(db_ctdb->conn, name, &db_ctdb->db_id, tdb_flags);
+	ret = ctdbd_db_attach(db_ctdb->conn, name, &db_ctdb->db_id, persistent);
 	if (ret != 0) {
 		DEBUG(0, ("ctdbd_db_attach failed for %s: %s\n", name,
 			  strerror(ret)));
@@ -1836,7 +1837,7 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 
 	db_path = ctdbd_dbpath(db_ctdb->conn, db_ctdb, db_ctdb->db_id);
 
-	result->persistent = ((tdb_flags & TDB_CLEAR_IF_FIRST) == 0);
+	result->persistent = persistent;
 	result->lock_order = lock_order;
 
 	/* only pass through specific flags */

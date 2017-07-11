@@ -819,12 +819,11 @@ char *ctdbd_dbpath(struct ctdbd_connection *conn,
  * attach to a ctdb database
  */
 int ctdbd_db_attach(struct ctdbd_connection *conn,
-		    const char *name, uint32_t *db_id, int tdb_flags)
+		    const char *name, uint32_t *db_id, bool persistent)
 {
 	int ret;
 	TDB_DATA data;
 	int32_t cstatus;
-	bool persistent = (tdb_flags & TDB_CLEAR_IF_FIRST) == 0;
 
 	data = string_term_tdb_data(name);
 
