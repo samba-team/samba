@@ -55,7 +55,7 @@ char *ctdbd_dbpath(struct ctdbd_connection *conn,
 		   TALLOC_CTX *mem_ctx, uint32_t db_id);
 
 int ctdbd_db_attach(struct ctdbd_connection *conn, const char *name,
-		    uint32_t *db_id, int tdb_flags);
+		    uint32_t *db_id, bool persistent);
 
 int ctdbd_migrate(struct ctdbd_connection *conn, uint32_t db_id, TDB_DATA key);
 
