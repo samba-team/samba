@@ -22,6 +22,7 @@ incdir=`dirname $0`/../../../testprogs/blackbox
 samba_bindir="$BINDIR"
 samba_vlp="$samba_bindir/vlp"
 samba_smbspool="$samba_bindir/smbspool"
+samba_smbspool_krb5="$samba_bindir/smbspool_krb5_wrapper"
 
 test_smbspool_noargs()
 {
@@ -36,6 +37,30 @@ test_smbspool_noargs()
 	fi
 
 	echo "$out" | grep 'network smb "Unknown" "Windows Printer via SAMBA"'
+	ret=$?
+	if [ $ret != 0 ] ; then
+		echo "$out"
+		return 1
+	fi
+}
+
+test_smbspool_authinforequired_none()
+{
+	cmd='$samba_smbspool_krb5 smb://$SERVER_IP/print1 200 $USERNAME "Testprint" 1 "options" $SRCDIR/testdata/printing/example.ps 2>&1'
+
+	AUTH_INFO_REQUIRED="none"
+	export AUTH_INFO_REQUIRED
+	eval echo "$cmd"
+	out=$(eval $cmd)
+	ret=$?
+	unset AUTH_INFO_REQUIRED
+
+	if [ $ret != 0 ]; then
+		echo "$out"
+		echo "failed to execute $smbspool_krb5"
+	fi
+
+	echo "$out" | grep 'ATTR: auth-info-required=negotiate'
 	ret=$?
 	if [ $ret != 0 ] ; then
 		echo "$out"
@@ -98,6 +123,14 @@ testit "smbspool no args" \
 	test_smbspool_noargs $samba_smbspool || \
 	failed=$(expr $failed + 1)
 
+testit "smbspool_krb5_wrapper no args" \
+	test_smbspool_noargs $samba_smbspool_krb5 || \
+	failed=$(expr $failed + 1)
+
+testit "smbspool_krb5_wrapper AuthInfoRequired=none" \
+	test_smbspool_authinforequired_none || \
+	failed=$(expr $failed + 1)
+
 testit "smbspool print example.ps" \
 	$samba_smbspool smb://$USERNAME:$PASSWORD@$SERVER_IP/print1 200 $USERNAME "Testprint" 1 "options" $SRCDIR/testdata/printing/example.ps || \
 	failed=$(expr $failed + 1)
@@ -105,5 +138,16 @@ testit "smbspool print example.ps" \
 testit "vlp verify example.ps" \
 	test_vlp_verify \
 	|| failed=$(expr $failed + 1)
+
+AUTH_INFO_REQUIRED="username,password"
+export AUTH_INFO_REQUIRED
+testit "smbspool_krb5(username,password) print example.ps" \
+	$samba_smbspool_krb5 smb://$USERNAME:$PASSWORD@$SERVER_IP/print1 200 $USERNAME "Testprint" 1 "options" $SRCDIR/testdata/printing/example.ps || \
+	failed=$(expr $failed + 1)
+
+testit "vlp verify example.ps" \
+	test_vlp_verify || \
+	failed=$(expr $failed + 1)
+unset AUTH_INFO_REQUIRED
 
 exit $failed
