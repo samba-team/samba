@@ -1840,9 +1840,25 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 	result->persistent = persistent;
 	result->lock_order = lock_order;
 
-	/* only pass through specific flags */
-	tdb_flags &= TDB_SEQNUM|TDB_VOLATILE|
-		TDB_MUTEX_LOCKING|TDB_CLEAR_IF_FIRST;
+	data.dptr = (uint8_t *)&db_ctdb->db_id;
+	data.dsize = sizeof(db_ctdb->db_id);
+
+	ret = ctdbd_control_local(conn, CTDB_CONTROL_DB_OPEN_FLAGS,
+				  0, 0, data, NULL, &data, &cstatus);
+	if (ret != 0) {
+		DBG_ERR(" ctdb control for db_open_flags "
+			 "failed: %s\n", strerror(ret));
+		TALLOC_FREE(result);
+		return NULL;
+	}
+
+	if (cstatus != 0 || data.dsize != sizeof(int)) {
+		DBG_ERR("ctdb_control for db_open_flags failed\n");
+		TALLOC_FREE(result);
+		return NULL;
+	}
+
+	tdb_flags = *(int *)data.dptr;
 
 	if (!result->persistent) {
 		ret = ctdb_async_ctx_init(NULL, messaging_tevent_context(msg_ctx));
