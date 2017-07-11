@@ -1779,6 +1779,7 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 	struct db_ctdb_ctx *db_ctdb;
 	char *db_path;
 	struct loadparm_context *lp_ctx;
+	TDB_DATA data;
 	int32_t cstatus;
 	int ret;
 
@@ -1816,6 +1817,21 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 			  strerror(ret)));
 		TALLOC_FREE(result);
 		return NULL;
+	}
+
+	if (tdb_flags & TDB_SEQNUM) {
+		data.dptr = (uint8_t *)&db_ctdb->db_id;
+		data.dsize = sizeof(db_ctdb->db_id);
+
+		ret = ctdbd_control_local(conn, CTDB_CONTROL_ENABLE_SEQNUM,
+					  0, 0, data,
+					  NULL, NULL, &cstatus);
+		if ((ret != 0) || cstatus != 0) {
+			DBG_ERR("ctdb_control for enable seqnum "
+				"failed: %s\n", strerror(ret));
+			TALLOC_FREE(result);
+			return NULL;
+		}
 	}
 
 	db_path = ctdbd_dbpath(db_ctdb->conn, db_ctdb, db_ctdb->db_id);

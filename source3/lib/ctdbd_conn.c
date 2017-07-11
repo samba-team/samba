@@ -847,21 +847,6 @@ int ctdbd_db_attach(struct ctdbd_connection *conn,
 	*db_id = *(uint32_t *)data.dptr;
 	talloc_free(data.dptr);
 
-	if (!(tdb_flags & TDB_SEQNUM)) {
-		return 0;
-	}
-
-	data.dptr = (uint8_t *)db_id;
-	data.dsize = sizeof(*db_id);
-
-	ret = ctdbd_control_local(conn, CTDB_CONTROL_ENABLE_SEQNUM, 0, 0, data,
-				  NULL, NULL, &cstatus);
-	if ((ret != 0) || cstatus != 0) {
-		DEBUG(0, (__location__ " ctdb_control for enable seqnum "
-			  "failed: %s\n", strerror(ret)));
-		return (ret == 0) ? EIO : ret;
-	}
-
 	return 0;
 }
 
