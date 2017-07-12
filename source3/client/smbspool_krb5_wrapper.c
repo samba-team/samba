@@ -181,6 +181,13 @@ int main(int argc, char *argv[])
 		return CUPS_BACKEND_FAILED;
 	}
 
+	env = getenv("KRB5CCNAME");
+	if (env != NULL && env[0] != 0) {
+		snprintf(gen_cc, sizeof(gen_cc), "%s", env);
+
+		goto create_env;
+	}
+
 	snprintf(gen_cc, sizeof(gen_cc), "/tmp/krb5cc_%d", uid);
 
 	rc = lstat(gen_cc, &sb);
@@ -205,6 +212,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
+create_env:
 	/*
 	 * Make sure we do not have LD_PRELOAD or other security relevant
 	 * environment variables set.
