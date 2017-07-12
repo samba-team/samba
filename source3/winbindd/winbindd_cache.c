@@ -3111,7 +3111,7 @@ bool wcache_invalidate_cache_noinit(void)
 	return true;
 }
 
-bool init_wcache(void)
+static bool init_wcache(void)
 {
 	char *db_path;
 
