@@ -159,33 +159,32 @@ updateip <old-interface> <new-interface> <ip-address> <netmask-bits>
 
 ipreallocated
 
-	This event is triggered after "releaseip", "takeip" and
-	"updateip" events during public IP address (re)assignment.
+	This event is triggered on all nodes as the last step of
+	public IP address (re)assignment.  It is unconditionally
+	triggered after any "releaseip", "takeip" and "updateip"
+	events, even though these events may not run on some nodes if
+	there are no relevant changes.  That is, the "ipreallocated"
+	event is triggered unconditionally, even on nodes where public
+	IP addresses assignements have not changed.
 
 	This event is used to reconfigure services.
 
-        This event runs even if public IP addresses on a node have not
-	been changed.  This allows reconfiguration to depend on the
-	states of other nodes rather that just IP addresses.
+	Since "ipreallocated" is always run, this allows
+	reconfiguration to depend on the states of other nodes rather
+	that just IP addresses.
 
 	Example: 11.natgw recalculates the NAT gateway master and
 	updates the relevant network configuration on each node if the
 	NAT gateway master has changed.
 
 Additional notes for "takeip", "releaseip", "updateip",
-ipreallocated":
+"ipreallocated":
 
 * Failure of any of these events causes IP allocation to be retried.
 
-* The "ipreallocated" event is run on all nodes.  It is even run if no
-  "takeip", "releaseip" or "updateip" events were triggered.
-
-* An event script can use ctdb_service_set_reconfigure() in "takeip"
-  or "releaseip" events to flag that its service needs to be
-  reconfigured.  The event script can then define a
-  service_reconfigure() function, which will be implicitly run before
-  the "ipreallocated" event.  This is a useful way of performing
-  reconfiguration that is conditional upon public IP address changes.
-
-  This means an explicit "ipreallocated" event handler is usually not
-  necessary.
+* An event script can use ctdb_service_set_reconfigure() in "takeip",
+  "releaseip" or "updateip" events to flag that its service needs to
+  be reconfigured.  The "ipreallocated" event can then use
+  ctdb_service_needs_reconfigure() to test if there were public IPs
+  changes to determine what type of reconfiguration (if any) is
+  needed.
