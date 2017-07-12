@@ -1764,11 +1764,11 @@ skip_save:
 	return status;
 }
 
-NTSTATUS wcache_name_to_sid(struct winbindd_domain *domain,
-			    const char *domain_name,
-			    const char *name,
-			    struct dom_sid *sid,
-			    enum lsa_SidType *type)
+static NTSTATUS wcache_name_to_sid(struct winbindd_domain *domain,
+				   const char *domain_name,
+				   const char *name,
+				   struct dom_sid *sid,
+				   enum lsa_SidType *type)
 {
 	struct winbind_cache *cache = get_cache(domain);
 	struct cache_entry *centry;
