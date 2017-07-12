@@ -2477,11 +2477,10 @@ NTSTATUS wcache_lookup_useraliases(struct winbindd_domain *domain,
 {
 	struct winbind_cache *cache = get_cache(domain);
 	struct cache_entry *centry = NULL;
-	uint32_t num_aliases;
+	uint32_t i, num_aliases;
 	uint32_t *aliases;
 	NTSTATUS status;
 	char *sidlist;
-	int i;
 
 	if (cache->tdb == NULL) {
 		return NT_STATUS_NOT_FOUND;
@@ -2541,7 +2540,7 @@ NTSTATUS wb_cache_lookup_useraliases(struct winbindd_domain *domain,
 	struct cache_entry *centry = NULL;
 	NTSTATUS status;
 	char *sidlist;
-	int i;
+	uint32_t i;
 	bool old_status;
 
 	old_status = domain->online;
@@ -2764,7 +2763,7 @@ NTSTATUS wb_cache_trusted_domains(struct winbindd_domain *domain,
 	struct winbindd_tdc_domain *dom_list = NULL;
 	size_t num_domains = 0;
 	bool retval = false;
-	int i;
+	size_t i;
 	bool old_status;
 
 	old_status = domain->online;
@@ -4321,8 +4320,7 @@ static bool add_wbdomain_to_tdc_array( struct winbindd_domain *new_dom,
 				       size_t *num_domains )
 {
 	struct winbindd_tdc_domain *list = NULL;
-	size_t idx;
-	int i;
+	size_t i, idx;
 	bool set_only = false;
 
 	/* don't allow duplicates */
@@ -4423,7 +4421,7 @@ static int pack_tdc_domains( struct winbindd_tdc_domain *domains,
         unsigned char *buffer = NULL;
 	int len = 0;
 	int buflen = 0;
-	int i = 0;
+	size_t i = 0;
 
 	DEBUG(10,("pack_tdc_domains: Packing %d trusted domains\n",
 		  (int)num_domains));
@@ -4693,7 +4691,7 @@ struct winbindd_tdc_domain * wcache_tdc_fetch_domain( TALLOC_CTX *ctx, const cha
 {
 	struct winbindd_tdc_domain *dom_list = NULL;
 	size_t num_domains = 0;
-	int i;
+	size_t i;
 	struct winbindd_tdc_domain *d = NULL;	
 
 	DEBUG(10,("wcache_tdc_fetch_domain: Searching for domain %s\n", name));
