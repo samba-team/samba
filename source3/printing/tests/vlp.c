@@ -29,7 +29,7 @@
 #undef malloc
 #endif
 
-#define PRINT_FIRSTJOB "100"
+#define PRINT_FIRSTJOB 100
 
 static TDB_CONTEXT *tdb;
 
@@ -97,10 +97,11 @@ static int next_jobnum(char *printer)
 	/* Create next job index if none exists */
 
 	if (jobnum == -1) {
-		jobnum = atoi(PRINT_FIRSTJOB);
+		jobnum = PRINT_FIRSTJOB;
+	} else {
+		jobnum++;
 	}
 
-	jobnum++;
 	tdb_store_int32(tdb, keystr, jobnum);
 
 	tdb_unlock_bystring(tdb, keystr);
