@@ -52,6 +52,8 @@ extern struct winbindd_methods reconnect_ads_methods;
 extern struct winbindd_methods builtin_passdb_methods;
 extern struct winbindd_methods sam_passdb_methods;
 
+static void wcache_flush_cache(void);
+
 /*
  * JRA. KEEP THIS LIST UP TO DATE IF YOU ADD CACHE ENTRIES.
  * Here are the list of entry types that are *not* stored
@@ -3319,7 +3321,7 @@ static int traverse_fn_cleanup(TDB_CONTEXT *the_tdb, TDB_DATA kbuf,
 }
 
 /* flush the cache */
-void wcache_flush_cache(void)
+static void wcache_flush_cache(void)
 {
 	char *db_path;
 

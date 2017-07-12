@@ -178,7 +178,6 @@ NTSTATUS wcache_lookup_usergroups(struct winbindd_domain *domain,
 				  uint32_t *pnum_sids,
 				  struct dom_sid **psids);
 
-void wcache_flush_cache(void);
 NTSTATUS wcache_count_cached_creds(struct winbindd_domain *domain, int *count);
 NTSTATUS wcache_remove_oldest_cached_creds(struct winbindd_domain *domain, const struct dom_sid *sid) ;
 bool set_global_winbindd_state_offline(void);
