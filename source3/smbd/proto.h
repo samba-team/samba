@@ -395,6 +395,7 @@ NTSTATUS file_name_hash(connection_struct *conn,
 NTSTATUS fsp_set_smb_fname(struct files_struct *fsp,
 			   const struct smb_filename *smb_fname_in);
 const struct GUID *fsp_client_guid(const files_struct *fsp);
+uint32_t fsp_lease_type(struct files_struct *fsp);
 
 /* The following definitions come from smbd/ipc.c  */
 
@@ -677,6 +678,7 @@ NTSTATUS get_relative_fid_filename(connection_struct *conn,
 
 /* The following definitions come from smbd/oplock.c  */
 
+uint32_t map_oplock_to_lease_type(uint16_t op_type);
 uint32_t get_lease_type(const struct share_mode_data *d,
 			const struct share_mode_entry *e);
 bool update_num_read_oplocks(files_struct *fsp, struct share_mode_lock *lck);

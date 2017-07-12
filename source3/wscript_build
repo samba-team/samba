@@ -625,7 +625,6 @@ bld.SAMBA3_LIBRARY('smbd_base',
                    RPC_SERVICE
                    NDR_SMBXSRV
                    LEASES_DB
-		   LEASES_UTIL
                    LIBASYS
                    sysquotas
                    NDR_SMB_ACL
@@ -647,17 +646,12 @@ bld.SAMBA3_SUBSYSTEM('LOCKING',
                     tdb
                     talloc
                     LEASES_DB
-		    LEASES_UTIL
                     NDR_OPEN_FILES
                     FNAME_UTIL''')
 
 bld.SAMBA3_SUBSYSTEM('LEASES_DB',
                     source='locking/leases_db.c',
                     deps='NDR_LEASES_DB')
-
-bld.SAMBA3_SUBSYSTEM('LEASES_UTIL',
-                    source='locking/leases_util.c',
-                    deps='NDR_OPEN_FILES')
 
 if bld.CONFIG_GET("WITH_PROFILE"):
     bld.SAMBA3_SUBSYSTEM('PROFILE',
