@@ -22,6 +22,8 @@
 
 #include <talloc.h>
 
+#include "lib/util/blocking.h"
+
 #include "common/pidfile.h"
 
 struct pidfile_context {
@@ -58,6 +60,12 @@ int pidfile_create(TALLOC_CTX *mem_ctx, const char *pidfile,
 	fd = open(pidfile, O_CREAT|O_WRONLY|O_NONBLOCK, 0644);
 	if (fd == -1) {
 		ret = errno;
+		goto fail;
+	}
+
+	if (! set_close_on_exec(fd)) {
+		close(fd);
+		ret = EIO;
 		goto fail;
 	}
 
