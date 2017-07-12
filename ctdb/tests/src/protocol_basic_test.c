@@ -26,6 +26,7 @@
 
 
 PROTOCOL_TYPE1_TEST(uint8_t, ctdb_uint8);
+PROTOCOL_TYPE1_TEST(uint16_t, ctdb_uint16);
 
 static void test_ctdb_int32(void)
 {
@@ -137,6 +138,7 @@ int main(int argc, char *argv[])
 	}
 
 	TEST_FUNC(ctdb_uint8)();
+	TEST_FUNC(ctdb_uint16)();
 
 	test_ctdb_int32();
 	test_ctdb_uint32();

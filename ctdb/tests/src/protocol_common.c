@@ -43,6 +43,12 @@ uint8_t rand8(void)
 	return val;
 }
 
+uint16_t rand16(void)
+{
+	uint16_t val = rand_int(0xffff) & 0xffff;
+	return val;
+}
+
 int32_t rand32i(void)
 {
 	return INT_MIN + random();
@@ -88,6 +94,16 @@ void fill_ctdb_uint8(uint8_t *p)
 }
 
 void verify_ctdb_uint8(uint8_t *p1, uint8_t *p2)
+{
+	assert(*p1 == *p2);
+}
+
+void fill_ctdb_uint16(uint16_t *p)
+{
+	*p = rand16();
+}
+
+void verify_ctdb_uint16(uint16_t *p1, uint16_t *p2)
 {
 	assert(*p1 == *p2);
 }

@@ -143,6 +143,7 @@ extern uint8_t BUFFER[1024*1024];
 
 int rand_int(int max);
 uint8_t rand8(void);
+uint16_t rand16(void);
 int32_t rand32i(void);
 uint32_t rand32(void);
 uint64_t rand64(void);
@@ -153,6 +154,9 @@ void verify_buffer(void *p1, void *p2, size_t len);
 
 void fill_ctdb_uint8(uint8_t *p);
 void verify_ctdb_uint8(uint8_t *p1, uint8_t *p2);
+
+void fill_ctdb_uint16(uint16_t *p);
+void verify_ctdb_uint16(uint16_t *p1, uint16_t *p2);
 
 void fill_ctdb_string(TALLOC_CTX *mem_ctx, const char **out);
 void verify_ctdb_string(const char *p1, const char *p2);
