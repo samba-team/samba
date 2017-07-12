@@ -1917,6 +1917,66 @@ static int ctdb_statistics_list_pull_old(uint8_t *buf, size_t buflen,
 	return 0;
 }
 
+struct ctdb_key_data_wire {
+	uint32_t db_id;
+	struct ctdb_ltdb_header header;
+	uint32_t keylen;
+	uint8_t key[1];
+};
+
+static size_t ctdb_key_data_len_old(struct ctdb_key_data *in)
+{
+	return offsetof(struct ctdb_key_data_wire, key) + in->key.dsize;
+}
+
+static void ctdb_key_data_push_old(struct ctdb_key_data *in, uint8_t *buf)
+{
+	struct ctdb_key_data_wire *wire = (struct ctdb_key_data_wire *)buf;
+
+	memcpy(wire, in, offsetof(struct ctdb_key_data, key));
+	wire->keylen = in->key.dsize;
+	memcpy(wire->key, in->key.dptr, in->key.dsize);
+}
+
+static int ctdb_key_data_pull_old(uint8_t *buf, size_t buflen,
+				  TALLOC_CTX *mem_ctx,
+				  struct ctdb_key_data **out)
+{
+	struct ctdb_key_data *val;
+	struct ctdb_key_data_wire *wire = (struct ctdb_key_data_wire *)buf;
+
+	if (buflen < offsetof(struct ctdb_key_data_wire, key)) {
+		return EMSGSIZE;
+	}
+	if (wire->keylen > buflen) {
+		return EMSGSIZE;
+	}
+	if (offsetof(struct ctdb_key_data_wire, key) + wire->keylen <
+	    offsetof(struct ctdb_key_data_wire, key)) {
+		return EMSGSIZE;
+	}
+	if (buflen < offsetof(struct ctdb_key_data_wire, key) + wire->keylen) {
+		return EMSGSIZE;
+	}
+
+	val = talloc(mem_ctx, struct ctdb_key_data);
+	if (val == NULL) {
+		return ENOMEM;
+	}
+
+	memcpy(val, wire, offsetof(struct ctdb_key_data, key));
+
+	val->key.dsize = wire->keylen;
+	val->key.dptr = talloc_memdup(val, wire->key, wire->keylen);
+	if (val->key.dptr == NULL) {
+		talloc_free(val);
+		return ENOMEM;
+	}
+
+	*out = val;
+	return 0;
+}
+
 
 COMPAT_TYPE3_TEST(struct ctdb_statistics, ctdb_statistics);
 COMPAT_TYPE3_TEST(struct ctdb_vnn_map, ctdb_vnn_map);
@@ -1954,6 +2014,7 @@ COMPAT_TYPE3_TEST(struct ctdb_iface, ctdb_iface);
 COMPAT_TYPE3_TEST(struct ctdb_iface_list, ctdb_iface_list);
 COMPAT_TYPE3_TEST(struct ctdb_public_ip_info, ctdb_public_ip_info);
 COMPAT_TYPE3_TEST(struct ctdb_statistics_list, ctdb_statistics_list);
+COMPAT_TYPE3_TEST(struct ctdb_key_data, ctdb_key_data);
 
 int main(int argc, char *argv[])
 {
@@ -1996,6 +2057,7 @@ int main(int argc, char *argv[])
 	COMPAT_TEST_FUNC(ctdb_iface_list)();
 	COMPAT_TEST_FUNC(ctdb_public_ip_info)();
 	COMPAT_TEST_FUNC(ctdb_statistics_list)();
+	COMPAT_TEST_FUNC(ctdb_key_data)();
 
 	return 0;
 }

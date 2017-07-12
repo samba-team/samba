@@ -295,10 +295,10 @@ void ctdb_public_ip_info_push(struct ctdb_public_ip_info *in, uint8_t *buf,
 int ctdb_public_ip_info_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 			     struct ctdb_public_ip_info **out, size_t *npull);
 
-size_t ctdb_key_data_len(struct ctdb_key_data *key);
-void ctdb_key_data_push(struct ctdb_key_data *key, uint8_t *buf);
+size_t ctdb_key_data_len(struct ctdb_key_data *in);
+void ctdb_key_data_push(struct ctdb_key_data *in, uint8_t *buf, size_t *npush);
 int ctdb_key_data_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-		       struct ctdb_key_data **out);
+		       struct ctdb_key_data **out, size_t *npull);
 
 size_t ctdb_db_statistics_len(struct ctdb_db_statistics *dbstats);
 void ctdb_db_statistics_push(struct ctdb_db_statistics *dbstats, void *buf);

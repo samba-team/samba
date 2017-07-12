@@ -641,7 +641,7 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_SCHEDULE_FOR_DELETION:
-		ctdb_key_data_push(cd->data.key, buf);
+		ctdb_key_data_push(cd->data.key, buf, &np);
 		break;
 
 	case CTDB_CONTROL_SET_DB_READONLY:
@@ -960,7 +960,7 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_CONTROL_SCHEDULE_FOR_DELETION:
 		ret = ctdb_key_data_pull(buf, buflen, mem_ctx,
-					 &cd->data.key);
+					 &cd->data.key, &np);
 		break;
 
 	case CTDB_CONTROL_SET_DB_READONLY:

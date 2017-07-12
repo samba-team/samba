@@ -4250,63 +4250,78 @@ fail:
 	return ret;
 }
 
-struct ctdb_key_data_wire {
-	uint32_t db_id;
-	struct ctdb_ltdb_header header;
-	uint32_t keylen;
-	uint8_t key[1];
-};
-
-size_t ctdb_key_data_len(struct ctdb_key_data *key)
+size_t ctdb_key_data_len(struct ctdb_key_data *in)
 {
-	return offsetof(struct ctdb_key_data_wire, key) + key->key.dsize;
+	return ctdb_uint32_len(&in->db_id) +
+		ctdb_padding_len(4) +
+		ctdb_ltdb_header_len(&in->header) +
+		ctdb_tdb_datan_len(&in->key);
 }
 
-void ctdb_key_data_push(struct ctdb_key_data *key, uint8_t *buf)
+void ctdb_key_data_push(struct ctdb_key_data *in, uint8_t *buf, size_t *npush)
 {
-	struct ctdb_key_data_wire *wire = (struct ctdb_key_data_wire *)buf;
+	size_t offset = 0, np;
 
-	memcpy(wire, key, offsetof(struct ctdb_key_data, key));
-	wire->keylen = key->key.dsize;
-	memcpy(wire->key, key->key.dptr, key->key.dsize);
+	ctdb_uint32_push(&in->db_id, buf+offset, &np);
+	offset += np;
+
+	ctdb_padding_push(4, buf+offset, &np);
+	offset += np;
+
+	ctdb_ltdb_header_push(&in->header, buf+offset, &np);
+	offset += np;
+
+	ctdb_tdb_datan_push(&in->key, buf+offset, &np);
+	offset += np;
+
+	*npush = offset;
 }
 
 int ctdb_key_data_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-		       struct ctdb_key_data **out)
+		       struct ctdb_key_data **out, size_t *npull)
 {
-	struct ctdb_key_data *key_data;
-	struct ctdb_key_data_wire *wire = (struct ctdb_key_data_wire *)buf;
+	struct ctdb_key_data *val;
+	size_t offset = 0, np;
+	int ret;
 
-	if (buflen < offsetof(struct ctdb_key_data_wire, key)) {
-		return EMSGSIZE;
-	}
-	if (wire->keylen > buflen) {
-		return EMSGSIZE;
-	}
-	if (offsetof(struct ctdb_key_data_wire, key) + wire->keylen <
-	    offsetof(struct ctdb_key_data_wire, key)) {
-		return EMSGSIZE;
-	}
-	if (buflen < offsetof(struct ctdb_key_data_wire, key) + wire->keylen) {
-		return EMSGSIZE;
-	}
-
-	key_data = talloc(mem_ctx, struct ctdb_key_data);
-	if (key_data == NULL) {
+	val = talloc(mem_ctx, struct ctdb_key_data);
+	if (val == NULL) {
 		return ENOMEM;
 	}
 
-	memcpy(key_data, wire, offsetof(struct ctdb_key_data, key));
-
-	key_data->key.dsize = wire->keylen;
-	key_data->key.dptr = talloc_memdup(key_data, wire->key, wire->keylen);
-	if (key_data->key.dptr == NULL) {
-		talloc_free(key_data);
-		return ENOMEM;
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &val->db_id, &np);
+	if (ret != 0) {
+		goto fail;
 	}
+	offset += np;
 
-	*out = key_data;
+	ret = ctdb_padding_pull(buf+offset, buflen-offset, 4, &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
+
+	ret = ctdb_ltdb_header_pull(buf+offset, buflen-offset, &val->header,
+				    &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
+
+	ret = ctdb_tdb_datan_pull(buf+offset, buflen-offset, val, &val->key,
+				  &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
+
+	*out = val;
+	*npull = offset;
 	return 0;
+
+fail:
+	talloc_free(val);
+	return ret;
 }
 
 struct ctdb_db_statistics_wire {
