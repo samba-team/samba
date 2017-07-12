@@ -1531,7 +1531,7 @@ static void ctdb_reply_control_data_push(struct ctdb_reply_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_GET_IFACES:
-		ctdb_iface_list_push(cd->data.iface_list, buf);
+		ctdb_iface_list_push(cd->data.iface_list, buf, &np);
 		break;
 
 	case CTDB_CONTROL_GET_STAT_HISTORY:
@@ -1714,7 +1714,7 @@ static int ctdb_reply_control_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_CONTROL_GET_IFACES:
 		ret = ctdb_iface_list_pull(buf, buflen, mem_ctx,
-					   &cd->data.iface_list);
+					   &cd->data.iface_list, &np);
 		break;
 
 	case CTDB_CONTROL_GET_STAT_HISTORY:

@@ -4085,66 +4085,82 @@ int ctdb_iface_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
-struct ctdb_iface_list_wire {
-	uint32_t num;
-	struct ctdb_iface iface[1];
-};
-
-size_t ctdb_iface_list_len(struct ctdb_iface_list *iface_list)
+size_t ctdb_iface_list_len(struct ctdb_iface_list *in)
 {
-	return sizeof(uint32_t) +
-	       iface_list->num * sizeof(struct ctdb_iface);
+	size_t len;
+
+	len = ctdb_uint32_len(&in->num);
+	if (in->num > 0) {
+		len += in->num * ctdb_iface_len(&in->iface[0]);
+	}
+
+	return len;
 }
 
-void ctdb_iface_list_push(struct ctdb_iface_list *iface_list, uint8_t *buf)
+void ctdb_iface_list_push(struct ctdb_iface_list *in, uint8_t *buf,
+			  size_t *npush)
 {
-	struct ctdb_iface_list_wire *wire =
-		(struct ctdb_iface_list_wire *)buf;
+	size_t offset = 0, np;
+	uint32_t i;
 
-	wire->num = iface_list->num;
-	memcpy(wire->iface, iface_list->iface,
-	       iface_list->num * sizeof(struct ctdb_iface));
+	ctdb_uint32_push(&in->num, buf+offset, &np);
+	offset += np;
+
+	for (i=0; i<in->num; i++) {
+		ctdb_iface_push(&in->iface[i], buf+offset, &np);
+		offset += np;
+	}
+
+	*npush = offset;
 }
 
 int ctdb_iface_list_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			 struct ctdb_iface_list **out)
+			 struct ctdb_iface_list **out, size_t *npull)
 {
-	struct ctdb_iface_list *iface_list;
-	struct ctdb_iface_list_wire *wire =
-		(struct ctdb_iface_list_wire *)buf;
+	struct ctdb_iface_list *val;
+	size_t offset = 0, np;
+	uint32_t i;
+	int ret;
 
-	if (buflen < sizeof(uint32_t)) {
-		return EMSGSIZE;
-	}
-	if (wire->num > buflen / sizeof(struct ctdb_iface)) {
-		return EMSGSIZE;
-	}
-	if (sizeof(uint32_t) + wire->num * sizeof(struct ctdb_iface) <
-	    sizeof(uint32_t)) {
-		return EMSGSIZE;
-	}
-	if (buflen < sizeof(uint32_t) + wire->num * sizeof(struct ctdb_iface)) {
-		return EMSGSIZE;
-	}
-
-	iface_list = talloc(mem_ctx, struct ctdb_iface_list);
-	if (iface_list == NULL) {
+	val = talloc(mem_ctx, struct ctdb_iface_list);
+	if (val == NULL) {
 		return ENOMEM;
 	}
 
-	iface_list->num = wire->num;
-	iface_list->iface = talloc_array(iface_list, struct ctdb_iface,
-					 wire->num);
-	if (iface_list->iface == NULL) {
-		talloc_free(iface_list);
-		return ENOMEM;
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &val->num, &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
+
+	if (val->num == 0) {
+		val->iface = NULL;
+		goto done;
 	}
 
-	memcpy(iface_list->iface, wire->iface,
-	       wire->num * sizeof(struct ctdb_iface));
+	val->iface = talloc_array(val, struct ctdb_iface, val->num);
+	if (val->iface == NULL) {
+		ret = ENOMEM;
+		goto fail;
+	}
 
-	*out = iface_list;
+	for (i=0; i<val->num; i++) {
+		ret = ctdb_iface_pull_elems(buf+offset, buflen-offset,
+					    val, &val->iface[i], &np);
+		if (ret != 0) {
+			goto fail;
+		}
+		offset += np;
+	}
+
+done:
+	*out = val;
+	*npull = offset;
 	return 0;
+
+fail:
+	talloc_free(val);
+	return ret;
 }
 
 struct ctdb_public_ip_info_wire {

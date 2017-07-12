@@ -1712,6 +1712,66 @@ static int ctdb_iface_pull_old(uint8_t *buf, size_t buflen,
 	return ret;
 }
 
+struct ctdb_iface_list_wire {
+	uint32_t num;
+	struct ctdb_iface iface[1];
+};
+
+static size_t ctdb_iface_list_len_old(struct ctdb_iface_list *in)
+{
+	return sizeof(uint32_t) +
+	       in->num * sizeof(struct ctdb_iface);
+}
+
+static void ctdb_iface_list_push_old(struct ctdb_iface_list *in, uint8_t *buf)
+{
+	struct ctdb_iface_list_wire *wire =
+		(struct ctdb_iface_list_wire *)buf;
+
+	wire->num = in->num;
+	memcpy(wire->iface, in->iface, in->num * sizeof(struct ctdb_iface));
+}
+
+static int ctdb_iface_list_pull_old(uint8_t *buf, size_t buflen,
+				    TALLOC_CTX *mem_ctx,
+				    struct ctdb_iface_list **out)
+{
+	struct ctdb_iface_list *val;
+	struct ctdb_iface_list_wire *wire =
+		(struct ctdb_iface_list_wire *)buf;
+
+	if (buflen < sizeof(uint32_t)) {
+		return EMSGSIZE;
+	}
+	if (wire->num > buflen / sizeof(struct ctdb_iface)) {
+		return EMSGSIZE;
+	}
+	if (sizeof(uint32_t) + wire->num * sizeof(struct ctdb_iface) <
+	    sizeof(uint32_t)) {
+		return EMSGSIZE;
+	}
+	if (buflen < sizeof(uint32_t) + wire->num * sizeof(struct ctdb_iface)) {
+		return EMSGSIZE;
+	}
+
+	val = talloc(mem_ctx, struct ctdb_iface_list);
+	if (val == NULL) {
+		return ENOMEM;
+	}
+
+	val->num = wire->num;
+	val->iface = talloc_array(val, struct ctdb_iface, wire->num);
+	if (val->iface == NULL) {
+		talloc_free(val);
+		return ENOMEM;
+	}
+
+	memcpy(val->iface, wire->iface, wire->num * sizeof(struct ctdb_iface));
+
+	*out = val;
+	return 0;
+}
+
 
 COMPAT_TYPE3_TEST(struct ctdb_statistics, ctdb_statistics);
 COMPAT_TYPE3_TEST(struct ctdb_vnn_map, ctdb_vnn_map);
@@ -1746,6 +1806,7 @@ COMPAT_TYPE3_TEST(struct ctdb_script_list, ctdb_script_list);
 COMPAT_TYPE3_TEST(struct ctdb_ban_state, ctdb_ban_state);
 COMPAT_TYPE3_TEST(struct ctdb_notify_data, ctdb_notify_data);
 COMPAT_TYPE3_TEST(struct ctdb_iface, ctdb_iface);
+COMPAT_TYPE3_TEST(struct ctdb_iface_list, ctdb_iface_list);
 
 int main(int argc, char *argv[])
 {
@@ -1785,6 +1846,7 @@ int main(int argc, char *argv[])
 	COMPAT_TEST_FUNC(ctdb_ban_state)();
 	COMPAT_TEST_FUNC(ctdb_notify_data)();
 	COMPAT_TEST_FUNC(ctdb_iface)();
+	COMPAT_TEST_FUNC(ctdb_iface_list)();
 
 	return 0;
 }

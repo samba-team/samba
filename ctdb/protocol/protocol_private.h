@@ -282,10 +282,11 @@ void ctdb_iface_push(struct ctdb_iface *in, uint8_t *buf, size_t *npush);
 int ctdb_iface_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 		    struct ctdb_iface **out, size_t *npull);
 
-size_t ctdb_iface_list_len(struct ctdb_iface_list *iface_list);
-void ctdb_iface_list_push(struct ctdb_iface_list *iface_list, uint8_t *buf);
+size_t ctdb_iface_list_len(struct ctdb_iface_list *in);
+void ctdb_iface_list_push(struct ctdb_iface_list *in, uint8_t *buf,
+			  size_t *npush);
 int ctdb_iface_list_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			 struct ctdb_iface_list **out);
+			 struct ctdb_iface_list **out, size_t *npull);
 
 size_t ctdb_public_ip_info_len(struct ctdb_public_ip_info *ipinfo);
 void ctdb_public_ip_info_push(struct ctdb_public_ip_info *ipinfo, uint8_t *buf);
