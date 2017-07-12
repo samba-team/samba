@@ -59,6 +59,7 @@ class DrsBaseTestCase(SambaToolCmdTest):
         url_dc = samba.tests.env_get_var_value("DC2")
         (self.ldb_dc2, self.info_dc2) = samba.tests.connect_samdb_ex(url_dc,
                                                                      ldap_only=True)
+        self.test_ldb_dc = self.ldb_dc1
 
         # cache some of RootDSE props
         self.schema_dn = self.info_dc1["schemaNamingContext"][0]
@@ -76,8 +77,12 @@ class DrsBaseTestCase(SambaToolCmdTest):
     def tearDown(self):
         super(DrsBaseTestCase, self).tearDown()
 
+    def set_test_ldb_dc(self, ldb_dc):
+        """Sets which DC's LDB we perform operations on during the test"""
+        self.test_ldb_dc = ldb_dc
+
     def _GUID_string(self, guid):
-        return self.ldb_dc1.schema_format_value("objectGUID", guid)
+        return self.test_ldb_dc.schema_format_value("objectGUID", guid)
 
     def _ldap_schemaUpdateNow(self, sam_db):
         rec = {"dn": "",
@@ -220,6 +225,17 @@ class DrsBaseTestCase(SambaToolCmdTest):
 
         return ctr6_links
 
+    def _get_ctr6_object_guids(self, ctr6):
+        """Returns all the object GUIDs in a GetNCChanges response"""
+        guid_list = []
+
+        obj = ctr6.first_object
+        for i in range(0, ctr6.object_count):
+            guid_list.append(str(obj.object.identifier.guid))
+            obj = obj.next_object
+
+        return guid_list
+
     def _ctr6_debug(self, ctr6):
         """
         Displays basic info contained in a DsGetNCChanges response.
@@ -257,15 +273,15 @@ class DrsBaseTestCase(SambaToolCmdTest):
         and returns the response received from the DC.
         """
         if source_dsa is None:
-            source_dsa = self.ldb_dc1.get_ntds_GUID()
+            source_dsa = self.test_ldb_dc.get_ntds_GUID()
         if invocation_id is None:
-            invocation_id = self.ldb_dc1.get_invocation_id()
+            invocation_id = self.test_ldb_dc.get_invocation_id()
         if nc_dn_str is None:
-            nc_dn_str = self.ldb_dc1.domain_dn()
+            nc_dn_str = self.test_ldb_dc.domain_dn()
 
         if highwatermark is None:
             if self.default_hwm is None:
-                (highwatermark, _) = self._get_highest_hwm_utdv(self.ldb_dc1)
+                (highwatermark, _) = self._get_highest_hwm_utdv(self.test_ldb_dc)
             else:
                 highwatermark = self.default_hwm
 

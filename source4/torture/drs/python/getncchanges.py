@@ -31,52 +31,64 @@ import drs_base
 import samba.tests
 import ldb
 from ldb import SCOPE_BASE
+import random
 
 from samba.dcerpc import drsuapi
 
 class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
     def setUp(self):
         super(DrsReplicaSyncIntegrityTestCase, self).setUp()
-        self.base_dn = self.ldb_dc1.get_default_basedn()
-        self.ou = "OU=uptodateness_test,%s" % self.base_dn
-        self.ldb_dc1.add({
+
+        # Note that DC2 is the DC with the testenv-specific quirks (e.g. it's
+        # the vampire_dc), so we point this test directly at that DC
+        self.set_test_ldb_dc(self.ldb_dc2)
+        (self.drs, self.drs_handle) = self._ds_bind(self.dnsname_dc2)
+
+        # add some randomness to the test OU. (Deletion of the last test's
+        # objects can be slow to replicate out. So the OU created by a previous
+        # testenv may still exist at this point).
+        rand = random.randint(1, 10000000)
+        self.base_dn = self.test_ldb_dc.get_default_basedn()
+        self.ou = "OU=getncchanges%d_test,%s" %(rand, self.base_dn)
+        self.test_ldb_dc.add({
             "dn": self.ou,
             "objectclass": "organizationalUnit"})
-        (self.drs, self.drs_handle) = self._ds_bind(self.dnsname_dc1)
-        (self.default_hwm, self.default_utdv) = self._get_highest_hwm_utdv(self.ldb_dc1)
+        (self.default_hwm, self.default_utdv) = self._get_highest_hwm_utdv(self.test_ldb_dc)
 
         self.rxd_dn_list = []
         self.rxd_links = []
+        self.rxd_guids = []
 
         # 100 is the minimum max_objects that Microsoft seems to honour
         # (the max honoured is 400ish), so we use that in these tests
         self.max_objects = 100
         self.last_ctr = None
 
-        # store whether we used GET_ANC flags in the requests
+        # store whether we used GET_TGT/GET_ANC flags in the requests
+        self.used_get_tgt = False
         self.used_get_anc = False
 
     def tearDown(self):
         super(DrsReplicaSyncIntegrityTestCase, self).tearDown()
         # tidyup groups and users
         try:
-            self.ldb_dc1.delete(self.ou, ["tree_delete:1"])
+            self.ldb_dc2.delete(self.ou, ["tree_delete:1"])
         except ldb.LdbError as (enum, string):
             if enum == ldb.ERR_NO_SUCH_OBJECT:
                 pass
 
     def add_object(self, dn):
         """Adds an OU object"""
-        self.ldb_dc1.add({"dn": dn, "objectclass": "organizationalunit"})
-        res = self.ldb_dc1.search(base=dn, scope=SCOPE_BASE)
+        self.test_ldb_dc.add({"dn": dn, "objectclass": "organizationalunit"})
+        res = self.test_ldb_dc.search(base=dn, scope=SCOPE_BASE)
         self.assertEquals(len(res), 1)
 
     def modify_object(self, dn, attr, value):
         """Modifies an object's USN by adding an attribute value to it"""
         m = ldb.Message()
-        m.dn = ldb.Dn(self.ldb_dc1, dn)
+        m.dn = ldb.Dn(self.test_ldb_dc, dn)
         m[attr] = ldb.MessageElement(value, ldb.FLAG_MOD_ADD, attr)
-        self.ldb_dc1.modify(m)
+        self.test_ldb_dc.modify(m)
 
     def create_object_range(self, start, end, prefix="",
                             children=None, parent_list=None):
@@ -149,7 +161,7 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
 
         # Create a range of objects to replicate.
         expected_dn_list = self.create_object_range(0, 400)
-        (orig_hwm, unused) = self._get_highest_hwm_utdv(self.ldb_dc1)
+        (orig_hwm, unused) = self._get_highest_hwm_utdv(self.test_ldb_dc)
 
         # We ask for the first page of 100 objects.
         # For this test, we don't care what order we receive the objects in,
@@ -160,7 +172,7 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
         for x in range(100, 200):
             self.modify_object(expected_dn_list[x], "displayName", "OU%d" % x)
 
-        (post_modify_hwm, unused) = self._get_highest_hwm_utdv(self.ldb_dc1)
+        (post_modify_hwm, unused) = self._get_highest_hwm_utdv(self.test_ldb_dc)
         self.assertTrue(post_modify_hwm.highest_usn > orig_hwm.highest_usn)
 
         # Get the remaining blocks of data
@@ -190,7 +202,7 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
         # test object), or its parent has been seen previously
         return parent_dn == self.ou or parent_dn in known_dn_list
 
-    def _repl_send_request(self, get_anc=False):
+    def _repl_send_request(self, get_anc=False, get_tgt=False):
         """Sends a GetNCChanges request for the next block of replication data."""
 
         # we're just trying to mimic regular client behaviour here, so just
@@ -205,44 +217,56 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
 
         # Ask for the next block of replication data
         replica_flags = drsuapi.DRSUAPI_DRS_WRIT_REP
+        more_flags = 0
 
         if get_anc:
             replica_flags = drsuapi.DRSUAPI_DRS_WRIT_REP | drsuapi.DRSUAPI_DRS_GET_ANC
             self.used_get_anc = True
 
+        if get_tgt:
+            more_flags = drsuapi.DRSUAPI_DRS_GET_TGT
+            self.used_get_tgt = True
+
         # return the response from the DC
         return self._get_replication(replica_flags,
                                      max_objects=self.max_objects,
                                      highwatermark=highwatermark,
-                                     uptodateness_vector=uptodateness_vector)
+                                     uptodateness_vector=uptodateness_vector,
+                                     more_flags=more_flags)
 
-    def repl_get_next(self, get_anc=False):
+    def repl_get_next(self, get_anc=False, get_tgt=False, assert_links=False):
         """
         Requests the next block of replication data. This tries to simulate
         client behaviour - if we receive a replicated object that we don't know
         the parent of, then re-request the block with the GET_ANC flag set.
+        If we don't know the target object for a linked attribute, then
+        re-request with GET_TGT.
         """
 
         # send a request to the DC and get the response
-        ctr6 = self._repl_send_request(get_anc=get_anc)
+        ctr6 = self._repl_send_request(get_anc=get_anc, get_tgt=get_tgt)
 
-        # check that we know the parent for every object received
+        # extract the object DNs and their GUIDs from the response
         rxd_dn_list = self._get_ctr6_dn_list(ctr6)
+        rxd_guid_list = self._get_ctr6_object_guids(ctr6)
 
         # we'll add new objects as we discover them, so take a copy of the
-        # ones we already know about, so we can modify the list safely
+        # ones we already know about, so we can modify these lists safely
         known_objects = self.rxd_dn_list[:]
+        known_guids = self.rxd_guids[:]
 
         # check that we know the parent for every object received
         for i in range(0, len(rxd_dn_list)):
 
             dn = rxd_dn_list[i]
+            guid = rxd_guid_list[i]
 
             if self.is_parent_known(dn, known_objects):
 
                 # the new DN is now known so add it to the list.
                 # It may be the parent of another child in this block
                 known_objects.append(dn)
+                known_guids.append(guid)
             else:
                 # If we've already set the GET_ANC flag then it should mean
                 # we receive the parents before the child
@@ -251,14 +275,57 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
                 print("Unknown parent for %s - try GET_ANC" % dn)
 
                 # try the same thing again with the GET_ANC flag set this time
-                return self.repl_get_next(get_anc=True)
+                return self.repl_get_next(get_anc=True, get_tgt=get_tgt,
+                                          assert_links=assert_links)
+
+        # check we know about references to any objects in the linked attritbutes
+        received_links = self._get_ctr6_links(ctr6)
+
+        # This is so that older versions of Samba fail - we want the links to be
+        # sent roughly with the objects, rather than getting all links at the end
+        if assert_links:
+            self.assertTrue(len(received_links) > 0,
+                            "Links were expected in the GetNCChanges response")
+
+        for link in received_links:
+
+            # check the source object is known (Windows can actually send links
+            # where we don't know the source object yet). Samba shouldn't ever
+            # hit this case because it gets the links based on the source
+            if link.identifier not in known_guids:
+
+                # If we've already set the GET_ANC flag then it should mean
+                # this case doesn't happen
+                self.assertFalse(get_anc, "Unknown source object for GUID %s"
+                                 % link.identifier)
+
+                print("Unknown source GUID %s - try GET_ANC" % link.identifier)
+
+                # try the same thing again with the GET_ANC flag set this time
+                return self.repl_get_next(get_anc=True, get_tgt=get_tgt,
+                                          assert_links=assert_links)
+
+            # check we know the target object
+            if link.targetGUID not in known_guids:
+
+                # If we've already set the GET_TGT flag then we should have
+                # already received any objects we need to know about
+                self.assertFalse(get_tgt, "Unknown linked target for object %s"
+                                 % link.targetDN)
+
+                print("Unknown target for %s - try GET_TGT" % link.targetDN)
+
+                # try the same thing again with the GET_TGT flag set this time
+                return self.repl_get_next(get_anc=get_anc, get_tgt=True,
+                                          assert_links=assert_links)
 
         # store the last successful result so we know what HWM to request next
         self.last_ctr = ctr6
 
-        # store the objects and links we received
+        # store the objects, GUIDs, and links we received
         self.rxd_dn_list += self._get_ctr6_dn_list(ctr6)
         self.rxd_links += self._get_ctr6_links(ctr6)
+        self.rxd_guids += self._get_ctr6_object_guids(ctr6)
 
         return ctr6
 
@@ -360,8 +427,8 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
         # Look up the link attribute in the DB
         # The extended_dn option will dump the GUID info for the link
         # attribute (as a hex blob)
-        res = self.ldb_dc1.search(ldb.Dn(self.ldb_dc1, dn), attrs=[link_attr],
-                                  controls=['extended_dn:1:0'], scope=ldb.SCOPE_BASE)
+        res = self.test_ldb_dc.search(ldb.Dn(self.test_ldb_dc, dn), attrs=[link_attr],
+                                      controls=['extended_dn:1:0'], scope=ldb.SCOPE_BASE)
 
         # We didn't find the expected link attribute in the DB for the object.
         # Something has gone wrong somewhere...
@@ -372,7 +439,7 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
         # source GUIDs match what's in the DB
         for val in res[0][link_attr]:
             # Work out the expected source and target GUIDs for the DB link
-            target_dn = ldb.Dn(self.ldb_dc1, val)
+            target_dn = ldb.Dn(self.test_ldb_dc, val)
             targetGUID_blob = target_dn.get_extended_component("GUID")
             sourceGUID_blob = res[0].dn.get_extended_component("GUID")
 
@@ -389,6 +456,106 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
                     break
 
             self.assertTrue(found, "Did not receive expected link for DN %s" % dn)
+
+    def test_repl_get_tgt(self):
+        """
+        Creates a scenario where we should receive the linked attribute before
+        we know about the target object, and therefore need to use GET_TGT.
+        Note: Samba currently avoids this problem by sending all its links last
+        """
+
+        # create the test objects
+        reportees = self.create_object_range(0, 100, prefix="reportee")
+        managers = self.create_object_range(0, 100, prefix="manager")
+        all_objects = managers + reportees
+        expected_links = reportees
+
+        # add a link attribute to each reportee object that points to the
+        # corresponding manager object as the target
+        for i in range(0, 100):
+            self.modify_object(reportees[i], "managedBy", managers[i])
+
+        # touch the managers (the link-target objects) again to make sure the
+        # reportees (link source objects) get returned first by the replication
+        for i in range(0, 100):
+            self.modify_object(managers[i], "displayName", "OU%d" % i)
+
+        links_expected = True
+
+        # Get all the replication data - this code should resend the requests
+        # with GET_TGT
+        while not self.replication_complete():
+
+            # get the next block of replication data (this sets GET_TGT if needed)
+            self.repl_get_next(assert_links=links_expected)
+            links_expected = len(self.rxd_links) < len(expected_links)
+
+        # The way the test objects have been created should force
+        # self.repl_get_next() to use the GET_TGT flag. If this doesn't
+        # actually happen, then the test isn't doing its job properly
+        self.assertTrue(self.used_get_tgt,
+                        "Test didn't use the GET_TGT flag as expected")
+
+        # Check we get all the objects we're expecting
+        self.assert_expected_data(all_objects)
+
+        # Check we received links for all the reportees
+        self.assert_expected_links(expected_links)
+
+    def test_repl_get_tgt_chain(self):
+        """
+        Tests the behaviour of GET_TGT with a more complicated scenario.
+        Here we create a chain of objects linked together, so if we follow
+        the link target, then we'd traverse ~200 objects each time.
+        """
+
+        # create the test objects
+        objectsA = self.create_object_range(0, 100, prefix="AAA")
+        objectsB = self.create_object_range(0, 100, prefix="BBB")
+        objectsC = self.create_object_range(0, 100, prefix="CCC")
+
+        # create a complex set of object links:
+        #   A0-->B0-->C1-->B2-->C3-->B4-->and so on...
+        # Basically each object-A should link to a circular chain of 200 B/C
+        # objects. We create the links in separate chunks here, as it makes it
+        # clearer what happens with the USN (links on Windows have their own
+        # USN, so this approach means the A->B/B->C links aren't interleaved)
+        for i in range(0, 100):
+            self.modify_object(objectsA[i], "managedBy", objectsB[i])
+
+        for i in range(0, 100):
+            self.modify_object(objectsB[i], "managedBy", objectsC[(i + 1) % 100])
+
+        for i in range(0, 100):
+            self.modify_object(objectsC[i], "managedBy", objectsB[(i + 1) % 100])
+
+        all_objects = objectsA + objectsB + objectsC
+        expected_links = all_objects
+
+        # the default order the objects now get returned in should be:
+        # [A0-A99][B0-B99][C0-C99]
+
+        links_expected = True
+
+        # Get all the replication data - this code should resend the requests
+        # with GET_TGT
+        while not self.replication_complete():
+
+            # get the next block of replication data (this sets GET_TGT if needed)
+            self.repl_get_next(assert_links=links_expected)
+            links_expected = len(self.rxd_links) < len(expected_links)
+
+        # The way the test objects have been created should force
+        # self.repl_get_next() to use the GET_TGT flag. If this doesn't
+        # actually happen, then the test isn't doing its job properly
+        self.assertTrue(self.used_get_tgt,
+                        "Test didn't use the GET_TGT flag as expected")
+
+        # Check we get all the objects we're expecting
+        self.assert_expected_data(all_objects)
+
+        # Check we received links for all the reportees
+        self.assert_expected_links(expected_links)
 
     def test_repl_get_anc_link_attr(self):
         """

@@ -1,0 +1,8 @@
+# These tests fail because Samba doesn't support GET_TGT yet and vampire_dc sends
+# the link in a separate chunk before the target object
+samba4.drs.getncchanges.python\(vampire_dc\).getncchanges.DrsReplicaSyncIntegrityTestCase.test_repl_get_tgt\(vampire_dc\)
+samba4.drs.getncchanges.python\(vampire_dc\).getncchanges.DrsReplicaSyncIntegrityTestCase.test_repl_get_tgt_chain\(vampire_dc\)
+# GET_TGT tests currently only work for testenvs that send the links at the
+# same time as the source objects. Currently this is only the vampire_dc
+samba4.drs.getncchanges.python\(promoted_dc\).getncchanges.DrsReplicaSyncIntegrityTestCase.test_repl_get_tgt\(promoted_dc\)
+samba4.drs.getncchanges.python\(promoted_dc\).getncchanges.DrsReplicaSyncIntegrityTestCase.test_repl_get_tgt_chain\(promoted_dc\)
