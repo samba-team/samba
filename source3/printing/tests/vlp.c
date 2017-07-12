@@ -405,6 +405,10 @@ int main(int argc, char **argv)
 	chmod(printdb_path, 0666);
 
 	/* Do commands */
+	if (argc < 3) {
+		usage();
+		return 1;
+	}
 
 	if (strcmp(argv[2], "lpq") == 0) {
 		return lpq_command(argc - 2, &argv[2]);
