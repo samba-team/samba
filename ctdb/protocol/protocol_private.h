@@ -271,10 +271,11 @@ void ctdb_ban_state_push(struct ctdb_ban_state *in, uint8_t *buf,
 int ctdb_ban_state_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 			struct ctdb_ban_state **out, size_t *npull);
 
-size_t ctdb_notify_data_len(struct ctdb_notify_data *notify);
-void ctdb_notify_data_push(struct ctdb_notify_data *notify, uint8_t *buf);
+size_t ctdb_notify_data_len(struct ctdb_notify_data *in);
+void ctdb_notify_data_push(struct ctdb_notify_data *in, uint8_t *buf,
+			   size_t *npush);
 int ctdb_notify_data_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			  struct ctdb_notify_data **out);
+			  struct ctdb_notify_data **out, size_t *npull);
 
 size_t ctdb_iface_len(struct ctdb_iface *iface);
 void ctdb_iface_push(struct ctdb_iface *iface, uint8_t *buf);

@@ -599,7 +599,7 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_REGISTER_NOTIFY:
-		ctdb_notify_data_push(cd->data.notify, buf);
+		ctdb_notify_data_push(cd->data.notify, buf, &np);
 		break;
 
 	case CTDB_CONTROL_DEREGISTER_NOTIFY:
@@ -911,7 +911,7 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_CONTROL_REGISTER_NOTIFY:
 		ret = ctdb_notify_data_pull(buf, buflen, mem_ctx,
-					    &cd->data.notify);
+					    &cd->data.notify, &np);
 		break;
 
 	case CTDB_CONTROL_DEREGISTER_NOTIFY:

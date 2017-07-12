@@ -1606,6 +1606,68 @@ static int ctdb_ban_state_pull_old(uint8_t *buf, size_t buflen,
 	return 0;
 }
 
+struct ctdb_notify_data_wire {
+	uint64_t srvid;
+	uint32_t len;
+	uint8_t data[1];
+};
+
+static size_t ctdb_notify_data_len_old(struct ctdb_notify_data *in)
+{
+	return offsetof(struct ctdb_notify_data_wire, data) +
+	       in->data.dsize;
+}
+
+static void ctdb_notify_data_push_old(struct ctdb_notify_data *in,
+				      uint8_t *buf)
+{
+	struct ctdb_notify_data_wire *wire =
+		(struct ctdb_notify_data_wire *)buf;
+
+	wire->srvid = in->srvid;
+	wire->len = in->data.dsize;
+	memcpy(wire->data, in->data.dptr, in->data.dsize);
+}
+
+static int ctdb_notify_data_pull_old(uint8_t *buf, size_t buflen,
+				     TALLOC_CTX *mem_ctx,
+				     struct ctdb_notify_data **out)
+{
+	struct ctdb_notify_data *val;
+	struct ctdb_notify_data_wire *wire =
+		(struct ctdb_notify_data_wire *)buf;
+
+	if (buflen < offsetof(struct ctdb_notify_data_wire, data)) {
+		return EMSGSIZE;
+	}
+	if (wire->len > buflen) {
+		return EMSGSIZE;
+	}
+	if (offsetof(struct ctdb_notify_data_wire, data) + wire->len <
+	    offsetof(struct ctdb_notify_data_wire, data)) {
+		return EMSGSIZE;
+	}
+	if (buflen < offsetof(struct ctdb_notify_data_wire, data) + wire->len) {
+		return EMSGSIZE;
+	}
+
+	val = talloc(mem_ctx, struct ctdb_notify_data);
+	if (val == NULL) {
+		return ENOMEM;
+	}
+
+	val->srvid = wire->srvid;
+	val->data.dsize = wire->len;
+	val->data.dptr = talloc_memdup(val, wire->data, wire->len);
+	if (val->data.dptr == NULL) {
+		talloc_free(val);
+		return ENOMEM;
+	}
+
+	*out = val;
+	return 0;
+}
+
 
 COMPAT_TYPE3_TEST(struct ctdb_statistics, ctdb_statistics);
 COMPAT_TYPE3_TEST(struct ctdb_vnn_map, ctdb_vnn_map);
@@ -1638,6 +1700,7 @@ COMPAT_TYPE3_TEST(struct ctdb_node_map, ctdb_node_map);
 COMPAT_TYPE3_TEST(struct ctdb_script, ctdb_script);
 COMPAT_TYPE3_TEST(struct ctdb_script_list, ctdb_script_list);
 COMPAT_TYPE3_TEST(struct ctdb_ban_state, ctdb_ban_state);
+COMPAT_TYPE3_TEST(struct ctdb_notify_data, ctdb_notify_data);
 
 int main(int argc, char *argv[])
 {
@@ -1675,6 +1738,7 @@ int main(int argc, char *argv[])
 	COMPAT_TEST_FUNC(ctdb_script)();
 	COMPAT_TEST_FUNC(ctdb_script_list)();
 	COMPAT_TEST_FUNC(ctdb_ban_state)();
+	COMPAT_TEST_FUNC(ctdb_notify_data)();
 
 	return 0;
 }

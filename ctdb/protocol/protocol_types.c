@@ -3953,64 +3953,58 @@ fail:
 	return ret;
 }
 
-struct ctdb_notify_data_wire {
-	uint64_t srvid;
-	uint32_t len;
-	uint8_t data[1];
-};
-
-size_t ctdb_notify_data_len(struct ctdb_notify_data *notify)
+size_t ctdb_notify_data_len(struct ctdb_notify_data *in)
 {
-	return offsetof(struct ctdb_notify_data_wire, data) +
-	       notify->data.dsize;
+	return ctdb_uint64_len(&in->srvid) +
+		ctdb_tdb_datan_len(&in->data);
 }
 
-void ctdb_notify_data_push(struct ctdb_notify_data *notify, uint8_t *buf)
+void ctdb_notify_data_push(struct ctdb_notify_data *in, uint8_t *buf,
+			   size_t *npush)
 {
-	struct ctdb_notify_data_wire *wire =
-		(struct ctdb_notify_data_wire *)buf;
+	size_t offset = 0, np;
 
-	wire->srvid = notify->srvid;
-	wire->len = notify->data.dsize;
-	memcpy(wire->data, notify->data.dptr, notify->data.dsize);
+	ctdb_uint64_push(&in->srvid, buf+offset, &np);
+	offset += np;
+
+	ctdb_tdb_datan_push(&in->data, buf+offset, &np);
+	offset += np;
+
+	*npush = offset;
 }
 
 int ctdb_notify_data_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			  struct ctdb_notify_data **out)
+			  struct ctdb_notify_data **out, size_t *npull)
 {
-	struct ctdb_notify_data *notify;
-	struct ctdb_notify_data_wire *wire =
-		(struct ctdb_notify_data_wire *)buf;
+	struct ctdb_notify_data *val;
+	size_t offset = 0, np;
+	int ret;
 
-	if (buflen < offsetof(struct ctdb_notify_data_wire, data)) {
-		return EMSGSIZE;
-	}
-	if (wire->len > buflen) {
-		return EMSGSIZE;
-	}
-	if (offsetof(struct ctdb_notify_data_wire, data) + wire->len <
-	    offsetof(struct ctdb_notify_data_wire, data)) {
-		return EMSGSIZE;
-	}
-	if (buflen < offsetof(struct ctdb_notify_data_wire, data) + wire->len) {
-		return EMSGSIZE;
-	}
-
-	notify = talloc(mem_ctx, struct ctdb_notify_data);
-	if (notify == NULL) {
+	val = talloc(mem_ctx, struct ctdb_notify_data);
+	if (val == NULL) {
 		return ENOMEM;
 	}
 
-	notify->srvid = wire->srvid;
-	notify->data.dsize = wire->len;
-	notify->data.dptr = talloc_memdup(notify, wire->data, wire->len);
-	if (notify->data.dptr == NULL) {
-		talloc_free(notify);
-		return ENOMEM;
+	ret = ctdb_uint64_pull(buf+offset, buflen-offset, &val->srvid, &np);
+	if (ret != 0) {
+		goto fail;
 	}
+	offset += np;
 
-	*out = notify;
+	ret = ctdb_tdb_datan_pull(buf+offset, buflen-offset, val, &val->data,
+				  &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
+
+	*out = val;
+	*npull = offset;
 	return 0;
+
+fail:
+	talloc_free(val);
+	return ret;
 }
 
 size_t ctdb_iface_len(struct ctdb_iface *iface)

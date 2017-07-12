@@ -77,7 +77,7 @@ PROTOCOL_TYPE3_TEST(struct ctdb_node_map, ctdb_node_map);
 PROTOCOL_TYPE3_TEST(struct ctdb_script, ctdb_script);
 PROTOCOL_TYPE3_TEST(struct ctdb_script_list, ctdb_script_list);
 PROTOCOL_TYPE3_TEST(struct ctdb_ban_state, ctdb_ban_state);
-DEFINE_TEST(struct ctdb_notify_data, ctdb_notify_data);
+PROTOCOL_TYPE3_TEST(struct ctdb_notify_data, ctdb_notify_data);
 DEFINE_TEST(struct ctdb_iface, ctdb_iface);
 DEFINE_TEST(struct ctdb_iface_list, ctdb_iface_list);
 DEFINE_TEST(struct ctdb_public_ip_info, ctdb_public_ip_info);
