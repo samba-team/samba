@@ -2321,11 +2321,11 @@ NTSTATUS wcache_query_user_fullname(struct winbindd_domain *domain,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS wcache_lookup_usergroups(struct winbindd_domain *domain,
-				  TALLOC_CTX *mem_ctx,
-				  const struct dom_sid *user_sid,
-				  uint32_t *pnum_sids,
-				  struct dom_sid **psids)
+static NTSTATUS wcache_lookup_usergroups(struct winbindd_domain *domain,
+					 TALLOC_CTX *mem_ctx,
+					 const struct dom_sid *user_sid,
+					 uint32_t *pnum_sids,
+					 struct dom_sid **psids)
 {
 	struct winbind_cache *cache = get_cache(domain);
 	struct cache_entry *centry = NULL;
