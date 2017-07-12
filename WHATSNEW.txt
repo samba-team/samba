@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the first release candidate of Samba 4.7.  This is *not*
+This is the second release candidate of Samba 4.7.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -281,6 +281,13 @@ KNOWN ISSUES
 ============
 
 https://wiki.samba.org/index.php/Release_Planning_for_Samba_4.7#Release_blocking_bugs
+
+
+CHANGES SINCE 4.7.0rc1
+======================
+
+o  Jeffrey Altman <jaltman@secure-endpoints.com>
+   * BUG 12894: CVE-2017-11103: Orpheus' Lyre KDC-REP service name validation
 
 
 #######################################
