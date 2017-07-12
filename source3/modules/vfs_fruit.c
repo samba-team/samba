@@ -2561,6 +2561,9 @@ static NTSTATUS check_ms_nfs(vfs_handle_struct *handle,
 				struct fruit_config_data,
 				return NT_STATUS_UNSUCCESSFUL);
 
+	if (!global_fruit_config.nego_aapl) {
+		return NT_STATUS_OK;
+	}
 	if (psd->dacl == NULL || !config->unix_info_enabled) {
 		return NT_STATUS_OK;
 	}
@@ -5140,6 +5143,9 @@ static NTSTATUS fruit_fget_nt_acl(vfs_handle_struct *handle,
 	/*
 	 * Add MS NFS style ACEs with uid, gid and mode
 	 */
+	if (!global_fruit_config.nego_aapl) {
+		return NT_STATUS_OK;
+	}
 	if (!config->unix_info_enabled) {
 		return NT_STATUS_OK;
 	}
