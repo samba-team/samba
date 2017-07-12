@@ -1,4 +1,57 @@
                    =============================
+                   Release Notes for Samba 4.6.6
+                            July 12, 2017
+                   =============================
+
+
+This is a security release in order to address the following defect:
+
+o  CVE-2017-11103 (Orpheus' Lyre mutual authentication validation bypass)
+
+=======
+Details
+=======
+
+o  CVE-2017-11103 (Heimdal):
+   All versions of Samba from 4.0.0 onwards using embedded Heimdal
+   Kerberos are vulnerable to a man-in-the-middle attack impersonating
+   a trusted server, who may gain elevated access to the domain by
+   returning malicious replication or authorization data.
+
+   Samba binaries built against MIT Kerberos are not vulnerable.
+
+
+Changes since 4.6.5:
+---------------------
+
+o  Jeffrey Altman <jaltman@secure-endpoints.com>
+   * BUG 12894: CVE-2017-11103: Orpheus' Lyre KDC-REP service name validation
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   =============================
                    Release Notes for Samba 4.6.5
                             June 6, 2017
                    =============================
@@ -78,8 +131,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    =============================
                    Release Notes for Samba 4.6.4
