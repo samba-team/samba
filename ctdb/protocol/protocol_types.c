@@ -3689,46 +3689,111 @@ fail:
 	return ret;
 }
 
-size_t ctdb_script_len(struct ctdb_script *script)
+size_t ctdb_script_len(struct ctdb_script *in)
 {
-	return sizeof(struct ctdb_script);
+	return ctdb_chararray_len(in->name, MAX_SCRIPT_NAME+1) +
+		ctdb_timeval_len(&in->start) +
+		ctdb_timeval_len(&in->finished) +
+		ctdb_int32_len(&in->status) +
+		ctdb_chararray_len(in->output, MAX_SCRIPT_OUTPUT+1) +
+		ctdb_padding_len(4);
 }
 
-void ctdb_script_push(struct ctdb_script *script, uint8_t *buf)
+void ctdb_script_push(struct ctdb_script *in, uint8_t *buf, size_t *npush)
 {
-	memcpy(buf, script, sizeof(struct ctdb_script));
+	size_t offset = 0, np;
+
+	ctdb_chararray_push(in->name, MAX_SCRIPT_NAME+1, buf+offset, &np);
+	offset += np;
+
+	ctdb_timeval_push(&in->start, buf+offset, &np);
+	offset += np;
+
+	ctdb_timeval_push(&in->finished, buf+offset, &np);
+	offset += np;
+
+	ctdb_int32_push(&in->status, buf+offset, &np);
+	offset += np;
+
+	ctdb_chararray_push(in->output, MAX_SCRIPT_OUTPUT+1, buf+offset, &np);
+	offset += np;
+
+	ctdb_padding_push(4, buf+offset, &np);
+	offset += np;
+
+	*npush = offset;
 }
 
 static int ctdb_script_pull_elems(uint8_t *buf, size_t buflen,
 				  TALLOC_CTX *mem_ctx,
-				  struct ctdb_script *out)
+				  struct ctdb_script *out, size_t *npull)
 {
-	if (buflen < sizeof(struct ctdb_script)) {
-		return EMSGSIZE;
+	size_t offset = 0, np;
+	int ret;
+
+	ret = ctdb_chararray_pull(buf+offset, buflen-offset,
+				  out->name, MAX_SCRIPT_NAME+1, &np);
+	if (ret != 0) {
+		return ret;
 	}
+	offset += np;
 
-	memcpy(out, buf, sizeof(struct ctdb_script));
+	ret = ctdb_timeval_pull(buf+offset, buflen-offset, &out->start, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
 
+	ret = ctdb_timeval_pull(buf+offset, buflen-offset, &out->finished,
+				&np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_int32_pull(buf+offset, buflen-offset, &out->status, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_chararray_pull(buf+offset, buflen-offset,
+				  out->output, MAX_SCRIPT_OUTPUT+1, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_padding_pull(buf+offset, buflen-offset, 4, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	*npull = offset;
 	return 0;
 }
 
 int ctdb_script_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-		     struct ctdb_script **out)
+		     struct ctdb_script **out, size_t *npull)
 {
-	struct ctdb_script *script;
+	struct ctdb_script *val;
+	size_t np;
 	int ret;
 
-	script = talloc(mem_ctx, struct ctdb_script);
-	if (script == NULL) {
+	val = talloc(mem_ctx, struct ctdb_script);
+	if (val == NULL) {
 		return ENOMEM;
 	}
 
-	ret = ctdb_script_pull_elems(buf, buflen, script, script);
+	ret = ctdb_script_pull_elems(buf, buflen, val, val, &np);
 	if (ret != 0) {
-		TALLOC_FREE(script);
+		TALLOC_FREE(val);
+		return ret;
 	}
 
-	*out = script;
+	*out = val;
+	*npull = np;
 	return ret;
 }
 
@@ -3757,7 +3822,7 @@ void ctdb_script_list_push(struct ctdb_script_list *script_list, uint8_t *buf)
 {
 	struct ctdb_script_list_wire *wire =
 		(struct ctdb_script_list_wire *)buf;
-	size_t offset;
+	size_t offset, np;
 	int i;
 
 	if (script_list == NULL) {
@@ -3768,8 +3833,8 @@ void ctdb_script_list_push(struct ctdb_script_list *script_list, uint8_t *buf)
 
 	offset = offsetof(struct ctdb_script_list_wire, script);
 	for (i=0; i<script_list->num_scripts; i++) {
-		ctdb_script_push(&script_list->script[i], &buf[offset]);
-		offset += ctdb_script_len(&script_list->script[i]);
+		ctdb_script_push(&script_list->script[i], &buf[offset], &np);
+		offset += np;
 	}
 }
 
@@ -3779,7 +3844,7 @@ int ctdb_script_list_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 	struct ctdb_script_list *script_list;
 	struct ctdb_script_list_wire *wire =
 		(struct ctdb_script_list_wire *)buf;
-	size_t offset;
+	size_t offset, np;
 	int i;
 	bool ret;
 
@@ -3821,12 +3886,12 @@ int ctdb_script_list_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 	for (i=0; i<wire->num_scripts; i++) {
 		ret = ctdb_script_pull_elems(&buf[offset], buflen-offset,
 					     script_list->script,
-					     &script_list->script[i]);
+					     &script_list->script[i], &np);
 		if (ret != 0) {
 			talloc_free(script_list);
 			return ret;
 		}
-		offset += ctdb_script_len(&script_list->script[i]);
+		offset += np;
 	}
 
 	*out = script_list;

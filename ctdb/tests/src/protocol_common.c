@@ -1053,12 +1053,20 @@ void verify_ctdb_node_map(struct ctdb_node_map *p1, struct ctdb_node_map *p2)
 
 void fill_ctdb_script(TALLOC_CTX *mem_ctx, struct ctdb_script *p)
 {
-	fill_buffer(p, sizeof(struct ctdb_script));
+	fill_string(p->name, MAX_SCRIPT_NAME+1);
+	fill_ctdb_timeval(&p->start);
+	fill_ctdb_timeval(&p->finished);
+	p->status = rand32i();
+	fill_string(p->output, MAX_SCRIPT_OUTPUT+1);
 }
 
 void verify_ctdb_script(struct ctdb_script *p1, struct ctdb_script *p2)
 {
-	verify_buffer(p1, p2, sizeof(struct ctdb_script));
+	verify_string(p1->name, p2->name);
+	verify_ctdb_timeval(&p1->start, &p2->start);
+	verify_ctdb_timeval(&p1->finished, &p2->finished);
+	assert(p1->status == p2->status);
+	verify_string(p1->output, p2->output);
 }
 
 void fill_ctdb_script_list(TALLOC_CTX *mem_ctx, struct ctdb_script_list *p)

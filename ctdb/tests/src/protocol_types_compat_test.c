@@ -1431,6 +1431,50 @@ static int ctdb_node_map_pull_old(uint8_t *buf, size_t buflen,
 	return 0;
 }
 
+static size_t ctdb_script_len_old(struct ctdb_script *in)
+{
+	return sizeof(struct ctdb_script);
+}
+
+static void ctdb_script_push_old(struct ctdb_script *in, uint8_t *buf)
+{
+	memcpy(buf, in, sizeof(struct ctdb_script));
+}
+
+static int ctdb_script_pull_elems_old(uint8_t *buf, size_t buflen,
+				      TALLOC_CTX *mem_ctx,
+				      struct ctdb_script *out)
+{
+	if (buflen < sizeof(struct ctdb_script)) {
+		return EMSGSIZE;
+	}
+
+	memcpy(out, buf, sizeof(struct ctdb_script));
+
+	return 0;
+}
+
+static int ctdb_script_pull_old(uint8_t *buf, size_t buflen,
+				TALLOC_CTX *mem_ctx, struct ctdb_script **out)
+{
+	struct ctdb_script *val;
+	int ret;
+
+	val = talloc(mem_ctx, struct ctdb_script);
+	if (val == NULL) {
+		return ENOMEM;
+	}
+
+	ret = ctdb_script_pull_elems_old(buf, buflen, val, val);
+	if (ret != 0) {
+		TALLOC_FREE(val);
+		return ret;
+	}
+
+	*out = val;
+	return ret;
+}
+
 
 COMPAT_TYPE3_TEST(struct ctdb_statistics, ctdb_statistics);
 COMPAT_TYPE3_TEST(struct ctdb_vnn_map, ctdb_vnn_map);
@@ -1460,6 +1504,7 @@ COMPAT_TYPE3_TEST(struct ctdb_public_ip, ctdb_public_ip);
 COMPAT_TYPE3_TEST(struct ctdb_public_ip_list, ctdb_public_ip_list);
 COMPAT_TYPE3_TEST(struct ctdb_node_and_flags, ctdb_node_and_flags);
 COMPAT_TYPE3_TEST(struct ctdb_node_map, ctdb_node_map);
+COMPAT_TYPE3_TEST(struct ctdb_script, ctdb_script);
 
 int main(int argc, char *argv[])
 {
@@ -1494,6 +1539,7 @@ int main(int argc, char *argv[])
 	COMPAT_TEST_FUNC(ctdb_public_ip_list)();
 	COMPAT_TEST_FUNC(ctdb_node_and_flags)();
 	COMPAT_TEST_FUNC(ctdb_node_map)();
+	COMPAT_TEST_FUNC(ctdb_script)();
 
 	return 0;
 }
