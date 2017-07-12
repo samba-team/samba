@@ -1863,10 +1863,10 @@ sam_logon:
 			goto cached_logon;
 		}
 
-			if (domain->online) {
-				/* We're still online - fail. */
-				goto done;
-			}
+		if (domain->online) {
+			/* We're still online - fail. */
+			goto done;
+		}
 	}
 
 cached_logon:
