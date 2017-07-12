@@ -248,7 +248,7 @@ class DrsBaseTestCase(SambaToolCmdTest):
 
             next_object = ctr6.first_object
             for i in range(0, ctr6.object_count):
-                print("Obj %d: %s %s" %(i, next_object.object.identifier.dn[:22],
+                print("Obj %d: %s %s" %(i, next_object.object.identifier.dn[:25],
                                         next_object.object.identifier.guid))
                 next_object = next_object.next_object
 
@@ -256,7 +256,7 @@ class DrsBaseTestCase(SambaToolCmdTest):
             ctr6_links = self._get_ctr6_links(ctr6)
             for link in ctr6_links:
                 print("Link Tgt %s... <-- Src %s"
-                      %(link.targetDN[:22], link.identifier))
+                      %(link.targetDN[:25], link.identifier))
 
             print("HWM:     %d" %(ctr6.new_highwatermark.highest_usn))
             print("Tmp HWM: %d" %(ctr6.new_highwatermark.tmp_highest_usn))

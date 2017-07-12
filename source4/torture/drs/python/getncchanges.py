@@ -90,6 +90,25 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
         m[attr] = ldb.MessageElement(value, ldb.FLAG_MOD_ADD, attr)
         self.test_ldb_dc.modify(m)
 
+    def delete_attribute(self, dn, attr, value):
+        """Deletes an attribute from an object"""
+        m = ldb.Message()
+        m.dn = ldb.Dn(self.ldb_dc2, dn)
+        m[attr] = ldb.MessageElement(value, ldb.FLAG_MOD_DELETE, attr)
+        self.ldb_dc2.modify(m)
+
+    def start_new_repl_cycle(self):
+        """Resets enough state info to start a new replication cycle"""
+        # reset rxd_links, but leave rxd_guids and rxd_dn_list alone so we know
+        # whether a parent/target is unknown and needs GET_ANC/GET_TGT to resolve
+        self.rxd_links = []
+
+        self.used_get_tgt = False
+        self.used_get_anc = False
+        # mostly preserve self.last_ctr, so that we use the last HWM
+        if self.last_ctr is not None:
+            self.last_ctr.more_data = True
+
     def create_object_range(self, start, end, prefix="",
                             children=None, parent_list=None):
         """
@@ -402,14 +421,16 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
         # Check we get all the objects we're expecting
         self.assert_expected_data(expected_dn_list)
 
-    def assert_expected_links(self, objects_with_links, link_attr="managedBy"):
+    def assert_expected_links(self, objects_with_links, link_attr="managedBy",
+                              num_expected=None):
         """
         Asserts that a GetNCChanges response contains any expected links
         for the objects it contains.
         """
         received_links = self.rxd_links
 
-        num_expected = len(objects_with_links)
+        if num_expected is None:
+            num_expected = len(objects_with_links)
 
         self.assertTrue(len(received_links) == num_expected,
                         "Received %d links but expected %d"
@@ -639,4 +660,117 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
 
         # Check we received links for all the parents
         self.assert_expected_links(parent_dn_list)
+
+    def test_repl_get_tgt_and_anc(self):
+        """
+        Check we can resolve an unknown ancestor when fetching the link target,
+        i.e. tests using GET_TGT and GET_ANC in combination
+        """
+
+        # Create some parent/child objects (the child will be the link target)
+        parents = []
+        all_objects = self.create_object_range(0, 100, prefix="parent",
+                                               children=["la_tgt"],
+                                               parent_list=parents)
+
+        children = [item for item in all_objects if item not in parents]
+
+        # create the link source objects and link them to the child/target
+        la_sources = self.create_object_range(0, 100, prefix="la_src")
+        all_objects += la_sources
+
+        for i in range(0, 100):
+            self.modify_object(la_sources[i], "managedBy", children[i])
+
+        expected_links = la_sources
+
+        # modify the children/targets so they come after the link source
+        for x in range(0, 100):
+            self.modify_object(children[x], "displayName", "OU%d" % x)
+
+        # modify the parents, so they now come last in the replication
+        for x in range(0, 100):
+            self.modify_object(parents[x], "displayName", "OU%d" % x)
+
+        # We've now got objects in the following order:
+        # [100 la_source][100 la_target][100 parents (of la_target)]
+
+        links_expected = True
+
+        # Get all the replication data - this code should resend the requests
+        # with GET_TGT and GET_ANC
+        while not self.replication_complete():
+
+            # get the next block of replication data (this sets GET_TGT/GET_ANC)
+            self.repl_get_next(assert_links=links_expected)
+            links_expected = len(self.rxd_links) < len(expected_links)
+
+        # The way the test objects have been created should force
+        # self.repl_get_next() to use the GET_TGT/GET_ANC flags. If this
+        # doesn't actually happen, then the test isn't doing its job properly
+        self.assertTrue(self.used_get_tgt,
+                        "Test didn't use the GET_TGT flag as expected")
+        self.assertTrue(self.used_get_anc,
+                        "Test didn't use the GET_ANC flag as expected")
+
+        # Check we get all the objects we're expecting
+        self.assert_expected_data(all_objects)
+
+        # Check we received links for all the link sources
+        self.assert_expected_links(expected_links)
+
+        # Second part of test. Add some extra objects and kick off another
+        # replication. The test code will use the HWM from the last replication
+        # so we'll only receive the objects we modify below
+        self.start_new_repl_cycle()
+
+        # add an extra level of grandchildren that hang off a child
+        # that got created last time
+        new_parent = "OU=test_new_parent,%s" % children[0]
+        self.add_object(new_parent)
+        new_children = []
+
+        for x in range(0, 50):
+            dn = "OU=test_new_la_tgt%d,%s" % (x, new_parent)
+            self.add_object(dn)
+            new_children.append(dn)
+
+        # replace half of the links to point to the new children
+        for x in range(0, 50):
+            self.delete_attribute(la_sources[x], "managedBy", children[x])
+            self.modify_object(la_sources[x], "managedBy", new_children[x])
+
+        # add some filler objects to fill up the 1st chunk
+        filler = self.create_object_range(0, 100, prefix="filler")
+
+        # modify the new children/targets so they come after the link source
+        for x in range(0, 50):
+            self.modify_object(new_children[x], "displayName", "OU-%d" % x)
+
+        # modify the parent, so it now comes last in the replication
+        self.modify_object(new_parent, "displayName", "OU%d" % x)
+
+        # We should now get the modified objects in the following order:
+        # [50 links (x 2)][100 filler][50 new children][new parent]
+        # Note that the link sources aren't actually sent (their new linked
+        # attributes are sent, but apart from that, nothing has changed)
+        all_objects = filler + new_children + [new_parent]
+        expected_links = la_sources[:50]
+
+        links_expected = True
+
+        while not self.replication_complete():
+            self.repl_get_next(assert_links=links_expected)
+            links_expected = len(self.rxd_links) < len(expected_links)
+
+        self.assertTrue(self.used_get_tgt,
+                        "Test didn't use the GET_TGT flag as expected")
+        self.assertTrue(self.used_get_anc,
+                        "Test didn't use the GET_ANC flag as expected")
+
+        # Check we get all the objects we're expecting
+        self.assert_expected_data(all_objects)
+
+        # Check we received links (50 deleted links and 50 new)
+        self.assert_expected_links(expected_links, num_expected=100)
 
