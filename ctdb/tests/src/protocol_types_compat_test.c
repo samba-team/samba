@@ -1668,6 +1668,50 @@ static int ctdb_notify_data_pull_old(uint8_t *buf, size_t buflen,
 	return 0;
 }
 
+static size_t ctdb_iface_len_old(struct ctdb_iface *in)
+{
+	return sizeof(struct ctdb_iface);
+}
+
+static void ctdb_iface_push_old(struct ctdb_iface *in, uint8_t *buf)
+{
+	memcpy(buf, in, sizeof(struct ctdb_iface));
+}
+
+static int ctdb_iface_pull_elems_old(uint8_t *buf, size_t buflen,
+				     TALLOC_CTX *mem_ctx,
+				     struct ctdb_iface *out)
+{
+	if (buflen < sizeof(struct ctdb_iface)) {
+		return EMSGSIZE;
+	}
+
+	memcpy(out, buf, sizeof(struct ctdb_iface));
+
+	return 0;
+}
+
+static int ctdb_iface_pull_old(uint8_t *buf, size_t buflen,
+			       TALLOC_CTX *mem_ctx, struct ctdb_iface **out)
+{
+	struct ctdb_iface *val;
+	int ret;
+
+	val = talloc(mem_ctx, struct ctdb_iface);
+	if (val == NULL) {
+		return ENOMEM;
+	}
+
+	ret = ctdb_iface_pull_elems_old(buf, buflen, val, val);
+	if (ret != 0) {
+		TALLOC_FREE(val);
+		return ret;
+	}
+
+	*out = val;
+	return ret;
+}
+
 
 COMPAT_TYPE3_TEST(struct ctdb_statistics, ctdb_statistics);
 COMPAT_TYPE3_TEST(struct ctdb_vnn_map, ctdb_vnn_map);
@@ -1701,6 +1745,7 @@ COMPAT_TYPE3_TEST(struct ctdb_script, ctdb_script);
 COMPAT_TYPE3_TEST(struct ctdb_script_list, ctdb_script_list);
 COMPAT_TYPE3_TEST(struct ctdb_ban_state, ctdb_ban_state);
 COMPAT_TYPE3_TEST(struct ctdb_notify_data, ctdb_notify_data);
+COMPAT_TYPE3_TEST(struct ctdb_iface, ctdb_iface);
 
 int main(int argc, char *argv[])
 {
@@ -1739,6 +1784,7 @@ int main(int argc, char *argv[])
 	COMPAT_TEST_FUNC(ctdb_script_list)();
 	COMPAT_TEST_FUNC(ctdb_ban_state)();
 	COMPAT_TEST_FUNC(ctdb_notify_data)();
+	COMPAT_TEST_FUNC(ctdb_iface)();
 
 	return 0;
 }

@@ -1125,12 +1125,16 @@ void verify_ctdb_notify_data(struct ctdb_notify_data *p1,
 
 void fill_ctdb_iface(TALLOC_CTX *mem_ctx, struct ctdb_iface *p)
 {
-	fill_buffer(p, sizeof(struct ctdb_iface));
+	fill_string(p->name, CTDB_IFACE_SIZE+2);
+	p->link_state = rand16();
+	p->references = rand32();
 }
 
 void verify_ctdb_iface(struct ctdb_iface *p1, struct ctdb_iface *p2)
 {
-	verify_buffer(p1, p2, sizeof(struct ctdb_iface));
+	verify_string(p1->name, p2->name);
+	assert(p1->link_state == p2->link_state);
+	assert(p1->references == p2->references);
 }
 
 void fill_ctdb_iface_list(TALLOC_CTX *mem_ctx, struct ctdb_iface_list *p)

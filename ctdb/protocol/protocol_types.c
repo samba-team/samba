@@ -4007,46 +4007,81 @@ fail:
 	return ret;
 }
 
-size_t ctdb_iface_len(struct ctdb_iface *iface)
+size_t ctdb_iface_len(struct ctdb_iface *in)
 {
-	return sizeof(struct ctdb_iface);
+	return ctdb_chararray_len(in->name, CTDB_IFACE_SIZE+2) +
+		ctdb_uint16_len(&in->link_state) +
+		ctdb_uint32_len(&in->references);
 }
 
-void ctdb_iface_push(struct ctdb_iface *iface, uint8_t *buf)
+void ctdb_iface_push(struct ctdb_iface *in, uint8_t *buf, size_t *npush)
 {
-	memcpy(buf, iface, sizeof(struct ctdb_iface));
+	size_t offset = 0, np;
+
+	ctdb_chararray_push(in->name, CTDB_IFACE_SIZE+2, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint16_push(&in->link_state, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->references, buf+offset, &np);
+	offset += np;
+
+	*npush = offset;
 }
 
 static int ctdb_iface_pull_elems(uint8_t *buf, size_t buflen,
 				 TALLOC_CTX *mem_ctx,
-				 struct ctdb_iface *out)
+				 struct ctdb_iface *out, size_t *npull)
 {
-	if (buflen < sizeof(struct ctdb_iface)) {
-		return EMSGSIZE;
+	size_t offset = 0, np;
+	int ret;
+
+	ret = ctdb_chararray_pull(buf+offset, buflen-offset,
+				  out->name, CTDB_IFACE_SIZE+2, &np);
+	if (ret != 0) {
+		return ret;
 	}
+	offset += np;
 
-	memcpy(out, buf, sizeof(struct ctdb_iface));
+	ret = ctdb_uint16_pull(buf+offset, buflen-offset, &out->link_state,
+			       &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
 
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &out->references,
+			       &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	*npull = offset;
 	return 0;
 }
 
 int ctdb_iface_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-		    struct ctdb_iface **out)
+		    struct ctdb_iface **out, size_t *npull)
 {
-	struct ctdb_iface *iface;
+	struct ctdb_iface *val;
+	size_t np;
 	int ret;
 
-	iface = talloc(mem_ctx, struct ctdb_iface);
-	if (iface == NULL) {
+	val = talloc(mem_ctx, struct ctdb_iface);
+	if (val == NULL) {
 		return ENOMEM;
 	}
 
-	ret = ctdb_iface_pull_elems(buf, buflen, iface, iface);
+	ret = ctdb_iface_pull_elems(buf, buflen, val, val, &np);
 	if (ret != 0) {
-		TALLOC_FREE(iface);
+		talloc_free(val);
+		return ret;
 	}
 
-	*out = iface;
+	*out = val;
+	*npull = np;
 	return ret;
 }
 

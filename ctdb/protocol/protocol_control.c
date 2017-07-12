@@ -633,7 +633,7 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_SET_IFACE_LINK_STATE:
-		ctdb_iface_push(cd->data.iface, buf);
+		ctdb_iface_push(cd->data.iface, buf, &np);
 		break;
 
 	case CTDB_CONTROL_TCP_ADD_DELAYED_UPDATE:
@@ -950,7 +950,7 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_CONTROL_SET_IFACE_LINK_STATE:
 		ret = ctdb_iface_pull(buf, buflen, mem_ctx,
-				      &cd->data.iface);
+				      &cd->data.iface, &np);
 		break;
 
 	case CTDB_CONTROL_TCP_ADD_DELAYED_UPDATE:

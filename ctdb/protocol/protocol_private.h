@@ -277,10 +277,10 @@ void ctdb_notify_data_push(struct ctdb_notify_data *in, uint8_t *buf,
 int ctdb_notify_data_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 			  struct ctdb_notify_data **out, size_t *npull);
 
-size_t ctdb_iface_len(struct ctdb_iface *iface);
-void ctdb_iface_push(struct ctdb_iface *iface, uint8_t *buf);
+size_t ctdb_iface_len(struct ctdb_iface *in);
+void ctdb_iface_push(struct ctdb_iface *in, uint8_t *buf, size_t *npush);
 int ctdb_iface_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-		    struct ctdb_iface **out);
+		    struct ctdb_iface **out, size_t *npull);
 
 size_t ctdb_iface_list_len(struct ctdb_iface_list *iface_list);
 void ctdb_iface_list_push(struct ctdb_iface_list *iface_list, uint8_t *buf);
