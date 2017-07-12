@@ -2602,12 +2602,12 @@ NTSTATUS wb_cache_lookup_useraliases(struct winbindd_domain *domain,
 	return status;
 }
 
-NTSTATUS wcache_lookup_groupmem(struct winbindd_domain *domain,
-				TALLOC_CTX *mem_ctx,
-				const struct dom_sid *group_sid,
-				uint32_t *num_names,
-				struct dom_sid **sid_mem, char ***names,
-				uint32_t **name_types)
+static NTSTATUS wcache_lookup_groupmem(struct winbindd_domain *domain,
+				       TALLOC_CTX *mem_ctx,
+				       const struct dom_sid *group_sid,
+				       uint32_t *num_names,
+				       struct dom_sid **sid_mem, char ***names,
+				       uint32_t **name_types)
 {
 	struct winbind_cache *cache = get_cache(domain);
 	struct cache_entry *centry = NULL;
