@@ -1772,6 +1772,85 @@ static int ctdb_iface_list_pull_old(uint8_t *buf, size_t buflen,
 	return 0;
 }
 
+struct ctdb_public_ip_info_wire {
+	struct ctdb_public_ip ip;
+	uint32_t active_idx;
+	uint32_t num;
+	struct ctdb_iface ifaces[1];
+};
+
+static size_t ctdb_public_ip_info_len_old(struct ctdb_public_ip_info *in)
+{
+	return offsetof(struct ctdb_public_ip_info_wire, num) +
+	       ctdb_iface_list_len_old(in->ifaces);
+}
+
+static void ctdb_public_ip_info_push_old(struct ctdb_public_ip_info *in,
+					 uint8_t *buf)
+{
+	struct ctdb_public_ip_info_wire *wire =
+		(struct ctdb_public_ip_info_wire *)buf;
+	size_t offset;
+
+	offset = offsetof(struct ctdb_public_ip_info_wire, num);
+	memcpy(wire, in, offset);
+	wire->num = in->ifaces->num;
+	memcpy(wire->ifaces, in->ifaces->iface,
+	       in->ifaces->num * sizeof(struct ctdb_iface));
+}
+
+static int ctdb_public_ip_info_pull_old(uint8_t *buf, size_t buflen,
+					TALLOC_CTX *mem_ctx,
+					struct ctdb_public_ip_info **out)
+{
+	struct ctdb_public_ip_info *val;
+	struct ctdb_public_ip_info_wire *wire =
+		(struct ctdb_public_ip_info_wire *)buf;
+
+	if (buflen < offsetof(struct ctdb_public_ip_info_wire, ifaces)) {
+		return EMSGSIZE;
+	}
+	if (wire->num > buflen / sizeof(struct ctdb_iface)) {
+		return EMSGSIZE;
+	}
+	if (offsetof(struct ctdb_public_ip_info_wire, ifaces) +
+	    wire->num * sizeof(struct ctdb_iface) <
+	    offsetof(struct ctdb_public_ip_info_wire, ifaces)) {
+		return EMSGSIZE;
+	}
+	if (buflen < offsetof(struct ctdb_public_ip_info_wire, ifaces) +
+		     wire->num * sizeof(struct ctdb_iface)) {
+		return EMSGSIZE;
+	}
+
+	val = talloc(mem_ctx, struct ctdb_public_ip_info);
+	if (val == NULL) {
+		return ENOMEM;
+	}
+
+	memcpy(val, wire, offsetof(struct ctdb_public_ip_info_wire, num));
+
+	val->ifaces = talloc(val, struct ctdb_iface_list);
+	if (val->ifaces == NULL) {
+		talloc_free(val);
+		return ENOMEM;
+	}
+
+	val->ifaces->num = wire->num;
+	val->ifaces->iface = talloc_array(val->ifaces, struct ctdb_iface,
+					  wire->num);
+	if (val->ifaces->iface == NULL) {
+		talloc_free(val);
+		return ENOMEM;
+	}
+
+	memcpy(val->ifaces->iface, wire->ifaces,
+	       wire->num * sizeof(struct ctdb_iface));
+
+	*out = val;
+	return 0;
+}
+
 
 COMPAT_TYPE3_TEST(struct ctdb_statistics, ctdb_statistics);
 COMPAT_TYPE3_TEST(struct ctdb_vnn_map, ctdb_vnn_map);
@@ -1807,6 +1886,7 @@ COMPAT_TYPE3_TEST(struct ctdb_ban_state, ctdb_ban_state);
 COMPAT_TYPE3_TEST(struct ctdb_notify_data, ctdb_notify_data);
 COMPAT_TYPE3_TEST(struct ctdb_iface, ctdb_iface);
 COMPAT_TYPE3_TEST(struct ctdb_iface_list, ctdb_iface_list);
+COMPAT_TYPE3_TEST(struct ctdb_public_ip_info, ctdb_public_ip_info);
 
 int main(int argc, char *argv[])
 {
@@ -1847,6 +1927,7 @@ int main(int argc, char *argv[])
 	COMPAT_TEST_FUNC(ctdb_notify_data)();
 	COMPAT_TEST_FUNC(ctdb_iface)();
 	COMPAT_TEST_FUNC(ctdb_iface_list)();
+	COMPAT_TEST_FUNC(ctdb_public_ip_info)();
 
 	return 0;
 }

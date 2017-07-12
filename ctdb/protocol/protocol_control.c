@@ -1527,7 +1527,7 @@ static void ctdb_reply_control_data_push(struct ctdb_reply_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_GET_PUBLIC_IP_INFO:
-		ctdb_public_ip_info_push(cd->data.ipinfo, buf);
+		ctdb_public_ip_info_push(cd->data.ipinfo, buf, &np);
 		break;
 
 	case CTDB_CONTROL_GET_IFACES:
@@ -1709,7 +1709,7 @@ static int ctdb_reply_control_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_CONTROL_GET_PUBLIC_IP_INFO:
 		ret = ctdb_public_ip_info_pull(buf, buflen, mem_ctx,
-					       &cd->data.ipinfo);
+					       &cd->data.ipinfo, &np);
 		break;
 
 	case CTDB_CONTROL_GET_IFACES:

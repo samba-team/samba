@@ -288,10 +288,11 @@ void ctdb_iface_list_push(struct ctdb_iface_list *in, uint8_t *buf,
 int ctdb_iface_list_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 			 struct ctdb_iface_list **out, size_t *npull);
 
-size_t ctdb_public_ip_info_len(struct ctdb_public_ip_info *ipinfo);
-void ctdb_public_ip_info_push(struct ctdb_public_ip_info *ipinfo, uint8_t *buf);
+size_t ctdb_public_ip_info_len(struct ctdb_public_ip_info *in);
+void ctdb_public_ip_info_push(struct ctdb_public_ip_info *in, uint8_t *buf,
+			      size_t *npush);
 int ctdb_public_ip_info_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			     struct ctdb_public_ip_info **out);
+			     struct ctdb_public_ip_info **out, size_t *npull);
 
 size_t ctdb_key_data_len(struct ctdb_key_data *key);
 void ctdb_key_data_push(struct ctdb_key_data *key, uint8_t *buf);
