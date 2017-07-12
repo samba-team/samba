@@ -265,10 +265,11 @@ void ctdb_script_list_push(struct ctdb_script_list *in, uint8_t *buf,
 int ctdb_script_list_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 			  struct ctdb_script_list **out, size_t *npull);
 
-size_t ctdb_ban_state_len(struct ctdb_ban_state *ban_state);
-void ctdb_ban_state_push(struct ctdb_ban_state *ban_state, uint8_t *buf);
+size_t ctdb_ban_state_len(struct ctdb_ban_state *in);
+void ctdb_ban_state_push(struct ctdb_ban_state *in, uint8_t *buf,
+			 size_t *npush);
 int ctdb_ban_state_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			struct ctdb_ban_state **out);
+			struct ctdb_ban_state **out, size_t *npull);
 
 size_t ctdb_notify_data_len(struct ctdb_notify_data *notify);
 void ctdb_notify_data_push(struct ctdb_notify_data *notify, uint8_t *buf);

@@ -3900,32 +3900,57 @@ fail:
 	return ret;
 }
 
-size_t ctdb_ban_state_len(struct ctdb_ban_state *ban_state)
+size_t ctdb_ban_state_len(struct ctdb_ban_state *in)
 {
-	return sizeof(struct ctdb_ban_state);
+	return ctdb_uint32_len(&in->pnn) +
+		ctdb_uint32_len(&in->time);
 }
 
-void ctdb_ban_state_push(struct ctdb_ban_state *ban_state, uint8_t *buf)
+void ctdb_ban_state_push(struct ctdb_ban_state *in, uint8_t *buf,
+			 size_t *npush)
 {
-	memcpy(buf, ban_state, sizeof(struct ctdb_ban_state));
+	size_t offset = 0, np;
+
+	ctdb_uint32_push(&in->pnn, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->time, buf+offset, &np);
+	offset += np;
+
+	*npush = offset;
 }
 
 int ctdb_ban_state_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			struct ctdb_ban_state **out)
+			struct ctdb_ban_state **out, size_t *npull)
 {
-	struct ctdb_ban_state *ban_state;
+	struct ctdb_ban_state *val;
+	size_t offset = 0, np;
+	int ret;
 
-	if (buflen < sizeof(struct ctdb_ban_state)) {
-		return EMSGSIZE;
-	}
-
-	ban_state = talloc_memdup(mem_ctx, buf, sizeof(struct ctdb_ban_state));
-	if (ban_state == NULL) {
+	val = talloc(mem_ctx, struct ctdb_ban_state);
+	if (val == NULL) {
 		return ENOMEM;
 	}
 
-	*out = ban_state;
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &val->pnn, &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &val->time, &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
+
+	*out = val;
+	*npull = offset;
 	return 0;
+
+fail:
+	talloc_free(val);
+	return ret;
 }
 
 struct ctdb_notify_data_wire {

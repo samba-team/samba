@@ -1577,6 +1577,35 @@ static int ctdb_script_list_pull_old(uint8_t *buf, size_t buflen,
 	return 0;
 }
 
+static size_t ctdb_ban_state_len_old(struct ctdb_ban_state *in)
+{
+	return sizeof(struct ctdb_ban_state);
+}
+
+static void ctdb_ban_state_push_old(struct ctdb_ban_state *in, uint8_t *buf)
+{
+	memcpy(buf, in, sizeof(struct ctdb_ban_state));
+}
+
+static int ctdb_ban_state_pull_old(uint8_t *buf, size_t buflen,
+				   TALLOC_CTX *mem_ctx,
+				   struct ctdb_ban_state **out)
+{
+	struct ctdb_ban_state *val;
+
+	if (buflen < sizeof(struct ctdb_ban_state)) {
+		return EMSGSIZE;
+	}
+
+	val = talloc_memdup(mem_ctx, buf, sizeof(struct ctdb_ban_state));
+	if (val == NULL) {
+		return ENOMEM;
+	}
+
+	*out = val;
+	return 0;
+}
+
 
 COMPAT_TYPE3_TEST(struct ctdb_statistics, ctdb_statistics);
 COMPAT_TYPE3_TEST(struct ctdb_vnn_map, ctdb_vnn_map);
@@ -1608,6 +1637,7 @@ COMPAT_TYPE3_TEST(struct ctdb_node_and_flags, ctdb_node_and_flags);
 COMPAT_TYPE3_TEST(struct ctdb_node_map, ctdb_node_map);
 COMPAT_TYPE3_TEST(struct ctdb_script, ctdb_script);
 COMPAT_TYPE3_TEST(struct ctdb_script_list, ctdb_script_list);
+COMPAT_TYPE3_TEST(struct ctdb_ban_state, ctdb_ban_state);
 
 int main(int argc, char *argv[])
 {
@@ -1644,6 +1674,7 @@ int main(int argc, char *argv[])
 	COMPAT_TEST_FUNC(ctdb_node_map)();
 	COMPAT_TEST_FUNC(ctdb_script)();
 	COMPAT_TEST_FUNC(ctdb_script_list)();
+	COMPAT_TEST_FUNC(ctdb_ban_state)();
 
 	return 0;
 }

@@ -595,7 +595,7 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_SET_BAN_STATE:
-		ctdb_ban_state_push(cd->data.ban_state, buf);
+		ctdb_ban_state_push(cd->data.ban_state, buf, &np);
 		break;
 
 	case CTDB_CONTROL_REGISTER_NOTIFY:
@@ -906,7 +906,7 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_CONTROL_SET_BAN_STATE:
 		ret = ctdb_ban_state_pull(buf, buflen, mem_ctx,
-					  &cd->data.ban_state);
+					  &cd->data.ban_state, &np);
 		break;
 
 	case CTDB_CONTROL_REGISTER_NOTIFY:
@@ -1512,7 +1512,7 @@ static void ctdb_reply_control_data_push(struct ctdb_reply_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_GET_BAN_STATE:
-		ctdb_ban_state_push(cd->data.ban_state, buf);
+		ctdb_ban_state_push(cd->data.ban_state, buf, &np);
 		break;
 
 	case CTDB_CONTROL_GET_DB_PRIORITY:
@@ -1692,7 +1692,7 @@ static int ctdb_reply_control_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_CONTROL_GET_BAN_STATE:
 		ret = ctdb_ban_state_pull(buf, buflen, mem_ctx,
-					  &cd->data.ban_state);
+					  &cd->data.ban_state, &np);
 		break;
 
 	case CTDB_CONTROL_GET_DB_PRIORITY:
