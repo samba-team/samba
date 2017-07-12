@@ -2472,10 +2472,12 @@ static char *wcache_make_sidlist(TALLOC_CTX *mem_ctx, uint32_t num_sids,
 	return sidlist;
 }
 
-NTSTATUS wcache_lookup_useraliases(struct winbindd_domain *domain,
-				   TALLOC_CTX *mem_ctx, uint32_t num_sids,
-				   const struct dom_sid *sids,
-				   uint32_t *pnum_aliases, uint32_t **paliases)
+static NTSTATUS wcache_lookup_useraliases(struct winbindd_domain *domain,
+					  TALLOC_CTX *mem_ctx,
+					  uint32_t num_sids,
+					  const struct dom_sid *sids,
+					  uint32_t *pnum_aliases,
+					  uint32_t **paliases)
 {
 	struct winbind_cache *cache = get_cache(domain);
 	struct cache_entry *centry = NULL;
