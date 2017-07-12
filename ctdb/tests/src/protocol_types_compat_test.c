@@ -1475,6 +1475,108 @@ static int ctdb_script_pull_old(uint8_t *buf, size_t buflen,
 	return ret;
 }
 
+struct ctdb_script_list_wire {
+	uint32_t num_scripts;
+	struct ctdb_script script[1];
+};
+
+static size_t ctdb_script_list_len_old(struct ctdb_script_list *in)
+{
+	int i;
+	size_t len;
+
+	if (in == NULL) {
+		return 0;
+	}
+
+	len = offsetof(struct ctdb_script_list_wire, script);
+	for (i=0; i<in->num_scripts; i++) {
+		len += ctdb_script_len_old(&in->script[i]);
+	}
+	return len;
+}
+
+static void ctdb_script_list_push_old(struct ctdb_script_list *in,
+				      uint8_t *buf)
+{
+	struct ctdb_script_list_wire *wire =
+		(struct ctdb_script_list_wire *)buf;
+	size_t offset;
+	int i;
+
+	if (in == NULL) {
+		return;
+	}
+
+	wire->num_scripts = in->num_scripts;
+
+	offset = offsetof(struct ctdb_script_list_wire, script);
+	for (i=0; i<in->num_scripts; i++) {
+		ctdb_script_push_old(&in->script[i], &buf[offset]);
+		offset += ctdb_script_len_old(&in->script[i]);
+	}
+}
+
+static int ctdb_script_list_pull_old(uint8_t *buf, size_t buflen,
+				     TALLOC_CTX *mem_ctx,
+				     struct ctdb_script_list **out)
+{
+	struct ctdb_script_list *val;
+	struct ctdb_script_list_wire *wire =
+		(struct ctdb_script_list_wire *)buf;
+	size_t offset;
+	int i;
+	bool ret;
+
+	/* If event scripts have never been run, the result will be NULL */
+	if (buflen == 0) {
+		*out = NULL;
+		return 0;
+	}
+
+	offset = offsetof(struct ctdb_script_list_wire, script);
+
+	if (buflen < offset) {
+		return EMSGSIZE;
+	}
+	if (wire->num_scripts > buflen / sizeof(struct ctdb_script)) {
+		return EMSGSIZE;
+	}
+	if (offset + wire->num_scripts * sizeof(struct ctdb_script) < offset) {
+		return EMSGSIZE;
+	}
+	if (buflen < offset + wire->num_scripts * sizeof(struct ctdb_script)) {
+		return EMSGSIZE;
+	}
+
+	val = talloc(mem_ctx, struct ctdb_script_list);
+	if (val == NULL) {
+		return ENOMEM;
+
+	}
+
+	val->num_scripts = wire->num_scripts;
+	val->script = talloc_array(val, struct ctdb_script, wire->num_scripts);
+	if (val->script == NULL) {
+		talloc_free(val);
+		return ENOMEM;
+	}
+
+	for (i=0; i<wire->num_scripts; i++) {
+		ret = ctdb_script_pull_elems_old(&buf[offset], buflen-offset,
+						 val->script,
+						 &val->script[i]);
+		if (ret != 0) {
+			talloc_free(val);
+			return ret;
+		}
+		offset += ctdb_script_len_old(&val->script[i]);
+	}
+
+	*out = val;
+	return 0;
+}
+
 
 COMPAT_TYPE3_TEST(struct ctdb_statistics, ctdb_statistics);
 COMPAT_TYPE3_TEST(struct ctdb_vnn_map, ctdb_vnn_map);
@@ -1505,6 +1607,7 @@ COMPAT_TYPE3_TEST(struct ctdb_public_ip_list, ctdb_public_ip_list);
 COMPAT_TYPE3_TEST(struct ctdb_node_and_flags, ctdb_node_and_flags);
 COMPAT_TYPE3_TEST(struct ctdb_node_map, ctdb_node_map);
 COMPAT_TYPE3_TEST(struct ctdb_script, ctdb_script);
+COMPAT_TYPE3_TEST(struct ctdb_script_list, ctdb_script_list);
 
 int main(int argc, char *argv[])
 {
@@ -1540,6 +1643,7 @@ int main(int argc, char *argv[])
 	COMPAT_TEST_FUNC(ctdb_node_and_flags)();
 	COMPAT_TEST_FUNC(ctdb_node_map)();
 	COMPAT_TEST_FUNC(ctdb_script)();
+	COMPAT_TEST_FUNC(ctdb_script_list)();
 
 	return 0;
 }

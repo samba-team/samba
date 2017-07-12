@@ -3797,105 +3797,107 @@ int ctdb_script_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
-struct ctdb_script_list_wire {
-	uint32_t num_scripts;
-	struct ctdb_script script[1];
-};
-
-size_t ctdb_script_list_len(struct ctdb_script_list *script_list)
+size_t ctdb_script_list_len(struct ctdb_script_list *in)
 {
-	int i;
 	size_t len;
 
-	if (script_list == NULL) {
+	if (in == NULL) {
 		return 0;
 	}
 
-	len = offsetof(struct ctdb_script_list_wire, script);
-	for (i=0; i<script_list->num_scripts; i++) {
-		len += ctdb_script_len(&script_list->script[i]);
+	len = ctdb_uint32_len(&in->num_scripts) + ctdb_padding_len(4);
+	if (in->num_scripts > 0) {
+		len += in->num_scripts * ctdb_script_len(&in->script[0]);
 	}
+
 	return len;
 }
 
-void ctdb_script_list_push(struct ctdb_script_list *script_list, uint8_t *buf)
+void ctdb_script_list_push(struct ctdb_script_list *in, uint8_t *buf,
+			   size_t *npush)
 {
-	struct ctdb_script_list_wire *wire =
-		(struct ctdb_script_list_wire *)buf;
-	size_t offset, np;
-	int i;
+	size_t offset = 0, np;
+	uint32_t i;
 
-	if (script_list == NULL) {
+	if (in == NULL) {
+		*npush = 0;
 		return;
 	}
 
-	wire->num_scripts = script_list->num_scripts;
+	ctdb_uint32_push(&in->num_scripts, buf+offset, &np);
+	offset += np;
 
-	offset = offsetof(struct ctdb_script_list_wire, script);
-	for (i=0; i<script_list->num_scripts; i++) {
-		ctdb_script_push(&script_list->script[i], &buf[offset], &np);
+	ctdb_padding_push(4, buf+offset, &np);
+	offset += np;
+
+	for (i=0; i<in->num_scripts; i++) {
+		ctdb_script_push(&in->script[i], buf+offset, &np);
 		offset += np;
 	}
+
+	*npush = offset;
 }
 
 int ctdb_script_list_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			  struct ctdb_script_list **out)
+			  struct ctdb_script_list **out, size_t *npull)
 {
-	struct ctdb_script_list *script_list;
-	struct ctdb_script_list_wire *wire =
-		(struct ctdb_script_list_wire *)buf;
-	size_t offset, np;
-	int i;
-	bool ret;
+	struct ctdb_script_list *val;
+	size_t offset = 0, np;
+	uint32_t i;
+	int ret;
 
 	/* If event scripts have never been run, the result will be NULL */
 	if (buflen == 0) {
-		*out = NULL;
-		return 0;
+		val = NULL;
+		goto done;
 	}
 
-	offset = offsetof(struct ctdb_script_list_wire, script);
-
-	if (buflen < offset) {
-		return EMSGSIZE;
-	}
-	if (wire->num_scripts > buflen / sizeof(struct ctdb_script)) {
-		return EMSGSIZE;
-	}
-	if (offset + wire->num_scripts * sizeof(struct ctdb_script) < offset) {
-		return EMSGSIZE;
-	}
-	if (buflen < offset + wire->num_scripts * sizeof(struct ctdb_script)) {
-		return EMSGSIZE;
-	}
-
-	script_list = talloc(mem_ctx, struct ctdb_script_list);
-	if (script_list == NULL) {
-		return ENOMEM;
-
-	}
-
-	script_list->num_scripts = wire->num_scripts;
-	script_list->script = talloc_array(script_list, struct ctdb_script,
-					   wire->num_scripts);
-	if (script_list->script == NULL) {
-		talloc_free(script_list);
+	val = talloc(mem_ctx, struct ctdb_script_list);
+	if (val == NULL) {
 		return ENOMEM;
 	}
 
-	for (i=0; i<wire->num_scripts; i++) {
-		ret = ctdb_script_pull_elems(&buf[offset], buflen-offset,
-					     script_list->script,
-					     &script_list->script[i], &np);
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &val->num_scripts,
+			       &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
+
+	ret = ctdb_padding_pull(buf+offset, buflen-offset, 4, &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
+
+	if (val->num_scripts == 0) {
+		goto done;
+		val->script = NULL;
+	}
+
+	val->script = talloc_array(val, struct ctdb_script, val->num_scripts);
+	if (val->script == NULL) {
+		ret = ENOMEM;
+		goto fail;
+	}
+
+	for (i=0; i<val->num_scripts; i++) {
+		ret = ctdb_script_pull_elems(buf+offset, buflen-offset,
+					     val, &val->script[i], &np);
 		if (ret != 0) {
-			talloc_free(script_list);
-			return ret;
+			goto fail;
 		}
 		offset += np;
 	}
 
-	*out = script_list;
+done:
+	*out = val;
+	*npull = offset;
 	return 0;
+
+fail:
+	talloc_free(val);
+	return ret;
 }
 
 size_t ctdb_ban_state_len(struct ctdb_ban_state *ban_state)

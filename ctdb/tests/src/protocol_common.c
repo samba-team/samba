@@ -1075,8 +1075,8 @@ void fill_ctdb_script_list(TALLOC_CTX *mem_ctx, struct ctdb_script_list *p)
 
 	p->num_scripts = rand_int(32);
 	if (p->num_scripts > 0) {
-		p->script = talloc_array(mem_ctx, struct ctdb_script,
-					 p->num_scripts);
+		p->script = talloc_zero_array(mem_ctx, struct ctdb_script,
+					      p->num_scripts);
 		assert(p->script != NULL);
 		for (i=0; i<p->num_scripts; i++) {
 			fill_ctdb_script(mem_ctx, &p->script[i]);

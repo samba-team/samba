@@ -259,10 +259,11 @@ void ctdb_script_push(struct ctdb_script *in, uint8_t *buf, size_t *npush);
 int ctdb_script_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 		     struct ctdb_script **out, size_t *npull);
 
-size_t ctdb_script_list_len(struct ctdb_script_list *script_list);
-void ctdb_script_list_push(struct ctdb_script_list *script_list, uint8_t *buf);
+size_t ctdb_script_list_len(struct ctdb_script_list *in);
+void ctdb_script_list_push(struct ctdb_script_list *in, uint8_t *buf,
+			   size_t *npush);
 int ctdb_script_list_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			  struct ctdb_script_list **out);
+			  struct ctdb_script_list **out, size_t *npull);
 
 size_t ctdb_ban_state_len(struct ctdb_ban_state *ban_state);
 void ctdb_ban_state_push(struct ctdb_ban_state *ban_state, uint8_t *buf);

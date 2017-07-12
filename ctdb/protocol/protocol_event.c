@@ -549,7 +549,7 @@ static void ctdb_event_reply_status_push(struct ctdb_event_reply_status *in,
 	ctdb_int32_push(&in->status, buf, &np);
 	offset += np;
 
-	ctdb_script_list_push(in->script_list, buf+offset);
+	ctdb_script_list_push(in->script_list, buf+offset, &np);
 }
 
 static int ctdb_event_reply_status_pull(uint8_t *buf, size_t buflen,
@@ -573,7 +573,7 @@ static int ctdb_event_reply_status_pull(uint8_t *buf, size_t buflen,
 	offset += np;
 
 	ret = ctdb_script_list_pull(buf+offset, buflen-offset,
-				    rdata, &rdata->script_list);
+				    rdata, &rdata->script_list, &np);
 	if (ret != 0) {
 		talloc_free(rdata);
 		return ret;
@@ -593,7 +593,9 @@ static void ctdb_event_reply_script_list_push(
 				struct ctdb_event_reply_script_list *in,
 				uint8_t *buf)
 {
-	ctdb_script_list_push(in->script_list, buf);
+	size_t np;
+
+	ctdb_script_list_push(in->script_list, buf, &np);
 }
 
 static int ctdb_event_reply_script_list_pull(
@@ -602,6 +604,7 @@ static int ctdb_event_reply_script_list_pull(
 				struct ctdb_event_reply_script_list **out)
 {
 	struct ctdb_event_reply_script_list *rdata;
+	size_t np;
 	int ret;
 
 	rdata = talloc(mem_ctx, struct ctdb_event_reply_script_list);
@@ -609,7 +612,8 @@ static int ctdb_event_reply_script_list_pull(
 		return ENOMEM;
 	}
 
-	ret = ctdb_script_list_pull(buf, buflen, rdata, &rdata->script_list);
+	ret = ctdb_script_list_pull(buf, buflen, rdata, &rdata->script_list,
+				    &np);
 	if (ret != 0) {
 		talloc_free(rdata);
 		return ret;
