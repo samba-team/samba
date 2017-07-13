@@ -287,10 +287,11 @@ static NTSTATUS gensec_spnego_create_negTokenInit(struct gensec_security *gensec
 			principal = gensec_security->target.hostname;
 		}
 
-		DEBUG(dbg_level, ("SPNEGO(%s) creating NEG_TOKEN_INIT for %s failed (next[%s]): %s\n",
-			  spnego_state->sub_sec_security->ops->name,
-			  principal,
-			  next, nt_errstr(nt_status)));
+		DBG_PREFIX(dbg_level, (
+			   "%s: creating NEG_TOKEN_INIT for %s failed "
+			   "(next[%s]): %s\n",
+			   spnego_state->sub_sec_security->ops->name,
+			   principal, next, nt_errstr(nt_status)));
 
 		/*
 		 * Pretend we never started it
@@ -298,7 +299,8 @@ static NTSTATUS gensec_spnego_create_negTokenInit(struct gensec_security *gensec
 		gensec_spnego_update_sub_abort(spnego_state);
 	}
 
-	DEBUG(10, ("Failed to setup SPNEGO negTokenInit request: %s\n", nt_errstr(nt_status)));
+	DBG_WARNING("Failed to setup SPNEGO negTokenInit request: %s\n",
+		    nt_errstr(nt_status));
 	return nt_status;
 
 reply:
@@ -311,7 +313,7 @@ reply:
 				     send_mech_types,
 				     &spnego_state->mech_types);
 	if (!ok) {
-		DEBUG(1, ("SPNEGO: Failed to write mechTypes\n"));
+		DBG_ERR("Failed to write mechTypes\n");
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -330,8 +332,8 @@ reply:
 	spnego_out.negTokenInit.mechToken = unwrapped_out;
 
 	if (spnego_write_data(out_mem_ctx, out, &spnego_out) == -1) {
-		DEBUG(1, ("Failed to write NEG_TOKEN_INIT\n"));
-			return NT_STATUS_INVALID_PARAMETER;
+		DBG_ERR("Failed to write NEG_TOKEN_INIT\n");
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/* set next state */
