@@ -795,6 +795,8 @@ sub setup_fileserver($$)
 	push(@dirs,$usershare_sharedir);
 
 	my $fileserver_options = "
+	kernel change notify = yes
+
 	usershare path = $usershare_dir
 	usershare max shares = 10
 	usershare allow guests = yes
