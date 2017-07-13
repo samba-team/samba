@@ -1785,7 +1785,7 @@ static void construct_reply_chain(struct smbXsrv_connection *xconn,
 	unsigned num_reqs;
 	bool ok;
 
-	ok = smb1_parse_chain(talloc_tos(), (uint8_t *)inbuf, xconn, encrypted,
+	ok = smb1_parse_chain(xconn, (uint8_t *)inbuf, xconn, encrypted,
 			      seqnum, &reqs, &num_reqs);
 	if (!ok) {
 		char errbuf[smb_size];
