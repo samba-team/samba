@@ -4861,24 +4861,66 @@ fail:
 	return ret;
 }
 
-size_t ctdb_server_id_len(struct ctdb_server_id *sid)
+size_t ctdb_server_id_len(struct ctdb_server_id *in)
 {
-	return sizeof(struct ctdb_server_id);
+	return ctdb_uint64_len(&in->pid) +
+		ctdb_uint32_len(&in->task_id) +
+		ctdb_uint32_len(&in->vnn) +
+		ctdb_uint64_len(&in->unique_id);
 }
 
-void ctdb_server_id_push(struct ctdb_server_id *sid, uint8_t *buf)
+void ctdb_server_id_push(struct ctdb_server_id *in, uint8_t *buf,
+			 size_t *npush)
 {
-	memcpy(buf, sid, sizeof(struct ctdb_server_id));
+	size_t offset = 0, np;
+
+	ctdb_uint64_push(&in->pid, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->task_id, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->vnn, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint64_push(&in->unique_id, buf+offset, &np);
+	offset += np;
+
+	*npush = offset;
 }
 
 int ctdb_server_id_pull(uint8_t *buf, size_t buflen,
-			struct ctdb_server_id *sid)
+			struct ctdb_server_id *out, size_t *npull)
 {
-	if (buflen < sizeof(struct ctdb_server_id)) {
-		return EMSGSIZE;
-	}
+	size_t offset = 0, np;
+	int ret;
 
-	memcpy(sid, buf, sizeof(struct ctdb_server_id));
+	ret = ctdb_uint64_pull(buf+offset, buflen-offset, &out->pid, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &out->task_id, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &out->vnn, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint64_pull(buf+offset, buflen-offset, &out->unique_id,
+			       &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	*npull = offset;
 	return 0;
 }
 

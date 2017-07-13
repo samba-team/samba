@@ -58,10 +58,11 @@ int ctdb_rec_buffer_write(struct ctdb_rec_buffer *recbuf, int fd);
 int ctdb_rec_buffer_read(int fd, TALLOC_CTX *mem_ctx,
 			 struct ctdb_rec_buffer **out);
 
-size_t ctdb_server_id_len(struct ctdb_server_id *sid);
-void ctdb_server_id_push(struct ctdb_server_id *sid, uint8_t *buf);
+size_t ctdb_server_id_len(struct ctdb_server_id *in);
+void ctdb_server_id_push(struct ctdb_server_id *in, uint8_t *buf,
+			 size_t *npush);
 int ctdb_server_id_pull(uint8_t *buf, size_t buflen,
-			 struct ctdb_server_id *sid);
+			struct ctdb_server_id *out, size_t *npull);
 
 size_t ctdb_g_lock_len(struct ctdb_g_lock *lock);
 void ctdb_g_lock_push(struct ctdb_g_lock *lock, uint8_t *buf);

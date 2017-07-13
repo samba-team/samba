@@ -87,6 +87,7 @@ PROTOCOL_TYPE3_TEST(struct ctdb_db_statistics, ctdb_db_statistics);
 PROTOCOL_TYPE3_TEST(struct ctdb_election_message, ctdb_election_message);
 PROTOCOL_TYPE3_TEST(struct ctdb_srvid_message, ctdb_srvid_message);
 PROTOCOL_TYPE3_TEST(struct ctdb_disable_message, ctdb_disable_message);
+PROTOCOL_TYPE1_TEST(struct ctdb_server_id, ctdb_server_id);
 DEFINE_TEST(struct ctdb_g_lock_list, ctdb_g_lock_list);
 
 static void test_ctdb_rec_buffer_read_write(void)
@@ -187,6 +188,7 @@ int main(int argc, char *argv[])
 	TEST_FUNC(ctdb_election_message)();
 	TEST_FUNC(ctdb_srvid_message)();
 	TEST_FUNC(ctdb_disable_message)();
+	TEST_FUNC(ctdb_server_id)();
 	TEST_FUNC(ctdb_g_lock_list)();
 
 	test_ctdb_rec_buffer_read_write();

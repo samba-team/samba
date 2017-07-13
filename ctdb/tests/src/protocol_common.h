@@ -358,7 +358,7 @@ void fill_ctdb_disable_message(TALLOC_CTX *mem_ctx,
 void verify_ctdb_disable_message(struct ctdb_disable_message *p1,
 				 struct ctdb_disable_message *p2);
 
-void fill_ctdb_server_id(TALLOC_CTX *mem_ctx, struct ctdb_server_id *p);
+void fill_ctdb_server_id(struct ctdb_server_id *p);
 void verify_ctdb_server_id(struct ctdb_server_id *p1,
 			   struct ctdb_server_id *p2);
 

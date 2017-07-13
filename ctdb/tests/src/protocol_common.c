@@ -1332,7 +1332,7 @@ void verify_ctdb_disable_message(struct ctdb_disable_message *p1,
 	assert(p1->timeout == p2->timeout);
 }
 
-void fill_ctdb_server_id(TALLOC_CTX *mem_ctx, struct ctdb_server_id *p)
+void fill_ctdb_server_id(struct ctdb_server_id *p)
 {
 	p->pid = rand64();
 	p->task_id = rand32();
@@ -1352,7 +1352,7 @@ void verify_ctdb_server_id(struct ctdb_server_id *p1,
 void fill_ctdb_g_lock(TALLOC_CTX *mem_ctx, struct ctdb_g_lock *p)
 {
 	p->type = rand_int(2);
-	fill_ctdb_server_id(mem_ctx, &p->sid);
+	fill_ctdb_server_id(&p->sid);
 }
 
 void verify_ctdb_g_lock(struct ctdb_g_lock *p1, struct ctdb_g_lock *p2)
