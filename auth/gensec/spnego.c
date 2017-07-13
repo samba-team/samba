@@ -224,11 +224,20 @@ static NTSTATUS gensec_spnego_create_negTokenInit(struct gensec_security *gensec
 
 	mechTypes = gensec_security_oids(gensec_security, 
 					 out_mem_ctx, GENSEC_OID_SPNEGO);
+	if (mechTypes == NULL) {
+		DBG_WARNING("gensec_security_oids() failed\n");
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	all_sec	= gensec_security_by_oid_list(gensec_security, 
 					      out_mem_ctx, 
 					      mechTypes,
 					      GENSEC_OID_SPNEGO);
+	if (all_sec == NULL) {
+		DBG_WARNING("gensec_security_by_oid_list() failed\n");
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	for (i=0; all_sec && all_sec[i].op; i++) {
 		const char *next = NULL;
 		const char *principal = NULL;
@@ -308,6 +317,10 @@ reply:
 
 	send_mech_types = gensec_security_oids_from_ops_wrapped(out_mem_ctx,
 								&all_sec[i]);
+	if (send_mech_types == NULL) {
+		DBG_WARNING("gensec_security_oids_from_ops_wrapped() failed\n");
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	ok = spnego_write_mech_types(spnego_state,
 				     send_mech_types,
