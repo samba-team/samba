@@ -81,7 +81,7 @@ fi
 # are the same on the nodes
 CONFIG_FILES_MAY="/usr/local/etc/ctdb/public_addresses /usr/local/etc/ctdb/static-routes"
 
-2>&1
+exec 2>&1
 
 cat <<EOF
 --------------------------------------------------------------------
