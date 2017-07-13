@@ -214,7 +214,7 @@ static NTSTATUS gensec_spnego_create_negTokenInit(struct gensec_security *gensec
 						  DATA_BLOB *out)
 {
 	int i;
-	NTSTATUS nt_status = NT_STATUS_INVALID_PARAMETER;
+	NTSTATUS status = NT_STATUS_INVALID_PARAMETER;
 	const char **mechTypes = NULL;
 	DATA_BLOB unwrapped_out = data_blob_null;
 	const struct gensec_security_ops_wrapper *all_sec;
@@ -234,16 +234,16 @@ static NTSTATUS gensec_spnego_create_negTokenInit(struct gensec_security *gensec
 		const char *principal = NULL;
 		int dbg_level = DBGLVL_WARNING;
 
-		nt_status = gensec_subcontext_start(spnego_state,
-						    gensec_security,
-						    &spnego_state->sub_sec_security);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			return nt_status;
+		status = gensec_subcontext_start(spnego_state,
+						 gensec_security,
+						 &spnego_state->sub_sec_security);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
 		}
 		/* select the sub context */
-		nt_status = gensec_start_mech_by_ops(spnego_state->sub_sec_security,
-						     all_sec[i].op);
-		if (!NT_STATUS_IS_OK(nt_status)) {
+		status = gensec_start_mech_by_ops(spnego_state->sub_sec_security,
+						  all_sec[i].op);
+		if (!NT_STATUS_IS_OK(status)) {
 			gensec_spnego_update_sub_abort(spnego_state);
 			continue;
 		}
@@ -256,16 +256,16 @@ static NTSTATUS gensec_spnego_create_negTokenInit(struct gensec_security *gensec
 		}
 
 		/* In the client, try and produce the first (optimistic) packet */
-		nt_status = gensec_update_ev(spnego_state->sub_sec_security,
+		status = gensec_update_ev(spnego_state->sub_sec_security,
 					  out_mem_ctx,
 					  ev,
 					  data_blob_null,
 					  &unwrapped_out);
-		if (NT_STATUS_IS_OK(nt_status)) {
+		if (NT_STATUS_IS_OK(status)) {
 			spnego_state->sub_sec_ready = true;
 		}
 
-		if (!GENSEC_UPDATE_IS_NTERROR(nt_status)) {
+		if (!GENSEC_UPDATE_IS_NTERROR(status)) {
 			goto reply;
 		}
 
@@ -291,7 +291,7 @@ static NTSTATUS gensec_spnego_create_negTokenInit(struct gensec_security *gensec
 			   "%s: creating NEG_TOKEN_INIT for %s failed "
 			   "(next[%s]): %s\n",
 			   spnego_state->sub_sec_security->ops->name,
-			   principal, next, nt_errstr(nt_status)));
+			   principal, next, nt_errstr(status)));
 
 		/*
 		 * Pretend we never started it
@@ -300,8 +300,8 @@ static NTSTATUS gensec_spnego_create_negTokenInit(struct gensec_security *gensec
 	}
 
 	DBG_WARNING("Failed to setup SPNEGO negTokenInit request: %s\n",
-		    nt_errstr(nt_status));
-	return nt_status;
+		    nt_errstr(status));
+	return status;
 
 reply:
 	spnego_out.type = SPNEGO_NEG_TOKEN_INIT;
