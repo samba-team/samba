@@ -213,11 +213,12 @@ static NTSTATUS gensec_spnego_create_negTokenInit(struct gensec_security *gensec
 						  struct tevent_context *ev,
 						  DATA_BLOB *out)
 {
-	int i;
 	NTSTATUS status;
 	const char **mechTypes = NULL;
 	DATA_BLOB unwrapped_out = data_blob_null;
+	size_t all_idx = 0;
 	const struct gensec_security_ops_wrapper *all_sec;
+	const struct gensec_security_ops_wrapper *cur_sec = NULL;
 	const char **send_mech_types = NULL;
 	struct spnego_data spnego_out;
 	bool ok;
@@ -238,10 +239,12 @@ static NTSTATUS gensec_spnego_create_negTokenInit(struct gensec_security *gensec
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	for (i=0; all_sec && all_sec[i].op; i++) {
+	for (; all_sec[all_idx].op != NULL; all_idx++) {
 		const char *next = NULL;
 		const char *principal = NULL;
 		int dbg_level = DBGLVL_WARNING;
+
+		cur_sec = &all_sec[all_idx];
 
 		status = gensec_subcontext_start(spnego_state,
 						 gensec_security,
@@ -251,7 +254,7 @@ static NTSTATUS gensec_spnego_create_negTokenInit(struct gensec_security *gensec
 		}
 		/* select the sub context */
 		status = gensec_start_mech_by_ops(spnego_state->sub_sec_security,
-						  all_sec[i].op);
+						  cur_sec->op);
 		if (!NT_STATUS_IS_OK(status)) {
 			gensec_spnego_update_sub_abort(spnego_state);
 			continue;
@@ -278,8 +281,8 @@ static NTSTATUS gensec_spnego_create_negTokenInit(struct gensec_security *gensec
 			goto reply;
 		}
 
-		if (all_sec[i+1].op != NULL) {
-			next = all_sec[i+1].op->name;
+		if (cur_sec[1].op != NULL) {
+			next = cur_sec[1].op->name;
 			dbg_level = DBGLVL_NOTICE;
 		}
 
@@ -298,8 +301,7 @@ static NTSTATUS gensec_spnego_create_negTokenInit(struct gensec_security *gensec
 
 		DBG_PREFIX(dbg_level, (
 			   "%s: creating NEG_TOKEN_INIT for %s failed "
-			   "(next[%s]): %s\n",
-			   spnego_state->sub_sec_security->ops->name,
+			   "(next[%s]): %s\n", cur_sec->op->name,
 			   principal, next, nt_errstr(status)));
 
 		if (next == NULL) {
@@ -322,7 +324,7 @@ reply:
 	spnego_out.type = SPNEGO_NEG_TOKEN_INIT;
 
 	send_mech_types = gensec_security_oids_from_ops_wrapped(out_mem_ctx,
-								&all_sec[i]);
+								cur_sec);
 	if (send_mech_types == NULL) {
 		DBG_WARNING("gensec_security_oids_from_ops_wrapped() failed\n");
 		return NT_STATUS_NO_MEMORY;
@@ -355,9 +357,14 @@ reply:
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	/* set next state */
-	spnego_state->neg_oid = all_sec[i].oid;
+	/*
+	 * Note that 'cur_sec' is temporary memory, but
+	 * cur_sec->oid points to a const string in the
+	 * backends gensec_security_ops structure.
+	 */
+	spnego_state->neg_oid = cur_sec->oid;
 
+	/* set next state */
 	if (spnego_state->state_position == SPNEGO_SERVER_START) {
 		spnego_state->state_position = SPNEGO_SERVER_START;
 		spnego_state->expected_packet = SPNEGO_NEG_TOKEN_INIT;
