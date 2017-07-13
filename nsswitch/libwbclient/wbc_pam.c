@@ -727,7 +727,7 @@ wbcErr wbcCtxLogoffUserEx(struct wbcContext *ctx,
 	struct winbindd_request request;
 	struct winbindd_response response;
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
-	int i;
+	size_t i;
 
 	/* validate input */
 
@@ -1269,7 +1269,7 @@ wbcErr wbcCtxCredentialCache(struct wbcContext *ctx,
 	struct winbindd_response response;
 	struct wbcNamedBlob *initial_blob = NULL;
 	struct wbcNamedBlob *challenge_blob = NULL;
-	int i;
+	size_t i;
 
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
