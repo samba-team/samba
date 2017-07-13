@@ -745,7 +745,7 @@ static PyMethodDef net_obj_methods[] = {
 	{"replicate_init", (PyCFunction)py_net_replicate_init, METH_VARARGS|METH_KEYWORDS, py_net_replicate_init_doc},
 	{"replicate_chunk", (PyCFunction)py_net_replicate_chunk, METH_VARARGS|METH_KEYWORDS, py_net_replicate_chunk_doc},
 	{"replicate_decrypt", (PyCFunction)py_net_replicate_decrypt, METH_VARARGS|METH_KEYWORDS, py_net_replicate_decrypt_doc},
-	{"finddc", (PyCFunction)py_net_finddc, METH_KEYWORDS, py_net_finddc_doc},
+	{"finddc", (PyCFunction)py_net_finddc, METH_VARARGS|METH_KEYWORDS, py_net_finddc_doc},
 	{ NULL }
 };
 
