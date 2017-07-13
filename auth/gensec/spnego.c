@@ -470,19 +470,18 @@ static NTSTATUS gensec_spnego_client_negTokenInit(struct gensec_security *gensec
 			   spnego_state->sub_sec_security->ops->name,
 			   principal, next, nt_errstr(status)));
 
-		if (allow_fallback && next != NULL) {
+		if (next == NULL) {
 			/*
-			 * Pretend we never started it.
+			 * A hard error without a possible fallback.
 			 */
-			gensec_spnego_update_sub_abort(spnego_state);
-			continue;
+			TALLOC_FREE(frame);
+			return status;
 		}
 
 		/*
-		 * Hard error.
+		 * Pretend we never started it.
 		 */
-		TALLOC_FREE(frame);
-		return status;
+		gensec_spnego_update_sub_abort(spnego_state);
 	}
 
 	DBG_WARNING("Could not find a suitable mechtype in NEG_TOKEN_INIT\n");
