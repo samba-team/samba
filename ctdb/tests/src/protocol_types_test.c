@@ -23,6 +23,7 @@
 
 #include <assert.h>
 
+#include "protocol/protocol_basic.c"
 #include "protocol/protocol_types.c"
 #include "protocol/protocol_header.c"
 #include "protocol/protocol_call.c"

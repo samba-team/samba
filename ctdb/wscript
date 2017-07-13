@@ -392,7 +392,8 @@ def build(bld):
     bld.SAMBA_SUBSYSTEM('ctdb-protocol',
                         source=bld.SUBDIR('protocol',
                                           '''protocol_header.c protocol_packet.c
-                                             protocol_types.c protocol_call.c
+                                             protocol_basic.c protocol_types.c
+                                             protocol_call.c
                                              protocol_message.c
                                              protocol_control.c
                                              protocol_client.c

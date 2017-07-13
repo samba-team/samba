@@ -22,6 +22,10 @@
 
 #include "protocol.h"
 
+/*
+ * From protocol/protocol_basic.c
+ */
+
 size_t ctdb_int32_len(int32_t val);
 void ctdb_int32_push(int32_t val, uint8_t *buf);
 int ctdb_int32_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
@@ -42,11 +46,6 @@ void ctdb_double_push(double val, uint8_t *buf);
 int ctdb_double_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 		     double *out);
 
-size_t ctdb_pid_len(pid_t pid);
-void ctdb_pid_push(pid_t pid, uint8_t *buf);
-int ctdb_pid_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-		  pid_t *out);
-
 size_t ctdb_string_len(const char *str);
 void ctdb_string_push(const char *str, uint8_t *buf);
 int ctdb_string_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
@@ -56,6 +55,15 @@ size_t ctdb_stringn_len(const char *str);
 void ctdb_stringn_push(const char *str, uint8_t *buf);
 int ctdb_stringn_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 		      const char **out);
+
+size_t ctdb_pid_len(pid_t pid);
+void ctdb_pid_push(pid_t pid, uint8_t *buf);
+int ctdb_pid_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
+		  pid_t *out);
+
+/*
+ * From protocol/protocol_types.c
+ */
 
 size_t ctdb_statistics_len(struct ctdb_statistics *stats);
 void ctdb_statistics_push(struct ctdb_statistics *stats, uint8_t *buf);
