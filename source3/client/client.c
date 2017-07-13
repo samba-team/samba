@@ -4961,11 +4961,21 @@ int set_remote_attr(const char *filename, uint16_t new_attr, int mode)
 	}
 
 	if (mode == ATTR_SET) {
+		if (new_attr == old_attr) {
+			d_printf("attributes unchanged, cli_setatr skipped\n");
+			return 0;
+		}
 		new_attr |= old_attr;
 	} else {
 		new_attr = old_attr & ~new_attr;
 	}
-
+	/*
+	 * if we are clearing attributes - can't pass 0 in
+	 * since that means "skip this field. See MS-FSCC section 2.6
+	 */
+	if (new_attr == 0) {
+		new_attr = FILE_ATTRIBUTE_NORMAL;
+	}
 	status = cli_setatr(cli, filename, new_attr, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("cli_setatr failed: %s\n", nt_errstr(status));
@@ -4990,6 +5000,8 @@ int cmd_setmode(void)
 	int mode = ATTR_SET;
 	int err = 0;
 	bool ok;
+	bool set = false;
+	bool unset = false;
 	TALLOC_CTX *ctx = talloc_new(NULL);
 	if (ctx == NULL) {
 		return 1;
@@ -5017,9 +5029,11 @@ int cmd_setmode(void)
 		while (*s) {
 			switch (*s++) {
 			case '+':
+				set = true;
 				mode = ATTR_SET;
 				break;
 			case '-':
+				unset = true;
 				mode = ATTR_UNSET;
 				break;
 			case 'r':
@@ -5051,8 +5065,12 @@ int cmd_setmode(void)
 	DEBUG(2, ("perm set %d %d\n", attr[ATTR_SET], attr[ATTR_UNSET]));
 
 	/* ignore return value: server might not store DOS attributes */
-	set_remote_attr(fname, attr[ATTR_SET], ATTR_SET);
-	set_remote_attr(fname, attr[ATTR_UNSET], ATTR_UNSET);
+	if (set) {
+		set_remote_attr(fname, attr[ATTR_SET], ATTR_SET);
+	}
+	if (unset) {
+		set_remote_attr(fname, attr[ATTR_UNSET], ATTR_UNSET);
+	}
 out:
 	talloc_free(ctx);
 	return err;
