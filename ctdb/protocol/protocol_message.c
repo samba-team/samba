@@ -125,7 +125,7 @@ static void ctdb_message_data_push(union ctdb_message_data *mdata,
 		break;
 
 	case CTDB_SRVID_ELECTION:
-		ctdb_election_message_push(mdata->election, buf);
+		ctdb_election_message_push(mdata->election, buf, &np);
 		break;
 
 	case CTDB_SRVID_RECONFIGURE:
@@ -206,7 +206,7 @@ static int ctdb_message_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_SRVID_ELECTION:
 		ret = ctdb_election_message_pull(buf, buflen, mem_ctx,
-						 &mdata->election);
+						 &mdata->election, &np);
 		break;
 
 	case CTDB_SRVID_RECONFIGURE:

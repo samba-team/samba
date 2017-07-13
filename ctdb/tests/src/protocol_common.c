@@ -1288,7 +1288,7 @@ void fill_ctdb_election_message(TALLOC_CTX *mem_ctx,
 				struct ctdb_election_message *p)
 {
 	p->num_connected = rand_int(32);
-	fill_buffer(&p->priority_time, sizeof(struct timeval));
+	fill_ctdb_timeval(&p->priority_time);
 	p->pnn = rand_int(32);
 	p->node_flags = rand32();
 }
@@ -1297,7 +1297,7 @@ void verify_ctdb_election_message(struct ctdb_election_message *p1,
 				  struct ctdb_election_message *p2)
 {
 	assert(p1->num_connected == p2->num_connected);
-	verify_buffer(p1, p2, sizeof(struct timeval));
+	verify_ctdb_timeval(&p1->priority_time, &p2->priority_time);
 	assert(p1->pnn == p2->pnn);
 	assert(p1->node_flags == p2->node_flags);
 }

@@ -2076,6 +2076,37 @@ static int ctdb_db_statistics_pull_old(uint8_t *buf, size_t buflen,
 	return 0;
 }
 
+static size_t ctdb_election_message_len_old(struct ctdb_election_message *in)
+{
+	return sizeof(struct ctdb_election_message);
+}
+
+static void ctdb_election_message_push_old(struct ctdb_election_message *in,
+					   uint8_t *buf)
+{
+	memcpy(buf, in, sizeof(struct ctdb_election_message));
+}
+
+static int ctdb_election_message_pull_old(uint8_t *buf, size_t buflen,
+					  TALLOC_CTX *mem_ctx,
+					  struct ctdb_election_message **out)
+{
+	struct ctdb_election_message *val;
+
+	if (buflen < sizeof(struct ctdb_election_message)) {
+		return EMSGSIZE;
+	}
+
+	val = talloc_memdup(mem_ctx, buf,
+			    sizeof(struct ctdb_election_message));
+	if (val == NULL) {
+		return ENOMEM;
+	}
+
+	*out = val;
+	return 0;
+}
+
 
 COMPAT_TYPE3_TEST(struct ctdb_statistics, ctdb_statistics);
 COMPAT_TYPE3_TEST(struct ctdb_vnn_map, ctdb_vnn_map);
@@ -2115,6 +2146,8 @@ COMPAT_TYPE3_TEST(struct ctdb_public_ip_info, ctdb_public_ip_info);
 COMPAT_TYPE3_TEST(struct ctdb_statistics_list, ctdb_statistics_list);
 COMPAT_TYPE3_TEST(struct ctdb_key_data, ctdb_key_data);
 COMPAT_TYPE3_TEST(struct ctdb_db_statistics, ctdb_db_statistics);
+
+COMPAT_TYPE3_TEST(struct ctdb_election_message, ctdb_election_message);
 
 int main(int argc, char *argv[])
 {
@@ -2159,6 +2192,8 @@ int main(int argc, char *argv[])
 	COMPAT_TEST_FUNC(ctdb_statistics_list)();
 	COMPAT_TEST_FUNC(ctdb_key_data)();
 	COMPAT_TEST_FUNC(ctdb_db_statistics)();
+
+	COMPAT_TEST_FUNC(ctdb_election_message)();
 
 	return 0;
 }

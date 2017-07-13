@@ -4626,34 +4626,92 @@ int ctdb_db_statistics_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 	return 0;
 }
 
-size_t ctdb_election_message_len(struct ctdb_election_message *election)
+size_t ctdb_election_message_len(struct ctdb_election_message *in)
 {
-	return sizeof(struct ctdb_election_message);
+	return ctdb_uint32_len(&in->num_connected) +
+		ctdb_padding_len(4) +
+		ctdb_timeval_len(&in->priority_time) +
+		ctdb_uint32_len(&in->pnn) +
+		ctdb_uint32_len(&in->node_flags);
 }
 
-void ctdb_election_message_push(struct ctdb_election_message *election,
-				uint8_t *buf)
+void ctdb_election_message_push(struct ctdb_election_message *in,
+				uint8_t *buf, size_t *npush)
 {
-	memcpy(buf, election, sizeof(struct ctdb_election_message));
+	size_t offset = 0, np;
+
+	ctdb_uint32_push(&in->num_connected, buf+offset, &np);
+	offset += np;
+
+	ctdb_padding_push(4, buf+offset, &np);
+	offset += np;
+
+	ctdb_timeval_push(&in->priority_time, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->pnn, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->node_flags, buf+offset, &np);
+	offset += np;
+
+	*npush = offset;
 }
 
-int ctdb_election_message_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			       struct ctdb_election_message **out)
+int ctdb_election_message_pull(uint8_t *buf, size_t buflen,
+			       TALLOC_CTX *mem_ctx,
+			       struct ctdb_election_message **out,
+			       size_t *npull)
 {
-	struct ctdb_election_message *election;
+	struct ctdb_election_message *val;
+	size_t offset = 0, np;
+	int ret;
 
-	if (buflen < sizeof(struct ctdb_election_message)) {
-		return EMSGSIZE;
-	}
-
-	election = talloc_memdup(mem_ctx, buf,
-				 sizeof(struct ctdb_election_message));
-	if (election == NULL) {
+	val = talloc(mem_ctx, struct ctdb_election_message);
+	if (val == NULL) {
 		return ENOMEM;
 	}
 
-	*out = election;
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &val->num_connected,
+			       &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
+
+	ret = ctdb_padding_pull(buf+offset, buflen-offset, 4, &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
+
+	ret = ctdb_timeval_pull(buf+offset, buflen-offset,
+				&val->priority_time, &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &val->pnn, &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &val->node_flags,
+			       &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
+
+	*out = val;
+	*npull = offset;
 	return 0;
+
+fail:
+	talloc_free(val);
+	return ret;
 }
 
 size_t ctdb_srvid_message_len(struct ctdb_srvid_message *msg)
