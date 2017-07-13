@@ -781,6 +781,8 @@ sub setup_fileserver($$)
 	push(@dirs,$tarmode_sharedir);
 
 	my $fileserver_options = "
+	kernel change notify = yes
+
 [lowercase]
 	path = $lower_case_share_dir
 	comment = smb username is [%U]
