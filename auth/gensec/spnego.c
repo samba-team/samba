@@ -214,7 +214,7 @@ static NTSTATUS gensec_spnego_create_negTokenInit(struct gensec_security *gensec
 						  DATA_BLOB *out)
 {
 	int i;
-	NTSTATUS status = NT_STATUS_INVALID_PARAMETER;
+	NTSTATUS status;
 	const char **mechTypes = NULL;
 	DATA_BLOB unwrapped_out = data_blob_null;
 	const struct gensec_security_ops_wrapper *all_sec;
@@ -302,15 +302,21 @@ static NTSTATUS gensec_spnego_create_negTokenInit(struct gensec_security *gensec
 			   spnego_state->sub_sec_security->ops->name,
 			   principal, next, nt_errstr(status)));
 
+		if (next == NULL) {
+			/*
+			 * A hard error without a possible fallback.
+			 */
+			return status;
+		}
+
 		/*
 		 * Pretend we never started it
 		 */
 		gensec_spnego_update_sub_abort(spnego_state);
 	}
 
-	DBG_WARNING("Failed to setup SPNEGO negTokenInit request: %s\n",
-		    nt_errstr(status));
-	return status;
+	DBG_WARNING("Failed to setup SPNEGO negTokenInit request\n");
+	return NT_STATUS_INVALID_PARAMETER;
 
 reply:
 	spnego_out.type = SPNEGO_NEG_TOKEN_INIT;
