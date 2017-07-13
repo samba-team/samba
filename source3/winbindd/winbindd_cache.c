@@ -1269,7 +1269,7 @@ do_query:
 NTSTATUS wcache_cached_creds_exist(struct winbindd_domain *domain, const struct dom_sid *sid)
 {
 	struct winbind_cache *cache = get_cache(domain);
-	TDB_DATA data;
+	int ret;
 	fstring key_str, tmp;
 	uint32_t rid;
 
@@ -1287,12 +1287,11 @@ NTSTATUS wcache_cached_creds_exist(struct winbindd_domain *domain, const struct 
 
 	fstr_sprintf(key_str, "CRED/%s", sid_to_fstring(tmp, sid));
 
-	data = tdb_fetch(cache->tdb, string_tdb_data(key_str));
-	if (!data.dptr) {
+	ret = tdb_exists(cache->tdb, string_tdb_data(key_str));
+	if (ret != 0) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
-	SAFE_FREE(data.dptr);
 	return NT_STATUS_OK;
 }
 
