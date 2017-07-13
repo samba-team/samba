@@ -2188,6 +2188,27 @@ static int ctdb_server_id_pull_old(uint8_t *buf, size_t buflen,
 	return 0;
 }
 
+static size_t ctdb_g_lock_len_old(struct ctdb_g_lock *in)
+{
+	return sizeof(struct ctdb_g_lock);
+}
+
+static void ctdb_g_lock_push_old(struct ctdb_g_lock *in, uint8_t *buf)
+{
+	memcpy(buf, in, sizeof(struct ctdb_g_lock));
+}
+
+static int ctdb_g_lock_pull_old(uint8_t *buf, size_t buflen,
+				struct ctdb_g_lock *out)
+{
+	if (buflen < sizeof(struct ctdb_g_lock)) {
+		return EMSGSIZE;
+	}
+
+	memcpy(out, buf, sizeof(struct ctdb_g_lock));
+	return 0;
+}
+
 
 COMPAT_TYPE3_TEST(struct ctdb_statistics, ctdb_statistics);
 COMPAT_TYPE3_TEST(struct ctdb_vnn_map, ctdb_vnn_map);
@@ -2233,6 +2254,7 @@ COMPAT_TYPE3_TEST(struct ctdb_srvid_message, ctdb_srvid_message);
 COMPAT_TYPE3_TEST(struct ctdb_disable_message, ctdb_disable_message);
 
 COMPAT_TYPE1_TEST(struct ctdb_server_id, ctdb_server_id);
+COMPAT_TYPE1_TEST(struct ctdb_g_lock, ctdb_g_lock);
 
 int main(int argc, char *argv[])
 {
@@ -2282,6 +2304,7 @@ int main(int argc, char *argv[])
 	COMPAT_TEST_FUNC(ctdb_srvid_message)();
 	COMPAT_TEST_FUNC(ctdb_disable_message)();
 	COMPAT_TEST_FUNC(ctdb_server_id)();
+	COMPAT_TEST_FUNC(ctdb_g_lock)();
 
 	return 0;
 }

@@ -1349,7 +1349,7 @@ void verify_ctdb_server_id(struct ctdb_server_id *p1,
 	assert(p1->unique_id == p2->unique_id);
 }
 
-void fill_ctdb_g_lock(TALLOC_CTX *mem_ctx, struct ctdb_g_lock *p)
+void fill_ctdb_g_lock(struct ctdb_g_lock *p)
 {
 	p->type = rand_int(2);
 	fill_ctdb_server_id(&p->sid);
@@ -1369,7 +1369,7 @@ void fill_ctdb_g_lock_list(TALLOC_CTX *mem_ctx, struct ctdb_g_lock_list *p)
 	p->lock = talloc_array(mem_ctx, struct ctdb_g_lock, p->num);
 	assert(p->lock != NULL);
 	for (i=0; i<p->num; i++) {
-		fill_ctdb_g_lock(mem_ctx, &p->lock[i]);
+		fill_ctdb_g_lock(&p->lock[i]);
 	}
 }
 

@@ -362,7 +362,7 @@ void fill_ctdb_server_id(struct ctdb_server_id *p);
 void verify_ctdb_server_id(struct ctdb_server_id *p1,
 			   struct ctdb_server_id *p2);
 
-void fill_ctdb_g_lock(TALLOC_CTX *mem_ctx, struct ctdb_g_lock *p);
+void fill_ctdb_g_lock(struct ctdb_g_lock *p);
 void verify_ctdb_g_lock(struct ctdb_g_lock *p1, struct ctdb_g_lock *p2);
 
 void fill_ctdb_g_lock_list(TALLOC_CTX *mem_ctx, struct ctdb_g_lock_list *p);

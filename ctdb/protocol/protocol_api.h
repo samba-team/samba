@@ -64,9 +64,10 @@ void ctdb_server_id_push(struct ctdb_server_id *in, uint8_t *buf,
 int ctdb_server_id_pull(uint8_t *buf, size_t buflen,
 			struct ctdb_server_id *out, size_t *npull);
 
-size_t ctdb_g_lock_len(struct ctdb_g_lock *lock);
-void ctdb_g_lock_push(struct ctdb_g_lock *lock, uint8_t *buf);
-int ctdb_g_lock_pull(uint8_t *buf, size_t buflen, struct ctdb_g_lock *lock);
+size_t ctdb_g_lock_len(struct ctdb_g_lock *in);
+void ctdb_g_lock_push(struct ctdb_g_lock *in, uint8_t *buf, size_t *npush);
+int ctdb_g_lock_pull(uint8_t *buf, size_t buflen, struct ctdb_g_lock *out,
+		     size_t *npull);
 
 size_t ctdb_g_lock_list_len(struct ctdb_g_lock_list *lock_list);
 void ctdb_g_lock_list_push(struct ctdb_g_lock_list *lock_list, uint8_t *buf);

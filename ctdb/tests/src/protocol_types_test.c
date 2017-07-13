@@ -31,22 +31,6 @@ PROTOCOL_TYPE2_TEST(TDB_DATA, ctdb_tdb_data);
 PROTOCOL_TYPE2_TEST(TDB_DATA, ctdb_tdb_datan);
 PROTOCOL_TYPE1_TEST(struct ctdb_latency_counter, ctdb_latency_counter);
 
-static void test_ctdb_g_lock(void)
-{
-	TALLOC_CTX *mem_ctx = talloc_new(NULL);
-	struct ctdb_g_lock p1, p2;
-	size_t buflen;
-	int ret;
-
-	fill_ctdb_g_lock(mem_ctx, &p1);
-	buflen = ctdb_g_lock_len(&p1);
-	ctdb_g_lock_push(&p1, BUFFER);
-	ret = ctdb_g_lock_pull(BUFFER, buflen, &p2);
-	assert(ret == 0);
-	verify_ctdb_g_lock(&p1, &p2);
-	talloc_free(mem_ctx);
-}
-
 PROTOCOL_TYPE3_TEST(struct ctdb_statistics, ctdb_statistics);
 PROTOCOL_TYPE3_TEST(struct ctdb_vnn_map, ctdb_vnn_map);
 PROTOCOL_TYPE3_TEST(struct ctdb_dbid, ctdb_dbid);
@@ -88,6 +72,7 @@ PROTOCOL_TYPE3_TEST(struct ctdb_election_message, ctdb_election_message);
 PROTOCOL_TYPE3_TEST(struct ctdb_srvid_message, ctdb_srvid_message);
 PROTOCOL_TYPE3_TEST(struct ctdb_disable_message, ctdb_disable_message);
 PROTOCOL_TYPE1_TEST(struct ctdb_server_id, ctdb_server_id);
+PROTOCOL_TYPE1_TEST(struct ctdb_g_lock, ctdb_g_lock);
 DEFINE_TEST(struct ctdb_g_lock_list, ctdb_g_lock_list);
 
 static void test_ctdb_rec_buffer_read_write(void)
@@ -146,7 +131,6 @@ int main(int argc, char *argv[])
 	TEST_FUNC(ctdb_tdb_data)();
 	TEST_FUNC(ctdb_tdb_datan)();
 	TEST_FUNC(ctdb_latency_counter)();
-	test_ctdb_g_lock();
 
 	TEST_FUNC(ctdb_statistics)();
 	TEST_FUNC(ctdb_vnn_map)();
@@ -189,6 +173,7 @@ int main(int argc, char *argv[])
 	TEST_FUNC(ctdb_srvid_message)();
 	TEST_FUNC(ctdb_disable_message)();
 	TEST_FUNC(ctdb_server_id)();
+	TEST_FUNC(ctdb_g_lock)();
 	TEST_FUNC(ctdb_g_lock_list)();
 
 	test_ctdb_rec_buffer_read_write();

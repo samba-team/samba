@@ -4924,23 +4924,65 @@ int ctdb_server_id_pull(uint8_t *buf, size_t buflen,
 	return 0;
 }
 
-size_t ctdb_g_lock_len(struct ctdb_g_lock *lock)
+size_t ctdb_g_lock_len(struct ctdb_g_lock *in)
 {
-	return sizeof(struct ctdb_g_lock);
+	return ctdb_uint32_len(&in->type) +
+		ctdb_padding_len(4) +
+		ctdb_server_id_len(&in->sid);
 }
 
-void ctdb_g_lock_push(struct ctdb_g_lock *lock, uint8_t *buf)
+void ctdb_g_lock_push(struct ctdb_g_lock *in, uint8_t *buf, size_t *npush)
 {
-	memcpy(buf, lock, sizeof(struct ctdb_g_lock));
+	size_t offset = 0, np;
+	uint32_t type;
+
+	type = in->type;
+	ctdb_uint32_push(&type, buf+offset, &np);
+	offset += np;
+
+	ctdb_padding_push(4, buf+offset, &np);
+	offset += np;
+
+	ctdb_server_id_push(&in->sid, buf+offset, &np);
+	offset += np;
+
+	*npush = offset;
 }
 
-int ctdb_g_lock_pull(uint8_t *buf, size_t buflen, struct ctdb_g_lock *lock)
+int ctdb_g_lock_pull(uint8_t *buf, size_t buflen, struct ctdb_g_lock *out,
+		     size_t *npull)
 {
-	if (buflen < sizeof(struct ctdb_g_lock)) {
-		return EMSGSIZE;
+	size_t offset = 0, np;
+	int ret;
+	uint32_t type;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &type, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	if (type == 0) {
+		out->type = CTDB_G_LOCK_READ;
+	} else if (type == 1) {
+		out->type = CTDB_G_LOCK_WRITE;
+	} else {
+		return EPROTO;
 	}
 
-	memcpy(lock, buf, sizeof(struct ctdb_g_lock));
+	ret = ctdb_padding_pull(buf+offset, buflen-offset, 4, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_server_id_pull(buf+offset, buflen-offset, &out->sid, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	*npull = offset;
 	return 0;
 }
 
@@ -4951,12 +4993,12 @@ size_t ctdb_g_lock_list_len(struct ctdb_g_lock_list *lock_list)
 
 void ctdb_g_lock_list_push(struct ctdb_g_lock_list *lock_list, uint8_t *buf)
 {
-	size_t offset = 0;
+	size_t offset = 0, np;
 	int i;
 
 	for (i=0; i<lock_list->num; i++) {
-		ctdb_g_lock_push(&lock_list->lock[i], &buf[offset]);
-		offset += sizeof(struct ctdb_g_lock);
+		ctdb_g_lock_push(&lock_list->lock[i], &buf[offset], &np);
+		offset += np;
 	}
 }
 
@@ -4965,7 +5007,7 @@ int ctdb_g_lock_list_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 {
 	struct ctdb_g_lock_list *lock_list;
 	unsigned count;
-	size_t offset;
+	size_t offset, np;
 	int ret, i;
 
 	lock_list = talloc_zero(mem_ctx, struct ctdb_g_lock_list);
@@ -4983,12 +5025,12 @@ int ctdb_g_lock_list_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 	offset = 0;
 	for (i=0; i<count; i++) {
 		ret = ctdb_g_lock_pull(&buf[offset], buflen-offset,
-				       &lock_list->lock[i]);
+				       &lock_list->lock[i], &np);
 		if (ret != 0) {
 			talloc_free(lock_list);
 			return ret;
 		}
-		offset += sizeof(struct ctdb_g_lock);
+		offset += np;
 	}
 
 	lock_list->num = count;
