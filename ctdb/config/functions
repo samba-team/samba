@@ -701,7 +701,7 @@ _ctdb_counter_common () {
 ctdb_counter_init () {
     _ctdb_counter_common "$1"
 
-    >"$_counter_file"
+    : >"$_counter_file"
 }
 ctdb_counter_incr () {
     _ctdb_counter_common "$1"
@@ -747,7 +747,7 @@ ctdb_service_needs_reconfigure ()
 ctdb_service_set_reconfigure ()
 {
     _ctdb_service_reconfigure_common
-    >"$_ctdb_service_reconfigure_flag"
+    : >"$_ctdb_service_reconfigure_flag"
 }
 
 ctdb_service_unset_reconfigure ()
@@ -868,7 +868,7 @@ if ! type mktemp >/dev/null 2>&1 ; then
 	    if $_dir ; then
 		mkdir "$_t"
 	    else
-		>"$_t"
+		: >"$_t"
 	    fi
 	)
 	echo "$_t"
