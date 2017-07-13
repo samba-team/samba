@@ -244,51 +244,56 @@ static NTSTATUS gensec_spnego_create_negTokenInit(struct gensec_security *gensec
 			continue;
 		}
 
+		if (spnego_state->state_position != SPNEGO_CLIENT_START) {
+			/*
+			 * The server doesn't generate an optimistic token.
+			 */
+			goto reply;
+		}
+
 		/* In the client, try and produce the first (optimistic) packet */
-		if (spnego_state->state_position == SPNEGO_CLIENT_START) {
-			nt_status = gensec_update_ev(spnego_state->sub_sec_security,
-						  out_mem_ctx, 
-						  ev,
-						  data_blob_null,
-						  &unwrapped_out);
-			if (NT_STATUS_IS_OK(nt_status)) {
-				spnego_state->sub_sec_ready = true;
+		nt_status = gensec_update_ev(spnego_state->sub_sec_security,
+					  out_mem_ctx,
+					  ev,
+					  data_blob_null,
+					  &unwrapped_out);
+		if (NT_STATUS_IS_OK(nt_status)) {
+			spnego_state->sub_sec_ready = true;
+		}
+
+		if (GENSEC_UPDATE_IS_NTERROR(nt_status)) {
+			const char *next = NULL;
+			const char *principal = NULL;
+			int dbg_level = DBGLVL_WARNING;
+
+			if (all_sec[i+1].op != NULL) {
+				next = all_sec[i+1].op->name;
+				dbg_level = DBGLVL_NOTICE;
 			}
 
-			if (GENSEC_UPDATE_IS_NTERROR(nt_status)) {
-				const char *next = NULL;
-				const char *principal = NULL;
-				int dbg_level = DBGLVL_WARNING;
-
-				if (all_sec[i+1].op != NULL) {
-					next = all_sec[i+1].op->name;
-					dbg_level = DBGLVL_NOTICE;
-				}
-
-				if (gensec_security->target.principal != NULL) {
-					principal = gensec_security->target.principal;
-				} else if (gensec_security->target.service != NULL &&
-					   gensec_security->target.hostname != NULL)
-				{
-					principal = talloc_asprintf(spnego_state->sub_sec_security,
-								    "%s/%s",
-								    gensec_security->target.service,
-								    gensec_security->target.hostname);
-				} else {
-					principal = gensec_security->target.hostname;
-				}
-
-				DEBUG(dbg_level, ("SPNEGO(%s) creating NEG_TOKEN_INIT for %s failed (next[%s]): %s\n",
-					  spnego_state->sub_sec_security->ops->name,
-					  principal,
-					  next, nt_errstr(nt_status)));
-
-				/*
-				 * Pretend we never started it
-				 */
-				gensec_spnego_update_sub_abort(spnego_state);
-				continue;
+			if (gensec_security->target.principal != NULL) {
+				principal = gensec_security->target.principal;
+			} else if (gensec_security->target.service != NULL &&
+				   gensec_security->target.hostname != NULL)
+			{
+				principal = talloc_asprintf(spnego_state->sub_sec_security,
+							    "%s/%s",
+							    gensec_security->target.service,
+							    gensec_security->target.hostname);
+			} else {
+				principal = gensec_security->target.hostname;
 			}
+
+			DEBUG(dbg_level, ("SPNEGO(%s) creating NEG_TOKEN_INIT for %s failed (next[%s]): %s\n",
+				  spnego_state->sub_sec_security->ops->name,
+				  principal,
+				  next, nt_errstr(nt_status)));
+
+			/*
+			 * Pretend we never started it
+			 */
+			gensec_spnego_update_sub_abort(spnego_state);
+			continue;
 		}
 
 		goto reply;
