@@ -175,11 +175,11 @@ static void ctdb_message_data_push(union ctdb_message_data *mdata,
 		break;
 
 	case CTDB_SRVID_DISABLE_TAKEOVER_RUNS:
-		ctdb_disable_message_push(mdata->disable, buf);
+		ctdb_disable_message_push(mdata->disable, buf, &np);
 		break;
 
 	case CTDB_SRVID_DISABLE_RECOVERIES:
-		ctdb_disable_message_push(mdata->disable, buf);
+		ctdb_disable_message_push(mdata->disable, buf, &np);
 		break;
 
 	case CTDB_SRVID_DISABLE_IP_CHECK:
@@ -265,12 +265,12 @@ static int ctdb_message_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_SRVID_DISABLE_TAKEOVER_RUNS:
 		ret = ctdb_disable_message_pull(buf, buflen, mem_ctx,
-						&mdata->disable);
+						&mdata->disable, &np);
 		break;
 
 	case CTDB_SRVID_DISABLE_RECOVERIES:
 		ret = ctdb_disable_message_pull(buf, buflen, mem_ctx,
-						&mdata->disable);
+						&mdata->disable, &np);
 		break;
 
 	case CTDB_SRVID_DISABLE_IP_CHECK:

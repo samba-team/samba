@@ -4777,34 +4777,88 @@ fail:
 	return ret;
 }
 
-size_t ctdb_disable_message_len(struct ctdb_disable_message *disable)
+size_t ctdb_disable_message_len(struct ctdb_disable_message *in)
 {
-	return sizeof(struct ctdb_disable_message);
+	return ctdb_uint32_len(&in->pnn) +
+		ctdb_padding_len(4) +
+		ctdb_uint64_len(&in->srvid) +
+		ctdb_uint32_len(&in->timeout) +
+		ctdb_padding_len(4);
 }
 
-void ctdb_disable_message_push(struct ctdb_disable_message *disable,
-			       uint8_t *buf)
+void ctdb_disable_message_push(struct ctdb_disable_message *in, uint8_t *buf,
+			       size_t *npush)
 {
-	memcpy(buf, disable, sizeof(struct ctdb_disable_message));
+	size_t offset = 0, np;
+
+	ctdb_uint32_push(&in->pnn, buf+offset, &np);
+	offset += np;
+
+	ctdb_padding_push(4, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint64_push(&in->srvid, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->timeout, buf+offset, &np);
+	offset += np;
+
+	ctdb_padding_push(4, buf+offset, &np);
+	offset += np;
+
+	*npush = offset;
 }
 
 int ctdb_disable_message_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			      struct ctdb_disable_message **out)
+			      struct ctdb_disable_message **out,
+			      size_t *npull)
 {
-	struct ctdb_disable_message *disable;
+	struct ctdb_disable_message *val;
+	size_t offset = 0, np;
+	int ret;
 
-	if (buflen < sizeof(struct ctdb_disable_message)) {
-		return EMSGSIZE;
-	}
-
-	disable = talloc_memdup(mem_ctx, buf,
-				sizeof(struct ctdb_disable_message));
-	if (disable == NULL) {
+	val = talloc(mem_ctx, struct ctdb_disable_message);
+	if (val == NULL) {
 		return ENOMEM;
 	}
 
-	*out = disable;
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &val->pnn, &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
+
+	ret = ctdb_padding_pull(buf+offset, buflen-offset, 4, &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
+
+	ret = ctdb_uint64_pull(buf+offset, buflen-offset, &val->srvid, &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &val->timeout, &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
+
+	ret = ctdb_padding_pull(buf+offset, buflen-offset, 4, &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
+
+	*out = val;
+	*npull = offset;
 	return 0;
+
+fail:
+	talloc_free(val);
+	return ret;
 }
 
 size_t ctdb_server_id_len(struct ctdb_server_id *sid)

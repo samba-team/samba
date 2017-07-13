@@ -309,7 +309,8 @@ int ctdb_db_statistics_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 size_t ctdb_election_message_len(struct ctdb_election_message *in);
 void ctdb_election_message_push(struct ctdb_election_message *in,
 				uint8_t *buf, size_t *npush);
-int ctdb_election_message_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
+int ctdb_election_message_pull(uint8_t *buf, size_t buflen,
+			       TALLOC_CTX *mem_ctx,
 			       struct ctdb_election_message **out,
 			       size_t *npull);
 
@@ -319,10 +320,11 @@ void ctdb_srvid_message_push(struct ctdb_srvid_message *in, uint8_t *buf,
 int ctdb_srvid_message_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 			    struct ctdb_srvid_message **out, size_t *npull);
 
-size_t ctdb_disable_message_len(struct ctdb_disable_message *disable);
-void ctdb_disable_message_push(struct ctdb_disable_message *disable,
-			       uint8_t *buf);
+size_t ctdb_disable_message_len(struct ctdb_disable_message *in);
+void ctdb_disable_message_push(struct ctdb_disable_message *in, uint8_t *buf,
+			       size_t *npush);
 int ctdb_disable_message_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			      struct ctdb_disable_message **out);
+			      struct ctdb_disable_message **out,
+			      size_t *npull);
 
 #endif /* __PROTOCOL_PRIVATE_H__ */
