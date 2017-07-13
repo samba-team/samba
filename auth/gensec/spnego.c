@@ -218,6 +218,9 @@ static NTSTATUS gensec_spnego_create_negTokenInit(struct gensec_security *gensec
 	const char **mechTypes = NULL;
 	DATA_BLOB unwrapped_out = data_blob_null;
 	const struct gensec_security_ops_wrapper *all_sec;
+	const char **send_mech_types = NULL;
+	struct spnego_data spnego_out;
+	bool ok;
 
 	mechTypes = gensec_security_oids(gensec_security, 
 					 out_mem_ctx, GENSEC_OID_SPNEGO);
@@ -227,10 +230,6 @@ static NTSTATUS gensec_spnego_create_negTokenInit(struct gensec_security *gensec
 					      mechTypes,
 					      GENSEC_OID_SPNEGO);
 	for (i=0; all_sec && all_sec[i].op; i++) {
-		struct spnego_data spnego_out;
-		const char **send_mech_types;
-		bool ok;
-
 		nt_status = gensec_subcontext_start(spnego_state,
 						    gensec_security,
 						    &spnego_state->sub_sec_security);
@@ -292,55 +291,58 @@ static NTSTATUS gensec_spnego_create_negTokenInit(struct gensec_security *gensec
 			}
 		}
 
-		spnego_out.type = SPNEGO_NEG_TOKEN_INIT;
-
-		send_mech_types = gensec_security_oids_from_ops_wrapped(out_mem_ctx,
-									&all_sec[i]);
-
-		ok = spnego_write_mech_types(spnego_state,
-					     send_mech_types,
-					     &spnego_state->mech_types);
-		if (!ok) {
-			DEBUG(1, ("SPNEGO: Failed to write mechTypes\n"));
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		/* List the remaining mechs as options */
-		spnego_out.negTokenInit.mechTypes = send_mech_types;
-		spnego_out.negTokenInit.reqFlags = data_blob_null;
-		spnego_out.negTokenInit.reqFlagsPadding = 0;
-
-		if (spnego_state->state_position == SPNEGO_SERVER_START) {
-			spnego_out.negTokenInit.mechListMIC
-				= data_blob_string_const(ADS_IGNORE_PRINCIPAL);
-		} else {
-			spnego_out.negTokenInit.mechListMIC = data_blob_null;
-		}
-
-		spnego_out.negTokenInit.mechToken = unwrapped_out;
-
-		if (spnego_write_data(out_mem_ctx, out, &spnego_out) == -1) {
-			DEBUG(1, ("Failed to write NEG_TOKEN_INIT\n"));
-				return NT_STATUS_INVALID_PARAMETER;
-		}
-
-		/* set next state */
-		spnego_state->neg_oid = all_sec[i].oid;
-
-		if (spnego_state->state_position == SPNEGO_SERVER_START) {
-			spnego_state->state_position = SPNEGO_SERVER_START;
-			spnego_state->expected_packet = SPNEGO_NEG_TOKEN_INIT;
-		} else {
-			spnego_state->state_position = SPNEGO_CLIENT_TARG;
-			spnego_state->expected_packet = SPNEGO_NEG_TOKEN_TARG;
-		}
-
-		return NT_STATUS_MORE_PROCESSING_REQUIRED;
+		goto reply;
 	}
 	gensec_spnego_update_sub_abort(spnego_state);
 
 	DEBUG(10, ("Failed to setup SPNEGO negTokenInit request: %s\n", nt_errstr(nt_status)));
 	return nt_status;
+
+reply:
+	spnego_out.type = SPNEGO_NEG_TOKEN_INIT;
+
+	send_mech_types = gensec_security_oids_from_ops_wrapped(out_mem_ctx,
+								&all_sec[i]);
+
+	ok = spnego_write_mech_types(spnego_state,
+				     send_mech_types,
+				     &spnego_state->mech_types);
+	if (!ok) {
+		DEBUG(1, ("SPNEGO: Failed to write mechTypes\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* List the remaining mechs as options */
+	spnego_out.negTokenInit.mechTypes = send_mech_types;
+	spnego_out.negTokenInit.reqFlags = data_blob_null;
+	spnego_out.negTokenInit.reqFlagsPadding = 0;
+
+	if (spnego_state->state_position == SPNEGO_SERVER_START) {
+		spnego_out.negTokenInit.mechListMIC
+			= data_blob_string_const(ADS_IGNORE_PRINCIPAL);
+	} else {
+		spnego_out.negTokenInit.mechListMIC = data_blob_null;
+	}
+
+	spnego_out.negTokenInit.mechToken = unwrapped_out;
+
+	if (spnego_write_data(out_mem_ctx, out, &spnego_out) == -1) {
+		DEBUG(1, ("Failed to write NEG_TOKEN_INIT\n"));
+			return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* set next state */
+	spnego_state->neg_oid = all_sec[i].oid;
+
+	if (spnego_state->state_position == SPNEGO_SERVER_START) {
+		spnego_state->state_position = SPNEGO_SERVER_START;
+		spnego_state->expected_packet = SPNEGO_NEG_TOKEN_INIT;
+	} else {
+		spnego_state->state_position = SPNEGO_CLIENT_TARG;
+		spnego_state->expected_packet = SPNEGO_NEG_TOKEN_TARG;
+	}
+
+	return NT_STATUS_MORE_PROCESSING_REQUIRED;
 }
 
 static NTSTATUS gensec_spnego_client_negTokenInit(struct gensec_security *gensec_security,
