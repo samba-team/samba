@@ -313,10 +313,11 @@ int ctdb_election_message_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 			       struct ctdb_election_message **out,
 			       size_t *npull);
 
-size_t ctdb_srvid_message_len(struct ctdb_srvid_message *msg);
-void ctdb_srvid_message_push(struct ctdb_srvid_message *msg, uint8_t *buf);
+size_t ctdb_srvid_message_len(struct ctdb_srvid_message *in);
+void ctdb_srvid_message_push(struct ctdb_srvid_message *in, uint8_t *buf,
+			     size_t *npush);
 int ctdb_srvid_message_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			    struct ctdb_srvid_message **out);
+			    struct ctdb_srvid_message **out, size_t *npull);
 
 size_t ctdb_disable_message_len(struct ctdb_disable_message *disable);
 void ctdb_disable_message_push(struct ctdb_disable_message *disable,

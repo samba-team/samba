@@ -156,7 +156,7 @@ static void ctdb_message_data_push(union ctdb_message_data *mdata,
 		break;
 
 	case CTDB_SRVID_MEM_DUMP:
-		ctdb_srvid_message_push(mdata->msg, buf);
+		ctdb_srvid_message_push(mdata->msg, buf, &np);
 		break;
 
 	case CTDB_SRVID_PUSH_NODE_FLAGS:
@@ -167,7 +167,7 @@ static void ctdb_message_data_push(union ctdb_message_data *mdata,
 		break;
 
 	case CTDB_SRVID_TAKEOVER_RUN:
-		ctdb_srvid_message_push(mdata->msg, buf);
+		ctdb_srvid_message_push(mdata->msg, buf, &np);
 		break;
 
 	case CTDB_SRVID_REBALANCE_NODE:
@@ -243,7 +243,7 @@ static int ctdb_message_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_SRVID_MEM_DUMP:
 		ret = ctdb_srvid_message_pull(buf, buflen, mem_ctx,
-					      &mdata->msg);
+					      &mdata->msg, &np);
 		break;
 
 	case CTDB_SRVID_PUSH_NODE_FLAGS:
@@ -256,7 +256,7 @@ static int ctdb_message_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_SRVID_TAKEOVER_RUN:
 		ret = ctdb_srvid_message_pull(buf, buflen, mem_ctx,
-					      &mdata->msg);
+					      &mdata->msg, &np);
 		break;
 
 	case CTDB_SRVID_REBALANCE_NODE:
