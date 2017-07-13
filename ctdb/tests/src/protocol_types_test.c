@@ -73,7 +73,7 @@ PROTOCOL_TYPE3_TEST(struct ctdb_srvid_message, ctdb_srvid_message);
 PROTOCOL_TYPE3_TEST(struct ctdb_disable_message, ctdb_disable_message);
 PROTOCOL_TYPE1_TEST(struct ctdb_server_id, ctdb_server_id);
 PROTOCOL_TYPE1_TEST(struct ctdb_g_lock, ctdb_g_lock);
-DEFINE_TEST(struct ctdb_g_lock_list, ctdb_g_lock_list);
+PROTOCOL_TYPE3_TEST(struct ctdb_g_lock_list, ctdb_g_lock_list);
 
 static void test_ctdb_rec_buffer_read_write(void)
 {

@@ -2209,6 +2209,60 @@ static int ctdb_g_lock_pull_old(uint8_t *buf, size_t buflen,
 	return 0;
 }
 
+static size_t ctdb_g_lock_list_len_old(struct ctdb_g_lock_list *in)
+{
+	return in->num * sizeof(struct ctdb_g_lock);
+}
+
+static void ctdb_g_lock_list_push_old(struct ctdb_g_lock_list *in,
+				      uint8_t *buf)
+{
+	size_t offset = 0;
+	int i;
+
+	for (i=0; i<in->num; i++) {
+		ctdb_g_lock_push_old(&in->lock[i], &buf[offset]);
+		offset += sizeof(struct ctdb_g_lock);
+	}
+}
+
+static int ctdb_g_lock_list_pull_old(uint8_t *buf, size_t buflen,
+				     TALLOC_CTX *mem_ctx,
+				     struct ctdb_g_lock_list **out)
+{
+	struct ctdb_g_lock_list *val;
+	unsigned count;
+	size_t offset;
+	int ret, i;
+
+	val = talloc_zero(mem_ctx, struct ctdb_g_lock_list);
+	if (val == NULL) {
+		return ENOMEM;
+	}
+
+	count = buflen / sizeof(struct ctdb_g_lock);
+	val->lock = talloc_array(val, struct ctdb_g_lock, count);
+	if (val->lock == NULL) {
+		talloc_free(val);
+		return ENOMEM;
+	}
+
+	offset = 0;
+	for (i=0; i<count; i++) {
+		ret = ctdb_g_lock_pull_old(&buf[offset], buflen-offset,
+					   &val->lock[i]);
+		if (ret != 0) {
+			talloc_free(val);
+			return ret;
+		}
+		offset += sizeof(struct ctdb_g_lock);
+	}
+
+	val->num = count;
+
+	*out = val;
+	return 0;
+}
 
 COMPAT_TYPE3_TEST(struct ctdb_statistics, ctdb_statistics);
 COMPAT_TYPE3_TEST(struct ctdb_vnn_map, ctdb_vnn_map);
@@ -2255,6 +2309,8 @@ COMPAT_TYPE3_TEST(struct ctdb_disable_message, ctdb_disable_message);
 
 COMPAT_TYPE1_TEST(struct ctdb_server_id, ctdb_server_id);
 COMPAT_TYPE1_TEST(struct ctdb_g_lock, ctdb_g_lock);
+
+COMPAT_TYPE3_TEST(struct ctdb_g_lock_list, ctdb_g_lock_list);
 
 int main(int argc, char *argv[])
 {
@@ -2305,6 +2361,7 @@ int main(int argc, char *argv[])
 	COMPAT_TEST_FUNC(ctdb_disable_message)();
 	COMPAT_TEST_FUNC(ctdb_server_id)();
 	COMPAT_TEST_FUNC(ctdb_g_lock)();
+	COMPAT_TEST_FUNC(ctdb_g_lock_list)();
 
 	return 0;
 }

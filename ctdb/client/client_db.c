@@ -1699,6 +1699,7 @@ static void ctdb_g_lock_lock_fetched(struct tevent_req *subreq)
 	struct ctdb_g_lock_lock_state *state = tevent_req_data(
 		req, struct ctdb_g_lock_lock_state);
 	TDB_DATA data;
+	size_t np;
 	int ret = 0;
 
 	state->h = ctdb_fetch_lock_recv(subreq, NULL, state, &data, &ret);
@@ -1716,7 +1717,7 @@ static void ctdb_g_lock_lock_fetched(struct tevent_req *subreq)
 	}
 
 	ret = ctdb_g_lock_list_pull(data.dptr, data.dsize, state,
-				    &state->lock_list);
+				    &state->lock_list, &np);
 	talloc_free(data.dptr);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, ("g_lock_lock: %s invalid lock data\n",
@@ -1855,6 +1856,7 @@ static int ctdb_g_lock_lock_update(struct tevent_req *req)
 	struct ctdb_g_lock_lock_state *state = tevent_req_data(
 		req, struct ctdb_g_lock_lock_state);
 	TDB_DATA data;
+	size_t np;
 	int ret;
 
 	data.dsize = ctdb_g_lock_list_len(state->lock_list);
@@ -1863,7 +1865,7 @@ static int ctdb_g_lock_lock_update(struct tevent_req *req)
 		return ENOMEM;
 	}
 
-	ctdb_g_lock_list_push(state->lock_list, data.dptr);
+	ctdb_g_lock_list_push(state->lock_list, data.dptr, &np);
 	ret = ctdb_store_record(state->h, data);
 	talloc_free(data.dptr);
 	return ret;
@@ -1964,6 +1966,7 @@ static void ctdb_g_lock_unlock_fetched(struct tevent_req *subreq)
 	struct ctdb_g_lock_unlock_state *state = tevent_req_data(
 		req, struct ctdb_g_lock_unlock_state);
 	TDB_DATA data;
+	size_t np;
 	int ret = 0;
 
 	state->h = ctdb_fetch_lock_recv(subreq, NULL, state, &data, &ret);
@@ -1976,7 +1979,7 @@ static void ctdb_g_lock_unlock_fetched(struct tevent_req *subreq)
 	}
 
 	ret = ctdb_g_lock_list_pull(data.dptr, data.dsize, state,
-				    &state->lock_list);
+				    &state->lock_list, &np);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, ("g_lock_unlock: %s invalid lock data\n",
 				  (char *)state->key.dptr));
@@ -2027,6 +2030,7 @@ static int ctdb_g_lock_unlock_update(struct tevent_req *req)
 
 	if (state->lock_list->num != 0) {
 		TDB_DATA data;
+		size_t np;
 
 		data.dsize = ctdb_g_lock_list_len(state->lock_list);
 		data.dptr = talloc_size(state, data.dsize);
@@ -2034,7 +2038,7 @@ static int ctdb_g_lock_unlock_update(struct tevent_req *req)
 			return ENOMEM;
 		}
 
-		ctdb_g_lock_list_push(state->lock_list, data.dptr);
+		ctdb_g_lock_list_push(state->lock_list, data.dptr, &np);
 		ret = ctdb_store_record(state->h, data);
 		talloc_free(data.dptr);
 		if (ret != 0) {

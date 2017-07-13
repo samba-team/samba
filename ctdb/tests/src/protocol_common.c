@@ -1366,7 +1366,7 @@ void fill_ctdb_g_lock_list(TALLOC_CTX *mem_ctx, struct ctdb_g_lock_list *p)
 	int i;
 
 	p->num = rand_int(20) + 1;
-	p->lock = talloc_array(mem_ctx, struct ctdb_g_lock, p->num);
+	p->lock = talloc_zero_array(mem_ctx, struct ctdb_g_lock, p->num);
 	assert(p->lock != NULL);
 	for (i=0; i<p->num; i++) {
 		fill_ctdb_g_lock(&p->lock[i]);

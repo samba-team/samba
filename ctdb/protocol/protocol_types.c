@@ -4986,55 +4986,74 @@ int ctdb_g_lock_pull(uint8_t *buf, size_t buflen, struct ctdb_g_lock *out,
 	return 0;
 }
 
-size_t ctdb_g_lock_list_len(struct ctdb_g_lock_list *lock_list)
+size_t ctdb_g_lock_list_len(struct ctdb_g_lock_list *in)
 {
-	return lock_list->num * sizeof(struct ctdb_g_lock);
+	size_t len = 0;
+
+	if (in->num > 0) {
+		len += in->num * ctdb_g_lock_len(&in->lock[0]);
+	}
+
+	return len;
 }
 
-void ctdb_g_lock_list_push(struct ctdb_g_lock_list *lock_list, uint8_t *buf)
+void ctdb_g_lock_list_push(struct ctdb_g_lock_list *in, uint8_t *buf,
+			   size_t *npush)
 {
 	size_t offset = 0, np;
-	int i;
+	uint32_t i;
 
-	for (i=0; i<lock_list->num; i++) {
-		ctdb_g_lock_push(&lock_list->lock[i], &buf[offset], &np);
+	for (i=0; i<in->num; i++) {
+		ctdb_g_lock_push(&in->lock[i], buf+offset, &np);
 		offset += np;
 	}
+
+	*npush = offset;
 }
 
 int ctdb_g_lock_list_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			  struct ctdb_g_lock_list **out)
+			  struct ctdb_g_lock_list **out, size_t *npull)
 {
-	struct ctdb_g_lock_list *lock_list;
-	unsigned count;
-	size_t offset, np;
-	int ret, i;
+	struct ctdb_g_lock_list *val;
+	struct ctdb_g_lock lock = { 0 };
+	size_t offset = 0, np;
+	uint32_t i;
+	int ret;
 
-	lock_list = talloc_zero(mem_ctx, struct ctdb_g_lock_list);
-	if (lock_list == NULL) {
+	val = talloc(mem_ctx, struct ctdb_g_lock_list);
+	if (val == NULL) {
 		return ENOMEM;
 	}
 
-	count = buflen / sizeof(struct ctdb_g_lock);
-	lock_list->lock = talloc_array(lock_list, struct ctdb_g_lock, count);
-	if (lock_list->lock == NULL) {
-		talloc_free(lock_list);
-		return ENOMEM;
+	if (buflen == 0) {
+		val->lock = NULL;
+		val->num = 0;
+		goto done;
 	}
 
-	offset = 0;
-	for (i=0; i<count; i++) {
-		ret = ctdb_g_lock_pull(&buf[offset], buflen-offset,
-				       &lock_list->lock[i], &np);
+	val->num = buflen / ctdb_g_lock_len(&lock);
+
+	val->lock = talloc_array(val, struct ctdb_g_lock, val->num);
+	if (val->lock == NULL) {
+		ret = ENOMEM;
+		goto fail;
+	}
+
+	for (i=0; i<val->num; i++) {
+		ret = ctdb_g_lock_pull(buf+offset, buflen-offset,
+				       &val->lock[i], &np);
 		if (ret != 0) {
-			talloc_free(lock_list);
-			return ret;
+			goto fail;
 		}
 		offset += np;
 	}
 
-	lock_list->num = count;
-
-	*out = lock_list;
+done:
+	*out = val;
+	*npull = offset;
 	return 0;
+
+fail:
+	talloc_free(val);
+	return ENOMEM;
 }

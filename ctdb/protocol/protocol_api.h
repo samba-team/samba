@@ -69,10 +69,11 @@ void ctdb_g_lock_push(struct ctdb_g_lock *in, uint8_t *buf, size_t *npush);
 int ctdb_g_lock_pull(uint8_t *buf, size_t buflen, struct ctdb_g_lock *out,
 		     size_t *npull);
 
-size_t ctdb_g_lock_list_len(struct ctdb_g_lock_list *lock_list);
-void ctdb_g_lock_list_push(struct ctdb_g_lock_list *lock_list, uint8_t *buf);
+size_t ctdb_g_lock_list_len(struct ctdb_g_lock_list *in);
+void ctdb_g_lock_list_push(struct ctdb_g_lock_list *in, uint8_t *buf,
+			   size_t *npush);
 int ctdb_g_lock_list_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			  struct ctdb_g_lock_list **out);
+			  struct ctdb_g_lock_list **out, size_t *npull);
 
 /* From protocol/protocol_header.c */
 
