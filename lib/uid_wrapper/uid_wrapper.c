@@ -133,9 +133,6 @@ enum uwrap_dbglvl_e {
 	UWRAP_LOG_TRACE
 };
 
-#ifdef NDEBUG
-# define UWRAP_LOG(...)
-#else /* NDEBUG */
 static void uwrap_log(enum uwrap_dbglvl_e dbglvl, const char *function, const char *format, ...) PRINTF_ATTRIBUTE(3, 4);
 # define UWRAP_LOG(dbglvl, ...) uwrap_log((dbglvl), __func__, __VA_ARGS__)
 
@@ -145,42 +142,43 @@ static void uwrap_log(enum uwrap_dbglvl_e dbglvl, const char *function, const ch
 	va_list va;
 	const char *d;
 	unsigned int lvl = 0;
+	const char *prefix = "UWRAP";
 
 	d = getenv("UID_WRAPPER_DEBUGLEVEL");
 	if (d != NULL) {
 		lvl = atoi(d);
 	}
 
+	if (lvl < dbglvl) {
+		return;
+	}
+
 	va_start(va, format);
 	vsnprintf(buffer, sizeof(buffer), format, va);
 	va_end(va);
 
-	if (lvl >= dbglvl) {
-		const char *prefix = "UWRAP";
-		switch (dbglvl) {
-			case UWRAP_LOG_ERROR:
-				prefix = "UWRAP_ERROR";
-				break;
-			case UWRAP_LOG_WARN:
-				prefix = "UWRAP_WARN";
-				break;
-			case UWRAP_LOG_DEBUG:
-				prefix = "UWRAP_DEBUG";
-				break;
-			case UWRAP_LOG_TRACE:
-				prefix = "UWRAP_TRACE";
-				break;
-		}
-
-		fprintf(stderr,
-			"%s(%d) - %s: %s\n",
-			prefix,
-			(int)getpid(),
-			function,
-			buffer);
+	switch (dbglvl) {
+		case UWRAP_LOG_ERROR:
+			prefix = "UWRAP_ERROR";
+			break;
+		case UWRAP_LOG_WARN:
+			prefix = "UWRAP_WARN";
+			break;
+		case UWRAP_LOG_DEBUG:
+			prefix = "UWRAP_DEBUG";
+			break;
+		case UWRAP_LOG_TRACE:
+			prefix = "UWRAP_TRACE";
+			break;
 	}
+
+	fprintf(stderr,
+		"%s(%d) - %s: %s\n",
+		prefix,
+		(int)getpid(),
+		function,
+		buffer);
 }
-#endif /* NDEBUG */
 
 /*****************
  * LIBC
@@ -403,6 +401,13 @@ static void *uwrap_load_lib_handle(enum uwrap_lib lib)
 				char soname[256] = {0};
 
 				snprintf(soname, sizeof(soname), "libc.so.%d", i);
+				handle = dlopen(soname, flags);
+				if (handle != NULL) {
+					break;
+				}
+
+				/* glibc on Alpha and IA64 is libc.so.6.1 */
+				snprintf(soname, sizeof(soname), "libc.so.%d.1", i);
 				handle = dlopen(soname, flags);
 				if (handle != NULL) {
 					break;
@@ -808,16 +813,102 @@ int pthread_create(pthread_t *thread,
  * UWRAP ID HANDLING
  *********************************************************/
 
+#define GROUP_STRING_SIZE 16384
+#define GROUP_MAX_COUNT (GROUP_STRING_SIZE / (10 + 1))
+
+/**
+ * This function exports all the IDs of the current user so if
+ * we fork and then exec we can setup uid_wrapper in the new process
+ * with those IDs.
+ */
+static void uwrap_export_ids(struct uwrap_thread *id)
+{
+	char groups_str[GROUP_STRING_SIZE] = {0};
+	size_t groups_str_size = sizeof(groups_str);
+	char unsigned_str[16] = {0}; /* We need 10 + 1 (+ 1) */
+	int i;
+
+	/* UIDS */
+	snprintf(unsigned_str, sizeof(unsigned_str), "%u", id->ruid);
+	setenv("UID_WRAPPER_INITIAL_RUID", unsigned_str, 1);
+
+	snprintf(unsigned_str, sizeof(unsigned_str), "%u", id->euid);
+	setenv("UID_WRAPPER_INITIAL_EUID", unsigned_str, 1);
+
+	snprintf(unsigned_str, sizeof(unsigned_str), "%u", id->suid);
+	setenv("UID_WRAPPER_INITIAL_SUID", unsigned_str, 1);
+
+	/* GIDS */
+	snprintf(unsigned_str, sizeof(unsigned_str), "%u", id->rgid);
+	setenv("UID_WRAPPER_INITIAL_RGID", unsigned_str, 1);
+
+	snprintf(unsigned_str, sizeof(unsigned_str), "%u", id->egid);
+	setenv("UID_WRAPPER_INITIAL_EGID", unsigned_str, 1);
+
+	snprintf(unsigned_str, sizeof(unsigned_str), "%u", id->sgid);
+	setenv("UID_WRAPPER_INITIAL_SGID", unsigned_str, 1);
+
+	if (id->ngroups > GROUP_MAX_COUNT) {
+		UWRAP_LOG(UWRAP_LOG_ERROR,
+			  "ERROR: Number of groups (%u) exceeds maximum value "
+			  "uid_wrapper can handle (%u).",
+			  id->ngroups,
+			  GROUP_MAX_COUNT);
+		exit(-1);
+	}
+
+	/* GROUPS */
+	for (i = 0; i < id->ngroups; i++) {
+		size_t groups_str_len = strlen(groups_str);
+		size_t groups_str_avail = groups_str_size - groups_str_len - 1;
+		int len;
+
+		len = snprintf(unsigned_str, sizeof(unsigned_str), ",%u", id->groups[i]);
+		if (len <= 1) {
+			UWRAP_LOG(UWRAP_LOG_ERROR,
+				  "snprintf failed for groups[%d]=%u",
+				  i,
+				  id->groups[i]);
+			break;
+		}
+		if (((size_t)len) >= groups_str_avail) {
+			UWRAP_LOG(UWRAP_LOG_ERROR,
+				  "groups env string is to small for %d groups",
+				  i);
+			break;
+		}
+
+		len = snprintf(groups_str + groups_str_len,
+			       groups_str_size - groups_str_len,
+			       "%s",
+			       i == 0 ? unsigned_str + 1 : unsigned_str);
+		if (len < 1) {
+			UWRAP_LOG(UWRAP_LOG_ERROR,
+				  "snprintf failed to create groups string at groups[%d]=%u",
+				  i,
+				  id->groups[i]);
+			break;
+		}
+	}
+
+	if (id->ngroups == i) {
+		setenv("UID_WRAPPER_INITIAL_GROUPS", groups_str, 1);
+
+		snprintf(unsigned_str, sizeof(unsigned_str), "%u", id->ngroups);
+		setenv("UID_WRAPPER_INITIAL_GROUPS_COUNT", unsigned_str, 1);
+	}
+}
+
 static void uwrap_thread_prepare(void)
 {
 	struct uwrap_thread *id = uwrap_tls_id;
+
+	UWRAP_LOCK_ALL;
 
 	/* uid_wrapper is loaded but not enabled */
 	if (id == NULL) {
 		return;
 	}
-
-	UWRAP_LOCK_ALL;
 
 	/*
 	 * What happens if another atfork prepare functions calls a uwrap
@@ -834,6 +925,7 @@ static void uwrap_thread_parent(void)
 
 	/* uid_wrapper is loaded but not enabled */
 	if (id == NULL) {
+		UWRAP_UNLOCK_ALL;
 		return;
 	}
 
@@ -849,6 +941,7 @@ static void uwrap_thread_child(void)
 
 	/* uid_wrapper is loaded but not enabled */
 	if (id == NULL) {
+		UWRAP_UNLOCK_ALL;
 		return;
 	}
 
@@ -872,9 +965,117 @@ static void uwrap_thread_child(void)
 		u = uwrap.ids;
 	}
 
+	uwrap_export_ids(id);
+
 	id->enabled = true;
 
 	UWRAP_UNLOCK_ALL;
+}
+
+/*
+ * This initializes uid_wrapper with the IDs exported to the environment. Those
+ * are normally set after we forked and executed.
+ */
+static void uwrap_init_env(struct uwrap_thread *id)
+{
+	const char *env;
+	int ngroups = 0;
+
+	env = getenv("UID_WRAPPER_INITIAL_RUID");
+	if (env != NULL && env[0] != '\0') {
+		UWRAP_LOG(UWRAP_LOG_DEBUG, "Initialize ruid with %s", env);
+		id->ruid = strtoul(env, (char **)NULL, 10);
+		unsetenv("UID_WRAPPER_INITIAL_RUID");
+	}
+
+	env = getenv("UID_WRAPPER_INITIAL_EUID");
+	if (env != NULL && env[0] != '\0') {
+		UWRAP_LOG(UWRAP_LOG_DEBUG, "Initalize euid with %s", env);
+		id->euid = strtoul(env, (char **)NULL, 10);
+		unsetenv("UID_WRAPPER_INITIAL_EUID");
+	}
+
+	env = getenv("UID_WRAPPER_INITIAL_SUID");
+	if (env != NULL && env[0] != '\0') {
+		UWRAP_LOG(UWRAP_LOG_DEBUG, "Initalize suid with %s", env);
+		id->suid = strtoul(env, (char **)NULL, 10);
+		unsetenv("UID_WRAPPER_INITIAL_SUID");
+	}
+
+	env = getenv("UID_WRAPPER_INITIAL_RGID");
+	if (env != NULL && env[0] != '\0') {
+		UWRAP_LOG(UWRAP_LOG_DEBUG, "Initialize ruid with %s", env);
+		id->rgid = strtoul(env, (char **)NULL, 10);
+		unsetenv("UID_WRAPPER_INITIAL_RGID");
+	}
+
+	env = getenv("UID_WRAPPER_INITIAL_EGID");
+	if (env != NULL && env[0] != '\0') {
+		UWRAP_LOG(UWRAP_LOG_DEBUG, "Initalize egid with %s", env);
+		id->egid = strtoul(env, (char **)NULL, 10);
+		unsetenv("UID_WRAPPER_INITIAL_EGID");
+	}
+
+	env = getenv("UID_WRAPPER_INITIAL_SGID");
+	if (env != NULL && env[0] != '\0') {
+		UWRAP_LOG(UWRAP_LOG_DEBUG, "Initalize sgid with %s", env);
+		id->sgid = strtoul(env, (char **)NULL, 10);
+		unsetenv("UID_WRAPPER_INITIAL_SGID");
+	}
+
+	env = getenv("UID_WRAPPER_INITIAL_GROUPS_COUNT");
+	if (env != NULL && env[0] != '\0') {
+		ngroups = strtol(env, (char **)NULL, 10);
+		unsetenv("UID_WRAPPER_INITIAL_GROUPS_COUNT");
+	}
+
+	if (ngroups > 0 && ngroups < GROUP_MAX_COUNT) {
+		int i = 0;
+
+		id->ngroups = 0;
+
+		free(id->groups);
+		id->groups = malloc(sizeof(gid_t) * ngroups);
+		if (id->groups == NULL) {
+			UWRAP_LOG(UWRAP_LOG_ERROR,
+				  "Unable to allocate memory");
+			exit(-1);
+		}
+
+		env = getenv("UID_WRAPPER_INITIAL_GROUPS");
+		if (env != NULL && env[0] != '\0') {
+			char *groups_str = NULL;
+			char *saveptr = NULL;
+			const char *p = NULL;
+
+			groups_str = strdup(env);
+			if (groups_str == NULL) {
+				exit(-1);
+			}
+
+			p = strtok_r(groups_str, ",", &saveptr);
+			while (p != NULL) {
+				id->groups[i] = strtol(p, (char **)NULL, 10);
+				i++;
+
+				p = strtok_r(NULL, ",", &saveptr);
+			}
+			SAFE_FREE(groups_str);
+		}
+
+		if (i != ngroups) {
+			UWRAP_LOG(UWRAP_LOG_ERROR,
+				  "ERROR: The number of groups (%u) passed, "
+				  "does not match the number of groups (%u) "
+				  "we parsed.",
+				  ngroups,
+				  i);
+			exit(-1);
+		}
+
+		UWRAP_LOG(UWRAP_LOG_DEBUG, "Initalize groups with %s", env);
+		id->ngroups = ngroups;
+	}
 }
 
 static void uwrap_init(void)
@@ -965,6 +1166,8 @@ static void uwrap_init(void)
 			}
 		}
 
+		uwrap_init_env(id);
+
 		id->enabled = true;
 
 		UWRAP_LOG(UWRAP_LOG_DEBUG,
@@ -975,7 +1178,7 @@ static void uwrap_init(void)
 
 	UWRAP_UNLOCK(uwrap_id);
 
-	UWRAP_LOG(UWRAP_LOG_DEBUG, "Succeccfully initialized uid_wrapper");
+	UWRAP_LOG(UWRAP_LOG_DEBUG, "Successfully initialized uid_wrapper");
 }
 
 bool uid_wrapper_enabled(void)
@@ -1148,9 +1351,7 @@ static int uwrap_setreuid_args(uid_t ruid, uid_t euid,
 
 static int uwrap_setreuid_thread(uid_t ruid, uid_t euid)
 {
-#ifndef NDEBUG
 	struct uwrap_thread *id = uwrap_tls_id;
-#endif
 	uid_t new_ruid = -1, new_euid = -1, new_suid = -1;
 	int rc;
 
@@ -1169,9 +1370,7 @@ static int uwrap_setreuid_thread(uid_t ruid, uid_t euid)
 #ifdef HAVE_SETREUID
 static int uwrap_setreuid(uid_t ruid, uid_t euid)
 {
-#ifndef NDEBUG
 	struct uwrap_thread *id = uwrap_tls_id;
-#endif
 	uid_t new_ruid = -1, new_euid = -1, new_suid = -1;
 	int rc;
 
@@ -1435,9 +1634,7 @@ static int uwrap_setregid_args(gid_t rgid, gid_t egid,
 
 static int uwrap_setregid_thread(gid_t rgid, gid_t egid)
 {
-#ifndef NDEBUG
 	struct uwrap_thread *id = uwrap_tls_id;
-#endif
 	gid_t new_rgid = -1, new_egid = -1, new_sgid = -1;
 	int rc;
 
@@ -1456,9 +1653,7 @@ static int uwrap_setregid_thread(gid_t rgid, gid_t egid)
 #ifdef HAVE_SETREGID
 static int uwrap_setregid(gid_t rgid, gid_t egid)
 {
-#ifndef NDEBUG
 	struct uwrap_thread *id = uwrap_tls_id;
-#endif
 	gid_t new_rgid = -1, new_egid = -1, new_sgid = -1;
 	int rc;
 
@@ -1894,7 +2089,11 @@ static long int uwrap_syscall (long int sysno, va_list vp)
 
 	switch (sysno) {
 		/* gid */
+#ifdef __alpha__
+		case SYS_getxgid:
+#else
 		case SYS_getgid:
+#endif
 #ifdef HAVE_LINUX_32BIT_SYSCALLS
 		case SYS_getgid32:
 #endif
@@ -1963,7 +2162,11 @@ static long int uwrap_syscall (long int sysno, va_list vp)
 #endif /* SYS_getresgid && HAVE_GETRESGID */
 
 		/* uid */
+#ifdef __alpha__
+		case SYS_getxuid:
+#else
 		case SYS_getuid:
+#endif
 #ifdef HAVE_LINUX_32BIT_SYSCALLS
 		case SYS_getuid32:
 #endif
@@ -2088,8 +2291,30 @@ long int syscall (long int sysno, ...)
 /****************************
  * CONSTRUCTOR
  ***************************/
+
 void uwrap_constructor(void)
 {
+	char *glibc_malloc_lock_bug;
+
+	/*
+	 * This is a workaround for a bug in glibc < 2.24:
+	 *
+	 * The child handler for the malloc() function is called and locks the
+	 * mutex. Then our child handler is called and we try to call setenv().
+	 * setenv() wants to malloc and tries to aquire the lock for malloc and
+	 * we end up in a deadlock.
+	 *
+	 * So as a workaround we need to call malloc once before we setup the
+	 * handlers.
+	 *
+	 * See https://sourceware.org/bugzilla/show_bug.cgi?id=16742
+	 */
+	glibc_malloc_lock_bug = malloc(1);
+	if (glibc_malloc_lock_bug == NULL) {
+		exit(-1);
+	}
+	glibc_malloc_lock_bug[0] = '\0';
+
 	/*
 	* If we hold a lock and the application forks, then the child
 	* is not able to unlock the mutex and we are in a deadlock.
@@ -2098,6 +2323,8 @@ void uwrap_constructor(void)
 	pthread_atfork(&uwrap_thread_prepare,
 		       &uwrap_thread_parent,
 		       &uwrap_thread_child);
+
+	free(glibc_malloc_lock_bug);
 
 	/* Here is safe place to call uwrap_init() and initialize data
 	 * for main process.
