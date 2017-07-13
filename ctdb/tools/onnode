@@ -238,10 +238,9 @@ get_nodes ()
 	all_nodes=$(sed -e 's@#.*@@g' -e 's@ *@@g' -e 's@^$@#DEAD@' "$f")
     fi
 
-    local nodes=""
-    local n
-    for n in $(parse_nodespec "$1") ; do
-	[ $? != 0 ] && exit 1  # Required to catch exit in above subshell.
+    local n nodes
+    nodes=$(parse_nodespec "$1") || exit $?
+    for n in $nodes ; do
 	case "$n" in
 	    all)
 		echo "${all_nodes//#DEAD/}"
@@ -337,8 +336,7 @@ fi
 
 ######################################################################
 
-nodes=$(get_nodes "$nodespec")
-[ $? != 0 ] && exit 1   # Required to catch exit in above subshell.
+nodes=$(get_nodes "$nodespec") || exit $?
 
 if $quiet ; then
     verbose=false
@@ -386,15 +384,13 @@ for n in $nodes ; do
 		$SSH $ssh_opts $EXTRA_SSH_OPTS "$n" "$command" |
 		    stdout_filter >&3
 	    } 2>&1 | stderr_filter
-	}
-	[ $? = 0 ] || retcode=$?
+	} || retcode=$?
     fi
 done
 
 if $parallel ; then
     for p in $pids; do
-	wait "$p"
-	[ $? = 0 ] || retcode=$?
+	wait "$p" || retcode=$?
     done
 fi
 
