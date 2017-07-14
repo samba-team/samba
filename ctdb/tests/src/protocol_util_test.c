@@ -22,10 +22,10 @@
 
 #include <assert.h>
 
-#include <talloc.h>
+#include "protocol/protocol_basic.c"
+#include "protocol/protocol_types.c"
+#include "protocol/protocol_util.c"
 
-#include "protocol/protocol.h"
-#include "protocol/protocol_api.h"
 #include "common/system_util.c"
 
 /* Test parsing of IPs, conversion to string */

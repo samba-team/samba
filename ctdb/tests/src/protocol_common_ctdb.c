@@ -1,7 +1,7 @@
 /*
-   protocol tests
+   protocol tests - ctdb protocol
 
-   Copyright (C) Amitay Isaacs  2015
+   Copyright (C) Amitay Isaacs  2017
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -22,29 +22,20 @@
 
 #include <assert.h>
 
-#define PROTOCOL_TEST
-
-#include "protocol_types_test.c"
-
-
-#define GENERATION	0xabcdef12
-#define OPERATION	CTDB_REQ_KEEPALIVE
-#define REQID		0x34567890
-#define SRCNODE		7
-#define DESTNODE	13
+#include "tests/src/protocol_common.h"
+#include "tests/src/protocol_common_ctdb.h"
 
 /*
  * Functions to fill and verify protocol structures
  */
 
-static void verify_ctdb_req_header(struct ctdb_req_header *h,
-				   struct ctdb_req_header *h2)
+void verify_ctdb_req_header(struct ctdb_req_header *h,
+			    struct ctdb_req_header *h2)
 {
-	verify_buffer(h, h2, ctdb_req_header_len(h));
+	verify_buffer(h, h2, sizeof(struct ctdb_req_header));
 }
 
-static void fill_ctdb_req_call(TALLOC_CTX *mem_ctx,
-			       struct ctdb_req_call *c)
+void fill_ctdb_req_call(TALLOC_CTX *mem_ctx, struct ctdb_req_call *c)
 {
 	c->flags = rand32();
 	c->db_id = rand32();
@@ -54,8 +45,7 @@ static void fill_ctdb_req_call(TALLOC_CTX *mem_ctx,
 	fill_tdb_data(mem_ctx, &c->calldata);
 }
 
-static void verify_ctdb_req_call(struct ctdb_req_call *c,
-				 struct ctdb_req_call *c2)
+void verify_ctdb_req_call(struct ctdb_req_call *c, struct ctdb_req_call *c2)
 {
 	assert(c->flags == c2->flags);
 	assert(c->db_id == c2->db_id);
@@ -65,36 +55,33 @@ static void verify_ctdb_req_call(struct ctdb_req_call *c,
 	verify_tdb_data(&c->calldata, &c2->calldata);
 }
 
-static void fill_ctdb_reply_call(TALLOC_CTX *mem_ctx,
-				 struct ctdb_reply_call *c)
+void fill_ctdb_reply_call(TALLOC_CTX *mem_ctx, struct ctdb_reply_call *c)
 {
 	c->status = rand32();
 	fill_tdb_data(mem_ctx, &c->data);
 }
 
-static void verify_ctdb_reply_call(struct ctdb_reply_call *c,
-				   struct ctdb_reply_call *c2)
+void verify_ctdb_reply_call(struct ctdb_reply_call *c,
+			    struct ctdb_reply_call *c2)
 {
 	assert(c->status == c2->status);
 	verify_tdb_data(&c->data, &c2->data);
 }
 
-static void fill_ctdb_reply_error(TALLOC_CTX *mem_ctx,
-				  struct ctdb_reply_error *c)
+void fill_ctdb_reply_error(TALLOC_CTX *mem_ctx, struct ctdb_reply_error *c)
 {
 	c->status = rand32();
 	fill_tdb_data(mem_ctx, &c->msg);
 }
 
-static void verify_ctdb_reply_error(struct ctdb_reply_error *c,
-				    struct ctdb_reply_error *c2)
+void verify_ctdb_reply_error(struct ctdb_reply_error *c,
+			     struct ctdb_reply_error *c2)
 {
 	assert(c->status == c2->status);
 	verify_tdb_data(&c->msg, &c2->msg);
 }
 
-static void fill_ctdb_req_dmaster(TALLOC_CTX *mem_ctx,
-				  struct ctdb_req_dmaster *c)
+void fill_ctdb_req_dmaster(TALLOC_CTX *mem_ctx, struct ctdb_req_dmaster *c)
 {
 	c->db_id = rand32();
 	c->rsn = rand64();
@@ -103,8 +90,8 @@ static void fill_ctdb_req_dmaster(TALLOC_CTX *mem_ctx,
 	fill_tdb_data(mem_ctx, &c->data);
 }
 
-static void verify_ctdb_req_dmaster(struct ctdb_req_dmaster *c,
-				    struct ctdb_req_dmaster *c2)
+void verify_ctdb_req_dmaster(struct ctdb_req_dmaster *c,
+			     struct ctdb_req_dmaster *c2)
 {
 	assert(c->db_id == c2->db_id);
 	assert(c->rsn == c2->rsn);
@@ -113,8 +100,8 @@ static void verify_ctdb_req_dmaster(struct ctdb_req_dmaster *c,
 	verify_tdb_data(&c->data, &c2->data);
 }
 
-static void fill_ctdb_reply_dmaster(TALLOC_CTX *mem_ctx,
-				    struct ctdb_reply_dmaster *c)
+void fill_ctdb_reply_dmaster(TALLOC_CTX *mem_ctx,
+			     struct ctdb_reply_dmaster *c)
 {
 	c->db_id = rand32();
 	c->rsn = rand64();
@@ -122,8 +109,8 @@ static void fill_ctdb_reply_dmaster(TALLOC_CTX *mem_ctx,
 	fill_tdb_data(mem_ctx, &c->data);
 }
 
-static void verify_ctdb_reply_dmaster(struct ctdb_reply_dmaster *c,
-				      struct ctdb_reply_dmaster *c2)
+void verify_ctdb_reply_dmaster(struct ctdb_reply_dmaster *c,
+			       struct ctdb_reply_dmaster *c2)
 {
 	assert(c->db_id == c2->db_id);
 	assert(c->rsn == c2->rsn);
@@ -131,9 +118,9 @@ static void verify_ctdb_reply_dmaster(struct ctdb_reply_dmaster *c,
 	verify_tdb_data(&c->data, &c2->data);
 }
 
-static void fill_ctdb_req_control_data(TALLOC_CTX *mem_ctx,
-				       struct ctdb_req_control_data *cd,
-				       uint32_t opcode)
+void fill_ctdb_req_control_data(TALLOC_CTX *mem_ctx,
+				struct ctdb_req_control_data *cd,
+				uint32_t opcode)
 {
 	cd->opcode = opcode;
 	switch (opcode) {
@@ -600,8 +587,8 @@ static void fill_ctdb_req_control_data(TALLOC_CTX *mem_ctx,
 	}
 }
 
-static void verify_ctdb_req_control_data(struct ctdb_req_control_data *cd,
-					 struct ctdb_req_control_data *cd2)
+void verify_ctdb_req_control_data(struct ctdb_req_control_data *cd,
+				  struct ctdb_req_control_data *cd2)
 {
 	assert(cd->opcode == cd2->opcode);
 
@@ -1002,9 +989,8 @@ static void verify_ctdb_req_control_data(struct ctdb_req_control_data *cd,
 	}
 }
 
-static void fill_ctdb_req_control(TALLOC_CTX *mem_ctx,
-				  struct ctdb_req_control *c,
-				  uint32_t opcode)
+void fill_ctdb_req_control(TALLOC_CTX *mem_ctx, struct ctdb_req_control *c,
+			   uint32_t opcode)
 {
 	c->opcode = opcode;
 	c->pad = rand32();
@@ -1015,8 +1001,8 @@ static void fill_ctdb_req_control(TALLOC_CTX *mem_ctx,
 	fill_ctdb_req_control_data(mem_ctx, &c->rdata, opcode);
 }
 
-static void verify_ctdb_req_control(struct ctdb_req_control *c,
-				    struct ctdb_req_control *c2)
+void verify_ctdb_req_control(struct ctdb_req_control *c,
+			     struct ctdb_req_control *c2)
 {
 	assert(c->opcode == c2->opcode);
 	assert(c->pad == c2->pad);
@@ -1027,9 +1013,9 @@ static void verify_ctdb_req_control(struct ctdb_req_control *c,
 	verify_ctdb_req_control_data(&c->rdata, &c2->rdata);
 }
 
-static void fill_ctdb_reply_control_data(TALLOC_CTX *mem_ctx,
-					 struct ctdb_reply_control_data *cd,
-					 uint32_t opcode)
+void fill_ctdb_reply_control_data(TALLOC_CTX *mem_ctx,
+				  struct ctdb_reply_control_data *cd,
+				  uint32_t opcode)
 {
 	cd->opcode = opcode;
 
@@ -1415,8 +1401,8 @@ static void fill_ctdb_reply_control_data(TALLOC_CTX *mem_ctx,
 	}
 }
 
-static void verify_ctdb_reply_control_data(struct ctdb_reply_control_data *cd,
-					   struct ctdb_reply_control_data *cd2)
+void verify_ctdb_reply_control_data(struct ctdb_reply_control_data *cd,
+				    struct ctdb_reply_control_data *cd2)
 {
 	assert(cd->opcode == cd2->opcode);
 
@@ -1760,9 +1746,8 @@ static void verify_ctdb_reply_control_data(struct ctdb_reply_control_data *cd,
 	}
 }
 
-static void fill_ctdb_reply_control(TALLOC_CTX *mem_ctx,
-				    struct ctdb_reply_control *c,
-				    uint32_t opcode)
+void fill_ctdb_reply_control(TALLOC_CTX *mem_ctx,
+			     struct ctdb_reply_control *c, uint32_t opcode)
 {
 	c->status = -rand_int(2);
 	if (c->status == 0) {
@@ -1773,8 +1758,8 @@ static void fill_ctdb_reply_control(TALLOC_CTX *mem_ctx,
 	}
 }
 
-static void verify_ctdb_reply_control(struct ctdb_reply_control *c,
-				      struct ctdb_reply_control *c2)
+void verify_ctdb_reply_control(struct ctdb_reply_control *c,
+			       struct ctdb_reply_control *c2)
 {
 	assert(c->status == c2->status);
 	verify_ctdb_string(c->errmsg, c2->errmsg);
@@ -1783,819 +1768,16 @@ static void verify_ctdb_reply_control(struct ctdb_reply_control *c,
 	}
 }
 
-static void fill_ctdb_req_message_data(TALLOC_CTX *mem_ctx,
-				       struct ctdb_req_message_data *c)
+void fill_ctdb_req_message_data(TALLOC_CTX *mem_ctx,
+				struct ctdb_req_message_data *c)
 {
 	c->srvid = rand64();
 	fill_tdb_data(mem_ctx, &c->data);
 }
 
-static void verify_ctdb_req_message_data(struct ctdb_req_message_data *c,
-					 struct ctdb_req_message_data *c2)
+void verify_ctdb_req_message_data(struct ctdb_req_message_data *c,
+				  struct ctdb_req_message_data *c2)
 {
 	assert(c->srvid == c2->srvid);
 	verify_tdb_data(&c->data, &c2->data);
-}
-
-/*
- * Functions to fill and verify eventd protocol structures
- */
-
-static void fill_ctdb_event_request_data(TALLOC_CTX *mem_ctx,
-					 struct ctdb_event_request_data *r,
-					 uint32_t command)
-{
-	r->command = command;
-
-	switch (command) {
-	case CTDB_EVENT_COMMAND_RUN:
-		r->data.run = talloc(mem_ctx, struct ctdb_event_request_run);
-		assert(r->data.run != NULL);
-
-		fill_ctdb_event_request_run(mem_ctx, r->data.run);
-		break;
-
-	case CTDB_EVENT_COMMAND_STATUS:
-		r->data.status = talloc(mem_ctx,
-					struct ctdb_event_request_status);
-		assert(r->data.status != NULL);
-
-		fill_ctdb_event_request_status(mem_ctx, r->data.status);
-		break;
-
-	case CTDB_EVENT_COMMAND_SCRIPT_LIST:
-		break;
-
-	case CTDB_EVENT_COMMAND_SCRIPT_ENABLE:
-		r->data.script_enable = talloc(mem_ctx,
-				struct ctdb_event_request_script_enable);
-		assert(r->data.script_enable != NULL);
-
-		fill_ctdb_event_request_script_enable(mem_ctx,
-						      r->data.script_enable);
-		break;
-
-	case CTDB_EVENT_COMMAND_SCRIPT_DISABLE:
-		r->data.script_disable = talloc(mem_ctx,
-				struct ctdb_event_request_script_disable);
-		assert(r->data.script_disable != NULL);
-
-		fill_ctdb_event_request_script_disable(mem_ctx,
-						       r->data.script_disable);
-		break;
-	}
-}
-
-static void verify_ctdb_event_request_data(struct ctdb_event_request_data *r,
-					   struct ctdb_event_request_data *r2)
-{
-	assert(r->command == r2->command);
-
-	switch (r->command) {
-	case CTDB_EVENT_COMMAND_RUN:
-		verify_ctdb_event_request_run(r->data.run, r2->data.run);
-		break;
-
-	case CTDB_EVENT_COMMAND_STATUS:
-		verify_ctdb_event_request_status(r->data.status,
-						 r2->data.status);
-		break;
-
-	case CTDB_EVENT_COMMAND_SCRIPT_LIST:
-		break;
-
-	case CTDB_EVENT_COMMAND_SCRIPT_ENABLE:
-		verify_ctdb_event_request_script_enable(r->data.script_enable,
-							r2->data.script_enable);
-		break;
-
-	case CTDB_EVENT_COMMAND_SCRIPT_DISABLE:
-		verify_ctdb_event_request_script_disable(r->data.script_disable,
-							 r2->data.script_disable);
-		break;
-	}
-}
-
-static void fill_ctdb_event_reply_data(TALLOC_CTX *mem_ctx,
-				       struct ctdb_event_reply_data *r,
-				       uint32_t command)
-{
-	r->command = command;
-	r->result = rand32i();
-
-	switch (command) {
-	case CTDB_EVENT_COMMAND_STATUS:
-		r->data.status = talloc(mem_ctx,
-					struct ctdb_event_reply_status);
-		assert(r->data.status != NULL);
-
-		fill_ctdb_event_reply_status(mem_ctx, r->data.status);
-		break;
-
-	case CTDB_EVENT_COMMAND_SCRIPT_LIST:
-		r->data.script_list = talloc(mem_ctx,
-				struct ctdb_event_reply_script_list);
-		assert(r->data.script_list != NULL);
-
-		fill_ctdb_event_reply_script_list(mem_ctx,
-						  r->data.script_list);
-		break;
-	}
-}
-
-static void verify_ctdb_event_reply_data(struct ctdb_event_reply_data *r,
-					 struct ctdb_event_reply_data *r2)
-{
-	assert(r->command == r2->command);
-	assert(r->result == r2->result);
-
-	switch (r->command) {
-	case CTDB_EVENT_COMMAND_RUN:
-		break;
-
-	case CTDB_EVENT_COMMAND_STATUS:
-		verify_ctdb_event_reply_status(r->data.status,
-					       r2->data.status);
-		break;
-
-	case CTDB_EVENT_COMMAND_SCRIPT_LIST:
-		verify_ctdb_event_reply_script_list(r->data.script_list,
-						    r2->data.script_list);
-		break;
-
-	case CTDB_EVENT_COMMAND_SCRIPT_ENABLE:
-		break;
-
-	case CTDB_EVENT_COMMAND_SCRIPT_DISABLE:
-		break;
-	}
-}
-
-static void verify_ctdb_event_header(struct ctdb_event_header *h,
-				     struct ctdb_event_header *h2)
-{
-	verify_buffer(h, h2, ctdb_event_header_len(h));
-}
-
-static void fill_ctdb_event_request(TALLOC_CTX *mem_ctx,
-				    struct ctdb_event_request *r,
-				    uint32_t command)
-{
-	ctdb_event_header_fill(&r->header, rand());
-	fill_ctdb_event_request_data(mem_ctx, &r->rdata, command);
-}
-
-static void verify_ctdb_event_request(struct ctdb_event_request *r,
-				      struct ctdb_event_request *r2)
-{
-	verify_ctdb_event_header(&r->header, &r2->header);
-	verify_ctdb_event_request_data(&r->rdata, &r2->rdata);
-}
-
-static void fill_ctdb_event_reply(TALLOC_CTX *mem_ctx,
-				  struct ctdb_event_reply *r,
-				  uint32_t command)
-{
-	ctdb_event_header_fill(&r->header, rand());
-	fill_ctdb_event_reply_data(mem_ctx, &r->rdata, command);
-}
-
-static void verify_ctdb_event_reply(struct ctdb_event_reply *r,
-				    struct ctdb_event_reply *r2)
-{
-	verify_ctdb_event_header(&r->header, &r2->header);
-	verify_ctdb_event_reply_data(&r->rdata, &r2->rdata);
-}
-
-/*
- * Functions to test marshalling
- */
-
-static void test_ctdb_req_header(void)
-{
-	TALLOC_CTX *mem_ctx;
-	uint8_t *pkt;
-	size_t pkt_len;
-	struct ctdb_req_header h, h2;
-	int ret;
-
-	printf("ctdb_req_header\n");
-	fflush(stdout);
-
-	mem_ctx = talloc_new(NULL);
-	assert(mem_ctx != NULL);
-
-	ctdb_req_header_fill(&h, GENERATION, OPERATION, DESTNODE, SRCNODE,
-			     REQID);
-
-	ret = ctdb_allocate_pkt(mem_ctx, ctdb_req_header_len(&h),
-				&pkt, &pkt_len);
-	assert(ret == 0);
-	assert(pkt != NULL);
-	assert(pkt_len >= ctdb_req_header_len(&h));
-
-	ctdb_req_header_push(&h, pkt);
-
-	ret = ctdb_req_header_pull(pkt, pkt_len, &h2);
-	assert(ret == 0);
-
-	verify_ctdb_req_header(&h, &h2);
-
-	talloc_free(mem_ctx);
-}
-
-static void test_ctdb_req_call(void)
-{
-	TALLOC_CTX *mem_ctx;
-	uint8_t *pkt;
-	size_t datalen, pkt_len, len;
-	int ret;
-	struct ctdb_req_header h, h2;
-	struct ctdb_req_call c, c2;
-
-	printf("ctdb_req_call\n");
-	fflush(stdout);
-
-	mem_ctx = talloc_new(NULL);
-	assert(mem_ctx != NULL);
-
-	ctdb_req_header_fill(&h, GENERATION, CTDB_REQ_CALL,
-			     DESTNODE, SRCNODE, REQID);
-
-	fill_ctdb_req_call(mem_ctx, &c);
-	datalen = ctdb_req_call_len(&h, &c);
-	ret = ctdb_allocate_pkt(mem_ctx, datalen, &pkt, &pkt_len);
-	assert(ret == 0);
-	assert(pkt != NULL);
-	assert(pkt_len >= datalen);
-	len = 0;
-	ret = ctdb_req_call_push(&h, &c, pkt, &len);
-	assert(ret == EMSGSIZE);
-	assert(len == datalen);
-	ret = ctdb_req_call_push(&h, &c, pkt, &pkt_len);
-	assert(ret == 0);
-	ret = ctdb_req_call_pull(pkt, pkt_len, &h2, mem_ctx, &c2);
-	assert(ret == 0);
-	verify_ctdb_req_header(&h, &h2);
-	assert(h2.length == pkt_len);
-	verify_ctdb_req_call(&c, &c2);
-
-	talloc_free(mem_ctx);
-}
-
-static void test_ctdb_reply_call(void)
-{
-	TALLOC_CTX *mem_ctx;
-	uint8_t *pkt;
-	size_t datalen, pkt_len, len;
-	int ret;
-	struct ctdb_req_header h, h2;
-	struct ctdb_reply_call c, c2;
-
-	printf("ctdb_reply_call\n");
-	fflush(stdout);
-
-	mem_ctx = talloc_new(NULL);
-	assert(mem_ctx != NULL);
-
-	ctdb_req_header_fill(&h, GENERATION, CTDB_REPLY_CALL,
-			     DESTNODE, SRCNODE, REQID);
-
-	fill_ctdb_reply_call(mem_ctx, &c);
-	datalen = ctdb_reply_call_len(&h, &c);
-	ret = ctdb_allocate_pkt(mem_ctx, datalen, &pkt, &pkt_len);
-	assert(ret == 0);
-	assert(pkt != NULL);
-	assert(pkt_len >= datalen);
-	len = 0;
-	ret = ctdb_reply_call_push(&h, &c, pkt, &len);
-	assert(ret == EMSGSIZE);
-	assert(len == datalen);
-	ret = ctdb_reply_call_push(&h, &c, pkt, &pkt_len);
-	assert(ret == 0);
-	ret = ctdb_reply_call_pull(pkt, pkt_len, &h2, mem_ctx, &c2);
-	assert(ret == 0);
-	verify_ctdb_req_header(&h, &h2);
-	assert(h2.length == pkt_len);
-	verify_ctdb_reply_call(&c, &c2);
-
-	talloc_free(mem_ctx);
-}
-
-static void test_ctdb_reply_error(void)
-{
-	TALLOC_CTX *mem_ctx;
-	uint8_t *pkt;
-	size_t datalen, pkt_len, len;
-	int ret;
-	struct ctdb_req_header h, h2;
-	struct ctdb_reply_error c, c2;
-
-	printf("ctdb_reply_error\n");
-	fflush(stdout);
-
-	mem_ctx = talloc_new(NULL);
-	assert(mem_ctx != NULL);
-
-	ctdb_req_header_fill(&h, GENERATION, CTDB_REPLY_ERROR,
-			     DESTNODE, SRCNODE, REQID);
-
-	fill_ctdb_reply_error(mem_ctx, &c);
-	datalen = ctdb_reply_error_len(&h, &c);
-	ret = ctdb_allocate_pkt(mem_ctx, datalen, &pkt, &pkt_len);
-	assert(ret == 0);
-	assert(pkt != NULL);
-	assert(pkt_len >= datalen);
-	len = 0;
-	ret = ctdb_reply_error_push(&h, &c, pkt, &len);
-	assert(ret == EMSGSIZE);
-	assert(len == datalen);
-	ret = ctdb_reply_error_push(&h, &c, pkt, &pkt_len);
-	assert(ret == 0);
-	ret = ctdb_reply_error_pull(pkt, pkt_len, &h2, mem_ctx, &c2);
-	assert(ret == 0);
-	verify_ctdb_req_header(&h, &h2);
-	assert(h2.length == pkt_len);
-	verify_ctdb_reply_error(&c, &c2);
-
-	talloc_free(mem_ctx);
-}
-
-static void test_ctdb_req_dmaster(void)
-{
-	TALLOC_CTX *mem_ctx;
-	uint8_t *pkt;
-	size_t datalen, pkt_len, len;
-	int ret;
-	struct ctdb_req_header h, h2;
-	struct ctdb_req_dmaster c, c2;
-
-	printf("ctdb_req_dmaster\n");
-	fflush(stdout);
-
-	mem_ctx = talloc_new(NULL);
-	assert(mem_ctx != NULL);
-
-	ctdb_req_header_fill(&h, GENERATION, CTDB_REQ_DMASTER,
-			     DESTNODE, SRCNODE, REQID);
-
-	fill_ctdb_req_dmaster(mem_ctx, &c);
-	datalen = ctdb_req_dmaster_len(&h, &c);
-	ret = ctdb_allocate_pkt(mem_ctx, datalen, &pkt, &pkt_len);
-	assert(ret == 0);
-	assert(pkt != NULL);
-	assert(pkt_len >= datalen);
-	len = 0;
-	ret = ctdb_req_dmaster_push(&h, &c, pkt, &len);
-	assert(ret == EMSGSIZE);
-	assert(len == datalen);
-	ret = ctdb_req_dmaster_push(&h, &c, pkt, &pkt_len);
-	assert(ret == 0);
-	ret = ctdb_req_dmaster_pull(pkt, pkt_len, &h2, mem_ctx, &c2);
-	assert(ret == 0);
-	verify_ctdb_req_header(&h, &h2);
-	assert(h2.length == pkt_len);
-	verify_ctdb_req_dmaster(&c, &c2);
-
-	talloc_free(mem_ctx);
-}
-
-static void test_ctdb_reply_dmaster(void)
-{
-	TALLOC_CTX *mem_ctx;
-	uint8_t *pkt;
-	size_t datalen, pkt_len, len;
-	int ret;
-	struct ctdb_req_header h, h2;
-	struct ctdb_reply_dmaster c, c2;
-
-	printf("ctdb_reply_dmaster\n");
-	fflush(stdout);
-
-	mem_ctx = talloc_new(NULL);
-	assert(mem_ctx != NULL);
-
-	ctdb_req_header_fill(&h, GENERATION, CTDB_REPLY_DMASTER,
-			     DESTNODE, SRCNODE, REQID);
-
-	fill_ctdb_reply_dmaster(mem_ctx, &c);
-	datalen = ctdb_reply_dmaster_len(&h, &c);
-	ret = ctdb_allocate_pkt(mem_ctx, datalen, &pkt, &pkt_len);
-	assert(ret == 0);
-	assert(pkt != NULL);
-	assert(pkt_len >= datalen);
-	len = 0;
-	ret = ctdb_reply_dmaster_push(&h, &c, pkt, &len);
-	assert(ret == EMSGSIZE);
-	assert(len == datalen);
-	ret = ctdb_reply_dmaster_push(&h, &c, pkt, &pkt_len);
-	assert(ret == 0);
-	ret = ctdb_reply_dmaster_pull(pkt, pkt_len, &h2, mem_ctx, &c2);
-	assert(ret == 0);
-	verify_ctdb_req_header(&h, &h2);
-	assert(h2.length == pkt_len);
-	verify_ctdb_reply_dmaster(&c, &c2);
-
-	talloc_free(mem_ctx);
-}
-
-#define NUM_CONTROLS	151
-
-static void test_ctdb_req_control_data(void)
-{
-	TALLOC_CTX *mem_ctx;
-	size_t buflen;
-	int ret;
-	struct ctdb_req_control_data cd, cd2;
-	uint32_t opcode;
-
-	printf("ctdb_req_control_data\n");
-	fflush(stdout);
-
-	for (opcode=0; opcode<NUM_CONTROLS; opcode++) {
-		mem_ctx = talloc_new(NULL);
-		assert(mem_ctx != NULL);
-
-		printf("%u.. ", opcode);
-		fflush(stdout);
-		fill_ctdb_req_control_data(mem_ctx, &cd, opcode);
-		buflen = ctdb_req_control_data_len(&cd);
-		ctdb_req_control_data_push(&cd, BUFFER);
-		ret = ctdb_req_control_data_pull(BUFFER, buflen, opcode, mem_ctx, &cd2);
-		assert(ret == 0);
-		verify_ctdb_req_control_data(&cd, &cd2);
-		talloc_free(mem_ctx);
-	}
-
-	printf("\n");
-	fflush(stdout);
-}
-
-static void test_ctdb_reply_control_data(void)
-{
-	TALLOC_CTX *mem_ctx;
-	size_t buflen;
-	int ret;
-	struct ctdb_reply_control_data cd, cd2;
-	uint32_t opcode;
-
-	printf("ctdb_reply_control_data\n");
-	fflush(stdout);
-
-	for (opcode=0; opcode<NUM_CONTROLS; opcode++) {
-		mem_ctx = talloc_new(NULL);
-		assert(mem_ctx != NULL);
-
-		printf("%u.. ", opcode);
-		fflush(stdout);
-		fill_ctdb_reply_control_data(mem_ctx, &cd, opcode);
-		buflen = ctdb_reply_control_data_len(&cd);
-		ctdb_reply_control_data_push(&cd, BUFFER);
-		ret = ctdb_reply_control_data_pull(BUFFER, buflen, opcode, mem_ctx, &cd2);
-		assert(ret == 0);
-		verify_ctdb_reply_control_data(&cd, &cd2);
-		talloc_free(mem_ctx);
-	}
-
-	printf("\n");
-	fflush(stdout);
-}
-
-static void test_ctdb_req_control(void)
-{
-	TALLOC_CTX *mem_ctx;
-	uint8_t *pkt;
-	size_t datalen, pkt_len, len;
-	int ret;
-	struct ctdb_req_header h, h2;
-	struct ctdb_req_control c, c2;
-	uint32_t opcode;
-
-	printf("ctdb_req_control\n");
-	fflush(stdout);
-
-	ctdb_req_header_fill(&h, GENERATION, CTDB_REQ_CONTROL,
-			     DESTNODE, SRCNODE, REQID);
-
-	for (opcode=0; opcode<NUM_CONTROLS; opcode++) {
-		mem_ctx = talloc_new(NULL);
-		assert(mem_ctx != NULL);
-
-		printf("%u.. ", opcode);
-		fflush(stdout);
-		fill_ctdb_req_control(mem_ctx, &c, opcode);
-		datalen = ctdb_req_control_len(&h, &c);
-		ret = ctdb_allocate_pkt(mem_ctx, datalen, &pkt, &pkt_len);
-		assert(ret == 0);
-		assert(pkt != NULL);
-		assert(pkt_len >= datalen);
-		len = 0;
-		ret = ctdb_req_control_push(&h, &c, pkt, &len);
-		assert(ret == EMSGSIZE);
-		assert(len == datalen);
-		ret = ctdb_req_control_push(&h, &c, pkt, &pkt_len);
-		assert(ret == 0);
-		ret = ctdb_req_control_pull(pkt, pkt_len, &h2, mem_ctx, &c2);
-		assert(ret == 0);
-		verify_ctdb_req_header(&h, &h2);
-		assert(h2.length == pkt_len);
-		verify_ctdb_req_control(&c, &c2);
-
-		talloc_free(mem_ctx);
-	}
-
-	printf("\n");
-	fflush(stdout);
-}
-
-static void test_ctdb_reply_control(void)
-{
-	TALLOC_CTX *mem_ctx;
-	uint8_t *pkt;
-	size_t datalen, pkt_len, len;
-	int ret;
-	struct ctdb_req_header h, h2;
-	struct ctdb_reply_control c, c2;
-	uint32_t opcode;
-
-	printf("ctdb_reply_control\n");
-	fflush(stdout);
-
-	ctdb_req_header_fill(&h, GENERATION, CTDB_REPLY_CONTROL,
-			     DESTNODE, SRCNODE, REQID);
-
-	for (opcode=0; opcode<NUM_CONTROLS; opcode++) {
-		mem_ctx = talloc_new(NULL);
-		assert(mem_ctx != NULL);
-
-		printf("%u.. ", opcode);
-		fflush(stdout);
-		fill_ctdb_reply_control(mem_ctx, &c, opcode);
-		datalen = ctdb_reply_control_len(&h, &c);
-		ret = ctdb_allocate_pkt(mem_ctx, datalen, &pkt, &pkt_len);
-		assert(ret == 0);
-		assert(pkt != NULL);
-		assert(pkt_len >= datalen);
-		len = 0;
-		ret = ctdb_reply_control_push(&h, &c, pkt, &len);
-		assert(ret == EMSGSIZE);
-		assert(len == datalen);
-		ret = ctdb_reply_control_push(&h, &c, pkt, &pkt_len);
-		assert(ret == 0);
-		ret = ctdb_reply_control_pull(pkt, pkt_len, opcode, &h2, mem_ctx, &c2);
-		assert(ret == 0);
-		verify_ctdb_req_header(&h, &h2);
-		assert(h2.length == pkt_len);
-		verify_ctdb_reply_control(&c, &c2);
-
-		talloc_free(mem_ctx);
-	}
-
-	printf("\n");
-	fflush(stdout);
-}
-
-static void test_ctdb_req_message_data(void)
-{
-	TALLOC_CTX *mem_ctx;
-	uint8_t *pkt;
-	size_t datalen, pkt_len, len;
-	int ret;
-	struct ctdb_req_header h, h2;
-	struct ctdb_req_message_data c, c2;
-
-	printf("ctdb_req_message\n");
-	fflush(stdout);
-
-	mem_ctx = talloc_new(NULL);
-	assert(mem_ctx != NULL);
-
-	ctdb_req_header_fill(&h, GENERATION, CTDB_REQ_MESSAGE,
-			     DESTNODE, SRCNODE, REQID);
-
-	fill_ctdb_req_message_data(mem_ctx, &c);
-	datalen = ctdb_req_message_data_len(&h, &c);
-	ret = ctdb_allocate_pkt(mem_ctx, datalen, &pkt, &pkt_len);
-	assert(ret == 0);
-	assert(pkt != NULL);
-	assert(pkt_len >= datalen);
-	len = 0;
-	ret = ctdb_req_message_data_push(&h, &c, pkt, &len);
-	assert(ret == EMSGSIZE);
-	assert(len == datalen);
-	ret = ctdb_req_message_data_push(&h, &c, pkt, &pkt_len);
-	assert(ret == 0);
-	ret = ctdb_req_message_data_pull(pkt, pkt_len, &h2, mem_ctx, &c2);
-	assert(ret == 0);
-	verify_ctdb_req_header(&h, &h2);
-	assert(h2.length == pkt_len);
-	verify_ctdb_req_message_data(&c, &c2);
-
-	talloc_free(mem_ctx);
-}
-
-/*
- * Functions to test eventd protocol marshalling
- */
-
-static void test_ctdb_event_header(void)
-{
-	TALLOC_CTX *mem_ctx;
-	size_t buflen;
-	struct ctdb_event_header h, h2;
-	int ret;
-
-	printf("ctdb_event_header\n");
-	fflush(stdout);
-
-	mem_ctx = talloc_new(NULL);
-	assert(mem_ctx != NULL);
-
-	ctdb_event_header_fill(&h, REQID);
-
-	buflen = ctdb_event_header_len(&h);
-	ctdb_event_header_push(&h, BUFFER);
-	ret = ctdb_event_header_pull(BUFFER, buflen, mem_ctx, &h2);
-	assert(ret == 0);
-
-	verify_ctdb_event_header(&h, &h2);
-
-	talloc_free(mem_ctx);
-}
-
-#define NUM_COMMANDS	5
-
-static void test_ctdb_event_request_data(void)
-{
-	TALLOC_CTX *mem_ctx;
-	size_t buflen;
-	struct ctdb_event_request_data rd, rd2;
-	uint32_t command;
-	int ret;
-
-	printf("ctdb_event_request_data\n");
-	fflush(stdout);
-
-	for (command=1; command<=NUM_COMMANDS; command++) {
-		mem_ctx = talloc_new(NULL);
-		assert(mem_ctx != NULL);
-
-		printf("%u.. ", command);
-		fflush(stdout);
-		fill_ctdb_event_request_data(mem_ctx, &rd, command);
-		buflen = ctdb_event_request_data_len(&rd);
-		ctdb_event_request_data_push(&rd, BUFFER);
-		ret = ctdb_event_request_data_pull(BUFFER, buflen, mem_ctx, &rd2);
-		assert(ret == 0);
-		verify_ctdb_event_request_data(&rd, &rd2);
-
-		talloc_free(mem_ctx);
-	}
-
-	printf("\n");
-	fflush(stdout);
-}
-
-static void test_ctdb_event_reply_data(void)
-{
-	TALLOC_CTX *mem_ctx;
-	size_t buflen;
-	struct ctdb_event_reply_data rd, rd2;
-	uint32_t command;
-	int ret;
-
-	printf("ctdb_event_reply_data\n");
-	fflush(stdout);
-
-	for (command=1; command<=NUM_COMMANDS; command++) {
-		mem_ctx = talloc_new(NULL);
-		assert(mem_ctx != NULL);
-
-		printf("%u.. ", command);
-		fflush(stdout);
-		fill_ctdb_event_reply_data(mem_ctx, &rd, command);
-		buflen = ctdb_event_reply_data_len(&rd);
-		ctdb_event_reply_data_push(&rd, BUFFER);
-		ret = ctdb_event_reply_data_pull(BUFFER, buflen, mem_ctx, &rd2);
-		assert(ret == 0);
-		verify_ctdb_event_reply_data(&rd, &rd2);
-
-		talloc_free(mem_ctx);
-	}
-
-	printf("\n");
-	fflush(stdout);
-}
-
-static void test_ctdb_event_request(void)
-{
-	TALLOC_CTX *mem_ctx;
-	uint8_t *buf;
-	size_t len, buflen;
-	int ret;
-	struct ctdb_event_request r, r2;
-	uint32_t command;
-
-	printf("ctdb_event_request\n");
-	fflush(stdout);
-
-	for (command=1; command<=NUM_COMMANDS; command++) {
-		mem_ctx = talloc_new(NULL);
-		assert(mem_ctx != NULL);
-
-		printf("%u.. ", command);
-		fflush(stdout);
-		fill_ctdb_event_request(mem_ctx, &r, command);
-		buflen = ctdb_event_request_len(&r);
-		buf = talloc_size(mem_ctx, buflen);
-		assert(buf != NULL);
-		len = 0;
-		ret = ctdb_event_request_push(&r, buf, &len);
-		assert(ret == EMSGSIZE);
-		assert(len == buflen);
-		ret = ctdb_event_request_push(&r, buf, &buflen);
-		assert(ret == 0);
-		ret = ctdb_event_request_pull(buf, buflen, mem_ctx, &r2);
-		assert(ret == 0);
-		assert(r2.header.length == buflen);
-		verify_ctdb_event_request(&r, &r2);
-
-		talloc_free(mem_ctx);
-	}
-
-	printf("\n");
-	fflush(stdout);
-}
-
-static void test_ctdb_event_reply(void)
-{
-	TALLOC_CTX *mem_ctx;
-	uint8_t *buf;
-	size_t len, buflen;
-	int ret;
-	struct ctdb_event_reply r, r2;
-	uint32_t command;
-
-	printf("ctdb_event_reply\n");
-	fflush(stdout);
-
-	for (command=1; command<=NUM_COMMANDS; command++) {
-		mem_ctx = talloc_new(NULL);
-		assert(mem_ctx != NULL);
-
-		printf("%u.. ", command);
-		fflush(stdout);
-		fill_ctdb_event_reply(mem_ctx, &r, command);
-		buflen = ctdb_event_reply_len(&r);
-		buf = talloc_size(mem_ctx, buflen);
-		assert(buf != NULL);
-		len = 0;
-		ret = ctdb_event_reply_push(&r, buf, &len);
-		assert(ret == EMSGSIZE);
-		assert(len == buflen);
-		ret = ctdb_event_reply_push(&r, buf, &buflen);
-		assert(ret == 0);
-		ret = ctdb_event_reply_pull(buf, buflen, mem_ctx, &r2);
-		assert(ret == 0);
-		assert(r2.header.length == buflen);
-		verify_ctdb_event_reply(&r, &r2);
-
-		talloc_free(mem_ctx);
-	}
-
-	printf("\n");
-	fflush(stdout);
-}
-
-int main(int argc, char *argv[])
-{
-	if (argc == 2) {
-		int seed = atoi(argv[1]);
-		srandom(seed);
-	}
-
-	test_ctdb_req_header();
-
-	test_ctdb_req_call();
-	test_ctdb_reply_call();
-	test_ctdb_reply_error();
-	test_ctdb_req_dmaster();
-	test_ctdb_reply_dmaster();
-
-	test_ctdb_req_control_data();
-	test_ctdb_reply_control_data();
-
-	test_ctdb_req_control();
-	test_ctdb_reply_control();
-
-	test_ctdb_req_message_data();
-
-	test_ctdb_event_header();
-
-	test_ctdb_event_request_data();
-	test_ctdb_event_reply_data();
-	test_ctdb_event_request();
-	test_ctdb_event_reply();
-
-	return 0;
 }

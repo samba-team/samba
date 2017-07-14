@@ -5,5 +5,5 @@
 ok_null
 
 for i in $(seq 1 1000) ; do
-    unit_test protocol_types_test $i
+    unit_test protocol_basic_test $i
 done

@@ -728,8 +728,6 @@ def build(bld):
         'comm_test',
         'comm_server_test',
         'comm_client_test',
-        'protocol_types_test',
-        'protocol_client_test',
         'pidfile_test',
         'run_proc_test',
         'sock_daemon_test',
@@ -767,17 +765,37 @@ def build(bld):
                      deps='samba-util ctdb-system popt',
                      install_path='${CTDB_TEST_LIBEXECDIR}')
 
+    bld.SAMBA_SUBSYSTEM('protocol-tests-common',
+                        source=bld.SUBDIR('tests/src',
+                                          '''protocol_common.c
+                                             protocol_common_ctdb.c
+                                             protocol_common_event.c
+                                          '''),
+                        includes='include',
+                        deps='replace popt talloc tevent tdb')
+
+    ctdb_protocol_tests = [
+            'protocol_basic_test',
+            'protocol_types_test',
+            'protocol_ctdb_test',
+            'protocol_event_test',
+            'protocol_util_test',
+    ]
+
+    for target in ctdb_protocol_tests:
+        src = 'tests/src/' + target + '.c'
+
+        bld.SAMBA_BINARY(target,
+                         source=src,
+                         deps='''protocol-tests-common
+                                 samba-util talloc tdb''',
+                         install_path='${CTDB_TEST_LIBEXECDIR}')
 
     bld.SAMBA_SUBSYSTEM('ctdb-tests-common',
                         source=bld.SUBDIR('tests/src',
                                           'cluster_wait.c test_options.c'),
                         includes='include',
                         deps='replace popt talloc tevent tdb')
-
-    bld.SAMBA_BINARY('protocol_util_test',
-                     source='tests/src/protocol_util_test.c',
-                     deps='talloc ctdb-protocol samba-util',
-                     install_path='${CTDB_TEST_LIBEXECDIR}')
 
     # Test binaries
     ctdb_tests = [
