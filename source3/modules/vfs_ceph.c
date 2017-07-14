@@ -916,13 +916,6 @@ static int cephwrap_chdir(struct vfs_handle_struct *handle,  const char *path)
 {
 	int result = -1;
 	DBG_DEBUG("[CEPH] chdir(%p, %s)\n", handle, path);
-	/*
-	 * If the path is just / use chdir because Ceph is below / and
-	 * cannot deal with changing directory above its mount point
-	 */
-	if (path && !strcmp(path, "/"))
-		return chdir(path);
-
 	result = ceph_chdir(handle->data, path);
 	DBG_DEBUG("[CEPH] chdir(...) = %d\n", result);
 	WRAP_RETURN(result);
