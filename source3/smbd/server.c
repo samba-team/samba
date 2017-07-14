@@ -386,6 +386,7 @@ static bool smbd_notifyd_init(struct messaging_context *msg, bool interactive,
 	struct tevent_req *req;
 	pid_t pid;
 	NTSTATUS status;
+	bool ok;
 
 	if (interactive) {
 		req = notifyd_req(msg, ev);
@@ -427,7 +428,12 @@ static bool smbd_notifyd_init(struct messaging_context *msg, bool interactive,
 	messaging_send(msg, pid_to_procid(getppid()), MSG_SMB_NOTIFY_STARTED,
 		       NULL);
 
-	return tevent_req_poll(req, ev);
+	ok = tevent_req_poll(req, ev);
+	if (!ok) {
+		DBG_WARNING("tevent_req_poll returned %s\n", strerror(errno));
+		exit(1);
+	}
+	exit(0);
 }
 
 static void notifyd_init_trigger(struct tevent_req *req);
