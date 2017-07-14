@@ -118,9 +118,8 @@ static void krb5_ticket_refresh_handler(struct tevent_context *event_ctx,
 	struct WINBINDD_MEMORY_CREDS *cred_ptr = entry->cred_ptr;
 #endif
 
-	DEBUG(10,("krb5_ticket_refresh_handler called\n"));
-	DEBUGADD(10,("event called for: %s, %s\n",
-		entry->ccname, entry->username));
+	DBG_DEBUG("event called for: %s, %s\n",
+		  entry->ccname, entry->username);
 
 	TALLOC_FREE(entry->event);
 
@@ -311,9 +310,8 @@ static void krb5_ticket_gain_handler(struct tevent_context *event_ctx,
 	struct winbindd_domain *domain = NULL;
 #endif
 
-	DEBUG(10,("krb5_ticket_gain_handler called\n"));
-	DEBUGADD(10,("event called for: %s, %s\n",
-		entry->ccname, entry->username));
+	DBG_DEBUG("event called for: %s, %s\n",
+		  entry->ccname, entry->username);
 
 	TALLOC_FREE(entry->event);
 
