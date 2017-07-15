@@ -392,8 +392,10 @@ static bool parse_ntlm_auth_domain_user(const char *domuser, fstring domain,
 }
 
 static bool get_require_membership_sid(void) {
-	struct winbindd_request request;
-	struct winbindd_response response;
+	fstring domain, name, sidbuf;
+	struct wbcDomainSid sid;
+	enum wbcSidType type;
+	wbcErr ret;
 
 	if (!require_membership_of) {
 		return True;
@@ -405,25 +407,23 @@ static bool get_require_membership_sid(void) {
 
 	/* Otherwise, ask winbindd for the name->sid request */
 
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
-
-	if (!parse_ntlm_auth_domain_user(require_membership_of, 
-					 request.data.name.dom_name, 
-					 request.data.name.name)) {
+	if (!parse_ntlm_auth_domain_user(require_membership_of,
+					 domain, name)) {
 		DEBUG(0, ("Could not parse %s into separate domain/name parts!\n",
 			  require_membership_of));
 		return False;
 	}
 
-	if (winbindd_request_response(NULL, WINBINDD_LOOKUPNAME, &request, &response) !=
-	    NSS_STATUS_SUCCESS) {
+	ret = wbcLookupName(domain, name, &sid, &type);
+	if (!WBC_ERROR_IS_OK(ret)) {
 		DEBUG(0, ("Winbindd lookupname failed to resolve %s into a SID!\n", 
 			  require_membership_of));
 		return False;
 	}
 
-	require_membership_of_sid = SMB_STRDUP(response.data.sid.sid);
+	wbcSidToStringBuf(&sid, sidbuf, sizeof(sidbuf));
+
+	require_membership_of_sid = SMB_STRDUP(sidbuf);
 
 	if (require_membership_of_sid)
 		return True;
