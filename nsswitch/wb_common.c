@@ -719,16 +719,15 @@ NSS_STATUS winbindd_request_response(struct winbindd_context *ctx,
 				     struct winbindd_response *response)
 {
 	NSS_STATUS status = NSS_STATUS_UNAVAIL;
-	struct winbindd_context *wb_ctx = ctx;
 
 	if (ctx == NULL) {
-		wb_ctx = &wb_global_ctx;
+		ctx = &wb_global_ctx;
 	}
 
-	status = winbindd_send_request(wb_ctx, req_type, 0, request);
+	status = winbindd_send_request(ctx, req_type, 0, request);
 	if (status != NSS_STATUS_SUCCESS)
 		return (status);
-	status = winbindd_get_response(wb_ctx, response);
+	status = winbindd_get_response(ctx, response);
 
 	return status;
 }
@@ -739,16 +738,15 @@ NSS_STATUS winbindd_priv_request_response(struct winbindd_context *ctx,
 					  struct winbindd_response *response)
 {
 	NSS_STATUS status = NSS_STATUS_UNAVAIL;
-	struct winbindd_context *wb_ctx = ctx;
 
 	if (ctx == NULL) {
-		wb_ctx = &wb_global_ctx;
+		ctx = &wb_global_ctx;
 	}
 
-	status = winbindd_send_request(wb_ctx, req_type, 1, request);
+	status = winbindd_send_request(ctx, req_type, 1, request);
 	if (status != NSS_STATUS_SUCCESS)
 		return (status);
-	status = winbindd_get_response(wb_ctx, response);
+	status = winbindd_get_response(ctx, response);
 
 	return status;
 }
