@@ -336,7 +336,8 @@ const char *get_winbind_domain(void)
 
 const char *get_winbind_netbios_name(void)
 {
-	struct winbindd_response response;
+	struct wbcInterfaceDetails *details;
+	wbcErr ret;
 
 	static fstring winbind_netbios_name;
 
@@ -344,17 +345,17 @@ const char *get_winbind_netbios_name(void)
 		return winbind_netbios_name;
 	}
 
-	ZERO_STRUCT(response);
-
 	/* Send off request */
 
-	if (winbindd_request_response(NULL, WINBINDD_NETBIOS_NAME, NULL, &response) !=
-	    NSS_STATUS_SUCCESS) {
+	ret = wbcInterfaceDetails(&details);
+	if (!WBC_ERROR_IS_OK(ret)) {
 		DEBUG(1, ("could not obtain winbind netbios name!\n"));
 		return lp_netbios_name();
 	}
 
-	fstrcpy(winbind_netbios_name, response.data.netbios_name);
+	fstrcpy(winbind_netbios_name, details->netbios_name);
+
+	wbcFreeMemory(details);
 
 	return winbind_netbios_name;
 
