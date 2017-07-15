@@ -310,24 +310,25 @@ static char winbind_separator(void)
 
 const char *get_winbind_domain(void)
 {
-	struct winbindd_response response;
+	struct wbcInterfaceDetails *details;
+	wbcErr ret;
 
 	static fstring winbind_domain;
 	if (*winbind_domain) {
 		return winbind_domain;
 	}
 
-	ZERO_STRUCT(response);
-
 	/* Send off request */
 
-	if (winbindd_request_response(NULL, WINBINDD_DOMAIN_NAME, NULL, &response) !=
-	    NSS_STATUS_SUCCESS) {
+	ret = wbcInterfaceDetails(&details);
+	if (!WBC_ERROR_IS_OK(ret)) {
 		DEBUG(1, ("could not obtain winbind domain name!\n"));
 		return lp_workgroup();
 	}
 
-	fstrcpy(winbind_domain, response.data.domain_name);
+	fstrcpy(winbind_domain, details->netbios_domain);
+
+	wbcFreeMemory(details);
 
 	return winbind_domain;
 
