@@ -280,24 +280,24 @@ static void gensec_want_feature_list(struct gensec_security *state, char* featur
 
 static char winbind_separator(void)
 {
-	struct winbindd_response response;
+	struct wbcInterfaceDetails *details;
+	wbcErr ret;
 	static bool got_sep;
 	static char sep;
 
 	if (got_sep)
 		return sep;
 
-	ZERO_STRUCT(response);
-
-	/* Send off request */
-
-	if (winbindd_request_response(NULL, WINBINDD_INFO, NULL, &response) !=
-	    NSS_STATUS_SUCCESS) {
+	ret = wbcInterfaceDetails(&details);
+	if (!WBC_ERROR_IS_OK(ret)) {
 		d_fprintf(stderr, "could not obtain winbind separator!\n");
 		return *lp_winbind_separator();
 	}
 
-	sep = response.data.info.winbind_separator;
+	sep = details->winbind_separator;
+
+	wbcFreeMemory(details);
+
 	got_sep = True;
 
 	if (!sep) {
