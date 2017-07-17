@@ -36,7 +36,7 @@ from samba.auth import system_session
 from samba.tests import delete_force
 from samba.dsdb import UF_WORKSTATION_TRUST_ACCOUNT, UF_PASSWD_NOTREQD
 from samba.dcerpc.misc import SEC_CHAN_WKSTA
-
+from samba.dcerpc.netlogon import NETLOGON_NEG_STRONG_KEYS
 
 class AuthLogTestsNetLogonBadCreds(samba.tests.auth_log_base.AuthLogTestBase):
 
@@ -172,7 +172,7 @@ class AuthLogTestsNetLogonBadCreds(samba.tests.auth_log_base.AuthLogTestBase):
                                        SEC_CHAN_WKSTA,
                                        self.netbios_name,
                                        creds,
-                                       0x00004000)
+                                       NETLOGON_NEG_STRONG_KEYS)
         except NTSTATUSError:
             pass
         self.waitForMessages(isLastExpectedMessage)
