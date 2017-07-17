@@ -841,37 +841,38 @@ static NTSTATUS gensec_spnego_client_negTokenTarg(struct gensec_security *gensec
 		return status;
 	}
 
-	if (sub_out.length || mech_list_mic.length) {
-		/* compose reply */
-		spnego_out.type = SPNEGO_NEG_TOKEN_TARG;
-		spnego_out.negTokenTarg.negResult = SPNEGO_NONE_RESULT;
-		spnego_out.negTokenTarg.supportedMech = NULL;
-		spnego_out.negTokenTarg.responseToken = sub_out;
-		spnego_out.negTokenTarg.mechListMIC = mech_list_mic;
-
-		if (spnego_write_data(out_mem_ctx, out, &spnego_out) == -1) {
-			DBG_WARNING("Failed to write NEG_TOKEN_TARG\n");
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-
-		spnego_state->num_targs++;
-		spnego_state->state_position = SPNEGO_CLIENT_TARG;
-		status = NT_STATUS_MORE_PROCESSING_REQUIRED;
-	} else {
-
-		/* all done - server has accepted, and we agree */
+	if (sub_out.length == 0 && mech_list_mic.length == 0) {
 		*out = data_blob_null;
 
 		if (ta->negResult != SPNEGO_ACCEPT_COMPLETED) {
 			/* unless of course it did not accept */
 			DBG_WARNING("gensec_update ok but not accepted\n");
-			status = NT_STATUS_INVALID_PARAMETER;
+			return NT_STATUS_INVALID_PARAMETER;
 		}
 
 		spnego_state->state_position = SPNEGO_DONE;
+		return status;
 	}
 
-	return status;
+	/* compose reply */
+	spnego_out.type = SPNEGO_NEG_TOKEN_TARG;
+	spnego_out.negTokenTarg.negResult = SPNEGO_NONE_RESULT;
+	spnego_out.negTokenTarg.supportedMech = NULL;
+	spnego_out.negTokenTarg.responseToken = sub_out;
+	spnego_out.negTokenTarg.mechListMIC = mech_list_mic;
+
+	if (spnego_write_data(out_mem_ctx, out, &spnego_out) == -1) {
+		DBG_WARNING("Failed to write NEG_TOKEN_TARG\n");
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	spnego_state->num_targs++;
+
+	/* set next state */
+	spnego_state->state_position = SPNEGO_CLIENT_TARG;
+	spnego_state->expected_packet = SPNEGO_NEG_TOKEN_TARG;
+
+	return NT_STATUS_MORE_PROCESSING_REQUIRED;
 }
 
 /** create a server negTokenTarg 
