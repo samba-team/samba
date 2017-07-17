@@ -52,7 +52,7 @@ is_ctdb_managed_service || exit 0
 case "$1" in
 startup)
 	service_start
-	ctdb_counter_int
+	ctdb_counter_init
 	;;
 
 shutdown)
