@@ -1048,7 +1048,8 @@ static NTSTATUS gensec_spnego_server_negTokenInit(struct gensec_security *gensec
 		if (GENSEC_UPDATE_IS_NTERROR(status)) {
 			DBG_WARNING("%s: NEG_TOKEN_INIT failed: %s\n",
 				    cur_sec->op->name, nt_errstr(status));
-			goto reply;
+			TALLOC_FREE(frame);
+			return status;
 		}
 
 		spnego_state->neg_oid = cur_sec->oid;
@@ -1056,7 +1057,8 @@ static NTSTATUS gensec_spnego_server_negTokenInit(struct gensec_security *gensec
 	}
 
 	DBG_WARNING("Could not find a suitable mechtype in NEG_TOKEN_INIT\n");
-	status = NT_STATUS_INVALID_PARAMETER;
+	TALLOC_FREE(frame);
+	return NT_STATUS_INVALID_PARAMETER;
 
  reply:
 	if (spnego_state->simulate_w2k) {
@@ -1118,7 +1120,7 @@ static NTSTATUS gensec_spnego_server_negTokenTarg(struct gensec_security *gensec
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_WARNING("failed to verify mechListMIC: %s\n",
 				    nt_errstr(status));
-			goto server_response;
+			return status;
 		}
 
 		spnego_state->needs_mic_check = false;
@@ -1130,6 +1132,11 @@ static NTSTATUS gensec_spnego_server_negTokenTarg(struct gensec_security *gensec
 		status = gensec_update_ev(spnego_state->sub_sec_security,
 					  out_mem_ctx, ev,
 					  sub_in, &sub_out);
+		if (GENSEC_UPDATE_IS_NTERROR(status)) {
+			DEBUG(2, ("SPNEGO login failed: %s\n",
+				  nt_errstr(status)));
+			return status;
+		}
 		if (NT_STATUS_IS_OK(status)) {
 			spnego_state->sub_sec_ready = true;
 		}
@@ -1166,7 +1173,7 @@ static NTSTATUS gensec_spnego_server_negTokenTarg(struct gensec_security *gensec
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_WARNING("failed to verify mechListMIC: %s\n",
 				    nt_errstr(status));
-			goto server_response;
+			return status;
 		}
 
 		spnego_state->needs_mic_check = false;
