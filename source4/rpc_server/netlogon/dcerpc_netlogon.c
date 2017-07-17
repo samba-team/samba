@@ -111,8 +111,10 @@ static NTSTATUS dcesrv_netr_ServerReqChallenge(struct dcesrv_call_state *dce_cal
  */
 static NTSTATUS dcesrv_netr_ServerAuthenticate3_helper(
 	struct dcesrv_call_state *dce_call,
-	 TALLOC_CTX *mem_ctx,
+	TALLOC_CTX *mem_ctx,
 	struct netr_ServerAuthenticate3 *r,
+	const char **trust_account_for_search,
+	const char **trust_account_in_db,
 	struct dom_sid **sid)
 {
 	struct netlogon_server_pipe_state *pipe_state =
@@ -128,8 +130,7 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_helper(
 	struct ldb_message **msgs;
 	NTSTATUS nt_status;
 	const char *attrs[] = {"unicodePwd", "userAccountControl",
-			       "objectSid", NULL};
-	const char *account_name;
+			       "objectSid", "samAccountName", NULL};
 	uint32_t server_flags = 0;
 	uint32_t negotiate_flags = 0;
 	bool allow_nt4_crypto = lpcfg_allow_nt4_crypto(dce_call->conn->dce_ctx->lp_ctx);
@@ -368,18 +369,19 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_helper(
 			return NT_STATUS_NO_TRUST_SAM_ACCOUNT;
 		}
 
-		account_name = talloc_asprintf(mem_ctx, "%s$", flatname);
-		if (account_name == NULL) {
+		*trust_account_for_search = talloc_asprintf(mem_ctx, "%s$", flatname);
+		if (*trust_account_for_search == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
 	} else {
-		account_name = r->in.account_name;
+		*trust_account_for_search = r->in.account_name;
 	}
 
 	/* pull the user attributes */
 	num_records = gendb_search(sam_ctx, mem_ctx, NULL, &msgs, attrs,
 				   "(&(sAMAccountName=%s)(objectclass=user))",
-				   ldb_binary_encode_string(mem_ctx, account_name));
+				   ldb_binary_encode_string(mem_ctx,
+							    *trust_account_for_search));
 
 	if (num_records == 0) {
 		DEBUG(3,("Couldn't find user [%s] in samdb.\n",
@@ -392,6 +394,15 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_helper(
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
+	*trust_account_in_db = ldb_msg_find_attr_as_string(msgs[0],
+							   "samAccountName",
+							   NULL);
+	if (*trust_account_in_db == NULL) {
+		DEBUG(0,("No samAccountName returned in record matching user [%s]\n",
+			 r->in.account_name));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+	
 	user_account_control = ldb_msg_find_attr_as_uint(msgs[0], "userAccountControl", 0);
 
 	if (user_account_control & UF_ACCOUNTDISABLE) {
@@ -507,6 +518,8 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(
 {
 	NTSTATUS status;
 	struct dom_sid *sid = NULL;
+	const char *trust_account_for_search = NULL;
+	const char *trust_account_in_db = NULL;
 	struct auth_usersupplied_info ui = {
 		.local_host = dce_call->conn->local_address,
 		.remote_host = dce_call->conn->remote_address,
@@ -518,27 +531,27 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(
 		.auth_description = "ServerAuthenticate",
 		.netlogon_trust_account = {
 			.computer_name = r->in.computer_name,
-			.account_name = r->in.account_name,
 			.negotiate_flags = *r->in.negotiate_flags,
 			.secure_channel_type = r->in.secure_channel_type,
 		},
-		.mapped = {
-			.account_name = r->in.account_name,
-		}
 	};
 
 	status = dcesrv_netr_ServerAuthenticate3_helper(dce_call,
 							mem_ctx,
 							r,
+							&trust_account_for_search,
+							&trust_account_in_db,
 							&sid);
 	ui.netlogon_trust_account.sid = sid;
+	ui.netlogon_trust_account.account_name = trust_account_in_db;
+	ui.mapped.account_name = trust_account_for_search;
 	log_authentication_event(
 		dce_call->conn->msg_ctx,
 		dce_call->conn->dce_ctx->lp_ctx,
 		&ui,
 		status,
 		lpcfg_workgroup(dce_call->conn->dce_ctx->lp_ctx),
-		r->in.account_name,
+		trust_account_in_db,
 		NULL,
 		sid);
 
