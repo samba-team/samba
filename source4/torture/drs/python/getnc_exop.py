@@ -138,8 +138,8 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
 
     def test_do_single_repl(self):
         """
-        Make sure that DRSU_EXOP_REPL_OBJ never replicates more than
-        one object, even when we use DRS_GET_ANC.
+	Make sure that DRSUAPI_EXOP_REPL_OBJ never replicates more than
+        one object, even when we use DRS_GET_ANC/GET_TGT.
         """
 
         ou1 = "OU=get_anc1,%s" % self.ou
@@ -162,36 +162,55 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
             })
         dc3_id = self._get_identifier(self.ldb_dc1, dc3)
 
-        req8 = self._exop_req8(dest_dsa=None,
-                               invocation_id=self.ldb_dc1.get_invocation_id(),
-                               nc_dn_str=ou1,
-                               exop=drsuapi.DRSUAPI_EXOP_REPL_OBJ,
-                               replica_flags=drsuapi.DRSUAPI_DRS_WRIT_REP)
-        (level, ctr) = self.drs.DsGetNCChanges(self.drs_handle, 8, req8)
-        self._check_ctr6(ctr, [ou1])
+        # Add some linked attributes (for checking GET_TGT behaviour)
+        m = ldb.Message()
+        m.dn = ldb.Dn(self.ldb_dc2, ou1)
+        m["managedBy"] = ldb.MessageElement(ou2, ldb.FLAG_MOD_ADD, "managedBy")
+        self.ldb_dc1.modify(m)
+        ou1_link = AbstractLink(drsuapi.DRSUAPI_ATTID_managedBy,
+                                drsuapi.DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE,
+                                ou1_id.guid, ou2_id.guid)
+
+        m.dn = ldb.Dn(self.ldb_dc2, dc3)
+        m["managedBy"] = ldb.MessageElement(ou2, ldb.FLAG_MOD_ADD, "managedBy")
+        self.ldb_dc1.modify(m)
+        dc3_link = AbstractLink(drsuapi.DRSUAPI_ATTID_managedBy,
+                                drsuapi.DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE,
+                                dc3_id.guid, ou2_id.guid)
+
+        req = self._getnc_req10(dest_dsa=None,
+                                invocation_id=self.ldb_dc1.get_invocation_id(),
+                                nc_dn_str=ou1,
+                                exop=drsuapi.DRSUAPI_EXOP_REPL_OBJ,
+                                replica_flags=drsuapi.DRSUAPI_DRS_WRIT_REP,
+                                more_flags=drsuapi.DRSUAPI_DRS_GET_TGT)
+        (level, ctr) = self.drs.DsGetNCChanges(self.drs_handle, 10, req)
+        self._check_ctr6(ctr, [ou1], expected_links=[ou1_link])
 
         # DRSUAPI_DRS_WRIT_REP means that we should only replicate the dn we give (dc3).
         # DRSUAPI_DRS_GET_ANC means that we should also replicate its ancestors, but
         # Windows doesn't do this if we use both.
-        req8 = self._exop_req8(dest_dsa=None,
-                               invocation_id=self.ldb_dc1.get_invocation_id(),
-                               nc_dn_str=dc3,
-                               exop=drsuapi.DRSUAPI_EXOP_REPL_OBJ,
-                               replica_flags=drsuapi.DRSUAPI_DRS_WRIT_REP |
-                                             drsuapi.DRSUAPI_DRS_GET_ANC)
-        (level, ctr) = self.drs.DsGetNCChanges(self.drs_handle, 8, req8)
-        self._check_ctr6(ctr, [dc3])
+        req = self._getnc_req10(dest_dsa=None,
+                                invocation_id=self.ldb_dc1.get_invocation_id(),
+                                nc_dn_str=dc3,
+                                exop=drsuapi.DRSUAPI_EXOP_REPL_OBJ,
+                                replica_flags=drsuapi.DRSUAPI_DRS_WRIT_REP |
+                                              drsuapi.DRSUAPI_DRS_GET_ANC,
+                                more_flags=drsuapi.DRSUAPI_DRS_GET_TGT)
+        (level, ctr) = self.drs.DsGetNCChanges(self.drs_handle, 10, req)
+        self._check_ctr6(ctr, [dc3], expected_links=[dc3_link])
 
         # Even though the ancestor of ou2 (ou1) has changed since last hwm, and we're
         # sending DRSUAPI_DRS_GET_ANC, the expected response is that it will only try
         # and replicate the single object still.
-        req8 = self._exop_req8(dest_dsa=None,
-                               invocation_id=self.ldb_dc1.get_invocation_id(),
-                               nc_dn_str=ou2,
-                               exop=drsuapi.DRSUAPI_EXOP_REPL_OBJ,
-                               replica_flags=drsuapi.DRSUAPI_DRS_CRITICAL_ONLY |
-                                             drsuapi.DRSUAPI_DRS_GET_ANC)
-        (level, ctr) = self.drs.DsGetNCChanges(self.drs_handle, 8, req8)
+        req = self._getnc_req10(dest_dsa=None,
+                                invocation_id=self.ldb_dc1.get_invocation_id(),
+                                nc_dn_str=ou2,
+                                exop=drsuapi.DRSUAPI_EXOP_REPL_OBJ,
+                                replica_flags=drsuapi.DRSUAPI_DRS_CRITICAL_ONLY |
+                                              drsuapi.DRSUAPI_DRS_GET_ANC,
+                                more_flags=drsuapi.DRSUAPI_DRS_GET_TGT)
+        (level, ctr) = self.drs.DsGetNCChanges(self.drs_handle, 10, req)
         self._check_ctr6(ctr, [ou2])
 
     def test_do_full_repl_on_ou(self):
