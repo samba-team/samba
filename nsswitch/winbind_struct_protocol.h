@@ -258,7 +258,7 @@ struct winbindd_request {
 		gid_t gid;           /* getgrgid, gid_to_sid */
 		uint32_t ndrcmd;
 		struct {
-			/* We deliberatedly don't split into domain/user to
+			/* We deliberately don't split into domain/user to
                            avoid having the client know what the separator
                            character is. */
 			fstring user;
