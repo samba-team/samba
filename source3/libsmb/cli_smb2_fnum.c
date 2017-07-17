@@ -1571,6 +1571,29 @@ NTSTATUS cli_smb2_setatr(struct cli_state *cli,
 	inbuf.length = sizeof(inbuf_store);
 	data_blob_clear(&inbuf);
 
+	/*
+	 * SMB1 uses attr == 0 to clear all attributes
+	 * on a file (end up with FILE_ATTRIBUTE_NORMAL),
+	 * and attr == FILE_ATTRIBUTE_NORMAL to mean ignore
+	 * request attribute change.
+	 *
+	 * SMB2 uses exactly the reverse. Unfortunately as the
+	 * cli_setatr() ABI is exposed inside libsmbclient,
+	 * we must make the SMB2 cli_smb2_setatr() call
+	 * export the same ABI as the SMB1 cli_setatr()
+	 * which calls it. This means reversing the sense
+	 * of the requested attr argument if it's zero
+	 * or FILE_ATTRIBUTE_NORMAL.
+	 *
+	 * See BUG: https://bugzilla.samba.org/show_bug.cgi?id=12899
+	 */
+
+	if (attr == 0) {
+		attr = FILE_ATTRIBUTE_NORMAL;
+	} else if (attr == FILE_ATTRIBUTE_NORMAL) {
+		attr = 0;
+	}
+
 	SSVAL(inbuf.data, 32, attr);
 	if (mtime != 0) {
 		put_long_date((char *)inbuf.data + 16,mtime);
