@@ -914,11 +914,6 @@ static NTSTATUS gensec_spnego_server_response(struct spnego_state *spnego_state,
 		}
 		spnego_out.negTokenTarg.negResult = SPNEGO_ACCEPT_COMPLETED;
 		spnego_state->state_position = SPNEGO_DONE;
-	} else {
-		spnego_out.negTokenTarg.negResult = SPNEGO_REJECT;
-		spnego_out.negTokenTarg.mechListMIC = data_blob_null;
-		DEBUG(2, ("SPNEGO login failed: %s\n", nt_errstr(nt_status)));
-		spnego_state->state_position = SPNEGO_DONE;
 	}
 
 	if (spnego_write_data(out_mem_ctx, out, &spnego_out) == -1) {
