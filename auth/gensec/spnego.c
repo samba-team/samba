@@ -844,6 +844,12 @@ static NTSTATUS gensec_spnego_client_negTokenTarg(struct gensec_security *gensec
 	if (sub_out.length == 0 && mech_list_mic.length == 0) {
 		*out = data_blob_null;
 
+		if (!spnego_state->sub_sec_ready) {
+			/* somethings wrong here... */
+			DBG_ERR("gensec_update not ready without output\n");
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+
 		if (ta->negResult != SPNEGO_ACCEPT_COMPLETED) {
 			/* unless of course it did not accept */
 			DBG_WARNING("gensec_update ok but not accepted\n");
