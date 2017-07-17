@@ -271,7 +271,8 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_helper(
 		/* schannel must be used, but client did not offer it. */
 		DEBUG(0,("%s: schannel required but client failed "
 			"to offer it. Client was %s\n",
-			__func__, r->in.account_name));
+			 __func__,
+			 log_escape(mem_ctx, r->in.account_name)));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -347,7 +348,8 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_helper(
 		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
 			DEBUG(2, ("Client asked for a trusted domain secure channel, "
 				  "but there's no tdo for [%s] => [%s] \n",
-				  r->in.account_name, encoded_name));
+				  log_escape(mem_ctx, r->in.account_name),
+				  encoded_name));
 			return NT_STATUS_NO_TRUST_SAM_ACCOUNT;
 		}
 		if (!NT_STATUS_IS_OK(nt_status)) {
@@ -385,12 +387,14 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_helper(
 
 	if (num_records == 0) {
 		DEBUG(3,("Couldn't find user [%s] in samdb.\n",
-			 r->in.account_name));
+			 log_escape(mem_ctx, r->in.account_name)));
 		return NT_STATUS_NO_TRUST_SAM_ACCOUNT;
 	}
 
 	if (num_records > 1) {
-		DEBUG(0,("Found %d records matching user [%s]\n", num_records, r->in.account_name));
+		DEBUG(0,("Found %d records matching user [%s]\n",
+			 num_records,
+			 log_escape(mem_ctx, r->in.account_name)));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -406,7 +410,8 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_helper(
 	user_account_control = ldb_msg_find_attr_as_uint(msgs[0], "userAccountControl", 0);
 
 	if (user_account_control & UF_ACCOUNTDISABLE) {
-		DEBUG(1, ("Account [%s] is disabled\n", r->in.account_name));
+		DEBUG(1, ("Account [%s] is disabled\n",
+			  log_escape(mem_ctx, r->in.account_name)));
 		return NT_STATUS_NO_TRUST_SAM_ACCOUNT;
 	}
 
@@ -453,8 +458,8 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_helper(
 	if (!challenge_valid) {
 		DEBUG(1, ("No challenge requested by client [%s/%s], "
 			  "cannot authenticate\n",
-			  r->in.computer_name,
-			  r->in.account_name));
+			  log_escape(mem_ctx, r->in.computer_name),
+			  log_escape(mem_ctx, r->in.account_name)));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
