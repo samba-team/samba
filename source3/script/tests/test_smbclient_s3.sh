@@ -1368,6 +1368,53 @@ EOF
     fi
 }
 
+# Test smbclient setmode command
+test_setmode()
+{
+    tmpfile=$PREFIX/smbclient_interactive_prompt_commands
+
+    cat > $tmpfile <<EOF
+del test_setmode
+put ${SMBCLIENT} test_setmode
+setmode test_setmode +r +s +h +a
+allinfo test_setmode
+setmode test_setmode -rsha
+allinfo test_setmode
+del test_setmode
+quit
+EOF
+    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/tmp -I $SERVER_IP $ADDARGS < $tmpfile 2>&1'
+    eval echo "$cmd"
+    out=`eval $cmd`
+    ret=$?
+
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed setmode test with output $ret"
+	false
+	return
+    fi
+
+    echo "$out" | grep 'attributes: RHSA'
+    ret=$?
+    if [ $ret -ne 0 ] ; then
+       echo "$out"
+       echo "failed - should get attributes: RHSA"
+       false
+       return
+    fi
+
+    echo "$out" | grep 'attributes:  (80)'
+    ret=$?
+    if [ $ret -ne 0 ] ; then
+       echo "$out"
+       echo "failed - should also get attributes:  (80)"
+       false
+       return
+    fi
+}
+
+
 test_server_os_message()
 {
     tmpfile=$PREFIX/smbclient_interactive_prompt_commands
@@ -1511,6 +1558,10 @@ testit "smbclient deltree command" \
 
 testit "server os message" \
     test_server_os_message || \
+    failed=`expr $failed + 1`
+
+testit "setmode test" \
+    test_setmode || \
     failed=`expr $failed + 1`
 
 testit "rm -rf $LOGDIR" \
