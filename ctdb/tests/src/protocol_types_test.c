@@ -60,7 +60,7 @@ PROTOCOL_TYPE3_TEST(struct ctdb_traverse_start, ctdb_traverse_start);
 PROTOCOL_TYPE3_TEST(struct ctdb_traverse_all, ctdb_traverse_all);
 PROTOCOL_TYPE3_TEST(struct ctdb_traverse_start_ext, ctdb_traverse_start_ext);
 PROTOCOL_TYPE3_TEST(struct ctdb_traverse_all_ext, ctdb_traverse_all_ext);
-DEFINE_TEST(ctdb_sock_addr, ctdb_sock_addr);
+PROTOCOL_TYPE3_TEST(ctdb_sock_addr, ctdb_sock_addr);
 DEFINE_TEST(struct ctdb_connection, ctdb_connection);
 DEFINE_TEST(struct ctdb_tunable, ctdb_tunable);
 DEFINE_TEST(struct ctdb_node_flag_change, ctdb_node_flag_change);

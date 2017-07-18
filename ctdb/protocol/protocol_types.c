@@ -2033,45 +2033,51 @@ fail:
 	return ret;
 }
 
-size_t ctdb_sock_addr_len(ctdb_sock_addr *addr)
+size_t ctdb_sock_addr_len(ctdb_sock_addr *in)
 {
 	return sizeof(ctdb_sock_addr);
 }
 
-void ctdb_sock_addr_push(ctdb_sock_addr *addr, uint8_t *buf)
+void ctdb_sock_addr_push(ctdb_sock_addr *in, uint8_t *buf, size_t *npush)
 {
-	memcpy(buf, addr, sizeof(ctdb_sock_addr));
+	memcpy(buf, in, sizeof(ctdb_sock_addr));
+	*npush = sizeof(ctdb_sock_addr);
 }
 
-static int ctdb_sock_addr_pull_elems(uint8_t *buf, size_t buflen,
-				     TALLOC_CTX *mem_ctx, ctdb_sock_addr *out)
+int ctdb_sock_addr_pull_elems(uint8_t *buf, size_t buflen,
+			      TALLOC_CTX *mem_ctx, ctdb_sock_addr *out,
+			      size_t *npull)
 {
 	if (buflen < sizeof(ctdb_sock_addr)) {
 		return EMSGSIZE;
 	}
 
 	memcpy(out, buf, sizeof(ctdb_sock_addr));
+	*npull = sizeof(ctdb_sock_addr);
 
 	return 0;
 }
 
 int ctdb_sock_addr_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			ctdb_sock_addr **out)
+			ctdb_sock_addr **out, size_t *npull)
 {
-	ctdb_sock_addr *addr;
+	ctdb_sock_addr *val;
+	size_t np;
 	int ret;
 
-	addr = talloc(mem_ctx, ctdb_sock_addr);
-	if (addr == NULL) {
-		return false;
+	val = talloc(mem_ctx, ctdb_sock_addr);
+	if (val == NULL) {
+		return ENOMEM;
 	}
 
-	ret = ctdb_sock_addr_pull_elems(buf, buflen, addr, addr);
+	ret = ctdb_sock_addr_pull_elems(buf, buflen, val, val, &np);
 	if (ret != 0) {
-		TALLOC_FREE(addr);
+		talloc_free(val);
+		return ret;
 	}
 
-	*out = addr;
+	*out = val;
+	*npull = np;
 	return ret;
 }
 

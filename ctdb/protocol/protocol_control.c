@@ -535,7 +535,7 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_GET_TCP_TICKLE_LIST:
-		ctdb_sock_addr_push(cd->data.addr, buf);
+		ctdb_sock_addr_push(cd->data.addr, buf, &np);
 		break;
 
 	case CTDB_CONTROL_SET_TCP_TICKLE_LIST:
@@ -629,7 +629,7 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_GET_PUBLIC_IP_INFO:
-		ctdb_sock_addr_push(cd->data.addr, buf);
+		ctdb_sock_addr_push(cd->data.addr, buf, &np);
 		break;
 
 	case CTDB_CONTROL_SET_IFACE_LINK_STATE:
@@ -833,7 +833,7 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_CONTROL_GET_TCP_TICKLE_LIST:
 		ret = ctdb_sock_addr_pull(buf, buflen, mem_ctx,
-					  &cd->data.addr);
+					  &cd->data.addr, &np);
 		break;
 
 	case CTDB_CONTROL_SET_TCP_TICKLE_LIST:
@@ -945,7 +945,7 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_CONTROL_GET_PUBLIC_IP_INFO:
 		ret = ctdb_sock_addr_pull(buf, buflen, mem_ctx,
-					  &cd->data.addr);
+					  &cd->data.addr, &np);
 		break;
 
 	case CTDB_CONTROL_SET_IFACE_LINK_STATE:

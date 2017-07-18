@@ -647,6 +647,50 @@ static int ctdb_traverse_all_ext_pull_old(uint8_t *buf, size_t buflen,
 	return 0;
 }
 
+static size_t ctdb_sock_addr_len_old(ctdb_sock_addr *in)
+{
+	return sizeof(ctdb_sock_addr);
+}
+
+static void ctdb_sock_addr_push_old(ctdb_sock_addr *in, uint8_t *buf)
+{
+	memcpy(buf, in, sizeof(ctdb_sock_addr));
+}
+
+static int ctdb_sock_addr_pull_elems_old(uint8_t *buf, size_t buflen,
+					 TALLOC_CTX *mem_ctx,
+					 ctdb_sock_addr *out)
+{
+	if (buflen < sizeof(ctdb_sock_addr)) {
+		return EMSGSIZE;
+	}
+
+	memcpy(out, buf, sizeof(ctdb_sock_addr));
+
+	return 0;
+}
+
+static int ctdb_sock_addr_pull_old(uint8_t *buf, size_t buflen,
+				   TALLOC_CTX *mem_ctx, ctdb_sock_addr **out)
+{
+	ctdb_sock_addr *val;
+	int ret;
+
+	val = talloc(mem_ctx, ctdb_sock_addr);
+	if (val == NULL) {
+		return ENOMEM;
+	}
+
+	ret = ctdb_sock_addr_pull_elems_old(buf, buflen, val, val);
+	if (ret != 0) {
+		TALLOC_FREE(val);
+		return ret;
+	}
+
+	*out = val;
+	return ret;
+}
+
 
 COMPAT_TYPE3_TEST(struct ctdb_statistics, ctdb_statistics);
 COMPAT_TYPE3_TEST(struct ctdb_vnn_map, ctdb_vnn_map);
@@ -662,6 +706,7 @@ COMPAT_TYPE3_TEST(struct ctdb_traverse_start, ctdb_traverse_start);
 COMPAT_TYPE3_TEST(struct ctdb_traverse_all, ctdb_traverse_all);
 COMPAT_TYPE3_TEST(struct ctdb_traverse_start_ext, ctdb_traverse_start_ext);
 COMPAT_TYPE3_TEST(struct ctdb_traverse_all_ext, ctdb_traverse_all_ext);
+COMPAT_TYPE3_TEST(ctdb_sock_addr, ctdb_sock_addr);
 
 int main(int argc, char *argv[])
 {
@@ -682,6 +727,7 @@ int main(int argc, char *argv[])
 	COMPAT_TEST_FUNC(ctdb_traverse_all)();
 	COMPAT_TEST_FUNC(ctdb_traverse_start_ext)();
 	COMPAT_TEST_FUNC(ctdb_traverse_all_ext)();
+	COMPAT_TEST_FUNC(ctdb_sock_addr)();
 
 	return 0;
 }

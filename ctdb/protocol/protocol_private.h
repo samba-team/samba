@@ -172,10 +172,13 @@ int ctdb_traverse_all_ext_pull(uint8_t *buf, size_t buflen,
 			       struct ctdb_traverse_all_ext **out,
 			       size_t *npull);
 
-size_t ctdb_sock_addr_len(ctdb_sock_addr *addr);
-void ctdb_sock_addr_push(ctdb_sock_addr *addr, uint8_t *buf);
+size_t ctdb_sock_addr_len(ctdb_sock_addr *in);
+void ctdb_sock_addr_push(ctdb_sock_addr *in, uint8_t *buf, size_t *npush);
+int ctdb_sock_addr_pull_elems(uint8_t *buf, size_t buflen,
+			      TALLOC_CTX *mem_ctx, ctdb_sock_addr *out,
+			      size_t *npull);
 int ctdb_sock_addr_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			ctdb_sock_addr **out);
+			ctdb_sock_addr **out, size_t *npull);
 
 size_t ctdb_connection_len(struct ctdb_connection *conn);
 void ctdb_connection_push(struct ctdb_connection *conn, uint8_t *buf);
