@@ -360,6 +360,8 @@ static WERROR get_and_verify_access_check(TALLOC_CTX *sub_ctx,
 					  uint32_t access_check_len,
 					  struct auth_session_info *session_info)
 {
+	struct bkrp_access_check_v2 uncrypted_accesscheckv2;
+	struct bkrp_access_check_v3 uncrypted_accesscheckv3;
 	gnutls_cipher_hd_t cipher_handle = { 0 };
 	gnutls_cipher_algorithm_t cipher_algo;
 	DATA_BLOB blob_us;
@@ -422,7 +424,6 @@ static WERROR get_and_verify_access_check(TALLOC_CTX *sub_ctx,
 		uint32_t hash_size = 20;
 		uint8_t hash[hash_size];
 		gnutls_hash_hd_t dig_ctx;
-		struct bkrp_access_check_v2 uncrypted_accesscheckv2;
 
 		ndr_err = ndr_pull_struct_blob(&blob_us, sub_ctx, &uncrypted_accesscheckv2,
 					(ndr_pull_flags_fn_t)ndr_pull_bkrp_access_check_v2);
@@ -457,7 +458,6 @@ static WERROR get_and_verify_access_check(TALLOC_CTX *sub_ctx,
 		uint32_t hash_size = 64;
 		uint8_t hash[hash_size];
 		gnutls_hash_hd_t dig_ctx;
-		struct bkrp_access_check_v3 uncrypted_accesscheckv3;
 
 		ndr_err = ndr_pull_struct_blob(&blob_us, sub_ctx, &uncrypted_accesscheckv3,
 					(ndr_pull_flags_fn_t)ndr_pull_bkrp_access_check_v3);
