@@ -1205,18 +1205,18 @@ setup_reclock ()
 
 setup_vsftpd ()
 {
-    service_name="vsftpd"
+	debug "Setting up VSFTPD environment: service $1, not managed by CTDB"
 
-    if [ "$1" != "down" ] ; then
-	die "setup_vsftpd up not implemented!!!"
-    else
-	debug "Setting up VSFTPD environment: service down, not managed by CTDB"
+	_service_name="vsftpd"
 
-	service vsftpd force-stopped
+	if [ "$1" != "down" ] ; then
+		service "$_service_name" start
+	else
+		service "$_service_name" force-stopped
+	fi
 
 	export CTDB_MANAGED_SERVICES="foo"
 	unset CTDB_MANAGES_VSFTPD
-    fi
 }
 
 ######################################################################
@@ -1225,18 +1225,20 @@ setup_vsftpd ()
 
 setup_httpd ()
 {
-    if [ "$1" != "down" ] ; then
-	die "setup_httpd up not implemented!!!"
-    else
-	debug "Setting up HTTPD environment: service down, not managed by CTDB"
+	debug "Setting up HTTPD environment: service $1, not managed by CTDB"
 
-	for service_name in "apache2" "httpd" ; do
-	    service "$service_name" force-stopped
-	done
+	if [ "$1" != "down" ] ; then
+		for _service_name in "apache2" "httpd" ; do
+			service "$_service_name" start
+		done
+	else
+		for _service_name in "apache2" "httpd" ; do
+			service "$_service_name" force-stopped
+		done
+	fi
 
 	export CTDB_MANAGED_SERVICES="foo"
 	unset CTDB_MANAGES_HTTPD
-    fi
 }
 
 ######################################################################
