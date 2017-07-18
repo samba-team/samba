@@ -774,3 +774,63 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
         # Check we received links (50 deleted links and 50 new)
         self.assert_expected_links(expected_links, num_expected=100)
 
+    def _repl_integrity_obj_deletion(self, delete_link_source=True):
+        """
+        Tests deleting link objects while a replication is in progress.
+        """
+
+        # create some objects and link them together, with some filler
+        # object in between the link sources
+        la_sources = self.create_object_range(0, 100, prefix="la_source")
+        la_targets = self.create_object_range(0, 100, prefix="la_targets")
+
+        for i in range(0, 50):
+            self.modify_object(la_sources[i], "managedBy", la_targets[i])
+
+        filler = self.create_object_range(0, 100, prefix="filler")
+
+        for i in range(50, 100):
+            self.modify_object(la_sources[i], "managedBy", la_targets[i])
+
+        # touch the targets so that the sources get replicated first
+        for i in range(0, 100):
+            self.modify_object(la_targets[i], "displayName", "OU%d" % i)
+
+        # objects should now be in the following USN order:
+        # [50 la_source][100 filler][50 la_source][100 la_target]
+
+        # Get the first block containing 50 link sources
+        self.repl_get_next()
+
+        # delete either the link targets or link source objects
+        if delete_link_source:
+            objects_to_delete = la_sources
+            # in GET_TGT testenvs we only receive the first 50 source objects
+            expected_objects = la_sources[:50] + la_targets + filler
+        else:
+            objects_to_delete = la_targets
+            expected_objects = la_sources + filler
+
+        for obj in objects_to_delete:
+            self.ldb_dc2.delete(obj)
+
+        # complete the replication
+        while not self.replication_complete():
+            self.repl_get_next()
+
+        # Check we get all the objects we're expecting
+        self.assert_expected_data(expected_objects)
+
+        # we can't use assert_expected_links() here because it tries to check
+        # against the deleted objects on the DC. (Although we receive some
+        # links from the first block processed, the Samba client should end up
+        # deleting these, as the source/target object involved is deleted)
+        self.assertTrue(len(self.rxd_links) == 50,
+                        "Expected 50 links, not %d" % len(self.rxd_links))
+
+    def test_repl_integrity_src_obj_deletion(self):
+        self._repl_integrity_obj_deletion(delete_link_source=True)
+
+    def test_repl_integrity_tgt_obj_deletion(self):
+        self._repl_integrity_obj_deletion(delete_link_source=False)
+

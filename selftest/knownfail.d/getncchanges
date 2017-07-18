@@ -4,6 +4,8 @@ samba4.drs.getncchanges.python\(vampire_dc\).getncchanges.DrsReplicaSyncIntegrit
 samba4.drs.getncchanges.python\(vampire_dc\).getncchanges.DrsReplicaSyncIntegrityTestCase.test_repl_get_tgt_chain\(vampire_dc\)
 samba4.drs.getncchanges.python\(vampire_dc\).getncchanges.DrsReplicaSyncIntegrityTestCase.test_repl_integrity_link_attr\(vampire_dc\)
 samba4.drs.getncchanges.python\(vampire_dc\).getncchanges.DrsReplicaSyncIntegrityTestCase.test_repl_get_tgt_and_anc\(vampire_dc\)
+samba4.drs.getncchanges.python\(vampire_dc\).getncchanges.DrsReplicaSyncIntegrityTestCase.test_repl_integrity_src_obj_deletion\(vampire_dc\)
+samba4.drs.getncchanges.python\(vampire_dc\).getncchanges.DrsReplicaSyncIntegrityTestCase.test_repl_integrity_tgt_obj_deletion\(vampire_dc\)
 samba4.drs.getncchanges.python\(promoted_dc\).getncchanges.DrsReplicaSyncIntegrityTestCase.test_repl_integrity_link_attr\(promoted_dc\)
 # GET_TGT tests currently only work for testenvs that send the links at the
 # same time as the source objects. Currently this is only the vampire_dc
