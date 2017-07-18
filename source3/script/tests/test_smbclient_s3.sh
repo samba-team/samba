@@ -1148,22 +1148,91 @@ test_local_symlinks()
     LOCAL_RAWARGS="${CONFIGURATION} -mSMB3"
     LOCAL_ADDARGS="${LOCAL_RAWARGS} $*"
 
-    test_dir="$LOCAL_PATH/local_symlinks/test"
+    share_test_dir="test"
+    share_slink_target_dir="$share_test_dir/dir1"
 
-    slink_name="$test_dir/sym_name"
-    slink_target_dir="$test_dir/dir1"
+    local_test_dir="$LOCAL_PATH/local_symlinks/$share_test_dir"
+    local_slink_name="$local_test_dir/sym_name"
+    local_slink_target_dir="$local_test_dir/dir1"
 
-    rm -rf $test_dir
+    rm -rf $local_test_dir
 
-    mkdir -p $test_dir
-    mkdir $slink_target_dir
-    ln -s $slink_target_dir $slink_name
+# Create the initial directories
+    tmpfile=$PREFIX/smbclient_interactive_prompt_commands
+    cat > $tmpfile <<EOF
+mkdir $share_test_dir
+mkdir $share_slink_target_dir
+quit
+EOF
+
+    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/local_symlinks -I $SERVER_IP $LOCAL_ADDARGS < $tmpfile 2>&1'
+    eval echo "$cmd"
+    out=`eval $cmd`
+    ret=$?
+    rm -f $tmpfile
+
+    if [ $ret -ne 0 ] ; then
+       echo "$out"
+       echo "failed accessing local_symlinks with error $ret"
+       false
+       return
+    fi
+
+    echo "$out" | grep 'NT_STATUS_'
+    ret=$?
+    if [ $ret -eq 0 ] ; then
+       echo "$out"
+       echo "failed - got an NT_STATUS error"
+       false
+       return
+    fi
+
+# Create the symlink locally
+    ln -s $local_slink_target_dir $local_slink_name
+    ret=$?
+    if [ $ret -ne 0 ] ; then
+       echo "$out"
+       echo "failed - unable to create symlink"
+       ls -la $local_test_dir
+       false
+       return
+    fi
 
 # Can we cd into the symlink name and ls ?
     tmpfile=$PREFIX/smbclient_interactive_prompt_commands
     cat > $tmpfile <<EOF
-cd test\\sym_name
+cd $share_test_dir\\sym_name
 ls
+quit
+EOF
+    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/local_symlinks -I $SERVER_IP $LOCAL_ADDARGS < $tmpfile 2>&1'
+    eval echo "$cmd"
+    out=`eval $cmd`
+    ret=$?
+    rm -f $tmpfile
+
+    if [ $ret -ne 0 ] ; then
+       echo "$out"
+       echo "failed accessing local_symlinks with error $ret"
+       false
+       return
+    fi
+
+    echo "$out" | grep 'NT_STATUS_'
+    ret=$?
+    if [ $ret -eq 0 ] ; then
+       echo "$out"
+       echo "failed - got an NT_STATUS error"
+       false
+       return
+    fi
+
+# CLEANUP
+    rm -f $local_slink_name
+
+    tmpfile=$PREFIX/smbclient_interactive_prompt_commands
+    cat > $tmpfile <<EOF
+deltree $share_test_dir
 quit
 EOF
     cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/local_symlinks -I $SERVER_IP $LOCAL_ADDARGS < $tmpfile 2>&1'
