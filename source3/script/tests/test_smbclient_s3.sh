@@ -1042,21 +1042,61 @@ EOF
 test_nosymlinks()
 {
 # Setup test dirs.
-    test_dir="$LOCAL_PATH/nosymlinks/test"
+    local_test_dir="$LOCAL_PATH/nosymlinks/test"
+    local_slink_name="$local_test_dir/source"
+    local_slink_target="$local_test_dir/nosymlink_target_file"
 
-    slink_name="$test_dir/source"
-    slink_target="$test_dir/target"
-    foobar_dir="$test_dir/foo/bar"
-    get_target="$test_dir/foo/bar/testfile"
+    share_test_dir="test"
+    share_foo_dir="$share_test_dir/foo"
+    share_foobar_dir="$share_test_dir/foo/bar"
+    share_target_file="$share_test_dir/foo/bar/testfile"
 
-    rm -rf $test_dir
+    rm -rf $local_test_dir
 
-    mkdir -p $test_dir
-    echo "$slink_target" > $slink_target
-    ln -s $slink_target $slink_name
+    local_nosymlink_target_file="nosymlink_target_file"
+    echo "$local_slink_target" > $local_nosymlink_target_file
 
-    mkdir -p $foobar_dir
-    echo "$get_target" > $get_target
+    local_foobar_target_file="testfile"
+    echo "$share_target_file" > $local_foobar_target_file
+
+    tmpfile=$PREFIX/smbclient_interactive_prompt_commands
+    cat > $tmpfile <<EOF
+mkdir $share_test_dir
+mkdir $share_foo_dir
+mkdir $share_foobar_dir
+cd /$share_test_dir
+put $local_nosymlink_target_file
+cd /$share_foobar_dir
+put $local_foobar_target_file
+quit
+EOF
+
+    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/nosymlinks -I $SERVER_IP $LOCAL_ADDARGS < $tmpfile 2>&1'
+    eval echo "$cmd"
+    out=`eval $cmd`
+    ret=$?
+    rm -f $tmpfile
+    rm -f $local_nosymlink_target_file
+    rm -f $local_foobar_target_file
+
+    if [ $ret -ne 0 ] ; then
+       echo "$out"
+       echo "failed accessing local_symlinks with error $ret"
+       false
+       return
+    fi
+
+    echo "$out" | grep 'NT_STATUS_'
+    ret=$?
+    if [ $ret -eq 0 ] ; then
+       echo "$out"
+       echo "failed - got an NT_STATUS error"
+       false
+       return
+    fi
+
+# Create the symlink locally
+    ln -s $local_slink_target $local_slink_name
 
 # Getting a file through a symlink name should fail.
     tmpfile=$PREFIX/smbclient_interactive_prompt_commands
@@ -1115,6 +1155,33 @@ EOF
 cd test\\foo\\bar
 ls
 get testfile -
+quit
+EOF
+    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/nosymlinks -I $SERVER_IP $ADDARGS < $tmpfile 2>&1'
+    eval echo "$cmd"
+    out=`eval $cmd`
+    ret=$?
+    rm -f $tmpfile
+
+    if [ $ret -ne 0 ] ; then
+       echo "$out"
+       echo "failed accessing nosymlinks with error $ret"
+       return 1
+    fi
+
+    echo "$out" | grep 'NT_STATUS'
+    ret=$?
+    if [ $ret -eq 0 ] ; then
+       echo "$out"
+       echo "failed - NT_STATUS_XXXX doing cd foo\\bar; get testfile on \\nosymlinks"
+       return 1
+    fi
+
+# CLEANUP
+    rm -f $local_slink_name
+
+    cat > $tmpfile <<EOF
+deltree test
 quit
 EOF
     cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/nosymlinks -I $SERVER_IP $ADDARGS < $tmpfile 2>&1'
