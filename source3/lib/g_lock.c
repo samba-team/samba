@@ -141,53 +141,6 @@ static NTSTATUS g_lock_store(struct db_record *rec, struct g_lock *lck,
 	return dbwrap_record_storev(rec, dbufs, ARRAY_SIZE(dbufs), 0);
 }
 
-#if 0
-
-static ssize_t g_lock_put(uint8_t *buf, size_t buflen,
-			  const struct g_lock_rec *locks,
-			  size_t num_locks,
-			  const uint8_t *data, size_t datalen)
-{
-	size_t i, len, ofs;
-
-	if (num_locks > UINT32_MAX/G_LOCK_REC_LENGTH) {
-		return -1;
-	}
-
-	len = num_locks * G_LOCK_REC_LENGTH;
-
-	len += sizeof(uint32_t);
-	if (len < sizeof(uint32_t)) {
-		return -1;
-	}
-
-	len += datalen;
-	if (len < datalen) {
-		return -1;
-	}
-
-	if (len > buflen) {
-		return len;
-	}
-
-	ofs = 0;
-	SIVAL(buf, ofs, num_locks);
-	ofs += sizeof(uint32_t);
-
-	for (i=0; i<num_locks; i++) {
-		g_lock_rec_put(buf+ofs, locks[i]);
-		ofs += G_LOCK_REC_LENGTH;
-	}
-
-	if ((data != NULL) && (datalen != 0)) {
-		memcpy(buf+ofs, data, datalen);
-	}
-
-	return len;
-}
-
-#endif
-
 static ssize_t g_lock_get(TDB_DATA recval,
 			  struct g_lock_rec *locks, size_t num_locks,
 			  uint8_t **data, size_t *datalen)
@@ -311,39 +264,6 @@ static bool g_lock_conflicts(enum g_lock_type l1, enum g_lock_type l2)
 	}
 	return true;
 }
-
-#if 0
-
-static NTSTATUS g_lock_record_store(struct db_record *rec,
-				    const struct g_lock_rec *locks,
-				    size_t num_locks,
-				    const uint8_t *data, size_t datalen)
-{
-	ssize_t len;
-	uint8_t *buf;
-	NTSTATUS status;
-
-	len = g_lock_put(NULL, 0, locks, num_locks, data, datalen);
-	if (len == -1) {
-		return NT_STATUS_BUFFER_TOO_SMALL;
-	}
-
-	buf = talloc_array(rec, uint8_t, len);
-	if (buf == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	g_lock_put(buf, len, locks, num_locks, data, datalen);
-
-	status = dbwrap_record_store(
-		rec, (TDB_DATA) { .dptr = buf, .dsize = len }, 0);
-
-	TALLOC_FREE(buf);
-
-	return status;
-}
-
-#endif
 
 static NTSTATUS g_lock_trylock(struct db_record *rec, struct server_id self,
 			       enum g_lock_type type,
