@@ -829,10 +829,6 @@ static NTSTATUS gensec_spnego_client_negTokenTarg(struct gensec_security *gensec
 		spnego_state->needs_mic_sign = false;
 	}
 
-	if (spnego_state->needs_mic_check) {
-		status = NT_STATUS_MORE_PROCESSING_REQUIRED;
-	}
-
  client_response:
 	if (GENSEC_UPDATE_IS_NTERROR(status)) {
 		DBG_WARNING("SPNEGO(%s) login failed: %s\n",
@@ -856,8 +852,10 @@ static NTSTATUS gensec_spnego_client_negTokenTarg(struct gensec_security *gensec
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
-		spnego_state->state_position = SPNEGO_DONE;
-		return status;
+		if (!spnego_state->needs_mic_check) {
+			spnego_state->state_position = SPNEGO_DONE;
+			return NT_STATUS_OK;
+		}
 	}
 
 	/* compose reply */
