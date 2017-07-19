@@ -819,7 +819,8 @@ class cmd_query(Command):
         record_type = dns_type_flag(rtype)
 
         if name.find('*') != -1:
-            raise CommandError('Wildcard searches not supported. To dump entire zone use "@"')
+            self.outf.write('use "@" to dump entire domain, looking up %s\n' %
+                            name)
 
         select_flags = 0
         if authority:
