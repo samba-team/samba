@@ -74,7 +74,7 @@ struct replmd_private {
 struct la_entry {
 	struct la_entry *next, *prev;
 	struct drsuapi_DsReplicaLinkedAttribute *la;
-	bool incomplete_replica;
+	uint32_t dsdb_repl_flags;
 };
 
 struct replmd_replicated_request {
@@ -6052,14 +6052,12 @@ static int replmd_store_linked_attributes(struct replmd_replicated_request *ar)
 {
 	int ret = LDB_SUCCESS;
 	uint32_t i;
-	bool incomplete_subset;
 	struct ldb_module *module = ar->module;
 	struct replmd_private *replmd_private =
 		talloc_get_type(ldb_module_get_private(module), struct replmd_private);
 	struct ldb_context *ldb;
 
 	ldb = ldb_module_get_ctx(module);
-	incomplete_subset = (ar->objs->dsdb_repl_flags & DSDB_REPL_FLAG_OBJECT_SUBSET);
 
 	DEBUG(4,("linked_attributes_count=%u\n", ar->objs->linked_attributes_count));
 
@@ -6082,13 +6080,7 @@ static int replmd_store_linked_attributes(struct replmd_replicated_request *ar)
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		*la_entry->la = ar->objs->linked_attributes[i];
-
-		/*
-		 * we may not be able to resolve link targets properly when
-		 * dealing with subsets of objects, e.g. the source is a
-		 * critical object and the target isn't
-		 */
-		la_entry->incomplete_replica = incomplete_subset;
+		la_entry->dsdb_repl_flags = ar->objs->dsdb_repl_flags;
 
 		/* we need to steal the non-scalars so they stay
 		   around until the end of the transaction */
@@ -6793,17 +6785,19 @@ static int replmd_check_target_exists(struct ldb_module *module,
 	if (target_res->count == 0) {
 
 		/*
+		 * we may not be able to resolve link targets properly when
+		 * dealing with subsets of objects, e.g. the source is a
+		 * critical object and the target isn't
+		 *
 		 * TODO:
 		 * When we implement Trusted Domains we need to consider
 		 * whether they get treated as an incomplete replica here or not
 		 */
-		if (la_entry->incomplete_replica) {
+		if (la_entry->dsdb_repl_flags & DSDB_REPL_FLAG_OBJECT_SUBSET) {
 
 			/*
-			 * If we're only replicating a subset of objects (e.g.
-			 * critical-only, single-object), then an unknown target
-			 * is probably not a critical problem. We don't increase
-			 * the highwater-mark so subsequent replications should
+			 * We don't increase the highwater-mark in the object
+			 * subset cases, so subsequent replications should
 			 * resolve any missing links
 			 */
 			DEBUG(2,(__location__
@@ -6853,12 +6847,27 @@ static int replmd_check_target_exists(struct ldb_module *module,
 		 * copy of the target object isn't up to date.
 		 */
 		if (target_deletion_state >= OBJECT_RECYCLED) {
-			ldb_asprintf_errstring(ldb,
-					       "Deleted target %s GUID %s linked from %s\n",
-					       ldb_dn_get_linearized(dsdb_dn->dn),
-					       GUID_string(tmp_ctx, guid),
-					       ldb_dn_get_linearized(source_dn));
-			ret = LDB_ERR_NO_SUCH_OBJECT;
+
+			if (la_entry->dsdb_repl_flags & DSDB_REPL_FLAG_TARGETS_UPTODATE) {
+
+				/*
+				 * target should already be uptodate so there's no
+				 * point retrying - it's probably just bad timing
+				 */
+				*ignore_link = true;
+				DEBUG(0, ("%s is deleted but up to date. "
+					  "Ignoring link from %s\n",
+					  ldb_dn_get_linearized(dsdb_dn->dn),
+					  ldb_dn_get_linearized(source_dn)));
+
+			} else {
+				ldb_asprintf_errstring(ldb,
+						       "Deleted target %s GUID %s linked from %s",
+						       ldb_dn_get_linearized(dsdb_dn->dn),
+						       GUID_string(tmp_ctx, guid),
+						       ldb_dn_get_linearized(source_dn));
+				ret = LDB_ERR_NO_SUCH_OBJECT;
+			}
 		}
 	}
 

@@ -868,6 +868,10 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 		dsdb_repl_flags |= DSDB_REPL_FLAG_OBJECT_SUBSET;
 	}
 
+	if (state->op->more_flags & DRSUAPI_DRS_GET_TGT) {
+		dsdb_repl_flags |= DSDB_REPL_FLAG_TARGETS_UPTODATE;
+	}
+
 	if (state->op->extended_op != DRSUAPI_EXOP_NONE) {
 		ret = dsdb_find_nc_root(service->samdb, partition,
 					partition->dn, &nc_root);

@@ -647,6 +647,10 @@ WERROR libnet_vampire_cb_store_chunk(void *private_data,
 			is_exop = true;
 		}
 		req_replica_flags = c->req10->replica_flags;
+
+		if (c->req10->more_flags & DRSUAPI_DRS_GET_TGT) {
+			dsdb_repl_flags |= DSDB_REPL_FLAG_TARGETS_UPTODATE;
+		}
 		break;
 	default:
 		return WERR_INVALID_PARAMETER;
