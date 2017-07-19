@@ -241,41 +241,6 @@ the talloc_autofree_context() (which is inherently thread-unsafe)
 and still be valgrind-clean on exit. Modules that don't need to
 free long-lived data on exit should use the NULL talloc context.
 
-Parameter changes
------------------
-
-The "strict sync" global parameter has been changed from
-a default of "no" to "yes". This means smbd will by default
-obey client requests to synchronize unwritten data in operating
-system buffers safely onto disk. This is a safer default setting
-for modern SMB1/2/3 clients.
-
-The 'ntlm auth' option default is renamed to 'ntlmv2-only', reflecting
-the previous behaviour.  Two new values have been provided,
-'mschapv2-and-ntlmv2-only' (allowing MSCHAPv2 while denying NTLMv1)
-and 'disabled', totally disabling NTLM authentication and password
-changes.
-
-smb.conf changes
-================
-
-  Parameter Name                     Description             Default
-  --------------                     -----------             -------
-  allow unsafe cluster upgrade       New parameter           no
-  auth event notification            New parameter           no
-  auth methods                       Deprecated
-  client max protocol                Effective               SMB3_11
-                                     default changed
-  map untrusted to domain            New value/              auto
-                                     Default changed/
-                                     Deprecated
-  mit kdc command                    New parameter
-  profile acls                       Deprecated
-  rpc server dynamic port range      New parameter           49152-65535
-  strict sync                        Default changed         yes
-  password hash userPassword schemes New parameter
-  ntlm auth                          New values              ntlmv2-only
-
 CTDB changes
 ------------
 
@@ -319,6 +284,41 @@ CTDB changes
   replicate state data across the cluster, but may find other
   uses. The data in replicated databases is valid for the lifetime of
   CTDB and cleared on first attach.
+
+Parameter changes
+-----------------
+
+The "strict sync" global parameter has been changed from
+a default of "no" to "yes". This means smbd will by default
+obey client requests to synchronize unwritten data in operating
+system buffers safely onto disk. This is a safer default setting
+for modern SMB1/2/3 clients.
+
+The 'ntlm auth' option default is renamed to 'ntlmv2-only', reflecting
+the previous behaviour.  Two new values have been provided,
+'mschapv2-and-ntlmv2-only' (allowing MSCHAPv2 while denying NTLMv1)
+and 'disabled', totally disabling NTLM authentication and password
+changes.
+
+smb.conf changes
+================
+
+  Parameter Name                     Description             Default
+  --------------                     -----------             -------
+  allow unsafe cluster upgrade       New parameter           no
+  auth event notification            New parameter           no
+  auth methods                       Deprecated
+  client max protocol                Effective               SMB3_11
+                                     default changed
+  map untrusted to domain            New value/              auto
+                                     Default changed/
+                                     Deprecated
+  mit kdc command                    New parameter
+  profile acls                       Deprecated
+  rpc server dynamic port range      New parameter           49152-65535
+  strict sync                        Default changed         yes
+  password hash userPassword schemes New parameter
+  ntlm auth                          New values              ntlmv2-only
 
 
 KNOWN ISSUES
