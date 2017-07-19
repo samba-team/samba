@@ -1780,7 +1780,7 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 	char *db_path;
 	struct loadparm_context *lp_ctx;
 	TDB_DATA data;
-	bool persistent = (tdb_flags & TDB_CLEAR_IF_FIRST);
+	bool persistent = (tdb_flags & TDB_CLEAR_IF_FIRST) == 0;
 	int32_t cstatus;
 	int ret;
 
