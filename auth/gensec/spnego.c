@@ -2072,7 +2072,9 @@ static NTSTATUS gensec_spnego_update_out(struct gensec_security *gensec_security
 					 TALLOC_CTX *out_mem_ctx,
 					 DATA_BLOB *_out)
 {
-	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
+	struct spnego_state *spnego_state =
+		talloc_get_type_abort(gensec_security->private_data,
+		struct spnego_state);
 	DATA_BLOB out = data_blob_null;
 	bool ok;
 
