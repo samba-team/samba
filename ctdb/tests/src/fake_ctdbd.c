@@ -3013,9 +3013,10 @@ static void client_read_handler(uint8_t *buf, size_t buflen,
 		req, struct client_state);
 	struct ctdbd_context *ctdb = state->ctdb;
 	struct ctdb_req_header header;
+	size_t np;
 	int ret, i;
 
-	ret = ctdb_req_header_pull(buf, buflen, &header);
+	ret = ctdb_req_header_pull(buf, buflen, &header, &np);
 	if (ret != 0) {
 		return;
 	}
@@ -3035,7 +3036,7 @@ static void client_read_handler(uint8_t *buf, size_t buflen,
 		for (i=0; i<ctdb->node_map->num_nodes; i++) {
 			header.destnode = i;
 
-			ctdb_req_header_push(&header, buf);
+			ctdb_req_header_push(&header, buf, &np);
 			client_process_packet(req, buf, buflen);
 		}
 		return;
@@ -3050,7 +3051,7 @@ static void client_read_handler(uint8_t *buf, size_t buflen,
 
 			header.destnode = i;
 
-			ctdb_req_header_push(&header, buf);
+			ctdb_req_header_push(&header, buf, &np);
 			client_process_packet(req, buf, buflen);
 		}
 		return;
@@ -3069,7 +3070,7 @@ static void client_read_handler(uint8_t *buf, size_t buflen,
 		return;
 	}
 
-	ctdb_req_header_push(&header, buf);
+	ctdb_req_header_push(&header, buf, &np);
 	client_process_packet(req, buf, buflen);
 }
 
@@ -3085,9 +3086,10 @@ static void client_process_packet(struct tevent_req *req,
 				  uint8_t *buf, size_t buflen)
 {
 	struct ctdb_req_header header;
+	size_t np;
 	int ret;
 
-	ret = ctdb_req_header_pull(buf, buflen, &header);
+	ret = ctdb_req_header_pull(buf, buflen, &header, &np);
 	if (ret != 0) {
 		return;
 	}

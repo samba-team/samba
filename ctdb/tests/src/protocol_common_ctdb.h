@@ -28,6 +28,7 @@
 
 #include "protocol/protocol.h"
 
+void fill_ctdb_req_header(struct ctdb_req_header *h);
 void verify_ctdb_req_header(struct ctdb_req_header *h,
 			    struct ctdb_req_header *h2);
 

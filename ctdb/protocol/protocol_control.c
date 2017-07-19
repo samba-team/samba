@@ -1779,7 +1779,7 @@ int ctdb_req_control_push(struct ctdb_req_header *h,
 {
 	struct ctdb_req_control_wire *wire =
 		(struct ctdb_req_control_wire *)buf;
-	size_t length;
+	size_t length, np;
 
 	length = ctdb_req_control_len(h, request);
 	if (*buflen < length) {
@@ -1788,7 +1788,7 @@ int ctdb_req_control_push(struct ctdb_req_header *h,
 	}
 
 	h->length = *buflen;
-	ctdb_req_header_push(h, (uint8_t *)&wire->hdr);
+	ctdb_req_header_push(h, (uint8_t *)&wire->hdr, &np);
 
 	wire->opcode = request->opcode;
 	wire->pad = request->pad;
@@ -1809,7 +1809,7 @@ int ctdb_req_control_pull(uint8_t *buf, size_t buflen,
 {
 	struct ctdb_req_control_wire *wire =
 		(struct ctdb_req_control_wire *)buf;
-	size_t length;
+	size_t length, np;
 	int ret;
 
 	length = offsetof(struct ctdb_req_control_wire, data);
@@ -1827,7 +1827,8 @@ int ctdb_req_control_pull(uint8_t *buf, size_t buflen,
 	}
 
 	if (h != NULL) {
-		ret = ctdb_req_header_pull((uint8_t *)&wire->hdr, buflen, h);
+		ret = ctdb_req_header_pull((uint8_t *)&wire->hdr, buflen, h,
+					   &np);
 		if (ret != 0) {
 			return ret;
 		}
@@ -1872,7 +1873,7 @@ int ctdb_reply_control_push(struct ctdb_req_header *h,
 	}
 
 	h->length = *buflen;
-	ctdb_req_header_push(h, (uint8_t *)&wire->hdr);
+	ctdb_req_header_push(h, (uint8_t *)&wire->hdr, &np);
 
 	wire->status = reply->status;
 
@@ -1918,7 +1919,8 @@ int ctdb_reply_control_pull(uint8_t *buf, size_t buflen, uint32_t opcode,
 	}
 
 	if (h != NULL) {
-		ret = ctdb_req_header_pull((uint8_t *)&wire->hdr, buflen, h);
+		ret = ctdb_req_header_pull((uint8_t *)&wire->hdr, buflen, h,
+					   &np);
 		if (ret != 0) {
 			return ret;
 		}

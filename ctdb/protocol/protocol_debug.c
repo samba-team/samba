@@ -593,11 +593,12 @@ void ctdb_packet_print(uint8_t *buf, size_t buflen, FILE *fp)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct ctdb_req_header h;
+	size_t np;
 	int ret;
 
 	fprintf(fp, "Buffer len:%zu\n", buflen);
 
-	ret = ctdb_req_header_pull(buf, buflen, &h);
+	ret = ctdb_req_header_pull(buf, buflen, &h, &np);
 	if (ret != 0) {
 		fprintf(fp, "Failed to parse ctdb packet header\n");
 		return;

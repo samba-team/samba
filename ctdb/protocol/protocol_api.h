@@ -81,10 +81,11 @@ void ctdb_req_header_fill(struct ctdb_req_header *h, uint32_t generation,
 			  uint32_t operation, uint32_t destnode,
 			  uint32_t srcnode, uint32_t reqid);
 
-size_t ctdb_req_header_len(struct ctdb_req_header *h);
-void ctdb_req_header_push(struct ctdb_req_header *h, uint8_t *buf);
+size_t ctdb_req_header_len(struct ctdb_req_header *in);
+void ctdb_req_header_push(struct ctdb_req_header *in, uint8_t *buf,
+			  size_t *npush);
 int ctdb_req_header_pull(uint8_t *buf, size_t buflen,
-			 struct ctdb_req_header *h);
+			 struct ctdb_req_header *out, size_t *npull);
 
 int ctdb_req_header_verify(struct ctdb_req_header *h, uint32_t operation);
 

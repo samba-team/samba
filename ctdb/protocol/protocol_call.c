@@ -96,7 +96,7 @@ int ctdb_req_call_push(struct ctdb_req_header *h, struct ctdb_req_call *c,
 	}
 
 	h->length = *buflen;
-	ctdb_req_header_push(h, (uint8_t *)&wire->hdr);
+	ctdb_req_header_push(h, (uint8_t *)&wire->hdr, &np);
 
 	wire->flags = c->flags;
 	wire->db_id = c->db_id;
@@ -138,7 +138,8 @@ int ctdb_req_call_pull(uint8_t *buf, size_t buflen,
 	}
 
 	if (h != NULL) {
-		ret = ctdb_req_header_pull((uint8_t *)&wire->hdr, buflen, h);
+		ret = ctdb_req_header_pull((uint8_t *)&wire->hdr, buflen, h,
+					   &np);
 		if (ret != 0) {
 			return ret;
 		}
@@ -185,7 +186,7 @@ int ctdb_reply_call_push(struct ctdb_req_header *h, struct ctdb_reply_call *c,
 	}
 
 	h->length = *buflen;
-	ctdb_req_header_push(h, (uint8_t *)&wire->hdr);
+	ctdb_req_header_push(h, (uint8_t *)&wire->hdr, &np);
 
 	wire->status = c->status;
 	wire->datalen = ctdb_tdb_data_len(&c->data);
@@ -219,7 +220,8 @@ int ctdb_reply_call_pull(uint8_t *buf, size_t buflen,
 	}
 
 	if (h != NULL) {
-		ret = ctdb_req_header_pull((uint8_t *)&wire->hdr, buflen, h);
+		ret = ctdb_req_header_pull((uint8_t *)&wire->hdr, buflen, h,
+					   &np);
 		if (ret != 0) {
 			return ret;
 		}
@@ -257,7 +259,7 @@ int ctdb_reply_error_push(struct ctdb_req_header *h, struct ctdb_reply_error *c,
 	}
 
 	h->length = *buflen;
-	ctdb_req_header_push(h, (uint8_t *)&wire->hdr);
+	ctdb_req_header_push(h, (uint8_t *)&wire->hdr, &np);
 
 	wire->status = c->status;
 	wire->msglen = ctdb_tdb_data_len(&c->msg);
@@ -291,7 +293,8 @@ int ctdb_reply_error_pull(uint8_t *buf, size_t buflen,
 	}
 
 	if (h != NULL) {
-		ret = ctdb_req_header_pull((uint8_t *)&wire->hdr, buflen, h);
+		ret = ctdb_req_header_pull((uint8_t *)&wire->hdr, buflen, h,
+					   &np);
 		if (ret != 0) {
 			return ret;
 		}
@@ -330,7 +333,7 @@ int ctdb_req_dmaster_push(struct ctdb_req_header *h, struct ctdb_req_dmaster *c,
 	}
 
 	h->length = *buflen;
-	ctdb_req_header_push(h, (uint8_t *)&wire->hdr);
+	ctdb_req_header_push(h, (uint8_t *)&wire->hdr, &np);
 
 	wire->db_id = c->db_id;
 	wire->rsn = c->rsn;
@@ -371,7 +374,8 @@ int ctdb_req_dmaster_pull(uint8_t *buf, size_t buflen,
 	}
 
 	if (h != NULL) {
-		ret = ctdb_req_header_pull((uint8_t *)&wire->hdr, buflen, h);
+		ret = ctdb_req_header_pull((uint8_t *)&wire->hdr, buflen, h,
+					   &np);
 		if (ret != 0) {
 			return ret;
 		}
@@ -419,7 +423,7 @@ int ctdb_reply_dmaster_push(struct ctdb_req_header *h,
 	}
 
 	h->length = *buflen;
-	ctdb_req_header_push(h, (uint8_t *)&wire->hdr);
+	ctdb_req_header_push(h, (uint8_t *)&wire->hdr, &np);
 
 	wire->db_id = c->db_id;
 	wire->rsn = c->rsn;
@@ -459,7 +463,8 @@ int ctdb_reply_dmaster_pull(uint8_t *buf, size_t buflen,
 	}
 
 	if (h != NULL) {
-		ret = ctdb_req_header_pull((uint8_t *)&wire->hdr, buflen, h);
+		ret = ctdb_req_header_pull((uint8_t *)&wire->hdr, buflen, h,
+					   &np);
 		if (ret != 0) {
 			return ret;
 		}

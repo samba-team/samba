@@ -29,10 +29,29 @@
  * Functions to fill and verify protocol structures
  */
 
+void fill_ctdb_req_header(struct ctdb_req_header *h)
+{
+	h->length = rand32();
+	h->ctdb_magic = rand32();
+	h->ctdb_version = rand32();
+	h->generation = rand32();
+	h->operation = rand32();
+	h->destnode = rand32();
+	h->srcnode = rand32();
+	h->reqid = rand32();
+}
+
 void verify_ctdb_req_header(struct ctdb_req_header *h,
 			    struct ctdb_req_header *h2)
 {
-	verify_buffer(h, h2, sizeof(struct ctdb_req_header));
+	assert(h->length == h2->length);
+	assert(h->ctdb_magic == h2->ctdb_magic);
+	assert(h->ctdb_version == h2->ctdb_version);
+	assert(h->generation == h2->generation);
+	assert(h->operation == h2->operation);
+	assert(h->destnode == h2->destnode);
+	assert(h->srcnode == h2->srcnode);
+	assert(h->reqid == h2->reqid);
 }
 
 void fill_ctdb_req_call(TALLOC_CTX *mem_ctx, struct ctdb_req_call *c)

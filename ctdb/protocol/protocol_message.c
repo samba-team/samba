@@ -299,7 +299,7 @@ int ctdb_req_message_push(struct ctdb_req_header *h,
 {
 	struct ctdb_req_message_wire *wire =
 		(struct ctdb_req_message_wire *)buf;
-	size_t length;
+	size_t length, np;
 
 	length = ctdb_req_message_len(h, message);
 	if (*buflen < length) {
@@ -308,7 +308,7 @@ int ctdb_req_message_push(struct ctdb_req_header *h,
 	}
 
 	h->length = *buflen;
-	ctdb_req_header_push(h, (uint8_t *)&wire->hdr);
+	ctdb_req_header_push(h, (uint8_t *)&wire->hdr, &np);
 
 	wire->srvid = message->srvid;
 	wire->datalen = ctdb_message_data_len(&message->data, message->srvid);
@@ -324,7 +324,7 @@ int ctdb_req_message_pull(uint8_t *buf, size_t buflen,
 {
 	struct ctdb_req_message_wire *wire =
 		(struct ctdb_req_message_wire *)buf;
-	size_t length;
+	size_t length, np;
 	int ret;
 
 	length = offsetof(struct ctdb_req_message_wire, data);
@@ -342,7 +342,8 @@ int ctdb_req_message_pull(uint8_t *buf, size_t buflen,
 	}
 
 	if (h != NULL) {
-		ret = ctdb_req_header_pull((uint8_t *)&wire->hdr, buflen, h);
+		ret = ctdb_req_header_pull((uint8_t *)&wire->hdr, buflen, h,
+					   &np);
 		if (ret != 0) {
 			return ret;
 		}
@@ -376,7 +377,7 @@ int ctdb_req_message_data_push(struct ctdb_req_header *h,
 	}
 
 	h->length = *buflen;
-	ctdb_req_header_push(h, (uint8_t *)&wire->hdr);
+	ctdb_req_header_push(h, (uint8_t *)&wire->hdr, &np);
 
 	wire->srvid = message->srvid;
 	wire->datalen = ctdb_tdb_data_len(&message->data);
@@ -410,7 +411,8 @@ int ctdb_req_message_data_pull(uint8_t *buf, size_t buflen,
 	}
 
 	if (h != NULL) {
-		ret = ctdb_req_header_pull((uint8_t *)&wire->hdr, buflen, h);
+		ret = ctdb_req_header_pull((uint8_t *)&wire->hdr, buflen, h,
+					   &np);
 		if (ret != 0) {
 			return ret;
 		}

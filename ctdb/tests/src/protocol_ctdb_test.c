@@ -278,38 +278,7 @@ static void TEST_FUNC(NAME)(uint64_t srvid) \
 	talloc_free(mem_ctx); \
 }
 
-static void test_ctdb_req_header(void)
-{
-	TALLOC_CTX *mem_ctx;
-	uint8_t *pkt;
-	size_t pkt_len;
-	struct ctdb_req_header h, h2;
-	int ret;
-
-	printf("ctdb_req_header\n");
-	fflush(stdout);
-
-	mem_ctx = talloc_new(NULL);
-	assert(mem_ctx != NULL);
-
-	ctdb_req_header_fill(&h, GENERATION, OPERATION, DESTNODE, SRCNODE,
-			     REQID);
-
-	ret = ctdb_allocate_pkt(mem_ctx, ctdb_req_header_len(&h),
-				&pkt, &pkt_len);
-	assert(ret == 0);
-	assert(pkt != NULL);
-	assert(pkt_len >= ctdb_req_header_len(&h));
-
-	ctdb_req_header_push(&h, pkt);
-
-	ret = ctdb_req_header_pull(pkt, pkt_len, &h2);
-	assert(ret == 0);
-
-	verify_ctdb_req_header(&h, &h2);
-
-	talloc_free(mem_ctx);
-}
+PROTOCOL_CTDB1_TEST(struct ctdb_req_header, ctdb_req_header);
 
 static void test_ctdb_req_call(void)
 {
@@ -708,7 +677,7 @@ int main(int argc, char *argv[])
 		srandom(seed);
 	}
 
-	test_ctdb_req_header();
+	TEST_FUNC(ctdb_req_header)();
 
 	test_ctdb_req_call();
 	test_ctdb_reply_call();

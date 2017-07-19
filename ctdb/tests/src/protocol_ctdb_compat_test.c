@@ -24,8 +24,10 @@
 
 #include "protocol/protocol_basic.c"
 #include "protocol/protocol_types.c"
+#include "protocol/protocol_header.c"
 
 #include "tests/src/protocol_common.h"
+#include "tests/src/protocol_common_ctdb.h"
 
 #define COMPAT_TEST_FUNC(NAME)		test_ ##NAME## _compat
 #define OLD_LEN_FUNC(NAME)		NAME## _len_old
@@ -202,12 +204,39 @@ static void COMPAT_TEST_FUNC(NAME)(uint64_t srvid) \
 	talloc_free(mem_ctx); \
 }
 
+
+static size_t ctdb_req_header_len_old(struct ctdb_req_header *in)
+{
+        return sizeof(struct ctdb_req_header);
+}
+
+static void ctdb_req_header_push_old(struct ctdb_req_header *in, uint8_t *buf)
+{
+        memcpy(buf, in, sizeof(struct ctdb_req_header));
+}
+
+static int ctdb_req_header_pull_old(uint8_t *buf, size_t buflen,
+				    struct ctdb_req_header *out)
+{
+        if (buflen < sizeof(struct ctdb_req_header)) {
+                return EMSGSIZE;
+        }
+
+        memcpy(out, buf, sizeof(struct ctdb_req_header));
+        return 0;
+}
+
+
+COMPAT_CTDB1_TEST(struct ctdb_req_header, ctdb_req_header);
+
 int main(int argc, char *argv[])
 {
 	if (argc == 2) {
 		int seed = atoi(argv[1]);
 		srandom(seed);
 	}
+
+	COMPAT_TEST_FUNC(ctdb_req_header)();
 
 	return 0;
 }
