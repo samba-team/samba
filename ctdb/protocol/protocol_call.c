@@ -27,17 +27,6 @@
 #include "protocol_api.h"
 #include "protocol_private.h"
 
-struct ctdb_req_call_wire {
-	struct ctdb_req_header hdr;
-	uint32_t flags;
-	uint32_t db_id;
-	uint32_t callid;
-	uint32_t hopcount;
-	uint32_t keylen;
-	uint32_t calldatalen;
-	uint8_t data[1]; /* key[] followed by calldata[] */
-};
-
 struct ctdb_reply_call_wire {
 	struct ctdb_req_header hdr;
 	uint32_t status;
@@ -73,17 +62,21 @@ struct ctdb_reply_dmaster_wire {
 
 size_t ctdb_req_call_len(struct ctdb_req_header *h, struct ctdb_req_call *c)
 {
-	return offsetof(struct ctdb_req_call_wire, data) +
-		ctdb_tdb_data_len(&c->key) +
-		ctdb_tdb_data_len(&c->calldata);
+	return ctdb_req_header_len(h) +
+		ctdb_uint32_len(&c->flags) +
+		ctdb_uint32_len(&c->db_id) +
+		ctdb_uint32_len(&c->callid) +
+		ctdb_uint32_len(&c->hopcount) +
+		ctdb_tdb_datan_len(&c->key) +
+		ctdb_tdb_datan_len(&c->calldata);
 }
 
 int ctdb_req_call_push(struct ctdb_req_header *h, struct ctdb_req_call *c,
 		       uint8_t *buf, size_t *buflen)
 {
-	struct ctdb_req_call_wire *wire =
-		(struct ctdb_req_call_wire *)buf;
+	size_t offset = 0;
 	size_t length, np;
+	uint32_t u32;
 
 	if (c->key.dsize == 0) {
 		return EINVAL;
@@ -96,16 +89,34 @@ int ctdb_req_call_push(struct ctdb_req_header *h, struct ctdb_req_call *c,
 	}
 
 	h->length = *buflen;
-	ctdb_req_header_push(h, (uint8_t *)&wire->hdr, &np);
+	ctdb_req_header_push(h, buf+offset, &np);
+	offset += np;
 
-	wire->flags = c->flags;
-	wire->db_id = c->db_id;
-	wire->callid = c->callid;
-	wire->hopcount = c->hopcount;
-	wire->keylen = ctdb_tdb_data_len(&c->key);
-	wire->calldatalen = ctdb_tdb_data_len(&c->calldata);
-	ctdb_tdb_data_push(&c->key, wire->data, &np);
-	ctdb_tdb_data_push(&c->calldata, wire->data + wire->keylen, &np);
+	ctdb_uint32_push(&c->flags, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&c->db_id, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&c->callid, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&c->hopcount, buf+offset, &np);
+	offset += np;
+
+	u32 = ctdb_tdb_data_len(&c->key);
+	ctdb_uint32_push(&u32, buf+offset, &np);
+	offset += np;
+
+	u32 = ctdb_tdb_data_len(&c->calldata);
+	ctdb_uint32_push(&u32, buf+offset, &np);
+	offset += np;
+
+	ctdb_tdb_data_push(&c->key, buf+offset, &np);
+	offset += np;
+
+	ctdb_tdb_data_push(&c->calldata, buf+offset, &np);
+	offset += np;
 
 	return 0;
 }
@@ -115,52 +126,80 @@ int ctdb_req_call_pull(uint8_t *buf, size_t buflen,
 		       TALLOC_CTX *mem_ctx,
 		       struct ctdb_req_call *c)
 {
-	struct ctdb_req_call_wire *wire =
-		(struct ctdb_req_call_wire *)buf;
-	size_t length, np;
+	struct ctdb_req_header header;
+	size_t offset = 0, np;
+	uint32_t u32;
 	int ret;
 
-	length = offsetof(struct ctdb_req_call_wire, data);
-	if (buflen < length) {
-		return EMSGSIZE;
+	ret = ctdb_req_header_pull(buf+offset, buflen-offset, &header, &np);
+	if (ret != 0) {
+		return ret;
 	}
-	if (wire->keylen > buflen || wire->calldatalen > buflen) {
-		return EMSGSIZE;
-	}
-	if (length + wire->keylen < length) {
-		return EMSGSIZE;
-	}
-	if (length + wire->keylen + wire->calldatalen < length) {
-		return EMSGSIZE;
-	}
-	if (buflen < length + wire->keylen + wire->calldatalen) {
-		return EMSGSIZE;
-	}
+	offset += np;
 
 	if (h != NULL) {
-		ret = ctdb_req_header_pull((uint8_t *)&wire->hdr, buflen, h,
-					   &np);
-		if (ret != 0) {
-			return ret;
-		}
+		*h = header;
 	}
 
-	c->flags = wire->flags;
-	c->db_id = wire->db_id;
-	c->callid = wire->callid;
-	c->hopcount = wire->hopcount;
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &c->flags, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
 
-	ret = ctdb_tdb_data_pull(wire->data, wire->keylen, mem_ctx, &c->key,
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &c->db_id, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &c->callid, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &c->hopcount, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &u32, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+	c->key.dsize = u32;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &u32, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+	c->calldata.dsize = u32;
+
+	if (buflen-offset < c->key.dsize) {
+		return EMSGSIZE;
+	}
+
+	ret = ctdb_tdb_data_pull(buf+offset, c->key.dsize, mem_ctx, &c->key,
 				 &np);
 	if (ret != 0) {
 		return ret;
 	}
+	offset += np;
 
-	ret = ctdb_tdb_data_pull(wire->data + wire->keylen, wire->calldatalen,
+	if (buflen-offset < c->calldata.dsize) {
+		return EMSGSIZE;
+	}
+
+	ret = ctdb_tdb_data_pull(buf+offset, c->calldata.dsize,
 				 mem_ctx, &c->calldata, &np);
 	if (ret != 0) {
 		return ret;
 	}
+	offset += np;
 
 	return 0;
 }

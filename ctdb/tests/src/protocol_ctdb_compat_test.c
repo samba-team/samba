@@ -25,6 +25,7 @@
 #include "protocol/protocol_basic.c"
 #include "protocol/protocol_types.c"
 #include "protocol/protocol_header.c"
+#include "protocol/protocol_call.c"
 
 #include "tests/src/protocol_common.h"
 #include "tests/src/protocol_common_ctdb.h"
@@ -226,8 +227,117 @@ static int ctdb_req_header_pull_old(uint8_t *buf, size_t buflen,
         return 0;
 }
 
+struct ctdb_req_call_wire {
+	struct ctdb_req_header hdr;
+	uint32_t flags;
+	uint32_t db_id;
+	uint32_t callid;
+	uint32_t hopcount;
+	uint32_t keylen;
+	uint32_t calldatalen;
+	uint8_t data[1]; /* key[] followed by calldata[] */
+};
+
+static size_t ctdb_req_call_len_old(struct ctdb_req_header *h,
+				    struct ctdb_req_call *c)
+{
+	return offsetof(struct ctdb_req_call_wire, data) +
+		ctdb_tdb_data_len(&c->key) +
+		ctdb_tdb_data_len(&c->calldata);
+}
+
+static int ctdb_req_call_push_old(struct ctdb_req_header *h,
+				  struct ctdb_req_call *c,
+				  uint8_t *buf, size_t *buflen)
+{
+	struct ctdb_req_call_wire *wire =
+		(struct ctdb_req_call_wire *)buf;
+	size_t length, np;
+
+	if (c->key.dsize == 0) {
+		return EINVAL;
+	}
+
+	length = ctdb_req_call_len_old(h, c);
+	if (*buflen < length) {
+		*buflen = length;
+		return EMSGSIZE;
+	}
+
+	h->length = *buflen;
+	ctdb_req_header_push_old(h, (uint8_t *)&wire->hdr);
+
+	wire->flags = c->flags;
+	wire->db_id = c->db_id;
+	wire->callid = c->callid;
+	wire->hopcount = c->hopcount;
+	wire->keylen = ctdb_tdb_data_len(&c->key);
+	wire->calldatalen = ctdb_tdb_data_len(&c->calldata);
+	ctdb_tdb_data_push(&c->key, wire->data, &np);
+	ctdb_tdb_data_push(&c->calldata, wire->data + wire->keylen, &np);
+
+	return 0;
+}
+
+static int ctdb_req_call_pull_old(uint8_t *buf, size_t buflen,
+				  struct ctdb_req_header *h,
+				  TALLOC_CTX *mem_ctx,
+				  struct ctdb_req_call *c)
+{
+	struct ctdb_req_call_wire *wire =
+		(struct ctdb_req_call_wire *)buf;
+	size_t length, np;
+	int ret;
+
+	length = offsetof(struct ctdb_req_call_wire, data);
+	if (buflen < length) {
+		return EMSGSIZE;
+	}
+	if (wire->keylen > buflen || wire->calldatalen > buflen) {
+		return EMSGSIZE;
+	}
+	if (length + wire->keylen < length) {
+		return EMSGSIZE;
+	}
+	if (length + wire->keylen + wire->calldatalen < length) {
+		return EMSGSIZE;
+	}
+	if (buflen < length + wire->keylen + wire->calldatalen) {
+		return EMSGSIZE;
+	}
+
+	if (h != NULL) {
+		ret = ctdb_req_header_pull_old((uint8_t *)&wire->hdr, buflen,
+					       h);
+		if (ret != 0) {
+			return ret;
+		}
+	}
+
+	c->flags = wire->flags;
+	c->db_id = wire->db_id;
+	c->callid = wire->callid;
+	c->hopcount = wire->hopcount;
+
+	ret = ctdb_tdb_data_pull(wire->data, wire->keylen, mem_ctx, &c->key,
+				 &np);
+	if (ret != 0) {
+		return ret;
+	}
+
+	ret = ctdb_tdb_data_pull(wire->data + wire->keylen, wire->calldatalen,
+				 mem_ctx, &c->calldata, &np);
+	if (ret != 0) {
+		return ret;
+	}
+
+	return 0;
+}
+
 
 COMPAT_CTDB1_TEST(struct ctdb_req_header, ctdb_req_header);
+
+COMPAT_CTDB4_TEST(struct ctdb_req_call, ctdb_req_call, CTDB_REQ_CALL);
 
 int main(int argc, char *argv[])
 {
@@ -237,6 +347,8 @@ int main(int argc, char *argv[])
 	}
 
 	COMPAT_TEST_FUNC(ctdb_req_header)();
+
+	COMPAT_TEST_FUNC(ctdb_req_call)();
 
 	return 0;
 }
