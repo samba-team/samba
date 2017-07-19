@@ -286,45 +286,8 @@ PROTOCOL_CTDB4_TEST(struct ctdb_reply_error, ctdb_reply_error,
 			CTDB_REPLY_ERROR);
 PROTOCOL_CTDB4_TEST(struct ctdb_req_dmaster, ctdb_req_dmaster,
 			CTDB_REQ_DMASTER);
-
-static void test_ctdb_reply_dmaster(void)
-{
-	TALLOC_CTX *mem_ctx;
-	uint8_t *pkt;
-	size_t datalen, pkt_len, len;
-	int ret;
-	struct ctdb_req_header h, h2;
-	struct ctdb_reply_dmaster c, c2;
-
-	printf("ctdb_reply_dmaster\n");
-	fflush(stdout);
-
-	mem_ctx = talloc_new(NULL);
-	assert(mem_ctx != NULL);
-
-	ctdb_req_header_fill(&h, GENERATION, CTDB_REPLY_DMASTER,
-			     DESTNODE, SRCNODE, REQID);
-
-	fill_ctdb_reply_dmaster(mem_ctx, &c);
-	datalen = ctdb_reply_dmaster_len(&h, &c);
-	ret = ctdb_allocate_pkt(mem_ctx, datalen, &pkt, &pkt_len);
-	assert(ret == 0);
-	assert(pkt != NULL);
-	assert(pkt_len >= datalen);
-	len = 0;
-	ret = ctdb_reply_dmaster_push(&h, &c, pkt, &len);
-	assert(ret == EMSGSIZE);
-	assert(len == datalen);
-	ret = ctdb_reply_dmaster_push(&h, &c, pkt, &pkt_len);
-	assert(ret == 0);
-	ret = ctdb_reply_dmaster_pull(pkt, pkt_len, &h2, mem_ctx, &c2);
-	assert(ret == 0);
-	verify_ctdb_req_header(&h, &h2);
-	assert(h2.length == pkt_len);
-	verify_ctdb_reply_dmaster(&c, &c2);
-
-	talloc_free(mem_ctx);
-}
+PROTOCOL_CTDB4_TEST(struct ctdb_reply_dmaster, ctdb_reply_dmaster,
+			CTDB_REPLY_DMASTER);
 
 #define NUM_CONTROLS	151
 
@@ -534,7 +497,7 @@ int main(int argc, char *argv[])
 	TEST_FUNC(ctdb_reply_call)();
 	TEST_FUNC(ctdb_reply_error)();
 	TEST_FUNC(ctdb_req_dmaster)();
-	test_ctdb_reply_dmaster();
+	TEST_FUNC(ctdb_reply_dmaster)();
 
 	test_ctdb_req_control_data();
 	test_ctdb_reply_control_data();
