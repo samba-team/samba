@@ -450,6 +450,15 @@ struct smbd_smb2_create_state {
 	struct smb2_create_blobs *out_context_blobs;
 };
 
+static void smbd_smb2_create_finish(struct tevent_req *req,
+				    struct smbd_smb2_request *smb2req,
+				    struct smb_request *smb1req,
+				    files_struct *result,
+				    const bool replay_operation,
+				    const int in_oplock_level,
+				    const int in_create_disposition,
+				    const int info);
+
 static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			struct tevent_context *ev,
 			struct smbd_smb2_request *smb2req,
@@ -644,6 +653,17 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			return tevent_req_post(req, state->ev);
 		}
 		info = FILE_WAS_OPENED;
+
+		smbd_smb2_create_finish(req,
+					smb2req,
+					smb1req,
+					result,
+					replay_operation,
+					in_oplock_level,
+					in_create_disposition,
+					info);
+		return req;
+
 	} else if (CAN_PRINT(smb1req->conn)) {
 		if (dhnc || dh2c) {
 			/* durable handles are not supported on printers */
@@ -665,6 +685,17 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			return tevent_req_post(req, state->ev);
 		}
 		info = FILE_WAS_CREATED;
+
+		smbd_smb2_create_finish(req,
+					smb2req,
+					smb1req,
+					result,
+					replay_operation,
+					in_oplock_level,
+					in_create_disposition,
+					info);
+		return req;
+
 	} else {
 		struct smb2_create_blob *exta = NULL;
 		struct ea_list *ea_list = NULL;
@@ -1357,6 +1388,29 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		}
 	}
 
+	smbd_smb2_create_finish(req,
+				smb2req,
+				smb1req,
+				result,
+				replay_operation,
+				in_oplock_level,
+				in_create_disposition,
+				info);
+	return req;
+}
+
+static void smbd_smb2_create_finish(struct tevent_req *req,
+				    struct smbd_smb2_request *smb2req,
+				    struct smb_request *smb1req,
+				    files_struct *result,
+				    const bool replay_operation,
+				    const int in_oplock_level,
+				    const int in_create_disposition,
+				    const int info)
+{
+	struct smbd_smb2_create_state *state = tevent_req_data(
+		req, struct smbd_smb2_create_state);
+
 	smb2req->compat_chain_fsp = smb1req->chain_fsp;
 
 	if (replay_operation) {
@@ -1404,7 +1458,8 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 	DBG_DEBUG("%s - %s\n", fsp_str_dbg(result), fsp_fnum_dbg(result));
 
 	tevent_req_done(req);
-	return tevent_req_post(req, state->ev);
+	tevent_req_post(req, state->ev);
+	return;
 }
 
 static NTSTATUS smbd_smb2_create_recv(struct tevent_req *req,
