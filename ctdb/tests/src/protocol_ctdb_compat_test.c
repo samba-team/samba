@@ -415,11 +415,93 @@ static int ctdb_reply_call_pull_old(uint8_t *buf, size_t buflen,
 	return 0;
 }
 
+struct ctdb_reply_error_wire {
+	struct ctdb_req_header hdr;
+	uint32_t status;
+	uint32_t msglen;
+	uint8_t  msg[1];
+};
+
+static size_t ctdb_reply_error_len_old(struct ctdb_req_header *h,
+				       struct ctdb_reply_error *c)
+{
+	return offsetof(struct ctdb_reply_error_wire, msg) +
+		ctdb_tdb_data_len(&c->msg);
+}
+
+static int ctdb_reply_error_push_old(struct ctdb_req_header *h,
+				     struct ctdb_reply_error *c,
+				     uint8_t *buf, size_t *buflen)
+{
+	struct ctdb_reply_error_wire *wire =
+		(struct ctdb_reply_error_wire *)buf;
+	size_t length, np;
+
+	length = ctdb_reply_error_len_old(h, c);
+	if (*buflen < length) {
+		*buflen = length;
+		return EMSGSIZE;
+	}
+
+	h->length = *buflen;
+	ctdb_req_header_push_old(h, (uint8_t *)&wire->hdr);
+
+	wire->status = c->status;
+	wire->msglen = ctdb_tdb_data_len(&c->msg);
+	ctdb_tdb_data_push(&c->msg, wire->msg, &np);
+
+	return 0;
+}
+
+static int ctdb_reply_error_pull_old(uint8_t *buf, size_t buflen,
+				     struct ctdb_req_header *h,
+				     TALLOC_CTX *mem_ctx,
+				     struct ctdb_reply_error *c)
+{
+	struct ctdb_reply_error_wire *wire =
+		(struct ctdb_reply_error_wire *)buf;
+	size_t length, np;
+	int ret;
+
+	length = offsetof(struct ctdb_reply_error_wire, msg);
+	if (buflen < length) {
+		return EMSGSIZE;
+	}
+	if (wire->msglen > buflen) {
+		return EMSGSIZE;
+	}
+	if (length + wire->msglen < length) {
+		return EMSGSIZE;
+	}
+	if (buflen < length + wire->msglen) {
+		return EMSGSIZE;
+	}
+
+	if (h != NULL) {
+		ret = ctdb_req_header_pull_old((uint8_t *)&wire->hdr, buflen,
+					       h);
+		if (ret != 0) {
+			return ret;
+		}
+	}
+
+	c->status = wire->status;
+
+	ret = ctdb_tdb_data_pull(wire->msg, wire->msglen, mem_ctx, &c->msg,
+				 &np);
+	if (ret != 0) {
+		return ret;
+	}
+
+	return 0;
+}
+
 
 COMPAT_CTDB1_TEST(struct ctdb_req_header, ctdb_req_header);
 
 COMPAT_CTDB4_TEST(struct ctdb_req_call, ctdb_req_call, CTDB_REQ_CALL);
 COMPAT_CTDB4_TEST(struct ctdb_reply_call, ctdb_reply_call, CTDB_REPLY_CALL);
+COMPAT_CTDB4_TEST(struct ctdb_reply_error, ctdb_reply_error, CTDB_REPLY_ERROR);
 
 int main(int argc, char *argv[])
 {
@@ -432,6 +514,7 @@ int main(int argc, char *argv[])
 
 	COMPAT_TEST_FUNC(ctdb_req_call)();
 	COMPAT_TEST_FUNC(ctdb_reply_call)();
+	COMPAT_TEST_FUNC(ctdb_reply_error)();
 
 	return 0;
 }
