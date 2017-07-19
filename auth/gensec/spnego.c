@@ -159,7 +159,7 @@ static struct spnego_neg_state *gensec_spnego_neg_state(TALLOC_CTX *mem_ctx,
 	return n;
 }
 
-static void gensec_spnego_update_sub_abort(struct spnego_state *spnego_state)
+static void gensec_spnego_reset_sub_sec(struct spnego_state *spnego_state)
 {
 	spnego_state->sub_sec_ready = false;
 	TALLOC_FREE(spnego_state->sub_sec_security);
@@ -369,7 +369,7 @@ static NTSTATUS gensec_spnego_create_negTokenInit_step(
 		/*
 		 * Pretend we never started it
 		 */
-		gensec_spnego_update_sub_abort(spnego_state);
+		gensec_spnego_reset_sub_sec(spnego_state);
 
 		/*
 		 * And try the next one...
@@ -393,7 +393,7 @@ static NTSTATUS gensec_spnego_create_negTokenInit_step(
 		status = gensec_start_mech_by_ops(spnego_state->sub_sec_security,
 						  cur_sec->op);
 		if (!NT_STATUS_IS_OK(status)) {
-			gensec_spnego_update_sub_abort(spnego_state);
+			gensec_spnego_reset_sub_sec(spnego_state);
 			continue;
 		}
 
@@ -597,7 +597,7 @@ static NTSTATUS gensec_spnego_client_negTokenInit_step(
 		/*
 		 * Pretend we never started it.
 		 */
-		gensec_spnego_update_sub_abort(spnego_state);
+		gensec_spnego_reset_sub_sec(spnego_state);
 
 		/*
 		 * And try the next one...
@@ -621,7 +621,7 @@ static NTSTATUS gensec_spnego_client_negTokenInit_step(
 		status = gensec_start_mech_by_ops(spnego_state->sub_sec_security,
 						  cur_sec->op);
 		if (!NT_STATUS_IS_OK(status)) {
-			gensec_spnego_update_sub_abort(spnego_state);
+			gensec_spnego_reset_sub_sec(spnego_state);
 			continue;
 		}
 
@@ -756,7 +756,7 @@ static NTSTATUS gensec_spnego_client_negTokenTarg_start(
 			   client_mech, client_oid, server_mech, server_oid);
 
 		spnego_state->downgraded = true;
-		gensec_spnego_update_sub_abort(spnego_state);
+		gensec_spnego_reset_sub_sec(spnego_state);
 
 		status = gensec_subcontext_start(spnego_state,
 						 gensec_security,
@@ -1224,7 +1224,7 @@ static NTSTATUS gensec_spnego_server_negTokenInit_step(
 		/*
 		 * Pretend we never started it
 		 */
-		gensec_spnego_update_sub_abort(spnego_state);
+		gensec_spnego_reset_sub_sec(spnego_state);
 
 		/*
 		 * And try the next one, based on the clients
@@ -1274,7 +1274,7 @@ static NTSTATUS gensec_spnego_server_negTokenInit_step(
 			/*
 			 * Pretend we never started it
 			 */
-			gensec_spnego_update_sub_abort(spnego_state);
+			gensec_spnego_reset_sub_sec(spnego_state);
 			continue;
 		}
 
