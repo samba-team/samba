@@ -41,6 +41,9 @@ getfacl and symlink. Using "-mNT1" reenabled them, if the server supports SMB1.
 Note the default ("CORE") for "client min protocol" hasn't changed,
 so it's still possible to connect to SMB1-only servers by default.
 
+smbclient learned a new command "deltree" that is able to do
+a recursive deletion of a directory tree.
+
 
 NEW FEATURES/CHANGES
 ====================
