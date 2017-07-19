@@ -1741,7 +1741,9 @@ static NTSTATUS gensec_spnego_update_in(struct gensec_security *gensec_security,
 					const DATA_BLOB in, TALLOC_CTX *mem_ctx,
 					DATA_BLOB *full_in)
 {
-	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
+	struct spnego_state *spnego_state =
+		talloc_get_type_abort(gensec_security->private_data,
+		struct spnego_state);
 	size_t expected;
 	bool ok;
 
