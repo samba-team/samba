@@ -6713,14 +6713,16 @@ static bool replmd_objects_have_same_nc(struct ldb_context *ldb,
 
 /**
  * Checks that the target object for a linked attribute exists.
- * If it exists, its GUID and deletion-state are returned
+ * @param guid returns the target object's GUID (is returned)if it exists)
+ * @param ignore_link set to true if the linked attribute should be ignored
+ * (i.e. the target doesn't exist, but that it's OK to skip the link)
  */
 static int replmd_check_target_exists(struct ldb_module *module,
 				      struct dsdb_dn *dsdb_dn,
 				      struct la_entry *la_entry,
 				      struct ldb_dn *source_dn,
 				      struct GUID *guid,
-				      enum deletion_state *target_deletion_state)
+				      bool *ignore_link)
 {
 	struct drsuapi_DsReplicaLinkedAttribute *la = la_entry->la;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
@@ -6729,10 +6731,10 @@ static int replmd_check_target_exists(struct ldb_module *module,
 	const char *attrs[] = { "isDeleted", "isRecycled", NULL };
 	NTSTATUS ntstatus;
 	int ret;
+	enum deletion_state target_deletion_state = OBJECT_REMOVED;
 	bool active = (la->flags & DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE) ? true : false;
 
-	*target_deletion_state = OBJECT_REMOVED;
-
+	*ignore_link = false;
 	ntstatus = dsdb_get_extended_dn_guid(dsdb_dn->dn, guid, "GUID");
 
 	if (!NT_STATUS_IS_OK(ntstatus) && !active) {
@@ -6808,6 +6810,7 @@ static int replmd_check_target_exists(struct ldb_module *module,
 				 ": Failed to find target %s linked from %s\n",
 				 ldb_dn_get_linearized(dsdb_dn->dn),
 				 ldb_dn_get_linearized(source_dn)));
+			*ignore_link = true;
 
 		} else if (replmd_objects_have_same_nc(ldb, tmp_ctx, source_dn,
 						       dsdb_dn->dn)) {
@@ -6827,6 +6830,7 @@ static int replmd_check_target_exists(struct ldb_module *module,
 			DEBUG(2,("Failed to resolve cross-partition link between %s and %s\n",
 				 ldb_dn_get_linearized(source_dn),
 				 ldb_dn_get_linearized(dsdb_dn->dn)));
+			*ignore_link = true;
 		}
 	} else if (target_res->count != 1) {
 		ldb_asprintf_errstring(ldb, "More than one object found matching objectGUID %s\n",
@@ -6839,7 +6843,23 @@ static int replmd_check_target_exists(struct ldb_module *module,
 
 		/* Get the object's state (i.e. Not Deleted, Tombstone, etc) */
 		replmd_deletion_state(module, target_msg,
-				      target_deletion_state, NULL);
+				      &target_deletion_state, NULL);
+
+		/*
+		 * Check for deleted objects as per MS-DRSR 4.1.10.6.14
+		 * ProcessLinkValue(). Link updates should not be sent for
+		 * recycled and tombstone objects (deleting the links should
+		 * happen when we delete the object). This probably means our
+		 * copy of the target object isn't up to date.
+		 */
+		if (target_deletion_state >= OBJECT_RECYCLED) {
+			ldb_asprintf_errstring(ldb,
+					       "Deleted target %s GUID %s linked from %s\n",
+					       ldb_dn_get_linearized(dsdb_dn->dn),
+					       GUID_string(tmp_ctx, guid),
+					       ldb_dn_get_linearized(source_dn));
+			ret = LDB_ERR_NO_SUCH_OBJECT;
+		}
 	}
 
 	talloc_free(tmp_ctx);
@@ -6972,8 +6992,8 @@ static int replmd_verify_linked_attribute(struct replmd_replicated_request *ar,
 	struct ldb_message *src_msg;
 	const struct dsdb_attribute *attr;
 	struct dsdb_dn *tgt_dsdb_dn;
-	enum deletion_state del_state = OBJECT_NOT_DELETED;
 	struct GUID guid = GUID_zero();
+	bool dummy;
 
 	ret = replmd_extract_la_entry_details(module, la, tmp_ctx, &attr,
 					      &src_msg, &tgt_dsdb_dn);
@@ -6995,7 +7015,7 @@ static int replmd_verify_linked_attribute(struct replmd_replicated_request *ar,
 	}
 
 	ret = replmd_check_target_exists(module, tgt_dsdb_dn, la,
-					 src_msg->dn, &guid, &del_state);
+					 src_msg->dn, &guid, &dummy);
 
 	/*
 	 * When we fail to find the target object, the error code we pass
@@ -7032,9 +7052,8 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 	struct parsed_dn *pdn_list, *pdn, *next;
 	struct GUID guid = GUID_zero();
 	bool active = (la->flags & DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE)?true:false;
-
+	bool ignore_link;
 	enum deletion_state deletion_state = OBJECT_NOT_DELETED;
-	enum deletion_state target_deletion_state = OBJECT_NOT_DELETED;
 
 	/*
 	 * get the attribute being modified, the search result for the source object,
@@ -7049,7 +7068,7 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 	}
 
 	/*
-	 * Check for deleted objects per MS-DRSR 4.1.10.6.13
+	 * Check for deleted objects per MS-DRSR 4.1.10.6.14
 	 * ProcessLinkValue, because link updates are not applied to
 	 * recycled and tombstone objects.  We don't have to delete
 	 * any existing link, that should have happened when the
@@ -7084,7 +7103,7 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 	}
 
 	ret = replmd_check_target_exists(module, dsdb_dn, la_entry, msg->dn,
-					 &guid, &target_deletion_state);
+					 &guid, &ignore_link);
 
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
@@ -7092,15 +7111,12 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 	}
 
 	/*
-	 * Check for deleted objects per MS-DRSR 4.1.10.6.13
-	 * ProcessLinkValue, because link updates are not applied to
-	 * recycled and tombstone objects.  We don't have to delete
-	 * any existing link, that should have happened when the
-	 * object deletion was replicated or initiated.
+	 * there are some cases where the target object doesn't exist, but it's
+	 * OK to ignore the linked attribute
 	 */
-	if (target_deletion_state >= OBJECT_RECYCLED) {
+	if (ignore_link) {
 		talloc_free(tmp_ctx);
-		return LDB_SUCCESS;
+		return ret;
 	}
 
 	/* see if this link already exists */
