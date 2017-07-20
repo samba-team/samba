@@ -456,14 +456,7 @@ struct smbd_smb2_create_state {
 	struct smb2_create_blobs *out_context_blobs;
 };
 
-static void smbd_smb2_create_finish(struct tevent_req *req,
-				    struct smbd_smb2_request *smb2req,
-				    struct smb_request *smb1req,
-				    files_struct *result,
-				    const bool replay_operation,
-				    const int in_oplock_level,
-				    const int in_create_disposition,
-				    const int info);
+static void smbd_smb2_create_finish(struct tevent_req *req);
 
 static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			struct tevent_context *ev,
@@ -683,14 +676,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		}
 		state->info = FILE_WAS_OPENED;
 
-		smbd_smb2_create_finish(req,
-					smb2req,
-					smb1req,
-					state->result,
-					state->replay_operation,
-					state->in_oplock_level,
-					state->in_create_disposition,
-					state->info);
+		smbd_smb2_create_finish(req);
 		return req;
 
 	} else if (CAN_PRINT(smb1req->conn)) {
@@ -715,14 +701,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		}
 		state->info = FILE_WAS_CREATED;
 
-		smbd_smb2_create_finish(req,
-					smb2req,
-					smb1req,
-					state->result,
-					state->replay_operation,
-					state->in_oplock_level,
-					state->in_create_disposition,
-					state->info);
+		smbd_smb2_create_finish(req);
 		return req;
 	}
 
@@ -1393,44 +1372,33 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	smbd_smb2_create_finish(req,
-				smb2req,
-				smb1req,
-				state->result,
-				state->replay_operation,
-				state->in_oplock_level,
-				state->in_create_disposition,
-				state->info);
+	smbd_smb2_create_finish(req);
 	return req;
 }
 
-static void smbd_smb2_create_finish(struct tevent_req *req,
-				    struct smbd_smb2_request *smb2req,
-				    struct smb_request *smb1req,
-				    files_struct *result,
-				    const bool replay_operation,
-				    const int in_oplock_level,
-				    const int in_create_disposition,
-				    const int info)
+static void smbd_smb2_create_finish(struct tevent_req *req)
 {
 	struct smbd_smb2_create_state *state = tevent_req_data(
 		req, struct smbd_smb2_create_state);
+	struct smbd_smb2_request *smb2req = state->smb2req;
+	struct smb_request *smb1req = state->smb1req;
+	files_struct *result = state->result;
 
 	smb2req->compat_chain_fsp = smb1req->chain_fsp;
 
-	if (replay_operation) {
-		state->out_oplock_level = in_oplock_level;
+	if (state->replay_operation) {
+		state->out_oplock_level = state->in_oplock_level;
 	} else if (lp_fake_oplocks(SNUM(smb2req->tcon->compat))) {
-		state->out_oplock_level	= in_oplock_level;
+		state->out_oplock_level	= state->in_oplock_level;
 	} else {
 		state->out_oplock_level	= map_samba_oplock_levels_to_smb2(result->oplock_type);
 	}
 
-	if ((in_create_disposition == FILE_SUPERSEDE)
-	    && (info == FILE_WAS_OVERWRITTEN)) {
+	if ((state->in_create_disposition == FILE_SUPERSEDE)
+	    && (state->info == FILE_WAS_OVERWRITTEN)) {
 		state->out_create_action = FILE_WAS_SUPERSEDED;
 	} else {
-		state->out_create_action = info;
+		state->out_create_action = state->info;
 	}
 	result->op->create_action = state->out_create_action;
 	state->out_file_attributes = dos_mode(result->conn,
