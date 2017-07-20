@@ -118,6 +118,7 @@ struct tevent_req *http_send_auth_request_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *subreq = NULL;
 	DATA_BLOB gensec_in = data_blob_null;
 	NTSTATUS status;
+	struct http_header *h = NULL;
 	const char *mech_name = NULL;
 
 	req = tevent_req_create(mem_ctx, &state, struct http_auth_state);
@@ -144,6 +145,26 @@ struct tevent_req *http_send_auth_request_send(TALLOC_CTX *mem_ctx,
 	status = gensec_set_credentials(state->gensec_ctx, credentials);
 	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, ev);
+	}
+
+	for (h = original_request->headers; h != NULL; h = h->next) {
+		int cmp;
+
+		cmp = strcasecmp(h->key, "Host");
+		if (cmp != 0) {
+			continue;
+		}
+
+		status = gensec_set_target_service(state->gensec_ctx, "http");
+		if (tevent_req_nterror(req, status)) {
+			return tevent_req_post(req, ev);
+		}
+
+		status = gensec_set_target_hostname(state->gensec_ctx, h->value);
+		if (tevent_req_nterror(req, status)) {
+			return tevent_req_post(req, ev);
+		}
+		break;
 	}
 
 	switch (state->auth) {
