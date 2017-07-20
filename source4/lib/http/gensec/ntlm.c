@@ -134,7 +134,7 @@ static void gensec_http_ntlm_update_done(struct tevent_req *subreq)
 	}
 
 	state->out = data_blob_string_const(str);
-	return;
+	tevent_req_done(req);
 }
 
 static NTSTATUS gensec_http_ntlm_update_recv(struct tevent_req *req,
