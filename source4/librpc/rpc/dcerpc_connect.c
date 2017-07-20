@@ -569,6 +569,8 @@ static struct composite_context* dcerpc_pipe_connect_ncacn_http_send(
 			s->http_auth = HTTP_AUTH_BASIC;
 		} else if (strcasecmp(opt, "ntlm") == 0) {
 			s->http_auth = HTTP_AUTH_NTLM;
+		} else if (strcasecmp(opt, "negotiate") == 0) {
+			s->http_auth = HTTP_AUTH_NEGOTIATE;
 		} else {
 			composite_error(c, NT_STATUS_INVALID_PARAMETER_MIX);
 			return c;
