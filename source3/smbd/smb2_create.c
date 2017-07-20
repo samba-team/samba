@@ -476,6 +476,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 	struct smb2_create_blob *dh2q = NULL;
 	struct smb2_create_blob *rqls = NULL;
 	bool replay_operation = false;
+	char *fname = NULL;
 
 	if(lp_fake_oplocks(SNUM(smb2req->tcon->compat))) {
 		requested_oplock_level = SMB2_OPLOCK_LEVEL_NONE;
@@ -517,6 +518,17 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 
 	TALLOC_FREE(smb2req->subreq);
 	smb2req->subreq = req;
+
+	/* these are ignored for SMB2 */
+	in_create_options &= ~(0x10);/* NTCREATEX_OPTIONS_SYNC_ALERT */
+	in_create_options &= ~(0x20);/* NTCREATEX_OPTIONS_ASYNC_ALERT */
+
+	in_file_attributes &= ~FILE_FLAG_POSIX_SEMANTICS;
+
+	fname = talloc_strdup(state, in_name);
+	if (tevent_req_nomem(fname, req)) {
+		return tevent_req_post(req, state->ev);
+	}
 
 	state->out_context_blobs = talloc_zero(state, struct smb2_create_blobs);
 	if (tevent_req_nomem(state->out_context_blobs, req)) {
@@ -654,7 +666,6 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		}
 		info = FILE_WAS_CREATED;
 	} else {
-		char *fname;
 		struct smb2_create_blob *exta = NULL;
 		struct ea_list *ea_list = NULL;
 		struct smb2_create_blob *mxac = NULL;
@@ -702,11 +713,6 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 						      SVHDX_OPEN_DEVICE_CONTEXT);
 		}
 #endif
-
-		fname = talloc_strdup(state, in_name);
-		if (tevent_req_nomem(fname, req)) {
-			return tevent_req_post(req, state->ev);
-		}
 
 		if (exta) {
 			if (!lp_ea_support(SNUM(smb2req->tcon->compat))) {
@@ -998,12 +1004,6 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 				}
 			}
 		}
-
-		/* these are ignored for SMB2 */
-		in_create_options &= ~(0x10);/* NTCREATEX_OPTIONS_SYNC_ALERT */
-		in_create_options &= ~(0x20);/* NTCREATEX_OPTIONS_ASYNC_ALERT */
-
-		in_file_attributes &= ~FILE_FLAG_POSIX_SEMANTICS;
 
 		DEBUG(10, ("smbd_smb2_create_send: open execution phase\n"));
 
