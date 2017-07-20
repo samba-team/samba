@@ -61,17 +61,19 @@ static NTSTATUS http_parse_auth_response(enum http_auth_method auth,
 	struct http_header *h;
 
 	for (h = auth_response->headers; h != NULL; h = h->next) {
-		if (strncasecmp(h->key, "WWW-Authenticate", 16) == 0) {
-			switch (auth) {
-			case HTTP_AUTH_NTLM:
-				if (strncasecmp(h->value, "NTLM ", 5) == 0) {
-					*in = data_blob_string_const(h->value);
-					return NT_STATUS_OK;
-				}
-				break;
-			default:
-				break;
+		if (strncasecmp(h->key, "WWW-Authenticate", 16) != 0) {
+			continue;
+		}
+
+		switch (auth) {
+		case HTTP_AUTH_NTLM:
+			if (strncasecmp(h->value, "NTLM ", 5) == 0) {
+				*in = data_blob_string_const(h->value);
+				return NT_STATUS_OK;
 			}
+			break;
+		default:
+			break;
 		}
 	}
 
