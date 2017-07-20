@@ -61,7 +61,10 @@ static NTSTATUS http_parse_auth_response(enum http_auth_method auth,
 	struct http_header *h;
 
 	for (h = auth_response->headers; h != NULL; h = h->next) {
-		if (strncasecmp(h->key, "WWW-Authenticate", 16) != 0) {
+		int cmp;
+
+		cmp = strcasecmp(h->key, "WWW-Authenticate");
+		if (cmp != 0) {
 			continue;
 		}
 
