@@ -110,11 +110,6 @@ NTSTATUS dbwrap_record_delete(struct db_record *rec)
 	return NT_STATUS_OK;
 }
 
-struct dbwrap_lock_order_state {
-	struct db_context **locked_dbs;
-	struct db_context *db;
-};
-
 static void debug_lock_order(int level, struct db_context *dbs[])
 {
 	int i;
@@ -125,69 +120,86 @@ static void debug_lock_order(int level, struct db_context *dbs[])
 	DEBUGADD(level, ("\n"));
 }
 
+static void dbwrap_lock_order_lock(struct db_context *db,
+				   struct db_context ***lockptr)
+{
+	static struct db_context *locked_dbs[DBWRAP_LOCK_ORDER_MAX];
+	int idx;
+
+	DBG_INFO("check lock order %d for %s\n", (int)db->lock_order,
+		 db->name);
+
+	if (!DBWRAP_LOCK_ORDER_VALID(db->lock_order)) {
+		DBG_ERR("Invalid lock order %d of %s\n",
+			(int)db->lock_order, db->name);
+		smb_panic("lock order violation");
+	}
+
+	for (idx=db->lock_order-1; idx<DBWRAP_LOCK_ORDER_MAX; idx++) {
+		if (locked_dbs[idx] != NULL) {
+			DBG_ERR("Lock order violation: Trying %s at %d while "
+				"%s at %d is locked\n",
+				db->name, (int)db->lock_order,
+				locked_dbs[idx]->name, idx + 1);
+			debug_lock_order(0, locked_dbs);
+			smb_panic("lock order violation");
+		}
+	}
+
+	locked_dbs[db->lock_order-1] = db;
+	*lockptr = &locked_dbs[db->lock_order-1];
+
+	debug_lock_order(10, locked_dbs);
+}
+
+static void dbwrap_lock_order_unlock(struct db_context *db,
+				     struct db_context **lockptr)
+{
+	DBG_INFO("release lock order %d for %s\n",
+		 (int)db->lock_order, db->name);
+
+	if (*lockptr == NULL) {
+		DBG_ERR("db %s at order %d unlocked\n", db->name,
+			(int)db->lock_order);
+		smb_panic("lock order violation");
+	}
+
+	if (*lockptr != db) {
+		DBG_ERR("locked db at lock order %d is %s, expected %s\n",
+			(int)(*lockptr)->lock_order, (*lockptr)->name,
+			db->name);
+		smb_panic("lock order violation");
+	}
+
+	*lockptr = NULL;
+}
+
+struct dbwrap_lock_order_state {
+	struct db_context *db;
+	struct db_context **lockptr;
+};
+
 static int dbwrap_lock_order_state_destructor(
 	struct dbwrap_lock_order_state *s)
 {
-	int idx = s->db->lock_order - 1;
-
-	DEBUG(5, ("release lock order %d for %s\n",
-		  (int)s->db->lock_order, s->db->name));
-
-	if (s->locked_dbs[idx] != s->db) {
-		DEBUG(0, ("locked db at lock order %d is %s, expected %s\n",
-			  idx + 1, s->locked_dbs[idx]->name, s->db->name));
-		debug_lock_order(0, s->locked_dbs);
-		smb_panic("inconsistent lock_order\n");
-	}
-
-	s->locked_dbs[idx] = NULL;
-
-	debug_lock_order(10, s->locked_dbs);
-
+	dbwrap_lock_order_unlock(s->db, s->lockptr);
 	return 0;
 }
-
 
 static struct dbwrap_lock_order_state *dbwrap_check_lock_order(
 	struct db_context *db, TALLOC_CTX *mem_ctx)
 {
-	int idx;
-	static struct db_context *locked_dbs[DBWRAP_LOCK_ORDER_MAX];
-	struct dbwrap_lock_order_state *state = NULL;
-
-	if (!DBWRAP_LOCK_ORDER_VALID(db->lock_order)) {
-		DEBUG(0,("Invalid lock order %d of %s\n",
-			 (int)db->lock_order, db->name));
-		smb_panic("invalid lock_order\n");
-		return NULL;
-	}
-
-	DEBUG(5, ("check lock order %d for %s\n",
-		  (int)db->lock_order, db->name));
-
-
-	for (idx=db->lock_order - 1; idx < DBWRAP_LOCK_ORDER_MAX; idx++) {
-		if (locked_dbs[idx] != NULL) {
-			DEBUG(0, ("Lock order violation: Trying %s at %d while %s at %d is locked\n",
-				  db->name, (int)db->lock_order, locked_dbs[idx]->name, idx + 1));
-			debug_lock_order(0, locked_dbs);
-			smb_panic("invalid lock_order");
-			return NULL;
-		}
-	}
+	struct dbwrap_lock_order_state *state;
 
 	state = talloc(mem_ctx, struct dbwrap_lock_order_state);
 	if (state == NULL) {
-		DEBUG(1, ("talloc failed\n"));
+		DBG_WARNING("talloc failed\n");
 		return NULL;
 	}
 	state->db = db;
-	state->locked_dbs = locked_dbs;
+
+	dbwrap_lock_order_lock(db, &state->lockptr);
 	talloc_set_destructor(state, dbwrap_lock_order_state_destructor);
-
-	locked_dbs[db->lock_order - 1] = db;
-
-	debug_lock_order(10, locked_dbs);
 
 	return state;
 }
