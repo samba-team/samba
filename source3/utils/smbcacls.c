@@ -229,30 +229,22 @@ get fileinfo for filename
 static uint16_t get_fileinfo(struct cli_state *cli, const char *filename)
 {
 	uint16_t fnum = (uint16_t)-1;
-	uint16_t mode = 0;
 	NTSTATUS status;
+	struct smb_create_returns cr = {0};
 
 	/* The desired access below is the only one I could find that works
 	   with NT4, W2KP and Samba */
 
 	status = cli_ntcreate(cli, filename, 0, CREATE_ACCESS_READ,
 			      0, FILE_SHARE_READ|FILE_SHARE_WRITE,
-			      FILE_OPEN, 0x0, 0x0, &fnum, NULL);
+			      FILE_OPEN, 0x0, 0x0, &fnum, &cr);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to open %s: %s\n", filename, nt_errstr(status));
 		return 0;
 	}
 
-	status = cli_qfileinfo_basic(cli, fnum, &mode, NULL, NULL, NULL,
-				     NULL, NULL, NULL);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed to file info %s: %s\n", filename,
-		       nt_errstr(status));
-        }
-
 	cli_close(cli, fnum);
-
-        return mode;
+	return cr.file_attributes;
 }
 
 /*****************************************************
