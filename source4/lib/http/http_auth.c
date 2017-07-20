@@ -155,6 +155,10 @@ struct tevent_req *http_send_auth_request_send(TALLOC_CTX *mem_ctx,
 		mech_name = "http_ntlm";
 		state->prefix = data_blob_string_const("NTLM");
 		break;
+	case HTTP_AUTH_NEGOTIATE:
+		mech_name = "http_negotiate";
+		state->prefix = data_blob_string_const("Negotiate");
+		break;
 	default:
 		tevent_req_nterror(req, NT_STATUS_NOT_SUPPORTED);
 		return tevent_req_post(req, ev);

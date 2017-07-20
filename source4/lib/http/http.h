@@ -65,6 +65,7 @@ enum http_cmd_type {
 enum http_auth_method {
 	HTTP_AUTH_BASIC=1,
 	HTTP_AUTH_NTLM,
+	HTTP_AUTH_NEGOTIATE,
 };
 
 struct http_header {
