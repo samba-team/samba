@@ -63,6 +63,12 @@ static NTSTATUS gensec_http_ntlm_client_start(struct gensec_security *gensec)
 						GENSEC_OID_NTLMSSP);
 }
 
+static NTSTATUS gensec_http_negotiate_client_start(struct gensec_security *gensec)
+{
+	return gensec_http_generic_client_start(gensec, "Negotiate",
+						GENSEC_OID_SPNEGO);
+}
+
 struct gensec_http_generic_update_state {
 	struct gensec_security *gensec;
 	DATA_BLOB sub_in;
@@ -245,6 +251,17 @@ static const struct gensec_security_ops gensec_http_ntlm_security_ops = {
 	.priority       = GENSEC_EXTERNAL,
 };
 
+static const struct gensec_security_ops gensec_http_negotiate_security_ops = {
+	.name           = "http_negotiate",
+	.auth_type      = 0,
+	.client_start   = gensec_http_negotiate_client_start,
+	.update_send    = gensec_http_generic_update_send,
+	.update_recv    = gensec_http_generic_update_recv,
+	.enabled        = true,
+	.priority       = GENSEC_EXTERNAL,
+	.glue           = true,
+};
+
 _PUBLIC_ NTSTATUS gensec_http_generic_init(TALLOC_CTX *ctx)
 {
 	NTSTATUS status;
@@ -253,6 +270,13 @@ _PUBLIC_ NTSTATUS gensec_http_generic_init(TALLOC_CTX *ctx)
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to register '%s' gensec backend!\n",
 				gensec_http_ntlm_security_ops.name));
+		return status;
+	}
+
+	status = gensec_register(ctx, &gensec_http_negotiate_security_ops);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Failed to register '%s' gensec backend!\n",
+			  gensec_http_negotiate_security_ops.name));
 		return status;
 	}
 
