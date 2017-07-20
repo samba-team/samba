@@ -45,6 +45,10 @@ char *tevent_req_default_print(struct tevent_req *req, TALLOC_CTX *mem_ctx)
 
 char *tevent_req_print(TALLOC_CTX *mem_ctx, struct tevent_req *req)
 {
+	if (req == NULL) {
+		return talloc_strdup(mem_ctx, "tevent_req[NULL]");
+	}
+
 	if (!req->private_print) {
 		return tevent_req_default_print(req, mem_ctx);
 	}
