@@ -13,9 +13,9 @@ bld.SAMBA_MODULE('gensec_http_basic',
 	deps='samba-util auth_session'
 )
 
-bld.SAMBA_MODULE('gensec_http_ntlm',
-	source='gensec/ntlm.c',
+bld.SAMBA_MODULE('gensec_http_generic',
+	source='gensec/generic.c',
 	subsystem='gensec',
-	init_function='gensec_http_ntlm_init',
+	init_function='gensec_http_generic_init',
 	deps='samba-util auth_session'
 )
