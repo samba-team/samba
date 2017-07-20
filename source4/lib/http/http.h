@@ -82,6 +82,7 @@ struct http_request {
 	size_t			headers_size;
 	unsigned int		response_code;		/* HTTP response code */
 	char			*response_code_line;	/* Readable response */
+	uint64_t		remaining_content_length; /* data not represent in body */
 	DATA_BLOB		body;
 };
 
@@ -101,7 +102,8 @@ NTSTATUS http_send_request_recv(struct tevent_req *);
 /* HTTP response */
 struct tevent_req *http_read_response_send(TALLOC_CTX *,
 					   struct tevent_context *,
-					   struct tstream_context *);
+					   struct tstream_context *,
+					   size_t max_content_length);
 NTSTATUS http_read_response_recv(struct tevent_req *,
 			    TALLOC_CTX *,
 			    struct http_request **);

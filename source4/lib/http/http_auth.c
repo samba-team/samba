@@ -272,9 +272,16 @@ static void http_send_auth_request_http_req_done(struct tevent_req *subreq)
 		return;
 	}
 
-	/* If more processing required, read the response from server */
+	/*
+	 * If more processing required, read the response from server
+	 *
+	 * We may get an empty RPCH Echo packet from the server
+	 * on the "RPC_OUT_DATA" path. We need to consume this
+	 * from the socket, but for now we just ignore the bytes.
+	 */
 	subreq = http_read_response_send(state, state->ev,
-					 state->stream);
+					 state->stream,
+					 UINT16_MAX);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -298,6 +305,20 @@ static void http_send_auth_request_http_rep_done(struct tevent_req *subreq)
 					 &state->auth_response);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	/*
+	 * We we asked for up to UINT16_MAX bytes of
+	 * content, we don't expect
+	 * state->auth_response->remaining_content_length
+	 * to be set.
+	 *
+	 * For now we just ignore any bytes in
+	 * state->auth_response->body.
+	 */
+	if (state->auth_response->remaining_content_length != 0) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
 		return;
 	}
 

@@ -482,7 +482,8 @@ struct tevent_req *roh_recv_out_channel_response_send(TALLOC_CTX *mem_ctx,
 	}
 
 	subreq = http_read_response_send(state, ev,
-					 roh->default_channel_out->streams.active);
+					 roh->default_channel_out->streams.active,
+					 0); /* we'll get the content later */
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
