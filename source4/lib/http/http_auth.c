@@ -54,7 +54,7 @@ static NTSTATUS http_copy_header(const struct http_request *src,
  * Retrieve the WWW-Authenticate header from server response based on the
  * authentication scheme being used.
  */
-static NTSTATUS http_parse_auth_response(enum http_auth_method auth,
+static NTSTATUS http_parse_auth_response(const DATA_BLOB prefix,
 					 struct http_request *auth_response,
 					 DATA_BLOB *in)
 {
@@ -68,16 +68,15 @@ static NTSTATUS http_parse_auth_response(enum http_auth_method auth,
 			continue;
 		}
 
-		switch (auth) {
-		case HTTP_AUTH_NTLM:
-			if (strncasecmp(h->value, "NTLM ", 5) == 0) {
-				*in = data_blob_string_const(h->value);
-				return NT_STATUS_OK;
-			}
-			break;
-		default:
-			break;
+		cmp = strncasecmp(h->value,
+				  (const char *)prefix.data,
+				  prefix.length);
+		if (cmp != 0) {
+			continue;
 		}
+
+		*in = data_blob_string_const(h->value);
+		return NT_STATUS_OK;
 	}
 
 	return NT_STATUS_NOT_SUPPORTED;
@@ -90,6 +89,7 @@ struct http_auth_state {
 	struct tevent_queue *send_queue;
 
 	enum http_auth_method auth;
+	DATA_BLOB prefix;
 
 	struct gensec_security *gensec_ctx;
 	NTSTATUS gensec_status;
@@ -149,9 +149,11 @@ struct tevent_req *http_send_auth_request_send(TALLOC_CTX *mem_ctx,
 	switch (state->auth) {
 	case HTTP_AUTH_BASIC:
 		mech_name = "http_basic";
+		state->prefix = data_blob_string_const("Basic");
 		break;
 	case HTTP_AUTH_NTLM:
 		mech_name = "http_ntlm";
+		state->prefix = data_blob_string_const("NTLM");
 		break;
 	default:
 		tevent_req_nterror(req, NT_STATUS_NOT_SUPPORTED);
@@ -327,7 +329,7 @@ static void http_send_auth_request_http_rep_done(struct tevent_req *subreq)
 		return;
 	}
 
-	status = http_parse_auth_response(state->auth,
+	status = http_parse_auth_response(state->prefix,
 					  state->auth_response,
 					  &gensec_in);
 	if (tevent_req_nterror(req, status)) {
