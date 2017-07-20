@@ -29,89 +29,157 @@
 
 _PUBLIC_ NTSTATUS gensec_http_generic_init(TALLOC_CTX *);
 
-struct gensec_http_ntlm_state {
+struct gensec_http_generic_state {
 	struct gensec_security *sub;
+	DATA_BLOB prefix;
 };
 
-static NTSTATUS gensec_http_ntlm_client_start(struct gensec_security *gensec)
+static NTSTATUS gensec_http_generic_client_start(struct gensec_security *gensec,
+						 const char *prefix_str,
+						 const char *mech_oid)
 {
 	NTSTATUS status;
-	struct gensec_http_ntlm_state *state;
+	struct gensec_http_generic_state *state;
 
-	state = talloc_zero(gensec, struct gensec_http_ntlm_state);
+	state = talloc_zero(gensec, struct gensec_http_generic_state);
 	if (state == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 	gensec->private_data = state;
+
+	state->prefix = data_blob_string_const(prefix_str);
 
 	status = gensec_subcontext_start(state, gensec, &state->sub);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	return gensec_start_mech_by_oid(state->sub, GENSEC_OID_NTLMSSP);
+	return gensec_start_mech_by_oid(state->sub, mech_oid);
 }
 
-struct gensec_http_ntlm_update_state {
-	DATA_BLOB ntlm_in;
+static NTSTATUS gensec_http_ntlm_client_start(struct gensec_security *gensec)
+{
+	return gensec_http_generic_client_start(gensec, "NTLM",
+						GENSEC_OID_NTLMSSP);
+}
+
+struct gensec_http_generic_update_state {
+	struct gensec_security *gensec;
+	DATA_BLOB sub_in;
 	NTSTATUS status;
 	DATA_BLOB out;
 };
 
-static void gensec_http_ntlm_update_done(struct tevent_req *subreq);
+static void gensec_http_generic_update_done(struct tevent_req *subreq);
 
-static struct tevent_req *gensec_http_ntlm_update_send(TALLOC_CTX *mem_ctx,
+static struct tevent_req *gensec_http_generic_update_send(TALLOC_CTX *mem_ctx,
 						    struct tevent_context *ev,
 						    struct gensec_security *gensec_ctx,
 						    const DATA_BLOB in)
 {
-	struct gensec_http_ntlm_state *http_ntlm =
+	struct gensec_http_generic_state *http_generic =
 		talloc_get_type_abort(gensec_ctx->private_data,
-				      struct gensec_http_ntlm_state);
+				      struct gensec_http_generic_state);
 	struct tevent_req *req = NULL;
-	struct gensec_http_ntlm_update_state *state = NULL;
+	struct gensec_http_generic_update_state *state = NULL;
 	struct tevent_req *subreq = NULL;
 
 	req = tevent_req_create(mem_ctx, &state,
-				struct gensec_http_ntlm_update_state);
+				struct gensec_http_generic_update_state);
 	if (req == NULL) {
 		return NULL;
 	}
+	state->gensec = gensec_ctx;
 
 	if (in.length) {
-		if (strncasecmp((char *)in.data, "NTLM ", 5) != 0) {
+		int cmp;
+		DATA_BLOB b64b;
+		size_t skip = 0;
+
+		if (in.length < http_generic->prefix.length) {
 			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
 			return tevent_req_post(req, ev);
 		}
-		state->ntlm_in = base64_decode_data_blob_talloc(state,
-							(char *)&in.data[5]);
+
+		cmp = strncasecmp((const char *)in.data,
+				  (const char *)http_generic->prefix.data,
+				  http_generic->prefix.length);
+		if (cmp != 0) {
+			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			return tevent_req_post(req, ev);
+		}
+
+		if (in.length == http_generic->prefix.length) {
+			/*
+			 * We expect more data, but the
+			 * server just sent the prefix without
+			 * a space prefixing base64 data.
+			 *
+			 * It means the server rejects
+			 * the request with.
+			 */
+			tevent_req_nterror(req, NT_STATUS_LOGON_FAILURE);
+			return tevent_req_post(req, ev);
+		}
+
+		if (in.data[http_generic->prefix.length] != ' ') {
+			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			return tevent_req_post(req, ev);
+		}
+		skip = http_generic->prefix.length + 1;
+
+		b64b = data_blob_const(in.data + skip, in.length - skip);
+		if (b64b.length != 0) {
+			char *b64 = NULL;
+
+			/*
+			 * ensure it's terminated with \0' before
+			 * passing to base64_decode_data_blob_talloc().
+			 */
+			b64 = talloc_strndup(state, (const char *)b64b.data,
+					     b64b.length);
+			if (tevent_req_nomem(b64, req)) {
+				return tevent_req_post(req, ev);
+			}
+
+			state->sub_in = base64_decode_data_blob_talloc(state,
+								       b64);
+			TALLOC_FREE(b64);
+			if (tevent_req_nomem(state->sub_in.data, req)) {
+				return tevent_req_post(req, ev);
+			}
+		}
 	}
 
 	subreq = gensec_update_send(state, ev,
-				    http_ntlm->sub,
-				    state->ntlm_in);
+				    http_generic->sub,
+				    state->sub_in);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
-	tevent_req_set_callback(subreq, gensec_http_ntlm_update_done, req);
+	tevent_req_set_callback(subreq, gensec_http_generic_update_done, req);
 
 	return req;
 }
 
-static void gensec_http_ntlm_update_done(struct tevent_req *subreq)
+static void gensec_http_generic_update_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req =
 		tevent_req_callback_data(subreq,
 		struct tevent_req);
-	struct gensec_http_ntlm_update_state *state =
+	struct gensec_http_generic_update_state *state =
 		tevent_req_data(req,
-		struct gensec_http_ntlm_update_state);
+		struct gensec_http_generic_update_state);
+	struct gensec_http_generic_state *http_generic =
+		talloc_get_type_abort(state->gensec->private_data,
+		struct gensec_http_generic_state);
 	NTSTATUS status;
-	DATA_BLOB ntlm_out;
+	DATA_BLOB sub_out = data_blob_null;
 	char *b64 = NULL;
 	char *str = NULL;
+	int prefix_length;
 
-	status = gensec_update_recv(subreq, state, &ntlm_out);
+	status = gensec_update_recv(subreq, state, &sub_out);
 	TALLOC_FREE(subreq);
 	state->status = status;
 	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
@@ -121,13 +189,20 @@ static void gensec_http_ntlm_update_done(struct tevent_req *subreq)
 		return;
 	}
 
-	b64 = base64_encode_data_blob(state, ntlm_out);
-	data_blob_free(&ntlm_out);
+	if (sub_out.length == 0) {
+		tevent_req_done(req);
+		return;
+	}
+
+	b64 = base64_encode_data_blob(state, sub_out);
+	data_blob_free(&sub_out);
 	if (tevent_req_nomem(b64, req)) {
 		return;
 	}
 
-	str = talloc_asprintf(state, "NTLM %s", b64);
+	prefix_length = http_generic->prefix.length;
+	str = talloc_asprintf(state, "%*.*s %s", prefix_length, prefix_length,
+			      (const char *)http_generic->prefix.data, b64);
 	TALLOC_FREE(b64);
 	if (tevent_req_nomem(str, req)) {
 		return;
@@ -137,13 +212,13 @@ static void gensec_http_ntlm_update_done(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
-static NTSTATUS gensec_http_ntlm_update_recv(struct tevent_req *req,
+static NTSTATUS gensec_http_generic_update_recv(struct tevent_req *req,
 					     TALLOC_CTX *out_mem_ctx,
 					     DATA_BLOB *out)
 {
-	struct gensec_http_ntlm_update_state *state =
+	struct gensec_http_generic_update_state *state =
 		tevent_req_data(req,
-		struct gensec_http_ntlm_update_state);
+		struct gensec_http_generic_update_state);
 	NTSTATUS status;
 
 	*out = data_blob_null;
@@ -164,8 +239,8 @@ static const struct gensec_security_ops gensec_http_ntlm_security_ops = {
 	.name           = "http_ntlm",
 	.auth_type      = 0,
 	.client_start   = gensec_http_ntlm_client_start,
-	.update_send    = gensec_http_ntlm_update_send,
-	.update_recv    = gensec_http_ntlm_update_recv,
+	.update_send    = gensec_http_generic_update_send,
+	.update_recv    = gensec_http_generic_update_recv,
 	.enabled        = true,
 	.priority       = GENSEC_EXTERNAL,
 };
