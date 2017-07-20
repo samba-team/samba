@@ -604,6 +604,7 @@ static NTSTATUS smbd_smb2_create_fetch_create_ctx(
 }
 
 static void smbd_smb2_create_before_exec(struct tevent_req *req);
+static void smbd_smb2_create_after_exec(struct tevent_req *req);
 static void smbd_smb2_create_finish(struct tevent_req *req);
 
 static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
@@ -933,173 +934,9 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		state->op = state->result->op;
 	}
 
-	/*
-	 * here we have op == state->result->op
-	 */
-
-	DEBUG(10, ("smbd_smb2_create_send: "
-		   "response construction phase\n"));
-
-	if (state->mxac != NULL) {
-		NTTIME last_write_time;
-
-		last_write_time = unix_timespec_to_nt_time(
-			state->result->fsp_name->st.st_ex_mtime);
-		if (last_write_time != state->max_access_time) {
-			uint8_t p[8];
-			uint32_t max_access_granted;
-			DATA_BLOB blob = data_blob_const(p, sizeof(p));
-
-			status = smbd_calculate_access_mask(smb1req->conn,
-							    state->result->fsp_name,
-							    false,
-							    SEC_FLAG_MAXIMUM_ALLOWED,
-							    &max_access_granted);
-
-			SIVAL(p, 0, NT_STATUS_V(status));
-			SIVAL(p, 4, max_access_granted);
-
-			status = smb2_create_blob_add(
-				state->out_context_blobs,
-				state->out_context_blobs,
-				SMB2_CREATE_TAG_MXAC,
-				blob);
-			if (!NT_STATUS_IS_OK(status)) {
-				tevent_req_nterror(req, status);
-				return tevent_req_post(req, state->ev);
-			}
-		}
-	}
-
-	if (!state->replay_operation && state->durable_requested &&
-	    (fsp_lease_type(state->result) & SMB2_LEASE_HANDLE))
-	{
-		status = SMB_VFS_DURABLE_COOKIE(
-			state->result,
-			state->op,
-			&state->op->global->backend_cookie);
-		if (!NT_STATUS_IS_OK(status)) {
-			state->op->global->backend_cookie = data_blob_null;
-		}
-	}
-	if (!state->replay_operation && state->op->global->backend_cookie.length > 0)
-	{
-		state->update_open = true;
-
-		state->op->global->durable = true;
-		state->op->global->durable_timeout_msec = state->durable_timeout_msec;
-	}
-
-	if (state->update_open) {
-		state->op->global->create_guid = state->_create_guid;
-		if (state->need_replay_cache) {
-			state->op->flags |= SMBXSRV_OPEN_NEED_REPLAY_CACHE;
-		}
-
-		status = smbXsrv_open_update(state->op);
-		DEBUG(10, ("smb2_create_send: smbXsrv_open_update "
-			   "returned %s\n",
-			   nt_errstr(status)));
-		if (!NT_STATUS_IS_OK(status)) {
-			tevent_req_nterror(req, status);
-			return tevent_req_post(req, state->ev);
-		}
-	}
-
-	if (state->dhnq != NULL && state->op->global->durable) {
-		uint8_t p[8] = { 0, };
-		DATA_BLOB blob = data_blob_const(p, sizeof(p));
-
-		status = smb2_create_blob_add(state->out_context_blobs,
-					      state->out_context_blobs,
-					      SMB2_CREATE_TAG_DHNQ,
-					      blob);
-		if (!NT_STATUS_IS_OK(status)) {
-			tevent_req_nterror(req, status);
-			return tevent_req_post(req, state->ev);
-		}
-	}
-
-	if (state->dh2q != NULL && state->op->global->durable &&
-	    /*
-	     * For replay operations, we return the dh2q blob
-	     * in the case of oplocks not based on the state of
-	     * the open, but on whether it could have been granted
-	     * for the request data. In the case of leases instead,
-	     * the state of the open is used...
-	     */
-	    (!state->replay_operation ||
-	     state->in_oplock_level == SMB2_OPLOCK_LEVEL_BATCH ||
-	     state->in_oplock_level == SMB2_OPLOCK_LEVEL_LEASE))
-	{
-		uint8_t p[8] = { 0, };
-		DATA_BLOB blob = data_blob_const(p, sizeof(p));
-		uint32_t durable_v2_response_flags = 0;
-
-		SIVAL(p, 0, state->op->global->durable_timeout_msec);
-		SIVAL(p, 4, durable_v2_response_flags);
-
-		status = smb2_create_blob_add(state->out_context_blobs,
-					      state->out_context_blobs,
-					      SMB2_CREATE_TAG_DH2Q,
-					      blob);
-		if (!NT_STATUS_IS_OK(status)) {
-			tevent_req_nterror(req, status);
-			return tevent_req_post(req, state->ev);
-		}
-	}
-
-	if (state->qfid != NULL) {
-		uint8_t p[32];
-		uint64_t file_index = get_FileIndex(state->result->conn,
-						    &state->result->fsp_name->st);
-		DATA_BLOB blob = data_blob_const(p, sizeof(p));
-
-		ZERO_STRUCT(p);
-
-		/* From conversations with Microsoft engineers at
-		   the MS plugfest. The first 8 bytes are the "volume index"
-		   == inode, the second 8 bytes are the "volume id",
-		   == dev. This will be updated in the SMB2 doc. */
-		SBVAL(p, 0, file_index);
-		SIVAL(p, 8, state->result->fsp_name->st.st_ex_dev);/* FileIndexHigh */
-
-		status = smb2_create_blob_add(state->out_context_blobs,
-					      state->out_context_blobs,
-					      SMB2_CREATE_TAG_QFID,
-					      blob);
-		if (!NT_STATUS_IS_OK(status)) {
-			tevent_req_nterror(req, status);
-			return tevent_req_post(req, state->ev);
-		}
-	}
-
-	if ((state->rqls != NULL) && (state->result->oplock_type == LEASE_OPLOCK)) {
-		uint8_t buf[52];
-		struct smb2_lease lease;
-		size_t lease_len;
-
-		lease = state->result->lease->lease;
-
-		lease_len = sizeof(buf);
-		if (lease.lease_version == 1) {
-			lease_len = 32;
-		}
-
-		if (!smb2_lease_push(&lease, buf, lease_len)) {
-			tevent_req_nterror(
-				req, NT_STATUS_INTERNAL_ERROR);
-			return tevent_req_post(req, state->ev);
-		}
-
-		status = smb2_create_blob_add(
-			state, state->out_context_blobs,
-			SMB2_CREATE_TAG_RQLS,
-			data_blob_const(buf, lease_len));
-		if (!NT_STATUS_IS_OK(status)) {
-			tevent_req_nterror(req, status);
-			return tevent_req_post(req, state->ev);
-		}
+	smbd_smb2_create_after_exec(req);
+	if (!tevent_req_is_in_progress(req)) {
+		return req;
 	}
 
 	smbd_smb2_create_finish(req);
@@ -1409,6 +1246,192 @@ static void smbd_smb2_create_before_exec(struct tevent_req *req)
 				(void)tevent_req_nterror(req, status);
 				return;
 			}
+		}
+	}
+
+	return;
+}
+
+static void smbd_smb2_create_after_exec(struct tevent_req *req)
+{
+	struct smbd_smb2_create_state *state = tevent_req_data(
+		req, struct smbd_smb2_create_state);
+	struct smb_request *smb1req = state->smb1req;
+	NTSTATUS status;
+
+	/*
+	 * here we have op == result->op
+	 */
+
+	DEBUG(10, ("smbd_smb2_create_send: "
+		   "response construction phase\n"));
+
+	if (state->mxac != NULL) {
+		NTTIME last_write_time;
+
+		last_write_time = unix_timespec_to_nt_time(
+			state->result->fsp_name->st.st_ex_mtime);
+		if (last_write_time != state->max_access_time) {
+			uint8_t p[8];
+			uint32_t max_access_granted;
+			DATA_BLOB blob = data_blob_const(p, sizeof(p));
+
+			status = smbd_calculate_access_mask(smb1req->conn,
+							    state->result->fsp_name,
+							    false,
+							    SEC_FLAG_MAXIMUM_ALLOWED,
+							    &max_access_granted);
+
+			SIVAL(p, 0, NT_STATUS_V(status));
+			SIVAL(p, 4, max_access_granted);
+
+			status = smb2_create_blob_add(
+				state->out_context_blobs,
+				state->out_context_blobs,
+				SMB2_CREATE_TAG_MXAC,
+				blob);
+			if (!NT_STATUS_IS_OK(status)) {
+				tevent_req_nterror(req, status);
+				tevent_req_post(req, state->ev);
+				return;
+			}
+		}
+	}
+
+	if (!state->replay_operation && state->durable_requested &&
+	    (fsp_lease_type(state->result) & SMB2_LEASE_HANDLE))
+	{
+		status = SMB_VFS_DURABLE_COOKIE(
+			state->result,
+			state->op,
+			&state->op->global->backend_cookie);
+		if (!NT_STATUS_IS_OK(status)) {
+			state->op->global->backend_cookie = data_blob_null;
+		}
+	}
+	if (!state->replay_operation && state->op->global->backend_cookie.length > 0)
+	{
+		state->update_open = true;
+
+		state->op->global->durable = true;
+		state->op->global->durable_timeout_msec = state->durable_timeout_msec;
+	}
+
+	if (state->update_open) {
+		state->op->global->create_guid = state->_create_guid;
+		if (state->need_replay_cache) {
+			state->op->flags |= SMBXSRV_OPEN_NEED_REPLAY_CACHE;
+		}
+
+		status = smbXsrv_open_update(state->op);
+		DEBUG(10, ("smb2_create_send: smbXsrv_open_update "
+			   "returned %s\n",
+			   nt_errstr(status)));
+		if (!NT_STATUS_IS_OK(status)) {
+			tevent_req_nterror(req, status);
+			tevent_req_post(req, state->ev);
+			return;
+		}
+	}
+
+	if (state->dhnq != NULL && state->op->global->durable) {
+		uint8_t p[8] = { 0, };
+		DATA_BLOB blob = data_blob_const(p, sizeof(p));
+
+		status = smb2_create_blob_add(state->out_context_blobs,
+					      state->out_context_blobs,
+					      SMB2_CREATE_TAG_DHNQ,
+					      blob);
+		if (!NT_STATUS_IS_OK(status)) {
+			tevent_req_nterror(req, status);
+			tevent_req_post(req, state->ev);
+			return;
+		}
+	}
+
+	if (state->dh2q != NULL && state->op->global->durable &&
+	    /*
+	     * For replay operations, we return the dh2q blob
+	     * in the case of oplocks not based on the state of
+	     * the open, but on whether it could have been granted
+	     * for the request data. In the case of leases instead,
+	     * the state of the open is used...
+	     */
+	    (!state->replay_operation ||
+	     state->in_oplock_level == SMB2_OPLOCK_LEVEL_BATCH ||
+	     state->in_oplock_level == SMB2_OPLOCK_LEVEL_LEASE))
+	{
+		uint8_t p[8] = { 0, };
+		DATA_BLOB blob = data_blob_const(p, sizeof(p));
+		uint32_t durable_v2_response_flags = 0;
+
+		SIVAL(p, 0, state->op->global->durable_timeout_msec);
+		SIVAL(p, 4, durable_v2_response_flags);
+
+		status = smb2_create_blob_add(state->out_context_blobs,
+					      state->out_context_blobs,
+					      SMB2_CREATE_TAG_DH2Q,
+					      blob);
+		if (!NT_STATUS_IS_OK(status)) {
+			tevent_req_nterror(req, status);
+			tevent_req_post(req, state->ev);
+			return;
+		}
+	}
+
+	if (state->qfid != NULL) {
+		uint8_t p[32];
+		uint64_t file_index = get_FileIndex(state->result->conn,
+						    &state->result->fsp_name->st);
+		DATA_BLOB blob = data_blob_const(p, sizeof(p));
+
+		ZERO_STRUCT(p);
+
+		/* From conversations with Microsoft engineers at
+		   the MS plugfest. The first 8 bytes are the "volume index"
+		   == inode, the second 8 bytes are the "volume id",
+		   == dev. This will be updated in the SMB2 doc. */
+		SBVAL(p, 0, file_index);
+		SIVAL(p, 8, state->result->fsp_name->st.st_ex_dev);/* FileIndexHigh */
+
+		status = smb2_create_blob_add(state->out_context_blobs,
+					      state->out_context_blobs,
+					      SMB2_CREATE_TAG_QFID,
+					      blob);
+		if (!NT_STATUS_IS_OK(status)) {
+			tevent_req_nterror(req, status);
+			tevent_req_post(req, state->ev);
+			return;
+		}
+	}
+
+	if ((state->rqls != NULL) && (state->result->oplock_type == LEASE_OPLOCK)) {
+		uint8_t buf[52];
+		struct smb2_lease lease;
+		size_t lease_len;
+
+		lease = state->result->lease->lease;
+
+		lease_len = sizeof(buf);
+		if (lease.lease_version == 1) {
+			lease_len = 32;
+		}
+
+		if (!smb2_lease_push(&lease, buf, lease_len)) {
+			tevent_req_nterror(
+				req, NT_STATUS_INTERNAL_ERROR);
+			tevent_req_post(req, state->ev);
+			return;
+		}
+
+		status = smb2_create_blob_add(
+			state, state->out_context_blobs,
+			SMB2_CREATE_TAG_RQLS,
+			data_blob_const(buf, lease_len));
+		if (!NT_STATUS_IS_OK(status)) {
+			tevent_req_nterror(req, status);
+			tevent_req_post(req, state->ev);
+			return;
 		}
 	}
 
