@@ -55,18 +55,7 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
             "objectclass": "organizationalUnit"})
         (self.default_hwm, self.default_utdv) = self._get_highest_hwm_utdv(self.test_ldb_dc)
 
-        self.rxd_dn_list = []
-        self.rxd_links = []
-        self.rxd_guids = []
-
-        # 100 is the minimum max_objects that Microsoft seems to honour
-        # (the max honoured is 400ish), so we use that in these tests
-        self.max_objects = 100
-        self.last_ctr = None
-
-        # store whether we used GET_TGT/GET_ANC flags in the requests
-        self.used_get_tgt = False
-        self.used_get_anc = False
+        self.init_test_state()
 
     def tearDown(self):
         super(DrsReplicaSyncIntegrityTestCase, self).tearDown()
@@ -76,6 +65,20 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
         except ldb.LdbError as (enum, string):
             if enum == ldb.ERR_NO_SUCH_OBJECT:
                 pass
+
+    def init_test_state(self):
+        self.rxd_dn_list = []
+        self.rxd_links = []
+        self.rxd_guids = []
+        self.last_ctr = None
+
+        # 100 is the minimum max_objects that Microsoft seems to honour
+        # (the max honoured is 400ish), so we use that in these tests
+        self.max_objects = 100
+
+        # store whether we used GET_TGT/GET_ANC flags in the requests
+        self.used_get_tgt = False
+        self.used_get_anc = False
 
     def add_object(self, dn):
         """Adds an OU object"""
@@ -833,4 +836,105 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
 
     def test_repl_integrity_tgt_obj_deletion(self):
         self._repl_integrity_obj_deletion(delete_link_source=False)
+
+    def restore_deleted_object(self, guid, new_dn):
+        """Re-animates a deleted object"""
+
+        res = self.test_ldb_dc.search(base="<GUID=%s>" % self._GUID_string(guid), attrs=["isDeleted"],
+                                  controls=['show_deleted:1'], scope=ldb.SCOPE_BASE)
+        if len(res) != 1:
+            return
+
+        msg = ldb.Message()
+        msg.dn = res[0].dn
+        msg["isDeleted"] = ldb.MessageElement([], ldb.FLAG_MOD_DELETE, "isDeleted")
+        msg["distinguishedName"] = ldb.MessageElement([new_dn], ldb.FLAG_MOD_REPLACE, "distinguishedName")
+        self.test_ldb_dc.modify(msg, ["show_deleted:1"])
+
+    def sync_DCs(self):
+        # make sure DC1 has all the changes we've made to DC2
+        self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2)
+
+    def get_object_guid(self, dn):
+        res = self.test_ldb_dc.search(base=dn, attrs=["objectGUID"], scope=ldb.SCOPE_BASE)
+        return res[0]['objectGUID'][0]
+
+    def test_repl_integrity_obj_reanimation(self):
+        """
+        Checks receiving links for a re-animated object doesn't lose links.
+        We test this against the peer DC to make sure it doesn't drop links.
+        """
+
+        # This test is a little different in that we're particularly interested
+        # in exercising the replmd client code on the second DC.
+        # First, make sure the peer DC has the base OU, then store its HWM
+        self.sync_DCs()
+        (peer_drs, peer_drs_handle) = self._ds_bind(self.dnsname_dc1)
+        (peer_default_hwm, peer_default_utdv) = self._get_highest_hwm_utdv(self.ldb_dc1)
+
+        # create the link source/target objects
+        la_sources = self.create_object_range(0, 100, prefix="la_src")
+        la_targets = self.create_object_range(0, 100, prefix="la_tgt")
+
+        # store the target object's GUIDs (we need to know these to reanimate them)
+        target_guids = []
+
+        for dn in la_targets:
+            target_guids.append(self.get_object_guid(dn))
+
+        # delete the link target
+        for x in range(0, 100):
+            self.ldb_dc2.delete(la_targets[x])
+
+        # sync the DCs, then disable replication. We want the peer DC to get
+        # all the following changes in a single replication cycle
+        self.sync_DCs()
+        self._disable_all_repl(self.dnsname_dc2)
+
+        # restore the target objects for the linked attributes again
+        for x in range(0, 100):
+            self.restore_deleted_object(target_guids[x], la_targets[x])
+
+        # add the links
+        for x in range(0, 100):
+            self.modify_object(la_sources[x], "managedBy", la_targets[x])
+
+        # create some additional filler objects
+        filler = self.create_object_range(0, 100, prefix="filler")
+
+        # modify the targets so they now come last
+        for x in range(0, 100):
+            self.modify_object(la_targets[x], "displayName", "OU-%d" % x)
+
+        # the objects should now be sent in the following order:
+        # [la sources + links][filler][la targets]
+        all_objects = la_sources + la_targets + filler
+        expected_links = la_sources
+
+        # Enable replication again and make sure the 2 DCs are back in sync
+        self._enable_all_repl(self.dnsname_dc2)
+        self.sync_DCs()
+
+        # get the replication data from the test DC - we should get 100 links
+        while not self.replication_complete():
+            self.repl_get_next()
+
+        # Check we get all the objects and links we're expecting
+        self.assert_expected_data(all_objects)
+        self.assert_expected_links(expected_links)
+
+        # switch over the DC state info so we now talk to the peer DC
+        self.init_test_state()
+        self.default_hwm = peer_default_hwm
+        self.default_utdv = peer_default_utdv
+        self.drs = peer_drs
+        self.drs_handle = peer_drs_handle
+        self.set_test_ldb_dc(self.ldb_dc1)
+
+        # check that we get the same information from the 2nd DC
+        while not self.replication_complete():
+            self.repl_get_next()
+
+        self.assert_expected_data(all_objects)
+        self.assert_expected_links(expected_links)
 
