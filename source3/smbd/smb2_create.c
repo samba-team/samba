@@ -470,6 +470,122 @@ struct smbd_smb2_create_state {
 	struct smb2_create_blobs *out_context_blobs;
 };
 
+static NTSTATUS smbd_smb2_create_fetch_create_ctx(
+	struct tevent_req *req,
+	struct smb2_create_blobs *in_context_blobs)
+{
+	struct smbd_smb2_create_state *state = tevent_req_data(
+		req, struct smbd_smb2_create_state);
+
+	state->dhnq = smb2_create_blob_find(in_context_blobs,
+					    SMB2_CREATE_TAG_DHNQ);
+	state->dhnc = smb2_create_blob_find(in_context_blobs,
+					    SMB2_CREATE_TAG_DHNC);
+	state->dh2q = smb2_create_blob_find(in_context_blobs,
+					    SMB2_CREATE_TAG_DH2Q);
+	state->dh2c = smb2_create_blob_find(in_context_blobs,
+					    SMB2_CREATE_TAG_DH2C);
+	if (state->smb2req->xconn->smb2.server.capabilities & SMB2_CAP_LEASING) {
+		state->rqls = smb2_create_blob_find(in_context_blobs,
+						    SMB2_CREATE_TAG_RQLS);
+	}
+
+	if (((state->dhnc != NULL) && (state->dh2c != NULL)) ||
+	    ((state->dhnc != NULL) && (state->dh2q != NULL)) ||
+	    ((state->dh2c != NULL) && (state->dhnq != NULL)) ||
+	    ((state->dh2q != NULL) && (state->dh2c != NULL)))
+	{
+		/* not both are allowed at the same time */
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (state->dhnc != NULL) {
+		uint32_t num_blobs_allowed;
+
+		if (state->dhnc->data.length != 16) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		/*
+		 * According to MS-SMB2: 3.3.5.9.7, "Handling the
+		 * SMB2_CREATE_DURABLE_HANDLE_RECONNECT Create Context",
+		 * we should ignore an additional dhnq blob, but fail
+		 * the request (with status OBJECT_NAME_NOT_FOUND) if
+		 * any other extra create blob has been provided.
+		 *
+		 * (Note that the cases of an additional dh2q or dh2c blob
+		 *  which require a different error code, have been treated
+		 *  above.)
+		 */
+
+		if (state->dhnq != NULL) {
+			num_blobs_allowed = 2;
+		} else {
+			num_blobs_allowed = 1;
+		}
+
+		if (state->rqls != NULL) {
+			num_blobs_allowed += 1;
+		}
+
+		if (in_context_blobs->num_blobs != num_blobs_allowed) {
+			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		}
+	}
+
+	if (state->dh2c!= NULL) {
+		uint32_t num_blobs_allowed;
+
+		if (state->dh2c->data.length != 36) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		/*
+		 * According to MS-SMB2: 3.3.5.9.12, "Handling the
+		 * SMB2_CREATE_DURABLE_HANDLE_RECONNECT_V2 Create Context",
+		 * we should fail the request with status
+		 * OBJECT_NAME_NOT_FOUND if any other create blob has been
+		 * provided.
+		 *
+		 * (Note that the cases of an additional dhnq, dhnc or dh2q
+		 *  blob which require a different error code, have been
+		 *  treated above.)
+		 */
+
+		num_blobs_allowed = 1;
+
+		if (state->rqls != NULL) {
+			num_blobs_allowed += 1;
+		}
+
+		if (in_context_blobs->num_blobs != num_blobs_allowed) {
+			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		}
+	}
+
+	state->exta = smb2_create_blob_find(in_context_blobs,
+					    SMB2_CREATE_TAG_EXTA);
+	state->mxac = smb2_create_blob_find(in_context_blobs,
+					    SMB2_CREATE_TAG_MXAC);
+	state->secd = smb2_create_blob_find(in_context_blobs,
+					    SMB2_CREATE_TAG_SECD);
+	state->alsi = smb2_create_blob_find(in_context_blobs,
+					    SMB2_CREATE_TAG_ALSI);
+	state->twrp = smb2_create_blob_find(in_context_blobs,
+					    SMB2_CREATE_TAG_TWRP);
+	state->qfid = smb2_create_blob_find(in_context_blobs,
+					    SMB2_CREATE_TAG_QFID);
+	if (state->smb2req->xconn->protocol >= PROTOCOL_SMB3_02) {
+		/*
+		 * This was introduced with SMB3_02
+		 */
+		state->svhdx = smb2_create_blob_find(
+			in_context_blobs, SVHDX_OPEN_DEVICE_CONTEXT);
+	}
+
+	return NT_STATUS_OK;
+}
+
 static void smbd_smb2_create_finish(struct tevent_req *req);
 
 static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
@@ -566,95 +682,9 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, state->ev);
 	}
 
-	state->dhnq = smb2_create_blob_find(&in_context_blobs,
-					    SMB2_CREATE_TAG_DHNQ);
-	state->dhnc = smb2_create_blob_find(&in_context_blobs,
-					    SMB2_CREATE_TAG_DHNC);
-	state->dh2q = smb2_create_blob_find(&in_context_blobs,
-					    SMB2_CREATE_TAG_DH2Q);
-	state->dh2c = smb2_create_blob_find(&in_context_blobs,
-					    SMB2_CREATE_TAG_DH2C);
-	if (smb2req->xconn->smb2.server.capabilities & SMB2_CAP_LEASING) {
-		state->rqls = smb2_create_blob_find(&in_context_blobs,
-						    SMB2_CREATE_TAG_RQLS);
-	}
-
-	if (((state->dhnc != NULL) && (state->dh2c != NULL)) ||
-	    ((state->dhnc != NULL) && (state->dh2q != NULL)) ||
-	    ((state->dh2c != NULL) && (state->dhnq != NULL)) ||
-	    ((state->dh2q != NULL) && (state->dh2c != NULL)))
-	{
-		/* not both are allowed at the same time */
-		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+	status = smbd_smb2_create_fetch_create_ctx(req, &in_context_blobs);
+	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, state->ev);
-	}
-
-	if (state->dhnc != NULL) {
-		uint32_t num_blobs_allowed;
-
-		if (state->dhnc->data.length != 16) {
-			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
-			return tevent_req_post(req, state->ev);
-		}
-
-		/*
-		 * According to MS-SMB2: 3.3.5.9.7, "Handling the
-		 * SMB2_CREATE_DURABLE_HANDLE_RECONNECT Create Context",
-		 * we should ignore an additional dhnq blob, but fail
-		 * the request (with status OBJECT_NAME_NOT_FOUND) if
-		 * any other extra create blob has been provided.
-		 *
-		 * (Note that the cases of an additional dh2q or dh2c blob
-		 *  which require a different error code, have been treated
-		 *  above.)
-		 */
-
-		if (state->dhnq != NULL) {
-			num_blobs_allowed = 2;
-		} else {
-			num_blobs_allowed = 1;
-		}
-
-		if (state->rqls != NULL) {
-			num_blobs_allowed += 1;
-		}
-
-		if (in_context_blobs.num_blobs != num_blobs_allowed) {
-			tevent_req_nterror(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
-			return tevent_req_post(req, state->ev);
-		}
-	}
-
-	if (state->dh2c!= NULL) {
-		uint32_t num_blobs_allowed;
-
-		if (state->dh2c->data.length != 36) {
-			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
-			return tevent_req_post(req, state->ev);
-		}
-
-		/*
-		 * According to MS-SMB2: 3.3.5.9.12, "Handling the
-		 * SMB2_CREATE_DURABLE_HANDLE_RECONNECT_V2 Create Context",
-		 * we should fail the request with status
-		 * OBJECT_NAME_NOT_FOUND if any other create blob has been
-		 * provided.
-		 *
-		 * (Note that the cases of an additional dhnq, dhnc or dh2q
-		 *  blob which require a different error code, have been
-		 *  treated above.)
-		 */
-
-		num_blobs_allowed = 1;
-
-		if (state->rqls != NULL) {
-			num_blobs_allowed += 1;
-		}
-
-		if (in_context_blobs.num_blobs != num_blobs_allowed) {
-			tevent_req_nterror(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
-			return tevent_req_post(req, state->ev);
-		}
 	}
 
 	if (IS_IPC(smb1req->conn)) {
@@ -705,27 +735,6 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 
 		smbd_smb2_create_finish(req);
 		return req;
-	}
-
-	state->exta = smb2_create_blob_find(&in_context_blobs,
-					    SMB2_CREATE_TAG_EXTA);
-	state->mxac = smb2_create_blob_find(&in_context_blobs,
-					    SMB2_CREATE_TAG_MXAC);
-	state->secd = smb2_create_blob_find(&in_context_blobs,
-					    SMB2_CREATE_TAG_SECD);
-	state->alsi = smb2_create_blob_find(&in_context_blobs,
-					    SMB2_CREATE_TAG_ALSI);
-	state->twrp = smb2_create_blob_find(&in_context_blobs,
-					    SMB2_CREATE_TAG_TWRP);
-	state->qfid = smb2_create_blob_find(&in_context_blobs,
-					    SMB2_CREATE_TAG_QFID);
-
-	if (smb2req->xconn->protocol >= PROTOCOL_SMB3_02) {
-		/*
-		 * This was introduced with SMB3_02
-		 */
-		state->svhdx = smb2_create_blob_find(&in_context_blobs,
-						     SVHDX_OPEN_DEVICE_CONTEXT);
 	}
 
 	if (state->exta != NULL) {
