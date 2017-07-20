@@ -43,7 +43,7 @@
 #define HTTP_NOTIMPLEMENTED	501	/* not implemented */
 #define HTTP_SERVUNAVAIL	503	/* server is not available */
 
-#define HTTP_MAX_HEADER_SIZE 	UINT_MAX
+#define HTTP_MAX_HEADER_SIZE	0x1FFFF
 
 struct cli_credentials;
 struct loadparm_ctx;
