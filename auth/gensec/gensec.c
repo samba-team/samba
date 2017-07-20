@@ -454,6 +454,9 @@ _PUBLIC_ struct tevent_req *gensec_update_send(TALLOC_CTX *mem_ctx,
 	}
 	tevent_req_set_callback(subreq, gensec_update_done, req);
 
+	DBG_DEBUG("%s[%p]: subreq: %p\n", state->ops->name,
+		  state->gensec_security, subreq);
+
 	return req;
 }
 
@@ -484,15 +487,35 @@ static void gensec_update_done(struct tevent_req *subreq)
 		tevent_req_data(req,
 		struct gensec_update_state);
 	NTSTATUS status;
+	const char *debug_subreq = NULL;
+
+	if (CHECK_DEBUGLVL(DBGLVL_DEBUG)) {
+		/*
+		 * We need to call tevent_req_print()
+		 * before calling the _recv function,
+		 * before tevent_req_received() was called.
+		 * in order to print the pointer value of
+		 * the subreq state.
+		 */
+		debug_subreq = tevent_req_print(state, subreq);
+	}
 
 	status = state->ops->update_recv(subreq, state, &state->out);
 	TALLOC_FREE(subreq);
 	state->status = status;
-	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		tevent_req_done(req);
+	if (GENSEC_UPDATE_IS_NTERROR(status)) {
+		DBG_INFO("%s[%p]: %s%s%s\n", state->ops->name,
+			 state->gensec_security, nt_errstr(status),
+			 debug_subreq ? " " : "",
+			 debug_subreq ? debug_subreq : "");
+		tevent_req_nterror(req, status);
 		return;
 	}
-	if (tevent_req_nterror(req, status)) {
+	DBG_DEBUG("%s[%p]: %s %s\n", state->ops->name,
+		  state->gensec_security, nt_errstr(status),
+		  debug_subreq);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		tevent_req_done(req);
 		return;
 	}
 
