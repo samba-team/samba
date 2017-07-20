@@ -2182,7 +2182,8 @@ static const struct gensec_security_ops gensec_spnego_security_ops = {
 	.expire_time      = gensec_child_expire_time,
 	.final_auth_type  = gensec_child_final_auth_type,
 	.enabled          = true,
-	.priority         = GENSEC_SPNEGO
+	.priority         = GENSEC_SPNEGO,
+	.glue             = true,
 };
 
 _PUBLIC_ NTSTATUS gensec_spnego_init(TALLOC_CTX *ctx)

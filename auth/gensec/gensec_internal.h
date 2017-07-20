@@ -86,6 +86,7 @@ struct gensec_security_ops {
 	bool enabled;
 	bool kerberos;
 	enum gensec_priority priority;
+	bool glue;
 };
 
 struct gensec_security_ops_wrapper {
