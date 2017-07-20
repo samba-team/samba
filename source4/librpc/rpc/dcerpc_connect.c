@@ -422,6 +422,7 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_ip_tcp_recv(struct composite_context *
 struct pipe_http_state {
 	struct dcerpc_pipe_connect io;
 	const char *localaddr;
+	const char *target_hostname;
 	const char *rpc_server;
 	uint32_t rpc_server_port;
 	char *rpc_proxy;
@@ -457,6 +458,8 @@ static void continue_pipe_open_ncacn_http(struct tevent_req *subreq)
 	s->io.conn->transport.stream = stream;
 	s->io.conn->transport.write_queue = queue;
 	s->io.conn->transport.pending_reads = 0;
+	s->io.conn->server_name = strupper_talloc(s->io.conn,
+						  s->target_hostname);
 
 	composite_done(c);
 }
@@ -493,6 +496,8 @@ static struct composite_context* dcerpc_pipe_connect_ncacn_http_send(
 							"localaddress");
 	/* RPC server and port (the endpoint) */
 	s->rpc_server = dcerpc_binding_get_string_option(io->binding, "host");
+	s->target_hostname = dcerpc_binding_get_string_option(io->binding,
+							      "target_hostname");
 	endpoint = dcerpc_binding_get_string_option(io->binding, "endpoint");
 	if (endpoint == NULL) {
 		composite_error(c, NT_STATUS_INVALID_PARAMETER_MIX);
