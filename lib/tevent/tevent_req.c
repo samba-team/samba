@@ -36,7 +36,7 @@ char *tevent_req_default_print(struct tevent_req *req, TALLOC_CTX *mem_ctx)
 			       req->internal.state,
 			       (unsigned long long)req->internal.error,
 			       (unsigned long long)req->internal.error,
-			       talloc_get_name(req->data),
+			       req->internal.private_type,
 			       req->data,
 			       req->internal.timer,
 			       req->internal.finish_location
