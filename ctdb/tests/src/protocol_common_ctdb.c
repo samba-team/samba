@@ -1787,6 +1787,140 @@ void verify_ctdb_reply_control(struct ctdb_reply_control *c,
 	}
 }
 
+void fill_ctdb_message_data(TALLOC_CTX *mem_ctx, union ctdb_message_data *md,
+			    uint64_t srvid)
+{
+	switch (srvid) {
+	case CTDB_SRVID_RECONFIGURE:
+	case CTDB_SRVID_GETLOG:
+	case CTDB_SRVID_CLEARLOG:
+	case CTDB_SRVID_RELOAD_NODES:
+		break;
+
+	case CTDB_SRVID_ELECTION:
+		md->election = talloc(mem_ctx, struct ctdb_election_message);
+		assert(md->election != NULL);
+		fill_ctdb_election_message(md->election, md->election);
+		break;
+
+	case CTDB_SRVID_RELEASE_IP:
+	case CTDB_SRVID_TAKE_IP:
+		fill_ctdb_string(mem_ctx, &md->ipaddr);
+		break;
+
+	case CTDB_SRVID_SET_NODE_FLAGS:
+	case CTDB_SRVID_PUSH_NODE_FLAGS:
+		md->flag_change = talloc(mem_ctx,
+					 struct ctdb_node_flag_change);
+		assert(md->flag_change != NULL);
+		fill_ctdb_node_flag_change(md->flag_change, md->flag_change);
+		break;
+
+	case CTDB_SRVID_RECD_UPDATE_IP:
+		md->pubip = talloc(mem_ctx, struct ctdb_public_ip);
+		assert(md->pubip != NULL);
+		fill_ctdb_public_ip(md->pubip, md->pubip);
+		break;
+
+	case CTDB_SRVID_VACUUM_FETCH:
+		md->recbuf = talloc(mem_ctx, struct ctdb_rec_buffer);
+		assert(md->recbuf != NULL);
+		fill_ctdb_rec_buffer(md->recbuf, md->recbuf);
+		break;
+
+	case CTDB_SRVID_DETACH_DATABASE:
+		md->db_id = rand32();
+		break;
+
+	case CTDB_SRVID_MEM_DUMP:
+	case CTDB_SRVID_TAKEOVER_RUN:
+		md->msg = talloc(mem_ctx, struct ctdb_srvid_message);
+		assert(md->msg != NULL);
+		fill_ctdb_srvid_message(md->msg, md->msg);
+		break;
+
+	case CTDB_SRVID_BANNING:
+	case CTDB_SRVID_REBALANCE_NODE:
+		md->pnn = rand32();
+		break;
+
+	case CTDB_SRVID_DISABLE_TAKEOVER_RUNS:
+	case CTDB_SRVID_DISABLE_RECOVERIES:
+		md->disable = talloc(mem_ctx, struct ctdb_disable_message);
+		assert(md->disable != NULL);
+		fill_ctdb_disable_message(md->disable, md->disable);
+		break;
+
+	case CTDB_SRVID_DISABLE_IP_CHECK:
+		md->timeout = rand32();
+		break;
+
+	default:
+		abort();
+	}
+}
+
+void verify_ctdb_message_data(union ctdb_message_data *md,
+			      union ctdb_message_data *md2, uint64_t srvid)
+{
+	switch (srvid) {
+	case CTDB_SRVID_RECONFIGURE:
+	case CTDB_SRVID_GETLOG:
+	case CTDB_SRVID_CLEARLOG:
+	case CTDB_SRVID_RELOAD_NODES:
+		break;
+
+	case CTDB_SRVID_ELECTION:
+		verify_ctdb_election_message(md->election, md2->election);
+		break;
+
+	case CTDB_SRVID_RELEASE_IP:
+	case CTDB_SRVID_TAKE_IP:
+		verify_ctdb_string(&md->ipaddr, &md2->ipaddr);
+		break;
+
+	case CTDB_SRVID_SET_NODE_FLAGS:
+	case CTDB_SRVID_PUSH_NODE_FLAGS:
+		verify_ctdb_node_flag_change(md->flag_change,
+					     md2->flag_change);
+		break;
+
+	case CTDB_SRVID_RECD_UPDATE_IP:
+		verify_ctdb_public_ip(md->pubip, md2->pubip);
+		break;
+
+	case CTDB_SRVID_VACUUM_FETCH:
+		verify_ctdb_rec_buffer(md->recbuf, md2->recbuf);
+		break;
+
+	case CTDB_SRVID_DETACH_DATABASE:
+		assert(md->db_id == md2->db_id);
+		break;
+
+	case CTDB_SRVID_MEM_DUMP:
+	case CTDB_SRVID_TAKEOVER_RUN:
+		verify_ctdb_srvid_message(md->msg, md2->msg);
+		break;
+
+	case CTDB_SRVID_BANNING:
+	case CTDB_SRVID_REBALANCE_NODE:
+		assert(md->pnn == md2->pnn);
+		break;
+
+	case CTDB_SRVID_DISABLE_TAKEOVER_RUNS:
+	case CTDB_SRVID_DISABLE_RECOVERIES:
+		verify_ctdb_disable_message(md->disable, md2->disable);
+		break;
+
+	case CTDB_SRVID_DISABLE_IP_CHECK:
+		assert(md->timeout == md2->timeout);
+		break;
+
+	default:
+		abort();
+	}
+}
+
 void fill_ctdb_req_message_data(TALLOC_CTX *mem_ctx,
 				struct ctdb_req_message_data *c)
 {

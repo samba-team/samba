@@ -299,6 +299,8 @@ PROTOCOL_CTDB5_TEST(struct ctdb_req_control, ctdb_req_control,
 PROTOCOL_CTDB6_TEST(struct ctdb_reply_control, ctdb_reply_control,
 			CTDB_REPLY_CONTROL);
 
+PROTOCOL_CTDB3_TEST(union ctdb_message_data, ctdb_message_data);
+
 static void test_ctdb_req_message_data(void)
 {
 	TALLOC_CTX *mem_ctx;
@@ -341,6 +343,28 @@ static void test_ctdb_req_message_data(void)
 int main(int argc, char *argv[])
 {
 	uint32_t opcode;
+	uint64_t test_srvid[] = {
+		CTDB_SRVID_BANNING,
+		CTDB_SRVID_ELECTION,
+		CTDB_SRVID_RECONFIGURE,
+		CTDB_SRVID_RELEASE_IP,
+		CTDB_SRVID_TAKE_IP,
+		CTDB_SRVID_SET_NODE_FLAGS,
+		CTDB_SRVID_RECD_UPDATE_IP,
+		CTDB_SRVID_VACUUM_FETCH,
+		CTDB_SRVID_DETACH_DATABASE,
+		CTDB_SRVID_MEM_DUMP,
+		CTDB_SRVID_GETLOG,
+		CTDB_SRVID_CLEARLOG,
+		CTDB_SRVID_PUSH_NODE_FLAGS,
+		CTDB_SRVID_RELOAD_NODES,
+		CTDB_SRVID_TAKEOVER_RUN,
+		CTDB_SRVID_REBALANCE_NODE,
+		CTDB_SRVID_DISABLE_TAKEOVER_RUNS,
+		CTDB_SRVID_DISABLE_RECOVERIES,
+		CTDB_SRVID_DISABLE_IP_CHECK,
+	};
+	int i;
 
 	if (argc == 2) {
 		int seed = atoi(argv[1]);
@@ -369,6 +393,9 @@ int main(int argc, char *argv[])
 		TEST_FUNC(ctdb_reply_control)(opcode);
 	}
 
+	for (i=0; i<ARRAY_SIZE(test_srvid); i++) {
+		TEST_FUNC(ctdb_message_data)(test_srvid[i]);
+	}
 	test_ctdb_req_message_data();
 
 	return 0;

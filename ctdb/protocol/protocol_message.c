@@ -79,6 +79,12 @@ static size_t ctdb_message_data_len(union ctdb_message_data *mdata,
 		len = ctdb_srvid_message_len(mdata->msg);
 		break;
 
+	case CTDB_SRVID_GETLOG:
+		break;
+
+	case CTDB_SRVID_CLEARLOG:
+		break;
+
 	case CTDB_SRVID_PUSH_NODE_FLAGS:
 		len = ctdb_node_flag_change_len(mdata->flag_change);
 		break;
@@ -115,9 +121,10 @@ static size_t ctdb_message_data_len(union ctdb_message_data *mdata,
 }
 
 static void ctdb_message_data_push(union ctdb_message_data *mdata,
-				   uint64_t srvid, uint8_t *buf)
+				   uint64_t srvid, uint8_t *buf,
+				   size_t *npush)
 {
-	size_t np;
+	size_t np = 0;
 
 	switch (srvid) {
 	case CTDB_SRVID_BANNING:
@@ -159,6 +166,12 @@ static void ctdb_message_data_push(union ctdb_message_data *mdata,
 		ctdb_srvid_message_push(mdata->msg, buf, &np);
 		break;
 
+	case CTDB_SRVID_GETLOG:
+		break;
+
+	case CTDB_SRVID_CLEARLOG:
+		break;
+
 	case CTDB_SRVID_PUSH_NODE_FLAGS:
 		ctdb_node_flag_change_push(mdata->flag_change, buf, &np);
 		break;
@@ -190,14 +203,17 @@ static void ctdb_message_data_push(union ctdb_message_data *mdata,
 		ctdb_tdb_data_push(&mdata->data, buf, &np);
 		break;
 	}
+
+	*npush = np;
 }
 
 static int ctdb_message_data_pull(uint8_t *buf, size_t buflen,
 				  uint64_t srvid, TALLOC_CTX *mem_ctx,
-				  union ctdb_message_data *mdata)
+				  union ctdb_message_data *mdata,
+				  size_t *npull)
 {
 	int ret = 0;
-	size_t np;
+	size_t np = 0;
 
 	switch (srvid) {
 	case CTDB_SRVID_BANNING:
@@ -246,6 +262,12 @@ static int ctdb_message_data_pull(uint8_t *buf, size_t buflen,
 					      &mdata->msg, &np);
 		break;
 
+	case CTDB_SRVID_GETLOG:
+		break;
+
+	case CTDB_SRVID_CLEARLOG:
+		break;
+
 	case CTDB_SRVID_PUSH_NODE_FLAGS:
 		ret = ctdb_node_flag_change_pull(buf, buflen, mem_ctx,
 						 &mdata->flag_change, &np);
@@ -283,7 +305,12 @@ static int ctdb_message_data_pull(uint8_t *buf, size_t buflen,
 		break;
 	}
 
-	return ret;
+	if (ret != 0) {
+		return ret;
+	}
+
+	*npull = np;
+	return 0;
 }
 
 size_t ctdb_req_message_len(struct ctdb_req_header *h,
@@ -312,7 +339,8 @@ int ctdb_req_message_push(struct ctdb_req_header *h,
 
 	wire->srvid = message->srvid;
 	wire->datalen = ctdb_message_data_len(&message->data, message->srvid);
-	ctdb_message_data_push(&message->data, message->srvid, wire->data);
+	ctdb_message_data_push(&message->data, message->srvid, wire->data,
+			       &np);
 
 	return 0;
 }
@@ -351,7 +379,7 @@ int ctdb_req_message_pull(uint8_t *buf, size_t buflen,
 
 	c->srvid = wire->srvid;
 	ret = ctdb_message_data_pull(wire->data, wire->datalen, wire->srvid,
-				     mem_ctx, &c->data);
+				     mem_ctx, &c->data, &np);
 	return ret;
 }
 
