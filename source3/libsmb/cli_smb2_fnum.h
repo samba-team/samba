@@ -107,6 +107,11 @@ NTSTATUS cli_smb2_qpathinfo_streams(struct cli_state *cli,
 			TALLOC_CTX *mem_ctx,
 			unsigned int *pnum_streams,
 			struct stream_struct **pstreams);
+NTSTATUS cli_smb2_setpathinfo(struct cli_state *cli,
+			const char *name,
+			uint8_t in_info_type,
+			uint8_t in_file_info_class,
+			const DATA_BLOB *p_in_data);
 NTSTATUS cli_smb2_setatr(struct cli_state *cli,
 			const char *fname,
 			uint16_t attr,
