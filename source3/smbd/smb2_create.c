@@ -428,6 +428,7 @@ static NTSTATUS smbd_smb2_create_durable_lease_check(struct smb_request *smb1req
 }
 
 struct smbd_smb2_create_state {
+	struct tevent_context *ev;
 	struct smbd_smb2_request *smb2req;
 	struct smb_request *smb1req;
 	bool open_was_deferred;
@@ -488,12 +489,13 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 	*state = (struct smbd_smb2_create_state) {
+		.ev = ev,
 		.smb2req = smb2req,
 	};
 
 	smb1req = smbd_smb2_fake_smb_request(smb2req);
 	if (tevent_req_nomem(smb1req, req)) {
-		return tevent_req_post(req, ev);
+		return tevent_req_post(req, state->ev);
 	}
 	state->smb1req = smb1req;
 
@@ -518,7 +520,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 
 	state->out_context_blobs = talloc_zero(state, struct smb2_create_blobs);
 	if (tevent_req_nomem(state->out_context_blobs, req)) {
-		return tevent_req_post(req, ev);
+		return tevent_req_post(req, state->ev);
 	}
 
 	dhnq = smb2_create_blob_find(&in_context_blobs,
@@ -539,7 +541,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 	{
 		/* not both are allowed at the same time */
 		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		return tevent_req_post(req, ev);
+		return tevent_req_post(req, state->ev);
 	}
 
 	if (dhnc) {
@@ -547,7 +549,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 
 		if (dhnc->data.length != 16) {
 			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
-			return tevent_req_post(req, ev);
+			return tevent_req_post(req, state->ev);
 		}
 
 		/*
@@ -574,7 +576,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 
 		if (in_context_blobs.num_blobs != num_blobs_allowed) {
 			tevent_req_nterror(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
-			return tevent_req_post(req, ev);
+			return tevent_req_post(req, state->ev);
 		}
 	}
 
@@ -583,7 +585,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 
 		if (dh2c->data.length != 36) {
 			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
-			return tevent_req_post(req, ev);
+			return tevent_req_post(req, state->ev);
 		}
 
 		/*
@@ -606,7 +608,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 
 		if (in_context_blobs.num_blobs != num_blobs_allowed) {
 			tevent_req_nterror(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
-			return tevent_req_post(req, ev);
+			return tevent_req_post(req, state->ev);
 		}
 	}
 
@@ -616,31 +618,31 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		if (dhnc || dh2c) {
 			/* durable handles are not supported on IPC$ */
 			tevent_req_nterror(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
-			return tevent_req_post(req, ev);
+			return tevent_req_post(req, state->ev);
 		}
 
 		if (!lp_nt_pipe_support()) {
 			tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
-			return tevent_req_post(req, ev);
+			return tevent_req_post(req, state->ev);
 		}
 
 		status = open_np_file(smb1req, pipe_name, &result);
 		if (!NT_STATUS_IS_OK(status)) {
 			tevent_req_nterror(req, status);
-			return tevent_req_post(req, ev);
+			return tevent_req_post(req, state->ev);
 		}
 		info = FILE_WAS_OPENED;
 	} else if (CAN_PRINT(smb1req->conn)) {
 		if (dhnc || dh2c) {
 			/* durable handles are not supported on printers */
 			tevent_req_nterror(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
-			return tevent_req_post(req, ev);
+			return tevent_req_post(req, state->ev);
 		}
 
 		status = file_new(smb1req, smb1req->conn, &result);
 		if(!NT_STATUS_IS_OK(status)) {
 			tevent_req_nterror(req, status);
-			return tevent_req_post(req, ev);
+			return tevent_req_post(req, state->ev);
 		}
 
 		status = print_spool_open(result, in_name,
@@ -648,7 +650,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		if (!NT_STATUS_IS_OK(status)) {
 			file_free(smb1req, result);
 			tevent_req_nterror(req, status);
-			return tevent_req_post(req, ev);
+			return tevent_req_post(req, state->ev);
 		}
 		info = FILE_WAS_CREATED;
 	} else {
@@ -703,14 +705,14 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 
 		fname = talloc_strdup(state, in_name);
 		if (tevent_req_nomem(fname, req)) {
-			return tevent_req_post(req, ev);
+			return tevent_req_post(req, state->ev);
 		}
 
 		if (exta) {
 			if (!lp_ea_support(SNUM(smb2req->tcon->compat))) {
 				tevent_req_nterror(req,
 					NT_STATUS_EAS_NOT_SUPPORTED);
-				return tevent_req_post(req, ev);
+				return tevent_req_post(req, state->ev);
 			}
 
 			ea_list = read_nttrans_ea_list(mem_ctx,
@@ -718,7 +720,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			if (!ea_list) {
 				DEBUG(10,("smbd_smb2_create_send: read_ea_name_list failed.\n"));
 				tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
-				return tevent_req_post(req, ev);
+				return tevent_req_post(req, state->ev);
 			}
 
 			/*
@@ -729,7 +731,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			 */
 			if (ea_list_has_invalid_name(ea_list)) {
 				tevent_req_nterror(req, STATUS_INVALID_EA_NAME);
-				return tevent_req_post(req, ev);
+				return tevent_req_post(req, state->ev);
 			}
 		}
 
@@ -740,7 +742,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 				max_access_time = BVAL(mxac->data.data, 0);
 			} else {
 				tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
-				return tevent_req_post(req, ev);
+				return tevent_req_post(req, state->ev);
 			}
 		}
 
@@ -749,7 +751,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 
 			sec_desc = talloc_zero(state, struct security_descriptor);
 			if (tevent_req_nomem(sec_desc, req)) {
-				return tevent_req_post(req, ev);
+				return tevent_req_post(req, state->ev);
 			}
 
 			ndr_err = ndr_pull_struct_blob(&secd->data,
@@ -759,19 +761,19 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 				DEBUG(2,("ndr_pull_security_descriptor failed: %s\n",
 					 ndr_errstr(ndr_err)));
 				tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
-				return tevent_req_post(req, ev);
+				return tevent_req_post(req, state->ev);
 			}
 		}
 
 		if (dhnq) {
 			if (dhnq->data.length != 16) {
 				tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
-				return tevent_req_post(req, ev);
+				return tevent_req_post(req, state->ev);
 			}
 
 			if (dh2q) {
 				tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
-				return tevent_req_post(req, ev);
+				return tevent_req_post(req, state->ev);
 			}
 
 			/*
@@ -796,12 +798,12 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 
 			if (dh2q->data.length != 32) {
 				tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
-				return tevent_req_post(req, ev);
+				return tevent_req_post(req, state->ev);
 			}
 
 			if (dhnq) {
 				tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
-				return tevent_req_post(req, ev);
+				return tevent_req_post(req, state->ev);
 			}
 
 			durable_v2_timeout = IVAL(p, 0);
@@ -810,7 +812,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			status = GUID_from_ndr_blob(&create_guid_blob,
 						    &_create_guid);
 			if (tevent_req_nterror(req, status)) {
-				return tevent_req_post(req, ev);
+				return tevent_req_post(req, state->ev);
 			}
 			create_guid = &_create_guid;
 			/*
@@ -858,7 +860,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			} else if (tevent_req_nterror(req, status)) {
 				DBG_WARNING("smb2srv_open_lookup_replay_cache "
 					    "failed: %s\n", nt_errstr(status));
-				return tevent_req_post(req, ev);
+				return tevent_req_post(req, state->ev);
 			} else if (!replay_operation) {
 				/*
 				 * If a create without replay operation flag
@@ -867,7 +869,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 				 */
 				status = NT_STATUS_DUPLICATE_OBJECTID;
 				(void)tevent_req_nterror(req, status);
-				return tevent_req_post(req, ev);
+				return tevent_req_post(req, state->ev);
 			}
 		}
 
@@ -887,7 +889,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			status = GUID_from_ndr_blob(&create_guid_blob,
 						    &_create_guid);
 			if (tevent_req_nterror(req, status)) {
-				return tevent_req_post(req, ev);
+				return tevent_req_post(req, state->ev);
 			}
 			create_guid = &_create_guid;
 
@@ -897,7 +899,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		if (alsi) {
 			if (alsi->data.length != 8) {
 				tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
-				return tevent_req_post(req, ev);
+				return tevent_req_post(req, state->ev);
 			}
 			allocation_size = BVAL(alsi->data.data, 0);
 		}
@@ -909,7 +911,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 
 			if (twrp->data.length != 8) {
 				tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
-				return tevent_req_post(req, ev);
+				return tevent_req_post(req, state->ev);
 			}
 
 			nttime = BVAL(twrp->data.data, 0);
@@ -927,7 +929,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 					tm->tm_min,
 					tm->tm_sec);
 			if (tevent_req_nomem(fname, req)) {
-				return tevent_req_post(req, ev);
+				return tevent_req_post(req, state->ev);
 			}
 			/*
 			 * Tell filename_create_ucf_flags() this
@@ -939,7 +941,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		if (qfid) {
 			if (qfid->data.length != 0) {
 				tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
-				return tevent_req_post(req, ev);
+				return tevent_req_post(req, state->ev);
 			}
 		}
 
@@ -949,7 +951,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			if (lease_len == -1) {
 				tevent_req_nterror(
 					req, NT_STATUS_INVALID_PARAMETER);
-				return tevent_req_post(req, ev);
+				return tevent_req_post(req, state->ev);
 			}
 			lease_ptr = &lease;
 
@@ -985,14 +987,14 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 				{
 					status = NT_STATUS_ACCESS_DENIED;
 					(void)tevent_req_nterror(req, status);
-					return tevent_req_post(req, ev);
+					return tevent_req_post(req, state->ev);
 				}
 				if (!smb2_lease_key_equal(&lease.lease_key,
 							  &op_ls->lease_key))
 				{
 					status = NT_STATUS_ACCESS_DENIED;
 					(void)tevent_req_nterror(req, status);
-					return tevent_req_post(req, ev);
+					return tevent_req_post(req, state->ev);
 				}
 			}
 		}
@@ -1029,7 +1031,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 					  "smb2srv_open_recreate failed: %s\n",
 					  nt_errstr(status)));
 				tevent_req_nterror(req, status);
-				return tevent_req_post(req, ev);
+				return tevent_req_post(req, state->ev);
 			}
 
 			DEBUG(10, ("smb2_create_send: %s to recreate the "
@@ -1040,7 +1042,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 				talloc_free(op);
 				tevent_req_nterror(req,
 					NT_STATUS_OBJECT_NAME_NOT_FOUND);
-				return tevent_req_post(req, ev);
+				return tevent_req_post(req, state->ev);
 			}
 
 			status = SMB_VFS_DURABLE_RECONNECT(smb1req->conn,
@@ -1060,7 +1062,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 					  nt_errstr(return_status)));
 
 				tevent_req_nterror(req, return_status);
-				return tevent_req_post(req, ev);
+				return tevent_req_post(req, state->ev);
 			}
 
 			DEBUG(10, ("result->oplock_type=%u, lease_ptr==%p\n",
@@ -1071,7 +1073,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			if (!NT_STATUS_IS_OK(status)) {
 				close_file(smb1req, result, SHUTDOWN_CLOSE);
 				tevent_req_nterror(req, status);
-				return tevent_req_post(req, ev);
+				return tevent_req_post(req, state->ev);
 			}
 
 			data_blob_free(&op->global->backend_cookie);
@@ -1108,7 +1110,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 				status = check_path_syntax(fname);
 				if (!NT_STATUS_IS_OK(status)) {
 					tevent_req_nterror(req, status);
-					return tevent_req_post(req, ev);
+					return tevent_req_post(req, state->ev);
 				}
 			}
 
@@ -1121,7 +1123,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 						  &smb_fname);
 			if (!NT_STATUS_IS_OK(status)) {
 				tevent_req_nterror(req, status);
-				return tevent_req_post(req, ev);
+				return tevent_req_post(req, state->ev);
 			}
 
 			/*
@@ -1139,7 +1141,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 					SMB2_IMPERSONATION_DELEGATE) {
 				tevent_req_nterror(req,
 					NT_STATUS_BAD_IMPERSONATION_LEVEL);
-				return tevent_req_post(req, ev);
+				return tevent_req_post(req, state->ev);
 			}
 
 			/*
@@ -1155,7 +1157,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			if (in_name[0] == '\\' || in_name[0] == '/') {
 				tevent_req_nterror(req,
 					NT_STATUS_INVALID_PARAMETER);
-				return tevent_req_post(req, ev);
+				return tevent_req_post(req, state->ev);
 			}
 
 			status = SMB_VFS_CREATE_FILE(smb1req->conn,
@@ -1183,7 +1185,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 					return req;
 				}
 				tevent_req_nterror(req, status);
-				return tevent_req_post(req, ev);
+				return tevent_req_post(req, state->ev);
 			}
 			op = result->op;
 		}
@@ -1221,7 +1223,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 				    blob);
 				if (!NT_STATUS_IS_OK(status)) {
 					tevent_req_nterror(req, status);
-					return tevent_req_post(req, ev);
+					return tevent_req_post(req, state->ev);
 				}
 			}
 		}
@@ -1256,7 +1258,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 				   nt_errstr(status)));
 			if (!NT_STATUS_IS_OK(status)) {
 				tevent_req_nterror(req, status);
-				return tevent_req_post(req, ev);
+				return tevent_req_post(req, state->ev);
 			}
 		}
 
@@ -1270,7 +1272,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 						      blob);
 			if (!NT_STATUS_IS_OK(status)) {
 				tevent_req_nterror(req, status);
-				return tevent_req_post(req, ev);
+				return tevent_req_post(req, state->ev);
 			}
 		}
 
@@ -1299,7 +1301,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 						      blob);
 			if (!NT_STATUS_IS_OK(status)) {
 				tevent_req_nterror(req, status);
-				return tevent_req_post(req, ev);
+				return tevent_req_post(req, state->ev);
 			}
 		}
 
@@ -1324,7 +1326,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 						      blob);
 			if (!NT_STATUS_IS_OK(status)) {
 				tevent_req_nterror(req, status);
-				return tevent_req_post(req, ev);
+				return tevent_req_post(req, state->ev);
 			}
 		}
 
@@ -1341,7 +1343,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			if (!smb2_lease_push(&lease, buf, lease_len)) {
 				tevent_req_nterror(
 					req, NT_STATUS_INTERNAL_ERROR);
-				return tevent_req_post(req, ev);
+				return tevent_req_post(req, state->ev);
 			}
 
 			status = smb2_create_blob_add(
@@ -1350,7 +1352,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 				data_blob_const(buf, lease_len));
 			if (!NT_STATUS_IS_OK(status)) {
 				tevent_req_nterror(req, status);
-				return tevent_req_post(req, ev);
+				return tevent_req_post(req, state->ev);
 			}
 		}
 	}
@@ -1403,7 +1405,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		  fsp_str_dbg(result), fsp_fnum_dbg(result)));
 
 	tevent_req_done(req);
-	return tevent_req_post(req, ev);
+	return tevent_req_post(req, state->ev);
 }
 
 static NTSTATUS smbd_smb2_create_recv(struct tevent_req *req,
