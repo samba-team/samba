@@ -1401,8 +1401,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 	state->out_file_id_persistent = result->op->global->open_persistent_id;
 	state->out_file_id_volatile = result->op->global->open_volatile_id;
 
-	DEBUG(10,("smbd_smb2_create_send: %s - %s\n",
-		  fsp_str_dbg(result), fsp_fnum_dbg(result)));
+	DBG_DEBUG("%s - %s\n", fsp_str_dbg(result), fsp_fnum_dbg(result));
 
 	tevent_req_done(req);
 	return tevent_req_post(req, state->ev);
