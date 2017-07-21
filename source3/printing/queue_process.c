@@ -144,7 +144,7 @@ static void reload_pcap_change_notify(struct tevent_context *ev,
 	 */
 	delete_and_reload_printers_full(ev, msg_ctx);
 
-	message_send_all(msg_ctx, MSG_PRINTER_PCAP, NULL, 0, NULL);
+	message_send_all(msg_ctx, MSG_PRINTER_PCAP, NULL, 0);
 }
 
 struct bq_state {

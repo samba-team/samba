@@ -371,15 +371,11 @@ static int traverse_fn(struct db_record *rec, const struct server_id *id,
  * applications that use it. When we need efficient broadcast we can add
  * it.
  *
- * @param n_sent Set to the number of messages sent.  This should be
- * equal to the number of processes, but be careful for races.
- *
  * @retval True for success.
  **/
 bool message_send_all(struct messaging_context *msg_ctx,
 		      int msg_type,
-		      const void *buf, size_t len,
-		      int *n_sent)
+		      const void *buf, size_t len)
 {
 	struct msg_all msg_all;
 
@@ -406,7 +402,5 @@ bool message_send_all(struct messaging_context *msg_ctx,
 	msg_all.msg_ctx = msg_ctx;
 
 	serverid_traverse(traverse_fn, &msg_all);
-	if (n_sent)
-		*n_sent = msg_all.n_sent;
 	return true;
 }

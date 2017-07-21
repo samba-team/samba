@@ -651,8 +651,7 @@ NTSTATUS pdb_delete_user(TALLOC_CTX *mem_ctx, struct samu *sam_acct)
 	message_send_all(server_messaging_context(),
 			 ID_CACHE_DELETE,
 			 msg_data,
-			 strlen(msg_data) + 1,
-			 NULL);
+			 strlen(msg_data) + 1);
 
 	TALLOC_FREE(msg_data);
 	return status;

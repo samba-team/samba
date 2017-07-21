@@ -62,16 +62,13 @@ static bool send_message(struct messaging_context *msg_ctx,
 			 const void *buf, int len)
 {
 	bool ret;
-	int n_sent = 0;
 
 	if (procid_to_pid(&pid) != 0)
 		return NT_STATUS_IS_OK(
 			messaging_send_buf(msg_ctx, pid, msg_type,
 					   (const uint8_t *)buf, len));
 
-	ret = message_send_all(msg_ctx, msg_type, buf, len, &n_sent);
-	DEBUG(10,("smbcontrol/send_message: broadcast message to "
-		  "%d processes\n", n_sent));
+	ret = message_send_all(msg_ctx, msg_type, buf, len);
 
 	return ret;
 }

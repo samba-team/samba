@@ -357,8 +357,7 @@ void smbd_send_stat_cache_delete_message(struct messaging_context *msg_ctx,
 	message_send_all(msg_ctx,
 			MSG_SMB_STAT_CACHE_DELETE,
 			name,
-			strlen(name)+1,
-			NULL);
+			strlen(name)+1);
 #endif
 }
 

@@ -75,7 +75,6 @@ struct messaging_context;
 
 bool message_send_all(struct messaging_context *msg_ctx,
 		      int msg_type,
-		      const void *buf, size_t len,
-		      int *n_sent);
+		      const void *buf, size_t len);
 
 #endif

@@ -1909,7 +1909,7 @@ WERROR _srvsvc_NetShareSetInfo(struct pipes_struct *p,
 		if (ret == 0) {
 			/* Tell everyone we updated smb.conf. */
 			message_send_all(p->msg_ctx, MSG_SMB_CONF_UPDATED,
-					 NULL, 0, NULL);
+					 NULL, 0);
 		}
 
 		if ( is_disk_op )
@@ -2111,8 +2111,7 @@ WERROR _srvsvc_NetShareAdd(struct pipes_struct *p,
 	ret = smbrun(command, NULL, NULL);
 	if (ret == 0) {
 		/* Tell everyone we updated smb.conf. */
-		message_send_all(p->msg_ctx, MSG_SMB_CONF_UPDATED, NULL, 0,
-				 NULL);
+		message_send_all(p->msg_ctx, MSG_SMB_CONF_UPDATED, NULL, 0);
 	}
 
 	if ( is_disk_op )
@@ -2219,8 +2218,7 @@ WERROR _srvsvc_NetShareDel(struct pipes_struct *p,
 	ret = smbrun(command, NULL, NULL);
 	if (ret == 0) {
 		/* Tell everyone we updated smb.conf. */
-		message_send_all(p->msg_ctx, MSG_SMB_CONF_UPDATED, NULL, 0,
-				 NULL);
+		message_send_all(p->msg_ctx, MSG_SMB_CONF_UPDATED, NULL, 0);
 	}
 
 	if ( is_disk_op )

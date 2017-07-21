@@ -1235,7 +1235,7 @@ uint32_t _fss_ExposeShadowCopySet(struct pipes_struct *p,
 	}
 	unbecome_root();
 
-	message_send_all(p->msg_ctx, MSG_SMB_CONF_UPDATED, NULL, 0, NULL);
+	message_send_all(p->msg_ctx, MSG_SMB_CONF_UPDATED, NULL, 0);
 	for (sc = sc_set->scs; sc; sc = sc->next) {
 		struct fss_sc_smap *sm;
 		for (sm = sc->smaps; sm; sm = sm->next)
@@ -1577,7 +1577,7 @@ static NTSTATUS sc_smap_unexpose(struct messaging_context *msg_ctx,
 			ret = NT_STATUS_UNSUCCESSFUL;
 			goto err_cancel;
 		}
-		message_send_all(msg_ctx, MSG_SMB_CONF_UPDATED, NULL, 0, NULL);
+		message_send_all(msg_ctx, MSG_SMB_CONF_UPDATED, NULL, 0);
 	} else {
 		ret = NT_STATUS_OK;
 		goto err_cancel;
@@ -1661,7 +1661,7 @@ uint32_t _fss_DeleteShareMapping(struct pipes_struct *p,
 	}
 
 	message_send_all(p->msg_ctx, MSG_SMB_FORCE_TDIS, sc_smap->sc_share_name,
-			 strlen(sc_smap->sc_share_name) + 1, NULL);
+			 strlen(sc_smap->sc_share_name) + 1);
 
 	if (sc->smaps_count > 1) {
 		/* do not delete the underlying snapshot - still in use */
