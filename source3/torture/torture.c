@@ -3158,6 +3158,29 @@ static bool run_browsetest(int dummy)
 
 }
 
+static bool check_attributes(struct cli_state *cli,
+				const char *fname,
+				uint16_t expected_attrs)
+{
+	uint16_t attrs = 0;
+	NTSTATUS status = cli_getatr(cli,
+				fname,
+				&attrs,
+				NULL,
+				NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_getatr failed with %s\n",
+			nt_errstr(status));
+		return false;
+	}
+	if (attrs != expected_attrs) {
+		printf("Attributes incorrect 0x%x, should be 0x%x\n",
+			(unsigned int)attrs,
+			(unsigned int)expected_attrs);
+		return false;
+	}
+	return true;
+}
 
 /*
   This checks how the getatr calls works
@@ -3217,6 +3240,120 @@ static bool run_attrtest(int dummy)
 	}
 
 	cli_unlink(cli, fname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+
+	/* Check cli_setpathinfo_basic() */
+	/* Re-create the file. */
+	status = cli_openx(cli, fname,
+			O_RDWR | O_CREAT | O_TRUNC, DENY_NONE, &fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed to recreate %s (%s)\n",
+			fname, nt_errstr(status));
+		correct = false;
+	}
+	cli_close(cli, fnum);
+
+	status = cli_setpathinfo_basic(cli,
+					fname,
+					0, /* create */
+					0, /* access */
+					0, /* write */
+					0, /* change */
+					FILE_ATTRIBUTE_SYSTEM |
+					FILE_ATTRIBUTE_HIDDEN |
+					FILE_ATTRIBUTE_READONLY);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_setpathinfo_basic failed with %s\n",
+			nt_errstr(status));
+		correct = false;
+	}
+
+	/* Check attributes are correct. */
+	correct = check_attributes(cli,
+			fname,
+			FILE_ATTRIBUTE_SYSTEM |
+			FILE_ATTRIBUTE_HIDDEN |
+			FILE_ATTRIBUTE_READONLY);
+	if (correct == false) {
+		goto out;
+	}
+
+	/* Setting to FILE_ATTRIBUTE_NORMAL should be ignored. */
+	status = cli_setpathinfo_basic(cli,
+					fname,
+					0, /* create */
+					0, /* access */
+					0, /* write */
+					0, /* change */
+					FILE_ATTRIBUTE_NORMAL);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_setpathinfo_basic failed with %s\n",
+			nt_errstr(status));
+		correct = false;
+	}
+
+	/* Check attributes are correct. */
+	correct = check_attributes(cli,
+			fname,
+			FILE_ATTRIBUTE_SYSTEM |
+			FILE_ATTRIBUTE_HIDDEN |
+			FILE_ATTRIBUTE_READONLY);
+	if (correct == false) {
+		goto out;
+	}
+
+	/* Setting to (uint16_t)-1 should also be ignored. */
+	status = cli_setpathinfo_basic(cli,
+					fname,
+					0, /* create */
+					0, /* access */
+					0, /* write */
+					0, /* change */
+					(uint16_t)-1);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_setpathinfo_basic failed with %s\n",
+			nt_errstr(status));
+		correct = false;
+	}
+
+	/* Check attributes are correct. */
+	correct = check_attributes(cli,
+			fname,
+			FILE_ATTRIBUTE_SYSTEM |
+			FILE_ATTRIBUTE_HIDDEN |
+			FILE_ATTRIBUTE_READONLY);
+	if (correct == false) {
+		goto out;
+	}
+
+	/* Setting to 0 should clear them all. */
+	status = cli_setpathinfo_basic(cli,
+					fname,
+					0, /* create */
+					0, /* access */
+					0, /* write */
+					0, /* change */
+					0);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_setpathinfo_basic failed with %s\n",
+			nt_errstr(status));
+		correct = false;
+	}
+
+	/* Check attributes are correct. */
+	correct = check_attributes(cli,
+			fname,
+			FILE_ATTRIBUTE_NORMAL);
+	if (correct == false) {
+		goto out;
+	}
+
+  out:
+
+	cli_unlink(cli,
+		fname,
+		FILE_ATTRIBUTE_SYSTEM |
+		FILE_ATTRIBUTE_HIDDEN|
+		FILE_ATTRIBUTE_READONLY);
 
 	if (!torture_close_connection(cli)) {
 		correct = False;
