@@ -624,6 +624,8 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 	struct smbd_smb2_create_state *state = NULL;
 	NTSTATUS status;
 	struct smb_request *smb1req = NULL;
+	struct smb_filename *smb_fname = NULL;
+	uint32_t ucf_flags;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smbd_smb2_create_state);
@@ -757,6 +759,15 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		state->result->op = state->op;
 		state->update_open = false;
 		state->info = state->op->create_action;
+
+		smbd_smb2_create_after_exec(req);
+		if (!tevent_req_is_in_progress(req)) {
+			return req;
+		}
+
+		smbd_smb2_create_finish(req);
+		return req;
+
 	} else if (state->do_durable_reconnect) {
 		DATA_BLOB new_cookie = data_blob_null;
 		NTTIME now = timeval_to_nttime(&smb2req->request_time);
@@ -830,109 +841,114 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		state->update_open = true;
 
 		state->info = FILE_WAS_OPENED;
-	} else {
-		struct smb_filename *smb_fname = NULL;
-		uint32_t ucf_flags;
 
-		if (state->requested_oplock_level == SMB2_OPLOCK_LEVEL_LEASE) {
-			if (state->lease_ptr == NULL) {
-				state->requested_oplock_level = SMB2_OPLOCK_LEVEL_NONE;
-			}
-		} else {
-			state->lease_ptr = NULL;
+		smbd_smb2_create_after_exec(req);
+		if (!tevent_req_is_in_progress(req)) {
+			return req;
 		}
 
-		/*
-		 * For a DFS path the function parse_dfs_path()
-		 * will do the path processing.
-		 */
-
-		if (!(smb1req->flags2 & FLAGS2_DFS_PATHNAMES)) {
-			/* convert '\\' into '/' */
-			status = check_path_syntax(state->fname);
-			if (!NT_STATUS_IS_OK(status)) {
-				tevent_req_nterror(req, status);
-				return tevent_req_post(req, state->ev);
-			}
-		}
-
-		ucf_flags = filename_create_ucf_flags(
-			smb1req, state->in_create_disposition);
-		status = filename_convert(req,
-					  smb1req->conn,
-					  state->fname,
-					  ucf_flags,
-					  NULL, /* ppath_contains_wcards */
-					  &smb_fname);
-		if (!NT_STATUS_IS_OK(status)) {
-			tevent_req_nterror(req, status);
-			return tevent_req_post(req, state->ev);
-		}
-
-		/*
-		 * MS-SMB2: 2.2.13 SMB2 CREATE Request
-		 * ImpersonationLevel ... MUST contain one of the
-		 * following values. The server MUST validate this
-		 * field, but otherwise ignore it.
-		 *
-		 * NB. The source4/torture/smb2/durable_open.c test
-		 * shows this check is only done on real opens, not
-		 * on durable handle-reopens.
-		 */
-
-		if (in_impersonation_level >
-		    SMB2_IMPERSONATION_DELEGATE) {
-			tevent_req_nterror(req,
-					   NT_STATUS_BAD_IMPERSONATION_LEVEL);
-			return tevent_req_post(req, state->ev);
-		}
-
-		/*
-		 * We know we're going to do a local open, so now
-		 * we must be protocol strict. JRA.
-		 *
-		 * MS-SMB2: 3.3.5.9 - Receiving an SMB2 CREATE Request
-		 * If the file name length is greater than zero and the
-		 * first character is a path separator character, the
-		 * server MUST fail the request with
-		 * STATUS_INVALID_PARAMETER.
-		 */
-		if (in_name[0] == '\\' || in_name[0] == '/') {
-			tevent_req_nterror(req,
-					   NT_STATUS_INVALID_PARAMETER);
-			return tevent_req_post(req, state->ev);
-		}
-
-		status = SMB_VFS_CREATE_FILE(smb1req->conn,
-					     smb1req,
-					     0, /* root_dir_fid */
-					     smb_fname,
-					     in_desired_access,
-					     in_share_access,
-					     state->in_create_disposition,
-					     in_create_options,
-					     in_file_attributes,
-					     map_smb2_oplock_levels_to_samba(
-						     state->requested_oplock_level),
-					     state->lease_ptr,
-					     state->allocation_size,
-					     0, /* private_flags */
-					     state->sec_desc,
-					     state->ea_list,
-					     &state->result,
-					     &state->info,
-					     &in_context_blobs,
-					     state->out_context_blobs);
-		if (!NT_STATUS_IS_OK(status)) {
-			if (open_was_deferred(smb1req->xconn, smb1req->mid)) {
-				SMBPROFILE_IOBYTES_ASYNC_SET_IDLE(smb2req->profile);
-				return req;
-			}
-			tevent_req_nterror(req, status);
-			return tevent_req_post(req, state->ev);
-		}
-		state->op = state->result->op;
+		smbd_smb2_create_finish(req);
+		return req;
 	}
+
+	if (state->requested_oplock_level == SMB2_OPLOCK_LEVEL_LEASE) {
+		if (state->lease_ptr == NULL) {
+			state->requested_oplock_level = SMB2_OPLOCK_LEVEL_NONE;
+		}
+	} else {
+		state->lease_ptr = NULL;
+	}
+
+	/*
+	 * For a DFS path the function parse_dfs_path()
+	 * will do the path processing.
+	 */
+
+	if (!(smb1req->flags2 & FLAGS2_DFS_PATHNAMES)) {
+		/* convert '\\' into '/' */
+		status = check_path_syntax(state->fname);
+		if (!NT_STATUS_IS_OK(status)) {
+			tevent_req_nterror(req, status);
+			return tevent_req_post(req, state->ev);
+		}
+	}
+
+	ucf_flags = filename_create_ucf_flags(
+		smb1req, state->in_create_disposition);
+	status = filename_convert(req,
+				  smb1req->conn,
+				  state->fname,
+				  ucf_flags,
+				  NULL, /* ppath_contains_wcards */
+				  &smb_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return tevent_req_post(req, state->ev);
+	}
+
+	/*
+	 * MS-SMB2: 2.2.13 SMB2 CREATE Request
+	 * ImpersonationLevel ... MUST contain one of the
+	 * following values. The server MUST validate this
+	 * field, but otherwise ignore it.
+	 *
+	 * NB. The source4/torture/smb2/durable_open.c test
+	 * shows this check is only done on real opens, not
+	 * on durable handle-reopens.
+	 */
+
+	if (in_impersonation_level >
+	    SMB2_IMPERSONATION_DELEGATE) {
+		tevent_req_nterror(req,
+				   NT_STATUS_BAD_IMPERSONATION_LEVEL);
+		return tevent_req_post(req, state->ev);
+	}
+
+	/*
+	 * We know we're going to do a local open, so now
+	 * we must be protocol strict. JRA.
+	 *
+	 * MS-SMB2: 3.3.5.9 - Receiving an SMB2 CREATE Request
+	 * If the file name length is greater than zero and the
+	 * first character is a path separator character, the
+	 * server MUST fail the request with
+	 * STATUS_INVALID_PARAMETER.
+	 */
+	if (in_name[0] == '\\' || in_name[0] == '/') {
+		tevent_req_nterror(req,
+				   NT_STATUS_INVALID_PARAMETER);
+		return tevent_req_post(req, state->ev);
+	}
+
+	status = SMB_VFS_CREATE_FILE(smb1req->conn,
+				     smb1req,
+				     0, /* root_dir_fid */
+				     smb_fname,
+				     in_desired_access,
+				     in_share_access,
+				     state->in_create_disposition,
+				     in_create_options,
+				     in_file_attributes,
+				     map_smb2_oplock_levels_to_samba(
+					     state->requested_oplock_level),
+				     state->lease_ptr,
+				     state->allocation_size,
+				     0, /* private_flags */
+				     state->sec_desc,
+				     state->ea_list,
+				     &state->result,
+				     &state->info,
+				     &in_context_blobs,
+				     state->out_context_blobs);
+	if (!NT_STATUS_IS_OK(status)) {
+		if (open_was_deferred(smb1req->xconn, smb1req->mid)) {
+			SMBPROFILE_IOBYTES_ASYNC_SET_IDLE(smb2req->profile);
+			return req;
+		}
+		tevent_req_nterror(req, status);
+		return tevent_req_post(req, state->ev);
+	}
+	state->op = state->result->op;
 
 	smbd_smb2_create_after_exec(req);
 	if (!tevent_req_is_in_progress(req)) {
