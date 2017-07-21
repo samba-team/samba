@@ -179,6 +179,15 @@ static NTSTATUS wb_irpc_SamLogon(struct irpc_message *msg,
 		account_name = "";
 	}
 
+	if (IS_DC && target_domain_name[0] == '\0') {
+		const char *p = NULL;
+
+		p = strchr_m(account_name, '@');
+		if (p != NULL) {
+			target_domain_name = p + 1;
+		}
+	}
+
 	domain = find_auth_domain(0, target_domain_name);
 	if (domain == NULL) {
 		DBG_INFO("target_domain[%s] for account[%s] not known\n",
