@@ -732,8 +732,17 @@ NTSTATUS cli_setpathinfo_basic(struct cli_state *cli, const char *fname,
         put_long_date(p, change_time);
         p += 8;
 
-        /* Add attributes */
-        SIVAL(p, 0, mode);
+	if (mode == (uint16_t)-1 || mode == FILE_ATTRIBUTE_NORMAL) {
+		/* No change. */
+		mode = 0;
+	} else if (mode == 0) {
+		/* Clear all existing attributes. */
+		mode = FILE_ATTRIBUTE_NORMAL;
+	}
+
+	/* Add attributes */
+	SIVAL(p, 0, mode);
+
         p += 4;
 
         /* Add padding */
