@@ -187,21 +187,13 @@ struct dreplsrv_service {
 		struct tevent_timer *te;
 	} periodic;
 
-	/* some stuff for running only the pendings ops */
+	/* some stuff for running only the incoming notify ops */
 	struct {
-		/*
-		 * the interval between notify runs
+		/* 
+		 * here we have a reference to the immidicate event that was
+		 * scheduled from the DsReplicaSync
 		 */
-		uint32_t interval;
-
-		/*
-		 * the timestamp for the next event,
-		 * this is the timstamp passed to event_add_timed()
-		 */
-		struct timeval next_event;
-
-		/* here we have a reference to the timed event the schedules the notifies */
-		struct tevent_timer *te;
+		struct tevent_immediate *im;
 	} pending;
 
 	/* some stuff for notify processing */

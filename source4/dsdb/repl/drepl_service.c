@@ -339,7 +339,7 @@ static NTSTATUS drepl_replica_sync(struct irpc_message *msg,
 	 * schedule replication event to force
 	 * replication as soon as possible
 	 */
-	dreplsrv_pendingops_schedule(service, 0);
+	dreplsrv_pendingops_schedule_pull_now(service);
 
 done:
 	return NT_STATUS_OK;
@@ -483,6 +483,15 @@ static void dreplsrv_task_init(struct task_server *task)
 		task_server_terminate(task, talloc_asprintf(task,
 				      "dreplsrv: Failed to periodic schedule: %s\n",
 							    win_errstr(status)), true);
+		return;
+	}
+
+	service->pending.im = tevent_create_immediate(service);
+	if (service->pending.im == NULL) {
+		task_server_terminate(task,
+				      "dreplsrv: Failed to create immediate "
+				      "task for future DsReplicaSync\n",
+				      true);
 		return;
 	}
 
