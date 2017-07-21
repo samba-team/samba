@@ -29,6 +29,7 @@
 #include "libsmb/clirap.h"
 #include "trans2.h"
 #include "../libcli/smb/smbXcli_base.h"
+#include "cli_smb2_fnum.h"
 
 #define PIPE_LANMAN   "\\PIPE\\LANMAN"
 
@@ -750,6 +751,19 @@ NTSTATUS cli_setpathinfo_basic(struct cli_state *cli, const char *fname,
         p += 4;
 
         data_len = PTR_DIFF(p, data);
+
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+		DATA_BLOB in_data = data_blob_const(data, data_len);
+		/*
+		 * Split out SMB2 here as we need to select
+		 * the correct info type and level.
+		 */
+		return cli_smb2_setpathinfo(cli,
+				fname,
+				1, /* SMB2_SETINFO_FILE */
+				SMB_FILE_BASIC_INFORMATION - 1000,
+				&in_data);
+	}
 
 	return cli_setpathinfo(cli, SMB_FILE_BASIC_INFORMATION, fname,
 			       (uint8_t *)data, data_len);

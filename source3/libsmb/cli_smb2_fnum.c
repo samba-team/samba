@@ -1646,6 +1646,75 @@ NTSTATUS cli_smb2_qpathinfo_streams(struct cli_state *cli,
 }
 
 /***************************************************************
+ Wrapper that allows SMB2 to set SMB_FILE_BASIC_INFORMATION on
+ a pathname.
+ Synchronous only.
+***************************************************************/
+
+NTSTATUS cli_smb2_setpathinfo(struct cli_state *cli,
+			const char *name,
+			uint8_t in_info_type,
+			uint8_t in_file_info_class,
+			const DATA_BLOB *p_in_data)
+{
+	NTSTATUS status;
+	uint16_t fnum = 0xffff;
+	struct smb2_hnd *ph = NULL;
+	TALLOC_CTX *frame = talloc_stackframe();
+
+	if (smbXcli_conn_has_async_calls(cli->conn)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+
+	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+
+	status = get_fnum_from_path(cli,
+				name,
+				FILE_WRITE_ATTRIBUTES,
+				&fnum);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+
+	status = map_fnum_to_smb2_handle(cli,
+					fnum,
+					&ph);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+
+	status = smb2cli_set_info(cli->conn,
+				cli->timeout,
+				cli->smb2.session,
+				cli->smb2.tcon,
+				in_info_type,
+				in_file_info_class,
+				p_in_data, /* in_input_buffer */
+				0, /* in_additional_info */
+				ph->fid_persistent,
+				ph->fid_volatile);
+  fail:
+
+	if (fnum != 0xffff) {
+		cli_smb2_close_fnum(cli, fnum);
+	}
+
+	cli->raw_status = status;
+
+	TALLOC_FREE(frame);
+	return status;
+}
+
+
+/***************************************************************
  Wrapper that allows SMB2 to set pathname attributes.
  Synchronous only.
 ***************************************************************/
@@ -1751,6 +1820,7 @@ NTSTATUS cli_smb2_setatr(struct cli_state *cli,
 	TALLOC_FREE(frame);
 	return status;
 }
+
 
 /***************************************************************
  Wrapper that allows SMB2 to set file handle times.
