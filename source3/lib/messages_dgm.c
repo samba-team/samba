@@ -1614,6 +1614,52 @@ int messaging_dgm_wipe(void)
 	return 0;
 }
 
+int messaging_dgm_forall(int (*fn)(pid_t pid, void *private_data),
+			 void *private_data)
+{
+	struct messaging_dgm_context *ctx = global_dgm_context;
+	DIR *msgdir;
+	struct dirent *dp;
+
+	if (ctx == NULL) {
+		return ENOTCONN;
+	}
+
+	messaging_dgm_validate(ctx);
+
+	/*
+	 * We scan the socket directory and not the lock directory. Otherwise
+	 * we would race against messaging_dgm_lockfile_create's open(O_CREAT)
+	 * and fcntl(SETLK).
+	 */
+
+	msgdir = opendir(ctx->socket_dir.buf);
+	if (msgdir == NULL) {
+		return errno;
+	}
+
+	while ((dp = readdir(msgdir)) != NULL) {
+		unsigned long pid;
+		int ret;
+
+		pid = strtoul(dp->d_name, NULL, 10);
+		if (pid == 0) {
+			/*
+			 * . and .. and other malformed entries
+			 */
+			continue;
+		}
+
+		ret = fn(pid, private_data);
+		if (ret != 0) {
+			break;
+		}
+	}
+	closedir(msgdir);
+
+	return 0;
+}
+
 struct messaging_dgm_fde {
 	struct tevent_fd *fde;
 };
