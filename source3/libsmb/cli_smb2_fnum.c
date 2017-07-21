@@ -1580,41 +1580,8 @@ NTSTATUS cli_smb2_setatr(struct cli_state *cli,
 			uint16_t attr,
 			time_t mtime)
 {
-	NTSTATUS status;
-	uint16_t fnum = 0xffff;
-	struct smb2_hnd *ph = NULL;
 	uint8_t inbuf_store[40];
 	DATA_BLOB inbuf = data_blob_null;
-	TALLOC_CTX *frame = talloc_stackframe();
-
-	if (smbXcli_conn_has_async_calls(cli->conn)) {
-		/*
-		 * Can't use sync call while an async call is in flight
-		 */
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto fail;
-	}
-
-	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto fail;
-	}
-
-	status = get_fnum_from_path(cli,
-				name,
-				FILE_WRITE_ATTRIBUTES,
-				&fnum);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		goto fail;
-	}
-
-	status = map_fnum_to_smb2_handle(cli,
-					fnum,
-					&ph);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto fail;
-	}
 
 	/* setinfo on the handle with info_type SMB2_SETINFO_FILE (1),
 	   level 4 (SMB_FILE_BASIC_INFORMATION - 1000). */
@@ -1655,24 +1622,12 @@ NTSTATUS cli_smb2_setatr(struct cli_state *cli,
 	SBVAL(inbuf.data, 8, 0xFFFFFFFFFFFFFFFFLL);
 	SBVAL(inbuf.data, 24, 0xFFFFFFFFFFFFFFFFLL);
 
-	status = smb2cli_set_info(cli->conn,
-				cli->timeout,
-				cli->smb2.session,
-				cli->smb2.tcon,
+	return cli_smb2_setpathinfo(cli,
+				name,
 				1, /* in_info_type */
-				SMB_FILE_BASIC_INFORMATION - 1000, /* in_file_info_class */
-				&inbuf, /* in_input_buffer */
-				0, /* in_additional_info */
-				ph->fid_persistent,
-				ph->fid_volatile);
-  fail:
-
-	if (fnum != 0xffff) {
-		cli_smb2_close_fnum(cli, fnum);
-	}
-
-	TALLOC_FREE(frame);
-	return status;
+				/* in_file_info_class */
+				SMB_FILE_BASIC_INFORMATION - 1000,
+				&inbuf);
 }
 
 
