@@ -1085,19 +1085,19 @@ $envvarstr
 		my $cmd = $$_[2];
 		my $name = $$_[0];
 		my $envname = $$_[1];
-
+		my ($env_basename, $env_localpart) = split(/:/, $envname);
 		my $envvars = "SKIP";
 
 		if (@opt_include_env) {
 		    foreach my $env (@opt_include_env) {
-			if ($envname eq $env) {
+			if ($env_basename eq $env) {
 			    $envvars = setup_env($envname, $prefix);
 			}
 		    }
 		} elsif (@opt_exclude_env) {
 		    my $excluded = 0;
 		    foreach my $env (@opt_exclude_env) {
-			if ($envname eq $env) {
+			if ($env_basename eq $env) {
 			    $excluded = 1;
 			}
 		    }
