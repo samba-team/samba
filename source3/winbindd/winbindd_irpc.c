@@ -135,6 +135,7 @@ static NTSTATUS wb_irpc_SamLogon(struct irpc_message *msg,
 	struct winbindd_domain *domain;
 	struct netr_IdentityInfo *identity_info;
 	const char *target_domain_name = NULL;
+	const char *account_name = NULL;
 
 	switch (req->in.logon_level) {
 	case NetlogonInteractiveInformation:
@@ -169,9 +170,19 @@ static NTSTATUS wb_irpc_SamLogon(struct irpc_message *msg,
 	}
 
 	target_domain_name = identity_info->domain_name.string;
+	if (target_domain_name == NULL) {
+		target_domain_name = "";
+	}
+
+	account_name = identity_info->account_name.string;
+	if (account_name == NULL) {
+		account_name = "";
+	}
 
 	domain = find_auth_domain(0, target_domain_name);
 	if (domain == NULL) {
+		DBG_INFO("target_domain[%s] for account[%s] not known\n",
+			target_domain_name, account_name);
 		req->out.result = NT_STATUS_NO_SUCH_USER;
 		req->out.authoritative = 0;
 		return NT_STATUS_OK;
