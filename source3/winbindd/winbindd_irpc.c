@@ -133,11 +133,42 @@ static NTSTATUS wb_irpc_SamLogon(struct irpc_message *msg,
 				 struct winbind_SamLogon *req)
 {
 	struct winbindd_domain *domain;
-	const char *target_domain_name;
-	if (req->in.logon.network == NULL) {
+	struct netr_IdentityInfo *identity_info;
+	const char *target_domain_name = NULL;
+
+	switch (req->in.logon_level) {
+	case NetlogonInteractiveInformation:
+	case NetlogonServiceInformation:
+	case NetlogonInteractiveTransitiveInformation:
+	case NetlogonServiceTransitiveInformation:
+		if (req->in.logon.password == NULL) {
+			return NT_STATUS_REQUEST_NOT_ACCEPTED;
+		}
+		identity_info = &req->in.logon.password->identity_info;
+		break;
+
+	case NetlogonNetworkInformation:
+	case NetlogonNetworkTransitiveInformation:
+		if (req->in.logon.network == NULL) {
+			return NT_STATUS_REQUEST_NOT_ACCEPTED;
+		}
+
+		identity_info = &req->in.logon.network->identity_info;
+		break;
+
+	case NetlogonGenericInformation:
+		if (req->in.logon.generic == NULL) {
+			return NT_STATUS_REQUEST_NOT_ACCEPTED;
+		}
+
+		identity_info = &req->in.logon.generic->identity_info;
+		break;
+
+	default:
 		return NT_STATUS_REQUEST_NOT_ACCEPTED;
 	}
-	target_domain_name = req->in.logon.network->identity_info.domain_name.string;
+
+	target_domain_name = identity_info->domain_name.string;
 
 	domain = find_auth_domain(0, target_domain_name);
 	if (domain == NULL) {
