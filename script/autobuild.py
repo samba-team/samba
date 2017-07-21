@@ -44,7 +44,21 @@ builddirs = {
     "retry"   : "."
     }
 
-defaulttasks = [ "ctdb", "samba", "samba-xc", "samba-o3", "samba-ctdb", "samba-libs", "samba-static", "samba-systemkrb5", "samba-nopython", "ldb", "tdb", "talloc", "replace", "tevent", "pidl" ]
+defaulttasks = [ "ctdb",
+                 "samba",
+                 "samba-xc",
+                 "samba-o3",
+                 "samba-ctdb",
+                 "samba-libs",
+                 "samba-static",
+                 "samba-systemkrb5",
+                 "samba-nopython",
+                 "ldb",
+                 "tdb",
+                 "talloc",
+                 "replace",
+                 "tevent",
+                 "pidl" ]
 
 if os.environ.get("AUTOBUILD_SKIP_SAMBA_O3", "0") == "1":
     defaulttasks.remove("samba-o3")
