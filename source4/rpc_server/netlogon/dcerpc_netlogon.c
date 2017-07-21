@@ -849,7 +849,8 @@ static WERROR dcesrv_netr_LogonUasLogoff(struct dcesrv_call_state *dce_call, TAL
 }
 
 
-static NTSTATUS dcesrv_netr_LogonSamLogon_check(const struct netr_LogonSamLogonEx *r)
+static NTSTATUS dcesrv_netr_LogonSamLogon_check(struct dcesrv_call_state *dce_call,
+						const struct netr_LogonSamLogonEx *r)
 {
 	switch (r->in.logon_level) {
 	case NetlogonInteractiveInformation:
@@ -903,6 +904,17 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_check(const struct netr_LogonSamLogonE
 		break;
 	default:
 		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	switch (r->in.validation_level) {
+	case NetlogonValidationSamInfo4: /* 6 */
+		if (dce_call->conn->auth_state.auth_level < DCERPC_AUTH_LEVEL_PRIVACY) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		break;
+
+	default:
+		break;
 	}
 
 	return NT_STATUS_OK;
@@ -1138,10 +1150,6 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 		break;
 
 	case 6:
-		if (dce_call->conn->auth_state.auth_level < DCERPC_AUTH_LEVEL_PRIVACY) {
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-
 		nt_status = auth_convert_user_info_dc_saminfo6(mem_ctx,
 							       user_info_dc,
 							       &sam6);
@@ -1172,7 +1180,7 @@ static NTSTATUS dcesrv_netr_LogonSamLogonEx(struct dcesrv_call_state *dce_call, 
 
 	*r->out.authoritative = 1;
 
-	nt_status = dcesrv_netr_LogonSamLogon_check(r);
+	nt_status = dcesrv_netr_LogonSamLogon_check(dce_call, r);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
@@ -1217,7 +1225,7 @@ static NTSTATUS dcesrv_netr_LogonSamLogonWithFlags(struct dcesrv_call_state *dce
 
 	*r->out.authoritative = 1;
 
-	nt_status = dcesrv_netr_LogonSamLogon_check(&r2);
+	nt_status = dcesrv_netr_LogonSamLogon_check(dce_call, &r2);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
