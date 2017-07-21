@@ -53,7 +53,7 @@ output=$(
     generate_control_output "ctdb_reply_control"
     generate_message_output "ctdb_message_data"
     generate_message_output "ctdb_req_message"
-    echo "ctdb_req_message"
+    echo "ctdb_req_message_data"
 )
 
 ok "$output"

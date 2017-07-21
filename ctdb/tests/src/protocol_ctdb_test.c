@@ -302,45 +302,8 @@ PROTOCOL_CTDB6_TEST(struct ctdb_reply_control, ctdb_reply_control,
 PROTOCOL_CTDB3_TEST(union ctdb_message_data, ctdb_message_data);
 PROTOCOL_CTDB7_TEST(struct ctdb_req_message, ctdb_req_message,
 			CTDB_REQ_MESSAGE);
-
-static void test_ctdb_req_message_data(void)
-{
-	TALLOC_CTX *mem_ctx;
-	uint8_t *pkt;
-	size_t datalen, pkt_len, len;
-	int ret;
-	struct ctdb_req_header h, h2;
-	struct ctdb_req_message_data c, c2;
-
-	printf("ctdb_req_message\n");
-	fflush(stdout);
-
-	mem_ctx = talloc_new(NULL);
-	assert(mem_ctx != NULL);
-
-	ctdb_req_header_fill(&h, GENERATION, CTDB_REQ_MESSAGE,
-			     DESTNODE, SRCNODE, REQID);
-
-	fill_ctdb_req_message_data(mem_ctx, &c);
-	datalen = ctdb_req_message_data_len(&h, &c);
-	ret = ctdb_allocate_pkt(mem_ctx, datalen, &pkt, &pkt_len);
-	assert(ret == 0);
-	assert(pkt != NULL);
-	assert(pkt_len >= datalen);
-	len = 0;
-	ret = ctdb_req_message_data_push(&h, &c, pkt, &len);
-	assert(ret == EMSGSIZE);
-	assert(len == datalen);
-	ret = ctdb_req_message_data_push(&h, &c, pkt, &pkt_len);
-	assert(ret == 0);
-	ret = ctdb_req_message_data_pull(pkt, pkt_len, &h2, mem_ctx, &c2);
-	assert(ret == 0);
-	verify_ctdb_req_header(&h, &h2);
-	assert(h2.length == pkt_len);
-	verify_ctdb_req_message_data(&c, &c2);
-
-	talloc_free(mem_ctx);
-}
+PROTOCOL_CTDB4_TEST(struct ctdb_req_message_data, ctdb_req_message_data,
+			CTDB_REQ_MESSAGE);
 
 int main(int argc, char *argv[])
 {
@@ -401,7 +364,7 @@ int main(int argc, char *argv[])
 	for (i=0; i<ARRAY_SIZE(test_srvid); i++) {
 		TEST_FUNC(ctdb_req_message)(test_srvid[i]);
 	}
-	test_ctdb_req_message_data();
+	TEST_FUNC(ctdb_req_message_data)();
 
 	return 0;
 }
