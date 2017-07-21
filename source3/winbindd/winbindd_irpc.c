@@ -188,6 +188,12 @@ static NTSTATUS wb_irpc_SamLogon(struct irpc_message *msg,
 		}
 	}
 
+	if (IS_DC && target_domain_name[0] == '\0') {
+		DBG_ERR("target_domain[%s] account[%s]\n",
+			target_domain_name, account_name);
+		return NT_STATUS_REQUEST_NOT_ACCEPTED;
+	}
+
 	domain = find_auth_domain(0, target_domain_name);
 	if (domain == NULL) {
 		DBG_INFO("target_domain[%s] for account[%s] not known\n",
