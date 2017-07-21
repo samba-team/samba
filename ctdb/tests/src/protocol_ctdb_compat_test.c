@@ -27,6 +27,7 @@
 #include "protocol/protocol_header.c"
 #include "protocol/protocol_call.c"
 #include "protocol/protocol_control.c"
+#include "protocol/protocol_message.c"
 
 #include "tests/src/protocol_common.h"
 #include "tests/src/protocol_common_ctdb.h"
@@ -891,6 +892,75 @@ static int ctdb_reply_control_pull_old(uint8_t *buf, size_t buflen,
 	return 0;
 }
 
+static size_t ctdb_req_message_len_old(struct ctdb_req_header *h,
+				       struct ctdb_req_message *c)
+{
+	return offsetof(struct ctdb_req_message_wire, data) +
+		ctdb_message_data_len(&c->data, c->srvid);
+}
+
+static int ctdb_req_message_push_old(struct ctdb_req_header *h,
+				     struct ctdb_req_message *c,
+				     uint8_t *buf, size_t *buflen)
+{
+	struct ctdb_req_message_wire *wire =
+		(struct ctdb_req_message_wire *)buf;
+	size_t length, np;
+
+	length = ctdb_req_message_len_old(h, c);
+	if (*buflen < length) {
+		*buflen = length;
+		return EMSGSIZE;
+	}
+
+	h->length = *buflen;
+	ctdb_req_header_push_old(h, (uint8_t *)&wire->hdr);
+
+	wire->srvid = c->srvid;
+	wire->datalen = ctdb_message_data_len(&c->data, c->srvid);
+	ctdb_message_data_push(&c->data, c->srvid, wire->data, &np);
+
+	return 0;
+}
+
+static int ctdb_req_message_pull_old(uint8_t *buf, size_t buflen,
+				     struct ctdb_req_header *h,
+				     TALLOC_CTX *mem_ctx,
+				     struct ctdb_req_message *c)
+{
+	struct ctdb_req_message_wire *wire =
+		(struct ctdb_req_message_wire *)buf;
+	size_t length, np;
+	int ret;
+
+	length = offsetof(struct ctdb_req_message_wire, data);
+	if (buflen < length) {
+		return EMSGSIZE;
+	}
+	if (wire->datalen > buflen) {
+		return EMSGSIZE;
+	}
+	if (length + wire->datalen < length) {
+		return EMSGSIZE;
+	}
+	if (buflen < length + wire->datalen) {
+		return EMSGSIZE;
+	}
+
+	if (h != NULL) {
+		ret = ctdb_req_header_pull_old((uint8_t *)&wire->hdr, buflen,
+					       h);
+		if (ret != 0) {
+			return ret;
+		}
+	}
+
+	c->srvid = wire->srvid;
+	ret = ctdb_message_data_pull(wire->data, wire->datalen, wire->srvid,
+				     mem_ctx, &c->data, &np);
+	return ret;
+}
+
 
 COMPAT_CTDB1_TEST(struct ctdb_req_header, ctdb_req_header);
 
@@ -903,11 +973,35 @@ COMPAT_CTDB4_TEST(struct ctdb_reply_dmaster, ctdb_reply_dmaster, CTDB_REPLY_DMAS
 COMPAT_CTDB5_TEST(struct ctdb_req_control, ctdb_req_control, CTDB_REQ_CONTROL);
 COMPAT_CTDB6_TEST(struct ctdb_reply_control, ctdb_reply_control, CTDB_REPLY_CONTROL);
 
+COMPAT_CTDB7_TEST(struct ctdb_req_message, ctdb_req_message, CTDB_REQ_MESSAGE);
+
 #define NUM_CONTROLS	151
 
 int main(int argc, char *argv[])
 {
 	uint32_t opcode;
+	uint64_t test_srvid[] = {
+		CTDB_SRVID_BANNING,
+		CTDB_SRVID_ELECTION,
+		CTDB_SRVID_RECONFIGURE,
+		CTDB_SRVID_RELEASE_IP,
+		CTDB_SRVID_TAKE_IP,
+		CTDB_SRVID_SET_NODE_FLAGS,
+		CTDB_SRVID_RECD_UPDATE_IP,
+		CTDB_SRVID_VACUUM_FETCH,
+		CTDB_SRVID_DETACH_DATABASE,
+		CTDB_SRVID_MEM_DUMP,
+		CTDB_SRVID_GETLOG,
+		CTDB_SRVID_CLEARLOG,
+		CTDB_SRVID_PUSH_NODE_FLAGS,
+		CTDB_SRVID_RELOAD_NODES,
+		CTDB_SRVID_TAKEOVER_RUN,
+		CTDB_SRVID_REBALANCE_NODE,
+		CTDB_SRVID_DISABLE_TAKEOVER_RUNS,
+		CTDB_SRVID_DISABLE_RECOVERIES,
+		CTDB_SRVID_DISABLE_IP_CHECK,
+	};
+	int i;
 
 	if (argc == 2) {
 		int seed = atoi(argv[1]);
@@ -927,6 +1021,10 @@ int main(int argc, char *argv[])
 	}
 	for (opcode=0; opcode<NUM_CONTROLS; opcode++) {
 		COMPAT_TEST_FUNC(ctdb_reply_control)(opcode);
+	}
+
+	for (i=0; i<ARRAY_SIZE(test_srvid); i++) {
+		COMPAT_TEST_FUNC(ctdb_req_message)(test_srvid[i]);
 	}
 
 	return 0;

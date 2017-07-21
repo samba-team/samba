@@ -300,6 +300,8 @@ PROTOCOL_CTDB6_TEST(struct ctdb_reply_control, ctdb_reply_control,
 			CTDB_REPLY_CONTROL);
 
 PROTOCOL_CTDB3_TEST(union ctdb_message_data, ctdb_message_data);
+PROTOCOL_CTDB7_TEST(struct ctdb_req_message, ctdb_req_message,
+			CTDB_REQ_MESSAGE);
 
 static void test_ctdb_req_message_data(void)
 {
@@ -395,6 +397,9 @@ int main(int argc, char *argv[])
 
 	for (i=0; i<ARRAY_SIZE(test_srvid); i++) {
 		TEST_FUNC(ctdb_message_data)(test_srvid[i]);
+	}
+	for (i=0; i<ARRAY_SIZE(test_srvid); i++) {
+		TEST_FUNC(ctdb_req_message)(test_srvid[i]);
 	}
 	test_ctdb_req_message_data();
 

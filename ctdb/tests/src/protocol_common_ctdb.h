@@ -79,6 +79,11 @@ void fill_ctdb_message_data(TALLOC_CTX *mem_ctx, union ctdb_message_data *md,
 void verify_ctdb_message_data(union ctdb_message_data *md,
 			      union ctdb_message_data *md2, uint64_t srvid);
 
+void fill_ctdb_req_message(TALLOC_CTX *mem_ctx, struct ctdb_req_message *c,
+			   uint64_t srvid);
+void verify_ctdb_req_message(struct ctdb_req_message *c,
+			     struct ctdb_req_message *c2);
+
 void fill_ctdb_req_message_data(TALLOC_CTX *mem_ctx,
 				struct ctdb_req_message_data *c);
 void verify_ctdb_req_message_data(struct ctdb_req_message_data *c,

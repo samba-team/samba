@@ -1921,6 +1921,20 @@ void verify_ctdb_message_data(union ctdb_message_data *md,
 	}
 }
 
+void fill_ctdb_req_message(TALLOC_CTX *mem_ctx, struct ctdb_req_message *c,
+			   uint64_t srvid)
+{
+	c->srvid = srvid;
+	fill_ctdb_message_data(mem_ctx, &c->data, srvid);
+}
+
+void verify_ctdb_req_message(struct ctdb_req_message *c,
+			     struct ctdb_req_message *c2)
+{
+	assert(c->srvid == c2->srvid);
+	verify_ctdb_message_data(&c->data, &c2->data, c->srvid);
+}
+
 void fill_ctdb_req_message_data(TALLOC_CTX *mem_ctx,
 				struct ctdb_req_message_data *c)
 {
