@@ -436,6 +436,7 @@ struct smbd_smb2_create_state {
 	struct timeval request_time;
 	struct file_id id;
 	struct deferred_open_record *open_rec;
+	files_struct *result;
 	uint8_t out_oplock_level;
 	uint32_t out_create_action;
 	struct timespec out_creation_ts;
@@ -476,7 +477,6 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 	struct smbd_smb2_create_state *state = NULL;
 	NTSTATUS status;
 	struct smb_request *smb1req = NULL;
-	files_struct *result = NULL;
 	int info;
 	int requested_oplock_level;
 	struct smb2_create_blob *dhnc = NULL;
@@ -672,7 +672,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			return tevent_req_post(req, state->ev);
 		}
 
-		status = open_np_file(smb1req, pipe_name, &result);
+		status = open_np_file(smb1req, pipe_name, &state->result);
 		if (!NT_STATUS_IS_OK(status)) {
 			tevent_req_nterror(req, status);
 			return tevent_req_post(req, state->ev);
@@ -682,7 +682,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		smbd_smb2_create_finish(req,
 					smb2req,
 					smb1req,
-					result,
+					state->result,
 					replay_operation,
 					in_oplock_level,
 					in_create_disposition,
@@ -696,16 +696,16 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			return tevent_req_post(req, state->ev);
 		}
 
-		status = file_new(smb1req, smb1req->conn, &result);
+		status = file_new(smb1req, smb1req->conn, &state->result);
 		if(!NT_STATUS_IS_OK(status)) {
 			tevent_req_nterror(req, status);
 			return tevent_req_post(req, state->ev);
 		}
 
-		status = print_spool_open(result, in_name,
+		status = print_spool_open(state->result, in_name,
 					  smb1req->vuid);
 		if (!NT_STATUS_IS_OK(status)) {
-			file_free(smb1req, result);
+			file_free(smb1req, state->result);
 			tevent_req_nterror(req, status);
 			return tevent_req_post(req, state->ev);
 		}
@@ -714,7 +714,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		smbd_smb2_create_finish(req,
 					smb2req,
 					smb1req,
-					result,
+					state->result,
 					replay_operation,
 					in_oplock_level,
 					in_create_disposition,
@@ -1044,8 +1044,8 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 	 * new open.
 	 */
 	if (replay_operation) {
-		result = op->compat;
-		result->op = op;
+		state->result = op->compat;
+		state->result->op = op;
 		update_open = false;
 		info = op->create_action;
 	} else if (do_durable_reconnect) {
@@ -1080,7 +1080,8 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 						   op, /* smbXsrv_open input */
 						   op->global->backend_cookie,
 						   op, /* TALLOC_CTX */
-						   &result, &new_cookie);
+						   &state->result,
+						   &new_cookie);
 		if (!NT_STATUS_IS_OK(status)) {
 			NTSTATUS return_status;
 
@@ -1096,12 +1097,12 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		}
 
 		DEBUG(10, ("result->oplock_type=%u, lease_ptr==%p\n",
-			   (unsigned)result->oplock_type, lease_ptr));
+			   (unsigned)state->result->oplock_type, lease_ptr));
 
 		status = smbd_smb2_create_durable_lease_check(
-			smb1req, fname, result, lease_ptr);
+			smb1req, fname, state->result, lease_ptr);
 		if (!NT_STATUS_IS_OK(status)) {
-			close_file(smb1req, result, SHUTDOWN_CLOSE);
+			close_file(smb1req, state->result, SHUTDOWN_CLOSE);
 			tevent_req_nterror(req, status);
 			return tevent_req_post(req, state->ev);
 		}
@@ -1205,7 +1206,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 					     0, /* private_flags */
 					     sec_desc,
 					     ea_list,
-					     &result,
+					     &state->result,
 					     &info,
 					     &in_context_blobs,
 					     state->out_context_blobs);
@@ -1217,11 +1218,11 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			tevent_req_nterror(req, status);
 			return tevent_req_post(req, state->ev);
 		}
-		op = result->op;
+		op = state->result->op;
 	}
 
 	/*
-	 * here we have op == result->op
+	 * here we have op == state->result->op
 	 */
 
 	DEBUG(10, ("smbd_smb2_create_send: "
@@ -1231,14 +1232,14 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		NTTIME last_write_time;
 
 		last_write_time = unix_timespec_to_nt_time(
-			result->fsp_name->st.st_ex_mtime);
+			state->result->fsp_name->st.st_ex_mtime);
 		if (last_write_time != max_access_time) {
 			uint8_t p[8];
 			uint32_t max_access_granted;
 			DATA_BLOB blob = data_blob_const(p, sizeof(p));
 
 			status = smbd_calculate_access_mask(smb1req->conn,
-							    result->fsp_name,
+							    state->result->fsp_name,
 							    false,
 							    SEC_FLAG_MAXIMUM_ALLOWED,
 							    &max_access_granted);
@@ -1259,9 +1260,9 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 	}
 
 	if (!replay_operation && durable_requested &&
-	    (fsp_lease_type(result) & SMB2_LEASE_HANDLE))
+	    (fsp_lease_type(state->result) & SMB2_LEASE_HANDLE))
 	{
-		status = SMB_VFS_DURABLE_COOKIE(result,
+		status = SMB_VFS_DURABLE_COOKIE(state->result,
 						op,
 						&op->global->backend_cookie);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -1337,8 +1338,8 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 
 	if (qfid) {
 		uint8_t p[32];
-		uint64_t file_index = get_FileIndex(result->conn,
-						    &result->fsp_name->st);
+		uint64_t file_index = get_FileIndex(state->result->conn,
+						    &state->result->fsp_name->st);
 		DATA_BLOB blob = data_blob_const(p, sizeof(p));
 
 		ZERO_STRUCT(p);
@@ -1348,7 +1349,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		   == inode, the second 8 bytes are the "volume id",
 		   == dev. This will be updated in the SMB2 doc. */
 		SBVAL(p, 0, file_index);
-		SIVAL(p, 8, result->fsp_name->st.st_ex_dev);/* FileIndexHigh */
+		SIVAL(p, 8, state->result->fsp_name->st.st_ex_dev);/* FileIndexHigh */
 
 		status = smb2_create_blob_add(state->out_context_blobs,
 					      state->out_context_blobs,
@@ -1360,10 +1361,10 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	if ((rqls != NULL) && (result->oplock_type == LEASE_OPLOCK)) {
+	if ((rqls != NULL) && (state->result->oplock_type == LEASE_OPLOCK)) {
 		uint8_t buf[52];
 
-		lease = result->lease->lease;
+		lease = state->result->lease->lease;
 
 		lease_len = sizeof(buf);
 		if (lease.lease_version == 1) {
@@ -1389,7 +1390,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 	smbd_smb2_create_finish(req,
 				smb2req,
 				smb1req,
-				result,
+				state->result,
 				replay_operation,
 				in_oplock_level,
 				in_create_disposition,
