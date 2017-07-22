@@ -439,6 +439,7 @@ struct smbd_smb2_create_state {
 	files_struct *result;
 	bool replay_operation;
 	uint8_t in_oplock_level;
+	uint32_t in_create_disposition;
 	int requested_oplock_level;
 	uint8_t out_oplock_level;
 	uint32_t out_create_action;
@@ -522,6 +523,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		.ev = ev,
 		.smb2req = smb2req,
 		.in_oplock_level = in_oplock_level,
+		.in_create_disposition = in_create_disposition,
 	};
 
 	smb1req = smbd_smb2_fake_smb_request(smb2req);
@@ -687,7 +689,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 					state->result,
 					state->replay_operation,
 					state->in_oplock_level,
-					in_create_disposition,
+					state->in_create_disposition,
 					info);
 		return req;
 
@@ -719,7 +721,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 					state->result,
 					state->replay_operation,
 					state->in_oplock_level,
-					in_create_disposition,
+					state->in_create_disposition,
 					info);
 		return req;
 	}
@@ -1147,7 +1149,8 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			}
 		}
 
-		ucf_flags = filename_create_ucf_flags(smb1req, in_create_disposition);
+		ucf_flags = filename_create_ucf_flags(
+			smb1req, state->in_create_disposition);
 		status = filename_convert(req,
 					  smb1req->conn,
 					  fname,
@@ -1199,7 +1202,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 					     smb_fname,
 					     in_desired_access,
 					     in_share_access,
-					     in_create_disposition,
+					     state->in_create_disposition,
 					     in_create_options,
 					     in_file_attributes,
 					     map_smb2_oplock_levels_to_samba(
@@ -1396,7 +1399,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 				state->result,
 				state->replay_operation,
 				state->in_oplock_level,
-				in_create_disposition,
+				state->in_create_disposition,
 				info);
 	return req;
 }
