@@ -198,7 +198,7 @@ void dreplsrv_run_pull_ops(struct dreplsrv_service *s)
 	struct tevent_req *subreq;
 	WERROR werr;
 
-	if (s->ops.current) {
+	if (s->ops.n_current || s->ops.current) {
 		/* if there's still one running, we're done */
 		return;
 	}
