@@ -441,6 +441,7 @@ struct smbd_smb2_create_state {
 	uint8_t in_oplock_level;
 	uint32_t in_create_disposition;
 	int requested_oplock_level;
+	int info;
 	uint8_t out_oplock_level;
 	uint32_t out_create_action;
 	struct timespec out_creation_ts;
@@ -481,7 +482,6 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 	struct smbd_smb2_create_state *state = NULL;
 	NTSTATUS status;
 	struct smb_request *smb1req = NULL;
-	int info;
 	struct smb2_create_blob *dhnc = NULL;
 	struct smb2_create_blob *dh2c = NULL;
 	struct smb2_create_blob *dhnq = NULL;
@@ -681,7 +681,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			tevent_req_nterror(req, status);
 			return tevent_req_post(req, state->ev);
 		}
-		info = FILE_WAS_OPENED;
+		state->info = FILE_WAS_OPENED;
 
 		smbd_smb2_create_finish(req,
 					smb2req,
@@ -690,7 +690,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 					state->replay_operation,
 					state->in_oplock_level,
 					state->in_create_disposition,
-					info);
+					state->info);
 		return req;
 
 	} else if (CAN_PRINT(smb1req->conn)) {
@@ -713,7 +713,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			tevent_req_nterror(req, status);
 			return tevent_req_post(req, state->ev);
 		}
-		info = FILE_WAS_CREATED;
+		state->info = FILE_WAS_CREATED;
 
 		smbd_smb2_create_finish(req,
 					smb2req,
@@ -722,7 +722,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 					state->replay_operation,
 					state->in_oplock_level,
 					state->in_create_disposition,
-					info);
+					state->info);
 		return req;
 	}
 
@@ -1051,7 +1051,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		state->result = op->compat;
 		state->result->op = op;
 		update_open = false;
-		info = op->create_action;
+		state->info = op->create_action;
 	} else if (do_durable_reconnect) {
 		DATA_BLOB new_cookie = data_blob_null;
 		NTTIME now = timeval_to_nttime(&smb2req->request_time);
@@ -1122,7 +1122,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 
 		update_open = true;
 
-		info = FILE_WAS_OPENED;
+		state->info = FILE_WAS_OPENED;
 	} else {
 		struct smb_filename *smb_fname = NULL;
 		uint32_t ucf_flags;
@@ -1213,7 +1213,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 					     sec_desc,
 					     ea_list,
 					     &state->result,
-					     &info,
+					     &state->info,
 					     &in_context_blobs,
 					     state->out_context_blobs);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -1400,7 +1400,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 				state->replay_operation,
 				state->in_oplock_level,
 				state->in_create_disposition,
-				info);
+				state->info);
 	return req;
 }
 
