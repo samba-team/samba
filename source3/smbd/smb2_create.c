@@ -438,6 +438,7 @@ struct smbd_smb2_create_state {
 	struct deferred_open_record *open_rec;
 	files_struct *result;
 	bool replay_operation;
+	int requested_oplock_level;
 	uint8_t out_oplock_level;
 	uint32_t out_create_action;
 	struct timespec out_creation_ts;
@@ -479,7 +480,6 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct smb_request *smb1req = NULL;
 	int info;
-	int requested_oplock_level;
 	struct smb2_create_blob *dhnc = NULL;
 	struct smb2_create_blob *dh2c = NULL;
 	struct smb2_create_blob *dhnq = NULL;
@@ -511,12 +511,6 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 #if 0
 	struct smb2_create_blob *svhdx = NULL;
 #endif
-
-	if(lp_fake_oplocks(SNUM(smb2req->tcon->compat))) {
-		requested_oplock_level = SMB2_OPLOCK_LEVEL_NONE;
-	} else {
-		requested_oplock_level = in_oplock_level;
-	}
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smbd_smb2_create_state);
@@ -552,6 +546,12 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 
 	TALLOC_FREE(smb2req->subreq);
 	smb2req->subreq = req;
+
+	if (lp_fake_oplocks(SNUM(smb2req->tcon->compat))) {
+		state->requested_oplock_level = SMB2_OPLOCK_LEVEL_NONE;
+	} else {
+		state->requested_oplock_level = in_oplock_level;
+	}
 
 	/* these are ignored for SMB2 */
 	in_create_options &= ~(0x10);/* NTCREATEX_OPTIONS_SYNC_ALERT */
@@ -999,7 +999,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 
 		if (!smb2_lease_key_valid(&lease.lease_key)) {
 			lease_ptr = NULL;
-			requested_oplock_level = SMB2_OPLOCK_LEVEL_NONE;
+			state->requested_oplock_level = SMB2_OPLOCK_LEVEL_NONE;
 		}
 
 		if ((smb2req->xconn->protocol < PROTOCOL_SMB3_00) &&
@@ -1123,9 +1123,9 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		struct smb_filename *smb_fname = NULL;
 		uint32_t ucf_flags;
 
-		if (requested_oplock_level == SMB2_OPLOCK_LEVEL_LEASE) {
+		if (state->requested_oplock_level == SMB2_OPLOCK_LEVEL_LEASE) {
 			if (lease_ptr == NULL) {
-				requested_oplock_level = SMB2_OPLOCK_LEVEL_NONE;
+				state->requested_oplock_level = SMB2_OPLOCK_LEVEL_NONE;
 			}
 		} else {
 			lease_ptr = NULL;
@@ -1200,7 +1200,8 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 					     in_create_disposition,
 					     in_create_options,
 					     in_file_attributes,
-					     map_smb2_oplock_levels_to_samba(requested_oplock_level),
+					     map_smb2_oplock_levels_to_samba(
+						     state->requested_oplock_level),
 					     lease_ptr,
 					     allocation_size,
 					     0, /* private_flags */
