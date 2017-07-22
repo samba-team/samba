@@ -437,6 +437,7 @@ struct smbd_smb2_create_state {
 	struct file_id id;
 	struct deferred_open_record *open_rec;
 	files_struct *result;
+	bool replay_operation;
 	uint8_t out_oplock_level;
 	uint32_t out_create_action;
 	struct timespec out_creation_ts;
@@ -484,7 +485,6 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 	struct smb2_create_blob *dhnq = NULL;
 	struct smb2_create_blob *dh2q = NULL;
 	struct smb2_create_blob *rqls = NULL;
-	bool replay_operation = false;
 	char *fname = NULL;
 	struct smb2_create_blob *exta = NULL;
 	struct ea_list *ea_list = NULL;
@@ -683,7 +683,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 					smb2req,
 					smb1req,
 					state->result,
-					replay_operation,
+					state->replay_operation,
 					in_oplock_level,
 					in_create_disposition,
 					info);
@@ -715,7 +715,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 					smb2req,
 					smb1req,
 					state->result,
-					replay_operation,
+					state->replay_operation,
 					in_oplock_level,
 					in_create_disposition,
 					info);
@@ -884,7 +884,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		 */
 		hdr = SMBD_SMB2_IN_HDR_PTR(smb2req);
 		flags = IVAL(hdr, SMB2_HDR_FLAGS);
-		replay_operation =
+		state->replay_operation =
 			flags & SMB2_HDR_FLAG_REPLAY_OPERATION;
 
 		status = smb2srv_open_lookup_replay_cache(
@@ -892,12 +892,12 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			0 /* now */, &op);
 
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
-			replay_operation = false;
+			state->replay_operation = false;
 		} else if (tevent_req_nterror(req, status)) {
 			DBG_WARNING("smb2srv_open_lookup_replay_cache "
 				    "failed: %s\n", nt_errstr(status));
 			return tevent_req_post(req, state->ev);
-		} else if (!replay_operation) {
+		} else if (!state->replay_operation) {
 			/*
 			 * If a create without replay operation flag
 			 * is sent but with a create_guid that is
@@ -1013,7 +1013,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		 * established open carries a lease with the
 		 * same lease key.
 		 */
-		if (replay_operation) {
+		if (state->replay_operation) {
 			struct smb2_lease *op_ls =
 				&op->compat->lease->lease;
 			int op_oplock = op->compat->oplock_type;
@@ -1043,7 +1043,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 	 * there is nothing else to do), durable_reconnect or
 	 * new open.
 	 */
-	if (replay_operation) {
+	if (state->replay_operation) {
 		state->result = op->compat;
 		state->result->op = op;
 		update_open = false;
@@ -1259,7 +1259,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	if (!replay_operation && durable_requested &&
+	if (!state->replay_operation && durable_requested &&
 	    (fsp_lease_type(state->result) & SMB2_LEASE_HANDLE))
 	{
 		status = SMB_VFS_DURABLE_COOKIE(state->result,
@@ -1269,7 +1269,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			op->global->backend_cookie = data_blob_null;
 		}
 	}
-	if (!replay_operation && op->global->backend_cookie.length > 0)
+	if (!state->replay_operation && op->global->backend_cookie.length > 0)
 	{
 		update_open = true;
 
@@ -1315,7 +1315,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 	     * for the request data. In the case of leases instead,
 	     * the state of the open is used...
 	     */
-	    (!replay_operation ||
+	    (!state->replay_operation ||
 	     in_oplock_level == SMB2_OPLOCK_LEVEL_BATCH ||
 	     in_oplock_level == SMB2_OPLOCK_LEVEL_LEASE))
 	{
@@ -1391,7 +1391,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 				smb2req,
 				smb1req,
 				state->result,
-				replay_operation,
+				state->replay_operation,
 				in_oplock_level,
 				in_create_disposition,
 				info);
