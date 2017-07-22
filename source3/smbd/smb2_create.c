@@ -438,6 +438,7 @@ struct smbd_smb2_create_state {
 	struct deferred_open_record *open_rec;
 	files_struct *result;
 	bool replay_operation;
+	uint8_t in_oplock_level;
 	int requested_oplock_level;
 	uint8_t out_oplock_level;
 	uint32_t out_create_action;
@@ -520,6 +521,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 	*state = (struct smbd_smb2_create_state) {
 		.ev = ev,
 		.smb2req = smb2req,
+		.in_oplock_level = in_oplock_level,
 	};
 
 	smb1req = smbd_smb2_fake_smb_request(smb2req);
@@ -550,7 +552,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 	if (lp_fake_oplocks(SNUM(smb2req->tcon->compat))) {
 		state->requested_oplock_level = SMB2_OPLOCK_LEVEL_NONE;
 	} else {
-		state->requested_oplock_level = in_oplock_level;
+		state->requested_oplock_level = state->in_oplock_level;
 	}
 
 	/* these are ignored for SMB2 */
@@ -684,7 +686,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 					smb1req,
 					state->result,
 					state->replay_operation,
-					in_oplock_level,
+					state->in_oplock_level,
 					in_create_disposition,
 					info);
 		return req;
@@ -716,7 +718,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 					smb1req,
 					state->result,
 					state->replay_operation,
-					in_oplock_level,
+					state->in_oplock_level,
 					in_create_disposition,
 					info);
 		return req;
@@ -1317,8 +1319,8 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 	     * the state of the open is used...
 	     */
 	    (!state->replay_operation ||
-	     in_oplock_level == SMB2_OPLOCK_LEVEL_BATCH ||
-	     in_oplock_level == SMB2_OPLOCK_LEVEL_LEASE))
+	     state->in_oplock_level == SMB2_OPLOCK_LEVEL_BATCH ||
+	     state->in_oplock_level == SMB2_OPLOCK_LEVEL_LEASE))
 	{
 		uint8_t p[8] = { 0, };
 		DATA_BLOB blob = data_blob_const(p, sizeof(p));
@@ -1393,7 +1395,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 				smb1req,
 				state->result,
 				state->replay_operation,
-				in_oplock_level,
+				state->in_oplock_level,
 				in_create_disposition,
 				info);
 	return req;
