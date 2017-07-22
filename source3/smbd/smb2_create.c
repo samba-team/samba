@@ -646,14 +646,12 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 	state->smb1req = smb1req;
 
 	if (smb2req->subreq == NULL) {
-		DEBUG(10,("smbd_smb2_create: name[%s]\n",
-			in_name));
+		DBG_DEBUG("name [%s]\n", in_name);
 	} else {
 		struct smbd_smb2_create_state *old_state = tevent_req_data(
 			smb2req->subreq, struct smbd_smb2_create_state);
 
-		DEBUG(10,("smbd_smb2_create_send: reentrant for file %s\n",
-			in_name ));
+		DBG_DEBUG("reentrant for file %s\n", in_name);
 
 		state->id = old_state->id;
 		state->request_time = old_state->request_time;
@@ -746,7 +744,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, state->ev);
 	}
 
-	DEBUG(10, ("smbd_smb2_create_send: open execution phase\n"));
+	DBG_DEBUG("open execution phase\n");
 
 	/*
 	 * For the backend file open procedure, there are
@@ -779,16 +777,14 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 					       now,
 					       &state->op);
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(3, ("smbd_smb2_create_send: "
-				  "smb2srv_open_recreate failed: %s\n",
-				  nt_errstr(status)));
+			DBG_NOTICE("smb2srv_open_recreate failed: %s\n",
+				   nt_errstr(status));
 			tevent_req_nterror(req, status);
 			return tevent_req_post(req, state->ev);
 		}
 
-		DEBUG(10, ("smb2_create_send: %s to recreate the "
-			   "smb2srv_open struct for a durable handle.\n",
-			   state->op->global->durable ? "succeeded" : "failed"));
+		DBG_DEBUG("%s to recreate durable handle\n",
+			  state->op->global->durable ? "succeeded" : "failed");
 
 		if (!state->op->global->durable) {
 			talloc_free(state->op);
@@ -809,17 +805,16 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 
 			return_status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
-			DEBUG(3, ("smbd_smb2_create_send: "
-				  "durable_reconnect failed: %s => %s\n",
-				  nt_errstr(status),
-				  nt_errstr(return_status)));
+			DBG_NOTICE("durable_reconnect failed: %s => %s\n",
+				   nt_errstr(status),
+				   nt_errstr(return_status));
 
 			tevent_req_nterror(req, return_status);
 			return tevent_req_post(req, state->ev);
 		}
 
-		DEBUG(10, ("result->oplock_type=%u, lease_ptr==%p\n",
-			   (unsigned)state->result->oplock_type, state->lease_ptr));
+		DBG_DEBUG("oplock_type=%u, lease_ptr==%p\n",
+			  (unsigned)state->result->oplock_type, state->lease_ptr);
 
 		status = smbd_smb2_create_durable_lease_check(
 			smb1req, state->fname, state->result, state->lease_ptr);
