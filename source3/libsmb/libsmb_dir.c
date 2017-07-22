@@ -379,9 +379,9 @@ SMBC_opendir_ctx(SMBCCTX *context,
         char *options = NULL;
 	char *workgroup = NULL;
 	char *path = NULL;
+	size_t path_len = 0;
         uint16_t mode;
 	uint16_t port = 0;
-        char *p = NULL;
 	SMBCSRV *srv  = NULL;
 	SMBCFILE *dir = NULL;
 	struct sockaddr_storage rem_ss;
@@ -802,7 +802,7 @@ SMBC_opendir_ctx(SMBCCTX *context,
 
 			/* Now, list the files ... */
 
-                        p = path + strlen(path);
+                        path_len = strlen(path);
 			path = talloc_asprintf_append(path, "\\*");
 			if (!path) {
 				if (dir) {
@@ -844,7 +844,7 @@ SMBC_opendir_ctx(SMBCCTX *context,
                                          * got would have been EINVAL rather
                                          * than ENOTDIR.
                                          */
-                                        *p = '\0'; /* restore original path */
+                                        path[path_len] = '\0'; /* restore original path */
 
                                         if (SMBC_getatr(context, srv, path,
                                                         &mode, NULL,
