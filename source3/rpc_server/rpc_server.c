@@ -1044,7 +1044,7 @@ void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 					TALLOC_FREE(ncacn_conn->remote_client_addr);
 
 					rc = tsocket_address_unix_from_path(ncacn_conn,
-									    "/root/ncalrpc_as_system",
+									    AS_SYSTEM_MAGIC_PATH_TOKEN,
 									    &ncacn_conn->remote_client_addr);
 					if (rc < 0) {
 						DEBUG(0, ("Out of memory building magic ncalrpc_as_system path!\n"));

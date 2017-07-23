@@ -203,7 +203,7 @@ static NTSTATUS gensec_ncalrpc_update_internal(
 			return NT_STATUS_LOGON_FAILURE;
 		}
 
-		cmp = strcmp(unix_path, "/root/ncalrpc_as_system");
+		cmp = strcmp(unix_path, AS_SYSTEM_MAGIC_PATH_TOKEN);
 		TALLOC_FREE(unix_path);
 		if (cmp != 0) {
 			state->step = GENSEC_NCALRPC_ERROR;
