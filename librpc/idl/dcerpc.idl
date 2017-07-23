@@ -247,6 +247,7 @@ interface dcerpc
 		DCERPC_AUTH_TYPE_MSMQ     = 100,
 		DCERPC_AUTH_TYPE_NCALRPC_AS_SYSTEM = 200
 	} dcerpc_AuthType;
+	const char *AS_SYSTEM_MAGIC_PATH_TOKEN = "/root/ncalrpc_as_system";
 
 	typedef [enum8bit] enum {
 		DCERPC_AUTH_LEVEL_NONE      = 1,
