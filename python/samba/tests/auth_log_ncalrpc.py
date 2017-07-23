@@ -22,6 +22,7 @@ from samba import auth
 import samba.tests
 from samba.messaging import Messaging
 from samba.dcerpc.messaging import MSG_AUTH_LOG, AUTH_EVENT_NAME
+from samba.dcerpc.dcerpc import AS_SYSTEM_MAGIC_PATH_TOKEN
 from samba.dcerpc import samr
 import time
 import json
@@ -35,7 +36,7 @@ class AuthLogTestsNcalrpc(samba.tests.auth_log_base.AuthLogTestBase):
 
     def setUp(self):
         super(AuthLogTestsNcalrpc, self).setUp()
-        self.remoteAddress = "/root/ncalrpc_as_system"
+        self.remoteAddress = AS_SYSTEM_MAGIC_PATH_TOKEN
 
     def tearDown(self):
         super(AuthLogTestsNcalrpc , self).tearDown()
