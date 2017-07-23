@@ -35,6 +35,7 @@ from samba.credentials import (
     CLI_CRED_NTLMv2_AUTH
 )
 from samba.dcerpc import ntlmssp, netlogon
+from samba.dcerpc.dcerpc import AS_SYSTEM_MAGIC_PATH_TOKEN
 from samba.ndr import ndr_pack
 from samba.auth import system_session
 from samba.tests import delete_force
@@ -57,7 +58,7 @@ class AuthLogTestsSamLogon(samba.tests.auth_log_base.AuthLogTestBase):
         self.domain        = os.environ["DOMAIN"]
         self.netbios_name  = "SamLogonTest"
         self.machinepass   = "abcdefghij"
-        self.remoteAddress = "/root/ncalrpc_as_system"
+        self.remoteAddress = AS_SYSTEM_MAGIC_PATH_TOKEN
         self.base_dn       = self.ldb.domain_dn()
         self.samlogon_dn   = ("cn=%s,cn=users,%s" %
                               (self.netbios_name, self.base_dn))
