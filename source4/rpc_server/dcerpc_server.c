@@ -2707,7 +2707,7 @@ static void dcesrv_sock_accept(struct stream_connection *srv_conn)
 			struct tsocket_address *r = NULL;
 
 			ret = tsocket_address_unix_from_path(dcesrv_conn,
-							     "/root/ncalrpc_as_system",
+							     AS_SYSTEM_MAGIC_PATH_TOKEN,
 							     &r);
 			if (ret == -1) {
 				status = map_nt_error_from_unix_common(errno);
