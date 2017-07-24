@@ -110,7 +110,7 @@ static struct IStream_vtable simple_IStream_vtable = {
 NTSTATUS com_simple_init(TALLOC_CTX *ctx)
 {
 	struct GUID clsid;
-	struct IUnknown *class_object = talloc(talloc_autofree_context(), struct IUnknown);
+	struct IUnknown *class_object = talloc(ctx, struct IUnknown);
 
 	class_object->ctx = NULL;
 	class_object->object_data = NULL;
@@ -120,5 +120,5 @@ NTSTATUS com_simple_init(TALLOC_CTX *ctx)
 	GUID_from_string(COM_ICLASSFACTORY_UUID, &simple_classobject_vtable.iid);
 	GUID_from_string(COM_ISTREAM_UUID, &simple_IStream_vtable.iid);
 
-	return com_register_running_class(&clsid, PROGID_SIMPLE, class_object);
+	return com_register_running_class(ctx, &clsid, PROGID_SIMPLE, class_object);
 }

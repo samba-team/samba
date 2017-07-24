@@ -29,9 +29,10 @@ static struct dcom_proxy {
 	struct dcom_proxy *prev, *next;
 }  *proxies = NULL;
 
-NTSTATUS dcom_register_proxy(struct IUnknown_vtable *proxy_vtable)
+NTSTATUS dcom_register_proxy(TALLOC_CTX *ctx,
+		struct IUnknown_vtable *proxy_vtable)
 {
-	struct dcom_proxy *proxy = talloc(talloc_autofree_context(), struct dcom_proxy);
+	struct dcom_proxy *proxy = talloc(ctx, struct dcom_proxy);
 
 	proxy->vtable = proxy_vtable;
 	DLIST_ADD(proxies, proxy);
@@ -57,9 +58,10 @@ static struct dcom_marshal {
 	struct dcom_marshal *prev, *next;
 }  *marshals = NULL;
 
-NTSTATUS dcom_register_marshal(struct GUID *clsid, marshal_fn marshal, unmarshal_fn unmarshal)
+NTSTATUS dcom_register_marshal(TALLOC_CTX *ctx,
+		struct GUID *clsid, marshal_fn marshal, unmarshal_fn unmarshal)
 {
-	struct dcom_marshal *p = talloc(talloc_autofree_context(), struct dcom_marshal);
+	struct dcom_marshal *p = talloc(ctx, struct dcom_marshal);
 
 	p->clsid = *clsid;
 	p->marshal = marshal;
