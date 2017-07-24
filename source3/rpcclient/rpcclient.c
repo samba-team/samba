@@ -1021,7 +1021,7 @@ out_free:
 		goto done;
 	}
 
-	nt_status = messaging_init_client(talloc_autofree_context(),
+	nt_status = messaging_init_client(ev_ctx,
 					  ev_ctx,
 					  &rpcclient_msg_ctx);
 	if (geteuid() != 0 &&
@@ -1254,6 +1254,7 @@ done:
 		cli_shutdown(cli);
 	}
 	popt_free_cmdline_auth_info();
+	TALLOC_FREE(rpcclient_msg_ctx);
 	TALLOC_FREE(ev_ctx);
 	TALLOC_FREE(frame);
 	return result;
