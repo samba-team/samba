@@ -87,7 +87,7 @@ krb5_error_code kdb_samba_dbekd_encrypt_key_data(krb5_context context,
 	key_data->key_data_kvno = keyver;
 	key_data->key_data_type[0] = kkey->enctype;
 	key_data->key_data_contents[0] = malloc(kkey->length);
-	if (key_data->key_data_contents[0]) {
+	if (key_data->key_data_contents[0] == NULL) {
 		return ENOMEM;
 	}
 	memcpy(key_data->key_data_contents[0],
