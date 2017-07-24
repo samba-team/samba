@@ -948,6 +948,7 @@ out_free:
 	const char *binding_string = NULL;
 	const char *host;
 	int signing_state = SMB_SIGNING_IPC_DEFAULT;
+	struct tevent_context *ev_ctx = NULL;
 
 	/* make sure the vars that get altered (4th field) are in
 	   a fixed location or certain compilers complain */
@@ -1013,8 +1014,15 @@ out_free:
 	poptFreeContext(pc);
 	popt_burn_cmdline_password(argc, argv);
 
+	ev_ctx = samba_tevent_context_init(frame);
+	if (ev_ctx == NULL) {
+		fprintf(stderr, "Could not init event context\n");
+		result = 1;
+		goto done;
+	}
+
 	nt_status = messaging_init_client(talloc_autofree_context(),
-					  samba_tevent_context_init(talloc_autofree_context()),
+					  ev_ctx,
 					  &rpcclient_msg_ctx);
 	if (geteuid() != 0 &&
 			NT_STATUS_EQUAL(nt_status, NT_STATUS_ACCESS_DENIED)) {
@@ -1246,6 +1254,7 @@ done:
 		cli_shutdown(cli);
 	}
 	popt_free_cmdline_auth_info();
+	TALLOC_FREE(ev_ctx);
 	TALLOC_FREE(frame);
 	return result;
 }
