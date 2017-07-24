@@ -39,10 +39,11 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
     def setUp(self):
         super(DrsReplicaSyncIntegrityTestCase, self).setUp()
 
+        self.init_test_state()
+
         # Note that DC2 is the DC with the testenv-specific quirks (e.g. it's
         # the vampire_dc), so we point this test directly at that DC
         self.set_test_ldb_dc(self.ldb_dc2)
-        (self.drs, self.drs_handle) = self._ds_bind(self.dnsname_dc2)
 
         # add some randomness to the test OU. (Deletion of the last test's
         # objects can be slow to replicate out. So the OU created by a previous
@@ -53,9 +54,9 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
         self.test_ldb_dc.add({
             "dn": self.ou,
             "objectclass": "organizationalUnit"})
-        (self.default_hwm, self.default_utdv) = self._get_highest_hwm_utdv(self.test_ldb_dc)
 
-        self.init_test_state()
+        self.default_conn = DcConnection(self, self.ldb_dc2, self.dnsname_dc2)
+        self.set_dc_connection(self.default_conn)
 
     def tearDown(self):
         super(DrsReplicaSyncIntegrityTestCase, self).tearDown()
@@ -80,9 +81,9 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
         self.used_get_tgt = False
         self.used_get_anc = False
 
-    def add_object(self, dn):
+    def add_object(self, dn, objectclass="organizationalunit"):
         """Adds an OU object"""
-        self.test_ldb_dc.add({"dn": dn, "objectclass": "organizationalunit"})
+        self.test_ldb_dc.add({"dn": dn, "objectclass": objectclass})
         res = self.test_ldb_dc.search(base=dn, scope=SCOPE_BASE)
         self.assertEquals(len(res), 1)
 
@@ -96,9 +97,9 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
     def delete_attribute(self, dn, attr, value):
         """Deletes an attribute from an object"""
         m = ldb.Message()
-        m.dn = ldb.Dn(self.ldb_dc2, dn)
+        m.dn = ldb.Dn(self.test_ldb_dc, dn)
         m[attr] = ldb.MessageElement(value, ldb.FLAG_MOD_DELETE, attr)
-        self.ldb_dc2.modify(m)
+        self.test_ldb_dc.modify(m)
 
     def start_new_repl_cycle(self):
         """Resets enough state info to start a new replication cycle"""
@@ -310,6 +311,10 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
                             "Links were expected in the GetNCChanges response")
 
         for link in received_links:
+
+            # skip any links that aren't part of the test
+            if self.ou not in link.targetDN:
+                continue
 
             # check the source object is known (Windows can actually send links
             # where we don't know the source object yet). Samba shouldn't ever
@@ -851,13 +856,57 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
         msg["distinguishedName"] = ldb.MessageElement([new_dn], ldb.FLAG_MOD_REPLACE, "distinguishedName")
         self.test_ldb_dc.modify(msg, ["show_deleted:1"])
 
-    def sync_DCs(self):
+    def sync_DCs(self, nc_dn=None):
         # make sure DC1 has all the changes we've made to DC2
-        self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2)
+        self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, nc_dn=nc_dn)
 
     def get_object_guid(self, dn):
         res = self.test_ldb_dc.search(base=dn, attrs=["objectGUID"], scope=ldb.SCOPE_BASE)
         return res[0]['objectGUID'][0]
+
+
+    def set_dc_connection(self, conn):
+        """
+        Switches over the connection state info that the underlying drs_base
+        class uses so that we replicate with a different DC.
+        """
+        self.default_hwm = conn.default_hwm
+        self.default_utdv = conn.default_utdv
+        self.drs = conn.drs
+        self.drs_handle = conn.drs_handle
+        self.set_test_ldb_dc(conn.ldb_dc)
+
+    def assert_DCs_replication_is_consistent(self, peer_conn, all_objects,
+                                             expected_links):
+        """
+        Replicates against both the primary and secondary DCs in the testenv
+        and checks that both return the expected results.
+        """
+        print("Checking replication against primary test DC...")
+
+        # get the replication data from the test DC first
+        while not self.replication_complete():
+            self.repl_get_next()
+
+        # Check we get all the objects and links we're expecting
+        self.assert_expected_data(all_objects)
+        self.assert_expected_links(expected_links)
+
+        # switch over the DC state info so we now talk to the peer DC
+        self.set_dc_connection(peer_conn)
+        self.init_test_state()
+
+        print("Checking replication against secondary test DC...")
+
+        # check that we get the same information from the 2nd DC
+        while not self.replication_complete():
+            self.repl_get_next()
+
+        self.assert_expected_data(all_objects)
+        self.assert_expected_links(expected_links)
+
+        # switch back to using the default connection
+        self.set_dc_connection(self.default_conn)
 
     def test_repl_integrity_obj_reanimation(self):
         """
@@ -867,10 +916,10 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
 
         # This test is a little different in that we're particularly interested
         # in exercising the replmd client code on the second DC.
-        # First, make sure the peer DC has the base OU, then store its HWM
+        # First, make sure the peer DC has the base OU, then connect to it (so
+        # we store its inital HWM)
         self.sync_DCs()
-        (peer_drs, peer_drs_handle) = self._ds_bind(self.dnsname_dc1)
-        (peer_default_hwm, peer_default_utdv) = self._get_highest_hwm_utdv(self.ldb_dc1)
+        peer_conn = DcConnection(self, self.ldb_dc1, self.dnsname_dc1)
 
         # create the link source/target objects
         la_sources = self.create_object_range(0, 100, prefix="la_src")
@@ -911,30 +960,97 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
         all_objects = la_sources + la_targets + filler
         expected_links = la_sources
 
-        # Enable replication again and make sure the 2 DCs are back in sync
+        # Enable replication again make sure the 2 DCs are back in sync
         self._enable_all_repl(self.dnsname_dc2)
         self.sync_DCs()
 
-        # get the replication data from the test DC - we should get 100 links
+        # Get the replication data from each DC in turn.
+        # Check that both give us all the objects and links we're expecting,
+        # i.e. no links were lost
+        self.assert_DCs_replication_is_consistent(peer_conn, all_objects,
+                                                  expected_links)
+
+    def test_repl_integrity_cross_partition_links(self):
+        """
+        Checks that a cross-partition link to an unknown target object does
+        not result in missing links.
+        """
+
+        # check the peer DC is up-to-date, then connect (storing its HWM)
+        self.sync_DCs()
+        peer_conn = DcConnection(self, self.ldb_dc1, self.dnsname_dc1)
+
+        # stop replication so the peer gets the following objects in one go
+        self._disable_all_repl(self.dnsname_dc2)
+
+        # create a link source object in the main NC
+        la_source = "OU=cross_nc_src,%s" % self.ou
+        self.add_object(la_source)
+
+        # create the link target (a server object) in the config NC
+        rand = random.randint(1, 10000000)
+        la_target = "CN=getncchanges-%d,CN=Servers,CN=Default-First-Site-Name," \
+                    "CN=Sites,%s" %(rand, self.config_dn)
+        self.add_object(la_target, objectclass="server")
+
+        # add a cross-partition link between the two
+        self.modify_object(la_source, "managedBy", la_target)
+
+        # First, sync across to the peer the NC containing the link source object
+        self.sync_DCs()
+
+        # Now, before the peer has received the partition containing the target
+        # object, try replicating from the peer. It will only know about half
+        # of the link at this point, but it should be a valid scenario
+        self.set_dc_connection(peer_conn)
+
         while not self.replication_complete():
-            self.repl_get_next()
+            # pretend we've received other link targets out of order and that's
+            # forced us to use GET_TGT. This checks the peer doesn't fail trying
+            # to fetch a cross-partition target object that doesn't exist
+            self.repl_get_next(get_tgt=True)
 
-        # Check we get all the objects and links we're expecting
-        self.assert_expected_data(all_objects)
-        self.assert_expected_links(expected_links)
-
-        # switch over the DC state info so we now talk to the peer DC
+        self.set_dc_connection(self.default_conn)
         self.init_test_state()
-        self.default_hwm = peer_default_hwm
-        self.default_utdv = peer_default_utdv
-        self.drs = peer_drs
-        self.drs_handle = peer_drs_handle
-        self.set_test_ldb_dc(self.ldb_dc1)
 
-        # check that we get the same information from the 2nd DC
-        while not self.replication_complete():
-            self.repl_get_next()
+        # Now sync across the partition containing the link target object
+        self.sync_DCs(nc_dn=self.config_dn)
+        self._enable_all_repl(self.dnsname_dc2)
 
-        self.assert_expected_data(all_objects)
-        self.assert_expected_links(expected_links)
+        # Get the replication data from each DC in turn.
+        # Check that both return the cross-partition link (note we're not
+        # checking the config domain NC here for simplicity)
+        self.assert_DCs_replication_is_consistent(peer_conn,
+                                                  all_objects=[la_source],
+                                                  expected_links=[la_source])
+
+        # the cross-partition linked attribute has a missing backlink. Check
+        # that we can still delete it successfully
+        self.delete_attribute(la_source, "managedBy", la_target)
+        self.sync_DCs()
+
+        res = self.test_ldb_dc.search(ldb.Dn(self.ldb_dc1, la_source),
+                                      attrs=["managedBy"],
+                                      controls=['extended_dn:1:0'],
+                                      scope=ldb.SCOPE_BASE)
+        self.assertFalse("managedBy" in res[0], "%s in DB still has managedBy attribute"
+                         % la_source)
+        res = self.test_ldb_dc.search(ldb.Dn(self.ldb_dc2, la_source),
+                                      attrs=["managedBy"],
+                                      controls=['extended_dn:1:0'],
+                                      scope=ldb.SCOPE_BASE)
+        self.assertFalse("managedBy" in res[0], "%s in DB still has managedBy attribute"
+                         % la_source)
+
+        # cleanup the server object we created in the Configuration partition
+        self.test_ldb_dc.delete(la_source)
+
+class DcConnection:
+    """Helper class to track a connection to another DC"""
+
+    def __init__(self, drs_base, ldb_dc, dnsname_dc):
+        self.ldb_dc = ldb_dc
+        (self.drs, self.drs_handle) = drs_base._ds_bind(dnsname_dc)
+        (self.default_hwm, self.default_utdv) = drs_base._get_highest_hwm_utdv(ldb_dc)
+
 
