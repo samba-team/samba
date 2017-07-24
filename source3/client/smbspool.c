@@ -26,6 +26,7 @@
 #include "system/filesys.h"
 #include "system/passwd.h"
 #include "libsmb/libsmb.h"
+#include "lib/param/param.h"
 
 /*
  * Starting with CUPS 1.3, Kerberos support is provided by cupsd including
@@ -96,6 +97,7 @@ main(int argc,			/* I - Number of command-line arguments */
 	int             tries = 0;
 	bool		need_auth = true;
 	const char     *dev_uri;
+	const char     *config_file = NULL;
 	TALLOC_CTX     *frame = talloc_stackframe();
 
 	null_str[0] = '\0';
@@ -244,8 +246,11 @@ main(int argc,			/* I - Number of command-line arguments */
 
 	smb_init_locale();
 
-	if (!lp_load_client(get_dyn_CONFIGFILE())) {
-		fprintf(stderr, "ERROR: Can't load %s - run testparm to debug it\n", get_dyn_CONFIGFILE());
+	config_file = lp_default_path();
+	if (!lp_load_client(config_file)) {
+		fprintf(stderr,
+			"ERROR: Can't load %s - run testparm to debug it\n",
+			config_file);
 		goto done;
 	}
 
