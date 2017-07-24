@@ -244,6 +244,11 @@ NTSTATUS netlogon_creds_cli_open_global_db(struct loadparm_context *lp_ctx)
 	return NT_STATUS_OK;
 }
 
+void netlogon_creds_cli_close_global_db(void)
+{
+	TALLOC_FREE(netlogon_creds_cli_global_db);
+}
+
 NTSTATUS netlogon_creds_cli_context_global(struct loadparm_context *lp_ctx,
 				struct messaging_context *msg_ctx,
 				const char *client_account,
