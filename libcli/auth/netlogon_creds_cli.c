@@ -221,7 +221,7 @@ NTSTATUS netlogon_creds_cli_open_global_db(struct loadparm_context *lp_ctx)
 		return NT_STATUS_OK;
 	}
 
-	fname = lpcfg_private_db_path(talloc_autofree_context(), lp_ctx, "netlogon_creds_cli");
+	fname = lpcfg_private_db_path(NULL, lp_ctx, "netlogon_creds_cli");
 	if (fname == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
