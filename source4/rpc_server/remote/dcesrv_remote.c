@@ -28,7 +28,7 @@
 #include "librpc/ndr/ndr_table.h"
 #include "param/param.h"
 
-NTSTATUS dcerpc_server_remote_init(void);
+NTSTATUS dcerpc_server_remote_init(TALLOC_CTX *ctx);
 
 struct dcesrv_remote_private {
 	struct dcerpc_pipe *c_pipe;
@@ -403,7 +403,7 @@ static bool remote_op_interface_by_name(struct dcesrv_interface *iface, const ch
 	return false;	
 }
 
-NTSTATUS dcerpc_server_remote_init(void)
+NTSTATUS dcerpc_server_remote_init(TALLOC_CTX *ctx)
 {
 	NTSTATUS ret;
 	static const struct dcesrv_endpoint_server ep_server = {
