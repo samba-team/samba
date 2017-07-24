@@ -3949,7 +3949,7 @@ static PyObject *py_register_module(PyObject *module, PyObject *args)
 	if (!PyArg_ParseTuple(args, "O", &input))
 		return NULL;
 
-	ops = talloc_zero(talloc_autofree_context(), struct ldb_module_ops);
+	ops = talloc_zero(NULL, struct ldb_module_ops);
 	if (ops == NULL) {
 		PyErr_NoMemory();
 		return NULL;
@@ -3972,6 +3972,9 @@ static PyObject *py_register_module(PyObject *module, PyObject *args)
 	ops->del_transaction = py_module_del_transaction;
 
 	ret = ldb_register_module(ops);
+	if (ret != LDB_SUCCESS) {
+		TALLOC_FREE(ops);
+	}
 
 	PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ret, NULL);
 
