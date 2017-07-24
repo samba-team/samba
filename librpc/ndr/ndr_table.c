@@ -44,7 +44,17 @@ NTSTATUS ndr_table_register(const struct ndr_interface_table *table)
 		}
 	}
 
-	l = talloc(talloc_autofree_context(), struct ndr_interface_list);
+	/*
+	 * This is a singleton instance guarenteed
+	 * by the above check to be only added once
+	 * into the list so we can allocate off the NULL
+	 * context. We never want this to be freed
+	 * until process shutdown. If needed we could
+	 * add a deregister function that walks and
+	 * frees the list.
+	 */
+
+	l = talloc(NULL, struct ndr_interface_list);
 	l->table = table;
 
 	DLIST_ADD(ndr_interfaces, l);
