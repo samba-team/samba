@@ -374,8 +374,9 @@ static int replmd_process_backlink(struct ldb_module *module, struct la_backlink
 	ret = dsdb_module_dn_by_guid(module, frame, &bl->target_guid, &target_dn, parent);
 	if (ret != LDB_SUCCESS) {
 		struct GUID_txt_buf guid_str;
-		DEBUG(2,(__location__ ": WARNING: Failed to find target DN for linked attribute with GUID %s\n",
-			 GUID_buf_string(&bl->target_guid, &guid_str)));
+		DBG_WARNING("Failed to find target DN for linked attribute with GUID %s\n",
+			    GUID_buf_string(&bl->target_guid, &guid_str));
+		DBG_WARNING("Please run 'samba-tool dbcheck' to resolve any missing backlinks.\n");
 		talloc_free(frame);
 		return LDB_SUCCESS;
 	}
@@ -6816,15 +6817,14 @@ static int replmd_check_target_exists(struct ldb_module *module,
 		} else {
 
 			/*
-			 * TODO:
-			 * We don't handle cross-partition links well here (we
-			 * could potentially lose them), but don't fail the
-			 * replication.
+			 * The target of the cross-partition link is missing.
+			 * Continue and try to at least add the forward-link.
+			 * This isn't great, but if we can add a partial link
+			 * then it's better than nothing.
 			 */
 			DEBUG(2,("Failed to resolve cross-partition link between %s and %s\n",
 				 ldb_dn_get_linearized(source_dn),
 				 ldb_dn_get_linearized(dsdb_dn->dn)));
-			*ignore_link = true;
 		}
 	} else if (target_res->count != 1) {
 		ldb_asprintf_errstring(ldb, "More than one object found matching objectGUID %s\n",
