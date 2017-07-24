@@ -44,6 +44,7 @@
 #include "lib/param/param.h"
 #include "lib/async_req/async_sock.h"
 #include "libsmb/samlogon_cache.h"
+#include "libcli/auth/netlogon_creds_cli.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -244,6 +245,8 @@ static void terminate(bool is_parent)
 	idmap_close();
 
 	gencache_stabilize();
+
+	netlogon_creds_cli_close_global_db();
 
 #if 0
 	if (interactive) {

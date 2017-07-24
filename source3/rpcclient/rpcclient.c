@@ -1254,6 +1254,7 @@ done:
 		cli_shutdown(cli);
 	}
 	popt_free_cmdline_auth_info();
+	netlogon_creds_cli_close_global_db();
 	TALLOC_FREE(rpcclient_msg_ctx);
 	TALLOC_FREE(ev_ctx);
 	TALLOC_FREE(frame);

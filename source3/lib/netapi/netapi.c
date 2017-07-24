@@ -184,6 +184,8 @@ NET_API_STATUS libnetapi_free(struct libnetapi_ctx *ctx)
 
 	secrets_shutdown();
 
+	netlogon_creds_cli_close_global_db();
+
 	if (ctx == stat_ctx) {
 		stat_ctx = NULL;
 	}
