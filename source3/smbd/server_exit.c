@@ -46,6 +46,7 @@
 #include "messages.h"
 #include "../lib/util/pidfile.h"
 #include "smbprofile.h"
+#include "libcli/auth/netlogon_creds_cli.h"
 
 static struct files_struct *log_writeable_file_fn(
 	struct files_struct *fsp, void *private_data)
@@ -226,6 +227,7 @@ static void exit_server_common(enum server_exit_reason how,
 	sconn = NULL;
 	xconn = NULL;
 	client = NULL;
+	netlogon_creds_cli_close_global_db();
 	TALLOC_FREE(global_smbXsrv_client);
 	smbprofile_dump();
 	server_messaging_context_free();
