@@ -96,9 +96,11 @@ struct IUnknown *com_class_by_clsid(struct com_context *ctx, const struct GUID *
 	return NULL;
 }
 
-NTSTATUS com_register_running_class(struct GUID *clsid, const char *progid, struct IUnknown *p)
+NTSTATUS com_register_running_class(TALLOC_CTX *ctx,
+		struct GUID *clsid, const char *progid, struct IUnknown *p)
 {
-	struct com_class *l = talloc_zero(running_classes?running_classes:talloc_autofree_context(), struct com_class);
+	struct com_class *l = talloc_zero(running_classes?
+				running_classes : ctx, struct com_class);
 
 	l->clsid = *clsid;
 	l->progid = talloc_strdup(l, progid);

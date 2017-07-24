@@ -21,6 +21,7 @@
 #define __SAMBA_COM_H__
 
 #include "librpc/gen_ndr/misc.h"
+#include "lib/talloc/talloc.h"
 
 struct com_context;
 struct tevent_context;
@@ -38,7 +39,7 @@ struct com_context
 };
 
 struct IUnknown *com_class_by_clsid(struct com_context *ctx, const struct GUID *clsid);
-NTSTATUS com_register_running_class(struct GUID *clsid, const char *progid, struct IUnknown *p);
+NTSTATUS com_register_running_class(TALLOC_CTX *ctx, struct GUID *clsid, const char *progid, struct IUnknown *p);
 
 struct dcom_interface_p *dcom_get_local_iface_p(struct GUID *ipid);
 
