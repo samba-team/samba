@@ -6,8 +6,18 @@
 <description>
     <para>This parameter determines whether or not <citerefentry><refentrytitle>smbd</refentrytitle>
     <manvolnum>8</manvolnum></citerefentry> will attempt to
-    authenticate users using the NTLM encrypted password response.
-    If disabled, NTLM and LanMan authencication is disabled server-wide.</para>
+    authenticate users using the NTLM encrypted password response for
+    this local passdb (SAM or account database). </para>
+
+    <para>If disabled, both NTLM and LanMan authencication against the
+    local passdb is disabled.</para>
+
+    <para>Note that these settings apply only to local users,
+    authentication will still be forwarded to and NTLM authentication
+    accepted against any domain we are joined to, and any trusted
+    domain, even if disabled or if NTLMv2-only is enforced here.  To
+    control NTLM authentiation for domain users, this must option must
+    be configured on each DC.</para>
 
     <para>By default with <command moreinfo="none">lanman
     auth</command> set to <constant>no</constant> and
@@ -41,8 +51,8 @@
         </listitem>
 
         <listitem>
-          <para><constant>disabled</constant> - Do not allow NTLM (or
-          LanMan) authentication of any level as a server, nor permit
+          <para><constant>disabled</constant> - Do not accept NTLM (or
+          LanMan) authentication of any level, nor permit
           NTLM password changes.</para>
         </listitem>
 
