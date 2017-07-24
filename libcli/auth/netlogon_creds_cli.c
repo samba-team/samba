@@ -208,7 +208,7 @@ NTSTATUS netlogon_creds_cli_set_global_db(struct db_context **db)
 		return NT_STATUS_INVALID_PARAMETER_MIX;
 	}
 
-	netlogon_creds_cli_global_db = talloc_move(talloc_autofree_context(), db);
+	netlogon_creds_cli_global_db = talloc_move(NULL, db);
 	return NT_STATUS_OK;
 }
 
@@ -226,7 +226,7 @@ NTSTATUS netlogon_creds_cli_open_global_db(struct loadparm_context *lp_ctx)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	global_db = dbwrap_local_open(talloc_autofree_context(), lp_ctx,
+	global_db = dbwrap_local_open(NULL, lp_ctx,
 				      fname, 0,
 				      TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH,
 				      O_RDWR|O_CREAT,
