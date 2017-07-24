@@ -2445,6 +2445,10 @@ static NTSTATUS kcctpl_kruskal(TALLOC_CTX *mem_ctx, struct kcctpl_graph *graph,
 	uint32_t i, num_expected_tree_edges, cst_edges;
 	struct kcctpl_multi_edge_list output_edges;
 
+	if (internal_edges.data == NULL || internal_edges.count == 0) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	num_expected_tree_edges = 0;
 	for (i = 0; i < graph->vertices.count; i++) {
 		struct kcctpl_vertex *vertex = &graph->vertices.data[i];
