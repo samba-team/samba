@@ -280,7 +280,17 @@ int ldb_register_module(const struct ldb_module_ops *ops)
 	if (ldb_find_module_ops(ops->name) != NULL)
 		return LDB_ERR_ENTRY_ALREADY_EXISTS;
 
-	entry = talloc(talloc_autofree_context(), struct ops_list_entry);
+	/*
+	 * ldb modules are not (yet) unloaded and
+	 * are only loaded once (the above check
+	 * makes sure of this). Allocate off the NULL
+	 * context. We never want this to be freed
+	 * until process shutdown. If eventually we
+	 * want to unload ldb modules we can add a
+	 * deregister function that walks and
+	 * frees the list.
+	 */
+	entry = talloc(NULL, struct ops_list_entry);
 	if (entry == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
