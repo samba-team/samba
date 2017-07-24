@@ -766,7 +766,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 				default_transport,
 				rpcclient_netlogon_domain,
 				&cmd_entry->rpc_pipe,
-				talloc_autofree_context(),
+				rpcclient_msg_ctx,
 				&rpcclient_netlogon_creds);
 			break;
 		default:
@@ -805,7 +805,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 			ntresult = rpccli_create_netlogon_creds_with_creds(creds,
 							dc_name,
 							rpcclient_msg_ctx,
-							talloc_autofree_context(),
+							rpcclient_msg_ctx,
 							&rpcclient_netlogon_creds);
 			if (!NT_STATUS_IS_OK(ntresult)) {
 				DEBUG(0, ("Could not initialise credentials for %s.\n",
