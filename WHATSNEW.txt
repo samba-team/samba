@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the second release candidate of Samba 4.7.  This is *not*
+This is the third release candidate of Samba 4.7.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -77,7 +77,6 @@ LDAP read inconsistency
 
 See https://bugzilla.samba.org/show_bug.cgi?id=12858 for more details
 and updated advise on database recovery for affected installations.
-
 
 Samba AD with MIT Kerberos
 --------------------------
@@ -303,6 +302,7 @@ the previous behaviour.  Two new values have been provided,
 and 'disabled', totally disabling NTLM authentication and password
 changes.
 
+
 smb.conf changes
 ================
 
@@ -328,6 +328,65 @@ KNOWN ISSUES
 ============
 
 https://wiki.samba.org/index.php/Release_Planning_for_Samba_4.7#Release_blocking_bugs
+
+
+CHANGES SINCE 4.7.0rc2
+======================
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 12836: s3: smbd: Fix a read after free if a chained SMB1 call goes
+     async.
+   * BUG 12899: s3: libsmb: Reverse sense of 'clear all attributes', ignore
+     attribute change in SMB2 to match SMB1.
+   * BUG 12914: s3: smbclient: Add new command deltree.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 12885: s3/smbd: Let non_widelink_open() chdir() to directories
+     directly.
+   * BUG 12887: Remove SMB_VFS_STRICT_UNLOCK noop from the VFS.
+   * BUG 12891: Enable TDB mutexes in dbwrap and ctdb.
+   * BUG 12897: vfs_fruit: don't use MS NFS ACEs with Windows clients.
+   * BUG 12910: s3/notifyd: Ensure notifyd doesn't return from
+     smbd_notifyd_init.
+
+o  Alexander Bokovoy <ab@samba.org>
+   * BUG 12905: Build py3 versions of other rpc modules.
+
+o  Günther Deschner <gd@samba.org>
+   * BUG 12840: vfs_fruit: Add "fruit:model = <modelname>" parametric option.
+
+o  Dustin L. Howett
+   * BUG 12720: idmap_ad: Retry query_user exactly once if we get
+     TLDAP_SERVER_DOWN.
+
+o  Amitay Isaacs <amitay@gmail.com>
+   * BUG 12891: dbwrap_ctdb: Fix calculation of persistent flag.
+
+o  Thomas Jarosch <thomas.jarosch@intra2net.com>
+   * BUG 12927: s3: libsmb: Fix use-after-free when accessing pointer *p.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 12925: smbd: Fix a connection run-down race condition.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * tevent: version 0.9.33: make tevent_req_print() more robust against crashes.
+   * ldb: version 1.2.1
+   * BUG 12882: Do not install _ldb_text.py if we have system libldb.
+   * BUG 12890: s3:smbd: consistently use talloc_tos() memory for
+     rpc_pipe_open_interface().
+   * BUG 12900: Fix index out of bound in ldb_msg_find_common_values.
+
+o  Rowland Penny <rpenny@samba.org>
+   * BUG 12884: Easily edit a users object in AD, as if using 'ldbedit'.
+
+o  Bernhard M. Wiedemann <bwiedemann@suse.de>
+   * BUG 12906: s3: drop build_env
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 12882: waf: Do not install _ldb_text.py if we have system libldb.
+
+o  Martin Schwenke <martin@meltin.net>
+   * BUG 12898: ctdb-common: Set close-on-exec when creating PID file.
 
 
 CHANGES SINCE 4.7.0rc1
