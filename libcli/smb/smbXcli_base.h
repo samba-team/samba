@@ -806,6 +806,32 @@ NTSTATUS smb2cli_query_directory(struct smbXcli_conn *conn,
 				 uint8_t **data,
 				 uint32_t *data_length);
 
+struct tevent_req *smb2cli_notify_send(TALLOC_CTX *mem_ctx,
+				       struct tevent_context *ev,
+				       struct smbXcli_conn *conn,
+				       uint32_t timeout_msec,
+				       struct smbXcli_session *session,
+				       struct smbXcli_tcon *tcon,
+				       uint32_t output_buffer_length,
+				       uint64_t fid_persistent,
+				       uint64_t fid_volatile,
+				       uint32_t completion_filter,
+				       bool recursive);
+NTSTATUS smb2cli_notify_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+			     uint8_t **data, uint32_t *data_length);
+NTSTATUS smb2cli_notify(struct smbXcli_conn *conn,
+			uint32_t timeout_msec,
+			struct smbXcli_session *session,
+			struct smbXcli_tcon *tcon,
+			uint32_t output_buffer_length,
+			uint64_t fid_persistent,
+			uint64_t fid_volatile,
+			uint32_t completion_filter,
+			bool recursive,
+			TALLOC_CTX *mem_ctx,
+			uint8_t **data,
+			uint32_t *data_length);
+
 struct tevent_req *smb2cli_ioctl_send(TALLOC_CTX *mem_ctx,
 				      struct tevent_context *ev,
 				      struct smbXcli_conn *conn,

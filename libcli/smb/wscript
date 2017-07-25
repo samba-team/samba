@@ -39,6 +39,7 @@ def build(bld):
            smb2cli_flush.c
            smb2cli_set_info.c
            smb2cli_query_info.c
+           smb2cli_notify.c
            smb2cli_query_directory.c
            smb2cli_ioctl.c
            smb2cli_echo.c
