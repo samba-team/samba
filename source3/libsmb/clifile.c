@@ -5609,10 +5609,18 @@ NTSTATUS cli_notify(struct cli_state *cli, uint16_t fnum, uint32_t buffer_size,
 		    TALLOC_CTX *mem_ctx, uint32_t *pnum_changes,
 		    struct notify_change **pchanges)
 {
-	TALLOC_CTX *frame = talloc_stackframe();
+	TALLOC_CTX *frame;
 	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+		return cli_smb2_notify(cli, fnum, buffer_size,
+				       completion_filter, recursive,
+				       mem_ctx, pchanges, pnum_changes);
+	}
+
+	frame = talloc_stackframe();
 
 	if (smbXcli_conn_has_async_calls(cli->conn)) {
 		/*
