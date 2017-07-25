@@ -584,7 +584,7 @@ static bool test_netlogon_huawei(struct torture_context *tctx,
 			tctx,
 			&n1);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_VAL(n1.ntver, NETLOGON_NT_VERSION_1);
+	CHECK_VAL(n1.ntver, NETLOGON_NT_VERSION_5);
 
 	return true;
 }

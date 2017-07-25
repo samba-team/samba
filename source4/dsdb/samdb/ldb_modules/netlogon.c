@@ -425,7 +425,7 @@ NTSTATUS parse_netlogon_request(struct ldb_parse_tree *tree,
 	*domain_guid = NULL;
 	*domain_sid = NULL;
 	*acct_control = -1;
-	*version = 0;
+	*version = NETLOGON_NT_VERSION_5;
 
 	if (tree->operation != LDB_OP_AND) goto failed;
 
