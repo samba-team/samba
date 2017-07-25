@@ -3817,3 +3817,95 @@ NTSTATUS cli_smb2_ftruncate(struct cli_state *cli,
 	TALLOC_FREE(frame);
 	return status;
 }
+
+NTSTATUS cli_smb2_notify(struct cli_state *cli, uint16_t fnum,
+			 uint32_t buffer_size, uint32_t completion_filter,
+			 bool recursive, TALLOC_CTX *mem_ctx,
+			 struct notify_change **pchanges,
+			 uint32_t *pnum_changes)
+{
+	NTSTATUS status;
+	struct smb2_hnd *ph = NULL;
+	TALLOC_CTX *frame = talloc_stackframe();
+	uint8_t *base;
+	uint32_t len, ofs;
+	struct notify_change *changes = NULL;
+	size_t num_changes = 0;
+
+	if (smbXcli_conn_has_async_calls(cli->conn)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+
+	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+
+	status = map_fnum_to_smb2_handle(cli, fnum, &ph);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+
+	status = smb2cli_notify(cli->conn, cli->timeout,
+				cli->smb2.session, cli->smb2.tcon,
+				buffer_size,
+				ph->fid_persistent, ph->fid_volatile,
+				completion_filter, recursive,
+				frame, &base, &len);
+
+	ofs = 0;
+
+	while (len - ofs >= 12) {
+		struct notify_change *tmp;
+		struct notify_change *c;
+		uint32_t next_ofs = IVAL(base, ofs);
+		uint32_t file_name_length = IVAL(base, ofs+8);
+		size_t namelen;
+		bool ok;
+
+		tmp = talloc_realloc(frame, changes, struct notify_change,
+				     num_changes + 1);
+		if (tmp == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto fail;
+		}
+		changes = tmp;
+		c = &changes[num_changes];
+		num_changes += 1;
+
+		if (smb_buffer_oob(len, ofs, next_ofs) ||
+		    smb_buffer_oob(len, ofs+12, file_name_length)) {
+			status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+			goto fail;
+		}
+
+		c->action = IVAL(base, ofs+4);
+
+		ok = convert_string_talloc(changes, CH_UTF16LE, CH_UNIX,
+					   base + ofs + 12, file_name_length,
+					   &c->name, &namelen);
+		if (!ok) {
+			status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+			goto fail;
+		}
+
+		if (next_ofs == 0) {
+			break;
+		}
+		ofs += next_ofs;
+	}
+
+	*pchanges = talloc_move(mem_ctx, &changes);
+	*pnum_changes = num_changes;
+	status = NT_STATUS_OK;
+
+fail:
+	cli->raw_status = status;
+
+	TALLOC_FREE(frame);
+	return status;
+}
