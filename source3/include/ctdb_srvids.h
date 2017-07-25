@@ -38,3 +38,9 @@
  * locally according to the non-clustered local notify.tdb
  */
 #define CTDB_SRVID_SAMBA_NOTIFY_PROXY  0xFE00000000000001LL
+
+/*
+ * SRVID for all processes that come from Samba. Used to be
+ * MSG_SRVID_SAMBA in the past. Now used for message_send_all.
+ */
+#define CTDB_SRVID_SAMBA_PROCESS  0xFE00000000000002LL

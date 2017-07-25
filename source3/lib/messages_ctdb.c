@@ -26,6 +26,7 @@
 #include "lib/messages_util.h"
 #include "ctdbd_conn.h"
 #include "lib/cluster_support.h"
+#include "ctdb_srvids.h"
 
 struct messaging_ctdb_context;
 
@@ -105,6 +106,14 @@ int messaging_ctdb_init(const char *sockname, int timeout, uint64_t unique_id,
 
 	ret = register_with_ctdbd(ctx->conn, getpid(), messaging_ctdb_recv,
 				  ctx);
+	if (ret != 0) {
+		DBG_DEBUG("register_with_ctdbd returned %s (%d)\n",
+			  strerror(ret), ret);
+		goto fail;
+	}
+
+	ret = register_with_ctdbd(ctx->conn, CTDB_SRVID_SAMBA_PROCESS,
+				  messaging_ctdb_recv, ctx);
 	if (ret != 0) {
 		DBG_DEBUG("register_with_ctdbd returned %s (%d)\n",
 			  strerror(ret), ret);
