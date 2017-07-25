@@ -248,6 +248,8 @@ static NTSTATUS messaging_init_internal(TALLOC_CTX *mem_ctx,
 	const char *priv_path;
 	bool ok;
 
+	sec_init();
+
 	lck_path = lock_path("msg.lock");
 	if (lck_path == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -291,8 +293,6 @@ static NTSTATUS messaging_init_internal(TALLOC_CTX *mem_ctx,
 	};
 
 	ctx->event_ctx = ev;
-
-	sec_init();
 
 	ctx->msg_dgm_ref = messaging_dgm_ref(ctx,
 					     ctx->event_ctx,
