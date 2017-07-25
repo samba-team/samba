@@ -237,4 +237,9 @@ NTSTATUS cli_smb2_shadow_copy_data(TALLOC_CTX *mem_ctx,
 NTSTATUS cli_smb2_ftruncate(struct cli_state *cli,
 			uint16_t fnum,
 			uint64_t newsize);
+NTSTATUS cli_smb2_notify(struct cli_state *cli, uint16_t fnum,
+			 uint32_t buffer_size, uint32_t completion_filter,
+			 bool recursive, TALLOC_CTX *mem_ctx,
+			 struct notify_change **pchanges,
+			 uint32_t *pnum_changes);
 #endif /* __SMB2CLI_FNUM_H__ */
