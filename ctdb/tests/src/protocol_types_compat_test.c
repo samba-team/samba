@@ -93,12 +93,48 @@ static void COMPAT_TEST_FUNC(NAME)(void) \
 }
 
 
+static size_t ctdb_statistics_len_old(struct ctdb_statistics *in)
+{
+	return sizeof(struct ctdb_statistics);
+}
+
+static void ctdb_statistics_push_old(struct ctdb_statistics *in, uint8_t *buf)
+{
+	memcpy(buf, in, sizeof(struct ctdb_statistics));
+}
+
+static int ctdb_statistics_pull_old(uint8_t *buf, size_t buflen,
+				    TALLOC_CTX *mem_ctx,
+				    struct ctdb_statistics **out)
+{
+	struct ctdb_statistics *val;
+
+	if (buflen < sizeof(struct ctdb_statistics)) {
+		return EMSGSIZE;
+	}
+
+	val = talloc(mem_ctx, struct ctdb_statistics);
+	if (val == NULL) {
+		return ENOMEM;
+	}
+
+	memcpy(val, buf, sizeof(struct ctdb_statistics));
+
+	*out = val;
+	return 0;
+}
+
+
+COMPAT_TYPE3_TEST(struct ctdb_statistics, ctdb_statistics);
+
 int main(int argc, char *argv[])
 {
 	if (argc == 2) {
 		int seed = atoi(argv[1]);
 		srandom(seed);
 	}
+
+	COMPAT_TEST_FUNC(ctdb_statistics)();
 
 	return 0;
 }

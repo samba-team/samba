@@ -295,13 +295,130 @@ void verify_ctdb_latency_counter(struct ctdb_latency_counter *p1,
 
 void fill_ctdb_statistics(TALLOC_CTX *mem_ctx, struct ctdb_statistics *p)
 {
-	fill_buffer((uint8_t *)p, sizeof(struct ctdb_statistics));
+	int i;
+
+	p->num_clients = rand32();
+	p->frozen = rand32();
+	p->recovering = rand32();
+	p->client_packets_sent = rand32();
+	p->client_packets_recv = rand32();
+	p->node_packets_sent = rand32();
+	p->node_packets_recv = rand32();
+	p->keepalive_packets_sent = rand32();
+	p->keepalive_packets_recv = rand32();
+
+	p->node.req_call = rand32();
+	p->node.reply_call = rand32();
+	p->node.req_dmaster = rand32();
+	p->node.reply_dmaster = rand32();
+	p->node.reply_error = rand32();
+	p->node.req_message = rand32();
+	p->node.req_control = rand32();
+	p->node.reply_control = rand32();
+
+	p->client.req_call = rand32();
+	p->client.req_message = rand32();
+	p->client.req_control = rand32();
+
+	p->timeouts.call = rand32();
+	p->timeouts.control = rand32();
+	p->timeouts.traverse = rand32();
+
+	fill_ctdb_latency_counter(&p->reclock.ctdbd);
+	fill_ctdb_latency_counter(&p->reclock.recd);
+
+	p->locks.num_calls = rand32();
+	p->locks.num_current = rand32();
+	p->locks.num_pending = rand32();
+	p->locks.num_failed = rand32();
+	fill_ctdb_latency_counter(&p->locks.latency);
+	for (i=0; i<MAX_COUNT_BUCKETS; i++) {
+		p->locks.buckets[i] = rand32();
+	}
+
+	p->total_calls = rand32();
+	p->pending_calls = rand32();
+	p->childwrite_calls = rand32();
+	p->pending_childwrite_calls = rand32();
+	p->memory_used = rand32();
+	p->__last_counter = rand32();
+	p->max_hop_count = rand32();
+	for (i=0; i<MAX_COUNT_BUCKETS; i++) {
+		p->hop_count_bucket[i] = rand32();
+	}
+	fill_ctdb_latency_counter(&p->call_latency);
+	fill_ctdb_latency_counter(&p->childwrite_latency);
+	p->num_recoveries = rand32();
+	fill_ctdb_timeval(&p->statistics_start_time);
+	fill_ctdb_timeval(&p->statistics_current_time);
+	p->total_ro_delegations = rand32();
+	p->total_ro_revokes = rand32();
 }
 
 void verify_ctdb_statistics(struct ctdb_statistics *p1,
 			    struct ctdb_statistics *p2)
 {
-	verify_buffer(p1, p2, sizeof(struct ctdb_statistics));
+	int i;
+
+	assert(p1->num_clients == p2->num_clients);
+	assert(p1->frozen == p2->frozen);
+	assert(p1->recovering == p2->recovering);
+	assert(p1->client_packets_sent == p2->client_packets_sent);
+	assert(p1->client_packets_recv == p2->client_packets_recv);
+	assert(p1->node_packets_sent == p2->node_packets_sent);
+	assert(p1->node_packets_recv == p2->node_packets_recv);
+	assert(p1->keepalive_packets_sent == p2->keepalive_packets_sent);
+	assert(p1->keepalive_packets_recv == p2->keepalive_packets_recv);
+
+	assert(p1->node.req_call == p2->node.req_call);
+	assert(p1->node.reply_call == p2->node.reply_call);
+	assert(p1->node.req_dmaster == p2->node.req_dmaster);
+	assert(p1->node.reply_dmaster == p2->node.reply_dmaster);
+	assert(p1->node.reply_error == p2->node.reply_error);
+	assert(p1->node.req_message == p2->node.req_message);
+	assert(p1->node.req_control == p2->node.req_control);
+	assert(p1->node.reply_control == p2->node.reply_control);
+
+	assert(p1->client.req_call == p2->client.req_call);
+	assert(p1->client.req_message == p2->client.req_message);
+	assert(p1->client.req_control == p2->client.req_control);
+
+	assert(p1->timeouts.call == p2->timeouts.call);
+	assert(p1->timeouts.control == p2->timeouts.control);
+	assert(p1->timeouts.traverse == p2->timeouts.traverse);
+
+	verify_ctdb_latency_counter(&p1->reclock.ctdbd, &p2->reclock.ctdbd);
+	verify_ctdb_latency_counter(&p1->reclock.recd, &p2->reclock.recd);
+
+	assert(p1->locks.num_calls == p2->locks.num_calls);
+	assert(p1->locks.num_current == p2->locks.num_current);
+	assert(p1->locks.num_pending == p2->locks.num_pending);
+	assert(p1->locks.num_failed == p2->locks.num_failed);
+	verify_ctdb_latency_counter(&p1->locks.latency, &p2->locks.latency);
+	for (i=0; i<MAX_COUNT_BUCKETS; i++) {
+		assert(p1->locks.buckets[i] == p2->locks.buckets[i]);
+	}
+
+	assert(p1->total_calls == p2->total_calls);
+	assert(p1->pending_calls == p2->pending_calls);
+	assert(p1->childwrite_calls == p2->childwrite_calls);
+	assert(p1->pending_childwrite_calls == p2->pending_childwrite_calls);
+	assert(p1->memory_used == p2->memory_used);
+	assert(p1->__last_counter == p2->__last_counter);
+	assert(p1->max_hop_count == p2->max_hop_count);
+	for (i=0; i<MAX_COUNT_BUCKETS; i++) {
+		assert(p1->hop_count_bucket[i] == p2->hop_count_bucket[i]);
+	}
+	verify_ctdb_latency_counter(&p1->call_latency, &p2->call_latency);
+	verify_ctdb_latency_counter(&p1->childwrite_latency,
+				    &p2->childwrite_latency);
+	assert(p1->num_recoveries == p2->num_recoveries);
+	verify_ctdb_timeval(&p1->statistics_start_time,
+			    &p2->statistics_start_time);
+	verify_ctdb_timeval(&p1->statistics_current_time,
+			    &p2->statistics_current_time);
+	assert(p1->total_ro_delegations == p2->total_ro_delegations);
+	assert(p1->total_ro_revokes == p2->total_ro_revokes);
 }
 
 void fill_ctdb_vnn_map(TALLOC_CTX *mem_ctx, struct ctdb_vnn_map *p)

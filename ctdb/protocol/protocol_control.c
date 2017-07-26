@@ -1419,7 +1419,7 @@ static void ctdb_reply_control_data_push(struct ctdb_reply_control_data *cd,
 
 	switch (cd->opcode) {
 	case CTDB_CONTROL_STATISTICS:
-		ctdb_statistics_push(cd->data.stats, buf);
+		ctdb_statistics_push(cd->data.stats, buf, &np);
 		break;
 
 	case CTDB_CONTROL_GETDBPATH:
@@ -1583,7 +1583,7 @@ static int ctdb_reply_control_data_pull(uint8_t *buf, size_t buflen,
 	switch (opcode) {
 	case CTDB_CONTROL_STATISTICS:
 		ret = ctdb_statistics_pull(buf, buflen, mem_ctx,
-					   &cd->data.stats);
+					   &cd->data.stats, &np);
 		break;
 
 	case CTDB_CONTROL_GETDBPATH:

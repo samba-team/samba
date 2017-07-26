@@ -105,10 +105,11 @@ void ctdb_latency_counter_push(struct ctdb_latency_counter *in, uint8_t *buf,
 int ctdb_latency_counter_pull(uint8_t *buf, size_t buflen,
 			      struct ctdb_latency_counter *out, size_t *npull);
 
-size_t ctdb_statistics_len(struct ctdb_statistics *stats);
-void ctdb_statistics_push(struct ctdb_statistics *stats, uint8_t *buf);
+size_t ctdb_statistics_len(struct ctdb_statistics *in);
+void ctdb_statistics_push(struct ctdb_statistics *in, uint8_t *buf,
+			  size_t *npush);
 int ctdb_statistics_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			 struct ctdb_statistics **out);
+			 struct ctdb_statistics **out, size_t *npull);
 
 size_t ctdb_statistics_list_len(struct ctdb_statistics_list *stats_list);
 void ctdb_statistics_list_push(struct ctdb_statistics_list *stats_list,

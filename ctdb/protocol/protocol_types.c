@@ -187,33 +187,595 @@ int ctdb_latency_counter_pull(uint8_t *buf, size_t buflen,
 	return 0;
 }
 
-size_t ctdb_statistics_len(struct ctdb_statistics *stats)
+size_t ctdb_statistics_len(struct ctdb_statistics *in)
 {
-	return sizeof(struct ctdb_statistics);
+	return ctdb_uint32_len(&in->num_clients) +
+		ctdb_uint32_len(&in->frozen) +
+		ctdb_uint32_len(&in->recovering) +
+		ctdb_uint32_len(&in->client_packets_sent) +
+		ctdb_uint32_len(&in->client_packets_recv) +
+		ctdb_uint32_len(&in->node_packets_sent) +
+		ctdb_uint32_len(&in->node_packets_recv) +
+		ctdb_uint32_len(&in->keepalive_packets_sent) +
+		ctdb_uint32_len(&in->keepalive_packets_recv) +
+		ctdb_uint32_len(&in->node.req_call) +
+		ctdb_uint32_len(&in->node.reply_call) +
+		ctdb_uint32_len(&in->node.req_dmaster) +
+		ctdb_uint32_len(&in->node.reply_dmaster) +
+		ctdb_uint32_len(&in->node.reply_error) +
+		ctdb_uint32_len(&in->node.req_message) +
+		ctdb_uint32_len(&in->node.req_control) +
+		ctdb_uint32_len(&in->node.reply_control) +
+		ctdb_uint32_len(&in->client.req_call) +
+		ctdb_uint32_len(&in->client.req_message) +
+		ctdb_uint32_len(&in->client.req_control) +
+		ctdb_uint32_len(&in->timeouts.call) +
+		ctdb_uint32_len(&in->timeouts.control) +
+		ctdb_uint32_len(&in->timeouts.traverse) +
+		ctdb_padding_len(4) +
+		ctdb_latency_counter_len(&in->reclock.ctdbd) +
+		ctdb_latency_counter_len(&in->reclock.recd) +
+		ctdb_uint32_len(&in->locks.num_calls) +
+		ctdb_uint32_len(&in->locks.num_current) +
+		ctdb_uint32_len(&in->locks.num_pending) +
+		ctdb_uint32_len(&in->locks.num_failed) +
+		ctdb_latency_counter_len(&in->locks.latency) +
+		MAX_COUNT_BUCKETS * ctdb_uint32_len(&in->locks.buckets[0]) +
+		ctdb_uint32_len(&in->total_calls) +
+		ctdb_uint32_len(&in->pending_calls) +
+		ctdb_uint32_len(&in->childwrite_calls) +
+		ctdb_uint32_len(&in->pending_childwrite_calls) +
+		ctdb_uint32_len(&in->memory_used) +
+		ctdb_uint32_len(&in->__last_counter) +
+		ctdb_uint32_len(&in->max_hop_count) +
+		MAX_COUNT_BUCKETS *
+			ctdb_uint32_len(&in->hop_count_bucket[0]) +
+		ctdb_padding_len(4) +
+		ctdb_latency_counter_len(&in->call_latency) +
+		ctdb_latency_counter_len(&in->childwrite_latency) +
+		ctdb_uint32_len(&in->num_recoveries) +
+		ctdb_padding_len(4) +
+		ctdb_timeval_len(&in->statistics_start_time) +
+		ctdb_timeval_len(&in->statistics_current_time) +
+		ctdb_uint32_len(&in->total_ro_delegations) +
+		ctdb_uint32_len(&in->total_ro_revokes);
 }
 
-void ctdb_statistics_push(struct ctdb_statistics *stats, uint8_t *buf)
+void ctdb_statistics_push(struct ctdb_statistics *in, uint8_t *buf,
+			  size_t *npush)
 {
-	memcpy(buf, stats, sizeof(struct ctdb_statistics));
+	size_t offset = 0, np;
+	int i;
+
+	ctdb_uint32_push(&in->num_clients, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->frozen, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->recovering, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->client_packets_sent, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->client_packets_recv, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->node_packets_sent, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->node_packets_recv, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->keepalive_packets_sent, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->keepalive_packets_recv, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->node.req_call, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->node.reply_call, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->node.req_dmaster, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->node.reply_dmaster, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->node.reply_error, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->node.req_message, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->node.req_control, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->node.reply_control, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->client.req_call, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->client.req_message, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->client.req_control, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->timeouts.call, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->timeouts.control, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->timeouts.traverse, buf+offset, &np);
+	offset += np;
+
+	ctdb_padding_push(4, buf+offset, &np);
+	offset += np;
+
+	ctdb_latency_counter_push(&in->reclock.ctdbd, buf+offset, &np);
+	offset += np;
+
+	ctdb_latency_counter_push(&in->reclock.recd, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->locks.num_calls, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->locks.num_current, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->locks.num_pending, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->locks.num_failed, buf+offset, &np);
+	offset += np;
+
+	ctdb_latency_counter_push(&in->locks.latency, buf+offset, &np);
+	offset += np;
+
+	for (i=0; i<MAX_COUNT_BUCKETS; i++) {
+		ctdb_uint32_push(&in->locks.buckets[i], buf+offset, &np);
+		offset += np;
+	}
+
+	ctdb_uint32_push(&in->total_calls, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->pending_calls, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->childwrite_calls, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->pending_childwrite_calls, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->memory_used, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->__last_counter, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->max_hop_count, buf+offset, &np);
+	offset += np;
+
+	for (i=0; i<MAX_COUNT_BUCKETS; i++) {
+		ctdb_uint32_push(&in->hop_count_bucket[i], buf+offset, &np);
+		offset += np;
+	}
+
+	ctdb_padding_push(4, buf+offset, &np);
+	offset += np;
+
+	ctdb_latency_counter_push(&in->call_latency, buf+offset, &np);
+	offset += np;
+
+	ctdb_latency_counter_push(&in->childwrite_latency, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->num_recoveries, buf+offset, &np);
+	offset += np;
+
+	ctdb_padding_push(4, buf+offset, &np);
+	offset += np;
+
+	ctdb_timeval_push(&in->statistics_start_time, buf+offset, &np);
+	offset += np;
+
+	ctdb_timeval_push(&in->statistics_current_time, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->total_ro_delegations, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->total_ro_revokes, buf+offset, &np);
+	offset += np;
+
+	*npush = offset;
+}
+
+static int ctdb_statistics_pull_elems(uint8_t *buf, size_t buflen,
+				      TALLOC_CTX *mem_ctx,
+				      struct ctdb_statistics *out,
+				      size_t *npull)
+{
+	size_t offset = 0, np;
+	int ret, i;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &out->num_clients,
+			       &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &out->frozen, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &out->recovering,
+			       &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->client_packets_sent, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->client_packets_recv, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->node_packets_sent, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->node_packets_recv, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->keepalive_packets_sent, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->keepalive_packets_recv, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->node.req_call, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->node.reply_call, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->node.req_dmaster, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->node.reply_dmaster, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->node.reply_error, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->node.req_message, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->node.req_control, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->node.reply_control, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->client.req_call, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->client.req_message, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->client.req_control, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->timeouts.call, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->timeouts.control, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->timeouts.traverse, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_padding_pull(buf+offset, buflen-offset, 4, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_latency_counter_pull(buf+offset, buflen-offset,
+					&out->reclock.ctdbd, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_latency_counter_pull(buf+offset, buflen-offset,
+					&out->reclock.recd, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->locks.num_calls, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->locks.num_current, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->locks.num_pending, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->locks.num_failed, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_latency_counter_pull(buf+offset, buflen-offset,
+					&out->locks.latency, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	for (i=0;  i<MAX_COUNT_BUCKETS; i++) {
+		ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+				       &out->locks.buckets[i], &np);
+		if (ret != 0) {
+			return ret;
+		}
+		offset += np;
+	}
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->total_calls, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->pending_calls, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->childwrite_calls, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->pending_childwrite_calls, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &out->memory_used,
+			       &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->__last_counter, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->max_hop_count, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	for (i=0;  i<MAX_COUNT_BUCKETS; i++) {
+		ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+				       &out->hop_count_bucket[i], &np);
+		if (ret != 0) {
+			return ret;
+		}
+		offset += np;
+	}
+
+	ret = ctdb_padding_pull(buf+offset, buflen-offset, 4, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_latency_counter_pull(buf+offset, buflen-offset,
+					&out->call_latency, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_latency_counter_pull(buf+offset, buflen-offset,
+					&out->childwrite_latency, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->num_recoveries, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_padding_pull(buf+offset, buflen-offset, 4, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_timeval_pull(buf+offset, buflen-offset,
+				&out->statistics_start_time, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_timeval_pull(buf+offset, buflen-offset,
+				&out->statistics_current_time, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->total_ro_delegations, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->total_ro_revokes, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	*npull = offset;
+	return 0;
 }
 
 int ctdb_statistics_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			 struct ctdb_statistics **out)
+			 struct ctdb_statistics **out, size_t *npull)
 {
-	struct ctdb_statistics *stats;
-	struct ctdb_statistics *wire = (struct ctdb_statistics *)buf;
+	struct ctdb_statistics *val;
+	size_t np;
+	int ret;
 
-	if (buflen < sizeof(struct ctdb_statistics)) {
-		return EMSGSIZE;
-	}
-
-	stats = talloc(mem_ctx, struct ctdb_statistics);
-	if (stats == NULL) {
+	val = talloc(mem_ctx, struct ctdb_statistics);
+	if (val == NULL) {
 		return ENOMEM;
 	}
-	memcpy(stats, wire, sizeof(struct ctdb_statistics));
 
-	*out = stats;
+	ret = ctdb_statistics_pull_elems(buf, buflen, val, val, &np);
+	if (ret != 0) {
+		talloc_free(val);
+		return ret;
+	}
+
+	*out = val;
+	*npull = np;
 	return 0;
 }
 

@@ -63,7 +63,7 @@ static void test_ctdb_g_lock(void)
 	talloc_free(mem_ctx);
 }
 
-DEFINE_TEST(struct ctdb_statistics, ctdb_statistics);
+PROTOCOL_TYPE3_TEST(struct ctdb_statistics, ctdb_statistics);
 DEFINE_TEST(struct ctdb_vnn_map, ctdb_vnn_map);
 DEFINE_TEST(struct ctdb_dbid_map, ctdb_dbid_map);
 DEFINE_TEST(struct ctdb_pulldb, ctdb_pulldb);
