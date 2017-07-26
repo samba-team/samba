@@ -441,9 +441,9 @@ static size_t ctdb_req_control_data_len(struct ctdb_req_control_data *cd)
 }
 
 static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
-				       uint8_t *buf)
+				       uint8_t *buf, size_t *npush)
 {
-	size_t np, offset;
+	size_t np = 0, offset;
 	uint32_t u32;
 
 	switch (cd->opcode) {
@@ -717,14 +717,17 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 		ctdb_string_push(&cd->data.db_name, buf, &np);
 		break;
 	}
+
+	*npush = np;
 }
 
 static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 				      uint32_t opcode,
 				      TALLOC_CTX *mem_ctx,
-				      struct ctdb_req_control_data *cd)
+				      struct ctdb_req_control_data *cd,
+				      size_t *npull)
 {
-	size_t np, offset;
+	size_t np = 0, offset;
 	uint32_t u32;
 	int ret = 0;
 
@@ -1045,7 +1048,12 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 		break;
 	}
 
-	return ret;
+	if (ret != 0) {
+		return ret;
+	}
+
+	*npull = np;
+	return 0;
 }
 
 static size_t ctdb_reply_control_data_len(struct ctdb_reply_control_data *cd)
@@ -1797,7 +1805,7 @@ int ctdb_req_control_push(struct ctdb_req_header *h,
 	wire->flags = request->flags;
 
 	wire->datalen = ctdb_req_control_data_len(&request->rdata);
-	ctdb_req_control_data_push(&request->rdata, wire->data);
+	ctdb_req_control_data_push(&request->rdata, wire->data, &np);
 
 	return 0;
 }
@@ -1841,7 +1849,7 @@ int ctdb_req_control_pull(uint8_t *buf, size_t buflen,
 	c->flags = wire->flags;
 
 	ret = ctdb_req_control_data_pull(wire->data, wire->datalen,
-					 c->opcode, mem_ctx, &c->rdata);
+					 c->opcode, mem_ctx, &c->rdata, &np);
 	if (ret != 0) {
 		return ret;
 	}

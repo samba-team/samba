@@ -11,6 +11,13 @@ control_output=$(
     echo
 )
 
+generate_control_output ()
+{
+    for i in $(seq 0 $last_control) ; do
+	echo "$1 $i"
+    done
+}
+
 output=$(
     echo "ctdb_req_header"
     echo "ctdb_req_call"
@@ -18,8 +25,7 @@ output=$(
     echo "ctdb_reply_error"
     echo "ctdb_req_dmaster"
     echo "ctdb_reply_dmaster"
-    echo "ctdb_req_control_data"
-    echo "$control_output"
+    generate_control_output "ctdb_req_control_data"
     echo "ctdb_reply_control_data"
     echo "$control_output"
     echo "ctdb_req_control"
