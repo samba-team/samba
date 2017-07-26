@@ -43,13 +43,22 @@ static uint32_t simple_IUnknown_Release (struct IUnknown *d, TALLOC_CTX *mem_ctx
 	return 1;
 }
 
-static WERROR simple_IStream_Read (struct IStream *d, TALLOC_CTX *mem_ctx, uint8_t *pv, uint32_t num_requested, uint32_t *num_readx, uint32_t num_read)
+static WERROR simple_IStream_Read(struct IStream *d,
+				  TALLOC_CTX *mem_ctx,
+				  uint8_t *pv,
+				  uint32_t num_requested,
+				  uint32_t *num_readx,
+				  uint32_t *num_read)
 {
-	printf("%d bytes are being read\n", num_read);
+	printf("%d bytes are being read\n", *num_read);
 	return WERR_OK;
 }
 
-static WERROR simple_IStream_Write (struct IStream *d, TALLOC_CTX *mem_ctx, uint8_t *data, uint32_t num_requested, uint32_t num_written)
+static WERROR simple_IStream_Write(struct IStream *d,
+				   TALLOC_CTX *mem_ctx,
+				   uint8_t *data,
+				   uint32_t num_requested,
+				   uint32_t *num_written)
 {
 	printf("%d bytes are being written\n", num_requested);
 	return WERR_OK;
@@ -62,7 +71,11 @@ static WERROR simpleclass_IUnknown_QueryInterface (struct IUnknown *d, TALLOC_CT
 	return WERR_OK;
 }
 
-static WERROR simpleclass_IClassFactory_CreateInstance (struct IClassFactory *d, TALLOC_CTX *mem_ctx, struct IUnknown *iunk, struct GUID *iid, struct IUnknown **ppv)
+static WERROR simpleclass_IClassFactory_CreateInstance(struct IClassFactory *d,
+						       TALLOC_CTX *mem_ctx,
+						       struct MInterfacePointer *pUnknown,
+						       struct GUID *iid,
+						       struct MInterfacePointer *ppv)
 {
 	struct IStream *ret;
 	/* FIXME: Check whether IID == ISTREAM_IID */
@@ -71,8 +84,8 @@ static WERROR simpleclass_IClassFactory_CreateInstance (struct IClassFactory *d,
 	ret->vtable = &simple_IStream_vtable;
 	ret->object_data = NULL;
 
-	*ppv = (struct IUnknown *)ret;
-	
+	ppv = (struct MInterfacePointer *)ret;
+
 	return WERR_OK;
 }
 
