@@ -1277,16 +1277,20 @@ _PUBLIC_ bool cli_credentials_parse_password_fd(struct cli_credentials *credenti
 				*++p = '\0'; /* advance p, and null-terminate pass */
 				break;
 			}
-			/* fall through */
+
+			FALL_THROUGH;
 		case 0:
 			if (p - pass) {
 				*p = '\0'; /* null-terminate it, just in case... */
 				p = NULL; /* then force the loop condition to become false */
 				break;
-			} else {
-				fprintf(stderr, "Error reading password from file descriptor %d: %s\n", fd, "empty password\n");
-				return false;
 			}
+
+			fprintf(stderr,
+				"Error reading password from file descriptor "
+				"%d: empty password\n",
+				fd);
+			return false;
 
 		default:
 			fprintf(stderr, "Error reading password from file descriptor %d: %s\n",
