@@ -22,7 +22,7 @@
 		<arg choice="opt">-a, --guest</arg>
 		<arg choice="opt">-r, --resume</arg>
 		<arg choice="opt">-R, --recursive</arg>
-		<arg choice="opt">-U, --username=STRING</arg>
+		<arg choice="opt">-U, --user=STRING</arg>
 		<arg choice="opt">-w, --workgroup=STRING</arg>
 		<arg choice="opt">-n, --nonprompt</arg>
 		<arg choice="opt">-d, --debuglevel=INT</arg>
@@ -76,7 +76,7 @@
 	</varlistentry>
 
 	<varlistentry>
-		<term> -U, --username=<replaceable>username[%password]</replaceable></term>
+		<term> -U, --user=<replaceable>username[%password]</replaceable></term>
 		<listitem><para>Username (and password) to use</para></listitem>
 	</varlistentry>
 
