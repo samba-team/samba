@@ -261,7 +261,7 @@ static void test_ctdb_event_reply(void)
 	fflush(stdout);
 }
 
-DEFINE_TEST(struct ctdb_event_request_run, ctdb_event_request_run);
+PROTOCOL_TYPE3_TEST(struct ctdb_event_request_run, ctdb_event_request_run);
 DEFINE_TEST(struct ctdb_event_request_status, ctdb_event_request_status);
 DEFINE_TEST(struct ctdb_event_request_script_enable,
 				ctdb_event_request_script_enable);
