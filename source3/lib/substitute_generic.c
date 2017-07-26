@@ -68,6 +68,7 @@ char *realloc_string_sub2(char *string,
 				if (allow_trailing_dollar && (i == li - 1 )) {
 					break;
 				}
+				FALL_THROUGH;
 			case '`':
 			case '"':
 			case '\'':
@@ -79,6 +80,7 @@ char *realloc_string_sub2(char *string,
 					in[i] = '_';
 					break;
 				}
+				FALL_THROUGH;
 			default:
 				/* ok */
 				break;
