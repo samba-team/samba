@@ -47,6 +47,7 @@ flags = [
     '-D_XOPEN_SOURCE_EXTENDED=1',
     '-DAD_DC_BUILD_IS_ENABLED=1',
     '-DHAVE_IPV6=1',
+    '-DFALL_THROUGH',
     '-I/usr/local/include',
     '-I.',
     '-Iauth',
