@@ -62,7 +62,8 @@ NTSTATUS encrypt_user_info(TALLOC_CTX *mem_ctx, struct auth4_context *auth_conte
 				return nt_status;
 			}
 			user_info_in = user_info_temp2;
-			/* fall through */
+
+			FALL_THROUGH;
 		}
 		case AUTH_PASSWORD_HASH:
 		{
@@ -122,7 +123,8 @@ NTSTATUS encrypt_user_info(TALLOC_CTX *mem_ctx, struct auth4_context *auth_conte
 			}
 
 			user_info_in = user_info_temp;
-			/* fall through */
+
+			FALL_THROUGH;
 		}
 		case AUTH_PASSWORD_RESPONSE:
 			*user_info_encrypted = user_info_in;
@@ -160,7 +162,8 @@ NTSTATUS encrypt_user_info(TALLOC_CTX *mem_ctx, struct auth4_context *auth_conte
 			*user_info_temp->password.hash.nt = nt;
 			
 			user_info_in = user_info_temp;
-			/* fall through */
+
+			FALL_THROUGH;
 		}
 		case AUTH_PASSWORD_HASH:
 			*user_info_encrypted = user_info_in;
