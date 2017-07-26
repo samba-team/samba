@@ -1649,7 +1649,7 @@ static struct tevent_req *gensec_spnego_update_send(TALLOC_CTX *mem_ctx,
 			return tevent_req_post(req, ev);
 		}
 
-		/* fall through */
+		FALL_THROUGH;
 	case SPNEGO_CLIENT_START:
 	case SPNEGO_SERVER_START:
 
