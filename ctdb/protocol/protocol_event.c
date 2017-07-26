@@ -317,7 +317,7 @@ static size_t ctdb_event_request_status_len(
 
 static void ctdb_event_request_status_push(
 				struct ctdb_event_request_status *in,
-				uint8_t *buf)
+				uint8_t *buf, size_t *npush)
 {
 	size_t offset = 0, np;
 
@@ -325,12 +325,16 @@ static void ctdb_event_request_status_push(
 	offset += np;
 
 	ctdb_event_status_state_push(in->state, buf+offset, &np);
+	offset += np;
+
+	*npush = offset;
 }
 
 static int ctdb_event_request_status_pull(
 				uint8_t *buf, size_t buflen,
 				TALLOC_CTX *mem_ctx,
-				struct ctdb_event_request_status **out)
+				struct ctdb_event_request_status **out,
+				size_t *npull)
 {
 	struct ctdb_event_request_status *rdata;
 	size_t offset = 0, np;
@@ -354,8 +358,10 @@ static int ctdb_event_request_status_pull(
 		talloc_free(rdata);
 		return ret;
 	}
+	offset += np;
 
 	*out = rdata;
+	*npull = offset;
 	return 0;
 }
 
@@ -483,7 +489,8 @@ static void ctdb_event_request_data_push(struct ctdb_event_request_data *in,
 		break;
 
 	case CTDB_EVENT_COMMAND_STATUS:
-		ctdb_event_request_status_push(in->data.status, buf+offset);
+		ctdb_event_request_status_push(in->data.status, buf+offset,
+					       &np);
 		break;
 
 	case CTDB_EVENT_COMMAND_SCRIPT_LIST:
@@ -527,7 +534,8 @@ static int ctdb_event_request_data_pull(uint8_t *buf, size_t buflen,
 	case CTDB_EVENT_COMMAND_STATUS:
 		ret = ctdb_event_request_status_pull(
 						buf+offset, buflen-offset,
-						mem_ctx, &out->data.status);
+						mem_ctx, &out->data.status,
+						&np);
 		break;
 
 	case CTDB_EVENT_COMMAND_SCRIPT_LIST:
