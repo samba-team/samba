@@ -250,6 +250,42 @@ def configure(conf):
                     headers='stdint.h sys/atomic.h',
                     msg='Checking for atomic_add_32 compiler builtin')
 
+    conf.CHECK_CODE('''
+                    #define FALL_THROUGH __attribute__((fallthrough))
+
+                    enum direction_e {
+                        UP = 0,
+                        DOWN,
+                    };
+
+                    int main(void) {
+                        enum direction_e key = UP;
+                        int i = 10;
+                        int j = 0;
+
+                        switch (key) {
+                        case UP:
+                            i = 5;
+                            FALL_THROUGH;
+                        case DOWN:
+                            j = i * 2;
+                            break;
+                        default:
+                            break;
+                        }
+
+                        if (j < i) {
+                            return 1;
+                        }
+
+                        return 0;
+                    }
+                    ''',
+                    'HAVE_FALLTHROUGH_ATTRIBUTE',
+                    addmain=False,
+                    cflags='-Werror',
+                    msg='Checking for fallthrough attribute')
+
     # these may be builtins, so we need the link=False strategy
     conf.CHECK_FUNCS('strdup memmem printf memset memcpy memmove strcpy strncpy bzero', link=False)
 
