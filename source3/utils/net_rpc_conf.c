@@ -1155,6 +1155,8 @@ static NTSTATUS rpc_conf_import_internal(struct net_context *c,
 				d_printf(_("error: out of memory!\n"));
 				goto error;
 			}
+
+			FALL_THROUGH;
 		case 1:
 			filename = argv[0];
 			break;
@@ -1426,6 +1428,8 @@ static NTSTATUS rpc_conf_addshare_internal(struct net_context *c,
 			goto error;
 		case 5:
 			comment = argv[4];
+
+			FALL_THROUGH;
 		case 4:
 			if (!strnequal(argv[3], "guest_ok=", 9)) {
 				rpc_conf_addshare_usage(c, argc, argv);
@@ -1446,6 +1450,8 @@ static NTSTATUS rpc_conf_addshare_internal(struct net_context *c,
 					status = NT_STATUS_INVALID_PARAMETER;
 					goto error;
 			}
+
+			FALL_THROUGH;
 		case 3:
 			if (!strnequal(argv[2], "writeable=", 10)) {
 				rpc_conf_addshare_usage(c, argc, argv);
@@ -1466,6 +1472,8 @@ static NTSTATUS rpc_conf_addshare_internal(struct net_context *c,
 					status = NT_STATUS_INVALID_PARAMETER;
 					goto error;
 			}
+
+			FALL_THROUGH;
 		case 2:
 			path = argv[1];
 			sharename = talloc_strdup(frame, argv[0]);
