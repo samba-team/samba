@@ -4324,100 +4324,305 @@ fail:
 	return ret;
 }
 
-struct ctdb_db_statistics_wire {
-	struct ctdb_db_statistics dbstats;
-	char hot_keys_wire[1];
-};
+/* In the tdb_data structure marshalling, we are only interested in dsize.
+ * The dptr value is ignored.  The actual tdb_data blob is stored separately.
+ *
+ * This is only required for ctdb_db_statistics and will be dropped in future.
+ */
 
-size_t ctdb_db_statistics_len(struct ctdb_db_statistics *dbstats)
+static size_t tdb_data_struct_len(TDB_DATA *data)
 {
+	return sizeof(void *) + sizeof(size_t);
+}
+
+static void tdb_data_struct_push(TDB_DATA *data, uint8_t *buf, size_t *npush)
+{
+	size_t offset = 0;
+
+	memcpy(buf+offset, &data->dptr, sizeof(void *));
+	offset += sizeof(void *);
+
+	memcpy(buf+offset, &data->dsize, sizeof(size_t));
+	offset += sizeof(size_t);
+
+	*npush = offset;
+}
+
+static int tdb_data_struct_pull(uint8_t *buf, size_t buflen, TDB_DATA *data,
+				size_t *npull)
+{
+	size_t offset = 0;
+	void *ptr;
+
+	if (buflen-offset < sizeof(void *)) {
+		return EMSGSIZE;
+	}
+
+	memcpy(&ptr, buf+offset, sizeof(void *));
+	offset += sizeof(void *);
+	data->dptr = NULL;
+
+	if (buflen-offset < sizeof(size_t)) {
+		return EMSGSIZE;
+	}
+
+	memcpy(&data->dsize, buf+offset, sizeof(size_t));
+	offset += sizeof(size_t);
+
+	*npull = offset;
+	return 0;
+}
+
+size_t ctdb_db_statistics_len(struct ctdb_db_statistics *in)
+{
+	TDB_DATA data = { 0 };
 	size_t len;
+	uint32_t u32 = 0;
 	int i;
 
-	len = sizeof(struct ctdb_db_statistics);
+	len = ctdb_uint32_len(&in->locks.num_calls) +
+		ctdb_uint32_len(&in->locks.num_current) +
+		ctdb_uint32_len(&in->locks.num_pending) +
+		ctdb_uint32_len(&in->locks.num_failed) +
+		ctdb_latency_counter_len(&in->locks.latency) +
+		MAX_COUNT_BUCKETS *
+			ctdb_uint32_len(&in->locks.buckets[0]) +
+		ctdb_latency_counter_len(&in->vacuum.latency) +
+		ctdb_uint32_len(&in->db_ro_delegations) +
+		ctdb_uint32_len(&in->db_ro_revokes) +
+		MAX_COUNT_BUCKETS *
+			ctdb_uint32_len(&in->hop_count_bucket[0]) +
+		ctdb_uint32_len(&in->num_hot_keys) +
+		ctdb_padding_len(4) +
+		MAX_HOT_KEYS *
+			(ctdb_uint32_len(&u32) + ctdb_padding_len(4) +
+			 tdb_data_struct_len(&data));
+
 	for (i=0; i<MAX_HOT_KEYS; i++) {
-		len += dbstats->hot_keys[i].key.dsize;
+		len += ctdb_tdb_data_len(&in->hot_keys[i].key);
 	}
+
 	return len;
 }
 
-void ctdb_db_statistics_push(struct ctdb_db_statistics *dbstats, void *buf)
+void ctdb_db_statistics_push(struct ctdb_db_statistics *in, uint8_t *buf,
+			     size_t *npush)
 {
-	struct ctdb_db_statistics_wire *wire =
-		(struct ctdb_db_statistics_wire *)buf;
-	size_t offset;
+	size_t offset = 0, np;
+	uint32_t num_hot_keys;
 	int i;
 
-	dbstats->num_hot_keys = MAX_HOT_KEYS;
-	memcpy(wire, dbstats, sizeof(struct ctdb_db_statistics));
+	ctdb_uint32_push(&in->locks.num_calls, buf+offset, &np);
+	offset += np;
 
-	offset = 0;
-	for (i=0; i<MAX_HOT_KEYS; i++) {
-		memcpy(&wire->hot_keys_wire[offset],
-		       dbstats->hot_keys[i].key.dptr,
-		       dbstats->hot_keys[i].key.dsize);
-		offset += dbstats->hot_keys[i].key.dsize;
+	ctdb_uint32_push(&in->locks.num_current, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->locks.num_pending, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->locks.num_failed, buf+offset, &np);
+	offset += np;
+
+	ctdb_latency_counter_push(&in->locks.latency, buf+offset, &np);
+	offset += np;
+
+	for (i=0; i<MAX_COUNT_BUCKETS; i++) {
+		ctdb_uint32_push(&in->locks.buckets[i], buf+offset, &np);
+		offset += np;
 	}
+
+	ctdb_latency_counter_push(&in->vacuum.latency, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->db_ro_delegations, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->db_ro_revokes, buf+offset, &np);
+	offset += np;
+
+	for (i=0; i<MAX_COUNT_BUCKETS; i++) {
+		ctdb_uint32_push(&in->hop_count_bucket[i], buf+offset, &np);
+		offset += np;
+	}
+
+	num_hot_keys = MAX_HOT_KEYS;
+	ctdb_uint32_push(&num_hot_keys, buf+offset, &np);
+	offset += np;
+
+	ctdb_padding_push(4, buf+offset, &np);
+	offset += np;
+
+	for (i=0; i<MAX_HOT_KEYS; i++) {
+		ctdb_uint32_push(&in->hot_keys[i].count, buf+offset, &np);
+		offset += np;
+
+		ctdb_padding_push(4, buf+offset, &np);
+		offset += np;
+
+		tdb_data_struct_push(&in->hot_keys[i].key, buf+offset, &np);
+		offset += np;
+	}
+
+	for (i=0; i<MAX_HOT_KEYS; i++) {
+		ctdb_tdb_data_push(&in->hot_keys[i].key, buf+offset, &np);
+		offset += np;
+	}
+
+	*npush = offset;
+}
+
+static int ctdb_db_statistics_pull_elems(uint8_t *buf, size_t buflen,
+					 TALLOC_CTX *mem_ctx,
+					 struct ctdb_db_statistics *out,
+					 size_t *npull)
+{
+	size_t offset = 0, np;
+	int ret, i;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->locks.num_calls, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->locks.num_current, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->locks.num_pending, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->locks.num_failed, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_latency_counter_pull(buf+offset, buflen-offset,
+					&out->locks.latency, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	for (i=0; i<MAX_COUNT_BUCKETS; i++) {
+		ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+				       &out->locks.buckets[i], &np);
+		if (ret != 0) {
+			return ret;
+		}
+		offset += np;
+	}
+
+	ret = ctdb_latency_counter_pull(buf+offset, buflen-offset,
+					&out->vacuum.latency, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->db_ro_delegations, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->db_ro_revokes, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	for (i=0; i<MAX_COUNT_BUCKETS; i++) {
+		ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+				       &out->hop_count_bucket[i], &np);
+		if (ret != 0) {
+			return ret;
+		}
+		offset += np;
+	}
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->num_hot_keys, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_padding_pull(buf+offset, buflen-offset, 4, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	for (i=0; i<MAX_HOT_KEYS; i++) {
+		ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+				       &out->hot_keys[i].count, &np);
+		if (ret != 0) {
+			return ret;
+		}
+		offset += np;
+
+		ret = ctdb_padding_pull(buf+offset, buflen-offset, 4, &np);
+		if (ret != 0) {
+			return ret;
+		}
+		offset += np;
+
+		ret = tdb_data_struct_pull(buf+offset, buflen-offset,
+					   &out->hot_keys[i].key, &np);
+		if (ret != 0) {
+			return ret;
+		}
+		offset += np;
+	}
+
+	for (i=0; i<MAX_HOT_KEYS; i++) {
+		ret = ctdb_tdb_data_pull(buf+offset,
+					 out->hot_keys[i].key.dsize,
+					 out, &out->hot_keys[i].key, &np);
+		if (ret != 0) {
+			return ret;
+		}
+		offset += np;
+	}
+
+	*npull = offset;
+	return 0;
 }
 
 int ctdb_db_statistics_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			    struct ctdb_db_statistics **out)
+			    struct ctdb_db_statistics **out, size_t *npull)
 {
-	struct ctdb_db_statistics *dbstats;
-	struct ctdb_db_statistics_wire *wire =
-		(struct ctdb_db_statistics_wire *)buf;
-	size_t offset;
-	int i;
+	struct ctdb_db_statistics *val;
+	size_t np;
+	int ret;
 
-	if (buflen < sizeof(struct ctdb_db_statistics)) {
-		return EMSGSIZE;
-	}
-
-	offset = 0;
-	for (i=0; i<wire->dbstats.num_hot_keys; i++) {
-		if (wire->dbstats.hot_keys[i].key.dsize > buflen) {
-			return EMSGSIZE;
-		}
-		if (offset + wire->dbstats.hot_keys[i].key.dsize < offset) {
-			return EMSGSIZE;
-		}
-		offset += wire->dbstats.hot_keys[i].key.dsize;
-		if (offset > buflen) {
-			return EMSGSIZE;
-		}
-	}
-	if (sizeof(struct ctdb_db_statistics) + offset <
-	    sizeof(struct ctdb_db_statistics)) {
-		return EMSGSIZE;
-	}
-	if (buflen < sizeof(struct ctdb_db_statistics) + offset) {
-		return EMSGSIZE;
-	}
-
-	dbstats = talloc(mem_ctx, struct ctdb_db_statistics);
-	if (dbstats == NULL) {
+	val = talloc(mem_ctx, struct ctdb_db_statistics);
+	if (val == NULL) {
 		return ENOMEM;
 	}
 
-	memcpy(dbstats, wire, sizeof(struct ctdb_db_statistics));
-
-	offset = 0;
-	for (i=0; i<wire->dbstats.num_hot_keys; i++) {
-		uint8_t *ptr;
-		size_t key_size;
-
-		key_size = dbstats->hot_keys[i].key.dsize;
-		ptr = talloc_memdup(mem_ctx, &wire->hot_keys_wire[offset],
-				    key_size);
-		if (ptr == NULL) {
-			talloc_free(dbstats);
-			return ENOMEM;
-		}
-		dbstats->hot_keys[i].key.dptr = ptr;
-		offset += key_size;
+	ret = ctdb_db_statistics_pull_elems(buf, buflen, val, val, &np);
+	if (ret != 0) {
+		talloc_free(val);
+		return ret;
 	}
 
-	*out = dbstats;
+	*out = val;
+	*npull = np;
 	return 0;
 }
 

@@ -1977,6 +1977,105 @@ static int ctdb_key_data_pull_old(uint8_t *buf, size_t buflen,
 	return 0;
 }
 
+struct ctdb_db_statistics_wire {
+	struct ctdb_db_statistics dbstats;
+	char hot_keys_wire[1];
+};
+
+static size_t ctdb_db_statistics_len_old(struct ctdb_db_statistics *in)
+{
+	size_t len;
+	int i;
+
+	len = sizeof(struct ctdb_db_statistics);
+	for (i=0; i<MAX_HOT_KEYS; i++) {
+		len += in->hot_keys[i].key.dsize;
+	}
+	return len;
+}
+
+static void ctdb_db_statistics_push_old(struct ctdb_db_statistics *in,
+					void *buf)
+{
+	struct ctdb_db_statistics_wire *wire =
+		(struct ctdb_db_statistics_wire *)buf;
+	size_t offset;
+	int i;
+
+	in->num_hot_keys = MAX_HOT_KEYS;
+	memcpy(wire, in, sizeof(struct ctdb_db_statistics));
+
+	offset = 0;
+	for (i=0; i<MAX_HOT_KEYS; i++) {
+		memcpy(&wire->hot_keys_wire[offset],
+		       in->hot_keys[i].key.dptr,
+		       in->hot_keys[i].key.dsize);
+		offset += in->hot_keys[i].key.dsize;
+	}
+}
+
+static int ctdb_db_statistics_pull_old(uint8_t *buf, size_t buflen,
+				       TALLOC_CTX *mem_ctx,
+				       struct ctdb_db_statistics **out)
+{
+	struct ctdb_db_statistics *val;
+	struct ctdb_db_statistics_wire *wire =
+		(struct ctdb_db_statistics_wire *)buf;
+	size_t offset;
+	int i;
+
+	if (buflen < sizeof(struct ctdb_db_statistics)) {
+		return EMSGSIZE;
+	}
+
+	offset = 0;
+	for (i=0; i<wire->dbstats.num_hot_keys; i++) {
+		if (wire->dbstats.hot_keys[i].key.dsize > buflen) {
+			return EMSGSIZE;
+		}
+		if (offset + wire->dbstats.hot_keys[i].key.dsize < offset) {
+			return EMSGSIZE;
+		}
+		offset += wire->dbstats.hot_keys[i].key.dsize;
+		if (offset > buflen) {
+			return EMSGSIZE;
+		}
+	}
+	if (sizeof(struct ctdb_db_statistics) + offset <
+	    sizeof(struct ctdb_db_statistics)) {
+		return EMSGSIZE;
+	}
+	if (buflen < sizeof(struct ctdb_db_statistics) + offset) {
+		return EMSGSIZE;
+	}
+
+	val = talloc(mem_ctx, struct ctdb_db_statistics);
+	if (val == NULL) {
+		return ENOMEM;
+	}
+
+	memcpy(val, wire, sizeof(struct ctdb_db_statistics));
+
+	offset = 0;
+	for (i=0; i<wire->dbstats.num_hot_keys; i++) {
+		uint8_t *ptr;
+		size_t key_size;
+
+		key_size = val->hot_keys[i].key.dsize;
+		ptr = talloc_memdup(mem_ctx, &wire->hot_keys_wire[offset],
+				    key_size);
+		if (ptr == NULL) {
+			talloc_free(val);
+			return ENOMEM;
+		}
+		val->hot_keys[i].key.dptr = ptr;
+		offset += key_size;
+	}
+
+	*out = val;
+	return 0;
+}
+
 
 COMPAT_TYPE3_TEST(struct ctdb_statistics, ctdb_statistics);
 COMPAT_TYPE3_TEST(struct ctdb_vnn_map, ctdb_vnn_map);
@@ -2015,6 +2114,7 @@ COMPAT_TYPE3_TEST(struct ctdb_iface_list, ctdb_iface_list);
 COMPAT_TYPE3_TEST(struct ctdb_public_ip_info, ctdb_public_ip_info);
 COMPAT_TYPE3_TEST(struct ctdb_statistics_list, ctdb_statistics_list);
 COMPAT_TYPE3_TEST(struct ctdb_key_data, ctdb_key_data);
+COMPAT_TYPE3_TEST(struct ctdb_db_statistics, ctdb_db_statistics);
 
 int main(int argc, char *argv[])
 {
@@ -2058,6 +2158,7 @@ int main(int argc, char *argv[])
 	COMPAT_TEST_FUNC(ctdb_public_ip_info)();
 	COMPAT_TEST_FUNC(ctdb_statistics_list)();
 	COMPAT_TEST_FUNC(ctdb_key_data)();
+	COMPAT_TEST_FUNC(ctdb_db_statistics)();
 
 	return 0;
 }

@@ -1542,7 +1542,7 @@ static void ctdb_reply_control_data_push(struct ctdb_reply_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_GET_DB_STATISTICS:
-		ctdb_db_statistics_push(cd->data.dbstats, buf);
+		ctdb_db_statistics_push(cd->data.dbstats, buf, &np);
 		break;
 
 	case CTDB_CONTROL_RECEIVE_RECORDS:
@@ -1727,7 +1727,7 @@ static int ctdb_reply_control_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_CONTROL_GET_DB_STATISTICS:
 		ret = ctdb_db_statistics_pull(buf, buflen, mem_ctx,
-					      &cd->data.dbstats);
+					      &cd->data.dbstats, &np);
 		break;
 
 	case CTDB_CONTROL_RECEIVE_RECORDS:

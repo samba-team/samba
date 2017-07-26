@@ -1231,8 +1231,24 @@ void fill_ctdb_db_statistics(TALLOC_CTX *mem_ctx,
 {
 	int i;
 
-	fill_buffer(p, offsetof(struct ctdb_db_statistics, num_hot_keys));
-	p->num_hot_keys = 10;
+	p->locks.num_calls = rand32();
+	p->locks.num_current = rand32();
+	p->locks.num_pending = rand32();
+	p->locks.num_failed = rand32();
+	fill_ctdb_latency_counter(&p->locks.latency);
+	for (i=0; i<MAX_COUNT_BUCKETS; i++) {
+		p->locks.buckets[i] = rand32();
+	}
+
+	fill_ctdb_latency_counter(&p->vacuum.latency);
+
+	p->db_ro_delegations = rand32();
+	p->db_ro_revokes = rand32();
+	for (i=0; i<MAX_COUNT_BUCKETS; i++) {
+		p->hop_count_bucket[i] = rand32();
+	}
+
+	p->num_hot_keys = MAX_HOT_KEYS;
 	for (i=0; i<p->num_hot_keys; i++) {
 		p->hot_keys[i].count = rand32();
 		fill_tdb_data(mem_ctx, &p->hot_keys[i].key);
@@ -1244,8 +1260,23 @@ void verify_ctdb_db_statistics(struct ctdb_db_statistics *p1,
 {
 	int i;
 
-	verify_buffer(p1, p2, offsetof(struct ctdb_db_statistics,
-					    num_hot_keys));
+	assert(p1->locks.num_calls == p2->locks.num_calls);
+	assert(p1->locks.num_current == p2->locks.num_current);
+	assert(p1->locks.num_pending == p2->locks.num_pending);
+	assert(p1->locks.num_failed == p2->locks.num_failed);
+	verify_ctdb_latency_counter(&p1->locks.latency, &p2->locks.latency);
+	for (i=0; i<MAX_COUNT_BUCKETS; i++) {
+		assert(p1->locks.buckets[i] == p2->locks.buckets[i]);
+	}
+
+	verify_ctdb_latency_counter(&p1->vacuum.latency, &p2->vacuum.latency);
+
+	assert(p1->db_ro_delegations == p2->db_ro_delegations);
+	assert(p1->db_ro_revokes == p2->db_ro_revokes);
+	for (i=0; i<MAX_COUNT_BUCKETS; i++) {
+		assert(p1->hop_count_bucket[i] == p2->hop_count_bucket[i]);
+	}
+
 	assert(p1->num_hot_keys == p2->num_hot_keys);
 	for (i=0; i<p1->num_hot_keys; i++) {
 		assert(p1->hot_keys[i].count == p2->hot_keys[i].count);

@@ -83,7 +83,7 @@ PROTOCOL_TYPE3_TEST(struct ctdb_iface_list, ctdb_iface_list);
 PROTOCOL_TYPE3_TEST(struct ctdb_public_ip_info, ctdb_public_ip_info);
 PROTOCOL_TYPE3_TEST(struct ctdb_statistics_list, ctdb_statistics_list);
 PROTOCOL_TYPE3_TEST(struct ctdb_key_data, ctdb_key_data);
-DEFINE_TEST(struct ctdb_db_statistics, ctdb_db_statistics);
+PROTOCOL_TYPE3_TEST(struct ctdb_db_statistics, ctdb_db_statistics);
 DEFINE_TEST(struct ctdb_election_message, ctdb_election_message);
 DEFINE_TEST(struct ctdb_srvid_message, ctdb_srvid_message);
 DEFINE_TEST(struct ctdb_disable_message, ctdb_disable_message);
