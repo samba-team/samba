@@ -47,13 +47,15 @@ static bool gpo_sd_check_agp_object_guid(const struct security_ace_object *objec
 				       &ext_right_apg_guid)) {
 				return true;
 			}
-			/* FALL TROUGH */
+
+			FALL_THROUGH;
 		case SEC_ACE_INHERITED_OBJECT_TYPE_PRESENT:
 			if (GUID_equal(&object->inherited_type.inherited_type,
 				       &ext_right_apg_guid)) {
 				return true;
 			}
-			/* FALL TROUGH */
+
+			FALL_THROUGH;
 		default:
 			break;
 	}
