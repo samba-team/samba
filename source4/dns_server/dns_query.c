@@ -1056,7 +1056,7 @@ struct tevent_req *dns_server_process_query_send(
 
 	if ((req_state->flags & DNS_FLAG_RECURSION_DESIRED) &&
 	    (req_state->flags & DNS_FLAG_RECURSION_AVAIL)) {
-		DEBUG(2, ("Not authoritative for '%s', forwarding\n",
+		DEBUG(5, ("Not authoritative for '%s', forwarding\n",
 			  in->questions[0].name));
 
 		subreq = ask_forwarder_send(state, ev, dns,
