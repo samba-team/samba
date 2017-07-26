@@ -95,10 +95,13 @@ static uint32_t ndr_cab_compute_checksum(uint8_t *data, uint32_t length, uint32_
 	switch (length % 4) {
 	case 3:
 		ul |= (((uint32_t)(*pb++)) << 16);
+		FALL_THROUGH;
 	case 2:
 		ul |= (((uint32_t)(*pb++)) <<  8);
+		FALL_THROUGH;
 	case 1:
 		ul |= (uint32_t)(*pb++);
+		FALL_THROUGH;
 	default:
 		break;
 	}
