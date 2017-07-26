@@ -1476,7 +1476,7 @@ static void ctdb_reply_control_data_push(struct ctdb_reply_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_GET_ALL_TUNABLES:
-		ctdb_tunable_list_push(cd->data.tun_list, buf);
+		ctdb_tunable_list_push(cd->data.tun_list, buf, &np);
 		break;
 
 	case CTDB_CONTROL_GET_TCP_TICKLE_LIST:
@@ -1649,7 +1649,7 @@ static int ctdb_reply_control_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_CONTROL_GET_ALL_TUNABLES:
 		ret = ctdb_tunable_list_pull(buf, buflen, mem_ctx,
-					     &cd->data.tun_list);
+					     &cd->data.tun_list, &np);
 		break;
 
 	case CTDB_CONTROL_GET_TCP_TICKLE_LIST:

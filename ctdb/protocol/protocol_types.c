@@ -2376,31 +2376,732 @@ fail:
 	return ret;
 }
 
-size_t ctdb_tunable_list_len(struct ctdb_tunable_list *tun_list)
+size_t ctdb_tunable_list_len(struct ctdb_tunable_list *in)
 {
-	return sizeof(struct ctdb_tunable_list);
+	return ctdb_uint32_len(&in->max_redirect_count) +
+		ctdb_uint32_len(&in->seqnum_interval) +
+		ctdb_uint32_len(&in->control_timeout) +
+		ctdb_uint32_len(&in->traverse_timeout) +
+		ctdb_uint32_len(&in->keepalive_interval) +
+		ctdb_uint32_len(&in->keepalive_limit) +
+		ctdb_uint32_len(&in->recover_timeout) +
+		ctdb_uint32_len(&in->recover_interval) +
+		ctdb_uint32_len(&in->election_timeout) +
+		ctdb_uint32_len(&in->takeover_timeout) +
+		ctdb_uint32_len(&in->monitor_interval) +
+		ctdb_uint32_len(&in->tickle_update_interval) +
+		ctdb_uint32_len(&in->script_timeout) +
+		ctdb_uint32_len(&in->monitor_timeout_count) +
+		ctdb_uint32_len(&in->script_unhealthy_on_timeout) +
+		ctdb_uint32_len(&in->recovery_grace_period) +
+		ctdb_uint32_len(&in->recovery_ban_period) +
+		ctdb_uint32_len(&in->database_hash_size) +
+		ctdb_uint32_len(&in->database_max_dead) +
+		ctdb_uint32_len(&in->rerecovery_timeout) +
+		ctdb_uint32_len(&in->enable_bans) +
+		ctdb_uint32_len(&in->deterministic_public_ips) +
+		ctdb_uint32_len(&in->reclock_ping_period) +
+		ctdb_uint32_len(&in->no_ip_failback) +
+		ctdb_uint32_len(&in->disable_ip_failover) +
+		ctdb_uint32_len(&in->verbose_memory_names) +
+		ctdb_uint32_len(&in->recd_ping_timeout) +
+		ctdb_uint32_len(&in->recd_ping_failcount) +
+		ctdb_uint32_len(&in->log_latency_ms) +
+		ctdb_uint32_len(&in->reclock_latency_ms) +
+		ctdb_uint32_len(&in->recovery_drop_all_ips) +
+		ctdb_uint32_len(&in->verify_recovery_lock) +
+		ctdb_uint32_len(&in->vacuum_interval) +
+		ctdb_uint32_len(&in->vacuum_max_run_time) +
+		ctdb_uint32_len(&in->repack_limit) +
+		ctdb_uint32_len(&in->vacuum_limit) +
+		ctdb_uint32_len(&in->max_queue_depth_drop_msg) +
+		ctdb_uint32_len(&in->allow_unhealthy_db_read) +
+		ctdb_uint32_len(&in->stat_history_interval) +
+		ctdb_uint32_len(&in->deferred_attach_timeout) +
+		ctdb_uint32_len(&in->vacuum_fast_path_count) +
+		ctdb_uint32_len(&in->lcp2_public_ip_assignment) +
+		ctdb_uint32_len(&in->allow_client_db_attach) +
+		ctdb_uint32_len(&in->recover_pdb_by_seqnum) +
+		ctdb_uint32_len(&in->deferred_rebalance_on_node_add) +
+		ctdb_uint32_len(&in->fetch_collapse) +
+		ctdb_uint32_len(&in->hopcount_make_sticky) +
+		ctdb_uint32_len(&in->sticky_duration) +
+		ctdb_uint32_len(&in->sticky_pindown) +
+		ctdb_uint32_len(&in->no_ip_takeover) +
+		ctdb_uint32_len(&in->db_record_count_warn) +
+		ctdb_uint32_len(&in->db_record_size_warn) +
+		ctdb_uint32_len(&in->db_size_warn) +
+		ctdb_uint32_len(&in->pulldb_preallocation_size) +
+		ctdb_uint32_len(&in->no_ip_host_on_all_disabled) +
+		ctdb_uint32_len(&in->samba3_hack) +
+		ctdb_uint32_len(&in->mutex_enabled) +
+		ctdb_uint32_len(&in->lock_processes_per_db) +
+		ctdb_uint32_len(&in->rec_buffer_size_limit) +
+		ctdb_uint32_len(&in->queue_buffer_size) +
+		ctdb_uint32_len(&in->ip_alloc_algorithm) +
+		ctdb_uint32_len(&in->allow_mixed_versions);
 }
 
-void ctdb_tunable_list_push(struct ctdb_tunable_list *tun_list, uint8_t *buf)
+void ctdb_tunable_list_push(struct ctdb_tunable_list *in, uint8_t *buf,
+			    size_t *npush)
 {
-	memcpy(buf, tun_list, sizeof(struct ctdb_tunable_list));
+	size_t offset = 0, np;
+
+	ctdb_uint32_push(&in->max_redirect_count, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->seqnum_interval, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->control_timeout, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->traverse_timeout, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->keepalive_interval, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->keepalive_limit, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->recover_timeout, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->recover_interval, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->election_timeout, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->takeover_timeout, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->monitor_interval, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->tickle_update_interval, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->script_timeout, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->monitor_timeout_count, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->script_unhealthy_on_timeout, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->recovery_grace_period, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->recovery_ban_period, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->database_hash_size, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->database_max_dead, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->rerecovery_timeout, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->enable_bans, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->deterministic_public_ips, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->reclock_ping_period, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->no_ip_failback, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->disable_ip_failover, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->verbose_memory_names, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->recd_ping_timeout, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->recd_ping_failcount, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->log_latency_ms, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->reclock_latency_ms, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->recovery_drop_all_ips, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->verify_recovery_lock, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->vacuum_interval, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->vacuum_max_run_time, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->repack_limit, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->vacuum_limit, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->max_queue_depth_drop_msg, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->allow_unhealthy_db_read, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->stat_history_interval, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->deferred_attach_timeout, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->vacuum_fast_path_count, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->lcp2_public_ip_assignment, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->allow_client_db_attach, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->recover_pdb_by_seqnum, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->deferred_rebalance_on_node_add, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->fetch_collapse, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->hopcount_make_sticky, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->sticky_duration, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->sticky_pindown, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->no_ip_takeover, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->db_record_count_warn, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->db_record_size_warn, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->db_size_warn, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->pulldb_preallocation_size, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->no_ip_host_on_all_disabled, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->samba3_hack, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->mutex_enabled, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->lock_processes_per_db, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->rec_buffer_size_limit, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->queue_buffer_size, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->ip_alloc_algorithm, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->allow_mixed_versions, buf+offset, &np);
+	offset += np;
+
+	*npush = offset;
+}
+
+static int ctdb_tunable_list_pull_elems(uint8_t *buf, size_t buflen,
+					TALLOC_CTX *mem_ctx,
+					struct ctdb_tunable_list *out,
+					size_t *npull)
+{
+	size_t offset = 0, np;
+	int ret;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->max_redirect_count, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->seqnum_interval, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->control_timeout, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->traverse_timeout, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->keepalive_interval, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->keepalive_limit, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->recover_timeout, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->recover_interval, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->election_timeout, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->takeover_timeout, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->monitor_interval, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->tickle_update_interval, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->script_timeout, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->monitor_timeout_count, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->script_unhealthy_on_timeout, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->recovery_grace_period, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->recovery_ban_period, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->database_hash_size, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->database_max_dead, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->rerecovery_timeout, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->enable_bans, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->deterministic_public_ips, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->reclock_ping_period, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->no_ip_failback, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->disable_ip_failover, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->verbose_memory_names, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->recd_ping_timeout, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->recd_ping_failcount, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->log_latency_ms, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->reclock_latency_ms, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->recovery_drop_all_ips, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->verify_recovery_lock, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->vacuum_interval, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->vacuum_max_run_time, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->repack_limit, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->vacuum_limit, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->max_queue_depth_drop_msg, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->allow_unhealthy_db_read, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->stat_history_interval, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->deferred_attach_timeout, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->vacuum_fast_path_count, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->lcp2_public_ip_assignment, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->allow_client_db_attach, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->recover_pdb_by_seqnum, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->deferred_rebalance_on_node_add, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->fetch_collapse, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->hopcount_make_sticky, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->sticky_duration, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->sticky_pindown, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->no_ip_takeover, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->db_record_count_warn, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->db_record_size_warn, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->db_size_warn, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->pulldb_preallocation_size, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->no_ip_host_on_all_disabled, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->samba3_hack, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->mutex_enabled, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->lock_processes_per_db, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->rec_buffer_size_limit, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->queue_buffer_size, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->ip_alloc_algorithm, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset,
+			       &out->allow_mixed_versions, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	*npull = offset;
+	return 0;
 }
 
 int ctdb_tunable_list_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			   struct ctdb_tunable_list **out)
+			   struct ctdb_tunable_list **out, size_t *npull)
 {
-	struct ctdb_tunable_list *tun_list;
+	struct ctdb_tunable_list *val;
+	size_t np;
+	int ret;
 
-	if (buflen < sizeof(struct ctdb_tunable_list)) {
-		return EMSGSIZE;
-	}
-
-	tun_list = talloc_memdup(mem_ctx, buf, sizeof(struct ctdb_tunable_list));
-	if (tun_list == NULL) {
+	val = talloc(mem_ctx, struct ctdb_tunable_list);
+	if (val == NULL) {
 		return ENOMEM;
 	}
 
-	*out = tun_list;
+	ret = ctdb_tunable_list_pull_elems(buf, buflen, val, val, &np);
+	if (ret != 0) {
+		talloc_free(val);
+		return ret;
+	}
+
+	*out = val;
+	*npull = np;
 	return 0;
 }
 
