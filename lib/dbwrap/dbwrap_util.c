@@ -376,22 +376,13 @@ NTSTATUS dbwrap_trans_store(struct db_context *db, TDB_DATA key, TDB_DATA dbuf,
 static NTSTATUS dbwrap_delete_action(struct db_context * db, void *private_data)
 {
 	NTSTATUS status;
-	struct db_record *rec;
 	TDB_DATA *key = (TDB_DATA *)private_data;
 
-	rec = dbwrap_fetch_locked(db, talloc_tos(), *key);
-	if (rec == NULL) {
-		DEBUG(5, ("fetch_locked failed\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	status = dbwrap_record_delete(rec);
+	status = dbwrap_delete(db, *key);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_INFO("dbwrap_record_delete returned %s\n",
 			 nt_errstr(status));
 	}
-
-	talloc_free(rec);
 	return  status;
 }
 
