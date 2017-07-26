@@ -81,6 +81,10 @@ static void dcesrv_task_init(struct task_server *task)
 
 		enum dcerpc_transport_t transport =
 			dcerpc_binding_get_transport(e->ep_description);
+		const char *transport_str
+			= derpc_transport_string_by_transport(transport);
+
+		struct dcesrv_if_list *iface_list;
 
 		/*
 		 * Ensure that -Msingle sets e->use_single_process for
@@ -116,6 +120,18 @@ static void dcesrv_task_init(struct task_server *task)
 		if (!NT_STATUS_IS_OK(status)) {
 			goto failed;
 		}
+
+		DEBUG(5,("Added endpoint on %s "
+			 "using process model %s for",
+			 transport_str,
+			 this_model_ops->name));
+
+		for (iface_list = e->interface_list;
+		     iface_list != NULL;
+		     iface_list = iface_list->next) {
+			DEBUGADD(5, (" %s", iface_list->iface.name));
+		}
+		DEBUGADD(5, ("\n"));
 	}
 
 	irpc_add_name(task->msg_ctx, "rpc_server");

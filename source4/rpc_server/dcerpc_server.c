@@ -275,7 +275,8 @@ _PUBLIC_ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 	enum dcerpc_transport_t transport;
 	char *ep_string = NULL;
 	bool use_single_process = true;
-	
+	const char *ep_process_string;
+
 	/*
 	 * If we are not using handles, there is no need for force
 	 * this service into using a single process.
@@ -444,8 +445,15 @@ _PUBLIC_ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 	/* Re-get the string as we may have set a port */
 	ep_string = dcerpc_binding_string(dce_ctx, ep->ep_description);
 
-	DEBUG(4,("dcesrv_interface_register: interface '%s' registered on endpoint '%s'\n",
-		 iface->name, ep_string));
+	if (use_single_process) {
+		ep_process_string = "single process required";
+	} else {
+		ep_process_string = "multi process compatible";
+	}
+
+	DBG_INFO("dcesrv_interface_register: interface '%s' "
+		 "registered on endpoint '%s' (%s)\n",
+		 iface->name, ep_string, ep_process_string);
 	TALLOC_FREE(ep_string);
 
 	return NT_STATUS_OK;
