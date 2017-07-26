@@ -1851,6 +1851,72 @@ static int ctdb_public_ip_info_pull_old(uint8_t *buf, size_t buflen,
 	return 0;
 }
 
+struct ctdb_statistics_list_wire {
+	uint32_t num;
+	struct ctdb_statistics stats[1];
+};
+
+static size_t ctdb_statistics_list_len_old(struct ctdb_statistics_list *in)
+{
+	return offsetof(struct ctdb_statistics_list_wire, stats) +
+	       in->num * sizeof(struct ctdb_statistics);
+}
+
+static void ctdb_statistics_list_push_old(struct ctdb_statistics_list *in,
+					  uint8_t *buf)
+{
+	struct ctdb_statistics_list_wire *wire =
+		(struct ctdb_statistics_list_wire *)buf;
+
+	wire->num = in->num;
+	memcpy(wire->stats, in->stats,
+	       in->num * sizeof(struct ctdb_statistics));
+}
+
+static int ctdb_statistics_list_pull_old(uint8_t *buf, size_t buflen,
+					 TALLOC_CTX *mem_ctx,
+					 struct ctdb_statistics_list **out)
+{
+	struct ctdb_statistics_list *val;
+	struct ctdb_statistics_list_wire *wire =
+		(struct ctdb_statistics_list_wire *)buf;
+
+	if (buflen < offsetof(struct ctdb_statistics_list_wire, stats)) {
+		return EMSGSIZE;
+	}
+	if (wire->num > buflen / sizeof(struct ctdb_statistics)) {
+		return EMSGSIZE;
+	}
+	if (offsetof(struct ctdb_statistics_list_wire, stats) +
+	    wire->num * sizeof(struct ctdb_statistics) <
+	    offsetof(struct ctdb_statistics_list_wire, stats)) {
+		return EMSGSIZE;
+	}
+	if (buflen < offsetof(struct ctdb_statistics_list_wire, stats) +
+		     wire->num * sizeof(struct ctdb_statistics)) {
+		return EMSGSIZE;
+	}
+
+	val = talloc(mem_ctx, struct ctdb_statistics_list);
+	if (val == NULL) {
+		return ENOMEM;
+	}
+
+	val->num = wire->num;
+
+	val->stats = talloc_array(val, struct ctdb_statistics, wire->num);
+	if (val->stats == NULL) {
+		talloc_free(val);
+		return ENOMEM;
+	}
+
+	memcpy(val->stats, wire->stats,
+	       wire->num * sizeof(struct ctdb_statistics));
+
+	*out = val;
+	return 0;
+}
+
 
 COMPAT_TYPE3_TEST(struct ctdb_statistics, ctdb_statistics);
 COMPAT_TYPE3_TEST(struct ctdb_vnn_map, ctdb_vnn_map);
@@ -1887,6 +1953,7 @@ COMPAT_TYPE3_TEST(struct ctdb_notify_data, ctdb_notify_data);
 COMPAT_TYPE3_TEST(struct ctdb_iface, ctdb_iface);
 COMPAT_TYPE3_TEST(struct ctdb_iface_list, ctdb_iface_list);
 COMPAT_TYPE3_TEST(struct ctdb_public_ip_info, ctdb_public_ip_info);
+COMPAT_TYPE3_TEST(struct ctdb_statistics_list, ctdb_statistics_list);
 
 int main(int argc, char *argv[])
 {
@@ -1928,6 +1995,7 @@ int main(int argc, char *argv[])
 	COMPAT_TEST_FUNC(ctdb_iface)();
 	COMPAT_TEST_FUNC(ctdb_iface_list)();
 	COMPAT_TEST_FUNC(ctdb_public_ip_info)();
+	COMPAT_TEST_FUNC(ctdb_statistics_list)();
 
 	return 0;
 }

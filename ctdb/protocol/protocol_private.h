@@ -111,11 +111,12 @@ void ctdb_statistics_push(struct ctdb_statistics *in, uint8_t *buf,
 int ctdb_statistics_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 			 struct ctdb_statistics **out, size_t *npull);
 
-size_t ctdb_statistics_list_len(struct ctdb_statistics_list *stats_list);
-void ctdb_statistics_list_push(struct ctdb_statistics_list *stats_list,
-			       uint8_t *buf);
+size_t ctdb_statistics_list_len(struct ctdb_statistics_list *in);
+void ctdb_statistics_list_push(struct ctdb_statistics_list *in,
+			       uint8_t *buf, size_t *npull);
 int ctdb_statistics_list_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			      struct ctdb_statistics_list **out);
+			      struct ctdb_statistics_list **out,
+			      size_t *npull);
 
 size_t ctdb_vnn_map_len(struct ctdb_vnn_map *in);
 void ctdb_vnn_map_push(struct ctdb_vnn_map *in, uint8_t *buf, size_t *npush);

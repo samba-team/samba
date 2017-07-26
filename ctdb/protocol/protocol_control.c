@@ -1535,7 +1535,7 @@ static void ctdb_reply_control_data_push(struct ctdb_reply_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_GET_STAT_HISTORY:
-		ctdb_statistics_list_push(cd->data.stats_list, buf);
+		ctdb_statistics_list_push(cd->data.stats_list, buf, &np);
 		break;
 
 	case CTDB_CONTROL_CHECK_SRVIDS:
@@ -1719,7 +1719,7 @@ static int ctdb_reply_control_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_CONTROL_GET_STAT_HISTORY:
 		ret = ctdb_statistics_list_pull(buf, buflen, mem_ctx,
-						&cd->data.stats_list);
+						&cd->data.stats_list, &np);
 		break;
 
 	case CTDB_CONTROL_CHECK_SRVIDS:

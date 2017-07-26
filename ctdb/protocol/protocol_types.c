@@ -779,70 +779,91 @@ int ctdb_statistics_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 	return 0;
 }
 
-struct ctdb_statistics_list_wire {
-	uint32_t num;
-	struct ctdb_statistics stats[1];
-};
-
-size_t ctdb_statistics_list_len(struct ctdb_statistics_list *stats_list)
+size_t ctdb_statistics_list_len(struct ctdb_statistics_list *in)
 {
-	return offsetof(struct ctdb_statistics_list_wire, stats) +
-	       stats_list->num * sizeof(struct ctdb_statistics);
+	size_t len;
+
+	len = ctdb_int32_len(&in->num) + ctdb_padding_len(4);
+	if (in->num > 0) {
+		len += in->num * ctdb_statistics_len(&in->stats[0]);
+	}
+
+	return len;
 }
 
-void ctdb_statistics_list_push(struct ctdb_statistics_list *stats_list,
-			       uint8_t *buf)
+void ctdb_statistics_list_push(struct ctdb_statistics_list *in,
+			       uint8_t *buf, size_t *npush)
 {
-	struct ctdb_statistics_list_wire *wire =
-		(struct ctdb_statistics_list_wire *)buf;
+	size_t offset = 0, np;
+	int i;
 
-	wire->num = stats_list->num;
-	memcpy(wire->stats, stats_list->stats,
-	       stats_list->num * sizeof(struct ctdb_statistics));
+	ctdb_int32_push(&in->num, buf+offset, &np);
+	offset += np;
+
+	ctdb_padding_push(4, buf+offset, &np);
+	offset += np;
+
+	for (i=0; i<in->num; i++) {
+		ctdb_statistics_push(&in->stats[i], buf+offset, &np);
+		offset += np;
+	}
+
+	*npush = offset;
 }
 
 int ctdb_statistics_list_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			      struct ctdb_statistics_list **out)
+			      struct ctdb_statistics_list **out,
+			      size_t *npull)
 {
-	struct ctdb_statistics_list *stats_list;
-	struct ctdb_statistics_list_wire *wire =
-		(struct ctdb_statistics_list_wire *)buf;
+	struct ctdb_statistics_list *val;
+	size_t offset = 0, np;
+	int ret, i;
 
-	if (buflen < offsetof(struct ctdb_statistics_list_wire, stats)) {
-		return EMSGSIZE;
-	}
-	if (wire->num > buflen / sizeof(struct ctdb_statistics)) {
-		return EMSGSIZE;
-	}
-	if (offsetof(struct ctdb_statistics_list_wire, stats) +
-	    wire->num * sizeof(struct ctdb_statistics) <
-	    offsetof(struct ctdb_statistics_list_wire, stats)) {
-		return EMSGSIZE;
-	}
-	if (buflen < offsetof(struct ctdb_statistics_list_wire, stats) +
-		     wire->num * sizeof(struct ctdb_statistics)) {
-		return EMSGSIZE;
-	}
-
-	stats_list = talloc(mem_ctx, struct ctdb_statistics_list);
-	if (stats_list == NULL) {
+	val = talloc(mem_ctx, struct ctdb_statistics_list);
+	if (val == NULL) {
 		return ENOMEM;
 	}
 
-	stats_list->num = wire->num;
+	ret = ctdb_int32_pull(buf+offset, buflen-offset, &val->num, &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
 
-	stats_list->stats = talloc_array(stats_list, struct ctdb_statistics,
-					 wire->num);
-	if (stats_list->stats == NULL) {
-		talloc_free(stats_list);
-		return ENOMEM;
+	ret = ctdb_padding_pull(buf+offset, buflen-offset, 4, &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
+
+	if (val->num == 0) {
+		val->stats = NULL;
+		goto done;
 	}
 
-	memcpy(stats_list->stats, wire->stats,
-	       wire->num * sizeof(struct ctdb_statistics));
+	val->stats = talloc_array(val, struct ctdb_statistics, val->num);
+	if (val->stats == NULL) {
+		ret = ENOMEM;
+		goto fail;
+	}
 
-	*out = stats_list;
+	for (i=0; i<val->num; i++) {
+		ret = ctdb_statistics_pull_elems(buf+offset, buflen-offset,
+						 val, &val->stats[i], &np);
+		if (ret != 0) {
+			goto fail;
+		}
+		offset += np;
+	}
+
+done:
+	*out = val;
+	*npull = offset;
 	return 0;
+
+fail:
+	talloc_free(val);
+	return ret;
 }
 
 size_t ctdb_vnn_map_len(struct ctdb_vnn_map *in)

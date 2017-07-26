@@ -1189,8 +1189,8 @@ void fill_ctdb_statistics_list(TALLOC_CTX *mem_ctx,
 
 	p->num = rand_int(10);
 	if (p->num > 0) {
-		p->stats = talloc_array(mem_ctx, struct ctdb_statistics,
-					p->num);
+		p->stats = talloc_zero_array(mem_ctx, struct ctdb_statistics,
+					     p->num);
 		assert(p->stats != NULL);
 
 		for (i=0; i<p->num; i++) {
