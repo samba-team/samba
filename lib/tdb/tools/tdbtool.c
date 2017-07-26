@@ -930,10 +930,13 @@ int main(int argc, char *argv[])
 		break;
 	case 5:
 		arg2 = tdb_convert_string(argv[4],&arg2len);
+		FALL_THROUGH;
 	case 4:
 		arg1 = tdb_convert_string(argv[3],&arg1len);
+		FALL_THROUGH;
 	case 3:
 		cmdname = argv[2];
+		FALL_THROUGH;
 	default:
 		do_command();
 		break;
