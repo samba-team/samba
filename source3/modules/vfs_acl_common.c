@@ -519,6 +519,7 @@ static NTSTATUS validate_nt_acl_blob(TALLOC_CTX *mem_ctx,
 		}
 
 		/* Otherwise, fall though and see if the NT ACL hash matches */
+		FALL_THROUGH;
 	}
 	case 3:
 		/* Get the full underlying sd for the hash
