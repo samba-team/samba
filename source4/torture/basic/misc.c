@@ -985,6 +985,8 @@ bool run_benchrw(struct torture_context *tctx)
 					break;
 				}
 				state[i]->mode=FINISHED;
+
+				FALL_THROUGH;
 			case FINISHED:
 				finished++;
 				break;
