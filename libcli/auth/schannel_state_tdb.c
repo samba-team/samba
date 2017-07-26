@@ -439,7 +439,7 @@ NTSTATUS schannel_fetch_challenge_tdb(struct db_context *db_sc,
 }
 
 /******************************************************************************
- Wrapper around schannel_fetch_session_key_tdb()
+ Wrapper around schannel_fetch_challenge_tdb()
  Note we must be root here.
 
 *******************************************************************************/
