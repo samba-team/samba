@@ -394,6 +394,8 @@ static bool parse_ace_flags(const char *str, unsigned int *pflags)
 		switch (*p) {
 		case '|':
 			p++;
+
+			FALL_THROUGH;
 		case '\0':
 			continue;
 		default:
