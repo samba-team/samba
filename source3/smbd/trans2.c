@@ -4032,7 +4032,8 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 				SIVAL(pdata,84,0x100); /* Don't support mac... */
 				break;
 			}
-			/* drop through */
+
+			FALL_THROUGH;
 		default:
 			return NT_STATUS_INVALID_LEVEL;
 	}
