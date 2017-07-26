@@ -573,8 +573,7 @@ static int linked_attributes_modify(struct ldb_module *module, struct ldb_reques
 			/* treat as just a normal add the delete part is handled by the callback */
 			store_el = true;
 
-			/* break intentionally missing */
-
+			FALL_THROUGH;
 		case LDB_FLAG_MOD_ADD:
 
 			/* For each value being added, we need to setup the adds */
