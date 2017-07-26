@@ -1068,7 +1068,8 @@ void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 					}
 				}
 			}
-			/* FALL TROUGH */
+
+			FALL_THROUGH;
 		case NCACN_NP:
 			pipe_name = talloc_strdup(ncacn_conn,
 						  name);
