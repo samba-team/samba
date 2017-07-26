@@ -318,7 +318,7 @@ static size_t ctdb_req_control_data_len(struct ctdb_req_control_data *cd)
 		break;
 
 	case CTDB_CONTROL_GET_DB_SEQNUM:
-		len = ctdb_uint64_len((uint64_t)cd->data.db_id);
+		len = ctdb_uint32_len(cd->data.db_id) + ctdb_uint32_len(0);
 		break;
 
 	case CTDB_CONTROL_DB_SET_HEALTHY:
@@ -607,6 +607,7 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 
 	case CTDB_CONTROL_GET_DB_SEQNUM:
 		ctdb_uint32_push(cd->data.db_id, buf);
+		ctdb_uint32_push(0, buf+4);
 		break;
 
 	case CTDB_CONTROL_DB_SET_HEALTHY:
@@ -711,6 +712,7 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 				      TALLOC_CTX *mem_ctx,
 				      struct ctdb_req_control_data *cd)
 {
+	uint32_t u32;
 	int ret = 0;
 
 	cd->opcode = opcode;
@@ -920,8 +922,11 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 		break;
 
 	case CTDB_CONTROL_GET_DB_SEQNUM:
-		ret = ctdb_uint32_pull(buf, buflen, mem_ctx,
-				       &cd->data.db_id);
+		ret = ctdb_uint32_pull(buf, buflen, mem_ctx, &cd->data.db_id);
+		if (ret != 0) {
+			break;
+		}
+		ret = ctdb_uint32_pull(buf+4, buflen-4, mem_ctx, &u32);
 		break;
 
 	case CTDB_CONTROL_DB_SET_HEALTHY:

@@ -1882,9 +1882,11 @@ int ctdb_ctrl_getdbseqnum(struct ctdb_context *ctdb, struct timeval timeout,
 	int ret;
 	int32_t res;
 	TDB_DATA data, outdata;
+	uint8_t buf[sizeof(uint64_t)] = { 0 };
 
-	data.dptr = (uint8_t *)&dbid;
-	data.dsize = sizeof(uint64_t);	/* This is just wrong */
+	*(uint32_t *)buf = dbid;
+	data.dptr = buf;
+	data.dsize = sizeof(uint64_t);
 
 	ret = ctdb_control(ctdb, destnode, 0, CTDB_CONTROL_GET_DB_SEQNUM,
 			   0, data, ctdb, &outdata, &res, &timeout, NULL);
