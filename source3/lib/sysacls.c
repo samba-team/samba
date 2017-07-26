@@ -186,7 +186,8 @@ char *sys_acl_to_text(const struct smb_acl_t *acl_d, ssize_t *len_p)
 
 			case SMB_ACL_USER:
 				id = uidtoname(ap->info.user.uid);
-				/* FALL TROUGH */
+
+				FALL_THROUGH;
 			case SMB_ACL_USER_OBJ:
 				tag = "user";
 				break;
@@ -199,7 +200,8 @@ char *sys_acl_to_text(const struct smb_acl_t *acl_d, ssize_t *len_p)
 				} else {
 					id = gr->gr_name;
 				}
-				/* FALL TROUGH */
+
+				FALL_THROUGH;
 			case SMB_ACL_GROUP_OBJ:
 				tag = "group";
 				break;
