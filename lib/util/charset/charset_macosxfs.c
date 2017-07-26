@@ -457,10 +457,11 @@ static size_t macosxfs_encoding_pull(
 
 	switch(result) {
 	case kCFStringEncodingConversionSuccess:
-		if (*inbytesleft == srcCharsUsed)
+		if (*inbytesleft == srcCharsUsed) {
 			break;
-		else
-			; /*fall through*/
+		}
+
+		FALL_THROUGH;
 	case kCFStringEncodingInsufficientOutputBufferLength:
 		debug_out("String conversion: "
 			  "Output buffer too small\n");
@@ -546,10 +547,11 @@ static size_t macosxfs_encoding_push(
 
 	switch(result) {
 	case kCFStringEncodingConversionSuccess:
-		if (*inbytesleft/2 == srcCharsUsed)
+		if (*inbytesleft/2 == srcCharsUsed) {
 			break;
-		else
-			; /*fall through*/
+		}
+
+		FALL_THROUGH;
 	case kCFStringEncodingInsufficientOutputBufferLength:
 		debug_out("String conversion: "
 			  "Output buffer too small\n");
