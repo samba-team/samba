@@ -96,7 +96,7 @@ static void TEST_FUNC(NAME)(uint32_t command) \
 static void test_ctdb_event_header(void)
 {
 	TALLOC_CTX *mem_ctx;
-	size_t buflen;
+	size_t buflen, np = 0;
 	struct ctdb_event_header h, h2;
 	int ret;
 
@@ -109,9 +109,13 @@ static void test_ctdb_event_header(void)
 	ctdb_event_header_fill(&h, REQID);
 
 	buflen = ctdb_event_header_len(&h);
-	ctdb_event_header_push(&h, BUFFER);
-	ret = ctdb_event_header_pull(BUFFER, buflen, mem_ctx, &h2);
+	assert(buflen < sizeof(BUFFER));
+	ctdb_event_header_push(&h, BUFFER, &np);
+	assert(np == buflen);
+	np = 0;
+	ret = ctdb_event_header_pull(BUFFER, buflen, mem_ctx, &h2, &np);
 	assert(ret == 0);
+	assert(np == buflen);
 
 	verify_ctdb_event_header(&h, &h2);
 
