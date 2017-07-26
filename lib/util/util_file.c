@@ -130,7 +130,8 @@ char *fgets_slash(TALLOC_CTX *mem_ctx, char *s2, int maxlen, FILE *f)
 			    if (start_of_line) {
 				    break;
 			    }
-			    /* fall through */
+
+			    FALL_THROUGH;
 		    default:
 			    start_of_line = false;
 			    s[len++] = c;
