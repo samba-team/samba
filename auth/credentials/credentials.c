@@ -1277,7 +1277,8 @@ _PUBLIC_ bool cli_credentials_parse_password_fd(struct cli_credentials *credenti
 				*++p = '\0'; /* advance p, and null-terminate pass */
 				break;
 			}
-			/* fall through */
+
+			FALL_THROUGH;
 		case 0:
 			if (p - pass) {
 				*p = '\0'; /* null-terminate it, just in case... */
