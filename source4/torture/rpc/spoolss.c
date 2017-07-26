@@ -1402,6 +1402,8 @@ static bool test_SetPrinter_errors(struct torture_context *tctx,
 				/* ignored then */
 				break;
 			}
+
+			FALL_THROUGH;
 		case SPOOLSS_PRINTER_CONTROL_PAUSE: /* 1 */
 		case SPOOLSS_PRINTER_CONTROL_RESUME: /* 2 */
 		case SPOOLSS_PRINTER_CONTROL_PURGE: /* 3 */
