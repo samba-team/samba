@@ -266,7 +266,7 @@ PROTOCOL_TYPE3_TEST(struct ctdb_event_request_status,
 				ctdb_event_request_status);
 PROTOCOL_TYPE3_TEST(struct ctdb_event_request_script_enable,
 				ctdb_event_request_script_enable);
-DEFINE_TEST(struct ctdb_event_request_script_disable,
+PROTOCOL_TYPE3_TEST(struct ctdb_event_request_script_disable,
 				ctdb_event_request_script_disable);
 DEFINE_TEST(struct ctdb_event_reply_status, ctdb_event_reply_status);
 DEFINE_TEST(struct ctdb_event_reply_script_list, ctdb_event_reply_script_list);

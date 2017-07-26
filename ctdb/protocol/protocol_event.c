@@ -416,17 +416,20 @@ static size_t ctdb_event_request_script_disable_len(
 
 static void ctdb_event_request_script_disable_push(
 				struct ctdb_event_request_script_disable *in,
-				uint8_t *buf)
+				uint8_t *buf, size_t *npush)
 {
 	size_t np;
 
 	ctdb_stringn_push(&in->script_name, buf, &np);
+
+	*npush = np;
 }
 
 static int ctdb_event_request_script_disable_pull(
 				uint8_t *buf, size_t buflen,
 				TALLOC_CTX *mem_ctx,
-				struct ctdb_event_request_script_disable **out)
+				struct ctdb_event_request_script_disable **out,
+				size_t *npull)
 {
 	struct ctdb_event_request_script_disable *rdata;
 	size_t np;
@@ -444,6 +447,7 @@ static int ctdb_event_request_script_disable_pull(
 	}
 
 	*out = rdata;
+	*npull = np;
 	return 0;
 }
 
@@ -509,7 +513,7 @@ static void ctdb_event_request_data_push(struct ctdb_event_request_data *in,
 	case CTDB_EVENT_COMMAND_SCRIPT_DISABLE:
 		ctdb_event_request_script_disable_push(
 						in->data.script_disable,
-						buf+offset);
+						buf+offset, &np);
 		break;
 	}
 }
@@ -558,7 +562,8 @@ static int ctdb_event_request_data_pull(uint8_t *buf, size_t buflen,
 		ret = ctdb_event_request_script_disable_pull(
 						buf+offset, buflen-offset,
 						mem_ctx,
-						&out->data.script_disable);
+						&out->data.script_disable,
+						&np);
 		break;
 	}
 
