@@ -276,6 +276,23 @@ void verify_ctdb_tdb_datan(TDB_DATA *p1, TDB_DATA *p2)
 	verify_tdb_data(p1, p2);
 }
 
+void fill_ctdb_latency_counter(struct ctdb_latency_counter *p)
+{
+	p->num = rand32i();
+	p->min = rand_double();
+	p->max = rand_double();
+	p->total = rand_double();
+}
+
+void verify_ctdb_latency_counter(struct ctdb_latency_counter *p1,
+				 struct ctdb_latency_counter *p2)
+{
+	assert(p1->num == p2->num);
+	assert(p1->min == p2->min);
+	assert(p1->max == p2->max);
+	assert(p1->total == p2->total);
+}
+
 void fill_ctdb_statistics(TALLOC_CTX *mem_ctx, struct ctdb_statistics *p)
 {
 	fill_buffer((uint8_t *)p, sizeof(struct ctdb_statistics));

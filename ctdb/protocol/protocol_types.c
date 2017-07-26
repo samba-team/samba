@@ -115,6 +115,78 @@ int ctdb_tdb_datan_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 	return 0;
 }
 
+size_t ctdb_latency_counter_len(struct ctdb_latency_counter *in)
+{
+	return ctdb_int32_len(&in->num) +
+		ctdb_padding_len(4) +
+		ctdb_double_len(&in->min) +
+		ctdb_double_len(&in->max) +
+		ctdb_double_len(&in->total);
+}
+
+void ctdb_latency_counter_push(struct ctdb_latency_counter *in, uint8_t *buf,
+			       size_t *npush)
+{
+	size_t offset = 0, np;
+
+	ctdb_int32_push(&in->num, buf+offset, &np);
+	offset += np;
+
+	ctdb_padding_push(4, buf+offset, &np);
+	offset += np;
+
+	ctdb_double_push(&in->min, buf+offset, &np);
+	offset += np;
+
+	ctdb_double_push(&in->max, buf+offset, &np);
+	offset += np;
+
+	ctdb_double_push(&in->total, buf+offset, &np);
+	offset += np;
+
+	*npush = offset;
+}
+
+int ctdb_latency_counter_pull(uint8_t *buf, size_t buflen,
+			      struct ctdb_latency_counter *out, size_t *npull)
+{
+	size_t offset = 0, np;
+	int ret;
+
+	ret = ctdb_int32_pull(buf+offset, buflen-offset, &out->num, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_padding_pull(buf+offset, buflen-offset, 4, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_double_pull(buf+offset, buflen-offset, &out->min, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_double_pull(buf+offset, buflen-offset, &out->max, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_double_pull(buf+offset, buflen-offset, &out->total, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	*npull = offset;
+	return 0;
+}
+
 size_t ctdb_statistics_len(struct ctdb_statistics *stats)
 {
 	return sizeof(struct ctdb_statistics);

@@ -29,6 +29,7 @@
 
 PROTOCOL_TYPE2_TEST(TDB_DATA, ctdb_tdb_data);
 PROTOCOL_TYPE2_TEST(TDB_DATA, ctdb_tdb_datan);
+PROTOCOL_TYPE1_TEST(struct ctdb_latency_counter, ctdb_latency_counter);
 
 static void test_ctdb_ltdb_header(void)
 {
@@ -157,6 +158,7 @@ int main(int argc, char *argv[])
 
 	TEST_FUNC(ctdb_tdb_data)();
 	TEST_FUNC(ctdb_tdb_datan)();
+	TEST_FUNC(ctdb_latency_counter)();
 	test_ctdb_ltdb_header();
 	test_ctdb_g_lock();
 
