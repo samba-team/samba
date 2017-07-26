@@ -294,6 +294,8 @@ static int net_conf_import(struct net_context *c, struct smbconf_ctx *conf_ctx,
 				d_printf(_("error: out of memory!\n"));
 				goto done;
 			}
+
+			FALL_THROUGH;
 		case 1:
 			filename = argv[0];
 			break;
@@ -563,6 +565,8 @@ static int net_conf_addshare(struct net_context *c,
 			goto done;
 		case 5:
 			comment = argv[4];
+
+			FALL_THROUGH;
 		case 4:
 			if (!strnequal(argv[3], "guest_ok=", 9)) {
 				net_conf_addshare_usage(c, argc, argv);
@@ -581,6 +585,8 @@ static int net_conf_addshare(struct net_context *c,
 					net_conf_addshare_usage(c, argc, argv);
 					goto done;
 			}
+
+			FALL_THROUGH;
 		case 3:
 			if (!strnequal(argv[2], "writeable=", 10)) {
 				net_conf_addshare_usage(c, argc, argv);
@@ -599,6 +605,8 @@ static int net_conf_addshare(struct net_context *c,
 					net_conf_addshare_usage(c, argc, argv);
 					goto done;
 			}
+
+			FALL_THROUGH;
 		case 2:
 			path = argv[1];
 			sharename = talloc_strdup(mem_ctx, argv[0]);
