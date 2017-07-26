@@ -75,7 +75,7 @@ static WERROR simpleclass_IClassFactory_CreateInstance(struct IClassFactory *d,
 						       TALLOC_CTX *mem_ctx,
 						       struct MInterfacePointer *pUnknown,
 						       struct GUID *iid,
-						       struct MInterfacePointer *ppv)
+						       struct MInterfacePointer **ppv)
 {
 	struct IStream *ret;
 	/* FIXME: Check whether IID == ISTREAM_IID */
@@ -84,7 +84,7 @@ static WERROR simpleclass_IClassFactory_CreateInstance(struct IClassFactory *d,
 	ret->vtable = &simple_IStream_vtable;
 	ret->object_data = NULL;
 
-	ppv = (struct MInterfacePointer *)ret;
+	*ppv = (struct MInterfacePointer *)ret;
 
 	return WERR_OK;
 }
