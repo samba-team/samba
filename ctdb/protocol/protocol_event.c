@@ -194,17 +194,20 @@ static size_t ctdb_event_status_state_len(enum ctdb_event_status_state in)
 }
 
 static void ctdb_event_status_state_push(enum ctdb_event_status_state in,
-					 uint8_t *buf)
+					 uint8_t *buf, size_t *npush)
 {
 	size_t np;
 	uint32_t u32 = in;
 
 	ctdb_uint32_push(&u32, buf, &np);
+
+	*npush = np;
 }
 
 static int ctdb_event_status_state_pull(uint8_t *buf, size_t buflen,
 					TALLOC_CTX *mem_ctx,
-					enum ctdb_event_status_state *out)
+					enum ctdb_event_status_state *out,
+					size_t *npull)
 {
 	uint32_t uint32_value;
 	enum ctdb_event_status_state value;
@@ -234,6 +237,7 @@ static int ctdb_event_status_state_pull(uint8_t *buf, size_t buflen,
 	}
 
 	*out = value;
+	*npull = np;
 	return 0;
 }
 
@@ -314,7 +318,7 @@ static void ctdb_event_request_status_push(
 	ctdb_event_push(in->event, buf, &np);
 	offset += np;
 
-	ctdb_event_status_state_push(in->state, buf+offset);
+	ctdb_event_status_state_push(in->state, buf+offset, &np);
 }
 
 static int ctdb_event_request_status_pull(
@@ -339,7 +343,7 @@ static int ctdb_event_request_status_pull(
 	offset += np;
 
 	ret = ctdb_event_status_state_pull(buf+offset, buflen-offset,
-					   rdata, &rdata->state);
+					   rdata, &rdata->state, &np);
 	if (ret != 0) {
 		talloc_free(rdata);
 		return ret;
