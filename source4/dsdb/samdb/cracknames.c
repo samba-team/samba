@@ -1083,7 +1083,7 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 				return WERR_OK;
 			}
 		}
-		/* FALL TROUGH */
+		FALL_THROUGH;
 		default:
 			info1->status = DRSUAPI_DS_NAME_STATUS_NOT_UNIQUE;
 			return WERR_OK;
