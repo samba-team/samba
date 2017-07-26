@@ -344,24 +344,17 @@ struct dbwrap_store_context {
 
 static NTSTATUS dbwrap_store_action(struct db_context *db, void *private_data)
 {
-	struct db_record *rec = NULL;
 	NTSTATUS status;
 	struct dbwrap_store_context *store_ctx;
 
 	store_ctx = (struct dbwrap_store_context *)private_data;
 
-	rec = dbwrap_fetch_locked(db, talloc_tos(), *(store_ctx->key));
-	if (rec == NULL) {
-		DEBUG(5, ("fetch_locked failed\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	status = dbwrap_record_store(rec, *(store_ctx->dbuf), store_ctx->flag);
+	status = dbwrap_store(db, *(store_ctx->key), *(store_ctx->dbuf),
+			      store_ctx->flag);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5, ("store returned %s\n", nt_errstr(status)));
 	}
 
-	TALLOC_FREE(rec);
 	return status;
 }
 
