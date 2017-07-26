@@ -2387,6 +2387,7 @@ static void call_nt_transact_get_user_quota(connection_struct *conn,
 
 			start_enum = False;
 
+			FALL_THROUGH;
 		case TRANSACT_GET_USER_QUOTA_LIST_START:
 
 			if (qt_handle->quota_list==NULL &&
