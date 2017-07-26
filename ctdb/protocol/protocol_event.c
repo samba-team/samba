@@ -645,17 +645,20 @@ static size_t ctdb_event_reply_script_list_len(
 
 static void ctdb_event_reply_script_list_push(
 				struct ctdb_event_reply_script_list *in,
-				uint8_t *buf)
+				uint8_t *buf, size_t *npush)
 {
 	size_t np;
 
 	ctdb_script_list_push(in->script_list, buf, &np);
+
+	*npush = np;
 }
 
 static int ctdb_event_reply_script_list_pull(
 				uint8_t *buf, size_t buflen,
 				TALLOC_CTX *mem_ctx,
-				struct ctdb_event_reply_script_list **out)
+				struct ctdb_event_reply_script_list **out,
+				size_t *npull)
 {
 	struct ctdb_event_reply_script_list *rdata;
 	size_t np;
@@ -674,6 +677,7 @@ static int ctdb_event_reply_script_list_pull(
 	}
 
 	*out = rdata;
+	*npull = np;
 	return 0;
 }
 
@@ -727,7 +731,7 @@ static void ctdb_event_reply_data_push(struct ctdb_event_reply_data *in,
 
 	case CTDB_EVENT_COMMAND_SCRIPT_LIST:
 		ctdb_event_reply_script_list_push(in->data.script_list,
-						  buf+offset);
+						  buf+offset, &np);
 		break;
 
 	case CTDB_EVENT_COMMAND_SCRIPT_ENABLE:
@@ -771,7 +775,7 @@ static int ctdb_event_reply_data_pull(uint8_t *buf, size_t buflen,
 	case CTDB_EVENT_COMMAND_SCRIPT_LIST:
 		ret = ctdb_event_reply_script_list_pull(
 					buf+offset, buflen-offset,
-					mem_ctx, &out->data.script_list);
+					mem_ctx, &out->data.script_list, &np);
 		break;
 
 	case CTDB_EVENT_COMMAND_SCRIPT_ENABLE:
