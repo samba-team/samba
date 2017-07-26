@@ -151,7 +151,8 @@ _PUBLIC_ char *tdb_summary(struct tdb_context *tdb)
 				rec.rec_len = tdb_dead_space(tdb, off)
 					- sizeof(rec);
 			}
-			/* Fall through */
+
+			FALL_THROUGH;
 		case TDB_DEAD_MAGIC:
 			tally_add(&dead, rec.rec_len);
 			break;
