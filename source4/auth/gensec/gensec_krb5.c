@@ -407,12 +407,9 @@ static NTSTATUS gensec_krb5_common_client_creds(struct gensec_security *gensec_s
 		/* Too much clock skew - we will need to kinit to re-skew the clock */
 	case KRB5KRB_AP_ERR_SKEW:
 	case KRB5_KDCREP_SKEW:
-	{
 		DEBUG(3, ("kerberos (mk_req) failed: %s\n", 
 			  smb_get_krb5_error_message(gensec_krb5_state->smb_krb5_context->krb5_context, ret, gensec_krb5_state)));
-		/*fall through*/
-	}
-	
+		FALL_THROUGH;
 	/* just don't print a message for these really ordinary messages */
 	case KRB5_FCC_NOFILE:
 	case KRB5_CC_NOTFOUND:
