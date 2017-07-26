@@ -84,6 +84,7 @@ static void string_sub2(char *s,const char *pattern, const char *insert, size_t 
 					p[i] = insert[i];
 					break;
 				}
+				FALL_THROUGH;
 			case '`':
 			case '"':
 			case '\'':
@@ -98,6 +99,7 @@ static void string_sub2(char *s,const char *pattern, const char *insert, size_t 
 					 * not replacing unsafe chars */
 					break;
 				}
+				FALL_THROUGH;
 			default:
 				p[i] = insert[i];
 			}
