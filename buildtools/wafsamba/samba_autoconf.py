@@ -711,6 +711,8 @@ def SAMBA_CONFIG_H(conf, path=None):
                         testflags=True)
         conf.ADD_CFLAGS('-Werror=uninitialized -Wuninitialized',
                         testflags=True)
+        conf.ADD_CFLAGS('-Wimplicit-fallthrough',
+                        testflags=True)
 
         conf.ADD_CFLAGS('-Wformat=2 -Wno-format-y2k', testflags=True)
         conf.ADD_CFLAGS('-Wno-format-zero-length', testflags=True)
