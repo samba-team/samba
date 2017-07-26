@@ -484,13 +484,14 @@ static size_t ctdb_event_request_data_len(struct ctdb_event_request_data *in)
 }
 
 static void ctdb_event_request_data_push(struct ctdb_event_request_data *in,
-					 uint8_t *buf)
+					 uint8_t *buf, size_t *npush)
 {
 	size_t offset = 0, np;
 
 	ctdb_event_command_push(in->command, buf, &np);
 	offset += np;
 
+	np = 0;
 	switch (in->command) {
 	case CTDB_EVENT_COMMAND_RUN:
 		ctdb_event_request_run_push(in->data.run, buf+offset, &np);
@@ -516,11 +517,15 @@ static void ctdb_event_request_data_push(struct ctdb_event_request_data *in,
 						buf+offset, &np);
 		break;
 	}
+	offset += np;
+
+	*npush = offset;
 }
 
 static int ctdb_event_request_data_pull(uint8_t *buf, size_t buflen,
 					TALLOC_CTX *mem_ctx,
-					struct ctdb_event_request_data *out)
+					struct ctdb_event_request_data *out,
+					size_t *npull)
 {
 	size_t offset = 0, np;
 	int ret;
@@ -532,6 +537,7 @@ static int ctdb_event_request_data_pull(uint8_t *buf, size_t buflen,
 	}
 	offset += np;
 
+	np = 0;
 	switch (out->command) {
 	case CTDB_EVENT_COMMAND_RUN:
 		ret = ctdb_event_request_run_pull(buf+offset, buflen-offset,
@@ -571,6 +577,9 @@ static int ctdb_event_request_data_pull(uint8_t *buf, size_t buflen,
 		return ret;
 	}
 
+	offset += np;
+
+	*npull = offset;
 	return 0;
 }
 
@@ -824,7 +833,7 @@ size_t ctdb_event_request_len(struct ctdb_event_request *in)
 int ctdb_event_request_push(struct ctdb_event_request *in,
 			    uint8_t *buf, size_t *buflen)
 {
-	size_t len, offset = 0;
+	size_t len, offset = 0, np;
 
 	len = ctdb_event_request_len(in);
 	if (*buflen < len) {
@@ -837,7 +846,7 @@ int ctdb_event_request_push(struct ctdb_event_request *in,
 	ctdb_event_header_push(&in->header, buf);
 	offset += ctdb_event_header_len(&in->header);
 
-	ctdb_event_request_data_push(&in->rdata, buf+offset);
+	ctdb_event_request_data_push(&in->rdata, buf+offset, &np);
 
 	return 0;
 }
@@ -846,7 +855,7 @@ int ctdb_event_request_pull(uint8_t *buf, size_t buflen,
 			    TALLOC_CTX *mem_ctx,
 			    struct ctdb_event_request *out)
 {
-	size_t offset = 0;
+	size_t offset = 0, np;
 	int ret;
 
 	ret = ctdb_event_header_pull(buf, buflen, mem_ctx, &out->header);
@@ -856,7 +865,7 @@ int ctdb_event_request_pull(uint8_t *buf, size_t buflen,
 	offset += ctdb_event_header_len(&out->header);
 
 	ret = ctdb_event_request_data_pull(buf+offset, buflen-offset,
-					   mem_ctx, &out->rdata);
+					   mem_ctx, &out->rdata, &np);
 	if (ret != 0) {
 		return ret;
 	}

@@ -11,10 +11,16 @@ command_output=$(
     echo
 )
 
+generate_output ()
+{
+    for i in $(seq 1 $last_command) ; do
+	echo "$1 $i"
+    done
+}
+
 output=$(
     echo "ctdb_event_header"
-    echo "ctdb_event_request_data"
-    echo "$command_output"
+    generate_output "ctdb_event_request_data"
     echo "ctdb_event_reply_data"
     echo "$command_output"
     echo "ctdb_event_request"

@@ -22,6 +22,7 @@
 #include "protocol/protocol_basic.c"
 #include "protocol/protocol_types.c"
 #include "protocol/protocol_event.c"
+#include "protocol/protocol_packet.c"
 
 #include "tests/src/protocol_common.h"
 #include "tests/src/protocol_common_event.h"
@@ -118,37 +119,6 @@ static void test_ctdb_event_header(void)
 }
 
 #define NUM_COMMANDS	5
-
-static void test_ctdb_event_request_data(void)
-{
-	TALLOC_CTX *mem_ctx;
-	size_t buflen;
-	struct ctdb_event_request_data rd, rd2;
-	uint32_t command;
-	int ret;
-
-	printf("ctdb_event_request_data\n");
-	fflush(stdout);
-
-	for (command=1; command<=NUM_COMMANDS; command++) {
-		mem_ctx = talloc_new(NULL);
-		assert(mem_ctx != NULL);
-
-		printf("%u.. ", command);
-		fflush(stdout);
-		fill_ctdb_event_request_data(mem_ctx, &rd, command);
-		buflen = ctdb_event_request_data_len(&rd);
-		ctdb_event_request_data_push(&rd, BUFFER);
-		ret = ctdb_event_request_data_pull(BUFFER, buflen, mem_ctx, &rd2);
-		assert(ret == 0);
-		verify_ctdb_event_request_data(&rd, &rd2);
-
-		talloc_free(mem_ctx);
-	}
-
-	printf("\n");
-	fflush(stdout);
-}
 
 static void test_ctdb_event_reply_data(void)
 {
@@ -271,8 +241,12 @@ PROTOCOL_TYPE3_TEST(struct ctdb_event_request_script_disable,
 DEFINE_TEST(struct ctdb_event_reply_status, ctdb_event_reply_status);
 DEFINE_TEST(struct ctdb_event_reply_script_list, ctdb_event_reply_script_list);
 
+PROTOCOL_EVENT1_TEST(struct ctdb_event_request_data, ctdb_event_request_data);
+
 int main(int argc, char *argv[])
 {
+	uint32_t command;
+
 	if (argc == 2) {
 		int seed = atoi(argv[1]);
 		srandom(seed);
@@ -287,7 +261,9 @@ int main(int argc, char *argv[])
 
 	test_ctdb_event_header();
 
-	test_ctdb_event_request_data();
+	for (command=1; command<=NUM_COMMANDS; command++) {
+		TEST_FUNC(ctdb_event_request_data)(command);
+	}
 	test_ctdb_event_reply_data();
 	test_ctdb_event_request();
 	test_ctdb_event_reply();
