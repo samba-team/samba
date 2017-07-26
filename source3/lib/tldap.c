@@ -1295,6 +1295,8 @@ static bool tldap_unescape_inplace(char *value, size_t *val_len)
 			case '\\':
 				value[p] = value[i];
 				p++;
+
+				break;
 			default:
 				/* invalid */
 				return false;
