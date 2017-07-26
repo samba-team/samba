@@ -715,6 +715,8 @@ static void map_dc_and_domain_names(uint32_t flags,
 				*domain_p = domain_name;
 				break;
 			}
+
+			FALL_THROUGH;
 		case DS_RETURN_DNS_NAME:
 		default:
 			if (dns_dc_name && dns_domain_name &&
