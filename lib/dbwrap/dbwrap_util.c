@@ -709,22 +709,12 @@ static bool dbwrap_unmarshall_fn(TDB_DATA key, TDB_DATA value,
 				 void *private_data)
 {
 	struct dbwrap_unmarshall_state *state = private_data;
-	struct db_record *rec;
 	NTSTATUS status;
 
-	rec = dbwrap_fetch_locked(state->db, state->db, key);
-	if (rec == NULL) {
-		DEBUG(10, ("%s: dbwrap_fetch_locked failed\n",
-			   __func__));
-		state->ret = NT_STATUS_NO_MEMORY;
-		return false;
-	}
-
-	status = dbwrap_record_store(rec, value, 0);
-	TALLOC_FREE(rec);
+	status = dbwrap_store(state->db, key, value, 0);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("%s: dbwrap_record_store failed: %s\n",
-			   __func__, nt_errstr(status)));
+		DBG_DEBUG("dbwrap_record_store failed: %s\n",
+			  nt_errstr(status));
 		state->ret = status;
 		return false;
 	}
