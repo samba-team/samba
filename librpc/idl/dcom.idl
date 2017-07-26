@@ -52,7 +52,7 @@ interface IUnknown
 	[local] WERROR CreateInstance(
 		[in,unique] MInterfacePointer *pUnknown,
 		[in,unique] GUID *iid,
-		[out, iid_is(riid),unique] MInterfacePointer *ppv
+		[out, iid_is(riid),unique] MInterfacePointer **ppv
 		);
 
 	[call_as(CreateInstance)] WERROR RemoteCreateInstance();
