@@ -278,7 +278,8 @@ int cbuf_print_quoted_string(cbuf* ost, const char* s)
 		case '\\':
 			cbuf_putc(ost, '\\');
 		        n++;
-			/* no break */
+
+			FALL_THROUGH;
 		default:
 			cbuf_putc(ost, *s);
 			n++;
