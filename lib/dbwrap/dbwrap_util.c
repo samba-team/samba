@@ -133,23 +133,14 @@ NTSTATUS dbwrap_fetch_uint32_bystring(struct db_context *db,
 NTSTATUS dbwrap_store_uint32_bystring(struct db_context *db,
 				      const char *keystr, uint32_t v)
 {
-	struct db_record *rec;
-	uint32_t v_store;
+	uint8_t v_store[sizeof(uint32_t)];
+	TDB_DATA data = { .dptr = v_store, .dsize = sizeof(v_store) };
 	NTSTATUS status;
 
-	rec = dbwrap_fetch_locked(db, talloc_tos(),
-				  string_term_tdb_data(keystr));
-	if (rec == NULL) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
+	SIVAL(v_store, 0, v);
 
-	SIVAL(&v_store, 0, v);
-
-	status = dbwrap_record_store(rec,
-				     make_tdb_data((const uint8_t *)&v_store,
-						   sizeof(v_store)),
-				     TDB_REPLACE);
-	TALLOC_FREE(rec);
+	status = dbwrap_store(db, string_term_tdb_data(keystr), data,
+			      TDB_REPLACE);
 	return status;
 }
 
