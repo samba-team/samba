@@ -354,8 +354,15 @@ _PUBLIC_ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 		 * If we have mulitiple endpoints on port 0, they each
 		 * get an epemeral port (currently by walking up from
 		 * 1024).
+		 *
+		 * Because one endpoint can only have one process
+		 * model, we add a new IP_TCP endpoint for each model.
+		 *
+		 * This woks in conjunction with the forced overwrite
+		 * of ep->use_single_process below.
 		 */
-		if (!use_single_process && transport == NCACN_IP_TCP) {
+		if (ep->use_single_process != use_single_process
+		    && transport == NCACN_IP_TCP) {
 			add_ep = true;
 		}
 	}
