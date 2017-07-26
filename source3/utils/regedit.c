@@ -507,7 +507,8 @@ static void handle_value_input(struct regedit *regedit, int c)
 	case 'b':
 	case 'B':
 		binmode = true;
-		/* Falthrough... */
+
+		FALL_THROUGH;
 	case '\n':
 	case KEY_ENTER:
 		vitem = value_list_get_current_item(regedit->vl);
