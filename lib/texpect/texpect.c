@@ -434,6 +434,9 @@ int main(int argc, const char **argv)
 	switch (pid) {
 		case -1:
 			err(1, "Failed to fork");
+
+			/* Never reached */
+			return 1;
 		case 0:
 
 			if(setsid()<0)
@@ -448,6 +451,9 @@ int main(int argc, const char **argv)
 			/* texpect <expect_instructions> <progname> [<args>] */
 			execvp(program, program_args);
 			err(1, "Failed to exec: %s", program);
+
+			/* Never reached */
+			return 1;
 		default:
 			close(slave);
 			{
@@ -462,4 +468,7 @@ int main(int argc, const char **argv)
 
 			return eval_parent(pid);
 	}
+
+	/* Never reached */
+	return 1;
 }
