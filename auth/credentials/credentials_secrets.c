@@ -372,7 +372,8 @@ _PUBLIC_ NTSTATUS cli_credentials_set_machine_account_db_ctx(struct cli_credenti
 				if (security != SEC_ADS) {
 					break;
 				}
-				/* fall through */
+
+				FALL_THROUGH;
 			case ROLE_ACTIVE_DIRECTORY_DC:
 				use_kerberos = CRED_AUTO_USE_KERBEROS;
 				break;
