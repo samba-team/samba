@@ -523,7 +523,8 @@ struct ldb_dn *ldb_dn_map_local(struct ldb_module *module, void *mem_ctx, struct
 					  "used in DN!", ldb_dn_get_component_name(dn, i));
 				goto failed;
 			}
-			/* fall through */
+
+			FALL_THROUGH;
 		case LDB_MAP_KEEP:
 		case LDB_MAP_RENAME:
 		case LDB_MAP_RENDROP:
@@ -599,7 +600,8 @@ struct ldb_dn *ldb_dn_map_remote(struct ldb_module *module, void *mem_ctx, struc
 					  "used in DN!", ldb_dn_get_component_name(dn, i));
 				goto failed;
 			}
-			/* fall through */
+
+			FALL_THROUGH;
 		case LDB_MAP_KEEP:
 		case LDB_MAP_RENAME:
 		case LDB_MAP_RENDROP:
