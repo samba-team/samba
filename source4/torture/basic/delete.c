@@ -640,7 +640,7 @@ static bool deltest13(struct torture_context *tctx, struct smbcli_state *cli1, s
 
 	torture_assert_ntstatus_ok(tctx, smbcli_nt_delete_on_close(cli2->tree, fnum2,
 						       false), 
-		 "setting delete_on_close on file failed !");
+		 "unsetting delete_on_close on file failed !");
 
 	correct &= check_delete_on_close(tctx, cli1, fnum1, fname, false, __location__);
 	correct &= check_delete_on_close(tctx, cli2, fnum2, fname, false, __location__);
@@ -1807,7 +1807,7 @@ static bool deltest20(struct torture_context *tctx, struct smbcli_state *cli1, s
 
 	status = smbcli_nt_delete_on_close(cli1->tree, dnum1, false);
 	torture_assert_ntstatus_ok(tctx, status, 
-					"setting delete_on_close on file failed !");
+					"unsetting delete_on_close on file failed !");
 		
 	{
 		char *fullname;
