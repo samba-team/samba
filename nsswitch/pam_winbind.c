@@ -2886,7 +2886,8 @@ int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags,
 			ret = atoi(tmp);
 			switch (ret) {
 			case PAM_AUTHTOK_EXPIRED:
-				/* fall through, since new token is required in this case */
+				/* Since new token is required in this case */
+				FALL_THROUGH;
 			case PAM_NEW_AUTHTOK_REQD:
 				_pam_log(ctx, LOG_WARNING,
 					 "pam_sm_acct_mgmt success but %s is set",
