@@ -2058,7 +2058,8 @@ void lpcfg_print_parameter(struct parm_struct *p, void *ptr, FILE * f)
 
 		case P_CMDLIST:
 			list_sep = " ";
-			/* fall through */
+
+			FALL_THROUGH;
 		case P_LIST:
 			if ((char ***)ptr && *(char ***)ptr) {
 				char **list = *(char ***)ptr;
