@@ -204,16 +204,20 @@ char *canonicalize_absolute_path(TALLOC_CTX *ctx, const char *abs_path)
 			switch(siz) {
 				case 5:
 					*d++ = *s++;
-					/*fall through*/
+
+					FALL_THROUGH;
 				case 4:
 					*d++ = *s++;
-					/*fall through*/
+
+					FALL_THROUGH;
 				case 3:
 					*d++ = *s++;
-					/*fall through*/
+
+					FALL_THROUGH;
 				case 2:
 					*d++ = *s++;
-					/*fall through*/
+
+					FALL_THROUGH;
 				case 1:
 					*d++ = *s++;
 					break;
