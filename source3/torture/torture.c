@@ -42,6 +42,7 @@
 #include "../libcli/smb/smbXcli_base.h"
 #include "lib/util/sys_rw_data.h"
 #include "lib/util/base64.h"
+#include "lib/util/time.h"
 
 extern char *optarg;
 extern int optind;
@@ -9906,6 +9907,54 @@ static bool run_symlink_open_test(int dummy)
 	return correct;
 }
 
+/*
+ * Only testing minimal time strings, as the others
+ * need (locale-dependent) guessing at what strftime does and
+ * even may differ in builds.
+ */
+static bool timesubst_test(void)
+{
+	TALLOC_CTX *ctx = NULL;
+	/* Sa 23. Dez 04:33:20 CET 2017 */
+	const struct timeval tv = { 1514000000, 123 };
+	const char* expect_minimal = "20171223_033320";
+	const char* expect_minus   = "20171223_033320_000123";
+	char *s;
+	char *env_tz, *orig_tz = NULL;
+	bool result = true;
+
+	ctx = talloc_new(NULL);
+
+	env_tz = getenv("TZ");
+	if(env_tz) {
+		orig_tz = talloc_strdup(ctx, env_tz);
+	}
+	setenv("TZ", "UTC", 1);
+
+	s = minimal_timeval_string(ctx, &tv, false);
+
+	if(!s || strcmp(s, expect_minimal)) {
+		printf("minimal_timeval_string(ctx, tv, false) returned [%s], expected "
+		       "[%s]\n", s ? s : "<nil>", expect_minimal);
+		result = false;
+	}
+	TALLOC_FREE(s);
+	s = minimal_timeval_string(ctx, &tv, true);
+	if(!s || strcmp(s, expect_minus)) {
+		printf("minimal_timeval_string(ctx, tv, true) returned [%s], expected "
+		       "[%s]\n", s ? s : "<nil>", expect_minus);
+		result = false;
+	}
+	TALLOC_FREE(s);
+
+	if(orig_tz) {
+		setenv("TZ", orig_tz, 1);
+	}
+
+	TALLOC_FREE(ctx);
+	return result;
+}
+
 static bool run_local_substitute(int dummy)
 {
 	bool ok = true;
@@ -9918,6 +9967,10 @@ static bool run_local_substitute(int dummy)
 	ok &= subst_test("%G", "", "", -1, 0, gidtoname(0));
 	ok &= subst_test("%D%u", "u", "dom", -1, 0, "domu");
 	ok &= subst_test("%i %I", "", "", -1, -1, "0.0.0.0 0.0.0.0");
+	ok &= subst_test("%j %J", "", "", -1, -1, "0_0_0_0 0_0_0_0");
+	/* Substitution depends on current time, so better test the underlying
+	   formatting function. At least covers %t. */
+	ok &= timesubst_test();
 
 	/* Different captialization rules in sub_basic... */
 

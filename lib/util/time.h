@@ -139,6 +139,21 @@ char *timeval_string(TALLOC_CTX *ctx, const struct timeval *tp, bool hires);
 char *current_timestring(TALLOC_CTX *ctx, bool hires);
 
 /**
+ Return a date and time as a string (optionally with microseconds)
+
+ format is %Y%m%d_%H%M%S or %Y%m%d_%H%M%S_%us
+**/
+
+char *minimal_timeval_string(TALLOC_CTX *ctx, const struct timeval *tp, bool hires);
+
+/**
+ Return the current date and time as a string (optionally with microseconds)
+
+ format is %Y%m%d_%H%M%S or %Y%m%d_%H%M%S_%us
+**/
+char *current_minimal_timestring(TALLOC_CTX *ctx, bool hires);
+
+/**
 return a HTTP/1.0 time string
 **/
 char *http_timestring(TALLOC_CTX *mem_ctx, time_t t);

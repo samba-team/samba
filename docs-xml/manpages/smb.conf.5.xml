@@ -512,6 +512,13 @@ chmod 1770 /usr/local/samba/lib/usershares
 		</varlistentry>
 
 		<varlistentry>
+		<term>%J</term>
+		<listitem><para>the IP address of the client machine,
+			colons/dots replaced by underscores.</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
 		<term>%i</term>
 		<listitem><para>the local IP address to which a client connected.</para>
 		<para>Before 4.0.0 it could contain IPv4 mapped IPv6 addresses,
@@ -520,8 +527,20 @@ chmod 1770 /usr/local/samba/lib/usershares
 		</varlistentry>
 
 		<varlistentry>
+		<term>%j</term>
+		<listitem><para>the local IP address to which a client connected,
+			colons/dots replaced by underscores.</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
 		<term>%T</term>
 		<listitem><para>the current date and time.</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>%t</term>
+		<listitem><para>the current date and time in a minimal format without colons (YYYYYmmdd_HHMMSS).</para></listitem>
 		</varlistentry>
 
 		<varlistentry>

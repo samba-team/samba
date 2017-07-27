@@ -367,6 +367,57 @@ char *current_timestring(TALLOC_CTX *ctx, bool hires)
 	return timeval_string(ctx, &tv, hires);
 }
 
+/*
+ * Return date and time as a minimal string avoiding funny characters
+ * that may cause trouble in file names. We only use digits and
+ * underscore ... or a minus/hyphen if we got negative time.
+ */
+char *minimal_timeval_string(TALLOC_CTX *ctx, const struct timeval *tp, bool hires)
+{
+	time_t t;
+	struct tm *tm;
+
+	t = (time_t)tp->tv_sec;
+	tm = localtime(&t);
+	if (!tm) {
+		if (hires) {
+			return talloc_asprintf(ctx, "%ld_%06ld",
+					       (long)tp->tv_sec,
+					       (long)tp->tv_usec);
+		} else {
+			return talloc_asprintf(ctx, "%ld", (long)t);
+		}
+	} else {
+		if (hires) {
+			return talloc_asprintf(ctx,
+					       "%04d%02d%02d_%02d%02d%02d_%06ld",
+					       tm->tm_year+1900,
+					       tm->tm_mon+1,
+					       tm->tm_mday,
+					       tm->tm_hour,
+					       tm->tm_min,
+					       tm->tm_sec,
+					       (long)tp->tv_usec);
+		} else {
+			return talloc_asprintf(ctx,
+					       "%04d%02d%02d_%02d%02d%02d",
+					       tm->tm_year+1900,
+					       tm->tm_mon+1,
+					       tm->tm_mday,
+					       tm->tm_hour,
+					       tm->tm_min,
+					       tm->tm_sec);
+		}
+	}
+}
+
+char *current_minimal_timestring(TALLOC_CTX *ctx, bool hires)
+{
+	struct timeval tv;
+
+	GetTimeOfDay(&tv);
+	return minimal_timeval_string(ctx, &tv, hires);
+}
 
 /**
 return a HTTP/1.0 time string
