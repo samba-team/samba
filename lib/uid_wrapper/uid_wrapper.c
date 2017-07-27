@@ -1035,7 +1035,7 @@ static void uwrap_init_env(struct uwrap_thread *id)
 		id->ngroups = 0;
 
 		free(id->groups);
-		id->groups = malloc(sizeof(gid_t) * ngroups);
+		id->groups = calloc(ngroups, sizeof(gid_t));
 		if (id->groups == NULL) {
 			UWRAP_LOG(UWRAP_LOG_ERROR,
 				  "Unable to allocate memory");
