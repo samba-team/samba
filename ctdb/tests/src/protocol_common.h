@@ -58,6 +58,87 @@ static void TEST_FUNC(NAME)(void) \
 	talloc_free(mem_ctx); \
 }
 
+/*
+ * Test for basic data types that do not need memory allocation
+ * For example - int32_t, uint32_t, uint64_t
+ */
+#define PROTOCOL_TYPE1_TEST(TYPE, NAME)	\
+static void TEST_FUNC(NAME)(void) \
+{ \
+	TYPE p1; \
+	TYPE p2; \
+	size_t buflen, np = 0; \
+	int ret; \
+\
+	FILL_FUNC(NAME)(&p1); \
+	buflen = LEN_FUNC(NAME)(&p1); \
+	assert(buflen < sizeof(BUFFER)); \
+	PUSH_FUNC(NAME)(&p1, BUFFER, &np); \
+	assert(np == buflen); \
+	np = 0; \
+	ret = PULL_FUNC(NAME)(BUFFER, buflen, &p2, &np); \
+	assert(ret == 0); \
+	assert(np == buflen); \
+	VERIFY_FUNC(NAME)(&p1, &p2); \
+}
+
+/*
+ * Test for container data types that need memory allocation for sub-elements
+ * For example - TDB_DATA
+ */
+#define PROTOCOL_TYPE2_TEST(TYPE, NAME)	\
+static void TEST_FUNC(NAME)(void) \
+{ \
+	TALLOC_CTX *mem_ctx; \
+	TYPE p1; \
+	TYPE p2; \
+	size_t buflen, np = 0; \
+	int ret; \
+\
+	mem_ctx = talloc_new(NULL); \
+	assert(mem_ctx != NULL); \
+	FILL_FUNC(NAME)(mem_ctx, &p1); \
+	buflen = LEN_FUNC(NAME)(&p1); \
+	assert(buflen < sizeof(BUFFER)); \
+	PUSH_FUNC(NAME)(&p1, BUFFER, &np); \
+	assert(np == buflen); \
+	np = 0; \
+	ret = PULL_FUNC(NAME)(BUFFER, buflen, mem_ctx, &p2, &np); \
+	assert(ret == 0); \
+	assert(np == buflen); \
+	VERIFY_FUNC(NAME)(&p1, &p2); \
+	talloc_free(mem_ctx); \
+}
+
+/*
+ * Test for derived data types that need memory allocation
+ * For example - most ctdb structures
+ */
+#define PROTOCOL_TYPE3_TEST(TYPE, NAME)	\
+static void TEST_FUNC(NAME)(void) \
+{ \
+	TALLOC_CTX *mem_ctx; \
+	TYPE *p1, *p2; \
+	size_t buflen, np = 0; \
+	int ret; \
+\
+	mem_ctx = talloc_new(NULL); \
+	assert(mem_ctx != NULL); \
+	p1 = talloc_zero(mem_ctx, TYPE); \
+	assert(p1 != NULL); \
+	FILL_FUNC(NAME)(p1, p1); \
+	buflen = LEN_FUNC(NAME)(p1); \
+	assert(buflen < sizeof(BUFFER)); \
+	PUSH_FUNC(NAME)(p1, BUFFER, &np); \
+	assert(np == buflen); \
+	np = 0; \
+	ret = PULL_FUNC(NAME)(BUFFER, buflen, mem_ctx, &p2, &np); \
+	assert(ret == 0); \
+	assert(np == buflen); \
+	VERIFY_FUNC(NAME)(p1, p2); \
+	talloc_free(mem_ctx); \
+}
+
 extern uint8_t BUFFER[1024*1024];
 
 int rand_int(int max);
