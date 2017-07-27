@@ -168,7 +168,7 @@ static int smb_pam_conv(int num_msg,
 				break;
 
 			case PAM_TEXT_INFO:
-				/* fall through */
+				FALL_THROUGH;
 
 			case PAM_ERROR_MSG:
 				/* ignore it... */
@@ -390,7 +390,7 @@ static int smb_pam_passchange_conv(int num_msg,
 			break;
 
 		case PAM_TEXT_INFO:
-			/* fall through */
+			FALL_THROUGH;
 
 		case PAM_ERROR_MSG:
 			/* ignore it... */
