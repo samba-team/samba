@@ -629,7 +629,8 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 					l++;
 					break;
 				}
-				/* fall through */
+
+				FALL_THROUGH;
 			case '\"':
 			case '<':
 			case '>':
