@@ -42,27 +42,22 @@ static void avahi_entry_group_callback(AvahiEntryGroup *g,
 
 	switch (status) {
 	case AVAHI_ENTRY_GROUP_ESTABLISHED:
-		DEBUG(10, ("avahi_entry_group_callback: "
-			   "AVAHI_ENTRY_GROUP_ESTABLISHED\n"));
+		DBG_DEBUG("AVAHI_ENTRY_GROUP_ESTABLISHED\n");
 		break;
 	case AVAHI_ENTRY_GROUP_FAILURE:
 		error = avahi_client_errno(state->client);
 
-		DEBUG(10, ("avahi_entry_group_callback: "
-			   "AVAHI_ENTRY_GROUP_FAILURE: %s\n",
-			   avahi_strerror(error)));
+		DBG_DEBUG("AVAHI_ENTRY_GROUP_FAILURE: %s\n",
+			  avahi_strerror(error));
 		break;
 	case AVAHI_ENTRY_GROUP_COLLISION:
-		DEBUG(10, ("avahi_entry_group_callback: "
-			   "AVAHI_ENTRY_GROUP_COLLISION\n"));
+		DBG_DEBUG("AVAHI_ENTRY_GROUP_COLLISION\n");
 		break;
 	case AVAHI_ENTRY_GROUP_UNCOMMITED:
-		DEBUG(10, ("avahi_entry_group_callback: "
-                           "AVAHI_ENTRY_GROUP_UNCOMMITED\n"));
+		DBG_DEBUG("AVAHI_ENTRY_GROUP_UNCOMMITED\n");
 		break;
 	case AVAHI_ENTRY_GROUP_REGISTERING:
-		DEBUG(10, ("avahi_entry_group_callback: "
-                           "AVAHI_ENTRY_GROUP_REGISTERING\n"));
+		DBG_DEBUG("AVAHI_ENTRY_GROUP_REGISTERING\n");
 		break;
 	}
 }
@@ -76,31 +71,33 @@ static void avahi_client_callback(AvahiClient *c, AvahiClientState status,
 
 	switch (status) {
 	case AVAHI_CLIENT_S_RUNNING:
-		DEBUG(10, ("avahi_client_callback: AVAHI_CLIENT_S_RUNNING\n"));
+		DBG_DEBUG("AVAHI_CLIENT_S_RUNNING\n");
 
 		state->entry_group = avahi_entry_group_new(
 			c, avahi_entry_group_callback, state);
 		if (state->entry_group == NULL) {
 			error = avahi_client_errno(c);
-			DEBUG(10, ("avahi_entry_group_new failed: %s\n",
-				   avahi_strerror(error)));
+			DBG_DEBUG("avahi_entry_group_new failed: %s\n",
+				  avahi_strerror(error));
 			break;
 		}
-		if (avahi_entry_group_add_service(
+
+		error = avahi_entry_group_add_service(
 			    state->entry_group, AVAHI_IF_UNSPEC,
 			    AVAHI_PROTO_UNSPEC, 0, lp_netbios_name(),
-			    "_smb._tcp", NULL, NULL, state->port, NULL) < 0) {
-			error = avahi_client_errno(c);
-			DEBUG(10, ("avahi_entry_group_add_service failed: "
-				   "%s\n", avahi_strerror(error)));
+			    "_smb._tcp", NULL, NULL, state->port, NULL);
+		if (error != AVAHI_OK) {
+			DBG_DEBUG("avahi_entry_group_add_service failed: %s\n",
+				  avahi_strerror(error));
 			avahi_entry_group_free(state->entry_group);
 			state->entry_group = NULL;
 			break;
 		}
-		if (avahi_entry_group_commit(state->entry_group) < 0) {
-			error = avahi_client_errno(c);
-			DEBUG(10, ("avahi_entry_group_commit failed: "
-				   "%s\n", avahi_strerror(error)));
+
+		error = avahi_entry_group_commit(state->entry_group);
+		if (error != AVAHI_OK) {
+			DBG_DEBUG("avahi_entry_group_commit failed: %s\n",
+				  avahi_strerror(error));
 			avahi_entry_group_free(state->entry_group);
 			state->entry_group = NULL;
 			break;
@@ -109,8 +106,7 @@ static void avahi_client_callback(AvahiClient *c, AvahiClientState status,
 	case AVAHI_CLIENT_FAILURE:
 		error = avahi_client_errno(c);
 
-		DEBUG(10, ("avahi_client_callback: AVAHI_CLIENT_FAILURE: %s\n",
-			   avahi_strerror(error)));
+		DBG_DEBUG("AVAHI_CLIENT_FAILURE: %s\n", avahi_strerror(error));
 
 		if (error != AVAHI_ERR_DISCONNECTED) {
 			break;
@@ -120,22 +116,19 @@ static void avahi_client_callback(AvahiClient *c, AvahiClientState status,
 						 avahi_client_callback, state,
 						 &error);
 		if (state->client == NULL) {
-			DEBUG(10, ("avahi_client_new failed: %s\n",
-				   avahi_strerror(error)));
+			DBG_DEBUG("avahi_client_new failed: %s\n",
+				  avahi_strerror(error));
 			break;
 		}
 		break;
 	case AVAHI_CLIENT_S_COLLISION:
-		DEBUG(10, ("avahi_client_callback: "
-			   "AVAHI_CLIENT_S_COLLISION\n"));
+		DBG_DEBUG("AVAHI_CLIENT_S_COLLISION\n");
 		break;
 	case AVAHI_CLIENT_S_REGISTERING:
-		DEBUG(10, ("avahi_client_callback: "
-			   "AVAHI_CLIENT_S_REGISTERING\n"));
+		DBG_DEBUG("AVAHI_CLIENT_S_REGISTERING\n");
 		break;
 	case AVAHI_CLIENT_CONNECTING:
-		DEBUG(10, ("avahi_client_callback: "
-			   "AVAHI_CLIENT_CONNECTING\n"));
+		DBG_DEBUG("AVAHI_CLIENT_CONNECTING\n");
 		break;
 	}
 }
@@ -159,8 +152,8 @@ void *avahi_start_register(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 					 avahi_client_callback, state,
 					 &error);
 	if (state->client == NULL) {
-		DEBUG(10, ("avahi_client_new failed: %s\n",
-			   avahi_strerror(error)));
+		DBG_DEBUG("avahi_client_new failed: %s\n",
+			  avahi_strerror(error));
 		goto fail;
 	}
 	return state;
