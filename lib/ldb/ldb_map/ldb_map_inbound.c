@@ -87,7 +87,8 @@ static int ldb_msg_el_partition(struct ldb_module *module, enum ldb_request_type
 			el = ldb_msg_el_map_local(module, remote, map, old);
 			break;
 		}
-		/* fall through */
+
+		FALL_THROUGH;
 	case LDB_MAP_IGNORE:
 		goto local;
 
@@ -99,7 +100,8 @@ static int ldb_msg_el_partition(struct ldb_module *module, enum ldb_request_type
 				  map->local_name);
 			goto local;
 		}
-		/* fall through */
+
+		FALL_THROUGH;
 	case LDB_MAP_KEEP:
 	case LDB_MAP_RENAME:
 		el = ldb_msg_el_map_local(module, remote, map, old);
