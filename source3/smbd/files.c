@@ -126,6 +126,8 @@ NTSTATUS fsp_bind_smb(struct files_struct *fsp, struct smb_request *req)
 	status = smbXsrv_open_create(req->xconn,
 				     req->session,
 				     fsp->conn->tcon,
+				     &fsp->file_id,
+				     fsp->name_hash,
 				     now,
 				     &op);
 	if (!NT_STATUS_IS_OK(status)) {

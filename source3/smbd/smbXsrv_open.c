@@ -567,6 +567,8 @@ static int smbXsrv_open_destructor(struct smbXsrv_open *op)
 NTSTATUS smbXsrv_open_create(struct smbXsrv_connection *conn,
 			     struct smbXsrv_session *session,
 			     struct smbXsrv_tcon *tcon,
+			     struct file_id *file_id,
+			     uint32_t name_hash,
 			     NTTIME now,
 			     struct smbXsrv_open **_open)
 {
@@ -633,6 +635,8 @@ NTSTATUS smbXsrv_open_create(struct smbXsrv_connection *conn,
 	global->open_volatile_id = op->local_id;
 
 	global->server_id = messaging_server_id(conn->client->msg_ctx);
+	global->file_id = *file_id;
+	global->name_hash = name_hash;
 	global->open_time = now;
 	global->open_owner = *current_sid;
 	global->session_global_id = session->global->session_global_id;

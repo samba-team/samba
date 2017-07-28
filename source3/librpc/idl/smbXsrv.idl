@@ -4,6 +4,7 @@ import "misc.idl";
 import "server_id.idl";
 import "security.idl";
 import "auth.idl";
+import "file_id.idl";
 
 [
 	uuid("07408340-ae31-11e1-97dc-539f7fddc06f"),
@@ -427,21 +428,20 @@ interface smbXsrv
 		uint32					open_global_id;
 		hyper					open_persistent_id;
 		hyper					open_volatile_id;
+		file_id					file_id;
+		uint32					name_hash;
 		dom_sid					open_owner;
 		NTTIME					open_time;
 		GUID					create_guid;
 		GUID					client_guid;
 		GUID					app_instance_id;
+		hyper 					app_instance_vhigh;
+		hyper 					app_instance_vlow;
 		uint32					create_action;
-		/*
-		 * TODO: for durable/resilient/persistent handles we need more
-		 *       things here. See [MS-SMB2] 3.3.1.10 Per Open
-		 *
-		 * NOTE: this is still version 0, which is not a stable format!
-		 */
 		NTTIME					disconnect_time;
 		uint32					durable_timeout_msec;
 		boolean8				durable;
+		boolean8				persistent;
 		DATA_BLOB				backend_cookie;
 		uint16					channel_sequence;
 		hyper					channel_generation;
