@@ -419,11 +419,17 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 		capabilities |= SMB2_CAP_ENCRYPTION;
 	}
 
-	if (protocol >= PROTOCOL_SMB3_00 &&
-	    in_capabilities & SMB2_CAP_DIRECTORY_LEASING &&
-	    lp_smb3_directory_leases())
-	{
-		capabilities |= SMB2_CAP_DIRECTORY_LEASING;
+	if (protocol >= PROTOCOL_SMB3_00) {
+		if (in_capabilities & SMB2_CAP_DIRECTORY_LEASING &&
+		    lp_smb3_directory_leases())
+		{
+			capabilities |= SMB2_CAP_DIRECTORY_LEASING;
+		}
+		if (in_capabilities & SMB2_CAP_PERSISTENT_HANDLES &&
+		    lp_persistent_handles())
+		{
+			capabilities |= SMB2_CAP_PERSISTENT_HANDLES;
+		}
 	}
 
 	/*
