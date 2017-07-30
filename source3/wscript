@@ -59,7 +59,7 @@ def set_options(opt):
 
     opt.SAMBA3_ADD_OPTION('cluster-support', default=False)
 
-    opt.SAMBA3_ADD_OPTION('regedit', default=None)
+    opt.SAMBA3_ADD_OPTION('regedit', default=False)
 
     opt.SAMBA3_ADD_OPTION('fake-kaserver',
                           help=("Include AFS fake-kaserver support"), default=False)
