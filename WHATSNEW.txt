@@ -88,7 +88,7 @@ running Samba AD with MIT Kerberos. You can enable it with:
 
 Samba requires version 1.15.1 of MIT Kerberos to build with AD DC support.
 The krb5-devel and krb5-server packages are required.
-The feature set is not on par with with the Heimdal build but the most important
+The feature set is not on par with the Heimdal build but the most important
 things, like forest and external trusts, are working. Samba uses the KDC binary
 provided by MIT Kerberos.
 
