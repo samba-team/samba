@@ -191,9 +191,8 @@ void pidfile_create(const char *piddir, const char *name)
 {
 	size_t len = strlen(piddir) + strlen(name) + 6;
 	char pidFile[len];
-	int     fd;
-	char    buf[20];
 	pid_t pid;
+	int ret;
 
 	snprintf(pidFile, sizeof(pidFile), "%s/%s.pid", piddir, name);
 
@@ -204,26 +203,10 @@ void pidfile_create(const char *piddir, const char *name)
 		exit(1);
 	}
 
-	fd = open(pidFile, O_NONBLOCK | O_CREAT | O_WRONLY, 0644);
-	if (fd == -1) {
-		DEBUG(0,("ERROR: can't open %s: Error was %s\n", pidFile,
-			 strerror(errno)));
-		exit(1);
-	}
-
-	smb_set_close_on_exec(fd);
-
-	if (fcntl_lock(fd,F_SETLK,0,1,F_WRLCK)==false) {
-		DEBUG(0,("ERROR: %s : fcntl lock of file %s failed. Error was %s\n",
-              name, pidFile, strerror(errno)));
-		exit(1);
-	}
-
-	memset(buf, 0, sizeof(buf));
-	slprintf(buf, sizeof(buf) - 1, "%u\n", (unsigned int) getpid());
-	if (write(fd, buf, strlen(buf)) != (ssize_t)strlen(buf)) {
-		DEBUG(0,("ERROR: can't write to file %s: %s\n",
-			 pidFile, strerror(errno)));
+	ret = pidfile_path_create(pidFile, NULL);
+	if (ret != 0) {
+		DBG_ERR("ERROR: Failed to create PID file %s (%s)\n",
+			pidFile, strerror(ret));
 		exit(1);
 	}
 
