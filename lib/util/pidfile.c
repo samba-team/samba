@@ -17,8 +17,13 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
+#include "replace.h"
 #include "system/filesys.h"
+
+#include "lib/util/blocking.h"
+#include "lib/util/debug.h"
+#include "lib/util/samba_util.h"  /* For process_exists_by_pid() */
+
 #include "lib/util/pidfile.h"
 
 /**
