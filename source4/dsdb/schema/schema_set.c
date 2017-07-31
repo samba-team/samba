@@ -214,7 +214,27 @@ int dsdb_schema_set_indices_and_attributes(struct ldb_context *ldb,
 		if (ret != LDB_SUCCESS) {
 			goto op_error;
 		}
-		if (mod_msg->num_elements > 0) {
+
+		/*
+		 * We don't want to re-index just because we didn't
+		 * see this flag
+		 *
+		 * DO NOT backport this logic earlier than 4.7, it
+		 * isn't needed and would be dangerous before 4.6,
+		 * where we add logic to samba_dsdb to manage
+		 * @SAMBA_FEATURES_SUPPORTED and need to know if the
+		 * DB has been re-opened by an earlier version.
+		 *
+		 */
+
+		if (mod_msg->num_elements == 1
+		    && ldb_attr_cmp(mod_msg->elements[0].name,
+				    SAMBA_FEATURES_SUPPORTED_FLAG) == 0) {
+			/*
+			 * Ignore only adding
+			 * @SAMBA_FEATURES_SUPPORTED
+			 */
+		} else if (mod_msg->num_elements > 0) {
 			/*
 			 * Do the replace with the constructed message,
 			 * to avoid needing a lock between this search
