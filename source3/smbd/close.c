@@ -920,6 +920,7 @@ static NTSTATUS close_normal_file(struct smb_request *req, files_struct *fsp,
 		 * Make sure the handle is not marked as durable anymore
 		 */
 		fsp->op->global->durable = false;
+		fsp->op->global->persistent = false;
 	}
 
 	if (fsp->fsp_flags.modified) {
