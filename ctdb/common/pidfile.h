@@ -45,7 +45,7 @@ struct pidfile_context;
  *
  * Freeing the pidfile_context, will delete the pidfile.
  */
-int pidfile_create(TALLOC_CTX *mem_ctx, const char *pidfile,
-		   struct pidfile_context **result);
+int pidfile_context_create(TALLOC_CTX *mem_ctx, const char *pidfile,
+			   struct pidfile_context **result);
 
 #endif /* __CTDB_PIDFILE_H__ */

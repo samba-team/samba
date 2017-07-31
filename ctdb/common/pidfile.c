@@ -34,8 +34,8 @@ struct pidfile_context {
 
 static int pidfile_context_destructor(struct pidfile_context *pid_ctx);
 
-int pidfile_create(TALLOC_CTX *mem_ctx, const char *pidfile,
-		   struct pidfile_context **result)
+int pidfile_context_create(TALLOC_CTX *mem_ctx, const char *pidfile,
+			   struct pidfile_context **result)
 {
 	struct pidfile_context *pid_ctx;
 	struct flock lck;

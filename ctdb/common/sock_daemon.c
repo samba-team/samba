@@ -477,7 +477,7 @@ int sock_daemon_setup(TALLOC_CTX *mem_ctx, const char *daemon_name,
 	}
 
 	if (pidfile != NULL) {
-		ret = pidfile_create(sockd, pidfile, &sockd->pid_ctx);
+		ret = pidfile_context_create(sockd, pidfile, &sockd->pid_ctx);
 		if (ret != 0) {
 			talloc_free(sockd);
 			return EEXIST;

@@ -34,7 +34,7 @@ static void test1(const char *pidfile)
 	FILE *fp;
 	pid_t pid;
 
-	ret = pidfile_create(NULL, pidfile, &pid_ctx);
+	ret = pidfile_context_create(NULL, pidfile, &pid_ctx);
 	assert(ret == 0);
 	assert(pid_ctx != NULL);
 
@@ -77,7 +77,7 @@ static void test2(const char *pidfile)
 
 		close(fd[0]);
 
-		ret = pidfile_create(NULL, pidfile, &pid_ctx);
+		ret = pidfile_context_create(NULL, pidfile, &pid_ctx);
 		assert(ret == 0);
 		assert(pid_ctx != NULL);
 
@@ -107,14 +107,14 @@ static void test2(const char *pidfile)
 	assert(pid == pid2);
 	fclose(fp);
 
-	ret = pidfile_create(NULL, pidfile, &pid_ctx);
+	ret = pidfile_context_create(NULL, pidfile, &pid_ctx);
 	assert(ret != 0);
 
 	nread = read(fd[0], &ret, sizeof(ret));
 	assert(nread == sizeof(ret));
 	assert(ret == 0);
 
-	ret = pidfile_create(NULL, pidfile, &pid_ctx);
+	ret = pidfile_context_create(NULL, pidfile, &pid_ctx);
 	assert(ret == 0);
 	assert(pid_ctx != NULL);
 
@@ -134,7 +134,7 @@ static void test3(const char *pidfile)
 	size_t nread;
 	struct stat st;
 
-	ret = pidfile_create(NULL, pidfile, &pid_ctx);
+	ret = pidfile_context_create(NULL, pidfile, &pid_ctx);
 	assert(ret == 0);
 	assert(pid_ctx != NULL);
 
@@ -192,7 +192,7 @@ static void test4(const char *pidfile)
 
 		close(fd[0]);
 
-		ret = pidfile_create(NULL, pidfile, &pid_ctx);
+		ret = pidfile_context_create(NULL, pidfile, &pid_ctx);
 
 		nwritten = write(fd[1], &ret, sizeof(ret));
 		assert(nwritten == sizeof(ret));
@@ -216,7 +216,7 @@ static void test4(const char *pidfile)
 	pid2 = waitpid(pid, &ret, 0);
 	assert(pid2 == pid);
 
-	ret = pidfile_create(NULL, pidfile, &pid_ctx);
+	ret = pidfile_context_create(NULL, pidfile, &pid_ctx);
 	assert(ret == 0);
 	assert(pid_ctx != NULL);
 

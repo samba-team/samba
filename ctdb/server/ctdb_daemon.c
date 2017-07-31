@@ -1158,8 +1158,8 @@ static void ctdb_remove_pidfile(void)
 static void ctdb_create_pidfile(TALLOC_CTX *mem_ctx)
 {
 	if (ctdbd_pidfile != NULL) {
-		int ret = pidfile_create(mem_ctx, ctdbd_pidfile,
-					 &ctdbd_pidfile_ctx);
+		int ret = pidfile_context_create(mem_ctx, ctdbd_pidfile,
+						 &ctdbd_pidfile_ctx);
 		if (ret != 0) {
 			DEBUG(DEBUG_ERR,
 			      ("Failed to create PID file %s\n",
