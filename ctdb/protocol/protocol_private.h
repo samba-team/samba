@@ -89,6 +89,11 @@ int ctdb_padding_pull(uint8_t *buf, size_t buflen, int count, size_t *npull);
  * From protocol/protocol_types.c
  */
 
+size_t ctdb_tdb_data_len(TDB_DATA data);
+void ctdb_tdb_data_push(TDB_DATA data, uint8_t *buf);
+int ctdb_tdb_data_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
+		       TDB_DATA *out);
+
 size_t ctdb_statistics_len(struct ctdb_statistics *stats);
 void ctdb_statistics_push(struct ctdb_statistics *stats, uint8_t *buf);
 int ctdb_statistics_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
@@ -272,11 +277,6 @@ size_t ctdb_srvid_message_len(struct ctdb_srvid_message *msg);
 void ctdb_srvid_message_push(struct ctdb_srvid_message *msg, uint8_t *buf);
 int ctdb_srvid_message_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 			    struct ctdb_srvid_message **out);
-
-size_t ctdb_tdb_data_len(TDB_DATA data);
-void ctdb_tdb_data_push(TDB_DATA data, uint8_t *buf);
-int ctdb_tdb_data_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-		       TDB_DATA *out);
 
 size_t ctdb_disable_message_len(struct ctdb_disable_message *disable);
 void ctdb_disable_message_push(struct ctdb_disable_message *disable,

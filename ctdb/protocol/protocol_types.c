@@ -27,6 +27,37 @@
 #include "protocol_private.h"
 #include "protocol_api.h"
 
+size_t ctdb_tdb_data_len(TDB_DATA data)
+{
+	return data.dsize;
+}
+
+void ctdb_tdb_data_push(TDB_DATA data, uint8_t *buf)
+{
+	if (data.dsize > 0) {
+		memcpy(buf, data.dptr, data.dsize);
+	}
+}
+
+int ctdb_tdb_data_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
+		       TDB_DATA *out)
+{
+	TDB_DATA data;
+
+	data.dsize = buflen;
+	if (data.dsize > 0) {
+		data.dptr = talloc_memdup(mem_ctx, buf, buflen);
+		if (data.dptr == NULL) {
+			return ENOMEM;
+		}
+	} else {
+		data.dptr = NULL;
+	}
+
+	*out = data;
+	return 0;
+}
+
 size_t ctdb_statistics_len(struct ctdb_statistics *stats)
 {
 	return sizeof(struct ctdb_statistics);
@@ -2210,37 +2241,6 @@ int ctdb_disable_message_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 	}
 
 	*out = disable;
-	return 0;
-}
-
-size_t ctdb_tdb_data_len(TDB_DATA data)
-{
-	return data.dsize;
-}
-
-void ctdb_tdb_data_push(TDB_DATA data, uint8_t *buf)
-{
-	if (data.dsize > 0) {
-		memcpy(buf, data.dptr, data.dsize);
-	}
-}
-
-int ctdb_tdb_data_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-		       TDB_DATA *out)
-{
-	TDB_DATA data;
-
-	data.dsize = buflen;
-	if (data.dsize > 0) {
-		data.dptr = talloc_memdup(mem_ctx, buf, buflen);
-		if (data.dptr == NULL) {
-			return ENOMEM;
-		}
-	} else {
-		data.dptr = NULL;
-	}
-
-	*out = data;
 	return 0;
 }
 
