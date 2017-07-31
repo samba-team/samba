@@ -71,7 +71,7 @@ bld.SAMBA_SUBSYSTEM('samba-util-core',
                     source='''data_blob.c util_file.c time.c
                               signal.c util.c idtree.c fault.c
                               substitute.c util_process.c util_strlist.c
-                              strv_util.c bitmap.c select.c''',
+                              strv_util.c bitmap.c select.c pidfile.c''',
                     deps='''time-basic samba-debug socket-blocking talloc
                             tevent execinfo pthread strv''',
                     local_include=False)
@@ -120,7 +120,7 @@ else:
                     util_strlist_v3.c util_paths.c
                     idtree_random.c base64.c
                     util_str.c util_str_common.c ms_fnmatch.c
-                    server_id.c dprintf.c pidfile.c
+                    server_id.c dprintf.c
                     tevent_debug.c memcache.c unix_match.c tfork.c''',
                   deps='samba-util-core DYNCONFIG close-low-fd tini tiniparser genrand',
                   public_deps='talloc tevent execinfo pthread LIBCRYPTO charset util_setid systemd systemd-daemon',
