@@ -1,5 +1,3 @@
-/* this code is broken - there is a race condition with the unlink (tridge) */
-
 /*
    Unix SMB/CIFS implementation.
    pidfile handling
@@ -79,9 +77,6 @@ pid_t pidfile_pid(const char *piddir, const char *name)
 
  noproc:
 	close(fd);
-	DEBUG(10, ("Deleting %s, since %d is not a Samba process.\n", pidFile,
-		(int)ret));
-	unlink(pidFile);
 	return 0;
 }
 
@@ -105,7 +100,7 @@ void pidfile_create(const char *piddir, const char *name)
 		exit(1);
 	}
 
-	fd = open(pidFile, O_NONBLOCK | O_CREAT | O_WRONLY | O_EXCL, 0644);
+	fd = open(pidFile, O_NONBLOCK | O_CREAT | O_WRONLY, 0644);
 	if (fd == -1) {
 		DEBUG(0,("ERROR: can't open %s: Error was %s\n", pidFile,
 			 strerror(errno)));
