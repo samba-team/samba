@@ -20,6 +20,9 @@
 #ifndef _SAMBA_PIDFILE_H_
 #define _SAMBA_PIDFILE_H_
 
+int pidfile_path_create(const char *path, int *outfd);
+void pidfile_fd_close(int fd);
+
 pid_t pidfile_pid(const char *piddir, const char *name);
 void pidfile_create(const char *piddir, const char *program_name);
 void pidfile_unlink(const char *piddir, const char *program_name);

@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    pidfile handling
    Copyright (C) Andrew Tridgell 1998
+   Copyright (C) Amitay Isaccs  2016
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -30,6 +31,104 @@
  * @file
  * @brief Pid file handling
  */
+
+int pidfile_path_create(const char *path, int *outfd)
+{
+	struct flock lck;
+	char tmp[64] = { 0 };
+	pid_t pid;
+	int fd, ret = 0;
+	int len;
+	ssize_t nwritten;
+
+	pid = getpid();
+
+	fd = open(path, O_CREAT|O_WRONLY|O_NONBLOCK, 0644);
+	if (fd == -1) {
+		return errno;
+	}
+
+	if (! set_close_on_exec(fd)) {
+		close(fd);
+		return EIO;
+	}
+
+	lck = (struct flock) {
+		.l_type = F_WRLCK,
+		.l_whence = SEEK_SET,
+	};
+
+	do {
+		ret = fcntl(fd, F_SETLK, &lck);
+	} while ((ret == -1) && (errno == EINTR));
+
+	if (ret != 0) {
+		ret = errno;
+		close(fd);
+		return ret;
+	}
+
+	/*
+	 * PID file is locked by us so from here on we should unlink
+	 * on failure
+	 */
+
+	do {
+		ret = ftruncate(fd, 0);
+	} while ((ret == -1) && (errno == EINTR));
+
+	if (ret == -1) {
+		ret = EIO;
+		goto fail_unlink;
+	}
+
+	len = snprintf(tmp, sizeof(tmp), "%u\n", pid);
+	if (len < 0) {
+		ret = errno;
+		goto fail_unlink;
+	}
+	if (len >= sizeof(tmp)) {
+		ret = ENOSPC;
+		goto fail_unlink;
+	}
+
+	do {
+		nwritten = write(fd, tmp, len);
+	} while ((nwritten == -1) && (errno == EINTR));
+
+	if ((nwritten == -1) || (nwritten != len)) {
+		ret = EIO;
+		goto fail_unlink;
+	}
+
+	if (outfd != NULL) {
+		*outfd = fd;
+	}
+	return 0;
+
+fail_unlink:
+	unlink(path);
+	close(fd);
+	return ret;
+}
+
+void pidfile_fd_close(int fd)
+{
+	struct flock lck = {
+		.l_type = F_UNLCK,
+		.l_whence = SEEK_SET,
+	};
+	int ret;
+
+	do {
+		ret = fcntl(fd, F_SETLK, &lck);
+	} while ((ret == -1) && (errno == EINTR));
+
+	do {
+		ret = close(fd);
+	} while ((ret == -1) && (errno == EINTR));
+}
+
 
 /**
  * return the pid in a pidfile. return 0 if the process (or pidfile)
