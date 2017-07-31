@@ -1434,11 +1434,11 @@ EOF
        return 1
     fi
 
-    echo "$out" | grep 'Try "help" do get a list of possible commands.'
+    echo "$out" | grep 'Try "help" to get a list of possible commands.'
     ret=$?
     if [ $ret -ne 0 ] ; then
        echo "$out"
-       echo 'failed - should get: Try "help" do get a list of possible commands.'
+       echo 'failed - should get: Try "help" to get a list of possible commands.'
        return 1
     fi
 

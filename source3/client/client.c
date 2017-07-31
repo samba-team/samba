@@ -5706,7 +5706,7 @@ static int process_stdin(void)
 {
 	int rc = 0;
 
-	d_printf("Try \"help\" do get a list of possible commands.\n");
+	d_printf("Try \"help\" to get a list of possible commands.\n");
 
 	while (!finished) {
 		TALLOC_CTX *frame = talloc_stackframe();
