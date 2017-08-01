@@ -39,5 +39,4 @@ exit_code=$?
 
 rm -rf $service_dir
 
-exit_code=0
 exit $exit_code
