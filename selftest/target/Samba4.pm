@@ -2127,7 +2127,7 @@ sub setup_env($$$)
 	} elsif ($envname eq "ad_dc") {
 		return $self->setup_ad_dc("$path/ad_dc");
 	} elsif ($envname eq "ad_dc_no_nss") {
-		return $self->setup_ad_dc("$path/ad_dc_no_nss", "no_nss");
+		return $self->setup_ad_dc_no_nss("$path/ad_dc_no_nss");
 	} elsif ($envname eq "ad_dc_no_ntlm") {
 		return $self->setup_ad_dc_no_ntlm("$path/ad_dc_no_ntlm");
 	} elsif ($envname eq "ad_member_rfc2307") {
@@ -2502,7 +2502,7 @@ sub setup_rodc($$$)
 
 sub setup_ad_dc($$)
 {
-	my ($self, $path, $no_nss) = @_;
+	my ($self, $path) = @_;
 
 	# If we didn't build with ADS, pretend this env was never available
 	if (not $self->{target3}->have_ads()) {
@@ -2515,11 +2515,6 @@ sub setup_ad_dc($$)
 		return undef;
 	}
 
-	if (defined($no_nss) and $no_nss) {
-		$env->{NSS_WRAPPER_MODULE_SO_PATH} = undef;
-		$env->{NSS_WRAPPER_MODULE_FN_PREFIX} = undef;
-	}
-
 	if (not defined($self->check_or_start($env, "single"))) {
 	    return undef;
 	}
@@ -2530,6 +2525,37 @@ sub setup_ad_dc($$)
 	$self->setup_namespaces($env, $upn_array, $spn_array);
 
 	$self->{vars}->{ad_dc} = $env;
+	return $env;
+}
+
+sub setup_ad_dc_no_nss($$)
+{
+	my ($self, $path) = @_;
+
+	# If we didn't build with ADS, pretend this env was never available
+	if (not $self->{target3}->have_ads()) {
+	       return "UNKNOWN";
+	}
+
+	my $env = $self->provision_ad_dc($path, "addc_no_nss", "ADNONSSDOMAIN",
+					 "adnonssdom.samba.example.com", "");
+	unless ($env) {
+		return undef;
+	}
+
+	$env->{NSS_WRAPPER_MODULE_SO_PATH} = undef;
+	$env->{NSS_WRAPPER_MODULE_FN_PREFIX} = undef;
+
+	if (not defined($self->check_or_start($env, "single"))) {
+	    return undef;
+	}
+
+	my $upn_array = ["$env->{REALM}.upn"];
+	my $spn_array = ["$env->{REALM}.spn"];
+
+	$self->setup_namespaces($env, $upn_array, $spn_array);
+
+	$self->{vars}->{ad_dc_no_nss} = $env;
 	return $env;
 }
 
