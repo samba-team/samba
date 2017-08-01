@@ -23,6 +23,7 @@ from samba.auth import system_session
 from samba.tests import TestCase
 from samba.ndr import ndr_unpack, ndr_pack
 from samba.dcerpc import drsblobs
+from samba import dsdb
 import ldb
 import os
 import samba
@@ -505,3 +506,25 @@ class DsdbTests(TestCase):
                                        backend_filename)
         backend_path = self.lp.private_path(backend_subpath)
         self._test_full_db_lock2(backend_path)
+
+    def test_no_error_on_invalid_control(self):
+        try:
+            res = self.samdb.search(expression="cn=Administrator",
+                                    scope=ldb.SCOPE_SUBTREE,
+                                    attrs=["replPropertyMetaData"],
+                                    controls=["local_oid:%s:0"
+                                              % dsdb.DSDB_CONTROL_INVALID_NOT_IMPLEMENTED])
+        except ldb.LdbError as e:
+            self.fail("Should have not raised an exception")
+
+    def test_error_on_invalid_critical_control(self):
+        try:
+            res = self.samdb.search(expression="cn=Administrator",
+                                    scope=ldb.SCOPE_SUBTREE,
+                                    attrs=["replPropertyMetaData"],
+                                    controls=["local_oid:%s:1"
+                                              % dsdb.DSDB_CONTROL_INVALID_NOT_IMPLEMENTED])
+        except ldb.LdbError as e:
+            if e[0] != ldb.ERR_UNSUPPORTED_CRITICAL_EXTENSION:
+                self.fail("Got %s should have got ERR_UNSUPPORTED_CRITICAL_EXTENSION"
+                          % e[1])

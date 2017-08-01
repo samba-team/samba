@@ -189,6 +189,8 @@ struct dsdb_control_password_user_account_control {
  */
 #define DSDB_CONTROL_FORCE_RODC_LOCAL_CHANGE "1.3.6.1.4.1.7165.4.3.31"
 
+#define DSDB_CONTROL_INVALID_NOT_IMPLEMENTED "1.3.6.1.4.1.7165.4.3.32"
+
 #define DSDB_EXTENDED_REPLICATED_OBJECTS_OID "1.3.6.1.4.1.7165.4.4.1"
 struct dsdb_extended_replicated_object {
 	struct ldb_message *msg;
