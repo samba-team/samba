@@ -148,10 +148,6 @@ void cache_name2sid_trusted(struct winbindd_domain *domain,
 void cache_name2sid(struct winbindd_domain *domain, 
 		    const char *domain_name, const char *name,
 		    enum lsa_SidType type, const struct dom_sid *sid);
-NTSTATUS wcache_query_user(struct winbindd_domain *domain,
-			   TALLOC_CTX *mem_ctx,
-			   const struct dom_sid *user_sid,
-			   struct wbint_userinfo *info);
 NTSTATUS wcache_query_user_fullname(struct winbindd_domain *domain,
 				    TALLOC_CTX *mem_ctx,
 				    const struct dom_sid *user_sid,
