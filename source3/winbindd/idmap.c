@@ -304,11 +304,6 @@ bool idmap_is_offline(void)
 	     get_global_winbindd_state_offline() );
 }
 
-bool idmap_is_online(void)
-{
-	return !idmap_is_offline();
-}
-
 /**********************************************************************
  Allow a module to register itself as a method.
 **********************************************************************/

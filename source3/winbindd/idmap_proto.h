@@ -28,7 +28,6 @@
 /* The following definitions come from winbindd/idmap.c  */
 
 bool idmap_is_offline(void);
-bool idmap_is_online(void);
 NTSTATUS smb_register_idmap(int version, const char *name,
 			    struct idmap_methods *methods);
 void idmap_close(void);

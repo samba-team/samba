@@ -57,11 +57,6 @@ bool winbindd_use_idmap_cache(void) {
 	return false;
 }
 
-bool idmap_is_online(void)
-{
-	return true;
-}
-
 static bool open_db(struct idmap_tdb_common_context *ctx)
 {
 	NTSTATUS status;
