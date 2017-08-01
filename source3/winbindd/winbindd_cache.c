@@ -4805,7 +4805,7 @@ bool wcache_fetch_ndr(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
 		goto fail;
 	}
 
-	if (!is_domain_offline(domain)) {
+	if (is_domain_online(domain)) {
 		uint32_t entry_seqnum, dom_seqnum, last_check;
 		uint64_t entry_timeout;
 
