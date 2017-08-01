@@ -148,6 +148,10 @@ if with_pam:
                   [os.path.join(srcdir(), "python/samba/tests/test_pam_winbind.sh"),
                    valgrindify(python), pam_wrapper_so_path,
                    "$DOMAIN", "$DC_USERNAME", "$DC_PASSWORD"])
+    plantestsuite("samba.tests.pam_winbind_warn_pwd_expire(domain)", "ad_member",
+                  [os.path.join(srcdir(), "python/samba/tests/test_pam_winbind_warn_pwd_expire.sh"),
+                   valgrindify(python), pam_wrapper_so_path,
+                   "$DOMAIN", "alice", "Secret007"])
 
 if with_cmocka:
     plantestsuite("samba.unittests.krb5samba", "none",
