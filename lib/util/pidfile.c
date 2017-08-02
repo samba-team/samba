@@ -27,11 +27,6 @@
 
 #include "lib/util/pidfile.h"
 
-/**
- * @file
- * @brief Pid file handling
- */
-
 int pidfile_path_create(const char *path, int *outfd)
 {
 	struct flock lck;
