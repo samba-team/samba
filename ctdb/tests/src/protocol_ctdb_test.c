@@ -41,6 +41,243 @@
  * Functions to test marshalling
  */
 
+/* for ctdb_req_header */
+#define PROTOCOL_CTDB1_TEST(TYPE, NAME) \
+static void TEST_FUNC(NAME)(void) \
+{ \
+	TALLOC_CTX *mem_ctx; \
+	TYPE c1, c2; \
+	uint8_t *pkt; \
+	size_t pkt_len, buflen, np; \
+	int ret; \
+\
+	printf("%s\n", #NAME); \
+	fflush(stdout); \
+	mem_ctx = talloc_new(NULL); \
+	assert(mem_ctx != NULL); \
+	FILL_FUNC(NAME)(&c1); \
+	buflen = LEN_FUNC(NAME)(&c1); \
+	ret = ctdb_allocate_pkt(mem_ctx, buflen, &pkt, &pkt_len); \
+	assert(ret == 0); \
+	assert(pkt != NULL); \
+	assert(pkt_len >= buflen); \
+	np = 0; \
+	PUSH_FUNC(NAME)(&c1, pkt, &np); \
+	assert(np == buflen); \
+	np = 0; \
+	ret = PULL_FUNC(NAME)(pkt, pkt_len, &c2, &np); \
+	assert(ret == 0); \
+	assert(np == buflen); \
+	VERIFY_FUNC(NAME)(&c1, &c2); \
+	talloc_free(mem_ctx); \
+}
+
+/* for ctdb_req_control_data, ctdb_reply_control_data */
+#define PROTOCOL_CTDB2_TEST(TYPE, NAME) \
+static void TEST_FUNC(NAME)(uint32_t opcode) \
+{ \
+	TALLOC_CTX *mem_ctx; \
+	TYPE c1, c2; \
+	uint8_t *pkt; \
+	size_t pkt_len, buflen, np; \
+	int ret; \
+\
+	printf("%s %u\n", #NAME, opcode); \
+	fflush(stdout); \
+	mem_ctx = talloc_new(NULL); \
+	assert(mem_ctx != NULL); \
+	FILL_FUNC(NAME)(mem_ctx, &c1, opcode); \
+	buflen = LEN_FUNC(NAME)(&c1); \
+	ret = ctdb_allocate_pkt(mem_ctx, buflen, &pkt, &pkt_len); \
+	assert(ret == 0); \
+	assert(pkt != NULL); \
+	assert(pkt_len >= buflen); \
+	np = 0; \
+	PUSH_FUNC(NAME)(&c1, pkt, &np); \
+	assert(np == buflen); \
+	np = 0; \
+	ret = PULL_FUNC(NAME)(pkt, pkt_len, opcode, mem_ctx, &c2, &np); \
+	assert(ret == 0); \
+	assert(np == buflen); \
+	VERIFY_FUNC(NAME)(&c1, &c2); \
+	talloc_free(mem_ctx); \
+}
+
+/* for ctdb_message_data */
+#define PROTOCOL_CTDB3_TEST(TYPE, NAME) \
+static void TEST_FUNC(NAME)(uint64_t srvid) \
+{ \
+	TALLOC_CTX *mem_ctx; \
+	TYPE c1, c2; \
+	uint8_t *pkt; \
+	size_t pkt_len, buflen, np; \
+	int ret; \
+\
+	printf("%s %"PRIx64"\n", #NAME, srvid); \
+	fflush(stdout); \
+	mem_ctx = talloc_new(NULL); \
+	assert(mem_ctx != NULL); \
+	FILL_FUNC(NAME)(mem_ctx, &c1, srvid); \
+	buflen = LEN_FUNC(NAME)(&c1, srvid); \
+	ret = ctdb_allocate_pkt(mem_ctx, buflen, &pkt, &pkt_len); \
+	assert(ret == 0); \
+	assert(pkt != NULL); \
+	assert(pkt_len >= buflen); \
+	np = 0; \
+	PUSH_FUNC(NAME)(&c1, srvid, pkt, &np); \
+	assert(np == buflen); \
+	np = 0; \
+	ret = PULL_FUNC(NAME)(pkt, pkt_len, srvid, mem_ctx, &c2, &np); \
+	assert(ret == 0); \
+	assert(np == buflen); \
+	VERIFY_FUNC(NAME)(&c1, &c2, srvid); \
+	talloc_free(mem_ctx); \
+}
+
+/* for ctdb_req_call, ctdb_reply_call, etc. */
+#define PROTOCOL_CTDB4_TEST(TYPE, NAME, OPER) \
+static void TEST_FUNC(NAME)(void) \
+{ \
+	TALLOC_CTX *mem_ctx; \
+	struct ctdb_req_header h1, h2; \
+	TYPE c1, c2; \
+	uint8_t *pkt; \
+	size_t pkt_len, buflen, len; \
+	int ret; \
+\
+	printf("%s\n", #NAME); \
+	fflush(stdout); \
+	mem_ctx = talloc_new(NULL); \
+	assert(mem_ctx != NULL); \
+	fill_ctdb_req_header(&h1); \
+	FILL_FUNC(NAME)(mem_ctx, &c1); \
+	buflen = LEN_FUNC(NAME)(&h1, &c1); \
+	ret = ctdb_allocate_pkt(mem_ctx, buflen, &pkt, &pkt_len); \
+	assert(ret == 0); \
+	assert(pkt != NULL); \
+	assert(pkt_len >= buflen); \
+	len = 0; \
+	ret = PUSH_FUNC(NAME)(&h1, &c1, pkt, &len); \
+	assert(ret == EMSGSIZE); \
+	assert(len == buflen); \
+	ret = PUSH_FUNC(NAME)(&h1, &c1, pkt, &pkt_len); \
+	assert(ret == 0); \
+	ret = PULL_FUNC(NAME)(pkt, pkt_len, &h2, mem_ctx, &c2); \
+	assert(ret == 0); \
+	verify_ctdb_req_header(&h1, &h2); \
+	assert(h2.length == pkt_len); \
+	VERIFY_FUNC(NAME)(&c1, &c2); \
+	talloc_free(mem_ctx); \
+}
+
+/* for ctdb_req_control */
+#define PROTOCOL_CTDB5_TEST(TYPE, NAME, OPER) \
+static void TEST_FUNC(NAME)(uint32_t opcode) \
+{ \
+	TALLOC_CTX *mem_ctx; \
+	struct ctdb_req_header h1, h2; \
+	TYPE c1, c2; \
+	uint8_t *pkt; \
+	size_t pkt_len, buflen, len; \
+	int ret; \
+\
+	printf("%s %u\n", #NAME, opcode); \
+	fflush(stdout); \
+	mem_ctx = talloc_new(NULL); \
+	assert(mem_ctx != NULL); \
+	fill_ctdb_req_header(&h1); \
+	FILL_FUNC(NAME)(mem_ctx, &c1, opcode); \
+	buflen = LEN_FUNC(NAME)(&h1, &c1); \
+	ret = ctdb_allocate_pkt(mem_ctx, buflen, &pkt, &pkt_len); \
+	assert(ret == 0); \
+	assert(pkt != NULL); \
+	assert(pkt_len >= buflen); \
+	len = 0; \
+	ret = PUSH_FUNC(NAME)(&h1, &c1, pkt, &len); \
+	assert(ret == EMSGSIZE); \
+	assert(len == buflen); \
+	ret = PUSH_FUNC(NAME)(&h1, &c1, pkt, &pkt_len); \
+	assert(ret == 0); \
+	ret = PULL_FUNC(NAME)(pkt, pkt_len, &h2, mem_ctx, &c2); \
+	assert(ret == 0); \
+	verify_ctdb_req_header(&h1, &h2); \
+	assert(h2.length == pkt_len); \
+	VERIFY_FUNC(NAME)(&c1, &c2); \
+	talloc_free(mem_ctx); \
+}
+
+/* for ctdb_reply_control */
+#define PROTOCOL_CTDB6_TEST(TYPE, NAME, OPER) \
+static void TEST_FUNC(NAME)(uint32_t opcode) \
+{ \
+	TALLOC_CTX *mem_ctx; \
+	struct ctdb_req_header h1, h2; \
+	TYPE c1, c2; \
+	uint8_t *pkt; \
+	size_t pkt_len, buflen, len; \
+	int ret; \
+\
+	printf("%s %u\n", #NAME, opcode); \
+	fflush(stdout); \
+	mem_ctx = talloc_new(NULL); \
+	assert(mem_ctx != NULL); \
+	fill_ctdb_req_header(&h1); \
+	FILL_FUNC(NAME)(mem_ctx, &c1, opcode); \
+	buflen = LEN_FUNC(NAME)(&h1, &c1); \
+	ret = ctdb_allocate_pkt(mem_ctx, buflen, &pkt, &pkt_len); \
+	assert(ret == 0); \
+	assert(pkt != NULL); \
+	assert(pkt_len >= buflen); \
+	len = 0; \
+	ret = PUSH_FUNC(NAME)(&h1, &c1, pkt, &len); \
+	assert(ret == EMSGSIZE); \
+	assert(len == buflen); \
+	ret = PUSH_FUNC(NAME)(&h1, &c1, pkt, &pkt_len); \
+	assert(ret == 0); \
+	ret = PULL_FUNC(NAME)(pkt, pkt_len, opcode, &h2, mem_ctx, &c2); \
+	assert(ret == 0); \
+	verify_ctdb_req_header(&h1, &h2); \
+	assert(h2.length == pkt_len); \
+	VERIFY_FUNC(NAME)(&c1, &c2); \
+	talloc_free(mem_ctx); \
+}
+
+/* for ctdb_req_message */
+#define PROTOCOL_CTDB7_TEST(TYPE, NAME, OPER) \
+static void TEST_FUNC(NAME)(uint64_t srvid) \
+{ \
+	TALLOC_CTX *mem_ctx; \
+	struct ctdb_req_header h1, h2; \
+	TYPE c1, c2; \
+	uint8_t *pkt; \
+	size_t pkt_len, buflen, len; \
+	int ret; \
+\
+	printf("%s %"PRIx64"\n", #NAME, srvid); \
+	fflush(stdout); \
+	mem_ctx = talloc_new(NULL); \
+	assert(mem_ctx != NULL); \
+	fill_ctdb_req_header(&h1); \
+	FILL_FUNC(NAME)(mem_ctx, &c1, srvid); \
+	buflen = LEN_FUNC(NAME)(&h1, &c1); \
+	ret = ctdb_allocate_pkt(mem_ctx, buflen, &pkt, &pkt_len); \
+	assert(ret == 0); \
+	assert(pkt != NULL); \
+	assert(pkt_len >= buflen); \
+	len = 0; \
+	ret = PUSH_FUNC(NAME)(&h1, &c1, pkt, &len); \
+	assert(ret == EMSGSIZE); \
+	assert(len == buflen); \
+	ret = PUSH_FUNC(NAME)(&h1, &c1, pkt, &pkt_len); \
+	assert(ret == 0); \
+	ret = PULL_FUNC(NAME)(pkt, pkt_len, &h2, mem_ctx, &c2); \
+	assert(ret == 0); \
+	verify_ctdb_req_header(&h1, &h2); \
+	assert(h2.length == pkt_len); \
+	VERIFY_FUNC(NAME)(&c1, &c2); \
+	talloc_free(mem_ctx); \
+}
+
 static void test_ctdb_req_header(void)
 {
 	TALLOC_CTX *mem_ctx;
