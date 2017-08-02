@@ -154,7 +154,7 @@ static NTSTATUS dsgetdcname_cache_delete(TALLOC_CTX *mem_ctx,
 
 static NTSTATUS dsgetdcname_cache_store(TALLOC_CTX *mem_ctx,
 					const char *domain_name,
-					const DATA_BLOB *blob)
+					DATA_BLOB blob)
 {
 	time_t expire_time;
 	char *key;
@@ -200,7 +200,8 @@ static NTSTATUS store_cldap_reply(TALLOC_CTX *mem_ctx,
 	}
 
 	if (r->domain_name) {
-		status = dsgetdcname_cache_store(mem_ctx, r->domain_name, &blob);
+		status = dsgetdcname_cache_store(mem_ctx, r->domain_name,
+						 blob);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto done;
 		}
@@ -209,7 +210,7 @@ static NTSTATUS store_cldap_reply(TALLOC_CTX *mem_ctx,
 		}
 	}
 	if (r->dns_domain) {
-		status = dsgetdcname_cache_store(mem_ctx, r->dns_domain, &blob);
+		status = dsgetdcname_cache_store(mem_ctx, r->dns_domain, blob);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto done;
 		}

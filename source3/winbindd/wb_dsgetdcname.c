@@ -153,7 +153,7 @@ NTSTATUS wb_dsgetdcname_gencache_set(const char *domname,
 		return status;
 	}
 
-	ok = gencache_set_data_blob(key, &blob, time(NULL)+3600);
+	ok = gencache_set_data_blob(key, blob, time(NULL)+3600);
 
 	if (!ok) {
 		DBG_WARNING("gencache_set_data_blob for key %s failed\n", key);

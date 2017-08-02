@@ -40,7 +40,7 @@ bool gencache_get_data_blob(const char *keystr, TALLOC_CTX *mem_ctx,
 			    DATA_BLOB *blob,
 			    time_t *timeout, bool *was_expired);
 bool gencache_stabilize(void);
-bool gencache_set_data_blob(const char *keystr, const DATA_BLOB *blob,
+bool gencache_set_data_blob(const char *keystr, DATA_BLOB blob,
 			    time_t timeout);
 void gencache_iterate_blobs(void (*fn)(const char *key, DATA_BLOB value,
 				       time_t timeout, void *private_data),
