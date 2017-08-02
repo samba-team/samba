@@ -80,7 +80,7 @@ objectClass: top
 objectClass: group
 description: Members of this group are Read-Only Domain Controllers in the enterprise
 objectSid: ${DOMAINSID}-498
-sAMAccountName: Enterprise Read-Only Domain Controllers
+sAMAccountName: Enterprise Read-only Domain Controllers
 groupType: -2147483640
 isCriticalSystemObject: TRUE
 
@@ -140,7 +140,7 @@ objectClass: group
 description: Members of this group are Read-Only Domain Controllers in the domain
 objectSid: ${DOMAINSID}-521
 adminCount: 1
-sAMAccountName: Read-Only Domain Controllers
+sAMAccountName: Read-only Domain Controllers
 isCriticalSystemObject: TRUE
 
 dn: CN=RAS and IAS Servers,CN=Users,${DOMAINDN}
