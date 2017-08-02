@@ -1328,7 +1328,6 @@ void ctdb_rec_data_push(struct ctdb_rec_data *rec, uint8_t *buf)
 
 static int ctdb_rec_data_pull_data(uint8_t *buf, size_t buflen,
 				   uint32_t *reqid,
-				   struct ctdb_ltdb_header **header,
 				   TDB_DATA *key, TDB_DATA *data,
 				   size_t *reclen)
 {
@@ -1361,11 +1360,6 @@ static int ctdb_rec_data_pull_data(uint8_t *buf, size_t buflen,
 	key->dptr = wire->data;
 	offset = wire->keylen;
 
-	/* Always set header to NULL.  If it is required, exact it using
-	 * ctdb_rec_data_extract_header()
-	 */
-	*header = NULL;
-
 	data->dsize = wire->datalen;
 	data->dptr = &wire->data[offset];
 
@@ -1380,18 +1374,21 @@ static int ctdb_rec_data_pull_elems(uint8_t *buf, size_t buflen,
 				    struct ctdb_rec_data *out)
 {
 	uint32_t reqid;
-	struct ctdb_ltdb_header *header;
 	TDB_DATA key, data;
 	size_t reclen;
 	int ret;
 
-	ret = ctdb_rec_data_pull_data(buf, buflen, &reqid, &header,
+	ret = ctdb_rec_data_pull_data(buf, buflen, &reqid,
 				      &key, &data, &reclen);
 	if (ret != 0) {
 		return ret;
 	}
 
 	out->reqid = reqid;
+
+	/* Always set header to NULL.  If it is required, extract it using
+	 * ctdb_rec_data_extract_header()
+	 */
 	out->header = NULL;
 
 	out->key.dsize = key.dsize;
@@ -1534,7 +1531,6 @@ int ctdb_rec_buffer_traverse(struct ctdb_rec_buffer *recbuf,
 			     ctdb_rec_parser_func_t func,
 			     void *private_data)
 {
-	struct ctdb_ltdb_header *header;
 	TDB_DATA key, data;
 	uint32_t reqid;
 	size_t offset, reclen;
@@ -1544,13 +1540,12 @@ int ctdb_rec_buffer_traverse(struct ctdb_rec_buffer *recbuf,
 	for (i=0; i<recbuf->count; i++) {
 		ret = ctdb_rec_data_pull_data(&recbuf->buf[offset],
 					      recbuf->buflen - offset,
-					      &reqid, &header,
-					      &key, &data, &reclen);
+					      &reqid, &key, &data, &reclen);
 		if (ret != 0) {
 			return ret;
 		}
 
-		ret = func(reqid, header, key, data, private_data);
+		ret = func(reqid, NULL, key, data, private_data);
 		if (ret != 0) {
 			break;
 		}
