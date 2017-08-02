@@ -26,6 +26,8 @@ int strv_add(TALLOC_CTX *mem_ctx, char **strv, const char *string);
 int strv_addn(TALLOC_CTX *mem_ctx, char **strv, const char *src, size_t srclen);
 int strv_append(TALLOC_CTX *mem_ctx, char **strv, const char *src);
 char *strv_next(char *strv, const char *entry);
+const char *strv_len_next(const char *strv, size_t strv_len,
+			  const char *entry);
 char *strv_find(char *strv, const char *entry);
 size_t strv_count(char *strv);
 void strv_delete(char **strv, char *entry);
