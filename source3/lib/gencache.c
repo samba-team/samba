@@ -275,7 +275,7 @@ static int last_stabilize_parser(TDB_DATA key, TDB_DATA data,
  * @retval false on failure
  **/
 
-bool gencache_set_data_blob(const char *keystr, const DATA_BLOB *blob,
+bool gencache_set_data_blob(const char *keystr, DATA_BLOB blob,
 			    time_t timeout)
 {
 	int ret;
@@ -291,7 +291,7 @@ bool gencache_set_data_blob(const char *keystr, const DATA_BLOB *blob,
 		return false;
 	}
 
-	if ((keystr == NULL) || (blob == NULL)) {
+	if ((keystr == NULL) || (blob.data == NULL)) {
 		return false;
 	}
 
@@ -299,7 +299,7 @@ bool gencache_set_data_blob(const char *keystr, const DATA_BLOB *blob,
 		return false;
 	}
 
-	if ((timeout != 0) && gencache_have_val(keystr, blob, timeout)) {
+	if ((timeout != 0) && gencache_have_val(keystr, &blob, timeout)) {
 		DEBUG(10, ("Did not store value for %s, we already got it\n",
 			   keystr));
 		return true;
@@ -310,12 +310,12 @@ bool gencache_set_data_blob(const char *keystr, const DATA_BLOB *blob,
 	if (hdr_len == -1) {
 		return false;
 	}
-	if ((blob->length + (size_t)hdr_len) < blob->length) {
+	if ((blob.length + (size_t)hdr_len) < blob.length) {
 		return false;
 	}
 
 	dbufs[0] = (TDB_DATA) { .dptr = (uint8_t *)hdr, .dsize = hdr_len };
-	dbufs[1] = (TDB_DATA) { .dptr = blob->data, .dsize = blob->length };
+	dbufs[1] = (TDB_DATA) { .dptr = blob.data, .dsize = blob.length };
 
 	DEBUG(10, ("Adding cache entry with key=[%s] and timeout="
 	           "[%s] (%d seconds %s)\n", keystr,
@@ -842,7 +842,7 @@ bool gencache_get(const char *keystr, TALLOC_CTX *mem_ctx, char **value,
 bool gencache_set(const char *keystr, const char *value, time_t timeout)
 {
 	DATA_BLOB blob = data_blob_const(value, strlen(value)+1);
-	return gencache_set_data_blob(keystr, &blob, timeout);
+	return gencache_set_data_blob(keystr, blob, timeout);
 }
 
 struct gencache_iterate_blobs_state {
