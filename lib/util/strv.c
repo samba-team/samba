@@ -86,29 +86,37 @@ static bool strv_valid_entry(const char *strv, size_t strv_len,
 	return true;
 }
 
-char *strv_next(char *strv, const char *entry)
+const char *strv_len_next(const char *strv, size_t strv_len,
+			  const char *entry)
 {
-	size_t len = talloc_array_length(strv);
 	size_t entry_len;
-	char *result;
 
 	if (entry == NULL) {
-		if (strv_valid_entry(strv, len, strv, NULL)) {
+		if (strv_valid_entry(strv, strv_len, strv, NULL)) {
 			return strv;
 		}
 		return NULL;
 	}
 
-	if (!strv_valid_entry(strv, len, entry, &entry_len)) {
+	if (!strv_valid_entry(strv, strv_len, entry, &entry_len)) {
 		return NULL;
 	}
-	result = &strv[entry - strv]; /* avoid const problems with this stmt */
-	result += entry_len + 1;
 
-	if (result >= (strv + len)) {
+	entry += entry_len+1;
+
+	if (entry >= (strv + strv_len)) {
 		return NULL;
 	}
-	return result;
+	return entry;
+}
+
+char *strv_next(char *strv, const char *entry)
+{
+	size_t len = talloc_array_length(strv);
+	const char *result;
+
+	result = strv_len_next(strv, len, entry);
+	return discard_const_p(char, result);
 }
 
 size_t strv_count(char *strv)
