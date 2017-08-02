@@ -79,7 +79,9 @@ static bool strv_valid_entry(const char *strv, size_t strv_len,
 		return false;
 	}
 
-	*entry_len = strlen(entry);
+	if (entry_len != NULL) {
+		*entry_len = strlen(entry);
+	}
 
 	return true;
 }
@@ -91,7 +93,7 @@ char *strv_next(char *strv, const char *entry)
 	char *result;
 
 	if (entry == NULL) {
-		if (strv_valid_entry(strv, len, strv, &entry_len)) {
+		if (strv_valid_entry(strv, len, strv, NULL)) {
 			return strv;
 		}
 		return NULL;
