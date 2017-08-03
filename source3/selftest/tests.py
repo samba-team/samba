@@ -154,6 +154,7 @@ local_tests = [
     "LOCAL-G-LOCK3",
     "LOCAL-G-LOCK4",
     "LOCAL-G-LOCK5",
+    "LOCAL-NAMEMAP-CACHE1",
     "LOCAL-hex_encode_buf",
     "LOCAL-remove_duplicate_addrs2"]
 

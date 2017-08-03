@@ -1174,6 +1174,7 @@ bld.SAMBA3_BINARY('smbtorture' + bld.env.suffix3,
                         torture/bench_pthreadpool.c
                         torture/wbc_async.c
                         torture/test_g_lock.c
+                        torture/test_namemap_cache.c
                         ''',
                  deps='''
                       talloc

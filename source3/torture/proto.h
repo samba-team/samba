@@ -132,5 +132,6 @@ bool run_g_lock3(int dummy);
 bool run_g_lock4(int dummy);
 bool run_g_lock5(int dummy);
 bool run_g_lock_ping_pong(int dummy);
+bool run_local_namemap_cache1(int dummy);
 
 #endif /* __TORTURE_H__ */
