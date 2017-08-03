@@ -18,6 +18,9 @@ import "misc.idl", "dnsp.idl";
 interface dns
 {
 	const int DNS_SERVICE_PORT       = 53;
+	const int DNS_MAX_LABELS         = 127;
+	const int DNS_MAX_DOMAIN_LENGTH  = 253;
+	const int DNS_MAX_LABEL_LENGTH   = 63;
 
 	typedef [public,bitmap16bit] bitmap {
 		DNS_RCODE                   = 0x000F,
