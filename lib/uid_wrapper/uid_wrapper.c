@@ -1029,7 +1029,21 @@ static void uwrap_init_env(struct uwrap_thread *id)
 		unsetenv("UID_WRAPPER_INITIAL_GROUPS_COUNT");
 	}
 
-	if (ngroups > 0 && ngroups < GROUP_MAX_COUNT) {
+	env = getenv("UID_WRAPPER_INITIAL_GROUPS_COUNT");
+	if (env != NULL && env[0] != '\0') {
+		char *endp = NULL;
+		long n;
+
+		n = strtol(env, &endp, 10);
+		if (env == endp) {
+			ngroups = 0;
+		} else if (n > 0 && n < GROUP_MAX_COUNT) {
+			ngroups = (int)n;
+		}
+		unsetenv("UID_WRAPPER_INITIAL_GROUPS_COUNT");
+	}
+
+	if (ngroups > 0) {
 		int i = 0;
 
 		id->ngroups = 0;
