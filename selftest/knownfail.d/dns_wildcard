@@ -1,2 +1,0 @@
-^samba.tests.dns_wildcard.__main__.TestWildCardQueries.test_one_a_query_match_wildcard\(ad_dc\)
-^samba.tests.dns_wildcard.__main__.TestWildCardQueries.test_one_a_query_match_wildcard_l2\(ad_dc\)

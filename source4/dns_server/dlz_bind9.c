@@ -865,8 +865,8 @@ static isc_result_t dlz_lookup_types(struct dlz_bind9_data *state,
 			return ISC_R_NOMEMORY;
 		}
 
-		werr = dns_common_lookup(state->samdb, tmp_ctx, dn,
-					 &records, &num_records, NULL);
+		werr = dns_common_wildcard_lookup(state->samdb, tmp_ctx, dn,
+					 &records, &num_records);
 		if (W_ERROR_IS_OK(werr)) {
 			break;
 		}
