@@ -786,6 +786,111 @@ static int ctdb_req_control_pull_old(uint8_t *buf, size_t buflen,
 	return 0;
 }
 
+struct ctdb_reply_control_wire {
+	struct ctdb_req_header hdr;
+	int32_t status;
+	uint32_t datalen;
+	uint32_t errorlen;
+	uint8_t data[1];
+};
+
+static size_t ctdb_reply_control_len_old(struct ctdb_req_header *h,
+					 struct ctdb_reply_control *c)
+{
+	return offsetof(struct ctdb_reply_control_wire, data) +
+		(c->status == 0 ?
+			ctdb_reply_control_data_len(&c->rdata) :
+			ctdb_string_len(&c->errmsg));
+}
+
+static int ctdb_reply_control_push_old(struct ctdb_req_header *h,
+				       struct ctdb_reply_control *c,
+				       uint8_t *buf, size_t *buflen)
+{
+	struct ctdb_reply_control_wire *wire =
+		(struct ctdb_reply_control_wire *)buf;
+	size_t length, np;
+
+	length = ctdb_reply_control_len_old(h, c);
+	if (*buflen < length) {
+		*buflen = length;
+		return EMSGSIZE;
+	}
+
+	h->length = *buflen;
+	ctdb_req_header_push_old(h, (uint8_t *)&wire->hdr);
+
+	wire->status = c->status;
+
+	if (c->status == 0) {
+		wire->datalen = ctdb_reply_control_data_len(&c->rdata);
+		wire->errorlen = 0;
+		ctdb_reply_control_data_push(&c->rdata, wire->data, &np);
+	} else {
+		wire->datalen = 0;
+		wire->errorlen = ctdb_string_len(&c->errmsg);
+		ctdb_string_push(&c->errmsg, wire->data + wire->datalen, &np);
+	}
+
+	return 0;
+}
+
+static int ctdb_reply_control_pull_old(uint8_t *buf, size_t buflen,
+				       uint32_t opcode,
+				       struct ctdb_req_header *h,
+				       TALLOC_CTX *mem_ctx,
+				       struct ctdb_reply_control *c)
+{
+	struct ctdb_reply_control_wire *wire =
+		(struct ctdb_reply_control_wire *)buf;
+	size_t length, np;
+	int ret;
+
+	length = offsetof(struct ctdb_reply_control_wire, data);
+	if (buflen < length) {
+		return EMSGSIZE;
+	}
+	if (wire->datalen > buflen || wire->errorlen > buflen) {
+		return EMSGSIZE;
+	}
+	if (length + wire->datalen < length) {
+		return EMSGSIZE;
+	}
+	if (length + wire->datalen + wire->errorlen < length) {
+		return EMSGSIZE;
+	}
+	if (buflen < length + wire->datalen + wire->errorlen) {
+		return EMSGSIZE;
+	}
+
+	if (h != NULL) {
+		ret = ctdb_req_header_pull_old((uint8_t *)&wire->hdr, buflen,
+					       h);
+		if (ret != 0) {
+			return ret;
+		}
+	}
+
+	c->status = wire->status;
+
+	if (c->status != -1) {
+		ret = ctdb_reply_control_data_pull(wire->data, wire->datalen,
+						   opcode, mem_ctx,
+						   &c->rdata, &np);
+		if (ret != 0) {
+			return ret;
+		}
+	}
+
+	ret = ctdb_string_pull(wire->data + wire->datalen, wire->errorlen,
+			       mem_ctx, &c->errmsg, &np);
+	if (ret != 0) {
+		return ret;
+	}
+
+	return 0;
+}
+
 
 COMPAT_CTDB1_TEST(struct ctdb_req_header, ctdb_req_header);
 
@@ -796,6 +901,7 @@ COMPAT_CTDB4_TEST(struct ctdb_req_dmaster, ctdb_req_dmaster, CTDB_REQ_DMASTER);
 COMPAT_CTDB4_TEST(struct ctdb_reply_dmaster, ctdb_reply_dmaster, CTDB_REPLY_DMASTER);
 
 COMPAT_CTDB5_TEST(struct ctdb_req_control, ctdb_req_control, CTDB_REQ_CONTROL);
+COMPAT_CTDB6_TEST(struct ctdb_reply_control, ctdb_reply_control, CTDB_REPLY_CONTROL);
 
 #define NUM_CONTROLS	151
 
@@ -818,6 +924,9 @@ int main(int argc, char *argv[])
 
 	for (opcode=0; opcode<NUM_CONTROLS; opcode++) {
 		COMPAT_TEST_FUNC(ctdb_req_control)(opcode);
+	}
+	for (opcode=0; opcode<NUM_CONTROLS; opcode++) {
+		COMPAT_TEST_FUNC(ctdb_reply_control)(opcode);
 	}
 
 	return 0;

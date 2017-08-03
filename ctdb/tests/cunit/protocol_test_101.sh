@@ -4,13 +4,6 @@
 
 last_control=150
 
-control_output=$(
-    for i in $(seq 0 $last_control) ; do
-	echo -n "$i.. "
-    done
-    echo
-)
-
 generate_control_output ()
 {
     for i in $(seq 0 $last_control) ; do
@@ -28,8 +21,7 @@ output=$(
     generate_control_output "ctdb_req_control_data"
     generate_control_output "ctdb_reply_control_data"
     generate_control_output "ctdb_req_control"
-    echo "ctdb_reply_control"
-    echo "$control_output"
+    generate_control_output "ctdb_reply_control"
     echo "ctdb_req_message"
 )
 
