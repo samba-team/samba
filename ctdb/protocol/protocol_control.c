@@ -1425,9 +1425,9 @@ static size_t ctdb_reply_control_data_len(struct ctdb_reply_control_data *cd)
 }
 
 static void ctdb_reply_control_data_push(struct ctdb_reply_control_data *cd,
-					 uint8_t *buf)
+					 uint8_t *buf, size_t *npush)
 {
-	size_t np;
+	size_t np = 0;
 
 	switch (cd->opcode) {
 	case CTDB_CONTROL_STATISTICS:
@@ -1581,13 +1581,16 @@ static void ctdb_reply_control_data_push(struct ctdb_reply_control_data *cd,
 		ctdb_uint32_push(&cd->data.db_id, buf, &np);
 		break;
 	}
+
+	*npush = np;
 }
 
 static int ctdb_reply_control_data_pull(uint8_t *buf, size_t buflen,
 					uint32_t opcode, TALLOC_CTX *mem_ctx,
-					struct ctdb_reply_control_data *cd)
+					struct ctdb_reply_control_data *cd,
+					size_t *npull)
 {
-	size_t np;
+	size_t np = 0;
 	int ret = 0;
 
 	cd->opcode = opcode;
@@ -1771,7 +1774,12 @@ static int ctdb_reply_control_data_pull(uint8_t *buf, size_t buflen,
 		break;
 	}
 
-	return ret;
+	if (ret != 0) {
+		return ret;
+	}
+
+	*npull = np;
+	return 0;
 }
 
 size_t ctdb_req_control_len(struct ctdb_req_header *h,
@@ -1888,7 +1896,7 @@ int ctdb_reply_control_push(struct ctdb_req_header *h,
 	if (reply->status == 0) {
 		wire->datalen = ctdb_reply_control_data_len(&reply->rdata);
 		wire->errorlen = 0;
-		ctdb_reply_control_data_push(&reply->rdata, wire->data);
+		ctdb_reply_control_data_push(&reply->rdata, wire->data, &np);
 	} else {
 		wire->datalen = 0;
 		wire->errorlen = ctdb_string_len(&reply->errmsg);
@@ -1939,7 +1947,7 @@ int ctdb_reply_control_pull(uint8_t *buf, size_t buflen, uint32_t opcode,
 	if (c->status != -1) {
 		ret = ctdb_reply_control_data_pull(wire->data, wire->datalen,
 						   opcode, mem_ctx,
-						   &c->rdata);
+						   &c->rdata, &np);
 		if (ret != 0) {
 			return ret;
 		}

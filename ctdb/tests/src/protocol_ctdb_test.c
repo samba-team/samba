@@ -292,36 +292,7 @@ PROTOCOL_CTDB4_TEST(struct ctdb_reply_dmaster, ctdb_reply_dmaster,
 #define NUM_CONTROLS	151
 
 PROTOCOL_CTDB2_TEST(struct ctdb_req_control_data, ctdb_req_control_data);
-
-static void test_ctdb_reply_control_data(void)
-{
-	TALLOC_CTX *mem_ctx;
-	size_t buflen;
-	int ret;
-	struct ctdb_reply_control_data cd, cd2;
-	uint32_t opcode;
-
-	printf("ctdb_reply_control_data\n");
-	fflush(stdout);
-
-	for (opcode=0; opcode<NUM_CONTROLS; opcode++) {
-		mem_ctx = talloc_new(NULL);
-		assert(mem_ctx != NULL);
-
-		printf("%u.. ", opcode);
-		fflush(stdout);
-		fill_ctdb_reply_control_data(mem_ctx, &cd, opcode);
-		buflen = ctdb_reply_control_data_len(&cd);
-		ctdb_reply_control_data_push(&cd, BUFFER);
-		ret = ctdb_reply_control_data_pull(BUFFER, buflen, opcode, mem_ctx, &cd2);
-		assert(ret == 0);
-		verify_ctdb_reply_control_data(&cd, &cd2);
-		talloc_free(mem_ctx);
-	}
-
-	printf("\n");
-	fflush(stdout);
-}
+PROTOCOL_CTDB2_TEST(struct ctdb_reply_control_data, ctdb_reply_control_data);
 
 static void test_ctdb_req_control(void)
 {
@@ -476,7 +447,9 @@ int main(int argc, char *argv[])
 	for (opcode=0; opcode<NUM_CONTROLS; opcode++) {
 		TEST_FUNC(ctdb_req_control_data)(opcode);
 	}
-	test_ctdb_reply_control_data();
+	for (opcode=0; opcode<NUM_CONTROLS; opcode++) {
+		TEST_FUNC(ctdb_reply_control_data)(opcode);
+	}
 
 	test_ctdb_req_control();
 	test_ctdb_reply_control();
