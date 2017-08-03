@@ -11,7 +11,7 @@ die ()
 # This expands the most probable problem cases like "." and "..".
 TEST_SUBDIR=$(dirname "$0")
 if [ $(dirname "$TEST_SUBDIR") = "." ] ; then
-    TEST_SUBDIR=$(cd "$TEST_SUBDIR" ; pwd)
+	TEST_SUBDIR=$(cd "$TEST_SUBDIR" ; pwd)
 fi
 
 # If we are running from within the source tree then, depending on the
@@ -41,9 +41,9 @@ else
 fi
 
 case "$_test_bin_dir" in
-    /*) : ;;
-    *) _test_bin_dir="${PWD}/${_test_bin_dir}" ;;
+/*) : ;;
+*) _test_bin_dir="${PWD}/${_test_bin_dir}" ;;
 esac
 if [ -d "$_test_bin_dir" ] ; then
-    PATH="${_test_bin_dir}:$PATH"
+	PATH="${_test_bin_dir}:$PATH"
 fi
