@@ -2250,7 +2250,7 @@ allowed:
 			return WERR_NOT_ENOUGH_MEMORY;
 		}
 
-		ret = dsdb_find_guid_by_dn(b_state->sam_ctx_system,
+		ret = dsdb_find_guid_by_dn(b_state->sam_ctx,
 					   getnc_state->ncRoot_dn,
 					   &getnc_state->ncRoot_guid);
 		if (ret != LDB_SUCCESS) {
