@@ -2,6 +2,12 @@
 
 # Common variables and functions for all CTDB tests.
 
+# Print a message and exit.
+die ()
+{
+	echo "$1" >&2 ; exit ${2:-1}
+}
+
 # This expands the most probable problem cases like "." and "..".
 TEST_SUBDIR=$(dirname "$0")
 if [ $(dirname "$TEST_SUBDIR") = "." ] ; then
@@ -37,9 +43,3 @@ esac
 if [ -d "$_test_bin_dir" ] ; then
     PATH="${_test_bin_dir}:$PATH"
 fi
-
-# Print a message and exit.
-die ()
-{
-    echo "$1" >&2 ; exit ${2:-1}
-}
