@@ -23,6 +23,7 @@
 #include "../librpc/gen_ndr/netlogon.h"
 #include "../librpc/gen_ndr/ndr_netlogon.h"
 #include "libcli/security/dom_sid.h"
+#include "lib/util/strv.h"
 
 /**
  * @file net_cache.c
@@ -76,6 +77,24 @@ static void print_cache_entry(const char* keystr, DATA_BLOB value,
 	}
 
 	datastr = (char *)value.data;
+
+	if (strnequal(keystr, "NAME2SID/", strlen("NAME2SID/"))) {
+		const char *strv = (char *)value.data;
+		size_t strv_len = value.length;
+		const char *sid = strv_len_next(strv, strv_len, NULL);
+		const char *type = strv_len_next(strv, strv_len, sid);
+		datastr = talloc_asprintf(talloc_tos(), "%s (%s)", sid, type);
+	}
+
+	if (strnequal(keystr, "SID2NAME/", strlen("SID2NAME/"))) {
+		const char *strv = (char *)value.data;
+		size_t strv_len = value.length;
+		const char *domain = strv_len_next(strv, strv_len, NULL);
+		const char *name = strv_len_next(strv, strv_len, domain);
+		const char *type = strv_len_next(strv, strv_len, name);
+		datastr = talloc_asprintf(talloc_tos(), "%s\\%s (%s)",
+					  domain, name, type);
+	}
 
 	if ((value.length > 0) && (value.data[value.length-1] != '\0')) {
 		datastr_free = talloc_asprintf(
