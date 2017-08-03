@@ -133,6 +133,10 @@ WERROR dns_common_extract(struct ldb_context *samdb,
 	return WERR_OK;
 }
 
+/*
+ * Lookup a DNS record, performing an exact match.
+ * i.e. DNS wild card records are not considered.
+ */
 WERROR dns_common_lookup(struct ldb_context *samdb,
 			 TALLOC_CTX *mem_ctx,
 			 struct ldb_dn *dn,
@@ -218,6 +222,350 @@ WERROR dns_common_lookup(struct ldb_context *samdb,
 			 */
 			return WERR_DNS_ERROR_NAME_DOES_NOT_EXIST;
 		}
+	}
+
+	werr = dns_common_extract(samdb, el, mem_ctx, records, num_records);
+	TALLOC_FREE(msg);
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
+	}
+
+	return WERR_OK;
+}
+
+/*
+ * Build an ldb_parse_tree node for an equality check
+ *
+ * Note: name is assumed to have been validated by dns_name_check
+ *       so will be zero terminated and of a reasonable size.
+ */
+static struct ldb_parse_tree *build_equality_operation(
+	TALLOC_CTX *mem_ctx,
+	bool add_asterix,     /* prepend an '*' to the name          */
+	const uint8_t *name,  /* the value being matched             */
+	const char *attr,     /* the attribute to check name against */
+	size_t size)          /* length of name                      */
+{
+
+	struct ldb_parse_tree *el = NULL;  /* Equality node being built */
+	struct ldb_val *value = NULL;      /* Value the attr will be compared
+					      with */
+	size_t length = 0;                 /* calculated length of the value
+	                                      including option '*' prefix and
+					      '\0' string terminator */
+
+	el = talloc(mem_ctx, struct ldb_parse_tree);
+	if (el == NULL) {
+		DBG_ERR("Unable to allocate ldb_parse_tree\n");
+		return NULL;
+	}
+
+	el->operation = LDB_OP_EQUALITY;
+	el->u.equality.attr = talloc_strdup(mem_ctx, attr);
+	value = &el->u.equality.value;
+	length = (add_asterix) ? size + 2 : size + 1;
+	value->data = talloc_zero_array(el, uint8_t, length);
+	if (el == NULL) {
+		DBG_ERR("Unable to allocate value->data\n");
+		TALLOC_FREE(el);
+		return NULL;
+	}
+
+	value->length = length;
+	if (add_asterix) {
+		value->data[0] = '*';
+		memcpy(&value->data[1], name, size);
+	} else {
+		memcpy(value->data, name, size);
+	}
+	return el;
+}
+
+/*
+ * Determine the number of levels in name
+ * essentially the number of '.'s in the name + 1
+ *
+ * name is assumed to have been validated by dns_name_check
+ */
+static unsigned int number_of_labels(const struct ldb_val *name) {
+	int x  = 0;
+	unsigned int labels = 1;
+	for (x = 0; x < name->length; x++) {
+		if (name->data[x] == '.') {
+			labels++;
+		}
+	}
+	return labels;
+}
+/*
+ * Build a query that matches the target name, and any possible
+ * DNS wild card entries
+ *
+ * Builds a parse tree equivalent to the example query.
+ *
+ * x.y.z -> (|(name=x.y.z)(name=\2a.y.z)(name=\2a.z)(name=\2a))
+ *
+ * Returns NULL if unable to build the query.
+ *
+ * The first component of the DN is assumed to be the name being looked up
+ * and also that it has been validated by dns_name_check
+ *
+ */
+#define BASE "(&(objectClass=dnsNode)(!(dNSTombstoned=TRUE))(|(a=b)(c=d)))"
+static struct ldb_parse_tree *build_wildcard_query(
+	TALLOC_CTX *mem_ctx,
+	struct ldb_dn *dn)
+{
+	const struct ldb_val *name = NULL;            /* The DNS name being
+							 queried */
+	const char *attr = NULL;                      /* The attribute name */
+	struct ldb_parse_tree *query = NULL;          /* The constructed query
+							 parse tree*/
+	struct ldb_parse_tree *wildcard_query = NULL; /* The parse tree for the
+							 name and wild card
+							 entries */
+	int labels = 0;         /* The number of labels in the name */
+
+	attr = ldb_dn_get_rdn_name(dn);
+	if (attr == NULL) {
+		DBG_ERR("Unable to get rdn_name\n");
+		return NULL;
+	}
+
+	name = ldb_dn_get_rdn_val(dn);
+	if (name == NULL) {
+		DBG_ERR("Unable to get domain name value\n");
+		return NULL;
+	}
+	labels = number_of_labels(name);
+
+	query = ldb_parse_tree(mem_ctx, BASE);
+	if (query == NULL) {
+		DBG_ERR("Unable to parse query %s\n", BASE);
+		return NULL;
+	}
+
+	/*
+	 * The 3rd element of BASE is a place holder which is replaced with
+	 * the actual wild card query
+	 */
+	wildcard_query = query->u.list.elements[2];
+	TALLOC_FREE(wildcard_query->u.list.elements);
+
+	wildcard_query->u.list.num_elements = labels + 1;
+	wildcard_query->u.list.elements = talloc_array(
+		wildcard_query,
+		struct ldb_parse_tree *,
+		labels + 1);
+	/*
+	 * Build the wild card query
+	 */
+	{
+		int x = 0;   /* current character in the name               */
+		int l = 0;   /* current equality operator index in elements */
+		struct ldb_parse_tree *el = NULL; /* Equality operator being
+						     built */
+		bool add_asterix = true;  /* prepend an '*' to the value    */
+		for (l = 0, x = 0; l < labels && x < name->length; l++) {
+			unsigned int size = name->length - x;
+			add_asterix = (name->data[x] == '.');
+			el = build_equality_operation(
+				mem_ctx,
+				add_asterix,
+				&name->data[x],
+				attr,
+				size);
+			if (el == NULL) {
+				return NULL;  /* Reason will have been logged */
+			}
+			wildcard_query->u.list.elements[l] = el;
+
+			/* skip to the start of the next label */
+			for (;x < name->length && name->data[x] != '.'; x++);
+		}
+
+		/* Add the base level "*" only query */
+		el = build_equality_operation(mem_ctx, true, NULL, attr, 0);
+		if (el == NULL) {
+			TALLOC_FREE(query);
+			return NULL;  /* Reason will have been logged */
+		}
+		wildcard_query->u.list.elements[l] = el;
+	}
+	return query;
+}
+
+/*
+ * Scan the list of records matching a dns wildcard query and return the
+ * best match.
+ *
+ * The best match is either an exact name match, or the longest wild card
+ * entry returned
+ *
+ * i.e. name = a.b.c candidates *.b.c, *.c,        - *.b.c would be selected
+ *      name = a.b.c candidates a.b.c, *.b.c, *.c  - a.b.c would be selected
+ */
+static struct ldb_message *get_best_match(struct ldb_dn *dn,
+		                          struct ldb_result *result)
+{
+	int matched = 0;    /* Index of the current best match in result */
+	size_t length = 0;  /* The length of the current candidate       */
+	const struct ldb_val *target = NULL;    /* value we're looking for */
+	const struct ldb_val *candidate = NULL; /* current candidate value */
+	int x = 0;
+
+	target = ldb_dn_get_rdn_val(dn);
+	for(x = 0; x < result->count; x++) {
+		candidate = ldb_dn_get_rdn_val(result->msgs[x]->dn);
+		if (strncasecmp((char *) target->data,
+				(char *) candidate->data,
+				target->length) == 0) {
+			/* Exact match stop searching and return */
+			return result->msgs[x];
+		}
+		if (candidate->length > length) {
+			matched = x;
+			length  = candidate->length;
+		}
+	}
+	return result->msgs[matched];
+}
+
+/*
+ * Look up a DNS entry, if an exact match does not exist, return the
+ * closest matching DNS wildcard entry if available
+ *
+ * Returns: LDB_ERR_NO_SUCH_OBJECT     If no matching record exists
+ *          LDB_ERR_OPERATIONS_ERROR   If the query fails
+ *          LDB_SUCCESS                If a matching record was retrieved
+ *
+ */
+static int dns_wildcard_lookup(struct ldb_context *samdb,
+			       TALLOC_CTX *mem_ctx,
+			       struct ldb_dn *dn,
+			       struct ldb_message **msg)
+{
+	static const char * const attrs[] = {
+		"dnsRecord",
+		"dNSTombstoned",
+		NULL
+	};
+	struct ldb_dn *parent = NULL;     /* The parent dn                    */
+	struct ldb_result *result = NULL; /* Results of the search            */
+	int ret;                          /* Return code                      */
+	struct ldb_parse_tree *query = NULL; /* The query to run              */
+	struct ldb_request *request = NULL;  /* LDB request for the query op  */
+	struct ldb_message *match = NULL;    /* the best matching DNS record  */
+	TALLOC_CTX *frame = talloc_stackframe();
+
+	parent = ldb_dn_get_parent(frame, dn);
+	if (parent == NULL) {
+		DBG_ERR("Unable to extract parent from dn\n");
+		TALLOC_FREE(frame);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	query = build_wildcard_query(frame, dn);
+	if (query == NULL) {
+		TALLOC_FREE(frame);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	result = talloc_zero(mem_ctx, struct ldb_result);
+	if (result == NULL) {
+		TALLOC_FREE(frame);
+		DBG_ERR("Unable to allocate ldb_result\n");
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = ldb_build_search_req_ex(&request,
+				      samdb,
+				      frame,
+				      parent,
+				      LDB_SCOPE_ONELEVEL,
+				      query,
+				      attrs,
+				      NULL,
+				      result,
+				      ldb_search_default_callback,
+				      NULL);
+	if (ret != LDB_SUCCESS) {
+		TALLOC_FREE(frame);
+		DBG_ERR("ldb_build_search_req_ex returned %d\n", ret);
+		return ret;
+	}
+
+	ret = ldb_request(samdb, request);
+	if (ret != LDB_SUCCESS) {
+		TALLOC_FREE(frame);
+		return ret;
+	}
+
+	ret = ldb_wait(request->handle, LDB_WAIT_ALL);
+	if (ret != LDB_SUCCESS) {
+		TALLOC_FREE(frame);
+		return ret;
+	}
+
+	if (result->count == 0) {
+		TALLOC_FREE(frame);
+		return LDB_ERR_NO_SUCH_OBJECT;
+	}
+
+	match = get_best_match(dn, result);
+	if (match == NULL) {
+		TALLOC_FREE(frame);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	*msg = talloc_move(mem_ctx, &match);
+	TALLOC_FREE(frame);
+	return LDB_SUCCESS;
+}
+
+/*
+ * Lookup a DNS record, will match DNS wild card records if an exact match
+ * is not found.
+ */
+WERROR dns_common_wildcard_lookup(struct ldb_context *samdb,
+				  TALLOC_CTX *mem_ctx,
+				  struct ldb_dn *dn,
+				  struct dnsp_DnssrvRpcRecord **records,
+				  uint16_t *num_records)
+{
+	int ret;
+	WERROR werr;
+	struct ldb_message *msg = NULL;
+	struct ldb_message_element *el = NULL;
+	const struct ldb_val *name = NULL;
+
+	*records = NULL;
+	*num_records = 0;
+
+	name = ldb_dn_get_rdn_val(dn);
+	if (name == NULL) {
+		return DNS_ERR(NAME_ERROR);
+	}
+
+	werr =  dns_name_check(
+			mem_ctx,
+			strlen((const char*)name->data),
+			(const char*) name->data);
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
+	}
+
+	ret = dns_wildcard_lookup(samdb, mem_ctx, dn, &msg);
+	if (ret == LDB_ERR_OPERATIONS_ERROR) {
+		return DNS_ERR(SERVER_FAILURE);
+	}
+	if (ret != LDB_SUCCESS) {
+		return DNS_ERR(NAME_ERROR);
+	}
+
+	el = ldb_msg_find_element(msg, "dnsRecord");
+	if (el == NULL) {
+		return WERR_DNS_ERROR_NAME_DOES_NOT_EXIST;
 	}
 
 	werr = dns_common_extract(samdb, el, mem_ctx, records, num_records);

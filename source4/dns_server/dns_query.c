@@ -625,9 +625,8 @@ static struct tevent_req *handle_authoritative_send(
 	if (tevent_req_werror(req, werr)) {
 		return tevent_req_post(req, ev);
 	}
-
-	werr = dns_lookup_records(dns, state, dn, &state->recs,
-				  &state->rec_count);
+	werr = dns_lookup_records_wildcard(dns, state, dn, &state->recs,
+				           &state->rec_count);
 	TALLOC_FREE(dn);
 	if (tevent_req_werror(req, werr)) {
 		return tevent_req_post(req, ev);

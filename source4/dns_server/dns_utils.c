@@ -107,6 +107,10 @@ bool dns_records_match(struct dnsp_DnssrvRpcRecord *rec1,
 	return false;
 }
 
+/*
+ * Lookup a DNS record, performing an exact match.
+ * i.e. DNS wild card records are not considered.
+ */
 WERROR dns_lookup_records(struct dns_server *dns,
 			  TALLOC_CTX *mem_ctx,
 			  struct ldb_dn *dn,
@@ -115,6 +119,20 @@ WERROR dns_lookup_records(struct dns_server *dns,
 {
 	return dns_common_lookup(dns->samdb, mem_ctx, dn,
 				 records, rec_count, NULL);
+}
+
+/*
+ * Lookup a DNS record, will match DNS wild card records if an exact match
+ * is not found.
+ */
+WERROR dns_lookup_records_wildcard(struct dns_server *dns,
+			  TALLOC_CTX *mem_ctx,
+			  struct ldb_dn *dn,
+			  struct dnsp_DnssrvRpcRecord **records,
+			  uint16_t *rec_count)
+{
+	return dns_common_wildcard_lookup(dns->samdb, mem_ctx, dn,
+				 records, rec_count);
 }
 
 WERROR dns_replace_records(struct dns_server *dns,
