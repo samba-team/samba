@@ -1578,15 +1578,27 @@ int ctdb_rec_buffer_traverse(struct ctdb_rec_buffer *recbuf,
 			return ret;
 		}
 
-		ret = func(reqid, NULL, key, data, private_data);
-		if (ret != 0) {
-			break;
+		if (func != NULL) {
+			ret = func(reqid, NULL, key, data, private_data);
+			if (ret != 0) {
+				break;
+			}
 		}
 
 		offset += reclen;
 	}
 
-	return ret;
+	if (ret != 0) {
+		return ret;
+	}
+
+	if (func == NULL) {
+		size_t *length = (size_t *)private_data;
+
+		*length = offset;
+	}
+
+	return 0;
 }
 
 int ctdb_rec_buffer_write(struct ctdb_rec_buffer *recbuf, int fd)
