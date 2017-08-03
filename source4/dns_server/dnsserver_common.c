@@ -246,14 +246,29 @@ static int rec_cmp(const struct dnsp_DnssrvRpcRecord *r1,
 }
 
 /*
- * Check for valid DNS names. These are names which are non-empty, do not
- * start with a dot and do not have any empty segments.
+ * Check for valid DNS names. These are names which:
+ *   - are non-empty
+ *   - do not start with a dot
+ *   - do not have any empty labels
+ *   - have no more than 127 labels
+ *   - are no longer than 253 characters
+ *   - none of the labels exceed 63 characters
  */
 WERROR dns_name_check(TALLOC_CTX *mem_ctx, size_t len, const char *name)
 {
 	size_t i;
+	unsigned int labels    = 0;
+	unsigned int label_len = 0;
 
 	if (len == 0) {
+		return WERR_DS_INVALID_DN_SYNTAX;
+	}
+
+	if (len > 1 && name[0] == '.') {
+		return WERR_DS_INVALID_DN_SYNTAX;
+	}
+
+	if ((len - 1) > DNS_MAX_DOMAIN_LENGTH) {
 		return WERR_DS_INVALID_DN_SYNTAX;
 	}
 
@@ -261,10 +276,18 @@ WERROR dns_name_check(TALLOC_CTX *mem_ctx, size_t len, const char *name)
 		if (name[i] == '.' && name[i+1] == '.') {
 			return WERR_DS_INVALID_DN_SYNTAX;
 		}
-	}
-
-	if (len > 1 && name[0] == '.') {
-		return WERR_DS_INVALID_DN_SYNTAX;
+		if (name[i] == '.') {
+			labels++;
+			if (labels > DNS_MAX_LABELS) {
+				return WERR_DS_INVALID_DN_SYNTAX;
+			}
+			label_len = 0;
+		} else {
+			label_len++;
+			if (label_len > DNS_MAX_LABEL_LENGTH) {
+				return WERR_DS_INVALID_DN_SYNTAX;
+			}
+		}
 	}
 
 	return WERR_OK;
