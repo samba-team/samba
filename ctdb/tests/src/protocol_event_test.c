@@ -33,6 +33,65 @@
  * Functions to test eventd protocol marshalling
  */
 
+/* for ctdb_event_request_data, ctdb_event_reply_data */
+#define PROTOCOL_EVENT1_TEST(TYPE, NAME) \
+static void TEST_FUNC(NAME)(uint32_t command) \
+{ \
+	TALLOC_CTX *mem_ctx; \
+	TYPE c1, c2; \
+	uint8_t *buf; \
+	size_t buflen, np; \
+	int ret; \
+\
+	printf("%s %u\n", #NAME, command); \
+	fflush(stdout); \
+	mem_ctx = talloc_new(NULL); \
+	assert(mem_ctx != NULL); \
+	FILL_FUNC(NAME)(mem_ctx, &c1, command); \
+	buflen = LEN_FUNC(NAME)(&c1); \
+	buf = talloc_size(mem_ctx, buflen); \
+	assert(buf != NULL); \
+	np = 0; \
+	PUSH_FUNC(NAME)(&c1, buf, &np); \
+	assert(np == buflen); \
+	np = 0; \
+	ret = PULL_FUNC(NAME)(buf, buflen, mem_ctx, &c2, &np); \
+	assert(ret == 0); \
+	assert(np == buflen); \
+	VERIFY_FUNC(NAME)(&c1, &c2); \
+	talloc_free(mem_ctx); \
+}
+
+#define PROTOCOL_EVENT2_TEST(TYPE, NAME) \
+static void TEST_FUNC(NAME)(uint32_t command) \
+{ \
+	TALLOC_CTX *mem_ctx; \
+	TYPE c1, c2; \
+	uint8_t *buf; \
+	size_t buflen, len; \
+	int ret; \
+\
+	printf("%s %u\n", #NAME, command); \
+	fflush(stdout); \
+	mem_ctx = talloc_new(NULL); \
+	assert(mem_ctx != NULL); \
+	FILL_FUNC(NAME)(mem_ctx, &c1, command); \
+	buflen = LEN_FUNC(NAME)(&c1); \
+	buf = talloc_size(mem_ctx, buflen); \
+	assert(buf != NULL); \
+	len = 0; \
+	ret = PUSH_FUNC(NAME)(&c1, buf, &len); \
+	assert(ret == EMSGSIZE); \
+	assert(len == buflen); \
+	ret = PUSH_FUNC(NAME)(&c1, buf, &buflen); \
+	assert(ret == 0); \
+	ret = PULL_FUNC(NAME)(buf, buflen, mem_ctx, &c2); \
+	assert(ret == 0); \
+	assert(c2.header.length == buflen); \
+	VERIFY_FUNC(NAME)(&c1, &c2); \
+	talloc_free(mem_ctx); \
+}
+
 static void test_ctdb_event_header(void)
 {
 	TALLOC_CTX *mem_ctx;
