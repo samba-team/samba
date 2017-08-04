@@ -79,7 +79,7 @@ class DirsyncBaseTests(samba.tests.TestCase):
         self.ldb_admin = SamDB(ldapshost, credentials=creds, session_info=system_session(lp), lp=lp)
         self.base_dn = self.ldb_admin.domain_dn()
         self.domain_sid = security.dom_sid(self.ldb_admin.get_domain_sid())
-        self.user_pass = "samba123@AAA"
+        self.user_pass = samba.generate_random_password(12, 16)
         self.configuration_dn = self.ldb_admin.get_config_basedn().get_linearized()
         self.sd_utils = sd_utils.SDUtils(self.ldb_admin)
         #used for anonymous login
