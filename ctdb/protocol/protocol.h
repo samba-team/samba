@@ -800,16 +800,6 @@ struct ctdb_key_data {
 	TDB_DATA key;
 };
 
-struct ctdb_uint8_array {
-	int num;
-	uint8_t *val;
-};
-
-struct ctdb_uint64_array {
-	int num;
-	uint64_t *val;
-};
-
 struct ctdb_db_statistics {
 	struct {
 		uint32_t num_calls;
@@ -876,7 +866,6 @@ struct ctdb_req_control_data {
 		uint64_t srvid;
 		struct ctdb_iface *iface;
 		struct ctdb_key_data *key;
-		struct ctdb_uint64_array *u64_array;
 		struct ctdb_traverse_start_ext *traverse_start_ext;
 		struct ctdb_traverse_all_ext *traverse_all_ext;
 	} data;
@@ -910,7 +899,6 @@ struct ctdb_reply_control_data {
 		struct ctdb_public_ip_info *ipinfo;
 		struct ctdb_iface_list *iface_list;
 		struct ctdb_statistics_list *stats_list;
-		struct ctdb_uint8_array *u8_array;
 		struct ctdb_db_statistics *dbstats;
 		enum ctdb_runstate runstate;
 		uint32_t num_records;

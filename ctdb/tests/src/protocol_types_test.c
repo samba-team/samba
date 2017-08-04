@@ -830,64 +830,6 @@ static void verify_ctdb_key_data(struct ctdb_key_data *p1,
 	verify_tdb_data(&p1->key, &p2->key);
 }
 
-static void fill_ctdb_uint8_array(TALLOC_CTX *mem_ctx,
-				  struct ctdb_uint8_array *p)
-{
-	int i;
-
-	p->num = rand_int(1024);
-	if (p->num > 0) {
-		p->val = talloc_array(mem_ctx, uint8_t, p->num);
-		assert(p->val != NULL);
-
-		for (i=0; i<p->num; i++) {
-			p->val[i] = rand8();
-		}
-	} else {
-		p->val = NULL;
-	}
-}
-
-static void verify_ctdb_uint8_array(struct ctdb_uint8_array *p1,
-				    struct ctdb_uint8_array *p2)
-{
-	int i;
-
-	assert(p1->num == p2->num);
-	for (i=0; i<p1->num; i++) {
-		assert(p1->val[i] == p2->val[i]);
-	}
-}
-
-static void fill_ctdb_uint64_array(TALLOC_CTX *mem_ctx,
-				   struct ctdb_uint64_array *p)
-{
-	int i;
-
-	p->num = rand_int(1024);
-	if (p->num > 0) {
-		p->val = talloc_array(mem_ctx, uint64_t, p->num);
-		assert(p->val != NULL);
-
-		for (i=0; i<p->num; i++) {
-			p->val[i] = rand64();
-		}
-	} else {
-		p->val = NULL;
-	}
-}
-
-static void verify_ctdb_uint64_array(struct ctdb_uint64_array *p1,
-				     struct ctdb_uint64_array *p2)
-{
-	int i;
-
-	assert(p1->num == p2->num);
-	for (i=0; i<p1->num; i++) {
-		assert(p1->val[i] == p2->val[i]);
-	}
-}
-
 static void fill_ctdb_db_statistics(TALLOC_CTX *mem_ctx,
 				    struct ctdb_db_statistics *p)
 {
@@ -1319,8 +1261,6 @@ DEFINE_TEST(struct ctdb_iface_list, ctdb_iface_list);
 DEFINE_TEST(struct ctdb_public_ip_info, ctdb_public_ip_info);
 DEFINE_TEST(struct ctdb_statistics_list, ctdb_statistics_list);
 DEFINE_TEST(struct ctdb_key_data, ctdb_key_data);
-DEFINE_TEST(struct ctdb_uint8_array, ctdb_uint8_array);
-DEFINE_TEST(struct ctdb_uint64_array, ctdb_uint64_array);
 DEFINE_TEST(struct ctdb_db_statistics, ctdb_db_statistics);
 DEFINE_TEST(struct ctdb_election_message, ctdb_election_message);
 DEFINE_TEST(struct ctdb_srvid_message, ctdb_srvid_message);
@@ -1435,8 +1375,6 @@ int main(int argc, char *argv[])
 	TEST_FUNC(ctdb_public_ip_info)();
 	TEST_FUNC(ctdb_statistics_list)();
 	TEST_FUNC(ctdb_key_data)();
-	TEST_FUNC(ctdb_uint8_array)();
-	TEST_FUNC(ctdb_uint64_array)();
 	TEST_FUNC(ctdb_db_statistics)();
 	TEST_FUNC(ctdb_election_message)();
 	TEST_FUNC(ctdb_srvid_message)();

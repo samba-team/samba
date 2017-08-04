@@ -42,16 +42,6 @@ void ctdb_double_push(double val, uint8_t *buf);
 int ctdb_double_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 		     double *out);
 
-size_t ctdb_uint8_array_len(struct ctdb_uint8_array *array);
-void ctdb_uint8_array_push(struct ctdb_uint8_array *array, uint8_t *buf);
-int ctdb_uint8_array_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			  struct ctdb_uint8_array **out);
-
-size_t ctdb_uint64_array_len(struct ctdb_uint64_array *array);
-void ctdb_uint64_array_push(struct ctdb_uint64_array *array, uint8_t *buf);
-int ctdb_uint64_array_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			   struct ctdb_uint64_array **out);
-
 size_t ctdb_pid_len(pid_t pid);
 void ctdb_pid_push(pid_t pid, uint8_t *buf);
 int ctdb_pid_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
