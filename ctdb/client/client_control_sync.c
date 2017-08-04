@@ -2194,48 +2194,6 @@ int ctdb_ctrl_set_db_readonly(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	return 0;
 }
 
-int ctdb_ctrl_check_srvids(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-			   struct ctdb_client_context *client,
-			   int destnode, struct timeval timeout,
-			   uint64_t *srvid, int count, uint8_t **result)
-{
-	struct ctdb_uint64_array srvid_list;
-	struct ctdb_uint8_array *u8_array;
-	struct ctdb_req_control request;
-	struct ctdb_reply_control *reply;
-	int ret;
-
-	srvid_list.num = count;
-	srvid_list.val = srvid;
-
-	ctdb_req_control_check_srvids(&request, &srvid_list);
-	ret = ctdb_client_control(mem_ctx, ev, client, destnode, timeout,
-				  &request, &reply);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,
-		      ("Control CHECK_SRVIDS failed to node %u, ret=%d\n",
-		       destnode, ret));
-		return ret;
-	}
-
-	ret = ctdb_reply_control_check_srvids(reply, &request, &u8_array);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,
-		      ("Control CHECK_SRVIDS failed, ret=%d\n", ret));
-		return ret;
-	}
-
-	if (u8_array->num != count) {
-		DEBUG(DEBUG_ERR,
-		      ("Control CHECK_SRVIDS returned invalid data %d != %d\n",
-		       u8_array->num, count));
-		return ret;
-	}
-
-	*result = talloc_steal(mem_ctx, u8_array->val);
-	return 0;
-}
-
 int ctdb_ctrl_traverse_start_ext(TALLOC_CTX *mem_ctx,
 				 struct tevent_context *ev,
 				 struct ctdb_client_context *client,

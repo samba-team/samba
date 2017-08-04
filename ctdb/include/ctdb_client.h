@@ -95,9 +95,6 @@ int ctdb_client_set_message_handler(struct ctdb_context *ctdb, uint64_t srvid,
 				    void *private_data);
 int ctdb_client_remove_message_handler(struct ctdb_context *ctdb,
 				       uint64_t srvid, void *private_data);
-int ctdb_client_check_message_handlers(struct ctdb_context *ctdb,
-				       uint64_t *ids, uint32_t num,
-				       uint8_t *result);
 
 /* send a ctdb message */
 int ctdb_client_send_message(struct ctdb_context *ctdb, uint32_t pnn,

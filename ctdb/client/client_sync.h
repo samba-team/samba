@@ -397,11 +397,6 @@ int ctdb_ctrl_set_db_readonly(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			      int destnode, struct timeval timeout,
 			      uint32_t db_id);
 
-int ctdb_ctrl_check_srvids(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-			   struct ctdb_client_context *client,
-			   int destnode, struct timeval timeout,
-			   uint64_t *srvid, int count, uint8_t **result);
-
 int ctdb_ctrl_traverse_start_ext(TALLOC_CTX *mem_ctx,
 				 struct tevent_context *ev,
 				 struct ctdb_client_context *client,
