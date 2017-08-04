@@ -356,7 +356,6 @@ static size_t ctdb_req_control_data_len(struct ctdb_req_control_data *cd)
 		break;
 
 	case CTDB_CONTROL_CHECK_SRVIDS:
-		len = ctdb_uint64_array_len(cd->data.u64_array);
 		break;
 
 	case CTDB_CONTROL_TRAVERSE_START_EXT:
@@ -639,7 +638,6 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_CHECK_SRVIDS:
-		ctdb_uint64_array_push(cd->data.u64_array, buf);
 		break;
 
 	case CTDB_CONTROL_TRAVERSE_START_EXT:
@@ -962,8 +960,6 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 		break;
 
 	case CTDB_CONTROL_CHECK_SRVIDS:
-		ret = ctdb_uint64_array_pull(buf, buflen, mem_ctx,
-					     &cd->data.u64_array);
 		break;
 
 	case CTDB_CONTROL_TRAVERSE_START_EXT:
@@ -1344,7 +1340,6 @@ static size_t ctdb_reply_control_data_len(struct ctdb_reply_control_data *cd)
 		break;
 
 	case CTDB_CONTROL_CHECK_SRVIDS:
-		len = ctdb_uint8_array_len(cd->data.u8_array);
 		break;
 
 	case CTDB_CONTROL_TRAVERSE_START_EXT:
@@ -1540,7 +1535,6 @@ static void ctdb_reply_control_data_push(struct ctdb_reply_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_CHECK_SRVIDS:
-		ctdb_uint8_array_push(cd->data.u8_array, buf);
 		break;
 
 	case CTDB_CONTROL_GET_DB_STATISTICS:
@@ -1728,8 +1722,6 @@ static int ctdb_reply_control_data_pull(uint8_t *buf, size_t buflen,
 		break;
 
 	case CTDB_CONTROL_CHECK_SRVIDS:
-		ret = ctdb_uint8_array_pull(buf, buflen, mem_ctx,
-					    &cd->data.u8_array);
 		break;
 
 	case CTDB_CONTROL_GET_DB_STATISTICS:

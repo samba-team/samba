@@ -505,9 +505,6 @@ static void fill_ctdb_req_control_data(TALLOC_CTX *mem_ctx,
 		break;
 
 	case CTDB_CONTROL_CHECK_SRVIDS:
-		cd->data.u64_array = talloc(mem_ctx, struct ctdb_uint64_array);
-		assert(cd->data.u64_array != NULL);
-		fill_ctdb_uint64_array(mem_ctx, cd->data.u64_array);
 		break;
 
 	case CTDB_CONTROL_TRAVERSE_START_EXT:
@@ -920,8 +917,6 @@ static void verify_ctdb_req_control_data(struct ctdb_req_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_CHECK_SRVIDS:
-		verify_ctdb_uint64_array(cd->data.u64_array,
-					 cd2->data.u64_array);
 		break;
 
 	case CTDB_CONTROL_TRAVERSE_START_EXT:
@@ -1359,9 +1354,6 @@ static void fill_ctdb_reply_control_data(TALLOC_CTX *mem_ctx,
 		break;
 
 	case CTDB_CONTROL_CHECK_SRVIDS:
-		cd->data.u8_array = talloc(mem_ctx, struct ctdb_uint8_array);
-		assert(cd->data.u8_array != NULL);
-		fill_ctdb_uint8_array(mem_ctx, cd->data.u8_array);
 		break;
 
 	case CTDB_CONTROL_TRAVERSE_START_EXT:
@@ -1713,7 +1705,6 @@ static void verify_ctdb_reply_control_data(struct ctdb_reply_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_CHECK_SRVIDS:
-		verify_ctdb_uint8_array(cd->data.u8_array, cd2->data.u8_array);
 		break;
 
 	case CTDB_CONTROL_TRAVERSE_START_EXT:

@@ -517,12 +517,6 @@ void ctdb_req_control_set_db_readonly(struct ctdb_req_control *request,
 				      uint32_t db_id);
 int ctdb_reply_control_set_db_readonly(struct ctdb_reply_control *reply);
 
-void ctdb_req_control_check_srvids(struct ctdb_req_control *request,
-				   struct ctdb_uint64_array *u64_array);
-int ctdb_reply_control_check_srvids(struct ctdb_reply_control *reply,
-				    TALLOC_CTX *mem_ctx,
-				    struct ctdb_uint8_array **u8_array);
-
 void ctdb_req_control_traverse_start_ext(struct ctdb_req_control *request,
 					 struct ctdb_traverse_start_ext *traverse);
 int ctdb_reply_control_traverse_start_ext(struct ctdb_reply_control *reply);

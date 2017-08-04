@@ -1915,33 +1915,6 @@ int ctdb_reply_control_set_db_readonly(struct ctdb_reply_control *reply)
 
 /* CTDB_CONTROL_CHECK_SRVIDS */
 
-void ctdb_req_control_check_srvids(struct ctdb_req_control *request,
-				   struct ctdb_uint64_array *u64_array)
-{
-	request->opcode = CTDB_CONTROL_CHECK_SRVIDS;
-	request->pad = 0;
-	request->srvid = 0;
-	request->client_id = 0;
-	request->flags = 0;
-
-	request->rdata.opcode = CTDB_CONTROL_CHECK_SRVIDS;
-	request->rdata.data.u64_array = u64_array;
-}
-
-int ctdb_reply_control_check_srvids(struct ctdb_reply_control *reply,
-				    TALLOC_CTX *mem_ctx,
-				    struct ctdb_uint8_array **u8_array)
-{
-	if (reply->rdata.opcode != CTDB_CONTROL_CHECK_SRVIDS) {
-		return EPROTO;
-	}
-
-	if (reply->status == 0) {
-		*u8_array = talloc_steal(mem_ctx, reply->rdata.data.u8_array);
-	}
-	return reply->status;
-}
-
 /* CTDB_CONTROL_TRAVERSE_START_EXT */
 
 void ctdb_req_control_traverse_start_ext(struct ctdb_req_control *request,
