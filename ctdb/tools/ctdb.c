@@ -3381,44 +3381,6 @@ static int control_deltickle(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	return 0;
 }
 
-static int control_check_srvids(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-				int argc, const char **argv)
-{
-	uint64_t *srvid;
-	uint8_t *result;
-	int ret, i;
-
-	if (argc == 0) {
-		usage("check_srvids");
-	}
-
-	srvid = talloc_array(mem_ctx, uint64_t, argc);
-	if (srvid == NULL) {
-		fprintf(stderr, "Memory allocation error\n");
-		return 1;
-	}
-
-	for (i=0; i<argc; i++) {
-		srvid[i] = strtoull(argv[i], NULL, 0);
-	}
-
-	ret = ctdb_ctrl_check_srvids(mem_ctx, ctdb->ev, ctdb->client,
-				     ctdb->cmd_pnn, TIMEOUT(), srvid, argc,
-				     &result);
-	if (ret != 0) {
-		fprintf(stderr, "Failed to check srvids on node %u\n",
-			ctdb->cmd_pnn);
-		return ret;
-	}
-
-	for (i=0; i<argc; i++) {
-		printf("SRVID 0x%" PRIx64 " %s\n", srvid[i],
-		       (result[i] ? "exists" : "does not exist"));
-	}
-
-	return 0;
-}
-
 static int control_listnodes(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 			     int argc, const char **argv)
 {
@@ -6067,8 +6029,6 @@ static const struct ctdb_cmd {
 		"add a tickle", "<ip>:<port> <ip>:<port>" },
 	{ "deltickle", control_deltickle, false, true,
 		"delete a tickle", "<ip>:<port> <ip>:<port>" },
-	{ "check_srvids", control_check_srvids, false, true,
-		"check if srvid is registered", "<id> [<id> ...]" },
 	{ "listnodes", control_listnodes, true, true,
 		"list nodes in the cluster", NULL },
 	{ "reloadnodes", control_reloadnodes, false, false,

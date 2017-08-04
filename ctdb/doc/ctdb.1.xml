@@ -1834,25 +1834,6 @@ HEALTH: NO-HEALTHY-NODES - ERROR - Backup of corrupted TDB in '/usr/local/var/li
       </para>
     </refsect2>
 
-    <refsect2>
-      <title>check_srvids <parameter>SRVID</parameter> ...</title>
-      <para>
-	This command checks whether a set of srvid message ports are
-	registered on the node or not. The command takes a list of
-	values to check.
-      </para>
-      <refsect3>
-	<title>Example</title>
-	<screen>
-# ctdb check_srvids 1 2 3 14765
-Server id 0:1 does not exist
-Server id 0:2 does not exist
-Server id 0:3 does not exist
-Server id 0:14765 exists
-	</screen>
-      </refsect3>
-    </refsect2>
-
   </refsect1>
 
   <!-- UNDOCUMENTED: showban stats disablemonitor enablemonitor
