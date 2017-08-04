@@ -1973,7 +1973,8 @@ static void process_smb(struct smbXsrv_connection *xconn,
 			size_t pdulen = nread - NBT_HDR_SIZE;
 			smbd_smb2_process_negprot(xconn, 0, inpdu, pdulen);
 			return;
-		} else if (nread >= smb_size && valid_smb_header(inbuf)
+		}
+		if (nread >= smb_size && valid_smb_header(inbuf)
 				&& CVAL(inbuf, smb_com) != 0x72) {
 			/* This is a non-negprot SMB1 packet.
 			   Disable SMB2 from now on. */
