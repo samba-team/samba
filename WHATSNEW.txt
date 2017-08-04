@@ -1,4 +1,90 @@
                    =============================
+                   Release Notes for Samba 4.6.7
+                           August 9, 2017
+                   =============================
+
+
+This is the latest stable release of the Samba 4.6 release series.
+
+
+Changes since 4.6.6:
+---------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 12836: s3: smbd: Fix a read after free if a chained SMB1 call goes async.
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 11392: s4-cldap/netlogon: Match Windows 2012R2 and return
+     NETLOGON_NT_VERSION_5 when version unspecified.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 12885: s3/smbd: Let non_widelink_open() chdir() to directories directly.
+   * BUG 12910: s3/notifyd: Ensure notifyd doesn't return from
+     smbd_notifyd_init.
+
+o  Günther Deschner <gd@samba.org>
+   * BUG 12840: vfs_fruit: Add fruit:model = <modelname> parametric option.
+
+o  David Disseldorp <ddiss@samba.org>
+   * BUG 12911: vfs_ceph: Fix cephwrap_chdir().
+
+o  Dustin L. Howett
+   * BUG 12720: idmap_ad: Retry query_user exactly once if we get
+     TLDAP_SERVER_DOWN.
+
+o  Thomas Jarosch <thomas.jarosch@intra2net.com>
+   * BUG 12927: s3: libsmb: Fix use-after-free when accessing pointer *p.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 12925: smbd: Fix a connection run-down race condition.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 12782: winbindd changes the local password and gets
+     NT_STATUS_WRONG_PASSWORD for the remote change.
+   * BUG 12890: s3:smbd: consistently use talloc_tos() memory for
+     rpc_pipe_open_interface().
+
+o  Noel Power <noel.power@suse.com>
+   * BUG 12937: smbcacls: Don't fail against a directory on Windows using SMB2.
+
+o  Arvid Requate <requate@univention.de>
+   * BUG 11392: s4-dsdb/netlogon: Allow missing ntver in cldap ping.
+
+o  Garming Sam <garming@catalyst.net.nz>
+   * BUG 12813: dnsserver: Stop dns_name_equal doing OOB read.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 12886: s3:client: The smbspool krb5 wrapper needs negotiate for
+     authentication.
+
+o  Martin Schwenke <martin@meltin.net>
+   * BUG 12898: ctdb-common: Set close-on-exec when creating PID file.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   =============================
                    Release Notes for Samba 4.6.6
                             July 12, 2017
                    =============================
@@ -48,8 +134,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    =============================
                    Release Notes for Samba 4.6.5
