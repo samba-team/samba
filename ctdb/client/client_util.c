@@ -117,17 +117,17 @@ int ctdb_server_id_exists(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			  struct ctdb_client_context *client,
 			  struct ctdb_server_id *sid, bool *exists)
 {
-	uint8_t *result;
+	int result;
 	int ret;
 
-	ret = ctdb_ctrl_check_srvids(mem_ctx, ev, client, sid->vnn,
-				     tevent_timeval_zero(),
-				     &sid->unique_id, 1, &result);
+	ret = ctdb_ctrl_process_exists(mem_ctx, ev, client, sid->vnn,
+				       tevent_timeval_zero(),
+				       sid->pid, &result);
 	if (ret != 0) {
 		return ret;
 	}
 
-	if (result[0] == 1) {
+	if (result == 1) {
 		*exists = true;
 	} else {
 		*exists = false;
