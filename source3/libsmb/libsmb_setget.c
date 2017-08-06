@@ -7,6 +7,7 @@
    Copyright (C) Tom Jansen (Ninja ISD) 2002
    Copyright (C) Derrell Lipman 2003-2008
    Copyright (C) Jeremy Allison 2007, 2008
+   Copyright (C) 2017 VMware, Inc. All rights reserved.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -96,6 +97,26 @@ smbc_setDebug(SMBCCTX *c, int debug)
         c->debug = debug;
 	lp_set_cmdline("log level", buf);
 	TALLOC_FREE(frame);
+}
+
+/** set callback function which will be called for logging */
+void
+smbc_setLogCallback(SMBCCTX *c, debug_callback_fn fn)
+{
+    debug_set_callback(NULL, fn);
+}
+
+/** set configuration file */
+void
+smbc_setConfiguration(SMBCCTX *c, const char* file)
+{
+    if (lp_load_client(file)) {
+        DEBUG(1, ("Configuration loaded succesfully: %s\n",
+                file));
+    } else {
+        DEBUG(1, ("Could not load config file: %s\n",
+                file));
+    }
 }
 
 /**
