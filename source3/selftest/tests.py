@@ -124,7 +124,6 @@ plantestsuite("samba3.smbtorture_s3.plain(%s).%s" % (env, t), env, [os.path.join
 local_tests = [
     "LOCAL-SUBSTITUTE",
     "LOCAL-GENCACHE",
-    "LOCAL-TALLOC-DICT",
     "LOCAL-BASE64",
     "LOCAL-RBTREE",
     "LOCAL-MEMCACHE",

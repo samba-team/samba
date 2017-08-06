@@ -31,7 +31,6 @@
 #include "dbwrap/dbwrap.h"
 #include "dbwrap/dbwrap_open.h"
 #include "dbwrap/dbwrap_rbt.h"
-#include "talloc_dict.h"
 #include "async_smb.h"
 #include "libsmb/libsmb.h"
 #include "libsmb/clirap.h"
@@ -10314,61 +10313,6 @@ failed:
 	return false;
 }
 
-
-struct talloc_dict_test {
-	int content;
-};
-
-static int talloc_dict_traverse_fn(DATA_BLOB key, void *data, void *priv)
-{
-	int *count = (int *)priv;
-	*count += 1;
-	return 0;
-}
-
-static bool run_local_talloc_dict(int dummy)
-{
-	struct talloc_dict *dict;
-	struct talloc_dict_test *t;
-	int key, count, res;
-	bool ok;
-
-	dict = talloc_dict_init(talloc_tos());
-	if (dict == NULL) {
-		return false;
-	}
-
-	t = talloc(talloc_tos(), struct talloc_dict_test);
-	if (t == NULL) {
-		return false;
-	}
-
-	key = 1;
-	t->content = 1;
-	ok = talloc_dict_set(dict, data_blob_const(&key, sizeof(key)), &t);
-	if (!ok) {
-		return false;
-	}
-
-	count = 0;
-	res = talloc_dict_traverse(dict, talloc_dict_traverse_fn, &count);
-	if (res == -1) {
-		return false;
-	}
-
-	if (count != 1) {
-		return false;
-	}
-
-	if (count != res) {
-		return false;
-	}
-
-	TALLOC_FREE(dict);
-
-	return true;
-}
-
 static bool run_local_string_to_sid(int dummy) {
 	struct dom_sid sid;
 
@@ -11657,7 +11601,6 @@ static struct {
 	{ "PIDHIGH", run_pidhigh },
 	{ "LOCAL-SUBSTITUTE", run_local_substitute, 0},
 	{ "LOCAL-GENCACHE", run_local_gencache, 0},
-	{ "LOCAL-TALLOC-DICT", run_local_talloc_dict, 0},
 	{ "LOCAL-DBWRAP-WATCH1", run_dbwrap_watch1, 0 },
 	{ "LOCAL-DBWRAP-WATCH2", run_dbwrap_watch2, 0 },
 	{ "LOCAL-DBWRAP-DO-LOCKED1", run_dbwrap_do_locked1, 0 },
