@@ -452,7 +452,7 @@ static NTSTATUS fetch_cache_seqnum( struct winbindd_domain *domain, time_t now )
 	/* have we expired? */
 
 	time_diff = now - domain->last_seq_check;
-	if ( time_diff > lp_winbind_cache_time() ) {
+	if ((int)time_diff > lp_winbind_cache_time()) {
 		DEBUG(10,("fetch_cache_seqnum: timeout [%s][%u @ %u]\n",
 			domain->name, domain->sequence_number,
 			(uint32_t)domain->last_seq_check));
@@ -619,7 +619,7 @@ static bool centry_expired(struct winbindd_domain *domain, const char *keystr, s
 	   current sequence number or it did not timeout then it is OK */
 	if (wcache_server_down(domain)
 	    || ((centry->sequence_number == domain->sequence_number)
-		&& (centry->timeout > time(NULL)))) {
+		&& ((time_t)centry->timeout > time(NULL)))) {
 		DEBUG(10,("centry_expired: Key %s for domain %s is good.\n",
 			keystr, domain->name ));
 		return false;
@@ -4802,7 +4802,7 @@ bool wcache_fetch_ndr(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
 			goto fail;
 		}
 		entry_timeout = BVAL(data.dptr, 4);
-		if (time(NULL) > entry_timeout) {
+		if (time(NULL) > (time_t)entry_timeout) {
 			DEBUG(10, ("Entry has timed out\n"));
 			goto fail;
 		}
