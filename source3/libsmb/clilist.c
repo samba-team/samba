@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    client directory list routines
    Copyright (C) Andrew Tridgell 1994-1998
+   Copyright (C) 2017 VMware, Inc. All rights reserved.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -171,6 +172,7 @@ static size_t interpret_long_filename(TALLOC_CTX *ctx,
 			p += 4; /* fileindex */
 
 			/* Offset zero is "create time", not "change time". */
+			finfo->crtime_ts = interpret_long_date(p);
 			p += 8;
 			finfo->atime_ts = interpret_long_date(p);
 			p += 8;
