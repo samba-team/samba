@@ -28,8 +28,6 @@
 #include "librpc/gen_ndr/dcerpc.h"
 #include "librpc/gen_ndr/winbind.h"
 
-#include "talloc_dict.h"
-
 #include "../lib/util/tevent_ntstatus.h"
 
 #ifdef HAVE_LIBNSCD

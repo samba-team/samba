@@ -339,7 +339,9 @@ struct winbindd_domain *wb_child_domain(void);
 /* The following definitions come from winbindd/winbindd_group.c  */
 bool fill_grent(TALLOC_CTX *mem_ctx, struct winbindd_gr *gr,
 		const char *dom_name, const char *gr_name, gid_t unix_gid);
-NTSTATUS winbindd_print_groupmembers(struct talloc_dict *members,
+
+struct db_context;
+NTSTATUS winbindd_print_groupmembers(struct db_context *members,
 				     TALLOC_CTX *mem_ctx,
 				     int *num_members, char **result);
 
@@ -661,12 +663,9 @@ struct tevent_req *wb_group_members_send(TALLOC_CTX *mem_ctx,
 					 enum lsa_SidType type,
 					 int max_depth);
 NTSTATUS wb_group_members_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
-			       struct talloc_dict **members);
-NTSTATUS add_wbint_Principal_to_dict(TALLOC_CTX *mem_ctx,
-				     struct dom_sid *sid,
-				     const char **name,
-				     enum lsa_SidType type,
-				     struct talloc_dict *dict);
+			       struct db_context **members);
+NTSTATUS add_member_to_db(struct db_context *db, struct dom_sid *sid,
+			  const char *name);
 
 struct tevent_req *wb_getgrsid_send(TALLOC_CTX *mem_ctx,
 				    struct tevent_context *ev,
@@ -674,7 +673,7 @@ struct tevent_req *wb_getgrsid_send(TALLOC_CTX *mem_ctx,
 				    int max_nesting);
 NTSTATUS wb_getgrsid_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			  const char **domname, const char **name, gid_t *gid,
-			  struct talloc_dict **members);
+			  struct db_context **members);
 
 struct tevent_req *winbindd_getgrgid_send(TALLOC_CTX *mem_ctx,
 					  struct tevent_context *ev,
@@ -778,7 +777,7 @@ struct tevent_req *wb_next_grent_send(TALLOC_CTX *mem_ctx,
 				      struct getgrent_state *gstate,
 				      struct winbindd_gr *gr);
 NTSTATUS wb_next_grent_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
-			    struct talloc_dict **members);
+			    struct db_context **members);
 
 struct tevent_req *winbindd_setgrent_send(TALLOC_CTX *mem_ctx,
 					  struct tevent_context *ev,

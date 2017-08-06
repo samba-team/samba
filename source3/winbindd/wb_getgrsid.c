@@ -21,6 +21,7 @@
 #include "winbindd.h"
 #include "librpc/gen_ndr/ndr_winbind_c.h"
 #include "../libcli/security/security.h"
+#include "lib/dbwrap/dbwrap_rbt.h"
 
 struct wb_getgrsid_state {
 	struct tevent_context *ev;
@@ -30,7 +31,7 @@ struct wb_getgrsid_state {
 	const char *name;
 	enum lsa_SidType type;
 	gid_t gid;
-	struct talloc_dict *members;
+	struct db_context *members;
 };
 
 static void wb_getgrsid_lookupsid_done(struct tevent_req *subreq);
@@ -156,7 +157,7 @@ static void wb_getgrsid_sid2gid_done(struct tevent_req *subreq)
 			return;
 		}
 
-		state->members = talloc_dict_init(state);
+		state->members = db_open_rbt(state);
 		if (tevent_req_nomem(state->members, req)) {
 			return;
 		}
@@ -169,11 +170,7 @@ static void wb_getgrsid_sid2gid_done(struct tevent_req *subreq)
 			return;
 		}
 
-		status = add_wbint_Principal_to_dict(talloc_tos(),
-						     &state->sid,
-						     &name,
-						     state->type,
-						     state->members);
+		status = add_member_to_db(state->members, &state->sid, name);
 		if (!NT_STATUS_IS_OK(status)) {
 			tevent_req_nterror(req, status);
 			return;
@@ -213,7 +210,7 @@ static void wb_getgrsid_got_members(struct tevent_req *subreq)
 
 NTSTATUS wb_getgrsid_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			  const char **domname, const char **name, gid_t *gid,
-			  struct talloc_dict **members)
+			  struct db_context **members)
 {
 	struct wb_getgrsid_state *state = tevent_req_data(
 		req, struct wb_getgrsid_state);
