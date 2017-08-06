@@ -1578,6 +1578,19 @@ int smbc_getdents(unsigned int dh, struct smbc_dirent *dirp, int count);
  */
 struct smbc_dirent* smbc_readdir(unsigned int dh);
 
+/**@ingroup directory
+ * Works similar as smbc_readdir but returns more information about file.
+ *
+ * @param dh        Valid directory as returned by smbc_opendir()
+ *
+ * @return          A pointer to a file_info structure, or NULL if an
+ *                  error occurs or end-of-directory is reached:
+ *                  - EBADF Invalid directory handle
+ *                  - EINVAL smbc_init() failed or has not been called
+ *
+ * @see             smbc_open(), smbc_readdir()
+ */
+struct file_info* smbc_readdirplus(unsigned int dh);
 
 /**@ingroup directory
  * Get the current directory offset.
