@@ -69,7 +69,7 @@ def create_kdc_conf(kdcconf, realm, domain, logdir):
 
         f.write("[dbmodules]\n")
 
-        f.write("\tdb_modules_dir = %s\n" % kdb_modules_dir)
+        f.write("\tdb_module_dir = %s\n" % kdb_modules_dir)
         f.write("\n")
 
         f.write("\t%s = {\n" % realm)
