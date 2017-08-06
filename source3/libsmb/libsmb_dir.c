@@ -1141,7 +1141,6 @@ struct file_info *
 SMBC_readdirplus_ctx(SMBCCTX *context,
                      SMBCFILE *dir)
 {
-    int maxlen;
     struct file_info *finfo;
     TALLOC_CTX *frame = talloc_stackframe();
 
