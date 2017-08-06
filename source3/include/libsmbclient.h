@@ -6,6 +6,7 @@
   Copyright (C) John Terpsra 2000
   Copyright (C) Tom Jansen (Ninja ISD) 2002
   Copyright (C) Derrell Lipman 2003-2008
+  Copyright (C) 2017 VMware, Inc. All rights reserved.
 
 
   This program is free software; you can redistribute it and/or modify
@@ -128,6 +129,26 @@ struct smbc_dirent
 	 */
 	char name[1];
 };
+
+/**@ingroup structure
+ * Structure that represents all attributes of a directory entry.
+ *
+ */
+#ifndef _CLIENT_H
+struct file_info {
+	uint64_t size;
+	uint16_t mode;
+	uid_t uid;
+	gid_t gid;
+	/* these times are normally kept in GMT */
+	struct timespec crtime_ts;
+	struct timespec mtime_ts;
+	struct timespec atime_ts;
+	struct timespec ctime_ts;
+	char *name;
+	char *short_name;
+};
+#endif /* _CLIENT_H */
 
 /*
  * Flags for smbc_setxattr()
@@ -957,6 +978,11 @@ typedef struct smbc_dirent * (*smbc_readdir_fn)(SMBCCTX *c,
                                                 SMBCFILE *dir);
 smbc_readdir_fn smbc_getFunctionReaddir(SMBCCTX *c);
 void smbc_setFunctionReaddir(SMBCCTX *c, smbc_readdir_fn fn);
+
+typedef struct file_info * (*smbc_readdirplus_fn)(SMBCCTX *c,
+                                                  SMBCFILE *dir);
+smbc_readdirplus_fn smbc_getFunctionReaddirPlus(SMBCCTX *c);
+void smbc_setFunctionReaddirPlus(SMBCCTX *c, smbc_readdirplus_fn fn);
 
 typedef int (*smbc_getdents_fn)(SMBCCTX *c,
                                 SMBCFILE *dir,
@@ -3001,6 +3027,7 @@ struct _SMBCCTX
         smbc_opendir_fn                 opendir DEPRECATED_SMBC_INTERFACE;
         smbc_closedir_fn                closedir DEPRECATED_SMBC_INTERFACE;
         smbc_readdir_fn                 readdir DEPRECATED_SMBC_INTERFACE;
+	smbc_readdirplus_fn		readdirplus DEPRECATED_SMBC_INTERFACE;
         smbc_getdents_fn                getdents DEPRECATED_SMBC_INTERFACE;
         smbc_mkdir_fn                   mkdir DEPRECATED_SMBC_INTERFACE;
         smbc_rmdir_fn                   rmdir DEPRECATED_SMBC_INTERFACE;
