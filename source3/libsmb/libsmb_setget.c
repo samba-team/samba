@@ -7,6 +7,7 @@
    Copyright (C) Tom Jansen (Ninja ISD) 2002
    Copyright (C) Derrell Lipman 2003-2008
    Copyright (C) Jeremy Allison 2007, 2008
+   Copyright (C) 2017 VMware, Inc. All rights reserved.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -927,6 +928,17 @@ smbc_setFunctionFstatdir(SMBCCTX *c, smbc_fstatdir_fn fn)
 {
         c->fstatdir = fn;
 }
+
+smbc_readdirplus_fn smbc_getFunctionReaddirPlus(SMBCCTX *c)
+{
+	return c->readdirplus;
+}
+
+void smbc_setFunctionReaddirPlus(SMBCCTX *c, smbc_readdirplus_fn fn)
+{
+	c->readdirplus = fn;
+}
+
 
 smbc_notify_fn
 smbc_getFunctionNotify(SMBCCTX *c)

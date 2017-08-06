@@ -7,6 +7,7 @@
    Copyright (C) Tom Jansen (Ninja ISD) 2002
    Copyright (C) Derrell Lipman 2003-2008
    Copyright (C) Jeremy Allison 2007, 2008
+   Copyright (C) 2017 VMware, Inc. All rights reserved.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -95,6 +96,13 @@ struct smbc_dir_list {
 };
 
 
+struct smbc_dirplus_list
+{
+	struct smbc_dirplus_list *next;
+	struct file_info *data;
+};
+
+
 /*
  * Structure for open file management
  */
@@ -110,7 +118,8 @@ struct _SMBCFILE {
 	struct _SMBCSRV *srv;
 	bool file;
 	struct smbc_dir_list *dir_list, *dir_end, *dir_next;
-	int dir_type, dir_error;
+	struct smbc_dirplus_list *dirplus_list, *dirplus_end, *dirplus_next;
+	int dir_type, dir_error, dirplus_error;
 
 	SMBCFILE *next, *prev;
 };
@@ -126,6 +135,7 @@ struct SMBC_internal_data {
 
         /* dirent pointer location */
 	struct smbc_dirent			dirent;
+	struct file_info			finfo;
 	/*
          * Leave room for any urlencoded filename and the comment field.
          *
@@ -291,6 +301,10 @@ SMBC_opendir_ctx(SMBCCTX *context,
 int
 SMBC_closedir_ctx(SMBCCTX *context,
                   SMBCFILE *dir);
+
+struct file_info *
+SMBC_readdirplus_ctx(SMBCCTX *context,
+					 SMBCFILE *dir);
 
 struct smbc_dirent *
 SMBC_readdir_ctx(SMBCCTX *context,

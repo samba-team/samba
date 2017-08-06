@@ -4,6 +4,7 @@
    Copyright (C) Andrew Tridgell 1992-1998
    Copyright (C) Luke Kenneth Casson Leighton 1996-1998
    Copyright (C) Jeremy Allison 1998
+   Copyright (C) 2017 VMware, Inc. All rights reserved.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -108,6 +109,7 @@ struct file_info {
 	uid_t uid;
 	gid_t gid;
 	/* these times are normally kept in GMT */
+	struct timespec crtime_ts;
 	struct timespec mtime_ts;
 	struct timespec atime_ts;
 	struct timespec ctime_ts;
