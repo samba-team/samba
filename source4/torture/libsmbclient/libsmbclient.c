@@ -24,6 +24,11 @@
 #include <libsmbclient.h>
 #include "torture/libsmbclient/proto.h"
 
+static void debug_callback(void *private_ptr, int level, const char *msg)
+{
+
+}
+
 bool torture_libsmbclient_init_context(struct torture_context *tctx,
 				       SMBCCTX **ctx_p)
 {
@@ -32,6 +37,9 @@ bool torture_libsmbclient_init_context(struct torture_context *tctx,
 	ctx = smbc_new_context();
 	torture_assert(tctx, ctx, "failed to get new context");
 	torture_assert(tctx, smbc_init_context(ctx), "failed to init context");
+
+	smbc_setConfiguration(ctx, "../examples/smb.conf.default");
+	smbc_setLogCallback(ctx, NULL, debug_callback);
 
 	smbc_setDebug(ctx, DEBUGLEVEL);
 	smbc_setOptionDebugToStderr(ctx, 1);
