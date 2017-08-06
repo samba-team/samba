@@ -115,7 +115,7 @@ def dist(appname='', version=''):
                     blacklisted = True
             if blacklisted:
                 continue
-            if os.path.isdir(abspath):
+            if os.path.isdir(abspath) and not os.path.islink(abspath):
                 continue
             if dstsubdir != '.':
                 f = dstsubdir + '/' + f
