@@ -121,12 +121,11 @@ static char *wcache_path(void)
 	return state_path("winbindd_cache.tdb");
 }
 
-/* get the winbind_cache structure */
-static struct winbind_cache *get_cache(struct winbindd_domain *domain)
+static void winbindd_domain_init_backend(struct winbindd_domain *domain)
 {
-	struct winbind_cache *ret = wcache;
-
-	/* We have to know what type of domain we are dealing with first. */
+	if (domain->backend != NULL) {
+		return;
+	}
 
 	if (domain->internal) {
 		domain->backend = &builtin_passdb_methods;
@@ -173,6 +172,14 @@ static struct winbind_cache *get_cache(struct winbindd_domain *domain)
 		DBG_INFO("Setting MS-RPC methods for domain %s\n", domain->name);
 		domain->backend = &reconnect_methods;
 	}
+}
+
+/* get the winbind_cache structure */
+static struct winbind_cache *get_cache(struct winbindd_domain *domain)
+{
+	struct winbind_cache *ret = wcache;
+
+	winbindd_domain_init_backend(domain);
 
 	if (ret != NULL) {
 		return ret;
