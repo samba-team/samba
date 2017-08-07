@@ -100,10 +100,7 @@ Missing features, compared to Heimdal, are:
 The Samba AD process will take care of starting the MIT KDC and it will load a
 KDB (Kerberos Database) driver to access the Samba AD database.  When
 provisioning an AD DC using 'samba-tool' it will take care of creating a correct
-kdc.conf file for the MIT KDC. Note that 'samba-tool' will overwrite the system
-kdc.conf by default. It is possible to use a different location during
-provision. You should consult the 'samba-tool' help and smb.conf manpage for
-details.
+kdc.conf file for the MIT KDC.
 
 Dynamic RPC port range
 ----------------------
