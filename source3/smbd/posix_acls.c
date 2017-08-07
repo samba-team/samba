@@ -3237,41 +3237,6 @@ static size_t merge_default_aces( struct security_ace *nt_ace_list, size_t num_a
 	return num_aces;
 }
 
-/*
- * Add or Replace ACE entry.
- * In some cases we need to add a specific ACE for compatibility reasons.
- * When doing that we must make sure we are not actually creating a duplicate
- * entry. So we need to search whether an ACE entry already exist and eventually
- * replacce the access mask, or add a completely new entry if none was found.
- *
- * This function assumes the array has enough space to add a new entry without
- * any reallocation of memory.
- */
-
-static void add_or_replace_ace(struct security_ace *nt_ace_list, size_t *num_aces,
-				const struct dom_sid *sid, enum security_ace_type type,
-				uint32_t mask, uint8_t flags)
-{
-	size_t i;
-
-	/* first search for a duplicate */
-	for (i = 0; i < *num_aces; i++) {
-		if (dom_sid_equal(&nt_ace_list[i].trustee, sid) &&
-		    (nt_ace_list[i].flags == flags)) break;
-	}
-
-	if (i < *num_aces) { /* found */
-		nt_ace_list[i].type = type;
-		nt_ace_list[i].access_mask = mask;
-		DEBUG(10, ("Replacing ACE %zu with SID %s and flags %02x\n",
-			   i, sid_string_dbg(sid), flags));
-		return;
-	}
-
-	/* not found, append it */
-	init_sec_ace(&nt_ace_list[(*num_aces)++], sid, type, mask, flags);
-}
-
 
 /****************************************************************************
  Reply to query a security descriptor from an fsp. If it succeeds it allocates
@@ -3300,8 +3265,6 @@ static NTSTATUS posix_get_nt_acl_common(struct connection_struct *conn,
 	canon_ace *file_ace = NULL;
 	canon_ace *dir_ace = NULL;
 	struct security_ace *nt_ace_list = NULL;
-	size_t num_profile_acls = 0;
-	struct dom_sid orig_owner_sid;
 	struct security_descriptor *psd = NULL;
 
 	/*
@@ -3309,14 +3272,6 @@ static NTSTATUS posix_get_nt_acl_common(struct connection_struct *conn,
 	 */
 
 	create_file_sids(sbuf, &owner_sid, &group_sid);
-
-	if (lp_profile_acls(SNUM(conn))) {
-		/* For WXP SP1 the owner must be administrators. */
-		sid_copy(&orig_owner_sid, &owner_sid);
-		sid_copy(&owner_sid, &global_sid_Builtin_Administrators);
-		sid_copy(&group_sid, &global_sid_Builtin_Users);
-		num_profile_acls = 3;
-	}
 
 	if (security_info & SECINFO_DACL) {
 
@@ -3362,7 +3317,7 @@ static NTSTATUS posix_get_nt_acl_common(struct connection_struct *conn,
 
 			nt_ace_list = talloc_zero_array(
 				talloc_tos(), struct security_ace,
-				num_acls + num_profile_acls + num_def_acls);
+				num_acls + num_def_acls);
 
 			if (nt_ace_list == NULL) {
 				DEBUG(0,("get_nt_acl: Unable to malloc space for nt_ace_list.\n"));
@@ -3385,15 +3340,6 @@ static NTSTATUS posix_get_nt_acl_common(struct connection_struct *conn,
 					ace->ace_flags);
 			}
 
-			/* The User must have access to a profile share - even
-			 * if we can't map the SID. */
-			if (lp_profile_acls(SNUM(conn))) {
-				add_or_replace_ace(nt_ace_list, &num_aces,
-						   &global_sid_Builtin_Users,
-						   SEC_ACE_TYPE_ACCESS_ALLOWED,
-						   FILE_GENERIC_ALL, 0);
-			}
-
 			for (ace = dir_ace; ace != NULL; ace = ace->next) {
 				uint32_t acc = map_canon_ace_perms(SNUM(conn),
 						&nt_acl_type,
@@ -3409,18 +3355,6 @@ static NTSTATUS posix_get_nt_acl_common(struct connection_struct *conn,
 					SEC_ACE_FLAG_INHERIT_ONLY);
 			}
 
-			/* The User must have access to a profile share - even
-			 * if we can't map the SID. */
-			if (lp_profile_acls(SNUM(conn))) {
-				add_or_replace_ace(nt_ace_list, &num_aces,
-						&global_sid_Builtin_Users,
-						SEC_ACE_TYPE_ACCESS_ALLOWED,
-						FILE_GENERIC_ALL,
-						SEC_ACE_FLAG_OBJECT_INHERIT |
-						SEC_ACE_FLAG_CONTAINER_INHERIT |
-						SEC_ACE_FLAG_INHERIT_ONLY);
-			}
-
 			/*
 			 * Merge POSIX default ACLs and normal ACLs into one NT ACE.
 			 * Win2K needs this to get the inheritance correct when replacing ACLs
@@ -3428,21 +3362,6 @@ static NTSTATUS posix_get_nt_acl_common(struct connection_struct *conn,
 			 */
 
 			num_aces = merge_default_aces(nt_ace_list, num_aces);
-
-			if (lp_profile_acls(SNUM(conn))) {
-				size_t i;
-
-				for (i = 0; i < num_aces; i++) {
-					if (dom_sid_equal(&nt_ace_list[i].trustee, &owner_sid)) {
-						add_or_replace_ace(nt_ace_list, &num_aces,
-	    							   &orig_owner_sid,
-			    					   nt_ace_list[i].type,
-					    			   nt_ace_list[i].access_mask,
-								   nt_ace_list[i].flags);
-						break;
-					}
-				}
-			}
 		}
 
 		if (num_aces) {
