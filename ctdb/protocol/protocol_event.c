@@ -873,6 +873,11 @@ int ctdb_event_request_push(struct ctdb_event_request *in,
 	offset += np;
 
 	ctdb_event_request_data_push(&in->rdata, buf+offset, &np);
+	offset += np;
+
+	if (offset > *buflen) {
+		return EMSGSIZE;
+	}
 
 	return 0;
 }
@@ -894,6 +899,11 @@ int ctdb_event_request_pull(uint8_t *buf, size_t buflen,
 					   mem_ctx, &out->rdata, &np);
 	if (ret != 0) {
 		return ret;
+	}
+	offset += np;
+
+	if (offset > buflen) {
+		return EMSGSIZE;
 	}
 
 	return 0;

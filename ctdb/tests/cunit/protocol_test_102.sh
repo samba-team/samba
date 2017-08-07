@@ -22,8 +22,7 @@ output=$(
     echo "ctdb_event_header"
     generate_output "ctdb_event_request_data"
     generate_output "ctdb_event_reply_data"
-    echo "ctdb_event_request"
-    echo "$command_output"
+    generate_output "ctdb_event_request"
     echo "ctdb_event_reply"
     echo "$command_output"
 )
