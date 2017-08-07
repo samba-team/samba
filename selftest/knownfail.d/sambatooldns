@@ -1,0 +1,3 @@
+# Support for DNS wildcared entries by samba_tool dns sub command
+# Will fail until implemented.
+^samba.tests.samba_tool.dnscmd.samba.tests.samba_tool.dnscmd.DnsCmdTestCase.test_dns_wildcards\(ad_dc:local\)
