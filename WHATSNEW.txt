@@ -57,12 +57,16 @@ smb.conf changes
 
   Parameter Name                     Description             Default
   --------------                     -----------             -------
-  binddns dir			     New
-  gpo update command		     New
+  auth methods                       Removed
+  binddns dir                        New
+  gpo update command                 New
+  map untrusted to domain            Removed
   oplock contention limit            Removed
   prefork children		     New		     1
   mdns name                          Added                   netbios
   fruit:time machine                 Added                   false
+  profile acls                       Removed
+
 
 NT4-style replication based net commands removed
 ================================================
