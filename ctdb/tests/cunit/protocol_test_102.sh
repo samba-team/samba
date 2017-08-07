@@ -4,13 +4,6 @@
 
 last_command=5
 
-command_output=$(
-    for i in $(seq 1 $last_command) ; do
-	echo -n "$i.. "
-    done
-    echo
-)
-
 generate_output ()
 {
     for i in $(seq 1 $last_command) ; do
@@ -23,8 +16,7 @@ output=$(
     generate_output "ctdb_event_request_data"
     generate_output "ctdb_event_reply_data"
     generate_output "ctdb_event_request"
-    echo "ctdb_event_reply"
-    echo "$command_output"
+    generate_output "ctdb_event_reply"
 )
 
 ok "$output"
