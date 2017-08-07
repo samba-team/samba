@@ -229,7 +229,6 @@ static const struct loadparm_service _sDefault =
 	.nt_acl_support = true,
 	.force_unknown_acl_user = false,
 	._use_sendfile = false,
-	.profile_acls = false,
 	.map_acl_inherit = false,
 	.afs_share = false,
 	.ea_support = false,
