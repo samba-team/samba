@@ -659,3 +659,70 @@ class DnsCmdTestCase(SambaToolCmdTest):
                                           self.zone, "testrecord2",
                                           "A", self.testip, self.creds_string)
         self.assertCmdFail(result)
+
+    def test_dns_wildcards(self):
+        """
+        Ensure that DNS wild card entries can be added deleted and queried
+        """
+        num_failures = 0
+        failure_msgs = []
+        records = [("*.",       "MISS",         "A", "1.1.1.1"),
+                   ("*.SAMDOM", "MISS.SAMDOM",  "A", "1.1.1.2")]
+        for (name, miss, dnstype, record) in records:
+            try:
+                result, out, err = self.runsubcmd("dns", "add",
+                                                  os.environ["SERVER"],
+                                                  self.zone, name,
+                                                  dnstype, record,
+                                                  self.creds_string)
+                self.assertCmdSuccess(
+                    result,
+                    out,
+                    err,
+                    ("Failed to add record %s (%s) with type %s."
+                     % (name, record, dnstype)))
+
+                result, out, err = self.runsubcmd("dns", "query",
+                                                  os.environ["SERVER"],
+                                                  self.zone, name,
+                                                  dnstype,
+                                                  self.creds_string)
+                self.assertCmdSuccess(
+                    result,
+                    out,
+                    err,
+                    ("Failed to query record %s with qualifier %s."
+                     % (record, dnstype)))
+
+                # dns tool does not perform dns wildcard search if the name
+                # does not match
+                result, out, err = self.runsubcmd("dns", "query",
+                                                  os.environ["SERVER"],
+                                                  self.zone, miss,
+                                                  dnstype,
+                                                  self.creds_string)
+                self.assertCmdFail(
+                    result,
+                    ("Failed to query record %s with qualifier %s."
+                     % (record, dnstype)))
+
+                result, out, err = self.runsubcmd("dns", "delete",
+                                                  os.environ["SERVER"],
+                                                  self.zone, name,
+                                                  dnstype, record,
+                                                  self.creds_string)
+                self.assertCmdSuccess(
+                    result,
+                    out,
+                    err,
+                    ("Failed to remove record %s with type %s."
+                     % (record, dnstype)))
+            except AssertionError as e:
+                num_failures = num_failures + 1
+                failure_msgs.append(e)
+
+        if num_failures > 0:
+            for msg in failure_msgs:
+                print(msg)
+            self.fail("Failed to accept valid commands. %d total failures."
+                      "Errors above." % num_failures)
