@@ -559,12 +559,6 @@ class DrsReplicaPrefixMapTestCase(drs_base.DrsBaseTestCase):
             if enum == ldb.ERR_NO_SUCH_OBJECT:
                 pass
 
-    def get_partial_attribute_set(self, attids=[drsuapi.DRSUAPI_ATTID_objectClass]):
-        partial_attribute_set = drsuapi.DsPartialAttributeSet()
-        partial_attribute_set.attids = attids
-        partial_attribute_set.num_attids = len(attids)
-        return partial_attribute_set
-
     def test_missing_prefix_map_dsa(self):
         partial_attribute_set = self.get_partial_attribute_set()
 

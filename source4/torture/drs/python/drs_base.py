@@ -452,6 +452,13 @@ class DrsBaseTestCase(SambaToolCmdTest):
         (drs_handle, supported_extensions) = drs_DsBind(drs)
         return (drs, drs_handle)
 
+    def get_partial_attribute_set(self, attids=[drsuapi.DRSUAPI_ATTID_objectClass]):
+        partial_attribute_set = drsuapi.DsPartialAttributeSet()
+        partial_attribute_set.attids = attids
+        partial_attribute_set.num_attids = len(attids)
+        return partial_attribute_set
+
+
 
 class AbstractLink:
     def __init__(self, attid, flags, identifier, targetGUID,
