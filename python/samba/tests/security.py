@@ -19,6 +19,10 @@
 
 import samba.tests
 from samba.dcerpc import security
+from samba.security import access_check
+from samba import ntstatus
+from samba import NTSTATUSError
+
 
 class SecurityTokenTests(samba.tests.TestCase):
 
@@ -141,3 +145,25 @@ class PrivilegeTests(samba.tests.TestCase):
         self.assertEquals(security.SEC_PRIV_SHUTDOWN,
                 security.privilege_id("SeShutdownPrivilege"))
 
+
+class CheckAccessTests(samba.tests.TestCase):
+
+    def test_check_access(self):
+        desc = security.descriptor.from_sddl("O:AOG:DAD:(A;;RPWPCCDCLCSWRCWDWOGA;;;S-1-0-0)", security.dom_sid("S-2-0-0"))
+        token = security.token()
+
+        self.assertEqual(access_check(desc, token, 0), 0)
+
+        params = (
+            (security.SEC_FLAG_SYSTEM_SECURITY,
+             ntstatus.NT_STATUS_PRIVILEGE_NOT_HELD),
+            (security.SEC_STD_READ_CONTROL, ntstatus.NT_STATUS_ACCESS_DENIED)
+        )
+
+        for arg, num in params:
+            try:
+                result = access_check(desc, token, arg)
+            except Exception as e:
+                self.assertTrue(isinstance(e, NTSTATUSError))
+                e_num, e_msg = e.args
+                self.assertEqual(num, e_num)
