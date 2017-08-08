@@ -32,7 +32,7 @@ from samba import dsdb
 from samba.dcerpc import drsuapi, misc, drsblobs, security
 from samba.ndr import ndr_unpack, ndr_pack
 from samba.drs_utils import drs_DsBind
-
+from samba import gensec
 from ldb import (
     SCOPE_BASE,
     Message,
@@ -49,6 +49,8 @@ class DrsBaseTestCase(SambaToolCmdTest):
 
     def setUp(self):
         super(DrsBaseTestCase, self).setUp()
+        creds = self.get_credentials()
+        creds.set_gensec_features(creds.get_gensec_features() | gensec.FEATURE_SEAL)
 
         # connect to DCs
         url_dc = samba.tests.env_get_var_value("DC1")
