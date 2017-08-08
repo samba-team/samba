@@ -122,7 +122,7 @@ def main ():
         gen_sourcefile_name = sys.argv[3]
         gen_pythonfile_name = sys.argv[4]
     else:
-        print "usage: %s winerrorfile headerfile sourcefile pythonfile" % (sys.argv[0])
+        print("usage: %s winerrorfile headerfile sourcefile pythonfile" % (sys.argv[0]))
         sys.exit()
 
     # read in the data
@@ -130,15 +130,15 @@ def main ():
 
     errors = parseErrorDescriptions(file_contents, False, transformErrorName)
 
-    print "writing new header file: %s" % gen_headerfile_name
+    print("writing new header file: %s" % gen_headerfile_name)
     out_file = open(gen_headerfile_name, "w")
     generateHeaderFile(out_file, errors)
     out_file.close()
-    print "writing new source file: %s" % gen_sourcefile_name
+    print("writing new source file: %s" % gen_sourcefile_name)
     out_file = open(gen_sourcefile_name, "w")
     generateSourceFile(out_file, errors)
     out_file.close()
-    print "writing new python file: %s" % gen_pythonfile_name
+    print("writing new python file: %s" % gen_pythonfile_name)
     out_file = open(gen_pythonfile_name, "w")
     generatePythonFile(out_file, errors)
     out_file.close()
