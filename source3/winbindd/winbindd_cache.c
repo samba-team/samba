@@ -1851,7 +1851,6 @@ NTSTATUS wb_cache_name_to_sid(struct winbindd_domain *domain,
 		}
 	}
 	/* and save it */
-	refresh_sequence_number(domain);
 
 	if (domain->online &&
 	    (NT_STATUS_IS_OK(status) || NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED))) {
@@ -1990,7 +1989,6 @@ NTSTATUS wb_cache_sid_to_name(struct winbindd_domain *domain,
 		}
 	}
 	/* and save it */
-	refresh_sequence_number(domain);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
