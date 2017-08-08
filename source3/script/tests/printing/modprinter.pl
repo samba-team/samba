@@ -67,7 +67,14 @@ if (!defined($share_name)) {
 	die "share name not defined";
 }
 
-my $tmp = $opt_smb_conf.$$;
+my $smb_conf_file = $opt_smb_conf;
+if ($smb_conf_file =~ /^(.*)$/) {
+	$smb_conf_file = $1; # untaint file name
+} else {
+	die "Invalid file name $smb_conf_file";
+}
+
+my $tmp = $smb_conf_file.$$;
 
 my $section = undef;
 my $within_section = 0;
@@ -75,7 +82,7 @@ my $found_section = 0;
 
 open(CONFIGFILE_NEW, "+>$tmp") || die "Unable top open conf file $tmp";
 
-open (CONFIGFILE, "+<$opt_smb_conf") || die "Unable to open config file $opt_smb_conf";
+open (CONFIGFILE, "+<$smb_conf_file") || die "Unable to open config file $smb_conf_file";
 while (<CONFIGFILE>) {
 	my $line = $_;
 	chomp($_);
@@ -123,7 +130,9 @@ close (CONFIGFILE_NEW);
 if ($opt_delete && ($found_section == 0)) {
 	die "share $share_name not found";
 }
-system("cp", "$tmp", "$opt_smb_conf");
+
+$ENV{'PATH'} = '/bin:/usr/bin'; # untaint PATH
+system("cp", "$tmp", "$smb_conf_file");
 unlink $tmp;
 
 exit 0;
