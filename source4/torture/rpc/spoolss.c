@@ -47,6 +47,7 @@
 #define TORTURE_WELLKNOWN_PRINTER_EX	"torture_wkn_printer_ex"
 #define TORTURE_PRINTER_EX		"torture_printer_ex"
 #define TORTURE_DRIVER			"torture_driver"
+#define TORTURE_DRIVER_ADD		"torture_driver_add"
 #define TORTURE_DRIVER_EX		"torture_driver_ex"
 #define TORTURE_DRIVER_ADOBE		"torture_driver_adobe"
 #define TORTURE_DRIVER_EX_ADOBE		"torture_driver_ex_adobe"
@@ -10932,7 +10933,7 @@ static bool test_add_driver_64(struct torture_context *tctx,
 	d->local.driver_directory	= talloc_strdup(d, "/usr/share/cups/drivers/x64");
 
 	d->info8.version		= SPOOLSS_DRIVER_VERSION_200X;
-	d->info8.driver_name		= TORTURE_DRIVER;
+	d->info8.driver_name		= TORTURE_DRIVER_ADD;
 	d->info8.architecture		= d->local.environment;
 	d->info8.driver_path		= talloc_strdup(d, "pscript5.dll");
 	d->info8.data_file		= talloc_strdup(d, "cups6.ppd");
@@ -10953,7 +10954,7 @@ static bool test_add_driver_32(struct torture_context *tctx,
 	d->local.driver_directory	= talloc_strdup(d, "/usr/share/cups/drivers/i386");
 
 	d->info8.version		= SPOOLSS_DRIVER_VERSION_200X;
-	d->info8.driver_name		= TORTURE_DRIVER;
+	d->info8.driver_name		= TORTURE_DRIVER_ADD;
 	d->info8.architecture		= d->local.environment;
 	d->info8.driver_path		= talloc_strdup(d, "pscript5.dll");
 	d->info8.data_file		= talloc_strdup(d, "cups6.ppd");
