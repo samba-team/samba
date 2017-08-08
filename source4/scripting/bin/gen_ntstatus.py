@@ -70,6 +70,7 @@ def generatePythonFile(out_file, errors):
     out_file.write(" * [MS-ERREF] http://msdn.microsoft.com/en-us/library/cc704588.aspx\n")
     out_file.write(" */\n")
     out_file.write("#include <Python.h>\n")
+    out_file.write("#include \"python/py3compat.h\"\n")
     out_file.write("#include \"includes.h\"\n\n")
     out_file.write("static inline PyObject *ndr_PyLong_FromUnsignedLongLong(unsigned long long v)\n");
     out_file.write("{\n");
@@ -82,17 +83,24 @@ def generatePythonFile(out_file, errors):
     # This is needed to avoid a missing prototype error from the C
     # compiler. There is never a prototype for this function, it is a
     # module loaded by python with dlopen() and found with dlsym().
-    out_file.write("void initntstatus(void);\n")
-    out_file.write("void initntstatus(void)\n")
+    out_file.write("static struct PyModuleDef moduledef = {\n")
+    out_file.write("\tPyModuleDef_HEAD_INIT,\n")
+    out_file.write("\t.m_name = \"ntstatus\",\n")
+    out_file.write("\t.m_doc = \"NTSTATUS error defines\",\n")
+    out_file.write("\t.m_size = -1,\n")
+    out_file.write("};\n\n")
+    out_file.write("MODULE_INIT_FUNC(ntstatus)\n")
     out_file.write("{\n")
     out_file.write("\tPyObject *m;\n\n")
-    out_file.write("\tm = Py_InitModule3(\"ntstatus\", NULL, \"NTSTATUS error defines\");\n");
+    out_file.write("\tm = PyModule_Create(&moduledef);\n");
     out_file.write("\tif (m == NULL)\n");
-    out_file.write("\t\treturn;\n\n");
+    out_file.write("\t\treturn NULL;\n\n");
     for err in errors:
         line = """\tPyModule_AddObject(m, \"%s\", 
                   \t\tndr_PyLong_FromUnsignedLongLong(NT_STATUS_V(%s)));\n""" % (err.err_define, err.err_define)
         out_file.write(line)
+    out_file.write("\n");
+    out_file.write("\treturn m;\n");
     out_file.write("}\n");
 
 def transformErrorName( error_name ):
