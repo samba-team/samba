@@ -88,9 +88,18 @@ struct la_for_sorting {
  * only exists for a single call to dcesrv_drsuapi_DsGetNCChanges()
  */
 struct getncchanges_repl_chunk {
-	struct drsuapi_DsGetNCChangesCtr6 *ctr6;
+	uint32_t max_objects;
+	uint32_t max_links;
+	uint32_t tgt_la_count;
+	bool immediate_link_sync;
+	time_t max_wait;
+	time_t start;
 
-	/* the last object written to the response */
+	/* stores the objects to be sent in this chunk */
+	uint32_t object_count;
+	struct drsuapi_DsReplicaObjectListItemEx *object_list;
+
+	/* the last object added to this replication chunk */
 	struct drsuapi_DsReplicaObjectListItemEx *last_object;
 };
 
@@ -2246,25 +2255,25 @@ static WERROR getncchanges_add_ancestors(struct drsuapi_DsReplicaObjectListItemE
 }
 
 /**
- * Adds a list of new objects into the getNCChanges response message
+ * Adds a list of new objects into the current chunk of replication data to send
  */
-static void getncchanges_add_objs_to_resp(struct getncchanges_repl_chunk *repl_chunk,
-					  struct drsuapi_DsReplicaObjectListItemEx *obj_list)
+static void getncchanges_chunk_add_objects(struct getncchanges_repl_chunk *repl_chunk,
+					   struct drsuapi_DsReplicaObjectListItemEx *obj_list)
 {
 	struct drsuapi_DsReplicaObjectListItemEx *obj;
 
 	/*
-	 * We track the last object added to the response message, so just add
+	 * We track the last object added to the replication chunk, so just add
 	 * the new object-list onto the end
 	 */
-	if (repl_chunk->last_object == NULL) {
-		repl_chunk->ctr6->first_object = obj_list;
+	if (repl_chunk->object_list == NULL) {
+		repl_chunk->object_list = obj_list;
 	} else {
 		repl_chunk->last_object->next_object = obj_list;
 	}
 
 	for (obj = obj_list; obj != NULL; obj = obj->next_object) {
-		repl_chunk->ctr6->object_count += 1;
+		repl_chunk->object_count += 1;
 
 		/*
 		 * Remember the last object in the response - we'll use this to
@@ -2346,6 +2355,67 @@ static WERROR getncchanges_get_obj_to_send(const struct ldb_message *msg,
 	}
 
 	return werr;
+}
+
+/**
+ * Returns the max number of links that will fit in the current replication chunk
+ */
+static uint32_t getncchanges_chunk_max_links(struct getncchanges_repl_chunk *repl_chunk)
+{
+	uint32_t max_links;
+
+	/*
+	 * This is just an approximate guess to avoid overfilling the replication
+	 * chunk. E.g. if we've already sent 1000 objects, then send 1000 fewer
+	 * links. For comparison, the max that Windows seems to send is ~2700
+	 * links and ~250 objects (although this may vary based on timeouts)
+	 */
+	if (repl_chunk->object_count >= repl_chunk->max_links) {
+
+		/* request is already full of objects - don't send any links */
+		max_links = 0;
+	} else {
+
+		/* send fewer links if we're already sending a lot of objects */
+		max_links = repl_chunk->max_links - repl_chunk->object_count;
+	}
+
+	return max_links;
+}
+
+/**
+ * Returns true if the current GetNCChanges() call has taken longer than its
+ * allotted time. This prevents the client from timing out.
+ */
+static bool getncchanges_chunk_timed_out(struct getncchanges_repl_chunk *repl_chunk)
+{
+	return (time(NULL) - repl_chunk->start > repl_chunk->max_wait);
+}
+
+/**
+ * Returns true if the current chunk of replication data has reached the
+ * max_objects
+ */
+static bool getncchanges_chunk_is_full(struct getncchanges_repl_chunk *repl_chunk,
+				       struct drsuapi_getncchanges_state *getnc_state)
+{
+	bool chunk_full = false;
+
+	/* check if the current chunk is already full with objects */
+	if (repl_chunk->object_count >= repl_chunk->max_objects) {
+		chunk_full = true;
+
+	} else if (repl_chunk->object_count > 0 &&
+		   getncchanges_chunk_timed_out(repl_chunk)) {
+
+		/*
+		 * We've exceeded our allotted time building this chunk,
+		 * and we have at least one object to send back to the client
+		 */
+		chunk_full = true;
+	}
+
+	return chunk_full;
 }
 
 /**
@@ -2479,7 +2549,7 @@ static WERROR getncchanges_chunk_add_la_targets(struct getncchanges_repl_chunk *
 		}
 
 		if (new_objs != NULL) {
-			getncchanges_add_objs_to_resp(repl_chunk, new_objs);
+			getncchanges_chunk_add_objects(repl_chunk, new_objs);
 		}
 		TALLOC_FREE(tmp_ctx);
 
@@ -2487,6 +2557,58 @@ static WERROR getncchanges_chunk_add_la_targets(struct getncchanges_repl_chunk *
 	}
 
 	return WERR_OK;
+}
+
+/**
+ * Creates a helper struct used for building a chunk of replication data,
+ * i.e. used over a single call to dcesrv_drsuapi_DsGetNCChanges().
+ */
+static struct getncchanges_repl_chunk * getncchanges_chunk_new(TALLOC_CTX *mem_ctx,
+							       struct dcesrv_call_state *dce_call,
+							       struct drsuapi_DsGetNCChangesRequest10 *req10)
+{
+	struct getncchanges_repl_chunk *repl_chunk;
+
+	repl_chunk = talloc_zero(mem_ctx, struct getncchanges_repl_chunk);
+
+	repl_chunk->start = time(NULL);
+
+	repl_chunk->max_objects = lpcfg_parm_int(dce_call->conn->dce_ctx->lp_ctx, NULL,
+						 "drs", "max object sync", 1000);
+
+	/*
+	 * The client control here only applies in normal replication, not extended
+	 * operations, which return a fixed set, even if the caller
+	 * sets max_object_count == 0
+	 */
+	if (req10->extended_op == DRSUAPI_EXOP_NONE) {
+
+		/*
+		 * use this to force single objects at a time, which is useful
+		 * for working out what object is giving problems
+		 */
+		if (req10->max_object_count < repl_chunk->max_objects) {
+			repl_chunk->max_objects = req10->max_object_count;
+		}
+	}
+
+	repl_chunk->max_links =
+			lpcfg_parm_int(dce_call->conn->dce_ctx->lp_ctx, NULL,
+				       "drs", "max link sync", 1500);
+
+	repl_chunk->immediate_link_sync =
+			lpcfg_parm_bool(dce_call->conn->dce_ctx->lp_ctx, NULL,
+					"drs", "immediate link sync", false);
+
+	/*
+	 * Maximum time that we can spend in a getncchanges
+	 * in order to avoid timeout of the other part.
+	 * 10 seconds by default.
+	 */
+	repl_chunk->max_wait = lpcfg_parm_int(dce_call->conn->dce_ctx->lp_ctx,
+					      NULL, "drs", "max work time", 10);
+
+	return repl_chunk;
 }
 
 /*
@@ -2502,7 +2624,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	uint32_t i, k;
 	struct dsdb_schema *schema;
 	struct drsuapi_DsReplicaOIDMapping_Ctr *ctr;
-	struct getncchanges_repl_chunk repl_chunk = { 0 };
+	struct getncchanges_repl_chunk *repl_chunk;
 	NTSTATUS status;
 	DATA_BLOB session_key;
 	WERROR werr;
@@ -2511,7 +2633,6 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	struct drsuapi_getncchanges_state *getnc_state;
 	struct drsuapi_DsGetNCChangesRequest10 *req10;
 	uint32_t options;
-	uint32_t max_objects;
 	uint32_t max_links;
 	uint32_t link_count = 0;
 	struct ldb_dn *search_dn = NULL;
@@ -2522,9 +2643,6 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	bool is_secret_request;
 	bool is_gc_pas_request;
 	struct drsuapi_changed_objects *changes;
-	time_t max_wait;
-	time_t start = time(NULL);
-	bool max_wait_reached = false;
 	bool has_get_all_changes = false;
 	struct GUID invocation_id;
 	static const struct drsuapi_DsReplicaLinkedAttribute no_linked_attr;
@@ -2532,7 +2650,6 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	bool full = true;
 	uint32_t *local_pas = NULL;
 	struct ldb_dn *machine_dn = NULL; /* Only used for REPL SECRET EXOP */
-	bool immediate_link_sync;
 
 	DCESRV_PULL_HANDLE_WERR(h, r->in.bind_handle, DRSUAPI_BIND_HANDLE);
 	b_state = h->data;
@@ -2555,13 +2672,6 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	r->out.ctr->ctr6.source_dsa_invocation_id = *(samdb_ntds_invocation_id(sam_ctx));
 	r->out.ctr->ctr6.first_object = NULL;
 
-	/* a RODC doesn't allow for any replication */
-	ret = samdb_rodc(sam_ctx, &am_rodc);
-	if (ret == LDB_SUCCESS && am_rodc) {
-		DEBUG(0,(__location__ ": DsGetNCChanges attempt on RODC\n"));
-		return WERR_DS_DRA_SOURCE_DISABLED;
-	}
-
 	/* Check request revision. 
 	 */
 	switch (r->in.level) {
@@ -2578,6 +2688,19 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		DEBUG(0,(__location__ ": Request for DsGetNCChanges with unsupported level %u\n",
 			 r->in.level));
 		return WERR_REVISION_MISMATCH;
+	}
+
+	repl_chunk = getncchanges_chunk_new(mem_ctx, dce_call, req10);
+
+	if (repl_chunk == NULL) {
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
+
+	/* a RODC doesn't allow for any replication */
+	ret = samdb_rodc(sam_ctx, &am_rodc);
+	if (ret == LDB_SUCCESS && am_rodc) {
+		DEBUG(0,(__location__ ": DsGetNCChanges attempt on RODC\n"));
+		return WERR_DS_DRA_SOURCE_DISABLED;
 	}
 
         /* Perform access checks. */
@@ -3039,45 +3162,13 @@ allowed:
 	r->out.ctr->ctr6.old_highwatermark = req10->highwatermark;
 	r->out.ctr->ctr6.new_highwatermark = req10->highwatermark;
 
-	repl_chunk.ctr6 = &r->out.ctr->ctr6;
-	repl_chunk.last_object = NULL;
-
-	max_objects = lpcfg_parm_int(dce_call->conn->dce_ctx->lp_ctx, NULL, "drs", "max object sync", 1000);
-	/*
-	 * The client control here only applies in normal replication, not extended
-	 * operations, which return a fixed set, even if the caller
-	 * sets max_object_count == 0
-	 */
-	if (req10->extended_op == DRSUAPI_EXOP_NONE) {
-		/* use this to force single objects at a time, which is useful
-		 * for working out what object is giving problems
-		 */
-		if (req10->max_object_count < max_objects) {
-			max_objects = req10->max_object_count;
-		}
-	}
-	/*
-	 * TODO: work out how the maximum should be calculated
-	 */
-	max_links = lpcfg_parm_int(dce_call->conn->dce_ctx->lp_ctx, NULL, "drs", "max link sync", 1500);
-
-	immediate_link_sync = lpcfg_parm_bool(dce_call->conn->dce_ctx->lp_ctx, NULL,
-					      "drs", "immediate link sync", false);
-
 	/*
 	 * If the client has already set GET_TGT then we know they can handle
 	 * receiving the linked attributes interleaved with the source objects
 	 */
 	if (getnc_state->is_get_tgt) {
-		immediate_link_sync = true;
+		repl_chunk->immediate_link_sync = true;
 	}
-
-	/*
-	 * Maximum time that we can spend in a getncchanges
-	 * in order to avoid timeout of the other part.
-	 * 10 seconds by default.
-	 */
-	max_wait = lpcfg_parm_int(dce_call->conn->dce_ctx->lp_ctx, NULL, "drs", "max work time", 10);
 
 	if (req10->partial_attribute_set != NULL) {
 		struct dsdb_syntax_ctx syntax_ctx;
@@ -3104,8 +3195,7 @@ allowed:
 
 	for (i=getnc_state->num_processed;
 	     i<getnc_state->num_records &&
-		     (r->out.ctr->ctr6.object_count < max_objects)
-		     && !max_wait_reached;
+		     !getncchanges_chunk_is_full(repl_chunk, getnc_state);
 	    i++) {
 		struct drsuapi_DsReplicaObjectListItemEx *new_objs = NULL;
 		struct ldb_message *msg;
@@ -3172,7 +3262,9 @@ allowed:
 		}
 
 		if (!obj_already_sent) {
-			max_wait_reached = (time(NULL) - start > max_wait);
+			bool max_wait_reached;
+
+			max_wait_reached = getncchanges_chunk_timed_out(repl_chunk);
 
 			/*
 			 * Construct an object, ready to send (this will include
@@ -3219,7 +3311,7 @@ allowed:
 			 * Add the object (and, if GET_ANC, any parents it may
 			 * have) into the current chunk of replication data
 			 */
-			getncchanges_add_objs_to_resp(&repl_chunk, new_objs);
+			getncchanges_chunk_add_objects(repl_chunk, new_objs);
 
 			talloc_free(getnc_state->last_dn);
 			getnc_state->last_dn = talloc_move(getnc_state, &msg->dn);
@@ -3236,7 +3328,7 @@ allowed:
 		 * make sure the client knows about the link target object
 		 */
 		if (getnc_state->is_get_tgt) {
-			werr = getncchanges_chunk_add_la_targets(&repl_chunk,
+			werr = getncchanges_chunk_add_la_targets(repl_chunk,
 								 getnc_state,
 								 old_la_index,
 								 mem_ctx, sam_ctx,
@@ -3251,6 +3343,10 @@ allowed:
 
 		TALLOC_FREE(tmp_ctx);
 	}
+
+	/* copy the constructed object list into the response message */
+	r->out.ctr->ctr6.object_count = repl_chunk->object_count;
+	r->out.ctr->ctr6.first_object = repl_chunk->object_list;
 
 	getnc_state->num_processed = i;
 
@@ -3291,24 +3387,14 @@ allowed:
 		}
 	}
 
-	/*
-	 * TODO:
-	 * This is just a guess, how to calculate the
-	 * number of linked attributes to send, we need to
-	 * find out how to do this right.
-	 */
-	if (r->out.ctr->ctr6.object_count >= max_links) {
-		max_links = 0;
-	} else {
-		max_links -= r->out.ctr->ctr6.object_count;
-	}
+	max_links = getncchanges_chunk_max_links(repl_chunk);
 
 	/*
 	 * Work out how many links we can send in this chunk. The default is to
 	 * send all the links last, but there is a config option to send them
 	 * immediately, in the same chunk as their source object
 	 */
-	if (!r->out.ctr->ctr6.more_data || immediate_link_sync) {
+	if (!r->out.ctr->ctr6.more_data || repl_chunk->immediate_link_sync) {
 		link_count = getnc_state->la_count - getnc_state->la_idx;
 		link_count = MIN(max_links, link_count);
 	}
@@ -3420,6 +3506,8 @@ allowed:
 		r->out.ctr->ctr6.nc_object_count = 0;
 		ZERO_STRUCT(r->out.ctr->ctr6.new_highwatermark);
 	}
+
+	TALLOC_FREE(repl_chunk);
 
 	DEBUG(r->out.ctr->ctr6.more_data?4:2,
 	      ("DsGetNCChanges with uSNChanged >= %llu flags 0x%08x on %s gave %u objects (done %u/%u) %u links (done %u/%u (as %s))\n",
