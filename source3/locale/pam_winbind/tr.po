@@ -1,0 +1,548 @@
+# This file is distributed under the same license as the pam_winbind package.
+#
+# Copyright (C) 2009 Lars Mueller <lars@samba.org>
+# Copyright (C) 2010 Christian Perrier <bubulle@debian.org>
+msgid ""
+msgstr ""
+"Project-Id-Version: pam_winbind\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2010-03-06 01:55+0800\n"
+"PO-Revision-Date: 2017-07-02 15:23+0300\n"
+"Last-Translator: Caglar Ulkuderner <caglar@profelis.com.tr>\n"
+"Language-Team: French <debian-l10n-french@lists.debian.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 2.0.2\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"Language: tr\n"
+
+#: ../../../nsswitch/pam_winbind.c:583 ../../libsmb/nterr.c:558
+msgid "Success"
+msgstr "Başarılı"
+
+#: ../../../nsswitch/pam_winbind.c:585
+msgid "No primary Domain Controler available"
+msgstr "Birincil Etki Alanı Denetleyicisi bulunamadı."
+
+#: ../../../nsswitch/pam_winbind.c:587
+msgid "No domain controllers found"
+msgstr "Hiçbir etki alanı denetleyicileri bulunamadı."
+
+#: ../../../nsswitch/pam_winbind.c:589 ../../libsmb/nterr.c:566
+msgid "No logon servers"
+msgstr "Hiçbir oturum açma sunucusu bulunamadı."
+
+#: ../../../nsswitch/pam_winbind.c:591
+msgid "Password too short"
+msgstr "Parola çok kısa."
+
+#: ../../../nsswitch/pam_winbind.c:593
+msgid "The password of this user is too recent to change"
+msgstr "Kullanıcının parolası değiştirmek için çok yeni."
+
+#: ../../../nsswitch/pam_winbind.c:595
+msgid "Password is already in password history"
+msgstr "Girilen parola, parola geçmişinde mevcut."
+
+#: ../../../nsswitch/pam_winbind.c:597
+msgid "Your password has expired"
+msgstr "Parolanızın süresi dolmuş."
+
+#: ../../../nsswitch/pam_winbind.c:599
+msgid "You need to change your password now"
+msgstr "Parolanızı değiştirmeniz gerekiyor."
+
+#: ../../../nsswitch/pam_winbind.c:601
+msgid "You are not allowed to logon from this workstation"
+msgstr "Bu iş istasyonunda oturum açmanıza izin verilmiyor."
+
+#: ../../../nsswitch/pam_winbind.c:603
+msgid "You are not allowed to logon at this time"
+msgstr "Bu saatte oturum açmanıza izin verilmiyor."
+
+#: ../../../nsswitch/pam_winbind.c:605
+msgid "Your account has expired. Please contact your System administrator"
+msgstr "Hesabınızın süresi dolmuş. Sistem yöneticinize başvurunuz."
+
+#: ../../../nsswitch/pam_winbind.c:608
+msgid "Your account is disabled. Please contact your System administrator"
+msgstr "Hesabınız devre dışı bırakılmış. Sistem yöneticinize başvurunuz."
+
+#: ../../../nsswitch/pam_winbind.c:611
+msgid "Your account has been locked. Please contact your System administrator"
+msgstr "Hesabınız kilitlenmiş. Sistem yöneticinize başvurunuz."
+
+#: ../../../nsswitch/pam_winbind.c:614 ../../../nsswitch/pam_winbind.c:616
+#: ../../../nsswitch/pam_winbind.c:618
+msgid "Invalid Trust Account"
+msgstr "Geçersiz Güven Hesabı."
+
+#: ../../../nsswitch/pam_winbind.c:620
+msgid "Access is denied"
+msgstr "Erişim engellendi."
+
+#: ../../../nsswitch/pam_winbind.c:818
+msgid "Do you want to change your password now?"
+msgstr "Parolanızı şimdi değiştirmek istiyor musunuz?"
+
+#: ../../../nsswitch/pam_winbind.c:902
+msgid "Your password expires today.\n"
+msgstr "Parolanızın süresi bugün sona eriyor.\n"
+
+#: ../../../nsswitch/pam_winbind.c:932
+#, c-format
+msgid "Your password will expire in %d %s.\n"
+msgstr "Parolanız %d %s içerisinde geçersiz olacak.\n"
+
+#: ../../../nsswitch/pam_winbind.c:933
+msgid "days"
+msgstr "gün"
+
+#: ../../../nsswitch/pam_winbind.c:933
+msgid "day"
+msgstr "gün"
+
+#: ../../../nsswitch/pam_winbind.c:1169 ../../../nsswitch/pam_winbind.c:1193
+#, c-format
+msgid "Cannot convert group %s to sid, please contact your administrator to see if group %s is valid."
+msgstr "%s grubu, sid türüne dönüştürülemiyor, yöneticiniz ile başlantı kurup %s grubunun geçerliliğini kontrol ediniz."
+
+#: ../../../nsswitch/pam_winbind.c:1387
+msgid "Grace login. Please change your password as soon you're online again"
+msgstr "Çevrimiçi olduğunuz en kısa süre içerisinde parolanızı değiştiriniz."
+
+#: ../../../nsswitch/pam_winbind.c:1397
+msgid "Domain Controller unreachable, using cached credentials instead. Network resources may be unavailable"
+msgstr "Etki Alanı Denetleyicisine ulaşılamadığı için kimlik bilgileri önbellekten kullanılıyor. Ağ kaynakları kullanılamıyor olabilir."
+
+#: ../../../nsswitch/pam_winbind.c:1422
+msgid ""
+"Failed to establish your Kerberos Ticket cache due time differences\n"
+"with the domain controller.  Please verify the system time.\n"
+msgstr ""
+"Etki Alanı Denetleyicisi ile aradaki zaman farkından dolayı\n"
+"Kerberos Bileti Önbelleği oluşturulamıyor. Sistem zamanını kontrol ediniz.\n"
+
+#: ../../../nsswitch/pam_winbind.c:1490
+msgid "Your password "
+msgstr "Parolanız "
+
+#: ../../../nsswitch/pam_winbind.c:1497
+#, c-format
+msgid "must be at least %d characters; "
+msgstr "en az %d karakter olmalıdır; "
+
+#: ../../../nsswitch/pam_winbind.c:1506
+#, c-format
+msgid "cannot repeat any of your previous %d passwords; "
+msgstr "Son %d parola tekrar edilemez; "
+
+#: ../../../nsswitch/pam_winbind.c:1516
+msgid "must contain capitals, numerals or punctuation; and cannot contain your account or full name; "
+msgstr "büyük harfler, sayılar ve noktalama işaretleri içermelidir; ve tam hesap adınızı içeremez;"
+
+#: ../../../nsswitch/pam_winbind.c:1526
+msgid "Please type a different password. Type a password which meets these requirements in both text boxes."
+msgstr "Başka bir parola giriniz. Her iki kutucuğa da parola kriterlerine uygun parolanızı giriniz."
+
+#: ../../../nsswitch/pam_winbind.c:1553
+#, c-format
+msgid "Creating directory: %s failed: %s"
+msgstr "Klasör oluşturuluyor: %s başarısız: %s"
+
+#: ../../../nsswitch/pam_winbind.c:2018
+msgid "Password does not meet complexity requirements"
+msgstr "Parola karmaşıklık gereksinimlerini karşılamıyor."
+
+#.
+#. * First get the name of a user
+#.
+#: ../../../nsswitch/pam_winbind.c:2489 ../../../nsswitch/pam_winbind.c:3035
+msgid "Username: "
+msgstr "Kullanıcı Adı: "
+
+#: ../../../nsswitch/pam_winbind.c:2665
+msgid "Password: "
+msgstr "Parola:  "
+
+#. instruct user what is happening
+#: ../../../nsswitch/pam_winbind.c:3073
+msgid "Changing password for"
+msgstr "Parolası değiştirilen kullanıcı: "
+
+#: ../../../nsswitch/pam_winbind.c:3086
+msgid "(current) NT password: "
+msgstr "(geçerli) Parola: "
+
+#: ../../../nsswitch/pam_winbind.c:3156
+msgid "Enter new NT password: "
+msgstr "Yeni parola: "
+
+#: ../../../nsswitch/pam_winbind.c:3157
+msgid "Retype new NT password: "
+msgstr "Yeni parola (tekrar): "
+
+#.
+#. * here is the string to inform the user that the new passwords they
+#. * typed were not the same.
+#.
+#: ../../../nsswitch/pam_winbind.h:128
+msgid "Sorry, passwords do not match"
+msgstr "Parolalar uyuşmuyor"
+
+#: ../../libsmb/nterr.c:559
+msgid "Undetermined error"
+msgstr "Belirsiz hata"
+
+#: ../../libsmb/nterr.c:560
+msgid "Access denied"
+msgstr "Erişim engellendi"
+
+#: ../../libsmb/nterr.c:561
+msgid "Account locked out"
+msgstr "Hesap kilitlendi"
+
+#: ../../libsmb/nterr.c:562
+msgid "Must change password"
+msgstr "Parola değiştirilmelidir"
+
+#: ../../libsmb/nterr.c:563
+msgid "Password is too short"
+msgstr "Parola çok kısa"
+
+#: ../../libsmb/nterr.c:564
+msgid "Password is too recent"
+msgstr "Parola çok yeni"
+
+#: ../../libsmb/nterr.c:565
+msgid "Password history conflict"
+msgstr "Parola geçmişi çakışması"
+
+#: ../../libsmb/nterr.c:567
+msgid "Improperly formed account name"
+msgstr "Yanlış oluşturulmuş hesap adı"
+
+#: ../../libsmb/nterr.c:568
+msgid "User exists"
+msgstr "Kullanıcı mevcut"
+
+#: ../../libsmb/nterr.c:569
+msgid "No such user"
+msgstr "Kullanıcı bulunamadı"
+
+#: ../../libsmb/nterr.c:570
+msgid "Group exists"
+msgstr "Grup mevcut"
+
+#: ../../libsmb/nterr.c:571
+msgid "No such group"
+msgstr "Grup bulunamadı"
+
+#: ../../libsmb/nterr.c:572
+msgid "Member not in group"
+msgstr "Üye bu grupta değil"
+
+#: ../../libsmb/nterr.c:573
+msgid "Wrong Password"
+msgstr "Yanlış Parola"
+
+#: ../../libsmb/nterr.c:574
+msgid "Ill formed password"
+msgstr "Kötü parola"
+
+#: ../../libsmb/nterr.c:575
+msgid "Password restriction"
+msgstr "Parola kısıtlaması"
+
+#: ../../libsmb/nterr.c:576
+msgid "Logon failure"
+msgstr "Oturum açma hatası"
+
+#: ../../libsmb/nterr.c:577
+msgid "Account restriction"
+msgstr "Hesap kısıtlaması"
+
+#: ../../libsmb/nterr.c:578
+msgid "Invalid logon hours"
+msgstr "Geçersiz oturum açma saati"
+
+#: ../../libsmb/nterr.c:579
+msgid "Invalid workstation"
+msgstr "Geçersiz Çalışma İstasyonu"
+
+#: ../../libsmb/nterr.c:580
+msgid "Password expired"
+msgstr "Parolanın süresi doldu"
+
+#: ../../libsmb/nterr.c:581
+msgid "Account disabled"
+msgstr "Hesap devre dışı"
+
+#: ../../libsmb/nterr.c:582
+msgid "Memory allocation error"
+msgstr "Bellek ayarlama hatası"
+
+#: ../../libsmb/nterr.c:583
+msgid "No domain controllers located"
+msgstr "Hiçbir Etki Alanı Denetleyicisi bulunamadı"
+
+#: ../../libsmb/nterr.c:584
+msgid "Named pipe not available"
+msgstr "Named pipe uygun değil"
+
+#: ../../libsmb/nterr.c:585
+msgid "Not implemented"
+msgstr "Henüz geliştirilmedi"
+
+#: ../../libsmb/nterr.c:586
+msgid "Invalid information class"
+msgstr "Geçersiz bilgi sınıfı"
+
+#: ../../libsmb/nterr.c:587
+msgid "Information length mismatch"
+msgstr "Bilgi uzunluğu uyumsuz"
+
+#: ../../libsmb/nterr.c:588
+msgid "Access violation"
+msgstr "Erişim ihlali"
+
+#: ../../libsmb/nterr.c:589
+msgid "Invalid handle"
+msgstr "Geçersiz yönetim"
+
+#: ../../libsmb/nterr.c:590
+msgid "Invalid parameter"
+msgstr "Geçersiz parametre"
+
+#: ../../libsmb/nterr.c:591
+msgid "No memory"
+msgstr "Bellek yok"
+
+#: ../../libsmb/nterr.c:592
+msgid "Buffer too small"
+msgstr "Tampon bölge çok küçük"
+
+#: ../../libsmb/nterr.c:593
+msgid "Revision mismatch"
+msgstr "Revizyon uyumsuzluğu"
+
+#: ../../libsmb/nterr.c:594
+msgid "No such logon session"
+msgstr "Böyle bir oturum yok"
+
+#: ../../libsmb/nterr.c:595
+msgid "No such privilege"
+msgstr "Böyle bir yetki yok"
+
+#: ../../libsmb/nterr.c:596
+msgid "Procedure not found"
+msgstr "Prosedür bulunamadı"
+
+#: ../../libsmb/nterr.c:597
+msgid "Server disabled"
+msgstr "Sunucu devre dışı"
+
+#: ../../libsmb/nterr.c:598
+msgid "Invalid pipe state"
+msgstr "Geçersiz pipe durumu"
+
+#: ../../libsmb/nterr.c:599
+msgid "Named pipe busy"
+msgstr "Named pipe meşgul"
+
+#: ../../libsmb/nterr.c:600
+msgid "Illegal function"
+msgstr "Geçersiz fonksiyon"
+
+#: ../../libsmb/nterr.c:601
+msgid "Named pipe disconnected"
+msgstr "Named pipe çevirim dışı"
+
+#: ../../libsmb/nterr.c:602
+msgid "Named pipe closing"
+msgstr "Named pipe kapatılıyor"
+
+#: ../../libsmb/nterr.c:603
+msgid "Remote host not listening"
+msgstr "Uzak sunucu dinlemiyor"
+
+#: ../../libsmb/nterr.c:604
+msgid "Duplicate name on network"
+msgstr "Ağ üzerinde çift isim"
+
+#: ../../libsmb/nterr.c:605
+msgid "Print queue is full"
+msgstr "Yazırma kuyruğu dolu"
+
+#: ../../libsmb/nterr.c:606
+msgid "No print spool space available"
+msgstr "Yazdırma biriktirme alanı dolu"
+
+#: ../../libsmb/nterr.c:607
+msgid "The network name cannot be found"
+msgstr "Ağ adı bulunamıyor"
+
+#: ../../libsmb/nterr.c:608
+msgid "The connection was refused"
+msgstr "Bağlantı reddedildi"
+
+#: ../../libsmb/nterr.c:609
+msgid "Too many names"
+msgstr "Çok fazla isim"
+
+#: ../../libsmb/nterr.c:610
+msgid "Too many sessions"
+msgstr "Çok fazla oturum"
+
+#: ../../libsmb/nterr.c:611
+msgid "Invalid server state"
+msgstr "Geçersiz sunucu durumu"
+
+#: ../../libsmb/nterr.c:612
+msgid "Invalid domain state"
+msgstr "Geçersiz etki alanı durumu"
+
+#: ../../libsmb/nterr.c:613
+msgid "Invalid domain role"
+msgstr "Geçersiz etki alanı rolü"
+
+#: ../../libsmb/nterr.c:614
+msgid "No such domain"
+msgstr "Böyle bir etki alanı yok"
+
+#: ../../libsmb/nterr.c:615
+msgid "Domain exists"
+msgstr "Etki alanı mevcut"
+
+#: ../../libsmb/nterr.c:616
+msgid "Domain limit exceeded"
+msgstr "Etki alanı limiti aşıldı"
+
+#: ../../libsmb/nterr.c:617
+msgid "Bad logon session state"
+msgstr "Kötü oturum açma oturumu durumu"
+
+#: ../../libsmb/nterr.c:618
+msgid "Logon session collision"
+msgstr "Oturum açma oturum çakışması"
+
+#: ../../libsmb/nterr.c:619
+msgid "Invalid logon type"
+msgstr "Hatalı oturum açma tipi"
+
+#: ../../libsmb/nterr.c:620
+msgid "Cancelled"
+msgstr "İptal edildi"
+
+#: ../../libsmb/nterr.c:621
+msgid "Invalid computer name"
+msgstr "Geçersiz bilgisayar adı"
+
+#: ../../libsmb/nterr.c:622
+msgid "Logon server conflict"
+msgstr "Oturum açma sunucusu çakışması"
+
+#: ../../libsmb/nterr.c:623
+msgid "Time difference at domain controller"
+msgstr "Etki alanı saati farklı"
+
+#: ../../libsmb/nterr.c:624
+msgid "Pipe broken"
+msgstr "Pipe bozuk"
+
+#: ../../libsmb/nterr.c:625
+msgid "Registry corrupt"
+msgstr "Kayıt defteri bozuk"
+
+#: ../../libsmb/nterr.c:626
+msgid "Too many secrets"
+msgstr "Çok fazla secrets var"
+
+#: ../../libsmb/nterr.c:627
+msgid "Too many SIDs"
+msgstr "Çok fazla SID var"
+
+#: ../../libsmb/nterr.c:628
+msgid "Lanmanager cross encryption required"
+msgstr "Lanmanager cross encryption gerekli"
+
+#: ../../libsmb/nterr.c:629
+msgid "Log file full"
+msgstr "Kayıt dosyası dolu"
+
+#: ../../libsmb/nterr.c:630
+msgid "No trusted LSA secret"
+msgstr "No trusted LSA secret"
+
+#: ../../libsmb/nterr.c:631
+msgid "No trusted SAM account"
+msgstr "No trusted SAM account"
+
+#: ../../libsmb/nterr.c:632
+msgid "Trusted domain failure"
+msgstr "Güvenlien etki alanı hatası"
+
+#: ../../libsmb/nterr.c:633
+msgid "Trust relationship failure"
+msgstr "Güven ilişkisi hatası"
+
+#: ../../libsmb/nterr.c:634
+msgid "Trust failure"
+msgstr "Güven hatası"
+
+#: ../../libsmb/nterr.c:635
+msgid "Netlogon service not started"
+msgstr "Netlogon servisi başlamadı"
+
+#: ../../libsmb/nterr.c:636
+msgid "Account expired"
+msgstr "Hesap süresi dolmuş"
+
+#: ../../libsmb/nterr.c:637
+msgid "Network credential conflict"
+msgstr "Ağ kimliği çakışması"
+
+#: ../../libsmb/nterr.c:638
+msgid "Remote session limit"
+msgstr "Uzak oturum limiti"
+
+#: ../../libsmb/nterr.c:639
+msgid "No logon interdomain trust account"
+msgstr "No logon interdomain trust account"
+
+#: ../../libsmb/nterr.c:640
+msgid "No logon workstation trust account"
+msgstr "No logon workstation trust account"
+
+#: ../../libsmb/nterr.c:641
+msgid "No logon server trust account"
+msgstr "No logon server trust account"
+
+#: ../../libsmb/nterr.c:642
+msgid "Domain trust inconsistent"
+msgstr "Domain trust inconsistent"
+
+#: ../../libsmb/nterr.c:643
+msgid "No user session key available"
+msgstr "No user session key available"
+
+#: ../../libsmb/nterr.c:644
+msgid "User session deleted"
+msgstr "Kullanıcı oturumu silindi"
+
+#: ../../libsmb/nterr.c:645
+msgid "Insufficient server resources"
+msgstr "Yetersiz sunucu kaynağı"
+
+#: ../../libsmb/nterr.c:646
+msgid "Insufficient logon information"
+msgstr "Yetersiz oturum açma bilgileri"
+
+#: ../../libsmb/nterr.c:648
+msgid "License quota exceeded"
+msgstr "Lisans limiti aşıldı"
+
+#: ../../libsmb/nterr.c:649
+msgid "No more files"
+msgstr "Başka dosya yok"
