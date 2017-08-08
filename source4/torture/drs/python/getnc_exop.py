@@ -35,6 +35,7 @@ from drs_base import AbstractLink
 
 import samba.tests
 import random
+from samba import werror, WERRORError
 
 import ldb
 from ldb import SCOPE_BASE
@@ -192,6 +193,29 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
                                              drsuapi.DRSUAPI_DRS_GET_ANC)
         (level, ctr) = self.drs.DsGetNCChanges(self.drs_handle, 8, req8)
         self._check_ctr6(ctr, [ou2])
+
+    def test_do_full_repl_on_ou(self):
+        """
+        Make sure that a full replication on a not-an-nc fails with
+        the right error code
+        """
+
+        non_nc_ou = "OU=not-an-NC,%s" % self.ou
+        self.ldb_dc1.add({
+            "dn": non_nc_ou,
+            "objectclass": "organizationalUnit"
+            })
+        req8 = self._exop_req8(dest_dsa=None,
+                               invocation_id=self.ldb_dc1.get_invocation_id(),
+                               nc_dn_str=non_nc_ou,
+                               exop=drsuapi.DRSUAPI_EXOP_NONE,
+                               replica_flags=drsuapi.DRSUAPI_DRS_WRIT_REP)
+
+        try:
+            (level, ctr) = self.drs.DsGetNCChanges(self.drs_handle, 8, req8)
+            self.fail("Expected DsGetNCChanges to fail with WERR_DS_CANT_FIND_EXPECTED_NC")
+        except WERRORError as (enum, estr):
+            self.assertEquals(enum, werror.WERR_DS_CANT_FIND_EXPECTED_NC)
 
     def test_link_utdv_hwm(self):
         """Test verify the DRS_GET_ANC behavior."""
