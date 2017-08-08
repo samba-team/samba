@@ -2241,6 +2241,14 @@ allowed:
 	}
 
 	if (getnc_state == NULL) {
+		struct ldb_result *res = NULL;
+		const char *attrs[] = {
+			"instanceType",
+			"objectGuID",
+			NULL
+		};
+		uint32_t nc_instanceType;
+
 		getnc_state = talloc_zero(b_state, struct drsuapi_getncchanges_state);
 		if (getnc_state == NULL) {
 			return WERR_NOT_ENOUGH_MEMORY;
@@ -2251,14 +2259,21 @@ allowed:
 			return WERR_NOT_ENOUGH_MEMORY;
 		}
 
-		ret = dsdb_find_guid_by_dn(b_state->sam_ctx,
-					   getnc_state->ncRoot_dn,
-					   &getnc_state->ncRoot_guid);
+		ret = dsdb_search_dn(sam_ctx, mem_ctx, &res,
+				     getnc_state->ncRoot_dn, attrs,
+				     DSDB_SEARCH_SHOW_DELETED |
+				     DSDB_SEARCH_SHOW_RECYCLED);
 		if (ret != LDB_SUCCESS) {
-			DEBUG(0,(__location__ ": Failed to find GUID of ncRoot_dn %s\n",
-				 ldb_dn_get_linearized(getnc_state->ncRoot_dn)));
-			return WERR_DS_DRA_INTERNAL_ERROR;
+			DBG_WARNING("Failed to find ncRoot_dn %s\n",
+				    ldb_dn_get_linearized(getnc_state->ncRoot_dn));
+			return WERR_DS_CANT_FIND_EXPECTED_NC;
 		}
+		getnc_state->ncRoot_guid = samdb_result_guid(res->msgs[0],
+							     "objectGUID");
+		nc_instanceType = ldb_msg_find_attr_as_int(res->msgs[0],
+							   "instanceType",
+							   0);
+		TALLOC_FREE(res);
 		ncRoot->guid = getnc_state->ncRoot_guid;
 
 		/* find out if we are to replicate Schema NC */
@@ -2279,6 +2294,16 @@ allowed:
 		 */
 		switch (req10->extended_op) {
 		case DRSUAPI_EXOP_NONE:
+			if ((nc_instanceType & INSTANCE_TYPE_IS_NC_HEAD) == 0) {
+				const char *dn_str
+					= ldb_dn_get_linearized(getnc_state->ncRoot_dn);
+
+				DBG_NOTICE("Rejecting full replication on "
+					   "not NC %s", dn_str);
+
+				return WERR_DS_CANT_FIND_EXPECTED_NC;
+			}
+
 			break;
 		case DRSUAPI_EXOP_FSMO_RID_ALLOC:
 			werr = getncchanges_rid_alloc(b_state, mem_ctx, req10, &r->out.ctr->ctr6, &search_dn);

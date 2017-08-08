@@ -102,14 +102,9 @@ class DrsReplicaSyncUnprivTestCase(drs_base.DrsBaseTestCase):
         user with the correct GET_CHANGES rights
         """
 
-        ou1 = "OU=single_obj,%s" % self.ou
-        self.ldb_dc1.add({
-            "dn": ou1,
-            "objectclass": "organizationalUnit"
-            })
         req8 = self._exop_req8(dest_dsa=None,
                                invocation_id=self.ldb_dc1.get_invocation_id(),
-                               nc_dn_str=ou1,
+                               nc_dn_str=self.ldb_dc1.get_default_basedn(),
                                exop=drsuapi.DRSUAPI_EXOP_NONE,
                                replica_flags=drsuapi.DRSUAPI_DRS_WRIT_REP)
         (level, ctr) = self.user_drs.DsGetNCChanges(self.user_drs_handle, 8, req8)
