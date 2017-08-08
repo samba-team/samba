@@ -8576,6 +8576,7 @@ static bool torture_rpc_spoolss_printer_teardown_common(struct torture_context *
 	struct dcerpc_pipe *p = t->spoolss_pipe;
 	struct dcerpc_binding_handle *b = NULL;
 	const char *server_name_slash;
+	bool ok = true;
 
 	if (p == NULL) {
 		return true;
@@ -8587,36 +8588,52 @@ static bool torture_rpc_spoolss_printer_teardown_common(struct torture_context *
 	if (!t->wellknown) {
 		const char *printer_name = t->info2.printername;
 
-		torture_assert(tctx,
+		torture_assert_goto(tctx,
 			test_DeletePrinter(tctx, b, &t->handle),
+			ok,
+			remove_driver,
 			"failed to delete printer");
 
-		torture_assert(tctx,
+		torture_assert_goto(tctx,
 			test_EnumPrinters_findname(tctx, b, PRINTER_ENUM_LOCAL, 1,
 						   printer_name, &found),
+			ok,
+			remove_driver,
 			"failed to enumerate printers");
 
-		torture_assert(tctx, !found, "deleted printer still there");
+		torture_assert_goto(tctx,
+			!found,
+			ok,
+			remove_driver,
+			"deleted printer still there");
 	}
 
 
+remove_driver:
 	if (t->added_driver) {
-		torture_assert(tctx,
-			remove_printer_driver(tctx, dcerpc_server_name(p), &t->driver),
-			"failed to remove printer driver");
+		ok = remove_printer_driver(tctx,
+					   dcerpc_server_name(p),
+					   &t->driver);
+		if (!ok) {
+			torture_warning(tctx,
+					"failed to remove printer driver\n");
+		}
 
-		torture_assert(tctx,
-			test_DeletePrinterDriverEx_exp(tctx, b,
-						       server_name_slash,
-						       t->driver.info8.driver_name,
-						       t->driver.info8.architecture,
-						       DPD_DELETE_ALL_FILES,
-						       t->driver.info8.version,
-						       WERR_OK),
-			"failed to delete printer driver via spoolss");
+		ok = test_DeletePrinterDriverEx_exp(tctx, b,
+						    server_name_slash,
+						    t->driver.info8.driver_name,
+						    t->driver.info8.architecture,
+						    DPD_DELETE_ALL_FILES,
+						    t->driver.info8.version,
+						    WERR_OK);
+		if (!ok) {
+			torture_warning(tctx,
+					"failed to delete printer driver via "
+					"spoolss\n");
+		}
 	}
 
-	return true;
+	return ok;
 }
 
 static bool torture_rpc_spoolss_printer_teardown(struct torture_context *tctx, void *data)
