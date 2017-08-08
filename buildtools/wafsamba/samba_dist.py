@@ -182,7 +182,7 @@ def dist(appname='', version=''):
 
             absfile = os.path.join(srcdir, file)
 
-            if os.path.isdir(absfile):
+            if os.path.isdir(absfile) and not os.path.islink(absfile):
                 destdir = destfile
                 dir = file
                 files = list_directory_files(dir)
