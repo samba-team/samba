@@ -8584,6 +8584,22 @@ static bool torture_rpc_spoolss_printer_teardown_common(struct torture_context *
 
 	server_name_slash = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 
+	if (!t->wellknown) {
+		const char *printer_name = t->info2.printername;
+
+		torture_assert(tctx,
+			test_DeletePrinter(tctx, b, &t->handle),
+			"failed to delete printer");
+
+		torture_assert(tctx,
+			test_EnumPrinters_findname(tctx, b, PRINTER_ENUM_LOCAL, 1,
+						   printer_name, &found),
+			"failed to enumerate printers");
+
+		torture_assert(tctx, !found, "deleted printer still there");
+	}
+
+
 	if (t->added_driver) {
 		torture_assert(tctx,
 			remove_printer_driver(tctx, dcerpc_server_name(p), &t->driver),
@@ -8598,21 +8614,6 @@ static bool torture_rpc_spoolss_printer_teardown_common(struct torture_context *
 						       t->driver.info8.version,
 						       WERR_OK),
 			"failed to delete printer driver via spoolss");
-	}
-
-	if (!t->wellknown) {
-		const char *printer_name = t->info2.printername;
-
-		torture_assert(tctx,
-			test_DeletePrinter(tctx, b, &t->handle),
-			"failed to delete printer");
-
-		torture_assert(tctx,
-			test_EnumPrinters_findname(tctx, b, PRINTER_ENUM_LOCAL, 1,
-						   printer_name, &found),
-			"failed to enumerate printers");
-
-		torture_assert(tctx, !found, "deleted printer still there");
 	}
 
 	return true;
