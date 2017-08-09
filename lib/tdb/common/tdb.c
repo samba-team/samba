@@ -541,6 +541,11 @@ static int _tdb_storev(struct tdb_context *tdb, TDB_DATA key,
 	for (i=0; i<num_dbufs; i++) {
 		size_t dsize = dbufs[i].dsize;
 
+		if ((dsize != 0) && (dbufs[i].dptr == NULL)) {
+			tdb->ecode = TDB_ERR_EINVAL;
+			goto fail;
+		}
+
 		dbufs_len += dsize;
 		if (dbufs_len < dsize) {
 			tdb->ecode = TDB_ERR_OOM;
