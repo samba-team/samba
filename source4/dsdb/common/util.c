@@ -2111,6 +2111,11 @@ enum samr_ValidationStatus samdb_check_password(TALLOC_CTX *mem_ctx,
 
 	TALLOC_FREE(password_script);
 
+	/*
+	 * Here are the standard AD password quality rules, which we
+	 * run after the script.
+	 */
+
 	if (!check_password_quality(utf8_pw)) {
 		return SAMR_VALIDATION_STATUS_NOT_COMPLEX_ENOUGH;
 	}
