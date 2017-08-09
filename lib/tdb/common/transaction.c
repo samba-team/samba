@@ -210,6 +210,10 @@ static int transaction_write(struct tdb_context *tdb, tdb_off_t off,
 {
 	uint32_t blk;
 
+	if (buf == NULL) {
+		return -1;
+	}
+
 	/* Only a commit is allowed on a prepared transaction */
 	if (tdb->transaction->prepared) {
 		tdb->ecode = TDB_ERR_EINVAL;
@@ -234,9 +238,7 @@ static int transaction_write(struct tdb_context *tdb, tdb_off_t off,
 		}
 		len -= len2;
 		off += len2;
-		if (buf != NULL) {
-			buf = (const void *)(len2 + (const char *)buf);
-		}
+		buf = (const void *)(len2 + (const char *)buf);
 	}
 
 	if (len == 0) {
@@ -289,11 +291,7 @@ static int transaction_write(struct tdb_context *tdb, tdb_off_t off,
 	}
 
 	/* overwrite part of an existing block */
-	if (buf == NULL) {
-		memset(tdb->transaction->blocks[blk] + off, 0, len);
-	} else {
-		memcpy(tdb->transaction->blocks[blk] + off, buf, len);
-	}
+	memcpy(tdb->transaction->blocks[blk] + off, buf, len);
 	if (blk == tdb->transaction->num_blocks-1) {
 		if (len + off > tdb->transaction->last_block_size) {
 			tdb->transaction->last_block_size = len + off;
