@@ -251,7 +251,7 @@ static ADS_STATUS ads_krb5_chg_password(const char *kdc_host,
 	ret = krb5_set_password(context,
 				&creds,
 				discard_const_p(char, newpw),
-				princ,
+				NULL,
 				&result_code,
 				&result_code_string,
 				&result_string);
