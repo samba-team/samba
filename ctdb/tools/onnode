@@ -359,15 +359,34 @@ trap 'kill -TERM $pids 2>/dev/null' INT TERM
 retcode=0
 for n in $nodes ; do
     set -o pipefail 2>/dev/null
+
+    # The following code applies stdout_filter and stderr_filter to
+    # the relevant streams.  Both filters are at the end of pipes so
+    # they read from stdin and (by default) write to stdout.  To allow
+    # the filters to operate independently, the output of
+    # stdout_filter is sent to a temporary file descriptor (3), which
+    # is redirected back to stdout at the outermost level.
     if $parallel ; then
-	{ exec 3>&1 ; { $SSH $ssh_opts $EXTRA_SSH_OPTS "$n" "$command" | stdout_filter >&3 ; } 2>&1 | stderr_filter ; } &
+	{
+	    exec 3>&1
+	    {
+		$SSH $ssh_opts $EXTRA_SSH_OPTS "$n" "$command" |
+		    stdout_filter >&3
+	    } 2>&1 | stderr_filter
+	} &
 	pids="${pids} $!"
     else
 	if $verbose ; then
 	    echo >&2 ; echo ">> NODE: $n <<" >&2
 	fi
 
-	{ exec 3>&1 ; { $SSH $ssh_opts $EXTRA_SSH_OPTS "$n" "$command" | stdout_filter >&3 ; } 2>&1 | stderr_filter ; }
+	{
+	    exec 3>&1
+	    {
+		$SSH $ssh_opts $EXTRA_SSH_OPTS "$n" "$command" |
+		    stdout_filter >&3
+	    } 2>&1 | stderr_filter
+	}
 	[ $? = 0 ] || retcode=$?
     fi
 done
