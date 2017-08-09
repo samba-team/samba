@@ -584,6 +584,9 @@ planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.dcerpc.srvsvc")
 planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.samba_tool.timecmd")
 planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.samba_tool.join")
 
+planpythontestsuite("none", "samba.tests.samba_tool.visualize")
+
+
 # test fsmo show
 for env in ["ad_dc_ntvfs", "fl2000dc", "fl2003dc", "fl2008r2dc"]:
     planpythontestsuite(env + ":local", "samba.tests.samba_tool.fsmo")
@@ -936,7 +939,7 @@ for env in ["ad_dc_ntvfs", "s4member", "rodc", "promoted_dc", "ad_dc", "ad_membe
 #
 # KDC Tests
 #
-    
+
 # This test is for users cached at the RODC
 plansmbtorture4testsuite('krb5.kdc', "rodc", ['ncacn_np:$SERVER_IP', "-k", "yes", '-Utestdenied%$PASSWORD',
                                               '--workgroup=$DOMAIN', '--realm=$REALM',
@@ -984,6 +987,7 @@ for env in [
                                 },
                            extra_path=[os.path.join(srcdir(), "samba/python"), ]
                            )
+    planpythontestsuite(env, "samba.tests.samba_tool.visualize_drs")
 
 for env in [ "simpleserver", "fileserver", "nt4_dc", "ad_dc", "ad_dc_ntvfs", "ad_member"]:
     planoldpythontestsuite(env, "netlogonsvc",

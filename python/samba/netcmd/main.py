@@ -76,3 +76,4 @@ class cmd_sambatool(SuperCommand):
     subcommands["time"] = None
     subcommands["user"] = None
     subcommands["processes"] = None
+    subcommands["visualize"] = None
