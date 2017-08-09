@@ -2667,8 +2667,8 @@ static bool test_EnumForms_find_one(struct torture_context *tctx,
 				    bool print_server,
 				    const char *form_name)
 {
-	union spoolss_FormInfo *info;
-	uint32_t count;
+	union spoolss_FormInfo *info = NULL;
+	uint32_t count = 0;
 	bool found = false;
 	int i;
 
@@ -5554,11 +5554,12 @@ static bool test_SetPrinterDataEx_values(struct torture_context *tctx,
 
 	for (i=0; i < ARRAY_SIZE(values); i++) {
 
-		enum winreg_Type type;
-		DATA_BLOB blob_in, blob_out;
+		enum winreg_Type type = REG_NONE;
+		DATA_BLOB blob_in = data_blob_null;
+		DATA_BLOB blob_out = data_blob_null;
 		uint32_t ecount;
 		struct spoolss_PrinterEnumValues *einfo;
-		uint32_t needed;
+		uint32_t needed = 0;
 
 		if (torture_setting_bool(tctx, "samba3", false)) {
 			char *q;
