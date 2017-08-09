@@ -619,6 +619,10 @@ static int _tdb_storev(struct tdb_context *tdb, TDB_DATA key,
 	ofs += key.dsize;
 
 	for (i=0; i<num_dbufs; i++) {
+		if (dbufs[i].dsize == 0) {
+			continue;
+		}
+
 		ret = tdb->methods->tdb_write(tdb, ofs, dbufs[i].dptr,
 					      dbufs[i].dsize);
 		if (ret == -1) {
