@@ -393,10 +393,20 @@ static int transaction_oob(struct tdb_context *tdb, tdb_off_t off,
 static int transaction_expand_file(struct tdb_context *tdb, tdb_off_t size,
 				   tdb_off_t addition)
 {
-	/* add a write to the transaction elements, so subsequent
-	   reads see the zero data */
-	if (transaction_write(tdb, size, NULL, addition) != 0) {
-		return -1;
+	const char buf_zero[8192] = {0};
+	size_t buf_len = sizeof(buf_zero);
+
+	while (addition > 0) {
+		size_t n = MIN(addition, buf_len);
+		int ret;
+
+		ret = transaction_write(tdb, size, buf_zero, n);
+		if (ret != 0) {
+			return ret;
+		}
+
+		addition -= n;
+		size += n;
 	}
 
 	tdb->transaction->expanded = true;
