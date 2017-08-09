@@ -39,25 +39,6 @@
 #define PUSH_FUNC(NAME)		NAME## _push
 #define PULL_FUNC(NAME)		NAME## _pull
 
-#define DEFINE_TEST(TYPE, NAME)	\
-static void TEST_FUNC(NAME)(void) \
-{ \
-	TALLOC_CTX *mem_ctx = talloc_new(NULL); \
-	TYPE *p1, *p2; \
-	size_t buflen; \
-	int ret; \
-\
-	p1 = talloc_zero(mem_ctx, TYPE); \
-	assert(p1 != NULL); \
-	FILL_FUNC(NAME)(p1, p1); \
-	buflen = LEN_FUNC(NAME)(p1); \
-	PUSH_FUNC(NAME)(p1, BUFFER); \
-	ret = PULL_FUNC(NAME)(BUFFER, buflen, mem_ctx, &p2); \
-	assert(ret == 0); \
-	VERIFY_FUNC(NAME)(p1, p2); \
-	talloc_free(mem_ctx); \
-}
-
 /*
  * Test for basic data types that do not need memory allocation
  * For example - int32_t, uint32_t, uint64_t
