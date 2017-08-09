@@ -30,7 +30,7 @@ import base64
 from ldb import LdbError, SCOPE_BASE
 from ldb import Message, MessageElement, Dn
 from ldb import FLAG_MOD_ADD, FLAG_MOD_DELETE
-from samba.dcerpc import security, misc, drsblobs
+from samba.dcerpc import security, misc, drsblobs, security
 from samba.ndr import ndr_unpack, ndr_pack
 
 from samba.auth import system_session
@@ -119,7 +119,8 @@ class SimpleDirsyncTests(DirsyncBaseTests):
         self.desc_sddl = self.sd_utils.get_sd_as_sddl(self.base_dn)
 
         user_sid = self.sd_utils.get_object_sid(self.get_user_dn(self.dirsync_user))
-        mod = "(A;;CR;1131f6aa-9c07-11d1-f79f-00c04fc2dcd2;;%s)" % str(user_sid)
+        mod = "(OA;;CR;%s;;%s)" % (security.GUID_DRS_GET_CHANGES,
+                                   str(user_sid))
         self.sd_utils.dacl_add_ace(self.base_dn, mod)
 
         # add admins to the Domain Admins group
