@@ -289,7 +289,8 @@ const char *lpcfg_imessaging_path(TALLOC_CTX *mem_ctx,
 const char *lpcfg_sam_name(struct loadparm_context *lp_ctx);
 const char *lpcfg_sam_dnsname(struct loadparm_context *lp_ctx);
 
-void lpcfg_default_kdc_policy(struct loadparm_context *lp_ctx,
+void lpcfg_default_kdc_policy(TALLOC_CTX *mem_ctx,
+				struct loadparm_context *lp_ctx,
 				time_t *svc_tkt_lifetime,
 				time_t *usr_tkt_lifetime,
 				time_t *renewal_lifetime);

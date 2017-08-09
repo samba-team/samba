@@ -304,6 +304,32 @@ class inf_to():
     def __str__(self):
         pass
 
+class inf_to_kdc_tdb(inf_to):
+    def mins_to_hours(self):
+        return '%d' % (int(self.val)/60)
+
+    def days_to_hours(self):
+        return '%d' % (int(self.val)*24)
+
+    def set_kdc_tdb(self, val):
+        old_val = self.gp_db.gpostore.get(self.attribute)
+        self.logger.info('%s was changed from %s to %s' % (self.attribute, old_val, val))
+        if val is not None:
+            self.gp_db.gpostore.store(self.attribute, val)
+            self.gp_db.store(str(self), self.attribute, old_val)
+        else:
+            self.gp_db.gpostore.delete(self.attribute)
+            self.gp_db.delete(str(self), self.attribute)
+
+    def mapper(self):
+        return { 'kdc:user_ticket_lifetime': (self.set_kdc_tdb, self.explicit),
+                 'kdc:service_ticket_lifetime': (self.set_kdc_tdb, self.mins_to_hours),
+                 'kdc:renewal_lifetime': (self.set_kdc_tdb, self.days_to_hours),
+               }
+
+    def __str__(self):
+        return 'Kerberos Policy'
+
 class inf_to_ldb(inf_to):
     '''This class takes the .inf file parameter (essentially a GPO file mapped to a GUID),
     hashmaps it to the Samba parameter, which then uses an ldb object to update the
@@ -385,7 +411,11 @@ class gp_sec_ext(gp_ext):
                                   "MaximumPasswordAge": ("maxPwdAge", inf_to_ldb),
                                   "MinimumPasswordLength": ("minPwdLength", inf_to_ldb),
                                   "PasswordComplexity": ("pwdProperties", inf_to_ldb),
-                                 }
+                                 },
+                "Kerberos Policy": {"MaxTicketAge": ("kdc:user_ticket_lifetime", inf_to_kdc_tdb),
+                                    "MaxServiceAge": ("kdc:service_ticket_lifetime", inf_to_kdc_tdb),
+                                    "MaxRenewAge": ("kdc:renewal_lifetime", inf_to_kdc_tdb),
+                                   }
                }
 
     def read_inf(self, path, conn):
