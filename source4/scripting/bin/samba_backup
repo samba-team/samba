@@ -15,6 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+# Revised 2017-08-10, Tim Kent, as follows:
+#    - Back up TDB files in the same manner as LDB files.
+#    - Stop tar returning error code 1 on changed files in the private dir
+#      so the if statement no longer needs to ignore it.
 # Revised 2013-09-25, Brian Martin, as follows:
 #    - Allow retention period ("DAYS") to be specified as a parameter.
 #    - Allow individual positional parameters to be left at the default
@@ -64,8 +68,8 @@ for d in $DIRS;do
 	relativedirname=`find . -type d -name "$d" -prune`
 	n=`echo $d | sed 's/\//_/g'`
 	if [ "$d" = "private" ]; then
-		find $relativedirname -name "*.ldb.bak" -exec rm {} \;
-		for ldb in `find $relativedirname -name "*.ldb"`; do
+		find $relativedirname -name "*.[l|t]db.bak" -exec rm {} \;
+		for ldb in `find $relativedirname -name "*.[l|t]db"`; do
 			tdbbackup $ldb
 			Status=$?	# Preserve $? for message, since [ alters it.
 			if [ $Status -ne 0 ]; then
@@ -74,14 +78,15 @@ for d in $DIRS;do
 			fi
 		done
 		# Run the backup.
+		#    --warning=no-file-changed set as private dir is always changing.
 		#    --warning=no-file-ignored set to suppress "socket ignored" messages.
-		tar cjf ${WHERE}/samba4_${n}.${WHEN}.tar.bz2  $relativedirname --exclude=\*.ldb --warning=no-file-ignored --transform 's/.ldb.bak$/.ldb/'
+		tar cjf ${WHERE}/samba4_${n}.${WHEN}.tar.bz2  $relativedirname --exclude=\*.\[l\|t\]db --warning=no-file-changed --warning=no-file-ignored --transform 's/.ldb.bak$/.ldb/' --transform 's/.tdb.bak$/.tdb/'
 		Status=$?	# Preserve $? for message, since [ alters it.
-		if [ $Status -ne 0 -a $Status -ne 1 ]; then	# Ignore 1 - private dir is always changing.
+		if [ $Status -ne 0 ]; then
 			echo "Error while archiving ${WHERE}/samba4_${n}.${WHEN}.tar.bz2 - status = $Status"
 			exit 1
 		fi
-		find $relativedirname -name "*.ldb.bak" -exec rm {} \;
+		find $relativedirname -name "*.[l|t]db.bak" -exec rm {} \;
 	else
 		# Run the backup.
 		#    --warning=no-file-ignored set to suppress "socket ignored" messages.
