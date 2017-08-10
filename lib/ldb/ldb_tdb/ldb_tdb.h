@@ -20,6 +20,7 @@ struct ltdb_private {
 		struct ldb_message *indexlist;
 		bool one_level_indexes;
 		bool attribute_indexes;
+		const char *GUID_index_attribute;
 	} *cache;
 
 	int in_transaction;
