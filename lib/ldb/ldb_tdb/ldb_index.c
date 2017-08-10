@@ -83,7 +83,9 @@ static int ltdb_dn_list_find_val(const struct dn_list *list, const struct ldb_va
 {
 	unsigned int i;
 	for (i=0; i<list->count; i++) {
-		if (dn_list_cmp(&list->dn[i], v) == 0) return i;
+		if (dn_list_cmp(&list->dn[i], v) == 0) {
+			return i;
+		}
 	}
 	return -1;
 }
