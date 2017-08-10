@@ -174,6 +174,12 @@ dynconfig = {
          'OPTION':    '--with-privatedir',
          'HELPTEXT':  'Where to put sam.ldb and other private files',
     },
+    'BINDDNS_DIR' : {
+         'STD-PATH':  '${PREFIX}/bind-dns',
+         'FHS-PATH':  '${LOCALSTATEDIR}/lib/samba/bind-dns',
+         'OPTION':    '--with-bind-dns-dir',
+         'HELPTEXT':  'bind-dns config directory',
+    },
     'LOCKDIR' : {
          'STD-PATH':  '${LOCALSTATEDIR}/lock',
          'FHS-PATH':  '${LOCALSTATEDIR}/lock/samba',
@@ -191,12 +197,6 @@ dynconfig = {
          'FHS-PATH':  '${LOCALSTATEDIR}/lib/samba',
          'OPTION':    '--with-statedir',
          'HELPTEXT':  'Where to put persistent state files',
-    },
-    'BINDDNS_DIR' : {
-         'STD-PATH':  '${LOCALSTATEDIR}/lib',
-         'FHS-PATH':  '${LOCALSTATEDIR}/lib/samba/bind-dns',
-         'OPTION':    '--with-bind-dns-dir',
-         'HELPTEXT':  'bind-dns config directory',
     },
     'CACHEDIR' : {
          'STD-PATH':  '${LOCALSTATEDIR}/cache',
