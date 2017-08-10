@@ -256,6 +256,10 @@ TDB_DATA ltdb_idx_to_key(struct ldb_module *module,
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct ldb_dn *dn;
 
+	if (ltdb->cache->GUID_index_attribute != NULL) {
+		return ltdb_guid_to_key(module, ltdb, mem_ctx, idx_val);
+	}
+
 	dn = ldb_dn_from_ldb_val(mem_ctx, ldb, idx_val);
 	if (dn == NULL) {
 		errno = EINVAL;
