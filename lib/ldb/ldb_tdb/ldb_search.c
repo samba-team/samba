@@ -200,24 +200,17 @@ static int ltdb_parse_data_unpack(TDB_DATA key, TDB_DATA data,
   return LDB_ERR_NO_SUCH_OBJECT on record-not-found
   and LDB_SUCCESS on success
 */
-int ltdb_search_dn1(struct ldb_module *module, struct ldb_dn *dn, struct ldb_message *msg,
+int ltdb_search_key(struct ldb_module *module, struct ltdb_private *ltdb,
+		    struct TDB_DATA tdb_key,
+		    struct ldb_message *msg,
 		    unsigned int unpack_flags)
 {
-	void *data = ldb_module_get_private(module);
-	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
 	int ret;
-	TDB_DATA tdb_key;
 	struct ltdb_parse_data_unpack_ctx ctx = {
 		.msg = msg,
 		.module = module,
 		.unpack_flags = unpack_flags
 	};
-
-	/* form the key */
-	tdb_key = ltdb_key_dn(module, dn);
-	if (!tdb_key.dptr) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
 
 	memset(msg, 0, sizeof(*msg));
 
@@ -234,6 +227,34 @@ int ltdb_search_dn1(struct ldb_module *module, struct ldb_dn *dn, struct ldb_mes
 		}
 		return LDB_ERR_OPERATIONS_ERROR;
 	} else if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	return LDB_SUCCESS;
+}
+
+/*
+  search the database for a single simple dn, returning all attributes
+  in a single message
+
+  return LDB_ERR_NO_SUCH_OBJECT on record-not-found
+  and LDB_SUCCESS on success
+*/
+int ltdb_search_dn1(struct ldb_module *module, struct ldb_dn *dn, struct ldb_message *msg,
+		    unsigned int unpack_flags)
+{
+	void *data = ldb_module_get_private(module);
+	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
+	int ret;
+	TDB_DATA tdb_key;
+	/* form the key */
+	tdb_key = ltdb_key_dn(module, dn);
+	if (!tdb_key.dptr) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = ltdb_search_key(module, ltdb, tdb_key, msg, unpack_flags);
+	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
 
