@@ -23,44 +23,21 @@ import itertools
 
 from samba.kcc.debug import null_debug, PURPLE, MAGENTA, DARK_YELLOW, RED
 from samba.kcc.debug import DARK_GREEN, C_NORMAL, GREY
+from samba.graph import dot_graph
 
 
 def write_dot_file(basename, edge_list, vertices=None, label=None,
-                   dot_file_dir=None, reformat_labels=True, directed=False,
-                   debug=None, edge_colors=None, edge_labels=None,
-                   vertex_colors=None):
+                   dot_file_dir=None, debug=None, **kwargs):
+    s = dot_graph(vertices, edge_list, title=label, **kwargs)
     if label:
         # sanitise DN and guid labels
         basename += '_' + label.translate(None, ', ')
 
-    f = open(os.path.join(dot_file_dir, "%s.dot" % basename), 'w')
-
+    filename = os.path.join(dot_file_dir, "%s.dot" % basename)
     if debug is not None:
-        debug(f.name)
-    graphname = ''.join(x for x in basename if x.isalnum())
-    print >>f, '%s %s {' % ('digraph' if directed else 'graph', graphname)
-    print >>f, 'label="%s";\nfontsize=20;' % (label or graphname)
-    if vertices:
-        for i, v in enumerate(vertices):
-            if reformat_labels:
-                v = v.replace(',', '\\n')
-            vc = ('color="%s"' % vertex_colors[i]) if vertex_colors else ''
-            print >>f, '"%s" [%s];' % (v, vc)
-
-    for i, edge in enumerate(edge_list):
-        a, b = edge
-        if a is None:
-            a = "Missing source value"
-        if b is None:
-            b = "Missing destination value"
-        if reformat_labels:
-            a = a.replace(',', '\\n')
-            b = b.replace(',', '\\n')
-        line = '->' if directed else '--'
-        el = ('label="%s"' % edge_labels[i]) if edge_labels else ''
-        ec = ('color="%s"' % edge_colors[i]) if edge_colors else ''
-        print >>f, '"%s" %s "%s" [%s %s];' % (a, line, b, el, ec)
-    print >>f, '}'
+        debug("writing graph to %s" % filename)
+    f = open(filename, 'w')
+    f.write(s)
     f.close()
 
 
