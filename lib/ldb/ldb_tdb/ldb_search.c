@@ -113,7 +113,7 @@ static int msg_add_distinguished_name(struct ldb_message *msg)
   return LDB_ERR_NO_SUCH_OBJECT on record-not-found
   and LDB_SUCCESS on success
 */
-static int ltdb_search_base(struct ldb_module *module, struct ldb_dn *dn)
+int ltdb_search_base(struct ldb_module *module, struct ldb_dn *dn)
 {
 	int exists;
 	int ret;

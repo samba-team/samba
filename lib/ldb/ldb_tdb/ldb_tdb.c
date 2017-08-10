@@ -1164,7 +1164,11 @@ static int ltdb_rename(struct ltdb_context *ctx)
 
 	/* We need to, before changing the DB, check if the new DN
 	 * exists, so we can return this error to the caller with an
-	 * unmodified DB */
+	 * unmodified DB
+	 *
+	 * Even in GUID index mode we use ltdb_key_dn() as we are
+	 * trying to figure out if this is just a case rename
+	 */
 	tdb_key = ltdb_key_dn(module, req->op.rename.newdn);
 	if (!tdb_key.dptr) {
 		talloc_free(msg);
@@ -1178,19 +1182,35 @@ static int ltdb_rename(struct ltdb_context *ctx)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	/* Only declare a conflict if the new DN already exists, and it isn't a case change on the old DN */
-	if (tdb_key_old.dsize != tdb_key.dsize || memcmp(tdb_key.dptr, tdb_key_old.dptr, tdb_key.dsize) != 0) {
-		if (tdb_exists(ltdb->tdb, tdb_key)) {
-			talloc_free(tdb_key_old.dptr);
-			talloc_free(tdb_key.dptr);
-			ldb_asprintf_errstring(ldb_module_get_ctx(module),
-					       "Entry %s already exists",
-					       ldb_dn_get_linearized(req->op.rename.newdn));
-			/* finding the new record already in the DB is an error */
-			talloc_free(msg);
-			return LDB_ERR_ENTRY_ALREADY_EXISTS;
+	/*
+	 * Only declare a conflict if the new DN already exists,
+	 * and it isn't a case change on the old DN
+	 */
+	if (tdb_key_old.dsize != tdb_key.dsize
+	    || memcmp(tdb_key.dptr, tdb_key_old.dptr, tdb_key.dsize) != 0) {
+		ret = ltdb_search_base(module,
+				       req->op.rename.newdn);
+		if (ret == LDB_SUCCESS) {
+			ret = LDB_ERR_ENTRY_ALREADY_EXISTS;
+		} else if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+			ret = LDB_SUCCESS;
 		}
 	}
+
+	/* finding the new record already in the DB is an error */
+
+	if (ret == LDB_ERR_ENTRY_ALREADY_EXISTS) {
+		ldb_asprintf_errstring(ldb_module_get_ctx(module),
+				       "Entry %s already exists",
+				       ldb_dn_get_linearized(req->op.rename.newdn));
+	}
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tdb_key_old.dptr);
+		talloc_free(tdb_key.dptr);
+		talloc_free(msg);
+		return ret;
+	}
+
 	talloc_free(tdb_key_old.dptr);
 	talloc_free(tdb_key.dptr);
 
