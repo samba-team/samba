@@ -258,7 +258,30 @@ TDB_DATA ltdb_guid_to_key(struct ldb_module *module,
 TDB_DATA ltdb_key_msg(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 		      const struct ldb_message *msg)
 {
-	return ltdb_key_dn(module, mem_ctx, msg->dn);
+	void *data = ldb_module_get_private(module);
+	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
+	TDB_DATA key;
+	const struct ldb_val *guid_val;
+
+	if (ltdb->cache->GUID_index_attribute == NULL) {
+		return ltdb_key_dn(module, mem_ctx, msg->dn);
+	}
+
+	if (ldb_dn_is_special(msg->dn)) {
+		return ltdb_key_dn(module, mem_ctx, msg->dn);
+	}
+
+	guid_val = ldb_msg_find_ldb_val(msg,
+				       ltdb->cache->GUID_index_attribute);
+	if (guid_val == NULL) {
+		errno = EINVAL;
+		key.dptr = NULL;
+		key.dsize = 0;
+		return key;
+	}
+
+	return ltdb_guid_to_key(module, ltdb, mem_ctx, guid_val);
+
 }
 
 /*
