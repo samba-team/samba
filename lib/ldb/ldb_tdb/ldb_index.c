@@ -61,23 +61,28 @@ int ltdb_index_transaction_start(struct ldb_module *module)
 	return LDB_SUCCESS;
 }
 
-/* compare two DN entries in a dn_list. Take account of possible
- * differences in string termination */
-static int dn_list_cmp(const struct ldb_val *v1, const struct ldb_val *v2)
+/*
+  see if two ldb_val structures contain exactly the same data
+  return -1 or 1 for a mismatch, 0 for match
+*/
+static int ldb_val_equal_exact_for_qsort(const struct ldb_val *v1,
+					 const struct ldb_val *v2)
 {
-	if (v1->length > v2->length && v1->data[v2->length] != 0) {
+	if (v1->length > v2->length) {
 		return -1;
 	}
-	if (v1->length < v2->length && v2->data[v1->length] != 0) {
+	if (v1->length < v2->length) {
 		return 1;
 	}
-	return strncmp((char *)v1->data, (char *)v2->data, v1->length);
+	return memcmp(v1->data, v2->data, v1->length);
 }
 
 
 /*
   find a entry in a dn_list, using a ldb_val. Uses a case sensitive
-  comparison with the dn returns -1 if not found
+  binary-safe comparison for the 'dn' returns -1 if not found
+
+  This is therefore safe when the value is a GUID in the future
  */
 static int ltdb_dn_list_find_val(struct ltdb_private *ltdb,
 				 const struct dn_list *list,
@@ -85,7 +90,7 @@ static int ltdb_dn_list_find_val(struct ltdb_private *ltdb,
 {
 	unsigned int i;
 	for (i=0; i<list->count; i++) {
-		if (dn_list_cmp(&list->dn[i], v) == 0) {
+		if (ldb_val_equal_exact(&list->dn[i], v) == 1) {
 			return i;
 		}
 	}
@@ -1058,11 +1063,13 @@ static void ltdb_dn_list_remove_duplicates(struct dn_list *list)
 		return;
 	}
 
-	TYPESAFE_QSORT(list->dn, list->count, dn_list_cmp);
+	TYPESAFE_QSORT(list->dn, list->count,
+		       ldb_val_equal_exact_for_qsort);
 
 	new_count = 1;
 	for (i=1; i<list->count; i++) {
-		if (dn_list_cmp(&list->dn[i], &list->dn[new_count-1]) != 0) {
+		if (ldb_val_equal_exact(&list->dn[i],
+					&list->dn[new_count-1]) == 0) {
 			if (new_count != i) {
 				list->dn[new_count] = list->dn[i];
 			}
