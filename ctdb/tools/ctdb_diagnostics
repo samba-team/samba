@@ -251,9 +251,6 @@ show_all "ctdb -X getdbmap | awk -F'|' 'NR > 1 {print \$3}' | sort | xargs -n 1 
 echo "Showing log.ctdb"
 show_all "test -f /usr/local/var/log/log.ctdb && tail -100 /usr/local/var/log/log.ctdb"
 
-echo "Showing log.ctdb"
-show_all "test -f /usr/local/var/log/log.ctdb && tail -100 /usr/local/var/log/log.ctdb"
-
 show_all "tail -200 /var/log/messages"
 show_all "ls -lRs /usr/local/var/lib/ctdb"
 show_all "ls -lRs /usr/local/etc/ctdb"
