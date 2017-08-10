@@ -192,6 +192,12 @@ dynconfig = {
          'OPTION':    '--with-statedir',
          'HELPTEXT':  'Where to put persistent state files',
     },
+    'BINDDNS_DIR' : {
+         'STD-PATH':  '${LOCALSTATEDIR}/lib',
+         'FHS-PATH':  '${LOCALSTATEDIR}/lib/samba/bind-dns',
+         'OPTION':    '--with-bind-dns-dir',
+         'HELPTEXT':  'bind-dns config directory',
+    },
     'CACHEDIR' : {
          'STD-PATH':  '${LOCALSTATEDIR}/cache',
          'FHS-PATH':  '${LOCALSTATEDIR}/cache/samba',
@@ -419,6 +425,7 @@ def build(bld):
     bld.INSTALL_DIR("${LOGFILEBASE}")
     bld.INSTALL_DIR("${PRIVILEGED_SOCKET_DIR}")
     bld.INSTALL_DIR("${PRIVATE_DIR}", 0o700)
+    bld.INSTALL_DIR("${BINDDNS_DIR}", 0o770)
     bld.INSTALL_DIR("${STATEDIR}")
     bld.INSTALL_DIR("${CACHEDIR}")
 

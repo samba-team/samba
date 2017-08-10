@@ -1,0 +1,18 @@
+<samba:parameter name="binddns dir"
+                 context="G"
+                 type="string"
+                 constant="1"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<synonym>bind dns directory</synonym>
+<description>
+    <para>
+        This parameters defines the directory samba will use to store the configuration
+        files for bind, such as named.conf.
+
+        NOTE: The bind dns directory needs to be on the same mount point as the private
+        directory!
+    </para>
+</description>
+
+<value type="default">&pathconfig.BINDDNS_DIR;</value>
+</samba:parameter>
