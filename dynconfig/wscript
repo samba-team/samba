@@ -418,7 +418,7 @@ def build(bld):
     bld.INSTALL_DIR("${CONFIGDIR}")
     bld.INSTALL_DIR("${LOGFILEBASE}")
     bld.INSTALL_DIR("${PRIVILEGED_SOCKET_DIR}")
-    bld.INSTALL_DIR("${PRIVATE_DIR}")
+    bld.INSTALL_DIR("${PRIVATE_DIR}", 0o700)
     bld.INSTALL_DIR("${STATEDIR}")
     bld.INSTALL_DIR("${CACHEDIR}")
 

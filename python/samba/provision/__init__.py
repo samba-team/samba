@@ -2065,7 +2065,7 @@ def provision(logger, session_info, smbconf=None,
         serverrole = lp.get("server role")
 
     if not os.path.exists(paths.private_dir):
-        os.mkdir(paths.private_dir)
+        os.mkdir(paths.private_dir, 0o700)
     if not os.path.exists(os.path.join(paths.private_dir, "tls")):
         os.makedirs(os.path.join(paths.private_dir, "tls"), 0700)
     if not os.path.exists(paths.state_dir):
