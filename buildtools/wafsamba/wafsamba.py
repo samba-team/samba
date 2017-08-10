@@ -904,12 +904,12 @@ def INSTALL_DIR(bld, path, chmod=0o755):
             os.chmod(path, chmod)
 Build.BuildContext.INSTALL_DIR = INSTALL_DIR
 
-def INSTALL_DIRS(bld, destdir, dirs):
+def INSTALL_DIRS(bld, destdir, dirs, chmod=0o755):
     '''install a set of directories'''
     destdir = bld.EXPAND_VARIABLES(destdir)
     dirs = bld.EXPAND_VARIABLES(dirs)
     for d in TO_LIST(dirs):
-        bld.install_dir(os.path.join(destdir, d))
+        INSTALL_DIR(bld, os.path.join(destdir, d), chmod)
 Build.BuildContext.INSTALL_DIRS = INSTALL_DIRS
 
 
