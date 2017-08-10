@@ -1613,6 +1613,16 @@ static int re_key(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *st
 		return -1;
 	}
 
+	if (msg->dn == NULL) {
+		ldb_debug(ldb, LDB_DEBUG_ERROR,
+			  "Refusing to re-index as GUID "
+			  "key %*.*s with no DN\n",
+			  (int)key.dsize, (int)key.dsize,
+			  (char *)key.dptr);
+		talloc_free(msg);
+		return -1;
+	}
+	
 	/* check if the DN key has changed, perhaps due to the
 	   case insensitivity of an element changing */
 	key2 = ltdb_key(module, msg->dn);
@@ -1708,7 +1718,13 @@ static int re_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *
 	}
 
 	if (msg->dn == NULL) {
-		dn = (char *)key.dptr + 3;
+		ldb_debug(ldb, LDB_DEBUG_ERROR,
+			  "Refusing to re-index as GUID "
+			  "key %*.*s with no DN\n",
+			  (int)key.dsize, (int)key.dsize,
+			  (char *)key.dptr);
+		talloc_free(msg);
+		return -1;
 	} else {
 		dn = ldb_dn_get_linearized(msg->dn);
 	}
