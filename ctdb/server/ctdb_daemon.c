@@ -208,37 +208,6 @@ int daemon_deregister_message_handler(struct ctdb_context *ctdb, uint32_t client
 	return srvid_deregister(ctdb->srv, srvid, client);
 }
 
-int daemon_check_srvids(struct ctdb_context *ctdb, TDB_DATA indata,
-			TDB_DATA *outdata)
-{
-	uint64_t *ids;
-	int i, num_ids;
-	uint8_t *results;
-
-	if ((indata.dsize % sizeof(uint64_t)) != 0) {
-		DEBUG(DEBUG_ERR, ("Bad indata in daemon_check_srvids, "
-				  "size=%d\n", (int)indata.dsize));
-		return -1;
-	}
-
-	ids = (uint64_t *)indata.dptr;
-	num_ids = indata.dsize / 8;
-
-	results = talloc_zero_array(outdata, uint8_t, (num_ids+7)/8);
-	if (results == NULL) {
-		DEBUG(DEBUG_ERR, ("talloc failed in daemon_check_srvids\n"));
-		return -1;
-	}
-	for (i=0; i<num_ids; i++) {
-		if (srvid_exists(ctdb->srv, ids[i]) == 0) {
-			results[i/8] |= (1 << (i%8));
-		}
-	}
-	outdata->dptr = (uint8_t *)results;
-	outdata->dsize = talloc_get_size(results);
-	return 0;
-}
-
 /*
   destroy a ctdb_client
 */

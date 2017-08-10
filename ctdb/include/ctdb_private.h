@@ -551,8 +551,6 @@ int daemon_register_message_handler(struct ctdb_context *ctdb,
 				    uint32_t client_id, uint64_t srvid);
 int daemon_deregister_message_handler(struct ctdb_context *ctdb,
 				      uint32_t client_id, uint64_t srvid);
-int daemon_check_srvids(struct ctdb_context *ctdb, TDB_DATA indata,
-			TDB_DATA *outdata);
 
 int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork);
 

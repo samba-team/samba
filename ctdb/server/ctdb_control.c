@@ -311,7 +311,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return daemon_deregister_message_handler(ctdb, client_id, srvid);
 
 	case CTDB_CONTROL_CHECK_SRVIDS:
-		return daemon_check_srvids(ctdb, indata, outdata);
+		return control_not_implemented("CHECK_SRVIDS", NULL);
 
 	case CTDB_CONTROL_ENABLE_SEQNUM:
 		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));
