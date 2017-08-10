@@ -355,6 +355,7 @@ static bool ldb_tdb_single_valued(const struct ldb_schema_attribute *a,
 }
 
 static int ltdb_add_internal(struct ldb_module *module,
+			     struct ltdb_private *ltdb,
 			     const struct ldb_message *msg,
 			     bool check_single_value)
 {
@@ -419,7 +420,7 @@ static int ltdb_add_internal(struct ldb_module *module,
 		return ret;
 	}
 
-	ret = ltdb_index_add_new(module, msg);
+	ret = ltdb_index_add_new(module, ltdb, msg);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -436,6 +437,8 @@ static int ltdb_add(struct ltdb_context *ctx)
 {
 	struct ldb_module *module = ctx->module;
 	struct ldb_request *req = ctx->req;
+	void *data = ldb_module_get_private(module);
+	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
 	int ret = LDB_SUCCESS;
 
 	ret = ltdb_check_special_dn(module, req->op.add.message);
@@ -449,7 +452,8 @@ static int ltdb_add(struct ltdb_context *ctx)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = ltdb_add_internal(module, req->op.add.message, true);
+	ret = ltdb_add_internal(module, ltdb,
+				req->op.add.message, true);
 
 	return ret;
 }
@@ -609,6 +613,7 @@ static int ltdb_msg_add_element(struct ldb_message *msg,
   delete all elements having a specified attribute name
 */
 static int msg_delete_attribute(struct ldb_module *module,
+				struct ltdb_private *ltdb,
 				struct ldb_message *msg, const char *name)
 {
 	unsigned int i;
@@ -621,7 +626,7 @@ static int msg_delete_attribute(struct ldb_module *module,
 	}
 	i = el - msg->elements;
 
-	ret = ltdb_index_del_element(module, msg->dn, el);
+	ret = ltdb_index_del_element(module, ltdb, msg->dn, el);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -643,6 +648,7 @@ static int msg_delete_attribute(struct ldb_module *module,
   return LDB Error on failure
 */
 static int msg_delete_element(struct ldb_module *module,
+			      struct ltdb_private *ltdb,
 			      struct ldb_message *msg,
 			      const char *name,
 			      const struct ldb_val *val)
@@ -675,10 +681,11 @@ static int msg_delete_element(struct ldb_module *module,
 		}
 		if (matched) {
 			if (el->num_values == 1) {
-				return msg_delete_attribute(module, msg, name);
+				return msg_delete_attribute(module,
+							    ltdb, msg, name);
 			}
 
-			ret = ltdb_index_del_value(module, msg->dn, el, i);
+			ret = ltdb_index_del_value(module, ltdb, msg->dn, el, i);
 			if (ret != LDB_SUCCESS) {
 				return ret;
 			}
@@ -715,6 +722,8 @@ int ltdb_modify_internal(struct ldb_module *module,
 			 struct ldb_request *req)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	void *data = ldb_module_get_private(module);
+	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
 	struct ldb_message *msg2;
 	unsigned int i, j;
 	int ret = LDB_SUCCESS, idx;
@@ -800,7 +809,8 @@ int ltdb_modify_internal(struct ldb_module *module,
 					ret = LDB_ERR_OTHER;
 					goto done;
 				}
-				ret = ltdb_index_add_element(module, msg2->dn,
+				ret = ltdb_index_add_element(module, ltdb,
+							     msg2->dn,
 							     el);
 				if (ret != LDB_SUCCESS) {
 					goto done;
@@ -881,7 +891,8 @@ int ltdb_modify_internal(struct ldb_module *module,
 				el2->values = vals;
 				el2->num_values += el->num_values;
 
-				ret = ltdb_index_add_element(module, msg2->dn, el);
+				ret = ltdb_index_add_element(module, ltdb,
+							     msg2->dn, el);
 				if (ret != LDB_SUCCESS) {
 					goto done;
 				}
@@ -945,7 +956,8 @@ int ltdb_modify_internal(struct ldb_module *module,
 				}
 
 				/* Delete the attribute if it exists in the DB */
-				if (msg_delete_attribute(module, msg2,
+				if (msg_delete_attribute(module, ltdb,
+							 msg2,
 							 el->name) != 0) {
 					ret = LDB_ERR_OTHER;
 					goto done;
@@ -958,7 +970,8 @@ int ltdb_modify_internal(struct ldb_module *module,
 				goto done;
 			}
 
-			ret = ltdb_index_add_element(module, msg2->dn, el);
+			ret = ltdb_index_add_element(module, ltdb,
+						     msg2->dn, el);
 			if (ret != LDB_SUCCESS) {
 				goto done;
 			}
@@ -974,7 +987,9 @@ int ltdb_modify_internal(struct ldb_module *module,
 
 			if (msg->elements[i].num_values == 0) {
 				/* Delete the whole attribute */
-				ret = msg_delete_attribute(module, msg2,
+				ret = msg_delete_attribute(module,
+							   ltdb,
+							   msg2,
 							   msg->elements[i].name);
 				if (ret == LDB_ERR_NO_SUCH_ATTRIBUTE &&
 				    control_permissive) {
@@ -991,6 +1006,7 @@ int ltdb_modify_internal(struct ldb_module *module,
 				/* Delete specified values from an attribute */
 				for (j=0; j < msg->elements[i].num_values; j++) {
 					ret = msg_delete_element(module,
+								 ltdb,
 							         msg2,
 							         msg->elements[i].name,
 							         &msg->elements[i].values[j]);
@@ -1142,7 +1158,7 @@ static int ltdb_rename(struct ltdb_context *ctx)
 	 * deleted attributes. We could go through all elements but that's
 	 * maybe not the most efficient way
 	 */
-	ret = ltdb_add_internal(module, msg, false);
+	ret = ltdb_add_internal(module, ltdb, msg, false);
 
 	talloc_free(msg);
 

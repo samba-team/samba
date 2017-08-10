@@ -82,13 +82,21 @@ int ltdb_check_at_attributes_values(const struct ldb_val *value);
 struct ldb_parse_tree;
 
 int ltdb_search_indexed(struct ltdb_context *ctx, uint32_t *);
-int ltdb_index_add_new(struct ldb_module *module, const struct ldb_message *msg);
+int ltdb_index_add_new(struct ldb_module *module,
+		       struct ltdb_private *ltdb,
+		       const struct ldb_message *msg);
 int ltdb_index_delete(struct ldb_module *module, const struct ldb_message *msg);
-int ltdb_index_del_element(struct ldb_module *module, struct ldb_dn *dn,
+int ltdb_index_del_element(struct ldb_module *module,
+			   struct ltdb_private *ltdb,
+			   struct ldb_dn *dn,
 			   struct ldb_message_element *el);
-int ltdb_index_add_element(struct ldb_module *module, struct ldb_dn *dn, 
+int ltdb_index_add_element(struct ldb_module *module,
+			   struct ltdb_private *ltdb,
+			   struct ldb_dn *dn,
 			   struct ldb_message_element *el);
-int ltdb_index_del_value(struct ldb_module *module, struct ldb_dn *dn,
+int ltdb_index_del_value(struct ldb_module *module,
+			 struct ltdb_private *ltdb,
+			 struct ldb_dn *dn,
 			 struct ldb_message_element *el, unsigned int v_idx);
 int ltdb_reindex(struct ldb_module *module);
 int ltdb_index_transaction_start(struct ldb_module *module);
