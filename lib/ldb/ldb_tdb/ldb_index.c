@@ -264,8 +264,43 @@ static int ltdb_dn_list_store_full(struct ldb_module *module,
 			talloc_free(msg);
 			return ldb_module_oom(module);
 		}
-		el->values = list->dn;
-		el->num_values = list->count;
+
+		if (ltdb->cache->GUID_index_attribute == NULL) {
+			el->values = list->dn;
+			el->num_values = list->count;
+		} else {
+			struct ldb_val v;
+			unsigned int i;
+			el->values = talloc_array(msg,
+						  struct ldb_val, 1);
+			if (el->values == NULL) {
+				talloc_free(msg);
+				return ldb_module_oom(module);
+			}
+
+			v.data = talloc_array_size(el->values,
+						   list->count,
+						   LTDB_GUID_SIZE);
+			if (v.data == NULL) {
+				talloc_free(msg);
+				return ldb_module_oom(module);
+			}
+
+			v.length = talloc_get_size(v.data);
+
+			for (i = 0; i < list->count; i++) {
+				if (list->dn[i].length !=
+				    LTDB_GUID_SIZE) {
+					talloc_free(msg);
+					return ldb_module_operr(module);
+				}
+				memcpy(&v.data[LTDB_GUID_SIZE*i],
+				       list->dn[i].data,
+				       LTDB_GUID_SIZE);
+			}
+			el->values[0] = v;
+			el->num_values = 1;
+		}
 	}
 
 	ret = ltdb_store(module, msg, TDB_REPLACE);
