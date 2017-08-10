@@ -885,6 +885,24 @@ def INSTALL_WILDCARD(bld, destdir, pattern, chmod=MODE_644, flat=False,
                   python_fixup=python_fixup, base_name=trim_path)
 Build.BuildContext.INSTALL_WILDCARD = INSTALL_WILDCARD
 
+def INSTALL_DIR(bld, path, chmod=0o755):
+    """Install a directory if it doesn't exist, always set permissions."""
+
+    if not path:
+        return []
+
+    if bld.is_install > 0:
+        path = bld.EXPAND_VARIABLES(path)
+        if not os.path.isdir(path):
+            try:
+                os.makedirs(path)
+                os.chmod(path, chmod)
+            except OSError, e:
+                if not os.path.isdir(path):
+                    raise Utils.WafError("Cannot create the folder '%s' (error: %s)" % (path, e))
+        else:
+            os.chmod(path, chmod)
+Build.BuildContext.INSTALL_DIR = INSTALL_DIR
 
 def INSTALL_DIRS(bld, destdir, dirs):
     '''install a set of directories'''
