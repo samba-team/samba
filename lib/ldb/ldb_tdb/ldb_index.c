@@ -49,6 +49,8 @@ struct ltdb_idxptr {
 */
 #define LTDB_INDEXING_VERSION 2
 
+#define LTDB_GUID_INDEXING_VERSION 3
+
 /* enable the idxptr mode when transactions start */
 int ltdb_index_transaction_start(struct ldb_module *module)
 {
@@ -274,10 +276,20 @@ static int ltdb_dn_list_store_full(struct ldb_module *module,
 		return ldb_module_oom(module);
 	}
 
-	ret = ldb_msg_add_fmt(msg, LTDB_IDXVERSION, "%u", LTDB_INDEXING_VERSION);
-	if (ret != LDB_SUCCESS) {
-		talloc_free(msg);
-		return ldb_module_oom(module);
+	if (ltdb->cache->GUID_index_attribute == NULL) {
+		ret = ldb_msg_add_fmt(msg, LTDB_IDXVERSION, "%u",
+				      LTDB_INDEXING_VERSION);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(msg);
+			return ldb_module_oom(module);
+		}
+	} else {
+		ret = ldb_msg_add_fmt(msg, LTDB_IDXVERSION, "%u",
+				      LTDB_GUID_INDEXING_VERSION);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(msg);
+			return ldb_module_oom(module);
+		}
 	}
 
 	msg->dn = dn;
