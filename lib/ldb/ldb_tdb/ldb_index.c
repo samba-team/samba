@@ -79,7 +79,9 @@ static int dn_list_cmp(const struct ldb_val *v1, const struct ldb_val *v2)
   find a entry in a dn_list, using a ldb_val. Uses a case sensitive
   comparison with the dn returns -1 if not found
  */
-static int ltdb_dn_list_find_val(const struct dn_list *list, const struct ldb_val *v)
+static int ltdb_dn_list_find_val(struct ltdb_private *ltdb,
+				 const struct dn_list *list,
+				 const struct ldb_val *v)
 {
 	unsigned int i;
 	for (i=0; i<list->count; i++) {
@@ -94,12 +96,14 @@ static int ltdb_dn_list_find_val(const struct dn_list *list, const struct ldb_va
   find a entry in a dn_list. Uses a case sensitive comparison with the dn
   returns -1 if not found
  */
-static int ltdb_dn_list_find_str(struct dn_list *list, const char *dn)
+static int ltdb_dn_list_find_str(struct ltdb_private *ltdb,
+				 struct dn_list *list,
+				 const char *dn)
 {
 	struct ldb_val v;
 	v.data = discard_const_p(unsigned char, dn);
 	v.length = strlen(dn);
-	return ltdb_dn_list_find_val(list, &v);
+	return ltdb_dn_list_find_val(ltdb, list, &v);
 }
 
 /*
@@ -219,7 +223,9 @@ normal_index:
 /*
   save a dn_list into a full @IDX style record
  */
-static int ltdb_dn_list_store_full(struct ldb_module *module, struct ldb_dn *dn,
+static int ltdb_dn_list_store_full(struct ldb_module *module,
+				   struct ltdb_private *ltdb,
+				   struct ldb_dn *dn,
 				   struct dn_list *list)
 {
 	struct ldb_message *msg;
@@ -274,7 +280,8 @@ static int ltdb_dn_list_store(struct ldb_module *module, struct ldb_dn *dn,
 	struct dn_list *list2;
 
 	if (ltdb->idxptr == NULL) {
-		return ltdb_dn_list_store_full(module, dn, list);
+		return ltdb_dn_list_store_full(module, ltdb,
+					       dn, list);
 	}
 
 	if (ltdb->idxptr->itdb == NULL) {
@@ -350,7 +357,8 @@ static int ltdb_index_traverse_store(struct tdb_context *tdb, TDB_DATA key, TDB_
 		return -1;
 	}
 
-	ltdb->idxptr->error = ltdb_dn_list_store_full(module, dn, list);
+	ltdb->idxptr->error = ltdb_dn_list_store_full(module, ltdb,
+						      dn, list);
 	talloc_free(dn);
 	if (ltdb->idxptr->error != 0) {
 		return -1;
@@ -580,6 +588,7 @@ static int ltdb_index_dn_leaf(struct ldb_module *module,
   list = list & list2
 */
 static bool list_intersect(struct ldb_context *ldb,
+			   struct ltdb_private *ltdb,
 			   struct dn_list *list, const struct dn_list *list2)
 {
 	struct dn_list *list3;
@@ -627,7 +636,8 @@ static bool list_intersect(struct ldb_context *ldb,
 	list3->count = 0;
 
 	for (i=0;i<list->count;i++) {
-		if (ltdb_dn_list_find_val(list2, &list->dn[i]) != -1) {
+		if (ltdb_dn_list_find_val(ltdb, list2,
+					  &list->dn[i]) != -1) {
 			list3->dn[list3->count] = list->dn[i];
 			list3->count++;
 		}
@@ -851,7 +861,8 @@ static int ltdb_index_dn_and(struct ldb_module *module,
 			list->dn = list2->dn;
 			list->count = list2->count;
 			found = true;
-		} else if (!list_intersect(ldb, list, list2)) {
+		} else if (!list_intersect(ldb, ltdb,
+					   list, list2)) {
 			talloc_free(list2);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
@@ -957,7 +968,8 @@ static int ltdb_index_dn(struct ldb_module *module,
   filter a candidate dn_list from an indexed search into a set of results
   extracting just the given attributes
 */
-static int ltdb_index_filter(const struct dn_list *dn_list,
+static int ltdb_index_filter(struct ltdb_private *ltdb,
+			     const struct dn_list *dn_list,
 			     struct ltdb_context *ac,
 			     uint32_t *match_count)
 {
@@ -1128,7 +1140,7 @@ int ltdb_search_indexed(struct ltdb_context *ac, uint32_t *match_count)
 		break;
 	}
 
-	ret = ltdb_index_filter(dn_list, ac, match_count);
+	ret = ltdb_index_filter(ltdb, dn_list, ac, match_count);
 	talloc_free(dn_list);
 	return ret;
 }
@@ -1153,7 +1165,9 @@ int ltdb_search_indexed(struct ltdb_context *ac, uint32_t *match_count)
  *
  * @return                  An ldb error code
  */
-static int ltdb_index_add1(struct ldb_module *module, const char *dn,
+static int ltdb_index_add1(struct ldb_module *module,
+			   struct ltdb_private *ltdb,
+			   const char *dn,
 			   struct ldb_message_element *el, int v_idx)
 {
 	struct ldb_context *ldb;
@@ -1232,12 +1246,15 @@ static int ltdb_index_add1(struct ldb_module *module, const char *dn,
 /*
   add index entries for one elements in a message
  */
-static int ltdb_index_add_el(struct ldb_module *module, const char *dn,
+static int ltdb_index_add_el(struct ldb_module *module,
+			     struct ltdb_private *ltdb,
+			     const char *dn,
 			     struct ldb_message_element *el)
 {
 	unsigned int i;
 	for (i = 0; i < el->num_values; i++) {
-		int ret = ltdb_index_add1(module, dn, el, i);
+		int ret = ltdb_index_add1(module, ltdb,
+					  dn, el, i);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
@@ -1249,11 +1266,12 @@ static int ltdb_index_add_el(struct ldb_module *module, const char *dn,
 /*
   add index entries for all elements in a message
  */
-static int ltdb_index_add_all(struct ldb_module *module, const char *dn,
+static int ltdb_index_add_all(struct ldb_module *module,
+			      struct ltdb_private *ltdb,
+			      const char *dn,
 			      struct ldb_message_element *elements,
 			      unsigned int num_el)
 {
-	struct ltdb_private *ltdb = talloc_get_type(ldb_module_get_private(module), struct ltdb_private);
 	unsigned int i;
 
 	if (dn[0] == '@') {
@@ -1270,7 +1288,7 @@ static int ltdb_index_add_all(struct ldb_module *module, const char *dn,
 		if (!ltdb_is_indexed(module, ltdb, elements[i].name)) {
 			continue;
 		}
-		ret = ltdb_index_add_el(module, dn, &elements[i]);
+		ret = ltdb_index_add_el(module, ltdb, dn, &elements[i]);
 		if (ret != LDB_SUCCESS) {
 			struct ldb_context *ldb = ldb_module_get_ctx(module);
 			ldb_asprintf_errstring(ldb,
@@ -1326,9 +1344,9 @@ static int ltdb_index_onelevel(struct ldb_module *module,
 	el.num_values = 1;
 
 	if (add) {
-		ret = ltdb_index_add1(module, dn, &el, 0);
+		ret = ltdb_index_add1(module, ltdb, dn, &el, 0);
 	} else { /* delete */
-		ret = ltdb_index_del_value(module, msg->dn, &el, 0);
+		ret = ltdb_index_del_value(module, ltdb, msg->dn, &el, 0);
 	}
 
 	talloc_free(pdn);
@@ -1340,23 +1358,27 @@ static int ltdb_index_onelevel(struct ldb_module *module,
   add the index entries for a new element in a record
   The caller guarantees that these element values are not yet indexed
 */
-int ltdb_index_add_element(struct ldb_module *module, struct ldb_dn *dn,
+int ltdb_index_add_element(struct ldb_module *module,
+			   struct ltdb_private *ltdb,
+			   struct ldb_dn *dn,
 			   struct ldb_message_element *el)
 {
-	struct ltdb_private *ltdb = talloc_get_type(ldb_module_get_private(module), struct ltdb_private);
 	if (ldb_dn_is_special(dn)) {
 		return LDB_SUCCESS;
 	}
 	if (!ltdb_is_indexed(module, ltdb, el->name)) {
 		return LDB_SUCCESS;
 	}
-	return ltdb_index_add_el(module, ldb_dn_get_linearized(dn), el);
+	return ltdb_index_add_el(module, ltdb,
+				 ldb_dn_get_linearized(dn), el);
 }
 
 /*
   add the index entries for a new record
 */
-int ltdb_index_add_new(struct ldb_module *module, const struct ldb_message *msg)
+int ltdb_index_add_new(struct ldb_module *module,
+		       struct ltdb_private *ltdb,
+		       const struct ldb_message *msg)
 {
 	const char *dn;
 	int ret;
@@ -1370,7 +1392,8 @@ int ltdb_index_add_new(struct ldb_module *module, const struct ldb_message *msg)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = ltdb_index_add_all(module, dn, msg->elements, msg->num_elements);
+	ret = ltdb_index_add_all(module, ltdb, dn, msg->elements,
+				 msg->num_elements);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -1382,7 +1405,9 @@ int ltdb_index_add_new(struct ldb_module *module, const struct ldb_message *msg)
 /*
   delete an index entry for one message element
 */
-int ltdb_index_del_value(struct ldb_module *module, struct ldb_dn *dn,
+int ltdb_index_del_value(struct ldb_module *module,
+			 struct ltdb_private *ltdb,
+			 struct ldb_dn *dn,
 			 struct ldb_message_element *el, unsigned int v_idx)
 {
 	struct ldb_context *ldb;
@@ -1427,7 +1452,7 @@ int ltdb_index_del_value(struct ldb_module *module, struct ldb_dn *dn,
 		return ret;
 	}
 
-	i = ltdb_dn_list_find_str(list, dn_str);
+	i = ltdb_dn_list_find_str(ltdb, list, dn_str);
 	if (i == -1) {
 		/* nothing to delete */
 		talloc_free(dn_key);
@@ -1457,10 +1482,11 @@ int ltdb_index_del_value(struct ldb_module *module, struct ldb_dn *dn,
   delete the index entries for a element
   return -1 on failure
 */
-int ltdb_index_del_element(struct ldb_module *module, struct ldb_dn *dn,
+int ltdb_index_del_element(struct ldb_module *module,
+			   struct ltdb_private *ltdb,
+			   struct ldb_dn *dn,
 			   struct ldb_message_element *el)
 {
-	struct ltdb_private *ltdb = talloc_get_type(ldb_module_get_private(module), struct ltdb_private);
 	const char *dn_str;
 	int ret;
 	unsigned int i;
@@ -1483,7 +1509,7 @@ int ltdb_index_del_element(struct ldb_module *module, struct ldb_dn *dn,
 		return LDB_SUCCESS;
 	}
 	for (i = 0; i < el->num_values; i++) {
-		ret = ltdb_index_del_value(module, dn, el, i);
+		ret = ltdb_index_del_value(module, ltdb, dn, el, i);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
@@ -1517,7 +1543,8 @@ int ltdb_index_delete(struct ldb_module *module, const struct ldb_message *msg)
 	}
 
 	for (i = 0; i < msg->num_elements; i++) {
-		ret = ltdb_index_del_element(module, msg->dn, &msg->elements[i]);
+		ret = ltdb_index_del_element(module, ltdb,
+					     msg->dn, &msg->elements[i]);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
@@ -1683,6 +1710,8 @@ static int re_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *
 	struct ldb_context *ldb;
 	struct ltdb_reindex_context *ctx = (struct ltdb_reindex_context *)state;
 	struct ldb_module *module = ctx->module;
+	struct ltdb_private *ltdb = talloc_get_type(ldb_module_get_private(module),
+						    struct ltdb_private);
 	struct ldb_message *msg;
 	const char *dn = NULL;
 	unsigned int nb_elements_in_db;
@@ -1744,7 +1773,8 @@ static int re_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *
 		return -1;
 	}
 
-	ret = ltdb_index_add_all(module, dn, msg->elements, msg->num_elements);
+	ret = ltdb_index_add_all(module, ltdb, dn,
+				 msg->elements, msg->num_elements);
 
 	if (ret != LDB_SUCCESS) {
 		ctx->error = ret;
