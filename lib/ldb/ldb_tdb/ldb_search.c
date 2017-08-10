@@ -125,7 +125,7 @@ static int ltdb_search_base(struct ldb_module *module, struct ldb_dn *dn)
 	}
 
 	/* form the key */
-	tdb_key = ltdb_key(module, dn);
+	tdb_key = ltdb_key_dn(module, dn);
 	if (!tdb_key.dptr) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -214,7 +214,7 @@ int ltdb_search_dn1(struct ldb_module *module, struct ldb_dn *dn, struct ldb_mes
 	};
 
 	/* form the key */
-	tdb_key = ltdb_key(module, dn);
+	tdb_key = ltdb_key_dn(module, dn);
 	if (!tdb_key.dptr) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}

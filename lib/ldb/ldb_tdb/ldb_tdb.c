@@ -174,7 +174,7 @@ bool ltdb_key_is_record(TDB_DATA key)
   note that the key for a record can depend on whether the
   dn refers to a case sensitive index record or not
 */
-TDB_DATA ltdb_key(struct ldb_module *module, struct ldb_dn *dn)
+TDB_DATA ltdb_key_dn(struct ldb_module *module, struct ldb_dn *dn)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	TDB_DATA key;
@@ -218,6 +218,19 @@ failed:
 	key.dptr = NULL;
 	key.dsize = 0;
 	return key;
+}
+
+/*
+  form a TDB_DATA for a record key
+  caller frees
+
+  note that the key for a record can depend on whether the
+  dn refers to a case sensitive index record or not
+*/
+TDB_DATA ltdb_key_msg(struct ldb_module *module,
+		      const struct ldb_message *msg)
+{
+	return ltdb_key_dn(module, msg->dn);
 }
 
 /*
@@ -312,7 +325,7 @@ int ltdb_store(struct ldb_module *module, const struct ldb_message *msg, int flg
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
-	tdb_key = ltdb_key(module, msg->dn);
+	tdb_key = ltdb_key_msg(module, msg);
 	if (tdb_key.dptr == NULL) {
 		return LDB_ERR_OTHER;
 	}
@@ -484,7 +497,7 @@ int ltdb_delete_noindex(struct ldb_module *module, struct ldb_dn *dn)
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
-	tdb_key = ltdb_key(module, dn);
+	tdb_key = ltdb_key_dn(module, dn);
 	if (!tdb_key.dptr) {
 		return LDB_ERR_OTHER;
 	}
@@ -1112,13 +1125,13 @@ static int ltdb_rename(struct ltdb_context *ctx)
 	/* We need to, before changing the DB, check if the new DN
 	 * exists, so we can return this error to the caller with an
 	 * unmodified DB */
-	tdb_key = ltdb_key(module, req->op.rename.newdn);
+	tdb_key = ltdb_key_dn(module, req->op.rename.newdn);
 	if (!tdb_key.dptr) {
 		talloc_free(msg);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	tdb_key_old = ltdb_key(module, req->op.rename.olddn);
+	tdb_key_old = ltdb_key_dn(module, req->op.rename.olddn);
 	if (!tdb_key_old.dptr) {
 		talloc_free(msg);
 		talloc_free(tdb_key.dptr);

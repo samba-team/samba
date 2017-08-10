@@ -117,7 +117,8 @@ int ltdb_unlock_read(struct ldb_module *module);
  * index, the old DN index and a possible future ID=
  */
 bool ltdb_key_is_record(TDB_DATA key);
-TDB_DATA ltdb_key(struct ldb_module *module, struct ldb_dn *dn);
+TDB_DATA ltdb_key_dn(struct ldb_module *module, struct ldb_dn *dn);
+TDB_DATA ltdb_key_msg(struct ldb_module *module, const struct ldb_message *msg);
 int ltdb_store(struct ldb_module *module, const struct ldb_message *msg, int flgs);
 int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *msg, struct ldb_request *req);
 int ltdb_delete_noindex(struct ldb_module *module, struct ldb_dn *dn);
