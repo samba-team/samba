@@ -446,7 +446,7 @@ if __name__ == '__main__':
                 dns_key_version_number = None
 
             secretsdb_setup_dns(ldbs.secrets, names,
-                                paths.private_dir, realm=names.realm,
+                                paths.private_dir, paths.binddns_dir, realm=names.realm,
                                 dnsdomain=names.dnsdomain,
                                 dns_keytab_path=paths.dns_keytab, dnspass=dnspass,
                                 key_version_number=dns_key_version_number)
@@ -454,15 +454,34 @@ if __name__ == '__main__':
         else:
             logger.info("dns-%s account already exists" % hostname)
 
-        dns_keytab_path = os.path.join(paths.private_dir, paths.dns_keytab)
-        if os.path.isfile(dns_keytab_path) and paths.bind_gid is not None:
+        private_dns_keytab_path = os.path.join(paths.private_dir, paths.dns_keytab)
+        bind_dns_keytab_path = os.path.join(paths.binddns_dir, paths.dns_keytab)
+
+        if os.path.isfile(private_dns_keytab_path):
+            if os.path.isfile(bind_dns_keytab_path):
+                try:
+                    os.unlink(bind_dns_keytab_path)
+                except OSError as e:
+                    logger.error("Failed to remove %s: %s" %
+                                 (bind_dns_keytab_path, e.strerror))
+
+            # link the dns.keytab to the bind-dns directory
             try:
-                os.chmod(dns_keytab_path, 0640)
-                os.chown(dns_keytab_path, -1, paths.bind_gid)
-            except OSError:
-                if not os.environ.has_key('SAMBA_SELFTEST'):
-                    logger.info("Failed to chown %s to bind gid %u",
-                                dns_keytab_path, paths.bind_gid)
+                os.link(private_dns_keytab_path, bind_dns_keytab_path)
+            except OSError as e:
+                logger.error("Failed to create link %s -> %s: %s" %
+                             (private_dns_keytab_path, bind_dns_keytab_path, e.strerror))
+
+            # chown the dns.keytab in the bind-dns directory
+            if paths.bind_gid is not None:
+                try:
+                    os.chmod(bind_dns_keytab_path, 0640)
+                    os.chown(bind_dns_keytab_path, -1, paths.bind_gid)
+                except OSError:
+                    if not os.environ.has_key('SAMBA_SELFTEST'):
+                        logger.info("Failed to chown %s to bind gid %u",
+                                    bind_dns_keytab_path, paths.bind_gid)
+
 
         # This forces a re-creation of dns directory and all the files within
         # It's an overkill, but it's easier to re-create a samdb copy, rather
@@ -476,7 +495,7 @@ if __name__ == '__main__':
         create_named_conf(paths, names.realm, dnsdomain, opts.dns_backend, logger)
 
         create_named_txt(paths.namedtxt, names.realm, dnsdomain, dnsname,
-                         paths.private_dir, paths.dns_keytab)
+                         paths.binddns_dir, paths.dns_keytab)
         logger.info("See %s for an example configuration include file for BIND", paths.namedconf)
         logger.info("and %s for further documentation required for secure DNS "
                     "updates", paths.namedtxt)

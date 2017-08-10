@@ -649,7 +649,7 @@ def add_dc_msdcs_records(samdb, forestdn, prefix, site, dnsforest, hostname,
             fqdn_hostname)
 
 
-def secretsdb_setup_dns(secretsdb, names, private_dir, realm,
+def secretsdb_setup_dns(secretsdb, names, private_dir, binddns_dir, realm,
                         dnsdomain, dns_keytab_path, dnspass, key_version_number):
     """Add DNS specific bits to a secrets database.
 
@@ -659,12 +659,15 @@ def secretsdb_setup_dns(secretsdb, names, private_dir, realm,
     """
     try:
         os.unlink(os.path.join(private_dir, dns_keytab_path))
+        os.unlink(os.path.join(binddns_dir, dns_keytab_path))
     except OSError:
         pass
 
     if key_version_number is None:
         key_version_number = 1
 
+    # This will create the dns.keytab file in the private_dir when it is
+    # commited!
     setup_ldb(secretsdb, setup_path("secrets_dns.ldif"), {
             "REALM": realm,
             "DNSDOMAIN": dnsdomain,
@@ -954,7 +957,7 @@ def create_named_conf(paths, realm, dnsdomain, dns_backend, logger):
                     })
 
 
-def create_named_txt(path, realm, dnsdomain, dnsname, private_dir,
+def create_named_txt(path, realm, dnsdomain, dnsname, binddns_dir,
     keytab_name):
     """Write out a file containing zone statements suitable for inclusion in a
     named.conf file (including GSS-TSIG configuration).
@@ -962,7 +965,7 @@ def create_named_txt(path, realm, dnsdomain, dnsname, private_dir,
     :param path: Path of the new named.conf file.
     :param realm: Realm name
     :param dnsdomain: DNS Domain name
-    :param private_dir: Path to private directory
+    :param binddns_dir: Path to bind dns directory
     :param keytab_name: File name of DNS keytab file
     """
     setup_file(setup_path("named.txt"), path, {
@@ -970,8 +973,8 @@ def create_named_txt(path, realm, dnsdomain, dnsname, private_dir,
             "DNSNAME" : dnsname,
             "REALM": realm,
             "DNS_KEYTAB": keytab_name,
-            "DNS_KEYTAB_ABS": os.path.join(private_dir, keytab_name),
-            "PRIVATE_DIR": private_dir
+            "DNS_KEYTAB_ABS": os.path.join(binddns_dir, keytab_name),
+            "PRIVATE_DIR": binddns_dir
         })
 
 
@@ -1194,7 +1197,9 @@ def setup_bind9_dns(samdb, secretsdb, names, paths, lp, logger,
     domainguid = get_domainguid(samdb, domaindn)
 
     secretsdb_setup_dns(secretsdb, names,
-                        paths.private_dir, realm=names.realm,
+                        paths.private_dir,
+                        paths.binddns_dir,
+                        realm=names.realm,
                         dnsdomain=names.dnsdomain,
                         dns_keytab_path=paths.dns_keytab, dnspass=dnspass,
                         key_version_number=key_version_number)
@@ -1218,7 +1223,7 @@ def setup_bind9_dns(samdb, secretsdb, names, paths, lp, logger,
     create_named_txt(paths.namedtxt,
                      realm=names.realm, dnsdomain=names.dnsdomain,
                      dnsname = "%s.%s" % (names.hostname, names.dnsdomain),
-                     private_dir=paths.private_dir,
+                     binddns_dir=paths.binddns_dir,
                      keytab_name=paths.dns_keytab)
     logger.info("See %s for an example configuration include file for BIND",
                 paths.namedconf)

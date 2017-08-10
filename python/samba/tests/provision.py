@@ -42,6 +42,7 @@ def create_dummy_secretsdb(path, lp=None):
     paths = ProvisionPaths()
     paths.secrets = path
     paths.private_dir = os.path.dirname(path)
+    paths.binddns_dir = os.path.dirname(path)
     paths.keytab = "no.keytab"
     paths.dns_keytab = "no.dns.keytab"
     secrets_ldb = setup_secretsdb(paths, None, None, lp=lp)
@@ -59,6 +60,7 @@ class ProvisionTestCase(samba.tests.TestCaseInTempDir):
         secrets_tdb_path = os.path.join(self.tempdir, "secrets.tdb")
         paths.secrets = path
         paths.private_dir = os.path.dirname(path)
+        paths.binddns_dir = os.path.dirname(path)
         paths.keytab = "no.keytab"
         paths.dns_keytab = "no.dns.keytab"
         ldb = setup_secretsdb(paths, None, None, lp=env_loadparm())

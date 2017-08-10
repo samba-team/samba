@@ -10,7 +10,7 @@
 
 # 1. Insert following lines into the options {} section of your named.conf
 #    file:
-tkey-gssapi-keytab "/data/samba/git/samba4.1/st/promoted_dc/private/dns.keytab";
+tkey-gssapi-keytab "/data/samba/git/samba4.1/st/promoted_dc/bind-dns/dns.keytab";
 
 #
 # Common Steps for BIND 9.x.x --------------------------------------------
@@ -24,8 +24,8 @@ tkey-gssapi-keytab "/data/samba/git/samba4.1/st/promoted_dc/private/dns.keytab";
 #    is running as a non-root user, the "dns.keytab" file must have its
 #    permissions altered to allow the daemon to read it.  Under Fedora 9,
 #    execute the following commands:
-chgrp named /data/samba/git/samba4.1/st/promoted_dc/private/dns.keytab
-chmod g+r /data/samba/git/samba4.1/st/promoted_dc/private/dns.keytab
+chgrp named /data/samba/git/samba4.1/st/promoted_dc/bind-dns/dns.keytab
+chmod g+r /data/samba/git/samba4.1/st/promoted_dc/bind-dns/dns.keytab
 
 # 3. Ensure the BIND zone file(s) that will be dynamically updated are in
 #    a directory where the BIND daemon can write.  When BIND performs
@@ -42,4 +42,4 @@ chmod g+r /data/samba/git/samba4.1/st/promoted_dc/private/dns.keytab
 #    SELinux file contexts.  The dns.keytab file must be accessible by the
 #    BIND daemon and should have a SELinux type of named_conf_t.  This can be
 #    set with the following command:
-chcon -t named_conf_t /data/samba/git/samba4.1/st/promoted_dc/private/dns.keytab
+chcon -t named_conf_t /data/samba/git/samba4.1/st/promoted_dc/bind-dns/dns.keytab

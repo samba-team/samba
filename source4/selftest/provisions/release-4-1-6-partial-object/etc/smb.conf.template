@@ -4,6 +4,7 @@
 	workgroup = SAMBADOMAIN
 	realm = SAMBA.EXAMPLE.COM
 	private dir = @@PREFIX@@/private
+	binddns dir = @@PREFIX@@/bind-dns
 	lock dir = @@PREFIX@@/
 	posix:eadb = @@PREFIX@@/private/eadb.tdb
 

@@ -11,13 +11,13 @@ tkey-domain "ALPHA13.SAMBA.CORP";
 # - Modify BIND init scripts to pass the location of the generated keytab file.
 # Fedora 8 & later provide a variable named KEYTAB_FILE in /etc/sysconfig/named
 # for this purpose:
-KEYTAB_FILE="/home/mat/workspace/samba/alpha13/private/dns.keytab"
+KEYTAB_FILE="/home/mat/workspace/samba/alpha13/bind-dns/dns.keytab"
 # Note that the Fedora scripts translate KEYTAB_FILE behind the scenes into a
 # variable named KRB5_KTNAME, which is ultimately passed to the BIND daemon.  If
 # your distribution does not provide a variable like KEYTAB_FILE to pass a
 # keytab file to the BIND daemon, a workaround is to place the following line in
 # BIND's sysconfig file or in the init script for BIND:
-export KRB5_KTNAME="/home/mat/workspace/samba/alpha13/private/dns.keytab"
+export KRB5_KTNAME="/home/mat/workspace/samba/alpha13/bind-dns/dns.keytab"
 
 # - Set appropriate ownership and permissions on the dns.keytab file.  Note
 # that most distributions have BIND configured to run under a non-root user
@@ -26,8 +26,8 @@ export KRB5_KTNAME="/home/mat/workspace/samba/alpha13/private/dns.keytab"
 # by the user that BIND run as.  If BIND is running as a non-root user, the
 # "dns.keytab" file must have its permissions altered to allow the daemon to
 # read it.  Under Fedora 9, execute the following commands:
-chgrp named /home/mat/workspace/samba/alpha13/private/dns.keytab
-chmod g+r /home/mat/workspace/samba/alpha13/private/dns.keytab
+chgrp named /home/mat/workspace/samba/alpha13/bind-dns/dns.keytab
+chmod g+r /home/mat/workspace/samba/alpha13/bind-dns/dns.keytab
 
 # - Ensure the BIND zone file(s) that will be dynamically updated are in a
 # directory where the BIND daemon can write.  When BIND performs dynamic
@@ -43,4 +43,4 @@ chmod g+r /home/mat/workspace/samba/alpha13/private/dns.keytab
 # file contexts.  The dns.keytab file must be accessible by the BIND daemon
 # and should have a SELinux type of named_conf_t.  This can be set with the
 # following command:
-chcon -t named_conf_t /home/mat/workspace/samba/alpha13/private/dns.keytab
+chcon -t named_conf_t /home/mat/workspace/samba/alpha13/bind-dns/dns.keytab
