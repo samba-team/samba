@@ -415,9 +415,12 @@ def build(bld):
                         cflags=cflags)
 
     # install some extra empty directories
-    bld.INSTALL_DIRS("", "${CONFIGDIR} ${PRIVATE_DIR} ${LOGFILEBASE}");
-    bld.INSTALL_DIRS("", "${PRIVATE_DIR} ${PRIVILEGED_SOCKET_DIR}")
-    bld.INSTALL_DIRS("", "${STATEDIR} ${CACHEDIR}");
+    bld.INSTALL_DIR("${CONFIGDIR}")
+    bld.INSTALL_DIR("${LOGFILEBASE}")
+    bld.INSTALL_DIR("${PRIVILEGED_SOCKET_DIR}")
+    bld.INSTALL_DIR("${PRIVATE_DIR}")
+    bld.INSTALL_DIR("${STATEDIR}")
+    bld.INSTALL_DIR("${CACHEDIR}")
 
     # these might be on non persistent storage
     bld.INSTALL_DIRS("", "${LOCKDIR} ${PIDDIR} ${SOCKET_DIR}")
