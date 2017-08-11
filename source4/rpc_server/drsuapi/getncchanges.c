@@ -2358,6 +2358,32 @@ static WERROR getncchanges_get_obj_to_send(const struct ldb_message *msg,
 }
 
 /**
+ * Returns the number of links that are waiting to be sent
+ */
+static uint32_t getncchanges_chunk_links_pending(struct getncchanges_repl_chunk *repl_chunk,
+						 struct drsuapi_getncchanges_state *getnc_state)
+{
+	uint32_t links_to_send = 0;
+
+	if (getnc_state->is_get_tgt) {
+
+		/*
+		 * when the GET_TGT flag is set, only include the linked
+		 * attributes whose target object has already been checked
+		 * (i.e. they're ready to send).
+		 */
+		if (repl_chunk->tgt_la_count > getnc_state->la_idx) {
+			links_to_send = (repl_chunk->tgt_la_count -
+					 getnc_state->la_idx);
+		}
+	} else {
+		links_to_send = getnc_state->la_count - getnc_state->la_idx;
+	}
+
+	return links_to_send;
+}
+
+/**
  * Returns the max number of links that will fit in the current replication chunk
  */
 static uint32_t getncchanges_chunk_max_links(struct getncchanges_repl_chunk *repl_chunk)
@@ -2394,12 +2420,14 @@ static bool getncchanges_chunk_timed_out(struct getncchanges_repl_chunk *repl_ch
 
 /**
  * Returns true if the current chunk of replication data has reached the
- * max_objects
+ * max_objects and/or max_links thresholds.
  */
 static bool getncchanges_chunk_is_full(struct getncchanges_repl_chunk *repl_chunk,
 				       struct drsuapi_getncchanges_state *getnc_state)
 {
 	bool chunk_full = false;
+	uint32_t links_to_send;
+	uint32_t chunk_limit;
 
 	/* check if the current chunk is already full with objects */
 	if (repl_chunk->object_count >= repl_chunk->max_objects) {
@@ -2413,6 +2441,20 @@ static bool getncchanges_chunk_is_full(struct getncchanges_repl_chunk *repl_chun
 		 * and we have at least one object to send back to the client
 		 */
 		chunk_full = true;
+
+	} else if (repl_chunk->immediate_link_sync) {
+
+		/* check if the chunk is already full with links */
+		links_to_send = getncchanges_chunk_links_pending(repl_chunk,
+								 getnc_state);
+
+		chunk_limit = getncchanges_chunk_max_links(repl_chunk);
+
+		/*
+		 * The chunk is full if we've got more links to send than will
+		 * fit in one chunk
+		 */
+		chunk_full = (chunk_limit <= links_to_send);
 	}
 
 	return chunk_full;
@@ -2437,6 +2479,9 @@ static WERROR getncchanges_chunk_add_la_targets(struct getncchanges_repl_chunk *
 {
 	int ret;
 	uint32_t i;
+	uint32_t max_la_index;
+	uint32_t max_links;
+	uint32_t target_count = 0;
 	WERROR werr = WERR_OK;
 	static const char * const msg_attrs[] = {
 					    "*",
@@ -2446,8 +2491,19 @@ static WERROR getncchanges_chunk_add_la_targets(struct getncchanges_repl_chunk *
 					    DSDB_SECRET_ATTRIBUTES,
 					    NULL };
 
+	/*
+	 * A object can potentially link to thousands of targets. Only bother
+	 * checking as many targets as will fit into the current response
+	 */
+	max_links = getncchanges_chunk_max_links(repl_chunk);
+	max_la_index = MIN(getnc_state->la_count,
+			   start_la_index + max_links);
+
 	/* loop through any linked attributes to check */
-	for (i = start_la_index; i < getnc_state->la_count; i++) {
+	for (i = start_la_index;
+	     (i < max_la_index &&
+	      !getncchanges_chunk_is_full(repl_chunk, getnc_state));
+	     i++) {
 
 		struct GUID target_guid;
 		struct drsuapi_DsReplicaObjectListItemEx *new_objs = NULL;
@@ -2462,6 +2518,13 @@ static WERROR getncchanges_chunk_add_la_targets(struct getncchanges_repl_chunk *
 
 		la = &getnc_state->la_list[i];
 		tmp_ctx = talloc_new(mem_ctx);
+
+		/*
+		 * Track what linked attribute targets we've checked. We might
+		 * not have time to check them all, so we should only send back
+		 * the ones we've actually checked.
+		 */
+		repl_chunk->tgt_la_count = i + 1;
 
 		/* get the GUID of the linked attribute's target object */
 		schema_attrib = dsdb_attribute_by_attributeID_id(schema,
@@ -2549,11 +2612,15 @@ static WERROR getncchanges_chunk_add_la_targets(struct getncchanges_repl_chunk *
 		}
 
 		if (new_objs != NULL) {
+			target_count++;
 			getncchanges_chunk_add_objects(repl_chunk, new_objs);
 		}
 		TALLOC_FREE(tmp_ctx);
+	}
 
-		/* TODO could have 1000s of links. Stop if we fill up the message */
+	if (target_count > 0) {
+		DEBUG(3, ("GET_TGT: checked %u link-attrs, added %u target objs\n",
+			  i - start_la_index, target_count));
 	}
 
 	return WERR_OK;
@@ -2633,7 +2700,6 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	struct drsuapi_getncchanges_state *getnc_state;
 	struct drsuapi_DsGetNCChangesRequest10 *req10;
 	uint32_t options;
-	uint32_t max_links;
 	uint32_t link_count = 0;
 	struct ldb_dn *search_dn = NULL;
 	bool am_rodc;
@@ -3193,6 +3259,25 @@ allowed:
 				   uint32_t_ptr_cmp);
 	}
 
+	/*
+	 * Check in case we're still processing the links from an object in the
+	 * previous chunk. We want to send the links (and any targets needed)
+	 * before moving on to the next object.
+	 */
+	if (getnc_state->is_get_tgt) {
+		werr = getncchanges_chunk_add_la_targets(repl_chunk,
+							 getnc_state,
+							 getnc_state->la_idx,
+							 mem_ctx, sam_ctx,
+							 schema, &session_key,
+							 req10, local_pas,
+							 machine_dn);
+
+		if (!W_ERROR_IS_OK(werr)) {
+			return werr;
+		}
+	}
+
 	for (i=getnc_state->num_processed;
 	     i<getnc_state->num_records &&
 		     !getncchanges_chunk_is_full(repl_chunk, getnc_state);
@@ -3387,16 +3472,16 @@ allowed:
 		}
 	}
 
-	max_links = getncchanges_chunk_max_links(repl_chunk);
-
 	/*
 	 * Work out how many links we can send in this chunk. The default is to
 	 * send all the links last, but there is a config option to send them
 	 * immediately, in the same chunk as their source object
 	 */
 	if (!r->out.ctr->ctr6.more_data || repl_chunk->immediate_link_sync) {
-		link_count = getnc_state->la_count - getnc_state->la_idx;
-		link_count = MIN(max_links, link_count);
+		link_count = getncchanges_chunk_links_pending(repl_chunk,
+							      getnc_state);
+		link_count = MIN(link_count,
+				 getncchanges_chunk_max_links(repl_chunk));
 	}
 
 	/* If we've got linked attributes to send, add them now */
@@ -3527,3 +3612,4 @@ allowed:
 
 	return WERR_OK;
 }
+
