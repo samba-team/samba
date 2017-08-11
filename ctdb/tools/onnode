@@ -391,11 +391,11 @@ for n in $nodes ; do
     fi
 done
 
-$parallel && {
+if $parallel ; then
     for p in $pids; do
 	wait "$p"
 	[ $? = 0 ] || retcode=$?
     done
-}
+fi
 
 exit $retcode
