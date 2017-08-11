@@ -47,6 +47,10 @@ struct ltdb_idxptr {
 static int ltdb_write_index_dn_guid(struct ldb_module *module,
 				    const struct ldb_message *msg,
 				    int add);
+static int ltdb_index_dn_base_dn(struct ldb_module *module,
+				 struct ltdb_private *ltdb,
+				 struct ldb_dn *base_dn,
+				 struct dn_list *dn_list);
 
 /* we put a @IDXVERSION attribute on index entries. This
    allows us to tell if it was written by an older version
@@ -265,6 +269,42 @@ normal_index:
 	talloc_free(msg->elements);
 	return LDB_SUCCESS;
 }
+
+int ltdb_key_dn_from_idx(struct ldb_module *module,
+			 struct ltdb_private *ltdb,
+			 TALLOC_CTX *mem_ctx,
+			 struct ldb_dn *dn,
+			 TDB_DATA *tdb_key)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	int ret;
+	struct dn_list *list = talloc(mem_ctx, struct dn_list);
+	if (list == NULL) {
+		ldb_oom(ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = ltdb_index_dn_base_dn(module, ltdb, dn, list);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	if (list->count == 0) {
+		return LDB_ERR_NO_SUCH_OBJECT;
+	}
+	if (list->count > 1) {
+		return LDB_ERR_CONSTRAINT_VIOLATION;
+	}
+
+	*tdb_key = ltdb_guid_to_key(module, ltdb,
+				    mem_ctx, &list->dn[0]);
+	if (tdb_key->dptr == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	return LDB_SUCCESS;
+}
+
 
 
 /*

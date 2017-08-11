@@ -114,6 +114,11 @@ int ltdb_reindex(struct ldb_module *module);
 int ltdb_index_transaction_start(struct ldb_module *module);
 int ltdb_index_transaction_commit(struct ldb_module *module);
 int ltdb_index_transaction_cancel(struct ldb_module *module);
+int ltdb_key_dn_from_idx(struct ldb_module *module,
+			 struct ltdb_private *ltdb,
+			 TALLOC_CTX *mem_ctx,
+			 struct ldb_dn *dn,
+			 TDB_DATA *tdb_key);
 
 /* The following definitions come from lib/ldb/ldb_tdb/ldb_search.c  */
 
