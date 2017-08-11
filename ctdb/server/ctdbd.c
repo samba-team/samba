@@ -65,7 +65,7 @@ static struct {
 	int         max_persistent_check_errors;
 	int         torture;
 } options = {
-	.socket = CTDB_RUNDIR "/ctdbd.socket",
+	.socket = CTDB_SOCKET,
 	.debuglevel = "NOTICE",
 	.nlist = NULL,
 	.public_address_list = NULL,
