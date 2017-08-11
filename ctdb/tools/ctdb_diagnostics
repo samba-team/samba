@@ -26,7 +26,9 @@ parse_options ()
 {
     temp=$(getopt -n "ctdb_diagnostics" -o "n:cwh" -l no-ads,help -- "$@")
 
-    [ $? != 0 ] && usage
+    # No! Checking the exit code afterwards is actually clearer...
+    # shellcheck disable=SC2181
+    [ $? -eq 0 ] || usage
 
     eval set -- "$temp"
 
