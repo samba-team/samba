@@ -1199,16 +1199,6 @@ def setup_bind9_dns(samdb, secretsdb, names, paths, lp, logger,
                         dns_keytab_path=paths.dns_keytab, dnspass=dnspass,
                         key_version_number=key_version_number)
 
-    dns_keytab_path = os.path.join(paths.private_dir, paths.dns_keytab)
-    if os.path.isfile(dns_keytab_path) and paths.bind_gid is not None:
-        try:
-            os.chmod(dns_keytab_path, 0640)
-            os.chown(dns_keytab_path, -1, paths.bind_gid)
-        except OSError:
-            if not os.environ.has_key('SAMBA_SELFTEST'):
-                logger.info("Failed to chown %s to bind gid %u",
-                            dns_keytab_path, paths.bind_gid)
-
     create_dns_dir(logger, paths)
 
     if dns_backend == "BIND9_FLATFILE":
