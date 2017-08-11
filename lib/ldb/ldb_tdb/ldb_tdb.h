@@ -62,6 +62,7 @@ struct ltdb_context {
 #define LTDB_IDXVERSION "@IDXVERSION"
 #define LTDB_IDXATTR    "@IDXATTR"
 #define LTDB_IDXONE     "@IDXONE"
+#define LTDB_IDXDN     "@IDXDN"
 #define LTDB_BASEINFO   "@BASEINFO"
 #define LTDB_OPTIONS    "@OPTIONS"
 #define LTDB_ATTRIBUTES "@ATTRIBUTES"

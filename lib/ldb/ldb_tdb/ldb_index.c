@@ -44,6 +44,10 @@ struct ltdb_idxptr {
 	int error;
 };
 
+static int ltdb_write_index_dn_guid(struct ldb_module *module,
+				    const struct ldb_message *msg,
+				    int add);
+
 /* we put a @IDXVERSION attribute on index entries. This
    allows us to tell if it was written by an older version
 */
@@ -1387,14 +1391,20 @@ static int ltdb_index_add_all(struct ldb_module *module,
 	struct ldb_message_element *elements = msg->elements;
 	unsigned int i;
 	const char *dn_str;
+	int ret;
 
-       if (ldb_dn_is_special(msg->dn)) {
-               return LDB_SUCCESS;
-       }
+	if (ldb_dn_is_special(msg->dn)) {
+		return LDB_SUCCESS;
+	}
 
 	dn_str = ldb_dn_get_linearized(msg->dn);
 	if (dn_str == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = ltdb_write_index_dn_guid(module, msg, 1);
+	if (ret != LDB_SUCCESS) {
+		return ret;
 	}
 
 	if (!ltdb->cache->attribute_indexes) {
@@ -1403,7 +1413,6 @@ static int ltdb_index_add_all(struct ldb_module *module,
 	}
 
 	for (i = 0; i < msg->num_elements; i++) {
-		int ret;
 		if (!ltdb_is_indexed(module, ltdb, elements[i].name)) {
 			continue;
 		}
@@ -1493,6 +1502,25 @@ static int ltdb_index_onelevel(struct ldb_module *module,
 	talloc_free(pdn);
 
 	return ret;
+}
+
+/*
+  insert a one level index for a message
+*/
+static int ltdb_write_index_dn_guid(struct ldb_module *module,
+				    const struct ldb_message *msg,
+				    int add)
+{
+	struct ltdb_private *ltdb = talloc_get_type(ldb_module_get_private(module),
+						    struct ltdb_private);
+
+	/* We index for DN only if using a GUID index */
+	if (ltdb->cache->GUID_index_attribute == NULL) {
+		return LDB_SUCCESS;
+	}
+
+	return ltdb_modify_index_dn(module, ltdb, msg, msg->dn,
+				    LTDB_IDXDN, add);
 }
 
 /*
@@ -1667,6 +1695,11 @@ int ltdb_index_delete(struct ldb_module *module, const struct ldb_message *msg)
 	}
 
 	ret = ltdb_index_onelevel(module, msg, 0);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	ret = ltdb_write_index_dn_guid(module, msg, 0);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
