@@ -6734,6 +6734,7 @@ static int replmd_allow_missing_target(struct ldb_module *module,
 				       TALLOC_CTX *mem_ctx,
 				       struct ldb_dn *target_dn,
 				       struct ldb_dn *source_dn,
+				       bool is_obj_commit,
 				       struct GUID *guid,
 				       uint32_t dsdb_repl_flags,
 				       bool *ignore_link,
@@ -6793,18 +6794,27 @@ static int replmd_allow_missing_target(struct ldb_module *module,
 				       ldb_dn_get_linearized(source_dn));
 		return LDB_ERR_NO_SUCH_OBJECT;
 	}
-	
+
 	/*
 	 * The target of the cross-partition link is missing. Continue
 	 * and try to at least add the forward-link. This isn't great,
 	 * but a partial link can be fixed by dbcheck, so it's better
 	 * than dropping the link completely.
 	 */
-	DBG_WARNING("%s cross-partition target %s linked from %s\n",
-		    missing_str, ldb_dn_get_linearized(target_dn),
-		    ldb_dn_get_linearized(source_dn));
 	*ignore_link = false;
 
+	if (is_obj_commit) {
+
+		/*
+		 * Only log this when we're actually committing the objects.
+		 * This avoids spurious logs, i.e. if we're just verifying the
+		 * received link during a join.
+		 */
+		DBG_WARNING("%s cross-partition target %s linked from %s\n",
+			    missing_str, ldb_dn_get_linearized(target_dn),
+			    ldb_dn_get_linearized(source_dn));
+	}
+	
 	return LDB_SUCCESS;
 }
 
@@ -6818,6 +6828,7 @@ static int replmd_check_target_exists(struct ldb_module *module,
 				      struct dsdb_dn *dsdb_dn,
 				      struct la_entry *la_entry,
 				      struct ldb_dn *source_dn,
+				      bool is_obj_commit,
 				      struct GUID *guid,
 				      bool *ignore_link)
 {
@@ -6894,7 +6905,7 @@ static int replmd_check_target_exists(struct ldb_module *module,
 		 * fail the replication, or add a partial link
 		 */
 		ret = replmd_allow_missing_target(module, tmp_ctx, dsdb_dn->dn,
-						  source_dn, guid,
+						  source_dn, is_obj_commit, guid,
 						  la_entry->dsdb_repl_flags,
 						  ignore_link, "Unknown");
 
@@ -6925,8 +6936,8 @@ static int replmd_check_target_exists(struct ldb_module *module,
 			 * link, fail the replication, or add a partial link
 			 */
 			ret = replmd_allow_missing_target(module, tmp_ctx,
-							  dsdb_dn->dn,
-							  source_dn, guid,
+							  dsdb_dn->dn, source_dn,
+							  is_obj_commit, guid,
 							  la_entry->dsdb_repl_flags,
 							  ignore_link, "Deleted");
 		}
@@ -7084,8 +7095,18 @@ static int replmd_verify_linked_attribute(struct replmd_replicated_request *ar,
 		return ret;
 	}
 
-	ret = replmd_check_target_exists(module, tgt_dsdb_dn, la,
-					 src_msg->dn, &guid, &dummy);
+	/*
+	 * We can skip the target object checks if we're only syncing critical
+	 * objects, or we know the target is up-to-date. If either case, we
+	 * still continue even if the target doesn't exist
+	 */
+	if ((la->dsdb_repl_flags & (DSDB_REPL_FLAG_OBJECT_SUBSET |
+				    DSDB_REPL_FLAG_TARGETS_UPTODATE)) == 0) {
+
+		ret = replmd_check_target_exists(module, tgt_dsdb_dn, la,
+						 src_msg->dn, false, &guid,
+						 &dummy);
+	}
 
 	/*
 	 * When we fail to find the target object, the error code we pass
@@ -7173,7 +7194,7 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 	}
 
 	ret = replmd_check_target_exists(module, dsdb_dn, la_entry, msg->dn,
-					 &guid, &ignore_link);
+					 true, &guid, &ignore_link);
 
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
