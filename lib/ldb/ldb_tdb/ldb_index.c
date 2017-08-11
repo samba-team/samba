@@ -664,14 +664,25 @@ static int ltdb_index_dn_leaf(struct ldb_module *module,
 		return LDB_SUCCESS;
 	}
 	if (ldb_attr_dn(tree->u.equality.attr) == 0) {
-		list->dn = talloc_array(list, struct ldb_val, 1);
-		if (list->dn == NULL) {
-			ldb_module_oom(module);
-			return LDB_ERR_OPERATIONS_ERROR;
+		struct ldb_dn *dn
+			= ldb_dn_from_ldb_val(list,
+					      ldb_module_get_ctx(module),
+					      &tree->u.equality.value);
+		if (dn == NULL) {
+			/* If we can't parse it, no match */
+			list->dn = NULL;
+			list->count = 0;
+			return LDB_SUCCESS;
 		}
-		list->dn[0] = tree->u.equality.value;
-		list->count = 1;
-		return LDB_SUCCESS;
+
+		/*
+		 * Re-use the same code we use for a SCOPE_BASE
+		 * search
+		 *
+		 * We can't call TALLOC_FREE(dn) as this must belong
+		 * to list for the memory to remain valid.
+		 */
+		return ltdb_index_dn_base_dn(module, ltdb, dn, list);
 	}
 	return ltdb_index_dn_simple(module, ltdb, tree, list);
 }
@@ -983,10 +994,11 @@ static int ltdb_index_dn_and(struct ldb_module *module,
 /*
   return a list of matching objects using a one-level index
  */
-static int ltdb_index_dn_one(struct ldb_module *module,
-			     struct ltdb_private *ltdb,
-			     struct ldb_dn *parent_dn,
-			     struct dn_list *list)
+static int ltdb_index_dn_attr(struct ldb_module *module,
+			      struct ltdb_private *ltdb,
+			      const char *attr,
+			      struct ldb_dn *dn,
+			      struct dn_list *list)
 {
 	struct ldb_context *ldb;
 	struct ldb_dn *key;
@@ -996,9 +1008,9 @@ static int ltdb_index_dn_one(struct ldb_module *module,
 	ldb = ldb_module_get_ctx(module);
 
 	/* work out the index key from the parent DN */
-	val.data = (uint8_t *)((uintptr_t)ldb_dn_get_casefold(parent_dn));
+	val.data = (uint8_t *)((uintptr_t)ldb_dn_get_casefold(dn));
 	val.length = strlen((char *)val.data);
-	key = ltdb_index_key(ldb, LTDB_IDXONE, &val, NULL);
+	key = ltdb_index_key(ldb, attr, &val, NULL);
 	if (!key) {
 		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -1014,6 +1026,47 @@ static int ltdb_index_dn_one(struct ldb_module *module,
 		return LDB_ERR_NO_SUCH_OBJECT;
 	}
 
+	return LDB_SUCCESS;
+}
+
+/*
+  return a list of matching objects using a one-level index
+ */
+static int ltdb_index_dn_one(struct ldb_module *module,
+			     struct ltdb_private *ltdb,
+			     struct ldb_dn *parent_dn,
+			     struct dn_list *list)
+{
+	return ltdb_index_dn_attr(module, ltdb,
+				  LTDB_IDXONE, parent_dn, list);
+}
+
+/*
+  return a list of matching objects using the DN index
+ */
+static int ltdb_index_dn_base_dn(struct ldb_module *module,
+				 struct ltdb_private *ltdb,
+				 struct ldb_dn *base_dn,
+				 struct dn_list *dn_list)
+{
+	if (ltdb->cache->GUID_index_attribute != NULL) {
+		return ltdb_index_dn_attr(module, ltdb,
+					  LTDB_IDXDN, base_dn, dn_list);
+	}
+
+	dn_list->dn = talloc_array(dn_list, struct ldb_val, 1);
+	if (dn_list->dn == NULL) {
+		talloc_free(dn_list);
+		return ldb_module_oom(module);
+	}
+	dn_list->dn[0].data = discard_const_p(unsigned char,
+					      ldb_dn_get_linearized(base_dn));
+	if (dn_list->dn[0].data == NULL) {
+		talloc_free(dn_list);
+		return ldb_module_oom(module);
+	}
+	dn_list->dn[0].length = strlen((char *)dn_list->dn[0].data);
+	dn_list->count = 1;
 	return LDB_SUCCESS;
 }
 
@@ -1196,18 +1249,12 @@ int ltdb_search_indexed(struct ltdb_context *ac, uint32_t *match_count)
 
 	switch (ac->scope) {
 	case LDB_SCOPE_BASE:
-		dn_list->dn = talloc_array(dn_list, struct ldb_val, 1);
-		if (dn_list->dn == NULL) {
+		ret = ltdb_index_dn_base_dn(ac->module, ltdb,
+					    ac->base, dn_list);
+		if (ret != LDB_SUCCESS) {
 			talloc_free(dn_list);
-			return ldb_module_oom(ac->module);
+			return ret;
 		}
-		dn_list->dn[0].data = discard_const_p(unsigned char, ldb_dn_get_linearized(ac->base));
-		if (dn_list->dn[0].data == NULL) {
-			talloc_free(dn_list);
-			return ldb_module_oom(ac->module);
-		}
-		dn_list->dn[0].length = strlen((char *)dn_list->dn[0].data);
-		dn_list->count = 1;
 		break;
 
 	case LDB_SCOPE_ONELEVEL:
