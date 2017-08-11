@@ -6726,6 +6726,89 @@ static int replmd_extended_replicated_objects(struct ldb_module *module, struct 
 }
 
 /**
+ * Checks how to handle an missing target - either we need to fail the
+ * replication and retry with GET_TGT, ignore the link and continue, or try to
+ * add a partial link to an unknown target.
+ */
+static int replmd_allow_missing_target(struct ldb_module *module,
+				       TALLOC_CTX *mem_ctx,
+				       struct ldb_dn *target_dn,
+				       struct ldb_dn *source_dn,
+				       struct GUID *guid,
+				       uint32_t dsdb_repl_flags,
+				       bool *ignore_link,
+				       const char * missing_str)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	bool is_in_same_nc;
+
+	/*
+	 * we may not be able to resolve link targets properly when
+	 * dealing with subsets of objects, e.g. the source is a
+	 * critical object and the target isn't
+	 *
+	 * TODO:
+	 * When we implement Trusted Domains we need to consider
+	 * whether they get treated as an incomplete replica here or not
+	 */
+	if (dsdb_repl_flags & DSDB_REPL_FLAG_OBJECT_SUBSET) {
+
+		/*
+		 * Ignore the link. We don't increase the highwater-mark in
+		 * the object subset cases, so subsequent replications should
+		 * resolve any missing links
+		 */
+		DEBUG(2, ("%s target %s linked from %s\n", missing_str,
+			  ldb_dn_get_linearized(target_dn),
+			  ldb_dn_get_linearized(source_dn)));
+		*ignore_link = true;
+		return LDB_SUCCESS;
+	}
+
+	if (dsdb_repl_flags & DSDB_REPL_FLAG_TARGETS_UPTODATE) {
+
+		/*
+		 * target should already be up-to-date so there's no point in
+		 * retrying. This could be due to bad timing, or if a target
+		 * on a one-way link was deleted. We ignore the link rather
+		 * than failing the replication cycle completely
+		 */
+		*ignore_link = true;
+		DBG_WARNING("%s is %s but up to date. Ignoring link from %s\n",
+			    ldb_dn_get_linearized(target_dn), missing_str,
+			    ldb_dn_get_linearized(source_dn));
+		return LDB_SUCCESS;
+	}
+	
+	is_in_same_nc = dsdb_objects_have_same_nc(ldb,
+						  mem_ctx,
+						  source_dn,
+						  target_dn);
+	if (is_in_same_nc) {
+		/* fail the replication and retry with GET_TGT */
+		ldb_asprintf_errstring(ldb, "%s target %s GUID %s linked from %s\n",
+				       missing_str,
+				       ldb_dn_get_linearized(target_dn),
+				       GUID_string(mem_ctx, guid),
+				       ldb_dn_get_linearized(source_dn));
+		return LDB_ERR_NO_SUCH_OBJECT;
+	}
+	
+	/*
+	 * The target of the cross-partition link is missing. Continue
+	 * and try to at least add the forward-link. This isn't great,
+	 * but a partial link can be fixed by dbcheck, so it's better
+	 * than dropping the link completely.
+	 */
+	DBG_WARNING("%s cross-partition target %s linked from %s\n",
+		    missing_str, ldb_dn_get_linearized(target_dn),
+		    ldb_dn_get_linearized(source_dn));
+	*ignore_link = false;
+
+	return LDB_SUCCESS;
+}
+
+/**
  * Checks that the target object for a linked attribute exists.
  * @param guid returns the target object's GUID (is returned)if it exists)
  * @param ignore_link set to true if the linked attribute should be ignored
@@ -6807,46 +6890,14 @@ static int replmd_check_target_exists(struct ldb_module *module,
 	if (target_res->count == 0) {
 
 		/*
-		 * we may not be able to resolve link targets properly when
-		 * dealing with subsets of objects, e.g. the source is a
-		 * critical object and the target isn't
-		 *
-		 * TODO:
-		 * When we implement Trusted Domains we need to consider
-		 * whether they get treated as an incomplete replica here or not
+		 * target object is unknown. Check whether to ignore the link,
+		 * fail the replication, or add a partial link
 		 */
-		if (la_entry->dsdb_repl_flags & DSDB_REPL_FLAG_OBJECT_SUBSET) {
+		ret = replmd_allow_missing_target(module, tmp_ctx, dsdb_dn->dn,
+						  source_dn, guid,
+						  la_entry->dsdb_repl_flags,
+						  ignore_link, "Unknown");
 
-			/*
-			 * We don't increase the highwater-mark in the object
-			 * subset cases, so subsequent replications should
-			 * resolve any missing links
-			 */
-			DEBUG(2,(__location__
-				 ": Failed to find target %s linked from %s\n",
-				 ldb_dn_get_linearized(dsdb_dn->dn),
-				 ldb_dn_get_linearized(source_dn)));
-			*ignore_link = true;
-
-		} else if (dsdb_objects_have_same_nc(ldb, tmp_ctx, source_dn,
-						     dsdb_dn->dn)) {
-			ldb_asprintf_errstring(ldb, "Unknown target %s GUID %s linked from %s\n",
-					       ldb_dn_get_linearized(dsdb_dn->dn),
-					       GUID_string(tmp_ctx, guid),
-					       ldb_dn_get_linearized(source_dn));
-			ret = LDB_ERR_NO_SUCH_OBJECT;
-		} else {
-
-			/*
-			 * The target of the cross-partition link is missing.
-			 * Continue and try to at least add the forward-link.
-			 * This isn't great, but if we can add a partial link
-			 * then it's better than nothing.
-			 */
-			DEBUG(2,("Failed to resolve cross-partition link between %s and %s\n",
-				 ldb_dn_get_linearized(source_dn),
-				 ldb_dn_get_linearized(dsdb_dn->dn)));
-		}
 	} else if (target_res->count != 1) {
 		ldb_asprintf_errstring(ldb, "More than one object found matching objectGUID %s\n",
 				       GUID_string(tmp_ctx, guid));
@@ -6869,26 +6920,15 @@ static int replmd_check_target_exists(struct ldb_module *module,
 		 */
 		if (target_deletion_state >= OBJECT_RECYCLED) {
 
-			if (la_entry->dsdb_repl_flags & DSDB_REPL_FLAG_TARGETS_UPTODATE) {
-
-				/*
-				 * target should already be uptodate so there's no
-				 * point retrying - it's probably just bad timing
-				 */
-				*ignore_link = true;
-				DEBUG(0, ("%s is deleted but up to date. "
-					  "Ignoring link from %s\n",
-					  ldb_dn_get_linearized(dsdb_dn->dn),
-					  ldb_dn_get_linearized(source_dn)));
-
-			} else {
-				ldb_asprintf_errstring(ldb,
-						       "Deleted target %s GUID %s linked from %s",
-						       ldb_dn_get_linearized(dsdb_dn->dn),
-						       GUID_string(tmp_ctx, guid),
-						       ldb_dn_get_linearized(source_dn));
-				ret = LDB_ERR_NO_SUCH_OBJECT;
-			}
+			/*
+			 * target object is deleted. Check whether to ignore the
+			 * link, fail the replication, or add a partial link
+			 */
+			ret = replmd_allow_missing_target(module, tmp_ctx,
+							  dsdb_dn->dn,
+							  source_dn, guid,
+							  la_entry->dsdb_repl_flags,
+							  ignore_link, "Deleted");
 		}
 	}
 

@@ -1042,8 +1042,30 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
         self.assertFalse("managedBy" in res[0], "%s in DB still has managedBy attribute"
                          % la_source)
 
+        # Check receiving a cross-partition link to a deleted target.
+        # Delete the target and make sure the deletion is sync'd between DCs
+        target_guid = self.get_object_guid(la_target)
+        self.test_ldb_dc.delete(la_target)
+        self.sync_DCs(nc_dn=self.config_dn)        
+        self._disable_all_repl(self.dnsname_dc2)
+
+        # re-animate the target
+        self.restore_deleted_object(target_guid, la_target)
+        self.modify_object(la_source, "managedBy", la_target)
+
+        # now sync the link - because the target is in another partition, the
+        # peer DC receives a link for a deleted target, which it should accept
+        self.sync_DCs()
+        res = self.test_ldb_dc.search(ldb.Dn(self.ldb_dc1, la_source),
+                                      attrs=["managedBy"],
+                                      controls=['extended_dn:1:0'],
+                                      scope=ldb.SCOPE_BASE)
+        self.assertTrue("managedBy" in res[0], "%s in DB missing managedBy attribute"
+                        % la_source)
+
         # cleanup the server object we created in the Configuration partition
-        self.test_ldb_dc.delete(la_source)
+        self.test_ldb_dc.delete(la_target)
+        self._enable_all_repl(self.dnsname_dc2)
 
     def test_repl_get_tgt_multivalued_links(self):
         """Tests replication with multi-valued link attributes."""
