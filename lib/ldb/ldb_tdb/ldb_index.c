@@ -166,12 +166,12 @@ static struct dn_list *ltdb_index_idxptr(struct ldb_module *module, TDB_DATA rec
   struct dn_list
  */
 static int ltdb_dn_list_load(struct ldb_module *module,
+			     struct ltdb_private *ltdb,
 			     struct ldb_dn *dn, struct dn_list *list)
 {
 	struct ldb_message *msg;
 	int ret;
 	struct ldb_message_element *el;
-	struct ltdb_private *ltdb = talloc_get_type(ldb_module_get_private(module), struct ltdb_private);
 	TDB_DATA rec;
 	struct dn_list *list2;
 	TDB_DATA key;
@@ -640,7 +640,7 @@ static int ltdb_index_dn_simple(struct ldb_module *module,
 	dn = ltdb_index_key(ldb, tree->u.equality.attr, &tree->u.equality.value, NULL);
 	if (!dn) return LDB_ERR_OPERATIONS_ERROR;
 
-	ret = ltdb_dn_list_load(module, dn, list);
+	ret = ltdb_dn_list_load(module, ltdb, dn, list);
 	talloc_free(dn);
 	return ret;
 }
@@ -984,6 +984,7 @@ static int ltdb_index_dn_and(struct ldb_module *module,
   return a list of matching objects using a one-level index
  */
 static int ltdb_index_dn_one(struct ldb_module *module,
+			     struct ltdb_private *ltdb,
 			     struct ldb_dn *parent_dn,
 			     struct dn_list *list)
 {
@@ -1003,7 +1004,7 @@ static int ltdb_index_dn_one(struct ldb_module *module,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = ltdb_dn_list_load(module, key, list);
+	ret = ltdb_dn_list_load(module, ltdb, key, list);
 	talloc_free(key);
 	if (ret != LDB_SUCCESS) {
 		return ret;
@@ -1214,7 +1215,7 @@ int ltdb_search_indexed(struct ltdb_context *ac, uint32_t *match_count)
 			talloc_free(dn_list);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		ret = ltdb_index_dn_one(ac->module, ac->base, dn_list);
+		ret = ltdb_index_dn_one(ac->module, ltdb, ac->base, dn_list);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(dn_list);
 			return ret;
@@ -1287,7 +1288,7 @@ static int ltdb_index_add1(struct ldb_module *module,
 	}
 	talloc_steal(list, dn_key);
 
-	ret = ltdb_dn_list_load(module, dn_key, list);
+	ret = ltdb_dn_list_load(module, ltdb, dn_key, list);
 	if (ret != LDB_SUCCESS && ret != LDB_ERR_NO_SUCH_OBJECT) {
 		talloc_free(list);
 		return ret;
@@ -1610,7 +1611,7 @@ int ltdb_index_del_value(struct ldb_module *module,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = ltdb_dn_list_load(module, dn_key, list);
+	ret = ltdb_dn_list_load(module, ltdb, dn_key, list);
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		/* it wasn't indexed. Did we have an earlier error? If we did then
 		   its gone now */
