@@ -823,6 +823,7 @@ def build(bld):
         'lock_tdb',
         'dummy_client',
         'tunnel_test',
+        'tunnel_cmd',
     ]
 
     for target in ctdb_tests:
