@@ -100,7 +100,7 @@ static bool eventd_context_init(TALLOC_CTX *mem_ctx,
 	socket = talloc_strdup(ectx, ctdb_get_socketname(ctdb));
 	if (socket == NULL) {
 		talloc_free(ectx);
-		return NULL;
+		return false;
 	}
 
 	ectx->socket = talloc_asprintf(ectx, "%s/eventd.sock",
