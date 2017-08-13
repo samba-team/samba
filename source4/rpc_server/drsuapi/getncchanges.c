@@ -2043,6 +2043,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	DCESRV_PULL_HANDLE_WERR(h, r->in.bind_handle, DRSUAPI_BIND_HANDLE);
 	b_state = h->data;
 
+	/* sam_ctx_system is not present for non-administrator users */
 	sam_ctx = b_state->sam_ctx_system?b_state->sam_ctx_system:b_state->sam_ctx;
 
 	invocation_id = *(samdb_ntds_invocation_id(sam_ctx));
@@ -2107,7 +2108,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	user_sid = &dce_call->conn->auth_state.session_info->security_token->sids[PRIMARY_USER_SID_INDEX];
 
 	/* all clients must have GUID_DRS_GET_CHANGES */
-	werr = drs_security_access_check_nc_root(b_state->sam_ctx,
+	werr = drs_security_access_check_nc_root(sam_ctx,
 						 mem_ctx,
 						 dce_call->conn->auth_state.session_info->security_token,
 						 req10->naming_context,
@@ -2149,7 +2150,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		return werr;
 	}
 	if (is_gc_pas_request) {
-		werr = drs_security_access_check_nc_root(b_state->sam_ctx,
+		werr = drs_security_access_check_nc_root(sam_ctx,
 							 mem_ctx,
 							 dce_call->conn->auth_state.session_info->security_token,
 							 req10->naming_context,
@@ -2166,7 +2167,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		return werr;
 	}
 	if (is_secret_request) {
-		werr = drs_security_access_check_nc_root(b_state->sam_ctx,
+		werr = drs_security_access_check_nc_root(sam_ctx,
 							 mem_ctx,
 							 dce_call->conn->auth_state.session_info->security_token,
 							 req10->naming_context,
@@ -2261,7 +2262,7 @@ allowed:
 		ncRoot->guid = getnc_state->ncRoot_guid;
 
 		/* find out if we are to replicate Schema NC */
-		ret = ldb_dn_compare_base(ldb_get_schema_basedn(b_state->sam_ctx),
+		ret = ldb_dn_compare_base(ldb_get_schema_basedn(sam_ctx),
 					  getnc_state->ncRoot_dn);
 
 		getnc_state->is_schema_nc = (0 == ret);
@@ -2532,7 +2533,7 @@ allowed:
 		struct dsdb_syntax_ctx syntax_ctx;
 		uint32_t j = 0;
 
-		dsdb_syntax_ctx_init(&syntax_ctx, b_state->sam_ctx, schema);
+		dsdb_syntax_ctx_init(&syntax_ctx, sam_ctx, schema);
 		syntax_ctx.pfm_remote = pfm_remote;
 
 		local_pas = talloc_array(b_state, uint32_t, req10->partial_attribute_set->num_attids);
@@ -2832,7 +2833,7 @@ allowed:
 		DEBUG(3,("UpdateRefs on getncchanges for %s\n",
 			 GUID_string(mem_ctx, &req10->destination_dsa_guid)));
 		ureq.naming_context = ncRoot;
-		ureq.dest_dsa_dns_name = samdb_ntds_msdcs_dns_name(b_state->sam_ctx, mem_ctx,
+		ureq.dest_dsa_dns_name = samdb_ntds_msdcs_dns_name(sam_ctx, mem_ctx,
 								   &req10->destination_dsa_guid);
 		if (!ureq.dest_dsa_dns_name) {
 			return WERR_NOT_ENOUGH_MEMORY;
