@@ -1089,25 +1089,42 @@ static int ltdb_index_dn_base_dn(struct ldb_module *module,
 				 struct ldb_dn *base_dn,
 				 struct dn_list *dn_list)
 {
-	if (ltdb->cache->GUID_index_attribute != NULL) {
-		return ltdb_index_dn_attr(module, ltdb,
-					  LTDB_IDXDN, base_dn, dn_list);
+	const struct ldb_val *guid_val = NULL;
+	if (ltdb->cache->GUID_index_attribute == NULL) {
+		dn_list->dn = talloc_array(dn_list, struct ldb_val, 1);
+		if (dn_list->dn == NULL) {
+			return ldb_module_oom(module);
+		}
+		dn_list->dn[0].data = discard_const_p(unsigned char,
+						      ldb_dn_get_linearized(base_dn));
+		if (dn_list->dn[0].data == NULL) {
+			return ldb_module_oom(module);
+		}
+		dn_list->dn[0].length = strlen((char *)dn_list->dn[0].data);
+		dn_list->count = 1;
+
+		return LDB_SUCCESS;
 	}
 
-	dn_list->dn = talloc_array(dn_list, struct ldb_val, 1);
-	if (dn_list->dn == NULL) {
-		talloc_free(dn_list);
-		return ldb_module_oom(module);
+	if (ltdb->cache->GUID_index_dn_component != NULL) {
+		guid_val = ldb_dn_get_extended_component(base_dn,
+							 ltdb->cache->GUID_index_dn_component);
 	}
-	dn_list->dn[0].data = discard_const_p(unsigned char,
-					      ldb_dn_get_linearized(base_dn));
-	if (dn_list->dn[0].data == NULL) {
-		talloc_free(dn_list);
-		return ldb_module_oom(module);
+
+	if (guid_val != NULL) {
+		dn_list->dn = talloc_array(dn_list, struct ldb_val, 1);
+		if (dn_list->dn == NULL) {
+			return ldb_module_oom(module);
+		}
+		dn_list->dn[0].data = guid_val->data;
+		dn_list->dn[0].length = guid_val->length;
+		dn_list->count = 1;
+
+		return LDB_SUCCESS;
 	}
-	dn_list->dn[0].length = strlen((char *)dn_list->dn[0].data);
-	dn_list->count = 1;
-	return LDB_SUCCESS;
+
+	return ltdb_index_dn_attr(module, ltdb,
+				  LTDB_IDXDN, base_dn, dn_list);
 }
 
 /*

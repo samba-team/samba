@@ -21,6 +21,7 @@ struct ltdb_private {
 		bool one_level_indexes;
 		bool attribute_indexes;
 		const char *GUID_index_attribute;
+		const char *GUID_index_dn_component;
 	} *cache;
 
 	int in_transaction;
