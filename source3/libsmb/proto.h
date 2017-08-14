@@ -174,6 +174,7 @@ const char *cli_state_remote_realm(struct cli_state *cli);
 uint16_t cli_state_get_vc_num(struct cli_state *cli);
 uint16_t cli_setpid(struct cli_state *cli, uint16_t pid);
 uint16_t cli_getpid(struct cli_state *cli);
+bool cli_state_is_encryption_on(struct cli_state *cli);
 bool cli_state_has_tcon(struct cli_state *cli);
 uint16_t cli_state_get_tid(struct cli_state *cli);
 uint16_t cli_state_set_tid(struct cli_state *cli, uint16_t tid);
