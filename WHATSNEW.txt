@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the third release candidate of Samba 4.7.  This is *not*
+This is the fourth release candidate of Samba 4.7.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -325,6 +325,51 @@ KNOWN ISSUES
 ============
 
 https://wiki.samba.org/index.php/Release_Planning_for_Samba_4.7#Release_blocking_bugs
+
+
+CHANGES SINCE 4.7.0rc3
+======================
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 12913: Implement cli_smb2_setatr() by calling cli_smb2_setpathinfo().
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 11392: s4-cldap/netlogon: Match Windows 2012R2 and return
+     NETLOGON_NT_VERSION_5 when version unspecified.
+   * BUG 12855: dsdb: Do not force a re-index of sam.ldb on upgrade to 4.7.
+   * BUG 12904: dsdb: Fix dsdb_next_callback to correctly use ldb_module_done()
+     etc.
+   * BUG 12939: s4-rpc_server: Improve debug of new endpoints.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 12791: Fix kernel oplocks issues with named streams.
+   * BUG 12944: vfs_gpfs: Handle EACCES when fetching DOS attributes from xattr.
+
+o  Bob Campbell <bobcampbell@catalyst.net.nz>
+   * BUG 12842: samdb/cracknames: Support user and service principal as desired
+     format.
+
+o  David Disseldorp <ddiss@samba.org>
+   * BUG 12911: vfs_ceph: Fix cephwrap_chdir().
+
+o  Gary Lockyer <gary@catalyst.net.nz>
+   * BUG 12865: Track machine account ServerAuthenticate3.
+
+o  Marc Muehlfeld <mmuehlfeld@samba.org>
+   * BUG 12947: python: Fix incorrect kdc.conf parameter name in kerberos.py.
+
+o  Noel Power <noel.power@suse.com>
+   * BUG 12937: s3/utils: 'smbcacls' failed to detect DIRECTORIES using SMB2
+     (Windows only).
+
+o  Arvid Requate <requate@univention.de>
+   * BUG 11392: s4-dsdb/netlogon: Allow missing ntver in cldap ping.
+
+o  Anoop C S <anoopcs@redhat.com>
+   * BUG 12936: source3/client: Fix typo in help message displayed by default.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 12930: Fix building with GCC 7.1.1.
 
 
 CHANGES SINCE 4.7.0rc2
