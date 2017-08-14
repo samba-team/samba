@@ -1287,6 +1287,7 @@ bool messaging_parent_dgm_cleanup_init(struct messaging_context *msg)
 			    60*15),
 		mess_parent_dgm_cleanup, msg);
 	if (req == NULL) {
+		DBG_WARNING("background_job_send failed\n");
 		return false;
 	}
 	tevent_req_set_callback(req, mess_parent_dgm_cleanup_done, msg);
