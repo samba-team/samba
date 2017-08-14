@@ -334,6 +334,19 @@ uint32_t cli_getpid(struct cli_state *cli)
 	return cli->smb1.pid;
 }
 
+bool cli_state_is_encryption_on(struct cli_state *cli)
+{
+	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
+		return smb1cli_conn_encryption_on(cli->conn);
+	}
+
+	if (cli->smb2.tcon == NULL) {
+		return false;
+	}
+
+	return smb2cli_tcon_is_encryption_on(cli->smb2.tcon);
+}
+
 bool cli_state_has_tcon(struct cli_state *cli)
 {
 	uint32_t tid;
