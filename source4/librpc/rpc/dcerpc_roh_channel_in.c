@@ -21,7 +21,7 @@
 */
 
 #include "includes.h"
-#include "lib/tevent/tevent.h"
+#include <tevent.h>
 #include "lib/talloc/talloc.h"
 #include "lib/tsocket/tsocket.h"
 #include "lib/tls/tls.h"
