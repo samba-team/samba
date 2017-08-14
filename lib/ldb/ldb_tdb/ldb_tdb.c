@@ -175,9 +175,9 @@ bool ltdb_key_is_record(TDB_DATA key)
   note that the key for a record can depend on whether the
   dn refers to a case sensitive index record or not
 */
-TDB_DATA ltdb_key_dn(struct ldb_module *module, struct ldb_dn *dn)
+TDB_DATA ltdb_key_dn(struct ldb_module *module, TALLOC_CTX *mem_ctx,
+		     struct ldb_dn *dn)
 {
-	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	TDB_DATA key;
 	char *key_str = NULL;
 	const char *dn_folded = NULL;
@@ -199,7 +199,7 @@ TDB_DATA ltdb_key_dn(struct ldb_module *module, struct ldb_dn *dn)
 		goto failed;
 	}
 
-	key_str = talloc_strdup(ldb, "DN=");
+	key_str = talloc_strdup(mem_ctx, "DN=");
 	if (!key_str) {
 		goto failed;
 	}
@@ -249,15 +249,16 @@ TDB_DATA ltdb_guid_to_key(struct ldb_module *module,
 
 /*
   form a TDB_DATA for a record key
-  caller frees
+  caller frees mem_ctx, which may or may not have the key
+  as a child.
 
-  note that the key for a record can depend on whether the
-  dn refers to a case sensitive index record or not
+  note that the key for a record can depend on whether a
+  GUID index is in use, or the DN is used as the key
 */
-TDB_DATA ltdb_key_msg(struct ldb_module *module,
+TDB_DATA ltdb_key_msg(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 		      const struct ldb_message *msg)
 {
-	return ltdb_key_dn(module, msg->dn);
+	return ltdb_key_dn(module, mem_ctx, msg->dn);
 }
 
 /*
@@ -347,20 +348,26 @@ int ltdb_store(struct ldb_module *module, const struct ldb_message *msg, int flg
 	TDB_DATA tdb_key, tdb_data;
 	struct ldb_val ldb_data;
 	int ret = LDB_SUCCESS;
+	TALLOC_CTX *tdb_key_ctx = talloc_new(module);
+
+	if (tdb_key_ctx == NULL) {
+		return ldb_module_oom(module);
+	}
 
 	if (ltdb->read_only) {
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
-	tdb_key = ltdb_key_msg(module, msg);
+	tdb_key = ltdb_key_msg(module, tdb_key_ctx, msg);
 	if (tdb_key.dptr == NULL) {
+		TALLOC_FREE(tdb_key_ctx);
 		return LDB_ERR_OTHER;
 	}
 
 	ret = ldb_pack_data(ldb_module_get_ctx(module),
 			    msg, &ldb_data);
 	if (ret == -1) {
-		talloc_free(tdb_key.dptr);
+		TALLOC_FREE(tdb_key_ctx);
 		return LDB_ERR_OTHER;
 	}
 
@@ -385,7 +392,7 @@ int ltdb_store(struct ldb_module *module, const struct ldb_message *msg, int flg
 	}
 
 done:
-	talloc_free(tdb_key.dptr);
+	TALLOC_FREE(tdb_key_ctx);
 	talloc_free(ldb_data.data);
 
 	return ret;
@@ -546,18 +553,24 @@ int ltdb_delete_noindex(struct ldb_module *module,
 	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
 	TDB_DATA tdb_key;
 	int ret;
+	TALLOC_CTX *tdb_key_ctx = talloc_new(module);
+
+	if (tdb_key_ctx == NULL) {
+		return ldb_module_oom(module);
+	}
 
 	if (ltdb->read_only) {
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
-	tdb_key = ltdb_key_dn(module, msg->dn);
+	tdb_key = ltdb_key_dn(module, tdb_key_ctx, msg->dn);
 	if (!tdb_key.dptr) {
+		TALLOC_FREE(tdb_key_ctx);
 		return LDB_ERR_OTHER;
 	}
 
 	ret = tdb_delete(ltdb->tdb, tdb_key);
-	talloc_free(tdb_key.dptr);
+	TALLOC_FREE(tdb_key_ctx);
 
 	if (ret != 0) {
 		ret = ltdb_err_map(tdb_error(ltdb->tdb));
@@ -1206,13 +1219,13 @@ static int ltdb_rename(struct ltdb_context *ctx)
 	 * Even in GUID index mode we use ltdb_key_dn() as we are
 	 * trying to figure out if this is just a case rename
 	 */
-	tdb_key = ltdb_key_dn(module, req->op.rename.newdn);
+	tdb_key = ltdb_key_dn(module, msg, req->op.rename.newdn);
 	if (!tdb_key.dptr) {
 		talloc_free(msg);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	tdb_key_old = ltdb_key_dn(module, req->op.rename.olddn);
+	tdb_key_old = ltdb_key_dn(module, msg, req->op.rename.olddn);
 	if (!tdb_key_old.dptr) {
 		talloc_free(msg);
 		talloc_free(tdb_key.dptr);

@@ -146,8 +146,10 @@ int ltdb_unlock_read(struct ldb_module *module);
  * index, the old DN index and a possible future ID=
  */
 bool ltdb_key_is_record(TDB_DATA key);
-TDB_DATA ltdb_key_dn(struct ldb_module *module, struct ldb_dn *dn);
-TDB_DATA ltdb_key_msg(struct ldb_module *module, const struct ldb_message *msg);
+TDB_DATA ltdb_key_dn(struct ldb_module *module, TALLOC_CTX *mem_ctx,
+		     struct ldb_dn *dn);
+TDB_DATA ltdb_key_msg(struct ldb_module *module, TALLOC_CTX *mem_ctx,
+		      const struct ldb_message *msg);
 TDB_DATA ltdb_guid_to_key(struct ldb_module *module,
 			  struct ltdb_private *ltdb,
 			  TALLOC_CTX *mem_ctx,

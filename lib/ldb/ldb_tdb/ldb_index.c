@@ -1962,7 +1962,7 @@ static int re_key(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *st
 	/* check if the DN key has changed, perhaps due to the case
 	   insensitivity of an element changing, or a change from DN
 	   to GUID keys */
-	key2 = ltdb_key_msg(module, msg);
+	key2 = ltdb_key_msg(module, msg, msg);
 	if (key2.dptr == NULL) {
 		/* probably a corrupt record ... darn */
 		ldb_debug(ldb, LDB_DEBUG_ERROR, "Invalid DN in re_index: %s",

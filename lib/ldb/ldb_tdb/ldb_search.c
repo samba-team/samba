@@ -215,7 +215,7 @@ static int ltdb_parse_data_unpack(TDB_DATA key, TDB_DATA data,
   and LDB_SUCCESS on success
 */
 int ltdb_search_key(struct ldb_module *module, struct ltdb_private *ltdb,
-		    struct TDB_DATA tdb_key,
+		    const struct TDB_DATA tdb_key,
 		    struct ldb_message *msg,
 		    unsigned int unpack_flags)
 {
@@ -233,7 +233,6 @@ int ltdb_search_key(struct ldb_module *module, struct ltdb_private *ltdb,
 
 	ret = tdb_parse_record(ltdb->tdb, tdb_key, 
 			       ltdb_parse_data_unpack, &ctx); 
-	talloc_free(tdb_key.dptr);
 	
 	if (ret == -1) {
 		ret = ltdb_err_map(tdb_error(ltdb->tdb));
@@ -266,13 +265,23 @@ int ltdb_search_dn1(struct ldb_module *module, struct ldb_dn *dn, struct ldb_mes
 	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
 	int ret;
 	TDB_DATA tdb_key;
+
+	TALLOC_CTX *tdb_key_ctx = talloc_new(msg);
+	if (!tdb_key_ctx) {
+		return ldb_module_oom(module);
+	}
+
 	/* form the key */
-	tdb_key = ltdb_key_dn(module, dn);
+	tdb_key = ltdb_key_dn(module, tdb_key_ctx, dn);
 	if (!tdb_key.dptr) {
+		TALLOC_FREE(tdb_key_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	ret = ltdb_search_key(module, ltdb, tdb_key, msg, unpack_flags);
+
+	TALLOC_FREE(tdb_key_ctx);
+
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
