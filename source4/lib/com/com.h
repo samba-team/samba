@@ -20,8 +20,8 @@
 #ifndef __SAMBA_COM_H__
 #define __SAMBA_COM_H__
 
+#include <talloc.h>
 #include "librpc/gen_ndr/misc.h"
-#include "lib/talloc/talloc.h"
 
 struct com_context;
 struct tevent_context;
