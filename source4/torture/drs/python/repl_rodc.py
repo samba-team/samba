@@ -202,6 +202,13 @@ class DrsRodcTestCase(drs_base.DrsBaseTestCase):
         except WERRORError as (enum, estr):
             self.assertEquals(enum, 8630) # ERROR_DS_DRA_SECRETS_DENIED
 
+        # send the same request again and we should get the same response
+        try:
+            (level, ctr) = self.rodc_drs.DsGetNCChanges(self.rodc_drs_handle, 10, req10)
+            self.fail("Successfully replicated secrets to an RODC that shouldn't have been replicated.")
+        except WERRORError as (enum, estr):
+            self.assertEquals(enum, 8630) # ERROR_DS_DRA_SECRETS_DENIED
+
         # Retry with Administrator credentials, ignores password replication groups
         (level, ctr) = self.drs.DsGetNCChanges(self.drs_handle, 10, req10)
 
