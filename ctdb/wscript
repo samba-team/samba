@@ -780,6 +780,7 @@ def build(bld):
             'protocol_ctdb_test',
             'protocol_event_test',
             'protocol_util_test',
+            'protocol_types_compat_test',
     ]
 
     for target in ctdb_protocol_tests:
