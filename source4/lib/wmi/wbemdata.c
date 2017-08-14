@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include <talloc.h>
 #include "librpc/gen_ndr/dcom.h"
 #include "librpc/gen_ndr/com_dcom.h"
 #include "librpc/ndr/libndr.h"
@@ -30,7 +31,6 @@
 #include "librpc/gen_ndr/ndr_dcom.h"
 #include "librpc/rpc/dcerpc.h"
 #include "librpc/gen_ndr/ndr_misc.h"
-#include "lib/talloc/talloc.h"
 #include "libcli/composite/composite.h"
 #include "lib/wmi/wmi.h"
 #include "librpc/gen_ndr/ndr_wmi.h"

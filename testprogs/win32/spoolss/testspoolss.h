@@ -29,7 +29,7 @@
 #include "printlib_proto.h"
 
 #if 0
-#include "lib/talloc/talloc.h"
+#include <talloc.h>
 #include "libcli/util/ntstatus.h"
 #include "lib/torture/torture.h"
 #endif

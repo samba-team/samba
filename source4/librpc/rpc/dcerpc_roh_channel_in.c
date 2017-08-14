@@ -22,7 +22,7 @@
 
 #include "includes.h"
 #include <tevent.h>
-#include "lib/talloc/talloc.h"
+#include <talloc.h>
 #include "lib/tsocket/tsocket.h"
 #include "lib/tls/tls.h"
 #include "lib/util/tevent_ntstatus.h"
