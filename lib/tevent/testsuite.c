@@ -25,7 +25,7 @@
 */
 
 #include "includes.h"
-#include "lib/tevent/tevent.h"
+#include "tevent.h"
 #include "system/filesys.h"
 #include "system/select.h"
 #include "system/network.h"
