@@ -1293,7 +1293,8 @@ sub provision_vampire_dc($$$)
 	if ($fl == "2000") {
 		$name = "vampire2000dc";
 	} else {
-		$extra_conf = "drs: immediate link sync = yes";
+		$extra_conf = "drs: immediate link sync = yes
+                       drs: max link sync = 250";
 	}
 
 	# We do this so that we don't run the provision.  That's the job of 'net vampire'.

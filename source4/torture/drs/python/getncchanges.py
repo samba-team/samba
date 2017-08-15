@@ -1045,6 +1045,59 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
         # cleanup the server object we created in the Configuration partition
         self.test_ldb_dc.delete(la_source)
 
+    def test_repl_get_tgt_multivalued_links(self):
+        """Tests replication with multi-valued link attributes."""
+
+        # create the target/source objects and link them together
+        la_targets = self.create_object_range(0, 500, prefix="la_tgt")
+        la_source = "CN=la_src,%s" % self.ou
+        self.add_object(la_source, objectclass="msExchConfigurationContainer")
+
+        for tgt in la_targets:
+            self.modify_object(la_source, "addressBookRoots2", tgt)
+
+        filler = self.create_object_range(0, 100, prefix="filler")
+
+        # We should receive the objects/links in the following order:
+        # [500 targets + 1 source][500 links][100 filler]
+        expected_objects = la_targets + [la_source] + filler
+        link_only_chunk = False
+
+        # First do the replication without needing GET_TGT
+        while not self.replication_complete():
+            ctr6 = self.repl_get_next()
+
+            if ctr6.object_count == 0 and ctr6.linked_attributes_count != 0:
+                link_only_chunk = True
+
+        # we should receive one chunk that contains only links
+        self.assertTrue(link_only_chunk,
+                        "Expected to receive a chunk containing only links")
+
+        # check we received all the expected objects/links
+        self.assert_expected_data(expected_objects)
+        self.assert_expected_links([la_source], link_attr="addressBookRoots2", num_expected=500)
+
+        # Do the replication again, forcing the use of GET_TGT this time
+        self.init_test_state()
+
+        for x in range(0, 500):
+            self.modify_object(la_targets[x], "displayName", "OU-%d" % x)
+
+        # The objects/links should get sent in the following order:
+        # [1 source][500 targets][500 links][100 filler]
+
+        while not self.replication_complete():
+            ctr6 = self.repl_get_next()
+
+        self.assertTrue(self.used_get_tgt,
+                        "Test didn't use the GET_TGT flag as expected")
+
+        # check we received all the expected objects/links
+        self.assert_expected_data(expected_objects)
+        self.assert_expected_links([la_source], link_attr="addressBookRoots2", num_expected=500)
+
+
 class DcConnection:
     """Helper class to track a connection to another DC"""
 
