@@ -371,6 +371,7 @@ int ltdb_cache_load(struct ldb_module *module)
 	struct ldb_dn *baseinfo_dn = NULL, *options_dn = NULL;
 	uint64_t seq;
 	struct ldb_message *baseinfo = NULL, *options = NULL;
+	const struct ldb_schema_attribute *a;
 	int r;
 
 	ldb = ldb_module_get_ctx(module);
@@ -472,6 +473,17 @@ int ltdb_cache_load(struct ldb_module *module)
 	 */
 	if (ltdb_attributes_load(module) == -1) {
 		goto failed;
+	}
+
+	ltdb->GUID_index_syntax = NULL;
+	if (ltdb->cache->GUID_index_attribute != NULL) {
+		/*
+		 * Now the attributes are loaded, set the guid_index_syntax.
+		 * This can't fail, it will return a default at worst
+		 */
+		a = ldb_schema_attribute_by_name(ldb,
+						 ltdb->cache->GUID_index_attribute);
+		ltdb->GUID_index_syntax = a->syntax;
 	}
 
 done:
