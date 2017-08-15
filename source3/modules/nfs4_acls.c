@@ -184,8 +184,7 @@ struct SMB4ACE_T *smb_add_ace4(struct SMB4ACL_T *acl, SMB_ACE4PROP_T *prop)
 		errno = ENOMEM;
 		return NULL;
 	}
-	/* ace->next = NULL not needed */
-	memcpy(&ace->prop, prop, sizeof(SMB_ACE4PROP_T));
+	ace->prop = *prop;
 
 	if (acl->first==NULL)
 	{
