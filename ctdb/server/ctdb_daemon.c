@@ -34,6 +34,7 @@
 #include "lib/util/debug.h"
 #include "lib/util/time.h"
 #include "lib/util/blocking.h"
+#include "lib/util/become_daemon.h"
 
 #include "ctdb_version.h"
 #include "ctdb_private.h"
@@ -1197,20 +1198,8 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 	int res, ret = -1;
 	struct tevent_fd *fde;
 
-	if (do_fork && fork()) {
-		return 0;
-	}
+	become_daemon(do_fork, false, false);
 
-	if (do_fork) {
-		if (setsid() == -1) {
-			ctdb_die(ctdb, "Failed to setsid()\n");
-		}
-		close(0);
-		if (open("/dev/null", O_RDONLY) != 0) {
-			DEBUG(DEBUG_ALERT,(__location__ " Failed to setup stdin on /dev/null\n"));
-			exit(11);
-		}
-	}
 	ignore_signal(SIGPIPE);
 	ignore_signal(SIGUSR1);
 
