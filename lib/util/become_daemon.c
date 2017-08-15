@@ -31,7 +31,7 @@
 #include "close_low_fd.h"
 #include "debug.h"
 
-#include "samba_util.h"
+#include "become_daemon.h"
 
 /*******************************************************************
  Close the low 3 fd's and open dev/null in their place.
