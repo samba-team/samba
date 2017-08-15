@@ -71,7 +71,8 @@ bld.SAMBA_SUBSYSTEM('samba-util-core',
                     source='''data_blob.c util_file.c time.c
                               signal.c util.c idtree.c fault.c
                               substitute.c util_process.c util_strlist.c
-                              strv_util.c bitmap.c select.c pidfile.c''',
+                              strv_util.c bitmap.c select.c pidfile.c
+                              become_daemon.c ''',
                     deps='''time-basic samba-debug socket-blocking talloc
                             tevent execinfo pthread strv''',
                     local_include=False)
@@ -114,7 +115,7 @@ else:
 
     bld.SAMBA_LIBRARY('samba-util',
                   source='''talloc_stack.c smb_threads.c
-                    rbtree.c rfc1738.c become_daemon.c system.c getpass.c
+                    rbtree.c rfc1738.c system.c getpass.c
                     genrand_util.c fsusage.c
                     params.c util_id.c util_net.c
                     util_strlist_v3.c util_paths.c
