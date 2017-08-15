@@ -21,6 +21,9 @@ bld.SAMBA3_SUBSYSTEM('VFS_AIXACL_UTIL',
                     source='vfs_aixacl_util.c',
                     enabled=(bld.SAMBA3_IS_ENABLED_MODULE('vfs_aixacl') or bld.SAMBA3_IS_ENABLED_MODULE('vfs_aixacl2')))
 
+bld.SAMBA3_SUBSYSTEM('getdate',
+                    source='getdate.c')
+
 bld.SAMBA3_SUBSYSTEM('vfs',
                     source='',
                     deps='smbd_base')
@@ -111,8 +114,8 @@ bld.SAMBA3_MODULE('vfs_default_quota',
 
 bld.SAMBA3_MODULE('vfs_readonly',
                  subsystem='vfs',
-                 source='vfs_readonly.c getdate.c',
-                 deps='samba-util',
+                 source='vfs_readonly.c',
+                 deps='samba-util getdate',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_readonly'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_readonly'))
@@ -482,8 +485,8 @@ bld.SAMBA3_MODULE('vfs_worm',
                   enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_worm'))
 bld.SAMBA3_MODULE('vfs_retention',
                   subsystem='vfs',
-                  source='vfs_retention.c getdate.c',
-                  deps='samba-util',
+                  source='vfs_retention.c',
+                  deps='samba-util getdate',
                   init_function='',
                   internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_retention'),
                   enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_retention'))
