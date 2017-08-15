@@ -108,9 +108,19 @@ static int ltdb_dn_list_find_msg(struct ltdb_private *ltdb,
 				 const struct ldb_message *msg)
 {
 	struct ldb_val v;
-	const char *dn_str = ldb_dn_get_linearized(msg->dn);
-	v.data = discard_const_p(unsigned char, dn_str);
-	v.length = strlen(dn_str);
+	const struct ldb_val *key_val;
+	if (ltdb->cache->GUID_index_attribute == NULL) {
+		const char *dn_str = ldb_dn_get_linearized(msg->dn);
+		v.data = discard_const_p(unsigned char, dn_str);
+		v.length = strlen(dn_str);
+	} else {
+		key_val = ldb_msg_find_ldb_val(msg,
+					       ltdb->cache->GUID_index_attribute);
+		if (key_val == NULL) {
+			return -1;
+		}
+		v = *key_val;
+	}
 	return ltdb_dn_list_find_val(ltdb, list, &v);
 }
 
