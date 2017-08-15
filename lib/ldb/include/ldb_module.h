@@ -183,6 +183,22 @@ void ldb_schema_attribute_set_override_handler(struct ldb_context *ldb,
 void ldb_schema_set_override_indexlist(struct ldb_context *ldb,
 				       bool one_level_indexes);
 
+/**
+
+  \param ldb The ldb context
+  \param GUID_index_attribute The globally attribute (eg objectGUID)
+         on each entry
+  \param GUID_index_attribute The DN component matching the
+         globally attribute on each entry (eg GUID)
+
+ The caller must ensure the supplied strings do not go out of
+ scope (they are typically constant memory).
+
+*/
+void ldb_schema_set_override_GUID_index(struct ldb_context *ldb,
+					const char *GUID_index_attribute,
+					const char *GUID_index_dn_component);
+
 /* A useful function to build comparison functions with */
 int ldb_any_comparison(struct ldb_context *ldb, void *mem_ctx, 
 		       ldb_attr_handler_t canonicalise_fn, 

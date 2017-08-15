@@ -98,6 +98,9 @@ struct ldb_schema {
 	 */
 	bool index_handler_override;
 	bool one_level_indexes;
+
+	const char *GUID_index_attribute;
+	const char *GUID_index_dn_component;
 };
 
 /*

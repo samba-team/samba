@@ -243,6 +243,10 @@ static int ltdb_index_load(struct ldb_module *module,
 		 */
 		ltdb->cache->attribute_indexes = true;
 		ltdb->cache->one_level_indexes = ldb->schema.one_level_indexes;
+		ltdb->cache->GUID_index_attribute
+			= ldb->schema.GUID_index_attribute;
+		ltdb->cache->GUID_index_dn_component
+			= ldb->schema.GUID_index_dn_component;
 		return 0;
 	}
 
@@ -276,6 +280,12 @@ static int ltdb_index_load(struct ldb_module *module,
 	if (ldb_msg_find_element(ltdb->cache->indexlist, LTDB_IDXATTR) != NULL) {
 		ltdb->cache->attribute_indexes = true;
 	}
+	ltdb->cache->GUID_index_attribute
+		= ldb_msg_find_attr_as_string(ltdb->cache->indexlist,
+					      LTDB_IDXGUID, NULL);
+	ltdb->cache->GUID_index_dn_component
+		= ldb_msg_find_attr_as_string(ltdb->cache->indexlist,
+					      LTDB_IDX_DN_GUID, NULL);
 
 	return 0;
 }
