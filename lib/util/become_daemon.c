@@ -37,7 +37,7 @@
  Close the low 3 fd's and open dev/null in their place.
 ********************************************************************/
 
-_PUBLIC_ void close_low_fds(bool stdin_too, bool stdout_too, bool stderr_too)
+void close_low_fds(bool stdin_too, bool stdout_too, bool stderr_too)
 {
 
 	if (stdin_too) {
@@ -67,7 +67,7 @@ _PUBLIC_ void close_low_fds(bool stdin_too, bool stdout_too, bool stderr_too)
  Become a daemon, discarding the controlling terminal.
 ****************************************************************************/
 
-_PUBLIC_ void become_daemon(bool do_fork, bool no_process_group, bool log_stdout)
+void become_daemon(bool do_fork, bool no_session, bool log_stdout)
 {
 	pid_t newpid;
 	if (do_fork) {
@@ -82,9 +82,9 @@ _PUBLIC_ void become_daemon(bool do_fork, bool no_process_group, bool log_stdout
 
 	/* detach from the terminal */
 #ifdef HAVE_SETSID
-	if (!no_process_group) setsid();
+	if (!no_session) setsid();
 #elif defined(TIOCNOTTY)
-	if (!no_process_group) {
+	if (!no_session) {
 		int i = open("/dev/tty", O_RDWR, 0);
 		if (i != -1) {
 			ioctl(i, (int) TIOCNOTTY, (char *)0);
@@ -100,7 +100,7 @@ _PUBLIC_ void become_daemon(bool do_fork, bool no_process_group, bool log_stdout
 	close_low_fds(do_fork, !log_stdout, false);
 }
 
-_PUBLIC_ void exit_daemon(const char *msg, int error)
+void exit_daemon(const char *msg, int error)
 {
 #if defined(HAVE_LIBSYSTEMD_DAEMON) || defined(HAVE_LIBSYSTEMD)
 	if (msg == NULL) {
@@ -116,25 +116,25 @@ _PUBLIC_ void exit_daemon(const char *msg, int error)
 	exit(1);
 }
 
-_PUBLIC_ void daemon_ready(const char *name)
+void daemon_ready(const char *daemon)
 {
-	if (name == NULL) {
-		name = "Samba";
+	if (daemon == NULL) {
+		daemon = "Samba";
 	}
 #if defined(HAVE_LIBSYSTEMD_DAEMON) || defined(HAVE_LIBSYSTEMD)
-	sd_notifyf(0, "READY=1\nSTATUS=%s: ready to serve connections...", name);
+	sd_notifyf(0, "READY=1\nSTATUS=%s: ready to serve connections...", daemon);
 #endif
 	DEBUG(0, ("STATUS=daemon '%s' finished starting up and ready to serve "
-		  "connections\n", name));
+		  "connections\n", daemon));
 }
 
-_PUBLIC_ void daemon_status(const char *name, const char *msg)
+void daemon_status(const char *daemon, const char *msg)
 {
-	if (name == NULL) {
-		name = "Samba";
+	if (daemon == NULL) {
+		daemon = "Samba";
 	}
 #if defined(HAVE_LIBSYSTEMD_DAEMON) || defined(HAVE_LIBSYSTEMD)
-	sd_notifyf(0, "\nSTATUS=%s: %s", name, msg);
+	sd_notifyf(0, "\nSTATUS=%s: %s", daemon, msg);
 #endif
-	DEBUG(0, ("STATUS=daemon '%s' : %s", name, msg));
+	DEBUG(0, ("STATUS=daemon '%s' : %s", daemon, msg));
 }
