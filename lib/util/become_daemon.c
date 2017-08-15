@@ -69,6 +69,9 @@ void become_daemon(bool do_fork, bool no_session, bool log_stdout)
 	pid_t newpid;
 	if (do_fork) {
 		newpid = fork();
+		if (newpid == -1) {
+			exit_daemon("Fork failed", errno);
+		}
 		if (newpid) {
 #if defined(HAVE_LIBSYSTEMD_DAEMON) || defined(HAVE_LIBSYSTEMD)
 			sd_notifyf(0,
@@ -82,7 +85,12 @@ void become_daemon(bool do_fork, bool no_session, bool log_stdout)
 
 	/* detach from the terminal */
 #ifdef HAVE_SETSID
-	if (!no_session) setsid();
+	if (!no_session) {
+		int ret = setsid();
+		if (ret == -1) {
+			exit_daemon("Failed to create session", errno);
+		}
+	}
 #elif defined(TIOCNOTTY)
 	if (!no_session) {
 		int i = open("/dev/tty", O_RDWR, 0);
