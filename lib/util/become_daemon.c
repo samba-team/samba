@@ -21,13 +21,17 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
+#include "replace.h"
 #include "system/filesys.h"
 #include "system/locale.h"
 #if defined(HAVE_LIBSYSTEMD_DAEMON) || defined(HAVE_LIBSYSTEMD)
 #include <systemd/sd-daemon.h>
 #endif
-#include "lib/util/close_low_fd.h"
+
+#include "close_low_fd.h"
+#include "debug.h"
+
+#include "samba_util.h"
 
 /*******************************************************************
  Close the low 3 fd's and open dev/null in their place.
