@@ -46,6 +46,8 @@
 #define DBGC_CLASS            DBGC_DRS_REPL
 
 #define DRS_GUID_SIZE       16
+#define DEFAULT_MAX_OBJECTS 1000
+#define DEFAULT_MAX_LINKS   1500
 
 /*
  * state of a partially-completed replication cycle. This state persists
@@ -2388,21 +2390,27 @@ static uint32_t getncchanges_chunk_links_pending(struct getncchanges_repl_chunk 
  */
 static uint32_t getncchanges_chunk_max_links(struct getncchanges_repl_chunk *repl_chunk)
 {
-	uint32_t max_links;
+	uint32_t max_links = 0;
 
-	/*
-	 * This is just an approximate guess to avoid overfilling the replication
-	 * chunk. E.g. if we've already sent 1000 objects, then send 1000 fewer
-	 * links. For comparison, the max that Windows seems to send is ~2700
-	 * links and ~250 objects (although this may vary based on timeouts)
-	 */
-	if (repl_chunk->object_count >= repl_chunk->max_links) {
+	if (repl_chunk->max_links != DEFAULT_MAX_LINKS ||
+	    repl_chunk->max_objects != DEFAULT_MAX_OBJECTS) {
 
-		/* request is already full of objects - don't send any links */
-		max_links = 0;
-	} else {
+		/*
+		 * We're using non-default settings, so don't try to adjust
+		 * them, just trust the user has configured decent values
+		 */
+		max_links = repl_chunk->max_links;
 
-		/* send fewer links if we're already sending a lot of objects */
+	} else if (repl_chunk->max_links > repl_chunk->object_count) {
+
+		/*
+		 * This is just an approximate guess to avoid overfilling the
+		 * replication chunk. It's the logic we've used historically.
+		 * E.g. if we've already sent 1000 objects, then send 1000 fewer
+		 * links. For comparison, the max that Windows seems to send is
+		 * ~2700 links and ~250 objects (although this may vary based
+		 * on timeouts)
+		 */
 		max_links = repl_chunk->max_links - repl_chunk->object_count;
 	}
 
@@ -2454,7 +2462,9 @@ static bool getncchanges_chunk_is_full(struct getncchanges_repl_chunk *repl_chun
 		 * The chunk is full if we've got more links to send than will
 		 * fit in one chunk
 		 */
-		chunk_full = (chunk_limit <= links_to_send);
+		if (links_to_send > 0 && chunk_limit <= links_to_send) {
+			chunk_full = true;
+		}
 	}
 
 	return chunk_full;
@@ -2641,7 +2651,8 @@ static struct getncchanges_repl_chunk * getncchanges_chunk_new(TALLOC_CTX *mem_c
 	repl_chunk->start = time(NULL);
 
 	repl_chunk->max_objects = lpcfg_parm_int(dce_call->conn->dce_ctx->lp_ctx, NULL,
-						 "drs", "max object sync", 1000);
+						 "drs", "max object sync",
+						 DEFAULT_MAX_OBJECTS);
 
 	/*
 	 * The client control here only applies in normal replication, not extended
@@ -2661,7 +2672,8 @@ static struct getncchanges_repl_chunk * getncchanges_chunk_new(TALLOC_CTX *mem_c
 
 	repl_chunk->max_links =
 			lpcfg_parm_int(dce_call->conn->dce_ctx->lp_ctx, NULL,
-				       "drs", "max link sync", 1500);
+				       "drs", "max link sync",
+					DEFAULT_MAX_LINKS);
 
 	repl_chunk->immediate_link_sync =
 			lpcfg_parm_bool(dce_call->conn->dce_ctx->lp_ctx, NULL,
