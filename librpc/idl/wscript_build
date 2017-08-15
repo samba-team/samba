@@ -37,12 +37,13 @@ bld.SAMBA_PIDL_LIST('PIDL',
                     printcap.idl
                     fsrvp_state.idl
                     cab.idl
+                    nfs4acl.idl
                     ''',
                     options='--header --ndr-parser',
                     output_dir='../gen_ndr')
 
 bld.SAMBA_PIDL_LIST('PIDL',
-		    'dnsp.idl nfs4acl.idl',
+		    'dnsp.idl',
                     options='--header --ndr-parser --client --python',
                     output_dir='../gen_ndr')
 

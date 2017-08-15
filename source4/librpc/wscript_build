@@ -110,7 +110,6 @@ bld.SAMBA_SUBSYSTEM('ndr-table',
                     NDR_FRSRPC
                     NDR_FRSAPI
                     NDR_FRSTRANS
-                    NDR_NFS4ACL
                     NDR_NTP_SIGND
                     NDR_DCOM
                     NDR_WMI
