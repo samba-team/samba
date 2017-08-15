@@ -682,7 +682,7 @@ static int msg_delete_attribute(struct ldb_module *module,
 	}
 	i = el - msg->elements;
 
-	ret = ltdb_index_del_element(module, ltdb, msg->dn, el);
+	ret = ltdb_index_del_element(module, ltdb, msg, el);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -741,7 +741,7 @@ static int msg_delete_element(struct ldb_module *module,
 							    ltdb, msg, name);
 			}
 
-			ret = ltdb_index_del_value(module, ltdb, msg->dn, el, i);
+			ret = ltdb_index_del_value(module, ltdb, msg, el, i);
 			if (ret != LDB_SUCCESS) {
 				return ret;
 			}
@@ -866,7 +866,7 @@ int ltdb_modify_internal(struct ldb_module *module,
 					goto done;
 				}
 				ret = ltdb_index_add_element(module, ltdb,
-							     msg2->dn,
+							     msg2,
 							     el);
 				if (ret != LDB_SUCCESS) {
 					goto done;
@@ -948,7 +948,7 @@ int ltdb_modify_internal(struct ldb_module *module,
 				el2->num_values += el->num_values;
 
 				ret = ltdb_index_add_element(module, ltdb,
-							     msg2->dn, el);
+							     msg2, el);
 				if (ret != LDB_SUCCESS) {
 					goto done;
 				}
@@ -1027,7 +1027,7 @@ int ltdb_modify_internal(struct ldb_module *module,
 			}
 
 			ret = ltdb_index_add_element(module, ltdb,
-						     msg2->dn, el);
+						     msg2, el);
 			if (ret != LDB_SUCCESS) {
 				goto done;
 			}

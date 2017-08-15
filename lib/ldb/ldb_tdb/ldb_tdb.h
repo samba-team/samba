@@ -95,15 +95,15 @@ int ltdb_index_add_new(struct ldb_module *module,
 int ltdb_index_delete(struct ldb_module *module, const struct ldb_message *msg);
 int ltdb_index_del_element(struct ldb_module *module,
 			   struct ltdb_private *ltdb,
-			   struct ldb_dn *dn,
+			   const struct ldb_message *msg,
 			   struct ldb_message_element *el);
 int ltdb_index_add_element(struct ldb_module *module,
 			   struct ltdb_private *ltdb,
-			   struct ldb_dn *dn,
+			   const struct ldb_message *msg,
 			   struct ldb_message_element *el);
 int ltdb_index_del_value(struct ldb_module *module,
 			 struct ltdb_private *ltdb,
-			 struct ldb_dn *dn,
+			 const struct ldb_message *msg,
 			 struct ldb_message_element *el, unsigned int v_idx);
 int ltdb_reindex(struct ldb_module *module);
 int ltdb_index_transaction_start(struct ldb_module *module);
