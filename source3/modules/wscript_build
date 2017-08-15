@@ -480,7 +480,13 @@ bld.SAMBA3_MODULE('vfs_worm',
                   init_function='',
                   internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_worm'),
                   enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_worm'))
-
+bld.SAMBA3_MODULE('vfs_retention',
+                  subsystem='vfs',
+                  source='vfs_retention.c getdate.c',
+                  deps='samba-util',
+                  init_function='',
+                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_retention'),
+                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_retention'))
 bld.SAMBA3_MODULE('vfs_snapper',
                  subsystem='vfs',
                  source='vfs_snapper.c',

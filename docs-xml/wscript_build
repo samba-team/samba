@@ -90,6 +90,7 @@ manpages='''
          manpages/vfs_tsmsm.8
          manpages/vfs_unityed_media.8
          manpages/vfs_worm.8
+         manpages/vfs_retention.8
          manpages/vfs_xattr_tdb.8
          manpages/vfstest.1
          manpages/wbinfo.1
