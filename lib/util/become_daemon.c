@@ -43,22 +43,19 @@ void close_low_fds(bool stdin_too, bool stdout_too, bool stderr_too)
 	if (stdin_too) {
 		int ret = close_low_fd(0);
 		if (ret != 0) {
-			DEBUG(0, ("%s: close_low_fd(0) failed: %s\n",
-				  __func__, strerror(ret)));
+			DBG_ERR("close_low_fd(0) failed: %s\n", strerror(ret));
 		}
 	}
 	if (stdout_too) {
 		int ret = close_low_fd(1);
 		if (ret != 0) {
-			DEBUG(0, ("%s: close_low_fd(1) failed: %s\n",
-				  __func__, strerror(ret)));
+			DBG_ERR("close_low_fd(1) failed: %s\n", strerror(ret));
 		}
 	}
 	if (stderr_too) {
 		int ret = close_low_fd(2);
 		if (ret != 0) {
-			DEBUG(0, ("%s: close_low_fd(2) failed: %s\n",
-				  __func__, strerror(ret)));
+			DBG_ERR("close_low_fd(2) failed: %s\n", strerror(ret));
 		}
 	}
 }
@@ -74,7 +71,10 @@ void become_daemon(bool do_fork, bool no_session, bool log_stdout)
 		newpid = fork();
 		if (newpid) {
 #if defined(HAVE_LIBSYSTEMD_DAEMON) || defined(HAVE_LIBSYSTEMD)
-			sd_notifyf(0, "READY=0\nSTATUS=Starting process...\nMAINPID=%lu", (unsigned long) newpid);
+			sd_notifyf(0,
+				   "READY=0\nSTATUS=Starting process...\n"
+				   "MAINPID=%lu",
+				   (unsigned long) newpid);
 #endif /* HAVE_LIBSYSTEMD_DAEMON */
 			_exit(0);
 		}
@@ -112,7 +112,8 @@ void exit_daemon(const char *msg, int error)
 				  msg,
 				  error);
 #endif
-	DEBUG(0, ("STATUS=daemon failed to start: %s, error code %d\n", msg, error));
+	DBG_ERR("STATUS=daemon failed to start: %s, error code %d\n",
+		msg, error);
 	exit(1);
 }
 
@@ -122,10 +123,11 @@ void daemon_ready(const char *daemon)
 		daemon = "Samba";
 	}
 #if defined(HAVE_LIBSYSTEMD_DAEMON) || defined(HAVE_LIBSYSTEMD)
-	sd_notifyf(0, "READY=1\nSTATUS=%s: ready to serve connections...", daemon);
+	sd_notifyf(0, "READY=1\nSTATUS=%s: ready to serve connections...",
+		   daemon);
 #endif
-	DEBUG(0, ("STATUS=daemon '%s' finished starting up and ready to serve "
-		  "connections\n", daemon));
+	DBG_ERR("STATUS=daemon '%s' finished starting up and ready to serve "
+		"connections\n", daemon);
 }
 
 void daemon_status(const char *daemon, const char *msg)
@@ -136,5 +138,5 @@ void daemon_status(const char *daemon, const char *msg)
 #if defined(HAVE_LIBSYSTEMD_DAEMON) || defined(HAVE_LIBSYSTEMD)
 	sd_notifyf(0, "\nSTATUS=%s: %s", daemon, msg);
 #endif
-	DEBUG(0, ("STATUS=daemon '%s' : %s", daemon, msg));
+	DBG_ERR("STATUS=daemon '%s' : %s", daemon, msg);
 }
