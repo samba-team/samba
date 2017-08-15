@@ -190,6 +190,7 @@
 #define DS_DOMAIN_FUNCTION_2008_R2	4
 #define DS_DOMAIN_FUNCTION_2012 	5
 #define DS_DOMAIN_FUNCTION_2012_R2	6
+#define DS_DOMAIN_FUNCTION_2016		7
 
 /* sa->systemFlags on attributes */
 #define DS_FLAG_ATTR_NOT_REPLICATED    0x00000001
