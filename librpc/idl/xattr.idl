@@ -11,7 +11,6 @@
 import "security.idl";
 
 [
-  uuid("12345778-1234-abcd-0001-00000002"),
   version(0.0),
   helper("../librpc/ndr/ndr_xattr.h"),
   pyhelper("librpc/ndr/py_xattr.c"),
@@ -104,10 +103,6 @@ interface xattr
 		uint16 version;
 		[switch_is(version)] xattr_DosInfo info;
 	} xattr_DOSATTRIB;
-
-	void xattr_parse_DOSATTRIB(
-		[in] xattr_DOSATTRIB x
-	);
 
 	/* we store DOS style extended attributes in a DosEAs xattr */
 	const char *XATTR_DOSEAS_NAME = "user.DosEAs";

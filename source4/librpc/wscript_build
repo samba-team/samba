@@ -93,7 +93,6 @@ bld.SAMBA_SUBSYSTEM('ndr-table',
                     NDR_TRKWKS
                     NDR_KEYSVC
                     ndr-krb5pac
-                    NDR_XATTR
                     NDR_SCHANNEL
                     NDR_ROT
                     NDR_DRSBLOBS
