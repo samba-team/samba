@@ -221,6 +221,32 @@ failed:
 	return key;
 }
 
+TDB_DATA ltdb_guid_to_key(struct ldb_module *module,
+			  struct ltdb_private *ltdb,
+			  TALLOC_CTX *mem_ctx,
+			  const struct ldb_val *GUID_val)
+{
+	TDB_DATA key;
+	const char *GUID_prefix = "GUID=";
+	const int GUID_prefix_len = strlen(GUID_prefix);
+
+	key.dptr = talloc_size(mem_ctx,
+			       GUID_val->length+GUID_prefix_len);
+
+	if (key.dptr == NULL) {
+		errno = ENOMEM;
+		key.dptr = NULL;
+		key.dsize = 0;
+		return key;
+	}
+	memcpy(key.dptr, "GUID=", GUID_prefix_len);
+	memcpy(&key.dptr[GUID_prefix_len],
+	       GUID_val->data, GUID_val->length);
+
+	key.dsize = talloc_get_size(key.dptr);
+	return key;
+}
+
 /*
   form a TDB_DATA for a record key
   caller frees
