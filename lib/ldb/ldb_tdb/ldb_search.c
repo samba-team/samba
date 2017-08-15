@@ -115,24 +115,38 @@ static int msg_add_distinguished_name(struct ldb_message *msg)
 */
 static int ltdb_search_base(struct ldb_module *module, struct ldb_dn *dn)
 {
-	void *data = ldb_module_get_private(module);
-	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
-	TDB_DATA tdb_key;
 	int exists;
+	int ret;
+	struct ldb_message *msg = NULL;
 
 	if (ldb_dn_is_null(dn)) {
 		return LDB_ERR_NO_SUCH_OBJECT;
 	}
 
-	/* form the key */
-	tdb_key = ltdb_key_dn(module, dn);
-	if (!tdb_key.dptr) {
+	/*
+	 * We can't use tdb_exists() directly on a key when the TDB
+	 * key is the GUID one, not the DN based one.  So we just do a
+	 * normal search and avoid most of the allocation with the
+	 * LDB_UNPACK_DATA_FLAG_NO_DN and
+	 * LDB_UNPACK_DATA_FLAG_NO_ATTRS flags
+	 */
+	msg = ldb_msg_new(module);
+	if (msg == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	exists = tdb_exists(ltdb->tdb, tdb_key);
-	talloc_free(tdb_key.dptr);
-		
+	ret = ltdb_search_dn1(module, dn,
+			      msg,
+			      LDB_UNPACK_DATA_FLAG_NO_DN|
+			      LDB_UNPACK_DATA_FLAG_NO_ATTRS);
+	talloc_free(msg);
+	if (ret == LDB_SUCCESS) {
+		exists = true;
+	} else if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+		exists = false;
+	} else {
+		return ret;
+	}
 	if (exists) {
 		return LDB_SUCCESS;
 	}
