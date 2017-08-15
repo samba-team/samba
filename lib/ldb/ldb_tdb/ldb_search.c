@@ -501,6 +501,81 @@ static int ltdb_search_full(struct ltdb_context *ctx)
 	return ctx->error;
 }
 
+static int ltdb_search_and_return_base(struct ltdb_private *ltdb,
+				       struct ltdb_context *ctx)
+{
+	struct ldb_message *msg, *filtered_msg;
+	struct ldb_context *ldb = ldb_module_get_ctx(ctx->module);
+	int ret;
+	bool matched;
+
+	msg = ldb_msg_new(ctx);
+	if (!msg) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	ret = ltdb_search_dn1(ctx->module, ctx->base, msg,
+			      LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC|
+			      LDB_UNPACK_DATA_FLAG_NO_VALUES_ALLOC);
+
+	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+		if (ltdb->check_base == false) {
+			/*
+			 * In this case, we are done, as no base
+			 * checking is allowed in this DB
+			 */
+			talloc_free(msg);
+			return LDB_SUCCESS;
+		}
+		ldb_asprintf_errstring(ldb,
+				       "No such Base DN: %s",
+				       ldb_dn_get_linearized(ctx->base));
+	}
+	if (ret != LDB_SUCCESS) {
+		talloc_free(msg);
+		return ret;
+	}
+
+
+	/*
+	 * We use this, not ldb_match_msg_error() as we know
+	 * we matched on the scope BASE, as we just fetched
+	 * the base DN
+	 */
+
+	ret = ldb_match_message(ldb, msg,
+				ctx->tree,
+				ctx->scope,
+				&matched);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(msg);
+		return ret;
+	}
+	if (!matched) {
+		talloc_free(msg);
+		return LDB_SUCCESS;
+	}
+
+	/* filter the attributes that the user wants */
+	ret = ltdb_filter_attrs(ctx, msg, ctx->attrs, &filtered_msg);
+
+	talloc_free(msg);
+
+	if (ret == -1) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = ldb_module_send_entry(ctx->req, filtered_msg, NULL);
+	if (ret != LDB_SUCCESS) {
+		/* Regardless of success or failure, the msg
+		 * is the callbacks responsiblity, and should
+		 * not be talloc_free()'ed */
+		ctx->request_terminated = true;
+		return ret;
+	}
+
+	return LDB_SUCCESS;
+}
+
 /*
   search the database with a LDAP-like expression.
   choses a search method
@@ -532,6 +607,11 @@ int ltdb_search(struct ltdb_context *ctx)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
+	ctx->tree = req->op.search.tree;
+	ctx->scope = req->op.search.scope;
+	ctx->base = req->op.search.base;
+	ctx->attrs = req->op.search.attrs;
+
 	if ((req->op.search.base == NULL) || (ldb_dn_is_null(req->op.search.base) == true)) {
 
 		/* Check what we should do with a NULL dn */
@@ -559,6 +639,21 @@ int ltdb_search(struct ltdb_context *ctx)
 				       ldb_dn_get_linearized(req->op.search.base));
 		ret = LDB_ERR_INVALID_DN_SYNTAX;
 
+	} else if (req->op.search.scope == LDB_SCOPE_BASE) {
+
+		/*
+		 * If we are LDB_SCOPE_BASE, do just one search and
+		 * return early.  This is critical to ensure we do not
+		 * go into the index code for special DNs, as that
+		 * will try to look up an index record for a special
+		 * record (which doesn't exist).
+		 */
+		ret = ltdb_search_and_return_base(ltdb, ctx);
+
+		ltdb_unlock_read(module);
+
+		return ret;
+
 	} else if (ltdb->check_base) {
 		/* This database has been marked as 'checkBaseOnSearch', so do a spot check of the base dn */
 		ret = ltdb_search_base(module, req->op.search.base);
@@ -573,11 +668,6 @@ int ltdb_search(struct ltdb_context *ctx)
 		/* If we are not checking the base DN life is easy */
 		ret = LDB_SUCCESS;
 	}
-
-	ctx->tree = req->op.search.tree;
-	ctx->scope = req->op.search.scope;
-	ctx->base = req->op.search.base;
-	ctx->attrs = req->op.search.attrs;
 
 	if (ret == LDB_SUCCESS) {
 		uint32_t match_count = 0;
