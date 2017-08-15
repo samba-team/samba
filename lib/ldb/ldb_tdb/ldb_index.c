@@ -1268,7 +1268,6 @@ static int ltdb_index_add1(struct ldb_module *module,
 	const struct ldb_schema_attribute *a;
 	struct dn_list *list;
 	unsigned alloc_len;
-	const char *dn_str;
 
 	ldb = ldb_module_get_ctx(module);
 
@@ -1321,14 +1320,34 @@ static int ltdb_index_add1(struct ldb_module *module,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	dn_str = ldb_dn_get_linearized(msg->dn);
-	list->dn[list->count].data
-		= (uint8_t *)talloc_strdup(list->dn, dn_str);
-	if (list->dn[list->count].data == NULL) {
-		talloc_free(list);
-		return LDB_ERR_OPERATIONS_ERROR;
+	if (ltdb->cache->GUID_index_attribute == NULL) {
+		const char *dn_str = ldb_dn_get_linearized(msg->dn);
+		list->dn[list->count].data
+			= (uint8_t *)talloc_strdup(list->dn, dn_str);
+		if (list->dn[list->count].data == NULL) {
+			talloc_free(list);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		list->dn[list->count].length = strlen(dn_str);
+	} else {
+		const struct ldb_val *key_val;
+		key_val = ldb_msg_find_ldb_val(msg,
+					       ltdb->cache->GUID_index_attribute);
+		if (key_val == NULL) {
+			talloc_free(list);
+			return ldb_module_operr(module);
+		}
+
+		if (key_val->length != LTDB_GUID_SIZE) {
+			talloc_free(list);
+			return ldb_module_operr(module);
+		}
+		list->dn[list->count] = ldb_val_dup(list->dn, key_val);
+		if (list->dn[list->count].data == NULL) {
+			talloc_free(list);
+			return ldb_module_operr(module);
+		}
 	}
-	list->dn[list->count].length = strlen(dn_str);
 	list->count++;
 
 	ret = ltdb_dn_list_store(module, dn_key, list);
