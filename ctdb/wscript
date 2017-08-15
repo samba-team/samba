@@ -781,6 +781,7 @@ def build(bld):
             'protocol_event_test',
             'protocol_util_test',
             'protocol_types_compat_test',
+            'protocol_ctdb_compat_test',
     ]
 
     for target in ctdb_protocol_tests:

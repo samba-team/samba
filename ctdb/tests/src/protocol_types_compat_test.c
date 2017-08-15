@@ -57,6 +57,7 @@ static void COMPAT_TEST_FUNC(NAME)(void) \
 	ret = PULL_FUNC(NAME)(buf1, buflen1, &p1, &np); \
 	assert(ret == 0); \
 	ret = OLD_PULL_FUNC(NAME)(buf2, buflen2, &p2); \
+	assert(ret == 0); \
 	VERIFY_FUNC(NAME)(&p1, &p2); \
 	talloc_free(mem_ctx); \
 }
@@ -88,6 +89,7 @@ static void COMPAT_TEST_FUNC(NAME)(void) \
 	ret = PULL_FUNC(NAME)(buf1, buflen1, mem_ctx, &p1, &np); \
 	assert(ret == 0); \
 	ret = OLD_PULL_FUNC(NAME)(buf2, buflen2, mem_ctx, &p2); \
+	assert(ret == 0); \
 	VERIFY_FUNC(NAME)(p1, p2); \
 	talloc_free(mem_ctx); \
 }
