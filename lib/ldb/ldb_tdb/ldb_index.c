@@ -1620,7 +1620,8 @@ static int re_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *
 		talloc_free(msg);
 		return 0;
 	}
-	if (strcmp((char *)key2.dptr, (char *)key.dptr) != 0) {
+	if (key.dsize != key2.dsize ||
+	    (memcmp(key.dptr, key2.dptr, key.dsize) != 0)) {
 		tdb_delete(tdb, key);
 		tdb_store(tdb, key2, data, 0);
 	}
