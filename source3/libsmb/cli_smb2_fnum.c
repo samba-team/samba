@@ -1101,6 +1101,47 @@ NTSTATUS cli_smb2_qpathinfo_basic(struct cli_state *cli,
 }
 
 /***************************************************************
+ Wrapper that allows SMB2 to check if a path is a directory.
+ Synchronous only.
+***************************************************************/
+
+NTSTATUS cli_smb2_chkpath(struct cli_state *cli,
+				const char *name)
+{
+	NTSTATUS status;
+	uint16_t fnum = 0xffff;
+
+	if (smbXcli_conn_has_async_calls(cli->conn)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* Ensure this is a directory. */
+	status = cli_smb2_create_fnum(cli,
+			name,
+			0,			/* create_flags */
+			FILE_READ_ATTRIBUTES,	/* desired_access */
+			FILE_ATTRIBUTE_DIRECTORY, /* file attributes */
+			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, /* share_access */
+			FILE_OPEN,		/* create_disposition */
+			FILE_DIRECTORY_FILE,	/* create_options */
+			&fnum,
+			NULL);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return cli_smb2_close_fnum(cli, fnum);
+}
+
+/***************************************************************
  Helper function for pathname operations.
 ***************************************************************/
 
