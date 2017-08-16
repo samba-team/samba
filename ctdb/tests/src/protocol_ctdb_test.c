@@ -31,13 +31,6 @@
 #include "tests/src/protocol_common.h"
 #include "tests/src/protocol_common_ctdb.h"
 
-
-#define GENERATION	0xabcdef12
-#define OPERATION	CTDB_REQ_KEEPALIVE
-#define REQID		0x34567890
-#define SRCNODE		7
-#define DESTNODE	13
-
 /*
  * Functions to test marshalling
  */
