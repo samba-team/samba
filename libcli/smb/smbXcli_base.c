@@ -1661,6 +1661,9 @@ static NTSTATUS smb1cli_req_writev_submit(struct tevent_req *req,
 	}
 
 	if (state->conn->protocol > PROTOCOL_NT1) {
+		DBG_ERR("called for dialect[%s] server[%s]\n",
+			smb_protocol_types_string(state->conn->protocol),
+			smbXcli_conn_remote_name(state->conn));
 		return NT_STATUS_REVISION_MISMATCH;
 	}
 
