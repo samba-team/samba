@@ -111,8 +111,8 @@ class DrsReplicaSyncUnprivTestCase(drs_base.DrsBaseTestCase):
                                                             8, req8)
                 self.fail("Should have failed with user denied access")
             except WERRORError as (enum, estr):
-                self.assertEquals(enum, expected_error,
-                                  "Got unexpected error: %s" % estr)
+                self.assertTrue(enum in expected_error,
+                                "Got unexpected error: %s" % estr)
 
     def _test_repl_single_obj(self, repl_obj, expected_error,
                               partial_attribute_set=None):
@@ -165,18 +165,19 @@ class DrsReplicaSyncUnprivTestCase(drs_base.DrsBaseTestCase):
         self.sd_utils.dacl_add_ace(self.base_dn, self.acl_mod_get_changes)
 
         self._test_repl_single_obj(repl_obj=self.ou,
-                                   expected_error=werror.WERR_DS_DRA_ACCESS_DENIED)
+                                   expected_error=[werror.WERR_DS_DRA_ACCESS_DENIED])
 
         self._test_repl_secret(repl_obj=self.ou,
-                               expected_error=werror.WERR_DS_DRA_ACCESS_DENIED)
+                               expected_error=[werror.WERR_DS_DRA_ACCESS_DENIED])
         self._test_repl_secret(repl_obj=self.user_dn,
-                               expected_error=werror.WERR_DS_DRA_ACCESS_DENIED)
+                               expected_error=[werror.WERR_DS_DRA_ACCESS_DENIED])
         self._test_repl_secret(repl_obj=self.user_dn,
                                dest_dsa=self.ldb_dc1.get_ntds_GUID(),
-                               expected_error=werror.WERR_DS_DRA_ACCESS_DENIED)
+                               expected_error=[werror.WERR_DS_DRA_ACCESS_DENIED])
 
-        self._test_repl_full(expected_error=werror.WERR_DS_DRA_ACCESS_DENIED)
-        self._test_repl_full_on_ou(expected_error=werror.WERR_DS_CANT_FIND_EXPECTED_NC)
+        self._test_repl_full(expected_error=[werror.WERR_DS_DRA_ACCESS_DENIED])
+        self._test_repl_full_on_ou(expected_error=[werror.WERR_DS_CANT_FIND_EXPECTED_NC,
+                                                   werror.WERR_DS_DRA_ACCESS_DENIED])
 
         # Partial Attribute Sets don't require GET_ALL_CHANGES rights, so we
         # expect the following to succeed
@@ -215,16 +216,20 @@ class DrsReplicaSyncUnprivTestCase(drs_base.DrsBaseTestCase):
         self._test_repl_single_obj(repl_obj=self.ou,
                                    expected_error=None)
 
+        # Microsoft returns DB_ERROR, Samba returns ACCESS_DENIED
         self._test_repl_secret(repl_obj=self.ou,
-                               expected_error=werror.WERR_DS_DRA_DB_ERROR)
+                               expected_error=[werror.WERR_DS_DRA_DB_ERROR,
+                                               werror.WERR_DS_DRA_ACCESS_DENIED])
         self._test_repl_secret(repl_obj=self.user_dn,
-                               expected_error=werror.WERR_DS_DRA_DB_ERROR)
+                               expected_error=[werror.WERR_DS_DRA_DB_ERROR,
+                                               werror.WERR_DS_DRA_ACCESS_DENIED])
+        # Note that Windows accepts this but Samba rejects it
         self._test_repl_secret(repl_obj=self.user_dn,
                                dest_dsa=self.ldb_dc1.get_ntds_GUID(),
-                               expected_error=None)
+                               expected_error=[werror.WERR_DS_DRA_ACCESS_DENIED])
 
         self._test_repl_full(expected_error=None)
-        self._test_repl_full_on_ou(expected_error=werror.WERR_DS_CANT_FIND_EXPECTED_NC)
+        self._test_repl_full_on_ou(expected_error=[werror.WERR_DS_CANT_FIND_EXPECTED_NC])
 
         self._test_repl_single_obj(repl_obj=self.ou,
                                    expected_error=None,
@@ -238,24 +243,27 @@ class DrsReplicaSyncUnprivTestCase(drs_base.DrsBaseTestCase):
         We expect all these requests to be rejected.
         """
 
+        # Microsoft usually returns BAD_DN, Samba returns ACCESS_DENIED
+        usual_error = [werror.WERR_DS_DRA_BAD_DN, werror.WERR_DS_DRA_ACCESS_DENIED]
+
         self._test_repl_single_obj(repl_obj=self.ou,
-                                   expected_error=werror.WERR_DS_DRA_BAD_DN)
+                                   expected_error=usual_error)
 
         self._test_repl_secret(repl_obj=self.ou,
-                               expected_error=werror.WERR_DS_DRA_BAD_DN)
+                               expected_error=usual_error)
         self._test_repl_secret(repl_obj=self.user_dn,
-                               expected_error=werror.WERR_DS_DRA_BAD_DN)
+                               expected_error=usual_error)
         self._test_repl_secret(repl_obj=self.user_dn,
                                dest_dsa=self.ldb_dc1.get_ntds_GUID(),
-                               expected_error=werror.WERR_DS_DRA_BAD_DN)
+                               expected_error=usual_error)
 
-        self._test_repl_full(expected_error=werror.WERR_DS_DRA_ACCESS_DENIED)
-        self._test_repl_full_on_ou(expected_error=werror.WERR_DS_DRA_BAD_DN)
+        self._test_repl_full(expected_error=[werror.WERR_DS_DRA_ACCESS_DENIED])
+        self._test_repl_full_on_ou(expected_error=usual_error)
 
         self._test_repl_single_obj(repl_obj=self.ou,
-                                   expected_error=werror.WERR_DS_DRA_BAD_DN,
+                                   expected_error=usual_error,
                                    partial_attribute_set=self.get_partial_attribute_set())
-        self._test_repl_full(expected_error=werror.WERR_DS_DRA_ACCESS_DENIED,
+        self._test_repl_full(expected_error=[werror.WERR_DS_DRA_ACCESS_DENIED],
                              partial_attribute_set=self.get_partial_attribute_set())
 
 
