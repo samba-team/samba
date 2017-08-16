@@ -2262,7 +2262,7 @@ allowed:
 		if (ret != LDB_SUCCESS) {
 			DBG_WARNING("Failed to find ncRoot_dn %s\n",
 				    ldb_dn_get_linearized(ncRoot_dn));
-			return WERR_DS_CANT_FIND_EXPECTED_NC;
+			return WERR_DS_DRA_BAD_DN;
 		}
 		nc_instanceType = ldb_msg_find_attr_as_int(res->msgs[0],
 							   "instanceType",
