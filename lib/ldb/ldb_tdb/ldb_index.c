@@ -1241,7 +1241,7 @@ static int ltdb_index_filter(struct ltdb_private *ltdb,
 	ldb = ldb_module_get_ctx(ac->module);
 
 	for (i = 0; i < dn_list->count; i++) {
-		struct ldb_dn *dn;
+		TDB_DATA tdb_key;
 		int ret;
 		bool matched;
 
@@ -1250,16 +1250,17 @@ static int ltdb_index_filter(struct ltdb_private *ltdb,
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
-		dn = ldb_dn_from_ldb_val(msg, ldb, &dn_list->dn[i]);
-		if (dn == NULL) {
-			talloc_free(msg);
+		tdb_key = ltdb_idx_to_key(ac->module, ltdb,
+					  ac, &dn_list->dn[i]);
+		if (tdb_key.dptr == NULL) {
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
-		ret = ltdb_search_dn1(ac->module, dn, msg,
+		ret = ltdb_search_key(ac->module, ltdb,
+				      tdb_key, msg,
 				      LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC|
 				      LDB_UNPACK_DATA_FLAG_NO_VALUES_ALLOC);
-		talloc_free(dn);
+		TALLOC_FREE(tdb_key.dptr);
 		if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 			/* the record has disappeared? yes, this can happen */
 			talloc_free(msg);

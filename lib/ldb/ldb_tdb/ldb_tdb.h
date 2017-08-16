@@ -154,6 +154,10 @@ TDB_DATA ltdb_guid_to_key(struct ldb_module *module,
 			  struct ltdb_private *ltdb,
 			  TALLOC_CTX *mem_ctx,
 			  const struct ldb_val *guid_val);
+TDB_DATA ltdb_idx_to_key(struct ldb_module *module,
+			 struct ltdb_private *ltdb,
+			 TALLOC_CTX *mem_ctx,
+			 const struct ldb_val *idx_val);
 int ltdb_store(struct ldb_module *module, const struct ldb_message *msg, int flgs);
 int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *msg, struct ldb_request *req);
 int ltdb_delete_noindex(struct ldb_module *module,

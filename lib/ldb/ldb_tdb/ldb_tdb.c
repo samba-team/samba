@@ -247,6 +247,34 @@ TDB_DATA ltdb_guid_to_key(struct ldb_module *module,
 	return key;
 }
 
+TDB_DATA ltdb_idx_to_key(struct ldb_module *module,
+			 struct ltdb_private *ltdb,
+			 TALLOC_CTX *mem_ctx,
+			 const struct ldb_val *idx_val)
+{
+	TDB_DATA key;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	struct ldb_dn *dn;
+
+	dn = ldb_dn_from_ldb_val(mem_ctx, ldb, idx_val);
+	if (dn == NULL) {
+		errno = EINVAL;
+		key.dptr = NULL;
+		key.dsize = 0;
+		return key;
+	}
+	/* form the key */
+	key = ltdb_key_dn(module, mem_ctx, dn);
+	TALLOC_FREE(dn);
+	if (!key.dptr) {
+		errno = ENOMEM;
+		key.dptr = NULL;
+		key.dsize = 0;
+		return key;
+	}
+	return key;
+}
+
 /*
   form a TDB_DATA for a record key
   caller frees mem_ctx, which may or may not have the key
