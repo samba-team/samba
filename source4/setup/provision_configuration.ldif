@@ -33,7 +33,7 @@ nTSecurityDescriptor:: ${FORESTUPDATES_DESCRIPTOR}
 dn: CN=ActiveDirectoryRodcUpdate,CN=ForestUpdates,${CONFIGDN}
 objectClass: top
 objectClass: container
-revision: 5
+revision: 2
 
 dn: CN=ActiveDirectoryUpdate,CN=ForestUpdates,${CONFIGDN}
 objectClass: top
