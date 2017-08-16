@@ -1178,7 +1178,7 @@ static WERROR getncchanges_repl_secret(struct drsuapi_bind_state *b_state,
 	if (b_state->sam_ctx_system == NULL) {
 		/* this operation needs system level access */
 		ctr6->extended_ret = DRSUAPI_EXOP_ERR_ACCESS_DENIED;
-		return WERR_DS_DRA_SOURCE_DISABLED;
+		return WERR_DS_DRA_ACCESS_DENIED;
 	}
 
 	/*
