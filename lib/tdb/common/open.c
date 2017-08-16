@@ -300,7 +300,8 @@ _PUBLIC_ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int td
 	struct tdb_header header;
 	struct tdb_context *tdb;
 	struct stat st;
-	int rev = 0, locked = 0;
+	int rev = 0;
+	bool locked = false;
 	unsigned char *vp;
 	uint32_t vertest;
 	unsigned v;
@@ -512,37 +513,42 @@ _PUBLIC_ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int td
 
 	/* we need to zero database if we are the only one with it open */
 	if ((tdb_flags & TDB_CLEAR_IF_FIRST) &&
-	    (!tdb->read_only) &&
-	    (locked = (tdb_nest_lock(tdb, ACTIVE_LOCK, F_WRLCK, TDB_LOCK_NOWAIT|TDB_LOCK_PROBE) == 0))) {
-		ret = tdb_brlock(tdb, F_WRLCK, FREELIST_TOP, 0,
-				 TDB_LOCK_WAIT);
-		if (ret == -1) {
-			TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_open_ex: "
-				 "tdb_brlock failed for %s: %s\n",
-				 name, strerror(errno)));
-			goto fail;
-		}
-		ret = tdb_new_database(tdb, &header, hash_size);
-		if (ret == -1) {
-			TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_open_ex: "
-				 "tdb_new_database failed for %s: %s\n",
-				 name, strerror(errno)));
-			tdb_unlockall(tdb);
-			goto fail;
-		}
-		ret = tdb_brunlock(tdb, F_WRLCK, FREELIST_TOP, 0);
-		if (ret == -1) {
-			TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_open_ex: "
-				 "tdb_unlockall failed for %s: %s\n",
-				 name, strerror(errno)));
-			goto fail;
-		}
-		ret = lseek(tdb->fd, 0, SEEK_SET);
-		if (ret == -1) {
-			TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_open_ex: "
-				 "lseek failed for %s: %s\n",
-				 name, strerror(errno)));
-			goto fail;
+	    (!tdb->read_only)) {
+		ret = tdb_nest_lock(tdb, ACTIVE_LOCK, F_WRLCK,
+				    TDB_LOCK_NOWAIT|TDB_LOCK_PROBE);
+		locked = (ret == 0);
+
+		if (locked) {
+			ret = tdb_brlock(tdb, F_WRLCK, FREELIST_TOP, 0,
+					 TDB_LOCK_WAIT);
+			if (ret == -1) {
+				TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_open_ex: "
+					 "tdb_brlock failed for %s: %s\n",
+					 name, strerror(errno)));
+				goto fail;
+			}
+			ret = tdb_new_database(tdb, &header, hash_size);
+			if (ret == -1) {
+				TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_open_ex: "
+					 "tdb_new_database failed for "
+					 "%s: %s\n", name, strerror(errno)));
+				tdb_unlockall(tdb);
+				goto fail;
+			}
+			ret = tdb_brunlock(tdb, F_WRLCK, FREELIST_TOP, 0);
+			if (ret == -1) {
+				TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_open_ex: "
+					 "tdb_unlockall failed for %s: %s\n",
+					 name, strerror(errno)));
+				goto fail;
+			}
+			ret = lseek(tdb->fd, 0, SEEK_SET);
+			if (ret == -1) {
+				TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_open_ex: "
+					 "lseek failed for %s: %s\n",
+					 name, strerror(errno)));
+				goto fail;
+			}
 		}
 	}
 
