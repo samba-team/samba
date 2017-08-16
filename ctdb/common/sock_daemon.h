@@ -181,6 +181,8 @@ int sock_daemon_add_unix(struct sock_daemon_context *sockd,
  * @param[in] ev Tevent context
  * @param[in] sockd The socket daemon context
  * @param[in] pidfile PID file to create, NULL if no PID file required
+ * @param[in] do_fork Whether the daemon should fork on startup
+ * @param[in] create_session Whether the daemon should create a new session
  * @param[in] pid_watch PID to watch. If PID goes away, shutdown.
  * @return new tevent request, NULL on failure
  */
@@ -188,6 +190,7 @@ struct tevent_req *sock_daemon_run_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
 					struct sock_daemon_context *sockd,
 					const char *pidfile,
+					bool do_fork, bool create_session,
 					pid_t pid_watch);
 
 /**
@@ -205,6 +208,8 @@ bool sock_daemon_run_recv(struct tevent_req *req, int *perr);
  * @param[in] ev Tevent context
  * @param[in] sockd The socket daemon context
  * @param[in] pidfile PID file to create, NULL if no PID file required
+ * @param[in] do_fork Whether the daemon should fork on startup
+ * @param[in] create_session Whether the daemon should create a new session
  * @param[in] pid_watch PID to watch. If PID goes away, shutdown.
  * @return 0 on success, errno on failure
  *
@@ -213,6 +218,7 @@ bool sock_daemon_run_recv(struct tevent_req *req, int *perr);
 int sock_daemon_run(struct tevent_context *ev,
 		    struct sock_daemon_context *sockd,
 		    const char *pidfile,
+		    bool do_fork, bool create_session,
 		    pid_t pid_watch);
 
 #endif /* __CTDB_SOCK_DAEMON_H__ */

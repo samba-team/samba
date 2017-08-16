@@ -30,6 +30,7 @@
 #include "lib/util/blocking.h"
 #include "lib/util/dlinklist.h"
 #include "lib/util/tevent_unix.h"
+#include "lib/util/become_daemon.h"
 
 #include "common/logging.h"
 #include "common/reqid.h"
@@ -529,6 +530,7 @@ struct tevent_req *sock_daemon_run_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
 					struct sock_daemon_context *sockd,
 					const char *pidfile,
+					bool do_fork, bool create_session,
 					pid_t pid_watch)
 {
 	struct tevent_req *req, *subreq;
@@ -541,6 +543,8 @@ struct tevent_req *sock_daemon_run_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
+
+	become_daemon(do_fork, !create_session, false);
 
 	if (pidfile != NULL) {
 		int ret = pidfile_context_create(sockd, pidfile,
@@ -782,13 +786,15 @@ bool sock_daemon_run_recv(struct tevent_req *req, int *perr)
 int sock_daemon_run(struct tevent_context *ev,
 		    struct sock_daemon_context *sockd,
 		    const char *pidfile,
+		    bool do_fork, bool create_session,
 		    pid_t pid_watch)
 {
 	struct tevent_req *req;
 	int ret;
 	bool status;
 
-	req = sock_daemon_run_send(ev, ev, sockd, pidfile, pid_watch);
+	req = sock_daemon_run_send(ev, ev, sockd,
+				   pidfile, do_fork, create_session, pid_watch);
 	if (req == NULL) {
 		return ENOMEM;
 	}

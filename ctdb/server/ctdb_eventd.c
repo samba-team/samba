@@ -1215,7 +1215,8 @@ int main(int argc, const char **argv)
 		goto fail;
 	}
 
-	ret = sock_daemon_run(ev, sockd, options.pidfile, options.pid);
+	ret = sock_daemon_run(ev, sockd,
+			      options.pidfile, false, false, options.pid);
 	if (ret == EINTR) {
 		ret = 0;
 	}

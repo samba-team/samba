@@ -168,7 +168,7 @@ static void test2(TALLOC_CTX *mem_ctx, const char *pidfile,
 					   &dummy_socket_funcs, NULL);
 		assert(ret == 0);
 
-		ret = sock_daemon_run(ev, sockd, pidfile, -1);
+		ret = sock_daemon_run(ev, sockd, pidfile, false, false, -1);
 		assert(ret == EINTR);
 
 		exit(0);
@@ -264,7 +264,7 @@ static void test3(TALLOC_CTX *mem_ctx, const char *pidfile,
 					   &dummy_socket_funcs, NULL);
 		assert(ret == 0);
 
-		ret = sock_daemon_run(ev, sockd, NULL, pid_watch);
+		ret = sock_daemon_run(ev, sockd, NULL, false, false, pid_watch);
 		assert(ret == ESRCH);
 
 		exit(0);
@@ -374,7 +374,7 @@ static void test4(TALLOC_CTX *mem_ctx, const char *pidfile,
 					&test4_funcs, NULL, &sockd);
 		assert(ret == 0);
 
-		ret = sock_daemon_run(ev, sockd, pidfile, -1);
+		ret = sock_daemon_run(ev, sockd, pidfile, false, false, -1);
 		assert(ret == 0);
 
 		exit(0);
@@ -663,7 +663,7 @@ static void test5(TALLOC_CTX *mem_ctx, const char *pidfile,
 					   &test5_client_funcs, &state);
 		assert(ret == 0);
 
-		ret = sock_daemon_run(ev, sockd, pidfile, pid);
+		ret = sock_daemon_run(ev, sockd, pidfile, false, false, pid);
 		assert(ret == EINTR);
 
 		exit(0);
@@ -970,7 +970,7 @@ static void test6(TALLOC_CTX *mem_ctx, const char *pidfile,
 					   &test6_client_funcs, &server_state);
 		assert(ret == 0);
 
-		ret = sock_daemon_run(ev, sockd, pidfile, pid);
+		ret = sock_daemon_run(ev, sockd, pidfile, false, false, pid);
 		assert(ret == 0);
 
 		exit(0);
@@ -1024,7 +1024,7 @@ static void test7(TALLOC_CTX *mem_ctx, const char *pidfile,
 					&test2_funcs, &fd[1], &sockd);
 		assert(ret == 0);
 
-		ret = sock_daemon_run(ev, sockd, pidfile, -1);
+		ret = sock_daemon_run(ev, sockd, pidfile, false, false, -1);
 		assert(ret == EINTR);
 
 		exit(0);
@@ -1048,7 +1048,7 @@ static void test7(TALLOC_CTX *mem_ctx, const char *pidfile,
 				&test2_funcs, &fd[1], &sockd);
 	assert(ret == 0);
 
-	ret = sock_daemon_run(ev, sockd, pidfile, -1);
+	ret = sock_daemon_run(ev, sockd, pidfile, false, false, -1);
 	assert(ret == EEXIST);
 
 	ret = kill(pid, SIGTERM);
