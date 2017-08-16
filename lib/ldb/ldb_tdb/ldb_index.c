@@ -263,17 +263,20 @@ static int ltdb_dn_list_store_full(struct ldb_module *module,
 	struct ldb_message *msg;
 	int ret;
 
-	if (list->count == 0) {
-		ret = ltdb_delete_noindex(module, dn);
-		if (ret == LDB_ERR_NO_SUCH_OBJECT) {
-			return LDB_SUCCESS;
-		}
-		return ret;
-	}
-
 	msg = ldb_msg_new(module);
 	if (!msg) {
 		return ldb_module_oom(module);
+	}
+
+	msg->dn = dn;
+
+	if (list->count == 0) {
+		ret = ltdb_delete_noindex(module, msg);
+		if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+			talloc_free(msg);
+			return LDB_SUCCESS;
+		}
+		return ret;
 	}
 
 	if (ltdb->cache->GUID_index_attribute == NULL) {
@@ -292,7 +295,6 @@ static int ltdb_dn_list_store_full(struct ldb_module *module,
 		}
 	}
 
-	msg->dn = dn;
 	if (list->count > 0) {
 		struct ldb_message_element *el;
 

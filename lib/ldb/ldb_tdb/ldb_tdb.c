@@ -491,7 +491,8 @@ static int ltdb_add(struct ltdb_context *ctx)
   delete a record from the database, not updating indexes (used for deleting
   index records)
 */
-int ltdb_delete_noindex(struct ldb_module *module, struct ldb_dn *dn)
+int ltdb_delete_noindex(struct ldb_module *module,
+			const struct ldb_message *msg)
 {
 	void *data = ldb_module_get_private(module);
 	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
@@ -502,7 +503,7 @@ int ltdb_delete_noindex(struct ldb_module *module, struct ldb_dn *dn)
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
-	tdb_key = ltdb_key_dn(module, dn);
+	tdb_key = ltdb_key_dn(module, msg->dn);
 	if (!tdb_key.dptr) {
 		return LDB_ERR_OTHER;
 	}
@@ -535,7 +536,7 @@ static int ltdb_delete_internal(struct ldb_module *module, struct ldb_dn *dn)
 		goto done;
 	}
 
-	ret = ltdb_delete_noindex(module, dn);
+	ret = ltdb_delete_noindex(module, msg);
 	if (ret != LDB_SUCCESS) {
 		goto done;
 	}
