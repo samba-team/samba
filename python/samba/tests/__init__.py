@@ -318,11 +318,20 @@ class BlackboxTestCase(TestCaseInTempDir):
         return line
 
     def check_run(self, line):
+        self.check_exit_code(line, 0)
+
+    def check_exit_code(self, line, expected):
         line = self._make_cmdline(line)
-        p = subprocess.Popen(line, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        p = subprocess.Popen(line,
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE,
+                             shell=True)
         retcode = p.wait()
-        if retcode:
-            raise BlackboxProcessError(retcode, line, p.stdout.read(), p.stderr.read())
+        if retcode != expected:
+            raise BlackboxProcessError(retcode,
+                                       line,
+                                       p.stdout.read(),
+                                       p.stderr.read())
 
     def check_output(self, line):
         line = self._make_cmdline(line)
