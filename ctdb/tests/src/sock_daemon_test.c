@@ -1065,6 +1065,115 @@ static void test7(TALLOC_CTX *mem_ctx, const char *pidfile,
 	close(fd[0]);
 }
 
+/*
+ * test8
+ *
+ * Start daemon, confirm that create_session argument works as expected
+ */
+
+static void test8(TALLOC_CTX *mem_ctx, const char *pidfile,
+		  const char *sockpath)
+{
+	int fd[2];
+	pid_t pid, pid2, sid;
+	int ret;
+	struct tevent_context *ev;
+	struct sock_daemon_context *sockd;
+	ssize_t n;
+
+	ret = pipe(fd);
+	assert(ret == 0);
+
+	pid = fork();
+	assert(pid != -1);
+
+	if (pid == 0) {
+		close(fd[0]);
+
+		ev = tevent_context_init(mem_ctx);
+		assert(ev != NULL);
+
+		/* Reuse test2 funcs for the startup synchronisation */
+		ret = sock_daemon_setup(mem_ctx, "test8", "file:", "NOTICE",
+					&test2_funcs, &fd[1], &sockd);
+		assert(ret == 0);
+
+		ret = sock_daemon_run(ev, sockd, pidfile, false, false, -1);
+		assert(ret == EINTR);
+
+		exit(0);
+	}
+
+	close(fd[1]);
+
+	n = read(fd[0], &ret, sizeof(ret));
+	assert(n == sizeof(ret));
+	assert(ret == 1);
+
+	/* create_session false above, so pid != sid */
+	sid = getsid(pid);
+	assert(pid != sid);
+
+	ret = kill(pid, SIGTERM);
+	assert(ret == 0);
+
+	n = read(fd[0], &ret, sizeof(ret));
+	assert(n == sizeof(ret));
+	assert(ret == 3);
+
+	pid2 = waitpid(pid, &ret, 0);
+	assert(pid2 == pid);
+	assert(WEXITSTATUS(ret) == 0);
+
+	close(fd[0]);
+
+	ret = pipe(fd);
+	assert(ret == 0);
+
+	pid = fork();
+	assert(pid != -1);
+
+	if (pid == 0) {
+		close(fd[0]);
+
+		ev = tevent_context_init(mem_ctx);
+		assert(ev != NULL);
+
+		/* Reuse test2 funcs for the startup synchronisation */
+		ret = sock_daemon_setup(mem_ctx, "test8", "file:", "NOTICE",
+					&test2_funcs, &fd[1], &sockd);
+		assert(ret == 0);
+
+		ret = sock_daemon_run(ev, sockd, pidfile, false, true, -1);
+		assert(ret == EINTR);
+
+		exit(0);
+	}
+
+	close(fd[1]);
+
+	n = read(fd[0], &ret, sizeof(ret));
+	assert(n == sizeof(ret));
+	assert(ret == 1);
+
+	/* create_session true above, so pid == sid */
+	sid = getsid(pid);
+	assert(pid == sid);
+
+	ret = kill(pid, SIGTERM);
+	assert(ret == 0);
+
+	n = read(fd[0], &ret, sizeof(ret));
+	assert(n == sizeof(ret));
+	assert(ret == 3);
+
+	pid2 = waitpid(pid, &ret, 0);
+	assert(pid2 == pid);
+	assert(WEXITSTATUS(ret) == 0);
+
+	close(fd[0]);
+}
+
 int main(int argc, const char **argv)
 {
 	TALLOC_CTX *mem_ctx;
@@ -1110,6 +1219,10 @@ int main(int argc, const char **argv)
 
 	case 7:
 		test7(mem_ctx, pidfile, sockpath);
+		break;
+
+	case 8:
+		test8(mem_ctx, pidfile, sockpath);
 		break;
 
 	default:
