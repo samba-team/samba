@@ -149,6 +149,7 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 	const char *domain;
 	NTSTATUS status;
 	int flags = 0;
+	enum protocol_types protocol = PROTOCOL_NONE;
 	int signing_state = get_cmdline_auth_info_signing_state(auth_info);
 	struct cli_credentials *creds = NULL;
 
@@ -204,7 +205,7 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 	}
 
 	if (max_protocol == 0) {
-		max_protocol = PROTOCOL_NT1;
+		max_protocol = PROTOCOL_LATEST;
 	}
 	DEBUG(4,(" session request ok\n"));
 
@@ -218,8 +219,12 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 		cli_shutdown(c);
 		return status;
 	}
+	protocol = smbXcli_conn_protocol(c->conn);
+	DEBUG(4,(" negotiated dialect[%s] against server[%s]\n",
+		 smb_protocol_types_string(protocol),
+		 smbXcli_conn_remote_name(c->conn)));
 
-	if (smbXcli_conn_protocol(c->conn) >= PROTOCOL_SMB2_02) {
+	if (protocol >= PROTOCOL_SMB2_02) {
 		/* Ensure we ask for some initial credits. */
 		smb2cli_conn_set_max_credits(c->conn, DEFAULT_SMB2_MAX_CREDITS);
 	}
