@@ -686,50 +686,32 @@ int ltdb_modify_internal(struct ldb_module *module,
 			 struct ldb_request *req)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
-	void *data = ldb_module_get_private(module);
-	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
-	TDB_DATA tdb_key, tdb_data;
-	struct ldb_val ldb_data;
 	struct ldb_message *msg2;
 	unsigned int i, j;
 	int ret = LDB_SUCCESS, idx;
 	struct ldb_control *control_permissive = NULL;
+	TALLOC_CTX *mem_ctx = talloc_new(req);
 
+	if (mem_ctx == NULL) {
+		return ldb_module_oom(module);
+	}
+	
 	if (req) {
 		control_permissive = ldb_request_get_control(req,
 					LDB_CONTROL_PERMISSIVE_MODIFY_OID);
 	}
 
-	tdb_key = ltdb_key(module, msg->dn);
-	if (!tdb_key.dptr) {
-		return LDB_ERR_OTHER;
-	}
-
-	tdb_data = tdb_fetch(ltdb->tdb, tdb_key);
-	if (!tdb_data.dptr) {
-		talloc_free(tdb_key.dptr);
-		return ltdb_err_map(tdb_error(ltdb->tdb));
-	}
-
-	msg2 = ldb_msg_new(tdb_key.dptr);
+	msg2 = ldb_msg_new(mem_ctx);
 	if (msg2 == NULL) {
-		free(tdb_data.dptr);
 		ret = LDB_ERR_OTHER;
 		goto done;
 	}
 
-	ldb_data.data = tdb_data.dptr;
-	ldb_data.length = tdb_data.dsize;
-
-	ret = ldb_unpack_data(ldb_module_get_ctx(module), &ldb_data, msg2);
-	free(tdb_data.dptr);
-	if (ret == -1) {
-		ret = LDB_ERR_OTHER;
+	ret = ltdb_search_dn1(module, msg->dn,
+			      msg2,
+			      LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC);
+	if (ret != LDB_SUCCESS) {
 		goto done;
-	}
-
-	if (!msg2->dn) {
-		msg2->dn = msg->dn;
 	}
 
 	for (i=0; i<msg->num_elements; i++) {
@@ -1018,7 +1000,7 @@ int ltdb_modify_internal(struct ldb_module *module,
 	}
 
 done:
-	talloc_free(tdb_key.dptr);
+	TALLOC_FREE(mem_ctx);
 	return ret;
 }
 
