@@ -54,6 +54,12 @@ static struct sock_socket_funcs dummy_socket_funcs = {
 	.read_recv = dummy_read_recv,
 };
 
+/*
+ * test1
+ *
+ * Check setup without actually running daemon
+ */
+
 static void test1(TALLOC_CTX *mem_ctx, const char *pidfile,
 		  const char *sockpath)
 {
@@ -85,6 +91,13 @@ static void test1(TALLOC_CTX *mem_ctx, const char *pidfile,
 	ret = stat(sockpath, &st);
 	assert(ret == -1);
 }
+
+/*
+ * test2
+ *
+ * Start daemon, check PID file, sock daemon functions, termination,
+ * exit code
+ */
 
 static void test2_startup(void *private_data)
 {
@@ -200,6 +213,12 @@ static void test2(TALLOC_CTX *mem_ctx, const char *pidfile,
 	assert(ret == -1);
 }
 
+/*
+ * test3
+ *
+ * Start daemon, test watching of (parent) PID
+ */
+
 static void test3(TALLOC_CTX *mem_ctx, const char *pidfile,
 		  const char *sockpath)
 {
@@ -253,6 +272,12 @@ static void test3(TALLOC_CTX *mem_ctx, const char *pidfile,
 	ret = stat(sockpath, &st);
 	assert(ret == -1);
 }
+
+/*
+ * test4
+ *
+ * Start daemon, test termination via wait_send function
+ */
 
 struct test4_wait_state {
 };
@@ -353,6 +378,12 @@ static void test4(TALLOC_CTX *mem_ctx, const char *pidfile,
 	ret = stat(sockpath, &st);
 	assert(ret == -1);
 }
+
+/*
+ * test5
+ *
+ * Start daemon, multiple client connects, requests, disconnects
+ */
 
 #define TEST5_MAX_CLIENTS	10
 
@@ -651,6 +682,12 @@ static void test5(TALLOC_CTX *mem_ctx, const char *pidfile,
 	ret = kill(pid_server, SIGTERM);
 	assert(ret == 0);
 }
+
+/*
+ * test6
+ *
+ * Start daemon, test client connects, requests, replies, disconnects
+ */
 
 struct test6_pkt {
 	uint32_t len;
