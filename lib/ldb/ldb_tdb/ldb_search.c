@@ -222,10 +222,15 @@ int ltdb_search_key(struct ldb_module *module, struct ltdb_private *ltdb,
 	talloc_free(tdb_key.dptr);
 	
 	if (ret == -1) {
-		if (tdb_error(ltdb->tdb) == TDB_ERR_NOEXIST) {
-			return LDB_ERR_NO_SUCH_OBJECT;
+		ret = ltdb_err_map(tdb_error(ltdb->tdb));
+		if (ret == LDB_SUCCESS) {
+			/*
+			 * Just to be sure we don't turn errors
+			 * into success
+			 */
+			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ret;
 	} else if (ret != LDB_SUCCESS) {
 		return ret;
 	}
