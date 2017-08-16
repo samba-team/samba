@@ -5829,6 +5829,11 @@ static int do_host_query(const char *query_host)
 		}
 	}
 
+	if (lp_client_min_protocol() > PROTOCOL_NT1) {
+		d_printf("SMB1 disabled -- no workgroup available\n");
+		goto out;
+	}
+
 	if (lp_disable_netbios()) {
 		d_printf("NetBIOS over TCP disabled -- no workgroup available\n");
 		goto out;
