@@ -2221,8 +2221,8 @@ allowed:
 				 ldb_dn_get_linearized(new_dn),
 				 ldb_dn_get_linearized(getnc_state->ncRoot_dn),
 				 ldb_dn_get_linearized(getnc_state->last_dn)));
-			talloc_free(getnc_state);
-			getnc_state = NULL;
+			TALLOC_FREE(getnc_state);
+			b_state->getncchanges_state = NULL;
 		}
 	}
 
@@ -2235,8 +2235,8 @@ allowed:
 				 ldb_dn_get_linearized(getnc_state->ncRoot_dn),
 				 (ret > 0) ? "older" : "newer",
 				 ldb_dn_get_linearized(getnc_state->last_dn)));
-			talloc_free(getnc_state);
-			getnc_state = NULL;
+			TALLOC_FREE(getnc_state);
+			b_state->getncchanges_state = NULL;
 		}
 	}
 
@@ -2248,39 +2248,25 @@ allowed:
 			NULL
 		};
 		uint32_t nc_instanceType;
+		struct ldb_dn *ncRoot_dn;
 
-		getnc_state = talloc_zero(b_state, struct drsuapi_getncchanges_state);
-		if (getnc_state == NULL) {
-			return WERR_NOT_ENOUGH_MEMORY;
-		}
-		b_state->getncchanges_state = getnc_state;
-		getnc_state->ncRoot_dn = drs_ObjectIdentifier_to_dn(getnc_state, sam_ctx, ncRoot);
-		if (getnc_state->ncRoot_dn == NULL) {
+		ncRoot_dn = drs_ObjectIdentifier_to_dn(mem_ctx, sam_ctx, ncRoot);
+		if (ncRoot_dn == NULL) {
 			return WERR_NOT_ENOUGH_MEMORY;
 		}
 
 		ret = dsdb_search_dn(sam_ctx, mem_ctx, &res,
-				     getnc_state->ncRoot_dn, attrs,
+				     ncRoot_dn, attrs,
 				     DSDB_SEARCH_SHOW_DELETED |
 				     DSDB_SEARCH_SHOW_RECYCLED);
 		if (ret != LDB_SUCCESS) {
 			DBG_WARNING("Failed to find ncRoot_dn %s\n",
-				    ldb_dn_get_linearized(getnc_state->ncRoot_dn));
+				    ldb_dn_get_linearized(ncRoot_dn));
 			return WERR_DS_CANT_FIND_EXPECTED_NC;
 		}
-		getnc_state->ncRoot_guid = samdb_result_guid(res->msgs[0],
-							     "objectGUID");
 		nc_instanceType = ldb_msg_find_attr_as_int(res->msgs[0],
 							   "instanceType",
 							   0);
-		TALLOC_FREE(res);
-		ncRoot->guid = getnc_state->ncRoot_guid;
-
-		/* find out if we are to replicate Schema NC */
-		ret = ldb_dn_compare_base(ldb_get_schema_basedn(sam_ctx),
-					  getnc_state->ncRoot_dn);
-
-		getnc_state->is_schema_nc = (0 == ret);
 
 		if (req10->extended_op != DRSUAPI_EXOP_NONE) {
 			r->out.ctr->ctr6.extended_ret = DRSUAPI_EXOP_ERR_SUCCESS;
@@ -2296,7 +2282,7 @@ allowed:
 		case DRSUAPI_EXOP_NONE:
 			if ((nc_instanceType & INSTANCE_TYPE_IS_NC_HEAD) == 0) {
 				const char *dn_str
-					= ldb_dn_get_linearized(getnc_state->ncRoot_dn);
+					= ldb_dn_get_linearized(ncRoot_dn);
 
 				DBG_NOTICE("Rejecting full replication on "
 					   "not NC %s", dn_str);
@@ -2354,6 +2340,27 @@ allowed:
 				 (unsigned)req10->extended_op));
 			return WERR_DS_DRA_NOT_SUPPORTED;
 		}
+
+		/* Initialize the state we'll store over the replication cycle */
+		getnc_state = talloc_zero(b_state, struct drsuapi_getncchanges_state);
+		if (getnc_state == NULL) {
+			return WERR_NOT_ENOUGH_MEMORY;
+		}
+		b_state->getncchanges_state = getnc_state;
+
+		getnc_state->ncRoot_dn = ncRoot_dn;
+		talloc_steal(getnc_state, ncRoot_dn);
+
+		getnc_state->ncRoot_guid = samdb_result_guid(res->msgs[0],
+							     "objectGUID");
+		ncRoot->guid = getnc_state->ncRoot_guid;
+
+		/* find out if we are to replicate Schema NC */
+		ret = ldb_dn_compare_base(ldb_get_schema_basedn(sam_ctx),
+					  ncRoot_dn);
+		getnc_state->is_schema_nc = (0 == ret);
+
+		TALLOC_FREE(res);
 	}
 
 	if (!ldb_dn_validate(getnc_state->ncRoot_dn) ||
