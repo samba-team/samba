@@ -40,6 +40,7 @@ from samba import werror, WERRORError
 from samba import sd_utils
 import ldb
 from ldb import SCOPE_BASE
+import random
 
 from samba.dcerpc import drsuapi, security
 from samba.credentials import DONT_USE_KERBEROS
@@ -51,13 +52,19 @@ class DrsReplicaSyncUnprivTestCase(drs_base.DrsBaseTestCase):
         super(DrsReplicaSyncUnprivTestCase, self).setUp()
         self.get_changes_user = "get-changes-user"
         self.base_dn = self.ldb_dc1.get_default_basedn()
-        self.ou = "OU=test_getncchanges,%s" % self.base_dn
         self.user_pass = samba.generate_random_password(12, 16)
+
+        # add some randomness to the test OU. (Deletion of the last test's
+        # objects can be slow to replicate out. So the OU created by a previous
+        # testenv may still exist at this point).
+        rand = random.randint(1, 10000000)
+        test_ou = "OU=test_getnc_unpriv%d" %rand
+        self.ou = "%s,%s" %(test_ou, self.base_dn)
         self.ldb_dc1.add({
             "dn": self.ou,
             "objectclass": "organizationalUnit"})
         self.ldb_dc1.newuser(self.get_changes_user, self.user_pass,
-                             userou="OU=test_getncchanges")
+                             userou=test_ou)
         (self.drs, self.drs_handle) = self._ds_bind(self.dnsname_dc1)
 
         self.sd_utils = sd_utils.SDUtils(self.ldb_dc1)
