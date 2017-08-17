@@ -832,7 +832,8 @@ static NTSTATUS secrets_store_domain_info1_by_key(const char *key,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS secrets_store_domain_info(const struct secrets_domain_info1 *info)
+static NTSTATUS secrets_store_domain_info(const struct secrets_domain_info1 *info,
+					  bool upgrade)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	const char *domain = info->domain_info.name.string;
@@ -853,7 +854,7 @@ static NTSTATUS secrets_store_domain_info(const struct secrets_domain_info1 *inf
 	switch (info->secure_channel_type) {
 	case SEC_CHAN_WKSTA:
 	case SEC_CHAN_BDC:
-		if (role >= ROLE_ACTIVE_DIRECTORY_DC) {
+		if (!upgrade && role >= ROLE_ACTIVE_DIRECTORY_DC) {
 			DBG_ERR("AD_DC not supported for %s\n",
 				domain);
 			TALLOC_FREE(frame);
@@ -1490,7 +1491,7 @@ NTSTATUS secrets_fetch_or_upgrade_domain_info(const char *domain,
 
 	secrets_debug_domain_info(DBGLVL_INFO, info, "upgrade");
 
-	status = secrets_store_domain_info(info);
+	status = secrets_store_domain_info(info, true /* upgrade */);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("secrets_store_domain_info() failed "
 			"for %s - %s\n", domain, nt_errstr(status));
@@ -1647,7 +1648,7 @@ NTSTATUS secrets_store_JoinCtx(const struct libnet_JoinCtx *r)
 
 	secrets_debug_domain_info(DBGLVL_INFO, info, "join");
 
-	status = secrets_store_domain_info(info);
+	status = secrets_store_domain_info(info, false /* upgrade */);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("secrets_store_domain_info() failed "
 			"for %s - %s\n", domain, nt_errstr(status));
@@ -1739,7 +1740,7 @@ NTSTATUS secrets_prepare_password_change(const char *domain, const char *dcname,
 
 	secrets_debug_domain_info(DBGLVL_INFO, info, "prepare_change");
 
-	status = secrets_store_domain_info(info);
+	status = secrets_store_domain_info(info, false /* upgrade */);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("secrets_store_domain_info() failed "
 			"for %s - %s\n", domain, nt_errstr(status));
@@ -1963,7 +1964,7 @@ static NTSTATUS secrets_abort_password_change(const char *change_server,
 
 	secrets_debug_domain_info(DBGLVL_WARNING, info, reason);
 
-	status = secrets_store_domain_info(info);
+	status = secrets_store_domain_info(info, false /* upgrade */);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("secrets_store_domain_info() failed "
 			"for %s - %s\n", domain, nt_errstr(status));
@@ -2057,7 +2058,7 @@ NTSTATUS secrets_finish_password_change(const char *change_server,
 
 	secrets_debug_domain_info(DBGLVL_WARNING, info, "finish_change");
 
-	status = secrets_store_domain_info(info);
+	status = secrets_store_domain_info(info, false /* upgrade */);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("secrets_store_domain_info() failed "
 			"for %s - %s\n", domain, nt_errstr(status));
