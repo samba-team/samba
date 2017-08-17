@@ -174,7 +174,7 @@ static int ltdb_dn_list_load(struct ldb_module *module,
 			     struct ldb_dn *dn, struct dn_list *list)
 {
 	struct ldb_message *msg;
-	int ret;
+	int ret, version;
 	struct ldb_message_element *el;
 	TDB_DATA rec;
 	struct dn_list *list2;
@@ -222,13 +222,13 @@ normal_index:
 		return ret;
 	}
 
-	/* TODO: check indexing version number */
-
 	el = ldb_msg_find_element(msg, LTDB_IDX);
 	if (!el) {
 		talloc_free(msg);
 		return LDB_SUCCESS;
 	}
+
+	version = ldb_msg_find_attr_as_int(msg, LTDB_IDXVERSION, 0);
 
 	/*
 	 * we avoid copying the strings by stealing the list.  We have
@@ -237,12 +237,35 @@ normal_index:
 	 * value with LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC above
 	 */
 	if (ltdb->cache->GUID_index_attribute == NULL) {
+		/* check indexing version number */
+		if (version != LTDB_INDEXING_VERSION) {
+			ldb_debug_set(ldb_module_get_ctx(module),
+				      LDB_DEBUG_ERROR,
+				      "Wrong DN index version %d "
+				      "expected %d for %s",
+				      version, LTDB_INDEXING_VERSION,
+				      ldb_dn_get_linearized(dn));
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
 		talloc_steal(el->values, msg);
 		list->dn = talloc_steal(list, el->values);
 		list->count = el->num_values;
 	} else {
 		unsigned int i;
 		static const size_t GUID_val_size = 16;
+		if (version != LTDB_GUID_INDEXING_VERSION) {
+			/* This is quite likely during the DB startup
+			   on first upgrade to using a GUID index */
+			ldb_debug_set(ldb_module_get_ctx(module),
+				      LDB_DEBUG_ERROR,
+				      "Wrong GUID index version %d "
+				      "expected %d for %s",
+				      version, LTDB_GUID_INDEXING_VERSION,
+				      ldb_dn_get_linearized(dn));
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
 		if (el->num_values != 1) {
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
