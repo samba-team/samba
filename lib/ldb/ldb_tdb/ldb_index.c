@@ -629,6 +629,12 @@ static bool ltdb_is_indexed(struct ldb_module *module,
 	unsigned int i;
 	struct ldb_message_element *el;
 
+	if ((ltdb->cache->GUID_index_attribute != NULL) &&
+	    (ldb_attr_cmp(attr,
+			  ltdb->cache->GUID_index_attribute) == 0)) {
+		/* Implicity covered, this is the index key */
+		return false;
+	}
 	if (ldb->schema.index_handler_override) {
 		const struct ldb_schema_attribute *a
 			= ldb_schema_attribute_by_name(ldb, attr);
