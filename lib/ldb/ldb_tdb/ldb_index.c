@@ -215,9 +215,30 @@ normal_index:
 	 * asked for the memory to be allocated on msg, not on each
 	 * value with LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC above
 	 */
-	talloc_steal(el->values, msg);
-	list->dn = talloc_steal(list, el->values);
-	list->count = el->num_values;
+	if (ltdb->cache->GUID_index_attribute == NULL) {
+		talloc_steal(el->values, msg);
+		list->dn = talloc_steal(list, el->values);
+		list->count = el->num_values;
+	} else {
+		unsigned int i;
+		static const size_t GUID_val_size = 16;
+		if (el->num_values != 1) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+		list->count = el->values[0].length / GUID_val_size;
+		list->dn = talloc_array(list, struct ldb_val, list->count);
+
+		/*
+		 * The actual data is on msg, due to
+		 * LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC
+		 */
+		talloc_steal(list->dn, msg);
+		for (i = 0; i < list->count; i++) {
+			list->dn[i].data = &el->values[0].data[i * GUID_val_size];
+			list->dn[i].length = GUID_val_size;
+		}
+	}
 
 	/* We don't need msg->elements any more */
 	talloc_free(msg->elements);
