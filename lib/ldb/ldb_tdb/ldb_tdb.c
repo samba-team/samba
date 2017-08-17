@@ -563,7 +563,7 @@ int ltdb_delete_noindex(struct ldb_module *module,
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
-	tdb_key = ltdb_key_dn(module, tdb_key_ctx, msg->dn);
+	tdb_key = ltdb_key_msg(module, tdb_key_ctx, msg);
 	if (!tdb_key.dptr) {
 		TALLOC_FREE(tdb_key_ctx);
 		return LDB_ERR_OTHER;
