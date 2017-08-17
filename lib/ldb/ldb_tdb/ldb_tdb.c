@@ -651,6 +651,17 @@ static int msg_delete_attribute(struct ldb_module *module,
 	unsigned int i;
 	int ret;
 	struct ldb_message_element *el;
+	bool is_special = ldb_dn_is_special(msg->dn);
+
+	if (!is_special
+	    && ltdb->cache->GUID_index_attribute != NULL
+	    && ldb_attr_cmp(name, ltdb->cache->GUID_index_attribute) == 0) {
+		struct ldb_context *ldb = ldb_module_get_ctx(module);
+		ldb_asprintf_errstring(ldb, "Must not modify GUID "
+				       "attribute %s (used as DB index)",
+				       ltdb->cache->GUID_index_attribute);
+		return LDB_ERR_CONSTRAINT_VIOLATION;
+	}
 
 	el = ldb_msg_find_element(msg, name);
 	if (el == NULL) {
