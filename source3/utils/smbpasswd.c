@@ -243,8 +243,9 @@ static char *prompt_for_new_password(bool stdin_get)
  Change a password either locally or remotely.
 *************************************************************/
 
-static NTSTATUS password_change(const char *remote_mach, char *username, 
-				char *old_passwd, char *new_pw,
+static NTSTATUS password_change(const char *remote_mach,
+				const char *username,
+				const char *old_passwd, const char *new_pw,
 				int local_flags)
 {
 	NTSTATUS ret;
