@@ -823,7 +823,8 @@ bool get_dc_name(const char *domain,
 
 /* The following definitions come from libsmb/passchange.c  */
 
-NTSTATUS remote_password_change(const char *remote_machine, const char *user_name, 
+NTSTATUS remote_password_change(const char *remote_machine,
+				const char *domain, const char *user_name,
 				const char *old_passwd, const char *new_passwd,
 				char **err_str);
 

@@ -258,7 +258,8 @@ static NTSTATUS password_change(const char *remote_mach, char *username,
 			fprintf(stderr, "Invalid remote operation!\n");
 			return NT_STATUS_UNSUCCESSFUL;
 		}
-		ret = remote_password_change(remote_mach, username,
+		ret = remote_password_change(remote_mach,
+					     NULL, username,
 					     old_passwd, new_pw, &err_str);
 	} else {
 		ret = local_password_change(username, local_flags, new_pw,

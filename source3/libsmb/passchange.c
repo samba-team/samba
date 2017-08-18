@@ -30,7 +30,8 @@
  Change a password on a remote machine using IPC calls.
 *************************************************************/
 
-NTSTATUS remote_password_change(const char *remote_machine, const char *user_name, 
+NTSTATUS remote_password_change(const char *remote_machine,
+				const char *domain, const char *user_name,
 				const char *old_passwd, const char *new_passwd,
 				char **err_str)
 {
@@ -55,7 +56,7 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 
 	creds = cli_session_creds_init(cli,
 				       user_name,
-				       NULL, /* domain */
+				       domain,
 				       NULL, /* realm */
 				       old_passwd,
 				       false, /* use_kerberos */
