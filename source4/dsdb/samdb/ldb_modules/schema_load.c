@@ -193,9 +193,17 @@ static struct dsdb_schema *dsdb_schema_refresh(struct ldb_module *module, struct
 		return schema;
 	}
 
-	/* We don't allow a schema reload during a transaction - nobody else can modify our schema behind our backs */
 	if (private_data->in_transaction) {
-		return schema;
+
+		/*
+		 * If the refresh is not an expected part of a larger
+		 * transaction, then we don't allow a schema reload during a
+		 * transaction. This stops others from modifying our schema
+		 * behind our backs
+		 */
+		if (ldb_get_opaque(ldb, "dsdb_schema_refresh_expected") != (void *)1) {
+			return schema;
+		}
 	}
 
 	SMB_ASSERT(ev == ldb_get_event_context(ldb));

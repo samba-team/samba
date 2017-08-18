@@ -1306,12 +1306,28 @@ static int rootdse_schemaupdatenow(struct ldb_module *module, struct ldb_request
 		return ldb_next_request(module, req);
 	}
 
-	ret = ldb_extended(ldb, DSDB_EXTENDED_SCHEMA_UPDATE_NOW_OID, schema_dn, &ext_res);
+	/*
+	 * schemaUpdateNow has been requested. Allow this to refresh the schema
+	 * even if we're currently in the middle of a transaction
+	 */
+	ret = ldb_set_opaque(ldb, "dsdb_schema_refresh_expected", (void *)1);
 	if (ret != LDB_SUCCESS) {
 		return ldb_operr(ldb);
 	}
 
+	ret = ldb_extended(ldb, DSDB_EXTENDED_SCHEMA_UPDATE_NOW_OID, schema_dn, &ext_res);
+	if (ret != LDB_SUCCESS) {
+		ldb_set_opaque(ldb, "dsdb_schema_refresh_expected", (void *)0);
+		return ldb_operr(ldb);
+	}
+
 	talloc_free(ext_res);
+
+	ret = ldb_set_opaque(ldb, "dsdb_schema_refresh_expected", (void *)0);
+	if (ret != LDB_SUCCESS) {
+		return ldb_operr(ldb);
+	}
+
 	return ldb_module_done(req, NULL, NULL, ret);
 }
 
