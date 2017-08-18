@@ -586,6 +586,7 @@ static int process_nonroot(int local_flags)
 int main(int argc, char **argv)
 {	
 	TALLOC_CTX *frame = talloc_stackframe();
+	struct messaging_context *msg_ctx = NULL;
 	int local_flags = 0;
 	int ret;
 
@@ -603,8 +604,17 @@ int main(int argc, char **argv)
 
 	setup_logging("smbpasswd", DEBUG_STDERR);
 
-	if (server_messaging_context() == NULL) {
-		return 1;
+	msg_ctx = server_messaging_context();
+	if (msg_ctx == NULL) {
+		if (geteuid() != 0) {
+			DBG_NOTICE("Unable to initialize messaging context. "
+				   "Must be root to do that.\n");
+		} else {
+			fprintf(stderr,
+				"smbpasswd is not able to initialize the "
+				"messaging context!\n");
+			return 1;
+		}
 	}
 
 	/*
