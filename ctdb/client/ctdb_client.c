@@ -2086,12 +2086,10 @@ int ctdb_ctrl_db_open_flags(struct ctdb_context *ctdb, uint32_t db_id,
 struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb,
 				    struct timeval timeout,
 				    const char *name,
-				    bool persistent)
+				    uint8_t db_flags)
 {
 	struct ctdb_db_context *ctdb_db;
-	TDB_DATA data;
 	int ret;
-	int32_t res;
 	int tdb_flags;
 
 	ctdb_db = ctdb_db_handle(ctdb, name);
@@ -2106,21 +2104,14 @@ struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb,
 	ctdb_db->db_name = talloc_strdup(ctdb_db, name);
 	CTDB_NO_MEMORY_NULL(ctdb, ctdb_db->db_name);
 
-	data.dptr = discard_const(name);
-	data.dsize = strlen(name)+1;
-
 	/* tell ctdb daemon to attach */
-	ret = ctdb_control(ctdb, CTDB_CURRENT_NODE, 0,
-			   persistent?CTDB_CONTROL_DB_ATTACH_PERSISTENT:CTDB_CONTROL_DB_ATTACH,
-			   0, data, ctdb_db, &data, &res, NULL, NULL);
-	if (ret != 0 || res != 0 || data.dsize != sizeof(uint32_t)) {
+	ret = ctdb_ctrl_createdb(ctdb, timeout, CTDB_CURRENT_NODE,
+				 ctdb_db, name, db_flags, &ctdb_db->db_id);
+	if (ret != 0) {
 		DEBUG(DEBUG_ERR,("Failed to attach to database '%s'\n", name));
 		talloc_free(ctdb_db);
 		return NULL;
 	}
-
-	ctdb_db->db_id = *(uint32_t *)data.dptr;
-	talloc_free(data.dptr);
 
 	ret = ctdb_ctrl_getdbpath(ctdb, timeout, CTDB_CURRENT_NODE, ctdb_db->db_id, ctdb_db, &ctdb_db->db_path);
 	if (ret != 0) {
@@ -2144,9 +2135,7 @@ struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb,
 		return NULL;
 	}
 
-	if (persistent) {
-		ctdb_db->db_flags = CTDB_DB_FLAGS_PERSISTENT;
-	}
+	ctdb_db->db_flags = db_flags;
 
 	DLIST_ADD(ctdb->db_list, ctdb_db);
 
@@ -3893,7 +3882,7 @@ struct ctdb_transaction_handle *ctdb_transaction_start(struct ctdb_db_context *c
 	}
 
 	h->g_lock_db = ctdb_attach(h->ctdb_db->ctdb, timeval_current_ofs(3,0),
-				   "g_lock.tdb", false);
+				   "g_lock.tdb", 0);
 	if (!h->g_lock_db) {
 		DEBUG(DEBUG_ERR, (__location__ " unable to attach to g_lock.tdb\n"));
 		talloc_free(h);
