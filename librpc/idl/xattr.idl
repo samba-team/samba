@@ -191,7 +191,7 @@ interface xattr
 		uint8 hash[64]; /* 64 bytes hash. */
 		utf8string description; /* description of what created
 					 * this hash (to allow
-					 * foresnics later, if we have
+					 * forensics later, if we have
 					 * a bug in one codepath */
 		NTTIME time;
 		uint8 sys_acl_hash[64]; /* 64 bytes hash. */
