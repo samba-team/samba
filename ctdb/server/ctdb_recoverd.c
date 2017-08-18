@@ -654,7 +654,7 @@ static void vacuum_fetch_handler(uint64_t srvid, TDB_DATA data,
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	const char *name;
 	struct ctdb_dbid_map_old *dbmap=NULL;
-	bool persistent = false;
+	uint8_t db_flags = 0;
 	struct ctdb_db_context *ctdb_db;
 	struct ctdb_rec_data_old *r;
 
@@ -673,7 +673,7 @@ static void vacuum_fetch_handler(uint64_t srvid, TDB_DATA data,
 
 	for (i=0;i<dbmap->num;i++) {
 		if (dbmap->dbs[i].db_id == recs->db_id) {
-			persistent = dbmap->dbs[i].flags & CTDB_DB_FLAGS_PERSISTENT;
+			db_flags = dbmap->dbs[i].flags;
 			break;
 		}
 	}
@@ -689,7 +689,7 @@ static void vacuum_fetch_handler(uint64_t srvid, TDB_DATA data,
 	}
 
 	/* attach to it */
-	ctdb_db = ctdb_attach(ctdb, CONTROL_TIMEOUT(), name, persistent);
+	ctdb_db = ctdb_attach(ctdb, CONTROL_TIMEOUT(), name, db_flags);
 	if (ctdb_db == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to attach to database '%s'\n", name));
 		goto done;

@@ -276,7 +276,7 @@ int ctdb_ctrl_db_open_flags(struct ctdb_context *ctdb, uint32_t db_id,
 struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb,
 				    struct timeval timeout,
 				    const char *name,
-				    bool persistent);
+				    uint8_t db_flags);
 
 int ctdb_detach(struct ctdb_context *ctdb, uint32_t db_id);
 
