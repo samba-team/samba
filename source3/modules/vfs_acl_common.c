@@ -1087,10 +1087,14 @@ static NTSTATUS set_underlying_acl(vfs_handle_struct *handle, files_struct *fsp,
 /*********************************************************************
  Store a v3 security descriptor
 *********************************************************************/
-static NTSTATUS store_v3_blob(vfs_handle_struct *handle, files_struct *fsp,
-			      struct security_descriptor *psd,
-			      struct security_descriptor *pdesc_next,
-			      uint8_t hash[XATTR_SD_HASH_SIZE])
+static NTSTATUS store_v3_blob(
+	NTSTATUS (*store_acl_blob_fsp_fn)(vfs_handle_struct *handle,
+					  files_struct *fsp,
+					  DATA_BLOB *pblob),
+	vfs_handle_struct *handle, files_struct *fsp,
+	struct security_descriptor *psd,
+	struct security_descriptor *pdesc_next,
+	uint8_t hash[XATTR_SD_HASH_SIZE])
 {
 	NTSTATUS status;
 	DATA_BLOB blob;
@@ -1118,7 +1122,7 @@ static NTSTATUS store_v3_blob(vfs_handle_struct *handle, files_struct *fsp,
 		return status;
 	}
 
-	status = store_acl_blob_fsp(handle, fsp, &blob);
+	status = store_acl_blob_fsp_fn(handle, fsp, &blob);
 	return status;
 }
 
@@ -1207,7 +1211,8 @@ static NTSTATUS fset_nt_acl_common(vfs_handle_struct *handle, files_struct *fsp,
 			}
 		}
 		ZERO_ARRAY(hash);
-		status = store_v3_blob(handle, fsp, psd, NULL, hash);
+		status = store_v3_blob(store_acl_blob_fsp, handle, fsp, psd,
+				       NULL, hash);
 
 		TALLOC_FREE(frame);
 		return status;
@@ -1248,7 +1253,8 @@ static NTSTATUS fset_nt_acl_common(vfs_handle_struct *handle, files_struct *fsp,
 	/* If we fail to get the ACL blob (for some reason) then this
 	 * is not fatal, we just work based on the NT ACL only */
 	if (ret != 0) {
-		status = store_v3_blob(handle, fsp, psd, pdesc_next, hash);
+		status = store_v3_blob(store_acl_blob_fsp, handle, fsp, psd,
+				       pdesc_next, hash);
 
 		TALLOC_FREE(frame);
 		return status;
