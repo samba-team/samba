@@ -3,7 +3,7 @@
 test_info()
 {
     cat <<EOF
-If we running local daemons and TEST_CLEANUP is true then shutdown the daemons.
+If we running local daemons then shutdown the daemons.
 
 No error if ctdbd is not already running on the cluster.
 

@@ -240,9 +240,7 @@ restart_ctdb_1 ()
 
 maybe_stop_ctdb ()
 {
-    if $TEST_CLEANUP ; then
-	daemons_stop
-    fi
+    daemons_stop
 }
 
 _restart_ctdb_all ()
