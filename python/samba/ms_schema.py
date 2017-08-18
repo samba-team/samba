@@ -198,7 +198,7 @@ def __write_ldif_one(entry):
         else:
             vl = l[1]
 
-        if l[0].lower() == 'omobjectclass':
+        if l[2]:
             out.append("%s:: %s" % (l[0], l[1]))
             continue
 
@@ -215,8 +215,15 @@ def __transform_entry(entry, objectClass):
     entry = [l.split(":", 1) for l in entry]
 
     cn = ""
+    skip_dn = skip_objectclass = skip_admin_description = skip_admin_display_name = False
 
     for l in entry:
+        if l[1].startswith(': '):
+            l.append(True)
+            l[1] = l[1][2:]
+        else:
+            l.append(False)
+
         key = l[0].lower()
         l[1] = l[1].lstrip()
         l[1] = l[1].rstrip()
@@ -235,25 +242,42 @@ def __transform_entry(entry, objectClass):
             l[1] = __convert_bitfield(key, l[1])
 
         if key == "omobjectclass":
-            l[1] = oMObjectClassBER[l[1].strip()]
+            if not l[2]:
+                l[1] = oMObjectClassBER[l[1].strip()]
+                l[2] = True
 
         if isinstance(l[1], str):
             l[1] = fix_dn(l[1])
 
+        if key == 'dn':
+            skip_dn = True
+            dn = l[1]
+
+        if key == 'objectclass':
+            skip_objectclass = True
+        elif key == 'admindisplayname':
+            skip_admin_display_name = True
+        elif key == 'admindescription':
+            skip_admin_description = True
 
     assert(cn)
-    entry.insert(0, ["dn", "CN=%s,${SCHEMADN}" % cn])
-    entry.insert(1, ["objectClass", ["top", objectClass]])
-    entry.insert(2, ["cn", cn])
-    entry.insert(2, ["objectGUID", str(uuid.uuid4())])
-    entry.insert(2, ["adminDescription", cn])
-    entry.insert(2, ["adminDisplayName", cn])
 
-    for l in entry:
-        key = l[0].lower()
+    header = []
+    if not skip_dn:
+        header.append(["dn", "CN=%s,${SCHEMADN}" % cn, False])
+    else:
+        header.append(["dn", dn, False])
 
-        if key == "cn":
-            entry.remove(l)
+    if not skip_objectclass:
+        header.append(["objectClass", ["top", objectClass], False])
+    if not skip_admin_description:
+        header.append(["adminDescription", cn, False])
+    if not skip_admin_display_name:
+        header.append(["adminDisplayName", cn, False])
+
+    header.append(["objectGUID", str(uuid.uuid4()), False])
+
+    entry = header + [x for x in entry if x[0].lower() not in {'dn', 'changetype', 'objectcategory'}]
 
     return entry
 
