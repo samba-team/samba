@@ -244,7 +244,7 @@ static char *prompt_for_new_password(bool stdin_get)
 *************************************************************/
 
 static NTSTATUS password_change(const char *remote_mach,
-				const char *username,
+				const char *domain, const char *username,
 				const char *old_passwd, const char *new_pw,
 				int local_flags)
 {
@@ -261,7 +261,7 @@ static NTSTATUS password_change(const char *remote_mach,
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 		ret = remote_password_change(remote_mach,
-					     NULL, username,
+					     domain, username,
 					     old_passwd, new_pw, &err_str);
 	} else {
 		ret = local_password_change(username, local_flags, new_pw,
@@ -466,7 +466,8 @@ static int process_root(int local_flags)
 		}
 	}
 
-	if (!NT_STATUS_IS_OK(password_change(remote_machine, user_name,
+	if (!NT_STATUS_IS_OK(password_change(remote_machine,
+					     NULL, user_name,
 					     old_passwd, new_passwd,
 					     local_flags))) {
 		result = 1;
@@ -566,8 +567,9 @@ static int process_nonroot(int local_flags)
 		exit(1);
 	}
 
-	if (!NT_STATUS_IS_OK(password_change(remote_machine, user_name, old_pw,
-					     new_pw, 0))) {
+	if (!NT_STATUS_IS_OK(password_change(remote_machine,
+					     NULL, user_name,
+					     old_pw, new_pw, 0))) {
 		result = 1;
 		goto done;
 	}
