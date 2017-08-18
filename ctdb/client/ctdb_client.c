@@ -1947,31 +1947,27 @@ int ctdb_ctrl_getdbseqnum(struct ctdb_context *ctdb, struct timeval timeout,
 /*
   create a database
  */
-int ctdb_ctrl_createdb(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, 
-		       TALLOC_CTX *mem_ctx, const char *name, bool persistent)
+int ctdb_ctrl_createdb(struct ctdb_context *ctdb, struct timeval timeout,
+		       uint32_t destnode, TALLOC_CTX *mem_ctx,
+		       const char *name, uint8_t db_flags)
 {
 	int ret;
 	int32_t res;
 	TDB_DATA data;
-	uint64_t tdb_flags = 0;
+	uint32_t opcode;
 
 	data.dptr = discard_const(name);
 	data.dsize = strlen(name)+1;
 
-	/* Make sure that volatile databases use jenkins hash */
-	if (!persistent) {
-		tdb_flags = TDB_INCOMPATIBLE_HASH;
+	if (db_flags & CTDB_DB_FLAGS_PERSISTENT) {
+		opcode = CTDB_CONTROL_DB_ATTACH_PERSISTENT;
+	} else if (db_flags & CTDB_DB_FLAGS_REPLICATED) {
+		opcode = CTDB_CONTROL_DB_ATTACH_REPLICATED;
+	} else {
+		opcode = CTDB_CONTROL_DB_ATTACH;
 	}
 
-#ifdef TDB_MUTEX_LOCKING
-	if (!persistent && ctdb->tunable.mutex_enabled == 1) {
-		tdb_flags |= (TDB_MUTEX_LOCKING | TDB_CLEAR_IF_FIRST);
-	}
-#endif
-
-	ret = ctdb_control(ctdb, destnode, tdb_flags,
-			   persistent?CTDB_CONTROL_DB_ATTACH_PERSISTENT:CTDB_CONTROL_DB_ATTACH, 
-			   0, data, 
+	ret = ctdb_control(ctdb, destnode, 0, opcode, 0, data,
 			   mem_ctx, &data, &res, &timeout, NULL);
 
 	if (ret != 0 || res != 0) {

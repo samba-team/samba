@@ -472,7 +472,7 @@ static int create_missing_remote_databases(struct ctdb_context *ctdb, struct ctd
 			ret = ctdb_ctrl_createdb(ctdb, CONTROL_TIMEOUT(),
 						 nodemap->nodes[j].pnn,
 						 mem_ctx, name,
-						 dbmap->dbs[db].flags & CTDB_DB_FLAGS_PERSISTENT);
+						 dbmap->dbs[db].flags);
 			if (ret != 0) {
 				DEBUG(DEBUG_ERR, (__location__ " Unable to create remote db:%s\n", name));
 				return -1;
@@ -534,8 +534,9 @@ static int create_missing_local_databases(struct ctdb_context *ctdb, struct ctdb
 					  nodemap->nodes[j].pnn));
 				return -1;
 			}
-			ctdb_ctrl_createdb(ctdb, CONTROL_TIMEOUT(), pnn, mem_ctx, name, 
-					   remote_dbmap->dbs[db].flags & CTDB_DB_FLAGS_PERSISTENT);
+			ctdb_ctrl_createdb(ctdb, CONTROL_TIMEOUT(), pnn,
+					   mem_ctx, name,
+					   remote_dbmap->dbs[db].flags);
 			if (ret != 0) {
 				DEBUG(DEBUG_ERR, (__location__ " Unable to create local db:%s\n", name));
 				return -1;
