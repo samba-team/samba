@@ -21,6 +21,7 @@
 #include "secrets.h"
 #include "../librpc/gen_ndr/samr.h"
 #include "../lib/util/util_pw.h"
+#include "libsmb/proto.h"
 #include "passdb.h"
 
 /*
