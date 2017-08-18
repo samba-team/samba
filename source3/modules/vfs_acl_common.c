@@ -854,12 +854,18 @@ static NTSTATUS stat_fsp_or_smb_fname(vfs_handle_struct *handle,
  filesystem sd.
 *******************************************************************/
 
-static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
+static NTSTATUS get_nt_acl_internal(
+	NTSTATUS (*get_acl_blob_fn)(TALLOC_CTX *ctx,
+				    vfs_handle_struct *handle,
 				    files_struct *fsp,
-				    const struct smb_filename *smb_fname_in,
-				    uint32_t security_info,
-				    TALLOC_CTX *mem_ctx,
-				    struct security_descriptor **ppdesc)
+				    const struct smb_filename *smb_fname,
+				    DATA_BLOB *pblob),
+	vfs_handle_struct *handle,
+	files_struct *fsp,
+	const struct smb_filename *smb_fname_in,
+	uint32_t security_info,
+	TALLOC_CTX *mem_ctx,
+	struct security_descriptor **ppdesc)
 {
 	DATA_BLOB blob = data_blob_null;
 	NTSTATUS status;
@@ -880,7 +886,7 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 
 	DBG_DEBUG("name=%s\n", smb_fname->base_name);
 
-	status = get_acl_blob(mem_ctx, handle, fsp, smb_fname, &blob);
+	status = get_acl_blob_fn(mem_ctx, handle, fsp, smb_fname, &blob);
 	if (NT_STATUS_IS_OK(status)) {
 		status = validate_nt_acl_blob(mem_ctx,
 					      handle,
@@ -1026,8 +1032,8 @@ static NTSTATUS fget_nt_acl_common(vfs_handle_struct *handle,
 				   TALLOC_CTX *mem_ctx,
 				   struct security_descriptor **ppdesc)
 {
-	return get_nt_acl_internal(handle, fsp,
-				   NULL, security_info, mem_ctx, ppdesc);
+	return get_nt_acl_internal(get_acl_blob, handle, fsp, NULL,
+				   security_info, mem_ctx, ppdesc);
 }
 
 /*********************************************************************
@@ -1040,12 +1046,8 @@ static NTSTATUS get_nt_acl_common(vfs_handle_struct *handle,
 				  TALLOC_CTX *mem_ctx,
 				  struct security_descriptor **ppdesc)
 {
-	return get_nt_acl_internal(handle,
-				NULL,
-				smb_fname,
-				security_info,
-				mem_ctx,
-				ppdesc);
+	return get_nt_acl_internal(get_acl_blob, handle, NULL, smb_fname,
+				   security_info, mem_ctx, ppdesc);
 }
 
 /*********************************************************************
@@ -1146,7 +1148,7 @@ static NTSTATUS fset_nt_acl_common(vfs_handle_struct *handle, files_struct *fsp,
 			discard_const_p(struct security_descriptor, orig_psd));
 	}
 
-	status = get_nt_acl_internal(handle, fsp,
+	status = get_nt_acl_internal(get_acl_blob, handle, fsp,
 			NULL,
 			SECINFO_OWNER|SECINFO_GROUP|SECINFO_DACL|SECINFO_SACL,
 				     frame,
