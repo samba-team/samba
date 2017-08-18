@@ -832,13 +832,6 @@ bool get_dc_name(const char *domain,
 		fstring srv_name,
 		struct sockaddr_storage *ss_out);
 
-/* The following definitions come from libsmb/passchange.c  */
-
-NTSTATUS remote_password_change(const char *remote_machine,
-				const char *domain, const char *user_name,
-				const char *old_passwd, const char *new_passwd,
-				char **err_str);
-
 /* The following definitions come from libsmb/smberr.c  */
 
 const char *smb_dos_err_name(uint8_t e_class, uint16_t num);
