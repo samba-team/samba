@@ -58,7 +58,7 @@ static void usage(void)
 	printf("  -c smb.conf file     Use the given path to the smb.conf file\n");
 	printf("  -D LEVEL             debug level\n");
 	printf("  -r MACHINE           remote machine\n");
-	printf("  -U USER              remote username\n");
+	printf("  -U USER              remote username (e.g. SAM/user)\n");
 
 	printf("extra options when run by root or in local mode:\n");
 	printf("  -a                   add user\n");
@@ -95,7 +95,7 @@ static int process_options(int argc, char **argv, int local_flags)
 
 	user_name[0] = '\0';
 
-	while ((ch = getopt(argc, argv, "c:axdehminjr:sw:R:D:U:LW")) != EOF) {
+	while ((ch = getopt(argc, argv, "c:axdehminjr:sw:R:D:U:LWS:")) != EOF) {
 		switch(ch) {
 		case 'L':
 			if (getuid() != 0) {
@@ -519,6 +519,9 @@ static int process_nonroot(int local_flags)
 	int result = 0;
 	char *old_pw = NULL;
 	char *new_pw = NULL;
+	const char *username = user_name;
+	const char *domain = NULL;
+	char *p = NULL;
 
 	if (local_flags & ~(LOCAL_AM_ROOT | LOCAL_SET_PASSWORD)) {
 		/* Extra flags that we can't honor non-root */
@@ -536,6 +539,15 @@ static int process_nonroot(int local_flags)
 		}
 	}
 
+	/* Allow domain as part of the username */
+	if ((p = strchr_m(user_name, '\\')) ||
+	    (p = strchr_m(user_name, '/')) ||
+	    (p = strchr_m(user_name, *lp_winbind_separator()))) {
+		*p = '\0';
+		username = p + 1;
+		domain = user_name;
+	}
+
 	/*
 	 * A non-root user is always setting a password
 	 * via a remote machine (even if that machine is
@@ -544,8 +556,18 @@ static int process_nonroot(int local_flags)
 
 	load_interfaces(); /* Delayed from main() */
 
-	if (remote_machine == NULL) {
+	if (remote_machine != NULL) {
+		if (!is_ipaddress(remote_machine)) {
+			domain = remote_machine;
+		}
+	} else {
 		remote_machine = "127.0.0.1";
+
+		/*
+		 * If we deal with a local user, change the password for the
+		 * user in our SAM.
+		 */
+		domain = get_global_sam_name();
 	}
 
 	if (remote_machine != NULL) {
@@ -568,13 +590,13 @@ static int process_nonroot(int local_flags)
 	}
 
 	if (!NT_STATUS_IS_OK(password_change(remote_machine,
-					     NULL, user_name,
+					     domain, username,
 					     old_pw, new_pw, 0))) {
 		result = 1;
 		goto done;
 	}
 
-	printf("Password changed for user %s\n", user_name);
+	printf("Password changed for user %s\n", username);
 
  done:
 	SAFE_FREE(old_pw);
