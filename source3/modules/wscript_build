@@ -4,6 +4,9 @@ bld.SAMBA3_SUBSYSTEM('NFS4_ACLS',
                     source='nfs4_acls.c',
                     deps='samba-util tdb')
 
+bld.SAMBA3_SUBSYSTEM('vfs_acl_common',
+                     source='vfs_acl_common.c')
+
 bld.SAMBA3_SUBSYSTEM('POSIXACL_XATTR',
                  source='posixacl_xattr.c',
                  enabled=(bld.SAMBA3_IS_ENABLED_MODULE('vfs_ceph') or bld.SAMBA3_IS_ENABLED_MODULE('vfs_glusterfs')),
@@ -357,7 +360,7 @@ bld.SAMBA3_MODULE('vfs_syncops',
 bld.SAMBA3_MODULE('vfs_acl_xattr',
                  subsystem='vfs',
                  source='vfs_acl_xattr.c',
-                 deps='samba-util',
+                 deps='samba-util vfs_acl_common',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_acl_xattr'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_acl_xattr'))
@@ -365,7 +368,7 @@ bld.SAMBA3_MODULE('vfs_acl_xattr',
 bld.SAMBA3_MODULE('vfs_acl_tdb',
                  subsystem='vfs',
                  source='vfs_acl_tdb.c',
-                 deps='NDR_XATTR tdb',
+                 deps='samba-util vfs_acl_common',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_acl_tdb'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_acl_tdb'))

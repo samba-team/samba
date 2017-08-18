@@ -748,6 +748,7 @@ bld.SAMBA3_LIBRARY('smbd_base',
                         netapi
                         NDR_IOCTL
                         notifyd
+                        vfs_acl_common
                    ''' +
                    bld.env['dmapi_lib'] +
                    bld.env['legacy_quota_libs'] +
