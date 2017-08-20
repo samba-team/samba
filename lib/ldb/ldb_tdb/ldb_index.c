@@ -316,6 +316,14 @@ int ltdb_key_dn_from_idx(struct ldb_module *module,
 		return LDB_ERR_NO_SUCH_OBJECT;
 	}
 	if (list->count > 1) {
+		const char *dn_str = ldb_dn_get_linearized(dn);
+		ldb_asprintf_errstring(ldb_module_get_ctx(module),
+				       __location__
+				       ": Failed to read DN index "
+				       "against %s for %s: too many "
+				       "values (%u > 1)",
+				       ltdb->cache->GUID_index_attribute,
+				       dn_str, list->count);
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
