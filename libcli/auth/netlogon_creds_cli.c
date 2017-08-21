@@ -669,19 +669,11 @@ bool netlogon_creds_cli_validate(struct netlogon_creds_cli_context *context,
 		return false;
 	}
 
-	if (blob1.length != blob2.length) {
-		TALLOC_FREE(frame);
-		return false;
-	}
-
-	cmp = memcmp(blob1.data, blob2.data, blob1.length);
-	if (cmp != 0) {
-		TALLOC_FREE(frame);
-		return false;
-	}
+	cmp = data_blob_cmp(&blob1, &blob2);
 
 	TALLOC_FREE(frame);
-	return true;
+
+	return (cmp == 0);
 }
 
 NTSTATUS netlogon_creds_cli_store(struct netlogon_creds_cli_context *context,
