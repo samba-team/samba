@@ -381,11 +381,11 @@ NTSTATUS netlogon_creds_cli_context_global(struct loadparm_context *lp_ctx,
 		proposed_flags |= NETLOGON_NEG_NEUTRALIZE_NT4_EMULATION;
 	}
 
-	if (require_sign_or_seal == false) {
-		proposed_flags &= ~NETLOGON_NEG_AUTHENTICATED_RPC;
-	} else {
+	if (require_sign_or_seal) {
 		required_flags |= NETLOGON_NEG_ARCFOUR;
 		required_flags |= NETLOGON_NEG_AUTHENTICATED_RPC;
+	} else {
+		proposed_flags &= ~NETLOGON_NEG_AUTHENTICATED_RPC;
 	}
 
 	if (reject_md5_servers) {
