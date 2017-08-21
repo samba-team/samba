@@ -1640,6 +1640,15 @@ static int ltdb_modify_index_dn(struct ldb_module *module,
 
 	val.data = (uint8_t *)((uintptr_t)ldb_dn_get_casefold(dn));
 	if (val.data == NULL) {
+		const char *dn_str = ldb_dn_get_linearized(dn);
+		ldb_asprintf_errstring(ldb_module_get_ctx(module),
+				       __location__
+				       ": Failed to modify %s "
+				       "against %s in %s: failed "
+				       "to get casefold DN",
+				       index,
+				       ltdb->cache->GUID_index_attribute,
+				       dn_str);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
