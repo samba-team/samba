@@ -111,7 +111,6 @@ static NTSTATUS netlogon_creds_cli_context_common(
 				struct netlogon_creds_cli_context **_context)
 {
 	struct netlogon_creds_cli_context *context = NULL;
-	TALLOC_CTX *frame = talloc_stackframe();
 	char *_key_name = NULL;
 	size_t server_netbios_name_len;
 	char *p = NULL;
@@ -120,21 +119,18 @@ static NTSTATUS netlogon_creds_cli_context_common(
 
 	context = talloc_zero(mem_ctx, struct netlogon_creds_cli_context);
 	if (context == NULL) {
-		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	context->client.computer = talloc_strdup(context, client_computer);
 	if (context->client.computer == NULL) {
 		TALLOC_FREE(context);
-		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	context->client.account = talloc_strdup(context, client_account);
 	if (context->client.account == NULL) {
 		TALLOC_FREE(context);
-		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -146,21 +142,18 @@ static NTSTATUS netlogon_creds_cli_context_common(
 	context->server.computer = talloc_strdup(context, server_computer);
 	if (context->server.computer == NULL) {
 		TALLOC_FREE(context);
-		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	context->server.netbios_domain = talloc_strdup(context, server_netbios_domain);
 	if (context->server.netbios_domain == NULL) {
 		TALLOC_FREE(context);
-		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	context->server.dns_domain = talloc_strdup(context, server_dns_domain);
 	if (context->server.dns_domain == NULL) {
 		TALLOC_FREE(context);
-		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -180,7 +173,7 @@ static NTSTATUS netlogon_creds_cli_context_common(
 		server_netbios_name_len = strlen(server_computer);
 	}
 
-	_key_name = talloc_asprintf(frame, "CLI[%s/%s]/SRV[%.*s/%s]",
+	_key_name = talloc_asprintf(context, "CLI[%s/%s]/SRV[%.*s/%s]",
 				    client_computer,
 				    client_account,
 				    (int)server_netbios_name_len,
@@ -188,21 +181,19 @@ static NTSTATUS netlogon_creds_cli_context_common(
 				    server_netbios_domain);
 	if (_key_name == NULL) {
 		TALLOC_FREE(context);
-		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	context->db.key_name = talloc_strdup_upper(context, _key_name);
+	TALLOC_FREE(_key_name);
 	if (context->db.key_name == NULL) {
 		TALLOC_FREE(context);
-		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	context->db.key_data = string_term_tdb_data(context->db.key_name);
 
 	*_context = context;
-	TALLOC_FREE(frame);
 	return NT_STATUS_OK;
 }
 
