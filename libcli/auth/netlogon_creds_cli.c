@@ -113,7 +113,7 @@ static NTSTATUS netlogon_creds_cli_context_common(
 	struct netlogon_creds_cli_context *context = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 	char *_key_name = NULL;
-	char *server_netbios_name = NULL;
+	size_t server_netbios_name_len;
 	char *p = NULL;
 
 	*_context = NULL;
@@ -172,22 +172,19 @@ static NTSTATUS netlogon_creds_cli_context_common(
 	 * For now we have to deal with
 	 * "HOSTNAME" vs. "hostname.example.com".
 	 */
-	server_netbios_name = talloc_strdup(frame, server_computer);
-	if (server_netbios_name == NULL) {
-		TALLOC_FREE(context);
-		TALLOC_FREE(frame);
-		return NT_STATUS_NO_MEMORY;
-	}
 
-	p = strchr(server_netbios_name, '.');
+	p = strchr(server_computer, '.');
 	if (p != NULL) {
-		p[0] = '\0';
+		server_netbios_name_len = p-server_computer;
+	} else {
+		server_netbios_name_len = strlen(server_computer);
 	}
 
-	_key_name = talloc_asprintf(frame, "CLI[%s/%s]/SRV[%s/%s]",
+	_key_name = talloc_asprintf(frame, "CLI[%s/%s]/SRV[%.*s/%s]",
 				    client_computer,
 				    client_account,
-				    server_netbios_name,
+				    (int)server_netbios_name_len,
+				    server_computer,
 				    server_netbios_domain);
 	if (_key_name == NULL) {
 		TALLOC_FREE(context);
