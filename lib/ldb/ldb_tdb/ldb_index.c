@@ -53,6 +53,9 @@ static int ltdb_index_dn_base_dn(struct ldb_module *module,
 				 struct ldb_dn *base_dn,
 				 struct dn_list *dn_list);
 
+static void ltdb_dn_list_sort(struct ltdb_private *ltdb,
+			      struct dn_list *list);
+
 /* we put a @IDXVERSION attribute on index entries. This
    allows us to tell if it was written by an older version
 */
@@ -740,7 +743,9 @@ static int ltdb_index_dn_simple(struct ldb_module *module,
 }
 
 
-static bool list_union(struct ldb_context *, struct dn_list *, const struct dn_list *);
+static bool list_union(struct ldb_context *ldb,
+		       struct ltdb_private *ltdb,
+		       struct dn_list *list, struct dn_list *list2);
 
 /*
   return a list of dn's that might match a leaf indexed search
@@ -881,7 +886,8 @@ static bool list_intersect(struct ldb_context *ldb,
   list = list | list2
 */
 static bool list_union(struct ldb_context *ldb,
-		       struct dn_list *list, const struct dn_list *list2)
+		       struct ltdb_private *ltdb,
+		       struct dn_list *list, struct dn_list *list2)
 {
 	struct ldb_val *dn3;
 
@@ -901,6 +907,13 @@ static bool list_union(struct ldb_context *ldb,
 		talloc_reparent(list2, list, list2->dn);
 		return true;
 	}
+
+	/*
+	 * Sort the lists (if not in GUID DN mode) so we can do
+	 * the de-duplication during the merge
+	 */
+	ltdb_dn_list_sort(ltdb, list);
+	ltdb_dn_list_sort(ltdb, list2);
 
 	dn3 = talloc_array(list, struct ldb_val, list->count + list2->count);
 	if (!dn3) {
@@ -964,7 +977,7 @@ static int ltdb_index_dn_or(struct ldb_module *module,
 			return ret;
 		}
 
-		if (!list_union(ldb, list, list2)) {
+		if (!list_union(ldb, ltdb, list, list2)) {
 			talloc_free(list2);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
@@ -1341,6 +1354,25 @@ static int ltdb_index_filter(struct ltdb_private *ltdb,
 	}
 
 	return LDB_SUCCESS;
+}
+
+/*
+  sort a DN list
+ */
+static void ltdb_dn_list_sort(struct ltdb_private *ltdb,
+			      struct dn_list *list)
+{
+	if (list->count < 2) {
+		return;
+	}
+
+	/* We know the list is sorted when using the GUID index */
+	if (ltdb->cache->GUID_index_attribute != NULL) {
+		return;
+	}
+
+	TYPESAFE_QSORT(list->dn, list->count,
+		       ldb_val_equal_exact_for_qsort);
 }
 
 /*
