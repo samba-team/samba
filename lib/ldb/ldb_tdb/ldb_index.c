@@ -885,7 +885,8 @@ static bool list_intersect(struct ldb_context *ldb,
 		return false;
 	}
 
-	list3->dn = talloc_array(list3, struct ldb_val, list->count);
+	list3->dn = talloc_array(list3, struct ldb_val,
+				 MIN(list->count, list2->count));
 	if (!list3->dn) {
 		talloc_free(list3);
 		return false;
