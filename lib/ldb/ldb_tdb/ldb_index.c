@@ -890,6 +890,7 @@ static bool list_union(struct ldb_context *ldb,
 		       struct dn_list *list, struct dn_list *list2)
 {
 	struct ldb_val *dn3;
+	unsigned int i = 0, j = 0, k = 0;
 
 	if (list2->count == 0) {
 		/* X | 0 == X */
@@ -921,12 +922,38 @@ static bool list_union(struct ldb_context *ldb,
 		return false;
 	}
 
-	/* we allow for duplicates here, and get rid of them later */
-	memcpy(dn3, list->dn, sizeof(list->dn[0])*list->count);
-	memcpy(dn3+list->count, list2->dn, sizeof(list2->dn[0])*list2->count);
+	while (i < list->count || j < list2->count) {
+		int cmp;
+		if (i >= list->count) {
+			cmp = 1;
+		} else if (j >= list2->count) {
+			cmp = -1;
+		} else {
+			cmp = ldb_val_equal_exact_ordered(list->dn[i],
+							  &list2->dn[j]);
+		}
+
+		if (cmp < 0) {
+			/* Take list */
+			dn3[k] = list->dn[i];
+			i++;
+			k++;
+		} else if (cmp > 0) {
+			/* Take list2 */
+			dn3[k] = list2->dn[j];
+			j++;
+			k++;
+		} else {
+			/* Equal, take list */
+			dn3[k] = list->dn[i];
+			i++;
+			j++;
+			k++;
+		}
+	}
 
 	list->dn = dn3;
-	list->count += list2->count;
+	list->count = k;
 
 	return true;
 }
