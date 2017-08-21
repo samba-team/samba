@@ -61,7 +61,8 @@ struct model_ops {
 			 void (*)(struct tevent_context *, 
 				  struct loadparm_context *, struct server_id, 
 				  void *),
-			 void *);
+			 void *,
+			 int);
 
 	/* function to terminate a connection or task */
 	void (*terminate)(struct tevent_context *, struct loadparm_context *lp_ctx,

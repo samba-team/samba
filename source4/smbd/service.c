@@ -56,13 +56,16 @@ NTSTATUS register_server_service(TALLOC_CTX *ctx,
 static NTSTATUS server_service_init(const char *name,
 				    struct tevent_context *event_context,
 				    struct loadparm_context *lp_ctx,
-				    const struct model_ops *model_ops)
+				    const struct model_ops *model_ops,
+				    int from_parent_fd)
 {
 	struct registered_server *srv;
 	for (srv=registered_servers; srv; srv=srv->next) {
 		if (strcasecmp(name, srv->service_name) == 0) {
-			return task_server_startup(event_context, lp_ctx, srv->service_name,
-						   model_ops, srv->task_init);
+			return task_server_startup(event_context, lp_ctx,
+						   srv->service_name,
+						   model_ops, srv->task_init,
+						   from_parent_fd);
 		}
 	}
 	return NT_STATUS_INVALID_SYSTEM_SERVICE;
@@ -72,9 +75,10 @@ static NTSTATUS server_service_init(const char *name,
 /*
   startup all of our server services
 */
-NTSTATUS server_service_startup(struct tevent_context *event_ctx, 
+NTSTATUS server_service_startup(struct tevent_context *event_ctx,
 				struct loadparm_context *lp_ctx,
-				const char *model, const char **server_services)
+				const char *model, const char **server_services,
+				int from_parent_fd)
 {
 	int i;
 	const struct model_ops *model_ops;
@@ -93,7 +97,8 @@ NTSTATUS server_service_startup(struct tevent_context *event_ctx,
 	for (i=0;server_services[i];i++) {
 		NTSTATUS status;
 
-		status = server_service_init(server_services[i], event_ctx, lp_ctx, model_ops);
+		status = server_service_init(server_services[i], event_ctx,
+					     lp_ctx, model_ops, from_parent_fd);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("Failed to start service '%s' - %s\n", 
 				 server_services[i], nt_errstr(status)));

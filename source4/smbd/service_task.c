@@ -101,7 +101,8 @@ NTSTATUS task_server_startup(struct tevent_context *event_ctx,
 			     struct loadparm_context *lp_ctx,
 			     const char *service_name, 
 			     const struct model_ops *model_ops, 
-			     void (*task_init)(struct task_server *))
+			     void (*task_init)(struct task_server *),
+			     int from_parent_fd)
 {
 	struct task_state *state;
 
@@ -110,8 +111,10 @@ NTSTATUS task_server_startup(struct tevent_context *event_ctx,
 
 	state->task_init = task_init;
 	state->model_ops = model_ops;
-	
-	model_ops->new_task(event_ctx, lp_ctx, service_name, task_server_callback, state);
+
+	state->model_ops->new_task(event_ctx, lp_ctx, service_name,
+			           task_server_callback, state,
+				   from_parent_fd);
 
 	return NT_STATUS_OK;
 }

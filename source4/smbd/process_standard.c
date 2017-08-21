@@ -42,22 +42,13 @@ struct standard_child_state {
 
 NTSTATUS process_model_standard_init(TALLOC_CTX *);
 
-/* we hold a pipe open in the parent, and the any child
-   processes wait for EOF on that pipe. This ensures that
-   children die when the parent dies */
-static int child_pipe[2] = { -1, -1 };
+static int from_parent_fd;
 
 /*
   called when the process model is selected
 */
 static void standard_model_init(void)
 {
-	int rc;
-
-	rc = pipe(child_pipe);
-	if (rc < 0) {
-		smb_panic("Failed to initialize pipe!");
-	}
 }
 
 static void sighup_signal_handler(struct tevent_context *ev,
@@ -312,15 +303,10 @@ static void standard_accept_connection(struct tevent_context *ev,
 		smb_panic("Failed to re-initialise imessaging after fork");
 	}
 
-	fde = tevent_add_fd(ev, ev, child_pipe[0], TEVENT_FD_READ,
+	fde = tevent_add_fd(ev, ev, from_parent_fd, TEVENT_FD_READ,
 		      standard_pipe_handler, NULL);
 	if (fde == NULL) {
 		smb_panic("Failed to add fd handler after fork");
-	}
-
-	if (child_pipe[1] != -1) {
-		close(child_pipe[1]);
-		child_pipe[1] = -1;
 	}
 
 	se = tevent_add_signal(ev,
@@ -368,11 +354,12 @@ static void standard_accept_connection(struct tevent_context *ev,
 /*
   called to create a new server task
 */
-static void standard_new_task(struct tevent_context *ev, 
+static void standard_new_task(struct tevent_context *ev,
 			      struct loadparm_context *lp_ctx,
 			      const char *service_name,
 			      void (*new_task)(struct tevent_context *, struct loadparm_context *lp_ctx, struct server_id , void *),
-			      void *private_data)
+			      void *private_data,
+			      int new_from_parent_fd)
 {
 	pid_t pid;
 	NTSTATUS status;
@@ -384,6 +371,7 @@ static void standard_new_task(struct tevent_context *ev,
 	if (state == NULL) {
 		return;
 	}
+	from_parent_fd = new_from_parent_fd;
 
 	pid = fork();
 
@@ -421,14 +409,10 @@ static void standard_new_task(struct tevent_context *ev,
 		smb_panic("Failed to re-initialise imessaging after fork");
 	}
 
-	fde = tevent_add_fd(ev, ev, child_pipe[0], TEVENT_FD_READ,
+	fde = tevent_add_fd(ev, ev, from_parent_fd, TEVENT_FD_READ,
 		      standard_pipe_handler, NULL);
 	if (fde == NULL) {
 		smb_panic("Failed to add fd handler after fork");
-	}
-	if (child_pipe[1] != -1) {
-		close(child_pipe[1]);
-		child_pipe[1] = -1;
 	}
 
 	se = tevent_add_signal(ev,

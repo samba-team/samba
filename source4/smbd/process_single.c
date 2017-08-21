@@ -85,11 +85,12 @@ static void single_accept_connection(struct tevent_context *ev,
 /*
   called to startup a new task
 */
-static void single_new_task(struct tevent_context *ev, 
+static void single_new_task(struct tevent_context *ev,
 			    struct loadparm_context *lp_ctx,
 			    const char *service_name,
-			    void (*new_task)(struct tevent_context *, struct loadparm_context *, struct server_id, void *), 
-			    void *private_data)
+			    void (*new_task)(struct tevent_context *, struct loadparm_context *, struct server_id, void *),
+			    void *private_data,
+			    int from_parent_fd)
 {
 	pid_t pid = getpid();
 	/* start our taskids at MAX_INT32, the first 2^31 tasks are is reserved for fd numbers */

@@ -43,6 +43,11 @@
 #include "lib/util/samba_modules.h"
 #include "nsswitch/winbind_client.h"
 #include "libds/common/roles.h"
+#include "lib/util/tfork.h"
+
+#ifdef HAVE_PTHREAD
+#include <pthread.h>
+#endif
 
 struct server_state {
 	struct tevent_context *event_ctx;
@@ -332,6 +337,20 @@ static int event_ctx_destructor(struct tevent_context *event_ctx)
 	return 0;
 }
 
+#ifdef HAVE_PTHREAD
+static int to_children_fd = -1;
+static void atfork_prepare(void) {
+}
+static void atfork_parent(void) {
+}
+static void atfork_child(void) {
+	if (to_children_fd != -1) {
+		close(to_children_fd);
+		to_children_fd = -1;
+	}
+}
+#endif
+
 /*
  main server.
 */
@@ -608,12 +627,54 @@ static int binary_smbd_main(const char *binary_name,
 
 	DEBUG(0,("%s: using '%s' process model\n", binary_name, model));
 
-	status = server_service_startup(state->event_ctx, cmdline_lp_ctx, model,
-					lpcfg_server_services(cmdline_lp_ctx));
-	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(state);
-		exit_daemon("Samba failed to start services",
-			NT_STATUS_V(status));
+	{
+		int child_pipe[2];
+		int rc;
+		bool start_services = false;
+
+		rc = pipe(child_pipe);
+		if (rc < 0) {
+			TALLOC_FREE(state);
+			exit_daemon("Samba failed to open process control pipe",
+				    errno);
+		}
+		smb_set_close_on_exec(child_pipe[0]);
+		smb_set_close_on_exec(child_pipe[1]);
+
+#ifdef HAVE_PTHREAD
+		to_children_fd = child_pipe[1];
+		pthread_atfork(atfork_prepare, atfork_parent,
+			       atfork_child);
+		start_services = true;
+#else
+		pid_t pid;
+		struct tfork *t = NULL;
+		t = tfork_create();
+		if (t == NULL) {
+			exit_daemon(
+				"Samba unable to fork master process",
+				0);
+		}
+		pid = tfork_child_pid(t);
+		if (pid == 0) {
+			start_services = false;
+		} else {
+			/* In the child process */
+			start_services = true;
+			close(child_pipe[1]);
+		}
+#endif
+		if (start_services) {
+			status = server_service_startup(
+				state->event_ctx, cmdline_lp_ctx, model,
+				lpcfg_server_services(cmdline_lp_ctx),
+				child_pipe[0]);
+			if (!NT_STATUS_IS_OK(status)) {
+				TALLOC_FREE(state);
+				exit_daemon("Samba failed to start services",
+				NT_STATUS_V(status));
+			}
+		}
 	}
 
 	if (opt_daemon) {
