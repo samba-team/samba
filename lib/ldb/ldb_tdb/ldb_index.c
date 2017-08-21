@@ -839,6 +839,7 @@ static bool list_intersect(struct ldb_context *ldb,
 			   struct ltdb_private *ltdb,
 			   struct dn_list *list, const struct dn_list *list2)
 {
+	const struct dn_list *short_list, *long_list;
 	struct dn_list *list3;
 	unsigned int i;
 
@@ -871,6 +872,14 @@ static bool list_intersect(struct ldb_context *ldb,
 		return true;
 	}
 
+	if (list->count > list2->count) {
+		short_list = list2;
+		long_list = list;
+	} else {
+		short_list = list;
+		long_list = list2;
+	}
+
 	list3 = talloc_zero(list, struct dn_list);
 	if (list3 == NULL) {
 		return false;
@@ -883,10 +892,11 @@ static bool list_intersect(struct ldb_context *ldb,
 	}
 	list3->count = 0;
 
-	for (i=0;i<list->count;i++) {
-		if (ltdb_dn_list_find_val(ltdb, list2,
-					  &list->dn[i]) != -1) {
-			list3->dn[list3->count] = list->dn[i];
+	for (i=0;i<short_list->count;i++) {
+		/* For the GUID index case, this is a binary search */
+		if (ltdb_dn_list_find_val(ltdb, long_list,
+					  &short_list->dn[i]) != -1) {
+			list3->dn[list3->count] = short_list->dn[i];
 			list3->count++;
 		}
 	}
