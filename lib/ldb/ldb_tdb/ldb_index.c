@@ -1424,17 +1424,58 @@ static int ltdb_index_add_all(struct ldb_module *module,
 
 
 /*
+  insert a DN index for a message
+*/
+static int ltdb_modify_index_dn(struct ldb_module *module,
+				struct ltdb_private *ltdb,
+				const struct ldb_message *msg,
+				struct ldb_dn *dn,
+				const char *index, int add)
+{
+	struct ldb_message_element el;
+	struct ldb_val val;
+	int ret;
+
+	val.data = (uint8_t *)((uintptr_t)ldb_dn_get_casefold(dn));
+	if (val.data == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	val.length = strlen((char *)val.data);
+	el.name = index;
+	el.values = &val;
+	el.num_values = 1;
+
+	if (add) {
+		ret = ltdb_index_add1(module, ltdb, msg, &el, 0);
+	} else { /* delete */
+		ret = ltdb_index_del_value(module, ltdb, msg, &el, 0);
+	}
+
+	if (ret != LDB_SUCCESS) {
+		struct ldb_context *ldb = ldb_module_get_ctx(module);
+		const char *dn_str = ldb_dn_get_linearized(dn);
+		ldb_asprintf_errstring(ldb,
+				       __location__
+				       ": Failed to modify %s "
+				       "against %s in %s - %s",
+				       index,
+				       ltdb->cache->GUID_index_attribute,
+				       dn_str, ldb_errstring(ldb));
+		return ret;
+	}
+	return ret;
+}
+
+/*
   insert a one level index for a message
 */
 static int ltdb_index_onelevel(struct ldb_module *module,
 			       const struct ldb_message *msg, int add)
-{	
+{
 	struct ltdb_private *ltdb = talloc_get_type(ldb_module_get_private(module),
 						    struct ltdb_private);
-	struct ldb_message_element el;
-	struct ldb_val val;
 	struct ldb_dn *pdn;
-	const char *dn;
 	int ret;
 
 	/* We index for ONE Level only if requested */
@@ -1446,29 +1487,8 @@ static int ltdb_index_onelevel(struct ldb_module *module,
 	if (pdn == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-
-	dn = ldb_dn_get_linearized(msg->dn);
-	if (dn == NULL) {
-		talloc_free(pdn);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	val.data = (uint8_t *)((uintptr_t)ldb_dn_get_casefold(pdn));
-	if (val.data == NULL) {
-		talloc_free(pdn);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	val.length = strlen((char *)val.data);
-	el.name = LTDB_IDXONE;
-	el.values = &val;
-	el.num_values = 1;
-
-	if (add) {
-		ret = ltdb_index_add1(module, ltdb, msg, &el, 0);
-	} else { /* delete */
-		ret = ltdb_index_del_value(module, ltdb, msg, &el, 0);
-	}
+	ret = ltdb_modify_index_dn(module, ltdb,
+				   msg, pdn, LTDB_IDXONE, add);
 
 	talloc_free(pdn);
 
