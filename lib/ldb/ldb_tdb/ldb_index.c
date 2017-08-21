@@ -1510,7 +1510,7 @@ static int ltdb_index_add1(struct ldb_module *module,
 				       el->name,
 				       ldb_dn_get_linearized(msg->dn));
 		talloc_free(list);
-		return LDB_ERR_ENTRY_ALREADY_EXISTS;
+		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
 	/* overallocate the list a bit, to reduce the number of
