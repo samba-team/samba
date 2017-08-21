@@ -33,6 +33,7 @@
 
 #include "ldb_tdb.h"
 #include "ldb_private.h"
+#include "lib/util/binsearch.h"
 
 struct dn_list {
 	unsigned int count;
@@ -85,6 +86,22 @@ static int ldb_val_equal_exact_for_qsort(const struct ldb_val *v1,
 		return 1;
 	}
 	return memcmp(v1->data, v2->data, v1->length);
+}
+
+/*
+  see if two ldb_val structures contain exactly the same data
+  return -1 or 1 for a mismatch, 0 for match
+*/
+static int ldb_val_equal_exact_ordered(const struct ldb_val v1,
+				       const struct ldb_val *v2)
+{
+	if (v1.length > v2->length) {
+		return -1;
+	}
+	if (v1.length < v2->length) {
+		return 1;
+	}
+	return memcmp(v1.data, v2->data, v1.length);
 }
 
 
@@ -1533,6 +1550,7 @@ static int ltdb_index_add1(struct ldb_module *module,
 		list->dn[list->count].length = strlen(dn_str);
 	} else {
 		const struct ldb_val *key_val;
+		struct ldb_val *exact = NULL, *next = NULL;
 		key_val = ldb_msg_find_ldb_val(msg,
 					       ltdb->cache->GUID_index_attribute);
 		if (key_val == NULL) {
@@ -1544,8 +1562,23 @@ static int ltdb_index_add1(struct ldb_module *module,
 			talloc_free(list);
 			return ldb_module_operr(module);
 		}
-		list->dn[list->count] = ldb_val_dup(list->dn, key_val);
-		if (list->dn[list->count].data == NULL) {
+
+		BINARY_ARRAY_SEARCH_GTE(list->dn, list->count,
+					*key_val, ldb_val_equal_exact_ordered,
+					exact, next);
+		if (exact != NULL) {
+			talloc_free(list);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+		if (next == NULL) {
+			next = &list->dn[list->count];
+		} else {
+			memmove(&next[1], next,
+				sizeof(*next) * (list->count - (next - list->dn)));
+		}
+		*next = ldb_val_dup(list->dn, key_val);
+		if (next->data == NULL) {
 			talloc_free(list);
 			return ldb_module_operr(module);
 		}

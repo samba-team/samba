@@ -21,6 +21,7 @@ samba_dist.DIST_DIRS('''lib/ldb:. lib/replace:lib/replace lib/talloc:lib/talloc
                         third_party/cmocka:third_party/cmocka
                         buildtools:buildtools third_party/waf:third_party/waf''')
 
+samba_dist.DIST_FILES('''lib/util/binsearch.h:lib/util/binsearch.h''')
 
 def set_options(opt):
     opt.BUILTIN_DEFAULT('replace')
