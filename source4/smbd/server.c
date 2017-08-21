@@ -341,6 +341,7 @@ static int binary_smbd_main(const char *binary_name,
 {
 	bool opt_daemon = false;
 	bool opt_interactive = false;
+	bool opt_no_process_group = false;
 	int opt;
 	poptContext pc;
 #define _MODULE_PROTO(init) extern NTSTATUS init(TALLOC_CTX *);
@@ -356,7 +357,8 @@ static int binary_smbd_main(const char *binary_name,
 		OPT_DAEMON = 1000,
 		OPT_INTERACTIVE,
 		OPT_PROCESS_MODEL,
-		OPT_SHOW_BUILD
+		OPT_SHOW_BUILD,
+		OPT_NO_PROCESS_GROUP,
 	};
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -371,6 +373,8 @@ static int binary_smbd_main(const char *binary_name,
 			"till autotermination", "seconds"},
 		{"show-build", 'b', POPT_ARG_NONE, NULL, OPT_SHOW_BUILD,
 			"show build info", NULL },
+		{"no-process-group", '\0', POPT_ARG_NONE, NULL,
+		  OPT_NO_PROCESS_GROUP, "Don't create a new process group" },
 		POPT_COMMON_SAMBA
 		POPT_COMMON_VERSION
 		{ NULL }
@@ -392,6 +396,9 @@ static int binary_smbd_main(const char *binary_name,
 			break;
 		case OPT_SHOW_BUILD:
 			show_build();
+			break;
+		case OPT_NO_PROCESS_GROUP:
+			opt_no_process_group = true;
 			break;
 		default:
 			fprintf(stderr, "\nInvalid option %s: %s\n\n",
@@ -507,6 +514,15 @@ static int binary_smbd_main(const char *binary_name,
 		/* stay alive forever */
 		stdin_event_flags = 0;
 	}
+
+#if HAVE_SETPGID
+	/*
+	 * If we're interactive we want to set our own process group for
+	 * signal management, unless --no-process-group specified.
+	 */
+	if (opt_interactive && !opt_no_process_group)
+		setpgid((pid_t)0, (pid_t)0);
+#endif
 
 	/* catch EOF on stdin */
 #ifdef SIGTTIN
