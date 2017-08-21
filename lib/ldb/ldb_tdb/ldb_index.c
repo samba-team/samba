@@ -1432,34 +1432,6 @@ static void ltdb_dn_list_sort(struct ltdb_private *ltdb,
 }
 
 /*
-  remove any duplicated entries in a indexed result
- */
-static void ltdb_dn_list_remove_duplicates(struct dn_list *list)
-{
-	unsigned int i, new_count;
-
-	if (list->count < 2) {
-		return;
-	}
-
-	TYPESAFE_QSORT(list->dn, list->count,
-		       ldb_val_equal_exact_for_qsort);
-
-	new_count = 1;
-	for (i=1; i<list->count; i++) {
-		if (ldb_val_equal_exact(&list->dn[i],
-					&list->dn[new_count-1]) == 0) {
-			if (new_count != i) {
-				list->dn[new_count] = list->dn[i];
-			}
-			new_count++;
-		}
-	}
-
-	list->count = new_count;
-}
-
-/*
   search the database with a LDAP-like expression using indexes
   returns -1 if an indexed search is not possible, in which
   case the caller should call ltdb_search_full()
@@ -1530,7 +1502,6 @@ int ltdb_search_indexed(struct ltdb_context *ac, uint32_t *match_count)
 			talloc_free(dn_list);
 			return ret;
 		}
-		ltdb_dn_list_remove_duplicates(dn_list);
 		break;
 	}
 
