@@ -1486,8 +1486,13 @@ static int ltdb_index_add1(struct ldb_module *module,
 		return ret;
 	}
 
+	/*
+	 * Check for duplicates in unique indexes and for the @IDXDN
+	 * DN -> GUID record
+	 */
 	if (list->count > 0 &&
-	    a->flags & LDB_ATTR_FLAG_UNIQUE_INDEX) {
+	    (a->flags & LDB_ATTR_FLAG_UNIQUE_INDEX ||
+	     ldb_attr_cmp(el->name, LTDB_IDXDN) == 0)) {
 		/*
 		 * We do not want to print info about a possibly
 		 * confidential DN that the conflict was with in the
