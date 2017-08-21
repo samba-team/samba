@@ -119,12 +119,30 @@ static int ltdb_dn_list_find_val(struct ltdb_private *ltdb,
 				 const struct ldb_val *v)
 {
 	unsigned int i;
-	for (i=0; i<list->count; i++) {
-		if (ldb_val_equal_exact(&list->dn[i], v) == 1) {
-			return i;
+	struct ldb_val *exact = NULL, *next = NULL;
+
+	if (ltdb->cache->GUID_index_attribute == NULL) {
+		for (i=0; i<list->count; i++) {
+			if (ldb_val_equal_exact(&list->dn[i], v) == 1) {
+				return i;
+			}
 		}
+		return -1;
 	}
-	return -1;
+
+	BINARY_ARRAY_SEARCH_GTE(list->dn, list->count,
+				*v, ldb_val_equal_exact_ordered,
+				exact, next);
+	if (exact == NULL) {
+		return -1;
+	}
+	/* Not required, but keeps the compiler quiet */
+	if (next != NULL) {
+		return -1;
+	}
+
+	i = exact - list->dn;
+	return i;
 }
 
 /*
