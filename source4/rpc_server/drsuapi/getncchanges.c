@@ -2330,7 +2330,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	invocation_id = *(samdb_ntds_invocation_id(sam_ctx));
 
 	*r->out.level_out = 6;
-	/* TODO: linked attributes*/
+
 	r->out.ctr->ctr6.linked_attributes_count = 0;
 	r->out.ctr->ctr6.linked_attributes = discard_const_p(struct drsuapi_DsReplicaLinkedAttribute, &no_linked_attr);
 
