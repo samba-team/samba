@@ -2190,19 +2190,6 @@ static WERROR getncchanges_add_ancestors(struct drsuapi_DsReplicaObjectListItemE
 			return werr;
 		}
 
-		werr = get_nc_changes_add_links(sam_ctx, getnc_state,
-						getnc_state->ncRoot_dn,
-						getnc_state->is_schema_nc,
-						schema, getnc_state->min_usn,
-						req10->replica_flags,
-						anc_msg,
-						&getnc_state->la_list,
-						&getnc_state->la_count,
-						req10->uptodateness_vector);
-		if (!W_ERROR_IS_OK(werr)) {
-			return werr;
-		}
-
 		/*
 		 * Regardless of whether we actually use it or not,
 		 * we add it to the cache so we don't look at it again
@@ -2891,8 +2878,7 @@ allowed:
 
 		/*
 		 * If it has already been added as an ancestor of
-		 * an object, we don't need to do anything more,
-		 * as we've already added the links.
+		 * an object, we don't need to do anything more
 		 */
 		if (getnc_state->obj_cache != NULL) {
 			werr = dcesrv_drsuapi_obj_cache_exists(getnc_state->obj_cache,
@@ -2901,6 +2887,21 @@ allowed:
 				dcesrv_drsuapi_update_highwatermark(msg,
 						getnc_state->max_usn,
 						&r->out.ctr->ctr6.new_highwatermark);
+
+				werr = get_nc_changes_add_links(sam_ctx, getnc_state,
+								getnc_state->ncRoot_dn,
+								getnc_state->is_schema_nc,
+								schema, getnc_state->min_usn,
+								req10->replica_flags,
+								msg,
+								&getnc_state->la_list,
+								&getnc_state->la_count,
+								req10->uptodateness_vector);
+
+				if (!W_ERROR_IS_OK(werr)) {
+					return werr;
+				}
+
 				/* no attributes to send */
 				talloc_free(obj);
 				continue;
