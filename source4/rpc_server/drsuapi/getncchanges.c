@@ -457,14 +457,10 @@ static WERROR get_nc_changes_filter_attrs(struct drsuapi_DsReplicaObjectListItem
 static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItemEx *obj,
 					  const struct ldb_message *msg,
 					  struct ldb_context *sam_ctx,
-					  bool   is_schema_nc,
+					  struct drsuapi_getncchanges_state *getnc_state,
 					  struct dsdb_schema *schema,
 					  DATA_BLOB *session_key,
-					  uint64_t highest_usn,
-					  uint32_t replica_flags,
-					  struct drsuapi_DsPartialAttributeSet *partial_attribute_set,
-					  struct drsuapi_DsReplicaCursorCtrEx *uptodateness_vector,
-					  enum drsuapi_DsExtendedOperation extended_op,
+					  struct drsuapi_DsGetNCChangesRequest10 *req10,
 					  bool force_object_return,
 					  uint32_t *local_pas,
 					  struct ldb_dn *machine_dn,
@@ -485,6 +481,14 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 	struct ldb_result *res = NULL;
 	WERROR werr;
 	int ret;
+	uint32_t replica_flags = req10->replica_flags;
+	struct drsuapi_DsPartialAttributeSet *partial_attribute_set =
+			req10->partial_attribute_set;
+	struct drsuapi_DsReplicaCursorCtrEx *uptodateness_vector =
+			req10->uptodateness_vector;
+	enum drsuapi_DsExtendedOperation extended_op = req10->extended_op;
+	bool is_schema_nc = getnc_state->is_schema_nc;
+	uint64_t highest_usn = getnc_state->min_usn;
 
 	/* make dsdb sytanx context for conversions */
 	dsdb_syntax_ctx_init(&syntax_ctx, sam_ctx, schema);
@@ -2188,13 +2192,9 @@ static WERROR getncchanges_add_ancestors(struct drsuapi_DsReplicaObjectListItemE
 
 		werr = get_nc_changes_build_object(anc_obj, anc_msg,
 						   sam_ctx,
-						   getnc_state->is_schema_nc,
+						   getnc_state,
 						   schema, session_key,
-						   getnc_state->min_usn,
-						   req10->replica_flags,
-						   req10->partial_attribute_set,
-						   req10->uptodateness_vector,
-						   req10->extended_op,
+						   req10,
 						   false, /* force_object_return */
 						   local_pas,
 						   machine_dn,
@@ -2938,12 +2938,9 @@ allowed:
 			max_wait_reached = (time(NULL) - start > max_wait);
 
 			werr = get_nc_changes_build_object(obj, msg,
-							   sam_ctx, getnc_state->is_schema_nc,
-							   schema, &session_key, getnc_state->min_usn,
-							   req10->replica_flags,
-							   req10->partial_attribute_set,
-							   req10->uptodateness_vector,
-							   req10->extended_op,
+							   sam_ctx, getnc_state,
+							   schema, &session_key,
+							   req10,
 							   max_wait_reached,
 							   local_pas, machine_dn,
 							   &getnc_state->guids[i]);
