@@ -60,6 +60,7 @@ struct drsuapi_getncchanges_state {
 	struct GUID ncRoot_guid;
 	bool is_schema_nc;
 	bool is_get_anc;
+	bool is_get_tgt;
 	uint64_t min_usn;
 	uint64_t max_usn;
 	struct drsuapi_DsReplicaHighWaterMark last_hwm;
@@ -2347,6 +2348,147 @@ static WERROR getncchanges_get_obj_to_send(const struct ldb_message *msg,
 	return werr;
 }
 
+/**
+ * Goes through any new linked attributes and checks that the target object
+ * will be known to the client, i.e. we've already sent it in an replication
+ * chunk. If not, then it adds the target object to the current replication
+ * chunk. This is only done when the client specifies DRS_GET_TGT.
+ */
+static WERROR getncchanges_chunk_add_la_targets(struct getncchanges_repl_chunk *repl_chunk,
+						struct drsuapi_getncchanges_state *getnc_state,
+						uint32_t start_la_index,
+						TALLOC_CTX *mem_ctx,
+						struct ldb_context *sam_ctx,
+						struct dsdb_schema *schema,
+						DATA_BLOB *session_key,
+						struct drsuapi_DsGetNCChangesRequest10 *req10,
+						uint32_t *local_pas,
+						struct ldb_dn *machine_dn)
+{
+	int ret;
+	uint32_t i;
+	WERROR werr = WERR_OK;
+	static const char * const msg_attrs[] = {
+					    "*",
+					    "nTSecurityDescriptor",
+					    "parentGUID",
+					    "replPropertyMetaData",
+					    DSDB_SECRET_ATTRIBUTES,
+					    NULL };
+
+	/* loop through any linked attributes to check */
+	for (i = start_la_index; i < getnc_state->la_count; i++) {
+
+		struct GUID target_guid;
+		struct drsuapi_DsReplicaObjectListItemEx *new_objs = NULL;
+		const struct drsuapi_DsReplicaLinkedAttribute *la;
+		struct ldb_result *msg_res;
+		struct ldb_dn *search_dn;
+		TALLOC_CTX *tmp_ctx;
+		struct dsdb_dn *dn;
+		const struct dsdb_attribute *schema_attrib;
+		NTSTATUS status;
+		bool same_nc;
+
+		la = &getnc_state->la_list[i];
+		tmp_ctx = talloc_new(mem_ctx);
+
+		/* get the GUID of the linked attribute's target object */
+		schema_attrib = dsdb_attribute_by_attributeID_id(schema,
+								 la->attid);
+
+		werr = dsdb_dn_la_from_blob(sam_ctx, schema_attrib, schema,
+					    tmp_ctx, la->value.blob, &dn);
+
+		if (!W_ERROR_IS_OK(werr)) {
+			DEBUG(0,(__location__ ": Bad la blob\n"));
+			return werr;
+		}
+
+		status = dsdb_get_extended_dn_guid(dn->dn, &target_guid, "GUID");
+
+		if (!NT_STATUS_IS_OK(status)) {
+			return ntstatus_to_werror(status);
+		}
+
+		/*
+		 * if the target isn't in the cache, then the client
+		 * might not know about it, so send the target now
+		 */
+		werr = dcesrv_drsuapi_obj_cache_exists(getnc_state->obj_cache,
+						       &target_guid);
+
+		if (W_ERROR_EQUAL(werr, WERR_OBJECT_NAME_EXISTS)) {
+
+			/* target already sent, nothing to do */
+			TALLOC_FREE(tmp_ctx);
+			continue;
+		}
+
+		same_nc = dsdb_objects_have_same_nc(sam_ctx, tmp_ctx, dn->dn,
+						    getnc_state->ncRoot_dn);
+
+		/* don't try to fetch target objects from another partition */
+		if (!same_nc) {
+			TALLOC_FREE(tmp_ctx);
+			continue;
+		}
+
+		search_dn = ldb_dn_new_fmt(tmp_ctx, sam_ctx, "<GUID=%s>",
+					   GUID_string(tmp_ctx, &target_guid));
+		W_ERROR_HAVE_NO_MEMORY(search_dn);
+
+		ret = drsuapi_search_with_extended_dn(sam_ctx, tmp_ctx,
+						      &msg_res, search_dn,
+						      LDB_SCOPE_BASE,
+						      msg_attrs, NULL);
+
+		/*
+		 * Don't fail the replication if we can't find the target.
+		 * This could happen for a one-way linked attribute, if the
+		 * target is deleted and then later expunged (thus, the source
+		 * object can be left with a hanging link). Continue to send
+		 * the the link (the client-side has already tried once with
+		 * GET_TGT, so it should just end up ignoring it).
+		 */
+		if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+			DBG_WARNING("Encountered unknown link target DN %s\n",
+				    ldb_dn_get_extended_linearized(tmp_ctx, dn->dn, 1));
+			TALLOC_FREE(tmp_ctx);
+			continue;
+
+		} else if (ret != LDB_SUCCESS) {
+			DBG_ERR("Failed to fetch link target DN %s - %s\n",
+				ldb_dn_get_extended_linearized(tmp_ctx, dn->dn, 1),
+				ldb_errstring(sam_ctx));
+			return WERR_DS_DRA_INCONSISTENT_DIT;
+		}
+
+		/*
+		 * Construct an object, ready to send (this will include
+		 * the object's ancestors as well, if GET_ANC is set)
+		 */
+		werr = getncchanges_get_obj_to_send(msg_res->msgs[0], mem_ctx,
+						    sam_ctx, getnc_state,
+						    schema, session_key, req10,
+						    false, local_pas,
+						    machine_dn, &target_guid,
+						    &new_objs);
+		if (!W_ERROR_IS_OK(werr)) {
+			return werr;
+		}
+
+		if (new_objs != NULL) {
+			getncchanges_add_objs_to_resp(repl_chunk, new_objs);
+		}
+		TALLOC_FREE(tmp_ctx);
+
+		/* TODO could have 1000s of links. Stop if we fill up the message */
+	}
+
+	return WERR_OK;
+}
+
 /*
   drsuapi_DsGetNCChanges
 
@@ -2437,7 +2579,6 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 			 r->in.level));
 		return WERR_REVISION_MISMATCH;
 	}
-
 
         /* Perform access checks. */
 	/* TODO: we need to support a sync on a specific non-root
@@ -2843,14 +2984,26 @@ allowed:
 		talloc_free(search_res);
 		talloc_free(changes);
 
-		if (req10->extended_op != DRSUAPI_EXOP_NONE) {
-			/* Do nothing */
-		} else if (req10->replica_flags & DRSUAPI_DRS_GET_ANC) {
+		if (req10->extended_op == DRSUAPI_EXOP_NONE) {
+			getnc_state->is_get_anc =
+				((req10->replica_flags & DRSUAPI_DRS_GET_ANC) != 0);
+			getnc_state->is_get_tgt =
+				((req10->more_flags & DRSUAPI_DRS_GET_TGT) != 0);
+		}
+
+		/*
+		 * when using GET_ANC or GET_TGT, cache the objects that have
+		 * been already sent, to avoid sending them multiple times
+		 */
+		if (getnc_state->is_get_anc || getnc_state->is_get_tgt) {
+			DEBUG(3,("Using object cache, GET_ANC %u, GET_TGT %u\n",
+				 getnc_state->is_get_anc,
+				 getnc_state->is_get_tgt));
+
 			getnc_state->obj_cache = db_open_rbt(getnc_state);
 			if (getnc_state->obj_cache == NULL) {
 				return WERR_NOT_ENOUGH_MEMORY;
 			}
-			getnc_state->is_get_anc = true;
 		}
 	}
 
@@ -2910,6 +3063,14 @@ allowed:
 
 	immediate_link_sync = lpcfg_parm_bool(dce_call->conn->dce_ctx->lp_ctx, NULL,
 					      "drs", "immediate link sync", false);
+
+	/*
+	 * If the client has already set GET_TGT then we know they can handle
+	 * receiving the linked attributes interleaved with the source objects
+	 */
+	if (getnc_state->is_get_tgt) {
+		immediate_link_sync = true;
+	}
 
 	/*
 	 * Maximum time that we can spend in a getncchanges
@@ -3069,6 +3230,24 @@ allowed:
 			 ldb_dn_get_linearized(msg->dn)));
 
 		getnc_state->total_links += (getnc_state->la_count - old_la_index);
+
+		/*
+		 * If the GET_TGT flag was set, check any new links added to
+		 * make sure the client knows about the link target object
+		 */
+		if (getnc_state->is_get_tgt) {
+			werr = getncchanges_chunk_add_la_targets(&repl_chunk,
+								 getnc_state,
+								 old_la_index,
+								 mem_ctx, sam_ctx,
+								 schema, &session_key,
+								 req10, local_pas,
+								 machine_dn);
+
+			if (!W_ERROR_IS_OK(werr)) {
+				return werr;
+			}
+		}
 
 		TALLOC_FREE(tmp_ctx);
 	}

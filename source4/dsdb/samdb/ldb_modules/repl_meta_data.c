@@ -6726,46 +6726,6 @@ static int replmd_extended_replicated_objects(struct ldb_module *module, struct 
 }
 
 /**
- * Returns True if the source and target DNs both have the same naming context,
- * i.e. they're both in the same partition.
- */
-static bool replmd_objects_have_same_nc(struct ldb_context *ldb,
-					TALLOC_CTX *mem_ctx,
-					struct ldb_dn *source_dn,
-					struct ldb_dn *target_dn)
-{
-	TALLOC_CTX *tmp_ctx;
-	struct ldb_dn *source_nc;
-	struct ldb_dn *target_nc;
-	int ret;
-	bool same_nc = true;
-
-	tmp_ctx = talloc_new(mem_ctx);
-
-	ret = dsdb_find_nc_root(ldb, tmp_ctx, source_dn, &source_nc);
-	if (ret != LDB_SUCCESS) {
-		DBG_ERR("Failed to find base DN for source %s\n",
-			ldb_dn_get_linearized(source_dn));
-		talloc_free(tmp_ctx);
-		return true;
-	}
-
-	ret = dsdb_find_nc_root(ldb, tmp_ctx, target_dn, &target_nc);
-	if (ret != LDB_SUCCESS) {
-		DBG_ERR("Failed to find base DN for target %s\n",
-			ldb_dn_get_linearized(target_dn));
-		talloc_free(tmp_ctx);
-		return true;
-	}
-
-	same_nc = (ldb_dn_compare(source_nc, target_nc) == 0);
-
-	talloc_free(tmp_ctx);
-
-	return same_nc;
-}
-
-/**
  * Checks that the target object for a linked attribute exists.
  * @param guid returns the target object's GUID (is returned)if it exists)
  * @param ignore_link set to true if the linked attribute should be ignored
@@ -6868,8 +6828,8 @@ static int replmd_check_target_exists(struct ldb_module *module,
 				 ldb_dn_get_linearized(source_dn)));
 			*ignore_link = true;
 
-		} else if (replmd_objects_have_same_nc(ldb, tmp_ctx, source_dn,
-						       dsdb_dn->dn)) {
+		} else if (dsdb_objects_have_same_nc(ldb, tmp_ctx, source_dn,
+						     dsdb_dn->dn)) {
 			ldb_asprintf_errstring(ldb, "Unknown target %s GUID %s linked from %s\n",
 					       ldb_dn_get_linearized(dsdb_dn->dn),
 					       GUID_string(tmp_ctx, guid),
