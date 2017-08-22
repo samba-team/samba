@@ -524,25 +524,42 @@ wait_until_node_has_some_ips ()
 
 #######################################
 
-restart_ctdb_1 ()
+_service_ctdb ()
 {
+    cmd="$1"
+
     if [ -e /etc/redhat-release ] ; then
-	service ctdb restart
+	service ctdb "$cmd"
     else
-	/etc/init.d/ctdb restart
+	/etc/init.d/ctdb "$cmd"
     fi
 }
 
 # Restart CTDB on all nodes.  Override for local daemons.
 _restart_ctdb_all ()
 {
-    onnode -p all $CTDB_TEST_WRAPPER restart_ctdb_1
+    onnode -p all $CTDB_TEST_WRAPPER _service_ctdb restart
 }
 
 # Nothing needed for a cluster.  Override for local daemons.
 setup_ctdb ()
 {
     :
+}
+
+start_ctdb_1 ()
+{
+    onnode "$1" $CTDB_TEST_WRAPPER _service_ctdb start
+}
+
+stop_ctdb_1 ()
+{
+    onnode "$1" $CTDB_TEST_WRAPPER _service_ctdb stop
+}
+
+restart_ctdb_1 ()
+{
+    onnode "$1" $CTDB_TEST_WRAPPER _service_ctdb restart
 }
 
 restart_ctdb ()
