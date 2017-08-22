@@ -467,6 +467,7 @@ sub provision_raw_prepare($$$$$$$$$$$)
 	$ctx->{krb5_ccache} = "$prefix_abs/krb5_ccache";
 	$ctx->{mitkdc_conf} = "$ctx->{etcdir}/mitkdc.conf";
 	$ctx->{privatedir} = "$prefix_abs/private";
+	$ctx->{binddnsdir} = "$prefix_abs/bind-dns";
 	$ctx->{ncalrpcdir} = "$prefix_abs/ncalrpc";
 	$ctx->{lockdir} = "$prefix_abs/lockdir";
 	$ctx->{logdir} = "$prefix_abs/logs";
@@ -494,6 +495,7 @@ sub provision_raw_prepare($$$$$$$$$$$)
 	$ctx->{interfaces} = "$ctx->{ipv4}/8 $ctx->{ipv6}/64";
 
 	push(@{$ctx->{directories}}, $ctx->{privatedir});
+	push(@{$ctx->{directories}}, $ctx->{binddnsdir});
 	push(@{$ctx->{directories}}, $ctx->{etcdir});
 	push(@{$ctx->{directories}}, $ctx->{piddir});
 	push(@{$ctx->{directories}}, $ctx->{lockdir});
@@ -584,6 +586,7 @@ sub provision_raw_step1($$)
 	workgroup = $ctx->{domain}
 	realm = $ctx->{realm}
 	private dir = $ctx->{privatedir}
+	binddns dir = $ctx->{binddnsdir}
 	pid directory = $ctx->{piddir}
 	ncalrpc dir = $ctx->{ncalrpcdir}
 	lock dir = $ctx->{lockdir}
@@ -725,6 +728,7 @@ nogroup:x:65534:nobody
 		STATEDIR => $ctx->{statedir},
 		CACHEDIR => $ctx->{cachedir},
 		PRIVATEDIR => $ctx->{privatedir},
+		BINDDNSDIR => $ctx->{binddnsdir},
 		SERVERCONFFILE => $ctx->{smb_conf},
 		CONFIGURATION => $configuration,
 		SOCKET_WRAPPER_DEFAULT_IFACE => $ctx->{swiface},

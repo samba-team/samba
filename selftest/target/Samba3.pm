@@ -1425,6 +1425,9 @@ sub provision($$$$$$$$$)
 	my $privatedir="$prefix_abs/private";
 	push(@dirs,$privatedir);
 
+	my $binddnsdir = "$prefix_abs/bind-dns";
+	push(@dirs, $binddnsdir);
+
 	my $lockdir="$prefix_abs/lockdir";
 	push(@dirs,$lockdir);
 
@@ -1674,6 +1677,7 @@ sub provision($$$$$$$$$)
 	workgroup = $domain
 
 	private dir = $privatedir
+	binddns dir = $binddnsdir
 	pid directory = $piddir
 	lock directory = $lockdir
 	log file = $logdir/log.\%m
