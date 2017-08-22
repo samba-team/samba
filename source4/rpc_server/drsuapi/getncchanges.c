@@ -2836,6 +2836,7 @@ allowed:
 					    NULL };
 		struct ldb_result *msg_res;
 		struct ldb_dn *msg_dn;
+		bool obj_already_sent = false;
 
 		obj = talloc_zero(mem_ctx, struct drsuapi_DsReplicaObjectListItemEx);
 		W_ERROR_HAVE_NO_MEMORY(obj);
@@ -2877,54 +2878,41 @@ allowed:
 		msg = msg_res->msgs[0];
 
 		/*
-		 * If it has already been added as an ancestor of
-		 * an object, we don't need to do anything more
+		 * Check if we've already sent the object as an ancestor of
+		 * another object. If so, we don't need to send it again
 		 */
 		if (getnc_state->obj_cache != NULL) {
 			werr = dcesrv_drsuapi_obj_cache_exists(getnc_state->obj_cache,
 							       &getnc_state->guids[i]);
 			if (W_ERROR_EQUAL(werr, WERR_OBJECT_NAME_EXISTS)) {
-				dcesrv_drsuapi_update_highwatermark(msg,
-						getnc_state->max_usn,
-						&r->out.ctr->ctr6.new_highwatermark);
-
-				werr = get_nc_changes_add_links(sam_ctx, getnc_state,
-								getnc_state->ncRoot_dn,
-								getnc_state->is_schema_nc,
-								schema, getnc_state->min_usn,
-								req10->replica_flags,
-								msg,
-								&getnc_state->la_list,
-								&getnc_state->la_count,
-								req10->uptodateness_vector);
-
-				if (!W_ERROR_IS_OK(werr)) {
-					return werr;
-				}
-
-				/* no attributes to send */
-				talloc_free(obj);
-				continue;
+				obj_already_sent = true;
 			}
 		}
 
-		max_wait_reached = (time(NULL) - start > max_wait);
+		if (!obj_already_sent) {
+			max_wait_reached = (time(NULL) - start > max_wait);
 
-		werr = get_nc_changes_build_object(obj, msg,
-						   sam_ctx, getnc_state->ncRoot_dn,
-						   getnc_state->is_schema_nc,
-						   schema, &session_key, getnc_state->min_usn,
-						   req10->replica_flags,
-						   req10->partial_attribute_set,
-						   req10->uptodateness_vector,
-						   req10->extended_op,
-						   max_wait_reached,
-						   local_pas, machine_dn,
-						   &getnc_state->guids[i]);
-		if (!W_ERROR_IS_OK(werr)) {
-			return werr;
+			werr = get_nc_changes_build_object(obj, msg,
+							   sam_ctx, getnc_state->ncRoot_dn,
+							   getnc_state->is_schema_nc,
+							   schema, &session_key, getnc_state->min_usn,
+							   req10->replica_flags,
+							   req10->partial_attribute_set,
+							   req10->uptodateness_vector,
+							   req10->extended_op,
+							   max_wait_reached,
+							   local_pas, machine_dn,
+							   &getnc_state->guids[i]);
+			if (!W_ERROR_IS_OK(werr)) {
+				return werr;
+			}
 		}
 
+		/*
+		 * We've reached the USN where this object naturally occurs.
+		 * Regardless of whether we've already sent the object (as an
+		 * ancestor), we add its links and update the HWM at this point
+		 */
 		werr = get_nc_changes_add_links(sam_ctx, getnc_state,
 						getnc_state->ncRoot_dn,
 						getnc_state->is_schema_nc,
@@ -2942,11 +2930,11 @@ allowed:
 					getnc_state->max_usn,
 					&r->out.ctr->ctr6.new_highwatermark);
 
-		if (obj->meta_data_ctr == NULL) {
+		if (obj_already_sent || obj->meta_data_ctr == NULL) {
 			DEBUG(8,(__location__ ": getncchanges skipping send of object %s\n",
 				 ldb_dn_get_linearized(msg->dn)));
-			/* no attributes to send */
-			talloc_free(obj);
+			/* nothing to send */
+			TALLOC_FREE(obj);
 			continue;
 		}
 
