@@ -570,12 +570,10 @@ static int process_nonroot(int local_flags)
 		domain = get_global_sam_name();
 	}
 
-	if (remote_machine != NULL) {
-		old_pw = get_pass("Old SMB password:",stdin_passwd_get);
-		if (old_pw == NULL) {
-			fprintf(stderr, "Unable to get old password.\n");
-			exit(1);
-		}
+	old_pw = get_pass("Old SMB password:",stdin_passwd_get);
+	if (old_pw == NULL) {
+		fprintf(stderr, "Unable to get old password.\n");
+		exit(1);
 	}
 
 	if (!new_passwd) {
