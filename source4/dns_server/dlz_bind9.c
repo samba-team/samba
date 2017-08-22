@@ -682,9 +682,9 @@ _PUBLIC_ isc_result_t dlz_create(const char *dlzname,
 	}
 
 	if (state->options.url == NULL) {
-		state->options.url = lpcfg_private_path(state,
-							state->lp,
-							"dns/sam.ldb");
+		state->options.url = talloc_asprintf(state,
+						     "%s/dns/sam.ldb",
+						     lpcfg_binddns_dir(state->lp));
 		if (state->options.url == NULL) {
 			result = ISC_R_NOMEMORY;
 			goto failed;
@@ -693,7 +693,7 @@ _PUBLIC_ isc_result_t dlz_create(const char *dlzname,
 		if (!file_exist(state->options.url)) {
 			state->options.url = talloc_asprintf(state,
 							     "%s/dns/sam.ldb",
-							     lpcfg_binddns_dir(state->lp));
+							     lpcfg_private_dir(state->lp));
 			if (state->options.url == NULL) {
 				result = ISC_R_NOMEMORY;
 				goto failed;
@@ -1322,7 +1322,7 @@ _PUBLIC_ isc_boolean_t dlz_ssumatch(const char *signer, const char *name, const 
 
 	keytab_file = talloc_asprintf(tmp_ctx,
 				      "%s/dns.keytab",
-				      lpcfg_private_dir(state->lp));
+				      lpcfg_binddns_dir(state->lp));
 	if (keytab_file == NULL) {
 		state->log(ISC_LOG_ERROR, "samba_dlz: Out of memory!");
 		talloc_free(tmp_ctx);
@@ -1332,7 +1332,7 @@ _PUBLIC_ isc_boolean_t dlz_ssumatch(const char *signer, const char *name, const 
 	if (!file_exist(keytab_file)) {
 		keytab_file = talloc_asprintf(tmp_ctx,
 					      "%s/dns.keytab",
-					      lpcfg_binddns_dir(state->lp));
+					      lpcfg_private_dir(state->lp));
 		if (keytab_file == NULL) {
 			state->log(ISC_LOG_ERROR, "samba_dlz: Out of memory!");
 			talloc_free(tmp_ctx);
