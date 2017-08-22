@@ -2083,7 +2083,165 @@ static WERROR getncchanges_get_sorted_array(const struct drsuapi_DsReplicaLinked
 	return werr;
 }
 
-/* 
+
+/**
+ * Adds any ancestor/parent objects of the child_obj specified.
+ * This is needed when the GET_ANC flag is specified in the request.
+ * @param new_objs if parents are added, this gets updated to point to a chain
+ * of parent objects (with the parents first and the child last)
+ */
+static WERROR getncchanges_add_ancestors(struct drsuapi_DsReplicaObjectListItemEx *child_obj,
+					 struct ldb_dn *child_dn,
+					 TALLOC_CTX *mem_ctx,
+					 struct ldb_context *sam_ctx,
+					 struct drsuapi_getncchanges_state *getnc_state,
+					 struct dsdb_schema *schema,
+					 DATA_BLOB *session_key,
+					 struct drsuapi_DsGetNCChangesRequest10 *req10,
+					 uint32_t *local_pas,
+					 struct ldb_dn *machine_dn,
+					 struct drsuapi_DsReplicaObjectListItemEx **new_objs)
+{
+	int ret;
+	const struct GUID *next_anc_guid = NULL;
+	WERROR werr = WERR_OK;
+	static const char * const msg_attrs[] = {
+					    "*",
+					    "nTSecurityDescriptor",
+					    "parentGUID",
+					    "replPropertyMetaData",
+					    DSDB_SECRET_ATTRIBUTES,
+					    NULL };
+
+	next_anc_guid = child_obj->parent_object_guid;
+
+	while (next_anc_guid != NULL) {
+		struct drsuapi_DsReplicaObjectListItemEx *anc_obj = NULL;
+		struct ldb_message *anc_msg = NULL;
+		struct ldb_result *anc_res = NULL;
+		struct ldb_dn *anc_dn = NULL;
+
+		/*
+		 * Don't send an object twice. (If we've sent the object, then
+		 * we've also sent all its parents as well)
+		 */
+		werr = dcesrv_drsuapi_obj_cache_exists(getnc_state->obj_cache,
+						       next_anc_guid);
+		if (W_ERROR_EQUAL(werr, WERR_OBJECT_NAME_EXISTS)) {
+			return WERR_OK;
+		}
+		if (W_ERROR_IS_OK(werr)) {
+			return WERR_INTERNAL_ERROR;
+		}
+		if (!W_ERROR_EQUAL(werr, WERR_OBJECT_NOT_FOUND)) {
+			return werr;
+		}
+
+		anc_obj = talloc_zero(mem_ctx,
+				      struct drsuapi_DsReplicaObjectListItemEx);
+		if (anc_obj == NULL) {
+			return WERR_NOT_ENOUGH_MEMORY;
+		}
+
+		anc_dn = ldb_dn_new_fmt(anc_obj, sam_ctx, "<GUID=%s>",
+					GUID_string(anc_obj, next_anc_guid));
+		if (anc_dn == NULL) {
+			return WERR_NOT_ENOUGH_MEMORY;
+		}
+
+		ret = drsuapi_search_with_extended_dn(sam_ctx, anc_obj,
+						      &anc_res, anc_dn,
+						      LDB_SCOPE_BASE,
+						      msg_attrs, NULL);
+		if (ret != LDB_SUCCESS) {
+			const char *anc_str = NULL;
+			const char *obj_str = NULL;
+
+			anc_str = ldb_dn_get_extended_linearized(anc_obj,
+								 anc_dn,
+								 1);
+			obj_str = ldb_dn_get_extended_linearized(anc_obj,
+								 child_dn,
+								 1);
+
+			DBG_ERR("getncchanges: failed to fetch ANC "
+				"DN %s for DN %s - %s\n",
+				anc_str, obj_str, ldb_errstring(sam_ctx));
+			return WERR_DS_DRA_INCONSISTENT_DIT;
+		}
+
+		anc_msg = anc_res->msgs[0];
+
+		werr = get_nc_changes_build_object(anc_obj, anc_msg,
+						   sam_ctx,
+						   getnc_state->ncRoot_dn,
+						   getnc_state->is_schema_nc,
+						   schema, session_key,
+						   getnc_state->min_usn,
+						   req10->replica_flags,
+						   req10->partial_attribute_set,
+						   req10->uptodateness_vector,
+						   req10->extended_op,
+						   false, /* force_object_return */
+						   local_pas,
+						   machine_dn,
+						   next_anc_guid);
+		if (!W_ERROR_IS_OK(werr)) {
+			return werr;
+		}
+
+		werr = get_nc_changes_add_links(sam_ctx, getnc_state,
+						getnc_state->ncRoot_dn,
+						getnc_state->is_schema_nc,
+						schema, getnc_state->min_usn,
+						req10->replica_flags,
+						anc_msg,
+						&getnc_state->la_list,
+						&getnc_state->la_count,
+						req10->uptodateness_vector);
+		if (!W_ERROR_IS_OK(werr)) {
+			return werr;
+		}
+
+		/*
+		 * Regardless of whether we actually use it or not,
+		 * we add it to the cache so we don't look at it again
+		 */
+		werr = dcesrv_drsuapi_obj_cache_add(getnc_state->obj_cache,
+						    next_anc_guid);
+		if (!W_ERROR_IS_OK(werr)) {
+			return werr;
+		}
+
+		/*
+		 * Any ancestors which are below the highwatermark
+		 * or uptodateness_vector shouldn't be added,
+		 * but we still look further up the
+		 * tree for ones which have been changed recently.
+		 */
+		if (anc_obj->meta_data_ctr != NULL) {
+
+			/*
+			 * prepend the parent to the list so that the client-side
+			 * adds the parent object before it adds the children
+			 */
+			anc_obj->next_object = *new_objs;
+			*new_objs = anc_obj;
+		}
+
+		anc_msg = NULL;
+		TALLOC_FREE(anc_res);
+		TALLOC_FREE(anc_dn);
+
+		/*
+		 * We may need to resolve more parents...
+		 */
+		next_anc_guid = anc_obj->parent_object_guid;
+	}
+	return werr;
+}
+
+/*
   drsuapi_DsGetNCChanges
 
   see MS-DRSR 4.1.10.5.2 for basic logic of this function
@@ -2691,7 +2849,6 @@ allowed:
 					    NULL };
 		struct ldb_result *msg_res;
 		struct ldb_dn *msg_dn;
-		const struct GUID *next_anc_guid = NULL;
 
 		obj = talloc_zero(mem_ctx, struct drsuapi_DsReplicaObjectListItemEx);
 		W_ERROR_HAVE_NO_MEMORY(obj);
@@ -2800,133 +2957,22 @@ allowed:
 			if (!W_ERROR_IS_OK(werr)) {
 				return werr;
 			}
-
-			if (getnc_state->is_get_anc) {
-				next_anc_guid = obj->parent_object_guid;
-			}
 		}
 
-		while (next_anc_guid != NULL) {
-			struct drsuapi_DsReplicaObjectListItemEx *anc_obj = NULL;
-			struct ldb_message *anc_msg = NULL;
-			struct ldb_result *anc_res = NULL;
-			struct ldb_dn *anc_dn = NULL;
-
-			werr = dcesrv_drsuapi_obj_cache_exists(getnc_state->obj_cache,
-							       next_anc_guid);
-			if (W_ERROR_EQUAL(werr, WERR_OBJECT_NAME_EXISTS)) {
-				/*
-				 * We don't need to send it twice.
-				 */
-				break;
-			}
-			if (W_ERROR_IS_OK(werr)) {
-				return WERR_INTERNAL_ERROR;
-			}
-			if (!W_ERROR_EQUAL(werr, WERR_OBJECT_NOT_FOUND)) {
-				return werr;
-			}
-			werr = WERR_OK;
-
-			anc_obj = talloc_zero(mem_ctx,
-					struct drsuapi_DsReplicaObjectListItemEx);
-			if (anc_obj == NULL) {
-				return WERR_NOT_ENOUGH_MEMORY;
-			}
-
-			anc_dn = ldb_dn_new_fmt(anc_obj, sam_ctx, "<GUID=%s>",
-					GUID_string(anc_obj, next_anc_guid));
-			if (anc_dn == NULL) {
-				return WERR_NOT_ENOUGH_MEMORY;
-			}
-
-			ret = drsuapi_search_with_extended_dn(sam_ctx, anc_obj,
-							      &anc_res, anc_dn,
-							      LDB_SCOPE_BASE,
-							      msg_attrs, NULL);
-			if (ret != LDB_SUCCESS) {
-				const char *anc_str = NULL;
-				const char *obj_str = NULL;
-
-				anc_str = ldb_dn_get_extended_linearized(anc_obj,
-									 anc_dn,
-									 1);
-				obj_str = ldb_dn_get_extended_linearized(anc_obj,
-									 msg->dn,
-									 1),
-
-				DBG_ERR("getncchanges: failed to fetch ANC "
-					"DN %s for DN %s - %s\n",
-					anc_str, obj_str,
-					ldb_errstring(sam_ctx));
-				return WERR_DS_DRA_INCONSISTENT_DIT;
-			}
-
-			anc_msg = anc_res->msgs[0];
-
-			werr = get_nc_changes_build_object(anc_obj, anc_msg,
-							   sam_ctx,
-							   getnc_state->ncRoot_dn,
-							   getnc_state->is_schema_nc,
-							   schema, &session_key,
-							   getnc_state->min_usn,
-							   req10->replica_flags,
-							   req10->partial_attribute_set,
-							   req10->uptodateness_vector,
-							   req10->extended_op,
-							   false, /* force_object_return */
-							   local_pas,
-							   machine_dn,
-							   next_anc_guid);
+		/*
+		 * For GET_ANC, prepend any parents that the client needs
+		 * to know about before it can add this object
+		 */
+		if (getnc_state->is_get_anc) {
+			werr = getncchanges_add_ancestors(obj, msg->dn, mem_ctx,
+							  sam_ctx, getnc_state,
+							  schema, &session_key,
+							  req10, local_pas,
+							  machine_dn,
+							  &new_objs);
 			if (!W_ERROR_IS_OK(werr)) {
 				return werr;
 			}
-
-			werr = get_nc_changes_add_links(sam_ctx, getnc_state,
-							getnc_state->ncRoot_dn,
-							getnc_state->is_schema_nc,
-							schema, getnc_state->min_usn,
-							req10->replica_flags,
-							anc_msg,
-							&getnc_state->la_list,
-							&getnc_state->la_count,
-							req10->uptodateness_vector);
-			if (!W_ERROR_IS_OK(werr)) {
-				return werr;
-			}
-
-			/*
-			 * Regardless of if we actually use it or not,
-			 * we add it to the cache so we don't look at it again
-			 */
-			werr = dcesrv_drsuapi_obj_cache_add(getnc_state->obj_cache,
-							    next_anc_guid);
-			if (!W_ERROR_IS_OK(werr)) {
-				return werr;
-			}
-
-			/*
-			 * Any ancestors which are below the highwatermark
-			 * or uptodateness_vector shouldn't be added,
-			 * but we still look further up the
-			 * tree for ones which have been changed recently.
-			 */
-			if (anc_obj->meta_data_ctr != NULL) {
-				/*
-				 * prepend it to the list
-				 */
-				anc_obj->next_object = new_objs;
-				new_objs = anc_obj;
-			}
-
-			anc_msg = NULL;
-			TALLOC_FREE(anc_res);
-			TALLOC_FREE(anc_dn);
-
-			/*
-			 * We may need to resolve more...
-			 */
-			next_anc_guid = anc_obj->parent_object_guid;
 		}
 
 		*currentObject = new_objs;
