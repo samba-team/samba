@@ -8,7 +8,8 @@ setup_ctdb
 
 ctdb_get_1_public_address |
 while read dev ip bits ; do
-	ip addr add "${ip}/${bits}" dev "$dev"
+	ok_null
+	simple_test_event "takeip" $dev $ip $bits
 
 	setup_tcp_connections 0
 
@@ -31,5 +32,5 @@ Remaining connections:
   10.0.0.3:445 10.254.254.10:43220
 EOF
 
-    simple_test $dev $ip $bits
+    simple_test_event "releaseip"  $dev $ip $bits
 done
