@@ -45,7 +45,10 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS            DBGC_DRS_REPL
 
-/* state of a partially completed getncchanges call */
+/*
+ * state of a partially-completed replication cycle. This state persists
+ * over multiple calls to dcesrv_drsuapi_DsGetNCChanges()
+ */
 struct drsuapi_getncchanges_state {
 	struct db_context *obj_cache;
 	struct GUID *guids;
@@ -71,7 +74,18 @@ struct drsuapi_getncchanges_state {
 struct la_for_sorting {
 	const struct drsuapi_DsReplicaLinkedAttribute *link;
 	uint8_t target_guid[16];
-        uint8_t source_guid[16];
+	uint8_t source_guid[16];
+};
+
+/*
+ * stores the state for a chunk of replication data. This state information
+ * only exists for a single call to dcesrv_drsuapi_DsGetNCChanges()
+ */
+struct getncchanges_repl_chunk {
+	struct drsuapi_DsGetNCChangesCtr6 *ctr6;
+
+	/* the last object written to the response */
+	struct drsuapi_DsReplicaObjectListItemEx *last_object;
 };
 
 static int drsuapi_DsReplicaHighWaterMark_cmp(const struct drsuapi_DsReplicaHighWaterMark *h1,
@@ -2228,6 +2242,37 @@ static WERROR getncchanges_add_ancestors(struct drsuapi_DsReplicaObjectListItemE
 	return werr;
 }
 
+/**
+ * Adds a list of new objects into the getNCChanges response message
+ */
+static void getncchanges_add_objs_to_resp(struct getncchanges_repl_chunk *repl_chunk,
+					  struct drsuapi_DsReplicaObjectListItemEx *obj_list)
+{
+	struct drsuapi_DsReplicaObjectListItemEx *obj;
+
+	/*
+	 * We track the last object added to the response message, so just add
+	 * the new object-list onto the end
+	 */
+	if (repl_chunk->last_object == NULL) {
+		repl_chunk->ctr6->first_object = obj_list;
+	} else {
+		repl_chunk->last_object->next_object = obj_list;
+	}
+
+	for (obj = obj_list; obj != NULL; obj = obj->next_object) {
+		repl_chunk->ctr6->object_count += 1;
+
+		/*
+		 * Remember the last object in the response - we'll use this to
+		 * link the next object(s) processed onto the existing list
+		 */
+		if (obj->next_object == NULL) {
+			repl_chunk->last_object = obj;
+		}
+	}
+}
+
 /*
   drsuapi_DsGetNCChanges
 
@@ -2241,7 +2286,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	uint32_t i, k;
 	struct dsdb_schema *schema;
 	struct drsuapi_DsReplicaOIDMapping_Ctr *ctr;
-	struct drsuapi_DsReplicaObjectListItemEx **currentObject;
+	struct getncchanges_repl_chunk repl_chunk = { 0 };
 	NTSTATUS status;
 	DATA_BLOB session_key;
 	WERROR werr;
@@ -2768,7 +2813,8 @@ allowed:
 	r->out.ctr->ctr6.old_highwatermark = req10->highwatermark;
 	r->out.ctr->ctr6.new_highwatermark = req10->highwatermark;
 
-	currentObject = &r->out.ctr->ctr6.first_object;
+	repl_chunk.ctr6 = &r->out.ctr->ctr6;
+	repl_chunk.last_object = NULL;
 
 	max_objects = lpcfg_parm_int(dce_call->conn->dce_ctx->lp_ctx, NULL, "drs", "max object sync", 1000);
 	/*
@@ -2964,14 +3010,11 @@ allowed:
 			}
 		}
 
-		*currentObject = new_objs;
-		while (new_objs != NULL) {
-			r->out.ctr->ctr6.object_count += 1;
-			if (new_objs->next_object == NULL) {
-				currentObject = &new_objs->next_object;
-			}
-			new_objs = new_objs->next_object;
-		}
+		/*
+		 * Add the object (and any parents it might have) into the
+		 * response message
+		 */
+		getncchanges_add_objs_to_resp(&repl_chunk, new_objs);
 
 		DEBUG(8,(__location__ ": replicating object %s\n", ldb_dn_get_linearized(msg->dn)));
 
