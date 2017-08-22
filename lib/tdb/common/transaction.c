@@ -43,7 +43,7 @@
     tdb_free() the old record to place it on the normal tdb freelist
     before allocating the new record
 
-  - during transactions, keep a linked list of writes all that have
+  - during transactions, keep a linked list of all writes that have
     been performed by intercepting all tdb_write() calls. The hooked
     transaction versions of tdb_read() and tdb_write() check this
     linked list and try to use the elements of the list in preference
