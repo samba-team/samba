@@ -457,7 +457,6 @@ static WERROR get_nc_changes_filter_attrs(struct drsuapi_DsReplicaObjectListItem
 static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItemEx *obj,
 					  const struct ldb_message *msg,
 					  struct ldb_context *sam_ctx,
-					  struct ldb_dn *ncRoot_dn,
 					  bool   is_schema_nc,
 					  struct dsdb_schema *schema,
 					  DATA_BLOB *session_key,
@@ -859,7 +858,6 @@ static WERROR get_nc_changes_add_la(TALLOC_CTX *mem_ctx,
  */
 static WERROR get_nc_changes_add_links(struct ldb_context *sam_ctx,
 				       TALLOC_CTX *mem_ctx,
-				       struct ldb_dn *ncRoot_dn,
 				       bool is_schema_nc,
 				       struct dsdb_schema *schema,
 				       uint64_t highest_usn,
@@ -2190,7 +2188,6 @@ static WERROR getncchanges_add_ancestors(struct drsuapi_DsReplicaObjectListItemE
 
 		werr = get_nc_changes_build_object(anc_obj, anc_msg,
 						   sam_ctx,
-						   getnc_state->ncRoot_dn,
 						   getnc_state->is_schema_nc,
 						   schema, session_key,
 						   getnc_state->min_usn,
@@ -2941,8 +2938,7 @@ allowed:
 			max_wait_reached = (time(NULL) - start > max_wait);
 
 			werr = get_nc_changes_build_object(obj, msg,
-							   sam_ctx, getnc_state->ncRoot_dn,
-							   getnc_state->is_schema_nc,
+							   sam_ctx, getnc_state->is_schema_nc,
 							   schema, &session_key, getnc_state->min_usn,
 							   req10->replica_flags,
 							   req10->partial_attribute_set,
@@ -2962,7 +2958,6 @@ allowed:
 		 * ancestor), we add its links and update the HWM at this point
 		 */
 		werr = get_nc_changes_add_links(sam_ctx, getnc_state,
-						getnc_state->ncRoot_dn,
 						getnc_state->is_schema_nc,
 						schema, getnc_state->min_usn,
 						req10->replica_flags,
