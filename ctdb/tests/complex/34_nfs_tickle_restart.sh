@@ -71,7 +71,7 @@ rn=$(awk -F'|' -v test_node=$test_node \
     '$2 != test_node { print $2 ; exit }' <<<"$listnodes_output")
 
 echo "Restarting CTDB on node ${rn}"
-try_command_on_node $rn $CTDB_TEST_WRAPPER restart_ctdb_1
+restart_ctdb_1 $rn
 
 # In some theoretical world this is racy.  In practice, the node will
 # take quite a while to become healthy, so this will beat any
