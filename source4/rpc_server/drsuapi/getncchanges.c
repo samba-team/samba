@@ -2272,6 +2272,78 @@ static void getncchanges_add_objs_to_resp(struct getncchanges_repl_chunk *repl_c
 	}
 }
 
+/**
+ * Gets the object to send, packed into an RPC struct ready to send. This also
+ * adds the object to the object cache, and adds any ancestors (if needed).
+ * @param msg - DB search result for the object to add
+ * @param guid - GUID of the object to add
+ * @param ret_obj_list - returns the object ready to be sent (in a list, along
+ * with any ancestors that might be needed). NULL if nothing to send.
+ */
+static WERROR getncchanges_get_obj_to_send(const struct ldb_message *msg,
+					   TALLOC_CTX *mem_ctx,
+					   struct ldb_context *sam_ctx,
+					   struct drsuapi_getncchanges_state *getnc_state,
+					   struct dsdb_schema *schema,
+					   DATA_BLOB *session_key,
+					   struct drsuapi_DsGetNCChangesRequest10 *req10,
+					   bool force_object_return,
+					   uint32_t *local_pas,
+					   struct ldb_dn *machine_dn,
+					   const struct GUID *guid,
+					   struct drsuapi_DsReplicaObjectListItemEx **ret_obj_list)
+{
+	struct drsuapi_DsReplicaObjectListItemEx *obj;
+	WERROR werr;
+
+	*ret_obj_list = NULL;
+
+	obj = talloc_zero(mem_ctx, struct drsuapi_DsReplicaObjectListItemEx);
+	W_ERROR_HAVE_NO_MEMORY(obj);
+
+	werr = get_nc_changes_build_object(obj, msg, sam_ctx, getnc_state,
+					   schema, session_key, req10,
+					   force_object_return,
+					   local_pas, machine_dn, guid);
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
+	}
+
+	/*
+	 * The object may get filtered out by the UTDV's USN and not actually
+	 * sent, in which case there's nothing more to do here
+	 */
+	if (obj->meta_data_ctr == NULL) {
+		TALLOC_FREE(obj);
+		return WERR_OK;
+	}
+
+	if (getnc_state->obj_cache != NULL) {
+		werr = dcesrv_drsuapi_obj_cache_add(getnc_state->obj_cache,
+						    guid);
+		if (!W_ERROR_IS_OK(werr)) {
+			return werr;
+		}
+	}
+
+	*ret_obj_list = obj;
+
+	/*
+	 * If required, also add any ancestors that the client may need to know
+	 * about before it can resolve this object. These get prepended to the
+	 * ret_obj_list so the client adds them first.
+	 */
+	if (getnc_state->is_get_anc) {
+		werr = getncchanges_add_ancestors(obj, msg->dn, mem_ctx,
+						  sam_ctx, getnc_state,
+						  schema, session_key,
+						  req10, local_pas,
+						  machine_dn, ret_obj_list);
+	}
+
+	return werr;
+}
+
 /*
   drsuapi_DsGetNCChanges
 
@@ -2870,7 +2942,6 @@ allowed:
 		     && !max_wait_reached;
 	    i++) {
 		struct drsuapi_DsReplicaObjectListItemEx *new_objs = NULL;
-		struct drsuapi_DsReplicaObjectListItemEx *obj;
 		struct ldb_message *msg;
 		static const char * const msg_attrs[] = {
 					    "*",
@@ -2882,13 +2953,11 @@ allowed:
 		struct ldb_result *msg_res;
 		struct ldb_dn *msg_dn;
 		bool obj_already_sent = false;
+		TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 
-		obj = talloc_zero(mem_ctx, struct drsuapi_DsReplicaObjectListItemEx);
-		W_ERROR_HAVE_NO_MEMORY(obj);
-
-		msg_dn = ldb_dn_new_fmt(obj, sam_ctx, "<GUID=%s>", GUID_string(obj, &getnc_state->guids[i]));
+		msg_dn = ldb_dn_new_fmt(tmp_ctx, sam_ctx, "<GUID=%s>",
+					GUID_string(tmp_ctx, &getnc_state->guids[i]));
 		W_ERROR_HAVE_NO_MEMORY(msg_dn);
-
 
 		/*
 		 * by re-searching here we avoid having a lot of full
@@ -2898,15 +2967,16 @@ allowed:
 		 * (tombstone expunge) between the first and second
 		 * check.
 		 */
-		ret = drsuapi_search_with_extended_dn(sam_ctx, obj, &msg_res,
+		ret = drsuapi_search_with_extended_dn(sam_ctx, tmp_ctx, &msg_res,
 						      msg_dn,
 						      LDB_SCOPE_BASE, msg_attrs, NULL);
 		if (ret != LDB_SUCCESS) {
 			if (ret != LDB_ERR_NO_SUCH_OBJECT) {
 				DEBUG(1,("getncchanges: failed to fetch DN %s - %s\n",
-					 ldb_dn_get_extended_linearized(obj, msg_dn, 1), ldb_errstring(sam_ctx)));
+					 ldb_dn_get_extended_linearized(tmp_ctx, msg_dn, 1),
+					 ldb_errstring(sam_ctx)));
 			}
-			talloc_free(obj);
+			TALLOC_FREE(tmp_ctx);
 			continue;
 		}
 
@@ -2914,9 +2984,9 @@ allowed:
 			DEBUG(1,("getncchanges: got LDB_SUCCESS but failed"
 				 "to get any results in fetch of DN "
 				 "%s (race with tombstone expunge?)\n",
-				 ldb_dn_get_extended_linearized(obj,
+				 ldb_dn_get_extended_linearized(tmp_ctx,
 								msg_dn, 1)));
-			talloc_free(obj);
+			TALLOC_FREE(tmp_ctx);
 			continue;
 		}
 
@@ -2937,13 +3007,17 @@ allowed:
 		if (!obj_already_sent) {
 			max_wait_reached = (time(NULL) - start > max_wait);
 
-			werr = get_nc_changes_build_object(obj, msg,
-							   sam_ctx, getnc_state,
-							   schema, &session_key,
-							   req10,
-							   max_wait_reached,
-							   local_pas, machine_dn,
-							   &getnc_state->guids[i]);
+			/*
+			 * Construct an object, ready to send (this will include
+			 * the object's ancestors as well, if needed)
+			 */
+			werr = getncchanges_get_obj_to_send(msg, mem_ctx, sam_ctx,
+							    getnc_state, schema,
+							    &session_key, req10,
+							    max_wait_reached,
+							    local_pas, machine_dn,
+							    &getnc_state->guids[i],
+							    &new_objs);
 			if (!W_ERROR_IS_OK(werr)) {
 				return werr;
 			}
@@ -2970,43 +3044,17 @@ allowed:
 					getnc_state->max_usn,
 					&r->out.ctr->ctr6.new_highwatermark);
 
-		if (obj_already_sent || obj->meta_data_ctr == NULL) {
+		if (new_objs == NULL) {
 			DEBUG(8,(__location__ ": getncchanges skipping send of object %s\n",
 				 ldb_dn_get_linearized(msg->dn)));
 			/* nothing to send */
-			TALLOC_FREE(obj);
+			TALLOC_FREE(tmp_ctx);
 			continue;
 		}
 
-		new_objs = obj;
-
-		if (getnc_state->obj_cache != NULL) {
-			werr = dcesrv_drsuapi_obj_cache_add(getnc_state->obj_cache,
-							    &getnc_state->guids[i]);
-			if (!W_ERROR_IS_OK(werr)) {
-				return werr;
-			}
-		}
-
 		/*
-		 * For GET_ANC, prepend any parents that the client needs
-		 * to know about before it can add this object
-		 */
-		if (getnc_state->is_get_anc) {
-			werr = getncchanges_add_ancestors(obj, msg->dn, mem_ctx,
-							  sam_ctx, getnc_state,
-							  schema, &session_key,
-							  req10, local_pas,
-							  machine_dn,
-							  &new_objs);
-			if (!W_ERROR_IS_OK(werr)) {
-				return werr;
-			}
-		}
-
-		/*
-		 * Add the object (and any parents it might have) into the
-		 * response message
+		 * Add the object (and, if GET_ANC, any parents it may
+		 * have) into the current chunk of replication data
 		 */
 		getncchanges_add_objs_to_resp(&repl_chunk, new_objs);
 
@@ -3015,8 +3063,7 @@ allowed:
 		talloc_free(getnc_state->last_dn);
 		getnc_state->last_dn = talloc_move(getnc_state, &msg->dn);
 
-		talloc_free(msg_res);
-		talloc_free(msg_dn);
+		TALLOC_FREE(tmp_ctx);
 	}
 
 	getnc_state->num_processed = i;
