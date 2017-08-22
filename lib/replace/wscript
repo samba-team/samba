@@ -249,6 +249,18 @@ def configure(conf):
     if conf.CONFIG_SET('HAVE_MEMALIGN'):
         conf.CHECK_DECLS('memalign', headers='malloc.h')
 
+    # glibc up to 2.3.6 had dangerously broken posix_fallocate(). DON'T USE IT.
+    if conf.CHECK_CODE('''
+#define _XOPEN_SOURCE 600
+#include <stdlib.h>
+#if defined(__GLIBC__) && ((__GLIBC__ < 2) || (__GLIBC__ == 2 && __GLIBC_MINOR__ < 4))
+#error probably broken posix_fallocate
+#endif
+''',
+                       '_POSIX_FALLOCATE_CAPABLE_LIBC',
+                       msg='Checking for posix_fallocate-capable libc'):
+        conf.CHECK_FUNCS('posix_fallocate')
+
     conf.CHECK_FUNCS('prctl dirname basename')
 
     # libbsd on some platforms provides strlcpy and strlcat

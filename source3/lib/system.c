@@ -438,7 +438,7 @@ int sys_lstat(const char *fname,SMB_STRUCT_STAT *sbuf,
 ********************************************************************/
 int sys_posix_fallocate(int fd, off_t offset, off_t len)
 {
-#if defined(HAVE_POSIX_FALLOCATE) && !defined(HAVE_BROKEN_POSIX_FALLOCATE)
+#if defined(HAVE_POSIX_FALLOCATE)
 	return posix_fallocate(fd, offset, len);
 #elif defined(F_RESVSP64)
 	/* this handles XFS on IRIX */

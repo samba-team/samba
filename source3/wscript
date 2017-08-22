@@ -106,7 +106,7 @@ def configure(conf):
     conf.CHECK_FUNCS('innetgr')
     conf.CHECK_FUNCS('initgroups select poll rdchk getgrnam getgrent pathconf')
     conf.CHECK_FUNCS('setpriv setgidx setuidx setgroups syscall sysconf')
-    conf.CHECK_FUNCS('atexit grantpt posix_openpt fallocate posix_fallocate')
+    conf.CHECK_FUNCS('atexit grantpt posix_openpt fallocate')
     conf.CHECK_FUNCS('fseeko setluid')
     conf.CHECK_FUNCS('getpwnam', headers='sys/types.h pwd.h')
     conf.CHECK_FUNCS('fdopendir')
@@ -397,7 +397,7 @@ llseek _llseek __llseek _lseek __lseek
 _lstat __lstat lutimes
 __lxstat memalign mknod mlock mlockall munlock munlockall
 _open __open _opendir __opendir
-pathconf poll posix_fallocate
+pathconf poll
 posix_memalign pread _pread __pread
 pwrite _pwrite __pwrite
 rdchk _read __read _readdir __readdir
@@ -1153,19 +1153,6 @@ err:
             addmain=False,
             execute=True,
             msg="Checking whether fcntl lock supports open file description locks")
-
-# glibc up to 2.3.6 had dangerously broken posix_fallocate(). DON'T USE IT.
-    if not conf.CHECK_CODE('''
-#define _XOPEN_SOURCE 600
-#include <stdlib.h>
-#if defined(__GLIBC__) && ((__GLIBC__ < 2) || (__GLIBC__ == 2 && __GLIBC_MINOR__ < 4))
-#error probably broken posix_fallocate
-#endif
-''',
-                           '_HAVE_UNBROKEN_POSIX_FALLOCATE',
-                           msg='Checking for broken posix_fallocate'):
-        conf.DEFINE('HAVE_BROKEN_POSIX_FALLOCATE', '1')
-
 
     conf.CHECK_STRUCTURE_MEMBER('struct stat', 'st_mtim.tv_nsec',
                                 define='HAVE_STRUCT_STAT_ST_MTIM_TV_NSEC') # Linux, Solaris
