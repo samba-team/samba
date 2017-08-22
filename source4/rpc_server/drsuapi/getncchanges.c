@@ -3044,24 +3044,21 @@ allowed:
 					getnc_state->max_usn,
 					&r->out.ctr->ctr6.new_highwatermark);
 
-		if (new_objs == NULL) {
-			DEBUG(8,(__location__ ": getncchanges skipping send of object %s\n",
-				 ldb_dn_get_linearized(msg->dn)));
-			/* nothing to send */
-			TALLOC_FREE(tmp_ctx);
-			continue;
+		if (new_objs != NULL) {
+
+			/*
+			 * Add the object (and, if GET_ANC, any parents it may
+			 * have) into the current chunk of replication data
+			 */
+			getncchanges_add_objs_to_resp(&repl_chunk, new_objs);
+
+			talloc_free(getnc_state->last_dn);
+			getnc_state->last_dn = talloc_move(getnc_state, &msg->dn);
 		}
 
-		/*
-		 * Add the object (and, if GET_ANC, any parents it may
-		 * have) into the current chunk of replication data
-		 */
-		getncchanges_add_objs_to_resp(&repl_chunk, new_objs);
-
-		DEBUG(8,(__location__ ": replicating object %s\n", ldb_dn_get_linearized(msg->dn)));
-
-		talloc_free(getnc_state->last_dn);
-		getnc_state->last_dn = talloc_move(getnc_state, &msg->dn);
+		DEBUG(8,(__location__ ": %s object %s\n",
+			 new_objs ? "replicating" : "skipping send of",
+			 ldb_dn_get_linearized(msg->dn)));
 
 		TALLOC_FREE(tmp_ctx);
 	}
