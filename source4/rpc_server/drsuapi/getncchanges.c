@@ -45,6 +45,8 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS            DBGC_DRS_REPL
 
+#define DRS_GUID_SIZE       16
+
 /*
  * state of a partially-completed replication cycle. This state persists
  * over multiple calls to dcesrv_drsuapi_DsGetNCChanges()
@@ -73,8 +75,8 @@ struct drsuapi_getncchanges_state {
 /* We must keep the GUIDs in NDR form for sorting */
 struct la_for_sorting {
 	const struct drsuapi_DsReplicaLinkedAttribute *link;
-	uint8_t target_guid[16];
-	uint8_t source_guid[16];
+	uint8_t target_guid[DRS_GUID_SIZE];
+	uint8_t source_guid[DRS_GUID_SIZE];
 };
 
 /*
@@ -1959,7 +1961,7 @@ static WERROR dcesrv_drsuapi_obj_cache_add(struct db_context *obj_cache,
 					   const struct GUID *guid)
 {
 	enum ndr_err_code ndr_err;
-	uint8_t guid_buf[16] = { 0, };
+	uint8_t guid_buf[DRS_GUID_SIZE] = { 0, };
 	DATA_BLOB b = {
 		.data = guid_buf,
 		.length = sizeof(guid_buf),
@@ -1996,7 +1998,7 @@ static WERROR dcesrv_drsuapi_obj_cache_exists(struct db_context *obj_cache,
 					      const struct GUID *guid)
 {
 	enum ndr_err_code ndr_err;
-	uint8_t guid_buf[16] = { 0, };
+	uint8_t guid_buf[DRS_GUID_SIZE] = { 0, };
 	DATA_BLOB b = {
 		.data = guid_buf,
 		.length = sizeof(guid_buf),
