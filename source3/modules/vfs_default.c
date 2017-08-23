@@ -722,7 +722,6 @@ static int vfswrap_init_pool(struct smbd_server_connection *conn)
 
 struct vfswrap_pread_state {
 	ssize_t ret;
-	int err;
 	int fd;
 	void *buf;
 	size_t count;
@@ -796,7 +795,9 @@ static void vfs_pread_do(void *private_data)
 				   state->offset);
 	} while ((state->ret == -1) && (errno == EINTR));
 
-	state->err = errno;
+	if (state->ret == -1) {
+		state->vfs_aio_state.error = errno;
+	}
 
 	PROFILE_TIMESTAMP(&end_time);
 
@@ -845,7 +846,6 @@ static ssize_t vfswrap_pread_recv(struct tevent_req *req,
 
 struct vfswrap_pwrite_state {
 	ssize_t ret;
-	int err;
 	int fd;
 	const void *buf;
 	size_t count;
@@ -919,7 +919,9 @@ static void vfs_pwrite_do(void *private_data)
 				   state->offset);
 	} while ((state->ret == -1) && (errno == EINTR));
 
-	state->err = errno;
+	if (state->ret == -1) {
+		state->vfs_aio_state.error = errno;
+	}
 
 	PROFILE_TIMESTAMP(&end_time);
 
@@ -968,7 +970,6 @@ static ssize_t vfswrap_pwrite_recv(struct tevent_req *req,
 
 struct vfswrap_fsync_state {
 	ssize_t ret;
-	int err;
 	int fd;
 
 	struct vfs_aio_state vfs_aio_state;
@@ -1029,7 +1030,9 @@ static void vfs_fsync_do(void *private_data)
 		state->ret = fsync(state->fd);
 	} while ((state->ret == -1) && (errno == EINTR));
 
-	state->err = errno;
+	if (state->ret == -1) {
+		state->vfs_aio_state.error = errno;
+	}
 
 	PROFILE_TIMESTAMP(&end_time);
 
