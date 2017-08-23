@@ -251,7 +251,7 @@ int ctdb_ctrl_getdbseqnum(struct ctdb_context *ctdb, struct timeval timeout,
 
 int ctdb_ctrl_createdb(struct ctdb_context *ctdb, struct timeval timeout,
 		       uint32_t destnode, TALLOC_CTX *mem_ctx,
-		       const char *name, uint8_t db_flags);
+		       const char *name, uint8_t db_flags, uint32_t *db_id);
 
 int ctdb_ctrl_get_debuglevel(struct ctdb_context *ctdb, uint32_t destnode,
 			     int32_t *level);
