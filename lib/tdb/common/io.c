@@ -52,27 +52,48 @@ static bool tdb_adjust_offset(struct tdb_context *tdb, off_t *off)
 static ssize_t tdb_pwrite(struct tdb_context *tdb, const void *buf,
 			  size_t count, off_t offset)
 {
+	ssize_t ret;
+
 	if (!tdb_adjust_offset(tdb, &offset)) {
 		return -1;
 	}
-	return pwrite(tdb->fd, buf, count, offset);
+
+	do {
+		ret = pwrite(tdb->fd, buf, count, offset);
+	} while ((ret == -1) && (errno == EINTR));
+
+	return ret;
 }
 
 static ssize_t tdb_pread(struct tdb_context *tdb, void *buf,
 			 size_t count, off_t offset)
 {
+	ssize_t ret;
+
 	if (!tdb_adjust_offset(tdb, &offset)) {
 		return -1;
 	}
-	return pread(tdb->fd, buf, count, offset);
+
+	do {
+		ret = pread(tdb->fd, buf, count, offset);
+	} while ((ret == -1) && (errno == EINTR));
+
+	return ret;
 }
 
 static int tdb_ftruncate(struct tdb_context *tdb, off_t length)
 {
+	ssize_t ret;
+
 	if (!tdb_adjust_offset(tdb, &length)) {
 		return -1;
 	}
-	return ftruncate(tdb->fd, length);
+
+	do {
+		ret = ftruncate(tdb->fd, length);
+	} while ((ret == -1) && (errno == EINTR));
+
+	return ret;
 }
 
 static int tdb_fstat(struct tdb_context *tdb, struct stat *buf)
