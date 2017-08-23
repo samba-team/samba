@@ -20,6 +20,7 @@
 
 import sys
 import os
+import errno
 import optparse
 import logging
 import grp
@@ -208,6 +209,36 @@ def import_zone_data(samdb, logger, zone, serial, domaindn, forestdn,
             logger.error("Failed to add DNS record %s" % (fqdn))
             raise
         logger.debug("Added DNS record %s" % (fqdn))
+
+def cleanup_remove_file(file_path):
+    try:
+        os.remove(file_path)
+    except OSError as e:
+        if e.errno not in [errno.EEXIST, errno.ENOENT]:
+            pass
+        else:
+            logger.debug("Could not remove %s: %s" % (file_path, e.strerror))
+
+def cleanup_remove_dir(dir_path):
+    try:
+        for root, dirs, files in os.walk(dir_path, topdown=False):
+            for name in files:
+                os.remove(os.path.join(root, name))
+            for name in dirs:
+                os.rmdir(os.path.join(root, name))
+        os.rmdir(dir_path)
+    except OSError as e:
+        if e.errno not in [errno.EEXIST, errno.ENOENT]:
+            pass
+        else:
+            logger.debug("Could not delete dir %s: %s" % (dir_path, e.strerror))
+
+def cleanup_obsolete_dns_files(paths):
+    cleanup_remove_file(os.path.join(paths.private_dir, "named.conf"))
+    cleanup_remove_file(os.path.join(paths.private_dir, "named.conf.update"))
+    cleanup_remove_file(os.path.join(paths.private_dir, "named.txt"))
+
+    cleanup_remove_dir(os.path.join(paths.private_dir, "dns"))
 
 
 # dnsprovision creates application partitions for AD based DNS mainly if the existing
@@ -496,6 +527,9 @@ if __name__ == '__main__':
 
         create_named_txt(paths.namedtxt, names.realm, dnsdomain, dnsname,
                          paths.binddns_dir, paths.dns_keytab)
+
+        cleanup_obsolete_dns_files(paths)
+
         logger.info("See %s for an example configuration include file for BIND", paths.namedconf)
         logger.info("and %s for further documentation required for secure DNS "
                     "updates", paths.namedtxt)
