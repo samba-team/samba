@@ -430,14 +430,14 @@ static int tdb_expand_file(struct tdb_context *tdb, tdb_off_t size, tdb_off_t ad
 			TDB_LOG((tdb, TDB_DEBUG_FATAL, "expand_file write "
 				"returned 0 twice: giving up!\n"));
 			errno = ENOSPC;
-			return -1;
+			goto fail;
 		}
 		if (written == -1) {
 			tdb->ecode = TDB_ERR_OOM;
 			TDB_LOG((tdb, TDB_DEBUG_FATAL, "expand_file write of "
 				 "%u bytes failed (%s)\n", (int)n,
 				 strerror(errno)));
-			return -1;
+			goto fail;
 		}
 		if (written != n) {
 			TDB_LOG((tdb, TDB_DEBUG_WARNING, "expand_file: wrote "
@@ -448,6 +448,29 @@ static int tdb_expand_file(struct tdb_context *tdb, tdb_off_t size, tdb_off_t ad
 		size += written;
 	}
 	return 0;
+
+fail:
+	{
+		int err = errno;
+		int ret;
+
+		/*
+		 * We're holding the freelist lock or are inside a
+		 * transaction. Cutting the file is safe, the space we
+		 * tried to allocate can't have been used anywhere in
+		 * the meantime.
+		 */
+
+		ret = tdb_ftruncate(tdb, size);
+		if (ret == -1) {
+			TDB_LOG((tdb, TDB_DEBUG_WARNING, "expand_file: "
+				 "retruncate to %ju failed\n",
+				 (uintmax_t)size));
+		}
+		errno = err;
+	}
+
+	return -1;
 }
 
 
