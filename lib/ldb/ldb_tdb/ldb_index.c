@@ -1600,6 +1600,7 @@ static int re_key(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *st
 	if (ret != 0) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR, "Invalid data for index %s\n",
 						ldb_dn_get_linearized(msg->dn));
+		ctx->error = ret;
 		talloc_free(msg);
 		return -1;
 	}
@@ -1616,8 +1617,32 @@ static int re_key(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *st
 	}
 	if (key.dsize != key2.dsize ||
 	    (memcmp(key.dptr, key2.dptr, key.dsize) != 0)) {
-		tdb_delete(tdb, key);
-		tdb_store(tdb, key2, data, 0);
+		int tdb_ret;
+		tdb_ret = tdb_delete(tdb, key);
+		if (tdb_ret != 0) {
+			ldb_debug(ldb, LDB_DEBUG_ERROR,
+				  "Failed to delete %*.*s "
+				  "for rekey as %*.*s: %s",
+				  (int)key.dsize, (int)key.dsize,
+				  (const char *)key.dptr,
+				  (int)key2.dsize, (int)key2.dsize,
+				  (const char *)key.dptr,
+				  tdb_errorstr(tdb));
+			ctx->error = ltdb_err_map(tdb_error(tdb));
+			return -1;
+		}
+		tdb_ret = tdb_store(tdb, key2, data, 0);
+		if (tdb_ret != 0) {
+			ldb_debug(ldb, LDB_DEBUG_ERROR,
+				  "Failed to rekey %*.*s as %*.*s: %s",
+				  (int)key.dsize, (int)key.dsize,
+				  (const char *)key.dptr,
+				  (int)key2.dsize, (int)key2.dsize,
+				  (const char *)key.dptr,
+				  tdb_errorstr(tdb));
+			ctx->error = ltdb_err_map(tdb_error(tdb));
+			return -1;
+		}
 	}
 	talloc_free(key2.dptr);
 
@@ -1669,6 +1694,7 @@ static int re_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *
 	if (ret != 0) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR, "Invalid data for index %s\n",
 						ldb_dn_get_linearized(msg->dn));
+		ctx->error = ret;
 		talloc_free(msg);
 		return -1;
 	}
