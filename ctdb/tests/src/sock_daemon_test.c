@@ -1174,6 +1174,131 @@ static void test8(TALLOC_CTX *mem_ctx, const char *pidfile,
 	close(fd[0]);
 }
 
+/*
+ * test9
+ *
+ * Confirm that do_fork causes the daemon to be forked as a separate child
+ */
+
+static void test9(TALLOC_CTX *mem_ctx, const char *pidfile,
+		  const char *sockpath)
+{
+	int fd[2];
+	pid_t pid, pid2;
+	int ret;
+	struct tevent_context *ev;
+	struct sock_daemon_context *sockd;
+	ssize_t n;
+	int pidfile_fd;
+	char pidstr[20] = { 0 };
+	struct stat st;
+
+	ret = pipe(fd);
+	assert(ret == 0);
+
+	pid = fork();
+	assert(pid != -1);
+
+	if (pid == 0) {
+		close(fd[0]);
+
+		ev = tevent_context_init(mem_ctx);
+		assert(ev != NULL);
+
+		/* Reuse test2 funcs for the startup synchronisation */
+		ret = sock_daemon_setup(mem_ctx, "test9", "file:", "NOTICE",
+					&test2_funcs, &fd[1], &sockd);
+		assert(ret == 0);
+
+		ret = sock_daemon_run(ev, sockd, pidfile, false, false, -1);
+		assert(ret == EINTR);
+
+		exit(0);
+	}
+
+	close(fd[1]);
+
+	n = read(fd[0], &ret, sizeof(ret));
+	assert(n == sizeof(ret));
+	assert(ret == 1);
+
+	/* do_fork false above, so pid should be active */
+	ret = kill(pid, 0);
+	assert(ret == 0);
+
+	ret = kill(pid, SIGTERM);
+	assert(ret == 0);
+
+	n = read(fd[0], &ret, sizeof(ret));
+	assert(n == sizeof(ret));
+	assert(ret == 3);
+
+	pid2 = waitpid(pid, &ret, 0);
+	assert(pid2 == pid);
+	assert(WEXITSTATUS(ret) == 0);
+
+	close(fd[0]);
+
+	ret = pipe(fd);
+	assert(ret == 0);
+
+	pid = fork();
+	assert(pid != -1);
+
+	if (pid == 0) {
+		close(fd[0]);
+
+		ev = tevent_context_init(mem_ctx);
+		assert(ev != NULL);
+
+		/* Reuse test2 funcs for the startup synchronisation */
+		ret = sock_daemon_setup(mem_ctx, "test9", "file:", "NOTICE",
+					&test2_funcs, &fd[1], &sockd);
+		assert(ret == 0);
+
+		ret = sock_daemon_run(ev, sockd, pidfile, true, false, -1);
+		assert(ret == EINTR);
+
+		exit(0);
+	}
+
+	close(fd[1]);
+
+	n = read(fd[0], &ret, sizeof(ret));
+	assert(n == sizeof(ret));
+	assert(ret == 1);
+
+	/* do_fork true above, so pid should have exited */
+	pid2 = waitpid(pid, &ret, 0);
+	assert(pid2 == pid);
+	assert(WEXITSTATUS(ret) == 0);
+
+	pidfile_fd = open(pidfile, O_RDONLY, 0644);
+	assert(pidfile_fd != -1);
+	n = read(pidfile_fd, pidstr, sizeof(pidstr)-1);
+	assert(n != -1);
+	pid2 = (pid_t)atoi(pidstr);
+	assert(pid != pid2);
+
+	ret = kill(pid2, SIGTERM);
+	assert(ret == 0);
+
+	n = read(fd[0], &ret, sizeof(ret));
+	assert(n == sizeof(ret));
+	assert(ret == 3);
+
+	/*
+	 * pid2 isn't our child, so can't call waitpid().  kill(pid2, 0)
+	 * is unreliable - pid2 may have been recycled.  Above indicates
+	 * that the shutdown function was called, so just do 1 final
+	 * check to see if pidfile has been removed.
+	 */
+	ret = stat(sockpath, &st);
+	assert(ret == -1);
+
+	close(fd[0]);
+}
+
 int main(int argc, const char **argv)
 {
 	TALLOC_CTX *mem_ctx;
@@ -1223,6 +1348,10 @@ int main(int argc, const char **argv)
 
 	case 8:
 		test8(mem_ctx, pidfile, sockpath);
+		break;
+
+	case 9:
+		test9(mem_ctx, pidfile, sockpath);
 		break;
 
 	default:

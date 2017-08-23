@@ -82,3 +82,13 @@ test8[PID]: Received signal 15
 test8[PID]: Shutting down
 EOF
 unit_test sock_daemon_test "$pidfile" "$sockpath" 8
+
+ok <<EOF
+test9[PID]: daemon started, pid=PID
+test9[PID]: Received signal 15
+test9[PID]: Shutting down
+test9[PID]: daemon started, pid=PID
+test9[PID]: Received signal 15
+test9[PID]: Shutting down
+EOF
+unit_test sock_daemon_test "$pidfile" "$sockpath" 9
