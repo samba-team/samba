@@ -1949,7 +1949,7 @@ int ctdb_ctrl_getdbseqnum(struct ctdb_context *ctdb, struct timeval timeout,
  */
 int ctdb_ctrl_createdb(struct ctdb_context *ctdb, struct timeval timeout,
 		       uint32_t destnode, TALLOC_CTX *mem_ctx,
-		       const char *name, uint8_t db_flags)
+		       const char *name, uint8_t db_flags, uint32_t *db_id)
 {
 	int ret;
 	int32_t res;
@@ -1973,6 +1973,15 @@ int ctdb_ctrl_createdb(struct ctdb_context *ctdb, struct timeval timeout,
 	if (ret != 0 || res != 0) {
 		return -1;
 	}
+
+	if (data.dsize != sizeof(uint32_t)) {
+		TALLOC_FREE(data.dptr);
+		return -1;
+	}
+	if (db_id != NULL) {
+		*db_id = *(uint32_t *)data.dptr;
+	}
+	talloc_free(data.dptr);
 
 	return 0;
 }
