@@ -1,0 +1,9 @@
+# Currently Samba can't resolve a conflict for a single-valued link attribute
+samba4.drs.link_conflicts.python\(vampire_dc\).link_conflicts.DrsReplicaLinkConflictTestCase.test_conflict_single_valued_link\(vampire_dc\)
+samba4.drs.link_conflicts.python\(promoted_dc\).link_conflicts.DrsReplicaLinkConflictTestCase.test_conflict_single_valued_link\(promoted_dc\)
+# There's a bug where Samba can incorrectly increment the attribute's version number
+samba4.drs.link_conflicts.python\(vampire_dc\).link_conflicts.DrsReplicaLinkConflictTestCase.test_link_deletion_conflict\(vampire_dc\)
+samba4.drs.link_conflicts.python\(promoted_dc\).link_conflicts.DrsReplicaLinkConflictTestCase.test_link_deletion_conflict\(promoted_dc\)
+samba4.drs.link_conflicts.python\(vampire_dc\).link_conflicts.DrsReplicaLinkConflictTestCase.test_full_sync_link_conflict\(vampire_dc\)
+samba4.drs.link_conflicts.python\(promoted_dc\).link_conflicts.DrsReplicaLinkConflictTestCase.test_full_sync_link_conflict\(promoted_dc\)
+

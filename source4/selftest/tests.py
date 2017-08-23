@@ -863,6 +863,11 @@ for env in ['vampire_dc', 'promoted_dc']:
                            name="samba4.drs.linked_attributes_drs.python(%s)" % env,
                            environ={'DC1': "$DC_SERVER", 'DC2': '$%s_SERVER' % env.upper()},
                            extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
+    planoldpythontestsuite(env, "link_conflicts",
+			   extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
+			   name="samba4.drs.link_conflicts.python(%s)" % env,
+			   environ={'DC1': "$DC_SERVER", 'DC2': '$%s_SERVER' % env.upper()},
+			   extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
 
 for env in ['vampire_dc', 'promoted_dc', 'vampire_2000_dc']:
     planoldpythontestsuite(env, "repl_schema",
