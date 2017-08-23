@@ -96,6 +96,24 @@ static int tdb_ftruncate(struct tdb_context *tdb, off_t length)
 	return ret;
 }
 
+#if HAVE_POSIX_FALLOCATE
+static int tdb_posix_fallocate(struct tdb_context *tdb, off_t offset,
+			       off_t len)
+{
+	ssize_t ret;
+
+	if (!tdb_adjust_offset(tdb, &offset)) {
+		return -1;
+	}
+
+	do {
+		ret = posix_fallocate(tdb->fd, offset, len);
+	} while ((ret == -1) && (errno == EINTR));
+
+	return ret;
+}
+#endif
+
 static int tdb_fstat(struct tdb_context *tdb, struct stat *buf)
 {
 	int ret;
@@ -394,6 +412,34 @@ static int tdb_expand_file(struct tdb_context *tdb, tdb_off_t size, tdb_off_t ad
 		errno = ENOSPC;
 		return -1;
 	}
+
+#if HAVE_POSIX_FALLOCATE
+	ret = tdb_posix_fallocate(tdb, size, addition);
+	if (ret == 0) {
+		return 0;
+	}
+	if (ret == ENOSPC) {
+		/*
+		 * The Linux glibc (at least as of 2.24) fallback if
+		 * the file system does not support fallocate does not
+		 * reset the file size back to where it was. Also, to
+		 * me it is unclear from the posix spec of
+		 * posix_fallocate whether this is allowed or
+		 * not. Better be safe than sorry and "goto fail" but
+		 * "return -1" here, leaving the EOF pointer too
+		 * large.
+		 */
+		goto fail;
+	}
+
+	/*
+	 * Retry the "old" way. Possibly unnecessary, but looking at
+	 * our configure script there seem to be weird failure modes
+	 * for posix_fallocate. See commit 3264a98ff16de, which
+	 * probably refers to
+	 * https://sourceware.org/bugzilla/show_bug.cgi?id=1083.
+	 */
+#endif
 
 	ret = tdb_ftruncate(tdb, new_size);
 	if (ret == -1) {
