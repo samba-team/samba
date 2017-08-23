@@ -1756,7 +1756,7 @@ struct ctdb_client *ctdb_find_client_by_pid(struct ctdb_context *ctdb, pid_t pid
    Samba does this when it needs/wants to check if a subrecord in one of the
    databases is still valied, or if it is stale and can be removed.
    If the node is in unhealthy or stopped state we just kill of the samba
-   process holding htis sub-record and return to the calling samba that
+   process holding this sub-record and return to the calling samba that
    the process does not exist.
    This allows us to forcefully recall subrecords registered by samba processes
    on banned and stopped nodes.
