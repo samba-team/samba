@@ -86,8 +86,8 @@ static bool set_gpfs_sharemode(files_struct *fsp, uint32_t access_mask,
 		return True;
 	}
 
-	allow |= (access_mask & (FILE_WRITE_DATA|FILE_APPEND_DATA|
-				 DELETE_ACCESS)) ? GPFS_SHARE_WRITE : 0;
+	allow |= (access_mask & (FILE_WRITE_DATA|FILE_APPEND_DATA)) ?
+		GPFS_SHARE_WRITE : 0;
 	allow |= (access_mask & (FILE_READ_DATA|FILE_EXECUTE)) ?
 		GPFS_SHARE_READ : 0;
 
