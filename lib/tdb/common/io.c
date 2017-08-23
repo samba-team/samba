@@ -379,6 +379,7 @@ static int tdb_expand_file(struct tdb_context *tdb, tdb_off_t size, tdb_off_t ad
 {
 	char buf[8192];
 	tdb_off_t new_size;
+	int ret;
 
 	if (tdb->read_only || tdb->traverse_read) {
 		tdb->ecode = TDB_ERR_RDONLY;
@@ -394,7 +395,8 @@ static int tdb_expand_file(struct tdb_context *tdb, tdb_off_t size, tdb_off_t ad
 		return -1;
 	}
 
-	if (tdb_ftruncate(tdb, new_size) == -1) {
+	ret = tdb_ftruncate(tdb, new_size);
+	if (ret == -1) {
 		char b = 0;
 		ssize_t written = tdb_pwrite(tdb, &b, 1, new_size - 1);
 		if (written == 0) {
@@ -452,7 +454,6 @@ static int tdb_expand_file(struct tdb_context *tdb, tdb_off_t size, tdb_off_t ad
 fail:
 	{
 		int err = errno;
-		int ret;
 
 		/*
 		 * We're holding the freelist lock or are inside a
