@@ -268,6 +268,17 @@ def get_domain_users_descriptor(domain_sid, name_map={}):
     "S:"
     return sddl2binary(sddl, domain_sid, name_map)
 
+def get_managed_service_accounts_descriptor(domain_sid, name_map={}):
+    sddl = "D:" \
+    "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)" \
+    "(A;;RPWPCRCCDCLCLORCWOWDSW;;;DA)" \
+    "(OA;;CCDC;ce206244-5827-4a86-ba1c-1c0c386c1b64;;AO)" \
+    "(OA;;CCDC;bf967aba-0de6-11d0-a285-00aa003049e2;;AO)" \
+    "(OA;;CCDC;bf967a9c-0de6-11d0-a285-00aa003049e2;;AO)" \
+    "(A;;RPLCLORC;;;AU)" \
+    "S:"
+    return sddl2binary(sddl, domain_sid, name_map)
+
 def get_domain_controllers_descriptor(domain_sid, name_map={}):
     sddl = "D:" \
     "(A;;RPLCLORC;;;AU)" \

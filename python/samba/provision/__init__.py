@@ -100,6 +100,7 @@ from samba.descriptor import (
     get_dns_partition_descriptor,
     get_dns_forest_microsoft_dns_descriptor,
     get_dns_domain_microsoft_dns_descriptor,
+    get_managed_service_accounts_descriptor,
     )
 from samba.provision.common import (
     setup_path,
@@ -1479,6 +1480,7 @@ def fill_samdb(samdb, lp, names, logger, policyguid,
 
     # If we are setting up a subdomain, then this has been replicated in, so we don't need to add it
     if fill == FILL_FULL:
+        managedservice_descr = b64encode(get_managed_service_accounts_descriptor(names.domainsid))
         setup_modify_ldif(samdb,
                           setup_path("provision_configuration_references.ldif"), {
                 "CONFIGDN": names.configdn,
@@ -1493,8 +1495,10 @@ def fill_samdb(samdb, lp, names, logger, policyguid,
 
     if fill == FILL_FULL or fill == FILL_SUBDOMAIN:
         setup_modify_ldif(samdb,
-                          setup_path("provision_basedn_references.ldif"),
-                          {"DOMAINDN": names.domaindn})
+                          setup_path("provision_basedn_references.ldif"), {
+                              "DOMAINDN": names.domaindn,
+                              "MANAGEDSERVICE_DESCRIPTOR": managedservice_descr
+                          })
 
         logger.info("Setting up sam.ldb users and groups")
         setup_add_ldif(samdb, setup_path("provision_users.ldif"), {

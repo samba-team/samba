@@ -464,6 +464,14 @@ objectClass: top
 objectClass: container
 revision: 9
 
+dn: CN=5e1574f6-55df-493e-a671-aaeffca6a100,CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=d262aae8-41f7-48ed-9f35-56bbb677573d,CN=Operations,CN=DomainUpdates,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
 # End domain updates
 
 dn: CN=File Replication Service,CN=System,${DOMAINDN}

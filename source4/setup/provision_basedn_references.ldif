@@ -1,6 +1,13 @@
 ###############################
 # Domain Naming Context
 ###############################
+dn: CN=Managed Service Accounts,${DOMAINDN}
+changetype: add
+objectClass: container
+description: Default container for managed service accounts
+showInAdvancedViewOnly: FALSE
+nTSecurityDescriptor:: ${MANAGEDSERVICE_DESCRIPTOR}
+
 dn: ${DOMAINDN}
 changetype: modify
 -
@@ -19,4 +26,5 @@ wellKnownObjects: B:32:ab1d30f3768811d1aded00c04fd8d5cd:CN=System,${DOMAINDN}
 wellKnownObjects: B:32:a361b2ffffd211d1aa4b00c04fd7d83a:OU=Domain Controllers,${DOMAINDN}
 wellKnownObjects: B:32:aa312825768811d1aded00c04fd8d5cd:CN=Computers,${DOMAINDN}
 wellKnownObjects: B:32:a9d1ca15768811d1aded00c04fd8d5cd:CN=Users,${DOMAINDN}
+otherWellKnownObjects: B:32:1EB93889E40C45DF9F0C64D23BBB6237:CN=Managed Service Accounts,${DOMAINDN}
 -
