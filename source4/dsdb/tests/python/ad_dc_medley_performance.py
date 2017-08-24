@@ -38,6 +38,7 @@ from samba.auth import system_session
 from ldb import Message, MessageElement, Dn, LdbError
 from ldb import FLAG_MOD_ADD, FLAG_MOD_REPLACE, FLAG_MOD_DELETE
 from ldb import SCOPE_BASE, SCOPE_SUBTREE, SCOPE_ONELEVEL
+from ldb import ERR_NO_SUCH_OBJECT
 
 parser = optparse.OptionParser("ad_dc_performance.py [options] <host>")
 sambaopts = options.SambaOptions(parser)
@@ -222,15 +223,19 @@ class UserTests(samba.tests.TestCase):
                                     attrs=['cn'])
                 except LdbError as e:
                     (num, msg) = e.args
-                    if num != 32:
+                    if num != ERR_NO_SUCH_OBJECT:
                         raise
 
     def _test_base_search_failing(self):
         pattern = 'missing%d' + self.ou
         for i in range(4000):
-            self.ldb.search(pattern % i,
-                            scope=SCOPE_BASE,
-                            attrs=['cn'])
+            try:
+                self.ldb.search(pattern % i,
+                                scope=SCOPE_BASE,
+                                attrs=['cn'])
+            except LdbError as (num, msg):
+                if num != ERR_NO_SUCH_OBJECT:
+                    raise
 
     def search_expression_list(self, expressions, rounds,
                                attrs=['cn'],
