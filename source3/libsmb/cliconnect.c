@@ -349,7 +349,7 @@ NTSTATUS cli_session_creds_prepare_krb5(struct cli_state *cli,
 				0 /* no time correction for now */,
 				NULL);
 	if (ret != 0) {
-		int dbglvl = DBGLVL_WARNING;
+		int dbglvl = DBGLVL_NOTICE;
 
 		if (krb5_state == CRED_MUST_USE_KERBEROS) {
 			dbglvl = DBGLVL_ERR;
