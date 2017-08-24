@@ -54,7 +54,7 @@ class SimpleLdb(TestCase):
 
     def tearDown(self):
         shutil.rmtree(self.testdir)
-        super(SimpleLdb, self).setUp()
+        super(SimpleLdb, self).tearDown()
 
     def test_connect(self):
         ldb.Ldb(self.filename)
@@ -616,7 +616,7 @@ class DnTests(TestCase):
 
     def tearDown(self):
         shutil.rmtree(self.testdir)
-        super(DnTests, self).setUp()
+        super(DnTests, self).tearDown()
 
     def test_set_dn_invalid(self):
         x = ldb.Message()
