@@ -653,7 +653,7 @@ static bool ad_unpack(struct adouble *ad, const size_t nentries,
 		off = RIVAL(ad->ad_data, AD_HEADER_LEN + (i * AD_ENTRY_LEN) + 4);
 		len = RIVAL(ad->ad_data, AD_HEADER_LEN + (i * AD_ENTRY_LEN) + 8);
 
-		if (!eid || eid > ADEID_MAX) {
+		if (!eid || eid >= ADEID_MAX) {
 			DEBUG(1, ("bogus eid %d\n", eid));
 			return false;
 		}
