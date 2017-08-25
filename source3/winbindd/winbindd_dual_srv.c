@@ -730,7 +730,7 @@ NTSTATUS _wbint_ChangeMachineAccount(struct pipes_struct *p,
 		goto done;
 	}
 
-	status = trust_pw_change(domain->conn.netlogon_creds,
+	status = trust_pw_change(domain->conn.netlogon_creds_ctx,
 				 msg_ctx,
 				 netlogon_pipe->binding_handle,
 				 domain->name,
@@ -839,7 +839,7 @@ NTSTATUS _winbind_DsrUpdateReadOnlyServerDnsRecords(struct pipes_struct *p,
 		goto done;
 	}
 
-	status = netlogon_creds_cli_DsrUpdateReadOnlyServerDnsRecords(domain->conn.netlogon_creds,
+	status = netlogon_creds_cli_DsrUpdateReadOnlyServerDnsRecords(domain->conn.netlogon_creds_ctx,
 								      netlogon_pipe->binding_handle,
 								      r->in.site_name,
 								      r->in.dns_ttl,
@@ -1192,7 +1192,7 @@ reconnect:
 	}
 
 	if (fetch_fti) {
-		status = netlogon_creds_cli_GetForestTrustInformation(domain->conn.netlogon_creds,
+		status = netlogon_creds_cli_GetForestTrustInformation(domain->conn.netlogon_creds_ctx,
 								      b, frame,
 								      &new_fti);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE)) {
@@ -1254,7 +1254,7 @@ reconnect:
 		}
 	}
 
-	status = netlogon_creds_cli_ServerGetTrustInfo(domain->conn.netlogon_creds,
+	status = netlogon_creds_cli_ServerGetTrustInfo(domain->conn.netlogon_creds_ctx,
 						       b, frame,
 						       &new_owf_password,
 						       &old_owf_password,
@@ -1415,7 +1415,7 @@ reconnect:
 	}
 	TALLOC_FREE(cur_nt_hash);
 
-	status = trust_pw_change(domain->conn.netlogon_creds,
+	status = trust_pw_change(domain->conn.netlogon_creds_ctx,
 				 msg_ctx, b, domain->name,
 				 domain->dcname,
 				 true); /* force */
@@ -1610,7 +1610,7 @@ reconnect:
 	}
 	b = netlogon_pipe->binding_handle;
 
-	status = netlogon_creds_cli_GetForestTrustInformation(domain->conn.netlogon_creds,
+	status = netlogon_creds_cli_GetForestTrustInformation(domain->conn.netlogon_creds_ctx,
 							      b, p->mem_ctx,
 							      &new_fti);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1722,7 +1722,7 @@ NTSTATUS _winbind_SendToSam(struct pipes_struct *p, struct winbind_SendToSam *r)
 		return status;
 	}
 
-	status = netlogon_creds_cli_SendToSam(domain->conn.netlogon_creds,
+	status = netlogon_creds_cli_SendToSam(domain->conn.netlogon_creds_ctx,
 					      netlogon_pipe->binding_handle,
 					      &r->in.message);
 

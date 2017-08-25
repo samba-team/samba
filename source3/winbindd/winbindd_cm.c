@@ -2038,7 +2038,7 @@ void invalidate_cm_connection(struct winbindd_domain *domain)
 	conn->auth_level = DCERPC_AUTH_LEVEL_PRIVACY;
 	conn->netlogon_force_reauth = false;
 	conn->netlogon_flags = 0;
-	TALLOC_FREE(conn->netlogon_creds);
+	TALLOC_FREE(conn->netlogon_creds_ctx);
 
 	if (conn->cli) {
 		cli_shutdown(conn->cli);
@@ -2617,11 +2617,11 @@ static NTSTATUS cm_get_schannel_creds(struct winbindd_domain *domain,
 		return NT_STATUS_TRUSTED_DOMAIN_FAILURE;
 	}
 
-	if (domain->conn.netlogon_creds != NULL) {
+	if (domain->conn.netlogon_creds_ctx != NULL) {
 		if (!(domain->conn.netlogon_flags & NETLOGON_NEG_AUTHENTICATED_RPC)) {
 			return NT_STATUS_TRUSTED_DOMAIN_FAILURE;
 		}
-		*ppdc = domain->conn.netlogon_creds;
+		*ppdc = domain->conn.netlogon_creds_ctx;
 		return NT_STATUS_OK;
 	}
 
@@ -2630,7 +2630,7 @@ static NTSTATUS cm_get_schannel_creds(struct winbindd_domain *domain,
 		return result;
 	}
 
-	if (domain->conn.netlogon_creds == NULL) {
+	if (domain->conn.netlogon_creds_ctx == NULL) {
 		return NT_STATUS_TRUSTED_DOMAIN_FAILURE;
 	}
 
@@ -2638,7 +2638,7 @@ static NTSTATUS cm_get_schannel_creds(struct winbindd_domain *domain,
 		return NT_STATUS_TRUSTED_DOMAIN_FAILURE;
 	}
 
-	*ppdc = domain->conn.netlogon_creds;
+	*ppdc = domain->conn.netlogon_creds_ctx;
 	return NT_STATUS_OK;
 }
 
@@ -3236,7 +3236,7 @@ static NTSTATUS cm_connect_netlogon_transport(struct winbindd_domain *domain,
 
 	TALLOC_FREE(conn->netlogon_pipe);
 	conn->netlogon_flags = 0;
-	TALLOC_FREE(conn->netlogon_creds);
+	TALLOC_FREE(conn->netlogon_creds_ctx);
 
 	result = get_trust_credentials(domain, talloc_tos(), true, &creds);
 	if (!NT_STATUS_IS_OK(result)) {
@@ -3281,7 +3281,7 @@ static NTSTATUS cm_connect_netlogon_transport(struct winbindd_domain *domain,
 							 domain->dcname,
 							 msg_ctx,
 							 domain,
-							 &conn->netlogon_creds);
+							 &conn->netlogon_creds_ctx);
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(1, ("rpccli_create_netlogon_creds failed for %s, "
 			  "unable to create NETLOGON credentials: %s\n",
@@ -3290,7 +3290,7 @@ static NTSTATUS cm_connect_netlogon_transport(struct winbindd_domain *domain,
 	}
 
 	result = rpccli_setup_netlogon_creds_with_creds(conn->cli, transport,
-						conn->netlogon_creds,
+						conn->netlogon_creds_ctx,
 						conn->netlogon_force_reauth,
 						creds);
 	conn->netlogon_force_reauth = false;
@@ -3301,7 +3301,7 @@ static NTSTATUS cm_connect_netlogon_transport(struct winbindd_domain *domain,
 		return result;
 	}
 
-	result = netlogon_creds_cli_get(conn->netlogon_creds,
+	result = netlogon_creds_cli_get(conn->netlogon_creds_ctx,
 					talloc_tos(),
 					&netlogon_creds);
 	if (!NT_STATUS_IS_OK(result)) {
@@ -3345,7 +3345,7 @@ static NTSTATUS cm_connect_netlogon_transport(struct winbindd_domain *domain,
 	result = cli_rpc_pipe_open_schannel_with_creds(
 		conn->cli, &ndr_table_netlogon, transport,
 		creds,
-		conn->netlogon_creds,
+		conn->netlogon_creds_ctx,
 		&conn->netlogon_pipe);
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(3, ("Could not open schannel'ed NETLOGON pipe. Error "

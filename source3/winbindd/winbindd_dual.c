@@ -1091,7 +1091,7 @@ static void machine_password_change_handler(struct tevent_context *ctx,
 		return;
 	}
 
-	result = trust_pw_change(child->domain->conn.netlogon_creds,
+	result = trust_pw_change(child->domain->conn.netlogon_creds_ctx,
 				 msg_ctx,
 				 netlogon_pipe->binding_handle,
 				 child->domain->name,

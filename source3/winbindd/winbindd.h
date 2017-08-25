@@ -101,7 +101,7 @@ struct winbindd_cm_conn {
 	struct policy_handle lsa_policy;
 
 	struct rpc_pipe_client *netlogon_pipe;
-	struct netlogon_creds_cli_context *netlogon_creds;
+	struct netlogon_creds_cli_context *netlogon_creds_ctx;
 	uint32_t netlogon_flags;
 	bool netlogon_force_reauth;
 };
