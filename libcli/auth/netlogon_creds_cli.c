@@ -572,7 +572,6 @@ NTSTATUS netlogon_creds_cli_get(struct netlogon_creds_cli_context *context,
 		.status = NT_STATUS_INTERNAL_ERROR,
 		.required_flags = context->client.required_flags,
 	};
-	static const struct netr_Credential zero_creds;
 
 	*_creds = NULL;
 
@@ -592,9 +591,9 @@ NTSTATUS netlogon_creds_cli_get(struct netlogon_creds_cli_context *context,
 	 * mark it as invalid for step operations.
 	 */
 	fstate.creds->sequence = 0;
-	fstate.creds->seed = zero_creds;
-	fstate.creds->client = zero_creds;
-	fstate.creds->server = zero_creds;
+	fstate.creds->seed = (struct netr_Credential) {{0}};
+	fstate.creds->client = (struct netr_Credential) {{0}};
+	fstate.creds->server = (struct netr_Credential) {{0}};
 
 	if (context->server.cached_flags == fstate.creds->negotiate_flags) {
 		*_creds = fstate.creds;
