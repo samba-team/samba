@@ -613,10 +613,7 @@ NTSTATUS netlogon_creds_cli_get(struct netlogon_creds_cli_context *context,
 	 *
 	 * The credentials chain is not per NETLOGON pipe
 	 * connection, but globally on the server/client pair
-	 * by computer name, while the client is free to use
-	 * any computer name. We include the cluster node number
-	 * in our computer name in order to avoid cross node
-	 * coordination of the credential chain.
+	 * by computer name.
 	 *
 	 * It's also important to use NetlogonValidationSamInfo4 (6),
 	 * because it relies on the rpc transport encryption
