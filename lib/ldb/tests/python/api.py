@@ -945,6 +945,90 @@ class GUIDIndexedSearchTests(SearchTests):
                     "@IDXGUID": [b"objectUUID"],
                     "@IDX_DN_GUID": [b"GUID"]})
 
+class AddModifyTests(TestCase):
+    def tearDown(self):
+        shutil.rmtree(self.testdir)
+        super(AddModifyTests, self).tearDown()
+
+    def setUp(self):
+        super(AddModifyTests, self).setUp()
+        self.testdir = tempdir()
+        self.filename = os.path.join(self.testdir, "add_test.ldb")
+        self.l = ldb.Ldb(self.filename, options=["modules:rdn_name"])
+        self.l.add({"dn": "DC=SAMBA,DC=ORG",
+                    "name": b"samba.org",
+                    "objectUUID": b"0123456789abcdef"})
+
+    def test_add_dup(self):
+        self.l.add({"dn": "OU=DUP,DC=SAMBA,DC=ORG",
+                    "name": b"Admins",
+                    "x": "z", "y": "a",
+                    "objectUUID": b"0123456789abcde1"})
+        try:
+            self.l.add({"dn": "OU=DUP,DC=SAMBA,DC=ORG",
+                        "name": b"Admins",
+                        "x": "z", "y": "a",
+                        "objectUUID": b"0123456789abcde2"})
+            self.fail("Should have failed adding dupliate entry")
+        except ldb.LdbError as err:
+            enum = err.args[0]
+            self.assertEqual(enum, ldb.ERR_ENTRY_ALREADY_EXISTS)
+
+    def test_add_del_add(self):
+        self.l.add({"dn": "OU=DUP,DC=SAMBA,DC=ORG",
+                    "name": b"Admins",
+                    "x": "z", "y": "a",
+                    "objectUUID": b"0123456789abcde1"})
+        self.l.delete("OU=DUP,DC=SAMBA,DC=ORG")
+        self.l.add({"dn": "OU=DUP,DC=SAMBA,DC=ORG",
+                    "name": b"Admins",
+                    "x": "z", "y": "a",
+                    "objectUUID": b"0123456789abcde2"})
+
+    def test_add_move_add(self):
+        self.l.add({"dn": "OU=DUP,DC=SAMBA,DC=ORG",
+                    "name": b"Admins",
+                    "x": "z", "y": "a",
+                    "objectUUID": b"0123456789abcde1"})
+        self.l.rename("OU=DUP,DC=SAMBA,DC=ORG",
+                      "OU=DUP2,DC=SAMBA,DC=ORG")
+        self.l.add({"dn": "OU=DUP,DC=SAMBA,DC=ORG",
+                    "name": b"Admins",
+                    "x": "z", "y": "a",
+                    "objectUUID": b"0123456789abcde2"})
+
+
+class IndexedAddModifyTests(AddModifyTests):
+    """Test searches using the index, to ensure the index doesn't
+       break things"""
+    def setUp(self):
+        super(IndexedAddModifyTests, self).setUp()
+        self.l.add({"dn": "@INDEXLIST",
+                    "@IDXATTR": [b"x", b"y", b"ou"],
+                    "@IDXONE": [b"1"]})
+
+class GUIDIndexedAddModifyTests(AddModifyTests):
+    """Test searches using the index, to ensure the index doesn't
+       break things"""
+    def setUp(self):
+        super(GUIDIndexedAddModifyTests, self).setUp()
+        self.l.add({"dn": "@INDEXLIST",
+                    "@IDXATTR": [b"x", b"y", b"ou"],
+                    "@IDXONE": [b"1"],
+                    "@IDXGUID": [b"objectUUID"],
+                    "@IDX_DN_GUID": [b"GUID"]})
+
+    def test_duplicate_GUID(self):
+        try:
+            self.l.add({"dn": "OU=DUPGUID,DC=SAMBA,DC=ORG",
+                        "name": b"Admins",
+                        "x": "z", "y": "a",
+                        "objectUUID": b"0123456789abcdef"})
+            self.fail("Should have failed adding dupliate GUID")
+        except ldb.LdbError as err:
+            enum = err.args[0]
+            self.assertEqual(enum, ldb.ERR_CONSTRAINT_VIOLATION)
+
 
 
 class DnTests(TestCase):
