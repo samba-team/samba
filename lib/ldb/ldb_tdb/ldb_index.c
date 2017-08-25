@@ -1511,6 +1511,7 @@ static int ltdb_write_index_dn_guid(struct ldb_module *module,
 				    const struct ldb_message *msg,
 				    int add)
 {
+	int ret;
 	struct ltdb_private *ltdb = talloc_get_type(ldb_module_get_private(module),
 						    struct ltdb_private);
 
@@ -1519,8 +1520,16 @@ static int ltdb_write_index_dn_guid(struct ldb_module *module,
 		return LDB_SUCCESS;
 	}
 
-	return ltdb_modify_index_dn(module, ltdb, msg, msg->dn,
-				    LTDB_IDXDN, add);
+	ret = ltdb_modify_index_dn(module, ltdb, msg, msg->dn,
+				   LTDB_IDXDN, add);
+
+	if (ret == LDB_ERR_CONSTRAINT_VIOLATION) {
+		ldb_asprintf_errstring(ldb_module_get_ctx(module),
+				       "Entry %s already exists",
+				       ldb_dn_get_linearized(msg->dn));
+		ret = LDB_ERR_ENTRY_ALREADY_EXISTS;
+	}
+	return ret;
 }
 
 /*
