@@ -108,6 +108,13 @@ struct fake_control_failure {
 	const char *comment;
 };
 
+struct ctdb_client {
+	struct ctdb_client *prev, *next;
+	struct ctdbd_context *ctdb;
+	pid_t pid;
+	void *state;
+};
+
 struct ctdbd_context {
 	struct node_map *node_map;
 	struct interface_map *iface_map;
@@ -126,6 +133,7 @@ struct ctdbd_context {
 	char *reclock;
 	struct ctdb_public_ip_list *known_ips;
 	struct fake_control_failure *control_failures;
+	struct ctdb_client *client_list;
 };
 
 /*
@@ -825,6 +833,48 @@ fail:
 }
 
 /*
+ * Manage clients
+ */
+
+static int ctdb_client_destructor(struct ctdb_client *client)
+{
+	DLIST_REMOVE(client->ctdb->client_list, client);
+	return 0;
+}
+
+static int client_add(struct ctdbd_context *ctdb, pid_t client_pid,
+		      void *client_state)
+{
+	struct ctdb_client *client;
+
+	client = talloc_zero(client_state, struct ctdb_client);
+	if (client == NULL) {
+		return ENOMEM;
+	}
+
+	client->ctdb = ctdb;
+	client->pid = client_pid;
+	client->state = client_state;
+
+	DLIST_ADD(ctdb->client_list, client);
+	talloc_set_destructor(client, ctdb_client_destructor);
+	return 0;
+}
+
+static void *client_find(struct ctdbd_context *ctdb, pid_t client_pid)
+{
+	struct ctdb_client *client;
+
+	for (client=ctdb->client_list; client != NULL; client=client->next) {
+		if (client->pid == client_pid) {
+			return client->state;
+		}
+	}
+
+	return NULL;
+}
+
+/*
  * CTDB context setup
  */
 
@@ -1148,6 +1198,7 @@ struct client_state {
 	int fd;
 	struct ctdbd_context *ctdb;
 	int pnn;
+	pid_t pid;
 	struct comm_context *comm;
 	struct srvid_register_state *rstate;
 	int status;
@@ -1261,11 +1312,22 @@ static void control_process_exists(TALLOC_CTX *mem_ctx,
 				   struct ctdb_req_header *header,
 				   struct ctdb_req_control *request)
 {
+	struct client_state *state = tevent_req_data(
+		req, struct client_state);
+	struct ctdbd_context *ctdb = state->ctdb;
+	struct client_state *cstate;
 	struct ctdb_reply_control reply;
 
 	reply.rdata.opcode = request->opcode;
-	reply.status = kill(request->rdata.data.pid, 0);
-	reply.errmsg = NULL;
+
+	cstate = client_find(ctdb, request->rdata.data.pid);
+	if (cstate == NULL) {
+		reply.status = -1;
+		reply.errmsg = "No client for PID";
+	} else {
+		reply.status = kill(request->rdata.data.pid, 0);
+		reply.errmsg = NULL;
+	}
 
 	client_send_control(req, header, &reply);
 }
@@ -2980,6 +3042,8 @@ static struct tevent_req *client_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req;
 	struct client_state *state;
+	struct ucred cr;
+	socklen_t crl = sizeof(struct ucred);
 	int ret;
 
 	req = tevent_req_create(mem_ctx, &state, struct client_state);
@@ -2992,8 +3056,21 @@ static struct tevent_req *client_send(TALLOC_CTX *mem_ctx,
 	state->ctdb = ctdb;
 	state->pnn = pnn;
 
+	ret = getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &cr, &crl);
+	if (ret != 0) {
+		tevent_req_error(req, ret);
+		return tevent_req_post(req, ev);
+	}
+	state->pid = cr.pid;
+
 	ret = comm_setup(state, ev, fd, client_read_handler, req,
 			 client_dead_handler, req, &state->comm);
+	if (ret != 0) {
+		tevent_req_error(req, ret);
+		return tevent_req_post(req, ev);
+	}
+
+	ret = client_add(ctdb, state->pid, state);
 	if (ret != 0) {
 		tevent_req_error(req, ret);
 		return tevent_req_post(req, ev);
