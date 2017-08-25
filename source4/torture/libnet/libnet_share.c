@@ -65,10 +65,16 @@ static void test_displayshares(struct torture_context *tctx,
 		for (i = 0; i < s.out.ctr.ctr1->count; i++) {
 			struct srvsvc_NetShareInfo1 *info = &s.out.ctr.ctr1->array[i];
 			for (j = 0; j < ARRAY_SIZE(share_types); j++) {
-				if (share_types[j].type == info->type) break;
+				if (share_types[j].type == info->type) {
+					torture_comment(tctx,
+							"\t[%d] %s (%s)\t%s\n",
+							i,
+							info->name,
+							info->comment,
+							share_types[j].desc);
+					break;
+				}
 			}
-			torture_comment(tctx, "\t[%d] %s (%s)\t%s\n", i, info->name,
-			       info->comment, share_types[j].desc);
 		}
 		break;
 
@@ -76,13 +82,27 @@ static void test_displayshares(struct torture_context *tctx,
 		for (i = 0; i < s.out.ctr.ctr2->count; i++) {
 			struct srvsvc_NetShareInfo2 *info = &s.out.ctr.ctr2->array[i];
 			for (j = 0; j < ARRAY_SIZE(share_types); j++) {
-				if (share_types[j].type == info->type) break;
+				if (share_types[j].type == info->type) {
+					torture_comment(tctx,
+							"\t[%d] %s\t%s\n"
+							"\t    %s\n"
+							"\t    [perms=0x%08x, "
+							"max_usr=%d, "
+							"cur_usr=%d, "
+							"path=%s, "
+							"pass=%s]\n",
+							i,
+							info->name,
+							share_types[j].desc,
+							info->comment,
+							info->permissions,
+							info->max_users,
+							info->current_users,
+							info->path,
+							info->password);
+					break;
+				}
 			}
-			torture_comment(tctx, "\t[%d] %s\t%s\n\t    %s\n\t    [perms=0x%08x, max_usr=%d, cur_usr=%d, path=%s, pass=%s]\n",
-				 i, info->name, share_types[j].desc, info->comment,
-				 info->permissions, info->max_users,
-				 info->current_users, info->path,
-				 info->password);
 		}
 		break;
 
@@ -90,11 +110,20 @@ static void test_displayshares(struct torture_context *tctx,
 		for (i = 0; i < s.out.ctr.ctr501->count; i++) {
 			struct srvsvc_NetShareInfo501 *info = &s.out.ctr.ctr501->array[i];
 			for (j = 0; j < ARRAY_SIZE(share_types); j++) {
-				if (share_types[j].type == info->type) break;
+				if (share_types[j].type == info->type) {
+					torture_comment(tctx,
+							"\t[%d] %s"
+							"\t%s "
+							"[csc_policy=0x%08x]\n"
+							"\t    %s\n",
+							i,
+							info->name,
+							share_types[j].desc,
+							info->csc_policy,
+							info->comment);
+					break;
+				}
 			}
-			torture_comment(tctx, "\t[%d] %s\t%s [csc_policy=0x%08x]\n\t    %s\n", i, info->name,
-				 share_types[j].desc, info->csc_policy,
-				 info->comment);
 		}
 		break;
 
@@ -102,13 +131,26 @@ static void test_displayshares(struct torture_context *tctx,
 		for (i = 0; i < s.out.ctr.ctr502->count; i++) {
 			struct srvsvc_NetShareInfo502 *info = &s.out.ctr.ctr502->array[i];
 			for (j = 0; j < ARRAY_SIZE(share_types); j++) {
-				if (share_types[j].type == info->type) break;
+				if (share_types[j].type == info->type) {
+					torture_comment(tctx,
+							"\t[%d] %s\t%s\n"
+							"\t    %s\n"
+							"\t    [perms=0x%08x, "
+							"max_usr=%d, "
+							"cur_usr=%d, "
+							"path=%s, pass=%s]\n",
+							i,
+							info->name,
+							share_types[j].desc,
+							info->comment,
+							info->permissions,
+							info->max_users,
+							info->current_users,
+							info->path,
+							info->password);
+					break;
+				}
 			}
-			torture_comment(tctx, "\t[%d] %s\t%s\n\t    %s\n\t    [perms=0x%08x, max_usr=%d, cur_usr=%d, path=%s, pass=%s]\n",
-				 i, info->name, share_types[j].desc, info->comment,
-				 info->permissions, info->max_users,
-				 info->current_users, info->path,
-				 info->password);
 		}
 		break;
 	}
