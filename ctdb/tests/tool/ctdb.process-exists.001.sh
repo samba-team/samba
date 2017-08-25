@@ -11,12 +11,14 @@ NODEMAP
 2       192.168.20.43   0x0
 EOF
 
-pid=$(ctdbd_getpid)
+dummy_client -s $ctdbd_socket &
+pid=$!
 
 ok "PID $pid exists"
 simple_test "$pid"
 
-# Use a PID that is probably impossible.  It must fit into 32 bits but
-# should be larger than most settings for pid_max.
-required_result 1 "PID 99999999 does not exist"
-simple_test "99999999"
+kill -9 $pid
+
+pid=$(ctdbd_getpid)
+required_result 1 "PID $pid does not exist"
+simple_test "$pid"
