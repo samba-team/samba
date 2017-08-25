@@ -1800,12 +1800,16 @@ int32_t ctdb_control_process_exists(struct ctdb_context *ctdb, pid_t pid)
 {
         struct ctdb_client *client;
 
-	if (ctdb->nodes[ctdb->pnn]->flags & (NODE_FLAGS_BANNED|NODE_FLAGS_STOPPED)) {
-		client = ctdb_find_client_by_pid(ctdb, pid);
-		if (client != NULL) {
-			DEBUG(DEBUG_NOTICE,(__location__ " Killing client with pid:%d on banned/stopped node\n", (int)pid));
-			talloc_free(client);
-		}
+	client = ctdb_find_client_by_pid(ctdb, pid);
+	if (client == NULL) {
+		return -1;
+	}
+
+	if (ctdb->nodes[ctdb->pnn]->flags & NODE_FLAGS_INACTIVE) {
+		DEBUG(DEBUG_NOTICE,
+		      ("Killing client with pid:%d on banned/stopped node\n",
+		       (int)pid));
+		talloc_free(client);
 		return -1;
 	}
 
