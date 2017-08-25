@@ -934,6 +934,17 @@ class IndexedSearchTests(SearchTests):
                     "@IDXATTR": [b"x", b"y", b"ou"],
                     "@IDXONE": [b"1"]})
 
+class GUIDIndexedSearchTests(SearchTests):
+    """Test searches using the index, to ensure the index doesn't
+       break things"""
+    def setUp(self):
+        super(GUIDIndexedSearchTests, self).setUp()
+        self.l.add({"dn": "@INDEXLIST",
+                    "@IDXATTR": [b"x", b"y", b"ou"],
+                    "@IDXONE": [b"1"],
+                    "@IDXGUID": [b"objectUUID"],
+                    "@IDX_DN_GUID": [b"GUID"]})
+
 
 
 class DnTests(TestCase):
