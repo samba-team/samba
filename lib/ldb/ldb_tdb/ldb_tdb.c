@@ -343,7 +343,18 @@ int ltdb_store(struct ldb_module *module, const struct ldb_message *msg, int flg
 
 	ret = tdb_store(ltdb->tdb, tdb_key, tdb_data, flgs);
 	if (ret != 0) {
+		bool is_special = ldb_dn_is_special(msg->dn);
 		ret = ltdb_err_map(tdb_error(ltdb->tdb));
+
+		/*
+		 * LDB_ERR_ENTRY_ALREADY_EXISTS means the DN, not
+		 * the GUID, so re-map
+		 */
+		if (ret == LDB_ERR_ENTRY_ALREADY_EXISTS
+		    && !is_special
+		    && ltdb->cache->GUID_index_attribute != NULL) {
+			ret = LDB_ERR_CONSTRAINT_VIOLATION;
+		}
 		goto done;
 	}
 
