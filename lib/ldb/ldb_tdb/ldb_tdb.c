@@ -451,6 +451,17 @@ static int ltdb_add_internal(struct ldb_module *module,
 
 	ret = ltdb_index_add_new(module, ltdb, msg);
 	if (ret != LDB_SUCCESS) {
+		/*
+		 * If we failed to index, delete the message again.
+		 *
+		 * This is particularly important for the GUID index
+		 * case, which will only fail for a duplicate DN
+		 * in the index add.
+		 *
+		 * Note that the caller may not cancel the transation
+		 * and this means the above add might really show up!
+		 */
+		ltdb_delete_noindex(module, msg);
 		return ret;
 	}
 
