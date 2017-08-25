@@ -226,6 +226,10 @@ normal_index:
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
+		if ((el->values[0].length % GUID_val_size) != 0) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
 		list->count = el->values[0].length / GUID_val_size;
 		list->dn = talloc_array(list, struct ldb_val, list->count);
 
