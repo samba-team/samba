@@ -616,79 +616,110 @@ class SearchTests(TestCase):
         self.filename = os.path.join(self.testdir, "search_test.ldb")
         self.l = ldb.Ldb(self.filename, options=["modules:rdn_name"])
 
-        self.l.add({"dn": "DC=SAMBA,DC=ORG", "name": b"samba.org"})
+        # Note that we can't use the name objectGUID here, as we
+        # want to stay clear of the objectGUID handler in LDB and
+        # instead use just the 16 bytes raw, which we just keep
+        # to printable chars here for ease of handling.
+
+        self.l.add({"dn": "DC=SAMBA,DC=ORG",
+                    "name": b"samba.org",
+                    "objectUUID": b"0123456789abcddf"})
         self.l.add({"dn": "OU=ADMIN,DC=SAMBA,DC=ORG",
                     "name": b"Admins",
-                    "x": "z", "y": "a"})
+                    "x": "z", "y": "a",
+                    "objectUUID": b"0123456789abcde1"})
         self.l.add({"dn": "OU=USERS,DC=SAMBA,DC=ORG",
                     "name": b"Users",
-                    "x": "z", "y": "a"})
+                    "x": "z", "y": "a",
+                    "objectUUID": b"0123456789abcde2"})
         self.l.add({"dn": "OU=OU1,DC=SAMBA,DC=ORG",
                     "name": b"OU #1",
-                    "x": "y", "y": "a"})
+                    "x": "y", "y": "a",
+                    "objectUUID": b"0123456789abcde3"})
         self.l.add({"dn": "OU=OU2,DC=SAMBA,DC=ORG",
                     "name": b"OU #2",
-                    "x": "y", "y": "a"})
+                    "x": "y", "y": "a",
+                    "objectUUID": b"0123456789abcde4"})
         self.l.add({"dn": "OU=OU3,DC=SAMBA,DC=ORG",
                     "name": b"OU #3",
-                    "x": "y", "y": "a"})
+                    "x": "y", "y": "a",
+                    "objectUUID": b"0123456789abcde5"})
         self.l.add({"dn": "OU=OU4,DC=SAMBA,DC=ORG",
                     "name": b"OU #4",
-                    "x": "y", "y": "a"})
+                    "x": "y", "y": "a",
+                    "objectUUID": b"0123456789abcde6"})
         self.l.add({"dn": "OU=OU5,DC=SAMBA,DC=ORG",
                     "name": b"OU #5",
-                    "x": "y", "y": "a"})
+                    "x": "y", "y": "a",
+                    "objectUUID": b"0123456789abcde7"})
         self.l.add({"dn": "OU=OU6,DC=SAMBA,DC=ORG",
                     "name": b"OU #6",
-                    "x": "y", "y": "a"})
+                    "x": "y", "y": "a",
+                    "objectUUID": b"0123456789abcde8"})
         self.l.add({"dn": "OU=OU7,DC=SAMBA,DC=ORG",
                     "name": b"OU #7",
-                    "x": "y", "y": "a"})
+                    "x": "y", "y": "a",
+                    "objectUUID": b"0123456789abcde9"})
         self.l.add({"dn": "OU=OU8,DC=SAMBA,DC=ORG",
                     "name": b"OU #8",
-                    "x": "y", "y": "a"})
+                    "x": "y", "y": "a",
+                    "objectUUID": b"0123456789abcde0"})
         self.l.add({"dn": "OU=OU9,DC=SAMBA,DC=ORG",
                     "name": b"OU #9",
-                    "x": "y", "y": "a"})
+                    "x": "y", "y": "a",
+                    "objectUUID": b"0123456789abcdea"})
         self.l.add({"dn": "OU=OU10,DC=SAMBA,DC=ORG",
                     "name": b"OU #10",
-                    "x": "y", "y": "a"})
+                    "x": "y", "y": "a",
+                    "objectUUID": b"0123456789abcdeb"})
         self.l.add({"dn": "OU=OU11,DC=SAMBA,DC=ORG",
                     "name": b"OU #10",
-                    "x": "y", "y": "a"})
+                    "x": "y", "y": "a",
+                    "objectUUID": b"0123456789abcdec"})
         self.l.add({"dn": "OU=OU12,DC=SAMBA,DC=ORG",
                     "name": b"OU #10",
-                    "x": "y", "y": "b"})
+                    "x": "y", "y": "b",
+                    "objectUUID": b"0123456789abcded"})
         self.l.add({"dn": "OU=OU13,DC=SAMBA,DC=ORG",
                     "name": b"OU #10",
-                    "x": "x", "y": "b"})
+                    "x": "x", "y": "b",
+                    "objectUUID": b"0123456789abcdee"})
         self.l.add({"dn": "OU=OU14,DC=SAMBA,DC=ORG",
                     "name": b"OU #10",
-                    "x": "x", "y": "b"})
+                    "x": "x", "y": "b",
+                    "objectUUID": b"0123456789abcd01"})
         self.l.add({"dn": "OU=OU15,DC=SAMBA,DC=ORG",
                     "name": b"OU #10",
-                    "x": "x", "y": "b"})
+                    "x": "x", "y": "b",
+                    "objectUUID": b"0123456789abcd02"})
         self.l.add({"dn": "OU=OU16,DC=SAMBA,DC=ORG",
                     "name": b"OU #10",
-                    "x": "x", "y": "b"})
+                    "x": "x", "y": "b",
+                    "objectUUID": b"0123456789abcd03"})
         self.l.add({"dn": "OU=OU17,DC=SAMBA,DC=ORG",
                     "name": b"OU #10",
-                    "x": "x", "y": "b"})
+                    "x": "x", "y": "b",
+                    "objectUUID": b"0123456789abcd04"})
         self.l.add({"dn": "OU=OU18,DC=SAMBA,DC=ORG",
                     "name": b"OU #10",
-                    "x": "x", "y": "b"})
+                    "x": "x", "y": "b",
+                    "objectUUID": b"0123456789abcd05"})
         self.l.add({"dn": "OU=OU19,DC=SAMBA,DC=ORG",
                     "name": b"OU #10",
-                    "x": "x", "y": "b"})
+                    "x": "x", "y": "b",
+                    "objectUUID": b"0123456789abcd06"})
         self.l.add({"dn": "OU=OU20,DC=SAMBA,DC=ORG",
                     "name": b"OU #10",
-                    "x": "x", "y": "b"})
+                    "x": "x", "y": "b",
+                    "objectUUID": b"0123456789abcd07"})
         self.l.add({"dn": "OU=OU21,DC=SAMBA,DC=ORG",
                     "name": b"OU #10",
-                    "x": "x", "y": "c"})
+                    "x": "x", "y": "c",
+                    "objectUUID": b"0123456789abcd08"})
         self.l.add({"dn": "OU=OU22,DC=SAMBA,DC=ORG",
                     "name": b"OU #10",
-                    "x": "x", "y": "c"})
+                    "x": "x", "y": "c",
+                    "objectUUID": b"0123456789abcd09"})
 
     def test_base(self):
         """Testing a search"""
