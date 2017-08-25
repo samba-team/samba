@@ -237,7 +237,7 @@ static bool popt_common_credentials_delay_post;
 
 void popt_common_credentials_set_ignore_missing_conf(void)
 {
-	popt_common_credentials_delay_post = true;
+	popt_common_credentials_ignore_missing_conf = true;
 }
 
 void popt_common_credentials_set_delay_post(void)
