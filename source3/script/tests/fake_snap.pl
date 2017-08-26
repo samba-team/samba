@@ -5,14 +5,25 @@ use strict;
 use File::Path qw(rmtree);
 use POSIX ();
 
+sub _untaint_path
+{
+	my ($path) = @_;
+
+	if ($path =~ /^(.*)$/) {
+		return $1;
+	}
+	die "bad path";
+}
+
 sub _create_snapshot
 {
-	my ($base_path) = @_;
+	my ($base_path) = _untaint_path(shift);
 	my $time_str = POSIX::strftime("%Y.%m.%d-%H.%M.%S" , localtime());
 	my $snap_path = $base_path . "/.snapshots/\@GMT-" . $time_str;
 	my $ret;
 
-	POSIX::mkdir($base_path . "/.snapshots", 0777);
+	$ENV{'PATH'} = '/bin:/usr/bin'; # untaint PATH
+	POSIX::mkdir($base_path . "/.snapshots", 0755);
 
 	# add trailing slash to src path to ensure that only contents is copied
 	$ret = system("rsync", "-a", "--exclude=.snapshots/", "${base_path}/",
@@ -28,7 +39,8 @@ sub _create_snapshot
 
 sub _delete_snapshot
 {
-	my ($base_path, $snap_path) = @_;
+	my $base_path = _untaint_path(shift);
+	my $snap_path = _untaint_path(shift);
 
 	# we're doing a recursive delete, so do some sanity checks
 	if ((index($snap_path, $base_path) != 0) || (index($snap_path, ".snapshots") == -1)) {
@@ -36,6 +48,7 @@ sub _delete_snapshot
 		return -1;
 	}
 
+	$ENV{'PATH'} = '/bin:/usr/bin'; # untaint PATH
 	rmtree($snap_path, {error => \my $err});
 	if (@$err) {
 		for my $diag (@$err) {
