@@ -22,6 +22,7 @@
 #include "smbd/smbd.h"
 #include "system/filesys.h"
 #include "string.h"
+#include "vfs_vxfs.h"
 
 /*
  * Available under GPL at
@@ -36,6 +37,9 @@ static int (*vxfs_getxattr_fd_func) (int fd, const char *name, void *value,
 				     size_t *len);
 static int (*vxfs_removexattr_fd_func) (int fd, const char *name);
 static int (*vxfs_listxattr_fd_func) (int fd, void *value, size_t *len);
+static int (*vxfs_setwxattr_fd_func) (int fd);
+static int (*vxfs_clearwxattr_fd_func) (int fd);
+static int (*vxfs_checkwxattr_fd_func) (int fd);
 
 int vxfs_setxattr_fd(int fd, const char *name, const void *value,
 		     size_t len, int flags)
@@ -202,6 +206,109 @@ int vxfs_listxattr_path(const char *path, char *list, size_t size)
 	return ret;
 }
 
+int vxfs_setwxattr_fd(int fd)
+{
+	int ret = 0;
+
+	if (vxfs_setwxattr_fd_func == NULL) {
+		errno = ENOSYS;
+		return -1;
+	}
+	ret = vxfs_setwxattr_fd_func(fd);
+	DBG_DEBUG("ret = %d\n", ret);
+	if (ret != 0) {
+		errno = ret;
+		ret = -1;
+	}
+
+	return ret;
+}
+
+int vxfs_setwxattr_path(const char *path)
+{
+	int ret, fd = -1;
+
+	fd = open(path, O_WRONLY);
+	if (fd == -1) {
+		DBG_DEBUG("file %s not opened, errno:%s\n",
+			   path, strerror(errno));
+		return -1;
+	}
+
+	ret = vxfs_setwxattr_fd(fd);
+	DBG_DEBUG("ret = %d\n", ret);
+	close(fd);
+
+	return ret;
+}
+
+int vxfs_clearwxattr_fd(int fd)
+{
+	int ret;
+	if (vxfs_clearwxattr_fd_func == NULL) {
+		errno = ENOSYS;
+		return -1;
+	}
+	ret = vxfs_clearwxattr_fd_func(fd);
+	DBG_DEBUG("ret = %d\n", ret);
+	if (ret != 0) {
+		errno = ret;
+		ret = -1;
+	}
+
+	return ret;
+}
+
+int vxfs_clearwxattr_path(const char *path)
+{
+	int ret, fd = -1;
+
+	fd = open(path, O_WRONLY);
+	if (fd == -1) {
+		DBG_DEBUG("file %s not opened, errno:%s\n",
+			   path, strerror(errno));
+		return -1;
+	}
+	ret = vxfs_clearwxattr_fd(fd);
+	DBG_DEBUG("ret = %d\n", ret);
+	close(fd);
+
+	return ret;
+}
+
+int vxfs_checkwxattr_fd(int fd)
+{
+	int ret;
+
+	if (vxfs_checkwxattr_fd_func == NULL) {
+		errno = ENOSYS;
+		return -1;
+	}
+	ret = vxfs_checkwxattr_fd_func(fd);
+	DBG_DEBUG("ret = %d\n", ret);
+	if (ret != 0) {
+		errno = ret;
+		ret = -1;
+	}
+	return ret;
+}
+
+int vxfs_checkwxattr_path(const char *path)
+{
+	int ret, fd = -1;
+
+	fd = open(path, O_WRONLY);
+	if (fd == -1) {
+		DBG_DEBUG("file %s not opened, errno:%s\n",
+			   path, strerror(errno));
+		return -1;
+	}
+	ret = vxfs_checkwxattr_fd(fd);
+	close(fd);
+
+	return ret;
+}
+
 static bool load_lib_vxfs_function(void *lib_handle, void *fn_ptr,
 				   const char *fnc_name)
 {
@@ -240,5 +347,11 @@ void vxfs_init()
 			       "vxfs_nxattr_remove");
 	load_lib_vxfs_function(&lib_handle, &vxfs_listxattr_fd_func,
 			       "vxfs_nxattr_list");
+	load_lib_vxfs_function(&lib_handle, &vxfs_setwxattr_fd_func,
+			       "vxfs_wattr_set");
+	load_lib_vxfs_function(&lib_handle, &vxfs_clearwxattr_fd_func,
+			       "vxfs_wattr_clear");
+	load_lib_vxfs_function(&lib_handle, &vxfs_checkwxattr_fd_func,
+			       "vxfs_wattr_check");
 
 }
