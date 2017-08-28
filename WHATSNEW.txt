@@ -150,7 +150,8 @@ the rest of the 'samba' process, rather than being forced into a single
 process.  This aids in Samba's ability to scale to larger numbers of AD
 clients and the AD DC's overall resiliency, but will mean that there is a
 fork()ed child for every LDAP client, which may be more resource
-intensive in some situations.
+intensive in some situations.  If you run Samba in a
+resource-constrained VM, consider allocating more RAM and swap space.
 
 Improved Read-Only Domain Controller (RODC) Support
 ---------------------------------------------------
