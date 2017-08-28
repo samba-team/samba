@@ -616,6 +616,9 @@ class SearchTests(TestCase):
         self.filename = os.path.join(self.testdir, "search_test.ldb")
         self.l = ldb.Ldb(self.filename, options=["modules:rdn_name"])
 
+        self.l.add({"dn": "@ATTRIBUTES",
+                    "DC": "CASE_INSENSITIVE"})
+
         # Note that we can't use the name objectGUID here, as we
         # want to stay clear of the objectGUID handler in LDB and
         # instead use just the 16 bytes raw, which we just keep
@@ -728,6 +731,13 @@ class SearchTests(TestCase):
                               scope=ldb.SCOPE_BASE)
         self.assertEqual(len(res11), 1)
 
+    def test_base_lower(self):
+        """Testing a search"""
+
+        res11 = self.l.search(base="OU=OU11,DC=samba,DC=org",
+                              scope=ldb.SCOPE_BASE)
+        self.assertEqual(len(res11), 1)
+
     def test_base_or(self):
         """Testing a search"""
 
@@ -804,6 +814,14 @@ class SearchTests(TestCase):
                               expression="(&(x=y)(|(y=b)(y=c)))")
         self.assertEqual(len(res11), 1)
 
+    def test_subtree_and2_lower(self):
+        """Testing a search"""
+
+        res11 = self.l.search(base="DC=samba,DC=org",
+                              scope=ldb.SCOPE_SUBTREE,
+                              expression="(&(x=y)(|(y=b)(y=c)))")
+        self.assertEqual(len(res11), 1)
+
     def test_subtree_or(self):
         """Testing a search"""
 
@@ -856,6 +874,14 @@ class SearchTests(TestCase):
         """Testing a search"""
 
         res11 = self.l.search(base="DC=SAMBA,DC=ORG",
+                              scope=ldb.SCOPE_ONELEVEL,
+                              expression="(|(x=y)(y=b))")
+        self.assertEqual(len(res11), 20)
+
+    def test_one_or2_lower(self):
+        """Testing a search"""
+
+        res11 = self.l.search(base="DC=samba,DC=org",
                               scope=ldb.SCOPE_ONELEVEL,
                               expression="(|(x=y)(y=b))")
         self.assertEqual(len(res11), 20)
