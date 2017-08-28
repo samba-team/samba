@@ -67,14 +67,13 @@ static void test1(TALLOC_CTX *mem_ctx, const char *pidfile,
 	struct stat st;
 	int ret;
 
-	ret = sock_daemon_setup(mem_ctx, "test1", "file:", "NOTICE", pidfile,
+	ret = sock_daemon_setup(mem_ctx, "test1", "file:", "NOTICE",
 				NULL, NULL, &sockd);
 	assert(ret == 0);
 	assert(sockd != NULL);
 
 	ret = stat(pidfile, &st);
-	assert(ret == 0);
-	assert(S_ISREG(st.st_mode));
+	assert(ret == -1);
 
 	ret = sock_daemon_add_unix(sockd, sockpath, &dummy_socket_funcs, NULL);
 	assert(ret == 0);
@@ -162,14 +161,14 @@ static void test2(TALLOC_CTX *mem_ctx, const char *pidfile,
 		assert(ev != NULL);
 
 		ret = sock_daemon_setup(mem_ctx, "test2", "file:", "NOTICE",
-					pidfile, &test2_funcs, &fd[1], &sockd);
+					&test2_funcs, &fd[1], &sockd);
 		assert(ret == 0);
 
 		ret = sock_daemon_add_unix(sockd, sockpath,
 					   &dummy_socket_funcs, NULL);
 		assert(ret == 0);
 
-		ret = sock_daemon_run(ev, sockd, -1);
+		ret = sock_daemon_run(ev, sockd, pidfile, -1);
 		assert(ret == EINTR);
 
 		exit(0);
@@ -258,14 +257,14 @@ static void test3(TALLOC_CTX *mem_ctx, const char *pidfile,
 		assert(ev != NULL);
 
 		ret = sock_daemon_setup(mem_ctx, "test3", "file:", "NOTICE",
-					NULL, NULL, NULL, &sockd);
+					NULL, NULL, &sockd);
 		assert(ret == 0);
 
 		ret = sock_daemon_add_unix(sockd, sockpath,
 					   &dummy_socket_funcs, NULL);
 		assert(ret == 0);
 
-		ret = sock_daemon_run(ev, sockd, pid_watch);
+		ret = sock_daemon_run(ev, sockd, NULL, pid_watch);
 		assert(ret == ESRCH);
 
 		exit(0);
@@ -372,10 +371,10 @@ static void test4(TALLOC_CTX *mem_ctx, const char *pidfile,
 		assert(ev != NULL);
 
 		ret = sock_daemon_setup(mem_ctx, "test4", "file:", "NOTICE",
-					pidfile, &test4_funcs, NULL, &sockd);
+					&test4_funcs, NULL, &sockd);
 		assert(ret == 0);
 
-		ret = sock_daemon_run(ev, sockd, -1);
+		ret = sock_daemon_run(ev, sockd, pidfile, -1);
 		assert(ret == 0);
 
 		exit(0);
@@ -655,7 +654,7 @@ static void test5(TALLOC_CTX *mem_ctx, const char *pidfile,
 		assert(ev != NULL);
 
 		ret = sock_daemon_setup(mem_ctx, "test5", "file:", "NOTICE",
-					pidfile, &test5_funcs, &fd[1], &sockd);
+					&test5_funcs, &fd[1], &sockd);
 		assert(ret == 0);
 
 		state.num_clients = 0;
@@ -664,7 +663,7 @@ static void test5(TALLOC_CTX *mem_ctx, const char *pidfile,
 					   &test5_client_funcs, &state);
 		assert(ret == 0);
 
-		ret = sock_daemon_run(ev, sockd, pid);
+		ret = sock_daemon_run(ev, sockd, pidfile, pid);
 		assert(ret == EINTR);
 
 		exit(0);
@@ -960,7 +959,7 @@ static void test6(TALLOC_CTX *mem_ctx, const char *pidfile,
 		server_state.fd = fd[1];
 
 		ret = sock_daemon_setup(mem_ctx, "test6", "file:", "NOTICE",
-					pidfile, &test6_funcs, &server_state,
+					&test6_funcs, &server_state,
 					&sockd);
 		assert(ret == 0);
 
@@ -971,7 +970,7 @@ static void test6(TALLOC_CTX *mem_ctx, const char *pidfile,
 					   &test6_client_funcs, &server_state);
 		assert(ret == 0);
 
-		ret = sock_daemon_run(ev, sockd, pid);
+		ret = sock_daemon_run(ev, sockd, pidfile, pid);
 		assert(ret == 0);
 
 		exit(0);

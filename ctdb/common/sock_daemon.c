@@ -452,7 +452,6 @@ bool sock_socket_write_recv(struct tevent_req *req, int *perr)
 
 int sock_daemon_setup(TALLOC_CTX *mem_ctx, const char *daemon_name,
 		      const char *logging, const char *debug_level,
-		      const char *pidfile,
 		      struct sock_daemon_funcs *funcs,
 		      void *private_data,
 		      struct sock_daemon_context **out)
@@ -474,14 +473,6 @@ int sock_daemon_setup(TALLOC_CTX *mem_ctx, const char *daemon_name,
 			"Failed to initialize logging, logging=%s, debug=%s\n",
 			logging, debug_level);
 		return ret;
-	}
-
-	if (pidfile != NULL) {
-		ret = pidfile_context_create(sockd, pidfile, &sockd->pid_ctx);
-		if (ret != 0) {
-			talloc_free(sockd);
-			return EEXIST;
-		}
 	}
 
 	*out = sockd;
@@ -537,6 +528,7 @@ static void sock_daemon_run_wait_done(struct tevent_req *subreq);
 struct tevent_req *sock_daemon_run_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
 					struct sock_daemon_context *sockd,
+					const char *pidfile,
 					pid_t pid_watch)
 {
 	struct tevent_req *req, *subreq;
@@ -548,6 +540,15 @@ struct tevent_req *sock_daemon_run_send(TALLOC_CTX *mem_ctx,
 				struct sock_daemon_run_state);
 	if (req == NULL) {
 		return NULL;
+	}
+
+	if (pidfile != NULL) {
+		int ret = pidfile_context_create(sockd, pidfile,
+						 &sockd->pid_ctx);
+		if (ret != 0) {
+			tevent_req_error(req, EEXIST);
+			return tevent_req_post(req, ev);
+		}
 	}
 
 	state->ev = ev;
@@ -780,13 +781,14 @@ bool sock_daemon_run_recv(struct tevent_req *req, int *perr)
 
 int sock_daemon_run(struct tevent_context *ev,
 		    struct sock_daemon_context *sockd,
+		    const char *pidfile,
 		    pid_t pid_watch)
 {
 	struct tevent_req *req;
 	int ret;
 	bool status;
 
-	req = sock_daemon_run_send(ev, ev, sockd, pid_watch);
+	req = sock_daemon_run_send(ev, ev, sockd, pidfile, pid_watch);
 	if (req == NULL) {
 		return ENOMEM;
 	}

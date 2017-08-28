@@ -1197,7 +1197,7 @@ int main(int argc, const char **argv)
 	};
 
 	ret = sock_daemon_setup(mem_ctx, "ctdb-eventd", options.logging,
-				options.debug_level, options.pidfile,
+				options.debug_level,
 				&daemon_funcs, ectx, &sockd);
 	if (ret != 0) {
 		goto fail;
@@ -1215,7 +1215,7 @@ int main(int argc, const char **argv)
 		goto fail;
 	}
 
-	ret = sock_daemon_run(ev, sockd, options.pid);
+	ret = sock_daemon_run(ev, sockd, options.pidfile, options.pid);
 	if (ret == EINTR) {
 		ret = 0;
 	}
