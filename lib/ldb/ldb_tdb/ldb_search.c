@@ -113,7 +113,10 @@ static int msg_add_distinguished_name(struct ldb_message *msg)
   return LDB_ERR_NO_SUCH_OBJECT on record-not-found
   and LDB_SUCCESS on success
 */
-int ltdb_search_base(struct ldb_module *module, struct ldb_dn *dn)
+int ltdb_search_base(struct ldb_module *module,
+		     TALLOC_CTX *mem_ctx,
+		     struct ldb_dn *dn,
+		     struct ldb_dn **ret_dn)
 {
 	int exists;
 	int ret;
@@ -137,16 +140,34 @@ int ltdb_search_base(struct ldb_module *module, struct ldb_dn *dn)
 
 	ret = ltdb_search_dn1(module, dn,
 			      msg,
-			      LDB_UNPACK_DATA_FLAG_NO_DN|
 			      LDB_UNPACK_DATA_FLAG_NO_ATTRS);
-	talloc_free(msg);
 	if (ret == LDB_SUCCESS) {
+		const char *dn_linearized
+			= ldb_dn_get_linearized(dn);
+		const char *msg_dn_linearlized
+			= ldb_dn_get_linearized(msg->dn);
+
+		if (strcmp(dn_linearized, msg_dn_linearlized) == 0) {
+			/*
+			 * Re-use the full incoming DN for
+			 * subtree checks
+			 */
+			*ret_dn = dn;
+		} else {
+			/*
+			 * Use the string DN from the unpack, so that
+			 * we have a case-exact match of the base
+			 */
+			*ret_dn = talloc_steal(mem_ctx, msg->dn);
+		}
 		exists = true;
 	} else if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		exists = false;
 	} else {
+		talloc_free(msg);
 		return ret;
 	}
+	talloc_free(msg);
 	if (exists) {
 		return LDB_SUCCESS;
 	}
@@ -721,8 +742,15 @@ int ltdb_search(struct ltdb_context *ctx)
 		return ret;
 
 	} else if (ltdb->check_base) {
-		/* This database has been marked as 'checkBaseOnSearch', so do a spot check of the base dn */
-		ret = ltdb_search_base(module, req->op.search.base);
+		/*
+		 * This database has been marked as
+		 * 'checkBaseOnSearch', so do a spot check of the base
+		 * dn.  Also optimise the subsequent filter by filling
+		 * in the ctx->base to be exactly case correct
+		 */
+		ret = ltdb_search_base(module, ctx,
+				       req->op.search.base,
+				       &ctx->base);
 		
 		if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 			ldb_asprintf_errstring(ldb, 

@@ -1265,6 +1265,7 @@ static int ltdb_rename(struct ltdb_context *ctx)
 	struct ldb_message *msg;
 	int ret = LDB_SUCCESS;
 	TDB_DATA tdb_key, tdb_key_old;
+	struct ldb_dn *db_dn;
 
 	ldb_request_set_state(req, LDB_ASYNC_PENDING);
 
@@ -1311,8 +1312,9 @@ static int ltdb_rename(struct ltdb_context *ctx)
 	 */
 	if (tdb_key_old.dsize != tdb_key.dsize
 	    || memcmp(tdb_key.dptr, tdb_key_old.dptr, tdb_key.dsize) != 0) {
-		ret = ltdb_search_base(module,
-				       req->op.rename.newdn);
+		ret = ltdb_search_base(module, msg,
+				       req->op.rename.newdn,
+				       &db_dn);
 		if (ret == LDB_SUCCESS) {
 			ret = LDB_ERR_ENTRY_ALREADY_EXISTS;
 		} else if (ret == LDB_ERR_NO_SUCH_OBJECT) {
