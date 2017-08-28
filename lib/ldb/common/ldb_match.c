@@ -515,17 +515,18 @@ static int ldb_match_extended(struct ldb_context *ldb,
 }
 
 /*
-  return 0 if the given parse tree matches the given message. Assumes
-  the message is in sorted order
+  Check if a particular message will match the given filter
 
-  return 1 if it matches, and 0 if it doesn't match
+  set *matched to true if it matches, false otherwise
+
+  returns LDB_SUCCESS or an error
 
   this is a recursive function, and does short-circuit evaluation
  */
-static int ldb_match_message(struct ldb_context *ldb, 
-			     const struct ldb_message *msg,
-			     const struct ldb_parse_tree *tree,
-			     enum ldb_scope scope, bool *matched)
+int ldb_match_message(struct ldb_context *ldb,
+		      const struct ldb_message *msg,
+		      const struct ldb_parse_tree *tree,
+		      enum ldb_scope scope, bool *matched)
 {
 	unsigned int i;
 	int ret;
@@ -586,6 +587,13 @@ static int ldb_match_message(struct ldb_context *ldb,
 
 	return LDB_ERR_INAPPROPRIATE_MATCHING;
 }
+
+/*
+  return 0 if the given parse tree matches the given message. Assumes
+  the message is in sorted order
+
+  return 1 if it matches, and 0 if it doesn't match
+*/
 
 int ldb_match_msg(struct ldb_context *ldb,
 		  const struct ldb_message *msg,
