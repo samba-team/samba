@@ -103,6 +103,9 @@ KDB (Kerberos Database) driver to access the Samba AD database.  When
 provisioning an AD DC using 'samba-tool' it will take care of creating a correct
 kdc.conf file for the MIT KDC.
 
+For further details, see:
+https://wiki.samba.org/index.php/Running_a_Samba_AD_DC_with_MIT_Kerberos_KDC
+
 Dynamic RPC port range
 ----------------------
 
@@ -135,6 +138,9 @@ changes.  In the file server and classic/NT4 domain controller, NTLM
 authentication, SMB and RPC authorization is covered, however password
 changes are not at this stage, and this support is not currently
 backed by a testsuite.
+
+For further details, see:
+https://wiki.samba.org/index.php/Setting_up_Audit_Logging
 
 Multi-process LDAP Server
 -------------------------
