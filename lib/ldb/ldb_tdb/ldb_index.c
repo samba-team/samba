@@ -1273,8 +1273,18 @@ static int ltdb_index_filter(struct ltdb_private *ltdb,
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
-		ret = ldb_match_msg_error(ldb, msg,
-					  ac->tree, ac->base, ac->scope, &matched);
+		/* We trust the index for SCOPE_ONELEVEL and SCOPE_BASE */
+		if ((ac->scope == LDB_SCOPE_ONELEVEL
+		     && ltdb->cache->one_level_indexes)
+		    || ac->scope == LDB_SCOPE_BASE) {
+			ret = ldb_match_message(ldb, msg, ac->tree,
+						ac->scope, &matched);
+		} else {
+			ret = ldb_match_msg_error(ldb, msg,
+						  ac->tree, ac->base,
+						  ac->scope, &matched);
+		}
+
 		if (ret != LDB_SUCCESS) {
 			talloc_free(msg);
 			return ret;
@@ -1362,6 +1372,11 @@ int ltdb_search_indexed(struct ltdb_context *ac, uint32_t *match_count)
 
 	switch (ac->scope) {
 	case LDB_SCOPE_BASE:
+		/*
+		 * If we ever start to also load the index values for
+		 * the tree, we must ensure we strictly intersect with
+		 * this list, as we trust the BASE index
+		 */
 		ret = ltdb_index_dn_base_dn(ac->module, ltdb,
 					    ac->base, dn_list);
 		if (ret != LDB_SUCCESS) {
@@ -1375,6 +1390,11 @@ int ltdb_search_indexed(struct ltdb_context *ac, uint32_t *match_count)
 			talloc_free(dn_list);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
+		/*
+		 * If we ever start to also load the index values for
+		 * the tree, we must ensure we strictly intersect with
+		 * this list, as we trust the ONELEVEL index
+		 */
 		ret = ltdb_index_dn_one(ac->module, ltdb, ac->base, dn_list);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(dn_list);
@@ -1388,6 +1408,10 @@ int ltdb_search_indexed(struct ltdb_context *ac, uint32_t *match_count)
 			talloc_free(dn_list);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
+		/*
+		 * Here we load the index for the tree.  We have no
+		 * index for the subtree.
+		 */
 		ret = ltdb_index_dn(ac->module, ltdb, ac->tree, dn_list);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(dn_list);
