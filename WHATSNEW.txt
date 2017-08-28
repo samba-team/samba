@@ -256,6 +256,15 @@ the talloc_autofree_context() (which is inherently thread-unsafe)
 and still be valgrind-clean on exit. Modules that don't need to
 free long-lived data on exit should use the NULL talloc context.
 
+SHA256 LDAPS Certificates
+-------------------------
+
+The self-signed certificate generated for use on LDAPS will now be
+generated with a SHA256 self-signature, not a SHA1 self-signature.
+
+Replacing this certificate with a certificate signed by a trusted
+CA is still highly recommended.
+
 CTDB changes
 ------------
 
