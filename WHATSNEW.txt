@@ -53,7 +53,7 @@ Whole DB read locks: Improved LDAP and replication consistency
 --------------------------------------------------------------
 
 Prior to Samba 4.7 and ldb 1.2.0, the LDB database layer used by Samba
-erronously did not take whole-DB read locks to protect search
+erroneously did not take whole-DB read locks to protect search
 and DRS replication operations.
 
 While each object returned remained subject to a record-level lock (so
