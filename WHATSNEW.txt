@@ -173,6 +173,14 @@ The reliability of RODCs locating a writable partner still requires some
 improvements and so the 'password server' configuration option is generally
 recommended on the RODC.
 
+Samba 4.7 is the first Samba release to be secure as an RODC or when
+hosting an RODC.  If you have been using earlier Samba versions to
+host or be an RODC, please upgrade.
+
+In particular see https://bugzilla.samba.org/show_bug.cgi?id=12977 for
+details on the security implications for password disclosure to an
+RODC using earlier versions.
+
 Additional password hashes stored in supplementalCredentials
 ------------------------------------------------------------
 
