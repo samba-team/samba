@@ -1674,10 +1674,13 @@ static WERROR dnsserver_enumerate_root_records(struct dnsserver_state *dsstate,
 	/* Add any additional records */
 	if (select_flag & DNS_RPC_VIEW_ADDITIONAL_DATA) {
 		for (i=0; i<add_count; i++) {
+			char *encoded_name
+				= ldb_binary_encode_string(tmp_ctx,
+							   add_names[i]);
 			ret = ldb_search(dsstate->samdb, tmp_ctx, &res, z->zone_dn,
 					 LDB_SCOPE_ONELEVEL, attrs,
 					 "(&(objectClass=dnsNode)(name=%s)(!(dNSTombstoned=TRUE)))",
-					add_names[i]);
+					 encoded_name);
 			if (ret != LDB_SUCCESS || res->count == 0) {
 				talloc_free(res);
 				continue;
@@ -1744,10 +1747,12 @@ static WERROR dnsserver_enumerate_records(struct dnsserver_state *dsstate,
 				 LDB_SCOPE_ONELEVEL, attrs,
 				 "(&(objectClass=dnsNode)(!(dNSTombstoned=TRUE)))");
 	} else {
+		char *encoded_name
+			= ldb_binary_encode_string(tmp_ctx, name);
 		ret = ldb_search(dsstate->samdb, tmp_ctx, &res, z->zone_dn,
 				 LDB_SCOPE_ONELEVEL, attrs,
 				 "(&(objectClass=dnsNode)(|(name=%s)(name=*.%s))(!(dNSTombstoned=TRUE)))",
-				name, name);
+				 encoded_name, encoded_name);
 	}
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
@@ -1818,11 +1823,15 @@ static WERROR dnsserver_enumerate_records(struct dnsserver_state *dsstate,
 
 			/* Search all the available zones for additional name */
 			for (z2 = dsstate->zones; z2; z2 = z2->next) {
+				char *encoded_name;
 				name = dns_split_node_name(tmp_ctx, add_names[i], z2->name);
+				encoded_name
+					= ldb_binary_encode_string(tmp_ctx,
+								   name);
 				ret = ldb_search(dsstate->samdb, tmp_ctx, &res, z2->zone_dn,
 						LDB_SCOPE_ONELEVEL, attrs,
 						"(&(objectClass=dnsNode)(name=%s)(!(dNSTombstoned=TRUE)))",
-						name);
+						encoded_name);
 				talloc_free(name);
 				if (ret != LDB_SUCCESS) {
 					continue;
