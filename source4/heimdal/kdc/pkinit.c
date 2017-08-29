@@ -384,7 +384,7 @@ get_dh_param(krb5_context context,
 
     if (dhparam.q) {
 	dh->q = integer_to_BN(context, "DH p-1 factor", dhparam.q);
-	if (dh->g == NULL)
+	if (dh->q == NULL)
 	    goto out;
     }
 
