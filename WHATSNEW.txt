@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the fourth release candidate of Samba 4.7.  This is *not*
+This is the fifth release candidate of Samba 4.7.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -332,6 +332,46 @@ KNOWN ISSUES
 ============
 
 https://wiki.samba.org/index.php/Release_Planning_for_Samba_4.7#Release_blocking_bugs
+
+
+CHANGES SINCE 4.7.0rc4
+======================
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 12929: smb.conf: Explain that "ntlm auth" is a per-passdb setting.
+   * BUG 12953: s4/lib/tls: Use SHA256 to sign the TLS certificates.
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 12932: Get rid of talloc_autofree_context().
+
+o  Amitay Isaacs <amitay@gmail.com>
+   * BUG 12978: After restarting CTDB, it attaches replicated databases with
+     wrong flags.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 12863: s3:smbclient: Don't try any workgroup listing with
+     "client min protocol = SMB2".
+   * BUG 12876: s3:libsmb: Don't call cli_NetServerEnum() on SMB2/3 connections
+     in SMBC_opendir_ctx().
+   * BUG 12881: s3:libsmb: Let do_connect() debug the negotiation result
+     similar to "session request ok".
+   * BUG 12919: s4:http/gensec: add missing tevent_req_done() to
+     gensec_http_ntlm_update_done().
+   * BUG 12968: Fix 'smbclient tarmode' with SMB2/3.
+   * BUG 12973: 'smbd': Don't use a lot of CPU on startup of a connection.
+
+o  Christof Schmitt <cs@samba.org>
+   * BUG 12983: vfs_default: Fix passing of errno from async calls.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 12629: s3:utils: Do not report an invalid range for AD DC role.
+   * BUG 12704: s3:libsmb: Let get_ipc_connect() use
+     CLI_FULL_CONNECTION_FORCE_SMB1.
+   * BUG 12930: Fix build issues with GCC 7.1.
+   * BUG 12950: s3:script: Untaint user supplied data in modprinter.pl.
+   * BUG 12956: s3:libads: Fix changing passwords with Kerberos.
+   * BUG 12975: Fix changing the password with 'smbpasswd' as a local user on
+     a domain member.
 
 
 CHANGES SINCE 4.7.0rc3
