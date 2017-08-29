@@ -53,12 +53,12 @@ if conf.env.KRB5_CONFIG:
     if 'gssapi_krb5' in conf.env['LIB_GSSAPI']:
         krb5_define_syslib(conf, "gssapi_krb5", conf.env['LIB_GSSAPI'])
 
-    vendor = conf.cmd_and_log("%(path)s --vendor" % dict(path=conf.env.KRB5_CONFIG), dict())
+    vendor = conf.cmd_and_log("%(path)s --vendor" % dict(path=conf.env.KRB5_CONFIG)
     conf.env.KRB5_VENDOR = vendor.strip().lower()
     if conf.env.KRB5_VENDOR != 'heimdal':
         conf.define('USING_SYSTEM_KRB5', 1)
         del conf.env.HEIMDAL_KRB5_CONFIG
-        krb5_conf_version = conf.cmd_and_log("%(path)s --version" % dict(path=conf.env.KRB5_CONFIG), dict()).strip()
+        krb5_conf_version = conf.cmd_and_log("%(path)s --version" % dict(path=conf.env.KRB5_CONFIG)).strip()
 
         krb5_version = krb5_conf_version.split()[-1]
 
