@@ -247,8 +247,6 @@ void popt_common_credentials_set_delay_post(void)
 
 void popt_common_credentials_post(void)
 {
-	const char *username = NULL;
-
 	if (get_cmdline_auth_info_use_machine_account(cmdline_auth_info) &&
 	    !set_cmdline_auth_info_machine_account_creds(cmdline_auth_info))
 	{
@@ -268,10 +266,7 @@ void popt_common_credentials_post(void)
 	 * correctly parsed yet. If we have a username we need to set it again
 	 * to run the string parser for the username correctly.
 	 */
-	username = get_cmdline_auth_info_username(cmdline_auth_info);
-	if (username != NULL && username[0] != '\0') {
-		set_cmdline_auth_info_username(cmdline_auth_info, username);
-	}
+	reset_cmdline_auth_info_username(cmdline_auth_info);
 }
 
 static void popt_common_credentials_callback(poptContext con,
