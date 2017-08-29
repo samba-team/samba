@@ -615,7 +615,7 @@ static NTSTATUS winbindd_raw_kerberos_login(TALLOC_CTX *mem_ctx,
 	struct PAC_DATA *pac_data = NULL;
 	struct PAC_DATA_CTR *pac_data_ctr = NULL;
 	const char *local_service;
-	int i;
+	uint32_t i;
 	struct netr_SamInfo3 *info3_copy = NULL;
 
 	*info3 = NULL;
