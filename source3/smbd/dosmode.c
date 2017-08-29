@@ -464,6 +464,7 @@ NTSTATUS set_ea_dos_attribute(connection_struct *conn,
 		NTSTATUS status = NT_STATUS_OK;
 		bool need_close = false;
 		files_struct *fsp = NULL;
+		bool set_dosmode_ok = false;
 
 		if ((errno != EPERM) && (errno != EACCES)) {
 			DBG_INFO("Cannot set "
@@ -477,10 +478,21 @@ NTSTATUS set_ea_dos_attribute(connection_struct *conn,
 		*/
 
 		/* Check if we have write access. */
-		if (!CAN_WRITE(conn) || !lp_dos_filemode(SNUM(conn)))
+		if (!CAN_WRITE(conn)) {
 			return NT_STATUS_ACCESS_DENIED;
+		}
 
-		if (!can_write_to_file(conn, smb_fname)) {
+		status = smbd_check_access_rights(conn, smb_fname, false,
+						  FILE_WRITE_ATTRIBUTES);
+		if (NT_STATUS_IS_OK(status)) {
+			set_dosmode_ok = true;
+		}
+
+		if (!set_dosmode_ok && lp_dos_filemode(SNUM(conn))) {
+			set_dosmode_ok = can_write_to_file(conn, smb_fname);
+		}
+
+		if (!set_dosmode_ok) {
 			return NT_STATUS_ACCESS_DENIED;
 		}
 
