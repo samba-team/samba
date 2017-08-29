@@ -37,6 +37,7 @@
 struct user_auth_info {
 	struct cli_credentials *creds;
 	struct loadparm_context *lp_ctx;
+	bool got_username;
 	bool got_pass;
 	int signing_state;
 	bool smb_encrypt;
@@ -93,6 +94,7 @@ void set_cmdline_auth_info_from_file(struct user_auth_info *auth_info,
 	if (!ok) {
 		exit(EIO);
 	}
+	auth_info->got_username = true;
 }
 
 const char *get_cmdline_auth_info_username(const struct user_auth_info *auth_info)
@@ -123,8 +125,35 @@ void set_cmdline_auth_info_username(struct user_auth_info *auth_info,
 		exit(ENOMEM);
 	}
 
+	auth_info->got_username = true;
 	if (strchr_m(username, '%') != NULL) {
 		auth_info->got_pass = true;
+	}
+}
+
+void reset_cmdline_auth_info_username(struct user_auth_info *auth_info)
+{
+	const char *username = NULL;
+	const char *new_val = NULL;
+
+	if (!auth_info->got_username) {
+		return;
+	}
+
+	username = cli_credentials_get_username(auth_info->creds);
+	if (username == NULL) {
+		return;
+	}
+	if (username[0] == '\0') {
+		return;
+	}
+
+	cli_credentials_parse_string(auth_info->creds,
+				     username,
+				     CRED_SPECIFIED);
+	new_val = cli_credentials_get_username(auth_info->creds);
+	if (new_val == NULL) {
+		exit(ENOMEM);
 	}
 }
 
