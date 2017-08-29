@@ -1744,7 +1744,7 @@ struct ctdb_client *ctdb_find_client_by_pid(struct ctdb_context *ctdb, pid_t pid
 /* This control is used by samba when probing if a process (of a samba daemon)
    exists on the node.
    Samba does this when it needs/wants to check if a subrecord in one of the
-   databases is still valied, or if it is stale and can be removed.
+   databases is still valid, or if it is stale and can be removed.
    If the node is in unhealthy or stopped state we just kill of the samba
    process holding this sub-record and return to the calling samba that
    the process does not exist.
