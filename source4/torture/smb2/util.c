@@ -33,6 +33,7 @@
 
 #include "torture/torture.h"
 #include "torture/smb2/proto.h"
+#include "source4/torture/util.h"
 
 
 /*
@@ -385,6 +386,29 @@ bool torture_smb2_connection_ext(struct torture_context *tctx,
 	NTSTATUS status;
 	const char *host = torture_setting_string(tctx, "host", NULL);
 	const char *share = torture_setting_string(tctx, "share", NULL);
+	const char *p = torture_setting_string(tctx, "unclist", NULL);
+	TALLOC_CTX *mem_ctx = NULL;
+	bool ok;
+
+	if (p != NULL) {
+		char *host2 = NULL;
+		char *share2 = NULL;
+
+		mem_ctx = talloc_new(tctx);
+		if (mem_ctx == NULL) {
+			return false;
+		}
+
+		ok = torture_get_conn_index(tctx->conn_index++, mem_ctx, tctx,
+					    &host2, &share2);
+		if (!ok) {
+			TALLOC_FREE(mem_ctx);
+			return false;
+		}
+
+		host = host2;
+		share = share2;
+	}
 
 	status = smb2_connect_ext(tctx,
 				  host,
@@ -402,8 +426,11 @@ bool torture_smb2_connection_ext(struct torture_context *tctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		torture_comment(tctx, "Failed to connect to SMB2 share \\\\%s\\%s - %s\n",
 		       host, share, nt_errstr(status));
+		TALLOC_FREE(mem_ctx);
 		return false;
 	}
+
+	TALLOC_FREE(mem_ctx);
 	return true;
 }
 
