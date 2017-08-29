@@ -657,6 +657,9 @@ WERROR dnsserver_db_delete_record(TALLOC_CTX *mem_ctx,
 	if (res->count == 0) {
 		return WERR_DNS_ERROR_RECORD_DOES_NOT_EXIST;
 	}
+	if (res->count > 1) {
+		return WERR_DNS_ERROR_RCODE_SERVER_FAILURE;
+	}
 
 	el = ldb_msg_find_element(res->msgs[0], "dnsRecord");
 	if (el == NULL || el->num_values == 0) {
