@@ -199,7 +199,7 @@ bool serverid_exists(const struct server_id *id)
 
 	if (lp_clustering()) {
 		return ctdbd_process_exists(messaging_ctdbd_connection(),
-					    id->vnn, id->pid);
+					    id->vnn, id->pid, id->unique_id);
 	}
 
 	return false;

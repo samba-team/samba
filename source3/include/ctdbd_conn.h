@@ -49,7 +49,7 @@ int ctdbd_messaging_send_iov(struct ctdbd_connection *conn,
 			     const struct iovec *iov, int iovlen);
 
 bool ctdbd_process_exists(struct ctdbd_connection *conn, uint32_t vnn,
-			  pid_t pid);
+			  pid_t pid, uint64_t unique_id);
 
 char *ctdbd_dbpath(struct ctdbd_connection *conn,
 		   TALLOC_CTX *mem_ctx, uint32_t db_id);

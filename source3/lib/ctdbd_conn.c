@@ -775,7 +775,8 @@ static int ctdbd_control(struct ctdbd_connection *conn,
 /*
  * see if a remote process exists
  */
-bool ctdbd_process_exists(struct ctdbd_connection *conn, uint32_t vnn, pid_t pid)
+bool ctdbd_process_exists(struct ctdbd_connection *conn, uint32_t vnn,
+			  pid_t pid, uint64_t unique_id)
 {
 	int32_t cstatus = 0;
 	int ret;
