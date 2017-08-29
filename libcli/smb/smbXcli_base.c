@@ -468,6 +468,11 @@ bool smbXcli_conn_use_unicode(struct smbXcli_conn *conn)
 	return false;
 }
 
+bool smbXcli_conn_signing_mandatory(struct smbXcli_conn *conn)
+{
+	return conn->mandatory_signing;
+}
+
 /*
  * [MS-SMB] 2.2.2.3.5 - SMB1 support for passing through
  * query/set commands to the file system
