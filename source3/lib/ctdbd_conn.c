@@ -784,12 +784,27 @@ static int ctdbd_control(struct ctdbd_connection *conn,
 bool ctdbd_process_exists(struct ctdbd_connection *conn, uint32_t vnn,
 			  pid_t pid, uint64_t unique_id)
 {
+	uint8_t buf[sizeof(pid)+sizeof(unique_id)];
 	int32_t cstatus = 0;
 	int ret;
 
-	ret = ctdbd_control(conn, vnn, CTDB_CONTROL_PROCESS_EXISTS, 0, 0,
-			    (TDB_DATA) { .dptr = (uint8_t *)&pid,
-					 .dsize = sizeof(pid) },
+	if (unique_id == SERVERID_UNIQUE_ID_NOT_TO_VERIFY) {
+		ret = ctdbd_control(conn, vnn, CTDB_CONTROL_PROCESS_EXISTS,
+				    0, 0,
+				    (TDB_DATA) { .dptr = (uint8_t *)&pid,
+						    .dsize = sizeof(pid) },
+				    NULL, NULL, &cstatus);
+		if (ret != 0) {
+			return false;
+		}
+		return (cstatus == 0);
+	}
+
+	memcpy(buf, &pid, sizeof(pid));
+	memcpy(buf+sizeof(pid), &unique_id, sizeof(unique_id));
+
+	ret = ctdbd_control(conn, vnn, CTDB_CONTROL_CHECK_PID_SRVID, 0, 0,
+			    (TDB_DATA) { .dptr = buf, .dsize = sizeof(buf) },
 			    NULL, NULL, &cstatus);
 	if (ret != 0) {
 		return false;
