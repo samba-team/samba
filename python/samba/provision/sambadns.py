@@ -809,6 +809,10 @@ def create_samdb_copy(samdb, logger, paths, names, domainsid, domainguid):
             "DESCRIPTOR" : descr})
         setup_add_ldif(dom_ldb,
             setup_path("provision_basedn_options.ldif"), None)
+
+        # We need the dummy main-domain DB to have the correct @INDEXLIST
+        index_res = samdb.search(base="@INDEXLIST", scope=ldb.SCOPE_BASE)
+        dom_ldb.add(index_res[0])
     except:
         logger.error(
             "Failed to setup database for BIND, AD based DNS cannot be used")
