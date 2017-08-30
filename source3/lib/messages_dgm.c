@@ -277,7 +277,8 @@ static int messaging_dgm_out_destructor(struct messaging_dgm_out *out)
 {
 	DLIST_REMOVE(out->ctx->outsocks, out);
 
-	if (tevent_queue_length(out->queue) != 0) {
+	if ((tevent_queue_length(out->queue) != 0) &&
+	    (getpid() == out->ctx->pid)) {
 		/*
 		 * We have pending jobs. We can't close the socket,
 		 * this has been handed over to messaging_dgm_out_queue_state.
