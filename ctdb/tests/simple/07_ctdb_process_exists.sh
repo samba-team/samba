@@ -36,11 +36,12 @@ set -e
 cluster_is_healthy
 
 test_node=1
+srvid=0xAE00000012345678
 
 # Execute a ctdb client on $test_node that will last for 60 seconds.
 # It should still be there when we check.
 try_command_on_node -v $test_node \
-	"$CTDB_TEST_WRAPPER exec dummy_client >/dev/null 2>&1 & echo \$!"
+	"$CTDB_TEST_WRAPPER exec dummy_client -S ${srvid} >/dev/null 2>&1 & echo \$!"
 client_pid="$out"
 
 cleanup ()
@@ -64,6 +65,23 @@ else
     echo "BAD"
     testfailures=1
 fi
+
+echo "Checking for PID $client_pid with SRVID $srvid on node $test_node"
+status=0
+try_command_on_node $test_node \
+	"$CTDB process-exists ${client_pid} ${srvid}" || status=$?
+echo "$out"
+
+if [ $status -eq 0 ] ; then
+    echo "OK"
+else
+    echo "BAD"
+    testfailures=1
+fi
+
+echo "Checking for PID $client_pid with SRVID $client_pid on node $test_node"
+try_command_on_node -v $test_node \
+	"! $CTDB process-exists ${client_pid} ${client_pid}"
 
 # Now just echo the PID of the ctdb daemon on test node.
 # This is not a ctdb client and process-exists should return error.
