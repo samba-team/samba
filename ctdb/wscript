@@ -790,7 +790,8 @@ def build(bld):
         'transaction_loop',
         'update_record',
         'update_record_persistent',
-        'lock_tdb'
+        'lock_tdb',
+        'dummy_client'
     ]
 
     for target in ctdb_tests:
