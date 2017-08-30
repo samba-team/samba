@@ -416,6 +416,10 @@ static size_t ctdb_req_control_data_len(struct ctdb_req_control_data *cd)
 	case CTDB_CONTROL_DB_ATTACH_REPLICATED:
 		len = ctdb_string_len(&cd->data.db_name);
 		break;
+
+	case CTDB_CONTROL_CHECK_PID_SRVID:
+		len = ctdb_pid_srvid_len(cd->data.pid_srvid);
+		break;
 	}
 
 	return len;
@@ -696,6 +700,10 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 
 	case CTDB_CONTROL_DB_ATTACH_REPLICATED:
 		ctdb_string_push(&cd->data.db_name, buf, &np);
+		break;
+
+	case CTDB_CONTROL_CHECK_PID_SRVID:
+		ctdb_pid_srvid_push(cd->data.pid_srvid, buf, &np);
 		break;
 	}
 
@@ -1026,6 +1034,11 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 	case CTDB_CONTROL_DB_ATTACH_REPLICATED:
 		ret = ctdb_string_pull(buf, buflen, mem_ctx,
 				       &cd->data.db_name, &np);
+		break;
+
+	case CTDB_CONTROL_CHECK_PID_SRVID:
+		ret = ctdb_pid_srvid_pull(buf, buflen, mem_ctx,
+					  &cd->data.pid_srvid, &np);
 		break;
 	}
 
@@ -1400,6 +1413,9 @@ static size_t ctdb_reply_control_data_len(struct ctdb_reply_control_data *cd)
 	case CTDB_CONTROL_DB_ATTACH_REPLICATED:
 		len = ctdb_uint32_len(&cd->data.db_id);
 		break;
+
+	case CTDB_CONTROL_CHECK_PID_SRVID:
+		break;
 	}
 
 	return len;
@@ -1560,6 +1576,9 @@ static void ctdb_reply_control_data_push(struct ctdb_reply_control_data *cd,
 
 	case CTDB_CONTROL_DB_ATTACH_REPLICATED:
 		ctdb_uint32_push(&cd->data.db_id, buf, &np);
+		break;
+
+	case CTDB_CONTROL_CHECK_PID_SRVID:
 		break;
 	}
 
@@ -1752,6 +1771,9 @@ static int ctdb_reply_control_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_CONTROL_DB_ATTACH_REPLICATED:
 		ret = ctdb_uint32_pull(buf, buflen, &cd->data.db_id, &np);
+		break;
+
+	case CTDB_CONTROL_CHECK_PID_SRVID:
 		break;
 	}
 

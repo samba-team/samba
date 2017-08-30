@@ -2,7 +2,7 @@
 
 . "${TEST_SCRIPTS_DIR}/unit.sh"
 
-last_control=150
+last_control=151
 
 generate_control_output ()
 {
