@@ -1864,23 +1864,43 @@ static int control_process_exists(TALLOC_CTX *mem_ctx,
 				  int argc, const char **argv)
 {
 	pid_t pid;
+	uint64_t srvid = 0;
 	int ret, status;
 
-	if (argc != 1) {
+	if (argc != 1 && argc != 2) {
 		usage("process-exists");
 	}
 
 	pid = atoi(argv[0]);
-	ret = ctdb_ctrl_process_exists(mem_ctx, ctdb->ev, ctdb->client,
+	if (argc == 2) {
+		srvid = strtoull(argv[1], NULL, 0);
+	}
+
+	if (srvid == 0) {
+		ret = ctdb_ctrl_process_exists(mem_ctx, ctdb->ev, ctdb->client,
 				       ctdb->cmd_pnn, TIMEOUT(), pid, &status);
+	} else {
+		struct ctdb_pid_srvid pid_srvid;
+
+		pid_srvid.pid = pid;
+		pid_srvid.srvid = srvid;
+
+		ret = ctdb_ctrl_check_pid_srvid(mem_ctx, ctdb->ev,
+						ctdb->client, ctdb->cmd_pnn,
+						TIMEOUT(), &pid_srvid,
+						&status);
+	}
+
 	if (ret != 0) {
 		return ret;
 	}
 
-	if (status == 0) {
-		printf("PID %u exists\n", pid);
+	if (srvid == 0) {
+		printf("PID %d %s\n", pid,
+		       (status == 0 ? "exists" : "does not exist"));
 	} else {
-		printf("PID %u does not exist\n", pid);
+		printf("PID %d with SRVID 0x%"PRIx64" %s\n", pid, srvid,
+		       (status == 0 ? "exists" : "does not exist"));
 	}
 	return status;
 }
@@ -6000,7 +6020,7 @@ static const struct ctdb_cmd {
 	{ "setifacelink", control_setifacelink, false, true,
 		"set interface link status", "<iface> up|down" },
 	{ "process-exists", control_process_exists, false, true,
-		"check if a process exists on a node",  "<pid>" },
+		"check if a process exists on a node",  "<pid> [<srvid>]" },
 	{ "getdbmap", control_getdbmap, false, true,
 		"show attached databases", NULL },
 	{ "getdbstatus", control_getdbstatus, false, true,
