@@ -593,6 +593,8 @@ static int ltdb_search_and_return_base(struct ltdb_private *ltdb,
 {
 	struct ldb_message *msg, *filtered_msg;
 	struct ldb_context *ldb = ldb_module_get_ctx(ctx->module);
+	const char *dn_linearized;
+	const char *msg_dn_linearlized;
 	int ret;
 	bool matched;
 
@@ -642,9 +644,32 @@ static int ltdb_search_and_return_base(struct ltdb_private *ltdb,
 		return LDB_SUCCESS;
 	}
 
-	/* filter the attributes that the user wants */
+	dn_linearized = ldb_dn_get_linearized(ctx->base);
+	msg_dn_linearlized = ldb_dn_get_linearized(msg->dn);
+
+	if (strcmp(dn_linearized, msg_dn_linearlized) == 0) {
+		/*
+		 * If the DN is exactly the same string, then
+		 * re-use the full incoming DN for the
+		 * returned result, as it has already been
+		 * casefolded
+		 */
+		msg->dn = ctx->base;
+	}
+
+	/*
+	 * filter the attributes that the user wants.
+	 *
+	 * This copies msg->dn including the casefolding, so the above
+	 * assignment is safe
+	 */
 	ret = ltdb_filter_attrs(ctx, msg, ctx->attrs, &filtered_msg);
 
+	/*
+	 * Remove any extended components possibly copied in from
+	 * msg->dn, we just want the casefold components
+	 */
+	ldb_dn_remove_extended_components(filtered_msg->dn);
 	talloc_free(msg);
 
 	if (ret == -1) {
