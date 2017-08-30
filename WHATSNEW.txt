@@ -1,4 +1,70 @@
                    ==============================
+                   Release Notes for Samba 4.5.13
+                           August 31, 2017
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.5 release series.
+
+
+Changes since 4.5.12:
+---------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 12836: s3: smbd: Fix a read after free if a chained SMB1 call goes
+     async.
+   * BUG 12899: 'smbclient setmode' no longer works to clear attribute bits due
+     to dialect upgrade.
+   * BUG 12913: SMBC_setatr() initially uses an SMB1 call before falling back.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 12791: Fix kernel oplock issues with named streams.
+   * BUG 12897: vfs_fruit: Don't use MS NFS ACEs with Windows clients.
+   * BUG 12910: s3/notifyd: Ensure notifyd doesn't return from
+     smbd_notifyd_init.
+   * BUG 12944: vfs_gpfs: handle EACCES when fetching DOS attributes from xattr.
+   * BUG 12885: Let non_widelink_open() chdir() to directories directly.
+
+o  Günther Deschner <gd@samba.org>
+   * BUG 12840: vfs_fruit: Add fruit:model = <modelname> parametric option.
+
+o  David Disseldorp <ddiss@samba.org>
+   * BUG 12911: vfs_ceph: fix cephwrap_chdir().
+
+o  Thomas Jarosch <thomas.jarosch@intra2net.com>
+   * BUG 12927: s3: libsmb: Fix use-after-free when accessing pointer *p.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 12782: winbindd changes the local password and gets
+     NT_STATUS_WRONG_PASSWORD for the remote change.
+   * BUG 12890: s3:smbd: consistently use talloc_tos() memory for
+     rpc_pipe_open_interface().
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ==============================
                    Release Notes for Samba 4.5.12
                             July 12, 2017
                    ==============================
@@ -48,8 +114,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    ==============================
                    Release Notes for Samba 4.5.11
