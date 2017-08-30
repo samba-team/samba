@@ -1653,9 +1653,6 @@ static void control_deregister_srvid(TALLOC_CTX *mem_ctx,
 	reply.status = 0;
 	reply.errmsg = NULL;
 
-	client_send_control(req, header, &reply);
-	return;
-
 fail:
 	client_send_control(req, header, &reply);
 }
@@ -2842,6 +2839,46 @@ fail:
 	client_send_control(req, header, &reply);
 }
 
+static void control_check_pid_srvid(TALLOC_CTX *mem_ctx,
+				    struct tevent_req *req,
+				    struct ctdb_req_header *header,
+				    struct ctdb_req_control *request)
+{
+	struct client_state *state = tevent_req_data(
+		req, struct client_state);
+	struct ctdbd_context *ctdb = state->ctdb;
+	struct client_state *cstate;
+	struct ctdb_reply_control reply;
+	int ret;
+
+	reply.rdata.opcode = request->opcode;
+
+	cstate = client_find(ctdb, request->rdata.data.pid_srvid->pid);
+	if (cstate == NULL) {
+		reply.status = -1;
+		reply.errmsg = "No client for PID";
+	} else {
+		ret = srvid_exists(ctdb->srv,
+				   request->rdata.data.pid_srvid->srvid,
+				   cstate);
+		if (ret != 0) {
+			reply.status = -1;
+			reply.errmsg = "No client for PID and SRVID";
+		} else {
+			ret = kill(cstate->pid, 0);
+			if (ret != 0) {
+				reply.status = ret;
+				reply.errmsg = strerror(errno);
+			} else {
+				reply.status = 0;
+				reply.errmsg = NULL;
+			}
+		}
+	}
+
+	client_send_control(req, header, &reply);
+}
+
 static bool fake_control_failure(TALLOC_CTX *mem_ctx,
 				 struct tevent_req *req,
 				 struct ctdb_req_header *header,
@@ -3439,6 +3476,10 @@ static void client_process_control(struct tevent_req *req,
 
 	case CTDB_CONTROL_GET_NODES_FILE:
 		control_get_nodes_file(mem_ctx, req, &header, &request);
+		break;
+
+	case CTDB_CONTROL_CHECK_PID_SRVID:
+		control_check_pid_srvid(mem_ctx, req, &header, &request);
 		break;
 
 	default:
