@@ -1771,6 +1771,30 @@ int32_t ctdb_control_process_exists(struct ctdb_context *ctdb, pid_t pid)
 	return kill(pid, 0);
 }
 
+int32_t ctdb_control_check_pid_srvid(struct ctdb_context *ctdb,
+				     TDB_DATA indata)
+{
+        struct ctdb_client *client;
+	pid_t pid;
+	uint64_t srvid;
+	int ret;
+
+	pid = *(pid_t *)indata.dptr;
+	srvid = *(uint64_t *)(indata.dptr + sizeof(pid_t));
+
+	client = ctdb_find_client_by_pid(ctdb, pid);
+	if (client == NULL) {
+		return -1;
+	}
+
+	ret = srvid_exists(ctdb->srv, srvid, client);
+	if (ret != 0) {
+		return -1;
+	}
+
+	return 0;
+}
+
 int ctdb_control_getnodesfile(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata)
 {
 	struct ctdb_node_map_old *node_map = NULL;
