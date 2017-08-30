@@ -701,6 +701,10 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return 0;
 	}
 
+	case CTDB_CONTROL_CHECK_PID_SRVID:
+		CHECK_CONTROL_DATA_SIZE((sizeof(pid_t) + sizeof(uint64_t)));
+		return ctdb_control_check_pid_srvid(ctdb, indata);
+
 	default:
 		DEBUG(DEBUG_CRIT,(__location__ " Unknown CTDB control opcode %u\n", opcode));
 		return -1;

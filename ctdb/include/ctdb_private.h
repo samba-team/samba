@@ -584,6 +584,8 @@ struct ctdb_client *ctdb_find_client_by_pid(struct ctdb_context *ctdb,
 					    pid_t pid);
 
 int32_t ctdb_control_process_exists(struct ctdb_context *ctdb, pid_t pid);
+int32_t ctdb_control_check_pid_srvid(struct ctdb_context *ctdb,
+				     TDB_DATA indata);
 
 int ctdb_control_getnodesfile(struct ctdb_context *ctdb, uint32_t opcode,
 			      TDB_DATA indata, TDB_DATA *outdata);
