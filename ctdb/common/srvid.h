@@ -91,11 +91,17 @@ int srvid_deregister(struct srvid_context *srv, uint64_t srvid,
 /**
  * @brief Check if any message handler is registered for srvid
  *
+ * If private_data is NULL, then check if there is any registration
+ * for * specified srvid.  If private_data is not NULL, then check for
+ * registration that matches the specified private data.
+ *
  * @param[in] srv The srvid message handler database context
  * @param[in] srvid The srvid
+ * @param[in] private_data Private data
  * @return 0 on success, errno on failure
  */
-int srvid_exists(struct srvid_context *srv, uint64_t srvid);
+int srvid_exists(struct srvid_context *srv, uint64_t srvid,
+		 void *private_data);
 
 /**
  * @brief Call message handlers for given srvid
