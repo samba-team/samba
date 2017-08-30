@@ -230,7 +230,7 @@ int daemon_check_srvids(struct ctdb_context *ctdb, TDB_DATA indata,
 		return -1;
 	}
 	for (i=0; i<num_ids; i++) {
-		if (srvid_exists(ctdb->srv, ids[i]) == 0) {
+		if (srvid_exists(ctdb->srv, ids[i], NULL) == 0) {
 			results[i/8] |= (1 << (i%8));
 		}
 	}

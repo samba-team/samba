@@ -221,9 +221,10 @@ int srvid_deregister(struct srvid_context *srv, uint64_t srvid,
 /*
  * Check if a message handler exists
  */
-int srvid_exists(struct srvid_context *srv, uint64_t srvid)
+int srvid_exists(struct srvid_context *srv, uint64_t srvid, void *private_data)
 {
 	struct srvid_handler_list *list;
+	struct srvid_handler *h;
 	int ret;
 
 	ret = srvid_fetch(srv, srvid, &list);
@@ -231,6 +232,16 @@ int srvid_exists(struct srvid_context *srv, uint64_t srvid)
 		return ret;
 	}
 	if (list->h == NULL) {
+		return ENOENT;
+	}
+
+	if (private_data != NULL) {
+		for (h = list->h; h != NULL; h = h->next) {
+			if (h->private_data == private_data) {
+				return 0;
+			}
+		}
+
 		return ENOENT;
 	}
 

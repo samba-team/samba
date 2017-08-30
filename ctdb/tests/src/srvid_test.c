@@ -52,7 +52,10 @@ int main(void)
 	ret = srvid_register(srv, tmp_ctx, TEST_SRVID, test_handler, &count);
 	assert(ret == 0);
 
-	ret = srvid_exists(srv, TEST_SRVID);
+	ret = srvid_exists(srv, TEST_SRVID, NULL);
+	assert(ret == 0);
+
+	ret = srvid_exists(srv, TEST_SRVID, &count);
 	assert(ret == 0);
 
 	ret = srvid_dispatch(srv, TEST_SRVID, 0, tdb_null);
@@ -73,7 +76,7 @@ int main(void)
 	assert(ret == 0);
 
 	talloc_free(tmp_ctx);
-	ret = srvid_exists(srv, TEST_SRVID);
+	ret = srvid_exists(srv, TEST_SRVID, NULL);
 	assert(ret == ENOENT);
 
 	ret = srvid_dispatch(srv, TEST_SRVID, 0, tdb_null);
@@ -84,7 +87,12 @@ int main(void)
 
 	ret = srvid_register(srv, tmp_ctx, TEST_SRVID, test_handler, NULL);
 	assert(ret == 0);
+	ret = srvid_exists(srv, TEST_SRVID, &count);
+	assert(ret == ENOENT);
+
 	ret = srvid_register(srv, tmp_ctx, TEST_SRVID, test_handler, &count);
+	assert(ret == 0);
+	ret = srvid_exists(srv, TEST_SRVID, &count);
 	assert(ret == 0);
 
 	talloc_free(srv);
