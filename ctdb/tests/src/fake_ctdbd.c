@@ -39,6 +39,7 @@
 #include "common/system.h"
 #include "common/logging.h"
 #include "common/tunable.h"
+#include "common/srvid.h"
 
 #include "ipalloc_read_known_ips.h"
 
@@ -94,12 +95,6 @@ struct database_map {
 	struct database *db;
 };
 
-struct srvid_register_state {
-	struct srvid_register_state *prev, *next;
-	struct ctdbd_context *ctdb;
-	uint64_t srvid;
-};
-
 struct fake_control_failure {
 	struct fake_control_failure  *prev, *next;
 	enum ctdb_controls opcode;
@@ -120,7 +115,7 @@ struct ctdbd_context {
 	struct interface_map *iface_map;
 	struct vnn_map *vnn_map;
 	struct database_map *db_map;
-	struct srvid_register_state *rstate;
+	struct srvid_context *srv;
 	int num_clients;
 	struct timeval start_time;
 	struct timeval recovery_start_time;
@@ -898,6 +893,7 @@ static struct ctdbd_context *ctdbd_setup(TALLOC_CTX *mem_ctx)
 	struct ctdbd_context *ctdb;
 	char line[1024];
 	bool status;
+	int ret;
 
 	ctdb = talloc_zero(mem_ctx, struct ctdbd_context);
 	if (ctdb == NULL) {
@@ -921,6 +917,11 @@ static struct ctdbd_context *ctdbd_setup(TALLOC_CTX *mem_ctx)
 
 	ctdb->db_map = dbmap_init(ctdb);
 	if (ctdb->db_map == NULL) {
+		goto fail;
+	}
+
+	ret = srvid_init(ctdb, &ctdb->srv);
+	if (ret != 0) {
 		goto fail;
 	}
 
@@ -1592,10 +1593,9 @@ fail:
 
 }
 
-static int srvid_register_state_destructor(struct srvid_register_state *rstate)
+static void srvid_handler(uint64_t srvid, TDB_DATA data, void *private_data)
 {
-	DLIST_REMOVE(rstate->ctdb->rstate, rstate);
-	return 0;
+	printf("Received a message for SRVID 0x%"PRIx64"\n", srvid);
 }
 
 static void control_register_srvid(TALLOC_CTX *mem_ctx,
@@ -1607,24 +1607,19 @@ static void control_register_srvid(TALLOC_CTX *mem_ctx,
 		req, struct client_state);
 	struct ctdbd_context *ctdb = state->ctdb;
 	struct ctdb_reply_control reply;
-	struct srvid_register_state *rstate;
+	int ret;
 
 	reply.rdata.opcode = request->opcode;
 
-	rstate = talloc_zero(ctdb, struct srvid_register_state);
-	if (rstate == NULL) {
+	ret = srvid_register(ctdb->srv, state, request->srvid,
+			     srvid_handler, state);
+	if (ret != 0) {
 		reply.status = -1;
 		reply.errmsg = "Memory error";
 		goto fail;
 	}
-	rstate->ctdb = ctdb;
-	rstate->srvid = request->srvid;
 
-	talloc_set_destructor(rstate, srvid_register_state_destructor);
-
-	DLIST_ADD_END(ctdb->rstate, rstate);
-
-	DEBUG(DEBUG_INFO, ("Register srvid 0x%"PRIx64"\n", rstate->srvid));
+	DEBUG(DEBUG_INFO, ("Register srvid 0x%"PRIx64"\n", request->srvid));
 
 	reply.status = 0;
 	reply.errmsg = NULL;
@@ -1642,24 +1637,18 @@ static void control_deregister_srvid(TALLOC_CTX *mem_ctx,
 		req, struct client_state);
 	struct ctdbd_context *ctdb = state->ctdb;
 	struct ctdb_reply_control reply;
-	struct srvid_register_state *rstate = NULL;
+	int ret;
 
 	reply.rdata.opcode = request->opcode;
 
-	for (rstate = ctdb->rstate; rstate != NULL; rstate = rstate->next) {
-		if (rstate->srvid == request->srvid) {
-			break;
-		}
-	}
-
-	if (rstate == NULL) {
+	ret = srvid_deregister(ctdb->srv, request->srvid, state);
+	if (ret != 0) {
 		reply.status = -1;
 		reply.errmsg = "srvid not registered";
 		goto fail;
 	}
 
-	DEBUG(DEBUG_INFO, ("Deregister srvid 0x%"PRIx64"\n", rstate->srvid));
-	talloc_free(rstate);
+	DEBUG(DEBUG_INFO, ("Deregister srvid 0x%"PRIx64"\n", request->srvid));
 
 	reply.status = 0;
 	reply.errmsg = NULL;
@@ -1668,7 +1657,6 @@ static void control_deregister_srvid(TALLOC_CTX *mem_ctx,
 	return;
 
 fail:
-	TALLOC_FREE(rstate);
 	client_send_control(req, header, &reply);
 }
 
