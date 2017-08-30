@@ -628,7 +628,7 @@ utility lists registered debug class names's
 char *debug_list_class_names_and_levels(void)
 {
 	char *buf = NULL;
-	unsigned int i;
+	int i;
 	/* prepare strings */
 	for (i = 0; i < debug_num_classes; i++) {
 		buf = talloc_asprintf_append(buf,
