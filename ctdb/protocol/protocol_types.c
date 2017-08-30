@@ -4704,6 +4704,59 @@ int ctdb_db_statistics_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 	return 0;
 }
 
+size_t ctdb_pid_srvid_len(struct ctdb_pid_srvid *in)
+{
+	return ctdb_pid_len(&in->pid) +
+		ctdb_uint64_len(&in->srvid);
+}
+
+void ctdb_pid_srvid_push(struct ctdb_pid_srvid *in, uint8_t *buf,
+			 size_t *npush)
+{
+	size_t offset = 0, np;
+
+	ctdb_pid_push(&in->pid, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint64_push(&in->srvid, buf+offset, &np);
+	offset += np;
+
+	*npush = offset;
+}
+
+int ctdb_pid_srvid_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
+			struct ctdb_pid_srvid **out, size_t *npull)
+{
+	struct ctdb_pid_srvid *val;
+	size_t offset = 0, np;
+	int ret;
+
+	val = talloc(mem_ctx, struct ctdb_pid_srvid);
+	if (val == NULL) {
+		return ENOMEM;
+	}
+
+	ret = ctdb_pid_pull(buf+offset, buflen-offset, &val->pid, &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
+
+	ret = ctdb_uint64_pull(buf+offset, buflen-offset, &val->srvid, &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
+
+	*out = val;
+	*npull = offset;
+	return 0;
+
+fail:
+	talloc_free(val);
+	return ret;
+}
+
 size_t ctdb_election_message_len(struct ctdb_election_message *in)
 {
 	return ctdb_uint32_len(&in->num_connected) +

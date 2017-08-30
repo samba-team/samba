@@ -70,6 +70,7 @@ PROTOCOL_TYPE3_TEST(struct ctdb_public_ip_info, ctdb_public_ip_info);
 PROTOCOL_TYPE3_TEST(struct ctdb_statistics_list, ctdb_statistics_list);
 PROTOCOL_TYPE3_TEST(struct ctdb_key_data, ctdb_key_data);
 PROTOCOL_TYPE3_TEST(struct ctdb_db_statistics, ctdb_db_statistics);
+PROTOCOL_TYPE3_TEST(struct ctdb_pid_srvid, ctdb_pid_srvid);
 PROTOCOL_TYPE3_TEST(struct ctdb_election_message, ctdb_election_message);
 PROTOCOL_TYPE3_TEST(struct ctdb_srvid_message, ctdb_srvid_message);
 PROTOCOL_TYPE3_TEST(struct ctdb_disable_message, ctdb_disable_message);
@@ -174,6 +175,7 @@ int main(int argc, char *argv[])
 	TEST_FUNC(ctdb_statistics_list)();
 	TEST_FUNC(ctdb_key_data)();
 	TEST_FUNC(ctdb_db_statistics)();
+	TEST_FUNC(ctdb_pid_srvid)();
 	TEST_FUNC(ctdb_election_message)();
 	TEST_FUNC(ctdb_srvid_message)();
 	TEST_FUNC(ctdb_disable_message)();

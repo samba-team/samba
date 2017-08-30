@@ -329,6 +329,10 @@ void fill_ctdb_db_statistics(TALLOC_CTX *mem_ctx,
 void verify_ctdb_db_statistics(struct ctdb_db_statistics *p1,
 			       struct ctdb_db_statistics *p2);
 
+void fill_ctdb_pid_srvid(TALLOC_CTX *mem_ctx, struct ctdb_pid_srvid *p);
+void verify_ctdb_pid_srvid(struct ctdb_pid_srvid *p1,
+			   struct ctdb_pid_srvid *p2);
+
 void fill_ctdb_election_message(TALLOC_CTX *mem_ctx,
 				struct ctdb_election_message *p);
 void verify_ctdb_election_message(struct ctdb_election_message *p1,
