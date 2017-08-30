@@ -369,6 +369,7 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_DB_PUSH_CONFIRM         = 148,
 		    CTDB_CONTROL_DB_OPEN_FLAGS           = 149,
 		    CTDB_CONTROL_DB_ATTACH_REPLICATED    = 150,
+		    CTDB_CONTROL_CHECK_PID_SRVID         = 151,
 };
 
 #define MAX_COUNT_BUCKETS 16
@@ -840,6 +841,11 @@ enum ctdb_runstate {
 	CTDB_RUNSTATE_SHUTDOWN,
 };
 
+struct ctdb_pid_srvid {
+	pid_t pid;
+	uint64_t srvid;
+};
+
 struct ctdb_req_control_data {
 	uint32_t opcode;
 	union {
@@ -876,6 +882,7 @@ struct ctdb_req_control_data {
 		struct ctdb_key_data *key;
 		struct ctdb_traverse_start_ext *traverse_start_ext;
 		struct ctdb_traverse_all_ext *traverse_all_ext;
+		struct ctdb_pid_srvid *pid_srvid;
 	} data;
 };
 
