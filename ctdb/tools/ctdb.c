@@ -4658,33 +4658,6 @@ static int control_natgw(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 			  argc, argv);
 }
 
-static int control_natgwlist(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			     int argc, const char **argv)
-{
-	char *t, *natgw_helper = NULL;
-	const char *cmd_argv[] = { "natgwlist", NULL };
-
-	if (argc != 0) {
-		usage("natgwlist");
-	}
-
-	t = getenv("CTDB_NATGW_HELPER");
-	if (t != NULL) {
-		natgw_helper = talloc_strdup(mem_ctx, t);
-	} else {
-		natgw_helper = talloc_asprintf(mem_ctx, "%s/ctdb_natgw",
-					       CTDB_HELPER_BINDIR);
-	}
-
-	if (natgw_helper == NULL) {
-		fprintf(stderr, "Unable to set NAT gateway helper\n");
-		return 1;
-	}
-
-	return run_helper(mem_ctx, "NAT gateway helper", natgw_helper,
-			  1, cmd_argv);
-}
-
 /*
  * Find the PNN of the current node
  * discover the pnn by loading the nodes file and try to bind
@@ -6058,8 +6031,6 @@ static const struct ctdb_cmd {
 		"[init|setup|startup|monitor|takeip|releaseip|ipreallocated]" },
 	{ "natgw", control_natgw, false, false,
 		"show natgw configuration", "master|list|status" },
-	{ "natgwlist", control_natgwlist, false, false,
-		"show the nodes belonging to this natgw configuration", NULL },
 	{ "getreclock", control_getreclock, false, true,
 		"get recovery lock file", NULL },
 	{ "setlmasterrole", control_setlmasterrole, false, true,
