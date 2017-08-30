@@ -600,6 +600,12 @@ static void fill_ctdb_req_control_data(TALLOC_CTX *mem_ctx,
 		fill_ctdb_string(mem_ctx, &cd->data.db_name);
 		assert(cd->data.db_name != NULL);
 		break;
+
+	case CTDB_CONTROL_CHECK_PID_SRVID:
+		cd->data.pid_srvid = talloc(mem_ctx, struct ctdb_pid_srvid);
+		assert(cd->data.pid_srvid != NULL);
+		fill_ctdb_pid_srvid(mem_ctx, cd->data.pid_srvid);
+		break;
 	}
 }
 
@@ -1004,6 +1010,9 @@ static void verify_ctdb_req_control_data(struct ctdb_req_control_data *cd,
 		verify_ctdb_string(cd->data.db_name, cd2->data.db_name);
 		break;
 
+	case CTDB_CONTROL_CHECK_PID_SRVID:
+		verify_ctdb_pid_srvid(cd->data.pid_srvid, cd2->data.pid_srvid);
+		break;
 	}
 }
 
@@ -1420,6 +1429,8 @@ static void fill_ctdb_reply_control_data(TALLOC_CTX *mem_ctx,
 		cd->data.db_id = rand32();
 		break;
 
+	case CTDB_CONTROL_CHECK_PID_SRVID:
+		break;
 	}
 }
 
@@ -1766,6 +1777,8 @@ static void verify_ctdb_reply_control_data(struct ctdb_reply_control_data *cd,
 		assert(cd->data.db_id == cd2->data.db_id);
 		break;
 
+	case CTDB_CONTROL_CHECK_PID_SRVID:
+		break;
 	}
 }
 
@@ -2208,7 +2221,7 @@ static void test_ctdb_reply_dmaster(void)
 	talloc_free(mem_ctx);
 }
 
-#define NUM_CONTROLS	151
+#define NUM_CONTROLS	152
 
 static void test_ctdb_req_control_data(void)
 {

@@ -606,6 +606,11 @@ void ctdb_req_control_db_attach_replicated(struct ctdb_req_control *request,
 int ctdb_reply_control_db_attach_replicated(struct ctdb_reply_control *reply,
 					    uint32_t *db_id);
 
+void ctdb_req_control_check_pid_srvid(struct ctdb_req_control *request,
+				      struct ctdb_pid_srvid *pid_srvid);
+int ctdb_reply_control_check_pid_srvid(struct ctdb_reply_control *reply,
+				       int *status);
+
 /* From protocol/protocol_debug.c */
 
 void ctdb_packet_print(uint8_t *buf, size_t buflen, FILE *fp);

@@ -915,6 +915,19 @@ static void verify_ctdb_db_statistics(struct ctdb_db_statistics *p1,
 	}
 }
 
+static void fill_ctdb_pid_srvid(TALLOC_CTX *mem_ctx, struct ctdb_pid_srvid *p)
+{
+	p->pid = rand32();
+	p->srvid = rand64();
+}
+
+static void verify_ctdb_pid_srvid(struct ctdb_pid_srvid *p1,
+				  struct ctdb_pid_srvid *p2)
+{
+	assert(p1->pid == p2->pid);
+	assert(p1->srvid == p2->srvid);
+}
+
 static void fill_ctdb_event_request_run(TALLOC_CTX *mem_ctx,
 					struct ctdb_event_request_run *p)
 {
@@ -1017,19 +1030,6 @@ static void verify_ctdb_event_reply_script_list(
 }
 
 #ifndef PROTOCOL_TEST
-
-static void fill_ctdb_pid_srvid(TALLOC_CTX *mem_ctx, struct ctdb_pid_srvid *p)
-{
-	p->pid = rand32();
-	p->srvid = rand64();
-}
-
-static void verify_ctdb_pid_srvid(struct ctdb_pid_srvid *p1,
-				  struct ctdb_pid_srvid *p2)
-{
-	assert(p1->pid == p2->pid);
-	assert(p1->srvid == p2->srvid);
-}
 
 static void fill_ctdb_election_message(TALLOC_CTX *mem_ctx,
 				       struct ctdb_election_message *p)

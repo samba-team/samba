@@ -2386,3 +2386,31 @@ int ctdb_reply_control_db_attach_replicated(struct ctdb_reply_control *reply,
 	}
 	return reply->status;
 }
+
+/* CTDB_CONTROL_CHECK_PID_SRVID */
+
+void ctdb_req_control_check_pid_srvid(struct ctdb_req_control *request,
+				      struct ctdb_pid_srvid *pid_srvid)
+{
+	request->opcode = CTDB_CONTROL_CHECK_PID_SRVID;
+	request->pad = 0;
+	request->srvid = 0;
+	request->client_id = 0;
+	request->flags = 0;
+
+	request->rdata.opcode = CTDB_CONTROL_CHECK_PID_SRVID;
+	request->rdata.data.pid_srvid = pid_srvid;
+}
+
+int ctdb_reply_control_check_pid_srvid(struct ctdb_reply_control *reply,
+				       int *status)
+{
+	if (reply->rdata.opcode != CTDB_CONTROL_CHECK_PID_SRVID) {
+		return EPROTO;
+	}
+
+	*status = reply->status;
+	reply->status = 0;
+
+	return reply->status;
+}
