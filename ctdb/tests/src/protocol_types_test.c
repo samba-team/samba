@@ -1018,6 +1018,19 @@ static void verify_ctdb_event_reply_script_list(
 
 #ifndef PROTOCOL_TEST
 
+static void fill_ctdb_pid_srvid(TALLOC_CTX *mem_ctx, struct ctdb_pid_srvid *p)
+{
+	p->pid = rand32();
+	p->srvid = rand64();
+}
+
+static void verify_ctdb_pid_srvid(struct ctdb_pid_srvid *p1,
+				  struct ctdb_pid_srvid *p2)
+{
+	assert(p1->pid == p2->pid);
+	assert(p1->srvid == p2->srvid);
+}
+
 static void fill_ctdb_election_message(TALLOC_CTX *mem_ctx,
 				       struct ctdb_election_message *p)
 {
@@ -1322,6 +1335,7 @@ DEFINE_TEST(struct ctdb_key_data, ctdb_key_data);
 DEFINE_TEST(struct ctdb_uint8_array, ctdb_uint8_array);
 DEFINE_TEST(struct ctdb_uint64_array, ctdb_uint64_array);
 DEFINE_TEST(struct ctdb_db_statistics, ctdb_db_statistics);
+DEFINE_TEST(struct ctdb_pid_srvid, ctdb_pid_srvid);
 DEFINE_TEST(struct ctdb_election_message, ctdb_election_message);
 DEFINE_TEST(struct ctdb_srvid_message, ctdb_srvid_message);
 DEFINE_TEST(struct ctdb_disable_message, ctdb_disable_message);
@@ -1438,6 +1452,7 @@ int main(int argc, char *argv[])
 	TEST_FUNC(ctdb_uint8_array)();
 	TEST_FUNC(ctdb_uint64_array)();
 	TEST_FUNC(ctdb_db_statistics)();
+	TEST_FUNC(ctdb_pid_srvid)();
 	TEST_FUNC(ctdb_election_message)();
 	TEST_FUNC(ctdb_srvid_message)();
 	TEST_FUNC(ctdb_disable_message)();

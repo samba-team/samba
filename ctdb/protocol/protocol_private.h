@@ -240,6 +240,11 @@ void ctdb_db_statistics_push(struct ctdb_db_statistics *dbstats, void *buf);
 int ctdb_db_statistics_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 			    struct ctdb_db_statistics **out);
 
+size_t ctdb_pid_srvid_len(struct ctdb_pid_srvid *in);
+void ctdb_pid_srvid_push(struct ctdb_pid_srvid *in, uint8_t *buf);
+int ctdb_pid_srvid_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
+			struct ctdb_pid_srvid **out);
+
 size_t ctdb_election_message_len(struct ctdb_election_message *election);
 void ctdb_election_message_push(struct ctdb_election_message *election,
 				uint8_t *buf);

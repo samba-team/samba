@@ -2394,6 +2394,53 @@ int ctdb_db_statistics_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 	return 0;
 }
 
+size_t ctdb_pid_srvid_len(struct ctdb_pid_srvid *in)
+{
+	return ctdb_pid_len(in->pid) +
+		ctdb_uint64_len(in->srvid);
+}
+
+void ctdb_pid_srvid_push(struct ctdb_pid_srvid *in, uint8_t *buf)
+{
+	size_t offset = 0;
+
+	ctdb_pid_push(in->pid, buf+offset);
+	offset += ctdb_pid_len(in->pid);
+
+	ctdb_uint64_push(in->srvid, buf+offset);
+}
+
+int ctdb_pid_srvid_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
+			struct ctdb_pid_srvid **out)
+{
+	struct ctdb_pid_srvid *val;
+	size_t offset = 0;
+	int ret;
+
+	val = talloc(mem_ctx, struct ctdb_pid_srvid);
+	if (val == NULL) {
+		return ENOMEM;
+	}
+
+	ret = ctdb_pid_pull(buf+offset, buflen-offset, val, &val->pid);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += ctdb_pid_len(val->pid);
+
+	ret = ctdb_uint64_pull(buf+offset, buflen-offset, val, &val->srvid);
+	if (ret != 0) {
+		goto fail;
+	}
+
+	*out = val;
+	return 0;
+
+fail:
+	talloc_free(val);
+	return ret;
+}
+
 size_t ctdb_election_message_len(struct ctdb_election_message *election)
 {
 	return sizeof(struct ctdb_election_message);
