@@ -37,35 +37,85 @@
 #ifdef SAMBA_RIJNDAEL
 #include "rijndael-alg-fst.h"
 
+/*
+ * The next 4 functions are the pure software implementations
+ * of:
+ *
+ * AES_set_encrypt_key()
+ * AES_set_decrypt_key()
+ * AES_encrypt()
+ * AES_decrypt()
+ */
+
+static int
+AES_set_encrypt_key_rj(const unsigned char *userkey, const int bits, AES_KEY *key)
+{
+    key->u.aes_rj.rounds = rijndaelKeySetupEnc(key->u.aes_rj.key, userkey, bits);
+    if (key->u.aes_rj.rounds == 0)
+	return -1;
+    return 0;
+}
+
+static int
+AES_set_decrypt_key_rj(const unsigned char *userkey, const int bits, AES_KEY *key)
+{
+    key->u.aes_rj.rounds = rijndaelKeySetupDec(key->u.aes_rj.key, userkey, bits);
+    if (key->u.aes_rj.rounds == 0)
+	return -1;
+    return 0;
+}
+
+static void
+AES_encrypt_rj(const unsigned char *in, unsigned char *out, const AES_KEY *key)
+{
+    rijndaelEncrypt(key->u.aes_rj.key, key->u.aes_rj.rounds, in, out);
+}
+
+static void
+AES_decrypt_rj(const unsigned char *in, unsigned char *out, const AES_KEY *key)
+{
+    rijndaelDecrypt(key->u.aes_rj.key, key->u.aes_rj.rounds, in, out);
+}
+
+/*
+ * The next 4 functions are the runtime switch for Intel AES hardware
+ * implementations of:
+ *
+ * AES_set_encrypt_key()
+ * AES_set_decrypt_key()
+ * AES_encrypt()
+ * AES_decrypt()
+ *
+ * If the hardware instructions don't exist, fall back to the software
+ * versions.
+ *
+ * Currently only use the software implementations.
+ */
+
 int
 AES_set_encrypt_key(const unsigned char *userkey, const int bits, AES_KEY *key)
 {
-    key->rounds = rijndaelKeySetupEnc(key->key, userkey, bits);
-    if (key->rounds == 0)
-	return -1;
-    return 0;
+	return AES_set_encrypt_key_rj(userkey, bits, key);
 }
 
 int
 AES_set_decrypt_key(const unsigned char *userkey, const int bits, AES_KEY *key)
 {
-    key->rounds = rijndaelKeySetupDec(key->key, userkey, bits);
-    if (key->rounds == 0)
-	return -1;
-    return 0;
+	return AES_set_decrypt_key_rj(userkey, bits, key);
 }
 
 void
 AES_encrypt(const unsigned char *in, unsigned char *out, const AES_KEY *key)
 {
-    rijndaelEncrypt(key->key, key->rounds, in, out);
+	return AES_encrypt_rj(in, out, key);
 }
 
 void
 AES_decrypt(const unsigned char *in, unsigned char *out, const AES_KEY *key)
 {
-    rijndaelDecrypt(key->key, key->rounds, in, out);
+	return AES_decrypt_rj(in, out, key);
 }
+
 #endif /* SAMBA_RIJNDAEL */
 
 #ifdef SAMBA_AES_CBC_ENCRYPT
