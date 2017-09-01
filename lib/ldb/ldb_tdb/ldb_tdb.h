@@ -82,6 +82,7 @@ struct ltdb_context {
 /* DB keys */
 #define LTDB_GUID_KEY_PREFIX "GUID="
 #define LTDB_GUID_SIZE 16
+#define LTDB_GUID_KEY_SIZE (LTDB_GUID_SIZE + sizeof(LTDB_GUID_KEY_PREFIX) - 1)
 
 /* The following definitions come from lib/ldb/ldb_tdb/ldb_cache.c  */
 
@@ -153,14 +154,15 @@ TDB_DATA ltdb_key_dn(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 		     struct ldb_dn *dn);
 TDB_DATA ltdb_key_msg(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 		      const struct ldb_message *msg);
-TDB_DATA ltdb_guid_to_key(struct ldb_module *module,
-			  struct ltdb_private *ltdb,
-			  TALLOC_CTX *mem_ctx,
-			  const struct ldb_val *guid_val);
-TDB_DATA ltdb_idx_to_key(struct ldb_module *module,
-			 struct ltdb_private *ltdb,
-			 TALLOC_CTX *mem_ctx,
-			 const struct ldb_val *idx_val);
+int ltdb_guid_to_key(struct ldb_module *module,
+		     struct ltdb_private *ltdb,
+		     const struct ldb_val *GUID_val,
+		     TDB_DATA *key);
+int ltdb_idx_to_key(struct ldb_module *module,
+		    struct ltdb_private *ltdb,
+		    TALLOC_CTX *mem_ctx,
+		    const struct ldb_val *idx_val,
+		    TDB_DATA *key);
 int ltdb_store(struct ldb_module *module, const struct ldb_message *msg, int flgs);
 int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *msg, struct ldb_request *req);
 int ltdb_delete_noindex(struct ldb_module *module,

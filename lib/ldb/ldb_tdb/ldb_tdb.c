@@ -221,62 +221,58 @@ failed:
 	return key;
 }
 
-TDB_DATA ltdb_guid_to_key(struct ldb_module *module,
-			  struct ltdb_private *ltdb,
-			  TALLOC_CTX *mem_ctx,
-			  const struct ldb_val *GUID_val)
+/* The caller is to provide a correctly sized key */
+int ltdb_guid_to_key(struct ldb_module *module,
+		     struct ltdb_private *ltdb,
+		     const struct ldb_val *GUID_val,
+		     TDB_DATA *key)
 {
-	TDB_DATA key;
-	const char *GUID_prefix = "GUID=";
-	const int GUID_prefix_len = strlen(GUID_prefix);
+	const char *GUID_prefix = LTDB_GUID_KEY_PREFIX;
+	const int GUID_prefix_len = sizeof(LTDB_GUID_KEY_PREFIX) - 1;
 
-	key.dptr = talloc_size(mem_ctx,
-			       GUID_val->length+GUID_prefix_len);
-
-	if (key.dptr == NULL) {
-		errno = ENOMEM;
-		key.dptr = NULL;
-		key.dsize = 0;
-		return key;
+	if (key->dsize != (GUID_val->length+GUID_prefix_len)) {
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	memcpy(key.dptr, "GUID=", GUID_prefix_len);
-	memcpy(&key.dptr[GUID_prefix_len],
-	       GUID_val->data, GUID_val->length);
 
-	key.dsize = talloc_get_size(key.dptr);
-	return key;
+	memcpy(key->dptr, GUID_prefix, GUID_prefix_len);
+	memcpy(&key->dptr[GUID_prefix_len],
+	       GUID_val->data, GUID_val->length);
+	return LDB_SUCCESS;
 }
 
-TDB_DATA ltdb_idx_to_key(struct ldb_module *module,
-			 struct ltdb_private *ltdb,
-			 TALLOC_CTX *mem_ctx,
-			 const struct ldb_val *idx_val)
+/*
+ * The caller is to provide a correctly sized key, used only in
+ * the GUID index mode
+ */
+int ltdb_idx_to_key(struct ldb_module *module,
+		    struct ltdb_private *ltdb,
+		    TALLOC_CTX *mem_ctx,
+		    const struct ldb_val *idx_val,
+		    TDB_DATA *key)
 {
-	TDB_DATA key;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct ldb_dn *dn;
 
 	if (ltdb->cache->GUID_index_attribute != NULL) {
-		return ltdb_guid_to_key(module, ltdb, mem_ctx, idx_val);
+		return ltdb_guid_to_key(module, ltdb,
+					idx_val, key);
 	}
 
 	dn = ldb_dn_from_ldb_val(mem_ctx, ldb, idx_val);
 	if (dn == NULL) {
-		errno = EINVAL;
-		key.dptr = NULL;
-		key.dsize = 0;
-		return key;
+		/*
+		 * LDB_ERR_INVALID_DN_SYNTAX would just be confusing
+		 * to the caller, as this in an invalid index value
+		 */
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	/* form the key */
-	key = ltdb_key_dn(module, mem_ctx, dn);
+	*key = ltdb_key_dn(module, mem_ctx, dn);
 	TALLOC_FREE(dn);
-	if (!key.dptr) {
-		errno = ENOMEM;
-		key.dptr = NULL;
-		key.dsize = 0;
-		return key;
+	if (!key->dptr) {
+		return ldb_module_oom(module);
 	}
-	return key;
+	return LDB_SUCCESS;
 }
 
 /*
@@ -294,6 +290,7 @@ TDB_DATA ltdb_key_msg(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
 	TDB_DATA key;
 	const struct ldb_val *guid_val;
+	int ret;
 
 	if (ltdb->cache->GUID_index_attribute == NULL) {
 		return ltdb_key_dn(module, mem_ctx, msg->dn);
@@ -312,8 +309,25 @@ TDB_DATA ltdb_key_msg(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 		return key;
 	}
 
-	return ltdb_guid_to_key(module, ltdb, mem_ctx, guid_val);
+	/* In this case, allocate with talloc */
+	key.dptr = talloc_size(mem_ctx, LTDB_GUID_KEY_SIZE);
+	if (key.dptr == NULL) {
+		errno = ENOMEM;
+		key.dptr = NULL;
+		key.dsize = 0;
+		return key;
+	}
+	key.dsize = talloc_get_size(key.dptr);
 
+	ret = ltdb_guid_to_key(module, ltdb, guid_val, &key);
+
+	if (ret != LDB_SUCCESS) {
+		errno = EINVAL;
+		key.dptr = NULL;
+		key.dsize = 0;
+		return key;
+	}
+	return key;
 }
 
 /*

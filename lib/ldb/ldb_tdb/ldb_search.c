@@ -285,14 +285,19 @@ int ltdb_search_dn1(struct ldb_module *module, struct ldb_dn *dn, struct ldb_mes
 	void *data = ldb_module_get_private(module);
 	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
 	int ret;
-	TDB_DATA tdb_key;
-
-	TALLOC_CTX *tdb_key_ctx = talloc_new(msg);
-	if (!tdb_key_ctx) {
-		return ldb_module_oom(module);
-	}
+	uint8_t guid_key[LTDB_GUID_KEY_SIZE];
+	TDB_DATA tdb_key = {
+		.dptr = guid_key,
+		.dsize = sizeof(guid_key)
+	};
+	TALLOC_CTX *tdb_key_ctx = NULL;
 
 	if (ltdb->cache->GUID_index_attribute == NULL) {
+		tdb_key_ctx = talloc_new(msg);
+		if (!tdb_key_ctx) {
+			return ldb_module_oom(module);
+		}
+
 		/* form the key */
 		tdb_key = ltdb_key_dn(module, tdb_key_ctx, dn);
 		if (!tdb_key.dptr) {
@@ -300,6 +305,11 @@ int ltdb_search_dn1(struct ldb_module *module, struct ldb_dn *dn, struct ldb_mes
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 	} else if (ldb_dn_is_special(dn)) {
+		tdb_key_ctx = talloc_new(msg);
+		if (!tdb_key_ctx) {
+			return ldb_module_oom(module);
+		}
+
 		/* form the key */
 		tdb_key = ltdb_key_dn(module, tdb_key_ctx, dn);
 		if (!tdb_key.dptr) {
@@ -307,11 +317,17 @@ int ltdb_search_dn1(struct ldb_module *module, struct ldb_dn *dn, struct ldb_mes
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 	} else {
-		/* Look in the index to find the key for this DN */
-		ret = ltdb_key_dn_from_idx(module, ltdb, tdb_key_ctx,
+		/*
+		 * Look in the index to find the key for this DN.
+		 *
+		 * the tdb_key memory is allocated above, msg is just
+		 * used for internal memory.
+		 *
+		 */
+		ret = ltdb_key_dn_from_idx(module, ltdb,
+					   msg,
 					   dn, &tdb_key);
 		if (ret != LDB_SUCCESS) {
-			TALLOC_FREE(tdb_key_ctx);
 			return ret;
 		}
 	}

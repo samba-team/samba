@@ -362,12 +362,15 @@ int ltdb_key_dn_from_idx(struct ldb_module *module,
 				       "values (%u > 1)",
 				       ltdb->cache->GUID_index_attribute,
 				       dn_str, list->count);
+		TALLOC_FREE(list);
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
-	*tdb_key = ltdb_guid_to_key(module, ltdb,
-				    mem_ctx, &list->dn[0]);
-	if (tdb_key->dptr == NULL) {
+	/* The tdb_key memory is allocated by the caller */
+	ret = ltdb_guid_to_key(module, ltdb,
+			       &list->dn[0], tdb_key);
+
+	if (ret != LDB_SUCCESS) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -1335,7 +1338,11 @@ static int ltdb_index_filter(struct ltdb_private *ltdb,
 	ldb = ldb_module_get_ctx(ac->module);
 
 	for (i = 0; i < dn_list->count; i++) {
-		TDB_DATA tdb_key;
+		uint8_t guid_key[LTDB_GUID_KEY_SIZE];
+		TDB_DATA tdb_key = {
+			.dptr = guid_key,
+			.dsize = sizeof(guid_key)
+		};
 		int ret;
 		bool matched;
 
@@ -1344,17 +1351,20 @@ static int ltdb_index_filter(struct ltdb_private *ltdb,
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
-		tdb_key = ltdb_idx_to_key(ac->module, ltdb,
-					  ac, &dn_list->dn[i]);
-		if (tdb_key.dptr == NULL) {
-			return LDB_ERR_OPERATIONS_ERROR;
+		ret = ltdb_idx_to_key(ac->module, ltdb,
+				      ac, &dn_list->dn[i],
+				      &tdb_key);
+		if (ret != LDB_SUCCESS) {
+			return ret;
 		}
 
 		ret = ltdb_search_key(ac->module, ltdb,
 				      tdb_key, msg,
 				      LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC|
 				      LDB_UNPACK_DATA_FLAG_NO_VALUES_ALLOC);
-		TALLOC_FREE(tdb_key.dptr);
+		if (tdb_key.dptr != guid_key) {
+			TALLOC_FREE(tdb_key.dptr);
+		}
 		if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 			/* the record has disappeared? yes, this can happen */
 			talloc_free(msg);
