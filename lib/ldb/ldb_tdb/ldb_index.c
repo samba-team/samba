@@ -1573,14 +1573,20 @@ static int re_key(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *st
 	};
 	int ret;
 	TDB_DATA key2;
-
+	bool is_record;
+	
 	ldb = ldb_module_get_ctx(module);
 
-	if (strncmp((char *)key.dptr, "DN=@", 4) == 0 ||
-	    strncmp((char *)key.dptr, "DN=", 3) != 0) {
+	if (key.dsize > 4 &&
+	    strncmp((char *)key.dptr, "DN=@", 4) == 0) {
 		return 0;
 	}
 
+	is_record = ltdb_key_is_record(key);
+	if (is_record == false) {
+		return 0;
+	}
+	
 	msg = ldb_msg_new(module);
 	if (msg == NULL) {
 		return -1;
@@ -1636,14 +1642,20 @@ static int re_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *
 		.length = data.dsize,
 	};
 	int ret;
-
+	bool is_record;
+	
 	ldb = ldb_module_get_ctx(module);
 
-	if (strncmp((char *)key.dptr, "DN=@", 4) == 0 ||
-	    strncmp((char *)key.dptr, "DN=", 3) != 0) {
+	if (key.dsize > 4 &&
+	    strncmp((char *)key.dptr, "DN=@", 4) == 0) {
 		return 0;
 	}
 
+	is_record = ltdb_key_is_record(key);
+	if (is_record == false) {
+		return 0;
+	}
+	
 	msg = ldb_msg_new(module);
 	if (msg == NULL) {
 		return -1;

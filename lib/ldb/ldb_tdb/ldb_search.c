@@ -410,8 +410,7 @@ static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, voi
 	ac = talloc_get_type(state, struct ltdb_context);
 	ldb = ldb_module_get_ctx(ac->module);
 
-	if (key.dsize < 4 || 
-	    strncmp((char *)key.dptr, "DN=", 3) != 0) {
+	if (ltdb_key_is_record(key) == false) {
 		return 0;
 	}
 
