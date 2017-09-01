@@ -621,45 +621,89 @@ int ltdb_index_transaction_cancel(struct ldb_module *module)
   the caller is responsible for freeing
 */
 static struct ldb_dn *ltdb_index_key(struct ldb_context *ldb,
+				     struct ltdb_private *ltdb,
 				     const char *attr, const struct ldb_val *value,
 				     const struct ldb_schema_attribute **ap)
 {
 	struct ldb_dn *ret;
 	struct ldb_val v;
-	const struct ldb_schema_attribute *a;
-	char *attr_folded;
+	const struct ldb_schema_attribute *a = NULL;
+	char *attr_folded = NULL;
+	const char *attr_for_dn = NULL;
 	int r;
+	bool should_b64_encode;
 
-	attr_folded = ldb_attr_casefold(ldb, attr);
-	if (!attr_folded) {
-		return NULL;
+	if (attr[0] == '@') {
+		attr_for_dn = attr;
+		v = *value;
+		if (ap != NULL) {
+			*ap = NULL;
+		}
+	} else {
+		attr_folded = ldb_attr_casefold(ldb, attr);
+		if (!attr_folded) {
+			return NULL;
+		}
+
+		attr_for_dn = attr_folded;
+
+		a = ldb_schema_attribute_by_name(ldb, attr);
+		if (ap) {
+			*ap = a;
+		}
+		r = a->syntax->canonicalise_fn(ldb, ldb, value, &v);
+		if (r != LDB_SUCCESS) {
+			const char *errstr = ldb_errstring(ldb);
+			/* canonicalisation can be refused. For
+			   example, a attribute that takes wildcards
+			   will refuse to canonicalise if the value
+			   contains a wildcard */
+			ldb_asprintf_errstring(ldb,
+					       "Failed to create index "
+					       "key for attribute '%s':%s%s%s",
+					       attr, ldb_strerror(r),
+					       (errstr?":":""),
+					       (errstr?errstr:""));
+			talloc_free(attr_folded);
+			return NULL;
+		}
 	}
 
-	a = ldb_schema_attribute_by_name(ldb, attr);
-	if (ap) {
-		*ap = a;
+	/*
+	 * We do not base 64 encode a DN in a key, it has already been
+	 * casefold and lineraized, that is good enough.  That already
+	 * avoids embedded NUL etc.
+	 */
+	if (ltdb->cache->GUID_index_attribute != NULL) {
+		if (strcmp(attr, LTDB_IDXDN) == 0) {
+			should_b64_encode = false;
+		} else if (strcmp(attr, LTDB_IDXONE) == 0) {
+			/*
+			 * We can only change the behaviour for IDXONE
+			 * when the GUID index is enabled
+			 */
+			should_b64_encode = false;
+		} else {
+			should_b64_encode
+				= ldb_should_b64_encode(ldb, &v);
+		}
+	} else {
+		should_b64_encode = ldb_should_b64_encode(ldb, &v);
 	}
-	r = a->syntax->canonicalise_fn(ldb, ldb, value, &v);
-	if (r != LDB_SUCCESS) {
-		const char *errstr = ldb_errstring(ldb);
-		/* canonicalisation can be refused. For example,
-		   a attribute that takes wildcards will refuse to canonicalise
-		   if the value contains a wildcard */
-		ldb_asprintf_errstring(ldb, "Failed to create index key for attribute '%s':%s%s%s",
-				       attr, ldb_strerror(r), (errstr?":":""), (errstr?errstr:""));
-		talloc_free(attr_folded);
-		return NULL;
-	}
-	if (ldb_should_b64_encode(ldb, &v)) {
+
+	if (should_b64_encode) {
 		char *vstr = ldb_base64_encode(ldb, (char *)v.data, v.length);
 		if (!vstr) {
 			talloc_free(attr_folded);
 			return NULL;
 		}
-		ret = ldb_dn_new_fmt(ldb, ldb, "%s:%s::%s", LTDB_INDEX, attr_folded, vstr);
+		ret = ldb_dn_new_fmt(ldb, ldb, "%s:%s::%s", LTDB_INDEX,
+				     attr_for_dn, vstr);
 		talloc_free(vstr);
 	} else {
-		ret = ldb_dn_new_fmt(ldb, ldb, "%s:%s:%.*s", LTDB_INDEX, attr_folded, (int)v.length, (char *)v.data);
+		ret = ldb_dn_new_fmt(ldb, ldb, "%s:%s:%.*s", LTDB_INDEX,
+				     attr_for_dn,
+				     (int)v.length, (char *)v.data);
 	}
 
 	if (v.data != value->data) {
@@ -758,7 +802,9 @@ static int ltdb_index_dn_simple(struct ldb_module *module,
 
 	/* the attribute is indexed. Pull the list of DNs that match the
 	   search criterion */
-	dn = ltdb_index_key(ldb, tree->u.equality.attr, &tree->u.equality.value, NULL);
+	dn = ltdb_index_key(ldb, ltdb,
+			    tree->u.equality.attr,
+			    &tree->u.equality.value, NULL);
 	if (!dn) return LDB_ERR_OPERATIONS_ERROR;
 
 	ret = ltdb_dn_list_load(module, ltdb, dn, list);
@@ -1205,7 +1251,7 @@ static int ltdb_index_dn_attr(struct ldb_module *module,
 	/* work out the index key from the parent DN */
 	val.data = (uint8_t *)((uintptr_t)ldb_dn_get_casefold(dn));
 	val.length = strlen((char *)val.data);
-	key = ltdb_index_key(ldb, attr, &val, NULL);
+	key = ltdb_index_key(ldb, ltdb, attr, &val, NULL);
 	if (!key) {
 		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -1562,7 +1608,8 @@ static int ltdb_index_add1(struct ldb_module *module,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	dn_key = ltdb_index_key(ldb, el->name, &el->values[v_idx], &a);
+	dn_key = ltdb_index_key(ldb, ltdb,
+				el->name, &el->values[v_idx], &a);
 	if (!dn_key) {
 		talloc_free(list);
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -1580,7 +1627,8 @@ static int ltdb_index_add1(struct ldb_module *module,
 	 * DN -> GUID record
 	 */
 	if (list->count > 0 &&
-	    (a->flags & LDB_ATTR_FLAG_UNIQUE_INDEX ||
+	    ((a != NULL
+	      && (a->flags & LDB_ATTR_FLAG_UNIQUE_INDEX)) ||
 	     ldb_attr_cmp(el->name, LTDB_IDXDN) == 0)) {
 		/*
 		 * We do not want to print info about a possibly
@@ -1911,7 +1959,8 @@ int ltdb_index_del_value(struct ldb_module *module,
 		return LDB_SUCCESS;
 	}
 
-	dn_key = ltdb_index_key(ldb, el->name, &el->values[v_idx], NULL);
+	dn_key = ltdb_index_key(ldb, ltdb,
+				el->name, &el->values[v_idx], NULL);
 	if (!dn_key) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
