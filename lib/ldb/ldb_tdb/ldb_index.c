@@ -291,7 +291,6 @@ normal_index:
 		list->count = el->num_values;
 	} else {
 		unsigned int i;
-		static const size_t GUID_val_size = 16;
 		if (version != LTDB_GUID_INDEXING_VERSION) {
 			/* This is quite likely during the DB startup
 			   on first upgrade to using a GUID index */
@@ -308,11 +307,11 @@ normal_index:
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
-		if ((el->values[0].length % GUID_val_size) != 0) {
+		if ((el->values[0].length % LTDB_GUID_SIZE) != 0) {
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
-		list->count = el->values[0].length / GUID_val_size;
+		list->count = el->values[0].length / LTDB_GUID_SIZE;
 		list->dn = talloc_array(list, struct ldb_val, list->count);
 
 		/*
@@ -321,8 +320,9 @@ normal_index:
 		 */
 		talloc_steal(list->dn, msg);
 		for (i = 0; i < list->count; i++) {
-			list->dn[i].data = &el->values[0].data[i * GUID_val_size];
-			list->dn[i].length = GUID_val_size;
+			list->dn[i].data
+				= &el->values[0].data[i * LTDB_GUID_SIZE];
+			list->dn[i].length = LTDB_GUID_SIZE;
 		}
 	}
 
