@@ -156,11 +156,12 @@ bool ltdb_key_is_record(TDB_DATA key)
 		return true;
 	}
 
-	if (key.dsize < 6) {
+	if (key.dsize < sizeof(LTDB_GUID_KEY_PREFIX)) {
 		return false;
 	}
 
-	if (memcmp(key.dptr, "GUID=", 5) == 0) {
+	if (memcmp(key.dptr, LTDB_GUID_KEY_PREFIX,
+		   sizeof(LTDB_GUID_KEY_PREFIX) - 1) == 0) {
 		return true;
 	}
 	

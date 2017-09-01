@@ -73,6 +73,10 @@ struct ltdb_context {
 #define LTDB_MOD_TIMESTAMP "whenChanged"
 #define LTDB_OBJECTCLASS "objectClass"
 
+/* DB keys */
+#define LTDB_GUID_KEY_PREFIX "GUID="
+#define LTDB_GUID_SIZE 16
+
 /* The following definitions come from lib/ldb/ldb_tdb/ldb_cache.c  */
 
 int ltdb_cache_reload(struct ldb_module *module);
