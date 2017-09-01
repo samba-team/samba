@@ -347,10 +347,12 @@ int ltdb_key_dn_from_idx(struct ldb_module *module,
 
 	ret = ltdb_index_dn_base_dn(module, ltdb, dn, list);
 	if (ret != LDB_SUCCESS) {
+		TALLOC_FREE(list);
 		return ret;
 	}
 
 	if (list->count == 0) {
+		TALLOC_FREE(list);
 		return LDB_ERR_NO_SUCH_OBJECT;
 	}
 	if (list->count > 1) {
@@ -369,6 +371,7 @@ int ltdb_key_dn_from_idx(struct ldb_module *module,
 	/* The tdb_key memory is allocated by the caller */
 	ret = ltdb_guid_to_key(module, ltdb,
 			       &list->dn[0], tdb_key);
+	TALLOC_FREE(list);
 
 	if (ret != LDB_SUCCESS) {
 		return LDB_ERR_OPERATIONS_ERROR;
