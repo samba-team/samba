@@ -127,6 +127,35 @@ int ltdb_unlock_read(struct ldb_module *module)
 }
 
 
+/* 
+ * Determine if this key could hold a record.  We allow the new GUID
+ * index, the old DN index and a possible future ID=
+ */
+bool ltdb_key_is_record(TDB_DATA key)
+{
+	if (key.dsize < 4) {
+		return false;
+	}
+
+	if (strncmp((char *)key.dptr, "DN=", 3) == 0) {
+		return true;
+	}
+	
+	if (strncmp((char *)key.dptr, "ID=", 3) == 0) {
+		return true;
+	}
+
+	if (key.dsize < 6) {
+		return false;
+	}
+
+	if (strncmp((char *)key.dptr, "GUID=", 5) == 0) {
+		return true;
+	}
+	
+	return false;
+}
+
 /*
   form a TDB_DATA for a record key
   caller frees
