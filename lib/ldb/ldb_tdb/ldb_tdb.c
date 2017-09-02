@@ -303,6 +303,12 @@ TDB_DATA ltdb_key_msg(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 	guid_val = ldb_msg_find_ldb_val(msg,
 				       ltdb->cache->GUID_index_attribute);
 	if (guid_val == NULL) {
+		ldb_asprintf_errstring(ldb_module_get_ctx(module),
+				       "Did not find GUID attribute %s "
+				       "in %s, required for TDB record "
+				       "key in " LTDB_IDXGUID " mode.",
+				       ltdb->cache->GUID_index_attribute,
+				       ldb_dn_get_linearized(msg->dn));
 		errno = EINVAL;
 		key.dptr = NULL;
 		key.dsize = 0;
