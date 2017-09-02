@@ -4,23 +4,73 @@ prog="ss"
 
 usage ()
 {
-    cat >&2 <<EOF
-Usage: $prog -tn state established [ '(' ip-filter ')' ] [ '(' port-filter ')' ]
+	cat >&2 <<EOF
+Usage: $prog { -t|--tcp | -x|--unix } [options] [ FILTER ]
 
 A fake ss stub that prints items depending on the variables
-FAKE_NETSTAT_TCP_ESTABLISHED and FAKE_NETSTAT_TCP_ESTABLISHED_FILE.
+FAKE_NETSTAT_TCP_ESTABLISHED, FAKE_TCP_LISTEN,
+FAKE_NETSTAT_UNIX_LISTEN, depending on command-line options.
 
-Note that "-tn state established" must be given.
+Note that -n is ignored.
 
 EOF
-    exit 1
+	exit 1
 }
 
-if [ "$1" != "-tn" -o "$2" != "state" -o "$3" != "established" ] ; then
-    usage
-fi
+not_supported ()
+{
+	echo "Options not supported in stub: $*" >&2
+	usage
+}
 
-shift 3
+############################################################
+
+#
+parse_filter ()
+{
+	# Very limited implementation:
+	# We only expect to find || inside parentheses
+	# We don't expect to see && - it is implied by juxtaposition
+	# Operator for port comparison is ignored and assumed to be ==
+
+	# Build lists of source ports and source IP addresses where
+	# each entry is surrounded by '|' characters.  These lists can
+	# be easily "searched" using the POSIX prefix and suffix
+	# removal operators.
+	in_parens=false
+	sports="|"
+	srcs="|"
+
+	while [ -n "$1" ] ; do
+		case "$1" in
+		\()
+			in_parens=true
+			shift
+			;;
+		\))
+			in_parens=false
+			shift
+			;;
+		\|\|)
+			if ! $in_parens ; then
+				not_supported "|| in parentheses"
+			fi
+			shift
+			;;
+		sport)
+			p="${3#:}" ; sports="${sports}${p}|"
+			shift 3
+			;;
+		src)
+			ip="${2#\[}" ; ip="${ip%\]}" ; srcs="${srcs}${ip}|"
+			shift 2
+			;;
+		*)
+			usage
+			;;
+		esac
+	done
+}
 
 # Check if socket has matches in both ok_ips and ok_ports
 filter_socket ()
@@ -44,31 +94,11 @@ filter_socket ()
 
 ss_tcp_established ()
 {
-    echo "Recv-Q Send-Q Local Address:Port Peer Address:Port"
+    if $header ; then
+	echo "Recv-Q Send-Q Local Address:Port Peer Address:Port"
+    fi
 
-    # Very limited implementation:
-    # We only expect to find || inside parentheses
-    # We don't expect to see && - it is implied by juxtaposition
-    # Operator for port comparison is ignored and assumed to be ==
-
-    # Build lists of source ports and source IP addresses where each
-    # entry is surrounded by '|' characters.  These lists can be
-    # easily "searched" using the POSIX prefix and suffix removal
-    # operators.
-    in_parens=false
-    sports="|"
-    srcs="|"
-
-    while [ -n "$1" ] ; do
-	case "$1" in
-	    \() in_parens=true ; shift ;;
-	    \)) in_parens=false ; shift ;;
-	    \|\|) if ! $in_parens ; then usage ; fi ; shift ;;
-	    sport) p="${3#:}" ; sports="${sports}${p}|" ; shift 3 ;;
-	    src) ip="${2#\[}" ; ip="${ip%\]}" ; srcs="${srcs}${ip}|" ; shift 2 ;;
-	    *) usage ;;
-	esac
-    done
+    parse_filter $*
 
     for i in $FAKE_NETSTAT_TCP_ESTABLISHED ; do
 	src="${i%|*}"
@@ -88,5 +118,80 @@ ss_tcp_established ()
     done <"$FAKE_NETSTAT_TCP_ESTABLISHED_FILE"
 }
 
-# Yes, lose the quoting so we can do a hacky parsing job
-ss_tcp_established $*
+############################################################
+
+unix_listen ()
+{
+	if $header ; then
+		cat <<EOF
+Netid State Recv-Q Send-Q   Local Address:Port   Peer Address:Port"
+EOF
+	fi
+
+	parse_filter $*
+
+	_n=12345
+	for _s in $FAKE_NETSTAT_UNIX_LISTEN ; do
+		# ss matches Unix domain sockets as either src or
+		# sport.
+		if filter_socket "$srcs" "$sports" "${_s}:" || \
+				filter_socket "$srcs" "$sports" ":${_s}" ; then
+			printf "u_str LISTEN 0 128   %s %d   * 0\n" "$_s" "$_n"
+			_n=$((_n + 1))
+		fi
+	done
+}
+
+############################################################
+
+# Defaults.
+tcp=false
+unix=false
+all=false
+listen=false
+header=true
+
+orig="$*"
+temp=$(getopt -n "$prog" -o "txnalHh" -l tcp -l unix -l help -- "$@")
+[ $? -eq 0 ] || usage
+
+eval set -- "$temp"
+
+while true ; do
+	case "$1" in
+	--tcp|-t) tcp=true ; shift ;;
+	--unix|-x) unix=true ; shift ;;
+	-l) listen=true ; shift ;;
+	-a) all=true ; shift ;;
+	-H) header=false ; shift ;;
+	-n) shift ;;
+	--) shift ; break ;;
+	-h|--help|*) usage ;;
+	esac
+done
+
+$tcp || $unix || not_supported "$*"
+
+if $tcp ; then
+	if [ "$1" != "state" -o "$2" != "established" ] || $listen ; then
+		usage
+	fi
+
+	shift 2
+
+	# Yes, lose the quoting so we can do a hacky parsing job
+	ss_tcp_established $*
+
+	exit
+fi
+
+if $unix ; then
+	if ! $listen ; then
+		not_supported "$orig"
+	fi
+
+	# Yes, lose the quoting so we can do a hacky parsing job
+	unix_listen $*
+
+	exit
+fi
