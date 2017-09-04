@@ -317,24 +317,6 @@ int ctdb_ctrl_freeze(struct ctdb_context *ctdb, struct timeval timeout,
 int ctdb_ctrl_getpnn(struct ctdb_context *ctdb, struct timeval timeout,
 		     uint32_t destnode);
 
-/*
-  get the monitoring mode of a remote node
- */
-int ctdb_ctrl_getmonmode(struct ctdb_context *ctdb, struct timeval timeout,
-			 uint32_t destnode, uint32_t *monmode);
-
-/*
-  set the monitoring mode of a remote node to active
- */
-int ctdb_ctrl_enable_monmode(struct ctdb_context *ctdb,
-			     struct timeval timeout, uint32_t destnode);
-
-/*
-  set the monitoring mode of a remote node to disabled
- */
-int ctdb_ctrl_disable_monmode(struct ctdb_context *ctdb,
-			      struct timeval timeout, uint32_t destnode);
-
 int ctdb_ctrl_takeover_ip(struct ctdb_context *ctdb, struct timeval timeout,
 			  uint32_t destnode, struct ctdb_public_ip *ip);
 int ctdb_ctrl_release_ip(struct ctdb_context *ctdb, struct timeval timeout,
