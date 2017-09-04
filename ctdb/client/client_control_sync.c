@@ -817,35 +817,6 @@ int ctdb_ctrl_shutdown(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	return 0;
 }
 
-int ctdb_ctrl_get_monmode(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-			  struct ctdb_client_context *client,
-			  int destnode, struct timeval timeout,
-			  int *mon_mode)
-{
-	struct ctdb_req_control request;
-	struct ctdb_reply_control *reply;
-	int ret;
-
-	ctdb_req_control_get_monmode(&request);
-	ret = ctdb_client_control(mem_ctx, ev, client, destnode, timeout,
-				  &request, &reply);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,
-		      ("Control GET_MONMODE failed to node %u, ret=%d\n",
-		       destnode, ret));
-		return ret;
-	}
-
-	ret = ctdb_reply_control_get_monmode(reply, mon_mode);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,
-		      ("Control GET_MONMODE failed, ret=%d\n", ret));
-		return ret;
-	}
-
-	return 0;
-}
-
 int ctdb_ctrl_tcp_add(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 		      struct ctdb_client_context *client,
 		      int destnode, struct timeval timeout,
@@ -1316,62 +1287,6 @@ int ctdb_ctrl_reload_nodes_file(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,
 		      ("Control RELOAD_NODES_FILE failed, ret=%d\n", ret));
-		return ret;
-	}
-
-	return 0;
-}
-
-int ctdb_ctrl_enable_monitor(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-			     struct ctdb_client_context *client,
-			     int destnode, struct timeval timeout)
-{
-	struct ctdb_req_control request;
-	struct ctdb_reply_control *reply;
-	int ret;
-
-	ctdb_req_control_enable_monitor(&request);
-	ret = ctdb_client_control(mem_ctx, ev, client, destnode, timeout,
-				  &request, &reply);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,
-		      ("Control ENABLE_MONITOR failed to node %u, ret=%d\n",
-		       destnode, ret));
-		return ret;
-	}
-
-	ret = ctdb_reply_control_enable_monitor(reply);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,
-		      ("Control ENABLE_MONITOR failed, ret=%d\n", ret));
-		return ret;
-	}
-
-	return 0;
-}
-
-int ctdb_ctrl_disable_monitor(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-			      struct ctdb_client_context *client,
-			      int destnode, struct timeval timeout)
-{
-	struct ctdb_req_control request;
-	struct ctdb_reply_control *reply;
-	int ret;
-
-	ctdb_req_control_disable_monitor(&request);
-	ret = ctdb_client_control(mem_ctx, ev, client, destnode, timeout,
-				  &request, &reply);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,
-		      ("Control DISABLE_MONITOR failed to node %u, ret=%d\n",
-		       destnode, ret));
-		return ret;
-	}
-
-	ret = ctdb_reply_control_disable_monitor(reply);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,
-		      ("Control DISABLE_MONITOR failed, ret=%d\n", ret));
 		return ret;
 	}
 

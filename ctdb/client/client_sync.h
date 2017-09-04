@@ -157,11 +157,6 @@ int ctdb_ctrl_shutdown(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 		       struct ctdb_client_context *client,
 		       int destnode, struct timeval timeout);
 
-int ctdb_ctrl_get_monmode(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-			  struct ctdb_client_context *client,
-			  int destnode, struct timeval timeout,
-			  int *mon_mode);
-
 int ctdb_ctrl_tcp_add(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 		      struct ctdb_client_context *client,
 		      int destnode, struct timeval timeout,
@@ -244,14 +239,6 @@ int ctdb_ctrl_end_recovery(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 int ctdb_ctrl_reload_nodes_file(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 				struct ctdb_client_context *client,
 				int destnode, struct timeval timeout);
-
-int ctdb_ctrl_enable_monitor(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-			     struct ctdb_client_context *client,
-			     int destnode, struct timeval timeout);
-
-int ctdb_ctrl_disable_monitor(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-			      struct ctdb_client_context *client,
-			      int destnode, struct timeval timeout);
 
 int ctdb_ctrl_add_public_ip(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			    struct ctdb_client_context *client,
