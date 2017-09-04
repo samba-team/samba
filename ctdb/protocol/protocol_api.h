@@ -299,10 +299,6 @@ int ctdb_reply_control_get_pnn(struct ctdb_reply_control *reply,
 void ctdb_req_control_shutdown(struct ctdb_req_control *request);
 int ctdb_reply_control_shutdown(struct ctdb_reply_control *reply);
 
-void ctdb_req_control_get_monmode(struct ctdb_req_control *request);
-int ctdb_reply_control_get_monmode(struct ctdb_reply_control *reply,
-				   int *mon_mode);
-
 void ctdb_req_control_tcp_client(struct ctdb_req_control *request,
 				 struct ctdb_connection *conn);
 int ctdb_reply_control_tcp_client(struct ctdb_reply_control *reply);
@@ -387,12 +383,6 @@ void ctdb_req_control_try_delete_records(struct ctdb_req_control *request,
 int ctdb_reply_control_try_delete_records(struct ctdb_reply_control *reply,
 					  TALLOC_CTX *mem_ctx,
 					  struct ctdb_rec_buffer **recbuf);
-
-void ctdb_req_control_enable_monitor(struct ctdb_req_control *request);
-int ctdb_reply_control_enable_monitor(struct ctdb_reply_control *reply);
-
-void ctdb_req_control_disable_monitor(struct ctdb_req_control *request);
-int ctdb_reply_control_disable_monitor(struct ctdb_reply_control *reply);
 
 void ctdb_req_control_add_public_ip(struct ctdb_req_control *request,
 				    struct ctdb_addr_info *addr_info);

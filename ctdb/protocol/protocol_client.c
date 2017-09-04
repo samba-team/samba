@@ -720,31 +720,6 @@ int ctdb_reply_control_shutdown(struct ctdb_reply_control *reply)
 
 /* CTDB_CONTROL_GET_MONMODE */
 
-void ctdb_req_control_get_monmode(struct ctdb_req_control *request)
-{
-	request->opcode = CTDB_CONTROL_GET_MONMODE;
-	request->pad = 0;
-	request->srvid = 0;
-	request->client_id = 0;
-	request->flags = 0;
-
-	request->rdata.opcode = CTDB_CONTROL_GET_MONMODE;
-}
-
-int ctdb_reply_control_get_monmode(struct ctdb_reply_control *reply,
-				   int *mon_mode)
-{
-	if (reply->rdata.opcode != CTDB_CONTROL_GET_MONMODE) {
-		return EPROTO;
-	}
-
-	if (reply->status >= 0) {
-		*mon_mode = reply->status;
-		reply->status = 0;
-	}
-	return reply->status;
-}
-
 /* CTDB_CONTROL_TCP_CLIENT */
 
 void ctdb_req_control_tcp_client(struct ctdb_req_control *request,
@@ -1196,40 +1171,7 @@ int ctdb_reply_control_try_delete_records(struct ctdb_reply_control *reply,
 }
 
 /* CTDB_CONTROL_ENABLE_MONITOR */
-
-void ctdb_req_control_enable_monitor(struct ctdb_req_control *request)
-{
-	request->opcode = CTDB_CONTROL_ENABLE_MONITOR;
-	request->pad = 0;
-	request->srvid = 0;
-	request->client_id = 0;
-	request->flags = 0;
-
-	request->rdata.opcode = CTDB_CONTROL_ENABLE_MONITOR;
-}
-
-int ctdb_reply_control_enable_monitor(struct ctdb_reply_control *reply)
-{
-	return ctdb_reply_control_generic(reply, CTDB_CONTROL_ENABLE_MONITOR);
-}
-
 /* CTDB_CONTROL_DISABLE_MONITOR */
-
-void ctdb_req_control_disable_monitor(struct ctdb_req_control *request)
-{
-	request->opcode = CTDB_CONTROL_DISABLE_MONITOR;
-	request->pad = 0;
-	request->srvid = 0;
-	request->client_id = 0;
-	request->flags = 0;
-
-	request->rdata.opcode = CTDB_CONTROL_DISABLE_MONITOR;
-}
-
-int ctdb_reply_control_disable_monitor(struct ctdb_reply_control *reply)
-{
-	return ctdb_reply_control_generic(reply, CTDB_CONTROL_DISABLE_MONITOR);
-}
 
 /* CTDB_CONTROL_ADD_PUBLIC_IP */
 
