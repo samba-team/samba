@@ -37,7 +37,6 @@
 #include "common/logging.h"
 
 struct ctdb_monitor_state {
-	uint32_t monitoring_mode;
 	TALLOC_CTX *monitor_context;
 	uint32_t next_interval;
 	uint32_t event_script_timeouts;
@@ -241,8 +240,6 @@ static void ctdb_startup_callback(struct ctdb_context *ctdb, int status, void *p
 	ctdb->monitor->next_interval = 2;
 	ctdb_run_notification_script(ctdb, "startup");
 
-	ctdb->monitor->monitoring_mode = CTDB_MONITORING_ENABLED;
-
 	tevent_add_timer(ctdb->ev, ctdb->monitor->monitor_context,
 			 timeval_current_ofs(ctdb->monitor->next_interval, 0),
 			 ctdb_check_health, ctdb);
@@ -388,8 +385,7 @@ static void ctdb_check_health(struct tevent_context *ev,
 
 	if (ctdb->recovery_mode != CTDB_RECOVERY_NORMAL ||
 	    ctdb->nodes[ctdb->pnn]->flags & NODE_FLAGS_INACTIVE ||
-	    ctdb->runstate != CTDB_RUNSTATE_RUNNING ||
-	    ctdb->monitor->monitoring_mode == CTDB_MONITORING_DISABLED) {
+	    ctdb->runstate != CTDB_RUNSTATE_RUNNING) {
 		skip_monitoring = true;
 	} else {
 		if (ctdb_db_all_frozen(ctdb)) {
@@ -427,7 +423,6 @@ void ctdb_stop_monitoring(struct ctdb_context *ctdb)
 	talloc_free(ctdb->monitor->monitor_context);
 	ctdb->monitor->monitor_context = NULL;
 
-	ctdb->monitor->monitoring_mode  = CTDB_MONITORING_DISABLED;
 	ctdb->monitor->next_interval = 5;
 	DEBUG(DEBUG_NOTICE,("Monitoring has been stopped\n"));
 }
