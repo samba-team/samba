@@ -419,26 +419,6 @@ static void ctdb_check_health(struct tevent_context *ev,
 	}
 }
 
-/* 
-  (Temporaily) Disabling monitoring will stop the monitor event scripts
-  from running   but node health checks will still occur
-*/
-void ctdb_disable_monitoring(struct ctdb_context *ctdb)
-{
-	ctdb->monitor->monitoring_mode = CTDB_MONITORING_DISABLED;
-	DEBUG(DEBUG_INFO,("Monitoring has been disabled\n"));
-}
-
-/* 
-   Re-enable running monitor events after they have been disabled
- */
-void ctdb_enable_monitoring(struct ctdb_context *ctdb)
-{
-	ctdb->monitor->monitoring_mode  = CTDB_MONITORING_ENABLED;
-	ctdb->monitor->next_interval = 5;
-	DEBUG(DEBUG_INFO,("Monitoring has been enabled\n"));
-}
-
 /* stop any monitoring 
    this should only be done when shutting down the daemon
 */
@@ -528,23 +508,4 @@ int32_t ctdb_control_modflags(struct ctdb_context *ctdb, TDB_DATA indata)
 				 CTDB_SRVID_SET_NODE_FLAGS, indata);
 
 	return 0;
-}
-
-/*
-  return the monitoring mode
- */
-int32_t ctdb_monitoring_mode(struct ctdb_context *ctdb)
-{
-	if (ctdb->monitor == NULL) {
-		return CTDB_MONITORING_DISABLED;
-	}
-	return ctdb->monitor->monitoring_mode;
-}
-
-/*
- * Check if monitoring has been stopped
- */
-bool ctdb_stopped_monitoring(struct ctdb_context *ctdb)
-{
-	return (ctdb->monitor->monitor_context == NULL ? true : false);
 }

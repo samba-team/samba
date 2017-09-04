@@ -747,16 +747,11 @@ int32_t ctdb_control_get_db_statistics(struct ctdb_context *ctdb,
 int ctdb_set_notification_script(struct ctdb_context *ctdb, const char *script);
 void ctdb_run_notification_script(struct ctdb_context *ctdb, const char *event);
 
-void ctdb_disable_monitoring(struct ctdb_context *ctdb);
-void ctdb_enable_monitoring(struct ctdb_context *ctdb);
 void ctdb_stop_monitoring(struct ctdb_context *ctdb);
 
 void ctdb_wait_for_first_recovery(struct ctdb_context *ctdb);
 
 int32_t ctdb_control_modflags(struct ctdb_context *ctdb, TDB_DATA indata);
-
-int32_t ctdb_monitoring_mode(struct ctdb_context *ctdb);
-bool ctdb_stopped_monitoring(struct ctdb_context *ctdb);
 
 /* from ctdb_persistent.c */
 
