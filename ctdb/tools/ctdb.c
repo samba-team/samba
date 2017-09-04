@@ -2159,26 +2159,6 @@ static int control_cattdb(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	return ret;
 }
 
-static int control_getmonmode(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			      int argc, const char **argv)
-{
-	int mode, ret;
-
-	if (argc != 0) {
-		usage("getmonmode");
-	}
-
-	ret = ctdb_ctrl_get_monmode(mem_ctx, ctdb->ev, ctdb->client,
-				    ctdb->cmd_pnn, TIMEOUT(), &mode);
-	if (ret != 0) {
-		return ret;
-	}
-
-	printf("%s\n",
-	       (mode == CTDB_MONITORING_ENABLED) ? "ENABLED" : "DISABLED");
-	return 0;
-}
-
 static int control_getcapabilities(TALLOC_CTX *mem_ctx,
 				   struct ctdb_context *ctdb,
 				   int argc, const char **argv)
@@ -2244,44 +2224,6 @@ static int control_lvs(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	}
 
 	return run_helper(mem_ctx, "LVS helper", lvs_helper, argc, argv);
-}
-
-static int control_disable_monitor(TALLOC_CTX *mem_ctx,
-				   struct ctdb_context *ctdb,
-				   int argc, const char **argv)
-{
-	int ret;
-
-	if (argc != 0) {
-		usage("disablemonitor");
-	}
-
-	ret = ctdb_ctrl_disable_monitor(mem_ctx, ctdb->ev, ctdb->client,
-					ctdb->cmd_pnn, TIMEOUT());
-	if (ret != 0) {
-		return ret;
-	}
-
-	return 0;
-}
-
-static int control_enable_monitor(TALLOC_CTX *mem_ctx,
-				  struct ctdb_context *ctdb,
-				  int argc, const char **argv)
-{
-	int ret;
-
-	if (argc != 0) {
-		usage("enablemonitor");
-	}
-
-	ret = ctdb_ctrl_enable_monitor(mem_ctx, ctdb->ev, ctdb->client,
-				       ctdb->cmd_pnn, TIMEOUT());
-	if (ret != 0) {
-		return ret;
-	}
-
-	return 0;
 }
 
 static int control_setdebug(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
@@ -5950,18 +5892,12 @@ static const struct ctdb_cmd {
 		"dump cluster-wide ctdb database", "<dbname|dbid>" },
 	{ "cattdb", control_cattdb, false, false,
 		"dump local ctdb database", "<dbname|dbid>" },
-	{ "getmonmode", control_getmonmode, false, true,
-		"show monitoring mode", NULL },
 	{ "getcapabilities", control_getcapabilities, false, true,
 		"show node capabilities", NULL },
 	{ "pnn", control_pnn, false, false,
 		"show the pnn of the currnet node", NULL },
 	{ "lvs", control_lvs, false, false,
 		"show lvs configuration", "master|list|status" },
-	{ "disablemonitor", control_disable_monitor, false, true,
-		"disable monitoring", NULL },
-	{ "enablemonitor", control_enable_monitor, false, true,
-		"enable monitoring", NULL },
 	{ "setdebug", control_setdebug, false, true,
 		"set debug level", "ERROR|WARNING|NOTICE|INFO|DEBUG" },
 	{ "getdebug", control_getdebug, false, true,
