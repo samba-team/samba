@@ -460,7 +460,7 @@ def build(bld):
                                              ctdb_update_record.c
                                              ctdb_lock.c ctdb_fork.c'''),
                      includes='include',
-                     deps='''ctdb-ipalloc ctdb-client ctdb-common ctdb-system
+                     deps='''ctdb-client ctdb-common ctdb-system ctdb-protocol
                              ctdb-tcp ctdb-util replace sys_rw popt
                              talloc tevent tdb talloc_report''' +
                           ib_deps,
