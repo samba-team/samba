@@ -332,22 +332,17 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));		
 		return ctdb_control_set_recmode(ctdb, c, indata, async_reply, errormsg);
 
-	case CTDB_CONTROL_GET_MONMODE: 
-		CHECK_CONTROL_DATA_SIZE(0);
-		return ctdb_monitoring_mode(ctdb);
-		
-	case CTDB_CONTROL_ENABLE_MONITOR: 
-		CHECK_CONTROL_DATA_SIZE(0);
-		ctdb_enable_monitoring(ctdb);
-		return 0;
+	case CTDB_CONTROL_GET_MONMODE:
+		return control_not_implemented("GET_MONMODE", NULL);
+
+	case CTDB_CONTROL_ENABLE_MONITOR:
+		return control_not_implemented("ENABLE_MONITOR", NULL);
 
 	case CTDB_CONTROL_RUN_EVENTSCRIPTS:
 		return control_not_implemented("RUN_EVENTSCRIPTS", NULL);
 
-	case CTDB_CONTROL_DISABLE_MONITOR: 
-		CHECK_CONTROL_DATA_SIZE(0);
-		ctdb_disable_monitoring(ctdb);
-		return 0;
+	case CTDB_CONTROL_DISABLE_MONITOR:
+		return control_not_implemented("DISABLE_MONITOR", NULL);
 
 	case CTDB_CONTROL_SHUTDOWN:
 		DEBUG(DEBUG_NOTICE,("Received SHUTDOWN command.\n"));

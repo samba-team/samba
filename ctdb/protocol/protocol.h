@@ -259,7 +259,7 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_THAW                    = 34, /* obsolete */
 		    CTDB_CONTROL_GET_PNN                 = 35,
 		    CTDB_CONTROL_SHUTDOWN                = 36,
-		    CTDB_CONTROL_GET_MONMODE             = 37,
+		    CTDB_CONTROL_GET_MONMODE             = 37, /* obsolete */
 		    /* #38 removed */
 		    /* #39 removed */
 		    /* #40 removed */
@@ -297,8 +297,8 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_RELOAD_NODES_FILE       = 72,
 		    /* #73 removed */
 		    CTDB_CONTROL_TRY_DELETE_RECORDS      = 74,
-		    CTDB_CONTROL_ENABLE_MONITOR          = 75,
-		    CTDB_CONTROL_DISABLE_MONITOR         = 76,
+		    CTDB_CONTROL_ENABLE_MONITOR          = 75, /* obsolete */
+		    CTDB_CONTROL_DISABLE_MONITOR         = 76, /* obsolete */
 		    CTDB_CONTROL_ADD_PUBLIC_IP           = 77,
 		    CTDB_CONTROL_DEL_PUBLIC_IP           = 78,
 		    CTDB_CONTROL_RUN_EVENTSCRIPTS        = 79, /* obsolete */
