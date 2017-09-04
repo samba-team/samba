@@ -512,3 +512,147 @@ int ctdb_connection_from_string(const char *str, bool client_first,
 
 	return 0;
 }
+
+int ctdb_connection_list_add(struct ctdb_connection_list *conn_list,
+			     struct ctdb_connection *conn)
+{
+	uint32_t len;
+
+	if (conn_list == NULL) {
+		return EINVAL;
+	}
+
+	/* Ensure array is big enough */
+	len = talloc_array_length(conn_list->conn);
+	if (conn_list->num == len) {
+		conn_list->conn = talloc_realloc(conn_list, conn_list->conn,
+						 struct ctdb_connection,
+						 len+128);
+		if (conn_list->conn == NULL) {
+			return ENOMEM;
+		}
+	}
+
+	conn_list->conn[conn_list->num] = *conn;
+	conn_list->num++;
+
+	return 0;
+}
+
+static int connection_cmp(const void *a, const void *b)
+{
+	const struct ctdb_connection *conn_a = a;
+	const struct ctdb_connection *conn_b = b;
+	int ret;
+
+	ret = ctdb_sock_addr_cmp(&conn_a->server, &conn_b->server);
+	if (ret == 0) {
+		ret = ctdb_sock_addr_cmp(&conn_a->client, &conn_b->client);
+	}
+
+	return ret;
+}
+
+int ctdb_connection_list_sort(struct ctdb_connection_list *conn_list)
+{
+	if (conn_list == NULL) {
+		return EINVAL;
+	}
+
+	if (conn_list->num > 0) {
+		qsort(conn_list->conn, conn_list->num,
+		      sizeof(struct ctdb_connection), connection_cmp);
+	}
+
+	return 0;
+}
+
+const char *ctdb_connection_list_to_string(
+	TALLOC_CTX *mem_ctx,
+	struct ctdb_connection_list *conn_list, bool client_first)
+{
+	uint32_t i;
+	char *out;
+
+	out = talloc_strdup(mem_ctx, "");
+	if (out == NULL) {
+		return NULL;
+	}
+
+	if (conn_list == NULL || conn_list->num == 0) {
+		return out;
+	}
+
+	for (i = 0; i < conn_list->num; i++) {
+		char buf[128];
+		int ret;
+
+		ret = ctdb_connection_to_buf(buf, sizeof(buf),
+					     &conn_list->conn[i], client_first);
+		if (ret != 0) {
+			talloc_free(out);
+			return NULL;
+		}
+
+		out = talloc_asprintf_append(out, "%s\n", buf);
+		if (out == NULL) {
+			return NULL;
+		}
+	}
+
+	return out;
+}
+
+int ctdb_connection_list_read(TALLOC_CTX *mem_ctx, bool client_first,
+			      struct ctdb_connection_list **conn_list)
+{
+	struct ctdb_connection_list *list;
+	char line[128]; /* long enough for IPv6 */
+	int ret;
+
+	if (conn_list == NULL) {
+		return EINVAL;
+	}
+
+	list = talloc_zero(mem_ctx, struct ctdb_connection_list);
+	if (list == NULL) {
+		return ENOMEM;
+	}
+
+	while (fgets(line, sizeof(line), stdin) != NULL) {
+		char *t;
+		struct ctdb_connection conn;
+
+		/* Skip empty lines */
+		if (line[0] == '\n') {
+			continue;
+		}
+
+		/* Comment */
+		if (line[0] == '#') {
+			continue;
+		}
+
+		t = strtok(line, "\n");
+		if (t == NULL) {
+			goto fail;
+		}
+
+		ret = ctdb_connection_from_string(t, client_first, &conn);
+		if (ret != 0) {
+			goto fail;
+		}
+
+		ret = ctdb_connection_list_add(list, &conn);
+		if (ret != 0) {
+			goto fail;
+		}
+	}
+
+	*conn_list = list;
+	return 0;
+
+fail:
+	talloc_free(list);
+	return EINVAL;
+}

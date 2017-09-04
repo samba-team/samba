@@ -144,6 +144,147 @@ static void test_connection_from_string_bad(const char *conn_str)
 	assert(ret != 0);
 }
 
+/*
+ * Test connection list utilities
+ */
+
+static void test_connection_list_read(const char *s1, const char *s2)
+{
+	TALLOC_CTX *tmp_ctx;
+	int pipefd[2];
+	pid_t pid;
+	struct ctdb_connection_list *conn_list;
+	const char *t;
+	int ret;
+
+	tmp_ctx = talloc_new(NULL);
+	assert(tmp_ctx != NULL);
+
+	ret = pipe(pipefd);
+	assert(ret == 0);
+
+	pid = fork();
+	assert(pid != -1);
+
+	if (pid == 0) {
+		close(pipefd[0]);
+
+		ret = dup2(pipefd[1], STDOUT_FILENO);
+		assert(ret != -1);
+
+		close(pipefd[1]);
+
+		printf("%s", s1);
+		fflush(stdout);
+
+		exit(0);
+	}
+
+	close(pipefd[1]);
+
+	ret = dup2(pipefd[0], STDIN_FILENO);
+	assert(ret != -1);
+
+	close(pipefd[0]);
+
+	ret = ctdb_connection_list_read(tmp_ctx, false, &conn_list);
+	assert(ret == 0);
+
+	ret = ctdb_connection_list_sort(conn_list);
+	assert(ret == 0);
+
+	t = ctdb_connection_list_to_string(tmp_ctx, conn_list, false);
+	assert(t != NULL);
+	ret = strcmp(t, s2);
+	assert(ret == 0);
+
+	talloc_free(tmp_ctx);
+}
+
+static void test_connection_list_read_bad(const char *s1)
+{
+	TALLOC_CTX *tmp_ctx;
+	int pipefd[2];
+	pid_t pid;
+	struct ctdb_connection_list *conn_list;
+	int ret;
+
+	tmp_ctx = talloc_new(NULL);
+	assert(tmp_ctx != NULL);
+
+	ret = pipe(pipefd);
+	assert(ret == 0);
+
+	pid = fork();
+	assert(pid != -1);
+
+	if (pid == 0) {
+		close(pipefd[0]);
+
+		ret = dup2(pipefd[1], STDOUT_FILENO);
+		assert(ret != -1);
+
+		close(pipefd[1]);
+
+		printf("%s", s1);
+		fflush(stdout);
+
+		exit(0);
+	}
+
+	close(pipefd[1]);
+
+	ret = dup2(pipefd[0], STDIN_FILENO);
+	assert(ret != -1);
+
+	close(pipefd[0]);
+
+	ret = ctdb_connection_list_read(tmp_ctx, false, &conn_list);
+	assert(ret != 0);
+
+	talloc_free(tmp_ctx);
+}
+
+/*
+ * Use macros for these to make them easy to concatenate
+ */
+
+#define CONN4 \
+"\
+127.0.0.1:12345 127.0.0.2:54321\n\
+127.0.0.2:12345 127.0.0.1:54322\n\
+127.0.0.1:12346 127.0.0.2:54323\n\
+127.0.0.2:12345 127.0.0.1:54324\n\
+127.0.0.1:12345 127.0.0.2:54325\n\
+"
+
+#define CONN4_SORT \
+"\
+127.0.0.1:12345 127.0.0.2:54321\n\
+127.0.0.1:12345 127.0.0.2:54325\n\
+127.0.0.1:12346 127.0.0.2:54323\n\
+127.0.0.2:12345 127.0.0.1:54322\n\
+127.0.0.2:12345 127.0.0.1:54324\n\
+"
+
+#define CONN6 \
+"\
+fe80::6af7:28ff:fefa:d136:12345 fe80::6af7:28ff:fefa:d137:54321\n\
+fe80::6af7:28ff:fefa:d138:12345 fe80::6af7:28ff:fefa:d137:54322\n\
+fe80::6af7:28ff:fefa:d136:12346 fe80::6af7:28ff:fefa:d137:54323\n\
+fe80::6af7:28ff:fefa:d132:12345 fe80::6af7:28ff:fefa:d137:54324\n\
+fe80::6af7:28ff:fefa:d136:12345 fe80::6af7:28ff:fefa:d137:54325\n\
+"
+
+#define CONN6_SORT \
+"\
+fe80::6af7:28ff:fefa:d132:12345 fe80::6af7:28ff:fefa:d137:54324\n\
+fe80::6af7:28ff:fefa:d136:12345 fe80::6af7:28ff:fefa:d137:54321\n\
+fe80::6af7:28ff:fefa:d136:12345 fe80::6af7:28ff:fefa:d137:54325\n\
+fe80::6af7:28ff:fefa:d136:12346 fe80::6af7:28ff:fefa:d137:54323\n\
+fe80::6af7:28ff:fefa:d138:12345 fe80::6af7:28ff:fefa:d137:54322\n\
+"
+
 int main(int argc, char *argv[])
 {
 	test_sock_addr_to_string("0.0.0.0", false);
@@ -193,6 +334,17 @@ int main(int argc, char *argv[])
 					"fe80::6af7:28ff:fefa:d136:122");
 	test_connection_from_string_bad("Junk!");
 	test_connection_from_string_bad("More junk");
+
+	test_connection_list_read(CONN4, CONN4_SORT);
+	test_connection_list_read(CONN6, CONN6_SORT);
+	test_connection_list_read(CONN4 CONN6, CONN4_SORT CONN6_SORT);
+	test_connection_list_read(CONN4 "# Comment\n\n# Comment\n" CONN6,
+				  CONN4_SORT CONN6_SORT);
+
+	test_connection_list_read_bad(CONN4 "# Comment\n\nJunk!!!\n" CONN6);
+	test_connection_list_read_bad(CONN4
+				      "# Comment\n\n127.0.0.1: 127.0.0.1:124\n"
+				      CONN6);
 
 	return 0;
 }

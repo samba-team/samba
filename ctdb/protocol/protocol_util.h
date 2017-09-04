@@ -60,4 +60,13 @@ const char *ctdb_connection_to_string(TALLOC_CTX *mem_ctx,
 int ctdb_connection_from_string(const char *str, bool client_first,
 				struct ctdb_connection *conn);
 
+int ctdb_connection_list_add(struct ctdb_connection_list *conn_list,
+			     struct ctdb_connection *conn);
+int ctdb_connection_list_sort(struct ctdb_connection_list *conn_list);
+const char *ctdb_connection_list_to_string(
+	TALLOC_CTX *mem_ctx,
+	struct ctdb_connection_list *conn_list, bool client_first);
+int ctdb_connection_list_read(TALLOC_CTX *mem_ctx, bool client_first,
+			      struct ctdb_connection_list **conn_list);
+
 #endif /* __CTDB_PROTOCOL_UTIL_H__ */
