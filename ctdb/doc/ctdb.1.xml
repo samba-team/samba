@@ -1757,15 +1757,6 @@ HEALTH: NO-HEALTHY-NODES - ERROR - Backup of corrupted TDB in '/usr/local/var/li
     </refsect2>
 
     <refsect2>
-      <title>getmonmode</title>
-      <para>
-	This command prints the monitoring mode of a node.  This
-	indicates when CTDB is monitoring services on the node. The
-	monitoring mode is either ENABLED or DISABLED.
-      </para>
-    </refsect2>
-
-    <refsect2>
       <title>attach <parameter>DBNAME</parameter> [persistent|replicated]</title>
       <para>
 	Create a new CTDB database called DBNAME and attach to it on
@@ -1836,9 +1827,8 @@ HEALTH: NO-HEALTHY-NODES - ERROR - Backup of corrupted TDB in '/usr/local/var/li
 
   </refsect1>
 
-  <!-- UNDOCUMENTED: showban stats disablemonitor enablemonitor
+  <!-- UNDOCUMENTED: stats
        isnotrecmaster addtickle deltickle
-       msglisten msgsend
        tfetch tstore readkey writekey
        checktcpport getdbseqnum ipiface
   -->
