@@ -26,7 +26,7 @@
 #include "lib/util/debug.h"
 
 #include "protocol/protocol.h"
-#include "protocol/protocol_api.h"
+#include "protocol/protocol_util.h"
 
 #include "common/rb_tree.h"
 #include "common/system.h"

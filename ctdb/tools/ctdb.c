@@ -39,6 +39,7 @@
 #include "common/logging.h"
 #include "protocol/protocol.h"
 #include "protocol/protocol_api.h"
+#include "protocol/protocol_util.h"
 #include "common/system.h"
 #include "client/client.h"
 #include "client/client_sync.h"

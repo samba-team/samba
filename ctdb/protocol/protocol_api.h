@@ -678,22 +678,4 @@ void sock_packet_header_set_reqid(struct sock_packet_header *h,
 void sock_packet_header_set_length(struct sock_packet_header *h,
 				   uint32_t length);
 
-/* From protocol/protocol_util.c */
-
-const char *ctdb_runstate_to_string(enum ctdb_runstate runstate);
-enum ctdb_runstate ctdb_runstate_from_string(const char *runstate_str);
-
-const char *ctdb_event_to_string(enum ctdb_event event);
-enum ctdb_event ctdb_event_from_string(const char *event_str);
-
-const char *ctdb_sock_addr_to_string(TALLOC_CTX *mem_ctx, ctdb_sock_addr *addr);
-int ctdb_sock_addr_cmp_ip(const ctdb_sock_addr *addr1,
-			  const ctdb_sock_addr *addr2);
-int ctdb_sock_addr_cmp(const ctdb_sock_addr *addr1,
-		       const ctdb_sock_addr *addr2);
-bool ctdb_sock_addr_same_ip(const ctdb_sock_addr *addr1,
-			    const ctdb_sock_addr *addr2);
-bool ctdb_sock_addr_same(const ctdb_sock_addr *addr1,
-			 const ctdb_sock_addr *addr2);
-
 #endif /* __CTDB_PROTOCOL_API_H__ */

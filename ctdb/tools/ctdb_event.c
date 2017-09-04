@@ -26,7 +26,7 @@
 
 #include "lib/util/debug.h"
 
-#include "protocol/protocol_api.h"
+#include "protocol/protocol_util.h"
 #include "client/client_event.h"
 #include "common/logging.h"
 

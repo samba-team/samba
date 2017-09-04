@@ -21,11 +21,9 @@
 #include "system/network.h"
 
 #include <talloc.h>
-#include <tdb.h>
 
 #include "protocol.h"
-#include "protocol_private.h"
-#include "protocol_api.h"
+#include "protocol_util.h"
 
 static struct {
 	enum ctdb_runstate runstate;

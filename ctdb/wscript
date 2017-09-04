@@ -400,10 +400,13 @@ def build(bld):
                                              protocol_keepalive.c
                                              protocol_client.c
                                              protocol_debug.c
-                                             protocol_util.c
                                              protocol_event.c
                                              protocol_sock.c'''),
                         includes='include',
+                        deps='replace talloc tdb')
+
+    bld.SAMBA_SUBSYSTEM('ctdb-protocol-util',
+                        source='protocol/protocol_util.c',
                         deps='replace talloc tdb')
 
     bld.SAMBA_SUBSYSTEM('ctdb-client',
@@ -439,7 +442,7 @@ def build(bld):
                                              ipalloc.c
                                           '''),
                         includes='include',
-                        deps='ctdb-protocol replace talloc tevent')
+                        deps='ctdb-protocol-util replace talloc tevent')
 
     bld.SAMBA_BINARY('ctdbd',
                      source='server/ctdbd.c ' +
@@ -469,21 +472,21 @@ def build(bld):
 
     bld.SAMBA_BINARY('ctdb',
                      source='tools/ctdb.c',
-                     deps='''ctdb-client2 ctdb-protocol ctdb-util ctdb-system
-                             samba-util sys_rw popt''',
+                     deps='''ctdb-client2 ctdb-protocol ctdb-protocol-util
+                             ctdb-util ctdb-system samba-util sys_rw popt''',
                      install_path='${BINDIR}',
                      manpages='ctdb.1')
 
     bld.SAMBA_BINARY('ctdb_killtcp',
                      source='tools/ctdb_killtcp.c',
-                     deps='''ctdb-protocol ctdb-util ctdb-system
+                     deps='''ctdb-protocol-util ctdb-util ctdb-system
                              samba-util replace''',
                      install_path='${CTDB_HELPER_BINDIR}')
 
     bld.SAMBA_BINARY('ctdb_event',
                      source='tools/ctdb_event.c',
-                     deps='''ctdb-client2 ctdb-protocol ctdb-util ctdb-system
-                             samba-util replace''',
+                     deps='''ctdb-client2 ctdb-protocol ctdb-protocol-util
+                             ctdb-util ctdb-system samba-util replace''',
                      install_path='${CTDB_HELPER_BINDIR}')
 
     bld.SAMBA_BINARY('ltdbtool',
@@ -495,8 +498,8 @@ def build(bld):
 
     bld.SAMBA_BINARY('ctdb_eventd',
                      source='server/ctdb_eventd.c',
-                     deps='''ctdb-server-util ctdb-protocol ctdb-util
-                             samba-util LIBASYNC_REQ replace popt''',
+                     deps='''ctdb-server-util ctdb-protocol ctdb-protocol-util
+                             ctdb-util samba-util LIBASYNC_REQ replace popt''',
                      install_path='${CTDB_HELPER_BINDIR}')
 
     bld.SAMBA_BINARY('ctdb_lock_helper',
@@ -840,8 +843,9 @@ def build(bld):
     bld.SAMBA_BINARY('fake_ctdbd',
                      source='''tests/src/fake_ctdbd.c
                                tests/src/ipalloc_read_known_ips.c''',
-                     deps='''ctdb-util ctdb-protocol ctdb-system
-                             samba-util tevent-util LIBASYNC_REQ popt''',
+                     deps='''ctdb-util ctdb-protocol ctdb-protocol-util
+                             ctdb-system samba-util tevent-util
+                             LIBASYNC_REQ popt''',
                      install_path='${CTDB_TEST_LIBEXECDIR}')
 
     if bld.env.HAVE_INFINIBAND:

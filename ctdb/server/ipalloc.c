@@ -29,7 +29,7 @@
 #include "common/logging.h"
 #include "common/rb_tree.h"
 
-#include "protocol/protocol_api.h"
+#include "protocol/protocol_util.h"
 
 #include "server/ipalloc_private.h"
 

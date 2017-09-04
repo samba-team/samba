@@ -35,6 +35,7 @@
 #include "lib/async_req/async_sock.h"
 
 #include "protocol/protocol_api.h"
+#include "protocol/protocol_util.h"
 
 #include "common/comm.h"
 #include "common/logging.h"

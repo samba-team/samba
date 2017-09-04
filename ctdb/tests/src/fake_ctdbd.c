@@ -34,6 +34,7 @@
 
 #include "protocol/protocol.h"
 #include "protocol/protocol_api.h"
+#include "protocol/protocol_util.h"
 
 #include "common/comm.h"
 #include "common/system.h"
