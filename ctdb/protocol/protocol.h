@@ -555,8 +555,14 @@ typedef union {
 } ctdb_sock_addr;
 
 struct ctdb_connection {
-	ctdb_sock_addr src;
-	ctdb_sock_addr dst;
+	union {
+		ctdb_sock_addr src;
+		ctdb_sock_addr server;
+	};
+	union {
+		ctdb_sock_addr dst;
+		ctdb_sock_addr client;
+	};
 };
 
 struct ctdb_tunable {
