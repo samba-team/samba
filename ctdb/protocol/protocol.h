@@ -565,6 +565,11 @@ struct ctdb_connection {
 	};
 };
 
+struct ctdb_connection_list {
+	uint32_t num;
+	struct ctdb_connection *conn;
+};
+
 struct ctdb_tunable {
 	const char *name;
 	uint32_t value;
