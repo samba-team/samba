@@ -417,3 +417,98 @@ bool ctdb_sock_addr_same(const ctdb_sock_addr *addr1,
 {
 	return (ctdb_sock_addr_cmp(addr1, addr2) == 0);
 }
+
+int ctdb_connection_to_buf(char *buf, size_t buflen,
+			   struct ctdb_connection *conn, bool client_first)
+{
+	char server[64], client[64];
+	int ret;
+
+	ret = ctdb_sock_addr_to_buf(server, sizeof(server),
+				    &conn->server, true);
+	if (ret != 0) {
+		return ret;
+	}
+
+	ret = ctdb_sock_addr_to_buf(client, sizeof(client),
+				    &conn->client, true);
+	if (ret != 0) {
+		return ret;
+	}
+
+	if (! client_first) {
+		ret = snprintf(buf, buflen, "%s %s", server, client);
+	} else {
+		ret = snprintf(buf, buflen, "%s %s", client, server);
+	}
+	if (ret >= buflen) {
+		return ENOSPC;
+	}
+
+	return 0;
+}
+
+const char *ctdb_connection_to_string(TALLOC_CTX *mem_ctx,
+				      struct ctdb_connection *conn,
+				      bool client_first)
+{
+	const size_t len = 128;
+	char *out;
+	int ret;
+
+	out = talloc_size(mem_ctx, len);
+	if (out == NULL) {
+		return NULL;
+	}
+
+	ret = ctdb_connection_to_buf(out, len, conn, client_first);
+	if (ret != 0) {
+		talloc_free(out);
+		return NULL;
+	}
+
+	return out;
+}
+
+int ctdb_connection_from_string(const char *str, bool client_first,
+				struct ctdb_connection *conn)
+{
+	char s[128];
+	char *t1 = NULL, *t2 = NULL;
+	size_t len;
+	ctdb_sock_addr *first = (client_first ? &conn->client : &conn->server);
+	ctdb_sock_addr *second = (client_first ? &conn->server : &conn->client);
+	int ret;
+
+	len = strlcpy(s, str, sizeof(s));
+	if (len >= sizeof(s)) {
+		return EINVAL;
+	}
+
+	t1 = strtok(s, " \t\n");
+	if (t1 == NULL) {
+		return EINVAL;
+	}
+
+	t2 = strtok(NULL, " \t\n\0");
+	if (t2 == NULL) {
+		return EINVAL;
+	}
+
+	ret = ctdb_sock_addr_from_string(t1, first, true);
+	if (ret != 0) {
+		return ret;
+	}
+
+	ret = ctdb_sock_addr_from_string(t2, second, true);
+	if (ret != 0) {
+		return ret;
+	}
+
+	ret = ctdb_sock_addr_cmp_family(first, second);
+	if (ret != 0) {
+		return EINVAL;
+	}
+
+	return 0;
+}

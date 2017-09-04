@@ -72,6 +72,78 @@ static void test_sock_addr_cmp(const char *ip1, const char *ip2,
 	assert(ret == res);
 }
 
+/*
+ * Test parsing of connection, conversion to string
+ */
+
+static void test_connection_to_string(const char *conn_str)
+{
+	TALLOC_CTX *tmp_ctx;
+	struct ctdb_connection conn;
+	const char *s, *r;
+	int ret;
+
+	tmp_ctx = talloc_new(NULL);
+	assert(tmp_ctx != NULL);
+
+	/*
+	 * Test non-reversed parse and render
+	 */
+
+	ret = ctdb_connection_from_string(conn_str, false, &conn);
+	assert(ret == 0);
+
+	s = ctdb_connection_to_string(tmp_ctx, &conn, false);
+	assert(s != NULL);
+	ret = strcmp(conn_str, s);
+	assert(ret == 0);
+
+	talloc_free(discard_const(s));
+
+	/*
+	 * Reversed render
+	 */
+	r = ctdb_connection_to_string(tmp_ctx, &conn, true);
+	assert(r != NULL);
+	ret = strcmp(conn_str, r);
+	assert(ret != 0);
+
+	/*
+	 * Reversed parse with forward render
+	 */
+	ret = ctdb_connection_from_string(conn_str, true, &conn);
+	assert(ret == 0);
+
+	s = ctdb_connection_to_string(tmp_ctx, &conn, false);
+	assert(s != NULL);
+	ret = strcmp(r, s);
+	assert(ret == 0);
+
+	talloc_free(discard_const(s));
+
+	/*
+	 * Reversed parse and render
+	 */
+	ret = ctdb_connection_from_string(conn_str, true, &conn);
+	assert(ret == 0);
+
+	s = ctdb_connection_to_string(tmp_ctx, &conn, true);
+	assert(s != NULL);
+	ret = strcmp(conn_str, s);
+	assert(ret == 0);
+
+	talloc_free(tmp_ctx);
+}
+
+static void test_connection_from_string_bad(const char *conn_str)
+{
+	struct ctdb_connection conn;
+	int ret;
+
+	ret = ctdb_connection_from_string(conn_str, false, &conn);
+	assert(ret != 0);
+}
+
 int main(int argc, char *argv[])
 {
 	test_sock_addr_to_string("0.0.0.0", false);
@@ -110,5 +182,17 @@ int main(int argc, char *argv[])
 	test_sock_addr_cmp("127.0.0.1:123", "127.0.0.1:124" , true, -1);
 	test_sock_addr_cmp("fe80::6af7:28ff:fefa:d136:123",
 			   "fe80::6af7:28ff:fefa:d136:122" , true, 1);
+
+	test_connection_to_string("127.0.0.1:12345 127.0.0.2:54321");
+	test_connection_to_string("fe80::6af7:28ff:fefa:d137:12345 "
+				  "fe80::6af7:28ff:fefa:d138:54321");
+
+	test_connection_from_string_bad("127.0.0.1:12345 127.0.0.2:");
+	test_connection_from_string_bad("127.0.0.1:12345");
+	test_connection_from_string_bad("127.0.0.1:12345 "
+					"fe80::6af7:28ff:fefa:d136:122");
+	test_connection_from_string_bad("Junk!");
+	test_connection_from_string_bad("More junk");
+
 	return 0;
 }
