@@ -129,7 +129,6 @@ struct ctdbd_context {
 	int log_level;
 	enum ctdb_runstate runstate;
 	struct ctdb_tunable_list tun_list;
-	int monitoring_mode;
 	char *reclock;
 	struct ctdb_public_ip_list *known_ips;
 	struct fake_control_failure *control_failures;
@@ -970,8 +969,6 @@ static struct ctdbd_context *ctdbd_setup(TALLOC_CTX *mem_ctx)
 
 	ctdb_tunable_set_defaults(&ctdb->tun_list);
 
-	ctdb->monitoring_mode = CTDB_MONITORING_ENABLED;
-
 	return ctdb;
 
 fail:
@@ -1759,23 +1756,6 @@ static void control_shutdown(TALLOC_CTX *mem_ctx,
 	state->status = 99;
 }
 
-static void control_get_monmode(TALLOC_CTX *mem_ctx,
-				struct tevent_req *req,
-				struct ctdb_req_header *header,
-				struct ctdb_req_control *request)
-{
-	struct client_state *state = tevent_req_data(
-		req, struct client_state);
-	struct ctdbd_context *ctdb = state->ctdb;
-	struct ctdb_reply_control reply;
-
-	reply.rdata.opcode = request->opcode;
-	reply.status = ctdb->monitoring_mode;
-	reply.errmsg = NULL;
-
-	client_send_control(req, header, &reply);
-}
-
 static void control_set_tunable(TALLOC_CTX *mem_ctx,
 				struct tevent_req *req,
 				struct ctdb_req_header *header,
@@ -1957,42 +1937,6 @@ static void control_uptime(TALLOC_CTX *mem_ctx,
 fail:
 	reply.status = -1;
 	reply.errmsg = "Memory error";
-	client_send_control(req, header, &reply);
-}
-
-static void control_enable_monitor(TALLOC_CTX *mem_ctx,
-				   struct tevent_req *req,
-				   struct ctdb_req_header *header,
-				   struct ctdb_req_control *request)
-{
-	struct client_state *state = tevent_req_data(
-		req, struct client_state);
-	struct ctdbd_context *ctdb = state->ctdb;
-	struct ctdb_reply_control reply;
-
-	ctdb->monitoring_mode = CTDB_MONITORING_ENABLED;
-
-	reply.rdata.opcode = request->opcode;
-	reply.status = 0;
-	reply.errmsg = NULL;
-	client_send_control(req, header, &reply);
-}
-
-static void control_disable_monitor(TALLOC_CTX *mem_ctx,
-				    struct tevent_req *req,
-				    struct ctdb_req_header *header,
-				    struct ctdb_req_control *request)
-{
-	struct client_state *state = tevent_req_data(
-		req, struct client_state);
-	struct ctdbd_context *ctdb = state->ctdb;
-	struct ctdb_reply_control reply;
-
-	ctdb->monitoring_mode = CTDB_MONITORING_DISABLED;
-
-	reply.rdata.opcode = request->opcode;
-	reply.status = 0;
-	reply.errmsg = NULL;
 	client_send_control(req, header, &reply);
 }
 
@@ -2364,7 +2308,6 @@ static void control_stop_node(TALLOC_CTX *mem_ctx,
 	reply.rdata.opcode = request->opcode;
 
 	DEBUG(DEBUG_INFO, ("Stopping node\n"));
-	ctdb->monitoring_mode = CTDB_MONITORING_DISABLED;
 	ctdb->node_map->node[header->destnode].flags |= NODE_FLAGS_STOPPED;
 
 	reply.status = 0;
@@ -3339,10 +3282,6 @@ static void client_process_control(struct tevent_req *req,
 		control_shutdown(mem_ctx, req, &header, &request);
 		break;
 
-	case CTDB_CONTROL_GET_MONMODE:
-		control_get_monmode(mem_ctx, req, &header, &request);
-		break;
-
 	case CTDB_CONTROL_SET_TUNABLE:
 		control_set_tunable(mem_ctx, req, &header, &request);
 		break;
@@ -3365,14 +3304,6 @@ static void client_process_control(struct tevent_req *req,
 
 	case CTDB_CONTROL_UPTIME:
 		control_uptime(mem_ctx, req, &header, &request);
-		break;
-
-	case CTDB_CONTROL_ENABLE_MONITOR:
-		control_enable_monitor(mem_ctx, req, &header, &request);
-		break;
-
-	case CTDB_CONTROL_DISABLE_MONITOR:
-		control_disable_monitor(mem_ctx, req, &header, &request);
 		break;
 
 	case CTDB_CONTROL_RELOAD_NODES_FILE:
