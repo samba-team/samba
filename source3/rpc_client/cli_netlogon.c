@@ -140,10 +140,6 @@ NTSTATUS rpccli_create_netlogon_creds_ctx(
 	const char *client_account;
 
 	sec_chan_type = cli_credentials_get_secure_channel_type(creds);
-	if (sec_chan_type == SEC_CHAN_NULL) {
-		return NT_STATUS_INVALID_PARAMETER_MIX;
-	}
-
 	client_account = cli_credentials_get_username(creds);
 	server_netbios_domain = cli_credentials_get_domain(creds);
 	server_dns_domain = cli_credentials_get_realm(creds);
