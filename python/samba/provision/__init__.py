@@ -2200,6 +2200,9 @@ def provision(logger, session_info, smbconf=None,
                          realm=names.realm)
         logger.info("A Kerberos configuration suitable for Samba AD has been "
                     "generated at %s", paths.krb5conf)
+        logger.info("Merge the contents of this file with your system "
+                    "krb5.conf or replace it with this one. Do not create a "
+                    "symlink!")
 
         if serverrole == "active directory domain controller":
             create_dns_update_list(lp, logger, paths)
