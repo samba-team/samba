@@ -405,6 +405,7 @@ static int objectclass_do_add(struct oc_context *ac)
 	}
 
 	if (ac->schema != NULL) {
+		unsigned int linkID = 0;
 		/*
 		 * Notice: by the normalization function call in "ldb_request()"
 		 * case "LDB_ADD" we have always only *one* "objectClass"
@@ -605,6 +606,11 @@ static int objectclass_do_add(struct oc_context *ac)
 			systemFlags |= (int32_t)(SYSTEM_FLAG_CONFIG_ALLOW_RENAME);
 		}
 		/* TODO: If parent object is site or subnet, also add (SYSTEM_FLAG_CONFIG_ALLOW_RENAME) */
+
+		linkID = ldb_msg_find_attr_as_int(msg, "linkID", 0);
+		if (linkID > 0 && linkID % 2 == 1) {
+			systemFlags |= DS_FLAG_ATTR_NOT_REPLICATED;
+		}
 
 		if (el || systemFlags != 0) {
 			ret = samdb_msg_add_int(ldb, msg, msg, "systemFlags",
