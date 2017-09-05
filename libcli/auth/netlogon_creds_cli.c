@@ -447,47 +447,6 @@ NTSTATUS netlogon_creds_cli_context_global(struct loadparm_context *lp_ctx,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS netlogon_creds_cli_context_tmp(const char *client_computer,
-				const char *client_account,
-				enum netr_SchannelType type,
-				uint32_t proposed_flags,
-				uint32_t required_flags,
-				enum dcerpc_AuthLevel auth_level,
-				const char *server_computer,
-				const char *server_netbios_domain,
-				TALLOC_CTX *mem_ctx,
-				struct netlogon_creds_cli_context **_context)
-{
-	NTSTATUS status;
-	struct netlogon_creds_cli_context *context = NULL;
-
-	*_context = NULL;
-
-	status = netlogon_creds_cli_context_common(client_computer,
-						   client_account,
-						   type,
-						   auth_level,
-						   proposed_flags,
-						   required_flags,
-						   server_computer,
-						   server_netbios_domain,
-						   "",
-						   mem_ctx,
-						   &context);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	context->db.ctx = db_open_rbt(context);
-	if (context->db.ctx == NULL) {
-		talloc_free(context);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	*_context = context;
-	return NT_STATUS_OK;
-}
-
 char *netlogon_creds_cli_debug_string(
 		const struct netlogon_creds_cli_context *context,
 		TALLOC_CTX *mem_ctx)

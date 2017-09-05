@@ -43,16 +43,6 @@ NTSTATUS netlogon_creds_cli_context_global(struct loadparm_context *lp_ctx,
 				const char *server_dns_domain,
 				TALLOC_CTX *mem_ctx,
 				struct netlogon_creds_cli_context **_context);
-NTSTATUS netlogon_creds_cli_context_tmp(const char *client_computer,
-				const char *client_account,
-				enum netr_SchannelType type,
-				uint32_t proposed_flags,
-				uint32_t required_flags,
-				enum dcerpc_AuthLevel auth_level,
-				const char *server_computer,
-				const char *server_netbios_domain,
-				TALLOC_CTX *mem_ctx,
-				struct netlogon_creds_cli_context **_context);
 
 char *netlogon_creds_cli_debug_string(
 		const struct netlogon_creds_cli_context *context,
