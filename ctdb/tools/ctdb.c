@@ -4139,6 +4139,7 @@ static int control_restoredb(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	uint32_t generation;
 	uint32_t *pnn_list;
 	char timebuf[128];
+	ssize_t n;
 	int fd, i;
 	int count, ret;
 
@@ -4158,8 +4159,8 @@ static int control_restoredb(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		db_name = argv[1];
 	}
 
-	ret = read(fd, &db_hdr, sizeof(struct db_header));
-	if (ret == -1) {
+	n = read(fd, &db_hdr, sizeof(struct db_header));
+	if (n == -1) {
 		ret = errno;
 		close(fd);
 		fprintf(stderr, "Failed to read db header from file %s\n",
@@ -4377,6 +4378,7 @@ static int control_dumpdbbackup(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	struct db_header db_hdr;
 	char timebuf[128];
 	struct dumpdbbackup_state state;
+	ssize_t n;
 	int fd, ret, i;
 
 	if (argc != 1) {
@@ -4391,8 +4393,8 @@ static int control_dumpdbbackup(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return ret;
 	}
 
-	ret = read(fd, &db_hdr, sizeof(struct db_header));
-	if (ret == -1) {
+	n = read(fd, &db_hdr, sizeof(struct db_header));
+	if (n == -1) {
 		ret = errno;
 		close(fd);
 		fprintf(stderr, "Failed to read db header from file %s\n",
