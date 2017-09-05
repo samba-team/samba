@@ -434,13 +434,6 @@ NTSTATUS netlogon_creds_cli_context_global(struct loadparm_context *lp_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (netlogon_creds_cli_global_db != NULL) {
-		context->db.ctx = netlogon_creds_cli_global_db;
-		*_context = context;
-		TALLOC_FREE(frame);
-		return NT_STATUS_OK;
-	}
-
 	status = netlogon_creds_cli_open_global_db(lp_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(context);
