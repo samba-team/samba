@@ -114,6 +114,91 @@ static void test_connect(void **state)
 	assert_int_equal(ret, 0);
 }
 
+static struct ldb_message *get_test_ldb_message(TALLOC_CTX *mem_ctx,
+						struct ldb_context *ldb)
+{
+	struct ldb_message *msg = ldb_msg_new(mem_ctx);
+	int ret;
+	assert_non_null(msg);
+
+	msg->dn = ldb_dn_new(msg, ldb, "dc=samba,dc=org");
+	assert_non_null(msg->dn);
+	ret = ldb_msg_add_string(msg, "public", "key");
+	assert_int_equal(ret, LDB_SUCCESS);
+	ret = ldb_msg_add_string(msg, "supersecret", "password");
+	assert_int_equal(ret, LDB_SUCCESS);
+	ret = ldb_msg_add_string(msg, "binary", "\xff\xff\0");
+	assert_int_equal(ret, LDB_SUCCESS);
+	return msg;
+}
+
+static void test_ldif_message(void **state)
+{
+	struct ldbtest_ctx *test_ctx = talloc_get_type_abort(*state,
+							struct ldbtest_ctx);
+	char *got_ldif;
+	const char *expected_ldif =
+		"dn: dc=samba,dc=org\n"
+		"changetype: add\n"
+		"public: key\n"
+		"supersecret: password\n"
+		"binary:: //8=\n"
+		"\n";
+	
+	struct ldb_message *msg = get_test_ldb_message(test_ctx,
+						       test_ctx->ldb);
+
+	got_ldif = ldb_ldif_message_string(test_ctx->ldb,
+					   test_ctx,
+					   LDB_CHANGETYPE_ADD,
+					   msg);
+	assert_string_equal(got_ldif, expected_ldif);
+	TALLOC_FREE(got_ldif);
+}
+
+static void test_ldif_message_redacted(void **state)
+{
+	struct ldbtest_ctx *test_ctx = talloc_get_type_abort(*state,
+							struct ldbtest_ctx);
+	int ret;
+	char *got_ldif;
+	const char *expected_ldif =
+		"dn: dc=samba,dc=org\n"
+		"changetype: add\n"
+		"public: key\n"
+		"# supersecret::: REDACTED SECRET ATTRIBUTE\n"
+		"binary:: //8=\n"
+		"\n";
+
+	const char *secret_attrs[] = {
+		"supersecret",
+		NULL
+	};
+	
+	struct ldb_message *msg = ldb_msg_new(test_ctx);
+
+	ldb_set_opaque(test_ctx->ldb,
+		       LDB_SECRET_ATTRIBUTE_LIST_OPAQUE,
+		       secret_attrs);
+	
+	assert_non_null(msg);
+
+	msg->dn = ldb_dn_new(msg, test_ctx->ldb, "dc=samba,dc=org");
+	ret = ldb_msg_add_string(msg, "public", "key");
+	assert_int_equal(ret, LDB_SUCCESS);
+	ret = ldb_msg_add_string(msg, "supersecret", "password");
+	assert_int_equal(ret, LDB_SUCCESS);
+	ret = ldb_msg_add_string(msg, "binary", "\xff\xff\0");
+	assert_int_equal(ret, LDB_SUCCESS);
+	got_ldif = ldb_ldif_message_redacted_string(test_ctx->ldb,
+						    test_ctx,
+						    LDB_CHANGETYPE_ADD,
+						    msg);
+	assert_string_equal(got_ldif, expected_ldif);
+	TALLOC_FREE(got_ldif);
+	assert_int_equal(ret, 0);
+}
+
 static int ldbtest_setup(void **state)
 {
 	struct ldbtest_ctx *test_ctx;
@@ -2780,6 +2865,12 @@ int main(int argc, const char **argv)
 {
 	const struct CMUnitTest tests[] = {
 		cmocka_unit_test_setup_teardown(test_connect,
+						ldbtest_noconn_setup,
+						ldbtest_noconn_teardown),
+		cmocka_unit_test_setup_teardown(test_ldif_message,
+						ldbtest_noconn_setup,
+						ldbtest_noconn_teardown),
+		cmocka_unit_test_setup_teardown(test_ldif_message_redacted,
 						ldbtest_noconn_setup,
 						ldbtest_noconn_teardown),
 		cmocka_unit_test_setup_teardown(test_ldb_add,
