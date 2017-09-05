@@ -283,6 +283,10 @@ NTSTATUS netlogon_creds_cli_context_global(struct loadparm_context *lp_ctx,
 
 	*_context = NULL;
 
+	if (msg_ctx == NULL) {
+		return NT_STATUS_INVALID_PARAMETER_MIX;
+	}
+
 	client_computer = lpcfg_netbios_name(lp_ctx);
 	if (strlen(client_computer) > 15) {
 		return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -433,13 +437,11 @@ NTSTATUS netlogon_creds_cli_context_global(struct loadparm_context *lp_ctx,
 		return status;
 	}
 
-	if (msg_ctx != NULL) {
-		context->db.g_ctx = g_lock_ctx_init(context, msg_ctx);
-		if (context->db.g_ctx == NULL) {
-			TALLOC_FREE(context);
-			TALLOC_FREE(frame);
-			return NT_STATUS_NO_MEMORY;
-		}
+	context->db.g_ctx = g_lock_ctx_init(context, msg_ctx);
+	if (context->db.g_ctx == NULL) {
+		TALLOC_FREE(context);
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	if (netlogon_creds_cli_global_db != NULL) {
