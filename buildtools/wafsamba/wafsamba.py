@@ -900,8 +900,6 @@ def INSTALL_DIR(bld, path, chmod=0o755):
             except OSError, e:
                 if not os.path.isdir(path):
                     raise Utils.WafError("Cannot create the folder '%s' (error: %s)" % (path, e))
-        else:
-            os.chmod(path, chmod)
 Build.BuildContext.INSTALL_DIR = INSTALL_DIR
 
 def INSTALL_DIRS(bld, destdir, dirs, chmod=0o755):
