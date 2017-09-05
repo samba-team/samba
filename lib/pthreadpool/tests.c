@@ -232,7 +232,11 @@ static int test_busyfork(void)
 		return -1;
 	}
 
-	poll(NULL, 0, 200);
+	ret = poll(NULL, 0, 200);
+	if (ret == -1) {
+		perror("poll failed");
+		return -1;
+	}
 
 	child = fork();
 	if (child < 0) {
@@ -278,7 +282,11 @@ static int test_busyfork(void)
 		return -1;
 	}
 
-	poll(NULL, 0, 200);
+	ret = poll(NULL, 0, 200);
+	if (ret == -1) {
+		perror("poll failed");
+		return -1;
+	}
 
 	waitret = waitpid(child, &wstatus, WNOHANG);
 	if (waitret != child) {
