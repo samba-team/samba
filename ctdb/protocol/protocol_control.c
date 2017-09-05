@@ -899,7 +899,7 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 		break;
 
 	case CTDB_CONTROL_DEREGISTER_NOTIFY:
-		ctdb_uint64_pull(buf, buflen, &cd->data.srvid, &np);
+		ret = ctdb_uint64_pull(buf, buflen, &cd->data.srvid, &np);
 		break;
 
 	case CTDB_CONTROL_TRANS3_COMMIT:
