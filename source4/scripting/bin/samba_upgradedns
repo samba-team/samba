@@ -553,6 +553,23 @@ if __name__ == '__main__':
                         "updates", paths.namedtxt)
 
     elif opts.dns_backend == "SAMBA_INTERNAL":
+        # Make sure to remove everything from the bind-dns directory to avoid
+        # possible security issues with the named group having write access
+        # to all AD partions
+        cleanup_remove_file(os.path.join(paths.binddns_dir, "dns.keytab"))
+        cleanup_remove_file(os.path.join(paths.binddns_dir, "named.conf"))
+        cleanup_remove_file(os.path.join(paths.binddns_dir, "named.conf.update"))
+        cleanup_remove_file(os.path.join(paths.binddns_dir, "named.txt"))
+
+        cleanup_remove_dir(os.path.dirname(paths.dns))
+
+        try:
+            os.chmod(paths.private_dir, 0o700)
+            os.chown(paths.private_dir, -1, 0)
+        except:
+            logger.warn("Failed to restore owner and permissions for %s",
+                        (paths.private_dir))
+
         # Check if dns-HOSTNAME account exists and delete it if required
         try:
             dn_str = 'samAccountName=dns-%s,CN=Principals' % hostname
