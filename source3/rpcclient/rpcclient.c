@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "../libcli/auth/netlogon_creds_cli.h"
 #include "popt_common.h"
 #include "rpcclient.h"
 #include "../libcli/auth/libcli_auth.h"

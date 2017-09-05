@@ -18,6 +18,7 @@
  */
 
 #include "includes.h"
+#include "../libcli/auth/netlogon_creds_cli.h"
 #include "lib/netapi/netapi.h"
 #include "lib/netapi/netapi_private.h"
 #include "secrets.h"
