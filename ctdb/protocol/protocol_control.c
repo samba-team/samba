@@ -1659,8 +1659,8 @@ static int ctdb_reply_control_data_pull(uint8_t *buf, size_t buflen,
 		break;
 
 	case CTDB_CONTROL_TRY_DELETE_RECORDS:
-		ctdb_rec_buffer_pull(buf, buflen, mem_ctx,
-				     &cd->data.recbuf, &np);
+		ret = ctdb_rec_buffer_pull(buf, buflen, mem_ctx,
+					   &cd->data.recbuf, &np);
 		break;
 
 	case CTDB_CONTROL_GET_CAPABILITIES:
