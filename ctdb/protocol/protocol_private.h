@@ -187,6 +187,12 @@ void ctdb_connection_push(struct ctdb_connection *in, uint8_t *buf,
 int ctdb_connection_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 			 struct ctdb_connection **out, size_t *npull);
 
+size_t ctdb_connection_list_len(struct ctdb_connection_list *in);
+void ctdb_connection_list_push(struct ctdb_connection_list *in, uint8_t *buf,
+			       size_t *npush);
+int ctdb_connection_list_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
+			      struct ctdb_connection_list **out, size_t *npull);
+
 size_t ctdb_tunable_len(struct ctdb_tunable *in);
 void ctdb_tunable_push(struct ctdb_tunable *in, uint8_t *buf, size_t *npush);
 int ctdb_tunable_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,

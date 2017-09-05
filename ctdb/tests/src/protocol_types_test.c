@@ -47,6 +47,7 @@ PROTOCOL_TYPE3_TEST(struct ctdb_traverse_start_ext, ctdb_traverse_start_ext);
 PROTOCOL_TYPE3_TEST(struct ctdb_traverse_all_ext, ctdb_traverse_all_ext);
 PROTOCOL_TYPE3_TEST(ctdb_sock_addr, ctdb_sock_addr);
 PROTOCOL_TYPE3_TEST(struct ctdb_connection, ctdb_connection);
+PROTOCOL_TYPE3_TEST(struct ctdb_connection_list, ctdb_connection_list);
 PROTOCOL_TYPE3_TEST(struct ctdb_tunable, ctdb_tunable);
 PROTOCOL_TYPE3_TEST(struct ctdb_node_flag_change, ctdb_node_flag_change);
 PROTOCOL_TYPE3_TEST(struct ctdb_var_list, ctdb_var_list);
@@ -150,6 +151,7 @@ int main(int argc, char *argv[])
 	TEST_FUNC(ctdb_traverse_all_ext)();
 	TEST_FUNC(ctdb_sock_addr)();
 	TEST_FUNC(ctdb_connection)();
+	TEST_FUNC(ctdb_connection_list)();
 	TEST_FUNC(ctdb_tunable)();
 	TEST_FUNC(ctdb_node_flag_change)();
 	TEST_FUNC(ctdb_var_list)();

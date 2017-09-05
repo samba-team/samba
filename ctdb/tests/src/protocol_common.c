@@ -707,6 +707,34 @@ void verify_ctdb_connection(struct ctdb_connection *p1,
 	verify_ctdb_sock_addr(&p1->dst, &p2->dst);
 }
 
+void fill_ctdb_connection_list(TALLOC_CTX *mem_ctx,
+			       struct ctdb_connection_list *p)
+{
+	uint32_t i;
+
+	p->num = rand_int(1000);
+	if (p->num > 0) {
+		p->conn = talloc_array(mem_ctx, struct ctdb_connection, p->num);
+		assert(p->conn != NULL);
+		for (i=0; i<p->num; i++) {
+			fill_ctdb_connection(mem_ctx, &p->conn[i]);
+		}
+	} else {
+		p->conn = NULL;
+	}
+}
+
+void verify_ctdb_connection_list(struct ctdb_connection_list *p1,
+				 struct ctdb_connection_list *p2)
+{
+	uint32_t i;
+
+	assert(p1->num == p2->num);
+	for (i=0; i<p1->num; i++) {
+		verify_ctdb_connection(&p1->conn[i], &p2->conn[i]);
+	}
+}
+
 void fill_ctdb_tunable(TALLOC_CTX *mem_ctx, struct ctdb_tunable *p)
 {
 	fill_ctdb_string(mem_ctx, &p->name);

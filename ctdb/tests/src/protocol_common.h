@@ -238,6 +238,11 @@ void fill_ctdb_connection(TALLOC_CTX *mem_ctx, struct ctdb_connection *p);
 void verify_ctdb_connection(struct ctdb_connection *p1,
 			    struct ctdb_connection *p2);
 
+void fill_ctdb_connection_list(TALLOC_CTX *mem_ctx,
+			       struct ctdb_connection_list *p);
+void verify_ctdb_connection_list(struct ctdb_connection_list *p1,
+				 struct ctdb_connection_list *p2);
+
 void fill_ctdb_tunable(TALLOC_CTX *mem_ctx, struct ctdb_tunable *p);
 void verify_ctdb_tunable(struct ctdb_tunable *p1, struct ctdb_tunable *p2);
 

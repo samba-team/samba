@@ -2171,6 +2171,84 @@ int ctdb_connection_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
+size_t ctdb_connection_list_len(struct ctdb_connection_list *in)
+{
+	size_t len;
+
+	len = ctdb_uint32_len(&in->num);
+	if (in->num > 0) {
+		len += in->num * ctdb_connection_len(&in->conn[0]);
+	}
+
+	return len;
+}
+
+void ctdb_connection_list_push(struct ctdb_connection_list *in, uint8_t *buf,
+			       size_t *npush)
+{
+	size_t offset = 0, np;
+	uint32_t i;
+
+	ctdb_uint32_push(&in->num, buf+offset, &np);
+	offset += np;
+
+	for (i=0; i<in->num; i++) {
+		ctdb_connection_push(&in->conn[i], buf+offset, &np);
+		offset += np;
+	}
+
+	*npush = offset;
+}
+
+int ctdb_connection_list_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
+			      struct ctdb_connection_list **out, size_t *npull)
+{
+	struct ctdb_connection_list *val;
+	size_t offset = 0, np;
+	uint32_t i;
+	int ret;
+
+	val = talloc(mem_ctx, struct ctdb_connection_list);
+	if (val == NULL) {
+		return ENOMEM;
+	}
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &val->num, &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
+
+	if (val->num == 0) {
+		val->conn = NULL;
+		goto done;
+	}
+
+	val->conn = talloc_array(val, struct ctdb_connection, val->num);
+	if (val->conn == NULL) {
+		ret = ENOMEM;
+		goto fail;
+	}
+
+	for (i=0; i<val->num; i++) {
+		ret = ctdb_connection_pull_elems(buf+offset, buflen-offset,
+						 val, &val->conn[i], &np);
+		if (ret != 0) {
+			goto fail;
+		}
+		offset += np;
+	}
+
+done:
+	*out = val;
+	*npull = offset;
+	return 0;
+
+fail:
+	talloc_free(val);
+	return ret;
+}
+
 size_t ctdb_tunable_len(struct ctdb_tunable *in)
 {
 	return ctdb_uint32_len(&in->value) +
