@@ -534,7 +534,7 @@ _PUBLIC_ struct samr_Password *cli_credentials_get_nt_hash(struct cli_credential
 					  password, password_len);
 		if (converted != sizeof(nt_hash->hash)) {
 			TALLOC_FREE(nt_hash);
-			return false;
+			return NULL;
 		}
 	} else {
 		E_md4hash(password, nt_hash->hash);
