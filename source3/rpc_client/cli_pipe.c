@@ -3294,7 +3294,7 @@ NTSTATUS cli_rpc_pipe_open_schannel_with_creds(struct cli_state *cli,
 
 	status = netlogon_creds_cli_lock(netlogon_creds, rpccli, &ncreds);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("netlogon_creds_cli_get returned %s\n",
+		DEBUG(0, ("netlogon_creds_cli_lock returned %s\n",
 			  nt_errstr(status)));
 		TALLOC_FREE(rpccli);
 		return status;
