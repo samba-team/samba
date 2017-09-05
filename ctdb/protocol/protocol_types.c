@@ -3892,8 +3892,8 @@ int ctdb_script_list_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 	offset += np;
 
 	if (val->num_scripts == 0) {
-		goto done;
 		val->script = NULL;
+		goto done;
 	}
 
 	val->script = talloc_array(val, struct ctdb_script, val->num_scripts);
