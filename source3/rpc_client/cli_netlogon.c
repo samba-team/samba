@@ -132,7 +132,7 @@ NTSTATUS rpccli_create_netlogon_creds_ctx(
 	const char *server_computer,
 	struct messaging_context *msg_ctx,
 	TALLOC_CTX *mem_ctx,
-	struct netlogon_creds_cli_context **netlogon_creds)
+	struct netlogon_creds_cli_context **creds_ctx)
 {
 	enum netr_SchannelType sec_chan_type;
 	const char *server_netbios_domain;
@@ -154,13 +154,13 @@ NTSTATUS rpccli_create_netlogon_creds_ctx(
 					    client_account,
 					    sec_chan_type,
 					    msg_ctx, mem_ctx,
-					    netlogon_creds);
+					    creds_ctx);
 }
 
 NTSTATUS rpccli_setup_netlogon_creds(
 	struct cli_state *cli,
 	enum dcerpc_transport_t transport,
-	struct netlogon_creds_cli_context *netlogon_creds,
+	struct netlogon_creds_cli_context *creds_ctx,
 	bool force_reauth,
 	struct cli_credentials *cli_creds)
 {
@@ -172,8 +172,7 @@ NTSTATUS rpccli_setup_netlogon_creds(
 	uint8_t idx_nt_hashes = 0;
 	NTSTATUS status;
 
-	status = netlogon_creds_cli_get(netlogon_creds,
-					frame, &creds);
+	status = netlogon_creds_cli_get(creds_ctx, frame, &creds);
 	if (NT_STATUS_IS_OK(status)) {
 		const char *action = "using";
 
@@ -219,7 +218,7 @@ NTSTATUS rpccli_setup_netlogon_creds(
 	}
 	talloc_steal(frame, netlogon_pipe);
 
-	status = netlogon_creds_cli_auth(netlogon_creds,
+	status = netlogon_creds_cli_auth(creds_ctx,
 					 netlogon_pipe->binding_handle,
 					 num_nt_hashes,
 					 nt_hashes,
@@ -229,8 +228,7 @@ NTSTATUS rpccli_setup_netlogon_creds(
 		return status;
 	}
 
-	status = netlogon_creds_cli_get(netlogon_creds,
-					frame, &creds);
+	status = netlogon_creds_cli_get(creds_ctx, frame, &creds);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
 		return NT_STATUS_INTERNAL_ERROR;
@@ -294,18 +292,19 @@ static NTSTATUS map_validation_to_info3(TALLOC_CTX *mem_ctx,
 
 /* Logon domain user */
 
-NTSTATUS rpccli_netlogon_password_logon(struct netlogon_creds_cli_context *creds,
-					struct dcerpc_binding_handle *binding_handle,
-					TALLOC_CTX *mem_ctx,
-					uint32_t logon_parameters,
-					const char *domain,
-					const char *username,
-					const char *password,
-					const char *workstation,
-					enum netr_LogonInfoClass logon_type,
-					uint8_t *authoritative,
-					uint32_t *flags,
-					struct netr_SamInfo3 **info3)
+NTSTATUS rpccli_netlogon_password_logon(
+	struct netlogon_creds_cli_context *creds_ctx,
+	struct dcerpc_binding_handle *binding_handle,
+	TALLOC_CTX *mem_ctx,
+	uint32_t logon_parameters,
+	const char *domain,
+	const char *username,
+	const char *password,
+	const char *workstation,
+	enum netr_LogonInfoClass logon_type,
+	uint8_t *authoritative,
+	uint32_t *flags,
+	struct netr_SamInfo3 **info3)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
@@ -412,7 +411,7 @@ NTSTATUS rpccli_netlogon_password_logon(struct netlogon_creds_cli_context *creds
 		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
-	status = netlogon_creds_cli_LogonSamLogon(creds,
+	status = netlogon_creds_cli_LogonSamLogon(creds_ctx,
 						  binding_handle,
 						  logon_type,
 						  logon,
@@ -445,19 +444,20 @@ NTSTATUS rpccli_netlogon_password_logon(struct netlogon_creds_cli_context *creds
  **/
 
 
-NTSTATUS rpccli_netlogon_network_logon(struct netlogon_creds_cli_context *creds,
-				       struct dcerpc_binding_handle *binding_handle,
-				       TALLOC_CTX *mem_ctx,
-				       uint32_t logon_parameters,
-				       const char *username,
-				       const char *domain,
-				       const char *workstation,
-				       const uint8_t chal[8],
-				       DATA_BLOB lm_response,
-				       DATA_BLOB nt_response,
-				       uint8_t *authoritative,
-				       uint32_t *flags,
-				       struct netr_SamInfo3 **info3)
+NTSTATUS rpccli_netlogon_network_logon(
+	struct netlogon_creds_cli_context *creds_ctx,
+	struct dcerpc_binding_handle *binding_handle,
+	TALLOC_CTX *mem_ctx,
+	uint32_t logon_parameters,
+	const char *username,
+	const char *domain,
+	const char *workstation,
+	const uint8_t chal[8],
+	DATA_BLOB lm_response,
+	DATA_BLOB nt_response,
+	uint8_t *authoritative,
+	uint32_t *flags,
+	struct netr_SamInfo3 **info3)
 {
 	NTSTATUS status;
 	const char *workstation_name_slash;
@@ -516,7 +516,7 @@ NTSTATUS rpccli_netlogon_network_logon(struct netlogon_creds_cli_context *creds,
 
 	/* Marshall data and send request */
 
-	status = netlogon_creds_cli_LogonSamLogon(creds,
+	status = netlogon_creds_cli_LogonSamLogon(creds_ctx,
 						  binding_handle,
 						  NetlogonNetworkInformation,
 						  logon,
