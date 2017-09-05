@@ -10,7 +10,7 @@ TEST_SCRIPTS_DIR=$(dirname $0)
 # We need the test binaries (i.e. tests/bin/) to be in $PATH.  If they
 # aren't already in $PATH then we know that tests/bin/ sits alongside
 # tests/scripts/.
-f="ctdb_bench"
+f="fetch_ring"
 if [ ! $(which $f >/dev/null 2>&1) ] ; then
     d=$(dirname "$TEST_SCRIPTS_DIR")/bin
     [ -x "$d/$f" ] && PATH="$d:$PATH"
