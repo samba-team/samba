@@ -5,8 +5,6 @@
 #ifndef X86_ASM_INST_H
 #define X86_ASM_INST_H
 
-#ifdef __ASSEMBLY__
-
 #define REG_NUM_INVALID		100
 
 #define REG_TYPE_R32		0
@@ -305,6 +303,4 @@
 	.endif
 	MODRM 0xc0 movq_r64_xmm_opd1 movq_r64_xmm_opd2
 	.endm
-#endif
-
 #endif

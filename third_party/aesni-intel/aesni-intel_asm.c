@@ -29,9 +29,19 @@
  * (at your option) any later version.
  */
 
-#include <linux/linkage.h>
-#include <asm/inst.h>
-#include <asm/frame.h>
+#define ENTRY(name) \
+       .globl name ; \
+       .align 4,0x90 ; \
+       name:
+#define ENDPROC(name) \
+       .type name, @function ; \
+       .size name, .-name
+
+#define FRAME_BEGIN
+#define FRAME_END
+#define FRAME_OFFSET 0
+
+#include "inst-intel.h"
 
 /*
  * The following macros are used to move an (un)aligned 16 byte value to/from
@@ -2553,11 +2563,9 @@ ENTRY(aesni_cbc_dec)
 ENDPROC(aesni_cbc_dec)
 
 #ifdef __x86_64__
-.pushsection .rodata
 .align 16
 .Lbswap_mask:
 	.byte 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0
-.popsection
 
 /*
  * _aesni_inc_init:	internal ABI
@@ -2572,7 +2580,7 @@ ENDPROC(aesni_cbc_dec)
  */
 .align 4
 _aesni_inc_init:
-	movaps .Lbswap_mask, BSWAP_MASK
+	movaps .Lbswap_mask(%rip), BSWAP_MASK
 	movaps IV, CTR
 	PSHUFB_XMM BSWAP_MASK CTR
 	mov $1, TCTR_LOW
@@ -2700,12 +2708,12 @@ ENTRY(aesni_xts_crypt8)
 	cmpb $0, %cl
 	movl $0, %ecx
 	movl $240, %r10d
-	leaq _aesni_enc4, %r11
-	leaq _aesni_dec4, %rax
+	leaq _aesni_enc4(%rip), %r11
+	leaq _aesni_dec4(%rip), %rax
 	cmovel %r10d, %ecx
 	cmoveq %rax, %r11
 
-	movdqa .Lgf128mul_x_ble_mask, GF128MUL_MASK
+	movdqa .Lgf128mul_x_ble_mask(%rip), GF128MUL_MASK
 	movups (IVP), IV
 
 	mov 480(KEYP), KLEN
