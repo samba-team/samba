@@ -84,6 +84,15 @@ static NTSTATUS zfs_get_nt_acl_common(TALLOC_CTX *mem_ctx,
 		aceprop.aceMask  = (uint32_t) acebuf[i].a_access_mask;
 		aceprop.who.id   = (uint32_t) acebuf[i].a_who;
 
+		/*
+		 * Windows clients expect SYNC on acls to correctly allow
+		 * rename, cf bug #7909. But not on DENY ace entries, cf bug
+		 * #8442.
+		 */
+		if (aceprop.aceType == SMB_ACE4_ACCESS_ALLOWED_ACE_TYPE) {
+			aceprop.aceMask |= SMB_ACE4_SYNCHRONIZE;
+		}
+
 		if(aceprop.aceFlags & ACE_OWNER) {
 			aceprop.flags = SMB_ACE4_ID_SPECIAL;
 			aceprop.who.special_id = SMB_ACE4_WHO_OWNER;
