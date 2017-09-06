@@ -382,6 +382,8 @@ static int binary_smbd_main(const char *binary_name,
 	struct server_state *state = NULL;
 	struct tevent_signal *se = NULL;
 
+	setproctitle("root process");
+
 	pc = poptGetContext(binary_name, argc, argv, long_options, 0);
 	while((opt = poptGetNextOpt(pc)) != -1) {
 		switch(opt) {
