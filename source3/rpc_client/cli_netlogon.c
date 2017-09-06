@@ -115,6 +115,7 @@ NTSTATUS rpccli_create_netlogon_creds(const char *server_computer,
 						   sec_chan_type,
 						   server_computer,
 						   server_netbios_domain,
+						   "",
 						   mem_ctx, netlogon_creds);
 	TALLOC_FREE(frame);
 	if (!NT_STATUS_IS_OK(status)) {

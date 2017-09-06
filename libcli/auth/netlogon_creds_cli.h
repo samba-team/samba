@@ -40,6 +40,7 @@ NTSTATUS netlogon_creds_cli_context_global(struct loadparm_context *lp_ctx,
 				enum netr_SchannelType type,
 				const char *server_computer,
 				const char *server_netbios_domain,
+				const char *server_dns_domain,
 				TALLOC_CTX *mem_ctx,
 				struct netlogon_creds_cli_context **_context);
 NTSTATUS netlogon_creds_cli_context_tmp(const char *client_computer,
