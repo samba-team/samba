@@ -86,14 +86,15 @@ NTSTATUS rpccli_pre_open_netlogon_creds(void)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS rpccli_create_netlogon_creds(const char *server_computer,
-				      const char *server_netbios_domain,
-				      const char *server_dns_domain,
-				      const char *client_account,
-				      enum netr_SchannelType sec_chan_type,
-				      struct messaging_context *msg_ctx,
-				      TALLOC_CTX *mem_ctx,
-				      struct netlogon_creds_cli_context **netlogon_creds)
+static NTSTATUS rpccli_create_netlogon_creds(
+	const char *server_computer,
+	const char *server_netbios_domain,
+	const char *server_dns_domain,
+	const char *client_account,
+	enum netr_SchannelType sec_chan_type,
+	struct messaging_context *msg_ctx,
+	TALLOC_CTX *mem_ctx,
+	struct netlogon_creds_cli_context **netlogon_creds)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct loadparm_context *lp_ctx;
