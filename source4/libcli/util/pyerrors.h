@@ -24,7 +24,7 @@
 
 #define PyErr_FromHRESULT(err) Py_BuildValue("(i,s)", HRES_ERROR_V(err), discard_const_p(char, hresult_errstr_const(err)))
 
-#define PyErr_FromNTSTATUS(status) Py_BuildValue("(i,s)", NT_STATUS_V(status), discard_const_p(char, get_friendly_nt_error_msg(status)))
+#define PyErr_FromNTSTATUS(status) Py_BuildValue("(I,s)", NT_STATUS_V(status), discard_const_p(char, get_friendly_nt_error_msg(status)))
 
 #define PyErr_FromString(str) Py_BuildValue("(s)", discard_const_p(char, str))
 
