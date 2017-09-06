@@ -1136,14 +1136,18 @@ static int la_do_op_request(struct ldb_module *module, struct la_context *ac, st
 
 	if (DEBUGLVL(4)) {
 		DEBUG(4,("Applying linked attribute change:\n%s\n",
-			 ldb_ldif_message_string(ldb, op, LDB_CHANGETYPE_MODIFY, new_msg)));
+			 ldb_ldif_message_redacted_string(ldb, op,
+							  LDB_CHANGETYPE_MODIFY,
+							  new_msg)));
 	}
 
 	ret = dsdb_module_modify(module, new_msg, DSDB_FLAG_NEXT_MODULE, ac->req);
 	if (ret != LDB_SUCCESS) {
 		ldb_debug(ldb, LDB_DEBUG_WARNING, __location__ ": failed to apply linked attribute change '%s'\n%s\n",
 			  ldb_errstring(ldb),
-			  ldb_ldif_message_string(ldb, op, LDB_CHANGETYPE_MODIFY, new_msg));
+			  ldb_ldif_message_redacted_string(ldb, op,
+							   LDB_CHANGETYPE_MODIFY,
+							   new_msg));
 	}
 
 	return ret;
