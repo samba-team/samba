@@ -1153,6 +1153,7 @@ static NTSTATUS libnet_join_joindomain_rpc_unsecure(TALLOC_CTX *mem_ctx,
 
 	status = rpccli_create_netlogon_creds(netlogon_pipe->desthost,
 					      r->in.domain_name,
+					      "", /* Never unsecure in AD */
 					      r->out.account_name,
 					      r->in.secure_channel_type,
 					      r->in.msg_ctx,

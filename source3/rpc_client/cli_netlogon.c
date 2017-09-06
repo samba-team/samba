@@ -88,6 +88,7 @@ NTSTATUS rpccli_pre_open_netlogon_creds(void)
 
 NTSTATUS rpccli_create_netlogon_creds(const char *server_computer,
 				      const char *server_netbios_domain,
+				      const char *server_dns_domain,
 				      const char *client_account,
 				      enum netr_SchannelType sec_chan_type,
 				      struct messaging_context *msg_ctx,
@@ -115,7 +116,7 @@ NTSTATUS rpccli_create_netlogon_creds(const char *server_computer,
 						   sec_chan_type,
 						   server_computer,
 						   server_netbios_domain,
-						   "",
+						   server_dns_domain,
 						   mem_ctx, netlogon_creds);
 	TALLOC_FREE(frame);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -133,6 +134,7 @@ NTSTATUS rpccli_create_netlogon_creds_with_creds(struct cli_credentials *creds,
 {
 	enum netr_SchannelType sec_chan_type;
 	const char *server_netbios_domain;
+	const char *server_dns_domain;
 	const char *client_account;
 
 	sec_chan_type = cli_credentials_get_secure_channel_type(creds);
@@ -142,9 +144,11 @@ NTSTATUS rpccli_create_netlogon_creds_with_creds(struct cli_credentials *creds,
 
 	client_account = cli_credentials_get_username(creds);
 	server_netbios_domain = cli_credentials_get_domain(creds);
+	server_dns_domain = cli_credentials_get_realm(creds);
 
 	return rpccli_create_netlogon_creds(server_computer,
 					    server_netbios_domain,
+					    server_dns_domain,
 					    client_account,
 					    sec_chan_type,
 					    msg_ctx, mem_ctx,

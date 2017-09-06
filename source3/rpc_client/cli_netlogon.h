@@ -35,6 +35,7 @@ struct dcerpc_binding_handle;
 NTSTATUS rpccli_pre_open_netlogon_creds(void);
 NTSTATUS rpccli_create_netlogon_creds(const char *server_computer,
 				      const char *server_netbios_domain,
+				      const char *server_dns_domain,
 				      const char *client_account,
 				      enum netr_SchannelType sec_chan_type,
 				      struct messaging_context *msg_ctx,
