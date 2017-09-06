@@ -267,8 +267,8 @@ NTSTATUS dcerpc_pull_auth_trailer(const struct ncacn_packet *pkt,
 		return NT_STATUS_RPC_PROTOCOL_ERROR;
 	}
 
-	DEBUG(6,(__location__ ": auth_pad_length %u\n",
-		 (unsigned)auth->auth_pad_length));
+	DBG_DEBUG("auth_pad_length %u\n",
+		  (unsigned)auth->auth_pad_length);
 
 	talloc_steal(mem_ctx, auth->credentials.data);
 	talloc_free(ndr);
