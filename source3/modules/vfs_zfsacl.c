@@ -40,13 +40,31 @@
  * read the local file's acls and return it in NT form
  * using the NFSv4 format conversion
  */
-static NTSTATUS zfs_get_nt_acl_common(TALLOC_CTX *mem_ctx,
+static NTSTATUS zfs_get_nt_acl_common(struct connection_struct *conn,
+				      TALLOC_CTX *mem_ctx,
 				      const struct smb_filename *smb_fname,
 				      struct SMB4ACL_T **ppacl)
 {
 	int naces, i;
 	ace_t *acebuf;
 	struct SMB4ACL_T *pacl;
+	SMB_STRUCT_STAT sbuf;
+	const SMB_STRUCT_STAT *psbuf = NULL;
+	int ret;
+
+	if (VALID_STAT(smb_fname->st)) {
+		psbuf = &smb_fname->st;
+	}
+
+	if (psbuf == NULL) {
+		ret = vfs_stat_smb_basename(conn, smb_fname, &sbuf);
+		if (ret != 0) {
+			DBG_INFO("stat [%s]failed: %s\n",
+				 smb_fname_str_dbg(smb_fname), strerror(errno));
+			return map_nt_error_from_unix(errno);
+		}
+		psbuf = &sbuf;
+	}
 
 	/* read the number of file aces */
 	if((naces = acl(smb_fname->base_name, ACE_GETACLCNT, 0, NULL)) == -1) {
@@ -210,7 +228,8 @@ static NTSTATUS zfsacl_fget_nt_acl(struct vfs_handle_struct *handle,
 	NTSTATUS status;
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	status = zfs_get_nt_acl_common(frame, fsp->fsp_name, &pacl);
+	status = zfs_get_nt_acl_common(handle->conn, frame,
+				       fsp->fsp_name, &pacl);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
 		return status;
@@ -232,7 +251,7 @@ static NTSTATUS zfsacl_get_nt_acl(struct vfs_handle_struct *handle,
 	NTSTATUS status;
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	status = zfs_get_nt_acl_common(frame, smb_fname, &pacl);
+	status = zfs_get_nt_acl_common(handle->conn, frame, smb_fname, &pacl);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
 		return status;
