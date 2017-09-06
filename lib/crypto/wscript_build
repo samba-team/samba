@@ -11,6 +11,9 @@ elif bld.CONFIG_SET('HAVE_SYS_MD5_H') and bld.CONFIG_SET('HAVE_LIBMD'):
 elif not bld.CONFIG_SET('HAVE_SYS_MD5_H') and not bld.CONFIG_SET('HAVE_COMMONCRYPTO_COMMONDIGEST_H'):
 	extra_source += ' md5.c'
 
+if bld.CONFIG_SET("HAVE_AESNI_INTEL"):
+        extra_deps += ' aesni-intel'
+
 bld.SAMBA_SUBSYSTEM('LIBCRYPTO',
         source='''crc32.c hmacmd5.c md4.c arcfour.c sha256.c sha512.c hmacsha256.c
         aes.c rijndael-alg-fst.c aes_cmac_128.c aes_ccm_128.c aes_gcm_128.c

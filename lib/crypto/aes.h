@@ -36,6 +36,8 @@
 #ifndef LIB_CRYPTO_AES_H
 #define LIB_CRYPTO_AES_H 1
 
+#include "aesni.h"
+
 #define SAMBA_RIJNDAEL 1
 #define SAMBA_AES_CBC_ENCRYPT 1
 #define SAMBA_AES_CFB8_ENCRYPT 1
@@ -67,6 +69,7 @@ struct aes_key_rj {
 typedef struct aes_key {
 	union {
 		struct aes_key_rj aes_rj;
+		struct crypto_aesni_ctx aes_ni;
 	} u;
 } AES_KEY;
 
