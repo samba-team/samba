@@ -31,6 +31,9 @@
 #include "dsdb/repl/drepl_service.h"
 #include "param/param.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS            DBGC_DRS_REPL
+
 struct fsmo_role_state {
 	struct irpc_message *msg;
 	struct drepl_takeFSMORole *r;

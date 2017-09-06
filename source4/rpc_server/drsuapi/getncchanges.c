@@ -42,6 +42,9 @@
 #include "lib/dbwrap/dbwrap_rbt.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS            DBGC_DRS_REPL
+
 /* state of a partially completed getncchanges call */
 struct drsuapi_getncchanges_state {
 	struct db_context *anc_cache;

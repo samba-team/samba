@@ -31,6 +31,9 @@
 #include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS            DBGC_DRS_REPL
+
 static void dreplsrv_periodic_run(struct dreplsrv_service *service);
 
 static void dreplsrv_periodic_handler_te(struct tevent_context *ev, struct tevent_timer *te,

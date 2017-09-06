@@ -35,6 +35,9 @@
 #include "param/param.h"
 #include "libds/common/roles.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS            DBGC_DRS_REPL
+
 /**
  * Call-back data for _drepl_replica_sync_done_cb()
  */

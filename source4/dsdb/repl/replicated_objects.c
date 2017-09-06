@@ -31,6 +31,9 @@
 #include "libcli/auth/libcli_auth.h"
 #include "param/param.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS            DBGC_DRS_REPL
+
 static WERROR dsdb_repl_merge_working_schema(struct ldb_context *ldb,
 					     struct dsdb_schema *dest_schema,
 					     const struct dsdb_schema *ref_schema)

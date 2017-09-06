@@ -30,6 +30,9 @@
 #include "librpc/gen_ndr/ndr_irpc_c.h"
 #include "lib/messaging/irpc.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS            DBGC_DRS_REPL
+
 struct repsTo {
 	uint32_t count;
 	struct repsFromToBlob *r;

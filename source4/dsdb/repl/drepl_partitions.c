@@ -34,6 +34,9 @@
 #include "param/param.h"
 #include "dsdb/common/util.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS            DBGC_DRS_REPL
+
 /*
   load the partitions list based on replicated NC attributes in our
   NTDSDSA object

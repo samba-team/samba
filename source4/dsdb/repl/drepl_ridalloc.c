@@ -30,6 +30,9 @@
 #include "dsdb/repl/drepl_service.h"
 #include "param/param.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS            DBGC_DRS_REPL
+
 /*
   called when a rid allocation request has completed
  */

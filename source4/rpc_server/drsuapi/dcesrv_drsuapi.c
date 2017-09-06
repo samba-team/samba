@@ -33,6 +33,9 @@
 #include "param/param.h"
 #include "lib/messaging/irpc.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS            DBGC_DRS_REPL
+
 #define DRSUAPI_UNSUPPORTED(fname) do { \
 	DEBUG(1,(__location__ ": Unsupported DRS call %s\n", #fname)); \
 	if (DEBUGLVL(2)) NDR_PRINT_IN_DEBUG(fname, r); \
