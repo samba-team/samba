@@ -33,6 +33,9 @@
 #include "libcli/composite/composite.h"
 #include "libcli/security/security.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS            DBGC_DRS_REPL
+
 /*
   update repsFrom/repsTo error information
  */

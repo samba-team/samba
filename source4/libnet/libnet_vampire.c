@@ -42,6 +42,9 @@
 #include "libcli/security/security.h"
 #include "dsdb/common/util.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS            DBGC_DRS_REPL
+
 /* 
 List of tasks vampire.py must perform:
 - Domain Join

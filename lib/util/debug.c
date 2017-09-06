@@ -540,6 +540,7 @@ static const char *default_classname_table[] = {
 	[DBGC_AUTH_AUDIT] =	"auth_audit",
 	[DBGC_AUTH_AUDIT_JSON] = "auth_json_audit",
 	[DBGC_KERBEROS] =       "kerberos",
+	[DBGC_DRS_REPL] =       "drs_repl",
 };
 
 /*
