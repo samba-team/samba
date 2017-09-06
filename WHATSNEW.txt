@@ -16,6 +16,24 @@ UPGRADING
 NEW FEATURES/CHANGES
 ====================
 
+Using x86_64 Accelerated AES Crypto Instructions
+================================================
+
+Samba on x86_64 can now be configured to use the Intel accelerated AES
+instruction set, which has the potential to make SMB3 signing and
+encryption much faster on client and server. To enable this, configure
+Samba using the new option --accel-aes=intelaesni.
+
+This is a temporary solution that is being included to allow users
+to enjoy the benefits of Intel accelerated AES on the x86_64 platform,
+but the longer-term solution will be to move Samba to a fully supported
+external crypto library.
+
+The third_party/aesni-intel code will be removed from Samba as soon as
+external crypto library performance reaches parity.
+
+The default is to build without setting --accel-aes, which uses the
+existing Samba software AES implementation.
 
 smb.conf changes
 ================
