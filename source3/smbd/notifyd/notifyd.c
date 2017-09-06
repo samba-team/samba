@@ -57,7 +57,7 @@ struct notifyd_state {
 	/*
 	 * Database of everything clients show interest in. Indexed by
 	 * absolute path. The database keys are not 0-terminated
-	 * because the criticial operation, notifyd_trigger, can walk
+	 * to allow the criticial operation, notifyd_trigger, to walk
 	 * the structure from the top without adding intermediate 0s.
 	 * The database records contain an array of
 	 *
