@@ -111,7 +111,11 @@ class cmd_rodc_preload(Command):
 
         destination_dsa_guid = misc.GUID(local_samdb.get_ntds_GUID())
 
-        repl = drs_Replicate("ncacn_ip_tcp:%s[seal,print]" % server, lp, creds,
+        binding_options = "seal"
+        if lp.log_level() >= 9:
+            binding_options += ",print"
+        repl = drs_Replicate("ncacn_ip_tcp:%s[%s]" % (server, binding_options),
+                             lp, creds,
                              local_samdb, destination_dsa_guid)
 
         errors = []
