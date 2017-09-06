@@ -31,6 +31,9 @@
 #include "librpc/ndr/libndr.h"
 #include "../lib/util/dlinklist.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_RPC_PARSE
+
 #define NDR_BASE_MARSHALL_SIZE 1024
 
 /* this guid indicates NDR encoding in a protocol tower */
