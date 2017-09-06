@@ -41,7 +41,7 @@
  * using the NFSv4 format conversion
  */
 static NTSTATUS zfs_get_nt_acl_common(TALLOC_CTX *mem_ctx,
-				      const char *name,
+				      const struct smb_filename *smb_fname,
 				      struct SMB4ACL_T **ppacl)
 {
 	int naces, i;
@@ -49,13 +49,13 @@ static NTSTATUS zfs_get_nt_acl_common(TALLOC_CTX *mem_ctx,
 	struct SMB4ACL_T *pacl;
 
 	/* read the number of file aces */
-	if((naces = acl(name, ACE_GETACLCNT, 0, NULL)) == -1) {
+	if((naces = acl(smb_fname->base_name, ACE_GETACLCNT, 0, NULL)) == -1) {
 		if(errno == ENOSYS) {
 			DEBUG(9, ("acl(ACE_GETACLCNT, %s): Operation is not "
 				  "supported on the filesystem where the file "
-				  "reside\n", name));
+				  "reside\n", smb_fname->base_name));
 		} else {
-			DEBUG(9, ("acl(ACE_GETACLCNT, %s): %s ", name,
+			DEBUG(9, ("acl(ACE_GETACLCNT, %s): %s ", smb_fname->base_name,
 					strerror(errno)));
 		}
 		return map_nt_error_from_unix(errno);
@@ -67,8 +67,8 @@ static NTSTATUS zfs_get_nt_acl_common(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 	/* read the aces into the field */
-	if(acl(name, ACE_GETACL, naces, acebuf) < 0) {
-		DEBUG(9, ("acl(ACE_GETACL, %s): %s ", name,
+	if(acl(smb_fname->base_name, ACE_GETACL, naces, acebuf) < 0) {
+		DEBUG(9, ("acl(ACE_GETACL, %s): %s ", smb_fname->base_name,
 				strerror(errno)));
 		return map_nt_error_from_unix(errno);
 	}
@@ -201,9 +201,7 @@ static NTSTATUS zfsacl_fget_nt_acl(struct vfs_handle_struct *handle,
 	NTSTATUS status;
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	status = zfs_get_nt_acl_common(frame,
-				       fsp->fsp_name->base_name,
-				       &pacl);
+	status = zfs_get_nt_acl_common(frame, fsp->fsp_name, &pacl);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
 		return status;
@@ -225,9 +223,7 @@ static NTSTATUS zfsacl_get_nt_acl(struct vfs_handle_struct *handle,
 	NTSTATUS status;
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	status = zfs_get_nt_acl_common(frame,
-					smb_fname->base_name,
-					&pacl);
+	status = zfs_get_nt_acl_common(frame, smb_fname, &pacl);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
 		return status;
