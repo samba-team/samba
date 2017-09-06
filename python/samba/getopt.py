@@ -40,7 +40,7 @@ class SambaOptions(optparse.OptionGroup):
                         type=str, metavar="FILE", help="Configuration file",
                         callback=self._load_configfile)
         self.add_option("-d", "--debuglevel", action="callback",
-                        type=int, metavar="DEBUGLEVEL", help="debug level",
+                        type=str, metavar="DEBUGLEVEL", help="debug level",
                         callback=self._set_debuglevel)
         self.add_option("--option", action="callback",
                         type=str, metavar="OPTION",
@@ -64,8 +64,8 @@ class SambaOptions(optparse.OptionGroup):
         if arg < 0:
             raise optparse.OptionValueError("invalid %s option value: %s" %
                                             (opt_str, arg))
-        self._lp.set('debug level', str(arg))
-        parser.values.debuglevel = int(arg)
+        self._lp.set('debug level', arg)
+        parser.values.debuglevel = arg
 
     def _set_realm(self, option, opt_str, arg, parser):
         self._lp.set('realm', arg)
