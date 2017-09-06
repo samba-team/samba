@@ -36,6 +36,8 @@ _PUBLIC_ int strcasecmp_m_handle(struct smb_iconv_handle *iconv_handle,
 				 const char *s1, const char *s2)
 {
 	codepoint_t c1=0, c2=0;
+	codepoint_t u1=0, u2=0;
+	codepoint_t l1=0, l2=0;
 	size_t size1, size2;
 
 	/* handle null ptr comparisons to simplify the use in qsort */
@@ -59,9 +61,19 @@ _PUBLIC_ int strcasecmp_m_handle(struct smb_iconv_handle *iconv_handle,
 			continue;
 		}
 
-		if (toupper_m(c1) != toupper_m(c2)) {
-			return c1 - c2;
+		u1 = toupper_m(c1);
+		u2 = toupper_m(c2);
+		if (u1 == u2) {
+			continue;
 		}
+
+		l1 = tolower_m(c1);
+		l2 = tolower_m(c2);
+		if (l1 == l2) {
+			continue;
+		}
+
+		return l1 - l2;
 	}
 
 	return *s1 - *s2;
@@ -83,6 +95,8 @@ _PUBLIC_ int strncasecmp_m_handle(struct smb_iconv_handle *iconv_handle,
 				  const char *s1, const char *s2, size_t n)
 {
 	codepoint_t c1=0, c2=0;
+	codepoint_t u1=0, u2=0;
+	codepoint_t l1=0, l2=0;
 	size_t size1, size2;
 
 	/* handle null ptr comparisons to simplify the use in qsort */
@@ -123,9 +137,19 @@ _PUBLIC_ int strncasecmp_m_handle(struct smb_iconv_handle *iconv_handle,
 			continue;
 		}
 
-		if (toupper_m(c1) != toupper_m(c2)) {
-			return c1 - c2;
+		u1 = toupper_m(c1);
+		u2 = toupper_m(c2);
+		if (u1 == u2) {
+			continue;
 		}
+
+		l1 = tolower_m(c1);
+		l2 = tolower_m(c2);
+		if (l1 == l2) {
+			continue;
+		}
+
+		return l1 - l2;
 	}
 
 	if (n == 0) {
