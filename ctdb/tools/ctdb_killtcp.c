@@ -324,7 +324,7 @@ int main(int argc, char **argv)
 {
 	struct ctdb_connection conn;
 	struct tevent_context *ev = NULL;
-	struct TALLOC_CONTEXT *mem_ctx = NULL;
+	TALLOC_CTX *mem_ctx = NULL;
 	struct ctdb_connection_list *conn_list = NULL;
 	const char *t;
 	struct tevent_req *req;
