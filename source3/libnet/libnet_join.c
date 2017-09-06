@@ -1122,6 +1122,7 @@ static NTSTATUS libnet_join_joindomain_rpc_unsecure(TALLOC_CTX *mem_ctx,
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct rpc_pipe_client *netlogon_pipe = NULL;
+	struct cli_credentials *cli_creds;
 	struct netlogon_creds_cli_context *netlogon_creds = NULL;
 	struct samr_Password current_nt_hash;
 	size_t len = 0;
@@ -1151,14 +1152,23 @@ static NTSTATUS libnet_join_joindomain_rpc_unsecure(TALLOC_CTX *mem_ctx,
 	/* according to WKSSVC_JOIN_FLAGS_MACHINE_PWD_PASSED */
 	E_md4hash(r->in.admin_password, current_nt_hash.hash);
 
-	status = rpccli_create_netlogon_creds(netlogon_pipe->desthost,
-					      r->in.domain_name,
-					      "", /* Never unsecure in AD */
-					      r->out.account_name,
-					      r->in.secure_channel_type,
-					      r->in.msg_ctx,
-					      frame,
-					      &netlogon_creds);
+	cli_creds = cli_credentials_init(talloc_tos());
+	if (cli_creds == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	cli_credentials_set_username(cli_creds, r->out.account_name,
+				     CRED_SPECIFIED);
+	cli_credentials_set_domain(cli_creds, r->in.domain_name,
+				   CRED_SPECIFIED);
+	cli_credentials_set_realm(cli_creds, "", CRED_SPECIFIED);
+	cli_credentials_set_secure_channel_type(cli_creds,
+						r->in.secure_channel_type);
+
+	status = rpccli_create_netlogon_creds_with_creds(
+		cli_creds, netlogon_pipe->desthost, r->in.msg_ctx,
+		frame, &netlogon_creds);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
 		return status;
