@@ -382,13 +382,6 @@ static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx,
 		      ace->aceFlags, win_ace_flags));
 
 		mask = ace->aceMask;
-		/* Windows clients expect SYNC on acls to
-		   correctly allow rename. See bug #7909. */
-		/* But not on DENY ace entries. See
-		   bug #8442. */
-		if(ace->aceType == SMB_ACE4_ACCESS_ALLOWED_ACE_TYPE) {
-			mask = ace->aceMask | SMB_ACE4_SYNCHRONIZE;
-		}
 
 		/* Mapping of owner@ and group@ to creator owner and
 		   creator group. Keep old behavior in mode special. */
