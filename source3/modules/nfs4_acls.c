@@ -352,10 +352,6 @@ static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx,
 		DEBUG(10, ("mapped %d to %s\n", ace->who.id,
 			   sid_string_dbg(&sid)));
 
-		if (is_directory && (ace->aceMask & SMB_ACE4_ADD_FILE)) {
-			ace->aceMask |= SMB_ACE4_DELETE_CHILD;
-		}
-
 		if (!is_directory && params->map_full_control) {
 			/*
 			 * Do we have all access except DELETE_CHILD
