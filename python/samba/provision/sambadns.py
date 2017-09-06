@@ -868,9 +868,6 @@ def create_samdb_copy(samdb, logger, paths, names, domainsid, domainguid):
     # Give bind read/write permissions dns partitions
     if paths.bind_gid is not None:
         try:
-            os.chown(samldb_dir, -1, paths.bind_gid)
-            os.chmod(samldb_dir, 0750)
-
             for dirname, dirs, files in os.walk(dns_dir):
                 for d in dirs:
                     dpath = os.path.join(dirname, d)
