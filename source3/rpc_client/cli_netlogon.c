@@ -157,13 +157,12 @@ NTSTATUS rpccli_create_netlogon_creds_ctx(
 					    netlogon_creds);
 }
 
-static NTSTATUS rpccli_setup_netlogon_creds(
+NTSTATUS rpccli_setup_netlogon_creds(
 	struct cli_state *cli,
 	enum dcerpc_transport_t transport,
 	struct netlogon_creds_cli_context *netlogon_creds,
 	bool force_reauth,
-	struct samr_Password current_nt_hash,
-	const struct samr_Password *previous_nt_hash)
+	struct cli_credentials *cli_creds)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct rpc_pipe_client *netlogon_pipe = NULL;
@@ -193,6 +192,19 @@ static NTSTATUS rpccli_setup_netlogon_creds(
 		TALLOC_FREE(creds);
 	}
 
+	nt_hashes[0] = cli_credentials_get_nt_hash(cli_creds, talloc_tos());
+	if (nt_hashes[0] == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+	num_nt_hashes = 1;
+
+	nt_hashes[1] = cli_credentials_get_old_nt_hash(cli_creds,
+						       talloc_tos());
+	if (nt_hashes[1] != NULL) {
+		num_nt_hashes = 2;
+	}
+
 	status = cli_rpc_pipe_open_noauth_transport(cli,
 						    transport,
 						    &ndr_table_netlogon,
@@ -206,13 +218,6 @@ static NTSTATUS rpccli_setup_netlogon_creds(
 		return status;
 	}
 	talloc_steal(frame, netlogon_pipe);
-
-	nt_hashes[0] = &current_nt_hash;
-	num_nt_hashes = 1;
-	if (previous_nt_hash != NULL) {
-		nt_hashes[1] = previous_nt_hash;
-		num_nt_hashes = 2;
-	}
 
 	status = netlogon_creds_cli_auth(netlogon_creds,
 					 netlogon_pipe->binding_handle,
@@ -237,37 +242,6 @@ static NTSTATUS rpccli_setup_netlogon_creds(
 		 smbXcli_conn_remote_name(cli->conn)));
 
 	TALLOC_FREE(frame);
-	return NT_STATUS_OK;
-}
-
-NTSTATUS rpccli_setup_netlogon_creds_with_creds(struct cli_state *cli,
-						enum dcerpc_transport_t transport,
-						struct netlogon_creds_cli_context *netlogon_creds,
-						bool force_reauth,
-						struct cli_credentials *creds)
-{
-	struct samr_Password *current_nt_hash = NULL;
-	struct samr_Password *previous_nt_hash = NULL;
-	NTSTATUS status;
-
-	current_nt_hash = cli_credentials_get_nt_hash(creds, talloc_tos());
-	if (current_nt_hash == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	previous_nt_hash = cli_credentials_get_old_nt_hash(creds, talloc_tos());
-
-	status = rpccli_setup_netlogon_creds(cli, transport,
-					     netlogon_creds,
-					     force_reauth,
-					     *current_nt_hash,
-					     previous_nt_hash);
-	TALLOC_FREE(current_nt_hash);
-	TALLOC_FREE(previous_nt_hash);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
 	return NT_STATUS_OK;
 }
 

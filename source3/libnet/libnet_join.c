@@ -1174,7 +1174,7 @@ static NTSTATUS libnet_join_joindomain_rpc_unsecure(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	status = rpccli_setup_netlogon_creds_with_creds(
+	status = rpccli_setup_netlogon_creds(
 		cli, NCACN_NP, netlogon_creds, true /* force_reauth */,
 		cli_creds);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1628,10 +1628,10 @@ NTSTATUS libnet_join_ok(struct messaging_context *msg_ctx,
 		return status;
 	}
 
-	status = rpccli_setup_netlogon_creds_with_creds(cli, NCACN_NP,
-							netlogon_creds,
-							true, /* force_reauth */
-							cli_creds);
+	status = rpccli_setup_netlogon_creds(cli, NCACN_NP,
+					     netlogon_creds,
+					     true, /* force_reauth */
+					     cli_creds);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("connect_to_domain_password_server: "
 			 "unable to open the domain client session to "

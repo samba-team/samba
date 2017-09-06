@@ -816,11 +816,12 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 				return ntresult;
 			}
 
-			ntresult = rpccli_setup_netlogon_creds_with_creds(cli,
-							NCACN_NP,
-							rpcclient_netlogon_creds,
-							false, /* force_reauth */
-							creds);
+			ntresult = rpccli_setup_netlogon_creds(
+				cli,
+				NCACN_NP,
+				rpcclient_netlogon_creds,
+				false, /* force_reauth */
+				creds);
 			TALLOC_FREE(creds);
 			if (!NT_STATUS_IS_OK(ntresult)) {
 				DEBUG(0, ("Could not initialise credentials for %s.\n",

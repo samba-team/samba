@@ -3289,10 +3289,10 @@ static NTSTATUS cm_connect_netlogon_transport(struct winbindd_domain *domain,
 		return result;
 	}
 
-	result = rpccli_setup_netlogon_creds_with_creds(conn->cli, transport,
-						conn->netlogon_creds_ctx,
-						conn->netlogon_force_reauth,
-						creds);
+	result = rpccli_setup_netlogon_creds(conn->cli, transport,
+					     conn->netlogon_creds_ctx,
+					     conn->netlogon_force_reauth,
+					     creds);
 	conn->netlogon_force_reauth = false;
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(1, ("rpccli_setup_netlogon_creds failed for %s, "
