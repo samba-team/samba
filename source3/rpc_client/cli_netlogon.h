@@ -33,11 +33,12 @@ struct dcerpc_binding_handle;
 /* The following definitions come from rpc_client/cli_netlogon.c  */
 
 NTSTATUS rpccli_pre_open_netlogon_creds(void);
-NTSTATUS rpccli_create_netlogon_creds_with_creds(struct cli_credentials *creds,
-						 const char *server_computer,
-						 struct messaging_context *msg_ctx,
-						 TALLOC_CTX *mem_ctx,
-						 struct netlogon_creds_cli_context **netlogon_creds);
+NTSTATUS rpccli_create_netlogon_creds_ctx(
+	struct cli_credentials *creds,
+	const char *server_computer,
+	struct messaging_context *msg_ctx,
+	TALLOC_CTX *mem_ctx,
+	struct netlogon_creds_cli_context **netlogon_creds);
 NTSTATUS rpccli_setup_netlogon_creds_with_creds(struct cli_state *cli,
 						enum dcerpc_transport_t transport,
 						struct netlogon_creds_cli_context *netlogon_creds,

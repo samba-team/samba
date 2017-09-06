@@ -1166,7 +1166,7 @@ static NTSTATUS libnet_join_joindomain_rpc_unsecure(TALLOC_CTX *mem_ctx,
 	cli_credentials_set_password(cli_creds, r->in.admin_password,
 				     CRED_SPECIFIED);
 
-	status = rpccli_create_netlogon_creds_with_creds(
+	status = rpccli_create_netlogon_creds_ctx(
 		cli_creds, netlogon_pipe->desthost, r->in.msg_ctx,
 		frame, &netlogon_creds);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1617,11 +1617,11 @@ NTSTATUS libnet_join_ok(struct messaging_context *msg_ctx,
 		return status;
 	}
 
-	status = rpccli_create_netlogon_creds_with_creds(cli_creds,
-							 dc_name,
-							 msg_ctx,
-							 frame,
-							 &netlogon_creds);
+	status = rpccli_create_netlogon_creds_ctx(cli_creds,
+						  dc_name,
+						  msg_ctx,
+						  frame,
+						  &netlogon_creds);
 	if (!NT_STATUS_IS_OK(status)) {
 		cli_shutdown(cli);
 		TALLOC_FREE(frame);

@@ -3277,11 +3277,11 @@ static NTSTATUS cm_connect_netlogon_transport(struct winbindd_domain *domain,
 		return NT_STATUS_OK;
 	}
 
-	result = rpccli_create_netlogon_creds_with_creds(creds,
-							 domain->dcname,
-							 msg_ctx,
-							 domain,
-							 &conn->netlogon_creds_ctx);
+	result = rpccli_create_netlogon_creds_ctx(creds,
+						  domain->dcname,
+						  msg_ctx,
+						  domain,
+						  &conn->netlogon_creds_ctx);
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(1, ("rpccli_create_netlogon_creds failed for %s, "
 			  "unable to create NETLOGON credentials: %s\n",

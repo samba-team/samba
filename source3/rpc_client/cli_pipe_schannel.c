@@ -62,11 +62,11 @@ NTSTATUS cli_rpc_pipe_open_schannel(struct cli_state *cli,
 		return status;
 	}
 
-	status = rpccli_create_netlogon_creds_with_creds(cli_creds,
-							 dc_name,
-							 msg_ctx,
-							 frame,
-							 &netlogon_creds);
+	status = rpccli_create_netlogon_creds_ctx(cli_creds,
+						  dc_name,
+						  msg_ctx,
+						  frame,
+						  &netlogon_creds);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
 		return status;

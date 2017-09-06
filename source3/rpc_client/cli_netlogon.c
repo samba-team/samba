@@ -127,11 +127,12 @@ static NTSTATUS rpccli_create_netlogon_creds(
 	return NT_STATUS_OK;
 }
 
-NTSTATUS rpccli_create_netlogon_creds_with_creds(struct cli_credentials *creds,
-						 const char *server_computer,
-						 struct messaging_context *msg_ctx,
-						 TALLOC_CTX *mem_ctx,
-						 struct netlogon_creds_cli_context **netlogon_creds)
+NTSTATUS rpccli_create_netlogon_creds_ctx(
+	struct cli_credentials *creds,
+	const char *server_computer,
+	struct messaging_context *msg_ctx,
+	TALLOC_CTX *mem_ctx,
+	struct netlogon_creds_cli_context **netlogon_creds)
 {
 	enum netr_SchannelType sec_chan_type;
 	const char *server_netbios_domain;

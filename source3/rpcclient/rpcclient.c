@@ -803,7 +803,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 				return ntresult;
 			}
 
-			ntresult = rpccli_create_netlogon_creds_with_creds(creds,
+			ntresult = rpccli_create_netlogon_creds_ctx(creds,
 							dc_name,
 							rpcclient_msg_ctx,
 							rpcclient_msg_ctx,
