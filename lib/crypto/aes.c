@@ -37,6 +37,146 @@
 #ifdef SAMBA_RIJNDAEL
 #include "rijndael-alg-fst.h"
 
+#if defined(HAVE_AESNI_INTEL)
+
+/*
+ * NB. HAVE_AESNI_INTEL is only defined if -lang-asm is
+ * available.
+ */
+
+static inline void __cpuid(unsigned int where[4], unsigned int leaf)
+{
+	asm volatile("cpuid" :
+			"=a" (where[0]),
+			"=b" (where[1]),
+			"=c" (where[2]),
+			"=d" (where[3]): "a" (leaf));
+}
+
+/*
+ * has_intel_aes_instructions()
+ * return true if supports AES-NI and false if doesn't
+ */
+static bool has_intel_aes_instructions(void)
+{
+	static int has_aes_instructions = -1;
+	unsigned int cpuid_results[4];
+
+	if (has_aes_instructions != -1) {
+		return (bool)has_aes_instructions;
+	}
+
+	__cpuid(cpuid_results, 0);
+	/*
+	 *        MSB         LSB
+	 *  EBX = 'u' 'n' 'e' 'G'
+	 *  EDX = 'I' 'e' 'n' 'i'
+	 *  ECX = 'l' 'e' 't' 'n'
+	 */
+	if (memcmp((unsigned char *)&cpuid_results[1], "Genu", 4) != 0 ||
+			memcmp((unsigned char *)&cpuid_results[3],
+				"ineI", 4) != 0 ||
+			memcmp((unsigned char *)&cpuid_results[2],
+				"ntel", 4) != 0) {
+		has_aes_instructions = 0;
+		return (bool)has_aes_instructions;
+	}
+
+	__cpuid(cpuid_results, 1);
+	has_aes_instructions = !!(cpuid_results[2] & (1 << 25));
+	return (bool)has_aes_instructions;
+}
+
+/*
+ * Macro to ensure the AES key schedule starts on a 16 byte boundary.
+ */
+
+#define SET_ACC_CTX(k) \
+	do {    \
+		(k)->u.aes_ni.acc_ctx =  \
+		(struct crypto_aes_ctx *)(((unsigned long)(k)->u.aes_ni._acc_ctx + 15) & ~0xfUL); \
+	} while (0)
+
+/*
+ * The next 4 functions call the Intel AES hardware implementations
+ * of:
+ *
+ * AES_set_encrypt_key()
+ * AES_set_decrypt_key()
+ * AES_encrypt()
+ * AES_decrypt()
+ */
+
+static int AES_set_encrypt_key_aesni(const unsigned char *userkey,
+				const int bits,
+				AES_KEY *key)
+{
+	SET_ACC_CTX(key);
+	return aesni_set_key(key->u.aes_ni.acc_ctx, userkey, bits/8);
+}
+
+static int AES_set_decrypt_key_aesni(const unsigned char *userkey,
+				const int bits,
+				AES_KEY *key)
+{
+	SET_ACC_CTX(key);
+	return aesni_set_key(key->u.aes_ni.acc_ctx, userkey, bits/8);
+}
+
+static void AES_encrypt_aesni(const unsigned char *in,
+				unsigned char *out,
+				const AES_KEY *key)
+{
+	aesni_enc(key->u.aes_ni.acc_ctx, out, in);
+}
+
+static void AES_decrypt_aesni(const unsigned char *in,
+				unsigned char *out,
+				const AES_KEY *key)
+{
+	aesni_dec(key->u.aes_ni.acc_ctx, out, in);
+}
+#else /* defined(HAVE_AESNI_INTEL) */
+
+/*
+ * Dummy implementations if no Intel AES instructions present.
+ * Only has_intel_aes_instructions() will ever be called.
+*/
+
+static bool has_intel_aes_instructions(void)
+{
+	return false;
+}
+
+static int AES_set_encrypt_key_aesni(const unsigned char *userkey,
+				const int bits,
+				AES_KEY *key)
+{
+	return -1;
+}
+
+static int AES_set_decrypt_key_aesni(const unsigned char *userkey,
+				const int bits,
+				AES_KEY *key)
+{
+	return -1;
+}
+
+static void AES_encrypt_aesni(const unsigned char *in,
+				unsigned char *out,
+				const AES_KEY *key)
+{
+	abort();
+}
+
+static void AES_decrypt_aesni(const unsigned char *in,
+				unsigned char *out,
+				const AES_KEY *key)
+{
+	abort();
+}
+#endif /* defined(HAVE_AENI_INTEL) */
+
 /*
  * The next 4 functions are the pure software implementations
  * of:
@@ -88,31 +228,41 @@ AES_decrypt_rj(const unsigned char *in, unsigned char *out, const AES_KEY *key)
  *
  * If the hardware instructions don't exist, fall back to the software
  * versions.
- *
- * Currently only use the software implementations.
  */
 
 int
 AES_set_encrypt_key(const unsigned char *userkey, const int bits, AES_KEY *key)
 {
+	if (has_intel_aes_instructions()) {
+		return AES_set_encrypt_key_aesni(userkey, bits, key);
+	}
 	return AES_set_encrypt_key_rj(userkey, bits, key);
 }
 
 int
 AES_set_decrypt_key(const unsigned char *userkey, const int bits, AES_KEY *key)
 {
+	if (has_intel_aes_instructions()) {
+		return AES_set_decrypt_key_aesni(userkey, bits, key);
+	}
 	return AES_set_decrypt_key_rj(userkey, bits, key);
 }
 
 void
 AES_encrypt(const unsigned char *in, unsigned char *out, const AES_KEY *key)
 {
+	if (has_intel_aes_instructions()) {
+		return AES_encrypt_aesni(in, out, key);
+	}
 	return AES_encrypt_rj(in, out, key);
 }
 
 void
 AES_decrypt(const unsigned char *in, unsigned char *out, const AES_KEY *key)
 {
+	if (has_intel_aes_instructions()) {
+		return AES_decrypt_aesni(in, out, key);
+	}
 	return AES_decrypt_rj(in, out, key);
 }
 
