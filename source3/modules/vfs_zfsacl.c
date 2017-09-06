@@ -66,6 +66,10 @@ static NTSTATUS zfs_get_nt_acl_common(struct connection_struct *conn,
 		psbuf = &sbuf;
 	}
 
+	if (S_ISDIR(psbuf->st_ex_mode) && (ace->aceMask & SMB_ACE4_ADD_FILE)) {
+		ace->aceMask |= SMB_ACE4_DELETE_CHILD;
+	}
+
 	/* read the number of file aces */
 	if((naces = acl(smb_fname->base_name, ACE_GETACLCNT, 0, NULL)) == -1) {
 		if(errno == ENOSYS) {
