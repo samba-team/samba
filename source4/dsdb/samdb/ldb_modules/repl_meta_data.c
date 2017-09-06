@@ -4984,7 +4984,9 @@ static int replmd_replicated_apply_add(struct replmd_replicated_request *ar)
 	if (DEBUGLVL(4)) {
 		struct GUID_txt_buf guid_txt;
 
-		char *s = ldb_ldif_message_string(ldb, ar, LDB_CHANGETYPE_ADD, msg);
+		char *s = ldb_ldif_message_redacted_string(ldb, ar,
+							   LDB_CHANGETYPE_ADD,
+							   msg);
 		DEBUG(4, ("DRS replication add message of %s:\n%s\n",
 			  GUID_buf_string(&ar->objs->objects[ar->index_current].object_guid, &guid_txt),
 			  s));
@@ -5556,7 +5558,8 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 	if (DEBUGLVL(5)) {
 		struct GUID_txt_buf guid_txt;
 
-		char *s = ldb_ldif_message_string(ldb, ar, LDB_CHANGETYPE_MODIFY, msg);
+		char *s = ldb_ldif_message_redacted_string(ldb, ar,
+							   LDB_CHANGETYPE_MODIFY, msg);
 		DEBUG(5, ("Initial DRS replication modify message of %s is:\n%s\n"
 			  "%s\n"
 			  "%s\n",
@@ -5832,7 +5835,9 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 	if (DEBUGLVL(4)) {
 		struct GUID_txt_buf guid_txt;
 
-		char *s = ldb_ldif_message_string(ldb, ar, LDB_CHANGETYPE_MODIFY, msg);
+		char *s = ldb_ldif_message_redacted_string(ldb, ar,
+							   LDB_CHANGETYPE_MODIFY,
+							   msg);
 		DEBUG(4, ("Final DRS replication modify message of %s:\n%s\n",
 			  GUID_buf_string(&ar->objs->objects[ar->index_current].object_guid, &guid_txt),
 			  s));
@@ -6499,7 +6504,9 @@ static int replmd_replicated_uptodate_modify(struct replmd_replicated_request *a
 	nrf_el->flags = LDB_FLAG_MOD_REPLACE;
 
 	if (CHECK_DEBUGLVL(4)) {
-		char *s = ldb_ldif_message_string(ldb, ar, LDB_CHANGETYPE_MODIFY, msg);
+		char *s = ldb_ldif_message_redacted_string(ldb, ar,
+							   LDB_CHANGETYPE_MODIFY,
+							   msg);
 		DEBUG(4, ("DRS replication uptodate modify message:\n%s\n", s));
 		talloc_free(s);
 	}
@@ -7312,7 +7319,10 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 	if (ret != LDB_SUCCESS) {
 		ldb_debug(ldb, LDB_DEBUG_WARNING, "Failed to apply linked attribute change '%s'\n%s\n",
 			  ldb_errstring(ldb),
-			  ldb_ldif_message_string(ldb, tmp_ctx, LDB_CHANGETYPE_MODIFY, msg));
+			  ldb_ldif_message_redacted_string(ldb,
+							   tmp_ctx,
+							   LDB_CHANGETYPE_MODIFY,
+							   msg));
 		talloc_free(tmp_ctx);
 		return ret;
 	}
