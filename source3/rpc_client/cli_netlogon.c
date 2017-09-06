@@ -156,12 +156,13 @@ NTSTATUS rpccli_create_netlogon_creds_with_creds(struct cli_credentials *creds,
 					    netlogon_creds);
 }
 
-NTSTATUS rpccli_setup_netlogon_creds(struct cli_state *cli,
-				     enum dcerpc_transport_t transport,
-				     struct netlogon_creds_cli_context *netlogon_creds,
-				     bool force_reauth,
-				     struct samr_Password current_nt_hash,
-				     const struct samr_Password *previous_nt_hash)
+static NTSTATUS rpccli_setup_netlogon_creds(
+	struct cli_state *cli,
+	enum dcerpc_transport_t transport,
+	struct netlogon_creds_cli_context *netlogon_creds,
+	bool force_reauth,
+	struct samr_Password current_nt_hash,
+	const struct samr_Password *previous_nt_hash)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct rpc_pipe_client *netlogon_pipe = NULL;
