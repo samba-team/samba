@@ -684,7 +684,7 @@ _PUBLIC_ const char *cli_credentials_get_realm(struct cli_credentials *cred)
 
 /**
  * Set the realm for this credentials context, and force it to
- * uppercase for the sainity of our local kerberos libraries 
+ * uppercase for the sanity of our local kerberos libraries
  */
 _PUBLIC_ bool cli_credentials_set_realm(struct cli_credentials *cred, 
 			       const char *val, 
