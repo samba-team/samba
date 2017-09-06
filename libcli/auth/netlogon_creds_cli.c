@@ -54,6 +54,7 @@ struct netlogon_creds_cli_context {
 	struct {
 		const char *computer;
 		const char *netbios_domain;
+		const char *dns_domain;
 		uint32_t cached_flags;
 		bool try_validation6;
 		bool try_logon_ex;
@@ -105,6 +106,7 @@ static NTSTATUS netlogon_creds_cli_context_common(
 				uint32_t required_flags,
 				const char *server_computer,
 				const char *server_netbios_domain,
+				const char *server_dns_domain,
 				TALLOC_CTX *mem_ctx,
 				struct netlogon_creds_cli_context **_context)
 {
@@ -150,6 +152,13 @@ static NTSTATUS netlogon_creds_cli_context_common(
 
 	context->server.netbios_domain = talloc_strdup(context, server_netbios_domain);
 	if (context->server.netbios_domain == NULL) {
+		TALLOC_FREE(context);
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	context->server.dns_domain = talloc_strdup(context, server_dns_domain);
+	if (context->server.dns_domain == NULL) {
 		TALLOC_FREE(context);
 		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
@@ -415,6 +424,7 @@ NTSTATUS netlogon_creds_cli_context_global(struct loadparm_context *lp_ctx,
 						   required_flags,
 						   server_computer,
 						   server_netbios_domain,
+						   "",
 						   mem_ctx,
 						   &context);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -475,6 +485,7 @@ NTSTATUS netlogon_creds_cli_context_tmp(const char *client_computer,
 						   required_flags,
 						   server_computer,
 						   server_netbios_domain,
+						   "",
 						   mem_ctx,
 						   &context);
 	if (!NT_STATUS_IS_OK(status)) {
