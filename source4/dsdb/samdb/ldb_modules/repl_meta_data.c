@@ -563,9 +563,41 @@ static int replmd_op_callback(struct ldb_request *req, struct ldb_reply *ares)
 	}
 
 	if (ares->error != LDB_SUCCESS) {
-		DEBUG(5,("%s failure. Error is: %s\n", __FUNCTION__, ldb_strerror(ares->error)));
+		struct GUID_txt_buf guid_txt;
+		struct ldb_message *msg = NULL;
+		char *s = NULL;
+
+		if (ac->apply_mode == false) {
+			DBG_NOTICE("Originating update failure. Error is: %s\n",
+				   ldb_strerror(ares->error));
+			return ldb_module_done(ac->req, controls,
+					       ares->response, ares->error);
+		}
+
+		msg = ac->objs->objects[ac->index_current].msg;
+		/*
+		 * Set at DBG_NOTICE as once these start to happe, they
+		 * will happen a lot until resolved, due to repeated
+		 * replication.  The caller will probably print the
+		 * ldb error string anyway.
+		 */
+		DBG_NOTICE("DRS replication apply failure for %s. Error is: %s\n",
+			   ldb_dn_get_linearized(msg->dn),
+			   ldb_strerror(ares->error));
+
+		s = ldb_ldif_message_redacted_string(ldb_module_get_ctx(ac->module),
+						     ac,
+						     LDB_CHANGETYPE_ADD,
+						     msg);
+
+		DBG_INFO("Failing DRS %s replication message was %s:\n%s\n",
+			 ac->search_msg == NULL ? "ADD" : "MODIFY",
+			 GUID_buf_string(&ac->objs->objects[ac->index_current].object_guid,
+					 &guid_txt),
+			 s);
+		talloc_free(s);
 		return ldb_module_done(ac->req, controls,
-					ares->response, ares->error);
+				       ares->response, ares->error);
 	}
 
 	if (ares->type != LDB_REPLY_DONE) {
