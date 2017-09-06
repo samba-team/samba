@@ -48,6 +48,21 @@ static bool test_codepoint_cmpi(struct torture_context *tctx)
 	return true;
 }
 
+static bool test_strcasecmp(struct torture_context *tctx)
+{
+	torture_assert_int_equal(tctx, strcasecmp("foo", "bar"), 4, "different strings both lower");
+	torture_assert_int_equal(tctx, strcasecmp("foo", "Bar"), 4, "different strings lower/upper");
+	torture_assert_int_equal(tctx, strcasecmp("Foo", "bar"), 4, "different strings upper/lower");
+	torture_assert_int_equal(tctx, strcasecmp("AFoo", "_bar"), 2, "different strings upper/lower");
+	torture_assert_int_equal(tctx, strcasecmp("foo", "foo"), 0, "same case strings");
+	torture_assert_int_equal(tctx, strcasecmp("foo", "Foo"), 0, "different case strings");
+
+	/*
+	 * Note that strcasecmp() doesn't allow NULL arguments
+	 */
+	return true;
+}
+
 static bool test_strcasecmp_m(struct torture_context *tctx)
 {
 	/* file.{accented e} in iso8859-1 */
@@ -106,6 +121,24 @@ static bool test_string_replace_m(struct torture_context *tctx)
 	string_replace_m(data, 'o', 'c');
 	torture_assert_str_equal(tctx, data, "blala", "no chars replaced");
 	string_replace_m(NULL, 'b', 'c');
+	return true;
+}
+
+static bool test_strncasecmp(struct torture_context *tctx)
+{
+	torture_assert_int_equal(tctx, strncasecmp("foo", "bar", 3), 4, "different strings both lower");
+	torture_assert_int_equal(tctx, strncasecmp("foo", "Bar", 3), 4, "different strings lower/upper");
+	torture_assert_int_equal(tctx, strncasecmp("Foo", "bar", 3), 4, "different strings upper/lower");
+	torture_assert_int_equal(tctx, strncasecmp("AFoo", "_bar", 4), 2, "different strings upper/lower");
+	torture_assert_int_equal(tctx, strncasecmp("foo", "foo", 3), 0, "same case strings");
+	torture_assert_int_equal(tctx, strncasecmp("foo", "Foo", 3), 0, "different case strings");
+	torture_assert_int_equal(tctx, strncasecmp("fool", "Foo", 3),0, "different case strings");
+	torture_assert_int_equal(tctx, strncasecmp("fool", "Fool", 40), 0, "over size");
+	torture_assert_int_equal(tctx, strncasecmp("BLA", "Fool", 0),0, "empty");
+
+	/*
+	 * Note that strncasecmp() doesn't allow NULL arguments
+	 */
 	return true;
 }
 
@@ -282,10 +315,12 @@ struct torture_suite *torture_local_charset(TALLOC_CTX *mem_ctx)
 	torture_suite_add_simple_test(suite, "toupper_m", test_toupper_m);
 	torture_suite_add_simple_test(suite, "tolower_m", test_tolower_m);
 	torture_suite_add_simple_test(suite, "codepoint_cmpi", test_codepoint_cmpi);
+	torture_suite_add_simple_test(suite, "strcasecmp", test_strcasecmp);
 	torture_suite_add_simple_test(suite, "strcasecmp_m", test_strcasecmp_m);
 	torture_suite_add_simple_test(suite, "strequal_m", test_strequal_m);
 	torture_suite_add_simple_test(suite, "strcsequal", test_strcsequal);
 	torture_suite_add_simple_test(suite, "string_replace_m", test_string_replace_m);
+	torture_suite_add_simple_test(suite, "strncasecmp", test_strncasecmp);
 	torture_suite_add_simple_test(suite, "strncasecmp_m", test_strncasecmp_m);
 	torture_suite_add_simple_test(suite, "next_token", test_next_token);
 	torture_suite_add_simple_test(suite, "next_token_null", test_next_token_null);
