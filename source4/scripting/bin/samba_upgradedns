@@ -442,6 +442,12 @@ if __name__ == '__main__':
 
     # Special stuff for DLZ backend
     if opts.dns_backend == "BIND9_DLZ":
+        config_migration = False
+
+        if (paths.private_dir != paths.binddns_dir and
+            os.path.isfile(os.path.join(paths.private_dir, "named.conf"))):
+            config_migration = True
+
         # Check if dns-HOSTNAME account exists and create it if required
         secrets_msgs = ldbs.secrets.search(expression='(samAccountName=dns-%s)' % hostname, attrs=['secret'])
         msg = ldbs.sam.search(base=domaindn, scope=ldb.SCOPE_DEFAULT,
@@ -537,9 +543,15 @@ if __name__ == '__main__':
 
         cleanup_obsolete_dns_files(paths)
 
-        logger.info("See %s for an example configuration include file for BIND", paths.namedconf)
-        logger.info("and %s for further documentation required for secure DNS "
-                    "updates", paths.namedtxt)
+        if config_migration:
+            logger.info("ATTENTION: The BIND configuration and keytab has been moved to: %s",
+                        paths.binddns_dir)
+            logger.info("           Please update your BIND configuration accordingly.")
+        else:
+            logger.info("See %s for an example configuration include file for BIND", paths.namedconf)
+            logger.info("and %s for further documentation required for secure DNS "
+                        "updates", paths.namedtxt)
+
     elif opts.dns_backend == "SAMBA_INTERNAL":
         # Check if dns-HOSTNAME account exists and delete it if required
         try:
