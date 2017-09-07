@@ -2993,6 +2993,8 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 				  "rpc server dynamic port range",
 				  "49152-65535");
 
+	lpcfg_do_global_parameter(lp_ctx, "prefork children", "1");
+
 	for (i = 0; parm_table[i].label; i++) {
 		if (!(lp_ctx->flags[i] & FLAG_CMDLINE)) {
 			lp_ctx->flags[i] |= FLAG_DEFAULT;

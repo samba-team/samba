@@ -1,0 +1,24 @@
+<samba:parameter name="prefork children"
+                 context="G"
+                 type="integer"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>This option controls the number of worker processes that are
+		started for each service when prefork process model is enabled.
+		The prefork children are only started for those services that
+		support prefork (currently only ldap). For processes that don't
+		support preforking all requests are handled by a single process
+		for that service.
+	</para>
+
+	<para>This should be set to a small multiple of the number of CPU's
+		available on the server</para>
+
+	<para>Additionally the number of prefork children can be specified for
+		an individual service by using "prefork children: service name"
+		i.e. "prefork children:ldap = 8" to set the number of ldap
+		worker processes.</para>
+</description>
+
+<value type="default">1</value>
+</samba:parameter>

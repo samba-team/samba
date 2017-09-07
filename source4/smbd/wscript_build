@@ -44,3 +44,10 @@ bld.SAMBA_MODULE('process_model_standard',
                  internal_module=False
                  )
 
+bld.SAMBA_MODULE('process_model_prefork',
+                 source='process_prefork.c',
+                 subsystem='process_model',
+                 init_function='process_model_prefork_init',
+                 deps='MESSAGING events ldbsamba cluster samba-sockets process_model messages_dgm',
+                 internal_module=False
+                 )
