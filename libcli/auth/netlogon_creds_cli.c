@@ -38,6 +38,7 @@
 #include "source3/include/g_lock.h"
 #include "libds/common/roles.h"
 #include "lib/crypto/crypto.h"
+#include "auth/credentials/credentials.h"
 
 struct netlogon_creds_cli_locked_state;
 
@@ -444,6 +445,37 @@ NTSTATUS netlogon_creds_cli_context_global(struct loadparm_context *lp_ctx,
 	context->db.ctx = netlogon_creds_cli_global_db;
 	*_context = context;
 	TALLOC_FREE(frame);
+	return NT_STATUS_OK;
+}
+
+NTSTATUS netlogon_creds_bind_cli_credentials(
+	struct netlogon_creds_cli_context *context, TALLOC_CTX *mem_ctx,
+	struct cli_credentials **pcli_creds)
+{
+	struct cli_credentials *cli_creds;
+	struct netlogon_creds_CredentialState *ncreds;
+	NTSTATUS status;
+
+	cli_creds = cli_credentials_init(mem_ctx);
+	if (cli_creds == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	cli_credentials_set_secure_channel_type(cli_creds,
+						context->client.type);
+	cli_credentials_set_username(cli_creds, context->client.account,
+				     CRED_SPECIFIED);
+	cli_credentials_set_domain(cli_creds, context->server.netbios_domain,
+				   CRED_SPECIFIED);
+	cli_credentials_set_realm(cli_creds, context->server.dns_domain,
+				  CRED_SPECIFIED);
+
+	status = netlogon_creds_cli_get(context, cli_creds, &ncreds);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(cli_creds);
+		return status;
+	}
+
+	*pcli_creds = cli_creds;
 	return NT_STATUS_OK;
 }
 

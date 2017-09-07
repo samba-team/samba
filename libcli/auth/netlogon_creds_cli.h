@@ -26,6 +26,7 @@
 #include "librpc/gen_ndr/schannel.h"
 
 struct netlogon_creds_cli_context;
+struct cli_credentials;
 struct messaging_context;
 struct dcerpc_binding_handle;
 struct db_context;
@@ -43,6 +44,9 @@ NTSTATUS netlogon_creds_cli_context_global(struct loadparm_context *lp_ctx,
 				const char *server_dns_domain,
 				TALLOC_CTX *mem_ctx,
 				struct netlogon_creds_cli_context **_context);
+NTSTATUS netlogon_creds_bind_cli_credentials(
+	struct netlogon_creds_cli_context *context, TALLOC_CTX *mem_ctx,
+	struct cli_credentials **pcli_creds);
 
 char *netlogon_creds_cli_debug_string(
 		const struct netlogon_creds_cli_context *context,
