@@ -474,6 +474,7 @@ NTSTATUS netlogon_creds_bind_cli_credentials(
 		TALLOC_FREE(cli_creds);
 		return status;
 	}
+	cli_credentials_set_netlogon_creds(cli_creds, ncreds);
 
 	*pcli_creds = cli_creds;
 	return NT_STATUS_OK;

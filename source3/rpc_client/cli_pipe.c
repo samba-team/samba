@@ -3275,7 +3275,6 @@ NTSTATUS cli_rpc_pipe_open_generic_auth(struct cli_state *cli,
 NTSTATUS cli_rpc_pipe_open_schannel_with_creds(struct cli_state *cli,
 					       const struct ndr_interface_table *table,
 					       enum dcerpc_transport_t transport,
-					       struct cli_credentials *cli_creds,
 					       struct netlogon_creds_cli_context *netlogon_creds,
 					       struct rpc_pipe_client **_rpccli)
 {
@@ -3283,6 +3282,7 @@ NTSTATUS cli_rpc_pipe_open_schannel_with_creds(struct cli_state *cli,
 	struct pipe_auth_data *rpcauth;
 	const char *target_service = table->authservices->names[0];
 	struct netlogon_creds_CredentialState *ncreds = NULL;
+	struct cli_credentials *cli_creds;
 	enum dcerpc_AuthLevel auth_level;
 	NTSTATUS status;
 	int rpc_pipe_bind_dbglvl = 0;
@@ -3302,7 +3302,14 @@ NTSTATUS cli_rpc_pipe_open_schannel_with_creds(struct cli_state *cli,
 
 	auth_level = netlogon_creds_cli_auth_level(netlogon_creds);
 
-	cli_credentials_set_netlogon_creds(cli_creds, ncreds);
+	status = netlogon_creds_bind_cli_credentials(
+		netlogon_creds, rpccli, &cli_creds);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("netlogon_creds_bind_cli_credentials failed: %s\n",
+			  nt_errstr(status));
+		TALLOC_FREE(rpccli);
+		return status;
+	}
 
 	status = rpccli_generic_bind_data_from_creds(rpccli,
 						     DCERPC_AUTH_TYPE_SCHANNEL,
@@ -3319,7 +3326,11 @@ NTSTATUS cli_rpc_pipe_open_schannel_with_creds(struct cli_state *cli,
 	}
 
 	status = rpc_pipe_bind(rpccli, rpcauth);
-	cli_credentials_set_netlogon_creds(cli_creds, NULL);
+
+	/* No TALLOC_FREE, gensec takes references */
+	talloc_unlink(rpccli, cli_creds);
+	cli_creds = NULL;
+
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_ACCESS_DENIED)) {
 		rpc_pipe_bind_dbglvl = 1;
 		netlogon_creds_cli_delete(netlogon_creds, ncreds);

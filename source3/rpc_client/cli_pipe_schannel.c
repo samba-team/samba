@@ -93,7 +93,6 @@ NTSTATUS cli_rpc_pipe_open_schannel(struct cli_state *cli,
 	if (netlogon_flags & NETLOGON_NEG_AUTHENTICATED_RPC) {
 		status = cli_rpc_pipe_open_schannel_with_creds(cli, table,
 							       transport,
-							       cli_creds,
 							       netlogon_creds,
 							       &result);
 		if (!NT_STATUS_IS_OK(status)) {

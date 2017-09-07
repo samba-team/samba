@@ -1662,7 +1662,6 @@ NTSTATUS libnet_join_ok(struct messaging_context *msg_ctx,
 
 	status = cli_rpc_pipe_open_schannel_with_creds(
 		cli, &ndr_table_netlogon, NCACN_NP,
-		cli_creds,
 		netlogon_creds, &netlogon_pipe);
 
 	TALLOC_FREE(netlogon_pipe);

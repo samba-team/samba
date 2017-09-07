@@ -2771,9 +2771,9 @@ retry:
 			   nt_errstr(result)));
 		goto anonymous;
 	}
-	status = cli_rpc_pipe_open_schannel_with_creds
-		(conn->cli, &ndr_table_samr, NCACN_NP,
-		 creds, p_creds, &conn->samr_pipe);
+	status = cli_rpc_pipe_open_schannel_with_creds(
+		conn->cli, &ndr_table_samr, NCACN_NP, p_creds,
+		&conn->samr_pipe);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_SESSION_EXPIRED)
 	    && !retry) {
@@ -2950,7 +2950,6 @@ static NTSTATUS cm_connect_lsa_tcp(struct winbindd_domain *domain,
 	status = cli_rpc_pipe_open_schannel_with_creds(conn->cli,
 						       &ndr_table_lsarpc,
 						       NCACN_IP_TCP,
-						       creds,
 						       p_creds,
 						       &conn->lsa_pipe_tcp);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -3077,9 +3076,9 @@ retry:
 			   nt_errstr(result)));
 		goto anonymous;
 	}
-	result = cli_rpc_pipe_open_schannel_with_creds
-		(conn->cli, &ndr_table_lsarpc, NCACN_NP,
-		 creds, p_creds, &conn->lsa_pipe);
+	result = cli_rpc_pipe_open_schannel_with_creds(
+		conn->cli, &ndr_table_lsarpc, NCACN_NP, p_creds,
+		&conn->lsa_pipe);
 
 	if (NT_STATUS_EQUAL(result, NT_STATUS_NETWORK_SESSION_EXPIRED)
 	    && !retry) {
@@ -3343,7 +3342,6 @@ static NTSTATUS cm_connect_netlogon_transport(struct winbindd_domain *domain,
 
 	result = cli_rpc_pipe_open_schannel_with_creds(
 		conn->cli, &ndr_table_netlogon, transport,
-		creds,
 		conn->netlogon_creds_ctx,
 		&conn->netlogon_pipe);
 	if (!NT_STATUS_IS_OK(result)) {
