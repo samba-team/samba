@@ -629,6 +629,7 @@ int32_t ctdb_control_wipe_database(struct ctdb_context *ctdb, TDB_DATA indata);
 
 bool ctdb_db_frozen(struct ctdb_db_context *ctdb_db);
 bool ctdb_db_all_frozen(struct ctdb_context *ctdb);
+bool ctdb_db_allow_access(struct ctdb_db_context *ctdb_db);
 
 /* from server/ctdb_keepalive.c */
 
