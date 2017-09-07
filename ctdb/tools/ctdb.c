@@ -4142,6 +4142,7 @@ static int control_restoredb(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	ssize_t n;
 	int fd, i;
 	int count, ret;
+	uint8_t db_flags;
 
 	if (argc < 1 || argc > 2) {
 		usage("restoredb");
@@ -4185,8 +4186,9 @@ static int control_restoredb(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		 localtime(&db_hdr.timestamp));
 	printf("Restoring database %s from backup @ %s\n", db_name, timebuf);
 
+	db_flags = db_hdr.flags & 0xff;
 	ret = ctdb_attach(ctdb->ev, ctdb->client, TIMEOUT(), db_name,
-			  db_hdr.flags, &db);
+			  db_flags, &db);
 	if (ret != 0) {
 		fprintf(stderr, "Failed to attach to DB %s\n", db_name);
 		close(fd);
