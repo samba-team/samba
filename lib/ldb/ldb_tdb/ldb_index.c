@@ -1578,7 +1578,7 @@ static int re_key(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *st
 	ldb = ldb_module_get_ctx(module);
 
 	if (key.dsize > 4 &&
-	    strncmp((char *)key.dptr, "DN=@", 4) == 0) {
+	    memcmp(key.dptr, "DN=@", 4) == 0) {
 		return 0;
 	}
 
@@ -1647,7 +1647,7 @@ static int re_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *
 	ldb = ldb_module_get_ctx(module);
 
 	if (key.dsize > 4 &&
-	    strncmp((char *)key.dptr, "DN=@", 4) == 0) {
+	    memcmp(key.dptr, "DN=@", 4) == 0) {
 		return 0;
 	}
 

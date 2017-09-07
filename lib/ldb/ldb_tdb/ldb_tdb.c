@@ -137,11 +137,11 @@ bool ltdb_key_is_record(TDB_DATA key)
 		return false;
 	}
 
-	if (strncmp((char *)key.dptr, "DN=", 3) == 0) {
+	if (memcmp(key.dptr, "DN=", 3) == 0) {
 		return true;
 	}
 	
-	if (strncmp((char *)key.dptr, "ID=", 3) == 0) {
+	if (memcmp(key.dptr, "ID=", 3) == 0) {
 		return true;
 	}
 
@@ -149,7 +149,7 @@ bool ltdb_key_is_record(TDB_DATA key)
 		return false;
 	}
 
-	if (strncmp((char *)key.dptr, "GUID=", 5) == 0) {
+	if (memcmp(key.dptr, "GUID=", 5) == 0) {
 		return true;
 	}
 	
