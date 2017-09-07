@@ -146,5 +146,5 @@ void daemon_status(const char *daemon, const char *msg)
 #if defined(HAVE_LIBSYSTEMD_DAEMON) || defined(HAVE_LIBSYSTEMD)
 	sd_notifyf(0, "\nSTATUS=%s: %s", daemon, msg);
 #endif
-	DBG_ERR("STATUS=daemon '%s' : %s", daemon, msg);
+	DBG_ERR("STATUS=daemon '%s' : %s\n", daemon, msg);
 }
