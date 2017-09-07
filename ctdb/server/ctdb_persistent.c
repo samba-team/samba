@@ -344,6 +344,11 @@ static int32_t ctdb_get_db_seqnum(struct ctdb_context *ctdb,
 		goto done;
 	}
 
+	if (! ctdb_db_allow_access(ctdb_db)) {
+		ret = -1;
+		goto done;
+	}
+
 	key.dptr = (uint8_t *)discard_const(keyname);
 	key.dsize = strlen(keyname) + 1;
 
