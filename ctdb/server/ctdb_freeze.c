@@ -874,3 +874,21 @@ bool ctdb_db_all_frozen(struct ctdb_context *ctdb)
 	}
 	return true;
 }
+
+bool ctdb_db_allow_access(struct ctdb_db_context *ctdb_db)
+{
+	if (ctdb_db->freeze_mode == CTDB_FREEZE_NONE) {
+		/* If database is not frozen, then allow access. */
+		return true;
+	} else if (ctdb_db->freeze_transaction_started) {
+		/* If database is frozen, allow access only if the
+		 * transaction is started.  This is required during
+		 * recovery.
+		 *
+		 * If a node is inactive, then transaction is not started.
+		 */
+		return true;
+	}
+
+	return false;
+}
