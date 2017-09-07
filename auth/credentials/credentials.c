@@ -959,8 +959,9 @@ _PUBLIC_ void cli_credentials_guess(struct cli_credentials *cred,
  * Attach NETLOGON credentials for use with SCHANNEL
  */
 
-_PUBLIC_ void cli_credentials_set_netlogon_creds(struct cli_credentials *cred, 
-						 struct netlogon_creds_CredentialState *netlogon_creds)
+_PUBLIC_ void cli_credentials_set_netlogon_creds(
+	struct cli_credentials *cred,
+	const struct netlogon_creds_CredentialState *netlogon_creds)
 {
 	TALLOC_FREE(cred->netlogon_creds);
 	if (netlogon_creds == NULL) {
