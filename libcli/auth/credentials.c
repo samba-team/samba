@@ -811,8 +811,9 @@ union netr_LogonLevel *netlogon_creds_shallow_copy_logon(TALLOC_CTX *mem_ctx,
   copy a netlogon_creds_CredentialState struct
 */
 
-struct netlogon_creds_CredentialState *netlogon_creds_copy(TALLOC_CTX *mem_ctx,
-							   struct netlogon_creds_CredentialState *creds_in)
+struct netlogon_creds_CredentialState *netlogon_creds_copy(
+	TALLOC_CTX *mem_ctx,
+	const struct netlogon_creds_CredentialState *creds_in)
 {
 	struct netlogon_creds_CredentialState *creds = talloc_zero(mem_ctx, struct netlogon_creds_CredentialState);
 
