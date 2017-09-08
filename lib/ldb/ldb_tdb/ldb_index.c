@@ -31,6 +31,119 @@
  *  Author: Andrew Tridgell
  */
 
+/*
+
+LDB Index design and choice of TDB key:
+=======================================
+
+LDB has index records held as LDB objects with a special record like:
+
+dn: @INDEX:attr:value
+
+value may be base64 encoded, if it is deemed not printable:
+
+dn: @INDEX:attr::base64-value
+
+In each record, there is two possible formats:
+
+The original format is:
+-----------------------
+
+dn: @INDEX:NAME:DNSUPDATEPROXY
+@IDXVERSION: 2
+@IDX: CN=DnsUpdateProxy,CN=Users,DC=addom,DC=samba,DC=example,DC=com
+
+In this format, @IDX is multi-valued, one entry for each match
+
+The corrosponding entry is stored in a TDB record with key:
+
+DN=CN=DNSUPDATEPROXY,CN=USERS,DC=ADDOM,DC=SAMBA,DC=EXAMPLE,DC=COM
+
+(This allows a scope BASE search to directly find the record via
+a simple casefold of the DN).
+
+The original mixed-case DN is stored in the entry iself.
+
+
+The new 'GUID index' format is:
+-------------------------------
+
+dn: @INDEX:NAME:DNSUPDATEPROXY
+@IDXVERSION: 3
+@IDX: <binary GUID>[<binary GUID>[...]]
+
+The binary guid is 16 bytes, as bytes and not expanded as hexidecimal
+or pretty-printed.  The GUID is chosen from the message to be stored
+by the @IDXGUID attribute on @INDEXLIST.
+
+If there are multiple values the @IDX value simply becomes longer,
+in multiples of 16.
+
+The corrosponding entry is stored in a TDB record with key:
+
+GUID=<binary GUID>
+
+This allows a very quick translation between the fixed-length index
+values and the TDB key, while seperating entries from other data
+in the TDB, should they be unlucky enough to start with the bytes of
+the 'DN=' prefix.
+
+Additionally, this allows a scope BASE search to directly find the
+record via a simple match on a GUID= extended DN, controlled via
+@IDX_DN_GUID on @INDEXLIST
+
+Exception for special @ DNs:
+
+@BASEINFO, @INDEXLIST and all other special DNs are stored as per the
+original format, as they are never referenced in an index and are used
+to bootstrap the database.
+
+
+Control points for choice of index mode
+---------------------------------------
+
+The choice of index and TDB key mode is made based (for example, from
+Samba) on entries in the @INDEXLIST DN:
+
+dn: @INDEXLIST
+@IDXGUID: objectGUID
+@IDX_DN_GUID: GUID
+
+By default, the original DN format is used.
+
+
+Control points for choosing indexed attributes
+----------------------------------------------
+
+@IDXATTR controls if an attribute is indexed
+
+dn: @INDEXLIST
+@IDXATTR: samAccountName
+@IDXATTR: nETBIOSName
+
+
+C Override functions
+--------------------
+
+void ldb_schema_set_override_GUID_index(struct ldb_context *ldb,
+                                        const char *GUID_index_attribute,
+                                        const char *GUID_index_dn_component)
+
+This is used, particularly in combination with the below, instead of
+the @IDXGUID and @IDX_DN_GUID values in @INDEXLIST.
+
+void ldb_schema_set_override_indexlist(struct ldb_context *ldb,
+                                       bool one_level_indexes);
+void ldb_schema_attribute_set_override_handler(struct ldb_context *ldb,
+                                               ldb_attribute_handler_override_fn_t override,
+                                               void *private_data);
+
+When the above two functions are called in combination, the @INDEXLIST
+values are not read from the DB, so
+ldb_schema_set_override_GUID_index() must be called.
+
+*/
+
 #include "ldb_tdb.h"
 #include "ldb_private.h"
 #include "lib/util/binsearch.h"
