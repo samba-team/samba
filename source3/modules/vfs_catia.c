@@ -2246,16 +2246,48 @@ static NTSTATUS catia_get_compression(vfs_handle_struct *handle,
 	NTSTATUS result;
 	struct catia_cache *cc = NULL;
 	int ret;
+	struct smb_filename *mapped_smb_fname = NULL;
+	char *mapped_name = NULL;
 
-	ret = CATIA_FETCH_FSP_PRE_NEXT(talloc_tos(), handle, fsp, &cc);
-	if (ret != 0) {
-		return map_nt_error_from_unix(errno);
+	if (fsp != NULL) {
+		ret = CATIA_FETCH_FSP_PRE_NEXT(talloc_tos(), handle, fsp, &cc);
+		if (ret != 0) {
+			return map_nt_error_from_unix(errno);
+		}
+		mapped_smb_fname = fsp->fsp_name;
+	} else {
+		result = catia_string_replace_allocate(handle->conn,
+				smb_fname->base_name,
+				&mapped_name,
+				vfs_translate_to_unix);
+		if (!NT_STATUS_IS_OK(result)) {
+			return result;
+		}
+
+		mapped_smb_fname = synthetic_smb_fname(talloc_tos(),
+						mapped_name,
+						NULL,
+						NULL,
+						smb_fname->flags);
+		if (mapped_smb_fname == NULL) {
+			TALLOC_FREE(mapped_name);
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		TALLOC_FREE(mapped_name);
 	}
 
-	result = SMB_VFS_NEXT_GET_COMPRESSION(handle, mem_ctx, fsp, smb_fname,
-					      _compression_fmt);
+	result = SMB_VFS_NEXT_GET_COMPRESSION(handle,
+					mem_ctx,
+					fsp,
+					mapped_smb_fname,
+					_compression_fmt);
 
-	CATIA_FETCH_FSP_POST_NEXT(&cc, fsp);
+	if (fsp != NULL) {
+		CATIA_FETCH_FSP_POST_NEXT(&cc, fsp);
+	} else {
+		TALLOC_FREE(mapped_smb_fname);
+	}
 
 	return result;
 }
