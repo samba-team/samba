@@ -275,6 +275,7 @@ static void samba_runcmd_io_handler(struct tevent_context *ev,
 			tevent_req_error(req, errno);
 			return;
 		}
+		TALLOC_FREE(fde);
 
 		if (WIFEXITED(status)) {
 			status = WEXITSTATUS(status);
