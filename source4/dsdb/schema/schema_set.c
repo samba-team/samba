@@ -128,7 +128,7 @@ int dsdb_schema_set_indices_and_attributes(struct ldb_context *ldb,
 		}
 	}
 
-	ret = ldb_msg_add_string(msg_idx, "@IDXVERSION", SAMDB_INDEXING_VERSION);
+	ret = ldb_msg_add_string(msg_idx, "@SAMDB_INDEXING_VERSION", SAMDB_INDEXING_VERSION);
 	if (ret != LDB_SUCCESS) {
 		goto op_error;
 	}
