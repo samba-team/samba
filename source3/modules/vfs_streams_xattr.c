@@ -1469,40 +1469,6 @@ static void streams_xattr_strict_unlock(struct vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_STRICT_UNLOCK(handle, fsp, plock);
 }
 
-static NTSTATUS streams_xattr_get_compression(struct vfs_handle_struct *handle,
-					      TALLOC_CTX *mem_ctx,
-					      struct files_struct *fsp,
-					      struct smb_filename *smb_fname,
-					      uint16_t *_compression_fmt)
-{
-	struct stream_io *sio =
-		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
-
-	if (sio == NULL) {
-		return SMB_VFS_NEXT_GET_COMPRESSION(handle, mem_ctx, fsp,
-						    smb_fname, _compression_fmt);
-	}
-
-	*_compression_fmt = COMPRESSION_FORMAT_NONE;
-	return NT_STATUS_OK;
-}
-
-static NTSTATUS streams_xattr_set_compression(struct vfs_handle_struct *handle,
-					      TALLOC_CTX *mem_ctx,
-					      struct files_struct *fsp,
-					      uint16_t compression_fmt)
-{
-	struct stream_io *sio =
-		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
-
-	if (sio == NULL) {
-		return SMB_VFS_NEXT_SET_COMPRESSION(handle, mem_ctx, fsp,
-						    compression_fmt);
-	}
-
-	return NT_STATUS_NOT_SUPPORTED;
-}
-
 static struct vfs_fn_pointers vfs_streams_xattr_fns = {
 	.fs_capabilities_fn = streams_xattr_fs_capabilities,
 	.connect_fn = streams_xattr_connect,
@@ -1527,9 +1493,6 @@ static struct vfs_fn_pointers vfs_streams_xattr_fns = {
 	.linux_setlease_fn = streams_xattr_linux_setlease,
 	.strict_lock_fn = streams_xattr_strict_lock,
 	.strict_unlock_fn = streams_xattr_strict_unlock,
-
-	.get_compression_fn = streams_xattr_get_compression,
-	.set_compression_fn = streams_xattr_set_compression,
 
 	.fchown_fn = streams_xattr_fchown,
 	.fchmod_fn = streams_xattr_fchmod,
