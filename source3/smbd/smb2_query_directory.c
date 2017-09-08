@@ -501,7 +501,6 @@ static struct tevent_req *smbd_smb2_query_directory_send(TALLOC_CTX *mem_ctx,
 	while (true) {
 		bool got_exact_match = false;
 		int space_remaining = in_output_buffer_length - off;
-		int cur_off = off;
 		struct file_id file_id;
 		bool stop = false;
 
@@ -556,7 +555,7 @@ static struct tevent_req *smbd_smb2_query_directory_send(TALLOC_CTX *mem_ctx,
 						       conn,
 						       file_id,
 						       info_level,
-						       base_data + cur_off,
+						       base_data + last_entry_off,
 						       &stop);
 			if (tevent_req_nomem(subreq, req)) {
 				return tevent_req_post(req, ev);
