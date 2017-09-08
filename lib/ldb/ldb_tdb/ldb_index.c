@@ -2038,10 +2038,29 @@ int ltdb_index_add_new(struct ldb_module *module,
 
 	ret = ltdb_index_add_all(module, ltdb, msg);
 	if (ret != LDB_SUCCESS) {
+		/*
+		 * Because we can't trust the caller to be doing
+		 * transactions properly, clean up any index for this
+		 * entry rather than relying on a transaction
+		 * cleanup
+		 */
+
+		ltdb_index_delete(module, msg);
 		return ret;
 	}
 
-	return ltdb_index_onelevel(module, msg, 1);
+	ret = ltdb_index_onelevel(module, msg, 1);
+	if (ret != LDB_SUCCESS) {
+		/*
+		 * Because we can't trust the caller to be doing
+		 * transactions properly, clean up any index for this
+		 * entry rather than relying on a transaction
+		 * cleanup
+		 */
+		ltdb_index_delete(module, msg);
+		return ret;
+	}
+	return ret;
 }
 
 
