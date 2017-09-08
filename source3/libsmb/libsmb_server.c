@@ -61,7 +61,16 @@ SMBC_check_server(SMBCCTX * context,
 					1,
 					data_blob_const(data, sizeof(data)));
 		if (!NT_STATUS_IS_OK(status)) {
-			return 1;
+			/*
+			 * Some NetApp servers return
+			 * NT_STATUS_INVALID_PARAMETER.That's OK, they still
+			 * replied.
+			 * BUG: https://bugzilla.samba.org/show_bug.cgi?id=13007
+			 */
+			if (!NT_STATUS_EQUAL(status,
+					NT_STATUS_INVALID_PARAMETER)) {
+				return 1;
+			}
 		}
 		server->last_echo_time = now;
 	}
