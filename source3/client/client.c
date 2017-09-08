@@ -5696,7 +5696,13 @@ static void readline_callback(void)
 	/* Ping the server to keep the connection alive using SMBecho. */
 	memset(garbage, 0xf0, sizeof(garbage));
 	status = cli_echo(cli, 1, data_blob_const(garbage, sizeof(garbage)));
-	if (NT_STATUS_IS_OK(status)) {
+	if (NT_STATUS_IS_OK(status) ||
+			NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)) {
+		/*
+		 * Even if server returns NT_STATUS_INVALID_PARAMETER
+		 * it still responded.
+		 * BUG: https://bugzilla.samba.org/show_bug.cgi?id=13007
+		 */
 		return;
 	}
 
