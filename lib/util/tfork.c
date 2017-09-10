@@ -670,7 +670,7 @@ static pid_t tfork_start_waiter_and_worker(struct tfork_state *state,
 		}
 		_exit(errno);
 	}
-	if (nread != 0) {
+	if (nread != 1) {
 		_exit(255);
 	}
 
@@ -838,7 +838,18 @@ int tfork_status(struct tfork **_t, bool wait)
 
 	/*
 	 * This triggers process exit in the waiter.
+	 * We write to the fd as well as closing it, as any tforked sibling
+	 * processes will also have the writable end of this socket open.
+	 *
 	 */
+	{
+		size_t nwritten;
+		nwritten = sys_write(t->status_fd, &(char){0}, sizeof(char));
+		if (nwritten != sizeof(char)) {
+			close(t->status_fd);
+			return -1;
+		}
+	}
 	close(t->status_fd);
 
 	do {
