@@ -495,6 +495,10 @@ static void netlogon_creds_cli_fetch_parser(TDB_DATA key, TDB_DATA data,
 		return;
 	}
 
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_DEBUG(netlogon_creds_CredentialState, state->creds);
+	}
+
 	tmp_flags = state->creds->negotiate_flags;
 	tmp_flags &= state->required_flags;
 	if (tmp_flags != state->required_flags) {
@@ -594,6 +598,10 @@ NTSTATUS netlogon_creds_cli_store(struct netlogon_creds_cli_context *context,
 		 * this was not the result of netlogon_creds_cli_lock*()
 		 */
 		return NT_STATUS_INVALID_PAGE_PROTECTION;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_DEBUG(netlogon_creds_CredentialState, creds);
 	}
 
 	ndr_err = ndr_push_struct_blob(&blob, creds, creds,
