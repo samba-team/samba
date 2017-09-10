@@ -22,7 +22,7 @@ consistently. In interactive sessions the following banner is now presented
 to the user: 'Try "help" do get a list of possible commands.'.
 
 The default for "client max protocol" has changed to "SMB3_11",
-which means that smbclient (and related commands) will work against
+which means that 'smbclient' (and related commands) will work against
 servers without SMB1 support.
 
 It's possible to use the '-m/--max-protocol' option to overwrite
@@ -32,7 +32,7 @@ Note that the '-e/--encrypt' option also works with most SMB3 servers
 (e.g. Windows >= 2012 and Samba >= 4.0.0), so the SMB1 unix extensions
 are not required for encryption.
 
-The change to SMB3_11 as default also means smbclient no longer
+The change to SMB3_11 as default also means 'smbclient' no longer
 negotiates SMB1 unix extensions by default, when talking to a Samba server with
 "unix extensions = yes".  As a result, some commands are not available, e.g.
 'posix_encrypt', 'posix_open', 'posix_mkdir', 'posix_rmdir', 'posix_unlink',
@@ -42,7 +42,7 @@ server supports SMB1.
 Note the default ("CORE") for "client min protocol" hasn't changed,
 so it's still possible to connect to SMB1-only servers by default.
 
-'smbclient' learned a new command "deltree" that is able to do
+'smbclient' learned a new command 'deltree' that is able to do
 a recursive deletion of a directory tree.
 
 
