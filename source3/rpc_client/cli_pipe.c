@@ -3322,7 +3322,8 @@ NTSTATUS cli_rpc_pipe_open_schannel_with_creds(struct cli_state *cli,
 	cli_credentials_set_netlogon_creds(cli_creds, NULL);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_ACCESS_DENIED)) {
 		rpc_pipe_bind_dbglvl = 1;
-		netlogon_creds_cli_delete(netlogon_creds, &ncreds);
+		netlogon_creds_cli_delete(netlogon_creds, ncreds);
+		TALLOC_FREE(ncreds);
 	}
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(rpc_pipe_bind_dbglvl,

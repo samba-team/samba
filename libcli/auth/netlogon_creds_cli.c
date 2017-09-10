@@ -715,18 +715,14 @@ NTSTATUS netlogon_creds_cli_store(struct netlogon_creds_cli_context *context,
 }
 
 NTSTATUS netlogon_creds_cli_delete(struct netlogon_creds_cli_context *context,
-				   struct netlogon_creds_CredentialState **_creds)
+				   struct netlogon_creds_CredentialState *creds)
 {
-	struct netlogon_creds_CredentialState *creds = *_creds;
 	NTSTATUS status;
-
-	*_creds = NULL;
 
 	if (context->db.locked_state == NULL) {
 		/*
 		 * this was not the result of netlogon_creds_cli_lock*()
 		 */
-		TALLOC_FREE(creds);
 		return NT_STATUS_INVALID_PAGE_PROTECTION;
 	}
 
@@ -734,13 +730,11 @@ NTSTATUS netlogon_creds_cli_delete(struct netlogon_creds_cli_context *context,
 		/*
 		 * this was not the result of netlogon_creds_cli_lock*()
 		 */
-		TALLOC_FREE(creds);
 		return NT_STATUS_INVALID_PAGE_PROTECTION;
 	}
 
 	status = dbwrap_delete(context->db.ctx,
 			       context->db.key_data);
-	TALLOC_FREE(creds);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -1470,7 +1464,8 @@ static void netlogon_creds_cli_check_cleanup(struct tevent_req *req,
 		return;
 	}
 
-	netlogon_creds_cli_delete(state->context, &state->creds);
+	netlogon_creds_cli_delete(state->context, state->creds);
+	TALLOC_FREE(state->creds);
 }
 
 static void netlogon_creds_cli_check_caps(struct tevent_req *subreq);
@@ -1843,7 +1838,8 @@ static void netlogon_creds_cli_ServerPasswordSet_cleanup(struct tevent_req *req,
 		return;
 	}
 
-	netlogon_creds_cli_delete(state->context, &state->creds);
+	netlogon_creds_cli_delete(state->context, state->creds);
+	TALLOC_FREE(state->creds);
 }
 
 static void netlogon_creds_cli_ServerPasswordSet_done(struct tevent_req *subreq);
@@ -2225,7 +2221,8 @@ static void netlogon_creds_cli_LogonSamLogon_cleanup(struct tevent_req *req,
 		return;
 	}
 
-	netlogon_creds_cli_delete(state->context, &state->lk_creds);
+	netlogon_creds_cli_delete(state->context, state->lk_creds);
+	TALLOC_FREE(state->lk_creds);
 }
 
 static void netlogon_creds_cli_LogonSamLogon_done(struct tevent_req *subreq);
@@ -2689,7 +2686,8 @@ static void netlogon_creds_cli_DsrUpdateReadOnlyServerDnsRecords_cleanup(struct 
 		return;
 	}
 
-	netlogon_creds_cli_delete(state->context, &state->creds);
+	netlogon_creds_cli_delete(state->context, state->creds);
+	TALLOC_FREE(state->creds);
 }
 
 static void netlogon_creds_cli_DsrUpdateReadOnlyServerDnsRecords_done(struct tevent_req *subreq);
@@ -2955,7 +2953,8 @@ static void netlogon_creds_cli_ServerGetTrustInfo_cleanup(struct tevent_req *req
 		return;
 	}
 
-	netlogon_creds_cli_delete(state->context, &state->creds);
+	netlogon_creds_cli_delete(state->context, state->creds);
+	TALLOC_FREE(state->creds);
 }
 
 static void netlogon_creds_cli_ServerGetTrustInfo_done(struct tevent_req *subreq);
@@ -3241,7 +3240,8 @@ static void netlogon_creds_cli_GetForestTrustInformation_cleanup(struct tevent_r
 		return;
 	}
 
-	netlogon_creds_cli_delete(state->context, &state->creds);
+	netlogon_creds_cli_delete(state->context, state->creds);
+	TALLOC_FREE(state->creds);
 }
 
 static void netlogon_creds_cli_GetForestTrustInformation_done(struct tevent_req *subreq);
@@ -3518,7 +3518,8 @@ static void netlogon_creds_cli_SendToSam_cleanup(struct tevent_req *req,
 		return;
 	}
 
-	netlogon_creds_cli_delete(state->context, &state->creds);
+	netlogon_creds_cli_delete(state->context, state->creds);
+	TALLOC_FREE(state->creds);
 }
 
 static void netlogon_creds_cli_SendToSam_done(struct tevent_req *subreq);
