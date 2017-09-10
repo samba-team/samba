@@ -32,7 +32,11 @@ void task_server_terminate(struct task_server *task, const char *reason, bool fa
 {
 	struct tevent_context *event_ctx = task->event_ctx;
 	const struct model_ops *model_ops = task->model_ops;
-	DEBUG(0,("task_server_terminate: [%s]\n", reason));
+	if (fatal) {
+		DBG_ERR("task_server_terminate: [%s]\n", reason);
+	} else {
+		DBG_NOTICE("task_server_terminate: [%s]\n", reason);
+	}
 
 	if (fatal && task->msg_ctx != NULL) {
 		struct dcerpc_binding_handle *irpc_handle;

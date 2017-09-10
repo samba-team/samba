@@ -62,9 +62,9 @@ void stream_terminate_connection(struct stream_connection *srv_conn, const char 
 	if (!reason) reason = "unknown reason";
 
 	if (srv_conn->processing) {
-		DEBUG(3,("Terminating connection deferred - '%s'\n", reason));
+		DBG_NOTICE("Terminating connection deferred - '%s'\n", reason);
 	} else {
-		DEBUG(3,("Terminating connection - '%s'\n", reason));
+		DBG_NOTICE("Terminating connection - '%s'\n", reason);
 	}
 
 	srv_conn->terminate = reason;
@@ -178,7 +178,7 @@ static void stream_new_connection(struct tevent_context *ev,
 
 	srv_conn = talloc_zero(ev, struct stream_connection);
 	if (!srv_conn) {
-		DEBUG(0,("talloc(mem_ctx, struct stream_connection) failed\n"));
+		DBG_ERR("talloc(mem_ctx, struct stream_connection) failed\n");
 		return;
 	}
 
@@ -366,9 +366,9 @@ NTSTATUS stream_setup_socket(TALLOC_CTX *mem_ctx,
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("Failed to listen on %s:%u - %s\n",
+		DBG_ERR("Failed to listen on %s:%u - %s\n",
 			 sock_addr, port ? (unsigned int)(*port) : 0,
-			 nt_errstr(status)));
+			 nt_errstr(status));
 		talloc_free(stream_socket);
 		return status;
 	}
@@ -382,7 +382,7 @@ NTSTATUS stream_setup_socket(TALLOC_CTX *mem_ctx,
 			    TEVENT_FD_READ,
 			    stream_accept_handler, stream_socket);
 	if (!fde) {
-		DEBUG(0,("Failed to setup fd event\n"));
+		DBG_ERR("Failed to setup fd event\n");
 		talloc_free(stream_socket);
 		return NT_STATUS_NO_MEMORY;
 	}

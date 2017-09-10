@@ -56,7 +56,8 @@ static void single_accept_connection(struct tevent_context *ev,
 	/* accept an incoming connection. */
 	status = socket_accept(listen_socket, &connected_socket);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("single_accept_connection: accept: %s\n", nt_errstr(status)));
+		DBG_ERR("single_accept_connection: accept: %s\n",
+			nt_errstr(status));
 		/* this looks strange, but is correct. 
 
 		   We can only be here if woken up from select, due to
@@ -121,7 +122,7 @@ static void single_terminate(struct tevent_context *ev,
 			     const char *reason,
 			     void *process_context)
 {
-	DEBUG(3,("single_terminate: reason[%s]\n",reason));
+	DBG_NOTICE("single_terminate: reason[%s]\n",reason);
 }
 
 /* called to set a title of a task or connection */

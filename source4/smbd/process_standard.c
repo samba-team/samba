@@ -74,11 +74,11 @@ static void sigterm_signal_handler(struct tevent_context *ev,
 		 * We're the process group leader, send
 		 * SIGTERM to our process group.
 		 */
-		DEBUG(0,("SIGTERM: killing children\n"));
+		DBG_ERR("SIGTERM: killing children\n");
 		kill(-getpgrp(), SIGTERM);
 	}
 #endif
-	DEBUG(0,("Exiting pid %u on SIGTERM\n", (unsigned int)getpid()));
+	DBG_ERR("Exiting pid %u on SIGTERM\n", (unsigned int)getpid());
 	talloc_free(ev);
 	exit(127);
 }
@@ -89,7 +89,7 @@ static void sigterm_signal_handler(struct tevent_context *ev,
 static void standard_pipe_handler(struct tevent_context *event_ctx, struct tevent_fd *fde, 
 				  uint16_t flags, void *private_data)
 {
-	DEBUG(10,("Child %d exiting\n", (int)getpid()));
+	DBG_DEBUG("Child %d exiting\n", (int)getpid());
 	talloc_free(event_ctx);
 	exit(0);
 }
@@ -130,16 +130,16 @@ static void standard_child_pipe_handler(struct tevent_context *ev,
 			 * SIGCHLD in the standard
 			 * process model.
 			 */
-			DEBUG(0, ("Error in waitpid() unexpectedly got ECHILD "
-				  "for child %d (%s) - %s, someone has set SIGCHLD "
-				  "to SIG_IGN!\n",
-				  (int)state->pid, state->name,
-				  strerror(errno)));
+			DBG_ERR("Error in waitpid() unexpectedly got ECHILD "
+				"for child %d (%s) - %s, someone has set SIGCHLD "
+				"to SIG_IGN!\n",
+				(int)state->pid, state->name,
+				strerror(errno));
 			TALLOC_FREE(state);
 			return;
 		}
-		DEBUG(0, ("Error in waitpid() for child %d (%s) - %s \n",
-			  (int)state->pid, state->name, strerror(errno)));
+		DBG_ERR("Error in waitpid() for child %d (%s) - %s \n",
+			(int)state->pid, state->name, strerror(errno));
 		if (errno == 0) {
 			errno = ECHILD;
 		}
@@ -154,8 +154,8 @@ static void standard_child_pipe_handler(struct tevent_context *ev,
 		}
 	} else if (WIFSIGNALED(status)) {
 		status = WTERMSIG(status);
-		DEBUG(0, ("Child %d (%s) terminated with signal %d\n",
-			  (int)state->pid, state->name, status));
+		DBG_ERR("Child %d (%s) terminated with signal %d\n",
+			(int)state->pid, state->name, status);
 	}
 	TALLOC_FREE(state);
 	return;
@@ -193,8 +193,8 @@ static struct standard_child_state *setup_standard_child_pipe(struct tevent_cont
 
 	ret = pipe(parent_child_pipe);
 	if (ret == -1) {
-		DEBUG(0, ("Failed to create parent-child pipe to handle "
-			  "SIGCHLD to track new process for socket\n"));
+		DBG_ERR("Failed to create parent-child pipe to handle "
+			"SIGCHLD to track new process for socket\n");
 		TALLOC_FREE(state);
 		return NULL;
 	}
@@ -254,8 +254,8 @@ static void standard_accept_connection(
 	/* accept an incoming connection. */
 	status = socket_accept(sock, &sock2);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("standard_accept_connection: accept: %s\n",
-			nt_errstr(status)));
+		DBG_DEBUG("standard_accept_connection: accept: %s\n",
+			  nt_errstr(status));
 		/* this looks strange, but is correct. We need to throttle
 		 * things until the system clears enough resources to handle
 		 * this new socket

@@ -91,13 +91,14 @@ NTSTATUS server_service_startup(struct tevent_context *event_ctx,
 	const struct model_ops *model_ops;
 
 	if (!server_services) {
-		DEBUG(0,("server_service_startup: no endpoint servers configured\n"));
+		DBG_ERR("server_service_startup: "
+			"no endpoint servers configured\n");
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	model_ops = process_model_startup(model);
 	if (!model_ops) {
-		DEBUG(0,("process_model_startup('%s') failed\n", model));
+		DBG_ERR("process_model_startup('%s') failed\n", model);
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
@@ -107,8 +108,8 @@ NTSTATUS server_service_startup(struct tevent_context *event_ctx,
 		status = server_service_init(server_services[i], event_ctx,
 					     lp_ctx, model_ops, from_parent_fd);
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0,("Failed to start service '%s' - %s\n", 
-				 server_services[i], nt_errstr(status)));
+			DBG_ERR("Failed to start service '%s' - %s\n",
+				 server_services[i], nt_errstr(status));
 		}
 		NT_STATUS_NOT_OK_RETURN(status);
 	}

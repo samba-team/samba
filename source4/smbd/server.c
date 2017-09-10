@@ -85,8 +85,8 @@ static void recursive_delete(const char *path)
 			continue;
 		}
 		if (unlink(fname) != 0) {
-			DEBUG(0,("Unabled to delete '%s' - %s\n",
-				 fname, strerror(errno)));
+			DBG_ERR("Unabled to delete '%s' - %s\n",
+				 fname, strerror(errno));
 			smb_panic("unable to cleanup tmp files");
 		}
 		talloc_free(fname);
@@ -125,11 +125,11 @@ static void sig_term(int sig)
 		 * We're the process group leader, send
 		 * SIGTERM to our process group.
 		 */
-		DEBUG(0,("SIGTERM: killing children\n"));
+		DBG_ERR("SIGTERM: killing children\n");
 		kill(-getpgrp(), SIGTERM);
 	}
 #endif
-	DEBUG(0,("Exiting pid %d on SIGTERM\n", (int)getpid()));
+	DBG_ERR("Exiting pid %d on SIGTERM\n", (int)getpid());
 	exit(127);
 }
 
@@ -141,7 +141,7 @@ static void sigterm_signal_handler(struct tevent_context *ev,
 	struct server_state *state = talloc_get_type_abort(
                 private_data, struct server_state);
 
-	DEBUG(10,("Process %s got SIGTERM\n", state->binary_name));
+	DBG_DEBUG("Process %s got SIGTERM\n", state->binary_name);
 	TALLOC_FREE(state);
 	sig_term(SIGTERM);
 }
@@ -189,12 +189,12 @@ static void server_stdin_handler(struct tevent_context *event_ctx,
 		private_data, struct server_state);
 	uint8_t c;
 	if (read(0, &c, 1) == 0) {
-		DEBUG(0,("%s: EOF on stdin - PID %d terminating\n",
-				state->binary_name, (int)getpid()));
+		DBG_ERR("%s: EOF on stdin - PID %d terminating\n",
+			state->binary_name, (int)getpid());
 #if HAVE_GETPGRP
 		if (getpgrp() == getpid()) {
-			DEBUG(0,("Sending SIGTERM from pid %d\n",
-				(int)getpid()));
+			DBG_ERR("Sending SIGTERM from pid %d\n",
+				(int)getpid());
 			kill(-getpgrp(), SIGTERM);
 		}
 #endif
@@ -212,12 +212,12 @@ _NORETURN_ static void max_runtime_handler(struct tevent_context *ev,
 {
 	struct server_state *state = talloc_get_type_abort(
 		private_data, struct server_state);
-	DEBUG(0,("%s: maximum runtime exceeded - "
+	DBG_ERR("%s: maximum runtime exceeded - "
 		"terminating PID %d at %llu, current ts: %llu\n",
 		 state->binary_name,
 		(int)getpid(),
 		(unsigned long long)t.tv_sec,
-		(unsigned long long)time(NULL)));
+		(unsigned long long)time(NULL));
 	TALLOC_FREE(state);
 	exit(0);
 }
@@ -471,7 +471,7 @@ static int binary_smbd_main(const char *binary_name,
 	}
 
 	if (opt_daemon) {
-		DEBUG(3,("Becoming a daemon.\n"));
+		DBG_NOTICE("Becoming a daemon.\n");
 		become_daemon(true, false, false);
 	}
 
@@ -571,10 +571,10 @@ static int binary_smbd_main(const char *binary_name,
 
 	if (max_runtime) {
 		struct tevent_timer *te;
-		DEBUG(0,("%s PID %d was called with maxruntime %d - "
+		DBG_ERR("%s PID %d was called with maxruntime %d - "
 			"current ts %llu\n",
 			binary_name, (int)getpid(),
-			max_runtime, (unsigned long long) time(NULL)));
+			max_runtime, (unsigned long long) time(NULL));
 		te = tevent_add_timer(state->event_ctx, state->event_ctx,
 				 timeval_current_ofs(max_runtime, 0),
 				 max_runtime_handler,
@@ -625,7 +625,7 @@ static int binary_smbd_main(const char *binary_name,
 			NT_STATUS_V(status));
 	}
 
-	DEBUG(0,("%s: using '%s' process model\n", binary_name, model));
+	DBG_ERR("%s: using '%s' process model\n", binary_name, model);
 
 	{
 		int child_pipe[2];
