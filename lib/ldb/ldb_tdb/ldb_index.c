@@ -2496,11 +2496,6 @@ int ltdb_reindex(struct ldb_module *module)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	/* if we don't have indexes we have nothing todo */
-	if (!ltdb->cache->attribute_indexes) {
-		return LDB_SUCCESS;
-	}
-
 	ctx.module = module;
 	ctx.error = 0;
 
