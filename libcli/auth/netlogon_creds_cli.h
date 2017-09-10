@@ -68,7 +68,7 @@ bool netlogon_creds_cli_validate(struct netlogon_creds_cli_context *context,
 			const struct netlogon_creds_CredentialState *creds1);
 
 NTSTATUS netlogon_creds_cli_store(struct netlogon_creds_cli_context *context,
-				  struct netlogon_creds_CredentialState **_creds);
+				  struct netlogon_creds_CredentialState *creds);
 NTSTATUS netlogon_creds_cli_delete(struct netlogon_creds_cli_context *context,
 				   struct netlogon_creds_CredentialState **_creds);
 

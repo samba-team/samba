@@ -672,21 +672,17 @@ bool netlogon_creds_cli_validate(struct netlogon_creds_cli_context *context,
 }
 
 NTSTATUS netlogon_creds_cli_store(struct netlogon_creds_cli_context *context,
-				  struct netlogon_creds_CredentialState **_creds)
+				  struct netlogon_creds_CredentialState *creds)
 {
-	struct netlogon_creds_CredentialState *creds = *_creds;
 	NTSTATUS status;
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	TDB_DATA data;
 
-	*_creds = NULL;
-
 	if (context->db.locked_state == NULL) {
 		/*
 		 * this was not the result of netlogon_creds_cli_lock*()
 		 */
-		TALLOC_FREE(creds);
 		return NT_STATUS_INVALID_PAGE_PROTECTION;
 	}
 
@@ -694,14 +690,12 @@ NTSTATUS netlogon_creds_cli_store(struct netlogon_creds_cli_context *context,
 		/*
 		 * this was not the result of netlogon_creds_cli_lock*()
 		 */
-		TALLOC_FREE(creds);
 		return NT_STATUS_INVALID_PAGE_PROTECTION;
 	}
 
 	ndr_err = ndr_push_struct_blob(&blob, creds, creds,
 		(ndr_push_flags_fn_t)ndr_push_netlogon_creds_CredentialState);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		TALLOC_FREE(creds);
 		status = ndr_map_error2ntstatus(ndr_err);
 		return status;
 	}
@@ -712,7 +706,7 @@ NTSTATUS netlogon_creds_cli_store(struct netlogon_creds_cli_context *context,
 	status = dbwrap_store(context->db.ctx,
 			      context->db.key_data,
 			      data, TDB_REPLACE);
-	TALLOC_FREE(creds);
+	TALLOC_FREE(data.dptr);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -1666,8 +1660,8 @@ static void netlogon_creds_cli_check_caps(struct tevent_req *subreq)
 
 	*state->creds = state->tmp_creds;
 	status = netlogon_creds_cli_store(state->context,
-					  &state->creds);
-	netlogon_creds_cli_check_cleanup(req, status);
+					  state->creds);
+	TALLOC_FREE(state->creds);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
@@ -2018,7 +2012,8 @@ static void netlogon_creds_cli_ServerPasswordSet_done(struct tevent_req *subreq)
 
 	*state->creds = state->tmp_creds;
 	status = netlogon_creds_cli_store(state->context,
-					  &state->creds);
+					  state->creds);
+	TALLOC_FREE(state->creds);
 	if (tevent_req_nterror(req, status)) {
 		netlogon_creds_cli_ServerPasswordSet_cleanup(req, status);
 		return;
@@ -2514,7 +2509,9 @@ static void netlogon_creds_cli_LogonSamLogon_done(struct tevent_req *subreq)
 
 	*state->lk_creds = state->tmp_creds;
 	status = netlogon_creds_cli_store(state->context,
-					  &state->lk_creds);
+					  state->lk_creds);
+	TALLOC_FREE(state->lk_creds);
+
 	if (tevent_req_nterror(req, status)) {
 		netlogon_creds_cli_LogonSamLogon_cleanup(req, status);
 		return;
@@ -2811,7 +2808,8 @@ static void netlogon_creds_cli_DsrUpdateReadOnlyServerDnsRecords_done(struct tev
 
 	*state->creds = state->tmp_creds;
 	status = netlogon_creds_cli_store(state->context,
-					  &state->creds);
+					  state->creds);
+	TALLOC_FREE(state->creds);
 
 	if (tevent_req_nterror(req, status)) {
 		netlogon_creds_cli_DsrUpdateReadOnlyServerDnsRecords_cleanup(req, status);
@@ -3077,7 +3075,8 @@ static void netlogon_creds_cli_ServerGetTrustInfo_done(struct tevent_req *subreq
 
 	*state->creds = state->tmp_creds;
 	status = netlogon_creds_cli_store(state->context,
-					  &state->creds);
+					  state->creds);
+	TALLOC_FREE(state->creds);
 	if (tevent_req_nterror(req, status)) {
 		netlogon_creds_cli_ServerGetTrustInfo_cleanup(req, status);
 		return;
@@ -3359,7 +3358,8 @@ static void netlogon_creds_cli_GetForestTrustInformation_done(struct tevent_req 
 
 	*state->creds = state->tmp_creds;
 	status = netlogon_creds_cli_store(state->context,
-					  &state->creds);
+					  state->creds);
+	TALLOC_FREE(state->creds);
 
 	if (tevent_req_nterror(req, status)) {
 		netlogon_creds_cli_GetForestTrustInformation_cleanup(req, status);
@@ -3638,7 +3638,8 @@ static void netlogon_creds_cli_SendToSam_done(struct tevent_req *subreq)
 
 	*state->creds = state->tmp_creds;
 	status = netlogon_creds_cli_store(state->context,
-					  &state->creds);
+					  state->creds);
+	TALLOC_FREE(state->creds);
 
 	if (tevent_req_nterror(req, status)) {
 		netlogon_creds_cli_SendToSam_cleanup(req, status);
