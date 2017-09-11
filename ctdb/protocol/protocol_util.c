@@ -111,7 +111,8 @@ enum ctdb_event ctdb_event_from_string(const char *event_str)
 	return CTDB_EVENT_MAX;
 }
 
-int ctdb_sock_addr_to_buf(char *buf, socklen_t buflen, ctdb_sock_addr *addr)
+int ctdb_sock_addr_to_buf(char *buf, socklen_t buflen,
+			  ctdb_sock_addr *addr, bool with_port)
 {
 	const char *t;
 
@@ -137,10 +138,22 @@ int ctdb_sock_addr_to_buf(char *buf, socklen_t buflen, ctdb_sock_addr *addr)
 		break;
 	}
 
+	if (with_port) {
+		size_t len = strlen(buf);
+		int ret;
+
+		ret = snprintf(buf+len, buflen-len,
+			       ":%u", ctdb_sock_addr_port(addr));
+		if (ret >= buflen-len) {
+			return ENOSPC;
+		}
+	}
+
 	return 0;
 }
 
-const char *ctdb_sock_addr_to_string(TALLOC_CTX *mem_ctx, ctdb_sock_addr *addr)
+const char *ctdb_sock_addr_to_string(TALLOC_CTX *mem_ctx,
+				     ctdb_sock_addr *addr, bool with_port)
 {
 	size_t len = 64;
 	char *cip;
@@ -152,7 +165,7 @@ const char *ctdb_sock_addr_to_string(TALLOC_CTX *mem_ctx, ctdb_sock_addr *addr)
 		return NULL;
 	}
 
-	ret = ctdb_sock_addr_to_buf(cip, len, addr);
+	ret = ctdb_sock_addr_to_buf(cip, len, addr, with_port);
 	if (ret != 0) {
 		talloc_free(cip);
 		return NULL;

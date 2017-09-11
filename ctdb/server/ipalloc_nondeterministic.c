@@ -95,7 +95,7 @@ try_again:
 			DEBUG(DEBUG_WARNING,
 			      (__location__ " Could not find maxnode. May not be able to serve ip '%s'\n",
 			       ctdb_sock_addr_to_string(ipalloc_state,
-							&t->addr)));
+							&t->addr, false)));
 
 			continue;
 		}

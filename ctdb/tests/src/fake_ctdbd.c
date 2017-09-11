@@ -2067,7 +2067,7 @@ static void control_release_ip(TALLOC_CTX *mem_ctx,
 
 	if (ctdb->known_ips == NULL) {
 		D_INFO("RELEASE_IP %s - not a public IP\n",
-		       ctdb_sock_addr_to_string(mem_ctx, &ip->addr));
+		       ctdb_sock_addr_to_string(mem_ctx, &ip->addr, false));
 		goto done;
 	}
 
@@ -2082,14 +2082,15 @@ static void control_release_ip(TALLOC_CTX *mem_ctx,
 	}
 	if (t == NULL) {
 		D_INFO("RELEASE_IP %s - not a public IP\n",
-		       ctdb_sock_addr_to_string(mem_ctx, &ip->addr));
+		       ctdb_sock_addr_to_string(mem_ctx, &ip->addr, false));
 		goto done;
 	}
 
 	if (t->pnn != header->destnode) {
 		if (header->destnode == ip->pnn) {
 			D_ERR("error: RELEASE_IP %s - to TAKE_IP node %d\n",
-			      ctdb_sock_addr_to_string(mem_ctx, &ip->addr),
+			      ctdb_sock_addr_to_string(mem_ctx,
+						       &ip->addr, false),
 			      ip->pnn);
 			reply.status = -1;
 			reply.errmsg = "RELEASE_IP to TAKE_IP node";
@@ -2098,12 +2099,12 @@ static void control_release_ip(TALLOC_CTX *mem_ctx,
 		}
 
 		D_INFO("RELEASE_IP %s - to node %d - redundant\n",
-		       ctdb_sock_addr_to_string(mem_ctx, &ip->addr),
+		       ctdb_sock_addr_to_string(mem_ctx, &ip->addr, false),
 		       ip->pnn);
 		t->pnn = ip->pnn;
 	} else {
 		D_NOTICE("RELEASE_IP %s - to node %d\n",
-			  ctdb_sock_addr_to_string(mem_ctx, &ip->addr),
+			 ctdb_sock_addr_to_string(mem_ctx, &ip->addr, false),
 			  ip->pnn);
 		t->pnn = ip->pnn;
 	}
@@ -2132,7 +2133,7 @@ static void control_takeover_ip(TALLOC_CTX *mem_ctx,
 
 	if (ctdb->known_ips == NULL) {
 		D_INFO("TAKEOVER_IP %s - not a public IP\n",
-		       ctdb_sock_addr_to_string(mem_ctx, &ip->addr));
+		       ctdb_sock_addr_to_string(mem_ctx, &ip->addr, false));
 		goto done;
 	}
 
@@ -2147,16 +2148,16 @@ static void control_takeover_ip(TALLOC_CTX *mem_ctx,
 	}
 	if (t == NULL) {
 		D_INFO("TAKEOVER_IP %s - not a public IP\n",
-		       ctdb_sock_addr_to_string(mem_ctx, &ip->addr));
+		       ctdb_sock_addr_to_string(mem_ctx, &ip->addr, false));
 		goto done;
 	}
 
 	if (t->pnn == header->destnode) {
 		D_INFO("TAKEOVER_IP %s - redundant\n",
-		       ctdb_sock_addr_to_string(mem_ctx, &ip->addr));
+		       ctdb_sock_addr_to_string(mem_ctx, &ip->addr, false));
 	} else {
 		D_NOTICE("TAKEOVER_IP %s\n",
-			 ctdb_sock_addr_to_string(mem_ctx, &ip->addr));
+			 ctdb_sock_addr_to_string(mem_ctx, &ip->addr, false));
 		t->pnn = ip->pnn;
 	}
 
@@ -2545,7 +2546,7 @@ static void control_get_public_ip_info(TALLOC_CTX *mem_ctx,
 
 	if (i == known->num) {
 		D_ERR("GET_PUBLIC_IP_INFO: not known public IP %s\n",
-		      ctdb_sock_addr_to_string(mem_ctx, addr));
+		      ctdb_sock_addr_to_string(mem_ctx, addr, false));
 		reply.status = -1;
 		reply.errmsg = "Unknown address";
 		goto done;

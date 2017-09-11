@@ -788,7 +788,7 @@ static void print_nodemap_machine(TALLOC_CTX *mem_ctx,
 		printf("%s%u%s%s%s%d%s%d%s%d%s%d%s%d%s%d%s%d%s%c%s\n",
 		       options.sep,
 		       node->pnn, options.sep,
-		       ctdb_sock_addr_to_string(mem_ctx, &node->addr),
+		       ctdb_sock_addr_to_string(mem_ctx, &node->addr, false),
 		       options.sep,
 		       !! (node->flags & NODE_FLAGS_DISCONNECTED), options.sep,
 		       !! (node->flags & NODE_FLAGS_BANNED), options.sep,
@@ -835,7 +835,7 @@ static void print_nodemap(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 
 		printf("pnn:%u %-16s %s%s\n",
 		       node->pnn,
-		       ctdb_sock_addr_to_string(mem_ctx, &node->addr),
+		       ctdb_sock_addr_to_string(mem_ctx, &node->addr, false),
 		       partially_online(mem_ctx, ctdb, node) ?
 				"PARTIALLYONLINE" :
 				pretty_print_flags(mem_ctx, node->flags),
@@ -1449,12 +1449,12 @@ static void print_ip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		if (options.machinereadable == 1) {
 			printf("%s%s%s%d%s", options.sep,
 			       ctdb_sock_addr_to_string(
-					mem_ctx, &ips->ip[i].addr),
+				       mem_ctx, &ips->ip[i].addr, false),
 			       options.sep,
 			       (int)ips->ip[i].pnn, options.sep);
 		} else {
 			printf("%s", ctdb_sock_addr_to_string(
-						mem_ctx, &ips->ip[i].addr));
+				       mem_ctx, &ips->ip[i].addr, false));
 		}
 
 		if (options.verbose == 0) {
@@ -1731,11 +1731,11 @@ static int control_ipinfo(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	}
 
 	printf("Public IP[%s] info on node %u\n",
-	       ctdb_sock_addr_to_string(mem_ctx, &ipinfo->ip.addr),
+	       ctdb_sock_addr_to_string(mem_ctx, &ipinfo->ip.addr, false),
 					ctdb->cmd_pnn);
 
 	printf("IP:%s\nCurrentNode:%u\nNumInterfaces:%u\n",
-	       ctdb_sock_addr_to_string(mem_ctx, &ipinfo->ip.addr),
+	       ctdb_sock_addr_to_string(mem_ctx, &ipinfo->ip.addr, false),
 	       ipinfo->ip.pnn, ipinfo->ifaces->num);
 
 	for (i=0; i<ipinfo->ifaces->num; i++) {
@@ -3082,28 +3082,27 @@ static int control_gettickles(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		for (i=0; i<tickles->num; i++) {
 			printf("%s%s%s%u%s%s%s%u%s\n", options.sep,
 			       ctdb_sock_addr_to_string(
-				       mem_ctx, &tickles->conn[i].src),
+				       mem_ctx, &tickles->conn[i].src, false),
 			       options.sep,
 			       ntohs(tickles->conn[i].src.ip.sin_port),
 			       options.sep,
 			       ctdb_sock_addr_to_string(
-				       mem_ctx, &tickles->conn[i].dst),
+				       mem_ctx, &tickles->conn[i].dst, false),
 			       options.sep,
 			       ntohs(tickles->conn[i].dst.ip.sin_port),
 			       options.sep);
 		}
 	} else {
 		printf("Connections for IP: %s\n",
-		       ctdb_sock_addr_to_string(mem_ctx, &tickles->addr));
+		       ctdb_sock_addr_to_string(mem_ctx,
+						&tickles->addr, false));
 		printf("Num connections: %u\n", tickles->num);
 		for (i=0; i<tickles->num; i++) {
-			printf("SRC: %s:%u   DST: %s:%u\n",
+			printf("SRC: %s   DST: %s\n",
 			       ctdb_sock_addr_to_string(
-				       mem_ctx, &tickles->conn[i].src),
-			       ntohs(tickles->conn[i].src.ip.sin_port),
+				       mem_ctx, &tickles->conn[i].src, true),
 			       ctdb_sock_addr_to_string(
-				       mem_ctx, &tickles->conn[i].dst),
-			       ntohs(tickles->conn[i].dst.ip.sin_port));
+				       mem_ctx, &tickles->conn[i].dst, true));
 		}
 	}
 
@@ -3348,12 +3347,12 @@ static int control_listnodes(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 			printf("%s%u%s%s%s\n", options.sep,
 			       nodemap->node[i].pnn, options.sep,
 			       ctdb_sock_addr_to_string(
-					mem_ctx, &nodemap->node[i].addr),
+				       mem_ctx, &nodemap->node[i].addr, false),
 			       options.sep);
 		} else {
 			printf("%s\n",
 			       ctdb_sock_addr_to_string(
-					mem_ctx, &nodemap->node[i].addr));
+				       mem_ctx, &nodemap->node[i].addr, false));
 		}
 	}
 
@@ -3401,7 +3400,7 @@ static int check_node_file_changes(TALLOC_CTX *mem_ctx,
 				"Node %u (%s) missing from nodes file\n",
 				nm->node[i].pnn,
 				ctdb_sock_addr_to_string(
-					mem_ctx, &nm->node[i].addr));
+					mem_ctx, &nm->node[i].addr, false));
 			check_failed = true;
 			continue;
 		}
@@ -3421,9 +3420,11 @@ static int check_node_file_changes(TALLOC_CTX *mem_ctx,
 					" (was %s, now %s)\n",
 					nm->node[i].pnn,
 					ctdb_sock_addr_to_string(
-						mem_ctx, &nm->node[i].addr),
+						mem_ctx,
+						&nm->node[i].addr, false),
 					ctdb_sock_addr_to_string(
-						mem_ctx, &fnm->node[i].addr));
+						mem_ctx,
+						&fnm->node[i].addr, false));
 				check_failed = true;
 			} else {
 				if (nm->node[i].flags & NODE_FLAGS_DISCONNECTED) {
@@ -3702,7 +3703,7 @@ static int moveip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 
 	if (i == pubip_list->num) {
 		fprintf(stderr, "Node %u CANNOT host IP address %s\n",
-			pnn, ctdb_sock_addr_to_string(mem_ctx, addr));
+			pnn, ctdb_sock_addr_to_string(mem_ctx, addr, false));
 		return 1;
 	}
 
@@ -3826,7 +3827,8 @@ static int control_addip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	for (i=0; i<pubip_list->num; i++) {
 		if (ctdb_same_ip(&addr, &pubip_list->ip[i].addr)) {
 			fprintf(stderr, "Node already knows about IP %s\n",
-				ctdb_sock_addr_to_string(mem_ctx, &addr));
+				ctdb_sock_addr_to_string(mem_ctx,
+							 &addr, false));
 			return 0;
 		}
 	}
@@ -3895,7 +3897,7 @@ static int control_delip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 
 	if (i == pubip_list->num) {
 		fprintf(stderr, "Node does not know about IP address %s\n",
-			ctdb_sock_addr_to_string(mem_ctx, &addr));
+			ctdb_sock_addr_to_string(mem_ctx, &addr, false));
 		return 0;
 	}
 

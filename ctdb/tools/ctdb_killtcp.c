@@ -131,11 +131,10 @@ static void capture_tcp_handler(struct tevent_context *ev,
 	if (window == htons(1234) && (rst || seq == 0)) {
 		/* Ignore packets that we sent! */
 		DEBUG(DEBUG_DEBUG,
-		      ("Ignoring packet with dst=%s:%d, src=%s:%d, seq=%"PRIu32", ack_seq=%"PRIu32", rst=%d, window=%"PRIu16"\n",
-		       ctdb_sock_addr_to_string(killtcp, &dst),
-		       ntohs(dst.ip.sin_port),
-		       ctdb_sock_addr_to_string(killtcp, &src),
-		       ntohs(src.ip.sin_port),
+		      ("Ignoring packet with dst=%s, src=%s, seq=%"PRIu32", "
+		       "ack_seq=%"PRIu32", rst=%d, window=%"PRIu16"\n",
+		       ctdb_sock_addr_to_string(killtcp, &dst, true),
+		       ctdb_sock_addr_to_string(killtcp, &src, true),
 		       seq, ack_seq, rst, ntohs(window)));
 		return;
 	}
@@ -153,11 +152,9 @@ static void capture_tcp_handler(struct tevent_context *ev,
 	/* This connection has been tickled!  RST it and remove it
 	 * from the list. */
 	DEBUG(DEBUG_INFO,
-	      ("Sending a TCP RST to kill connection (%s:%d) -> %s:%d\n",
-	       ctdb_sock_addr_to_string(con, &con->src_addr),
-	       ntohs(con->src_addr.ip.sin_port),
-	       ctdb_sock_addr_to_string(con, &con->dst_addr),
-	       ntohs(con->dst_addr.ip.sin_port)));
+	      ("Sending a TCP RST to kill connection (%s) -> %s\n",
+	       ctdb_sock_addr_to_string(con, &con->src_addr, true),
+	       ctdb_sock_addr_to_string(con, &con->dst_addr, true)));
 
 	ctdb_sys_send_tcp(&con->dst_addr, &con->src_addr, ack_seq, seq, 1);
 	talloc_free(con);
