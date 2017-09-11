@@ -4916,10 +4916,19 @@ static void smbXcli_negprot_smb2_done(struct tevent_req *subreq)
 		return;
 	}
 
+	/*
+	 * Here we are now at SMB3_11, so encryption should be
+	 * negotiated via context, not capabilities.
+	 */
+
 	if (conn->smb2.server.capabilities & SMB2_CAP_ENCRYPTION) {
-		tevent_req_nterror(req,
-				NT_STATUS_INVALID_NETWORK_RESPONSE);
-		return;
+		/*
+		 * Server set SMB2_CAP_ENCRYPTION capability,
+		 * but *SHOULD* not, not *MUST* not. Just mask it off.
+		 * NetApp seems to do this:
+		 * BUG: https://bugzilla.samba.org/show_bug.cgi?id=13009
+		 */
+		conn->smb2.server.capabilities &= ~SMB2_CAP_ENCRYPTION;
 	}
 
 	negotiate_context_offset = IVAL(body, 60);
