@@ -26,33 +26,42 @@
 #include "protocol/protocol_types.c"
 #include "protocol/protocol_util.c"
 
-#include "common/system_util.c"
+/*
+ * Test parsing of IPs, conversion to string
+ */
 
-/* Test parsing of IPs, conversion to string */
 static void test_sock_addr_to_string(const char *ip, bool with_port)
 {
 	ctdb_sock_addr sa;
 	const char *s;
-	bool status;
+	int ret;
 
-	if (with_port) {
-		status = parse_ip_port(ip, &sa);
-	} else {
-		status = parse_ip(ip, NULL, 0, &sa);
-	}
-	assert(status);
+	ret = ctdb_sock_addr_from_string(ip, &sa, with_port);
+	assert(ret == 0);
 	s = ctdb_sock_addr_to_string(NULL, &sa, with_port);
 	assert(strcmp(ip, s) == 0);
 	talloc_free(discard_const(s));
 }
 
-static void test_sock_addr_cmp(const char *ip1, const char *ip2, int res)
+static void test_sock_addr_from_string_bad(const char *ip, bool with_port)
+{
+	ctdb_sock_addr sa;
+	int ret;
+
+	ret = ctdb_sock_addr_from_string(ip, &sa, with_port);
+	assert(ret != 0);
+}
+
+static void test_sock_addr_cmp(const char *ip1, const char *ip2,
+			       bool with_port, int res)
 {
 	ctdb_sock_addr sa1, sa2;
 	int ret;
 
-	assert(parse_ip(ip1, NULL, 0, &sa1));
-	assert(parse_ip(ip2, NULL, 0, &sa2));
+	ret = ctdb_sock_addr_from_string(ip1, &sa1, with_port);
+	assert(ret == 0);
+	ret = ctdb_sock_addr_from_string(ip2, &sa2, with_port);
+	assert(ret == 0);
 	ret = ctdb_sock_addr_cmp(&sa1, &sa2);
 	if (ret < 0) {
 		ret = -1;
@@ -77,20 +86,29 @@ int main(int argc, char *argv[])
 	test_sock_addr_to_string("192.168.2.1:123", true);
 	test_sock_addr_to_string("fe80::6af7:28ff:fefa:d136:234", true);
 
+	test_sock_addr_from_string_bad("0.0.0", false);
+	test_sock_addr_from_string_bad("0.0.0:0", true);
+	test_sock_addr_from_string_bad("fe80::6af7:28ff:fefa:d136", true);
+	test_sock_addr_from_string_bad("junk", false);
+	test_sock_addr_from_string_bad("0.0.0.0:0 trailing junk", true);
 
-	test_sock_addr_cmp("127.0.0.1", "127.0.0.1" , 0);
-	test_sock_addr_cmp("127.0.0.1", "127.0.0.2" , -1);
-	test_sock_addr_cmp("127.0.0.2", "127.0.0.1" , 1);
-	test_sock_addr_cmp("127.0.1.2", "127.0.2.1" , -1);
-	test_sock_addr_cmp("127.0.2.1", "127.0.1.2" , 1);
-	test_sock_addr_cmp("fe80::6af7:28ff:fefa:d136", "127.0.1.2" , 1);
+	test_sock_addr_cmp("127.0.0.1", "127.0.0.1" , false, 0);
+	test_sock_addr_cmp("127.0.0.1", "127.0.0.2" , false, -1);
+	test_sock_addr_cmp("127.0.0.2", "127.0.0.1" , false, 1);
+	test_sock_addr_cmp("127.0.1.2", "127.0.2.1" , false, -1);
+	test_sock_addr_cmp("127.0.2.1", "127.0.1.2" , false, 1);
+	test_sock_addr_cmp("fe80::6af7:28ff:fefa:d136", "127.0.1.2" , false, 1);
 	test_sock_addr_cmp("fe80::6af7:28ff:fefa:d136",
-			   "fe80::6af7:28ff:fefa:d136" , 0);
+			   "fe80::6af7:28ff:fefa:d136" , false, 0);
 	test_sock_addr_cmp("fe80::6af7:28ff:fefa:d136",
-			   "fe80::6af7:28ff:fefa:d137" , -1);
+			   "fe80::6af7:28ff:fefa:d137" , false, -1);
 	test_sock_addr_cmp("fe80::6af7:28ff:fefa:d136",
-			   "fe80:0000:0000:0000:6af7:28ff:fefa:d136" , 0);
-	test_sock_addr_cmp("::ffff:192.0.2.128", "192.0.2.128", 0);
+			   "fe80:0000:0000:0000:6af7:28ff:fefa:d136" ,
+			   false, 0);
+	test_sock_addr_cmp("::ffff:192.0.2.128", "192.0.2.128", false, 0);
 
+	test_sock_addr_cmp("127.0.0.1:123", "127.0.0.1:124" , true, -1);
+	test_sock_addr_cmp("fe80::6af7:28ff:fefa:d136:123",
+			   "fe80::6af7:28ff:fefa:d136:122" , true, 1);
 	return 0;
 }

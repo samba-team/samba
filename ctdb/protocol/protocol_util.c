@@ -174,6 +174,132 @@ const char *ctdb_sock_addr_to_string(TALLOC_CTX *mem_ctx,
 	return cip;
 }
 
+static int ipv4_from_string(const char *str, struct sockaddr_in *ip)
+{
+	int ret;
+
+	*ip = (struct sockaddr_in) {
+		.sin_family = AF_INET,
+	};
+
+	ret = inet_pton(AF_INET, str, &ip->sin_addr);
+	if (ret != 1) {
+		return EINVAL;
+	}
+
+#ifdef HAVE_SOCK_SIN_LEN
+	ip->sin_len = sizeof(*ip);
+#endif
+	return 0;
+}
+
+static int ipv6_from_string(const char *str, struct sockaddr_in6 *ip6)
+{
+	int ret;
+
+	*ip6 = (struct sockaddr_in6) {
+		.sin6_family   = AF_INET6,
+	};
+
+	ret = inet_pton(AF_INET6, str, &ip6->sin6_addr);
+	if (ret != 1) {
+		return EINVAL;
+	}
+
+#ifdef HAVE_SOCK_SIN_LEN
+	ip6->sin6_len = sizeof(*ip6);
+#endif
+	return 0;
+}
+
+static int ip_from_string(const char *str, ctdb_sock_addr *addr)
+{
+	char *p;
+	int ret;
+
+	if (addr == NULL) {
+		return EINVAL;
+	}
+
+	ZERO_STRUCTP(addr); /* valgrind :-) */
+
+	/* IPv4 or IPv6 address?
+	 *
+	 * Use rindex() because we need the right-most ':' below for
+	 * IPv4-mapped IPv6 addresses anyway...
+	 */
+	p = rindex(str, ':');
+	if (p == NULL) {
+		ret = ipv4_from_string(str, &addr->ip);
+	} else {
+		uint8_t ipv4_mapped_prefix[12] = {
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff
+		};
+
+		ret = ipv6_from_string(str, &addr->ip6);
+		if (ret != 0) {
+			return ret;
+		}
+
+		/*
+		 * Check for IPv4-mapped IPv6 address
+		 * (e.g. ::ffff:192.0.2.128) - reparse as IPv4 if
+		 * necessary
+		 */
+		if (memcmp(&addr->ip6.sin6_addr.s6_addr[0],
+			   ipv4_mapped_prefix,
+			   sizeof(ipv4_mapped_prefix)) == 0) {
+			/* Reparse as IPv4 */
+			ret = ipv4_from_string(p+1, &addr->ip);
+		}
+	}
+
+	return ret;
+}
+
+int ctdb_sock_addr_from_string(const char *str,
+			       ctdb_sock_addr *addr, bool with_port)
+{
+	char *p;
+	char s[64]; /* Much longer than INET6_ADDRSTRLEN */
+	unsigned port;
+	char *endp = NULL;
+	size_t len;
+	bool ret;
+
+	if (! with_port) {
+		ret = ip_from_string(str, addr);
+		return ret;
+	}
+
+	/* Parse out port number and then IP address */
+
+	len = strlen(str);
+	if (len >= sizeof(s)) {
+		return EINVAL;
+	}
+
+	strncpy(s, str, len+1);
+
+	p = rindex(s, ':');
+	if (p == NULL) {
+		return EINVAL;
+	}
+
+	port = strtoul(p+1, &endp, 10);
+	if (endp == p+1 || *endp != '\0') {
+		/* Empty string or trailing garbage */
+		return EINVAL;
+	}
+
+	*p = '\0';
+	ret = ip_from_string(s, addr);
+
+	ctdb_sock_addr_set_port(addr, port);
+
+	return ret;
+}
+
 unsigned int ctdb_sock_addr_port(ctdb_sock_addr *addr)
 {
 	switch (addr->sa.sa_family) {

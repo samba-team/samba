@@ -39,6 +39,8 @@ int ctdb_sock_addr_to_buf(char *buf, socklen_t buflen,
 			  ctdb_sock_addr *addr, bool with_port);
 const char *ctdb_sock_addr_to_string(TALLOC_CTX *mem_ctx,
 				     ctdb_sock_addr *addr, bool with_port);
+int ctdb_sock_addr_from_string(const char *str,
+			       ctdb_sock_addr *addr, bool with_port);
 unsigned int ctdb_sock_addr_port(ctdb_sock_addr *addr);
 void ctdb_sock_addr_set_port(ctdb_sock_addr *addr, unsigned int port);
 int ctdb_sock_addr_cmp_ip(const ctdb_sock_addr *addr1,
