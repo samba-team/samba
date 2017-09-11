@@ -22,6 +22,7 @@
 #include <tevent.h>
 #include "system/filesys.h"
 #include "system/wait.h"
+#include "system/select.h"
 #include "libcli/util/ntstatus.h"
 #include "torture/torture.h"
 #include "lib/util/data_blob.h"
@@ -533,6 +534,248 @@ done:
 	return ok;
 }
 
+/*
+ * Test to ensure that the event_fd becomes readable after
+ * a tfork_process terminates.
+ */
+static bool test_tfork_event_file_handle(struct torture_context *tctx)
+{
+	bool ok = true;
+
+	struct tfork *t1 = NULL;
+	pid_t child1;
+	struct pollfd poll1[] = { {-1, POLLIN} };
+
+	struct tfork *t2 = NULL;
+	pid_t child2;
+	struct pollfd poll2[] = { {-1, POLLIN} };
+
+
+	t1 = tfork_create();
+	if (t1 == NULL) {
+		torture_fail(tctx, "tfork failed\n");
+		return false;
+	}
+
+	child1 = tfork_child_pid(t1);
+	if (child1 == 0) {
+		/*
+		 * Parent process will kill this with a SIGTERM
+		 * so 10 seconds should be plenty
+		 */
+		sleep(10);
+		exit(1);
+	}
+	poll1[0].fd = tfork_event_fd(t1);
+
+	t2 = tfork_create();
+	if (t2 == NULL) {
+		torture_fail(tctx, "tfork failed\n");
+		return false;
+	}
+	child2 = tfork_child_pid(t2);
+	if (child2 == 0) {
+		/*
+		 * Parent process will kill this with a SIGTERM
+		 * so 10 seconds should be plenty
+		 */
+		sleep(10);
+		exit(2);
+	}
+	poll2[0].fd = tfork_event_fd(t2);
+
+	/*
+	 * Have forked two process and are in the master process
+	 * Expect that both event_fds are unreadable
+	 */
+	poll(poll1, 1, 0);
+	ok = !(poll1[0].revents & POLLIN);
+	torture_assert_goto(tctx, ok, ok, done,
+			    "tfork process 1 event fd readable\n");
+	poll(poll2, 1, 0);
+	ok = !(poll2[0].revents & POLLIN);
+	torture_assert_goto(tctx, ok, ok, done,
+			    "tfork process 1 event fd readable\n");
+
+	/* Kill the first child process */
+	kill(child1, SIGKILL);
+	sleep(1);
+
+	/*
+	 * Have killed the first child, so expect it's event_fd to have gone
+	 * readable.
+	 *
+	 */
+	poll(poll1, 1, 0);
+	ok = (poll1[0].revents & POLLIN);
+	torture_assert_goto(tctx, ok, ok, done,
+			    "tfork process 1 event fd not readable\n");
+	poll(poll2, 1, 0);
+	ok = !(poll2[0].revents & POLLIN);
+	torture_assert_goto(tctx, ok, ok, done,
+			    "tfork process 2 event fd readable\n");
+
+	/* Kill the secind child process */
+	kill(child2, SIGKILL);
+	sleep(1);
+	/*
+	 * Have killed the children, so expect their event_fd's to have gone
+	 * readable.
+	 *
+	 */
+	poll(poll1, 1, 0);
+	ok = (poll1[0].revents & POLLIN);
+	torture_assert_goto(tctx, ok, ok, done,
+			    "tfork process 1 event fd not readable\n");
+	poll(poll2, 1, 0);
+	ok = (poll2[0].revents & POLLIN);
+	torture_assert_goto(tctx, ok, ok, done,
+			    "tfork process 2 event fd not readable\n");
+
+done:
+	return ok;
+}
+
+/*
+ * Test to ensure that the status calls behave as expected after a process
+ * terminates.
+ *
+ * As the parent process owns the status fd's they get passed to all
+ * subsequent children after a tfork.  So it's possible for another
+ * child process to hold the status pipe open.
+ *
+ * The event fd needs to be left open by tfork, as a close in the status
+ * code can cause issues in tevent code.
+ *
+ */
+static bool test_tfork_status_handle(struct torture_context *tctx)
+{
+	bool ok = true;
+
+	struct tfork *t1 = NULL;
+	pid_t child1;
+
+	struct tfork *t2 = NULL;
+	pid_t child2;
+
+	int status;
+	int fd;
+	int ev1_fd;
+	int ev2_fd;
+
+
+	t1 = tfork_create();
+	if (t1 == NULL) {
+		torture_fail(tctx, "tfork failed\n");
+		return false;
+	}
+
+	child1 = tfork_child_pid(t1);
+	if (child1 == 0) {
+		/*
+		 * Parent process will kill this with a SIGTERM
+		 * so 10 seconds should be plenty
+		 */
+		sleep(10);
+		exit(1);
+	}
+	ev1_fd = tfork_event_fd(t1);
+
+	t2 = tfork_create();
+	if (t2 == NULL) {
+		torture_fail(tctx, "tfork failed\n");
+		return false;
+	}
+	child2 = tfork_child_pid(t2);
+	if (child2 == 0) {
+		/*
+		 * Parent process will kill this with a SIGTERM
+		 * so 10 seconds should be plenty
+		 */
+		sleep(10);
+		exit(2);
+	}
+	ev2_fd = tfork_event_fd(t2);
+
+	/*
+	 * Have forked two process and are in the master process
+	 * expect that the status call will block, and hence return -1
+	 * as the processes are still running
+	 * The event fd's should be open.
+	 */
+	status = tfork_status(&t1, false);
+	ok = status == -1;
+	torture_assert_goto(tctx, ok, ok, done,
+			    "tfork status available for non terminated "
+			    "process 1\n");
+	/* Is the event fd open? */
+	fd = dup(ev1_fd);
+	ok = fd != -1;
+	torture_assert_goto(tctx, ok, ok, done,
+			    "tfork process 1 event fd is not open");
+
+	status = tfork_status(&t2, false);
+	ok = status == -1;
+	torture_assert_goto(tctx, ok, ok, done,
+			    "tfork status avaiable for non terminated "
+			    "process 2\n");
+	/* Is the event fd open? */
+	fd = dup(ev2_fd);
+	ok = fd != -1;
+	torture_assert_goto(tctx, ok, ok, done,
+			    "tfork process 2 event fd is not open");
+
+	/*
+	 * Kill the first process, it's status should be readable
+	 * and it's event_fd should be open
+	 * The second process's status should be unreadable.
+	 */
+	kill(child1, SIGTERM);
+	sleep(1);
+	status = tfork_status(&t1, false);
+	ok = status != -1;
+	torture_assert_goto(tctx, ok, ok, done,
+			    "tfork status for child 1 not available after "
+			    "termination\n");
+	/* Is the event fd open? */
+	fd = dup(ev2_fd);
+	ok = fd != -1;
+	torture_assert_goto(tctx, ok, ok, done,
+			    "tfork process 1 event fd is not open");
+
+	status = tfork_status(&t2, false);
+	ok = status == -1;
+	torture_assert_goto(tctx, ok, ok, done,
+			    "tfork status available for child 2 after "
+			    "termination of child 1\n");
+
+	/*
+	 * Kill the second process, it's status should be readable
+	 */
+	kill(child2, SIGTERM);
+	sleep(1);
+	status = tfork_status(&t2, false);
+	ok = status != -1;
+	torture_assert_goto(tctx, ok, ok, done,
+			    "tfork status for child 2 not available after "
+			    "termination\n");
+
+	/* Check that the event fd's are still open */
+	/* Is the event fd open? */
+	fd = dup(ev1_fd);
+	ok = fd != -1;
+	torture_assert_goto(tctx, ok, ok, done,
+			    "tfork process 1 event fd is not open");
+	/* Is the event fd open? */
+	fd = dup(ev2_fd);
+	ok = fd != -1;
+	torture_assert_goto(tctx, ok, ok, done,
+			    "tfork process 2 event fd is not open");
+
+done:
+	return ok;
+}
+
 struct torture_suite *torture_local_tfork(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite =
@@ -573,6 +816,14 @@ struct torture_suite *torture_local_tfork(TALLOC_CTX *mem_ctx)
 	torture_suite_add_simple_test(suite,
 				      "tfork_cmd_send",
 				      test_tfork_cmd_send);
+
+	torture_suite_add_simple_test(suite,
+				      "tfork_event_file_handle",
+				      test_tfork_event_file_handle);
+
+	torture_suite_add_simple_test(suite,
+				      "tfork_status_handle",
+				      test_tfork_status_handle);
 
 	return suite;
 }
