@@ -68,6 +68,7 @@ struct netlogon_creds_cli_context {
 		struct db_context *ctx;
 		struct g_lock_ctx *g_ctx;
 		struct netlogon_creds_cli_locked_state *locked_state;
+		enum netlogon_creds_cli_lck_type lock;
 	} db;
 };
 
@@ -904,6 +905,148 @@ NTSTATUS netlogon_creds_cli_lock(struct netlogon_creds_cli_context *context,
 		goto fail;
 	}
 	status = netlogon_creds_cli_lock_recv(req, mem_ctx, creds);
+ fail:
+	TALLOC_FREE(frame);
+	return status;
+}
+
+struct netlogon_creds_cli_lck {
+	struct netlogon_creds_cli_context *context;
+};
+
+struct netlogon_creds_cli_lck_state {
+	struct netlogon_creds_cli_lck *lck;
+	enum netlogon_creds_cli_lck_type type;
+};
+
+static void netlogon_creds_cli_lck_locked(struct tevent_req *subreq);
+static int netlogon_creds_cli_lck_destructor(
+	struct netlogon_creds_cli_lck *lck);
+
+struct tevent_req *netlogon_creds_cli_lck_send(
+	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+	struct netlogon_creds_cli_context *context,
+	enum netlogon_creds_cli_lck_type type)
+{
+	struct tevent_req *req, *subreq;
+	struct netlogon_creds_cli_lck_state *state;
+	enum g_lock_type gtype;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct netlogon_creds_cli_lck_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	if (context->db.lock != NETLOGON_CREDS_CLI_LCK_NONE) {
+		DBG_DEBUG("context already locked\n");
+		tevent_req_nterror(req, NT_STATUS_INVALID_LOCK_SEQUENCE);
+		return tevent_req_post(req, ev);
+	}
+
+	switch (type) {
+	    case NETLOGON_CREDS_CLI_LCK_SHARED:
+		    gtype = G_LOCK_READ;
+		    break;
+	    case NETLOGON_CREDS_CLI_LCK_EXCLUSIVE:
+		    gtype = G_LOCK_WRITE;
+		    break;
+	    default:
+		    tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		    return tevent_req_post(req, ev);
+	}
+
+	state->lck = talloc(state, struct netlogon_creds_cli_lck);
+	if (tevent_req_nomem(state->lck, req)) {
+		return tevent_req_post(req, ev);
+	}
+	state->lck->context = context;
+	state->type = type;
+
+	subreq = g_lock_lock_send(state, ev,
+				  context->db.g_ctx,
+				  context->db.key_name,
+				  gtype);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, netlogon_creds_cli_lck_locked, req);
+
+	return req;
+}
+
+static void netlogon_creds_cli_lck_locked(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct netlogon_creds_cli_lck_state *state = tevent_req_data(
+		req, struct netlogon_creds_cli_lck_state);
+	NTSTATUS status;
+
+	status = g_lock_lock_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	state->lck->context->db.lock = state->type;
+	talloc_set_destructor(state->lck, netlogon_creds_cli_lck_destructor);
+
+	tevent_req_done(req);
+}
+
+static int netlogon_creds_cli_lck_destructor(
+	struct netlogon_creds_cli_lck *lck)
+{
+	struct netlogon_creds_cli_context *ctx = lck->context;
+	NTSTATUS status;
+
+	status = g_lock_unlock(ctx->db.g_ctx, ctx->db.key_name);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("g_lock_unlock failed: %s\n", nt_errstr(status));
+		smb_panic("g_lock_unlock failed");
+	}
+	ctx->db.lock = NETLOGON_CREDS_CLI_LCK_NONE;
+	return 0;
+}
+
+NTSTATUS netlogon_creds_cli_lck_recv(
+	struct tevent_req *req, TALLOC_CTX *mem_ctx,
+	struct netlogon_creds_cli_lck **lck)
+{
+	struct netlogon_creds_cli_lck_state *state = tevent_req_data(
+		req, struct netlogon_creds_cli_lck_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+	*lck = talloc_move(mem_ctx, &state->lck);
+	return NT_STATUS_OK;
+}
+
+NTSTATUS netlogon_creds_cli_lck(
+	struct netlogon_creds_cli_context *context,
+	enum netlogon_creds_cli_lck_type type,
+	TALLOC_CTX *mem_ctx, struct netlogon_creds_cli_lck **lck)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct tevent_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	ev = samba_tevent_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = netlogon_creds_cli_lck_send(frame, ev, context, type);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
+	}
+	status = netlogon_creds_cli_lck_recv(req, mem_ctx, lck);
  fail:
 	TALLOC_FREE(frame);
 	return status;

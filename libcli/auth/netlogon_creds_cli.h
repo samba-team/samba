@@ -76,6 +76,26 @@ NTSTATUS netlogon_creds_cli_lock(struct netlogon_creds_cli_context *context,
 			TALLOC_CTX *mem_ctx,
 			struct netlogon_creds_CredentialState **creds);
 
+struct netlogon_creds_cli_lck;
+
+enum netlogon_creds_cli_lck_type {
+	NETLOGON_CREDS_CLI_LCK_NONE,
+	NETLOGON_CREDS_CLI_LCK_SHARED,
+	NETLOGON_CREDS_CLI_LCK_EXCLUSIVE,
+};
+
+struct tevent_req *netlogon_creds_cli_lck_send(
+	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+	struct netlogon_creds_cli_context *context,
+	enum netlogon_creds_cli_lck_type type);
+NTSTATUS netlogon_creds_cli_lck_recv(
+	struct tevent_req *req, TALLOC_CTX *mem_ctx,
+	struct netlogon_creds_cli_lck **lck);
+NTSTATUS netlogon_creds_cli_lck(
+	struct netlogon_creds_cli_context *context,
+	enum netlogon_creds_cli_lck_type type,
+	TALLOC_CTX *mem_ctx, struct netlogon_creds_cli_lck **lck);
+
 struct tevent_req *netlogon_creds_cli_auth_send(TALLOC_CTX *mem_ctx,
 				struct tevent_context *ev,
 				struct netlogon_creds_cli_context *context,
