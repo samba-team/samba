@@ -175,11 +175,11 @@ int dsdb_schema_set_indices_and_attributes(struct ldb_context *ldb,
 		}
 		if (mod_msg->num_elements > 0) {
 			/*
-			 * Do the replace with the constructed message,
-			 * to avoid needing a lock between this search
-			 * and the replace
+			 * Do the replace with the difference, as we
+			 * are under the read lock and we wish to do a
+			 * delete of any removed/renamed attributes
 			 */
-			ret = dsdb_replace(ldb, msg, 0);
+			ret = dsdb_modify(ldb, mod_msg, 0);
 		}
 		talloc_free(mod_msg);
 	}
@@ -235,12 +235,13 @@ int dsdb_schema_set_indices_and_attributes(struct ldb_context *ldb,
 			 * @SAMBA_FEATURES_SUPPORTED
 			 */
 		} else if (mod_msg->num_elements > 0) {
+
 			/*
-			 * Do the replace with the constructed message,
-			 * to avoid needing a lock between this search
-			 * and the replace
+			 * Do the replace with the difference, as we
+			 * are under the read lock and we wish to do a
+			 * delete of any removed/renamed attributes
 			 */
-			ret = dsdb_replace(ldb, msg_idx, 0);
+			ret = dsdb_modify(ldb, mod_msg, 0);
 		}
 		talloc_free(mod_msg);
 	}
