@@ -2224,7 +2224,12 @@ int ltdb_index_delete(struct ldb_module *module, const struct ldb_message *msg)
 
 
 /*
-  traversal function that deletes all @INDEX records
+  traversal function that deletes all @INDEX records in the in-memory
+  TDB.
+
+  This does not touch the actual DB, that is done at transaction
+  commit, which in turn greatly reduces DB churn as we will likely
+  be able to do a direct update into the old record.
 */
 static int delete_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *state)
 {
@@ -2249,6 +2254,11 @@ static int delete_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, vo
 	v.length = strnlen((char *)key.dptr, key.dsize) - 3;
 
 	dn = ldb_dn_from_ldb_val(ltdb, ldb_module_get_ctx(module), &v);
+
+	/*
+	 * This does not actually touch the DB quite yet, just
+         * the in-memory index cache
+	 */
 	ret = ltdb_dn_list_store(module, dn, &list);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb_module_get_ctx(module),
