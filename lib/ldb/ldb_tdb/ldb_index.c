@@ -2264,6 +2264,7 @@ static int delete_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, vo
 struct ltdb_reindex_context {
 	struct ldb_module *module;
 	int error;
+	uint32_t count;
 };
 
 /*
@@ -2368,6 +2369,13 @@ static int re_key(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *st
 
 	talloc_free(msg);
 
+	ctx->count++;
+	if (ctx->count % 10000 == 0) {
+		ldb_debug(ldb, LDB_DEBUG_WARNING,
+			  "Reindexing: re-keyed %u records so far",
+			  ctx->count);
+	}
+
 	return 0;
 }
 
@@ -2449,6 +2457,13 @@ static int re_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *
 
 	talloc_free(msg);
 
+	ctx->count++;
+	if (ctx->count % 10000 == 0) {
+		ldb_debug(ldb, LDB_DEBUG_WARNING,
+			  "Reindexing: re-indexed %u records so far",
+			  ctx->count);
+	}
+
 	return 0;
 }
 
@@ -2498,6 +2513,7 @@ int ltdb_reindex(struct ldb_module *module)
 
 	ctx.module = module;
 	ctx.error = 0;
+	ctx.count = 0;
 
 	/* now traverse adding any indexes for normal LDB records */
 	ret = tdb_traverse(ltdb->tdb, re_key, &ctx);
@@ -2515,6 +2531,7 @@ int ltdb_reindex(struct ldb_module *module)
 	}
 
 	ctx.error = 0;
+	ctx.count = 0;
 
 	/* now traverse adding any indexes for normal LDB records */
 	ret = tdb_traverse(ltdb->tdb, re_index, &ctx);
@@ -2531,5 +2548,11 @@ int ltdb_reindex(struct ldb_module *module)
 		return ctx.error;
 	}
 
+	if (ctx.count > 10000) {
+		ldb_debug(ldb_module_get_ctx(module),
+			  LDB_DEBUG_WARNING, "Reindexing: re_index successful on %s, "
+			  "final index write-out will be in transaction commit",
+			  tdb_name(ltdb->tdb));
+	}
 	return LDB_SUCCESS;
 }
