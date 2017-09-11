@@ -1116,9 +1116,9 @@ int ctdb_ltdb_fetch(struct ctdb_db_context *db, TDB_DATA key,
 			return EIO;
 		}
 
-		header->rsn = 0;
-		header->dmaster = CTDB_UNKNOWN_PNN;
-		header->flags = 0;
+		*header = (struct ctdb_ltdb_header) {
+			.dmaster = CTDB_UNKNOWN_PNN,
+		};
 
 		if (data != NULL) {
 			*data = tdb_null;
