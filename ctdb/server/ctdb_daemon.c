@@ -1800,7 +1800,6 @@ void ctdb_shutdown_sequence(struct ctdb_context *ctdb, int exit_code)
 	ctdb_set_runstate(ctdb, CTDB_RUNSTATE_SHUTDOWN);
 	ctdb_stop_recoverd(ctdb);
 	ctdb_stop_keepalive(ctdb);
-	ctdb_stop_monitoring(ctdb);
 	ctdb_release_all_ips(ctdb);
 	ctdb_event_script(ctdb, CTDB_EVENT_SHUTDOWN);
 	ctdb_stop_eventd(ctdb);
