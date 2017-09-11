@@ -158,6 +158,10 @@ startup)
 	monitor_interfaces
 	;;
 
+shutdown)
+	drop_all_public_ips
+	;;
+
 takeip)
 	iface=$2
 	ip=$3
