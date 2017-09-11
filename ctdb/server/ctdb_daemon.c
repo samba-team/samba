@@ -676,6 +676,7 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 				DEBUG(DEBUG_ERR,(__location__ " ctdb_ltdb_unlock() failed with error %d\n", ret));
 			}
 			CTDB_DECREMENT_STAT(ctdb, pending_calls);
+			talloc_free(data.dptr);
 			return;
 		}
 	}
