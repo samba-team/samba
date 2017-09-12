@@ -377,7 +377,6 @@ int tevent_common_check_signal(struct tevent_context *ev);
 void tevent_cleanup_pending_signal_handlers(struct tevent_signal *se);
 
 bool tevent_standard_init(void);
-bool tevent_select_init(void);
 bool tevent_poll_init(void);
 void tevent_poll_event_add_fd_internal(struct tevent_context *ev,
 				       struct tevent_fd *fde);
