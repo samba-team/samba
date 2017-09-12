@@ -52,9 +52,9 @@ cleanup ()
 
 ctdb_test_exit_hook_add cleanup
 
-echo "Checking for PID $client_pid on node $test_node"
+echo "Waiting until PID $client_pid is registered on node $test_node"
 status=0
-try_command_on_node $test_node \
+wait_until 30 try_command_on_node $test_node \
 	"$CTDB process-exists ${client_pid}" || status=$?
 echo "$out"
 
