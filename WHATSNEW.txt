@@ -1,4 +1,84 @@
                    ==============================
+                   Release Notes for Samba 4.4.16
+                          September 20, 2017
+                   ==============================
+
+
+This is a security release in order to address the following defects:
+
+o  CVE-2017-12150 (SMB1/2/3 connections may not require signing where they
+   should)
+o  CVE-2017-12151 (SMB3 connections don't keep encryption across DFS redirects)
+o  CVE-2017-12163 (Server memory information leak over SMB1)
+
+
+=======
+Details
+=======
+
+o  CVE-2017-12150:
+   A man in the middle attack may hijack client connections.
+
+o  CVE-2017-12151:
+   A man in the middle attack can read and may alter confidential
+   documents transferred via a client connection, which are reached
+   via DFS redirect when the original connection used SMB3.
+
+o  CVE-2017-12163:
+   Client with write access to a share can cause server memory contents to be
+   written into a file or printer.
+
+For more details and workarounds, please see the security advisories:
+
+   o https://www.samba.org/samba/security/CVE-2017-12150.html
+   o https://www.samba.org/samba/security/CVE-2017-12151.html
+   o https://www.samba.org/samba/security/CVE-2017-12163.html
+
+
+Changes since 4.4.15:
+---------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 12836: s3: smbd: Fix a read after free if a chained SMB1 call goes
+     async.
+   * BUG 13020: CVE-2017-12163: s3:smbd: Prevent client short SMB1 write from
+     writing server memory to file.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 12885: s3/smbd: Let non_widelink_open() chdir() to directories
+     directly.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 12996: CVE-2017-12151: Keep required encryption across SMB3 dfs
+     redirects.
+   * BUG 12997: CVE-2017-12150: Some code path don't enforce smb signing
+     when they should.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ==============================
                    Release Notes for Samba 4.4.15
                             July 12, 2017
                    ==============================
@@ -48,8 +128,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    ==============================
                    Release Notes for Samba 4.4.14
