@@ -404,6 +404,9 @@ if [ -d $release_dir ]; then
     testit_expect_failure "dbcheck2" dbcheck2
     testit "dbcheck_clean2" dbcheck_clean2
     testit "rm_deleted_objects" rm_deleted_objects
+    # We must re-index again because rm_deleted_objects went behind
+    # the back of the main sam.ldb.
+    testit "reindex2" reindex
     testit_expect_failure "dbcheck3" dbcheck3
     testit "dbcheck_clean3" dbcheck_clean3
     testit "check_expected_after_deleted_objects" check_expected_after_deleted_objects
