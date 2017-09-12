@@ -34,3 +34,4 @@
 ^samba3.blackbox.smbclient_tar.* # fails very, very often on sn-devel
 ^samba3.blackbox.smbclient_s3.*.sending a message to the remote server # flakey on sn-devel-104 and sn-devel-144
 ^samba3.blackbox.smbclient_s3.*.creating a good symlink and deleting it by path # flakey on sn-devel-104 and sn-devel-144
+^samba3.blackbox.smbclient_s3.*follow.symlinks.*no # fails sometimes on sn-devel
