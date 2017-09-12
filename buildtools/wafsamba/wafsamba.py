@@ -885,29 +885,30 @@ def INSTALL_WILDCARD(bld, destdir, pattern, chmod=MODE_644, flat=False,
                   python_fixup=python_fixup, base_name=trim_path)
 Build.BuildContext.INSTALL_WILDCARD = INSTALL_WILDCARD
 
-def INSTALL_DIR(bld, path, chmod=0o755):
+def INSTALL_DIR(bld, path, chmod=0o755, env=None):
     """Install a directory if it doesn't exist, always set permissions."""
 
     if not path:
         return []
 
+    destpath = bld.get_install_path(path, env)
+
     if bld.is_install > 0:
-        path = bld.EXPAND_VARIABLES(path)
-        if not os.path.isdir(path):
+        if not os.path.isdir(destpath):
             try:
-                os.makedirs(path)
-                os.chmod(path, chmod)
+                os.makedirs(destpath)
+                os.chmod(destpath, chmod)
             except OSError, e:
-                if not os.path.isdir(path):
+                if not os.path.isdir(destpath):
                     raise Utils.WafError("Cannot create the folder '%s' (error: %s)" % (path, e))
 Build.BuildContext.INSTALL_DIR = INSTALL_DIR
 
-def INSTALL_DIRS(bld, destdir, dirs, chmod=0o755):
+def INSTALL_DIRS(bld, destdir, dirs, chmod=0o755, env=None):
     '''install a set of directories'''
     destdir = bld.EXPAND_VARIABLES(destdir)
     dirs = bld.EXPAND_VARIABLES(dirs)
     for d in TO_LIST(dirs):
-        INSTALL_DIR(bld, os.path.join(destdir, d), chmod)
+        INSTALL_DIR(bld, os.path.join(destdir, d), chmod, env)
 Build.BuildContext.INSTALL_DIRS = INSTALL_DIRS
 
 
