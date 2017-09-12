@@ -984,6 +984,8 @@ class AddModifyTests(TestCase):
         self.l.add({"dn": "DC=SAMBA,DC=ORG",
                     "name": b"samba.org",
                     "objectUUID": b"0123456789abcdef"})
+        self.l.add({"dn": "@ATTRIBUTES",
+                    "objectUUID": "UNIQUE_INDEX"})
 
     def test_add_dup(self):
         self.l.add({"dn": "OU=DUP,DC=SAMBA,DC=ORG",
@@ -1023,6 +1025,88 @@ class AddModifyTests(TestCase):
                     "x": "z", "y": "a",
                     "objectUUID": b"0123456789abcde2"})
 
+    def test_add_move_fail_move_move(self):
+        self.l.add({"dn": "OU=DUP,DC=SAMBA,DC=ORG",
+                    "name": b"Admins",
+                    "x": "z", "y": "a",
+                    "objectUUID": b"0123456789abcde1"})
+        self.l.add({"dn": "OU=DUP2,DC=SAMBA,DC=ORG",
+                    "name": b"Admins",
+                    "x": "z", "y": "a",
+                    "objectUUID": b"0123456789abcde2"})
+        try:
+            self.l.rename("OU=DUP,DC=SAMBA,DC=ORG",
+                          "OU=DUP2,DC=SAMBA,DC=ORG")
+            self.fail("Should have failed on duplicate DN")
+        except ldb.LdbError as err:
+            enum = err.args[0]
+            self.assertEqual(enum, ldb.ERR_ENTRY_ALREADY_EXISTS)
+
+        self.l.rename("OU=DUP2,DC=SAMBA,DC=ORG",
+                      "OU=DUP3,DC=SAMBA,DC=ORG")
+
+        self.l.rename("OU=DUP,DC=SAMBA,DC=ORG",
+                      "OU=DUP2,DC=SAMBA,DC=ORG")
+
+        res2 = self.l.search(base="DC=SAMBA,DC=ORG",
+                             scope=ldb.SCOPE_SUBTREE,
+                             expression="(objectUUID=0123456789abcde1)")
+        self.assertEqual(len(res2), 1)
+        self.assertEqual(str(res2[0].dn), "OU=DUP2,DC=SAMBA,DC=ORG")
+
+        res3 = self.l.search(base="DC=SAMBA,DC=ORG",
+                             scope=ldb.SCOPE_SUBTREE,
+                             expression="(objectUUID=0123456789abcde2)")
+        self.assertEqual(len(res3), 1)
+        self.assertEqual(str(res3[0].dn), "OU=DUP3,DC=SAMBA,DC=ORG")
+
+    def test_move_missing(self):
+        try:
+            self.l.rename("OU=DUP,DC=SAMBA,DC=ORG",
+                          "OU=DUP2,DC=SAMBA,DC=ORG")
+            self.fail("Should have failed on missing")
+        except ldb.LdbError as err:
+            enum = err.args[0]
+            self.assertEqual(enum, ldb.ERR_NO_SUCH_OBJECT)
+
+    def test_move_missing2(self):
+        self.l.add({"dn": "OU=DUP2,DC=SAMBA,DC=ORG",
+                    "name": b"Admins",
+                    "x": "z", "y": "a",
+                    "objectUUID": b"0123456789abcde2"})
+
+        try:
+            self.l.rename("OU=DUP,DC=SAMBA,DC=ORG",
+                          "OU=DUP2,DC=SAMBA,DC=ORG")
+            self.fail("Should have failed on missing")
+        except ldb.LdbError as err:
+            enum = err.args[0]
+            self.assertEqual(enum, ldb.ERR_NO_SUCH_OBJECT)
+
+    def test_move_fail_move_add(self):
+        self.l.add({"dn": "OU=DUP,DC=SAMBA,DC=ORG",
+                    "name": b"Admins",
+                    "x": "z", "y": "a",
+                    "objectUUID": b"0123456789abcde1"})
+        self.l.add({"dn": "OU=DUP2,DC=SAMBA,DC=ORG",
+                    "name": b"Admins",
+                    "x": "z", "y": "a",
+                    "objectUUID": b"0123456789abcde2"})
+        try:
+            self.l.rename("OU=DUP,DC=SAMBA,DC=ORG",
+                          "OU=DUP2,DC=SAMBA,DC=ORG")
+            self.fail("Should have failed on duplicate DN")
+        except ldb.LdbError as err:
+            enum = err.args[0]
+            self.assertEqual(enum, ldb.ERR_ENTRY_ALREADY_EXISTS)
+
+        self.l.rename("OU=DUP2,DC=SAMBA,DC=ORG",
+                      "OU=DUP3,DC=SAMBA,DC=ORG")
+
+        self.l.add({"dn": "OU=DUP2,DC=SAMBA,DC=ORG",
+                    "name": b"Admins",
+                    "x": "z", "y": "a",
+                    "objectUUID": b"0123456789abcde3"})
 
 class IndexedAddModifyTests(AddModifyTests):
     """Test searches using the index, to ensure the index doesn't
@@ -1030,19 +1114,8 @@ class IndexedAddModifyTests(AddModifyTests):
     def setUp(self):
         super(IndexedAddModifyTests, self).setUp()
         self.l.add({"dn": "@INDEXLIST",
-                    "@IDXATTR": [b"x", b"y", b"ou"],
+                    "@IDXATTR": [b"x", b"y", b"ou", b"objectUUID"],
                     "@IDXONE": [b"1"]})
-
-class GUIDIndexedAddModifyTests(AddModifyTests):
-    """Test searches using the index, to ensure the index doesn't
-       break things"""
-    def setUp(self):
-        super(GUIDIndexedAddModifyTests, self).setUp()
-        self.l.add({"dn": "@INDEXLIST",
-                    "@IDXATTR": [b"x", b"y", b"ou"],
-                    "@IDXONE": [b"1"],
-                    "@IDXGUID": [b"objectUUID"],
-                    "@IDX_DN_GUID": [b"GUID"]})
 
     def test_duplicate_GUID(self):
         try:
@@ -1054,6 +1127,97 @@ class GUIDIndexedAddModifyTests(AddModifyTests):
         except ldb.LdbError as err:
             enum = err.args[0]
             self.assertEqual(enum, ldb.ERR_CONSTRAINT_VIOLATION)
+
+    def test_duplicate_name_dup_GUID(self):
+        self.l.add({"dn": "OU=ADMIN,DC=SAMBA,DC=ORG",
+                    "name": b"Admins",
+                    "x": "z", "y": "a",
+                    "objectUUID": b"a123456789abcdef"})
+        try:
+            self.l.add({"dn": "OU=ADMIN,DC=SAMBA,DC=ORG",
+                        "name": b"Admins",
+                        "x": "z", "y": "a",
+                        "objectUUID": b"a123456789abcdef"})
+            self.fail("Should have failed adding dupliate GUID")
+        except ldb.LdbError as err:
+            enum = err.args[0]
+            self.assertEqual(enum, ldb.ERR_ENTRY_ALREADY_EXISTS)
+
+    def test_duplicate_name_dup_GUID2(self):
+        self.l.add({"dn": "OU=ADMIN,DC=SAMBA,DC=ORG",
+                    "name": b"Admins",
+                    "x": "z", "y": "a",
+                    "objectUUID": b"abc3456789abcdef"})
+        try:
+            self.l.add({"dn": "OU=ADMIN,DC=SAMBA,DC=ORG",
+                        "name": b"Admins",
+                        "x": "z", "y": "a",
+                        "objectUUID": b"aaa3456789abcdef"})
+            self.fail("Should have failed adding dupliate DN")
+        except ldb.LdbError as err:
+            enum = err.args[0]
+            self.assertEqual(enum, ldb.ERR_ENTRY_ALREADY_EXISTS)
+
+        # Checking the GUID didn't stick in the index
+        self.l.add({"dn": "OU=DUP,DC=SAMBA,DC=ORG",
+                    "name": b"Admins",
+                    "x": "z", "y": "a",
+                    "objectUUID": b"aaa3456789abcdef"})
+
+    def test_add_dup_guid_add(self):
+        self.l.add({"dn": "OU=DUP,DC=SAMBA,DC=ORG",
+                    "name": b"Admins",
+                    "x": "z", "y": "a",
+                    "objectUUID": b"0123456789abcde1"})
+        try:
+            self.l.add({"dn": "OU=DUP2,DC=SAMBA,DC=ORG",
+                        "name": b"Admins",
+                        "x": "z", "y": "a",
+                        "objectUUID": b"0123456789abcde1"})
+            self.fail("Should have failed on duplicate GUID")
+
+        except ldb.LdbError as err:
+            enum = err.args[0]
+            self.assertEqual(enum, ldb.ERR_CONSTRAINT_VIOLATION)
+
+        self.l.add({"dn": "OU=DUP2,DC=SAMBA,DC=ORG",
+                    "name": b"Admins",
+                    "x": "z", "y": "a",
+                    "objectUUID": b"0123456789abcde2"})
+
+class GUIDIndexedAddModifyTests(IndexedAddModifyTests):
+    """Test searches using the index, to ensure the index doesn't
+       break things"""
+    def setUp(self):
+        super(GUIDIndexedAddModifyTests, self).setUp()
+        indexlist = {"dn": "@INDEXLIST",
+                     "@IDXATTR": [b"x", b"y", b"ou"],
+                     "@IDXONE": [b"1"],
+                     "@IDXGUID": [b"objectUUID"],
+                     "@IDX_DN_GUID": [b"GUID"]}
+        m = ldb.Message.from_dict(self.l, indexlist, ldb.FLAG_MOD_REPLACE)
+        self.l.modify(m)
+
+
+class GUIDTransIndexedAddModifyTests(GUIDIndexedAddModifyTests):
+    """Test GUID index behaviour insdie the transaction"""
+    def setUp(self):
+        super(GUIDTransIndexedAddModifyTests, self).setUp()
+        self.l.transaction_start()
+
+    def tearDown(self):
+        self.l.transaction_commit()
+        super(GUIDTransIndexedAddModifyTests, self).tearDown()
+
+class TransIndexedAddModifyTests(IndexedAddModifyTests):
+    """Test index behaviour insdie the transaction"""
+    def setUp(self):
+        super(TransIndexedAddModifyTests, self).setUp()
+        self.l.transaction_start()
+
+    def tearDown(self):
+        self.l.transaction_commit()
+        super(TransIndexedAddModifyTests, self).tearDown()
 
 
 
