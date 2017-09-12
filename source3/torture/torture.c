@@ -10910,17 +10910,17 @@ static bool run_local_dbtrans(int dummy)
 
 /*
  * Just a dummy test to be run under a debugger. There's no real way
- * to inspect the tevent_select specific function from outside of
- * tevent_select.c.
+ * to inspect the tevent_poll specific function from outside of
+ * tevent_poll.c.
  */
 
-static bool run_local_tevent_select(int dummy)
+static bool run_local_tevent_poll(int dummy)
 {
 	struct tevent_context *ev;
 	struct tevent_fd *fd1, *fd2;
 	bool result = false;
 
-	ev = tevent_context_init_byname(NULL, "select");
+	ev = tevent_context_init_byname(NULL, "poll");
 	if (ev == NULL) {
 		d_fprintf(stderr, "tevent_context_init_byname failed\n");
 		goto fail;
@@ -11471,7 +11471,7 @@ static struct {
 	{ "LOCAL-sid_to_string", run_local_sid_to_string, 0},
 	{ "LOCAL-binary_to_sid", run_local_binary_to_sid, 0},
 	{ "LOCAL-DBTRANS", run_local_dbtrans, 0},
-	{ "LOCAL-TEVENT-SELECT", run_local_tevent_select, 0},
+	{ "LOCAL-TEVENT-POLL", run_local_tevent_poll, 0},
 	{ "LOCAL-CONVERT-STRING", run_local_convert_string, 0},
 	{ "LOCAL-CONV-AUTH-INFO", run_local_conv_auth_info, 0},
 	{ "LOCAL-hex_encode_buf", run_local_hex_encode_buf, 0},

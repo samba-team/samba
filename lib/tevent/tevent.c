@@ -128,7 +128,6 @@ static void tevent_backend_init(void)
 
 	done = true;
 
-	tevent_select_init();
 	tevent_poll_init();
 	tevent_poll_mt_init();
 #if defined(HAVE_EPOLL)

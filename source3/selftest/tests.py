@@ -128,7 +128,7 @@ local_tests = [
     "LOCAL-sid_to_string",
     "LOCAL-binary_to_sid",
     "LOCAL-DBTRANS",
-    "LOCAL-TEVENT-SELECT",
+    "LOCAL-TEVENT-POLL",
     "LOCAL-CONVERT-STRING",
     "LOCAL-CONV-AUTH-INFO",
     "LOCAL-IDMAP-TDB-COMMON",
