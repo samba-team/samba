@@ -3281,21 +3281,23 @@ NTSTATUS cli_rpc_pipe_open_schannel_with_creds(struct cli_state *cli,
 	struct rpc_pipe_client *rpccli;
 	struct pipe_auth_data *rpcauth;
 	const char *target_service = table->authservices->names[0];
-	struct netlogon_creds_CredentialState *ncreds = NULL;
 	struct cli_credentials *cli_creds;
 	enum dcerpc_AuthLevel auth_level;
 	NTSTATUS status;
 	int rpc_pipe_bind_dbglvl = 0;
+	struct netlogon_creds_cli_lck *lck;
 
 	status = cli_rpc_pipe_open(cli, transport, table, &rpccli);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	status = netlogon_creds_cli_lock(netlogon_creds, rpccli, &ncreds);
+	status = netlogon_creds_cli_lck(
+		netlogon_creds, NETLOGON_CREDS_CLI_LCK_EXCLUSIVE,
+		rpccli, &lck);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("netlogon_creds_cli_lock returned %s\n",
-			  nt_errstr(status)));
+		DBG_WARNING("netlogon_creds_cli_lck returned %s\n",
+			    nt_errstr(status));
 		TALLOC_FREE(rpccli);
 		return status;
 	}
@@ -3333,8 +3335,7 @@ NTSTATUS cli_rpc_pipe_open_schannel_with_creds(struct cli_state *cli,
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_ACCESS_DENIED)) {
 		rpc_pipe_bind_dbglvl = 1;
-		netlogon_creds_cli_delete(netlogon_creds, ncreds);
-		TALLOC_FREE(ncreds);
+		netlogon_creds_cli_delete_lck(netlogon_creds);
 	}
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(rpc_pipe_bind_dbglvl,
@@ -3343,8 +3344,6 @@ NTSTATUS cli_rpc_pipe_open_schannel_with_creds(struct cli_state *cli,
 		TALLOC_FREE(rpccli);
 		return status;
 	}
-
-	TALLOC_FREE(ncreds);
 
 	if (!ndr_syntax_id_equal(&table->syntax_id, &ndr_table_netlogon.syntax_id)) {
 		goto done;
@@ -3359,12 +3358,13 @@ NTSTATUS cli_rpc_pipe_open_schannel_with_creds(struct cli_state *cli,
 		return status;
 	}
 
-
 done:
 	DEBUG(10,("%s: opened pipe %s to machine %s "
 		  "for domain %s and bound using schannel.\n",
 		  __func__, table->name,
 		  rpccli->desthost, cli_credentials_get_domain(cli_creds)));
+
+	TALLOC_FREE(lck);
 
 	*_rpccli = rpccli;
 	return NT_STATUS_OK;

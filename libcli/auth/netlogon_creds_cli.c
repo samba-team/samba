@@ -1525,14 +1525,13 @@ struct netlogon_creds_cli_check_state {
 	union netr_Capabilities caps;
 
 	struct netlogon_creds_CredentialState *creds;
-	struct netlogon_creds_CredentialState tmp_creds;
 	struct netr_Authenticator req_auth;
 	struct netr_Authenticator rep_auth;
 };
 
 static void netlogon_creds_cli_check_cleanup(struct tevent_req *req,
 					     NTSTATUS status);
-static void netlogon_creds_cli_check_locked(struct tevent_req *subreq);
+static void netlogon_creds_cli_check_caps(struct tevent_req *subreq);
 
 struct tevent_req *netlogon_creds_cli_check_send(TALLOC_CTX *mem_ctx,
 				struct tevent_context *ev,
@@ -1544,6 +1543,7 @@ struct tevent_req *netlogon_creds_cli_check_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *subreq;
 	enum dcerpc_AuthType auth_type;
 	enum dcerpc_AuthLevel auth_level;
+	NTSTATUS status;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct netlogon_creds_cli_check_state);
@@ -1554,6 +1554,17 @@ struct tevent_req *netlogon_creds_cli_check_send(TALLOC_CTX *mem_ctx,
 	state->ev = ev;
 	state->context = context;
 	state->binding_handle = b;
+
+	if (context->db.lock != NETLOGON_CREDS_CLI_LCK_EXCLUSIVE) {
+		tevent_req_nterror(req, NT_STATUS_NOT_LOCKED);
+		return tevent_req_post(req, ev);
+	}
+
+	status = netlogon_creds_cli_get_internal(context, state,
+						 &state->creds);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
 
 	state->srv_name_slash = talloc_asprintf(state, "\\\\%s",
 						context->server.computer);
@@ -1578,14 +1589,29 @@ struct tevent_req *netlogon_creds_cli_check_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	subreq = netlogon_creds_cli_lock_send(state, state->ev,
-					      state->context);
+	/*
+	 * we defer all callbacks in order to cleanup
+	 * the database record.
+	 */
+	tevent_req_defer_callback(req, state->ev);
+
+	netlogon_creds_client_authenticator(state->creds, &state->req_auth);
+	ZERO_STRUCT(state->rep_auth);
+
+	subreq = dcerpc_netr_LogonGetCapabilities_send(state, state->ev,
+						state->binding_handle,
+						state->srv_name_slash,
+						state->context->client.computer,
+						&state->req_auth,
+						&state->rep_auth,
+						1,
+						&state->caps);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
 
 	tevent_req_set_callback(subreq,
-				netlogon_creds_cli_check_locked,
+				netlogon_creds_cli_check_caps,
 				req);
 
 	return req;
@@ -1611,56 +1637,8 @@ static void netlogon_creds_cli_check_cleanup(struct tevent_req *req,
 		return;
 	}
 
-	netlogon_creds_cli_delete(state->context, state->creds);
+	netlogon_creds_cli_delete_lck(state->context);
 	TALLOC_FREE(state->creds);
-}
-
-static void netlogon_creds_cli_check_caps(struct tevent_req *subreq);
-
-static void netlogon_creds_cli_check_locked(struct tevent_req *subreq)
-{
-	struct tevent_req *req =
-		tevent_req_callback_data(subreq,
-		struct tevent_req);
-	struct netlogon_creds_cli_check_state *state =
-		tevent_req_data(req,
-		struct netlogon_creds_cli_check_state);
-	NTSTATUS status;
-
-	status = netlogon_creds_cli_lock_recv(subreq, state,
-					      &state->creds);
-	TALLOC_FREE(subreq);
-	if (tevent_req_nterror(req, status)) {
-		return;
-	}
-
-	/*
-	 * we defer all callbacks in order to cleanup
-	 * the database record.
-	 */
-	tevent_req_defer_callback(req, state->ev);
-
-	state->tmp_creds = *state->creds;
-	netlogon_creds_client_authenticator(&state->tmp_creds,
-					    &state->req_auth);
-	ZERO_STRUCT(state->rep_auth);
-
-	subreq = dcerpc_netr_LogonGetCapabilities_send(state, state->ev,
-						state->binding_handle,
-						state->srv_name_slash,
-						state->context->client.computer,
-						&state->req_auth,
-						&state->rep_auth,
-						1,
-						&state->caps);
-	if (tevent_req_nomem(subreq, req)) {
-		status = NT_STATUS_NO_MEMORY;
-		netlogon_creds_cli_check_cleanup(req, status);
-		return;
-	}
-	tevent_req_set_callback(subreq,
-				netlogon_creds_cli_check_caps,
-				req);
 }
 
 static void netlogon_creds_cli_check_caps(struct tevent_req *subreq)
@@ -1683,7 +1661,7 @@ static void netlogon_creds_cli_check_caps(struct tevent_req *subreq)
 		 * Note that the negotiated flags are already checked
 		 * for our required flags after the ServerAuthenticate3/2 call.
 		 */
-		uint32_t negotiated = state->tmp_creds.negotiate_flags;
+		uint32_t negotiated = state->creds->negotiate_flags;
 
 		if (negotiated & NETLOGON_NEG_SUPPORTS_AES) {
 			/*
@@ -1738,7 +1716,7 @@ static void netlogon_creds_cli_check_caps(struct tevent_req *subreq)
 		 * Note that the negotiated flags are already checked
 		 * for our required flags after the ServerAuthenticate3/2 call.
 		 */
-		uint32_t negotiated = state->tmp_creds.negotiate_flags;
+		uint32_t negotiated = state->creds->negotiate_flags;
 
 		if (negotiated & NETLOGON_NEG_SUPPORTS_AES) {
 			/*
@@ -1764,8 +1742,7 @@ static void netlogon_creds_cli_check_caps(struct tevent_req *subreq)
 		return;
 	}
 
-	ok = netlogon_creds_client_check(&state->tmp_creds,
-					 &state->rep_auth.cred);
+	ok = netlogon_creds_client_check(state->creds, &state->rep_auth.cred);
 	if (!ok) {
 		status = NT_STATUS_ACCESS_DENIED;
 		tevent_req_nterror(req, status);
@@ -1778,7 +1755,7 @@ static void netlogon_creds_cli_check_caps(struct tevent_req *subreq)
 		return;
 	}
 
-	if (state->caps.server_capabilities != state->tmp_creds.negotiate_flags) {
+	if (state->caps.server_capabilities != state->creds->negotiate_flags) {
 		status = NT_STATUS_DOWNGRADE_DETECTED;
 		tevent_req_nterror(req, status);
 		netlogon_creds_cli_check_cleanup(req, status);
@@ -1800,10 +1777,8 @@ static void netlogon_creds_cli_check_caps(struct tevent_req *subreq)
 		return;
 	}
 
-	*state->creds = state->tmp_creds;
-	status = netlogon_creds_cli_store(state->context,
-					  state->creds);
-	TALLOC_FREE(state->creds);
+	status = netlogon_creds_cli_store_internal(state->context,
+						   state->creds);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
