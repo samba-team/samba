@@ -578,27 +578,14 @@ bool netlogon_creds_cli_validate(struct netlogon_creds_cli_context *context,
 	return (cmp == 0);
 }
 
-NTSTATUS netlogon_creds_cli_store(struct netlogon_creds_cli_context *context,
-				  struct netlogon_creds_CredentialState *creds)
+static NTSTATUS netlogon_creds_cli_store_internal(
+	struct netlogon_creds_cli_context *context,
+	struct netlogon_creds_CredentialState *creds)
 {
 	NTSTATUS status;
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	TDB_DATA data;
-
-	if (context->db.locked_state == NULL) {
-		/*
-		 * this was not the result of netlogon_creds_cli_lock*()
-		 */
-		return NT_STATUS_INVALID_PAGE_PROTECTION;
-	}
-
-	if (context->db.locked_state->creds != creds) {
-		/*
-		 * this was not the result of netlogon_creds_cli_lock*()
-		 */
-		return NT_STATUS_INVALID_PAGE_PROTECTION;
-	}
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_DEBUG(netlogon_creds_CredentialState, creds);
@@ -623,6 +610,29 @@ NTSTATUS netlogon_creds_cli_store(struct netlogon_creds_cli_context *context,
 	}
 
 	return NT_STATUS_OK;
+}
+
+NTSTATUS netlogon_creds_cli_store(struct netlogon_creds_cli_context *context,
+				  struct netlogon_creds_CredentialState *creds)
+{
+	NTSTATUS status;
+
+	if (context->db.locked_state == NULL) {
+		/*
+		 * this was not the result of netlogon_creds_cli_lock*()
+		 */
+		return NT_STATUS_INVALID_PAGE_PROTECTION;
+	}
+
+	if (context->db.locked_state->creds != creds) {
+		/*
+		 * this was not the result of netlogon_creds_cli_lock*()
+		 */
+		return NT_STATUS_INVALID_PAGE_PROTECTION;
+	}
+
+	status = netlogon_creds_cli_store_internal(context, creds);
+	return status;
 }
 
 NTSTATUS netlogon_creds_cli_delete(struct netlogon_creds_cli_context *context,
