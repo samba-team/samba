@@ -635,6 +635,14 @@ NTSTATUS netlogon_creds_cli_store(struct netlogon_creds_cli_context *context,
 	return status;
 }
 
+static NTSTATUS netlogon_creds_cli_delete_internal(
+	struct netlogon_creds_cli_context *context)
+{
+	NTSTATUS status;
+	status = dbwrap_delete(context->db.ctx, context->db.key_data);
+	return status;
+}
+
 NTSTATUS netlogon_creds_cli_delete(struct netlogon_creds_cli_context *context,
 				   struct netlogon_creds_CredentialState *creds)
 {
@@ -654,13 +662,8 @@ NTSTATUS netlogon_creds_cli_delete(struct netlogon_creds_cli_context *context,
 		return NT_STATUS_INVALID_PAGE_PROTECTION;
 	}
 
-	status = dbwrap_delete(context->db.ctx,
-			       context->db.key_data);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	return NT_STATUS_OK;
+	status = netlogon_creds_cli_delete_internal(context);
+	return status;
 }
 
 struct netlogon_creds_cli_lock_state {
