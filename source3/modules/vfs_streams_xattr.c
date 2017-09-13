@@ -232,11 +232,11 @@ static int streams_xattr_fstat(vfs_handle_struct *handle, files_struct *fsp,
 	struct stream_io *io = (struct stream_io *)
 		VFS_FETCH_FSP_EXTENSION(handle, fsp);
 
-	DBG_DEBUG("streams_xattr_fstat called for %s\n", fsp_str_dbg(io->fsp));
-
 	if (io == NULL || fsp->base_fsp == NULL) {
 		return SMB_VFS_NEXT_FSTAT(handle, fsp, sbuf);
 	}
+
+	DBG_DEBUG("streams_xattr_fstat called for %s\n", fsp_str_dbg(io->fsp));
 
 	if (!streams_xattr_recheck(io)) {
 		return -1;
