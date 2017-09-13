@@ -540,6 +540,24 @@ static int ltdb_add_internal(struct ldb_module *module,
 
 	ret = ltdb_store(module, msg, TDB_INSERT);
 	if (ret != LDB_SUCCESS) {
+		/*
+		 * Try really hard to get the right error code for
+		 * a re-add situation, as this can matter!
+		 */
+		if (ret == LDB_ERR_CONSTRAINT_VIOLATION) {
+			int ret2;
+			struct ldb_dn *dn2 = NULL;
+			TALLOC_CTX *mem_ctx = talloc_new(module);
+			if (mem_ctx == NULL) {
+				return ldb_module_operr(module);
+			}
+			ret2 = ltdb_search_base(module, module,
+						msg->dn, &dn2);
+			TALLOC_FREE(mem_ctx);
+			if (ret2 == LDB_SUCCESS) {
+				ret = LDB_ERR_ENTRY_ALREADY_EXISTS;
+			}
+		}
 		if (ret == LDB_ERR_ENTRY_ALREADY_EXISTS) {
 			ldb_asprintf_errstring(ldb,
 					       "Entry %s already exists",
