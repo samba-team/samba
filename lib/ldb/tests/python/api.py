@@ -950,6 +950,22 @@ class SearchTests(TestCase):
                               expression="(&(ou=ouX)(y=a))")
         self.assertEqual(len(res11), 0)
 
+    def test_subtree_and_idx_record(self):
+        """Testing a search against the index record"""
+
+        res11 = self.l.search(base="DC=SAMBA,DC=ORG",
+                              scope=ldb.SCOPE_SUBTREE,
+                              expression="(@IDXDN=DC=SAMBA,DC=ORG)")
+        self.assertEqual(len(res11), 0)
+
+    def test_subtree_and_idxone_record(self):
+        """Testing a search against the index record"""
+
+        res11 = self.l.search(base="DC=SAMBA,DC=ORG",
+                              scope=ldb.SCOPE_SUBTREE,
+                              expression="(@IDXONE=DC=SAMBA,DC=ORG)")
+        self.assertEqual(len(res11), 0)
+
 
 class IndexedSearchTests(SearchTests):
     """Test searches using the index, to ensure the index doesn't
