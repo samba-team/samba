@@ -407,9 +407,10 @@ for env in bld.gen_python_environments():
 		)
 
 if bld.PYTHON_BUILD_IS_ENABLED():
-    bld.SAMBA_SCRIPT('python_dcerpc_init',
-                 pattern='rpc/dcerpc.py',
-                 installdir='python/samba/dcerpc',
-                 installname='__init__.py')
+	for env in bld.gen_python_environments():
+		bld.SAMBA_SCRIPT('python_dcerpc_init',
+			pattern='rpc/dcerpc.py',
+			installdir='python/samba/dcerpc',
+			installname='__init__.py')
 
-    bld.INSTALL_FILES('${PYTHONARCHDIR}/samba/dcerpc', 'rpc/dcerpc.py', destname='__init__.py')
+		bld.INSTALL_FILES('${PYTHONARCHDIR}/samba/dcerpc', 'rpc/dcerpc.py', destname='__init__.py')
