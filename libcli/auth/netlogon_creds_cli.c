@@ -1084,10 +1084,8 @@ struct netlogon_creds_cli_auth_state {
 	bool try_auth3;
 	bool try_auth2;
 	bool require_auth2;
-	struct netlogon_creds_cli_locked_state *locked_state;
 };
 
-static void netlogon_creds_cli_auth_locked(struct tevent_req *subreq);
 static void netlogon_creds_cli_auth_challenge_start(struct tevent_req *req);
 
 struct tevent_req *netlogon_creds_cli_auth_send(TALLOC_CTX *mem_ctx,
@@ -1099,7 +1097,6 @@ struct tevent_req *netlogon_creds_cli_auth_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req;
 	struct netlogon_creds_cli_auth_state *state;
-	struct netlogon_creds_cli_locked_state *locked_state;
 	NTSTATUS status;
 
 	req = tevent_req_create(mem_ctx, &state,
@@ -1124,21 +1121,10 @@ struct tevent_req *netlogon_creds_cli_auth_send(TALLOC_CTX *mem_ctx,
 	state->idx_nt_hashes = 0;
 	state->nt_hashes = nt_hashes;
 
-	if (context->db.locked_state != NULL) {
-		tevent_req_nterror(req, NT_STATUS_LOCK_NOT_GRANTED);
+	if (context->db.lock != NETLOGON_CREDS_CLI_LCK_EXCLUSIVE) {
+		tevent_req_nterror(req, NT_STATUS_NOT_LOCKED);
 		return tevent_req_post(req, ev);
 	}
-
-	locked_state = talloc_zero(state, struct netlogon_creds_cli_locked_state);
-	if (tevent_req_nomem(locked_state, req)) {
-		return tevent_req_post(req, ev);
-	}
-	talloc_set_destructor(locked_state,
-			      netlogon_creds_cli_locked_state_destructor);
-	locked_state->context = context;
-
-	context->db.locked_state = locked_state;
-	state->locked_state = locked_state;
 
 	state->srv_name_slash = talloc_asprintf(state, "\\\\%s",
 						context->server.computer);
@@ -1156,23 +1142,6 @@ struct tevent_req *netlogon_creds_cli_auth_send(TALLOC_CTX *mem_ctx,
 	state->used_nt_hash = state->nt_hashes[state->idx_nt_hashes];
 	state->current_flags = context->client.proposed_flags;
 
-	if (context->db.g_ctx != NULL) {
-		struct tevent_req *subreq;
-
-		subreq = g_lock_lock_send(state, ev,
-					  context->db.g_ctx,
-					  context->db.key_name,
-					  G_LOCK_WRITE);
-		if (tevent_req_nomem(subreq, req)) {
-			return tevent_req_post(req, ev);
-		}
-		tevent_req_set_callback(subreq,
-					netlogon_creds_cli_auth_locked,
-					req);
-
-		return req;
-	}
-
 	status = dbwrap_purge(state->context->db.ctx,
 			      state->context->db.key_data);
 	if (tevent_req_nterror(req, status)) {
@@ -1185,32 +1154,6 @@ struct tevent_req *netlogon_creds_cli_auth_send(TALLOC_CTX *mem_ctx,
 	}
 
 	return req;
-}
-
-static void netlogon_creds_cli_auth_locked(struct tevent_req *subreq)
-{
-	struct tevent_req *req =
-		tevent_req_callback_data(subreq,
-		struct tevent_req);
-	struct netlogon_creds_cli_auth_state *state =
-		tevent_req_data(req,
-		struct netlogon_creds_cli_auth_state);
-	NTSTATUS status;
-
-	status = g_lock_lock_recv(subreq);
-	TALLOC_FREE(subreq);
-	if (tevent_req_nterror(req, status)) {
-		return;
-	}
-	state->locked_state->is_glocked = true;
-
-	status = dbwrap_purge(state->context->db.ctx,
-			      state->context->db.key_data);
-	if (tevent_req_nterror(req, status)) {
-		return;
-	}
-
-	netlogon_creds_cli_auth_challenge_start(req);
 }
 
 static void netlogon_creds_cli_auth_challenge_done(struct tevent_req *subreq);
@@ -1456,7 +1399,6 @@ static void netlogon_creds_cli_auth_srvauth_done(struct tevent_req *subreq)
 	status = dbwrap_store(state->context->db.ctx,
 			      state->context->db.key_data,
 			      data, TDB_REPLACE);
-	TALLOC_FREE(state->locked_state);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
