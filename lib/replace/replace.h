@@ -918,6 +918,10 @@ int usleep(useconds_t);
 void rep_setproctitle(const char *fmt, ...) PRINTF_ATTRIBUTE(1, 2);
 #endif
 
+#ifndef HAVE_SETPROCTITLE_INIT
+#define setproctitle_init rep_setproctitle_init
+void rep_setproctitle_init(int argc, char *argv[], char *envp[]);
+#endif
 bool nss_wrapper_enabled(void);
 bool nss_wrapper_hosts_enabled(void);
 bool socket_wrapper_enabled(void);

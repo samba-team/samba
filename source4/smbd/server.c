@@ -631,5 +631,7 @@ static int binary_smbd_main(const char *binary_name,
 
 int main(int argc, const char *argv[])
 {
+	setproctitle_init(argc, discard_const(argv), environ);
+
 	return binary_smbd_main("samba", argc, argv);
 }
