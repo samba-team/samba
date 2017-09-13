@@ -272,11 +272,13 @@ NTSTATUS netlogon_creds_cli_context_global(struct loadparm_context *lp_ctx,
 	*_context = NULL;
 
 	if (msg_ctx == NULL) {
+		TALLOC_FREE(frame);
 		return NT_STATUS_INVALID_PARAMETER_MIX;
 	}
 
 	client_computer = lpcfg_netbios_name(lp_ctx);
 	if (strlen(client_computer) > 15) {
+		TALLOC_FREE(frame);
 		return NT_STATUS_INVALID_PARAMETER_MIX;
 	}
 
