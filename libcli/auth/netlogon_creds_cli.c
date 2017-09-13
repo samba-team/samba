@@ -707,7 +707,9 @@ struct netlogon_creds_cli_lock_state {
 };
 
 static void netlogon_creds_cli_lock_done(struct tevent_req *subreq);
-static void netlogon_creds_cli_lock_fetch(struct tevent_req *req);
+static NTSTATUS netlogon_creds_cli_lock_fetch(
+	struct netlogon_creds_cli_context *context,
+	TALLOC_CTX *mem_ctx, struct netlogon_creds_CredentialState **pcreds);
 
 struct tevent_req *netlogon_creds_cli_lock_send(TALLOC_CTX *mem_ctx,
 				struct tevent_context *ev,
@@ -741,8 +743,11 @@ struct tevent_req *netlogon_creds_cli_lock_send(TALLOC_CTX *mem_ctx,
 	state->locked_state = locked_state;
 
 	if (context->db.g_ctx == NULL) {
-		netlogon_creds_cli_lock_fetch(req);
-		if (!tevent_req_is_in_progress(req)) {
+		NTSTATUS status;
+
+		status = netlogon_creds_cli_lock_fetch(
+			context, state, &state->creds);
+		if (tevent_req_nterror(req, status)) {
 			return tevent_req_post(req, ev);
 		}
 
@@ -778,38 +783,39 @@ static void netlogon_creds_cli_lock_done(struct tevent_req *subreq)
 	}
 	state->locked_state->is_glocked = true;
 
-	netlogon_creds_cli_lock_fetch(req);
+	status = netlogon_creds_cli_lock_fetch(state->locked_state->context,
+					       state, &state->creds);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	tevent_req_done(req);
 }
 
-static void netlogon_creds_cli_lock_fetch(struct tevent_req *req)
+static NTSTATUS netlogon_creds_cli_lock_fetch(
+	struct netlogon_creds_cli_context *context,
+	TALLOC_CTX *mem_ctx, struct netlogon_creds_CredentialState **pcreds)
 {
-	struct netlogon_creds_cli_lock_state *state =
-		tevent_req_data(req,
-		struct netlogon_creds_cli_lock_state);
-	struct netlogon_creds_cli_context *context = state->locked_state->context;
 	struct netlogon_creds_cli_fetch_state fstate = {
 		.status = NT_STATUS_INTERNAL_ERROR,
 		.required_flags = context->client.required_flags,
 	};
 	NTSTATUS status;
 
-	fstate.mem_ctx = state;
+	fstate.mem_ctx = mem_ctx;
 	status = dbwrap_parse_record(context->db.ctx,
 				     context->db.key_data,
 				     netlogon_creds_cli_fetch_parser,
 				     &fstate);
-	if (tevent_req_nterror(req, status)) {
-		return;
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
-	status = fstate.status;
-	if (tevent_req_nterror(req, status)) {
-		return;
+	if (!NT_STATUS_IS_OK(fstate.status)) {
+		return fstate.status;
 	}
 
 	if (context->server.cached_flags == fstate.creds->negotiate_flags) {
-		state->creds = fstate.creds;
-		tevent_req_done(req);
-		return;
+		*pcreds = fstate.creds;
+		return NT_STATUS_OK;
 	}
 
 	context->server.cached_flags = fstate.creds->negotiate_flags;
@@ -825,9 +831,8 @@ static void netlogon_creds_cli_lock_fetch(struct tevent_req *req)
 		context->server.try_validation6 = false;
 	}
 
-	state->creds = fstate.creds;
-	tevent_req_done(req);
-	return;
+	*pcreds = fstate.creds;
+	return NT_STATUS_OK;
 }
 
 NTSTATUS netlogon_creds_cli_lock_recv(struct tevent_req *req,
