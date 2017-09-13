@@ -1,0 +1,2 @@
+^samba.tests.dsdb_schema_attributes.samba.tests.dsdb_schema_attributes.SchemaAttributesTestCase.test_modify_at_indexlist
+^samba.tests.dsdb_schema_attributes.samba.tests.dsdb_schema_attributes.SchemaAttributesTestCase.test_modify_at_attributes
