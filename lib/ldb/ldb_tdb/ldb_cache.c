@@ -36,6 +36,7 @@
 
 #define LTDB_FLAG_CASE_INSENSITIVE (1<<0)
 #define LTDB_FLAG_INTEGER          (1<<1)
+#define LTDB_FLAG_UNIQUE_INDEX     (1<<2)
 
 /* valid attribute flags */
 static const struct {
@@ -45,6 +46,7 @@ static const struct {
 	{ "CASE_INSENSITIVE", LTDB_FLAG_CASE_INSENSITIVE },
 	{ "INTEGER", LTDB_FLAG_INTEGER },
 	{ "HIDDEN", 0 },
+	{ "UNIQUE_INDEX",  LTDB_FLAG_UNIQUE_INDEX},
 	{ "NONE", 0 },
 	{ NULL, 0 }
 };
@@ -149,7 +151,7 @@ static int ltdb_attributes_load(struct ldb_module *module)
 	/* mapping these flags onto ldap 'syntaxes' isn't strictly correct,
 	   but its close enough for now */
 	for (i=0;i<attrs_msg->num_elements;i++) {
-		unsigned flags, attr_flags;
+		unsigned flags = 0, attr_flags = 0;
 		const char *syntax;
 		const struct ldb_schema_syntax *s;
 		const struct ldb_schema_attribute *a =
@@ -166,6 +168,11 @@ static int ltdb_attributes_load(struct ldb_module *module)
 				  attrs_msg->elements[i].name);
 			goto failed;
 		}
+
+		if (flags & LTDB_FLAG_UNIQUE_INDEX) {
+			attr_flags = LDB_ATTR_FLAG_UNIQUE_INDEX;
+		}
+		flags &= ~LTDB_FLAG_UNIQUE_INDEX;
 
 		/* These are not currently flags, each is exclusive */
 		if (flags == LTDB_FLAG_CASE_INSENSITIVE) {
@@ -191,7 +198,7 @@ static int ltdb_attributes_load(struct ldb_module *module)
 			goto failed;
 		}
 
-		attr_flags = LDB_ATTR_FLAG_ALLOCATED | LDB_ATTR_FLAG_FROM_DB;
+		attr_flags |= LDB_ATTR_FLAG_ALLOCATED | LDB_ATTR_FLAG_FROM_DB;
 
 		r = ldb_schema_attribute_fill_with_syntax(ldb,
 							  attrs,
