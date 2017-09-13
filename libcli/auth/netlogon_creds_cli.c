@@ -818,6 +818,38 @@ static NTSTATUS netlogon_creds_cli_lock_fetch(
 		return NT_STATUS_OK;
 	}
 
+	/*
+	 * It is really important to try SamLogonEx here,
+	 * because multiple processes can talk to the same
+	 * domain controller, without using the credential
+	 * chain.
+	 *
+	 * With a normal SamLogon call, we must keep the
+	 * credentials chain updated and intact between all
+	 * users of the machine account (which would imply
+	 * cross-node communication for every NTLM logon).
+	 *
+	 * The credentials chain is not per NETLOGON pipe
+	 * connection, but globally on the server/client pair
+	 * by computer name.
+	 *
+	 * It's also important to use NetlogonValidationSamInfo4 (6),
+	 * because it relies on the rpc transport encryption
+	 * and avoids using the global netlogon schannel
+	 * session key to en/decrypt secret information
+	 * like the user_session_key for network logons.
+	 *
+	 * [MS-APDS] 3.1.5.2 NTLM Network Logon
+	 * says NETLOGON_NEG_CROSS_FOREST_TRUSTS and
+	 * NETLOGON_NEG_AUTHENTICATED_RPC set together
+	 * are the indication that the server supports
+	 * NetlogonValidationSamInfo4 (6). And it must only
+	 * be used if "SealSecureChannel" is used.
+	 *
+	 * The "SealSecureChannel" AUTH_TYPE_SCHANNEL/AUTH_LEVEL_PRIVACY
+	 * check is done in netlogon_creds_cli_LogonSamLogon*().
+	 */
+
 	context->server.cached_flags = fstate.creds->negotiate_flags;
 	context->server.try_validation6 = true;
 	context->server.try_logon_ex = true;
