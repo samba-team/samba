@@ -945,6 +945,12 @@ static int ltdb_index_dn_leaf(struct ldb_module *module,
 		list->count = 0;
 		return LDB_SUCCESS;
 	}
+	if (tree->u.equality.attr[0] == '@') {
+		/* Do not allow a indexed search against an @ */
+		list->dn = NULL;
+		list->count = 0;
+		return LDB_SUCCESS;
+	}
 	if (ldb_attr_dn(tree->u.equality.attr) == 0) {
 		struct ldb_dn *dn
 			= ldb_dn_from_ldb_val(list,
