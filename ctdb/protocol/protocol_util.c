@@ -328,11 +328,9 @@ void ctdb_sock_addr_set_port(ctdb_sock_addr *addr, unsigned int port)
 	}
 }
 
-int ctdb_sock_addr_cmp_ip(const ctdb_sock_addr *addr1,
-			  const ctdb_sock_addr *addr2)
+static int ctdb_sock_addr_cmp_family(const ctdb_sock_addr *addr1,
+				     const ctdb_sock_addr *addr2)
 {
-	int ret = 0;
-
 	/* This is somewhat arbitrary.  However, when used for sorting
 	 * it just needs to be consistent.
 	 */
@@ -341,6 +339,19 @@ int ctdb_sock_addr_cmp_ip(const ctdb_sock_addr *addr1,
 	}
 	if (addr1->sa.sa_family > addr2->sa.sa_family) {
 		return 1;
+	}
+
+	return 0;
+}
+
+int ctdb_sock_addr_cmp_ip(const ctdb_sock_addr *addr1,
+			  const ctdb_sock_addr *addr2)
+{
+	int ret;
+
+	ret = ctdb_sock_addr_cmp_family(addr1, addr2);
+	if (ret != 0) {
+		return ret;
 	}
 
 	switch (addr1->sa.sa_family) {
