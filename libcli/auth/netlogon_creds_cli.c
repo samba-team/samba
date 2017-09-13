@@ -506,27 +506,20 @@ static void netlogon_creds_cli_fetch_parser(TDB_DATA key, TDB_DATA data,
 	state->status = NT_STATUS_OK;
 }
 
+static NTSTATUS netlogon_creds_cli_get_internal(
+	struct netlogon_creds_cli_context *context,
+	TALLOC_CTX *mem_ctx, struct netlogon_creds_CredentialState **pcreds);
+
 NTSTATUS netlogon_creds_cli_get(struct netlogon_creds_cli_context *context,
 				TALLOC_CTX *mem_ctx,
 				struct netlogon_creds_CredentialState **_creds)
 {
 	NTSTATUS status;
-	struct netlogon_creds_cli_fetch_state fstate = {
-		.mem_ctx = mem_ctx,
-		.status = NT_STATUS_INTERNAL_ERROR,
-		.required_flags = context->client.required_flags,
-	};
+	struct netlogon_creds_CredentialState *creds;
 
 	*_creds = NULL;
 
-	status = dbwrap_parse_record(context->db.ctx,
-				     context->db.key_data,
-				     netlogon_creds_cli_fetch_parser,
-				     &fstate);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-	status = fstate.status;
+	status = netlogon_creds_cli_get_internal(context, mem_ctx, &creds);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -534,61 +527,12 @@ NTSTATUS netlogon_creds_cli_get(struct netlogon_creds_cli_context *context,
 	/*
 	 * mark it as invalid for step operations.
 	 */
-	fstate.creds->sequence = 0;
-	fstate.creds->seed = (struct netr_Credential) {{0}};
-	fstate.creds->client = (struct netr_Credential) {{0}};
-	fstate.creds->server = (struct netr_Credential) {{0}};
+	creds->sequence = 0;
+	creds->seed = (struct netr_Credential) {{0}};
+	creds->client = (struct netr_Credential) {{0}};
+	creds->server = (struct netr_Credential) {{0}};
 
-	if (context->server.cached_flags == fstate.creds->negotiate_flags) {
-		*_creds = fstate.creds;
-		return NT_STATUS_OK;
-	}
-
-	/*
-	 * It is really important to try SamLogonEx here,
-	 * because multiple processes can talk to the same
-	 * domain controller, without using the credential
-	 * chain.
-	 *
-	 * With a normal SamLogon call, we must keep the
-	 * credentials chain updated and intact between all
-	 * users of the machine account (which would imply
-	 * cross-node communication for every NTLM logon).
-	 *
-	 * The credentials chain is not per NETLOGON pipe
-	 * connection, but globally on the server/client pair
-	 * by computer name.
-	 *
-	 * It's also important to use NetlogonValidationSamInfo4 (6),
-	 * because it relies on the rpc transport encryption
-	 * and avoids using the global netlogon schannel
-	 * session key to en/decrypt secret information
-	 * like the user_session_key for network logons.
-	 *
-	 * [MS-APDS] 3.1.5.2 NTLM Network Logon
-	 * says NETLOGON_NEG_CROSS_FOREST_TRUSTS and
-	 * NETLOGON_NEG_AUTHENTICATED_RPC set together
-	 * are the indication that the server supports
-	 * NetlogonValidationSamInfo4 (6). And it must only
-	 * be used if "SealSecureChannel" is used.
-	 *
-	 * The "SealSecureChannel" AUTH_TYPE_SCHANNEL/AUTH_LEVEL_PRIVACY
-	 * check is done in netlogon_creds_cli_LogonSamLogon*().
-	 */
-	context->server.cached_flags = fstate.creds->negotiate_flags;
-	context->server.try_validation6 = true;
-	context->server.try_logon_ex = true;
-	context->server.try_logon_with = true;
-
-	if (!(context->server.cached_flags & NETLOGON_NEG_AUTHENTICATED_RPC)) {
-		context->server.try_validation6 = false;
-		context->server.try_logon_ex = false;
-	}
-	if (!(context->server.cached_flags & NETLOGON_NEG_CROSS_FOREST_TRUSTS)) {
-		context->server.try_validation6 = false;
-	}
-
-	*_creds = fstate.creds;
+	*_creds = creds;
 	return NT_STATUS_OK;
 }
 
@@ -707,9 +651,6 @@ struct netlogon_creds_cli_lock_state {
 };
 
 static void netlogon_creds_cli_lock_done(struct tevent_req *subreq);
-static NTSTATUS netlogon_creds_cli_get_internal(
-	struct netlogon_creds_cli_context *context,
-	TALLOC_CTX *mem_ctx, struct netlogon_creds_CredentialState **pcreds);
 
 struct tevent_req *netlogon_creds_cli_lock_send(TALLOC_CTX *mem_ctx,
 				struct tevent_context *ev,
