@@ -707,7 +707,7 @@ struct netlogon_creds_cli_lock_state {
 };
 
 static void netlogon_creds_cli_lock_done(struct tevent_req *subreq);
-static NTSTATUS netlogon_creds_cli_lock_fetch(
+static NTSTATUS netlogon_creds_cli_get_internal(
 	struct netlogon_creds_cli_context *context,
 	TALLOC_CTX *mem_ctx, struct netlogon_creds_CredentialState **pcreds);
 
@@ -745,7 +745,7 @@ struct tevent_req *netlogon_creds_cli_lock_send(TALLOC_CTX *mem_ctx,
 	if (context->db.g_ctx == NULL) {
 		NTSTATUS status;
 
-		status = netlogon_creds_cli_lock_fetch(
+		status = netlogon_creds_cli_get_internal(
 			context, state, &state->creds);
 		if (tevent_req_nterror(req, status)) {
 			return tevent_req_post(req, ev);
@@ -783,7 +783,7 @@ static void netlogon_creds_cli_lock_done(struct tevent_req *subreq)
 	}
 	state->locked_state->is_glocked = true;
 
-	status = netlogon_creds_cli_lock_fetch(state->locked_state->context,
+	status = netlogon_creds_cli_get_internal(state->locked_state->context,
 					       state, &state->creds);
 	if (tevent_req_nterror(req, status)) {
 		return;
@@ -791,7 +791,7 @@ static void netlogon_creds_cli_lock_done(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
-static NTSTATUS netlogon_creds_cli_lock_fetch(
+static NTSTATUS netlogon_creds_cli_get_internal(
 	struct netlogon_creds_cli_context *context,
 	TALLOC_CTX *mem_ctx, struct netlogon_creds_CredentialState **pcreds)
 {
