@@ -370,6 +370,36 @@ KNOWN ISSUES
 https://wiki.samba.org/index.php/Release_Planning_for_Samba_4.7#Release_blocking_bugs
 
 
+CHANGES SINCE 4.7.0rc5
+======================
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 13008: lib: crypto: Make smbd use the Intel AES instruction set for signing
+     and encryption.
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 12946: s4-drsuapi: Avoid segfault when replicating as a non-admin with
+     GUID_DRS_GET_CHANGES.
+   * BUG 13015: Allow re-index of newer databases with binary GUID TDB keys
+     (this officially removes support for re-index of the original pack format 0,
+     rather than simply segfaulting).
+   * BUG 13017: Add ldb_ldif_message_redacted_string() to allow debug of redacted
+     log messages, avoiding showing secret values.
+   * BUG 13023: ldb: version 1.2.2.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 13024: s3/smbd: Sticky write time offset miscalculation causes broken
+     timestamps
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 13006: messaging: Avoid a socket leak after fork.
+
+o  Amitay Isaacs <amitay@gmail.com>
+   * BUG 13012: ctdb-daemon: Fix implementation of process_exists control.
+   * BUG 13021: GET_DB_SEQNUM control can cause ctdb to deadlock when databases
+     are frozen.
+
+
 CHANGES SINCE 4.7.0rc4
 ======================
 
