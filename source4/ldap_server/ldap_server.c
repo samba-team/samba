@@ -293,6 +293,7 @@ static void ldapsrv_accept(struct stream_connection *c,
 	int ret;
 	struct tevent_req *subreq;
 	struct timeval endtime;
+	char *errstring = NULL;
 
 	conn = talloc_zero(c, struct ldapsrv_connection);
 	if (!conn) {
@@ -361,8 +362,13 @@ static void ldapsrv_accept(struct stream_connection *c,
 		conn->require_strong_auth = lpcfg_ldap_server_require_strong_auth(conn->lp_ctx);
 	}
 
-	if (!NT_STATUS_IS_OK(ldapsrv_backend_Init(conn))) {
-		ldapsrv_terminate_connection(conn, "backend Init failed");
+	ret = ldapsrv_backend_Init(conn, &errstring);
+	if (ret != LDB_SUCCESS) {
+		char *reason = talloc_asprintf(conn,
+					       "LDB backend for LDAP Init "
+					       "failed: %s: %s",
+					       errstring, ldb_strerror(ret));
+		ldapsrv_terminate_connection(conn, reason);
 		return;
 	}
 
