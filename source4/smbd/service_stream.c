@@ -147,15 +147,15 @@ NTSTATUS stream_new_connection_merge(struct tevent_context *ev,
 	srv_conn = talloc_zero(ev, struct stream_connection);
 	NT_STATUS_HAVE_NO_MEMORY(srv_conn);
 
-	srv_conn->private_data  = private_data;
-	srv_conn->model_ops     = model_ops;
-	srv_conn->socket	= NULL;
-	srv_conn->server_id	= cluster_id(0, 0);
-	srv_conn->ops           = stream_ops;
-	srv_conn->msg_ctx	= msg_ctx;
-	srv_conn->event.ctx	= ev;
-	srv_conn->lp_ctx	= lp_ctx;
-	srv_conn->event.fde	= NULL;
+	srv_conn->private_data    = private_data;
+	srv_conn->model_ops       = model_ops;
+	srv_conn->socket	  = NULL;
+	srv_conn->server_id	  = cluster_id(0, 0);
+	srv_conn->ops             = stream_ops;
+	srv_conn->msg_ctx	  = msg_ctx;
+	srv_conn->event.ctx	  = ev;
+	srv_conn->lp_ctx	  = lp_ctx;
+	srv_conn->event.fde	  = NULL;
 	srv_conn->process_context = process_context;
 
 	*_srv_conn = srv_conn;
@@ -184,13 +184,13 @@ static void stream_new_connection(struct tevent_context *ev,
 
 	talloc_steal(srv_conn, sock);
 
-	srv_conn->private_data	= stream_socket->private_data;
-	srv_conn->model_ops     = stream_socket->model_ops;
-	srv_conn->socket	= sock;
-	srv_conn->server_id	= server_id;
-	srv_conn->ops           = stream_socket->ops;
-	srv_conn->event.ctx	= ev;
-	srv_conn->lp_ctx	= lp_ctx;
+	srv_conn->private_data	  = stream_socket->private_data;
+	srv_conn->model_ops       = stream_socket->model_ops;
+	srv_conn->socket	  = sock;
+	srv_conn->server_id	  = server_id;
+	srv_conn->ops             = stream_socket->ops;
+	srv_conn->event.ctx	  = ev;
+	srv_conn->lp_ctx	  = lp_ctx;
 	srv_conn->process_context = process_context;
 
 	if (!socket_check_access(sock, "smbd", lpcfg_hosts_allow(NULL, lpcfg_default_service(lp_ctx)), lpcfg_hosts_deny(NULL, lpcfg_default_service(lp_ctx)))) {
@@ -263,10 +263,13 @@ static void stream_accept_handler(struct tevent_context *ev, struct tevent_fd *f
 	/* ask the process model to create us a process for this new
 	   connection.  When done, it calls stream_new_connection()
 	   with the newly created socket */
-	stream_socket->model_ops->accept_connection(ev, stream_socket->lp_ctx,
-						    stream_socket->sock,
-						    stream_new_connection, stream_socket,
-						    stream_socket->process_context);
+	stream_socket->model_ops->accept_connection(
+		ev,
+		stream_socket->lp_ctx,
+		stream_socket->sock,
+		stream_new_connection,
+		stream_socket,
+		stream_socket->process_context);
 }
 
 /*

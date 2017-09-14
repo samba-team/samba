@@ -256,8 +256,10 @@ static void standard_accept_connection(
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("standard_accept_connection: accept: %s\n",
 			nt_errstr(status)));
-		/* this looks strange, but is correct. We need to throttle things until
-		   the system clears enough resources to handle this new socket */
+		/* this looks strange, but is correct. We need to throttle
+		 * things until the system clears enough resources to handle
+		 * this new socket
+		 */
 		sleep(1);
 		return;
 	}
