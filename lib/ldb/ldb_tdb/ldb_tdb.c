@@ -98,15 +98,26 @@ int ltdb_lock_read(struct ldb_module *module)
 {
 	void *data = ldb_module_get_private(module);
 	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
-	int ret = 0;
+	int tdb_ret = 0;
+	int ret;
 
 	if (ltdb->in_transaction == 0 &&
 	    ltdb->read_lock_count == 0) {
-		ret = tdb_lockall_read(ltdb->tdb);
+		tdb_ret = tdb_lockall_read(ltdb->tdb);
 	}
-	if (ret == 0) {
+	if (tdb_ret == 0) {
 		ltdb->read_lock_count++;
+		return LDB_SUCCESS;
 	}
+	ret = ltdb_err_map(tdb_error(ltdb->tdb));
+	if (ret == LDB_SUCCESS) {
+		ret = LDB_ERR_OPERATIONS_ERROR;
+	}
+	ldb_debug_set(ldb_module_get_ctx(module),
+		      LDB_DEBUG_FATAL,
+		      "Failure during ltdb_lock_read(): %s -> %s",
+		      tdb_errorstr(ltdb->tdb),
+		      ldb_strerror(ret));
 	return ret;
 }
 
