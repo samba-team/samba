@@ -13,9 +13,13 @@ bld.SAMBA_LIBRARY('MESSAGING',
 	private_library=True
 	)
 
-bld.SAMBA_PYTHON('python_messaging',
-	source='pymessaging.c',
-	deps='MESSAGING events pyparam_util pytalloc-util',
-	realname='samba/messaging.so'
-	)
+for env in bld.gen_python_environments():
 
+	pyparam_util = bld.pyembed_libname('pyparam_util')
+	pytalloc_util = bld.pyembed_libname('pytalloc-util')
+
+	bld.SAMBA_PYTHON('python_messaging',
+		source='pymessaging.c',
+		deps='MESSAGING events pyparam_util pytalloc-util',
+		realname='samba/messaging.so'
+		)

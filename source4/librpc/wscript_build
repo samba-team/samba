@@ -338,7 +338,7 @@ for env in bld.gen_python_environments():
 
 	bld.SAMBA_PYTHON('python_irpc',
 		source='gen_ndr/py_irpc.c',
-		deps='RPC_NDR_IRPC pytalloc-util pyrpc_util',
+		deps='RPC_NDR_IRPC %s %s' % (pytalloc_util, pyrpc_util),
 		realname='samba/dcerpc/irpc.so'
 		)
 
