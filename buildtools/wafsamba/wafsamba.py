@@ -945,6 +945,7 @@ def link_display(self):
     fname = self.outputs[0].bldpath(self.env)
     return progress_display(self, 'Linking', fname)
 Task.TaskBase.classes['cc_link'].display = link_display
+Task.TaskBase.classes['hostcc_link'].display = link_display
 
 def samba_display(self):
     if Options.options.progress_bar != 0:

@@ -126,7 +126,7 @@ def ADD_COMMAND(opt, name, function):
 Options.Handler.ADD_COMMAND = ADD_COMMAND
 
 
-@feature('c', 'cc', 'cshlib', 'cprogram')
+@feature('c', 'cc', 'hostcc', 'cshlib', 'cprogram', 'host_cprogram')
 @before('apply_core','exec_rule')
 def process_depends_on(self):
     '''The new depends_on attribute for build rules
@@ -647,7 +647,7 @@ def AD_DC_BUILD_IS_ENABLED(self):
 
 Build.BuildContext.AD_DC_BUILD_IS_ENABLED = AD_DC_BUILD_IS_ENABLED
 
-@feature('cprogram', 'cshlib', 'cstaticlib')
+@feature('cprogram', 'host_cprogram', 'cshlib', 'cstaticlib')
 @after('apply_lib_vars')
 @before('apply_obj_vars')
 def samba_before_apply_obj_vars(self):

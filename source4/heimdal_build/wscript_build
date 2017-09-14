@@ -276,8 +276,13 @@ def HEIMDAL_SUBSYSTEM(modname, source,
 
     bld.set_group(group)
 
+    if bld.env.CROSS_COMPILE and use_hostcc:
+        features = 'hostcc'
+    else:
+        features = 'c'
+
     return bld(
-        features       = 'c',
+        features       = features,
         source         = source,
         target         = modname,
         samba_cflags   = CURRENT_CFLAGS(bld, modname, cflags, allow_warnings=True),
@@ -306,7 +311,10 @@ def HEIMDAL_BINARY(binname, source,
     if not SET_TARGET_TYPE(bld, binname, 'BINARY'):
         return
 
-    features = 'c cprogram symlink_bin install_bin'
+    if bld.env.CROSS_COMPILE and use_hostcc:
+        features = 'hostcc host_cprogram symlink_bin install_bin'
+    else:
+        features = 'c cprogram symlink_bin install_bin'
 
     obj_target = binname + '.objlist'
 
@@ -342,7 +350,8 @@ def HEIMDAL_BINARY(binname, source,
         local_include  = True,
         top            = True,
         install_path   = None,
-        samba_install  = install
+        samba_install  = install,
+        samba_use_hostcc = use_hostcc
         )
 
 

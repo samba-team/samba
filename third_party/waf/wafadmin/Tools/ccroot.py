@@ -190,7 +190,7 @@ def get_target_name(self):
 
 	return os.path.join(dir, pattern % name)
 
-@feature('c', 'cc', 'cxx')
+@feature('c', 'cc', 'hostcc', 'cxx')
 @before('apply_core')
 def default_cc(self):
 	"""compiled_tasks attribute must be set before the '.c->.o' tasks can be created"""
@@ -217,7 +217,7 @@ def default_cc(self):
 	if not self.env.BINDIR: self.env.BINDIR = Utils.subst_vars('${PREFIX}/bin', self.env)
 	if not self.env.LIBDIR: self.env.LIBDIR = Utils.subst_vars('${PREFIX}/lib${LIB_EXT}', self.env)
 
-@feature('cprogram', 'dprogram', 'cstaticlib', 'dstaticlib', 'cshlib', 'dshlib')
+@feature('host_cprogram', 'cprogram', 'dprogram', 'cstaticlib', 'dstaticlib', 'cshlib', 'dshlib')
 def apply_verif(self):
 	"""no particular order, used for diagnostic"""
 	if not (self.source or getattr(self, 'add_objects', None) or getattr(self, 'uselib_local', None) or getattr(self, 'obj_files', None)):
@@ -227,7 +227,7 @@ def apply_verif(self):
 
 # TODO reference the d programs, shlibs in d.py, not here
 
-@feature('cprogram', 'dprogram')
+@feature('host_cprogram', 'cprogram', 'dprogram')
 @after('default_cc')
 @before('apply_core')
 def vars_target_cprogram(self):
@@ -245,7 +245,7 @@ def vars_target_cshlib(self):
 	else:
 		self.default_install_path = self.env.LIBDIR
 
-@feature('cprogram', 'dprogram', 'cstaticlib', 'dstaticlib', 'cshlib', 'dshlib')
+@feature('host_cprogram', 'cprogram', 'dprogram', 'cstaticlib', 'dstaticlib', 'cshlib', 'dshlib')
 @after('apply_link', 'vars_target_cprogram', 'vars_target_cshlib')
 def default_link_install(self):
 	"""you may kill this method to inject your own installation for the first element
@@ -253,7 +253,7 @@ def default_link_install(self):
 	if self.install_path:
 		self.bld.install_files(self.install_path, self.link_task.outputs[0], env=self.env, chmod=self.chmod)
 
-@feature('c', 'cc', 'cxx')
+@feature('c', 'cc', 'hostcc', 'cxx')
 @after('apply_type_vars', 'apply_lib_vars', 'apply_core')
 def apply_incpaths(self):
 	"""used by the scanner
@@ -297,7 +297,7 @@ def apply_incpaths(self):
 	if USE_TOP_LEVEL:
 		self.env.append_value('INC_PATHS', self.bld.srcnode)
 
-@feature('c', 'cc', 'cxx')
+@feature('c', 'cc', 'hostcc', 'cxx')
 @after('init_cc', 'init_cxx')
 @before('apply_lib_vars')
 def apply_type_vars(self):
@@ -305,7 +305,7 @@ def apply_type_vars(self):
 	after init_cc and init_cxx because web need p_type_vars
 	"""
 	for x in self.features:
-		if not x in ['cprogram', 'cstaticlib', 'cshlib']:
+		if not x in ['cprogram', 'host_cprogram', 'cstaticlib', 'cshlib']:
 			continue
 		x = x.lstrip('c')
 
@@ -321,7 +321,7 @@ def apply_type_vars(self):
 			value = self.env[compvar]
 			if value: self.env.append_value(var, value)
 
-@feature('cprogram', 'cshlib', 'cstaticlib')
+@feature('cprogram', 'host_cprogram', 'cshlib', 'cstaticlib')
 @after('apply_core')
 def apply_link(self):
 	"""executes after apply_core for collecting 'compiled_tasks'
@@ -330,6 +330,7 @@ def apply_link(self):
 	if not link:
 		if 'cstaticlib' in self.features: link = 'static_link'
 		elif 'cxx' in self.features: link = 'cxx_link'
+		elif 'host_cprogram' in self.features: link = 'hostcc_link'
 		else: link = 'cc_link'
 
 	tsk = self.create_task(link)
@@ -339,7 +340,7 @@ def apply_link(self):
 
 	self.link_task = tsk
 
-@feature('c', 'cc', 'cxx')
+@feature('c', 'cc', 'hostcc', 'cxx')
 @after('apply_link', 'init_cc', 'init_cxx', 'apply_core')
 def apply_lib_vars(self):
 	"""after apply_link because of 'link_task'
@@ -371,7 +372,7 @@ def apply_lib_vars(self):
 		# object has ancestors to process (shared libraries): add them to the end of the list
 		if getattr(y, 'uselib_local', None):
 			lst = y.to_list(y.uselib_local)
-			if 'cshlib' in y.features or 'cprogram' in y.features:
+			if 'cshlib' in y.features or 'cprogram' in y.features or 'host_cprogram' in y.features:
 				lst = [x for x in lst if not 'cstaticlib' in self.name_to_obj(x).features]
 			tmp.extend(lst)
 
@@ -381,7 +382,7 @@ def apply_lib_vars(self):
 			link_name = y.target[y.target.rfind(os.sep) + 1:]
 			if 'cstaticlib' in y.features:
 				env.append_value('STATICLIB', link_name)
-			elif 'cshlib' in y.features or 'cprogram' in y.features:
+			elif 'cshlib' in y.features or 'cprogram' in y.features or 'host_cprogram' in y.features:
 				# WARNING some linkers can link against programs
 				env.append_value('LIB', link_name)
 
@@ -417,7 +418,7 @@ def apply_lib_vars(self):
 			val = self.env[v + '_' + x]
 			if val: self.env.append_value(v, val)
 
-@feature('cprogram', 'cstaticlib', 'cshlib')
+@feature('cprogram', 'host_cprogram', 'cstaticlib', 'cshlib')
 @after('init_cc', 'init_cxx', 'apply_link')
 def apply_objdeps(self):
 	"add the .o files produced by some other object files in the same manner as uselib_local"
@@ -456,7 +457,7 @@ def apply_objdeps(self):
 		for t in y.compiled_tasks:
 			self.link_task.inputs.extend(t.outputs)
 
-@feature('cprogram', 'cshlib', 'cstaticlib')
+@feature('cprogram', 'host_cprogram', 'cshlib', 'cstaticlib')
 @after('apply_lib_vars')
 def apply_obj_vars(self):
 	"""after apply_lib_vars for uselib"""
@@ -523,7 +524,7 @@ c_attrs = {
 'frameworkpath' : 'FRAMEWORKPATH'
 }
 
-@feature('c', 'cc', 'cxx')
+@feature('c', 'cc', 'cxx', 'hostcc')
 @before('init_cxx', 'init_cc')
 @before('apply_lib_vars', 'apply_obj_vars', 'apply_incpaths', 'init_cc')
 def add_extra_flags(self):
