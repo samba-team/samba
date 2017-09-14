@@ -86,16 +86,18 @@ static isc_result_t dlz_bind9_writeable_zone_hook(dns_view_t *view,
 					   const char *zone_name)
 {
 	struct torture_context *tctx = talloc_get_type((void *)view, struct torture_context);
-	struct ldb_context *samdb = samdb_connect_url(tctx, NULL, tctx->lp_ctx,
-						      system_session(tctx->lp_ctx),
-						      0,
-						      test_dlz_bind9_binddns_dir(tctx, "dns/sam.ldb"));
+	struct ldb_context *samdb = NULL;
+	char *errstring = NULL;
+	int ret = samdb_connect_url(tctx, NULL, tctx->lp_ctx,
+				    system_session(tctx->lp_ctx),
+				    0,
+				    test_dlz_bind9_binddns_dir(tctx, "dns/sam.ldb"),
+				    &samdb, &errstring);
 	struct ldb_message *msg;
-	int ret;
 	const char *attrs[] = {
 		NULL
 	};
-	if (!samdb) {
+	if (ret != LDB_SUCCESS) {
 		torture_fail(tctx, "Failed to connect to samdb");
 		return ISC_R_FAILURE;
 	}

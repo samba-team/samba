@@ -614,6 +614,8 @@ _PUBLIC_ isc_result_t dlz_create(const char *dlzname,
 	isc_result_t result;
 	struct ldb_dn *dn;
 	NTSTATUS nt_status;
+	int ret;
+	char *errstring = NULL;
 
 	if (dlz_bind9_state != NULL) {
 		*dbdata = dlz_bind9_state;
@@ -701,11 +703,14 @@ _PUBLIC_ isc_result_t dlz_create(const char *dlzname,
 		}
 	}
 
-	state->samdb = samdb_connect_url(state, state->ev_ctx, state->lp,
-					system_session(state->lp), 0, state->options.url);
-	if (state->samdb == NULL) {
-		state->log(ISC_LOG_ERROR, "samba_dlz: Failed to connect to %s",
-			state->options.url);
+	ret = samdb_connect_url(state, state->ev_ctx, state->lp,
+				system_session(state->lp), 0,
+				state->options.url,
+				&state->samdb, &errstring);
+	if (ret != LDB_SUCCESS) {
+		state->log(ISC_LOG_ERROR,
+			   "samba_dlz: Failed to connect to %s: %s",
+			   errstring, ldb_strerror(ret));
 		result = ISC_R_FAILURE;
 		goto failed;
 	}

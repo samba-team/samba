@@ -3023,6 +3023,8 @@ static NTSTATUS pdb_init_samba_dsdb(struct pdb_methods **pdb_method,
 	struct pdb_methods *m;
 	struct pdb_samba_dsdb_state *state;
 	NTSTATUS status;
+	char *errstring = NULL;
+	int ret;
 
 	if ( !NT_STATUS_IS_OK(status = make_pdb_method( &m )) ) {
 		return status;
@@ -3048,21 +3050,20 @@ static NTSTATUS pdb_init_samba_dsdb(struct pdb_methods **pdb_method,
 		goto nomem;
 	}
 
-	if (location) {
-		state->ldb = samdb_connect_url(state,
-				   state->ev,
-				   state->lp_ctx,
-				   system_session(state->lp_ctx),
-				   0, location);
-	} else {
-		state->ldb = samdb_connect(state,
-				   state->ev,
-				   state->lp_ctx,
-				   system_session(state->lp_ctx), 0);
+	if (location == NULL) {
+		location = "sam.ldb";
 	}
 
+	ret = samdb_connect_url(state,
+				state->ev,
+				state->lp_ctx,
+				system_session(state->lp_ctx),
+				0, location,
+				&state->ldb, &errstring);
+
 	if (!state->ldb) {
-		DEBUG(0, ("samdb_connect failed\n"));
+		DEBUG(0, ("samdb_connect failed: %s: %s\n",
+			  errstring, ldb_strerror(ret)));
 		status = NT_STATUS_INTERNAL_ERROR;
 		goto fail;
 	}
