@@ -73,7 +73,8 @@ planpythontestsuite("none", "samba.tests.dcerpc.rpc_talloc")
 planpythontestsuite("none", "samba.tests.dcerpc.array")
 planpythontestsuite("none", "samba.tests.dcerpc.string")
 planpythontestsuite("none", "samba.tests.hostconfig")
-planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.messaging")
+planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.messaging",
+                    py3_compatible=True)
 planpythontestsuite("none", "samba.tests.samba3sam")
 planpythontestsuite(
     "none", "wafsamba.tests.test_suite",
