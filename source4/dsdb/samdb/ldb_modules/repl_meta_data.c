@@ -2214,7 +2214,7 @@ static int replmd_build_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct ds
 static int replmd_update_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct dsdb_dn *dsdb_dn,
 				struct dsdb_dn *old_dsdb_dn, const struct GUID *invocation_id,
 				uint64_t seq_num, uint64_t local_usn, NTTIME nttime,
-				uint32_t version, bool deleted);
+				bool deleted);
 
 /*
   check if any links need upgrading from w2k format
@@ -2268,7 +2268,7 @@ static int replmd_check_upgrade_links(struct ldb_context *ldb,
 		/* it's an old one that needs upgrading */
 		ret = replmd_update_la_val(el->values, dns[i].v,
 					   dns[i].dsdb_dn, dns[i].dsdb_dn,
-					   invocation_id, 1, 1, 0, 0, false);
+					   invocation_id, 1, 1, 0, false);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
@@ -2290,14 +2290,14 @@ static int replmd_check_upgrade_links(struct ldb_context *ldb,
 }
 
 /*
-  update an extended DN, including all meta data fields
+  Sets the value for a linked attribute, including all meta data fields
 
   see replmd_build_la_val for value names
  */
-static int replmd_update_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct dsdb_dn *dsdb_dn,
-				struct dsdb_dn *old_dsdb_dn, const struct GUID *invocation_id,
-				uint64_t usn, uint64_t local_usn, NTTIME nttime,
-				uint32_t version, bool deleted)
+static int replmd_set_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct dsdb_dn *dsdb_dn,
+			     struct dsdb_dn *old_dsdb_dn, const struct GUID *invocation_id,
+			     uint64_t usn, uint64_t local_usn, NTTIME nttime,
+			     uint32_t version, bool deleted)
 {
 	struct ldb_dn *dn = dsdb_dn->dn;
 	const char *tstring, *usn_string, *flags_string;
@@ -2306,7 +2306,6 @@ static int replmd_update_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct d
 	struct ldb_val usnv, local_usnv;
 	struct ldb_val vers, flagsv;
 	const struct ldb_val *old_addtime;
-	uint32_t old_version;
 	NTSTATUS status;
 	int ret;
 	const char *dnstring;
@@ -2371,11 +2370,6 @@ static int replmd_update_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct d
 	ret = ldb_dn_set_extended_component(dn, "RMD_LOCAL_USN", &local_usnv);
 	if (ret != LDB_SUCCESS) return ret;
 
-	/* increase the version by 1 */
-	status = dsdb_get_extended_dn_uint32(old_dsdb_dn->dn, &old_version, "RMD_VERSION");
-	if (NT_STATUS_IS_OK(status) && old_version >= version) {
-		version = old_version+1;
-	}
 	vstring = talloc_asprintf(dn, "%lu", (unsigned long)version);
 	vers = data_blob_string_const(vstring);
 	ret = ldb_dn_set_extended_component(dn, "RMD_VERSION", &vers);
@@ -2388,6 +2382,33 @@ static int replmd_update_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct d
 	*v = data_blob_string_const(dnstring);
 
 	return LDB_SUCCESS;
+}
+
+/**
+ * Updates the value for a linked attribute, including all meta data fields
+ */
+static int replmd_update_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct dsdb_dn *dsdb_dn,
+				struct dsdb_dn *old_dsdb_dn, const struct GUID *invocation_id,
+				uint64_t usn, uint64_t local_usn, NTTIME nttime,
+				bool deleted)
+{
+	uint32_t old_version;
+	uint32_t version = 0;
+	NTSTATUS status;
+
+	/*
+	 * We're updating the linked attribute locally, so increase the version
+	 * by 1 so that other DCs will see the change when it gets replicated out
+	 */
+	status = dsdb_get_extended_dn_uint32(old_dsdb_dn->dn, &old_version,
+					     "RMD_VERSION");
+
+	if (NT_STATUS_IS_OK(status)) {
+		version = old_version + 1;
+	}
+
+	return replmd_set_la_val(mem_ctx, v, dsdb_dn, old_dsdb_dn, invocation_id,
+				 usn, local_usn, nttime, version, deleted);
 }
 
 /*
@@ -2520,7 +2541,7 @@ static int replmd_modify_la_add(struct ldb_module *module,
 						   dns[i].dsdb_dn,
 						   exact->dsdb_dn,
 						   invocation_id, seq_num,
-						   seq_num, now, 0, false);
+						   seq_num, now, false);
 			if (ret != LDB_SUCCESS) {
 				talloc_free(tmp_ctx);
 				return ret;
@@ -2727,7 +2748,7 @@ static int replmd_modify_la_delete(struct ldb_module *module,
 			ret = replmd_update_la_val(old_el->values, p->v,
 						   p->dsdb_dn, p->dsdb_dn,
 						   invocation_id, seq_num,
-						   seq_num, now, 0, true);
+						   seq_num, now, true);
 			if (ret != LDB_SUCCESS) {
 				talloc_free(tmp_ctx);
 				return ret;
@@ -2824,7 +2845,7 @@ static int replmd_modify_la_delete(struct ldb_module *module,
 		ret = replmd_update_la_val(old_el->values, exact->v,
 					   exact->dsdb_dn, exact->dsdb_dn,
 					   invocation_id, seq_num, seq_num,
-					   now, 0, true);
+					   now, true);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
 			return ret;
@@ -2993,7 +3014,7 @@ static int replmd_modify_la_replace(struct ldb_module *module,
 							   old_p->dsdb_dn,
 							   invocation_id,
 							   seq_num, seq_num,
-							   now, 0, true);
+							   now, true);
 				if (ret != LDB_SUCCESS) {
 					talloc_free(tmp_ctx);
 					return ret;
@@ -3027,7 +3048,7 @@ static int replmd_modify_la_replace(struct ldb_module *module,
 						   old_p->dsdb_dn,
 						   invocation_id,
 						   seq_num, seq_num,
-						   now, 0, false);
+						   now, false);
 			if (ret != LDB_SUCCESS) {
 				talloc_free(tmp_ctx);
 				return ret;
@@ -7270,12 +7291,12 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 			}
 		}
 
-		ret = replmd_update_la_val(tmp_ctx, pdn->v, dsdb_dn, pdn->dsdb_dn,
-					   &la->meta_data.originating_invocation_id,
-					   la->meta_data.originating_usn, seq_num,
-					   la->meta_data.originating_change_time,
-					   la->meta_data.version,
-					   !active);
+		ret = replmd_set_la_val(tmp_ctx, pdn->v, dsdb_dn, pdn->dsdb_dn,
+					&la->meta_data.originating_invocation_id,
+					la->meta_data.originating_usn, seq_num,
+					la->meta_data.originating_change_time,
+					la->meta_data.version,
+					!active);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
 			return ret;
