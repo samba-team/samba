@@ -1196,10 +1196,12 @@ static int ltdb_prepare_commit(struct ldb_module *module)
 	if (tdb_transaction_prepare_commit(ltdb->tdb) != 0) {
 		ret = ltdb_err_map(tdb_error(ltdb->tdb));
 		ltdb->in_transaction--;
-		ldb_asprintf_errstring(ldb_module_get_ctx(module),
-				       "Failure during tdb_transaction_prepare_commit(): %s -> %s",
-				       tdb_errorstr(ltdb->tdb),
-				       ldb_strerror(ret));
+		ldb_debug_set(ldb_module_get_ctx(module),
+			      LDB_DEBUG_FATAL,
+			      "Failure during "
+			      "tdb_transaction_prepare_commit(): %s -> %s",
+			      tdb_errorstr(ltdb->tdb),
+			      ldb_strerror(ret));
 		return ret;
 	}
 
