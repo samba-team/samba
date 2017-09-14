@@ -64,10 +64,11 @@ static void capture_tcp_handler(struct tevent_context *ev,
 	uint16_t window;
 	int ret;
 
-	if (ctdb_sys_read_tcp_packet(killtcp->capture_fd,
-				     killtcp->private_data,
-				     &conn.server, &conn.client,
-				     &ack_seq, &seq, &rst, &window) != 0) {
+	ret = ctdb_sys_read_tcp_packet(killtcp->capture_fd,
+				       killtcp->private_data,
+				       &conn.server, &conn.client,
+				       &ack_seq, &seq, &rst, &window);
+	if (ret != 0) {
 		/* probably a non-tcp ACK packet */
 		return;
 	}
@@ -97,7 +98,10 @@ static void capture_tcp_handler(struct tevent_context *ev,
 	D_INFO("Sending a TCP RST to kill connection %s\n",
 	       ctdb_connection_to_string(killtcp, &conn, true));
 
-	ctdb_sys_send_tcp(&conn.server, &conn.client, ack_seq, seq, 1);
+	ret = ctdb_sys_send_tcp(&conn.server, &conn.client, ack_seq, seq, 1);
+	if (ret != 0) {
+		DBG_ERR("Error sending TCP RST for connection\n");
+	}
 }
 
 
@@ -108,6 +112,7 @@ static int tickle_connection_parser(uint8_t *keybuf, size_t keylen,
 	struct ctdb_kill_tcp *killtcp = talloc_get_type_abort(
 		private_data, struct ctdb_kill_tcp);
 	struct ctdb_connection *conn;
+	int ret;
 
 	if (keylen != sizeof(*conn)) {
 		DBG_WARNING("Unexpected data in connection hash\n");
@@ -122,7 +127,11 @@ static int tickle_connection_parser(uint8_t *keybuf, size_t keylen,
 		return 1;
 	}
 
-	ctdb_sys_send_tcp(&conn->server, &conn->client, 0, 0, 0);
+	ret = ctdb_sys_send_tcp(&conn->server, &conn->client, 0, 0, 0);
+	if (ret != 0) {
+		DBG_ERR("Error sending tickle ACK\n");
+		/* continue */
+	}
 
 	return 0;
 }
