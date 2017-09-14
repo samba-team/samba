@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the fifth release candidate of Samba 4.7.  This is *not*
+This is the sixth release candidate of Samba 4.7.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -367,13 +367,15 @@ smb.conf changes
 KNOWN ISSUES
 ============
 
-https://wiki.samba.org/index.php/Release_Planning_for_Samba_4.7#Release_blocking_bugs
+https://wiki.samba.org/inFdex.php/Release_Planning_for_Samba_4.7#Release_blocking_bugs
 
 
 CHANGES SINCE 4.7.0rc5
 ======================
 
 o  Jeremy Allison <jra@samba.org>
+   * BUG 13003: s3: vfs: catia: compression get/set must act only on base file, and
+     must cope with fsp==NULL.
    * BUG 13008: lib: crypto: Make smbd use the Intel AES instruction set for signing
      and encryption.
 
@@ -386,18 +388,37 @@ o  Andrew Bartlett <abartlet@samba.org>
    * BUG 13017: Add ldb_ldif_message_redacted_string() to allow debug of redacted
      log messages, avoiding showing secret values.
    * BUG 13023: ldb: version 1.2.2.
+   * BUG 13025: schema: Rework dsdb_schema_set_indices_and_attributes() db
+     operations.
+
+o  Alexander Bokovoy <ab@samba.org>
+   * BUG 13030: Install dcerpc/__init__.py for all Python environments.
 
 o  Ralph Boehme <slow@samba.org>
    * BUG 13024: s3/smbd: Sticky write time offset miscalculation causes broken
      timestamps
+   * BUG 13037: lib/util: Only close the event_fd in tfork if the caller didn't
+     call tfork_event_fd().
 
 o  Volker Lendecke <vl@samba.org>
    * BUG 13006: messaging: Avoid a socket leak after fork.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 13018: charset: Fix str[n]casecmp_m() by comparing lower case values.
+
+o  Gary Lockyer <gary@catalyst.net.nz>
+   * BUG 13037: util_runcmd: Free the fde in event handler.
 
 o  Amitay Isaacs <amitay@gmail.com>
    * BUG 13012: ctdb-daemon: Fix implementation of process_exists control.
    * BUG 13021: GET_DB_SEQNUM control can cause ctdb to deadlock when databases
      are frozen.
+   * BUG 13029: ctdb-daemon: Free up record data if a call request is deferred.
+   * BUG 13036: ctdb-client: Initialize ctdb_ltdb_header completely for empty
+     record.
+
+o  Christof Schmitt <cs@samba.org>
+   * BUG 13032: vfs_streams_xattr: Fix segfault when running with log level 10.
 
 
 CHANGES SINCE 4.7.0rc4
