@@ -707,5 +707,10 @@ static void dnsupdate_task_init(struct task_server *task)
 */
 NTSTATUS server_service_dnsupdate_init(TALLOC_CTX *ctx)
 {
-	return register_server_service(ctx, "dnsupdate", dnsupdate_task_init);
+	struct service_details details = {
+		.inhibit_fork_on_accept = true,
+		.inhibit_pre_fork = true,
+	};
+	return register_server_service(ctx, "dnsupdate", dnsupdate_task_init,
+				       &details);
 }

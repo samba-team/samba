@@ -2870,7 +2870,9 @@ static const struct stream_server_ops dcesrv_stream_ops = {
 static NTSTATUS dcesrv_add_ep_unix(struct dcesrv_context *dce_ctx, 
 				   struct loadparm_context *lp_ctx,
 				   struct dcesrv_endpoint *e,
-			    struct tevent_context *event_ctx, const struct model_ops *model_ops)
+				   struct tevent_context *event_ctx,
+				   const struct model_ops *model_ops,
+				   void *process_context)
 {
 	struct dcesrv_socket_context *dcesrv_sock;
 	uint16_t port = 1;
@@ -2890,7 +2892,7 @@ static NTSTATUS dcesrv_add_ep_unix(struct dcesrv_context *dce_ctx,
 				     model_ops, &dcesrv_stream_ops, 
 				     "unix", endpoint, &port,
 				     lpcfg_socket_options(lp_ctx),
-				     dcesrv_sock);
+				     dcesrv_sock, process_context);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("service_setup_stream_socket(path=%s) failed - %s\n",
 			 endpoint, nt_errstr(status)));
@@ -2902,7 +2904,9 @@ static NTSTATUS dcesrv_add_ep_unix(struct dcesrv_context *dce_ctx,
 static NTSTATUS dcesrv_add_ep_ncalrpc(struct dcesrv_context *dce_ctx, 
 				      struct loadparm_context *lp_ctx,
 				      struct dcesrv_endpoint *e,
-				      struct tevent_context *event_ctx, const struct model_ops *model_ops)
+				      struct tevent_context *event_ctx,
+				      const struct model_ops *model_ops,
+				      void *process_context)
 {
 	struct dcesrv_socket_context *dcesrv_sock;
 	uint16_t port = 1;
@@ -2944,7 +2948,7 @@ static NTSTATUS dcesrv_add_ep_ncalrpc(struct dcesrv_context *dce_ctx,
 				     model_ops, &dcesrv_stream_ops, 
 				     "unix", full_path, &port, 
 				     lpcfg_socket_options(lp_ctx),
-				     dcesrv_sock);
+				     dcesrv_sock, process_context);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("service_setup_stream_socket(identifier=%s,path=%s) failed - %s\n",
 			 endpoint, full_path, nt_errstr(status)));
@@ -2955,7 +2959,9 @@ static NTSTATUS dcesrv_add_ep_ncalrpc(struct dcesrv_context *dce_ctx,
 static NTSTATUS dcesrv_add_ep_np(struct dcesrv_context *dce_ctx,
 				 struct loadparm_context *lp_ctx,
 				 struct dcesrv_endpoint *e,
-				 struct tevent_context *event_ctx, const struct model_ops *model_ops)
+				 struct tevent_context *event_ctx,
+				 const struct model_ops *model_ops,
+				 void *process_context)
 {
 	struct dcesrv_socket_context *dcesrv_sock;
 	NTSTATUS status;
@@ -2977,7 +2983,7 @@ static NTSTATUS dcesrv_add_ep_np(struct dcesrv_context *dce_ctx,
 	status = tstream_setup_named_pipe(dce_ctx, event_ctx, lp_ctx,
 					  model_ops, &dcesrv_stream_ops,
 					  endpoint,
-					  dcesrv_sock);
+					  dcesrv_sock, process_context);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("stream_setup_named_pipe(pipe=%s) failed - %s\n",
 			 endpoint, nt_errstr(status)));
@@ -2990,9 +2996,12 @@ static NTSTATUS dcesrv_add_ep_np(struct dcesrv_context *dce_ctx,
 /*
   add a socket address to the list of events, one event per dcerpc endpoint
 */
-static NTSTATUS add_socket_rpc_tcp_iface(struct dcesrv_context *dce_ctx, struct dcesrv_endpoint *e,
-					 struct tevent_context *event_ctx, const struct model_ops *model_ops,
-					 const char *address)
+static NTSTATUS add_socket_rpc_tcp_iface(struct dcesrv_context *dce_ctx,
+					 struct dcesrv_endpoint *e,
+					 struct tevent_context *event_ctx,
+					 const struct model_ops *model_ops,
+					 const char *address,
+					 void *process_context)
 {
 	struct dcesrv_socket_context *dcesrv_sock;
 	uint16_t port = 0;
@@ -3016,7 +3025,7 @@ static NTSTATUS add_socket_rpc_tcp_iface(struct dcesrv_context *dce_ctx, struct 
 				     model_ops, &dcesrv_stream_ops, 
 				     "ip", address, &port,
 				     lpcfg_socket_options(dce_ctx->lp_ctx),
-				     dcesrv_sock);
+				     dcesrv_sock, process_context);
 	if (!NT_STATUS_IS_OK(status)) {
 		struct dcesrv_if_list *iface;
 		DEBUG(0,("service_setup_stream_socket(address=%s,port=%u) for ",
@@ -3055,7 +3064,9 @@ static NTSTATUS add_socket_rpc_tcp_iface(struct dcesrv_context *dce_ctx, struct 
 static NTSTATUS dcesrv_add_ep_tcp(struct dcesrv_context *dce_ctx, 
 				  struct loadparm_context *lp_ctx,
 				  struct dcesrv_endpoint *e,
-				  struct tevent_context *event_ctx, const struct model_ops *model_ops)
+				  struct tevent_context *event_ctx,
+				  const struct model_ops *model_ops,
+				  void *process_context)
 {
 	NTSTATUS status;
 
@@ -3070,7 +3081,9 @@ static NTSTATUS dcesrv_add_ep_tcp(struct dcesrv_context *dce_ctx,
 		num_interfaces = iface_list_count(ifaces);
 		for(i = 0; i < num_interfaces; i++) {
 			const char *address = iface_list_n_ip(ifaces, i);
-			status = add_socket_rpc_tcp_iface(dce_ctx, e, event_ctx, model_ops, address);
+			status = add_socket_rpc_tcp_iface(dce_ctx, e, event_ctx,
+					                  model_ops, address,
+							  process_context);
 			NT_STATUS_NOT_OK_RETURN(status);
 		}
 	} else {
@@ -3080,7 +3093,9 @@ static NTSTATUS dcesrv_add_ep_tcp(struct dcesrv_context *dce_ctx,
 		wcard = iface_list_wildcard(dce_ctx);
 		NT_STATUS_HAVE_NO_MEMORY(wcard);
 		for (i=0; wcard[i]; i++) {
-			status = add_socket_rpc_tcp_iface(dce_ctx, e, event_ctx, model_ops, wcard[i]);
+			status = add_socket_rpc_tcp_iface(dce_ctx, e, event_ctx,
+							  model_ops, wcard[i],
+							  process_context);
 			if (NT_STATUS_IS_OK(status)) {
 				num_binds++;
 			}
@@ -3098,23 +3113,28 @@ NTSTATUS dcesrv_add_ep(struct dcesrv_context *dce_ctx,
 		       struct loadparm_context *lp_ctx,
 		       struct dcesrv_endpoint *e,
 		       struct tevent_context *event_ctx,
-		       const struct model_ops *model_ops)
+		       const struct model_ops *model_ops,
+		       void *process_context)
 {
 	enum dcerpc_transport_t transport =
 		dcerpc_binding_get_transport(e->ep_description);
 
 	switch (transport) {
 	case NCACN_UNIX_STREAM:
-		return dcesrv_add_ep_unix(dce_ctx, lp_ctx, e, event_ctx, model_ops);
+		return dcesrv_add_ep_unix(dce_ctx, lp_ctx, e, event_ctx,
+					  model_ops, process_context);
 
 	case NCALRPC:
-		return dcesrv_add_ep_ncalrpc(dce_ctx, lp_ctx, e, event_ctx, model_ops);
+		return dcesrv_add_ep_ncalrpc(dce_ctx, lp_ctx, e, event_ctx,
+					     model_ops, process_context);
 
 	case NCACN_IP_TCP:
-		return dcesrv_add_ep_tcp(dce_ctx, lp_ctx, e, event_ctx, model_ops);
+		return dcesrv_add_ep_tcp(dce_ctx, lp_ctx, e, event_ctx,
+					 model_ops, process_context);
 
 	case NCACN_NP:
-		return dcesrv_add_ep_np(dce_ctx, lp_ctx, e, event_ctx, model_ops);
+		return dcesrv_add_ep_np(dce_ctx, lp_ctx, e, event_ctx,
+					model_ops, process_context);
 
 	default:
 		return NT_STATUS_NOT_SUPPORTED;

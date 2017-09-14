@@ -30,6 +30,7 @@
 static struct registered_server {
 	struct registered_server *next, *prev;
 	const char *service_name;
+	struct service_details *service_details;
 	void (*task_init)(struct task_server *);
 } *registered_servers;
 
@@ -38,13 +39,17 @@ static struct registered_server {
 */
 NTSTATUS register_server_service(TALLOC_CTX *ctx,
 				const char *name,
-				void (*task_init)(struct task_server *))
+				void (*task_init) (struct task_server *),
+				struct service_details *details)
 {
 	struct registered_server *srv;
 	srv = talloc(ctx, struct registered_server);
 	NT_STATUS_HAVE_NO_MEMORY(srv);
 	srv->service_name = name;
 	srv->task_init = task_init;
+	srv->service_details =
+		talloc_memdup(ctx, details, sizeof(struct service_details));
+	NT_STATUS_HAVE_NO_MEMORY(srv->service_details);
 	DLIST_ADD_END(registered_servers, srv);
 	return NT_STATUS_OK;
 }
@@ -64,7 +69,9 @@ static NTSTATUS server_service_init(const char *name,
 		if (strcasecmp(name, srv->service_name) == 0) {
 			return task_server_startup(event_context, lp_ctx,
 						   srv->service_name,
-						   model_ops, srv->task_init,
+						   model_ops,
+						   srv->task_init,
+						   srv->service_details,
 						   from_parent_fd);
 		}
 	}

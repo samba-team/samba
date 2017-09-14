@@ -541,7 +541,8 @@ static void ntp_signd_task_init(struct task_server *task)
 				     &ntp_signd_stream_ops, 
 				     "unix", address, NULL,
 				     lpcfg_socket_options(ntp_signd->task->lp_ctx),
-				     ntp_signd);
+				     ntp_signd,
+				     ntp_signd->task->process_context);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Failed to bind to %s - %s\n",
 			 address, nt_errstr(status)));
@@ -554,5 +555,10 @@ static void ntp_signd_task_init(struct task_server *task)
 /* called at smbd startup - register ourselves as a server service */
 NTSTATUS server_service_ntp_signd_init(TALLOC_CTX *ctx)
 {
-	return register_server_service(ctx, "ntp_signd", ntp_signd_task_init);
+	struct service_details details = {
+		.inhibit_fork_on_accept = true,
+		.inhibit_pre_fork = true
+	};
+	return register_server_service(ctx, "ntp_signd", ntp_signd_task_init,
+				       &details);
 }

@@ -642,7 +642,8 @@ static NTSTATUS dns_add_socket(struct dns_server *dns,
 				     &dns_tcp_stream_ops,
 				     "ip", address, &port,
 				     lpcfg_socket_options(dns->task->lp_ctx),
-				     dns_socket);
+				     dns_socket,
+				     dns->task->process_context);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Failed to bind to %s:%u TCP - %s\n",
 			 address, port, nt_errstr(status)));
@@ -929,5 +930,9 @@ static void dns_task_init(struct task_server *task)
 
 NTSTATUS server_service_dns_init(TALLOC_CTX *ctx)
 {
-	return register_server_service(ctx, "dns", dns_task_init);
+	struct service_details details = {
+		.inhibit_fork_on_accept = true,
+		.inhibit_pre_fork = true,
+	};
+	return register_server_service(ctx, "dns", dns_task_init, &details);
 }

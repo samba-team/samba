@@ -90,9 +90,16 @@ NTSTATUS server_service_winbindd_init(TALLOC_CTX *);
 
 NTSTATUS server_service_winbindd_init(TALLOC_CTX *ctx)
 {
-	NTSTATUS status = register_server_service(ctx, "winbindd", winbindd_task_init);
+	struct service_details details = {
+		.inhibit_fork_on_accept = true,
+		.inhibit_pre_fork = true,
+	};
+
+	NTSTATUS status = register_server_service(ctx, "winbindd",
+						  winbindd_task_init, &details);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	return register_server_service(ctx, "winbind", winbindd_task_init);
+	return register_server_service(ctx, "winbind", winbindd_task_init,
+				       &details);
 }

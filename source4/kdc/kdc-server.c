@@ -578,7 +578,8 @@ NTSTATUS kdc_add_socket(struct kdc_server *kdc,
 					     &kdc_tcp_stream_ops,
 					     "ip", address, &port,
 					     lpcfg_socket_options(kdc->task->lp_ctx),
-					     kdc_socket);
+					     kdc_socket,
+					     kdc->task->process_context);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("Failed to bind to %s:%u TCP - %s\n",
 				 address, port, nt_errstr(status)));

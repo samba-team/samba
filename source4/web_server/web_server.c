@@ -330,8 +330,10 @@ static void websrv_task_init(struct task_server *task)
 						     task->lp_ctx, model_ops,
 						     &web_stream_ops, 
 						     "ip", address,
-						     &port, lpcfg_socket_options(task->lp_ctx),
-						     task);
+						     &port,
+						     lpcfg_socket_options(task->lp_ctx),
+						     task,
+						     task->process_context);
 			if (!NT_STATUS_IS_OK(status)) goto failed;
 		}
 
@@ -350,7 +352,8 @@ static void websrv_task_init(struct task_server *task)
 						     &web_stream_ops,
 						     "ip", wcard[i],
 						     &port, lpcfg_socket_options(task->lp_ctx),
-						     wdata);
+						     wdata,
+						     task->process_context);
 			if (!NT_STATUS_IS_OK(status)) goto failed;
 		}
 		talloc_free(wcard);
@@ -372,5 +375,9 @@ failed:
 /* called at smbd startup - register ourselves as a server service */
 NTSTATUS server_service_web_init(TALLOC_CTX *ctx)
 {
-	return register_server_service(ctx, "web", websrv_task_init);
+	struct service_details details = {
+		.inhibit_fork_on_accept = true,
+		.inhibit_pre_fork = true
+	};
+	return register_server_service(ctx, "web", websrv_task_init, &details);
 }

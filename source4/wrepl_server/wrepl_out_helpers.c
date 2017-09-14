@@ -988,6 +988,7 @@ static NTSTATUS wreplsrv_push_notify_wait_update(struct wreplsrv_push_notify_sta
 {
 	struct wreplsrv_in_connection *wrepl_in;
 	struct tstream_context *stream;
+	void *process_context = NULL;
 	NTSTATUS status;
 
 	status = wrepl_request_recv(state->subreq, state, NULL);
@@ -1011,10 +1012,11 @@ static NTSTATUS wreplsrv_push_notify_wait_update(struct wreplsrv_push_notify_sta
 	 * NOTE: stream will be stolen by
 	 *       wreplsrv_in_connection_merge()
 	 */
+	process_context = state->io->in.partner->service->task->process_context;
 	status = wreplsrv_in_connection_merge(state->io->in.partner,
 					      state->wreplconn->assoc_ctx.peer_ctx,
 					      &stream,
-					      &wrepl_in);
+					      &wrepl_in, process_context);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	/* now we can free the wreplsrv_out_connection */

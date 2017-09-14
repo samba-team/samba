@@ -44,6 +44,7 @@ struct stream_socket {
 	const struct model_ops *model_ops;
 	struct socket_context *sock;
 	void *private_data;
+	void *process_context;
 };
 
 
@@ -55,6 +56,7 @@ void stream_terminate_connection(struct stream_connection *srv_conn, const char 
 	struct tevent_context *event_ctx = srv_conn->event.ctx;
 	const struct model_ops *model_ops = srv_conn->model_ops;
 	struct loadparm_context *lp_ctx = srv_conn->lp_ctx;
+	void *process_context = srv_conn->process_context;
 	TALLOC_CTX *frame = NULL;
 
 	if (!reason) reason = "unknown reason";
@@ -89,8 +91,7 @@ void stream_terminate_connection(struct stream_connection *srv_conn, const char 
 	srv_conn->event.fde = NULL;
 	imessaging_cleanup(srv_conn->msg_ctx);
 	TALLOC_FREE(srv_conn);
-	model_ops->terminate(event_ctx, lp_ctx, reason);
-
+	model_ops->terminate(event_ctx, lp_ctx, reason, process_context);
 	TALLOC_FREE(frame);
 }
 
@@ -138,7 +139,8 @@ NTSTATUS stream_new_connection_merge(struct tevent_context *ev,
 				     const struct stream_server_ops *stream_ops,
 				     struct imessaging_context *msg_ctx,
 				     void *private_data,
-				     struct stream_connection **_srv_conn)
+				     struct stream_connection **_srv_conn,
+				     void *process_context)
 {
 	struct stream_connection *srv_conn;
 
@@ -154,6 +156,7 @@ NTSTATUS stream_new_connection_merge(struct tevent_context *ev,
 	srv_conn->event.ctx	= ev;
 	srv_conn->lp_ctx	= lp_ctx;
 	srv_conn->event.fde	= NULL;
+	srv_conn->process_context = process_context;
 
 	*_srv_conn = srv_conn;
 	return NT_STATUS_OK;
@@ -166,7 +169,9 @@ NTSTATUS stream_new_connection_merge(struct tevent_context *ev,
 static void stream_new_connection(struct tevent_context *ev,
 				  struct loadparm_context *lp_ctx,
 				  struct socket_context *sock, 
-				  struct server_id server_id, void *private_data)
+				  struct server_id server_id,
+				  void *private_data,
+				  void *process_context)
 {
 	struct stream_socket *stream_socket = talloc_get_type(private_data, struct stream_socket);
 	struct stream_connection *srv_conn;
@@ -186,6 +191,7 @@ static void stream_new_connection(struct tevent_context *ev,
 	srv_conn->ops           = stream_socket->ops;
 	srv_conn->event.ctx	= ev;
 	srv_conn->lp_ctx	= lp_ctx;
+	srv_conn->process_context = process_context;
 
 	if (!socket_check_access(sock, "smbd", lpcfg_hosts_allow(NULL, lpcfg_default_service(lp_ctx)), lpcfg_hosts_deny(NULL, lpcfg_default_service(lp_ctx)))) {
 		stream_terminate_connection(srv_conn, "denied by access rules");
@@ -258,8 +264,9 @@ static void stream_accept_handler(struct tevent_context *ev, struct tevent_fd *f
 	   connection.  When done, it calls stream_new_connection()
 	   with the newly created socket */
 	stream_socket->model_ops->accept_connection(ev, stream_socket->lp_ctx,
-						    stream_socket->sock, 
-						    stream_new_connection, stream_socket);
+						    stream_socket->sock,
+						    stream_new_connection, stream_socket,
+						    stream_socket->process_context);
 }
 
 /*
@@ -279,7 +286,8 @@ NTSTATUS stream_setup_socket(TALLOC_CTX *mem_ctx,
 			     const char *sock_addr,
 			     uint16_t *port,
 			     const char *socket_options,
-			     void *private_data)
+			     void *private_data,
+			     void *process_context)
 {
 	NTSTATUS status;
 	struct stream_socket *stream_socket;
@@ -385,6 +393,7 @@ NTSTATUS stream_setup_socket(TALLOC_CTX *mem_ctx,
 	stream_socket->ops              = stream_ops;
 	stream_socket->event_ctx	= event_context;
 	stream_socket->model_ops        = model_ops;
+	stream_socket->process_context  = process_context;
 
 	return NT_STATUS_OK;
 }

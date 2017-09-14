@@ -23,8 +23,26 @@
 #ifndef __SERVICE_H__
 #define __SERVICE_H__
 
+
 #include "smbd/service_stream.h"
 #include "smbd/service_task.h"
+
+struct service_details {
+	/*
+	 * Prevent the standard process model from forking a new worker
+	 * process when accepting a new connection.  Do this when the service
+	 * relies on shared state, or the over-head of forking would be a
+	 * significant part of the response time
+	 */
+	bool inhibit_fork_on_accept;
+	/*
+	 * Prevent the pre-fork process model from pre-forking any worker
+	 * processes. In this mode pre-fork is equivalent to standard with
+	 * inhibit_fork_on_accept set.
+	 */
+	 bool inhibit_pre_fork;
+};
+
 #include "smbd/service_proto.h"
 
 #endif /* __SERVICE_H__ */

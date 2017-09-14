@@ -397,7 +397,8 @@ NTSTATUS smbsrv_add_socket(TALLOC_CTX *mem_ctx,
 			   struct tevent_context *event_context,
 			   struct loadparm_context *lp_ctx,
 			   const struct model_ops *model_ops,
-			   const char *address);
+			   const char *address,
+			   void *process_context);
 
 struct loadparm_context;
 

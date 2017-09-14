@@ -468,5 +468,20 @@ static void kdc_task_init(struct task_server *task)
 /* called at smbd startup - register ourselves as a server service */
 NTSTATUS server_service_kdc_init(TALLOC_CTX *ctx)
 {
-	return register_server_service(ctx, "kdc", kdc_task_init);
+	struct service_details details = {
+		.inhibit_fork_on_accept = true,
+		/* 
+		 * Need to prevent pre-forking on kdc.
+		 * The task_init function is run on the master process only
+		 * and the irpc process name is registered in it's event loop.
+		 * The child worker processes initialise their event loops on
+		 * fork, so are not listening for the irpc event.
+		 *
+		 * The master process does not wait on that event context
+		 * the master process is responsible for managing the worker
+		 * processes not performing work.
+		 */
+		.inhibit_pre_fork = true
+	};
+	return register_server_service(ctx, "kdc", kdc_task_init, &details);
 }

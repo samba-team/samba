@@ -347,7 +347,8 @@ static const struct stream_server_ops wreplsrv_stream_ops = {
 NTSTATUS wreplsrv_in_connection_merge(struct wreplsrv_partner *partner,
 				      uint32_t peer_assoc_ctx,
 				      struct tstream_context **stream,
-				      struct wreplsrv_in_connection **_wrepl_in)
+				      struct wreplsrv_in_connection **_wrepl_in,
+				      void* process_context)
 {
 	struct wreplsrv_service *service = partner->service;
 	struct wreplsrv_in_connection *wrepl_in;
@@ -379,7 +380,8 @@ NTSTATUS wreplsrv_in_connection_merge(struct wreplsrv_partner *partner,
 					     &wreplsrv_stream_ops,
 					     service->task->msg_ctx,
 					     wrepl_in,
-					     &conn);
+					     &conn,
+					     process_context);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	/*
@@ -461,7 +463,7 @@ NTSTATUS wreplsrv_setup_sockets(struct wreplsrv_service *service, struct loadpar
 						     &wreplsrv_stream_ops,
 						     "ipv4", address, &port, 
 					              lpcfg_socket_options(task->lp_ctx),
-						     service);
+						     service, task->process_context);
 			if (!NT_STATUS_IS_OK(status)) {
 				DEBUG(0,("stream_setup_socket(address=%s,port=%u) failed - %s\n",
 					 address, port, nt_errstr(status)));
@@ -473,7 +475,7 @@ NTSTATUS wreplsrv_setup_sockets(struct wreplsrv_service *service, struct loadpar
 		status = stream_setup_socket(task, task->event_ctx, task->lp_ctx,
 					     model_ops, &wreplsrv_stream_ops,
 					     "ipv4", address, &port, lpcfg_socket_options(task->lp_ctx),
-					     service);
+					     service, task->process_context);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("stream_setup_socket(address=%s,port=%u) failed - %s\n",
 				 address, port, nt_errstr(status)));

@@ -31,6 +31,7 @@ struct task_server {
 	struct loadparm_context *lp_ctx;
 	struct server_id server_id;
 	void *private_data;
+	void *process_context;
 };
 
 

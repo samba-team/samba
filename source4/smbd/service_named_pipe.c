@@ -188,7 +188,8 @@ NTSTATUS tstream_setup_named_pipe(TALLOC_CTX *mem_ctx,
 				  const struct model_ops *model_ops,
 				  const struct stream_server_ops *stream_ops,
 				  const char *pipe_name,
-				  void *private_data)
+				  void *private_data,
+				  void *process_context)
 {
 	char *dirname;
 	struct named_pipe_socket *pipe_sock;
@@ -248,7 +249,8 @@ NTSTATUS tstream_setup_named_pipe(TALLOC_CTX *mem_ctx,
 				     pipe_sock->pipe_path,
 				     NULL,
 				     NULL,
-				     pipe_sock);
+				     pipe_sock,
+				     process_context);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}

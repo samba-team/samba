@@ -222,13 +222,18 @@ static struct standard_child_state *setup_standard_child_pipe(struct tevent_cont
 /*
   called when a listening socket becomes readable. 
 */
-static void standard_accept_connection(struct tevent_context *ev, 
-				       struct loadparm_context *lp_ctx,
-				       struct socket_context *sock, 
-				       void (*new_conn)(struct tevent_context *,
-							struct loadparm_context *, struct socket_context *, 
-							struct server_id , void *), 
-				       void *private_data)
+static void standard_accept_connection(
+		struct tevent_context *ev,
+		struct loadparm_context *lp_ctx,
+		struct socket_context *sock,
+		void (*new_conn)(struct tevent_context *,
+				struct loadparm_context *,
+				struct socket_context *,
+				struct server_id,
+				void *,
+				void *),
+		void *private_data,
+		void *process_context)
 {
 	NTSTATUS status;
 	struct socket_context *sock2;
@@ -340,7 +345,8 @@ static void standard_accept_connection(struct tevent_context *ev,
 	talloc_free(s);
 
 	/* setup this new connection.  Cluster ID is PID based for this process model */
-	new_conn(ev, lp_ctx, sock2, cluster_id(pid, 0), private_data);
+	new_conn(ev, lp_ctx, sock2, cluster_id(pid, 0), private_data,
+		 NULL);
 
 	/* we can't return to the top level here, as that event context is gone,
 	   so we now process events in the new event context until there are no
@@ -357,8 +363,9 @@ static void standard_accept_connection(struct tevent_context *ev,
 static void standard_new_task(struct tevent_context *ev,
 			      struct loadparm_context *lp_ctx,
 			      const char *service_name,
-			      void (*new_task)(struct tevent_context *, struct loadparm_context *lp_ctx, struct server_id , void *),
+			      void (*new_task)(struct tevent_context *, struct loadparm_context *lp_ctx, struct server_id , void *, void *),
 			      void *private_data,
+			      const struct service_details *service_details,
 			      int new_from_parent_fd)
 {
 	pid_t pid;
@@ -438,11 +445,11 @@ static void standard_new_task(struct tevent_context *ev,
 	setproctitle("task %s server_id[%d]", service_name, (int)pid);
 
 	/* setup this new task.  Cluster ID is PID based for this process model */
-	new_task(ev, lp_ctx, cluster_id(pid, 0), private_data);
+	new_task(ev, lp_ctx, cluster_id(pid, 0), private_data, NULL);
 
 	/* we can't return to the top level here, as that event context is gone,
 	   so we now process events in the new event context until there are no
-	   more to process */	   
+	   more to process */
 	tevent_loop_wait(ev);
 
 	talloc_free(ev);
@@ -452,7 +459,8 @@ static void standard_new_task(struct tevent_context *ev,
 
 /* called when a task goes down */
 _NORETURN_ static void standard_terminate(struct tevent_context *ev, struct loadparm_context *lp_ctx,
-					  const char *reason) 
+					  const char *reason,
+					  void *process_context) 
 {
 	DEBUG(2,("standard_terminate: reason[%s]\n",reason));
 
