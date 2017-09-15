@@ -53,6 +53,7 @@ except ImportError:
 else:
     planpythontestsuite("none", "subunit.tests.test_suite")
 planpythontestsuite("none", "samba.tests.blackbox.ndrdump")
+planpythontestsuite("none", "samba.tests.blackbox.check_output")
 planpythontestsuite("none", "api", name="ldb.python", extra_path=['lib/ldb/tests/python'])
 planpythontestsuite("none", "samba.tests.credentials", py3_compatible=True)
 planpythontestsuite("none", "samba.tests.registry", py3_compatible=True)
