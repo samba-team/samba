@@ -65,6 +65,8 @@ NTSTATUS netlogon_creds_cli_store(struct netlogon_creds_cli_context *context,
 				  struct netlogon_creds_CredentialState *creds);
 NTSTATUS netlogon_creds_cli_delete(struct netlogon_creds_cli_context *context,
 				   struct netlogon_creds_CredentialState *creds);
+NTSTATUS netlogon_creds_cli_delete_lck(
+	struct netlogon_creds_cli_context *context);
 
 struct tevent_req *netlogon_creds_cli_lock_send(TALLOC_CTX *mem_ctx,
 				struct tevent_context *ev,

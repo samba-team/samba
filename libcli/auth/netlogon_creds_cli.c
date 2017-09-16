@@ -677,6 +677,19 @@ static NTSTATUS netlogon_creds_cli_delete_internal(
 	return status;
 }
 
+NTSTATUS netlogon_creds_cli_delete_lck(
+	struct netlogon_creds_cli_context *context)
+{
+	NTSTATUS status;
+
+	if (context->db.lock != NETLOGON_CREDS_CLI_LCK_EXCLUSIVE) {
+		return NT_STATUS_NOT_LOCKED;
+	}
+
+	status = netlogon_creds_cli_delete_internal(context);
+	return status;
+}
+
 NTSTATUS netlogon_creds_cli_delete(struct netlogon_creds_cli_context *context,
 				   struct netlogon_creds_CredentialState *creds)
 {
