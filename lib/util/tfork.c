@@ -795,9 +795,14 @@ pid_t tfork_child_pid(const struct tfork *t)
 	return t->worker_pid;
 }
 
-int tfork_event_fd(const struct tfork *t)
+int tfork_event_fd(struct tfork *t)
 {
-	return t->event_fd;
+	int fd = t->event_fd;
+
+	assert(t->event_fd != -1);
+	t->event_fd = -1;
+
+	return fd;
 }
 
 int tfork_status(struct tfork **_t, bool wait)
@@ -857,7 +862,10 @@ int tfork_status(struct tfork **_t, bool wait)
 	} while ((pid == -1) && (errno == EINTR));
 	assert(pid == t->waiter_pid);
 
-	close(t->event_fd);
+	if (t->event_fd != -1) {
+		close(t->event_fd);
+		t->event_fd = -1;
+	}
 
 	free(t);
 	t = NULL;
