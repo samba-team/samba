@@ -65,12 +65,17 @@ pid_t tfork_child_pid(const struct tfork *t);
  *
  * @param[in]   t    Pointer to struct tfork returned by tfork_create()
  *
+ * It is the callers responsibility to ensure that the event fd returned by
+ * tfork_event_fd() is closed. By calling tfork_event_fd() ownership of the fd
+ * is transferred to the caller, calling tfork_event_fd() again will trigger an
+ * abort().
+ *
  * @return           An fd that becomes readable when the child created with
  *                   tfork_create() terminates. It is guaranteed that a
  *                   subsequent call to tfork_status() will not block and return
  *                   the exit status of the child.
  **/
-int tfork_event_fd(const struct tfork *t);
+int tfork_event_fd(struct tfork *t);
 
 /**
  * @brief Wait for the child to terminate and return its exit status
