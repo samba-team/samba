@@ -308,6 +308,10 @@ int ltdb_store(struct ldb_module *module, const struct ldb_message *msg, int flg
 	struct ldb_val ldb_data;
 	int ret = LDB_SUCCESS;
 
+	if (ltdb->read_only) {
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
 	tdb_key = ltdb_key(module, msg->dn);
 	if (tdb_key.dptr == NULL) {
 		return LDB_ERR_OTHER;
@@ -475,6 +479,10 @@ int ltdb_delete_noindex(struct ldb_module *module, struct ldb_dn *dn)
 	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
 	TDB_DATA tdb_key;
 	int ret;
+
+	if (ltdb->read_only) {
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
 
 	tdb_key = ltdb_key(module, dn);
 	if (!tdb_key.dptr) {
@@ -1165,6 +1173,11 @@ static int ltdb_start_trans(struct ldb_module *module)
 	void *data = ldb_module_get_private(module);
 	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
 
+	/* Do not take out the transaction lock on a read-only DB */
+	if (ltdb->read_only) {
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
 	if (tdb_transaction_start(ltdb->tdb) != 0) {
 		return ltdb_err_map(tdb_error(ltdb->tdb));
 	}
@@ -1648,18 +1661,34 @@ static int ltdb_connect(struct ldb_context *ldb, const char *url,
 		tdb_flags |= TDB_NOMMAP;
 	}
 
-	if (flags & LDB_FLG_RDONLY) {
-		open_flags = O_RDONLY;
-	} else if (flags & LDB_FLG_DONT_CREATE_DB) {
-		open_flags = O_RDWR;
-	} else {
-		open_flags = O_CREAT | O_RDWR;
-	}
-
 	ltdb = talloc_zero(ldb, struct ltdb_private);
 	if (!ltdb) {
 		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	if (flags & LDB_FLG_RDONLY) {
+		/*
+		 * This is weird, but because we can only have one tdb
+		 * in this process, and the other one could be
+		 * read-write, we can't use the tdb readonly.  Plus a
+		 * read only tdb prohibits the all-record lock.
+		 */
+		open_flags = O_RDWR;
+
+		ltdb->read_only = true;
+
+	} else if (flags & LDB_FLG_DONT_CREATE_DB) {
+		/*
+		 * This is used by ldbsearch to prevent creation of the database
+		 * if the name is wrong
+		 */
+		open_flags = O_RDWR;
+	} else {
+		/*
+		 * This is the normal case
+		 */
+		open_flags = O_CREAT | O_RDWR;
 	}
 
 	/* note that we use quite a large default hash size */

@@ -310,6 +310,11 @@ static int ltdb_dn_list_store(struct ldb_module *module, struct ldb_dn *dn,
 	rec.dptr = (uint8_t *)&list2;
 	rec.dsize = sizeof(void *);
 
+
+	/*
+	 * This is not a store into the main DB, but into an in-memory
+	 * TDB, so we don't need a guard on ltdb->read_only
+	 */
 	ret = tdb_store(ltdb->idxptr->itdb, key, rec, TDB_INSERT);
 	if (ret != 0) {
 		return ltdb_err_map(tdb_error(ltdb->idxptr->itdb));
@@ -1759,6 +1764,14 @@ int ltdb_reindex(struct ldb_module *module)
 	struct ltdb_private *ltdb = talloc_get_type(ldb_module_get_private(module), struct ltdb_private);
 	int ret;
 	struct ltdb_reindex_context ctx;
+
+	/*
+	 * Only triggered after a modification, but make clear we do
+	 * not re-index a read-only DB
+	 */
+	if (ltdb->read_only) {
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
 
 	if (ltdb_cache_reload(module) != 0) {
 		return LDB_ERR_OPERATIONS_ERROR;

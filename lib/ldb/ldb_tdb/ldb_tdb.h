@@ -32,6 +32,8 @@ struct ltdb_private {
 
 	bool warn_unindexed;
 	bool warn_reindex;
+
+	bool read_only;
 };
 
 struct ltdb_context {
