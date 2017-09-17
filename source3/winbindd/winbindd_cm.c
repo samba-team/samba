@@ -3205,8 +3205,7 @@ NTSTATUS cm_connect_lsat(struct winbindd_domain *domain,
 }
 
 /****************************************************************************
- Open the netlogon pipe to this DC. Use schannel if specified in client conf.
- session key stored in conn->netlogon_pipe->dc->sess_key.
+ Open the netlogon pipe to this DC.
 ****************************************************************************/
 
 static NTSTATUS cm_connect_netlogon_transport(struct winbindd_domain *domain,
