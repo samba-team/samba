@@ -190,7 +190,6 @@ struct kcc_connection_list *kccsrv_find_connections(struct kccsrv_service *s,
 	const char *attrs[] = { "objectGUID", "fromServer", NULL };
 	struct kcc_connection_list *list;
 	TALLOC_CTX *tmp_ctx;
-	kcctpl_test(s);
 
 	tmp_ctx = talloc_new(mem_ctx);
 	if (!tmp_ctx) {

@@ -43,7 +43,7 @@ bld.SAMBA_LIBRARY('dsdb_garbage_collect_tombstones',
                   private_library=True)
 
 bld.SAMBA_MODULE('service_kcc',
-	source='kcc/kcc_service.c kcc/kcc_connection.c kcc/kcc_topology.c kcc/kcc_periodic.c kcc/kcc_drs_replica_info.c',
+	source='kcc/kcc_service.c kcc/kcc_connection.c kcc/kcc_periodic.c kcc/kcc_drs_replica_info.c',
 	autoproto='kcc/kcc_service_proto.h',
 	subsystem='service',
 	init_function='server_service_kcc_init',
