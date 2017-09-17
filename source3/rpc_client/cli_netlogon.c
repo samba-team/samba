@@ -153,7 +153,7 @@ NTSTATUS rpccli_create_netlogon_creds_ctx(
 					    creds_ctx);
 }
 
-NTSTATUS rpccli_setup_netlogon_creds(
+NTSTATUS rpccli_setup_netlogon_creds_locked(
 	struct cli_state *cli,
 	enum dcerpc_transport_t transport,
 	struct netlogon_creds_cli_context *creds_ctx,
@@ -166,18 +166,7 @@ NTSTATUS rpccli_setup_netlogon_creds(
 	uint8_t num_nt_hashes = 0;
 	const struct samr_Password *nt_hashes[2] = { NULL, NULL };
 	uint8_t idx_nt_hashes = 0;
-	struct netlogon_creds_cli_lck *lck = NULL;
 	NTSTATUS status;
-
-	status = netlogon_creds_cli_lck(
-		creds_ctx, NETLOGON_CREDS_CLI_LCK_EXCLUSIVE,
-		frame, &lck);
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG_WARNING("netlogon_creds_cli_lck failed: %s\n",
-			    nt_errstr(status));
-		TALLOC_FREE(frame);
-		return status;
-	}
 
 	status = netlogon_creds_cli_get(creds_ctx, frame, &creds);
 	if (NT_STATUS_IS_OK(status)) {
@@ -241,8 +230,6 @@ NTSTATUS rpccli_setup_netlogon_creds(
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	TALLOC_FREE(lck);
-
 	DEBUG(5,("%s: using new netlogon_creds cli[%s/%s] to %s\n",
 		 __FUNCTION__,
 		 creds->account_name, creds->computer_name,
@@ -250,6 +237,35 @@ NTSTATUS rpccli_setup_netlogon_creds(
 
 	TALLOC_FREE(frame);
 	return NT_STATUS_OK;
+}
+
+NTSTATUS rpccli_setup_netlogon_creds(
+	struct cli_state *cli,
+	enum dcerpc_transport_t transport,
+	struct netlogon_creds_cli_context *creds_ctx,
+	bool force_reauth,
+	struct cli_credentials *cli_creds)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct netlogon_creds_cli_lck *lck;
+	NTSTATUS status;
+
+	status = netlogon_creds_cli_lck(
+		creds_ctx, NETLOGON_CREDS_CLI_LCK_EXCLUSIVE,
+		frame, &lck);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("netlogon_creds_cli_lck failed: %s\n",
+			    nt_errstr(status));
+		TALLOC_FREE(frame);
+		return status;
+	}
+
+	status = rpccli_setup_netlogon_creds_locked(
+		cli, transport, creds_ctx, force_reauth, cli_creds);
+
+	TALLOC_FREE(frame);
+
+	return status;
 }
 
 static NTSTATUS map_validation_to_info3(TALLOC_CTX *mem_ctx,
