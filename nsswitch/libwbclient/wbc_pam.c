@@ -187,6 +187,10 @@ static wbcErr wbc_create_auth_info(const struct winbindd_response *resp,
 			BAIL_ON_WBC_ERROR(wbc_status);
 		}
 
+		/* Skip primary group, already added */
+		if (rid == resp->data.auth.info3.group_rid)
+			continue;
+
 		if (!sid_attr_compose(&i->sids[sn], &domain_sid,
 				      rid, attrs)) {
 			wbc_status = WBC_ERR_INVALID_SID;
