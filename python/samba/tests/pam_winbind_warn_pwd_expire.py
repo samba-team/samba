@@ -38,7 +38,7 @@ class PasswordExpirePamTests(samba.tests.TestCase):
         elif warn_pwd_expire == 50:
             # This is needed as otherwise a build started just before
             # midnight can fail
-            if (res.info[0] != u"Your password will expire in 41 days"):
+            if (res.info[0] != u"Your password will expire in 41 days.\n"):
                 self.assertEqual(res.info[0], u"Your password will expire in 42 days.\n")
         else:
             self.assertEqual(warn_pwd_expire, 0)
