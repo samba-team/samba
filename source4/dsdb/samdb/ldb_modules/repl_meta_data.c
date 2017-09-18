@@ -7154,7 +7154,6 @@ static bool replmd_link_update_is_newer(struct parsed_dn *pdn,
 	/* see if this update is newer than what we have already */
 	struct GUID invocation_id = GUID_zero();
 	uint32_t version = 0;
-	uint32_t originating_usn = 0;
 	NTTIME change_time = 0;
 
 	if (pdn == NULL) {
@@ -7165,7 +7164,6 @@ static bool replmd_link_update_is_newer(struct parsed_dn *pdn,
 
 	dsdb_get_extended_dn_guid(pdn->dsdb_dn->dn, &invocation_id, "RMD_INVOCID");
 	dsdb_get_extended_dn_uint32(pdn->dsdb_dn->dn, &version, "RMD_VERSION");
-	dsdb_get_extended_dn_uint32(pdn->dsdb_dn->dn, &originating_usn, "RMD_ORIGINATING_USN");
 	dsdb_get_extended_dn_nttime(pdn->dsdb_dn->dn, &change_time, "RMD_CHANGETIME");
 
 	return replmd_update_is_newer(&invocation_id,
