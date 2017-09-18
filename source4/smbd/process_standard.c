@@ -41,8 +41,12 @@ struct standard_child_state {
 };
 
 NTSTATUS process_model_standard_init(TALLOC_CTX *);
-
-static int from_parent_fd;
+struct process_context {
+	char *name;
+	int from_parent_fd;
+	bool inhibit_fork_on_accept;
+	bool forked_on_accept;
+};
 
 /*
   called when the process model is selected
@@ -242,6 +246,7 @@ static void standard_accept_connection(
 	struct standard_child_state *state;
 	struct tevent_fd *fde = NULL;
 	struct tevent_signal *se = NULL;
+	struct process_context *proc_ctx = NULL;
 
 	state = setup_standard_child_pipe(ev, NULL);
 	if (state == NULL) {
@@ -261,6 +266,9 @@ static void standard_accept_connection(
 		TALLOC_FREE(state);
 		return;
 	}
+
+	proc_ctx = talloc_get_type_abort(process_context,
+					 struct process_context);
 
 	pid = fork();
 
@@ -283,7 +291,13 @@ static void standard_accept_connection(
 	/* this leaves state->to_parent_fd open */
 	TALLOC_FREE(state);
 
+	/* Now in the child code so indicate that we forked
+	 * so the terminate code knows what to do
+	 */
+	proc_ctx->forked_on_accept = true;
+
 	pid = getpid();
+	setproctitle("task[%s] standard worker", proc_ctx->name);
 
 	/* This is now the child code. We need a completely new event_context to work with */
 
@@ -308,7 +322,7 @@ static void standard_accept_connection(
 		smb_panic("Failed to re-initialise imessaging after fork");
 	}
 
-	fde = tevent_add_fd(ev, ev, from_parent_fd, TEVENT_FD_READ,
+	fde = tevent_add_fd(ev, ev, proc_ctx->from_parent_fd, TEVENT_FD_READ,
 		      standard_pipe_handler, NULL);
 	if (fde == NULL) {
 		smb_panic("Failed to add fd handler after fork");
@@ -346,7 +360,7 @@ static void standard_accept_connection(
 
 	/* setup this new connection.  Cluster ID is PID based for this process model */
 	new_conn(ev, lp_ctx, sock2, cluster_id(pid, 0), private_data,
-		 NULL);
+		 process_context);
 
 	/* we can't return to the top level here, as that event context is gone,
 	   so we now process events in the new event context until there are no
@@ -366,19 +380,19 @@ static void standard_new_task(struct tevent_context *ev,
 			      void (*new_task)(struct tevent_context *, struct loadparm_context *lp_ctx, struct server_id , void *, void *),
 			      void *private_data,
 			      const struct service_details *service_details,
-			      int new_from_parent_fd)
+			      int from_parent_fd)
 {
 	pid_t pid;
 	NTSTATUS status;
 	struct standard_child_state *state;
 	struct tevent_fd *fde = NULL;
 	struct tevent_signal *se = NULL;
+	struct process_context *proc_ctx = NULL;
 
 	state = setup_standard_child_pipe(ev, service_name);
 	if (state == NULL) {
 		return;
 	}
-	from_parent_fd = new_from_parent_fd;
 
 	pid = fork();
 
@@ -442,10 +456,21 @@ static void standard_new_task(struct tevent_context *ev,
 		smb_panic("Failed to add SIGTERM handler after fork");
 	}
 
-	setproctitle("task %s server_id[%d]", service_name, (int)pid);
+	setproctitle("task[%s]", service_name);
+
+	/*
+	 * Set up the process context to be passed through to the terminate
+	 * and accept_connection functions
+	 */
+	proc_ctx = talloc(ev, struct process_context);
+	proc_ctx->name = talloc_strdup(ev, service_name);
+	proc_ctx->from_parent_fd = from_parent_fd;
+	proc_ctx->inhibit_fork_on_accept  =
+		service_details->inhibit_fork_on_accept;
+	proc_ctx->forked_on_accept = false;
 
 	/* setup this new task.  Cluster ID is PID based for this process model */
-	new_task(ev, lp_ctx, cluster_id(pid, 0), private_data, NULL);
+	new_task(ev, lp_ctx, cluster_id(pid, 0), private_data, proc_ctx);
 
 	/* we can't return to the top level here, as that event context is gone,
 	   so we now process events in the new event context until there are no
@@ -458,11 +483,31 @@ static void standard_new_task(struct tevent_context *ev,
 
 
 /* called when a task goes down */
-_NORETURN_ static void standard_terminate(struct tevent_context *ev, struct loadparm_context *lp_ctx,
-					  const char *reason,
-					  void *process_context) 
+static void standard_terminate(struct tevent_context *ev,
+			       struct loadparm_context *lp_ctx,
+			       const char *reason,
+			       void *process_context)
 {
-	DEBUG(2,("standard_terminate: reason[%s]\n",reason));
+	struct process_context *proc_ctx = NULL;
+
+	DBG_DEBUG("process terminating reason[%s]\n", reason);
+	if (process_context == NULL) {
+		smb_panic("Panicking process_context is NULL");
+	}
+
+	proc_ctx = talloc_get_type(process_context, struct process_context);
+	if (proc_ctx->forked_on_accept == false) {
+		/*
+		 * The current task was not forked on accept, so it needs to
+		 * keep running and process requests from other connections
+		 */
+		return;
+	}
+	/*
+	 * The current process was forked on accept to handle a single
+	 * connection/request. That request has now finished and the process
+	 * should terminate
+	 */
 
 	/* this reload_charcnv() has the effect of freeing the iconv context memory,
 	   which makes leak checking easier */
