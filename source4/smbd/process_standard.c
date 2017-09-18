@@ -148,8 +148,10 @@ static void standard_child_pipe_handler(struct tevent_context *ev,
 	}
 	if (WIFEXITED(status)) {
 		status = WEXITSTATUS(status);
-		DEBUG(2, ("Child %d (%s) exited with status %d\n",
-			  (int)state->pid, state->name, status));
+		if (status != 0) {
+			DBG_ERR("Child %d (%s) exited with status %d\n",
+				(int)state->pid, state->name, status);
+		}
 	} else if (WIFSIGNALED(status)) {
 		status = WTERMSIG(status);
 		DEBUG(0, ("Child %d (%s) terminated with signal %d\n",
