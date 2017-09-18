@@ -747,6 +747,8 @@ int32_t ctdb_control_get_db_statistics(struct ctdb_context *ctdb,
 int ctdb_set_notification_script(struct ctdb_context *ctdb, const char *script);
 void ctdb_run_notification_script(struct ctdb_context *ctdb, const char *event);
 
+void ctdb_stop_monitoring(struct ctdb_context *ctdb);
+
 void ctdb_wait_for_first_recovery(struct ctdb_context *ctdb);
 
 int32_t ctdb_control_modflags(struct ctdb_context *ctdb, TDB_DATA indata);
