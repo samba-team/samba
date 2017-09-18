@@ -158,7 +158,8 @@ NTSTATUS rpccli_setup_netlogon_creds_locked(
 	enum dcerpc_transport_t transport,
 	struct netlogon_creds_cli_context *creds_ctx,
 	bool force_reauth,
-	struct cli_credentials *cli_creds)
+	struct cli_credentials *cli_creds,
+	uint32_t *negotiate_flags)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct rpc_pipe_client *netlogon_pipe = NULL;
@@ -181,8 +182,7 @@ NTSTATUS rpccli_setup_netlogon_creds_locked(
 			 creds->account_name, creds->computer_name,
 			 smbXcli_conn_remote_name(cli->conn)));
 		if (!force_reauth) {
-			TALLOC_FREE(frame);
-			return NT_STATUS_OK;
+			goto done;
 		}
 		TALLOC_FREE(creds);
 	}
@@ -235,6 +235,11 @@ NTSTATUS rpccli_setup_netlogon_creds_locked(
 		 creds->account_name, creds->computer_name,
 		 smbXcli_conn_remote_name(cli->conn)));
 
+done:
+	if (negotiate_flags != NULL) {
+		*negotiate_flags = creds->negotiate_flags;
+	}
+
 	TALLOC_FREE(frame);
 	return NT_STATUS_OK;
 }
@@ -261,7 +266,7 @@ NTSTATUS rpccli_setup_netlogon_creds(
 	}
 
 	status = rpccli_setup_netlogon_creds_locked(
-		cli, transport, creds_ctx, force_reauth, cli_creds);
+		cli, transport, creds_ctx, force_reauth, cli_creds, NULL);
 
 	TALLOC_FREE(frame);
 
