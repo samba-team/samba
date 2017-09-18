@@ -7142,6 +7142,40 @@ static int replmd_verify_linked_attribute(struct replmd_replicated_request *ar,
 	return ret;
 }
 
+/**
+ * @returns true if the replication linked attribute info is newer than we
+ * already have in our DB
+ * @param pdn the existing linked attribute info in our DB
+ * @param la the new linked attribute info received during replication
+ */
+static bool replmd_link_update_is_newer(struct parsed_dn *pdn,
+					struct drsuapi_DsReplicaLinkedAttribute *la)
+{
+	/* see if this update is newer than what we have already */
+	struct GUID invocation_id = GUID_zero();
+	uint32_t version = 0;
+	uint32_t originating_usn = 0;
+	NTTIME change_time = 0;
+
+	if (pdn == NULL) {
+
+		/* no existing info so update is newer */
+		return true;
+	}
+
+	dsdb_get_extended_dn_guid(pdn->dsdb_dn->dn, &invocation_id, "RMD_INVOCID");
+	dsdb_get_extended_dn_uint32(pdn->dsdb_dn->dn, &version, "RMD_VERSION");
+	dsdb_get_extended_dn_uint32(pdn->dsdb_dn->dn, &originating_usn, "RMD_ORIGINATING_USN");
+	dsdb_get_extended_dn_nttime(pdn->dsdb_dn->dn, &change_time, "RMD_CHANGETIME");
+
+	return replmd_update_is_newer(&invocation_id,
+				      &la->meta_data.originating_invocation_id,
+				      version,
+				      la->meta_data.version,
+				      change_time,
+				      la->meta_data.originating_change_time);
+}
+
 /*
   process one linked attribute structure
  */
@@ -7244,39 +7278,23 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 		return ret;
 	}
 
+	if (!replmd_link_update_is_newer(pdn, la)) {
+		DEBUG(3,("Discarding older DRS linked attribute update to %s on %s from %s\n",
+			 old_el->name, ldb_dn_get_linearized(msg->dn),
+			 GUID_string(tmp_ctx, &la->meta_data.originating_invocation_id)));
+		talloc_free(tmp_ctx);
+		return LDB_SUCCESS;
+	}
+
+	/* get a seq_num for this change */
+	ret = ldb_sequence_number(ldb, LDB_SEQ_NEXT, &seq_num);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
 
 	if (pdn != NULL) {
-		/* see if this update is newer than what we have already */
-		struct GUID invocation_id = GUID_zero();
-		uint32_t version = 0;
-		uint32_t originating_usn = 0;
-		NTTIME change_time = 0;
 		uint32_t rmd_flags = dsdb_dn_rmd_flags(pdn->dsdb_dn->dn);
-
-		dsdb_get_extended_dn_guid(pdn->dsdb_dn->dn, &invocation_id, "RMD_INVOCID");
-		dsdb_get_extended_dn_uint32(pdn->dsdb_dn->dn, &version, "RMD_VERSION");
-		dsdb_get_extended_dn_uint32(pdn->dsdb_dn->dn, &originating_usn, "RMD_ORIGINATING_USN");
-		dsdb_get_extended_dn_nttime(pdn->dsdb_dn->dn, &change_time, "RMD_CHANGETIME");
-
-		if (!replmd_update_is_newer(&invocation_id,
-					    &la->meta_data.originating_invocation_id,
-					    version,
-					    la->meta_data.version,
-					    change_time,
-					    la->meta_data.originating_change_time)) {
-			DEBUG(3,("Discarding older DRS linked attribute update to %s on %s from %s\n",
-				 old_el->name, ldb_dn_get_linearized(msg->dn),
-				 GUID_string(tmp_ctx, &la->meta_data.originating_invocation_id)));
-			talloc_free(tmp_ctx);
-			return LDB_SUCCESS;
-		}
-
-		/* get a seq_num for this change */
-		ret = ldb_sequence_number(ldb, LDB_SEQ_NEXT, &seq_num);
-		if (ret != LDB_SUCCESS) {
-			talloc_free(tmp_ctx);
-			return ret;
-		}
 
 		if (!(rmd_flags & DSDB_RMD_FLAG_DELETED)) {
 			/* remove the existing backlink */
@@ -7303,12 +7321,7 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 		}
 	} else {
 		unsigned offset;
-		/* get a seq_num for this change */
-		ret = ldb_sequence_number(ldb, LDB_SEQ_NEXT, &seq_num);
-		if (ret != LDB_SUCCESS) {
-			talloc_free(tmp_ctx);
-			return ret;
-		}
+
 		/*
 		 * We know where the new one needs to be, from the *next
 		 * pointer into pdn_list.
