@@ -7143,6 +7143,56 @@ static int replmd_verify_linked_attribute(struct replmd_replicated_request *ar,
 }
 
 /**
+ * Finds the current active Parsed-DN value for a single-valued linked
+ * attribute, if one exists.
+ * @param ret_pdn assigned the active Parsed-DN, or NULL if none was found
+ * @returns LDB_SUCCESS (regardless of whether a match was found), unless
+ * an error occurred
+ */
+static int replmd_get_active_singleval_link(struct ldb_module *module,
+					    TALLOC_CTX *mem_ctx,
+					    struct parsed_dn pdn_list[],
+					    unsigned int count,
+					    const struct dsdb_attribute *attr,
+					    struct parsed_dn **ret_pdn)
+{
+	unsigned int i;
+
+	*ret_pdn = NULL;
+
+	if (!(attr->ldb_schema_attribute->flags & LDB_ATTR_FLAG_SINGLE_VALUE)) {
+
+		/* nothing to do for multi-valued linked attributes */
+		return LDB_SUCCESS;
+	}
+
+	for (i = 0; i < count; i++) {
+		int ret = LDB_SUCCESS;
+		struct parsed_dn *pdn = &pdn_list[i];
+
+		/* skip any inactive links */
+		if (dsdb_dn_is_deleted_val(pdn->v)) {
+			continue;
+		}
+
+		/* we've found an active value for this attribute */
+		*ret_pdn = pdn;
+
+		if (pdn->dsdb_dn == NULL) {
+			struct ldb_context *ldb = ldb_module_get_ctx(module);
+
+			ret = really_parse_trusted_dn(mem_ctx, ldb, pdn,
+						      attr->syntax->ldap_oid);
+		}
+
+		return ret;
+	}
+
+	/* no active link found */
+	return LDB_SUCCESS;
+}
+
+/**
  * @returns true if the replication linked attribute info is newer than we
  * already have in our DB
  * @param pdn the existing linked attribute info in our DB
@@ -7276,6 +7326,28 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 		return ret;
 	}
 
+	if (pdn == NULL && active) {
+
+		/*
+		 * check if there's a conflict for single-valued links, i.e.
+		 * an active linked attribute already exists, but it has a
+		 * different target value
+		 */
+		ret = replmd_get_active_singleval_link(module, tmp_ctx, pdn_list,
+						       old_el->num_values, attr,
+						       &pdn);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return ret;
+		}
+
+		if (pdn != NULL) {
+			DBG_WARNING("Link conflict for %s linked from %s\n",
+				    ldb_dn_get_linearized(pdn->dsdb_dn->dn),
+				    ldb_dn_get_linearized(msg->dn));
+		}
+	}
+
 	if (!replmd_link_update_is_newer(pdn, la)) {
 		DEBUG(3,("Discarding older DRS linked attribute update to %s on %s from %s\n",
 			 old_el->name, ldb_dn_get_linearized(msg->dn),
@@ -7299,7 +7371,7 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 			ret = replmd_add_backlink(module, replmd_private,
 						  schema, 
 						  msg->dn,
-						  &guid, false, attr,
+						  &pdn->guid, false, attr,
 						  parent);
 			if (ret != LDB_SUCCESS) {
 				talloc_free(tmp_ctx);
