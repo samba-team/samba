@@ -45,22 +45,26 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
         self.ou2 = None
 
     def tearDown(self):
+        self._cleanup_object(self.ou1)
+        self._cleanup_object(self.ou2)
+
         # re-enable replication
         self._enable_inbound_repl(self.dnsname_dc1)
         self._enable_inbound_repl(self.dnsname_dc2)
-        if self.ldb_dc2 is not None:
-            if self.ou1 is not None:
-                try:
-                    self.ldb_dc2.delete('<GUID=%s>' % self.ou1, ["tree_delete:1"])
-                except LdbError, (num, _):
-                    self.assertEquals(num, ERR_NO_SUCH_OBJECT)
-            if self.ou2 is not None:
-                try:
-                    self.ldb_dc2.delete('<GUID=%s>' % self.ou2, ["tree_delete:1"])
-                except LdbError, (num, _):
-                    self.assertEquals(num, ERR_NO_SUCH_OBJECT)
 
         super(DrsReplicaSyncTestCase, self).tearDown()
+
+    def _cleanup_object(self, guid):
+        """Cleans up a test object, if it still exists"""
+        if guid is not None:
+            try:
+                self.ldb_dc2.delete('<GUID=%s>' % guid, ["tree_delete:1"])
+            except LdbError, (num, _):
+                self.assertEquals(num, ERR_NO_SUCH_OBJECT)
+            try:
+                self.ldb_dc1.delete('<GUID=%s>' % guid, ["tree_delete:1"])
+            except LdbError, (num, _):
+                self.assertEquals(num, ERR_NO_SUCH_OBJECT)
 
     def test_ReplEnabled(self):
         """Tests we can replicate when replication is enabled"""
