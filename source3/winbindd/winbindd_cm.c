@@ -3214,8 +3214,6 @@ static NTSTATUS cm_connect_netlogon_transport(struct winbindd_domain *domain,
 	struct messaging_context *msg_ctx = winbind_messaging_context();
 	struct winbindd_cm_conn *conn;
 	NTSTATUS result;
-	enum netr_SchannelType sec_chan_type;
-	struct netlogon_creds_CredentialState *netlogon_creds = NULL;
 	struct cli_credentials *creds = NULL;
 
 	*cli = NULL;
@@ -3243,38 +3241,6 @@ static NTSTATUS cm_connect_netlogon_transport(struct winbindd_domain *domain,
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
 
-	if (cli_credentials_is_anonymous(creds)) {
-		DEBUG(1, ("get_trust_credential only gave anonymous for %s, unable to make get NETLOGON credentials\n",
-			  domain->name));
-		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
-	}
-
-	sec_chan_type = cli_credentials_get_secure_channel_type(creds);
-	if (sec_chan_type == SEC_CHAN_NULL) {
-		if (transport == NCACN_IP_TCP) {
-			DBG_NOTICE("get_secure_channel_type gave SEC_CHAN_NULL for %s, "
-				   " deny NCACN_IP_TCP and let the caller fallback to NCACN_NP.\n",
-				   domain->name);
-			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
-		}
-
-		DBG_NOTICE("get_secure_channel_type gave SEC_CHAN_NULL for %s, "
-			   "fallback to noauth on NCACN_NP.\n",
-			   domain->name);
-
-		result = cli_rpc_pipe_open_noauth_transport(conn->cli,
-							    transport,
-							    &ndr_table_netlogon,
-							    &conn->netlogon_pipe);
-		if (!NT_STATUS_IS_OK(result)) {
-			invalidate_cm_connection(domain);
-			return result;
-		}
-
-		*cli = conn->netlogon_pipe;
-		return NT_STATUS_OK;
-	}
-
 	result = rpccli_create_netlogon_creds_ctx(creds,
 						  domain->dcname,
 						  msg_ctx,
@@ -3287,68 +3253,13 @@ static NTSTATUS cm_connect_netlogon_transport(struct winbindd_domain *domain,
 		return result;
 	}
 
-	result = rpccli_setup_netlogon_creds(conn->cli, transport,
-					     conn->netlogon_creds_ctx,
-					     conn->netlogon_force_reauth,
-					     creds);
-	conn->netlogon_force_reauth = false;
-	if (!NT_STATUS_IS_OK(result)) {
-		DEBUG(1, ("rpccli_setup_netlogon_creds failed for %s, "
-			  "unable to setup NETLOGON credentials: %s\n",
-			  domain->name, nt_errstr(result)));
-		return result;
-	}
-
-	result = netlogon_creds_cli_get(conn->netlogon_creds_ctx,
-					talloc_tos(),
-					&netlogon_creds);
-	if (!NT_STATUS_IS_OK(result)) {
-		DEBUG(1, ("netlogon_creds_cli_get failed for %s, "
-			  "unable to get NETLOGON credentials: %s\n",
-			  domain->name, nt_errstr(result)));
-		return result;
-	}
-	conn->netlogon_flags = netlogon_creds->negotiate_flags;
-	TALLOC_FREE(netlogon_creds);
-
-	if (!(conn->netlogon_flags & NETLOGON_NEG_AUTHENTICATED_RPC)) {
-		if (lp_winbind_sealed_pipes() || lp_require_strong_key()) {
-			result = NT_STATUS_DOWNGRADE_DETECTED;
-			DEBUG(1, ("Unwilling to make connection to domain %s"
-				  "without connection level security, "
-				  "must set 'winbind sealed pipes = false' and "
-				  "'require strong key = false' to proceed: %s\n",
-				  domain->name, nt_errstr(result)));
-			invalidate_cm_connection(domain);
-			return result;
-		}
-		result = cli_rpc_pipe_open_noauth_transport(conn->cli,
-							    transport,
-							    &ndr_table_netlogon,
-							    &conn->netlogon_pipe);
-		if (!NT_STATUS_IS_OK(result)) {
-			invalidate_cm_connection(domain);
-			return result;
-		}
-
-		*cli = conn->netlogon_pipe;
-		return NT_STATUS_OK;
-	}
-
-	/* Using the credentials from the first pipe, open a signed and sealed
-	   second netlogon pipe. The session key is stored in the schannel
-	   part of the new pipe auth struct.
-	*/
-
-	result = cli_rpc_pipe_open_schannel_with_creds(
-		conn->cli, &ndr_table_netlogon, transport,
-		conn->netlogon_creds_ctx,
+	result = rpccli_connect_netlogon(
+		conn->cli, transport,
+		conn->netlogon_creds_ctx, conn->netlogon_force_reauth, creds,
 		&conn->netlogon_pipe);
 	if (!NT_STATUS_IS_OK(result)) {
-		DEBUG(3, ("Could not open schannel'ed NETLOGON pipe. Error "
-			  "was %s\n", nt_errstr(result)));
-
-		invalidate_cm_connection(domain);
+		DBG_DEBUG("rpccli_connect_netlogon failed: %s\n",
+			  nt_errstr(result));
 		return result;
 	}
 
