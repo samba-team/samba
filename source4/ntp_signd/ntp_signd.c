@@ -494,8 +494,6 @@ static void ntp_signd_task_init(struct task_server *task)
 	struct ntp_signd_server *ntp_signd;
 	NTSTATUS status;
 
-	const struct model_ops *model_ops;
-
 	const char *address;
 
 	if (!directory_create_or_exist_strict(lpcfg_ntp_signd_socket_directory(task->lp_ctx), geteuid(), 0750)) {
@@ -503,15 +501,6 @@ static void ntp_signd_task_init(struct task_server *task)
 					      lpcfg_ntp_signd_socket_directory(task->lp_ctx));
 		task_server_terminate(task,
 				      error, true);
-		return;
-	}
-
-	/* within the ntp_signd task we want to be a single process, so
-	   ask for the single process model ops and pass these to the
-	   stream_setup_socket() call. */
-	model_ops = process_model_startup("single");
-	if (!model_ops) {
-		DEBUG(0,("Can't find 'single' process model_ops\n"));
 		return;
 	}
 
@@ -537,7 +526,7 @@ static void ntp_signd_task_init(struct task_server *task)
 	status = stream_setup_socket(ntp_signd->task,
 				     ntp_signd->task->event_ctx,
 				     ntp_signd->task->lp_ctx,
-				     model_ops, 
+				     task->model_ops,
 				     &ntp_signd_stream_ops, 
 				     "unix", address, NULL,
 				     lpcfg_socket_options(ntp_signd->task->lp_ctx),

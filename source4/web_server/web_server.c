@@ -298,14 +298,9 @@ static void websrv_task_init(struct task_server *task)
 {
 	NTSTATUS status;
 	uint16_t port = lpcfg_web_port(task->lp_ctx);
-	const struct model_ops *model_ops;
 	struct web_server_data *wdata;
 
 	task_server_set_title(task, "task[websrv]");
-
-	/* run the web server as a single process */
-	model_ops = process_model_startup("single");
-	if (!model_ops) goto failed;
 
 	/* startup the Python processor - unfortunately we can't do this
 	   per connection as that wouldn't allow for session variables */
@@ -327,8 +322,9 @@ static void websrv_task_init(struct task_server *task)
 			const char *address = iface_list_n_ip(ifaces, i);
 			status = stream_setup_socket(task,
 						     task->event_ctx,
-						     task->lp_ctx, model_ops,
-						     &web_stream_ops, 
+						     task->lp_ctx,
+						     task->model_ops,
+						     &web_stream_ops,
 						     "ip", address,
 						     &port,
 						     lpcfg_socket_options(task->lp_ctx),
@@ -348,7 +344,8 @@ static void websrv_task_init(struct task_server *task)
 		}
 		for (i=0; wcard[i]; i++) {
 			status = stream_setup_socket(task, task->event_ctx,
-						     task->lp_ctx, model_ops,
+						     task->lp_ctx,
+						     task->model_ops,
 						     &web_stream_ops,
 						     "ip", wcard[i],
 						     &port, lpcfg_socket_options(task->lp_ctx),

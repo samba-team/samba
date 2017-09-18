@@ -684,22 +684,13 @@ static NTSTATUS dns_add_socket(struct dns_server *dns,
   setup our listening sockets on the configured network interfaces
 */
 static NTSTATUS dns_startup_interfaces(struct dns_server *dns,
-				       struct interface *ifaces)
+				       struct interface *ifaces,
+				       const struct model_ops *model_ops)
 {
-	const struct model_ops *model_ops;
 	int num_interfaces;
 	TALLOC_CTX *tmp_ctx = talloc_new(dns);
 	NTSTATUS status;
 	int i;
-
-	/* within the dns task we want to be a single process, so
-	   ask for the single process model ops and pass these to the
-	   stream_setup_socket() call. */
-	model_ops = process_model_startup("single");
-	if (!model_ops) {
-		DEBUG(0,("Can't find 'single' process model_ops\n"));
-		return NT_STATUS_INTERNAL_ERROR;
-	}
 
 	if (ifaces != NULL) {
 		num_interfaces = iface_list_count(ifaces);
@@ -907,7 +898,7 @@ static void dns_task_init(struct task_server *task)
 		return;
 	}
 
-	status = dns_startup_interfaces(dns, ifaces);
+	status = dns_startup_interfaces(dns, ifaces, task->model_ops);
 	if (!NT_STATUS_IS_OK(status)) {
 		task_server_terminate(task, "dns failed to setup interfaces", true);
 		return;

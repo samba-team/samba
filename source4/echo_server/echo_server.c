@@ -241,33 +241,13 @@ static NTSTATUS echo_add_socket(struct echo_server *echo,
 /* Set up the listening sockets */
 static NTSTATUS echo_startup_interfaces(struct echo_server *echo,
 					struct loadparm_context *lp_ctx,
-					struct interface *ifaces)
+					struct interface *ifaces,
+					const struct model_ops *model_ops)
 {
-	const struct model_ops *model_ops;
 	int num_interfaces;
 	TALLOC_CTX *tmp_ctx = talloc_new(echo);
 	NTSTATUS status;
 	int i;
-
-	/*
-	 * Samba allows subtask to set their own process model.
-	 * Available models currently are:
-	 * - onefork  (forks exactly one child process)
-	 * - prefork  (keep a couple of child processes around)
-	 * - single   (only run a single process)
-	 * - standard (fork one subprocess per incoming connection)
-	 * - thread   (use threads instead of forks)
-	 *
-	 * For the echo server, the "single" process model works fine,
-	 * you probably don't want to use the thread model unless you really
-	 * know what you're doing.
-	 */
-
-	model_ops = process_model_startup("single");
-	if (model_ops == NULL) {
-		DEBUG(0, ("Can't find 'single' process model_ops\n"));
-		return NT_STATUS_INTERNAL_ERROR;
-	}
 
 	num_interfaces = iface_list_count(ifaces);
 
@@ -327,7 +307,8 @@ static void echo_task_init(struct task_server *task)
 
 	echo->task = task;
 
-	status = echo_startup_interfaces(echo, task->lp_ctx, ifaces);
+	status = echo_startup_interfaces(echo, task->lp_ctx, ifaces,
+					 task->model_ops);
 	if (!NT_STATUS_IS_OK(status)) {
 		task_server_terminate(task, "echo: Failed to set up interfaces",
 				      true);

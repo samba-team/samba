@@ -72,12 +72,6 @@ static NTSTATUS startup_kpasswd_server(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 	}
 
-	model_ops = process_model_startup("single");
-	if (model_ops == NULL) {
-		DBG_ERR("Can't find 'single' process model_ops\n");
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
 	tmp_ctx = talloc_named_const(mem_ctx, 0, "kpasswd");
 	if (tmp_ctx == NULL) {
 		return NT_STATUS_NO_MEMORY;

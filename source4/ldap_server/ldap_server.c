@@ -1112,7 +1112,6 @@ static void ldapsrv_task_init(struct task_server *task)
 	const char *dns_host_name;
 	struct ldapsrv_service *ldap_service;
 	NTSTATUS status;
-	const struct model_ops *model_ops;
 
 	switch (lpcfg_server_role(task->lp_ctx)) {
 	case ROLE_STANDALONE:
@@ -1129,13 +1128,6 @@ static void ldapsrv_task_init(struct task_server *task)
 	}
 
 	task_server_set_title(task, "task[ldapsrv]");
-
-	/*
-	 * Here we used to run the ldap server as a single process,
-	 * but we don't want transaction locks for one task in a write
-	 * blocking all other reads, so we go multi-process.
-	 */
-	model_ops = task->model_ops;
 
 	ldap_service = talloc_zero(task, struct ldapsrv_service);
 	if (ldap_service == NULL) goto failed;
@@ -1180,7 +1172,8 @@ static void ldapsrv_task_init(struct task_server *task)
 		*/
 		for(i = 0; i < num_interfaces; i++) {
 			const char *address = iface_list_n_ip(ifaces, i);
-			status = add_socket(task, task->lp_ctx, model_ops, address, ldap_service);
+			status = add_socket(task, task->lp_ctx, task->model_ops,
+					    address, ldap_service);
 			if (!NT_STATUS_IS_OK(status)) goto failed;
 		}
 	} else {
@@ -1193,7 +1186,8 @@ static void ldapsrv_task_init(struct task_server *task)
 			goto failed;
 		}
 		for (i=0; wcard[i]; i++) {
-			status = add_socket(task, task->lp_ctx, model_ops, wcard[i], ldap_service);
+			status = add_socket(task, task->lp_ctx, task->model_ops,
+					    wcard[i], ldap_service);
 			if (NT_STATUS_IS_OK(status)) {
 				num_binds++;
 			}
@@ -1210,7 +1204,7 @@ static void ldapsrv_task_init(struct task_server *task)
 	}
 
 	status = stream_setup_socket(task, task->event_ctx, task->lp_ctx,
-				     model_ops, &ldap_stream_nonpriv_ops,
+				     task->model_ops, &ldap_stream_nonpriv_ops,
 				     "unix", ldapi_path, NULL, 
 				     lpcfg_socket_options(task->lp_ctx),
 				     ldap_service, task->process_context);
@@ -1241,7 +1235,7 @@ static void ldapsrv_task_init(struct task_server *task)
 	}
 
 	status = stream_setup_socket(task, task->event_ctx, task->lp_ctx,
-				     model_ops, &ldap_stream_priv_ops,
+				     task->model_ops, &ldap_stream_priv_ops,
 				     "unix", ldapi_path, NULL,
 				     lpcfg_socket_options(task->lp_ctx),
 				     ldap_service,
