@@ -7301,19 +7301,6 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 			talloc_free(tmp_ctx);
 			return ret;
 		}
-
-		if (active) {
-			/* add the new backlink */
-			ret = replmd_add_backlink(module, replmd_private,
-						  schema, 
-						  msg->dn,
-						  &guid, true, attr,
-						  parent);
-			if (ret != LDB_SUCCESS) {
-				talloc_free(tmp_ctx);
-				return ret;
-			}
-		}
 	} else {
 		unsigned offset;
 		/* get a seq_num for this change */
@@ -7367,17 +7354,18 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 			talloc_free(tmp_ctx);
 			return ret;
 		}
+	}
 
-		if (active) {
-			ret = replmd_add_backlink(module, replmd_private,
-						  schema, 
-						  msg->dn,
-						  &guid, true, attr,
-						  parent);
-			if (ret != LDB_SUCCESS) {
-				talloc_free(tmp_ctx);
-				return ret;
-			}
+	/* if the new link is active, then add the new backlink */
+	if (active) {
+		ret = replmd_add_backlink(module, replmd_private,
+					  schema,
+					  msg->dn,
+					  &guid, true, attr,
+					  parent);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return ret;
 		}
 	}
 
