@@ -52,6 +52,13 @@ NTSTATUS rpccli_setup_netlogon_creds(
 	struct netlogon_creds_cli_context *creds_ctx,
 	bool force_reauth,
 	struct cli_credentials *cli_creds);
+NTSTATUS rpccli_connect_netlogon(
+	struct cli_state *cli,
+	enum dcerpc_transport_t transport,
+	struct netlogon_creds_cli_context *creds_ctx,
+	bool force_reauth,
+	struct cli_credentials *trust_creds,
+	struct rpc_pipe_client **_rpccli);
 NTSTATUS rpccli_netlogon_password_logon(struct netlogon_creds_cli_context *creds,
 					struct dcerpc_binding_handle *binding_handle,
 					TALLOC_CTX *mem_ctx,

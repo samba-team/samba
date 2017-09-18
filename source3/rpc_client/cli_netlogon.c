@@ -273,6 +273,196 @@ NTSTATUS rpccli_setup_netlogon_creds(
 	return status;
 }
 
+NTSTATUS rpccli_connect_netlogon(
+	struct cli_state *cli,
+	enum dcerpc_transport_t transport,
+	struct netlogon_creds_cli_context *creds_ctx,
+	bool force_reauth,
+	struct cli_credentials *trust_creds,
+	struct rpc_pipe_client **_rpccli)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct netlogon_creds_CredentialState *creds = NULL;
+	enum netlogon_creds_cli_lck_type lck_type;
+	enum netr_SchannelType sec_chan_type;
+	struct netlogon_creds_cli_lck *lck;
+	uint32_t negotiate_flags;
+	uint8_t found_session_key[16] = {0};
+	bool found_existing_creds = false;
+	bool do_serverauth;
+	struct rpc_pipe_client *rpccli;
+	NTSTATUS status;
+
+again:
+
+	/*
+	 * See whether we can use existing netlogon_creds or
+	 * whether we have to serverauthenticate.
+	 */
+	status = netlogon_creds_cli_get(creds_ctx, frame, &creds);
+
+	if (NT_STATUS_IS_OK(status)) {
+		int cmp = memcmp(found_session_key,
+				 creds->session_key,
+				 sizeof(found_session_key));
+		found_existing_creds = (cmp != 0);
+
+		memcpy(found_session_key,
+		       creds->session_key,
+		       sizeof(found_session_key));
+
+		TALLOC_FREE(creds);
+	}
+
+	lck_type = (force_reauth || !found_existing_creds) ?
+		NETLOGON_CREDS_CLI_LCK_EXCLUSIVE :
+		NETLOGON_CREDS_CLI_LCK_SHARED;
+
+	status = netlogon_creds_cli_lck(creds_ctx, lck_type, frame, &lck);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("netlogon_creds_cli_lck failed: %s\n",
+			  nt_errstr(status));
+		goto fail;
+	}
+
+	if (!found_existing_creds) {
+		/*
+		 * Try to find creds under the lock again. Someone
+		 * else might have done it for us.
+		 */
+		status = netlogon_creds_cli_get(creds_ctx, frame, &creds);
+
+		if (NT_STATUS_IS_OK(status)) {
+			int cmp = memcmp(found_session_key,
+					 creds->session_key,
+					 sizeof(found_session_key));
+			found_existing_creds = (cmp != 0);
+
+			memcpy(found_session_key, creds->session_key,
+			       sizeof(found_session_key));
+
+			TALLOC_FREE(creds);
+		}
+	}
+
+	do_serverauth = force_reauth || !found_existing_creds;
+
+	if (!do_serverauth) {
+		/*
+		 * Do the quick schannel bind without a reauth
+		 */
+		status = cli_rpc_pipe_open_bind_schannel(
+			cli, &ndr_table_netlogon, transport, creds_ctx,
+			&rpccli);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_DEBUG("cli_rpc_pipe_open_bind_schannel "
+				  "failed: %s\n", nt_errstr(status));
+		}
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_ACCESS_DENIED)) {
+			DBG_DEBUG("Retrying with serverauthenticate\n");
+			TALLOC_FREE(lck);
+			goto again;
+		}
+		goto done;
+	}
+
+	if (cli_credentials_is_anonymous(trust_creds)) {
+		DBG_WARNING("get_trust_credential for %s only gave anonymous,"
+			    "unable to make get NETLOGON credentials\n",
+			    netlogon_creds_cli_debug_string(
+				    creds_ctx, frame));
+		status = NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+		goto fail;
+	}
+
+	sec_chan_type = cli_credentials_get_secure_channel_type(trust_creds);
+	if (sec_chan_type == SEC_CHAN_NULL) {
+		if (transport == NCACN_IP_TCP) {
+			DBG_NOTICE("secure_channel_type gave SEC_CHAN_NULL "
+				   "for %s, deny NCACN_IP_TCP and let the "
+				   "caller fallback to NCACN_NP.\n",
+				   netlogon_creds_cli_debug_string(
+					   creds_ctx, frame));
+			status = NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+			goto fail;
+		}
+
+		DBG_NOTICE("get_secure_channel_type gave SEC_CHAN_NULL "
+			   "for %s, fallback to noauth on NCACN_NP.\n",
+			   netlogon_creds_cli_debug_string(
+				   creds_ctx, frame));
+
+		TALLOC_FREE(lck);
+
+		status = cli_rpc_pipe_open_noauth_transport(
+			cli, transport, &ndr_table_netlogon, &rpccli);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_DEBUG("cli_rpc_pipe_open_noauth_transport "
+				  "failed: %s\n", nt_errstr(status));
+		}
+		goto done;
+	}
+
+	status = rpccli_setup_netlogon_creds_locked(
+		cli, transport, creds_ctx, true, trust_creds,
+		&negotiate_flags);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("rpccli_setup_netlogon_creds failed for %s, "
+			  "unable to setup NETLOGON credentials: %s\n",
+			  netlogon_creds_cli_debug_string(
+				  creds_ctx, frame),
+			  nt_errstr(status));
+		goto fail;
+	}
+
+	if (!(negotiate_flags & NETLOGON_NEG_AUTHENTICATED_RPC)) {
+		if (lp_winbind_sealed_pipes() || lp_require_strong_key()) {
+			status = NT_STATUS_DOWNGRADE_DETECTED;
+			DBG_WARNING("Unwilling to make connection to %s"
+				    "without connection level security, "
+				    "must set 'winbind sealed pipes = false'"
+				    " and 'require strong key = false' "
+				    "to proceed: %s\n",
+				    netlogon_creds_cli_debug_string(
+					    creds_ctx, frame),
+				    nt_errstr(status));
+			goto fail;
+		}
+
+		status = cli_rpc_pipe_open_noauth_transport(
+			cli, transport, &ndr_table_netlogon, &rpccli);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_DEBUG("cli_rpc_pipe_open_noauth_transport "
+				  "failed: %s\n", nt_errstr(status));
+		}
+		goto done;
+	}
+
+	status = cli_rpc_pipe_open_bind_schannel(
+		cli, &ndr_table_netlogon, transport, creds_ctx, &rpccli);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("cli_rpc_pipe_open_bind_schannel "
+			  "failed: %s\n", nt_errstr(status));
+		goto fail;
+	}
+
+	status = netlogon_creds_cli_check(creds_ctx, rpccli->binding_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("netlogon_creds_cli_check failed: %s\n",
+			    nt_errstr(status));
+		goto fail;
+	}
+
+done:
+	*_rpccli = rpccli;
+	status = NT_STATUS_OK;
+fail:
+	ZERO_STRUCT(found_session_key);
+	TALLOC_FREE(lck);
+	TALLOC_FREE(frame);
+	return status;
+}
+
 static NTSTATUS map_validation_to_info3(TALLOC_CTX *mem_ctx,
 					uint16_t validation_level,
 					union netr_Validation *validation,
