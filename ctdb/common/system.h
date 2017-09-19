@@ -62,7 +62,4 @@ void mkdir_p_or_die(const char *dir, int mode);
 
 void ctdb_wait_for_process_to_exit(pid_t pid);
 
-int ctdb_parse_connections(FILE *fp, TALLOC_CTX *mem_ctx,
-			   int *num_conn, struct ctdb_connection **out);
-
 #endif /* __CTDB_SYSTEM_H__ */
