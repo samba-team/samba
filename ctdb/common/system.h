@@ -53,7 +53,6 @@ bool parse_ip(const char *addr, const char *ifaces, unsigned port,
 	      ctdb_sock_addr *saddr);
 bool parse_ip_mask(const char *str, const char *ifaces, ctdb_sock_addr *addr,
 		   unsigned *mask);
-bool parse_ip_port(const char *addr, ctdb_sock_addr *saddr);
 
 void lockdown_memory(bool valgrinding);
 

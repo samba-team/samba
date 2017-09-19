@@ -244,46 +244,6 @@ bool parse_ip_mask(const char *str, const char *ifaces, ctdb_sock_addr *addr, un
 	return ret;
 }
 
-/*
-  parse a ip:port pair
- */
-bool parse_ip_port(const char *addr, ctdb_sock_addr *saddr)
-{
-	char *p;
-	char s[64]; /* Much longer than INET6_ADDRSTRLEN */
-	unsigned port;
-	char *endp = NULL;
-	ssize_t len;
-	bool ret;
-
-	len = strlen(addr);
-	if (len >= sizeof(s)) {
-		DEBUG(DEBUG_ERR, ("Address %s is unreasonably long\n", addr));
-		return false;
-	}
-
-	strncpy(s, addr, len+1);
-
-	p = rindex(s, ':');
-	if (p == NULL) {
-		DEBUG(DEBUG_ERR, (__location__ " This addr: %s does not contain a port number\n", s));
-		return false;
-	}
-
-	port = strtoul(p+1, &endp, 10);
-	if (endp == NULL || *endp != 0) {
-		/* trailing garbage */
-		DEBUG(DEBUG_ERR, (__location__ " Trailing garbage after the port in %s\n", s));
-		return false;
-	}
-	*p = 0;
-
-	/* now is this a ipv4 or ipv6 address ?*/
-	ret = parse_ip(s, NULL, port, saddr);
-
-	return ret;
-}
-
 /* we don't lock future pages here; it would increase the chance that
  * we'd fail to mmap later on. */
 void lockdown_memory(bool valgrinding)
