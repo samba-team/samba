@@ -29,6 +29,8 @@
 
 #include "ctdb_private.h"
 
+#include "protocol/protocol_util.h"
+
 #include "common/reqid.h"
 #include "common/system.h"
 #include "common/common.h"
@@ -172,6 +174,7 @@ int ctdb_parse_address(TALLOC_CTX *mem_ctx, const char *str,
 {
 	struct servent *se;
 	int port;
+	int ret;
 
 	setservent(0);
 	se = getservbyname("ctdb", "tcp");
@@ -183,9 +186,11 @@ int ctdb_parse_address(TALLOC_CTX *mem_ctx, const char *str,
 		port = ntohs(se->s_port);
 	}
 
-	if (! parse_ip(str, NULL, port, address)) {
+	ret = ctdb_sock_addr_from_string(str, address, false);
+	if (ret != 0) {
 		return -1;
 	}
+	ctdb_sock_addr_set_port(address, port);
 
 	return 0;
 }
