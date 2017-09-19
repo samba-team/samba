@@ -3044,12 +3044,14 @@ static int control_tickle(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	}
 
 
-	if (! parse_ip_port(argv[0], &src)) {
+	ret = ctdb_sock_addr_from_string(argv[0], &src, true);
+	if (ret != 0) {
 		fprintf(stderr, "Invalid IP address %s\n", argv[0]);
 		return 1;
 	}
 
-	if (! parse_ip_port(argv[1], &dst)) {
+	ret = ctdb_sock_addr_from_string(argv[1], &dst, true);
+	if (ret != 0) {
 		fprintf(stderr, "Invalid IP address %s\n", argv[1]);
 		return 1;
 	}
@@ -3259,11 +3261,13 @@ static int control_addtickle(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return 0;
 	}
 
-	if (! parse_ip_port(argv[0], &conn.src)) {
+	ret = ctdb_sock_addr_from_string(argv[0], &conn.src, true);
+	if (ret != 0) {
 		fprintf(stderr, "Invalid IP address %s\n", argv[0]);
 		return 1;
 	}
-	if (! parse_ip_port(argv[1], &conn.dst)) {
+	ret = ctdb_sock_addr_from_string(argv[1], &conn.dst, true);
+	if (ret != 0) {
 		fprintf(stderr, "Invalid IP address %s\n", argv[1]);
 		return 1;
 	}
@@ -3322,11 +3326,13 @@ static int control_deltickle(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return 0;
 	}
 
-	if (! parse_ip_port(argv[0], &conn.src)) {
+	ret = ctdb_sock_addr_from_string(argv[0], &conn.src, true);
+	if (ret != 0) {
 		fprintf(stderr, "Invalid IP address %s\n", argv[0]);
 		return 1;
 	}
-	if (! parse_ip_port(argv[1], &conn.dst)) {
+	ret = ctdb_sock_addr_from_string(argv[1], &conn.dst, true);
+	if (ret != 0) {
 		fprintf(stderr, "Invalid IP address %s\n", argv[1]);
 		return 1;
 	}
