@@ -114,7 +114,7 @@ void reset_scheduler(void)
 #endif
 }
 
-bool parse_ipv4(const char *s, unsigned port, struct sockaddr_in *sin)
+static bool parse_ipv4(const char *s, unsigned port, struct sockaddr_in *sin)
 {
 	sin->sin_family = AF_INET;
 	sin->sin_port   = htons(port);
@@ -161,7 +161,8 @@ static bool parse_ipv6(const char *s, const char *ifaces, unsigned port, ctdb_so
 /*
   parse an ip
  */
-bool parse_ip(const char *addr, const char *ifaces, unsigned port, ctdb_sock_addr *saddr)
+static bool parse_ip(const char *addr, const char *ifaces, unsigned port,
+		     ctdb_sock_addr *saddr)
 {
 	char *p;
 	bool ret;
