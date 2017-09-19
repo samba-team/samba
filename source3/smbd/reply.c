@@ -921,6 +921,11 @@ void reply_tcon_and_X(struct smb_request *req)
 		}
 
 		TALLOC_FREE(tcon);
+		/*
+		 * This tree id is gone. Make sure we can't re-use it
+		 * by accident.
+		 */
+		req->tid = 0;
 	}
 
 	if ((passlen > MAX_PASS_LEN) || (passlen >= req->buflen)) {
