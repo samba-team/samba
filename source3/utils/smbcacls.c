@@ -349,7 +349,7 @@ static bool set_secdesc(struct cli_state *cli, const char *filename,
 
 	status = cli_set_security_descriptor(cli, fnum, sec_info, sd);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("ERROR: security description set failed: %s\n",
+		printf("ERROR: security descriptor set failed: %s\n",
                        nt_errstr(status));
 		result=false;
 	}
