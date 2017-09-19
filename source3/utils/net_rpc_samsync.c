@@ -27,7 +27,6 @@
 #include "utils/net.h"
 #include "../librpc/gen_ndr/ndr_netlogon.h"
 #include "../librpc/gen_ndr/ndr_drsuapi.h"
-#include "libnet/libnet_samsync.h"
 #include "libnet/libnet_dssync.h"
 #include "../libcli/security/security.h"
 #include "passdb/machine_sid.h"

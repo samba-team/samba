@@ -232,7 +232,6 @@ bld.SAMBA3_BINARY('net',
                  PASSWD_UTIL
                  LIBNET
                  LIBNET_DSSYNC
-                 LIBNET_SAMSYNC
                  LIBEVENTLOG
                  REGFIO
                  NDR_NTPRINTING
