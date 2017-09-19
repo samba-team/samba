@@ -37,7 +37,6 @@
 #include "protocol/protocol_util.h"
 
 #include "common/comm.h"
-#include "common/system.h"
 #include "common/logging.h"
 #include "common/tunable.h"
 #include "common/srvid.h"
@@ -170,6 +169,7 @@ static bool nodemap_parse(struct node_map *node_map)
 		char *ip;
 		ctdb_sock_addr saddr;
 		struct node *node;
+		int ret;
 
 		if (line[0] == '\n') {
 			break;
@@ -194,10 +194,12 @@ static bool nodemap_parse(struct node_map *node_map)
 			fprintf(stderr, "bad line (%s) - missing IP\n", line);
 			continue;
 		}
-		if (!parse_ip(tok, NULL, CTDB_PORT, &saddr)) {
+		ret = ctdb_sock_addr_from_string(tok, &saddr, false);
+		if (ret != 0) {
 			fprintf(stderr, "bad line (%s) - invalid IP\n", line);
 			continue;
 		}
+		ctdb_sock_addr_set_port(&saddr, CTDB_PORT);
 		ip = talloc_strdup(node_map, tok);
 		if (ip == NULL) {
 			goto fail;
@@ -249,7 +251,8 @@ static bool nodemap_parse(struct node_map *node_map)
 		}
 		node = &node_map->node[node_map->num_nodes];
 
-		parse_ip(ip, NULL, CTDB_PORT, &node->addr);
+		ctdb_sock_addr_from_string(ip, &node->addr, false);
+		ctdb_sock_addr_set_port(&node->addr, CTDB_PORT);
 		node->pnn = pnn;
 		node->flags = flags;
 		node->capabilities = capabilities;
@@ -275,11 +278,14 @@ static bool node_map_add(struct ctdb_node_map *nodemap,
 	ctdb_sock_addr addr;
 	uint32_t num;
 	struct ctdb_node_and_flags *n;
+	int ret;
 
-	if (! parse_ip(nstr, NULL, CTDB_PORT, &addr)) {
+	ret = ctdb_sock_addr_from_string(nstr, &addr, false);
+	if (ret != 0) {
 		fprintf(stderr, "Invalid IP address %s\n", nstr);
 		return false;
 	}
+	ctdb_sock_addr_set_port(&addr, CTDB_PORT);
 
 	num = nodemap->num;
 	nodemap->node = talloc_realloc(nodemap, nodemap->node,
@@ -1959,7 +1965,8 @@ static void control_reload_nodes_file(TALLOC_CTX *mem_ctx,
 			node = &node_map->node[i];
 
 			node->flags |= NODE_FLAGS_DELETED;
-			parse_ip("0.0.0.0", NULL, 0, &node->addr);
+			ctdb_sock_addr_from_string("0.0.0.0", &node->addr,
+						   false);
 
 			continue;
 		}
