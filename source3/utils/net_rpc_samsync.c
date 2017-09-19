@@ -184,85 +184,6 @@ static NTSTATUS rpc_vampire_ds_internals(struct net_context *c,
 	return status;
 }
 
-/* dump sam database via samsync rpc calls */
-static NTSTATUS rpc_vampire_internals(struct net_context *c,
-				      const struct dom_sid *domain_sid,
-				      const char *domain_name,
-				      struct cli_state *cli,
-				      struct rpc_pipe_client *pipe_hnd,
-				      TALLOC_CTX *mem_ctx,
-				      int argc,
-				      const char **argv)
-{
-	NTSTATUS result;
-	struct samsync_context *ctx = NULL;
-
-	if (!dom_sid_equal(domain_sid, get_global_sam_sid())) {
-		d_printf(_("Cannot import users from %s at this time, "
-			   "as the current domain:\n\t%s: %s\nconflicts "
-			   "with the remote domain\n\t%s: %s\n"
-			   "Perhaps you need to set: \n\n\tsecurity=user\n\t"
-			   "workgroup=%s\n\n in your smb.conf?\n"),
-			 domain_name,
-			 get_global_sam_name(),
-			 sid_string_dbg(get_global_sam_sid()),
-			 domain_name,
-			 sid_string_dbg(domain_sid),
-			 domain_name);
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	result = libnet_samsync_init_context(mem_ctx,
-					     domain_sid,
-					     &ctx);
-	if (!NT_STATUS_IS_OK(result)) {
-		return result;
-	}
-
-	ctx->mode		= NET_SAMSYNC_MODE_FETCH_PASSDB;
-	ctx->cli		= pipe_hnd;
-	ctx->ops		= &libnet_samsync_passdb_ops;
-	ctx->domain_name	= domain_name;
-
-	ctx->force_full_replication = c->opt_force_full_repl ? true : false;
-	ctx->clean_old_entries = c->opt_clean_old_entries ? true : false;
-
-	parse_samsync_partial_replication_objects(ctx, argc, argv,
-						  &ctx->single_object_replication,
-						  &ctx->objects,
-						  &ctx->num_objects);
-
-	/* fetch domain */
-	result = libnet_samsync(SAM_DATABASE_DOMAIN, ctx);
-
-	if (!NT_STATUS_IS_OK(result) && ctx->error_message) {
-		d_fprintf(stderr, "%s\n", ctx->error_message);
-		goto fail;
-	}
-
-	if (ctx->result_message) {
-		d_fprintf(stdout, "%s\n", ctx->result_message);
-	}
-
-	/* fetch builtin */
-	ctx->domain_sid = dom_sid_dup(mem_ctx, &global_sid_Builtin);
-	ctx->domain_sid_str = sid_string_talloc(mem_ctx, ctx->domain_sid);
-	result = libnet_samsync(SAM_DATABASE_BUILTIN, ctx);
-
-	if (!NT_STATUS_IS_OK(result) && ctx->error_message) {
-		d_fprintf(stderr, "%s\n", ctx->error_message);
-		goto fail;
-	}
-
-	if (ctx->result_message) {
-		d_fprintf(stdout, "%s\n", ctx->result_message);
-	}
-
- fail:
-	TALLOC_FREE(ctx);
-	return result;
-}
-
 int rpc_vampire_passdb(struct net_context *c, int argc, const char **argv)
 {
 	int ret = 0;
@@ -290,11 +211,8 @@ int rpc_vampire_passdb(struct net_context *c, int argc, const char **argv)
 	}
 
 	if (!dc_info.is_ad) {
-		printf(_("DC is not running Active Directory\n"));
-		ret = run_rpc_command(c, cli, &ndr_table_netlogon,
-				      0,
-				      rpc_vampire_internals, argc, argv);
-		return ret;
+		printf(_("DC is not running Active Directory, exiting\n"));
+		return -1;
 	}
 
 	if (!c->opt_force) {
@@ -309,14 +227,6 @@ int rpc_vampire_passdb(struct net_context *c, int argc, const char **argv)
 	ret = run_rpc_command(c, cli, &ndr_table_drsuapi,
 			      NET_FLAGS_SEAL | NET_FLAGS_TCP,
 			      rpc_vampire_ds_internals, argc, argv);
-	if (ret != 0 && dc_info.is_mixed_mode) {
-		printf(_("Fallback to NT4 vampire on Mixed-Mode AD "
-			 "Domain\n"));
-		ret = run_rpc_command(c, cli, &ndr_table_netlogon,
-				      0,
-				      rpc_vampire_internals, argc, argv);
-	}
-
 	return ret;
 }
 
