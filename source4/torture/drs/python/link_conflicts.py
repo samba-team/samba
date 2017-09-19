@@ -35,7 +35,8 @@ from ldb import SCOPE_BASE
 import random
 import time
 
-from samba.dcerpc import drsuapi
+from drs_base import AbstractLink
+from samba.dcerpc import drsuapi, misc
 
 # specifies the order to sync DCs in
 DC1_TO_DC2 = 1
@@ -55,6 +56,9 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
             "dn": self.ou,
             "objectclass": "organizationalUnit"})
 
+        (self.drs, self.drs_handle) = self._ds_bind(self.dnsname_dc1)
+        (self.drs2, self.drs2_handle) = self._ds_bind(self.dnsname_dc2)
+
         # disable replication for the tests so we can control at what point
         # the DCs try to replicate
         self._disable_inbound_repl(self.dnsname_dc1)
@@ -68,7 +72,7 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
         super(DrsReplicaLinkConflictTestCase, self).tearDown()
 
     def get_guid(self, samdb, dn):
-        """Returns an object's GUID"""
+        """Returns an object's GUID (in string format)"""
         res = samdb.search(base=dn, attrs=["objectGUID"], scope=ldb.SCOPE_BASE)
         return self._GUID_string(res[0]['objectGUID'][0])
 
@@ -137,6 +141,37 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
             self.assertTrue(val in res2[0][attr],
                             "%s '%s' not found on DC2" %(attr, val))
 
+    def _check_replicated_links(self, src_obj_dn, expected_links):
+        """Checks that replication sends back the expected linked attributes"""
+
+        hwm = drsuapi.DsReplicaHighWaterMark()
+        hwm.tmp_highest_usn = 0
+        hwm.reserved_usn = 0
+        hwm.highest_usn = 0
+
+        self._check_replication([src_obj_dn],
+                                drsuapi.DRSUAPI_DRS_WRIT_REP,
+                                dest_dsa=None,
+                                drs_error=drsuapi.DRSUAPI_EXOP_ERR_SUCCESS,
+                                nc_dn_str=src_obj_dn,
+                                exop=drsuapi.DRSUAPI_EXOP_REPL_OBJ,
+                                expected_links=expected_links,
+                                highwatermark=hwm)
+
+        # Check DC2 as well
+        self.set_test_ldb_dc(self.ldb_dc2)
+
+        self._check_replication([src_obj_dn],
+                                drsuapi.DRSUAPI_DRS_WRIT_REP,
+                                dest_dsa=None,
+                                drs_error=drsuapi.DRSUAPI_EXOP_ERR_SUCCESS,
+                                nc_dn_str=src_obj_dn,
+                                exop=drsuapi.DRSUAPI_EXOP_REPL_OBJ,
+                                expected_links=expected_links,
+                                highwatermark=hwm,
+                                drs=self.drs2, drs_handle=self.drs2_handle)
+        self.set_test_ldb_dc(self.ldb_dc1)
+
     def _test_conflict_single_valued_link(self, sync_order):
         """
         Tests a simple single-value link conflict, i.e. each DC adds a link to
@@ -175,6 +210,16 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
 
         self.assertTrue(res1[0]["managedBy"][0] == target2_ou,
                         "Expected most recent update to win conflict")
+
+        # we can't query the deleted links over LDAP, but we can check DRS
+        # to make sure the DC kept a copy of the conflicting link
+        link1 = AbstractLink(drsuapi.DRSUAPI_ATTID_managedBy, 0,
+                             misc.GUID(src_guid), misc.GUID(target1_guid))
+        link2 = AbstractLink(drsuapi.DRSUAPI_ATTID_managedBy,
+                             drsuapi.DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE,
+                             misc.GUID(src_guid), misc.GUID(target2_guid))
+        self._check_replicated_links(src_ou, [link1, link2])
+
 
     def test_conflict_single_valued_link(self):
         # repeat the test twice, to give each DC a chance to resolve the conflict
