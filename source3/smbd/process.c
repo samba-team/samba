@@ -1855,12 +1855,13 @@ void smb_request_done(struct smb_request *req)
 
 		next->vuid = SVAL(req->outbuf, smb_uid);
 		next->tid  = SVAL(req->outbuf, smb_tid);
-		status = smb1srv_tcon_lookup(req->xconn, req->tid,
+		status = smb1srv_tcon_lookup(req->xconn, next->tid,
 					     now, &tcon);
+
 		if (NT_STATUS_IS_OK(status)) {
-			req->conn = tcon->compat;
+			next->conn = tcon->compat;
 		} else {
-			req->conn = NULL;
+			next->conn = NULL;
 		}
 		next->chain_fsp = req->chain_fsp;
 		next->inbuf = req->inbuf;
