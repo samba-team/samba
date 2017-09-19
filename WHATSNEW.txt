@@ -41,6 +41,28 @@ smb.conf changes
   Parameter Name                     Description             Default
   --------------                     -----------             -------
 
+NT4-style replication based net commands removed
+================================================
+
+The following commands and sub-commands have been removed from the
+"net" utility:
+
+net rpc samdump
+net rpc vampire ldif
+
+Also, replicating from a real NT4 domain with "net rpc vampire" and
+"net rpc vampire keytab" has been removed.
+
+The NT4-based commands were accidentially broken in 2013, and nobody
+noticed the breakage. So instead of fixing them including tests (which
+would have meant writing a server for the protocols, which we don't
+have) we decided to remove them.
+
+For the same reason, the "samsync", "samdeltas" and "database_redo"
+commands have been removed from rpcclient.
+
+"net rpc vampire keytab" from Active Directory domains continues to be
+supported.
 
 KNOWN ISSUES
 ============
