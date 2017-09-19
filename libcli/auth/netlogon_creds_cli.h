@@ -116,9 +116,11 @@ struct tevent_req *netlogon_creds_cli_check_send(TALLOC_CTX *mem_ctx,
 				struct tevent_context *ev,
 				struct netlogon_creds_cli_context *context,
 				struct dcerpc_binding_handle *b);
-NTSTATUS netlogon_creds_cli_check_recv(struct tevent_req *req);
+NTSTATUS netlogon_creds_cli_check_recv(struct tevent_req *req,
+				       union netr_Capabilities *capabilities);
 NTSTATUS netlogon_creds_cli_check(struct netlogon_creds_cli_context *context,
-				  struct dcerpc_binding_handle *b);
+				  struct dcerpc_binding_handle *b,
+				  union netr_Capabilities *capabilities);
 
 struct tevent_req *netlogon_creds_cli_ServerPasswordSet_send(TALLOC_CTX *mem_ctx,
 				struct tevent_context *ev,

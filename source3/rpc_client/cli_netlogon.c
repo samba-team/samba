@@ -446,7 +446,8 @@ again:
 		goto fail;
 	}
 
-	status = netlogon_creds_cli_check(creds_ctx, rpccli->binding_handle);
+	status = netlogon_creds_cli_check(creds_ctx, rpccli->binding_handle,
+					  NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_WARNING("netlogon_creds_cli_check failed: %s\n",
 			    nt_errstr(status));

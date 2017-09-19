@@ -1728,8 +1728,11 @@ static void netlogon_creds_cli_check_caps(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
-NTSTATUS netlogon_creds_cli_check_recv(struct tevent_req *req)
+NTSTATUS netlogon_creds_cli_check_recv(struct tevent_req *req,
+				       union netr_Capabilities *capabilities)
 {
+	struct netlogon_creds_cli_check_state *state = tevent_req_data(
+		req, struct netlogon_creds_cli_check_state);
 	NTSTATUS status;
 
 	if (tevent_req_is_nterror(req, &status)) {
@@ -1738,12 +1741,17 @@ NTSTATUS netlogon_creds_cli_check_recv(struct tevent_req *req)
 		return status;
 	}
 
+	if (capabilities != NULL) {
+		*capabilities = state->caps;
+	}
+
 	tevent_req_received(req);
 	return NT_STATUS_OK;
 }
 
 NTSTATUS netlogon_creds_cli_check(struct netlogon_creds_cli_context *context,
-				  struct dcerpc_binding_handle *b)
+				  struct dcerpc_binding_handle *b,
+				  union netr_Capabilities *capabilities)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct tevent_context *ev;
@@ -1761,7 +1769,7 @@ NTSTATUS netlogon_creds_cli_check(struct netlogon_creds_cli_context *context,
 	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
 		goto fail;
 	}
-	status = netlogon_creds_cli_check_recv(req);
+	status = netlogon_creds_cli_check_recv(req, capabilities);
  fail:
 	TALLOC_FREE(frame);
 	return status;

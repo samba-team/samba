@@ -3370,7 +3370,8 @@ NTSTATUS cli_rpc_pipe_open_schannel_with_creds(struct cli_state *cli,
 	if (ndr_syntax_id_equal(&table->syntax_id,
 				&ndr_table_netlogon.syntax_id)) {
 		status = netlogon_creds_cli_check(netlogon_creds,
-						  rpccli->binding_handle);
+						  rpccli->binding_handle,
+						  NULL);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("netlogon_creds_cli_check failed with %s\n",
 				  nt_errstr(status)));
