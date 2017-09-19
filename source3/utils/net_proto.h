@@ -319,7 +319,6 @@ struct rpc_sh_cmd *net_rpc_rights_cmds(struct net_context *c, TALLOC_CTX *mem_ct
 
 int rpc_vampire_usage(struct net_context *c, int argc, const char **argv);
 int rpc_vampire_passdb(struct net_context *c, int argc, const char **argv);
-int rpc_vampire_ldif(struct net_context *c, int argc, const char **argv);
 int rpc_vampire_keytab(struct net_context *c, int argc, const char **argv);
 
 /* The following definitions come from utils/net_rpc_service.c  */

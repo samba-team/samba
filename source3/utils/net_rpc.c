@@ -7443,15 +7443,6 @@ static int rpc_vampire(struct net_context *c, int argc, const char **argv)
 {
 	struct functable func[] = {
 		{
-			"ldif",
-			rpc_vampire_ldif,
-			NET_TRANSPORT_RPC,
-			N_("Dump remote SAM database to ldif"),
-			N_("net rpc vampire ldif\n"
-			   "    Dump remote SAM database to LDIF file or "
-			   "stdout")
-		},
-		{
 			"keytab",
 			rpc_vampire_keytab,
 			NET_TRANSPORT_RPC,
