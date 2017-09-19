@@ -7438,22 +7438,6 @@ bool net_rpc_check(struct net_context *c, unsigned flags)
 	return ret;
 }
 
-/* dump sam database via samsync rpc calls */
-static int rpc_samdump(struct net_context *c, int argc, const char **argv) {
-	if (c->display_usage) {
-		d_printf(  "%s\n"
-			   "net rpc samdump\n"
-			   "    %s\n",
-			 _("Usage:"),
-			 _("Dump remote SAM database"));
-		return 0;
-	}
-
-	return run_rpc_command(c, NULL, &ndr_table_netlogon,
-			       NET_FLAGS_ANONYMOUS,
-			       rpc_samdump_internals, argc, argv);
-}
-
 /* syncronise sam database via samsync rpc calls */
 static int rpc_vampire(struct net_context *c, int argc, const char **argv)
 {
@@ -8266,14 +8250,6 @@ int net_rpc(struct net_context *c, int argc, const char **argv)
 			N_("Shutdown a remote server"),
 			N_("net rpc shutdown\n"
 			   "    Shutdown a remote server")
-		},
-		{
-			"samdump",
-			rpc_samdump,
-			NET_TRANSPORT_RPC,
-			N_("Dump SAM data of remote NT PDC"),
-			N_("net rpc samdump\n"
-			   "    Dump SAM data of remote NT PDC")
 		},
 		{
 			"vampire",

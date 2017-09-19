@@ -107,51 +107,6 @@ static void parse_samsync_partial_replication_objects(TALLOC_CTX *mem_ctx,
 	}
 }
 
-/* dump sam database via samsync rpc calls */
-NTSTATUS rpc_samdump_internals(struct net_context *c,
-				const struct dom_sid *domain_sid,
-				const char *domain_name,
-				struct cli_state *cli,
-				struct rpc_pipe_client *pipe_hnd,
-				TALLOC_CTX *mem_ctx,
-				int argc,
-				const char **argv)
-{
-	struct samsync_context *ctx = NULL;
-	NTSTATUS status;
-
-	status = libnet_samsync_init_context(mem_ctx,
-					     domain_sid,
-					     &ctx);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	ctx->mode		= NET_SAMSYNC_MODE_DUMP;
-	ctx->cli		= pipe_hnd;
-	ctx->netlogon_creds	= c->netlogon_creds;
-	ctx->ops		= &libnet_samsync_display_ops;
-	ctx->domain_name	= domain_name;
-
-	ctx->force_full_replication = c->opt_force_full_repl ? true : false;
-	ctx->clean_old_entries = c->opt_clean_old_entries ? true : false;
-
-	parse_samsync_partial_replication_objects(ctx, argc, argv,
-						  &ctx->single_object_replication,
-						  &ctx->objects,
-						  &ctx->num_objects);
-
-	libnet_samsync(SAM_DATABASE_DOMAIN, ctx);
-
-	libnet_samsync(SAM_DATABASE_BUILTIN, ctx);
-
-	libnet_samsync(SAM_DATABASE_PRIVS, ctx);
-
-	TALLOC_FREE(ctx);
-
-	return NT_STATUS_OK;
-}
-
 /**
  * Basic usage function for 'net rpc vampire'
  *
