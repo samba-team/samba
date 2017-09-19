@@ -3013,19 +3013,19 @@ static int control_tickle(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	}
 
 	if (argc == 0) {
-		struct ctdb_connection *clist;
-		int count;
+		struct ctdb_connection_list *clist;
 		int i, num_failed;
 
-		ret = ctdb_parse_connections(stdin, mem_ctx, &count, &clist);
+		/* Client first but the src/dst logic is confused */
+		ret = ctdb_connection_list_read(mem_ctx, false, &clist);
 		if (ret != 0) {
 			return ret;
 		}
 
 		num_failed = 0;
-		for (i=0; i<count; i++) {
-			ret = ctdb_sys_send_tcp(&clist[i].src,
-						&clist[i].dst,
+		for (i = 0; i < clist->num; i++) {
+			ret = ctdb_sys_send_tcp(&clist->conn[i].src,
+						&clist->conn[i].dst,
 						0, 0, 0);
 			if (ret != 0) {
 				num_failed += 1;
@@ -3136,7 +3136,7 @@ typedef void (*clist_request_func)(struct ctdb_req_control *request,
 typedef int (*clist_reply_func)(struct ctdb_reply_control *reply);
 
 struct process_clist_state {
-	struct ctdb_connection *clist;
+	struct ctdb_connection_list *clist;
 	int count;
 	int num_failed, num_total;
 	clist_reply_func reply_func;
@@ -3147,8 +3147,7 @@ static void process_clist_done(struct tevent_req *subreq);
 static struct tevent_req *process_clist_send(
 					TALLOC_CTX *mem_ctx,
 					struct ctdb_context *ctdb,
-					struct ctdb_connection *clist,
-					int count,
+					struct ctdb_connection_list *clist,
 					clist_request_func request_func,
 					clist_reply_func reply_func)
 {
@@ -3163,11 +3162,10 @@ static struct tevent_req *process_clist_send(
 	}
 
 	state->clist = clist;
-	state->count = count;
 	state->reply_func = reply_func;
 
-	for (i=0; i<count; i++) {
-		request_func(&request, &clist[i]);
+	for (i = 0; i < clist->num; i++) {
+		request_func(&request, &clist->conn[i]);
 		subreq = ctdb_client_control_send(state, ctdb->ev,
 						  ctdb->client, ctdb->cmd_pnn,
 						  TIMEOUT(), &request);
@@ -3205,7 +3203,7 @@ static void process_clist_done(struct tevent_req *subreq)
 
 done:
 	state->num_total += 1;
-	if (state->num_total == state->count) {
+	if (state->num_total == state->clist->num) {
 		tevent_req_done(req);
 	}
 }
@@ -3229,19 +3227,19 @@ static int control_addtickle(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	}
 
 	if (argc == 0) {
-		struct ctdb_connection *clist;
+		struct ctdb_connection_list *clist;
 		struct tevent_req *req;
-		int count;
 
-		ret = ctdb_parse_connections(stdin, mem_ctx, &count, &clist);
+		/* Client first but the src/dst logic is confused */
+		ret = ctdb_connection_list_read(mem_ctx, false, &clist);
 		if (ret != 0) {
 			return ret;
 		}
-		if (count == 0) {
+		if (clist->num == 0) {
 			return 0;
 		}
 
-		req = process_clist_send(mem_ctx, ctdb, clist, count,
+		req = process_clist_send(mem_ctx, ctdb, clist,
 				 ctdb_req_control_tcp_add_delayed_update,
 				 ctdb_reply_control_tcp_add_delayed_update);
 		if (req == NULL) {
@@ -3292,19 +3290,19 @@ static int control_deltickle(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	}
 
 	if (argc == 0) {
-		struct ctdb_connection *clist;
+		struct ctdb_connection_list *clist;
 		struct tevent_req *req;
-		int count;
 
-		ret = ctdb_parse_connections(stdin, mem_ctx, &count, &clist);
+		/* Client first but the src/dst logic is confused */
+		ret = ctdb_connection_list_read(mem_ctx, false, &clist);
 		if (ret != 0) {
 			return ret;
 		}
-		if (count == 0) {
+		if (clist->num == 0) {
 			return 0;
 		}
 
-		req = process_clist_send(mem_ctx, ctdb, clist, count,
+		req = process_clist_send(mem_ctx, ctdb, clist,
 					 ctdb_req_control_tcp_remove,
 					 ctdb_reply_control_tcp_remove);
 		if (req == NULL) {
