@@ -874,19 +874,6 @@ bld.SAMBA3_SUBSYSTEM('LIBNET_DSSYNC',
                          RPC_NDR_DRSUAPI
                          ''')
 
-bld.SAMBA3_SUBSYSTEM('LIBNET_SAMSYNC',
-                    source='''
-                           libnet/libnet_samsync.c
-                           libnet/libnet_samsync_ldif.c
-                           libnet/libnet_samsync_passdb.c
-                           libnet/libnet_samsync_display.c
-                           libnet/libnet_samsync_keytab.c
-                           ''',
-                    deps='''
-                         LIBNET
-                         LIBCLI_SAMSYNC
-                         ''')
-
 bld.SAMBA3_SUBSYSTEM('LIBEVENTLOG',
                     source='lib/eventlog/eventlog.c',
                     deps='NDR_EVENTLOG tdb')
