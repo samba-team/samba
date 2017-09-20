@@ -2144,6 +2144,10 @@ server_lookup:
 	    goto out;
 	}
 
+	if (rk_is_subkey == 0) {
+	    auth_data_key = &adtkt.key;
+	}
+
 	kdc_log(context, config, 0, "constrained delegation for %s "
 		"from %s (%s) to %s", tpn, cpn, dpn, spn);
     }
