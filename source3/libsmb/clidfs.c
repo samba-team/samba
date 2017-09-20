@@ -203,7 +203,9 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 		/* If a password was not supplied then
 		 * try again with a null username. */
 		if (password[0] || !username[0] ||
+			force_encrypt || smbXcli_conn_signing_mandatory(c->conn) ||
 			get_cmdline_auth_info_use_kerberos(auth_info) ||
+			get_cmdline_auth_info_use_ccache(auth_info) ||
 			!NT_STATUS_IS_OK(status = cli_session_setup(c, "",
 				    		"", 0,
 						"", 0,
@@ -952,7 +954,7 @@ NTSTATUS cli_resolve_path(TALLOC_CTX *ctx,
 			     "IPC$",
 			     dfs_auth_info,
 			     false,
-			     smb1cli_conn_encryption_on(rootcli->conn),
+			     cli_state_is_encryption_on(rootcli),
 			     smbXcli_conn_protocol(rootcli->conn),
 			     0,
 			     0x20,
@@ -1010,7 +1012,7 @@ NTSTATUS cli_resolve_path(TALLOC_CTX *ctx,
 				dfs_refs[count].share,
 				dfs_auth_info,
 				false,
-				smb1cli_conn_encryption_on(rootcli->conn),
+				cli_state_is_encryption_on(rootcli),
 				smbXcli_conn_protocol(rootcli->conn),
 				0,
 				0x20,
