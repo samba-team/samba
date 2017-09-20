@@ -4,4 +4,7 @@ samba4.drs.replica_sync.python\(vampire_dc\).replica_sync.DrsReplicaSyncTestCase
 samba4.drs.replica_sync.python\(promoted_dc\).replica_sync.DrsReplicaSyncTestCase.test_ReplConflictsRenamedVsNewRemoteWin\(promoted_dc:local\)
 samba4.drs.replica_sync.python\(vampire_dc\).replica_sync.DrsReplicaSyncTestCase.test_ReplConflictsRenamedVsNewLocalWin\(vampire_dc:local\)
 samba4.drs.replica_sync.python\(promoted_dc\).replica_sync.DrsReplicaSyncTestCase.test_ReplConflictsRenamedVsNewLocalWin\(promoted_dc:local\)
+samba4.drs.replica_sync.python\(vampire_dc\).replica_sync.DrsReplicaSyncTestCase.test_ReplReanimationConflict\(vampire_dc:local\)
+samba4.drs.replica_sync.python\(promoted_dc\).replica_sync.DrsReplicaSyncTestCase.test_ReplReanimationConflict\(promoted_dc:local\)
+
 
