@@ -26,6 +26,7 @@
 #include "trans2.h"
 #include "libsmb/nmblib.h"
 #include "../libcli/smb/smbXcli_base.h"
+#include "auth/credentials/credentials.h"
 
 /********************************************************************
  Important point.
@@ -145,9 +146,6 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 	char *servicename;
 	char *sharename;
 	char *newserver, *newshare;
-	const char *username;
-	const char *password;
-	const char *domain;
 	NTSTATUS status;
 	int flags = 0;
 	int signing_state = get_cmdline_auth_info_signing_state(auth_info);
@@ -225,21 +223,15 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 		smb2cli_conn_set_max_credits(c->conn, DEFAULT_SMB2_MAX_CREDITS);
 	}
 
-	username = get_cmdline_auth_info_username(auth_info);
-	password = get_cmdline_auth_info_password(auth_info);
-	domain = get_cmdline_auth_info_domain(auth_info);
-	if ((domain == NULL) || (domain[0] == '\0')) {
-		domain = lp_workgroup();
-	}
-
 	creds = get_cmdline_auth_info_creds(auth_info);
 
 	status = cli_session_setup_creds(c, creds);
 	if (!NT_STATUS_IS_OK(status)) {
 		/* If a password was not supplied then
 		 * try again with a null username. */
-		if (password[0] || !username[0] ||
-			get_cmdline_auth_info_use_kerberos(auth_info) ||
+		if (force_encrypt || smbXcli_conn_signing_mandatory(c->conn) ||
+			cli_credentials_authentication_requested(creds) ||
+			cli_credentials_is_anonymous(creds) ||
 			!NT_STATUS_IS_OK(status = cli_session_setup_anon(c)))
 		{
 			d_printf("session setup failed: %s\n",
@@ -980,7 +972,7 @@ NTSTATUS cli_resolve_path(TALLOC_CTX *ctx,
 			     "IPC$",
 			     dfs_auth_info,
 			     false,
-			     smb1cli_conn_encryption_on(rootcli->conn),
+			     cli_state_is_encryption_on(rootcli),
 			     smbXcli_conn_protocol(rootcli->conn),
 			     0,
 			     0x20,
@@ -1038,7 +1030,7 @@ NTSTATUS cli_resolve_path(TALLOC_CTX *ctx,
 				dfs_refs[count].share,
 				dfs_auth_info,
 				false,
-				smb1cli_conn_encryption_on(rootcli->conn),
+				cli_state_is_encryption_on(rootcli),
 				smbXcli_conn_protocol(rootcli->conn),
 				0,
 				0x20,

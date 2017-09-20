@@ -468,6 +468,11 @@ bool smbXcli_conn_use_unicode(struct smbXcli_conn *conn)
 	return false;
 }
 
+bool smbXcli_conn_signing_mandatory(struct smbXcli_conn *conn)
+{
+	return conn->mandatory_signing;
+}
+
 void smbXcli_conn_set_sockopt(struct smbXcli_conn *conn, const char *options)
 {
 	set_socket_options(conn->sock_fd, options);

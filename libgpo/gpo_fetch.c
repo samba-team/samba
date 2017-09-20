@@ -133,7 +133,7 @@ static NTSTATUS gpo_connect_server(ADS_STRUCT *ads,
 			ads->auth.password,
 			CLI_FULL_CONNECTION_USE_KERBEROS |
 			CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS,
-			Undefined);
+			SMB_SIGNING_REQUIRED);
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(10,("check_refresh_gpo: "
 				"failed to connect: %s\n",
