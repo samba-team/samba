@@ -1388,11 +1388,13 @@ tgs_parse_request(krb5_context context,
 	}
 	ALLOC(*auth_data);
 	if (*auth_data == NULL) {
+	    krb5_data_free(&ad);
 	    krb5_auth_con_free(context, ac);
 	    ret = KRB5KRB_AP_ERR_BAD_INTEGRITY; /* ? */
 	    goto out;
 	}
 	ret = decode_AuthorizationData(ad.data, ad.length, *auth_data, NULL);
+	krb5_data_free(&ad);
 	if(ret){
 	    krb5_auth_con_free(context, ac);
 	    free(*auth_data);
