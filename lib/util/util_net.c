@@ -1036,6 +1036,9 @@ static const smb_socket_option socket_options[] = {
 #ifdef TCP_DEFER_ACCEPT
   {"TCP_DEFER_ACCEPT", IPPROTO_TCP, TCP_DEFER_ACCEPT, 0, OPT_INT},
 #endif
+#ifdef TCP_USER_TIMEOUT
+  {"TCP_USER_TIMEOUT", IPPROTO_TCP, TCP_USER_TIMEOUT, 0, OPT_INT},
+#endif
   {NULL,0,0,0,0}};
 
 /****************************************************************************

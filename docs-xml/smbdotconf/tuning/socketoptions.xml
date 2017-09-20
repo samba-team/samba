@@ -71,6 +71,7 @@
 	<listitem><para>TCP_KEEPALIVE_THRESHOLD *</para></listitem>
 	<listitem><para>TCP_KEEPALIVE_ABORT_THRESHOLD *</para></listitem>
 	<listitem><para>TCP_DEFER_ACCEPT *</para></listitem>
+	<listitem><para>TCP_USER_TIMEOUT *</para></listitem>
     </itemizedlist>
 
     <para>Those marked with a <emphasis>'*'</emphasis> take an integer 
