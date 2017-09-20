@@ -3351,13 +3351,13 @@ static int verify_cidr(const char *cidr)
 }
 
 
-static int samldb_verify_subnet(struct samldb_ctx *ac)
+static int samldb_verify_subnet(struct samldb_ctx *ac, struct ldb_dn *dn)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
 	const char *cidr = NULL;
 	const struct ldb_val *rdn_value = NULL;
 
-	rdn_value = ldb_dn_get_rdn_val(ac->msg->dn);
+	rdn_value = ldb_dn_get_rdn_val(dn);
 	if (rdn_value == NULL) {
 		ldb_set_errstring(ldb, "samldb: ldb_dn_get_rdn_val "
 				  "failed");
@@ -3588,7 +3588,7 @@ static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 
 	if (samdb_find_attribute(ldb, ac->msg,
 				 "objectclass", "subnet") != NULL) {
-		ret = samldb_verify_subnet(ac);
+		ret = samldb_verify_subnet(ac, ac->msg->dn);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(ac);
 			return ret;
@@ -3991,7 +3991,7 @@ static int check_rename_constraints(struct ldb_message *msg,
 
 	/* subnet objects */
 	if (samdb_find_attribute(ldb, msg, "objectclass", "subnet") != NULL) {
-		ret = samldb_verify_subnet(ac);
+		ret = samldb_verify_subnet(ac, newdn);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(ac);
 			return ret;
