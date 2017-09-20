@@ -447,7 +447,7 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 		cli_credentials_get_username(cli_creds),
 		cli_credentials_get_domain(cli_creds),
 		cli_credentials_get_password(cli_creds),
-		0, 0);
+		0, SMB_SIGNING_DEFAULT);
 	if (!py_tevent_req_wait_exc(self->ev, req)) {
 		return -1;
 	}

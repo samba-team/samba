@@ -25,6 +25,7 @@
 #include "librpc/gen_ndr/samr.h" /* for struct samrPassword */
 #include "auth/credentials/credentials.h"
 #include "auth/credentials/credentials_internal.h"
+#include "auth/gensec/gensec.h"
 #include "libcli/auth/libcli_auth.h"
 #include "tevent.h"
 #include "param/param.h"
@@ -362,6 +363,8 @@ _PUBLIC_ bool cli_credentials_set_principal_callback(struct cli_credentials *cre
 
 _PUBLIC_ bool cli_credentials_authentication_requested(struct cli_credentials *cred) 
 {
+	uint32_t gensec_features = 0;
+
 	if (cred->bind_dn) {
 		return true;
 	}
@@ -386,6 +389,19 @@ _PUBLIC_ bool cli_credentials_authentication_requested(struct cli_credentials *c
 	}
 
 	if (cli_credentials_get_kerberos_state(cred) == CRED_MUST_USE_KERBEROS) {
+		return true;
+	}
+
+	gensec_features = cli_credentials_get_gensec_features(cred);
+	if (gensec_features & GENSEC_FEATURE_NTLM_CCACHE) {
+		return true;
+	}
+
+	if (gensec_features & GENSEC_FEATURE_SIGN) {
+		return true;
+	}
+
+	if (gensec_features & GENSEC_FEATURE_SEAL) {
 		return true;
 	}
 

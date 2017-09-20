@@ -47,6 +47,7 @@ bool smbXcli_conn_dfs_supported(struct smbXcli_conn *conn);
 
 enum protocol_types smbXcli_conn_protocol(struct smbXcli_conn *conn);
 bool smbXcli_conn_use_unicode(struct smbXcli_conn *conn);
+bool smbXcli_conn_signing_mandatory(struct smbXcli_conn *conn);
 
 void smbXcli_conn_set_sockopt(struct smbXcli_conn *conn, const char *options);
 const struct sockaddr_storage *smbXcli_conn_local_sockaddr(struct smbXcli_conn *conn);
