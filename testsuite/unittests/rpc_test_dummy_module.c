@@ -1,10 +1,10 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <signal.h>
+#include "replace.h"
+#include <sys/types.h>
 #include <unistd.h>
+#include "libcli/util/ntstatus.h"
 
-int samba_init_module(void);
-int samba_init_module(void)
+NTSTATUS samba_init_module(void);
+NTSTATUS samba_init_module(void)
 {
 	int rc;
 
@@ -16,5 +16,5 @@ int samba_init_module(void)
 		exit(-1);
 	}
 
-	return 0;
+	return NT_STATUS_OK;
 }
