@@ -19,6 +19,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "torture/util.h"
+
 struct lease_break_info {
 	struct torture_context *tctx;
 
