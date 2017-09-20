@@ -1,13 +1,11 @@
-Release Announcements
-=====================
+                   =============================
+                   Release Notes for Samba 4.7.0
+                        September 20, 2017
+                   =============================
 
-This is the sixth release candidate of Samba 4.7.  This is *not*
-intended for production environments and is designed for testing
-purposes only.  Please report any defects via the Samba bug reporting
-system at https://bugzilla.samba.org/.
 
-Samba 4.7 will be the next version of the Samba suite.
-
+This is the first stable release of Samba 4.7.
+Please read the release notes carefully before upgrading.
 
 UPGRADING
 =========
@@ -368,6 +366,22 @@ KNOWN ISSUES
 ============
 
 https://wiki.samba.org/inFdex.php/Release_Planning_for_Samba_4.7#Release_blocking_bugs
+
+
+CHANGES SINCE 4.7.0rc6
+======================
+
+o  CVE-2017-12150:
+   A man in the middle attack may hijack client connections.
+
+o  CVE-2017-12151:
+   A man in the middle attack can read and may alter confidential
+   documents transferred via a client connection, which are reached
+   via DFS redirect when the original connection used SMB3.
+
+o  CVE-2017-12163:
+   Client with write access to a share can cause server memory contents to be
+   written into a file or printer.
 
 
 CHANGES SINCE 4.7.0rc5
