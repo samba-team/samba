@@ -1159,7 +1159,6 @@ tgs_parse_request(krb5_context context,
 		  const struct sockaddr *from_addr,
 		  time_t **csec,
 		  int **cusec,
-		  AuthorizationData **auth_data,
 		  krb5_keyblock **replykey,
 		  int *rk_is_subkey)
 {
@@ -1170,14 +1169,11 @@ tgs_parse_request(krb5_context context,
     krb5_auth_context ac = NULL;
     krb5_flags ap_req_options;
     krb5_flags verify_ap_req_flags;
-    krb5_crypto crypto;
     Key *tkey;
     krb5_keyblock *subkey = NULL;
-    unsigned usage;
     krb5uint32 kvno = 0;
     krb5uint32 *kvno_ptr = NULL;
 
-    *auth_data = NULL;
     *csec  = NULL;
     *cusec = NULL;
     *replykey = NULL;
@@ -1328,7 +1324,6 @@ tgs_parse_request(krb5_context context,
 	goto out;
     }
 
-    usage = KRB5_KU_TGS_REQ_AUTH_DAT_SUBKEY;
     *rk_is_subkey = 1;
 
     ret = krb5_auth_con_getremotesubkey(context, ac, &subkey);
@@ -1340,7 +1335,6 @@ tgs_parse_request(krb5_context context,
 	goto out;
     }
     if(subkey == NULL){
-	usage = KRB5_KU_TGS_REQ_AUTH_DAT_SESSION;
 	*rk_is_subkey = 0;
 
 	ret = krb5_auth_con_getkey(context, ac, &subkey);
@@ -1361,49 +1355,6 @@ tgs_parse_request(krb5_context context,
     }
 
     *replykey = subkey;
-
-    if (b->enc_authorization_data) {
-	krb5_data ad;
-
-	ret = krb5_crypto_init(context, subkey, 0, &crypto);
-	if (ret) {
-	    const char *msg = krb5_get_error_message(context, ret);
-	    krb5_auth_con_free(context, ac);
-	    kdc_log(context, config, 0, "krb5_crypto_init failed: %s", msg);
-	    krb5_free_error_message(context, msg);
-	    goto out;
-	}
-	ret = krb5_decrypt_EncryptedData (context,
-					  crypto,
-					  usage,
-					  b->enc_authorization_data,
-					  &ad);
-	krb5_crypto_destroy(context, crypto);
-	if(ret){
-	    krb5_auth_con_free(context, ac);
-	    kdc_log(context, config, 0,
-		    "Failed to decrypt enc-authorization-data");
-	    ret = KRB5KRB_AP_ERR_BAD_INTEGRITY; /* ? */
-	    goto out;
-	}
-	ALLOC(*auth_data);
-	if (*auth_data == NULL) {
-	    krb5_data_free(&ad);
-	    krb5_auth_con_free(context, ac);
-	    ret = KRB5KRB_AP_ERR_BAD_INTEGRITY; /* ? */
-	    goto out;
-	}
-	ret = decode_AuthorizationData(ad.data, ad.length, *auth_data, NULL);
-	krb5_data_free(&ad);
-	if(ret){
-	    krb5_auth_con_free(context, ac);
-	    free(*auth_data);
-	    *auth_data = NULL;
-	    kdc_log(context, config, 0, "Failed to decode authorization data");
-	    ret = KRB5KRB_AP_ERR_BAD_INTEGRITY; /* ? */
-	    goto out;
-	}
-    }
 
     krb5_auth_con_free(context, ac);
 
@@ -1502,7 +1453,6 @@ tgs_build_reply(krb5_context context,
 		krb5_data *reply,
 		const char *from,
 		const char **e_text,
-		AuthorizationData **auth_data,
 		const struct sockaddr *from_addr)
 {
     krb5_error_code ret;
@@ -1518,6 +1468,9 @@ tgs_build_reply(krb5_context context,
     krb5_keyblock sessionkey;
     krb5_kvno kvno;
     krb5_data rspac;
+    AuthorizationData *auth_data = NULL;
+    const EncryptionKey *auth_data_key = replykey;
+    unsigned auth_data_usage;
 
     hdb_entry_ex *krbtgt_out = NULL;
 
@@ -1541,6 +1494,12 @@ tgs_build_reply(krb5_context context,
 
     s = b->sname;
     r = b->realm;
+
+    if (rk_is_subkey != 0) {
+	auth_data_usage = KRB5_KU_TGS_REQ_AUTH_DAT_SUBKEY;
+    } else {
+	auth_data_usage = KRB5_KU_TGS_REQ_AUTH_DAT_SESSION;
+    }
 
     if (b->kdc_options.canonicalize)
 	flags |= HDB_F_CANON;
@@ -2189,6 +2148,47 @@ server_lookup:
 		"from %s (%s) to %s", tpn, cpn, dpn, spn);
     }
 
+    if (b->enc_authorization_data) {
+	krb5_data ad;
+	krb5_crypto crypto;
+
+	ret = krb5_crypto_init(context, auth_data_key, 0, &crypto);
+	if (ret) {
+	    const char *msg = krb5_get_error_message(context, ret);
+	    kdc_log(context, config, 0, "krb5_crypto_init failed: %s", msg);
+	    krb5_free_error_message(context, msg);
+	    goto out;
+	}
+
+	ret = krb5_decrypt_EncryptedData (context,
+					  crypto,
+					  auth_data_usage,
+					  b->enc_authorization_data,
+					  &ad);
+	krb5_crypto_destroy(context, crypto);
+	if(ret){
+	    kdc_log(context, config, 0,
+		    "Failed to decrypt enc-authorization-data");
+	    ret = KRB5KRB_AP_ERR_BAD_INTEGRITY; /* ? */
+	    goto out;
+	}
+	ALLOC(auth_data);
+	if (auth_data == NULL) {
+	    krb5_data_free(&ad);
+	    ret = KRB5KRB_AP_ERR_BAD_INTEGRITY; /* ? */
+	    goto out;
+	}
+	ret = decode_AuthorizationData(ad.data, ad.length, auth_data, NULL);
+	krb5_data_free(&ad);
+	if(ret){
+	    free(auth_data);
+	    auth_data = NULL;
+	    kdc_log(context, config, 0, "Failed to decode authorization data");
+	    ret = KRB5KRB_AP_ERR_BAD_INTEGRITY; /* ? */
+	    goto out;
+	}
+    }
+
     /*
      * Check flags
      */
@@ -2264,7 +2264,7 @@ server_lookup:
 			 ekey,
 			 &sessionkey,
 			 kvno,
-			 *auth_data,
+			 auth_data,
 			 server,
 			 server->entry.principal,
 			 spn,
@@ -2309,6 +2309,11 @@ out:
 	free(ref_realm);
     free_METHOD_DATA(&enc_pa_data);
 
+    if (auth_data) {
+       free_AuthorizationData(auth_data);
+       free(auth_data);
+    }
+
     free_EncTicketPart(&adtkt);
 
     return ret;
@@ -2327,7 +2332,6 @@ _kdc_tgs_rep(krb5_context context,
 	     struct sockaddr *from_addr,
 	     int datagram_reply)
 {
-    AuthorizationData *auth_data = NULL;
     krb5_error_code ret;
     int i = 0;
     const PA_DATA *tgs_req;
@@ -2366,7 +2370,6 @@ _kdc_tgs_rep(krb5_context context,
 			    &e_text,
 			    from, from_addr,
 			    &csec, &cusec,
-			    &auth_data,
 			    &replykey,
 			    &rk_is_subkey);
     if (ret == HDB_ERR_NOT_FOUND_HERE) {
@@ -2391,7 +2394,6 @@ _kdc_tgs_rep(krb5_context context,
 			  data,
 			  from,
 			  &e_text,
-			  &auth_data,
 			  from_addr);
     if (ret) {
 	kdc_log(context, config, 0,
@@ -2427,11 +2429,6 @@ out:
 	krb5_free_ticket(context, ticket);
     if(krbtgt)
 	_kdc_free_ent(context, krbtgt);
-
-    if (auth_data) {
-	free_AuthorizationData(auth_data);
-	free(auth_data);
-    }
 
     return ret;
 }
