@@ -183,6 +183,51 @@ class SimpleSubnetTests(SitesBaseTests):
         self.assertRaises(subnets.SubnetNotFound,
                           subnets.delete_subnet, self.ldb, basedn, cidr)
 
+    def test_rename_good_subnet_to_good_subnet(self):
+        """Make sure that we can rename subnets"""
+        basedn = self.ldb.get_config_basedn()
+        cidr = "10.16.0.0/24"
+        new_cidr = "10.16.1.0/24"
+
+        subnets.create_subnet(self.ldb, basedn, cidr, self.sitename)
+
+        subnets.rename_subnet(self.ldb, basedn, cidr, new_cidr)
+
+        ret = self.ldb.search(base=basedn, scope=SCOPE_SUBTREE,
+                              expression='(&(objectclass=subnet)(cn=%s))' % new_cidr)
+
+        self.assertEqual(len(ret), 1, 'Failed to rename subnet %s' % cidr)
+
+        ret = self.ldb.search(base=basedn, scope=SCOPE_SUBTREE,
+                              expression='(&(objectclass=subnet)(cn=%s))' % cidr)
+
+        self.assertEqual(len(ret), 0, 'Failed to remove old subnet during rename %s' % cidr)
+
+        subnets.delete_subnet(self.ldb, basedn, new_cidr)
+
+    def test_rename_good_subnet_to_bad_subnet(self):
+        """Make sure that the CIDR checking runs during rename"""
+        basedn = self.ldb.get_config_basedn()
+        cidr = "10.17.0.0/24"
+        bad_cidr = "10.11.12.0/14"
+
+        subnets.create_subnet(self.ldb, basedn, cidr, self.sitename)
+
+        self.assertRaises(subnets.SubnetInvalid, subnets.rename_subnet,
+                          self.ldb, basedn, cidr, bad_cidr)
+
+        ret = self.ldb.search(base=basedn, scope=SCOPE_SUBTREE,
+                              expression='(&(objectclass=subnet)(cn=%s))' % bad_cidr)
+
+        self.assertEqual(len(ret), 0, 'Failed to rename subnet %s' % cidr)
+
+        ret = self.ldb.search(base=basedn, scope=SCOPE_SUBTREE,
+                              expression='(&(objectclass=subnet)(cn=%s))' % cidr)
+
+        self.assertEqual(len(ret), 1, 'Failed to remove old subnet during rename %s' % cidr)
+
+        subnets.delete_subnet(self.ldb, basedn, cidr)
+
     def test_create_bad_ranges(self):
         """These CIDR ranges all have something wrong with them, and they
         should all fail."""
