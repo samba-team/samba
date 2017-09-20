@@ -127,6 +127,39 @@ def delete_subnet(samdb, configDn, subnet_name):
 
     samdb.delete(dnsubnet)
 
+def rename_subnet(samdb, configDn, subnet_name, new_name):
+    """Rename a subnet.
+
+    :param samdb: A samdb connection
+    :param configDn: The DN of the configuration partition
+    :param subnet_name: Name of the subnet to rename
+    :param new_name: New name for the subnet
+    :return: None
+    :raise SubnetNotFound: if the subnet to be renamed does not exist.
+    :raise SubnetExists: if the subnet to be created already exists.
+    """
+    dnsubnet = ldb.Dn(samdb, "CN=Subnets,CN=Sites")
+    if dnsubnet.add_base(configDn) == False:
+        raise SubnetException("dnsubnet.add_base() failed")
+    if dnsubnet.add_child("CN=X") == False:
+        raise SubnetException("dnsubnet.add_child() failed")
+    dnsubnet.set_component(0, "CN", subnet_name)
+
+    newdnsubnet = ldb.Dn(samdb, str(dnsubnet))
+    newdnsubnet.set_component(0, "CN", new_name)
+    try:
+        samdb.rename(dnsubnet, newdnsubnet)
+    except LdbError as (enum, estr):
+        if enum == ldb.ERR_NO_SUCH_OBJECT:
+            raise SubnetNotFound('Subnet %s does not exist' % subnet)
+        elif enum == ldb.ERR_ENTRY_ALREADY_EXISTS:
+            raise SubnetAlreadyExists('A subnet with the CIDR %s already exists'
+                                      % new_name)
+        elif enum == ldb.ERR_INVALID_DN_SYNTAX:
+            raise SubnetInvalid("%s is not a valid subnet: %s" % (new_name,
+                                                                  estr))
+        else:
+            raise
 
 def set_subnet_site(samdb, configDn, subnet_name, site_name):
     """Assign a subnet to a site.
