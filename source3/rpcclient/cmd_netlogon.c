@@ -878,62 +878,38 @@ static NTSTATUS cmd_netlogon_capabilities(struct rpc_pipe_client *cli,
 					  TALLOC_CTX *mem_ctx, int argc,
 					  const char **argv)
 {
-	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-	NTSTATUS result;
-	struct netr_Authenticator credential;
-	struct netr_Authenticator return_authenticator;
+	struct netlogon_creds_cli_lck *lck;
 	union netr_Capabilities capabilities;
-	uint32_t level = 1;
-	struct dcerpc_binding_handle *b = cli->binding_handle;
-	struct netlogon_creds_CredentialState *creds = NULL;
+	NTSTATUS status;
 
-	if (argc > 2) {
-		fprintf(stderr, "Usage: %s <level>\n", argv[0]);
+	if (argc > 1) {
+		fprintf(stderr, "Usage: %s\n", argv[0]);
 		return NT_STATUS_OK;
 	}
 
-	if (argc == 2) {
-		level = atoi(argv[1]);
-	}
-
-	ZERO_STRUCT(return_authenticator);
-
-	if (rpcclient_netlogon_creds == NULL) {
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	status = netlogon_creds_cli_lock(rpcclient_netlogon_creds,
-					 mem_ctx, &creds);
+	status = netlogon_creds_cli_lck(rpcclient_netlogon_creds,
+					NETLOGON_CREDS_CLI_LCK_EXCLUSIVE,
+					mem_ctx, &lck);
 	if (!NT_STATUS_IS_OK(status)) {
+		fprintf(stderr, "netlogon_creds_cli_lck failed: %s\n",
+			nt_errstr(status));
 		return status;
 	}
 
-	netlogon_creds_client_authenticator(creds, &credential);
-
-	status = dcerpc_netr_LogonGetCapabilities(b, mem_ctx,
-						  cli->desthost,
-						  lp_netbios_name(),
-						  &credential,
-						  &return_authenticator,
-						  level,
-						  &capabilities,
-						  &result);
+	status = netlogon_creds_cli_check(rpcclient_netlogon_creds,
+					  cli->binding_handle,
+					  &capabilities);
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(creds);
+		fprintf(stderr, "netlogon_creds_cli_check failed: %s\n",
+			nt_errstr(status));
 		return status;
 	}
 
-	if (!netlogon_creds_client_check(creds,
-					 &return_authenticator.cred)) {
-		DEBUG(0,("credentials chain check failed\n"));
-		TALLOC_FREE(creds);
-		return NT_STATUS_ACCESS_DENIED;
-	}
-	TALLOC_FREE(creds);
+	TALLOC_FREE(lck);
 
 	printf("capabilities: 0x%08x\n", capabilities.server_capabilities);
 
-	return result;
+	return NT_STATUS_OK;
 }
 
 /* List of commands exported by this module */
