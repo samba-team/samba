@@ -1237,11 +1237,24 @@ static int ltdb_index_dn_not(struct ldb_module *module,
 	return LDB_ERR_OPERATIONS_ERROR;
 }
 
-
+/*
+ * These things are unique, so avoid a full scan if this is a search
+ * by GUID, DN or a unique attribute
+ */
 static bool ltdb_index_unique(struct ldb_context *ldb,
+			      struct ltdb_private *ltdb,
 			      const char *attr)
 {
 	const struct ldb_schema_attribute *a;
+	if (ltdb->cache->GUID_index_attribute != NULL) {
+		if (ldb_attr_cmp(attr, ltdb->cache->GUID_index_attribute) == 0) {
+			return true;
+		}
+	}
+	if (ldb_attr_dn(attr) == 0) {
+		return true;
+	}
+
 	a = ldb_schema_attribute_by_name(ldb, attr);
 	if (a->flags & LDB_ATTR_FLAG_UNIQUE_INDEX) {
 		return true;
@@ -1274,7 +1287,8 @@ static int ltdb_index_dn_and(struct ldb_module *module,
 		int ret;
 
 		if (subtree->operation != LDB_OP_EQUALITY ||
-		    !ltdb_index_unique(ldb, subtree->u.equality.attr)) {
+		    !ltdb_index_unique(ldb, ltdb,
+				       subtree->u.equality.attr)) {
 			continue;
 		}
 
