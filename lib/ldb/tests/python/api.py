@@ -1241,13 +1241,7 @@ class DnTests(TestCase):
 
     def setUp(self):
         super(DnTests, self).setUp()
-        self.testdir = tempdir()
-        self.filename = os.path.join(self.testdir, "test.ldb")
-        self.ldb = ldb.Ldb(self.filename)
-
-    def tearDown(self):
-        shutil.rmtree(self.testdir)
-        super(DnTests, self).tearDown()
+        self.ldb = ldb.Ldb()
 
     def test_set_dn_invalid(self):
         x = ldb.Message()
@@ -1482,12 +1476,6 @@ class LdbMsgTests(TestCase):
     def setUp(self):
         super(LdbMsgTests, self).setUp()
         self.msg = ldb.Message()
-        self.testdir = tempdir()
-        self.filename = os.path.join(self.testdir, "test.ldb")
-
-    def tearDown(self):
-        shutil.rmtree(self.testdir)
-        super(LdbMsgTests, self).tearDown()
 
     def test_init_dn(self):
         self.msg = ldb.Message(ldb.Dn(ldb.Ldb(), "dc=foo27"))
@@ -1495,11 +1483,11 @@ class LdbMsgTests(TestCase):
 
     def test_iter_items(self):
         self.assertEqual(0, len(self.msg.items()))
-        self.msg.dn = ldb.Dn(ldb.Ldb(self.filename), "dc=foo28")
+        self.msg.dn = ldb.Dn(ldb.Ldb(), "dc=foo28")
         self.assertEqual(1, len(self.msg.items()))
 
     def test_repr(self):
-        self.msg.dn = ldb.Dn(ldb.Ldb(self.filename), "dc=foo29")
+        self.msg.dn = ldb.Dn(ldb.Ldb(), "dc=foo29")
         self.msg["dc"] = b"foo"
         if PY3:
             self.assertIn(repr(self.msg), [
@@ -1577,37 +1565,37 @@ class LdbMsgTests(TestCase):
         self.assertEqual(["bar"], list(self.msg.text["foo"]))
 
     def test_keys(self):
-        self.msg.dn = ldb.Dn(ldb.Ldb(self.filename), "@BASEINFO")
+        self.msg.dn = ldb.Dn(ldb.Ldb(), "@BASEINFO")
         self.msg["foo"] = [b"bla"]
         self.msg["bar"] = [b"bla"]
         self.assertEqual(["dn", "foo", "bar"], self.msg.keys())
 
     def test_keys_text(self):
-        self.msg.dn = ldb.Dn(ldb.Ldb(self.filename), "@BASEINFO")
+        self.msg.dn = ldb.Dn(ldb.Ldb(), "@BASEINFO")
         self.msg["foo"] = ["bla"]
         self.msg["bar"] = ["bla"]
         self.assertEqual(["dn", "foo", "bar"], self.msg.text.keys())
 
     def test_dn(self):
-        self.msg.dn = ldb.Dn(ldb.Ldb(self.filename), "@BASEINFO")
+        self.msg.dn = ldb.Dn(ldb.Ldb(), "@BASEINFO")
         self.assertEqual("@BASEINFO", self.msg.dn.__str__())
 
     def test_get_dn(self):
-        self.msg.dn = ldb.Dn(ldb.Ldb(self.filename), "@BASEINFO")
+        self.msg.dn = ldb.Dn(ldb.Ldb(), "@BASEINFO")
         self.assertEqual("@BASEINFO", self.msg.get("dn").__str__())
 
     def test_dn_text(self):
-        self.msg.text.dn = ldb.Dn(ldb.Ldb(self.filename), "@BASEINFO")
+        self.msg.text.dn = ldb.Dn(ldb.Ldb(), "@BASEINFO")
         self.assertEqual("@BASEINFO", str(self.msg.dn))
         self.assertEqual("@BASEINFO", str(self.msg.text.dn))
 
     def test_get_dn_text(self):
-        self.msg.dn = ldb.Dn(ldb.Ldb(self.filename), "@BASEINFO")
+        self.msg.dn = ldb.Dn(ldb.Ldb(), "@BASEINFO")
         self.assertEqual("@BASEINFO", str(self.msg.get("dn")))
         self.assertEqual("@BASEINFO", str(self.msg.text.get("dn")))
 
     def test_get_invalid(self):
-        self.msg.dn = ldb.Dn(ldb.Ldb(self.filename), "@BASEINFO")
+        self.msg.dn = ldb.Dn(ldb.Ldb(), "@BASEINFO")
         self.assertRaises(TypeError, self.msg.get, 42)
 
     def test_get_other(self):
@@ -1655,7 +1643,7 @@ class LdbMsgTests(TestCase):
         self.assertEqual(msg1, msg2)
 
     def test_equal_simplel(self):
-        db = ldb.Ldb(self.filename)
+        db = ldb.Ldb()
         msg1 = ldb.Message()
         msg1.dn = ldb.Dn(db, "foo=bar")
         msg2 = ldb.Message()
