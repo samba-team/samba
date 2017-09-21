@@ -812,12 +812,6 @@ ADS_STATUS ads_get_gpo_list(ADS_STRUCT *ads,
 					dump_gplink(&gp_link);
 				}
 
-				/* block inheritance from now on */
-				if (gp_link.gp_opts &
-				    GPOPTIONS_BLOCK_INHERITANCE) {
-					add_only_forced_gpos = true;
-				}
-
 				status = add_gplink_to_gpo_list(ads,
 							mem_ctx,
 							gpo_list,
@@ -828,6 +822,12 @@ ADS_STATUS ads_get_gpo_list(ADS_STRUCT *ads,
 							token);
 				if (!ADS_ERR_OK(status)) {
 					return status;
+				}
+
+				/* block inheritance from now on */
+				if (gp_link.gp_opts &
+				    GPOPTIONS_BLOCK_INHERITANCE) {
+					add_only_forced_gpos = true;
 				}
 			}
 		}
@@ -858,12 +858,6 @@ ADS_STATUS ads_get_gpo_list(ADS_STRUCT *ads,
 					dump_gplink(&gp_link);
 				}
 
-				/* block inheritance from now on */
-				if (gp_link.gp_opts &
-				    GPOPTIONS_BLOCK_INHERITANCE) {
-					add_only_forced_gpos = true;
-				}
-
 				status = add_gplink_to_gpo_list(ads,
 							mem_ctx,
 							gpo_list,
@@ -874,6 +868,12 @@ ADS_STATUS ads_get_gpo_list(ADS_STRUCT *ads,
 							token);
 				if (!ADS_ERR_OK(status)) {
 					return status;
+				}
+
+				/* block inheritance from now on */
+				if (gp_link.gp_opts &
+				    GPOPTIONS_BLOCK_INHERITANCE) {
+					add_only_forced_gpos = true;
 				}
 			}
 		}
