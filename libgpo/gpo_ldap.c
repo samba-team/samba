@@ -561,10 +561,16 @@ static ADS_STATUS add_gplink_to_gpo_list(ADS_STRUCT *ads,
 					 const struct security_token *token)
 {
 	ADS_STATUS status;
-	int i;
+	uint32_t count;
 
-	for (i = 0; i < gp_link->num_links; i++) {
-
+	/*
+	 * Note: DLIST_ADD pushes to the front,
+	 * so loop from last to first to get the
+	 * order right.
+	 */
+	for (count = gp_link->num_links; count > 0; count--) {
+		/* NB. Index into arrays is one less than counter. */
+		uint32_t i = count - 1;
 		struct GROUP_POLICY_OBJECT *new_gpo = NULL;
 
 		if (gp_link->link_opts[i] & GPO_LINK_OPT_DISABLED) {
@@ -726,7 +732,15 @@ ADS_STATUS ads_get_gpo_list(ADS_STRUCT *ads,
 			    const struct security_token *token,
 			    struct GROUP_POLICY_OBJECT **gpo_list)
 {
-	/* (L)ocal (S)ite (D)omain (O)rganizational(U)nit */
+	/*
+	 * Push GPOs to gpo_list so that the traversal order of the list matches
+	 * the order of application:
+	 * (L)ocal (S)ite (D)omain (O)rganizational(U)nit
+	 * Within domains and OUs: parent-to-child.
+	 * Since GPOs are pushed to the front of gpo_list, GPOs have to be
+	 * pushed in the opposite order of application (OUs first, local last,
+	 * child-to-parent).
+	 */
 
 	ADS_STATUS status;
 	struct GP_LINK gp_link;
@@ -745,97 +759,6 @@ ADS_STATUS ads_get_gpo_list(ADS_STRUCT *ads,
 
 	DEBUG(10,("ads_get_gpo_list: getting GPO list for [%s]\n", dn));
 
-	/* (L)ocal */
-	status = add_local_policy_to_gpo_list(mem_ctx, gpo_list,
-					      GP_LINK_LOCAL);
-	if (!ADS_ERR_OK(status)) {
-		return status;
-	}
-
-	/* (S)ite */
-
-	/* are site GPOs valid for users as well ??? */
-	if (flags & GPO_LIST_FLAG_MACHINE) {
-
-		status = ads_site_dn_for_machine(ads, mem_ctx,
-						 ads->config.ldap_server_name,
-						 &site_dn);
-		if (!ADS_ERR_OK(status)) {
-			return status;
-		}
-
-		DEBUG(10,("ads_get_gpo_list: query SITE: [%s] for GPOs\n",
-			site_dn));
-
-		status = ads_get_gpo_link(ads, mem_ctx, site_dn, &gp_link);
-		if (ADS_ERR_OK(status)) {
-
-			if (DEBUGLEVEL >= 100) {
-				dump_gplink(&gp_link);
-			}
-
-			status = add_gplink_to_gpo_list(ads, mem_ctx, gpo_list,
-							site_dn, &gp_link,
-							GP_LINK_SITE,
-							add_only_forced_gpos,
-							token);
-			if (!ADS_ERR_OK(status)) {
-				return status;
-			}
-
-			if (flags & GPO_LIST_FLAG_SITEONLY) {
-				return ADS_ERROR(LDAP_SUCCESS);
-			}
-
-			/* inheritance can't be blocked at the site level */
-		}
-	}
-
-	tmp_dn = dn;
-
-	while ((parent_dn = ads_parent_dn(tmp_dn)) &&
-	       (!strequal(parent_dn, ads_parent_dn(ads->config.bind_path)))) {
-
-		/* (D)omain */
-
-		/* An account can just be a member of one domain */
-		if (strncmp(parent_dn, "DC=", strlen("DC=")) == 0) {
-
-			DEBUG(10,("ads_get_gpo_list: query DC: [%s] for GPOs\n",
-				parent_dn));
-
-			status = ads_get_gpo_link(ads, mem_ctx, parent_dn,
-						  &gp_link);
-			if (ADS_ERR_OK(status)) {
-
-				if (DEBUGLEVEL >= 100) {
-					dump_gplink(&gp_link);
-				}
-
-				status = add_gplink_to_gpo_list(ads,
-							mem_ctx,
-							gpo_list,
-							parent_dn,
-							&gp_link,
-							GP_LINK_DOMAIN,
-							add_only_forced_gpos,
-							token);
-				if (!ADS_ERR_OK(status)) {
-					return status;
-				}
-
-				/* block inheritance from now on */
-				if (gp_link.gp_opts &
-				    GPOPTIONS_BLOCK_INHERITANCE) {
-					add_only_forced_gpos = true;
-				}
-			}
-		}
-
-		tmp_dn = parent_dn;
-	}
-
-	/* reset dn again */
 	tmp_dn = dn;
 
 	while ((parent_dn = ads_parent_dn(tmp_dn)) &&
@@ -880,7 +803,98 @@ ADS_STATUS ads_get_gpo_list(ADS_STRUCT *ads,
 
 		tmp_dn = parent_dn;
 
-	};
+	}
+
+	/* reset dn again */
+	tmp_dn = dn;
+
+	while ((parent_dn = ads_parent_dn(tmp_dn)) &&
+	       (!strequal(parent_dn, ads_parent_dn(ads->config.bind_path)))) {
+
+		/* (D)omain */
+
+		/* An account can just be a member of one domain */
+		if (strncmp(parent_dn, "DC=", strlen("DC=")) == 0) {
+
+			DEBUG(10,("ads_get_gpo_list: query DC: [%s] for GPOs\n",
+				parent_dn));
+
+			status = ads_get_gpo_link(ads, mem_ctx, parent_dn,
+						  &gp_link);
+			if (ADS_ERR_OK(status)) {
+
+				if (DEBUGLEVEL >= 100) {
+					dump_gplink(&gp_link);
+				}
+
+				status = add_gplink_to_gpo_list(ads,
+							mem_ctx,
+							gpo_list,
+							parent_dn,
+							&gp_link,
+							GP_LINK_DOMAIN,
+							add_only_forced_gpos,
+							token);
+				if (!ADS_ERR_OK(status)) {
+					return status;
+				}
+
+				/* block inheritance from now on */
+				if (gp_link.gp_opts &
+				    GPOPTIONS_BLOCK_INHERITANCE) {
+					add_only_forced_gpos = true;
+				}
+			}
+		}
+
+		tmp_dn = parent_dn;
+	}
+
+	/* (S)ite */
+
+	/* are site GPOs valid for users as well ??? */
+	if (flags & GPO_LIST_FLAG_MACHINE) {
+
+		status = ads_site_dn_for_machine(ads, mem_ctx,
+						 ads->config.ldap_server_name,
+						 &site_dn);
+		if (!ADS_ERR_OK(status)) {
+			return status;
+		}
+
+		DEBUG(10,("ads_get_gpo_list: query SITE: [%s] for GPOs\n",
+			site_dn));
+
+		status = ads_get_gpo_link(ads, mem_ctx, site_dn, &gp_link);
+		if (ADS_ERR_OK(status)) {
+
+			if (DEBUGLEVEL >= 100) {
+				dump_gplink(&gp_link);
+			}
+
+			status = add_gplink_to_gpo_list(ads, mem_ctx, gpo_list,
+							site_dn, &gp_link,
+							GP_LINK_SITE,
+							add_only_forced_gpos,
+							token);
+			if (!ADS_ERR_OK(status)) {
+				return status;
+			}
+
+			if (flags & GPO_LIST_FLAG_SITEONLY) {
+				return ADS_ERROR(LDAP_SUCCESS);
+			}
+
+			/* inheritance can't be blocked at the site level */
+		}
+	}
+
+	/* (L)ocal */
+	status = add_local_policy_to_gpo_list(mem_ctx, gpo_list,
+					      GP_LINK_LOCAL);
+	if (!ADS_ERR_OK(status)) {
+		return status;
+	}
 
 	return ADS_ERROR(LDAP_SUCCESS);
 }
