@@ -2758,3 +2758,32 @@ int ctdb_ctrl_db_attach_replicated(TALLOC_CTX *mem_ctx,
 
 	return 0;
 }
+
+int ctdb_ctrl_check_pid_srvid(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+			      struct ctdb_client_context *client,
+			      int destnode, struct timeval timeout,
+			      struct ctdb_pid_srvid *pid_srvid, int *status)
+{
+	struct ctdb_req_control request;
+	struct ctdb_reply_control *reply;
+	int ret;
+
+	ctdb_req_control_check_pid_srvid(&request, pid_srvid);
+	ret = ctdb_client_control(mem_ctx, ev, client, destnode, timeout,
+				  &request, &reply);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,
+		      ("Control CHECK_PID_SRVID failed to node %u, ret=%d\n",
+		       destnode, ret));
+		return ret;
+	}
+
+	ret = ctdb_reply_control_check_pid_srvid(reply, status);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,
+		      ("Control CHECK_PID_SRVID failed, ret=%d\n", ret));
+		return ret;
+	}
+
+	return 0;
+}
