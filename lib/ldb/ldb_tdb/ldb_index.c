@@ -746,7 +746,33 @@ static int ltdb_index_dn_leaf(struct ldb_module *module,
 		 * to list for the memory to remain valid.
 		 */
 		return ltdb_index_dn_base_dn(module, ltdb, dn, list);
+
+	} else if ((ltdb->cache->GUID_index_attribute != NULL) &&
+		   (ldb_attr_cmp(tree->u.equality.attr,
+				 ltdb->cache->GUID_index_attribute) == 0)) {
+		int ret;
+		struct ldb_context *ldb = ldb_module_get_ctx(module);
+		list->dn = talloc_array(list, struct ldb_val, 1);
+		if (list->dn == NULL) {
+			ldb_module_oom(module);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		/*
+		 * We need to go via the canonicalise_fn() to
+		 * ensure we get the index in binary, rather
+		 * than a string
+		 */
+		ret = ltdb->GUID_index_syntax->canonicalise_fn(ldb,
+							       list->dn,
+							       &tree->u.equality.value,
+							       &list->dn[0]);
+		if (ret != LDB_SUCCESS) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		list->count = 1;
+		return LDB_SUCCESS;
 	}
+
 	return ltdb_index_dn_simple(module, ltdb, tree, list);
 }
 
