@@ -114,8 +114,10 @@ static krb5_error_code hdb_samba4_fetch_kvno(krb5_context context, HDB *db,
 		break;
 	case SDB_ERR_NOENTRY:
 		return HDB_ERR_NOENTRY;
-	default:
+	case SDB_ERR_NOT_FOUND_HERE:
 		return HDB_ERR_NOT_FOUND_HERE;
+	default:
+		return ret;
 	}
 
 	ret = sdb_entry_ex_to_hdb_entry_ex(context, &sdb_entry_ex, entry_ex);
@@ -146,8 +148,10 @@ static krb5_error_code hdb_samba4_firstkey(krb5_context context, HDB *db, unsign
 		return HDB_ERR_WRONG_REALM;
 	case SDB_ERR_NOENTRY:
 		return HDB_ERR_NOENTRY;
-	default:
+	case SDB_ERR_NOT_FOUND_HERE:
 		return HDB_ERR_NOT_FOUND_HERE;
+	default:
+		return ret;
 	}
 
 	ret = sdb_entry_ex_to_hdb_entry_ex(context, &sdb_entry_ex, entry);
@@ -173,8 +177,10 @@ static krb5_error_code hdb_samba4_nextkey(krb5_context context, HDB *db, unsigne
 		return HDB_ERR_WRONG_REALM;
 	case SDB_ERR_NOENTRY:
 		return HDB_ERR_NOENTRY;
-	default:
+	case SDB_ERR_NOT_FOUND_HERE:
 		return HDB_ERR_NOT_FOUND_HERE;
+	default:
+		return ret;
 	}
 
 	ret = sdb_entry_ex_to_hdb_entry_ex(context, &sdb_entry_ex, entry);
@@ -214,8 +220,10 @@ hdb_samba4_check_constrained_delegation(krb5_context context, HDB *db,
 	case SDB_ERR_NOENTRY:
 		ret = HDB_ERR_NOENTRY;
 		break;
-	default:
+	case SDB_ERR_NOT_FOUND_HERE:
 		ret = HDB_ERR_NOT_FOUND_HERE;
+		break;
+	default:
 		break;
 	}
 
@@ -248,8 +256,10 @@ hdb_samba4_check_pkinit_ms_upn_match(krb5_context context, HDB *db,
 	case SDB_ERR_NOENTRY:
 		ret = HDB_ERR_NOENTRY;
 		break;
-	default:
+	case SDB_ERR_NOT_FOUND_HERE:
 		ret = HDB_ERR_NOT_FOUND_HERE;
+		break;
+	default:
 		break;
 	}
 
@@ -282,8 +292,10 @@ hdb_samba4_check_s4u2self(krb5_context context, HDB *db,
 	case SDB_ERR_NOENTRY:
 		ret = HDB_ERR_NOENTRY;
 		break;
-	default:
+	case SDB_ERR_NOT_FOUND_HERE:
 		ret = HDB_ERR_NOT_FOUND_HERE;
+		break;
+	default:
 		break;
 	}
 
