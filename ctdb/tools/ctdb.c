@@ -30,7 +30,7 @@
 #include <tevent.h>
 #include <tdb.h>
 
-#include "ctdb_version.h"
+#include "common/version.h"
 #include "lib/util/debug.h"
 #include "lib/util/samba_util.h"
 #include "lib/util/sys_rw.h"
@@ -725,7 +725,7 @@ static int run_helper(TALLOC_CTX *mem_ctx, const char *command,
 static int control_version(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 			   int argc, const char **argv)
 {
-	printf("%s\n", CTDB_VERSION_STRING);
+	printf("%s\n", ctdb_version_string);
 	return 0;
 }
 
