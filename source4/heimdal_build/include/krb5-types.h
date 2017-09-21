@@ -6,6 +6,7 @@
 
 #include "replace.h"
 #include "system/network.h"
+#include "lib/util/attr.h"
 
 #if defined USING_SYSTEM_KRB5 && defined HEIMDAL_KRB5_TYPES_PATH
 #include HEIMDAL_KRB5_TYPES_PATH
@@ -14,5 +15,7 @@ typedef socklen_t krb5_socklen_t;
 typedef int krb5_socket_t;
 typedef ssize_t krb5_ssize_t;
 #endif
+
+#define HEIMDAL_WARN_UNUSED_RESULT_ATTRIBUTE _WARN_UNUSED_RESULT_
 
 #endif /* __samb_krb5_types_h__ */
