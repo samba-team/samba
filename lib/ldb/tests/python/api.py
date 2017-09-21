@@ -55,6 +55,9 @@ class SimpleLdb(TestCase):
     def tearDown(self):
         shutil.rmtree(self.testdir)
         super(SimpleLdb, self).tearDown()
+        # Ensure the LDB is closed now, so we close the FD
+        del(self.ldb)
+
 
     def test_connect(self):
         ldb.Ldb(self.filename)
@@ -610,6 +613,10 @@ class SearchTests(TestCase):
         shutil.rmtree(self.testdir)
         super(SearchTests, self).tearDown()
 
+        # Ensure the LDB is closed now, so we close the FD
+        del(self.l)
+
+
     def setUp(self):
         super(SearchTests, self).setUp()
         self.testdir = tempdir()
@@ -992,6 +999,9 @@ class AddModifyTests(TestCase):
         shutil.rmtree(self.testdir)
         super(AddModifyTests, self).tearDown()
 
+        # Ensure the LDB is closed now, so we close the FD
+        del(self.l)
+
     def setUp(self):
         super(AddModifyTests, self).setUp()
         self.testdir = tempdir()
@@ -1242,6 +1252,10 @@ class DnTests(TestCase):
     def setUp(self):
         super(DnTests, self).setUp()
         self.ldb = ldb.Ldb()
+
+    def tearDown(self):
+        super(DnTests, self).tearDown()
+        del(self.ldb)
 
     def test_set_dn_invalid(self):
         x = ldb.Message()
@@ -1863,6 +1877,8 @@ class LdbResultTests(TestCase):
     def tearDown(self):
         shutil.rmtree(self.testdir)
         super(LdbResultTests, self).tearDown()
+        # Ensure the LDB is closed now, so we close the FD
+        del(self.l)
 
     def test_return_type(self):
         res = self.l.search()
