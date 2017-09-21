@@ -403,9 +403,9 @@ static void kdc_post_fork(struct task_server *task, struct process_details *pd)
 	 * The old behavior in the _kdc_get_preferred_key()
 	 * function is use_strongest_server_key=TRUE.
 	 */
-	kdc_config->as_use_strongest_session_key = false;
+	kdc_config->tgt_use_strongest_session_key = false;
 	kdc_config->preauth_use_strongest_session_key = true;
-	kdc_config->tgs_use_strongest_session_key = false;
+	kdc_config->svc_use_strongest_session_key = false;
 	kdc_config->use_strongest_server_key = true;
 
 	kdc_config->autodetect_referrals = false;
