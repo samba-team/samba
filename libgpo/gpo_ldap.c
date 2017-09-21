@@ -554,6 +554,7 @@ ADS_STATUS ads_get_gpo(ADS_STRUCT *ads,
 static ADS_STATUS add_gplink_to_gpo_list(ADS_STRUCT *ads,
 					 TALLOC_CTX *mem_ctx,
 					 struct GROUP_POLICY_OBJECT **gpo_list,
+					 struct GROUP_POLICY_OBJECT **forced_gpo_list,
 					 const char *link_dn,
 					 struct GP_LINK *gp_link,
 					 enum GPO_LINK_TYPE link_type,
@@ -571,7 +572,10 @@ static ADS_STATUS add_gplink_to_gpo_list(ADS_STRUCT *ads,
 	for (count = gp_link->num_links; count > 0; count--) {
 		/* NB. Index into arrays is one less than counter. */
 		uint32_t i = count - 1;
+		struct GROUP_POLICY_OBJECT **target_list = NULL;
 		struct GROUP_POLICY_OBJECT *new_gpo = NULL;
+		bool is_forced =
+			(gp_link->link_opts[i] & GPO_LINK_OPT_ENFORCED) != 0;
 
 		if (gp_link->link_opts[i] & GPO_LINK_OPT_DISABLED) {
 			DEBUG(10,("skipping disabled GPO\n"));
@@ -580,7 +584,7 @@ static ADS_STATUS add_gplink_to_gpo_list(ADS_STRUCT *ads,
 
 		if (only_add_forced_gpos) {
 
-			if (!(gp_link->link_opts[i] & GPO_LINK_OPT_ENFORCED)) {
+			if (!is_forced) {
 				DEBUG(10,("skipping nonenforced GPO link "
 					"because GPOPTIONS_BLOCK_INHERITANCE "
 					"has been set\n"));
@@ -623,7 +627,8 @@ static ADS_STATUS add_gplink_to_gpo_list(ADS_STRUCT *ads,
 		new_gpo->link = link_dn;
 		new_gpo->link_type = link_type;
 
-		DLIST_ADD(*gpo_list, new_gpo);
+		target_list = is_forced ? forced_gpo_list : gpo_list;
+		DLIST_ADD(*target_list, new_gpo);
 
 		DEBUG(10,("add_gplink_to_gplist: added GPLINK #%d %s "
 			"to GPO list\n", i, gp_link->link_names[i]));
@@ -722,24 +727,27 @@ static ADS_STATUS add_local_policy_to_gpo_list(TALLOC_CTX *mem_ctx,
 }
 
 /****************************************************************
- get the full list of GROUP_POLICY_OBJECTs for a given dn
+ Get the full list of GROUP_POLICY_OBJECTs for a given dn.
 ****************************************************************/
 
-ADS_STATUS ads_get_gpo_list(ADS_STRUCT *ads,
+static ADS_STATUS ads_get_gpo_list_internal(ADS_STRUCT *ads,
 			    TALLOC_CTX *mem_ctx,
 			    const char *dn,
 			    uint32_t flags,
 			    const struct security_token *token,
-			    struct GROUP_POLICY_OBJECT **gpo_list)
+			    struct GROUP_POLICY_OBJECT **gpo_list,
+			    struct GROUP_POLICY_OBJECT **forced_gpo_list)
 {
 	/*
 	 * Push GPOs to gpo_list so that the traversal order of the list matches
 	 * the order of application:
 	 * (L)ocal (S)ite (D)omain (O)rganizational(U)nit
-	 * Within domains and OUs: parent-to-child.
+	 * For different domains and OUs: parent-to-child.
+	 * Within same level of domains and OUs: Link order.
 	 * Since GPOs are pushed to the front of gpo_list, GPOs have to be
 	 * pushed in the opposite order of application (OUs first, local last,
 	 * child-to-parent).
+	 * Forced GPOs are appended in the end since they override all others.
 	 */
 
 	ADS_STATUS status;
@@ -748,6 +756,7 @@ ADS_STATUS ads_get_gpo_list(ADS_STRUCT *ads,
 	bool add_only_forced_gpos = false;
 
 	ZERO_STRUCTP(gpo_list);
+	ZERO_STRUCTP(forced_gpo_list);
 
 	if (!dn) {
 		return ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
@@ -784,6 +793,7 @@ ADS_STATUS ads_get_gpo_list(ADS_STRUCT *ads,
 				status = add_gplink_to_gpo_list(ads,
 							mem_ctx,
 							gpo_list,
+							forced_gpo_list,
 							parent_dn,
 							&gp_link,
 							GP_LINK_OU,
@@ -830,6 +840,7 @@ ADS_STATUS ads_get_gpo_list(ADS_STRUCT *ads,
 				status = add_gplink_to_gpo_list(ads,
 							mem_ctx,
 							gpo_list,
+							forced_gpo_list,
 							parent_dn,
 							&gp_link,
 							GP_LINK_DOMAIN,
@@ -872,8 +883,12 @@ ADS_STATUS ads_get_gpo_list(ADS_STRUCT *ads,
 				dump_gplink(&gp_link);
 			}
 
-			status = add_gplink_to_gpo_list(ads, mem_ctx, gpo_list,
-							site_dn, &gp_link,
+			status = add_gplink_to_gpo_list(ads,
+							mem_ctx,
+							gpo_list,
+							forced_gpo_list,
+							site_dn,
+							&gp_link,
 							GP_LINK_SITE,
 							add_only_forced_gpos,
 							token);
@@ -895,6 +910,40 @@ ADS_STATUS ads_get_gpo_list(ADS_STRUCT *ads,
 	if (!ADS_ERR_OK(status)) {
 		return status;
 	}
+
+	return ADS_ERROR(LDAP_SUCCESS);
+}
+
+/****************************************************************
+ Get the full list of GROUP_POLICY_OBJECTs for a given dn, wrapper
+ around ads_get_gpo_list_internal() that ensures correct ordering.
+****************************************************************/
+
+ADS_STATUS ads_get_gpo_list(ADS_STRUCT *ads,
+			    TALLOC_CTX *mem_ctx,
+			    const char *dn,
+			    uint32_t flags,
+			    const struct security_token *token,
+			    struct GROUP_POLICY_OBJECT **gpo_list)
+{
+	struct GROUP_POLICY_OBJECT *forced_gpo_list = NULL;
+	ADS_STATUS status;
+
+	status = ads_get_gpo_list_internal(ads,
+					   mem_ctx,
+					   dn,
+					   flags,
+					   token,
+					   gpo_list,
+					   &forced_gpo_list);
+	if (!ADS_ERR_OK(status)) {
+		return status;
+	}
+	/*
+	 * Append |forced_gpo_list| at the end of |gpo_list|,
+	 * so that forced GPOs are applied on top of non enforced GPOs.
+	 */
+	DLIST_CONCATENATE(*gpo_list, forced_gpo_list);
 
 	return ADS_ERROR(LDAP_SUCCESS);
 }
