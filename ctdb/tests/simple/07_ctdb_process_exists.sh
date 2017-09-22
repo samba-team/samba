@@ -41,7 +41,7 @@ srvid=0xAE00000012345678
 # Execute a ctdb client on $test_node that will last for 60 seconds.
 # It should still be there when we check.
 try_command_on_node -v $test_node \
-	"$CTDB_TEST_WRAPPER exec dummy_client -S ${srvid} >/dev/null 2>&1 & echo \$!"
+	"$CTDB_TEST_WRAPPER exec dummy_client -n 10 -S ${srvid} >/dev/null 2>&1 & echo \$!"
 client_pid="$out"
 
 cleanup ()
