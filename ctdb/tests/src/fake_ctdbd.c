@@ -2792,33 +2792,44 @@ static void control_check_pid_srvid(TALLOC_CTX *mem_ctx,
 	struct client_state *state = tevent_req_data(
 		req, struct client_state);
 	struct ctdbd_context *ctdb = state->ctdb;
+	struct ctdb_client *client;
 	struct client_state *cstate;
 	struct ctdb_reply_control reply;
+	bool pid_found, srvid_found;
 	int ret;
 
 	reply.rdata.opcode = request->opcode;
 
-	cstate = client_find(ctdb, request->rdata.data.pid_srvid->pid);
-	if (cstate == NULL) {
-		reply.status = -1;
-		reply.errmsg = "No client for PID";
-	} else {
-		ret = srvid_exists(ctdb->srv,
-				   request->rdata.data.pid_srvid->srvid,
-				   cstate);
-		if (ret != 0) {
-			reply.status = -1;
-			reply.errmsg = "No client for PID and SRVID";
-		} else {
-			ret = kill(cstate->pid, 0);
-			if (ret != 0) {
-				reply.status = ret;
-				reply.errmsg = strerror(errno);
-			} else {
-				reply.status = 0;
-				reply.errmsg = NULL;
+	pid_found = false;
+	srvid_found = false;
+
+	for (client=ctdb->client_list; client != NULL; client=client->next) {
+		if (client->pid == request->rdata.data.pid_srvid->pid) {
+			pid_found = true;
+			cstate = (struct client_state *)client->state;
+			ret = srvid_exists(ctdb->srv,
+					   request->rdata.data.pid_srvid->srvid,
+					   cstate);
+			if (ret == 0) {
+				srvid_found = true;
+				ret = kill(cstate->pid, 0);
+				if (ret != 0) {
+					reply.status = ret;
+					reply.errmsg = strerror(errno);
+				} else {
+					reply.status = 0;
+					reply.errmsg = NULL;
+				}
 			}
 		}
+	}
+
+	if (! pid_found) {
+		reply.status = -1;
+		reply.errmsg = "No client for PID";
+	} else if (! srvid_found) {
+		reply.status = -1;
+		reply.errmsg = "No client for PID and SRVID";
 	}
 
 	client_send_control(req, header, &reply);
