@@ -204,6 +204,11 @@ bool smbd_is_smb2_header(const uint8_t *inbuf, size_t size)
 	return true;
 }
 
+bool smbd_smb2_is_compound(const struct smbd_smb2_request *req)
+{
+	return req->in.vector_count >= (2*SMBD_SMB2_NUM_IOV_PER_REQ);
+}
+
 static NTSTATUS smbd_initialize_smb2(struct smbXsrv_connection *xconn,
 				     uint64_t expected_seq_low)
 {
