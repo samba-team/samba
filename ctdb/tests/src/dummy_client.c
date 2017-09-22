@@ -31,6 +31,7 @@
 static struct {
 	const char *sockpath;
 	const char *debuglevel;
+	int num_connections;
 	int timelimit;
 	const char *srvidstr;
 } options;
@@ -41,6 +42,8 @@ static struct poptOption cmdline_options[] = {
 		"Unix domain socket path", "filename" },
 	{ "debug", 'd', POPT_ARG_STRING, &options.debuglevel, 0,
 		"debug level", "ERR|WARNING|NOTICE|INFO|DEBUG" } ,
+	{ "nconn", 'n', POPT_ARG_INT, &options.num_connections, 0,
+		"number of connections", "" },
 	{ "timelimit", 't', POPT_ARG_INT, &options.timelimit, 0,
 		"time limit", "seconds" },
 	{ "srvid", 'S', POPT_ARG_STRING, &options.srvidstr, 0,
@@ -59,16 +62,18 @@ int main(int argc, const char *argv[])
 {
 	TALLOC_CTX *mem_ctx;
 	struct tevent_context *ev;
-	struct ctdb_client_context *client;
+	struct ctdb_client_context **client;
+	struct ctdb_client_context *last_client;
 	const char *ctdb_socket;
 	poptContext pc;
-	int opt, ret;
+	int opt, ret, i;
 	int log_level;
 	bool status, done;
 
 	/* Set default options */
 	options.sockpath = CTDB_SOCKET;
 	options.debuglevel = "ERR";
+	options.num_connections = 1;
 	options.timelimit = 60;
 	options.srvidstr = NULL;
 
@@ -112,11 +117,24 @@ int main(int argc, const char *argv[])
 	setup_logging("dummy_client", DEBUG_STDERR);
 	DEBUGLEVEL = log_level;
 
-	ret = ctdb_client_init(mem_ctx, ev, options.sockpath, &client);
-	if (ret != 0) {
-		D_ERR("Failed to initialize client, ret=%d\n", ret);
+	client = talloc_array(mem_ctx, struct ctdb_client_context *,
+			      options.num_connections);
+	if (client == NULL) {
+		fprintf(stderr, "Memory allocation error\n");
 		exit(1);
 	}
+
+	for (i=0; i<options.num_connections; i++) {
+		ret = ctdb_client_init(client, ev, options.sockpath,
+				       &client[i]);
+		if (ret != 0) {
+			D_ERR("Failed to initialize client %d, ret=%d\n",
+			      i, ret);
+			exit(1);
+		}
+	}
+
+	last_client = client[options.num_connections-1];
 
 	done = false;
 	if (options.srvidstr != NULL) {
@@ -124,7 +142,7 @@ int main(int argc, const char *argv[])
 
 		srvid = strtoull(options.srvidstr, NULL, 0);
 
-		ret = ctdb_client_set_message_handler(ev, client, srvid,
+		ret = ctdb_client_set_message_handler(ev, last_client, srvid,
 						      dummy_handler, &done);
 		if (ret != 0) {
 			D_ERR("Failed to register srvid, ret=%d\n", ret);
@@ -143,6 +161,6 @@ int main(int argc, const char *argv[])
 		exit(1);
 	}
 
-	talloc_free(client);
+	talloc_free(mem_ctx);
 	exit(0);
 }
