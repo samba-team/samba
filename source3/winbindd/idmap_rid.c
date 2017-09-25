@@ -68,7 +68,6 @@ failed:
 
 static NTSTATUS idmap_rid_id_to_sid(struct idmap_domain *dom, struct id_map *map)
 {
-	struct winbindd_domain *domain;
 	struct idmap_rid_context *ctx;
 
 	ctx = talloc_get_type(dom->private_data, struct idmap_rid_context);
@@ -80,12 +79,13 @@ static NTSTATUS idmap_rid_id_to_sid(struct idmap_domain *dom, struct id_map *map
 		return NT_STATUS_NONE_MAPPED;
 	}
 
-	domain = find_domain_from_name_noinit(dom->name);
-	if (domain == NULL ) {
+	if (is_null_sid(&dom->dom_sid)) {
+		DBG_INFO("idmap domain '%s' without SID\n", dom->name);
 		return NT_STATUS_NO_SUCH_DOMAIN;
 	}
 
-	sid_compose(map->sid, &domain->sid, map->xid.id - dom->low_id + ctx->base_rid);
+	sid_compose(map->sid, &dom->dom_sid,
+		    map->xid.id - dom->low_id + ctx->base_rid);
 
 	map->status = ID_MAPPED;
 	map->xid.type = ID_TYPE_BOTH;
