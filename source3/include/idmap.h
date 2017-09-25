@@ -37,6 +37,11 @@ struct wbint_userinfo;
 
 struct idmap_domain {
 	const char *name;
+	/*
+	 * dom_sid is currently only initialized in the unixids_to_sids request,
+	 * so don't rely on this being filled out everywhere!
+	 */
+	struct dom_sid dom_sid;
 	struct idmap_methods *methods;
 	NTSTATUS (*query_user)(struct idmap_domain *domain,
 			       struct wbint_userinfo *info);

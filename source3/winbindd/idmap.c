@@ -605,7 +605,8 @@ NTSTATUS idmap_allocate_gid(struct unixid *id)
 }
 
 NTSTATUS idmap_backend_unixids_to_sids(struct id_map **maps,
-				       const char *domain_name)
+				       const char *domain_name,
+				       struct dom_sid domain_sid)
 {
 	struct idmap_domain *dom = NULL;
 	NTSTATUS status;
@@ -626,6 +627,7 @@ NTSTATUS idmap_backend_unixids_to_sids(struct id_map **maps,
 		return NT_STATUS_NONE_MAPPED;
 	}
 
+	dom->dom_sid = domain_sid;
 	status = dom->methods->unixids_to_sids(dom, maps);
 
 	DBG_DEBUG("unixid_to_sids for domain %s returned %s\n",
