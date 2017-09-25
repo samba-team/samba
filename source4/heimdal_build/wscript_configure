@@ -25,7 +25,8 @@ conf.CHECK_HEADERS('''crypt.h errno.h inttypes.h netdb.h signal.h sys/bswap.h
 conf.CHECK_HEADERS('curses.h term.h termcap.h', together=True)
 
 conf.CHECK_FUNCS('''atexit cgetent getprogname setprogname gethostname
-                    putenv rcmd readv sendmsg setitimer strlwr strncasecmp
+                    putenv rcmd readv secure_getenv
+                    sendmsg setitimer strlwr strncasecmp
             strptime strsep strsep_copy    strtok_r strupr swab umask uname unsetenv
             closefrom err warn errx warnx flock writev''')
 
