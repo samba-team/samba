@@ -497,7 +497,8 @@ static krb5_error_code fill_mem_keytab_from_dedicated_keytab(krb5_context krbctx
 	ret = smb_krb5_kt_open(krbctx, lp_dedicated_keytab_file(),
 				   false, &keytab);
 	if (ret) {
-		DEBUG(1, ("smb_krb5_kt_open failed (%s)\n",
+		DEBUG(1, ("smb_krb5_kt_open of %s failed (%s)\n",
+			  lp_dedicated_keytab_file(),
 			  error_message(ret)));
 		return ret;
 	}
@@ -508,7 +509,9 @@ static krb5_error_code fill_mem_keytab_from_dedicated_keytab(krb5_context krbctx
 
 	ret = krb5_kt_start_seq_get(krbctx, keytab, &kt_cursor);
 	if (ret) {
-		DEBUG(1, (__location__ ": krb5_kt_start_seq_get failed (%s)\n",
+		DEBUG(1, (__location__ ": krb5_kt_start_seq_get on %s "
+			  "failed (%s)\n",
+			  lp_dedicated_keytab_file(),
 			  error_message(ret)));
 		goto out;
 	}
