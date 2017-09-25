@@ -37,6 +37,7 @@ struct _gss_mech_switch_list _gss_mechs = { NULL } ;
 gss_OID_set _gss_mech_oids;
 static HEIMDAL_MUTEX _gss_mech_mutex = HEIMDAL_MUTEX_INITIALIZER;
 
+#ifdef DL_OPEN
 /*
  * Convert a string containing an OID in 'dot' form
  * (e.g. 1.2.840.113554.1.2.2) to a gss_OID.
@@ -148,6 +149,7 @@ _gss_string_to_oid(const char* s, gss_OID oid)
 
 	return (0);
 }
+#endif /* HAVE_DLOPEN */
 
 #define SYM(name)							\
 do {									\
@@ -227,6 +229,7 @@ void
 _gss_load_mech(void)
 {
 	OM_uint32	major_status, minor_status;
+#ifdef HAVE_DLOPEN
 	FILE		*fp;
 	char		buf[256];
 	char		*p;
@@ -235,6 +238,7 @@ _gss_load_mech(void)
 	void		*so;
 	gss_OID_desc	mech_oid;
 	int		found;
+#endif
 
 
 	HEIMDAL_MUTEX_lock(&_gss_mech_mutex);
