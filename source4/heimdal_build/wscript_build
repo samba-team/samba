@@ -453,10 +453,12 @@ if not bld.CONFIG_SET("USING_SYSTEM_HDB"):
         options="--sequence=HDB-Ext-KeySet --sequence=Keys",
         includes='../heimdal/lib/asn1')
 
+    HDB_KEYS_SOURCE = 'lib/hdb/keys.c'
+
     HEIMDAL_SUBSYSTEM('HEIMDAL_HDB_KEYS',
-        'lib/hdb/keys.c',
+        HDB_KEYS_SOURCE,
         includes='../heimdal/lib/hdb',
-        deps='roken hcrypto krb5 HEIMDAL_HDB_ASN1'
+        deps='roken hcrypto krb5 HEIMDAL_HDB_ASN1',
         )
 
     HEIMDAL_ERRTABLE('HEIMDAL_HDB_ERR_ET', 'lib/hdb/hdb_err.et')
@@ -473,8 +475,8 @@ if not bld.CONFIG_SET("USING_SYSTEM_HDB"):
         deps='krb5 HEIMDAL_HDB_KEYS roken hcrypto com_err HEIMDAL_HDB_ASN1 wind',
         vnum='11.0.2',
         )
-    HEIMDAL_AUTOPROTO('lib/hdb/hdb-protos.h', HDB_SOURCE)
-    HEIMDAL_AUTOPROTO_PRIVATE('lib/hdb/hdb-private.h', HDB_SOURCE)
+    HEIMDAL_AUTOPROTO('lib/hdb/hdb-protos.h', HDB_SOURCE + " " + HDB_KEYS_SOURCE)
+    HEIMDAL_AUTOPROTO_PRIVATE('lib/hdb/hdb-private.h', HDB_SOURCE + " " + HDB_KEYS_SOURCE)
 
 
 if not bld.CONFIG_SET("USING_SYSTEM_GSSAPI"):
