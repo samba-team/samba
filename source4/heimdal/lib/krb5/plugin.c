@@ -394,6 +394,8 @@ struct plugin2 {
     heim_dict_t names;
 };
 
+#ifdef HAVE_DLOPEN
+
 static void
 plug_dealloc(void *ptr)
 {
@@ -404,6 +406,7 @@ plug_dealloc(void *ptr)
 	dlclose(p->dsohandle);
 }
 
+#endif /* HAVE_DLOPEN */
 
 void
 _krb5_load_plugins(krb5_context context, const char *name, const char **paths)
