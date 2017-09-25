@@ -226,7 +226,8 @@ NTSTATUS _wbint_UnixIDs2Sids(struct pipes_struct *p,
 		maps[i]->xid = r->in.xids[i];
 	}
 
-	status = idmap_backend_unixids_to_sids(maps, r->in.domain_name);
+	status = idmap_backend_unixids_to_sids(maps, r->in.domain_name,
+					       r->in.domain_sid);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(maps);
 		return status;

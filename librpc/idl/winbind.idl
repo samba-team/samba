@@ -58,6 +58,7 @@ interface winbind
 
     NTSTATUS wbint_UnixIDs2Sids(
 	[in,string,charset(UTF8)] char *domain_name,
+	[in] dom_sid domain_sid,
 	[in] uint32 num_ids,
 	[in,out] unixid xids[num_ids],
 	[out] dom_sid sids[num_ids]
