@@ -65,6 +65,24 @@ conf.CHECK_FUNCS('dirfd', headers='dirent.h')
 conf.CHECK_DECLS('dirfd', reverse=True, headers='dirent.h')
 conf.CHECK_STRUCTURE_MEMBER('DIR', 'dd_fd', define='HAVE_DIR_DD_FD',  headers='dirent.h')
 
+heimdal_no_error_flags = ['-Wno-error=discarded-qualifiers',
+                          '-Wno-error=cast-qual',
+                          '-Wno-error=missing-field-initializers',
+                          '-Wno-error=shadow',
+                          '-Wno-error=implicit-fallthrough',
+                          '-Wno-error=enum-compare',
+                          '-Wno-error=unused-but-set-variable',
+                          '-Wno-error=unused-const-variable',
+                          '-Wno-error=unused-variable',
+                          '-Wno-error=unused-result']
+for flag in heimdal_no_error_flags:
+    conf.ADD_NAMED_CFLAGS('HEIMDAL_PICKY_CFLAGS',
+                          flag,
+                          testflags=True)
+
+if len(bld.env.HEIMDAL_PICKY_CFLAGS) == len(heimdal_no_error_flags):
+    conf.env.enable_heimdal_warnings = True
+
 conf.DEFINE('SAMBA4_USES_HEIMDAL', 1)
 
 # setup the right defines for a in-tree heimdal build

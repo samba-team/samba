@@ -287,11 +287,20 @@ def HEIMDAL_SUBSYSTEM(modname, source,
 
     bld.set_group(group)
 
+    # If we found the -Wno-error options we need then build without
+    # allowing warnings, otherwise permit them
+    if bld.env.enable_heimdal_warnings:
+        samba_cflags = CURRENT_CFLAGS(bld, modname, cflags) + \
+                       bld.env.HEIMDAL_PICKY_CFLAGS
+    else:
+        samba_cflags = CURRENT_CFLAGS(bld, modname, cflags,
+                                      allow_warnings=True)
+
     return bld(
         features       = 'c',
         source         = source,
         target         = modname,
-        samba_cflags   = CURRENT_CFLAGS(bld, modname, cflags, allow_warnings=True),
+        samba_cflags   = samba_cflags,
         depends_on     = '',
         samba_deps     = to_list(deps),
         samba_includes = includes,
