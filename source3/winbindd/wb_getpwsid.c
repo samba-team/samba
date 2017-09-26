@@ -47,6 +47,12 @@ struct tevent_req *wb_getpwsid_send(TALLOC_CTX *mem_ctx,
 	state->ev = ev;
 	state->pw = pw;
 
+	if (dom_sid_in_domain(&global_sid_Unix_Users, user_sid)) {
+		/* unmapped Unix users must be resolved locally */
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return tevent_req_post(req, ev);
+	}
+
 	subreq = wb_queryuser_send(state, ev, &state->sid);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
