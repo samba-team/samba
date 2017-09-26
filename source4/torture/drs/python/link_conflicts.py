@@ -541,3 +541,107 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
         self._test_full_sync_link_conflict(sync_order=DC1_TO_DC2)
         self._test_full_sync_link_conflict(sync_order=DC2_TO_DC1)
 
+    def _test_conflict_single_valued_link_deleted_winner(self, sync_order):
+        """
+        Tests a single-value link conflict where the more-up-to-date link value
+        is deleted.
+        """
+        src_ou = self.unique_dn("OU=src")
+        src_guid = self.add_object(self.ldb_dc1, src_ou)
+        self.sync_DCs()
+
+        # create a unique target on each DC
+        target1_ou = self.unique_dn("OU=target1")
+        target2_ou = self.unique_dn("OU=target2")
+
+        target1_guid = self.add_object(self.ldb_dc1, target1_ou)
+        target2_guid = self.add_object(self.ldb_dc2, target2_ou)
+
+        # add the links for the respective targets, and delete one of the links
+        self.add_link_attr(self.ldb_dc1, src_ou, "managedBy", target1_ou)
+        self.add_link_attr(self.ldb_dc2, src_ou, "managedBy", target2_ou)
+        self.ensure_unique_timestamp()
+        self.del_link_attr(self.ldb_dc1, src_ou, "managedBy", target1_ou)
+
+        # sync the 2 DCs
+        self.sync_DCs(sync_order=sync_order)
+
+        res1 = self.ldb_dc1.search(base="<GUID=%s>" % src_guid,
+                                  scope=SCOPE_BASE, attrs=["managedBy"])
+        res2 = self.ldb_dc2.search(base="<GUID=%s>" % src_guid,
+                                  scope=SCOPE_BASE, attrs=["managedBy"])
+
+        # Although the more up-to-date link value is deleted, this shouldn't
+        # trump DC1's active link
+        self.assert_attrs_match(res1, res2, "managedBy", 1)
+
+        self.assertTrue(res1[0]["managedBy"][0] == target2_ou,
+                        "Expected active link win conflict")
+
+        # we can't query the deleted links over LDAP, but we can check that
+        # the deleted links exist using DRS
+        link1 = AbstractLink(drsuapi.DRSUAPI_ATTID_managedBy, 0,
+                             misc.GUID(src_guid), misc.GUID(target1_guid))
+        link2 = AbstractLink(drsuapi.DRSUAPI_ATTID_managedBy,
+                             drsuapi.DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE,
+                             misc.GUID(src_guid), misc.GUID(target2_guid))
+        self._check_replicated_links(src_ou, [link1, link2])
+
+    def test_conflict_single_valued_link_deleted_winner(self):
+        # repeat the test twice, to give each DC a chance to resolve the conflict
+        self._test_conflict_single_valued_link_deleted_winner(sync_order=DC1_TO_DC2)
+        self._test_conflict_single_valued_link_deleted_winner(sync_order=DC2_TO_DC1)
+
+    def _test_conflict_single_valued_link_deleted_loser(self, sync_order):
+        """
+        Tests a single-valued link conflict, where the losing link value is deleted.
+        """
+        src_ou = self.unique_dn("OU=src")
+        src_guid = self.add_object(self.ldb_dc1, src_ou)
+        self.sync_DCs()
+
+        # create a unique target on each DC
+        target1_ou = self.unique_dn("OU=target1")
+        target2_ou = self.unique_dn("OU=target2")
+
+        target1_guid = self.add_object(self.ldb_dc1, target1_ou)
+        target2_guid = self.add_object(self.ldb_dc2, target2_ou)
+
+        # add the links - we want the link to end up deleted on DC2, but active on
+        # DC1. DC1 has the better version and DC2 has the better timestamp - the
+        # better version should win
+        self.add_link_attr(self.ldb_dc1, src_ou, "managedBy", target1_ou)
+        self.del_link_attr(self.ldb_dc1, src_ou, "managedBy", target1_ou)
+        self.add_link_attr(self.ldb_dc1, src_ou, "managedBy", target1_ou)
+        self.ensure_unique_timestamp()
+        self.add_link_attr(self.ldb_dc2, src_ou, "managedBy", target2_ou)
+        self.del_link_attr(self.ldb_dc2, src_ou, "managedBy", target2_ou)
+
+        self.sync_DCs(sync_order=sync_order)
+
+        res1 = self.ldb_dc1.search(base="<GUID=%s>" % src_guid,
+                                  scope=SCOPE_BASE, attrs=["managedBy"])
+        res2 = self.ldb_dc2.search(base="<GUID=%s>" % src_guid,
+                                  scope=SCOPE_BASE, attrs=["managedBy"])
+
+        # check the object has only have one occurence of the single-valued
+        # attribute and it matches on both DCs
+        self.assert_attrs_match(res1, res2, "managedBy", 1)
+
+        self.assertTrue(res1[0]["managedBy"][0] == target1_ou,
+                        "Expected most recent update to win conflict")
+
+        # we can't query the deleted links over LDAP, but we can check DRS
+        # to make sure the DC kept a copy of the conflicting link
+        link1 = AbstractLink(drsuapi.DRSUAPI_ATTID_managedBy,
+                             drsuapi.DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE,
+                             misc.GUID(src_guid), misc.GUID(target1_guid))
+        link2 = AbstractLink(drsuapi.DRSUAPI_ATTID_managedBy, 0,
+                             misc.GUID(src_guid), misc.GUID(target2_guid))
+        self._check_replicated_links(src_ou, [link1, link2])
+
+    def test_conflict_single_valued_link_deleted_loser(self):
+        # repeat the test twice, to give each DC a chance to resolve the conflict
+        self._test_conflict_single_valued_link_deleted_loser(sync_order=DC1_TO_DC2)
+        self._test_conflict_single_valued_link_deleted_loser(sync_order=DC2_TO_DC1)
+
