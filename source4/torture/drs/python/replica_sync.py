@@ -298,6 +298,86 @@ objectClass: organizationalUnit
         self._check_deleted(self.ldb_dc2, ou1_child)
         self._check_deleted(self.ldb_dc2, ou2_child)
 
+    def test_ReplConflictsRenamedVsNewRemoteWin(self):
+        """Tests resolving a DN conflict between a renamed object and a new object"""
+        self._disable_inbound_repl(self.dnsname_dc1)
+        self._disable_inbound_repl(self.dnsname_dc2)
+
+        # Create an OU and rename it on DC1
+        self.ou1 = self._create_ou(self.ldb_dc1, "OU=Test Remote Rename Conflict orig")
+        self.ldb_dc1.rename("<GUID=%s>" % self.ou1, "OU=Test Remote Rename Conflict,%s" % self.domain_dn)
+
+        # We have to sleep to ensure that the two objects have different timestamps
+        time.sleep(1)
+
+        # create a conflicting object with the same DN on DC2
+        self.ou2 = self._create_ou(self.ldb_dc2, "OU=Test Remote Rename Conflict")
+
+        self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, forced=True, full_sync=False)
+
+        # Check that DC2 got the DC1 object, and SELF.OU1 was made into conflict
+        res1 = self.ldb_dc1.search(base="<GUID=%s>" % self.ou1,
+                                  scope=SCOPE_BASE, attrs=["name"])
+        res2 = self.ldb_dc1.search(base="<GUID=%s>" % self.ou2,
+                                  scope=SCOPE_BASE, attrs=["name"])
+        print res1[0]["name"][0]
+        print res2[0]["name"][0]
+        self.assertTrue('CNF:%s' % self.ou1 in str(res1[0]["name"][0]))
+        self.assertTrue(self._lost_and_found_dn(self.ldb_dc1, self.domain_dn) not in str(res1[0].dn))
+        self.assertTrue(self._lost_and_found_dn(self.ldb_dc1, self.domain_dn) not in str(res2[0].dn))
+        self.assertEqual(str(res1[0]["name"][0]), res1[0].dn.get_rdn_value())
+        self.assertEqual(str(res2[0]["name"][0]), res2[0].dn.get_rdn_value())
+
+        # Delete both objects by GUID on DC1
+        self.ldb_dc1.delete('<GUID=%s>' % self.ou1)
+        self.ldb_dc1.delete('<GUID=%s>' % self.ou2)
+
+        self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, forced=True, full_sync=False)
+
+        self._check_deleted(self.ldb_dc1, self.ou1)
+        self._check_deleted(self.ldb_dc1, self.ou2)
+        # Check deleted on DC2
+        self._check_deleted(self.ldb_dc2, self.ou1)
+        self._check_deleted(self.ldb_dc2, self.ou2)
+
+    def test_ReplConflictsRenamedVsNewLocalWin(self):
+        """Tests resolving a DN conflict between a renamed object and a new object"""
+        self._disable_inbound_repl(self.dnsname_dc1)
+        self._disable_inbound_repl(self.dnsname_dc2)
+
+        # Create conflicting objects on DC1 and DC2, where the DC2 object has been renamed
+        self.ou2 = self._create_ou(self.ldb_dc2, "OU=Test Rename Local Conflict orig")
+        self.ldb_dc2.rename("<GUID=%s>" % self.ou2, "OU=Test Rename Local Conflict,%s" % self.domain_dn)
+        # We have to sleep to ensure that the two objects have different timestamps
+        time.sleep(1)
+        self.ou1 = self._create_ou(self.ldb_dc1, "OU=Test Rename Local Conflict")
+
+        self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, forced=True, full_sync=False)
+
+        # Check that DC2 got the DC1 object, and OU2 was made into conflict
+        res1 = self.ldb_dc1.search(base="<GUID=%s>" % self.ou1,
+                                  scope=SCOPE_BASE, attrs=["name"])
+        res2 = self.ldb_dc1.search(base="<GUID=%s>" % self.ou2,
+                                  scope=SCOPE_BASE, attrs=["name"])
+        print res1[0]["name"][0]
+        print res2[0]["name"][0]
+        self.assertTrue('CNF:%s' % self.ou2 in str(res2[0]["name"][0]))
+        self.assertTrue(self._lost_and_found_dn(self.ldb_dc1, self.domain_dn) not in str(res1[0].dn))
+        self.assertTrue(self._lost_and_found_dn(self.ldb_dc1, self.domain_dn) not in str(res2[0].dn))
+        self.assertEqual(str(res1[0]["name"][0]), res1[0].dn.get_rdn_value())
+        self.assertEqual(str(res2[0]["name"][0]), res2[0].dn.get_rdn_value())
+
+        # Delete both objects by GUID on DC1
+        self.ldb_dc1.delete('<GUID=%s>' % self.ou1)
+        self.ldb_dc1.delete('<GUID=%s>' % self.ou2)
+
+        self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, forced=True, full_sync=False)
+
+        self._check_deleted(self.ldb_dc1, self.ou1)
+        self._check_deleted(self.ldb_dc1, self.ou2)
+        # Check deleted on DC2
+        self._check_deleted(self.ldb_dc2, self.ou1)
+        self._check_deleted(self.ldb_dc2, self.ou2)
 
     def test_ReplConflictsRenameRemoteWin(self):
         """Tests that objects created in conflict become conflict DNs"""
