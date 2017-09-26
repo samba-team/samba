@@ -31,6 +31,7 @@
 #include "auth/gensec/gensec_internal.h"
 #include "auth/credentials/credentials.h"
 #include "../librpc/gen_ndr/dcerpc.h"
+#include "param/param.h"
 
 #if defined(HAVE_KRB5)
 
@@ -248,7 +249,7 @@ err_out:
 	return status;
 }
 
-static NTSTATUS gse_init_client(TALLOC_CTX *mem_ctx,
+static NTSTATUS gse_init_client(struct gensec_security *gensec_security,
 				bool do_sign, bool do_seal,
 				const char *ccache_name,
 				const char *server,
@@ -271,12 +272,41 @@ static NTSTATUS gse_init_client(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	status = gse_context_init(mem_ctx, do_sign, do_seal,
+	status = gse_context_init(gensec_security, do_sign, do_seal,
 				  ccache_name, add_gss_c_flags,
 				  &gse_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		return NT_STATUS_NO_MEMORY;
 	}
+
+#ifdef SAMBA4_USES_HEIMDAL
+	{
+		int ret;
+		bool set_dns_canon = gensec_setting_bool(
+				gensec_security->settings,
+				"krb5", "set_dns_canonicalize",
+				false);
+		const char *server_realm = lpcfg_realm(
+				gensec_security->settings->lp_ctx);
+		if (server_realm != NULL) {
+			ret = gsskrb5_set_default_realm(server_realm);
+			if (ret) {
+				DBG_ERR("gsskrb5_set_default_realm failed\n");
+				return NT_STATUS_INTERNAL_ERROR;
+			}
+		}
+
+		/*
+		 * don't do DNS lookups of any kind, it might/will
+		 * fail for a netbios name
+		 */
+		ret = gsskrb5_set_dns_canonicalize(set_dns_canon);
+		if (ret != GSS_S_COMPLETE) {
+			DBG_ERR("gsskrb5_set_dns_canonicalize failed\n");
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+	}
+#endif
 
 	/* TODO: get krb5 ticket using username/password, if no valid
 	 * one already available in ccache */
@@ -1151,13 +1181,13 @@ static bool gensec_gse_have_feature(struct gensec_security *gensec_security,
 			return false;
 		}
 
-		status = gssapi_get_session_key(talloc_tos(), 
+		status = gssapi_get_session_key(talloc_tos(),
 						gse_ctx->gssapi_context, NULL, &keytype);
-		/* 
+		/*
 		 * We should do a proper sig on the mechListMic unless
 		 * we know we have to be backwards compatible with
-		 * earlier windows versions.  
-		 * 
+		 * earlier windows versions.
+		 *
 		 * Negotiating a non-krb5
 		 * mech for example should be regarded as having
 		 * NEW_SPNEGO
