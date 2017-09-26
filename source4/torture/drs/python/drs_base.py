@@ -253,10 +253,22 @@ class DrsBaseTestCase(SambaToolCmdTest):
                 next_object = next_object.next_object
 
             print("Linked Attributes: %d" % ctr6.linked_attributes_count)
-            ctr6_links = self._get_ctr6_links(ctr6)
-            for link in ctr6_links:
+            for lidx in range(0, ctr6.linked_attributes_count):
+                l = ctr6.linked_attributes[lidx]
+                try:
+                    target = ndr_unpack(drsuapi.DsReplicaObjectIdentifier3,
+                                        l.value.blob)
+                except:
+                    target = ndr_unpack(drsuapi.DsReplicaObjectIdentifier3Binary,
+                                        l.value.blob)
+
                 print("Link Tgt %s... <-- Src %s"
-                      %(link.targetDN[:25], link.identifier))
+                      %(target.dn[:25], l.identifier.guid))
+		state = "Del"
+		if l.flags & drsuapi.DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE:
+		    state = "Act"
+		print("  v%u %s changed %u" %(l.meta_data.version, state,
+		      l.meta_data.originating_change_time))
 
             print("HWM:     %d" %(ctr6.new_highwatermark.highest_usn))
             print("Tmp HWM: %d" %(ctr6.new_highwatermark.tmp_highest_usn))
