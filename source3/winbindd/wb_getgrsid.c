@@ -53,6 +53,12 @@ struct tevent_req *wb_getgrsid_send(TALLOC_CTX *mem_ctx,
 	state->ev = ev;
 	state->max_nesting = max_nesting;
 
+	if (dom_sid_in_domain(&global_sid_Unix_Groups, group_sid)) {
+		/* unmapped Unix groups must be resolved locally */
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return tevent_req_post(req, ev);
+	}
+
 	if (lp_winbind_trusted_domains_only()) {
 		struct winbindd_domain *our_domain = find_our_domain();
 
