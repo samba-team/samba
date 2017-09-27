@@ -7332,38 +7332,38 @@ static int replmd_check_singleval_la_conflict(struct ldb_module *module,
 		conflict_pdn = active_pdn;
 	}
 
+	if (conflict_pdn == NULL) {
+		return LDB_SUCCESS;
+	}
+
 	/* resolve any single-valued link conflicts */
-	if (conflict_pdn != NULL) {
+	DBG_WARNING("Link conflict for %s attribute on %s\n",
+		    attr->lDAPDisplayName, ldb_dn_get_linearized(src_obj_dn));
 
-		DBG_WARNING("Link conflict for %s attribute on %s\n",
-			    attr->lDAPDisplayName, ldb_dn_get_linearized(src_obj_dn));
+	if (replmd_link_update_is_newer(conflict_pdn, la)) {
+		DBG_WARNING("Using received value %s, over existing target %s\n",
+			    ldb_dn_get_linearized(dsdb_dn->dn),
+			    ldb_dn_get_linearized(conflict_pdn->dsdb_dn->dn));
 
-		if (replmd_link_update_is_newer(conflict_pdn, la)) {
-			DBG_WARNING("Using received value %s, over existing target %s\n",
-				    ldb_dn_get_linearized(dsdb_dn->dn),
-				    ldb_dn_get_linearized(conflict_pdn->dsdb_dn->dn));
+		ret = replmd_delete_link_value(module, replmd_private, old_el,
+					       src_obj_dn, schema, attr,
+					       seq_num, true, &conflict_pdn->guid,
+					       conflict_pdn->dsdb_dn,
+					       conflict_pdn->v);
 
-			ret = replmd_delete_link_value(module, replmd_private,
-						       old_el, src_obj_dn, schema,
-						       attr, seq_num, true,
-						       &conflict_pdn->guid,
-						       conflict_pdn->dsdb_dn,
-						       conflict_pdn->v);
-
-			if (ret != LDB_SUCCESS) {
-				return ret;
-			}
-		} else {
-			DBG_WARNING("Using existing target %s, over received value %s\n",
-				    ldb_dn_get_linearized(conflict_pdn->dsdb_dn->dn),
-				    ldb_dn_get_linearized(dsdb_dn->dn));
-
-			/*
-			 * we want to keep our existing active link and add the
-			 * received link as inactive
-			 */
-			*add_as_inactive = true;
+		if (ret != LDB_SUCCESS) {
+			return ret;
 		}
+	} else {
+		DBG_WARNING("Using existing target %s, over received value %s\n",
+			    ldb_dn_get_linearized(conflict_pdn->dsdb_dn->dn),
+			    ldb_dn_get_linearized(dsdb_dn->dn));
+
+		/*
+		 * we want to keep our existing active link and add the
+		 * received link as inactive
+		 */
+		*add_as_inactive = true;
 	}
 
 	return LDB_SUCCESS;
