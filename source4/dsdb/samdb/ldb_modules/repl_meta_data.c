@@ -7275,6 +7275,100 @@ static int replmd_delete_link_value(struct ldb_module *module,
 	return ret;
 }
 
+/**
+ * Checks for a conflict in single-valued link attributes, and tries to
+ * resolve the problem if possible.
+ *
+ * Single-valued links should only ever have one active value. If we already
+ * have an active link value, and during replication we receive an active link
+ * value for a different target DN, then we need to resolve this inconsistency
+ * and determine which value should be active. If the received info is better/
+ * newer than the existing link attribute, then we need to set our existing
+ * link as deleted. If the received info is worse/older, then we should continue
+ * to add it, but set it as an inactive link.
+ *
+ * Note that this is a corner-case that is unlikely to happen (but if it does
+ * happen, we don't want it to break replication completely).
+ *
+ * @param pdn the parsed DN corresponding to the received link
+ * target (note this is NULL if the link does not already exist in our DB)
+ * @param pdn_list all the source object's Parsed-DNs for this attribute, i.e.
+ * any existing active or inactive values for the attribute in our DB.
+ * @param dsdb_dn the target DN for the received link attribute
+ * @param add_as_inactive gets set to true if the received link is worse than
+ * the existing link - it should still be added, but as an inactive link.
+ */
+static int replmd_check_singleval_la_conflict(struct ldb_module *module,
+					      struct replmd_private *replmd_private,
+					      TALLOC_CTX *mem_ctx,
+					      struct ldb_dn *src_obj_dn,
+					      struct drsuapi_DsReplicaLinkedAttribute *la,
+					      struct dsdb_dn *dsdb_dn,
+					      struct parsed_dn *pdn,
+					      struct parsed_dn *pdn_list,
+					      struct ldb_message_element *old_el,
+					      const struct dsdb_schema *schema,
+					      const struct dsdb_attribute *attr,
+					      uint64_t seq_num,
+					      bool *add_as_inactive)
+{
+	struct parsed_dn *active_pdn = NULL;
+	struct parsed_dn *conflict_pdn = NULL;
+	int ret;
+
+	/*
+	 * check if there's a conflict for single-valued links, i.e. an active
+	 * linked attribute already exists, but it has a different target value
+	 */
+	ret = replmd_get_active_singleval_link(module, mem_ctx, pdn_list,
+					       old_el->num_values, attr,
+					       &active_pdn);
+
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	if (active_pdn != pdn) {
+		conflict_pdn = active_pdn;
+	}
+
+	/* resolve any single-valued link conflicts */
+	if (conflict_pdn != NULL) {
+
+		DBG_WARNING("Link conflict for %s attribute on %s\n",
+			    attr->lDAPDisplayName, ldb_dn_get_linearized(src_obj_dn));
+
+		if (replmd_link_update_is_newer(conflict_pdn, la)) {
+			DBG_WARNING("Using received value %s, over existing target %s\n",
+				    ldb_dn_get_linearized(dsdb_dn->dn),
+				    ldb_dn_get_linearized(conflict_pdn->dsdb_dn->dn));
+
+			ret = replmd_delete_link_value(module, replmd_private,
+						       old_el, src_obj_dn, schema,
+						       attr, seq_num, true,
+						       &conflict_pdn->guid,
+						       conflict_pdn->dsdb_dn,
+						       conflict_pdn->v);
+
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
+		} else {
+			DBG_WARNING("Using existing target %s, over received value %s\n",
+				    ldb_dn_get_linearized(conflict_pdn->dsdb_dn->dn),
+				    ldb_dn_get_linearized(dsdb_dn->dn));
+
+			/*
+			 * we want to keep our existing active link and add the
+			 * received link as inactive
+			 */
+			*add_as_inactive = true;
+		}
+	}
+
+	return LDB_SUCCESS;
+}
+
 /*
   process one linked attribute structure
  */
@@ -7295,7 +7389,6 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 	struct ldb_message_element *old_el;
 	time_t t = time(NULL);
 	struct parsed_dn *pdn_list, *pdn, *next;
-	struct parsed_dn *conflict_pdn = NULL;
 	struct GUID guid = GUID_zero();
 	bool active = (la->flags & DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE)?true:false;
 	bool ignore_link;
@@ -7381,26 +7474,6 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 		return ret;
 	}
 
-	/*
-	 * check if there's a conflict for single-valued links, i.e. an active
-	 * linked attribute already exists, but it has a different target value
-	 */
-	if (active) {
-		struct parsed_dn *active_pdn = NULL;
-
-		ret = replmd_get_active_singleval_link(module, tmp_ctx, pdn_list,
-						       old_el->num_values, attr,
-						       &active_pdn);
-		if (ret != LDB_SUCCESS) {
-			talloc_free(tmp_ctx);
-			return ret;
-		}
-
-		if (active_pdn != pdn) {
-			conflict_pdn = active_pdn;
-		}
-	}
-
 	if (!replmd_link_update_is_newer(pdn, la)) {
 		DEBUG(3,("Discarding older DRS linked attribute update to %s on %s from %s\n",
 			 old_el->name, ldb_dn_get_linearized(msg->dn),
@@ -7416,38 +7489,20 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 		return ret;
 	}
 
-	/* resolve any single-valued link conflicts */
-	if (conflict_pdn != NULL) {
-
-		DBG_WARNING("Link conflict for %s attribute on %s\n",
-			    attr->lDAPDisplayName, ldb_dn_get_linearized(msg->dn));
-
-		if (replmd_link_update_is_newer(conflict_pdn, la)) {
-			DBG_WARNING("Using received value %s, over existing target %s\n",
-				    ldb_dn_get_linearized(dsdb_dn->dn),
-				    ldb_dn_get_linearized(conflict_pdn->dsdb_dn->dn));
-
-			ret = replmd_delete_link_value(module, replmd_private,
-						       old_el, msg->dn, schema,
-						       attr, seq_num, true,
-						       &conflict_pdn->guid,
-						       conflict_pdn->dsdb_dn,
-						       conflict_pdn->v);
-
-			if (ret != LDB_SUCCESS) {
-				talloc_free(tmp_ctx);
-				return ret;
-			}
-		} else {
-			DBG_WARNING("Using existing target %s, over received value %s\n",
-				    ldb_dn_get_linearized(conflict_pdn->dsdb_dn->dn),
-				    ldb_dn_get_linearized(dsdb_dn->dn));
-
-			/*
-			 * we want to keep our existing active link and add the
-			 * received link as inactive
-			 */
-			add_as_inactive = true;
+	/*
+	 * check for single-valued link conflicts, i.e. an active linked
+	 * attribute already exists, but it has a different target value
+	 */
+	if (active) {
+		ret = replmd_check_singleval_la_conflict(module, replmd_private,
+							 tmp_ctx, msg->dn, la,
+							 dsdb_dn, pdn, pdn_list,
+							 old_el, schema, attr,
+							 seq_num,
+							 &add_as_inactive);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return ret;
 		}
 	}
 
