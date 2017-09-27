@@ -7300,6 +7300,8 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 	bool active = (la->flags & DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE)?true:false;
 	bool ignore_link;
 	enum deletion_state deletion_state = OBJECT_NOT_DELETED;
+	struct dsdb_dn *old_dsdb_dn = NULL;
+	struct ldb_val *val_to_update = NULL;
 
 	/*
 	 * get the attribute being modified, the search result for the source object,
@@ -7457,16 +7459,9 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 			}
 		}
 
-		ret = replmd_set_la_val(tmp_ctx, pdn->v, dsdb_dn, pdn->dsdb_dn,
-					&la->meta_data.originating_invocation_id,
-					la->meta_data.originating_usn, seq_num,
-					la->meta_data.originating_change_time,
-					la->meta_data.version,
-					!active);
-		if (ret != LDB_SUCCESS) {
-			talloc_free(tmp_ctx);
-			return ret;
-		}
+		val_to_update = pdn->v;
+		old_dsdb_dn = pdn->dsdb_dn;
+
 	} else {
 		unsigned offset;
 
@@ -7505,16 +7500,20 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 
 		old_el->num_values++;
 
-		ret = replmd_build_la_val(tmp_ctx, &old_el->values[offset], dsdb_dn,
-					  &la->meta_data.originating_invocation_id,
-					  la->meta_data.originating_usn, seq_num,
-					  la->meta_data.originating_change_time,
-					  la->meta_data.version,
-					  !active);
-		if (ret != LDB_SUCCESS) {
-			talloc_free(tmp_ctx);
-			return ret;
-		}
+		val_to_update = &old_el->values[offset];
+		old_dsdb_dn = NULL;
+	}
+
+	/* set the link attribute's value to the info that was received */
+	ret = replmd_set_la_val(tmp_ctx, val_to_update, dsdb_dn, old_dsdb_dn,
+				&la->meta_data.originating_invocation_id,
+				la->meta_data.originating_usn, seq_num,
+				la->meta_data.originating_change_time,
+				la->meta_data.version,
+				!active);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
 	}
 
 	/* if the new link is active, then add the new backlink */
