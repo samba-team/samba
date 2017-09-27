@@ -12893,6 +12893,7 @@ searchFlags: 1
 lDAPDisplayName: msDS-GeoCoordinatesAltitude
 schemaIDGUID:: twMXoUFWnE2GPl+zMl504A==
 attributeSecurityGUID:: hri1d0qU0RGuvQAA+ANnwQ==
+systemFlags: 16
 objectCategory: CN=Attribute-Schema,CN=Schema,CN=Configuration,DC=X
 
 dn: CN=ms-DS-GeoCoordinates-Latitude,CN=Schema,CN=Configuration,DC=X
@@ -12911,6 +12912,7 @@ searchFlags: 1
 lDAPDisplayName: msDS-GeoCoordinatesLatitude
 schemaIDGUID:: TtRm3EM99UCFxTwS4WmSfg==
 attributeSecurityGUID:: hri1d0qU0RGuvQAA+ANnwQ==
+systemFlags: 16
 objectCategory: CN=Attribute-Schema,CN=Schema,CN=Configuration,DC=X
 
 dn: CN=ms-DS-GeoCoordinates-Longitude,CN=Schema,CN=Configuration,DC=X
@@ -12929,6 +12931,7 @@ searchFlags: 1
 lDAPDisplayName: msDS-GeoCoordinatesLongitude
 schemaIDGUID:: ECHElOS66kyFd6+BOvXaJQ==
 attributeSecurityGUID:: hri1d0qU0RGuvQAA+ANnwQ==
+systemFlags: 16
 objectCategory: CN=Attribute-Schema,CN=Schema,CN=Configuration,DC=X
 
 dn: CN=ms-DS-GroupMSAMembership,CN=Schema,CN=Configuration,DC=X
