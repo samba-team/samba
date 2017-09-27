@@ -7302,6 +7302,7 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 	enum deletion_state deletion_state = OBJECT_NOT_DELETED;
 	struct dsdb_dn *old_dsdb_dn = NULL;
 	struct ldb_val *val_to_update = NULL;
+	bool add_as_inactive = false;
 
 	/*
 	 * get the attribute being modified, the search result for the source object,
@@ -7438,8 +7439,11 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 				    ldb_dn_get_linearized(conflict_pdn->dsdb_dn->dn),
 				    ldb_dn_get_linearized(dsdb_dn->dn));
 
-			/* don't add the link as active */
-			active = false;
+			/*
+			 * we want to keep our existing active link and add the
+			 * received link as inactive
+			 */
+			add_as_inactive = true;
 		}
 	}
 
@@ -7516,8 +7520,22 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 		return ret;
 	}
 
-	/* if the new link is active, then add the new backlink */
-	if (active) {
+	if (add_as_inactive) {
+
+		/* Set the new link as inactive/deleted to avoid conflicts */
+		ret = replmd_delete_link_value(module, replmd_private, old_el,
+					       msg->dn, schema, attr, seq_num,
+					       false, &guid, dsdb_dn,
+					       val_to_update);
+
+		if (ret != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return ret;
+		}
+
+	} else if (active) {
+
+		/* if the new link is active, then add the new backlink */
 		ret = replmd_add_backlink(module, replmd_private,
 					  schema,
 					  msg->dn,
