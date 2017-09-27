@@ -7290,7 +7290,7 @@ static int replmd_delete_link_value(struct ldb_module *module,
  * Note that this is a corner-case that is unlikely to happen (but if it does
  * happen, we don't want it to break replication completely).
  *
- * @param pdn the parsed DN corresponding to the received link
+ * @param pdn_being_modified the parsed DN corresponding to the received link
  * target (note this is NULL if the link does not already exist in our DB)
  * @param pdn_list all the source object's Parsed-DNs for this attribute, i.e.
  * any existing active or inactive values for the attribute in our DB.
@@ -7304,7 +7304,7 @@ static int replmd_check_singleval_la_conflict(struct ldb_module *module,
 					      struct ldb_dn *src_obj_dn,
 					      struct drsuapi_DsReplicaLinkedAttribute *la,
 					      struct dsdb_dn *dsdb_dn,
-					      struct parsed_dn *pdn,
+					      struct parsed_dn *pdn_being_modified,
 					      struct parsed_dn *pdn_list,
 					      struct ldb_message_element *old_el,
 					      const struct dsdb_schema *schema,
@@ -7313,7 +7313,7 @@ static int replmd_check_singleval_la_conflict(struct ldb_module *module,
 					      bool *add_as_inactive)
 {
 	struct parsed_dn *active_pdn = NULL;
-	struct parsed_dn *conflict_pdn = NULL;
+	bool update_is_newer = false;
 	int ret;
 
 	/*
@@ -7328,35 +7328,41 @@ static int replmd_check_singleval_la_conflict(struct ldb_module *module,
 		return ret;
 	}
 
-	if (active_pdn != pdn) {
-		conflict_pdn = active_pdn;
-	}
-
-	if (conflict_pdn == NULL) {
+	/*
+	 * If no active value exists (or the received info is for the currently
+	 * active value), then no conflict exists
+	 */
+	if (active_pdn == NULL || active_pdn == pdn_being_modified) {
 		return LDB_SUCCESS;
 	}
 
-	/* resolve any single-valued link conflicts */
 	DBG_WARNING("Link conflict for %s attribute on %s\n",
 		    attr->lDAPDisplayName, ldb_dn_get_linearized(src_obj_dn));
 
-	if (replmd_link_update_is_newer(conflict_pdn, la)) {
+	/* Work out how to resolve the conflict based on which info is better */
+	update_is_newer = replmd_link_update_is_newer(active_pdn, la);
+
+	if (update_is_newer) {
 		DBG_WARNING("Using received value %s, over existing target %s\n",
 			    ldb_dn_get_linearized(dsdb_dn->dn),
-			    ldb_dn_get_linearized(conflict_pdn->dsdb_dn->dn));
+			    ldb_dn_get_linearized(active_pdn->dsdb_dn->dn));
 
+		/*
+		 * Delete our existing active link. The received info will then
+		 * be added (through normal link processing) as the active value
+		 */
 		ret = replmd_delete_link_value(module, replmd_private, old_el,
 					       src_obj_dn, schema, attr,
-					       seq_num, true, &conflict_pdn->guid,
-					       conflict_pdn->dsdb_dn,
-					       conflict_pdn->v);
+					       seq_num, true, &active_pdn->guid,
+					       active_pdn->dsdb_dn,
+					       active_pdn->v);
 
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
 	} else {
 		DBG_WARNING("Using existing target %s, over received value %s\n",
-			    ldb_dn_get_linearized(conflict_pdn->dsdb_dn->dn),
+			    ldb_dn_get_linearized(active_pdn->dsdb_dn->dn),
 			    ldb_dn_get_linearized(dsdb_dn->dn));
 
 		/*
