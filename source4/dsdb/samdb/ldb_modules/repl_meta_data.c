@@ -7224,6 +7224,54 @@ static bool replmd_link_update_is_newer(struct parsed_dn *pdn,
 				      la->meta_data.originating_change_time);
 }
 
+/**
+ * Marks an existing linked attribute value as deleted in the DB
+ * @param pdn the parsed-DN of the target-value to delete
+ */
+static int replmd_delete_link_value(struct ldb_module *module,
+				    struct replmd_private *replmd_private,
+				    TALLOC_CTX *mem_ctx,
+				    struct ldb_dn *src_obj_dn,
+				    const struct dsdb_schema *schema,
+				    const struct dsdb_attribute *attr,
+				    uint64_t seq_num,
+				    bool is_active,
+				    struct GUID *target_guid,
+				    struct dsdb_dn *target_dsdb_dn,
+				    struct ldb_val *output_val)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	time_t t;
+	NTTIME now;
+	const struct GUID *invocation_id = NULL;
+	int ret;
+
+	t = time(NULL);
+	unix_to_nt_time(&now, t);
+
+	invocation_id = samdb_ntds_invocation_id(ldb);
+	if (invocation_id == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	/* if the existing link is active, remove its backlink */
+	if (is_active) {
+
+		ret = replmd_add_backlink(module, replmd_private, schema,
+					  src_obj_dn, target_guid, false,
+					  attr, NULL);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+
+	/* mark the existing value as deleted */
+	ret = replmd_update_la_val(mem_ctx, output_val, target_dsdb_dn,
+				   target_dsdb_dn, invocation_id, seq_num,
+				   seq_num, now, true);
+	return ret;
+}
+
 /*
   process one linked attribute structure
  */
@@ -7244,6 +7292,7 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 	struct ldb_message_element *old_el;
 	time_t t = time(NULL);
 	struct parsed_dn *pdn_list, *pdn, *next;
+	struct parsed_dn *conflict_pdn = NULL;
 	struct GUID guid = GUID_zero();
 	bool active = (la->flags & DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE)?true:false;
 	bool ignore_link;
@@ -7335,16 +7384,10 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 		 */
 		ret = replmd_get_active_singleval_link(module, tmp_ctx, pdn_list,
 						       old_el->num_values, attr,
-						       &pdn);
+						       &conflict_pdn);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
 			return ret;
-		}
-
-		if (pdn != NULL) {
-			DBG_WARNING("Link conflict for %s linked from %s\n",
-				    ldb_dn_get_linearized(pdn->dsdb_dn->dn),
-				    ldb_dn_get_linearized(msg->dn));
 		}
 	}
 
@@ -7361,6 +7404,38 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
+	}
+
+	/* resolve any single-valued link conflicts */
+	if (conflict_pdn != NULL) {
+
+		DBG_WARNING("Link conflict for %s attribute on %s\n",
+			    attr->lDAPDisplayName, ldb_dn_get_linearized(msg->dn));
+
+		if (replmd_link_update_is_newer(conflict_pdn, la)) {
+			DBG_WARNING("Using received value %s, over existing target %s\n",
+				    ldb_dn_get_linearized(dsdb_dn->dn),
+				    ldb_dn_get_linearized(conflict_pdn->dsdb_dn->dn));
+
+			ret = replmd_delete_link_value(module, replmd_private,
+						       old_el, msg->dn, schema,
+						       attr, seq_num, true,
+						       &conflict_pdn->guid,
+						       conflict_pdn->dsdb_dn,
+						       conflict_pdn->v);
+
+			if (ret != LDB_SUCCESS) {
+				talloc_free(tmp_ctx);
+				return ret;
+			}
+		} else {
+			DBG_WARNING("Using existing target %s, over received value %s\n",
+				    ldb_dn_get_linearized(conflict_pdn->dsdb_dn->dn),
+				    ldb_dn_get_linearized(dsdb_dn->dn));
+
+			/* don't add the link as active */
+			active = false;
+		}
 	}
 
 	if (pdn != NULL) {

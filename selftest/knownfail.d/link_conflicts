@@ -1,6 +1,4 @@
 # Currently Samba can't resolve a conflict for a single-valued link attribute
-samba4.drs.link_conflicts.python\(vampire_dc\).link_conflicts.DrsReplicaLinkConflictTestCase.test_conflict_single_valued_link\(vampire_dc\)
-samba4.drs.link_conflicts.python\(promoted_dc\).link_conflicts.DrsReplicaLinkConflictTestCase.test_conflict_single_valued_link\(promoted_dc\)
 samba4.drs.link_conflicts.python\(vampire_dc\).link_conflicts.DrsReplicaLinkConflictTestCase.test_conflict_existing_single_valued_link\(vampire_dc\)
 samba4.drs.link_conflicts.python\(promoted_dc\).link_conflicts.DrsReplicaLinkConflictTestCase.test_conflict_existing_single_valued_link\(promoted_dc\)
 
