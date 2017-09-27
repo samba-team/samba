@@ -668,11 +668,8 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
         self.ensure_unique_timestamp()
         self.add_link_attr(self.ldb_dc2, src_ou, "managedBy", target2_ou)
 
-        # try to sync the 2 DCs (this currently fails)
-        try:
-            self.sync_DCs(sync_order=sync_order)
-        except Exception, e:
-            self.fail("Replication could not resolve link conflict: %s" % e)
+        # try to sync the 2 DCs
+        self.sync_DCs(sync_order=sync_order)
 
         res1 = self.ldb_dc1.search(base="<GUID=%s>" % src_guid,
                                   scope=SCOPE_BASE, attrs=["managedBy"])

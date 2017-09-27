@@ -7381,19 +7381,23 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 		return ret;
 	}
 
-	if (pdn == NULL && active) {
+	/*
+	 * check if there's a conflict for single-valued links, i.e. an active
+	 * linked attribute already exists, but it has a different target value
+	 */
+	if (active) {
+		struct parsed_dn *active_pdn = NULL;
 
-		/*
-		 * check if there's a conflict for single-valued links, i.e.
-		 * an active linked attribute already exists, but it has a
-		 * different target value
-		 */
 		ret = replmd_get_active_singleval_link(module, tmp_ctx, pdn_list,
 						       old_el->num_values, attr,
-						       &conflict_pdn);
+						       &active_pdn);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
 			return ret;
+		}
+
+		if (active_pdn != pdn) {
+			conflict_pdn = active_pdn;
 		}
 	}
 
