@@ -565,16 +565,16 @@ static NTSTATUS make_default_acl_windows(TALLOC_CTX *ctx,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS make_default_filesystem_acl(TALLOC_CTX *ctx,
-					    struct acl_common_config *config,
-					    const char *name,
-					    SMB_STRUCT_STAT *psbuf,
-					    struct security_descriptor **ppdesc)
+static NTSTATUS make_default_filesystem_acl(
+	TALLOC_CTX *ctx,
+	enum default_acl_style acl_style,
+	const char *name,
+	SMB_STRUCT_STAT *psbuf,
+	struct security_descriptor **ppdesc)
 {
 	NTSTATUS status;
 
-	switch (config->default_acl_style) {
-
+	switch (acl_style) {
 	case DEFAULT_ACL_POSIX:
 		status =  make_default_acl_posix(ctx, name, psbuf, ppdesc);
 		break;
@@ -584,7 +584,7 @@ static NTSTATUS make_default_filesystem_acl(TALLOC_CTX *ctx,
 		break;
 
 	default:
-		DBG_ERR("unknown acl style %d", config->default_acl_style);
+		DBG_ERR("unknown acl style %d", acl_style);
 		status = NT_STATUS_INTERNAL_ERROR;
 		break;
 	}
@@ -908,7 +908,7 @@ NTSTATUS get_nt_acl_common(
 
 			status = make_default_filesystem_acl(
 				mem_ctx,
-				config,
+				config->default_acl_style,
 				smb_fname->base_name,
 				psbuf,
 				&psd);
