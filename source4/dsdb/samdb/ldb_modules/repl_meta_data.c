@@ -54,6 +54,9 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS            DBGC_DRS_REPL
 
+/* the RMD_VERSION for linked attributes starts from 1 */
+#define RMD_VERSION_INITIAL   1
+
 /*
  * It's 29/12/9999 at 23:59:59 UTC as specified in MS-ADTS 7.1.1.4.2
  * Deleted Objects Container
@@ -2150,7 +2153,7 @@ static int replmd_build_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct ds
 	int ret;
 	const char *dnstring;
 	char *vstring;
-	uint32_t version = 0;
+	uint32_t version = RMD_VERSION_INITIAL;
 	uint32_t rmd_flags = 0;
 
 	tstring = talloc_asprintf(mem_ctx, "%llu", (unsigned long long)nttime);
@@ -2397,7 +2400,7 @@ static int replmd_update_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct d
 				bool deleted)
 {
 	uint32_t old_version;
-	uint32_t version = 0;
+	uint32_t version = RMD_VERSION_INITIAL;
 	NTSTATUS status;
 
 	/*
