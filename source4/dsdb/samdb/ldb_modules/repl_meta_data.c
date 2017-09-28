@@ -929,7 +929,7 @@ static void replmd_ldb_message_sort(struct ldb_message *msg,
 }
 
 static int replmd_build_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct dsdb_dn *dsdb_dn,
-			       const struct GUID *invocation_id, uint64_t seq_num,
+			       const struct GUID *invocation_id,
 			       uint64_t local_usn, NTTIME nttime);
 
 static int parsed_dn_compare(struct parsed_dn *pdn1, struct parsed_dn *pdn2);
@@ -1001,7 +1001,7 @@ static int replmd_add_fix_la(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 		}
 		ret = replmd_build_la_val(el->values, p->v, p->dsdb_dn,
 					  &ac->our_invocation_id,
-					  ac->seq_num, ac->seq_num, now);
+					  ac->seq_num, now);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
 			return ret;
@@ -2143,12 +2143,13 @@ static int get_parsed_dns_trusted(struct ldb_module *module,
   RMD_LOCAL_USN       = local_usn
   RMD_VERSION         = version
  */
-static int replmd_build_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct dsdb_dn *dsdb_dn,
-			       const struct GUID *invocation_id, uint64_t seq_num,
+static int replmd_build_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v,
+			       struct dsdb_dn *dsdb_dn,
+			       const struct GUID *invocation_id,
 			       uint64_t local_usn, NTTIME nttime)
 {
 	return replmd_set_la_val(mem_ctx, v, dsdb_dn, NULL, invocation_id,
-				 seq_num, local_usn, nttime,
+				 local_usn, local_usn, nttime,
 				 RMD_VERSION_INITIAL, false);
 }
 
@@ -2541,7 +2542,7 @@ static int replmd_modify_la_add(struct ldb_module *module,
 		/* Make the new linked attribute ldb_val. */
 		ret = replmd_build_la_val(new_values, &new_values[num_values],
 					  dns[i].dsdb_dn, invocation_id,
-					  seq_num, seq_num, now);
+					  seq_num, now);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
 			return ret;
@@ -3023,7 +3024,7 @@ static int replmd_modify_la_replace(struct ldb_module *module,
 						  new_p->v,
 						  new_p->dsdb_dn,
 						  invocation_id,
-						  seq_num, seq_num, now);
+						  seq_num, now);
 			if (ret != LDB_SUCCESS) {
 				talloc_free(tmp_ctx);
 				return ret;
