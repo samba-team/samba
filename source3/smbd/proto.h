@@ -806,6 +806,17 @@ int posix_sys_acl_blob_get_fd(vfs_handle_struct *handle,
 			      char **blob_description,
 			      DATA_BLOB *blob);
 
+enum default_acl_style {DEFAULT_ACL_POSIX, DEFAULT_ACL_WINDOWS};
+
+const struct enum_list *get_default_acl_style_list(void);
+
+NTSTATUS make_default_filesystem_acl(
+	TALLOC_CTX *ctx,
+	enum default_acl_style acl_style,
+	const char *name,
+	SMB_STRUCT_STAT *psbuf,
+	struct security_descriptor **ppdesc);
+
 /* The following definitions come from smbd/process.c  */
 
 void smbd_setup_sig_term_handler(struct smbd_server_connection *sconn);

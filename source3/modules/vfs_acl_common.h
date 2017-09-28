@@ -22,7 +22,7 @@
 #ifndef __VFS_ACL_COMMON_H__
 #define __VFS_ACL_COMMON_H__
 
-enum default_acl_style {DEFAULT_ACL_POSIX, DEFAULT_ACL_WINDOWS};
+#include "smbd/proto.h"
 
 struct acl_common_config {
 	bool ignore_system_acls;
