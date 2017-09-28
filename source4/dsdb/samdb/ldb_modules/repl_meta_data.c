@@ -2373,7 +2373,7 @@ static int replmd_set_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct dsdb
 	ret = ldb_dn_set_extended_component(dn, "RMD_LOCAL_USN", &local_usnv);
 	if (ret != LDB_SUCCESS) return ret;
 
-	vstring = talloc_asprintf(dn, "%lu", (unsigned long)version);
+	vstring = talloc_asprintf(mem_ctx, "%lu", (unsigned long)version);
 	vers = data_blob_string_const(vstring);
 	ret = ldb_dn_set_extended_component(dn, "RMD_VERSION", &vers);
 	if (ret != LDB_SUCCESS) return ret;
