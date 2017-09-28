@@ -833,14 +833,14 @@ NTSTATUS samba_kdc_update_delegation_info_blob(TALLOC_CTX *mem_ctx,
 	}
 	smb_krb5_free_data_contents(context, &old_data);
 
-	ret = krb5_unparse_name(context, server_principal, &server);
+	ret = krb5_unparse_name_flags(context, server_principal,
+				      KRB5_PRINCIPAL_UNPARSE_NO_REALM, &server);
 	if (ret) {
 		talloc_free(tmp_ctx);
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	ret = krb5_unparse_name_flags(context, proxy_principal,
-				      KRB5_PRINCIPAL_UNPARSE_NO_REALM, &proxy);
+	ret = krb5_unparse_name(context, proxy_principal, &proxy);
 	if (ret) {
 		SAFE_FREE(server);
 		talloc_free(tmp_ctx);
