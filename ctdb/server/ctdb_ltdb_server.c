@@ -1208,7 +1208,7 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 	lockdown_memory(ctdb->valgrinding);
 
 	/* tell all the other nodes about this database */
-	ctdb_daemon_send_control(ctdb, CTDB_BROADCAST_ALL, tdb_flags,
+	ctdb_daemon_send_control(ctdb, CTDB_BROADCAST_CONNECTED, tdb_flags,
 				 persistent?CTDB_CONTROL_DB_ATTACH_PERSISTENT:
 						CTDB_CONTROL_DB_ATTACH,
 				 0, CTDB_CTRL_FLAG_NOREPLY,
@@ -1263,7 +1263,8 @@ int32_t ctdb_control_db_detach(struct ctdb_context *ctdb, TDB_DATA indata,
 		client = reqid_find(ctdb->idr, client_id, struct ctdb_client);
 		if (client != NULL) {
 			/* forward the control to all the nodes */
-			ctdb_daemon_send_control(ctdb, CTDB_BROADCAST_ALL, 0,
+			ctdb_daemon_send_control(ctdb,
+						 CTDB_BROADCAST_CONNECTED, 0,
 						 CTDB_CONTROL_DB_DETACH, 0,
 						 CTDB_CTRL_FLAG_NOREPLY,
 						 indata, NULL, NULL);
