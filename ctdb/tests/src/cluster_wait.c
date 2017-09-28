@@ -264,7 +264,7 @@ static void cluster_wait_join_unregistered(struct tevent_req *subreq)
 	msg.data.data = tdb_null;
 
 	subreq = ctdb_client_message_send(state, state->ev, state->client,
-					  CTDB_BROADCAST_ALL, &msg);
+					  CTDB_BROADCAST_CONNECTED, &msg);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
