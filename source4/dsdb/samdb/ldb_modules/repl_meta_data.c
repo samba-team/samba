@@ -122,6 +122,10 @@ static int replmd_check_upgrade_links(struct ldb_context *ldb,
 				      const char *ldap_oid);
 static int replmd_verify_linked_attribute(struct replmd_replicated_request *ar,
 					  struct la_entry *la);
+static int replmd_set_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct dsdb_dn *dsdb_dn,
+			     struct dsdb_dn *old_dsdb_dn, const struct GUID *invocation_id,
+			     uint64_t usn, uint64_t local_usn, NTTIME nttime,
+			     uint32_t version, bool deleted);
 
 enum urgent_situation {
 	REPL_URGENT_ON_CREATE = 1,
@@ -2143,76 +2147,9 @@ static int replmd_build_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct ds
 			       const struct GUID *invocation_id, uint64_t seq_num,
 			       uint64_t local_usn, NTTIME nttime)
 {
-	struct ldb_dn *dn = dsdb_dn->dn;
-	const char *tstring, *usn_string, *flags_string;
-	struct ldb_val tval;
-	struct ldb_val iid;
-	struct ldb_val usnv, local_usnv;
-	struct ldb_val vers, flagsv;
-	NTSTATUS status;
-	int ret;
-	const char *dnstring;
-	char *vstring;
-	uint32_t version = RMD_VERSION_INITIAL;
-	uint32_t rmd_flags = 0;
-
-	tstring = talloc_asprintf(mem_ctx, "%llu", (unsigned long long)nttime);
-	if (!tstring) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	tval = data_blob_string_const(tstring);
-
-	usn_string = talloc_asprintf(mem_ctx, "%llu", (unsigned long long)seq_num);
-	if (!usn_string) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	usnv = data_blob_string_const(usn_string);
-
-	usn_string = talloc_asprintf(mem_ctx, "%llu", (unsigned long long)local_usn);
-	if (!usn_string) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	local_usnv = data_blob_string_const(usn_string);
-
-	vstring = talloc_asprintf(mem_ctx, "%lu", (unsigned long)version);
-	if (!vstring) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	vers = data_blob_string_const(vstring);
-
-	status = GUID_to_ndr_blob(invocation_id, dn, &iid);
-	if (!NT_STATUS_IS_OK(status)) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	flags_string = talloc_asprintf(mem_ctx, "%u", rmd_flags);
-	if (!flags_string) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	flagsv = data_blob_string_const(flags_string);
-
-	ret = ldb_dn_set_extended_component(dn, "RMD_FLAGS", &flagsv);
-	if (ret != LDB_SUCCESS) return ret;
-	ret = ldb_dn_set_extended_component(dn, "RMD_ADDTIME", &tval);
-	if (ret != LDB_SUCCESS) return ret;
-	ret = ldb_dn_set_extended_component(dn, "RMD_INVOCID", &iid);
-	if (ret != LDB_SUCCESS) return ret;
-	ret = ldb_dn_set_extended_component(dn, "RMD_CHANGETIME", &tval);
-	if (ret != LDB_SUCCESS) return ret;
-	ret = ldb_dn_set_extended_component(dn, "RMD_LOCAL_USN", &local_usnv);
-	if (ret != LDB_SUCCESS) return ret;
-	ret = ldb_dn_set_extended_component(dn, "RMD_ORIGINATING_USN", &usnv);
-	if (ret != LDB_SUCCESS) return ret;
-	ret = ldb_dn_set_extended_component(dn, "RMD_VERSION", &vers);
-	if (ret != LDB_SUCCESS) return ret;
-
-	dnstring = dsdb_dn_get_extended_linearized(mem_ctx, dsdb_dn, 1);
-	if (dnstring == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	*v = data_blob_string_const(dnstring);
-
-	return LDB_SUCCESS;
+	return replmd_set_la_val(mem_ctx, v, dsdb_dn, NULL, invocation_id,
+				 seq_num, local_usn, nttime,
+				 RMD_VERSION_INITIAL, false);
 }
 
 static int replmd_update_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct dsdb_dn *dsdb_dn,
