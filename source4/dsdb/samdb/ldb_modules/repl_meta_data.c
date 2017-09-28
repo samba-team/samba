@@ -923,7 +923,7 @@ static void replmd_ldb_message_sort(struct ldb_message *msg,
 
 static int replmd_build_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct dsdb_dn *dsdb_dn,
 			       const struct GUID *invocation_id, uint64_t seq_num,
-			       uint64_t local_usn, NTTIME nttime, uint32_t version, bool deleted);
+			       uint64_t local_usn, NTTIME nttime);
 
 static int parsed_dn_compare(struct parsed_dn *pdn1, struct parsed_dn *pdn2);
 
@@ -994,7 +994,7 @@ static int replmd_add_fix_la(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 		}
 		ret = replmd_build_la_val(el->values, p->v, p->dsdb_dn,
 					  &ac->our_invocation_id,
-					  ac->seq_num, ac->seq_num, now, 0, false);
+					  ac->seq_num, ac->seq_num, now);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
 			return ret;
@@ -2138,7 +2138,7 @@ static int get_parsed_dns_trusted(struct ldb_module *module,
  */
 static int replmd_build_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct dsdb_dn *dsdb_dn,
 			       const struct GUID *invocation_id, uint64_t seq_num,
-			       uint64_t local_usn, NTTIME nttime, uint32_t version, bool deleted)
+			       uint64_t local_usn, NTTIME nttime)
 {
 	struct ldb_dn *dn = dsdb_dn->dn;
 	const char *tstring, *usn_string, *flags_string;
@@ -2150,7 +2150,8 @@ static int replmd_build_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct ds
 	int ret;
 	const char *dnstring;
 	char *vstring;
-	uint32_t rmd_flags = deleted?DSDB_RMD_FLAG_DELETED:0;
+	uint32_t version = 0;
+	uint32_t rmd_flags = 0;
 
 	tstring = talloc_asprintf(mem_ctx, "%llu", (unsigned long long)nttime);
 	if (!tstring) {
@@ -2600,8 +2601,7 @@ static int replmd_modify_la_add(struct ldb_module *module,
 		/* Make the new linked attribute ldb_val. */
 		ret = replmd_build_la_val(new_values, &new_values[num_values],
 					  dns[i].dsdb_dn, invocation_id,
-					  seq_num, seq_num,
-					  now, 0, false);
+					  seq_num, seq_num, now);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
 			return ret;
@@ -3083,8 +3083,7 @@ static int replmd_modify_la_replace(struct ldb_module *module,
 						  new_p->v,
 						  new_p->dsdb_dn,
 						  invocation_id,
-						  seq_num, seq_num,
-						  now, 0, false);
+						  seq_num, seq_num, now);
 			if (ret != LDB_SUCCESS) {
 				talloc_free(tmp_ctx);
 				return ret;
