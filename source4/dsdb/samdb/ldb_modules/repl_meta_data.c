@@ -2305,7 +2305,7 @@ static int replmd_set_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct dsdb
 	struct ldb_val iid;
 	struct ldb_val usnv, local_usnv;
 	struct ldb_val vers, flagsv;
-	const struct ldb_val *old_addtime;
+	const struct ldb_val *old_addtime = NULL;
 	NTSTATUS status;
 	int ret;
 	const char *dnstring;
@@ -2345,7 +2345,10 @@ static int replmd_set_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct dsdb
 	if (ret != LDB_SUCCESS) return ret;
 
 	/* get the ADDTIME from the original */
-	old_addtime = ldb_dn_get_extended_component(old_dsdb_dn->dn, "RMD_ADDTIME");
+	if (old_dsdb_dn != NULL) {
+		old_addtime = ldb_dn_get_extended_component(old_dsdb_dn->dn,
+							    "RMD_ADDTIME");
+	}
 	if (old_addtime == NULL) {
 		old_addtime = &tval;
 	}
