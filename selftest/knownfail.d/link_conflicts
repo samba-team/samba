@@ -1,0 +1,5 @@
+# Samba starts its RMD_VERSION from zero. Windows starts from one.
+samba4.drs.link_conflicts.python\(vampire_dc\).link_conflicts.DrsReplicaLinkConflictTestCase.test_link_attr_version\(vampire_dc\)
+samba4.drs.link_conflicts.python\(promoted_dc\).link_conflicts.DrsReplicaLinkConflictTestCase.test_link_attr_version\(promoted_dc\)
+
+

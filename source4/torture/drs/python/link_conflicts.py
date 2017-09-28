@@ -141,14 +141,16 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
             self.assertTrue(val in res2[0][attr],
                             "%s '%s' not found on DC2" %(attr, val))
 
-    def _check_replicated_links(self, src_obj_dn, expected_links):
-        """Checks that replication sends back the expected linked attributes"""
-
+    def zero_highwatermark(self):
+        """Returns a zeroed highwatermark so that all DRS data gets returned"""
         hwm = drsuapi.DsReplicaHighWaterMark()
         hwm.tmp_highest_usn = 0
         hwm.reserved_usn = 0
         hwm.highest_usn = 0
+        return hwm
 
+    def _check_replicated_links(self, src_obj_dn, expected_links):
+        """Checks that replication sends back the expected linked attributes"""
         self._check_replication([src_obj_dn],
                                 drsuapi.DRSUAPI_DRS_WRIT_REP,
                                 dest_dsa=None,
@@ -156,7 +158,7 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
                                 nc_dn_str=src_obj_dn,
                                 exop=drsuapi.DRSUAPI_EXOP_REPL_OBJ,
                                 expected_links=expected_links,
-                                highwatermark=hwm)
+                                highwatermark=self.zero_highwatermark())
 
         # Check DC2 as well
         self.set_test_ldb_dc(self.ldb_dc2)
@@ -168,7 +170,7 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
                                 nc_dn_str=src_obj_dn,
                                 exop=drsuapi.DRSUAPI_EXOP_REPL_OBJ,
                                 expected_links=expected_links,
-                                highwatermark=hwm,
+                                highwatermark=self.zero_highwatermark(),
                                 drs=self.drs2, drs_handle=self.drs2_handle)
         self.set_test_ldb_dc(self.ldb_dc1)
 
@@ -697,4 +699,29 @@ class DrsReplicaLinkConflictTestCase(drs_base.DrsBaseTestCase):
         # repeat the test twice, to give each DC a chance to resolve the conflict
         self._test_conflict_existing_single_valued_link(sync_order=DC1_TO_DC2)
         self._test_conflict_existing_single_valued_link(sync_order=DC2_TO_DC1)
+
+    def test_link_attr_version(self):
+        """
+        Checks the link attribute version starts from the correct value
+        """
+        # create some objects and add a link
+        src_ou = self.unique_dn("OU=src")
+        src_guid = self.add_object(self.ldb_dc1, src_ou)
+        target1_ou = self.unique_dn("OU=target1")
+        target1_guid = self.add_object(self.ldb_dc1, target1_ou)
+        self.add_link_attr(self.ldb_dc1, src_ou, "managedBy", target1_ou)
+
+        # get the link info via replication
+        ctr6 = self._get_replication(drsuapi.DRSUAPI_DRS_WRIT_REP,
+                                     dest_dsa=None,
+                                     drs_error=drsuapi.DRSUAPI_EXOP_ERR_SUCCESS,
+                                     exop=drsuapi.DRSUAPI_EXOP_REPL_OBJ,
+                                     highwatermark=self.zero_highwatermark(),
+                                     nc_dn_str=src_ou)
+
+        self.assertTrue(ctr6.linked_attributes_count == 1,
+                        "DRS didn't return a link")
+        link = ctr6.linked_attributes[0]
+        self.assertTrue(link.meta_data.version == 1,
+                        "Link version started from %u, not 1" % link.meta_data.version)
 
