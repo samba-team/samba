@@ -16,6 +16,41 @@ typedef int krb5_socket_t;
 typedef ssize_t krb5_ssize_t;
 #endif
 
+
+#ifndef HEIMDAL_DEPRECATED
+#define HEIMDAL_DEPRECATED _DEPRECATED_
+#endif
+
+#ifndef HEIMDAL_PRINTF_ATTRIBUTE
+#ifdef HAVE_ATTRIBUTE_PRINTF
+#define HEIMDAL_PRINTF_ATTRIBUTE(x) __attribute__((format x))
+#else
+#define HEIMDAL_PRINTF_ATTRIBUTE(x)
+#endif
+#endif
+
+#ifndef HEIMDAL_NORETURN_ATTRIBUTE
+#ifdef HAVE___ATTRIBUTE__
+#define HEIMDAL_NORETURN_ATTRIBUTE __attribute__((noreturn))
+#else
+#define HEIMDAL_NORETURN_ATTRIBUTE
+#endif
+#endif
+
+#ifndef HEIMDAL_UNUSED_ATTRIBUTE
+#ifdef HAVE___ATTRIBUTE__
+#define HEIMDAL_UNUSED_ATTRIBUTE __attribute__((unused))
+#else
+#define HEIMDAL_UNUSED_ATTRIBUTE
+#endif
+#endif
+
+#ifndef HEIMDAL_WARN_UNUSED_RESULT_ATTRIBUTE
+#ifdef HAVE___ATTRIBUTE__
 #define HEIMDAL_WARN_UNUSED_RESULT_ATTRIBUTE _WARN_UNUSED_RESULT_
+#else
+#define HEIMDAL_WARN_UNUSED_RESULT_ATTRIBUTE
+#endif
+#endif
 
 #endif /* __samb_krb5_types_h__ */
