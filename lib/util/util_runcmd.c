@@ -110,7 +110,6 @@ struct tevent_req *samba_runcmd_send(TALLOC_CTX *mem_ctx,
 
 	state->tfork = tfork_create();
 	if (state->tfork == NULL) {
-		printf("state->tfork == NULL\n");
 		close(p1[0]);
 		close(p1[1]);
 		close(p2[0]);
