@@ -55,7 +55,7 @@
 	<para>
 		The underlying share path must have a corresponding snapper
 		configuration file. The snapshot directory tree must allow
-		access for relavent users.
+		access for relevant users.
 	</para>
 
 	<programlisting>
