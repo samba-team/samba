@@ -300,6 +300,11 @@ int ctdb_queue_send(struct ctdb_queue *queue, uint8_t *data, uint32_t length)
 	struct ctdb_queue_pkt *pkt;
 	uint32_t length2, full_length;
 
+	/* If the queue does not have valid fd, no point queueing a packet */
+	if (queue->fd == -1) {
+		return 0;
+	}
+
 	if (queue->alignment) {
 		/* enforce the length and alignment rules from the tcp packet allocator */
 		length2 = (length+(queue->alignment-1)) & ~(queue->alignment-1);
