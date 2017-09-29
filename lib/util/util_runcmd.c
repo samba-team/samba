@@ -34,11 +34,10 @@
 
 static int samba_runcmd_state_destructor(struct samba_runcmd_state *state)
 {
-	if (state->pid > 0) {
-		kill(state->pid, SIGKILL);
-		waitpid(state->pid, NULL, 0);
-		state->pid = -1;
+	if (state->tfork != NULL) {
+		tfork_destroy(&state->tfork);
 	}
+	state->pid = -1;
 
 	if (state->fd_stdin != -1) {
 		close(state->fd_stdin);
@@ -275,6 +274,7 @@ static void samba_runcmd_io_handler(struct tevent_context *ev,
 			tevent_req_error(req, errno);
 			return;
 		}
+		state->pid = -1;
 		TALLOC_FREE(fde);
 
 		if (WIFEXITED(status)) {
