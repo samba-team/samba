@@ -41,6 +41,7 @@ static int samba_runcmd_state_destructor(struct samba_runcmd_state *state)
 
 	if (state->fd_stdin != -1) {
 		close(state->fd_stdin);
+		state->fd_stdin = -1;
 	}
 	return 0;
 }
