@@ -1003,6 +1003,8 @@ struct ctdb_req_keepalive {
 	uint32_t uptime;
 };
 
+#define CTDB_TUNNEL_TEST	0xffffffff00000000
+
 #define CTDB_TUNNEL_FLAG_REQUEST	0x00000001
 #define CTDB_TUNNEL_FLAG_REPLY		0x00000002
 #define CTDB_TUNNEL_FLAG_NOREPLY	0x00000010

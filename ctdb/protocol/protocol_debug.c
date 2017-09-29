@@ -356,7 +356,11 @@ static void ctdb_srvid_print(uint64_t srvid, FILE *fp)
 
 static void ctdb_tunnel_id_print(uint64_t tunnel_id, FILE *fp)
 {
-	fprintf(fp, "0x%"PRIx64, tunnel_id);
+	if ((tunnel_id & CTDB_TUNNEL_TEST) == CTDB_TUNNEL_TEST) {
+		fprintf(fp, "TEST-%"PRIx64, tunnel_id);
+	} else {
+		fprintf(fp, "0x%"PRIx64, tunnel_id);
+	}
 }
 
 static void ctdb_tunnel_flags_print(uint32_t flags, FILE *fp)
