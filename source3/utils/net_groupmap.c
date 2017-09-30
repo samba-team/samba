@@ -764,7 +764,9 @@ static int net_groupmap_cleanup(struct net_context *c, int argc, const char **ar
 			printf(_("Group %s is not mapped\n"),
 				maps[i]->nt_name);
 
-		if (!sid_check_is_in_our_sam(&maps[i]->sid)) {
+		if (!sid_check_is_in_our_sam(&maps[i]->sid) &&
+		    !sid_check_is_in_builtin(&maps[i]->sid))
+		{
 			printf(_("Deleting mapping for NT Group %s, sid %s\n"),
 				maps[i]->nt_name,
 				sid_string_tos(&maps[i]->sid));
