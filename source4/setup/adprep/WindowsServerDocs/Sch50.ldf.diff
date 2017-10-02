@@ -1,0 +1,107 @@
+--- orig/Sch50.ldf	2017-10-03 15:53:31.162142476 +1300
++++ Sch50.ldf	2017-10-03 16:17:07.330514808 +1300
+@@ -3,20 +3,21 @@
+ changetype: ntdsSchemaAdd
+ objectClass: attributeSchema
+ ldapDisplayName: msDS-AllowedToActOnBehalfOfOtherIdentity
+ adminDisplayName: ms-DS-Allowed-To-Act-On-Behalf-Of-Other-Identity
+ adminDescription: This attribute is used for access checks to determine if a requester has permission to act on the behalf of other identities to services running as this account.
+ attributeId: 1.2.840.113556.1.4.2182
+ attributeSyntax: 2.5.5.15
+ omSyntax: 66
+ isSingleValued: TRUE
+ systemOnly: TRUE
++schemaFlagsEx: 1
+ searchFlags: 0
+ rangeLower: 0
+ rangeUpper: 132096
+ schemaIdGuid:: 5cN4P5r3vUaguJ0YEW3ceQ==
+ attributeSecurityGuid:: hri1d0qU0RGuvQAA+ANnwQ==
+ showInAdvancedViewOnly: TRUE
+ systemFlags: 16  
+ 
+ dn: CN=ms-Kds-Version,CN=Schema,CN=Configuration,DC=X
+ changetype: ntdsSchemaAdd
+@@ -243,21 +244,21 @@
+ ldapDisplayName: msKds-SecretAgreementParam
+ adminDisplayName: ms-Kds-SecretAgreement-Param
+ adminDescription: The parameters for the secret agreement algorithm.
+ attributeId: 1.2.840.113556.1.4.2172
+ attributeSyntax: 2.5.5.10
+ omSyntax: 4
+ isSingleValued: TRUE
+ systemOnly: FALSE
+ searchFlags: 640
+ rangeUpper: 2000
+-schemaIdGuid:: MLCZ2e3+dUm4B+ukRNp56Q==
++schemaIdGuid:: 2ZmwMP7tSXW4B+ukRNp56Q==
+ showInAdvancedViewOnly: TRUE
+ systemFlags: 16  
+ 
+ dn: CN=ms-Kds-SecretAgreement-AlgorithmID,CN=Schema,CN=Configuration,DC=X
+ changetype: ntdsSchemaAdd
+ objectClass: attributeSchema
+ ldapDisplayName: msKds-SecretAgreementAlgorithmID
+ adminDisplayName: ms-Kds-SecretAgreement-AlgorithmID
+ adminDescription: The name of the secret agreement algorithm to be used with public keys.
+ attributeId: 1.2.840.113556.1.4.2171
+@@ -276,56 +277,59 @@
+ objectClass: attributeSchema
+ ldapDisplayName: msDS-ValueTypeReference
+ adminDisplayName: ms-DS-Value-Type-Reference
+ adminDescription: This attribute is used to link a resource property object to its value type.
+ attributeId: 1.2.840.113556.1.4.2187
+ attributeSyntax: 2.5.5.1
+ omSyntax: 127
+ isSingleValued: TRUE
+ systemOnly: TRUE
+ searchFlags: 0
++schemaFlagsEx: 1
+ omObjectClass:: KwwCh3McAIVK
+ schemaIdGuid:: hF38eNzBSDGJhFj3ktQdPg==
+ linkID: 2188
+ showInAdvancedViewOnly: TRUE
+ systemFlags: 16  
+ 
+ dn: CN=ms-DS-Value-Type-Reference-BL,CN=Schema,CN=Configuration,DC=X
+ changetype: ntdsSchemaAdd
+ objectClass: attributeSchema
+ ldapDisplayName: msDS-ValueTypeReferenceBL
+ adminDisplayName: ms-DS-Value-Type-Reference-BL
+ adminDescription: This is the back link for ms-DS-Value-Type-Reference. It links a value type object back to resource properties.
+ attributeId: 1.2.840.113556.1.4.2188
+ attributeSyntax: 2.5.5.1
+ omSyntax: 127
+ isSingleValued: FALSE
+ systemOnly: TRUE
+ searchFlags: 0
++schemaFlagsEx: 1
+ omObjectClass:: KwwCh3McAIVK
+ schemaIdGuid:: rUNVq6EjRTu5N5sxPVR0qA==
+ linkID: 2189
+ showInAdvancedViewOnly: TRUE
+ systemFlags: 17  
+ 
+ dn: CN=ms-DS-Is-Possible-Values-Present,CN=Schema,CN=Configuration,DC=X
+ changetype: ntdsSchemaAdd
+ objectClass: attributeSchema
+ ldapDisplayName: msDS-IsPossibleValuesPresent
+ adminDisplayName: ms-DS-Is-Possible-Values-Present
+ adminDescription: This attribute identifies if ms-DS-Claim-Possible-Values on linked resource property must have value or must not have value.
+ attributeId: 1.2.840.113556.1.4.2186
+ attributeSyntax: 2.5.5.8
+ omSyntax: 1
+ isSingleValued: TRUE
+ systemOnly: TRUE
+ searchFlags: 0
++schemaFlagsEx: 1
+ schemaIdGuid:: 2tyrb1OMTyCxpJ3wxnwetA==
+ showInAdvancedViewOnly: TRUE
+ systemFlags: 16  
+ 
+ dn:
+ changetype: modify
+ add: schemaUpdateNow
+ schemaUpdateNow: 1
+ -  
+ 

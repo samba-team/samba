@@ -1,0 +1,26 @@
+--- orig/Sch59.ldf	2017-10-03 15:53:31.170142465 +1300
++++ Sch59.ldf	2017-10-03 16:17:07.338514781 +1300
+@@ -160,23 +160,20 @@
+ changetype: ntdsSchemaModify
+ replace: isSingleValued
+ isSingleValued: TRUE
+ -  
+ 
+ dn: CN=ms-DS-Device-Physical-IDs,CN=Schema,CN=Configuration,DC=X
+ changetype: ntdsSchemaModify
+ replace: omSyntax
+ omSyntax: 64
+ -  
+-
+-dn: CN=ms-DS-Device-Physical-IDs,CN=Schema,CN=Configuration,DC=X
+-changetype: ntdsSchemaModify
+ replace: attributeSyntax
+ attributeSyntax: 2.5.5.12
+ -  
+ 
+ dn: CN=ms-DS-Device-Physical-IDs,CN=Schema,CN=Configuration,DC=X
+ changetype: ntdsSchemaModify
+ replace: rangeUpper
+ rangeUpper: 1024
+ -  
+ 

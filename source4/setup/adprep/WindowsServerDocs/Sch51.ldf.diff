@@ -1,0 +1,225 @@
+--- orig/Sch51.ldf	2017-11-01 10:14:58.508429058 +1300
++++ Sch51.ldf	2017-11-01 10:16:12.391393181 +1300
+@@ -4,173 +4,183 @@
+ objectClass: attributeSchema
+ ldapDisplayName: msDS-TransformationRules
+ adminDisplayName: ms-DS-Transformation-Rules
+ adminDescription: Specifies the Transformation Rules for Across-Forest Claims Transformation.
+ attributeId: 1.2.840.113556.1.4.2189
+ attributeSyntax: 2.5.5.12
+ omSyntax: 64
+ isSingleValued: TRUE
+ systemOnly: FALSE
+ searchFlags: 0
++schemaFlagsEx: 1
+ schemaIdGuid:: cSuHVbLESDuuUUCV+R7GAA==
+ showInAdvancedViewOnly: TRUE
+ systemFlags: 16  
+ 
+ dn: CN=ms-DS-Applies-To-Resource-Types,CN=Schema,CN=Configuration,DC=X
+ changetype: ntdsSchemaAdd
+ objectClass: attributeSchema
+ ldapDisplayName: msDS-AppliesToResourceTypes
+ adminDisplayName: ms-DS-Applies-To-Resource-Types
+ adminDescription: For a resource property, this attribute indicates what resource types this resource property applies to.
+ attributeId: 1.2.840.113556.1.4.2195
+ attributeSyntax: 2.5.5.12
+ omSyntax: 64
+ isSingleValued: FALSE
+ systemOnly: FALSE
+ searchFlags: 0
++schemaFlagsEx: 1
+ schemaIdGuid:: BiA/aWRXSj2EOVjwSqtLWQ==
+ showInAdvancedViewOnly: TRUE
+ systemFlags: 16  
+ 
+ dn: CN=ms-DS-Transformation-Rules-Compiled,CN=Schema,CN=Configuration,DC=X
+ changetype: ntdsSchemaAdd
+ objectClass: attributeSchema
+ ldapDisplayName: msDS-TransformationRulesCompiled
+ adminDisplayName: ms-DS-Transformation-Rules-Compiled
+ adminDescription: Blob containing compiled transformation rules.
+ attributeId: 1.2.840.113556.1.4.2190
+ attributeSyntax: 2.5.5.10
+ omSyntax: 4
+ isSingleValued: TRUE
+ systemOnly: TRUE
+ searchFlags: 128
++schemaFlagsEx: 1
+ schemaIdGuid:: EJq0C2tTTbyicwurDdS9EA==
+ showInAdvancedViewOnly: TRUE
+ systemFlags: 17  
+ 
+ dn: CN=ms-DS-Egress-Claims-Transformation-Policy,CN=Schema,CN=Configuration,DC=X
+ changetype: ntdsSchemaAdd
+ objectClass: attributeSchema
+ ldapDisplayName: msDS-EgressClaimsTransformationPolicy
+ adminDisplayName: ms-DS-Egress-Claims-Transformation-Policy
+ adminDescription: This is a link to a Claims Transformation Policy Object for the egress claims (claims leaving this forest) to the Trusted Domain. This is applicable only for an incoming or bidirectional Across-Forest Trust. When this link is not present, all claims are allowed to egress as-is.
+ attributeId: 1.2.840.113556.1.4.2192
+ attributeSyntax: 2.5.5.1
+ omSyntax: 127
+ isSingleValued: TRUE
+ systemOnly: FALSE
+ searchFlags: 0
++schemaFlagsEx: 1
+ omObjectClass:: KwwCh3McAIVK
+ schemaIdGuid:: fkI3wXOaQLCRkBsJW7QyiA==
+ linkID: 2192
+ showInAdvancedViewOnly: TRUE
+ systemFlags: 16  
+ 
+ dn: CN=ms-DS-Ingress-Claims-Transformation-Policy,CN=Schema,CN=Configuration,DC=X
+ changetype: ntdsSchemaAdd
+ objectClass: attributeSchema
+ ldapDisplayName: msDS-IngressClaimsTransformationPolicy
+ adminDisplayName: ms-DS-Ingress-Claims-Transformation-Policy
+ adminDescription: This is a link to a Claims Transformation Policy Object for the ingress claims (claims entering this forest) from the Trusted Domain. This is applicable only for an outgoing or bidirectional Across-Forest Trust. If this link is absent, all the ingress claims are dropped.
+ attributeId: 1.2.840.113556.1.4.2191
+ attributeSyntax: 2.5.5.1
+ omSyntax: 127
+ isSingleValued: TRUE
+ systemOnly: FALSE
+ searchFlags: 0
++schemaFlagsEx: 1
+ omObjectClass:: KwwCh3McAIVK
+ schemaIdGuid:: CEwohm4MQBWLFXUUfSPSDQ==
+ linkID: 2190
+ showInAdvancedViewOnly: TRUE
+ systemFlags: 16  
+ 
+ dn: CN=ms-DS-TDO-Egress-BL,CN=Schema,CN=Configuration,DC=X
+ changetype: ntdsSchemaAdd
+ objectClass: attributeSchema
+ ldapDisplayName: msDS-TDOEgressBL
+ adminDisplayName: ms-DS-TDO-Egress-BL
+ adminDescription: Backlink to TDO Egress rules link on object.
+ attributeId: 1.2.840.113556.1.4.2194
+ attributeSyntax: 2.5.5.1
+ omSyntax: 127
+ isSingleValued: FALSE
+ systemOnly: TRUE
+ searchFlags: 0
++schemaFlagsEx: 1
+ omObjectClass:: KwwCh3McAIVK
+ schemaIdGuid:: KWIA1ROZQiKLF4N2HR4OWw==
+ linkID: 2193
+ showInAdvancedViewOnly: TRUE
+ systemFlags: 17  
+ 
+ dn: CN=ms-DS-TDO-Ingress-BL,CN=Schema,CN=Configuration,DC=X
+ changetype: ntdsSchemaAdd
+ objectClass: attributeSchema
+ ldapDisplayName: msDS-TDOIngressBL
+ adminDisplayName: ms-DS-TDO-Ingress-BL
+ adminDescription: Backlink to TDO Ingress rules link on object.
+ attributeId: 1.2.840.113556.1.4.2193
+ attributeSyntax: 2.5.5.1
+ omSyntax: 127
+ isSingleValued: FALSE
+ systemOnly: TRUE
+ searchFlags: 0
++schemaFlagsEx: 1
+ omObjectClass:: KwwCh3McAIVK
+ schemaIdGuid:: oWFWWsaXS1SAVuQw/nvFVA==
+ linkID: 2191
+ showInAdvancedViewOnly: TRUE
+ systemFlags: 17  
+ 
+ dn: CN=ms-DS-ManagedPassword,CN=Schema,CN=Configuration,DC=X
+ changetype: ntdsSchemaAdd
+ objectClass: attributeSchema
+ ldapDisplayName: msDS-ManagedPassword
+ adminDisplayName: msDS-ManagedPassword
+ adminDescription: This attribute is the managed password data for a group MSA.
+ attributeId: 1.2.840.113556.1.4.2196
+ attributeSyntax: 2.5.5.10
+ omSyntax: 4
+ isSingleValued: TRUE
+ systemOnly: FALSE
+ searchFlags: 0
++schemaFlagsEx: 1
+ schemaIdGuid:: hu1i4yi3QgiyfS3qep3yGA==
+ showInAdvancedViewOnly: TRUE
+ systemFlags: 20  
+ 
+ dn: CN=ms-DS-ManagedPasswordId,CN=Schema,CN=Configuration,DC=X
+ changetype: ntdsSchemaAdd
+ objectClass: attributeSchema
+ ldapDisplayName: msDS-ManagedPasswordId
+ adminDisplayName: msDS-ManagedPasswordId
+ adminDescription: This attribute is the identifier for the current managed password data for a group MSA.
+ attributeId: 1.2.840.113556.1.4.2197
+ attributeSyntax: 2.5.5.10
+ omSyntax: 4
+ isSingleValued: TRUE
+ systemOnly: TRUE
+ searchFlags: 0
++schemaFlagsEx: 1
+ rangeUpper: 1024
+ schemaIdGuid:: Wil4DtPGQAq0kdYiUf+gpg==
+ showInAdvancedViewOnly: TRUE
+ systemFlags: 16  
+ 
+ dn: CN=ms-DS-GroupMSAMembership,CN=Schema,CN=Configuration,DC=X
+ changetype: ntdsSchemaAdd
+ objectClass: attributeSchema
+ ldapDisplayName: msDS-GroupMSAMembership
+ adminDisplayName: msDS-GroupMSAMembership
+ adminDescription: This attribute is used for access checks to determine if a requester has permission to retrieve the password for a group MSA.
+ attributeId: 1.2.840.113556.1.4.2200
+ attributeSyntax: 2.5.5.15
+ omSyntax: 66
+ isSingleValued: TRUE
+ systemOnly: FALSE
+ searchFlags: 0
++schemaFlagsEx: 1
+ rangeUpper: 132096
+ schemaIdGuid:: 1u2OiATOQN+0YrilDkG6OA==
+ showInAdvancedViewOnly: TRUE
+ systemFlags: 16  
+ 
+ dn: CN=ms-DS-GeoCoordinates-Altitude,CN=Schema,CN=Configuration,DC=X
+ changetype: ntdsSchemaAdd
+ objectClass: attributeSchema
+ ldapDisplayName: msDS-GeoCoordinatesAltitude
+ adminDisplayName: ms-DS-GeoCoordinates-Altitude
+@@ -222,36 +232,38 @@
+ objectClass: attributeSchema
+ ldapDisplayName: msDS-ManagedPasswordInterval
+ adminDisplayName: msDS-ManagedPasswordInterval
+ adminDescription: This attribute is used to retrieve the number of days before a managed password is automatically changed for a group MSA.
+ attributeId: 1.2.840.113556.1.4.2199
+ attributeSyntax: 2.5.5.9
+ omSyntax: 2
+ isSingleValued: TRUE
+ systemOnly: TRUE
+ searchFlags: 0
++schemaFlagsEx: 1
+ schemaIdGuid:: 9451+HasQ4ii7qJrTcr0CQ==
+ showInAdvancedViewOnly: TRUE
+ systemFlags: 16  
+ 
+ dn: CN=ms-DS-ManagedPasswordPreviousId,CN=Schema,CN=Configuration,DC=X
+ changetype: ntdsSchemaAdd
+ objectClass: attributeSchema
+ ldapDisplayName: msDS-ManagedPasswordPreviousId
+ adminDisplayName: msDS-ManagedPasswordPreviousId
+ adminDescription: This attribute is the identifier for the previous managed password data for a group MSA.
+ attributeId: 1.2.840.113556.1.4.2198
+ attributeSyntax: 2.5.5.10
+ omSyntax: 4
+ isSingleValued: TRUE
+ systemOnly: TRUE
+ searchFlags: 0
++schemaFlagsEx: 1
+ rangeUpper: 1024
+ schemaIdGuid:: MSHW0EotT9CZ2RxjZGIppA==
+ showInAdvancedViewOnly: TRUE
+ systemFlags: 16  
+ 
+ dn:
+ changetype: modify
+ add: schemaUpdateNow
+ schemaUpdateNow: 1
+ -  

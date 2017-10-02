@@ -1,0 +1,105 @@
+--- orig/Sch57.ldf	2017-10-03 15:53:31.170142465 +1300
++++ Sch57.ldf	2017-10-03 16:17:07.334514795 +1300
+@@ -61,96 +61,101 @@
+ adminDescription: This attribute is used to enable or disable the user-device relationship.
+ ldapDisplayName: msDS-IsEnabled
+ attributeId: 1.2.840.113556.1.4.2248
+ omSyntax: 1
+ attributeSyntax: 2.5.5.8
+ isSingleValued: TRUE
+ instanceType: 4
+ searchFlags: 0
+ systemOnly: FALSE
+ schemaIdGuid:: DlypIoMfgkyUzr6miM/IcQ==
++isMemberOfPartialAttributeSet: TRUE
+ systemFlags: 16  
+ 
+ dn: CN=ms-DS-Device-OS-Type,CN=Schema,CN=Configuration,DC=X
+ changetype: ntdsSchemaAdd
+ objectClass: attributeSchema
+ cn: ms-DS-Device-OS-Type
+ adminDisplayName: ms-DS-Device-OS-Type
+ adminDescription: This attribute is used to track the type of device based on the OS.
+ ldapDisplayName: msDS-DeviceOSType
+ attributeId: 1.2.840.113556.1.4.2249
+ omSyntax: 64
+ attributeSyntax: 2.5.5.12
+ isSingleValued: FALSE
+ instanceType: 4
+ rangeLower: 0
+ rangeUpper: 1024
+ searchFlags: 0
+ systemOnly: FALSE
+ schemaIdGuid:: TUUOELvzy02EX41e3EccWQ==
++isMemberOfPartialAttributeSet: TRUE
+ systemFlags: 16  
+ 
+ dn: CN=ms-DS-Device-OS-Version,CN=Schema,CN=Configuration,DC=X
+ changetype: ntdsSchemaAdd
+ objectClass: attributeSchema
+ cn: ms-DS-Device-OS-Version
+ adminDisplayName: ms-DS-Device-OS-Version
+ adminDescription: This attribute is used to track the OS version of the device.
+ ldapDisplayName: msDS-DeviceOSVersion
+ attributeId: 1.2.840.113556.1.4.2250
+ omSyntax: 64
+ attributeSyntax: 2.5.5.12
+ isSingleValued: FALSE
+ instanceType: 4
+ rangeLower: 0
+ rangeUpper: 512
+-searchFlags: 0
++searchFlags: 1
+ systemOnly: FALSE
+ schemaIdGuid:: Y4z7cKtfBEWrnRSzKain+A==
++isMemberOfPartialAttributeSet: TRUE
+ systemFlags: 16  
+ 
+ dn: CN=ms-DS-Device-Physical-IDs,CN=Schema,CN=Configuration,DC=X
+ changetype: ntdsSchemaAdd
+ objectClass: attributeSchema
+ cn: ms-DS-Device-Physical-IDs
+ adminDisplayName: ms-DS-Device-Physical-IDs
+ adminDescription: This attribute is used to store identifiers of the physical device.
+ ldapDisplayName: msDS-DevicePhysicalIDs
+ attributeId: 1.2.840.113556.1.4.2251
+ omSyntax: 4
+ attributeSyntax: 2.5.5.10
+ isSingleValued: FALSE
+ instanceType: 4
+ rangeLower: 1
+ rangeUpper: 10485760
+ searchFlags: 1
+ systemOnly: FALSE
+ schemaIdGuid:: FFRhkKCiR0Spk1NAlZm3Tg==
++isMemberOfPartialAttributeSet: TRUE
+ systemFlags: 16  
+ 
+ dn: CN=ms-DS-Device-ID,CN=Schema,CN=Configuration,DC=X
+ changetype: ntdsSchemaAdd
+ objectClass: attributeSchema
+ cn: ms-DS-Device-ID
+ adminDisplayName: ms-DS-Device-ID
+ adminDescription: This attribute stores the ID of the device.
+ ldapDisplayName: msDS-DeviceID
+ attributeId: 1.2.840.113556.1.4.2252
+ omSyntax: 4
+ attributeSyntax: 2.5.5.10
+ isSingleValued: TRUE
+ instanceType: 4
+ rangeLower: 16
+ rangeUpper: 16
+ searchFlags: 1
+ systemOnly: FALSE
+ schemaIdGuid:: x4EBw0Jj+0GyeffFZsvgpw==
++isMemberOfPartialAttributeSet: TRUE
+ systemFlags: 16  
+ 
+ dn:
+ changetype: modify
+ add: schemaUpdateNow
+ schemaUpdateNow: 1
+ -  
+ 
+ dn: CN=ms-DS-Device-Registration-Service-Container,CN=Schema,CN=Configuration,DC=X
+ changetype: ntdsSchemaAdd
