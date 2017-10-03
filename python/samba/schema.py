@@ -62,6 +62,19 @@ def get_schema_descriptor(domain_sid, name_map={}):
 
 class Schema(object):
 
+    # the schema files (and corresponding object version) that we know about
+    base_schemas = {
+       "2008_R2" : ("MS-AD_Schema_2K8_R2_Attributes.txt",
+                    "MS-AD_Schema_2K8_R2_Classes.txt",
+                    47),
+       "2012"    : ("AD_DS_Attributes__Windows_Server_2012.ldf",
+                    "AD_DS_Classes__Windows_Server_2012.ldf",
+                    56),
+       "2012_R2" : ("AD_DS_Attributes__Windows_Server_2012_R2.ldf",
+                    "AD_DS_Classes__Windows_Server_2012_R2.ldf",
+                    69),
+    }
+
     def __init__(self, domain_sid, invocationid=None, schemadn=None,
                  files=None, override_prefixmap=None, additional_prefixmap=None):
         from samba.provision import setup_path
@@ -118,6 +131,16 @@ class Schema(object):
         # We don't actually add this ldif, just parse it
         prefixmap_ldif = "dn: %s\nprefixMap:: %s\n\n" % (self.schemadn, self.prefixmap_data)
         self.set_from_ldif(prefixmap_ldif, self.schema_data, self.schemadn)
+
+    @staticmethod
+    def default_base_schema():
+        """Returns the default base schema to use"""
+        return "2008_R2"
+
+    @staticmethod
+    def get_version(base_schema):
+        """Returns the base schema's object version, e.g. 47 for 2008_R2"""
+        return Schema.base_schemas[base_schema][2]
 
     def set_from_ldif(self, pf, df, dn):
         dsdb._dsdb_set_schema_from_ldif(self.ldb, pf, df, dn)
