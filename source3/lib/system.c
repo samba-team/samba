@@ -594,7 +594,9 @@ char *sys_getwd(void)
 			break;
 		}
 		if (errno != ERANGE) {
+			int saved_errno = errno;
 			SAFE_FREE(s);
+			errno = saved_errno;
 			break;
 		}
 		allocated *= 2;
@@ -612,7 +614,9 @@ char *sys_getwd(void)
 	}
 	wd = getwd(s);
 	if (wd == NULL) {
+		int saved_errno = errno;
 		SAFE_FREE(s);
+		errno = saved_errno;
 	}
 	return wd;
 #endif
