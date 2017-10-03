@@ -2226,6 +2226,10 @@ static struct smb_filename *vfswrap_getwd(vfs_handle_struct *handle,
 	START_PROFILE(syscall_getwd);
 	result = sys_getwd();
 	END_PROFILE(syscall_getwd);
+
+	if (result == NULL) {
+		return NULL;
+	}
 	smb_fname = synthetic_smb_fname(ctx,
 				result,
 				NULL,
