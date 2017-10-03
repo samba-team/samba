@@ -76,7 +76,8 @@ class Schema(object):
     }
 
     def __init__(self, domain_sid, invocationid=None, schemadn=None,
-                 files=None, override_prefixmap=None, additional_prefixmap=None):
+                 files=None, override_prefixmap=None, additional_prefixmap=None,
+                 base_schema=None):
         from samba.provision import setup_path
 
         """Load schema for the SamDB from the AD schema files and
@@ -89,6 +90,11 @@ class Schema(object):
         needing to add it to the db
         """
 
+        if base_schema is None:
+            base_schema = Schema.default_base_schema()
+
+        self.base_schema = base_schema
+
         self.schemadn = schemadn
         # We need to have the am_rodc=False just to keep some warnings quiet -
         # this isn't a real SAM, so it's meaningless.
@@ -97,8 +103,8 @@ class Schema(object):
             self.ldb.set_invocation_id(invocationid)
 
         self.schema_data = read_ms_schema(
-            setup_path('ad-schema/MS-AD_Schema_2K8_R2_Attributes.txt'),
-            setup_path('ad-schema/MS-AD_Schema_2K8_R2_Classes.txt'))
+            setup_path('ad-schema/%s' % Schema.base_schemas[base_schema][0]),
+            setup_path('ad-schema/%s' % Schema.base_schemas[base_schema][1]))
 
         if files is not None:
             for file in files:
@@ -108,9 +114,10 @@ class Schema(object):
             {"SCHEMADN": schemadn})
         check_all_substituted(self.schema_data)
 
+        schema_version = str(Schema.get_version(base_schema))
         self.schema_dn_modify = read_and_sub_file(
             setup_path("provision_schema_basedn_modify.ldif"),
-            {"SCHEMADN": schemadn})
+            {"SCHEMADN": schemadn, "OBJVERSION" : schema_version})
 
         descr = b64encode(get_schema_descriptor(domain_sid))
         self.schema_dn_add = read_and_sub_file(

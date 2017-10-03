@@ -6,5 +6,5 @@ changetype: modify
 -
 # "masteredBy", "msDs-masteredBy" filled in later
 replace: objectVersion
-objectVersion: 47
+objectVersion: ${OBJVERSION}
 

@@ -1355,6 +1355,12 @@ def fill_samdb(samdb, lp, names, logger, policyguid,
         protected1wd_descr = b64encode(get_config_delete_protected1wd_descriptor(names.domainsid))
         protected2_descr = b64encode(get_config_delete_protected2_descriptor(names.domainsid))
 
+        if "2008" in schema.base_schema:
+            # exclude 2012-specific changes if we're using a 2008 schema
+            incl_2012 = "#"
+        else:
+            incl_2012 = ""
+
         setup_add_ldif(samdb, setup_path("provision_configuration.ldif"), {
                 "CONFIGDN": names.configdn,
                 "NETBIOSNAME": names.netbiosname,
@@ -1378,7 +1384,7 @@ def fill_samdb(samdb, lp, names, logger, policyguid,
 
         setup_add_ldif(samdb, setup_path("extended-rights.ldif"), {
                 "CONFIGDN": names.configdn,
-                "INC2012" : "#",
+                "INC2012" : incl_2012,
                 })
 
         logger.info("Setting up display specifiers")
@@ -1968,7 +1974,8 @@ def provision(logger, session_info, smbconf=None,
         sitename=None, ol_mmr_urls=None, ol_olc=None, slapd_path=None,
         useeadb=False, am_rodc=False, lp=None, use_ntvfs=False,
         use_rfc2307=False, maxuid=None, maxgid=None, skip_sysvolacl=True,
-        ldap_backend_forced_uri=None, nosync=False, ldap_dryrun_mode=False, ldap_backend_extra_port=None):
+        ldap_backend_forced_uri=None, nosync=False, ldap_dryrun_mode=False,
+        ldap_backend_extra_port=None, base_schema=None):
     """Provision samba4
 
     :note: caution, this wipes all existing data!
@@ -2101,7 +2108,7 @@ def provision(logger, session_info, smbconf=None,
     ldapi_url = "ldapi://%s" % urllib.quote(paths.s4_ldapi_path, safe="")
 
     schema = Schema(domainsid, invocationid=invocationid,
-        schemadn=names.schemadn)
+        schemadn=names.schemadn, base_schema=base_schema)
 
     if backend_type == "ldb":
         provision_backend = LDBBackend(backend_type, paths=paths,
