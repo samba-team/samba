@@ -1019,6 +1019,7 @@ static NTSTATUS set_underlying_acl(vfs_handle_struct *handle, files_struct *fsp,
 				   bool chown_needed)
 {
 	NTSTATUS status;
+	const struct security_token *token = NULL;
 
 	status = SMB_VFS_NEXT_FSET_NT_ACL(handle, fsp, security_info_sent, psd);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
@@ -1031,6 +1032,18 @@ static NTSTATUS set_underlying_acl(vfs_handle_struct *handle, files_struct *fsp,
 	if (get_current_uid(handle->conn) == 0 || chown_needed == false ||
 	    !(fsp->access_mask & SEC_STD_WRITE_OWNER)) {
 		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	/*
+	 * Only allow take-ownership, not give-ownership. That's the way Windows
+	 * implements SEC_STD_WRITE_OWNER. MS-FSA 2.1.5.16 just states: If
+	 * InputBuffer.OwnerSid is not a valid owner SID for a file in the
+	 * objectstore, as determined in an implementation specific manner, the
+	 * object store MUST return STATUS_INVALID_OWNER.
+	 */
+	token = get_current_nttok(fsp->conn);
+	if (!security_token_is_sid(token, psd->owner_sid)) {
+		return NT_STATUS_INVALID_OWNER;
 	}
 
 	DBG_DEBUG("overriding chown on file %s for sid %s\n",
