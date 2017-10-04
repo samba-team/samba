@@ -639,7 +639,8 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 				   sid_string_dbg(&t->sids[i])));
 			continue;
 		}
-		if (!add_gid_to_array_unique(session_info, ids[i].id,
+		if (!add_gid_to_array_unique(session_info->unix_token,
+					     ids[i].id,
 					     &session_info->unix_token->groups,
 					     &session_info->unix_token->ngroups)) {
 			return NT_STATUS_NO_MEMORY;
