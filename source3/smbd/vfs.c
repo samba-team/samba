@@ -858,6 +858,8 @@ const char *vfs_readdirname(connection_struct *conn, void *p,
 int vfs_ChDir(connection_struct *conn, const struct smb_filename *smb_fname)
 {
 	int ret;
+	int saved_errno = 0;
+	struct smb_filename *saved_cwd = NULL;
 
 	if (!LastDir) {
 		LastDir = SMB_STRDUP("");
@@ -872,23 +874,80 @@ int vfs_ChDir(connection_struct *conn, const struct smb_filename *smb_fname)
 		return 0;
 	}
 
+	if (conn->cwd_fname != NULL) {
+		/*
+		 * Save off where we are in case we need to return
+		 * on vfs_GetWd() failure after successful SMB_VFS_CHDIR().
+		 */
+		saved_cwd = cp_smb_filename(conn, conn->cwd_fname);
+		if (saved_cwd == NULL) {
+			return -1;
+		}
+	}
+
 	DEBUG(4,("vfs_ChDir to %s\n", smb_fname->base_name));
 
 	ret = SMB_VFS_CHDIR(conn, smb_fname);
-	if (ret == 0) {
-		/* Global cache. */
-		SAFE_FREE(LastDir);
-		LastDir = SMB_STRDUP(smb_fname->base_name);
+	if (ret != 0) {
+		saved_errno = errno;
+		TALLOC_FREE(saved_cwd);
+		errno = saved_errno;
+		return -1;
+	}
 
-		/* conn cache. */
-		TALLOC_FREE(conn->cwd_fname);
-		conn->cwd_fname = vfs_GetWd(conn, conn);
-		if (conn->cwd_fname == NULL) {
-			smb_panic("con->cwd getwd failed\n");
+	/*
+	 * Always replace conn->cwd_fname. We
+	 * don't know if it's been modified by
+	 * VFS modules in the stack.
+	 */
+
+	/* conn cache. */
+	TALLOC_FREE(conn->cwd_fname);
+	conn->cwd_fname = vfs_GetWd(conn, conn);
+	if (conn->cwd_fname == NULL) {
+		/*
+		 * vfs_GetWd() failed.
+		 * We must be able to read cwd.
+		 * Return to original directory
+		 * and return -1.
+		 */
+		saved_errno = errno;
+
+		if (saved_cwd == NULL) {
+			/*
+			 * Failed on the very first chdir()+getwd()
+			 * for this connection. We can't
+			 * continue.
+			 */
+			smb_panic("conn->cwd getwd failed\n");
 			/* NOTREACHED */
 			return -1;
 		}
-		DEBUG(4,("vfs_ChDir got %s\n",conn->cwd_fname->base_name));
+
+		/* Return to the previous $cwd. */
+		ret = SMB_VFS_CHDIR(conn, saved_cwd);
+		if (ret != 0) {
+			smb_panic("conn->cwd getwd failed\n");
+			/* NOTREACHED */
+			return -1;
+		}
+		/* Restore original conn->cwd_fname. */
+		conn->cwd_fname = saved_cwd;
+		errno = saved_errno;
+		/* And fail the chdir(). */
+		return -1;
+	}
+
+	/* vfs_GetWd() succeeded. */
+	/* Replace global cache. */
+	SAFE_FREE(LastDir);
+	LastDir = SMB_STRDUP(smb_fname->base_name);
+
+	DEBUG(4,("vfs_ChDir got %s\n", conn->cwd_fname->base_name));
+
+	TALLOC_FREE(saved_cwd);
+	if (saved_errno != 0) {
+		errno = saved_errno;
 	}
 	return ret;
 }
