@@ -3671,7 +3671,7 @@ NTSTATUS try_chown(files_struct *fsp, uid_t uid, gid_t gid)
 	   a local SID on the users workstation
 	*/
 	if (uid != get_current_uid(fsp->conn)) {
-		return NT_STATUS_ACCESS_DENIED;
+		return NT_STATUS_INVALID_OWNER;
 	}
 
 	become_root();
