@@ -19,8 +19,8 @@
 
 #include "includes.h"
 #include "printing.h"
+#include "smbd/proto.h"
 
-extern struct current_user current_user;
 extern userdom_struct current_user_info;
 
 /****************************************************************************
@@ -76,7 +76,7 @@ static int print_run_command(int snum, const char* printername, bool do_sub,
 				lp_servicename(talloc_tos(), snum),
 				current_user_info.unix_name,
 				"",
-				current_user.ut.gid,
+				get_current_gid(NULL),
 				get_current_username(),
 				current_user_info.domain,
 				syscmd);
