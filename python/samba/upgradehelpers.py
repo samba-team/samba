@@ -226,7 +226,7 @@ def update_policyids(names, samdb):
         names.policyid_dc = None
 
 
-def newprovision(names, session, smbconf, provdir, logger):
+def newprovision(names, session, smbconf, provdir, logger, base_schema=None):
     """Create a new provision.
 
     This provision will be the reference for knowing what has changed in the
@@ -256,7 +256,7 @@ def newprovision(names, session, smbconf, provdir, logger):
             backend_type=None, ldapadminpass=None, ol_mmr_urls=None,
             slapd_path=None,
             dom_for_fun_level=names.domainlevel, dns_backend=names.dns_backend,
-            useeadb=True, use_ntvfs=True)
+            useeadb=True, use_ntvfs=True, base_schema=base_schema)
 
 
 def dn_sort(x, y):
