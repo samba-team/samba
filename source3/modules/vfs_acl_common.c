@@ -1018,8 +1018,9 @@ static NTSTATUS set_underlying_acl(vfs_handle_struct *handle, files_struct *fsp,
 				   uint32_t security_info_sent,
 				   bool chown_needed)
 {
-	NTSTATUS status =
-	    SMB_VFS_NEXT_FSET_NT_ACL(handle, fsp, security_info_sent, psd);
+	NTSTATUS status;
+
+	status = SMB_VFS_NEXT_FSET_NT_ACL(handle, fsp, security_info_sent, psd);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
 		return status;
 	}
