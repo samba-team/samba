@@ -233,6 +233,10 @@ class cmd_domain_provision(Command):
                 choices=["2000", "2003", "2008", "2008_R2"],
                 help="The domain and forest function level (2000 | 2003 | 2008 | 2008_R2 - always native). Default is (Windows) 2008_R2 Native.",
                 default="2008_R2"),
+         Option("--base-schema", type="choice", metavar="BASE-SCHEMA",
+                choices=["2008_R2", "2012", "2012_R2"],
+                help="The base schema files to use. Default is (Windows) 2008_R2.",
+                default="2008_R2"),
          Option("--next-rid", type="int", metavar="NEXTRID", default=1000,
                 help="The initial nextRid value (only needed for upgrades).  Default is 1000."),
          Option("--partitions-only",
@@ -310,7 +314,8 @@ class cmd_domain_provision(Command):
             ldap_backend_nosync=None,
             ldap_backend_extra_port=None,
             ldap_backend_forced_uri=None,
-            ldap_dryrun_mode=None):
+            ldap_dryrun_mode=None,
+            base_schema=None):
 
         self.logger = self.get_logger("provision")
         if quiet:
@@ -478,7 +483,8 @@ class cmd_domain_provision(Command):
                   use_rfc2307=use_rfc2307, skip_sysvolacl=False,
                   ldap_backend_extra_port=ldap_backend_extra_port,
                   ldap_backend_forced_uri=ldap_backend_forced_uri,
-                  nosync=ldap_backend_nosync, ldap_dryrun_mode=ldap_dryrun_mode)
+                  nosync=ldap_backend_nosync, ldap_dryrun_mode=ldap_dryrun_mode,
+                  base_schema=base_schema)
 
         except ProvisioningError, e:
             raise CommandError("Provision failed", e)
