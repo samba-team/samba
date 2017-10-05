@@ -3927,7 +3927,9 @@ class cmd_domain_schema_upgrade(Command):
         Option("--schema", type="choice", metavar="SCHEMA",
                choices=["2012", "2012_R2"],
                help="The schema file to upgrade to. Default is (Windows) 2012_R2.",
-               default="2012_R2")
+               default="2012_R2"),
+        Option("--ldf-file", type=str, default=None,
+                help="Just apply the schema updates in the adprep/.LDF file(s) specified")
     ]
 
     def _apply_updates_in_file(self, samdb, ldif_file):
@@ -4045,6 +4047,7 @@ class cmd_domain_schema_upgrade(Command):
         creds = credopts.get_credentials(lp)
         H = kwargs.get("H")
         target_schema = kwargs.get("schema")
+        ldf_files = kwargs.get("ldf_file")
 
         samdb = SamDB(url=H, session_info=system_session(), credentials=creds, lp=lp)
 
@@ -4054,16 +4057,25 @@ class cmd_domain_schema_upgrade(Command):
             print("Temporarily overriding 'dsdb:schema update allowed' setting")
             updates_allowed_overriden = True
 
-        # work out the version of the target schema we're upgrading to
-        end = Schema.get_version(target_schema)
+        # if specific LDIF files were specified, just apply them
+        if ldf_files:
+            schema_updates = ldf_files.split(",")
+        else:
+            schema_updates = []
 
-        # work out the version of the schema we're currently using
-        res = samdb.search(base=samdb.get_schema_basedn(), scope=ldb.SCOPE_BASE,
-                           attrs=['objectVersion'])
+            # work out the version of the target schema we're upgrading to
+            end = Schema.get_version(target_schema)
 
-        if len(res) != 1:
-            raise CommandError('Could not determine current schema version')
-        start = int(res[0]['objectVersion'][0]) + 1
+            # work out the version of the schema we're currently using
+            res = samdb.search(base=samdb.get_schema_basedn(),
+                               scope=ldb.SCOPE_BASE, attrs=['objectVersion'])
+
+            if len(res) != 1:
+                raise CommandError('Could not determine current schema version')
+            start = int(res[0]['objectVersion'][0]) + 1
+
+            for version in range(start, end + 1):
+                schema_updates.append('Sch%d.ldf' % version)
 
         samdb.transaction_start()
         count = 0
@@ -4071,8 +4083,8 @@ class cmd_domain_schema_upgrade(Command):
 
         try:
             # Apply the schema updates needed to move to the new schema version
-            for version in range(start, end + 1):
-                count += self._apply_update(samdb, 'Sch%d.ldf' % version)
+            for ldif_file in schema_updates:
+                count += self._apply_update(samdb, ldif_file)
 
             if count > 0:
                 samdb.transaction_commit()
