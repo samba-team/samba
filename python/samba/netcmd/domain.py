@@ -4037,6 +4037,7 @@ class cmd_domain_schema_upgrade(Command):
     def run(self, **kwargs):
         from samba.schema import Schema
 
+        updates_allowed_overriden = False
         sambaopts = kwargs.get("sambaopts")
         credopts = kwargs.get("credopts")
         versionpts = kwargs.get("versionopts")
@@ -4046,6 +4047,12 @@ class cmd_domain_schema_upgrade(Command):
         target_schema = kwargs.get("schema")
 
         samdb = SamDB(url=H, session_info=system_session(), credentials=creds, lp=lp)
+
+        # we're not going to get far if the config doesn't allow schema updates
+        if lp.get("dsdb:schema update allowed") is None:
+            lp.set("dsdb:schema update allowed", "yes")
+            print("Temporarily overriding 'dsdb:schema update allowed' setting")
+            updates_allowed_overriden = True
 
         # work out the version of the target schema we're upgrading to
         end = Schema.get_version(target_schema)
@@ -4060,6 +4067,7 @@ class cmd_domain_schema_upgrade(Command):
 
         samdb.transaction_start()
         count = 0
+        error_encountered = False
 
         try:
             # Apply the schema updates needed to move to the new schema version
@@ -4076,6 +4084,12 @@ class cmd_domain_schema_upgrade(Command):
             print("Exception: %s" % e)
             print("Error encountered, aborting schema upgrade")
             samdb.transaction_cancel()
+            error_encountered = True
+
+        if updates_allowed_overriden:
+            lp.set("dsdb:schema update allowed", "no")
+
+        if error_encountered:
             raise CommandError('Failed to upgrade schema')
 
 class cmd_domain(SuperCommand):
