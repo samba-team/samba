@@ -9218,14 +9218,26 @@ static bool test_printer_set_publish(struct torture_context *tctx,
 					 "info7 publish flag not set");
 	} else {
 		struct GUID guid;
+		char *ref_guid;
 		torture_assert_int_equal(tctx,
 					 info.info7.action,
 					 DSPRINT_PUBLISH,
 					 "info7 publish flag not set");
+
+		/* GUID_from_string is able to parse both plain and
+		 * curly-braced guids */
 		torture_assert_ntstatus_ok(tctx,
 					   GUID_from_string(info.info7.guid,
 					   &guid),
 					   "invalid published printer GUID");
+
+		/* Build reference GUID string */
+		ref_guid = GUID_string2(tctx, &guid);
+		torture_assert_not_null(tctx, ref_guid, "ENOMEM");
+		ref_guid = talloc_strdup_upper(tctx, ref_guid);
+		torture_assert_not_null(tctx, ref_guid, "ENOMEM");
+		torture_assert_str_equal(tctx, info.info7.guid, ref_guid,
+			"invalid GUID format");
 	}
 
 	return true;
