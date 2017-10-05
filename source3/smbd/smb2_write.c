@@ -287,6 +287,7 @@ static struct tevent_req *smbd_smb2_write_send(TALLOC_CTX *mem_ctx,
 		state->write_through = true;
 	}
 	state->in_length = in_data.length;
+	state->in_offset = in_offset;
 	state->out_count = 0;
 
 	DEBUG(10,("smbd_smb2_write: %s - %s\n",
