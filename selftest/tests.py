@@ -131,6 +131,11 @@ plantestsuite(
     ["PYTHON=%s" % python,
      os.path.join(bbdir, "runtime-links.sh"),
      '$PREFIX_ABS/provision', 'release-4-5-0-pre1', configuration])
+plantestsuite(
+    "samba4.blackbox.schemaupgrade", "none",
+    ["PYTHON=%s" % python,
+     os.path.join(bbdir, "schemaupgrade.sh"),
+     '$PREFIX_ABS/provision', configuration])
 planpythontestsuite("none", "samba.tests.upgradeprovision")
 planpythontestsuite("none", "samba.tests.xattr", py3_compatible=True)
 planpythontestsuite("none", "samba.tests.ntacls")
