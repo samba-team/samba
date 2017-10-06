@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from samba_utils import save_file
+import os
 manpages='''
          manpages/cifsdd.8
          manpages/dbwrap_tool.1
@@ -131,7 +132,13 @@ def smbdotconf_generate_parameter_list(task):
     save_file(parameter_all, t , create_dir=True)
     return 0
 
-articles = bld.path.ant_glob("smbdotconf/**/*.xml", flat=True)
+# Since nothing really forces sorting in glob, we have to sort by file name
+# POSIX file systems aren't required to return sorted content but we want
+# smb.conf parameters to be sorted alphabetically
+sources = bld.path.ant_glob("smbdotconf/**/*.xml", flat=False)
+articles = " ".join(sorted([x.relpath_gen(bld.path) for x in sources],
+                           key=lambda m: m.split(os.sep)[-1]))
+
 parameter_all = 'smbdotconf/parameters.all.xml'
 bld.SAMBA_GENERATOR(parameter_all,
                     source=articles,
