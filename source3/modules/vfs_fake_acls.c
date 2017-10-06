@@ -413,6 +413,12 @@ static int fake_acls_chown(vfs_handle_struct *handle,
 	int ret;
 	uint8_t id_buf[4];
 	if (uid != -1) {
+		uid_t current_uid = get_current_uid(handle->conn);
+
+		if (current_uid != 0 && current_uid != uid) {
+			return EACCES;
+		}
+
 		SIVAL(id_buf, 0, uid);
 		ret = SMB_VFS_NEXT_SETXATTR(handle,
 				smb_fname,
@@ -447,6 +453,12 @@ static int fake_acls_lchown(vfs_handle_struct *handle,
 	int ret;
 	uint8_t id_buf[4];
 	if (uid != -1) {
+		uid_t current_uid = get_current_uid(handle->conn);
+
+		if (current_uid != 0 && current_uid != uid) {
+			return EACCES;
+		}
+
 		/* This isn't quite right (calling setxattr not
 		 * lsetxattr), but for the test purposes of this
 		 * module (fake NT ACLs from windows clients), it is
@@ -486,6 +498,12 @@ static int fake_acls_fchown(vfs_handle_struct *handle, files_struct *fsp, uid_t 
 	int ret;
 	uint8_t id_buf[4];
 	if (uid != -1) {
+		uid_t current_uid = get_current_uid(handle->conn);
+
+		if (current_uid != 0 && current_uid != uid) {
+			return EACCES;
+		}
+
 		SIVAL(id_buf, 0, uid);
 		ret = SMB_VFS_NEXT_FSETXATTR(handle, fsp, FAKE_UID, id_buf, sizeof(id_buf), 0);
 		if (ret != 0) {
