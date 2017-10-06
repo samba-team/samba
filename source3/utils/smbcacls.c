@@ -397,21 +397,17 @@ static int owner_set(struct cli_state *cli, enum chown_mode change_mode,
 			const char *filename, const char *new_username)
 {
 	struct dom_sid sid;
-	struct security_descriptor *sd, *old;
+	struct security_descriptor *sd;
 	size_t sd_size;
 
 	if (!StringToSid(cli, &sid, new_username))
 		return EXIT_PARSE_ERROR;
 
-	old = get_secdesc(cli, filename);
-
-	if (!old) {
-		return EXIT_FAILED;
-	}
-
-	sd = make_sec_desc(talloc_tos(),old->revision, SEC_DESC_SELF_RELATIVE,
-				(change_mode == REQUEST_CHOWN) ? &sid : NULL,
-				(change_mode == REQUEST_CHGRP) ? &sid : NULL,
+	sd = make_sec_desc(talloc_tos(),
+			   SECURITY_DESCRIPTOR_REVISION_1,
+			   SEC_DESC_SELF_RELATIVE,
+			   (change_mode == REQUEST_CHOWN) ? &sid : NULL,
+			   (change_mode == REQUEST_CHGRP) ? &sid : NULL,
 			   NULL, NULL, &sd_size);
 
 	if (!set_secdesc(cli, filename, sd)) {
