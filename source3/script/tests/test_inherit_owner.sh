@@ -4,9 +4,9 @@
 # currently needs to run in SMB1 mode, because it uses UNIX
 # extensions to fetch the UNIX owner of a file.
 
-if [ $# -lt 9 ]; then
+if [ $# -lt 10 ]; then
 cat <<EOF
-Usage: $0 SERVER USERNAME PASSWORD PREFIX SMBCLIENT SMBCACLS SHARE INH_WIN INH_UNIX <additional args>
+Usage: $0 SERVER USERNAME PASSWORD PREFIX SMBCLIENT SMBCACLS NET SHARE INH_WIN INH_UNIX <additional args>
 EOF
 exit 1;
 fi
@@ -17,13 +17,15 @@ PASSWORD="$3"
 PREFIX="$4"
 SMBCLIENT="$5"
 SMBCACLS="$6"
-SHARE="$7"
-INH_WIN="$8"
-INH_UNIX="$9"
-shift 9
+NET="$7"
+SHARE="$8"
+INH_WIN="$9"
+INH_UNIX="${10}"
+shift 10
 ADDARGS="$*"
 SMBCLIENT="$VALGRIND ${SMBCLIENT} ${ADDARGS}"
 SMBCACLS="$VALGRIND ${SMBCACLS} ${ADDARGS}"
+NET="$VALGRIND ${NET}"
 
 incdir=`dirname $0`/../../../testprogs/blackbox
 . $incdir/subunit.sh
@@ -137,6 +139,7 @@ fi
 
 # SETUP
 testit "$TEST_LABEL - setup root dir" create_dir tmp tmp.$$
+testit "grant SeRestorePrivilege" $NET rpc rights grant $USERNAME SeRestorePrivilege -U $USERNAME%$PASSWORD -I $SERVER || exit 1
 testit "$TEST_LABEL - assign default ACL" $SMBCACLS //$SERVER/tmp tmp.$$ -U $USERNAME%$PASSWORD -S "REVISION:1,OWNER:$SERVER\force_user,GROUP:$SERVER\domusers,ACL:Everyone:ALLOWED/0x3/FULL" 2>/dev/null
 # END SETUP
 
@@ -155,3 +158,5 @@ testit "$TEST_LABEL - verify file unix owner after change" unix_owner_id_is $SHA
 testit "$TEST_LABEL - cleanup subdir" cleanup_dir $SHARE tmp.$$/subdir
 testit "$TEST_LABEL - cleanup file" cleanup_file $SHARE tmp.$$/afile
 testit "$TEST_LABEL - cleanup root" cleanup_dir $SHARE tmp.$$
+
+testit "revoke SeRestorePrivilege" $NET rpc rights revoke $USERNAME SeRestorePrivilege -U $USERNAME%$PASSWORD -I $SERVER || exit 1
