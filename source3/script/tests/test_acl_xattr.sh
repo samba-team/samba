@@ -72,7 +72,8 @@ nt_affects_chown() {
 
     b4_actual=$($SMBCLIENT //$SERVER/$share -U $USERNAME%$PASSWORD -c "getfacl $fname" 2>/dev/null) || exit 1
     b4_actual=$(echo "$b4_actual" | sed -rn 's/^# owner: (.*)/\1/p')
-    $SMBCACLS //$SERVER/$share $fname -U $USERNAME%$PASSWORD -C force_user 2>/dev/null || exit 1
+    $SMBCACLS //$SERVER/$share $fname -U $USERNAME%$PASSWORD -a "ACL:$SERVER\force_user:ALLOWED/0x0/FULL" || exit 1
+    $SMBCACLS //$SERVER/$share $fname -U force_user%$PASSWORD -C force_user 2>/dev/null || exit 1
     af_actual=$($SMBCLIENT //$SERVER/$share -U $USERNAME%$PASSWORD -c "getfacl $fname" 2>/dev/null) || exit 1
     af_actual=$(echo "$af_actual" | sed -rn 's/^# owner: (.*)/\1/p')
     echo "before: $b4_actual"
