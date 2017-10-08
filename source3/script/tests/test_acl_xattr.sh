@@ -117,7 +117,7 @@ nt_affects_chgrp() {
     af_actual=$(echo "$af_actual" | sed -rn 's/^# group: (.*)/\1/p')
     echo "before: $b4_actual"
     echo "after: $af_actual"
-    test "$b4_expected" = "$b4_actual" && test "$af_expected" = "$af_actual"
+    test "$af_expected" != "$b4_actual" && test "$af_expected" = "$af_actual"
 }
 
 testit "setup remote file tmp" setup_remote_file tmp
