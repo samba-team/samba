@@ -100,8 +100,8 @@ nt_affects_chgrp() {
     b4_expected=$(echo "$b4_expected" | awk -F: '{print $3}')
     echo "$b4_expected"
 
-    echo -n "determining uid of domadmins..."
-    af_expected=$(getent passwd domadmins) || exit 1
+    echo -n "determining gid of domadmins..."
+    af_expected=$(getent group domadmins) || exit 1
     af_expected=$(echo "$af_expected" | awk -F: '{print $3}')
     echo "$af_expected"
 
