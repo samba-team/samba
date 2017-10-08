@@ -109,8 +109,8 @@ nt_affects_chgrp() {
     test "$b4_expected" != "$af_expected" || exit 1
 
     b4_actual=$($SMBCLIENT //$SERVER/$share -U $USERNAME%$PASSWORD -c "getfacl $fname" 2>/dev/null) || exit 1
-    b4_actual=$(echo "$b4_actual" | sed -rn 's/^# group: (.*)/\1/p')
     echo "${b4_actual}" | grep -q "^# group:" || exit 1
+    b4_actual=$(echo "$b4_actual" | sed -rn 's/^# group: (.*)/\1/p')
     $SMBCACLS //$SERVER/$share $fname -U $USERNAME%$PASSWORD -G domadmins 2>/dev/null || exit 1
     af_actual=$($SMBCLIENT //$SERVER/$share -U $USERNAME%$PASSWORD -c "getfacl $fname" 2>/dev/null) || exit 1
     echo "${af_actual}" | grep -q "^# group:" || exit 1
