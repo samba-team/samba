@@ -130,5 +130,5 @@ testit "nt_affects_chown tmp" nt_affects_chown tmp
 testit "nt_affects_chown ign_sysacls" nt_affects_chown ign_sysacls
 testit "setup remote file tmp" setup_remote_file tmp
 testit "setup remote file ign_sysacls" setup_remote_file ign_sysacls
-testit "nt_affects_chgrp tmp" nt_affects_chown tmp
-testit "nt_affects_chgrp ign_sysacls" nt_affects_chown ign_sysacls
+testit "nt_affects_chgrp tmp" nt_affects_chgrp tmp
+testit "nt_affects_chgrp ign_sysacls" nt_affects_chgrp ign_sysacls
