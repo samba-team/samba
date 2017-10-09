@@ -49,7 +49,7 @@ static void test_sock_addr_from_string_bad(const char *ip, bool with_port)
 	int ret;
 
 	ret = ctdb_sock_addr_from_string(ip, &sa, with_port);
-	assert(ret != 0);
+	assert(ret == EINVAL);
 }
 
 static void test_sock_addr_cmp(const char *ip1, const char *ip2,
@@ -141,7 +141,7 @@ static void test_connection_from_string_bad(const char *conn_str)
 	int ret;
 
 	ret = ctdb_connection_from_string(conn_str, false, &conn);
-	assert(ret != 0);
+	assert(ret == EINVAL);
 }
 
 /*
@@ -240,7 +240,7 @@ static void test_connection_list_read_bad(const char *s1)
 	close(pipefd[0]);
 
 	ret = ctdb_connection_list_read(tmp_ctx, false, &conn_list);
-	assert(ret != 0);
+	assert(ret == EINVAL);
 
 	talloc_free(tmp_ctx);
 }
