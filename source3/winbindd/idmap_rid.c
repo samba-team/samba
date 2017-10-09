@@ -81,7 +81,7 @@ static NTSTATUS idmap_rid_id_to_sid(struct idmap_domain *dom, struct id_map *map
 
 	if (is_null_sid(&dom->dom_sid)) {
 		DBG_INFO("idmap domain '%s' without SID\n", dom->name);
-		return NT_STATUS_NO_SUCH_DOMAIN;
+		return NT_STATUS_NONE_MAPPED;
 	}
 
 	sid_compose(map->sid, &dom->dom_sid,
