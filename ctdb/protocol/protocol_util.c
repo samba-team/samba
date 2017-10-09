@@ -265,7 +265,7 @@ int ctdb_sock_addr_from_string(const char *str,
 	unsigned port;
 	char *endp = NULL;
 	size_t len;
-	bool ret;
+	int ret;
 
 	if (! with_port) {
 		ret = ip_from_string(str, addr);
