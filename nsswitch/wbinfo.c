@@ -1105,6 +1105,12 @@ static bool wbinfo_xids_to_sids(const char *arg)
 
 	for (i=0; i<num_xids; i++) {
 		char str[WBC_SID_STRING_BUFLEN];
+		struct wbcDomainSid null_sid = { 0 };
+
+		if (memcmp(&null_sid, &sids[i], sizeof(struct wbcDomainSid)) == 0) {
+			d_printf("NOT MAPPED\n");
+			continue;
+		}
 		wbcSidToStringBuf(&sids[i], str, sizeof(str));
 		d_printf("%s\n", str);
 	}
