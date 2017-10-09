@@ -183,7 +183,7 @@ bool smb_krb5_sockaddr_to_kaddr(struct sockaddr_storage *paddr,
 				krb5_address *pkaddr)
 {
 	memset(pkaddr, '\0', sizeof(krb5_address));
-#if defined(HAVE_IPV6) && defined(ADDRTYPE_INET6)
+#ifdef HAVE_IPV6
 	if (paddr->ss_family == AF_INET6) {
 		pkaddr->addrtype = ADDRTYPE_INET6;
 		pkaddr->length = sizeof(((struct sockaddr_in6 *)paddr)->sin6_addr);
