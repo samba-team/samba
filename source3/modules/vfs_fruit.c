@@ -578,6 +578,10 @@ static bool ad_pack(struct adouble *ad)
 	uint32_t       offset = 0;
 
 	bufsize = talloc_get_size(ad->ad_data);
+	if (bufsize < AD_DATASZ_DOT_UND) {
+		DBG_ERR("bad buffer size [0x%" PRIx32 "]\n", bufsize);
+		return false;
+	}
 
 	if (offset + ADEDLEN_MAGIC < offset ||
 			offset + ADEDLEN_MAGIC >= bufsize) {
@@ -1021,19 +1025,41 @@ static ssize_t ad_read_rsrc_adouble(struct adouble *ad,
 	char *p_ad = NULL;
 	char *p_meta_ad = NULL;
 	ssize_t len;
+	size_t size;
 	int ret;
 	bool ok;
-
-	len = sys_pread(ad->ad_fd, ad->ad_data, AD_DATASZ_DOT_UND, 0);
-	if (len != AD_DATASZ_DOT_UND) {
-		DBG_NOTICE("%s %s: bad size: %zd\n",
-			   smb_fname->base_name, strerror(errno), len);
-		return -1;
-	}
 
 	ret = sys_fstat(ad->ad_fd, &sbuf, lp_fake_directory_create_times(
 				SNUM(ad->ad_handle->conn)));
 	if (ret != 0) {
+		return -1;
+	}
+
+	/*
+	 * AppleDouble file header content and size, two cases:
+	 *
+	 * - without xattrs it is exactly AD_DATASZ_DOT_UND (82) bytes large
+	 * - with embedded xattrs it can be larger, up to AD_XATTR_MAX_HDR_SIZE
+	 *
+	 * Read as much as we can up to AD_XATTR_MAX_HDR_SIZE.
+	 */
+	size = sbuf.st_ex_size;
+	if (size > talloc_array_length(ad->ad_data)) {
+		if (size > AD_XATTR_MAX_HDR_SIZE) {
+			size = AD_XATTR_MAX_HDR_SIZE;
+		}
+		p_ad = talloc_realloc(ad, ad->ad_data, char, size);
+		if (p_ad == NULL) {
+			return -1;
+		}
+		ad->ad_data = p_ad;
+	}
+
+	len = sys_pread(ad->ad_fd, ad->ad_data,
+			talloc_array_length(ad->ad_data), 0);
+	if (len != talloc_array_length(ad->ad_data)) {
+		DBG_NOTICE("%s %s: bad size: %zd\n",
+			   smb_fname->base_name, strerror(errno), len);
 		return -1;
 	}
 
@@ -1452,9 +1478,9 @@ static int ad_fset(struct adouble *ad, files_struct *fsp)
 		len = SMB_VFS_NEXT_PWRITE(ad->ad_handle,
 					  fsp,
 					  ad->ad_data,
-					  talloc_get_size(ad->ad_data),
+					  AD_DATASZ_DOT_UND,
 					  0);
-		if (len != (ssize_t)talloc_get_size(ad->ad_data)) {
+		if (len != AD_DATASZ_DOT_UND) {
 			DBG_ERR("short write on %s: %zd", fsp_str_dbg(fsp), len);
 			return -1;
 		}
