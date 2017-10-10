@@ -342,11 +342,47 @@ typedef enum {ADOUBLE_META, ADOUBLE_RSRC} adouble_type_t;
 #define AD_DATE_FROM_UNIX(x)  (htonl((x) - AD_DATE_DELTA))
 #define AD_DATE_TO_UNIX(x)    (ntohl(x) + AD_DATE_DELTA)
 
+#define AD_XATTR_HDR_MAGIC    0x41545452 /* 'ATTR' */
+#define AD_XATTR_MAX_ENTRIES  1024 /* Some arbitrarily enforced limit */
+#define AD_XATTR_HDR_SIZE     36
+#define AD_XATTR_MAX_HDR_SIZE 65536
+
 /* Accessor macros */
 #define ad_getentrylen(ad,eid)     ((ad)->ad_eid[(eid)].ade_len)
 #define ad_getentryoff(ad,eid)     ((ad)->ad_eid[(eid)].ade_off)
 #define ad_setentrylen(ad,eid,len) ((ad)->ad_eid[(eid)].ade_len = (len))
 #define ad_setentryoff(ad,eid,off) ((ad)->ad_eid[(eid)].ade_off = (off))
+
+/*
+ * Both struct ad_xattr_header and struct ad_xattr_entry describe the in memory
+ * representation as well as the on-disk format.
+ *
+ * The ad_xattr_header follows the FinderInfo data in the FinderInfo entry if
+ * the length of the FinderInfo entry is larger then 32 bytes. It is then
+ * preceeded with 2 bytes padding.
+ *
+ * Cf: https://opensource.apple.com/source/xnu/xnu-4570.1.46/bsd/vfs/vfs_xattr.c
+ */
+
+struct ad_xattr_header {
+	uint32_t adx_magic;        /* ATTR_HDR_MAGIC */
+	uint32_t adx_debug_tag;    /* for debugging == file id of owning file */
+	uint32_t adx_total_size;   /* file offset of end of attribute header + entries + data */
+	uint32_t adx_data_start;   /* file offset to attribute data area */
+	uint32_t adx_data_length;  /* length of attribute data area */
+	uint32_t adx_reserved[3];
+	uint16_t adx_flags;
+	uint16_t adx_num_attrs;
+};
+
+/* On-disk entries are aligned on 4 byte boundaries */
+struct ad_xattr_entry {
+	uint32_t adx_offset;    /* file offset to data */
+	uint32_t adx_length;    /* size of attribute data */
+	uint16_t adx_flags;
+	uint8_t  adx_namelen;	/* included the NULL terminator */
+	char    *adx_name;      /* NULL-terminated UTF-8 name */
+};
 
 struct ad_entry {
 	size_t ade_off;
@@ -362,6 +398,8 @@ struct adouble {
 	uint32_t                  ad_version;
 	struct ad_entry           ad_eid[ADEID_MAX];
 	char                     *ad_data;
+	struct ad_xattr_header    adx_header;
+	struct ad_xattr_entry    *adx_entries;
 };
 
 struct ad_entry_order {
