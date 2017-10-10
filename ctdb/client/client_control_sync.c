@@ -2014,7 +2014,7 @@ int ctdb_ctrl_tcp_add_delayed_update(TALLOC_CTX *mem_ctx,
 	ret = ctdb_reply_control_tcp_add_delayed_update(reply);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,
-		      ("Control TCP_ADD_DELAYED_UDATE failed, ret=%d\n", ret));
+		      ("Control TCP_ADD_DELAYED_UPDATE failed, ret=%d\n", ret));
 		return ret;
 	}
 
