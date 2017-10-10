@@ -924,7 +924,9 @@ static bool ad_unpack(struct adouble *ad, const size_t nentries,
  * @return -1 in case an error occured, 0 if no conversion was done, 1
  * otherwise
  **/
-static int ad_convert(struct adouble *ad, int fd)
+static int ad_convert(struct adouble *ad,
+		      const char *path,
+		      int fd)
 {
 	int rc = 0;
 	char *map = MAP_FAILED;
@@ -1219,7 +1221,7 @@ static ssize_t ad_read_rsrc_adouble(struct adouble *ad,
 	 * there is lost.
 	 */
 
-	ret = ad_convert(ad, ad->ad_fd);
+	ret = ad_convert(ad, path, ad->ad_fd);
 	if (ret != 0) {
 		DBG_WARNING("Failed to convert [%s]\n", path);
 		return len;
