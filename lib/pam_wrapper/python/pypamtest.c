@@ -1004,12 +1004,14 @@ static struct PyModuleDef pypamtestdef = {
  *** Initialize the module
  **********************************************************/
 
+#if PY_VERSION_HEX >= 0x02070000 /* >= 2.7.0 */
 PyDoc_STRVAR(PamTestError__doc__,
 "pypamtest specific exception\n\n"
 "This exception is raised if the _pamtest() function fails. If _pamtest() "
 "returns PAMTEST_ERR_CASE (a test case returns unexpected error code), then "
 "the exception also details which test case failed."
 );
+#endif
 
 #if IS_PYTHON3
 PyMODINIT_FUNC PyInit_pypamtest(void)
@@ -1034,10 +1036,17 @@ PyMODINIT_FUNC initpypamtest(void)
 			  pypamtest_module_methods);
 #endif
 
+#if PY_VERSION_HEX >= 0x02070000 /* >= 2.7.0 */
 	PyExc_PamTestError = PyErr_NewExceptionWithDoc(discard_const_p(char, "pypamtest.PamTestError"),
 						       PamTestError__doc__,
 						       PyExc_EnvironmentError,
 						       NULL);
+#else /* < 2.7.0 */
+	PyExc_PamTestError = PyErr_NewException(discard_const_p(char, "pypamtest.PamTestError"),
+						       PyExc_EnvironmentError,
+						       NULL);
+#endif
+
 	if (PyExc_PamTestError == NULL) {
 		RETURN_ON_ERROR;
 	}
