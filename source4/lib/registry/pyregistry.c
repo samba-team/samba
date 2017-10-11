@@ -19,6 +19,7 @@
 */
 
 #include <Python.h>
+#include "python/py3compat.h"
 #include "includes.h"
 #include "libcli/util/pyerrors.h"
 #include "lib/registry/registry.h"
@@ -30,8 +31,6 @@
 extern PyTypeObject PyRegistryKey;
 extern PyTypeObject PyRegistry;
 extern PyTypeObject PyHiveKey;
-
-void initregistry(void);
 
 /*#define PyRegistryKey_AsRegistryKey(obj) pytalloc_get_type(obj, struct registry_key)*/
 #define PyRegistry_AsRegistryContext(obj) ((struct registry_context *)pytalloc_get_ptr(obj))
@@ -121,7 +120,7 @@ static PyObject *py_mount_hive(PyObject *self, PyObject *args)
 		int i;
 		elements = talloc_array(NULL, const char *, PyList_Size(py_elements));
 		for (i = 0; i < PyList_Size(py_elements); i++)
-			elements[i] = PyString_AsString(PyList_GetItem(py_elements, i));
+			elements[i] = PyStr_AsString(PyList_GetItem(py_elements, i));
 	}
 
 	SMB_ASSERT(ctx != NULL);
@@ -412,7 +411,7 @@ static PyObject *py_str_regtype(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "i", &regtype))
 		return NULL;
 	
-	return PyString_FromString(str_regtype(regtype));
+	return PyStr_FromString(str_regtype(regtype));
 }
 
 static PyObject *py_get_predef_name(PyObject *self, PyObject *args)
@@ -426,7 +425,7 @@ static PyObject *py_get_predef_name(PyObject *self, PyObject *args)
 	str = reg_get_predef_name(hkey);
 	if (str == NULL)
 		Py_RETURN_NONE;
-	return PyString_FromString(str);
+	return PyStr_FromString(str);
 }
 
 static PyMethodDef py_registry_methods[] = {
@@ -438,22 +437,30 @@ static PyMethodDef py_registry_methods[] = {
 	{ NULL }
 };
 
-void initregistry(void)
+static struct PyModuleDef moduledef = {
+    PyModuleDef_HEAD_INIT,
+    .m_name = "registry",
+    .m_doc = "Registry",
+    .m_size = -1,
+    .m_methods = py_registry_methods,
+};
+
+MODULE_INIT_FUNC(registry)
 {
 	PyObject *m;
 
 	if (pytalloc_BaseObject_PyType_Ready(&PyHiveKey) < 0)
-		return;
+		return NULL;
 
 	if (pytalloc_BaseObject_PyType_Ready(&PyRegistry) < 0)
-		return;
+		return NULL;
 
 	if (pytalloc_BaseObject_PyType_Ready(&PyRegistryKey) < 0)
-		return;
+		return NULL;
 
-	m = Py_InitModule3("registry", py_registry_methods, "Registry");
+	m = PyModule_Create(&moduledef);
 	if (m == NULL)
-		return;
+		return NULL;
 
 	PyModule_AddObject(m, "HKEY_CLASSES_ROOT", PyInt_FromLong(HKEY_CLASSES_ROOT));
 	PyModule_AddObject(m, "HKEY_CURRENT_USER", PyInt_FromLong(HKEY_CURRENT_USER));
@@ -473,4 +480,6 @@ void initregistry(void)
 
 	Py_INCREF(&PyRegistryKey);
 	PyModule_AddObject(m, "RegistryKey", (PyObject *)&PyRegistryKey);
+
+	return m;
 }
