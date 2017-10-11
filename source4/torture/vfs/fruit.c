@@ -2036,6 +2036,11 @@ static bool test_adouble_conversion(struct torture_context *tctx,
 			    fname, AFPRESOURCE_STREAM,
 			    16, datalen, 0, datalen, data);
 
+	ret &= check_stream(tree, __location__, tctx, mem_ctx,
+			    fname,
+			    ":foo" "\xef\x80\xa2" "bar:$DATA", /* "foo:bar:$DATA" */
+			    0, 3, 0, 3, "baz");
+
 done:
 	smb2_deltree(tree, BASEDIR);
 	talloc_free(mem_ctx);
