@@ -29,6 +29,9 @@ bld.SAMBA3_SUBSYSTEM('OFFLOAD_TOKEN',
                     source='offload_token.c',
                     deps='samba-util')
 
+bld.SAMBA3_SUBSYSTEM('STRING_REPLACE',
+                    source='string_replace.c')
+
 bld.SAMBA3_MODULE('vfs_default',
                  subsystem='vfs',
                  source='vfs_default.c',
@@ -239,7 +242,7 @@ bld.SAMBA3_MODULE('vfs_tru64acl',
 bld.SAMBA3_MODULE('vfs_catia',
                  subsystem='vfs',
                  source='vfs_catia.c',
-                 deps='samba-util',
+                 deps='samba-util STRING_REPLACE',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_catia'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_catia'))
