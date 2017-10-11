@@ -1,5 +1,6 @@
 #include "replace.h"
 #include <sys/types.h>
+#include <signal.h>
 #include <unistd.h>
 #include "libcli/util/ntstatus.h"
 
