@@ -33,6 +33,7 @@
 #include "lib/util/tevent_ntstatus.h"
 #include "lib/util/tevent_unix.h"
 #include "offload_token.h"
+#include "string_replace.h"
 
 /*
  * Enhanced OS X and Netatalk compatibility
@@ -932,6 +933,119 @@ static bool ad_unpack(struct adouble *ad, const size_t nentries,
 	return true;
 }
 
+static bool ad_convert_xattr(struct adouble *ad,
+			     const struct smb_filename *smb_fname,
+			     char *map)
+{
+	static struct char_mappings **string_replace_cmaps = NULL;
+	uint16_t i;
+	int saved_errno = 0;
+	NTSTATUS status;
+
+	if (ad->adx_header.adx_num_attrs == 0) {
+		return true;
+	}
+
+	if (string_replace_cmaps == NULL) {
+		const char **mappings = NULL;
+
+		mappings = str_list_make_v3_const(
+			talloc_tos(), fruit_catia_maps, NULL);
+		if (mappings == NULL) {
+			return false;
+		}
+		string_replace_cmaps = string_replace_init_map(mappings);
+		TALLOC_FREE(mappings);
+	}
+
+	for (i = 0; i < ad->adx_header.adx_num_attrs; i++) {
+		struct ad_xattr_entry *e = &ad->adx_entries[i];
+		char *mapped_name = NULL;
+		char *tmp = NULL;
+		struct smb_filename *stream_name = NULL;
+		files_struct *fsp = NULL;
+		ssize_t nwritten;
+
+		status = string_replace_allocate(ad->ad_handle->conn,
+						 e->adx_name,
+						 string_replace_cmaps,
+						 talloc_tos(),
+						 &mapped_name,
+						 vfs_translate_to_windows);
+		if (!NT_STATUS_IS_OK(status) &&
+		    !NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED))
+		{
+			DBG_ERR("string_replace_allocate failed\n");
+			return -1;
+		}
+
+		tmp = mapped_name;
+		mapped_name = talloc_asprintf(talloc_tos(), ":%s", tmp);
+		TALLOC_FREE(tmp);
+		if (mapped_name == NULL) {
+			return -1;
+		}
+
+		stream_name = synthetic_smb_fname(talloc_tos(),
+						  smb_fname->base_name,
+						  mapped_name,
+						  NULL,
+						  smb_fname->flags);
+		TALLOC_FREE(mapped_name);
+		if (stream_name == NULL) {
+			DBG_ERR("synthetic_smb_fname failed\n");
+			return -1;
+		}
+
+		DBG_DEBUG("stream_name: %s\n", smb_fname_str_dbg(stream_name));
+
+		status = SMB_VFS_CREATE_FILE(
+			ad->ad_handle->conn,		/* conn */
+			NULL,				/* req */
+			0,				/* root_dir_fid */
+			stream_name,			/* fname */
+			FILE_GENERIC_WRITE,		/* access_mask */
+			FILE_SHARE_READ | FILE_SHARE_WRITE, /* share_access */
+			FILE_OPEN_IF,			/* create_disposition */
+			0,				/* create_options */
+			0,				/* file_attributes */
+			INTERNAL_OPEN_ONLY,		/* oplock_request */
+			NULL,				/* lease */
+			0,				/* allocation_size */
+			0,				/* private_flags */
+			NULL,				/* sd */
+			NULL,				/* ea_list */
+			&fsp,				/* result */
+			NULL,				/* psbuf */
+			NULL, NULL);			/* create context */
+		TALLOC_FREE(stream_name);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_ERR("SMB_VFS_CREATE_FILE failed\n");
+			return -1;
+		}
+
+		nwritten = SMB_VFS_PWRITE(fsp,
+					  map + e->adx_offset,
+					  e->adx_length,
+					  0);
+		if (nwritten == -1) {
+			DBG_ERR("SMB_VFS_PWRITE failed\n");
+			saved_errno = errno;
+			close_file(NULL, fsp, ERROR_CLOSE);
+			errno = saved_errno;
+			return -1;
+		}
+
+		status = close_file(NULL, fsp, NORMAL_CLOSE);
+		if (!NT_STATUS_IS_OK(status)) {
+			return -1;
+		}
+		fsp = NULL;
+	}
+
+	return true;
+}
+
 /**
  * Convert from Apple's ._ file to Netatalk
  *
@@ -949,6 +1063,7 @@ static int ad_convert(struct adouble *ad,
 	int rc = 0;
 	char *map = MAP_FAILED;
 	size_t origlen;
+	bool ok;
 
 	origlen = ad_getentryoff(ad, ADEID_RFORK) +
 		ad_getentrylen(ad, ADEID_RFORK);
@@ -959,6 +1074,11 @@ static int ad_convert(struct adouble *ad,
 		DEBUG(2, ("mmap AppleDouble: %s\n", strerror(errno)));
 		rc = -1;
 		goto exit;
+	}
+
+	ok = ad_convert_xattr(ad, smb_fname, map);
+	if (!ok) {
+		return -1;
 	}
 
 	if (ad_getentrylen(ad, ADEID_RFORK) > 0) {
