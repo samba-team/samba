@@ -4902,7 +4902,7 @@ static int fruit_ftruncate_rsrc_adouble(struct vfs_handle_struct *handle,
 
 	ad_off = ad_getentryoff(ad, ADEID_RFORK);
 
-	rc = SMB_VFS_NEXT_FTRUNCATE(handle, fsp, offset + ad_off);
+	rc = ftruncate(fsp->fh->fd, offset + ad_off);
 	if (rc != 0) {
 		TALLOC_FREE(ad);
 		return -1;
