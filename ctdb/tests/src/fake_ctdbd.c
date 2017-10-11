@@ -251,7 +251,11 @@ static bool nodemap_parse(struct node_map *node_map)
 		}
 		node = &node_map->node[node_map->num_nodes];
 
-		ctdb_sock_addr_from_string(ip, &node->addr, false);
+		ret = ctdb_sock_addr_from_string(ip, &node->addr, false);
+		if (ret != 0) {
+			fprintf(stderr, "bad line (%s) - invalid IP\n", line);
+			continue;
+		}
 		ctdb_sock_addr_set_port(&node->addr, CTDB_PORT);
 		node->pnn = pnn;
 		node->flags = flags;
