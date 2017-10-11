@@ -31,22 +31,12 @@
 #include "smbd/smbd.h"
 #include "lib/util/tevent_unix.h"
 #include "lib/util/tevent_ntstatus.h"
+#include "string_replace.h"
 
 static int vfs_catia_debug_level = DBGC_VFS;
 
 #undef DBGC_CLASS
 #define DBGC_CLASS vfs_catia_debug_level
-
-#define GLOBAL_SNUM     0xFFFFFFF
-#define MAP_SIZE        0xFF
-#define MAP_NUM         0x101 /* max unicode charval / MAP_SIZE */
-#define T_OFFSET(_v_)   ((_v_ % MAP_SIZE))
-#define T_START(_v_)    (((_v_ / MAP_SIZE) * MAP_SIZE))
-#define T_PICK(_v_)     ((_v_ / MAP_SIZE))
-
-struct char_mappings {
-	smb_ucs2_t entry[MAP_SIZE][2];
-};
 
 struct share_mapping_entry {
 	int snum;
@@ -65,66 +55,13 @@ struct catia_cache {
 
 struct share_mapping_entry *srt_head = NULL;
 
-static bool build_table(struct char_mappings **cmaps, int value)
-{
-	int i;
-	int start = T_START(value);
-
-	(*cmaps) = talloc_zero(NULL, struct char_mappings);
-
-	if (!*cmaps)
-		return False;
-
-	for (i = 0; i < MAP_SIZE;i++) {
-		(*cmaps)->entry[i][vfs_translate_to_unix] = start + i;
-		(*cmaps)->entry[i][vfs_translate_to_windows] = start + i;
-	}
-
-	return True;
-}
-
-static void set_tables(struct char_mappings **cmaps,
-		       long unix_map,
-		       long windows_map)
-{
-	int i;
-
-	/* set unix -> windows */
-	i = T_OFFSET(unix_map);
-	cmaps[T_PICK(unix_map)]->entry[i][vfs_translate_to_windows] = windows_map;
-
-	/* set windows -> unix */
-	i = T_OFFSET(windows_map);
-	cmaps[T_PICK(windows_map)]->entry[i][vfs_translate_to_unix] = unix_map;
-}
-
-static bool build_ranges(struct char_mappings **cmaps,
-			 long unix_map,
-			 long windows_map)
-{
-
-	if (!cmaps[T_PICK(unix_map)]) {
-		if (!build_table(&cmaps[T_PICK(unix_map)], unix_map))
-			return False;
-	}
-
-	if (!cmaps[T_PICK(windows_map)]) {
-		if (!build_table(&cmaps[T_PICK(windows_map)], windows_map))
-			return False;
-	}
-
-	set_tables(cmaps, unix_map, windows_map);
-
-	return True;
-}
-
 static struct share_mapping_entry *get_srt(connection_struct *conn,
 					   struct share_mapping_entry **global)
 {
 	struct share_mapping_entry *share;
 
 	for (share = srt_head; share != NULL; share = share->next) {
-		if (share->snum == GLOBAL_SNUM)
+		if (share->snum == GLOBAL_SECTION_SNUM)
 			(*global) = share;
 
 		if (share->snum == SNUM(conn))
@@ -136,61 +73,24 @@ static struct share_mapping_entry *get_srt(connection_struct *conn,
 
 static struct share_mapping_entry *add_srt(int snum, const char **mappings)
 {
+	struct share_mapping_entry *sme = NULL;
 
-	char *tmp;
-	fstring mapping;
-	int i;
-	long unix_map, windows_map;
-	struct share_mapping_entry *ret = NULL;
+	sme = TALLOC_ZERO(NULL, sizeof(struct share_mapping_entry));
+	if (sme == NULL)
+		return sme;
 
-	ret = (struct share_mapping_entry *)
-		TALLOC_ZERO(NULL, sizeof(struct share_mapping_entry) +
-		(mappings ? (MAP_NUM * sizeof(struct char_mappings *)) : 0));
+	sme->snum = snum;
+	sme->next = srt_head;
+	srt_head = sme;
 
-	if (!ret)
-		return ret;
-
-	ret->snum = snum;
-
-	ret->next = srt_head;
-	srt_head = ret;
-
-	if (mappings) {
-		ret->mappings = (struct char_mappings**) ((unsigned char*) ret +
-		    sizeof(struct share_mapping_entry));
-		memset(ret->mappings, 0,
-		    MAP_NUM * sizeof(struct char_mappings *));
-	} else {
-		ret->mappings = NULL;
-		return ret;
+	if (mappings == NULL) {
+		sme->mappings = NULL;
+		return sme;
 	}
 
-	/*
-	 * catia mappings are of the form :
-	 * UNIX char (in 0xnn hex) : WINDOWS char (in 0xnn hex)
-	 *
-	 * multiple mappings are comma separated in smb.conf
-	 */
-	for (i=0;mappings[i];i++) {
-		fstrcpy(mapping, mappings[i]);
-		unix_map = strtol(mapping, &tmp, 16);
-		if (unix_map == 0 && errno == EINVAL) {
-			DEBUG(0, ("INVALID CATIA MAPPINGS - %s\n", mapping));
-			continue;
-		}
-		windows_map = strtol(++tmp, NULL, 16);
-		if (windows_map == 0 && errno == EINVAL) {
-			DEBUG(0, ("INVALID CATIA MAPPINGS - %s\n", mapping));
-			continue;
-		}
+	sme->mappings = string_replace_init_map(mappings);
 
-		if (!build_ranges(ret->mappings, unix_map, windows_map)) {
-			DEBUG(0, ("TABLE ERROR - CATIA MAPPINGS - %s\n", mapping));
-			continue;
-		}
-	}
-
-	return ret;
+	return sme;
 }
 
 static bool init_mappings(connection_struct *conn,
@@ -211,7 +111,7 @@ static bool init_mappings(connection_struct *conn,
 	if (!global) {
 		/* global setting */
 		mappings = lp_parm_string_list(-1, "catia", "mappings", NULL);
-		global = add_srt(GLOBAL_SNUM, mappings);
+		global = add_srt(GLOBAL_SECTION_SNUM, mappings);
 	}
 
 	/* no global setting - what about share level ? */
@@ -236,12 +136,8 @@ static NTSTATUS catia_string_replace_allocate(connection_struct *conn,
 					      char **mapped_name,
 					enum vfs_translate_direction direction)
 {
-	static smb_ucs2_t *tmpbuf = NULL;
-	smb_ucs2_t *ptr;
 	struct share_mapping_entry *selected;
-	struct char_mappings *map = NULL;
-	size_t converted_size;
-	TALLOC_CTX *ctx = talloc_tos();
+	NTSTATUS status;
 
 	if (!init_mappings(conn, &selected)) {
 		/* No mappings found. Just use the old name */
@@ -253,30 +149,13 @@ static NTSTATUS catia_string_replace_allocate(connection_struct *conn,
 		return NT_STATUS_OK;
 	}
 
-	if ((push_ucs2_talloc(ctx, &tmpbuf, name_in,
-			      &converted_size)) == false) {
-		return map_nt_error_from_unix(errno);
-	}
-	ptr = tmpbuf;
-	for(;*ptr;ptr++) {
-		if (*ptr == 0)
-			break;
-		map = selected->mappings[T_PICK((*ptr))];
-
-		/* nothing to do */
-		if (!map)
-			continue;
-
-		*ptr = map->entry[T_OFFSET((*ptr))][direction];
-	}
-
-	if ((pull_ucs2_talloc(ctx, mapped_name, tmpbuf,
-			      &converted_size)) == false) {
-		TALLOC_FREE(tmpbuf);
-		return map_nt_error_from_unix(errno);
-	}
-	TALLOC_FREE(tmpbuf);
-	return NT_STATUS_OK;
+	status = string_replace_allocate(conn,
+					 name_in,
+					 selected->mappings,
+					 talloc_tos(),
+					 mapped_name,
+					 direction);
+	return status;
 }
 
 static DIR *catia_opendir(vfs_handle_struct *handle,
