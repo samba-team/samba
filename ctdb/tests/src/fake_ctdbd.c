@@ -1966,11 +1966,17 @@ static void control_reload_nodes_file(TALLOC_CTX *mem_ctx,
 		}
 
 		if (nodemap->node[i].flags & NODE_FLAGS_DELETED) {
+			int ret;
+
 			node = &node_map->node[i];
 
 			node->flags |= NODE_FLAGS_DELETED;
-			ctdb_sock_addr_from_string("0.0.0.0", &node->addr,
-						   false);
+			ret = ctdb_sock_addr_from_string("0.0.0.0", &node->addr,
+							 false);
+			if (ret != 0) {
+				/* Can't happen, but Coverity... */
+				goto fail;
+			}
 
 			continue;
 		}
