@@ -11,7 +11,9 @@ alphanumeric sort order.
 
 As a special case, any eventscript that ends with a '~' character will be
 ignored since this is a common postfix that some editors will append to
-older versions of a file.
+older versions of a file.  Similarly, any eventscript with multiple '.'s
+will be ignored as package managers can create copies with additional
+suffix starting with '.' (e.g. .rpmnew, .dpkg-dist).
 
 Only executable event scripts are run by CTDB.  Any event script that
 does not have execute permission is ignored.

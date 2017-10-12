@@ -60,6 +60,12 @@ static int script_filter(const struct dirent *de)
 		return 0;
 	}
 
+	/* Ignore filenames with multiple '.'s */
+	ptr = index(&de->d_name[3], '.');
+	if (ptr != NULL) {
+		return 0;
+	}
+
 	return 1;
 }
 
