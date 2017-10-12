@@ -37,6 +37,27 @@ required_result 1 <<EOF
 EOF
 unit_test test -x "${scriptdir}/prog"
 
+cat > "$scriptdir/10.test.rpmnew" <<EOF
+#!/bin/sh
+
+echo hello
+EOF
+chmod +x "$scriptdir/10.test.rpmnew"
+
+# Invalid script with multiple '.'s
+ok <<EOF
+No event scripts found
+EOF
+unit_test run_event_test "$scriptdir" list
+
+ok <<EOF
+Script disable 10.test.rpmnew completed with result=22
+EOF
+unit_test run_event_test "$scriptdir" disable 10.test.rpmnew
+
+ok_null
+unit_test test -x "${scriptdir}/10.test.rpmnew"
+
 cat > "$scriptdir/11.foo" <<EOF
 #!/bin/sh
 
