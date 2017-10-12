@@ -76,14 +76,34 @@ add_ace() {
 
     # avoid duplicate
     out=$($SMBCACLS //$SERVER/$share $fname -U $USERNAME%$PASSWORD)
+    if [ $? -ne 0 ] ; then
+	echo "get acl failed"
+	echo "$out"
+	return 1
+    fi
+    echo "Original ACL"
+    echo $out
     echo "$out" | grep "$local_ace" && return 0
 
     # add it
-    $SMBCACLS //$SERVER/$share $fname -U $USERNAME%$PASSWORD -a "$ace" || return 1
+    $SMBCACLS //$SERVER/$share $fname -U $USERNAME%$PASSWORD -a "$ace"
+    if [ $? -ne 0 ] ; then
+	echo "add acl failed"
+	return 1
+    fi
 
     # check it's there
-    out=$($SMBCACLS //$SERVER/$share $fname -U $USERNAME%$PASSWORD) || return 1
+    out=$($SMBCACLS //$SERVER/$share $fname -U $USERNAME%$PASSWORD)
+    if [ $? -ne 0 ] ; then
+	echo "get new acl failed"
+	echo "$out"
+	return 1
+    fi
+    echo "New ACL"
+    echo $out
+    echo "Checking if new ACL has \"$local_ace\""
     echo "$out" | grep "$local_ace" || return 1
+    echo "ok"
 }
 
 chown_give_fails() {
