@@ -737,6 +737,8 @@ static struct database *database_find(struct database_map *map,
 static bool public_ips_parse(struct ctdbd_context *ctdb,
 			     uint32_t numnodes)
 {
+	bool status;
+
 	if (numnodes == 0) {
 		D_ERR("Must initialise nodemap before public IPs\n");
 		return false;
@@ -744,7 +746,15 @@ static bool public_ips_parse(struct ctdbd_context *ctdb,
 
 	ctdb->known_ips = ipalloc_read_known_ips(ctdb, numnodes, false);
 
-	return (ctdb->known_ips != NULL);
+	status = (ctdb->known_ips != NULL);
+
+	if (status) {
+		D_INFO("Parsing public IPs done\n");
+	} else {
+		D_INFO("Parsing public IPs failed\n");
+	}
+
+	return status;
 }
 
 /* Read information about controls to fail.  Format is:
