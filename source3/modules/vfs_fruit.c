@@ -3785,7 +3785,7 @@ static int fruit_rmdir(struct vfs_handle_struct *handle,
 
 exit_rmdir:
 	if (dh) {
-		closedir(dh);
+		SMB_VFS_CLOSEDIR(handle->conn, dh);
 	}
 	return SMB_VFS_NEXT_RMDIR(handle, smb_fname);
 }
