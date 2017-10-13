@@ -260,7 +260,7 @@ static NTSTATUS idmap_autorid_id_to_sid(struct autorid_global_config *cfg,
 		    }
 		    /* If we end up here, something weird is in the record. */
 
-		    /* FALL THROUGH */
+		    FALL_THROUGH;
 	    default:
 		    DBG_DEBUG("SID/domain range: %s\n",
 			      (const char *)data.dptr);
