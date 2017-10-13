@@ -72,7 +72,7 @@ add_ace() {
     local fname=$2
     local ace=$3
 
-    local_ace=$(echo $ace | sed 's|\\|/|')
+    local_ace=$(printf '%s' "$ace" | sed 's|\\|/|')
 
     # avoid duplicate
     out=$($SMBCACLS //$SERVER/$share $fname -U $USERNAME%$PASSWORD)
