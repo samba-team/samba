@@ -810,7 +810,8 @@ static int check_tdb_action(struct db_record *rec, void *check_ctx)
 					talloc_free(key);
 					key = p;
 				}
-			} /* fall through */
+				FALL_THROUGH;
+			}
 			case 'r': /* retry */
 				once_more = true;
 				break;
