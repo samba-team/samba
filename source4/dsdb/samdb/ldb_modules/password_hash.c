@@ -2241,7 +2241,7 @@ static int setup_last_set_field(struct setup_password_fields_io *io)
 		if (!io->ac->update_password) {
 			break;
 		}
-		/* fall through */
+		FALL_THROUGH;
 	case UINT64_MAX:
 		if (!io->ac->update_password &&
 		    io->u.pwdLastSet != 0 &&
