@@ -1804,7 +1804,6 @@ WERROR _spoolss_OpenPrinterEx(struct pipes_struct *p,
 		DEBUG(4,("Setting print server access = %s\n", (r->in.access_mask == SERVER_ACCESS_ADMINISTER)
 			? "SERVER_ACCESS_ADMINISTER" : "SERVER_ACCESS_ENUMERATE" ));
 
-		/* We fall through to return WERR_OK */
 		break;
 
 	case SPLHND_PRINTER:
