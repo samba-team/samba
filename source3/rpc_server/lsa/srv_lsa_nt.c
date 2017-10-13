@@ -4288,11 +4288,13 @@ static NTSTATUS check_ft_info(TALLOC_CTX *mem_ctx,
 					exclusion = true;
 					break;
 				}
-				/* fall through */
+
+				FALL_THROUGH;
 			case DNS_CMP_FIRST_IS_CHILD:
 			case DNS_CMP_SECOND_IS_CHILD:
 				tln_conflict = true;
-				/* fall through */
+
+				FALL_THROUGH;
 			default:
 				break;
 			}
