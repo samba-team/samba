@@ -84,7 +84,6 @@ char *trust_pw_new_value(TALLOC_CTX *mem_ctx,
 		min = 120;
 		max = 120;
 		break;
-		/* fall through */
 	case SEC_CHAN_DOMAIN:
 		/*
 		 * The maximum length of a trust account password.
