@@ -5588,7 +5588,6 @@ const struct {
 	DBSTATISTICS_FIELD(locks.num_current),
 	DBSTATISTICS_FIELD(locks.num_pending),
 	DBSTATISTICS_FIELD(locks.num_failed),
-	DBSTATISTICS_FIELD(db_ro_delegations),
 };
 
 static void print_dbstatistics(const char *db_name,
