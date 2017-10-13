@@ -1390,7 +1390,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 			 * NTLMSSP_CLIENT_1 for now.
 			 */
 			use_cached_creds = false;
-			/* fall through */
+			FALL_THROUGH;
 		case NTLMSSP_CLIENT_1:
 			/* setup the client side */
 
@@ -1486,7 +1486,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 			if (!in.length) {
 				first = true;
 			}
-			/* fall through */
+			FALL_THROUGH;
 		case SQUID_2_5_NTLMSSP:
 			nt_status = gensec_start_mech_by_oid(state->gensec_state, GENSEC_OID_NTLMSSP);
 			break;
