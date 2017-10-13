@@ -744,7 +744,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 				use_kerberos = CRED_AUTO_USE_KERBEROS;
 				break;
 			}
-			/* Fall through */
+			FALL_THROUGH;
 		case DCERPC_AUTH_TYPE_NTLMSSP:
 		case DCERPC_AUTH_TYPE_KRB5:
 			ntresult = cli_rpc_pipe_open_generic_auth(
