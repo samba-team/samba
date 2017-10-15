@@ -331,9 +331,13 @@
 	      <parameter>file</parameter>, vfs_fruit may create ._ AppleDouble
 	      files. This options controls whether these ._ AppleDouble files
 	      are vetoed which prevents the client from accessing them.</para>
-	      <para>Vetoing ._ files may break some applications, eg
-	      extracting Mac ZIP archives from Mac clients failes,
-	      because they contain ._ files. Setting this option to
+	      <para>Vetoing ._ files may break some applications, e.g.
+	      extracting Mac ZIP archives from Mac clients fails,
+	      because they contain ._ files. <command>rsync</command> will
+	      also be unable to sync files beginning with underscores, as
+	      the temporary files it uses for these will start with ._ and
+	      so cannot be created.</para>
+	      <para>Setting this option to
 	      false will fix this, but the abstraction leak of
 	      exposing the internally created ._ files may have other
 	      unknown side effects.</para>
