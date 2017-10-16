@@ -4543,16 +4543,16 @@ static struct ldb_dn *replmd_conflict_dn(TALLOC_CTX *mem_ctx, struct ldb_dn *dn,
 /*
   form a deleted DN
  */
-static int replmd_make_deleted_child_dn(TALLOC_CTX *tmp_ctx,
-					struct ldb_context *ldb,
-					struct ldb_dn *dn,
-					const char *rdn_name,
-					const struct ldb_val *rdn_value,
-					struct GUID guid)
+static int replmd_make_prefix_child_dn(TALLOC_CTX *tmp_ctx,
+				       struct ldb_context *ldb,
+				       struct ldb_dn *dn,
+				       const char *four_char_prefix,
+				       const char *rdn_name,
+				       const struct ldb_val *rdn_value,
+				       struct GUID guid)
 {
 	struct ldb_val deleted_child_rdn_val;
 	struct GUID_txt_buf guid_str;
-	const char *four_char_prefix = "DEL:";
 	bool retb;
 
 	GUID_buf_string(&guid, &guid_str);
@@ -4614,6 +4614,61 @@ static int replmd_make_deleted_child_dn(TALLOC_CTX *tmp_ctx,
 			     deleted_child_rdn_val);
 
 	return LDB_SUCCESS;
+}
+
+
+/*
+  form a conflict DN
+ */
+static struct ldb_dn *replmd_conflict_dn(TALLOC_CTX *mem_ctx,
+					 struct ldb_context *ldb,
+					 struct ldb_dn *dn,
+					 struct GUID *guid)
+{
+	const struct ldb_val *rdn_val;
+	const char *rdn_name;
+	struct ldb_dn *new_dn;
+	int ret;
+
+	rdn_val = ldb_dn_get_rdn_val(dn);
+	rdn_name = ldb_dn_get_rdn_name(dn);
+	if (!rdn_val || !rdn_name) {
+		return NULL;
+	}
+
+	new_dn = ldb_dn_get_parent(mem_ctx, dn);
+	if (!new_dn) {
+		return NULL;
+	}
+
+	ret = replmd_make_prefix_child_dn(mem_ctx,
+					  ldb, new_dn,
+					  "CNF:",
+					  rdn_name,
+					  rdn_val,
+					  *guid);
+	if (ret != LDB_SUCCESS) {
+		return NULL;
+	}
+	return new_dn;
+}
+
+/*
+  form a deleted DN
+ */
+static int replmd_make_deleted_child_dn(TALLOC_CTX *tmp_ctx,
+					struct ldb_context *ldb,
+					struct ldb_dn *dn,
+					const char *rdn_name,
+					const struct ldb_val *rdn_value,
+					struct GUID guid)
+{
+	return replmd_make_prefix_child_dn(tmp_ctx,
+					   ldb, dn,
+					   "DEL:",
+					   rdn_name,
+					   rdn_value,
+					   guid);
 }
 
 
