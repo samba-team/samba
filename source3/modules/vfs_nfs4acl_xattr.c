@@ -260,43 +260,6 @@ static bool nfs4acl_smb4acl2nfs4acl(TALLOC_CTX *mem_ctx,
 	return true;
 }
 
-static bool nfs4acl_xattr_set_smb4acl(vfs_handle_struct *handle,
-				      const struct smb_filename *smb_fname,
-				      struct SMB4ACL_T *smbacl)
-{
-	TALLOC_CTX *frame = talloc_stackframe();
-	struct nfs4acl *nfs4acl;
-	int ret;
-	bool denymissingspecial;
-	DATA_BLOB blob;
-
-	denymissingspecial = lp_parm_bool(handle->conn->params->service,
-					  "nfs4acl_xattr",
-					  "denymissingspecial", false);
-
-	if (!nfs4acl_smb4acl2nfs4acl(frame, smbacl, &nfs4acl,
-				     denymissingspecial)) {
-		DEBUG(0, ("Failed to convert smb ACL to nfs4 ACL.\n"));
-		TALLOC_FREE(frame);
-		return false;
-	}
-
-	blob = nfs4acl_acl2blob(frame, nfs4acl);
-	if (!blob.data) {
-		DEBUG(0, ("Failed to convert ACL to linear blob for xattr\n"));
-		TALLOC_FREE(frame);
-		errno = EINVAL;
-		return false;
-	}
-	ret = SMB_VFS_NEXT_SETXATTR(handle, smb_fname, NFS4ACL_NDR_XATTR_NAME,
-				    blob.data, blob.length, 0);
-	if (ret != 0) {
-		DEBUG(0, ("can't store acl in xattr: %s\n", strerror(errno)));
-	}
-	TALLOC_FREE(frame);
-	return ret == 0;
-}
-
 /* call-back function processing the NT acl -> NFS4 acl using NFSv4 conv. */
 static bool nfs4acl_xattr_fset_smb4acl(vfs_handle_struct *handle,
 				       files_struct *fsp,
@@ -338,194 +301,47 @@ static bool nfs4acl_xattr_fset_smb4acl(vfs_handle_struct *handle,
 	return ret == 0;
 }
 
-static struct SMB4ACL_T *nfs4acls_defaultacl(TALLOC_CTX *mem_ctx)
+static NTSTATUS nfs4acl_xattr_default_sd(
+	struct vfs_handle_struct *handle,
+	const struct smb_filename *smb_fname,
+	TALLOC_CTX *mem_ctx,
+	struct security_descriptor **sd)
 {
-	struct SMB4ACL_T *pacl = NULL;
-	struct SMB4ACE_T *pace;
-	SMB_ACE4PROP_T ace = {
-		.flags = SMB_ACE4_ID_SPECIAL,
-		.who = {
-			.id = SMB_ACE4_WHO_EVERYONE,
-		},
-		.aceType = SMB_ACE4_ACCESS_ALLOWED_ACE_TYPE,
-		.aceFlags = 0,
-		.aceMask = SMB_ACE4_ALL_MASKS,
-	};
-
-	DEBUG(10, ("Building default full access acl\n"));
-
-	pacl = smb_create_smb4acl(mem_ctx);
-	if (pacl == NULL) {
-		DEBUG(0, ("talloc failed\n"));
-		errno = ENOMEM;
-		return NULL;
-	}
-
-	pace = smb_add_ace4(pacl, &ace);
-	if (pace == NULL) {
-		DEBUG(0, ("talloc failed\n"));
-		TALLOC_FREE(pacl);
-		errno = ENOMEM;
-		return NULL;
-	}
-
-	return pacl;
-}
-
-/*
- * Because there is no good way to guarantee that a new xattr will be
- * created on file creation there might be no acl xattr on a file when
- * trying to read the acl. In this case the acl xattr will get
- * constructed at that time from the parent acl.
- * If the parent ACL doesn't have an xattr either the call will
- * recurse to the next parent directory until the share root is
- * reached. If the share root doesn't contain an ACL xattr either a
- * default ACL will be used.
- * Also a default ACL will be set if a non inheriting ACL is encountered.
- *
- * Basic algorithm:
- *   read acl xattr blob
- *   if acl xattr blob doesn't exist
- *     stat current directory to know if it's a file or directory
- *     read acl xattr blob from parent dir
- *     acl xattr blob to smb nfs4 acl
- *     calculate inherited smb nfs4 acl
- *     without inheritance use default smb nfs4 acl
- *     smb nfs4 acl to acl xattr blob
- *     set acl xattr blob
- *     return smb nfs4 acl
- *   else
- *     acl xattr blob to smb nfs4 acl
- *
- * Todo: Really use mem_ctx after fixing interface of nfs4_acls
- */
-static struct SMB4ACL_T *nfs4acls_inheritacl(vfs_handle_struct *handle,
-	const struct smb_filename *smb_fname_in,
-	TALLOC_CTX *mem_ctx)
-{
-	char *parent_dir = NULL;
-	struct SMB4ACL_T *pparentacl = NULL;
-	struct SMB4ACL_T *pchildacl = NULL;
-	struct SMB4ACE_T *pace;
-	SMB_ACE4PROP_T ace;
-	bool isdir;
-	struct smb_filename *smb_fname = NULL;
-	struct smb_filename *smb_fname_parent = NULL;
-	NTSTATUS status;
+	struct nfs4acl_config *config = NULL;
+	enum default_acl_style default_acl_style;
+	mode_t required_mode;
+	SMB_STRUCT_STAT sbuf = smb_fname->st;
 	int ret;
-	TALLOC_CTX *frame = talloc_stackframe();
 
-	DEBUG(10, ("nfs4acls_inheritacl invoked for %s\n",
-			smb_fname_in->base_name));
-	smb_fname = cp_smb_filename_nostream(frame, smb_fname_in);
-	if (smb_fname == NULL) {
-		TALLOC_FREE(frame);
-		errno = ENOMEM;
-		return NULL;
-	}
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct nfs4acl_config,
+				return NT_STATUS_INTERNAL_ERROR);
 
-	ret = SMB_VFS_STAT(handle->conn, smb_fname);
-	if (ret == -1) {
-		DEBUG(0,("nfs4acls_inheritacl: failed to stat "
-			 "directory %s. Error was %s\n",
-			 smb_fname_str_dbg(smb_fname),
-			 strerror(errno)));
-		TALLOC_FREE(frame);
-		return NULL;
-	}
-	isdir = S_ISDIR(smb_fname->st.st_ex_mode);
+	default_acl_style = config->default_acl_style;
 
-	if (!parent_dirname(talloc_tos(),
-			    smb_fname->base_name,
-			    &parent_dir,
-			    NULL)) {
-		TALLOC_FREE(frame);
-		errno = ENOMEM;
-		return NULL;
-	}
-
-	smb_fname_parent = synthetic_smb_fname(talloc_tos(),
-				parent_dir,
-				NULL,
-				NULL,
-				0);
-	if (smb_fname_parent == NULL) {
-		TALLOC_FREE(frame);
-		errno = ENOMEM;
-		return NULL;
-	}
-
-	status = nfs4_get_nfs4_acl(handle, frame, smb_fname_parent,
-					&pparentacl);
-	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)
-	    && strncmp(parent_dir, ".", 2) != 0) {
-		pparentacl = nfs4acls_inheritacl(handle,
-						smb_fname_parent,
-						frame);
-	}
-	else if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
-		pparentacl = nfs4acls_defaultacl(frame);
-
-	}
-	else if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(frame);
-		return NULL;
-	}
-
-	pchildacl = smb_create_smb4acl(mem_ctx);
-	if (pchildacl == NULL) {
-		DEBUG(0, ("talloc failed\n"));
-		TALLOC_FREE(frame);
-		errno = ENOMEM;
-		return NULL;
-	}
-
-	for (pace = smb_first_ace4(pparentacl); pace != NULL;
-	     pace = smb_next_ace4(pace)) {
-		struct SMB4ACE_T *pchildace;
-		ace = *smb_get_ace4(pace);
-		if ((isdir && !(ace.aceFlags & SMB_ACE4_DIRECTORY_INHERIT_ACE)) ||
-		    (!isdir && !(ace.aceFlags & SMB_ACE4_FILE_INHERIT_ACE))) {
-			DEBUG(10, ("non inheriting ace type: %d, iflags: %x, "
-				   "flags: %x, mask: %x, who: %d\n",
-				   ace.aceType, ace.flags, ace.aceFlags,
-				   ace.aceMask, ace.who.id));
-			continue;
-		}
-		DEBUG(10, ("inheriting ace type: %d, iflags: %x, "
-			   "flags: %x, mask: %x, who: %d\n",
-			   ace.aceType, ace.flags, ace.aceFlags,
-			   ace.aceMask, ace.who.id));
-		ace.aceFlags |= SMB_ACE4_INHERITED_ACE;
-		if (ace.aceFlags & SMB_ACE4_INHERIT_ONLY_ACE) {
-			ace.aceFlags &= ~SMB_ACE4_INHERIT_ONLY_ACE;
-		}
-		if (ace.aceFlags & SMB_ACE4_NO_PROPAGATE_INHERIT_ACE) {
-			ace.aceFlags &= ~SMB_ACE4_FILE_INHERIT_ACE;
-			ace.aceFlags &= ~SMB_ACE4_DIRECTORY_INHERIT_ACE;
-			ace.aceFlags &= ~SMB_ACE4_NO_PROPAGATE_INHERIT_ACE;
-		}
-		pchildace = smb_add_ace4(pchildacl, &ace);
-		if (pchildace == NULL) {
-			DEBUG(0, ("talloc failed\n"));
-			TALLOC_FREE(frame);
-			errno = ENOMEM;
-			return NULL;
+	if (!VALID_STAT(sbuf)) {
+		ret = vfs_stat_smb_basename(handle->conn,
+					    smb_fname,
+					    &sbuf);
+		if (ret != 0) {
+			return map_nt_error_from_unix(errno);
 		}
 	}
 
-	/* Set a default ACL if we didn't inherit anything. */
-	if (smb_first_ace4(pchildacl) == NULL) {
-		TALLOC_FREE(pchildacl);
-		pchildacl = nfs4acls_defaultacl(mem_ctx);
+	if (S_ISDIR(sbuf.st_ex_mode)) {
+		required_mode = 0777;
+	} else {
+		required_mode = 0666;
+	}
+	if ((sbuf.st_ex_mode & required_mode) != required_mode) {
+		default_acl_style = DEFAULT_ACL_POSIX;
 	}
 
-	/* store the returned ACL to get it directly in the
-	   future and avoid dynamic inheritance behavior. */
-	nfs4acl_xattr_set_smb4acl(handle, smb_fname, pchildacl);
-
-	TALLOC_FREE(frame);
-	return pchildacl;
+	return make_default_filesystem_acl(mem_ctx,
+					   default_acl_style,
+					   smb_fname->base_name,
+					   &sbuf,
+					   sd);
 }
 
 static NTSTATUS nfs4acl_xattr_fget_nt_acl(struct vfs_handle_struct *handle,
@@ -540,10 +356,11 @@ static NTSTATUS nfs4acl_xattr_fget_nt_acl(struct vfs_handle_struct *handle,
 
 	status = nfs4_fget_nfs4_acl(handle, frame, fsp, &pacl);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
-		pacl = nfs4acls_inheritacl(handle, fsp->fsp_name,
-					   frame);
+		TALLOC_FREE(frame);
+		return nfs4acl_xattr_default_sd(
+			handle, fsp->fsp_name, mem_ctx, ppdesc);
 	}
-	else if (!NT_STATUS_IS_OK(status)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
 		return status;
 	}
@@ -566,9 +383,11 @@ static NTSTATUS nfs4acl_xattr_get_nt_acl(struct vfs_handle_struct *handle,
 
 	status = nfs4_get_nfs4_acl(handle, frame, smb_fname, &pacl);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
-		pacl = nfs4acls_inheritacl(handle, smb_fname, frame);
+		TALLOC_FREE(frame);
+		return nfs4acl_xattr_default_sd(
+			handle,	smb_fname, mem_ctx, ppdesc);
 	}
-	else if (!NT_STATUS_IS_OK(status)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
 		return status;
 	}
@@ -665,6 +484,24 @@ static int nfs4acl_connect(struct vfs_handle_struct *handle,
 
 	SMB_VFS_HANDLE_SET_DATA(handle, config, NULL, struct nfs4acl_config,
 				return -1);
+
+	/*
+	 * Ensure we have the parameters correct if we're using this module.
+	 */
+	DBG_NOTICE("Setting 'inherit acls = true', "
+		   "'dos filemode = true', "
+		   "'force unknown acl user = true', "
+		   "'create mask = 0666', "
+		   "'directory mask = 0777' and "
+		   "'store dos attributes = yes' "
+		   "for service [%s]\n", service);
+
+	lp_do_parameter(SNUM(handle->conn), "inherit acls", "true");
+	lp_do_parameter(SNUM(handle->conn), "dos filemode", "true");
+	lp_do_parameter(SNUM(handle->conn), "force unknown acl user", "true");
+	lp_do_parameter(SNUM(handle->conn), "create mask", "0666");
+	lp_do_parameter(SNUM(handle->conn), "directory mask", "0777");
+	lp_do_parameter(SNUM(handle->conn), "store dos attributes", "yes");
 
 	return 0;
 }
