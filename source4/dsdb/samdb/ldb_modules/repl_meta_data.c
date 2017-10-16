@@ -5256,7 +5256,7 @@ static int replmd_replicated_apply_search_for_parent_callback(struct ldb_request
 	{
 		struct ldb_message *parent_msg = ares->message;
 		struct ldb_message *msg = ar->objs->objects[ar->index_current].msg;
-		struct ldb_dn *parent_dn;
+		struct ldb_dn *parent_dn = NULL;
 		int comp_num;
 
 		if (!ldb_msg_check_string_attribute(msg, "isDeleted", "TRUE")
