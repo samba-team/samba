@@ -3844,7 +3844,7 @@ static int replmd_delete_internals(struct ldb_module *module, struct ldb_request
 {
 	int ret = LDB_ERR_OTHER;
 	bool retb, disallow_move_on_delete;
-	struct ldb_dn *old_dn, *new_dn;
+	struct ldb_dn *old_dn = NULL, *new_dn = NULL;
 	const char *rdn_name;
 	const struct ldb_val *rdn_value, *new_rdn_value;
 	struct GUID guid;
@@ -4056,11 +4056,13 @@ static int replmd_delete_internals(struct ldb_module *module, struct ldb_request
 	guid = samdb_result_guid(old_msg, "objectGUID");
 
 	if (deletion_state == OBJECT_NOT_DELETED) {
-		/* Add a formatted child */
-		retb = ldb_dn_add_child_fmt(new_dn, "%s=%s\\0ADEL:%s",
-					    rdn_name,
-					    ldb_dn_escape_value(tmp_ctx, *rdn_value),
-					    GUID_string(tmp_ctx, &guid));
+		struct ldb_val deleted_child_rdn_val;
+		struct GUID_txt_buf guid_str;
+		const char *four_char_prefix = "DEL:";
+
+		GUID_buf_string(&guid, &guid_str);
+
+		retb = ldb_dn_add_child_fmt(new_dn, "X=Y");
 		if (!retb) {
 			ldb_asprintf_errstring(ldb, __location__
 					       ": Unable to add a formatted child to dn: %s",
@@ -4068,6 +4070,56 @@ static int replmd_delete_internals(struct ldb_module *module, struct ldb_request
 			talloc_free(tmp_ctx);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
+
+
+		deleted_child_rdn_val = ldb_val_dup(tmp_ctx, rdn_value);
+
+		/*
+		 * sizeof(guid_str.buf) will always be longer than
+		 * strlen(guid_str.buf) but we allocate using this and
+		 * waste the trailing bytes to avoid scaring folks
+		 * with memcpy() using strlen() below
+		 */
+
+		deleted_child_rdn_val.data
+			= talloc_realloc(tmp_ctx, deleted_child_rdn_val.data,
+					 uint8_t,
+					 rdn_value->length + 5
+					 + sizeof(guid_str.buf));
+		if (!deleted_child_rdn_val.data) {
+			ldb_asprintf_errstring(ldb, __location__
+					       ": Unable to add a formatted child to dn: %s",
+					       ldb_dn_get_linearized(new_dn));
+			talloc_free(tmp_ctx);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+		deleted_child_rdn_val.length =
+			rdn_value->length + 5
+			+ strlen(guid_str.buf);
+
+		SMB_ASSERT(deleted_child_rdn_val.length <
+			   talloc_get_size(deleted_child_rdn_val.data));
+
+		/*
+		 * talloc won't allocate more than 256MB so we can't
+		 * overflow but just to be sure
+		 */
+		if (deleted_child_rdn_val.length < rdn_value->length) {
+			talloc_free(tmp_ctx);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+		deleted_child_rdn_val.data[rdn_value->length] = 0x0a;
+		memcpy(&deleted_child_rdn_val.data[rdn_value->length + 1],
+		       four_char_prefix, 4);
+		memcpy(&deleted_child_rdn_val.data[rdn_value->length + 5],
+		       guid_str.buf,
+		       sizeof(guid_str.buf));
+
+		/* Now set the value into the RDN, without parsing it */
+		ldb_dn_set_component(new_dn, 0, rdn_name,
+				     deleted_child_rdn_val);
 
 		ret = ldb_msg_add_string(msg, "isDeleted", "TRUE");
 		if (ret != LDB_SUCCESS) {
