@@ -71,7 +71,7 @@
 	against Netatalk AFP sharing modes by setting
 	<command>fruit:locking = netatalk</command>.</para>
 
-	<para>This module is not stackable other then described in
+	<para>This module is not stackable other than described in
 	this manpage.</para>
 
 </refsect1>
