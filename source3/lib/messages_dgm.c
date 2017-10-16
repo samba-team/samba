@@ -1562,55 +1562,30 @@ int messaging_dgm_cleanup(pid_t pid)
 	return 0;
 }
 
-int messaging_dgm_wipe(void)
+static int messaging_dgm_wipe_fn(pid_t pid, void *private_data)
 {
-	struct messaging_dgm_context *ctx = global_dgm_context;
-	DIR *msgdir;
-	struct dirent *dp;
-	pid_t our_pid = getpid();
+	pid_t *our_pid = (pid_t *)private_data;
 	int ret;
 
-	if (ctx == NULL) {
-		return ENOTCONN;
+	if (pid == *our_pid) {
+		/*
+		 * fcntl(F_GETLK) will succeed for ourselves, we hold
+		 * that lock ourselves.
+		 */
+		return 0;
 	}
 
-	messaging_dgm_validate(ctx);
+	ret = messaging_dgm_cleanup(pid);
+	DEBUG(10, ("messaging_dgm_cleanup(%lu) returned %s\n",
+		   (unsigned long)pid, ret ? strerror(ret) : "ok"));
 
-	/*
-	 * We scan the socket directory and not the lock directory. Otherwise
-	 * we would race against messaging_dgm_lockfile_create's open(O_CREAT)
-	 * and fcntl(SETLK).
-	 */
+	return 0;
+}
 
-	msgdir = opendir(ctx->socket_dir.buf);
-	if (msgdir == NULL) {
-		return errno;
-	}
-
-	while ((dp = readdir(msgdir)) != NULL) {
-		unsigned long pid;
-
-		pid = strtoul(dp->d_name, NULL, 10);
-		if (pid == 0) {
-			/*
-			 * . and .. and other malformed entries
-			 */
-			continue;
-		}
-		if ((pid_t)pid == our_pid) {
-			/*
-			 * fcntl(F_GETLK) will succeed for ourselves, we hold
-			 * that lock ourselves.
-			 */
-			continue;
-		}
-
-		ret = messaging_dgm_cleanup(pid);
-		DEBUG(10, ("messaging_dgm_cleanup(%lu) returned %s\n",
-			   pid, ret ? strerror(ret) : "ok"));
-	}
-	closedir(msgdir);
-
+int messaging_dgm_wipe(void)
+{
+	pid_t pid = getpid();
+	messaging_dgm_forall(messaging_dgm_wipe_fn, &pid);
 	return 0;
 }
 
