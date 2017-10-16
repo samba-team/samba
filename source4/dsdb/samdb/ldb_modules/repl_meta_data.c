@@ -4531,7 +4531,16 @@ static int replmd_make_prefix_child_dn(TALLOC_CTX *tmp_ctx,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-
+	/*
+	 * TODO: Per MS-ADTS 3.1.1.5.5 Delete Operation
+	 * we should truncate this value to ensure the RDN is not more than 255 chars.
+	 *
+	 * However we MS-ADTS 3.1.1.5.1.2 Naming Constraints indicates that:
+	 *
+	 * "Naming constraints are not enforced for replicated
+	 * updates." so this is safe and we don't have to work out not
+	 * splitting a UTF8 char right now.
+	 */
 	deleted_child_rdn_val = ldb_val_dup(tmp_ctx, rdn_value);
 
 	/*
