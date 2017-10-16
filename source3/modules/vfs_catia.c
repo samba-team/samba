@@ -141,7 +141,7 @@ static NTSTATUS catia_string_replace_allocate(connection_struct *conn,
 
 	if (!init_mappings(conn, &selected)) {
 		/* No mappings found. Just use the old name */
-		*mapped_name = talloc_strdup(NULL, name_in);
+		*mapped_name = talloc_strdup(talloc_tos(), name_in);
 		if (!*mapped_name) {
 			errno = ENOMEM;
 			return NT_STATUS_NO_MEMORY;
