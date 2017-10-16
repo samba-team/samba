@@ -4507,41 +4507,7 @@ static bool replmd_replPropertyMetaData1_new_should_be_taken(uint32_t dsdb_repl_
 
 
 /*
-  form a conflict DN
- */
-static struct ldb_dn *replmd_conflict_dn(TALLOC_CTX *mem_ctx, struct ldb_dn *dn, struct GUID *guid)
-{
-	const struct ldb_val *rdn_val;
-	const char *rdn_name;
-	struct ldb_dn *new_dn;
-
-	rdn_val = ldb_dn_get_rdn_val(dn);
-	rdn_name = ldb_dn_get_rdn_name(dn);
-	if (!rdn_val || !rdn_name) {
-		return NULL;
-	}
-
-	new_dn = ldb_dn_copy(mem_ctx, dn);
-	if (!new_dn) {
-		return NULL;
-	}
-
-	if (!ldb_dn_remove_child_components(new_dn, 1)) {
-		return NULL;
-	}
-
-	if (!ldb_dn_add_child_fmt(new_dn, "%s=%s\\0ACNF:%s",
-				  rdn_name,
-				  ldb_dn_escape_value(new_dn, *rdn_val),
-				  GUID_string(new_dn, guid))) {
-		return NULL;
-	}
-
-	return new_dn;
-}
-
-/*
-  form a deleted DN
+  form a DN for a deleted (DEL:) or conflict (CNF:) DN
  */
 static int replmd_make_prefix_child_dn(TALLOC_CTX *tmp_ctx,
 				       struct ldb_context *ldb,
@@ -4953,7 +4919,9 @@ static int replmd_op_possible_conflict_callback(struct ldb_request *req, struct 
 				 ldb_dn_get_linearized(conflict_dn)));
 			goto failed;
 		}
-		new_dn = replmd_conflict_dn(req, conflict_dn, &guid);
+		new_dn = replmd_conflict_dn(req,
+					    ldb_module_get_ctx(ar->module),
+					    conflict_dn, &guid);
 		if (new_dn == NULL) {
 			DEBUG(0,(__location__ ": Failed to form conflict DN for %s\n",
 				 ldb_dn_get_linearized(conflict_dn)));
@@ -4978,7 +4946,9 @@ static int replmd_op_possible_conflict_callback(struct ldb_request *req, struct 
 			goto failed;
 		}
 
-		new_dn = replmd_conflict_dn(req, conflict_dn, &guid);
+		new_dn = replmd_conflict_dn(req,
+					    ldb_module_get_ctx(ar->module),
+					    conflict_dn, &guid);
 		if (new_dn == NULL) {
 			DEBUG(0,(__location__ ": Failed to form conflict DN for %s\n",
 				 ldb_dn_get_linearized(conflict_dn)));
@@ -5580,7 +5550,9 @@ static int replmd_replicated_handle_rename(struct replmd_replicated_request *ar,
 
 	if (rename_incoming_record) {
 
-		new_dn = replmd_conflict_dn(msg, msg->dn,
+		new_dn = replmd_conflict_dn(msg,
+					    ldb_module_get_ctx(ar->module),
+					    msg->dn,
 					    &ar->objs->objects[ar->index_current].object_guid);
 		if (new_dn == NULL) {
 			ldb_asprintf_errstring(ldb_module_get_ctx(ar->module),
@@ -5616,7 +5588,9 @@ static int replmd_replicated_handle_rename(struct replmd_replicated_request *ar,
 		goto failed;
 	}
 
-	new_dn = replmd_conflict_dn(tmp_ctx, conflict_dn, &guid);
+	new_dn = replmd_conflict_dn(tmp_ctx,
+				    ldb_module_get_ctx(ar->module),
+				    conflict_dn, &guid);
 	if (new_dn == NULL) {
 		DEBUG(0,(__location__ ": Failed to form conflict DN for %s\n",
 			 ldb_dn_get_linearized(conflict_dn)));
