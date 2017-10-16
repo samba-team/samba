@@ -331,18 +331,6 @@ static bool nfs4acl_xattr_fset_smb4acl(vfs_handle_struct *handle,
 	return ret == 0;
 }
 
-/* nfs4_set_nt_acl()
- * set the local file's acls obtaining it in NT form
- * using the NFSv4 format conversion
- */
-static NTSTATUS nfs4_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
-			   uint32_t security_info_sent,
-			   const struct security_descriptor *psd)
-{
-	return smb_set_nt_acl_nfs4(handle, fsp, NULL, security_info_sent, psd,
-			nfs4acl_xattr_fset_smb4acl);
-}
-
 static struct SMB4ACL_T *nfs4acls_defaultacl(TALLOC_CTX *mem_ctx)
 {
 	struct SMB4ACL_T *pacl = NULL;
@@ -590,7 +578,8 @@ static NTSTATUS nfs4acl_xattr_fset_nt_acl(vfs_handle_struct *handle,
 			 uint32_t security_info_sent,
 			 const struct security_descriptor *psd)
 {
-	return nfs4_set_nt_acl(handle, fsp, security_info_sent, psd);
+	return smb_set_nt_acl_nfs4(handle, fsp, NULL, security_info_sent,
+				   psd,	nfs4acl_xattr_fset_smb4acl);
 }
 
 /*
