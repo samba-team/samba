@@ -40,6 +40,7 @@ smb.conf changes
 
   Parameter Name                     Description             Default
   --------------                     -----------             -------
+  oplock contention limit            Removed
 
 NT4-style replication based net commands removed
 ================================================

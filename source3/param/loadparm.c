@@ -168,7 +168,6 @@ static struct loadparm_service sDefault =
 	.max_connections = 0,
 	.default_case = CASE_LOWER,
 	.printing = DEFAULT_PRINTING,
-	.oplock_contention_limit = 2,
 	.csc_policy = 0,
 	.block_size = 1024,
 	.dfree_cache_time = 0,

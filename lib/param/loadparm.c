@@ -2935,8 +2935,6 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 
 	lpcfg_do_global_parameter(lp_ctx, "blocking locks", "yes");
 
-	lpcfg_do_global_parameter(lp_ctx, "oplock contention limit", "2");
-
 	lpcfg_do_global_parameter(lp_ctx, "load printers", "yes");
 
 	lpcfg_do_global_parameter(lp_ctx, "idmap cache time", "604800");
