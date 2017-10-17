@@ -806,7 +806,7 @@ int posix_sys_acl_blob_get_fd(vfs_handle_struct *handle,
 			      char **blob_description,
 			      DATA_BLOB *blob);
 
-enum default_acl_style {DEFAULT_ACL_POSIX, DEFAULT_ACL_WINDOWS};
+enum default_acl_style {DEFAULT_ACL_POSIX, DEFAULT_ACL_WINDOWS, DEFAULT_ACL_EVERYONE};
 
 const struct enum_list *get_default_acl_style_list(void);
 

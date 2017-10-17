@@ -5037,9 +5037,61 @@ static NTSTATUS make_default_acl_windows(TALLOC_CTX *ctx,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS make_default_acl_everyone(TALLOC_CTX *ctx,
+					  const char *name,
+					  SMB_STRUCT_STAT *psbuf,
+					  struct security_descriptor **ppdesc)
+{
+	struct dom_sid owner_sid, group_sid;
+	size_t size = 0;
+	struct security_ace aces[1];
+	mode_t mode = psbuf->st_ex_mode;
+	struct security_acl *new_dacl = NULL;
+	int idx = 0;
+
+	DBG_DEBUG("file [%s] mode [0%o]\n", name, (int)mode);
+
+	uid_to_sid(&owner_sid, psbuf->st_ex_uid);
+	gid_to_sid(&group_sid, psbuf->st_ex_gid);
+
+	/*
+	 * We provide one ACEs: full access for everyone
+	 */
+
+	init_sec_ace(&aces[idx],
+		     &global_sid_World,
+		     SEC_ACE_TYPE_ACCESS_ALLOWED,
+		     SEC_RIGHTS_FILE_ALL,
+		     0);
+	idx++;
+
+	new_dacl = make_sec_acl(ctx,
+				NT4_ACL_REVISION,
+				idx,
+				aces);
+
+	if (!new_dacl) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	*ppdesc = make_sec_desc(ctx,
+				SECURITY_DESCRIPTOR_REVISION_1,
+				SEC_DESC_SELF_RELATIVE|SEC_DESC_DACL_PRESENT,
+				&owner_sid,
+				&group_sid,
+				NULL,
+				new_dacl,
+				&size);
+	if (!*ppdesc) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	return NT_STATUS_OK;
+}
+
 static const struct enum_list default_acl_style_list[] = {
 	{DEFAULT_ACL_POSIX,	"posix"},
-	{DEFAULT_ACL_WINDOWS,	"windows"}
+	{DEFAULT_ACL_WINDOWS,	"windows"},
+	{DEFAULT_ACL_EVERYONE,	"everyone"},
 };
 
 const struct enum_list *get_default_acl_style_list(void)
@@ -5063,6 +5115,10 @@ NTSTATUS make_default_filesystem_acl(
 
 	case DEFAULT_ACL_WINDOWS:
 		status =  make_default_acl_windows(ctx, name, psbuf, ppdesc);
+		break;
+
+	case DEFAULT_ACL_EVERYONE:
+		status =  make_default_acl_everyone(ctx, name, psbuf, ppdesc);
 		break;
 
 	default:

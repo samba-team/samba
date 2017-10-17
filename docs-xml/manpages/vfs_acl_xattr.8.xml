@@ -93,7 +93,7 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>acl_xattr:default acl style = [posix|windows]</term>
+		<term>acl_xattr:default acl style = [posix|windows|everyone]</term>
 		<listitem>
 		<para>
 		This parameter determines the type of ACL that is synthesized in
@@ -110,6 +110,10 @@
 		When set to <emphasis>windows</emphasis>, an ACL is synthesized
 		the same way Windows does it, only including permissions for the
 		owner and <emphasis>NT Authority\SYSTEM</emphasis>.
+		</para>
+		<para>
+		When set to <emphasis>everyone</emphasis>, an ACL is synthesized
+		giving full permissions to everyone (S-1-1-0).
 		</para>
 		<para>
 		The default for this option is <emphasis>posix</emphasis>.
