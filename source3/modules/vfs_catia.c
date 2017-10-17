@@ -2217,6 +2217,7 @@ static NTSTATUS catia_readdir_attr(struct vfs_handle_struct *handle,
 	status = SMB_VFS_NEXT_READDIR_ATTR(handle, smb_fname, mem_ctx, pattr_data);
 
 	TALLOC_FREE(smb_fname);
+	TALLOC_FREE(fname);
 	return status;
 }
 
