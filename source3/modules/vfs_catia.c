@@ -53,7 +53,7 @@ struct catia_cache {
 	char *base_fname;
 };
 
-struct share_mapping_entry *srt_head = NULL;
+static struct share_mapping_entry *srt_head = NULL;
 
 static struct share_mapping_entry *get_srt(connection_struct *conn,
 					   struct share_mapping_entry **global)
