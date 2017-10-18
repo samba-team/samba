@@ -354,14 +354,15 @@ again:
 		status = cli_rpc_pipe_open_bind_schannel(
 			cli, &ndr_table_netlogon, transport, creds_ctx,
 			&rpccli);
-		if (!NT_STATUS_IS_OK(status)) {
-			DBG_DEBUG("cli_rpc_pipe_open_bind_schannel "
-				  "failed: %s\n", nt_errstr(status));
-		}
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_ACCESS_DENIED)) {
 			DBG_DEBUG("Retrying with serverauthenticate\n");
 			TALLOC_FREE(lck);
 			goto again;
+		}
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_DEBUG("cli_rpc_pipe_open_bind_schannel "
+				  "failed: %s\n", nt_errstr(status));
+			goto fail;
 		}
 		goto done;
 	}
@@ -399,6 +400,7 @@ again:
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_DEBUG("cli_rpc_pipe_open_noauth_transport "
 				  "failed: %s\n", nt_errstr(status));
+			goto fail;
 		}
 		goto done;
 	}
@@ -434,6 +436,7 @@ again:
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_DEBUG("cli_rpc_pipe_open_noauth_transport "
 				  "failed: %s\n", nt_errstr(status));
+			goto fail;
 		}
 		goto done;
 	}
