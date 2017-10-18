@@ -368,7 +368,7 @@ again:
 
 	if (cli_credentials_is_anonymous(trust_creds)) {
 		DBG_WARNING("get_trust_credential for %s only gave anonymous,"
-			    "unable to make get NETLOGON credentials\n",
+			    "unable to negotiate NETLOGON credentials\n",
 			    netlogon_creds_cli_debug_string(
 				    creds_ctx, frame));
 		status = NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
