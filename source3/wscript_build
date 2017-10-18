@@ -412,7 +412,6 @@ bld.SAMBA3_SUBSYSTEM('samba3core',
                           lib/idmap_cache.c
                           lib/util_ea.c
                           lib/background.c
-                          lib/cleanupdb.c
                           ''',
                    deps='''
                         samba3util
@@ -670,6 +669,7 @@ bld.SAMBA3_LIBRARY('smbd_base',
                           printing/printspoolss.c
                           lib/sessionid_tdb.c
                           lib/conn_tdb.c
+                          lib/cleanupdb.c
                           smbd/fake_file.c
                           smbd/quotas.c
                           smbd/ntquotas.c
