@@ -373,19 +373,45 @@ struct ctdb_rec_data_old *ctdb_marshall_loop_next(
 */
 void ctdb_canonicalize_ip(const ctdb_sock_addr *ip, ctdb_sock_addr *cip)
 {
-	char prefix[12] = { 0,0,0,0,0,0,0,0,0,0,0xff,0xff };
+	ZERO_STRUCTP(cip);
 
-	memcpy(cip, ip, sizeof (*cip));
-
-	if ( (ip->sa.sa_family == AF_INET6)
-	&& !memcmp(&ip->ip6.sin6_addr, prefix, 12)) {
-		memset(cip, 0, sizeof(*cip));
+	if (ip->sa.sa_family == AF_INET6) {
+		const char prefix[12] = { 0,0,0,0,0,0,0,0,0,0,0xff,0xff };
+		if (memcmp(&ip->ip6.sin6_addr, prefix, sizeof(prefix)) == 0) {
+			/* Copy IPv4-mapped IPv6 addresses as IPv4 */
+			cip->ip.sin_family = AF_INET;
 #ifdef HAVE_SOCK_SIN_LEN
-		cip->ip.sin_len = sizeof(*cip);
+			cip->ip.sin_len = sizeof(ctdb_sock_addr);
 #endif
+			cip->ip.sin_port   = ip->ip6.sin6_port;
+			memcpy(&cip->ip.sin_addr,
+			       &ip->ip6.sin6_addr.s6_addr[12],
+			       sizeof(cip->ip.sin_addr));
+		} else {
+			cip->ip6.sin6_family = AF_INET6;
+#ifdef HAVE_SOCK_SIN_LEN
+			cip->ip6.sin_len = sizeof(ctdb_sock_addr);
+#endif
+			cip->ip6.sin6_port   = ip->ip6.sin6_port;
+			memcpy(&cip->ip6.sin6_addr,
+			       &ip->ip6.sin6_addr,
+			       sizeof(cip->ip6.sin6_addr));
+		}
+
+		return;
+	}
+
+	if (ip->sa.sa_family == AF_INET) {
 		cip->ip.sin_family = AF_INET;
-		cip->ip.sin_port   = ip->ip6.sin6_port;
-		memcpy(&cip->ip.sin_addr, &ip->ip6.sin6_addr.s6_addr[12], 4);
+#ifdef HAVE_SOCK_SIN_LEN
+		cip->ip.sin_len = sizeof(ctdb_sock_addr);
+#endif
+		cip->ip.sin_port = ip->ip.sin_port;
+		memcpy(&cip->ip.sin_addr,
+		       &ip->ip.sin_addr,
+		       sizeof(ip->ip.sin_addr));
+
+		return;
 	}
 }
 
