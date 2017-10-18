@@ -217,9 +217,30 @@ bld.SAMBA3_MODULE('vfs_zfsacl',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_zfsacl'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_zfsacl'))
 
+xdr_buf_hack = 'sed -e "s@^\([ \t]*register int32_t \*buf\);@\\1 = buf;@"'
+
+bld.SAMBA_GENERATOR('nfs41acl-xdr-c',
+                    source='nfs41acl.x',
+                    target='nfs41acl_xdr.c',
+                    rule='rpcgen -c ${SRC} | ' + xdr_buf_hack + ' > ${TGT}')
+
+bld.SAMBA_GENERATOR('nfs41acl-h',
+                    source='nfs41acl.x',
+                    target='nfs41acl.h',
+                    rule='rpcgen -h ${SRC} > ${TGT}')
+
+vfs_nfs4acl_xattr_source = '''
+                           vfs_nfs4acl_xattr.c
+                           nfs4acl_xattr_ndr.c
+                           nfs4acl_xattr_xdr.c
+                           '''
+
+if bld.CONFIG_SET("HAVE_RPC_XDR_H"):
+    vfs_nfs4acl_xattr_source += ' nfs41acl_xdr.c'
+
 bld.SAMBA3_MODULE('vfs_nfs4acl_xattr',
                   subsystem='vfs',
-                  source='vfs_nfs4acl_xattr.c nfs4acl_xattr_ndr.c',
+                  source=vfs_nfs4acl_xattr_source,
                   deps='NFS4_ACLS sunacl NDR_NFS4ACL',
                   init_function='',
                   internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_nfs4acl_xattr'),

@@ -34,6 +34,7 @@
 #include "librpc/gen_ndr/ndr_nfs4acl.h"
 #include "nfs4acl_xattr.h"
 #include "nfs4acl_xattr_ndr.h"
+#include "nfs4acl_xattr_xdr.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
@@ -224,6 +225,9 @@ static NTSTATUS nfs4acl_blob_to_smb4(struct vfs_handle_struct *handle,
 	case NFS4ACL_ENCODING_NDR:
 		status = nfs4acl_ndr_blob_to_smb4(handle, mem_ctx, blob, smb4acl);
 		break;
+	case NFS4ACL_ENCODING_XDR:
+		status = nfs4acl_xdr_blob_to_smb4(handle, mem_ctx, blob, smb4acl);
+		break;
 	default:
 		status = NT_STATUS_INTERNAL_ERROR;
 		break;
@@ -318,6 +322,10 @@ static bool nfs4acl_smb4acl_set_fn(vfs_handle_struct *handle,
 	switch (config->encoding) {
 	case NFS4ACL_ENCODING_NDR:
 		status = nfs4acl_smb4acl_to_ndr_blob(handle, talloc_tos(),
+						     smb4acl, &blob);
+		break;
+	case NFS4ACL_ENCODING_XDR:
+		status = nfs4acl_smb4acl_to_xdr_blob(handle, talloc_tos(),
 						     smb4acl, &blob);
 		break;
 	default:
@@ -515,6 +523,9 @@ static int nfs4acl_connect(struct vfs_handle_struct *handle,
 	config->encoding = (enum nfs4acl_encoding)enumval;
 
 	switch (config->encoding) {
+	case NFS4ACL_ENCODING_XDR:
+		default_xattr_name = NFS4ACL_XDR_XATTR_NAME;
+		break;
 	case NFS4ACL_ENCODING_NDR:
 	default:
 		default_xattr_name = NFS4ACL_NDR_XATTR_NAME;

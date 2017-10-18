@@ -1664,6 +1664,8 @@ main() {
         Logs.info("building with Spotlight support")
         default_static_modules.extend(TO_LIST('rpc_mdssvc_module'))
 
+    conf.CHECK_HEADERS('rpc/xdr.h')
+
     forced_static_modules.extend(TO_LIST('auth_builtin auth_sam auth_winbind'))
     default_static_modules.extend(TO_LIST('''pdb_smbpasswd pdb_tdbsam
                                       auth_unix
