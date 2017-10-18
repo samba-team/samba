@@ -569,13 +569,6 @@ int create_pipe_sock(const char *socket_dir,
 int create_tcpip_socket(const struct sockaddr_storage *ifss, uint16_t *port);
 const char *get_mydnsfullname(void);
 bool is_myname_or_ipaddr(const char *s);
-struct tevent_req *getaddrinfo_send(TALLOC_CTX *mem_ctx,
-				    struct tevent_context *ev,
-				    struct fncall_context *ctx,
-				    const char *node,
-				    const char *service,
-				    const struct addrinfo *hints);
-int getaddrinfo_recv(struct tevent_req *req, struct addrinfo **res);
 int poll_one_fd(int fd, int events, int timeout, int *revents);
 int poll_intr_one_fd(int fd, int events, int timeout, int *revents);
 
