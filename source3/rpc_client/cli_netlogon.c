@@ -292,6 +292,7 @@ NTSTATUS rpccli_connect_netlogon(
 	bool do_serverauth;
 	struct rpc_pipe_client *rpccli;
 	NTSTATUS status;
+	bool retry = false;
 
 again:
 
@@ -354,9 +355,10 @@ again:
 		status = cli_rpc_pipe_open_bind_schannel(
 			cli, &ndr_table_netlogon, transport, creds_ctx,
 			&rpccli);
-		if (NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_ACCESS_DENIED)) {
+		if (!retry && NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_ACCESS_DENIED)) {
 			DBG_DEBUG("Retrying with serverauthenticate\n");
 			TALLOC_FREE(lck);
+			retry = true;
 			goto again;
 		}
 		if (!NT_STATUS_IS_OK(status)) {
