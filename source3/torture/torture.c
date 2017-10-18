@@ -10863,59 +10863,6 @@ static bool run_wbclient_multi_ping(int dummy)
 	return result;
 }
 
-static void getaddrinfo_finished(struct tevent_req *req)
-{
-	char *name = (char *)tevent_req_callback_data_void(req);
-	struct addrinfo *ainfo;
-	int res;
-
-	res = getaddrinfo_recv(req, &ainfo);
-	if (res != 0) {
-		d_printf("gai(%s) returned %s\n", name, gai_strerror(res));
-		return;
-	}
-	d_printf("gai(%s) succeeded\n", name);
-	freeaddrinfo(ainfo);
-}
-
-static bool run_getaddrinfo_send(int dummy)
-{
-	TALLOC_CTX *frame = talloc_stackframe();
-	struct fncall_context *ctx;
-	struct tevent_context *ev;
-	bool result = false;
-	const char *names[4] = { "www.samba.org", "notfound.samba.org",
-				 "www.slashdot.org", "heise.de" };
-	struct tevent_req *reqs[4];
-	int i;
-
-	ev = samba_tevent_context_init(frame);
-	if (ev == NULL) {
-		goto fail;
-	}
-
-	ctx = fncall_context_init(frame, 4);
-
-	for (i=0; i<ARRAY_SIZE(names); i++) {
-		reqs[i] = getaddrinfo_send(frame, ev, ctx, names[i], NULL,
-					   NULL);
-		if (reqs[i] == NULL) {
-			goto fail;
-		}
-		tevent_req_set_callback(reqs[i], getaddrinfo_finished,
-					discard_const_p(void, names[i]));
-	}
-
-	for (i=0; i<ARRAY_SIZE(reqs); i++) {
-		tevent_loop_once(ev);
-	}
-
-	result = true;
-fail:
-	TALLOC_FREE(frame);
-	return result;
-}
-
 static bool dbtrans_inc(struct db_context *db)
 {
 	struct db_record *rec;
@@ -11576,7 +11523,6 @@ static struct {
 	{ "NTTRANS-CREATE", run_nttrans_create, 0},
 	{ "NTTRANS-FSCTL", run_nttrans_fsctl, 0},
 	{ "CLI_ECHO", run_cli_echo, 0},
-	{ "GETADDRINFO", run_getaddrinfo_send, 0},
 	{ "TLDAP", run_tldap },
 	{ "STREAMERROR", run_streamerror },
 	{ "NOTIFY-BENCH", run_notify_bench },
