@@ -1414,6 +1414,69 @@ EOF
     fi
 }
 
+# Test smbclient utimes command
+test_utimes()
+{
+    tmpfile=$PREFIX/smbclient_interactive_prompt_commands
+
+    cat > $tmpfile <<EOF
+del utimes_test
+put ${SMBCLIENT} utimes_test
+allinfo utimes_test
+utimes utimes_test -1 17:01:01-05:10:20 -1 -1
+allinfo utimes_test
+del utimes_test
+quit
+EOF
+    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/tmp -I $SERVER_IP $ADDARGS < $tmpfile 2>&1'
+    eval echo "$cmd"
+    out=`eval $cmd`
+    ret=$?
+
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed utimes test with output $ret"
+	false
+	return
+    fi
+
+    # Now, we should have 2 identical create_time, write_time, change_time
+    # values, but one access_time of Jan  1 05:10:20 AM.
+    out=`echo "$out" | sort | uniq`
+    num_create=`echo "$out" | grep 'create_time:' | wc -l`
+    num_access=`echo "$out" | grep 'access_time:' | wc -l`
+    num_write=`echo "$out" | grep 'write_time:' | wc -l`
+    num_change=`echo "$out" | grep 'change_time:' | wc -l`
+    if [ "$num_create" != "1" ]; then
+        echo "failed - should only get one create_time $out"
+        false
+        return
+    fi
+    if [ "$num_access" != "2" ]; then
+        echo "failed - should get two access_time $out"
+        false
+        return
+    fi
+    if [ "$num_write" != "1" ]; then
+        echo "failed - should only get one write_time $out"
+        false
+        return
+    fi
+    if [ "$num_change" != "1" ]; then
+        echo "failed - should only get one change_time $out"
+        false
+        return
+    fi
+    echo "$out" | grep 'access_time:.*Sun Jan.*1 05:10:20 AM 2017'
+    ret=$?
+    if [ $ret -ne 0 ] ; then
+       echo "$out"
+       echo "failed - should get access_time:    Sun Jan  1 05:10:20 AM 2017"
+       false
+       return
+    fi
+}
+
 
 test_server_os_message()
 {
@@ -1562,6 +1625,10 @@ testit "server os message" \
 
 testit "setmode test" \
     test_setmode || \
+    failed=`expr $failed + 1`
+
+testit "utimes" \
+    test_utimes || \
     failed=`expr $failed + 1`
 
 testit "rm -rf $LOGDIR" \
