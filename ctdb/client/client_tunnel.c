@@ -155,7 +155,7 @@ static void ctdb_tunnel_handler(uint64_t tunnel_id, TDB_DATA data,
 		return;
 	}
 
-	if (data.dsize != sizeof(tunnel_data)) {
+	if (data.dsize != sizeof(struct ctdb_tunnel_data)) {
 		return;
 	}
 
@@ -362,7 +362,7 @@ void ctdb_client_req_tunnel(struct ctdb_client_context *client,
 	} else if (tunnel->flags & CTDB_TUNNEL_FLAG_REQUEST) {
 
 		TDB_DATA data = {
-			.dsize = sizeof(&tunnel_data),
+			.dsize = sizeof(struct ctdb_tunnel_data),
 			.dptr = (uint8_t *)&tunnel_data,
 		};
 
