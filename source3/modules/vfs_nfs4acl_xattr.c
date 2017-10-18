@@ -29,6 +29,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "smbd/smbd.h"
+#include "libcli/security/security_token.h"
 #include "nfs4_acls.h"
 #include "librpc/gen_ndr/ndr_nfs4acl.h"
 #include "nfs4acl_xattr.h"
@@ -41,6 +42,55 @@ static const struct enum_list nfs4acl_encoding[] = {
 	{NFS4ACL_ENCODING_NDR, "ndr"},
 	{NFS4ACL_ENCODING_XDR, "xdr"},
 };
+
+/*
+ * Check if someone changed the POSIX mode, for files we expect 0666, for
+ * directories 0777. Discard the ACL blob if the mode is different.
+ */
+static bool nfs4acl_validate_blob(vfs_handle_struct *handle,
+				  const struct smb_filename *smb_fname)
+{
+	struct nfs4acl_config *config = NULL;
+	mode_t expected_mode;
+	int saved_errno = 0;
+	int ret;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct nfs4acl_config,
+				return false);
+
+	if (!VALID_STAT(smb_fname->st)) {
+		/* might be a create */
+		return true;
+	}
+
+	if (S_ISDIR(smb_fname->st.st_ex_mode)) {
+		expected_mode = 0777;
+	} else {
+		expected_mode = 0666;
+	}
+	if ((smb_fname->st.st_ex_mode & expected_mode) == expected_mode) {
+		return true;
+	}
+
+	become_root();
+	ret = SMB_VFS_NEXT_REMOVEXATTR(handle,
+				       smb_fname,
+				       config->xattr_name);
+	if (ret != 0) {
+		saved_errno = errno;
+	}
+	unbecome_root();
+	if (saved_errno != 0) {
+		errno = saved_errno;
+	}
+	if (ret != 0 && errno != ENOATTR) {
+		DBG_ERR("Removing NFS4 xattr failed: %s\n", strerror(errno));
+		return false;
+	}
+
+	return true;
+}
 
 static NTSTATUS nfs4acl_get_blob(struct vfs_handle_struct *handle,
 				 files_struct *fsp,
@@ -68,6 +118,11 @@ static NTSTATUS nfs4acl_get_blob(struct vfs_handle_struct *handle,
 		smb_fname = fsp->fsp_name;
 	}
 	if (smb_fname == NULL) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	ok = nfs4acl_validate_blob(handle, smb_fname);
+	if (!ok) {
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
@@ -304,17 +359,68 @@ static NTSTATUS nfs4acl_xattr_fset_nt_acl(vfs_handle_struct *handle,
 			 const struct security_descriptor *psd)
 {
 	struct nfs4acl_config *config = NULL;
+	mode_t existing_mode;
+	mode_t expected_mode;
+	mode_t restored_mode;
+	NTSTATUS status;
+	int ret;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
 				struct nfs4acl_config,
 				return NT_STATUS_INTERNAL_ERROR);
 
-	return smb_set_nt_acl_nfs4(handle,
-				   fsp,
-				   &config->nfs4_params,
-				   security_info_sent,
-				   psd,
-				   nfs4acl_smb4acl_set_fn);
+	if (!VALID_STAT(fsp->fsp_name->st)) {
+		DBG_ERR("Invalid stat info on [%s]\n", fsp_str_dbg(fsp));
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	existing_mode = fsp->fsp_name->st.st_ex_mode;
+	if (S_ISDIR(existing_mode)) {
+		expected_mode = 0777;
+	} else {
+		expected_mode = 0666;
+	}
+	if ((existing_mode & expected_mode) != expected_mode) {
+		int saved_errno = 0;
+
+		restored_mode = existing_mode | expected_mode;
+
+		become_root();
+		if (fsp->fh->fd != -1) {
+			ret = SMB_VFS_NEXT_FCHMOD(handle,
+						  fsp,
+						  restored_mode);
+		} else {
+			ret = SMB_VFS_NEXT_CHMOD(handle,
+						 fsp->fsp_name,
+						 restored_mode);
+		}
+		if (ret != 0) {
+			saved_errno = errno;
+		}
+		unbecome_root();
+		if (saved_errno != 0) {
+			errno = saved_errno;
+		}
+		if (ret != 0) {
+			DBG_ERR("Resetting POSIX mode on [%s] from [0%o]: %s\n",
+				fsp_str_dbg(fsp), existing_mode,
+				strerror(errno));
+			return map_nt_error_from_unix(errno);
+		}
+	}
+
+	status = smb_set_nt_acl_nfs4(handle,
+				     fsp,
+				     &config->nfs4_params,
+				     security_info_sent,
+				     psd,
+				     nfs4acl_smb4acl_set_fn);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return NT_STATUS_OK;
 }
 
 static int nfs4acl_connect(struct vfs_handle_struct *handle,
