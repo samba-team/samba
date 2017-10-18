@@ -1024,16 +1024,6 @@ char *get_pass( const char *prompt, bool stdin_get);
 struct AvahiPoll *tevent_avahi_poll(TALLOC_CTX *mem_ctx,
 				    struct tevent_context *ev);
 
-/* The following definitions come from lib/fncall.c */
-
-struct fncall_context *fncall_context_init(TALLOC_CTX *mem_ctx,
-					   int max_threads);
-struct tevent_req *fncall_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-			       struct fncall_context *ctx,
-			       void (*fn)(void *private_data),
-			       void *private_data);
-int fncall_recv(struct tevent_req *req, int *perr);
-
 /* The following definitions come from libsmb/smbsock_connect.c */
 
 struct tevent_req *smbsock_connect_send(TALLOC_CTX *mem_ctx,

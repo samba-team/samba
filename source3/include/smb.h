@@ -125,7 +125,6 @@ struct uuid;
 struct named_mutex;
 struct wb_context;
 struct rpc_cli_smbd_conn;
-struct fncall_context;
 
 /* the basic packet size, assuming no words or bytes */
 #define smb_size 39
