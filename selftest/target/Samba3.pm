@@ -1890,6 +1890,14 @@ sub provision($$$$$$$$$)
 	nfs4acl_xattr:encoding = xdr
 	nfs4acl_xattr:version = 40
 
+[nfs4acl_xdr_41]
+	path = $shrdir
+	comment = smb username is [%U]
+	vfs objects = nfs4acl_xattr xattr_tdb
+	nfs4:mode = simple
+	nfs4acl_xattr:encoding = xdr
+	nfs4acl_xattr:version = 41
+
 [xcopy_share]
 	path = $shrdir
 	comment = smb username is [%U]

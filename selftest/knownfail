@@ -40,6 +40,9 @@
 ^samba3.raw.acls nfs4acl_xattr-xdr-40.nulldacl\(nt4_dc\)
 ^samba3.raw.acls nfs4acl_xattr-xdr-40.inherit_creator_owner\(nt4_dc\)
 ^samba3.raw.acls nfs4acl_xattr-xdr-40.inherit_creator_group\(nt4_dc\)
+^samba3.raw.acls nfs4acl_xattr-xdr-41.create_owner_file\(nt4_dc\)
+^samba3.raw.acls nfs4acl_xattr-xdr-41.create_owner_dir\(nt4_dc\)
+^samba3.raw.acls nfs4acl_xattr-xdr-41.nulldacl\(nt4_dc\)
 ^samba3.base.delete.deltest16a
 ^samba3.base.delete.deltest17a
 ^samba3.unix.whoami anonymous connection.whoami\(ad_dc\) # We need to resolve if we should be including SID_NT_WORLD and SID_NT_NETWORK in this token
