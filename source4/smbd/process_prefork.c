@@ -24,6 +24,8 @@
 */
 
 #include "includes.h"
+#include <unistd.h>
+
 #include "lib/events/events.h"
 #include "lib/messaging/messaging.h"
 #include "lib/socket/socket.h"
