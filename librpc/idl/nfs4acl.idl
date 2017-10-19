@@ -19,6 +19,10 @@ interface nfs4acl_interface
 	const char *NFS4ACL_XATTR_GROUP_WHO	 = "GROUP@";
 	const char *NFS4ACL_XATTR_EVERYONE_WHO   = "EVERYONE@";
 
+	const uint8 ACL4_XATTR_VERSION_40      = 0x00;
+	const uint8 ACL4_XATTR_VERSION_41      = 0x01;
+	const uint8 ACL4_XATTR_VERSION_DEFAULT = ACL4_XATTR_VERSION_40;
+
 	/* these structures use the same bit values and other constants as
 	   in security.idl */
 	typedef [flag(NDR_BIG_ENDIAN)] struct {
