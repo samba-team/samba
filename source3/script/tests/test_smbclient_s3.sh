@@ -1442,11 +1442,11 @@ EOF
 
     # Now, we should have 2 identical create_time, write_time, change_time
     # values, but one access_time of Jan  1 05:10:20 AM.
-    out=`echo "$out" | sort | uniq`
-    num_create=`echo "$out" | grep 'create_time:' | wc -l`
-    num_access=`echo "$out" | grep 'access_time:' | wc -l`
-    num_write=`echo "$out" | grep 'write_time:' | wc -l`
-    num_change=`echo "$out" | grep 'change_time:' | wc -l`
+    out_sorted=`echo "$out" | sort | uniq`
+    num_create=`echo "$out_sorted" | grep -c 'create_time:'`
+    num_access=`echo "$out_sorted" | grep -c 'access_time:'`
+    num_write=`echo "$out_sorted" | grep -c 'write_time:'`
+    num_change=`echo "$out_sorted" | grep -c 'change_time:'`
     if [ "$num_create" != "1" ]; then
         echo "failed - should only get one create_time $out"
         false
@@ -1467,11 +1467,15 @@ EOF
         false
         return
     fi
-    echo "$out" | grep 'access_time:.*Sun Jan.*1 05:10:20 AM 2017'
+
+    # This could be: Sun Jan  1 05:10:20 AM 2017
+    # or           : Sun Jan  1 05:10:20 2017 CET
+    echo "$out" | grep 'access_time:.*Sun Jan.*1 05:10:20 .*2017.*'
     ret=$?
     if [ $ret -ne 0 ] ; then
        echo "$out"
-       echo "failed - should get access_time:    Sun Jan  1 05:10:20 AM 2017"
+       echo
+       echo "failed - should get access_time:    Sun Jan  1 05:10:20 [AM] 2017"
        false
        return
     fi
