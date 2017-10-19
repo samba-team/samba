@@ -263,6 +263,21 @@ static void standard_accept_connection(
 	proc_ctx = talloc_get_type_abort(process_context,
 					 struct process_context);
 
+	if (proc_ctx->inhibit_fork_on_accept) {
+		pid = getpid();
+		/*
+		 * Service does not support forking a new process on a
+		 * new connection, either it's maintaining shared
+		 * state or the overhead of forking a new process is a
+		 * significant fraction of the response time.
+		 */
+		talloc_steal(private_data, sock2);
+		new_conn(ev, lp_ctx, sock2,
+			 cluster_id(pid, socket_get_fd(sock2)), private_data,
+			 process_context);
+		return;
+	}
+
 	state = setup_standard_child_pipe(ev, NULL);
 	if (state == NULL) {
 		return;
