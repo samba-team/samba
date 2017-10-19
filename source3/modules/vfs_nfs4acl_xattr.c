@@ -44,8 +44,9 @@ static const struct enum_list nfs4acl_encoding[] = {
 static struct nfs4acl *nfs4acl_blob2acl(DATA_BLOB *blob, TALLOC_CTX *mem_ctx)
 {
 	enum ndr_err_code ndr_err;
-	struct nfs4acl *acl = talloc(mem_ctx, struct nfs4acl);
-	if (!acl) {
+	struct nfs4acl *acl = talloc_zero(mem_ctx, struct nfs4acl);
+
+	if (acl == NULL) {
 		errno = ENOMEM;
 		return NULL;
 	}
@@ -54,8 +55,7 @@ static struct nfs4acl *nfs4acl_blob2acl(DATA_BLOB *blob, TALLOC_CTX *mem_ctx)
 		(ndr_pull_flags_fn_t)ndr_pull_nfs4acl);
 
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DEBUG(0, ("ndr_pull_acl_t failed: %s\n",
-			  ndr_errstr(ndr_err)));
+		DBG_ERR("ndr_pull_acl_t failed: %s\n", ndr_errstr(ndr_err));
 		TALLOC_FREE(acl);
 		return NULL;
 	}
@@ -66,12 +66,12 @@ static DATA_BLOB nfs4acl_acl2blob(TALLOC_CTX *mem_ctx, struct nfs4acl *acl)
 {
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
+
 	ndr_err = ndr_push_struct_blob(&blob, mem_ctx, acl,
 		(ndr_push_flags_fn_t)ndr_push_nfs4acl);
 
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DEBUG(0, ("ndr_push_acl_t failed: %s\n",
-			  ndr_errstr(ndr_err)));
+		DBG_ERR("ndr_push_acl_t failed: %s\n", ndr_errstr(ndr_err));
 		return data_blob_null;
 	}
 	return blob;
@@ -79,26 +79,33 @@ static DATA_BLOB nfs4acl_acl2blob(TALLOC_CTX *mem_ctx, struct nfs4acl *acl)
 
 static NTSTATUS nfs4_get_nfs4_acl_common(TALLOC_CTX *mem_ctx,
 					 DATA_BLOB *blob,
-					 struct SMB4ACL_T **ppacl)
+					 struct SMB4ACL_T **_smb4acl)
 {
-	int i;
 	struct nfs4acl *nfs4acl = NULL;
-	struct SMB4ACL_T *pacl = NULL;
+	struct SMB4ACL_T *smb4acl = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
-	nfs4acl = nfs4acl_blob2acl(blob, frame);
+	int i;
 
-	/* create SMB4ACL data */
-	if((pacl = smb_create_smb4acl(mem_ctx)) == NULL) {
+	nfs4acl = nfs4acl_blob2acl(blob, frame);
+	if (nfs4acl == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	smb4acl = smb_create_smb4acl(mem_ctx);
+	if (smb4acl == NULL) {
 		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
-	for(i=0; i<nfs4acl->a_count; i++) {
+
+	for (i = 0; i < nfs4acl->a_count; i++) {
 		SMB_ACE4PROP_T aceprop;
 
 		aceprop.aceType  = (uint32_t) nfs4acl->ace[i].e_type;
 		aceprop.aceFlags = (uint32_t) nfs4acl->ace[i].e_flags;
 		aceprop.aceMask  = (uint32_t) nfs4acl->ace[i].e_mask;
 		aceprop.who.id   = (uint32_t) nfs4acl->ace[i].e_id;
+
 		if (!strcmp(nfs4acl->ace[i].e_who,
 			    NFS4ACL_XATTR_OWNER_WHO)) {
 			aceprop.flags = SMB_ACE4_ID_SPECIAL;
@@ -114,13 +121,13 @@ static NTSTATUS nfs4_get_nfs4_acl_common(TALLOC_CTX *mem_ctx,
 		} else {
 			aceprop.flags = 0;
 		}
-		if(smb_add_ace4(pacl, &aceprop) == NULL) {
+		if (smb_add_ace4(smb4acl, &aceprop) == NULL) {
 			TALLOC_FREE(frame);
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
 
-	*ppacl = pacl;
+	*_smb4acl = smb4acl;
 	TALLOC_FREE(frame);
 	return NT_STATUS_OK;
 }
@@ -188,17 +195,16 @@ static NTSTATUS nfs4_get_nfs4_acl(vfs_handle_struct *handle,
 
 static bool nfs4acl_smb4acl2nfs4acl(TALLOC_CTX *mem_ctx,
 				    struct SMB4ACL_T *smbacl,
-				    struct nfs4acl **pnfs4acl,
+				    struct nfs4acl **_nfs4acl,
 				    bool denymissingspecial)
 {
-	struct nfs4acl *nfs4acl;
-	struct SMB4ACE_T *smbace;
+	struct nfs4acl *nfs4acl = NULL;
+	struct SMB4ACE_T *smbace = NULL;
 	bool have_special_id = false;
 	int i;
 
-	/* allocate the field of NFS4 aces */
 	nfs4acl = talloc_zero(mem_ctx, struct nfs4acl);
-	if(nfs4acl == NULL) {
+	if (nfs4acl == NULL) {
 		errno = ENOMEM;
 		return false;
 	}
@@ -207,16 +213,16 @@ static bool nfs4acl_smb4acl2nfs4acl(TALLOC_CTX *mem_ctx,
 
 	nfs4acl->ace = talloc_zero_array(nfs4acl, struct nfs4ace,
 					 nfs4acl->a_count);
-	if(nfs4acl->ace == NULL) {
+	if (nfs4acl->ace == NULL) {
 		TALLOC_FREE(nfs4acl);
 		errno = ENOMEM;
 		return false;
 	}
 
-	/* handle all aces */
-	for(smbace = smb_first_ace4(smbacl), i = 0;
-			smbace!=NULL;
-			smbace = smb_next_ace4(smbace), i++) {
+	for (smbace = smb_first_ace4(smbacl), i = 0;
+	     smbace != NULL;
+	     smbace = smb_next_ace4(smbace), i++)
+	{
 		SMB_ACE4PROP_T *aceprop = smb_get_ace4(smbace);
 
 		nfs4acl->ace[i].e_type        = aceprop->aceType;
@@ -238,8 +244,8 @@ static bool nfs4acl_smb4acl2nfs4acl(TALLOC_CTX *mem_ctx,
 					NFS4ACL_XATTR_GROUP_WHO;
 				break;
 			default:
-				DEBUG(8, ("unsupported special_id %d\n", \
-					aceprop->who.special_id));
+				DBG_DEBUG("unsupported special_id %d\n",
+					  aceprop->who.special_id);
 				continue; /* don't add it !!! */
 			}
 			have_special_id = true;
@@ -256,7 +262,7 @@ static bool nfs4acl_smb4acl2nfs4acl(TALLOC_CTX *mem_ctx,
 
 	SMB_ASSERT(i == nfs4acl->a_count);
 
-	*pnfs4acl = nfs4acl;
+	*_nfs4acl = nfs4acl;
 	return true;
 }
 
@@ -284,7 +290,7 @@ static bool nfs4acl_xattr_fset_smb4acl(vfs_handle_struct *handle,
 
 	blob = nfs4acl_acl2blob(frame, nfs4acl);
 	if (!blob.data) {
-		DEBUG(0, ("Failed to convert ACL to linear blob for xattr\n"));
+		DBG_ERR("Failed to convert ACL to linear blob for xattr\n");
 		TALLOC_FREE(frame);
 		errno = EINVAL;
 		return false;
@@ -295,7 +301,7 @@ static bool nfs4acl_xattr_fset_smb4acl(vfs_handle_struct *handle,
 	ret = SMB_VFS_NEXT_FSETXATTR(handle, fsp, NFS4ACL_NDR_XATTR_NAME,
 				     blob.data, blob.length, 0);
 	if (ret != 0) {
-		DEBUG(0, ("can't store acl in xattr: %s\n", strerror(errno)));
+		DBG_ERR("can't store acl in xattr: %s\n", strerror(errno));
 	}
 	TALLOC_FREE(frame);
 	return ret == 0;
@@ -348,17 +354,17 @@ static NTSTATUS nfs4acl_xattr_fget_nt_acl(struct vfs_handle_struct *handle,
 				   struct files_struct *fsp,
 				   uint32_t security_info,
 				   TALLOC_CTX *mem_ctx,
-				   struct security_descriptor **ppdesc)
+				   struct security_descriptor **sd)
 {
-	struct SMB4ACL_T *pacl;
-	NTSTATUS status;
+	struct SMB4ACL_T *smb4acl = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
+	NTSTATUS status;
 
-	status = nfs4_fget_nfs4_acl(handle, frame, fsp, &pacl);
+	status = nfs4_fget_nfs4_acl(handle, frame, fsp, &smb4acl);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
 		TALLOC_FREE(frame);
 		return nfs4acl_xattr_default_sd(
-			handle, fsp->fsp_name, mem_ctx, ppdesc);
+			handle, fsp->fsp_name, mem_ctx, sd);
 	}
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
@@ -366,7 +372,7 @@ static NTSTATUS nfs4acl_xattr_fget_nt_acl(struct vfs_handle_struct *handle,
 	}
 
 	status = smb_fget_nt_acl_nfs4(fsp, NULL, security_info, mem_ctx,
-				      ppdesc, pacl);
+				      sd, smb4acl);
 	TALLOC_FREE(frame);
 	return status;
 }
@@ -375,17 +381,17 @@ static NTSTATUS nfs4acl_xattr_get_nt_acl(struct vfs_handle_struct *handle,
 				  const struct smb_filename *smb_fname,
 				  uint32_t security_info,
 				  TALLOC_CTX *mem_ctx,
-				  struct security_descriptor **ppdesc)
+				  struct security_descriptor **sd)
 {
-	struct SMB4ACL_T *pacl;
-	NTSTATUS status;
+	struct SMB4ACL_T *smb4acl = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
+	NTSTATUS status;
 
-	status = nfs4_get_nfs4_acl(handle, frame, smb_fname, &pacl);
+	status = nfs4_get_nfs4_acl(handle, frame, smb_fname, &smb4acl);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
 		TALLOC_FREE(frame);
 		return nfs4acl_xattr_default_sd(
-			handle,	smb_fname, mem_ctx, ppdesc);
+			handle,	smb_fname, mem_ctx, sd);
 	}
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
@@ -393,8 +399,8 @@ static NTSTATUS nfs4acl_xattr_get_nt_acl(struct vfs_handle_struct *handle,
 	}
 
 	status = smb_get_nt_acl_nfs4(handle->conn, smb_fname, NULL,
-				     security_info, mem_ctx, ppdesc,
-				     pacl);
+				     security_info, mem_ctx, sd,
+				     smb4acl);
 	TALLOC_FREE(frame);
 	return status;
 }
