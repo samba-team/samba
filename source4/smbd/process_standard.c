@@ -248,28 +248,25 @@ static void standard_accept_connection(
 	struct tevent_signal *se = NULL;
 	struct process_context *proc_ctx = NULL;
 
-	state = setup_standard_child_pipe(ev, NULL);
-	if (state == NULL) {
-		return;
-	}
 
 	/* accept an incoming connection. */
 	status = socket_accept(sock, &sock2);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("standard_accept_connection: accept: %s\n",
-			 nt_errstr(status)));
+			nt_errstr(status)));
 		/* this looks strange, but is correct. We need to throttle things until
 		   the system clears enough resources to handle this new socket */
 		sleep(1);
-		close(state->to_parent_fd);
-		state->to_parent_fd = -1;
-		TALLOC_FREE(state);
 		return;
 	}
 
 	proc_ctx = talloc_get_type_abort(process_context,
 					 struct process_context);
 
+	state = setup_standard_child_pipe(ev, NULL);
+	if (state == NULL) {
+		return;
+	}
 	pid = fork();
 
 	if (pid != 0) {
