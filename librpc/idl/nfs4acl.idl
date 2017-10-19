@@ -23,6 +23,11 @@ interface nfs4acl_interface
 	const uint8 ACL4_XATTR_VERSION_41      = 0x01;
 	const uint8 ACL4_XATTR_VERSION_DEFAULT = ACL4_XATTR_VERSION_40;
 
+	const uint8 ACL4_AUTO_INHERIT  = 0x01;
+	const uint8 ACL4_PROTECTED     = 0x02;
+	const uint8 ACL4_DEFAULTED     = 0x04;
+	const uint8 ACL4_WRITE_THROUGH = 0x40;
+
 	/* these structures use the same bit values and other constants as
 	   in security.idl */
 	typedef [flag(NDR_BIG_ENDIAN)] struct {
