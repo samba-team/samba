@@ -3799,7 +3799,8 @@ static int replmd_delete_remove_link(struct ldb_module *module,
 		ret = dsdb_module_search_dn(module, tmp_ctx, &link_res,
 					    msg->dn, attrs,
 					    DSDB_FLAG_NEXT_MODULE |
-					    DSDB_SEARCH_SHOW_EXTENDED_DN,
+					    DSDB_SEARCH_SHOW_EXTENDED_DN |
+					    DSDB_SEARCH_SHOW_RECYCLED,
 					    parent);
 
 		if (ret != LDB_SUCCESS) {
