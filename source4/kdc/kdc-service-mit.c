@@ -58,7 +58,6 @@ static NTSTATUS startup_kpasswd_server(TALLOC_CTX *mem_ctx,
 				       struct loadparm_context *lp_ctx,
 				       struct interface *ifaces)
 {
-	const struct model_ops *model_ops;
 	int num_interfaces;
 	int i;
 	TALLOC_CTX *tmp_ctx;
@@ -92,7 +91,7 @@ static NTSTATUS startup_kpasswd_server(TALLOC_CTX *mem_ctx,
 
 		for (i = 0; wcard[i] != NULL; i++) {
 			status = kdc_add_socket(kdc,
-						model_ops,
+						kdc->task->model_ops,
 						"kpasswd",
 						wcard[i],
 						kpasswd_port,
@@ -116,7 +115,7 @@ static NTSTATUS startup_kpasswd_server(TALLOC_CTX *mem_ctx,
 		const char *address = talloc_strdup(tmp_ctx, iface_list_n_ip(ifaces, i));
 
 		status = kdc_add_socket(kdc,
-					model_ops,
+					kdc->task->model_ops,
 					"kpasswd",
 					address,
 					kpasswd_port,
