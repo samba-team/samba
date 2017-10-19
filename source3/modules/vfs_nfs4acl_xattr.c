@@ -9,6 +9,7 @@
  * Copyright (C) Tim Potter, 1999-2000
  * Copyright (C) Alexander Bokovoy, 2002
  * Copyright (C) Andrew Bartlett, 2002,2012
+ * Copyright (C) Ralph Boehme 2017
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,9 +31,15 @@
 #include "smbd/smbd.h"
 #include "nfs4_acls.h"
 #include "librpc/gen_ndr/ndr_nfs4acl.h"
+#include "nfs4acl_xattr.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
+
+static const struct enum_list nfs4acl_encoding[] = {
+	{NFS4ACL_ENCODING_NDR, "ndr"},
+	{NFS4ACL_ENCODING_XDR, "xdr"},
+};
 
 static struct nfs4acl *nfs4acl_blob2acl(DATA_BLOB *blob, TALLOC_CTX *mem_ctx)
 {
@@ -582,6 +589,86 @@ static NTSTATUS nfs4acl_xattr_fset_nt_acl(vfs_handle_struct *handle,
 				   psd,	nfs4acl_xattr_fset_smb4acl);
 }
 
+static int nfs4acl_connect(struct vfs_handle_struct *handle,
+			   const char *service,
+			   const char *user)
+{
+	struct nfs4acl_config *config = NULL;
+	const struct enum_list *default_acl_style_list = NULL;
+	const char *default_xattr_name = NULL;
+	int enumval;
+	unsigned nfs_version;
+	int ret;
+
+	default_acl_style_list = get_default_acl_style_list();
+
+	config = talloc_zero(handle->conn, struct nfs4acl_config);
+	if (config == NULL) {
+		DBG_ERR("talloc_zero() failed\n");
+		return -1;
+	}
+
+	ret = SMB_VFS_NEXT_CONNECT(handle, service, user);
+	if (ret < 0) {
+		TALLOC_FREE(config);
+		return ret;
+	}
+
+	ret = smbacl4_get_vfs_params(handle->conn, &config->nfs4_params);
+	if (ret < 0) {
+		TALLOC_FREE(config);
+		return ret;
+	}
+
+	enumval = lp_parm_enum(SNUM(handle->conn),
+			       "nfs4acl_xattr",
+			       "encoding",
+			       nfs4acl_encoding,
+			       NFS4ACL_ENCODING_NDR);
+	if (enumval == -1) {
+		DBG_ERR("Invalid \"nfs4acl_xattr:encoding\" parameter\n");
+		return -1;
+	}
+	config->encoding = (enum nfs4acl_encoding)enumval;
+
+	switch (config->encoding) {
+	case NFS4ACL_ENCODING_NDR:
+	default:
+		default_xattr_name = NFS4ACL_NDR_XATTR_NAME;
+		break;
+	}
+
+	nfs_version = (unsigned)lp_parm_int(SNUM(handle->conn),
+					    "nfs4acl_xattr",
+					    "version",
+					    40);
+	switch (nfs_version) {
+	case 40:
+		config->nfs_version = ACL4_XATTR_VERSION_40;
+		break;
+	default:
+		config->nfs_version = ACL4_XATTR_VERSION_DEFAULT;
+		break;
+	}
+
+	config->default_acl_style = lp_parm_enum(SNUM(handle->conn),
+						 "nfs4acl_xattr",
+						 "default acl style",
+						 default_acl_style_list,
+						 DEFAULT_ACL_EVERYONE);
+
+	config->xattr_name = lp_parm_talloc_string(config,
+						   SNUM(handle->conn),
+						   "nfs4acl_xattr",
+						   "xattr_name",
+						   default_xattr_name);
+
+	SMB_VFS_HANDLE_SET_DATA(handle, config, NULL, struct nfs4acl_config,
+				return -1);
+
+	return 0;
+}
+
 /*
    As long as Samba does not support an exiplicit method for a module
    to define conflicting vfs methods, we should override all conflicting
@@ -643,6 +730,7 @@ static int nfs4acl_xattr_fail__sys_acl_blob_get_fd(vfs_handle_struct *handle, fi
 /* VFS operations structure */
 
 static struct vfs_fn_pointers nfs4acl_xattr_fns = {
+	.connect_fn = nfs4acl_connect,
 	.fget_nt_acl_fn = nfs4acl_xattr_fget_nt_acl,
 	.get_nt_acl_fn = nfs4acl_xattr_get_nt_acl,
 	.fset_nt_acl_fn = nfs4acl_xattr_fset_nt_acl,
