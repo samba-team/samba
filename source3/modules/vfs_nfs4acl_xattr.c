@@ -643,6 +643,10 @@ static int nfs4acl_xattr_fail__sys_acl_blob_get_fd(vfs_handle_struct *handle, fi
 /* VFS operations structure */
 
 static struct vfs_fn_pointers nfs4acl_xattr_fns = {
+	.fget_nt_acl_fn = nfs4acl_xattr_fget_nt_acl,
+	.get_nt_acl_fn = nfs4acl_xattr_get_nt_acl,
+	.fset_nt_acl_fn = nfs4acl_xattr_fset_nt_acl,
+
 	.sys_acl_get_file_fn = nfs4acl_xattr_fail__sys_acl_get_file,
 	.sys_acl_get_fd_fn = nfs4acl_xattr_fail__sys_acl_get_fd,
 	.sys_acl_blob_get_file_fn = nfs4acl_xattr_fail__sys_acl_blob_get_file,
@@ -650,9 +654,6 @@ static struct vfs_fn_pointers nfs4acl_xattr_fns = {
 	.sys_acl_set_file_fn = nfs4acl_xattr_fail__sys_acl_set_file,
 	.sys_acl_set_fd_fn = nfs4acl_xattr_fail__sys_acl_set_fd,
 	.sys_acl_delete_def_file_fn = nfs4acl_xattr_fail__sys_acl_delete_def_file,
-	.fget_nt_acl_fn = nfs4acl_xattr_fget_nt_acl,
-	.get_nt_acl_fn = nfs4acl_xattr_get_nt_acl,
-	.fset_nt_acl_fn = nfs4acl_xattr_fset_nt_acl,
 };
 
 NTSTATUS vfs_nfs4acl_xattr_init(TALLOC_CTX *);
