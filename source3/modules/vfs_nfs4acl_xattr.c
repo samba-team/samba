@@ -135,7 +135,7 @@ static NTSTATUS nfs4_fget_nfs4_acl(vfs_handle_struct *handle, TALLOC_CTX *mem_ct
 			errno = ENOMEM;
 			return NT_STATUS_NO_MEMORY;
 		}
-		length = SMB_VFS_NEXT_FGETXATTR(handle, fsp, NFS4ACL_XATTR_NAME, blob.data, blob.length);
+		length = SMB_VFS_NEXT_FGETXATTR(handle, fsp, NFS4ACL_NDR_XATTR_NAME, blob.data, blob.length);
 		blob.length = length;
 	} while (length == -1 && errno == ERANGE);
 	if (length == -1) {
@@ -167,7 +167,7 @@ static NTSTATUS nfs4_get_nfs4_acl(vfs_handle_struct *handle,
 			return NT_STATUS_NO_MEMORY;
 		}
 		length = SMB_VFS_NEXT_GETXATTR(handle, smb_fname,
-				NFS4ACL_XATTR_NAME, blob.data, blob.length);
+				NFS4ACL_NDR_XATTR_NAME, blob.data, blob.length);
 		blob.length = length;
 	} while (length == -1 && errno == ERANGE);
 	if (length == -1) {
@@ -281,7 +281,7 @@ static bool nfs4acl_xattr_set_smb4acl(vfs_handle_struct *handle,
 		errno = EINVAL;
 		return false;
 	}
-	ret = SMB_VFS_NEXT_SETXATTR(handle, smb_fname, NFS4ACL_XATTR_NAME,
+	ret = SMB_VFS_NEXT_SETXATTR(handle, smb_fname, NFS4ACL_NDR_XATTR_NAME,
 				    blob.data, blob.length, 0);
 	if (ret != 0) {
 		DEBUG(0, ("can't store acl in xattr: %s\n", strerror(errno)));
@@ -322,7 +322,7 @@ static bool nfs4acl_xattr_fset_smb4acl(vfs_handle_struct *handle,
 	if (fsp->fh->fd == -1) {
 		DEBUG(0, ("Error: fsp->fh->fd == -1\n"));
 	}
-	ret = SMB_VFS_NEXT_FSETXATTR(handle, fsp, NFS4ACL_XATTR_NAME,
+	ret = SMB_VFS_NEXT_FSETXATTR(handle, fsp, NFS4ACL_NDR_XATTR_NAME,
 				     blob.data, blob.length, 0);
 	if (ret != 0) {
 		DEBUG(0, ("can't store acl in xattr: %s\n", strerror(errno)));
