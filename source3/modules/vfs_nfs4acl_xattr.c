@@ -355,6 +355,9 @@ static int nfs4acl_connect(struct vfs_handle_struct *handle,
 	case 40:
 		config->nfs_version = ACL4_XATTR_VERSION_40;
 		break;
+	case 41:
+		config->nfs_version = ACL4_XATTR_VERSION_41;
+		break;
 	default:
 		config->nfs_version = ACL4_XATTR_VERSION_DEFAULT;
 		break;

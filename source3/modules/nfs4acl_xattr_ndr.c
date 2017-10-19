@@ -73,6 +73,23 @@ static DATA_BLOB nfs4acl_acl2blob(TALLOC_CTX *mem_ctx, struct nfs4acl *acl)
 	return blob;
 }
 
+static uint16_t nfs4acl_to_smb4acl_flags(uint8_t nfs4acl_flags)
+{
+	uint16_t smb4acl_flags = SEC_DESC_SELF_RELATIVE;
+
+	if (nfs4acl_flags & ACL4_AUTO_INHERIT) {
+		smb4acl_flags |= SEC_DESC_DACL_AUTO_INHERITED;
+	}
+	if (nfs4acl_flags & ACL4_PROTECTED) {
+		smb4acl_flags |= SEC_DESC_DACL_PROTECTED;
+	}
+	if (nfs4acl_flags & ACL4_DEFAULTED) {
+		smb4acl_flags |= SEC_DESC_DACL_DEFAULTED;
+	}
+
+	return smb4acl_flags;
+}
+
 NTSTATUS nfs4acl_ndr_blob_to_smb4(struct vfs_handle_struct *handle,
 				  TALLOC_CTX *mem_ctx,
 				  DATA_BLOB *blob,
@@ -98,6 +115,15 @@ NTSTATUS nfs4acl_ndr_blob_to_smb4(struct vfs_handle_struct *handle,
 	if (smb4acl == NULL) {
 		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (config->nfs_version > ACL4_XATTR_VERSION_40 &&
+	    nfs4acl->a_version > ACL4_XATTR_VERSION_40)
+	{
+		uint16_t smb4acl_flags;
+
+		smb4acl_flags = nfs4acl_to_smb4acl_flags(nfs4acl->a_flags);
+		smbacl4_set_controlflags(smb4acl, smb4acl_flags);
 	}
 
 	for (i = 0; i < nfs4acl->a_count; i++) {
@@ -135,15 +161,38 @@ NTSTATUS nfs4acl_ndr_blob_to_smb4(struct vfs_handle_struct *handle,
 	return NT_STATUS_OK;
 }
 
-static bool nfs4acl_smb4acl2nfs4acl(TALLOC_CTX *mem_ctx,
+static uint8_t smb4acl_to_nfs4acl_flags(uint16_t smb4acl_flags)
+{
+	uint8_t flags = 0;
+
+	if (smb4acl_flags & SEC_DESC_DACL_AUTO_INHERITED) {
+		flags |= ACL4_AUTO_INHERIT;
+	}
+	if (smb4acl_flags & SEC_DESC_DACL_PROTECTED) {
+		flags |= ACL4_PROTECTED;
+	}
+	if (smb4acl_flags & SEC_DESC_DACL_DEFAULTED) {
+		flags |= ACL4_DEFAULTED;
+	}
+
+	return flags;
+}
+
+static bool nfs4acl_smb4acl2nfs4acl(vfs_handle_struct *handle,
+				    TALLOC_CTX *mem_ctx,
 				    struct SMB4ACL_T *smbacl,
 				    struct nfs4acl **_nfs4acl,
 				    bool denymissingspecial)
 {
+	struct nfs4acl_config *config = NULL;
 	struct nfs4acl *nfs4acl = NULL;
 	struct SMB4ACE_T *smbace = NULL;
 	bool have_special_id = false;
 	int i;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct nfs4acl_config,
+				return false);
 
 	nfs4acl = talloc_zero(mem_ctx, struct nfs4acl);
 	if (nfs4acl == NULL) {
@@ -159,6 +208,16 @@ static bool nfs4acl_smb4acl2nfs4acl(TALLOC_CTX *mem_ctx,
 		TALLOC_FREE(nfs4acl);
 		errno = ENOMEM;
 		return false;
+	}
+
+	nfs4acl->a_version = config->nfs_version;
+	if (nfs4acl->a_version > ACL4_XATTR_VERSION_40) {
+		uint16_t smb4acl_flags;
+		uint8_t flags;
+
+		smb4acl_flags = smbacl4_get_controlflags(smbacl);
+		flags = smb4acl_to_nfs4acl_flags(smb4acl_flags);
+		nfs4acl->a_flags = flags;
 	}
 
 	for (smbace = smb_first_ace4(smbacl), i = 0;
@@ -222,7 +281,7 @@ NTSTATUS nfs4acl_smb4acl_to_ndr_blob(vfs_handle_struct *handle,
 					  "nfs4acl_xattr",
 					  "denymissingspecial", false);
 
-	ok = nfs4acl_smb4acl2nfs4acl(talloc_tos(), smb4acl, &nfs4acl,
+	ok = nfs4acl_smb4acl2nfs4acl(handle, talloc_tos(), smb4acl, &nfs4acl,
 				     denymissingspecial);
 	if (!ok) {
 		DBG_ERR("Failed to convert smb ACL to nfs4 ACL.\n");
