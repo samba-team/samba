@@ -430,7 +430,7 @@ static int do_cd(const char *new_dir)
 	}
 	client_set_cur_dir(new_cd);
 
-	new_cd = clean_name(ctx, new_cd);
+	new_cd = client_clean_name(ctx, new_cd);
 	client_set_cur_dir(new_cd);
 
 	status = cli_resolve_path(ctx, "", popt_get_cmdline_auth_info(),
@@ -474,7 +474,7 @@ static int do_cd(const char *new_dir)
 			client_set_cur_dir(saved_dir);
 			goto out;
 		}
-		targetpath = clean_name(ctx, targetpath);
+		targetpath = client_clean_name(ctx, targetpath);
 		if (!targetpath) {
 			client_set_cur_dir(saved_dir);
 			goto out;
@@ -984,6 +984,11 @@ static int cmd_dir(void)
 		return 1;
 	}
 
+	mask = client_clean_name(ctx, mask);
+	if (mask == NULL) {
+		return 1;
+	}
+
 	if (showacls) {
 		/* cwd is only used if showacls is on */
 		client_set_cwd(client_get_cur_dir());
@@ -1035,6 +1040,14 @@ static int cmd_du(void)
 		}
 	} else {
 		mask = talloc_strdup(ctx, "*");
+	}
+	if (!mask) {
+		return 1;
+	}
+
+	mask = client_clean_name(ctx, mask);
+	if (mask == NULL) {
+		return 1;
 	}
 
 	status = do_list(mask, attribute, do_du, recurse, true);
@@ -1232,7 +1245,7 @@ static int cmd_get(void)
 	if (!rname) {
 		return 1;
 	}
-	rname = clean_name(ctx, rname);
+	rname = client_clean_name(ctx, rname);
 	if (!rname) {
 		return 1;
 	}
@@ -1298,6 +1311,10 @@ static NTSTATUS do_mget(struct cli_state *cli_state, struct file_info *finfo,
 		if (!rname) {
 			return NT_STATUS_NO_MEMORY;
 		}
+		rname = client_clean_name(ctx, rname);
+		if (rname == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
 		do_get(rname, finfo->name, false);
 		TALLOC_FREE(rname);
 		return NT_STATUS_OK;
@@ -1315,6 +1332,10 @@ static NTSTATUS do_mget(struct cli_state *cli_state, struct file_info *finfo,
 				finfo->name,
 				CLI_DIRSEP_STR);
 	if (!new_cd) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	new_cd = client_clean_name(ctx, new_cd);
+	if (new_cd == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 	client_set_cur_dir(new_cd);
@@ -1347,6 +1368,10 @@ static NTSTATUS do_mget(struct cli_state *cli_state, struct file_info *finfo,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	mget_mask = client_clean_name(ctx, mget_mask);
+	if (mget_mask == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 	status = do_list(mget_mask,
 			 (FILE_ATTRIBUTE_SYSTEM
 			  | FILE_ATTRIBUTE_HIDDEN
@@ -1416,7 +1441,7 @@ static int cmd_more(void)
 	if (!rname) {
 		return 1;
 	}
-	rname = clean_name(ctx,rname);
+	rname = client_clean_name(ctx,rname);
 	if (!rname) {
 		return 1;
 	}
@@ -1474,6 +1499,10 @@ static int cmd_mget(void)
 		if (!mget_mask) {
 			return 1;
 		}
+		mget_mask = client_clean_name(ctx, mget_mask);
+		if (mget_mask == NULL) {
+			return 1;
+		}
 		status = do_list(mget_mask, attribute, do_mget, false, true);
 		if (!NT_STATUS_IS_OK(status)) {
 			return 1;
@@ -1490,6 +1519,10 @@ static int cmd_mget(void)
 					"%s*",
 					client_get_cur_dir());
 		if (!mget_mask) {
+			return 1;
+		}
+		mget_mask = client_clean_name(ctx, mget_mask);
+		if (mget_mask == NULL) {
 			return 1;
 		}
 		status = do_list(mget_mask, attribute, do_mget, false, true);
@@ -1588,6 +1621,10 @@ static int cmd_mkdir(void)
 	if (!mask) {
 		return 1;
 	}
+	mask = client_clean_name(ctx, mask);
+	if (mask == NULL) {
+		return 1;
+	}
 
 	if (recurse) {
 		char *ddir = NULL;
@@ -1657,6 +1694,10 @@ static int cmd_altname(void)
 	}
 	name = talloc_asprintf_append(name, "%s", buf);
 	if (!name) {
+		return 1;
+	}
+	name = client_clean_name(ctx, name);
+	if (name == NULL) {
 		return 1;
 	}
 	do_altname(name);
@@ -1889,7 +1930,10 @@ static int cmd_allinfo(void)
 	if (!name) {
 		return 1;
 	}
-
+	name = client_clean_name(ctx, name);
+	if (name == NULL) {
+		return 1;
+	}
 	do_allinfo(name);
 
 	return 0;
@@ -2052,7 +2096,7 @@ static int cmd_put(void)
 		return 1;
 	}
 
-	rname = clean_name(ctx, rname);
+	rname = client_clean_name(ctx, rname);
 	if (!rname) {
 		return 1;
 	}
@@ -2261,6 +2305,19 @@ static int cmd_mput(void)
 						break;
 					}
 					normalize_name(rname);
+					{
+						char *tmp_rname =
+							client_clean_name(ctx, rname);
+						if (tmp_rname == NULL) {
+							break;
+						}
+						SAFE_FREE(rname);
+						rname = smb_xstrdup(tmp_rname);
+						TALLOC_FREE(tmp_rname);
+						if (rname == NULL) {
+							break;
+						}
+					}
 					if (!NT_STATUS_IS_OK(cli_chkpath(cli, rname)) &&
 					    !do_mkdir(rname)) {
 						DEBUG (0, ("Unable to make dir, skipping..."));
@@ -2291,6 +2348,18 @@ static int cmd_mput(void)
 
 			normalize_name(rname);
 
+			{
+				char *tmp_rname = client_clean_name(ctx, rname);
+				if (tmp_rname == NULL) {
+					break;
+				}
+				SAFE_FREE(rname);
+				rname = smb_xstrdup(tmp_rname);
+				TALLOC_FREE(tmp_rname);
+				if (rname == NULL) {
+					break;
+				}
+			}
 			do_put(rname, lname, false);
 		}
 		free_file_list(file_list);
@@ -2461,6 +2530,10 @@ static int cmd_del(void)
 	if (!mask) {
 		return 1;
 	}
+	mask = client_clean_name(ctx, mask);
+	if (mask == NULL) {
+		return 1;
+	}
 
 	status = do_list(mask,attribute,do_del,false,false);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2577,6 +2650,10 @@ static int cmd_deltree(void)
 	if (mask == NULL) {
 		return 1;
 	}
+	mask = client_clean_name(ctx, mask);
+	if (mask == NULL) {
+		return 1;
+	}
 
 	deltree_list_head = NULL;
 
@@ -2678,6 +2755,10 @@ static int cmd_wdel(void)
 	if (!mask) {
 		return 1;
 	}
+	mask = client_clean_name(ctx, mask);
+	if (mask == NULL) {
+		return 1;
+	}
 
 	status = cli_resolve_path(ctx, "", popt_get_cmdline_auth_info(),
 				cli, mask, &targetcli, &targetname);
@@ -2716,6 +2797,11 @@ static int cmd_open(void)
 			client_get_cur_dir(),
 			buf);
 	if (!mask) {
+		return 1;
+	}
+
+	mask = client_clean_name(ctx, mask);
+	if (mask == NULL) {
 		return 1;
 	}
 
@@ -2834,6 +2920,10 @@ static int cmd_posix_open(void)
 	if (!mask) {
 		return 1;
 	}
+	mask = client_clean_name(ctx, mask);
+	if (mask == NULL) {
+		return 1;
+	}
 
 	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		d_printf("posix_open <filename> 0<mode>\n");
@@ -2889,6 +2979,10 @@ static int cmd_posix_mkdir(void)
 	if (!mask) {
 		return 1;
 	}
+	mask = client_clean_name(ctx, mask);
+	if (mask == NULL) {
+		return 1;
+	}
 
 	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		d_printf("posix_mkdir <filename> 0<mode>\n");
@@ -2933,6 +3027,10 @@ static int cmd_posix_unlink(void)
 	if (!mask) {
 		return 1;
 	}
+	mask = client_clean_name(ctx, mask);
+	if (mask == NULL) {
+		return 1;
+	}
 
 	status = cli_resolve_path(ctx, "", popt_get_cmdline_auth_info(),
 				cli, mask, &targetcli, &targetname);
@@ -2970,6 +3068,10 @@ static int cmd_posix_rmdir(void)
 			client_get_cur_dir(),
 			buf);
 	if (!mask) {
+		return 1;
+	}
+	mask = client_clean_name(ctx, mask);
+	if (mask == NULL) {
 		return 1;
 	}
 
@@ -3274,6 +3376,10 @@ static int cmd_rmdir(void)
 	if (!mask) {
 		return 1;
 	}
+	mask = client_clean_name(ctx, mask);
+	if (mask == NULL) {
+		return 1;
+	}
 
 	status = cli_resolve_path(ctx, "", popt_get_cmdline_auth_info(),
 			cli, mask, &targetcli, &targetname);
@@ -3318,11 +3424,19 @@ static int cmd_link(void)
 	if (!oldname) {
 		return 1;
 	}
+	oldname = client_clean_name(ctx, oldname);
+	if (oldname == NULL) {
+		return 1;
+	}
 	newname = talloc_asprintf(ctx,
 			"%s%s",
 			client_get_cur_dir(),
 			buf2);
 	if (!newname) {
+		return 1;
+	}
+	newname = client_clean_name(ctx, newname);
+	if (newname == NULL) {
 		return 1;
 	}
 
@@ -3370,6 +3484,10 @@ static int cmd_readlink(void)
 			client_get_cur_dir(),
 			buf);
 	if (!name) {
+		return 1;
+	}
+	name = client_clean_name(ctx, name);
+	if (name == NULL) {
 		return 1;
 	}
 
@@ -3426,6 +3544,10 @@ static int cmd_symlink(void)
 		if (!newname) {
 			return 1;
 		}
+		newname = client_clean_name(ctx, newname);
+		if (newname == NULL) {
+			return 1;
+		}
 		/* New name must be present in share namespace. */
 		status = cli_resolve_path(ctx, "",
 				popt_get_cmdline_auth_info(), cli, newname,
@@ -3475,6 +3597,10 @@ static int cmd_chmod(void)
 			client_get_cur_dir(),
 			buf2);
 	if (!src) {
+		return 1;
+	}
+	src = client_clean_name(ctx, src);
+	if (src == NULL) {
 		return 1;
 	}
 
@@ -3634,6 +3760,10 @@ static int cmd_getfacl(void)
 			client_get_cur_dir(),
 			name);
 	if (!src) {
+		return 1;
+	}
+	src = client_clean_name(ctx, src);
+	if (src == NULL) {
 		return 1;
 	}
 
@@ -3804,6 +3934,10 @@ static int cmd_geteas(void)
 	if (!src) {
 		return 1;
 	}
+	src = client_clean_name(ctx, src);
+	if (src == NULL) {
+		return 1;
+	}
 
 	status = cli_resolve_path(ctx, "", popt_get_cmdline_auth_info(),
 			cli, src, &targetcli, &targetname);
@@ -3861,6 +3995,10 @@ static int cmd_setea(void)
 	if (!src) {
 		return 1;
 	}
+	src = client_clean_name(ctx, src);
+	if (src == NULL) {
+		return 1;
+	}
 
 	status = cli_resolve_path(ctx, "", popt_get_cmdline_auth_info(),
 			cli, src, &targetcli, &targetname);
@@ -3905,6 +4043,10 @@ static int cmd_stat(void)
 			client_get_cur_dir(),
 			name);
 	if (!src) {
+		return 1;
+	}
+	src = client_clean_name(ctx, src);
+	if (src == NULL) {
 		return 1;
 	}
 
@@ -4016,6 +4158,10 @@ static int cmd_chown(void)
 	if (!src) {
 		return 1;
 	}
+	src = client_clean_name(ctx, src);
+	if (src == NULL) {
+		return 1;
+	}
 	status = cli_resolve_path(ctx, "", popt_get_cmdline_auth_info(),
 			cli, src, &targetcli, &targetname);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -4066,12 +4212,20 @@ static int cmd_rename(void)
 	if (!src) {
 		return 1;
 	}
+	src = client_clean_name(ctx, src);
+	if (src == NULL) {
+		return 1;
+	}
 
 	dest = talloc_asprintf(ctx,
 			"%s%s",
 			client_get_cur_dir(),
 			buf2);
 	if (!dest) {
+		return 1;
+	}
+	dest = client_clean_name(ctx, dest);
+	if (dest == NULL) {
 		return 1;
 	}
 
@@ -4159,12 +4313,20 @@ static int cmd_scopy(void)
 	if (!src) {
 		return 1;
 	}
+	src = client_clean_name(ctx, src);
+	if (src == NULL) {
+		return 1;
+	}
 
 	dest = talloc_asprintf(ctx,
 			"%s%s",
 			client_get_cur_dir(),
 			buf2);
 	if (!dest) {
+		return 1;
+	}
+	dest = client_clean_name(ctx, dest);
+	if (dest == NULL) {
 		return 1;
 	}
 
@@ -4289,12 +4451,20 @@ static int cmd_hardlink(void)
 	if (!src) {
 		return 1;
 	}
+	src = client_clean_name(ctx, src);
+	if (src == NULL) {
+		return 1;
+	}
 
 	dest = talloc_asprintf(ctx,
 			"%s%s",
 			client_get_cur_dir(),
 			buf2);
 	if (!dest) {
+		return 1;
+	}
+	dest = client_clean_name(ctx, dest);
+	if (dest == NULL) {
 		return 1;
 	}
 
@@ -4375,6 +4545,10 @@ static int cmd_notify(void)
 	name = talloc_asprintf_append(name, "%s", buf);
 	if (name == NULL) {
 		goto fail;
+	}
+	name = client_clean_name(talloc_tos(), name);
+	if (name == NULL) {
+		return 1;
 	}
 	status = cli_ntcreate(
 		cli, name, 0, FILE_READ_DATA, 0,
@@ -4550,7 +4724,7 @@ static int cmd_reget(void)
 	if (!remote_name) {
 		return 1;
 	}
-	remote_name = clean_name(ctx,remote_name);
+	remote_name = client_clean_name(ctx,remote_name);
 	if (!remote_name) {
 		return 1;
 	}
@@ -4602,7 +4776,7 @@ static int cmd_reput(void)
 		return 1;
 	}
 
-	remote_name = clean_name(ctx, remote_name);
+	remote_name = client_clean_name(ctx, remote_name);
 	if (!remote_name) {
 		return 1;
 	}
@@ -5037,6 +5211,11 @@ int cmd_setmode(void)
 				"%s%s",
 				client_get_cur_dir(),
 				buf);
+	if (fname == NULL) {
+		err = 1;
+		goto out;
+	}
+	fname = client_clean_name(ctx, fname);
 	if (fname == NULL) {
 		err = 1;
 		goto out;
@@ -5547,6 +5726,10 @@ static char **remote_completion(const char *text, int len)
 					client_get_cur_dir());
 	}
 	if (!dirmask) {
+		goto cleanup;
+	}
+	dirmask = client_clean_name(ctx, dirmask);
+	if (dirmask == NULL) {
 		goto cleanup;
 	}
 
