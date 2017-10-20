@@ -699,6 +699,11 @@ static int tar_create(struct tar* t)
 			err = 1;
 			goto out_close;
 		}
+		mask = client_clean_name(ctx, mask);
+		if (mask == NULL) {
+			err = 1;
+			goto out_close;
+		}
 		DBG(5, ("tar_process do_list with mask: %s\n", mask));
 		status = do_list(mask, TAR_DO_LIST_ATTR, get_file_callback, false, true);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -764,6 +769,11 @@ static int tar_create_from_list(struct tar *t)
 			err = 1;
 			goto out;
 		}
+		mask = client_clean_name(ctx, mask);
+		if (mask == NULL) {
+			err = 1;
+			goto out;
+		}
 
 		DBG(5, ("incl. path='%s', base='%s', mask='%s'\n",
 					path, base ? base : "NULL", mask));
@@ -775,6 +785,12 @@ static int tar_create_from_list(struct tar *t)
 				err = 1;
 				goto out;
 			}
+			base = client_clean_name(ctx, base);
+			if (base == NULL) {
+				err = 1;
+				goto out;
+			}
+
 			DBG(5, ("cd '%s' before do_list\n", base));
 			client_set_cur_dir(base);
 		}
@@ -820,6 +836,11 @@ static NTSTATUS get_file_callback(struct cli_state *cli,
 		status = NT_STATUS_NO_MEMORY;
 		goto out;
 	}
+	remote_name = client_clean_name(ctx, remote_name);
+	if (remote_name == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
+	}
 
 	if (strequal(finfo->name, "..") || strequal(finfo->name, ".")) {
 		goto out;
@@ -849,6 +870,11 @@ static NTSTATUS get_file_callback(struct cli_state *cli,
 			goto out;
 		}
 		mask = talloc_asprintf(ctx, "%s*", new_dir);
+		if (mask == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
+		}
+		mask = client_clean_name(ctx, mask);
 		if (mask == NULL) {
 			status = NT_STATUS_NO_MEMORY;
 			goto out;
@@ -1108,6 +1134,11 @@ static int tar_send_file(struct tar *t, struct archive_entry *entry)
 		goto out;
 	}
 	full_path = talloc_strdup_append(full_path, dos_path);
+	if (full_path == NULL) {
+		err = 1;
+		goto out;
+	}
+	full_path = client_clean_name(ctx, full_path);
 	if (full_path == NULL) {
 		err = 1;
 		goto out;
