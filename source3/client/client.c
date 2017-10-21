@@ -349,6 +349,37 @@ static void normalize_name(char *newdir)
 }
 
 /****************************************************************************
+ Local name cleanup before sending to server. SMB1 allows relative pathnames,
+ but SMB2 does not, so we need to resolve them locally.
+****************************************************************************/
+
+char *client_clean_name(TALLOC_CTX *ctx, const char *name)
+{
+	char *newname = NULL;
+	if (name == NULL) {
+		return NULL;
+	}
+
+	/* First ensure any path separators are correct. */
+	newname = talloc_strdup(ctx, name);
+	if (newname == NULL) {
+		return NULL;
+	}
+	normalize_name(newname);
+
+	/* Now remove any relative (..) path components. */
+	if (cli->requested_posix_capabilities & CIFS_UNIX_POSIX_PATHNAMES_CAP) {
+		newname = unix_clean_name(ctx, newname);
+	} else {
+		newname = clean_name(ctx, newname);
+	}
+	if (newname == NULL) {
+		return NULL;
+	}
+	return newname;
+}
+
+/****************************************************************************
  Change directory - inner section.
 ****************************************************************************/
 
