@@ -19,7 +19,7 @@
 */
 
 #include "includes.h"
-#include "nsswitch/winbind_nss.h"
+#include "nsswitch/winbind_client.h"
 #include "nsswitch/libwbclient/wbclient.h"
 
 #ifdef HAVE_NS_API_H
