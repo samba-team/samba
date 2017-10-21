@@ -1024,7 +1024,7 @@ _nss_winbind_getgrgid_r(gid_t gid,
 /* Initialise supplementary groups */
 
 NSS_STATUS
-_nss_winbind_initgroups_dyn(char *user, gid_t group, long int *start,
+_nss_winbind_initgroups_dyn(const char *user, gid_t group, long int *start,
 			    long int *size, gid_t **groups, long int limit,
 			    int *errnop)
 {
