@@ -612,9 +612,9 @@ static int ltdb_dn_list_store_full(struct ldb_module *module,
 	if (list->count == 0) {
 		ret = ltdb_delete_noindex(module, msg);
 		if (ret == LDB_ERR_NO_SUCH_OBJECT) {
-			talloc_free(msg);
-			return LDB_SUCCESS;
+			ret = LDB_SUCCESS;
 		}
+		talloc_free(msg);
 		return ret;
 	}
 
