@@ -30,12 +30,17 @@
  */
 
 #include "nsswitch/winbind_nss_solaris.h"
+#include "nsswitch/winbind_nss_linux.h"
 
 #elif HAVE_NSS_H
 
 /*
  * Linux (glibc)
  */
+
+#include <nss.h>
+
+typedef enum nss_status NSS_STATUS;
 
 #include "nsswitch/winbind_nss_linux.h"
 
@@ -60,6 +65,7 @@
  */
 
 #include "nsswitch/winbind_nss_netbsd.h"
+#include "nsswitch/winbind_nss_linux.h"
 
 #else /* Nothing's defined. Neither gnu nor netbsd nor sun nor hp */
 

@@ -24,25 +24,6 @@
 #include "winbind_client.h"
 
 /* Make sure that the module gets registered needed by freebsd 5.1 */
-extern enum nss_status _nss_winbind_getgrent_r(struct group *, char *, size_t,
-    int *);
-extern enum nss_status _nss_winbind_getgrnam_r(const char *, struct group *,
-    char *, size_t, int *);
-extern enum nss_status _nss_winbind_getgrgid_r(gid_t gid, struct group *, char *,
-    size_t, int *);
-extern enum nss_status _nss_winbind_setgrent(void);
-extern enum nss_status _nss_winbind_endgrent(void);
-extern enum nss_status _nss_winbind_initgroups_dyn(char *, gid_t, long int *,
-    long int *, gid_t **, long int , int *);
-
-extern enum nss_status _nss_winbind_getpwent_r(struct passwd *, char *, size_t,
-    int *);
-extern enum nss_status _nss_winbind_getpwnam_r(const char *, struct passwd *,
-    char *, size_t, int *);
-extern enum nss_status _nss_winbind_getpwuid_r(gid_t gid, struct passwd *, char *,
-    size_t, int *);
-extern enum nss_status _nss_winbind_setpwent(void);
-extern enum nss_status _nss_winbind_endpwent(void);
 ns_mtab *nss_module_register(const char *, unsigned int *, nss_module_unregister_fn *);
 
 NSS_METHOD_PROTOTYPE(__nss_compat_getgrnam_r);
