@@ -562,8 +562,8 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 
 	status = cli_tree_connect_creds(c, share, "?????", creds);
 	if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
 		cli_shutdown(c);
+		errno = map_errno_from_nt_status(status);
 		return NULL;
 	}
 
