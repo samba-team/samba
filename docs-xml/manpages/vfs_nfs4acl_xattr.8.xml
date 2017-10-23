@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE refentry PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
+<refentry id="vfs_nfs4acl_xattr.8">
+
+  <refmeta>
+    <refentrytitle>vfs_nfs4acl_xattr</refentrytitle>
+    <manvolnum>8</manvolnum>
+    <refmiscinfo class="source">Samba</refmiscinfo>
+    <refmiscinfo class="manual">System Administration tools</refmiscinfo>
+    <refmiscinfo class="version">4.7</refmiscinfo>
+  </refmeta>
+
+
+  <refnamediv>
+    <refname>vfs_nfs4acl_xattr</refname>
+    <refpurpose>Save NTFS-ACLs as NFS4 encoded blobs in extended
+    attributes</refpurpose>
+  </refnamediv>
+
+  <refsynopsisdiv>
+    <cmdsynopsis>
+      <command>vfs objects = nfs4acl_xattr</command>
+    </cmdsynopsis>
+  </refsynopsisdiv>
+
+  <refsect1>
+    <title>DESCRIPTION</title>
+
+    <para>This VFS module is part of the
+    <citerefentry><refentrytitle>samba</refentrytitle>
+    <manvolnum>7</manvolnum></citerefentry> suite.</para>
+
+    <para>The <command>vfs_acl_xattr</command> VFS module stores NTFS Access
+    Control Lists (ACLs) in Extended Attributes (EAs/xattrs).  This enables the
+    full mapping of Windows ACLs on Samba servers.
+    </para>
+
+    <para>This module is stackable.</para>
+  </refsect1>
+
+
+  <refsect1>
+    <title>OPTIONS</title>
+
+    <variablelist>
+
+      <varlistentry>
+	<term>nfs4acl_xattr:encoding = [ndr|xdr]</term>
+	<listitem>
+	  <para>This parameter configures the marshaling format used in the ACL
+	  blob and the default extended attribute name used to store the blob.
+	  </para>
+
+	  <para>When set to <emphasis>ndr (default)</emphasis> - store the NT
+	  ACL with POSIX draft NFSv4 compatible NDR encoding. By default this
+	  uses the extended attribute "security.nfs4acl_ndr".</para>
+
+	  <para>When set to <emphasis>xdr</emphasis> - store the NT ACL in a
+	  format similar to NFS 4.1 RFC 5661 in XDR encoding. The main
+	  differences to RFC 5661 are the use of ids instead of strings as users
+	  and group identifiers and an additional attribute per nfsace4. By
+	  default this encoding stores the blob in the extended attribute
+	  "security.nfs4acl_xdr".</para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>nfs4acl_xattr:version = [40|41]</term>
+	<listitem>
+	  <para>This parameter configures the NFS4 ACL level. Only
+	  <emphasis>41</emphasis> fully supports mapping NT ACLs and should be
+	  used. The default is <emphasis>41</emphasis>.</para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>nfs4acl_xattr:default acl style = [posix|windows|everyone]</term>
+	<listitem>
+	  <para>This parameter determines the type of ACL that is synthesized in
+	  case a file or directory lacks an ACL extended attribute.</para>
+
+	  <para>When set to <emphasis>posix</emphasis>, an ACL will be
+	  synthesized based on the POSIX mode permissions for user, group and
+	  others, with an additional ACE for <emphasis>NT
+	  Authority\SYSTEM</emphasis> will full rights.</para>
+
+	  <para>When set to <emphasis>windows</emphasis>, an ACL is synthesized
+	  the same way Windows does it, only including permissions for the owner
+	  and <emphasis>NT Authority\SYSTEM</emphasis>.</para>
+
+	  <para>When set to <emphasis>everyone</emphasis>, an ACL is synthesized
+	  giving full permissions to everyone (S-1-1-0).</para>
+
+	  <para>The default for this option is
+	  <emphasis>everyone</emphasis>.</para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>nfs4acl_xattr:xattr_name = STRING</term>
+	<listitem>
+	  <para>This parameter configures the extended attribute name used to
+	  store the marshaled ACL.</para>
+	  <para>The default depends on the setting for
+	  <emphasis>nfs4acl_xattr:encoding</emphasis>.</para>
+	</listitem>
+      </varlistentry>
+
+    </variablelist>
+  </refsect1>
+
+  <refsect1>
+    <title>EXAMPLES</title>
+
+    <para>A directory can be exported via Samba using this module as
+    follows:</para>
+
+    <programlisting>
+      <smbconfsection name="[samba_gpfs_share]"/>
+      <smbconfoption name="vfs objects">nfs4acl_xattr</smbconfoption>
+      <smbconfoption name="path">/foo/bar</smbconfoption>
+    </programlisting>
+  </refsect1>
+
+  <refsect1>
+    <title>AUTHOR</title>
+
+    <para>The original Samba software and related utilities
+    were created by Andrew Tridgell. Samba is now developed
+    by the Samba Team as an Open Source project similar
+    to the way the Linux kernel is developed.</para>
+  </refsect1>
+
+</refentry>
