@@ -1876,6 +1876,12 @@ sub provision($$$$$$$$$)
 	nfs4acl_xattr:version = 40
 	vfs objects = nfs4acl_xattr xattr_tdb
 
+[nfs4acl_simple_41]
+	path = $shrdir
+	comment = smb username is [%U]
+	nfs4:mode = simple
+	vfs objects = nfs4acl_xattr xattr_tdb
+
 [xcopy_share]
 	path = $shrdir
 	comment = smb username is [%U]
