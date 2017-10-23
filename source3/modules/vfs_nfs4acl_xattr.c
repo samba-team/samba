@@ -72,12 +72,15 @@ static NTSTATUS nfs4acl_get_blob(struct vfs_handle_struct *handle,
 	}
 
 	do {
+		int saved_errno = 0;
+
 		allocsize *= 4;
 		ok = data_blob_realloc(mem_ctx, blob, allocsize);
 		if (!ok) {
 			return NT_STATUS_NO_MEMORY;
 		}
 
+		become_root();
 		if (fsp != NULL && fsp->fh->fd != -1) {
 			length = SMB_VFS_NEXT_FGETXATTR(handle,
 							fsp,
@@ -90,6 +93,13 @@ static NTSTATUS nfs4acl_get_blob(struct vfs_handle_struct *handle,
 						       config->xattr_name,
 						       blob->data,
 						       blob->length);
+		}
+		if (length == -1) {
+			saved_errno = errno;
+		}
+		unbecome_root();
+		if (saved_errno != 0) {
+			errno = saved_errno;
 		}
 	} while (length == -1 && errno == ERANGE && allocsize <= 65536);
 
@@ -243,6 +253,7 @@ static bool nfs4acl_smb4acl_set_fn(vfs_handle_struct *handle,
 	struct nfs4acl_config *config = NULL;
 	DATA_BLOB blob;
 	NTSTATUS status;
+	int saved_errno = 0;
 	int ret;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
@@ -262,6 +273,7 @@ static bool nfs4acl_smb4acl_set_fn(vfs_handle_struct *handle,
 		return false;
 	}
 
+	become_root();
 	if (fsp->fh->fd != -1) {
 		ret = SMB_VFS_NEXT_FSETXATTR(handle, fsp, config->xattr_name,
 					     blob.data, blob.length, 0);
@@ -270,7 +282,14 @@ static bool nfs4acl_smb4acl_set_fn(vfs_handle_struct *handle,
 					    config->xattr_name,
 					    blob.data, blob.length, 0);
 	}
+	if (ret != 0) {
+		saved_errno = errno;
+	}
+	unbecome_root();
 	data_blob_free(&blob);
+	if (saved_errno != 0) {
+		errno = saved_errno;
+	}
 	if (ret != 0) {
 		DBG_ERR("can't store acl in xattr: %s\n", strerror(errno));
 		return false;
