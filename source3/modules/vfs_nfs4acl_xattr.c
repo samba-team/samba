@@ -41,6 +41,64 @@ static const struct enum_list nfs4acl_encoding[] = {
 	{NFS4ACL_ENCODING_XDR, "xdr"},
 };
 
+static NTSTATUS nfs4acl_get_blob(struct vfs_handle_struct *handle,
+				 files_struct *fsp,
+				 const struct smb_filename *smb_fname_in,
+				 TALLOC_CTX *mem_ctx,
+				 DATA_BLOB *blob)
+{
+	struct nfs4acl_config *config = NULL;
+	const struct smb_filename *smb_fname = NULL;
+	size_t allocsize = 256;
+	ssize_t length;
+	bool ok;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct nfs4acl_config,
+				return NT_STATUS_INTERNAL_ERROR);
+
+	*blob = data_blob_null;
+
+	if (fsp == NULL && smb_fname_in == NULL) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+	smb_fname = smb_fname_in;
+	if (smb_fname == NULL) {
+		smb_fname = fsp->fsp_name;
+	}
+	if (smb_fname == NULL) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	do {
+		allocsize *= 4;
+		ok = data_blob_realloc(mem_ctx, blob, allocsize);
+		if (!ok) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		if (fsp != NULL && fsp->fh->fd != -1) {
+			length = SMB_VFS_NEXT_FGETXATTR(handle,
+							fsp,
+							config->xattr_name,
+							blob->data,
+							blob->length);
+		} else {
+			length = SMB_VFS_NEXT_GETXATTR(handle,
+						       smb_fname,
+						       config->xattr_name,
+						       blob->data,
+						       blob->length);
+		}
+	} while (length == -1 && errno == ERANGE && allocsize <= 65536);
+
+	if (length == -1) {
+		return map_nt_error_from_unix(errno);
+	}
+
+	return NT_STATUS_OK;
+}
+
 static struct nfs4acl *nfs4acl_blob2acl(DATA_BLOB *blob, TALLOC_CTX *mem_ctx)
 {
 	enum ndr_err_code ndr_err;
@@ -77,14 +135,20 @@ static DATA_BLOB nfs4acl_acl2blob(TALLOC_CTX *mem_ctx, struct nfs4acl *acl)
 	return blob;
 }
 
-static NTSTATUS nfs4_get_nfs4_acl_common(TALLOC_CTX *mem_ctx,
-					 DATA_BLOB *blob,
-					 struct SMB4ACL_T **_smb4acl)
+static NTSTATUS nfs4acl_ndr_blob_to_smb4(struct vfs_handle_struct *handle,
+				  TALLOC_CTX *mem_ctx,
+				  DATA_BLOB *blob,
+				  struct SMB4ACL_T **_smb4acl)
 {
 	struct nfs4acl *nfs4acl = NULL;
 	struct SMB4ACL_T *smb4acl = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
+	struct nfs4acl_config *config = NULL;
 	int i;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct nfs4acl_config,
+				return NT_STATUS_INTERNAL_ERROR);
 
 	nfs4acl = nfs4acl_blob2acl(blob, frame);
 	if (nfs4acl == NULL) {
@@ -130,67 +194,6 @@ static NTSTATUS nfs4_get_nfs4_acl_common(TALLOC_CTX *mem_ctx,
 	*_smb4acl = smb4acl;
 	TALLOC_FREE(frame);
 	return NT_STATUS_OK;
-}
-
-/* Fetch the NFSv4 ACL from the xattr, and convert into Samba's internal NFSv4 format */
-static NTSTATUS nfs4_fget_nfs4_acl(vfs_handle_struct *handle, TALLOC_CTX *mem_ctx,
-				   files_struct *fsp, struct SMB4ACL_T **ppacl)
-{
-	NTSTATUS status;
-	DATA_BLOB blob = data_blob_null;
-	ssize_t length;
-	TALLOC_CTX *frame = talloc_stackframe();
-
-	do {
-		blob.length += 1000;
-		blob.data = talloc_realloc(frame, blob.data, uint8_t, blob.length);
-		if (!blob.data) {
-			TALLOC_FREE(frame);
-			errno = ENOMEM;
-			return NT_STATUS_NO_MEMORY;
-		}
-		length = SMB_VFS_NEXT_FGETXATTR(handle, fsp, NFS4ACL_NDR_XATTR_NAME, blob.data, blob.length);
-		blob.length = length;
-	} while (length == -1 && errno == ERANGE);
-	if (length == -1) {
-		TALLOC_FREE(frame);
-		return map_nt_error_from_unix(errno);
-	}
-	status = nfs4_get_nfs4_acl_common(mem_ctx, &blob, ppacl);
-	TALLOC_FREE(frame);
-	return status;
-}
-
-/* Fetch the NFSv4 ACL from the xattr, and convert into Samba's internal NFSv4 format */
-static NTSTATUS nfs4_get_nfs4_acl(vfs_handle_struct *handle,
-				TALLOC_CTX *mem_ctx,
-				const struct smb_filename *smb_fname,
-				struct SMB4ACL_T **ppacl)
-{
-	NTSTATUS status;
-	DATA_BLOB blob = data_blob_null;
-	ssize_t length;
-	TALLOC_CTX *frame = talloc_stackframe();
-
-	do {
-		blob.length += 1000;
-		blob.data = talloc_realloc(frame, blob.data, uint8_t, blob.length);
-		if (!blob.data) {
-			TALLOC_FREE(frame);
-			errno = ENOMEM;
-			return NT_STATUS_NO_MEMORY;
-		}
-		length = SMB_VFS_NEXT_GETXATTR(handle, smb_fname,
-				NFS4ACL_NDR_XATTR_NAME, blob.data, blob.length);
-		blob.length = length;
-	} while (length == -1 && errno == ERANGE);
-	if (length == -1) {
-		TALLOC_FREE(frame);
-		return map_nt_error_from_unix(errno);
-	}
-	status = nfs4_get_nfs4_acl_common(mem_ctx, &blob, ppacl);
-	TALLOC_FREE(frame);
-	return status;
 }
 
 static bool nfs4acl_smb4acl2nfs4acl(TALLOC_CTX *mem_ctx,
@@ -266,45 +269,36 @@ static bool nfs4acl_smb4acl2nfs4acl(TALLOC_CTX *mem_ctx,
 	return true;
 }
 
-/* call-back function processing the NT acl -> NFS4 acl using NFSv4 conv. */
-static bool nfs4acl_xattr_fset_smb4acl(vfs_handle_struct *handle,
-				       files_struct *fsp,
-				       struct SMB4ACL_T *smbacl)
+static NTSTATUS nfs4acl_smb4acl_to_ndr_blob(vfs_handle_struct *handle,
+					    TALLOC_CTX *mem_ctx,
+					    struct SMB4ACL_T *smb4acl,
+					    DATA_BLOB *_blob)
 {
-	TALLOC_CTX *frame = talloc_stackframe();
-	struct nfs4acl *nfs4acl;
-	int ret;
-	bool denymissingspecial;
+	struct nfs4acl *nfs4acl = NULL;
 	DATA_BLOB blob;
+	bool denymissingspecial;
+	bool ok;
 
-	denymissingspecial = lp_parm_bool(fsp->conn->params->service,
+	denymissingspecial = lp_parm_bool(SNUM(handle->conn),
 					  "nfs4acl_xattr",
 					  "denymissingspecial", false);
 
-	if (!nfs4acl_smb4acl2nfs4acl(frame, smbacl, &nfs4acl,
-				     denymissingspecial)) {
-		DEBUG(0, ("Failed to convert smb ACL to nfs4 ACL.\n"));
-		TALLOC_FREE(frame);
-		return false;
+	ok = nfs4acl_smb4acl2nfs4acl(talloc_tos(), smb4acl, &nfs4acl,
+				     denymissingspecial);
+	if (!ok) {
+		DBG_ERR("Failed to convert smb ACL to nfs4 ACL.\n");
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	blob = nfs4acl_acl2blob(frame, nfs4acl);
-	if (!blob.data) {
+	blob = nfs4acl_acl2blob(mem_ctx, nfs4acl);
+	TALLOC_FREE(nfs4acl);
+	if (blob.data == NULL) {
 		DBG_ERR("Failed to convert ACL to linear blob for xattr\n");
-		TALLOC_FREE(frame);
-		errno = EINVAL;
-		return false;
+		return NT_STATUS_INTERNAL_ERROR;
 	}
-	if (fsp->fh->fd == -1) {
-		DEBUG(0, ("Error: fsp->fh->fd == -1\n"));
-	}
-	ret = SMB_VFS_NEXT_FSETXATTR(handle, fsp, NFS4ACL_NDR_XATTR_NAME,
-				     blob.data, blob.length, 0);
-	if (ret != 0) {
-		DBG_ERR("can't store acl in xattr: %s\n", strerror(errno));
-	}
-	TALLOC_FREE(frame);
-	return ret == 0;
+
+	*_blob = blob;
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS nfs4acl_xattr_default_sd(
@@ -350,6 +344,30 @@ static NTSTATUS nfs4acl_xattr_default_sd(
 					   sd);
 }
 
+static NTSTATUS nfs4acl_blob_to_smb4(struct vfs_handle_struct *handle,
+				     DATA_BLOB *blob,
+				     TALLOC_CTX *mem_ctx,
+				     struct SMB4ACL_T **smb4acl)
+{
+	struct nfs4acl_config *config = NULL;
+	NTSTATUS status;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct nfs4acl_config,
+				return NT_STATUS_INTERNAL_ERROR);
+
+	switch (config->encoding) {
+	case NFS4ACL_ENCODING_NDR:
+		status = nfs4acl_ndr_blob_to_smb4(handle, mem_ctx, blob, smb4acl);
+		break;
+	default:
+		status = NT_STATUS_INTERNAL_ERROR;
+		break;
+	}
+
+	return status;
+}
+
 static NTSTATUS nfs4acl_xattr_fget_nt_acl(struct vfs_handle_struct *handle,
 				   struct files_struct *fsp,
 				   uint32_t security_info,
@@ -358,14 +376,21 @@ static NTSTATUS nfs4acl_xattr_fget_nt_acl(struct vfs_handle_struct *handle,
 {
 	struct SMB4ACL_T *smb4acl = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
+	DATA_BLOB blob;
 	NTSTATUS status;
 
-	status = nfs4_fget_nfs4_acl(handle, frame, fsp, &smb4acl);
+	status = nfs4acl_get_blob(handle, fsp, NULL, frame, &blob);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
 		TALLOC_FREE(frame);
 		return nfs4acl_xattr_default_sd(
 			handle, fsp->fsp_name, mem_ctx, sd);
 	}
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return status;
+	}
+
+	status = nfs4acl_blob_to_smb4(handle, &blob, frame, &smb4acl);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
 		return status;
@@ -385,14 +410,21 @@ static NTSTATUS nfs4acl_xattr_get_nt_acl(struct vfs_handle_struct *handle,
 {
 	struct SMB4ACL_T *smb4acl = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
+	DATA_BLOB blob;
 	NTSTATUS status;
 
-	status = nfs4_get_nfs4_acl(handle, frame, smb_fname, &smb4acl);
+	status = nfs4acl_get_blob(handle, NULL, smb_fname, frame, &blob);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
 		TALLOC_FREE(frame);
 		return nfs4acl_xattr_default_sd(
 			handle,	smb_fname, mem_ctx, sd);
 	}
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return status;
+	}
+
+	status = nfs4acl_blob_to_smb4(handle, &blob, frame, &smb4acl);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
 		return status;
@@ -405,13 +437,60 @@ static NTSTATUS nfs4acl_xattr_get_nt_acl(struct vfs_handle_struct *handle,
 	return status;
 }
 
+static bool nfs4acl_smb4acl_set_fn(vfs_handle_struct *handle,
+				   files_struct *fsp,
+				   struct SMB4ACL_T *smb4acl)
+{
+	struct nfs4acl_config *config = NULL;
+	DATA_BLOB blob;
+	NTSTATUS status;
+	int ret;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct nfs4acl_config,
+				return false);
+
+	switch (config->encoding) {
+	case NFS4ACL_ENCODING_NDR:
+		status = nfs4acl_smb4acl_to_ndr_blob(handle, talloc_tos(),
+						     smb4acl, &blob);
+		break;
+	default:
+		status = NT_STATUS_INTERNAL_ERROR;
+		break;
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
+
+	ret = SMB_VFS_NEXT_FSETXATTR(handle, fsp, config->xattr_name,
+				     blob.data, blob.length, 0);
+	data_blob_free(&blob);
+	if (ret != 0) {
+		DBG_ERR("can't store acl in xattr: %s\n", strerror(errno));
+		return false;
+	}
+
+	return true;
+}
+
 static NTSTATUS nfs4acl_xattr_fset_nt_acl(vfs_handle_struct *handle,
 			 files_struct *fsp,
 			 uint32_t security_info_sent,
 			 const struct security_descriptor *psd)
 {
-	return smb_set_nt_acl_nfs4(handle, fsp, NULL, security_info_sent,
-				   psd,	nfs4acl_xattr_fset_smb4acl);
+	struct nfs4acl_config *config = NULL;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct nfs4acl_config,
+				return NT_STATUS_INTERNAL_ERROR);
+
+	return smb_set_nt_acl_nfs4(handle,
+				   fsp,
+				   &config->nfs4_params,
+				   security_info_sent,
+				   psd,
+				   nfs4acl_smb4acl_set_fn);
 }
 
 static int nfs4acl_connect(struct vfs_handle_struct *handle,
