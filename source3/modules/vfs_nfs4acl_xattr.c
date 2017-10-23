@@ -463,8 +463,14 @@ static bool nfs4acl_smb4acl_set_fn(vfs_handle_struct *handle,
 		return false;
 	}
 
-	ret = SMB_VFS_NEXT_FSETXATTR(handle, fsp, config->xattr_name,
-				     blob.data, blob.length, 0);
+	if (fsp->fh->fd != -1) {
+		ret = SMB_VFS_NEXT_FSETXATTR(handle, fsp, config->xattr_name,
+					     blob.data, blob.length, 0);
+	} else {
+		ret = SMB_VFS_NEXT_SETXATTR(handle, fsp->fsp_name,
+					    config->xattr_name,
+					    blob.data, blob.length, 0);
+	}
 	data_blob_free(&blob);
 	if (ret != 0) {
 		DBG_ERR("can't store acl in xattr: %s\n", strerror(errno));

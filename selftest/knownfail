@@ -25,12 +25,10 @@
 ^samba3.raw.acls nfs4acl_xattr-simple.create_owner_file\(nt4_dc\)
 ^samba3.raw.acls nfs4acl_xattr-simple.create_owner_dir\(nt4_dc\)
 ^samba3.raw.acls nfs4acl_xattr-simple.nulldacl\(nt4_dc\)
-^samba3.raw.acls nfs4acl_xattr-simple.generic\(nt4_dc\)
 ^samba3.raw.acls nfs4acl_xattr-special.INHERITFLAGS\(nt4_dc\)
 ^samba3.raw.acls nfs4acl_xattr-special.create_owner_file\(nt4_dc\)
 ^samba3.raw.acls nfs4acl_xattr-special.create_owner_dir\(nt4_dc\)
 ^samba3.raw.acls nfs4acl_xattr-special.nulldacl\(nt4_dc\)
-^samba3.raw.acls nfs4acl_xattr-special.generic\(nt4_dc\)
 ^samba3.raw.acls nfs4acl_xattr-special.inherit_creator_owner\(nt4_dc\)
 ^samba3.raw.acls nfs4acl_xattr-special.inherit_creator_group\(nt4_dc\)
 ^samba3.base.delete.deltest16a
