@@ -359,9 +359,11 @@ static NTSTATUS nfs4acl_xattr_fset_nt_acl(vfs_handle_struct *handle,
 			 const struct security_descriptor *psd)
 {
 	struct nfs4acl_config *config = NULL;
+	const struct security_token *token = NULL;
 	mode_t existing_mode;
 	mode_t expected_mode;
 	mode_t restored_mode;
+	bool chown_needed = false;
 	NTSTATUS status;
 	int ret;
 
@@ -416,11 +418,58 @@ static NTSTATUS nfs4acl_xattr_fset_nt_acl(vfs_handle_struct *handle,
 				     security_info_sent,
 				     psd,
 				     nfs4acl_smb4acl_set_fn);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	if (NT_STATUS_IS_OK(status)) {
+		return NT_STATUS_OK;
 	}
 
-	return NT_STATUS_OK;
+	/*
+	 * We got access denied. If we're already root, or we didn't
+	 * need to do a chown, or the fsp isn't open with WRITE_OWNER
+	 * access, just return.
+	 */
+
+	if ((security_info_sent & SECINFO_OWNER) &&
+	    (psd->owner_sid != NULL))
+	{
+		chown_needed = true;
+	}
+	if ((security_info_sent & SECINFO_GROUP) &&
+	    (psd->group_sid != NULL))
+	{
+		chown_needed = true;
+	}
+
+	if (get_current_uid(handle->conn) == 0 ||
+	    chown_needed == false ||
+	    !(fsp->access_mask & SEC_STD_WRITE_OWNER))
+	{
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	/*
+	 * Only allow take-ownership, not give-ownership. That's the way Windows
+	 * implements SEC_STD_WRITE_OWNER. MS-FSA 2.1.5.16 just states: If
+	 * InputBuffer.OwnerSid is not a valid owner SID for a file in the
+	 * objectstore, as determined in an implementation specific manner, the
+	 * object store MUST return STATUS_INVALID_OWNER.
+	 */
+	token = get_current_nttok(fsp->conn);
+	if (!security_token_is_sid(token, psd->owner_sid)) {
+		return NT_STATUS_INVALID_OWNER;
+	}
+
+	DBG_DEBUG("overriding chown on file %s for sid %s\n",
+		  fsp_str_dbg(fsp), sid_string_tos(psd->owner_sid));
+
+	become_root();
+	status = smb_set_nt_acl_nfs4(handle,
+				     fsp,
+				     &config->nfs4_params,
+				     security_info_sent,
+				     psd,
+				     nfs4acl_smb4acl_set_fn);
+	unbecome_root();
+	return status;
 }
 
 static int nfs4acl_connect(struct vfs_handle_struct *handle,
