@@ -30,47 +30,14 @@
 
 /* A Python C API module to use LIBGPO */
 
-typedef struct {
-	PyObject_HEAD
-	TALLOC_CTX *frame;
-	struct GROUP_POLICY_OBJECT *gpo_ptr;
-	struct GROUP_POLICY_OBJECT *head;
-} GPO;
-
-static void py_gpo_dealloc(GPO* self)
-{
-	talloc_free(self->frame);
-	Py_TYPE(self)->tp_free((PyObject*)self);
-}
-
-static PyObject* py_gpo_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
-{
-	GPO *self;
-	PyObject *c_obj;
-	PyObject *talloc_obj;
-	static const char *kwlist[] = {"gpo_ptr", "talloc_ctx", NULL};
-	self = (GPO*)type->tp_alloc(type, 0);
-	if (PyArg_ParseTupleAndKeywords(args, kwds, "|OO", discard_const_p(char *, kwlist),
-					&c_obj, &talloc_obj)) {
-		self->gpo_ptr = PyCapsule_GetPointer(c_obj, NULL);
-		self->head = self->gpo_ptr;
-		self->frame = PyCapsule_GetPointer(talloc_obj, NULL);
-	} else
-		self->gpo_ptr = NULL;
-		self->frame = NULL;
-	return (PyObject*)self;
-}
-
-static int py_gpo_init(GPO *self, PyObject *args, PyObject *kwds)
-{
-	return 0;
-}
-
 #define GPO_getter(ATTR) \
-static PyObject* GPO_get_##ATTR(GPO *self, void *closure) \
+static PyObject* GPO_get_##ATTR(PyObject *self, void *closure) \
 { \
-	if (self->gpo_ptr->ATTR) \
-		return PyString_FromString(self->gpo_ptr->ATTR); \
+	struct GROUP_POLICY_OBJECT *gpo_ptr \
+		= pytalloc_get_ptr(self); \
+	\
+	if (gpo_ptr->ATTR) \
+		return PyString_FromString(gpo_ptr->ATTR); \
 	else \
 		return Py_None; \
 }
@@ -93,15 +60,18 @@ static PyGetSetDef GPO_setters[] = {
 	{NULL}
 };
 
-static PyObject *py_gpo_get_unix_path(GPO *self, PyObject *args, PyObject *kwds)
+static PyObject *py_gpo_get_unix_path(PyObject *self, PyObject *args,
+				      PyObject *kwds)
 {
 	NTSTATUS status;
 	const char *cache_dir = NULL;
 	PyObject *ret = Py_None;
 	char *unix_path = NULL;
 	TALLOC_CTX *frame = NULL;
-
 	static const char *kwlist[] = {"cache_dir", NULL};
+	struct GROUP_POLICY_OBJECT *gpo_ptr \
+		= (struct GROUP_POLICY_OBJECT *)pytalloc_get_ptr(self);
+
 	if (!PyArg_ParseTupleAndKeywords(args, kwds, "|s", discard_const_p(char *, kwlist), &cache_dir)) {
 		PyErr_SetString(PyExc_SystemError, "Failed to parse arguments to gpo_get_unix_path()");
 		goto out;
@@ -117,7 +87,7 @@ static PyObject *py_gpo_get_unix_path(GPO *self, PyObject *args, PyObject *kwds)
 
 	frame = talloc_stackframe();
 
-	status = gpo_get_unix_path(self->frame, cache_dir, self->gpo_ptr, &unix_path);
+	status = gpo_get_unix_path(frame, cache_dir, gpo_ptr, &unix_path);
 
 	TALLOC_FREE(frame);
 
@@ -137,39 +107,13 @@ static PyMethodDef GPO_methods[] = {
 	{NULL}
 };
 
-static PyTypeObject GPOType;
-static PyObject* py_gpo_iternext(GPO *self)
-{
-	if (self->gpo_ptr && self->gpo_ptr->next) {
-		self->gpo_ptr = self->gpo_ptr->next;
-		return (PyObject *)self;
-	} else {
-		self->gpo_ptr = self->head;
-		PyErr_SetNone(PyExc_StopIteration);
-		return NULL;
-	}
-}
-
-static PyObject* py_gpo_iter(PyObject *self)
-{
-	Py_INCREF(self);
-	return self;
-}
-
 static PyTypeObject GPOType = {
+	PyVarObject_HEAD_INIT(NULL, 0)
 	.tp_name = "gpo.GROUP_POLICY_OBJECT",
-	.tp_basicsize = sizeof(GPO),
-	.tp_new = py_gpo_new,
-	.tp_free = PyObject_Del,
-	.tp_init = (initproc)py_gpo_init,
-	.tp_alloc = PyType_GenericAlloc,
-	.tp_dealloc = (destructor)py_gpo_dealloc,
 	.tp_doc = "GROUP_POLICY_OBJECT",
 	.tp_getset = GPO_setters,
 	.tp_methods = GPO_methods,
-	.tp_iter = py_gpo_iter,
-	.tp_iternext = (iternextfunc)py_gpo_iternext,
-	.tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_ITER,
+	.tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 };
 
 typedef struct {
@@ -386,7 +330,7 @@ out:
 static PyObject *py_ads_get_gpo_list(ADS *self, PyObject *args, PyObject *kwds)
 {
 	TALLOC_CTX *frame = NULL;
-	struct GROUP_POLICY_OBJECT *gpo_list = NULL;
+	struct GROUP_POLICY_OBJECT *gpo = NULL, *gpo_list = NULL;
 	ADS_STATUS status;
 	const char *samaccountname = NULL;
 	const char *dn = NULL;
@@ -395,6 +339,8 @@ static PyObject *py_ads_get_gpo_list(ADS *self, PyObject *args, PyObject *kwds)
 	struct security_token *token = NULL;
 	PyObject *ret = Py_None;
 	TALLOC_CTX *gpo_ctx;
+	size_t list_size;
+	size_t i;
 
 	static const char *kwlist[] = {"samaccountname", NULL};
 	if (!PyArg_ParseTupleAndKeywords(args, kwds, "s", discard_const_p(char *, kwlist), &samaccountname)) {
@@ -423,7 +369,7 @@ static PyObject *py_ads_get_gpo_list(ADS *self, PyObject *args, PyObject *kwds)
 		goto out;
 	}
 
-	gpo_ctx = talloc_new(NULL);
+	gpo_ctx = talloc_new(frame);
 	status = ads_get_gpo_list(self->ads_ptr, gpo_ctx, dn, flags, token, &gpo_list);
 	if (!ADS_ERR_OK(status)) {
 		TALLOC_FREE(frame);
@@ -431,17 +377,34 @@ static PyObject *py_ads_get_gpo_list(ADS *self, PyObject *args, PyObject *kwds)
 		goto out;
 	}
 
-	t_args = PyTuple_New(2);
-	PyTuple_SetItem(t_args, 0, PyCapsule_New(gpo_list, NULL, NULL));
-	PyTuple_SetItem(t_args, 1, PyCapsule_New(gpo_ctx, NULL, NULL));
-	ret = PyObject_CallObject((PyObject *)&GPOType, t_args);
+	/* Convert the C linked list into a python list */
+	list_size = 0;
+	for (gpo = gpo_list; gpo != NULL; gpo = gpo->next) {
+		list_size++;
+	}
+
+	i = 0;
+	ret = PyList_New(list_size);
+	if (ret == NULL) {
+		TALLOC_FREE(frame);
+		goto out;
+	}
+
+	for (gpo = gpo_list; gpo != NULL; gpo = gpo->next) {
+		PyObject *obj = pytalloc_reference_ex(&GPOType,
+						      gpo_ctx, gpo);
+		if (obj == NULL) {
+			TALLOC_FREE(frame);
+			goto out;
+		}
+
+		PyList_SetItem(ret, i, obj);
+		i++;
+	}
 
 out:
+
 	TALLOC_FREE(frame);
-	if (!ret) {
-		PyErr_Print();
-		return Py_None;
-	}
 	return ret;
 }
 
@@ -477,10 +440,16 @@ void initgpo(void)
 	m = Py_InitModule3("gpo", py_gpo_methods, "libgpo python bindings");
 	if (m == NULL) return;
 	PyModule_AddObject(m, "version", PyString_FromString(SAMBA_VERSION_STRING));
+
 	if (PyType_Ready(&ads_ADSType) < 0)
 		return;
 	PyModule_AddObject(m, "ADS_STRUCT", (PyObject *)&ads_ADSType);
-	if (PyType_Ready(&GPOType) < 0)
+
+	if (pytalloc_BaseObject_PyType_Ready(&GPOType) < 0)
 		return;
-	PyModule_AddObject(m, "GROUP_POLICY_OBJECT", (PyObject *)&GPOType);
+
+	Py_INCREF((PyObject *)(void *)&GPOType);
+	PyModule_AddObject(m, "GROUP_POLICY_OBJECT",
+			   (PyObject *)&GPOType);
+
 }
