@@ -25,6 +25,7 @@
 #include "secrets.h"
 #include "../libds/common/flags.h"
 #include "auth/credentials/pycredentials.h"
+#include "libcli/util/pyerrors.h"
 
 /* A Python C API module to use LIBGPO */
 
@@ -288,13 +289,22 @@ static PyObject *py_gpo_get_sysvol_gpt_version(PyObject * self, PyObject * args)
 	char *display_name = NULL;
 	uint32_t sysvol_version = 0;
 	PyObject *result;
+	NTSTATUS status;
 
 	tmp_ctx = talloc_new(NULL);
 
 	if (!PyArg_ParseTuple(args, "s", &unix_path)) {
 		return NULL;
 	}
-	gpo_get_sysvol_gpt_version(tmp_ctx, unix_path, &sysvol_version, &display_name);
+	status = gpo_get_sysvol_gpt_version(tmp_ctx, unix_path,
+					    &sysvol_version,
+					    &display_name);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_SetNTSTATUS(status);
+		TALLOC_FREE(tmp_ctx);
+		return NULL;
+	}
+
 	talloc_free(tmp_ctx);
 	result = Py_BuildValue("[s,i]", display_name, sysvol_version);
 	return result;
