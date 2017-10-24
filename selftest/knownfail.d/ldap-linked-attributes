@@ -1,3 +1,0 @@
-# linked attribute replacement isn't checking for duplicates.
-
-samba4.ldap.linked_attributes.python.*test_la_links_replace
