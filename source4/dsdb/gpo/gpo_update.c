@@ -111,7 +111,6 @@ static void gpoupdate_scan_apply(struct gpoupdate_service *service)
 	const char *const *gpo_update_command =
 	    lpcfg_gpo_update_command(service->task->lp_ctx);
 	const char *smbconf = lpcfg_configfile(service->task->lp_ctx);
-	/* /home/john/samba/samba/source4/scripting/bin/gpoupdate */
 	TALLOC_FREE(service->sysvscan.subreq);
 	DEBUG(3, ("Calling GPO update script\n"));
 	service->sysvscan.subreq = samba_runcmd_send(service,
