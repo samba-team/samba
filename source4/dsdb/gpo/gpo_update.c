@@ -154,17 +154,23 @@ static void gpoupdate_task_init(struct task_server *task)
 	service->system_session_info = system_session(service->task->lp_ctx);
 	if (!service->system_session_info) {
 		task_server_terminate(task,
-				      "gpoupdate: Failed to obtain server credentials\n",
+				      "gpoupdate: Failed to obtain server "
+				      "credentials\n",
 				      true);
 		return;
 	}
 
-	service->sysvscan.interval = lpcfg_parm_int(task->lp_ctx, NULL, "gpoupdate", "config interval", 900);	/* in seconds */
+	service->sysvscan.interval = lpcfg_parm_int(task->lp_ctx, NULL,
+						    "gpoupdate",
+						    "config interval",
+						    900); /* in seconds */
 	status = gpoupdate_sysvscan_schedule(service);
 	if (!NT_STATUS_IS_OK(status)) {
-		task_server_terminate(task, talloc_asprintf(task,
-							    "gpoupdate: Failed to update sysvol scan schedule: %s\n",
-							    nt_errstr(status)),
+		task_server_terminate(task,
+				      talloc_asprintf(task,
+						      "gpoupdate: Failed to update "
+						      "sysvol scan schedule: %s\n",
+						      nt_errstr(status)),
 				      true);
 		return;
 	}
