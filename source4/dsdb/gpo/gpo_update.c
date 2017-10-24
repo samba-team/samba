@@ -95,9 +95,6 @@ static void gpoupdate_sysvscan_handler_te(struct tevent_context *ev,
 static NTSTATUS gpoupdate_sysvscan_schedule(struct gpoupdate_service *service)
 {
 	/* For the moment the interval is hard coded to 5 sec */
-	DEBUG(0,
-	      ("calling %s interval = %d\n", __FUNCTION__,
-	       service->sysvscan.interval));
 	service->sysvscan.te =
 	    tevent_add_timer(service->task->event_ctx, service,
 			     timeval_current_ofs(service->sysvscan.interval, 0),
