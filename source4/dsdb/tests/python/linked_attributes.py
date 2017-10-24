@@ -306,6 +306,11 @@ class LATests(samba.tests.TestCase):
         self.remove_linked_attribute(g1, [])
         self.assert_forward_links(g1, [])
 
+        # removing a duplicate link in the same message should fail
+        self.add_linked_attribute(g2, [u1, u2])
+        self.assertRaises(ldb.LdbError,
+                          self.remove_linked_attribute,g2, [u1, u1])
+
     def _test_la_links_delete_link_reveal(self):
         u1, u2 = self.add_objects(2, 'user', 'u_del_link_reveal')
         g1, g2 = self.add_objects(2, 'group', 'g_del_link_reveal')
