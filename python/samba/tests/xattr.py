@@ -17,7 +17,7 @@
 
 """Tests for samba.xattr_native and samba.xattr_tdb."""
 
-import samba.xattr_native, samba.xattr_tdb
+import samba.xattr_native, samba.xattr_tdb, samba.posix_eadb
 from samba.xattr import copytree_with_xattrs
 from samba.dcerpc import xattr
 from samba.ndr import ndr_pack
@@ -102,6 +102,34 @@ class XattrTests(TestCase):
             samba.xattr_tdb.wrap_setxattr(eadb_path, tempf, "user.unittests",
                 reftxt)
             text = samba.xattr_tdb.wrap_getxattr(eadb_path, tempf,
+                "user.unittests")
+            self.assertEquals(text, reftxt)
+        finally:
+            os.unlink(tempf)
+        os.unlink(eadb_path)
+
+    def test_set_posix_eadb(self):
+        tempf = self._tmpfilename()
+        eadb_path = self._eadbpath()
+        ntacl = xattr.NTACL()
+        ntacl.version = 1
+        open(tempf, 'w').write("empty")
+        try:
+            samba.posix_eadb.wrap_setxattr(eadb_path,
+                tempf, "user.unittests", ndr_pack(ntacl))
+        finally:
+            os.unlink(tempf)
+        os.unlink(eadb_path)
+
+    def test_set_and_get_posix_eadb(self):
+        tempf = self._tmpfilename()
+        eadb_path = self._eadbpath()
+        reftxt = "this is a test"
+        open(tempf, 'w').write("empty")
+        try:
+            samba.posix_eadb.wrap_setxattr(eadb_path, tempf, "user.unittests",
+                reftxt)
+            text = samba.posix_eadb.wrap_getxattr(eadb_path, tempf,
                 "user.unittests")
             self.assertEquals(text, reftxt)
         finally:
