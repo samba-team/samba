@@ -464,6 +464,16 @@ class LATests(samba.tests.TestCase):
         self.assert_back_links(u3, [g1])
         self.assert_back_links(u4, [])
 
+        try:
+            # adding u2 twice should be an error
+            self.replace_linked_attribute(g2, [u1, u2, u3, u2])
+        except ldb.LdbError as (num, msg):
+            if num != ldb.ERR_ENTRY_ALREADY_EXISTS:
+                self.fail("adding duplicate values, expected "
+                          "ERR_ENTRY_ALREADY_EXISTS, (%d) "
+                          "got %d" % (ldb.ERR_ENTRY_ALREADY_EXISTS, num))
+        else:
+            self.fail("replacing duplicate values succeeded when it shouldn't")
 
     def test_la_links_replace2(self):
         users = self.add_objects(12, 'user', 'u_replace2')
