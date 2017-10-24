@@ -616,14 +616,11 @@ class LATests(samba.tests.TestCase):
         (g2,) = self.add_objects(1, 'group', 'g_all_at_once2',
                                  more_attrs={'member': users[:5]})
 
-        try:
-            self.add_objects(1, 'group', 'g_with_duplicate_links',
-                             more_attrs={'member': users[:5] + users[1:2]})
-        except ldb.LdbError as (num, msg):
-            if num != ldb.ERR_ENTRY_ALREADY_EXISTS:
-                self.fail("adding duplicate values, expected "
-                          "ERR_ENTRY_ALREADY_EXISTS, (%d) "
-                          "got %d" % (ldb.ERR_ENTRY_ALREADY_EXISTS, num))
+        self.assertRaisesLdbError(ldb.ERR_ENTRY_ALREADY_EXISTS,
+                                  "adding multiple duplicate values",
+                                  self.add_objects, 1, 'group',
+                                  'g_with_duplicate_links',
+                                  more_attrs={'member': users[:5] + users[1:2]})
 
         self.assert_forward_links(g1, users)
         self.assert_forward_links(g2, users[:5])
