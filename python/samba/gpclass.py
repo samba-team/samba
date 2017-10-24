@@ -360,7 +360,7 @@ class inf_to_ldb(inf_to):
         self.gp_db.store(str(self), self.attribute, old_val)
         self.ldb.set_pwdProperties(val)
 
-    def nttime2unix(self):
+    def days2rel_nttime(self):
         seconds = 60
         minutes = 60
         hours = 24
@@ -371,8 +371,8 @@ class inf_to_ldb(inf_to):
 
     def mapper(self):
         '''ldap value : samba setter'''
-        return { "minPwdAge" : (self.ch_minPwdAge, self.nttime2unix),
-                 "maxPwdAge" : (self.ch_maxPwdAge, self.nttime2unix),
+        return { "minPwdAge" : (self.ch_minPwdAge, self.days2rel_nttime),
+                 "maxPwdAge" : (self.ch_maxPwdAge, self.days2rel_nttime),
                  # Could be none, but I like the method assignment in update_samba
                  "minPwdLength" : (self.ch_minPwdLength, self.explicit),
                  "pwdProperties" : (self.ch_pwdProperties, self.explicit),
