@@ -24,6 +24,7 @@
 #include "ads.h"
 #include "secrets.h"
 #include "../libds/common/flags.h"
+#include "librpc/rpc/pyrpc_util.h"
 #include "auth/credentials/pycredentials.h"
 #include "libcli/util/pyerrors.h"
 
@@ -196,17 +197,27 @@ static int py_ads_init(ADS *self, PyObject *args, PyObject *kwds)
 	const char *realm = NULL;
 	const char *workgroup = NULL;
 	const char *ldap_server = NULL;
-	PyObject *creds = NULL;
+	PyObject *py_creds = NULL;
 	PyObject *lp_obj = NULL;
 	struct loadparm_context *lp_ctx = NULL;
 
 	static const char *kwlist[] = {"ldap_server", "loadparm_context", "credentials", NULL};
-	if (!PyArg_ParseTupleAndKeywords(args, kwds, "sO|O", discard_const_p(char *, kwlist), &ldap_server, &lp_obj, &creds))
+	if (!PyArg_ParseTupleAndKeywords(args, kwds, "sO|O", discard_const_p(char *, kwlist), &ldap_server, &lp_obj, &py_creds))
 		return -1;
 
 	self->frame = talloc_stackframe();
 
-	if (creds) self->cli_creds = pytalloc_get_type(creds, struct cli_credentials);
+	if (py_creds) {
+		if (!py_check_dcerpc_type(py_creds, "samba.credentials",
+					  "Credentials")) {
+			PyErr_Format(PyExc_TypeError,
+				     "Expected samba.credentaials "
+				     "for credentials argument");
+			return -1;
+		}
+		self->cli_creds
+			= PyCredentials_AsCliCredentials(py_creds);
+	}
 
 	if (lp_obj) {
 		lp_ctx = pytalloc_get_type(lp_obj, struct loadparm_context);
