@@ -401,6 +401,8 @@ class LATests(samba.tests.TestCase):
                 self.fail("adding duplicate values, expected "
                           "ERR_ENTRY_ALREADY_EXISTS, (%d) "
                           "got %d" % (ldb.ERR_ENTRY_ALREADY_EXISTS, num))
+        else:
+            self.fail("adding duplicate values succeed when it shouldn't")
 
         self.assert_forward_links(g1, [u1, u2, u3, u4])
         self.assert_forward_links(g2, [u3, u1])
