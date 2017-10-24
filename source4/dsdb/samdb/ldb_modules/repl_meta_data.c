@@ -938,6 +938,10 @@ static int get_parsed_dns(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 			  struct ldb_message_element *el, struct parsed_dn **pdn,
 			  const char *ldap_oid, struct ldb_request *parent);
 
+static int check_parsed_dn_duplicates(struct ldb_module *module,
+				      struct ldb_message_element *el,
+				      struct parsed_dn *pdn);
+
 /*
   fix up linked attributes in replmd_add.
   This involves setting up the right meta-data in extended DN
@@ -979,6 +983,12 @@ static int replmd_add_fix_la(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 		return ret;
 	}
 
+	ret = check_parsed_dn_duplicates(module, el, pdn);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
 	new_values = talloc_array(tmp_ctx, struct ldb_val, el->num_values);
 	if (new_values == NULL) {
 		ldb_module_oom(module);
@@ -988,17 +998,6 @@ static int replmd_add_fix_la(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 
 	for (i = 0; i < el->num_values; i++) {
 		struct parsed_dn *p = &pdn[i];
-		if (i > 0 && parsed_dn_compare(p, &pdn[i - 1]) == 0) {
-			ldb_asprintf_errstring(ldb,
-					"Linked attribute %s has "
-					"multiple identical values", el->name);
-			talloc_free(tmp_ctx);
-			if (ldb_attr_cmp(el->name, "member") == 0) {
-				return LDB_ERR_ENTRY_ALREADY_EXISTS;
-			} else {
-				return LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
-			}
-		}
 		ret = replmd_build_la_val(el->values, p->v, p->dsdb_dn,
 					  &ac->our_invocation_id,
 					  ac->seq_num, now);
