@@ -99,6 +99,7 @@ static PyObject *py_gpo_get_unix_path(GPO *self, PyObject *args, PyObject *kwds)
 	const char *cache_dir = NULL;
 	PyObject *ret = Py_None;
 	char *unix_path = NULL;
+	TALLOC_CTX *frame = NULL;
 
 	static const char *kwlist[] = {"cache_dir", NULL};
 	if (!PyArg_ParseTupleAndKeywords(args, kwds, "|s", discard_const_p(char *, kwlist), &cache_dir)) {
@@ -114,7 +115,12 @@ static PyObject *py_gpo_get_unix_path(GPO *self, PyObject *args, PyObject *kwds)
 		}
 	}
 
+	frame = talloc_stackframe();
+
 	status = gpo_get_unix_path(self->frame, cache_dir, self->gpo_ptr, &unix_path);
+
+	TALLOC_FREE(frame);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		PyErr_SetString(PyExc_SystemError, "Failed to determine gpo unix path");
 		goto out;
@@ -168,7 +174,6 @@ static PyTypeObject GPOType = {
 
 typedef struct {
 	PyObject_HEAD
-	TALLOC_CTX *frame;
 	ADS_STRUCT *ads_ptr;
 	struct cli_credentials *cli_creds;
 } ADS;
@@ -176,7 +181,6 @@ typedef struct {
 static void py_ads_dealloc(ADS* self)
 {
 	ads_destroy(&(self->ads_ptr));
-	talloc_free(self->frame);
 	Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
@@ -200,8 +204,6 @@ static int py_ads_init(ADS *self, PyObject *args, PyObject *kwds)
 	static const char *kwlist[] = {"ldap_server", "loadparm_context", "credentials", NULL};
 	if (!PyArg_ParseTupleAndKeywords(args, kwds, "sO|O", discard_const_p(char *, kwlist), &ldap_server, &lp_obj, &py_creds))
 		return -1;
-
-	self->frame = talloc_stackframe();
 
 	if (py_creds) {
 		if (!py_check_dcerpc_type(py_creds, "samba.credentials",
@@ -383,7 +385,7 @@ out:
 
 static PyObject *py_ads_get_gpo_list(ADS *self, PyObject *args, PyObject *kwds)
 {
-	TALLOC_CTX *mem_ctx = NULL;
+	TALLOC_CTX *frame = NULL;
 	struct GROUP_POLICY_OBJECT *gpo_list = NULL;
 	ADS_STATUS status;
 	const char *samaccountname = NULL;
@@ -393,7 +395,6 @@ static PyObject *py_ads_get_gpo_list(ADS *self, PyObject *args, PyObject *kwds)
 	struct security_token *token = NULL;
 	PyObject *ret = Py_None;
 	TALLOC_CTX *gpo_ctx;
-	PyObject * t_args;
 
 	static const char *kwlist[] = {"samaccountname", NULL};
 	if (!PyArg_ParseTupleAndKeywords(args, kwds, "s", discard_const_p(char *, kwlist), &samaccountname)) {
@@ -401,21 +402,23 @@ static PyObject *py_ads_get_gpo_list(ADS *self, PyObject *args, PyObject *kwds)
 		goto out;
 	}
 
-	mem_ctx = talloc_new(self->frame);
+	frame = talloc_stackframe();
 
-	status = find_samaccount(self->ads_ptr, mem_ctx, samaccountname, &uac, &dn);
+	status = find_samaccount(self->ads_ptr, frame, samaccountname, &uac, &dn);
 	if (!ADS_ERR_OK(status)) {
+		TALLOC_FREE(frame);
 		PyErr_SetString(PyExc_SystemError, "Failed to find samAccountName");
 		goto out;
 	}
 
 	if (uac & UF_WORKSTATION_TRUST_ACCOUNT || uac & UF_SERVER_TRUST_ACCOUNT) {
 		flags |= GPO_LIST_FLAG_MACHINE;
-		status = gp_get_machine_token(self->ads_ptr, mem_ctx, dn, &token);
+		status = gp_get_machine_token(self->ads_ptr, frame, dn, &token);
 	} else {
-		status = ads_get_sid_token(self->ads_ptr, mem_ctx, dn, &token);
+		status = ads_get_sid_token(self->ads_ptr, frame, dn, &token);
 	}
 	if (!ADS_ERR_OK(status)) {
+		TALLOC_FREE(frame);
 		PyErr_SetString(PyExc_SystemError, "Failed to get token");
 		goto out;
 	}
@@ -423,6 +426,7 @@ static PyObject *py_ads_get_gpo_list(ADS *self, PyObject *args, PyObject *kwds)
 	gpo_ctx = talloc_new(NULL);
 	status = ads_get_gpo_list(self->ads_ptr, gpo_ctx, dn, flags, token, &gpo_list);
 	if (!ADS_ERR_OK(status)) {
+		TALLOC_FREE(frame);
 		PyErr_SetString(PyExc_SystemError, "Failed to fetch GPO list");
 		goto out;
 	}
@@ -433,7 +437,7 @@ static PyObject *py_ads_get_gpo_list(ADS *self, PyObject *args, PyObject *kwds)
 	ret = PyObject_CallObject((PyObject *)&GPOType, t_args);
 
 out:
-	talloc_free(mem_ctx);
+	TALLOC_FREE(frame);
 	if (!ret) {
 		PyErr_Print();
 		return Py_None;
