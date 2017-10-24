@@ -126,7 +126,7 @@ plantestsuite(
      os.path.join(bbdir, "dbcheck-links.sh"),
      '$PREFIX_ABS/provision', 'release-4-5-0-pre1', configuration])
 planpythontestsuite("none", "samba.tests.upgradeprovision")
-planpythontestsuite("none", "samba.tests.xattr")
+planpythontestsuite("none", "samba.tests.xattr", py3_compatible=True)
 planpythontestsuite("none", "samba.tests.ntacls")
 planpythontestsuite("none", "samba.tests.policy")
 planpythontestsuite("none", "samba.tests.kcc.graph")

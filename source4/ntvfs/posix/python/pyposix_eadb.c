@@ -19,6 +19,7 @@
 */
 
 #include <Python.h>
+#include "python/py3compat.h"
 #include "includes.h"
 #include "system/filesys.h"
 #include <tdb.h>
@@ -27,8 +28,6 @@
 #include "ntvfs/posix/posix_eadb.h"
 #include "libcli/util/pyerrors.h"
 #include "param/pyparam.h"
-
-void initposix_eadb(void);
 
 static PyObject *py_is_xattr_supported(PyObject *self)
 {
@@ -102,7 +101,7 @@ static PyObject *py_wrap_getxattr(PyObject *self, PyObject *args)
 		talloc_free(mem_ctx);
 		return NULL;
 	}
-	ret = PyString_FromStringAndSize((char *)blob.data, blob.length);
+	ret = PyStr_FromStringAndSize((char *)blob.data, blob.length);
 	talloc_free(mem_ctx);
 	return ret;
 }
@@ -119,12 +118,22 @@ static PyMethodDef py_posix_eadb_methods[] = {
 	{ NULL }
 };
 
-void initposix_eadb(void)
+static struct PyModuleDef moduledef = {
+    PyModuleDef_HEAD_INIT,
+    .m_name = "posix_eadb",
+    .m_doc = "Python bindings for xattr manipulation.",
+    .m_size = -1,
+    .m_methods = py_posix_eadb_methods,
+};
+
+MODULE_INIT_FUNC(posix_eadb)
 {
 	PyObject *m;
 
-	m = Py_InitModule3("posix_eadb", py_posix_eadb_methods,
-			   "Python bindings for xattr manipulation.");
+	m = PyModule_Create(&moduledef);
+
 	if (m == NULL)
-		return;
+		return NULL;
+
+	return m;
 }
