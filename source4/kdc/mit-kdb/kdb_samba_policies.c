@@ -432,20 +432,10 @@ done:
 	return code;
 }
 
-void kdb_samba_db_audit_as_req(krb5_context context,
-			       krb5_kdc_req *request,
-			       krb5_db_entry *client,
-			       krb5_db_entry *server,
-			       krb5_timestamp authtime,
-			       krb5_error_code error_code)
+
+static void samba_bad_password_count(krb5_db_entry *client,
+				     krb5_error_code error_code)
 {
-	struct mit_samba_context *mit_ctx;
-
-	mit_ctx = ks_get_context(context);
-	if (mit_ctx == NULL) {
-		return;
-	}
-
 	switch (error_code) {
 	case 0:
 		mit_samba_zero_bad_password_count(client);
@@ -456,3 +446,29 @@ void kdb_samba_db_audit_as_req(krb5_context context,
 		break;
 	}
 }
+
+#if KRB5_KDB_API_VERSION >= 9
+void kdb_samba_db_audit_as_req(krb5_context context,
+			       krb5_kdc_req *request,
+			       const krb5_address *local_addr,
+			       const krb5_address *remote_addr,
+			       krb5_db_entry *client,
+			       krb5_db_entry *server,
+			       krb5_timestamp authtime,
+			       krb5_error_code error_code)
+{
+	samba_bad_password_count(client, error_code);
+
+	/* TODO: perform proper audit logging for addresses */
+}
+#else
+void kdb_samba_db_audit_as_req(krb5_context context,
+			       krb5_kdc_req *request,
+			       krb5_db_entry *client,
+			       krb5_db_entry *server,
+			       krb5_timestamp authtime,
+			       krb5_error_code error_code)
+{
+	samba_bad_password_count(client, error_code);
+}
+#endif
