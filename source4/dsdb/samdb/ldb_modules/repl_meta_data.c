@@ -2133,6 +2133,37 @@ static int get_parsed_dns_trusted(struct ldb_module *module,
 }
 
 /*
+   Return LDB_SUCCESS if a parsed_dn list contains no duplicate values,
+   otherwise an error code. For compatibility the error code differs depending
+   on whether or not the attribute is "member".
+
+   As always, the parsed_dn list is assumed to be sorted.
+ */
+static int check_parsed_dn_duplicates(struct ldb_module *module,
+				      struct ldb_message_element *el,
+				      struct parsed_dn *pdn)
+{
+	unsigned int i;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+
+	for (i = 1; i < el->num_values; i++) {
+		struct parsed_dn *p = &pdn[i];
+		if (parsed_dn_compare(p, &pdn[i - 1]) == 0) {
+			ldb_asprintf_errstring(ldb,
+					       "Linked attribute %s has "
+					       "multiple identical values",
+					       el->name);
+			if (ldb_attr_cmp(el->name, "member") == 0) {
+				return LDB_ERR_ENTRY_ALREADY_EXISTS;
+			} else {
+				return LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
+			}
+		}
+	}
+	return LDB_SUCCESS;
+}
+
+/*
   build a new extended DN, including all meta data fields
 
   RMD_FLAGS           = DSDB_RMD_FLAG_* bits
@@ -2896,6 +2927,12 @@ static int replmd_modify_la_replace(struct ldb_module *module,
 	}
 
 	ret = get_parsed_dns(module, tmp_ctx, el, &dns, ldap_oid, parent);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	ret = check_parsed_dn_duplicates(module, el, dns);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
