@@ -14,6 +14,8 @@ EOF
 dummy_client -s $ctdbd_socket &
 pid=$!
 
+wait_until 10 $CTDB process-exists "$pid"
+
 ok "PID $pid exists"
 simple_test "$pid"
 
