@@ -1099,8 +1099,9 @@ static struct smb_filename *vfs_gluster_getwd(struct vfs_handle_struct *handle,
 	}
 
 	ret = glfs_getcwd(handle->data, cwd, PATH_MAX - 1);
-	if (ret == 0) {
+	if (ret == NULL) {
 		free(cwd);
+		return NULL;
 	}
 	smb_fname = synthetic_smb_fname(ctx,
 					ret,
