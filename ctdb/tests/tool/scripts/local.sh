@@ -48,10 +48,14 @@ cleanup_ctdbd ()
 
 setup_ctdbd ()
 {
-	debug "Setting up fake ctdbd"
+	echo "Setting up fake ctdbd"
 
 	$VALGRIND fake_ctdbd -d "$FAKE_CTDBD_DEBUGLEVEL" \
 		  -s "$ctdbd_socket" -p "$ctdbd_pidfile"
+	# Wait till fake_ctdbd is running
+	wait_until 10 test -S "$ctdbd_socket" || \
+		die "fake_ctdbd failed to start"
+
 	test_cleanup cleanup_ctdbd
 }
 
