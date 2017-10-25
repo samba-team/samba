@@ -71,7 +71,7 @@ smbc_getUser(SMBCCTX *c)
 
 /** Set the username used for making connections */
 void
-smbc_setUser(SMBCCTX *c, char * user)
+smbc_setUser(SMBCCTX *c, const char *user)
 {
 	SAFE_FREE(c->user);
 	if (user) {

@@ -491,7 +491,7 @@ smbc_getUser(SMBCCTX *c);
 
 /** Set the username used for making connections */
 void
-smbc_setUser(SMBCCTX *c, char * user);
+smbc_setUser(SMBCCTX *c, const char *user);
 
 /**
  * Get the timeout used for waiting on connections and response data
