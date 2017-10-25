@@ -32,7 +32,7 @@ def generateHeaderFile(out_file, errors):
     out_file.write("#ifndef _NTSTATUS_GEN_H\n")
     out_file.write("#define _NTSTATUS_GEN_H\n")
     for err in errors:
-        line = "#define %s NT_STATUS(%s)\n" % (err.err_define, hex(err.err_code))
+        line = "#define %s NT_STATUS(%#x)\n" % (err.err_define, err.err_code)
         out_file.write(line)
     out_file.write("\n#endif /* _NTSTATUS_GEN_H */\n")
 
