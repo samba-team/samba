@@ -384,7 +384,7 @@ SMB_ACL_T posixacl_xattr_acl_get_file(vfs_handle_struct *handle,
 		TALLOC_CTX *frame = talloc_stackframe();
 		struct smb_filename *smb_fname_tmp =
 			cp_smb_filename_nostream(frame, smb_fname);
-		if (smb_fname == NULL) {
+		if (smb_fname_tmp == NULL) {
 			errno = ENOMEM;
 			ret = -1;
 		} else {
