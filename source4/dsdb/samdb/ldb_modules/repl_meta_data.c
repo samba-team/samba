@@ -3303,6 +3303,7 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 	unsigned int functional_level;
 	const struct ldb_message_element *guid_el = NULL;
 	struct ldb_control *sd_propagation_control;
+	struct ldb_control *fix_links_control = NULL;
 	struct replmd_private *replmd_private =
 		talloc_get_type(ldb_module_get_private(module), struct replmd_private);
 
@@ -3327,6 +3328,39 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	ldb = ldb_module_get_ctx(module);
+
+	fix_links_control = ldb_request_get_control(req,
+					DSDB_CONTROL_DBCHECK_FIX_DUPLICATE_LINKS);
+	if (fix_links_control != NULL) {
+		struct dsdb_schema *schema = NULL;
+		const struct dsdb_attribute *sa = NULL;
+
+		if (req->op.mod.message->num_elements != 1) {
+			return ldb_module_operr(module);
+		}
+
+		if (req->op.mod.message->elements[0].flags != LDB_FLAG_MOD_REPLACE) {
+			return ldb_module_operr(module);
+		}
+
+		schema = dsdb_get_schema(ldb, req);
+		if (schema == NULL) {
+			return ldb_module_operr(module);
+		}
+
+		sa = dsdb_attribute_by_lDAPDisplayName(schema,
+				req->op.mod.message->elements[0].name);
+		if (sa == NULL) {
+			return ldb_module_operr(module);
+		}
+
+		if (sa->linkID == 0) {
+			return ldb_module_operr(module);
+		}
+
+		fix_links_control->critical = false;
+		return ldb_next_request(module, req);
+	}
 
 	ldb_debug(ldb, LDB_DEBUG_TRACE, "replmd_modify\n");
 
