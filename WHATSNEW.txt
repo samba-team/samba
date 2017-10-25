@@ -1,4 +1,103 @@
                    =============================
+                   Release Notes for Samba 4.6.9
+                          October 25, 2017
+                   =============================
+
+
+This is the latest stable release of the Samba 4.6 release series.
+
+
+Changes since 4.6.8:
+--------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 12899: s3: libsmb: Reverse sense of 'clear all attributes', ignore
+     attribute change in SMB2 to match SMB1.
+   * BUG 12913: SMBC_setatr() initially uses an SMB1 call before falling back.
+   * BUG 13003: Fix segfault on MacOS 10.12.3 clients caused by
+     SMB_VFS_GET_COMPRESSION.
+   * BUG 13069: sys_getwd() can leak memory or possibly return the wrong errno
+     on older systems.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 6133: Cannot delete non-ACL files on Solaris/ZFS/NFSv4 ACL filesystem.
+   * BUG 7909: vfs_zfs_acl: Map SYNCHRONIZE acl permission statically.
+   * BUG 7933: vfs_fake_acls: Honor SEC_STD_WRITE_OWNER bit.
+   * BUG 12791: Kernel oplocks still have issues with named streams.
+   * BUG 12944: vfs_gpfs: Handle EACCES when fetching DOS attributes.
+   * BUG 12991: s3/mdssvc: Missing assignment in sl_pack_float.
+   * BUG 12995: Fix wrong Samba access checks when changing DOS attributes.
+   * BUG 13065: net: Groupmap cleanup should not delete BUILTIN mappings.
+   * BUG 13076: Enabling vfs_fruit results in loss of Finder tags and other
+     xattrs.
+
+o  Samuel Cabrero <scabrero@suse.de>
+   * BUG 12993: s3: spoolss: Fix GUID string format on GetPrinter info.
+
+o  David Disseldorp <ddiss@samba.org>
+   * BUG 12144: smbd/ioctl: Match WS2016 ReFS set compression behaviour.
+
+o  Amitay Isaacs <amitay@gmail.com>
+   * BUG 13012: ctdb-daemon: Fix implementation of process_exists control.
+   * BUG 13021: ctdb: GET_DB_SEQNUM control can cause ctdb to deadlock when
+     databases are frozen.
+   * BUG 13029: ctdb-daemon: Free up record data if a call request is deferred.
+   * BUG 13036: ctdb-client: Initialize ctdb_ltdb_header completely for empty
+     record.
+   * BUG 13056: CTDB starts consuming memory if there are dead nodes in the
+     cluster.
+   * BUG 13070: ctdb-common: Ignore event scripts with multiple '.'s.
+
+o  Lutz Justen <ljusten@google.com>
+   * BUG 13046: libgpo: Sort the GPOs in the correct order.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 12973: 'smbd' uses a lot of CPU on startup of a connection.
+   * BUG 13018: charset: Fix str[n]casecmp_m() by comparing lower case values.
+   * BUG 13079: Can't change password in Samba from a windows client if Samba
+     runs on IPv6 only interface.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 12903: Fix file change notification for renames.
+   * BUG 13006: messaging: Avoid a socket leak after fork.
+   * BUG 13090: vfs_catia: Fix a potential memleak.
+
+o  Christof Schmitt <cs@samba.org>
+   * BUG 12983: vfs_default: Fix passing of errno from async calls.
+   * BUG 13032: vfs_streams_xattr: Fix segfault when running with log level 10.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 12629: s3:utils: Do not report an invalid range for AD DC role.
+   * BUG 12704: s3:libsmb: Print the kinit failed message with DBGLVL_NOTICE.
+   * BUG 12956: s3:libads: Fix changing passwords with Kerberos.
+   * BUG 12975: Fix changing the password with 'smbpasswd' as a local user on
+     a domain member.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   =============================
                    Release Notes for Samba 4.6.8
                          September 20, 2017
                    =============================
@@ -75,8 +174,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    =============================
                    Release Notes for Samba 4.6.7
