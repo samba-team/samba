@@ -1090,8 +1090,10 @@ static int secrets_domain_info_kerberos_keys(struct secrets_domain_info1_passwor
 		return krb5_ret;
 	}
 
-	salt.data = discard_const(salt_data);
-	salt.length = strlen(salt_data);
+	salt = (krb5_data) {
+		.data = discard_const(salt_data),
+		.length = strlen(salt_data),
+	};
 
 	ok = convert_string_talloc(keys, CH_UTF16MUNGED, CH_UTF8,
 				   p->cleartext_blob.data,
