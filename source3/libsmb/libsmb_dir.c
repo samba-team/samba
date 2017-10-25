@@ -7,6 +7,7 @@
    Copyright (C) Tom Jansen (Ninja ISD) 2002
    Copyright (C) Derrell Lipman 2003-2008
    Copyright (C) Jeremy Allison 2007, 2008
+   Copyright (C) 2017 VMware, Inc. All rights reserved.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -55,6 +56,96 @@ remove_dir(SMBCFILE *dir)
 	}
 
 	dir->dir_list = dir->dir_end = dir->dir_next = NULL;
+
+}
+
+
+static void
+remove_dirplus(SMBCFILE *dir)
+{
+	struct smbc_dirplus_list *d,*f;
+
+	d = dir->dirplus_list;
+	while (d) {
+
+		f = d; d = d->next;
+
+		SAFE_FREE(f->data->short_name);
+		SAFE_FREE(f->data->name);
+		SAFE_FREE(f->data);
+		SAFE_FREE(f);
+
+	}
+
+	dir->dirplus_list = dir->dirplus_end = dir->dirplus_next = NULL;
+
+}
+
+static int
+add_fileinfo(SMBCFILE *dir,
+           struct file_info *finfo)
+{
+	struct file_info *info;
+
+	info = SMB_MALLOC_P(struct file_info);
+
+	if (!info) {
+
+		dir->dir_error = ENOMEM;
+		return -1;
+
+	}
+
+	ZERO_STRUCTP(info);
+
+	if (dir->dirplus_list == NULL) {
+
+		dir->dirplus_list = SMB_MALLOC_P(struct smbc_dirplus_list);
+		if (!dir->dirplus_list) {
+
+			SAFE_FREE(info);
+			dir->dirplus_error = ENOMEM;
+			return -1;
+
+		}
+		ZERO_STRUCTP(dir->dirplus_list);
+
+		dir->dirplus_end = dir->dirplus_next = dir->dirplus_list;
+	}
+	else {
+
+		dir->dirplus_end->next = SMB_MALLOC_P(struct smbc_dirplus_list);
+
+		if (!dir->dirplus_end->next) {
+
+			SAFE_FREE(info);
+			dir->dirplus_error = ENOMEM;
+			return -1;
+
+		}
+		ZERO_STRUCTP(dir->dirplus_end->next);
+
+		dir->dirplus_end = dir->dirplus_end->next;
+	}
+
+	dir->dirplus_end->next = NULL;
+	dir->dirplus_end->data = info;
+
+	info->crtime_ts = finfo->crtime_ts;
+	info->atime_ts = finfo->atime_ts;
+	info->ctime_ts = finfo->ctime_ts;
+	info->gid = finfo->gid;
+	info->mode = finfo->mode;
+	info->mtime_ts = finfo->mtime_ts;
+	info->name = SMB_STRDUP(finfo->name);
+	if (finfo->short_name)
+		info->short_name = SMB_STRDUP(finfo->short_name);
+	else
+		info->short_name = SMB_STRDUP("");
+	info->size = finfo->size;
+	info->uid = finfo->uid;
+
+	return 0;
 
 }
 
@@ -252,6 +343,13 @@ dir_list_fn(const char *mnt,
 		       (finfo->mode&FILE_ATTRIBUTE_DIRECTORY?SMBC_DIR:SMBC_FILE)) < 0) {
 		SMBCFILE *dir = (SMBCFILE *)state;
 		return map_nt_error_from_unix(dir->dir_error);
+	}
+
+	if(add_fileinfo((SMBCFILE *)state, finfo) < 0)
+	{
+		SMBCFILE *dir = (SMBCFILE *)state;
+		return map_nt_error_from_unix(dir->dirplus_error);
+
 	}
 	return NT_STATUS_OK;
 }
@@ -456,6 +554,7 @@ SMBC_opendir_ctx(SMBCCTX *context,
 	dir->offset   = 0;
 	dir->file     = False;
 	dir->dir_list = dir->dir_next = dir->dir_end = NULL;
+	dir->dirplus_list = dir->dirplus_next = dir->dirplus_end = NULL;
 
 	if (server[0] == (char)0) {
 
@@ -928,7 +1027,9 @@ SMBC_closedir_ctx(SMBCCTX *context,
 		return -1;
 	}
 
-	remove_dir(dir); /* Clean it up */
+	/* Clean it up */
+	remove_dir(dir);
+    remove_dirplus(dir);
 
 	DLIST_REMOVE(context->internal->files, dir);
 
@@ -1043,6 +1144,57 @@ SMBC_readdir_ctx(SMBCCTX *context,
 
 	TALLOC_FREE(frame);
         return dirp;
+}
+
+/*
+ * Routine to get a directory entry with all attributes
+ */
+
+struct file_info *
+SMBC_readdirplus_ctx(SMBCCTX *context,
+                     SMBCFILE *dir)
+{
+    struct file_info *finfo;
+    TALLOC_CTX *frame = talloc_stackframe();
+
+    /* Check that all is ok first ... */
+
+    if (!context || !context->internal->initialized) {
+
+        errno = EINVAL;
+        DEBUG(0, ("Invalid context in SMBC_readdirplus_ctx()\n"));
+        TALLOC_FREE(frame);
+        return NULL;
+
+    }
+
+    if (!dir || !SMBC_dlist_contains(context->internal->files, dir)) {
+
+        errno = EBADF;
+        DEBUG(0, ("Invalid dir in SMBC_readdirplus_ctx()\n"));
+        TALLOC_FREE(frame);
+        return NULL;
+
+    }
+
+    if (!dir->dirplus_next) {
+        TALLOC_FREE(frame);
+        return NULL;
+    }
+
+    finfo = dir->dirplus_next->data;
+    if (!finfo) {
+
+        errno = ENOENT;
+        TALLOC_FREE(frame);
+        return NULL;
+
+    }
+
+    dir->dirplus_next = dir->dirplus_next->next;
+
+    TALLOC_FREE(frame);
+    return finfo;
 }
 
 /*

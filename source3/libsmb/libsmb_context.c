@@ -7,6 +7,7 @@
    Copyright (C) Tom Jansen (Ninja ISD) 2002
    Copyright (C) Derrell Lipman 2003-2008
    Copyright (C) Jeremy Allison 2007, 2008
+   Copyright (C) 2017 VMware, Inc. All rights reserved.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -208,6 +209,7 @@ smbc_new_context(void)
         smbc_setFunctionOpendir(context, SMBC_opendir_ctx);
         smbc_setFunctionClosedir(context, SMBC_closedir_ctx);
         smbc_setFunctionReaddir(context, SMBC_readdir_ctx);
+        smbc_setFunctionReaddirPlus(context, SMBC_readdirplus_ctx);
         smbc_setFunctionGetdents(context, SMBC_getdents_ctx);
         smbc_setFunctionMkdir(context, SMBC_mkdir_ctx);
         smbc_setFunctionRmdir(context, SMBC_rmdir_ctx);

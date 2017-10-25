@@ -6,6 +6,7 @@
    Copyright (C) John Terpstra 2000
    Copyright (C) Tom Jansen (Ninja ISD) 2002
    Copyright (C) Derrell Lipman 2003, 2008
+   Copyright (C) 2017 VMware, Inc. All rights reserved.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -283,6 +284,13 @@ smbc_readdir(unsigned int dh)
 {
 	SMBCFILE * file = find_fd(dh);
         return smbc_getFunctionReaddir(statcont)(statcont, file);
+}
+
+struct file_info *
+smbc_readdirplus(unsigned int dh)
+{
+	SMBCFILE * file = find_fd(dh);
+	return smbc_getFunctionReaddirPlus(statcont)(statcont, file);
 }
 
 off_t
