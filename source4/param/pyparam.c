@@ -331,6 +331,9 @@ static PyObject *py_lp_dump_a_parameter(PyObject *self, PyObject *args)
 
 	if (!ret) {
 		PyErr_Format(PyExc_RuntimeError, "Parameter %s unknown for section %s", param_name, section_name);
+		if (f != stdout) {
+			fclose(f);
+		}
 		return NULL;
 	}
 
@@ -479,6 +482,9 @@ static PyObject *py_lp_service_dump(PyObject *self, PyObject *args)
 
 	if (!PyObject_TypeCheck(py_default_service, &PyLoadparmService)) {
 		PyErr_SetNone(PyExc_TypeError);
+		if (f != stdout) {
+			fclose(f);
+		}
 		return NULL;
 	}
 
