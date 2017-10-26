@@ -2987,6 +2987,19 @@ static int fruit_connect(vfs_handle_struct *handle,
 		lp_do_parameter(SNUM(handle->conn), "posix locking", "no");
 	}
 
+	if (config->time_machine) {
+		DBG_NOTICE("Enabling durable handles for Time Machine "
+			   "support on [%s]\n", service);
+		lp_do_parameter(SNUM(handle->conn), "durable handles", "yes");
+		lp_do_parameter(SNUM(handle->conn), "kernel oplocks", "no");
+		lp_do_parameter(SNUM(handle->conn), "kernel share modes", "no");
+		if (!lp_strict_sync(SNUM(handle->conn))) {
+			DBG_WARNING("Time Machine without strict sync is not "
+				    "recommended!\n");
+		}
+		lp_do_parameter(SNUM(handle->conn), "posix locking", "no");
+	}
+
 	return rc;
 }
 
