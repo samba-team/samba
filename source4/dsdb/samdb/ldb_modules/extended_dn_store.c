@@ -375,6 +375,7 @@ static int extended_dn_modify(struct ldb_module *module, struct ldb_request *req
 
 	unsigned int i, j;
 	struct extended_dn_context *ac;
+	struct ldb_control *fix_links_control = NULL;
 	int ret;
 
 	if (ldb_dn_is_special(req->op.mod.message->dn)) {
@@ -390,6 +391,12 @@ static int extended_dn_modify(struct ldb_module *module, struct ldb_request *req
 	if (!ac->schema) {
 		talloc_free(ac);
 		/* without schema, this doesn't make any sense */
+		return ldb_next_request(module, req);
+	}
+
+	fix_links_control = ldb_request_get_control(req,
+					DSDB_CONTROL_DBCHECK_FIX_DUPLICATE_LINKS);
+	if (fix_links_control != NULL) {
 		return ldb_next_request(module, req);
 	}
 
