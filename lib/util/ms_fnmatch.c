@@ -164,7 +164,8 @@ static int ms_fnmatch_core(const char *p, const char *n,
 int ms_fnmatch_protocol(const char *pattern, const char *string, int protocol,
 			bool is_case_sensitive)
 {
-	int ret, count, i;
+	int ret = -1;
+	size_t count, i;
 
 	if (strcmp(string, "..") == 0) {
 		string = ".";
@@ -209,12 +210,16 @@ int ms_fnmatch_protocol(const char *pattern, const char *string, int protocol,
 		if (pattern[i] == '*' || pattern[i] == '<') count++;
 	}
 
-	{
+	/* If the pattern includes '*' or '<' */
+	if (count >= 1) {
 		struct max_n max_n[count];
 
 		memset(max_n, 0, sizeof(struct max_n) * count);
 
 		ret = ms_fnmatch_core(pattern, string, max_n, strrchr(string, '.'),
+				      is_case_sensitive);
+	} else {
+		ret = ms_fnmatch_core(pattern, string, NULL, strrchr(string, '.'),
 				      is_case_sensitive);
 	}
 
