@@ -1,0 +1,8 @@
+Checking 225 objects
+WARNING: Link (back) mismatch for 'memberOf' (1) on 'CN=Administrator,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp' to 'member' (2) on 'CN=Enterprise Admins,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp'
+ERROR: Duplicate link values for attribute 'member' in 'CN=Enterprise Admins,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp'
+Duplicate link '<GUID=f4616422-30ec-473b-9d6f-a9a2d7bd1e6a>;<RMD_ADDTIME=131116484540000000>;<RMD_CHANGETIME=131116484540000000>;<RMD_FLAGS=0>;<RMD_INVOCID=4e4496a3-7fb8-4f97-8a33-d238db8b5e2d>;<RMD_LOCAL_USN=0>;<RMD_ORIGINATING_USN=3552>;<RMD_VERSION=0>;<SID=S-1-5-21-4177067393-1453636373-93818738-500>;CN=Administrator,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp'
+Correct   link '<GUID=f4616422-30ec-473b-9d6f-a9a2d7bd1e6a>;<RMD_ADDTIME=131116484540000000>;<RMD_CHANGETIME=131116484540000000>;<RMD_FLAGS=0>;<RMD_INVOCID=4e4496a3-7fb8-4f97-8a33-d238db8b5e2d>;<RMD_LOCAL_USN=3552>;<RMD_ORIGINATING_USN=3552>;<RMD_VERSION=0>;<SID=S-1-5-21-4177067393-1453636373-93818738-500>;CN=Administrator,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp'
+Remove duplicate links in attribute 'member' [YES]
+Fixed duplicate links in attribute 'member'
+Checked 225 objects (1 errors)
