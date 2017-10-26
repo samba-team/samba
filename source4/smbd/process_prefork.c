@@ -318,7 +318,7 @@ static void prefork_new_task(
 		struct tfork* w = NULL;
 
 		w = tfork_create();
-		if (t == NULL) {
+		if (w == NULL) {
 			smb_panic("failure in tfork\n");
 		}
 
