@@ -339,7 +339,6 @@ static void prefork_new_task(
 			free(w);
 
 			TALLOC_FREE(ev);
-			pid = getpid();
 			setproctitle("task[%s] pre-forked worker",
 				     service_name);
 			prefork_reload_after_fork();
