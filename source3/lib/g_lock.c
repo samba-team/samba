@@ -74,12 +74,12 @@ static bool g_lock_parse(uint8_t *buf, size_t buflen, struct g_lock *lck)
 
 	found_recs = IVAL(buf, 0);
 
+	buf += sizeof(uint32_t);
+	buflen -= sizeof(uint32_t);
 	if (found_recs > buflen/G_LOCK_REC_LENGTH) {
 		return false;
 	}
 
-	buf += sizeof(uint32_t);
-	buflen -= sizeof(uint32_t);
 	data_ofs = found_recs * G_LOCK_REC_LENGTH;
 
 	*lck = (struct g_lock) {
