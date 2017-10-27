@@ -3250,7 +3250,7 @@ static bool api_WPrintQueueCtrl(struct smbd_server_connection *sconn,
 	struct spoolss_SetPrinterInfoCtr info_ctr;
 	struct spoolss_DevmodeContainer devmode_ctr;
 	struct sec_desc_buf secdesc_ctr;
-	enum spoolss_PrinterControl command;
+	enum spoolss_PrinterControl command = SPOOLSS_PRINTER_CONTROL_UNPAUSE;
 
 	if (!str1 || !str2 || !QueueName) {
 		return False;

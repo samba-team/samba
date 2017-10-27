@@ -3670,7 +3670,7 @@ WERROR winreg_get_driver(TALLOC_CTX *mem_ctx,
 	struct policy_handle hive_hnd, key_hnd;
 	struct spoolss_DriverInfo8 i8, *info8;
 	struct spoolss_PrinterEnumValues *enum_values = NULL;
-	struct spoolss_PrinterEnumValues *v;
+	struct spoolss_PrinterEnumValues *v = NULL;
 	uint32_t num_values = 0;
 	TALLOC_CTX *tmp_ctx;
 	WERROR result;
@@ -3928,10 +3928,14 @@ WERROR winreg_get_driver(TALLOC_CTX *mem_ctx,
 		CHECK_ERROR(result);
 	}
 
-	if (!W_ERROR_IS_OK(result)) {
+	if (v && !W_ERROR_IS_OK(result)) {
 		DEBUG(0, ("winreg_enumval_to_TYPE() failed "
 			  "for %s: %s\n", v->value_name,
 			  win_errstr(result)));
+		goto done;
+	} else if (!v) {
+		DEBUG(0, ("winreg_enumval_to_TYPE() failed "
+			  "for unknown: %s\n", win_errstr(result)));
 		goto done;
 	}
 
@@ -4139,7 +4143,7 @@ WERROR winreg_get_core_driver(TALLOC_CTX *mem_ctx,
 	struct policy_handle hive_hnd, key_hnd;
 	struct spoolss_CorePrinterDriver *c;
 	struct spoolss_PrinterEnumValues *enum_values = NULL;
-	struct spoolss_PrinterEnumValues *v;
+	struct spoolss_PrinterEnumValues *v = NULL;
 	uint32_t num_values = 0;
 	TALLOC_CTX *tmp_ctx;
 	WERROR result;
@@ -4266,10 +4270,14 @@ WERROR winreg_get_core_driver(TALLOC_CTX *mem_ctx,
 		CHECK_ERROR(result);
 	}
 
-	if (!W_ERROR_IS_OK(result)) {
+	if (v && !W_ERROR_IS_OK(result)) {
 		DEBUG(0, ("winreg_enumval_to_TYPE() failed "
 			  "for %s: %s\n", v->value_name,
 			  win_errstr(result)));
+		goto done;
+	} else if (!v) {
+		DEBUG(0, ("winreg_enumval_to_TYPE() failed "
+			  "for unknown: %s\n", win_errstr(result)));
 		goto done;
 	}
 
@@ -4474,7 +4482,7 @@ WERROR winreg_get_driver_package(TALLOC_CTX *mem_ctx,
 	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	struct policy_handle hive_hnd, key_hnd;
 	struct spoolss_PrinterEnumValues *enum_values = NULL;
-	struct spoolss_PrinterEnumValues *v;
+	struct spoolss_PrinterEnumValues *v = NULL;
 	uint32_t num_values = 0;
 	TALLOC_CTX *tmp_ctx;
 	WERROR result;
@@ -4572,10 +4580,14 @@ WERROR winreg_get_driver_package(TALLOC_CTX *mem_ctx,
 		CHECK_ERROR(result);
 	}
 
-	if (!W_ERROR_IS_OK(result)) {
+	if (v && !W_ERROR_IS_OK(result)) {
 		DEBUG(0, ("winreg_enumval_to_TYPE() failed "
 			  "for %s: %s\n", v->value_name,
 			  win_errstr(result)));
+		goto done;
+	} else if (!v) {
+		DEBUG(0, ("winreg_enumval_to_TYPE() failed "
+			  "for unknown: %s\n", win_errstr(result)));
 		goto done;
 	}
 

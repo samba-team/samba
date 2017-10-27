@@ -31,6 +31,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <time.h>
 
 /* pre-include some of the public headers to avoid ordering issues */
 #include "core/ntstatus.h"

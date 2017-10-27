@@ -828,6 +828,7 @@ static int transaction_setup_recovery(struct tdb_context *tdb,
 	uint32_t magic, tailer;
 	int i;
 
+	memset((void *)&recovery_offset, 0, sizeof(tdb_off_t));
 	/*
 	  check that the recovery area has enough space
 	*/

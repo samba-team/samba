@@ -188,7 +188,7 @@ static WERROR DsCrackNameSPNAlias(struct ldb_context *sam_ctx, TALLOC_CTX *mem_c
 	krb5_principal principal;
 	const krb5_data *component;
 	const char *service, *dns_name;
-	char *new_service;
+	char *new_service = NULL;
 	char *new_princ;
 	enum drsuapi_DsNameStatus namestatus;
 

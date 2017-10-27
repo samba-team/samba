@@ -5372,7 +5372,7 @@ static bool test_ioctl_trim_simple(struct torture_context *torture,
 	struct smb2_handle fh;
 	NTSTATUS status;
 	union smb_ioctl ioctl;
-	bool trim_supported;
+	bool trim_supported = false;
 	TALLOC_CTX *tmp_ctx = talloc_new(tree);
 	struct fsctl_file_level_trim_req trim_req;
 	struct fsctl_file_level_trim_rsp trim_rsp;

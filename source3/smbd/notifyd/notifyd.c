@@ -380,7 +380,7 @@ static bool notifyd_apply_rec_change(
 	struct notifyd_instance *instances;
 	size_t num_instances;
 	size_t i;
-	struct notifyd_instance *instance;
+	struct notifyd_instance *instance = NULL;
 	TDB_DATA value;
 	NTSTATUS status;
 	bool ok = false;
@@ -441,7 +441,7 @@ static bool notifyd_apply_rec_change(
 		}
 	}
 
-	if (i < num_instances) {
+	if (instance && i < num_instances) {
 		instance->instance = *chg;
 	} else {
 		/*
