@@ -375,7 +375,10 @@ def SAMBA_BINARY(bld, binname, source,
     if not SET_TARGET_TYPE(bld, binname, 'BINARY'):
         return
 
-    features = 'c cprogram symlink_bin install_bin'
+    if bld.env.CROSS_COMPILE and use_hostcc:
+        features = 'hostcc host_cprogram symlink_bin install_bin'
+    else:
+        features = 'c cprogram symlink_bin install_bin'
     if pyembed:
         features += ' pyembed'
 
@@ -602,7 +605,10 @@ def SAMBA_SUBSYSTEM(bld, modname, source,
 
     bld.SET_BUILD_GROUP(group)
 
-    features = 'c'
+    if bld.env.CROSS_COMPILE and use_hostcc:
+        features = 'hostcc'
+    else:
+        features = 'c'
     if pyext:
         features += ' pyext'
     if pyembed:
@@ -950,6 +956,7 @@ def link_display(self):
     fname = self.outputs[0].bldpath(self.env)
     return progress_display(self, 'Linking', fname)
 Task.TaskBase.classes['cc_link'].display = link_display
+Task.TaskBase.classes['hostcc_link'].display = link_display
 
 def samba_display(self):
     if Options.options.progress_bar != 0:

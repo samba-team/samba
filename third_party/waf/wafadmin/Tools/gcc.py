@@ -18,6 +18,14 @@ def find_gcc(conf):
 	conf.env.CC      = cc
 
 @conftest
+def find_host_gcc(conf):
+	hcc = conf.find_program(['gcc', 'cc'], var='HOSTCC', mandatory=True)
+	hcc = conf.cmd_to_list(hcc)
+	ccroot.get_cc_version(conf, hcc, gcc=True)
+	conf.env.HOSTCC_NAME = 'host gcc'
+	conf.env.HOSTCC      = hcc
+
+@conftest
 def gcc_common_flags(conf):
 	v = conf.env
 
@@ -33,6 +41,7 @@ def gcc_common_flags(conf):
 
 	# linker
 	if not v['LINK_CC']: v['LINK_CC'] = v['CC']
+	if not v['LINK_HOSTCC']: v['LINK_HOSTCC'] = v['HOSTCC']
 	v['CCLNK_SRC_F']         = ''
 	v['CCLNK_TGT_F']         = ['-o', ''] # shell hack for -MD
 
@@ -129,6 +138,7 @@ def gcc_modifier_platform(conf):
 
 def detect(conf):
 	conf.find_gcc()
+	conf.find_host_gcc()
 	conf.find_cpp()
 	conf.find_ar()
 	conf.gcc_common_flags()

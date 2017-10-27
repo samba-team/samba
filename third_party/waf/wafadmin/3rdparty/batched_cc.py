@@ -40,7 +40,7 @@ class batch_task(Task.Task):
 	color = 'RED'
 
 	after = 'cc cxx'
-	before = 'cc_link cxx_link static_link'
+	before = 'cc_link hostcc_link cxx_link static_link'
 
 	def __str__(self):
 		return '(batch compilation for %d slaves)\n' % len(self.slaves)
@@ -147,7 +147,7 @@ cxx_hook = wrap(cxx.cxx_hook)
 extension(cxx.EXT_CXX)(cxx_hook)
 
 
-@feature('cprogram', 'cshlib', 'cstaticlib')
+@feature('cprogram', 'host_cprogram', 'cshlib', 'cstaticlib')
 @after('apply_link')
 def link_after_masters(self):
 	if getattr(self, 'allmasters', None):
