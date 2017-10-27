@@ -876,6 +876,12 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         error_count = 0
         obj_guid = obj['objectGUID'][0]
 
+        linkID, reverse_link_name = self.get_attr_linkID_and_reverse_name(attrname)
+        if reverse_link_name is not None:
+            reverse_syntax_oid = self.samdb_schema.get_syntax_oid_from_lDAPDisplayName(reverse_link_name)
+        else:
+            reverse_syntax_oid = None
+
         for val in obj[attrname]:
             dsdb_dn = dsdb_Dn(self.samdb, val, syntax_oid)
 
@@ -896,7 +902,6 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             else:
                 fixing_msDS_HasInstantiatedNCs = False
 
-            linkID, reverse_link_name = self.get_attr_linkID_and_reverse_name(attrname)
             if reverse_link_name is not None:
                 attrs.append(reverse_link_name)
 
@@ -1016,7 +1021,6 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                     if v_guid == obj_guid:
                         match_count += 1
             if match_count != 1:
-                reverse_syntax_oid = self.samdb_schema.get_syntax_oid_from_lDAPDisplayName(reverse_link_name)
                 if syntax_oid == dsdb.DSDB_SYNTAX_BINARY_DN or reverse_syntax_oid == dsdb.DSDB_SYNTAX_BINARY_DN:
                     if not linkID & 1:
                         # Forward binary multi-valued linked attribute
