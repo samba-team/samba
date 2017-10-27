@@ -65,6 +65,7 @@ class dbcheck(object):
         self.fix_undead_linked_attributes = False
         self.fix_all_missing_backlinks = False
         self.fix_all_orphaned_backlinks = False
+        self.fix_all_duplicate_links = False
         self.fix_rmd_flags = False
         self.fix_ntsecuritydescriptor = False
         self.fix_ntsecuritydescriptor_owner_group = False
@@ -720,6 +721,19 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                           "Failed to fix orphaned backlink %s" % attrname):
             self.report("Fixed orphaned backlink %s" % (attrname))
 
+    def err_duplicate_links(self, obj, attrname, vals):
+        '''handle a duplicate links value'''
+
+        if not self.confirm_all("Remove duplicate links in attribute '%s'" % attrname, 'fix_all_duplicate_links'):
+            self.report("Not removing duplicate links in attribute '%s'" % attrname)
+            return
+        m = ldb.Message()
+        m.dn = obj.dn
+        m['value'] = ldb.MessageElement(vals, ldb.FLAG_MOD_REPLACE, attrname)
+        if self.do_modify(m, ["local_oid:1.3.6.1.4.1.7165.4.3.19.2:1"],
+                "Failed to fix duplicate links in attribute '%s'" % attrname):
+            self.report("Fixed duplicate links in attribute '%s'" % (attrname))
+
     def err_no_fsmoRoleOwner(self, obj):
         '''handle a missing fSMORoleOwner'''
         self.report("ERROR: fSMORoleOwner not found for role %s" % (obj.dn))
@@ -882,6 +896,75 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         else:
             reverse_syntax_oid = None
 
+        duplicate_dict = dict()
+        duplicate_list = list()
+        unique_dict = dict()
+        unique_list = list()
+        for val in obj[attrname]:
+            if linkID & 1:
+                #
+                # Only cleanup forward links here,
+                # back links are handled below.
+                break
+
+            dsdb_dn = dsdb_Dn(self.samdb, val, syntax_oid)
+
+            # all DNs should have a GUID component
+            guid = dsdb_dn.dn.get_extended_component("GUID")
+            if guid is None:
+                continue
+            guidstr = str(misc.GUID(guid))
+            keystr = guidstr + dsdb_dn.prefix
+            if keystr not in unique_dict:
+                unique_dict[keystr] = dsdb_dn
+                unique_list.append(keystr)
+                continue
+            error_count += 1
+            if keystr not in duplicate_dict:
+                duplicate_dict[keystr] = dict()
+                duplicate_dict[keystr]["keep"] = None
+                duplicate_dict[keystr]["delete"] = list()
+                duplicate_list.append(keystr)
+
+            # Now check for the highest RMD_VERSION
+            v1 = int(unique_dict[keystr].dn.get_extended_component("RMD_VERSION"))
+            v2 = int(dsdb_dn.dn.get_extended_component("RMD_VERSION"))
+            if v1 > v2:
+                duplicate_dict[keystr]["keep"] = unique_dict[keystr]
+                duplicate_dict[keystr]["delete"].append(dsdb_dn)
+                continue
+            if v1 < v2:
+                duplicate_dict[keystr]["keep"] = dsdb_dn
+                duplicate_dict[keystr]["delete"].append(unique_dict[keystr])
+                unique_dict[keystr] = dsdb_dn
+                continue
+            # Fallback to the highest RMD_LOCAL_USN
+            u1 = int(unique_dict[keystr].dn.get_extended_component("RMD_LOCAL_USN"))
+            u2 = int(dsdb_dn.dn.get_extended_component("RMD_LOCAL_USN"))
+            if u1 >= u2:
+                duplicate_dict[keystr]["keep"] = unique_dict[keystr]
+                duplicate_dict[keystr]["delete"].append(dsdb_dn)
+                continue
+            duplicate_dict[keystr]["keep"] = dsdb_dn
+            duplicate_dict[keystr]["delete"].append(unique_dict[keystr])
+            unique_dict[keystr] = dsdb_dn
+
+        if len(duplicate_list) != 0:
+            self.report("ERROR: Duplicate link values for attribute '%s' in '%s'" % (attrname, obj.dn))
+            for keystr in duplicate_list:
+                d = duplicate_dict[keystr]
+                for dd in d["delete"]:
+                    self.report("Duplicate link '%s'" % dd)
+                self.report("Correct   link '%s'" % d["keep"])
+
+            vals = []
+            for keystr in unique_list:
+                dsdb_dn = unique_dict[keystr]
+                vals.append(str(dsdb_dn))
+            self.err_duplicate_links(obj, attrname, vals)
+            # We should continue with the fixed values
+            obj[attrname] = ldb.MessageElement(vals, ldb.FLAG_MOD_REPLACE, attrname)
+
         for val in obj[attrname]:
             dsdb_dn = dsdb_Dn(self.samdb, val, syntax_oid)
 
@@ -975,16 +1058,15 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             # components on deleted links, as these are allowed to
             # go stale (we just need the GUID, not the name)
             rmd_blob = dsdb_dn.dn.get_extended_component("RMD_FLAGS")
+            rmd_flags = 0
             if rmd_blob is not None:
                 rmd_flags = int(rmd_blob)
-                if rmd_flags & 1:
-                    continue
 
             # assert the DN matches in string form, where a reverse
             # link exists, otherwise (below) offer to fix it as a non-error.
             # The string form is essentially only kept for forensics,
             # as we always re-resolve by GUID in normal operations.
-            if reverse_link_name is not None:
+            if not rmd_flags & 1 and reverse_link_name is not None:
                 if str(res[0].dn) != str(dsdb_dn.dn):
                     error_count += 1
                     self.err_dn_component_target_mismatch(obj.dn, attrname, val, dsdb_dn,
@@ -1017,9 +1099,17 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             match_count = 0
             if reverse_link_name in res[0]:
                 for v in res[0][reverse_link_name]:
-                    v_guid = dsdb_Dn(self.samdb, v).dn.get_extended_component("GUID")
+                    v_dn = dsdb_Dn(self.samdb, v)
+                    v_guid = v_dn.dn.get_extended_component("GUID")
+                    v_blob = v_dn.dn.get_extended_component("RMD_FLAGS")
+                    v_rmd_flags = 0
+                    if v_blob is not None:
+                        v_rmd_flags = int(v_blob)
+                    if v_rmd_flags & 1:
+                        continue
                     if v_guid == obj_guid:
                         match_count += 1
+
             if match_count != 1:
                 if syntax_oid == dsdb.DSDB_SYNTAX_BINARY_DN or reverse_syntax_oid == dsdb.DSDB_SYNTAX_BINARY_DN:
                     if not linkID & 1:
@@ -1032,55 +1122,66 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
 
                         if match_count == forward_count:
                             continue
-
-                        error_count += 1
-
-                        # Add or remove the missing number of backlinks
-                        diff_count = forward_count - match_count
-
-                        # Loop until the difference between the forward and
-                        # the backward links is resolved.
-                        while diff_count != 0:
-                            if diff_count > 0:
-                                # self.err_missing_backlink(obj, attrname,
-                                #                          obj.dn.extended_str(),
-                                #                          reverse_link_name,
-                                #                          dsdb_dn.dn)
-                                # diff_count -= 1
-                                # TODO no method to fix these right now
-                                self.report("ERROR: Can't fix missing "
-                                            "multi-valued backlinks on %s" % str(dsdb_dn.dn))
-                                break
-                            else:
-                                self.err_orphaned_backlink(res[0], reverse_link_name,
-                                                           obj.dn.extended_str(), attrname,
-                                                           dsdb_dn.dn)
-                                diff_count += 1
-
-                    else:
-                        # If there's a backward link on binary multi-valued linked attribute,
-                        # let the check on the forward link remedy the value.
-                        # UNLESS, there is no forward link detected.
-                        if match_count == 0:
-                            self.err_orphaned_backlink(obj, attrname,
-                                                       val, reverse_link_name,
-                                                       dsdb_dn.dn)
-
+            expected_count = 0
+            for v in obj[attrname]:
+                v_dn = dsdb_Dn(self.samdb, v)
+                v_guid = v_dn.dn.get_extended_component("GUID")
+                v_blob = v_dn.dn.get_extended_component("RMD_FLAGS")
+                v_rmd_flags = 0
+                if v_blob is not None:
+                    v_rmd_flags = int(v_blob)
+                if v_rmd_flags & 1:
                     continue
+                if v_guid == guid:
+                    expected_count += 1
 
-                error_count += 1
-                if linkID & 1:
-                    # Backlink exists, but forward link does not
-                    # Delete the hanging backlink
-                    self.err_orphaned_backlink(obj, attrname, val, reverse_link_name, dsdb_dn.dn)
-                else:
-                    # Forward link exists, but backlink does not
-                    # Add the missing backlink (if the target object is not Deleted Objects?)
-                    if not target_is_deleted:
-                        self.err_missing_backlink(obj, attrname, obj.dn.extended_str(), reverse_link_name, dsdb_dn.dn)
+            if match_count == expected_count:
                 continue
 
+            diff_count = expected_count - match_count
 
+            if linkID & 1:
+                # If there's a backward link on binary multi-valued linked attribute,
+                # let the check on the forward link remedy the value.
+                # UNLESS, there is no forward link detected.
+                if match_count == 0:
+                    error_count += 1
+                    self.err_orphaned_backlink(obj, attrname,
+                                               val, reverse_link_name,
+                                               dsdb_dn.dn)
+                    continue
+                # Only warn here and let the forward link logic fix it.
+                self.report("WARNING: Link (back) mismatch for '%s' (%d) on '%s' to '%s' (%d) on '%s'" % (
+                            attrname, expected_count, str(obj.dn),
+                            reverse_link_name, match_count, str(dsdb_dn.dn)))
+                continue
+
+            assert not target_is_deleted
+
+            self.report("ERROR: Link (forward) mismatch for '%s' (%d) on '%s' to '%s' (%d) on '%s'" % (
+                        attrname, expected_count, str(obj.dn),
+                        reverse_link_name, match_count, str(dsdb_dn.dn)))
+
+            # Loop until the difference between the forward and
+            # the backward links is resolved.
+            while diff_count != 0:
+                error_count += 1
+                if diff_count > 0:
+                    if match_count > 0 or diff_count > 1:
+                        # TODO no method to fix these right now
+                        self.report("ERROR: Can't fix missing "
+                                    "multi-valued backlinks on %s" % str(dsdb_dn.dn))
+                        break
+                    self.err_missing_backlink(obj, attrname,
+                                              obj.dn.extended_str(),
+                                              reverse_link_name,
+                                              dsdb_dn.dn)
+                    diff_count -= 1
+                else:
+                    self.err_orphaned_backlink(res[0], reverse_link_name,
+                                               obj.dn.extended_str(), attrname,
+                                               obj.dn)
+                    diff_count += 1
 
 
         return error_count
