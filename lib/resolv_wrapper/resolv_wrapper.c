@@ -350,7 +350,11 @@ static ssize_t rwrap_fake_header(uint8_t **header_blob, size_t remaining,
 	memset(hb, 0, NS_HFIXEDSZ);
 
 	h = (HEADER *) hb;
+#ifdef HAVE_RES_RANDOMID
 	h->id = res_randomid();		/* random query ID */
+#else /* HAVE_RES_RANDOMID */
+	h->id = (0xffff & getpid());		/* random query ID */
+#endif /* HAVE_RES_RANDOMID */
 	h->qr = 1;			/* response flag */
 	h->rd = 1;			/* recursion desired */
 	h->ra = 1;			/* recursion available */
