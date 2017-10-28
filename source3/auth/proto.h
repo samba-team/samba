@@ -97,10 +97,6 @@ NTSTATUS auth_check_ntlm_password(TALLOC_CTX *mem_ctx,
 
 NTSTATUS auth_builtin_init(TALLOC_CTX *mem_ctx);
 
-/* The following definitions come from auth/auth_domain.c  */
-
-NTSTATUS auth_domain_init(TALLOC_CTX *mem_ctx);
-
 /* The following definitions come from auth/auth_generic.c  */
 
 NTSTATUS make_auth4_context(TALLOC_CTX *mem_ctx, struct auth4_context **auth4_context_out);
