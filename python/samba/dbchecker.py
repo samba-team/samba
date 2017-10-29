@@ -498,13 +498,15 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
 
     def err_deleted_dn(self, dn, attrname, val, dsdb_dn, correct_dn, remove_plausible=False):
         """handle a DN pointing to a deleted object"""
-        self.report("ERROR: target DN is deleted for %s in object %s - %s" % (attrname, dn, val))
-        self.report("Target GUID points at deleted DN %r" % str(correct_dn))
         if not remove_plausible:
+            self.report("ERROR: target DN is deleted for %s in object %s - %s" % (attrname, dn, val))
+            self.report("Target GUID points at deleted DN %r" % str(correct_dn))
             if not self.confirm_all('Remove DN link?', 'remove_implausible_deleted_DN_links'):
                 self.report("Not removing")
                 return
         else:
+            self.report("WARNING: target DN is deleted for %s in object %s - %s" % (attrname, dn, val))
+            self.report("Target GUID points at deleted DN %r" % str(correct_dn))
             if not self.confirm_all('Remove stale DN link?', 'remove_plausible_deleted_DN_links'):
                 self.report("Not removing")
                 return
@@ -527,23 +529,45 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             linkID, reverse_link_name \
                 = self.get_attr_linkID_and_reverse_name(attrname)
             if reverse_link_name is not None:
+                self.report("WARNING: no target object found for GUID "
+                            "component for one-way forward link "
+                            "%s in object "
+                            "%s - %s" % (attrname, dn, val))
                 self.report("Not removing dangling forward link")
-                return
+                return 0
 
             nc_root = self.samdb.get_nc_root(dn)
             target_nc_root = self.samdb.get_nc_root(dsdb_dn.dn)
             if nc_root != target_nc_root:
+                # We don't bump the error count as Samba produces these
+                # in normal operation
+                self.report("WARNING: no target object found for GUID "
+                            "component for cross-partition link "
+                            "%s in object "
+                            "%s - %s" % (attrname, dn, val))
                 self.report("Not removing dangling one-way "
                             "cross-partition link "
                             "(we might be mid-replication)")
-                return
+                return 0
 
             # Due to our link handling one-way links pointing to
             # missing objects are plausible.
+            #
+            # We don't bump the error count as Samba produces these
+            # in normal operation
+            self.report("WARNING: no target object found for GUID "
+                        "component for DN value %s in object "
+                        "%s - %s" % (attrname, dn, val))
             self.err_deleted_dn(dn, attrname, val,
                                 dsdb_dn, dsdb_dn, True)
+            return 0
 
+        # We bump the error count here, as we should have deleted this
+        self.report("ERROR: no target object found for GUID "
+                    "component for link %s in object "
+                    "%s - %s" % (attrname, dn, val))
         self.err_deleted_dn(dn, attrname, val, dsdb_dn, dsdb_dn, False)
+        return 1
 
     def err_missing_dn_GUID_component(self, dn, attrname, val, dsdb_dn, errstr):
         """handle a missing GUID extended DN component"""
@@ -883,12 +907,14 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                                                                "reveal_internals:0"
                                         ])
             except ldb.LdbError, (enum, estr):
-                error_count += 1
-                self.report("ERROR: no target object found for GUID component for %s in object %s - %s" % (attrname, obj.dn, val))
                 if enum != ldb.ERR_NO_SUCH_OBJECT:
                     raise
 
-                self.err_missing_target_dn_or_GUID(obj.dn, attrname, val, dsdb_dn)
+                # We don't always want to
+                error_count += self.err_missing_target_dn_or_GUID(obj.dn,
+                                                                  attrname,
+                                                                  val,
+                                                                  dsdb_dn)
                 continue
 
             if fixing_msDS_HasInstantiatedNCs:
