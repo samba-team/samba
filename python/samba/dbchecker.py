@@ -1123,11 +1123,14 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         return (set_att, list_attid, wrong_attids)
 
 
-    def fix_metadata(self, dn, attr):
+    def fix_metadata(self, obj, attr):
         '''re-write replPropertyMetaData elements for a single attribute for a
         object. This is used to fix missing replPropertyMetaData elements'''
+        guid_str = str(ndr_unpack(misc.GUID, obj['objectGUID'][0]))
+        dn = ldb.Dn(self.samdb, "<GUID=%s>" % guid_str)
         res = self.samdb.search(base = dn, scope=ldb.SCOPE_BASE, attrs = [attr],
-                                controls = ["search_options:1:2", "show_recycled:1"])
+                                controls = ["search_options:1:2",
+                                            "show_recycled:1"])
         msg = res[0]
         nmsg = ldb.Message()
         nmsg.dn = dn
@@ -1969,7 +1972,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                 if not self.confirm_all("Fix missing replPropertyMetaData element '%s'" % att, 'fix_all_metadata'):
                     self.report("Not fixing missing replPropertyMetaData element '%s'" % att)
                     continue
-                self.fix_metadata(dn, att)
+                self.fix_metadata(obj, att)
 
         if self.is_fsmo_role(dn):
             if "fSMORoleOwner" not in obj and ("*" in attrs or "fsmoroleowner" in map(str.lower, attrs)):
