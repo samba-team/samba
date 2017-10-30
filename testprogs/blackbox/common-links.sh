@@ -96,6 +96,14 @@ add_deleted_target_backlink() {
     fi
 }
 
+add_deleted_source_backlink() {
+    ldif=$release_dir/add-deleted-source-backlink.ldif
+    TZ=UTC $ldbmodify -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb.d/DC%3DRELEASE-4-5-0-PRE1,DC%3DSAMBA,DC%3DCORP.ldb $ldif
+    if [ "$?" != "0" ]; then
+	return 1
+    fi
+}
+
 add_deleted_target_link() {
     ldif=$release_dir/add-dangling-deleted-link.ldif
     TZ=UTC $ldbmodify -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb.d/DC%3DRELEASE-4-5-0-PRE1,DC%3DSAMBA,DC%3DCORP.ldb $ldif
