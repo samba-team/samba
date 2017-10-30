@@ -30,9 +30,12 @@ struct smb2cli_notify_state {
 	struct iovec *recv_iov;
 	uint8_t *data;
 	uint32_t data_length;
+
+	struct tevent_req *subreq;
 };
 
 static void smb2cli_notify_done(struct tevent_req *subreq);
+static void smb2cli_notify_timedout(struct tevent_req *subreq);
 
 struct tevent_req *smb2cli_notify_send(TALLOC_CTX *mem_ctx,
 				       struct tevent_context *ev,
@@ -64,19 +67,48 @@ struct tevent_req *smb2cli_notify_send(TALLOC_CTX *mem_ctx,
 	SIVAL(fixed, 24, completion_filter);
 	SIVAL(fixed, 28, 0); 	/* reserved */
 
-	subreq = smb2cli_req_send(state, ev, conn, SMB2_OP_NOTIFY,
-				  0, 0, /* flags */
-				  timeout_msec,
-				  tcon,
-				  session,
-				  state->fixed, sizeof(state->fixed),
-				  NULL, 0, /* dyn* */
-				  0); /* max_dyn_len */
+	state->subreq = smb2cli_req_send(state, ev, conn, SMB2_OP_NOTIFY,
+					 0, 0, /* flags */
+					 0,	/* timeout_msec */
+					 tcon,
+					 session,
+					 state->fixed, sizeof(state->fixed),
+					 NULL, 0, /* dyn* */
+					 0); /* max_dyn_len */
+	if (tevent_req_nomem(state->subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(state->subreq, smb2cli_notify_done, req);
+
+	subreq = tevent_wakeup_send(state, ev,
+				    timeval_current_ofs_msec(timeout_msec));
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
-	tevent_req_set_callback(subreq, smb2cli_notify_done, req);
+	tevent_req_set_callback(subreq, smb2cli_notify_timedout, req);
+
 	return req;
+}
+
+static void smb2cli_notify_timedout(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct smb2cli_notify_state *state = tevent_req_data(
+		req, struct smb2cli_notify_state);
+	bool ok;
+
+	ok = tevent_wakeup_recv(subreq);
+	if (!ok) {
+		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+		return;
+	}
+
+	ok = tevent_req_cancel(state->subreq);
+	if (!ok) {
+		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+		return;
+	}
 }
 
 static void smb2cli_notify_done(struct tevent_req *subreq)
@@ -98,6 +130,10 @@ static void smb2cli_notify_done(struct tevent_req *subreq)
 	status = smb2cli_req_recv(subreq, state, &iov,
 				  expected, ARRAY_SIZE(expected));
 	TALLOC_FREE(subreq);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_CANCELLED)) {
+		status = NT_STATUS_IO_TIMEOUT;
+	}
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
