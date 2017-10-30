@@ -4561,12 +4561,17 @@ static int cmd_notify(void)
 	}
 
 	while (1) {
-		uint32_t i, num_changes;
-		struct notify_change *changes;
+		uint32_t i;
+		uint32_t num_changes = 0;
+		struct notify_change *changes = NULL;
 
 		status = cli_notify(cli, fnum, 1000, FILE_NOTIFY_CHANGE_ALL,
 				    true,
 				    talloc_tos(), &num_changes, &changes);
+		if (NT_STATUS_EQUAL(status, STATUS_NOTIFY_ENUM_DIR)) {
+			printf("NOTIFY_ENUM_DIR\n");
+			status = NT_STATUS_OK;
+		}
 		if (!NT_STATUS_IS_OK(status)) {
 			d_printf("notify returned %s\n",
 				 nt_errstr(status));
