@@ -1,0 +1,5 @@
+dn:CN=dsg\0ADEL:6d66d0ef-cad7-4e5d-b1b6-4a233a21c269,CN=Deleted Objects,DC=release-4-5-0-pre1,DC=samba,DC=corp
+changetype: modify
+add: memberOf
+memberOf: <GUID=a5b834bf-e4ca-4e1b-9c9f-0f01c9656f3b>;<SID=S-1-5-21-4177067393-1453636373-93818738-571>;CN=Allowed RODC Password Replication Group,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+-

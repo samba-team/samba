@@ -1,0 +1,7 @@
+Checking 1612 objects
+WARNING: no target object found for GUID component for DN value msDS-NC-Replica-Locations in object CN=36a28334-a8d3-4e67-bfe9-7e66c1af7cff,CN=Partitions,CN=Configuration,DC=release-4-5-0-pre1,DC=samba,DC=corp - <GUID=d2cadb04-6df2-4b99-b388-9fe2511767c4>;CN=NTDS Settings,CN=NOT-A_SERVER,CN=Servers,CN=Default-First-Site-Name,CN=Sites,CN=Configuration,DC=release-4-5-0-pre1,DC=samba,DC=corp
+WARNING: target DN is deleted for msDS-NC-Replica-Locations in object CN=36a28334-a8d3-4e67-bfe9-7e66c1af7cff,CN=Partitions,CN=Configuration,DC=release-4-5-0-pre1,DC=samba,DC=corp - <GUID=d2cadb04-6df2-4b99-b388-9fe2511767c4>;CN=NTDS Settings,CN=NOT-A_SERVER,CN=Servers,CN=Default-First-Site-Name,CN=Sites,CN=Configuration,DC=release-4-5-0-pre1,DC=samba,DC=corp
+Target GUID points at deleted DN '<GUID=d2cadb04-6df2-4b99-b388-9fe2511767c4>;CN=NTDS Settings,CN=NOT-A_SERVER,CN=Servers,CN=Default-First-Site-Name,CN=Sites,CN=Configuration,DC=release-4-5-0-pre1,DC=samba,DC=corp'
+Remove stale DN link? [YES]
+Removed deleted DN on attribute msDS-NC-Replica-Locations
+Checked 1612 objects (0 errors)

@@ -1,0 +1,13 @@
+dn: CN=secretary-del,CN=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+changetype: add
+objectclass: user
+samaccountname: secretary-del
+
+dn: CN=deleted-one-way-del,CN=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+changetype: add
+objectclass: user
+samaccountname: dangling-one-way-del
+secretary: CN=secretary-del,CN=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+
+dn: CN=secretary-del,CN=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+changetype: delete

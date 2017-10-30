@@ -1,0 +1,5 @@
+dn: CN=Allowed RODC Password Replication Group,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+changetype: modify
+add: member
+member: <GUID=2301a64c-5b42-4ca8-851e-12d4a711cfb4>;<SID=S-1-5-21-4177067393-1453636373-93818738-1111>;CN=fred\0ADEL:2301a64c-5b42-4ca8-851e-12d4a711cfb4,CN=Deleted Objects,DC=release-4-5-0-pre1,DC=samba,DC=corp
+-
