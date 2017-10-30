@@ -878,7 +878,7 @@ static NTSTATUS smbXcli_req_cancel_write_req(struct tevent_req *req)
 
 	/*
 	 * Check if it's possible to cancel the request.
-	 * If the result is true it's not to late.
+	 * If the result is true it's not too late.
 	 * See writev_cancel().
 	 */
 	ok = tevent_req_cancel(state->write_req);
