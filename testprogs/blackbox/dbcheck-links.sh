@@ -150,6 +150,7 @@ if [ -d $release_dir ]; then
     testit "add_dangling_link" add_dangling_link
     testit "add_dangling_backlink" add_dangling_backlink
     testit "add_deleted_dangling_backlink" add_deleted_dangling_backlink
+    testit "add_deleted_source_backlink" add_deleted_source_backlink
     testit "add_deleted_target_link" add_deleted_target_link
     testit "add_deleted_target_backlink" add_deleted_target_backlink
     testit "dbcheck_dangling" dbcheck_dangling
