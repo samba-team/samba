@@ -318,7 +318,7 @@
 ^samba3.smb2.credits.session_setup_credits_granted.*
 ^samba3.smb2.credits.single_req_credits_granted.*
 ^samba3.smb2.credits.skipped_mid.*
-^samba4.blackbox.dbcheck-links.release-4-5-0-pre1.dangling_multi_valued_dbcheck
+^samba4.blackbox.dbcheck-links.release-4-5-0-pre1.dbcheck_dangling_multi_valued_clean
 ^samba4.blackbox.dbcheck-links.release-4-5-0-pre1.dangling_multi_valued_check_missing
 #
 # rap password tests don't function in the ad_dc_ntvfs:local environment

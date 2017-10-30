@@ -263,7 +263,7 @@ dangling_one_way_link() {
     fi
 }
 
-dangling_multi_valued() {
+add_dangling_multi_valued() {
     # multi1 - All 4 backlinks
     # multi2 - Missing all 4 backlinks
     # multi3 - Missing 2 backlinks
@@ -292,6 +292,9 @@ dangling_multi_valued() {
     if [ "$?" != "0" ]; then
 	return 1
     fi
+}
+
+dbcheck_dangling_multi_valued() {
 
     $PYTHON $BINDIR/samba-tool dbcheck -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb --fix --yes
     if [ "$?" != "1" ]; then
@@ -358,11 +361,12 @@ if [ -d $release_dir ]; then
     testit "dangling_one_way_dn" dangling_one_way_dn
     testit "deleted_one_way_dn" deleted_one_way_dn
     testit "dbcheck_clean3" dbcheck_clean
-    testit "dangling_multi_valued" dangling_multi_valued
+    testit "add_dangling_multi_valued" add_dangling_multi_valued
+    testit "dbcheck_dangling_multi_valued" dbcheck_dangling_multi_valued
     testit "dangling_multi_valued_check_missing" dangling_multi_valued_check_missing
     testit "dangling_multi_valued_check_equal_or_too_many" dangling_multi_valued_check_equal_or_too_many
     # Currently this cannot pass
-    testit "dangling_multi_valued_dbcheck" dbcheck_clean
+    testit "dbcheck_dangling_multi_valued_clean" dbcheck_clean
 else
     subunit_start_test $RELEASE
     subunit_skip_test $RELEASE <<EOF
