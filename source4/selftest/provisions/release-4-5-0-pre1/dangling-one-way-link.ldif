@@ -1,15 +1,7 @@
-dn: CN=secretary,CN=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
-changetype: add
-objectclass: user
-samaccountname: secretary
-
-dn: CN=dangling-one-way,CN=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
-changetype: add
-objectclass: user
-samaccountname: dangling-one-way
-secretary: CN=secretary,CN=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
-
-dn: CN=secretary,CN=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
-changetype: modrdn
-newrdn: cn=new-secretary
-deleteoldrdn: 1
+dn: CN=36a28334-a8d3-4e67-bfe9-7e66c1af7cff,CN=Partitions,CN=Configuration,DC=release-4-5-0-pre1,DC=samba,DC=corp
+changetype: modify
+add: msDS-NC-Replica-Locations
+msDS-NC-Replica-Locations: <GUID=d2cadb04-6df2-4b99-b388-9fe2511767c4>;CN=NTDS
+  Settings,CN=NOT-A_SERVER,CN=Servers,CN=Default-First-Site-Name,CN=Sites,C
+ N=Configuration,DC=release-4-5-0-pre1,DC=samba,DC=corp
+-

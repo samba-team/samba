@@ -50,29 +50,39 @@ undump() {
 }
 
 dbcheck() {
-    tmpfile=$PREFIX_ABS/$RELEASE/expected-dbcheck-link-output.txt.tmp
-    tmpldif1=$PREFIX_ABS/$RELEASE/expected-dbcheck-output2.txt.tmp1
+    tmpfile=$PREFIX_ABS/$RELEASE/expected-dbcheck-link-output${1}.txt.tmp
+    tmpldif1=$PREFIX_ABS/$RELEASE/expected-dbcheck-output${1}2.txt.tmp1
 
     TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb -s base -b '' | grep highestCommittedUSN > $tmpldif1
 
-    $PYTHON $BINDIR/samba-tool dbcheck -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb --fix --yes > $tmpfile
-    if [ "$?" != "1" ]; then
+    $PYTHON $BINDIR/samba-tool dbcheck -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb $3 --fix --yes > $tmpfile
+    if [ "$?" != "$2" ]; then
 	return 1
     fi
     sort $tmpfile > $tmpfile.sorted
-    sort $release_dir/expected-dbcheck-link-output.txt > $tmpfile.expected
+    sort $release_dir/expected-dbcheck-link-output${1}.txt > $tmpfile.expected
     diff -u $tmpfile.sorted $tmpfile.expected
     if [ "$?" != "0" ]; then
 	return 1
     fi
 
-    tmpldif2=$PREFIX_ABS/$RELEASE/expected-dbcheck-output2.txt.tmp2
+    tmpldif2=$PREFIX_ABS/$RELEASE/expected-dbcheck-output${1}2.txt.tmp2
     TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb -s base -b '' | grep highestCommittedUSN > $tmpldif2
 
-    diff $tmpldif1 $tmpldif2
+    diff -u $tmpldif1 $tmpldif2
     if [ "$?" != "0" ]; then
 	return 1
     fi
+}
+
+dbcheck_dangling() {
+    dbcheck "" "1" ""
+    return $?
+}
+
+dbcheck_one_way() {
+    dbcheck "_one_way" "0" "CN=Configuration,DC=release-4-5-0-pre1,DC=samba,DC=corp"
+    return $?
 }
 
 dbcheck_clean() {
@@ -121,6 +131,42 @@ add_dangling_backlink() {
     fi
 
     ldif=$release_dir/add-dangling-backlink.ldif
+    TZ=UTC $ldbmodify -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb.d/DC%3DRELEASE-4-5-0-PRE1,DC%3DSAMBA,DC%3DCORP.ldb $ldif
+    if [ "$?" != "0" ]; then
+	return 1
+    fi
+}
+
+add_deleted_dangling_backlink() {
+    ldif=$release_dir/add-deleted-backlink-user.ldif
+    TZ=UTC $ldbadd -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb $ldif
+    if [ "$?" != "0" ]; then
+	return 1
+    fi
+
+    ldif=$release_dir/add-deleted-backlink.ldif
+    TZ=UTC $ldbmodify -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb.d/DC%3DRELEASE-4-5-0-PRE1,DC%3DSAMBA,DC%3DCORP.ldb $ldif
+    if [ "$?" != "0" ]; then
+	return 1
+    fi
+}
+
+add_deleted_target_backlink() {
+    ldif=$release_dir/add-deleted-target-backlink-user.ldif
+    TZ=UTC $ldbadd -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb $ldif
+    if [ "$?" != "0" ]; then
+	return 1
+    fi
+
+    ldif=$release_dir/add-deleted-target-backlink.ldif
+    TZ=UTC $ldbmodify -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb.d/DC%3DRELEASE-4-5-0-PRE1,DC%3DSAMBA,DC%3DCORP.ldb $ldif
+    if [ "$?" != "0" ]; then
+	return 1
+    fi
+}
+
+add_deleted_target_link() {
+    ldif=$release_dir/add-dangling-deleted-link.ldif
     TZ=UTC $ldbmodify -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb.d/DC%3DRELEASE-4-5-0-PRE1,DC%3DSAMBA,DC%3DCORP.ldb $ldif
     if [ "$?" != "0" ]; then
 	return 1
@@ -193,9 +239,25 @@ check_expected_after_objects() {
     fi
 }
 
-dangling_one_way() {
-    ldif=$release_dir/dangling-one-way-link.ldif
+dangling_one_way_dn() {
+    ldif=$release_dir/dangling-one-way-dn.ldif
     TZ=UTC $ldbmodify -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb $ldif
+    if [ "$?" != "0" ]; then
+        return 1
+    fi
+}
+
+deleted_one_way_dn() {
+    ldif=$release_dir/deleted-one-way-dn.ldif
+    TZ=UTC $ldbmodify -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb $ldif
+    if [ "$?" != "0" ]; then
+        return 1
+    fi
+}
+
+dangling_one_way_link() {
+    ldif=$release_dir/dangling-one-way-link.ldif
+    TZ=UTC $ldbmodify -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb.d/CN%3DCONFIGURATION,DC%3DRELEASE-4-5-0-PRE1,DC%3DSAMBA,DC%3DCORP.ldb $ldif
     if [ "$?" != "0" ]; then
         return 1
     fi
@@ -282,13 +344,20 @@ if [ -d $release_dir ]; then
     testit "move_one_user" move_one_user
     testit "add_dangling_link" add_dangling_link
     testit "add_dangling_backlink" add_dangling_backlink
-    testit "dbcheck" dbcheck
+    testit "add_deleted_dangling_backlink" add_deleted_dangling_backlink
+    testit "add_deleted_target_link" add_deleted_target_link
+    testit "add_deleted_target_backlink" add_deleted_target_backlink
+    testit "dbcheck_dangling" dbcheck_dangling
     testit "dbcheck_clean" dbcheck_clean
     testit "check_expected_after_deleted_links" check_expected_after_deleted_links
     testit "check_expected_after_links" check_expected_after_links
     testit "check_expected_after_objects" check_expected_after_objects
-    testit "dangling_one_way" dangling_one_way
-    testit "dbcheck_clean" dbcheck_clean
+    testit "dangling_one_way_link" dangling_one_way_link
+    testit "dbcheck_one_way" dbcheck_one_way
+    testit "dbcheck_clean2" dbcheck_clean
+    testit "dangling_one_way_dn" dangling_one_way_dn
+    testit "deleted_one_way_dn" deleted_one_way_dn
+    testit "dbcheck_clean3" dbcheck_clean
     testit "dangling_multi_valued" dangling_multi_valued
     testit "dangling_multi_valued_check_missing" dangling_multi_valued_check_missing
     testit "dangling_multi_valued_check_equal_or_too_many" dangling_multi_valued_check_equal_or_too_many

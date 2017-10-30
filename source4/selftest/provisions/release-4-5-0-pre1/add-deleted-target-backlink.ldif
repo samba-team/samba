@@ -1,0 +1,4 @@
+dn: CN=deleted-target-back,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+changetype: modify
+add: memberOf
+memberOf: <GUID=e0f581e7-14ee-4fc2-839c-8f46f581c72a>;<SID=S-1-5-21-4177067393-1453636373-93818738-1109>;CN=gdg\0ADEL:e0f581e7-14ee-4fc2-839c-8f46f581c72a,CN=Deleted Objects,DC=release-4-5-0-pre1,DC=samba,DC=corp

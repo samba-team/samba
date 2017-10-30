@@ -1,0 +1,15 @@
+dn: CN=secretary,CN=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+changetype: add
+objectclass: user
+samaccountname: secretary
+
+dn: CN=dangling-one-way,CN=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+changetype: add
+objectclass: user
+samaccountname: dangling-one-way
+secretary: CN=secretary,CN=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+
+dn: CN=secretary,CN=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+changetype: modrdn
+newrdn: cn=new-secretary
+deleteoldrdn: 1
