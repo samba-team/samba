@@ -4192,6 +4192,15 @@ NTSTATUS cli_smb2_notify(struct cli_state *cli, uint16_t fnum,
 				completion_filter, recursive,
 				frame, &base, &len);
 
+	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+		len = 0;
+		status = NT_STATUS_OK;
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+
 	ofs = 0;
 
 	while (len - ofs >= 12) {
