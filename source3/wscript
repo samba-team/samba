@@ -1588,10 +1588,10 @@ main() {
     if Options.options.with_glusterfs:
         conf.CHECK_CFG(package='glusterfs-api', args='"glusterfs-api >= 4" --cflags --libs',
                        msg='Checking for glusterfs-api >= 4', uselib_store="GFAPI")
-        conf.CHECK_HEADERS('api/glfs.h', lib='gfapi')
+        conf.CHECK_HEADERS('glusterfs/api/glfs.h', lib='gfapi')
         conf.CHECK_LIB('gfapi', shlib=True)
 
-        if conf.CONFIG_SET('HAVE_API_GLFS_H'):
+        if conf.CONFIG_SET('HAVE_GLUSTERFS_API_GLFS_H'):
             if Options.options.with_acl_support:
                  conf.DEFINE('HAVE_GLUSTERFS', '1')
             else:
