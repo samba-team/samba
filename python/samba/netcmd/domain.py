@@ -33,6 +33,7 @@ import tempfile
 import logging
 import subprocess
 import time
+import shutil
 from samba import ntstatus
 from samba import NTSTATUSError
 from samba import werror
@@ -65,6 +66,7 @@ from samba.drs_utils import (
                             sendDsReplicaSync, drsuapi_connect, drsException,
                             sendRemoveDsServer)
 from samba import remove_dc, arcfour_encrypt, string_to_byte_array
+from samba.ms_markdown import read_ms_markdown
 
 from samba.dsdb import (
     DS_DOMAIN_FUNCTION_2000,
@@ -3936,7 +3938,7 @@ class cmd_domain_schema_upgrade(Command):
                default="2012_R2"),
         Option("--ldf-file", type=str, default=None,
                 help="Just apply the schema updates in the adprep/.LDF file(s) specified"),
-        Option("--base-dir", type=str, default=setup_path('adprep'),
+        Option("--base-dir", type=str, default=None,
                help="Location of ldf files Default is ${SETUPDIR}/adprep.")
     ]
 
@@ -4057,6 +4059,8 @@ class cmd_domain_schema_upgrade(Command):
         ldf_files = kwargs.get("ldf_file")
         base_dir = kwargs.get("base_dir")
 
+        temp_folder = None
+
         samdb = SamDB(url=H, session_info=system_session(), credentials=creds, lp=lp)
 
         # we're not going to get far if the config doesn't allow schema updates
@@ -4082,8 +4086,43 @@ class cmd_domain_schema_upgrade(Command):
                 raise CommandError('Could not determine current schema version')
             start = int(res[0]['objectVersion'][0]) + 1
 
+            diff_dir = setup_path("adprep/WindowsServerDocs")
+            if base_dir is None:
+                # Read from the Schema-Updates.md file
+                temp_folder = tempfile.mkdtemp()
+
+                update_file = setup_path("adprep/WindowsServerDocs/Schema-Updates.md")
+
+                try:
+                    read_ms_markdown(update_file, temp_folder)
+                except Exception as e:
+                    print("Exception in markdown parsing: %s" % e)
+                    shutil.rmtree(temp_folder)
+                    raise CommandError('Failed to upgrade schema')
+
+                base_dir = temp_folder
+
             for version in range(start, end + 1):
-                schema_updates.append('Sch%d.ldf' % version)
+                update = 'Sch%d.ldf' % version
+                schema_updates.append(update)
+
+                # Apply patches if we parsed the Schema-Updates.md file
+                diff = os.path.abspath(os.path.join(diff_dir, update + '.diff'))
+                if temp_folder and os.path.exists(diff):
+                    p = subprocess.Popen(['patch', update, '-i', diff],
+                                         stdout=subprocess.PIPE,
+                                         stderr=subprocess.PIPE, cwd=temp_folder)
+                    stdout, stderr = p.communicate()
+
+                    if p.returncode:
+                        print("Exception in patch: %s\n%s" % (stdout, stderr))
+                        shutil.rmtree(temp_folder)
+                        raise CommandError('Failed to upgrade schema')
+
+                    print("Patched %s using %s" % (update, diff))
+
+        if base_dir is None:
+            base_dir = setup_path("adprep")
 
         samdb.transaction_start()
         count = 0
@@ -4108,6 +4147,9 @@ class cmd_domain_schema_upgrade(Command):
 
         if updates_allowed_overriden:
             lp.set("dsdb:schema update allowed", "no")
+
+        if temp_folder:
+            shutil.rmtree(temp_folder)
 
         if error_encountered:
             raise CommandError('Failed to upgrade schema')
