@@ -38,7 +38,7 @@
 #include "includes.h"
 #include "smbd/smbd.h"
 #include <stdio.h>
-#include "api/glfs.h"
+#include <glusterfs/api/glfs.h>
 #include "lib/util/dlinklist.h"
 #include "lib/util/tevent_unix.h"
 #include "smbd/globals.h"
