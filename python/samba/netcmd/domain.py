@@ -3935,7 +3935,9 @@ class cmd_domain_schema_upgrade(Command):
                help="The schema file to upgrade to. Default is (Windows) 2012_R2.",
                default="2012_R2"),
         Option("--ldf-file", type=str, default=None,
-                help="Just apply the schema updates in the adprep/.LDF file(s) specified")
+                help="Just apply the schema updates in the adprep/.LDF file(s) specified"),
+        Option("--base-dir", type=str, default=setup_path('adprep'),
+               help="Location of ldf files Default is ${SETUPDIR}/adprep.")
     ]
 
     def _apply_updates_in_file(self, samdb, ldif_file):
@@ -4022,15 +4024,14 @@ class cmd_domain_schema_upgrade(Command):
         return count
 
 
-    def _apply_update(self, samdb, update_file):
+    def _apply_update(self, samdb, update_file, base_dir):
         """Wrapper function for parsing an LDIF file and applying the updates"""
 
         print("Applying %s updates..." % update_file)
-        path = setup_path('adprep')
 
         ldif_file = None
         try:
-            ldif_file = open(os.path.join(path, update_file))
+            ldif_file = open(os.path.join(base_dir, update_file))
 
             count = self._apply_updates_in_file(samdb, ldif_file)
 
@@ -4054,6 +4055,7 @@ class cmd_domain_schema_upgrade(Command):
         H = kwargs.get("H")
         target_schema = kwargs.get("schema")
         ldf_files = kwargs.get("ldf_file")
+        base_dir = kwargs.get("base_dir")
 
         samdb = SamDB(url=H, session_info=system_session(), credentials=creds, lp=lp)
 
@@ -4090,7 +4092,7 @@ class cmd_domain_schema_upgrade(Command):
         try:
             # Apply the schema updates needed to move to the new schema version
             for ldif_file in schema_updates:
-                count += self._apply_update(samdb, ldif_file)
+                count += self._apply_update(samdb, ldif_file, base_dir)
 
             if count > 0:
                 samdb.transaction_commit()
