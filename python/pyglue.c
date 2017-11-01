@@ -89,6 +89,22 @@ static PyObject *py_check_password_quality(PyObject *self, PyObject *args)
 	return PyBool_FromLong(check_password_quality(pass));
 }
 
+static PyObject *py_generate_random_bytes(PyObject *self, PyObject *args)
+{
+	int len;
+	PyObject *ret;
+	uint8_t *bytes = NULL;
+
+	if (!PyArg_ParseTuple(args, "i", &len))
+		return NULL;
+
+	bytes = talloc_zero_size(NULL, len);
+	generate_random_buffer(bytes, len);
+	ret = PyBytes_FromStringAndSize((const char *)bytes, len);
+	talloc_free(bytes);
+	return ret;
+}
+
 static PyObject *py_unix2nttime(PyObject *self, PyObject *args)
 {
 	time_t t;
@@ -335,6 +351,11 @@ static PyMethodDef py_misc_methods[] = {
 		"is the NTVFS file server built in this installation?" },
 	{ "is_heimdal_built", (PyCFunction)py_is_heimdal_built, METH_NOARGS,
 		"is Samba built with Heimdal Kerberbos?" },
+	{ "generate_random_bytes",
+		(PyCFunction)py_generate_random_bytes,
+		METH_VARARGS,
+		"generate_random_bytes(len) -> bytes\n"
+		"Generate random bytes with specified length." },
 	{ NULL }
 };
 
