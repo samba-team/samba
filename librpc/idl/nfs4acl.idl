@@ -13,7 +13,7 @@ import "misc.idl", "security.idl";
 ]
 interface nfs4acl_interface
 {
-	const char *NFS4ACL_NDR_XATTR_NAME = "system.nfs4acl";
+	const char *NFS4ACL_NDR_XATTR_NAME = "security.nfs4acl_ndr";
 
 	const char *NFS4ACL_XATTR_OWNER_WHO	 = "OWNER@";
 	const char *NFS4ACL_XATTR_GROUP_WHO	 = "GROUP@";
