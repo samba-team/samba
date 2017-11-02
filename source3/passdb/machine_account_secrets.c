@@ -1476,6 +1476,7 @@ NTSTATUS secrets_fetch_or_upgrade_domain_info(const char *domain,
 		DBG_ERR("secrets_domain_info_password_create(pw) failed "
 			"for %s - %s\n", domain, nt_errstr(status));
 		dbwrap_transaction_cancel(db);
+		SAFE_FREE(old_pw);
 		TALLOC_FREE(frame);
 		return status;
 	}
