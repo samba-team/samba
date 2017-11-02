@@ -350,7 +350,7 @@ static int nfs4acl_connect(struct vfs_handle_struct *handle,
 	nfs_version = (unsigned)lp_parm_int(SNUM(handle->conn),
 					    "nfs4acl_xattr",
 					    "version",
-					    40);
+					    41);
 	switch (nfs_version) {
 	case 40:
 		config->nfs_version = ACL4_XATTR_VERSION_40;
