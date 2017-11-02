@@ -1,4 +1,115 @@
                    =============================
+                   Release Notes for Samba 4.7.1
+                         November 02, 2017
+                   =============================
+
+
+This is the latest stable release of the Samba 4.7 release series.
+
+
+Changes since 4.7.0:
+--------------------
+
+o  Michael Adam <obnox@samba.org>
+   * BUG 13091: vfs_glusterfs: Fix exporting subdirs with shadow_copy2.
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 13027: s3: smbd: Currently if getwd() fails after a chdir(), we panic.
+   * BUG 13068: s3: VFS: Ensure default SMB_VFS_GETWD() call can't return a
+     partially completed struct smb_filename.
+   * BUG 13069: sys_getwd() can leak memory or possibly return the wrong errno
+     on older systems.
+   * BUG 13093: 'smbclient' doesn't correctly canonicalize all local names
+     before use.
+
+o  Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+   * BUG 13095: Fix broken linked attribute handling.
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 12994: Missing LDAP query escapes in DNS rpc server.
+   * BUG 13087: replace: Link to -lbsd when building replace.c by hand.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 6133: Cannot delete non-ACL files on Solaris/ZFS/NFSv4 ACL filesystem.
+   * BUG 7909: Map SYNCHRONIZE acl permission statically in zfs_acl vfs module.
+   * BUG 7933: Samba fails to honor SEC_STD_WRITE_OWNER bit with the
+     acl_xattr module.
+   * BUG 12991: s3/mdssvc: Missing assignment in sl_pack_float.
+   * BUG 12995: Wrong Samba access checks when changing DOS attributes.
+   * BUG 13062: samba_runcmd_send() leaves zombie processes on timeout
+   * BUG 13065: net: groupmap cleanup should not delete BUILTIN mappings.
+   * BUG 13076: Enabling vfs_fruit results in loss of Finder tags and other
+     xattrs.
+
+o  Alexander Bokovoy <ab@samba.org>
+   * BUG 9613: man pages: Properly ident lists.
+   * BUG 13081: smb.conf.5: Sort parameters alphabetically.
+
+o  Samuel Cabrero <scabrero@suse.de>
+   * BUG 12993: s3: spoolss: Fix GUID string format on GetPrinter info.
+
+o  Amitay Isaacs <amitay@gmail.com>
+   * BUG 13042: Remote serverid check doesn't check for the unique id.
+   * BUG 13056: CTDB starts consuming memory if there are dead nodes in the
+     cluster.
+   * BUG 13070: ctdb-common: Ignore event scripts with multiple '.'s.
+
+o  Lutz Justen <ljusten@google.com>
+   * BUG 13046: libgpo doesn't sort the GPOs in the correct order.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 13042: Remote serverid check doesn't check for the unique id.
+   * BUG 13090: vfs_catia: Fix a potential memleak.
+   * BUG 12903: Fix file change notification for renames.
+
+o  Gary Lockyer <gary@catalyst.net.nz>
+   * BUG 12952: Samba DNS server does not honour wildcards.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 13079:  Can't change password in samba from a Windows client if Samba
+     runs on IPv6 only interface.
+
+o  Anoop C S <anoopcs@redhat.com>
+   * BUG 13086: vfs_fruit: Replace closedir() by SMB_VFS_CLOSEDIR.
+
+o  Christof Schmitt <cs@samba.org>
+   * BUG 13047: Apple client can't cope with SMB2 async replies when creating
+     symlinks.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 12959: s4:rpc_server:backupkey: Move variable into scope.
+   * BUG 13099: s4:scripting: Fix ntstatus_gen.h generation on 32bit.
+   * BUG 13100: s3:vfs_glusterfs: Fix a double free in vfs_gluster_getwd().
+   * BUG 13101: Fix resouce leaks and pointer issues.
+
+o  Jorge Schrauwen
+   * BUG 13049: vfs_solarisacl: Fix build for samba 4.7 and up.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   =============================
                    Release Notes for Samba 4.7.0
                         September 20, 2017
                    =============================
