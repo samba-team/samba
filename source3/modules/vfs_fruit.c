@@ -1078,6 +1078,7 @@ static int ad_convert(struct adouble *ad,
 
 	ok = ad_convert_xattr(ad, smb_fname, map);
 	if (!ok) {
+		munmap(map, origlen);
 		return -1;
 	}
 
