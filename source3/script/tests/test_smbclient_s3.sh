@@ -1277,50 +1277,6 @@ done
 
 LOGDIR=$(mktemp -d ${PREFIX}/${LOGDIR_PREFIX}_XXXXXX)
 
-# Test smbclient renames with pathnames containing '..'
-test_rename_dotdot()
-{
-    tmpfile=$PREFIX/smbclient_interactive_prompt_commands
-
-cat > $tmpfile <<EOF
-deltree dotdot_test
-mkdir dotdot_test
-cd dotdot_test
-mkdir dir1
-mkdir dir2
-cd dir1
-put ${SMBCLIENT} README
-rename README ..\\dir2\\README
-cd ..
-cd dir2
-allinfo README
-cd \\
-deltree dotdot_test
-quit
-EOF
-    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/tmp -I $SERVER_IP $ADDARGS < $tmpfile 2>&1'
-    eval echo "$cmd"
-    out=`eval $cmd`
-    ret=$?
-
-    if [ $ret != 0 ] ; then
-	echo "$out"
-	echo "failed rename_dotdot test with output $ret"
-	false
-	return
-    fi
-
-    # We are allowed to get NT_STATUS_NO_SUCH_FILE listing \dotdot_test
-    # as the top level directory should not exist, but no other errors.
-
-    error_str=`echo $out | grep NT_STATUS | grep -v "NT_STATUS_NO_SUCH_FILE listing .dotdot_test"`
-    if [ "$error_str" != "" ]; then
-        echo "failed - unexpected NT_STATUS error in $out"
-        false
-        return
-    fi
-}
-
 
 testit "smbclient -L $SERVER_IP" $SMBCLIENT -L $SERVER_IP -N -p 139 || failed=`expr $failed + 1`
 testit "smbclient -L $SERVER -I $SERVER_IP" $SMBCLIENT -L $SERVER -I $SERVER_IP -N -p 139 -c quit || failed=`expr $failed + 1`
@@ -1415,10 +1371,6 @@ testit "follow symlinks = no" \
 
 testit "follow local symlinks" \
     test_local_symlinks || \
-    failed=`expr $failed + 1`
-
-testit "rename_dotdot" \
-    test_rename_dotdot || \
     failed=`expr $failed + 1`
 
 testit "rm -rf $LOGDIR" \
