@@ -442,7 +442,7 @@ def build(bld):
                         source=bld.SUBDIR('common',
                                           '''sock_daemon.c'''),
                         deps='''samba-util ctdb-util tevent-util
-                                replace talloc tevent''')
+                                LIBASYNC_REQ replace talloc tevent''')
 
     bld.SAMBA_SUBSYSTEM('ctdb-ipalloc',
                         source=bld.SUBDIR('server',
@@ -511,7 +511,7 @@ def build(bld):
     bld.SAMBA_BINARY('ctdb_eventd',
                      source='server/ctdb_eventd.c',
                      deps='''ctdb-server-util ctdb-protocol ctdb-protocol-util
-                             ctdb-util samba-util LIBASYNC_REQ replace popt''',
+                             ctdb-util samba-util replace popt''',
                      install_path='${CTDB_HELPER_BINDIR}')
 
     bld.SAMBA_BINARY('ctdb_lock_helper',
