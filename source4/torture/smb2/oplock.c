@@ -4674,6 +4674,122 @@ done:
 	return ret;
 }
 
+/**
+ * Recreate regression test from bug:
+ *
+ * https://bugzilla.samba.org/show_bug.cgi?id=13058
+ *
+ * 1. smbd-1 opens the file and sets the oplock
+ * 2. smbd-2 tries to open the file. open() fails(EAGAIN) and open is deferred.
+ * 3. smbd-1 sends oplock break request to the client.
+ * 4. smbd-1 closes the file.
+ * 5. smbd-1 opens the file and sets the oplock.
+ * 6. smbd-2 calls defer_open_done(), and should re-break the oplock.
+ **/
+
+static bool test_smb2_kernel_oplocks7(struct torture_context *tctx,
+				      struct smb2_tree *tree,
+				      struct smb2_tree *tree2)
+{
+	const char *fname = "test_kernel_oplock7.dat";
+	NTSTATUS status;
+	bool ret = true;
+	struct smb2_create create;
+	struct smb2_handle h1 = {{0}}, h2 = {{0}};
+	struct smb2_create create_2;
+        struct smb2_create io;
+	struct smb2_request *req;
+
+	smb2_util_unlink(tree, fname);
+	status = torture_smb2_testfile(tree, fname, &h1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"Error creating testfile\n");
+	smb2_util_close(tree, h1);
+	ZERO_STRUCT(h1);
+
+	/* Close the open file on break. */
+	tree->session->transport->oplock.handler = torture_oplock_handler_close;
+	tree->session->transport->oplock.private_data = tree;
+	ZERO_STRUCT(break_info);
+
+	/* 1 - open file with oplock */
+	ZERO_STRUCT(create);
+	create.in.desired_access = SEC_RIGHTS_FILE_ALL;
+	create.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	create.in.share_access = NTCREATEX_SHARE_ACCESS_MASK;
+	create.in.create_disposition = NTCREATEX_DISP_OPEN;
+	create.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS;
+	create.in.fname = fname;
+	create.in.oplock_level = SMB2_OPLOCK_LEVEL_EXCLUSIVE;
+
+	status = smb2_create(tree, tctx, &create);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+			"Error opening the file\n");
+	CHECK_VAL(create.out.oplock_level, SMB2_OPLOCK_LEVEL_EXCLUSIVE);
+
+	/* 2 - open file to break oplock */
+	ZERO_STRUCT(create_2);
+	create_2.in.desired_access = SEC_RIGHTS_FILE_ALL;
+	create_2.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	create_2.in.share_access = NTCREATEX_SHARE_ACCESS_MASK;
+	create_2.in.create_disposition = NTCREATEX_DISP_OPEN;
+	create_2.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS;
+	create_2.in.fname = fname;
+	create_2.in.oplock_level = SMB2_OPLOCK_LEVEL_NONE;
+
+	/* Open on tree2 - should cause a break on tree */
+	req = smb2_create_send(tree2, &create_2);
+	torture_assert(tctx, req != NULL, "smb2_create_send");
+
+	/* The oplock break handler should close the file. */
+	/* Steps 3 & 4. */
+	torture_wait_for_oplock_break(tctx);
+
+	tree->session->transport->oplock.handler = torture_oplock_handler;
+
+	/*
+	 * 5 - re-open on tree. NB. There is a race here
+	 * depending on which smbd goes first. We either get
+	 * an oplock level of SMB2_OPLOCK_LEVEL_EXCLUSIVE if
+	 * the close and re-open on tree is processed first, or
+	 * SMB2_OPLOCK_LEVEL_NONE if the pending create on
+	 * tree2 is processed first.
+	 */
+	status = smb2_create(tree, tctx, &create);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+			"Error opening the file\n");
+
+	h1 = create.out.file.handle;
+	if (create.out.oplock_level != SMB2_OPLOCK_LEVEL_EXCLUSIVE &&
+	    create.out.oplock_level != SMB2_OPLOCK_LEVEL_NONE) {
+		torture_result(tctx,
+			TORTURE_FAIL,
+			"(%s): wrong value for oplock got 0x%x\n",
+			__location__,
+			(unsigned int)create.out.oplock_level);
+                ret = false;
+		goto done;
+
+	}
+
+	/* 6 - retrieve the second open. */
+	status = smb2_create_recv(req, tctx, &io);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+			"Error opening the file\n");
+	h2 = io.out.file.handle;
+	CHECK_VAL(io.out.oplock_level, SMB2_OPLOCK_LEVEL_NONE);
+
+  done:
+	if (!smb2_util_handle_empty(h1)) {
+		smb2_util_close(tree, h1);
+	}
+	if (!smb2_util_handle_empty(h2)) {
+		smb2_util_close(tree2, h2);
+	}
+	smb2_util_unlink(tree, fname);
+	return ret;
+}
+
 struct torture_suite *torture_smb2_kernel_oplocks_init(void)
 {
 	struct torture_suite *suite =
@@ -4685,6 +4801,7 @@ struct torture_suite *torture_smb2_kernel_oplocks_init(void)
 	torture_suite_add_1smb2_test(suite, "kernel_oplocks4", test_smb2_kernel_oplocks4);
 	torture_suite_add_1smb2_test(suite, "kernel_oplocks5", test_smb2_kernel_oplocks5);
 	torture_suite_add_2smb2_test(suite, "kernel_oplocks6", test_smb2_kernel_oplocks6);
+	torture_suite_add_2smb2_test(suite, "kernel_oplocks7", test_smb2_kernel_oplocks7);
 
 	suite->description = talloc_strdup(suite, "SMB2-KERNEL-OPLOCK tests");
 
