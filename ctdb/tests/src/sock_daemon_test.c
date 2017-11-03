@@ -1335,6 +1335,133 @@ static void test9(TALLOC_CTX *mem_ctx, const char *pidfile,
 	close(fd[0]);
 }
 
+/*
+ * test10
+ *
+ * Confirm that the daemon starts successfully if there is a stale socket
+ */
+
+static void test10(TALLOC_CTX *mem_ctx, const char *pidfile,
+		  const char *sockpath)
+{
+	struct stat st;
+	int fd[2];
+	pid_t pid, pid2;
+	int ret;
+	ssize_t n;
+	int pidfile_fd;
+	char pidstr[20] = { 0 };
+
+	ret = pipe(fd);
+	assert(ret == 0);
+
+	pid = fork();
+	assert(pid != -1);
+
+	if (pid == 0) {
+		struct tevent_context *ev;
+		struct sock_daemon_context *sockd;
+
+		close(fd[0]);
+
+		ev = tevent_context_init(mem_ctx);
+		assert(ev != NULL);
+
+		ret = sock_daemon_setup(mem_ctx, "test10", "file:", "NOTICE",
+					&test2_funcs, &fd[1], &sockd);
+		assert(ret == 0);
+
+		ret = sock_daemon_add_unix(sockd, sockpath,
+					   &dummy_socket_funcs, NULL);
+		assert(ret == 0);
+
+		ret = sock_daemon_run(ev, sockd, pidfile, false, false, -1);
+		assert(ret == EINTR);
+
+		exit(0);
+	}
+
+	close(fd[1]);
+
+	n = read(fd[0], &ret, sizeof(ret));
+	assert(n == sizeof(ret));
+	assert(ret == 1);
+
+	/* KILL will leave PID file and socket behind */
+	ret = kill (pid, SIGKILL);
+	assert(ret == 0);
+
+	ret = stat(sockpath, &st);
+	assert(ret == 0);
+
+	close(fd[0]);
+
+	ret = pipe(fd);
+	assert(ret == 0);
+
+	pid = fork();
+	assert(pid != -1);
+
+	if (pid == 0) {
+		struct tevent_context *ev;
+		struct sock_daemon_context *sockd;
+
+		close(fd[0]);
+
+		ev = tevent_context_init(mem_ctx);
+		assert(ev != NULL);
+
+		ret = sock_daemon_setup(mem_ctx, "test10", "file:", "NOTICE",
+					&test2_funcs, &fd[1], &sockd);
+		assert(ret == 0);
+
+		ret = sock_daemon_add_unix(sockd, sockpath,
+					   &dummy_socket_funcs, NULL);
+		assert(ret == 0);
+
+		ret = sock_daemon_run(ev, sockd, pidfile, false, false, -1);
+		assert(ret == EINTR);
+
+		exit(0);
+	}
+
+	close(fd[1]);
+
+	n = read(fd[0], &ret, sizeof(ret));
+	assert(n == sizeof(ret));
+	assert(ret == 1);
+
+	ret = stat(pidfile, &st);
+	assert(ret == 0);
+	assert(S_ISREG(st.st_mode));
+
+	pidfile_fd = open(pidfile, O_RDONLY, 0644);
+	assert(pidfile_fd != -1);
+	n = read(pidfile_fd, pidstr, sizeof(pidstr)-1);
+	assert(n != -1);
+	pid2 = (pid_t)atoi(pidstr);
+	assert(pid == pid2);
+
+	ret = kill(pid, SIGTERM);
+	assert(ret == 0);
+
+	n = read(fd[0], &ret, sizeof(ret));
+	assert(n == sizeof(ret));
+	assert(ret == 3);
+
+	pid2 = waitpid(pid, &ret, 0);
+	assert(pid2 == pid);
+	assert(WEXITSTATUS(ret) == 0);
+
+	close(fd[0]);
+
+	ret = stat(pidfile, &st);
+	assert(ret == -1);
+
+	ret = stat(sockpath, &st);
+	assert(ret == -1);
+}
+
 int main(int argc, const char **argv)
 {
 	TALLOC_CTX *mem_ctx;
@@ -1388,6 +1515,10 @@ int main(int argc, const char **argv)
 
 	case 9:
 		test9(mem_ctx, pidfile, sockpath);
+		break;
+
+	case 10:
+		test10(mem_ctx, pidfile, sockpath);
 		break;
 
 	default:
