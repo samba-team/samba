@@ -3776,11 +3776,11 @@ static int fruit_rmdir(struct vfs_handle_struct *handle,
 		TALLOC_FREE(ad);
 
 		ret = SMB_VFS_NEXT_UNLINK(handle, ad_smb_fname);
-		TALLOC_FREE(ad_smb_fname);
 		if (ret != 0) {
 			DBG_ERR("Deleting [%s] failed\n",
 				smb_fname_str_dbg(ad_smb_fname));
 		}
+		TALLOC_FREE(ad_smb_fname);
 	}
 
 exit_rmdir:
