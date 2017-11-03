@@ -32,6 +32,42 @@
 #include "common/sock_daemon.c"
 #include "common/sock_io.c"
 
+struct dummy_wait_state {
+};
+
+static struct tevent_req *dummy_wait_send(TALLOC_CTX *mem_ctx,
+					  struct tevent_context *ev,
+					  void *private_data)
+{
+	struct tevent_req *req;
+	struct dummy_wait_state *state;
+	const char *sockpath = (const char *)private_data;
+	struct stat st;
+	int ret;
+
+	ret = stat(sockpath, &st);
+	assert(ret == 0);
+	assert(S_ISSOCK(st.st_mode));
+
+	req = tevent_req_create(mem_ctx, &state, struct dummy_wait_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	tevent_req_done(req);
+	return tevent_req_post(req, ev);
+}
+
+static bool dummy_wait_recv(struct tevent_req *req, int *perr)
+{
+	return true;
+}
+
+static struct sock_daemon_funcs test1_funcs = {
+	.wait_send = dummy_wait_send,
+	.wait_recv = dummy_wait_recv,
+};
+
 static struct tevent_req *dummy_read_send(TALLOC_CTX *mem_ctx,
 					  struct tevent_context *ev,
 					  struct sock_client_context *client,
@@ -63,12 +99,13 @@ static struct sock_socket_funcs dummy_socket_funcs = {
 static void test1(TALLOC_CTX *mem_ctx, const char *pidfile,
 		  const char *sockpath)
 {
+	struct tevent_context *ev;
 	struct sock_daemon_context *sockd;
 	struct stat st;
 	int ret;
 
 	ret = sock_daemon_setup(mem_ctx, "test1", "file:", "NOTICE",
-				NULL, NULL, &sockd);
+				&test1_funcs, discard_const(sockpath), &sockd);
 	assert(ret == 0);
 	assert(sockd != NULL);
 
@@ -79,16 +116,15 @@ static void test1(TALLOC_CTX *mem_ctx, const char *pidfile,
 	assert(ret == 0);
 
 	ret = stat(sockpath, &st);
+	assert(ret == -1);
+
+	ev = tevent_context_init(mem_ctx);
+	assert(ev != NULL);
+
+	ret = sock_daemon_run(ev, sockd, NULL, false, false, -1);
 	assert(ret == 0);
-	assert(S_ISSOCK(st.st_mode));
 
-	talloc_free(sockd);
-
-	ret = stat(pidfile, &st);
-	assert(ret == -1);
-
-	ret = stat(sockpath, &st);
-	assert(ret == -1);
+	talloc_free(mem_ctx);
 }
 
 /*

@@ -239,6 +239,8 @@ static int socket_setup(const char *sockpath, bool remove_before_use)
 		return -1;
 	}
 
+	D_NOTICE("listening on %s\n", sockpath);
+
 	return fd;
 }
 
@@ -247,7 +249,6 @@ static int sock_socket_destructor(struct sock_socket *sock);
 static int sock_socket_init(TALLOC_CTX *mem_ctx, const char *sockpath,
 			    struct sock_socket_funcs *funcs,
 			    void *private_data,
-			    bool remove_before_use,
 			    struct sock_socket **result)
 {
 	struct sock_socket *sock;
@@ -267,12 +268,7 @@ static int sock_socket_init(TALLOC_CTX *mem_ctx, const char *sockpath,
 	sock->sockpath = sockpath;
 	sock->funcs = funcs;
 	sock->private_data = private_data;
-
-	sock->fd = socket_setup(sockpath, remove_before_use);
-	if (sock->fd == -1) {
-		talloc_free(sock);
-		return EIO;
-	}
+	sock->fd = -1;
 
 	talloc_set_destructor(sock, sock_socket_destructor);
 
@@ -306,7 +302,8 @@ static int sock_socket_start_client_destructor(struct sock_client *client);
 
 static struct tevent_req *sock_socket_start_send(TALLOC_CTX *mem_ctx,
 						 struct tevent_context *ev,
-						 struct sock_socket *sock)
+						 struct sock_socket *sock,
+						 bool remove_before_use)
 {
 	struct tevent_req *req, *subreq;
 	struct sock_socket_start_state *state;
@@ -319,6 +316,12 @@ static struct tevent_req *sock_socket_start_send(TALLOC_CTX *mem_ctx,
 
 	state->ev = ev;
 	state->sock = sock;
+
+	sock->fd = socket_setup(sock->sockpath, remove_before_use);
+	if (sock->fd == -1) {
+		tevent_req_error(req, EIO);
+		return tevent_req_post(req, ev);
+	}
 
 	talloc_set_destructor(state, sock_socket_start_state_destructor);
 
@@ -487,17 +490,12 @@ int sock_daemon_add_unix(struct sock_daemon_context *sockd,
 {
 	struct sock_socket *sock;
 	int ret;
-	bool remove_before_use = false;
 
-	remove_before_use = (sockd->pid_ctx != NULL) ? true : false;
-
-	ret = sock_socket_init(sockd, sockpath, funcs, private_data,
-			       remove_before_use, &sock);
+	ret = sock_socket_init(sockd, sockpath, funcs, private_data, &sock);
 	if (ret != 0) {
 		return ret;
 	}
 
-	D_NOTICE("listening on %s\n", sockpath);
 
 	DLIST_ADD(sockd->socket_list, sock);
 	return 0;
@@ -537,6 +535,7 @@ struct tevent_req *sock_daemon_run_send(TALLOC_CTX *mem_ctx,
 	struct sock_daemon_run_state *state;
 	struct tevent_signal *se;
 	struct sock_socket *sock;
+	bool remove_before_use = false;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct sock_daemon_run_state);
@@ -553,6 +552,7 @@ struct tevent_req *sock_daemon_run_send(TALLOC_CTX *mem_ctx,
 			tevent_req_error(req, EEXIST);
 			return tevent_req_post(req, ev);
 		}
+		remove_before_use = true;
 	}
 
 	state->ev = ev;
@@ -592,7 +592,8 @@ struct tevent_req *sock_daemon_run_send(TALLOC_CTX *mem_ctx,
 	}
 
 	for (sock = sockd->socket_list; sock != NULL; sock = sock->next) {
-		subreq = sock_socket_start_send(state, ev, sock);
+		subreq = sock_socket_start_send(state, ev, sock,
+						remove_before_use);
 		if (tevent_req_nomem(subreq, req)) {
 			return tevent_req_post(req, ev);
 		}
