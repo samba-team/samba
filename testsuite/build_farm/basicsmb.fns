@@ -177,8 +177,6 @@ test_listfilesauth_should_deny() {
 	return 0
 }
 
-echo "LIBSMB_PROG=$LIBSMB_PROG" >&2
-
 
 
 # Give sensible defaults to some variables.  

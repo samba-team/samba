@@ -158,10 +158,6 @@ int smbrun_no_sanitize(const char *cmd, int *outfd, char * const *env);
 int smbrun(const char *cmd, int *outfd, char * const *env);
 int smbrunsecret(const char *cmd, const char *secret);
 
-/* The following definitions come from lib/sock_exec.c  */
-
-int sock_exec(const char *prog);
-
 /* The following definitions come from lib/substitute.c  */
 
 void free_local_machine_name(void);

@@ -2505,7 +2505,6 @@ static struct tevent_req *cli_connect_sock_send(
 {
 	struct tevent_req *req, *subreq;
 	struct cli_connect_sock_state *state;
-	const char *prog;
 	struct sockaddr_storage *addrs;
 	unsigned i, num_addrs;
 	NTSTATUS status;
@@ -2514,19 +2513,6 @@ static struct tevent_req *cli_connect_sock_send(
 				struct cli_connect_sock_state);
 	if (req == NULL) {
 		return NULL;
-	}
-
-	prog = getenv("LIBSMB_PROG");
-	if (prog != NULL) {
-		state->fd = sock_exec(prog);
-		if (state->fd == -1) {
-			status = map_nt_error_from_unix(errno);
-			tevent_req_nterror(req, status);
-		} else {
-			state->port = 0;
-			tevent_req_done(req);
-		}
-		return tevent_req_post(req, ev);
 	}
 
 	if ((pss == NULL) || is_zero_addr(pss)) {

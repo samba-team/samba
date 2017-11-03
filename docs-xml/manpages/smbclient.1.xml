@@ -1216,12 +1216,6 @@
 	the password of the person using the client.  This information is
 	used only if the protocol level is high enough to support
 	session-level passwords. </para>
-
-	<para>The variable <envar>LIBSMB_PROG</envar> may contain
-	the path, executed with system(), which the client should connect
-		to instead of connecting to a server.  This functionality is primarily
-		intended as a development aid, and works best when using a LMHOSTS
-		file</para>
 </refsect1>
 
 

@@ -304,7 +304,6 @@ bld.SAMBA3_SUBSYSTEM('samba3util',
                           lib/util_tsock.c
                           lib/util_transfer_file.c
                           lib/sys_popen.c
-                          lib/sock_exec.c
                           ''',
                    deps='''
                         CHARSET3
