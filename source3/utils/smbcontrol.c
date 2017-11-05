@@ -61,16 +61,14 @@ static bool send_message(struct messaging_context *msg_ctx,
 			 struct server_id pid, int msg_type,
 			 const void *buf, int len)
 {
-	bool ret;
-
 	if (procid_to_pid(&pid) != 0)
 		return NT_STATUS_IS_OK(
 			messaging_send_buf(msg_ctx, pid, msg_type,
 					   (const uint8_t *)buf, len));
 
-	ret = message_send_all(msg_ctx, msg_type, buf, len);
+	messaging_send_all(msg_ctx, msg_type, buf, len);
 
-	return ret;
+	return true;
 }
 
 static void smbcontrol_timeout(struct tevent_context *event_ctx,

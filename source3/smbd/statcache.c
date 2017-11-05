@@ -354,10 +354,10 @@ void smbd_send_stat_cache_delete_message(struct messaging_context *msg_ctx,
 					 const char *name)
 {
 #ifdef DEVELOPER
-	message_send_all(msg_ctx,
-			MSG_SMB_STAT_CACHE_DELETE,
-			name,
-			strlen(name)+1);
+	messaging_send_all(msg_ctx,
+			   MSG_SMB_STAT_CACHE_DELETE,
+			   name,
+			   strlen(name)+1);
 #endif
 }
 
