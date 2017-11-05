@@ -96,6 +96,8 @@ NTSTATUS messaging_send_iov(struct messaging_context *msg_ctx,
 			    struct server_id server, uint32_t msg_type,
 			    const struct iovec *iov, int iovlen,
 			    const int *fds, size_t num_fds);
+void messaging_send_all(struct messaging_context *msg_ctx,
+			int msg_type, const void *buf, size_t len);
 
 struct tevent_req *messaging_filtered_read_send(
 	TALLOC_CTX *mem_ctx, struct tevent_context *ev,

@@ -60,6 +60,12 @@
 #include "lib/messages_ctdb_ref.h"
 #include "lib/messages_util.h"
 #include "cluster_support.h"
+#include "ctdbd_conn.h"
+#include "ctdb_srvids.h"
+
+#ifdef CLUSTER_SUPPORT
+#include "ctdb_protocol.h"
+#endif
 
 struct messaging_callback {
 	struct messaging_callback *prev, *next;
@@ -513,6 +519,7 @@ static NTSTATUS messaging_init_internal(TALLOC_CTX *mem_ctx,
 	}
 	talloc_set_destructor(ctx, messaging_context_destructor);
 
+#ifdef CLUSTER_SUPPORT
 	if (lp_clustering()) {
 		ctx->msg_ctdb_ref = messaging_ctdb_ref(
 			ctx, ctx->event_ctx,
@@ -525,6 +532,8 @@ static NTSTATUS messaging_init_internal(TALLOC_CTX *mem_ctx,
 			goto done;
 		}
 	}
+#endif
+
 	ctx->id.vnn = get_my_vnn();
 
 	ctx->names_db = server_id_db_init(ctx,
@@ -834,6 +843,71 @@ NTSTATUS messaging_send_iov(struct messaging_context *msg_ctx,
 		return map_nt_error_from_unix(ret);
 	}
 	return NT_STATUS_OK;
+}
+
+struct send_all_state {
+	struct messaging_context *msg_ctx;
+	int msg_type;
+	const void *buf;
+	size_t len;
+};
+
+static int send_all_fn(pid_t pid, void *private_data)
+{
+	struct send_all_state *state = private_data;
+	NTSTATUS status;
+
+	status = messaging_send_buf(state->msg_ctx, pid_to_procid(pid),
+				    state->msg_type, state->buf, state->len);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("messaging_send_buf to %ju failed: %s\n",
+			    (uintmax_t)pid, nt_errstr(status));
+	}
+
+	return 0;
+}
+
+void messaging_send_all(struct messaging_context *msg_ctx,
+			int msg_type, const void *buf, size_t len)
+{
+	struct send_all_state state = {
+		.msg_ctx = msg_ctx, .msg_type = msg_type,
+		.buf = buf, .len = len
+	};
+	int ret;
+
+#ifdef CLUSTER_SUPPORT
+	if (lp_clustering()) {
+		struct ctdbd_connection *conn = messaging_ctdb_connection();
+		uint8_t msghdr[MESSAGE_HDR_LENGTH];
+		struct iovec iov[] = {
+			{ .iov_base = msghdr,
+			  .iov_len = sizeof(msghdr) },
+			{ .iov_base = discard_const_p(void, buf),
+			  .iov_len = len }
+		};
+
+		message_hdr_put(msghdr, msg_type, messaging_server_id(msg_ctx),
+				(struct server_id) {0});
+
+		ret = ctdbd_messaging_send_iov(
+			conn, CTDB_BROADCAST_CONNECTED,
+			CTDB_SRVID_SAMBA_PROCESS,
+			iov, ARRAY_SIZE(iov));
+		if (ret != 0) {
+			DBG_WARNING("ctdbd_messaging_send_iov failed: %s\n",
+				    strerror(ret));
+		}
+
+		return;
+	}
+#endif
+
+	ret = messaging_dgm_forall(send_all_fn, &state);
+	if (ret != 0) {
+		DBG_WARNING("messaging_dgm_forall failed: %s\n",
+			    strerror(ret));
+	}
 }
 
 static struct messaging_rec *messaging_rec_dup(TALLOC_CTX *mem_ctx,
