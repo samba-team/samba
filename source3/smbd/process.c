@@ -41,7 +41,6 @@
 #include "../libcli/security/security_token.h"
 #include "lib/id_cache.h"
 #include "lib/util/sys_rw_data.h"
-#include "serverid.h"
 #include "system/threads.h"
 
 /* Internal message queue for deferred opens. */
@@ -3947,14 +3946,6 @@ void smbd_process(struct tevent_context *ev_ctx,
 	if (!interactive) {
 		smbd_setup_sig_term_handler(sconn);
 		smbd_setup_sig_hup_handler(sconn);
-
-		if (!serverid_register(messaging_server_id(msg_ctx),
-				       FLAG_MSG_GENERAL|FLAG_MSG_SMBD
-				       |FLAG_MSG_DBWRAP
-				       |FLAG_MSG_PRINT_GENERAL)) {
-			exit_server_cleanly("Could not register myself in "
-					    "serverid.tdb");
-		}
 	}
 
 	status = smbd_add_connection(client, sock_fd, &xconn);

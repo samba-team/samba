@@ -177,21 +177,12 @@ static void smbd_cleanupd_process_exited(struct messaging_context *msg,
 	     child != NULL;
 	     child = child->next)
 	{
-		struct server_id child_id;
 		bool ok;
 
 		ok = cleanupdb_delete_child(child->pid);
 		if (!ok) {
 			DBG_ERR("failed to delete pid %d\n", (int)child->pid);
 		}
-
-		/*
-		 * Get child_id before messaging_cleanup which wipes
-		 * the unique_id. Not that it really matters here for
-		 * functionality (the child should have properly
-		 * cleaned up :-)) though, but it looks nicer.
-		 */
-		child_id = pid_to_procid(child->pid);
 
 		smbprofile_cleanup(child->pid, state->parent_pid);
 
@@ -200,11 +191,6 @@ static void smbd_cleanupd_process_exited(struct messaging_context *msg,
 		if ((ret != 0) && (ret != ENOENT)) {
 			DBG_DEBUG("messaging_cleanup returned %s\n",
 				  strerror(ret));
-		}
-
-		if (!serverid_deregister(child_id)) {
-			DBG_ERR("Could not remove pid %d from serverid.tdb\n",
-				(int)child->pid);
 		}
 
 		DBG_DEBUG("cleaned up pid %d\n", (int)child->pid);

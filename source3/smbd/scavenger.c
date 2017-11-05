@@ -138,7 +138,6 @@ static bool smbd_scavenger_running(struct smbd_scavenger_state *state)
 
 static int smbd_scavenger_server_id_destructor(struct server_id *id)
 {
-	serverid_deregister(*id);
 	return 0;
 }
 
@@ -255,13 +254,6 @@ static bool smbd_scavenger_start(struct smbd_scavenger_state *state)
 		*state->scavenger_id = messaging_server_id(state->msg);
 
 		scavenger_setup_sig_term_handler(state->ev);
-
-		if (!serverid_register(*state->scavenger_id,
-				       FLAG_MSG_GENERAL)) {
-			DBG_WARNING("serverid_register failed");
-			exit_server("serverid_register failed");
-			return false;
-		}
 
 		ok = scavenger_say_hello(fds[1], *state->scavenger_id);
 		if (!ok) {

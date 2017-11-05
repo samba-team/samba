@@ -36,7 +36,6 @@
 #include "printing/queue_process.h"
 #include "rpc_server/rpc_service_setup.h"
 #include "rpc_server/rpc_config.h"
-#include "serverid.h"
 #include "passdb.h"
 #include "auth.h"
 #include "messages.h"
@@ -1263,21 +1262,6 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 		return false;
 	}
 
-	/* Setup the main smbd so that we can get messages. Note that
-	   do this after starting listening. This is needed as when in
-	   clustered mode, ctdb won't allow us to start doing database
-	   operations until it has gone thru a full startup, which
-	   includes checking to see that smbd is listening. */
-
-	if (!serverid_register(messaging_server_id(msg_ctx),
-			       FLAG_MSG_GENERAL|FLAG_MSG_SMBD
-			       |FLAG_MSG_PRINT_GENERAL
-			       |FLAG_MSG_DBWRAP)) {
-		DEBUG(0, ("open_sockets_smbd: Failed to register "
-			  "myself in serverid.tdb\n"));
-		return false;
-	}
-
         /* Listen to messages */
 
 	messaging_register(msg_ctx, NULL, MSG_SHUTDOWN, msg_exit_server);
@@ -1984,10 +1968,6 @@ extern void build_options(bool screen);
 
 	if (!smbd_scavenger_init(NULL, msg_ctx, ev_ctx)) {
 		exit_daemon("Samba cannot init scavenging", EACCES);
-	}
-
-	if (!serverid_parent_init(ev_ctx)) {
-		exit_daemon("Samba cannot init server id", EACCES);
 	}
 
 	if (!W_ERROR_IS_OK(registry_init_full()))

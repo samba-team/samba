@@ -527,7 +527,6 @@ int main(int argc, const char *argv[])
 	sec_init();
 	init_guest_info();
 	locking_init();
-	serverid_parent_init(NULL);
 	vfs = talloc_zero(NULL, struct vfs_state);
 	if (vfs == NULL) {
 		return 1;
@@ -553,7 +552,6 @@ int main(int argc, const char *argv[])
 	vfs->conn->share_access = FILE_GENERIC_ALL;
 	vfs->conn->read_only = false;
 
-	serverid_register(messaging_server_id(vfs->conn->sconn->msg_ctx), 0);
 	file_init(vfs->conn->sconn);
 	for (i=0; i < 1024; i++)
 		vfs->files[i] = NULL;

@@ -21,7 +21,6 @@
 
 #include "includes.h"
 
-#include "serverid.h"
 #include "ntdomain.h"
 #include "messages.h"
 
@@ -170,14 +169,6 @@ void start_epmd(struct tevent_context *ev_ctx,
 
 	epmd_setup_sig_term_handler(ev_ctx);
 	epmd_setup_sig_hup_handler(ev_ctx, msg_ctx);
-
-	ok = serverid_register(messaging_server_id(msg_ctx),
-			       FLAG_MSG_GENERAL |
-			       FLAG_MSG_PRINT_GENERAL);
-	if (!ok) {
-		DEBUG(0, ("Failed to register serverid in epmd!\n"));
-		exit(1);
-	}
 
 	messaging_register(msg_ctx,
 			   ev_ctx,

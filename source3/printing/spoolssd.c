@@ -17,7 +17,6 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "includes.h"
-#include "serverid.h"
 #include "smbd/smbd.h"
 
 #include "messages.h"
@@ -277,12 +276,6 @@ static bool spoolss_child_init(struct tevent_context *ev_ctx,
 
 	ok = spoolss_setup_chld_hup_handler(ev_ctx, msg_ctx, pf);
 	if (!ok) {
-		return false;
-	}
-
-	if (!serverid_register(messaging_server_id(msg_ctx),
-				FLAG_MSG_GENERAL |
-				FLAG_MSG_PRINT_GENERAL)) {
 		return false;
 	}
 
@@ -691,12 +684,6 @@ pid_t start_spoolssd(struct tevent_context *ev_ctx,
 				 &spoolss_children_main, NULL,
 				 &spoolss_pool);
 	if (!ok) {
-		exit(1);
-	}
-
-	if (!serverid_register(messaging_server_id(msg_ctx),
-				FLAG_MSG_GENERAL |
-				FLAG_MSG_PRINT_GENERAL)) {
 		exit(1);
 	}
 

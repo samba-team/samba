@@ -243,10 +243,6 @@ bool nt_printing_init(struct messaging_context *msg_ctx)
 	messaging_register(msg_ctx, NULL, MSG_PRINTER_DRVUPGRADE,
 			forward_drv_upgrade_printer_msg);
 
-	/* of course, none of the message callbacks matter if you don't
-	   tell messages.c that you interested in receiving PRINT_GENERAL
-	   msgs.  This is done in serverid_register() */
-
 	if ( lp_security() == SEC_ADS ) {
 		win_rc = check_published_printers(msg_ctx);
 		if (!W_ERROR_IS_OK(win_rc))

@@ -20,7 +20,6 @@
  */
 
 #include "includes.h"
-#include "serverid.h"
 #include "messages.h"
 #include "ntdomain.h"
 
@@ -216,11 +215,6 @@ static bool mdssd_child_init(struct tevent_context *ev_ctx,
 
 	ok = mdssd_setup_chld_hup_handler(ev_ctx);
 	if (!ok) {
-		return false;
-	}
-
-	if (!serverid_register(messaging_server_id(msg_ctx),
-			       FLAG_MSG_GENERAL)) {
 		return false;
 	}
 
@@ -683,11 +677,6 @@ void start_mdssd(struct tevent_context *ev_ctx,
 				 NULL,
 				 &mdssd_pool);
 	if (!ok) {
-		exit(1);
-	}
-
-	if (!serverid_register(messaging_server_id(msg_ctx),
-			       FLAG_MSG_GENERAL)) {
 		exit(1);
 	}
 

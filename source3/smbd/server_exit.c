@@ -171,14 +171,6 @@ static void exit_server_common(enum server_exit_reason how,
 	/* 3 second timeout. */
 	print_notify_send_messages(msg_ctx, 3);
 
-	/* delete our entry in the serverid database. */
-	if (am_parent) {
-		/*
-		 * For children the parent takes care of cleaning up
-		 */
-		serverid_deregister(messaging_server_id(msg_ctx));
-	}
-
 #ifdef USE_DMAPI
 	/* Destroy Samba DMAPI session only if we are master smbd process */
 	if (am_parent) {

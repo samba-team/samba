@@ -27,7 +27,6 @@
 #include "printing.h"
 #include "printing/pcap.h"
 #include "printing/queue_process.h"
-#include "serverid.h"
 #include "locking/proto.h"
 #include "smbd/smbd.h"
 #include "rpc_server/rpc_config.h"
@@ -389,12 +388,6 @@ pid_t start_background_queue(struct tevent_context *ev,
 		BlockSignals(false, SIGHUP);
 
 		if (!printing_subsystem_queue_tasks(state)) {
-			exit(1);
-		}
-
-		if (!serverid_register(messaging_server_id(msg_ctx),
-				       FLAG_MSG_GENERAL |
-				       FLAG_MSG_PRINT_GENERAL)) {
 			exit(1);
 		}
 

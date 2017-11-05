@@ -34,7 +34,6 @@
 #include "rpc_client/cli_netlogon.h"
 #include "idmap.h"
 #include "lib/addrchange.h"
-#include "serverid.h"
 #include "auth.h"
 #include "messages.h"
 #include "../lib/util/pidfile.h"
@@ -221,9 +220,6 @@ static void terminate(bool is_parent)
 #endif
 
 	if (is_parent) {
-		struct messaging_context *msg = server_messaging_context();
-		struct server_id self = messaging_server_id(msg);
-		serverid_deregister(self);
 		pidfile_unlink(lp_pid_directory(), "winbindd");
 	}
 
@@ -1302,16 +1298,6 @@ static void winbindd_register_handlers(struct messaging_context *msg_ctx,
 	 * and initialized before we startup.
 	 */
 	if (!winbindd_cache_validate_and_initialize()) {
-		exit(1);
-	}
-
-	/* get broadcast messages */
-
-	if (!serverid_register(messaging_server_id(msg_ctx),
-			       FLAG_MSG_GENERAL |
-			       FLAG_MSG_WINBIND |
-			       FLAG_MSG_DBWRAP)) {
-		DEBUG(1, ("Could not register myself in serverid.tdb\n"));
 		exit(1);
 	}
 
