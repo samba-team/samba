@@ -29,23 +29,6 @@
 #include "util_tdb.h"
 #include "librpc/gen_ndr/ndr_open_files.h"
 
-static int net_serverid_list_fn(const struct server_id *id,
-				uint32_t msg_flags, void *priv)
-{
-	struct server_id_buf idbuf;
-	d_printf("%s %llu 0x%x\n", server_id_str_buf(*id, &idbuf),
-		 (unsigned long long)id->unique_id,
-		 (unsigned int)msg_flags);
-	return 0;
-}
-
-static int net_serverid_list(struct net_context *c, int argc,
-			     const char **argv)
-{
-	d_printf("pid unique_id msg_flags\n");
-	return serverid_traverse_read(net_serverid_list_fn, NULL) ? 0 : -1;
-}
-
 struct wipedbs_record_marker {
 	struct wipedbs_record_marker *prev, *next;
 	TDB_DATA key, val;
@@ -671,14 +654,6 @@ static int net_serverid_exists(struct net_context *c, int argc,
 int net_serverid(struct net_context *c, int argc, const char **argv)
 {
 	struct functable func[] = {
-		{
-			"list",
-			net_serverid_list,
-			NET_TRANSPORT_LOCAL,
-			N_("List all entries from serverid.tdb"),
-			N_("net serverid list\n"
-			   "    List all entries from serverid.tdb")
-		},
 		{
 			"wipedbs",
 			net_serverid_wipedbs,
