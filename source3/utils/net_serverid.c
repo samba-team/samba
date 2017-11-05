@@ -46,31 +46,6 @@ static int net_serverid_list(struct net_context *c, int argc,
 	return serverid_traverse_read(net_serverid_list_fn, NULL) ? 0 : -1;
 }
 
-static int net_serverid_wipe_fn(struct db_record *rec,
-				const struct server_id *id,
-				uint32_t msg_flags, void *private_data)
-{
-	NTSTATUS status;
-
-	if (!procid_is_local(id)) {
-		return 0;
-	}
-	status = dbwrap_record_delete(rec);
-	if (!NT_STATUS_IS_OK(status)) {
-		struct server_id_buf idbuf;
-		DEBUG(1, ("Could not delete serverid.tdb record %s: %s\n",
-			  server_id_str_buf(*id, &idbuf), nt_errstr(status)));
-	}
-	return 0;
-}
-
-static int net_serverid_wipe(struct net_context *c, int argc,
-			     const char **argv)
-{
-	return serverid_traverse(net_serverid_wipe_fn, NULL) ? 0 : -1;
-}
-
-
 struct wipedbs_record_marker {
 	struct wipedbs_record_marker *prev, *next;
 	TDB_DATA key, val;
@@ -703,14 +678,6 @@ int net_serverid(struct net_context *c, int argc, const char **argv)
 			N_("List all entries from serverid.tdb"),
 			N_("net serverid list\n"
 			   "    List all entries from serverid.tdb")
-		},
-		{
-			"wipe",
-			net_serverid_wipe,
-			NET_TRANSPORT_LOCAL,
-			N_("Wipe the serverid.tdb for the current node"),
-			N_("net serverid wipe\n"
-			   "    Wipe the serverid.tdb for the current node")
 		},
 		{
 			"wipedbs",
