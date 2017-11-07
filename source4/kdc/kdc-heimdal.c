@@ -388,24 +388,17 @@ static void kdc_post_fork(struct task_server *task, struct process_details *pd)
 	kdc_config->num_db = 1;
 
 	/*
-	 * This restores the behavior before
-	 * commit 255e3e18e00f717d99f3bc57c8a8895ff624f3c3
-	 * s4:heimdal: import lorikeet-heimdal-201107150856
-	 * (commit 48936803fae4a2fb362c79365d31f420c917b85b)
+	 * Note with the CVE-2022-37966 patches,
+	 * see https://bugzilla.samba.org/show_bug.cgi?id=15219
+	 * and https://bugzilla.samba.org/show_bug.cgi?id=15237
+	 * we want to use the strongest keys for everything.
 	 *
-	 * as_use_strongest_session_key,preauth_use_strongest_session_key
-	 * and tgs_use_strongest_session_key are input to the
-	 * _kdc_find_etype() function. The old bahavior is in
-	 * the use_strongest_session_key=FALSE code path.
-	 * (The only remaining difference in _kdc_find_etype()
-	 *  is the is_preauth parameter.)
-	 *
-	 * The old behavior in the _kdc_get_preferred_key()
-	 * function is use_strongest_server_key=TRUE.
+	 * Some of these don't have any real effect anymore,
+	 * but it is better to have them as true...
 	 */
-	kdc_config->tgt_use_strongest_session_key = false;
+	kdc_config->tgt_use_strongest_session_key = true;
 	kdc_config->preauth_use_strongest_session_key = true;
-	kdc_config->svc_use_strongest_session_key = false;
+	kdc_config->svc_use_strongest_session_key = true;
 	kdc_config->use_strongest_server_key = true;
 
 	kdc_config->force_include_pa_etype_salt = true;
