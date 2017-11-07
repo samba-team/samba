@@ -241,6 +241,7 @@ static int py_ads_init(ADS *self, PyObject *args, PyObject *kwds)
 static PyObject* py_ads_connect(ADS *self)
 {
 	ADS_STATUS status;
+	TALLOC_CTX *frame = talloc_stackframe();
 	if (self->cli_creds) {
 		self->ads_ptr->auth.user_name = SMB_STRDUP(cli_credentials_get_username(self->cli_creds));
 self->ads_ptr->auth.flags |= ADS_AUTH_USER_CREDS;
@@ -250,6 +251,7 @@ self->ads_ptr->auth.flags |= ADS_AUTH_USER_CREDS;
 		status = ads_connect_user_creds(self->ads_ptr);
 		if (!ADS_ERR_OK(status)) {
 			PyErr_SetString(PyExc_SystemError, "ads_connect() failed");
+			TALLOC_FREE(frame);
 			Py_RETURN_FALSE;
 		}
 	} else {
@@ -257,31 +259,38 @@ self->ads_ptr->auth.flags |= ADS_AUTH_USER_CREDS;
 
 		if (asprintf(&(self->ads_ptr->auth.user_name), "%s$", lp_netbios_name()) == -1) {
 			PyErr_SetString(PyExc_SystemError, "Failed to asprintf");
+			TALLOC_FREE(frame);
 			Py_RETURN_FALSE;
 		} else
 			self->ads_ptr->auth.flags |= ADS_AUTH_USER_CREDS;
 		if (!secrets_init()) {
 			PyErr_SetString(PyExc_SystemError, "secrets_init() failed");
+			TALLOC_FREE(frame);
 			Py_RETURN_FALSE;
 		}
+
 		if (!(passwd = secrets_fetch_machine_password(self->ads_ptr->server.workgroup, NULL, NULL))) {
 			PyErr_SetString(PyExc_SystemError, "Failed to fetch the machine account password");
+			TALLOC_FREE(frame);
 			Py_RETURN_FALSE;
 		}
 		self->ads_ptr->auth.password = smb_xstrdup(passwd);
 		self->ads_ptr->auth.realm = smb_xstrdup(self->ads_ptr->server.realm);
 		if (!strupper_m(self->ads_ptr->auth.realm)) {
 			PyErr_SetString(PyExc_SystemError, "Failed to strdup");
+			TALLOC_FREE(frame);
 			Py_RETURN_FALSE;
 		}
 
 		status = ads_connect(self->ads_ptr);
 		if (!ADS_ERR_OK(status)) {
 			PyErr_SetString(PyExc_SystemError, "ads_connect() failed");
+			TALLOC_FREE(frame);
 			Py_RETURN_FALSE;
 		}
 	}
 
+	TALLOC_FREE(frame);
 	Py_RETURN_TRUE;
 }
 
