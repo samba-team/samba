@@ -267,6 +267,7 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 						    bool is_rodc,
 						    uint32_t userAccountControl,
 						    enum samba_kdc_ent_type ent_type,
+						    unsigned flags,
 						    struct sdb_entry_ex *entry_ex)
 {
 	krb5_error_code ret = 0;
@@ -287,6 +288,30 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 		= ldb_msg_find_attr_as_uint(msg,
 					    "msDS-SupportedEncryptionTypes",
 					    0);
+	uint32_t new_session_enctypes = 0;
+	const krb5_enctype newer_enctypes[] = {
+		ENCTYPE_AES256_CTS_HMAC_SHA1_96,
+		ENCTYPE_AES128_CTS_HMAC_SHA1_96,
+	};
+
+	switch (ent_type) {
+	case SAMBA_KDC_ENT_TYPE_CLIENT:
+	case SAMBA_KDC_ENT_TYPE_ANY:
+		break;
+	case SAMBA_KDC_ENT_TYPE_SERVER:
+	case SAMBA_KDC_ENT_TYPE_KRBTGT:
+	case SAMBA_KDC_ENT_TYPE_TRUST:
+		if (flags & (SDB_F_FOR_AS_REQ|SDB_F_FOR_TGS_REQ)) {
+			/*
+			 * We should indicate support for new encryption
+			 * types (for session keys) via empty keyvalues,
+			 * in case we don't have stored keys for such encryption
+			 * types.
+			 */
+			new_session_enctypes = supported_enctypes;
+		}
+		break;
+	}
 
 	if (userAccountControl & UF_NORMAL_ACCOUNT) {
 		supported_enctypes = 0;
@@ -522,6 +547,8 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 		return 0;
 	}
 
+	allocated_keys += ARRAY_SIZE(newer_enctypes);
+
 	/* allocate space to decode into */
 	entry_ex->entry.keys.len = 0;
 	entry_ex->entry.keys.val = calloc(allocated_keys, sizeof(struct sdb_key));
@@ -549,12 +576,15 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 	if (pkb4) {
 		for (i=0; i < pkb4->num_keys; i++) {
 			struct sdb_key key = {};
+			uint32_t enctype;
 
 			if (!pkb4->keys[i].value) continue;
 
-			if (!(kerberos_enctype_to_bitmap(pkb4->keys[i].keytype) & supported_enctypes)) {
+			enctype = kerberos_enctype_to_bitmap(pkb4->keys[i].keytype);
+			if (!(enctype & supported_enctypes)) {
 				continue;
 			}
+			new_session_enctypes &= ~enctype;
 
 			if (pkb4->salt.string) {
 				DATA_BLOB salt;
@@ -607,12 +637,15 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 	} else if (pkb3) {
 		for (i=0; i < pkb3->num_keys; i++) {
 			struct sdb_key key = {};
+			uint32_t enctype;
 
 			if (!pkb3->keys[i].value) continue;
 
-			if (!(kerberos_enctype_to_bitmap(pkb3->keys[i].keytype) & supported_enctypes)) {
+			enctype = kerberos_enctype_to_bitmap(pkb3->keys[i].keytype);
+			if (!(enctype & supported_enctypes)) {
 				continue;
 			}
+			new_session_enctypes &= ~enctype;
 
 			if (pkb3->salt.string) {
 				DATA_BLOB salt;
@@ -654,6 +687,30 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 			entry_ex->entry.keys.val[entry_ex->entry.keys.len] = key;
 			entry_ex->entry.keys.len++;
 		}
+	}
+
+	/*
+	 * Check if we should announce support for newer encryption
+	 * types, which can be used as session keys, while the
+	 * last password change only stored older keys.
+	 *
+	 * We do that by providing entries with empty key values.
+	 */
+	for (i = 0; i < ARRAY_SIZE(newer_enctypes); i++) {
+		struct sdb_key key = {
+			.key = {
+				.keytype = newer_enctypes[i],
+			},
+		};
+		uint32_t enctype;
+
+		enctype = kerberos_enctype_to_bitmap(key.key.keytype);
+		if (!(enctype & new_session_enctypes)) {
+			continue;
+		}
+
+		entry_ex->entry.keys.val[entry_ex->entry.keys.len] = key;
+		entry_ex->entry.keys.len++;
 	}
 
 out:
@@ -1089,7 +1146,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	/* Get keys from the db */
 	ret = samba_kdc_message2entry_keys(context, kdc_db_ctx, p, msg,
 					   rid, is_rodc, userAccountControl,
-					   ent_type, entry_ex);
+					   ent_type, flags, entry_ex);
 	if (ret) {
 		/* Could be bogus data in the entry, or out of memory */
 		goto out;
