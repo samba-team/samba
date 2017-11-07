@@ -53,6 +53,7 @@ def configure(conf):
     conf.RECURSE('aesni-intel')
     if conf.CONFIG_GET('ENABLE_SELFTEST'):
         conf.RECURSE('socket_wrapper')
+        conf.RECURSE('nss_wrapper')
 
 
 def build(bld):
@@ -79,3 +80,5 @@ def build(bld):
     bld.RECURSE('aesni-intel')
     if bld.CONFIG_GET('SOCKET_WRAPPER'):
         bld.RECURSE('socket_wrapper')
+    if bld.CONFIG_GET('NSS_WRAPPER'):
+        bld.RECURSE('nss_wrapper')

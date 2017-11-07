@@ -44,3 +44,8 @@ Build.BuildContext.CHECK_CMOCKA = CHECK_CMOCKA
 def CHECK_SOCKET_WRAPPER(conf):
     return conf.CHECK_BUNDLED_SYSTEM_PKG('socket_wrapper', minversion='1.1.7')
 Build.BuildContext.CHECK_SOCKET_WRAPPER = CHECK_SOCKET_WRAPPER
+
+@conf
+def CHECK_NSS_WRAPPER(conf):
+    return conf.CHECK_BUNDLED_SYSTEM_PKG('nss_wrapper', minversion='1.1.3')
+Build.BuildContext.CHECK_NSS_WRAPPER = CHECK_NSS_WRAPPER

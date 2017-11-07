@@ -5,7 +5,7 @@ import os
 VERSION="1.1.3"
 
 def configure(conf):
-    if conf.CHECK_BUNDLED_SYSTEM('nss_wrapper', minversion=VERSION, set_target=False):
+    if conf.CHECK_NSS_WRAPPER():
         conf.DEFINE('USING_SYSTEM_NSS_WRAPPER', 1)
         libnss_wrapper_so_path = 'libnss_wrapper.so'
     else:
@@ -102,7 +102,7 @@ def configure(conf):
 
         # Create full path to nss_wrapper
         blddir = os.path.realpath(conf.blddir)
-        libnss_wrapper_so_path = blddir + '/default/lib/nss_wrapper/libnss-wrapper.so'
+        libnss_wrapper_so_path = blddir + '/default/third_party/nss_wrapper/libnss-wrapper.so'
 
     conf.DEFINE('LIBNSS_WRAPPER_SO_PATH', libnss_wrapper_so_path)
     conf.DEFINE('NSS_WRAPPER', 1)

@@ -67,8 +67,6 @@ bld.RECURSE('source4/lib/messaging')
 bld.RECURSE('source4/lib/events')
 bld.RECURSE('source4/lib/cmdline')
 bld.RECURSE('source4/lib/http')
-if bld.CONFIG_GET('NSS_WRAPPER'):
-    bld.RECURSE('lib/nss_wrapper')
 if bld.CONFIG_GET('PAM_WRAPPER') and Options.options.with_pam:
     bld.RECURSE('lib/pam_wrapper')
 if bld.CONFIG_GET('RESOLV_WRAPPER'):
