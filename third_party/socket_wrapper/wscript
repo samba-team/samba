@@ -2,7 +2,7 @@
 
 import os
 
-VERSION="1.1.7"
+VERSION="1.1.9"
 
 def configure(conf):
     if conf.CHECK_SOCKET_WRAPPER():
@@ -109,6 +109,6 @@ def build(bld):
         # breaks preloading!
         bld.SAMBA_LIBRARY('socket_wrapper',
                           source='socket_wrapper.c',
-                          deps='dl',
+                          deps='dl pthread',
                           install=False,
                           realname='libsocket-wrapper.so')
