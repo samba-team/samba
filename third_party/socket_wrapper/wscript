@@ -5,7 +5,7 @@ import os
 VERSION="1.1.7"
 
 def configure(conf):
-    if conf.CHECK_BUNDLED_SYSTEM('socket_wrapper', minversion=VERSION, set_target=False):
+    if conf.CHECK_SOCKET_WRAPPER():
         conf.DEFINE('USING_SYSTEM_SOCKET_WRAPPER', 1)
         libsocket_wrapper_so_path = 'libsocket_wrapper.so'
     else:
@@ -97,7 +97,7 @@ def configure(conf):
 
         # Create full path to socket_wrapper
         blddir = os.path.realpath(conf.blddir)
-        libsocket_wrapper_so_path = blddir + '/default/lib/socket_wrapper/libsocket-wrapper.so'
+        libsocket_wrapper_so_path = blddir + '/default/third_party/socket_wrapper/libsocket-wrapper.so'
 
     conf.DEFINE('LIBSOCKET_WRAPPER_SO_PATH', libsocket_wrapper_so_path)
     conf.DEFINE('SOCKET_WRAPPER', 1)

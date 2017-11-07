@@ -71,8 +71,6 @@ if bld.CONFIG_GET('NSS_WRAPPER'):
     bld.RECURSE('lib/nss_wrapper')
 if bld.CONFIG_GET('PAM_WRAPPER') and Options.options.with_pam:
     bld.RECURSE('lib/pam_wrapper')
-if bld.CONFIG_GET('SOCKET_WRAPPER'):
-    bld.RECURSE('lib/socket_wrapper')
 if bld.CONFIG_GET('RESOLV_WRAPPER'):
     bld.RECURSE('lib/resolv_wrapper')
 if bld.CONFIG_GET('UID_WRAPPER'):

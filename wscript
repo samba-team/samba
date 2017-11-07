@@ -135,6 +135,7 @@ def configure(conf):
         raise Utils.WafError('Python version 3.x is not supported by Samba yet')
 
     conf.RECURSE('dynconfig')
+    conf.RECURSE('selftest')
 
     if conf.CHECK_FOR_THIRD_PARTY():
         conf.RECURSE('third_party')
@@ -154,6 +155,11 @@ def configure(conf):
         else:
             conf.define('USING_SYSTEM_CMOCKA', 1)
 
+        if conf.CONFIG_GET('ENABLE_SELFTEST'):
+            if not conf.CHECK_SOCKET_WRAPPER():
+                raise Utils.WafError('socket_wrapper package has not been found.\nIf third_party is installed, check that it is in the proper place.')
+            else:
+                conf.define('USING_SYSTEM_SOCKET_WRAPPER', 1)
 
     conf.RECURSE('lib/ldb')
 
@@ -182,11 +188,9 @@ def configure(conf):
     conf.RECURSE('libcli/smbreadline')
     conf.RECURSE('lib/crypto')
     conf.RECURSE('pidl')
-    conf.RECURSE('selftest')
     if conf.CONFIG_GET('ENABLE_SELFTEST'):
         conf.RECURSE('lib/nss_wrapper')
         conf.RECURSE('lib/resolv_wrapper')
-        conf.RECURSE('lib/socket_wrapper')
         conf.RECURSE('lib/uid_wrapper')
         if Options.options.with_pam:
             conf.RECURSE('lib/pam_wrapper')

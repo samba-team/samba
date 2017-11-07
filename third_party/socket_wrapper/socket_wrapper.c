@@ -1233,7 +1233,7 @@ static int convert_in_un_alloc(struct socket_info *si, const struct sockaddr *in
 
 		if (addr == 0) {
 			/* 0.0.0.0 */
-		 	is_bcast = 0;
+			is_bcast = 0;
 			type = d_type;
 			iface = socket_wrapper_default_iface();
 		} else if (a_type && addr == 0xFFFFFFFF) {
@@ -2019,7 +2019,7 @@ static int swrap_pcap_get_fd(const char *fname)
 	if (fd != -1) {
 		struct swrap_file_hdr file_hdr;
 		file_hdr.magic		= 0xA1B2C3D4;
-		file_hdr.version_major	= 0x0002;	
+		file_hdr.version_major	= 0x0002;
 		file_hdr.version_minor	= 0x0004;
 		file_hdr.timezone	= 0x00000000;
 		file_hdr.sigfigs	= 0x00000000;

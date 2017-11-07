@@ -30,7 +30,7 @@ default_prefix = Options.default_prefix = '/usr/local'
 
 samba_dist.DIST_DIRS('''ctdb:. lib/replace:lib/replace lib/talloc:lib/talloc
                         lib/tevent:lib/tevent lib/tdb:lib/tdb
-                        lib/socket_wrapper:lib/socket_wrapper
+                        third_party/socket_wrapper:third_party/socket_wrapper
                         third_party/popt:third_party/popt
                         lib/util:lib/util lib/tdb_wrap:lib/tdb_wrap
                         lib/ccan:lib/ccan libcli/util:libcli/util
@@ -112,20 +112,29 @@ def configure(conf):
 
     if conf.CHECK_FOR_THIRD_PARTY():
         conf.RECURSE('third_party/popt')
+        if conf.env.standalone_ctdb or conf.CONFIG_GET('ENABLE_SELFTEST'):
+            conf.RECURSE('third_party/socket_wrapper')
+            conf.env.SOCKET_WRAPPER_SO_PATH = conf.CONFIG_GET('LIBSOCKET_WRAPPER_SO_PATH')
     else:
         if not conf.CHECK_POPT():
             raise Utils.WafError('popt development packages have not been found\nIf third_party is installed, check that it is in the proper place.')
         else:
             conf.define('USING_SYSTEM_POPT', 1)
+        conf.env.SOCKET_WRAPPER_SO_PATH = ''
+
+
+        if conf.env.standalone_ctdb or conf.CONFIG_GET('ENABLE_SELFTEST'):
+            if not conf.CHECK_SOCKET_WRAPPER():
+                raise Utils.WafError('socket_wrapper package has not been found.\nIf third_party is installed, check that it is in the proper place.')
+            else:
+                conf.define('USING_SYSTEM_SOCKET_WRAPPER', 1)
+                conf.env.SOCKET_WRAPPER_SO_PATH = conf.CONFIG_GET('LIBSOCKET_WRAPPER_SO_PATH')
 
     conf.RECURSE('lib/util')
 
     conf.RECURSE('lib/talloc')
     conf.RECURSE('lib/tevent')
     conf.RECURSE('lib/tdb')
-    if conf.env.standalone_ctdb or conf.CONFIG_GET('ENABLE_SELFTEST'):
-        conf.RECURSE('lib/socket_wrapper')
-        conf.env.SOCKET_WRAPPER_SO_PATH = conf.CONFIG_GET('LIBSOCKET_WRAPPER_SO_PATH')
 
     conf.CHECK_HEADERS('sched.h')
     conf.CHECK_HEADERS('procinfo.h')
@@ -315,6 +324,8 @@ def build(bld):
     bld.RECURSE('lib/replace')
     if bld.CHECK_FOR_THIRD_PARTY():
         bld.RECURSE('third_party/popt')
+        if bld.env.standalone_ctdb or bld.CONFIG_GET('SOCKET_WRAPPER'):
+            bld.RECURSE('third_party/socket_wrapper')
 
     bld.RECURSE('lib/tdb_wrap')
     bld.RECURSE('lib/util')
@@ -323,8 +334,6 @@ def build(bld):
     bld.RECURSE('lib/talloc')
     bld.RECURSE('lib/tevent')
     bld.RECURSE('lib/tdb')
-    if bld.env.standalone_ctdb or bld.CONFIG_GET('SOCKET_WRAPPER'):
-        bld.RECURSE('lib/socket_wrapper')
 
     if bld.env.standalone_ctdb:
         # If a combined build is implemented, CTDB will want to

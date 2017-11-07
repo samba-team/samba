@@ -51,6 +51,8 @@ def configure(conf):
     conf.RECURSE('popt')
     conf.RECURSE('zlib')
     conf.RECURSE('aesni-intel')
+    if conf.CONFIG_GET('ENABLE_SELFTEST'):
+        conf.RECURSE('socket_wrapper')
 
 
 def build(bld):
@@ -75,3 +77,5 @@ def build(bld):
     bld.RECURSE('zlib')
     bld.RECURSE('popt')
     bld.RECURSE('aesni-intel')
+    if bld.CONFIG_GET('SOCKET_WRAPPER'):
+        bld.RECURSE('socket_wrapper')
