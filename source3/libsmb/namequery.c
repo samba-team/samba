@@ -2556,7 +2556,7 @@ static NTSTATUS resolve_ads(const char *name,
 				freeaddrinfo(res);
 			}
 		} else {
-			/* use all the IP addresses from the SRV sresponse */
+			/* use all the IP addresses from the SRV response */
 			int j;
 			for (j = 0; j < dcs[i].num_ips; j++) {
 				(*return_iplist)[*return_count].port = dcs[i].port;
