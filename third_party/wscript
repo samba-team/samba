@@ -54,6 +54,7 @@ def configure(conf):
     if conf.CONFIG_GET('ENABLE_SELFTEST'):
         conf.RECURSE('socket_wrapper')
         conf.RECURSE('nss_wrapper')
+        conf.RECURSE('resolv_wrapper')
 
 
 def build(bld):
@@ -82,3 +83,5 @@ def build(bld):
         bld.RECURSE('socket_wrapper')
     if bld.CONFIG_GET('NSS_WRAPPER'):
         bld.RECURSE('nss_wrapper')
+    if bld.CONFIG_GET('RESOLV_WRAPPER'):
+        bld.RECURSE('resolv_wrapper')

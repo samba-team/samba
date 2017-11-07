@@ -5,7 +5,7 @@ import os
 VERSION="1.1.4"
 
 def configure(conf):
-    if conf.CHECK_BUNDLED_SYSTEM('resolv_wrapper', minversion=VERSION, set_target=False):
+    if conf.CHECK_RESOLV_WRAPPER():
         conf.DEFINE('USING_SYSTEM_RESOLV_WRAPPER', 1)
         libresolv_wrapper_so_path = 'libresolv_wrapper.so'
     else:
@@ -80,7 +80,7 @@ def configure(conf):
 
         # Create full path to resolv_wrapper
         blddir = os.path.realpath(conf.blddir)
-        libresolv_wrapper_so_path = blddir + '/default/lib/resolv_wrapper/libresolv-wrapper.so'
+        libresolv_wrapper_so_path = blddir + '/default/third_party/resolv_wrapper/libresolv-wrapper.so'
 
     conf.DEFINE('LIBRESOLV_WRAPPER_SO_PATH', libresolv_wrapper_so_path)
     conf.DEFINE('RESOLV_WRAPPER', 1)
