@@ -81,6 +81,8 @@ def configure(conf):
     conf.CHECK_HEADERS('sys/atomic.h')
     conf.CHECK_HEADERS('libgen.h')
 
+    if conf.CHECK_CFLAGS('-Wno-format-zero-length'):
+        conf.define('HAVE_WNO_FORMAT_ZERO_LENGTH', '1')
     if conf.CHECK_CFLAGS('-Wno-format-truncation'):
         conf.define('HAVE_WNO_FORMAT_TRUNCATION', '1')
 
@@ -734,7 +736,9 @@ def build(bld):
                       private_library=True,
                       deps='crypt dl nsl socket rt attr' + extra_libs)
 
-    replace_test_cflags="-Wno-format-zero-length"
+    replace_test_cflags = ""
+    if bld.CONFIG_SET('HAVE_WNO_FORMAT_ZERO_LENGTH'):
+        replace_test_cflags += "-Wno-format-zero-length"
     if bld.CONFIG_SET('HAVE_WNO_FORMAT_TRUNCATION'):
         replace_test_cflags += " -Wno-format-truncation"
     bld.SAMBA_SUBSYSTEM('replace-test',
