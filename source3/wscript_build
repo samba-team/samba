@@ -569,6 +569,7 @@ bld.SAMBA3_SUBSYSTEM('SMBCONF_PARAM',
                         PARAM_UTIL
                         ldap
                         lber
+                        krb5
                         LOADPARM_CTX
                         samba3core
                         param_local.h
