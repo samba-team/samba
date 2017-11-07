@@ -216,16 +216,16 @@ static void test2(TALLOC_CTX *mem_ctx, const char *pidfile,
 	assert(n == sizeof(ret));
 	assert(ret == 1);
 
-	ret = stat(pidfile, &st);
-	assert(ret == 0);
-	assert(S_ISREG(st.st_mode));
-
 	pidfile_fd = open(pidfile, O_RDONLY, 0644);
 	assert(pidfile_fd != -1);
+	ret = fstat(pidfile_fd, &st);
+	assert(ret == 0);
+	assert(S_ISREG(st.st_mode));
 	n = read(pidfile_fd, pidstr, sizeof(pidstr)-1);
 	assert(n != -1);
 	pid2 = (pid_t)atoi(pidstr);
 	assert(pid == pid2);
+	close(pidfile_fd);
 
 	ret = kill(pid, SIGHUP);
 	assert(ret == 0);
@@ -1315,6 +1315,7 @@ static void test9(TALLOC_CTX *mem_ctx, const char *pidfile,
 	assert(n != -1);
 	pid2 = (pid_t)atoi(pidstr);
 	assert(pid != pid2);
+	close(pidfile_fd);
 
 	ret = kill(pid2, SIGTERM);
 	assert(ret == 0);
@@ -1431,16 +1432,13 @@ static void test10(TALLOC_CTX *mem_ctx, const char *pidfile,
 	assert(n == sizeof(ret));
 	assert(ret == 1);
 
-	ret = stat(pidfile, &st);
-	assert(ret == 0);
-	assert(S_ISREG(st.st_mode));
-
 	pidfile_fd = open(pidfile, O_RDONLY, 0644);
 	assert(pidfile_fd != -1);
 	n = read(pidfile_fd, pidstr, sizeof(pidstr)-1);
 	assert(n != -1);
 	pid2 = (pid_t)atoi(pidstr);
 	assert(pid == pid2);
+	close(pidfile_fd);
 
 	ret = kill(pid, SIGTERM);
 	assert(ret == 0);
