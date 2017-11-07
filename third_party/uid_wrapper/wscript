@@ -6,7 +6,7 @@ import os, sys
 VERSION="1.2.4"
 
 def configure(conf):
-    if conf.CHECK_BUNDLED_SYSTEM('uid_wrapper', minversion=VERSION, set_target=False):
+    if conf.CHECK_UID_WRAPPER():
         conf.DEFINE('USING_SYSTEM_UID_WRAPPER', 1)
         libuid_wrapper_so_path = 'libuid_wrapper.so'
     else:
@@ -113,7 +113,7 @@ syscall(SYS_setgroups32, 0, NULL);
 
         # Create full path to uid_wrapper
         blddir = os.path.realpath(conf.blddir)
-        libuid_wrapper_so_path = blddir + '/default/lib/uid_wrapper/libuid-wrapper.so'
+        libuid_wrapper_so_path = blddir + '/default/third_party/uid_wrapper/libuid-wrapper.so'
 
     conf.DEFINE('LIBUID_WRAPPER_SO_PATH', libuid_wrapper_so_path)
     conf.DEFINE('UID_WRAPPER', 1)
@@ -128,4 +128,3 @@ def build(bld):
                           deps='dl',
                           install=False,
                           realname='libuid-wrapper.so')
-

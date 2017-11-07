@@ -54,3 +54,8 @@ Build.BuildContext.CHECK_NSS_WRAPPER = CHECK_NSS_WRAPPER
 def CHECK_RESOLV_WRAPPER(conf):
     return conf.CHECK_BUNDLED_SYSTEM_PKG('resolv_wrapper', minversion='1.1.4')
 Build.BuildContext.CHECK_RESOLV_WRAPPER = CHECK_RESOLV_WRAPPER
+
+@conf
+def CHECK_UID_WRAPPER(conf):
+    return conf.CHECK_BUNDLED_SYSTEM_PKG('uid_wrapper', minversion='1.2.4')
+Build.BuildContext.CHECK_UID_WRAPPER = CHECK_UID_WRAPPER

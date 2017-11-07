@@ -55,6 +55,7 @@ def configure(conf):
         conf.RECURSE('socket_wrapper')
         conf.RECURSE('nss_wrapper')
         conf.RECURSE('resolv_wrapper')
+        conf.RECURSE('uid_wrapper')
 
 
 def build(bld):
@@ -85,3 +86,5 @@ def build(bld):
         bld.RECURSE('nss_wrapper')
     if bld.CONFIG_GET('RESOLV_WRAPPER'):
         bld.RECURSE('resolv_wrapper')
+    if bld.CONFIG_GET('UID_WRAPPER'):
+        bld.RECURSE('uid_wrapper')

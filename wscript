@@ -171,6 +171,11 @@ def configure(conf):
             else:
                 conf.define('USING_SYSTEM_RESOLV_WRAPPER', 1)
 
+            if not conf.CHECK_UID_WRAPPER():
+                raise Utils.WafError('uid_wrapper package has not been found.\nIf third_party is installed, check that it is in the proper place.')
+            else:
+                conf.define('USING_SYSTEM_UID_WRAPPER', 1)
+
     conf.RECURSE('lib/ldb')
 
     if not (Options.options.without_ad_dc):
@@ -199,7 +204,6 @@ def configure(conf):
     conf.RECURSE('lib/crypto')
     conf.RECURSE('pidl')
     if conf.CONFIG_GET('ENABLE_SELFTEST'):
-        conf.RECURSE('lib/uid_wrapper')
         if Options.options.with_pam:
             conf.RECURSE('lib/pam_wrapper')
         if Options.options.with_ntvfs_fileserver != False:
