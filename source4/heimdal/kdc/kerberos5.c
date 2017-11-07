@@ -131,7 +131,7 @@ _kdc_find_etype(krb5_context context, krb5_boolean use_strongest_session_key,
     krb5_error_code ret;
     krb5_salt def_salt;
     krb5_enctype enctype = ETYPE_NULL;
-    Key *key;
+    Key *key = NULL;
     int i;
 
     /* We'll want to avoid keys with v4 salted keys in the pre-auth case... */
@@ -159,29 +159,34 @@ _kdc_find_etype(krb5_context context, krb5_boolean use_strongest_session_key,
 
 	/* drive the search with local supported enctypes list */
 	p = krb5_kerberos_enctypes(context);
-	for (i = 0; p[i] != ETYPE_NULL && enctype == ETYPE_NULL; i++) {
+	for (i = 0; p[i] != ETYPE_NULL && key == NULL; i++) {
 	    if (krb5_enctype_valid(context, p[i]) != 0)
 		continue;
 
 	    /* check that the client supports it too */
-	    for (j = 0; j < len && enctype == ETYPE_NULL; j++) {
+	    for (j = 0; j < len && key == NULL; j++) {
 		if (p[i] != etypes[j])
 		    continue;
 		/* save best of union of { client, crypto system } */
 		if (clientbest == ETYPE_NULL)
 		    clientbest = p[i];
+		if (enctype == ETYPE_NULL) {
+		    ret = hdb_enctype_supported(context, &princ->entry, p[i]);
+		    if (ret == 0) {
+			enctype = p[i];
+		    }
+		}
 		/* check target princ support */
 		ret = hdb_enctype2key(context, &princ->entry, p[i], &key);
 		if (ret)
 		    continue;
 		if (is_preauth && !is_default_salt_p(&def_salt, key))
 		    continue;
-		enctype = p[i];
 	    }
 	}
 	if (clientbest != ETYPE_NULL && enctype == ETYPE_NULL)
 	    enctype = clientbest;
-	else if (enctype == ETYPE_NULL)
+	else if (key == NULL)
 	    ret = KRB5KDC_ERR_ETYPE_NOSUPP;
 	if (ret == 0 && ret_enctype != NULL)
 	    *ret_enctype = enctype;
