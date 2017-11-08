@@ -346,6 +346,7 @@ static bool test_enum_r_passwd(struct torture_context *tctx,
 	torture_comment(tctx, "Testing setpwent\n");
 	setpwent();
 
+#ifdef HAVE_GETPWENT_R /* getpwent_r not supported on macOS */
 	while (1) {
 		torture_comment(tctx, "Testing getpwent_r\n");
 
@@ -368,6 +369,7 @@ static bool test_enum_r_passwd(struct torture_context *tctx,
 			num_pwd++;
 		}
 	}
+#endif /* getpwent_r not supported on macOS */
 
 	torture_comment(tctx, "Testing endpwent\n");
 	endpwent();
@@ -544,6 +546,7 @@ static bool test_enum_r_group(struct torture_context *tctx,
 	torture_comment(tctx, "Testing setgrent\n");
 	setgrent();
 
+#ifdef HAVE_GETGRENT_R /* getgrent_r not supported on macOS */
 	while (1) {
 		torture_comment(tctx, "Testing getgrent_r\n");
 
@@ -566,6 +569,7 @@ static bool test_enum_r_group(struct torture_context *tctx,
 			num_grp++;
 		}
 	}
+#endif /* getgrent_r not supported on macOS */
 
 	torture_comment(tctx, "Testing endgrent\n");
 	endgrent();
