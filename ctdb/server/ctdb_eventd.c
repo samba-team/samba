@@ -42,12 +42,6 @@
 #include "common/run_event.h"
 #include "common/sock_daemon.h"
 
-struct pending_event {
-	struct pending_event *prev, *next;
-
-	struct tevent_req *req;
-};
-
 struct eventd_client {
 	struct eventd_client *prev, *next;
 
@@ -57,12 +51,6 @@ struct eventd_client {
 
 struct eventd_context {
 	struct run_event_context *run_ctx;
-	struct tevent_queue *queue;
-
-	/* current state */
-	bool running;
-	enum ctdb_event event;
-	struct tevent_req *req;
 
 	/* result of last execution */
 	struct run_event_script_list *status_run[CTDB_EVENT_MAX];
@@ -97,15 +85,6 @@ static int eventd_context_init(TALLOC_CTX *mem_ctx,
 		return ret;
 	}
 
-	ectx->queue = tevent_queue_create(ectx, "run event queue");
-	if (ectx->queue == NULL) {
-		talloc_free(ectx);
-		return ENOMEM;
-	}
-
-	ectx->running = false;
-	ectx->event = CTDB_EVENT_INIT;
-
 	*result = ectx;
 	return 0;
 }
@@ -113,46 +92,6 @@ static int eventd_context_init(TALLOC_CTX *mem_ctx,
 static struct run_event_context *eventd_run_context(struct eventd_context *ectx)
 {
 	return ectx->run_ctx;
-}
-
-static struct tevent_queue *eventd_queue(struct eventd_context *ectx)
-{
-	return ectx->queue;
-}
-
-static void eventd_start_running(struct eventd_context *ectx,
-				 enum ctdb_event event,
-				 struct tevent_req *req)
-{
-	ectx->running = true;
-	ectx->event = event;
-	ectx->req = req;
-}
-
-static void eventd_stop_running(struct eventd_context *ectx)
-{
-	ectx->running = false;
-	ectx->req = NULL;
-}
-
-static struct tevent_req *eventd_cancel_running(struct eventd_context *ectx)
-{
-	struct tevent_req *req = ectx->req;
-
-	ectx->req = NULL;
-	eventd_stop_running(ectx);
-
-	return req;
-}
-
-static bool eventd_is_running(struct eventd_context *ectx,
-			      enum ctdb_event *event)
-{
-	if (event != NULL && ectx->running) {
-		*event = ectx->event;
-	}
-
-	return ectx->running;
 }
 
 static struct run_event_script_list *script_list_copy(
@@ -226,6 +165,11 @@ static void eventd_set_result(struct eventd_context *ectx,
 		return;
 	}
 
+	/* Do not update status if event was cancelled */
+	if (script_list->summary == -ECANCELED) {
+		return;
+	}
+
 	TALLOC_FREE(ectx->status_run[event]);
 	ectx->status_run[event] = talloc_steal(ectx, script_list);
 
@@ -279,20 +223,13 @@ static int eventd_get_result(struct eventd_context *ectx,
  */
 
 struct command_run_state {
-	struct tevent_context *ev;
 	struct eventd_context *ectx;
-	struct eventd_client *client;
 
 	enum ctdb_event event;
-	uint32_t timeout;
-	const char *arg_str;
 	struct ctdb_event_reply *reply;
-	struct tevent_req *subreq;
 };
 
-static void command_run_trigger(struct tevent_req *req, void *private_data);
 static void command_run_done(struct tevent_req *subreq);
-static void command_run_cancel(struct tevent_req *req);
 
 static struct tevent_req *command_run_send(TALLOC_CTX *mem_ctx,
 					   struct tevent_context *ev,
@@ -300,24 +237,17 @@ static struct tevent_req *command_run_send(TALLOC_CTX *mem_ctx,
 					   struct eventd_client *client,
 					   struct ctdb_event_request *request)
 {
-	struct tevent_req *req, *mon_req;
+	struct tevent_req *req, *subreq;
 	struct command_run_state *state;
-	struct pending_event *pending;
-	enum ctdb_event running_event;
-	bool running, status;
+	uint32_t timeout;
 
 	req = tevent_req_create(mem_ctx, &state, struct command_run_state);
 	if (req == NULL) {
 		return NULL;
 	}
 
-	state->ev = ev;
 	state->ectx = ectx;
-	state->client = client;
-
 	state->event = request->rdata.data.run->event;
-	state->timeout = request->rdata.data.run->timeout;
-	state->arg_str = talloc_steal(state, request->rdata.data.run->arg_str);
 
 	state->reply = talloc_zero(state, struct ctdb_event_reply);
 	if (tevent_req_nomem(state->reply, req)) {
@@ -326,77 +256,18 @@ static struct tevent_req *command_run_send(TALLOC_CTX *mem_ctx,
 
 	state->reply->rdata.command = request->rdata.command;
 
-	/*
-	 * If monitor event is running,
-	 *   Cancel the running monitor event and run new event
-	 *
-	 * If any other event is running,
-	 *   If new event is monitor, cancel that event
-	 *   Else add new event to the queue
-	 */
-
-	running = eventd_is_running(ectx, &running_event);
-	if (running) {
-		if (running_event == CTDB_EVENT_MONITOR) {
-			mon_req = eventd_cancel_running(ectx);
-			command_run_cancel(mon_req);
-		} else if (state->event == CTDB_EVENT_MONITOR) {
-			state->reply->rdata.result = -ECANCELED;
-			tevent_req_done(req);
-			return tevent_req_post(req, ev);
-		}
-	}
-
-	pending = talloc_zero(state, struct pending_event);
-	if (tevent_req_nomem(pending, req)) {
+	timeout = request->rdata.data.run->timeout;
+	subreq = run_event_send(state, ev,
+				eventd_run_context(state->ectx),
+				ctdb_event_to_string(state->event),
+				request->rdata.data.run->arg_str,
+				tevent_timeval_current_ofs(timeout, 0));
+	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
-
-	pending->req = req;
-	DLIST_ADD(client->pending_list, pending);
-
-	status = tevent_queue_add(eventd_queue(ectx), ev, req,
-				  command_run_trigger, pending);
-	if (! status) {
-		tevent_req_error(req, ENOMEM);
-		return tevent_req_post(req, ev);
-	}
+	tevent_req_set_callback(subreq, command_run_done, req);
 
 	return req;
-}
-
-static void command_run_trigger(struct tevent_req *req, void *private_data)
-{
-	struct pending_event *pending = talloc_get_type_abort(
-		private_data, struct pending_event);
-	struct command_run_state *state = tevent_req_data(
-		req, struct command_run_state);
-
-	DLIST_REMOVE(state->client->pending_list, pending);
-
-	if (pending->req != req) {
-		tevent_req_error(req, EIO);
-		return;
-	}
-
-	talloc_free(pending);
-
-	D_DEBUG("Running event %s with args \"%s\"\n",
-		ctdb_event_to_string(state->event),
-		state->arg_str == NULL ? "(null)" : state->arg_str);
-
-	state->subreq = run_event_send(state, state->ev,
-				       eventd_run_context(state->ectx),
-				       ctdb_event_to_string(state->event),
-				       state->arg_str,
-				       tevent_timeval_current_ofs(
-					       state->timeout, 0));
-	if (tevent_req_nomem(state->subreq, req)) {
-		return;
-	}
-	tevent_req_set_callback(state->subreq, command_run_done, req);
-
-	eventd_start_running(state->ectx, state->event, req);
 }
 
 static void command_run_done(struct tevent_req *subreq)
@@ -408,8 +279,6 @@ static void command_run_done(struct tevent_req *subreq)
 	struct run_event_script_list *script_list;
 	int ret;
 	bool status;
-
-	eventd_stop_running(state->ectx);
 
 	status = run_event_recv(subreq, &ret, state, &script_list);
 	TALLOC_FREE(subreq);
@@ -425,20 +294,6 @@ static void command_run_done(struct tevent_req *subreq)
 		eventd_set_result(state->ectx, state->event, script_list);
 		state->reply->rdata.result = script_list->summary;
 	}
-
-	tevent_req_done(req);
-}
-
-static void command_run_cancel(struct tevent_req *req)
-{
-	struct command_run_state *state = tevent_req_data(
-		req, struct command_run_state);
-
-	eventd_stop_running(state->ectx);
-
-	TALLOC_FREE(state->subreq);
-
-	state->reply->rdata.result = -ECANCELED;
 
 	tevent_req_done(req);
 }
@@ -783,18 +638,14 @@ static void client_disconnect(struct sock_client_context *client_ctx,
 	struct eventd_context *ectx = talloc_get_type_abort(
 		private_data, struct eventd_context);
 	struct eventd_client *client;
-	struct pending_event *pe;
 
 	client = client_find(ectx, client_ctx);
 	if (client == NULL) {
 		return;
 	}
 
-	/* Get rid of pending events */
-	while ((pe = client->pending_list) != NULL) {
-		DLIST_REMOVE(client->pending_list, pe);
-		talloc_free(pe->req);
-	}
+	DLIST_REMOVE(ectx->client_list, client);
+	talloc_free(client);
 }
 
 struct client_process_state {
