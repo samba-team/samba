@@ -311,7 +311,7 @@ static void sock_client_msg_reply(struct sock_client_context *sockc,
 }
 
 bool sock_client_msg_recv(struct tevent_req *req, int *perr,
-			  TALLOC_CTX *mem_ctx, void **reply)
+			  TALLOC_CTX *mem_ctx, void *reply)
 {
 	struct sock_client_msg_state *state = tevent_req_data(
 		req, struct sock_client_msg_state);
@@ -325,7 +325,7 @@ bool sock_client_msg_recv(struct tevent_req *req, int *perr,
 	}
 
 	if (reply != NULL) {
-		*reply = talloc_steal(mem_ctx, state->reply);
+		*(void **)reply = talloc_steal(mem_ctx, state->reply);
 	}
 
 	return true;

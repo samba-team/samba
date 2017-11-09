@@ -124,6 +124,6 @@ struct tevent_req *sock_client_msg_send(TALLOC_CTX *mem_ctx,
  * @return true on success, false on failure
  */
 bool sock_client_msg_recv(struct tevent_req *req, int *perr,
-			  TALLOC_CTX *mem_ctx, void **reply);
+			  TALLOC_CTX *mem_ctx, void *reply);
 
 #endif /* __CTDB_SOCK_CLIENT_H__ */
