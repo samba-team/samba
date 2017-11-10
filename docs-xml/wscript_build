@@ -52,7 +52,6 @@ manpages='''
          manpages/vfs_acl_tdb.8
          manpages/vfs_acl_xattr.8
          manpages/vfs_aio_fork.8
-         manpages/vfs_aio_linux.8
          manpages/vfs_aio_pthread.8
          manpages/vfs_audit.8
 	 manpages/vfs_btrfs.8

@@ -65,6 +65,15 @@ commands have been removed from rpcclient.
 "net rpc vampire keytab" from Active Directory domains continues to be
 supported.
 
+vfs_aio_linux module removed
+============================
+
+The current Linux kernel aio does not match what Samba would
+do. Shipping code that uses it leads people to false
+assumptions. Samba implements async I/O based on threads by default,
+there is no special module required to see benefits of read and write
+request being sent do the disk in parallel.
+
 KNOWN ISSUES
 ============
 
