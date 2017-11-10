@@ -1896,9 +1896,6 @@ void reply_search(struct smb_request *req)
 
 	DEBUG(4,("dptr_num is %d\n",dptr_num));
 
-	/* Initialize per SMBsearch/SMBffirst/SMBfunique operation data */
-	dptr_init_search_op(dirptr);
-
 	if ((dirtype&0x1F) == FILE_ATTRIBUTE_VOLUME) {
 		char buf[DIR_STRUCT_SIZE];
 		memcpy(buf,status,21);
