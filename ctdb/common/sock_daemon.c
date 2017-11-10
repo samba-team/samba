@@ -648,7 +648,16 @@ static void sock_daemon_run_started(struct tevent_req *subreq)
 	D_NOTICE("daemon started, pid=%u\n", getpid());
 
 	if (sockd->funcs != NULL && sockd->funcs->startup != NULL) {
-		sockd->funcs->startup(sockd->private_data);
+		int ret;
+
+		ret = sockd->funcs->startup(sockd->private_data);
+		if (ret != 0) {
+			D_ERR("startup failed, ret=%d\n", ret);
+			tevent_req_error(req, EIO);
+			return;
+		}
+
+		D_NOTICE("startup completed successfully\n");
 	}
 }
 
@@ -680,7 +689,15 @@ static void sock_daemon_run_reconfigure(struct tevent_req *req)
 	struct sock_daemon_context *sockd = state->sockd;
 
 	if (sockd->funcs != NULL && sockd->funcs->reconfigure != NULL) {
-		sockd->funcs->reconfigure(sockd->private_data);
+		int ret;
+
+		ret = sockd->funcs->reconfigure(sockd->private_data);
+		if (ret != 0) {
+			D_ERR("reconfigure failed, ret=%d\n", ret);
+			return;
+		}
+
+		D_NOTICE("reconfigure completed successfully\n");
 	}
 }
 

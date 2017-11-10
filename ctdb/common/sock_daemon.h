@@ -48,8 +48,14 @@ struct sock_client_context;
  * @brief The callback routines called during daemon life cycle
  *
  * startup() is called when the daemon starts running
- *            either via sock_daemon_run() or via sock_daemon_run_send()
- * reconfigure() is called when process receives SIGUSR1 or SIGHUP
+ *	either via sock_daemon_run() or via sock_daemon_run_send()
+ *	startup() should return 0 for success, non-zero value on failure
+ *	On failure, sock_daemon_run() will return error.
+ *
+ * reconfigure() is called when the daemon receives SIGUSR1 or SIGHUP
+ *	reconfigure() should return 0 for success, non-zero value on failure
+ *	On failure, sock_daemon_run() will continue to run.
+ *
  * shutdown() is called when process receives SIGINT or SIGTERM or
  *             when wait computation has finished
  *
@@ -60,8 +66,8 @@ struct sock_client_context;
  * If wait_send() returns req, then when req is over, daemon will shutdown.
  */
 struct sock_daemon_funcs {
-	void (*startup)(void *private_data);
-	void (*reconfigure)(void *private_data);
+	int (*startup)(void *private_data);
+	int (*reconfigure)(void *private_data);
 	void (*shutdown)(void *private_data);
 
 	struct tevent_req * (*wait_send)(TALLOC_CTX *mem_ctx,
