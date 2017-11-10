@@ -628,6 +628,14 @@ static void sock_daemon_run_started(struct tevent_req *subreq)
 	struct sock_daemon_run_state *state = tevent_req_data(
 		req, struct sock_daemon_run_state);
 	struct sock_daemon_context *sockd = state->sockd;
+	bool status;
+
+	status = tevent_wakeup_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (! status) {
+		tevent_req_error(req, EIO);
+		return;
+	}
 
 	D_NOTICE("daemon started, pid=%u\n", getpid());
 
