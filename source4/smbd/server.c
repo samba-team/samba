@@ -348,6 +348,7 @@ static int binary_smbd_main(const char *binary_name,
 				const char *argv[])
 {
 	bool opt_daemon = false;
+	bool opt_fork = true;
 	bool opt_interactive = false;
 	bool opt_no_process_group = false;
 	int opt;
@@ -363,6 +364,7 @@ static int binary_smbd_main(const char *binary_name,
 	struct stat st;
 	enum {
 		OPT_DAEMON = 1000,
+		OPT_FOREGROUND,
 		OPT_INTERACTIVE,
 		OPT_PROCESS_MODEL,
 		OPT_SHOW_BUILD,
@@ -372,6 +374,8 @@ static int binary_smbd_main(const char *binary_name,
 		POPT_AUTOHELP
 		{"daemon", 'D', POPT_ARG_NONE, NULL, OPT_DAEMON,
 		 "Become a daemon (default)", NULL },
+		{"foreground", 'F', POPT_ARG_NONE, NULL, OPT_FOREGROUND,
+		 "Run the daemon in foreground", NULL },
 		{"interactive",	'i', POPT_ARG_NONE, NULL, OPT_INTERACTIVE,
 		 "Run interactive (not a daemon)", NULL},
 		{"model", 'M', POPT_ARG_STRING,	NULL, OPT_PROCESS_MODEL,
@@ -395,6 +399,9 @@ static int binary_smbd_main(const char *binary_name,
 		switch(opt) {
 		case OPT_DAEMON:
 			opt_daemon = true;
+			break;
+		case OPT_FOREGROUND:
+			opt_fork = false;
 			break;
 		case OPT_INTERACTIVE:
 			opt_interactive = true;
@@ -422,7 +429,7 @@ static int binary_smbd_main(const char *binary_name,
 			"not allowed together with -D|--daemon\n\n");
 		poptPrintUsage(pc, stderr, 0);
 		return 1;
-	} else if (!opt_interactive) {
+	} else if (!opt_interactive && !opt_fork) {
 		/* default is --daemon */
 		opt_daemon = true;
 	}
@@ -458,8 +465,8 @@ static int binary_smbd_main(const char *binary_name,
 	}
 
 	if (opt_daemon) {
-		DEBUG(3,("Becoming a daemon.\n"));
-		become_daemon(true, false, false);
+		DBG_NOTICE("Becoming a daemon.\n");
+		become_daemon(opt_fork, opt_no_process_group, false);
 	}
 
 	/* Create the memory context to hang everything off. */
