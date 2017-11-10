@@ -7,7 +7,7 @@ Type=notify
 NotifyAccess=all
 PIDFile=/run/winbindd.pid
 EnvironmentFile=-/etc/sysconfig/samba
-ExecStart=/usr/sbin/winbindd "$WINBINDOPTIONS"
+ExecStart=/usr/sbin/winbindd --foreground --no-process-group "$WINBINDOPTIONS"
 ExecReload=/usr/bin/kill -HUP $MAINPID
 LimitCORE=infinity
 

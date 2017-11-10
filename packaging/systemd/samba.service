@@ -8,7 +8,7 @@ NotifyAccess=all
 PIDFile=/run/samba.pid
 LimitNOFILE=16384
 EnvironmentFile=-/etc/sysconfig/samba
-ExecStart=/usr/sbin/samba $SAMBAOPTIONS
+ExecStart=/usr/sbin/samba --foreground --no-process-group $SAMBAOPTIONS
 ExecReload=/usr/bin/kill -HUP $MAINPID
 
 [Install]
