@@ -1685,13 +1685,6 @@ int smb_vfs_call_closedir(struct vfs_handle_struct *handle,
 	return handle->fns->closedir_fn(handle, dir);
 }
 
-void smb_vfs_call_init_search_op(struct vfs_handle_struct *handle,
-				 DIR *dirp)
-{
-	VFS_FIND(init_search_op);
-	handle->fns->init_search_op_fn(handle, dirp);
-}
-
 int smb_vfs_call_open(struct vfs_handle_struct *handle,
 		      struct smb_filename *smb_fname, struct files_struct *fsp,
 		      int flags, mode_t mode)

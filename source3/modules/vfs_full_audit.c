@@ -110,7 +110,6 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_MKDIR,
 	SMB_VFS_OP_RMDIR,
 	SMB_VFS_OP_CLOSEDIR,
-	SMB_VFS_OP_INIT_SEARCH_OP,
 
 	/* File operations */
 
@@ -256,7 +255,6 @@ static struct {
 	{ SMB_VFS_OP_MKDIR,	"mkdir" },
 	{ SMB_VFS_OP_RMDIR,	"rmdir" },
 	{ SMB_VFS_OP_CLOSEDIR,	"closedir" },
-	{ SMB_VFS_OP_INIT_SEARCH_OP, "init_search_op" },
 	{ SMB_VFS_OP_OPEN,	"open" },
 	{ SMB_VFS_OP_CREATE_FILE, "create_file" },
 	{ SMB_VFS_OP_CLOSE,	"close" },
@@ -928,14 +926,6 @@ static int smb_full_audit_closedir(vfs_handle_struct *handle,
 	do_log(SMB_VFS_OP_CLOSEDIR, (result >= 0), handle, "");
 
 	return result;
-}
-
-static void smb_full_audit_init_search_op(vfs_handle_struct *handle,
-			DIR *dirp)
-{
-	SMB_VFS_NEXT_INIT_SEARCH_OP(handle, dirp);
-
-	do_log(SMB_VFS_OP_INIT_SEARCH_OP, True, handle, "");
 }
 
 static int smb_full_audit_open(vfs_handle_struct *handle,
@@ -2516,7 +2506,6 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.mkdir_fn = smb_full_audit_mkdir,
 	.rmdir_fn = smb_full_audit_rmdir,
 	.closedir_fn = smb_full_audit_closedir,
-	.init_search_op_fn = smb_full_audit_init_search_op,
 	.open_fn = smb_full_audit_open,
 	.create_file_fn = smb_full_audit_create_file,
 	.close_fn = smb_full_audit_close,

@@ -244,8 +244,9 @@
 /* Version 37 - Remove SMB_VFS_STRICT_UNLOCK */
 /* Version 37 - Rename SMB_VFS_STRICT_LOCK to
                 SMB_VFS_STRICT_LOCK_CHECK */
+/* Version 38 - Remove SMB_VFS_INIT_SEARCH_OP */
 
-#define SMB_VFS_INTERFACE_VERSION 37
+#define SMB_VFS_INTERFACE_VERSION 38
 
 /*
     All intercepted VFS operations must be declared as static functions inside module source
@@ -656,7 +657,6 @@ struct vfs_fn_pointers {
 	int (*rmdir_fn)(struct vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname);
 	int (*closedir_fn)(struct vfs_handle_struct *handle, DIR *dir);
-	void (*init_search_op_fn)(struct vfs_handle_struct *handle, DIR *dirp);
 
 	/* File operations */
 
@@ -1145,8 +1145,6 @@ int smb_vfs_call_rmdir(struct vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname);
 int smb_vfs_call_closedir(struct vfs_handle_struct *handle,
 			  DIR *dir);
-void smb_vfs_call_init_search_op(struct vfs_handle_struct *handle,
-				 DIR *dirp);
 int smb_vfs_call_open(struct vfs_handle_struct *handle,
 		      struct smb_filename *smb_fname, struct files_struct *fsp,
 		      int flags, mode_t mode);

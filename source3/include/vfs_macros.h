@@ -124,11 +124,6 @@
 #define SMB_VFS_NEXT_CLOSEDIR(handle, dir) \
 	smb_vfs_call_closedir((handle)->next, (dir))
 
-#define SMB_VFS_INIT_SEARCH_OP(conn, dirp) \
-	smb_vfs_call_init_search_op((conn)->vfs_handles, (dirp))
-#define SMB_VFS_NEXT_INIT_SEARCH_OP(handle, dirp) \
-	smb_vfs_call_init_search_op((handle)->next, (dirp))
-
 /* File operations */
 #define SMB_VFS_OPEN(conn, fname, fsp, flags, mode) \
 	smb_vfs_call_open((conn)->vfs_handles, (fname), (fsp), (flags), (mode))
