@@ -524,6 +524,7 @@ static void sock_daemon_run_signal_handler(struct tevent_context *ev,
 					   void *private_data);
 static void sock_daemon_run_reconfigure(struct tevent_req *req);
 static void sock_daemon_run_shutdown(struct tevent_req *req);
+static bool sock_daemon_run_socket_listen(struct tevent_req *req);
 static void sock_daemon_run_socket_fail(struct tevent_req *subreq);
 static void sock_daemon_run_watch_pid(struct tevent_req *subreq);
 static void sock_daemon_run_wait(struct tevent_req *req);
@@ -539,8 +540,6 @@ struct tevent_req *sock_daemon_run_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req, *subreq;
 	struct sock_daemon_run_state *state;
 	struct tevent_signal *se;
-	struct sock_socket *sock;
-	bool remove_before_use = false;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct sock_daemon_run_state);
@@ -557,7 +556,6 @@ struct tevent_req *sock_daemon_run_send(TALLOC_CTX *mem_ctx,
 			tevent_req_error(req, EEXIST);
 			return tevent_req_post(req, ev);
 		}
-		remove_before_use = true;
 	}
 
 	state->ev = ev;
@@ -594,16 +592,6 @@ struct tevent_req *sock_daemon_run_send(TALLOC_CTX *mem_ctx,
 			       sock_daemon_run_signal_handler, req);
 	if (tevent_req_nomem(se, req)) {
 		return tevent_req_post(req, ev);
-	}
-
-	for (sock = sockd->socket_list; sock != NULL; sock = sock->next) {
-		subreq = sock_socket_start_send(state, ev, sock,
-						remove_before_use);
-		if (tevent_req_nomem(subreq, req)) {
-			return tevent_req_post(req, ev);
-		}
-		tevent_req_set_callback(subreq, sock_daemon_run_socket_fail,
-					req);
 	}
 
 	if (pid_watch > 1) {
@@ -650,6 +638,10 @@ static void sock_daemon_run_started(struct tevent_req *subreq)
 		D_NOTICE("startup completed successfully\n");
 	}
 
+	status = sock_daemon_run_socket_listen(req);
+	if (! status) {
+		return;
+	}
 	sock_daemon_run_wait(req);
 }
 
@@ -712,6 +704,31 @@ static void sock_daemon_run_shutdown(struct tevent_req *req)
 	}
 
 	TALLOC_FREE(sockd->pid_ctx);
+}
+
+static bool sock_daemon_run_socket_listen(struct tevent_req *req)
+{
+	struct tevent_req *subreq;
+	struct sock_daemon_run_state *state = tevent_req_data(
+		req, struct sock_daemon_run_state);
+	struct sock_daemon_context *sockd = state->sockd;
+	struct sock_socket *sock;
+	bool remove_before_use = false;
+
+	if (sockd->pid_ctx != NULL) {
+		remove_before_use = true;
+	}
+	for (sock = sockd->socket_list; sock != NULL; sock = sock->next) {
+		subreq = sock_socket_start_send(state, state->ev, sock,
+						remove_before_use);
+		if (tevent_req_nomem(subreq, req)) {
+			return false;
+		}
+		tevent_req_set_callback(subreq, sock_daemon_run_socket_fail,
+					req);
+	}
+
+	return true;
 }
 
 static void sock_daemon_run_socket_fail(struct tevent_req *subreq)
