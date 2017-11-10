@@ -887,14 +887,6 @@ bool dptr_SearchDir(struct dptr_struct *dptr, const char *name, long *poffset, S
 }
 
 /****************************************************************************
- Initialize variables & state data at the beginning of all search SMB requests.
-****************************************************************************/
-void dptr_init_search_op(struct dptr_struct *dptr)
-{
-	SMB_VFS_INIT_SEARCH_OP(dptr->conn, dptr->dir_hnd->dir);
-}
-
-/****************************************************************************
  Map a native directory offset to a 32-bit cookie.
 ****************************************************************************/
 
