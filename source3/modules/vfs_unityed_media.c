@@ -846,15 +846,6 @@ static int um_closedir(vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_CLOSEDIR(handle, realdirp);
 }
 
-static void um_init_search_op(vfs_handle_struct *handle,
-			      DIR *dirp)
-{
-	DEBUG(10, ("Entering and leaving um_init_search_op\n"));
-
-	SMB_VFS_NEXT_INIT_SEARCH_OP(handle,
-				    ((um_dirinfo_struct*)dirp)->dirstream);
-}
-
 static int um_open(vfs_handle_struct *handle,
 		   struct smb_filename *smb_fname,
 		   files_struct *fsp,
@@ -1908,7 +1899,6 @@ static struct vfs_fn_pointers vfs_um_fns = {
 	.mkdir_fn = um_mkdir,
 	.rmdir_fn = um_rmdir,
 	.closedir_fn = um_closedir,
-	.init_search_op_fn = um_init_search_op,
 
 	/* File operations */
 
