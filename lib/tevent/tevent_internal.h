@@ -235,7 +235,6 @@ struct tevent_threaded_context {
 	pthread_mutex_t event_ctx_mutex;
 #endif
 	struct tevent_context *event_ctx;
-	int wakeup_fd;
 };
 
 struct tevent_debug_ops {
