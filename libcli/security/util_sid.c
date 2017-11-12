@@ -431,6 +431,6 @@ bool add_rid_to_array_unique(TALLOC_CTX *mem_ctx,
 
 bool is_null_sid(const struct dom_sid *sid)
 {
-	static const struct dom_sid null_sid = {0};
+	const struct dom_sid null_sid = {0};
 	return dom_sid_equal(sid, &null_sid);
 }
