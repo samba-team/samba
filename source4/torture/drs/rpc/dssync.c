@@ -935,11 +935,9 @@ static bool test_FetchNT4Data(struct torture_context *tctx,
 	union drsuapi_DsGetNT4ChangeLogInfo info;
 	uint32_t level_out = 0;
 	struct GUID null_guid;
-	struct dom_sid null_sid;
 	DATA_BLOB cookie;
 
 	ZERO_STRUCT(null_guid);
-	ZERO_STRUCT(null_sid);
 	ZERO_STRUCT(cookie);
 
 	ZERO_STRUCT(r);
