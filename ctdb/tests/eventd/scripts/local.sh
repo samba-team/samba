@@ -42,7 +42,7 @@ cleanup_eventd ()
 
 setup_eventd ()
 {
-	debug "Setting up eventd"
+	echo "Setting up eventd"
 
 	if [ -n "$1" ]; then
 		extra_args="-D $1"
@@ -53,9 +53,8 @@ setup_eventd ()
 		-e "$eventd_scriptdir" \
 		-l "file:" -d "DEBUG" $extra_args 2>&1 | tee "$eventd_logfile" &
 	# Wait till eventd is running
-	while [ ! -S "$eventd_socket" ] ; do
-		sleep 1
-	done
+	wait_until 10 test -S "$eventd_socket" || \
+		die "ctdb_eventd failed to start"
 
 	test_cleanup cleanup_eventd
 }
