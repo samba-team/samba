@@ -445,12 +445,10 @@ WERROR dreplsrv_partition_find_for_nc(struct dreplsrv_service *s,
 {
 	struct dreplsrv_partition *p;
 	bool valid_sid, valid_guid;
-	struct dom_sid null_sid;
-	ZERO_STRUCT(null_sid);
 
 	SMB_ASSERT(_p);
 
-	valid_sid  = nc_sid && !dom_sid_equal(&null_sid, nc_sid);
+	valid_sid  = nc_sid && !is_null_sid(nc_sid);
 	valid_guid = nc_guid && !GUID_all_zero(nc_guid);
 
 	if (!valid_sid && !valid_guid && (!nc_dn_str)) {
