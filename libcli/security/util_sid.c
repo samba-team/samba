@@ -195,7 +195,7 @@ static const struct {
 
 const char *sid_type_lookup(uint32_t sid_type)
 {
-	int i;
+	size_t i;
 
 	/* Look through list */
 	for (i=0; i < ARRAY_SIZE(sid_name_type); i++) {
