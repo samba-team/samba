@@ -44,7 +44,7 @@ void zero_sockaddr(struct sockaddr_storage *pss)
 static char *normalize_ipv6_literal(const char *str, char *buf, size_t *_len)
 {
 #define IPv6_LITERAL_NET ".ipv6-literal.net"
-	static const size_t llen = sizeof(IPv6_LITERAL_NET) - 1;
+	const size_t llen = sizeof(IPv6_LITERAL_NET) - 1;
 	size_t len = *_len;
 	int cmp;
 	size_t i;
