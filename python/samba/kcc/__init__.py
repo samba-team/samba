@@ -1501,7 +1501,7 @@ class KCC(object):
                             cn.set_modified(True)
 
                     # Display any modified connection
-                    if self.readonly:
+                    if self.readonly or ldsa.is_ro():
                         if cn.to_be_modified:
                             logger.info("TO BE MODIFIED:\n%s" % cn)
 
@@ -1585,11 +1585,11 @@ class KCC(object):
                                     rbh.dsa_dnstr, link_sched)
 
             # Display any added connection
-            if self.readonly:
+            if self.readonly or lbh.is_ro():
                 if cn.to_be_added:
                     logger.info("TO BE ADDED:\n%s" % cn)
 
-                    lbh.commit_connections(self.samdb, ro=True)
+                lbh.commit_connections(self.samdb, ro=True)
             else:
                 lbh.commit_connections(self.samdb)
 
