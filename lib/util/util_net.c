@@ -53,7 +53,7 @@ static char *normalize_ipv6_literal(const char *str, char *buf, size_t *_len)
 	size_t cnt_chars = 0;
 
 	if (len <= llen) {
-		return false;
+		return NULL;
 	}
 
 	/* ignore a trailing '.' */
