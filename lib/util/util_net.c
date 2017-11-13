@@ -490,76 +490,75 @@ bool is_ipaddress_v6(const char *str)
 #if defined(HAVE_IPV6)
 	int ret = -1;
 	char *p = NULL;
+	char buf[INET6_ADDRSTRLEN] = { 0, };
+	size_t len;
+	const char *addr = str;
+	const char *idxs = NULL;
+	unsigned int idx = 0;
+	struct in6_addr ip6;
 
 	p = strchr_m(str, ':');
 	if (p == NULL) {
 		return is_ipv6_literal(str);
-	} else {
-		char buf[INET6_ADDRSTRLEN] = { 0, };
-		size_t len;
-		const char *addr = str;
-		const char *idxs = NULL;
-		unsigned int idx = 0;
-		struct in6_addr ip6;
-
-		p = strchr_m(str, SCOPE_DELIMITER);
-		if (p && (p > str)) {
-			len = PTR_DIFF(p, str);
-			idxs = p + 1;
-		} else {
-			len = strlen(str);
-		}
-
-		if (len >= sizeof(buf)) {
-			return false;
-		}
-		if (idxs != NULL) {
-			strncpy(buf, str, len);
-			addr = buf;
-		}
-
-		/*
-		 * Cope with link-local.
-		 * This is IP:v6:addr%ifidx.
-		 */
-		if (idxs != NULL) {
-			char c;
-
-			ret = sscanf(idxs, "%5u%c", &idx, &c);
-			if (ret != 1) {
-				idx = 0;
-			}
-
-			if (idx > 0 && idx < UINT16_MAX) {
-				/* a valid index */
-				idxs = NULL;
-			}
-		}
-
-		/*
-		 * Cope with link-local.
-		 * This is IP:v6:addr%ifname.
-		 */
-		if (idxs != NULL) {
-			idx = if_nametoindex(idxs);
-
-			if (idx > 0) {
-				/* a valid index */
-				idxs = NULL;
-			}
-		}
-
-		if (idxs != NULL) {
-			return false;
-		}
-
-		ret = inet_pton(AF_INET6, addr, &ip6);
-		if (ret <= 0) {
-			return false;
-		}
-
-		return true;
 	}
+
+	p = strchr_m(str, SCOPE_DELIMITER);
+	if (p && (p > str)) {
+		len = PTR_DIFF(p, str);
+		idxs = p + 1;
+	} else {
+		len = strlen(str);
+	}
+
+	if (len >= sizeof(buf)) {
+		return false;
+	}
+	if (idxs != NULL) {
+		strncpy(buf, str, len);
+		addr = buf;
+	}
+
+	/*
+	 * Cope with link-local.
+	 * This is IP:v6:addr%ifidx.
+	 */
+	if (idxs != NULL) {
+		char c;
+
+		ret = sscanf(idxs, "%5u%c", &idx, &c);
+		if (ret != 1) {
+			idx = 0;
+		}
+
+		if (idx > 0 && idx < UINT16_MAX) {
+			/* a valid index */
+			idxs = NULL;
+		}
+	}
+
+	/*
+	 * Cope with link-local.
+	 * This is IP:v6:addr%ifname.
+	 */
+	if (idxs != NULL) {
+		idx = if_nametoindex(idxs);
+
+		if (idx > 0) {
+			/* a valid index */
+			idxs = NULL;
+		}
+	}
+
+	if (idxs != NULL) {
+		return false;
+	}
+
+	ret = inet_pton(AF_INET6, addr, &ip6);
+	if (ret <= 0) {
+		return false;
+	}
+
+	return true;
 #endif
 	return false;
 }
