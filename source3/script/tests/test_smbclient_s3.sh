@@ -1277,6 +1277,34 @@ done
 
 LOGDIR=$(mktemp -d ${PREFIX}/${LOGDIR_PREFIX}_XXXXXX)
 
+# Test doing a volume command.
+test_volume()
+{
+    tmpfile=$PREFIX/smbclient_interactive_prompt_commands
+    cat > $tmpfile <<EOF
+volume
+quit
+EOF
+    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/tmp -I $SERVER_IP $ADDARGS < $tmpfile 2>&1'
+    eval echo "$cmd"
+    out=`eval $cmd`
+    ret=$?
+    rm -f $tmpfile
+
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed doing volume command with error $ret"
+	return 1
+    fi
+
+    echo "$out" | grep '^Volume: |tmp| serial number'
+    ret=$?
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed doing volume command"
+	return 1
+    fi
+}
 
 testit "smbclient -L $SERVER_IP" $SMBCLIENT -L $SERVER_IP -N -p 139 || failed=`expr $failed + 1`
 testit "smbclient -L $SERVER -I $SERVER_IP" $SMBCLIENT -L $SERVER -I $SERVER_IP -N -p 139 -c quit || failed=`expr $failed + 1`
@@ -1371,6 +1399,10 @@ testit "follow symlinks = no" \
 
 testit "follow local symlinks" \
     test_local_symlinks || \
+    failed=`expr $failed + 1`
+
+testit "volume" \
+    test_volume || \
     failed=`expr $failed + 1`
 
 testit "rm -rf $LOGDIR" \
