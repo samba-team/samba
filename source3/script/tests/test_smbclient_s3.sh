@@ -1458,6 +1458,34 @@ EOF
     fi
 }
 
+# Test doing a volume command.
+test_volume()
+{
+    tmpfile=$PREFIX/smbclient_interactive_prompt_commands
+    cat > $tmpfile <<EOF
+volume
+quit
+EOF
+    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/tmp -I $SERVER_IP $ADDARGS < $tmpfile 2>&1'
+    eval echo "$cmd"
+    out=`eval $cmd`
+    ret=$?
+    rm -f $tmpfile
+
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed doing volume command with error $ret"
+	return 1
+    fi
+
+    echo "$out" | grep '^Volume: |tmp| serial number'
+    ret=$?
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed doing volume command"
+	return 1
+    fi
+}
 
 test_server_os_message()
 {
@@ -1610,6 +1638,10 @@ testit "setmode test" \
 
 testit "rename_dotdot" \
     test_rename_dotdot || \
+    failed=`expr $failed + 1`
+
+testit "volume" \
+    test_volume || \
     failed=`expr $failed + 1`
 
 testit "rm -rf $LOGDIR" \
