@@ -133,6 +133,11 @@ NTSTATUS cli_smb2_get_fs_full_size_info(struct cli_state *cli,
 			uint64_t *actual_allocation_units,
 			uint64_t *sectors_per_allocation_unit,
 			uint64_t *bytes_per_sector);
+NTSTATUS cli_smb2_get_fs_volume_info(struct cli_state *cli,
+			TALLOC_CTX *mem_ctx,
+			char **_volume_name,
+			uint32_t *pserial_number,
+			time_t *pdate);
 NTSTATUS cli_smb2_query_security_descriptor(struct cli_state *cli,
 			uint16_t fnum,
 			uint32_t sec_info,

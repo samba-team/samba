@@ -375,6 +375,14 @@ NTSTATUS cli_get_fs_volume_info(struct cli_state *cli,
 	unsigned int nlen;
 	char *volume_name = NULL;
 
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+		return cli_smb2_get_fs_volume_info(cli,
+						mem_ctx,
+						_volume_name,
+						pserial_number,
+						pdate);
+	}
+
 	SSVAL(setup, 0, TRANSACT2_QFSINFO);
 	SSVAL(param,0,SMB_QUERY_FS_VOLUME_INFO);
 
