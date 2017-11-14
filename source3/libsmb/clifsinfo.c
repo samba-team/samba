@@ -439,6 +439,15 @@ NTSTATUS cli_get_fs_full_size_info(struct cli_state *cli,
 	uint32_t rdata_count;
 	NTSTATUS status;
 
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+		return cli_smb2_get_fs_full_size_info(cli,
+						total_allocation_units,
+						caller_allocation_units,
+						actual_allocation_units,
+						sectors_per_allocation_unit,
+						bytes_per_sector);
+	}
+
 	SSVAL(setup, 0, TRANSACT2_QFSINFO);
 	SSVAL(param, 0, SMB_FS_FULL_SIZE_INFORMATION);
 
