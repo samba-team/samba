@@ -2169,6 +2169,136 @@ fail:
 }
 
 /***************************************************************
+ Wrapper that allows SMB2 to query file system volume info.
+ Synchronous only.
+***************************************************************/
+
+NTSTATUS cli_smb2_get_fs_volume_info(struct cli_state *cli,
+                                TALLOC_CTX *mem_ctx,
+                                char **_volume_name,
+                                uint32_t *pserial_number,
+                                time_t *pdate)
+{
+	NTSTATUS status;
+	uint16_t fnum = 0xffff;
+	DATA_BLOB outbuf = data_blob_null;
+	struct smb2_hnd *ph = NULL;
+	uint32_t nlen;
+	char *volume_name = NULL;
+	TALLOC_CTX *frame = talloc_stackframe();
+
+	if (smbXcli_conn_has_async_calls(cli->conn)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+
+	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+
+	/* First open the top level directory. */
+	status =
+	    cli_smb2_create_fnum(cli, "", 0,		   /* create_flags */
+				 FILE_READ_ATTRIBUTES,     /* desired_access */
+				 FILE_ATTRIBUTE_DIRECTORY, /* file attributes */
+				 FILE_SHARE_READ | FILE_SHARE_WRITE |
+				     FILE_SHARE_DELETE, /* share_access */
+				 FILE_OPEN,		/* create_disposition */
+				 FILE_DIRECTORY_FILE,   /* create_options */
+				 &fnum,
+				 NULL);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+
+	status = map_fnum_to_smb2_handle(cli, fnum, &ph);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+
+	/* getinfo on the returned handle with info_type SMB2_GETINFO_FS (2),
+	   level 1 (SMB_FS_VOLUME_INFORMATION). */
+
+	status = smb2cli_query_info(cli->conn,
+				cli->timeout,
+				cli->smb2.session,
+				cli->smb2.tcon,
+				SMB2_GETINFO_FS, /* in_info_type */
+				/* in_file_info_class */
+				SMB_FS_VOLUME_INFORMATION - 1000,
+				0xFFFF, /* in_max_output_length */
+				NULL, /* in_input_buffer */
+				0, /* in_additional_info */
+				0, /* in_flags */
+				ph->fid_persistent,
+				ph->fid_volatile,
+				frame,
+				&outbuf);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+
+	if (outbuf.length < 24) {
+		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+		goto fail;
+	}
+
+	if (pdate) {
+		struct timespec ts;
+		ts = interpret_long_date((char *)outbuf.data);
+		*pdate = ts.tv_sec;
+	}
+	if (pserial_number) {
+		*pserial_number = IVAL(outbuf.data,8);
+	}
+	nlen = IVAL(outbuf.data,12);
+	if (nlen + 18 < 18) {
+		/* Integer wrap. */
+		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+		goto fail;
+	}
+	/*
+	 * The next check is safe as we know outbuf.length >= 24
+	 * from above.
+	 */
+	if (nlen > (outbuf.length - 18)) {
+		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+		goto fail;
+	}
+
+	clistr_pull_talloc(mem_ctx,
+			(const char *)outbuf.data,
+			0,
+			&volume_name,
+			outbuf.data + 18,
+			nlen,
+			STR_UNICODE);
+	if (volume_name == NULL) {
+		status = map_nt_error_from_unix(errno);
+		goto fail;
+	}
+
+	*_volume_name = volume_name;
+
+fail:
+
+	if (fnum != 0xffff) {
+		cli_smb2_close_fnum(cli, fnum);
+	}
+
+	cli->raw_status = status;
+
+	TALLOC_FREE(frame);
+	return status;
+}
+
+
+/***************************************************************
  Wrapper that allows SMB2 to query a security descriptor.
  Synchronous only.
 ***************************************************************/
