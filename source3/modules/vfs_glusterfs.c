@@ -464,6 +464,10 @@ static uint32_t vfs_gluster_fs_capabilities(struct vfs_handle_struct *handle,
 {
 	uint32_t caps = FILE_CASE_SENSITIVE_SEARCH | FILE_CASE_PRESERVED_NAMES;
 
+#ifdef HAVE_GFAPI_VER_6
+	caps |= FILE_SUPPORTS_SPARSE_FILES;
+#endif
+
 #ifdef STAT_HAVE_NSEC
 	*p_ts_res = TIMESTAMP_SET_NT_OR_BETTER;
 #endif
@@ -1148,9 +1152,31 @@ static int vfs_gluster_fallocate(struct vfs_handle_struct *handle,
 				 uint32_t mode,
 				 off_t offset, off_t len)
 {
-	/* TODO: add support using glfs_fallocate() and glfs_zerofill() */
+#ifdef HAVE_GFAPI_VER_6
+	int keep_size, punch_hole;
+
+	keep_size = mode & VFS_FALLOCATE_FL_KEEP_SIZE;
+	punch_hole = mode & VFS_FALLOCATE_FL_PUNCH_HOLE;
+
+	mode &= ~(VFS_FALLOCATE_FL_KEEP_SIZE|VFS_FALLOCATE_FL_PUNCH_HOLE);
+	if (mode != 0) {
+		errno = ENOTSUP;
+		return -1;
+	}
+
+	if (punch_hole) {
+		return glfs_discard(*(glfs_fd_t **)
+				    VFS_FETCH_FSP_EXTENSION(handle, fsp),
+				    offset, len);
+	}
+
+	return glfs_fallocate(*(glfs_fd_t **)
+			      VFS_FETCH_FSP_EXTENSION(handle, fsp),
+			      keep_size, offset, len);
+#else
 	errno = ENOTSUP;
 	return -1;
+#endif
 }
 
 static struct smb_filename *vfs_gluster_realpath(struct vfs_handle_struct *handle,

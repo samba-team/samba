@@ -1575,6 +1575,10 @@ main() {
                 conf.undefine('HAVE_GLUSTERFS')
         else:
             conf.undefine('HAVE_GLUSTERFS')
+
+        conf.CHECK_CFG(package='glusterfs-api', args='"glusterfs-api >= 6" --cflags --libs',
+                       msg='Checking for glusterfs-api >= 6',
+                       uselib_store="GFAPI_VER_6")
     else:
         conf.SET_TARGET_TYPE('gfapi', 'EMPTY')
         conf.undefine('HAVE_GLUSTERFS')
