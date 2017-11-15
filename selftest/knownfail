@@ -307,3 +307,5 @@
 ^samba.tests.dcerpc.dnsserver.samba.tests.dcerpc.dnsserver.DnsserverTests.test_add_duplicate_different_type.*
 ^samba.tests.dcerpc.dnsserver.samba.tests.dcerpc.dnsserver.DnsserverTests.test_rank_none.*
 ^samba.tests.dcerpc.dnsserver.samba.tests.dcerpc.dnsserver.DnsserverTests.test_security_descriptor.*
+^samba3.vfs.fruit metadata_stream.stream names\(nt4_dc\)
+^samba3.vfs.fruit streams_depot.stream names\(nt4_dc\)
