@@ -4413,6 +4413,7 @@ struct torture_suite *torture_vfs_fruit(TALLOC_CTX *ctx)
 	torture_suite_add_2ns_smb2_test(suite, "invalid AFP_AfpInfo", test_invalid_afpinfo);
 	torture_suite_add_1smb2_test(suite, "creating rsrc with read-only access", test_rfork_create_ro);
 	torture_suite_add_1smb2_test(suite, "copy-chunk streams", test_copy_chunk_streams);
+	torture_suite_add_1smb2_test(suite, "OS X AppleDouble file conversion", test_adouble_conversion);
 
 	return suite;
 }
@@ -4491,7 +4492,6 @@ struct torture_suite *torture_vfs_fruit_netatalk(TALLOC_CTX *ctx)
 	suite->description = talloc_strdup(suite, "vfs_fruit tests for Netatalk interop that require fruit:metadata=netatalk");
 
 	torture_suite_add_1smb2_test(suite, "read netatalk metadata", test_read_netatalk_metadata);
-	torture_suite_add_1smb2_test(suite, "OS X AppleDouble file conversion", test_adouble_conversion);
 	torture_suite_add_1smb2_test(suite, "stream names with locally created xattr", test_stream_names_local);
 
 	return suite;
