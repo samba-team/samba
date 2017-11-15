@@ -477,6 +477,9 @@ static struct adouble *ad_init(TALLOC_CTX *ctx, vfs_handle_struct *handle,
 static int ad_set(struct adouble *ad, const char *path);
 static int ad_fset(struct adouble *ad, files_struct *fsp);
 static int adouble_path(TALLOC_CTX *ctx, const char *path_in, char **path_out);
+static AfpInfo *afpinfo_new(TALLOC_CTX *ctx);
+static ssize_t afpinfo_pack(const AfpInfo *ai, char *buf);
+static AfpInfo *afpinfo_unpack(TALLOC_CTX *ctx, const void *data);
 
 /**
  * Return a pointer to an AppleDouble entry
