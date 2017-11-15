@@ -105,8 +105,16 @@ static void cleanup_tmp_files(struct loadparm_context *lp_ctx)
 {
 	char *path;
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		exit_daemon("Failed to create memory context",
+			    ENOMEM);
+	}
 
 	path = smbd_tmp_path(mem_ctx, lp_ctx, NULL);
+	if (path == NULL) {
+		exit_daemon("Failed to cleanup temporary files",
+			    EINVAL);
+	}
 
 	recursive_delete(path);
 	talloc_free(mem_ctx);
