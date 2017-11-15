@@ -36,9 +36,8 @@
 
 void zero_sockaddr(struct sockaddr_storage *pss)
 {
-	ZERO_STRUCTP(pss);
 	/* Ensure we're at least a valid sockaddr-storage. */
-	pss->ss_family = AF_INET;
+	*pss = (struct sockaddr_storage) { .ss_family = AF_INET };
 }
 
 static char *normalize_ipv6_literal(const char *str, char *buf, size_t *_len)
