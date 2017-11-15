@@ -308,4 +308,3 @@
 ^samba.tests.dcerpc.dnsserver.samba.tests.dcerpc.dnsserver.DnsserverTests.test_rank_none.*
 ^samba.tests.dcerpc.dnsserver.samba.tests.dcerpc.dnsserver.DnsserverTests.test_security_descriptor.*
 ^samba3.vfs.fruit streams_depot.OS X AppleDouble file conversion\(nt4_dc\)
-^samba3.vfs.fruit metadata_stream.OS X AppleDouble file conversion\(nt4_dc\)
