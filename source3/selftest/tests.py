@@ -486,8 +486,8 @@ for t in tests:
         plansmbtorture4testsuite(t, "ad_dc", '//$SERVER/tmp -U$USERNAME%$PASSWORD')
     elif t == "vfs.fruit":
         plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/vfs_fruit -U$USERNAME%$PASSWORD --option=torture:localdir=$SELFTEST_PREFIX/nt4_dc/share --option=torture:share2=vfs_wo_fruit', 'metadata_netatalk')
-        plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/vfs_fruit_metadata_stream --option=torture:share2=vfs_wo_fruit -U$USERNAME%$PASSWORD', 'metadata_stream')
-        plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/vfs_fruit_stream_depot --option=torture:share2=vfs_wo_fruit_stream_depot -U$USERNAME%$PASSWORD', 'streams_depot')
+        plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/vfs_fruit_metadata_stream -U$USERNAME%$PASSWORD --option=torture:share2=vfs_wo_fruit', 'metadata_stream')
+        plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/vfs_fruit_stream_depot -U$USERNAME%$PASSWORD --option=torture:share2=vfs_wo_fruit_stream_depot', 'streams_depot')
     elif t == "vfs.fruit_netatalk":
         plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/vfs_fruit -U$USERNAME%$PASSWORD --option=torture:localdir=$SELFTEST_PREFIX/nt4_dc/share')
     elif t == "vfs.fruit_file_id":
