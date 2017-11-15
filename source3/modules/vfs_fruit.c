@@ -481,6 +481,10 @@ static int ad_fset(struct adouble *ad, files_struct *fsp);
 static int adouble_path(TALLOC_CTX *ctx,
 			const struct smb_filename *smb_fname__in,
 			struct smb_filename **ppsmb_fname_out);
+static AfpInfo *afpinfo_new(TALLOC_CTX *ctx);
+static ssize_t afpinfo_pack(const AfpInfo *ai, char *buf);
+static AfpInfo *afpinfo_unpack(TALLOC_CTX *ctx, const void *data);
+
 
 /**
  * Return a pointer to an AppleDouble entry
