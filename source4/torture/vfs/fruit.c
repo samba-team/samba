@@ -2861,15 +2861,8 @@ static bool test_stream_names(struct torture_context *tctx,
 	/* UTF8 private use are starts at 0xef 0x80 0x80 (0xf000) */
 	const char *streams[] = {
 		":foo" "\xef\x80\xa2" "bar:$DATA", /* "foo:bar:$DATA" */
-		":bar" "\xef\x80\xa2" "baz:$DATA", /* "bar:baz:$DATA" */
 		"::$DATA"
 	};
-	const char *localdir = NULL;
-
-	localdir = torture_setting_string(tctx, "localdir", NULL);
-	if (localdir == NULL) {
-		torture_skip(tctx, "Need localdir for test");
-	}
 
 	sname1 = talloc_asprintf(mem_ctx, "%s%s", fname, streams[0]);
 
@@ -2898,12 +2891,7 @@ static bool test_stream_names(struct torture_context *tctx,
 	CHECK_STATUS(status, NT_STATUS_OK);
 	smb2_util_close(tree, create.out.file.handle);
 
-	ret = torture_setup_local_xattr(tctx, "localdir", BASEDIR "/stream_names.txt",
-					"user.DosStream.bar:baz:$DATA",
-					"data", strlen("data"));
-	CHECK_VALUE(ret, true);
-
-	ret = check_stream_list(tree, tctx, fname, 3, streams, false);
+	ret = check_stream_list(tree, tctx, fname, 2, streams, false);
 	CHECK_VALUE(ret, true);
 
 done:
@@ -4195,6 +4183,72 @@ struct torture_suite *torture_vfs_fruit(void)
 	return suite;
 }
 
+static bool test_stream_names_local(struct torture_context *tctx,
+				    struct smb2_tree *tree)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	NTSTATUS status;
+	struct smb2_create create;
+	struct smb2_handle h;
+	const char *fname = BASEDIR "\\stream_names.txt";
+	const char *sname1;
+	bool ret;
+	/* UTF8 private use are starts at 0xef 0x80 0x80 (0xf000) */
+	const char *streams[] = {
+		":foo" "\xef\x80\xa2" "bar:$DATA", /* "foo:bar:$DATA" */
+		":bar" "\xef\x80\xa2" "baz:$DATA", /* "bar:baz:$DATA" */
+		"::$DATA"
+	};
+	const char *localdir = NULL;
+
+	localdir = torture_setting_string(tctx, "localdir", NULL);
+	if (localdir == NULL) {
+		torture_skip(tctx, "Need localdir for test");
+	}
+
+	sname1 = talloc_asprintf(mem_ctx, "%s%s", fname, streams[0]);
+
+	/* clean slate ...*/
+	smb2_util_unlink(tree, fname);
+	smb2_deltree(tree, fname);
+	smb2_deltree(tree, BASEDIR);
+
+	status = torture_smb2_testdir(tree, BASEDIR, &h);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	smb2_util_close(tree, h);
+
+	torture_comment(tctx, "(%s) testing stream names\n", __location__);
+	ZERO_STRUCT(create);
+	create.in.desired_access = SEC_FILE_WRITE_DATA;
+	create.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	create.in.share_access =
+		NTCREATEX_SHARE_ACCESS_DELETE|
+		NTCREATEX_SHARE_ACCESS_READ|
+		NTCREATEX_SHARE_ACCESS_WRITE;
+	create.in.create_disposition = NTCREATEX_DISP_CREATE;
+	create.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS;
+	create.in.fname = sname1;
+
+	status = smb2_create(tree, mem_ctx, &create);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	smb2_util_close(tree, create.out.file.handle);
+
+	ret = torture_setup_local_xattr(tctx, "localdir", BASEDIR "/stream_names.txt",
+					"user.DosStream.bar:baz:$DATA",
+					"data", strlen("data"));
+	CHECK_VALUE(ret, true);
+
+	ret = check_stream_list(tree, tctx, fname, 3, streams, false);
+	CHECK_VALUE(ret, true);
+
+done:
+	status = smb2_util_unlink(tree, fname);
+	smb2_deltree(tree, BASEDIR);
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
 struct torture_suite *torture_vfs_fruit_netatalk(void)
 {
 	struct torture_suite *suite = torture_suite_create(
@@ -4204,6 +4258,7 @@ struct torture_suite *torture_vfs_fruit_netatalk(void)
 
 	torture_suite_add_1smb2_test(suite, "read netatalk metadata", test_read_netatalk_metadata);
 	torture_suite_add_1smb2_test(suite, "OS X AppleDouble file conversion", test_adouble_conversion);
+	torture_suite_add_1smb2_test(suite, "stream names with locally created xattr", test_stream_names_local);
 
 	return suite;
 }
