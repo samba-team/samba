@@ -1538,12 +1538,6 @@ class Site(object):
             if not dsa.is_ro():
                 self.rw_dsa_table[dnstr] = dsa
 
-    def get_dsa_by_guidstr(self, guidstr):  # XXX unused
-        for dsa in self.dsa_table.values():
-            if str(dsa.dsa_guid) == guidstr:
-                return dsa
-        return None
-
     def get_dsa(self, dnstr):
         """Return a previously loaded DSA object by consulting
         the sites dsa_table for the provided DSA dn string
