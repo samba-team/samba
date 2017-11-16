@@ -1044,12 +1044,23 @@ static NTSTATUS libnet_join_lookup_dc_rpc(TALLOC_CTX *mem_ctx,
 	NTSTATUS status, result;
 	union lsa_PolicyInformation *info = NULL;
 	struct dcerpc_binding_handle *b;
+	const char *account = r->in.admin_account;
+	const char *domain = r->in.admin_domain;
+	const char *password = r->in.admin_password;
+	bool use_kerberos = r->in.use_kerberos;
+
+	if (r->in.join_flags & WKSSVC_JOIN_FLAGS_JOIN_UNSECURE) {
+		account = "";
+		domain = "";
+		password = NULL;
+		use_kerberos = false;
+	}
 
 	status = libnet_join_connect_dc_ipc(r->in.dc_name,
-					    r->in.admin_account,
-					    r->in.admin_domain,
-					    r->in.admin_password,
-					    r->in.use_kerberos,
+					    account,
+					    domain,
+					    password,
+					    use_kerberos,
 					    cli);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
@@ -1121,16 +1132,19 @@ static NTSTATUS libnet_join_joindomain_rpc_unsecure(TALLOC_CTX *mem_ctx,
 						    struct cli_state *cli)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct rpc_pipe_client *netlogon_pipe = NULL;
+	struct rpc_pipe_client *authenticate_pipe = NULL;
+	struct rpc_pipe_client *passwordset_pipe = NULL;
 	struct cli_credentials *cli_creds;
 	struct netlogon_creds_cli_context *netlogon_creds = NULL;
+	struct netlogon_creds_CredentialState *creds = NULL;
+	uint32_t netlogon_flags = 0;
 	size_t len = 0;
 	bool ok;
 	DATA_BLOB new_trust_blob = data_blob_null;
 	NTSTATUS status;
 
 	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_netlogon,
-					  &netlogon_pipe);
+					  &authenticate_pipe);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
 		return status;
@@ -1167,7 +1181,7 @@ static NTSTATUS libnet_join_joindomain_rpc_unsecure(TALLOC_CTX *mem_ctx,
 				     CRED_SPECIFIED);
 
 	status = rpccli_create_netlogon_creds_ctx(
-		cli_creds, netlogon_pipe->desthost, r->in.msg_ctx,
+		cli_creds, authenticate_pipe->desthost, r->in.msg_ctx,
 		frame, &netlogon_creds);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
@@ -1180,6 +1194,29 @@ static NTSTATUS libnet_join_joindomain_rpc_unsecure(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
 		return status;
+	}
+
+	status = netlogon_creds_cli_get(netlogon_creds, frame, &creds);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return status;
+	}
+
+	netlogon_flags = creds->negotiate_flags;
+	TALLOC_FREE(creds);
+
+	if (netlogon_flags & NETLOGON_NEG_AUTHENTICATED_RPC) {
+		status = cli_rpc_pipe_open_schannel_with_creds(cli,
+							       &ndr_table_netlogon,
+							       NCACN_NP,
+							       netlogon_creds,
+							       &passwordset_pipe);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(frame);
+			return status;
+		}
+	} else {
+		passwordset_pipe = authenticate_pipe;
 	}
 
 	len = strlen(r->in.machine_password);
@@ -1197,7 +1234,7 @@ static NTSTATUS libnet_join_joindomain_rpc_unsecure(TALLOC_CTX *mem_ctx,
 	}
 
 	status = netlogon_creds_cli_ServerPasswordSet(netlogon_creds,
-						      netlogon_pipe->binding_handle,
+						      passwordset_pipe->binding_handle,
 						      &new_trust_blob,
 						      NULL); /* new_version */
 	if (!NT_STATUS_IS_OK(status)) {
