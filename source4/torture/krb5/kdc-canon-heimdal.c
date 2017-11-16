@@ -43,7 +43,8 @@
 #define TEST_UPN              0x0000040
 #define TEST_S4U2SELF         0x0000080
 #define TEST_REMOVEDOLLAR     0x0000100
-#define TEST_ALL              0x00001FF
+#define TEST_AS_REQ_SPN       0x0000200
+#define TEST_ALL              0x00003FF
 
 struct test_data {
 	const char *test_name;
@@ -62,6 +63,8 @@ struct test_data {
 	bool other_upn_suffix;
 	bool s4u2self;
 	bool removedollar;
+	bool as_req_spn;
+	bool spn_is_upn;
 	const char *krb5_service;
 	const char *krb5_hostname;
 };
@@ -238,7 +241,8 @@ static bool torture_krb5_pre_send_as_req_test(struct torture_krb5_context *test_
 	torture_assert_int_equal(test_context->tctx, used, send_buf->length, "length mismatch");
 	torture_assert_int_equal(test_context->tctx, test_context->as_req.pvno,
 				 5, "Got wrong as_req->pvno");
-	if (test_context->test_data->canonicalize || test_context->test_data->enterprise) {
+	if (test_context->test_data->canonicalize
+	    || test_context->test_data->enterprise) {
 		torture_assert(test_context->tctx,
 			       test_context->as_req.req_body.kdc_options.canonicalize,
 			       "krb5 libs did not set canonicalize!");
@@ -249,7 +253,23 @@ static bool torture_krb5_pre_send_as_req_test(struct torture_krb5_context *test_
 					 "krb5 libs unexpectedly set canonicalize!");
 	}
 
-	if (test_context->test_data->enterprise) {
+	if (test_context->test_data->as_req_spn) {
+		if (test_context->test_data->upn) {
+			torture_assert_int_equal(test_context->tctx,
+						 test_context->as_req.req_body.cname->name_type,
+						 KRB5_NT_PRINCIPAL,
+						 "krb5 libs unexpectedly "
+						 "did not set principal "
+						 "as NT_SRV_HST!");
+		} else {
+			torture_assert_int_equal(test_context->tctx,
+						 test_context->as_req.req_body.cname->name_type,
+						 KRB5_NT_SRV_HST,
+						 "krb5 libs unexpectedly "
+						 "did not set principal "
+						 "as NT_SRV_HST!");
+		}
+	} else if (test_context->test_data->enterprise) {
 		torture_assert_int_equal(test_context->tctx,
 					 test_context->as_req.req_body.cname->name_type,
 					 KRB5_NT_ENTERPRISE_PRINCIPAL,
@@ -347,6 +367,11 @@ static bool torture_krb5_post_recv_as_req_test(struct torture_krb5_context *test
 		torture_assert_int_equal(test_context->tctx, error.pvno, 5,
 					 "Got wrong error.pvno");
 		if (test_context->test_data->netbios_realm && test_context->test_data->upn) {
+			torture_assert_int_equal(test_context->tctx,
+						 error.error_code,
+						 KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN - KRB5KDC_ERR_NONE,
+						 "Got wrong error.error_code");
+		} else if (test_context->test_data->as_req_spn && !test_context->test_data->spn_is_upn) {
 			torture_assert_int_equal(test_context->tctx,
 						 error.error_code,
 						 KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN - KRB5KDC_ERR_NONE,
@@ -580,6 +605,14 @@ static bool torture_krb5_pre_send_tgs_req_canon_test(struct torture_krb5_context
 					 test_context->tgs_req.req_body.realm, test_context->test_data->real_realm,
 				 "Mismatch in realm between request and expected request");
 
+	} else if (test_context->test_data->as_req_spn) {
+		torture_assert_int_equal(test_context->tctx,
+					 test_context->tgs_req.req_body.sname->name_type, KRB5_NT_SRV_HST,
+					 "Mismatch in name type between request and expected request, expected  KRB5_NT_SRV_HST");
+		torture_assert_str_equal(test_context->tctx,
+					 test_context->tgs_req.req_body.realm, test_context->test_data->real_realm,
+				 "Mismatch in realm between request and expected request");
+
 	} else if (test_context->test_data->canonicalize) {
 		torture_assert_int_equal(test_context->tctx,
 					 test_context->tgs_req.req_body.sname->name_type, KRB5_NT_PRINCIPAL,
@@ -704,7 +737,22 @@ static bool torture_krb5_pre_send_self_trust_tgs_req_test(struct torture_krb5_co
 				 0, "decode_TGS_REQ for TEST_SELF_TRUST_TGS_REQ test failed");
 	torture_assert_int_equal(test_context->tctx, used, send_buf->length, "length mismatch");
 	torture_assert_int_equal(test_context->tctx, test_context->tgs_req.pvno, 5, "Got wrong as_req->pvno");
-	torture_assert_int_equal(test_context->tctx, test_context->tgs_req.req_body.kdc_options.canonicalize, false, "krb5 libs unexpectedly set canonicalize!");
+
+	if (test_context->test_data->enterprise
+	    || (test_context->test_data->spn_is_upn && test_context->test_data->upn)) {
+		torture_assert_int_equal(test_context->tctx,
+					 test_context->tgs_req.req_body.kdc_options.canonicalize,
+					 true,
+					 "krb5 libs unexpectedly"
+					 " did not set canonicalize!");
+	} else {
+		torture_assert_int_equal(test_context->tctx,
+					 test_context->tgs_req.req_body.kdc_options.canonicalize,
+					 false,
+					 "krb5 libs unexpectedly"
+					 " set canonicalize!");
+	}
+	
 
 	if (test_context->test_data->canonicalize) {
 		torture_assert_str_equal(test_context->tctx,
@@ -829,11 +877,23 @@ static bool torture_krb5_pre_send_tgs_req_test(struct torture_krb5_context *test
 	torture_assert_int_equal(test_context->tctx, used, send_buf->length, "length mismatch");
 	torture_assert_int_equal(test_context->tctx, test_context->tgs_req.pvno, 5,
 				 "Got wrong as_req->pvno");
-	torture_assert_int_equal(test_context->tctx,
-				 test_context->tgs_req.req_body.kdc_options.canonicalize,
-				 false,
-				 "krb5 libs unexpectedly set canonicalize!");
 
+	if (test_context->test_data->enterprise
+	    && test_context->test_data->s4u2self == false
+	    && test_context->test_data->spn_is_upn) {
+		torture_assert_int_equal(test_context->tctx,
+					 test_context->tgs_req.req_body.kdc_options.canonicalize,
+					 true,
+					 "krb5 libs unexpectedly"
+					 " did not set canonicalize!");
+	} else {
+		torture_assert_int_equal(test_context->tctx,
+					 test_context->tgs_req.req_body.kdc_options.canonicalize,
+					 false,
+					 "krb5 libs unexpectedly"
+					 " set canonicalize!");
+	}
+	
 	if (test_context->test_data->enterprise) {
 		torture_assert_int_equal(test_context->tctx,
 					 test_context->tgs_req.req_body.sname->name_type,
@@ -842,6 +902,28 @@ static bool torture_krb5_pre_send_tgs_req_test(struct torture_krb5_context *test
 		torture_assert_str_equal(test_context->tctx,
 					 test_context->tgs_req.req_body.realm,
 					 test_context->test_data->real_realm,
+					 "Mismatch in realm between request and expected request");
+
+	} else if (test_context->test_data->spn_is_upn && test_context->test_data->upn && test_context->test_data->canonicalize) {
+		torture_assert_int_equal(test_context->tctx,
+					 test_context->tgs_req.req_body.sname->name_type,
+					 KRB5_NT_PRINCIPAL,
+					 "Mismatch in name type between request and expected request, expected  KRB5_NT_PRINCIPAL");
+		torture_assert_str_equal(test_context->tctx,
+					 test_context->tgs_req.req_body.realm,
+					 test_context->test_data->real_realm,
+					 "Mismatch in realm between request and expected request");
+
+	} else if (test_context->test_data->spn_is_upn
+		   && test_context->test_data->as_req_spn
+		   && test_context->test_data->canonicalize == false) {
+		torture_assert_int_equal(test_context->tctx,
+					 test_context->tgs_req.req_body.sname->name_type,
+					 KRB5_NT_SRV_HST,
+					 "Mismatch in name type between request and expected request, expected  KRB5_NT_SRV_HST");
+		torture_assert_str_equal(test_context->tctx,
+					 test_context->tgs_req.req_body.realm,
+					 test_context->test_data->realm,
 					 "Mismatch in realm between request and expected request");
 
 	} else {
@@ -1191,7 +1273,12 @@ static bool torture_krb5_post_recv_as_req_self_test(struct torture_krb5_context 
 					 error.pvno, 5,
 					 "Got wrong error.pvno");
 		if ((torture_setting_bool(test_context->tctx, "expect_machine_account", false)
-		     && (test_context->test_data->upn == false))) {
+		     && ((test_context->test_data->upn == false)
+			 || (test_context->test_data->as_req_spn &&
+			     test_context->test_data->spn_is_upn)
+			 || (test_context->test_data->enterprise == false &&
+			     test_context->test_data->upn &&
+			    test_context->test_data->spn_is_upn)))) {
 			torture_assert_int_equal(test_context->tctx,
 						 error.error_code,
 						 KRB5KRB_ERR_RESPONSE_TOO_BIG - KRB5KDC_ERR_NONE,
@@ -1415,10 +1502,10 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 	krb5_principal principal;
 	krb5_principal krbtgt_other;
 	krb5_principal expected_principal;
-	char *principal_string;
+	const char *principal_string = NULL;
 	char *krbtgt_other_string;
 	int principal_flags;
-	char *expected_principal_string;
+	const char *expected_principal_string = NULL;
 	char *expected_unparse_principal_string;
 	int expected_principal_flags;
 	char *got_principal_string;
@@ -1436,6 +1523,8 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 	krb5_data in_data, enc_ticket;
 	krb5_get_creds_opt opt;
 
+	const char *spn = NULL;
+	const char *spn_real_realm = NULL;
 	const char *upn = torture_setting_string(tctx, "krb5-upn", "");
 	test_data->krb5_service = torture_setting_string(tctx, "krb5-service", "host");
 	test_data->krb5_hostname = torture_setting_string(tctx, "krb5-hostname", "");
@@ -1446,6 +1535,14 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 	 */
 	if (test_data->upn && upn[0] == '\0') {
 		torture_skip(tctx, "This test needs a UPN specified as --option=torture:krb5-upn=user@example.com to run");
+	}
+
+	/*
+	 * If we have not passed a SPN on the command line,
+	 * then skip the SPN tests.
+	 */
+	if (test_data->as_req_spn && test_data->krb5_hostname[0] == '\0') {
+		torture_skip(tctx, "This test needs a hostname specified as --option=torture:krb5-hostname=hostname.example.com and optinally --option=torture:krb5-service=service (defaults to host) to run");
 	}
 
 	if (test_data->removedollar &&
@@ -1520,8 +1617,34 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 		*p = '\0';
 	}
 
-	principal_string = talloc_asprintf(test_data, "%s@%s", test_data->username, test_data->realm);
+	spn = talloc_asprintf(test_data, "%s/%s@%s",
+			      test_data->krb5_service,
+			      test_data->krb5_hostname,
+			      test_data->realm);
 
+	spn_real_realm = talloc_asprintf(test_data, "%s/%s@%s",
+					 test_data->krb5_service,
+					 test_data->krb5_hostname,
+					 test_data->real_realm);
+
+	if (test_data->as_req_spn) {
+		if (test_data->enterprise) {
+			torture_skip(tctx,
+				     "This test combination "
+				     "is skipped intentionally");
+		}
+		principal_string = spn;
+	} else {
+		principal_string = talloc_asprintf(test_data,
+						   "%s@%s",
+						   test_data->username,
+						   test_data->realm);
+		
+	}
+
+	test_data->spn_is_upn
+		= (strcasecmp(upn, spn) == 0);
+				
 	/*
 	 * If we are set to canonicalize, we get back the fixed UPPER
 	 * case realm, and the real username (ie matching LDAP
@@ -1533,13 +1656,17 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 	 * Finally, if we are not set to canonicalize, we get back the
 	 * fixed UPPER case realm, but the as-sent username
 	 */
-	if (test_data->canonicalize) {
+	if (test_data->as_req_spn && !test_data->spn_is_upn) {
+		expected_principal_string = spn;
+	} else if (test_data->canonicalize) {
 		expected_principal_string = talloc_asprintf(test_data,
 							    "%s@%s",
 							    test_data->real_username,
 							    test_data->real_realm);
 	} else if (test_data->enterprise) {
 		expected_principal_string = principal_string;
+	} else if (test_data->as_req_spn && test_data->spn_is_upn) {
+		expected_principal_string = spn_real_realm;
 	} else {
 		expected_principal_string = talloc_asprintf(test_data,
 							    "%s@%s",
@@ -1574,7 +1701,25 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 						       expected_principal_flags,
 						       &expected_principal),
 				 0, "krb5_parse_name_flags failed");
-
+	
+	if (test_data->as_req_spn) {
+		if (test_data->upn) {
+			krb5_principal_set_type(k5_context,
+						principal,
+						KRB5_NT_PRINCIPAL);
+			krb5_principal_set_type(k5_context,
+						expected_principal,
+						KRB5_NT_PRINCIPAL);
+		} else {
+			krb5_principal_set_type(k5_context,
+						principal,
+						KRB5_NT_SRV_HST);
+			krb5_principal_set_type(k5_context,
+						expected_principal,
+						KRB5_NT_SRV_HST);
+		}
+	}
+	
 	torture_assert_int_equal(tctx,
 				 krb5_unparse_name(k5_context,
 						   expected_principal,
@@ -1617,6 +1762,14 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 					 "Got wrong error_code from krb5_get_init_creds_password");
 		/* We can't proceed with more checks */
 		return true;
+	} else if (test_context->test_data->as_req_spn
+		   && !test_context->test_data->spn_is_upn) {
+		torture_assert_int_equal(tctx, k5ret,
+					 KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN,
+					 "Got wrong error_code from "
+					 "krb5_get_init_creds_password");
+		/* We can't proceed with more checks */
+		return true;
 	} else {
 		assertion_message = talloc_asprintf(tctx,
 						    "krb5_get_init_creds_password for %s failed: %s",
@@ -1638,6 +1791,12 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 					 krb5_principal_get_type(k5_context,
 								 my_creds.client),
 					 KRB5_NT_ENTERPRISE_PRINCIPAL,
+					 "smb_krb5_init_context gave incorrect client->name.name_type");
+	} else if (test_data->canonicalize == false && test_data->as_req_spn) {
+		torture_assert_int_equal(tctx,
+					 krb5_principal_get_type(k5_context,
+								 my_creds.client),
+					 KRB5_NT_SRV_HST,
 					 "smb_krb5_init_context gave incorrect client->name.name_type");
 	} else {
 		torture_assert_int_equal(tctx,
@@ -1844,7 +2003,9 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 		 * servicePrincipalName) can expect this test to succeed
 		 */
 		if (torture_setting_bool(tctx, "expect_machine_account", false)
-		    && (test_data->enterprise || test_data->upn == false)) {
+		    && (test_data->enterprise
+			|| test_data->spn_is_upn
+			|| test_data->upn == false)) {
 			torture_assert_int_equal(tctx, k5ret, 0, assertion_message);
 			torture_assert_int_equal(tctx, krb5_cc_store_cred(k5_context,
 									  ccache, server_creds),
@@ -1882,6 +2043,7 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 	 */
 	if (test_context->test_data->canonicalize == false
 	    || test_context->test_data->enterprise
+	    || (test_context->test_data->spn_is_upn && test_context->test_data->upn)
 	    || (test_context->test_data->upper_realm
 		&& test_context->test_data->netbios_realm == false)) {
 		test_context->test_stage = TEST_TGS_REQ;
@@ -1909,16 +2071,77 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 	 * Only machine accounts (strictly, accounts with a
 	 * servicePrincipalName) can expect this test to succeed
 	 */
-	if (torture_setting_bool(tctx, "expect_machine_account", false) && (test_data->enterprise || test_data->upn == false)) {
+	if (torture_setting_bool(tctx, "expect_machine_account", false)
+	    && (test_data->enterprise ||
+		(test_context->test_data->as_req_spn 
+		 || test_context->test_data->spn_is_upn)
+		|| test_data->upn == false)) {
 		DATA_BLOB client_to_server;
 		torture_assert_int_equal(tctx, k5ret, 0, assertion_message);
 		client_to_server = data_blob_const(enc_ticket.data, enc_ticket.length);
-		torture_assert(tctx,
-			       test_accept_ticket(tctx,
-					popt_get_cmdline_credentials(),
-						  expected_unparse_principal_string,
-						  client_to_server),
-			       "test_accept_ticket failed - failed to accept the ticket we just created");
+
+		/* This is very weird */
+		if (test_data->canonicalize == false
+		    && test_context->test_data->as_req_spn
+		    && test_context->test_data->spn_is_upn
+		    && test_context->test_data->s4u2self) {
+			
+			torture_assert(tctx,
+				       test_accept_ticket(tctx,
+							  popt_get_cmdline_credentials(),
+							  spn_real_realm,
+							  client_to_server),
+				       "test_accept_ticket failed - failed to accept the ticket we just created");
+		} else if (test_data->canonicalize == true
+		    && test_context->test_data->as_req_spn
+		    && test_context->test_data->spn_is_upn
+		    && test_context->test_data->s4u2self) {
+			
+			torture_assert(tctx,
+				       test_accept_ticket(tctx,
+							  popt_get_cmdline_credentials(),
+							  spn,
+							  client_to_server),
+				       "test_accept_ticket failed - failed to accept the ticket we just created");
+		} else if (test_data->canonicalize == true
+			   && test_data->enterprise == false
+			   && test_context->test_data->upn
+			   && test_context->test_data->spn_is_upn
+			   && test_context->test_data->s4u2self) {
+			
+			torture_assert(tctx,
+				       test_accept_ticket(tctx,
+							  popt_get_cmdline_credentials(),
+							  principal_string,
+							  client_to_server),
+				       "test_accept_ticket failed - failed to accept the ticket we just created");
+		} else if (test_data->canonicalize == false
+			   && test_data->enterprise == false
+			   && test_context->test_data->upn
+			   && test_context->test_data->spn_is_upn
+			   && test_context->test_data->s4u2self) {
+			
+			const char *accept_expected_principal_string
+				= talloc_asprintf(test_data,
+						  "%s@%s",
+						  test_data->username,
+						  test_data->real_realm);
+			
+			torture_assert(tctx,
+				       test_accept_ticket(tctx,
+							  popt_get_cmdline_credentials(),
+							  accept_expected_principal_string,
+							  client_to_server),
+				       "test_accept_ticket failed - failed to accept the ticket we just created");
+		} else {
+		
+			torture_assert(tctx,
+				       test_accept_ticket(tctx,
+							  popt_get_cmdline_credentials(),
+							  expected_unparse_principal_string,
+							  client_to_server),
+				       "test_accept_ticket failed - failed to accept the ticket we just created");
+		}
 		krb5_data_free(&enc_ticket);
 	} else {
 		torture_assert_int_equal(tctx, k5ret, KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN,
@@ -1947,6 +2170,7 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 	 */
 
 	if (*test_data->krb5_service && *test_data->krb5_hostname) {
+		bool implied_canonicalize;
 		krb5_principal host_principal_srv_inst;
 		/*
 		 * This tries to guess when the krb5 libs will ask for a
@@ -1967,25 +2191,45 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 				    &in_data, ccache,
 				    &enc_ticket);
 
-		if (test_data->canonicalize == false && test_data->enterprise == false
+		implied_canonicalize = test_data->canonicalize;
+		if (test_data->spn_is_upn && (test_data->upn || test_data->as_req_spn)) {
+			implied_canonicalize = true;
+		}
+		if (test_data->enterprise) {
+			implied_canonicalize = true;
+		}
+
+		if (implied_canonicalize == false
 		    && (test_data->upper_realm == false || test_data->netbios_realm == true)) {
+			torture_assert_int_equal(tctx, k5ret, KRB5_CC_NOTFOUND,
+						 "krb5_get_creds should have failed with KRB5_CC_NOTFOUND");
+		} else if (test_data->spn_is_upn
+			   && test_data->canonicalize == false
+			   && test_data->enterprise == false
+			   && test_data->upper_realm == false
+			   && test_data->upper_username == true
+			   && test_data->upn) {
 			torture_assert_int_equal(tctx, k5ret, KRB5_CC_NOTFOUND,
 						 "krb5_get_creds should have failed with KRB5_CC_NOTFOUND");
 		} else {
 			assertion_message = talloc_asprintf(tctx,
 							    "krb5_mk_req for %s/%s failed: %s",
-							    test_data->krb5_hostname,
 							    test_data->krb5_service,
+							    test_data->krb5_hostname,
 							    smb_get_krb5_error_message(k5_context, k5ret, tctx));
 
 			torture_assert_int_equal(tctx, k5ret, 0, assertion_message);
-			/*
-			 * Only in these cases would the above code have needed to
-			 * send packets to the network
-			 */
-			torture_assert(tctx,
-				       test_context->packet_count > 0,
-				       "Expected krb5_get_creds to send packets");
+
+			if (test_data->spn_is_upn == false) {
+				/*
+				 * Only in these cases would the above
+				 * code have needed to send packets to
+				 * the network
+				 */
+				torture_assert(tctx,
+					       test_context->packet_count > 0,
+					       "Expected krb5_get_creds to send packets");
+			}
 		}
 
 
@@ -2118,7 +2362,8 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 					     password, NULL, NULL, 0,
 					     principal_string, krb_options);
 
-	if (torture_setting_bool(test_context->tctx, "expect_machine_account", false) && (test_data->upn == false)) {
+	if (torture_setting_bool(test_context->tctx, "expect_machine_account", false)
+	    && (test_data->upn == false || (test_data->enterprise == false && test_data->upn == true && test_data->spn_is_upn))) {
 		assertion_message = talloc_asprintf(tctx,
 						    "krb5_get_init_creds_password for %s failed: %s",
 						    principal_string,
@@ -2146,7 +2391,18 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 	 * Assert that the reply was with the correct type of
 	 * principal, depending on the flags we set
 	 */
-	if (test_data->canonicalize == false && test_data->enterprise) {
+	if (test_data->as_req_spn && test_data->spn_is_upn && test_data->canonicalize == false) {
+		torture_assert_int_equal(tctx,
+					 krb5_principal_get_type(k5_context,
+								 my_creds.client),
+					 KRB5_NT_SRV_HST,
+					 "smb_krb5_init_context gave incorrect client->name.name_type");
+		torture_assert_int_equal(tctx,
+					 krb5_principal_get_type(k5_context,
+								 my_creds.server),
+					 KRB5_NT_SRV_HST,
+					 "smb_krb5_init_context gave incorrect server->name.name_type");
+	} else if (test_data->canonicalize == false && test_data->enterprise) {
 		torture_assert_int_equal(tctx,
 					 krb5_principal_get_type(k5_context,
 								 my_creds.client),
@@ -2214,19 +2470,31 @@ struct torture_suite *torture_krb5_canon(TALLOC_CTX *mem_ctx)
 	suite->description = talloc_strdup(suite, "Kerberos Canonicalisation tests");
 
 	for (i = 0; i < TEST_ALL; i++) {
-		char *name = talloc_asprintf(suite, "%s.%s.%s.%s.%s.%s.%s.%s.%s",
+		char *name = talloc_asprintf(suite, "%s.%s.%s.%s.%s.%s.%s.%s",
 					     (i & TEST_CANONICALIZE) ? "canon" : "no-canon",
 					     (i & TEST_ENTERPRISE) ? "enterprise" : "no-enterprise",
 					     (i & TEST_UPPER_REALM) ? "uc-realm" : "lc-realm",
 					     (i & TEST_UPPER_USERNAME) ? "uc-user" : "lc-user",
 					     (i & TEST_NETBIOS_REALM) ? "netbios-realm" : "krb5-realm",
 					     (i & TEST_WIN2K) ? "win2k" : "no-win2k",
-					     (i & TEST_UPN) ? "upn" : "no-upn",
-					     (i & TEST_S4U2SELF) ? "s4u2self" : "normal",
-					     (i & TEST_REMOVEDOLLAR) ? "removedollar" : "keepdollar");
+					     (i & TEST_UPN) ? "upn" :
+					     ((i & TEST_AS_REQ_SPN) ? "spn" : 
+					      ((i & TEST_REMOVEDOLLAR) ? "removedollar" : "samaccountname")),
+					     (i & TEST_S4U2SELF) ? "s4u2self" : "normal");
+		struct torture_suite *sub_suite = torture_suite_create(mem_ctx, name);
 
 		struct test_data *test_data = talloc_zero(suite, struct test_data);
-
+		if (i & TEST_UPN) {
+			if (i & TEST_AS_REQ_SPN) {
+				continue;
+			}
+		}
+		if ((i & TEST_UPN) || (i & TEST_AS_REQ_SPN)) {
+			if (i & TEST_REMOVEDOLLAR) {
+				continue;
+			}
+		}
+		
 		test_data->test_name = name;
 		test_data->real_realm
 			= strupper_talloc(test_data,
@@ -2247,8 +2515,10 @@ struct torture_suite *torture_krb5_canon(TALLOC_CTX *mem_ctx)
 		test_data->upn = (i & TEST_UPN) != 0;
 		test_data->s4u2self = (i & TEST_S4U2SELF) != 0;
 		test_data->removedollar = (i & TEST_REMOVEDOLLAR) != 0;
-		torture_suite_add_simple_tcase_const(suite, name, torture_krb5_as_req_canon,
+		test_data->as_req_spn = (i & TEST_AS_REQ_SPN) != 0;
+		torture_suite_add_simple_tcase_const(sub_suite, name, torture_krb5_as_req_canon,
 						     test_data);
+		torture_suite_add_suite(suite, sub_suite);
 
 	}
 	return suite;

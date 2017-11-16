@@ -1,0 +1,320 @@
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.no-canon.no-enterprise.lc-realm.lc-user.krb5-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.canon.no-enterprise.lc-realm.lc-user.krb5-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.no-canon.no-enterprise.uc-realm.lc-user.krb5-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.canon.no-enterprise.uc-realm.lc-user.krb5-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.no-canon.no-enterprise.lc-realm.uc-user.krb5-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.canon.no-enterprise.lc-realm.uc-user.krb5-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.no-canon.no-enterprise.uc-realm.uc-user.krb5-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.canon.no-enterprise.uc-realm.uc-user.krb5-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.no-canon.no-enterprise.lc-realm.lc-user.netbios-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.canon.no-enterprise.lc-realm.lc-user.netbios-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.no-canon.no-enterprise.uc-realm.lc-user.netbios-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.canon.no-enterprise.uc-realm.lc-user.netbios-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.no-canon.no-enterprise.lc-realm.uc-user.netbios-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.canon.no-enterprise.lc-realm.uc-user.netbios-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.no-canon.no-enterprise.uc-realm.uc-user.netbios-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.canon.no-enterprise.uc-realm.uc-user.netbios-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.no-canon.no-enterprise.lc-realm.lc-user.krb5-realm.win2k.spn.normal
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.canon.no-enterprise.lc-realm.lc-user.krb5-realm.win2k.spn.normal
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.no-canon.no-enterprise.uc-realm.lc-user.krb5-realm.win2k.spn.normal
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.canon.no-enterprise.uc-realm.lc-user.krb5-realm.win2k.spn.normal
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.no-canon.no-enterprise.lc-realm.uc-user.krb5-realm.win2k.spn.normal
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.canon.no-enterprise.lc-realm.uc-user.krb5-realm.win2k.spn.normal
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.no-canon.no-enterprise.uc-realm.uc-user.krb5-realm.win2k.spn.normal
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.canon.no-enterprise.uc-realm.uc-user.krb5-realm.win2k.spn.normal
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.no-canon.no-enterprise.lc-realm.lc-user.netbios-realm.win2k.spn.normal
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.canon.no-enterprise.lc-realm.lc-user.netbios-realm.win2k.spn.normal
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.no-canon.no-enterprise.uc-realm.lc-user.netbios-realm.win2k.spn.normal
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.canon.no-enterprise.uc-realm.lc-user.netbios-realm.win2k.spn.normal
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.no-canon.no-enterprise.lc-realm.uc-user.netbios-realm.win2k.spn.normal
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.canon.no-enterprise.lc-realm.uc-user.netbios-realm.win2k.spn.normal
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.no-canon.no-enterprise.uc-realm.uc-user.netbios-realm.win2k.spn.normal
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.canon.no-enterprise.uc-realm.uc-user.netbios-realm.win2k.spn.normal
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.no-canon.no-enterprise.lc-realm.lc-user.krb5-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.canon.no-enterprise.lc-realm.lc-user.krb5-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.no-canon.no-enterprise.uc-realm.lc-user.krb5-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.canon.no-enterprise.uc-realm.lc-user.krb5-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.no-canon.no-enterprise.lc-realm.uc-user.krb5-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.canon.no-enterprise.lc-realm.uc-user.krb5-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.no-canon.no-enterprise.uc-realm.uc-user.krb5-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.canon.no-enterprise.uc-realm.uc-user.krb5-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.no-canon.no-enterprise.lc-realm.lc-user.netbios-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.canon.no-enterprise.lc-realm.lc-user.netbios-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.no-canon.no-enterprise.uc-realm.lc-user.netbios-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.canon.no-enterprise.uc-realm.lc-user.netbios-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.no-canon.no-enterprise.lc-realm.uc-user.netbios-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.canon.no-enterprise.lc-realm.uc-user.netbios-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.no-canon.no-enterprise.uc-realm.uc-user.netbios-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.canon.no-enterprise.uc-realm.uc-user.netbios-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.no-canon.no-enterprise.lc-realm.lc-user.krb5-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.canon.no-enterprise.lc-realm.lc-user.krb5-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.no-canon.no-enterprise.uc-realm.lc-user.krb5-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.canon.no-enterprise.uc-realm.lc-user.krb5-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.no-canon.no-enterprise.lc-realm.uc-user.krb5-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.canon.no-enterprise.lc-realm.uc-user.krb5-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.no-canon.no-enterprise.uc-realm.uc-user.krb5-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.canon.no-enterprise.uc-realm.uc-user.krb5-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.no-canon.no-enterprise.lc-realm.lc-user.netbios-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.canon.no-enterprise.lc-realm.lc-user.netbios-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.no-canon.no-enterprise.uc-realm.lc-user.netbios-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.canon.no-enterprise.uc-realm.lc-user.netbios-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.no-canon.no-enterprise.lc-realm.uc-user.netbios-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.canon.no-enterprise.lc-realm.uc-user.netbios-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.no-canon.no-enterprise.uc-realm.uc-user.netbios-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with account ALLOWED permission to replicate to an RODC.canon.no-enterprise.uc-realm.uc-user.netbios-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.lc-user.krb5-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.lc-user.krb5-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.lc-user.krb5-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.lc-user.krb5-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.uc-user.krb5-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.uc-user.krb5-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.uc-user.krb5-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.uc-user.krb5-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.lc-user.netbios-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.lc-user.netbios-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.lc-user.netbios-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.lc-user.netbios-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.uc-user.netbios-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.uc-user.netbios-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.uc-user.netbios-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.uc-user.netbios-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.lc-user.krb5-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.lc-user.krb5-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.lc-user.krb5-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.lc-user.krb5-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.uc-user.krb5-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.uc-user.krb5-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.uc-user.krb5-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.uc-user.krb5-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.lc-user.netbios-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.lc-user.netbios-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.lc-user.netbios-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.lc-user.netbios-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.uc-user.netbios-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.uc-user.netbios-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.uc-user.netbios-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.uc-user.netbios-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.lc-user.krb5-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.lc-user.krb5-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.lc-user.krb5-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.lc-user.krb5-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.uc-user.krb5-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.uc-user.krb5-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.uc-user.krb5-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.uc-user.krb5-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.lc-user.netbios-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.lc-user.netbios-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.lc-user.netbios-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.lc-user.netbios-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.uc-user.netbios-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.uc-user.netbios-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.uc-user.netbios-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.uc-user.netbios-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.lc-user.krb5-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.lc-user.krb5-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.lc-user.krb5-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.lc-user.krb5-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.uc-user.krb5-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.uc-user.krb5-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.uc-user.krb5-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.uc-user.krb5-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.lc-user.netbios-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.lc-user.netbios-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.lc-user.netbios-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.lc-user.netbios-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.uc-user.netbios-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.uc-user.netbios-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.uc-user.netbios-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.uc-user.netbios-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.lc-user.krb5-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.lc-user.krb5-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.lc-user.krb5-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.lc-user.krb5-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.uc-user.krb5-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.uc-user.krb5-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.uc-user.krb5-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.uc-user.krb5-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.lc-user.netbios-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.lc-user.netbios-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.lc-user.netbios-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.lc-user.netbios-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.uc-user.netbios-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.uc-user.netbios-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.uc-user.netbios-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.uc-user.netbios-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.lc-user.krb5-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.lc-user.krb5-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.lc-user.krb5-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.lc-user.krb5-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.uc-user.krb5-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.uc-user.krb5-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.uc-user.krb5-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.uc-user.krb5-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.lc-user.netbios-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.lc-user.netbios-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.lc-user.netbios-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.lc-user.netbios-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.uc-user.netbios-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.uc-user.netbios-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.uc-user.netbios-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.uc-user.netbios-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.lc-user.krb5-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.lc-user.krb5-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.lc-user.krb5-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.lc-user.krb5-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.uc-user.krb5-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.uc-user.krb5-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.uc-user.krb5-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.uc-user.krb5-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.lc-user.netbios-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.lc-user.netbios-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.lc-user.netbios-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.lc-user.netbios-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.uc-user.netbios-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.uc-user.netbios-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.uc-user.netbios-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.uc-user.netbios-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.lc-user.krb5-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.lc-user.krb5-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.lc-user.krb5-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.lc-user.krb5-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.uc-user.krb5-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.uc-user.krb5-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.uc-user.krb5-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.uc-user.krb5-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.lc-user.netbios-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.lc-user.netbios-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.lc-user.netbios-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.lc-user.netbios-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.uc-user.netbios-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.uc-user.netbios-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.uc-user.netbios-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.uc-user.netbios-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.lc-user.krb5-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.lc-user.krb5-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.lc-user.krb5-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.lc-user.krb5-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.uc-user.krb5-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.uc-user.krb5-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.uc-user.krb5-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.uc-user.krb5-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.lc-user.netbios-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.lc-user.netbios-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.lc-user.netbios-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.lc-user.netbios-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.uc-user.netbios-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.uc-user.netbios-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.uc-user.netbios-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.uc-user.netbios-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.lc-user.krb5-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.lc-user.krb5-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.lc-user.krb5-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.lc-user.krb5-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.uc-user.krb5-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.uc-user.krb5-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.uc-user.krb5-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.uc-user.krb5-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.lc-user.netbios-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.lc-user.netbios-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.lc-user.netbios-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.lc-user.netbios-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.uc-user.netbios-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.uc-user.netbios-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.uc-user.netbios-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.uc-user.netbios-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.lc-user.krb5-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.lc-user.krb5-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.lc-user.krb5-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.lc-user.krb5-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.uc-user.krb5-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.uc-user.krb5-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.uc-user.krb5-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.uc-user.krb5-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.lc-user.netbios-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.lc-user.netbios-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.lc-user.netbios-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.lc-user.netbios-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.uc-user.netbios-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.uc-user.netbios-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.uc-user.netbios-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.uc-user.netbios-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.lc-user.krb5-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.lc-user.krb5-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.lc-user.krb5-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.lc-user.krb5-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.uc-user.krb5-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.uc-user.krb5-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.uc-user.krb5-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.uc-user.krb5-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.lc-user.netbios-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.lc-user.netbios-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.lc-user.netbios-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.lc-user.netbios-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.uc-user.netbios-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.uc-user.netbios-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.uc-user.netbios-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.uc-user.netbios-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.lc-user.krb5-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.lc-user.krb5-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.lc-user.krb5-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.lc-user.krb5-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.uc-user.krb5-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.uc-user.krb5-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.uc-user.krb5-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.uc-user.krb5-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.lc-user.netbios-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.lc-user.netbios-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.lc-user.netbios-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.lc-user.netbios-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.uc-user.netbios-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.uc-user.netbios-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.uc-user.netbios-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.uc-user.netbios-realm.no-win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.lc-user.krb5-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.lc-user.krb5-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.lc-user.krb5-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.lc-user.krb5-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.uc-user.krb5-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.uc-user.krb5-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.uc-user.krb5-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.uc-user.krb5-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.lc-user.netbios-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.lc-user.netbios-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.lc-user.netbios-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.lc-user.netbios-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.uc-user.netbios-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.uc-user.netbios-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.uc-user.netbios-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.uc-user.netbios-realm.win2k.spn.normal
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.lc-user.krb5-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.lc-user.krb5-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.lc-user.krb5-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.lc-user.krb5-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.uc-user.krb5-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.uc-user.krb5-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.uc-user.krb5-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.uc-user.krb5-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.lc-user.netbios-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.lc-user.netbios-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.lc-user.netbios-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.lc-user.netbios-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.uc-user.netbios-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.uc-user.netbios-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.uc-user.netbios-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.uc-user.netbios-realm.no-win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.lc-user.krb5-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.lc-user.krb5-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.lc-user.krb5-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.lc-user.krb5-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.uc-user.krb5-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.uc-user.krb5-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.uc-user.krb5-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.uc-user.krb5-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.lc-user.netbios-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.lc-user.netbios-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.lc-user.netbios-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.lc-user.netbios-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.lc-realm.uc-user.netbios-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.lc-realm.uc-user.netbios-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.no-canon.no-enterprise.uc-realm.uc-user.netbios-realm.win2k.spn.s4u2self
+^samba4.krb5.kdc with machine account.canon.no-enterprise.uc-realm.uc-user.netbios-realm.win2k.spn.s4u2self
