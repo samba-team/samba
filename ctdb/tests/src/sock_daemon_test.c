@@ -80,6 +80,34 @@ static int test1_startup(void *private_data)
 	return 0;
 }
 
+struct test1_startup_state {
+};
+
+static struct tevent_req *test1_startup_send(TALLOC_CTX *mem_ctx,
+					     struct tevent_context *ev,
+					     void *private_data)
+{
+	struct tevent_req *req;
+	struct test1_startup_state *state;
+
+	req = tevent_req_create(mem_ctx, &state, struct test1_startup_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	tevent_req_error(req, 2);
+	return tevent_req_post(req, ev);
+}
+
+static bool test1_startup_recv(struct tevent_req *req, int *perr)
+{
+	if (tevent_req_is_unix_error(req, perr)) {
+		return false;
+	}
+
+	return true;
+}
+
 static struct tevent_req *dummy_read_send(TALLOC_CTX *mem_ctx,
 					  struct tevent_context *ev,
 					  struct sock_client_context *client,
@@ -122,6 +150,23 @@ static void test1(TALLOC_CTX *mem_ctx, const char *pidfile,
 
 	test1_funcs = (struct sock_daemon_funcs){
 		.startup = test1_startup_fail,
+	};
+
+	ret = sock_daemon_setup(mem_ctx, "test1", "file:", "NOTICE",
+				&test1_funcs, NULL, &sockd);
+	assert(ret == 0);
+	assert(sockd != NULL);
+
+	ret = stat(pidfile, &st);
+	assert(ret == -1);
+
+	ret = sock_daemon_run(ev, sockd, NULL, false, false, -1);
+	assert(ret == EIO);
+	talloc_free(sockd);
+
+	test1_funcs = (struct sock_daemon_funcs){
+		.startup_send = test1_startup_send,
+		.startup_recv = test1_startup_recv,
 	};
 
 	ret = sock_daemon_setup(mem_ctx, "test1", "file:", "NOTICE",

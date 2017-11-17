@@ -52,6 +52,8 @@ struct sock_client_context;
  *	startup() should return 0 for success, non-zero value on failure
  *	On failure, sock_daemon_run() will return error.
  *
+ * startup_send()/startup_recv() is the async version of startup()
+ *
  * reconfigure() is called when the daemon receives SIGUSR1 or SIGHUP
  *	reconfigure() should return 0 for success, non-zero value on failure
  *	On failure, sock_daemon_run() will continue to run.
@@ -67,6 +69,12 @@ struct sock_client_context;
  */
 struct sock_daemon_funcs {
 	int (*startup)(void *private_data);
+
+	struct tevent_req * (*startup_send)(TALLOC_CTX *mem_ctx,
+					    struct tevent_context *ev,
+					    void *private_data);
+	bool (*startup_recv)(struct tevent_req *req, int *perr);
+
 	int (*reconfigure)(void *private_data);
 	void (*shutdown)(void *private_data);
 

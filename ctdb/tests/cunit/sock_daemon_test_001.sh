@@ -26,6 +26,8 @@ ok <<EOF
 test1[PID]: daemon started, pid=PID
 test1[PID]: startup failed, ret=1
 test1[PID]: daemon started, pid=PID
+test1[PID]: startup failed, ret=2
+test1[PID]: daemon started, pid=PID
 test1[PID]: startup completed successfully
 test1[PID]: listening on $sockpath
 test1[PID]: Shutting down
