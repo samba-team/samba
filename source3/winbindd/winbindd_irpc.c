@@ -123,7 +123,7 @@ static NTSTATUS wb_irpc_DsrUpdateReadOnlyServerDnsRecords(struct irpc_message *m
 	DEBUG(5, ("wb_irpc_DsrUpdateReadOnlyServerDnsRecords called\n"));
 
 	return wb_irpc_forward_rpc_call(msg, msg,
-					winbind_event_context(),
+					server_event_context(),
 					req, NDR_WINBIND_DSRUPDATEREADONLYSERVERDNSRECORDS,
 					"winbind_DsrUpdateReadOnlyServerDnsRecords",
 					domain, IRPC_CALL_TIMEOUT);
@@ -149,7 +149,7 @@ static NTSTATUS wb_irpc_SamLogon(struct irpc_message *msg,
 	DEBUG(5, ("wb_irpc_SamLogon called\n"));
 
 	return wb_irpc_forward_rpc_call(msg, msg,
-					winbind_event_context(),
+					server_event_context(),
 					req, NDR_WINBIND_SAMLOGON,
 					"winbind_SamLogon",
 					domain, IRPC_CALL_TIMEOUT);
@@ -209,7 +209,7 @@ static NTSTATUS wb_irpc_LogonControl(struct irpc_message *msg,
 
 	TALLOC_FREE(frame);
 	return wb_irpc_forward_rpc_call(msg, msg,
-					winbind_event_context(),
+					server_event_context(),
 					req, NDR_WINBIND_LOGONCONTROL,
 					"winbind_LogonControl",
 					domain, 45 /* timeout */);
@@ -249,7 +249,7 @@ static NTSTATUS wb_irpc_GetForestTrustInformation(struct irpc_message *msg,
 	DEBUG(5, ("wb_irpc_GetForestTrustInformation called\n"));
 
 	return wb_irpc_forward_rpc_call(msg, msg,
-					winbind_event_context(),
+					server_event_context(),
 					req, NDR_WINBIND_GETFORESTTRUSTINFORMATION,
 					"winbind_GetForestTrustInformation",
 					domain, 45 /* timeout */);
@@ -267,7 +267,7 @@ static NTSTATUS wb_irpc_SendToSam(struct irpc_message *msg,
 	DEBUG(5, ("wb_irpc_SendToSam called\n"));
 
 	return wb_irpc_forward_rpc_call(msg, msg,
-					winbind_event_context(),
+					server_event_context(),
 					req, NDR_WINBIND_SENDTOSAM,
 					"winbind_SendToSam",
 					domain, IRPC_CALL_TIMEOUT);

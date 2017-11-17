@@ -81,7 +81,7 @@ struct tevent_req *winbindd_pam_auth_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	subreq = wb_domain_request_send(state, winbind_event_context(), domain,
+	subreq = wb_domain_request_send(state, server_event_context(), domain,
 					request);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
