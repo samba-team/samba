@@ -44,6 +44,15 @@ test2[PID]: Received signal 10
 test2[PID]: reconfigure completed successfully
 test2[PID]: Received signal 15
 test2[PID]: Shutting down
+test2[PID]: daemon started, pid=PID
+test2[PID]: startup completed successfully
+test2[PID]: listening on $sockpath
+test2[PID]: Received signal 10
+test2[PID]: reconfigure failed, ret=2
+test2[PID]: Received signal 1
+test2[PID]: reconfigure completed successfully
+test2[PID]: Received signal 15
+test2[PID]: Shutting down
 EOF
 unit_test sock_daemon_test "$pidfile" "$sockpath" 2
 

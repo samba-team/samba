@@ -58,6 +58,8 @@ struct sock_client_context;
  *	reconfigure() should return 0 for success, non-zero value on failure
  *	On failure, sock_daemon_run() will continue to run.
  *
+ * reconfigure_send()/reconfigure_recv() is the async version of reconfigure()
+ *
  * shutdown() is called when process receives SIGINT or SIGTERM or
  *             when wait computation has finished
  *
@@ -76,6 +78,12 @@ struct sock_daemon_funcs {
 	bool (*startup_recv)(struct tevent_req *req, int *perr);
 
 	int (*reconfigure)(void *private_data);
+
+	struct tevent_req * (*reconfigure_send)(TALLOC_CTX *mem_ctx,
+						struct tevent_context *ev,
+						void *private_data);
+	bool (*reconfigure_recv)(struct tevent_req *req, int *perr);
+
 	void (*shutdown)(void *private_data);
 
 	struct tevent_req * (*wait_send)(TALLOC_CTX *mem_ctx,

@@ -240,6 +240,53 @@ static int test2_reconfigure(void *private_data)
 	return 0;
 }
 
+struct test2_reconfigure_state {
+	int fd;
+};
+
+static struct tevent_req *test2_reconfigure_send(TALLOC_CTX *mem_ctx,
+						 struct tevent_context *ev,
+						 void *private_data)
+{
+	struct tevent_req *req;
+	struct test2_reconfigure_state *state;
+	static bool first_time = true;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct test2_reconfigure_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	state->fd = *(int *)private_data;
+
+	if (first_time) {
+		first_time = false;
+		tevent_req_error(req, 2);
+	} else {
+		tevent_req_done(req);
+	}
+
+	return tevent_req_post(req, ev);
+}
+
+static bool test2_reconfigure_recv(struct tevent_req *req, int *perr)
+{
+	struct test2_reconfigure_state *state = tevent_req_data(
+		req, struct test2_reconfigure_state);
+	int ret = 2;
+	ssize_t nwritten;
+
+	nwritten = write(state->fd, &ret, sizeof(ret));
+	assert(nwritten == sizeof(ret));
+
+	if (tevent_req_is_unix_error(req, perr)) {
+		return false;
+	}
+
+	return true;
+}
+
 static void test2_shutdown(void *private_data)
 {
 	int fd = *(int *)private_data;
@@ -344,6 +391,69 @@ static void test2(TALLOC_CTX *mem_ctx, const char *pidfile,
 
 	ret = stat(sockpath, &st);
 	assert(ret == -1);
+
+	ret = pipe(fd);
+	assert(ret == 0);
+
+	pid = fork();
+	assert(pid != -1);
+
+	if (pid == 0) {
+		struct tevent_context *ev;
+		struct sock_daemon_context *sockd;
+		struct sock_daemon_funcs test2_funcs = {
+			.startup = test2_startup,
+			.reconfigure_send = test2_reconfigure_send,
+			.reconfigure_recv = test2_reconfigure_recv,
+		};
+
+		close(fd[0]);
+
+		ev = tevent_context_init(mem_ctx);
+		assert(ev != NULL);
+
+		ret = sock_daemon_setup(mem_ctx, "test2", "file:", "NOTICE",
+					&test2_funcs, &fd[1], &sockd);
+		assert(ret == 0);
+
+		ret = sock_daemon_add_unix(sockd, sockpath,
+					   &dummy_socket_funcs, NULL);
+		assert(ret == 0);
+
+		ret = sock_daemon_run(ev, sockd, pidfile, false, false, -1);
+		assert(ret == EINTR);
+
+		exit(0);
+	}
+
+	close(fd[1]);
+
+	n = read(fd[0], &ret, sizeof(ret));
+	assert(n == sizeof(ret));
+	assert(ret == 1);
+
+	ret = kill(pid, SIGUSR1);
+	assert(ret == 0);
+
+	n = read(fd[0], &ret, sizeof(ret));
+	assert(n == sizeof(ret));
+	assert(ret == 2);
+
+	ret = kill(pid, SIGHUP);
+	assert(ret == 0);
+
+	n = read(fd[0], &ret, sizeof(ret));
+	assert(n == sizeof(ret));
+	assert(ret == 2);
+
+	ret = kill(pid, SIGTERM);
+	assert(ret == 0);
+
+	pid2 = waitpid(pid, &ret, 0);
+	assert(pid2 == pid);
+	assert(WEXITSTATUS(ret) == 0);
+
+	close(fd[0]);
 }
 
 /*

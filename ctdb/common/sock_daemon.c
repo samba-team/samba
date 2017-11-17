@@ -533,6 +533,7 @@ static void sock_daemon_run_signal_handler(struct tevent_context *ev,
 					   int signum, int count, void *siginfo,
 					   void *private_data);
 static void sock_daemon_run_reconfigure(struct tevent_req *req);
+static void sock_daemon_run_reconfigure_done(struct tevent_req *subreq);
 static void sock_daemon_run_shutdown(struct tevent_req *req);
 static bool sock_daemon_run_socket_listen(struct tevent_req *req);
 static void sock_daemon_run_socket_fail(struct tevent_req *subreq);
@@ -717,9 +718,22 @@ static void sock_daemon_run_signal_handler(struct tevent_context *ev,
 
 static void sock_daemon_run_reconfigure(struct tevent_req *req)
 {
+	struct tevent_req *subreq;
 	struct sock_daemon_run_state *state = tevent_req_data(
 		req, struct sock_daemon_run_state);
 	struct sock_daemon_context *sockd = state->sockd;
+
+	if (sockd->funcs != NULL && sockd->funcs->reconfigure_send != NULL &&
+	    sockd->funcs->reconfigure_recv != NULL) {
+		subreq = sockd->funcs->reconfigure_send(state, state->ev,
+							sockd->private_data);
+		if (tevent_req_nomem(subreq, req)) {
+			return;
+		}
+		tevent_req_set_callback(subreq,
+					sock_daemon_run_reconfigure_done, req);
+		return;
+	}
 
 	if (sockd->funcs != NULL && sockd->funcs->reconfigure != NULL) {
 		int ret;
@@ -732,6 +746,26 @@ static void sock_daemon_run_reconfigure(struct tevent_req *req)
 
 		D_NOTICE("reconfigure completed successfully\n");
 	}
+}
+
+static void sock_daemon_run_reconfigure_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct sock_daemon_run_state *state = tevent_req_data(
+		req, struct sock_daemon_run_state);
+	struct sock_daemon_context *sockd = state->sockd;
+	int ret;
+	bool status;
+
+	status = sockd->funcs->reconfigure_recv(subreq, &ret);
+	TALLOC_FREE(subreq);
+	if (! status) {
+		D_ERR("reconfigure failed, ret=%d\n", ret);
+		return;
+	}
+
+	D_NOTICE("reconfigure completed successfully\n");
 }
 
 static void sock_daemon_run_shutdown(struct tevent_req *req)
