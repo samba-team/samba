@@ -265,7 +265,11 @@ static int sock_socket_init(TALLOC_CTX *mem_ctx, const char *sockpath,
 		return ENOMEM;
 	}
 
-	sock->sockpath = sockpath;
+	sock->sockpath = talloc_strdup(sock, sockpath);
+	if (sock->sockpath == NULL) {
+		talloc_free(sock);
+		return ENOMEM;
+	}
 	sock->funcs = funcs;
 	sock->private_data = private_data;
 	sock->fd = -1;
@@ -405,7 +409,8 @@ static int sock_socket_start_client_destructor(struct sock_client *client)
 	return 0;
 }
 
-static bool sock_socket_start_recv(struct tevent_req *req, int *perr)
+static bool sock_socket_start_recv(struct tevent_req *req, int *perr,
+				   TALLOC_CTX *mem_ctx, const char **sockpath)
 {
 	struct sock_socket_start_state *state = tevent_req_data(
 		req, struct sock_socket_start_state);
@@ -418,6 +423,10 @@ static bool sock_socket_start_recv(struct tevent_req *req, int *perr)
 			*perr = ret;
 		}
 		return false;
+	}
+
+	if (sockpath != NULL) {
+		*sockpath = talloc_steal(mem_ctx, state->sock->sockpath);
 	}
 
 	return true;
@@ -735,13 +744,17 @@ static void sock_daemon_run_socket_fail(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
+	struct sock_daemon_run_state *state = tevent_req_data(
+		req, struct sock_daemon_run_state);
+	const char *sockpath = NULL;
 	int ret = 0;
 	bool status;
 
-	status = sock_socket_start_recv(subreq, &ret);
+	status = sock_socket_start_recv(subreq, &ret, state, &sockpath);
 	TALLOC_FREE(subreq);
 	sock_daemon_run_shutdown(req);
 	if (! status) {
+		D_ERR("socket %s closed unexpectedly\n", sockpath);
 		tevent_req_error(req, ret);
 	} else {
 		tevent_req_done(req);
