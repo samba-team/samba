@@ -205,12 +205,6 @@ static void test2_shutdown(void *private_data)
 	assert(nwritten == sizeof(ret));
 }
 
-static struct sock_daemon_funcs test2_funcs = {
-	.startup = test2_startup,
-	.reconfigure = test2_reconfigure,
-	.shutdown = test2_shutdown,
-};
-
 static void test2(TALLOC_CTX *mem_ctx, const char *pidfile,
 		  const char *sockpath)
 {
@@ -231,6 +225,11 @@ static void test2(TALLOC_CTX *mem_ctx, const char *pidfile,
 	if (pid == 0) {
 		struct tevent_context *ev;
 		struct sock_daemon_context *sockd;
+		struct sock_daemon_funcs test2_funcs = {
+			.startup = test2_startup,
+			.reconfigure = test2_reconfigure,
+			.shutdown = test2_shutdown,
+		};
 
 		close(fd[0]);
 
@@ -1091,6 +1090,7 @@ static void test6(TALLOC_CTX *mem_ctx, const char *pidfile,
 static void test7(TALLOC_CTX *mem_ctx, const char *pidfile,
 		  const char *sockpath)
 {
+	struct sock_daemon_funcs test7_funcs;
 	struct stat st;
 	int fd[2];
 	pid_t pid, pid2;
@@ -1098,6 +1098,13 @@ static void test7(TALLOC_CTX *mem_ctx, const char *pidfile,
 	struct tevent_context *ev;
 	struct sock_daemon_context *sockd;
 	ssize_t n;
+
+	/* Reuse test2 funcs for the startup synchronisation */
+	test7_funcs = (struct sock_daemon_funcs) {
+		.startup = test2_startup,
+		.reconfigure = test2_reconfigure,
+		.shutdown = test2_shutdown,
+	};
 
 	ret = pipe(fd);
 	assert(ret == 0);
@@ -1111,9 +1118,8 @@ static void test7(TALLOC_CTX *mem_ctx, const char *pidfile,
 		ev = tevent_context_init(mem_ctx);
 		assert(ev != NULL);
 
-		/* Reuse test2 funcs for the startup synchronisation */
 		ret = sock_daemon_setup(mem_ctx, "test7", "file:", "NOTICE",
-					&test2_funcs, &fd[1], &sockd);
+					&test7_funcs, &fd[1], &sockd);
 		assert(ret == 0);
 
 		ret = sock_daemon_run(ev, sockd, pidfile, false, false, -1);
@@ -1135,9 +1141,8 @@ static void test7(TALLOC_CTX *mem_ctx, const char *pidfile,
 	ev = tevent_context_init(mem_ctx);
 	assert(ev != NULL);
 
-	/* Reuse test2 funcs for the startup synchronisation */
 	ret = sock_daemon_setup(mem_ctx, "test7-parent", "file:", "NOTICE",
-				&test2_funcs, &fd[1], &sockd);
+				&test7_funcs, &fd[1], &sockd);
 	assert(ret == 0);
 
 	ret = sock_daemon_run(ev, sockd, pidfile, false, false, -1);
@@ -1180,14 +1185,18 @@ static void test8(TALLOC_CTX *mem_ctx, const char *pidfile,
 	assert(pid != -1);
 
 	if (pid == 0) {
+		/* Reuse test2 funcs for the startup synchronisation */
+		struct sock_daemon_funcs test8_funcs = {
+			.startup = test2_startup,
+		};
+
 		close(fd[0]);
 
 		ev = tevent_context_init(mem_ctx);
 		assert(ev != NULL);
 
-		/* Reuse test2 funcs for the startup synchronisation */
 		ret = sock_daemon_setup(mem_ctx, "test8", "file:", "NOTICE",
-					&test2_funcs, &fd[1], &sockd);
+					&test8_funcs, &fd[1], &sockd);
 		assert(ret == 0);
 
 		ret = sock_daemon_run(ev, sockd, pidfile, false, false, -1);
@@ -1209,10 +1218,6 @@ static void test8(TALLOC_CTX *mem_ctx, const char *pidfile,
 	ret = kill(pid, SIGTERM);
 	assert(ret == 0);
 
-	n = read(fd[0], &ret, sizeof(ret));
-	assert(n == sizeof(ret));
-	assert(ret == 3);
-
 	pid2 = waitpid(pid, &ret, 0);
 	assert(pid2 == pid);
 	assert(WEXITSTATUS(ret) == 0);
@@ -1226,14 +1231,18 @@ static void test8(TALLOC_CTX *mem_ctx, const char *pidfile,
 	assert(pid != -1);
 
 	if (pid == 0) {
+		/* Reuse test2 funcs for the startup synchronisation */
+		struct sock_daemon_funcs test8_funcs = {
+			.startup = test2_startup,
+		};
+
 		close(fd[0]);
 
 		ev = tevent_context_init(mem_ctx);
 		assert(ev != NULL);
 
-		/* Reuse test2 funcs for the startup synchronisation */
 		ret = sock_daemon_setup(mem_ctx, "test8", "file:", "NOTICE",
-					&test2_funcs, &fd[1], &sockd);
+					&test8_funcs, &fd[1], &sockd);
 		assert(ret == 0);
 
 		ret = sock_daemon_run(ev, sockd, pidfile, false, true, -1);
@@ -1254,10 +1263,6 @@ static void test8(TALLOC_CTX *mem_ctx, const char *pidfile,
 
 	ret = kill(pid, SIGTERM);
 	assert(ret == 0);
-
-	n = read(fd[0], &ret, sizeof(ret));
-	assert(n == sizeof(ret));
-	assert(ret == 3);
 
 	pid2 = waitpid(pid, &ret, 0);
 	assert(pid2 == pid);
@@ -1292,14 +1297,18 @@ static void test9(TALLOC_CTX *mem_ctx, const char *pidfile,
 	assert(pid != -1);
 
 	if (pid == 0) {
+		/* Reuse test2 funcs for the startup synchronisation */
+		struct sock_daemon_funcs test9_funcs = {
+			.startup = test2_startup,
+		};
+
 		close(fd[0]);
 
 		ev = tevent_context_init(mem_ctx);
 		assert(ev != NULL);
 
-		/* Reuse test2 funcs for the startup synchronisation */
 		ret = sock_daemon_setup(mem_ctx, "test9", "file:", "NOTICE",
-					&test2_funcs, &fd[1], &sockd);
+					&test9_funcs, &fd[1], &sockd);
 		assert(ret == 0);
 
 		ret = sock_daemon_run(ev, sockd, pidfile, false, false, -1);
@@ -1321,10 +1330,6 @@ static void test9(TALLOC_CTX *mem_ctx, const char *pidfile,
 	ret = kill(pid, SIGTERM);
 	assert(ret == 0);
 
-	n = read(fd[0], &ret, sizeof(ret));
-	assert(n == sizeof(ret));
-	assert(ret == 3);
-
 	pid2 = waitpid(pid, &ret, 0);
 	assert(pid2 == pid);
 	assert(WEXITSTATUS(ret) == 0);
@@ -1338,14 +1343,19 @@ static void test9(TALLOC_CTX *mem_ctx, const char *pidfile,
 	assert(pid != -1);
 
 	if (pid == 0) {
+		/* Reuse test2 funcs for the startup synchronisation */
+		struct sock_daemon_funcs test9_funcs = {
+			.startup = test2_startup,
+			.shutdown = test2_shutdown,
+		};
+
 		close(fd[0]);
 
 		ev = tevent_context_init(mem_ctx);
 		assert(ev != NULL);
 
-		/* Reuse test2 funcs for the startup synchronisation */
 		ret = sock_daemon_setup(mem_ctx, "test9", "file:", "NOTICE",
-					&test2_funcs, &fd[1], &sockd);
+					&test9_funcs, &fd[1], &sockd);
 		assert(ret == 0);
 
 		ret = sock_daemon_run(ev, sockd, pidfile, true, false, -1);
