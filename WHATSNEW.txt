@@ -4,9 +4,10 @@
                    ==============================
 
 
-This is a security release in order to address the following defect:
+This is a security release in order to address the following defects:
 
 o  CVE-2017-14746 (Use-after-free vulnerability.)
+o  CVE-2017-15275 (Server heap memory information leak.)
 
 
 =======
@@ -19,9 +20,21 @@ o  CVE-2017-14746:
    control the contents of heap memory via a deallocated heap pointer. It
    is possible this may be used to compromise the SMB server.
 
-For more details and a workaround, please see the security advisories:
+o  CVE-2017-15275:
+   All versions of Samba from 3.6.0 onwards are vulnerable to a heap
+   memory information leak, where server allocated heap memory may be
+   returned to the client without being cleared.
+
+   There is no known vulnerability associated with this error, but
+   uncleared heap memory may contain previously used data that may help
+   an attacker compromise the server via other methods. Uncleared heap
+   memory may potentially contain password hashes or other high-value
+   data.
+
+For more details and workarounds, please see the security advisories:
 
    o https://www.samba.org/samba/security/CVE-2017-14746.html
+   o https://www.samba.org/samba/security/CVE-2017-15275.html
 
 
 Changes since 4.5.14:
@@ -29,6 +42,8 @@ Changes since 4.5.14:
 
 o  Jeremy Allison <jra@samba.org>
    * BUG 13041: CVE-2017-14746: s3: smbd: Fix SMB1 use-after-free crash bug.
+   * BUG 13077: CVE-2017-15275: s3: smbd: Chain code can return uninitialized
+     memory when talloc buffer is grown.
 
 
 #######################################
