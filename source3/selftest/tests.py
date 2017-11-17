@@ -588,6 +588,10 @@ plantestsuite("samba3.blackbox.net_rpc_join", "nt4_dc",
               [os.path.join(samba3srcdir, "script/tests/test_net_rpc_join.sh"),
                "$USERNAME", "$PASSWORD", "$SERVER", "$PREFIX/net_rpc_join",
                configuration])
+plantestsuite("samba3.blackbox.net_rpc_oldjoin", "nt4_dc:local",
+              [os.path.join(samba3srcdir, "script/tests/test_net_rpc_oldjoin.sh"),
+               "$SERVER", "$PREFIX/net_rpc_oldjoin",
+               "$SMB_CONF_PATH"])
 
 plantestsuite("samba3.blackbox.rpcclient_srvsvc", "simpleserver",
               [os.path.join(samba3srcdir, "script/tests/test_rpcclientsrvsvc.sh"),
