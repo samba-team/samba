@@ -1959,6 +1959,13 @@ static bool test_adouble_conversion(struct torture_context *tctx,
 	bool ret = true;
 	const char *data = "This resource fork intentionally left blank";
 	size_t datalen = strlen(data);
+	const char *streams[] = {
+		"::$DATA",
+		AFPINFO_STREAM,
+		AFPRESOURCE_STREAM,
+		":com.apple.metadata" "\xef\x80\xa2" "_kMDItemUserTags:$DATA",
+		":foo" "\xef\x80\xa2" "bar:$DATA", /* "foo:bar:$DATA" */
+	};
 
 	smb2_deltree(tree, BASEDIR);
 
@@ -1989,11 +1996,20 @@ static bool test_adouble_conversion(struct torture_context *tctx,
 	torture_assert_goto(tctx, ret == true, ret, done,
 			    "check AFPRESOURCE_STREAM failed\n");
 
+	ret = check_stream(tree, __location__, tctx, mem_ctx,
+			   fname, AFPINFO_STREAM,
+			   0, 60, 16, 8, "TESTSLOW");
+	torture_assert_goto(tctx, ret == true, ret, done,
+			    "check AFPINFO_STREAM failed\n");
+
 	ret = check_stream(tree, __location__, tctx, mem_ctx, fname,
 			   ":foo" "\xef\x80\xa2" "bar:$DATA", /* "foo:bar:$DATA" */
 			   0, 3, 0, 3, "baz");
 	torture_assert_goto(tctx, ret == true, ret, done,
 			    "check foo:bar stream failed\n");
+
+	ret = check_stream_list(tree, tctx, fname, 5, streams, false);
+	torture_assert_goto(tctx, ret == true, ret, done, "check_stream_list");
 
 done:
 	smb2_deltree(tree, BASEDIR);
