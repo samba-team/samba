@@ -1210,49 +1210,6 @@ static bool torture_setup_local_xattr(struct torture_context *tctx,
 	return ret;
 }
 
-static bool torture_setup_local_file(struct torture_context *tctx,
-				     const char *path_option,
-				     const char *name,
-				     const char *buf,
-				     size_t size)
-{
-	int fd;
-	const char *spath;
-	char *path;
-	ssize_t rsize;
-
-	spath = torture_setting_string(tctx, path_option, NULL);
-	if (spath == NULL) {
-		printf("No sharepath for option %s\n", path_option);
-		return false;
-	}
-
-	path = talloc_asprintf(tctx, "%s/%s", spath, name);
-	if (path == NULL) {
-		return false;
-	}
-
-	fd = creat(path, S_IRWXU);
-	TALLOC_FREE(path);
-	if (fd == -1) {
-		return false;
-	}
-
-	if ((buf == NULL) || (size == 0)) {
-		close(fd);
-		return true;
-	}
-
-	rsize = write(fd, buf, size);
-	if (rsize != size) {
-		return false;
-	}
-
-	close(fd);
-
-	return true;
-}
-
 /**
  * Create a file or directory
  **/
@@ -1996,38 +1953,32 @@ static bool test_adouble_conversion(struct torture_context *tctx,
 {
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	const char *fname = BASEDIR "\\test_adouble_conversion";
-	const char *fname_local = BASEDIR "/test_adouble_conversion";
-	const char *adname_local = BASEDIR "/._test_adouble_conversion";
+	const char *adname = BASEDIR "/._test_adouble_conversion";
 	NTSTATUS status;
 	struct smb2_handle testdirh;
 	bool ret = true;
 	const char *data = "This resource fork intentionally left blank";
 	size_t datalen = strlen(data);
-	const char *localdir = NULL;
 
-	localdir = torture_setting_string(tctx, "localdir", NULL);
-	if (localdir == NULL) {
-		torture_skip(tctx, "Need localdir for test");
-	}
-
-	smb2_util_unlink(tree, fname);
+	smb2_deltree(tree, BASEDIR);
 
 	status = torture_smb2_testdir(tree, BASEDIR, &testdirh);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	smb2_util_close(tree, testdirh);
 
-	ret = torture_setup_local_file(tctx, "localdir", fname_local,
-				       NULL, 0);
-	if (ret == false) {
-		goto done;
-	}
+	ret = torture_setup_file(tctx, tree, fname, false);
+	torture_assert_goto(tctx, ret == true, ret, done,
+			    "torture_setup_file failed\n");
 
-	ret = torture_setup_local_file(tctx, "localdir", adname_local,
-				       osx_adouble_w_xattr,
-				       sizeof(osx_adouble_w_xattr));
-	if (ret == false) {
-		goto done;
-	}
+	ret = torture_setup_file(tctx, tree, adname, false);
+	torture_assert_goto(tctx, ret == true, ret, done,
+			    "torture_setup_file failed\n");
+
+	ret = write_stream(tree, __location__, tctx, mem_ctx,
+			   adname, NULL,
+			   0, sizeof(osx_adouble_w_xattr), osx_adouble_w_xattr);
+	torture_assert_goto(tctx, ret == true, ret, done,
+			    "write_stream failed\n");
 
 	torture_comment(tctx, "(%s) test OS X AppleDouble conversion\n",
 	    __location__);
