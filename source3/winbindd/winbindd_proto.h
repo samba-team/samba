@@ -36,7 +36,6 @@ bool winbindd_setup_sig_hup_handler(const char *lfile);
 bool winbindd_use_idmap_cache(void);
 bool winbindd_use_cache(void);
 char *get_winbind_priv_pipe_dir(void);
-struct tevent_context *winbind_event_context(void);
 
 /* The following definitions come from winbindd/winbindd_ads.c  */
 
