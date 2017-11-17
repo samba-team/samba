@@ -4009,6 +4009,9 @@ static bool test_readdir_attr_illegal_ntfs(struct torture_context *tctx,
 
 		if (!strcmp(found, ".") || !strcmp(found, ".."))
 			continue;
+		if (strncmp(found, "._", 2) == 0) {
+			continue;
+		}
 		break;
 	}
 

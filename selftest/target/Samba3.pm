@@ -1789,6 +1789,7 @@ sub provision($$$$$$$$)
 	fruit:metadata = netatalk
 	fruit:locking = netatalk
 	fruit:encoding = native
+	fruit:veto_appledouble = no
 
 [vfs_fruit_metadata_stream]
 	path = $shrdir
@@ -1796,6 +1797,7 @@ sub provision($$$$$$$$)
 	ea support = yes
 	fruit:resource = file
 	fruit:metadata = stream
+	fruit:veto_appledouble = no
 
 [vfs_fruit_stream_depot]
 	path = $shrdir
@@ -1803,6 +1805,7 @@ sub provision($$$$$$$$)
 	ea support = yes
 	fruit:resource = stream
 	fruit:metadata = stream
+	fruit:veto_appledouble = no
 
 [vfs_wo_fruit]
 	path = $shrdir
