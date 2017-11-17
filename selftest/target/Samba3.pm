@@ -1809,18 +1809,21 @@ sub provision($$$$$$$$$)
 	fruit:metadata = netatalk
 	fruit:locking = netatalk
 	fruit:encoding = native
+	fruit:veto_appledouble = no
 
 [vfs_fruit_metadata_stream]
 	path = $shrdir
 	vfs objects = fruit streams_xattr acl_xattr
 	fruit:resource = file
 	fruit:metadata = stream
+	fruit:veto_appledouble = no
 
 [vfs_fruit_stream_depot]
 	path = $shrdir
 	vfs objects = fruit streams_depot acl_xattr
 	fruit:resource = stream
 	fruit:metadata = stream
+	fruit:veto_appledouble = no
 
 [vfs_wo_fruit]
 	path = $shrdir
