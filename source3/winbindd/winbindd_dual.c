@@ -175,7 +175,7 @@ static void wb_child_request_trigger(struct tevent_req *req,
 		return;
 	}
 
-	subreq = wb_simple_trans_send(state, winbind_event_context(), NULL,
+	subreq = wb_simple_trans_send(state, server_event_context(), NULL,
 				      state->child->sock, state->request);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
@@ -968,7 +968,7 @@ static void account_lockout_policy_handler(struct tevent_context *ctx,
 			 nt_errstr(result)));
 	}
 
-	child->lockout_policy_event = tevent_add_timer(winbind_event_context(), NULL,
+	child->lockout_policy_event = tevent_add_timer(server_event_context(), NULL,
 						      timeval_current_ofs(3600, 0),
 						      account_lockout_policy_handler,
 						      child);
@@ -1130,7 +1130,7 @@ static void machine_password_change_handler(struct tevent_context *ctx,
 	}
 
 done:
-	child->machine_password_change_event = tevent_add_timer(winbind_event_context(), NULL,
+	child->machine_password_change_event = tevent_add_timer(server_event_context(), NULL,
 							      next_change,
 							      machine_password_change_handler,
 							      child);
@@ -1251,7 +1251,7 @@ NTSTATUS winbindd_reinit_after_fork(const struct winbindd_child *myself,
 
 	status = reinit_after_fork(
 		winbind_messaging_context(),
-		winbind_event_context(),
+		server_event_context(),
 		true, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("reinit_after_fork() failed\n"));
@@ -1556,7 +1556,7 @@ static bool fork_domain_child(struct winbindd_child *child)
 		}
 
 		child->lockout_policy_event = tevent_add_timer(
-			winbind_event_context(), NULL, timeval_zero(),
+			server_event_context(), NULL, timeval_zero(),
 			account_lockout_policy_handler,
 			child);
 	}
@@ -1570,13 +1570,13 @@ static bool fork_domain_child(struct winbindd_child *child)
 		if (calculate_next_machine_pwd_change(child->domain->name,
 						       &next_change)) {
 			child->machine_password_change_event = tevent_add_timer(
-				winbind_event_context(), NULL, next_change,
+				server_event_context(), NULL, next_change,
 				machine_password_change_handler,
 				child);
 		}
 	}
 
-	fde = tevent_add_fd(winbind_event_context(), NULL, state.cli.sock,
+	fde = tevent_add_fd(server_event_context(), NULL, state.cli.sock,
 			    TEVENT_FD_READ, child_handler, &state);
 	if (fde == NULL) {
 		DEBUG(1, ("tevent_add_fd failed\n"));
@@ -1588,7 +1588,7 @@ static bool fork_domain_child(struct winbindd_child *child)
 		int ret;
 		TALLOC_CTX *frame = talloc_stackframe();
 
-		ret = tevent_loop_once(winbind_event_context());
+		ret = tevent_loop_once(server_event_context());
 		if (ret != 0) {
 			DEBUG(1, ("tevent_loop_once failed: %s\n",
 				  strerror(errno)));
