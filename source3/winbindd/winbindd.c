@@ -60,25 +60,6 @@ static bool interactive = False;
 
 extern bool override_logfile;
 
-struct tevent_context *winbind_event_context(void)
-{
-	static struct tevent_context *ev = NULL;
-
-	if (ev != NULL) {
-		return ev;
-	}
-
-	/*
-	 * Note we MUST use the NULL context here, not the autofree context,
-	 * to avoid side effects in forked children exiting.
-	 */
-	ev = samba_tevent_context_init(NULL);
-	if (ev == NULL) {
-		smb_panic("Could not init winbindd's messaging context.\n");
-	}
-	return ev;
-}
-
 struct messaging_context *winbind_messaging_context(void)
 {
 	static struct messaging_context *msg = NULL;

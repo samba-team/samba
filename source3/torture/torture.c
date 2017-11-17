@@ -11697,15 +11697,6 @@ static struct {
 	{ "qpathinfo-bufsize", run_qpathinfo_bufsize, 0 },
 	{NULL, NULL, 0}};
 
-/*
- * dummy function to satisfy linker dependency
- */
-struct tevent_context *winbind_event_context(void);
-struct tevent_context *winbind_event_context(void)
-{
-	return NULL;
-}
-
 /****************************************************************************
 run a specified test or "ALL"
 ****************************************************************************/
