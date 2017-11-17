@@ -223,10 +223,10 @@ static bool fork_child_dc_connect(struct winbindd_domain *domain)
 
 	if (domain->dc_probe_pid != (pid_t)0) {
 		/* Parent */
-		messaging_register(winbind_messaging_context(), NULL,
+		messaging_register(server_messaging_context(), NULL,
 				   MSG_WINBIND_TRY_TO_GO_ONLINE,
 				   msg_try_to_go_online);
-		messaging_register(winbind_messaging_context(), NULL,
+		messaging_register(server_messaging_context(), NULL,
 				   MSG_WINBIND_FAILED_TO_GO_ONLINE,
 				   msg_failed_to_go_online);
 		return True;
@@ -247,7 +247,7 @@ static bool fork_child_dc_connect(struct winbindd_domain *domain)
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("winbindd_reinit_after_fork failed: %s\n",
 			  nt_errstr(status)));
-		messaging_send_buf(winbind_messaging_context(),
+		messaging_send_buf(server_messaging_context(),
 				   pid_to_procid(parent_pid),
 				   MSG_WINBIND_FAILED_TO_GO_ONLINE,
 				   (const uint8_t *)domain->name,
@@ -259,7 +259,7 @@ static bool fork_child_dc_connect(struct winbindd_domain *domain)
 	mem_ctx = talloc_init("fork_child_dc_connect");
 	if (!mem_ctx) {
 		DEBUG(0,("talloc_init failed.\n"));
-		messaging_send_buf(winbind_messaging_context(),
+		messaging_send_buf(server_messaging_context(),
 				   pid_to_procid(parent_pid),
 				   MSG_WINBIND_FAILED_TO_GO_ONLINE,
 				   (const uint8_t *)domain->name,
@@ -269,7 +269,7 @@ static bool fork_child_dc_connect(struct winbindd_domain *domain)
 
 	if ((!get_dcs(mem_ctx, domain, &dcs, &num_dcs, 0)) || (num_dcs == 0)) {
 		/* Still offline ? Can't find DC's. */
-		messaging_send_buf(winbind_messaging_context(),
+		messaging_send_buf(server_messaging_context(),
 				   pid_to_procid(parent_pid),
 				   MSG_WINBIND_FAILED_TO_GO_ONLINE,
 				   (const uint8_t *)domain->name,
@@ -280,7 +280,7 @@ static bool fork_child_dc_connect(struct winbindd_domain *domain)
 	/* We got a DC. Send a message to our parent to get it to
 	   try and do the same. */
 
-	messaging_send_buf(winbind_messaging_context(),
+	messaging_send_buf(server_messaging_context(),
 			   pid_to_procid(parent_pid),
 			   MSG_WINBIND_TRY_TO_GO_ONLINE,
 			   (const uint8_t *)domain->name,
@@ -444,7 +444,7 @@ void set_domain_offline(struct winbindd_domain *domain)
 
 	/* Send a message to the parent that the domain is offline. */
 	if (parent_pid > 1 && !domain->internal) {
-		messaging_send_buf(winbind_messaging_context(),
+		messaging_send_buf(server_messaging_context(),
 				   pid_to_procid(parent_pid),
 				   MSG_WINBIND_DOMAIN_OFFLINE,
 				   (uint8_t *)domain->name,
@@ -458,7 +458,7 @@ void set_domain_offline(struct winbindd_domain *domain)
 		struct winbindd_child *idmap = idmap_child();
 
 		if ( idmap->pid != 0 ) {
-			messaging_send_buf(winbind_messaging_context(),
+			messaging_send_buf(server_messaging_context(),
 					   pid_to_procid(idmap->pid), 
 					   MSG_WINBIND_OFFLINE, 
 					   (const uint8_t *)domain->name,
@@ -521,16 +521,16 @@ static void set_domain_online(struct winbindd_domain *domain)
 	TALLOC_FREE(domain->check_online_event);
 
 	/* Ensure we ignore any pending child messages. */
-	messaging_deregister(winbind_messaging_context(),
+	messaging_deregister(server_messaging_context(),
 			     MSG_WINBIND_TRY_TO_GO_ONLINE, NULL);
-	messaging_deregister(winbind_messaging_context(),
+	messaging_deregister(server_messaging_context(),
 			     MSG_WINBIND_FAILED_TO_GO_ONLINE, NULL);
 
 	domain->online = True;
 
 	/* Send a message to the parent that the domain is online. */
 	if (parent_pid > 1 && !domain->internal) {
-		messaging_send_buf(winbind_messaging_context(),
+		messaging_send_buf(server_messaging_context(),
 				   pid_to_procid(parent_pid),
 				   MSG_WINBIND_DOMAIN_ONLINE,
 				   (uint8_t *)domain->name,
@@ -544,7 +544,7 @@ static void set_domain_online(struct winbindd_domain *domain)
 		struct winbindd_child *idmap = idmap_child();
 
 		if ( idmap->pid != 0 ) {
-			messaging_send_buf(winbind_messaging_context(),
+			messaging_send_buf(server_messaging_context(),
 					   pid_to_procid(idmap->pid), 
 					   MSG_WINBIND_ONLINE, 
 					   (const uint8_t *)domain->name,
@@ -1420,7 +1420,7 @@ static bool dcip_check_name(TALLOC_CTX *mem_ctx,
 	}
 #endif
 
-	status = nbt_getdc(winbind_messaging_context(), 10, pss, domain->name,
+	status = nbt_getdc(server_messaging_context(), 10, pss, domain->name,
 			   &domain->sid, nt_version, mem_ctx, &nt_version,
 			   &dc_name, NULL);
 	if (NT_STATUS_IS_OK(status)) {
@@ -1789,7 +1789,7 @@ NTSTATUS wb_open_internal_pipe(TALLOC_CTX *mem_ctx,
 						 session_info,
 						 NULL,
 						 NULL,
-						 winbind_messaging_context(),
+						 server_messaging_context(),
 						 &cli);
 	} else {
 		status = rpc_pipe_open_internal(mem_ctx,
@@ -1797,7 +1797,7 @@ NTSTATUS wb_open_internal_pipe(TALLOC_CTX *mem_ctx,
 						session_info,
 						NULL,
 						NULL,
-						winbind_messaging_context(),
+						server_messaging_context(),
 						&cli);
 	}
 	if (!NT_STATUS_IS_OK(status)) {
@@ -3211,7 +3211,7 @@ static NTSTATUS cm_connect_netlogon_transport(struct winbindd_domain *domain,
 					      enum dcerpc_transport_t transport,
 					      struct rpc_pipe_client **cli)
 {
-	struct messaging_context *msg_ctx = winbind_messaging_context();
+	struct messaging_context *msg_ctx = server_messaging_context();
 	struct winbindd_cm_conn *conn;
 	NTSTATUS result;
 	struct cli_credentials *creds = NULL;

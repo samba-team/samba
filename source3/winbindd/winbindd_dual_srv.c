@@ -523,7 +523,7 @@ NTSTATUS _wbint_DsGetDcName(struct pipes_struct *p, struct wbint_DsGetDcName *r)
 	struct dcerpc_binding_handle *b;
 
 	if (domain == NULL) {
-		return dsgetdcname(p->mem_ctx, winbind_messaging_context(),
+		return dsgetdcname(p->mem_ctx, server_messaging_context(),
 				   r->in.domain_name, r->in.domain_guid,
 				   r->in.site_name ? r->in.site_name : "",
 				   r->in.flags,
@@ -715,7 +715,7 @@ again:
 NTSTATUS _wbint_ChangeMachineAccount(struct pipes_struct *p,
 				     struct wbint_ChangeMachineAccount *r)
 {
-	struct messaging_context *msg_ctx = winbind_messaging_context();
+	struct messaging_context *msg_ctx = server_messaging_context();
 	struct winbindd_domain *domain;
 	NTSTATUS status;
 	struct rpc_pipe_client *netlogon_pipe;
@@ -1364,7 +1364,7 @@ static WERROR _winbind_LogonControl_CHANGE_PASSWORD(struct pipes_struct *p,
 			     struct winbindd_domain *domain,
 			     struct winbind_LogonControl *r)
 {
-	struct messaging_context *msg_ctx = winbind_messaging_context();
+	struct messaging_context *msg_ctx = server_messaging_context();
 	NTSTATUS status;
 	struct rpc_pipe_client *netlogon_pipe;
 	struct cli_credentials *creds = NULL;
