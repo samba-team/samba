@@ -24,7 +24,6 @@
 #define _WINBINDD_PROTO_H_
 
 /* The following definitions come from winbindd/winbindd.c  */
-struct messaging_context *winbind_messaging_context(void);
 struct imessaging_context *winbind_imessaging_context(void);
 void request_error(struct winbindd_cli_state *state);
 void request_ok(struct winbindd_cli_state *state);

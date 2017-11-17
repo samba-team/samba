@@ -60,25 +60,6 @@ static bool interactive = False;
 
 extern bool override_logfile;
 
-struct messaging_context *winbind_messaging_context(void)
-{
-	static struct messaging_context *msg = NULL;
-
-	if (msg != NULL) {
-		return msg;
-	}
-
-	/*
-	 * Note we MUST use the NULL context here, not the autofree context,
-	 * to avoid side effects in forked children exiting.
-	 */
-	msg = messaging_init(NULL, server_event_context());
-	if (msg == NULL) {
-		smb_panic("Could not init winbindd's messaging context.\n");
-	}
-	return msg;
-}
-
 struct imessaging_context *winbind_imessaging_context(void)
 {
 	static struct imessaging_context *msg = NULL;
