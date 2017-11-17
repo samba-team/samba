@@ -277,7 +277,7 @@ void winbindd_domain_info(struct winbindd_cli_state *cli)
 	 * Send a ping down. This implicitly initializes the domain.
 	 */
 
-	req = wb_domain_request_send(state, winbind_event_context(),
+	req = wb_domain_request_send(state, server_event_context(),
 				     domain, &state->ping_request);
 	if (req == NULL) {
 		DEBUG(3, ("wb_domain_request_send failed\n"));
