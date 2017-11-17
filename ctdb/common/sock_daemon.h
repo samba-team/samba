@@ -63,6 +63,12 @@ struct sock_client_context;
  * shutdown() is called when process receives SIGINT or SIGTERM or
  *             when wait computation has finished
  *
+ * shutdown_send()/shutdown_recv() is the async version of shutdown()
+ *
+ * Please note that only one (sync or async) version of these functions
+ * will be called.  If both versions are defined, then only async function
+ * will be called.
+ *
  * wait_send() starts the async computation to keep running the daemon
  * wait_recv() ends the async computation to keep running the daemon
  *
@@ -85,6 +91,11 @@ struct sock_daemon_funcs {
 	bool (*reconfigure_recv)(struct tevent_req *req, int *perr);
 
 	void (*shutdown)(void *private_data);
+
+	struct tevent_req * (*shutdown_send)(TALLOC_CTX *mem_ctx,
+					     struct tevent_context *ev,
+					     void *private_data);
+	void (*shutdown_recv)(struct tevent_req *req);
 
 	struct tevent_req * (*wait_send)(TALLOC_CTX *mem_ctx,
 					 struct tevent_context *ev,

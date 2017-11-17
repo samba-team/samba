@@ -524,6 +524,7 @@ struct sock_daemon_run_state {
 	pid_t pid_watch;
 
 	int fd;
+	int exit_code;
 };
 
 static void sock_daemon_run_started(struct tevent_req *subreq);
@@ -535,6 +536,8 @@ static void sock_daemon_run_signal_handler(struct tevent_context *ev,
 static void sock_daemon_run_reconfigure(struct tevent_req *req);
 static void sock_daemon_run_reconfigure_done(struct tevent_req *subreq);
 static void sock_daemon_run_shutdown(struct tevent_req *req);
+static void sock_daemon_run_shutdown_done(struct tevent_req *subreq);
+static void sock_daemon_run_exit(struct tevent_req *req);
 static bool sock_daemon_run_socket_listen(struct tevent_req *req);
 static void sock_daemon_run_socket_fail(struct tevent_req *subreq);
 static void sock_daemon_run_watch_pid(struct tevent_req *subreq);
@@ -702,6 +705,8 @@ static void sock_daemon_run_signal_handler(struct tevent_context *ev,
 {
 	struct tevent_req *req = talloc_get_type_abort(
 		private_data, struct tevent_req);
+	struct sock_daemon_run_state *state = tevent_req_data(
+		req, struct sock_daemon_run_state);
 
 	D_NOTICE("Received signal %d\n", signum);
 
@@ -711,8 +716,8 @@ static void sock_daemon_run_signal_handler(struct tevent_context *ev,
 	}
 
 	if (signum == SIGINT || signum == SIGTERM) {
+		state->exit_code = EINTR;
 		sock_daemon_run_shutdown(req);
-		tevent_req_error(req, EINTR);
 	}
 }
 
@@ -770,6 +775,7 @@ static void sock_daemon_run_reconfigure_done(struct tevent_req *subreq)
 
 static void sock_daemon_run_shutdown(struct tevent_req *req)
 {
+	struct tevent_req *subreq;
 	struct sock_daemon_run_state *state = tevent_req_data(
 		req, struct sock_daemon_run_state);
 	struct sock_daemon_context *sockd = state->sockd;
@@ -782,11 +788,53 @@ static void sock_daemon_run_shutdown(struct tevent_req *req)
 		TALLOC_FREE(sock);
 	}
 
+	if (sockd->funcs != NULL && sockd->funcs->shutdown_send != NULL &&
+	    sockd->funcs->shutdown_recv != NULL) {
+		subreq = sockd->funcs->shutdown_send(state, state->ev,
+						     sockd->private_data);
+		if (subreq == NULL) {
+			sock_daemon_run_exit(req);
+			return;
+		}
+		tevent_req_set_callback(subreq, sock_daemon_run_shutdown_done,
+						req);
+		return;
+	}
+
 	if (sockd->funcs != NULL && sockd->funcs->shutdown != NULL) {
 		sockd->funcs->shutdown(sockd->private_data);
 	}
 
+	sock_daemon_run_exit(req);
+}
+
+static void sock_daemon_run_shutdown_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct sock_daemon_run_state *state = tevent_req_data(
+		req, struct sock_daemon_run_state);
+	struct sock_daemon_context *sockd = state->sockd;
+
+	sockd->funcs->shutdown_recv(subreq);
+	TALLOC_FREE(subreq);
+
+	sock_daemon_run_exit(req);
+}
+
+static void sock_daemon_run_exit(struct tevent_req *req)
+{
+	struct sock_daemon_run_state *state = tevent_req_data(
+		req, struct sock_daemon_run_state);
+	struct sock_daemon_context *sockd = state->sockd;
+
 	TALLOC_FREE(sockd->pid_ctx);
+
+	if (state->exit_code == 0) {
+		tevent_req_done(req);
+	} else {
+		tevent_req_error(req, state->exit_code);
+	}
 }
 
 static bool sock_daemon_run_socket_listen(struct tevent_req *req)
@@ -826,13 +874,14 @@ static void sock_daemon_run_socket_fail(struct tevent_req *subreq)
 
 	status = sock_socket_start_recv(subreq, &ret, state, &sockpath);
 	TALLOC_FREE(subreq);
-	sock_daemon_run_shutdown(req);
 	if (! status) {
 		D_ERR("socket %s closed unexpectedly\n", sockpath);
-		tevent_req_error(req, ret);
+		state->exit_code = ret;
 	} else {
-		tevent_req_done(req);
+		state->exit_code = 0;
 	}
+
+	sock_daemon_run_shutdown(req);
 }
 
 static void sock_daemon_run_watch_pid(struct tevent_req *subreq)
@@ -855,8 +904,8 @@ static void sock_daemon_run_watch_pid(struct tevent_req *subreq)
 	if (ret == -1) {
 		if (errno == ESRCH) {
 			D_ERR("PID %d gone away, exiting\n", state->pid_watch);
+			state->exit_code = ESRCH;
 			sock_daemon_run_shutdown(req);
-			tevent_req_error(req, ESRCH);
 			return;
 		} else {
 			D_ERR("Failed to check PID status %d, ret=%d\n",
@@ -898,17 +947,18 @@ static void sock_daemon_run_wait_done(struct tevent_req *subreq)
 	struct sock_daemon_run_state *state = tevent_req_data(
 		req, struct sock_daemon_run_state);
 	struct sock_daemon_context *sockd = state->sockd;
-	int ret;
+	int ret = 0;
 	bool status;
 
 	status = sockd->funcs->wait_recv(subreq, &ret);
 	TALLOC_FREE(subreq);
-	sock_daemon_run_shutdown(req);
 	if (! status) {
-		tevent_req_error(req, ret);
+		state->exit_code = ret;
 	} else {
-		tevent_req_done(req);
+		state->exit_code = 0;
 	}
+
+	sock_daemon_run_shutdown(req);
 }
 
 bool sock_daemon_run_recv(struct tevent_req *req, int *perr)

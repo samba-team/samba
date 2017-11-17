@@ -297,6 +297,40 @@ static void test2_shutdown(void *private_data)
 	assert(nwritten == sizeof(ret));
 }
 
+struct test2_shutdown_state {
+	int fd;
+};
+
+static struct tevent_req *test2_shutdown_send(TALLOC_CTX *mem_ctx,
+					      struct tevent_context *ev,
+					      void *private_data)
+{
+	struct tevent_req *req;
+	struct test2_shutdown_state *state;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct test2_shutdown_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	state->fd = *(int *)private_data;
+
+	tevent_req_done(req);
+	return tevent_req_post(req, ev);
+}
+
+static void test2_shutdown_recv(struct tevent_req *req)
+{
+	struct test2_shutdown_state *state = tevent_req_data(
+		req, struct test2_shutdown_state);
+	int ret = 3;
+	ssize_t nwritten;
+
+	nwritten = write(state->fd, &ret, sizeof(ret));
+	assert(nwritten == sizeof(ret));
+}
+
 static void test2(TALLOC_CTX *mem_ctx, const char *pidfile,
 		  const char *sockpath)
 {
@@ -405,6 +439,8 @@ static void test2(TALLOC_CTX *mem_ctx, const char *pidfile,
 			.startup = test2_startup,
 			.reconfigure_send = test2_reconfigure_send,
 			.reconfigure_recv = test2_reconfigure_recv,
+			.shutdown_send = test2_shutdown_send,
+			.shutdown_recv = test2_shutdown_recv,
 		};
 
 		close(fd[0]);
@@ -448,6 +484,10 @@ static void test2(TALLOC_CTX *mem_ctx, const char *pidfile,
 
 	ret = kill(pid, SIGTERM);
 	assert(ret == 0);
+
+	n = read(fd[0], &ret, sizeof(ret));
+	assert(n == sizeof(ret));
+	assert(ret == 3);
 
 	pid2 = waitpid(pid, &ret, 0);
 	assert(pid2 == pid);
