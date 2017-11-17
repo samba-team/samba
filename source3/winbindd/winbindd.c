@@ -239,7 +239,7 @@ static void terminate(bool is_parent)
 #endif
 
 	if (is_parent) {
-		struct messaging_context *msg = winbind_messaging_context();
+		struct messaging_context *msg = server_messaging_context();
 		struct server_id self = messaging_server_id(msg);
 		serverid_deregister(self);
 		pidfile_unlink(lp_pid_directory(), "winbindd");
@@ -1348,9 +1348,9 @@ static void winbindd_register_handlers(struct messaging_context *msg_ctx,
 			   MSG_WINBIND_ONLINESTATUS, winbind_msg_onlinestatus);
 
 	/* Handle domain online/offline messages for domains */
-	messaging_register(winbind_messaging_context(), NULL,
+	messaging_register(server_messaging_context(), NULL,
 			   MSG_WINBIND_DOMAIN_OFFLINE, winbind_msg_domain_offline);
-	messaging_register(winbind_messaging_context(), NULL,
+	messaging_register(server_messaging_context(), NULL,
 			   MSG_WINBIND_DOMAIN_ONLINE, winbind_msg_domain_online);
 
 	messaging_register(msg_ctx, NULL,
@@ -1661,7 +1661,7 @@ int main(int argc, const char **argv)
 
 	/* Initialise messaging system */
 
-	if (winbind_messaging_context() == NULL) {
+	if (server_messaging_context() == NULL) {
 		exit(1);
 	}
 
@@ -1755,7 +1755,7 @@ int main(int argc, const char **argv)
 	 * winbindd-specific resources we must free yet. JRA.
 	 */
 
-	status = reinit_after_fork(winbind_messaging_context(),
+	status = reinit_after_fork(server_messaging_context(),
 				   server_event_context(),
 				   false, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1772,9 +1772,9 @@ int main(int argc, const char **argv)
 		exit_daemon(nt_errstr(status), map_errno_from_nt_status(status));
 	}
 
-	winbindd_register_handlers(winbind_messaging_context(), !Fork);
+	winbindd_register_handlers(server_messaging_context(), !Fork);
 
-	if (!messaging_parent_dgm_cleanup_init(winbind_messaging_context())) {
+	if (!messaging_parent_dgm_cleanup_init(server_messaging_context())) {
 		exit(1);
 	}
 
@@ -1787,7 +1787,7 @@ int main(int argc, const char **argv)
 	rpc_samr_init(NULL);
 
 	winbindd_init_addrchange(NULL, server_event_context(),
-				 winbind_messaging_context());
+				 server_messaging_context());
 
 	/* setup listen sockets */
 

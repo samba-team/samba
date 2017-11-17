@@ -1051,7 +1051,7 @@ static void machine_password_change_handler(struct tevent_context *ctx,
 					    struct timeval now,
 					    void *private_data)
 {
-	struct messaging_context *msg_ctx = winbind_messaging_context();
+	struct messaging_context *msg_ctx = server_messaging_context();
 	struct winbindd_child *child =
 		(struct winbindd_child *)private_data;
 	struct rpc_pipe_client *netlogon_pipe = NULL;
@@ -1250,7 +1250,7 @@ NTSTATUS winbindd_reinit_after_fork(const struct winbindd_child *myself,
 	NTSTATUS status;
 
 	status = reinit_after_fork(
-		winbind_messaging_context(),
+		server_messaging_context(),
 		server_event_context(),
 		true, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1275,26 +1275,26 @@ NTSTATUS winbindd_reinit_after_fork(const struct winbindd_child *myself,
 	CatchChild();
 
 	/* Don't handle the same messages as our parent. */
-	messaging_deregister(winbind_messaging_context(),
+	messaging_deregister(server_messaging_context(),
 			     MSG_SMB_CONF_UPDATED, NULL);
-	messaging_deregister(winbind_messaging_context(),
+	messaging_deregister(server_messaging_context(),
 			     MSG_SHUTDOWN, NULL);
-	messaging_deregister(winbind_messaging_context(),
+	messaging_deregister(server_messaging_context(),
 			     MSG_WINBIND_OFFLINE, NULL);
-	messaging_deregister(winbind_messaging_context(),
+	messaging_deregister(server_messaging_context(),
 			     MSG_WINBIND_ONLINE, NULL);
-	messaging_deregister(winbind_messaging_context(),
+	messaging_deregister(server_messaging_context(),
 			     MSG_WINBIND_ONLINESTATUS, NULL);
-	messaging_deregister(winbind_messaging_context(),
+	messaging_deregister(server_messaging_context(),
 			     MSG_DUMP_EVENT_LIST, NULL);
-	messaging_deregister(winbind_messaging_context(),
+	messaging_deregister(server_messaging_context(),
 			     MSG_WINBIND_DUMP_DOMAIN_LIST, NULL);
-	messaging_deregister(winbind_messaging_context(),
+	messaging_deregister(server_messaging_context(),
 			     MSG_DEBUG, NULL);
 
-	messaging_deregister(winbind_messaging_context(),
+	messaging_deregister(server_messaging_context(),
 			     MSG_WINBIND_DOMAIN_OFFLINE, NULL);
-	messaging_deregister(winbind_messaging_context(),
+	messaging_deregister(server_messaging_context(),
 			     MSG_WINBIND_DOMAIN_ONLINE, NULL);
 
 	/* We have destroyed all events in the winbindd_event_context
@@ -1492,15 +1492,15 @@ static bool fork_domain_child(struct winbindd_child *child)
 	}
 
 	/* Handle online/offline messages. */
-	messaging_register(winbind_messaging_context(), NULL,
+	messaging_register(server_messaging_context(), NULL,
 			   MSG_WINBIND_OFFLINE, child_msg_offline);
-	messaging_register(winbind_messaging_context(), NULL,
+	messaging_register(server_messaging_context(), NULL,
 			   MSG_WINBIND_ONLINE, child_msg_online);
-	messaging_register(winbind_messaging_context(), NULL,
+	messaging_register(server_messaging_context(), NULL,
 			   MSG_DUMP_EVENT_LIST, child_msg_dump_event_list);
-	messaging_register(winbind_messaging_context(), NULL,
+	messaging_register(server_messaging_context(), NULL,
 			   MSG_DEBUG, debug_message);
-	messaging_register(winbind_messaging_context(), NULL,
+	messaging_register(server_messaging_context(), NULL,
 			   MSG_WINBIND_IP_DROPPED,
 			   winbind_msg_ip_dropped);
 
