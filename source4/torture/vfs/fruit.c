@@ -1140,7 +1140,7 @@ static bool write_stream(struct smb2_tree *tree,
 	NTSTATUS status;
 	const char *full_name;
 
-	full_name = talloc_asprintf(mem_ctx, "%s%s", fname, sname);
+	full_name = talloc_asprintf(mem_ctx, "%s%s", fname, sname ? sname : "");
 	if (full_name == NULL) {
 	    torture_comment(tctx, "talloc_asprintf error\n");
 	    return false;
