@@ -1270,7 +1270,7 @@ NTSTATUS wcache_cached_creds_exist(struct winbindd_domain *domain, const struct 
 	fstr_sprintf(key_str, "CRED/%s", sid_to_fstring(tmp, sid));
 
 	ret = tdb_exists(cache->tdb, string_tdb_data(key_str));
-	if (ret != 0) {
+	if (ret != 1) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
