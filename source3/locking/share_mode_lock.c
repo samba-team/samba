@@ -114,6 +114,7 @@ static bool locking_init_internal(bool read_only)
 {
 	struct db_context *backend;
 	char *db_path;
+	uint64_t dbwrap_flags = DBWRAP_FLAG_NONE;
 
 	brl_init(read_only);
 
@@ -126,13 +127,17 @@ static bool locking_init_internal(bool read_only)
 		return false;
 	}
 
+	if (lp_persistent_handles()) {
+		dbwrap_flags |= DBWRAP_FLAG_PER_REC_PERSISTENT;
+	}
+
 	backend = db_open(NULL, db_path,
 			  SMBD_VOLATILE_TDB_HASH_SIZE,
 			  SMBD_VOLATILE_TDB_FLAGS |
 			  TDB_SEQNUM,
 			  read_only?O_RDONLY:O_RDWR|O_CREAT, 0640,
 			  DBWRAP_LOCK_ORDER_NONE,
-			  DBWRAP_FLAG_NONE);
+			  dbwrap_flags);
 	TALLOC_FREE(db_path);
 	if (!backend) {
 		DEBUG(0,("ERROR: Failed to initialise locking database\n"));
