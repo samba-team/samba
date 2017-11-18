@@ -65,7 +65,6 @@ struct db_context *db_open(TALLOC_CTX *mem_ctx,
 {
 	struct db_context *result = NULL;
 	const char *base;
-	const char *sockname;
 
 	if (!DBWRAP_LOCK_ORDER_VALID(lock_order)) {
 		errno = EINVAL;
@@ -126,9 +125,10 @@ struct db_context *db_open(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	sockname = lp_ctdbd_socket();
-
 	if (lp_clustering()) {
+		const char *sockname;
+
+		sockname = lp_ctdbd_socket();
 		if (!socket_exist(sockname)) {
 			DEBUG(1, ("ctdb socket does not exist - is ctdb not "
 				  "running?\n"));
