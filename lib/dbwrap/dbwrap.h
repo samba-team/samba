@@ -39,6 +39,7 @@ enum dbwrap_lock_order {
 
 #define DBWRAP_FLAG_NONE                     0x0000000000000000ULL
 #define DBWRAP_FLAG_OPTIMIZE_READONLY_ACCESS 0x0000000000000001ULL
+#define DBWRAP_FLAG_PER_REC_PERSISTENT       0x0000000000000002ULL
 
 /** Flags to dbwrap_store() */
 #define DBWRAP_REPLACE	TDB_REPLACE	/* Replace record */
