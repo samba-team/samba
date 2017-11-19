@@ -84,6 +84,9 @@ def configure(conf):
     if conf.CHECK_CFLAGS('-Wno-format-truncation'):
         conf.define('HAVE_WNO_FORMAT_TRUNCATION', '1')
 
+    if conf.CHECK_CFLAGS('-Wno-unused-function'):
+        conf.define('HAVE_WNO_UNUSED_FUNCTION', '1')
+
     # Check for process set name support
     conf.CHECK_CODE('''
                     #include <sys/prctl.h>
