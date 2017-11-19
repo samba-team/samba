@@ -2409,7 +2409,7 @@ static bool test_EnumTrustDom(struct dcerpc_binding_handle *b,
 
 		in_resume_handle = out_resume_handle;
 
-	} while ((NT_STATUS_EQUAL(r.out.result, STATUS_MORE_ENTRIES)));
+	} while (NT_STATUS_EQUAL(r.out.result, STATUS_MORE_ENTRIES));
 
 	return ret;
 }
@@ -2507,7 +2507,7 @@ static bool test_EnumTrustDomEx(struct dcerpc_binding_handle *b,
 
 		ret &= test_query_each_TrustDomEx(b, tctx, handle, &domains_ex);
 
-	} while ((NT_STATUS_EQUAL(r_ex.out.result, STATUS_MORE_ENTRIES)));
+	} while (NT_STATUS_EQUAL(r_ex.out.result, STATUS_MORE_ENTRIES));
 
 	return ret;
 }
