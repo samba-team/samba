@@ -521,6 +521,9 @@ static TALLOC_CTX *do_log_ctx(void)
 }
 
 static void do_log(vfs_op_type op, bool success, vfs_handle_struct *handle,
+		   const char *format, ...) PRINTF_ATTRIBUTE(4, 5);
+
+static void do_log(vfs_op_type op, bool success, vfs_handle_struct *handle,
 		   const char *format, ...)
 {
 	struct vfs_full_audit_private_data *pd;
@@ -1411,7 +1414,7 @@ static uint64_t smb_full_audit_get_alloc_size(vfs_handle_struct *handle,
 	result = SMB_VFS_NEXT_GET_ALLOC_SIZE(handle, fsp, sbuf);
 
 	do_log(SMB_VFS_OP_GET_ALLOC_SIZE, (result != (uint64_t)-1), handle,
-			"%llu", result);
+			"%llu", (unsigned long long)result);
 
 	return result;
 }
@@ -1783,7 +1786,10 @@ static NTSTATUS smb_full_audit_brl_lock_windows(struct vfs_handle_struct *handle
 	do_log(SMB_VFS_OP_BRL_LOCK_WINDOWS, NT_STATUS_IS_OK(result), handle,
 	    "%s:%llu-%llu. type=%d. blocking=%d",
 	       fsp_str_do_log(brl_fsp(br_lck)),
-	    plock->start, plock->size, plock->lock_type, blocking_lock);
+	       (unsigned long long)plock->start,
+	       (unsigned long long)plock->size,
+	       plock->lock_type,
+	       blocking_lock);
 
 	return result;
 }
@@ -1800,8 +1806,9 @@ static bool smb_full_audit_brl_unlock_windows(struct vfs_handle_struct *handle,
 
 	do_log(SMB_VFS_OP_BRL_UNLOCK_WINDOWS, (result == 0), handle,
 	       "%s:%llu-%llu:%d", fsp_str_do_log(brl_fsp(br_lck)),
-	       plock->start,
-	    plock->size, plock->lock_type);
+	       (unsigned long long)plock->start,
+	       (unsigned long long)plock->size,
+	       plock->lock_type);
 
 	return result;
 }
@@ -1816,8 +1823,9 @@ static bool smb_full_audit_brl_cancel_windows(struct vfs_handle_struct *handle,
 
 	do_log(SMB_VFS_OP_BRL_CANCEL_WINDOWS, (result == 0), handle,
 	       "%s:%llu-%llu:%d", fsp_str_do_log(brl_fsp(br_lck)),
-	       plock->start,
-	    plock->size, plock->lock_type);
+	       (unsigned long long)plock->start,
+	       (unsigned long long)plock->size,
+	       plock->lock_type);
 
 	return result;
 }
@@ -1831,8 +1839,10 @@ static bool smb_full_audit_strict_lock_check(struct vfs_handle_struct *handle,
 	result = SMB_VFS_NEXT_STRICT_LOCK_CHECK(handle, fsp, plock);
 
 	do_log(SMB_VFS_OP_STRICT_LOCK_CHECK, result, handle,
-	    "%s:%llu-%llu:%d", fsp_str_do_log(fsp), plock->start,
-	    plock->size, plock->lock_type);
+	       "%s:%llu-%llu:%d", fsp_str_do_log(fsp),
+	       (unsigned long long)plock->start,
+	       (unsigned long long)plock->size,
+	       plock->lock_type);
 
 	return result;
 }
