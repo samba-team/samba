@@ -133,7 +133,7 @@ static WERROR add_response_rr(const char *name,
 
 	ans[ai].name = talloc_strdup(ans, name);
 	W_ERROR_HAVE_NO_MEMORY(ans[ai].name);
-	ans[ai].rr_type = rec->wType;
+	ans[ai].rr_type = (enum dns_qtype)rec->wType;
 	ans[ai].rr_class = DNS_QCLASS_IN;
 	ans[ai].ttl = rec->dwTtlSeconds;
 	ans[ai].length = UINT16_MAX;
