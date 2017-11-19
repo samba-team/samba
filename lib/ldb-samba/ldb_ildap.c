@@ -476,7 +476,7 @@ static int ildb_search(struct ildb_context *ac)
 	}
 
 	if (req->op.search.scope == LDB_SCOPE_DEFAULT) {
-		msg->r.SearchRequest.scope = LDB_SCOPE_SUBTREE;
+		msg->r.SearchRequest.scope = LDAP_SEARCH_SCOPE_SUB;
 	} else {
 		msg->r.SearchRequest.scope = req->op.search.scope;
 	}
