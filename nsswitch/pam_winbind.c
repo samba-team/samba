@@ -671,7 +671,7 @@ static int converse(const pam_handle_t *pamh,
 		    struct pam_response **response)
 {
 	int retval;
-	struct pam_conv *conv;
+	const struct pam_conv *conv;
 
 	retval = pam_get_item(pamh, PAM_CONV, (const void **) &conv);
 	if (retval == PAM_SUCCESS) {
@@ -2993,7 +2993,7 @@ static bool _pam_require_krb5_auth_after_chauthtok(struct pwb_context *ctx,
 	 * --- BoYang
 	 * */
 
-	char *new_authtok_reqd_during_auth = NULL;
+	const char *new_authtok_reqd_during_auth = NULL;
 	struct passwd *pwd = NULL;
 
 	pam_get_data(ctx->pamh, PAM_WINBIND_NEW_AUTHTOK_REQD_DURING_AUTH,
