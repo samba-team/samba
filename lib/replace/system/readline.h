@@ -26,6 +26,9 @@
 
 #ifdef HAVE_LIBREADLINE
 #  ifdef HAVE_READLINE_READLINE_H
+#    ifdef HAVE_READLINE_READLINE_WORKAROUND
+#      define _FUNCTION_DEF
+#    endif
 #    include <readline/readline.h>
 #    ifdef HAVE_READLINE_HISTORY_H
 #      include <readline/history.h>
