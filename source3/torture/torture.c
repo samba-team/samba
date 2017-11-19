@@ -5219,7 +5219,7 @@ static bool run_rename_access(int dummy)
 	}
 
 	if (cli) {
-		if (fnum != (uint64_t)-1) {
+		if (fnum != (uint16_t)-1) {
 			cli_close(cli, fnum);
 		}
 		cli_unlink(cli, src,
