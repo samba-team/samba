@@ -174,6 +174,10 @@ static inline void textdomain_init(void)
 
 
 /* some syslogging */
+static void _pam_log_int(const pam_handle_t *pamh,
+			 int err,
+			 const char *format,
+			 va_list args) PRINTF_ATTRIBUTE(3, 0);
 
 #ifdef HAVE_PAM_VSYSLOG
 static void _pam_log_int(const pam_handle_t *pamh,
@@ -189,21 +193,26 @@ static void _pam_log_int(const pam_handle_t *pamh,
 			 const char *format,
 			 va_list args)
 {
-	char *format2 = NULL;
+	char *base = NULL;
+	va_list args2;
 	const char *service;
 	int ret;
 
+	va_copy(args2, args);
+
 	pam_get_item(pamh, PAM_SERVICE, (const void **) &service);
 
-	ret = asprintf(&format2, "%s(%s): %s", MODULE_NAME, service, format);
+	ret = vasprintf(&base, format, args);
 	if (ret == -1) {
 		/* what else todo ? */
-		vsyslog(err, format, args);
+		vsyslog(err, format, args2);
+		va_end(args2);
 		return;
 	}
 
-	vsyslog(err, format2, args);
-	SAFE_FREE(format2);
+	syslog(err, "%s(%s): %s", MODULE_NAME, service, base);
+	SAFE_FREE(base);
+	va_end(args2);
 }
 #endif /* HAVE_PAM_VSYSLOG */
 
@@ -710,6 +719,11 @@ static int _make_remark(struct pwb_context *ctx,
 	}
 	return retval;
 }
+
+static int _make_remark_v(struct pwb_context *ctx,
+			  int type,
+			  const char *format,
+			  va_list args) PRINTF_ATTRIBUTE(3, 0);
 
 static int _make_remark_v(struct pwb_context *ctx,
 			  int type,
