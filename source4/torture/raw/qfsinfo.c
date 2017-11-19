@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include <math.h>
 #include "libcli/libcli.h"
 #include "torture/util.h"
 #include "torture/basic/proto.h"
@@ -206,7 +207,7 @@ bool torture_raw_qfsinfo(struct torture_context *torture,
 			s2->allocation.out.sectors_per_unit *
 			s2->allocation.out.total_alloc_units *
 			s2->allocation.out.bytes_per_sector / scale;
-		if (abs(size1 - size2) > 1) {
+		if (fabs(size1 - size2) > 1) {
 			printf("Inconsistent total size in DSKATTR and ALLOCATION - size1=%.0f size2=%.0f\n", 
 			       size1, size2);
 			ret = false;
@@ -228,7 +229,7 @@ bool torture_raw_qfsinfo(struct torture_context *torture,
 			s2->allocation.out.sectors_per_unit *
 			s2->allocation.out.avail_alloc_units *
 			s2->allocation.out.bytes_per_sector / scale;
-		if (abs(size1 - size2) > 1) {
+		if (fabs(size1 - size2) > 1) {
 			printf("Inconsistent avail size in DSKATTR and ALLOCATION - size1=%.0f size2=%.0f\n", 
 			       size1, size2);
 			ret = false;

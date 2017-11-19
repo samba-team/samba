@@ -190,7 +190,7 @@ static bool run_attrtest(struct torture_context *tctx,
 
 	torture_comment(tctx, "New file time is %s", ctime(&t));
 
-	if (abs(t - time(NULL)) > 60*60*24*10) {
+	if (labs(t - time(NULL)) > 60*60*24*10) {
 		torture_result(tctx, TORTURE_FAIL, "ERROR: SMBgetatr bug. time is %s",
 		       ctime(&t));
 		t = time(NULL);
@@ -289,13 +289,13 @@ static bool run_trans2test(struct torture_context *tctx,
 			torture_comment(tctx, "modify time=%s", ctime(&m_time));
 			torture_comment(tctx, "This system appears to have sticky create times\n");
 		}
-		if ((abs(a_time - t) > 60) && (a_time % (60*60) == 0)) {
+		if ((labs(a_time - t) > 60) && (a_time % (60*60) == 0)) {
 			torture_comment(tctx, "access time=%s", ctime(&a_time));
 			torture_result(tctx, TORTURE_FAIL, "This system appears to set a midnight access time\n");
 			correct = false;
 		}
 
-		if (abs(m_time - t) > 60*60*24*7) {
+		if (labs(m_time - t) > 60*60*24*7) {
 			torture_result(tctx, TORTURE_FAIL, "ERROR: totally incorrect times - maybe word reversed? mtime=%s", ctime(&m_time));
 			correct = false;
 		}
