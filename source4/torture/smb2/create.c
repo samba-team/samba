@@ -81,7 +81,7 @@
 	status = smb2_getinfo_file(tree, tctx, &finfo); \
 	CHECK_STATUS(status, NT_STATUS_OK); \
 	t2 = finfo.all_info.out.field; \
-	if (abs(t-t2) > 20000) { \
+	if (llabs((int64_t)(t-t2)) > 20000) { \
 		torture_result(tctx, TORTURE_FAIL, \
 			"(%s) wrong time for field %s  %s - %s\n", \
 		       __location__, #field, \
