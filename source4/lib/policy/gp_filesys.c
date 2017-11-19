@@ -644,7 +644,7 @@ NTSTATUS gp_set_gpt_security_descriptor(struct gp_context *gp_ctx,
 	}
 
 	/* Set the security descriptor on the directory */
-	fileinfo.generic.level = RAW_FILEINFO_SEC_DESC;
+	fileinfo.generic.level = RAW_SFILEINFO_SEC_DESC;
 	fileinfo.set_secdesc.in.file.fnum = io.ntcreatex.out.file.fnum;
 	fileinfo.set_secdesc.in.secinfo_flags = SECINFO_PROTECTED_DACL |
 	                                        SECINFO_OWNER |
