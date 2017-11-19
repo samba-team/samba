@@ -24,8 +24,8 @@
 #define PYTHON_MODULE_NAME  "pypamtest"
 
 #ifndef discard_const_p
-#if defined(__intptr_t_defined) || defined(HAVE_INTPTR_T)
-# define discard_const_p(type, ptr) ((type *)((intptr_t)(ptr)))
+#if defined(__intptr_t_defined) || defined(HAVE_UINTPTR_T)
+# define discard_const_p(type, ptr) ((type *)((uintptr_t)(ptr)))
 #else
 # define discard_const_p(type, ptr) ((type *)(ptr))
 #endif
