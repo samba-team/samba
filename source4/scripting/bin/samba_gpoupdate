@@ -64,8 +64,9 @@ def apply_gp(lp, creds, test_ldb, logger, store, gp_extensions):
         guid = gpo_obj.name
         if guid == 'Local Policy':
             continue
-        local_path = os.path.join(lp.get('realm').lower(), 'Policies', guid)
-        version = int(gpo.gpo_get_sysvol_gpt_version(os.path.join(lp.get("path", "sysvol"), local_path))[1])
+        path = os.path.join(lp.get('realm').lower(), 'Policies', guid)
+        local_path = os.path.join(lp.get("path", "sysvol"), path)
+        version = int(gpo.gpo_get_sysvol_gpt_version(local_path)[1])
         if version != store.get_int(guid):
             logger.info('GPO %s has changed' % guid)
             gp_db.state(GPOSTATE.APPLY)
@@ -75,7 +76,7 @@ def apply_gp(lp, creds, test_ldb, logger, store, gp_extensions):
         store.start()
         try:
             for ext in gp_extensions:
-                ext.parse(ext.list(local_path), test_ldb, conn, gp_db, lp)
+                ext.parse(ext.list(path), test_ldb, conn, gp_db, lp)
         except:
             logger.error('Failed to parse gpo %s' % guid)
             store.cancel()
@@ -112,7 +113,8 @@ if __name__ == "__main__":
     parser.add_option_group(options.VersionOptions(parser))
     credopts = options.CredentialsOptions(parser)
     parser.add_option('-H', '--url', dest='url', help='URL for the samdb')
-    parser.add_option('-X', '--unapply', help='Unapply Group Policy', action='store_true')
+    parser.add_option('-X', '--unapply', help='Unapply Group Policy',
+                      action='store_true')
     parser.add_option_group(credopts)
 
     # Set the options and the arguments

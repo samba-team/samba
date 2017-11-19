@@ -50,13 +50,18 @@ GPO_getter(user_extensions)
 GPO_getter(machine_extensions)
 
 static PyGetSetDef GPO_setters[] = {
-	{discard_const_p(char, "ds_path"), (getter)GPO_get_ds_path, NULL, NULL, NULL},
-	{discard_const_p(char, "file_sys_path"), (getter)GPO_get_file_sys_path, NULL, NULL, NULL},
-	{discard_const_p(char, "display_name"), (getter)GPO_get_display_name, NULL, NULL, NULL},
+	{discard_const_p(char, "ds_path"), (getter)GPO_get_ds_path, NULL, NULL,
+		NULL},
+	{discard_const_p(char, "file_sys_path"), (getter)GPO_get_file_sys_path,
+		NULL, NULL, NULL},
+	{discard_const_p(char, "display_name"), (getter)GPO_get_display_name, NULL,
+		NULL, NULL},
 	{discard_const_p(char, "name"), (getter)GPO_get_name, NULL, NULL, NULL},
 	{discard_const_p(char, "link"), (getter)GPO_get_link, NULL, NULL, NULL},
-	{discard_const_p(char, "user_extensions"), (getter)GPO_get_user_extensions, NULL, NULL, NULL},
-	{discard_const_p(char, "machine_extensions"), (getter)GPO_get_machine_extensions, NULL, NULL, NULL},
+	{discard_const_p(char, "user_extensions"), (getter)GPO_get_user_extensions,
+		NULL, NULL, NULL},
+	{discard_const_p(char, "machine_extensions"),
+		(getter)GPO_get_machine_extensions, NULL, NULL, NULL},
 	{NULL}
 };
 
@@ -72,15 +77,19 @@ static PyObject *py_gpo_get_unix_path(PyObject *self, PyObject *args,
 	struct GROUP_POLICY_OBJECT *gpo_ptr \
 		= (struct GROUP_POLICY_OBJECT *)pytalloc_get_ptr(self);
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwds, "|s", discard_const_p(char *, kwlist), &cache_dir)) {
-		PyErr_SetString(PyExc_SystemError, "Failed to parse arguments to gpo_get_unix_path()");
+	if (!PyArg_ParseTupleAndKeywords(args, kwds, "|s",
+					 discard_const_p(char *, kwlist),
+					 &cache_dir)) {
+		PyErr_SetString(PyExc_SystemError,
+				"Failed to parse arguments to gpo_get_unix_path()");
 		goto out;
 	}
 
 	if (!cache_dir) {
 		cache_dir = cache_path(GPO_CACHE_DIR);
 		if (!cache_dir) {
-			PyErr_SetString(PyExc_MemoryError, "Failed to determine gpo cache dir");
+			PyErr_SetString(PyExc_MemoryError,
+					"Failed to determine gpo cache dir");
 			goto out;
 		}
 	}
@@ -92,7 +101,8 @@ static PyObject *py_gpo_get_unix_path(PyObject *self, PyObject *args,
 	TALLOC_FREE(frame);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		PyErr_SetString(PyExc_SystemError, "Failed to determine gpo unix path");
+		PyErr_SetString(PyExc_SystemError,
+				"Failed to determine gpo unix path");
 		goto out;
 	}
 
@@ -145,8 +155,11 @@ static int py_ads_init(ADS *self, PyObject *args, PyObject *kwds)
 	PyObject *lp_obj = NULL;
 	struct loadparm_context *lp_ctx = NULL;
 
-	static const char *kwlist[] = {"ldap_server", "loadparm_context", "credentials", NULL};
-	if (!PyArg_ParseTupleAndKeywords(args, kwds, "sO|O", discard_const_p(char *, kwlist), &ldap_server, &lp_obj, &py_creds))
+	static const char *kwlist[] = {"ldap_server", "loadparm_context",
+		"credentials", NULL};
+	if (!PyArg_ParseTupleAndKeywords(args, kwds, "sO|O",
+					 discard_const_p(char *, kwlist),
+					 &ldap_server, &lp_obj, &py_creds))
 		return -1;
 
 	if (py_creds) {
@@ -189,10 +202,13 @@ static PyObject* py_ads_connect(ADS *self)
 	ADS_STATUS status;
 	TALLOC_CTX *frame = talloc_stackframe();
 	if (self->cli_creds) {
-		self->ads_ptr->auth.user_name = SMB_STRDUP(cli_credentials_get_username(self->cli_creds));
-self->ads_ptr->auth.flags |= ADS_AUTH_USER_CREDS;
-		self->ads_ptr->auth.password = SMB_STRDUP(cli_credentials_get_password(self->cli_creds));
-		self->ads_ptr->auth.realm = SMB_STRDUP(cli_credentials_get_realm(self->cli_creds));
+		self->ads_ptr->auth.user_name =
+			SMB_STRDUP(cli_credentials_get_username(self->cli_creds));
+		self->ads_ptr->auth.flags |= ADS_AUTH_USER_CREDS;
+		self->ads_ptr->auth.password =
+			SMB_STRDUP(cli_credentials_get_password(self->cli_creds));
+		self->ads_ptr->auth.realm =
+			SMB_STRDUP(cli_credentials_get_realm(self->cli_creds));
 
 		status = ads_connect_user_creds(self->ads_ptr);
 		if (!ADS_ERR_OK(status)) {
@@ -203,7 +219,8 @@ self->ads_ptr->auth.flags |= ADS_AUTH_USER_CREDS;
 	} else {
 		char *passwd;
 
-		if (asprintf(&(self->ads_ptr->auth.user_name), "%s$", lp_netbios_name()) == -1) {
+		if (asprintf(&(self->ads_ptr->auth.user_name), "%s$",
+			     lp_netbios_name()) == -1) {
 			PyErr_SetString(PyExc_SystemError, "Failed to asprintf");
 			TALLOC_FREE(frame);
 			Py_RETURN_FALSE;
@@ -214,9 +231,11 @@ self->ads_ptr->auth.flags |= ADS_AUTH_USER_CREDS;
 			TALLOC_FREE(frame);
 			Py_RETURN_FALSE;
 		}
-
-		if (!(passwd = secrets_fetch_machine_password(self->ads_ptr->server.workgroup, NULL, NULL))) {
-			PyErr_SetString(PyExc_SystemError, "Failed to fetch the machine account password");
+		if (!(passwd =
+		      secrets_fetch_machine_password(self->ads_ptr->server.workgroup,
+						     NULL, NULL))) {
+			PyErr_SetString(PyExc_SystemError,
+					"Failed to fetch the machine account password");
 			TALLOC_FREE(frame);
 			Py_RETURN_FALSE;
 		}
@@ -244,7 +263,8 @@ self->ads_ptr->auth.flags |= ADS_AUTH_USER_CREDS;
 void initgpo(void);
 
 /* Global methods aka do not need a special pyobject type */
-static PyObject *py_gpo_get_sysvol_gpt_version(PyObject * self, PyObject * args)
+static PyObject *py_gpo_get_sysvol_gpt_version(PyObject * self,
+					       PyObject * args)
 {
 	TALLOC_CTX *tmp_ctx = NULL;
 	char *unix_path;
@@ -272,7 +292,9 @@ static PyObject *py_gpo_get_sysvol_gpt_version(PyObject * self, PyObject * args)
 	return result;
 }
 
-static ADS_STATUS find_samaccount(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, const char *samaccountname, uint32_t *uac_ret, const char **dn_ret)
+static ADS_STATUS find_samaccount(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
+				  const char *samaccountname,
+				  uint32_t *uac_ret, const char **dn_ret)
 {
 	ADS_STATUS status;
 	const char *attrs[] = { "userAccountControl", NULL };
@@ -287,7 +309,8 @@ static ADS_STATUS find_samaccount(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, const ch
 		goto out;
 	}
 
-	status = ads_do_search_all(ads, ads->config.bind_path, LDAP_SCOPE_SUBTREE, filter, attrs, &res);
+	status = ads_do_search_all(ads, ads->config.bind_path, LDAP_SCOPE_SUBTREE,
+				   filter, attrs, &res);
 
 	if (!ADS_ERR_OK(status)) {
 		goto out;
@@ -343,8 +366,11 @@ static PyObject *py_ads_get_gpo_list(ADS *self, PyObject *args, PyObject *kwds)
 	size_t i;
 
 	static const char *kwlist[] = {"samaccountname", NULL};
-	if (!PyArg_ParseTupleAndKeywords(args, kwds, "s", discard_const_p(char *, kwlist), &samaccountname)) {
-		PyErr_SetString(PyExc_SystemError, "Failed to parse arguments to py_ads_get_gpo_list()");
+	if (!PyArg_ParseTupleAndKeywords(args, kwds, "s",
+					 discard_const_p(char *, kwlist),
+					 &samaccountname)) {
+		PyErr_SetString(PyExc_SystemError,
+				"Failed to parse arguments to py_ads_get_gpo_list()");
 		goto out;
 	}
 
@@ -370,7 +396,8 @@ static PyObject *py_ads_get_gpo_list(ADS *self, PyObject *args, PyObject *kwds)
 	}
 
 	gpo_ctx = talloc_new(frame);
-	status = ads_get_gpo_list(self->ads_ptr, gpo_ctx, dn, flags, token, &gpo_list);
+	status = ads_get_gpo_list(self->ads_ptr, gpo_ctx, dn, flags, token,
+				  &gpo_list);
 	if (!ADS_ERR_OK(status)) {
 		TALLOC_FREE(frame);
 		PyErr_SetString(PyExc_SystemError, "Failed to fetch GPO list");
@@ -409,7 +436,8 @@ out:
 }
 
 static PyMethodDef ADS_methods[] = {
-	{ "connect", (PyCFunction)py_ads_connect, METH_NOARGS, "Connect to the LDAP server" },
+	{ "connect", (PyCFunction)py_ads_connect, METH_NOARGS,
+		"Connect to the LDAP server" },
 	{ "get_gpo_list", (PyCFunction)py_ads_get_gpo_list, METH_KEYWORDS, NULL },
 	{ NULL }
 };
@@ -426,7 +454,8 @@ static PyTypeObject ads_ADSType = {
 };
 
 static PyMethodDef py_gpo_methods[] = {
-	{"gpo_get_sysvol_gpt_version", (PyCFunction) py_gpo_get_sysvol_gpt_version, METH_VARARGS, NULL},
+	{"gpo_get_sysvol_gpt_version", (PyCFunction) py_gpo_get_sysvol_gpt_version,
+		METH_VARARGS, NULL},
 	{NULL}
 };
 
@@ -439,7 +468,8 @@ void initgpo(void)
 	/* Instantiate the types */
 	m = Py_InitModule3("gpo", py_gpo_methods, "libgpo python bindings");
 	if (m == NULL) return;
-	PyModule_AddObject(m, "version", PyString_FromString(SAMBA_VERSION_STRING));
+	PyModule_AddObject(m, "version",
+			   PyString_FromString(SAMBA_VERSION_STRING));
 
 	if (PyType_Ready(&ads_ADSType) < 0)
 		return;

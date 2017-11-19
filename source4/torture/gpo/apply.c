@@ -32,7 +32,8 @@ struct torture_suite *gpo_apply_suite(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(ctx, "apply");
 
-	torture_suite_add_simple_test(suite, "gpo_param_from_gpo", torture_gpo_system_access_policies);
+	torture_suite_add_simple_test(suite, "gpo_param_from_gpo",
+				      torture_gpo_system_access_policies);
 
 	suite->description = talloc_strdup(suite, "Group Policy apply tests");
 
@@ -64,7 +65,9 @@ static int unix2nttime(char *sval)
 	return (strtoll(sval, NULL, 10) * -1 / 60 / 60 / 24 / 10000000);
 }
 
-#define GPODIR "addom.samba.example.com/Policies/{31B2F340-016D-11D2-945F-00C04FB984F9}/MACHINE/Microsoft/Windows NT/SecEdit"
+#define GPODIR "addom.samba.example.com/Policies/"\
+	       "{31B2F340-016D-11D2-945F-00C04FB984F9}/MACHINE/Microsoft/"\
+	       "Windows NT/SecEdit"
 #define GPOFILE "GptTmpl.inf"
 #define GPTTMPL "[System Access]\n\
 MinimumPasswordAge = %d\n\
@@ -72,12 +75,14 @@ MaximumPasswordAge = %d\n\
 MinimumPasswordLength = %d\n\
 PasswordComplexity = %d\n\
 "
-#define GPTINI "addom.samba.example.com/Policies/{31B2F340-016D-11D2-945F-00C04FB984F9}/GPT.INI"
+#define GPTINI "addom.samba.example.com/Policies/"\
+	       "{31B2F340-016D-11D2-945F-00C04FB984F9}/GPT.INI"
 
 bool torture_gpo_system_access_policies(struct torture_context *tctx)
 {
 	int ret, vers = 0, i;
-	const char *sysvol_path = NULL, *gpo_dir = NULL, *gpo_file = NULL, *gpt_file = NULL;
+	const char *sysvol_path = NULL, *gpo_dir = NULL;
+	const char *gpo_file = NULL, *gpt_file = NULL;
 	struct ldb_context *samdb = NULL;
 	struct ldb_result *result;
 	const char *attrs[] = {
@@ -96,7 +101,8 @@ bool torture_gpo_system_access_policies(struct torture_context *tctx)
 	int pwdpropcases[] = { 0, 1, 1 };
 	struct ldb_message *old_message = NULL;
 
-	sysvol_path = lpcfg_path(lpcfg_service(tctx->lp_ctx, "sysvol"), lpcfg_default_service(tctx->lp_ctx), tctx);
+	sysvol_path = lpcfg_path(lpcfg_service(tctx->lp_ctx, "sysvol"),
+				 lpcfg_default_service(tctx->lp_ctx), tctx);
 	torture_assert(tctx, sysvol_path, "Failed to fetch the sysvol path");
 
 	/* Ensure the sysvol path exists */
@@ -106,21 +112,27 @@ bool torture_gpo_system_access_policies(struct torture_context *tctx)
 
 	/* Get the gpo update command */
 	gpo_update_cmd = lpcfg_gpo_update_command(tctx->lp_ctx);
-	torture_assert(tctx, gpo_update_cmd && gpo_update_cmd[0], "Failed to fetch the gpo update command");
+	torture_assert(tctx, gpo_update_cmd && gpo_update_cmd[0],
+		       "Failed to fetch the gpo update command");
 
 	/* Open and read the samba db and store the initial password settings */
-	samdb = samdb_connect(tctx, tctx->ev, tctx->lp_ctx, system_session(tctx->lp_ctx), 0);
+	samdb = samdb_connect(tctx, tctx->ev, tctx->lp_ctx,
+			      system_session(tctx->lp_ctx), 0);
 	torture_assert(tctx, samdb, "Failed to connect to the samdb");
 
-	ret = ldb_search(samdb, tctx, &result, ldb_get_default_basedn(samdb), LDB_SCOPE_BASE, attrs, NULL);
-	torture_assert(tctx, ret == LDB_SUCCESS && result->count == 1, "Searching the samdb failed");
+	ret = ldb_search(samdb, tctx, &result, ldb_get_default_basedn(samdb),
+			 LDB_SCOPE_BASE, attrs, NULL);
+	torture_assert(tctx, ret == LDB_SUCCESS && result->count == 1,
+		       "Searching the samdb failed");
 
 	old_message = result->msgs[0];
 
 	for (i = 0; i < 3; i++) {
 		/* Write out the sysvol */
 		if ( (fp = fopen(gpo_file, "w")) ) {
-			fputs(talloc_asprintf(tctx, GPTTMPL, minpwdcases[i], maxpwdcases[i], pwdlencases[i], pwdpropcases[i]), fp);
+			fputs(talloc_asprintf(tctx, GPTTMPL, minpwdcases[i],
+					      maxpwdcases[i], pwdlencases[i],
+					      pwdpropcases[i]), fp);
 			fclose(fp);
 		}
 
@@ -137,33 +149,41 @@ bool torture_gpo_system_access_policies(struct torture_context *tctx)
 			fclose(fp);
 		}
 		if ( (fp = fopen(gpt_file, "w")) ) {
-			char *data = talloc_asprintf(tctx, "[General]\nVersion=%d\n", ++vers);
+			char *data = talloc_asprintf(tctx, "[General]\nVersion=%d\n",
+						     ++vers);
 			fputs(data, fp);
 			fclose(fp);
 		}
 
 		/* Run the gpo update command */
 		ret = exec_wait(gpo_update_cmd);
-		torture_assert(tctx, ret == 0, "Failed to execute the gpo update command");
+		torture_assert(tctx, ret == 0,
+			       "Failed to execute the gpo update command");
 
-		ret = ldb_search(samdb, tctx, &result, ldb_get_default_basedn(samdb), LDB_SCOPE_BASE, attrs, NULL);
-		torture_assert(tctx, ret == LDB_SUCCESS && result->count == 1, "Searching the samdb failed");
+		ret = ldb_search(samdb, tctx, &result, ldb_get_default_basedn(samdb),
+				 LDB_SCOPE_BASE, attrs, NULL);
+		torture_assert(tctx, ret == LDB_SUCCESS && result->count == 1,
+			       "Searching the samdb failed");
 
 		/* minPwdAge */
 		val = ldb_msg_find_ldb_val(result->msgs[0], attrs[0]);
-		torture_assert(tctx, unix2nttime((char*)val->data) == minpwdcases[i], "The minPwdAge was not applied");
+		torture_assert(tctx, unix2nttime((char*)val->data) == minpwdcases[i],
+			       "The minPwdAge was not applied");
 
 		/* maxPwdAge */
 		val = ldb_msg_find_ldb_val(result->msgs[0], attrs[1]);
-		torture_assert(tctx, unix2nttime((char*)val->data) == maxpwdcases[i], "The maxPwdAge was not applied");
+		torture_assert(tctx, unix2nttime((char*)val->data) == maxpwdcases[i],
+			       "The maxPwdAge was not applied");
 
 		/* minPwdLength */
 		val = ldb_msg_find_ldb_val(result->msgs[0], attrs[2]);
-		torture_assert(tctx, atoi((char*)val->data) == pwdlencases[i], "The minPwdLength was not applied");
+		torture_assert(tctx, atoi((char*)val->data) == pwdlencases[i],
+			       "The minPwdLength was not applied");
 
 		/* pwdProperties */
 		val = ldb_msg_find_ldb_val(result->msgs[0], attrs[3]);
-		torture_assert(tctx, atoi((char*)val->data) == pwdpropcases[i], "The pwdProperties were not applied");
+		torture_assert(tctx, atoi((char*)val->data) == pwdpropcases[i],
+			       "The pwdProperties were not applied");
 	}
 
 	for (i = 0; i < old_message->num_elements; i++) {
