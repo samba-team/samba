@@ -500,7 +500,8 @@ static bool test_start_dcerpc_server(struct torture_context *tctx,
 static struct received_packet *last_packet(struct received_packet *p)
 {
 	struct received_packet *tmp;
-	for (tmp = p; tmp->next; tmp = tmp->next) ;;
+	for (tmp = p; tmp->next; tmp = tmp->next) {
+	}
 	return tmp;
 }
 
