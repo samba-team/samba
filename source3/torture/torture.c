@@ -3214,7 +3214,7 @@ static bool run_attrtest(int dummy)
 		correct = False;
 	}
 
-	if (abs(t - time(NULL)) > 60*60*24*10) {
+	if (labs(t - time(NULL)) > 60*60*24*10) {
 		printf("ERROR: SMBgetatr bug. time is %s",
 		       ctime(&t));
 		t = time(NULL);
@@ -3445,13 +3445,13 @@ static bool run_trans2test(int dummy)
 			printf("modify time=%s", ctime(&m_time));
 			printf("This system appears to have sticky create times\n");
 		}
-		if ((abs(a_time - t) > 60) && (a_time % (60*60) == 0)) {
+		if ((labs(a_time - t) > 60) && (a_time % (60*60) == 0)) {
 			printf("access time=%s", ctime(&a_time));
 			printf("This system appears to set a midnight access time\n");
 			correct = False;
 		}
 
-		if (abs(m_time - t) > 60*60*24*7) {
+		if (labs(m_time - t) > 60*60*24*7) {
 			printf("ERROR: totally incorrect times - maybe word reversed? mtime=%s", ctime(&m_time));
 			correct = False;
 		}
