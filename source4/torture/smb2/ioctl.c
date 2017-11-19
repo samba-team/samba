@@ -2846,7 +2846,7 @@ static bool test_ioctl_compress_set_file_attr(struct torture_context *torture,
 		       "compression attr before set");
 
 	ZERO_STRUCT(set_io);
-	set_io.generic.level = RAW_FILEINFO_BASIC_INFORMATION;
+	set_io.generic.level = RAW_SFILEINFO_BASIC_INFORMATION;
 	set_io.basic_info.in.file.handle = fh;
 	set_io.basic_info.in.create_time = io.basic_info.out.create_time;
 	set_io.basic_info.in.access_time = io.basic_info.out.access_time;
@@ -2885,7 +2885,7 @@ static bool test_ioctl_compress_set_file_attr(struct torture_context *torture,
 		       "compression attr before set");
 
 	ZERO_STRUCT(set_io);
-	set_io.generic.level = RAW_FILEINFO_BASIC_INFORMATION;
+	set_io.generic.level = RAW_SFILEINFO_BASIC_INFORMATION;
 	set_io.basic_info.in.file.handle = dirh;
 	set_io.basic_info.in.create_time = io.basic_info.out.create_time;
 	set_io.basic_info.in.access_time = io.basic_info.out.access_time;

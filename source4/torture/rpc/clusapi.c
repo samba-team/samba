@@ -1152,7 +1152,7 @@ static bool test_ResourceTypeControl_int(struct torture_context *tctx,
 					 struct dcerpc_pipe *p,
 					 struct policy_handle *Cluster,
 					 const char *resource_type,
-					 enum clusapi_ClusterControlCode dwControlCode)
+					 enum clusapi_ResourceTypeControlCode dwControlCode)
 {
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	struct clusapi_ResourceTypeControl r;
