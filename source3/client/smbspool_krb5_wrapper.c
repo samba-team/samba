@@ -37,7 +37,8 @@ enum cups_smb_dbglvl_e {
 	CUPS_SMB_LOG_DEBUG = 0,
 	CUPS_SMB_LOG_ERROR,
 };
-static void cups_smb_debug(enum cups_smb_dbglvl_e lvl, const char *format, ...);
+static void cups_smb_debug(enum cups_smb_dbglvl_e lvl, const char *format, ...)
+		PRINTF_ATTRIBUTE(2, 3);
 
 #define CUPS_SMB_DEBUG(...) cups_smb_debug(CUPS_SMB_LOG_DEBUG, __VA_ARGS__)
 #define CUPS_SMB_ERROR(...) cups_smb_debug(CUPS_SMB_LOG_DEBUG, __VA_ARGS__)
@@ -166,7 +167,7 @@ int main(int argc, char *argv[])
 	CUPS_SMB_DEBUG("Switching to gid=%d", gid);
 	rc = setgid(gid);
 	if (rc != 0) {
-		CUPS_SMB_ERROR("Failed to switch to gid=%u",
+		CUPS_SMB_ERROR("Failed to switch to gid=%u - %s",
 			       gid,
 			       strerror(errno));
 		return CUPS_BACKEND_FAILED;
@@ -175,7 +176,7 @@ int main(int argc, char *argv[])
 	CUPS_SMB_DEBUG("Switching to uid=%u", uid);
 	rc = setuid(uid);
 	if (rc != 0) {
-		CUPS_SMB_ERROR("Failed to switch to uid=%u",
+		CUPS_SMB_ERROR("Failed to switch to uid=%u - %s",
 			       uid,
 			       strerror(errno));
 		return CUPS_BACKEND_FAILED;
