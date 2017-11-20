@@ -1483,24 +1483,23 @@ int32_t ctdb_control_tcp_remove(struct ctdb_context *ctdb, TDB_DATA indata)
 }
 
 
+static void ctdb_send_set_tcp_tickles_for_all(struct ctdb_context *ctdb,
+					      bool force);
+
 /*
   Called when another daemon starts - causes all tickles for all
   public addresses we are serving to be sent to the new node on the
-  next check.  This actually causes the next scheduled call to
-  tdb_update_tcp_tickles() to update all nodes.  This is simple and
+  next check.  This actually causes the tickles to be sent to the
+  other node immediately.  In case there is an error, the periodic
+  timer will send the updates on timer event.  This is simple and
   doesn't require careful error handling.
  */
 int32_t ctdb_control_startup(struct ctdb_context *ctdb, uint32_t pnn)
 {
-	struct ctdb_vnn *vnn;
-
 	DEBUG(DEBUG_INFO, ("Received startup control from node %lu\n",
 			   (unsigned long) pnn));
 
-	for (vnn = ctdb->vnn; vnn != NULL; vnn = vnn->next) {
-		vnn->tcp_update_needed = true;
-	}
-
+	ctdb_send_set_tcp_tickles_for_all(ctdb, true);
 	return 0;
 }
 
