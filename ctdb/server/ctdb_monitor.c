@@ -243,6 +243,12 @@ static void ctdb_startup_callback(struct ctdb_context *ctdb, int status, void *p
 
 	ctdb->monitor->monitoring_mode = CTDB_MONITORING_ENABLED;
 
+	/* tell all other nodes we've just started up */
+	ctdb_daemon_send_control(ctdb, CTDB_BROADCAST_CONNECTED,
+				 0, CTDB_CONTROL_STARTUP, 0,
+				 CTDB_CTRL_FLAG_NOREPLY,
+				 tdb_null, NULL, NULL);
+
 	tevent_add_timer(ctdb->ev, ctdb->monitor->monitor_context,
 			 timeval_current_ofs(ctdb->monitor->next_interval, 0),
 			 ctdb_check_health, ctdb);
