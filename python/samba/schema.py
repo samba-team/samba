@@ -64,8 +64,11 @@ class Schema(object):
 
     # the schema files (and corresponding object version) that we know about
     base_schemas = {
-       "2008_R2" : ("MS-AD_Schema_2K8_R2_Attributes.txt",
-                    "MS-AD_Schema_2K8_R2_Classes.txt",
+       "2008_R2_old" : ("MS-AD_Schema_2K8_R2_Attributes.txt",
+                        "MS-AD_Schema_2K8_R2_Classes.txt",
+                        47),
+       "2008_R2" : ("Attributes_for_AD_DS__Windows_Server_2008_R2.ldf",
+                    "Classes_for_AD_DS__Windows_Server_2008_R2.ldf",
                     47),
        "2012"    : ("AD_DS_Attributes__Windows_Server_2012.ldf",
                     "AD_DS_Classes__Windows_Server_2012.ldf",
