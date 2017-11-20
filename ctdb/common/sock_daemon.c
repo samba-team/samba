@@ -278,6 +278,8 @@ static int sock_socket_init(TALLOC_CTX *mem_ctx, const char *sockpath,
 
 static int sock_socket_destructor(struct sock_socket *sock)
 {
+	TALLOC_FREE(sock->req);
+
 	if (sock->fd != -1) {
 		close(sock->fd);
 		sock->fd = -1;
@@ -330,6 +332,8 @@ static struct tevent_req *sock_socket_start_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 	tevent_req_set_callback(subreq, sock_socket_start_new_client, req);
+
+	sock->req = req;
 
 	return req;
 }
@@ -599,8 +603,6 @@ struct tevent_req *sock_daemon_run_send(TALLOC_CTX *mem_ctx,
 		}
 		tevent_req_set_callback(subreq, sock_daemon_run_socket_fail,
 					req);
-
-		sock->req = subreq;
 	}
 
 	if (pid_watch > 1) {
@@ -693,7 +695,6 @@ static void sock_daemon_run_shutdown(struct tevent_req *req)
 
 	while ((sock = sockd->socket_list) != NULL) {
 		DLIST_REMOVE(sockd->socket_list, sock);
-		TALLOC_FREE(sock->req);
 		TALLOC_FREE(sock);
 	}
 
