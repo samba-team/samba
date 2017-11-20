@@ -473,10 +473,13 @@ def CHECK_STRUCTURE_MEMBER(conf, structname, member,
 def CHECK_CFLAGS(conf, cflags, fragment='int main(void) { return 0; }\n'):
     '''check if the given cflags are accepted by the compiler
     '''
+    check_cflags = TO_LIST(cflags)
+    if 'WERROR_CFLAGS' in conf.env:
+        check_cflags.extend(conf.env['WERROR_CFLAGS'])
     return conf.check(fragment=fragment,
                       execute=0,
                       type='nolink',
-                      ccflags=cflags,
+                      ccflags=check_cflags,
                       msg="Checking compiler accepts %s" % cflags)
 
 @conf
