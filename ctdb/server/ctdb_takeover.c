@@ -1983,6 +1983,40 @@ static int ctdb_send_set_tcp_tickles_for_ip(struct ctdb_context *ctdb,
 	return ret;
 }
 
+static void ctdb_send_set_tcp_tickles_for_all(struct ctdb_context *ctdb,
+					      bool force)
+{
+	struct ctdb_vnn *vnn;
+	int ret;
+
+	for (vnn = ctdb->vnn; vnn != NULL; vnn = vnn->next) {
+		/* we only send out updates for public addresses that
+		   we have taken over
+		 */
+		if (ctdb->pnn != vnn->pnn) {
+			continue;
+		}
+
+		/* We only send out the updates if we need to */
+		if (!force && !vnn->tcp_update_needed) {
+			continue;
+		}
+
+		ret = ctdb_send_set_tcp_tickles_for_ip(ctdb,
+						       &vnn->public_address,
+						       vnn->tcp_array);
+		if (ret != 0) {
+			D_ERR("Failed to send the tickle update for ip %s\n",
+			      ctdb_addr_to_str(&vnn->public_address));
+			vnn->tcp_update_needed = true;
+		} else {
+			D_INFO("Sent tickle update for ip %s\n",
+			       ctdb_addr_to_str(&vnn->public_address));
+			vnn->tcp_update_needed = false;
+		}
+	}
+
+}
 
 /*
   perform tickle updates if required
@@ -1991,34 +2025,10 @@ static void ctdb_update_tcp_tickles(struct tevent_context *ev,
 				    struct tevent_timer *te,
 				    struct timeval t, void *private_data)
 {
-	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);
-	int ret;
-	struct ctdb_vnn *vnn;
+	struct ctdb_context *ctdb = talloc_get_type(
+		private_data, struct ctdb_context);
 
-	for (vnn=ctdb->vnn;vnn;vnn=vnn->next) {
-		/* we only send out updates for public addresses that 
-		   we have taken over
-		 */
-		if (ctdb->pnn != vnn->pnn) {
-			continue;
-		}
-		/* We only send out the updates if we need to */
-		if (!vnn->tcp_update_needed) {
-			continue;
-		}
-		ret = ctdb_send_set_tcp_tickles_for_ip(ctdb,
-						       &vnn->public_address,
-						       vnn->tcp_array);
-		if (ret != 0) {
-			DEBUG(DEBUG_ERR,("Failed to send the tickle update for public address %s\n",
-				ctdb_addr_to_str(&vnn->public_address)));
-		} else {
-			DEBUG(DEBUG_INFO,
-			      ("Sent tickle update for public address %s\n",
-			       ctdb_addr_to_str(&vnn->public_address)));
-			vnn->tcp_update_needed = false;
-		}
-	}
+	ctdb_send_set_tcp_tickles_for_all(ctdb, false);
 
 	tevent_add_timer(ctdb->ev, ctdb->tickle_update_context,
 			 timeval_current_ofs(ctdb->tunable.tickle_update_interval, 0),
