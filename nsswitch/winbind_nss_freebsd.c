@@ -129,8 +129,13 @@ __freebsd_getgroupmembership(void *retval, void *mdata, va_list ap)
 	/* insert primary membership(possibly already there) */
 	gr_addgid(group, groups, maxgrp, groupc);
 	/* Don't limit number of groups, we want to know total size */
-	ret = _nss_winbind_initgroups_dyn(uname, group, &lcount, &lsize,
-		&tmpgroups, 0, &errnop);
+	ret = _nss_winbind_initgroups_dyn(discard_const(uname),
+					  group,
+					  &lcount,
+					  &lsize,
+					  &tmpgroups,
+					  0,
+					  &errnop);
 	if (ret == NSS_STATUS_SUCCESS) {
 		/* lcount potentially can be bigger than maxgrp, so would groupc */
 		for (i = 0; i < lcount; i++)
