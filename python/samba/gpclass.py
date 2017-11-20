@@ -95,10 +95,11 @@ class gp_log:
             self.gpdb = etree.fromstring(db_log)
         else:
             self.gpdb = etree.Element('gp')
-        self.user = self.gpdb.find('user[@name="%s"]' % user)
-        if self.user is None:
-            self.user = etree.SubElement(self.gpdb, 'user')
-            self.user.attrib['name'] = user
+        self.user = user
+        user_obj = self.gpdb.find('user[@name="%s"]' % user)
+        if user_obj is None:
+            user_obj = etree.SubElement(self.gpdb, 'user')
+            user_obj.attrib['name'] = user
 
     def state(self, value):
         ''' Policy application state
@@ -113,7 +114,8 @@ class gp_log:
         '''
         # If we're enforcing, but we've unapplied, apply instead
         if value == GPOSTATE.ENFORCE:
-            apply_log = self.user.find('applylog')
+            user_obj = self.gpdb.find('user[@name="%s"]' % self.user)
+            apply_log = user_obj.find('applylog')
             if apply_log is None or len(apply_log) == 0:
                 self._state = GPOSTATE.APPLY
             else:
@@ -126,14 +128,16 @@ class gp_log:
         param guid          - guid value of the GPO from which we're applying
                               policy
         '''
-        self.guid = self.user.find('guid[@value="%s"]' % guid)
-        if self.guid is None:
-            self.guid = etree.SubElement(self.user, 'guid')
-            self.guid.attrib['value'] = guid
+        self.guid = guid
+        user_obj = self.gpdb.find('user[@name="%s"]' % self.user)
+        obj = user_obj.find('guid[@value="%s"]' % guid)
+        if obj is None:
+            obj = etree.SubElement(user_obj, 'guid')
+            obj.attrib['value'] = guid
         if self._state == GPOSTATE.APPLY:
-            apply_log = self.user.find('applylog')
+            apply_log = user_obj.find('applylog')
             if apply_log is None:
-                apply_log = etree.SubElement(self.user, 'applylog')
+                apply_log = etree.SubElement(user_obj, 'applylog')
             item = etree.SubElement(apply_log, 'guid')
             item.attrib['count'] = '%d' % (len(apply_log)-1)
             item.attrib['value'] = guid
@@ -145,14 +149,15 @@ class gp_log:
         Removes the GPO guid last added to the list, which is the most recently
         applied GPO.
         '''
-        apply_log = self.user.find('applylog')
+        user_obj = self.gpdb.find('user[@name="%s"]' % self.user)
+        apply_log = user_obj.find('applylog')
         if apply_log is not None:
             ret = apply_log.find('guid[@count="%d"]' % (len(apply_log)-1))
             if ret is not None:
                 apply_log.remove(ret)
                 return ret.attrib['value']
-            if len(apply_log) == 0 and apply_log in self.user:
-                self.user.remove(apply_log)
+            if len(apply_log) == 0 and apply_log in user_obj:
+                user_obj.remove(apply_log)
         return None
 
     def store(self, gp_ext_name, attribute, old_val):
@@ -164,10 +169,12 @@ class gp_log:
         '''
         if self._state == GPOSTATE.UNAPPLY or self._state == GPOSTATE.ENFORCE:
             return None
-        assert self.guid is not None, "gpo guid was not set"
-        ext = self.guid.find('gp_ext[@name="%s"]' % gp_ext_name)
+        user_obj = self.gpdb.find('user[@name="%s"]' % self.user)
+        guid_obj = user_obj.find('guid[@value="%s"]' % self.guid)
+        assert guid_obj is not None, "gpo guid was not set"
+        ext = guid_obj.find('gp_ext[@name="%s"]' % gp_ext_name)
         if ext is None:
-            ext = etree.SubElement(self.guid, 'gp_ext')
+            ext = etree.SubElement(guid_obj, 'gp_ext')
             ext.attrib['name'] = gp_ext_name
         attr = ext.find('attribute[@name="%s"]' % attribute)
         if attr is None:
@@ -182,8 +189,10 @@ class gp_log:
         return              - The value of the attribute prior to policy
                               application
         '''
-        assert self.guid is not None, "gpo guid was not set"
-        ext = self.guid.find('gp_ext[@name="%s"]' % gp_ext_name)
+        user_obj = self.gpdb.find('user[@name="%s"]' % self.user)
+        guid_obj = user_obj.find('guid[@value="%s"]' % self.guid)
+        assert guid_obj is not None, "gpo guid was not set"
+        ext = guid_obj.find('gp_ext[@name="%s"]' % gp_ext_name)
         if ext is not None:
             attr = ext.find('attribute[@name="%s"]' % attribute)
             if attr is not None:
@@ -198,12 +207,14 @@ class gp_log:
         return              - list of (attr, value, apply_func) tuples for
                               unapplying policy
         '''
-        assert self.guid is not None, "gpo guid was not set"
+        user_obj = self.gpdb.find('user[@name="%s"]' % self.user)
+        guid_obj = user_obj.find('guid[@value="%s"]' % self.guid)
+        assert guid_obj is not None, "gpo guid was not set"
         ret = []
         data_maps = {}
         for gp_ext in gp_extensions:
             data_maps.update(gp_ext.apply_map())
-        exts = self.guid.findall('gp_ext')
+        exts = guid_obj.findall('gp_ext')
         if exts is not None:
             for ext in exts:
                 ext_map = {val[0]: val[1] for (key, val) in \
@@ -220,21 +231,19 @@ class gp_log:
                               attribute
         param attribute     - attribute to remove
         '''
-        assert self.guid is not None, "gpo guid was not set"
-        ext = self.guid.find('gp_ext[@name="%s"]' % gp_ext_name)
+        user_obj = self.gpdb.find('user[@name="%s"]' % self.user)
+        guid_obj = user_obj.find('guid[@value="%s"]' % self.guid)
+        assert guid_obj is not None, "gpo guid was not set"
+        ext = guid_obj.find('gp_ext[@name="%s"]' % gp_ext_name)
         if ext is not None:
             attr = ext.find('attribute[@name="%s"]' % attribute)
             if attr is not None:
                 ext.remove(attr)
                 if len(ext) == 0:
-                    self.guid.remove(ext)
+                    guid_obj.remove(ext)
 
     def commit(self):
         ''' Write gp_log changes to disk '''
-        if len(self.guid) == 0 and self.guid in self.user:
-            self.user.remove(self.guid)
-        if len(self.user) == 0 and self.user in self.gpdb:
-            self.gpdb.remove(self.user)
         self.gpostore.store(self.username, etree.tostring(self.gpdb, 'utf-8'))
 
 class GPOStorage:
