@@ -87,6 +87,15 @@ struct ldb_module;
 /* force single value checking on this attribute */
 #define LDB_FLAG_INTERNAL_FORCE_SINGLE_VALUE_CHECK 0x80
 
+/*
+ * ensure that this value is unique on an index
+ * (despite the index not otherwise being configured as UNIQUE).
+ * For example, all words starting with 'a' must be unique, but duplicates of
+ * words starting with b are allowed.  This is specifically for Samba's
+ * objectSid index which is unique in the primary domain only.
+ */
+#define LDB_FLAG_INTERNAL_FORCE_UNIQUE_INDEX 0x100
+
 /* an extended match rule that always fails to match */
 #define SAMBA_LDAP_MATCH_ALWAYS_FALSE "1.3.6.1.4.1.7165.4.5.1"
 

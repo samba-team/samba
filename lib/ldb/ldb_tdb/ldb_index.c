@@ -1761,7 +1761,8 @@ static int ltdb_index_add1(struct ldb_module *module,
 	 */
 	if (list->count > 0 &&
 	    ((a != NULL
-	      && (a->flags & LDB_ATTR_FLAG_UNIQUE_INDEX)) ||
+	      && (a->flags & LDB_ATTR_FLAG_UNIQUE_INDEX ||
+		 (el->flags & LDB_FLAG_INTERNAL_FORCE_UNIQUE_INDEX))) ||
 	     ldb_attr_cmp(el->name, LTDB_IDXDN) == 0)) {
 		/*
 		 * We do not want to print info about a possibly
