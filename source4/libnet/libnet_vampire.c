@@ -331,7 +331,7 @@ static WERROR libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s,
 		provision_schema = dsdb_get_schema(s->ldb, s);
 	} else {
 		provision_schema = dsdb_get_schema(schema_ldb, s);
-		ret = dsdb_reference_schema(s->ldb, provision_schema, false);
+		ret = dsdb_reference_schema(s->ldb, provision_schema, SCHEMA_MEMORY_ONLY);
 		if (ret != LDB_SUCCESS) {
 			DEBUG(0,("Failed to attach schema from local provision using remote prefixMap."));
 			return WERR_INTERNAL_ERROR;
@@ -368,7 +368,7 @@ static WERROR libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s,
 	 * attach the schema we just brought over DRS to the ldb,
 	 * so we can use it in dsdb_convert_object_ex below
 	 */
-	ret = dsdb_set_schema(s->ldb, s->self_made_schema, true);
+	ret = dsdb_set_schema(s->ldb, s->self_made_schema, SCHEMA_WRITE);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0,("Failed to attach working schema from DRS.\n"));
 		return WERR_INTERNAL_ERROR;

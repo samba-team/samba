@@ -919,7 +919,7 @@ static PyObject *py_dsdb_set_schema_from_ldb(PyObject *self, PyObject *args)
 	struct ldb_context *from_ldb;
 	struct dsdb_schema *schema;
 	int ret;
-	char write_indices_and_attributes = true;
+	char write_indices_and_attributes = SCHEMA_WRITE;
 	if (!PyArg_ParseTuple(args, "OO|b",
 			      &py_ldb, &py_from_ldb, &write_indices_and_attributes))
 		return NULL;

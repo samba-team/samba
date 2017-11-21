@@ -78,7 +78,7 @@ static bool torture_syntax_add_OR_Name(struct torture_context *tctx,
 	ldb_ldif_read_free(ldb, ldif);
 	torture_assert_werr_ok(tctx, werr, "dsdb_set_attribute_from_ldb() failed!");
 
-	ldb_res = dsdb_set_schema(ldb, schema, true);
+	ldb_res = dsdb_set_schema(ldb, schema, SCHEMA_WRITE);
 	torture_assert_int_equal(tctx, ldb_res, LDB_SUCCESS, "dsdb_set_schema() failed");
 
 	return true;

@@ -158,7 +158,7 @@ bool drs_util_dsdb_schema_load_ldb(struct torture_context *tctx,
 
 	talloc_free(res);
 
-	ret = dsdb_set_schema(ldb, ldap_schema, true);
+	ret = dsdb_set_schema(ldb, ldap_schema, SCHEMA_WRITE);
 	if (ret != LDB_SUCCESS) {
 		torture_fail(tctx,
 			     talloc_asprintf(tctx, "dsdb_set_schema() failed: %s", ldb_strerror(ret)));

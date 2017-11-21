@@ -192,6 +192,12 @@ struct dsdb_class {
 	} tmp;
 };
 
+enum schema_set_enum {
+	SCHEMA_MEMORY_ONLY = 0,
+	SCHEMA_WRITE = 1,
+	SCHEMA_COMPARE = 2,
+};
+
 /**
  * data stored in schemaInfo attribute
  */

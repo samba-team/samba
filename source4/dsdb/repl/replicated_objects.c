@@ -867,7 +867,7 @@ WERROR dsdb_replicated_objects_commit(struct ldb_context *ldb,
 		cur_schema = dsdb_get_schema(ldb, tmp_ctx);
 		used_global_schema = dsdb_uses_global_schema(ldb);
 
-		ret = dsdb_reference_schema(ldb, working_schema, false);
+		ret = dsdb_reference_schema(ldb, working_schema, SCHEMA_MEMORY_ONLY);
 		if (ret != LDB_SUCCESS) {
 			DEBUG(0,(__location__ "Failed to reference working schema - %s\n",
 				 ldb_strerror(ret)));
@@ -884,7 +884,7 @@ WERROR dsdb_replicated_objects_commit(struct ldb_context *ldb,
 		if (used_global_schema) { 
 			dsdb_set_global_schema(ldb);
 		} else if (cur_schema) {
-			dsdb_reference_schema(ldb, cur_schema, false);
+			dsdb_reference_schema(ldb, cur_schema, SCHEMA_MEMORY_ONLY);
 		}
 
 		if (W_ERROR_EQUAL(objects->error, WERR_DS_DRA_RECYCLED_TARGET)) {
@@ -917,7 +917,7 @@ WERROR dsdb_replicated_objects_commit(struct ldb_context *ldb,
 			if (used_global_schema) { 
 				dsdb_set_global_schema(ldb);
 			} else if (cur_schema ) {
-				dsdb_reference_schema(ldb, cur_schema, false);
+				dsdb_reference_schema(ldb, cur_schema, SCHEMA_MEMORY_ONLY);
 			}
 			DEBUG(0,("Failed to save updated prefixMap: %s\n",
 				 win_errstr(werr)));
@@ -932,7 +932,7 @@ WERROR dsdb_replicated_objects_commit(struct ldb_context *ldb,
 		if (used_global_schema) { 
 			dsdb_set_global_schema(ldb);
 		} else if (cur_schema ) {
-			dsdb_reference_schema(ldb, cur_schema, false);
+			dsdb_reference_schema(ldb, cur_schema, SCHEMA_MEMORY_ONLY);
 		}
 		DEBUG(0,(__location__ " Failed to prepare commit of transaction: %s\n",
 			 ldb_errstring(ldb)));
@@ -946,7 +946,7 @@ WERROR dsdb_replicated_objects_commit(struct ldb_context *ldb,
 		if (used_global_schema) { 
 			dsdb_set_global_schema(ldb);
 		} else if (cur_schema ) {
-			dsdb_reference_schema(ldb, cur_schema, false);
+			dsdb_reference_schema(ldb, cur_schema, SCHEMA_MEMORY_ONLY);
 		}
 		DEBUG(0,(__location__ " Failed to load partition uSN\n"));
 		ldb_transaction_cancel(ldb);
@@ -960,7 +960,7 @@ WERROR dsdb_replicated_objects_commit(struct ldb_context *ldb,
 		if (used_global_schema) { 
 			dsdb_set_global_schema(ldb);
 		} else if (cur_schema ) {
-			dsdb_reference_schema(ldb, cur_schema, false);
+			dsdb_reference_schema(ldb, cur_schema, SCHEMA_MEMORY_ONLY);
 		}
 		DEBUG(0,(__location__ " Failed to commit transaction\n"));
 		TALLOC_FREE(tmp_ctx);
@@ -1005,7 +1005,7 @@ WERROR dsdb_replicated_objects_commit(struct ldb_context *ldb,
 				new_schema != NULL ?
 				new_schema->metadata_usn : 0,
 				working_schema, working_schema->metadata_usn);
-			dsdb_reference_schema(ldb, cur_schema, false);
+			dsdb_reference_schema(ldb, cur_schema, SCHEMA_MEMORY_ONLY);
 			if (used_global_schema) {
 				dsdb_set_global_schema(ldb);
 			}

@@ -58,7 +58,7 @@ const struct ldb_schema_attribute *dsdb_attribute_handler_override(struct ldb_co
  */
 int dsdb_schema_set_indices_and_attributes(struct ldb_context *ldb,
 					   struct dsdb_schema *schema,
-					   bool write_indices_and_attributes)
+					   enum schema_set_enum mode)
 {
 	int ret = LDB_SUCCESS;
 	struct ldb_result *res;
@@ -80,7 +80,7 @@ int dsdb_schema_set_indices_and_attributes(struct ldb_context *ldb,
 		ldb_schema_set_override_GUID_index(ldb, "objectGUID", "GUID");
 	}
 
-	if (!write_indices_and_attributes) {
+	if (mode == SCHEMA_MEMORY_ONLY) {
 		return ret;
 	}
 
@@ -178,9 +178,17 @@ int dsdb_schema_set_indices_and_attributes(struct ldb_context *ldb,
 	ret = ldb_search(ldb, mem_ctx, &res, msg->dn, LDB_SCOPE_BASE, NULL,
 			 NULL);
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+		if (mode == SCHEMA_COMPARE) {
+			/* We are probably not in a transaction */
+			goto wrong_mode;
+		}
 		ret = ldb_add(ldb, msg);
 	} else if (ret != LDB_SUCCESS) {
 	} else if (res->count != 1) {
+		if (mode == SCHEMA_COMPARE) {
+			/* We are probably not in a transaction */
+			goto wrong_mode;
+		}
 		ret = ldb_add(ldb, msg);
 	} else {
 		ret = LDB_SUCCESS;
@@ -198,6 +206,10 @@ int dsdb_schema_set_indices_and_attributes(struct ldb_context *ldb,
 			 * are under the read lock and we wish to do a
 			 * delete of any removed/renamed attributes
 			 */
+			if (mode == SCHEMA_COMPARE) {
+				/* We are probably not in a transaction */
+				goto wrong_mode;
+			}
 			ret = dsdb_modify(ldb, mod_msg, 0);
 		}
 		talloc_free(mod_msg);
@@ -219,9 +231,17 @@ int dsdb_schema_set_indices_and_attributes(struct ldb_context *ldb,
 	ret = ldb_search(ldb, mem_ctx, &res_idx, msg_idx->dn, LDB_SCOPE_BASE,
 			 NULL, NULL);
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+		if (mode == SCHEMA_COMPARE) {
+			/* We are probably not in a transaction */
+			goto wrong_mode;
+		}
 		ret = ldb_add(ldb, msg_idx);
 	} else if (ret != LDB_SUCCESS) {
 	} else if (res_idx->count != 1) {
+		if (mode == SCHEMA_COMPARE) {
+			/* We are probably not in a transaction */
+			goto wrong_mode;
+		}
 		ret = ldb_add(ldb, msg_idx);
 	} else {
 		ret = LDB_SUCCESS;
@@ -260,6 +280,10 @@ int dsdb_schema_set_indices_and_attributes(struct ldb_context *ldb,
 			 * are under the read lock and we wish to do a
 			 * delete of any removed/renamed attributes
 			 */
+			if (mode == SCHEMA_COMPARE) {
+				/* We are probably not in a transaction */
+				goto wrong_mode;
+			}
 			ret = dsdb_modify(ldb, mod_msg, 0);
 		}
 		talloc_free(mod_msg);
@@ -280,6 +304,10 @@ int dsdb_schema_set_indices_and_attributes(struct ldb_context *ldb,
 op_error:
 	talloc_free(mem_ctx);
 	return ldb_operr(ldb);
+
+wrong_mode:
+	talloc_free(mem_ctx);
+	return LDB_ERR_BUSY;
 }
 
 
@@ -531,7 +559,7 @@ int dsdb_set_schema_refresh_function(struct ldb_context *ldb,
  */
 int dsdb_set_schema(struct ldb_context *ldb,
 		    struct dsdb_schema *schema,
-		    bool write_indices_and_attributes)
+		    enum schema_set_enum write_indices_and_attributes)
 {
 	struct dsdb_schema *old_schema;
 	int ret;
@@ -586,7 +614,7 @@ static struct dsdb_schema *global_schema;
  * disk.
  */
 int dsdb_reference_schema(struct ldb_context *ldb, struct dsdb_schema *schema,
-			  bool write_indices_and_attributes)
+			  enum schema_set_enum write_indices_and_attributes)
 {
 	int ret;
 	struct dsdb_schema *old_schema;
@@ -657,7 +685,8 @@ int dsdb_set_global_schema(struct ldb_context *ldb)
 	talloc_unlink(ldb, old_schema);
 
 	/* Set the new attributes based on the new schema */
-	ret = dsdb_schema_set_indices_and_attributes(ldb, global_schema, false /* Don't write indices and attributes, it's expensive */);
+	/* Don't write indices and attributes, it's expensive */
+	ret = dsdb_schema_set_indices_and_attributes(ldb, global_schema, SCHEMA_MEMORY_ONLY);
 	if (ret == LDB_SUCCESS) {
 		/* Keep a reference to this schema, just in case the original copy is replaced */
 		if (talloc_reference(ldb, global_schema) == NULL) {
@@ -948,7 +977,7 @@ WERROR dsdb_set_schema_from_ldif(struct ldb_context *ldb,
 		}
 	}
 
-	ret = dsdb_set_schema(ldb, schema, true);
+	ret = dsdb_set_schema(ldb, schema, SCHEMA_WRITE);
 	if (ret != LDB_SUCCESS) {
 		status = WERR_FOOBAR;
 		DEBUG(0,("ERROR: dsdb_set_schema() failed with %s / %s\n",
