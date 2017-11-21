@@ -175,12 +175,16 @@ static int py_ads_init(ADS *self, PyObject *args, PyObject *kwds)
 	}
 
 	if (lp_obj) {
+		bool ok;
 		lp_ctx = pytalloc_get_type(lp_obj, struct loadparm_context);
 		if (lp_ctx == NULL) {
 			return -1;
 		}
+		ok = lp_load_initial_only(lp_ctx->szConfigFile);
+		if (!ok) {
+			return -1;
+		}
 	}
-	if (!lp_load_initial_only(lp_ctx->szConfigFile)) return -1;
 
 	if (self->cli_creds) {
 		realm = cli_credentials_get_realm(self->cli_creds);
