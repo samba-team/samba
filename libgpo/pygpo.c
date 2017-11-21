@@ -166,7 +166,7 @@ static int py_ads_init(ADS *self, PyObject *args, PyObject *kwds)
 		if (!py_check_dcerpc_type(py_creds, "samba.credentials",
 					  "Credentials")) {
 			PyErr_Format(PyExc_TypeError,
-				     "Expected samba.credentaials "
+				     "Expected samba.credentials "
 				     "for credentials argument");
 			return -1;
 		}
