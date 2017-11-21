@@ -54,11 +54,14 @@ static PyGetSetDef GPO_setters[] = {
 		NULL},
 	{discard_const_p(char, "file_sys_path"), (getter)GPO_get_file_sys_path,
 		NULL, NULL, NULL},
-	{discard_const_p(char, "display_name"), (getter)GPO_get_display_name, NULL,
-		NULL, NULL},
-	{discard_const_p(char, "name"), (getter)GPO_get_name, NULL, NULL, NULL},
-	{discard_const_p(char, "link"), (getter)GPO_get_link, NULL, NULL, NULL},
-	{discard_const_p(char, "user_extensions"), (getter)GPO_get_user_extensions,
+	{discard_const_p(char, "display_name"), (getter)GPO_get_display_name,
+		NULL, NULL, NULL},
+	{discard_const_p(char, "name"), (getter)GPO_get_name, NULL, NULL,
+		NULL},
+	{discard_const_p(char, "link"), (getter)GPO_get_link, NULL, NULL,
+		NULL},
+	{discard_const_p(char, "user_extensions"),
+		(getter)GPO_get_user_extensions,
 		NULL, NULL, NULL},
 	{discard_const_p(char, "machine_extensions"),
 		(getter)GPO_get_machine_extensions, NULL, NULL, NULL},
@@ -81,7 +84,8 @@ static PyObject *py_gpo_get_unix_path(PyObject *self, PyObject *args,
 					 discard_const_p(char *, kwlist),
 					 &cache_dir)) {
 		PyErr_SetString(PyExc_SystemError,
-				"Failed to parse arguments to gpo_get_unix_path()");
+				"Failed to parse arguments to "
+				"gpo_get_unix_path()");
 		goto out;
 	}
 
@@ -113,7 +117,8 @@ out:
 }
 
 static PyMethodDef GPO_methods[] = {
-	{"get_unix_path", (PyCFunction)py_gpo_get_unix_path, METH_KEYWORDS, NULL },
+	{"get_unix_path", (PyCFunction)py_gpo_get_unix_path, METH_KEYWORDS,
+		NULL },
 	{NULL}
 };
 
@@ -155,8 +160,9 @@ static int py_ads_init(ADS *self, PyObject *args, PyObject *kwds)
 	PyObject *lp_obj = NULL;
 	struct loadparm_context *lp_ctx = NULL;
 
-	static const char *kwlist[] = {"ldap_server", "loadparm_context",
-		"credentials", NULL};
+	static const char *kwlist[] = {
+		"ldap_server", "loadparm_context", "credentials", NULL
+	};
 	if (!PyArg_ParseTupleAndKeywords(args, kwds, "sO|O",
 					 discard_const_p(char *, kwlist),
 					 &ldap_server, &lp_obj, &py_creds)) {
@@ -222,7 +228,8 @@ static PyObject* py_ads_connect(ADS *self)
 
 		status = ads_connect_user_creds(self->ads_ptr);
 		if (!ADS_ERR_OK(status)) {
-			PyErr_SetString(PyExc_SystemError, "ads_connect() failed");
+			PyErr_SetString(PyExc_SystemError,
+					"ads_connect() failed");
 			TALLOC_FREE(frame);
 			Py_RETURN_FALSE;
 		}
@@ -250,12 +257,14 @@ static PyObject* py_ads_connect(ADS *self)
 							NULL, NULL);
 		if (passwd == NULL) {
 			PyErr_SetString(PyExc_SystemError,
-					"Failed to fetch the machine account password");
+					"Failed to fetch the machine account "
+					"password");
 			TALLOC_FREE(frame);
 			Py_RETURN_FALSE;
 		}
 		self->ads_ptr->auth.password = smb_xstrdup(passwd);
-		self->ads_ptr->auth.realm = smb_xstrdup(self->ads_ptr->server.realm);
+		self->ads_ptr->auth.realm =
+			smb_xstrdup(self->ads_ptr->server.realm);
 		if (!strupper_m(self->ads_ptr->auth.realm)) {
 			PyErr_SetString(PyExc_SystemError, "Failed to strdup");
 			TALLOC_FREE(frame);
@@ -265,7 +274,8 @@ static PyObject* py_ads_connect(ADS *self)
 
 		status = ads_connect(self->ads_ptr);
 		if (!ADS_ERR_OK(status)) {
-			PyErr_SetString(PyExc_SystemError, "ads_connect() failed");
+			PyErr_SetString(PyExc_SystemError,
+					"ads_connect() failed");
 			TALLOC_FREE(frame);
 			SAFE_FREE(passwd);
 			Py_RETURN_FALSE;
@@ -320,14 +330,15 @@ static ADS_STATUS find_samaccount(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
 	char *dn = NULL;
 	uint32_t uac = 0;
 
-	filter = talloc_asprintf(mem_ctx, "(sAMAccountName=%s)", samaccountname);
+	filter = talloc_asprintf(mem_ctx, "(sAMAccountName=%s)",
+				 samaccountname);
 	if (filter == NULL) {
 		status = ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 		goto out;
 	}
 
-	status = ads_do_search_all(ads, ads->config.bind_path, LDAP_SCOPE_SUBTREE,
-				   filter, attrs, &res);
+	status = ads_do_search_all(ads, ads->config.bind_path,
+				   LDAP_SCOPE_SUBTREE, filter, attrs, &res);
 
 	if (!ADS_ERR_OK(status)) {
 		goto out;
@@ -387,22 +398,27 @@ static PyObject *py_ads_get_gpo_list(ADS *self, PyObject *args, PyObject *kwds)
 					 discard_const_p(char *, kwlist),
 					 &samaccountname)) {
 		PyErr_SetString(PyExc_SystemError,
-				"Failed to parse arguments to py_ads_get_gpo_list()");
+				"Failed to parse arguments to "
+				"py_ads_get_gpo_list()");
 		goto out;
 	}
 
 	frame = talloc_stackframe();
 
-	status = find_samaccount(self->ads_ptr, frame, samaccountname, &uac, &dn);
+	status = find_samaccount(self->ads_ptr, frame,
+				 samaccountname, &uac, &dn);
 	if (!ADS_ERR_OK(status)) {
 		TALLOC_FREE(frame);
-		PyErr_SetString(PyExc_SystemError, "Failed to find samAccountName");
+		PyErr_SetString(PyExc_SystemError,
+				"Failed to find samAccountName");
 		goto out;
 	}
 
-	if (uac & UF_WORKSTATION_TRUST_ACCOUNT || uac & UF_SERVER_TRUST_ACCOUNT) {
+	if (uac & UF_WORKSTATION_TRUST_ACCOUNT ||
+	    uac & UF_SERVER_TRUST_ACCOUNT) {
 		flags |= GPO_LIST_FLAG_MACHINE;
-		status = gp_get_machine_token(self->ads_ptr, frame, dn, &token);
+		status = gp_get_machine_token(self->ads_ptr, frame, dn,
+					      &token);
 	} else {
 		status = ads_get_sid_token(self->ads_ptr, frame, dn, &token);
 	}
@@ -455,7 +471,8 @@ out:
 static PyMethodDef ADS_methods[] = {
 	{ "connect", (PyCFunction)py_ads_connect, METH_NOARGS,
 		"Connect to the LDAP server" },
-	{ "get_gpo_list", (PyCFunction)py_ads_get_gpo_list, METH_KEYWORDS, NULL },
+	{ "get_gpo_list", (PyCFunction)py_ads_get_gpo_list, METH_KEYWORDS,
+		NULL },
 	{ NULL }
 };
 
@@ -471,7 +488,8 @@ static PyTypeObject ads_ADSType = {
 };
 
 static PyMethodDef py_gpo_methods[] = {
-	{"gpo_get_sysvol_gpt_version", (PyCFunction) py_gpo_get_sysvol_gpt_version,
+	{"gpo_get_sysvol_gpt_version",
+		(PyCFunction)py_gpo_get_sysvol_gpt_version,
 		METH_VARARGS, NULL},
 	{NULL}
 };
