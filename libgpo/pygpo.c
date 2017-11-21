@@ -248,6 +248,7 @@ static PyObject* py_ads_connect(ADS *self)
 		if (!strupper_m(self->ads_ptr->auth.realm)) {
 			PyErr_SetString(PyExc_SystemError, "Failed to strdup");
 			TALLOC_FREE(frame);
+			SAFE_FREE(passwd);
 			Py_RETURN_FALSE;
 		}
 
@@ -255,6 +256,7 @@ static PyObject* py_ads_connect(ADS *self)
 		if (!ADS_ERR_OK(status)) {
 			PyErr_SetString(PyExc_SystemError, "ads_connect() failed");
 			TALLOC_FREE(frame);
+			SAFE_FREE(passwd);
 			Py_RETURN_FALSE;
 		}
 	}
