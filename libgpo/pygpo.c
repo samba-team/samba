@@ -159,8 +159,9 @@ static int py_ads_init(ADS *self, PyObject *args, PyObject *kwds)
 		"credentials", NULL};
 	if (!PyArg_ParseTupleAndKeywords(args, kwds, "sO|O",
 					 discard_const_p(char *, kwlist),
-					 &ldap_server, &lp_obj, &py_creds))
+					 &ldap_server, &lp_obj, &py_creds)) {
 		return -1;
+	}
 
 	if (py_creds) {
 		if (!py_check_dcerpc_type(py_creds, "samba.credentials",
@@ -197,8 +198,11 @@ static int py_ads_init(ADS *self, PyObject *args, PyObject *kwds)
 	if (ldap_server == NULL) {
 		return -1;
 	}
-	if ( !(self->ads_ptr = ads_init(realm, workgroup, ldap_server)) )
+
+	self->ads_ptr = ads_init(realm, workgroup, ldap_server);
+	if (self->ads_ptr == NULL) {
 		return -1;
+	}
 
 	return 0;
 }
@@ -223,23 +227,28 @@ static PyObject* py_ads_connect(ADS *self)
 			Py_RETURN_FALSE;
 		}
 	} else {
-		char *passwd;
-
-		if (asprintf(&(self->ads_ptr->auth.user_name), "%s$",
-			     lp_netbios_name()) == -1) {
-			PyErr_SetString(PyExc_SystemError, "Failed to asprintf");
+		char *passwd = NULL;
+		int ret = asprintf(&(self->ads_ptr->auth.user_name), "%s$",
+				   lp_netbios_name());
+		if (ret == -1) {
+			PyErr_SetString(PyExc_SystemError,
+					"Failed to asprintf");
 			TALLOC_FREE(frame);
 			Py_RETURN_FALSE;
-		} else
+		} else {
 			self->ads_ptr->auth.flags |= ADS_AUTH_USER_CREDS;
+		}
+
 		if (!secrets_init()) {
-			PyErr_SetString(PyExc_SystemError, "secrets_init() failed");
+			PyErr_SetString(PyExc_SystemError,
+					"secrets_init() failed");
 			TALLOC_FREE(frame);
 			Py_RETURN_FALSE;
 		}
-		if (!(passwd =
-		      secrets_fetch_machine_password(self->ads_ptr->server.workgroup,
-						     NULL, NULL))) {
+
+		passwd = secrets_fetch_machine_password(self->ads_ptr->server.workgroup,
+							NULL, NULL);
+		if (passwd == NULL) {
 			PyErr_SetString(PyExc_SystemError,
 					"Failed to fetch the machine account password");
 			TALLOC_FREE(frame);
@@ -346,7 +355,7 @@ static ADS_STATUS find_samaccount(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
 
 	if (dn_ret) {
 		*dn_ret = talloc_strdup(mem_ctx, dn);
-		if (!*dn_ret) {
+		if (*dn_ret == NULL) {
 			status = ADS_ERROR(LDAP_NO_MEMORY);
 			goto out;
 		}
@@ -473,18 +482,25 @@ void initgpo(void)
 	PyObject *m;
 
 	debug_setup_talloc_log();
+
 	/* Instantiate the types */
 	m = Py_InitModule3("gpo", py_gpo_methods, "libgpo python bindings");
-	if (m == NULL) return;
+	if (m == NULL) {
+		return;
+	}
+
 	PyModule_AddObject(m, "version",
 			   PyString_FromString(SAMBA_VERSION_STRING));
 
-	if (PyType_Ready(&ads_ADSType) < 0)
+	if (PyType_Ready(&ads_ADSType) < 0) {
 		return;
+	}
+
 	PyModule_AddObject(m, "ADS_STRUCT", (PyObject *)&ads_ADSType);
 
-	if (pytalloc_BaseObject_PyType_Ready(&GPOType) < 0)
+	if (pytalloc_BaseObject_PyType_Ready(&GPOType) < 0) {
 		return;
+	}
 
 	Py_INCREF((PyObject *)(void *)&GPOType);
 	PyModule_AddObject(m, "GROUP_POLICY_OBJECT",
