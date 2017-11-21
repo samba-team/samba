@@ -50,6 +50,7 @@ const struct ldb_schema_attribute *dsdb_attribute_handler_override(struct ldb_co
 	}
 	return a->ldb_schema_attribute;
 }
+
 /*
  * Set the attribute handlers onto the LDB, and potentially write the
  * @INDEXLIST, @IDXONE and @ATTRIBUTES records.  The @ATTRIBUTES records
