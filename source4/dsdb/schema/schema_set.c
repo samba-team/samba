@@ -892,6 +892,9 @@ WERROR dsdb_schema_set_el_from_ldb_msg(struct ldb_context *ldb,
  * Rather than read a schema from the LDB itself, read it from an ldif
  * file.  This allows schema to be loaded and used while adding the
  * schema itself to the directory.
+ *
+ * Should be called with a transaction (or failing that, have no concurrent
+ * access while called).
  */
 
 WERROR dsdb_set_schema_from_ldif(struct ldb_context *ldb,
@@ -977,6 +980,13 @@ WERROR dsdb_set_schema_from_ldif(struct ldb_context *ldb,
 		}
 	}
 
+	/*
+	 * TODO We may need a transaction here, otherwise this causes races.
+	 *
+	 * To do so may require an ldb_in_transaction function. In the
+	 * meantime, assume that this is always called with a transaction or in
+	 * isolation.
+	 */
 	ret = dsdb_set_schema(ldb, schema, SCHEMA_WRITE);
 	if (ret != LDB_SUCCESS) {
 		status = WERR_FOOBAR;
