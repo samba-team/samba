@@ -19,19 +19,12 @@ import sys
 import os
 import tdb
 sys.path.insert(0, "bin/python")
-import samba.gpo as gpo
-import optparse
-import ldb
-from samba.auth import system_session
-import samba.getopt as options
-from samba.samdb import SamDB
-from samba.netcmd import gpo as gpo_user
-import codecs
 from samba import NTSTATUSError
 from ConfigParser import ConfigParser
 from StringIO import StringIO
 from abc import ABCMeta, abstractmethod
 import xml.etree.ElementTree as etree
+import re
 
 try:
     from enum import Enum

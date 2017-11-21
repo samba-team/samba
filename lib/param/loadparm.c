@@ -2734,6 +2734,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lpcfg_do_global_parameter(lp_ctx, "winbindd socket directory", dyn_WINBINDD_SOCKET_DIR);
 	lpcfg_do_global_parameter(lp_ctx, "ntp signd socket directory", dyn_NTP_SIGND_SOCKET_DIR);
 	lpcfg_do_global_parameter_var(lp_ctx, "gpo update command", "%s/samba_gpoupdate", dyn_SCRIPTSBINDIR);
+	lpcfg_do_global_parameter_var(lp_ctx, "apply group policies", "False");
 	lpcfg_do_global_parameter_var(lp_ctx, "dns update command", "%s/samba_dnsupdate", dyn_SCRIPTSBINDIR);
 	lpcfg_do_global_parameter_var(lp_ctx, "spn update command", "%s/samba_spnupdate", dyn_SCRIPTSBINDIR);
 	lpcfg_do_global_parameter_var(lp_ctx, "samba kcc command",

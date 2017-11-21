@@ -942,4 +942,7 @@ NTSTATUS wb_irpc_register(void);
 /* The following definitions come from winbindd/winbindd_reconnect.c  */
 bool reconnect_need_retry(NTSTATUS status, struct winbindd_domain *domain);
 
+/* The following definitions come from winbindd/winbindd_gpupdate.c  */
+void gpupdate_init(void);
+
 #endif /*  _WINBINDD_PROTO_H_  */

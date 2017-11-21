@@ -7,6 +7,6 @@ if bld.CONFIG_SET('AD_DC_BUILD_IS_ENABLED'):
                    'samba_kcc',
                    'samba_upgradeprovision',
                    'samba_upgradedns',
-                   'samba_gpoupdate',
                    'gen_output.py']:
         bld.SAMBA_SCRIPT(script, pattern=script, installdir='.')
+bld.SAMBA_SCRIPT('samba_gpoupdate', pattern='samba_gpoupdate', installdir='.')

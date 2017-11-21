@@ -29,11 +29,18 @@ sys.path.insert(0, "bin/python")
 
 import optparse
 from samba import getopt as options
+from samba.auth import system_session
+try:
+    from samba.samdb import SamDB
+except:
+    SamDB = None
 from samba.gpclass import *
 from samba.net import Net
 from samba.dcerpc import nbt
 from samba import smb
+import samba.gpo as gpo
 import logging
+import chardet
 
 ''' Fetch the hostname of a writable DC '''
 def get_dc_hostname(creds, lp):
@@ -117,6 +124,8 @@ if __name__ == "__main__":
     parser.add_option('-H', '--url', dest='url', help='URL for the samdb')
     parser.add_option('-X', '--unapply', help='Unapply Group Policy',
                       action='store_true')
+    parser.add_option('-M', '--machine', help='Apply machine policy',
+                      action='store_true', default=False)
     parser.add_option_group(credopts)
 
     # Set the options and the arguments
@@ -150,10 +159,18 @@ if __name__ == "__main__":
     cache_dir = lp.get('cache directory')
     store = GPOStorage(os.path.join(cache_dir, 'gpo.tdb'))
 
-    gp_extensions = [gp_sec_ext(logger)]
+    gp_extensions = []
+    if opts.machine:
+        if lp.get('server role') == 'active directory domain controller':
+            gp_extensions.append(gp_sec_ext(logger))
+    else:
+        pass # User extensions
 
     # Get a live instance of Samba
-    test_ldb = SamDB(url, session_info=session, credentials=creds, lp=lp)
+    if SamDB:
+        test_ldb = SamDB(url, session_info=session, credentials=creds, lp=lp)
+    else:
+        test_ldb = None
 
     if not opts.unapply:
         apply_gp(lp, creds, test_ldb, logger, store, gp_extensions)

@@ -1790,6 +1790,8 @@ int main(int argc, const char **argv)
 		daemon_ready("winbindd");
 	}
 
+	gpupdate_init();
+
 	/* Loop waiting for requests */
 	while (1) {
 		frame = talloc_stackframe();

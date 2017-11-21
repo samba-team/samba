@@ -254,7 +254,8 @@ bld.SAMBA3_BINARY('winbindd',
                  winbindd_pam_logoff.c
                  winbindd_pam_chauthtok.c
                  winbindd_pam_auth_crap.c
-                 winbindd_pam_chng_pswd_auth_crap.c''',
+                 winbindd_pam_chng_pswd_auth_crap.c
+                 winbindd_gpupdate.c''',
                  deps='''
                  talloc
                  tevent

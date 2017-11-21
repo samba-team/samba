@@ -1,0 +1,19 @@
+<samba:parameter name="apply group policies"
+                 context="G"
+                 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+
+	<para>This option controls whether winbind will execute the gpupdate
+	command defined in <smbconfoption name="gpo update command"/> on the
+	Group Policy update interval. The Group	Policy update interval is
+	defined as every 90 minutes, plus a random offset between 0 and	30
+	minutes. This applies Group Policy Machine polices to the client or
+	KDC and machine policies to a server.
+	</para>
+
+</description>
+
+<value type="default">no</value>
+<value type="example">yes</value>
+</samba:parameter>
