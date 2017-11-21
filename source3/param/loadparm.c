@@ -1604,7 +1604,7 @@ static bool lp_add_ipc(const char *ipc_name, bool guest_ok)
 	ServicePtrs[i]->guest_ok = guest_ok;
 	ServicePtrs[i]->printable = false;
 	ServicePtrs[i]->browseable = sDefault.browseable;
-	ServicePtrs[i]->autoloaded = true;
+	ServicePtrs[i]->autoloaded = false;
 
 	DEBUG(3, ("adding IPC service\n"));
 
