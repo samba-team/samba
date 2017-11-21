@@ -770,14 +770,15 @@ def CONFIG_PATH(conf, name, default):
             conf.env[name] = conf.env['PREFIX'] + default
 
 @conf
-def ADD_NAMED_CFLAGS(conf, name, flags, testflags=False):
+def ADD_NAMED_CFLAGS(conf, name, flags, testflags=False, prereq_flags=[]):
     '''add some CFLAGS to the command line
        optionally set testflags to ensure all the flags work
     '''
+    prereq_flags = TO_LIST(prereq_flags)
     if testflags:
         ok_flags=[]
         for f in flags.split():
-            if CHECK_CFLAGS(conf, f):
+            if CHECK_CFLAGS(conf, [f] + prereq_flags):
                 ok_flags.append(f)
         flags = ok_flags
     if not name in conf.env:
@@ -785,11 +786,12 @@ def ADD_NAMED_CFLAGS(conf, name, flags, testflags=False):
     conf.env[name].extend(TO_LIST(flags))
 
 @conf
-def ADD_CFLAGS(conf, flags, testflags=False):
+def ADD_CFLAGS(conf, flags, testflags=False, prereq_flags=[]):
     '''add some CFLAGS to the command line
        optionally set testflags to ensure all the flags work
     '''
-    ADD_NAMED_CFLAGS(conf, 'EXTRA_CFLAGS', flags, testflags=testflags)
+    ADD_NAMED_CFLAGS(conf, 'EXTRA_CFLAGS', flags, testflags=testflags,
+                     prereq_flags=prereq_flags)
 
 @conf
 def ADD_LDFLAGS(conf, flags, testflags=False):
