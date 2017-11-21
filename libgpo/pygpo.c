@@ -192,9 +192,11 @@ static int py_ads_init(ADS *self, PyObject *args, PyObject *kwds)
 	} else {
 		realm = lp_realm();
 		workgroup = lp_workgroup();
-		if (!ldap_server) return -1;
 	}
 
+	if (ldap_server == NULL) {
+		return -1;
+	}
 	if ( !(self->ads_ptr = ads_init(realm, workgroup, ldap_server)) )
 		return -1;
 
