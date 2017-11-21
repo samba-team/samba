@@ -110,7 +110,7 @@ static bool defaults_saved = false;
 static struct loadparm_global Globals;
 
 /* This is a default service used to prime a services structure */
-static struct loadparm_service sDefault =
+static const struct loadparm_service _sDefault =
 {
 	.valid = true,
 	.autoloaded = false,
@@ -248,6 +248,12 @@ static struct loadparm_service sDefault =
 	.param_opt = NULL,
 	.dummy = ""
 };
+
+/*
+ * This is a copy of the default service structure. Service options in the
+ * global section would otherwise overwrite the initial default values.
+ */
+static struct loadparm_service sDefault;
 
 /* local variables */
 static struct loadparm_service **ServicePtrs = NULL;
@@ -956,7 +962,7 @@ static struct loadparm_context *setup_lp_context(TALLOC_CTX *mem_ctx)
 		return NULL;
 	}
 
-	*lp_ctx->sDefault = sDefault;
+	*lp_ctx->sDefault = _sDefault;
 	lp_ctx->services = NULL; /* We do not want to access this directly */
 	lp_ctx->bInGlobalSection = bInGlobalSection;
 	lp_ctx->flags = flags_list;
@@ -3826,6 +3832,7 @@ static bool lp_load_ex(const char *pszFname,
 	bInGlobalSection = true;
 	bGlobalOnly = global_only;
 	bAllowIncludeRegistry = allow_include_registry;
+	sDefault = _sDefault;
 
 	lp_ctx = setup_lp_context(talloc_tos());
 
