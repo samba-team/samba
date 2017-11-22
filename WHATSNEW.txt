@@ -1,4 +1,75 @@
                    ==============================
+                   Release Notes for Samba 4.5.15
+                          November 21, 2017
+                   ==============================
+
+
+This is a security release in order to address the following defects:
+
+o  CVE-2017-14746 (Use-after-free vulnerability.)
+o  CVE-2017-15275 (Server heap memory information leak.)
+
+
+=======
+Details
+=======
+
+o  CVE-2017-14746:
+   All versions of Samba from 4.0.0 onwards are vulnerable to a use after
+   free vulnerability, where a malicious SMB1 request can be used to
+   control the contents of heap memory via a deallocated heap pointer. It
+   is possible this may be used to compromise the SMB server.
+
+o  CVE-2017-15275:
+   All versions of Samba from 3.6.0 onwards are vulnerable to a heap
+   memory information leak, where server allocated heap memory may be
+   returned to the client without being cleared.
+
+   There is no known vulnerability associated with this error, but
+   uncleared heap memory may contain previously used data that may help
+   an attacker compromise the server via other methods. Uncleared heap
+   memory may potentially contain password hashes or other high-value
+   data.
+
+For more details and workarounds, please see the security advisories:
+
+   o https://www.samba.org/samba/security/CVE-2017-14746.html
+   o https://www.samba.org/samba/security/CVE-2017-15275.html
+
+
+Changes since 4.5.14:
+---------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 13041: CVE-2017-14746: s3: smbd: Fix SMB1 use-after-free crash bug.
+   * BUG 13077: CVE-2017-15275: s3: smbd: Chain code can return uninitialized
+     memory when talloc buffer is grown.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ==============================
                    Release Notes for Samba 4.5.14
                          September 20, 2017
                    ==============================
@@ -69,8 +140,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    ==============================
                    Release Notes for Samba 4.5.13
