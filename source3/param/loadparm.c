@@ -959,7 +959,14 @@ static struct loadparm_context *setup_lp_context(TALLOC_CTX *mem_ctx)
 		return NULL;
 	}
 
-	lp_ctx->sDefault = &sDefault;
+	lp_ctx->sDefault = talloc_zero(lp_ctx, struct loadparm_service);
+	if (lp_ctx->sDefault == NULL) {
+		DBG_ERR("talloc_zero failed\n");
+		TALLOC_FREE(lp_ctx);
+		return NULL;
+	}
+
+	*lp_ctx->sDefault = sDefault;
 	lp_ctx->services = NULL; /* We do not want to access this directly */
 	lp_ctx->bInGlobalSection = bInGlobalSection;
 	lp_ctx->flags = flags_list;
