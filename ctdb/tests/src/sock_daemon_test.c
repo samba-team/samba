@@ -984,6 +984,10 @@ static void test5(TALLOC_CTX *mem_ctx, const char *pidfile,
 
 	ret = kill(pid_server, SIGTERM);
 	assert(ret == 0);
+
+	pid = waitpid(pid_server, &ret, 0);
+	assert(pid == pid_server);
+	assert(WEXITSTATUS(ret) == 0);
 }
 
 /*
@@ -1272,8 +1276,9 @@ static void test6(TALLOC_CTX *mem_ctx, const char *pidfile,
 
 	test6_client(sockpath);
 
-	pid = wait(&ret);
-	assert(pid != -1);
+	pid = waitpid(pid_server, &ret, 0);
+	assert(pid == pid_server);
+	assert(WEXITSTATUS(ret) == 0);
 }
 
 /*
@@ -1730,6 +1735,10 @@ static void test10(TALLOC_CTX *mem_ctx, const char *pidfile,
 	/* KILL will leave PID file and socket behind */
 	ret = kill (pid, SIGKILL);
 	assert(ret == 0);
+
+	pid2 = waitpid(pid, &ret, 0);
+	assert(pid2 == pid);
+	assert(WEXITSTATUS(ret) == 0);
 
 	ret = stat(sockpath, &st);
 	assert(ret == 0);
