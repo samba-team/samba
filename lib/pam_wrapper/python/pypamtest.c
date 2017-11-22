@@ -67,9 +67,9 @@ static PyObject *PyExc_PamTestError;
  *** helper functions
  **********************************************************/
 
-static const char *repr_fmt = "{ pam_operation [%d] "
-			      "expected_rv [%d] "
-			      "flags [%d] }";
+#define REPR_FMT "{ pam_operation [%d] " \
+			      "expected_rv [%d] " \
+			      "flags [%d] }"
 
 static char *py_strdup(const char *string)
 {
@@ -267,7 +267,7 @@ set_pypamtest_exception(PyObject *exc,
 			size_t num_tests)
 {
 	PyObject *obj = NULL;
-	/* repr_fmt is fixed and contains just %d expansions, so this is safe */
+	/* REPR_FMT contains just %d expansions, so this is safe */
 	char test_repr[256] = { '\0' };
 	union {
 		char *str;
@@ -286,7 +286,7 @@ set_pypamtest_exception(PyObject *exc,
 	if (perr == PAMTEST_ERR_CASE) {
 		failed = _pamtest_failed_case(tests, num_tests);
 		if (failed) {
-			snprintf(test_repr, sizeof(test_repr), repr_fmt,
+			snprintf(test_repr, sizeof(test_repr), REPR_FMT,
 				 failed->pam_operation,
 				 failed->expected_rv,
 				 failed->flags);
@@ -422,7 +422,7 @@ static int TestCase_init(TestCaseObject *self,
  */
 static PyObject *TestCase_repr(TestCaseObject *self)
 {
-	return PyUnicode_FromFormat(repr_fmt,
+	return PyUnicode_FromFormat(REPR_FMT,
 				    self->pam_operation,
 				    self->expected_rv,
 				    self->flags);
