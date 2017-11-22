@@ -386,7 +386,12 @@ static int traverse_sessionid(const char *key, struct sessionid *session,
 		if (numeric_only) {
 			fstr_sprintf(uid_str, "%u", (unsigned int)session->uid);
 		} else {
-			fstrcpy(uid_str, uidtoname(session->uid));
+			const char *uid_name = uidtoname(session->uid);
+
+			if (uid_name == NULL) {
+				return -1;
+			}
+			fstrcpy(uid_str, uid_name);
 		}
 	}
 
@@ -396,6 +401,11 @@ static int traverse_sessionid(const char *key, struct sessionid *session,
 		if (numeric_only) {
 			fstr_sprintf(gid_str, "%u", (unsigned int)session->gid);
 		} else {
+			const char *gid_name = gidtoname(session->gid);
+
+			if (gid_name == NULL) {
+				return -1;
+			}
 			fstrcpy(gid_str, gidtoname(session->gid));
 		}
 	}
