@@ -8066,7 +8066,7 @@ static bool run_chain1(int dummy)
 	if (reqs[1] == NULL) return false;
 	tevent_req_set_callback(reqs[1], chain1_write_completion, NULL);
 
-	reqs[2] = cli_close_create(talloc_tos(), evt, cli1, 0, &smbreqs[2]);
+	reqs[2] = cli_smb1_close_create(talloc_tos(), evt, cli1, 0, &smbreqs[2]);
 	if (reqs[2] == NULL) return false;
 	tevent_req_set_callback(reqs[2], chain1_close_completion, &done);
 

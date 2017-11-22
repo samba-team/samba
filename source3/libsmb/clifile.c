@@ -2770,22 +2770,22 @@ NTSTATUS cli_open(struct cli_state *cli, const char *fname, int flags,
  Close a file.
 ****************************************************************************/
 
-struct cli_close_state {
+struct cli_smb1_close_state {
 	uint16_t vwv[3];
 };
 
-static void cli_close_done(struct tevent_req *subreq);
+static void cli_smb1_close_done(struct tevent_req *subreq);
 
-struct tevent_req *cli_close_create(TALLOC_CTX *mem_ctx,
+struct tevent_req *cli_smb1_close_create(TALLOC_CTX *mem_ctx,
 				struct tevent_context *ev,
 				struct cli_state *cli,
 				uint16_t fnum,
 				struct tevent_req **psubreq)
 {
 	struct tevent_req *req, *subreq;
-	struct cli_close_state *state;
+	struct cli_smb1_close_state *state;
 
-	req = tevent_req_create(mem_ctx, &state, struct cli_close_state);
+	req = tevent_req_create(mem_ctx, &state, struct cli_smb1_close_state);
 	if (req == NULL) {
 		return NULL;
 	}
@@ -2799,32 +2799,12 @@ struct tevent_req *cli_close_create(TALLOC_CTX *mem_ctx,
 		TALLOC_FREE(req);
 		return NULL;
 	}
-	tevent_req_set_callback(subreq, cli_close_done, req);
+	tevent_req_set_callback(subreq, cli_smb1_close_done, req);
 	*psubreq = subreq;
 	return req;
 }
 
-struct tevent_req *cli_close_send(TALLOC_CTX *mem_ctx,
-				struct tevent_context *ev,
-				struct cli_state *cli,
-				uint16_t fnum)
-{
-	struct tevent_req *req, *subreq;
-	NTSTATUS status;
-
-	req = cli_close_create(mem_ctx, ev, cli, fnum, &subreq);
-	if (req == NULL) {
-		return NULL;
-	}
-
-	status = smb1cli_req_chain_submit(&subreq, 1);
-	if (tevent_req_nterror(req, status)) {
-		return tevent_req_post(req, ev);
-	}
-	return req;
-}
-
-static void cli_close_done(struct tevent_req *subreq)
+static void cli_smb1_close_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
@@ -2836,6 +2816,26 @@ static void cli_close_done(struct tevent_req *subreq)
 		return;
 	}
 	tevent_req_done(req);
+}
+
+struct tevent_req *cli_close_send(TALLOC_CTX *mem_ctx,
+				struct tevent_context *ev,
+				struct cli_state *cli,
+				uint16_t fnum)
+{
+	struct tevent_req *req, *subreq;
+	NTSTATUS status;
+
+	req = cli_smb1_close_create(mem_ctx, ev, cli, fnum, &subreq);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	status = smb1cli_req_chain_submit(&subreq, 1);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
+	return req;
 }
 
 NTSTATUS cli_close_recv(struct tevent_req *req)

@@ -70,7 +70,7 @@ static struct tevent_req *chain3_andx_send(TALLOC_CTX *mem_ctx,
 	}
 	tevent_req_set_callback(subreq, chain3_andx_write_done, req);
 
-	subreq = cli_close_create(state, ev, cli, 0, &smbreqs[2]);
+	subreq = cli_smb1_close_create(state, ev, cli, 0, &smbreqs[2]);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}

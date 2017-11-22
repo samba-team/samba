@@ -423,7 +423,7 @@ struct tevent_req *cli_openx_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev
 NTSTATUS cli_openx_recv(struct tevent_req *req, uint16_t *fnum);
 NTSTATUS cli_openx(struct cli_state *cli, const char *fname, int flags, int share_mode, uint16_t *pfnum);
 NTSTATUS cli_open(struct cli_state *cli, const char *fname, int flags, int share_mode, uint16_t *pfnum);
-struct tevent_req *cli_close_create(TALLOC_CTX *mem_ctx,
+struct tevent_req *cli_smb1_close_create(TALLOC_CTX *mem_ctx,
 				    struct tevent_context *ev,
 				    struct cli_state *cli, uint16_t fnum,
 				    struct tevent_req **psubreq);
