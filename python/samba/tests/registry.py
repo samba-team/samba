@@ -56,7 +56,11 @@ class HiveTests(samba.tests.TestCaseInTempDir):
         self.assertIsNone(self.hive.set_value('foo2', 1, 'bar2'))
         self.assertIsNone(self.hive.flush())
 
-        proc = Popen(['bin/tdbdump', self.hive_path], stdout=PIPE, stderr=PIPE)
+        tdbdump_tool = 'tdbdump'
+        if os.path.isfile('bin/tdbdump'):
+            tdbdump_tool = 'bin/tdbdump'
+
+        proc = Popen([tdbdump_tool, self.hive_path], stdout=PIPE, stderr=PIPE)
         tdb_dump, err = proc.communicate()
         self.assertTrue(b'DN=VALUE=FOO2,HIVE=NONE' in tdb_dump)
 
