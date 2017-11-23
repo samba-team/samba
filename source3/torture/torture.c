@@ -1478,7 +1478,8 @@ static bool tcon_devtest(struct cli_state *cli,
 
 	if (NT_STATUS_IS_OK(expected_error)) {
 		if (NT_STATUS_IS_OK(status)) {
-			if (strcmp(cli->dev, return_devtype) == 0) {
+			if (return_devtype != NULL &&
+			    strequal(cli->dev, return_devtype)) {
 				ret = True;
 			} else { 
 				printf("tconX to share %s with type %s "
