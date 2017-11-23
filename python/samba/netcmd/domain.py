@@ -66,7 +66,6 @@ from samba.drs_utils import (
                             sendDsReplicaSync, drsuapi_connect, drsException,
                             sendRemoveDsServer)
 from samba import remove_dc, arcfour_encrypt, string_to_byte_array
-from samba.ms_markdown import read_ms_markdown
 
 from samba.dsdb import (
     DS_DOMAIN_FUNCTION_2000,
@@ -4046,6 +4045,7 @@ class cmd_domain_schema_upgrade(Command):
         return count
 
     def run(self, **kwargs):
+        from samba.ms_schema_markdown import read_ms_markdown
         from samba.schema import Schema
 
         updates_allowed_overriden = False
