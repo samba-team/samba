@@ -7,8 +7,38 @@ for termlib in ['ncurses', 'curses', 'termcap', 'terminfo', 'termlib', 'tinfo']:
         conf.env['READLINE_TERMLIB'] = termlib
         break
 
+#
+# Check if we need to work around readline/readline.h
+# deprecated declarations
+#
+if conf.CONFIG_SET('HAVE_READLINE_READLINE_H'):
+    if not conf.CHECK_CODE('''
+                    #include <readline/readline.h>
+                    int main() {return 0;}
+                    ''',
+                    define='HAVE_WORKING_READLINE_READLINE_WITH_STRICT_PROTO',
+                    cflags=conf.env['WERROR_CFLAGS'] +
+                           ['-Wstrict-prototypes',
+                            '-Werror=strict-prototypes'],
+                    msg='for compiling <readline/readline.h> with strict prototypes',
+                    addmain=False):
+                conf.CHECK_CODE('''
+                    #define _FUNCTION_DEF
+                    #include <readline/readline.h>
+                    int main() {return 0;}
+                    ''',
+                    cflags=conf.env['WERROR_CFLAGS'] +
+                           ['-Wstrict-prototypes',
+                            '-Werror=strict-prototypes'],
+                    msg='for workaround to <readline/readline.h> strict prototypes issue',
+                    define='HAVE_READLINE_READLINE_WORKAROUND',
+                    addmain=False)
+
 conf.CHECK_CODE('''
 #ifdef HAVE_READLINE_READLINE_H
+#  ifdef HAVE_READLINE_READLINE_WORKAROUND
+#    define _FUNCTION_DEF
+#  endif
 #  include <readline/readline.h>
 #  ifdef HAVE_READLINE_HISTORY_H
 #    include <readline/history.h>
@@ -28,6 +58,9 @@ msg='Checking for rl_completion_t')
 
 conf.CHECK_CODE('''
 #ifdef HAVE_READLINE_READLINE_H
+#  ifdef HAVE_READLINE_READLINE_WORKAROUND
+#    define _FUNCTION_DEF
+#  endif
 #  include <readline/readline.h>
 #  ifdef HAVE_READLINE_HISTORY_H
 #    include <readline/history.h>
