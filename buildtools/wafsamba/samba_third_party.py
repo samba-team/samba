@@ -59,3 +59,8 @@ Build.BuildContext.CHECK_RESOLV_WRAPPER = CHECK_RESOLV_WRAPPER
 def CHECK_UID_WRAPPER(conf):
     return conf.CHECK_BUNDLED_SYSTEM_PKG('uid_wrapper', minversion='1.2.4')
 Build.BuildContext.CHECK_UID_WRAPPER = CHECK_UID_WRAPPER
+
+@conf
+def CHECK_PAM_WRAPPER(conf):
+    return conf.CHECK_BUNDLED_SYSTEM_PKG('pam_wrapper', minversion='1.0.4')
+Build.BuildContext.CHECK_PAM_WRAPPER = CHECK_PAM_WRAPPER

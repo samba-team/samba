@@ -1456,7 +1456,7 @@ int pam_prompt(pam_handle_t *pamh,
 			       args);
 	va_end(args);
 
-	return rv;  
+	return rv;
 }
 
 #ifdef HAVE_PAM_STRERROR_CONST

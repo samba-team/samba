@@ -13,7 +13,7 @@ def find_library(library_names, lookup_paths):
     return ''
 
 def configure(conf):
-    if conf.CHECK_BUNDLED_SYSTEM('pam_wrapper', minversion=VERSION, set_target=False):
+    if conf.CHECK_PAM_WRAPPER():
         conf.DEFINE('USING_SYSTEM_PAM_WRAPPER', 1)
         libpam_wrapper_so_path = 'libpam_wrapper.so'
     else:
@@ -93,7 +93,7 @@ def configure(conf):
 
         # Create full path to pam_wrapper
         blddir = os.path.realpath(conf.blddir)
-        libpam_wrapper_so_path = blddir + '/default/lib/pam_wrapper/libpam-wrapper.so'
+        libpam_wrapper_so_path = blddir + '/default/third_party/pam_wrapper/libpam-wrapper.so'
 
     conf.DEFINE('LIBPAM_WRAPPER_SO_PATH', libpam_wrapper_so_path)
     conf.DEFINE('PAM_WRAPPER', 1)
@@ -110,7 +110,8 @@ def build(bld):
                           realname='libpam-wrapper.so')
 
         # Can be used to write pam tests in python
-        bld.SAMBA_PYTHON('pypamtest',
-                         source='python/pypamtest.c libpamtest.c',
-                         deps='dl pam',
-                         install=False)
+        for env in bld.gen_python_environments():
+            bld.SAMBA_PYTHON('pypamtest',
+                             source='python/pypamtest.c libpamtest.c',
+                             deps='dl pam',
+                             install=False)

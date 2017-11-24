@@ -12,7 +12,7 @@ PASSWORD="$3"
 export PASSWORD
 shift 3
 
-PAM_WRAPPER_PATH="$BINDIR/default/lib/pam_wrapper"
+PAM_WRAPPER_PATH="$BINDIR/default/third_party/pam_wrapper"
 
 pam_winbind="$BINDIR/shared/pam_winbind.so"
 service_dir="$SELFTEST_TMPDIR/pam_services"
