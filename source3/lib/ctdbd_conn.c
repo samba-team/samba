@@ -1371,7 +1371,7 @@ static struct tevent_req *ctdb_pkt_send_send(TALLOC_CTX *mem_ctx,
 	}
 
 	/*
-	 * Attempt a direct write. If this returns short, shedule the
+	 * Attempt a direct write. If this returns short, schedule the
 	 * remaining data as an async write, otherwise we're already done.
 	 */
 
