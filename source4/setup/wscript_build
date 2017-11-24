@@ -5,6 +5,7 @@ bld.INSTALL_WILDCARD('${SETUPDIR}', 'ad-schema/*.ldf')
 bld.INSTALL_WILDCARD('${SETUPDIR}', 'display-specifiers/*.txt')
 bld.INSTALL_WILDCARD('${SETUPDIR}', 'adprep/*.ldf')
 bld.INSTALL_WILDCARD('${SETUPDIR}', 'adprep/WindowsServerDocs/Schema-Updates.md')
+bld.INSTALL_WILDCARD('${SETUPDIR}', 'adprep/WindowsServerDocs/Forest-Wide-Updates.md')
 bld.INSTALL_WILDCARD('${SETUPDIR}', 'adprep/WindowsServerDocs/*.diff')
 
 bld.INSTALL_FILES('${SETUPDIR}', 'dns_update_list')

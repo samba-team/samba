@@ -21,3 +21,15 @@ for p in `ls WindowsServerDocs/*.diff` ; do patch -p 1 < $p ; done
 All this is handled at runtime in the provision code, so that we do
 not store patched generated files in git (an alternative would have
 been to patch the original markdown).
+
+===============================================================================
+
+The Forest Wide updates file is taken from Microsoft's Github:
+file: WindowsServerDocs/identity/ad-ds/deploy/RODC/Forest-Wide-Updates.md
+
+./WindowsServerDocs/Forest-Wide-Updates.md is our current version (last updated
+Dec 15, 2017, commit SHA f209fb9101ee87107).
+
+The ms_forest_updates_markdown.py script is used to extract the add portions of
+the updates. The rest are handled manually in forest_updates.py by interpreting
+this documentation.
