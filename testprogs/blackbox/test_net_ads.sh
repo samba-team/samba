@@ -46,6 +46,19 @@ testit "testjoin (dedicated keytab)" $VALGRIND $net_tool ads testjoin -kP || fai
 testit "changetrustpw (dedicated keytab)" $VALGRIND $net_tool ads changetrustpw || failed=`expr $failed + 1`
 
 testit "leave (dedicated keytab)" $VALGRIND $net_tool ads leave -U$DC_USERNAME%$DC_PASSWORD || failed=`expr $failed + 1`
+
+# if there is no keytab, try and create it
+if [ ! -f $dedicated_keytab_file ]; then
+  if [ $(command -v ktutil) >/dev/null ]; then
+    printf "addent -password -p $DC_USERNAME@$REALM -k 1 -e rc4-hmac\n$DC_PASSWORD\nwkt $dedicated_keytab_file\n" | ktutil
+  fi
+fi
+
+if [  -f $dedicated_keytab_file ]; then
+  testit "keytab list (dedicated keytab)" $VALGRIND $net_tool ads keytab list --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" || failed=`expr $failed + 1`
+  testit "keytab list keytab specified on cmdline" $VALGRIND $net_tool ads keytab list $dedicated_keytab_file || failed=`expr $failed + 1`
+fi
+
 rm -f $dedicated_keytab_file
 
 testit_expect_failure "testjoin(not joined)" $VALGRIND $net_tool ads testjoin -kP || failed=`expr $failed + 1`
