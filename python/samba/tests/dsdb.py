@@ -21,6 +21,7 @@ from samba.credentials import Credentials
 from samba.samdb import SamDB
 from samba.auth import system_session
 from samba.tests import TestCase
+from samba.tests import delete_force
 from samba.ndr import ndr_unpack, ndr_pack
 from samba.dcerpc import drsblobs
 from samba import dsdb
@@ -42,14 +43,27 @@ class DsdbTests(TestCase):
                            credentials=self.creds,
                            lp=self.lp)
 
+        # Create a test user
+        user_name = "samdb-testuser"
+        user_pass = samba.generate_random_password(32, 32)
+        user_description = "Test user for dsdb test"
+
+        base_dn = self.samdb.domain_dn()
+
+        self.account_dn = "cn=" + user_name + ",cn=Users," + base_dn
+        delete_force(self.samdb, self.account_dn)
+        self.samdb.newuser(username=user_name,
+                           password=user_pass,
+                           description=user_description)
+
     def test_get_oid_from_attrid(self):
         oid = self.samdb.get_oid_from_attid(591614)
         self.assertEquals(oid, "1.2.840.113556.1.4.1790")
 
     def test_error_replpropertymetadata(self):
-        res = self.samdb.search(expression="cn=Administrator",
-                            scope=ldb.SCOPE_SUBTREE,
-                            attrs=["replPropertyMetaData"])
+        res = self.samdb.search(scope=ldb.SCOPE_SUBTREE,
+                                base=self.account_dn,
+                                attrs=["replPropertyMetaData"])
         repl = ndr_unpack(drsblobs.replPropertyMetaDataBlob,
                             str(res[0]["replPropertyMetaData"]))
         ctr = repl.ctr
@@ -65,9 +79,9 @@ class DsdbTests(TestCase):
         self.assertRaises(ldb.LdbError, self.samdb.modify, msg, ["local_oid:1.3.6.1.4.1.7165.4.3.14:0"])
 
     def test_error_replpropertymetadata_nochange(self):
-        res = self.samdb.search(expression="cn=Administrator",
-                            scope=ldb.SCOPE_SUBTREE,
-                            attrs=["replPropertyMetaData"])
+        res = self.samdb.search(scope=ldb.SCOPE_SUBTREE,
+                                base=self.account_dn,
+                                attrs=["replPropertyMetaData"])
         repl = ndr_unpack(drsblobs.replPropertyMetaDataBlob,
                             str(res[0]["replPropertyMetaData"]))
         replBlob = ndr_pack(repl)
@@ -77,9 +91,9 @@ class DsdbTests(TestCase):
         self.assertRaises(ldb.LdbError, self.samdb.modify, msg, ["local_oid:1.3.6.1.4.1.7165.4.3.14:0"])
 
     def test_error_replpropertymetadata_allow_sort(self):
-        res = self.samdb.search(expression="cn=Administrator",
-                            scope=ldb.SCOPE_SUBTREE,
-                            attrs=["replPropertyMetaData"])
+        res = self.samdb.search(scope=ldb.SCOPE_SUBTREE,
+                                base=self.account_dn,
+                                attrs=["replPropertyMetaData"])
         repl = ndr_unpack(drsblobs.replPropertyMetaDataBlob,
                             str(res[0]["replPropertyMetaData"]))
         replBlob = ndr_pack(repl)
@@ -89,9 +103,9 @@ class DsdbTests(TestCase):
         self.samdb.modify(msg, ["local_oid:1.3.6.1.4.1.7165.4.3.14:0", "local_oid:1.3.6.1.4.1.7165.4.3.25:0"])
 
     def test_twoatt_replpropertymetadata(self):
-        res = self.samdb.search(expression="cn=Administrator",
-                            scope=ldb.SCOPE_SUBTREE,
-                            attrs=["replPropertyMetaData", "uSNChanged"])
+        res = self.samdb.search(scope=ldb.SCOPE_SUBTREE,
+                                base=self.account_dn,
+                                attrs=["replPropertyMetaData", "uSNChanged"])
         repl = ndr_unpack(drsblobs.replPropertyMetaDataBlob,
                             str(res[0]["replPropertyMetaData"]))
         ctr = repl.ctr
@@ -109,9 +123,9 @@ class DsdbTests(TestCase):
         self.assertRaises(ldb.LdbError, self.samdb.modify, msg, ["local_oid:1.3.6.1.4.1.7165.4.3.14:0"])
 
     def test_set_replpropertymetadata(self):
-        res = self.samdb.search(expression="cn=Administrator",
-                            scope=ldb.SCOPE_SUBTREE,
-                            attrs=["replPropertyMetaData", "uSNChanged"])
+        res = self.samdb.search(scope=ldb.SCOPE_SUBTREE,
+                                base=self.account_dn,
+                                attrs=["replPropertyMetaData", "uSNChanged"])
         repl = ndr_unpack(drsblobs.replPropertyMetaDataBlob,
                             str(res[0]["replPropertyMetaData"]))
         ctr = repl.ctr
@@ -135,17 +149,17 @@ class DsdbTests(TestCase):
         self.assertEquals(self.samdb.get_attribute_from_attid(11979), None)
 
     def test_get_attribute_replmetadata_version(self):
-        res = self.samdb.search(expression="cn=Administrator",
-                            scope=ldb.SCOPE_SUBTREE,
-                            attrs=["dn"])
+        res = self.samdb.search(scope=ldb.SCOPE_SUBTREE,
+                                base=self.account_dn,
+                                attrs=["dn"])
         self.assertEquals(len(res), 1)
         dn = str(res[0].dn)
-        self.assertEqual(self.samdb.get_attribute_replmetadata_version(dn, "unicodePwd"), 1)
+        self.assertEqual(self.samdb.get_attribute_replmetadata_version(dn, "unicodePwd"), 2)
 
     def test_set_attribute_replmetadata_version(self):
-        res = self.samdb.search(expression="cn=Administrator",
-                            scope=ldb.SCOPE_SUBTREE,
-                            attrs=["dn"])
+        res = self.samdb.search(scope=ldb.SCOPE_SUBTREE,
+                                base=self.account_dn,
+                                attrs=["dn"])
         self.assertEquals(len(res), 1)
         dn = str(res[0].dn)
         version = self.samdb.get_attribute_replmetadata_version(dn, "description")
@@ -509,8 +523,8 @@ class DsdbTests(TestCase):
 
     def test_no_error_on_invalid_control(self):
         try:
-            res = self.samdb.search(expression="cn=Administrator",
-                                    scope=ldb.SCOPE_SUBTREE,
+            res = self.samdb.search(scope=ldb.SCOPE_SUBTREE,
+                                    base=self.account_dn,
                                     attrs=["replPropertyMetaData"],
                                     controls=["local_oid:%s:0"
                                               % dsdb.DSDB_CONTROL_INVALID_NOT_IMPLEMENTED])
@@ -519,8 +533,8 @@ class DsdbTests(TestCase):
 
     def test_error_on_invalid_critical_control(self):
         try:
-            res = self.samdb.search(expression="cn=Administrator",
-                                    scope=ldb.SCOPE_SUBTREE,
+            res = self.samdb.search(scope=ldb.SCOPE_SUBTREE,
+                                    base=self.account_dn,
                                     attrs=["replPropertyMetaData"],
                                     controls=["local_oid:%s:1"
                                               % dsdb.DSDB_CONTROL_INVALID_NOT_IMPLEMENTED])
