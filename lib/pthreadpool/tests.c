@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <signal.h>
 #include "pthreadpool_pipe.h"
 #include "pthreadpool_tevent.h"
 
@@ -192,6 +193,121 @@ static int test_fork(void)
 	return 0;
 }
 
+static void busyfork_job(void *private_data)
+{
+	return;
+}
+
+static int test_busyfork(void)
+{
+	struct pthreadpool_pipe *p;
+	int fds[2];
+	struct pollfd pfd;
+	pid_t child, waitret;
+	int ret, jobnum, wstatus;
+
+	ret = pipe(fds);
+	if (ret == -1) {
+		perror("pipe failed");
+		return -1;
+	}
+
+	ret = pthreadpool_pipe_init(1, &p);
+	if (ret != 0) {
+		fprintf(stderr, "pthreadpool_pipe_init failed: %s\n",
+			strerror(ret));
+		return -1;
+	}
+
+	ret = pthreadpool_pipe_add_job(p, 1, busyfork_job, NULL);
+	if (ret != 0) {
+		fprintf(stderr, "pthreadpool_add_job failed: %s\n",
+			strerror(ret));
+		return -1;
+	}
+
+	ret = pthreadpool_pipe_finished_jobs(p, &jobnum, 1);
+	if (ret != 1) {
+		fprintf(stderr, "pthreadpool_pipe_finished_jobs failed\n");
+		return -1;
+	}
+
+	ret = poll(NULL, 0, 200);
+	if (ret == -1) {
+		perror("poll failed");
+		return -1;
+	}
+
+	child = fork();
+	if (child < 0) {
+		perror("fork failed");
+		return -1;
+	}
+
+	if (child == 0) {
+		ret = pthreadpool_pipe_destroy(p);
+		if (ret != 0) {
+			fprintf(stderr, "pthreadpool_pipe_destroy failed: "
+				"%s\n", strerror(ret));
+			exit(1);
+		}
+		exit(0);
+	}
+
+	ret = close(fds[1]);
+	if (ret == -1) {
+		perror("close failed");
+		return -1;
+	}
+
+	pfd = (struct pollfd) { .fd = fds[0], .events = POLLIN };
+
+	ret = poll(&pfd, 1, 5000);
+	if (ret == -1) {
+		perror("poll failed");
+		return -1;
+	}
+	if (ret == 0) {
+		fprintf(stderr, "Child did not exit for 5 seconds\n");
+		/*
+		 * The child might hang forever in
+		 * pthread_cond_destroy for example. Be kind to the
+		 * system and kill it.
+		 */
+		kill(child, SIGTERM);
+		return -1;
+	}
+	if (ret != 1) {
+		fprintf(stderr, "poll returned %d -- huh??\n", ret);
+		return -1;
+	}
+
+	ret = poll(NULL, 0, 200);
+	if (ret == -1) {
+		perror("poll failed");
+		return -1;
+	}
+
+	waitret = waitpid(child, &wstatus, WNOHANG);
+	if (waitret != child) {
+		fprintf(stderr, "waitpid returned %d\n", (int)waitret);
+		return -1;
+	}
+
+	if (!WIFEXITED(wstatus)) {
+		fprintf(stderr, "child did not properly exit\n");
+		return -1;
+	}
+
+	ret = WEXITSTATUS(wstatus);
+	if (ret != 0) {
+		fprintf(stderr, "child returned %d\n", ret);
+		return -1;
+	}
+
+	return 0;
+}
+
 static void test_tevent_wait(void *private_data)
 {
 	int *timeout = private_data;
@@ -298,6 +414,12 @@ int main(void)
 	ret = test_busydestroy();
 	if (ret != 0) {
 		fprintf(stderr, "test_busydestroy failed\n");
+		return 1;
+	}
+
+	ret = test_busyfork();
+	if (ret != 0) {
+		fprintf(stderr, "test_busyfork failed\n");
 		return 1;
 	}
 

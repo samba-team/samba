@@ -317,7 +317,6 @@ typedef char fstring[FSTRING_LEN];
 
 #include "../libcli/util/ntstatus.h"
 #include "../libcli/util/error.h"
-#include "../libcli/auth/netlogon_creds_cli.h"
 #include "../lib/util/charset/charset.h"
 #include "dynconfig/dynconfig.h"
 #include "locking.h"

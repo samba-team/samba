@@ -26,7 +26,9 @@ parse_options ()
 {
     temp=$(getopt -n "ctdb_diagnostics" -o "n:cwh" -l no-ads,help -- "$@")
 
-    [ $? != 0 ] && usage
+    # No! Checking the exit code afterwards is actually clearer...
+    # shellcheck disable=SC2181
+    [ $? -eq 0 ] || usage
 
     eval set -- "$temp"
 
@@ -81,7 +83,7 @@ fi
 # are the same on the nodes
 CONFIG_FILES_MAY="/usr/local/etc/ctdb/public_addresses /usr/local/etc/ctdb/static-routes"
 
-2>&1
+exec 2>&1
 
 cat <<EOF
 --------------------------------------------------------------------
@@ -245,9 +247,6 @@ show_all "ctdb uptime"
 show_all "ctdb listvars"
 show_all "ctdb getdbmap"
 show_all "ctdb -X getdbmap | awk -F'|' 'NR > 1 {print \$3}' | sort | xargs -n 1 ctdb dbstatistics"
-
-echo "Showing log.ctdb"
-show_all "test -f /usr/local/var/log/log.ctdb && tail -100 /usr/local/var/log/log.ctdb"
 
 echo "Showing log.ctdb"
 show_all "test -f /usr/local/var/log/log.ctdb && tail -100 /usr/local/var/log/log.ctdb"

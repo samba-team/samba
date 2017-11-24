@@ -1724,15 +1724,45 @@ char * ldb_ldif_write_string(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 			  const struct ldb_ldif *msg);
 
 
-/*
-   Produce a string form of an ldb message
+/**
+   Write an LDB message to a string
 
-   convenient function to turn a ldb_message into a string. Useful for
-   debugging
- */
+   \param ldb the ldb context (from ldb_init())
+   \param mem_ctx the talloc context on which to attach the string)
+   \param changetype LDB_CHANGETYPE_ADD or LDB_CHANGETYPE_MODIFY
+   \param msg the message to write out
+
+   \return the string containing the LDIF, or NULL on error
+
+   \sa ldb_ldif_message_redacted_string for a safer version of this 
+       function
+*/
 char *ldb_ldif_message_string(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 			      enum ldb_changetype changetype,
 			      const struct ldb_message *msg);
+
+/**
+   Write an LDB message to a string
+
+   \param ldb the ldb context (from ldb_init())
+   \param mem_ctx the talloc context on which to attach the string)
+   \param changetype LDB_CHANGETYPE_ADD or LDB_CHANGETYPE_MODIFY
+   \param msg the message to write out
+
+   \return the string containing the LDIF, or NULL on error, but
+           with secret attributes redacted
+
+   \note The secret attributes are specified in a 
+         'const char * const *' within the LDB_SECRET_ATTRIBUTE_LIST
+         opaque set on the ldb
+
+   \sa ldb_ldif_message_string for an exact representiation of the
+       message as LDIF
+*/
+char *ldb_ldif_message_redacted_string(struct ldb_context *ldb,
+				       TALLOC_CTX *mem_ctx,
+				       enum ldb_changetype changetype,
+				       const struct ldb_message *msg);
 
 
 /**

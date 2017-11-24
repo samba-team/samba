@@ -321,7 +321,7 @@ static void add_trusted_domains( struct winbindd_domain *domain )
 	state->request.length = sizeof(state->request);
 	state->request.cmd = WINBINDD_LIST_TRUSTDOM;
 
-	req = wb_domain_request_send(state, winbind_event_context(),
+	req = wb_domain_request_send(state, server_event_context(),
 				     domain, &state->request);
 	if (req == NULL) {
 		DEBUG(1, ("wb_domain_request_send failed\n"));

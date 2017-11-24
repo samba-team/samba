@@ -178,7 +178,7 @@ bool lookup_name(TALLOC_CTX *mem_ctx,
 
 	/*
 	 * Finally check for a well known domain name ("NT Authority"),
-	 * this is taken care if in lookup_wellknown_name().
+	 * this is being taken care of in lookup_wellknown_name().
 	 */
 	if ((domain[0] != '\0') &&
 	    (flags & LOOKUP_NAME_WKN) &&

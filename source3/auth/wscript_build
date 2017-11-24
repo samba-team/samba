@@ -46,13 +46,6 @@ bld.SAMBA3_MODULE('auth_winbind',
                  init_function='',
                  internal_module=True)
 
-bld.SAMBA3_MODULE('auth_domain',
-                 subsystem='auth',
-                 source='auth_domain.c',
-                 deps='RPC_CLIENT_SCHANNEL trusts_util',
-                 init_function='',
-                 internal_module=True)
-
 bld.SAMBA3_MODULE('auth_builtin',
                  subsystem='auth',
                  source='auth_builtin.c',

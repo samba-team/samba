@@ -179,7 +179,7 @@ while [ ${i} -lt ${NUMGROUPS} ] ; do
     GIDS="$GIDS g$(expr ${i} + ${GID_START})"
     i=$(expr "$i" + 1)
 done
-NUM_VALID_SIDS=$($wbinfo --unix-ids-to-sids="$GIDS" | grep -v ^S-0-0 | wc -l)
+NUM_VALID_SIDS=$($wbinfo --unix-ids-to-sids="$GIDS" | grep -v ^"NOT MAPPED" | wc -l)
 
 testit "Count number of valid sids found" \
        test ${NUM_VALID_SIDS} = ${NUMGROUPS} ||

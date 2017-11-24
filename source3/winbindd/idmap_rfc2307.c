@@ -193,7 +193,7 @@ static NTSTATUS idmap_rfc2307_init_ldap(struct idmap_rfc2307_context *ctx,
 	}
 
 	/* assume anonymous if we don't have a specified user */
-	ret = smbldap_init(mem_ctx, winbind_event_context(), url,
+	ret = smbldap_init(mem_ctx, server_event_context(), url,
 			   (user_dn == NULL), user_dn, secret,
 			   &ctx->smbldap_state);
 	SAFE_FREE(secret);

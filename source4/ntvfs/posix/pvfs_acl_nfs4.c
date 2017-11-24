@@ -47,7 +47,7 @@ static NTSTATUS pvfs_acl_load_nfs4(struct pvfs_state *pvfs, struct pvfs_filename
 	NT_STATUS_HAVE_NO_MEMORY(acl);
 
 	status = pvfs_xattr_ndr_load(pvfs, mem_ctx, name->full_name, fd, 
-				     NFS4ACL_XATTR_NAME,
+				     NFS4ACL_NDR_XATTR_NAME,
 				     acl, (void *) ndr_pull_nfs4acl);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(acl);
@@ -176,7 +176,7 @@ static NTSTATUS pvfs_acl_save_nfs4(struct pvfs_state *pvfs, struct pvfs_filename
 
 	privs = root_privileges();
 	status = pvfs_xattr_ndr_save(pvfs, name->full_name, fd, 
-				     NFS4ACL_XATTR_NAME, 
+				     NFS4ACL_NDR_XATTR_NAME,
 				     &acl, (void *) ndr_push_nfs4acl);
 	talloc_free(privs);
 

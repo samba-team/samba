@@ -20,6 +20,9 @@
 import os
 from samba import registry
 import samba.tests
+from samba import WERRORError
+from subprocess import Popen, PIPE
+
 
 class HelperTests(samba.tests.TestCase):
 
@@ -29,7 +32,6 @@ class HelperTests(samba.tests.TestCase):
 
     def test_str_regtype(self):
         self.assertEquals("REG_DWORD", registry.str_regtype(4))
-
 
 
 class HiveTests(samba.tests.TestCaseInTempDir):
@@ -47,14 +49,27 @@ class HiveTests(samba.tests.TestCaseInTempDir):
     def test_ldb_new(self):
         self.assertTrue(self.hive is not None)
 
-    #def test_flush(self):
-    #    self.hive.flush()
+    def test_set_value(self):
+        self.assertIsNone(self.hive.set_value('foo1', 1, 'bar1'))
 
-    #def test_del_value(self):
-    #    self.hive.del_value("FOO")
+    def test_flush(self):
+        self.assertIsNone(self.hive.set_value('foo2', 1, 'bar2'))
+        self.assertIsNone(self.hive.flush())
+
+        proc = Popen(['bin/tdbdump', self.hive_path], stdout=PIPE, stderr=PIPE)
+        tdb_dump, err = proc.communicate()
+        self.assertTrue(b'DN=VALUE=FOO2,HIVE=NONE' in tdb_dump)
+
+    def test_del_value(self):
+        self.assertIsNone(self.hive.set_value('foo3', 1, 'bar3'))
+        self.assertIsNone(self.hive.del_value('foo3'))
+
+    def test_del_nonexisting_value(self):
+        self.assertRaises(WERRORError, self.hive.del_value, 'foo4')
 
 
 class RegistryTests(samba.tests.TestCase):
 
     def test_new(self):
         self.registry = registry.Registry()
+        self.assertIsNotNone(self.registry)

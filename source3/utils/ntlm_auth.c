@@ -280,24 +280,24 @@ static void gensec_want_feature_list(struct gensec_security *state, char* featur
 
 static char winbind_separator(void)
 {
-	struct winbindd_response response;
+	struct wbcInterfaceDetails *details;
+	wbcErr ret;
 	static bool got_sep;
 	static char sep;
 
 	if (got_sep)
 		return sep;
 
-	ZERO_STRUCT(response);
-
-	/* Send off request */
-
-	if (winbindd_request_response(NULL, WINBINDD_INFO, NULL, &response) !=
-	    NSS_STATUS_SUCCESS) {
+	ret = wbcInterfaceDetails(&details);
+	if (!WBC_ERROR_IS_OK(ret)) {
 		d_fprintf(stderr, "could not obtain winbind separator!\n");
 		return *lp_winbind_separator();
 	}
 
-	sep = response.data.info.winbind_separator;
+	sep = details->winbind_separator;
+
+	wbcFreeMemory(details);
+
 	got_sep = True;
 
 	if (!sep) {
@@ -310,24 +310,25 @@ static char winbind_separator(void)
 
 const char *get_winbind_domain(void)
 {
-	struct winbindd_response response;
+	struct wbcInterfaceDetails *details;
+	wbcErr ret;
 
 	static fstring winbind_domain;
 	if (*winbind_domain) {
 		return winbind_domain;
 	}
 
-	ZERO_STRUCT(response);
-
 	/* Send off request */
 
-	if (winbindd_request_response(NULL, WINBINDD_DOMAIN_NAME, NULL, &response) !=
-	    NSS_STATUS_SUCCESS) {
+	ret = wbcInterfaceDetails(&details);
+	if (!WBC_ERROR_IS_OK(ret)) {
 		DEBUG(1, ("could not obtain winbind domain name!\n"));
 		return lp_workgroup();
 	}
 
-	fstrcpy(winbind_domain, response.data.domain_name);
+	fstrcpy(winbind_domain, details->netbios_domain);
+
+	wbcFreeMemory(details);
 
 	return winbind_domain;
 
@@ -335,7 +336,8 @@ const char *get_winbind_domain(void)
 
 const char *get_winbind_netbios_name(void)
 {
-	struct winbindd_response response;
+	struct wbcInterfaceDetails *details;
+	wbcErr ret;
 
 	static fstring winbind_netbios_name;
 
@@ -343,17 +345,17 @@ const char *get_winbind_netbios_name(void)
 		return winbind_netbios_name;
 	}
 
-	ZERO_STRUCT(response);
-
 	/* Send off request */
 
-	if (winbindd_request_response(NULL, WINBINDD_NETBIOS_NAME, NULL, &response) !=
-	    NSS_STATUS_SUCCESS) {
+	ret = wbcInterfaceDetails(&details);
+	if (!WBC_ERROR_IS_OK(ret)) {
 		DEBUG(1, ("could not obtain winbind netbios name!\n"));
 		return lp_netbios_name();
 	}
 
-	fstrcpy(winbind_netbios_name, response.data.netbios_name);
+	fstrcpy(winbind_netbios_name, details->netbios_name);
+
+	wbcFreeMemory(details);
 
 	return winbind_netbios_name;
 
@@ -391,8 +393,10 @@ static bool parse_ntlm_auth_domain_user(const char *domuser, fstring domain,
 }
 
 static bool get_require_membership_sid(void) {
-	struct winbindd_request request;
-	struct winbindd_response response;
+	fstring domain, name, sidbuf;
+	struct wbcDomainSid sid;
+	enum wbcSidType type;
+	wbcErr ret;
 
 	if (!require_membership_of) {
 		return True;
@@ -404,25 +408,23 @@ static bool get_require_membership_sid(void) {
 
 	/* Otherwise, ask winbindd for the name->sid request */
 
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
-
-	if (!parse_ntlm_auth_domain_user(require_membership_of, 
-					 request.data.name.dom_name, 
-					 request.data.name.name)) {
+	if (!parse_ntlm_auth_domain_user(require_membership_of,
+					 domain, name)) {
 		DEBUG(0, ("Could not parse %s into separate domain/name parts!\n",
 			  require_membership_of));
 		return False;
 	}
 
-	if (winbindd_request_response(NULL, WINBINDD_LOOKUPNAME, &request, &response) !=
-	    NSS_STATUS_SUCCESS) {
+	ret = wbcLookupName(domain, name, &sid, &type);
+	if (!WBC_ERROR_IS_OK(ret)) {
 		DEBUG(0, ("Winbindd lookupname failed to resolve %s into a SID!\n", 
 			  require_membership_of));
 		return False;
 	}
 
-	require_membership_of_sid = SMB_STRDUP(response.data.sid.sid);
+	wbcSidToStringBuf(&sid, sidbuf, sizeof(sidbuf));
+
+	require_membership_of_sid = SMB_STRDUP(sidbuf);
 
 	if (require_membership_of_sid)
 		return True;

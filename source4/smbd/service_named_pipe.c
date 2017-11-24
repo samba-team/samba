@@ -122,13 +122,13 @@ static void named_pipe_accept_done(struct tevent_req *subreq)
 	conn->local_address = talloc_move(conn, &local_server_addr);
 	conn->remote_address = talloc_move(conn, &remote_client_addr);
 
-	DEBUG(10, ("Accepted npa connection from %s. "
-		   "Client: %s (%s). Server: %s (%s)\n",
-		   tsocket_address_string(conn->remote_address, tmp_ctx),
-		   local_server_name,
-		   tsocket_address_string(local_server_addr, tmp_ctx),
-		   remote_client_name,
-		   tsocket_address_string(remote_client_addr, tmp_ctx)));
+	DBG_DEBUG("Accepted npa connection from %s. "
+		  "Client: %s (%s). Server: %s (%s)\n",
+		  tsocket_address_string(conn->remote_address, tmp_ctx),
+		  local_server_name,
+		  tsocket_address_string(local_server_addr, tmp_ctx),
+		  remote_client_name,
+		  tsocket_address_string(remote_client_addr, tmp_ctx));
 
 	conn->session_info = auth_session_info_from_transport(conn, session_info_transport,
 							      conn->lp_ctx,
@@ -145,8 +145,7 @@ static void named_pipe_accept_done(struct tevent_req *subreq)
 	conn->private_data = pipe_sock->private_data;
 	conn->ops->accept_connection(conn);
 
-	DEBUG(10, ("named pipe connection [%s] established\n",
-		   conn->ops->name));
+	DBG_DEBUG("named pipe connection [%s] established\n", conn->ops->name);
 
 	talloc_free(tmp_ctx);
 	return;
@@ -188,7 +187,8 @@ NTSTATUS tstream_setup_named_pipe(TALLOC_CTX *mem_ctx,
 				  const struct model_ops *model_ops,
 				  const struct stream_server_ops *stream_ops,
 				  const char *pipe_name,
-				  void *private_data)
+				  void *private_data,
+				  void *process_context)
 {
 	char *dirname;
 	struct named_pipe_socket *pipe_sock;
@@ -207,8 +207,8 @@ NTSTATUS tstream_setup_named_pipe(TALLOC_CTX *mem_ctx,
 
 	if (!directory_create_or_exist(lpcfg_ncalrpc_dir(lp_ctx), 0755)) {
 		status = map_nt_error_from_unix_common(errno);
-		DEBUG(0,(__location__ ": Failed to create ncalrpc pipe directory '%s' - %s\n",
-			 lpcfg_ncalrpc_dir(lp_ctx), nt_errstr(status)));
+		DBG_ERR("Failed to create ncalrpc pipe directory '%s' - %s\n",
+			lpcfg_ncalrpc_dir(lp_ctx), nt_errstr(status));
 		goto fail;
 	}
 
@@ -219,8 +219,8 @@ NTSTATUS tstream_setup_named_pipe(TALLOC_CTX *mem_ctx,
 
 	if (!directory_create_or_exist_strict(dirname, geteuid(), 0700)) {
 		status = map_nt_error_from_unix_common(errno);
-		DEBUG(0,(__location__ ": Failed to create stream pipe directory '%s' - %s\n",
-			 dirname, nt_errstr(status)));
+		DBG_ERR("Failed to create stream pipe directory '%s' - %s\n",
+			dirname, nt_errstr(status));
 		goto fail;
 	}
 
@@ -248,7 +248,8 @@ NTSTATUS tstream_setup_named_pipe(TALLOC_CTX *mem_ctx,
 				     pipe_sock->pipe_path,
 				     NULL,
 				     NULL,
-				     pipe_sock);
+				     pipe_sock,
+				     process_context);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}

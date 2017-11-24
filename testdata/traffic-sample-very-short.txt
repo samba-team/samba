@@ -1,0 +1,50 @@
+1487921562.592126000	11		3	1	dns	0	query
+1487921562.592285000	11		1	4	dns	0	query
+1487921562.592636000	11		4	1	dns	1	response
+1487921562.592911000	11		1	3	dns	1	response
+1487921562.593315000	06	3	5	1	ldap	3	searchRequest	2	DC,DC		cn			
+1487921562.596247000	11		3	1	dns	0	query
+1487921562.596362000	11		1	4	dns	0	query
+1487921562.596697000	11		4	1	dns	1	response
+1487921562.596921000	11		1	3	dns	1	response
+1487921562.598308000	11		3	1	dns	0	query
+1487921562.598414000	11		1	4	dns	0	query
+1487921562.598729000	11		4	1	dns	1	response
+1487921562.598963000	11		1	3	dns	1	response
+1487921562.607624000	11		6	1	dns	0	query
+1487921562.607956000	11		6	1	dns	0	query
+1487921562.608009000	11		1	6	dns	1	response
+1487921562.608232000	11		1	6	dns	1	response
+1487921562.612424000	11		6	1	dns	0	query
+1487921562.612648000	11		1	6	dns	1	response
+1487921562.720442000	11		6	1	cldap	3	searchRequest				Netlogon			
+1487921562.720706000	11		6	1	cldap	3	searchRequest				Netlogon			
+1487921562.721004000	11		6	1	cldap	3	searchRequest				Netlogon			
+1487921562.724801000	11		1	6	cldap	5	searchResDone							
+1487921562.728632000	11		1	6	cldap	5	searchResDone							
+1487921562.732508000	11		1	6	cldap	5	searchResDone							
+1487921562.748004000	06	3	1	5	ldap	5	searchResDone							
+1487921562.820387000	06	3	5	1	ldap	2	unbindRequest							
+1487921562.831445000	06	14	6	1	dcerpc	11	Bind
+1487921562.831565000	06	14	1	6	dcerpc	12	Bind_ack
+1487921562.831776000	06	14	6	1	epm	3	Map
+1487921562.832483000	06	14	1	6	epm	3	Map
+1487921562.833521000	06	15	6	1	dcerpc	11	Bind
+1487921562.833775000	06	15	1	6	dcerpc	12	Bind_ack
+1487921562.833955000	06	15	6	1	rpc_netlogon	4	NetrServerReqChallenge
+1487921562.834039000	06	15	1	6	rpc_netlogon	4	NetrServerReqChallenge
+1487921562.834325000	06	15	6	1	rpc_netlogon	26	NetrServerAuthenticate3
+1487921562.834895000	06	15	1	6	rpc_netlogon	26	NetrServerAuthenticate3
+1487921562.835515000	06	16	6	1	dcerpc	11	Bind
+1487921562.836417000	06	16	1	6	dcerpc	12	Bind_ack
+1487921562.836694000	06	16	6	1	rpc_netlogon	21	NetrLogonDummyRoutine1
+1487921562.836917000	06	16	1	6	rpc_netlogon	21	NetrLogonDummyRoutine1
+1487921562.852041000	06	14	6	1	epm	3	Map
+1487921562.852687000	06	14	1	6	epm	3	Map
+1487921562.876310000	06	16	6	1	rpc_netlogon	29	NetrLogonGetDomainInfo
+1487921562.880868000	06	18	6	1	kerberos			
+1487921562.881074000	06	16	1	6	rpc_netlogon	29	NetrLogonGetDomainInfo
+1487921562.884476000	06	19	6	1	ldap	3	searchRequest				subschemaSubentry,dsServiceName,namingContexts,defaultNamingContext,schemaNamingContext,configurationNamingContext,rootDomainNamingContext,supportedControl,supportedLDAPVersion,supportedLDAPPolicies,supportedSASLMechanisms,dnsHostName,ldapServiceName,serverName,supportedCapabilities			
+1487921562.885803000	06	18	1	6	kerberos			
+1487921562.892086000	06	19	1	6	ldap	5	searchResDone							
+1487921562.916946000	06	20	6	1	smb	0x72	Negotiate Protocol (0x72)

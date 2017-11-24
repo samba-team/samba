@@ -24,23 +24,22 @@
 #include "system/network.h"
 
 #include "lib/util/debug.h"
+#include "lib/util/tevent_unix.h"
 
 #include "protocol/protocol.h"
-#include "protocol/protocol_api.h"
+#include "protocol/protocol_util.h"
 
-#include "common/rb_tree.h"
+#include "common/db_hash.h"
 #include "common/system.h"
 #include "common/logging.h"
 
 
-/* Contains the listening socket and the list of TCP connections to
- * kill */
-struct ctdb_kill_tcp {
+struct reset_connections_state {
+	struct tevent_context *ev;
 	int capture_fd;
 	struct tevent_fd *fde;
-	trbt_tree_t *connections;
+	struct db_hash_context *connections;
 	void *private_data;
-	void *destructor_data;
 	unsigned int attempts;
 	unsigned int max_attempts;
 	struct timeval retry_interval;
@@ -48,292 +47,274 @@ struct ctdb_kill_tcp {
 	unsigned int batch_size;
 };
 
-static const char *prog;
 
-/* TCP connection to be killed */
-struct ctdb_killtcp_con {
-	ctdb_sock_addr src_addr;
-	ctdb_sock_addr dst_addr;
-	struct ctdb_kill_tcp *killtcp;
-};
+static void reset_connections_capture_tcp_handler(struct tevent_context *ev,
+						  struct tevent_fd *fde,
+						  uint16_t flags,
+						  void *private_data);
+static void reset_connections_batch(struct tevent_req *subreq);
+static int reset_connections_tickle_connection(
+					uint8_t *keybuf, size_t keylen,
+					uint8_t *databuf, size_t datalen,
+					void *private_data);
 
-/* this function is used to create a key to represent this socketpair
-   in the killtcp tree.
-   this key is used to insert and lookup matching socketpairs that are
-   to be tickled and RST
-*/
-#define KILLTCP_KEYLEN	10
-static uint32_t *killtcp_key(ctdb_sock_addr *src, ctdb_sock_addr *dst)
+static struct tevent_req *reset_connections_send(
+			      TALLOC_CTX *mem_ctx,
+			      struct tevent_context *ev,
+			      const char *iface,
+			      struct ctdb_connection_list *conn_list)
 {
-	static uint32_t key[KILLTCP_KEYLEN];
+	struct tevent_req *req, *subreq;
+	struct reset_connections_state *state;
+	int i, ret;
 
-	bzero(key, sizeof(key));
-
-	if (src->sa.sa_family != dst->sa.sa_family) {
-		DEBUG(DEBUG_ERR, (__location__ " ERROR, different families passed :%u vs %u\n", src->sa.sa_family, dst->sa.sa_family));
-		return key;
+	req = tevent_req_create(mem_ctx, &state,
+				struct reset_connections_state);
+	if (req == NULL) {
+		return NULL;
 	}
 
-	switch (src->sa.sa_family) {
-	case AF_INET:
-		key[0]	= dst->ip.sin_addr.s_addr;
-		key[1]	= src->ip.sin_addr.s_addr;
-		key[2]	= dst->ip.sin_port;
-		key[3]	= src->ip.sin_port;
-		break;
-	case AF_INET6: {
-		uint32_t *dst6_addr32 =
-			(uint32_t *)&(dst->ip6.sin6_addr.s6_addr);
-		uint32_t *src6_addr32 =
-			(uint32_t *)&(src->ip6.sin6_addr.s6_addr);
-		key[0]	= dst6_addr32[3];
-		key[1]	= src6_addr32[3];
-		key[2]	= dst6_addr32[2];
-		key[3]	= src6_addr32[2];
-		key[4]	= dst6_addr32[1];
-		key[5]	= src6_addr32[1];
-		key[6]	= dst6_addr32[0];
-		key[7]	= src6_addr32[0];
-		key[8]	= dst->ip6.sin6_port;
-		key[9]	= src->ip6.sin6_port;
-		break;
-	}
-	default:
-		DEBUG(DEBUG_ERR, (__location__ " ERROR, unknown family passed :%u\n", src->sa.sa_family));
-		return key;
+	state->ev = ev;
+
+	if (conn_list->num == 0) {
+		/* No connections, done! */
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
 	}
 
-	return key;
+	ret = db_hash_init(state, "connections", 2048, DB_HASH_SIMPLE,
+			   &state->connections);
+	if (ret != 0) {
+		D_ERR("Failed to initialise connection hash (%s)\n",
+		      strerror(ret));
+		tevent_req_error(req, ret);
+		return tevent_req_post(req, ev);
+	}
+
+	DBG_DEBUG("Adding %u connections to hash\n", conn_list->num);
+	for (i = 0; i < conn_list->num; i++) {
+		struct ctdb_connection *c = &conn_list->conn[i];
+
+		DBG_DEBUG("Adding connection to hash: %s\n",
+			  ctdb_connection_to_string(conn_list, c, true));
+
+		/* Connection is stored as a key in the connections hash */
+		ret = db_hash_add(state->connections,
+				  (uint8_t *)discard_const(c), sizeof(*c),
+				  NULL, 0);
+		if (ret != 0) {
+			D_ERR("Error adding connection to hash (%s)\n",
+			      strerror(ret));
+			tevent_req_error(req, ret);
+			return tevent_req_post(req, ev);
+		}
+	}
+
+	state->attempts = 0;
+	state->max_attempts = 50;
+
+	state->retry_interval.tv_sec = 0;
+	state->retry_interval.tv_usec = 100 * 1000;
+
+	state->batch_count = 0;
+	state->batch_size = 300;
+
+	state->capture_fd =
+		ctdb_sys_open_capture_socket(iface, &state->private_data);
+	if (state->capture_fd == -1) {
+		D_ERR("Failed to open capture socket on iface '%s' (%s)\n",
+		      iface, strerror(errno));
+			tevent_req_error(req, EIO);
+			return tevent_req_post(req, ev);
+	}
+
+	state->fde = tevent_add_fd(ev, state, state->capture_fd,
+				   TEVENT_FD_READ,
+				   reset_connections_capture_tcp_handler,
+				   state);
+	if (tevent_req_nomem(state->fde, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_fd_set_auto_close(state->fde);
+
+	subreq = tevent_wakeup_send(state, ev, tevent_timeval_current_ofs(0,0));
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, reset_connections_batch, req);
+
+	return req;
 }
 
 /*
   called when we get a read event on the raw socket
  */
-static void capture_tcp_handler(struct tevent_context *ev,
-				struct tevent_fd *fde,
-				uint16_t flags, void *private_data)
+static void reset_connections_capture_tcp_handler(struct tevent_context *ev,
+						  struct tevent_fd *fde,
+						  uint16_t flags,
+						  void *private_data)
 {
-	struct ctdb_kill_tcp *killtcp = talloc_get_type(private_data, struct ctdb_kill_tcp);
-	struct ctdb_killtcp_con *con;
-	ctdb_sock_addr src, dst;
+	struct reset_connections_state *state = talloc_get_type_abort(
+		private_data, struct reset_connections_state);
+	/* 0 the parts that don't get set by ctdb_sys_read_tcp_packet */
+	struct ctdb_connection conn;
 	uint32_t ack_seq, seq;
 	int rst;
 	uint16_t window;
+	int ret;
 
-	if (ctdb_sys_read_tcp_packet(killtcp->capture_fd,
-				     killtcp->private_data,
-				     &src, &dst,
-				     &ack_seq, &seq, &rst, &window) != 0) {
+	ret = ctdb_sys_read_tcp_packet(state->capture_fd,
+				       state->private_data,
+				       &conn.server, &conn.client,
+				       &ack_seq, &seq, &rst, &window);
+	if (ret != 0) {
 		/* probably a non-tcp ACK packet */
 		return;
 	}
 
 	if (window == htons(1234) && (rst || seq == 0)) {
 		/* Ignore packets that we sent! */
-		DEBUG(DEBUG_DEBUG,
-		      ("Ignoring packet with dst=%s:%d, src=%s:%d, seq=%"PRIu32", ack_seq=%"PRIu32", rst=%d, window=%"PRIu16"\n",
-		       ctdb_sock_addr_to_string(killtcp, &dst),
-		       ntohs(dst.ip.sin_port),
-		       ctdb_sock_addr_to_string(killtcp, &src),
-		       ntohs(src.ip.sin_port),
-		       seq, ack_seq, rst, ntohs(window)));
+		D_DEBUG("Ignoring packet: %s, "
+			"seq=%"PRIu32", ack_seq=%"PRIu32", "
+			"rst=%d, window=%"PRIu16"\n",
+			ctdb_connection_to_string(state, &conn, false),
+			seq, ack_seq, rst, ntohs(window));
 		return;
 	}
 
-	/* check if we have this guy in our list of connections
-	   to kill
-	*/
-	con = trbt_lookuparray32(killtcp->connections,
-			KILLTCP_KEYLEN, killtcp_key(&src, &dst));
-	if (con == NULL) {
-		/* no this was some other packet we can just ignore */
+	/* Check if this connection is one being reset, if found then delete */
+	ret = db_hash_delete(state->connections,
+			     (uint8_t*)&conn, sizeof(conn));
+	if (ret == ENOENT) {
+		/* Packet for some other connection, ignore */
+		DBG_DEBUG("Ignoring packet for unknown connection: %s\n",
+			  ctdb_connection_to_string(state, &conn, true));
+		return;
+	}
+	if (ret != 0) {
+		DBG_WARNING("Internal error (%s)\n", strerror(ret));
 		return;
 	}
 
-	/* This connection has been tickled!  RST it and remove it
-	 * from the list. */
-	DEBUG(DEBUG_INFO,
-	      ("Sending a TCP RST to kill connection (%s:%d) -> %s:%d\n",
-	       ctdb_sock_addr_to_string(con, &con->src_addr),
-	       ntohs(con->src_addr.ip.sin_port),
-	       ctdb_sock_addr_to_string(con, &con->dst_addr),
-	       ntohs(con->dst_addr.ip.sin_port)));
+	D_INFO("Sending a TCP RST to for connection %s\n",
+	       ctdb_connection_to_string(state, &conn, true));
 
-	ctdb_sys_send_tcp(&con->dst_addr, &con->src_addr, ack_seq, seq, 1);
-	talloc_free(con);
-}
-
-
-/* when traversing the list of all tcp connections to send tickle acks to
-   (so that we can capture the ack coming back and kill the connection
-    by a RST)
-   this callback is called for each connection we are currently trying to kill
-*/
-static int tickle_connection_traverse(void *param, void *data)
-{
-	struct ctdb_killtcp_con *con = talloc_get_type(data, struct ctdb_killtcp_con);
-
-	con->killtcp->batch_count++;
-	if (con->killtcp->batch_count > con->killtcp->batch_size) {
-		/* Terminate the traverse */
-		return -1;
+	ret = ctdb_sys_send_tcp(&conn.server, &conn.client, ack_seq, seq, 1);
+	if (ret != 0) {
+		DBG_ERR("Error sending TCP RST for connection\n");
 	}
-
-	ctdb_sys_send_tcp(&con->dst_addr, &con->src_addr, 0, 0, 0);
-
-	return 0;
 }
-
 
 /*
-   called every second until all sentenced connections have been reset
+ * Called periodically until all sentenced connections have been reset
+ * or enough attempts have been made
  */
-static void ctdb_tickle_sentenced_connections(struct tevent_context *ev,
-					      struct tevent_timer *te,
-					      struct timeval t, void *private_data)
+static void reset_connections_batch(struct tevent_req *subreq)
 {
-	struct ctdb_kill_tcp *killtcp = talloc_get_type(private_data, struct ctdb_kill_tcp);
-	void *delete_cons = talloc_new(NULL);
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct reset_connections_state *state = tevent_req_data(
+		req, struct reset_connections_state);
+	bool status;
+	int count, ret;
+
+	status = tevent_wakeup_recv(subreq);
+	TALLOC_FREE(subreq);
+
+	if (! status) {
+		DBG_WARNING("Unexpected error on timer expiry\n");
+		/* Keep going... */
+	}
 
 	/* loop over up to batch_size connections sending tickle ACKs */
-	killtcp->batch_count = 0;
-	trbt_traversearray32(killtcp->connections, KILLTCP_KEYLEN, tickle_connection_traverse, delete_cons);
+	state->batch_count = 0;
+	ret = db_hash_traverse(state->connections,
+			       reset_connections_tickle_connection,
+			       state, NULL);
+	if (ret != 0) {
+		DBG_WARNING("Unexpected error traversing connections (%s)\n",
+			    strerror(ret));
+	}
 
-	/* now we've finished traverse, it's safe to do deletion. */
-	talloc_free(delete_cons);
+	state->attempts++;
 
-	killtcp->attempts++;
-
-	/* If there are no more connections to kill or we have tried
-	   too many times we can remove the entire killtcp structure
+	/*
+	 * If there are no more connections to kill or we have tried
+	 * too many times we're finished
 	 */
-	if (killtcp->connections == NULL ||
-	    killtcp->connections->root == NULL ||
-		killtcp->attempts >= killtcp->max_attempts) {
-		talloc_free(killtcp);
+	ret = db_hash_traverse(state->connections, NULL, NULL, &count);
+	if (ret != 0) {
+		/* What now?  Try again until max_attempts reached */
+		DBG_WARNING("Unexpected error traversing connections (%s)\n",
+			    strerror(ret));
+		count = 1;
+	}
+	if (count == 0 ||
+	    state->attempts >= state->max_attempts) {
+		tevent_req_done(req);
 		return;
 	}
 
-	/* try tickling them again in a seconds time
-	 */
-	tevent_add_timer(ev, killtcp,
-			 tevent_timeval_current_ofs(
-				 killtcp->retry_interval.tv_sec,
-				 killtcp->retry_interval.tv_usec),
-			 ctdb_tickle_sentenced_connections, killtcp);
+	/* Schedule next attempt */
+	subreq = tevent_wakeup_send(state, state->ev,
+				    tevent_timeval_current_ofs(
+					    state->retry_interval.tv_sec,
+					    state->retry_interval.tv_usec));
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, reset_connections_batch, req);
 }
 
-/* nothing fancy here, just unconditionally replace any existing
-   connection structure with the new one.
-
-   don't even free the old one if it did exist, that one is talloc_stolen
-   by the same node in the tree anyway and will be deleted when the new data
-   is deleted
-*/
-static void *add_killtcp_callback(void *parm, void *data)
+static int reset_connections_tickle_connection(
+					uint8_t *keybuf, size_t keylen,
+					uint8_t *databuf, size_t datalen,
+					void *private_data)
 {
-	return parm;
-}
+	struct reset_connections_state *state = talloc_get_type_abort(
+		private_data, struct reset_connections_state);
+	struct ctdb_connection *conn;
+	int ret;
 
-/* Add a TCP socket to the list of connections we want to RST.  The
- * list is attached to *killtcp_arg.  If this is NULL then allocate
- * the structure.  */
-static int ctdb_killtcp(struct tevent_context *ev,
-			TALLOC_CTX *mem_ctx,
-			const char *iface,
-			const ctdb_sock_addr *src,
-			const ctdb_sock_addr *dst,
-			struct ctdb_kill_tcp **killtcp_arg)
-{
-	struct ctdb_kill_tcp *killtcp;
-	struct ctdb_killtcp_con *con;
-
-	if (killtcp_arg == NULL) {
-		DEBUG(DEBUG_ERR, (__location__ " killtcp_arg is NULL!\n"));
-		return -1;
+	if (keylen != sizeof(*conn)) {
+		DBG_WARNING("Unexpected data in connection hash\n");
+		return 0;
 	}
 
-	killtcp = *killtcp_arg;
+	conn = (struct ctdb_connection *)keybuf;
 
-	/* Allocate a new structure if necessary.  The structure is
-	 * only freed when mem_ctx is freed. */
-	if (killtcp == NULL) {
-		killtcp = talloc_zero(mem_ctx, struct ctdb_kill_tcp);
-		if (killtcp == NULL) {
-			DEBUG(DEBUG_ERR, (__location__ " out of memory\n"));
-			return -1;
-		}
-
-		killtcp->capture_fd  = -1;
-		killtcp->connections = trbt_create(killtcp, 0);
-
-		killtcp->attempts = 0;
-		killtcp->max_attempts = 50;
-
-		killtcp->retry_interval.tv_sec = 0;
-		killtcp->retry_interval.tv_usec = 100 * 1000;
-
-		killtcp->batch_count = 0;
-		killtcp->batch_size = 300;
-
-		*killtcp_arg = killtcp;
+	state->batch_count++;
+	if (state->batch_count > state->batch_size) {
+		/* Terminate the traverse */
+		return 1;
 	}
 
-	/* create a structure that describes this connection we want to
-	   RST and store it in killtcp->connections
-	*/
-	con = talloc(killtcp, struct ctdb_killtcp_con);
-	if (con == NULL) {
-		DEBUG(DEBUG_ERR, (__location__ " out of memory\n"));
-		return -1;
-	}
-	con->src_addr = *src;
-	con->dst_addr = *dst;
-	con->killtcp  = killtcp;
-
-
-	trbt_insertarray32_callback(killtcp->connections,
-				    KILLTCP_KEYLEN,
-				    killtcp_key(&con->dst_addr,
-						&con->src_addr),
-				    add_killtcp_callback, con);
-
-	/*
-	   If we don't have a socket to listen on yet we must create it
-	 */
-	if (killtcp->capture_fd == -1) {
-		killtcp->capture_fd =
-			ctdb_sys_open_capture_socket(iface,
-						     &killtcp->private_data);
-		if (killtcp->capture_fd == -1) {
-			DEBUG(DEBUG_CRIT,(__location__ " Failed to open capturing "
-					  "socket on iface '%s' for killtcp (%s)\n",
-					  iface, strerror(errno)));
-			return -1;
-		}
-	}
-
-
-	if (killtcp->fde == NULL) {
-		killtcp->fde = tevent_add_fd(ev, killtcp,
-					     killtcp->capture_fd,
-					     TEVENT_FD_READ,
-					     capture_tcp_handler, killtcp);
-		tevent_fd_set_auto_close(killtcp->fde);
+	DBG_DEBUG("Sending tickle ACK for connection '%s'\n",
+		  ctdb_connection_to_string(state, conn, true));
+	ret = ctdb_sys_send_tcp(&conn->server, &conn->client, 0, 0, 0);
+	if (ret != 0) {
+		DBG_ERR("Error sending tickle ACK\n");
+		/* continue */
 	}
 
 	return 0;
 }
 
-static int ctdb_killtcp_destructor(struct ctdb_kill_tcp *killtcp)
+static bool reset_connections_recv(struct tevent_req *req, int *perr)
 {
-	bool *done = killtcp->destructor_data;
-	*done = true;
+	int err;
 
-	return 0;
+	if (tevent_req_is_unix_error(req, &err)) {
+		if (perr != NULL) {
+			*perr = err;
+		}
+		return false;
+	}
+
+	return true;
 }
 
-static void usage(void)
+static void usage(const char *prog)
 {
 	printf("usage: %s <interface> [ <srcip:port> <dstip:port> ]\n", prog);
 	exit(1);
@@ -342,15 +323,14 @@ static void usage(void)
 int main(int argc, char **argv)
 {
 	struct ctdb_connection conn;
-	struct ctdb_kill_tcp *killtcp = NULL;
 	struct tevent_context *ev = NULL;
-	struct TALLOC_CONTEXT *mem_ctx = NULL;
-	struct ctdb_connection *conns = NULL;
+	TALLOC_CTX *mem_ctx = NULL;
+	struct ctdb_connection_list *conn_list = NULL;
 	const char *t;
+	struct tevent_req *req;
 	int debug_level;
-	bool done;
-	int num = 0;
-	int i, ret;
+	bool status;
+	int ret;
 
 	/* Set the debug level */
 	t = getenv("CTDB_DEBUGLEVEL");
@@ -362,31 +342,40 @@ int main(int argc, char **argv)
 		}
 	}
 
-	prog = argv[0];
-
 	if (argc != 2 && argc != 4) {
-		usage();
+		usage(argv[0]);
 	}
 
 	if (argc == 4) {
-		if (!parse_ip_port(argv[2], &conn.src)) {
-			DEBUG(DEBUG_ERR, ("Bad IP:port '%s'\n", argv[2]));
-			goto fail;
-		}
-
-		if (!parse_ip_port(argv[3], &conn.dst)) {
-			DEBUG(DEBUG_ERR, ("Bad IP:port '%s'\n", argv[3]));
-			goto fail;
-		}
-
-		conns = &conn;
-		num = 1;
-	} else {
-		ret = ctdb_parse_connections(stdin, mem_ctx, &num, &conns);
+		ret = ctdb_sock_addr_from_string(argv[2], &conn.client, true);
 		if (ret != 0) {
-			DEBUG(DEBUG_ERR,
-			      ("Unable to parse connections [%s]\n",
-			       strerror(ret)));
+			D_ERR("Bad IP:port '%s'\n", argv[2]);
+			goto fail;
+		}
+
+		ret = ctdb_sock_addr_from_string(argv[3], &conn.server, true);
+		if (ret != 0) {
+			D_ERR("Bad IP:port '%s'\n", argv[3]);
+			goto fail;
+		}
+
+
+		conn_list = talloc_zero(mem_ctx, struct ctdb_connection_list);
+		if (conn_list == NULL) {
+			ret = ENOMEM;
+			DBG_ERR("Internal error (%s)\n", strerror(ret));
+			goto fail;
+		}
+		ret = ctdb_connection_list_add(conn_list, &conn);
+		if (ret != 0) {
+			DBG_ERR("Internal error (%s)\n", strerror(ret));
+			goto fail;
+		}
+	} else {
+		ret = ctdb_connection_list_read(mem_ctx, true, &conn_list);
+		if (ret != 0) {
+			D_ERR("Unable to parse connections (%s)\n",
+			      strerror(ret));
 			goto fail;
 		}
 	}
@@ -397,39 +386,23 @@ int main(int argc, char **argv)
 		goto fail;
 	}
 
-        ev = tevent_context_init(mem_ctx);
+	ev = tevent_context_init(mem_ctx);
 	if (ev == NULL) {
 		DEBUG(DEBUG_ERR, ("Failed to initialise tevent\n"));
 		goto fail;
 	}
 
-	if (num == 0) {
-		/* No connections, done! */
-		talloc_free(mem_ctx);
-		return 0;
+	req = reset_connections_send(mem_ctx, ev, argv[1], conn_list);
+	if (req == NULL) {
+		goto fail;
 	}
 
-	for (i = 0; i < num; i++) {
-		ret = ctdb_killtcp(ev, mem_ctx, argv[1],
-				   &conns[i].src, &conns[i].dst,
-				   &killtcp);
-		if (ret != 0) {
-			DEBUG(DEBUG_ERR, ("Unable to killtcp\n"));
-			goto fail;
-		}
-	}
+	tevent_req_poll(req, ev);
 
-	done = false;
-	killtcp->destructor_data = &done;
-	talloc_set_destructor(killtcp, ctdb_killtcp_destructor);
-
-	/* Do the initial processing of connections */
-	tevent_add_timer(ev, killtcp,
-			 tevent_timeval_current_ofs(0, 0),
-			 ctdb_tickle_sentenced_connections, killtcp);
-
-	while (!done) {
-		tevent_loop_once(ev);
+	status = reset_connections_recv(req, &ret);
+	if (! status) {
+		D_ERR("Failed to kill connections (%s)\n", strerror(ret));
+		goto fail;
 	}
 
 	talloc_free(mem_ctx);

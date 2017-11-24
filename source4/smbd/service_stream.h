@@ -62,6 +62,7 @@ struct stream_connection {
 
 	uint processing;
 	const char *terminate;
+	void *process_context;
 };
 
 

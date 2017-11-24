@@ -72,6 +72,7 @@ def generatePythonFile(out_file, errors):
     out_file.write(" * [MS-ERREF] https://msdn.microsoft.com/en-us/library/cc231199.aspx\n")
     out_file.write(" */\n")
     out_file.write("#include <Python.h>\n")
+    out_file.write("#include \"python/py3compat.h\"\n")
     out_file.write("#include \"includes.h\"\n\n")
     out_file.write("static inline PyObject *ndr_PyLong_FromUnsignedLongLong(unsigned long long v)\n");
     out_file.write("{\n");
@@ -84,17 +85,24 @@ def generatePythonFile(out_file, errors):
     # This is needed to avoid a missing prototype error from the C
     # compiler. There is never a prototype for this function, it is a
     # module loaded by python with dlopen() and found with dlsym().
-    out_file.write("void initwerror(void);\n")
-    out_file.write("void initwerror(void)\n")
+    out_file.write("static struct PyModuleDef moduledef = {\n")
+    out_file.write("\tPyModuleDef_HEAD_INIT,\n")
+    out_file.write("\t.m_name = \"werror\",\n")
+    out_file.write("\t.m_doc = \"WERROR defines\",\n")
+    out_file.write("\t.m_size = -1,\n")
+    out_file.write("};\n\n")
+    out_file.write("MODULE_INIT_FUNC(werror)\n")
     out_file.write("{\n")
     out_file.write("\tPyObject *m;\n\n")
-    out_file.write("\tm = Py_InitModule3(\"werror\", NULL, \"WERROR defines\");\n");
+    out_file.write("\tm = PyModule_Create(&moduledef);\n");
     out_file.write("\tif (m == NULL)\n");
-    out_file.write("\t\treturn;\n\n");
+    out_file.write("\t\treturn NULL;\n\n");
     for err in errors:
         line = """\tPyModule_AddObject(m, \"%s\",
                   \t\tndr_PyLong_FromUnsignedLongLong(W_ERROR_V(%s)));\n""" % (err.err_define, err.err_define)
         out_file.write(line)
+    out_file.write("\n");
+    out_file.write("\treturn m;\n");
     out_file.write("}\n");
 
 def transformErrorName( error_name ):
@@ -124,22 +132,22 @@ def main():
         gen_sourcefile_name = sys.argv[3]
         gen_pythonfile_name = sys.argv[4]
     else:
-        print "usage: %s winerrorfile headerfile sourcefile pythonfile" % sys.argv[0]
+        print("usage: %s winerrorfile headerfile sourcefile pythonfile" % sys.argv[0])
         sys.exit()
 
     input_file = open(input_file_name, "r")
     errors = parseErrorDescriptions(input_file, True, transformErrorName)
     input_file.close()
 
-    print "writing new header file: %s" % gen_headerfile_name
+    print("writing new header file: %s" % gen_headerfile_name)
     out_file = open(gen_headerfile_name, "w")
     generateHeaderFile(out_file, errors)
     out_file.close()
-    print "writing new source file: %s" % gen_sourcefile_name
+    print("writing new source file: %s" % gen_sourcefile_name)
     out_file = open(gen_sourcefile_name, "w")
     generateSourceFile(out_file, errors)
     out_file.close()
-    print "writing new python file: %s" % gen_pythonfile_name
+    print("writing new python file: %s" % gen_pythonfile_name)
     out_file = open(gen_pythonfile_name, "w")
     generatePythonFile(out_file, errors)
     out_file.close()

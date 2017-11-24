@@ -23,11 +23,13 @@
 #include "idmap_cache.h"
 #include "librpc/gen_ndr/ndr_winbind_c.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
+#include "passdb/lookup_sid.h"
 
 struct wb_xids2sids_dom_map {
 	unsigned low_id;
 	unsigned high_id;
 	const char *name;
+	struct dom_sid sid;
 };
 
 /*
@@ -93,6 +95,7 @@ static bool wb_xids2sids_add_dom(const char *domname,
 		dom_maps = tmp;
 
 		map = &dom_maps[num_maps];
+		ZERO_STRUCTP(map);
 		map->name = talloc_move(dom_maps, &name);
 	}
 
@@ -102,30 +105,138 @@ static bool wb_xids2sids_add_dom(const char *domname,
 	return false;
 }
 
-static void wb_xids2sids_init_dom_maps(void)
-{
-	if (dom_maps != NULL) {
-		return;
-	}
+struct wb_xids2sids_init_dom_maps_state {
+	struct tevent_context *ev;
+	struct tevent_req *req;
+	size_t dom_idx;
+};
 
+static void wb_xids2sids_init_dom_maps_lookupname_next(
+	struct wb_xids2sids_init_dom_maps_state *state);
+
+static void wb_xids2sids_init_dom_maps_lookupname_done(
+	struct tevent_req *subreq);
+
+static struct tevent_req *wb_xids2sids_init_dom_maps_send(
+	TALLOC_CTX *mem_ctx, struct tevent_context *ev)
+{
+	struct tevent_req *req = NULL;
+	struct wb_xids2sids_init_dom_maps_state *state = NULL;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct wb_xids2sids_init_dom_maps_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	*state = (struct wb_xids2sids_init_dom_maps_state) {
+		.ev = ev,
+		.req = req,
+		.dom_idx = 0,
+	};
+
+	if (dom_maps != NULL) {
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+	}
 	/*
 	 * Put the passdb idmap domain first. We always need to try
 	 * there first.
 	 */
 
-	dom_maps = talloc_array(NULL, struct wb_xids2sids_dom_map, 1);
-	if (dom_maps == NULL) {
-		return;
+	dom_maps = talloc_zero_array(NULL, struct wb_xids2sids_dom_map, 1);
+	if (tevent_req_nomem(dom_maps, req)) {
+		return tevent_req_post(req, ev);
 	}
 	dom_maps[0].low_id = 0;
 	dom_maps[0].high_id = UINT_MAX;
 	dom_maps[0].name = talloc_strdup(dom_maps, get_global_sam_name());
-	if (dom_maps[0].name == NULL) {
+	if (tevent_req_nomem(dom_maps[0].name, req)) {
 		TALLOC_FREE(dom_maps);
-		return;
+		return tevent_req_post(req, ev);
 	}
 
 	lp_scan_idmap_domains(wb_xids2sids_add_dom, NULL);
+
+	wb_xids2sids_init_dom_maps_lookupname_next(state);
+	if (!tevent_req_is_in_progress(req)) {
+		tevent_req_post(req, ev);
+	}
+	return req;
+}
+
+static void wb_xids2sids_init_dom_maps_lookupname_next(
+	struct wb_xids2sids_init_dom_maps_state *state)
+{
+	struct tevent_req *subreq = NULL;
+
+	if (state->dom_idx == talloc_array_length(dom_maps)) {
+		tevent_req_done(state->req);
+		return;
+	}
+
+	if (strequal(dom_maps[state->dom_idx].name, "*")) {
+		state->dom_idx++;
+		if (state->dom_idx == talloc_array_length(dom_maps)) {
+			tevent_req_done(state->req);
+			return;
+		}
+	}
+
+	subreq = wb_lookupname_send(state,
+				    state->ev,
+				    dom_maps[state->dom_idx].name,
+				    "",
+				    LOOKUP_NAME_NO_NSS);
+	if (tevent_req_nomem(subreq, state->req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq,
+				wb_xids2sids_init_dom_maps_lookupname_done,
+				state->req);
+}
+
+static void wb_xids2sids_init_dom_maps_lookupname_done(
+	struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct wb_xids2sids_init_dom_maps_state *state = tevent_req_data(
+		req, struct wb_xids2sids_init_dom_maps_state);
+	enum lsa_SidType type;
+	NTSTATUS status;
+
+	status = wb_lookupname_recv(subreq,
+				    &dom_maps[state->dom_idx].sid,
+				    &type);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("Lookup domain name '%s' failed '%s'\n",
+			    dom_maps[state->dom_idx].name,
+			    nt_errstr(status));
+
+		state->dom_idx++;
+		wb_xids2sids_init_dom_maps_lookupname_next(state);
+		return;
+	}
+
+	if (type != SID_NAME_DOMAIN) {
+		DBG_WARNING("SID %s for idmap domain name '%s' "
+			    "not a domain SID\n",
+			    sid_string_dbg(&dom_maps[state->dom_idx].sid),
+			    dom_maps[state->dom_idx].name);
+
+		ZERO_STRUCT(dom_maps[state->dom_idx].sid);
+	}
+
+	state->dom_idx++;
+	wb_xids2sids_init_dom_maps_lookupname_next(state);
+
+	return;
+}
+
+static NTSTATUS wb_xids2sids_init_dom_maps_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
 }
 
 struct wb_xids2sids_dom_state {
@@ -185,7 +296,6 @@ static struct tevent_req *wb_xids2sids_dom_send(
 			/* already mapped */
 			continue;
 		}
-
 		state->dom_xids[state->num_dom_xids++] = id;
 	}
 
@@ -196,7 +306,7 @@ static struct tevent_req *wb_xids2sids_dom_send(
 
 	child = idmap_child();
 	subreq = dcerpc_wbint_UnixIDs2Sids_send(
-		state, ev, child->binding_handle, dom_map->name,
+		state, ev, child->binding_handle, dom_map->name, dom_map->sid,
 		state->num_dom_xids, state->dom_xids, state->dom_sids);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
@@ -299,7 +409,8 @@ static void wb_xids2sids_dom_gotdc(struct tevent_req *subreq)
 	child = idmap_child();
 	subreq = dcerpc_wbint_UnixIDs2Sids_send(
 		state, state->ev, child->binding_handle, state->dom_map->name,
-		state->num_dom_xids, state->dom_xids, state->dom_sids);
+		state->dom_map->sid, state->num_dom_xids,
+		state->dom_xids, state->dom_sids);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -321,6 +432,7 @@ struct wb_xids2sids_state {
 };
 
 static void wb_xids2sids_done(struct tevent_req *subreq);
+static void wb_xids2sids_init_dom_maps_done(struct tevent_req *subreq);
 
 struct tevent_req *wb_xids2sids_send(TALLOC_CTX *mem_ctx,
 				     struct tevent_context *ev,
@@ -329,7 +441,6 @@ struct tevent_req *wb_xids2sids_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req, *subreq;
 	struct wb_xids2sids_state *state;
-	size_t num_domains;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct wb_xids2sids_state);
@@ -371,22 +482,44 @@ struct tevent_req *wb_xids2sids_send(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	wb_xids2sids_init_dom_maps();
-	num_domains = talloc_array_length(dom_maps);
+	subreq = wb_xids2sids_init_dom_maps_send(
+		state, state->ev);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, wb_xids2sids_init_dom_maps_done, req);
+	return req;
+}
 
+static void wb_xids2sids_init_dom_maps_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct wb_xids2sids_state *state = tevent_req_data(
+		req, struct wb_xids2sids_state);
+	size_t num_domains;
+	NTSTATUS status;
+
+	status = wb_xids2sids_init_dom_maps_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	num_domains = talloc_array_length(dom_maps);
 	if (num_domains == 0) {
 		tevent_req_done(req);
-		return tevent_req_post(req, ev);
+		return;
 	}
 
 	subreq = wb_xids2sids_dom_send(
 		state, state->ev, &dom_maps[state->dom_idx],
 		state->xids, state->num_xids, state->sids);
 	if (tevent_req_nomem(subreq, req)) {
-		return tevent_req_post(req, ev);
+		return;
 	}
 	tevent_req_set_callback(subreq, wb_xids2sids_done, req);
-	return req;
+	return;
 }
 
 static void wb_xids2sids_done(struct tevent_req *subreq)

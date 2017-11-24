@@ -89,7 +89,7 @@ struct roh_open_connection_state {
 	struct roh_connection		*roh;
 	struct tstream_tls_params	*tls_params;
 	struct loadparm_context		*lp_ctx;
-	bool				use_ntlm;
+	uint8_t				http_auth;
 };
 
 NTSTATUS dcerpc_pipe_open_roh_recv(struct tevent_req *req,
@@ -143,7 +143,7 @@ struct tevent_req *dcerpc_pipe_open_roh_send(struct dcecli_connection *conn,
 					     struct cli_credentials *credentials,
 					     struct resolve_context *resolve_ctx,
 					     struct loadparm_context *lp_ctx,
-					     bool use_ntlm)
+					     uint8_t http_auth)
 {
 	NTSTATUS				status;
 	struct tevent_req			*req;
@@ -170,7 +170,7 @@ struct tevent_req *dcerpc_pipe_open_roh_send(struct dcecli_connection *conn,
 	state->rpc_server_port = rpc_server_port;
 	state->rpc_proxy = talloc_strdup(state, rpc_proxy);
 	state->rpc_proxy_port = rpc_proxy_port;
-	state->use_ntlm = use_ntlm;
+	state->http_auth = http_auth;
 
 	state->roh = talloc_zero(state, struct roh_connection);
 	state->roh->protocol_version = ROH_V2;
@@ -313,7 +313,7 @@ static void roh_connect_channel_out_done(struct tevent_req *subreq)
 					   state->rpc_server,
 					   state->rpc_server_port,
 					   state->rpc_proxy,
-					   state->use_ntlm);
+					   state->http_auth);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -344,7 +344,7 @@ static void roh_send_RPC_DATA_IN_done(struct tevent_req *subreq)
 					    state->rpc_server,
 					    state->rpc_server_port,
 					    state->rpc_proxy,
-					    state->use_ntlm);
+					    state->http_auth);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}

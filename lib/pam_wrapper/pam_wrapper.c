@@ -508,6 +508,7 @@ static const char *libpam_pam_strerror(pam_handle_t *pamh, int errnum)
 	return pwrap.libpam.symbols._libpam_pam_strerror.f(discard_const_p(pam_handle_t, pamh), errnum);
 }
 
+#if defined(HAVE_PAM_VSYSLOG) || defined(HAVE_PAM_SYSLOG)
 static void libpam_pam_vsyslog(const pam_handle_t *pamh,
 			       int priority,
 			       const char *fmt,
@@ -522,6 +523,7 @@ static void libpam_pam_vsyslog(const pam_handle_t *pamh,
 						   args);
 #endif
 }
+#endif
 
 /*********************************************************
  * PWRAP INIT
@@ -1487,6 +1489,8 @@ const char *pam_strerror(pam_handle_t *pamh, int errnum)
 				  errnum);
 }
 
+#if defined(HAVE_PAM_VSYSLOG) || defined(HAVE_PAM_SYSLOG)
+
 static void pwrap_pam_vsyslog(const pam_handle_t *pamh,
 			      int priority,
 			      const char *fmt,
@@ -1533,6 +1537,7 @@ static void pwrap_pam_vsyslog(const pam_handle_t *pamh,
 
 	pwrap_vlog(dbglvl, syslog_str, fmt, args);
 }
+#endif /* defined(HAVE_PAM_VSYSLOG) || defined(HAVE_PAM_SYSLOG) */
 
 #ifdef HAVE_PAM_VSYSLOG
 void pam_vsyslog(const pam_handle_t *pamh,

@@ -50,6 +50,7 @@ def configure(conf):
     conf.RECURSE('cmocka')
     conf.RECURSE('popt')
     conf.RECURSE('zlib')
+    conf.RECURSE('aesni-intel')
 
 
 def build(bld):
@@ -73,3 +74,4 @@ def build(bld):
     bld.RECURSE('cmocka')
     bld.RECURSE('zlib')
     bld.RECURSE('popt')
+    bld.RECURSE('aesni-intel')

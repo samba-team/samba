@@ -27,7 +27,7 @@ struct wb_next_grent_state {
 	int max_nesting;
 	struct getgrent_state *gstate;
 	struct winbindd_gr *gr;
-	struct talloc_dict *members;
+	struct db_context *members;
 };
 
 static void wb_next_grent_fetch_done(struct tevent_req *subreq);
@@ -150,7 +150,7 @@ static void wb_next_grent_getgrsid_done(struct tevent_req *subreq)
 }
 
 NTSTATUS wb_next_grent_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
-			    struct talloc_dict **members)
+			    struct db_context **members)
 {
 	struct wb_next_grent_state *state = tevent_req_data(
 		req, struct wb_next_grent_state);

@@ -51,6 +51,12 @@
 #include "dsdb/samdb/ldb_modules/util.h"
 #include "lib/util/tsort.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS            DBGC_DRS_REPL
+
+/* the RMD_VERSION for linked attributes starts from 1 */
+#define RMD_VERSION_INITIAL   1
+
 /*
  * It's 29/12/9999 at 23:59:59 UTC as specified in MS-ADTS 7.1.1.4.2
  * Deleted Objects Container
@@ -74,6 +80,7 @@ struct replmd_private {
 struct la_entry {
 	struct la_entry *next, *prev;
 	struct drsuapi_DsReplicaLinkedAttribute *la;
+	uint32_t dsdb_repl_flags;
 };
 
 struct replmd_replicated_request {
@@ -113,6 +120,19 @@ static int replmd_check_upgrade_links(struct ldb_context *ldb,
 				      struct parsed_dn *dns, uint32_t count,
 				      struct ldb_message_element *el,
 				      const char *ldap_oid);
+static int replmd_verify_linked_attribute(struct replmd_replicated_request *ar,
+					  struct la_entry *la);
+static int replmd_set_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct dsdb_dn *dsdb_dn,
+			     struct dsdb_dn *old_dsdb_dn, const struct GUID *invocation_id,
+			     uint64_t usn, uint64_t local_usn, NTTIME nttime,
+			     uint32_t version, bool deleted);
+
+static int replmd_make_deleted_child_dn(TALLOC_CTX *tmp_ctx,
+					struct ldb_context *ldb,
+					struct ldb_dn *dn,
+					const char *rdn_name,
+					const struct ldb_val *rdn_value,
+					struct GUID guid);
 
 enum urgent_situation {
 	REPL_URGENT_ON_CREATE = 1,
@@ -371,8 +391,9 @@ static int replmd_process_backlink(struct ldb_module *module, struct la_backlink
 	ret = dsdb_module_dn_by_guid(module, frame, &bl->target_guid, &target_dn, parent);
 	if (ret != LDB_SUCCESS) {
 		struct GUID_txt_buf guid_str;
-		DEBUG(2,(__location__ ": WARNING: Failed to find target DN for linked attribute with GUID %s\n",
-			 GUID_buf_string(&bl->target_guid, &guid_str)));
+		DBG_WARNING("Failed to find target DN for linked attribute with GUID %s\n",
+			    GUID_buf_string(&bl->target_guid, &guid_str));
+		DBG_WARNING("Please run 'samba-tool dbcheck' to resolve any missing backlinks.\n");
 		talloc_free(frame);
 		return LDB_SUCCESS;
 	}
@@ -556,9 +577,41 @@ static int replmd_op_callback(struct ldb_request *req, struct ldb_reply *ares)
 	}
 
 	if (ares->error != LDB_SUCCESS) {
-		DEBUG(5,("%s failure. Error is: %s\n", __FUNCTION__, ldb_strerror(ares->error)));
+		struct GUID_txt_buf guid_txt;
+		struct ldb_message *msg = NULL;
+		char *s = NULL;
+
+		if (ac->apply_mode == false) {
+			DBG_NOTICE("Originating update failure. Error is: %s\n",
+				   ldb_strerror(ares->error));
+			return ldb_module_done(ac->req, controls,
+					       ares->response, ares->error);
+		}
+
+		msg = ac->objs->objects[ac->index_current].msg;
+		/*
+		 * Set at DBG_NOTICE as once these start to happe, they
+		 * will happen a lot until resolved, due to repeated
+		 * replication.  The caller will probably print the
+		 * ldb error string anyway.
+		 */
+		DBG_NOTICE("DRS replication apply failure for %s. Error is: %s\n",
+			   ldb_dn_get_linearized(msg->dn),
+			   ldb_strerror(ares->error));
+
+		s = ldb_ldif_message_redacted_string(ldb_module_get_ctx(ac->module),
+						     ac,
+						     LDB_CHANGETYPE_ADD,
+						     msg);
+
+		DBG_INFO("Failing DRS %s replication message was %s:\n%s\n",
+			 ac->search_msg == NULL ? "ADD" : "MODIFY",
+			 GUID_buf_string(&ac->objs->objects[ac->index_current].object_guid,
+					 &guid_txt),
+			 s);
+		talloc_free(s);
 		return ldb_module_done(ac->req, controls,
-					ares->response, ares->error);
+				       ares->response, ares->error);
 	}
 
 	if (ares->type != LDB_REPLY_DONE) {
@@ -883,14 +936,18 @@ static void replmd_ldb_message_sort(struct ldb_message *msg,
 }
 
 static int replmd_build_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct dsdb_dn *dsdb_dn,
-			       const struct GUID *invocation_id, uint64_t seq_num,
-			       uint64_t local_usn, NTTIME nttime, uint32_t version, bool deleted);
+			       const struct GUID *invocation_id,
+			       uint64_t local_usn, NTTIME nttime);
 
 static int parsed_dn_compare(struct parsed_dn *pdn1, struct parsed_dn *pdn2);
 
 static int get_parsed_dns(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 			  struct ldb_message_element *el, struct parsed_dn **pdn,
 			  const char *ldap_oid, struct ldb_request *parent);
+
+static int check_parsed_dn_duplicates(struct ldb_module *module,
+				      struct ldb_message_element *el,
+				      struct parsed_dn *pdn);
 
 /*
   fix up linked attributes in replmd_add.
@@ -933,6 +990,12 @@ static int replmd_add_fix_la(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 		return ret;
 	}
 
+	ret = check_parsed_dn_duplicates(module, el, pdn);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
 	new_values = talloc_array(tmp_ctx, struct ldb_val, el->num_values);
 	if (new_values == NULL) {
 		ldb_module_oom(module);
@@ -942,20 +1005,9 @@ static int replmd_add_fix_la(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 
 	for (i = 0; i < el->num_values; i++) {
 		struct parsed_dn *p = &pdn[i];
-		if (i > 0 && parsed_dn_compare(p, &pdn[i - 1]) == 0) {
-			ldb_asprintf_errstring(ldb,
-					"Linked attribute %s has "
-					"multiple identical values", el->name);
-			talloc_free(tmp_ctx);
-			if (ldb_attr_cmp(el->name, "member") == 0) {
-				return LDB_ERR_ENTRY_ALREADY_EXISTS;
-			} else {
-				return LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
-			}
-		}
 		ret = replmd_build_la_val(el->values, p->v, p->dsdb_dn,
 					  &ac->our_invocation_id,
-					  ac->seq_num, ac->seq_num, now, 0, false);
+					  ac->seq_num, now);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
 			return ret;
@@ -2087,6 +2139,37 @@ static int get_parsed_dns_trusted(struct ldb_module *module,
 }
 
 /*
+   Return LDB_SUCCESS if a parsed_dn list contains no duplicate values,
+   otherwise an error code. For compatibility the error code differs depending
+   on whether or not the attribute is "member".
+
+   As always, the parsed_dn list is assumed to be sorted.
+ */
+static int check_parsed_dn_duplicates(struct ldb_module *module,
+				      struct ldb_message_element *el,
+				      struct parsed_dn *pdn)
+{
+	unsigned int i;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+
+	for (i = 1; i < el->num_values; i++) {
+		struct parsed_dn *p = &pdn[i];
+		if (parsed_dn_compare(p, &pdn[i - 1]) == 0) {
+			ldb_asprintf_errstring(ldb,
+					       "Linked attribute %s has "
+					       "multiple identical values",
+					       el->name);
+			if (ldb_attr_cmp(el->name, "member") == 0) {
+				return LDB_ERR_ENTRY_ALREADY_EXISTS;
+			} else {
+				return LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
+			}
+		}
+	}
+	return LDB_SUCCESS;
+}
+
+/*
   build a new extended DN, including all meta data fields
 
   RMD_FLAGS           = DSDB_RMD_FLAG_* bits
@@ -2097,85 +2180,20 @@ static int get_parsed_dns_trusted(struct ldb_module *module,
   RMD_LOCAL_USN       = local_usn
   RMD_VERSION         = version
  */
-static int replmd_build_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct dsdb_dn *dsdb_dn,
-			       const struct GUID *invocation_id, uint64_t seq_num,
-			       uint64_t local_usn, NTTIME nttime, uint32_t version, bool deleted)
+static int replmd_build_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v,
+			       struct dsdb_dn *dsdb_dn,
+			       const struct GUID *invocation_id,
+			       uint64_t local_usn, NTTIME nttime)
 {
-	struct ldb_dn *dn = dsdb_dn->dn;
-	const char *tstring, *usn_string, *flags_string;
-	struct ldb_val tval;
-	struct ldb_val iid;
-	struct ldb_val usnv, local_usnv;
-	struct ldb_val vers, flagsv;
-	NTSTATUS status;
-	int ret;
-	const char *dnstring;
-	char *vstring;
-	uint32_t rmd_flags = deleted?DSDB_RMD_FLAG_DELETED:0;
-
-	tstring = talloc_asprintf(mem_ctx, "%llu", (unsigned long long)nttime);
-	if (!tstring) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	tval = data_blob_string_const(tstring);
-
-	usn_string = talloc_asprintf(mem_ctx, "%llu", (unsigned long long)seq_num);
-	if (!usn_string) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	usnv = data_blob_string_const(usn_string);
-
-	usn_string = talloc_asprintf(mem_ctx, "%llu", (unsigned long long)local_usn);
-	if (!usn_string) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	local_usnv = data_blob_string_const(usn_string);
-
-	vstring = talloc_asprintf(mem_ctx, "%lu", (unsigned long)version);
-	if (!vstring) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	vers = data_blob_string_const(vstring);
-
-	status = GUID_to_ndr_blob(invocation_id, dn, &iid);
-	if (!NT_STATUS_IS_OK(status)) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	flags_string = talloc_asprintf(mem_ctx, "%u", rmd_flags);
-	if (!flags_string) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	flagsv = data_blob_string_const(flags_string);
-
-	ret = ldb_dn_set_extended_component(dn, "RMD_FLAGS", &flagsv);
-	if (ret != LDB_SUCCESS) return ret;
-	ret = ldb_dn_set_extended_component(dn, "RMD_ADDTIME", &tval);
-	if (ret != LDB_SUCCESS) return ret;
-	ret = ldb_dn_set_extended_component(dn, "RMD_INVOCID", &iid);
-	if (ret != LDB_SUCCESS) return ret;
-	ret = ldb_dn_set_extended_component(dn, "RMD_CHANGETIME", &tval);
-	if (ret != LDB_SUCCESS) return ret;
-	ret = ldb_dn_set_extended_component(dn, "RMD_LOCAL_USN", &local_usnv);
-	if (ret != LDB_SUCCESS) return ret;
-	ret = ldb_dn_set_extended_component(dn, "RMD_ORIGINATING_USN", &usnv);
-	if (ret != LDB_SUCCESS) return ret;
-	ret = ldb_dn_set_extended_component(dn, "RMD_VERSION", &vers);
-	if (ret != LDB_SUCCESS) return ret;
-
-	dnstring = dsdb_dn_get_extended_linearized(mem_ctx, dsdb_dn, 1);
-	if (dnstring == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	*v = data_blob_string_const(dnstring);
-
-	return LDB_SUCCESS;
+	return replmd_set_la_val(mem_ctx, v, dsdb_dn, NULL, invocation_id,
+				 local_usn, local_usn, nttime,
+				 RMD_VERSION_INITIAL, false);
 }
 
 static int replmd_update_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct dsdb_dn *dsdb_dn,
 				struct dsdb_dn *old_dsdb_dn, const struct GUID *invocation_id,
 				uint64_t seq_num, uint64_t local_usn, NTTIME nttime,
-				uint32_t version, bool deleted);
+				bool deleted);
 
 /*
   check if any links need upgrading from w2k format
@@ -2229,7 +2247,7 @@ static int replmd_check_upgrade_links(struct ldb_context *ldb,
 		/* it's an old one that needs upgrading */
 		ret = replmd_update_la_val(el->values, dns[i].v,
 					   dns[i].dsdb_dn, dns[i].dsdb_dn,
-					   invocation_id, 1, 1, 0, 0, false);
+					   invocation_id, 1, 1, 0, false);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
@@ -2251,14 +2269,14 @@ static int replmd_check_upgrade_links(struct ldb_context *ldb,
 }
 
 /*
-  update an extended DN, including all meta data fields
+  Sets the value for a linked attribute, including all meta data fields
 
   see replmd_build_la_val for value names
  */
-static int replmd_update_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct dsdb_dn *dsdb_dn,
-				struct dsdb_dn *old_dsdb_dn, const struct GUID *invocation_id,
-				uint64_t usn, uint64_t local_usn, NTTIME nttime,
-				uint32_t version, bool deleted)
+static int replmd_set_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct dsdb_dn *dsdb_dn,
+			     struct dsdb_dn *old_dsdb_dn, const struct GUID *invocation_id,
+			     uint64_t usn, uint64_t local_usn, NTTIME nttime,
+			     uint32_t version, bool deleted)
 {
 	struct ldb_dn *dn = dsdb_dn->dn;
 	const char *tstring, *usn_string, *flags_string;
@@ -2266,8 +2284,7 @@ static int replmd_update_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct d
 	struct ldb_val iid;
 	struct ldb_val usnv, local_usnv;
 	struct ldb_val vers, flagsv;
-	const struct ldb_val *old_addtime;
-	uint32_t old_version;
+	const struct ldb_val *old_addtime = NULL;
 	NTSTATUS status;
 	int ret;
 	const char *dnstring;
@@ -2307,7 +2324,10 @@ static int replmd_update_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct d
 	if (ret != LDB_SUCCESS) return ret;
 
 	/* get the ADDTIME from the original */
-	old_addtime = ldb_dn_get_extended_component(old_dsdb_dn->dn, "RMD_ADDTIME");
+	if (old_dsdb_dn != NULL) {
+		old_addtime = ldb_dn_get_extended_component(old_dsdb_dn->dn,
+							    "RMD_ADDTIME");
+	}
 	if (old_addtime == NULL) {
 		old_addtime = &tval;
 	}
@@ -2332,12 +2352,7 @@ static int replmd_update_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct d
 	ret = ldb_dn_set_extended_component(dn, "RMD_LOCAL_USN", &local_usnv);
 	if (ret != LDB_SUCCESS) return ret;
 
-	/* increase the version by 1 */
-	status = dsdb_get_extended_dn_uint32(old_dsdb_dn->dn, &old_version, "RMD_VERSION");
-	if (NT_STATUS_IS_OK(status) && old_version >= version) {
-		version = old_version+1;
-	}
-	vstring = talloc_asprintf(dn, "%lu", (unsigned long)version);
+	vstring = talloc_asprintf(mem_ctx, "%lu", (unsigned long)version);
 	vers = data_blob_string_const(vstring);
 	ret = ldb_dn_set_extended_component(dn, "RMD_VERSION", &vers);
 	if (ret != LDB_SUCCESS) return ret;
@@ -2349,6 +2364,33 @@ static int replmd_update_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct d
 	*v = data_blob_string_const(dnstring);
 
 	return LDB_SUCCESS;
+}
+
+/**
+ * Updates the value for a linked attribute, including all meta data fields
+ */
+static int replmd_update_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct dsdb_dn *dsdb_dn,
+				struct dsdb_dn *old_dsdb_dn, const struct GUID *invocation_id,
+				uint64_t usn, uint64_t local_usn, NTTIME nttime,
+				bool deleted)
+{
+	uint32_t old_version;
+	uint32_t version = RMD_VERSION_INITIAL;
+	NTSTATUS status;
+
+	/*
+	 * We're updating the linked attribute locally, so increase the version
+	 * by 1 so that other DCs will see the change when it gets replicated out
+	 */
+	status = dsdb_get_extended_dn_uint32(old_dsdb_dn->dn, &old_version,
+					     "RMD_VERSION");
+
+	if (NT_STATUS_IS_OK(status)) {
+		version = old_version + 1;
+	}
+
+	return replmd_set_la_val(mem_ctx, v, dsdb_dn, old_dsdb_dn, invocation_id,
+				 usn, local_usn, nttime, version, deleted);
 }
 
 /*
@@ -2481,7 +2523,7 @@ static int replmd_modify_la_add(struct ldb_module *module,
 						   dns[i].dsdb_dn,
 						   exact->dsdb_dn,
 						   invocation_id, seq_num,
-						   seq_num, now, 0, false);
+						   seq_num, now, false);
 			if (ret != LDB_SUCCESS) {
 				talloc_free(tmp_ctx);
 				return ret;
@@ -2537,8 +2579,7 @@ static int replmd_modify_la_add(struct ldb_module *module,
 		/* Make the new linked attribute ldb_val. */
 		ret = replmd_build_la_val(new_values, &new_values[num_values],
 					  dns[i].dsdb_dn, invocation_id,
-					  seq_num, seq_num,
-					  now, 0, false);
+					  seq_num, now);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
 			return ret;
@@ -2688,7 +2729,7 @@ static int replmd_modify_la_delete(struct ldb_module *module,
 			ret = replmd_update_la_val(old_el->values, p->v,
 						   p->dsdb_dn, p->dsdb_dn,
 						   invocation_id, seq_num,
-						   seq_num, now, 0, true);
+						   seq_num, now, true);
 			if (ret != LDB_SUCCESS) {
 				talloc_free(tmp_ctx);
 				return ret;
@@ -2785,7 +2826,7 @@ static int replmd_modify_la_delete(struct ldb_module *module,
 		ret = replmd_update_la_val(old_el->values, exact->v,
 					   exact->dsdb_dn, exact->dsdb_dn,
 					   invocation_id, seq_num, seq_num,
-					   now, 0, true);
+					   now, true);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
 			return ret;
@@ -2897,6 +2938,12 @@ static int replmd_modify_la_replace(struct ldb_module *module,
 		return ret;
 	}
 
+	ret = check_parsed_dn_duplicates(module, el, dns);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
 	ret = get_parsed_dns(module, tmp_ctx, old_el, &old_dns,
 			     ldap_oid, parent);
 	if (ret != LDB_SUCCESS) {
@@ -2954,7 +3001,7 @@ static int replmd_modify_la_replace(struct ldb_module *module,
 							   old_p->dsdb_dn,
 							   invocation_id,
 							   seq_num, seq_num,
-							   now, 0, true);
+							   now, true);
 				if (ret != LDB_SUCCESS) {
 					talloc_free(tmp_ctx);
 					return ret;
@@ -2988,7 +3035,7 @@ static int replmd_modify_la_replace(struct ldb_module *module,
 						   old_p->dsdb_dn,
 						   invocation_id,
 						   seq_num, seq_num,
-						   now, 0, false);
+						   now, false);
 			if (ret != LDB_SUCCESS) {
 				talloc_free(tmp_ctx);
 				return ret;
@@ -3020,8 +3067,7 @@ static int replmd_modify_la_replace(struct ldb_module *module,
 						  new_p->v,
 						  new_p->dsdb_dn,
 						  invocation_id,
-						  seq_num, seq_num,
-						  now, 0, false);
+						  seq_num, now);
 			if (ret != LDB_SUCCESS) {
 				talloc_free(tmp_ctx);
 				return ret;
@@ -3805,7 +3851,7 @@ static int replmd_delete_internals(struct ldb_module *module, struct ldb_request
 {
 	int ret = LDB_ERR_OTHER;
 	bool retb, disallow_move_on_delete;
-	struct ldb_dn *old_dn, *new_dn;
+	struct ldb_dn *old_dn = NULL, *new_dn = NULL;
 	const char *rdn_name;
 	const struct ldb_val *rdn_value, *new_rdn_value;
 	struct GUID guid;
@@ -4017,17 +4063,16 @@ static int replmd_delete_internals(struct ldb_module *module, struct ldb_request
 	guid = samdb_result_guid(old_msg, "objectGUID");
 
 	if (deletion_state == OBJECT_NOT_DELETED) {
-		/* Add a formatted child */
-		retb = ldb_dn_add_child_fmt(new_dn, "%s=%s\\0ADEL:%s",
-					    rdn_name,
-					    ldb_dn_escape_value(tmp_ctx, *rdn_value),
-					    GUID_string(tmp_ctx, &guid));
-		if (!retb) {
-			ldb_asprintf_errstring(ldb, __location__
-					       ": Unable to add a formatted child to dn: %s",
-					       ldb_dn_get_linearized(new_dn));
+
+		ret = replmd_make_deleted_child_dn(tmp_ctx,
+						   ldb,
+						   new_dn,
+						   rdn_name, rdn_value,
+						   guid);
+
+		if (ret != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ret;
 		}
 
 		ret = ldb_msg_add_string(msg, "isDeleted", "TRUE");
@@ -4462,13 +4507,103 @@ static bool replmd_replPropertyMetaData1_new_should_be_taken(uint32_t dsdb_repl_
 
 
 /*
+  form a DN for a deleted (DEL:) or conflict (CNF:) DN
+ */
+static int replmd_make_prefix_child_dn(TALLOC_CTX *tmp_ctx,
+				       struct ldb_context *ldb,
+				       struct ldb_dn *dn,
+				       const char *four_char_prefix,
+				       const char *rdn_name,
+				       const struct ldb_val *rdn_value,
+				       struct GUID guid)
+{
+	struct ldb_val deleted_child_rdn_val;
+	struct GUID_txt_buf guid_str;
+	bool retb;
+
+	GUID_buf_string(&guid, &guid_str);
+
+	retb = ldb_dn_add_child_fmt(dn, "X=Y");
+	if (!retb) {
+		ldb_asprintf_errstring(ldb, __location__
+				       ": Unable to add a formatted child to dn: %s",
+				       ldb_dn_get_linearized(dn));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	/*
+	 * TODO: Per MS-ADTS 3.1.1.5.5 Delete Operation
+	 * we should truncate this value to ensure the RDN is not more than 255 chars.
+	 *
+	 * However we MS-ADTS 3.1.1.5.1.2 Naming Constraints indicates that:
+	 *
+	 * "Naming constraints are not enforced for replicated
+	 * updates." so this is safe and we don't have to work out not
+	 * splitting a UTF8 char right now.
+	 */
+	deleted_child_rdn_val = ldb_val_dup(tmp_ctx, rdn_value);
+
+	/*
+	 * sizeof(guid_str.buf) will always be longer than
+	 * strlen(guid_str.buf) but we allocate using this and
+	 * waste the trailing bytes to avoid scaring folks
+	 * with memcpy() using strlen() below
+	 */
+
+	deleted_child_rdn_val.data
+		= talloc_realloc(tmp_ctx, deleted_child_rdn_val.data,
+				 uint8_t,
+				 rdn_value->length + 5
+				 + sizeof(guid_str.buf));
+	if (!deleted_child_rdn_val.data) {
+		ldb_asprintf_errstring(ldb, __location__
+				       ": Unable to add a formatted child to dn: %s",
+				       ldb_dn_get_linearized(dn));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	deleted_child_rdn_val.length =
+		rdn_value->length + 5
+		+ strlen(guid_str.buf);
+
+	SMB_ASSERT(deleted_child_rdn_val.length <
+		   talloc_get_size(deleted_child_rdn_val.data));
+
+	/*
+	 * talloc won't allocate more than 256MB so we can't
+	 * overflow but just to be sure
+	 */
+	if (deleted_child_rdn_val.length < rdn_value->length) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	deleted_child_rdn_val.data[rdn_value->length] = 0x0a;
+	memcpy(&deleted_child_rdn_val.data[rdn_value->length + 1],
+	       four_char_prefix, 4);
+	memcpy(&deleted_child_rdn_val.data[rdn_value->length + 5],
+	       guid_str.buf,
+	       sizeof(guid_str.buf));
+
+	/* Now set the value into the RDN, without parsing it */
+	ldb_dn_set_component(dn, 0, rdn_name,
+			     deleted_child_rdn_val);
+
+	return LDB_SUCCESS;
+}
+
+
+/*
   form a conflict DN
  */
-static struct ldb_dn *replmd_conflict_dn(TALLOC_CTX *mem_ctx, struct ldb_dn *dn, struct GUID *guid)
+static struct ldb_dn *replmd_conflict_dn(TALLOC_CTX *mem_ctx,
+					 struct ldb_context *ldb,
+					 struct ldb_dn *dn,
+					 struct GUID *guid)
 {
 	const struct ldb_val *rdn_val;
 	const char *rdn_name;
 	struct ldb_dn *new_dn;
+	int ret;
 
 	rdn_val = ldb_dn_get_rdn_val(dn);
 	rdn_name = ldb_dn_get_rdn_name(dn);
@@ -4476,23 +4611,39 @@ static struct ldb_dn *replmd_conflict_dn(TALLOC_CTX *mem_ctx, struct ldb_dn *dn,
 		return NULL;
 	}
 
-	new_dn = ldb_dn_copy(mem_ctx, dn);
+	new_dn = ldb_dn_get_parent(mem_ctx, dn);
 	if (!new_dn) {
 		return NULL;
 	}
 
-	if (!ldb_dn_remove_child_components(new_dn, 1)) {
+	ret = replmd_make_prefix_child_dn(mem_ctx,
+					  ldb, new_dn,
+					  "CNF:",
+					  rdn_name,
+					  rdn_val,
+					  *guid);
+	if (ret != LDB_SUCCESS) {
 		return NULL;
 	}
-
-	if (!ldb_dn_add_child_fmt(new_dn, "%s=%s\\0ACNF:%s",
-				  rdn_name,
-				  ldb_dn_escape_value(new_dn, *rdn_val),
-				  GUID_string(new_dn, guid))) {
-		return NULL;
-	}
-
 	return new_dn;
+}
+
+/*
+  form a deleted DN
+ */
+static int replmd_make_deleted_child_dn(TALLOC_CTX *tmp_ctx,
+					struct ldb_context *ldb,
+					struct ldb_dn *dn,
+					const char *rdn_name,
+					const struct ldb_val *rdn_value,
+					struct GUID guid)
+{
+	return replmd_make_prefix_child_dn(tmp_ctx,
+					   ldb, dn,
+					   "DEL:",
+					   rdn_name,
+					   rdn_value,
+					   guid);
 }
 
 
@@ -4777,7 +4928,9 @@ static int replmd_op_possible_conflict_callback(struct ldb_request *req, struct 
 				 ldb_dn_get_linearized(conflict_dn)));
 			goto failed;
 		}
-		new_dn = replmd_conflict_dn(req, conflict_dn, &guid);
+		new_dn = replmd_conflict_dn(req,
+					    ldb_module_get_ctx(ar->module),
+					    conflict_dn, &guid);
 		if (new_dn == NULL) {
 			DEBUG(0,(__location__ ": Failed to form conflict DN for %s\n",
 				 ldb_dn_get_linearized(conflict_dn)));
@@ -4802,7 +4955,9 @@ static int replmd_op_possible_conflict_callback(struct ldb_request *req, struct 
 			goto failed;
 		}
 
-		new_dn = replmd_conflict_dn(req, conflict_dn, &guid);
+		new_dn = replmd_conflict_dn(req,
+					    ldb_module_get_ctx(ar->module),
+					    conflict_dn, &guid);
 		if (new_dn == NULL) {
 			DEBUG(0,(__location__ ": Failed to form conflict DN for %s\n",
 				 ldb_dn_get_linearized(conflict_dn)));
@@ -4977,16 +5132,22 @@ static int replmd_replicated_apply_add(struct replmd_replicated_request *ar)
 		}
 	}
 
-	if (DEBUGLVL(4)) {
+	if (DEBUGLVL(8)) {
 		struct GUID_txt_buf guid_txt;
 
-		char *s = ldb_ldif_message_string(ldb, ar, LDB_CHANGETYPE_ADD, msg);
-		DEBUG(4, ("DRS replication add message of %s:\n%s\n",
+		char *s = ldb_ldif_message_redacted_string(ldb, ar,
+							   LDB_CHANGETYPE_ADD,
+							   msg);
+		DEBUG(8, ("DRS replication add message of %s:\n%s\n",
 			  GUID_buf_string(&ar->objs->objects[ar->index_current].object_guid, &guid_txt),
 			  s));
 		talloc_free(s);
+	} else if (DEBUGLVL(4)) {
+		struct GUID_txt_buf guid_txt;
+		DEBUG(4, ("DRS replication add DN of %s is %s\n",
+			  GUID_buf_string(&ar->objs->objects[ar->index_current].object_guid, &guid_txt),
+			  ldb_dn_get_linearized(msg->dn)));
 	}
-
 	remote_isDeleted = ldb_msg_find_attr_as_bool(msg,
 						     "isDeleted", false);
 
@@ -5095,7 +5256,7 @@ static int replmd_replicated_apply_search_for_parent_callback(struct ldb_request
 	{
 		struct ldb_message *parent_msg = ares->message;
 		struct ldb_message *msg = ar->objs->objects[ar->index_current].msg;
-		struct ldb_dn *parent_dn;
+		struct ldb_dn *parent_dn = NULL;
 		int comp_num;
 
 		if (!ldb_msg_check_string_attribute(msg, "isDeleted", "TRUE")
@@ -5398,7 +5559,9 @@ static int replmd_replicated_handle_rename(struct replmd_replicated_request *ar,
 
 	if (rename_incoming_record) {
 
-		new_dn = replmd_conflict_dn(msg, msg->dn,
+		new_dn = replmd_conflict_dn(msg,
+					    ldb_module_get_ctx(ar->module),
+					    msg->dn,
 					    &ar->objs->objects[ar->index_current].object_guid);
 		if (new_dn == NULL) {
 			ldb_asprintf_errstring(ldb_module_get_ctx(ar->module),
@@ -5434,7 +5597,9 @@ static int replmd_replicated_handle_rename(struct replmd_replicated_request *ar,
 		goto failed;
 	}
 
-	new_dn = replmd_conflict_dn(tmp_ctx, conflict_dn, &guid);
+	new_dn = replmd_conflict_dn(tmp_ctx,
+				    ldb_module_get_ctx(ar->module),
+				    conflict_dn, &guid);
 	if (new_dn == NULL) {
 		DEBUG(0,(__location__ ": Failed to form conflict DN for %s\n",
 			 ldb_dn_get_linearized(conflict_dn)));
@@ -5549,11 +5714,12 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 		}
 	}
 
-	if (DEBUGLVL(5)) {
+	if (DEBUGLVL(8)) {
 		struct GUID_txt_buf guid_txt;
 
-		char *s = ldb_ldif_message_string(ldb, ar, LDB_CHANGETYPE_MODIFY, msg);
-		DEBUG(5, ("Initial DRS replication modify message of %s is:\n%s\n"
+		char *s = ldb_ldif_message_redacted_string(ldb, ar,
+							   LDB_CHANGETYPE_MODIFY, msg);
+		DEBUG(8, ("Initial DRS replication modify message of %s is:\n%s\n"
 			  "%s\n"
 			  "%s\n",
 			  GUID_buf_string(&ar->objs->objects[ar->index_current].object_guid, &guid_txt),
@@ -5567,8 +5733,15 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 						  "incoming replPropertyMetaData",
 						  rmd)));
 		talloc_free(s);
-	}
+	} else if (DEBUGLVL(4)) {
+		struct GUID_txt_buf guid_txt;
 
+		DEBUG(4, ("Initial DRS replication modify DN of %s is: %s\n",
+			  GUID_buf_string(&ar->objs->objects[ar->index_current].object_guid,
+					  &guid_txt),
+			  ldb_dn_get_linearized(msg->dn)));
+	}
+		
 	local_isDeleted = ldb_msg_find_attr_as_bool(ar->search_msg,
 						    "isDeleted", false);
 	remote_isDeleted = ldb_msg_find_attr_as_bool(msg,
@@ -5825,14 +5998,24 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 		}
 	}
 
-	if (DEBUGLVL(4)) {
+	if (DEBUGLVL(8)) {
 		struct GUID_txt_buf guid_txt;
 
-		char *s = ldb_ldif_message_string(ldb, ar, LDB_CHANGETYPE_MODIFY, msg);
-		DEBUG(4, ("Final DRS replication modify message of %s:\n%s\n",
-			  GUID_buf_string(&ar->objs->objects[ar->index_current].object_guid, &guid_txt),
+		char *s = ldb_ldif_message_redacted_string(ldb, ar,
+							   LDB_CHANGETYPE_MODIFY,
+							   msg);
+		DEBUG(8, ("Final DRS replication modify message of %s:\n%s\n",
+			  GUID_buf_string(&ar->objs->objects[ar->index_current].object_guid,
+					  &guid_txt),
 			  s));
 		talloc_free(s);
+	} else if (DEBUGLVL(4)) {
+		struct GUID_txt_buf guid_txt;
+
+		DEBUG(4, ("Final DRS replication modify DN of %s is %s\n",
+			  GUID_buf_string(&ar->objs->objects[ar->index_current].object_guid,
+					  &guid_txt),
+			  ldb_dn_get_linearized(msg->dn)));
 	}
 
 	ret = ldb_build_mod_req(&change_req,
@@ -6040,6 +6223,62 @@ static int replmd_replicated_apply_search_callback(struct ldb_request *req,
 	return LDB_SUCCESS;
 }
 
+/**
+ * Stores the linked attributes received in the replication chunk - these get
+ * applied at the end of the transaction. We also check that each linked
+ * attribute is valid, i.e. source and target objects are known.
+ */
+static int replmd_store_linked_attributes(struct replmd_replicated_request *ar)
+{
+	int ret = LDB_SUCCESS;
+	uint32_t i;
+	struct ldb_module *module = ar->module;
+	struct replmd_private *replmd_private =
+		talloc_get_type(ldb_module_get_private(module), struct replmd_private);
+	struct ldb_context *ldb;
+
+	ldb = ldb_module_get_ctx(module);
+
+	DEBUG(4,("linked_attributes_count=%u\n", ar->objs->linked_attributes_count));
+
+	/* save away the linked attributes for the end of the transaction */
+	for (i = 0; i < ar->objs->linked_attributes_count; i++) {
+		struct la_entry *la_entry;
+
+		if (replmd_private->la_ctx == NULL) {
+			replmd_private->la_ctx = talloc_new(replmd_private);
+		}
+		la_entry = talloc(replmd_private->la_ctx, struct la_entry);
+		if (la_entry == NULL) {
+			ldb_oom(ldb);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		la_entry->la = talloc(la_entry, struct drsuapi_DsReplicaLinkedAttribute);
+		if (la_entry->la == NULL) {
+			talloc_free(la_entry);
+			ldb_oom(ldb);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		*la_entry->la = ar->objs->linked_attributes[i];
+		la_entry->dsdb_repl_flags = ar->objs->dsdb_repl_flags;
+
+		/* we need to steal the non-scalars so they stay
+		   around until the end of the transaction */
+		talloc_steal(la_entry->la, la_entry->la->identifier);
+		talloc_steal(la_entry->la, la_entry->la->value.blob);
+
+		ret = replmd_verify_linked_attribute(ar, la_entry);
+
+		if (ret != LDB_SUCCESS) {
+			break;
+		}
+
+		DLIST_ADD(replmd_private->la_list, la_entry);
+	}
+
+	return ret;
+}
+
 static int replmd_replicated_uptodate_vector(struct replmd_replicated_request *ar);
 
 static int replmd_replicated_apply_next(struct replmd_replicated_request *ar)
@@ -6056,7 +6295,18 @@ static int replmd_replicated_apply_next(struct replmd_replicated_request *ar)
 	struct GUID_txt_buf guid_str_buf;
 
 	if (ar->index_current >= ar->objs->num_objects) {
-		/* done with it, go to next stage */
+
+		/*
+		 * Now that we've applied all the objects, check the new linked
+		 * attributes and store them (we apply them in .prepare_commit)
+		 */
+		ret = replmd_store_linked_attributes(ar);
+
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+
+		/* done applying objects, move on to the next stage */
 		return replmd_replicated_uptodate_vector(ar);
 	}
 
@@ -6428,7 +6678,9 @@ static int replmd_replicated_uptodate_modify(struct replmd_replicated_request *a
 	nrf_el->flags = LDB_FLAG_MOD_REPLACE;
 
 	if (CHECK_DEBUGLVL(4)) {
-		char *s = ldb_ldif_message_string(ldb, ar, LDB_CHANGETYPE_MODIFY, msg);
+		char *s = ldb_ldif_message_redacted_string(ldb, ar,
+							   LDB_CHANGETYPE_MODIFY,
+							   msg);
 		DEBUG(4, ("DRS replication uptodate modify message:\n%s\n", s));
 		talloc_free(s);
 	}
@@ -6534,9 +6786,6 @@ static int replmd_extended_replicated_objects(struct ldb_module *module, struct 
 	struct replmd_replicated_request *ar;
 	struct ldb_control **ctrls;
 	int ret;
-	uint32_t i;
-	struct replmd_private *replmd_private =
-		talloc_get_type(ldb_module_get_private(module), struct replmd_private);
 
 	ldb = ldb_module_get_ctx(module);
 
@@ -6593,72 +6842,254 @@ static int replmd_extended_replicated_objects(struct ldb_module *module, struct 
 	ar->controls = req->controls;
 	req->controls = ctrls;
 
-	DEBUG(4,("linked_attributes_count=%u\n", objs->linked_attributes_count));
-
-	/* save away the linked attributes for the end of the
-	   transaction */
-	for (i=0; i<ar->objs->linked_attributes_count; i++) {
-		struct la_entry *la_entry;
-
-		if (replmd_private->la_ctx == NULL) {
-			replmd_private->la_ctx = talloc_new(replmd_private);
-		}
-		la_entry = talloc(replmd_private->la_ctx, struct la_entry);
-		if (la_entry == NULL) {
-			ldb_oom(ldb);
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-		la_entry->la = talloc(la_entry, struct drsuapi_DsReplicaLinkedAttribute);
-		if (la_entry->la == NULL) {
-			talloc_free(la_entry);
-			ldb_oom(ldb);
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-		*la_entry->la = ar->objs->linked_attributes[i];
-
-		/* we need to steal the non-scalars so they stay
-		   around until the end of the transaction */
-		talloc_steal(la_entry->la, la_entry->la->identifier);
-		talloc_steal(la_entry->la, la_entry->la->value.blob);
-
-		DLIST_ADD(replmd_private->la_list, la_entry);
-	}
-
 	return replmd_replicated_apply_next(ar);
 }
 
-/*
-  process one linked attribute structure
+/**
+ * Checks how to handle an missing target - either we need to fail the
+ * replication and retry with GET_TGT, ignore the link and continue, or try to
+ * add a partial link to an unknown target.
  */
-static int replmd_process_linked_attribute(struct ldb_module *module,
-					   struct replmd_private *replmd_private,
-					   struct la_entry *la_entry,
-					   struct ldb_request *parent)
+static int replmd_allow_missing_target(struct ldb_module *module,
+				       TALLOC_CTX *mem_ctx,
+				       struct ldb_dn *target_dn,
+				       struct ldb_dn *source_dn,
+				       bool is_obj_commit,
+				       struct GUID *guid,
+				       uint32_t dsdb_repl_flags,
+				       bool *ignore_link,
+				       const char * missing_str)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	bool is_in_same_nc;
+
+	/*
+	 * we may not be able to resolve link targets properly when
+	 * dealing with subsets of objects, e.g. the source is a
+	 * critical object and the target isn't
+	 *
+	 * TODO:
+	 * When we implement Trusted Domains we need to consider
+	 * whether they get treated as an incomplete replica here or not
+	 */
+	if (dsdb_repl_flags & DSDB_REPL_FLAG_OBJECT_SUBSET) {
+
+		/*
+		 * Ignore the link. We don't increase the highwater-mark in
+		 * the object subset cases, so subsequent replications should
+		 * resolve any missing links
+		 */
+		DEBUG(2, ("%s target %s linked from %s\n", missing_str,
+			  ldb_dn_get_linearized(target_dn),
+			  ldb_dn_get_linearized(source_dn)));
+		*ignore_link = true;
+		return LDB_SUCCESS;
+	}
+
+	if (dsdb_repl_flags & DSDB_REPL_FLAG_TARGETS_UPTODATE) {
+
+		/*
+		 * target should already be up-to-date so there's no point in
+		 * retrying. This could be due to bad timing, or if a target
+		 * on a one-way link was deleted. We ignore the link rather
+		 * than failing the replication cycle completely
+		 */
+		*ignore_link = true;
+		DBG_WARNING("%s is %s but up to date. Ignoring link from %s\n",
+			    ldb_dn_get_linearized(target_dn), missing_str,
+			    ldb_dn_get_linearized(source_dn));
+		return LDB_SUCCESS;
+	}
+	
+	is_in_same_nc = dsdb_objects_have_same_nc(ldb,
+						  mem_ctx,
+						  source_dn,
+						  target_dn);
+	if (is_in_same_nc) {
+		/* fail the replication and retry with GET_TGT */
+		ldb_asprintf_errstring(ldb, "%s target %s GUID %s linked from %s\n",
+				       missing_str,
+				       ldb_dn_get_linearized(target_dn),
+				       GUID_string(mem_ctx, guid),
+				       ldb_dn_get_linearized(source_dn));
+		return LDB_ERR_NO_SUCH_OBJECT;
+	}
+
+	/*
+	 * The target of the cross-partition link is missing. Continue
+	 * and try to at least add the forward-link. This isn't great,
+	 * but a partial link can be fixed by dbcheck, so it's better
+	 * than dropping the link completely.
+	 */
+	*ignore_link = false;
+
+	if (is_obj_commit) {
+
+		/*
+		 * Only log this when we're actually committing the objects.
+		 * This avoids spurious logs, i.e. if we're just verifying the
+		 * received link during a join.
+		 */
+		DBG_WARNING("%s cross-partition target %s linked from %s\n",
+			    missing_str, ldb_dn_get_linearized(target_dn),
+			    ldb_dn_get_linearized(source_dn));
+	}
+	
+	return LDB_SUCCESS;
+}
+
+/**
+ * Checks that the target object for a linked attribute exists.
+ * @param guid returns the target object's GUID (is returned)if it exists)
+ * @param ignore_link set to true if the linked attribute should be ignored
+ * (i.e. the target doesn't exist, but that it's OK to skip the link)
+ */
+static int replmd_check_target_exists(struct ldb_module *module,
+				      struct dsdb_dn *dsdb_dn,
+				      struct la_entry *la_entry,
+				      struct ldb_dn *source_dn,
+				      bool is_obj_commit,
+				      struct GUID *guid,
+				      bool *ignore_link)
 {
 	struct drsuapi_DsReplicaLinkedAttribute *la = la_entry->la;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
-	struct ldb_message *msg;
-	struct ldb_message *target_msg = NULL;
+	struct ldb_result *target_res;
 	TALLOC_CTX *tmp_ctx = talloc_new(la_entry);
-	const struct dsdb_schema *schema = dsdb_get_schema(ldb, tmp_ctx);
+	const char *attrs[] = { "isDeleted", "isRecycled", NULL };
+	NTSTATUS ntstatus;
+	int ret;
+	enum deletion_state target_deletion_state = OBJECT_REMOVED;
+	bool active = (la->flags & DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE) ? true : false;
+
+	*ignore_link = false;
+	ntstatus = dsdb_get_extended_dn_guid(dsdb_dn->dn, guid, "GUID");
+
+	if (!NT_STATUS_IS_OK(ntstatus) && !active) {
+
+		/*
+		 * This strange behaviour (allowing a NULL/missing
+		 * GUID) originally comes from:
+		 *
+		 * commit e3054ce0fe0f8f62d2f5b2a77893e7a1479128bd
+		 * Author: Andrew Tridgell <tridge@samba.org>
+		 * Date:   Mon Dec 21 21:21:55 2009 +1100
+		 *
+		 *  s4-drs: cope better with NULL GUIDS from DRS
+		 *
+		 *  It is valid to get a NULL GUID over DRS for a deleted forward link. We
+		 *  need to match by DN if possible when seeing if we should update an
+		 *  existing link.
+		 *
+		 *  Pair-Programmed-With: Andrew Bartlett <abartlet@samba.org>
+		 */
+		ret = dsdb_module_search_dn(module, tmp_ctx, &target_res,
+					    dsdb_dn->dn, attrs,
+					    DSDB_FLAG_NEXT_MODULE |
+					    DSDB_SEARCH_SHOW_RECYCLED |
+					    DSDB_SEARCH_SEARCH_ALL_PARTITIONS |
+					    DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT,
+					    NULL);
+	} else if (!NT_STATUS_IS_OK(ntstatus)) {
+		ldb_asprintf_errstring(ldb, "Failed to find GUID in linked attribute 0x%x blob for %s from %s",
+				       la->attid,
+				       ldb_dn_get_linearized(dsdb_dn->dn),
+				       ldb_dn_get_linearized(source_dn));
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	} else {
+		ret = dsdb_module_search(module, tmp_ctx, &target_res,
+					 NULL, LDB_SCOPE_SUBTREE,
+					 attrs,
+					 DSDB_FLAG_NEXT_MODULE |
+					 DSDB_SEARCH_SHOW_RECYCLED |
+					 DSDB_SEARCH_SEARCH_ALL_PARTITIONS |
+					 DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT,
+					 NULL,
+					 "objectGUID=%s",
+					 GUID_string(tmp_ctx, guid));
+	}
+
+	if (ret != LDB_SUCCESS) {
+		ldb_asprintf_errstring(ldb, "Failed to re-resolve GUID %s: %s\n",
+				       GUID_string(tmp_ctx, guid),
+				       ldb_errstring(ldb));
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	if (target_res->count == 0) {
+
+		/*
+		 * target object is unknown. Check whether to ignore the link,
+		 * fail the replication, or add a partial link
+		 */
+		ret = replmd_allow_missing_target(module, tmp_ctx, dsdb_dn->dn,
+						  source_dn, is_obj_commit, guid,
+						  la_entry->dsdb_repl_flags,
+						  ignore_link, "Unknown");
+
+	} else if (target_res->count != 1) {
+		ldb_asprintf_errstring(ldb, "More than one object found matching objectGUID %s\n",
+				       GUID_string(tmp_ctx, guid));
+		ret = LDB_ERR_OPERATIONS_ERROR;
+	} else {
+		struct ldb_message *target_msg = target_res->msgs[0];
+
+		dsdb_dn->dn = talloc_steal(dsdb_dn, target_msg->dn);
+
+		/* Get the object's state (i.e. Not Deleted, Tombstone, etc) */
+		replmd_deletion_state(module, target_msg,
+				      &target_deletion_state, NULL);
+
+		/*
+		 * Check for deleted objects as per MS-DRSR 4.1.10.6.14
+		 * ProcessLinkValue(). Link updates should not be sent for
+		 * recycled and tombstone objects (deleting the links should
+		 * happen when we delete the object). This probably means our
+		 * copy of the target object isn't up to date.
+		 */
+		if (target_deletion_state >= OBJECT_RECYCLED) {
+
+			/*
+			 * target object is deleted. Check whether to ignore the
+			 * link, fail the replication, or add a partial link
+			 */
+			ret = replmd_allow_missing_target(module, tmp_ctx,
+							  dsdb_dn->dn, source_dn,
+							  is_obj_commit, guid,
+							  la_entry->dsdb_repl_flags,
+							  ignore_link, "Deleted");
+		}
+	}
+
+	talloc_free(tmp_ctx);
+	return ret;
+}
+
+/**
+ * Extracts the key details about the source/target object for a
+ * linked-attribute entry.
+ * This returns the following details:
+ * @param ret_attr the schema details for the linked attribute
+ * @param source_msg the search result for the source object
+ * @param target_dsdb_dn the unpacked DN info for the target object
+ */
+static int replmd_extract_la_entry_details(struct ldb_module *module,
+					   struct la_entry *la_entry,
+					   TALLOC_CTX *mem_ctx,
+					   const struct dsdb_attribute **ret_attr,
+					   struct ldb_message **source_msg,
+					   struct dsdb_dn **target_dsdb_dn)
+{
+	struct drsuapi_DsReplicaLinkedAttribute *la = la_entry->la;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	const struct dsdb_schema *schema = dsdb_get_schema(ldb, mem_ctx);
 	int ret;
 	const struct dsdb_attribute *attr;
-	struct dsdb_dn *dsdb_dn;
-	uint64_t seq_num = 0;
-	struct ldb_message_element *old_el;
 	WERROR status;
-	time_t t = time(NULL);
 	struct ldb_result *res;
-	struct ldb_result *target_res;
 	const char *attrs[4];
-	const char *attrs2[] = { "isDeleted", "isRecycled", NULL };
-	struct parsed_dn *pdn_list, *pdn, *next;
-	struct GUID guid = GUID_zero();
-	NTSTATUS ntstatus;
-	bool active = (la->flags & DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE)?true:false;
-
-	enum deletion_state deletion_state = OBJECT_NOT_DELETED;
-	enum deletion_state target_deletion_state = OBJECT_NOT_DELETED;
 
 /*
 linked_attributes[0]:
@@ -6703,7 +7134,6 @@ linked_attributes[0]:
 				       la->attid,
 				       GUID_buf_string(&la->identifier->guid,
 						       &guid_str));
-		talloc_free(tmp_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -6712,37 +7142,382 @@ linked_attributes[0]:
 	attrs[2] = "isRecycled";
 	attrs[3] = NULL;
 
-	/* get the existing message from the db for the object with
-	   this GUID, returning attribute being modified. We will then
-	   use this msg as the basis for a modify call */
-	ret = dsdb_module_search(module, tmp_ctx, &res, NULL, LDB_SCOPE_SUBTREE, attrs,
+	/*
+	 * get the existing message from the db for the object with
+	 * this GUID, returning attribute being modified. We will then
+	 * use this msg as the basis for a modify call
+	 */
+	ret = dsdb_module_search(module, mem_ctx, &res, NULL, LDB_SCOPE_SUBTREE, attrs,
 	                         DSDB_FLAG_NEXT_MODULE |
 				 DSDB_SEARCH_SEARCH_ALL_PARTITIONS |
 				 DSDB_SEARCH_SHOW_RECYCLED |
 				 DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT |
 				 DSDB_SEARCH_REVEAL_INTERNALS,
-				 parent,
-				 "objectGUID=%s", GUID_string(tmp_ctx, &la->identifier->guid));
+				 NULL,
+				 "objectGUID=%s", GUID_string(mem_ctx, &la->identifier->guid));
 	if (ret != LDB_SUCCESS) {
-		talloc_free(tmp_ctx);
 		return ret;
 	}
 	if (res->count != 1) {
 		ldb_asprintf_errstring(ldb, "DRS linked attribute for GUID %s - DN not found",
-				       GUID_string(tmp_ctx, &la->identifier->guid));
-		talloc_free(tmp_ctx);
+				       GUID_string(mem_ctx, &la->identifier->guid));
 		return LDB_ERR_NO_SUCH_OBJECT;
 	}
-	msg = res->msgs[0];
+
+	*source_msg = res->msgs[0];
+
+	/* the value blob for the attribute holds the target object DN */
+	status = dsdb_dn_la_from_blob(ldb, attr, schema, mem_ctx, la->value.blob, target_dsdb_dn);
+	if (!W_ERROR_IS_OK(status)) {
+		ldb_asprintf_errstring(ldb, "Failed to parsed linked attribute blob for %s on %s - %s\n",
+				       attr->lDAPDisplayName,
+				       ldb_dn_get_linearized(res->msgs[0]->dn),
+				       win_errstr(status));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	*ret_attr = attr;
+
+	return LDB_SUCCESS;
+}
+
+/**
+ * Verifies the source and target objects are known for a linked attribute
+ */
+static int replmd_verify_linked_attribute(struct replmd_replicated_request *ar,
+					  struct la_entry *la)
+{
+	int ret = LDB_SUCCESS;
+	TALLOC_CTX *tmp_ctx = talloc_new(la);
+	struct ldb_module *module = ar->module;
+	struct ldb_message *src_msg;
+	const struct dsdb_attribute *attr;
+	struct dsdb_dn *tgt_dsdb_dn;
+	struct GUID guid = GUID_zero();
+	bool dummy;
+
+	ret = replmd_extract_la_entry_details(module, la, tmp_ctx, &attr,
+					      &src_msg, &tgt_dsdb_dn);
 
 	/*
-	 * Check for deleted objects per MS-DRSR 4.1.10.6.13
+	 * When we fail to find the source object, the error code we pass
+	 * back here is really important. It flags back to the callers to
+	 * retry this request with DRSUAPI_DRS_GET_ANC. This case should
+	 * never happen if we're replicating from a Samba DC, but it is
+	 * needed to talk to a Windows DC
+	 */
+	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+		ret = replmd_replicated_request_werror(ar, WERR_DS_DRA_MISSING_PARENT);
+	}
+
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	/*
+	 * We can skip the target object checks if we're only syncing critical
+	 * objects, or we know the target is up-to-date. If either case, we
+	 * still continue even if the target doesn't exist
+	 */
+	if ((la->dsdb_repl_flags & (DSDB_REPL_FLAG_OBJECT_SUBSET |
+				    DSDB_REPL_FLAG_TARGETS_UPTODATE)) == 0) {
+
+		ret = replmd_check_target_exists(module, tgt_dsdb_dn, la,
+						 src_msg->dn, false, &guid,
+						 &dummy);
+	}
+
+	/*
+	 * When we fail to find the target object, the error code we pass
+	 * back here is really important. It flags back to the callers to
+	 * retry this request with DRSUAPI_DRS_GET_TGT
+	 */
+	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+		ret = replmd_replicated_request_werror(ar, WERR_DS_DRA_RECYCLED_TARGET);
+	}
+
+	talloc_free(tmp_ctx);
+	return ret;
+}
+
+/**
+ * Finds the current active Parsed-DN value for a single-valued linked
+ * attribute, if one exists.
+ * @param ret_pdn assigned the active Parsed-DN, or NULL if none was found
+ * @returns LDB_SUCCESS (regardless of whether a match was found), unless
+ * an error occurred
+ */
+static int replmd_get_active_singleval_link(struct ldb_module *module,
+					    TALLOC_CTX *mem_ctx,
+					    struct parsed_dn pdn_list[],
+					    unsigned int count,
+					    const struct dsdb_attribute *attr,
+					    struct parsed_dn **ret_pdn)
+{
+	unsigned int i;
+
+	*ret_pdn = NULL;
+
+	if (!(attr->ldb_schema_attribute->flags & LDB_ATTR_FLAG_SINGLE_VALUE)) {
+
+		/* nothing to do for multi-valued linked attributes */
+		return LDB_SUCCESS;
+	}
+
+	for (i = 0; i < count; i++) {
+		int ret = LDB_SUCCESS;
+		struct parsed_dn *pdn = &pdn_list[i];
+
+		/* skip any inactive links */
+		if (dsdb_dn_is_deleted_val(pdn->v)) {
+			continue;
+		}
+
+		/* we've found an active value for this attribute */
+		*ret_pdn = pdn;
+
+		if (pdn->dsdb_dn == NULL) {
+			struct ldb_context *ldb = ldb_module_get_ctx(module);
+
+			ret = really_parse_trusted_dn(mem_ctx, ldb, pdn,
+						      attr->syntax->ldap_oid);
+		}
+
+		return ret;
+	}
+
+	/* no active link found */
+	return LDB_SUCCESS;
+}
+
+/**
+ * @returns true if the replication linked attribute info is newer than we
+ * already have in our DB
+ * @param pdn the existing linked attribute info in our DB
+ * @param la the new linked attribute info received during replication
+ */
+static bool replmd_link_update_is_newer(struct parsed_dn *pdn,
+					struct drsuapi_DsReplicaLinkedAttribute *la)
+{
+	/* see if this update is newer than what we have already */
+	struct GUID invocation_id = GUID_zero();
+	uint32_t version = 0;
+	NTTIME change_time = 0;
+
+	if (pdn == NULL) {
+
+		/* no existing info so update is newer */
+		return true;
+	}
+
+	dsdb_get_extended_dn_guid(pdn->dsdb_dn->dn, &invocation_id, "RMD_INVOCID");
+	dsdb_get_extended_dn_uint32(pdn->dsdb_dn->dn, &version, "RMD_VERSION");
+	dsdb_get_extended_dn_nttime(pdn->dsdb_dn->dn, &change_time, "RMD_CHANGETIME");
+
+	return replmd_update_is_newer(&invocation_id,
+				      &la->meta_data.originating_invocation_id,
+				      version,
+				      la->meta_data.version,
+				      change_time,
+				      la->meta_data.originating_change_time);
+}
+
+/**
+ * Marks an existing linked attribute value as deleted in the DB
+ * @param pdn the parsed-DN of the target-value to delete
+ */
+static int replmd_delete_link_value(struct ldb_module *module,
+				    struct replmd_private *replmd_private,
+				    TALLOC_CTX *mem_ctx,
+				    struct ldb_dn *src_obj_dn,
+				    const struct dsdb_schema *schema,
+				    const struct dsdb_attribute *attr,
+				    uint64_t seq_num,
+				    bool is_active,
+				    struct GUID *target_guid,
+				    struct dsdb_dn *target_dsdb_dn,
+				    struct ldb_val *output_val)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	time_t t;
+	NTTIME now;
+	const struct GUID *invocation_id = NULL;
+	int ret;
+
+	t = time(NULL);
+	unix_to_nt_time(&now, t);
+
+	invocation_id = samdb_ntds_invocation_id(ldb);
+	if (invocation_id == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	/* if the existing link is active, remove its backlink */
+	if (is_active) {
+
+		ret = replmd_add_backlink(module, replmd_private, schema,
+					  src_obj_dn, target_guid, false,
+					  attr, NULL);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+
+	/* mark the existing value as deleted */
+	ret = replmd_update_la_val(mem_ctx, output_val, target_dsdb_dn,
+				   target_dsdb_dn, invocation_id, seq_num,
+				   seq_num, now, true);
+	return ret;
+}
+
+/**
+ * Checks for a conflict in single-valued link attributes, and tries to
+ * resolve the problem if possible.
+ *
+ * Single-valued links should only ever have one active value. If we already
+ * have an active link value, and during replication we receive an active link
+ * value for a different target DN, then we need to resolve this inconsistency
+ * and determine which value should be active. If the received info is better/
+ * newer than the existing link attribute, then we need to set our existing
+ * link as deleted. If the received info is worse/older, then we should continue
+ * to add it, but set it as an inactive link.
+ *
+ * Note that this is a corner-case that is unlikely to happen (but if it does
+ * happen, we don't want it to break replication completely).
+ *
+ * @param pdn_being_modified the parsed DN corresponding to the received link
+ * target (note this is NULL if the link does not already exist in our DB)
+ * @param pdn_list all the source object's Parsed-DNs for this attribute, i.e.
+ * any existing active or inactive values for the attribute in our DB.
+ * @param dsdb_dn the target DN for the received link attribute
+ * @param add_as_inactive gets set to true if the received link is worse than
+ * the existing link - it should still be added, but as an inactive link.
+ */
+static int replmd_check_singleval_la_conflict(struct ldb_module *module,
+					      struct replmd_private *replmd_private,
+					      TALLOC_CTX *mem_ctx,
+					      struct ldb_dn *src_obj_dn,
+					      struct drsuapi_DsReplicaLinkedAttribute *la,
+					      struct dsdb_dn *dsdb_dn,
+					      struct parsed_dn *pdn_being_modified,
+					      struct parsed_dn *pdn_list,
+					      struct ldb_message_element *old_el,
+					      const struct dsdb_schema *schema,
+					      const struct dsdb_attribute *attr,
+					      uint64_t seq_num,
+					      bool *add_as_inactive)
+{
+	struct parsed_dn *active_pdn = NULL;
+	bool update_is_newer = false;
+	int ret;
+
+	/*
+	 * check if there's a conflict for single-valued links, i.e. an active
+	 * linked attribute already exists, but it has a different target value
+	 */
+	ret = replmd_get_active_singleval_link(module, mem_ctx, pdn_list,
+					       old_el->num_values, attr,
+					       &active_pdn);
+
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	/*
+	 * If no active value exists (or the received info is for the currently
+	 * active value), then no conflict exists
+	 */
+	if (active_pdn == NULL || active_pdn == pdn_being_modified) {
+		return LDB_SUCCESS;
+	}
+
+	DBG_WARNING("Link conflict for %s attribute on %s\n",
+		    attr->lDAPDisplayName, ldb_dn_get_linearized(src_obj_dn));
+
+	/* Work out how to resolve the conflict based on which info is better */
+	update_is_newer = replmd_link_update_is_newer(active_pdn, la);
+
+	if (update_is_newer) {
+		DBG_WARNING("Using received value %s, over existing target %s\n",
+			    ldb_dn_get_linearized(dsdb_dn->dn),
+			    ldb_dn_get_linearized(active_pdn->dsdb_dn->dn));
+
+		/*
+		 * Delete our existing active link. The received info will then
+		 * be added (through normal link processing) as the active value
+		 */
+		ret = replmd_delete_link_value(module, replmd_private, old_el,
+					       src_obj_dn, schema, attr,
+					       seq_num, true, &active_pdn->guid,
+					       active_pdn->dsdb_dn,
+					       active_pdn->v);
+
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	} else {
+		DBG_WARNING("Using existing target %s, over received value %s\n",
+			    ldb_dn_get_linearized(active_pdn->dsdb_dn->dn),
+			    ldb_dn_get_linearized(dsdb_dn->dn));
+
+		/*
+		 * we want to keep our existing active link and add the
+		 * received link as inactive
+		 */
+		*add_as_inactive = true;
+	}
+
+	return LDB_SUCCESS;
+}
+
+/*
+  process one linked attribute structure
+ */
+static int replmd_process_linked_attribute(struct ldb_module *module,
+					   struct replmd_private *replmd_private,
+					   struct la_entry *la_entry,
+					   struct ldb_request *parent)
+{
+	struct drsuapi_DsReplicaLinkedAttribute *la = la_entry->la;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	struct ldb_message *msg;
+	TALLOC_CTX *tmp_ctx = talloc_new(la_entry);
+	const struct dsdb_schema *schema = dsdb_get_schema(ldb, tmp_ctx);
+	int ret;
+	const struct dsdb_attribute *attr;
+	struct dsdb_dn *dsdb_dn;
+	uint64_t seq_num = 0;
+	struct ldb_message_element *old_el;
+	time_t t = time(NULL);
+	struct parsed_dn *pdn_list, *pdn, *next;
+	struct GUID guid = GUID_zero();
+	bool active = (la->flags & DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE)?true:false;
+	bool ignore_link;
+	enum deletion_state deletion_state = OBJECT_NOT_DELETED;
+	struct dsdb_dn *old_dsdb_dn = NULL;
+	struct ldb_val *val_to_update = NULL;
+	bool add_as_inactive = false;
+
+	/*
+	 * get the attribute being modified, the search result for the source object,
+	 * and the target object's DN details
+	 */
+	ret = replmd_extract_la_entry_details(module, la_entry, tmp_ctx, &attr,
+					      &msg, &dsdb_dn);
+
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	/*
+	 * Check for deleted objects per MS-DRSR 4.1.10.6.14
 	 * ProcessLinkValue, because link updates are not applied to
 	 * recycled and tombstone objects.  We don't have to delete
 	 * any existing link, that should have happened when the
 	 * object deletion was replicated or initiated.
 	 */
-
 	replmd_deletion_state(module, msg, &deletion_state, NULL);
 
 	if (deletion_state >= OBJECT_RECYCLED) {
@@ -6771,95 +7546,21 @@ linked_attributes[0]:
 		return ret;
 	}
 
-	status = dsdb_dn_la_from_blob(ldb, attr, schema, tmp_ctx, la->value.blob, &dsdb_dn);
-	if (!W_ERROR_IS_OK(status)) {
-		ldb_asprintf_errstring(ldb, "Failed to parsed linked attribute blob for %s on %s - %s\n",
-				       old_el->name, ldb_dn_get_linearized(msg->dn), win_errstr(status));
-		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	ntstatus = dsdb_get_extended_dn_guid(dsdb_dn->dn, &guid, "GUID");
-	if (!NT_STATUS_IS_OK(ntstatus) && !active) {
-		/*
-		 * This strange behaviour (allowing a NULL/missing
-		 * GUID) originally comes from:
-		 *
-		 * commit e3054ce0fe0f8f62d2f5b2a77893e7a1479128bd
-		 * Author: Andrew Tridgell <tridge@samba.org>
-		 * Date:   Mon Dec 21 21:21:55 2009 +1100
-		 *
-		 *  s4-drs: cope better with NULL GUIDS from DRS
-		 *
-		 *  It is valid to get a NULL GUID over DRS for a deleted forward link. We
-		 *  need to match by DN if possible when seeing if we should update an
-		 *  existing link.
-		 *
-		 *  Pair-Programmed-With: Andrew Bartlett <abartlet@samba.org>
-		 */
-
-		ret = dsdb_module_search_dn(module, tmp_ctx, &target_res,
-					    dsdb_dn->dn, attrs2,
-					    DSDB_FLAG_NEXT_MODULE |
-					    DSDB_SEARCH_SHOW_RECYCLED |
-					    DSDB_SEARCH_SEARCH_ALL_PARTITIONS |
-					    DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT,
-					    parent);
-	} else if (!NT_STATUS_IS_OK(ntstatus)) {
-		ldb_asprintf_errstring(ldb, "Failed to find GUID in linked attribute blob for %s on %s from %s",
-				       old_el->name,
-				       ldb_dn_get_linearized(dsdb_dn->dn),
-				       ldb_dn_get_linearized(msg->dn));
-		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
-	} else {
-		ret = dsdb_module_search(module, tmp_ctx, &target_res,
-					 NULL, LDB_SCOPE_SUBTREE,
-					 attrs2,
-					 DSDB_FLAG_NEXT_MODULE |
-					 DSDB_SEARCH_SHOW_RECYCLED |
-					 DSDB_SEARCH_SEARCH_ALL_PARTITIONS |
-					 DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT,
-					 parent,
-					 "objectGUID=%s",
-					 GUID_string(tmp_ctx, &guid));
-	}
+	ret = replmd_check_target_exists(module, dsdb_dn, la_entry, msg->dn,
+					 true, &guid, &ignore_link);
 
 	if (ret != LDB_SUCCESS) {
-		ldb_asprintf_errstring(ldb_module_get_ctx(module), "Failed to re-resolve GUID %s: %s\n",
-				       GUID_string(tmp_ctx, &guid),
-				       ldb_errstring(ldb_module_get_ctx(module)));
 		talloc_free(tmp_ctx);
 		return ret;
 	}
 
-	if (target_res->count == 0) {
-		DEBUG(2,(__location__ ": WARNING: Failed to re-resolve GUID %s - using %s\n",
-			 GUID_string(tmp_ctx, &guid),
-			 ldb_dn_get_linearized(dsdb_dn->dn)));
-	} else if (target_res->count != 1) {
-		ldb_asprintf_errstring(ldb_module_get_ctx(module), "More than one object found matching objectGUID %s\n",
-				       GUID_string(tmp_ctx, &guid));
-		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
-	} else {
-		target_msg = target_res->msgs[0];
-		dsdb_dn->dn = talloc_steal(dsdb_dn, target_msg->dn);
-	}
-
 	/*
-	 * Check for deleted objects per MS-DRSR 4.1.10.6.13
-	 * ProcessLinkValue, because link updates are not applied to
-	 * recycled and tombstone objects.  We don't have to delete
-	 * any existing link, that should have happened when the
-	 * object deletion was replicated or initiated.
+	 * there are some cases where the target object doesn't exist, but it's
+	 * OK to ignore the linked attribute
 	 */
-	replmd_deletion_state(module, target_msg,
-			      &target_deletion_state, NULL);
-
-	if (target_deletion_state >= OBJECT_RECYCLED) {
+	if (ignore_link) {
 		talloc_free(tmp_ctx);
-		return LDB_SUCCESS;
+		return ret;
 	}
 
 	/* see if this link already exists */
@@ -6875,46 +7576,47 @@ linked_attributes[0]:
 		return ret;
 	}
 
+	if (!replmd_link_update_is_newer(pdn, la)) {
+		DEBUG(3,("Discarding older DRS linked attribute update to %s on %s from %s\n",
+			 old_el->name, ldb_dn_get_linearized(msg->dn),
+			 GUID_string(tmp_ctx, &la->meta_data.originating_invocation_id)));
+		talloc_free(tmp_ctx);
+		return LDB_SUCCESS;
+	}
 
-	if (pdn != NULL) {
-		/* see if this update is newer than what we have already */
-		struct GUID invocation_id = GUID_zero();
-		uint32_t version = 0;
-		uint32_t originating_usn = 0;
-		NTTIME change_time = 0;
-		uint32_t rmd_flags = dsdb_dn_rmd_flags(pdn->dsdb_dn->dn);
+	/* get a seq_num for this change */
+	ret = ldb_sequence_number(ldb, LDB_SEQ_NEXT, &seq_num);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
 
-		dsdb_get_extended_dn_guid(pdn->dsdb_dn->dn, &invocation_id, "RMD_INVOCID");
-		dsdb_get_extended_dn_uint32(pdn->dsdb_dn->dn, &version, "RMD_VERSION");
-		dsdb_get_extended_dn_uint32(pdn->dsdb_dn->dn, &originating_usn, "RMD_ORIGINATING_USN");
-		dsdb_get_extended_dn_nttime(pdn->dsdb_dn->dn, &change_time, "RMD_CHANGETIME");
-
-		if (!replmd_update_is_newer(&invocation_id,
-					    &la->meta_data.originating_invocation_id,
-					    version,
-					    la->meta_data.version,
-					    change_time,
-					    la->meta_data.originating_change_time)) {
-			DEBUG(3,("Discarding older DRS linked attribute update to %s on %s from %s\n",
-				 old_el->name, ldb_dn_get_linearized(msg->dn),
-				 GUID_string(tmp_ctx, &la->meta_data.originating_invocation_id)));
-			talloc_free(tmp_ctx);
-			return LDB_SUCCESS;
-		}
-
-		/* get a seq_num for this change */
-		ret = ldb_sequence_number(ldb, LDB_SEQ_NEXT, &seq_num);
+	/*
+	 * check for single-valued link conflicts, i.e. an active linked
+	 * attribute already exists, but it has a different target value
+	 */
+	if (active) {
+		ret = replmd_check_singleval_la_conflict(module, replmd_private,
+							 tmp_ctx, msg->dn, la,
+							 dsdb_dn, pdn, pdn_list,
+							 old_el, schema, attr,
+							 seq_num,
+							 &add_as_inactive);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
 			return ret;
 		}
+	}
+
+	if (pdn != NULL) {
+		uint32_t rmd_flags = dsdb_dn_rmd_flags(pdn->dsdb_dn->dn);
 
 		if (!(rmd_flags & DSDB_RMD_FLAG_DELETED)) {
 			/* remove the existing backlink */
 			ret = replmd_add_backlink(module, replmd_private,
 						  schema, 
 						  msg->dn,
-						  &guid, false, attr,
+						  &pdn->guid, false, attr,
 						  parent);
 			if (ret != LDB_SUCCESS) {
 				talloc_free(tmp_ctx);
@@ -6922,37 +7624,12 @@ linked_attributes[0]:
 			}
 		}
 
-		ret = replmd_update_la_val(tmp_ctx, pdn->v, dsdb_dn, pdn->dsdb_dn,
-					   &la->meta_data.originating_invocation_id,
-					   la->meta_data.originating_usn, seq_num,
-					   la->meta_data.originating_change_time,
-					   la->meta_data.version,
-					   !active);
-		if (ret != LDB_SUCCESS) {
-			talloc_free(tmp_ctx);
-			return ret;
-		}
+		val_to_update = pdn->v;
+		old_dsdb_dn = pdn->dsdb_dn;
 
-		if (active) {
-			/* add the new backlink */
-			ret = replmd_add_backlink(module, replmd_private,
-						  schema, 
-						  msg->dn,
-						  &guid, true, attr,
-						  parent);
-			if (ret != LDB_SUCCESS) {
-				talloc_free(tmp_ctx);
-				return ret;
-			}
-		}
 	} else {
 		unsigned offset;
-		/* get a seq_num for this change */
-		ret = ldb_sequence_number(ldb, LDB_SEQ_NEXT, &seq_num);
-		if (ret != LDB_SUCCESS) {
-			talloc_free(tmp_ctx);
-			return ret;
-		}
+
 		/*
 		 * We know where the new one needs to be, from the *next
 		 * pointer into pdn_list.
@@ -6988,27 +7665,46 @@ linked_attributes[0]:
 
 		old_el->num_values++;
 
-		ret = replmd_build_la_val(tmp_ctx, &old_el->values[offset], dsdb_dn,
-					  &la->meta_data.originating_invocation_id,
-					  la->meta_data.originating_usn, seq_num,
-					  la->meta_data.originating_change_time,
-					  la->meta_data.version,
-					  !active);
+		val_to_update = &old_el->values[offset];
+		old_dsdb_dn = NULL;
+	}
+
+	/* set the link attribute's value to the info that was received */
+	ret = replmd_set_la_val(tmp_ctx, val_to_update, dsdb_dn, old_dsdb_dn,
+				&la->meta_data.originating_invocation_id,
+				la->meta_data.originating_usn, seq_num,
+				la->meta_data.originating_change_time,
+				la->meta_data.version,
+				!active);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	if (add_as_inactive) {
+
+		/* Set the new link as inactive/deleted to avoid conflicts */
+		ret = replmd_delete_link_value(module, replmd_private, old_el,
+					       msg->dn, schema, attr, seq_num,
+					       false, &guid, dsdb_dn,
+					       val_to_update);
+
 		if (ret != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
 			return ret;
 		}
 
-		if (active) {
-			ret = replmd_add_backlink(module, replmd_private,
-						  schema, 
-						  msg->dn,
-						  &guid, true, attr,
-						  parent);
-			if (ret != LDB_SUCCESS) {
-				talloc_free(tmp_ctx);
-				return ret;
-			}
+	} else if (active) {
+
+		/* if the new link is active, then add the new backlink */
+		ret = replmd_add_backlink(module, replmd_private,
+					  schema,
+					  msg->dn,
+					  &guid, true, attr,
+					  parent);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return ret;
 		}
 	}
 
@@ -7046,7 +7742,10 @@ linked_attributes[0]:
 	if (ret != LDB_SUCCESS) {
 		ldb_debug(ldb, LDB_DEBUG_WARNING, "Failed to apply linked attribute change '%s'\n%s\n",
 			  ldb_errstring(ldb),
-			  ldb_ldif_message_string(ldb, tmp_ctx, LDB_CHANGETYPE_MODIFY, msg));
+			  ldb_ldif_message_redacted_string(ldb,
+							   tmp_ctx,
+							   LDB_CHANGETYPE_MODIFY,
+							   msg));
 		talloc_free(tmp_ctx);
 		return ret;
 	}

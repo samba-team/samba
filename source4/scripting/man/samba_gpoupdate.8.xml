@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN" "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd">
+<refentry id="samba_gpoupdate.8">
+<refentryinfo><date>2017-07-11</date></refentryinfo>
+
+<refmeta>
+	<refentrytitle>SAMBA_GPOUPDATE</refentrytitle>
+	<manvolnum>8</manvolnum>
+	<refmiscinfo class="source">Samba</refmiscinfo>
+	<refmiscinfo class="manual">System Administration tools</refmiscinfo>
+	<refmiscinfo class="version">4.8.0</refmiscinfo>
+</refmeta>
+
+<refnamediv>
+	<refname>samba_gpoupdate</refname>
+	<refpurpose>apply group policy</refpurpose>
+</refnamediv>
+
+<refsynopsisdiv>
+	<cmdsynopsis>
+		<command>samba_gpoupdate</command>
+	</cmdsynopsis>
+
+	<cmdsynopsis>
+		<command>samba_gpoupdate</command>
+		<arg choice="opt">
+		<replaceable>options</replaceable>
+		</arg>
+	</cmdsynopsis>
+
+</refsynopsisdiv>
+
+
+<refsect1>
+	<title>DESCRIPTION</title>
+	<para>This tool is part of the
+	<citerefentry><refentrytitle>samba</refentrytitle>
+	<manvolnum>1</manvolnum></citerefentry> suite.</para>
+
+	<para><command>samba_gpoupdate</command> a script for
+	applying and unapplying Group Policy. Group Policy
+	application is experimental. Currently this applies
+	password policies (minimum/maximum password age,
+	minimum password length, and password complexity) and
+	kerberos policies (user/service ticket lifetime and
+	renew lifetime).</para>
+
+</refsect1>
+
+<refsect1>
+	<title>OPTIONS</title>
+
+<para><option>-h</option>, <option>--help</option>
+       show this help message and exit</para>
+
+<para><option>-H </option>URL, <option>--url</option>=<emphasis remap="I">URL</emphasis>
+       URL for the samdb</para>
+
+<para><option>-X</option>, <option>--unapply</option>
+       Unapply Group Policy</para>
+
+<para>Samba Common Options:</para>
+
+<para><option>-s </option>FILE, <option>--configfile</option>=<emphasis remap="I">FILE</emphasis>
+       Configuration file</para>
+
+<para><option>-d </option>DEBUGLEVEL, <option>--debuglevel</option>=<emphasis remap="I">DEBUGLEVEL</emphasis>
+       debug level</para>
+
+<para><option>--option</option>=<emphasis remap="I">OPTION</emphasis>
+       set smb.conf option from command line</para>
+
+<para><option>--realm</option>=<emphasis remap="I">REALM</emphasis>
+       set the realm name</para>
+
+<para>Version Options:</para>
+
+<para><option>-V</option>, <option>--version</option>
+       Display version number</para>
+
+<para>Credentials Options:</para>
+
+<para><option>--simple-bind-dn</option>=<emphasis remap="I">DN</emphasis>
+       DN to use for a simple bind</para>
+
+<para><option>--password</option>=<emphasis remap="I">PASSWORD</emphasis>
+       Password</para>
+
+<para><option>-U </option>USERNAME, <option>--username</option>=<emphasis remap="I">USERNAME</emphasis>
+       Username</para>
+
+<para><option>-W </option>WORKGROUP, <option>--workgroup</option>=<emphasis remap="I">WORKGROUP</emphasis>
+       Workgroup</para>
+
+<para><option>-N</option>, <option>--no-pass</option>
+       Don't ask for a password</para>
+
+<para><option>-k </option>KERBEROS, <option>--kerberos</option>=<emphasis remap="I">KERBEROS</emphasis>
+       Use Kerberos</para>
+
+<para><option>--ipaddress</option>=<emphasis remap="I">IPADDRESS</emphasis>
+       IP address of server</para>
+
+<para><option>-P</option>, <option>--machine-pass</option>
+       Use stored machine account password</para>
+
+</refsect1>
+
+<refsect1>
+	<title>AUTHOR</title>
+	<para>The original Samba software and related utilities were
+	created by Andrew Tridgell. Samba is now developed by the
+	Samba Team as an Open Source project similar to the way the
+	Linux kernel is developed.</para>
+</refsect1>
+
+</refentry>

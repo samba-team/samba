@@ -249,6 +249,13 @@ static PyObject *py_descriptor_from_sddl(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "sO!", &sddl, &dom_sid_Type, &py_sid))
 		return NULL;
 
+	if (!PyObject_TypeCheck(py_sid, &dom_sid_Type)) {
+		PyErr_SetString(PyExc_TypeError,
+				"expected security.dom_sid "
+				"for second argument to .from_sddl");
+		return NULL;
+	}
+
 	sid = pytalloc_get_ptr(py_sid);
 
 	secdesc = sddl_decode(NULL, sddl, sid);

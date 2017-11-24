@@ -341,15 +341,15 @@ nameserver %s
         elif self.getvar('NAMESERVER_BACKEND') != 'SAMBA_INTERNAL':
             if self.named_supports_gssapi_keytab():
                 self.setvar("NAMED_TKEY_OPTION",
-                         'tkey-gssapi-keytab "${PREFIX}/private/dns.keytab";')
+                         'tkey-gssapi-keytab "${PREFIX}/bind-dns/dns.keytab";')
             else:
                 self.info("LCREALM=${LCREALM}")
                 self.setvar("NAMED_TKEY_OPTION",
                          '''tkey-gssapi-credential "DNS/${LCREALM}";
                             tkey-domain "${LCREALM}";
                  ''')
-            self.putenv('KEYTAB_FILE', '${PREFIX}/private/dns.keytab')
-            self.putenv('KRB5_KTNAME', '${PREFIX}/private/dns.keytab')
+            self.putenv('KEYTAB_FILE', '${PREFIX}/bind-dns/dns.keytab')
+            self.putenv('KRB5_KTNAME', '${PREFIX}/bind-dns/dns.keytab')
         else:
             self.setvar("NAMED_TKEY_OPTION", "")
 

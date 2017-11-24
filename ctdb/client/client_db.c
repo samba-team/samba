@@ -984,9 +984,10 @@ static void ctdb_db_traverse_handler(uint64_t srvid, TDB_DATA data,
 		req, struct ctdb_db_traverse_state);
 	struct ctdb_rec_data *rec;
 	struct ctdb_ltdb_header header;
+	size_t np;
 	int ret;
 
-	ret = ctdb_rec_data_pull(data.dptr, data.dsize, state, &rec);
+	ret = ctdb_rec_data_pull(data.dptr, data.dsize, state, &rec, &np);
 	if (ret != 0) {
 		return;
 	}
@@ -1101,6 +1102,7 @@ int ctdb_ltdb_fetch(struct ctdb_db_context *db, TDB_DATA key,
 		    TALLOC_CTX *mem_ctx, TDB_DATA *data)
 {
 	TDB_DATA rec;
+	size_t np;
 	int ret;
 
 	rec = tdb_fetch(db->ltdb->tdb, key);
@@ -1114,9 +1116,9 @@ int ctdb_ltdb_fetch(struct ctdb_db_context *db, TDB_DATA key,
 			return EIO;
 		}
 
-		header->rsn = 0;
-		header->dmaster = CTDB_UNKNOWN_PNN;
-		header->flags = 0;
+		*header = (struct ctdb_ltdb_header) {
+			.dmaster = CTDB_UNKNOWN_PNN,
+		};
 
 		if (data != NULL) {
 			*data = tdb_null;
@@ -1124,17 +1126,15 @@ int ctdb_ltdb_fetch(struct ctdb_db_context *db, TDB_DATA key,
 		return 0;
 	}
 
-	ret = ctdb_ltdb_header_pull(rec.dptr, rec.dsize, header);
+	ret = ctdb_ltdb_header_pull(rec.dptr, rec.dsize, header, &np);
 	if (ret != 0) {
 		return ret;
 	}
 
 	ret = 0;
 	if (data != NULL) {
-		size_t offset = ctdb_ltdb_header_len(header);
-
-		data->dsize = rec.dsize - offset;
-		data->dptr = talloc_memdup(mem_ctx, rec.dptr + offset,
+		data->dsize = rec.dsize - np;
+		data->dptr = talloc_memdup(mem_ctx, rec.dptr + np,
 					   data->dsize);
 		if (data->dptr == NULL) {
 			ret = ENOMEM;
@@ -1230,6 +1230,7 @@ static int ctdb_fetch_lock_check(struct tevent_req *req)
 	struct ctdb_record_handle *h = state->h;
 	struct ctdb_ltdb_header header;
 	TDB_DATA data = tdb_null;
+	size_t np;
 	int ret, err = 0;
 	bool do_migrate = false;
 
@@ -1253,7 +1254,7 @@ static int ctdb_fetch_lock_check(struct tevent_req *req)
 	}
 
 	/* Got the record */
-	ret = ctdb_ltdb_header_pull(data.dptr, data.dsize, &header);
+	ret = ctdb_ltdb_header_pull(data.dptr, data.dsize, &header, &np);
 	if (ret != 0) {
 		err = ret;
 		goto failed;
@@ -1457,6 +1458,7 @@ int ctdb_store_record(struct ctdb_record_handle *h, TDB_DATA data)
 {
 	uint8_t header[sizeof(struct ctdb_ltdb_header)];
 	TDB_DATA rec[2];
+	size_t np;
 	int ret;
 
 	/* Cannot modify the record if it was obtained as a readonly copy */
@@ -1471,9 +1473,9 @@ int ctdb_store_record(struct ctdb_record_handle *h, TDB_DATA data)
 		return 0;
 	}
 
-	ctdb_ltdb_header_push(&h->header, header);
+	ctdb_ltdb_header_push(&h->header, header, &np);
 
-	rec[0].dsize = ctdb_ltdb_header_len(&h->header);
+	rec[0].dsize = np;
 	rec[0].dptr = header;
 
 	rec[1].dsize = data.dsize;
@@ -1506,6 +1508,7 @@ struct tevent_req *ctdb_delete_record_send(TALLOC_CTX *mem_ctx,
 	struct ctdb_req_control request;
 	uint8_t header[sizeof(struct ctdb_ltdb_header)];
 	TDB_DATA rec;
+	size_t  np;
 	int ret;
 
 	req = tevent_req_create(mem_ctx, &state,
@@ -1524,9 +1527,9 @@ struct tevent_req *ctdb_delete_record_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	ctdb_ltdb_header_push(&h->header, header);
+	ctdb_ltdb_header_push(&h->header, header, &np);
 
-	rec.dsize = ctdb_ltdb_header_len(&h->header);
+	rec.dsize = np;
 	rec.dptr = header;
 
 	ret = tdb_store(h->db->ltdb->tdb, h->key, rec, TDB_REPLACE);
@@ -1696,6 +1699,7 @@ static void ctdb_g_lock_lock_fetched(struct tevent_req *subreq)
 	struct ctdb_g_lock_lock_state *state = tevent_req_data(
 		req, struct ctdb_g_lock_lock_state);
 	TDB_DATA data;
+	size_t np;
 	int ret = 0;
 
 	state->h = ctdb_fetch_lock_recv(subreq, NULL, state, &data, &ret);
@@ -1713,7 +1717,7 @@ static void ctdb_g_lock_lock_fetched(struct tevent_req *subreq)
 	}
 
 	ret = ctdb_g_lock_list_pull(data.dptr, data.dsize, state,
-				    &state->lock_list);
+				    &state->lock_list, &np);
 	talloc_free(data.dptr);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, ("g_lock_lock: %s invalid lock data\n",
@@ -1852,6 +1856,7 @@ static int ctdb_g_lock_lock_update(struct tevent_req *req)
 	struct ctdb_g_lock_lock_state *state = tevent_req_data(
 		req, struct ctdb_g_lock_lock_state);
 	TDB_DATA data;
+	size_t np;
 	int ret;
 
 	data.dsize = ctdb_g_lock_list_len(state->lock_list);
@@ -1860,7 +1865,7 @@ static int ctdb_g_lock_lock_update(struct tevent_req *req)
 		return ENOMEM;
 	}
 
-	ctdb_g_lock_list_push(state->lock_list, data.dptr);
+	ctdb_g_lock_list_push(state->lock_list, data.dptr, &np);
 	ret = ctdb_store_record(state->h, data);
 	talloc_free(data.dptr);
 	return ret;
@@ -1961,6 +1966,7 @@ static void ctdb_g_lock_unlock_fetched(struct tevent_req *subreq)
 	struct ctdb_g_lock_unlock_state *state = tevent_req_data(
 		req, struct ctdb_g_lock_unlock_state);
 	TDB_DATA data;
+	size_t np;
 	int ret = 0;
 
 	state->h = ctdb_fetch_lock_recv(subreq, NULL, state, &data, &ret);
@@ -1973,7 +1979,7 @@ static void ctdb_g_lock_unlock_fetched(struct tevent_req *subreq)
 	}
 
 	ret = ctdb_g_lock_list_pull(data.dptr, data.dsize, state,
-				    &state->lock_list);
+				    &state->lock_list, &np);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, ("g_lock_unlock: %s invalid lock data\n",
 				  (char *)state->key.dptr));
@@ -2024,6 +2030,7 @@ static int ctdb_g_lock_unlock_update(struct tevent_req *req)
 
 	if (state->lock_list->num != 0) {
 		TDB_DATA data;
+		size_t np;
 
 		data.dsize = ctdb_g_lock_list_len(state->lock_list);
 		data.dptr = talloc_size(state, data.dsize);
@@ -2031,7 +2038,7 @@ static int ctdb_g_lock_unlock_update(struct tevent_req *req)
 			return ENOMEM;
 		}
 
-		ctdb_g_lock_list_push(state->lock_list, data.dptr);
+		ctdb_g_lock_list_push(state->lock_list, data.dptr, &np);
 		ret = ctdb_store_record(state->h, data);
 		talloc_free(data.dptr);
 		if (ret != 0) {

@@ -438,7 +438,7 @@ int sys_lstat(const char *fname,SMB_STRUCT_STAT *sbuf,
 ********************************************************************/
 int sys_posix_fallocate(int fd, off_t offset, off_t len)
 {
-#if defined(HAVE_POSIX_FALLOCATE) && !defined(HAVE_BROKEN_POSIX_FALLOCATE)
+#if defined(HAVE_POSIX_FALLOCATE)
 	return posix_fallocate(fd, offset, len);
 #elif defined(F_RESVSP64)
 	/* this handles XFS on IRIX */
@@ -594,7 +594,9 @@ char *sys_getwd(void)
 			break;
 		}
 		if (errno != ERANGE) {
+			int saved_errno = errno;
 			SAFE_FREE(s);
+			errno = saved_errno;
 			break;
 		}
 		allocated *= 2;
@@ -605,11 +607,18 @@ char *sys_getwd(void)
 	}
 	return wd;
 #else
+	char *wd = NULL;
 	char *s = SMB_MALLOC_ARRAY(char, PATH_MAX);
 	if (s == NULL) {
 		return NULL;
 	}
-	return getwd(s);
+	wd = getwd(s);
+	if (wd == NULL) {
+		int saved_errno = errno;
+		SAFE_FREE(s);
+		errno = saved_errno;
+	}
+	return wd;
 #endif
 }
 

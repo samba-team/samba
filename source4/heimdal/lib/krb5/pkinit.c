@@ -497,7 +497,12 @@ build_auth_pack(krb5_context context,
 		free_DomainParameters(&dp);
 		return ret;
 	    }
-	    ret = BN_to_integer(context, dh->q, &dp.q);
+	    dp.q = calloc(1, sizeof(*dp.q));
+	    if (dp.q == NULL) {
+		free_DomainParameters(&dp);
+		return ENOMEM;
+	    }
+	    ret = BN_to_integer(context, dh->q, dp.q);
 	    if (ret) {
 		free_DomainParameters(&dp);
 		return ret;

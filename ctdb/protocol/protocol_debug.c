@@ -239,6 +239,9 @@ static void ctdb_opcode_print(uint32_t opcode, FILE *fp)
 		{ CTDB_CONTROL_DB_PUSH_CONFIRM, "DB_PUSH_CONFIRM" },
 		{ CTDB_CONTROL_DB_OPEN_FLAGS, "DB_OPEN_FLAGS" },
 		{ CTDB_CONTROL_DB_ATTACH_REPLICATED, "DB_ATTACH_REPLICATED" },
+		{ CTDB_CONTROL_CHECK_PID_SRVID, "CHECK_PID_SRVID" },
+		{ CTDB_CONTROL_TUNNEL_REGISTER, "TUNNEL_REGISTER" },
+		{ CTDB_CONTROL_TUNNEL_DEREGISTER, "TUNNEL_DEREGISTER" },
 		{ MAP_END, "" },
 	};
 
@@ -351,6 +354,28 @@ static void ctdb_srvid_print(uint64_t srvid, FILE *fp)
 	}
 }
 
+static void ctdb_tunnel_id_print(uint64_t tunnel_id, FILE *fp)
+{
+	if ((tunnel_id & CTDB_TUNNEL_TEST) == CTDB_TUNNEL_TEST) {
+		fprintf(fp, "TEST-%"PRIx64, tunnel_id);
+	} else {
+		fprintf(fp, "0x%"PRIx64, tunnel_id);
+	}
+}
+
+static void ctdb_tunnel_flags_print(uint32_t flags, FILE *fp)
+{
+	if (flags & CTDB_TUNNEL_FLAG_REQUEST) {
+		fprintf(fp, "REQUEST ");
+	}
+	if (flags & CTDB_TUNNEL_FLAG_REPLY) {
+		fprintf(fp, "REPLY ");
+	}
+	if (flags & CTDB_TUNNEL_FLAG_NOREPLY) {
+		fprintf(fp, "NOREPLY ");
+	}
+}
+
 /*
  * Print routines
  */
@@ -458,6 +483,24 @@ static void ctdb_reply_control_print(struct ctdb_reply_control *c, FILE *fp)
 	if (c->errmsg != NULL) {
 		fprintf(fp, "errmsg: %s", c->errmsg);
 	}
+	fprintf(fp, "\n");
+}
+
+static void ctdb_req_keepalive_print(struct ctdb_req_keepalive *c, FILE *fp)
+{
+	fprintf(fp, "Data\n");
+	fprintf(fp, "  version:0x%"PRIx32, c->version);
+	fprintf(fp, "  uptime:%"PRIu32, c->uptime);
+	fprintf(fp, "\n");
+}
+
+static void ctdb_req_tunnel_print(struct ctdb_req_tunnel *c, FILE *fp)
+{
+	fprintf(fp, "Data\n");
+	fprintf(fp, "  tunnel_id:");
+	ctdb_tunnel_id_print(c->tunnel_id, fp);
+	ctdb_tunnel_flags_print(c->flags, fp);
+	tdb_data_print(c->data, fp);
 	fprintf(fp, "\n");
 }
 
@@ -585,6 +628,36 @@ static void ctdb_reply_control_parse(uint8_t *buf, size_t buflen, FILE *fp,
 	ctdb_reply_control_print(&c, fp);
 }
 
+static void ctdb_req_keepalive_parse(uint8_t *buf, size_t buflen, FILE *fp,
+				     TALLOC_CTX *mem_ctx)
+{
+	struct ctdb_req_keepalive c;
+	int ret;
+
+	ret = ctdb_req_keepalive_pull(buf, buflen, NULL, mem_ctx, &c);
+	if (ret != 0) {
+		fprintf(fp, "Failed to parse CTDB_REQ_KEEPALIVE\n");
+		return;
+	}
+
+	ctdb_req_keepalive_print(&c, fp);
+}
+
+static void ctdb_req_tunnel_parse(uint8_t *buf, size_t buflen, FILE *fp,
+				  TALLOC_CTX *mem_ctx)
+{
+	struct ctdb_req_tunnel c;
+	int ret;
+
+	ret = ctdb_req_tunnel_pull(buf, buflen, NULL, mem_ctx, &c);
+	if (ret != 0) {
+		fprintf(fp, "Failed to parse CTDB_REQ_TUNNEL\n");
+		return;
+	}
+
+	ctdb_req_tunnel_print(&c, fp);
+}
+
 /*
  * Packet print
  */
@@ -593,11 +666,12 @@ void ctdb_packet_print(uint8_t *buf, size_t buflen, FILE *fp)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct ctdb_req_header h;
+	size_t np;
 	int ret;
 
 	fprintf(fp, "Buffer len:%zu\n", buflen);
 
-	ret = ctdb_req_header_pull(buf, buflen, &h);
+	ret = ctdb_req_header_pull(buf, buflen, &h, &np);
 	if (ret != 0) {
 		fprintf(fp, "Failed to parse ctdb packet header\n");
 		return;
@@ -649,6 +723,11 @@ void ctdb_packet_print(uint8_t *buf, size_t buflen, FILE *fp)
 			break;
 
 		case CTDB_REQ_KEEPALIVE:
+			ctdb_req_keepalive_parse(buf, buflen, fp, mem_ctx);
+			break;
+
+		case CTDB_REQ_TUNNEL:
+			ctdb_req_tunnel_parse(buf, buflen, fp, mem_ctx);
 			break;
 
 		default:

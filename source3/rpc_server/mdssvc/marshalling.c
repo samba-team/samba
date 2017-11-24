@@ -164,6 +164,8 @@ static ssize_t sl_pack_float(double d, char *buf, ssize_t offset, size_t bufsize
 		uint64_t w;
 	} ieee_fp_union;
 
+	ieee_fp_union.d = d;
+
 	offset = sl_push_uint64_val(buf, offset, bufsize, sl_pack_tag(SQ_TYPE_FLOAT, 2, 1));
 	if (offset == -1) {
 		return -1;

@@ -223,7 +223,7 @@ bld.SAMBA3_BINARY('net',
                  KRBCLIENT
                  ndr-standard
                  msrpc3
-                 gpo
+                 gpext
                  ads
                  smbd_base
                  LIBADS_SERVER
@@ -232,7 +232,6 @@ bld.SAMBA3_BINARY('net',
                  PASSWD_UTIL
                  LIBNET
                  LIBNET_DSSYNC
-                 LIBNET_SAMSYNC
                  LIBEVENTLOG
                  REGFIO
                  NDR_NTPRINTING

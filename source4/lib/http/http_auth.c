@@ -54,25 +54,29 @@ static NTSTATUS http_copy_header(const struct http_request *src,
  * Retrieve the WWW-Authenticate header from server response based on the
  * authentication scheme being used.
  */
-static NTSTATUS http_parse_auth_response(enum http_auth_method auth,
+static NTSTATUS http_parse_auth_response(const DATA_BLOB prefix,
 					 struct http_request *auth_response,
 					 DATA_BLOB *in)
 {
 	struct http_header *h;
 
 	for (h = auth_response->headers; h != NULL; h = h->next) {
-		if (strncasecmp(h->key, "WWW-Authenticate", 16) == 0) {
-			switch (auth) {
-			case HTTP_AUTH_NTLM:
-				if (strncasecmp(h->value, "NTLM ", 5) == 0) {
-					*in = data_blob_string_const(h->value);
-					return NT_STATUS_OK;
-				}
-				break;
-			default:
-				break;
-			}
+		int cmp;
+
+		cmp = strcasecmp(h->key, "WWW-Authenticate");
+		if (cmp != 0) {
+			continue;
 		}
+
+		cmp = strncasecmp(h->value,
+				  (const char *)prefix.data,
+				  prefix.length);
+		if (cmp != 0) {
+			continue;
+		}
+
+		*in = data_blob_string_const(h->value);
+		return NT_STATUS_OK;
 	}
 
 	return NT_STATUS_NOT_SUPPORTED;
@@ -85,6 +89,7 @@ struct http_auth_state {
 	struct tevent_queue *send_queue;
 
 	enum http_auth_method auth;
+	DATA_BLOB prefix;
 
 	struct gensec_security *gensec_ctx;
 	NTSTATUS gensec_status;
@@ -113,6 +118,7 @@ struct tevent_req *http_send_auth_request_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *subreq = NULL;
 	DATA_BLOB gensec_in = data_blob_null;
 	NTSTATUS status;
+	struct http_header *h = NULL;
 	const char *mech_name = NULL;
 
 	req = tevent_req_create(mem_ctx, &state, struct http_auth_state);
@@ -141,12 +147,38 @@ struct tevent_req *http_send_auth_request_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
+	for (h = original_request->headers; h != NULL; h = h->next) {
+		int cmp;
+
+		cmp = strcasecmp(h->key, "Host");
+		if (cmp != 0) {
+			continue;
+		}
+
+		status = gensec_set_target_service(state->gensec_ctx, "http");
+		if (tevent_req_nterror(req, status)) {
+			return tevent_req_post(req, ev);
+		}
+
+		status = gensec_set_target_hostname(state->gensec_ctx, h->value);
+		if (tevent_req_nterror(req, status)) {
+			return tevent_req_post(req, ev);
+		}
+		break;
+	}
+
 	switch (state->auth) {
 	case HTTP_AUTH_BASIC:
 		mech_name = "http_basic";
+		state->prefix = data_blob_string_const("Basic");
 		break;
 	case HTTP_AUTH_NTLM:
 		mech_name = "http_ntlm";
+		state->prefix = data_blob_string_const("NTLM");
+		break;
+	case HTTP_AUTH_NEGOTIATE:
+		mech_name = "http_negotiate";
+		state->prefix = data_blob_string_const("Negotiate");
 		break;
 	default:
 		tevent_req_nterror(req, NT_STATUS_NOT_SUPPORTED);
@@ -272,9 +304,16 @@ static void http_send_auth_request_http_req_done(struct tevent_req *subreq)
 		return;
 	}
 
-	/* If more processing required, read the response from server */
+	/*
+	 * If more processing required, read the response from server
+	 *
+	 * We may get an empty RPCH Echo packet from the server
+	 * on the "RPC_OUT_DATA" path. We need to consume this
+	 * from the socket, but for now we just ignore the bytes.
+	 */
 	subreq = http_read_response_send(state, state->ev,
-					 state->stream);
+					 state->stream,
+					 UINT16_MAX);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -301,7 +340,21 @@ static void http_send_auth_request_http_rep_done(struct tevent_req *subreq)
 		return;
 	}
 
-	status = http_parse_auth_response(state->auth,
+	/*
+	 * We we asked for up to UINT16_MAX bytes of
+	 * content, we don't expect
+	 * state->auth_response->remaining_content_length
+	 * to be set.
+	 *
+	 * For now we just ignore any bytes in
+	 * state->auth_response->body.
+	 */
+	if (state->auth_response->remaining_content_length != 0) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+
+	status = http_parse_auth_response(state->prefix,
 					  state->auth_response,
 					  &gensec_in);
 	if (tevent_req_nterror(req, status)) {

@@ -468,6 +468,11 @@ bool smbXcli_conn_use_unicode(struct smbXcli_conn *conn)
 	return false;
 }
 
+bool smbXcli_conn_signing_mandatory(struct smbXcli_conn *conn)
+{
+	return conn->mandatory_signing;
+}
+
 /*
  * [MS-SMB] 2.2.2.3.5 - SMB1 support for passing through
  * query/set commands to the file system
@@ -873,7 +878,7 @@ static NTSTATUS smbXcli_req_cancel_write_req(struct tevent_req *req)
 
 	/*
 	 * Check if it's possible to cancel the request.
-	 * If the result is true it's not to late.
+	 * If the result is true it's not too late.
 	 * See writev_cancel().
 	 */
 	ok = tevent_req_cancel(state->write_req);
@@ -1661,6 +1666,9 @@ static NTSTATUS smb1cli_req_writev_submit(struct tevent_req *req,
 	}
 
 	if (state->conn->protocol > PROTOCOL_NT1) {
+		DBG_ERR("called for dialect[%s] server[%s]\n",
+			smb_protocol_types_string(state->conn->protocol),
+			smbXcli_conn_remote_name(state->conn));
 		return NT_STATUS_REVISION_MISMATCH;
 	}
 
@@ -4913,10 +4921,19 @@ static void smbXcli_negprot_smb2_done(struct tevent_req *subreq)
 		return;
 	}
 
+	/*
+	 * Here we are now at SMB3_11, so encryption should be
+	 * negotiated via context, not capabilities.
+	 */
+
 	if (conn->smb2.server.capabilities & SMB2_CAP_ENCRYPTION) {
-		tevent_req_nterror(req,
-				NT_STATUS_INVALID_NETWORK_RESPONSE);
-		return;
+		/*
+		 * Server set SMB2_CAP_ENCRYPTION capability,
+		 * but *SHOULD* not, not *MUST* not. Just mask it off.
+		 * NetApp seems to do this:
+		 * BUG: https://bugzilla.samba.org/show_bug.cgi?id=13009
+		 */
+		conn->smb2.server.capabilities &= ~SMB2_CAP_ENCRYPTION;
 	}
 
 	negotiate_context_offset = IVAL(body, 60);

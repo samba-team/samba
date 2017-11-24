@@ -173,3 +173,56 @@ systemOnly: FALSE
 
         self.assertIn(attr_ldap_name, [str(x) for x in idx_res[0]["@IDXATTR"]])
         self.assertIn(attr_ldap_name2, [str(x) for x in idx_res[0]["@IDXATTR"]])
+
+    def test_modify_at_attributes(self):
+        m = {"dn": "@ATTRIBUTES",
+             "@TEST_EXTRA": ["HIDDEN"]
+             }
+
+        msg = ldb.Message.from_dict(self.samdb, m, ldb.FLAG_MOD_ADD)
+        self.samdb.modify(msg)
+
+        res = self.samdb.search(base="@ATTRIBUTES", scope=ldb.SCOPE_BASE,
+                                attrs=["@TEST_EXTRA"])
+        self.assertEquals(len(res), 1)
+        self.assertEquals(str(res[0].dn), "@ATTRIBUTES")
+        self.assertEquals(len(res[0]), 1)
+        self.assertTrue("@TEST_EXTRA" in res[0])
+        self.assertEquals(len(res[0]["@TEST_EXTRA"]), 1)
+        self.assertEquals(res[0]["@TEST_EXTRA"][0], "HIDDEN")
+
+        samdb2 = samba.tests.connect_samdb(self.lp.samdb_url())
+
+        res = self.samdb.search(base="@ATTRIBUTES", scope=ldb.SCOPE_BASE,
+                                attrs=["@TEST_EXTRA"])
+        self.assertEquals(len(res), 1)
+        self.assertEquals(str(res[0].dn), "@ATTRIBUTES")
+        self.assertEquals(len(res[0]), 0)
+        self.assertFalse("@TEST_EXTRA" in res[0])
+
+
+    def test_modify_at_indexlist(self):
+        m = {"dn": "@INDEXLIST",
+             "@TEST_EXTRA": ["1"]
+             }
+
+        msg = ldb.Message.from_dict(self.samdb, m, ldb.FLAG_MOD_ADD)
+        self.samdb.modify(msg)
+
+        res = self.samdb.search(base="@INDEXLIST", scope=ldb.SCOPE_BASE,
+                                attrs=["@TEST_EXTRA"])
+        self.assertEquals(len(res), 1)
+        self.assertEquals(str(res[0].dn), "@INDEXLIST")
+        self.assertEquals(len(res[0]), 1)
+        self.assertTrue("@TEST_EXTRA" in res[0])
+        self.assertEquals(len(res[0]["@TEST_EXTRA"]), 1)
+        self.assertEquals(res[0]["@TEST_EXTRA"][0], "1")
+
+        samdb2 = samba.tests.connect_samdb(self.lp.samdb_url())
+
+        res = self.samdb.search(base="@INDEXLIST", scope=ldb.SCOPE_BASE,
+                                attrs=["@TEST_EXTRA"])
+        self.assertEquals(len(res), 1)
+        self.assertEquals(str(res[0].dn), "@INDEXLIST")
+        self.assertEquals(len(res[0]), 0)
+        self.assertFalse("@TEST_EXTRA" in res[0])

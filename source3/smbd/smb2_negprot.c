@@ -128,6 +128,7 @@ enum protocol_types smbd_smb2_protocol_dialect_match(const uint8_t *indyn,
 NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 {
 	struct smbXsrv_connection *xconn = req->xconn;
+	struct smbXsrv_client_global0 *global0 = NULL;
 	NTSTATUS status;
 	const uint8_t *inbody;
 	const uint8_t *indyn = NULL;
@@ -612,91 +613,91 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 
 	req->sconn->using_smb2 = true;
 
-	if (dialect != SMB2_DIALECT_REVISION_2FF) {
-		struct smbXsrv_client_global0 *global0 = NULL;
+	if (dialect == SMB2_DIALECT_REVISION_2FF) {
+		return smbd_smb2_request_done(req, outbody, &outdyn);
+	}
 
-		status = smbXsrv_connection_init_tables(xconn, protocol);
+	status = smbXsrv_connection_init_tables(xconn, protocol);
+	if (!NT_STATUS_IS_OK(status)) {
+		return smbd_smb2_request_error(req, status);
+	}
+
+	xconn->smb2.client.capabilities = in_capabilities;
+	xconn->smb2.client.security_mode = in_security_mode;
+	xconn->smb2.client.guid = in_guid;
+	xconn->smb2.client.num_dialects = dialect_count;
+	xconn->smb2.client.dialects = talloc_array(xconn,
+						   uint16_t,
+						   dialect_count);
+	if (xconn->smb2.client.dialects == NULL) {
+		return smbd_smb2_request_error(req, NT_STATUS_NO_MEMORY);
+	}
+	for (c=0; c < dialect_count; c++) {
+		xconn->smb2.client.dialects[c] = SVAL(indyn, c*2);
+	}
+
+	xconn->smb2.server.capabilities = capabilities;
+	xconn->smb2.server.security_mode = security_mode;
+	xconn->smb2.server.guid = out_guid;
+	xconn->smb2.server.dialect = dialect;
+	xconn->smb2.server.max_trans = max_trans;
+	xconn->smb2.server.max_read  = max_read;
+	xconn->smb2.server.max_write = max_write;
+
+	if (xconn->protocol < PROTOCOL_SMB2_10) {
+		/*
+		 * SMB2_02 doesn't support client guids
+		 */
+		return smbd_smb2_request_done(req, outbody, &outdyn);
+	}
+
+	if (!xconn->client->server_multi_channel_enabled) {
+		/*
+		 * Only deal with the client guid database
+		 * if multi-channel is enabled.
+		 */
+		return smbd_smb2_request_done(req, outbody, &outdyn);
+	}
+
+	if (xconn->smb2.client.guid_verified) {
+		/*
+		 * The connection was passed from another
+		 * smbd process.
+		 */
+		return smbd_smb2_request_done(req, outbody, &outdyn);
+	}
+
+	status = smb2srv_client_lookup_global(xconn->client,
+					      xconn->smb2.client.guid,
+					      req, &global0);
+	/*
+	 * TODO: check for races...
+	 */
+	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECTID_NOT_FOUND)) {
+		/*
+		 * This stores the new client information in
+		 * smbXsrv_client_global.tdb
+		 */
+		xconn->client->global->client_guid =
+			xconn->smb2.client.guid;
+		status = smbXsrv_client_update(xconn->client);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		xconn->smb2.client.guid_verified = true;
+	} else if (NT_STATUS_IS_OK(status)) {
+		status = smb2srv_client_connection_pass(req,
+							global0);
 		if (!NT_STATUS_IS_OK(status)) {
 			return smbd_smb2_request_error(req, status);
 		}
 
-		xconn->smb2.client.capabilities = in_capabilities;
-		xconn->smb2.client.security_mode = in_security_mode;
-		xconn->smb2.client.guid = in_guid;
-		xconn->smb2.client.num_dialects = dialect_count;
-		xconn->smb2.client.dialects = talloc_array(xconn,
-							   uint16_t,
-							   dialect_count);
-		if (xconn->smb2.client.dialects == NULL) {
-			return smbd_smb2_request_error(req, NT_STATUS_NO_MEMORY);
-		}
-		for (c=0; c < dialect_count; c++) {
-			xconn->smb2.client.dialects[c] = SVAL(indyn, c*2);
-		}
-
-		xconn->smb2.server.capabilities = capabilities;
-		xconn->smb2.server.security_mode = security_mode;
-		xconn->smb2.server.guid = out_guid;
-		xconn->smb2.server.dialect = dialect;
-		xconn->smb2.server.max_trans = max_trans;
-		xconn->smb2.server.max_read  = max_read;
-		xconn->smb2.server.max_write = max_write;
-
-		if (xconn->protocol < PROTOCOL_SMB2_10) {
-			/*
-			 * SMB2_02 doesn't support client guids
-			 */
-			return smbd_smb2_request_done(req, outbody, &outdyn);
-		}
-
-		if (!xconn->client->server_multi_channel_enabled) {
-			/*
-			 * Only deal with the client guid database
-			 * if multi-channel is enabled.
-			 */
-			return smbd_smb2_request_done(req, outbody, &outdyn);
-		}
-
-		if (xconn->smb2.client.guid_verified) {
-			/*
-			 * The connection was passed from another
-			 * smbd process.
-			 */
-			return smbd_smb2_request_done(req, outbody, &outdyn);
-		}
-
-		status = smb2srv_client_lookup_global(xconn->client,
-						xconn->smb2.client.guid,
-						req, &global0);
-		/*
-		 * TODO: check for races...
-		 */
-		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECTID_NOT_FOUND)) {
-			/*
-			 * This stores the new client information in
-			 * smbXsrv_client_global.tdb
-			 */
-			xconn->client->global->client_guid =
-						xconn->smb2.client.guid;
-			status = smbXsrv_client_update(xconn->client);
-			if (!NT_STATUS_IS_OK(status)) {
-				return status;
-			}
-
-			xconn->smb2.client.guid_verified = true;
-		} else if (NT_STATUS_IS_OK(status)) {
-			status = smb2srv_client_connection_pass(req,
-								global0);
-			if (!NT_STATUS_IS_OK(status)) {
-				return smbd_smb2_request_error(req, status);
-			}
-
-			smbd_server_connection_terminate(xconn,
-							 "passed connection");
-			return NT_STATUS_OBJECTID_EXISTS;
-		} else {
-			return smbd_smb2_request_error(req, status);
-		}
+		smbd_server_connection_terminate(xconn,
+						 "passed connection");
+		return NT_STATUS_OBJECTID_EXISTS;
+	} else {
+		return smbd_smb2_request_error(req, status);
 	}
 
 	return smbd_smb2_request_done(req, outbody, &outdyn);

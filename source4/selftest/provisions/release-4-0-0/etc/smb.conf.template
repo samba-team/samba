@@ -5,6 +5,7 @@
 	server role     = domain controller
 
 	private dir = @@PREFIX@@/private
+	binddns dir = @@PREFIX@@/bind-dns
 	lock dir = @@PREFIX@@/
 	posix:eadb = @@PREFIX@@/private/eadb.tdb
 

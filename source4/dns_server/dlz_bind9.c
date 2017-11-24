@@ -614,6 +614,8 @@ _PUBLIC_ isc_result_t dlz_create(const char *dlzname,
 	isc_result_t result;
 	struct ldb_dn *dn;
 	NTSTATUS nt_status;
+	int ret;
+	char *errstring = NULL;
 
 	if (dlz_bind9_state != NULL) {
 		*dbdata = dlz_bind9_state;
@@ -682,18 +684,33 @@ _PUBLIC_ isc_result_t dlz_create(const char *dlzname,
 	}
 
 	if (state->options.url == NULL) {
-		state->options.url = lpcfg_private_path(state, state->lp, "dns/sam.ldb");
+		state->options.url = talloc_asprintf(state,
+						     "%s/dns/sam.ldb",
+						     lpcfg_binddns_dir(state->lp));
 		if (state->options.url == NULL) {
 			result = ISC_R_NOMEMORY;
 			goto failed;
 		}
+
+		if (!file_exist(state->options.url)) {
+			state->options.url = talloc_asprintf(state,
+							     "%s/dns/sam.ldb",
+							     lpcfg_private_dir(state->lp));
+			if (state->options.url == NULL) {
+				result = ISC_R_NOMEMORY;
+				goto failed;
+			}
+		}
 	}
 
-	state->samdb = samdb_connect_url(state, state->ev_ctx, state->lp,
-					system_session(state->lp), 0, state->options.url);
-	if (state->samdb == NULL) {
-		state->log(ISC_LOG_ERROR, "samba_dlz: Failed to connect to %s",
-			state->options.url);
+	ret = samdb_connect_url(state, state->ev_ctx, state->lp,
+				system_session(state->lp), 0,
+				state->options.url,
+				&state->samdb, &errstring);
+	if (ret != LDB_SUCCESS) {
+		state->log(ISC_LOG_ERROR,
+			   "samba_dlz: Failed to connect to %s: %s",
+			   errstring, ldb_strerror(ret));
 		result = ISC_R_FAILURE;
 		goto failed;
 	}
@@ -865,8 +882,8 @@ static isc_result_t dlz_lookup_types(struct dlz_bind9_data *state,
 			return ISC_R_NOMEMORY;
 		}
 
-		werr = dns_common_lookup(state->samdb, tmp_ctx, dn,
-					 &records, &num_records, NULL);
+		werr = dns_common_wildcard_lookup(state->samdb, tmp_ctx, dn,
+					 &records, &num_records);
 		if (W_ERROR_IS_OK(werr)) {
 			break;
 		}
@@ -1266,6 +1283,7 @@ _PUBLIC_ isc_boolean_t dlz_ssumatch(const char *signer, const char *name, const 
 	DATA_BLOB ap_req;
 	struct cli_credentials *server_credentials;
 	char *keytab_name;
+	char *keytab_file = NULL;
 	int ret;
 	int ldb_ret;
 	NTSTATUS nt_status;
@@ -1307,8 +1325,33 @@ _PUBLIC_ isc_boolean_t dlz_ssumatch(const char *signer, const char *name, const 
 	cli_credentials_set_krb5_context(server_credentials, state->smb_krb5_ctx);
 	cli_credentials_set_conf(server_credentials, state->lp);
 
-	keytab_name = talloc_asprintf(tmp_ctx, "FILE:%s/dns.keytab",
-					lpcfg_private_dir(state->lp));
+	keytab_file = talloc_asprintf(tmp_ctx,
+				      "%s/dns.keytab",
+				      lpcfg_binddns_dir(state->lp));
+	if (keytab_file == NULL) {
+		state->log(ISC_LOG_ERROR, "samba_dlz: Out of memory!");
+		talloc_free(tmp_ctx);
+		return ISC_FALSE;
+	}
+
+	if (!file_exist(keytab_file)) {
+		keytab_file = talloc_asprintf(tmp_ctx,
+					      "%s/dns.keytab",
+					      lpcfg_private_dir(state->lp));
+		if (keytab_file == NULL) {
+			state->log(ISC_LOG_ERROR, "samba_dlz: Out of memory!");
+			talloc_free(tmp_ctx);
+			return ISC_FALSE;
+		}
+	}
+
+	keytab_name = talloc_asprintf(tmp_ctx, "FILE:%s", keytab_file);
+	if (keytab_name == NULL) {
+		state->log(ISC_LOG_ERROR, "samba_dlz: Out of memory!");
+		talloc_free(tmp_ctx);
+		return ISC_FALSE;
+	}
+
 	ret = cli_credentials_set_keytab_name(server_credentials, state->lp, keytab_name,
 						CRED_SPECIFIED);
 	if (ret != 0) {

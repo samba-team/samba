@@ -33,6 +33,7 @@ bld.RECURSE('smb2')
 bld.RECURSE('winbind')
 bld.RECURSE('libnetapi')
 bld.RECURSE('libsmbclient')
+bld.RECURSE('gpo')
 
 ntvfs_specific = dict(source='', deps='')
 

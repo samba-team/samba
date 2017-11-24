@@ -47,38 +47,61 @@
   connect to the SAM database specified by URL
   return an opaque context pointer on success, or NULL on failure
  */
-struct ldb_context *samdb_connect_url(TALLOC_CTX *mem_ctx,
-				  struct tevent_context *ev_ctx,
-				  struct loadparm_context *lp_ctx,
-				  struct auth_session_info *session_info,
-				  unsigned int flags, const char *url)
+int samdb_connect_url(TALLOC_CTX *mem_ctx,
+		      struct tevent_context *ev_ctx,
+		      struct loadparm_context *lp_ctx,
+		      struct auth_session_info *session_info,
+		      unsigned int flags, const char *url,
+		      struct ldb_context **ldb_ret,
+		      char **errstring)
 {
-	struct ldb_context *ldb;
+	struct ldb_context *ldb = NULL;
 	int ret;
-
+	*ldb_ret = NULL;
+	*errstring = NULL;
 	ldb = ldb_wrap_find(url, ev_ctx, lp_ctx, session_info, NULL, flags);
-	if (ldb != NULL)
-		return talloc_reference(mem_ctx, ldb);
+	if (ldb != NULL) {
+		*ldb_ret = talloc_reference(mem_ctx, ldb);
+		if (*ldb_ret == NULL) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		return LDB_SUCCESS;
+	}
 
 	ldb = samba_ldb_init(mem_ctx, ev_ctx, lp_ctx, session_info, NULL);
 
-	if (ldb == NULL)
-		return NULL;
+	if (ldb == NULL) {
+		*errstring = talloc_asprintf(mem_ctx,
+					     "Failed to set up Samba ldb "
+					     "wrappers with samba_ldb_init() "
+					     "to connect to %s",
+					     url);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
 	dsdb_set_global_schema(ldb);
 
 	ret = samba_ldb_connect(ldb, lp_ctx, url, flags);
 	if (ret != LDB_SUCCESS) {
+		*errstring = talloc_asprintf(mem_ctx,
+					     "Failed to connect to %s: %s",
+					     url,
+					     ldb_errstring(ldb));
 		talloc_free(ldb);
-		return NULL;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	if (!ldb_wrap_add(url, ev_ctx, lp_ctx, session_info, NULL, flags, ldb)) {
+		*errstring = talloc_asprintf(mem_ctx,
+					     "Failed to add cached DB reference"
+					     " to %s",
+					     url);
 		talloc_free(ldb);
-		return NULL;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	return ldb;
+	*ldb_ret = ldb;
+	return LDB_SUCCESS;
 }
 
 
@@ -92,7 +115,14 @@ struct ldb_context *samdb_connect(TALLOC_CTX *mem_ctx,
 				  struct auth_session_info *session_info,
 				  unsigned int flags)
 {
-	return samdb_connect_url(mem_ctx, ev_ctx, lp_ctx, session_info, flags, "sam.ldb");
+	char *errstring;
+	struct ldb_context *ldb;
+	int ret = samdb_connect_url(mem_ctx, ev_ctx, lp_ctx, session_info, flags,
+				    "sam.ldb", &ldb, &errstring);
+	if (ret == LDB_SUCCESS) {
+		return ldb;
+	}
+	return NULL;
 }
 
 /****************************************************************************

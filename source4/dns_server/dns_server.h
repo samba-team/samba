@@ -95,6 +95,11 @@ WERROR dns_lookup_records(struct dns_server *dns,
 			  struct ldb_dn *dn,
 			  struct dnsp_DnssrvRpcRecord **records,
 			  uint16_t *rec_count);
+WERROR dns_lookup_records_wildcard(struct dns_server *dns,
+			  TALLOC_CTX *mem_ctx,
+			  struct ldb_dn *dn,
+			  struct dnsp_DnssrvRpcRecord **records,
+			  uint16_t *rec_count);
 WERROR dns_replace_records(struct dns_server *dns,
 			   TALLOC_CTX *mem_ctx,
 			   struct ldb_dn *dn,

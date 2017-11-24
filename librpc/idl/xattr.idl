@@ -11,7 +11,6 @@
 import "security.idl";
 
 [
-  uuid("12345778-1234-abcd-0001-00000002"),
   version(0.0),
   helper("../librpc/ndr/ndr_xattr.h"),
   pyhelper("librpc/ndr/py_xattr.c"),
@@ -105,10 +104,6 @@ interface xattr
 		[switch_is(version)] xattr_DosInfo info;
 	} xattr_DOSATTRIB;
 
-	void xattr_parse_DOSATTRIB(
-		[in] xattr_DOSATTRIB x
-	);
-
 	/* we store DOS style extended attributes in a DosEAs xattr */
 	const char *XATTR_DOSEAS_NAME = "user.DosEAs";
 
@@ -191,7 +186,7 @@ interface xattr
 		uint8 hash[64]; /* 64 bytes hash. */
 		utf8string description; /* description of what created
 					 * this hash (to allow
-					 * foresnics later, if we have
+					 * forensics later, if we have
 					 * a bug in one codepath */
 		NTTIME time;
 		uint8 sys_acl_hash[64]; /* 64 bytes hash. */

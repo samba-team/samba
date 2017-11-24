@@ -1,0 +1,160 @@
+#!/usr/bin/env python
+# Copyright Luke Morrison <luc785@.hotmail.com> July 2013
+# Co-Edited by Matthieu Pattou July 2013 from original August 2013
+# Edited by Garming Sam Feb. 2014
+# Edited by Luke Morrison April 2014
+# Edited by David Mulder May 2017
+
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+'''This script reads a log file of previous GPO, gets all GPO from sysvol
+and sorts them by container. Then, it applies the ones that haven't been
+applied, have changed, or is in the right container'''
+
+import os
+import sys
+
+sys.path.insert(0, "bin/python")
+
+import optparse
+from samba import getopt as options
+from samba.gpclass import *
+from samba.net import Net
+from samba.dcerpc import nbt
+from samba import smb
+import logging
+
+''' Fetch the hostname of a writable DC '''
+def get_dc_hostname():
+    net = Net(creds=creds, lp=lp)
+    cldap_ret = net.finddc(domain=lp.get('realm'), flags=(nbt.NBT_SERVER_LDAP |
+        nbt.NBT_SERVER_DS))
+    return cldap_ret.pdc_dns_name
+
+''' Fetch a list of GUIDs for applicable GPOs '''
+def get_gpo_list(dc_hostname, creds, lp):
+    gpos = []
+    ads = gpo.ADS_STRUCT(dc_hostname, lp, creds)
+    if ads.connect():
+        gpos = ads.get_gpo_list(creds.get_username())
+    return gpos
+
+def apply_gp(lp, creds, test_ldb, logger, store, gp_extensions):
+    gp_db = store.get_gplog(creds.get_username())
+    dc_hostname = get_dc_hostname()
+    try:
+        conn =  smb.SMB(dc_hostname, 'sysvol', lp=lp, creds=creds)
+    except:
+        logger.error('Error connecting to \'%s\' using SMB' % dc_hostname)
+        raise
+    gpos = get_gpo_list(dc_hostname, creds, lp)
+
+    for gpo_obj in gpos:
+        guid = gpo_obj.name
+        if guid == 'Local Policy':
+            continue
+        path = os.path.join(lp.get('realm').lower(), 'Policies', guid)
+        local_path = os.path.join(lp.get("path", "sysvol"), path)
+        version = int(gpo.gpo_get_sysvol_gpt_version(local_path)[1])
+        if version != store.get_int(guid):
+            logger.info('GPO %s has changed' % guid)
+            gp_db.state(GPOSTATE.APPLY)
+        else:
+            gp_db.state(GPOSTATE.ENFORCE)
+        gp_db.set_guid(guid)
+        store.start()
+        try:
+            for ext in gp_extensions:
+                ext.parse(ext.list(path), test_ldb, conn, gp_db, lp)
+        except:
+            logger.error('Failed to parse gpo %s' % guid)
+            store.cancel()
+            continue
+        store.store(guid, '%i' % version)
+        store.commit()
+
+def unapply_log(gp_db):
+    while True:
+        item = gp_db.apply_log_pop()
+        if item:
+            yield item
+        else:
+            break
+
+def unapply_gp(lp, creds, test_ldb, logger, store, gp_extensions):
+    gp_db = store.get_gplog(creds.get_username())
+    gp_db.state(GPOSTATE.UNAPPLY)
+    for gpo_guid in unapply_log(gp_db):
+        gp_db.set_guid(gpo_guid)
+        unapply_attributes = gp_db.list(gp_extensions)
+        for attr in unapply_attributes:
+            attr_obj = attr[-1](logger, test_ldb, gp_db, lp, attr[0], attr[1])
+            attr_obj.mapper()[attr[0]][0](attr[1]) # Set the old value
+            gp_db.delete(str(attr_obj), attr[0])
+        gp_db.commit()
+
+if __name__ == "__main__":
+    parser = optparse.OptionParser('samba_gpoupdate [options]')
+    sambaopts = options.SambaOptions(parser)
+
+    # Get the command line options
+    parser.add_option_group(sambaopts)
+    parser.add_option_group(options.VersionOptions(parser))
+    credopts = options.CredentialsOptions(parser)
+    parser.add_option('-H', '--url', dest='url', help='URL for the samdb')
+    parser.add_option('-X', '--unapply', help='Unapply Group Policy',
+                      action='store_true')
+    parser.add_option_group(credopts)
+
+    # Set the options and the arguments
+    (opts, args) = parser.parse_args()
+
+    # Set the loadparm context
+    lp = sambaopts.get_loadparm()
+    if not opts.url:
+        url = lp.samdb_url()
+    else:
+        url = opts.url
+
+    # Initialize the session
+    creds = credopts.get_credentials(lp, fallback_machine=True)
+    session = system_session()
+
+    # Set up logging
+    logger = logging.getLogger('samba_gpoupdate')
+    logger.addHandler(logging.StreamHandler(sys.stdout))
+    logger.setLevel(logging.CRITICAL)
+    log_level = lp.log_level()
+    if log_level == 1:
+        logger.setLevel(logging.ERROR)
+    elif log_level == 2:
+        logger.setLevel(logging.WARNING)
+    elif log_level == 3:
+        logger.setLevel(logging.INFO)
+    elif log_level >= 4:
+        logger.setLevel(logging.DEBUG)
+
+    cache_dir = lp.get('cache directory')
+    store = GPOStorage(os.path.join(cache_dir, 'gpo.tdb'))
+
+    gp_extensions = [gp_sec_ext(logger)]
+
+    # Get a live instance of Samba
+    test_ldb = SamDB(url, session_info=session, credentials=creds, lp=lp)
+
+    if not opts.unapply:
+        apply_gp(lp, creds, test_ldb, logger, store, gp_extensions)
+    else:
+        unapply_gp(lp, creds, test_ldb, logger, store, gp_extensions)
+

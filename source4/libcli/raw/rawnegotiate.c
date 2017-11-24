@@ -56,6 +56,10 @@ struct tevent_req *smb_raw_negotiate_send(TALLOC_CTX *mem_ctx,
 		maxprotocol = PROTOCOL_NT1;
 	}
 
+	if (minprotocol > maxprotocol) {
+		minprotocol = maxprotocol;
+	}
+
 	subreq = smbXcli_negprot_send(state, ev,
 				      transport->conn,
 				      timeout_msec,

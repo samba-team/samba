@@ -1658,11 +1658,23 @@ static int setup_primary_samba_gpg(struct setup_password_fields_io *io,
 		gret = gpgme_get_key(ctx, key_id, &keys[ki], 0 /* public key */);
 		if (gret != GPG_ERR_NO_ERROR) {
 			keys[ki] = NULL;
-			ldb_debug(ldb, LDB_DEBUG_ERROR,
-				  "%s:%s: ki[%zu] key_id[%s] gret[%u] %s\n",
-				  __location__, __func__,
-				  ki, key_id,
-				  gret, gpgme_strerror(gret));
+			if (gpg_err_source(gret) == GPG_ERR_SOURCE_GPGME
+			    && gpg_err_code(gret) == GPG_ERR_EOF) {
+				ldb_debug(ldb, LDB_DEBUG_ERROR,
+					  "Invalid "
+					  "'password hash gpg key ids': "
+					  "Public Key ID [%s] "
+					  "not found in keyring\n",
+					  key_id);
+
+			} else {
+				ldb_debug(ldb, LDB_DEBUG_ERROR,
+					  "%s:%s: ki[%zu] key_id[%s] "
+					  "gret[%u] %s\n",
+					  __location__, __func__,
+					  ki, key_id,
+					  gret, gpgme_strerror(gret));
+			}
 			for (kr = 0; keys[kr] != NULL; kr++) {
 				gpgme_key_release(keys[kr]);
 			}

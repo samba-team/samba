@@ -77,7 +77,8 @@ nt_affects_chown() {
     b4_actual=$($SMBCLIENT //$SERVER/$share -U $USERNAME%$PASSWORD -c "getfacl $fname" 2>/dev/null) || exit 1
     echo "${b4_actual}" | grep -q "^# owner:" || exit 1
     b4_actual=$(echo "$b4_actual" | sed -rn 's/^# owner: (.*)/\1/p')
-    $SMBCACLS //$SERVER/$share $fname -U $USERNAME%$PASSWORD -C force_user 2>/dev/null || exit 1
+    $SMBCACLS //$SERVER/$share $fname -U $USERNAME%$PASSWORD -a "ACL:$SERVER\force_user:ALLOWED/0x0/FULL" || exit 1
+    $SMBCACLS //$SERVER/$share $fname -U force_user%$PASSWORD -C force_user 2>/dev/null || exit 1
     af_actual=$($SMBCLIENT //$SERVER/$share -U $USERNAME%$PASSWORD -c "getfacl $fname" 2>/dev/null) || exit 1
     echo "${af_actual}" | grep -q "^# owner:" || exit 1
     af_actual=$(echo "$af_actual" | sed -rn 's/^# owner: (.*)/\1/p')
@@ -99,8 +100,8 @@ nt_affects_chgrp() {
     b4_expected=$(echo "$b4_expected" | awk -F: '{print $3}')
     echo "$b4_expected"
 
-    echo -n "determining uid of domadmins..."
-    af_expected=$(getent passwd domadmins) || exit 1
+    echo -n "determining gid of domadmins..."
+    af_expected=$(getent group domadmins) || exit 1
     af_expected=$(echo "$af_expected" | awk -F: '{print $3}')
     echo "$af_expected"
 
@@ -108,15 +109,15 @@ nt_affects_chgrp() {
     test "$b4_expected" != "$af_expected" || exit 1
 
     b4_actual=$($SMBCLIENT //$SERVER/$share -U $USERNAME%$PASSWORD -c "getfacl $fname" 2>/dev/null) || exit 1
-    b4_actual=$(echo "$b4_actual" | sed -rn 's/^# group: (.*)/\1/p')
     echo "${b4_actual}" | grep -q "^# group:" || exit 1
+    b4_actual=$(echo "$b4_actual" | sed -rn 's/^# group: (.*)/\1/p')
     $SMBCACLS //$SERVER/$share $fname -U $USERNAME%$PASSWORD -G domadmins 2>/dev/null || exit 1
     af_actual=$($SMBCLIENT //$SERVER/$share -U $USERNAME%$PASSWORD -c "getfacl $fname" 2>/dev/null) || exit 1
     echo "${af_actual}" | grep -q "^# group:" || exit 1
     af_actual=$(echo "$af_actual" | sed -rn 's/^# group: (.*)/\1/p')
     echo "before: $b4_actual"
     echo "after: $af_actual"
-    test "$b4_expected" = "$b4_actual" && test "$af_expected" = "$af_actual"
+    test "$af_expected" != "$b4_actual" && test "$af_expected" = "$af_actual"
 }
 
 testit "setup remote file tmp" setup_remote_file tmp
@@ -129,5 +130,5 @@ testit "nt_affects_chown tmp" nt_affects_chown tmp
 testit "nt_affects_chown ign_sysacls" nt_affects_chown ign_sysacls
 testit "setup remote file tmp" setup_remote_file tmp
 testit "setup remote file ign_sysacls" setup_remote_file ign_sysacls
-testit "nt_affects_chgrp tmp" nt_affects_chown tmp
-testit "nt_affects_chgrp ign_sysacls" nt_affects_chown ign_sysacls
+testit "nt_affects_chgrp tmp" nt_affects_chgrp tmp
+testit "nt_affects_chgrp ign_sysacls" nt_affects_chgrp ign_sysacls

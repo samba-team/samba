@@ -43,7 +43,7 @@
 #define HTTP_NOTIMPLEMENTED	501	/* not implemented */
 #define HTTP_SERVUNAVAIL	503	/* server is not available */
 
-#define HTTP_MAX_HEADER_SIZE 	UINT_MAX
+#define HTTP_MAX_HEADER_SIZE	0x1FFFF
 
 struct cli_credentials;
 struct loadparm_ctx;
@@ -65,6 +65,7 @@ enum http_cmd_type {
 enum http_auth_method {
 	HTTP_AUTH_BASIC=1,
 	HTTP_AUTH_NTLM,
+	HTTP_AUTH_NEGOTIATE,
 };
 
 struct http_header {
@@ -82,6 +83,7 @@ struct http_request {
 	size_t			headers_size;
 	unsigned int		response_code;		/* HTTP response code */
 	char			*response_code_line;	/* Readable response */
+	uint64_t		remaining_content_length; /* data not represent in body */
 	DATA_BLOB		body;
 };
 
@@ -101,7 +103,8 @@ NTSTATUS http_send_request_recv(struct tevent_req *);
 /* HTTP response */
 struct tevent_req *http_read_response_send(TALLOC_CTX *,
 					   struct tevent_context *,
-					   struct tstream_context *);
+					   struct tstream_context *,
+					   size_t max_content_length);
 NTSTATUS http_read_response_recv(struct tevent_req *,
 			    TALLOC_CTX *,
 			    struct http_request **);

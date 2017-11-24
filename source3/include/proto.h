@@ -158,10 +158,6 @@ int smbrun_no_sanitize(const char *cmd, int *outfd, char * const *env);
 int smbrun(const char *cmd, int *outfd, char * const *env);
 int smbrunsecret(const char *cmd, const char *secret);
 
-/* The following definitions come from lib/sock_exec.c  */
-
-int sock_exec(const char *prog);
-
 /* The following definitions come from lib/substitute.c  */
 
 void free_local_machine_name(void);
@@ -569,13 +565,6 @@ int create_pipe_sock(const char *socket_dir,
 int create_tcpip_socket(const struct sockaddr_storage *ifss, uint16_t *port);
 const char *get_mydnsfullname(void);
 bool is_myname_or_ipaddr(const char *s);
-struct tevent_req *getaddrinfo_send(TALLOC_CTX *mem_ctx,
-				    struct tevent_context *ev,
-				    struct fncall_context *ctx,
-				    const char *node,
-				    const char *service,
-				    const struct addrinfo *hints);
-int getaddrinfo_recv(struct tevent_req *req, struct addrinfo **res);
 int poll_one_fd(int fd, int events, int timeout, int *revents);
 int poll_intr_one_fd(int fd, int events, int timeout, int *revents);
 
@@ -821,12 +810,6 @@ bool get_dc_name(const char *domain,
 		fstring srv_name,
 		struct sockaddr_storage *ss_out);
 
-/* The following definitions come from libsmb/passchange.c  */
-
-NTSTATUS remote_password_change(const char *remote_machine, const char *user_name, 
-				const char *old_passwd, const char *new_passwd,
-				char **err_str);
-
 /* The following definitions come from libsmb/smberr.c  */
 
 const char *smb_dos_err_name(uint8_t e_class, uint16_t num);
@@ -1036,16 +1019,6 @@ char *get_pass( const char *prompt, bool stdin_get);
 
 struct AvahiPoll *tevent_avahi_poll(TALLOC_CTX *mem_ctx,
 				    struct tevent_context *ev);
-
-/* The following definitions come from lib/fncall.c */
-
-struct fncall_context *fncall_context_init(TALLOC_CTX *mem_ctx,
-					   int max_threads);
-struct tevent_req *fncall_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-			       struct fncall_context *ctx,
-			       void (*fn)(void *private_data),
-			       void *private_data);
-int fncall_recv(struct tevent_req *req, int *perr);
 
 /* The following definitions come from libsmb/smbsock_connect.c */
 

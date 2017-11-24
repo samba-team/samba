@@ -24,8 +24,6 @@ struct cleanup_key {
 };
 
 struct cleanup_rec {
-	/* Storing the pid here as well saves a few lines of code */
-	pid_t pid;
 	bool unclean;
 };
 
@@ -59,7 +57,7 @@ bool cleanupdb_store_child(const pid_t pid, const bool unclean)
 {
 	struct tdb_wrap *db;
 	struct cleanup_key key = { .pid = pid };
-	struct cleanup_rec rec = { .pid = pid, .unclean = unclean };
+	struct cleanup_rec rec = { .unclean = unclean };
 	TDB_DATA tdbkey = { .dptr = (uint8_t *)&key, .dsize = sizeof(key) };
 	TDB_DATA tdbdata = { .dptr = (uint8_t *)&rec, .dsize = sizeof(rec) };
 	int result;
@@ -99,20 +97,6 @@ bool cleanupdb_delete_child(const pid_t pid)
 	return true;
 }
 
-static bool cleanup_rec_parse(TDB_DATA tdbdata,
-			      struct cleanup_rec *cleanup_rec)
-{
-	if (tdbdata.dsize != sizeof(struct cleanup_rec)) {
-		DBG_ERR("Found invalid value length %d in cleanup.tdb\n",
-			(int)tdbdata.dsize);
-		return false;
-	}
-
-	memcpy(cleanup_rec, tdbdata.dptr, sizeof(struct cleanup_rec));
-
-	return true;
-}
-
 struct cleanup_read_state {
 	int (*fn)(const pid_t pid, const bool cleanup, void *private_data);
 	void *private_data;
@@ -124,16 +108,25 @@ static int cleanup_traverse_fn(struct tdb_context *tdb,
 {
 	struct cleanup_read_state *state =
 		(struct cleanup_read_state *)private_data;
+	struct cleanup_key ckey;
 	struct cleanup_rec rec;
-	bool ok;
 	int result;
 
-	ok = cleanup_rec_parse(value, &rec);
-	if (!ok) {
+	if (key.dsize != sizeof(struct cleanup_key)) {
+		DBG_ERR("Found invalid key length %zu in cleanup.tdb\n",
+			key.dsize);
 		return -1;
 	}
+	memcpy(&ckey, key.dptr, sizeof(struct cleanup_key));
 
-	result = state->fn(rec.pid, rec.unclean, state->private_data);
+	if (value.dsize != sizeof(struct cleanup_rec)) {
+		DBG_ERR("Found invalid value length %zu in cleanup.tdb\n",
+			value.dsize);
+		return -1;
+	}
+	memcpy(&rec, value.dptr, sizeof(struct cleanup_rec));
+
+	result = state->fn(ckey.pid, rec.unclean, state->private_data);
 	if (result != 0) {
 		return -1;
 	}

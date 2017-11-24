@@ -7,17 +7,26 @@
 
 import "misc.idl", "security.idl";
 
-[ uuid("18763978-8625-abc3-54ca-9892bacdf321"),
+[
   version(1.0),
   pointer_default(unique)
 ]
 interface nfs4acl_interface
 {
-	const char *NFS4ACL_XATTR_NAME = "system.nfs4acl";
+	const char *NFS4ACL_NDR_XATTR_NAME = "security.nfs4acl_ndr";
 
 	const char *NFS4ACL_XATTR_OWNER_WHO	 = "OWNER@";
 	const char *NFS4ACL_XATTR_GROUP_WHO	 = "GROUP@";
 	const char *NFS4ACL_XATTR_EVERYONE_WHO   = "EVERYONE@";
+
+	const uint8 ACL4_XATTR_VERSION_40      = 0x00;
+	const uint8 ACL4_XATTR_VERSION_41      = 0x01;
+	const uint8 ACL4_XATTR_VERSION_DEFAULT = ACL4_XATTR_VERSION_41;
+
+	const uint8 ACL4_AUTO_INHERIT  = 0x01;
+	const uint8 ACL4_PROTECTED     = 0x02;
+	const uint8 ACL4_DEFAULTED     = 0x04;
+	const uint8 ACL4_WRITE_THROUGH = 0x40;
 
 	/* these structures use the same bit values and other constants as
 	   in security.idl */
@@ -39,8 +48,4 @@ interface nfs4acl_interface
 		uint32 a_other_mask;
 		nfs4ace ace[a_count];
 	} nfs4acl;
-
-	NTSTATUS nfs4acl_test(
-		[in]  nfs4acl acl
-		);
 }

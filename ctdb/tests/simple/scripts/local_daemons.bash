@@ -172,12 +172,9 @@ EOF
     done
 }
 
-daemons_start ()
+start_ctdb_1 ()
 {
-    echo "Starting $TEST_LOCAL_DAEMONS ctdb daemons..."
-
-    local pnn
-    for pnn in $(seq 0 $(($TEST_LOCAL_DAEMONS - 1))) ; do
+	local pnn="$1"
 	local pidfile=$(node_pidfile "$pnn")
 	local conf=$(node_conf "$pnn")
 
@@ -200,7 +197,27 @@ daemons_start ()
 	if [ -n "$tmp_conf" ] ; then
 		rm -f "$tmp_conf"
 	fi
+
+}
+
+daemons_start ()
+{
+    echo "Starting $TEST_LOCAL_DAEMONS ctdb daemons..."
+
+    local pnn
+    for pnn in $(seq 0 $(($TEST_LOCAL_DAEMONS - 1))) ; do
+	start_ctdb_1 "$pnn"
     done
+}
+
+stop_ctdb_1 ()
+{
+	local pnn="$1"
+	local pidfile=$(node_pidfile "$pnn")
+	local conf=$(node_conf "$pnn")
+
+	CTDBD_CONF="$conf" \
+	     ctdbd_wrapper "$pidfile" stop
 }
 
 daemons_stop ()
@@ -209,21 +226,21 @@ daemons_stop ()
 
     local pnn
     for pnn in $(seq 0 $(($TEST_LOCAL_DAEMONS - 1))) ; do
-	local pidfile=$(node_pidfile "$pnn")
-	local conf=$(node_conf "$pnn")
-
-	CTDBD_CONF="$conf" \
-	     ctdbd_wrapper "$pidfile" stop
+	stop_ctdb_1 "$pnn"
     done
 
     rm -rf "${TEST_VAR_DIR}/test.db"
 }
 
+restart_ctdb_1 ()
+{
+	stop_ctdb_1 "$1"
+	start_ctdb_1 "$1"
+}
+
 maybe_stop_ctdb ()
 {
-    if $TEST_CLEANUP ; then
-	daemons_stop
-    fi
+    daemons_stop
 }
 
 _restart_ctdb_all ()

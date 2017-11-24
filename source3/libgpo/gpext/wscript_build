@@ -1,9 +1,5 @@
 #!/usr/bin/env python
 
-bld.SAMBA3_SUBSYSTEM('gpext',
-                    source='../../../libgpo/gpext/gpext.c',
-                    deps='samba-util samba3core gpo')
-
 bld.SAMBA3_MODULE('gpext_registry',
                  subsystem='gpext',
                  source='registry.c',

@@ -26,7 +26,7 @@
 #include "lib/util/debug.h"
 
 #include "protocol/protocol.h"
-#include "protocol/protocol_api.h"
+#include "protocol/protocol_util.h"
 #include "common/logging.h"
 #include "common/system.h"
 
@@ -39,7 +39,7 @@ static void print_ctdb_public_ip_list(TALLOC_CTX *mem_ctx,
 {
 	while (ips) {
 		printf("%s %d\n",
-		       ctdb_sock_addr_to_string(mem_ctx, &(ips->addr)),
+		       ctdb_sock_addr_to_string(mem_ctx, &(ips->addr), false),
 		       ips->pnn);
 		ips = ips->next;
 	}

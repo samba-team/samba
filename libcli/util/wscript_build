@@ -26,14 +26,15 @@ bld.SAMBA_GENERATOR('werror_generated',
                     rule='${PYTHON} ${SRC[0].abspath(env)} ${SRC[1].abspath(env)} ${TGT[0].abspath(env)} ${TGT[1].abspath(env)} ${TGT[2].abspath(env)}'
                    )
 
-bld.SAMBA_PYTHON('python_ntstatus',
-	source='py_ntstatus.c',
-	deps='samba-errors',
-	realname='samba/ntstatus.so'
-	)
+for env in bld.gen_python_environments():
+	bld.SAMBA_PYTHON('python_ntstatus',
+		source='py_ntstatus.c',
+		deps='samba-errors',
+		realname='samba/ntstatus.so'
+		)
 
-bld.SAMBA_PYTHON('python_werror',
-	source='py_werror.c',
-	deps='samba-errors',
-	realname='samba/werror.so'
-	)
+	bld.SAMBA_PYTHON('python_werror',
+		source='py_werror.c',
+		deps='samba-errors',
+		realname='samba/werror.so'
+		)

@@ -474,7 +474,9 @@ static bool test_start_dcerpc_server(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, status,
 				   "unable to initialize process models");
 
-	status = smbsrv_add_socket(tctx, event_ctx, tctx->lp_ctx, process_model_startup("single"), address);
+	status = smbsrv_add_socket(tctx, event_ctx, tctx->lp_ctx,
+				   process_model_startup("single"),
+				   address, NULL);
 	torture_assert_ntstatus_ok(tctx, status, "starting smb server");
 
 	status = dcesrv_init_context(tctx, tctx->lp_ctx, endpoints, &dce_ctx);
@@ -483,7 +485,8 @@ static bool test_start_dcerpc_server(struct torture_context *tctx,
 
 	for (e=dce_ctx->endpoint_list;e;e=e->next) {
 		status = dcesrv_add_ep(dce_ctx, tctx->lp_ctx,
-				       e, tctx->ev, process_model_startup("single"));
+				       e, tctx->ev,
+				       process_model_startup("single"), NULL);
 		torture_assert_ntstatus_ok(tctx, status,
 				"unable listen on dcerpc endpoint server");
 	}
@@ -497,7 +500,8 @@ static bool test_start_dcerpc_server(struct torture_context *tctx,
 static struct received_packet *last_packet(struct received_packet *p)
 {
 	struct received_packet *tmp;
-	for (tmp = p; tmp->next; tmp = tmp->next) ;;
+	for (tmp = p; tmp->next; tmp = tmp->next) {
+	}
 	return tmp;
 }
 

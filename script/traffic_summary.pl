@@ -518,7 +518,7 @@ sub format_ldap
 #------------------------------------------------------------------------------
 sub format_kerberos
 {
-    my $msg_type    = $proto_data{'kerberos.msg_type.show'};
+    my $msg_type    = $proto_data{'kerberos.msg_type.show'} || '';
     my $cname_type  = $proto_data{'kerberos.cname.type'} || '';
     my $description = $proto_data{'kerberos.msg_type.showname'} || '';
 

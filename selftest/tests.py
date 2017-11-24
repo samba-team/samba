@@ -53,12 +53,13 @@ except ImportError:
 else:
     planpythontestsuite("none", "subunit.tests.test_suite")
 planpythontestsuite("none", "samba.tests.blackbox.ndrdump")
+planpythontestsuite("none", "samba.tests.blackbox.check_output")
 planpythontestsuite("none", "api", name="ldb.python", extra_path=['lib/ldb/tests/python'])
 planpythontestsuite("none", "samba.tests.credentials", py3_compatible=True)
-planpythontestsuite("none", "samba.tests.registry")
+planpythontestsuite("none", "samba.tests.registry", py3_compatible=True)
 planpythontestsuite("none", "samba.tests.auth", py3_compatible=True)
 planpythontestsuite("none", "samba.tests.get_opt", py3_compatible=True)
-planpythontestsuite("none", "samba.tests.security")
+planpythontestsuite("none", "samba.tests.security", py3_compatible=True)
 planpythontestsuite("none", "samba.tests.dcerpc.misc", py3_compatible=True)
 planpythontestsuite("none", "samba.tests.dcerpc.integer")
 planpythontestsuite("none", "samba.tests.param", py3_compatible=True)
@@ -72,7 +73,8 @@ planpythontestsuite("none", "samba.tests.dcerpc.rpc_talloc")
 planpythontestsuite("none", "samba.tests.dcerpc.array")
 planpythontestsuite("none", "samba.tests.dcerpc.string")
 planpythontestsuite("none", "samba.tests.hostconfig")
-planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.messaging")
+planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.messaging",
+                    py3_compatible=True)
 planpythontestsuite("none", "samba.tests.samba3sam")
 planpythontestsuite(
     "none", "wafsamba.tests.test_suite",
@@ -124,7 +126,7 @@ plantestsuite(
      os.path.join(bbdir, "dbcheck-links.sh"),
      '$PREFIX_ABS/provision', 'release-4-5-0-pre1', configuration])
 planpythontestsuite("none", "samba.tests.upgradeprovision")
-planpythontestsuite("none", "samba.tests.xattr")
+planpythontestsuite("none", "samba.tests.xattr", py3_compatible=True)
 planpythontestsuite("none", "samba.tests.ntacls")
 planpythontestsuite("none", "samba.tests.policy")
 planpythontestsuite("none", "samba.tests.kcc.graph")
@@ -132,10 +134,6 @@ planpythontestsuite("none", "samba.tests.kcc.graph_utils")
 planpythontestsuite("none", "samba.tests.kcc.kcc_utils")
 planpythontestsuite("none", "samba.tests.kcc.ldif_import_export")
 plantestsuite("wafsamba.duplicate_symbols", "none", [os.path.join(srcdir(), "buildtools/wafsamba/test_duplicate_symbol.sh")])
-plantestsuite(
-    "script.traffic_summary", "none",
-    [os.path.join(srcdir(), "script/tests/test_traffic_summary.sh"),
-     configuration])
 planpythontestsuite("none", "samba.tests.glue", py3_compatible=True)
 planpythontestsuite("none", "samba.tests.tdb_util", py3_compatible=True)
 
@@ -148,6 +146,10 @@ if with_pam:
                   [os.path.join(srcdir(), "python/samba/tests/test_pam_winbind.sh"),
                    valgrindify(python), pam_wrapper_so_path,
                    "$DOMAIN", "$DC_USERNAME", "$DC_PASSWORD"])
+    plantestsuite("samba.tests.pam_winbind_warn_pwd_expire(domain)", "ad_member",
+                  [os.path.join(srcdir(), "python/samba/tests/test_pam_winbind_warn_pwd_expire.sh"),
+                   valgrindify(python), pam_wrapper_so_path,
+                   "$DOMAIN", "alice", "Secret007"])
 
 if with_cmocka:
     plantestsuite("samba.unittests.krb5samba", "none",

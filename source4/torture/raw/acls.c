@@ -342,6 +342,60 @@ static bool test_nttrans_create_ext(struct torture_context *tctx,
 	status = delete_func(cli->tree, fname);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
+ done:
+	smbcli_close(cli->tree, fnum);
+	smb_raw_exit(cli->session);
+	smbcli_deltree(cli->tree, BASEDIR);
+	return ret;
+}
+
+/*
+  test using nttrans create to create a file and directory with an initial acl
+  and owner.
+*/
+static bool test_nttrans_create_ext_owner(
+	struct torture_context *tctx,
+	struct smbcli_state *cli, bool test_dir)
+{
+	NTSTATUS status;
+	union smb_open io;
+	const char *fname = BASEDIR "\\foo.txt";
+	bool ret = true;
+	int fnum = -1;
+	struct security_ace ace;
+	struct security_descriptor *sd;
+	uint32_t attrib =
+	    FILE_ATTRIBUTE_HIDDEN |
+	    FILE_ATTRIBUTE_SYSTEM |
+	    (test_dir ? FILE_ATTRIBUTE_DIRECTORY : 0);
+	NTSTATUS (*delete_func)(struct smbcli_tree *, const char *) =
+	    test_dir ? smbcli_rmdir : smbcli_unlink;
+
+	ZERO_STRUCT(ace);
+
+	smbcli_deltree(cli->tree, BASEDIR);
+
+	if (!torture_setup_dir(cli, BASEDIR))
+		return false;
+
+	io.generic.level = RAW_OPEN_NTTRANS_CREATE;
+	io.ntcreatex.in.root_fid.fnum = 0;
+	io.ntcreatex.in.flags = 0;
+	io.ntcreatex.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	io.ntcreatex.in.create_options =
+	    test_dir ? NTCREATEX_OPTIONS_DIRECTORY : 0;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access =
+		NTCREATEX_SHARE_ACCESS_READ |
+		NTCREATEX_SHARE_ACCESS_WRITE;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = fname;
+	io.ntcreatex.in.sec_desc = NULL;
+	io.ntcreatex.in.ea_list = NULL;
+
 	torture_comment(tctx, "creating with attributes, ACL and owner\n");
 
 	sd = security_descriptor_dacl_create(tctx,
@@ -387,6 +441,22 @@ static bool test_nttrans_create_dir(struct torture_context *tctx,
 	torture_comment(tctx, "Testing nttrans create with sec_desc on directories\n");
 
 	return test_nttrans_create_ext(tctx, cli, true);
+}
+
+static bool test_nttrans_create_owner_file(struct torture_context *tctx,
+    struct smbcli_state *cli)
+{
+	torture_comment(tctx, "Testing nttrans create with sec_desc with owner on file\n");
+
+	return test_nttrans_create_ext_owner(tctx, cli, false);
+}
+
+static bool test_nttrans_create_owner_dir(struct torture_context *tctx,
+    struct smbcli_state *cli)
+{
+	torture_comment(tctx, "Testing nttrans create with sec_desc with owner on directory\n");
+
+	return test_nttrans_create_ext_owner(tctx, cli, true);
 }
 
 #define CHECK_ACCESS_FLAGS(_fnum, flags) do { \
@@ -2466,6 +2536,8 @@ struct torture_suite *torture_raw_acls(TALLOC_CTX *mem_ctx)
 	torture_suite_add_1smb_test(suite, "sd", test_sd);
 	torture_suite_add_1smb_test(suite, "create_file", test_nttrans_create_file);
 	torture_suite_add_1smb_test(suite, "create_dir", test_nttrans_create_dir);
+	torture_suite_add_1smb_test(suite, "create_owner_file", test_nttrans_create_owner_file);
+	torture_suite_add_1smb_test(suite, "create_owner_dir", test_nttrans_create_owner_dir);
 	torture_suite_add_1smb_test(suite, "nulldacl", test_nttrans_create_null_dacl);
 	torture_suite_add_1smb_test(suite, "creator", test_creator_sid);
 	torture_suite_add_1smb_test(suite, "generic", test_generic_bits);

@@ -1,0 +1,23 @@
+#!/usr/bin/env python
+import Options
+import Utils
+
+def configure(conf):
+    if Options.options.accel_aes.lower() == "intelaesni":
+        if conf.CHECK_CFLAGS('-Wp,-E,-lang-asm', ''):
+            if conf.env['SYSTEM_UNAME_MACHINE'] == 'x86_64':
+                print("Compiling with Intel AES instructions")
+                conf.DEFINE('HAVE_AESNI_INTEL', 1)
+            else:
+                raise Utils.WafError('--aes-accel=intelaesni selected and non x86_64 CPU')
+        else:
+            raise Utils.WafError('--aes-accel=intelaesni selected and compiler rejects -Wp,-E,-lang-asm')
+
+def build(bld):
+    if not bld.CONFIG_SET('HAVE_AESNI_INTEL'):
+        return
+
+    bld.SAMBA_LIBRARY('aesni-intel',
+        source='aesni-intel_asm.c',
+        cflags='-Wp,-E,-lang-asm',
+        private_library=True)

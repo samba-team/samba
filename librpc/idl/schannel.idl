@@ -27,7 +27,7 @@ interface schannel
 		dom_sid *sid;
 	} netlogon_creds_CredentialState;
 
-	/* This is used in the schannel_cache.tdb */
+	/* This is used in the schannel_store.tdb */
 	typedef [public] struct {
 		[string,charset(UTF16)] uint16 *computer_name;
 		netr_Credential server_challenge;

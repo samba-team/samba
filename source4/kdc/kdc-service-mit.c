@@ -58,7 +58,6 @@ static NTSTATUS startup_kpasswd_server(TALLOC_CTX *mem_ctx,
 				       struct loadparm_context *lp_ctx,
 				       struct interface *ifaces)
 {
-	const struct model_ops *model_ops;
 	int num_interfaces;
 	int i;
 	TALLOC_CTX *tmp_ctx;
@@ -70,12 +69,6 @@ static NTSTATUS startup_kpasswd_server(TALLOC_CTX *mem_ctx,
 	kpasswd_port = lpcfg_kpasswd_port(lp_ctx);
 	if (kpasswd_port == 0) {
 		return NT_STATUS_OK;
-	}
-
-	model_ops = process_model_startup("single");
-	if (model_ops == NULL) {
-		DBG_ERR("Can't find 'single' process model_ops\n");
-		return NT_STATUS_INTERNAL_ERROR;
 	}
 
 	tmp_ctx = talloc_named_const(mem_ctx, 0, "kpasswd");
@@ -98,7 +91,7 @@ static NTSTATUS startup_kpasswd_server(TALLOC_CTX *mem_ctx,
 
 		for (i = 0; wcard[i] != NULL; i++) {
 			status = kdc_add_socket(kdc,
-						model_ops,
+						kdc->task->model_ops,
 						"kpasswd",
 						wcard[i],
 						kpasswd_port,
@@ -122,7 +115,7 @@ static NTSTATUS startup_kpasswd_server(TALLOC_CTX *mem_ctx,
 		const char *address = talloc_strdup(tmp_ctx, iface_list_n_ip(ifaces, i));
 
 		status = kdc_add_socket(kdc,
-					model_ops,
+					kdc->task->model_ops,
 					"kpasswd",
 					address,
 					kpasswd_port,
@@ -358,5 +351,21 @@ NTSTATUS server_service_mitkdc_init(TALLOC_CTX *mem_ctx);
 
 NTSTATUS server_service_mitkdc_init(TALLOC_CTX *mem_ctx)
 {
-	return register_server_service(mem_ctx, "kdc", mitkdc_task_init);
+	struct service_details details = {
+		.inhibit_fork_on_accept = true,
+		/* 
+		 * Need to prevent pre-forking on kdc.
+		 * The task_init function is run on the master process only
+		 * and the irpc process name is registered in it's event loop.
+		 * The child worker processes initialise their event loops on
+		 * fork, so are not listening for the irpc event.
+		 *
+		 * The master process does not wait on that event context
+		 * the master process is responsible for managing the worker
+		 * processes not performing work.
+		 */
+		.inhibit_pre_fork = true
+	};
+	return register_server_service(mem_ctx, "kdc", mitkdc_task_init,
+				       &details);
 }

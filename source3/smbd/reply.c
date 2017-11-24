@@ -923,6 +923,11 @@ void reply_tcon_and_X(struct smb_request *req)
 		}
 
 		TALLOC_FREE(tcon);
+		/*
+		 * This tree id is gone. Make sure we can't re-use it
+		 * by accident.
+		 */
+		req->tid = 0;
 	}
 
 	if ((passlen > MAX_PASS_LEN) || (passlen >= req->buflen)) {
@@ -1895,9 +1900,6 @@ void reply_search(struct smb_request *req)
 	}
 
 	DEBUG(4,("dptr_num is %d\n",dptr_num));
-
-	/* Initialize per SMBsearch/SMBffirst/SMBfunique operation data */
-	dptr_init_search_op(dirptr);
 
 	if ((dirtype&0x1F) == FILE_ATTRIBUTE_VOLUME) {
 		char buf[DIR_STRUCT_SIZE];
@@ -4474,6 +4476,9 @@ void reply_writebraw(struct smb_request *req)
 	}
 
 	/* Ensure we don't write bytes past the end of this packet. */
+	/*
+	 * This already protects us against CVE-2017-12163.
+	 */
 	if (data + numtowrite > smb_base(req->inbuf) + smb_len(req->inbuf)) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		error_to_writebrawerr(req);
@@ -4574,6 +4579,11 @@ void reply_writebraw(struct smb_request *req)
 			exit_server_cleanly("secondary writebraw failed");
 		}
 
+		/*
+		 * We are not vulnerable to CVE-2017-12163
+		 * here as we are guarenteed to have numtowrite
+		 * bytes available - we just read from the client.
+		 */
 		nwritten = write_file(req,fsp,buf+4,startpos+nwritten,numtowrite);
 		if (nwritten == -1) {
 			TALLOC_FREE(buf);
@@ -4647,6 +4657,7 @@ void reply_writeunlock(struct smb_request *req)
 	connection_struct *conn = req->conn;
 	ssize_t nwritten = -1;
 	size_t numtowrite;
+	size_t remaining;
 	off_t startpos;
 	const char *data;
 	NTSTATUS status = NT_STATUS_OK;
@@ -4678,6 +4689,17 @@ void reply_writeunlock(struct smb_request *req)
 	numtowrite = SVAL(req->vwv+1, 0);
 	startpos = IVAL_TO_SMB_OFF_T(req->vwv+2, 0);
 	data = (const char *)req->buf + 3;
+
+	/*
+	 * Ensure client isn't asking us to write more than
+	 * they sent. CVE-2017-12163.
+	 */
+	remaining = smbreq_bufrem(req, data);
+	if (numtowrite > remaining) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		END_PROFILE(SMBwriteunlock);
+		return;
+	}
 
 	if (!fsp->print_file && numtowrite > 0) {
 		init_strict_lock_struct(fsp, (uint64_t)req->smbpid,
@@ -4756,6 +4778,7 @@ void reply_write(struct smb_request *req)
 {
 	connection_struct *conn = req->conn;
 	size_t numtowrite;
+	size_t remaining;
 	ssize_t nwritten = -1;
 	off_t startpos;
 	const char *data;
@@ -4795,6 +4818,17 @@ void reply_write(struct smb_request *req)
 	numtowrite = SVAL(req->vwv+1, 0);
 	startpos = IVAL_TO_SMB_OFF_T(req->vwv+2, 0);
 	data = (const char *)req->buf + 3;
+
+	/*
+	 * Ensure client isn't asking us to write more than
+	 * they sent. CVE-2017-12163.
+	 */
+	remaining = smbreq_bufrem(req, data);
+	if (numtowrite > remaining) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		END_PROFILE(SMBwrite);
+		return;
+	}
 
 	if (!fsp->print_file) {
 		init_strict_lock_struct(fsp, (uint64_t)req->smbpid,
@@ -5018,6 +5052,9 @@ void reply_write_and_X(struct smb_request *req)
 			goto out;
 		}
 	} else {
+		/*
+		 * This already protects us against CVE-2017-12163.
+		 */
 		if (smb_doff > smblen || smb_doff + numtowrite < numtowrite ||
 				smb_doff + numtowrite > smblen) {
 			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
@@ -5444,6 +5481,7 @@ void reply_writeclose(struct smb_request *req)
 {
 	connection_struct *conn = req->conn;
 	size_t numtowrite;
+	size_t remaining;
 	ssize_t nwritten = -1;
 	NTSTATUS close_status = NT_STATUS_OK;
 	off_t startpos;
@@ -5476,6 +5514,17 @@ void reply_writeclose(struct smb_request *req)
 	startpos = IVAL_TO_SMB_OFF_T(req->vwv+2, 0);
 	mtime = convert_time_t_to_timespec(srv_make_unix_date3(req->vwv+4));
 	data = (const char *)req->buf + 1;
+
+	/*
+	 * Ensure client isn't asking us to write more than
+	 * they sent. CVE-2017-12163.
+	 */
+	remaining = smbreq_bufrem(req, data);
+	if (numtowrite > remaining) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		END_PROFILE(SMBwriteclose);
+		return;
+	}
 
 	if (fsp->print_file == NULL) {
 		init_strict_lock_struct(fsp, (uint64_t)req->smbpid,
@@ -6069,6 +6118,9 @@ void reply_printwrite(struct smb_request *req)
 
 	numtowrite = SVAL(req->buf, 1);
 
+	/*
+	 * This already protects us against CVE-2017-12163.
+	 */
 	if (req->buflen < numtowrite + 3) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		END_PROFILE(SMBsplwr);

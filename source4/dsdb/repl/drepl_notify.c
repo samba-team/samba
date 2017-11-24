@@ -35,6 +35,9 @@
 #include "libcli/composite/composite.h"
 #include "../lib/util/tevent_ntstatus.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS            DBGC_DRS_REPL
+
 
 struct dreplsrv_op_notify_state {
 	struct tevent_context *ev;

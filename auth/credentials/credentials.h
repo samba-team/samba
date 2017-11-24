@@ -158,8 +158,9 @@ void cli_credentials_set_secure_channel_type(struct cli_credentials *cred,
 				     enum netr_SchannelType secure_channel_type);
 void cli_credentials_set_password_last_changed_time(struct cli_credentials *cred,
 							     time_t last_change_time);
-void cli_credentials_set_netlogon_creds(struct cli_credentials *cred, 
-					struct netlogon_creds_CredentialState *netlogon_creds);
+void cli_credentials_set_netlogon_creds(
+	struct cli_credentials *cred,
+	const struct netlogon_creds_CredentialState *netlogon_creds);
 NTSTATUS cli_credentials_set_krb5_context(struct cli_credentials *cred, 
 					  struct smb_krb5_context *smb_krb5_context);
 NTSTATUS cli_credentials_set_stored_principal(struct cli_credentials *cred,

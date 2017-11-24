@@ -301,6 +301,11 @@ int ldb_unpack_data_only_attr_list_flags(struct ldb_context *ldb,
 		goto failed;
 	}
 
+	
+	if (flags & LDB_UNPACK_DATA_FLAG_NO_ATTRS) {
+		return 0;
+	}
+	
 	if (message->num_elements == 0) {
 		return 0;
 	}

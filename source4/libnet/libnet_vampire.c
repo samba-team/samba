@@ -42,6 +42,9 @@
 #include "libcli/security/security.h"
 #include "dsdb/common/util.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS            DBGC_DRS_REPL
+
 /* 
 List of tasks vampire.py must perform:
 - Domain Join
@@ -647,6 +650,10 @@ WERROR libnet_vampire_cb_store_chunk(void *private_data,
 			is_exop = true;
 		}
 		req_replica_flags = c->req10->replica_flags;
+
+		if (c->req10->more_flags & DRSUAPI_DRS_GET_TGT) {
+			dsdb_repl_flags |= DSDB_REPL_FLAG_TARGETS_UPTODATE;
+		}
 		break;
 	default:
 		return WERR_INVALID_PARAMETER;
@@ -660,6 +667,7 @@ WERROR libnet_vampire_cb_store_chunk(void *private_data,
 		 */
 		ZERO_STRUCT(s_dsa->highwatermark);
 		uptodateness_vector = NULL;
+		dsdb_repl_flags |= DSDB_REPL_FLAG_OBJECT_SUBSET;
 	}
 
 	/* TODO: avoid hardcoded flags */

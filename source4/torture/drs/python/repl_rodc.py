@@ -202,11 +202,51 @@ class DrsRodcTestCase(drs_base.DrsBaseTestCase):
         except WERRORError as (enum, estr):
             self.assertEquals(enum, 8630) # ERROR_DS_DRA_SECRETS_DENIED
 
+        # send the same request again and we should get the same response
+        try:
+            (level, ctr) = self.rodc_drs.DsGetNCChanges(self.rodc_drs_handle, 10, req10)
+            self.fail("Successfully replicated secrets to an RODC that shouldn't have been replicated.")
+        except WERRORError as (enum, estr):
+            self.assertEquals(enum, 8630) # ERROR_DS_DRA_SECRETS_DENIED
+
         # Retry with Administrator credentials, ignores password replication groups
         (level, ctr) = self.drs.DsGetNCChanges(self.drs_handle, 10, req10)
 
         # Check that the user has been added to msDSRevealedUsers
         self._assert_in_revealed_users(user_dn, expected_user_attributes)
+
+    def test_rodc_repl_secrets_follow_on_req(self):
+        """
+        Checks that an RODC can't subvert an existing (valid) GetNCChanges
+        request to reveal secrets it shouldn't have access to.
+        """
+
+        # send an acceptable request that will match as many GUIDs as possible.
+        # Here we set the SPECIAL_SECRET_PROCESSING flag so that the request gets accepted.
+        # (On the server, this builds up the getnc_state->guids array)
+        req8 = self._exop_req8(dest_dsa=str(self.rodc_ctx.ntds_guid),
+                               invocation_id=self.ldb_dc1.get_invocation_id(),
+                               nc_dn_str=self.ldb_dc1.domain_dn(),
+                               exop=drsuapi.DRSUAPI_EXOP_NONE,
+                               max_objects=1,
+                               replica_flags=drsuapi.DRSUAPI_DRS_SPECIAL_SECRET_PROCESSING)
+        (level, ctr) = self.rodc_drs.DsGetNCChanges(self.rodc_drs_handle, 8, req8)
+
+        # Get the next replication chunk, but set REPL_SECRET this time. This
+        # is following on the the previous accepted request, but we've changed
+        # exop to now request secrets. This request should fail
+        try:
+            req8 = self._exop_req8(dest_dsa=str(self.rodc_ctx.ntds_guid),
+                                   invocation_id=self.ldb_dc1.get_invocation_id(),
+                                   nc_dn_str=self.ldb_dc1.domain_dn(),
+                                   exop=drsuapi.DRSUAPI_EXOP_REPL_SECRET)
+            req8.highwatermark = ctr.new_highwatermark
+
+            (level, ctr) = self.rodc_drs.DsGetNCChanges(self.rodc_drs_handle, 8, req8)
+
+            self.fail("Successfully replicated secrets to an RODC that shouldn't have been replicated.")
+        except RuntimeError as (enum, estr):
+            pass
 
     def test_msDSRevealedUsers_admin(self):
         """

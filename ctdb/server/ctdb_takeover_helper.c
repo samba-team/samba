@@ -42,6 +42,7 @@
 
 #include "protocol/protocol.h"
 #include "protocol/protocol_api.h"
+#include "protocol/protocol_util.h"
 #include "client/client.h"
 
 #include "common/logging.h"
@@ -294,7 +295,8 @@ static struct tevent_req *release_ip_send(TALLOC_CTX *mem_ctx,
 		substate->req = req;
 
 		substate->ip_str  = ctdb_sock_addr_to_string(substate,
-							     &tmp_ip->addr);
+							     &tmp_ip->addr,
+							     false);
 		if (tevent_req_nomem(substate->ip_str, req)) {
 			return tevent_req_post(req, ev);
 		}
@@ -478,7 +480,8 @@ static struct tevent_req *take_ip_send(TALLOC_CTX *mem_ctx,
 		substate->pnn = tmp_ip->pnn;
 
 		substate->ip_str  = ctdb_sock_addr_to_string(substate,
-							     &tmp_ip->addr);
+							     &tmp_ip->addr,
+							     false);
 		if (tevent_req_nomem(substate->ip_str, req)) {
 			return tevent_req_post(req, ev);
 		}

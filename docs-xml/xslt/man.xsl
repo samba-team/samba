@@ -43,6 +43,7 @@
   <!-- * content (if any) before getting the list items -->
   <xsl:apply-templates
     select="*[not(self::listitem) and not(self::title)]"/>
+  <xsl:text>&#10;.RS&#10;</xsl:text>
   <xsl:apply-templates select="listitem"/>
   <xsl:if test="(parent::para or parent::listitem) or following-sibling::node()">
     <xsl:text>.sp&#10;</xsl:text>

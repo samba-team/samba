@@ -32,7 +32,7 @@
 #include "common/common.h"
 #include "common/rb_tree.h"
 
-#include "protocol/protocol_api.h"
+#include "protocol/protocol_util.h"
 
 #include "server/ipalloc_private.h"
 
@@ -113,7 +113,8 @@ int find_takeover_node(struct ipalloc_state *ipalloc_state,
 	if (pnn == -1) {
 		DEBUG(DEBUG_WARNING,(__location__ " Could not find node to take over public address '%s'\n",
 				     ctdb_sock_addr_to_string(ipalloc_state,
-							      &ip->addr)));
+							      &ip->addr,
+							      false)));
 
 		return -1;
 	}
@@ -164,7 +165,8 @@ void basic_allocate_unassigned(struct ipalloc_state *ipalloc_state)
 				DEBUG(DEBUG_WARNING,
 				      ("Failed to find node to cover ip %s\n",
 				       ctdb_sock_addr_to_string(ipalloc_state,
-								&t->addr)));
+								&t->addr,
+								false)));
 			}
 		}
 	}
@@ -184,8 +186,9 @@ void unassign_unsuitable_ips(struct ipalloc_state *ipalloc_state)
 		if (!can_node_host_ip(ipalloc_state, t->pnn, t) != 0) {
 			/* this node can not serve this ip. */
 			DEBUG(DEBUG_DEBUG,("Unassign IP: %s from %d\n",
-					   ctdb_sock_addr_to_string(ipalloc_state,
-								    &t->addr),
+					   ctdb_sock_addr_to_string(
+						   ipalloc_state,
+						   &t->addr, false),
 					   t->pnn));
 			t->pnn = -1;
 		}

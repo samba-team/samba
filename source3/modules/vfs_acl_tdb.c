@@ -22,18 +22,17 @@
 #include "smbd/smbd.h"
 #include "system/filesys.h"
 #include "librpc/gen_ndr/xattr.h"
-#include "librpc/gen_ndr/ndr_xattr.h"
 #include "../lib/crypto/sha256.h"
 #include "dbwrap/dbwrap.h"
 #include "dbwrap/dbwrap_open.h"
 #include "auth.h"
 #include "util_tdb.h"
+#include "vfs_acl_common.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
 
 #define ACL_MODULE_NAME "acl_tdb"
-#include "modules/vfs_acl_common.c"
 
 static unsigned int ref_count;
 static struct db_context *acl_db;
@@ -320,7 +319,7 @@ static int connect_acl_tdb(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
-	ok = init_acl_common_config(handle);
+	ok = init_acl_common_config(handle, ACL_MODULE_NAME);
 	if (!ok) {
 		DBG_ERR("init_acl_common_config failed\n");
 		return -1;
@@ -451,6 +450,42 @@ static int sys_acl_set_fd_tdb(vfs_handle_struct *handle,
 	return 0;
 }
 
+static NTSTATUS acl_tdb_fget_nt_acl(vfs_handle_struct *handle,
+				    files_struct *fsp,
+				    uint32_t security_info,
+				    TALLOC_CTX *mem_ctx,
+				    struct security_descriptor **ppdesc)
+{
+	NTSTATUS status;
+	status = get_nt_acl_common(get_acl_blob, handle, fsp, NULL,
+				   security_info, mem_ctx, ppdesc);
+	return status;
+}
+
+static NTSTATUS acl_tdb_get_nt_acl(vfs_handle_struct *handle,
+				   const struct smb_filename *smb_fname,
+				   uint32_t security_info,
+				   TALLOC_CTX *mem_ctx,
+				   struct security_descriptor **ppdesc)
+{
+	NTSTATUS status;
+	status = get_nt_acl_common(get_acl_blob, handle, NULL, smb_fname,
+				   security_info, mem_ctx, ppdesc);
+	return status;
+}
+
+static NTSTATUS acl_tdb_fset_nt_acl(vfs_handle_struct *handle,
+				    files_struct *fsp,
+				    uint32_t security_info_sent,
+				    const struct security_descriptor *psd)
+{
+	NTSTATUS status;
+	status = fset_nt_acl_common(get_acl_blob, store_acl_blob_fsp,
+				    ACL_MODULE_NAME,
+				    handle, fsp, security_info_sent, psd);
+	return status;
+}
+
 static struct vfs_fn_pointers vfs_acl_tdb_fns = {
 	.connect_fn = connect_acl_tdb,
 	.disconnect_fn = disconnect_acl_tdb,
@@ -458,9 +493,9 @@ static struct vfs_fn_pointers vfs_acl_tdb_fns = {
 	.unlink_fn = unlink_acl_tdb,
 	.chmod_fn = chmod_acl_module_common,
 	.fchmod_fn = fchmod_acl_module_common,
-	.fget_nt_acl_fn = fget_nt_acl_common,
-	.get_nt_acl_fn = get_nt_acl_common,
-	.fset_nt_acl_fn = fset_nt_acl_common,
+	.fget_nt_acl_fn = acl_tdb_fget_nt_acl,
+	.get_nt_acl_fn = acl_tdb_get_nt_acl,
+	.fset_nt_acl_fn = acl_tdb_fset_nt_acl,
 	.chmod_acl_fn = chmod_acl_acl_module_common,
 	.fchmod_acl_fn = fchmod_acl_acl_module_common,
 	.sys_acl_set_file_fn = sys_acl_set_file_tdb,

@@ -436,7 +436,7 @@ static int vlv_results(struct vlv_context *ac)
 			     ac->store->num_entries - 1);
 
 		for (i = first_i; i <= last_i; i++) {
-			struct ldb_result *result;
+			struct ldb_result *result = NULL;
 			struct GUID *guid = &ac->store->results[i];
 
 			ret = vlv_search_by_dn_guid(ac->module, ac, &result, guid,

@@ -36,6 +36,7 @@ enum ctdb_operation {
 	CTDB_REQ_CONTROL        = 7,
 	CTDB_REPLY_CONTROL      = 8,
 	CTDB_REQ_KEEPALIVE      = 9,
+	CTDB_REQ_TUNNEL		= 10,
 };
 
 /* used on the domain socket, send a pdu to the local daemon */
@@ -259,7 +260,7 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_THAW                    = 34, /* obsolete */
 		    CTDB_CONTROL_GET_PNN                 = 35,
 		    CTDB_CONTROL_SHUTDOWN                = 36,
-		    CTDB_CONTROL_GET_MONMODE             = 37,
+		    CTDB_CONTROL_GET_MONMODE             = 37, /* obsolete */
 		    /* #38 removed */
 		    /* #39 removed */
 		    /* #40 removed */
@@ -297,8 +298,8 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_RELOAD_NODES_FILE       = 72,
 		    /* #73 removed */
 		    CTDB_CONTROL_TRY_DELETE_RECORDS      = 74,
-		    CTDB_CONTROL_ENABLE_MONITOR          = 75,
-		    CTDB_CONTROL_DISABLE_MONITOR         = 76,
+		    CTDB_CONTROL_ENABLE_MONITOR          = 75, /* obsolete */
+		    CTDB_CONTROL_DISABLE_MONITOR         = 76, /* obsolete */
 		    CTDB_CONTROL_ADD_PUBLIC_IP           = 77,
 		    CTDB_CONTROL_DEL_PUBLIC_IP           = 78,
 		    CTDB_CONTROL_RUN_EVENTSCRIPTS        = 79, /* obsolete */
@@ -348,7 +349,7 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_GET_STAT_HISTORY        = 127,
 		    CTDB_CONTROL_SCHEDULE_FOR_DELETION   = 128,
 		    CTDB_CONTROL_SET_DB_READONLY         = 129,
-		    CTDB_CONTROL_CHECK_SRVIDS            = 130,
+		    CTDB_CONTROL_CHECK_SRVIDS            = 130, /* obsolete */
 		    CTDB_CONTROL_TRAVERSE_START_EXT      = 131,
 		    CTDB_CONTROL_GET_DB_STATISTICS       = 132,
 		    CTDB_CONTROL_SET_DB_STICKY           = 133,
@@ -369,10 +370,10 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_DB_PUSH_CONFIRM         = 148,
 		    CTDB_CONTROL_DB_OPEN_FLAGS           = 149,
 		    CTDB_CONTROL_DB_ATTACH_REPLICATED    = 150,
+		    CTDB_CONTROL_CHECK_PID_SRVID         = 151,
+		    CTDB_CONTROL_TUNNEL_REGISTER         = 152,
+		    CTDB_CONTROL_TUNNEL_DEREGISTER       = 153,
 };
-
-#define CTDB_MONITORING_ENABLED		0
-#define CTDB_MONITORING_DISABLED	1
 
 #define MAX_COUNT_BUCKETS 16
 #define MAX_HOT_KEYS      10
@@ -403,11 +404,13 @@ struct ctdb_statistics {
 		uint32_t req_message;
 		uint32_t req_control;
 		uint32_t reply_control;
+		uint32_t req_tunnel;
 	} node;
 	struct {
 		uint32_t req_call;
 		uint32_t req_message;
 		uint32_t req_control;
+		uint32_t req_tunnel;
 	} client;
 	struct {
 		uint32_t call;
@@ -558,8 +561,19 @@ typedef union {
 } ctdb_sock_addr;
 
 struct ctdb_connection {
-	ctdb_sock_addr src;
-	ctdb_sock_addr dst;
+	union {
+		ctdb_sock_addr src;
+		ctdb_sock_addr server;
+	};
+	union {
+		ctdb_sock_addr dst;
+		ctdb_sock_addr client;
+	};
+};
+
+struct ctdb_connection_list {
+	uint32_t num;
+	struct ctdb_connection *conn;
 };
 
 struct ctdb_tunable {
@@ -800,16 +814,6 @@ struct ctdb_key_data {
 	TDB_DATA key;
 };
 
-struct ctdb_uint8_array {
-	int num;
-	uint8_t *val;
-};
-
-struct ctdb_uint64_array {
-	int num;
-	uint64_t *val;
-};
-
 struct ctdb_db_statistics {
 	struct {
 		uint32_t num_calls;
@@ -840,6 +844,11 @@ enum ctdb_runstate {
 	CTDB_RUNSTATE_STARTUP,
 	CTDB_RUNSTATE_RUNNING,
 	CTDB_RUNSTATE_SHUTDOWN,
+};
+
+struct ctdb_pid_srvid {
+	pid_t pid;
+	uint64_t srvid;
 };
 
 struct ctdb_req_control_data {
@@ -876,9 +885,9 @@ struct ctdb_req_control_data {
 		uint64_t srvid;
 		struct ctdb_iface *iface;
 		struct ctdb_key_data *key;
-		struct ctdb_uint64_array *u64_array;
 		struct ctdb_traverse_start_ext *traverse_start_ext;
 		struct ctdb_traverse_all_ext *traverse_all_ext;
+		struct ctdb_pid_srvid *pid_srvid;
 	} data;
 };
 
@@ -910,7 +919,6 @@ struct ctdb_reply_control_data {
 		struct ctdb_public_ip_info *ipinfo;
 		struct ctdb_iface_list *iface_list;
 		struct ctdb_statistics_list *stats_list;
-		struct ctdb_uint8_array *u8_array;
 		struct ctdb_db_statistics *dbstats;
 		enum ctdb_runstate runstate;
 		uint32_t num_records;
@@ -995,6 +1003,18 @@ struct ctdb_req_keepalive {
 	uint32_t uptime;
 };
 
+#define CTDB_TUNNEL_TEST	0xffffffff00000000
+
+#define CTDB_TUNNEL_FLAG_REQUEST	0x00000001
+#define CTDB_TUNNEL_FLAG_REPLY		0x00000002
+#define CTDB_TUNNEL_FLAG_NOREPLY	0x00000010
+
+struct ctdb_req_tunnel {
+	uint64_t tunnel_id;
+	uint32_t flags;
+	TDB_DATA data;
+};
+
 
 /* This is equivalent to server_id */
 struct ctdb_server_id {
@@ -1017,6 +1037,15 @@ struct ctdb_g_lock {
 struct ctdb_g_lock_list {
 	unsigned int num;
 	struct ctdb_g_lock *lock;
+};
+
+/*
+ * Generic packet header
+ */
+
+struct sock_packet_header {
+	uint32_t length;
+	uint32_t reqid;
 };
 
 /*
@@ -1084,18 +1113,13 @@ struct ctdb_event_reply_data {
 	} data;
 };
 
-struct ctdb_event_header {
-	uint32_t length;
-	uint32_t reqid;
-};
-
 struct ctdb_event_request {
-	struct ctdb_event_header header;
+	struct sock_packet_header header;
 	struct ctdb_event_request_data rdata;
 };
 
 struct ctdb_event_reply {
-	struct ctdb_event_header header;
+	struct sock_packet_header header;
 	struct ctdb_event_reply_data rdata;
 };
 

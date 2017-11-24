@@ -180,12 +180,11 @@ struct SMB4ACE_T *smb_add_ace4(struct SMB4ACL_T *acl, SMB_ACE4PROP_T *prop)
 	ace = talloc_zero(acl, struct SMB4ACE_T);
 	if (ace==NULL)
 	{
-		DEBUG(0, ("TALLOC_SIZE failed\n"));
+		DBG_ERR("talloc_zero failed\n");
 		errno = ENOMEM;
 		return NULL;
 	}
-	/* ace->next = NULL not needed */
-	memcpy(&ace->prop, prop, sizeof(SMB_ACE4PROP_T));
+	ace->prop = *prop;
 
 	if (acl->first==NULL)
 	{
@@ -352,10 +351,6 @@ static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx,
 		DEBUG(10, ("mapped %d to %s\n", ace->who.id,
 			   sid_string_dbg(&sid)));
 
-		if (is_directory && (ace->aceMask & SMB_ACE4_ADD_FILE)) {
-			ace->aceMask |= SMB_ACE4_DELETE_CHILD;
-		}
-
 		if (!is_directory && params->map_full_control) {
 			/*
 			 * Do we have all access except DELETE_CHILD
@@ -386,13 +381,6 @@ static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx,
 		      ace->aceFlags, win_ace_flags));
 
 		mask = ace->aceMask;
-		/* Windows clients expect SYNC on acls to
-		   correctly allow rename. See bug #7909. */
-		/* But not on DENY ace entries. See
-		   bug #8442. */
-		if(ace->aceType == SMB_ACE4_ACCESS_ALLOWED_ACE_TYPE) {
-			mask = ace->aceMask | SMB_ACE4_SYNCHRONIZE;
-		}
 
 		/* Mapping of owner@ and group@ to creator owner and
 		   creator group. Keep old behavior in mode special. */

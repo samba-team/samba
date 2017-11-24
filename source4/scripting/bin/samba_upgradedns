@@ -20,6 +20,7 @@
 
 import sys
 import os
+import errno
 import optparse
 import logging
 import grp
@@ -208,6 +209,36 @@ def import_zone_data(samdb, logger, zone, serial, domaindn, forestdn,
             logger.error("Failed to add DNS record %s" % (fqdn))
             raise
         logger.debug("Added DNS record %s" % (fqdn))
+
+def cleanup_remove_file(file_path):
+    try:
+        os.remove(file_path)
+    except OSError as e:
+        if e.errno not in [errno.EEXIST, errno.ENOENT]:
+            pass
+        else:
+            logger.debug("Could not remove %s: %s" % (file_path, e.strerror))
+
+def cleanup_remove_dir(dir_path):
+    try:
+        for root, dirs, files in os.walk(dir_path, topdown=False):
+            for name in files:
+                os.remove(os.path.join(root, name))
+            for name in dirs:
+                os.rmdir(os.path.join(root, name))
+        os.rmdir(dir_path)
+    except OSError as e:
+        if e.errno not in [errno.EEXIST, errno.ENOENT]:
+            pass
+        else:
+            logger.debug("Could not delete dir %s: %s" % (dir_path, e.strerror))
+
+def cleanup_obsolete_dns_files(paths):
+    cleanup_remove_file(os.path.join(paths.private_dir, "named.conf"))
+    cleanup_remove_file(os.path.join(paths.private_dir, "named.conf.update"))
+    cleanup_remove_file(os.path.join(paths.private_dir, "named.txt"))
+
+    cleanup_remove_dir(os.path.join(paths.private_dir, "dns"))
 
 
 # dnsprovision creates application partitions for AD based DNS mainly if the existing
@@ -411,6 +442,12 @@ if __name__ == '__main__':
 
     # Special stuff for DLZ backend
     if opts.dns_backend == "BIND9_DLZ":
+        config_migration = False
+
+        if (paths.private_dir != paths.binddns_dir and
+            os.path.isfile(os.path.join(paths.private_dir, "named.conf"))):
+            config_migration = True
+
         # Check if dns-HOSTNAME account exists and create it if required
         secrets_msgs = ldbs.secrets.search(expression='(samAccountName=dns-%s)' % hostname, attrs=['secret'])
         msg = ldbs.sam.search(base=domaindn, scope=ldb.SCOPE_DEFAULT,
@@ -446,7 +483,7 @@ if __name__ == '__main__':
                 dns_key_version_number = None
 
             secretsdb_setup_dns(ldbs.secrets, names,
-                                paths.private_dir, realm=names.realm,
+                                paths.private_dir, paths.binddns_dir, realm=names.realm,
                                 dnsdomain=names.dnsdomain,
                                 dns_keytab_path=paths.dns_keytab, dnspass=dnspass,
                                 key_version_number=dns_key_version_number)
@@ -454,15 +491,41 @@ if __name__ == '__main__':
         else:
             logger.info("dns-%s account already exists" % hostname)
 
-        dns_keytab_path = os.path.join(paths.private_dir, paths.dns_keytab)
-        if os.path.isfile(dns_keytab_path) and paths.bind_gid is not None:
+        private_dns_keytab_path = os.path.join(paths.private_dir, paths.dns_keytab)
+        bind_dns_keytab_path = os.path.join(paths.binddns_dir, paths.dns_keytab)
+
+        if os.path.isfile(private_dns_keytab_path):
+            if os.path.isfile(bind_dns_keytab_path):
+                try:
+                    os.unlink(bind_dns_keytab_path)
+                except OSError as e:
+                    logger.error("Failed to remove %s: %s" %
+                                 (bind_dns_keytab_path, e.strerror))
+
+            # link the dns.keytab to the bind-dns directory
             try:
-                os.chmod(dns_keytab_path, 0640)
-                os.chown(dns_keytab_path, -1, paths.bind_gid)
-            except OSError:
-                if not os.environ.has_key('SAMBA_SELFTEST'):
-                    logger.info("Failed to chown %s to bind gid %u",
-                                dns_keytab_path, paths.bind_gid)
+                os.link(private_dns_keytab_path, bind_dns_keytab_path)
+            except OSError as e:
+                logger.error("Failed to create link %s -> %s: %s" %
+                             (private_dns_keytab_path, bind_dns_keytab_path, e.strerror))
+
+            # chown the dns.keytab in the bind-dns directory
+            if paths.bind_gid is not None:
+                try:
+                    os.chmod(paths.binddns_dir, 0o770)
+                    os.chown(paths.binddns_dir, -1, paths.bind_gid)
+                except OSError:
+                    if not os.environ.has_key('SAMBA_SELFTEST'):
+                        logger.info("Failed to chown %s to bind gid %u",
+                                    paths.binddns_dir, paths.bind_gid)
+                try:
+                    os.chmod(bind_dns_keytab_path, 0640)
+                    os.chown(bind_dns_keytab_path, -1, paths.bind_gid)
+                except OSError:
+                    if not os.environ.has_key('SAMBA_SELFTEST'):
+                        logger.info("Failed to chown %s to bind gid %u",
+                                    bind_dns_keytab_path, paths.bind_gid)
+
 
         # This forces a re-creation of dns directory and all the files within
         # It's an overkill, but it's easier to re-create a samdb copy, rather
@@ -476,11 +539,37 @@ if __name__ == '__main__':
         create_named_conf(paths, names.realm, dnsdomain, opts.dns_backend, logger)
 
         create_named_txt(paths.namedtxt, names.realm, dnsdomain, dnsname,
-                         paths.private_dir, paths.dns_keytab)
-        logger.info("See %s for an example configuration include file for BIND", paths.namedconf)
-        logger.info("and %s for further documentation required for secure DNS "
-                    "updates", paths.namedtxt)
+                         paths.binddns_dir, paths.dns_keytab)
+
+        cleanup_obsolete_dns_files(paths)
+
+        if config_migration:
+            logger.info("ATTENTION: The BIND configuration and keytab has been moved to: %s",
+                        paths.binddns_dir)
+            logger.info("           Please update your BIND configuration accordingly.")
+        else:
+            logger.info("See %s for an example configuration include file for BIND", paths.namedconf)
+            logger.info("and %s for further documentation required for secure DNS "
+                        "updates", paths.namedtxt)
+
     elif opts.dns_backend == "SAMBA_INTERNAL":
+        # Make sure to remove everything from the bind-dns directory to avoid
+        # possible security issues with the named group having write access
+        # to all AD partions
+        cleanup_remove_file(os.path.join(paths.binddns_dir, "dns.keytab"))
+        cleanup_remove_file(os.path.join(paths.binddns_dir, "named.conf"))
+        cleanup_remove_file(os.path.join(paths.binddns_dir, "named.conf.update"))
+        cleanup_remove_file(os.path.join(paths.binddns_dir, "named.txt"))
+
+        cleanup_remove_dir(os.path.dirname(paths.dns))
+
+        try:
+            os.chmod(paths.private_dir, 0o700)
+            os.chown(paths.private_dir, -1, 0)
+        except:
+            logger.warn("Failed to restore owner and permissions for %s",
+                        (paths.private_dir))
+
         # Check if dns-HOSTNAME account exists and delete it if required
         try:
             dn_str = 'samAccountName=dns-%s,CN=Principals' % hostname

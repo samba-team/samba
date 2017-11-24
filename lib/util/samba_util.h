@@ -567,33 +567,7 @@ int gen_fnmatch(const char *pattern, const char *string);
 #include "idtree.h"
 #include "idtree_random.h"
 
-/**
- Close the low 3 fd's and open dev/null in their place
-**/
-_PUBLIC_ void close_low_fds(bool stdin_too, bool stdout_too, bool stderr_too);
-
-/**
- Become a daemon, discarding the controlling terminal.
-**/
-_PUBLIC_ void become_daemon(bool do_fork, bool no_process_group, bool log_stdout);
-
-/**
- Exit daemon and print error message to the log at level 0
- Optionally report failure to systemd if systemd integration is enabled
-**/
-_PUBLIC_ void exit_daemon(const char *msg, int error);
-
-/**
- Report that the daemon is ready to serve connections to the log at level 0
- Optionally report status to systemd if systemd integration is enabled
-**/
-_PUBLIC_ void daemon_ready(const char *daemon);
-
-/*
- * Report the daemon status. For example if it is not ready to serve connections
- * and is waiting for some event to happen.
- */
-_PUBLIC_ void daemon_status(const char *name, const char *msg);
+#include "become_daemon.h"
 
 /**
  * @brief Get a password from the console.

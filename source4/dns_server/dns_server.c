@@ -642,7 +642,8 @@ static NTSTATUS dns_add_socket(struct dns_server *dns,
 				     &dns_tcp_stream_ops,
 				     "ip", address, &port,
 				     lpcfg_socket_options(dns->task->lp_ctx),
-				     dns_socket);
+				     dns_socket,
+				     dns->task->process_context);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Failed to bind to %s:%u TCP - %s\n",
 			 address, port, nt_errstr(status)));
@@ -683,22 +684,13 @@ static NTSTATUS dns_add_socket(struct dns_server *dns,
   setup our listening sockets on the configured network interfaces
 */
 static NTSTATUS dns_startup_interfaces(struct dns_server *dns,
-				       struct interface *ifaces)
+				       struct interface *ifaces,
+				       const struct model_ops *model_ops)
 {
-	const struct model_ops *model_ops;
 	int num_interfaces;
 	TALLOC_CTX *tmp_ctx = talloc_new(dns);
 	NTSTATUS status;
 	int i;
-
-	/* within the dns task we want to be a single process, so
-	   ask for the single process model ops and pass these to the
-	   stream_setup_socket() call. */
-	model_ops = process_model_startup("single");
-	if (!model_ops) {
-		DEBUG(0,("Can't find 'single' process model_ops\n"));
-		return NT_STATUS_INTERNAL_ERROR;
-	}
 
 	if (ifaces != NULL) {
 		num_interfaces = iface_list_count(ifaces);
@@ -906,7 +898,7 @@ static void dns_task_init(struct task_server *task)
 		return;
 	}
 
-	status = dns_startup_interfaces(dns, ifaces);
+	status = dns_startup_interfaces(dns, ifaces, task->model_ops);
 	if (!NT_STATUS_IS_OK(status)) {
 		task_server_terminate(task, "dns failed to setup interfaces", true);
 		return;
@@ -929,5 +921,9 @@ static void dns_task_init(struct task_server *task)
 
 NTSTATUS server_service_dns_init(TALLOC_CTX *ctx)
 {
-	return register_server_service(ctx, "dns", dns_task_init);
+	struct service_details details = {
+		.inhibit_fork_on_accept = true,
+		.inhibit_pre_fork = true,
+	};
+	return register_server_service(ctx, "dns", dns_task_init, &details);
 }

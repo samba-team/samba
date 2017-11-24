@@ -30,7 +30,7 @@
 #include <tevent.h>
 #include <tdb.h>
 
-#include "ctdb_version.h"
+#include "common/version.h"
 #include "lib/util/debug.h"
 #include "lib/util/samba_util.h"
 #include "lib/util/sys_rw.h"
@@ -39,6 +39,7 @@
 #include "common/logging.h"
 #include "protocol/protocol.h"
 #include "protocol/protocol_api.h"
+#include "protocol/protocol_util.h"
 #include "common/system.h"
 #include "client/client.h"
 #include "client/client_sync.h"
@@ -381,8 +382,10 @@ static bool node_map_add(struct ctdb_node_map *nodemap,
 	ctdb_sock_addr addr;
 	uint32_t num;
 	struct ctdb_node_and_flags *n;
+	int ret;
 
-	if (! parse_ip(nstr, NULL, 0, &addr)) {
+	ret = ctdb_sock_addr_from_string(nstr, &addr, false);
+	if (ret != 0) {
 		fprintf(stderr, "Invalid IP address %s\n", nstr);
 		return false;
 	}
@@ -724,7 +727,7 @@ static int run_helper(TALLOC_CTX *mem_ctx, const char *command,
 static int control_version(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 			   int argc, const char **argv)
 {
-	printf("%s\n", CTDB_VERSION_STRING);
+	printf("%s\n", ctdb_version_string);
 	return 0;
 }
 
@@ -787,7 +790,7 @@ static void print_nodemap_machine(TALLOC_CTX *mem_ctx,
 		printf("%s%u%s%s%s%d%s%d%s%d%s%d%s%d%s%d%s%d%s%c%s\n",
 		       options.sep,
 		       node->pnn, options.sep,
-		       ctdb_sock_addr_to_string(mem_ctx, &node->addr),
+		       ctdb_sock_addr_to_string(mem_ctx, &node->addr, false),
 		       options.sep,
 		       !! (node->flags & NODE_FLAGS_DISCONNECTED), options.sep,
 		       !! (node->flags & NODE_FLAGS_BANNED), options.sep,
@@ -834,7 +837,7 @@ static void print_nodemap(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 
 		printf("pnn:%u %-16s %s%s\n",
 		       node->pnn,
-		       ctdb_sock_addr_to_string(mem_ctx, &node->addr),
+		       ctdb_sock_addr_to_string(mem_ctx, &node->addr, false),
 		       partially_online(mem_ctx, ctdb, node) ?
 				"PARTIALLYONLINE" :
 				pretty_print_flags(mem_ctx, node->flags),
@@ -1157,9 +1160,11 @@ const struct {
 	STATISTICS_FIELD(node.req_message),
 	STATISTICS_FIELD(node.req_control),
 	STATISTICS_FIELD(node.reply_control),
+	STATISTICS_FIELD(node.req_tunnel),
 	STATISTICS_FIELD(client.req_call),
 	STATISTICS_FIELD(client.req_message),
 	STATISTICS_FIELD(client.req_control),
+	STATISTICS_FIELD(client.req_tunnel),
 	STATISTICS_FIELD(timeouts.call),
 	STATISTICS_FIELD(timeouts.control),
 	STATISTICS_FIELD(timeouts.traverse),
@@ -1448,12 +1453,12 @@ static void print_ip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		if (options.machinereadable == 1) {
 			printf("%s%s%s%d%s", options.sep,
 			       ctdb_sock_addr_to_string(
-					mem_ctx, &ips->ip[i].addr),
+				       mem_ctx, &ips->ip[i].addr, false),
 			       options.sep,
 			       (int)ips->ip[i].pnn, options.sep);
 		} else {
 			printf("%s", ctdb_sock_addr_to_string(
-						mem_ctx, &ips->ip[i].addr));
+				       mem_ctx, &ips->ip[i].addr, false));
 		}
 
 		if (options.verbose == 0) {
@@ -1713,7 +1718,8 @@ static int control_ipinfo(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		usage("ipinfo");
 	}
 
-	if (! parse_ip(argv[0], NULL, 0, &addr)) {
+	ret = ctdb_sock_addr_from_string(argv[0], &addr, false);
+	if (ret != 0) {
 		fprintf(stderr, "Invalid IP address %s\n", argv[0]);
 		return 1;
 	}
@@ -1730,11 +1736,11 @@ static int control_ipinfo(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	}
 
 	printf("Public IP[%s] info on node %u\n",
-	       ctdb_sock_addr_to_string(mem_ctx, &ipinfo->ip.addr),
+	       ctdb_sock_addr_to_string(mem_ctx, &ipinfo->ip.addr, false),
 					ctdb->cmd_pnn);
 
 	printf("IP:%s\nCurrentNode:%u\nNumInterfaces:%u\n",
-	       ctdb_sock_addr_to_string(mem_ctx, &ipinfo->ip.addr),
+	       ctdb_sock_addr_to_string(mem_ctx, &ipinfo->ip.addr, false),
 	       ipinfo->ip.pnn, ipinfo->ifaces->num);
 
 	for (i=0; i<ipinfo->ifaces->num; i++) {
@@ -1864,23 +1870,43 @@ static int control_process_exists(TALLOC_CTX *mem_ctx,
 				  int argc, const char **argv)
 {
 	pid_t pid;
+	uint64_t srvid = 0;
 	int ret, status;
 
-	if (argc != 1) {
+	if (argc != 1 && argc != 2) {
 		usage("process-exists");
 	}
 
 	pid = atoi(argv[0]);
-	ret = ctdb_ctrl_process_exists(mem_ctx, ctdb->ev, ctdb->client,
+	if (argc == 2) {
+		srvid = strtoull(argv[1], NULL, 0);
+	}
+
+	if (srvid == 0) {
+		ret = ctdb_ctrl_process_exists(mem_ctx, ctdb->ev, ctdb->client,
 				       ctdb->cmd_pnn, TIMEOUT(), pid, &status);
+	} else {
+		struct ctdb_pid_srvid pid_srvid;
+
+		pid_srvid.pid = pid;
+		pid_srvid.srvid = srvid;
+
+		ret = ctdb_ctrl_check_pid_srvid(mem_ctx, ctdb->ev,
+						ctdb->client, ctdb->cmd_pnn,
+						TIMEOUT(), &pid_srvid,
+						&status);
+	}
+
 	if (ret != 0) {
 		return ret;
 	}
 
-	if (status == 0) {
-		printf("PID %u exists\n", pid);
+	if (srvid == 0) {
+		printf("PID %d %s\n", pid,
+		       (status == 0 ? "exists" : "does not exist"));
 	} else {
-		printf("PID %u does not exist\n", pid);
+		printf("PID %d with SRVID 0x%"PRIx64" %s\n", pid, srvid,
+		       (status == 0 ? "exists" : "does not exist"));
 	}
 	return status;
 }
@@ -2159,26 +2185,6 @@ static int control_cattdb(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	return ret;
 }
 
-static int control_getmonmode(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			      int argc, const char **argv)
-{
-	int mode, ret;
-
-	if (argc != 0) {
-		usage("getmonmode");
-	}
-
-	ret = ctdb_ctrl_get_monmode(mem_ctx, ctdb->ev, ctdb->client,
-				    ctdb->cmd_pnn, TIMEOUT(), &mode);
-	if (ret != 0) {
-		return ret;
-	}
-
-	printf("%s\n",
-	       (mode == CTDB_MONITORING_ENABLED) ? "ENABLED" : "DISABLED");
-	return 0;
-}
-
 static int control_getcapabilities(TALLOC_CTX *mem_ctx,
 				   struct ctdb_context *ctdb,
 				   int argc, const char **argv)
@@ -2244,44 +2250,6 @@ static int control_lvs(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	}
 
 	return run_helper(mem_ctx, "LVS helper", lvs_helper, argc, argv);
-}
-
-static int control_disable_monitor(TALLOC_CTX *mem_ctx,
-				   struct ctdb_context *ctdb,
-				   int argc, const char **argv)
-{
-	int ret;
-
-	if (argc != 0) {
-		usage("disablemonitor");
-	}
-
-	ret = ctdb_ctrl_disable_monitor(mem_ctx, ctdb->ev, ctdb->client,
-					ctdb->cmd_pnn, TIMEOUT());
-	if (ret != 0) {
-		return ret;
-	}
-
-	return 0;
-}
-
-static int control_enable_monitor(TALLOC_CTX *mem_ctx,
-				  struct ctdb_context *ctdb,
-				  int argc, const char **argv)
-{
-	int ret;
-
-	if (argc != 0) {
-		usage("enablemonitor");
-	}
-
-	ret = ctdb_ctrl_enable_monitor(mem_ctx, ctdb->ev, ctdb->client,
-				       ctdb->cmd_pnn, TIMEOUT());
-	if (ret != 0) {
-		return ret;
-	}
-
-	return 0;
 }
 
 static int control_setdebug(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
@@ -3021,7 +2989,8 @@ static int control_gratarp(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		usage("gratarp");
 	}
 
-	if (! parse_ip(argv[0], NULL, 0, &addr_info.addr)) {
+	ret = ctdb_sock_addr_from_string(argv[0], &addr_info.addr, false);
+	if (ret != 0) {
 		fprintf(stderr, "Invalid IP address %s\n", argv[0]);
 		return 1;
 	}
@@ -3050,19 +3019,19 @@ static int control_tickle(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	}
 
 	if (argc == 0) {
-		struct ctdb_connection *clist;
-		int count;
+		struct ctdb_connection_list *clist;
 		int i, num_failed;
 
-		ret = ctdb_parse_connections(stdin, mem_ctx, &count, &clist);
+		/* Client first but the src/dst logic is confused */
+		ret = ctdb_connection_list_read(mem_ctx, false, &clist);
 		if (ret != 0) {
 			return ret;
 		}
 
 		num_failed = 0;
-		for (i=0; i<count; i++) {
-			ret = ctdb_sys_send_tcp(&clist[i].src,
-						&clist[i].dst,
+		for (i = 0; i < clist->num; i++) {
+			ret = ctdb_sys_send_tcp(&clist->conn[i].src,
+						&clist->conn[i].dst,
 						0, 0, 0);
 			if (ret != 0) {
 				num_failed += 1;
@@ -3081,12 +3050,14 @@ static int control_tickle(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	}
 
 
-	if (! parse_ip_port(argv[0], &src)) {
+	ret = ctdb_sock_addr_from_string(argv[0], &src, true);
+	if (ret != 0) {
 		fprintf(stderr, "Invalid IP address %s\n", argv[0]);
 		return 1;
 	}
 
-	if (! parse_ip_port(argv[1], &dst)) {
+	ret = ctdb_sock_addr_from_string(argv[1], &dst, true);
+	if (ret != 0) {
 		fprintf(stderr, "Invalid IP address %s\n", argv[1]);
 		return 1;
 	}
@@ -3116,10 +3087,12 @@ static int control_gettickles(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		port = strtoul(argv[1], NULL, 10);
 	}
 
-	if (! parse_ip(argv[0], NULL, port, &addr)) {
+	ret = ctdb_sock_addr_from_string(argv[0], &addr, false);
+	if (ret != 0) {
 		fprintf(stderr, "Invalid IP address %s\n", argv[0]);
 		return 1;
 	}
+	ctdb_sock_addr_set_port(&addr, port);
 
 	ret = ctdb_ctrl_get_tcp_tickle_list(mem_ctx, ctdb->ev, ctdb->client,
 					    ctdb->cmd_pnn, TIMEOUT(), &addr,
@@ -3139,28 +3112,27 @@ static int control_gettickles(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		for (i=0; i<tickles->num; i++) {
 			printf("%s%s%s%u%s%s%s%u%s\n", options.sep,
 			       ctdb_sock_addr_to_string(
-				       mem_ctx, &tickles->conn[i].src),
+				       mem_ctx, &tickles->conn[i].src, false),
 			       options.sep,
 			       ntohs(tickles->conn[i].src.ip.sin_port),
 			       options.sep,
 			       ctdb_sock_addr_to_string(
-				       mem_ctx, &tickles->conn[i].dst),
+				       mem_ctx, &tickles->conn[i].dst, false),
 			       options.sep,
 			       ntohs(tickles->conn[i].dst.ip.sin_port),
 			       options.sep);
 		}
 	} else {
 		printf("Connections for IP: %s\n",
-		       ctdb_sock_addr_to_string(mem_ctx, &tickles->addr));
+		       ctdb_sock_addr_to_string(mem_ctx,
+						&tickles->addr, false));
 		printf("Num connections: %u\n", tickles->num);
 		for (i=0; i<tickles->num; i++) {
-			printf("SRC: %s:%u   DST: %s:%u\n",
+			printf("SRC: %s   DST: %s\n",
 			       ctdb_sock_addr_to_string(
-				       mem_ctx, &tickles->conn[i].src),
-			       ntohs(tickles->conn[i].src.ip.sin_port),
+				       mem_ctx, &tickles->conn[i].src, true),
 			       ctdb_sock_addr_to_string(
-				       mem_ctx, &tickles->conn[i].dst),
-			       ntohs(tickles->conn[i].dst.ip.sin_port));
+				       mem_ctx, &tickles->conn[i].dst, true));
 		}
 	}
 
@@ -3174,7 +3146,7 @@ typedef void (*clist_request_func)(struct ctdb_req_control *request,
 typedef int (*clist_reply_func)(struct ctdb_reply_control *reply);
 
 struct process_clist_state {
-	struct ctdb_connection *clist;
+	struct ctdb_connection_list *clist;
 	int count;
 	int num_failed, num_total;
 	clist_reply_func reply_func;
@@ -3185,8 +3157,7 @@ static void process_clist_done(struct tevent_req *subreq);
 static struct tevent_req *process_clist_send(
 					TALLOC_CTX *mem_ctx,
 					struct ctdb_context *ctdb,
-					struct ctdb_connection *clist,
-					int count,
+					struct ctdb_connection_list *clist,
 					clist_request_func request_func,
 					clist_reply_func reply_func)
 {
@@ -3201,11 +3172,10 @@ static struct tevent_req *process_clist_send(
 	}
 
 	state->clist = clist;
-	state->count = count;
 	state->reply_func = reply_func;
 
-	for (i=0; i<count; i++) {
-		request_func(&request, &clist[i]);
+	for (i = 0; i < clist->num; i++) {
+		request_func(&request, &clist->conn[i]);
 		subreq = ctdb_client_control_send(state, ctdb->ev,
 						  ctdb->client, ctdb->cmd_pnn,
 						  TIMEOUT(), &request);
@@ -3243,7 +3213,7 @@ static void process_clist_done(struct tevent_req *subreq)
 
 done:
 	state->num_total += 1;
-	if (state->num_total == state->count) {
+	if (state->num_total == state->clist->num) {
 		tevent_req_done(req);
 	}
 }
@@ -3267,19 +3237,19 @@ static int control_addtickle(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	}
 
 	if (argc == 0) {
-		struct ctdb_connection *clist;
+		struct ctdb_connection_list *clist;
 		struct tevent_req *req;
-		int count;
 
-		ret = ctdb_parse_connections(stdin, mem_ctx, &count, &clist);
+		/* Client first but the src/dst logic is confused */
+		ret = ctdb_connection_list_read(mem_ctx, false, &clist);
 		if (ret != 0) {
 			return ret;
 		}
-		if (count == 0) {
+		if (clist->num == 0) {
 			return 0;
 		}
 
-		req = process_clist_send(mem_ctx, ctdb, clist, count,
+		req = process_clist_send(mem_ctx, ctdb, clist,
 				 ctdb_req_control_tcp_add_delayed_update,
 				 ctdb_reply_control_tcp_add_delayed_update);
 		if (req == NULL) {
@@ -3299,11 +3269,13 @@ static int control_addtickle(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return 0;
 	}
 
-	if (! parse_ip_port(argv[0], &conn.src)) {
+	ret = ctdb_sock_addr_from_string(argv[0], &conn.src, true);
+	if (ret != 0) {
 		fprintf(stderr, "Invalid IP address %s\n", argv[0]);
 		return 1;
 	}
-	if (! parse_ip_port(argv[1], &conn.dst)) {
+	ret = ctdb_sock_addr_from_string(argv[1], &conn.dst, true);
+	if (ret != 0) {
 		fprintf(stderr, "Invalid IP address %s\n", argv[1]);
 		return 1;
 	}
@@ -3330,19 +3302,19 @@ static int control_deltickle(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	}
 
 	if (argc == 0) {
-		struct ctdb_connection *clist;
+		struct ctdb_connection_list *clist;
 		struct tevent_req *req;
-		int count;
 
-		ret = ctdb_parse_connections(stdin, mem_ctx, &count, &clist);
+		/* Client first but the src/dst logic is confused */
+		ret = ctdb_connection_list_read(mem_ctx, false, &clist);
 		if (ret != 0) {
 			return ret;
 		}
-		if (count == 0) {
+		if (clist->num == 0) {
 			return 0;
 		}
 
-		req = process_clist_send(mem_ctx, ctdb, clist, count,
+		req = process_clist_send(mem_ctx, ctdb, clist,
 					 ctdb_req_control_tcp_remove,
 					 ctdb_reply_control_tcp_remove);
 		if (req == NULL) {
@@ -3362,11 +3334,13 @@ static int control_deltickle(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return 0;
 	}
 
-	if (! parse_ip_port(argv[0], &conn.src)) {
+	ret = ctdb_sock_addr_from_string(argv[0], &conn.src, true);
+	if (ret != 0) {
 		fprintf(stderr, "Invalid IP address %s\n", argv[0]);
 		return 1;
 	}
-	if (! parse_ip_port(argv[1], &conn.dst)) {
+	ret = ctdb_sock_addr_from_string(argv[1], &conn.dst, true);
+	if (ret != 0) {
 		fprintf(stderr, "Invalid IP address %s\n", argv[1]);
 		return 1;
 	}
@@ -3376,44 +3350,6 @@ static int control_deltickle(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	if (ret != 0) {
 		fprintf(stderr, "Failed to unregister connection\n");
 		return ret;
-	}
-
-	return 0;
-}
-
-static int control_check_srvids(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-				int argc, const char **argv)
-{
-	uint64_t *srvid;
-	uint8_t *result;
-	int ret, i;
-
-	if (argc == 0) {
-		usage("check_srvids");
-	}
-
-	srvid = talloc_array(mem_ctx, uint64_t, argc);
-	if (srvid == NULL) {
-		fprintf(stderr, "Memory allocation error\n");
-		return 1;
-	}
-
-	for (i=0; i<argc; i++) {
-		srvid[i] = strtoull(argv[i], NULL, 0);
-	}
-
-	ret = ctdb_ctrl_check_srvids(mem_ctx, ctdb->ev, ctdb->client,
-				     ctdb->cmd_pnn, TIMEOUT(), srvid, argc,
-				     &result);
-	if (ret != 0) {
-		fprintf(stderr, "Failed to check srvids on node %u\n",
-			ctdb->cmd_pnn);
-		return ret;
-	}
-
-	for (i=0; i<argc; i++) {
-		printf("SRVID 0x%" PRIx64 " %s\n", srvid[i],
-		       (result[i] ? "exists" : "does not exist"));
 	}
 
 	return 0;
@@ -3443,12 +3379,12 @@ static int control_listnodes(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 			printf("%s%u%s%s%s\n", options.sep,
 			       nodemap->node[i].pnn, options.sep,
 			       ctdb_sock_addr_to_string(
-					mem_ctx, &nodemap->node[i].addr),
+				       mem_ctx, &nodemap->node[i].addr, false),
 			       options.sep);
 		} else {
 			printf("%s\n",
 			       ctdb_sock_addr_to_string(
-					mem_ctx, &nodemap->node[i].addr));
+				       mem_ctx, &nodemap->node[i].addr, false));
 		}
 	}
 
@@ -3496,7 +3432,7 @@ static int check_node_file_changes(TALLOC_CTX *mem_ctx,
 				"Node %u (%s) missing from nodes file\n",
 				nm->node[i].pnn,
 				ctdb_sock_addr_to_string(
-					mem_ctx, &nm->node[i].addr));
+					mem_ctx, &nm->node[i].addr, false));
 			check_failed = true;
 			continue;
 		}
@@ -3516,9 +3452,11 @@ static int check_node_file_changes(TALLOC_CTX *mem_ctx,
 					" (was %s, now %s)\n",
 					nm->node[i].pnn,
 					ctdb_sock_addr_to_string(
-						mem_ctx, &nm->node[i].addr),
+						mem_ctx,
+						&nm->node[i].addr, false),
 					ctdb_sock_addr_to_string(
-						mem_ctx, &fnm->node[i].addr));
+						mem_ctx,
+						&fnm->node[i].addr, false));
 				check_failed = true;
 			} else {
 				if (nm->node[i].flags & NODE_FLAGS_DISCONNECTED) {
@@ -3797,7 +3735,7 @@ static int moveip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 
 	if (i == pubip_list->num) {
 		fprintf(stderr, "Node %u CANNOT host IP address %s\n",
-			pnn, ctdb_sock_addr_to_string(mem_ctx, addr));
+			pnn, ctdb_sock_addr_to_string(mem_ctx, addr, false));
 		return 1;
 	}
 
@@ -3845,7 +3783,8 @@ static int control_moveip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		usage("moveip");
 	}
 
-	if (! parse_ip(argv[0], NULL, 0, &addr)) {
+	ret = ctdb_sock_addr_from_string(argv[0], &addr, false);
+	if (ret != 0) {
 		fprintf(stderr, "Invalid IP address %s\n", argv[0]);
 		return 1;
 	}
@@ -3921,7 +3860,8 @@ static int control_addip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	for (i=0; i<pubip_list->num; i++) {
 		if (ctdb_same_ip(&addr, &pubip_list->ip[i].addr)) {
 			fprintf(stderr, "Node already knows about IP %s\n",
-				ctdb_sock_addr_to_string(mem_ctx, &addr));
+				ctdb_sock_addr_to_string(mem_ctx,
+							 &addr, false));
 			return 0;
 		}
 	}
@@ -3968,7 +3908,8 @@ static int control_delip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		usage("delip");
 	}
 
-	if (! parse_ip(argv[0], NULL, 0, &addr)) {
+	ret = ctdb_sock_addr_from_string(argv[0], &addr, false);
+	if (ret != 0) {
 		fprintf(stderr, "Invalid IP address %s\n", argv[0]);
 		return 1;
 	}
@@ -3990,7 +3931,7 @@ static int control_delip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 
 	if (i == pubip_list->num) {
 		fprintf(stderr, "Node does not know about IP address %s\n",
-			ctdb_sock_addr_to_string(mem_ctx, &addr));
+			ctdb_sock_addr_to_string(mem_ctx, &addr, false));
 		return 0;
 	}
 
@@ -4177,8 +4118,10 @@ static int control_restoredb(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	uint32_t generation;
 	uint32_t *pnn_list;
 	char timebuf[128];
+	ssize_t n;
 	int fd, i;
 	int count, ret;
+	uint8_t db_flags;
 
 	if (argc < 1 || argc > 2) {
 		usage("restoredb");
@@ -4196,8 +4139,8 @@ static int control_restoredb(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		db_name = argv[1];
 	}
 
-	ret = read(fd, &db_hdr, sizeof(struct db_header));
-	if (ret == -1) {
+	n = read(fd, &db_hdr, sizeof(struct db_header));
+	if (n == -1) {
 		ret = errno;
 		close(fd);
 		fprintf(stderr, "Failed to read db header from file %s\n",
@@ -4222,8 +4165,9 @@ static int control_restoredb(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		 localtime(&db_hdr.timestamp));
 	printf("Restoring database %s from backup @ %s\n", db_name, timebuf);
 
+	db_flags = db_hdr.flags & 0xff;
 	ret = ctdb_attach(ctdb->ev, ctdb->client, TIMEOUT(), db_name,
-			  db_hdr.flags, &db);
+			  db_flags, &db);
 	if (ret != 0) {
 		fprintf(stderr, "Failed to attach to DB %s\n", db_name);
 		close(fd);
@@ -4294,6 +4238,7 @@ static int control_restoredb(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	for (i=0; i<db_hdr.nbuf; i++) {
 		struct ctdb_req_message message;
 		TDB_DATA data;
+		size_t np;
 
 		ret = ctdb_rec_buffer_read(fd, mem_ctx, &recbuf);
 		if (ret != 0) {
@@ -4306,7 +4251,7 @@ static int control_restoredb(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 			goto failed;
 		}
 
-		ctdb_rec_buffer_push(recbuf, data.dptr);
+		ctdb_rec_buffer_push(recbuf, data.dptr, &np);
 
 		message.srvid = pulldb.srvid;
 		message.data.data = data;
@@ -4414,6 +4359,7 @@ static int control_dumpdbbackup(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	struct db_header db_hdr;
 	char timebuf[128];
 	struct dumpdbbackup_state state;
+	ssize_t n;
 	int fd, ret, i;
 
 	if (argc != 1) {
@@ -4428,8 +4374,8 @@ static int control_dumpdbbackup(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return ret;
 	}
 
-	ret = read(fd, &db_hdr, sizeof(struct db_header));
-	if (ret == -1) {
+	n = read(fd, &db_hdr, sizeof(struct db_header));
+	if (n == -1) {
 		ret = errno;
 		close(fd);
 		fprintf(stderr, "Failed to read db header from file %s\n",
@@ -4693,33 +4639,6 @@ static int control_natgw(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 
 	return run_helper(mem_ctx, "NAT gateway helper", natgw_helper,
 			  argc, argv);
-}
-
-static int control_natgwlist(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			     int argc, const char **argv)
-{
-	char *t, *natgw_helper = NULL;
-	const char *cmd_argv[] = { "natgwlist", NULL };
-
-	if (argc != 0) {
-		usage("natgwlist");
-	}
-
-	t = getenv("CTDB_NATGW_HELPER");
-	if (t != NULL) {
-		natgw_helper = talloc_strdup(mem_ctx, t);
-	} else {
-		natgw_helper = talloc_asprintf(mem_ctx, "%s/ctdb_natgw",
-					       CTDB_HELPER_BINDIR);
-	}
-
-	if (natgw_helper == NULL) {
-		fprintf(stderr, "Unable to set NAT gateway helper\n");
-		return 1;
-	}
-
-	return run_helper(mem_ctx, "NAT gateway helper", natgw_helper,
-			  1, cmd_argv);
 }
 
 /*
@@ -5319,6 +5238,7 @@ static int control_tstore(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	TDB_DATA key, data[2], value;
 	struct ctdb_ltdb_header header;
 	uint8_t header_buf[sizeof(struct ctdb_ltdb_header)];
+	size_t np;
 	int ret;
 
 	if (argc < 3 || argc > 5) {
@@ -5357,9 +5277,9 @@ static int control_tstore(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		header.flags = (uint32_t)atol(argv[5]);
 	}
 
-	ctdb_ltdb_header_push(&header, header_buf);
+	ctdb_ltdb_header_push(&header, header_buf, &np);
 
-	data[0].dsize = ctdb_ltdb_header_len(&header);
+	data[0].dsize = np;
 	data[0].dptr = header_buf;
 
 	data[1].dsize = value.dsize;
@@ -5668,7 +5588,6 @@ const struct {
 	DBSTATISTICS_FIELD(locks.num_current),
 	DBSTATISTICS_FIELD(locks.num_pending),
 	DBSTATISTICS_FIELD(locks.num_failed),
-	DBSTATISTICS_FIELD(db_ro_delegations),
 };
 
 static void print_dbstatistics(const char *db_name,
@@ -5938,12 +5857,14 @@ static int control_ipiface(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 {
 	ctdb_sock_addr addr;
 	char *iface;
+	int ret;
 
 	if (argc != 1) {
 		usage("ipiface");
 	}
 
-	if (! parse_ip(argv[0], NULL, 0, &addr)) {
+	ret = ctdb_sock_addr_from_string(argv[0], &addr, false);
+	if (ret != 0) {
 		fprintf(stderr, "Failed to Parse IP %s\n", argv[0]);
 		return 1;
 	}
@@ -6000,7 +5921,7 @@ static const struct ctdb_cmd {
 	{ "setifacelink", control_setifacelink, false, true,
 		"set interface link status", "<iface> up|down" },
 	{ "process-exists", control_process_exists, false, true,
-		"check if a process exists on a node",  "<pid>" },
+		"check if a process exists on a node",  "<pid> [<srvid>]" },
 	{ "getdbmap", control_getdbmap, false, true,
 		"show attached databases", NULL },
 	{ "getdbstatus", control_getdbstatus, false, true,
@@ -6009,18 +5930,12 @@ static const struct ctdb_cmd {
 		"dump cluster-wide ctdb database", "<dbname|dbid>" },
 	{ "cattdb", control_cattdb, false, false,
 		"dump local ctdb database", "<dbname|dbid>" },
-	{ "getmonmode", control_getmonmode, false, true,
-		"show monitoring mode", NULL },
 	{ "getcapabilities", control_getcapabilities, false, true,
 		"show node capabilities", NULL },
 	{ "pnn", control_pnn, false, false,
 		"show the pnn of the currnet node", NULL },
 	{ "lvs", control_lvs, false, false,
 		"show lvs configuration", "master|list|status" },
-	{ "disablemonitor", control_disable_monitor, false, true,
-		"disable monitoring", NULL },
-	{ "enablemonitor", control_enable_monitor, false, true,
-		"enable monitoring", NULL },
 	{ "setdebug", control_setdebug, false, true,
 		"set debug level", "ERROR|WARNING|NOTICE|INFO|DEBUG" },
 	{ "getdebug", control_getdebug, false, true,
@@ -6067,8 +5982,6 @@ static const struct ctdb_cmd {
 		"add a tickle", "<ip>:<port> <ip>:<port>" },
 	{ "deltickle", control_deltickle, false, true,
 		"delete a tickle", "<ip>:<port> <ip>:<port>" },
-	{ "check_srvids", control_check_srvids, false, true,
-		"check if srvid is registered", "<id> [<id> ...]" },
 	{ "listnodes", control_listnodes, true, true,
 		"list nodes in the cluster", NULL },
 	{ "reloadnodes", control_reloadnodes, false, false,
@@ -6096,8 +6009,6 @@ static const struct ctdb_cmd {
 		"[init|setup|startup|monitor|takeip|releaseip|ipreallocated]" },
 	{ "natgw", control_natgw, false, false,
 		"show natgw configuration", "master|list|status" },
-	{ "natgwlist", control_natgwlist, false, false,
-		"show the nodes belonging to this natgw configuration", NULL },
 	{ "getreclock", control_getreclock, false, true,
 		"get recovery lock file", NULL },
 	{ "setlmasterrole", control_setlmasterrole, false, true,

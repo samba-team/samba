@@ -434,7 +434,6 @@ void dump_data_cb(const uint8_t *buf, int len,
 		  void *private_data)
 {
 	int i=0;
-	static const uint8_t empty[16] = { 0, };
 	bool skipped = false;
 	char tmp[16];
 
@@ -446,7 +445,7 @@ void dump_data_cb(const uint8_t *buf, int len,
 			if ((omit_zero_bytes == true) &&
 			    (i > 0) &&
 			    (len > i+16) &&
-			    (memcmp(&buf[i], &empty, 16) == 0))
+			    all_zero(&buf[i], 16))
 			{
 				i +=16;
 				continue;
@@ -473,7 +472,7 @@ void dump_data_cb(const uint8_t *buf, int len,
 
 			if ((omit_zero_bytes == true) &&
 			    (len > i+16) &&
-			    (memcmp(&buf[i], &empty, 16) == 0)) {
+			    all_zero(&buf[i], 16)) {
 				if (!skipped) {
 					cb("skipping zero buffer bytes\n",
 					   private_data);

@@ -483,290 +483,6 @@ static WERROR cmd_netlogon_logon_ctrl(struct rpc_pipe_client *cli,
 	return werr;
 }
 
-/* Display sam synchronisation information */
-
-static void display_sam_sync(struct netr_DELTA_ENUM_ARRAY *r)
-{
-	uint32_t i, j;
-
-	for (i=0; i < r->num_deltas; i++) {
-
-		union netr_DELTA_UNION u = r->delta_enum[i].delta_union;
-		union netr_DELTA_ID_UNION id = r->delta_enum[i].delta_id_union;
-
-		switch (r->delta_enum[i].delta_type) {
-		case NETR_DELTA_DOMAIN:
-			printf("Domain: %s\n",
-				u.domain->domain_name.string);
-			break;
-		case NETR_DELTA_GROUP:
-			printf("Group: %s\n",
-				u.group->group_name.string);
-			break;
-		case NETR_DELTA_DELETE_GROUP:
-			printf("Delete Group: %d\n",
-				id.rid);
-			break;
-		case NETR_DELTA_RENAME_GROUP:
-			printf("Rename Group: %s -> %s\n",
-				u.rename_group->OldName.string,
-				u.rename_group->NewName.string);
-			break;
-		case NETR_DELTA_USER:
-			printf("Account: %s\n",
-				u.user->account_name.string);
-			break;
-		case NETR_DELTA_DELETE_USER:
-			printf("Delete User: %d\n",
-				id.rid);
-			break;
-		case NETR_DELTA_RENAME_USER:
-			printf("Rename user: %s -> %s\n",
-				u.rename_user->OldName.string,
-				u.rename_user->NewName.string);
-			break;
-		case NETR_DELTA_GROUP_MEMBER:
-			for (j=0; j < u.group_member->num_rids; j++) {
-				printf("rid 0x%x, attrib 0x%08x\n",
-					u.group_member->rids[j],
-					u.group_member->attribs[j]);
-			}
-			break;
-		case NETR_DELTA_ALIAS:
-			printf("Alias: %s\n",
-				u.alias->alias_name.string);
-			break;
-		case NETR_DELTA_DELETE_ALIAS:
-			printf("Delete Alias: %d\n",
-				id.rid);
-			break;
-		case NETR_DELTA_RENAME_ALIAS:
-			printf("Rename alias: %s -> %s\n",
-				u.rename_alias->OldName.string,
-				u.rename_alias->NewName.string);
-			break;
-		case NETR_DELTA_ALIAS_MEMBER:
-			for (j=0; j < u.alias_member->sids.num_sids; j++) {
-				fstring sid_str;
-				sid_to_fstring(sid_str,
-					u.alias_member->sids.sids[j].sid);
-				printf("%s\n", sid_str);
-			}
-			break;
-		case NETR_DELTA_POLICY:
-			printf("Policy: %s\n",
-				sid_string_dbg(id.sid));
-			break;
-		case NETR_DELTA_TRUSTED_DOMAIN:
-			printf("Trusted Domain: %s\n",
-				u.trusted_domain->domain_name.string);
-			break;
-		case NETR_DELTA_DELETE_TRUST:
-			printf("Delete Trust: %s\n",
-				sid_string_dbg(id.sid));
-			break;
-		case NETR_DELTA_ACCOUNT:
-			printf("Account: %s\n",
-				sid_string_dbg(id.sid));
-			break;
-		case NETR_DELTA_DELETE_ACCOUNT:
-			printf("Delete Account: %s\n",
-				sid_string_dbg(id.sid));
-			break;
-		case NETR_DELTA_SECRET:
-			printf("Secret: %s\n",
-				id.name);
-			break;
-		case NETR_DELTA_DELETE_SECRET:
-			printf("Delete Secret: %s\n",
-				id.name);
-			break;
-		case NETR_DELTA_DELETE_GROUP2:
-			printf("Delete Group2: %s\n",
-				u.delete_group->account_name);
-			break;
-		case NETR_DELTA_DELETE_USER2:
-			printf("Delete User2: %s\n",
-				u.delete_user->account_name);
-			break;
-		case NETR_DELTA_MODIFY_COUNT:
-			printf("sam sequence update: 0x%016llx\n",
-				(unsigned long long) *u.modified_count);
-			break;
-		default:
-			printf("unknown delta type 0x%02x\n",
-				r->delta_enum[i].delta_type);
-			break;
-		}
-	}
-}
-
-/* Perform sam synchronisation */
-
-static NTSTATUS cmd_netlogon_sam_sync(struct rpc_pipe_client *cli,
-                                      TALLOC_CTX *mem_ctx, int argc,
-                                      const char **argv)
-{
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	NTSTATUS status;
-	const char *logon_server = cli->desthost;
-	const char *computername = lp_netbios_name();
-	struct netr_Authenticator credential;
-	struct netr_Authenticator return_authenticator;
-	enum netr_SamDatabaseID database_id = SAM_DATABASE_DOMAIN;
-	uint16_t restart_state = 0;
-	uint32_t sync_context = 0;
-	struct dcerpc_binding_handle *b = cli->binding_handle;
-
-        if (argc > 2) {
-                fprintf(stderr, "Usage: %s [database_id]\n", argv[0]);
-                return NT_STATUS_OK;
-        }
-
-	if (argc == 2) {
-		database_id = atoi(argv[1]);
-	}
-
-	/* Synchronise sam database */
-
-	do {
-		struct netr_DELTA_ENUM_ARRAY *delta_enum_array = NULL;
-		struct netlogon_creds_CredentialState *creds = NULL;
-
-		if (rpcclient_netlogon_creds == NULL) {
-			return NT_STATUS_UNSUCCESSFUL;
-		}
-
-		status = netlogon_creds_cli_lock(rpcclient_netlogon_creds,
-						 mem_ctx, &creds);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-
-		netlogon_creds_client_authenticator(creds, &credential);
-
-		status = dcerpc_netr_DatabaseSync2(b, mem_ctx,
-						   logon_server,
-						   computername,
-						   &credential,
-						   &return_authenticator,
-						   database_id,
-						   restart_state,
-						   &sync_context,
-						   &delta_enum_array,
-						   0xffff,
-						   &result);
-		if (!NT_STATUS_IS_OK(status)) {
-			TALLOC_FREE(creds);
-			return status;
-		}
-
-		/* Check returned credentials. */
-		if (!netlogon_creds_client_check(creds,
-						 &return_authenticator.cred)) {
-			DEBUG(0,("credentials chain check failed\n"));
-			TALLOC_FREE(creds);
-			return NT_STATUS_ACCESS_DENIED;
-		}
-		TALLOC_FREE(creds);
-
-		if (NT_STATUS_IS_ERR(result)) {
-			break;
-		}
-
-		/* Display results */
-
-		display_sam_sync(delta_enum_array);
-
-		TALLOC_FREE(delta_enum_array);
-
-	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
-
-	return result;
-}
-
-/* Perform sam delta synchronisation */
-
-static NTSTATUS cmd_netlogon_sam_deltas(struct rpc_pipe_client *cli,
-					TALLOC_CTX *mem_ctx, int argc,
-					const char **argv)
-{
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	NTSTATUS status;
-	uint32_t tmp;
-	const char *logon_server = cli->desthost;
-	const char *computername = lp_netbios_name();
-	struct netr_Authenticator credential;
-	struct netr_Authenticator return_authenticator;
-	enum netr_SamDatabaseID database_id = SAM_DATABASE_DOMAIN;
-	uint64_t sequence_num;
-	struct dcerpc_binding_handle *b = cli->binding_handle;
-
-	if (argc != 3) {
-		fprintf(stderr, "Usage: %s database_id seqnum\n", argv[0]);
-		return NT_STATUS_OK;
-	}
-
-	database_id = atoi(argv[1]);
-	tmp = atoi(argv[2]);
-
-	sequence_num = tmp & 0xffff;
-
-	do {
-		struct netr_DELTA_ENUM_ARRAY *delta_enum_array = NULL;
-		struct netlogon_creds_CredentialState *creds = NULL;
-
-		if (rpcclient_netlogon_creds == NULL) {
-			return NT_STATUS_UNSUCCESSFUL;
-		}
-
-		status = netlogon_creds_cli_lock(rpcclient_netlogon_creds,
-						 mem_ctx, &creds);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-
-		netlogon_creds_client_authenticator(creds, &credential);
-
-		status = dcerpc_netr_DatabaseDeltas(b, mem_ctx,
-						    logon_server,
-						    computername,
-						    &credential,
-						    &return_authenticator,
-						    database_id,
-						    &sequence_num,
-						    &delta_enum_array,
-						    0xffff,
-						    &result);
-		if (!NT_STATUS_IS_OK(status)) {
-			TALLOC_FREE(creds);
-			return status;
-		}
-
-		/* Check returned credentials. */
-		if (!netlogon_creds_client_check(creds,
-						 &return_authenticator.cred)) {
-			DEBUG(0,("credentials chain check failed\n"));
-			TALLOC_FREE(creds);
-			return NT_STATUS_ACCESS_DENIED;
-		}
-		TALLOC_FREE(creds);
-
-		if (NT_STATUS_IS_ERR(result)) {
-			break;
-		}
-
-		/* Display results */
-
-		display_sam_sync(delta_enum_array);
-
-		TALLOC_FREE(delta_enum_array);
-
-	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
-
-        return result;
-}
-
 /* Log on a domain user */
 
 static NTSTATUS cmd_netlogon_sam_logon(struct rpc_pipe_client *cli, 
@@ -1158,131 +874,42 @@ static WERROR cmd_netlogon_getdcsitecoverage(struct rpc_pipe_client *cli,
 	return werr;
 }
 
-static NTSTATUS cmd_netlogon_database_redo(struct rpc_pipe_client *cli,
-					   TALLOC_CTX *mem_ctx, int argc,
-					   const char **argv)
-{
-	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-	NTSTATUS result;
-	const char *server_name = cli->desthost;
-	struct netr_Authenticator clnt_creds, srv_cred;
-	struct netr_DELTA_ENUM_ARRAY *delta_enum_array = NULL;
-	struct netr_ChangeLogEntry e;
-	uint32_t rid = 500;
-	struct dcerpc_binding_handle *b = cli->binding_handle;
-	struct netlogon_creds_CredentialState *creds = NULL;
-
-	if (argc > 2) {
-		fprintf(stderr, "Usage: %s <user rid>\n", argv[0]);
-		return NT_STATUS_OK;
-	}
-
-	if (argc == 2) {
-		sscanf(argv[1], "%d", &rid);
-	}
-
-	if (rpcclient_netlogon_creds == NULL) {
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	status = netlogon_creds_cli_lock(rpcclient_netlogon_creds,
-					 mem_ctx, &creds);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	netlogon_creds_client_authenticator(creds, &clnt_creds);
-
-	ZERO_STRUCT(e);
-
-	e.object_rid		= rid;
-	e.db_index		= SAM_DATABASE_DOMAIN;
-	e.delta_type		= NETR_DELTA_USER;
-
-	status = dcerpc_netr_DatabaseRedo(b, mem_ctx,
-					  server_name,
-					  lp_netbios_name(),
-					  &clnt_creds,
-					  &srv_cred,
-					  e,
-					  0, /* is calculated automatically */
-					  &delta_enum_array,
-					  &result);
-	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(creds);
-		return status;
-	}
-
-	if (!netlogon_creds_client_check(creds, &srv_cred.cred)) {
-		DEBUG(0,("credentials chain check failed\n"));
-		TALLOC_FREE(creds);
-		return NT_STATUS_ACCESS_DENIED;
-	}
-	TALLOC_FREE(creds);
-
-	return result;
-}
-
 static NTSTATUS cmd_netlogon_capabilities(struct rpc_pipe_client *cli,
 					  TALLOC_CTX *mem_ctx, int argc,
 					  const char **argv)
 {
-	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-	NTSTATUS result;
-	struct netr_Authenticator credential;
-	struct netr_Authenticator return_authenticator;
+	struct netlogon_creds_cli_lck *lck;
 	union netr_Capabilities capabilities;
-	uint32_t level = 1;
-	struct dcerpc_binding_handle *b = cli->binding_handle;
-	struct netlogon_creds_CredentialState *creds = NULL;
+	NTSTATUS status;
 
-	if (argc > 2) {
-		fprintf(stderr, "Usage: %s <level>\n", argv[0]);
+	if (argc > 1) {
+		fprintf(stderr, "Usage: %s\n", argv[0]);
 		return NT_STATUS_OK;
 	}
 
-	if (argc == 2) {
-		level = atoi(argv[1]);
-	}
-
-	ZERO_STRUCT(return_authenticator);
-
-	if (rpcclient_netlogon_creds == NULL) {
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	status = netlogon_creds_cli_lock(rpcclient_netlogon_creds,
-					 mem_ctx, &creds);
+	status = netlogon_creds_cli_lck(rpcclient_netlogon_creds,
+					NETLOGON_CREDS_CLI_LCK_EXCLUSIVE,
+					mem_ctx, &lck);
 	if (!NT_STATUS_IS_OK(status)) {
+		fprintf(stderr, "netlogon_creds_cli_lck failed: %s\n",
+			nt_errstr(status));
 		return status;
 	}
 
-	netlogon_creds_client_authenticator(creds, &credential);
-
-	status = dcerpc_netr_LogonGetCapabilities(b, mem_ctx,
-						  cli->desthost,
-						  lp_netbios_name(),
-						  &credential,
-						  &return_authenticator,
-						  level,
-						  &capabilities,
-						  &result);
+	status = netlogon_creds_cli_check(rpcclient_netlogon_creds,
+					  cli->binding_handle,
+					  &capabilities);
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(creds);
+		fprintf(stderr, "netlogon_creds_cli_check failed: %s\n",
+			nt_errstr(status));
 		return status;
 	}
 
-	if (!netlogon_creds_client_check(creds,
-					 &return_authenticator.cred)) {
-		DEBUG(0,("credentials chain check failed\n"));
-		TALLOC_FREE(creds);
-		return NT_STATUS_ACCESS_DENIED;
-	}
-	TALLOC_FREE(creds);
+	TALLOC_FREE(lck);
 
 	printf("capabilities: 0x%08x\n", capabilities.server_capabilities);
 
-	return result;
+	return NT_STATUS_OK;
 }
 
 /* List of commands exported by this module */
@@ -1300,8 +927,6 @@ struct cmd_set netlogon_commands[] = {
 	{ "dsr_getsitename", RPC_RTYPE_WERROR, NULL, cmd_netlogon_dsr_getsitename, &ndr_table_netlogon, NULL, "Get sitename",     "" },
 	{ "dsr_getforesttrustinfo", RPC_RTYPE_WERROR, NULL, cmd_netlogon_dsr_getforesttrustinfo, &ndr_table_netlogon, NULL, "Get Forest Trust Info",     "" },
 	{ "logonctrl",  RPC_RTYPE_WERROR, NULL, cmd_netlogon_logon_ctrl, &ndr_table_netlogon, NULL, "Logon Control",       "" },
-	{ "samsync",    RPC_RTYPE_NTSTATUS, cmd_netlogon_sam_sync,    NULL, &ndr_table_netlogon, NULL, "Sam Synchronisation", "", .use_netlogon_creds = true, },
-	{ "samdeltas",  RPC_RTYPE_NTSTATUS, cmd_netlogon_sam_deltas,  NULL, &ndr_table_netlogon, NULL, "Query Sam Deltas",    "", .use_netlogon_creds = true, },
 	{ "samlogon",   RPC_RTYPE_NTSTATUS, cmd_netlogon_sam_logon,   NULL, &ndr_table_netlogon, NULL, "Sam Logon",           "", .use_netlogon_creds = true, },
 	{ "change_trust_pw",   RPC_RTYPE_NTSTATUS, cmd_netlogon_change_trust_pw,   NULL, &ndr_table_netlogon, NULL, "Change Trust Account Password",           "", .use_netlogon_creds = true, },
 	{ "gettrustrid", RPC_RTYPE_WERROR, NULL, cmd_netlogon_gettrustrid, &ndr_table_netlogon, NULL, "Get trust rid",     "" },
@@ -1311,7 +936,6 @@ struct cmd_set netlogon_commands[] = {
 	{ "netrenumtrusteddomains", RPC_RTYPE_NTSTATUS, cmd_netlogon_enumtrusteddomains, NULL, &ndr_table_netlogon, NULL, "Enumerate trusted domains",     "" },
 	{ "netrenumtrusteddomainsex", RPC_RTYPE_WERROR, NULL, cmd_netlogon_enumtrusteddomainsex, &ndr_table_netlogon, NULL, "Enumerate trusted domains",     "" },
 	{ "getdcsitecoverage", RPC_RTYPE_WERROR, NULL, cmd_netlogon_getdcsitecoverage, &ndr_table_netlogon, NULL, "Get the Site-Coverage from a DC",     "" },
-	{ "database_redo", RPC_RTYPE_NTSTATUS, cmd_netlogon_database_redo, NULL, &ndr_table_netlogon, NULL, "Replicate single object from a DC",     "", .use_netlogon_creds = true, },
 	{ "capabilities", RPC_RTYPE_NTSTATUS, cmd_netlogon_capabilities, NULL, &ndr_table_netlogon, NULL, "Return Capabilities",     "", .use_netlogon_creds = true, },
 
 	{ NULL }

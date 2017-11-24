@@ -849,7 +849,8 @@ static WERROR dcesrv_netr_LogonUasLogoff(struct dcesrv_call_state *dce_call, TAL
 }
 
 
-static NTSTATUS dcesrv_netr_LogonSamLogon_check(const struct netr_LogonSamLogonEx *r)
+static NTSTATUS dcesrv_netr_LogonSamLogon_check(struct dcesrv_call_state *dce_call,
+						const struct netr_LogonSamLogonEx *r)
 {
 	switch (r->in.logon_level) {
 	case NetlogonInteractiveInformation:
@@ -905,8 +906,44 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_check(const struct netr_LogonSamLogonE
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	switch (r->in.validation_level) {
+	case NetlogonValidationSamInfo4: /* 6 */
+		if (dce_call->conn->auth_state.auth_level < DCERPC_AUTH_LEVEL_PRIVACY) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		break;
+
+	default:
+		break;
+	}
+
 	return NT_STATUS_OK;
 }
+
+struct dcesrv_netr_LogonSamLogon_base_state {
+	struct dcesrv_call_state *dce_call;
+
+	TALLOC_CTX *mem_ctx;
+
+	struct netlogon_creds_CredentialState *creds;
+
+	struct netr_LogonSamLogonEx r;
+
+	uint32_t _ignored_flags;
+
+	struct {
+		struct netr_LogonSamLogon *lsl;
+		struct netr_LogonSamLogonWithFlags *lslwf;
+		struct netr_LogonSamLogonEx *lslex;
+	} _r;
+
+	struct kdc_check_generic_kerberos kr;
+};
+
+static void dcesrv_netr_LogonSamLogon_base_auth_done(struct tevent_req *subreq);
+static void dcesrv_netr_LogonSamLogon_base_krb5_done(struct tevent_req *subreq);
+static void dcesrv_netr_LogonSamLogon_base_reply(
+	struct dcesrv_netr_LogonSamLogon_base_state *state);
 
 /*
   netr_LogonSamLogon_base
@@ -916,18 +953,18 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_check(const struct netr_LogonSamLogonE
   We can't do the traditional 'wrapping' format completely, as this
   function must only run under schannel
 */
-static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-					struct netr_LogonSamLogonEx *r, struct netlogon_creds_CredentialState *creds)
+static NTSTATUS dcesrv_netr_LogonSamLogon_base_call(struct dcesrv_netr_LogonSamLogon_base_state *state)
 {
+	struct dcesrv_call_state *dce_call = state->dce_call;
+	TALLOC_CTX *mem_ctx = state->mem_ctx;
+	struct netr_LogonSamLogonEx *r = &state->r;
+	struct netlogon_creds_CredentialState *creds = state->creds;
 	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
 	const char *workgroup = lpcfg_workgroup(lp_ctx);
 	struct auth4_context *auth_context = NULL;
 	struct auth_usersupplied_info *user_info = NULL;
-	struct auth_user_info_dc *user_info_dc = NULL;
 	NTSTATUS nt_status;
-	struct netr_SamInfo2 *sam2 = NULL;
-	struct netr_SamInfo3 *sam3 = NULL;
-	struct netr_SamInfo6 *sam6 = NULL;
+	struct tevent_req *subreq = NULL;
 
 	*r->out.authoritative = 1;
 
@@ -1066,15 +1103,9 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 		}
 
 		if (strcmp(r->in.logon->generic->package_name.string, "Kerberos") == 0) {
-			NTSTATUS status;
 			struct dcerpc_binding_handle *irpc_handle;
-			struct kdc_check_generic_kerberos check;
 			struct netr_GenericInfo2 *generic = talloc_zero(mem_ctx, struct netr_GenericInfo2);
 			NT_STATUS_HAVE_NO_MEMORY(generic);
-			*r->out.authoritative = 1;
-
-			/* TODO: Describe and deal with these flags */
-			*r->out.flags = 0;
 
 			r->out.validation->generic = generic;
 
@@ -1086,24 +1117,24 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 				return NT_STATUS_NO_LOGON_SERVERS;
 			}
 
-			check.in.generic_request =
+			state->kr.in.generic_request =
 				data_blob_const(r->in.logon->generic->data,
 						r->in.logon->generic->length);
 
 			/*
-			 * TODO: make this async and avoid
-			 * dcerpc_binding_handle_set_sync_ev()
+			 * 60 seconds should be enough
 			 */
-			dcerpc_binding_handle_set_sync_ev(irpc_handle,
-							  dce_call->event_ctx);
-			status = dcerpc_kdc_check_generic_kerberos_r(irpc_handle,
-								     mem_ctx,
-								     &check);
-			if (!NT_STATUS_IS_OK(status)) {
-				return status;
+			dcerpc_binding_handle_set_timeout(irpc_handle, 60);
+			subreq = dcerpc_kdc_check_generic_kerberos_r_send(state,
+						state->dce_call->event_ctx,
+						irpc_handle, &state->kr);
+			if (subreq == NULL) {
+				return NT_STATUS_NO_MEMORY;
 			}
-			generic->length = check.out.generic_reply.length;
-			generic->data = check.out.generic_reply.data;
+			state->dce_call->state_flags |= DCESRV_CALL_STATE_FLAG_ASYNC;
+			tevent_req_set_callback(subreq,
+					dcesrv_netr_LogonSamLogon_base_krb5_done,
+					state);
 			return NT_STATUS_OK;
 		}
 
@@ -1114,16 +1145,48 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	nt_status = auth_check_password(auth_context, mem_ctx, user_info,
-					&user_info_dc, r->out.authoritative);
-	NT_STATUS_NOT_OK_RETURN(nt_status);
+	subreq = auth_check_password_send(state, state->dce_call->event_ctx,
+					  auth_context, user_info);
+	state->dce_call->state_flags |= DCESRV_CALL_STATE_FLAG_ASYNC;
+	tevent_req_set_callback(subreq,
+				dcesrv_netr_LogonSamLogon_base_auth_done,
+				state);
+	return NT_STATUS_OK;
+}
+
+static void dcesrv_netr_LogonSamLogon_base_auth_done(struct tevent_req *subreq)
+{
+	struct dcesrv_netr_LogonSamLogon_base_state *state =
+		tevent_req_callback_data(subreq,
+		struct dcesrv_netr_LogonSamLogon_base_state);
+	TALLOC_CTX *mem_ctx = state->mem_ctx;
+	struct netr_LogonSamLogonEx *r = &state->r;
+	struct auth_user_info_dc *user_info_dc = NULL;
+	struct netr_SamInfo2 *sam2 = NULL;
+	struct netr_SamInfo3 *sam3 = NULL;
+	struct netr_SamInfo6 *sam6 = NULL;
+	NTSTATUS nt_status;
+
+	nt_status = auth_check_password_recv(subreq, mem_ctx,
+					     &user_info_dc,
+					     r->out.authoritative);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		r->out.result = nt_status;
+		dcesrv_netr_LogonSamLogon_base_reply(state);
+		return;
+	}
 
 	switch (r->in.validation_level) {
 	case 2:
 		nt_status = auth_convert_user_info_dc_saminfo2(mem_ctx,
 							       user_info_dc,
 							       &sam2);
-		NT_STATUS_NOT_OK_RETURN(nt_status);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			r->out.result = nt_status;
+			dcesrv_netr_LogonSamLogon_base_reply(state);
+			return;
+		}
 
 		r->out.validation->sam2 = sam2;
 		break;
@@ -1132,54 +1195,140 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 		nt_status = auth_convert_user_info_dc_saminfo3(mem_ctx,
 							       user_info_dc,
 							       &sam3);
-		NT_STATUS_NOT_OK_RETURN(nt_status);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			r->out.result = nt_status;
+			dcesrv_netr_LogonSamLogon_base_reply(state);
+			return;
+		}
 
 		r->out.validation->sam3 = sam3;
 		break;
 
 	case 6:
-		if (dce_call->conn->auth_state.auth_level < DCERPC_AUTH_LEVEL_PRIVACY) {
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-
 		nt_status = auth_convert_user_info_dc_saminfo6(mem_ctx,
 							       user_info_dc,
 							       &sam6);
-		NT_STATUS_NOT_OK_RETURN(nt_status);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			r->out.result = nt_status;
+			dcesrv_netr_LogonSamLogon_base_reply(state);
+			return;
+		}
 
 		r->out.validation->sam6 = sam6;
 		break;
 
 	default:
-		return NT_STATUS_INVALID_INFO_CLASS;
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			r->out.result = NT_STATUS_INVALID_INFO_CLASS;
+			dcesrv_netr_LogonSamLogon_base_reply(state);
+			return;
+		}
 	}
-
-	netlogon_creds_encrypt_samlogon_validation(creds,
-						   r->in.validation_level,
-						   r->out.validation);
 
 	/* TODO: Describe and deal with these flags */
 	*r->out.flags = 0;
 
-	return NT_STATUS_OK;
+	r->out.result = NT_STATUS_OK;
+
+	dcesrv_netr_LogonSamLogon_base_reply(state);
+}
+
+static void dcesrv_netr_LogonSamLogon_base_krb5_done(struct tevent_req *subreq)
+{
+	struct dcesrv_netr_LogonSamLogon_base_state *state =
+		tevent_req_callback_data(subreq,
+		struct dcesrv_netr_LogonSamLogon_base_state);
+	TALLOC_CTX *mem_ctx = state->mem_ctx;
+	struct netr_LogonSamLogonEx *r = &state->r;
+	struct netr_GenericInfo2 *generic = NULL;
+	NTSTATUS status;
+
+	status = dcerpc_kdc_check_generic_kerberos_r_recv(subreq, mem_ctx);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		r->out.result = status;
+		dcesrv_netr_LogonSamLogon_base_reply(state);
+		return;
+	}
+
+	generic = r->out.validation->generic;
+	generic->length = state->kr.out.generic_reply.length;
+	generic->data = state->kr.out.generic_reply.data;
+
+	/* TODO: Describe and deal with these flags */
+	*r->out.flags = 0;
+
+	r->out.result = NT_STATUS_OK;
+
+	dcesrv_netr_LogonSamLogon_base_reply(state);
+}
+
+static void dcesrv_netr_LogonSamLogon_base_reply(
+	struct dcesrv_netr_LogonSamLogon_base_state *state)
+{
+	struct netr_LogonSamLogonEx *r = &state->r;
+	NTSTATUS status;
+
+	if (NT_STATUS_IS_OK(r->out.result)) {
+		netlogon_creds_encrypt_samlogon_validation(state->creds,
+							   r->in.validation_level,
+							   r->out.validation);
+	}
+
+	if (state->_r.lslex != NULL) {
+		struct netr_LogonSamLogonEx *_r = state->_r.lslex;
+		_r->out.result = r->out.result;
+	} else if (state->_r.lslwf != NULL) {
+		struct netr_LogonSamLogonWithFlags *_r = state->_r.lslwf;
+		_r->out.result = r->out.result;
+	} else if (state->_r.lsl != NULL) {
+		struct netr_LogonSamLogon *_r = state->_r.lsl;
+		_r->out.result = r->out.result;
+	}
+
+	status = dcesrv_reply(state->dce_call);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("dcesrv_reply() failed - %s\n",
+			nt_errstr(status));
+	}
 }
 
 static NTSTATUS dcesrv_netr_LogonSamLogonEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				     struct netr_LogonSamLogonEx *r)
 {
+	struct dcesrv_netr_LogonSamLogon_base_state *state;
 	NTSTATUS nt_status;
-	struct netlogon_creds_CredentialState *creds;
 
 	*r->out.authoritative = 1;
 
-	nt_status = dcesrv_netr_LogonSamLogon_check(r);
+	state = talloc_zero(mem_ctx, struct dcesrv_netr_LogonSamLogon_base_state);
+	if (state == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	state->dce_call = dce_call;
+	state->mem_ctx = mem_ctx;
+
+	state->r.in.server_name      = r->in.server_name;
+	state->r.in.computer_name    = r->in.computer_name;
+	state->r.in.logon_level      = r->in.logon_level;
+	state->r.in.logon            = r->in.logon;
+	state->r.in.validation_level = r->in.validation_level;
+	state->r.in.flags            = r->in.flags;
+	state->r.out.validation      = r->out.validation;
+	state->r.out.authoritative   = r->out.authoritative;
+	state->r.out.flags           = r->out.flags;
+
+	state->_r.lslex = r;
+
+	nt_status = dcesrv_netr_LogonSamLogon_check(dce_call, &state->r);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
 
 	nt_status = schannel_get_creds_state(mem_ctx,
 					     dce_call->conn->dce_ctx->lp_ctx,
-					     r->in.computer_name, &creds);
+					     r->in.computer_name, &state->creds);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
@@ -1187,7 +1336,14 @@ static NTSTATUS dcesrv_netr_LogonSamLogonEx(struct dcesrv_call_state *dce_call, 
 	if (dce_call->conn->auth_state.auth_type != DCERPC_AUTH_TYPE_SCHANNEL) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
-	return dcesrv_netr_LogonSamLogon_base(dce_call, mem_ctx, r, creds);
+
+	nt_status = dcesrv_netr_LogonSamLogon_base_call(state);
+
+	if (dce_call->state_flags & DCESRV_CALL_STATE_FLAG_ASYNC) {
+		return nt_status;
+	}
+
+	return nt_status;
 }
 
 /*
@@ -1197,44 +1353,57 @@ static NTSTATUS dcesrv_netr_LogonSamLogonEx(struct dcesrv_call_state *dce_call, 
 static NTSTATUS dcesrv_netr_LogonSamLogonWithFlags(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					    struct netr_LogonSamLogonWithFlags *r)
 {
+	struct dcesrv_netr_LogonSamLogon_base_state *state;
 	NTSTATUS nt_status;
-	struct netlogon_creds_CredentialState *creds;
-	struct netr_LogonSamLogonEx r2;
-
-	struct netr_Authenticator *return_authenticator;
-
-	ZERO_STRUCT(r2);
-
-	r2.in.server_name	= r->in.server_name;
-	r2.in.computer_name	= r->in.computer_name;
-	r2.in.logon_level	= r->in.logon_level;
-	r2.in.logon		= r->in.logon;
-	r2.in.validation_level	= r->in.validation_level;
-	r2.in.flags		= r->in.flags;
-	r2.out.validation	= r->out.validation;
-	r2.out.authoritative	= r->out.authoritative;
-	r2.out.flags		= r->out.flags;
 
 	*r->out.authoritative = 1;
 
-	nt_status = dcesrv_netr_LogonSamLogon_check(&r2);
+	state = talloc_zero(mem_ctx, struct dcesrv_netr_LogonSamLogon_base_state);
+	if (state == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	state->dce_call = dce_call;
+	state->mem_ctx = mem_ctx;
+
+	state->r.in.server_name      = r->in.server_name;
+	state->r.in.computer_name    = r->in.computer_name;
+	state->r.in.logon_level      = r->in.logon_level;
+	state->r.in.logon            = r->in.logon;
+	state->r.in.validation_level = r->in.validation_level;
+	state->r.in.flags            = r->in.flags;
+	state->r.out.validation      = r->out.validation;
+	state->r.out.authoritative   = r->out.authoritative;
+	state->r.out.flags           = r->out.flags;
+
+	state->_r.lslwf = r;
+
+	nt_status = dcesrv_netr_LogonSamLogon_check(dce_call, &state->r);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
 
-	return_authenticator = talloc(mem_ctx, struct netr_Authenticator);
-	NT_STATUS_HAVE_NO_MEMORY(return_authenticator);
+	r->out.return_authenticator = talloc_zero(mem_ctx,
+						  struct netr_Authenticator);
+	if (r->out.return_authenticator == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	nt_status = dcesrv_netr_creds_server_step_check(dce_call,
 							mem_ctx,
 							r->in.computer_name,
-							r->in.credential, return_authenticator,
-							&creds);
-	NT_STATUS_NOT_OK_RETURN(nt_status);
+							r->in.credential,
+							r->out.return_authenticator,
+							&state->creds);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
+	}
 
-	nt_status = dcesrv_netr_LogonSamLogon_base(dce_call, mem_ctx, &r2, creds);
+	nt_status = dcesrv_netr_LogonSamLogon_base_call(state);
 
-	r->out.return_authenticator	= return_authenticator;
+	if (dce_call->state_flags & DCESRV_CALL_STATE_FLAG_ASYNC) {
+		return nt_status;
+	}
 
 	return nt_status;
 }
@@ -1245,29 +1414,59 @@ static NTSTATUS dcesrv_netr_LogonSamLogonWithFlags(struct dcesrv_call_state *dce
 static NTSTATUS dcesrv_netr_LogonSamLogon(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				   struct netr_LogonSamLogon *r)
 {
-	struct netr_LogonSamLogonWithFlags r2;
-	uint32_t flags = 0;
-	NTSTATUS status;
+	struct dcesrv_netr_LogonSamLogon_base_state *state;
+	NTSTATUS nt_status;
 
-	ZERO_STRUCT(r2);
+	*r->out.authoritative = 1;
 
-	r2.in.server_name = r->in.server_name;
-	r2.in.computer_name = r->in.computer_name;
-	r2.in.credential  = r->in.credential;
-	r2.in.return_authenticator = r->in.return_authenticator;
-	r2.in.logon_level = r->in.logon_level;
-	r2.in.logon = r->in.logon;
-	r2.in.validation_level = r->in.validation_level;
-	r2.in.flags = &flags;
-	r2.out.validation = r->out.validation;
-	r2.out.authoritative = r->out.authoritative;
-	r2.out.flags = &flags;
+	state = talloc_zero(mem_ctx, struct dcesrv_netr_LogonSamLogon_base_state);
+	if (state == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
-	status = dcesrv_netr_LogonSamLogonWithFlags(dce_call, mem_ctx, &r2);
+	state->dce_call = dce_call;
+	state->mem_ctx = mem_ctx;
 
-	r->out.return_authenticator = r2.out.return_authenticator;
+	state->r.in.server_name      = r->in.server_name;
+	state->r.in.computer_name    = r->in.computer_name;
+	state->r.in.logon_level      = r->in.logon_level;
+	state->r.in.logon            = r->in.logon;
+	state->r.in.validation_level = r->in.validation_level;
+	state->r.in.flags            = &state->_ignored_flags;
+	state->r.out.validation      = r->out.validation;
+	state->r.out.authoritative   = r->out.authoritative;
+	state->r.out.flags           = &state->_ignored_flags;
 
-	return status;
+	state->_r.lsl = r;
+
+	nt_status = dcesrv_netr_LogonSamLogon_check(dce_call, &state->r);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
+	}
+
+	r->out.return_authenticator = talloc_zero(mem_ctx,
+						  struct netr_Authenticator);
+	if (r->out.return_authenticator == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	nt_status = dcesrv_netr_creds_server_step_check(dce_call,
+							mem_ctx,
+							r->in.computer_name,
+							r->in.credential,
+							r->out.return_authenticator,
+							&state->creds);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
+	}
+
+	nt_status = dcesrv_netr_LogonSamLogon_base_call(state);
+
+	if (dce_call->state_flags & DCESRV_CALL_STATE_FLAG_ASYNC) {
+		return nt_status;
+	}
+
+	return nt_status;
 }
 
 

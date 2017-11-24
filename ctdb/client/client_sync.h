@@ -157,11 +157,6 @@ int ctdb_ctrl_shutdown(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 		       struct ctdb_client_context *client,
 		       int destnode, struct timeval timeout);
 
-int ctdb_ctrl_get_monmode(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-			  struct ctdb_client_context *client,
-			  int destnode, struct timeval timeout,
-			  int *mon_mode);
-
 int ctdb_ctrl_tcp_add(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 		      struct ctdb_client_context *client,
 		      int destnode, struct timeval timeout,
@@ -244,14 +239,6 @@ int ctdb_ctrl_end_recovery(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 int ctdb_ctrl_reload_nodes_file(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 				struct ctdb_client_context *client,
 				int destnode, struct timeval timeout);
-
-int ctdb_ctrl_enable_monitor(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-			     struct ctdb_client_context *client,
-			     int destnode, struct timeval timeout);
-
-int ctdb_ctrl_disable_monitor(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-			      struct ctdb_client_context *client,
-			      int destnode, struct timeval timeout);
 
 int ctdb_ctrl_add_public_ip(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			    struct ctdb_client_context *client,
@@ -397,11 +384,6 @@ int ctdb_ctrl_set_db_readonly(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			      int destnode, struct timeval timeout,
 			      uint32_t db_id);
 
-int ctdb_ctrl_check_srvids(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-			   struct ctdb_client_context *client,
-			   int destnode, struct timeval timeout,
-			   uint64_t *srvid, int count, uint8_t **result);
-
 int ctdb_ctrl_traverse_start_ext(TALLOC_CTX *mem_ctx,
 				 struct tevent_context *ev,
 				 struct ctdb_client_context *client,
@@ -493,6 +475,21 @@ int ctdb_ctrl_db_attach_replicated(TALLOC_CTX *mem_ctx,
 				   struct ctdb_client_context *client,
 				   int destnode, struct timeval timeout,
 				   const char *db_name, uint32_t *db_id);
+
+int ctdb_ctrl_check_pid_srvid(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+			      struct ctdb_client_context *client,
+			      int destnode, struct timeval timeout,
+			      struct ctdb_pid_srvid *pid_srvid, int *status);
+
+int ctdb_ctrl_tunnel_register(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+			      struct ctdb_client_context *client,
+			      int destnode, struct timeval timeout,
+			      uint64_t tunnel_id);
+
+int ctdb_ctrl_tunnel_deregister(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+				struct ctdb_client_context *client,
+				int destnode, struct timeval timeout,
+				uint64_t tunnel_id);
 
 /* from client/client_message_sync.c */
 

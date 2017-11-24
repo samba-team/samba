@@ -1567,8 +1567,9 @@ static void nwrap_init(void)
 
 	env = getenv("NSS_WRAPPER_MAX_HOSTENTS");
 	if (env != NULL) {
-		max_hostents_tmp = (size_t)strtol(env, &endptr, 10);
-		if (((env != '\0') && (endptr == '\0')) ||
+		max_hostents_tmp = (size_t)strtoul(env, &endptr, 10);
+		if ((*env == '\0') ||
+		    (*endptr != '\0') ||
 		    (max_hostents_tmp == 0)) {
 			NWRAP_LOG(NWRAP_LOG_DEBUG,
 				  "Error parsing NSS_WRAPPER_MAX_HOSTENTS "

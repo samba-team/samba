@@ -22,244 +22,321 @@
 
 #include "protocol.h"
 
-size_t ctdb_int32_len(int32_t val);
-void ctdb_int32_push(int32_t val, uint8_t *buf);
-int ctdb_int32_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-	            int32_t *out);
+/*
+ * From protocol/protocol_basic.c
+ */
 
-size_t ctdb_uint32_len(uint32_t val);
-void ctdb_uint32_push(uint32_t val, uint8_t *buf);
-int ctdb_uint32_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-		     uint32_t *out);
+size_t ctdb_uint8_len(uint8_t *in);
+void ctdb_uint8_push(uint8_t *in, uint8_t *buf, size_t *npush);
+int ctdb_uint8_pull(uint8_t *buf, size_t buflen, uint8_t *out, size_t *npull);
 
-size_t ctdb_uint64_len(uint64_t val);
-void ctdb_uint64_push(uint64_t val, uint8_t *buf);
-int ctdb_uint64_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-		     uint64_t *out);
+size_t ctdb_uint16_len(uint16_t *in);
+void ctdb_uint16_push(uint16_t *in, uint8_t *buf, size_t *npush);
+int ctdb_uint16_pull(uint8_t *buf, size_t buflen, uint16_t *out,
+		     size_t *npull);
 
-size_t ctdb_double_len(double val);
-void ctdb_double_push(double val, uint8_t *buf);
-int ctdb_double_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-		     double *out);
+size_t ctdb_int32_len(int32_t *in);
+void ctdb_int32_push(int32_t *in, uint8_t *buf, size_t *npush);
+int ctdb_int32_pull(uint8_t *buf, size_t buflen, int32_t *out, size_t *npull);
 
-size_t ctdb_uint8_array_len(struct ctdb_uint8_array *array);
-void ctdb_uint8_array_push(struct ctdb_uint8_array *array, uint8_t *buf);
-int ctdb_uint8_array_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			  struct ctdb_uint8_array **out);
+size_t ctdb_uint32_len(uint32_t *in);
+void ctdb_uint32_push(uint32_t *in, uint8_t *buf, size_t *npush);
+int ctdb_uint32_pull(uint8_t *buf, size_t buflen, uint32_t *out,
+		     size_t *npull);
 
-size_t ctdb_uint64_array_len(struct ctdb_uint64_array *array);
-void ctdb_uint64_array_push(struct ctdb_uint64_array *array, uint8_t *buf);
-int ctdb_uint64_array_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			   struct ctdb_uint64_array **out);
+size_t ctdb_uint64_len(uint64_t *in);
+void ctdb_uint64_push(uint64_t *in, uint8_t *buf, size_t *npush);
+int ctdb_uint64_pull(uint8_t *buf, size_t buflen, uint64_t *out,
+		     size_t *npull);
 
-size_t ctdb_pid_len(pid_t pid);
-void ctdb_pid_push(pid_t pid, uint8_t *buf);
-int ctdb_pid_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-		  pid_t *out);
+size_t ctdb_double_len(double *in);
+void ctdb_double_push(double *in, uint8_t *buf, size_t *npush);
+int ctdb_double_pull(uint8_t *buf, size_t buflen, double *out, size_t *npull);
 
-size_t ctdb_string_len(const char *str);
-void ctdb_string_push(const char *str, uint8_t *buf);
+size_t ctdb_bool_len(bool *in);
+void ctdb_bool_push(bool *in, uint8_t *buf, size_t *npush);
+int ctdb_bool_pull(uint8_t *buf, size_t buflen, bool *out, size_t *npull);
+
+size_t ctdb_chararray_len(char *in, size_t len);
+void ctdb_chararray_push(char *in, size_t len, uint8_t *buf, size_t *npush);
+int ctdb_chararray_pull(uint8_t *buf, size_t buflen, char *out, size_t len,
+			size_t *npull);
+
+size_t ctdb_string_len(const char **in);
+void ctdb_string_push(const char **in, uint8_t *buf, size_t *npush);
 int ctdb_string_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-		     const char **out);
+		     const char **out, size_t *npull);
 
-size_t ctdb_stringn_len(const char *str);
-void ctdb_stringn_push(const char *str, uint8_t *buf);
+size_t ctdb_stringn_len(const char **in);
+void ctdb_stringn_push(const char **in, uint8_t *buf, size_t *npush);
 int ctdb_stringn_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-		      const char **out);
+		      const char **out, size_t *npull);
 
-size_t ctdb_statistics_len(struct ctdb_statistics *stats);
-void ctdb_statistics_push(struct ctdb_statistics *stats, uint8_t *buf);
+size_t ctdb_pid_len(pid_t *in);
+void ctdb_pid_push(pid_t *in, uint8_t *buf, size_t *npush);
+int ctdb_pid_pull(uint8_t *buf, size_t buflen, pid_t *out, size_t *npull);
+
+size_t ctdb_timeval_len(struct timeval *in);
+void ctdb_timeval_push(struct timeval *in, uint8_t *buf, size_t *npush);
+int ctdb_timeval_pull(uint8_t *buf, size_t buflen, struct timeval *out,
+		      size_t *npull);
+
+size_t ctdb_padding_len(int count);
+void ctdb_padding_push(int count, uint8_t *buf, size_t *npush);
+int ctdb_padding_pull(uint8_t *buf, size_t buflen, int count, size_t *npull);
+
+/*
+ * From protocol/protocol_types.c
+ */
+
+size_t ctdb_tdb_data_len(TDB_DATA *in);
+void ctdb_tdb_data_push(TDB_DATA *in, uint8_t *buf, size_t *npush);
+int ctdb_tdb_data_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
+		       TDB_DATA *out, size_t *npull);
+
+size_t ctdb_tdb_datan_len(TDB_DATA *in);
+void ctdb_tdb_datan_push(TDB_DATA *in, uint8_t *buf, size_t *npush);
+int ctdb_tdb_datan_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
+			TDB_DATA *out, size_t *npull);
+
+size_t ctdb_latency_counter_len(struct ctdb_latency_counter *in);
+void ctdb_latency_counter_push(struct ctdb_latency_counter *in, uint8_t *buf,
+			       size_t *npush);
+int ctdb_latency_counter_pull(uint8_t *buf, size_t buflen,
+			      struct ctdb_latency_counter *out, size_t *npull);
+
+size_t ctdb_statistics_len(struct ctdb_statistics *in);
+void ctdb_statistics_push(struct ctdb_statistics *in, uint8_t *buf,
+			  size_t *npush);
 int ctdb_statistics_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			 struct ctdb_statistics **out);
+			 struct ctdb_statistics **out, size_t *npull);
 
-size_t ctdb_statistics_list_len(struct ctdb_statistics_list *stats_list);
-void ctdb_statistics_list_push(struct ctdb_statistics_list *stats_list,
-			       uint8_t *buf);
+size_t ctdb_statistics_list_len(struct ctdb_statistics_list *in);
+void ctdb_statistics_list_push(struct ctdb_statistics_list *in,
+			       uint8_t *buf, size_t *npull);
 int ctdb_statistics_list_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			      struct ctdb_statistics_list **out);
+			      struct ctdb_statistics_list **out,
+			      size_t *npull);
 
-size_t ctdb_vnn_map_len(struct ctdb_vnn_map *vnnmap);
-void ctdb_vnn_map_push(struct ctdb_vnn_map *vnnmap, uint8_t *buf);
+size_t ctdb_vnn_map_len(struct ctdb_vnn_map *in);
+void ctdb_vnn_map_push(struct ctdb_vnn_map *in, uint8_t *buf, size_t *npush);
 int ctdb_vnn_map_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-		      struct ctdb_vnn_map **out);
+		      struct ctdb_vnn_map **out, size_t  *npull);
 
-size_t ctdb_dbid_map_len(struct ctdb_dbid_map *dbmap);
-void ctdb_dbid_map_push(struct ctdb_dbid_map *dbmap, uint8_t *buf);
+size_t ctdb_dbid_len(struct ctdb_dbid *in);
+void ctdb_dbid_push(struct ctdb_dbid *in, uint8_t *buf, size_t *npush);
+int ctdb_dbid_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
+		   struct ctdb_dbid **out, size_t *npull);
+
+size_t ctdb_dbid_map_len(struct ctdb_dbid_map *in);
+void ctdb_dbid_map_push(struct ctdb_dbid_map *in, uint8_t *buf,
+			size_t *npush);
 int ctdb_dbid_map_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-		       struct ctdb_dbid_map **out);
+		       struct ctdb_dbid_map **out, size_t *npull);
 
-size_t ctdb_pulldb_len(struct ctdb_pulldb *pulldb);
-void ctdb_pulldb_push(struct ctdb_pulldb *pulldb, uint8_t *buf);
+size_t ctdb_pulldb_len(struct ctdb_pulldb *in);
+void ctdb_pulldb_push(struct ctdb_pulldb *in, uint8_t *buf, size_t *npush);
 int ctdb_pulldb_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-		     struct ctdb_pulldb **out);
+		     struct ctdb_pulldb **out, size_t *npull);
 
-size_t ctdb_pulldb_ext_len(struct ctdb_pulldb_ext *pulldb);
-void ctdb_pulldb_ext_push(struct ctdb_pulldb_ext *pulldb, uint8_t *buf);
+size_t ctdb_pulldb_ext_len(struct ctdb_pulldb_ext *in);
+void ctdb_pulldb_ext_push(struct ctdb_pulldb_ext *in, uint8_t *buf,
+			  size_t *npush);
 int ctdb_pulldb_ext_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			 struct ctdb_pulldb_ext **out);
+			 struct ctdb_pulldb_ext **out, size_t *npull);
 
-size_t ctdb_traverse_start_len(struct ctdb_traverse_start *traverse);
-void ctdb_traverse_start_push(struct ctdb_traverse_start *traverse,
-			      uint8_t *buf);
+size_t ctdb_traverse_start_len(struct ctdb_traverse_start *in);
+void ctdb_traverse_start_push(struct ctdb_traverse_start *in, uint8_t *buf,
+			      size_t *npush);
 int ctdb_traverse_start_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			     struct ctdb_traverse_start **out);
+			     struct ctdb_traverse_start **out, size_t *npull);
 
-size_t ctdb_traverse_all_len(struct ctdb_traverse_all *traverse);
-void ctdb_traverse_all_push(struct ctdb_traverse_all *traverse, uint8_t *buf);
+size_t ctdb_traverse_all_len(struct ctdb_traverse_all *in);
+void ctdb_traverse_all_push(struct ctdb_traverse_all *in, uint8_t *buf,
+			    size_t *npush);
 int ctdb_traverse_all_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			   struct ctdb_traverse_all **out);
+			   struct ctdb_traverse_all **out, size_t *npull);
 
-size_t ctdb_traverse_start_ext_len(struct ctdb_traverse_start_ext *traverse);
-void ctdb_traverse_start_ext_push(struct ctdb_traverse_start_ext *traverse,
-				  uint8_t *buf);
+size_t ctdb_traverse_start_ext_len(struct ctdb_traverse_start_ext *in);
+void ctdb_traverse_start_ext_push(struct ctdb_traverse_start_ext *in,
+				  uint8_t *buf, size_t *npush);
 int ctdb_traverse_start_ext_pull(uint8_t *buf, size_t buflen,
 				 TALLOC_CTX *mem_ctx,
-				 struct ctdb_traverse_start_ext **out);
+				 struct ctdb_traverse_start_ext **out,
+				 size_t *npull);
 
-size_t ctdb_traverse_all_ext_len(struct ctdb_traverse_all_ext *traverse);
-void ctdb_traverse_all_ext_push(struct ctdb_traverse_all_ext *traverse,
-				uint8_t *buf);
+size_t ctdb_traverse_all_ext_len(struct ctdb_traverse_all_ext *in);
+void ctdb_traverse_all_ext_push(struct ctdb_traverse_all_ext *in,
+				uint8_t *buf, size_t *npush);
 int ctdb_traverse_all_ext_pull(uint8_t *buf, size_t buflen,
 			       TALLOC_CTX *mem_ctx,
-			       struct ctdb_traverse_all_ext **out);
+			       struct ctdb_traverse_all_ext **out,
+			       size_t *npull);
 
-size_t ctdb_sock_addr_len(ctdb_sock_addr *addr);
-void ctdb_sock_addr_push(ctdb_sock_addr *addr, uint8_t *buf);
+size_t ctdb_sock_addr_len(ctdb_sock_addr *in);
+void ctdb_sock_addr_push(ctdb_sock_addr *in, uint8_t *buf, size_t *npush);
+int ctdb_sock_addr_pull_elems(uint8_t *buf, size_t buflen,
+			      TALLOC_CTX *mem_ctx, ctdb_sock_addr *out,
+			      size_t *npull);
 int ctdb_sock_addr_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			ctdb_sock_addr **out);
+			ctdb_sock_addr **out, size_t *npull);
 
-size_t ctdb_connection_len(struct ctdb_connection *conn);
-void ctdb_connection_push(struct ctdb_connection *conn, uint8_t *buf);
+size_t ctdb_connection_len(struct ctdb_connection *in);
+void ctdb_connection_push(struct ctdb_connection *in, uint8_t *buf,
+			  size_t *npush);
 int ctdb_connection_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			 struct ctdb_connection **out);
+			 struct ctdb_connection **out, size_t *npull);
 
-size_t ctdb_tunable_len(struct ctdb_tunable *tunable);
-void ctdb_tunable_push(struct ctdb_tunable *tunable, uint8_t *buf);
+size_t ctdb_connection_list_len(struct ctdb_connection_list *in);
+void ctdb_connection_list_push(struct ctdb_connection_list *in, uint8_t *buf,
+			       size_t *npush);
+int ctdb_connection_list_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
+			      struct ctdb_connection_list **out, size_t *npull);
+
+size_t ctdb_tunable_len(struct ctdb_tunable *in);
+void ctdb_tunable_push(struct ctdb_tunable *in, uint8_t *buf, size_t *npush);
 int ctdb_tunable_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-		      struct ctdb_tunable **out);
+		      struct ctdb_tunable **out, size_t *npull);
 
-size_t ctdb_node_flag_change_len(struct ctdb_node_flag_change *flag_change);
-void ctdb_node_flag_change_push(struct ctdb_node_flag_change *flag_change,
-				uint8_t *buf);
+size_t ctdb_node_flag_change_len(struct ctdb_node_flag_change *in);
+void ctdb_node_flag_change_push(struct ctdb_node_flag_change *in,
+				uint8_t *buf, size_t *npush);
 int ctdb_node_flag_change_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			       struct ctdb_node_flag_change **out);
+			       struct ctdb_node_flag_change **out,
+			       size_t *npull);
 
-size_t ctdb_var_list_len(struct ctdb_var_list *var_list);
-void ctdb_var_list_push(struct ctdb_var_list *var_list, uint8_t *buf);
+size_t ctdb_var_list_len(struct ctdb_var_list *in);
+void ctdb_var_list_push(struct ctdb_var_list *in, uint8_t *buf, size_t *npush);
 int ctdb_var_list_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-		       struct ctdb_var_list **out);
+		       struct ctdb_var_list **out, size_t *npull);
 
-size_t ctdb_tunable_list_len(struct ctdb_tunable_list *tun_list);
-void ctdb_tunable_list_push(struct ctdb_tunable_list *tun_list, uint8_t *buf);
+size_t ctdb_tunable_list_len(struct ctdb_tunable_list *in);
+void ctdb_tunable_list_push(struct ctdb_tunable_list *in, uint8_t *buf,
+			    size_t *npush);
 int ctdb_tunable_list_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			   struct ctdb_tunable_list **out);
+			   struct ctdb_tunable_list **out, size_t *npull);
 
-size_t ctdb_tickle_list_len(struct ctdb_tickle_list *tickles);
-void ctdb_tickle_list_push(struct ctdb_tickle_list *tickles, uint8_t *buf);
+size_t ctdb_tickle_list_len(struct ctdb_tickle_list *in);
+void ctdb_tickle_list_push(struct ctdb_tickle_list *in, uint8_t *buf,
+			   size_t *npush);
 int ctdb_tickle_list_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			  struct ctdb_tickle_list **out);
+			  struct ctdb_tickle_list **out, size_t *npull);
 
-size_t ctdb_addr_info_len(struct ctdb_addr_info *addr_info);
-void ctdb_addr_info_push(struct ctdb_addr_info *addr_info, uint8_t *buf);
+size_t ctdb_addr_info_len(struct ctdb_addr_info *in);
+void ctdb_addr_info_push(struct ctdb_addr_info *in, uint8_t *buf,
+			 size_t *npush);
 int ctdb_addr_info_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			struct ctdb_addr_info **out);
+			struct ctdb_addr_info **out, size_t *npull);
 
-size_t ctdb_transdb_len(struct ctdb_transdb *transdb);
-void ctdb_transdb_push(struct ctdb_transdb *transdb, uint8_t *buf);
+size_t ctdb_transdb_len(struct ctdb_transdb *in);
+void ctdb_transdb_push(struct ctdb_transdb *in, uint8_t *buf, size_t *npush);
 int ctdb_transdb_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-		     struct ctdb_transdb **out);
+		     struct ctdb_transdb **out, size_t *npull);
 
-size_t ctdb_uptime_len(struct ctdb_uptime *uptime);
-void ctdb_uptime_push(struct ctdb_uptime *uptime, uint8_t *buf);
+size_t ctdb_uptime_len(struct ctdb_uptime *in);
+void ctdb_uptime_push(struct ctdb_uptime *in, uint8_t *buf, size_t *npush);
 int ctdb_uptime_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-		     struct ctdb_uptime **out);
+		     struct ctdb_uptime **out, size_t *npull);
 
-size_t ctdb_public_ip_len(struct ctdb_public_ip *public_ip);
-void ctdb_public_ip_push(struct ctdb_public_ip *public_ip, uint8_t *buf);
+size_t ctdb_public_ip_len(struct ctdb_public_ip *in);
+void ctdb_public_ip_push(struct ctdb_public_ip *in, uint8_t *buf,
+			 size_t *npush);
 int ctdb_public_ip_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			struct ctdb_public_ip **out);
+			struct ctdb_public_ip **out, size_t *npull);
 
-size_t ctdb_public_ip_list_len(struct ctdb_public_ip_list *pubip_list);
-void ctdb_public_ip_list_push(struct ctdb_public_ip_list *pubip_list,
-			      uint8_t *buf);
+size_t ctdb_public_ip_list_len(struct ctdb_public_ip_list *in);
+void ctdb_public_ip_list_push(struct ctdb_public_ip_list *in, uint8_t *buf,
+			      size_t *npush);
 int ctdb_public_ip_list_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			     struct ctdb_public_ip_list **out);
+			     struct ctdb_public_ip_list **out, size_t *npull);
 
-size_t ctdb_node_and_flags_len(struct ctdb_node_and_flags *node);
-void ctdb_node_and_flags_push(struct ctdb_node_and_flags *node, uint8_t *buf);
+size_t ctdb_node_and_flags_len(struct ctdb_node_and_flags *in);
+void ctdb_node_and_flags_push(struct ctdb_node_and_flags *in, uint8_t *buf,
+			      size_t *npush);
 int ctdb_node_and_flags_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			     struct ctdb_node_and_flags **out);
+			     struct ctdb_node_and_flags **out, size_t *npull);
 
-size_t ctdb_node_map_len(struct ctdb_node_map *nodemap);
-void ctdb_node_map_push(struct ctdb_node_map *nodemap, uint8_t *buf);
+size_t ctdb_node_map_len(struct ctdb_node_map *in);
+void ctdb_node_map_push(struct ctdb_node_map *in, uint8_t *buf, size_t *npush);
 int ctdb_node_map_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-		       struct ctdb_node_map **out);
+		       struct ctdb_node_map **out, size_t *npull);
 
-size_t ctdb_script_len(struct ctdb_script *script);
-void ctdb_script_push(struct ctdb_script *script, uint8_t *buf);
+size_t ctdb_script_len(struct ctdb_script *in);
+void ctdb_script_push(struct ctdb_script *in, uint8_t *buf, size_t *npush);
 int ctdb_script_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-		     struct ctdb_script **out);
+		     struct ctdb_script **out, size_t *npull);
 
-size_t ctdb_script_list_len(struct ctdb_script_list *script_list);
-void ctdb_script_list_push(struct ctdb_script_list *script_list, uint8_t *buf);
+size_t ctdb_script_list_len(struct ctdb_script_list *in);
+void ctdb_script_list_push(struct ctdb_script_list *in, uint8_t *buf,
+			   size_t *npush);
 int ctdb_script_list_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			  struct ctdb_script_list **out);
+			  struct ctdb_script_list **out, size_t *npull);
 
-size_t ctdb_ban_state_len(struct ctdb_ban_state *ban_state);
-void ctdb_ban_state_push(struct ctdb_ban_state *ban_state, uint8_t *buf);
+size_t ctdb_ban_state_len(struct ctdb_ban_state *in);
+void ctdb_ban_state_push(struct ctdb_ban_state *in, uint8_t *buf,
+			 size_t *npush);
 int ctdb_ban_state_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			struct ctdb_ban_state **out);
+			struct ctdb_ban_state **out, size_t *npull);
 
-size_t ctdb_notify_data_len(struct ctdb_notify_data *notify);
-void ctdb_notify_data_push(struct ctdb_notify_data *notify, uint8_t *buf);
+size_t ctdb_notify_data_len(struct ctdb_notify_data *in);
+void ctdb_notify_data_push(struct ctdb_notify_data *in, uint8_t *buf,
+			   size_t *npush);
 int ctdb_notify_data_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			  struct ctdb_notify_data **out);
+			  struct ctdb_notify_data **out, size_t *npull);
 
-size_t ctdb_iface_len(struct ctdb_iface *iface);
-void ctdb_iface_push(struct ctdb_iface *iface, uint8_t *buf);
+size_t ctdb_iface_len(struct ctdb_iface *in);
+void ctdb_iface_push(struct ctdb_iface *in, uint8_t *buf, size_t *npush);
 int ctdb_iface_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-		    struct ctdb_iface **out);
+		    struct ctdb_iface **out, size_t *npull);
 
-size_t ctdb_iface_list_len(struct ctdb_iface_list *iface_list);
-void ctdb_iface_list_push(struct ctdb_iface_list *iface_list, uint8_t *buf);
+size_t ctdb_iface_list_len(struct ctdb_iface_list *in);
+void ctdb_iface_list_push(struct ctdb_iface_list *in, uint8_t *buf,
+			  size_t *npush);
 int ctdb_iface_list_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			 struct ctdb_iface_list **out);
+			 struct ctdb_iface_list **out, size_t *npull);
 
-size_t ctdb_public_ip_info_len(struct ctdb_public_ip_info *ipinfo);
-void ctdb_public_ip_info_push(struct ctdb_public_ip_info *ipinfo, uint8_t *buf);
+size_t ctdb_public_ip_info_len(struct ctdb_public_ip_info *in);
+void ctdb_public_ip_info_push(struct ctdb_public_ip_info *in, uint8_t *buf,
+			      size_t *npush);
 int ctdb_public_ip_info_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			     struct ctdb_public_ip_info **out);
+			     struct ctdb_public_ip_info **out, size_t *npull);
 
-size_t ctdb_key_data_len(struct ctdb_key_data *key);
-void ctdb_key_data_push(struct ctdb_key_data *key, uint8_t *buf);
+size_t ctdb_key_data_len(struct ctdb_key_data *in);
+void ctdb_key_data_push(struct ctdb_key_data *in, uint8_t *buf, size_t *npush);
 int ctdb_key_data_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-		       struct ctdb_key_data **out);
+		       struct ctdb_key_data **out, size_t *npull);
 
-size_t ctdb_db_statistics_len(struct ctdb_db_statistics *dbstats);
-void ctdb_db_statistics_push(struct ctdb_db_statistics *dbstats, void *buf);
+size_t ctdb_db_statistics_len(struct ctdb_db_statistics *in);
+void ctdb_db_statistics_push(struct ctdb_db_statistics *in, uint8_t *buf,
+			     size_t *npush);
 int ctdb_db_statistics_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			    struct ctdb_db_statistics **out);
+			    struct ctdb_db_statistics **out, size_t *npull);
 
-size_t ctdb_election_message_len(struct ctdb_election_message *election);
-void ctdb_election_message_push(struct ctdb_election_message *election,
-				uint8_t *buf);
-int ctdb_election_message_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			       struct ctdb_election_message **out);
+size_t ctdb_pid_srvid_len(struct ctdb_pid_srvid *in);
+void ctdb_pid_srvid_push(struct ctdb_pid_srvid *in, uint8_t *buf,
+			 size_t *npush);
+int ctdb_pid_srvid_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
+			struct ctdb_pid_srvid **out, size_t *npull);
 
-size_t ctdb_srvid_message_len(struct ctdb_srvid_message *msg);
-void ctdb_srvid_message_push(struct ctdb_srvid_message *msg, uint8_t *buf);
+size_t ctdb_election_message_len(struct ctdb_election_message *in);
+void ctdb_election_message_push(struct ctdb_election_message *in,
+				uint8_t *buf, size_t *npush);
+int ctdb_election_message_pull(uint8_t *buf, size_t buflen,
+			       TALLOC_CTX *mem_ctx,
+			       struct ctdb_election_message **out,
+			       size_t *npull);
+
+size_t ctdb_srvid_message_len(struct ctdb_srvid_message *in);
+void ctdb_srvid_message_push(struct ctdb_srvid_message *in, uint8_t *buf,
+			     size_t *npush);
 int ctdb_srvid_message_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			    struct ctdb_srvid_message **out);
+			    struct ctdb_srvid_message **out, size_t *npull);
 
-size_t ctdb_tdb_data_len(TDB_DATA data);
-void ctdb_tdb_data_push(TDB_DATA data, uint8_t *buf);
-int ctdb_tdb_data_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-		       TDB_DATA *out);
-
-size_t ctdb_disable_message_len(struct ctdb_disable_message *disable);
-void ctdb_disable_message_push(struct ctdb_disable_message *disable,
-			       uint8_t *buf);
+size_t ctdb_disable_message_len(struct ctdb_disable_message *in);
+void ctdb_disable_message_push(struct ctdb_disable_message *in, uint8_t *buf,
+			       size_t *npush);
 int ctdb_disable_message_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			      struct ctdb_disable_message **out);
+			      struct ctdb_disable_message **out,
+			      size_t *npull);
 
 #endif /* __PROTOCOL_PRIVATE_H__ */

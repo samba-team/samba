@@ -34,11 +34,12 @@
 
 #include "protocol/protocol.h"
 #include "protocol/protocol_api.h"
+#include "protocol/protocol_util.h"
 
 #include "common/comm.h"
-#include "common/system.h"
 #include "common/logging.h"
 #include "common/tunable.h"
+#include "common/srvid.h"
 
 #include "ipalloc_read_known_ips.h"
 
@@ -94,12 +95,6 @@ struct database_map {
 	struct database *db;
 };
 
-struct srvid_register_state {
-	struct srvid_register_state *prev, *next;
-	struct ctdbd_context *ctdb;
-	uint64_t srvid;
-};
-
 struct fake_control_failure {
 	struct fake_control_failure  *prev, *next;
 	enum ctdb_controls opcode;
@@ -108,12 +103,19 @@ struct fake_control_failure {
 	const char *comment;
 };
 
+struct ctdb_client {
+	struct ctdb_client *prev, *next;
+	struct ctdbd_context *ctdb;
+	pid_t pid;
+	void *state;
+};
+
 struct ctdbd_context {
 	struct node_map *node_map;
 	struct interface_map *iface_map;
 	struct vnn_map *vnn_map;
 	struct database_map *db_map;
-	struct srvid_register_state *rstate;
+	struct srvid_context *srv;
 	int num_clients;
 	struct timeval start_time;
 	struct timeval recovery_start_time;
@@ -122,10 +124,10 @@ struct ctdbd_context {
 	int log_level;
 	enum ctdb_runstate runstate;
 	struct ctdb_tunable_list tun_list;
-	int monitoring_mode;
 	char *reclock;
 	struct ctdb_public_ip_list *known_ips;
 	struct fake_control_failure *control_failures;
+	struct ctdb_client *client_list;
 };
 
 /*
@@ -167,6 +169,7 @@ static bool nodemap_parse(struct node_map *node_map)
 		char *ip;
 		ctdb_sock_addr saddr;
 		struct node *node;
+		int ret;
 
 		if (line[0] == '\n') {
 			break;
@@ -191,10 +194,12 @@ static bool nodemap_parse(struct node_map *node_map)
 			fprintf(stderr, "bad line (%s) - missing IP\n", line);
 			continue;
 		}
-		if (!parse_ip(tok, NULL, CTDB_PORT, &saddr)) {
+		ret = ctdb_sock_addr_from_string(tok, &saddr, false);
+		if (ret != 0) {
 			fprintf(stderr, "bad line (%s) - invalid IP\n", line);
 			continue;
 		}
+		ctdb_sock_addr_set_port(&saddr, CTDB_PORT);
 		ip = talloc_strdup(node_map, tok);
 		if (ip == NULL) {
 			goto fail;
@@ -246,7 +251,12 @@ static bool nodemap_parse(struct node_map *node_map)
 		}
 		node = &node_map->node[node_map->num_nodes];
 
-		parse_ip(ip, NULL, CTDB_PORT, &node->addr);
+		ret = ctdb_sock_addr_from_string(ip, &node->addr, false);
+		if (ret != 0) {
+			fprintf(stderr, "bad line (%s) - invalid IP\n", line);
+			continue;
+		}
+		ctdb_sock_addr_set_port(&node->addr, CTDB_PORT);
 		node->pnn = pnn;
 		node->flags = flags;
 		node->capabilities = capabilities;
@@ -272,11 +282,14 @@ static bool node_map_add(struct ctdb_node_map *nodemap,
 	ctdb_sock_addr addr;
 	uint32_t num;
 	struct ctdb_node_and_flags *n;
+	int ret;
 
-	if (! parse_ip(nstr, NULL, CTDB_PORT, &addr)) {
+	ret = ctdb_sock_addr_from_string(nstr, &addr, false);
+	if (ret != 0) {
 		fprintf(stderr, "Invalid IP address %s\n", nstr);
 		return false;
 	}
+	ctdb_sock_addr_set_port(&addr, CTDB_PORT);
 
 	num = nodemap->num;
 	nodemap->node = talloc_realloc(nodemap, nodemap->node,
@@ -724,6 +737,8 @@ static struct database *database_find(struct database_map *map,
 static bool public_ips_parse(struct ctdbd_context *ctdb,
 			     uint32_t numnodes)
 {
+	bool status;
+
 	if (numnodes == 0) {
 		D_ERR("Must initialise nodemap before public IPs\n");
 		return false;
@@ -731,7 +746,15 @@ static bool public_ips_parse(struct ctdbd_context *ctdb,
 
 	ctdb->known_ips = ipalloc_read_known_ips(ctdb, numnodes, false);
 
-	return (ctdb->known_ips != NULL);
+	status = (ctdb->known_ips != NULL);
+
+	if (status) {
+		D_INFO("Parsing public IPs done\n");
+	} else {
+		D_INFO("Parsing public IPs failed\n");
+	}
+
+	return status;
 }
 
 /* Read information about controls to fail.  Format is:
@@ -825,6 +848,48 @@ fail:
 }
 
 /*
+ * Manage clients
+ */
+
+static int ctdb_client_destructor(struct ctdb_client *client)
+{
+	DLIST_REMOVE(client->ctdb->client_list, client);
+	return 0;
+}
+
+static int client_add(struct ctdbd_context *ctdb, pid_t client_pid,
+		      void *client_state)
+{
+	struct ctdb_client *client;
+
+	client = talloc_zero(client_state, struct ctdb_client);
+	if (client == NULL) {
+		return ENOMEM;
+	}
+
+	client->ctdb = ctdb;
+	client->pid = client_pid;
+	client->state = client_state;
+
+	DLIST_ADD(ctdb->client_list, client);
+	talloc_set_destructor(client, ctdb_client_destructor);
+	return 0;
+}
+
+static void *client_find(struct ctdbd_context *ctdb, pid_t client_pid)
+{
+	struct ctdb_client *client;
+
+	for (client=ctdb->client_list; client != NULL; client=client->next) {
+		if (client->pid == client_pid) {
+			return client->state;
+		}
+	}
+
+	return NULL;
+}
+
+/*
  * CTDB context setup
  */
 
@@ -848,6 +913,7 @@ static struct ctdbd_context *ctdbd_setup(TALLOC_CTX *mem_ctx)
 	struct ctdbd_context *ctdb;
 	char line[1024];
 	bool status;
+	int ret;
 
 	ctdb = talloc_zero(mem_ctx, struct ctdbd_context);
 	if (ctdb == NULL) {
@@ -871,6 +937,11 @@ static struct ctdbd_context *ctdbd_setup(TALLOC_CTX *mem_ctx)
 
 	ctdb->db_map = dbmap_init(ctdb);
 	if (ctdb->db_map == NULL) {
+		goto fail;
+	}
+
+	ret = srvid_init(ctdb, &ctdb->srv);
+	if (ret != 0) {
 		goto fail;
 	}
 
@@ -919,8 +990,6 @@ static struct ctdbd_context *ctdbd_setup(TALLOC_CTX *mem_ctx)
 	ctdb->runstate = CTDB_RUNSTATE_RUNNING;
 
 	ctdb_tunable_set_defaults(&ctdb->tun_list);
-
-	ctdb->monitoring_mode = CTDB_MONITORING_ENABLED;
 
 	return ctdb;
 
@@ -1148,6 +1217,7 @@ struct client_state {
 	int fd;
 	struct ctdbd_context *ctdb;
 	int pnn;
+	pid_t pid;
 	struct comm_context *comm;
 	struct srvid_register_state *rstate;
 	int status;
@@ -1261,11 +1331,22 @@ static void control_process_exists(TALLOC_CTX *mem_ctx,
 				   struct ctdb_req_header *header,
 				   struct ctdb_req_control *request)
 {
+	struct client_state *state = tevent_req_data(
+		req, struct client_state);
+	struct ctdbd_context *ctdb = state->ctdb;
+	struct client_state *cstate;
 	struct ctdb_reply_control reply;
 
 	reply.rdata.opcode = request->opcode;
-	reply.status = kill(request->rdata.data.pid, 0);
-	reply.errmsg = NULL;
+
+	cstate = client_find(ctdb, request->rdata.data.pid);
+	if (cstate == NULL) {
+		reply.status = -1;
+		reply.errmsg = "No client for PID";
+	} else {
+		reply.status = kill(request->rdata.data.pid, 0);
+		reply.errmsg = NULL;
+	}
 
 	client_send_control(req, header, &reply);
 }
@@ -1530,10 +1611,9 @@ fail:
 
 }
 
-static int srvid_register_state_destructor(struct srvid_register_state *rstate)
+static void srvid_handler(uint64_t srvid, TDB_DATA data, void *private_data)
 {
-	DLIST_REMOVE(rstate->ctdb->rstate, rstate);
-	return 0;
+	printf("Received a message for SRVID 0x%"PRIx64"\n", srvid);
 }
 
 static void control_register_srvid(TALLOC_CTX *mem_ctx,
@@ -1545,24 +1625,19 @@ static void control_register_srvid(TALLOC_CTX *mem_ctx,
 		req, struct client_state);
 	struct ctdbd_context *ctdb = state->ctdb;
 	struct ctdb_reply_control reply;
-	struct srvid_register_state *rstate;
+	int ret;
 
 	reply.rdata.opcode = request->opcode;
 
-	rstate = talloc_zero(ctdb, struct srvid_register_state);
-	if (rstate == NULL) {
+	ret = srvid_register(ctdb->srv, state, request->srvid,
+			     srvid_handler, state);
+	if (ret != 0) {
 		reply.status = -1;
 		reply.errmsg = "Memory error";
 		goto fail;
 	}
-	rstate->ctdb = ctdb;
-	rstate->srvid = request->srvid;
 
-	talloc_set_destructor(rstate, srvid_register_state_destructor);
-
-	DLIST_ADD_END(ctdb->rstate, rstate);
-
-	DEBUG(DEBUG_INFO, ("Register srvid 0x%"PRIx64"\n", rstate->srvid));
+	DEBUG(DEBUG_INFO, ("Register srvid 0x%"PRIx64"\n", request->srvid));
 
 	reply.status = 0;
 	reply.errmsg = NULL;
@@ -1580,33 +1655,23 @@ static void control_deregister_srvid(TALLOC_CTX *mem_ctx,
 		req, struct client_state);
 	struct ctdbd_context *ctdb = state->ctdb;
 	struct ctdb_reply_control reply;
-	struct srvid_register_state *rstate = NULL;
+	int ret;
 
 	reply.rdata.opcode = request->opcode;
 
-	for (rstate = ctdb->rstate; rstate != NULL; rstate = rstate->next) {
-		if (rstate->srvid == request->srvid) {
-			break;
-		}
-	}
-
-	if (rstate == NULL) {
+	ret = srvid_deregister(ctdb->srv, request->srvid, state);
+	if (ret != 0) {
 		reply.status = -1;
 		reply.errmsg = "srvid not registered";
 		goto fail;
 	}
 
-	DEBUG(DEBUG_INFO, ("Deregister srvid 0x%"PRIx64"\n", rstate->srvid));
-	talloc_free(rstate);
+	DEBUG(DEBUG_INFO, ("Deregister srvid 0x%"PRIx64"\n", request->srvid));
 
 	reply.status = 0;
 	reply.errmsg = NULL;
 
-	client_send_control(req, header, &reply);
-	return;
-
 fail:
-	TALLOC_FREE(rstate);
 	client_send_control(req, header, &reply);
 }
 
@@ -1695,23 +1760,6 @@ static void control_shutdown(TALLOC_CTX *mem_ctx,
 		req, struct client_state);
 
 	state->status = 99;
-}
-
-static void control_get_monmode(TALLOC_CTX *mem_ctx,
-				struct tevent_req *req,
-				struct ctdb_req_header *header,
-				struct ctdb_req_control *request)
-{
-	struct client_state *state = tevent_req_data(
-		req, struct client_state);
-	struct ctdbd_context *ctdb = state->ctdb;
-	struct ctdb_reply_control reply;
-
-	reply.rdata.opcode = request->opcode;
-	reply.status = ctdb->monitoring_mode;
-	reply.errmsg = NULL;
-
-	client_send_control(req, header, &reply);
 }
 
 static void control_set_tunable(TALLOC_CTX *mem_ctx,
@@ -1898,42 +1946,6 @@ fail:
 	client_send_control(req, header, &reply);
 }
 
-static void control_enable_monitor(TALLOC_CTX *mem_ctx,
-				   struct tevent_req *req,
-				   struct ctdb_req_header *header,
-				   struct ctdb_req_control *request)
-{
-	struct client_state *state = tevent_req_data(
-		req, struct client_state);
-	struct ctdbd_context *ctdb = state->ctdb;
-	struct ctdb_reply_control reply;
-
-	ctdb->monitoring_mode = CTDB_MONITORING_ENABLED;
-
-	reply.rdata.opcode = request->opcode;
-	reply.status = 0;
-	reply.errmsg = NULL;
-	client_send_control(req, header, &reply);
-}
-
-static void control_disable_monitor(TALLOC_CTX *mem_ctx,
-				    struct tevent_req *req,
-				    struct ctdb_req_header *header,
-				    struct ctdb_req_control *request)
-{
-	struct client_state *state = tevent_req_data(
-		req, struct client_state);
-	struct ctdbd_context *ctdb = state->ctdb;
-	struct ctdb_reply_control reply;
-
-	ctdb->monitoring_mode = CTDB_MONITORING_DISABLED;
-
-	reply.rdata.opcode = request->opcode;
-	reply.status = 0;
-	reply.errmsg = NULL;
-	client_send_control(req, header, &reply);
-}
-
 static void control_reload_nodes_file(TALLOC_CTX *mem_ctx,
 				      struct tevent_req *req,
 				      struct ctdb_req_header *header,
@@ -1964,10 +1976,17 @@ static void control_reload_nodes_file(TALLOC_CTX *mem_ctx,
 		}
 
 		if (nodemap->node[i].flags & NODE_FLAGS_DELETED) {
+			int ret;
+
 			node = &node_map->node[i];
 
 			node->flags |= NODE_FLAGS_DELETED;
-			parse_ip("0.0.0.0", NULL, 0, &node->addr);
+			ret = ctdb_sock_addr_from_string("0.0.0.0", &node->addr,
+							 false);
+			if (ret != 0) {
+				/* Can't happen, but Coverity... */
+				goto fail;
+			}
 
 			continue;
 		}
@@ -2060,7 +2079,7 @@ static void control_release_ip(TALLOC_CTX *mem_ctx,
 
 	if (ctdb->known_ips == NULL) {
 		D_INFO("RELEASE_IP %s - not a public IP\n",
-		       ctdb_sock_addr_to_string(mem_ctx, &ip->addr));
+		       ctdb_sock_addr_to_string(mem_ctx, &ip->addr, false));
 		goto done;
 	}
 
@@ -2075,14 +2094,15 @@ static void control_release_ip(TALLOC_CTX *mem_ctx,
 	}
 	if (t == NULL) {
 		D_INFO("RELEASE_IP %s - not a public IP\n",
-		       ctdb_sock_addr_to_string(mem_ctx, &ip->addr));
+		       ctdb_sock_addr_to_string(mem_ctx, &ip->addr, false));
 		goto done;
 	}
 
 	if (t->pnn != header->destnode) {
 		if (header->destnode == ip->pnn) {
 			D_ERR("error: RELEASE_IP %s - to TAKE_IP node %d\n",
-			      ctdb_sock_addr_to_string(mem_ctx, &ip->addr),
+			      ctdb_sock_addr_to_string(mem_ctx,
+						       &ip->addr, false),
 			      ip->pnn);
 			reply.status = -1;
 			reply.errmsg = "RELEASE_IP to TAKE_IP node";
@@ -2091,12 +2111,12 @@ static void control_release_ip(TALLOC_CTX *mem_ctx,
 		}
 
 		D_INFO("RELEASE_IP %s - to node %d - redundant\n",
-		       ctdb_sock_addr_to_string(mem_ctx, &ip->addr),
+		       ctdb_sock_addr_to_string(mem_ctx, &ip->addr, false),
 		       ip->pnn);
 		t->pnn = ip->pnn;
 	} else {
 		D_NOTICE("RELEASE_IP %s - to node %d\n",
-			  ctdb_sock_addr_to_string(mem_ctx, &ip->addr),
+			 ctdb_sock_addr_to_string(mem_ctx, &ip->addr, false),
 			  ip->pnn);
 		t->pnn = ip->pnn;
 	}
@@ -2125,7 +2145,7 @@ static void control_takeover_ip(TALLOC_CTX *mem_ctx,
 
 	if (ctdb->known_ips == NULL) {
 		D_INFO("TAKEOVER_IP %s - not a public IP\n",
-		       ctdb_sock_addr_to_string(mem_ctx, &ip->addr));
+		       ctdb_sock_addr_to_string(mem_ctx, &ip->addr, false));
 		goto done;
 	}
 
@@ -2140,16 +2160,16 @@ static void control_takeover_ip(TALLOC_CTX *mem_ctx,
 	}
 	if (t == NULL) {
 		D_INFO("TAKEOVER_IP %s - not a public IP\n",
-		       ctdb_sock_addr_to_string(mem_ctx, &ip->addr));
+		       ctdb_sock_addr_to_string(mem_ctx, &ip->addr, false));
 		goto done;
 	}
 
 	if (t->pnn == header->destnode) {
 		D_INFO("TAKEOVER_IP %s - redundant\n",
-		       ctdb_sock_addr_to_string(mem_ctx, &ip->addr));
+		       ctdb_sock_addr_to_string(mem_ctx, &ip->addr, false));
 	} else {
 		D_NOTICE("TAKEOVER_IP %s\n",
-			 ctdb_sock_addr_to_string(mem_ctx, &ip->addr));
+			 ctdb_sock_addr_to_string(mem_ctx, &ip->addr, false));
 		t->pnn = ip->pnn;
 	}
 
@@ -2302,7 +2322,6 @@ static void control_stop_node(TALLOC_CTX *mem_ctx,
 	reply.rdata.opcode = request->opcode;
 
 	DEBUG(DEBUG_INFO, ("Stopping node\n"));
-	ctdb->monitoring_mode = CTDB_MONITORING_DISABLED;
 	ctdb->node_map->node[header->destnode].flags |= NODE_FLAGS_STOPPED;
 
 	reply.status = 0;
@@ -2539,7 +2558,7 @@ static void control_get_public_ip_info(TALLOC_CTX *mem_ctx,
 
 	if (i == known->num) {
 		D_ERR("GET_PUBLIC_IP_INFO: not known public IP %s\n",
-		      ctdb_sock_addr_to_string(mem_ctx, addr));
+		      ctdb_sock_addr_to_string(mem_ctx, addr, false));
 		reply.status = -1;
 		reply.errmsg = "Unknown address";
 		goto done;
@@ -2792,6 +2811,57 @@ fail:
 	client_send_control(req, header, &reply);
 }
 
+static void control_check_pid_srvid(TALLOC_CTX *mem_ctx,
+				    struct tevent_req *req,
+				    struct ctdb_req_header *header,
+				    struct ctdb_req_control *request)
+{
+	struct client_state *state = tevent_req_data(
+		req, struct client_state);
+	struct ctdbd_context *ctdb = state->ctdb;
+	struct ctdb_client *client;
+	struct client_state *cstate;
+	struct ctdb_reply_control reply;
+	bool pid_found, srvid_found;
+	int ret;
+
+	reply.rdata.opcode = request->opcode;
+
+	pid_found = false;
+	srvid_found = false;
+
+	for (client=ctdb->client_list; client != NULL; client=client->next) {
+		if (client->pid == request->rdata.data.pid_srvid->pid) {
+			pid_found = true;
+			cstate = (struct client_state *)client->state;
+			ret = srvid_exists(ctdb->srv,
+					   request->rdata.data.pid_srvid->srvid,
+					   cstate);
+			if (ret == 0) {
+				srvid_found = true;
+				ret = kill(cstate->pid, 0);
+				if (ret != 0) {
+					reply.status = ret;
+					reply.errmsg = strerror(errno);
+				} else {
+					reply.status = 0;
+					reply.errmsg = NULL;
+				}
+			}
+		}
+	}
+
+	if (! pid_found) {
+		reply.status = -1;
+		reply.errmsg = "No client for PID";
+	} else if (! srvid_found) {
+		reply.status = -1;
+		reply.errmsg = "No client for PID and SRVID";
+	}
+
+	client_send_control(req, header, &reply);
+}
+
 static bool fake_control_failure(TALLOC_CTX *mem_ctx,
 				 struct tevent_req *req,
 				 struct ctdb_req_header *header,
@@ -2980,6 +3050,8 @@ static struct tevent_req *client_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req;
 	struct client_state *state;
+	struct ucred cr;
+	socklen_t crl = sizeof(struct ucred);
 	int ret;
 
 	req = tevent_req_create(mem_ctx, &state, struct client_state);
@@ -2992,8 +3064,21 @@ static struct tevent_req *client_send(TALLOC_CTX *mem_ctx,
 	state->ctdb = ctdb;
 	state->pnn = pnn;
 
+	ret = getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &cr, &crl);
+	if (ret != 0) {
+		tevent_req_error(req, ret);
+		return tevent_req_post(req, ev);
+	}
+	state->pid = cr.pid;
+
 	ret = comm_setup(state, ev, fd, client_read_handler, req,
 			 client_dead_handler, req, &state->comm);
+	if (ret != 0) {
+		tevent_req_error(req, ret);
+		return tevent_req_post(req, ev);
+	}
+
+	ret = client_add(ctdb, state->pid, state);
 	if (ret != 0) {
 		tevent_req_error(req, ret);
 		return tevent_req_post(req, ev);
@@ -3013,9 +3098,10 @@ static void client_read_handler(uint8_t *buf, size_t buflen,
 		req, struct client_state);
 	struct ctdbd_context *ctdb = state->ctdb;
 	struct ctdb_req_header header;
+	size_t np;
 	int ret, i;
 
-	ret = ctdb_req_header_pull(buf, buflen, &header);
+	ret = ctdb_req_header_pull(buf, buflen, &header, &np);
 	if (ret != 0) {
 		return;
 	}
@@ -3035,7 +3121,7 @@ static void client_read_handler(uint8_t *buf, size_t buflen,
 		for (i=0; i<ctdb->node_map->num_nodes; i++) {
 			header.destnode = i;
 
-			ctdb_req_header_push(&header, buf);
+			ctdb_req_header_push(&header, buf, &np);
 			client_process_packet(req, buf, buflen);
 		}
 		return;
@@ -3050,7 +3136,7 @@ static void client_read_handler(uint8_t *buf, size_t buflen,
 
 			header.destnode = i;
 
-			ctdb_req_header_push(&header, buf);
+			ctdb_req_header_push(&header, buf, &np);
 			client_process_packet(req, buf, buflen);
 		}
 		return;
@@ -3069,7 +3155,7 @@ static void client_read_handler(uint8_t *buf, size_t buflen,
 		return;
 	}
 
-	ctdb_req_header_push(&header, buf);
+	ctdb_req_header_push(&header, buf, &np);
 	client_process_packet(req, buf, buflen);
 }
 
@@ -3085,9 +3171,10 @@ static void client_process_packet(struct tevent_req *req,
 				  uint8_t *buf, size_t buflen)
 {
 	struct ctdb_req_header header;
+	size_t np;
 	int ret;
 
-	ret = ctdb_req_header_pull(buf, buflen, &header);
+	ret = ctdb_req_header_pull(buf, buflen, &header, &np);
 	if (ret != 0) {
 		return;
 	}
@@ -3260,10 +3347,6 @@ static void client_process_control(struct tevent_req *req,
 		control_shutdown(mem_ctx, req, &header, &request);
 		break;
 
-	case CTDB_CONTROL_GET_MONMODE:
-		control_get_monmode(mem_ctx, req, &header, &request);
-		break;
-
 	case CTDB_CONTROL_SET_TUNABLE:
 		control_set_tunable(mem_ctx, req, &header, &request);
 		break;
@@ -3286,14 +3369,6 @@ static void client_process_control(struct tevent_req *req,
 
 	case CTDB_CONTROL_UPTIME:
 		control_uptime(mem_ctx, req, &header, &request);
-		break;
-
-	case CTDB_CONTROL_ENABLE_MONITOR:
-		control_enable_monitor(mem_ctx, req, &header, &request);
-		break;
-
-	case CTDB_CONTROL_DISABLE_MONITOR:
-		control_disable_monitor(mem_ctx, req, &header, &request);
 		break;
 
 	case CTDB_CONTROL_RELOAD_NODES_FILE:
@@ -3374,6 +3449,10 @@ static void client_process_control(struct tevent_req *req,
 
 	case CTDB_CONTROL_GET_NODES_FILE:
 		control_get_nodes_file(mem_ctx, req, &header, &request);
+		break;
+
+	case CTDB_CONTROL_CHECK_PID_SRVID:
+		control_check_pid_srvid(mem_ctx, req, &header, &request);
 		break;
 
 	default:

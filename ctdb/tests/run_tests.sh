@@ -232,13 +232,13 @@ find_and_run_one_test ()
 
 # Following 2 lines may be modified by installation script
 export CTDB_TESTS_ARE_INSTALLED=false
-test_dir=$(dirname "$0")
+export CTDB_TEST_DIR=$(dirname "$0")
 
 if [ -z "$TEST_VAR_DIR" ] ; then
     if $CTDB_TESTS_ARE_INSTALLED ; then
 	TEST_VAR_DIR=$(mktemp -d)
     else
-	TEST_VAR_DIR="${test_dir}/var"
+	TEST_VAR_DIR="${CTDB_TEST_DIR}/var"
     fi
 fi
 mkdir -p "$TEST_VAR_DIR"
@@ -252,7 +252,7 @@ if $socket_wrapper ; then
     mkdir -p "$SOCKET_WRAPPER_DIR"
 fi
 
-export TEST_SCRIPTS_DIR="${test_dir}/scripts"
+export TEST_SCRIPTS_DIR="${CTDB_TEST_DIR}/scripts"
 
 # If no tests specified then run some defaults
 if [ -z "$1" ] ; then

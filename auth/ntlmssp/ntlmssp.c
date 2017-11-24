@@ -44,6 +44,13 @@ static const struct ntlmssp_callbacks {
 	NTSTATUS (*sync_fn)(struct gensec_security *gensec_security,
 			    TALLOC_CTX *out_mem_ctx,
 			    DATA_BLOB in, DATA_BLOB *out);
+	struct tevent_req *(*send_fn)(TALLOC_CTX *mem_ctx,
+				      struct tevent_context *ev,
+				      struct gensec_security *gensec_security,
+				      const DATA_BLOB in);
+	NTSTATUS (*recv_fn)(struct tevent_req *req,
+			    TALLOC_CTX *out_mem_ctx,
+			    DATA_BLOB *out);
 } ntlmssp_callbacks[] = {
 	{
 		.role		= NTLMSSP_CLIENT,
@@ -64,7 +71,8 @@ static const struct ntlmssp_callbacks {
 	},{
 		.role		= NTLMSSP_SERVER,
 		.command	= NTLMSSP_AUTH,
-		.sync_fn	= gensec_ntlmssp_server_auth,
+		.send_fn	= ntlmssp_server_auth_send,
+		.recv_fn	= ntlmssp_server_auth_recv,
 	}
 };
 
@@ -146,9 +154,12 @@ static NTSTATUS gensec_ntlmssp_update_find(struct gensec_security *gensec_securi
 }
 
 struct gensec_ntlmssp_update_state {
+	const struct ntlmssp_callbacks *cb;
 	NTSTATUS status;
 	DATA_BLOB out;
 };
+
+static void gensec_ntlmssp_update_done(struct tevent_req *subreq);
 
 static struct tevent_req *gensec_ntlmssp_update_send(TALLOC_CTX *mem_ctx,
 						     struct tevent_context *ev,
@@ -176,6 +187,23 @@ static struct tevent_req *gensec_ntlmssp_update_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
+	if (ntlmssp_callbacks[i].send_fn != NULL) {
+		struct tevent_req *subreq = NULL;
+
+		state->cb = &ntlmssp_callbacks[i];
+
+		subreq = state->cb->send_fn(state, ev,
+					    gensec_security,
+					    in);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(subreq,
+					gensec_ntlmssp_update_done,
+					req);
+		return req;
+	}
+
 	status = ntlmssp_callbacks[i].sync_fn(gensec_security,
 					      state,
 					      in, &state->out);
@@ -190,6 +218,27 @@ static struct tevent_req *gensec_ntlmssp_update_send(TALLOC_CTX *mem_ctx,
 
 	tevent_req_done(req);
 	return tevent_req_post(req, ev);
+}
+
+static void gensec_ntlmssp_update_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
+	struct gensec_ntlmssp_update_state *state =
+		tevent_req_data(req,
+		struct gensec_ntlmssp_update_state);
+	NTSTATUS status;
+
+	status = state->cb->recv_fn(subreq, state, &state->out);
+	TALLOC_FREE(subreq);
+	if (GENSEC_UPDATE_IS_NTERROR(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	state->status = status;
+	tevent_req_done(req);
 }
 
 static NTSTATUS gensec_ntlmssp_update_recv(struct tevent_req *req,

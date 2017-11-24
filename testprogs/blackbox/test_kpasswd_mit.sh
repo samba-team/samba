@@ -192,11 +192,8 @@ test_smbclient "Test login with user kerberos" \
 ### Test kpasswd service via 'net ads password'
 ###########################################################
 
-# NOTE: This call works if it is compiled with Heimdal, because the Heimdal
-# krb5_set_password() implementation falls back to change_password. The MIT
-# function doesn't!
-testit_expect_failure "change user password with 'net ads password', admin: $DOMAIN/$TEST_USERNAME, target: $TEST_PRINCIPAL (will fail)" \
-	$VALGRIND $net_tool ads password -W$DOMAIN -U$TEST_PRINCIPAL%$TEST_PASSWORD $TEST_PRINCIPAL "$TEST_PASSWORD_NEW" && failed=`expr $failed + 1`
+testit "change user password with 'net ads password', admin: $DOMAIN/$TEST_USERNAME, target: $TEST_PRINCIPAL" \
+	$VALGRIND $net_tool ads password -W$DOMAIN -U$TEST_PRINCIPAL%$TEST_PASSWORD $TEST_PRINCIPAL "$TEST_PASSWORD_NEW" || failed=`expr $failed + 1`
 
 #TEST_PASSWORD=$TEST_PASSWORD_NEW
 #TEST_PASSWORD_NEW="testPaSS@06%"

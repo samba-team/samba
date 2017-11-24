@@ -207,7 +207,6 @@ int dptr_dnum(struct dptr_struct *dptr);
 bool dptr_get_priv(struct dptr_struct *dptr);
 void dptr_set_priv(struct dptr_struct *dptr);
 bool dptr_SearchDir(struct dptr_struct *dptr, const char *name, long *poffset, SMB_STRUCT_STAT *pst);
-void dptr_init_search_op(struct dptr_struct *dptr);
 bool dptr_fill(struct smbd_server_connection *sconn,
 	       char *buf1,unsigned int key);
 struct dptr_struct *dptr_fetch(struct smbd_server_connection *sconn,
@@ -805,6 +804,17 @@ int posix_sys_acl_blob_get_fd(vfs_handle_struct *handle,
 			      TALLOC_CTX *mem_ctx,
 			      char **blob_description,
 			      DATA_BLOB *blob);
+
+enum default_acl_style {DEFAULT_ACL_POSIX, DEFAULT_ACL_WINDOWS, DEFAULT_ACL_EVERYONE};
+
+const struct enum_list *get_default_acl_style_list(void);
+
+NTSTATUS make_default_filesystem_acl(
+	TALLOC_CTX *ctx,
+	enum default_acl_style acl_style,
+	const char *name,
+	SMB_STRUCT_STAT *psbuf,
+	struct security_descriptor **ppdesc);
 
 /* The following definitions come from smbd/process.c  */
 

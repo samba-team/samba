@@ -16,13 +16,76 @@ UPGRADING
 NEW FEATURES/CHANGES
 ====================
 
+Using x86_64 Accelerated AES Crypto Instructions
+================================================
+
+Samba on x86_64 can now be configured to use the Intel accelerated AES
+instruction set, which has the potential to make SMB3 signing and
+encryption much faster on client and server. To enable this, configure
+Samba using the new option --accel-aes=intelaesni.
+
+This is a temporary solution that is being included to allow users
+to enjoy the benefits of Intel accelerated AES on the x86_64 platform,
+but the longer-term solution will be to move Samba to a fully supported
+external crypto library.
+
+The third_party/aesni-intel code will be removed from Samba as soon as
+external crypto library performance reaches parity.
+
+The default is to build without setting --accel-aes, which uses the
+existing Samba software AES implementation.
+
+KDC GPO application
+-------------------
+
+Adds Group Policy support for the samba kdc. Applies password policies
+(minimum/maximum password age, minimum password length, and password
+complexity) and kerberos policies (user/service ticket lifetime and
+renew lifetime).
+
+Adds the samba_gpoupdate script for applying and unapplying
+policy. Can be applied automatically by setting
+
+ 'server services = +gpoupdate'.
 
 smb.conf changes
 ================
 
   Parameter Name                     Description             Default
   --------------                     -----------             -------
+  oplock contention limit            Removed
 
+NT4-style replication based net commands removed
+================================================
+
+The following commands and sub-commands have been removed from the
+"net" utility:
+
+net rpc samdump
+net rpc vampire ldif
+
+Also, replicating from a real NT4 domain with "net rpc vampire" and
+"net rpc vampire keytab" has been removed.
+
+The NT4-based commands were accidentially broken in 2013, and nobody
+noticed the breakage. So instead of fixing them including tests (which
+would have meant writing a server for the protocols, which we don't
+have) we decided to remove them.
+
+For the same reason, the "samsync", "samdeltas" and "database_redo"
+commands have been removed from rpcclient.
+
+"net rpc vampire keytab" from Active Directory domains continues to be
+supported.
+
+vfs_aio_linux module removed
+============================
+
+The current Linux kernel aio does not match what Samba would
+do. Shipping code that uses it leads people to false
+assumptions. Samba implements async I/O based on threads by default,
+there is no special module required to see benefits of read and write
+request being sent do the disk in parallel.
 
 KNOWN ISSUES
 ============

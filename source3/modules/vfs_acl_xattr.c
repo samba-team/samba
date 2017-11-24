@@ -21,17 +21,15 @@
 #include "includes.h"
 #include "smbd/smbd.h"
 #include "librpc/gen_ndr/xattr.h"
-#include "librpc/gen_ndr/ndr_xattr.h"
 #include "../lib/crypto/sha256.h"
 #include "auth.h"
-
-#undef DBGC_CLASS
-#define DBGC_CLASS DBGC_VFS
+#include "vfs_acl_common.h"
 
 /* Pull in the common functions. */
 #define ACL_MODULE_NAME "acl_xattr"
 
-#include "modules/vfs_acl_common.c"
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_VFS
 
 /*******************************************************************
  Pull a security descriptor into a DATA_BLOB from a xattr.
@@ -222,7 +220,7 @@ static int connect_acl_xattr(struct vfs_handle_struct *handle,
 		return ret;
 	}
 
-	ok = init_acl_common_config(handle);
+	ok = init_acl_common_config(handle, ACL_MODULE_NAME);
 	if (!ok) {
 		DBG_ERR("init_acl_common_config failed\n");
 		return -1;
@@ -280,15 +278,51 @@ static int connect_acl_xattr(struct vfs_handle_struct *handle,
 	return 0;
 }
 
+static NTSTATUS acl_xattr_fget_nt_acl(vfs_handle_struct *handle,
+				      files_struct *fsp,
+				      uint32_t security_info,
+				      TALLOC_CTX *mem_ctx,
+				      struct security_descriptor **ppdesc)
+{
+	NTSTATUS status;
+	status = get_nt_acl_common(get_acl_blob, handle, fsp, NULL,
+				   security_info, mem_ctx, ppdesc);
+	return status;
+}
+
+static NTSTATUS acl_xattr_get_nt_acl(vfs_handle_struct *handle,
+				     const struct smb_filename *smb_fname,
+				     uint32_t security_info,
+				     TALLOC_CTX *mem_ctx,
+				     struct security_descriptor **ppdesc)
+{
+	NTSTATUS status;
+	status = get_nt_acl_common(get_acl_blob, handle, NULL, smb_fname,
+				   security_info, mem_ctx, ppdesc);
+	return status;
+}
+
+static NTSTATUS acl_xattr_fset_nt_acl(vfs_handle_struct *handle,
+				      files_struct *fsp,
+				      uint32_t security_info_sent,
+				      const struct security_descriptor *psd)
+{
+	NTSTATUS status;
+	status = fset_nt_acl_common(get_acl_blob, store_acl_blob_fsp,
+				    ACL_MODULE_NAME,
+				    handle, fsp, security_info_sent, psd);
+	return status;
+}
+
 static struct vfs_fn_pointers vfs_acl_xattr_fns = {
 	.connect_fn = connect_acl_xattr,
 	.rmdir_fn = rmdir_acl_common,
 	.unlink_fn = unlink_acl_common,
 	.chmod_fn = chmod_acl_module_common,
 	.fchmod_fn = fchmod_acl_module_common,
-	.fget_nt_acl_fn = fget_nt_acl_common,
-	.get_nt_acl_fn = get_nt_acl_common,
-	.fset_nt_acl_fn = fset_nt_acl_common,
+	.fget_nt_acl_fn = acl_xattr_fget_nt_acl,
+	.get_nt_acl_fn = acl_xattr_get_nt_acl,
+	.fset_nt_acl_fn = acl_xattr_fset_nt_acl,
 	.chmod_acl_fn = chmod_acl_acl_module_common,
 	.fchmod_acl_fn = fchmod_acl_acl_module_common,
 	.sys_acl_set_file_fn = sys_acl_set_file_xattr,

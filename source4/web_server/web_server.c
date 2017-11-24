@@ -298,14 +298,9 @@ static void websrv_task_init(struct task_server *task)
 {
 	NTSTATUS status;
 	uint16_t port = lpcfg_web_port(task->lp_ctx);
-	const struct model_ops *model_ops;
 	struct web_server_data *wdata;
 
 	task_server_set_title(task, "task[websrv]");
-
-	/* run the web server as a single process */
-	model_ops = process_model_startup("single");
-	if (!model_ops) goto failed;
 
 	/* startup the Python processor - unfortunately we can't do this
 	   per connection as that wouldn't allow for session variables */
@@ -327,11 +322,14 @@ static void websrv_task_init(struct task_server *task)
 			const char *address = iface_list_n_ip(ifaces, i);
 			status = stream_setup_socket(task,
 						     task->event_ctx,
-						     task->lp_ctx, model_ops,
-						     &web_stream_ops, 
+						     task->lp_ctx,
+						     task->model_ops,
+						     &web_stream_ops,
 						     "ip", address,
-						     &port, lpcfg_socket_options(task->lp_ctx),
-						     task);
+						     &port,
+						     lpcfg_socket_options(task->lp_ctx),
+						     task,
+						     task->process_context);
 			if (!NT_STATUS_IS_OK(status)) goto failed;
 		}
 
@@ -346,11 +344,13 @@ static void websrv_task_init(struct task_server *task)
 		}
 		for (i=0; wcard[i]; i++) {
 			status = stream_setup_socket(task, task->event_ctx,
-						     task->lp_ctx, model_ops,
+						     task->lp_ctx,
+						     task->model_ops,
 						     &web_stream_ops,
 						     "ip", wcard[i],
 						     &port, lpcfg_socket_options(task->lp_ctx),
-						     wdata);
+						     wdata,
+						     task->process_context);
 			if (!NT_STATUS_IS_OK(status)) goto failed;
 		}
 		talloc_free(wcard);
@@ -372,5 +372,9 @@ failed:
 /* called at smbd startup - register ourselves as a server service */
 NTSTATUS server_service_web_init(TALLOC_CTX *ctx)
 {
-	return register_server_service(ctx, "web", websrv_task_init);
+	struct service_details details = {
+		.inhibit_fork_on_accept = true,
+		.inhibit_pre_fork = true
+	};
+	return register_server_service(ctx, "web", websrv_task_init, &details);
 }

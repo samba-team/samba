@@ -33,6 +33,9 @@
 #include "libcli/composite/composite.h"
 #include "libcli/security/security.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS            DBGC_DRS_REPL
+
 /*
   update repsFrom/repsTo error information
  */
@@ -126,6 +129,7 @@ WERROR dreplsrv_schedule_partition_pull_source(struct dreplsrv_service *s,
 	op->callback    = callback;
 	op->cb_data	= cb_data;
 	op->schedule_time = time(NULL);
+	op->more_flags	= 0;
 
 	DLIST_ADD_END(s->ops.pending, op);
 

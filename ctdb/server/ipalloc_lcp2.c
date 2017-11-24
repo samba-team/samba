@@ -25,7 +25,7 @@
 #include "lib/util/debug.h"
 #include "common/logging.h"
 
-#include "protocol/protocol_api.h"
+#include "protocol/protocol_util.h"
 
 #include "server/ipalloc_private.h"
 
@@ -242,7 +242,8 @@ static void lcp2_allocate_unassigned(struct ipalloc_state *ipalloc_state,
 				DEBUG(DEBUG_DEBUG,
 				      (" %s -> %d [+%d]\n",
 				       ctdb_sock_addr_to_string(ipalloc_state,
-								&(t->addr)),
+								&(t->addr),
+								false),
 				       dstnode,
 				       dstimbl - lcp2_imbalances[dstnode]));
 
@@ -266,7 +267,7 @@ static void lcp2_allocate_unassigned(struct ipalloc_state *ipalloc_state,
 			DEBUG(DEBUG_INFO,(" %s -> %d [+%d]\n",
 					  ctdb_sock_addr_to_string(
 						  ipalloc_state,
-						  &(minip->addr)),
+						  &(minip->addr), false),
 					  minnode,
 					  mindsum));
 		}
@@ -289,7 +290,8 @@ static void lcp2_allocate_unassigned(struct ipalloc_state *ipalloc_state,
 				DEBUG(DEBUG_WARNING,
 				      ("Failed to find node to cover ip %s\n",
 				       ctdb_sock_addr_to_string(ipalloc_state,
-								&t->addr)));
+								&t->addr,
+								false)));
 			}
 		}
 	}
@@ -360,7 +362,8 @@ static bool lcp2_failback_candidate(struct ipalloc_state *ipalloc_state,
 			DEBUG(DEBUG_DEBUG,(" %d [%d] -> %s -> %d [+%d]\n",
 					   srcnode, -srcdsum,
 					   ctdb_sock_addr_to_string(
-						   ipalloc_state, &(t->addr)),
+						   ipalloc_state,
+						   &(t->addr), false),
 					   dstnode, dstdsum));
 
 			if ((dstimbl < lcp2_imbalances[srcnode]) &&
@@ -382,7 +385,8 @@ static bool lcp2_failback_candidate(struct ipalloc_state *ipalloc_state,
 		DEBUG(DEBUG_INFO,
 		      ("%d [%d] -> %s -> %d [+%d]\n",
 		       srcnode, minsrcimbl - lcp2_imbalances[srcnode],
-		       ctdb_sock_addr_to_string(ipalloc_state, &(minip->addr)),
+		       ctdb_sock_addr_to_string(ipalloc_state,
+						&(minip->addr), false),
 		       mindstnode, mindstimbl - lcp2_imbalances[mindstnode]));
 
 

@@ -118,9 +118,8 @@ static void krb5_ticket_refresh_handler(struct tevent_context *event_ctx,
 	struct WINBINDD_MEMORY_CREDS *cred_ptr = entry->cred_ptr;
 #endif
 
-	DEBUG(10,("krb5_ticket_refresh_handler called\n"));
-	DEBUGADD(10,("event called for: %s, %s\n",
-		entry->ccname, entry->username));
+	DBG_DEBUG("event called for: %s, %s\n",
+		  entry->ccname, entry->username);
 
 	TALLOC_FREE(entry->event);
 
@@ -285,7 +284,7 @@ done:
 	if (entry->refresh_time == 0) {
 		entry->refresh_time = new_start;
 	}
-	entry->event = tevent_add_timer(winbind_event_context(), entry,
+	entry->event = tevent_add_timer(server_event_context(), entry,
 				       timeval_set(new_start, 0),
 				       krb5_ticket_refresh_handler,
 				       entry);
@@ -311,9 +310,8 @@ static void krb5_ticket_gain_handler(struct tevent_context *event_ctx,
 	struct winbindd_domain *domain = NULL;
 #endif
 
-	DEBUG(10,("krb5_ticket_gain_handler called\n"));
-	DEBUGADD(10,("event called for: %s, %s\n",
-		entry->ccname, entry->username));
+	DBG_DEBUG("event called for: %s, %s\n",
+		  entry->ccname, entry->username);
 
 	TALLOC_FREE(entry->event);
 
@@ -385,7 +383,7 @@ static void krb5_ticket_gain_handler(struct tevent_context *event_ctx,
 	if (entry->refresh_time == 0) {
 		entry->refresh_time = t.tv_sec;
 	}
-	entry->event = tevent_add_timer(winbind_event_context(),
+	entry->event = tevent_add_timer(server_event_context(),
 				       entry,
 				       t,
 				       krb5_ticket_refresh_handler,
@@ -404,7 +402,7 @@ static void add_krb5_ticket_gain_handler_event(struct WINBINDD_CCACHE_ENTRY *ent
 				     struct timeval t)
 {
 	entry->refresh_time = 0;
-	entry->event = tevent_add_timer(winbind_event_context(),
+	entry->event = tevent_add_timer(server_event_context(),
 				       entry,
 				       t,
 				       krb5_ticket_gain_handler,
@@ -424,13 +422,13 @@ void ccache_regain_all_now(void)
 		 * the event has the krb5_ticket_gain_handler
 		 */
 		if (cur->refresh_time == 0) {
-			new_event = tevent_add_timer(winbind_event_context(),
+			new_event = tevent_add_timer(server_event_context(),
 						    cur,
 						    t,
 						    krb5_ticket_gain_handler,
 						    cur);
 		} else {
-			new_event = tevent_add_timer(winbind_event_context(),
+			new_event = tevent_add_timer(server_event_context(),
 						    cur,
 						    t,
 						    krb5_ticket_refresh_handler,
@@ -547,7 +545,7 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 				if (!entry->refresh_time) {
 					entry->refresh_time = t.tv_sec;
 				}
-				entry->event = tevent_add_timer(winbind_event_context(),
+				entry->event = tevent_add_timer(server_event_context(),
 							       entry,
 							       t,
 							       krb5_ticket_refresh_handler,
@@ -645,7 +643,7 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 		if (entry->refresh_time == 0) {
 			entry->refresh_time = t.tv_sec;
 		}
-		entry->event = tevent_add_timer(winbind_event_context(),
+		entry->event = tevent_add_timer(server_event_context(),
 					       entry,
 					       t,
 					       krb5_ticket_refresh_handler,

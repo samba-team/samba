@@ -109,13 +109,15 @@ static bool lp_scan_idmap_found_domain(const char *string,
 			return false;
 		}
 
-		ok = lp_idmap_range(domname, &c->low, &c->high);
-		if (!ok) {
-			fprintf(stderr,
-				"ERROR: Invalid idmap range for domain "
-				"%s!\n\n",
-				c->domain_name);
-			return false;
+		if (lp_server_role() != ROLE_ACTIVE_DIRECTORY_DC) {
+			ok = lp_idmap_range(domname, &c->low, &c->high);
+			if (!ok) {
+				fprintf(stderr,
+					"ERROR: Invalid idmap range for domain "
+					"%s!\n\n",
+					c->domain_name);
+				return false;
+			}
 		}
 
 		d->count++;

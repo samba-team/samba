@@ -512,6 +512,12 @@ sub write_clientconf($$$)
 	        mkdir("$clientdir/private", 0777);
 	}
 
+	if ( -d "$clientdir/bind-dns" ) {
+	        unlink <$clientdir/bind-dns/*>;
+	} else {
+	        mkdir("$clientdir/bind-dns", 0777);
+	}
+
 	if ( -d "$clientdir/lockdir" ) {
 	        unlink <$clientdir/lockdir/*>;
 	} else {
@@ -595,6 +601,7 @@ sub write_clientconf($$$)
 	}
 	print CF "
 	private dir = $clientdir/private
+	binddns dir = $clientdir/bind-dns
 	lock dir = $clientdir/lockdir
 	state directory = $clientdir/statedir
 	cache directory = $clientdir/cachedir

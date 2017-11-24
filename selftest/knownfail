@@ -21,20 +21,28 @@
 ^samba3.blackbox.smbclient_machine_auth.plain \(nt4_dc:local\)# the NT4 DC does not currently set up a self-join
 ^samba3.raw.samba3hide.samba3hide\((nt4_dc|ad_dc)\) # This test fails against an smbd environment with NT ACLs enabled
 ^samba3.raw.samba3closeerr.samba3closeerr\(nt4_dc\) # This test fails against an smbd environment with NT ACLs enabled
-^samba3.raw.acls nfs4acl_xattr-simple.INHERITFLAGS\(nt4_dc\) # This (and the follow nfs4acl_xattr tests fail because our NFSv4 backend isn't a complete mapping yet.
-^samba3.raw.acls nfs4acl_xattr-simple.create_file\(nt4_dc\)
-^samba3.raw.acls nfs4acl_xattr-simple.create_dir\(nt4_dc\)
-^samba3.raw.acls nfs4acl_xattr-simple.nulldacl\(nt4_dc\)
-^samba3.raw.acls nfs4acl_xattr-simple.generic\(nt4_dc\)
-^samba3.raw.acls nfs4acl_xattr-simple.inheritance\(nt4_dc\)
-^samba3.raw.acls nfs4acl_xattr-special.INHERITFLAGS\(nt4_dc\)
-^samba3.raw.acls nfs4acl_xattr-special.create_file\(nt4_dc\)
-^samba3.raw.acls nfs4acl_xattr-special.create_dir\(nt4_dc\)
-^samba3.raw.acls nfs4acl_xattr-special.nulldacl\(nt4_dc\)
-^samba3.raw.acls nfs4acl_xattr-special.generic\(nt4_dc\)
-^samba3.raw.acls nfs4acl_xattr-special.inheritance\(nt4_dc\)
-^samba3.raw.acls nfs4acl_xattr-special.inherit_creator_owner\(nt4_dc\)
-^samba3.raw.acls nfs4acl_xattr-special.inherit_creator_group\(nt4_dc\)
+^samba3.raw.acls nfs4acl_xattr-simple-40.INHERITFLAGS\(nt4_dc\) # This (and the follow nfs4acl_xattr tests fail because our NFSv4 backend isn't a complete mapping yet.
+^samba3.raw.acls nfs4acl_xattr-simple-40.create_owner_file\(nt4_dc\)
+^samba3.raw.acls nfs4acl_xattr-simple-40.create_owner_dir\(nt4_dc\)
+^samba3.raw.acls nfs4acl_xattr-simple-40.nulldacl\(nt4_dc\)
+^samba3.raw.acls nfs4acl_xattr-simple-41.create_owner_file\(nt4_dc\)
+^samba3.raw.acls nfs4acl_xattr-simple-41.create_owner_dir\(nt4_dc\)
+^samba3.raw.acls nfs4acl_xattr-simple-41.nulldacl\(nt4_dc\)
+^samba3.raw.acls nfs4acl_xattr-special-40.INHERITFLAGS\(nt4_dc\)
+^samba3.raw.acls nfs4acl_xattr-special-40.create_owner_file\(nt4_dc\)
+^samba3.raw.acls nfs4acl_xattr-special-40.create_owner_dir\(nt4_dc\)
+^samba3.raw.acls nfs4acl_xattr-special-40.nulldacl\(nt4_dc\)
+^samba3.raw.acls nfs4acl_xattr-special-40.inherit_creator_owner\(nt4_dc\)
+^samba3.raw.acls nfs4acl_xattr-special-40.inherit_creator_group\(nt4_dc\)
+^samba3.raw.acls nfs4acl_xattr-xdr-40.INHERITFLAGS\(nt4_dc\)
+^samba3.raw.acls nfs4acl_xattr-xdr-40.create_owner_file\(nt4_dc\)
+^samba3.raw.acls nfs4acl_xattr-xdr-40.create_owner_dir\(nt4_dc\)
+^samba3.raw.acls nfs4acl_xattr-xdr-40.nulldacl\(nt4_dc\)
+^samba3.raw.acls nfs4acl_xattr-xdr-40.inherit_creator_owner\(nt4_dc\)
+^samba3.raw.acls nfs4acl_xattr-xdr-40.inherit_creator_group\(nt4_dc\)
+^samba3.raw.acls nfs4acl_xattr-xdr-41.create_owner_file\(nt4_dc\)
+^samba3.raw.acls nfs4acl_xattr-xdr-41.create_owner_dir\(nt4_dc\)
+^samba3.raw.acls nfs4acl_xattr-xdr-41.nulldacl\(nt4_dc\)
 ^samba3.base.delete.deltest16a
 ^samba3.base.delete.deltest17a
 ^samba3.unix.whoami anonymous connection.whoami\(ad_dc\) # We need to resolve if we should be including SID_NT_WORLD and SID_NT_NETWORK in this token
@@ -106,7 +114,8 @@
 ^samba4.raw.streams.*.perms
 ^samba4.raw.acls.INHERITFLAGS
 ^samba4.raw.acls.*.create_dir
-^samba4.raw.acls.*.create_file
+^samba4.raw.acls.*.create_owner_dir
+^samba4.raw.acls.*.create_owner_file
 ^samba4.smb2.create.*.acldir
 ^samba4.smb2.create.*.impersonation
 ^samba4.smb2.acls.*.generic
@@ -172,6 +181,7 @@
 ^samba3.smb2.setinfo.setinfo
 ^samba3.smb2.session.*reauth5 # some special anonymous checks?
 ^samba3.smb2.compound.interim2 # wrong return code (STATUS_CANCELLED)
+^samba3.smb2.compound.aio.interim2 # wrong return code (STATUS_CANCELLED)
 ^samba3.smb2.replay.channel-sequence
 ^samba3.smb2.replay.replay3
 ^samba3.smb2.replay.replay4
@@ -324,16 +334,6 @@
 # rap password tests don't function in the ad_dc_ntvfs:local environment
 #
 ^samba.tests.auth_log_pass_change.samba.tests.auth_log_pass_change.AuthLogPassChangeTests.test_rap_change_password\(ad_dc_ntvfs:local\)
-#
-# The following should pass once we have trust support
-^samba4.blackbox.trust_ntlm.Test07.*client.*with.ADDOMAIN\\Administrator%locDCpass1\(fl2008r2dc:local\)
-^samba4.blackbox.trust_ntlm.Test08.*client.*with.ADDOM.SAMBA.EXAMPLE.COM\\Administrator%locDCpass1\(fl2008r2dc:local\)
-^samba4.blackbox.trust_ntlm.Test09.*client.*with.Administrator@ADDOMAIN%locDCpass1\(fl2008r2dc:local\)
-^samba4.blackbox.trust_ntlm.Test10.*client.*with.Administrator@ADDOM.SAMBA.EXAMPLE.COM%locDCpass1\(fl2008r2dc:local\)
-^samba4.blackbox.trust_ntlm.Test07.*client.*with.ADDOMAIN\\Administrator%locDCpass1\(fl2003dc:local\)
-^samba4.blackbox.trust_ntlm.Test08.*client.*with.ADDOM.SAMBA.EXAMPLE.COM\\Administrator%locDCpass1\(fl2003dc:local\)
-^samba4.blackbox.trust_ntlm.Test09.*client.*with.Administrator@ADDOMAIN%locDCpass1\(fl2003dc:local\)
-^samba4.blackbox.trust_ntlm.Test10.*client.*with.Administrator@ADDOM.SAMBA.EXAMPLE.COM%locDCpass1\(fl2003dc:local\)
 # We currently don't send referrals for LDAP modify of non-replicated attrs
 ^samba4.ldap.rodc.python\(rodc\).__main__.RodcTests.test_modify_nonreplicated.*
 ^samba4.ldap.rodc_rwdc.python.*.__main__.RodcRwdcTests.test_change_password_reveal_on_demand_kerberos
@@ -342,6 +342,8 @@
 ^samba.tests.netlogonsvc.python\(simpleserver\)
 ^samba.tests.netlogonsvc.python\(fileserver\)
 # NTLM authentication is (intentionally) disabled in ktest
-^samba.tests.ntlmauth.python\(ktest\).ntlmauth.NtlmAuthTests.test_ntlm_connection\(ktest\)
+^samba.tests.ntlmdisabled.python\(ktest\).ntlmdisabled.NtlmDisabledTests.test_ntlm_connection\(ktest\)
+^samba.tests.ntlmdisabled.python\(ad_dc_no_ntlm\).ntlmdisabled.NtlmDisabledTests.test_samr_change_password\(ad_dc_no_ntlm\)
 # Disabling NTLM means you can't use samr to change the password
-^samba.tests.ntlmauth.python\(ktest\).ntlmauth.NtlmAuthTests.test_samr_change_password\(ktest\)
+^samba.tests.ntlmdisabled.python\(ktest\).ntlmdisabled.NtlmDisabledTests.test_samr_change_password\(ktest\)
+^samba.tests.ntlmdisabled.python\(ad_dc_no_ntlm\).ntlmdisabled.NtlmDisabledTests.test_ntlm_connection\(ad_dc_no_ntlm\)

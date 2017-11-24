@@ -168,7 +168,6 @@ static struct loadparm_service sDefault =
 	.max_connections = 0,
 	.default_case = CASE_LOWER,
 	.printing = DEFAULT_PRINTING,
-	.oplock_contention_limit = 2,
 	.csc_policy = 0,
 	.block_size = 1024,
 	.dfree_cache_time = 0,
@@ -550,6 +549,8 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 			 get_dyn_SMB_PASSWD_FILE());
 	lpcfg_string_set(Globals.ctx, &Globals.private_dir,
 			 get_dyn_PRIVATE_DIR());
+	lpcfg_string_set(Globals.ctx, &Globals.binddns_dir,
+			 get_dyn_BINDDNS_DIR());
 
 	/* use the new 'hash2' method by default, with a prefix of 1 */
 	lpcfg_string_set(Globals.ctx, &Globals.mangling_method, "hash2");
@@ -912,6 +913,13 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 	Globals.dns_update_command = str_list_make_v3_const(NULL, s, NULL);
 	TALLOC_FREE(s);
 
+	s = talloc_asprintf(talloc_tos(), "%s/samba_gpoupdate", get_dyn_SCRIPTSBINDIR());
+	if (s == NULL) {
+		smb_panic("init_globals: ENOMEM");
+	}
+	Globals.gpo_update_command = str_list_make_v3_const(NULL, s, NULL);
+	TALLOC_FREE(s);
+
 	s = talloc_asprintf(talloc_tos(), "%s/samba_spnupdate", get_dyn_SCRIPTSBINDIR());
 	if (s == NULL) {
 		smb_panic("init_globals: ENOMEM");
@@ -942,6 +950,7 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 			 "49152-65535");
 	Globals.rpc_low_port = SERVER_TCP_LOW_PORT;
 	Globals.rpc_high_port = SERVER_TCP_HIGH_PORT;
+	Globals.prefork_children = 1;
 
 	/* Now put back the settings that were set with lp_set_cmdline() */
 	apply_lp_set_cmdline();

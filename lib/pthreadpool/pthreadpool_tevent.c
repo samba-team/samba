@@ -25,8 +25,37 @@
 
 struct pthreadpool_tevent_job_state;
 
+/*
+ * We need one pthreadpool_tevent_glue object per unique combintaion of tevent
+ * contexts and pthreadpool_tevent objects. Maintain a list of used tevent
+ * contexts in a pthreadpool_tevent.
+ */
+struct pthreadpool_tevent_glue {
+	struct pthreadpool_tevent_glue *prev, *next;
+	struct pthreadpool_tevent *pool; /* back-pointer to owning object. */
+	/* Tuple we are keeping track of in this list. */
+	struct tevent_context *ev;
+	struct tevent_threaded_context *tctx;
+	/* Pointer to link object owned by *ev. */
+	struct pthreadpool_tevent_glue_ev_link *ev_link;
+};
+
+/*
+ * The pthreadpool_tevent_glue_ev_link and its destructor ensure we remove the
+ * tevent context from our list of active event contexts if the event context
+ * is destroyed.
+ * This structure is talloc()'ed from the struct tevent_context *, and is a
+ * back-pointer allowing the related struct pthreadpool_tevent_glue object
+ * to be removed from the struct pthreadpool_tevent glue list if the owning
+ * tevent_context is talloc_free()'ed.
+ */
+struct pthreadpool_tevent_glue_ev_link {
+	struct pthreadpool_tevent_glue *glue;
+};
+
 struct pthreadpool_tevent {
 	struct pthreadpool *pool;
+	struct pthreadpool_tevent_glue *glue_list;
 
 	struct pthreadpool_tevent_job_state *jobs;
 };
@@ -35,7 +64,6 @@ struct pthreadpool_tevent_job_state {
 	struct pthreadpool_tevent_job_state *prev, *next;
 	struct pthreadpool_tevent *pool;
 	struct tevent_context *ev;
-	struct tevent_threaded_context *tctx;
 	struct tevent_immediate *im;
 	struct tevent_req *req;
 
@@ -77,6 +105,7 @@ int pthreadpool_tevent_init(TALLOC_CTX *mem_ctx, unsigned max_threads,
 static int pthreadpool_tevent_destructor(struct pthreadpool_tevent *pool)
 {
 	struct pthreadpool_tevent_job_state *state, *next;
+	struct pthreadpool_tevent_glue *glue = NULL;
 	int ret;
 
 	ret = pthreadpool_destroy(pool->pool);
@@ -91,6 +120,118 @@ static int pthreadpool_tevent_destructor(struct pthreadpool_tevent *pool)
 		state->pool = NULL;
 	}
 
+	/*
+	 * Delete all the registered
+	 * tevent_context/tevent_threaded_context
+	 * pairs.
+	 */
+	for (glue = pool->glue_list; glue != NULL; glue = pool->glue_list) {
+		/* The glue destructor removes it from the list */
+		TALLOC_FREE(glue);
+	}
+	pool->glue_list = NULL;
+
+	return 0;
+}
+
+static int pthreadpool_tevent_glue_destructor(
+	struct pthreadpool_tevent_glue *glue)
+{
+	if (glue->pool->glue_list != NULL) {
+		DLIST_REMOVE(glue->pool->glue_list, glue);
+	}
+
+	/* Ensure the ev_link destructor knows we're gone */
+	glue->ev_link->glue = NULL;
+
+	TALLOC_FREE(glue->ev_link);
+	TALLOC_FREE(glue->tctx);
+
+	return 0;
+}
+
+/*
+ * Destructor called either explicitly from
+ * pthreadpool_tevent_glue_destructor(), or indirectly
+ * when owning tevent_context is destroyed.
+ *
+ * When called from pthreadpool_tevent_glue_destructor()
+ * ev_link->glue is already NULL, so this does nothing.
+ *
+ * When called from talloc_free() of the owning
+ * tevent_context we must ensure we also remove the
+ * linked glue object from the list inside
+ * struct pthreadpool_tevent.
+ */
+static int pthreadpool_tevent_glue_link_destructor(
+	struct pthreadpool_tevent_glue_ev_link *ev_link)
+{
+	TALLOC_FREE(ev_link->glue);
+	return 0;
+}
+
+static int pthreadpool_tevent_register_ev(struct pthreadpool_tevent *pool,
+					  struct tevent_context *ev)
+{
+	struct pthreadpool_tevent_glue *glue = NULL;
+	struct pthreadpool_tevent_glue_ev_link *ev_link = NULL;
+
+	/*
+	 * See if this tevent_context was already registered by
+	 * searching the glue object list. If so we have nothing
+	 * to do here - we already have a tevent_context/tevent_threaded_context
+	 * pair.
+	 */
+	for (glue = pool->glue_list; glue != NULL; glue = glue->next) {
+		if (glue->ev == ev) {
+			return 0;
+		}
+	}
+
+	/*
+	 * Event context not yet registered - create a new glue
+	 * object containing a tevent_context/tevent_threaded_context
+	 * pair and put it on the list to remember this registration.
+	 * We also need a link object to ensure the event context
+	 * can't go away without us knowing about it.
+	 */
+	glue = talloc_zero(pool, struct pthreadpool_tevent_glue);
+	if (glue == NULL) {
+		return ENOMEM;
+	}
+	*glue = (struct pthreadpool_tevent_glue) {
+		.pool = pool,
+		.ev = ev,
+	};
+	talloc_set_destructor(glue, pthreadpool_tevent_glue_destructor);
+
+	/*
+	 * Now allocate the link object to the event context. Note this
+	 * is allocated OFF THE EVENT CONTEXT ITSELF, so if the event
+	 * context is freed we are able to cleanup the glue object
+	 * in the link object destructor.
+	 */
+
+	ev_link = talloc_zero(ev, struct pthreadpool_tevent_glue_ev_link);
+	if (ev_link == NULL) {
+		TALLOC_FREE(glue);
+		return ENOMEM;
+	}
+	ev_link->glue = glue;
+	talloc_set_destructor(ev_link, pthreadpool_tevent_glue_link_destructor);
+
+	glue->ev_link = ev_link;
+
+#ifdef HAVE_PTHREAD
+	glue->tctx = tevent_threaded_context_create(pool, ev);
+	if (glue->tctx == NULL) {
+		TALLOC_FREE(ev_link);
+		TALLOC_FREE(glue);
+		return ENOMEM;
+	}
+#endif
+
+	DLIST_ADD(pool->glue_list, glue);
 	return 0;
 }
 
@@ -147,20 +288,11 @@ struct tevent_req *pthreadpool_tevent_job_send(
 		return tevent_req_post(req, ev);
 	}
 
-#ifdef HAVE_PTHREAD
-	state->tctx = tevent_threaded_context_create(state, ev);
-	if (state->tctx == NULL && errno == ENOSYS) {
-		/*
-		 * Samba build with pthread support but
-		 * tevent without???
-		 */
-		tevent_req_error(req, ENOSYS);
+	ret = pthreadpool_tevent_register_ev(pool, ev);
+	if (ret != 0) {
+		tevent_req_error(req, errno);
 		return tevent_req_post(req, ev);
 	}
-	if (tevent_req_nomem(state->tctx, req)) {
-		return tevent_req_post(req, ev);
-	}
-#endif
 
 	ret = pthreadpool_add_job(pool->pool, 0,
 				  pthreadpool_tevent_job_fn,
@@ -194,10 +326,30 @@ static int pthreadpool_tevent_job_signal(int jobid,
 {
 	struct pthreadpool_tevent_job_state *state = talloc_get_type_abort(
 		job_private_data, struct pthreadpool_tevent_job_state);
+	struct tevent_threaded_context *tctx = NULL;
+	struct pthreadpool_tevent_glue *g = NULL;
 
-	if (state->tctx != NULL) {
+	if (state->pool == NULL) {
+		/* The pthreadpool_tevent is already gone */
+		return 0;
+	}
+
+#ifdef HAVE_PTHREAD
+	for (g = state->pool->glue_list; g != NULL; g = g->next) {
+		if (g->ev == state->ev) {
+			tctx = g->tctx;
+			break;
+		}
+	}
+
+	if (tctx == NULL) {
+		abort();
+	}
+#endif
+
+	if (tctx != NULL) {
 		/* with HAVE_PTHREAD */
-		tevent_threaded_schedule_immediate(state->tctx, state->im,
+		tevent_threaded_schedule_immediate(tctx, state->im,
 						   pthreadpool_tevent_job_done,
 						   state);
 	} else {
@@ -221,8 +373,6 @@ static void pthreadpool_tevent_job_done(struct tevent_context *ctx,
 		DLIST_REMOVE(state->pool->jobs, state);
 		state->pool = NULL;
 	}
-
-	TALLOC_FREE(state->tctx);
 
 	if (state->req == NULL) {
 		/*

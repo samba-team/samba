@@ -86,8 +86,8 @@ static bool set_gpfs_sharemode(files_struct *fsp, uint32_t access_mask,
 		return True;
 	}
 
-	allow |= (access_mask & (FILE_WRITE_DATA|FILE_APPEND_DATA|
-				 DELETE_ACCESS)) ? GPFS_SHARE_WRITE : 0;
+	allow |= (access_mask & (FILE_WRITE_DATA|FILE_APPEND_DATA)) ?
+		GPFS_SHARE_WRITE : 0;
 	allow |= (access_mask & (FILE_READ_DATA|FILE_EXECUTE)) ?
 		GPFS_SHARE_READ : 0;
 
@@ -99,6 +99,15 @@ static bool set_gpfs_sharemode(files_struct *fsp, uint32_t access_mask,
 			0 : GPFS_DENY_WRITE;
 		deny |= (share_access & (FILE_SHARE_READ)) ?
 			0 : GPFS_DENY_READ;
+
+		/*
+		 * GPFS_DENY_DELETE can only be set together with either
+		 * GPFS_DENY_WRITE or GPFS_DENY_READ.
+		 */
+		if (deny & (GPFS_DENY_WRITE|GPFS_DENY_READ)) {
+			deny |= (share_access & (FILE_SHARE_DELETE)) ?
+				0 : GPFS_DENY_DELETE;
+		}
 	}
 	DEBUG(10, ("am=%x, allow=%d, sa=%x, deny=%d\n",
 		   access_mask, allow, share_access, deny));
@@ -1537,6 +1546,47 @@ static unsigned int vfs_gpfs_dosmode_to_winattrs(uint32_t dosmode)
 	return winattrs;
 }
 
+static int get_dos_attr_with_capability(struct smb_filename *smb_fname,
+					struct gpfs_winattr *attr)
+{
+	int saved_errno = 0;
+	int ret;
+
+	/*
+	 * According to MS-FSA 2.1.5.1.2.1 "Algorithm to Check Access to an
+	 * Existing File" FILE_LIST_DIRECTORY on a directory implies
+	 * FILE_READ_ATTRIBUTES for directory entries. Being able to stat() a
+	 * file implies FILE_LIST_DIRECTORY for the directory containing the
+	 * file.
+	 */
+
+	if (!VALID_STAT(smb_fname->st)) {
+		/*
+		 * Safety net: dos_mode() already checks this, but as we set
+		 * DAC_OVERRIDE_CAPABILITY based on this, add an additional
+		 * layer of defense.
+		 */
+		DBG_ERR("Rejecting DAC override, invalid stat [%s]\n",
+			smb_fname_str_dbg(smb_fname));
+		errno = EACCES;
+		return -1;
+	}
+
+	set_effective_capability(DAC_OVERRIDE_CAPABILITY);
+
+	ret = gpfswrap_get_winattrs_path(smb_fname->base_name, attr);
+	if (ret == -1) {
+		saved_errno = errno;
+	}
+
+	drop_effective_capability(DAC_OVERRIDE_CAPABILITY);
+
+	if (saved_errno != 0) {
+		errno = saved_errno;
+	}
+	return ret;
+}
+
 static NTSTATUS vfs_gpfs_get_dos_attributes(struct vfs_handle_struct *handle,
 					    struct smb_filename *smb_fname,
 					    uint32_t *dosmode)
@@ -1559,7 +1609,9 @@ static NTSTATUS vfs_gpfs_get_dos_attributes(struct vfs_handle_struct *handle,
 		return SMB_VFS_NEXT_GET_DOS_ATTRIBUTES(handle, smb_fname,
 						       dosmode);
 	}
-
+	if (ret == -1 && errno == EACCES) {
+		ret = get_dos_attr_with_capability(smb_fname, &attrs);
+	}
 	if (ret == -1) {
 		DBG_WARNING("Getting winattrs failed for %s: %s\n",
 			    smb_fname->base_name, strerror(errno));
@@ -1593,6 +1645,30 @@ static NTSTATUS vfs_gpfs_fget_dos_attributes(struct vfs_handle_struct *handle,
 	ret = gpfswrap_get_winattrs(fsp->fh->fd, &attrs);
 	if (ret == -1 && errno == ENOSYS) {
 		return SMB_VFS_NEXT_FGET_DOS_ATTRIBUTES(handle, fsp, dosmode);
+	}
+
+	if (ret == -1 && errno == EACCES) {
+		int saved_errno = 0;
+
+		/*
+		 * According to MS-FSA 2.1.5.1.2.1 "Algorithm to Check Access to
+		 * an Existing File" FILE_LIST_DIRECTORY on a directory implies
+		 * FILE_READ_ATTRIBUTES for directory entries. Being able to
+		 * open a file implies FILE_LIST_DIRECTORY.
+		 */
+
+		set_effective_capability(DAC_OVERRIDE_CAPABILITY);
+
+		ret = gpfswrap_get_winattrs(fsp->fh->fd, &attrs);
+		if (ret == -1) {
+			saved_errno = errno;
+		}
+
+		drop_effective_capability(DAC_OVERRIDE_CAPABILITY);
+
+		if (saved_errno != 0) {
+			errno = saved_errno;
+		}
 	}
 
 	if (ret == -1) {

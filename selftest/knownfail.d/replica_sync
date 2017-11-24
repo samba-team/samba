@@ -1,0 +1,10 @@
+# Samba currently picks a different winner of object conflicts compared to Windows.
+# Samba uses the version number whereas Windows always takes the most recent change
+samba4.drs.replica_sync.python\(vampire_dc\).replica_sync.DrsReplicaSyncTestCase.test_ReplConflictsRenamedVsNewRemoteWin\(vampire_dc:local\)
+samba4.drs.replica_sync.python\(promoted_dc\).replica_sync.DrsReplicaSyncTestCase.test_ReplConflictsRenamedVsNewRemoteWin\(promoted_dc:local\)
+samba4.drs.replica_sync.python\(vampire_dc\).replica_sync.DrsReplicaSyncTestCase.test_ReplConflictsRenamedVsNewLocalWin\(vampire_dc:local\)
+samba4.drs.replica_sync.python\(promoted_dc\).replica_sync.DrsReplicaSyncTestCase.test_ReplConflictsRenamedVsNewLocalWin\(promoted_dc:local\)
+samba4.drs.replica_sync.python\(vampire_dc\).replica_sync.DrsReplicaSyncTestCase.test_ReplReanimationConflict\(vampire_dc:local\)
+samba4.drs.replica_sync.python\(promoted_dc\).replica_sync.DrsReplicaSyncTestCase.test_ReplReanimationConflict\(promoted_dc:local\)
+
+

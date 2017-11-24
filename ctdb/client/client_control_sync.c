@@ -817,35 +817,6 @@ int ctdb_ctrl_shutdown(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	return 0;
 }
 
-int ctdb_ctrl_get_monmode(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-			  struct ctdb_client_context *client,
-			  int destnode, struct timeval timeout,
-			  int *mon_mode)
-{
-	struct ctdb_req_control request;
-	struct ctdb_reply_control *reply;
-	int ret;
-
-	ctdb_req_control_get_monmode(&request);
-	ret = ctdb_client_control(mem_ctx, ev, client, destnode, timeout,
-				  &request, &reply);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,
-		      ("Control GET_MONMODE failed to node %u, ret=%d\n",
-		       destnode, ret));
-		return ret;
-	}
-
-	ret = ctdb_reply_control_get_monmode(reply, mon_mode);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,
-		      ("Control GET_MONMODE failed, ret=%d\n", ret));
-		return ret;
-	}
-
-	return 0;
-}
-
 int ctdb_ctrl_tcp_add(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 		      struct ctdb_client_context *client,
 		      int destnode, struct timeval timeout,
@@ -1316,62 +1287,6 @@ int ctdb_ctrl_reload_nodes_file(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,
 		      ("Control RELOAD_NODES_FILE failed, ret=%d\n", ret));
-		return ret;
-	}
-
-	return 0;
-}
-
-int ctdb_ctrl_enable_monitor(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-			     struct ctdb_client_context *client,
-			     int destnode, struct timeval timeout)
-{
-	struct ctdb_req_control request;
-	struct ctdb_reply_control *reply;
-	int ret;
-
-	ctdb_req_control_enable_monitor(&request);
-	ret = ctdb_client_control(mem_ctx, ev, client, destnode, timeout,
-				  &request, &reply);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,
-		      ("Control ENABLE_MONITOR failed to node %u, ret=%d\n",
-		       destnode, ret));
-		return ret;
-	}
-
-	ret = ctdb_reply_control_enable_monitor(reply);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,
-		      ("Control ENABLE_MONITOR failed, ret=%d\n", ret));
-		return ret;
-	}
-
-	return 0;
-}
-
-int ctdb_ctrl_disable_monitor(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-			      struct ctdb_client_context *client,
-			      int destnode, struct timeval timeout)
-{
-	struct ctdb_req_control request;
-	struct ctdb_reply_control *reply;
-	int ret;
-
-	ctdb_req_control_disable_monitor(&request);
-	ret = ctdb_client_control(mem_ctx, ev, client, destnode, timeout,
-				  &request, &reply);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,
-		      ("Control DISABLE_MONITOR failed to node %u, ret=%d\n",
-		       destnode, ret));
-		return ret;
-	}
-
-	ret = ctdb_reply_control_disable_monitor(reply);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,
-		      ("Control DISABLE_MONITOR failed, ret=%d\n", ret));
 		return ret;
 	}
 
@@ -2099,7 +2014,7 @@ int ctdb_ctrl_tcp_add_delayed_update(TALLOC_CTX *mem_ctx,
 	ret = ctdb_reply_control_tcp_add_delayed_update(reply);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,
-		      ("Control TCP_ADD_DELAYED_UDATE failed, ret=%d\n", ret));
+		      ("Control TCP_ADD_DELAYED_UPDATE failed, ret=%d\n", ret));
 		return ret;
 	}
 
@@ -2191,48 +2106,6 @@ int ctdb_ctrl_set_db_readonly(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 		return ret;
 	}
 
-	return 0;
-}
-
-int ctdb_ctrl_check_srvids(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-			   struct ctdb_client_context *client,
-			   int destnode, struct timeval timeout,
-			   uint64_t *srvid, int count, uint8_t **result)
-{
-	struct ctdb_uint64_array srvid_list;
-	struct ctdb_uint8_array *u8_array;
-	struct ctdb_req_control request;
-	struct ctdb_reply_control *reply;
-	int ret;
-
-	srvid_list.num = count;
-	srvid_list.val = srvid;
-
-	ctdb_req_control_check_srvids(&request, &srvid_list);
-	ret = ctdb_client_control(mem_ctx, ev, client, destnode, timeout,
-				  &request, &reply);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,
-		      ("Control CHECK_SRVIDS failed to node %u, ret=%d\n",
-		       destnode, ret));
-		return ret;
-	}
-
-	ret = ctdb_reply_control_check_srvids(reply, &request, &u8_array);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,
-		      ("Control CHECK_SRVIDS failed, ret=%d\n", ret));
-		return ret;
-	}
-
-	if (u8_array->num != count) {
-		DEBUG(DEBUG_ERR,
-		      ("Control CHECK_SRVIDS returned invalid data %d != %d\n",
-		       u8_array->num, count));
-		return ret;
-	}
-
-	*result = talloc_steal(mem_ctx, u8_array->val);
 	return 0;
 }
 
@@ -2753,6 +2626,93 @@ int ctdb_ctrl_db_attach_replicated(TALLOC_CTX *mem_ctx,
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,
 		      ("Control DB_ATTACH_REPLICATED failed, ret=%d\n", ret));
+		return ret;
+	}
+
+	return 0;
+}
+
+int ctdb_ctrl_check_pid_srvid(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+			      struct ctdb_client_context *client,
+			      int destnode, struct timeval timeout,
+			      struct ctdb_pid_srvid *pid_srvid, int *status)
+{
+	struct ctdb_req_control request;
+	struct ctdb_reply_control *reply;
+	int ret;
+
+	ctdb_req_control_check_pid_srvid(&request, pid_srvid);
+	ret = ctdb_client_control(mem_ctx, ev, client, destnode, timeout,
+				  &request, &reply);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,
+		      ("Control CHECK_PID_SRVID failed to node %u, ret=%d\n",
+		       destnode, ret));
+		return ret;
+	}
+
+	ret = ctdb_reply_control_check_pid_srvid(reply, status);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,
+		      ("Control CHECK_PID_SRVID failed, ret=%d\n", ret));
+		return ret;
+	}
+
+	return 0;
+}
+
+int ctdb_ctrl_tunnel_register(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+			      struct ctdb_client_context *client,
+			      int destnode, struct timeval timeout,
+			      uint64_t tunnel_id)
+{
+	struct ctdb_req_control request;
+	struct ctdb_reply_control *reply;
+	int ret;
+
+	ctdb_req_control_tunnel_register(&request, tunnel_id);
+	ret = ctdb_client_control(mem_ctx, ev, client, destnode, timeout,
+				  &request, &reply);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,
+		      ("Control TUNNEL_REGISTER failed to node %u, ret=%d\n",
+		       destnode, ret));
+		return ret;
+	}
+
+	ret = ctdb_reply_control_tunnel_register(reply);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,
+		      ("Control TUNNEL_REGISTER failed, ret=%d\n", ret));
+		return ret;
+	}
+
+	return 0;
+}
+
+int ctdb_ctrl_tunnel_deregister(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+				struct ctdb_client_context *client,
+				int destnode, struct timeval timeout,
+				uint64_t tunnel_id)
+{
+	struct ctdb_req_control request;
+	struct ctdb_reply_control *reply;
+	int ret;
+
+	ctdb_req_control_tunnel_deregister(&request, tunnel_id);
+	ret = ctdb_client_control(mem_ctx, ev, client, destnode, timeout,
+				  &request, &reply);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,
+		      ("Control TUNNEL_DEREGISTER failed to node %u, ret=%d\n",
+		       destnode, ret));
+		return ret;
+	}
+
+	ret = ctdb_reply_control_tunnel_deregister(reply);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,
+		      ("Control TUNNEL_DEREGISTER failed, ret=%d\n", ret));
 		return ret;
 	}
 

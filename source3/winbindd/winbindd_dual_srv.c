@@ -230,7 +230,8 @@ NTSTATUS _wbint_UnixIDs2Sids(struct pipes_struct *p,
 		maps[i]->xid = r->in.xids[i];
 	}
 
-	status = idmap_backend_unixids_to_sids(maps, r->in.domain_name);
+	status = idmap_backend_unixids_to_sids(maps, r->in.domain_name,
+					       r->in.domain_sid);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(maps);
 		return status;
@@ -522,7 +523,7 @@ NTSTATUS _wbint_DsGetDcName(struct pipes_struct *p, struct wbint_DsGetDcName *r)
 	struct dcerpc_binding_handle *b;
 
 	if (domain == NULL) {
-		return dsgetdcname(p->mem_ctx, winbind_messaging_context(),
+		return dsgetdcname(p->mem_ctx, server_messaging_context(),
 				   r->in.domain_name, r->in.domain_guid,
 				   r->in.site_name ? r->in.site_name : "",
 				   r->in.flags,
@@ -714,7 +715,7 @@ again:
 NTSTATUS _wbint_ChangeMachineAccount(struct pipes_struct *p,
 				     struct wbint_ChangeMachineAccount *r)
 {
-	struct messaging_context *msg_ctx = winbind_messaging_context();
+	struct messaging_context *msg_ctx = server_messaging_context();
 	struct winbindd_domain *domain;
 	NTSTATUS status;
 	struct rpc_pipe_client *netlogon_pipe;
@@ -730,7 +731,7 @@ NTSTATUS _wbint_ChangeMachineAccount(struct pipes_struct *p,
 		goto done;
 	}
 
-	status = trust_pw_change(domain->conn.netlogon_creds,
+	status = trust_pw_change(domain->conn.netlogon_creds_ctx,
 				 msg_ctx,
 				 netlogon_pipe->binding_handle,
 				 domain->name,
@@ -839,7 +840,7 @@ NTSTATUS _winbind_DsrUpdateReadOnlyServerDnsRecords(struct pipes_struct *p,
 		goto done;
 	}
 
-	status = netlogon_creds_cli_DsrUpdateReadOnlyServerDnsRecords(domain->conn.netlogon_creds,
+	status = netlogon_creds_cli_DsrUpdateReadOnlyServerDnsRecords(domain->conn.netlogon_creds_ctx,
 								      netlogon_pipe->binding_handle,
 								      r->in.site_name,
 								      r->in.dns_ttl,
@@ -1192,7 +1193,7 @@ reconnect:
 	}
 
 	if (fetch_fti) {
-		status = netlogon_creds_cli_GetForestTrustInformation(domain->conn.netlogon_creds,
+		status = netlogon_creds_cli_GetForestTrustInformation(domain->conn.netlogon_creds_ctx,
 								      b, frame,
 								      &new_fti);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE)) {
@@ -1254,7 +1255,7 @@ reconnect:
 		}
 	}
 
-	status = netlogon_creds_cli_ServerGetTrustInfo(domain->conn.netlogon_creds,
+	status = netlogon_creds_cli_ServerGetTrustInfo(domain->conn.netlogon_creds_ctx,
 						       b, frame,
 						       &new_owf_password,
 						       &old_owf_password,
@@ -1363,7 +1364,7 @@ static WERROR _winbind_LogonControl_CHANGE_PASSWORD(struct pipes_struct *p,
 			     struct winbindd_domain *domain,
 			     struct winbind_LogonControl *r)
 {
-	struct messaging_context *msg_ctx = winbind_messaging_context();
+	struct messaging_context *msg_ctx = server_messaging_context();
 	NTSTATUS status;
 	struct rpc_pipe_client *netlogon_pipe;
 	struct cli_credentials *creds = NULL;
@@ -1415,7 +1416,7 @@ reconnect:
 	}
 	TALLOC_FREE(cur_nt_hash);
 
-	status = trust_pw_change(domain->conn.netlogon_creds,
+	status = trust_pw_change(domain->conn.netlogon_creds_ctx,
 				 msg_ctx, b, domain->name,
 				 domain->dcname,
 				 true); /* force */
@@ -1610,7 +1611,7 @@ reconnect:
 	}
 	b = netlogon_pipe->binding_handle;
 
-	status = netlogon_creds_cli_GetForestTrustInformation(domain->conn.netlogon_creds,
+	status = netlogon_creds_cli_GetForestTrustInformation(domain->conn.netlogon_creds_ctx,
 							      b, p->mem_ctx,
 							      &new_fti);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1722,7 +1723,7 @@ NTSTATUS _winbind_SendToSam(struct pipes_struct *p, struct winbind_SendToSam *r)
 		return status;
 	}
 
-	status = netlogon_creds_cli_SendToSam(domain->conn.netlogon_creds,
+	status = netlogon_creds_cli_SendToSam(domain->conn.netlogon_creds_ctx,
 					      netlogon_pipe->binding_handle,
 					      &r->in.message);
 

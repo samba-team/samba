@@ -31,7 +31,6 @@
 #include "dbwrap/dbwrap.h"
 #include "dbwrap/dbwrap_open.h"
 #include "dbwrap/dbwrap_rbt.h"
-#include "talloc_dict.h"
 #include "async_smb.h"
 #include "libsmb/libsmb.h"
 #include "libsmb/clirap.h"
@@ -3215,7 +3214,7 @@ static bool run_attrtest(int dummy)
 		correct = False;
 	}
 
-	if (abs(t - time(NULL)) > 60*60*24*10) {
+	if (labs(t - time(NULL)) > 60*60*24*10) {
 		printf("ERROR: SMBgetatr bug. time is %s",
 		       ctime(&t));
 		t = time(NULL);
@@ -3446,13 +3445,13 @@ static bool run_trans2test(int dummy)
 			printf("modify time=%s", ctime(&m_time));
 			printf("This system appears to have sticky create times\n");
 		}
-		if ((abs(a_time - t) > 60) && (a_time % (60*60) == 0)) {
+		if ((labs(a_time - t) > 60) && (a_time % (60*60) == 0)) {
 			printf("access time=%s", ctime(&a_time));
 			printf("This system appears to set a midnight access time\n");
 			correct = False;
 		}
 
-		if (abs(m_time - t) > 60*60*24*7) {
+		if (labs(m_time - t) > 60*60*24*7) {
 			printf("ERROR: totally incorrect times - maybe word reversed? mtime=%s", ctime(&m_time));
 			correct = False;
 		}
@@ -5220,7 +5219,7 @@ static bool run_rename_access(int dummy)
 	}
 
 	if (cli) {
-		if (fnum != (uint64_t)-1) {
+		if (fnum != (uint16_t)-1) {
 			cli_close(cli, fnum);
 		}
 		cli_unlink(cli, src,
@@ -10314,61 +10313,6 @@ failed:
 	return false;
 }
 
-
-struct talloc_dict_test {
-	int content;
-};
-
-static int talloc_dict_traverse_fn(DATA_BLOB key, void *data, void *priv)
-{
-	int *count = (int *)priv;
-	*count += 1;
-	return 0;
-}
-
-static bool run_local_talloc_dict(int dummy)
-{
-	struct talloc_dict *dict;
-	struct talloc_dict_test *t;
-	int key, count, res;
-	bool ok;
-
-	dict = talloc_dict_init(talloc_tos());
-	if (dict == NULL) {
-		return false;
-	}
-
-	t = talloc(talloc_tos(), struct talloc_dict_test);
-	if (t == NULL) {
-		return false;
-	}
-
-	key = 1;
-	t->content = 1;
-	ok = talloc_dict_set(dict, data_blob_const(&key, sizeof(key)), &t);
-	if (!ok) {
-		return false;
-	}
-
-	count = 0;
-	res = talloc_dict_traverse(dict, talloc_dict_traverse_fn, &count);
-	if (res == -1) {
-		return false;
-	}
-
-	if (count != 1) {
-		return false;
-	}
-
-	if (count != res) {
-		return false;
-	}
-
-	TALLOC_FREE(dict);
-
-	return true;
-}
-
 static bool run_local_string_to_sid(int dummy) {
 	struct dom_sid sid;
 
@@ -10919,59 +10863,6 @@ static bool run_wbclient_multi_ping(int dummy)
 	return result;
 }
 
-static void getaddrinfo_finished(struct tevent_req *req)
-{
-	char *name = (char *)tevent_req_callback_data_void(req);
-	struct addrinfo *ainfo;
-	int res;
-
-	res = getaddrinfo_recv(req, &ainfo);
-	if (res != 0) {
-		d_printf("gai(%s) returned %s\n", name, gai_strerror(res));
-		return;
-	}
-	d_printf("gai(%s) succeeded\n", name);
-	freeaddrinfo(ainfo);
-}
-
-static bool run_getaddrinfo_send(int dummy)
-{
-	TALLOC_CTX *frame = talloc_stackframe();
-	struct fncall_context *ctx;
-	struct tevent_context *ev;
-	bool result = false;
-	const char *names[4] = { "www.samba.org", "notfound.samba.org",
-				 "www.slashdot.org", "heise.de" };
-	struct tevent_req *reqs[4];
-	int i;
-
-	ev = samba_tevent_context_init(frame);
-	if (ev == NULL) {
-		goto fail;
-	}
-
-	ctx = fncall_context_init(frame, 4);
-
-	for (i=0; i<ARRAY_SIZE(names); i++) {
-		reqs[i] = getaddrinfo_send(frame, ev, ctx, names[i], NULL,
-					   NULL);
-		if (reqs[i] == NULL) {
-			goto fail;
-		}
-		tevent_req_set_callback(reqs[i], getaddrinfo_finished,
-					discard_const_p(void, names[i]));
-	}
-
-	for (i=0; i<ARRAY_SIZE(reqs); i++) {
-		tevent_loop_once(ev);
-	}
-
-	result = true;
-fail:
-	TALLOC_FREE(frame);
-	return result;
-}
-
 static bool dbtrans_inc(struct db_context *db)
 {
 	struct db_record *rec;
@@ -11114,17 +11005,17 @@ static bool run_local_dbtrans(int dummy)
 
 /*
  * Just a dummy test to be run under a debugger. There's no real way
- * to inspect the tevent_select specific function from outside of
- * tevent_select.c.
+ * to inspect the tevent_poll specific function from outside of
+ * tevent_poll.c.
  */
 
-static bool run_local_tevent_select(int dummy)
+static bool run_local_tevent_poll(int dummy)
 {
 	struct tevent_context *ev;
 	struct tevent_fd *fd1, *fd2;
 	bool result = false;
 
-	ev = tevent_context_init_byname(NULL, "select");
+	ev = tevent_context_init_byname(NULL, "poll");
 	if (ev == NULL) {
 		d_fprintf(stderr, "tevent_context_init_byname failed\n");
 		goto fail;
@@ -11632,7 +11523,6 @@ static struct {
 	{ "NTTRANS-CREATE", run_nttrans_create, 0},
 	{ "NTTRANS-FSCTL", run_nttrans_fsctl, 0},
 	{ "CLI_ECHO", run_cli_echo, 0},
-	{ "GETADDRINFO", run_getaddrinfo_send, 0},
 	{ "TLDAP", run_tldap },
 	{ "STREAMERROR", run_streamerror },
 	{ "NOTIFY-BENCH", run_notify_bench },
@@ -11657,7 +11547,6 @@ static struct {
 	{ "PIDHIGH", run_pidhigh },
 	{ "LOCAL-SUBSTITUTE", run_local_substitute, 0},
 	{ "LOCAL-GENCACHE", run_local_gencache, 0},
-	{ "LOCAL-TALLOC-DICT", run_local_talloc_dict, 0},
 	{ "LOCAL-DBWRAP-WATCH1", run_dbwrap_watch1, 0 },
 	{ "LOCAL-DBWRAP-WATCH2", run_dbwrap_watch2, 0 },
 	{ "LOCAL-DBWRAP-DO-LOCKED1", run_dbwrap_do_locked1, 0 },
@@ -11678,7 +11567,7 @@ static struct {
 	{ "LOCAL-sid_to_string", run_local_sid_to_string, 0},
 	{ "LOCAL-binary_to_sid", run_local_binary_to_sid, 0},
 	{ "LOCAL-DBTRANS", run_local_dbtrans, 0},
-	{ "LOCAL-TEVENT-SELECT", run_local_tevent_select, 0},
+	{ "LOCAL-TEVENT-POLL", run_local_tevent_poll, 0},
 	{ "LOCAL-CONVERT-STRING", run_local_convert_string, 0},
 	{ "LOCAL-CONV-AUTH-INFO", run_local_conv_auth_info, 0},
 	{ "LOCAL-hex_encode_buf", run_local_hex_encode_buf, 0},
@@ -11698,15 +11587,6 @@ static struct {
 	{ "LOCAL-CANONICALIZE-PATH", run_local_canonicalize_path, 0 },
 	{ "qpathinfo-bufsize", run_qpathinfo_bufsize, 0 },
 	{NULL, NULL, 0}};
-
-/*
- * dummy function to satisfy linker dependency
- */
-struct tevent_context *winbind_event_context(void);
-struct tevent_context *winbind_event_context(void)
-{
-	return NULL;
-}
 
 /****************************************************************************
 run a specified test or "ALL"

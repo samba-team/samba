@@ -720,31 +720,6 @@ int ctdb_reply_control_shutdown(struct ctdb_reply_control *reply)
 
 /* CTDB_CONTROL_GET_MONMODE */
 
-void ctdb_req_control_get_monmode(struct ctdb_req_control *request)
-{
-	request->opcode = CTDB_CONTROL_GET_MONMODE;
-	request->pad = 0;
-	request->srvid = 0;
-	request->client_id = 0;
-	request->flags = 0;
-
-	request->rdata.opcode = CTDB_CONTROL_GET_MONMODE;
-}
-
-int ctdb_reply_control_get_monmode(struct ctdb_reply_control *reply,
-				   int *mon_mode)
-{
-	if (reply->rdata.opcode != CTDB_CONTROL_GET_MONMODE) {
-		return EPROTO;
-	}
-
-	if (reply->status >= 0) {
-		*mon_mode = reply->status;
-		reply->status = 0;
-	}
-	return reply->status;
-}
-
 /* CTDB_CONTROL_TCP_CLIENT */
 
 void ctdb_req_control_tcp_client(struct ctdb_req_control *request,
@@ -1196,40 +1171,7 @@ int ctdb_reply_control_try_delete_records(struct ctdb_reply_control *reply,
 }
 
 /* CTDB_CONTROL_ENABLE_MONITOR */
-
-void ctdb_req_control_enable_monitor(struct ctdb_req_control *request)
-{
-	request->opcode = CTDB_CONTROL_ENABLE_MONITOR;
-	request->pad = 0;
-	request->srvid = 0;
-	request->client_id = 0;
-	request->flags = 0;
-
-	request->rdata.opcode = CTDB_CONTROL_ENABLE_MONITOR;
-}
-
-int ctdb_reply_control_enable_monitor(struct ctdb_reply_control *reply)
-{
-	return ctdb_reply_control_generic(reply, CTDB_CONTROL_ENABLE_MONITOR);
-}
-
 /* CTDB_CONTROL_DISABLE_MONITOR */
-
-void ctdb_req_control_disable_monitor(struct ctdb_req_control *request)
-{
-	request->opcode = CTDB_CONTROL_DISABLE_MONITOR;
-	request->pad = 0;
-	request->srvid = 0;
-	request->client_id = 0;
-	request->flags = 0;
-
-	request->rdata.opcode = CTDB_CONTROL_DISABLE_MONITOR;
-}
-
-int ctdb_reply_control_disable_monitor(struct ctdb_reply_control *reply)
-{
-	return ctdb_reply_control_generic(reply, CTDB_CONTROL_DISABLE_MONITOR);
-}
 
 /* CTDB_CONTROL_ADD_PUBLIC_IP */
 
@@ -1915,33 +1857,6 @@ int ctdb_reply_control_set_db_readonly(struct ctdb_reply_control *reply)
 
 /* CTDB_CONTROL_CHECK_SRVIDS */
 
-void ctdb_req_control_check_srvids(struct ctdb_req_control *request,
-				   struct ctdb_uint64_array *u64_array)
-{
-	request->opcode = CTDB_CONTROL_CHECK_SRVIDS;
-	request->pad = 0;
-	request->srvid = 0;
-	request->client_id = 0;
-	request->flags = 0;
-
-	request->rdata.opcode = CTDB_CONTROL_CHECK_SRVIDS;
-	request->rdata.data.u64_array = u64_array;
-}
-
-int ctdb_reply_control_check_srvids(struct ctdb_reply_control *reply,
-				    TALLOC_CTX *mem_ctx,
-				    struct ctdb_uint8_array **u8_array)
-{
-	if (reply->rdata.opcode != CTDB_CONTROL_CHECK_SRVIDS) {
-		return EPROTO;
-	}
-
-	if (reply->status == 0) {
-		*u8_array = talloc_steal(mem_ctx, reply->rdata.data.u8_array);
-	}
-	return reply->status;
-}
-
 /* CTDB_CONTROL_TRAVERSE_START_EXT */
 
 void ctdb_req_control_traverse_start_ext(struct ctdb_req_control *request,
@@ -2384,5 +2299,75 @@ int ctdb_reply_control_db_attach_replicated(struct ctdb_reply_control *reply,
 	if (reply->status == 0) {
 		*db_id = reply->rdata.data.db_id;
 	}
+	return reply->status;
+}
+
+/* CTDB_CONTROL_CHECK_PID_SRVID */
+
+void ctdb_req_control_check_pid_srvid(struct ctdb_req_control *request,
+				      struct ctdb_pid_srvid *pid_srvid)
+{
+	request->opcode = CTDB_CONTROL_CHECK_PID_SRVID;
+	request->pad = 0;
+	request->srvid = 0;
+	request->client_id = 0;
+	request->flags = 0;
+
+	request->rdata.opcode = CTDB_CONTROL_CHECK_PID_SRVID;
+	request->rdata.data.pid_srvid = pid_srvid;
+}
+
+int ctdb_reply_control_check_pid_srvid(struct ctdb_reply_control *reply,
+				       int *status)
+{
+	if (reply->rdata.opcode != CTDB_CONTROL_CHECK_PID_SRVID) {
+		return EPROTO;
+	}
+
+	*status = reply->status;
+	reply->status = 0;
+
+	return reply->status;
+}
+
+/* CTDB_CONTROL_TUNNEL_REGISTER */
+
+void ctdb_req_control_tunnel_register(struct ctdb_req_control *request,
+				      uint64_t tunnel_id)
+{
+	request->opcode = CTDB_CONTROL_TUNNEL_REGISTER;
+	request->pad = 0;
+	request->srvid = tunnel_id;
+	request->client_id = 0;
+	request->flags = 0;
+}
+
+int ctdb_reply_control_tunnel_register(struct ctdb_reply_control *reply)
+{
+	if (reply->rdata.opcode != CTDB_CONTROL_TUNNEL_REGISTER) {
+		return EPROTO;
+	}
+
+	return reply->status;
+}
+
+/* CTDB_CONTROL_TUNNEL_DEREGISTER */
+
+void ctdb_req_control_tunnel_deregister(struct ctdb_req_control *request,
+					uint64_t tunnel_id)
+{
+	request->opcode = CTDB_CONTROL_TUNNEL_DEREGISTER;
+	request->pad = 0;
+	request->srvid = tunnel_id;
+	request->client_id = 0;
+	request->flags = 0;
+}
+
+int ctdb_reply_control_tunnel_deregister(struct ctdb_reply_control *reply)
+{
+	if (reply->rdata.opcode != CTDB_CONTROL_TUNNEL_DEREGISTER) {
+		return EPROTO;
+	}
+
 	return reply->status;
 }

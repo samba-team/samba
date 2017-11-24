@@ -36,7 +36,7 @@
 
 #define LTDB_FLAG_CASE_INSENSITIVE (1<<0)
 #define LTDB_FLAG_INTEGER          (1<<1)
-#define LTDB_FLAG_HIDDEN           (1<<2)
+#define LTDB_FLAG_UNIQUE_INDEX     (1<<2)
 
 /* valid attribute flags */
 static const struct {
@@ -45,7 +45,8 @@ static const struct {
 } ltdb_valid_attr_flags[] = {
 	{ "CASE_INSENSITIVE", LTDB_FLAG_CASE_INSENSITIVE },
 	{ "INTEGER", LTDB_FLAG_INTEGER },
-	{ "HIDDEN", LTDB_FLAG_HIDDEN },
+	{ "HIDDEN", 0 },
+	{ "UNIQUE_INDEX",  LTDB_FLAG_UNIQUE_INDEX},
 	{ "NONE", 0 },
 	{ NULL, 0 }
 };
@@ -150,7 +151,7 @@ static int ltdb_attributes_load(struct ldb_module *module)
 	/* mapping these flags onto ldap 'syntaxes' isn't strictly correct,
 	   but its close enough for now */
 	for (i=0;i<attrs_msg->num_elements;i++) {
-		unsigned flags;
+		unsigned flags = 0, attr_flags = 0;
 		const char *syntax;
 		const struct ldb_schema_syntax *s;
 		const struct ldb_schema_attribute *a =
@@ -167,17 +168,20 @@ static int ltdb_attributes_load(struct ldb_module *module)
 				  attrs_msg->elements[i].name);
 			goto failed;
 		}
-		switch (flags & ~LTDB_FLAG_HIDDEN) {
-		case 0:
-			syntax = LDB_SYNTAX_OCTET_STRING;
-			break;
-		case LTDB_FLAG_CASE_INSENSITIVE:
+
+		if (flags & LTDB_FLAG_UNIQUE_INDEX) {
+			attr_flags = LDB_ATTR_FLAG_UNIQUE_INDEX;
+		}
+		flags &= ~LTDB_FLAG_UNIQUE_INDEX;
+
+		/* These are not currently flags, each is exclusive */
+		if (flags == LTDB_FLAG_CASE_INSENSITIVE) {
 			syntax = LDB_SYNTAX_DIRECTORY_STRING;
-			break;
-		case LTDB_FLAG_INTEGER:
+		} else if (flags == LTDB_FLAG_INTEGER) {
 			syntax = LDB_SYNTAX_INTEGER;
-			break;
-		default:
+		} else if (flags == 0) {
+			syntax = LDB_SYNTAX_OCTET_STRING;
+		} else {
 			ldb_debug(ldb, LDB_DEBUG_ERROR, 
 				  "Invalid flag combination 0x%x for '%s' "
 				  "in @ATTRIBUTES",
@@ -194,12 +198,12 @@ static int ltdb_attributes_load(struct ldb_module *module)
 			goto failed;
 		}
 
-		flags |= LDB_ATTR_FLAG_ALLOCATED | LDB_ATTR_FLAG_FROM_DB;
+		attr_flags |= LDB_ATTR_FLAG_ALLOCATED | LDB_ATTR_FLAG_FROM_DB;
 
 		r = ldb_schema_attribute_fill_with_syntax(ldb,
 							  attrs,
 							  attrs_msg->elements[i].name,
-							  flags, s,
+							  attr_flags, s,
 							  &attrs[num_loaded_attrs + ldb->schema.num_attributes]);
 		if (r != 0) {
 			goto failed;
@@ -243,6 +247,10 @@ static int ltdb_index_load(struct ldb_module *module,
 		 */
 		ltdb->cache->attribute_indexes = true;
 		ltdb->cache->one_level_indexes = ldb->schema.one_level_indexes;
+		ltdb->cache->GUID_index_attribute
+			= ldb->schema.GUID_index_attribute;
+		ltdb->cache->GUID_index_dn_component
+			= ldb->schema.GUID_index_dn_component;
 		return 0;
 	}
 
@@ -276,6 +284,12 @@ static int ltdb_index_load(struct ldb_module *module,
 	if (ldb_msg_find_element(ltdb->cache->indexlist, LTDB_IDXATTR) != NULL) {
 		ltdb->cache->attribute_indexes = true;
 	}
+	ltdb->cache->GUID_index_attribute
+		= ldb_msg_find_attr_as_string(ltdb->cache->indexlist,
+					      LTDB_IDXGUID, NULL);
+	ltdb->cache->GUID_index_dn_component
+		= ldb_msg_find_attr_as_string(ltdb->cache->indexlist,
+					      LTDB_IDX_DN_GUID, NULL);
 
 	return 0;
 }
@@ -371,6 +385,7 @@ int ltdb_cache_load(struct ldb_module *module)
 	struct ldb_dn *baseinfo_dn = NULL, *options_dn = NULL;
 	uint64_t seq;
 	struct ldb_message *baseinfo = NULL, *options = NULL;
+	const struct ldb_schema_attribute *a;
 	int r;
 
 	ldb = ldb_module_get_ctx(module);
@@ -472,6 +487,17 @@ int ltdb_cache_load(struct ldb_module *module)
 	 */
 	if (ltdb_attributes_load(module) == -1) {
 		goto failed;
+	}
+
+	ltdb->GUID_index_syntax = NULL;
+	if (ltdb->cache->GUID_index_attribute != NULL) {
+		/*
+		 * Now the attributes are loaded, set the guid_index_syntax.
+		 * This can't fail, it will return a default at worst
+		 */
+		a = ldb_schema_attribute_by_name(ldb,
+						 ltdb->cache->GUID_index_attribute);
+		ltdb->GUID_index_syntax = a->syntax;
 	}
 
 done:

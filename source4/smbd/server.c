@@ -43,6 +43,11 @@
 #include "lib/util/samba_modules.h"
 #include "nsswitch/winbind_client.h"
 #include "libds/common/roles.h"
+#include "lib/util/tfork.h"
+
+#ifdef HAVE_PTHREAD
+#include <pthread.h>
+#endif
 
 struct server_state {
 	struct tevent_context *event_ctx;
@@ -80,8 +85,8 @@ static void recursive_delete(const char *path)
 			continue;
 		}
 		if (unlink(fname) != 0) {
-			DEBUG(0,("Unabled to delete '%s' - %s\n",
-				 fname, strerror(errno)));
+			DBG_ERR("Unabled to delete '%s' - %s\n",
+				 fname, strerror(errno));
 			smb_panic("unable to cleanup tmp files");
 		}
 		talloc_free(fname);
@@ -120,11 +125,11 @@ static void sig_term(int sig)
 		 * We're the process group leader, send
 		 * SIGTERM to our process group.
 		 */
-		DEBUG(0,("SIGTERM: killing children\n"));
+		DBG_ERR("SIGTERM: killing children\n");
 		kill(-getpgrp(), SIGTERM);
 	}
 #endif
-	DEBUG(0,("Exiting pid %d on SIGTERM\n", (int)getpid()));
+	DBG_ERR("Exiting pid %d on SIGTERM\n", (int)getpid());
 	exit(127);
 }
 
@@ -136,7 +141,7 @@ static void sigterm_signal_handler(struct tevent_context *ev,
 	struct server_state *state = talloc_get_type_abort(
                 private_data, struct server_state);
 
-	DEBUG(10,("Process %s got SIGTERM\n", state->binary_name));
+	DBG_DEBUG("Process %s got SIGTERM\n", state->binary_name);
 	TALLOC_FREE(state);
 	sig_term(SIGTERM);
 }
@@ -184,12 +189,12 @@ static void server_stdin_handler(struct tevent_context *event_ctx,
 		private_data, struct server_state);
 	uint8_t c;
 	if (read(0, &c, 1) == 0) {
-		DEBUG(0,("%s: EOF on stdin - PID %d terminating\n",
-				state->binary_name, (int)getpid()));
+		DBG_ERR("%s: EOF on stdin - PID %d terminating\n",
+			state->binary_name, (int)getpid());
 #if HAVE_GETPGRP
 		if (getpgrp() == getpid()) {
-			DEBUG(0,("Sending SIGTERM from pid %d\n",
-				(int)getpid()));
+			DBG_ERR("Sending SIGTERM from pid %d\n",
+				(int)getpid());
 			kill(-getpgrp(), SIGTERM);
 		}
 #endif
@@ -207,12 +212,12 @@ _NORETURN_ static void max_runtime_handler(struct tevent_context *ev,
 {
 	struct server_state *state = talloc_get_type_abort(
 		private_data, struct server_state);
-	DEBUG(0,("%s: maximum runtime exceeded - "
+	DBG_ERR("%s: maximum runtime exceeded - "
 		"terminating PID %d at %llu, current ts: %llu\n",
 		 state->binary_name,
 		(int)getpid(),
 		(unsigned long long)t.tv_sec,
-		(unsigned long long)time(NULL)));
+		(unsigned long long)time(NULL));
 	TALLOC_FREE(state);
 	exit(0);
 }
@@ -332,6 +337,20 @@ static int event_ctx_destructor(struct tevent_context *event_ctx)
 	return 0;
 }
 
+#ifdef HAVE_PTHREAD
+static int to_children_fd = -1;
+static void atfork_prepare(void) {
+}
+static void atfork_parent(void) {
+}
+static void atfork_child(void) {
+	if (to_children_fd != -1) {
+		close(to_children_fd);
+		to_children_fd = -1;
+	}
+}
+#endif
+
 /*
  main server.
 */
@@ -341,6 +360,7 @@ static int binary_smbd_main(const char *binary_name,
 {
 	bool opt_daemon = false;
 	bool opt_interactive = false;
+	bool opt_no_process_group = false;
 	int opt;
 	poptContext pc;
 #define _MODULE_PROTO(init) extern NTSTATUS init(TALLOC_CTX *);
@@ -356,7 +376,8 @@ static int binary_smbd_main(const char *binary_name,
 		OPT_DAEMON = 1000,
 		OPT_INTERACTIVE,
 		OPT_PROCESS_MODEL,
-		OPT_SHOW_BUILD
+		OPT_SHOW_BUILD,
+		OPT_NO_PROCESS_GROUP,
 	};
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -371,12 +392,16 @@ static int binary_smbd_main(const char *binary_name,
 			"till autotermination", "seconds"},
 		{"show-build", 'b', POPT_ARG_NONE, NULL, OPT_SHOW_BUILD,
 			"show build info", NULL },
+		{"no-process-group", '\0', POPT_ARG_NONE, NULL,
+		  OPT_NO_PROCESS_GROUP, "Don't create a new process group" },
 		POPT_COMMON_SAMBA
 		POPT_COMMON_VERSION
 		{ NULL }
 	};
 	struct server_state *state = NULL;
 	struct tevent_signal *se = NULL;
+
+	setproctitle("root process");
 
 	pc = poptGetContext(binary_name, argc, argv, long_options, 0);
 	while((opt = poptGetNextOpt(pc)) != -1) {
@@ -392,6 +417,9 @@ static int binary_smbd_main(const char *binary_name,
 			break;
 		case OPT_SHOW_BUILD:
 			show_build();
+			break;
+		case OPT_NO_PROCESS_GROUP:
+			opt_no_process_group = true;
 			break;
 		default:
 			fprintf(stderr, "\nInvalid option %s: %s\n\n",
@@ -443,7 +471,7 @@ static int binary_smbd_main(const char *binary_name,
 	}
 
 	if (opt_daemon) {
-		DEBUG(3,("Becoming a daemon.\n"));
+		DBG_NOTICE("Becoming a daemon.\n");
 		become_daemon(true, false, false);
 	}
 
@@ -508,6 +536,15 @@ static int binary_smbd_main(const char *binary_name,
 		stdin_event_flags = 0;
 	}
 
+#if HAVE_SETPGID
+	/*
+	 * If we're interactive we want to set our own process group for
+	 * signal management, unless --no-process-group specified.
+	 */
+	if (opt_interactive && !opt_no_process_group)
+		setpgid((pid_t)0, (pid_t)0);
+#endif
+
 	/* catch EOF on stdin */
 #ifdef SIGTTIN
 	signal(SIGTTIN, SIG_IGN);
@@ -534,10 +571,10 @@ static int binary_smbd_main(const char *binary_name,
 
 	if (max_runtime) {
 		struct tevent_timer *te;
-		DEBUG(0,("%s PID %d was called with maxruntime %d - "
+		DBG_ERR("%s PID %d was called with maxruntime %d - "
 			"current ts %llu\n",
 			binary_name, (int)getpid(),
-			max_runtime, (unsigned long long) time(NULL)));
+			max_runtime, (unsigned long long) time(NULL));
 		te = tevent_add_timer(state->event_ctx, state->event_ctx,
 				 timeval_current_ofs(max_runtime, 0),
 				 max_runtime_handler,
@@ -588,14 +625,56 @@ static int binary_smbd_main(const char *binary_name,
 			NT_STATUS_V(status));
 	}
 
-	DEBUG(0,("%s: using '%s' process model\n", binary_name, model));
+	DBG_ERR("%s: using '%s' process model\n", binary_name, model);
 
-	status = server_service_startup(state->event_ctx, cmdline_lp_ctx, model,
-					lpcfg_server_services(cmdline_lp_ctx));
-	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(state);
-		exit_daemon("Samba failed to start services",
-			NT_STATUS_V(status));
+	{
+		int child_pipe[2];
+		int rc;
+		bool start_services = false;
+
+		rc = pipe(child_pipe);
+		if (rc < 0) {
+			TALLOC_FREE(state);
+			exit_daemon("Samba failed to open process control pipe",
+				    errno);
+		}
+		smb_set_close_on_exec(child_pipe[0]);
+		smb_set_close_on_exec(child_pipe[1]);
+
+#ifdef HAVE_PTHREAD
+		to_children_fd = child_pipe[1];
+		pthread_atfork(atfork_prepare, atfork_parent,
+			       atfork_child);
+		start_services = true;
+#else
+		pid_t pid;
+		struct tfork *t = NULL;
+		t = tfork_create();
+		if (t == NULL) {
+			exit_daemon(
+				"Samba unable to fork master process",
+				0);
+		}
+		pid = tfork_child_pid(t);
+		if (pid == 0) {
+			start_services = false;
+		} else {
+			/* In the child process */
+			start_services = true;
+			close(child_pipe[1]);
+		}
+#endif
+		if (start_services) {
+			status = server_service_startup(
+				state->event_ctx, cmdline_lp_ctx, model,
+				lpcfg_server_services(cmdline_lp_ctx),
+				child_pipe[0]);
+			if (!NT_STATUS_IS_OK(status)) {
+				TALLOC_FREE(state);
+				exit_daemon("Samba failed to start services",
+				NT_STATUS_V(status));
+			}
+		}
 	}
 
 	if (opt_daemon) {
@@ -615,5 +694,7 @@ static int binary_smbd_main(const char *binary_name,
 
 int main(int argc, const char *argv[])
 {
+	setproctitle_init(argc, discard_const(argv), environ);
+
 	return binary_smbd_main("samba", argc, argv);
 }

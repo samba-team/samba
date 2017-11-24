@@ -237,6 +237,7 @@ static void ldapsrv_BindSimple_done(struct tevent_req *subreq)
 						    call,
 						    &session_info);
 	if (NT_STATUS_IS_OK(status)) {
+		char *ldb_errstring = NULL;
 		result = LDAP_SUCCESS;
 		errstr = NULL;
 
@@ -248,11 +249,16 @@ static void ldapsrv_BindSimple_done(struct tevent_req *subreq)
 		/* don't leak the old LDB */
 		talloc_unlink(call->conn, call->conn->ldb);
 
-		status = ldapsrv_backend_Init(call->conn);		
-		
-		if (!NT_STATUS_IS_OK(status)) {
-			result = LDAP_OPERATIONS_ERROR;
-			errstr = talloc_asprintf(reply, "Simple Bind: Failed to advise ldb new credentials: %s", nt_errstr(status));
+		result = ldapsrv_backend_Init(call->conn, &ldb_errstring);
+
+		if (result != LDB_SUCCESS) {
+			/* Only put the detailed error in DEBUG() */
+			DBG_ERR("ldapsrv_backend_Init failed: %s: %s",
+				ldb_errstring, ldb_strerror(result));
+			errstr = talloc_strdup(reply,
+					       "Simple Bind: Failed to advise "
+					       "ldb new credentials");
+			result = LDB_ERR_OPERATIONS_ERROR;
 		}
 	} else {
 		status = nt_status_squash(status);
@@ -475,6 +481,7 @@ static void ldapsrv_BindSASL_done(struct tevent_req *subreq)
 	NTSTATUS status;
 	int result;
 	const char *errstr = NULL;
+	char *ldb_errstring = NULL;
 	DATA_BLOB output = data_blob_null;
 
 	status = gensec_update_recv(subreq, call, &output);
@@ -582,15 +589,16 @@ static void ldapsrv_BindSASL_done(struct tevent_req *subreq)
 
 	call->conn->authz_logged = true;
 
-	status = ldapsrv_backend_Init(conn);
+	result = ldapsrv_backend_Init(call->conn, &ldb_errstring);
 
-	if (!NT_STATUS_IS_OK(status)) {
-		result = LDAP_OPERATIONS_ERROR;
-		errstr = talloc_asprintf(reply,
-					 "SASL:[%s]: Failed to advise samdb of new credentials: %s",
-					 req->creds.SASL.mechanism,
-					 nt_errstr(status));
-		goto do_reply;
+	if (result != LDB_SUCCESS) {
+		/* Only put the detailed error in DEBUG() */
+		DBG_ERR("ldapsrv_backend_Init failed: %s: %s",
+			ldb_errstring, ldb_strerror(result));
+		errstr = talloc_strdup(reply,
+				       "SASL Bind: Failed to advise "
+				       "ldb new credentials");
+		result = LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	if (context != NULL) {

@@ -126,7 +126,7 @@ static uint64_t print_count_count_samples(
 
 		if (buf[0] == '\0') {
 			snprintf(buf, buflen,
-				"%s %ju/sec",
+				"%-40s %ju/sec",
 				name, (uintmax_t)(step / delta_sec));
 		} else {
 			printf("%-40s %s %ju/sec\n",
@@ -240,7 +240,7 @@ static uint64_t print_count_samples(
 	uint64_t delta_usec)
 {
 	uint64_t count = 0;
-	char buf[40] = { '\0', };
+	char buf[60] = { '\0', };
 
 	if (delta_usec == 0) {
 		return 0;

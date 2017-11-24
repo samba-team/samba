@@ -1044,7 +1044,6 @@ static void ctdb_end_recovery_callback(struct ctdb_context *ctdb, int status, vo
 {
 	struct recovery_callback_state *state = talloc_get_type(p, struct recovery_callback_state);
 
-	ctdb_enable_monitoring(ctdb);
 	CTDB_INCREMENT_STAT(ctdb, num_recoveries);
 
 	if (status != 0) {
@@ -1083,16 +1082,12 @@ int32_t ctdb_control_end_recovery(struct ctdb_context *ctdb,
 
 	state->c    = c;
 
-	ctdb_disable_monitoring(ctdb);
-
 	ret = ctdb_event_script_callback(ctdb, state,
 					 ctdb_end_recovery_callback, 
 					 state, 
 					 CTDB_EVENT_RECOVERED, "%s", "");
 
 	if (ret != 0) {
-		ctdb_enable_monitoring(ctdb);
-
 		DEBUG(DEBUG_ERR,(__location__ " Failed to end recovery\n"));
 		talloc_free(state);
 		return -1;
@@ -1123,8 +1118,6 @@ static void run_start_recovery_event(struct ctdb_context *ctdb,
 				     struct recovery_callback_state *state)
 {
 	int ret;
-
-	ctdb_disable_monitoring(ctdb);
 
 	ret = ctdb_event_script_callback(ctdb, state,
 					 ctdb_start_recovery_callback,
@@ -1613,7 +1606,6 @@ int32_t ctdb_control_set_recmaster(struct ctdb_context *ctdb, uint32_t opcode, T
 int32_t ctdb_control_stop_node(struct ctdb_context *ctdb)
 {
 	DEBUG(DEBUG_ERR, ("Stopping node\n"));
-	ctdb_disable_monitoring(ctdb);
 	ctdb->nodes[ctdb->pnn]->flags |= NODE_FLAGS_STOPPED;
 
 	return 0;

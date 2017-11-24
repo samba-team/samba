@@ -1,3 +1,7 @@
+#!/usr/bin/env python
+import Options
+import Utils
+
 if not conf.CHECK_FUNCS_IN('MD5Init', 'bsd', headers='bsd/md5.h',
     checklibc=True):
     conf.CHECK_FUNCS_IN('MD5Init', 'md5', headers='sys/md5.h',
@@ -13,3 +17,12 @@ if conf.CHECK_FUNCS('SHA256_Update'):
 	conf.DEFINE('SHA256_RENAME_NEEDED', 1)
 if conf.CHECK_FUNCS('SHA512_Update'):
 	conf.DEFINE('SHA512_RENAME_NEEDED', 1)
+
+#
+# --aes-accel=XXX selects accelerated AES crypto library to use, if any.
+# Default is none.
+#
+if Options.options.accel_aes.lower() == "intelaesni":
+        print("Attempting to compile with runtime-switchable x86_64 Intel AES instructions. WARNING - this is temporary.")
+elif Options.options.accel_aes.lower() != "none":
+        raise Utils.WafError('--aes-accel=%s is not a valid option. Valid options are [none|intelaesni]' % Options.options.accel_aes)

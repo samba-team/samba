@@ -60,7 +60,11 @@ static void smbsrv_task_init(struct task_server *task)
 		*/
 		for(i = 0; i < num_interfaces; i++) {
 			const char *address = iface_list_n_ip(ifaces, i);
-			status = smbsrv_add_socket(task, task->event_ctx, task->lp_ctx, task->model_ops, address);
+			status = smbsrv_add_socket(task, task->event_ctx,
+					           task->lp_ctx,
+						   task->model_ops,
+						   address,
+						   task->process_context);
 			if (!NT_STATUS_IS_OK(status)) goto failed;
 		}
 	} else {
@@ -72,7 +76,11 @@ static void smbsrv_task_init(struct task_server *task)
 			goto failed;
 		}
 		for (i=0; wcard[i]; i++) {
-			status = smbsrv_add_socket(task, task->event_ctx, task->lp_ctx, task->model_ops, wcard[i]);
+			status = smbsrv_add_socket(task, task->event_ctx,
+						   task->lp_ctx,
+						   task->model_ops,
+						   wcard[i],
+						   task->process_context);
 			if (!NT_STATUS_IS_OK(status)) goto failed;
 		}
 		talloc_free(wcard);
@@ -87,7 +95,11 @@ failed:
 /* called at smbd startup - register ourselves as a server service */
 NTSTATUS server_service_smb_init(TALLOC_CTX *ctx)
 {
+	struct service_details details = {
+		.inhibit_fork_on_accept = true,
+		.inhibit_pre_fork = true
+	};
 	ntvfs_init(cmdline_lp_ctx);
 	share_init();
-	return register_server_service(ctx, "smb", smbsrv_task_init);
+	return register_server_service(ctx, "smb", smbsrv_task_init, &details);
 }

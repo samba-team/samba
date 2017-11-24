@@ -4177,9 +4177,12 @@ static WERROR construct_printer_info5(TALLOC_CTX *mem_ctx,
 
 	r->attributes	= info2->attributes;
 
-	/* these two are not used by NT+ according to MSDN */
-	r->device_not_selected_timeout		= 0x0;  /* have seen 0x3a98 */
-	r->transmission_retry_timeout		= 0x0;  /* have seen 0xafc8 */
+	/*
+	 * These two are not used by NT+ according to MSDN. However the values
+	 * we saw on Windows Server 2012 and 2016 are always set to the 0xafc8.
+	 */
+	r->device_not_selected_timeout		= 0xafc8; /* 45 sec */
+	r->transmission_retry_timeout		= 0xafc8; /* 45 sec */
 
 	return WERR_OK;
 }
@@ -4238,7 +4241,7 @@ static WERROR construct_printer_info7(TALLOC_CTX *mem_ctx,
 	if (is_printer_published(tmp_ctx, session_info, msg_ctx,
 				 servername, printer, &pinfo2)) {
 		struct GUID guid;
-		struct GUID_txt_buf guid_txt;
+		char *guidstr;
 		werr = nt_printer_guid_get(tmp_ctx, session_info, msg_ctx,
 					   printer, &guid);
 		if (!W_ERROR_IS_OK(werr)) {
@@ -4285,9 +4288,19 @@ static WERROR construct_printer_info7(TALLOC_CTX *mem_ctx,
 					  printer));
 			}
 		}
-		r->guid = talloc_strdup_upper(mem_ctx,
-					     GUID_buf_string(&guid, &guid_txt));
+
+		/* [MS-RPRN] section 2.2: must use curly-braced GUIDs */
+		guidstr = GUID_string2(mem_ctx, &guid);
+		if (guidstr == NULL) {
+			werr = WERR_NOT_ENOUGH_MEMORY;
+			goto out_tmp_free;
+		}
+		/* Convert GUID string to uppercase otherwise printers
+		 * are pruned */
+		r->guid = talloc_strdup_upper(mem_ctx, guidstr);
 		r->action = DSPRINT_PUBLISH;
+
+		TALLOC_FREE(guidstr);
 	} else {
 		r->guid = talloc_strdup(mem_ctx, "");
 		r->action = DSPRINT_UNPUBLISH;

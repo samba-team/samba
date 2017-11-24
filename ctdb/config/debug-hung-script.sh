@@ -39,6 +39,8 @@ fi
     sed -r -n "s@.*-(.*(${pat}).*),([0-9]*).*@\3 \1@p" |
     while read pid name ; do
 	trace=$(cat "/proc/${pid}/stack" 2>/dev/null)
+	# No! Checking the exit code afterwards is actually clearer...
+	# shellcheck disable=SC2181
 	if [ $? -eq 0 ] ; then
 	    echo "---- Stack trace of interesting process ${pid}[${name}] ----"
 	    echo "$trace"

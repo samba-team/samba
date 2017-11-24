@@ -27,6 +27,7 @@
 __docformat__ = "restructuredText"
 
 from base64 import b64encode
+import errno
 import os
 import re
 import pwd
@@ -145,6 +146,7 @@ class ProvisionPaths(object):
         self.dns = None
         self.winsdb = None
         self.private_dir = None
+        self.binddns_dir = None
         self.state_dir = None
 
 
@@ -531,6 +533,7 @@ def provision_paths_from_lp(lp, dnsdomain):
     """
     paths = ProvisionPaths()
     paths.private_dir = lp.get("private dir")
+    paths.binddns_dir = lp.get("binddns dir")
     paths.state_dir = lp.get("state directory")
 
     # This is stored without path prefix for the "privateKeytab" attribute in
@@ -543,16 +546,18 @@ def provision_paths_from_lp(lp, dnsdomain):
     paths.idmapdb = os.path.join(paths.private_dir, "idmap.ldb")
     paths.secrets = os.path.join(paths.private_dir, "secrets.ldb")
     paths.privilege = os.path.join(paths.private_dir, "privilege.ldb")
-    paths.dns = os.path.join(paths.private_dir, "dns", dnsdomain + ".zone")
     paths.dns_update_list = os.path.join(paths.private_dir, "dns_update_list")
     paths.spn_update_list = os.path.join(paths.private_dir, "spn_update_list")
-    paths.namedconf = os.path.join(paths.private_dir, "named.conf")
-    paths.namedconf_update = os.path.join(paths.private_dir, "named.conf.update")
-    paths.namedtxt = os.path.join(paths.private_dir, "named.txt")
     paths.krb5conf = os.path.join(paths.private_dir, "krb5.conf")
     paths.kdcconf = os.path.join(paths.private_dir, "kdc.conf")
     paths.winsdb = os.path.join(paths.private_dir, "wins.ldb")
     paths.s4_ldapi_path = os.path.join(paths.private_dir, "ldapi")
+
+    paths.dns = os.path.join(paths.binddns_dir, "dns", dnsdomain + ".zone")
+    paths.namedconf = os.path.join(paths.binddns_dir, "named.conf")
+    paths.namedconf_update = os.path.join(paths.binddns_dir, "named.conf.update")
+    paths.namedtxt = os.path.join(paths.binddns_dir, "named.txt")
+
     paths.hklm = "hklm.ldb"
     paths.hkcr = "hkcr.ldb"
     paths.hkcu = "hkcu.ldb"
@@ -944,6 +949,10 @@ def setup_secretsdb(paths, session_info, backend_credentials, lp):
     keytab_path = os.path.join(paths.private_dir, paths.keytab)
     if os.path.exists(keytab_path):
         os.unlink(keytab_path)
+
+    bind_dns_keytab_path = os.path.join(paths.binddns_dir, paths.dns_keytab)
+    if os.path.exists(bind_dns_keytab_path):
+        os.unlink(bind_dns_keytab_path)
 
     dns_keytab_path = os.path.join(paths.private_dir, paths.dns_keytab)
     if os.path.exists(dns_keytab_path):
@@ -1928,6 +1937,15 @@ def provision_fake_ypserver(logger, samdb, domaindn, netbiosname, nisdomain,
     else:
         samdb.transaction_commit()
 
+def directory_create_or_exists(path, mode=0o755):
+    if not os.path.exists(path):
+        try:
+            os.mkdir(path, mode)
+        except OSError as e:
+            if e.errno in [errno.EEXIST]:
+                pass
+            else:
+                raise ProvisioningError("Failed to create directory %s: %s" % (path, e.strerror))
 
 def provision(logger, session_info, smbconf=None,
         targetdir=None, samdb_fill=FILL_FULL, realm=None, rootdn=None,
@@ -2064,12 +2082,10 @@ def provision(logger, session_info, smbconf=None,
     if serverrole is None:
         serverrole = lp.get("server role")
 
-    if not os.path.exists(paths.private_dir):
-        os.mkdir(paths.private_dir)
-    if not os.path.exists(os.path.join(paths.private_dir, "tls")):
-        os.makedirs(os.path.join(paths.private_dir, "tls"), 0700)
-    if not os.path.exists(paths.state_dir):
-        os.mkdir(paths.state_dir)
+    directory_create_or_exists(paths.private_dir, 0o700)
+    directory_create_or_exists(paths.binddns_dir, 0o770)
+    directory_create_or_exists(os.path.join(paths.private_dir, "tls"))
+    directory_create_or_exists(paths.state_dir)
 
     if paths.sysvol and not os.path.exists(paths.sysvol):
         os.makedirs(paths.sysvol, 0775)
@@ -2184,6 +2200,9 @@ def provision(logger, session_info, smbconf=None,
                          realm=names.realm)
         logger.info("A Kerberos configuration suitable for Samba AD has been "
                     "generated at %s", paths.krb5conf)
+        logger.info("Merge the contents of this file with your system "
+                    "krb5.conf or replace it with this one. Do not create a "
+                    "symlink!")
 
         if serverrole == "active directory domain controller":
             create_dns_update_list(lp, logger, paths)
@@ -2198,16 +2217,42 @@ def provision(logger, session_info, smbconf=None,
     # Now commit the secrets.ldb to disk
     secrets_ldb.transaction_commit()
 
-    # the commit creates the dns.keytab, now chown it
-    dns_keytab_path = os.path.join(paths.private_dir, paths.dns_keytab)
-    if os.path.isfile(dns_keytab_path) and paths.bind_gid is not None:
+    # the commit creates the dns.keytab in the private directory
+    private_dns_keytab_path = os.path.join(paths.private_dir, paths.dns_keytab)
+    bind_dns_keytab_path = os.path.join(paths.binddns_dir, paths.dns_keytab)
+
+    if os.path.isfile(private_dns_keytab_path):
+        if os.path.isfile(bind_dns_keytab_path):
+            try:
+                os.unlink(bind_dns_keytab_path)
+            except OSError as e:
+                logger.error("Failed to remove %s: %s" %
+                             (bind_dns_keytab_path, e.strerror))
+
+        # link the dns.keytab to the bind-dns directory
         try:
-            os.chmod(dns_keytab_path, 0640)
-            os.chown(dns_keytab_path, -1, paths.bind_gid)
-        except OSError:
-            if not os.environ.has_key('SAMBA_SELFTEST'):
-                logger.info("Failed to chown %s to bind gid %u",
-                            dns_keytab_path, paths.bind_gid)
+            os.link(private_dns_keytab_path, bind_dns_keytab_path)
+        except OSError as e:
+            logger.error("Failed to create link %s -> %s: %s" %
+                         (private_dns_keytab_path, bind_dns_keytab_path, e.strerror))
+
+        # chown the dns.keytab in the bind-dns directory
+        if paths.bind_gid is not None:
+            try:
+                os.chmod(paths.binddns_dir, 0770)
+                os.chown(paths.binddns_dir, -1, paths.bind_gid)
+            except OSError:
+                if not os.environ.has_key('SAMBA_SELFTEST'):
+                    logger.info("Failed to chown %s to bind gid %u",
+                                paths.binddns_dir, paths.bind_gid)
+
+            try:
+                os.chmod(bind_dns_keytab_path, 0640)
+                os.chown(bind_dns_keytab_path, -1, paths.bind_gid)
+            except OSError:
+                if not os.environ.has_key('SAMBA_SELFTEST'):
+                    logger.info("Failed to chown %s to bind gid %u",
+                                bind_dns_keytab_path, paths.bind_gid)
 
     result = ProvisionResult()
     result.server_role = serverrole

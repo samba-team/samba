@@ -4041,7 +4041,8 @@ static NTSTATUS dcesrv_lsa_SetInfoPolicy2(struct dcesrv_call_state *dce_call,
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-static void kdc_get_policy(struct loadparm_context *lp_ctx,
+static void kdc_get_policy(TALLOC_CTX *mem_ctx,
+			   struct loadparm_context *lp_ctx,
 			   struct smb_krb5_context *smb_krb5_context,
 			   struct lsa_DomainInfoKerberos *k)
 {
@@ -4049,12 +4050,10 @@ static void kdc_get_policy(struct loadparm_context *lp_ctx,
 	time_t usr_tkt_lifetime;
 	time_t renewal_lifetime;
 
-	/* These should be set and stored via Group Policy, but until then, some defaults are in order */
-
 	/* Our KDC always re-validates the client */
 	k->authentication_options = LSA_POLICY_KERBEROS_VALIDATE_CLIENT;
 
-	lpcfg_default_kdc_policy(lp_ctx, &svc_tkt_lifetime,
+	lpcfg_default_kdc_policy(mem_ctx, lp_ctx, &svc_tkt_lifetime,
 				 &usr_tkt_lifetime, &renewal_lifetime);
 
 	unix_to_nt_time(&k->service_tkt_lifetime, svc_tkt_lifetime);
@@ -4103,7 +4102,7 @@ static NTSTATUS dcesrv_lsa_QueryDomainInformationPolicy(struct dcesrv_call_state
 			*r->out.info = NULL;
 			return NT_STATUS_INTERNAL_ERROR;
 		}
-		kdc_get_policy(dce_call->conn->dce_ctx->lp_ctx,
+		kdc_get_policy(mem_ctx, dce_call->conn->dce_ctx->lp_ctx,
 			       smb_krb5_context,
 			       k);
 		talloc_free(smb_krb5_context);

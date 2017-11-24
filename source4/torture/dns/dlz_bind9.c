@@ -19,7 +19,7 @@
 
 #include "includes.h"
 #include "torture/smbtorture.h"
-#include "dlz_minimal.h"
+#include "dns_server/dlz_minimal.h"
 #include <talloc.h>
 #include <ldb.h>
 #include "lib/param/param.h"
@@ -54,13 +54,22 @@ static bool test_dlz_bind9_version(struct torture_context *tctx)
 	return true;
 }
 
+static char *test_dlz_bind9_binddns_dir(struct torture_context *tctx,
+					const char *file)
+{
+	return talloc_asprintf(tctx,
+			       "%s/%s",
+			       lpcfg_binddns_dir(tctx->lp_ctx),
+			       file);
+}
+
 static bool test_dlz_bind9_create(struct torture_context *tctx)
 {
 	void *dbdata;
 	const char *argv[] = {
 		"samba_dlz",
 		"-H",
-		lpcfg_private_path(tctx, tctx->lp_ctx, "dns/sam.ldb"),
+		test_dlz_bind9_binddns_dir(tctx, "dns/sam.ldb"),
 		NULL
 	};
 	tctx_static = tctx;
@@ -77,15 +86,18 @@ static isc_result_t dlz_bind9_writeable_zone_hook(dns_view_t *view,
 					   const char *zone_name)
 {
 	struct torture_context *tctx = talloc_get_type((void *)view, struct torture_context);
-	struct ldb_context *samdb = samdb_connect_url(tctx, NULL, tctx->lp_ctx,
-						      system_session(tctx->lp_ctx),
-						      0, lpcfg_private_path(tctx, tctx->lp_ctx, "dns/sam.ldb"));
+	struct ldb_context *samdb = NULL;
+	char *errstring = NULL;
+	int ret = samdb_connect_url(tctx, NULL, tctx->lp_ctx,
+				    system_session(tctx->lp_ctx),
+				    0,
+				    test_dlz_bind9_binddns_dir(tctx, "dns/sam.ldb"),
+				    &samdb, &errstring);
 	struct ldb_message *msg;
-	int ret;
 	const char *attrs[] = {
 		NULL
 	};
-	if (!samdb) {
+	if (ret != LDB_SUCCESS) {
 		torture_fail(tctx, "Failed to connect to samdb");
 		return ISC_R_FAILURE;
 	}
@@ -108,7 +120,7 @@ static bool test_dlz_bind9_configure(struct torture_context *tctx)
 	const char *argv[] = {
 		"samba_dlz",
 		"-H",
-		lpcfg_private_path(tctx, tctx->lp_ctx, "dns/sam.ldb"),
+		test_dlz_bind9_binddns_dir(tctx, "dns/sam.ldb"),
 		NULL
 	};
 	tctx_static = tctx;
@@ -143,7 +155,7 @@ static bool test_dlz_bind9_gensec(struct torture_context *tctx, const char *mech
 	const char *argv[] = {
 		"samba_dlz",
 		"-H",
-		lpcfg_private_path(tctx, tctx->lp_ctx, "dns/sam.ldb"),
+		test_dlz_bind9_binddns_dir(tctx, "dns/sam.ldb"),
 		NULL
 	};
 	tctx_static = tctx;
@@ -323,7 +335,7 @@ static bool test_dlz_bind9_lookup(struct torture_context *tctx)
 	const char *argv[] = {
 		"samba_dlz",
 		"-H",
-		lpcfg_private_path(tctx, tctx->lp_ctx, "dns/sam.ldb"),
+		test_dlz_bind9_binddns_dir(tctx, "dns/sam.ldb"),
 		NULL
 	};
 	struct test_expected_rr *expected1 = NULL;
@@ -448,7 +460,7 @@ static bool test_dlz_bind9_zonedump(struct torture_context *tctx)
 	const char *argv[] = {
 		"samba_dlz",
 		"-H",
-		lpcfg_private_path(tctx, tctx->lp_ctx, "dns/sam.ldb"),
+		test_dlz_bind9_binddns_dir(tctx, "dns/sam.ldb"),
 		NULL
 	};
 	struct test_expected_rr *expected1 = NULL;
@@ -560,7 +572,7 @@ static bool test_dlz_bind9_update01(struct torture_context *tctx)
 	const char *argv[] = {
 		"samba_dlz",
 		"-H",
-		lpcfg_private_path(tctx, tctx->lp_ctx, "dns/sam.ldb"),
+		test_dlz_bind9_binddns_dir(tctx, "dns/sam.ldb"),
 		NULL
 	};
 	struct test_expected_rr *expected1 = NULL;

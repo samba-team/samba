@@ -69,9 +69,16 @@ int dsdb_schema_set_indices_and_attributes(struct ldb_context *ldb,
 	struct ldb_message *msg;
 	struct ldb_message *msg_idx;
 
+	struct loadparm_context *lp_ctx =
+		talloc_get_type(ldb_get_opaque(ldb, "loadparm"),
+				struct loadparm_context);
 	/* setup our own attribute name to schema handler */
 	ldb_schema_attribute_set_override_handler(ldb, dsdb_attribute_handler_override, schema);
 	ldb_schema_set_override_indexlist(ldb, true);
+	if (lp_ctx == NULL ||
+	    lpcfg_parm_bool(lp_ctx, NULL, "dsdb", "guid index", true)) {
+		ldb_schema_set_override_GUID_index(ldb, "objectGUID", "GUID");
+	}
 
 	if (!write_indices_and_attributes) {
 		return ret;
@@ -108,8 +115,20 @@ int dsdb_schema_set_indices_and_attributes(struct ldb_context *ldb,
 		goto op_error;
 	}
 
+	if (lp_ctx == NULL ||
+	    lpcfg_parm_bool(lp_ctx, NULL, "dsdb", "guid index", true)) {
+		ret = ldb_msg_add_string(msg_idx, "@IDXGUID", "objectGUID");
+		if (ret != LDB_SUCCESS) {
+			goto op_error;
+		}
 
-	ret = ldb_msg_add_string(msg_idx, "@IDXVERSION", SAMDB_INDEXING_VERSION);
+		ret = ldb_msg_add_string(msg_idx, "@IDX_DN_GUID", "GUID");
+		if (ret != LDB_SUCCESS) {
+			goto op_error;
+		}
+	}
+
+	ret = ldb_msg_add_string(msg_idx, "@SAMDB_INDEXING_VERSION", SAMDB_INDEXING_VERSION);
 	if (ret != LDB_SUCCESS) {
 		goto op_error;
 	}
@@ -175,11 +194,11 @@ int dsdb_schema_set_indices_and_attributes(struct ldb_context *ldb,
 		}
 		if (mod_msg->num_elements > 0) {
 			/*
-			 * Do the replace with the constructed message,
-			 * to avoid needing a lock between this search
-			 * and the replace
+			 * Do the replace with the difference, as we
+			 * are under the read lock and we wish to do a
+			 * delete of any removed/renamed attributes
 			 */
-			ret = dsdb_replace(ldb, msg, 0);
+			ret = dsdb_modify(ldb, mod_msg, 0);
 		}
 		talloc_free(mod_msg);
 	}
@@ -235,12 +254,13 @@ int dsdb_schema_set_indices_and_attributes(struct ldb_context *ldb,
 			 * @SAMBA_FEATURES_SUPPORTED
 			 */
 		} else if (mod_msg->num_elements > 0) {
+
 			/*
-			 * Do the replace with the constructed message,
-			 * to avoid needing a lock between this search
-			 * and the replace
+			 * Do the replace with the difference, as we
+			 * are under the read lock and we wish to do a
+			 * delete of any removed/renamed attributes
 			 */
-			ret = dsdb_replace(ldb, msg_idx, 0);
+			ret = dsdb_modify(ldb, mod_msg, 0);
 		}
 		talloc_free(mod_msg);
 	}

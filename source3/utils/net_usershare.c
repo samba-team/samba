@@ -647,13 +647,16 @@ static int net_usershare_add(struct net_context *c, int argc, const char **argv)
 	us_comment = "";
 	arg_acl = "S-1-1-0:R";
 
-	if (c->display_usage)
+	if (c->display_usage) {
+		TALLOC_FREE(ctx);
 		return net_usershare_add_usage(c, argc, argv);
+	}
 
 	switch (argc) {
 		case 0:
 		case 1:
 		default:
+			TALLOC_FREE(ctx);
 			return net_usershare_add_usage(c, argc, argv);
 		case 2:
 			cp_sharename = argv[0];

@@ -135,6 +135,13 @@ tcp_port_down ()
     done
 }
 
+unix_socket_listening ()
+{
+	_s="$1"
+
+	FAKE_NETSTAT_UNIX_LISTEN="${FAKE_NETSTAT_UNIX_LISTEN} ${_s}"
+}
+
 _tcp_connections ()
 {
 	_count="$1"

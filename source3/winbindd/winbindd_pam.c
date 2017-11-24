@@ -615,7 +615,7 @@ static NTSTATUS winbindd_raw_kerberos_login(TALLOC_CTX *mem_ctx,
 	struct PAC_DATA *pac_data = NULL;
 	struct PAC_DATA_CTR *pac_data_ctr = NULL;
 	const char *local_service;
-	int i;
+	uint32_t i;
 	struct netr_SamInfo3 *info3_copy = NULL;
 
 	*info3 = NULL;
@@ -1438,12 +1438,12 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 			return result;
 		}
 		netr_attempts = 0;
-		if (domain->conn.netlogon_creds == NULL) {
+		if (domain->conn.netlogon_creds_ctx == NULL) {
 			DBG_NOTICE("No security credentials available for "
 				  "domain [%s]\n", domainname);
 			result = NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 		} else if (interactive) {
-			result = rpccli_netlogon_password_logon(domain->conn.netlogon_creds,
+			result = rpccli_netlogon_password_logon(domain->conn.netlogon_creds_ctx,
 								netlogon_pipe->binding_handle,
 								mem_ctx,
 								logon_parameters,
@@ -1456,7 +1456,7 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 								flags,
 								info3);
 		} else {
-			result = rpccli_netlogon_network_logon(domain->conn.netlogon_creds,
+			result = rpccli_netlogon_network_logon(domain->conn.netlogon_creds_ctx,
 							netlogon_pipe->binding_handle,
 							mem_ctx,
 							logon_parameters,
@@ -1863,10 +1863,10 @@ sam_logon:
 			goto cached_logon;
 		}
 
-			if (domain->online) {
-				/* We're still online - fail. */
-				goto done;
-			}
+		if (domain->online) {
+			/* We're still online - fail. */
+			goto done;
+		}
 	}
 
 cached_logon:

@@ -337,7 +337,6 @@ static NTSTATUS libnet_dssync_build_request(TALLOC_CTX *mem_ctx,
 	uint32_t count;
 	uint32_t level;
 	union drsuapi_DsGetNCChangesRequest req;
-	struct dom_sid null_sid;
 	enum drsuapi_DsExtendedOperation extended_op;
 	struct drsuapi_DsReplicaObjectIdentifier *nc = NULL;
 	struct drsuapi_DsReplicaCursorCtrEx *cursors = NULL;
@@ -348,7 +347,6 @@ static NTSTATUS libnet_dssync_build_request(TALLOC_CTX *mem_ctx,
 				  DRSUAPI_DRS_GET_ANC |
 				  DRSUAPI_DRS_NEVER_SYNCED;
 
-	ZERO_STRUCT(null_sid);
 	ZERO_STRUCT(req);
 
 	if (ctx->remote_info28.supported_extensions
@@ -366,7 +364,7 @@ static NTSTATUS libnet_dssync_build_request(TALLOC_CTX *mem_ctx,
 	}
 	nc->dn = dn;
 	nc->guid = GUID_zero();
-	nc->sid = null_sid;
+	nc->sid = (struct dom_sid) {0};
 
 	if (!ctx->single_object_replication &&
 	    !ctx->force_full_replication && utdv)

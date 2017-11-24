@@ -26,6 +26,7 @@
 #include "librpc/gen_ndr/schannel.h"
 
 struct netlogon_creds_cli_context;
+struct cli_credentials;
 struct messaging_context;
 struct dcerpc_binding_handle;
 struct db_context;
@@ -40,18 +41,12 @@ NTSTATUS netlogon_creds_cli_context_global(struct loadparm_context *lp_ctx,
 				enum netr_SchannelType type,
 				const char *server_computer,
 				const char *server_netbios_domain,
+				const char *server_dns_domain,
 				TALLOC_CTX *mem_ctx,
 				struct netlogon_creds_cli_context **_context);
-NTSTATUS netlogon_creds_cli_context_tmp(const char *client_computer,
-				const char *client_account,
-				enum netr_SchannelType type,
-				uint32_t proposed_flags,
-				uint32_t required_flags,
-				enum dcerpc_AuthLevel auth_level,
-				const char *server_computer,
-				const char *server_netbios_domain,
-				TALLOC_CTX *mem_ctx,
-				struct netlogon_creds_cli_context **_context);
+NTSTATUS netlogon_creds_bind_cli_credentials(
+	struct netlogon_creds_cli_context *context, TALLOC_CTX *mem_ctx,
+	struct cli_credentials **pcli_creds);
 
 char *netlogon_creds_cli_debug_string(
 		const struct netlogon_creds_cli_context *context,
@@ -67,9 +62,11 @@ bool netlogon_creds_cli_validate(struct netlogon_creds_cli_context *context,
 			const struct netlogon_creds_CredentialState *creds1);
 
 NTSTATUS netlogon_creds_cli_store(struct netlogon_creds_cli_context *context,
-				  struct netlogon_creds_CredentialState **_creds);
+				  struct netlogon_creds_CredentialState *creds);
 NTSTATUS netlogon_creds_cli_delete(struct netlogon_creds_cli_context *context,
-				   struct netlogon_creds_CredentialState **_creds);
+				   struct netlogon_creds_CredentialState *creds);
+NTSTATUS netlogon_creds_cli_delete_lck(
+	struct netlogon_creds_cli_context *context);
 
 struct tevent_req *netlogon_creds_cli_lock_send(TALLOC_CTX *mem_ctx,
 				struct tevent_context *ev,
@@ -80,6 +77,26 @@ NTSTATUS netlogon_creds_cli_lock_recv(struct tevent_req *req,
 NTSTATUS netlogon_creds_cli_lock(struct netlogon_creds_cli_context *context,
 			TALLOC_CTX *mem_ctx,
 			struct netlogon_creds_CredentialState **creds);
+
+struct netlogon_creds_cli_lck;
+
+enum netlogon_creds_cli_lck_type {
+	NETLOGON_CREDS_CLI_LCK_NONE,
+	NETLOGON_CREDS_CLI_LCK_SHARED,
+	NETLOGON_CREDS_CLI_LCK_EXCLUSIVE,
+};
+
+struct tevent_req *netlogon_creds_cli_lck_send(
+	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+	struct netlogon_creds_cli_context *context,
+	enum netlogon_creds_cli_lck_type type);
+NTSTATUS netlogon_creds_cli_lck_recv(
+	struct tevent_req *req, TALLOC_CTX *mem_ctx,
+	struct netlogon_creds_cli_lck **lck);
+NTSTATUS netlogon_creds_cli_lck(
+	struct netlogon_creds_cli_context *context,
+	enum netlogon_creds_cli_lck_type type,
+	TALLOC_CTX *mem_ctx, struct netlogon_creds_cli_lck **lck);
 
 struct tevent_req *netlogon_creds_cli_auth_send(TALLOC_CTX *mem_ctx,
 				struct tevent_context *ev,
@@ -99,9 +116,11 @@ struct tevent_req *netlogon_creds_cli_check_send(TALLOC_CTX *mem_ctx,
 				struct tevent_context *ev,
 				struct netlogon_creds_cli_context *context,
 				struct dcerpc_binding_handle *b);
-NTSTATUS netlogon_creds_cli_check_recv(struct tevent_req *req);
+NTSTATUS netlogon_creds_cli_check_recv(struct tevent_req *req,
+				       union netr_Capabilities *capabilities);
 NTSTATUS netlogon_creds_cli_check(struct netlogon_creds_cli_context *context,
-				  struct dcerpc_binding_handle *b);
+				  struct dcerpc_binding_handle *b,
+				  union netr_Capabilities *capabilities);
 
 struct tevent_req *netlogon_creds_cli_ServerPasswordSet_send(TALLOC_CTX *mem_ctx,
 				struct tevent_context *ev,

@@ -347,23 +347,14 @@ static const struct stream_server_ops wreplsrv_stream_ops = {
 NTSTATUS wreplsrv_in_connection_merge(struct wreplsrv_partner *partner,
 				      uint32_t peer_assoc_ctx,
 				      struct tstream_context **stream,
-				      struct wreplsrv_in_connection **_wrepl_in)
+				      struct wreplsrv_in_connection **_wrepl_in,
+				      void* process_context)
 {
 	struct wreplsrv_service *service = partner->service;
 	struct wreplsrv_in_connection *wrepl_in;
-	const struct model_ops *model_ops;
 	struct stream_connection *conn;
 	struct tevent_req *subreq;
 	NTSTATUS status;
-
-	/* within the wrepl task we want to be a single process, so
-	   ask for the single process model ops and pass these to the
-	   stream_setup_socket() call. */
-	model_ops = process_model_startup("single");
-	if (!model_ops) {
-		DEBUG(0,("Can't find 'single' process model_ops"));
-		return NT_STATUS_INTERNAL_ERROR;
-	}
 
 	wrepl_in = talloc_zero(partner, struct wreplsrv_in_connection);
 	NT_STATUS_HAVE_NO_MEMORY(wrepl_in);
@@ -375,11 +366,12 @@ NTSTATUS wreplsrv_in_connection_merge(struct wreplsrv_partner *partner,
 
 	status = stream_new_connection_merge(service->task->event_ctx,
 					     service->task->lp_ctx,
-					     model_ops,
+					     service->task->model_ops,
 					     &wreplsrv_stream_ops,
 					     service->task->msg_ctx,
 					     wrepl_in,
-					     &conn);
+					     &conn,
+					     process_context);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	/*
@@ -425,18 +417,8 @@ NTSTATUS wreplsrv_setup_sockets(struct wreplsrv_service *service, struct loadpar
 {
 	NTSTATUS status;
 	struct task_server *task = service->task;
-	const struct model_ops *model_ops;
 	const char *address;
 	uint16_t port = WINS_REPLICATION_PORT;
-
-	/* within the wrepl task we want to be a single process, so
-	   ask for the single process model ops and pass these to the
-	   stream_setup_socket() call. */
-	model_ops = process_model_startup("single");
-	if (!model_ops) {
-		DEBUG(0,("Can't find 'single' process model_ops"));
-		return NT_STATUS_INTERNAL_ERROR;
-	}
 
 	if (lpcfg_interfaces(lp_ctx) && lpcfg_bind_interfaces_only(lp_ctx)) {
 		int num_interfaces;
@@ -456,12 +438,14 @@ NTSTATUS wreplsrv_setup_sockets(struct wreplsrv_service *service, struct loadpar
 				continue;
 			}
 			address = iface_list_n_ip(ifaces, i);
-			status = stream_setup_socket(task, task->event_ctx,
-						     task->lp_ctx, model_ops,
-						     &wreplsrv_stream_ops,
-						     "ipv4", address, &port, 
-					              lpcfg_socket_options(task->lp_ctx),
-						     service);
+			status = stream_setup_socket(
+					task, task->event_ctx,
+					task->lp_ctx,
+					task->model_ops,
+					&wreplsrv_stream_ops,
+					"ipv4", address, &port,
+					lpcfg_socket_options(task->lp_ctx),
+					service, task->process_context);
 			if (!NT_STATUS_IS_OK(status)) {
 				DEBUG(0,("stream_setup_socket(address=%s,port=%u) failed - %s\n",
 					 address, port, nt_errstr(status)));
@@ -470,10 +454,12 @@ NTSTATUS wreplsrv_setup_sockets(struct wreplsrv_service *service, struct loadpar
 		}
 	} else {
 		address = "0.0.0.0";
-		status = stream_setup_socket(task, task->event_ctx, task->lp_ctx,
-					     model_ops, &wreplsrv_stream_ops,
-					     "ipv4", address, &port, lpcfg_socket_options(task->lp_ctx),
-					     service);
+		status = stream_setup_socket(task, task->event_ctx,
+					     task->lp_ctx, task->model_ops,
+					     &wreplsrv_stream_ops,
+					     "ipv4", address, &port,
+					     lpcfg_socket_options(task->lp_ctx),
+					     service, task->process_context);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("stream_setup_socket(address=%s,port=%u) failed - %s\n",
 				 address, port, nt_errstr(status)));

@@ -2730,7 +2730,8 @@ NTSTATUS samba_kdc_setup_db_ctx(TALLOC_CTX *mem_ctx, struct samba_kdc_base_conte
 	kdc_db_ctx->msg_ctx = base_ctx->msg_ctx;
 
 	/* get default kdc policy */
-	lpcfg_default_kdc_policy(base_ctx->lp_ctx,
+	lpcfg_default_kdc_policy(mem_ctx,
+				 base_ctx->lp_ctx,
 				 &kdc_db_ctx->policy.svc_tkt_lifetime,
 				 &kdc_db_ctx->policy.usr_tkt_lifetime,
 				 &kdc_db_ctx->policy.renewal_lifetime);

@@ -207,7 +207,7 @@ creds.set_kerberos_state(DONT_USE_KERBEROS)
 
 
 
-def check_for_DNS(refprivate, private, dns_backend):
+def check_for_DNS(refprivate, private, refbinddns_dir, binddns_dir, dns_backend):
     """Check if the provision has already the requirement for dynamic dns
 
     :param refprivate: The path to the private directory of the reference
@@ -229,17 +229,17 @@ def check_for_DNS(refprivate, private, dns_backend):
 
     namedfile = lp.get("dnsupdate:path")
     if not namedfile:
-       namedfile = "%s/named.conf.update" % private
+       namedfile = "%s/named.conf.update" % binddns_dir
     if not os.path.exists(namedfile):
-        destdir = "%s/new_dns" % private
-        dnsdir = "%s/dns" % private
+        destdir = "%s/new_dns" % binddns_dir
+        dnsdir = "%s/dns" % binddns_dir
 
         if not os.path.exists(destdir):
             os.mkdir(destdir)
         if not os.path.exists(dnsdir):
             os.mkdir(dnsdir)
-        shutil.copy("%s/named.conf" % refprivate, "%s/named.conf" % destdir)
-        shutil.copy("%s/named.txt" % refprivate, "%s/named.txt" % destdir)
+        shutil.copy("%s/named.conf" % refbinddns_dir, "%s/named.conf" % destdir)
+        shutil.copy("%s/named.txt" % refbinddns_dir, "%s/named.txt" % destdir)
         message(SIMPLE, "It seems that your provision did not integrate "
                 "new rules for dynamic dns update of domain related entries")
         message(SIMPLE, "A copy of the new bind configuration files and "
@@ -1793,7 +1793,9 @@ if __name__ == '__main__':
         # 20)
         updateOEMInfo(ldbs.sam, str(names.rootdn))
         # 21)
-        check_for_DNS(newpaths.private_dir, paths.private_dir, names.dns_backend)
+        check_for_DNS(newpaths.private_dir, paths.private_dir,
+                      newpaths.binddns_dir, paths.binddns_dir,
+                      names.dns_backend)
         # 22)
         update_provision_usn(ldbs.sam, minUSN, maxUSN, names.invocation)
         if opts.full and (names.policyid is None or names.policyid_dc is None):

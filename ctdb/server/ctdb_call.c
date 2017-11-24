@@ -1549,6 +1549,7 @@ struct revokechild_deferred_call {
 	struct ctdb_req_header *hdr;
 	deferred_requeue_fn fn;
 	void *ctx;
+	struct revokechild_handle *rc;
 };
 
 struct revokechild_handle {
@@ -1573,12 +1574,20 @@ static void deferred_call_requeue(struct tevent_context *ev,
 	while (dlist != NULL) {
 		struct revokechild_deferred_call *dcall = dlist;
 
+		talloc_set_destructor(dcall, NULL);
 		DLIST_REMOVE(dlist, dcall);
 		dcall->fn(dcall->ctx, dcall->hdr);
 		talloc_free(dcall);
 	}
 }
 
+static int deferred_call_destructor(struct revokechild_deferred_call *dcall)
+{
+	struct revokechild_handle *rc = dcall->rc;
+
+	DLIST_REMOVE(rc->deferred_call_list, dcall);
+	return 0;
+}
 
 static int revokechild_destructor(struct revokechild_handle *rc)
 {
@@ -1917,7 +1926,7 @@ int ctdb_add_revoke_deferred_call(struct ctdb_context *ctdb, struct ctdb_db_cont
 		return -1;
 	}
 
-	deferred_call = talloc(ctdb_db, struct revokechild_deferred_call);
+	deferred_call = talloc(call_context, struct revokechild_deferred_call);
 	if (deferred_call == NULL) {
 		DEBUG(DEBUG_ERR,("Failed to allocate deferred call structure for revoking record\n"));
 		return -1;
@@ -1927,6 +1936,9 @@ int ctdb_add_revoke_deferred_call(struct ctdb_context *ctdb, struct ctdb_db_cont
 	deferred_call->hdr  = talloc_steal(deferred_call, hdr);
 	deferred_call->fn   = fn;
 	deferred_call->ctx  = call_context;
+	deferred_call->rc   = rc;
+
+	talloc_set_destructor(deferred_call, deferred_call_destructor);
 
 	DLIST_ADD(rc->deferred_call_list, deferred_call);
 

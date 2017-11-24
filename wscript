@@ -44,6 +44,7 @@ def set_options(opt):
     opt.RECURSE('pidl')
     opt.RECURSE('source3')
     opt.RECURSE('lib/util')
+    opt.RECURSE('lib/crypto')
     opt.RECURSE('ctdb')
     opt.samba_add_onoff_option('pthreadpool', with_name="enable", without_name="disable", default=True)
 

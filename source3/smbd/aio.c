@@ -697,6 +697,10 @@ NTSTATUS schedule_smb2_aio_read(connection_struct *conn,
 		return NT_STATUS_RETRY;
 	}
 
+	if (smbd_smb2_is_compound(smbreq->smb2req)) {
+		return NT_STATUS_RETRY;
+	}
+
 	/* Create the out buffer. */
 	*preadbuf = data_blob_talloc(ctx, NULL, smb_maxcnt);
 	if (preadbuf->data == NULL) {
@@ -838,6 +842,10 @@ NTSTATUS schedule_aio_smb2_write(connection_struct *conn,
 
 	/* Only do this on writes not using the write cache. */
 	if (lp_write_cache_size(SNUM(conn)) != 0) {
+		return NT_STATUS_RETRY;
+	}
+
+	if (smbd_smb2_is_compound(smbreq->smb2req)) {
 		return NT_STATUS_RETRY;
 	}
 

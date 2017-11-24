@@ -54,6 +54,7 @@ struct http_send_request_state {
 struct http_read_response_state {
 	enum http_parser_state	parser_state;
 	size_t			max_headers_size;
+	uint64_t		max_content_length;
 	DATA_BLOB		buffer;
 	struct http_request	*response;
 };

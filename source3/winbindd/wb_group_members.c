@@ -22,6 +22,9 @@
 #include "librpc/gen_ndr/ndr_winbind_c.h"
 #include "../librpc/gen_ndr/ndr_security.h"
 #include "../libcli/security/security.h"
+#include "lib/util/util_tdb.h"
+#include "lib/dbwrap/dbwrap.h"
+#include "lib/dbwrap/dbwrap_rbt.h"
 
 /*
  * We have 3 sets of routines here:
@@ -268,14 +271,14 @@ static NTSTATUS wb_groups_members_recv(struct tevent_req *req,
 
 /*
  * This is the routine expanding a list of groups up to a certain level. We
- * collect the users in a talloc_dict: We have to add them without duplicates,
- * and talloc_dict is an indexed (here indexed by SID) data structure.
+ * collect the users in a rbt database: We have to add them without duplicates,
+ * and the db is indexed by SID.
  */
 
 struct wb_group_members_state {
 	struct tevent_context *ev;
 	int depth;
-	struct talloc_dict *users;
+	struct db_context *users;
 	struct wbint_Principal *groups;
 };
 
@@ -301,7 +304,7 @@ struct tevent_req *wb_group_members_send(TALLOC_CTX *mem_ctx,
 	}
 	state->ev = ev;
 	state->depth = max_depth;
-	state->users = talloc_dict_init(state);
+	state->users = db_open_rbt(state);
 	if (tevent_req_nomem(state->users, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -349,40 +352,18 @@ static NTSTATUS wb_group_members_next_subreq(
 	return NT_STATUS_OK;
 }
 
-
-/**
- * compose a wbint_Principal and add it to  talloc_dict
- *
- * NOTE: this has a side effect: *name needs to be talloc'd
- * and it is talloc_move'd to mem_ctx.
- */
-NTSTATUS add_wbint_Principal_to_dict(TALLOC_CTX *mem_ctx,
-				     struct dom_sid *sid,
-				     const char **name,
-				     enum lsa_SidType type,
-				     struct talloc_dict *dict)
+NTSTATUS add_member_to_db(struct db_context *db, struct dom_sid *sid,
+			  const char *name)
 {
-	struct wbint_Principal *m;
-	DATA_BLOB key;
-	bool ok;
+	size_t len = ndr_size_dom_sid(sid, 0);
+	uint8_t sidbuf[len];
+	TDB_DATA key = { .dptr = sidbuf, .dsize = sizeof(sidbuf) };
+	NTSTATUS status;
 
-	m = talloc(mem_ctx, struct wbint_Principal);
-	if (m == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	sid_linearize(sidbuf, sizeof(sidbuf), sid);
 
-	sid_copy(&m->sid, sid);
-	m->name = talloc_move(m, name);
-	m->type = type;
-
-	key = data_blob_const(&m->sid, sizeof(m->sid));
-
-	ok = talloc_dict_set(dict, key, &m);
-	if (!ok) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	return NT_STATUS_OK;
+	status = dbwrap_store(db, key, string_term_tdb_data(name), 0);
+	return status;
 }
 
 static void wb_group_members_done(struct tevent_req *subreq)
@@ -433,11 +414,8 @@ static void wb_group_members_done(struct tevent_req *subreq)
 			/*
 			 * Add a copy of members[i] to state->users
 			 */
-			status = add_wbint_Principal_to_dict(talloc_tos(),
-							     &members[i].sid,
-							     &members[i].name,
-							     members[i].type,
-							     state->users);
+			status = add_member_to_db(state->users, &members[i].sid,
+						  members[i].name);
 			if (tevent_req_nterror(req, status)) {
 				return;
 			}
@@ -476,7 +454,7 @@ static void wb_group_members_done(struct tevent_req *subreq)
 }
 
 NTSTATUS wb_group_members_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
-			       struct talloc_dict **members)
+			       struct db_context **members)
 {
 	struct wb_group_members_state *state = tevent_req_data(
 		req, struct wb_group_members_state);

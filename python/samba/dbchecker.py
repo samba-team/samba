@@ -523,8 +523,26 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         # check if its a backlink
         linkID, _ = self.get_attr_linkID_and_reverse_name(attrname)
         if (linkID & 1 == 0) and str(dsdb_dn).find('\\0ADEL') == -1:
-            self.report("Not removing dangling forward link")
-            return
+
+            linkID, reverse_link_name \
+                = self.get_attr_linkID_and_reverse_name(attrname)
+            if reverse_link_name is not None:
+                self.report("Not removing dangling forward link")
+                return
+
+            nc_root = self.samdb.get_nc_root(dn)
+            target_nc_root = self.samdb.get_nc_root(dsdb_dn.dn)
+            if nc_root != target_nc_root:
+                self.report("Not removing dangling one-way "
+                            "cross-partition link "
+                            "(we might be mid-replication)")
+                return
+
+            # Due to our link handling one-way links pointing to
+            # missing objects are plausible.
+            self.err_deleted_dn(dn, attrname, val,
+                                dsdb_dn, dsdb_dn, True)
+
         self.err_deleted_dn(dn, attrname, val, dsdb_dn, dsdb_dn, False)
 
     def err_missing_dn_GUID_component(self, dn, attrname, val, dsdb_dn, errstr):

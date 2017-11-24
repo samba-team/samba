@@ -103,6 +103,8 @@ static struct tevent_req *wbint_bh_raw_call_send(TALLOC_CTX *mem_ctx,
 	if ((state->domain != NULL)
 	    && wcache_fetch_ndr(state, state->domain, state->opnum,
 				&state->in_data, &state->out_data)) {
+		DBG_DEBUG("Got opnum %"PRIu32" for domain %s from cache\n",
+			  state->opnum, state->domain->name);
 		tevent_req_done(req);
 		return tevent_req_post(req, ev);
 	}

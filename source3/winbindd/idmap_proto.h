@@ -28,14 +28,14 @@
 /* The following definitions come from winbindd/idmap.c  */
 
 bool idmap_is_offline(void);
-bool idmap_is_online(void);
 NTSTATUS smb_register_idmap(int version, const char *name,
 			    struct idmap_methods *methods);
 void idmap_close(void);
 NTSTATUS idmap_allocate_uid(struct unixid *id);
 NTSTATUS idmap_allocate_gid(struct unixid *id);
 NTSTATUS idmap_backend_unixids_to_sids(struct id_map **maps,
-				       const char *domain_name);
+				       const char *domain_name,
+				       struct dom_sid domain_sid);
 struct idmap_domain *idmap_find_domain(const char *domname);
 
 /* The following definitions come from winbindd/idmap_nss.c  */

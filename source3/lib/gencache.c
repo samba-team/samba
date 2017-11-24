@@ -74,29 +74,6 @@ static bool gencache_init(void)
 	cache = tdb_wrap_open(NULL, cache_fname, hash_size,
 			      TDB_DEFAULT|TDB_INCOMPATIBLE_HASH,
 			      open_flags, 0644);
-	if (cache) {
-		int ret;
-		ret = tdb_check(cache->tdb, NULL, NULL);
-		if (ret != 0) {
-			TALLOC_FREE(cache);
-
-			/*
-			 * Retry with CLEAR_IF_FIRST.
-			 *
-			 * Warning: Converting this to dbwrap won't work
-			 * directly. gencache.c does transactions on this tdb,
-			 * and dbwrap forbids this for CLEAR_IF_FIRST
-			 * databases. tdb does allow transactions on
-			 * CLEAR_IF_FIRST databases, so lets use it here to
-			 * clean up a broken database.
-			 */
-			cache = tdb_wrap_open(NULL, cache_fname, hash_size,
-					      TDB_DEFAULT|
-					      TDB_INCOMPATIBLE_HASH|
-					      TDB_CLEAR_IF_FIRST,
-					      open_flags, 0644);
-		}
-	}
 
 	if (!cache && (errno == EACCES)) {
 		open_flags = O_RDONLY;
@@ -622,9 +599,6 @@ struct stabilize_state {
 static int stabilize_fn(struct tdb_context *tdb, TDB_DATA key, TDB_DATA val,
 			void *priv);
 
-static int wipe_fn(struct tdb_context *tdb, TDB_DATA key, TDB_DATA val,
-		   void *priv);
-
 /**
  * Stabilize gencache
  *
@@ -690,20 +664,10 @@ bool gencache_stabilize(void)
 		return false;
 	}
 
-	res = tdb_traverse(cache_notrans->tdb, wipe_fn, NULL);
+	res = tdb_wipe_all(cache_notrans->tdb);
 	if (res < 0) {
-		DEBUG(10, ("tdb_traverse with wipe_fn on gencache_notrans.tdb "
-			  "failed: %s\n",
-			   tdb_errorstr(cache_notrans->tdb)));
-		tdb_unlockall(cache_notrans->tdb);
-		return false;
-	}
-
-	res = tdb_unlockall(cache_notrans->tdb);
-	if (res != 0) {
-		DEBUG(10, ("tdb_unlockall on gencache.tdb failed: "
-			   "%s\n", tdb_errorstr(cache->tdb)));
-		return false;
+		DBG_DEBUG("tdb_wipe_all on gencache_notrans.tdb failed: %s\n",
+			  tdb_errorstr(cache_notrans->tdb));
 	}
 
 	now = talloc_asprintf(talloc_tos(), "%d", (int)time(NULL));
@@ -711,6 +675,13 @@ bool gencache_stabilize(void)
 		tdb_store(cache_notrans->tdb, last_stabilize_key(),
 			  string_term_tdb_data(now), 0);
 		TALLOC_FREE(now);
+	}
+
+	res = tdb_unlockall(cache_notrans->tdb);
+	if (res != 0) {
+		DEBUG(10, ("tdb_unlockall on gencache.tdb failed: "
+			   "%s\n", tdb_errorstr(cache->tdb)));
+		return false;
 	}
 
 	return true;
@@ -753,35 +724,6 @@ static int stabilize_fn(struct tdb_context *tdb, TDB_DATA key, TDB_DATA val,
 
 	return 0;
 }
-
-static int wipe_fn(struct tdb_context *tdb, TDB_DATA key, TDB_DATA val,
-		   void *priv)
-{
-	int res;
-	bool ok;
-	time_t timeout;
-
-	res = tdb_data_cmp(key, last_stabilize_key());
-	if (res == 0) {
-		return 0;
-	}
-
-	ok = gencache_pull_timeout(val.dptr, &timeout, NULL);
-	if (!ok) {
-		DEBUG(10, ("Ignoring invalid entry\n"));
-		return 0;
-	}
-
-	res = tdb_delete(tdb, key);
-	if (res != 0) {
-		DEBUG(10, ("tdb_delete from gencache_notrans.tdb failed: "
-			   "%s\n", tdb_errorstr(cache_notrans->tdb)));
-		return -1;
-	}
-
-	return 0;
-}
-
 
 /**
  * Get existing entry from the cache file.

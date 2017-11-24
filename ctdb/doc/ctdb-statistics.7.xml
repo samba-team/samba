@@ -253,6 +253,13 @@ Statistics collected since  : (000 01:49:20) Fri Sep 12 11:43:12 2014
       </para>
     </refsect3>
 
+    <refsect3>
+      <title>req_tunnel</title>
+      <para>
+        Number of REQ_TUNNEL messages from the other nodes.
+      </para>
+    </refsect3>
+
     </refsect2>
 
     <refsect2>
@@ -280,6 +287,13 @@ Statistics collected since  : (000 01:49:20) Fri Sep 12 11:43:12 2014
       <title>req_control</title>
       <para>
         Number of REQ_CONTROL messages from the clients.
+      </para>
+    </refsect3>
+
+    <refsect3>
+      <title>req_tunnel</title>
+      <para>
+        Number of REQ_TUNNEL messages from the clients.
       </para>
     </refsect3>
 

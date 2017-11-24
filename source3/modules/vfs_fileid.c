@@ -129,7 +129,7 @@ static uint64_t fileid_uint64_hash(const uint8_t *s, size_t len)
 
 	/* Set the initial value from the key size. */
 	for (value = 0x238F13AFLL * len, i=0; i < len; i++)
-		value = (value + (s[i] << (i*5 % 24)));
+		value = (value + (((uint64_t)s[i]) << (i*5 % 24)));
 
 	return (1103515243LL * value + 12345LL);
 }

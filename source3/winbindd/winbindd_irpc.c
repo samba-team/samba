@@ -123,7 +123,7 @@ static NTSTATUS wb_irpc_DsrUpdateReadOnlyServerDnsRecords(struct irpc_message *m
 	DEBUG(5, ("wb_irpc_DsrUpdateReadOnlyServerDnsRecords called\n"));
 
 	return wb_irpc_forward_rpc_call(msg, msg,
-					winbind_event_context(),
+					server_event_context(),
 					req, NDR_WINBIND_DSRUPDATEREADONLYSERVERDNSRECORDS,
 					"winbind_DsrUpdateReadOnlyServerDnsRecords",
 					domain, IRPC_CALL_TIMEOUT);
@@ -133,14 +133,71 @@ static NTSTATUS wb_irpc_SamLogon(struct irpc_message *msg,
 				 struct winbind_SamLogon *req)
 {
 	struct winbindd_domain *domain;
-	const char *target_domain_name;
-	if (req->in.logon.network == NULL) {
+	struct netr_IdentityInfo *identity_info;
+	const char *target_domain_name = NULL;
+	const char *account_name = NULL;
+
+	switch (req->in.logon_level) {
+	case NetlogonInteractiveInformation:
+	case NetlogonServiceInformation:
+	case NetlogonInteractiveTransitiveInformation:
+	case NetlogonServiceTransitiveInformation:
+		if (req->in.logon.password == NULL) {
+			return NT_STATUS_REQUEST_NOT_ACCEPTED;
+		}
+		identity_info = &req->in.logon.password->identity_info;
+		break;
+
+	case NetlogonNetworkInformation:
+	case NetlogonNetworkTransitiveInformation:
+		if (req->in.logon.network == NULL) {
+			return NT_STATUS_REQUEST_NOT_ACCEPTED;
+		}
+
+		identity_info = &req->in.logon.network->identity_info;
+		break;
+
+	case NetlogonGenericInformation:
+		if (req->in.logon.generic == NULL) {
+			return NT_STATUS_REQUEST_NOT_ACCEPTED;
+		}
+
+		identity_info = &req->in.logon.generic->identity_info;
+		break;
+
+	default:
 		return NT_STATUS_REQUEST_NOT_ACCEPTED;
 	}
-	target_domain_name = req->in.logon.network->identity_info.domain_name.string;
+
+	target_domain_name = identity_info->domain_name.string;
+	if (target_domain_name == NULL) {
+		target_domain_name = "";
+	}
+
+	account_name = identity_info->account_name.string;
+	if (account_name == NULL) {
+		account_name = "";
+	}
+
+	if (IS_DC && target_domain_name[0] == '\0') {
+		const char *p = NULL;
+
+		p = strchr_m(account_name, '@');
+		if (p != NULL) {
+			target_domain_name = p + 1;
+		}
+	}
+
+	if (IS_DC && target_domain_name[0] == '\0') {
+		DBG_ERR("target_domain[%s] account[%s]\n",
+			target_domain_name, account_name);
+		return NT_STATUS_REQUEST_NOT_ACCEPTED;
+	}
 
 	domain = find_auth_domain(0, target_domain_name);
 	if (domain == NULL) {
+		DBG_INFO("target_domain[%s] for account[%s] not known\n",
+			target_domain_name, account_name);
 		req->out.result = NT_STATUS_NO_SUCH_USER;
 		req->out.authoritative = 0;
 		return NT_STATUS_OK;
@@ -149,7 +206,7 @@ static NTSTATUS wb_irpc_SamLogon(struct irpc_message *msg,
 	DEBUG(5, ("wb_irpc_SamLogon called\n"));
 
 	return wb_irpc_forward_rpc_call(msg, msg,
-					winbind_event_context(),
+					server_event_context(),
 					req, NDR_WINBIND_SAMLOGON,
 					"winbind_SamLogon",
 					domain, IRPC_CALL_TIMEOUT);
@@ -209,7 +266,7 @@ static NTSTATUS wb_irpc_LogonControl(struct irpc_message *msg,
 
 	TALLOC_FREE(frame);
 	return wb_irpc_forward_rpc_call(msg, msg,
-					winbind_event_context(),
+					server_event_context(),
 					req, NDR_WINBIND_LOGONCONTROL,
 					"winbind_LogonControl",
 					domain, 45 /* timeout */);
@@ -249,7 +306,7 @@ static NTSTATUS wb_irpc_GetForestTrustInformation(struct irpc_message *msg,
 	DEBUG(5, ("wb_irpc_GetForestTrustInformation called\n"));
 
 	return wb_irpc_forward_rpc_call(msg, msg,
-					winbind_event_context(),
+					server_event_context(),
 					req, NDR_WINBIND_GETFORESTTRUSTINFORMATION,
 					"winbind_GetForestTrustInformation",
 					domain, 45 /* timeout */);
@@ -267,7 +324,7 @@ static NTSTATUS wb_irpc_SendToSam(struct irpc_message *msg,
 	DEBUG(5, ("wb_irpc_SendToSam called\n"));
 
 	return wb_irpc_forward_rpc_call(msg, msg,
-					winbind_event_context(),
+					server_event_context(),
 					req, NDR_WINBIND_SENDTOSAM,
 					"winbind_SendToSam",
 					domain, IRPC_CALL_TIMEOUT);

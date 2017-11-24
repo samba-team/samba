@@ -59,7 +59,9 @@ dbcheck() {
     if [ "$?" != "1" ]; then
 	return 1
     fi
-    diff $tmpfile $release_dir/expected-dbcheck-link-output.txt
+    sort $tmpfile > $tmpfile.sorted
+    sort $release_dir/expected-dbcheck-link-output.txt > $tmpfile.expected
+    diff -u $tmpfile.sorted $tmpfile.expected
     if [ "$?" != "0" ]; then
 	return 1
     fi

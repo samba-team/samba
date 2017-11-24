@@ -20,11 +20,15 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "includes.h"
+#include "vfs_acl_common.h"
 #include "smbd/smbd.h"
 #include "system/filesys.h"
+#include "librpc/gen_ndr/ndr_xattr.h"
 #include "../libcli/security/security.h"
 #include "../librpc/gen_ndr/ndr_security.h"
 #include "../lib/util/bitmap.h"
+#include "lib/crypto/sha256.h"
 #include "passdb/lookup_sid.h"
 
 static NTSTATUS create_acl_blob(const struct security_descriptor *psd,
@@ -32,36 +36,18 @@ static NTSTATUS create_acl_blob(const struct security_descriptor *psd,
 			uint16_t hash_type,
 			uint8_t hash[XATTR_SD_HASH_SIZE]);
 
-static NTSTATUS get_acl_blob(TALLOC_CTX *ctx,
-			vfs_handle_struct *handle,
-			files_struct *fsp,
-			const struct smb_filename *smb_fname,
-			DATA_BLOB *pblob);
-
-static NTSTATUS store_acl_blob_fsp(vfs_handle_struct *handle,
-			files_struct *fsp,
-			DATA_BLOB *pblob);
-
 #define HASH_SECURITY_INFO (SECINFO_OWNER | \
 				SECINFO_GROUP | \
 				SECINFO_DACL | \
 				SECINFO_SACL)
 
-enum default_acl_style {DEFAULT_ACL_POSIX, DEFAULT_ACL_WINDOWS};
-
-static const struct enum_list default_acl_style[] = {
-	{DEFAULT_ACL_POSIX,	"posix"},
-	{DEFAULT_ACL_WINDOWS,	"windows"}
-};
-
-struct acl_common_config {
-	bool ignore_system_acls;
-	enum default_acl_style default_acl_style;
-};
-
-static bool init_acl_common_config(vfs_handle_struct *handle)
+bool init_acl_common_config(vfs_handle_struct *handle,
+			    const char *module_name)
 {
 	struct acl_common_config *config = NULL;
+	const struct enum_list *default_acl_style_list = NULL;
+
+	default_acl_style_list = get_default_acl_style_list();
 
 	config = talloc_zero(handle->conn, struct acl_common_config);
 	if (config == NULL) {
@@ -71,13 +57,13 @@ static bool init_acl_common_config(vfs_handle_struct *handle)
 	}
 
 	config->ignore_system_acls = lp_parm_bool(SNUM(handle->conn),
-						  ACL_MODULE_NAME,
+						  module_name,
 						  "ignore system acls",
 						  false);
 	config->default_acl_style = lp_parm_enum(SNUM(handle->conn),
-						 ACL_MODULE_NAME,
+						 module_name,
 						 "default acl style",
-						 default_acl_style,
+						 default_acl_style_list,
 						 DEFAULT_ACL_POSIX);
 
 	SMB_VFS_HANDLE_SET_DATA(handle, config, NULL,
@@ -398,212 +384,6 @@ static NTSTATUS add_directory_inheritable_components(vfs_handle_struct *handle,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS make_default_acl_posix(TALLOC_CTX *ctx,
-				       const char *name,
-				       SMB_STRUCT_STAT *psbuf,
-				       struct security_descriptor **ppdesc)
-{
-	struct dom_sid owner_sid, group_sid;
-	size_t size = 0;
-	struct security_ace aces[4];
-	uint32_t access_mask = 0;
-	mode_t mode = psbuf->st_ex_mode;
-	struct security_acl *new_dacl = NULL;
-	int idx = 0;
-
-	DBG_DEBUG("file %s mode = 0%o\n",name, (int)mode);
-
-	uid_to_sid(&owner_sid, psbuf->st_ex_uid);
-	gid_to_sid(&group_sid, psbuf->st_ex_gid);
-
-	/*
-	 We provide up to 4 ACEs
-		- Owner
-		- Group
-		- Everyone
-		- NT System
-	*/
-
-	if (mode & S_IRUSR) {
-		if (mode & S_IWUSR) {
-			access_mask |= SEC_RIGHTS_FILE_ALL;
-		} else {
-			access_mask |= SEC_RIGHTS_FILE_READ | SEC_FILE_EXECUTE;
-		}
-	}
-	if (mode & S_IWUSR) {
-		access_mask |= SEC_RIGHTS_FILE_WRITE | SEC_STD_DELETE;
-	}
-
-	init_sec_ace(&aces[idx],
-			&owner_sid,
-			SEC_ACE_TYPE_ACCESS_ALLOWED,
-			access_mask,
-			0);
-	idx++;
-
-	access_mask = 0;
-	if (mode & S_IRGRP) {
-		access_mask |= SEC_RIGHTS_FILE_READ | SEC_FILE_EXECUTE;
-	}
-	if (mode & S_IWGRP) {
-		/* note that delete is not granted - this matches posix behaviour */
-		access_mask |= SEC_RIGHTS_FILE_WRITE;
-	}
-	if (access_mask) {
-		init_sec_ace(&aces[idx],
-			&group_sid,
-			SEC_ACE_TYPE_ACCESS_ALLOWED,
-			access_mask,
-			0);
-		idx++;
-	}
-
-	access_mask = 0;
-	if (mode & S_IROTH) {
-		access_mask |= SEC_RIGHTS_FILE_READ | SEC_FILE_EXECUTE;
-	}
-	if (mode & S_IWOTH) {
-		access_mask |= SEC_RIGHTS_FILE_WRITE;
-	}
-	if (access_mask) {
-		init_sec_ace(&aces[idx],
-			&global_sid_World,
-			SEC_ACE_TYPE_ACCESS_ALLOWED,
-			access_mask,
-			0);
-		idx++;
-	}
-
-	init_sec_ace(&aces[idx],
-			&global_sid_System,
-			SEC_ACE_TYPE_ACCESS_ALLOWED,
-			SEC_RIGHTS_FILE_ALL,
-			0);
-	idx++;
-
-	new_dacl = make_sec_acl(ctx,
-			NT4_ACL_REVISION,
-			idx,
-			aces);
-
-	if (!new_dacl) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	*ppdesc = make_sec_desc(ctx,
-			SECURITY_DESCRIPTOR_REVISION_1,
-			SEC_DESC_SELF_RELATIVE|SEC_DESC_DACL_PRESENT,
-			&owner_sid,
-			&group_sid,
-			NULL,
-			new_dacl,
-			&size);
-	if (!*ppdesc) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	return NT_STATUS_OK;
-}
-
-static NTSTATUS make_default_acl_windows(TALLOC_CTX *ctx,
-					 const char *name,
-					 SMB_STRUCT_STAT *psbuf,
-					 struct security_descriptor **ppdesc)
-{
-	struct dom_sid owner_sid, group_sid;
-	size_t size = 0;
-	struct security_ace aces[4];
-	uint32_t access_mask = 0;
-	mode_t mode = psbuf->st_ex_mode;
-	struct security_acl *new_dacl = NULL;
-	int idx = 0;
-
-	DBG_DEBUG("file [%s] mode [0%o]\n", name, (int)mode);
-
-	uid_to_sid(&owner_sid, psbuf->st_ex_uid);
-	gid_to_sid(&group_sid, psbuf->st_ex_gid);
-
-	/*
-	 * We provide 2 ACEs:
-	 * - Owner
-	 * - NT System
-	 */
-
-	if (mode & S_IRUSR) {
-		if (mode & S_IWUSR) {
-			access_mask |= SEC_RIGHTS_FILE_ALL;
-		} else {
-			access_mask |= SEC_RIGHTS_FILE_READ | SEC_FILE_EXECUTE;
-		}
-	}
-	if (mode & S_IWUSR) {
-		access_mask |= SEC_RIGHTS_FILE_WRITE | SEC_STD_DELETE;
-	}
-
-	init_sec_ace(&aces[idx],
-		     &owner_sid,
-		     SEC_ACE_TYPE_ACCESS_ALLOWED,
-		     access_mask,
-		     0);
-	idx++;
-
-	init_sec_ace(&aces[idx],
-		     &global_sid_System,
-		     SEC_ACE_TYPE_ACCESS_ALLOWED,
-		     SEC_RIGHTS_FILE_ALL,
-		     0);
-	idx++;
-
-	new_dacl = make_sec_acl(ctx,
-				NT4_ACL_REVISION,
-				idx,
-				aces);
-
-	if (!new_dacl) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	*ppdesc = make_sec_desc(ctx,
-				SECURITY_DESCRIPTOR_REVISION_1,
-				SEC_DESC_SELF_RELATIVE|SEC_DESC_DACL_PRESENT,
-				&owner_sid,
-				&group_sid,
-				NULL,
-				new_dacl,
-				&size);
-	if (!*ppdesc) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	return NT_STATUS_OK;
-}
-
-static NTSTATUS make_default_filesystem_acl(TALLOC_CTX *ctx,
-					    struct acl_common_config *config,
-					    const char *name,
-					    SMB_STRUCT_STAT *psbuf,
-					    struct security_descriptor **ppdesc)
-{
-	NTSTATUS status;
-
-	switch (config->default_acl_style) {
-
-	case DEFAULT_ACL_POSIX:
-		status =  make_default_acl_posix(ctx, name, psbuf, ppdesc);
-		break;
-
-	case DEFAULT_ACL_WINDOWS:
-		status =  make_default_acl_windows(ctx, name, psbuf, ppdesc);
-		break;
-
-	default:
-		DBG_ERR("unknown acl style %d", config->default_acl_style);
-		status = NT_STATUS_INTERNAL_ERROR;
-		break;
-	}
-
-	return status;
-}
-
 /**
  * Validate an ACL blob
  *
@@ -854,12 +634,18 @@ static NTSTATUS stat_fsp_or_smb_fname(vfs_handle_struct *handle,
  filesystem sd.
 *******************************************************************/
 
-static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
+NTSTATUS get_nt_acl_common(
+	NTSTATUS (*get_acl_blob_fn)(TALLOC_CTX *ctx,
+				    vfs_handle_struct *handle,
 				    files_struct *fsp,
-				    const struct smb_filename *smb_fname_in,
-				    uint32_t security_info,
-				    TALLOC_CTX *mem_ctx,
-				    struct security_descriptor **ppdesc)
+				    const struct smb_filename *smb_fname,
+				    DATA_BLOB *pblob),
+	vfs_handle_struct *handle,
+	files_struct *fsp,
+	const struct smb_filename *smb_fname_in,
+	uint32_t security_info,
+	TALLOC_CTX *mem_ctx,
+	struct security_descriptor **ppdesc)
 {
 	DATA_BLOB blob = data_blob_null;
 	NTSTATUS status;
@@ -880,7 +666,7 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 
 	DBG_DEBUG("name=%s\n", smb_fname->base_name);
 
-	status = get_acl_blob(mem_ctx, handle, fsp, smb_fname, &blob);
+	status = get_acl_blob_fn(mem_ctx, handle, fsp, smb_fname, &blob);
 	if (NT_STATUS_IS_OK(status)) {
 		status = validate_nt_acl_blob(mem_ctx,
 					      handle,
@@ -914,7 +700,7 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 
 			status = make_default_filesystem_acl(
 				mem_ctx,
-				config,
+				config->default_acl_style,
 				smb_fname->base_name,
 				psbuf,
 				&psd);
@@ -1017,38 +803,6 @@ fail:
 }
 
 /*********************************************************************
- Fetch a security descriptor given an fsp.
-*********************************************************************/
-
-static NTSTATUS fget_nt_acl_common(vfs_handle_struct *handle,
-				   files_struct *fsp,
-				   uint32_t security_info,
-				   TALLOC_CTX *mem_ctx,
-				   struct security_descriptor **ppdesc)
-{
-	return get_nt_acl_internal(handle, fsp,
-				   NULL, security_info, mem_ctx, ppdesc);
-}
-
-/*********************************************************************
- Fetch a security descriptor given a pathname.
-*********************************************************************/
-
-static NTSTATUS get_nt_acl_common(vfs_handle_struct *handle,
-				  const struct smb_filename *smb_fname,
-				  uint32_t security_info,
-				  TALLOC_CTX *mem_ctx,
-				  struct security_descriptor **ppdesc)
-{
-	return get_nt_acl_internal(handle,
-				NULL,
-				smb_fname,
-				security_info,
-				mem_ctx,
-				ppdesc);
-}
-
-/*********************************************************************
  Set the underlying ACL (e.g. POSIX ACLS, POSIX owner, etc)
 *********************************************************************/
 static NTSTATUS set_underlying_acl(vfs_handle_struct *handle, files_struct *fsp,
@@ -1056,8 +810,10 @@ static NTSTATUS set_underlying_acl(vfs_handle_struct *handle, files_struct *fsp,
 				   uint32_t security_info_sent,
 				   bool chown_needed)
 {
-	NTSTATUS status =
-	    SMB_VFS_NEXT_FSET_NT_ACL(handle, fsp, security_info_sent, psd);
+	NTSTATUS status;
+	const struct security_token *token = NULL;
+
+	status = SMB_VFS_NEXT_FSET_NT_ACL(handle, fsp, security_info_sent, psd);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
 		return status;
 	}
@@ -1068,6 +824,18 @@ static NTSTATUS set_underlying_acl(vfs_handle_struct *handle, files_struct *fsp,
 	if (get_current_uid(handle->conn) == 0 || chown_needed == false ||
 	    !(fsp->access_mask & SEC_STD_WRITE_OWNER)) {
 		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	/*
+	 * Only allow take-ownership, not give-ownership. That's the way Windows
+	 * implements SEC_STD_WRITE_OWNER. MS-FSA 2.1.5.16 just states: If
+	 * InputBuffer.OwnerSid is not a valid owner SID for a file in the
+	 * objectstore, as determined in an implementation specific manner, the
+	 * object store MUST return STATUS_INVALID_OWNER.
+	 */
+	token = get_current_nttok(fsp->conn);
+	if (!security_token_is_sid(token, psd->owner_sid)) {
+		return NT_STATUS_INVALID_OWNER;
 	}
 
 	DBG_DEBUG("overriding chown on file %s for sid %s\n",
@@ -1085,10 +853,14 @@ static NTSTATUS set_underlying_acl(vfs_handle_struct *handle, files_struct *fsp,
 /*********************************************************************
  Store a v3 security descriptor
 *********************************************************************/
-static NTSTATUS store_v3_blob(vfs_handle_struct *handle, files_struct *fsp,
-			      struct security_descriptor *psd,
-			      struct security_descriptor *pdesc_next,
-			      uint8_t hash[XATTR_SD_HASH_SIZE])
+static NTSTATUS store_v3_blob(
+	NTSTATUS (*store_acl_blob_fsp_fn)(vfs_handle_struct *handle,
+					  files_struct *fsp,
+					  DATA_BLOB *pblob),
+	vfs_handle_struct *handle, files_struct *fsp,
+	struct security_descriptor *psd,
+	struct security_descriptor *pdesc_next,
+	uint8_t hash[XATTR_SD_HASH_SIZE])
 {
 	NTSTATUS status;
 	DATA_BLOB blob;
@@ -1116,7 +888,7 @@ static NTSTATUS store_v3_blob(vfs_handle_struct *handle, files_struct *fsp,
 		return status;
 	}
 
-	status = store_acl_blob_fsp(handle, fsp, &blob);
+	status = store_acl_blob_fsp_fn(handle, fsp, &blob);
 	return status;
 }
 
@@ -1124,8 +896,19 @@ static NTSTATUS store_v3_blob(vfs_handle_struct *handle, files_struct *fsp,
  Store a security descriptor given an fsp.
 *********************************************************************/
 
-static NTSTATUS fset_nt_acl_common(vfs_handle_struct *handle, files_struct *fsp,
-        uint32_t security_info_sent, const struct security_descriptor *orig_psd)
+NTSTATUS fset_nt_acl_common(
+	NTSTATUS (*get_acl_blob_fn)(TALLOC_CTX *ctx,
+				    vfs_handle_struct *handle,
+				    files_struct *fsp,
+				    const struct smb_filename *smb_fname,
+				    DATA_BLOB *pblob),
+	NTSTATUS (*store_acl_blob_fsp_fn)(vfs_handle_struct *handle,
+					  files_struct *fsp,
+					  DATA_BLOB *pblob),
+	const char *module_name,
+	vfs_handle_struct *handle, files_struct *fsp,
+	uint32_t security_info_sent,
+	const struct security_descriptor *orig_psd)
 {
 	NTSTATUS status;
 	int ret;
@@ -1138,7 +921,7 @@ static NTSTATUS fset_nt_acl_common(vfs_handle_struct *handle, files_struct *fsp,
 	char *sys_acl_description;
 	TALLOC_CTX *frame = talloc_stackframe();
 	bool ignore_file_system_acl = lp_parm_bool(
-	    SNUM(handle->conn), ACL_MODULE_NAME, "ignore system acls", false);
+	    SNUM(handle->conn), module_name, "ignore system acls", false);
 
 	if (DEBUGLEVEL >= 10) {
 		DBG_DEBUG("incoming sd for file %s\n", fsp_str_dbg(fsp));
@@ -1146,7 +929,7 @@ static NTSTATUS fset_nt_acl_common(vfs_handle_struct *handle, files_struct *fsp,
 			discard_const_p(struct security_descriptor, orig_psd));
 	}
 
-	status = get_nt_acl_internal(handle, fsp,
+	status = get_nt_acl_common(get_acl_blob_fn, handle, fsp,
 			NULL,
 			SECINFO_OWNER|SECINFO_GROUP|SECINFO_DACL|SECINFO_SACL,
 				     frame,
@@ -1205,7 +988,8 @@ static NTSTATUS fset_nt_acl_common(vfs_handle_struct *handle, files_struct *fsp,
 			}
 		}
 		ZERO_ARRAY(hash);
-		status = store_v3_blob(handle, fsp, psd, NULL, hash);
+		status = store_v3_blob(store_acl_blob_fsp_fn, handle, fsp, psd,
+				       NULL, hash);
 
 		TALLOC_FREE(frame);
 		return status;
@@ -1246,7 +1030,8 @@ static NTSTATUS fset_nt_acl_common(vfs_handle_struct *handle, files_struct *fsp,
 	/* If we fail to get the ACL blob (for some reason) then this
 	 * is not fatal, we just work based on the NT ACL only */
 	if (ret != 0) {
-		status = store_v3_blob(handle, fsp, psd, pdesc_next, hash);
+		status = store_v3_blob(store_acl_blob_fsp_fn, handle, fsp, psd,
+				       pdesc_next, hash);
 
 		TALLOC_FREE(frame);
 		return status;
@@ -1281,7 +1066,7 @@ static NTSTATUS fset_nt_acl_common(vfs_handle_struct *handle, files_struct *fsp,
 		return status;
 	}
 
-	status = store_acl_blob_fsp(handle, fsp, &blob);
+	status = store_acl_blob_fsp_fn(handle, fsp, &blob);
 
 	TALLOC_FREE(frame);
 	return status;
@@ -1382,8 +1167,8 @@ static int acl_common_remove_object(vfs_handle_struct *handle,
 	return ret;
 }
 
-static int rmdir_acl_common(struct vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname)
+int rmdir_acl_common(struct vfs_handle_struct *handle,
+		     const struct smb_filename *smb_fname)
 {
 	int ret;
 
@@ -1406,7 +1191,7 @@ static int rmdir_acl_common(struct vfs_handle_struct *handle,
 	return -1;
 }
 
-static int unlink_acl_common(struct vfs_handle_struct *handle,
+int unlink_acl_common(struct vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname)
 {
 	int ret;
@@ -1435,9 +1220,9 @@ static int unlink_acl_common(struct vfs_handle_struct *handle,
 	return -1;
 }
 
-static int chmod_acl_module_common(struct vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			mode_t mode)
+int chmod_acl_module_common(struct vfs_handle_struct *handle,
+			    const struct smb_filename *smb_fname,
+			    mode_t mode)
 {
 	if (smb_fname->flags & SMB_FILENAME_POSIX_PATH) {
 		/* Only allow this on POSIX pathnames. */
@@ -1446,8 +1231,8 @@ static int chmod_acl_module_common(struct vfs_handle_struct *handle,
 	return 0;
 }
 
-static int fchmod_acl_module_common(struct vfs_handle_struct *handle,
-			struct files_struct *fsp, mode_t mode)
+int fchmod_acl_module_common(struct vfs_handle_struct *handle,
+			     struct files_struct *fsp, mode_t mode)
 {
 	if (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN) {
 		/* Only allow this on POSIX opens. */
@@ -1456,9 +1241,9 @@ static int fchmod_acl_module_common(struct vfs_handle_struct *handle,
 	return 0;
 }
 
-static int chmod_acl_acl_module_common(struct vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			mode_t mode)
+int chmod_acl_acl_module_common(struct vfs_handle_struct *handle,
+				const struct smb_filename *smb_fname,
+				mode_t mode)
 {
 	if (smb_fname->flags & SMB_FILENAME_POSIX_PATH) {
 		/* Only allow this on POSIX pathnames. */
@@ -1467,8 +1252,8 @@ static int chmod_acl_acl_module_common(struct vfs_handle_struct *handle,
 	return 0;
 }
 
-static int fchmod_acl_acl_module_common(struct vfs_handle_struct *handle,
-			struct files_struct *fsp, mode_t mode)
+int fchmod_acl_acl_module_common(struct vfs_handle_struct *handle,
+				 struct files_struct *fsp, mode_t mode)
 {
 	if (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN) {
 		/* Only allow this on POSIX opens. */

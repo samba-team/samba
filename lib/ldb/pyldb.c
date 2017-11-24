@@ -510,10 +510,10 @@ static PyObject *py_ldb_dn_set_extended_component(PyLdbDnObject *self, PyObject 
 {
 	char *name;
 	int err;
-	uint8_t *value;
+	uint8_t *value = NULL;
 	Py_ssize_t size = 0;
 
-	if (!PyArg_ParseTuple(args, "sz#", &name, (const char**)&value, &size))
+	if (!PyArg_ParseTuple(args, "sz#", &name, (char **)&value, &size))
 		return NULL;
 
 	if (value == NULL) {

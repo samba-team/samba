@@ -170,16 +170,56 @@ static void dnsupdate_rebuild(struct dnsupdate_service *service)
 
 	path = lpcfg_parm_string(service->task->lp_ctx, NULL, "dnsupdate", "path");
 	if (path == NULL) {
-		path = lpcfg_private_path(tmp_ctx, service->task->lp_ctx, "named.conf.update");
+		path = lpcfg_private_path(tmp_ctx,
+					  service->task->lp_ctx,
+					  "named.conf.update");
+		if (path == NULL) {
+			DBG_ERR("Out of memory!");
+			talloc_free(tmp_ctx);
+			return;
+		}
+
+		/*
+		 * If the file doesn't exist, we provisioned in a the new
+		 * bind-dns directory
+		 */
+		if (!file_exist(path)) {
+			path = talloc_asprintf(tmp_ctx,
+					       "%s/named.conf.update",
+					       lpcfg_binddns_dir(service->task->lp_ctx));
+			if (path == NULL) {
+				DBG_ERR("Out of memory!");
+				talloc_free(tmp_ctx);
+				return;
+			}
+		}
 	}
 
 	path_static = lpcfg_parm_string(service->task->lp_ctx, NULL, "dnsupdate", "extra_static_grant_rules");
 	if (path_static == NULL) {
-		path_static = lpcfg_private_path(tmp_ctx, service->task->lp_ctx, "named.conf.update.static");
+		path_static = lpcfg_private_path(tmp_ctx,
+						 service->task->lp_ctx,
+						 "named.conf.update.static");
+		if (path_static == NULL) {
+			DBG_ERR("Out of memory!");
+			talloc_free(tmp_ctx);
+			return;
+		}
+
+		if (!file_exist(path_static)) {
+			path_static = talloc_asprintf(tmp_ctx,
+						      "%s/named.conf.update.static",
+						      lpcfg_binddns_dir(service->task->lp_ctx));
+			if (path_static == NULL) {
+				DBG_ERR("Out of memory!");
+				talloc_free(tmp_ctx);
+				return;
+			}
+		}
 	}
 
 	tmp_path = talloc_asprintf(tmp_ctx, "%s.tmp", path);
-	if (path == NULL || tmp_path == NULL || path_static == NULL ) {
+	if (tmp_path == NULL) {
 		DEBUG(0,(__location__ ": Unable to get paths\n"));
 		talloc_free(tmp_ctx);
 		return;
@@ -667,5 +707,10 @@ static void dnsupdate_task_init(struct task_server *task)
 */
 NTSTATUS server_service_dnsupdate_init(TALLOC_CTX *ctx)
 {
-	return register_server_service(ctx, "dnsupdate", dnsupdate_task_init);
+	struct service_details details = {
+		.inhibit_fork_on_accept = true,
+		.inhibit_pre_fork = true,
+	};
+	return register_server_service(ctx, "dnsupdate", dnsupdate_task_init,
+				       &details);
 }

@@ -936,8 +936,8 @@ void tevent_req_set_cancel_fn(struct tevent_req *req, tevent_req_cancel_fn fn);
  *
  * @param[in]  req      The request to use.
  *
- * @return              This function returns true is the request is cancelable,
- *                      othererwise false is returned.
+ * @return              This function returns true if the request is
+ *                      cancelable, otherwise false is returned.
  *
  * @note Even if the function returns true, the caller need to wait
  *       for the function to complete normally.

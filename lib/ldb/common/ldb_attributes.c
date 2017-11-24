@@ -395,3 +395,17 @@ void ldb_schema_set_override_indexlist(struct ldb_context *ldb,
 	ldb->schema.index_handler_override = true;
 	ldb->schema.one_level_indexes = one_level_indexes;
 }
+
+/*
+ * set that the GUID index mode is in operation
+ *
+ * The caller must ensure the supplied strings do not go out of
+ * scope (they are typically constant memory).
+ */
+void ldb_schema_set_override_GUID_index(struct ldb_context *ldb,
+					const char *GUID_index_attribute,
+					const char *GUID_index_dn_component)
+{
+	ldb->schema.GUID_index_attribute = GUID_index_attribute;
+	ldb->schema.GUID_index_dn_component = GUID_index_dn_component;
+}

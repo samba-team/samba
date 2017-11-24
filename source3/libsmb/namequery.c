@@ -2556,7 +2556,7 @@ static NTSTATUS resolve_ads(const char *name,
 				freeaddrinfo(res);
 			}
 		} else {
-			/* use all the IP addresses from the SRV sresponse */
+			/* use all the IP addresses from the SRV response */
 			int j;
 			for (j = 0; j < dcs[i].num_ips; j++) {
 				(*return_iplist)[*return_count].port = dcs[i].port;
@@ -2862,12 +2862,15 @@ bool resolve_name(const char *name,
 	char *sitename = NULL;
 	int count = 0;
 	NTSTATUS status;
+	TALLOC_CTX *frame = NULL;
 
 	if (is_ipaddress(name)) {
 		return interpret_string_addr(return_ss, name, AI_NUMERICHOST);
 	}
 
-	sitename = sitename_fetch(talloc_tos(), lp_realm()); /* wild guess */
+	frame = talloc_stackframe();
+
+	sitename = sitename_fetch(frame, lp_realm()); /* wild guess */
 
 	status = internal_resolve_name(name, name_type, sitename,
 				       &ss_list, &count,
@@ -2882,7 +2885,7 @@ bool resolve_name(const char *name,
 						(ss_list[i].ss.ss_family == AF_INET)) {
 					*return_ss = ss_list[i].ss;
 					SAFE_FREE(ss_list);
-					TALLOC_FREE(sitename);
+					TALLOC_FREE(frame);
 					return True;
 				}
 			}
@@ -2894,14 +2897,14 @@ bool resolve_name(const char *name,
 			    !is_broadcast_addr((struct sockaddr *)(void *)&ss_list[i].ss)) {
 				*return_ss = ss_list[i].ss;
 				SAFE_FREE(ss_list);
-				TALLOC_FREE(sitename);
+				TALLOC_FREE(frame);
 				return True;
 			}
 		}
 	}
 
 	SAFE_FREE(ss_list);
-	TALLOC_FREE(sitename);
+	TALLOC_FREE(frame);
 	return False;
 }
 
@@ -3092,15 +3095,11 @@ static NTSTATUS get_dc_list(const char *domain,
 	bool done_auto_lookup = false;
 	int auto_count = 0;
 	NTSTATUS status;
-	TALLOC_CTX *ctx = talloc_init("get_dc_list");
+	TALLOC_CTX *ctx = talloc_stackframe();
 	int auto_name_type = 0x1C;
 
 	*ip_list = NULL;
 	*count = 0;
-
-	if (!ctx) {
-		return NT_STATUS_NO_MEMORY;
-	}
 
 	*ordered = False;
 

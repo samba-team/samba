@@ -445,6 +445,55 @@ The only exception is the test code that depends repeated use of calls
 like CHECK_STATUS, CHECK_VAL and others.
 
 
+Error and out logic
+-------------------
+
+Don't do this:
+
+	frame = talloc_stackframe();
+
+	if (ret == LDB_SUCCESS) {
+		if (result->count == 0) {
+			ret = LDB_ERR_NO_SUCH_OBJECT;
+		} else {
+			struct ldb_message *match =
+				get_best_match(dn, result);
+			if (match == NULL) {
+				TALLOC_FREE(frame);
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
+			*msg = talloc_move(mem_ctx, &match);
+		}
+	}
+
+	TALLOC_FREE(frame);
+	return ret;
+
+It should be:
+
+	frame = talloc_stackframe();
+
+	if (ret != LDB_SUCCESS) {
+		TALLOC_FREE(frame);
+		return ret;
+	}
+
+	if (result->count == 0) {
+		TALLOC_FREE(frame);
+		return LDB_ERR_NO_SUCH_OBJECT;
+	}
+
+	match = get_best_match(dn, result);
+	if (match == NULL) {
+		TALLOC_FREE(frame);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	*msg = talloc_move(mem_ctx, &match);
+	TALLOC_FREE(frame);
+	return LDB_SUCCESS;
+
+
 DEBUG statements
 ----------------
 

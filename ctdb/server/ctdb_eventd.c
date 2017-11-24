@@ -35,6 +35,7 @@
 #include "lib/async_req/async_sock.h"
 
 #include "protocol/protocol_api.h"
+#include "protocol/protocol_util.h"
 
 #include "common/comm.h"
 #include "common/logging.h"
@@ -1019,7 +1020,8 @@ static void client_process_reply(struct tevent_req *req,
 	size_t buflen;
 	int ret;
 
-	ctdb_event_header_fill(&reply->header, state->request.header.reqid);
+	sock_packet_header_set_reqid(&reply->header,
+				     state->request.header.reqid);
 
 	buflen = ctdb_event_reply_len(reply);
 	buf = talloc_zero_size(state, buflen);
@@ -1197,7 +1199,7 @@ int main(int argc, const char **argv)
 	};
 
 	ret = sock_daemon_setup(mem_ctx, "ctdb-eventd", options.logging,
-				options.debug_level, options.pidfile,
+				options.debug_level,
 				&daemon_funcs, ectx, &sockd);
 	if (ret != 0) {
 		goto fail;
@@ -1215,7 +1217,8 @@ int main(int argc, const char **argv)
 		goto fail;
 	}
 
-	ret = sock_daemon_run(ev, sockd, options.pid);
+	ret = sock_daemon_run(ev, sockd,
+			      options.pidfile, false, false, options.pid);
 	if (ret == EINTR) {
 		ret = 0;
 	}

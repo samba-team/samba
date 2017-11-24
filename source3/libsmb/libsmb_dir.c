@@ -590,6 +590,10 @@ SMBC_opendir_ctx(SMBCCTX *context,
                                 continue;
                         }
 
+			if (smbXcli_conn_protocol(srv->cli->conn) > PROTOCOL_NT1) {
+				continue;
+			}
+
                         dir->srv = srv;
                         dir->dir_type = SMBC_WORKGROUP;
 
@@ -703,6 +707,15 @@ SMBC_opendir_ctx(SMBCCTX *context,
 				}
 
 				dir->srv = srv;
+
+				if (smbXcli_conn_protocol(srv->cli->conn) > PROTOCOL_NT1) {
+					if (dir) {
+						SAFE_FREE(dir->fname);
+						SAFE_FREE(dir);
+					}
+					TALLOC_FREE(frame);
+					return NULL;
+				}
 
 				/* Now, list the servers ... */
 				if (!cli_NetServerEnum(srv->cli, wgroup,

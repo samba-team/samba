@@ -6,7 +6,6 @@
 	<para>This specifies the NTVFS handlers for this share.</para>
 
 	<itemizedlist>
-	  <listitem><para>posix: Maps POSIX FS semantics to NT semantics</para></listitem>
 	  <listitem><para>unixuid: Sets up user credentials based on POSIX gid/uid.</para></listitem>
 	  <listitem><para>cifs: Proxies a remote CIFS FS. Mainly useful for testing.</para></listitem>
 	  <listitem><para>nbench: Filter module that saves data useful to the nbench benchmark suite.</para></listitem>

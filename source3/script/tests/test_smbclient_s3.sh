@@ -1414,6 +1414,145 @@ EOF
     fi
 }
 
+# Test smbclient utimes command
+test_utimes()
+{
+    tmpfile=$PREFIX/smbclient_interactive_prompt_commands
+
+    cat > $tmpfile <<EOF
+del utimes_test
+put ${SMBCLIENT} utimes_test
+allinfo utimes_test
+utimes utimes_test -1 17:01:01-05:10:20 -1 -1
+allinfo utimes_test
+del utimes_test
+quit
+EOF
+    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/tmp -I $SERVER_IP $ADDARGS < $tmpfile 2>&1'
+    eval echo "$cmd"
+    out=`eval $cmd`
+    ret=$?
+
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed utimes test with output $ret"
+	false
+	return
+    fi
+
+    # Now, we should have 2 identical create_time, write_time, change_time
+    # values, but one access_time of Jan  1 05:10:20 AM.
+    out_sorted=`echo "$out" | sort | uniq`
+    num_create=`echo "$out_sorted" | grep -c 'create_time:'`
+    num_access=`echo "$out_sorted" | grep -c 'access_time:'`
+    num_write=`echo "$out_sorted" | grep -c 'write_time:'`
+    num_change=`echo "$out_sorted" | grep -c 'change_time:'`
+    if [ "$num_create" != "1" ]; then
+        echo "failed - should only get one create_time $out"
+        false
+        return
+    fi
+    if [ "$num_access" != "2" ]; then
+        echo "failed - should get two access_time $out"
+        false
+        return
+    fi
+    if [ "$num_write" != "1" ]; then
+        echo "failed - should only get one write_time $out"
+        false
+        return
+    fi
+    if [ "$num_change" != "1" ]; then
+        echo "failed - should only get one change_time $out"
+        false
+        return
+    fi
+
+    # This could be: Sun Jan  1 05:10:20 AM 2017
+    # or           : Sun Jan  1 05:10:20 2017 CET
+    echo "$out" | grep 'access_time:.*Sun Jan.*1 05:10:20 .*2017.*'
+    ret=$?
+    if [ $ret -ne 0 ] ; then
+       echo "$out"
+       echo
+       echo "failed - should get access_time:    Sun Jan  1 05:10:20 [AM] 2017"
+       false
+       return
+    fi
+}
+
+# Test smbclient renames with pathnames containing '..'
+test_rename_dotdot()
+{
+    tmpfile=$PREFIX/smbclient_interactive_prompt_commands
+
+    cat > $tmpfile <<EOF
+deltree dotdot_test
+mkdir dotdot_test
+cd dotdot_test
+mkdir dir1
+mkdir dir2
+cd dir1
+put ${SMBCLIENT} README
+rename README ..\\dir2\\README
+cd ..
+cd dir2
+allinfo README
+cd \\
+deltree dotdot_test
+quit
+EOF
+    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/tmp -I $SERVER_IP $ADDARGS < $tmpfile 2>&1'
+    eval echo "$cmd"
+    out=`eval $cmd`
+    ret=$?
+
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed rename_dotdot test with output $ret"
+	false
+	return
+    fi
+
+    # We are allowed to get NT_STATUS_NO_SUCH_FILE listing \dotdot_test
+    # as the top level directory should not exist, but no other errors.
+
+    error_str=`echo $out | grep NT_STATUS | grep -v "NT_STATUS_NO_SUCH_FILE listing .dotdot_test"`
+    if [ "$error_str" != "" ]; then
+        echo "failed - unexpected NT_STATUS error in $out"
+        false
+        return
+    fi
+}
+
+# Test doing a volume command.
+test_volume()
+{
+    tmpfile=$PREFIX/smbclient_interactive_prompt_commands
+    cat > $tmpfile <<EOF
+volume
+quit
+EOF
+    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/tmp -I $SERVER_IP $ADDARGS < $tmpfile 2>&1'
+    eval echo "$cmd"
+    out=`eval $cmd`
+    ret=$?
+    rm -f $tmpfile
+
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed doing volume command with error $ret"
+	return 1
+    fi
+
+    echo "$out" | grep '^Volume: |tmp| serial number'
+    ret=$?
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed doing volume command"
+	return 1
+    fi
+}
 
 test_server_os_message()
 {
@@ -1434,11 +1573,11 @@ EOF
        return 1
     fi
 
-    echo "$out" | grep 'Try "help" do get a list of possible commands.'
+    echo "$out" | grep 'Try "help" to get a list of possible commands.'
     ret=$?
     if [ $ret -ne 0 ] ; then
        echo "$out"
-       echo 'failed - should get: Try "help" do get a list of possible commands.'
+       echo 'failed - should get: Try "help" to get a list of possible commands.'
        return 1
     fi
 
@@ -1562,6 +1701,18 @@ testit "server os message" \
 
 testit "setmode test" \
     test_setmode || \
+    failed=`expr $failed + 1`
+
+testit "utimes" \
+    test_utimes || \
+    failed=`expr $failed + 1`
+
+testit "rename_dotdot" \
+    test_rename_dotdot || \
+    failed=`expr $failed + 1`
+
+testit "volume" \
+    test_volume || \
     failed=`expr $failed + 1`
 
 testit "rm -rf $LOGDIR" \

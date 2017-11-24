@@ -472,7 +472,7 @@ static int create_missing_remote_databases(struct ctdb_context *ctdb, struct ctd
 			ret = ctdb_ctrl_createdb(ctdb, CONTROL_TIMEOUT(),
 						 nodemap->nodes[j].pnn,
 						 mem_ctx, name,
-						 dbmap->dbs[db].flags & CTDB_DB_FLAGS_PERSISTENT);
+						 dbmap->dbs[db].flags, NULL);
 			if (ret != 0) {
 				DEBUG(DEBUG_ERR, (__location__ " Unable to create remote db:%s\n", name));
 				return -1;
@@ -534,8 +534,9 @@ static int create_missing_local_databases(struct ctdb_context *ctdb, struct ctdb
 					  nodemap->nodes[j].pnn));
 				return -1;
 			}
-			ctdb_ctrl_createdb(ctdb, CONTROL_TIMEOUT(), pnn, mem_ctx, name, 
-					   remote_dbmap->dbs[db].flags & CTDB_DB_FLAGS_PERSISTENT);
+			ctdb_ctrl_createdb(ctdb, CONTROL_TIMEOUT(), pnn,
+					   mem_ctx, name,
+					   remote_dbmap->dbs[db].flags, NULL);
 			if (ret != 0) {
 				DEBUG(DEBUG_ERR, (__location__ " Unable to create local db:%s\n", name));
 				return -1;
@@ -653,7 +654,7 @@ static void vacuum_fetch_handler(uint64_t srvid, TDB_DATA data,
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	const char *name;
 	struct ctdb_dbid_map_old *dbmap=NULL;
-	bool persistent = false;
+	uint8_t db_flags = 0;
 	struct ctdb_db_context *ctdb_db;
 	struct ctdb_rec_data_old *r;
 
@@ -672,7 +673,7 @@ static void vacuum_fetch_handler(uint64_t srvid, TDB_DATA data,
 
 	for (i=0;i<dbmap->num;i++) {
 		if (dbmap->dbs[i].db_id == recs->db_id) {
-			persistent = dbmap->dbs[i].flags & CTDB_DB_FLAGS_PERSISTENT;
+			db_flags = dbmap->dbs[i].flags;
 			break;
 		}
 	}
@@ -688,7 +689,7 @@ static void vacuum_fetch_handler(uint64_t srvid, TDB_DATA data,
 	}
 
 	/* attach to it */
-	ctdb_db = ctdb_attach(ctdb, CONTROL_TIMEOUT(), name, persistent);
+	ctdb_db = ctdb_attach(ctdb, CONTROL_TIMEOUT(), name, db_flags);
 	if (ctdb_db == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to attach to database '%s'\n", name));
 		goto done;
@@ -1025,6 +1026,7 @@ static int helper_run(struct ctdb_recoverd *rec, TALLOC_CTX *mem_ctx,
 	struct tevent_fd *fde;
 	const char **args;
 	int nargs, ret;
+	uint32_t recmaster = rec->recmaster;
 
 	state = talloc_zero(mem_ctx, struct helper_state);
 	if (state == NULL) {
@@ -1084,6 +1086,14 @@ static int helper_run(struct ctdb_recoverd *rec, TALLOC_CTX *mem_ctx,
 
 	while (!state->done) {
 		tevent_loop_once(rec->ctdb->ev);
+
+		/* If recmaster changes, we have lost election */
+		if (recmaster != rec->recmaster) {
+			D_ERR("Recmaster changed to %u, aborting %s\n",
+			      rec->recmaster, type);
+			state->result = 1;
+			break;
+		}
 	}
 
 	close(state->fd[0]);

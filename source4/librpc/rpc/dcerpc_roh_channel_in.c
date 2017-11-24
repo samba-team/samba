@@ -21,8 +21,8 @@
 */
 
 #include "includes.h"
-#include "lib/tevent/tevent.h"
-#include "lib/talloc/talloc.h"
+#include <tevent.h>
+#include <talloc.h>
 #include "lib/tsocket/tsocket.h"
 #include "lib/tls/tls.h"
 #include "lib/util/tevent_ntstatus.h"
@@ -227,7 +227,7 @@ struct tevent_req *roh_send_RPC_DATA_IN_send(TALLOC_CTX *mem_ctx,
 					     const char *rpc_server,
 					     uint32_t rpc_server_port,
 					     const char *rpc_proxy,
-					     bool use_ntlm)
+					     uint8_t http_auth)
 {
 	struct tevent_req		*req;
 	struct tevent_req		*subreq;
@@ -299,8 +299,7 @@ struct tevent_req *roh_send_RPC_DATA_IN_send(TALLOC_CTX *mem_ctx,
 					state->request,
 					credentials,
 					lp_ctx,
-					use_ntlm ? HTTP_AUTH_NTLM :
-						   HTTP_AUTH_BASIC);
+					http_auth);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}

@@ -1855,12 +1855,13 @@ void smb_request_done(struct smb_request *req)
 
 		next->vuid = SVAL(req->outbuf, smb_uid);
 		next->tid  = SVAL(req->outbuf, smb_tid);
-		status = smb1srv_tcon_lookup(req->xconn, req->tid,
+		status = smb1srv_tcon_lookup(req->xconn, next->tid,
 					     now, &tcon);
+
 		if (NT_STATUS_IS_OK(status)) {
-			req->conn = tcon->compat;
+			next->conn = tcon->compat;
 		} else {
-			req->conn = NULL;
+			next->conn = NULL;
 		}
 		next->chain_fsp = req->chain_fsp;
 		next->inbuf = req->inbuf;
@@ -1973,7 +1974,8 @@ static void process_smb(struct smbXsrv_connection *xconn,
 			size_t pdulen = nread - NBT_HDR_SIZE;
 			smbd_smb2_process_negprot(xconn, 0, inpdu, pdulen);
 			return;
-		} else if (nread >= smb_size && valid_smb_header(inbuf)
+		}
+		if (nread >= smb_size && valid_smb_header(inbuf)
 				&& CVAL(inbuf, smb_com) != 0x72) {
 			/* This is a non-negprot SMB1 packet.
 			   Disable SMB2 from now on. */

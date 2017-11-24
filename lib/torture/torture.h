@@ -101,6 +101,8 @@ struct torture_context
 
 	/** Loadparm context (will go away in favor of torture_setting_ at some point) */
 	struct loadparm_context *lp_ctx;
+
+	int conn_index;
 };
 
 struct torture_results

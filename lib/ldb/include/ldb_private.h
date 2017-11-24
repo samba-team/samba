@@ -98,6 +98,9 @@ struct ldb_schema {
 	 */
 	bool index_handler_override;
 	bool one_level_indexes;
+
+	const char *GUID_index_attribute;
+	const char *GUID_index_dn_component;
 };
 
 /*
@@ -287,5 +290,24 @@ int ldb_msg_find_duplicate_val(struct ldb_context *ldb,
 			       const struct ldb_message_element *el,
 			       struct ldb_val **duplicate,
 			       uint32_t options);
+/**
+  Check if a particular message will match the given filter
+
+  \param ldb an ldb context
+  \param msg the message to be checked
+  \param tree the filter tree to check against
+  \param scope the scope to match against
+         (to avoid matching special DNs except on a base search)
+  \param matched a pointer to a boolean set true if it matches,
+         false otherwise
+
+  returns LDB_SUCCESS or an error
+
+  \note this is a recursive function, and does short-circuit evaluation
+ */
+int ldb_match_message(struct ldb_context *ldb,
+		      const struct ldb_message *msg,
+		      const struct ldb_parse_tree *tree,
+		      enum ldb_scope scope, bool *matched);
 
 #endif

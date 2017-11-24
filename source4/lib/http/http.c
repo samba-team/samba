@@ -20,7 +20,6 @@
 */
 
 #include "includes.h"
-#include <talloc_dict.h>
 #include "lib/util/tevent_ntstatus.h"
 #include "http.h"
 #include "http_internal.h"
@@ -30,19 +29,39 @@
 
 /**
  * Determines if a response should have a body.
- * Follows the rules in RFC 2616 section 4.3.
  * @return 1 if the response MUST have a body; 0 if the response MUST NOT have
  *     a body. Returns -1 on error.
  */
 static int http_response_needs_body(struct http_request *req)
 {
+	struct http_header *h = NULL;
+
 	if (!req) return -1;
 
-	/* If response code is 503, the body contains the error description
-	 * (2.1.2.1.3)
-	 */
-	if (req->response_code == 503)
-		return 1;
+	for (h = req->headers; h != NULL; h = h->next) {
+		int cmp;
+		int n;
+		char c;
+		unsigned long long v;
+
+		cmp = strcasecmp(h->key, "Content-Length");
+		if (cmp != 0) {
+			continue;
+		}
+
+		n = sscanf(h->value, "%llu%c", &v, &c);
+		if (n != 1) {
+			return -1;
+		}
+
+		req->remaining_content_length = v;
+
+		if (v != 0) {
+			return 1;
+		}
+
+		return 0;
+	}
 
 	return 0;
 }
@@ -92,14 +111,17 @@ static enum http_read_status http_parse_headers(struct http_read_response_state 
 
 		ret = http_response_needs_body(state->response);
 		switch (ret) {
+		case 1:
+			if (state->response->remaining_content_length <= state->max_content_length) {
+				DEBUG(11, ("%s: Start of read body\n", __func__));
+				state->parser_state = HTTP_READING_BODY;
+				break;
+			}
+			/* fall through */
 		case 0:
 			DEBUG(11, ("%s: Skipping body for code %d\n", __func__,
 				   state->response->response_code));
 			state->parser_state = HTTP_READING_DONE;
-			break;
-		case 1:
-			DEBUG(11, ("%s: Start of read body\n", __func__));
-			state->parser_state = HTTP_READING_BODY;
 			break;
 		case -1:
 			DEBUG(0, ("%s_: Error in http_response_needs_body\n", __func__));
@@ -256,9 +278,19 @@ static enum http_read_status http_parse_firstline(struct http_read_response_stat
 
 static enum http_read_status http_read_body(struct http_read_response_state *state)
 {
-	enum http_read_status status = HTTP_DATA_CORRUPTED;
-	/* TODO */
-	return status;
+	struct http_request *resp = state->response;
+
+	if (state->buffer.length < resp->remaining_content_length) {
+		return HTTP_MORE_DATA_EXPECTED;
+	}
+
+	resp->body = state->buffer;
+	state->buffer = data_blob_null;
+	talloc_steal(resp, resp->body.data);
+	resp->remaining_content_length = 0;
+
+	state->parser_state = HTTP_READING_DONE;
+	return HTTP_ALL_DATA_READ;
 }
 
 static enum http_read_status http_read_trailer(struct http_read_response_state *state)
@@ -519,7 +551,8 @@ static int http_read_response_next_vector(struct tstream_context *stream,
 static void http_read_response_done(struct tevent_req *);
 struct tevent_req *http_read_response_send(TALLOC_CTX *mem_ctx,
 					   struct tevent_context *ev,
-					   struct tstream_context *stream)
+					   struct tstream_context *stream,
+					   size_t max_content_length)
 {
 	struct tevent_req		*req;
 	struct tevent_req		*subreq;
@@ -539,6 +572,7 @@ struct tevent_req *http_read_response_send(TALLOC_CTX *mem_ctx,
 	}
 
 	state->max_headers_size = HTTP_MAX_HEADER_SIZE;
+	state->max_content_length = (uint64_t)max_content_length;
 	state->parser_state = HTTP_READING_FIRSTLINE;
 	state->response = talloc_zero(state, struct http_request);
 	if (tevent_req_nomem(state->response, req)) {

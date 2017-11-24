@@ -81,7 +81,9 @@ parse_options ()
     # Not on the previous line - local returns 0!
     temp=$(POSIXLY_CORRECT=1 getopt -n "$prog" -o "cf:hno:pqvPi" -l help -- "$@")
 
-    [ $? != 0 ] && usage
+    # No! Checking the exit code afterwards is actually clearer...
+    # shellcheck disable=SC2181
+    [ $? -eq 0 ] || usage
 
     eval set -- "$temp"
 
@@ -147,6 +149,8 @@ get_nodes_with_status ()
 
     if [ -z "$ctdb_status_output" ] ; then
 	ctdb_status_output=$(ctdb -X status 2>&1)
+	# No! Checking the exit code afterwards is actually clearer...
+	# shellcheck disable=SC2181
 	if [ $? -ne 0 ] ; then
 	    echo "${prog}: unable to get status of CTDB nodes" >&2
 	    echo "$ctdb_status_output" >&2
@@ -238,10 +242,9 @@ get_nodes ()
 	all_nodes=$(sed -e 's@#.*@@g' -e 's@ *@@g' -e 's@^$@#DEAD@' "$f")
     fi
 
-    local nodes=""
-    local n
-    for n in $(parse_nodespec "$1") ; do
-	[ $? != 0 ] && exit 1  # Required to catch exit in above subshell.
+    local n nodes
+    nodes=$(parse_nodespec "$1") || exit $?
+    for n in $nodes ; do
 	case "$n" in
 	    all)
 		echo "${all_nodes//#DEAD/}"
@@ -337,8 +340,7 @@ fi
 
 ######################################################################
 
-nodes=$(get_nodes "$nodespec")
-[ $? != 0 ] && exit 1   # Required to catch exit in above subshell.
+nodes=$(get_nodes "$nodespec") || exit $?
 
 if $quiet ; then
     verbose=false
@@ -359,24 +361,41 @@ trap 'kill -TERM $pids 2>/dev/null' INT TERM
 retcode=0
 for n in $nodes ; do
     set -o pipefail 2>/dev/null
+
+    # The following code applies stdout_filter and stderr_filter to
+    # the relevant streams.  Both filters are at the end of pipes so
+    # they read from stdin and (by default) write to stdout.  To allow
+    # the filters to operate independently, the output of
+    # stdout_filter is sent to a temporary file descriptor (3), which
+    # is redirected back to stdout at the outermost level.
     if $parallel ; then
-	{ exec 3>&1 ; { $SSH $ssh_opts $EXTRA_SSH_OPTS "$n" "$command" | stdout_filter >&3 ; } 2>&1 | stderr_filter ; } &
+	{
+	    exec 3>&1
+	    {
+		$SSH $ssh_opts $EXTRA_SSH_OPTS "$n" "$command" |
+		    stdout_filter >&3
+	    } 2>&1 | stderr_filter
+	} &
 	pids="${pids} $!"
     else
 	if $verbose ; then
 	    echo >&2 ; echo ">> NODE: $n <<" >&2
 	fi
 
-	{ exec 3>&1 ; { $SSH $ssh_opts $EXTRA_SSH_OPTS "$n" "$command" | stdout_filter >&3 ; } 2>&1 | stderr_filter ; }
-	[ $? = 0 ] || retcode=$?
+	{
+	    exec 3>&1
+	    {
+		$SSH $ssh_opts $EXTRA_SSH_OPTS "$n" "$command" |
+		    stdout_filter >&3
+	    } 2>&1 | stderr_filter
+	} || retcode=$?
     fi
 done
 
-$parallel && {
+if $parallel ; then
     for p in $pids; do
-	wait "$p"
-	[ $? = 0 ] || retcode=$?
+	wait "$p" || retcode=$?
     done
-}
+fi
 
 exit $retcode

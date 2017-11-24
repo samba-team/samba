@@ -884,6 +884,8 @@ sub setup_fileserver($$)
 	push(@dirs,$usershare_sharedir);
 
 	my $fileserver_options = "
+	kernel change notify = yes
+
 	usershare path = $usershare_dir
 	usershare max shares = 10
 	usershare allow guests = yes
@@ -1423,6 +1425,9 @@ sub provision($$$$$$$$$)
 	my $privatedir="$prefix_abs/private";
 	push(@dirs,$privatedir);
 
+	my $binddnsdir = "$prefix_abs/bind-dns";
+	push(@dirs, $binddnsdir);
+
 	my $lockdir="$prefix_abs/lockdir";
 	push(@dirs,$lockdir);
 
@@ -1672,6 +1677,7 @@ sub provision($$$$$$$$$)
 	workgroup = $domain
 
 	private dir = $privatedir
+	binddns dir = $binddnsdir
 	pid directory = $piddir
 	lock directory = $lockdir
 	log file = $logdir/log.\%m
@@ -1856,17 +1862,41 @@ sub provision($$$$$$$$$)
 [lp]
 	copy = print1
 
-[nfs4acl_simple]
+[nfs4acl_simple_40]
+	path = $shrdir
+	comment = smb username is [%U]
+	nfs4:mode = simple
+	nfs4acl_xattr:version = 40
+	vfs objects = nfs4acl_xattr xattr_tdb
+
+[nfs4acl_special_40]
+	path = $shrdir
+	comment = smb username is [%U]
+	nfs4:mode = special
+	nfs4acl_xattr:version = 40
+	vfs objects = nfs4acl_xattr xattr_tdb
+
+[nfs4acl_simple_41]
 	path = $shrdir
 	comment = smb username is [%U]
 	nfs4:mode = simple
 	vfs objects = nfs4acl_xattr xattr_tdb
 
-[nfs4acl_special]
+[nfs4acl_xdr_40]
 	path = $shrdir
 	comment = smb username is [%U]
-	nfs4:mode = special
 	vfs objects = nfs4acl_xattr xattr_tdb
+	nfs4:mode = simple
+	nfs4acl_xattr:encoding = xdr
+	nfs4acl_xattr:version = 40
+
+[nfs4acl_xdr_41]
+	path = $shrdir
+	comment = smb username is [%U]
+	vfs objects = nfs4acl_xattr xattr_tdb
+	nfs4:mode = simple
+	nfs4acl_xattr:encoding = xdr
+	nfs4acl_xattr:version = 41
 
 [xcopy_share]
 	path = $shrdir

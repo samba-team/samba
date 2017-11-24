@@ -364,10 +364,12 @@ WERROR dnsserver_db_add_empty_node(TALLOC_CTX *mem_ctx,
 	const char * const attrs[] = { "name", NULL };
 	struct ldb_result *res;
 	struct ldb_dn *dn;
+	char *encoded_name = ldb_binary_encode_string(mem_ctx, name);
 	int ret;
 
 	ret = ldb_search(samdb, mem_ctx, &res, z->zone_dn, LDB_SCOPE_BASE, attrs,
-			"(&(objectClass=dnsNode)(name=%s))", name);
+			"(&(objectClass=dnsNode)(name=%s))",
+			 encoded_name);
 	if (ret != LDB_SUCCESS) {
 		return WERR_INTERNAL_DB_ERROR;
 	}
@@ -406,6 +408,7 @@ WERROR dnsserver_db_add_record(TALLOC_CTX *mem_ctx,
 	int serial;
 	WERROR werr;
 	bool was_tombstoned = false;
+	char *encoded_name = ldb_binary_encode_string(mem_ctx, name);
 
 	werr = dns_to_dnsp_convert(mem_ctx, add_record, &rec, true);
 	if (!W_ERROR_IS_OK(werr)) {
@@ -436,7 +439,8 @@ WERROR dnsserver_db_add_record(TALLOC_CTX *mem_ctx,
 	rec->dwTimeStamp = t;
 
 	ret = ldb_search(samdb, mem_ctx, &res, z->zone_dn, LDB_SCOPE_ONELEVEL, attrs,
-			"(&(objectClass=dnsNode)(name=%s))", name);
+			"(&(objectClass=dnsNode)(name=%s))",
+			 encoded_name);
 	if (ret != LDB_SUCCESS) {
 		return WERR_INTERNAL_DB_ERROR;
 	}
@@ -524,6 +528,7 @@ WERROR dnsserver_db_update_record(TALLOC_CTX *mem_ctx,
 	int ret, i;
 	int serial;
 	WERROR werr;
+	char *encoded_name = ldb_binary_encode_string(mem_ctx, name);
 
 	werr = dns_to_dnsp_convert(mem_ctx, add_record, &arec, true);
 	if (!W_ERROR_IS_OK(werr)) {
@@ -541,7 +546,8 @@ WERROR dnsserver_db_update_record(TALLOC_CTX *mem_ctx,
 	arec->dwTimeStamp = t;
 
 	ret = ldb_search(samdb, mem_ctx, &res, z->zone_dn, LDB_SCOPE_ONELEVEL, attrs,
-			"(&(objectClass=dnsNode)(name=%s)(!(dNSTombstoned=TRUE)))", name);
+			"(&(objectClass=dnsNode)(name=%s)(!(dNSTombstoned=TRUE)))",
+			 encoded_name);
 	if (ret != LDB_SUCCESS) {
 		return WERR_INTERNAL_DB_ERROR;
 	}
@@ -642,13 +648,17 @@ WERROR dnsserver_db_delete_record(TALLOC_CTX *mem_ctx,
 	}
 
 	ret = ldb_search(samdb, mem_ctx, &res, z->zone_dn, LDB_SCOPE_ONELEVEL, attrs,
-			"(&(objectClass=dnsNode)(name=%s))", name);
+			"(&(objectClass=dnsNode)(name=%s))",
+			 ldb_binary_encode_string(mem_ctx, name));
 	if (ret != LDB_SUCCESS) {
 		return WERR_INTERNAL_DB_ERROR;
 	}
 
 	if (res->count == 0) {
 		return WERR_DNS_ERROR_RECORD_DOES_NOT_EXIST;
+	}
+	if (res->count > 1) {
+		return WERR_DNS_ERROR_RCODE_SERVER_FAILURE;
 	}
 
 	el = ldb_msg_find_element(res->msgs[0], "dnsRecord");

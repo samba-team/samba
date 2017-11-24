@@ -126,15 +126,22 @@ class Schema(object):
         self.ldb.connect(url=schemadb_path)
         self.ldb.transaction_start()
         try:
+            # These are actually ignored, as the schema has been forced
+            # when the ldb object was created, and that overrides this
             self.ldb.add_ldif("""dn: @ATTRIBUTES
 linkID: INTEGER
 
 dn: @INDEXLIST
 @IDXATTR: linkID
 @IDXATTR: attributeSyntax
+@IDXGUID: objectGUID
 """)
+
+            schema_dn_add = self.schema_dn_add \
+                            + "objectGUID: 24e2ca70-b093-4ae8-84c0-2d7ac652a1b8\n"
+
             # These bits of LDIF are supplied when the Schema object is created
-            self.ldb.add_ldif(self.schema_dn_add)
+            self.ldb.add_ldif(schema_dn_add)
             self.ldb.modify_ldif(self.schema_dn_modify)
             self.ldb.add_ldif(self.schema_data)
         except:

@@ -114,6 +114,91 @@ static void test_connect(void **state)
 	assert_int_equal(ret, 0);
 }
 
+static struct ldb_message *get_test_ldb_message(TALLOC_CTX *mem_ctx,
+						struct ldb_context *ldb)
+{
+	struct ldb_message *msg = ldb_msg_new(mem_ctx);
+	int ret;
+	assert_non_null(msg);
+
+	msg->dn = ldb_dn_new(msg, ldb, "dc=samba,dc=org");
+	assert_non_null(msg->dn);
+	ret = ldb_msg_add_string(msg, "public", "key");
+	assert_int_equal(ret, LDB_SUCCESS);
+	ret = ldb_msg_add_string(msg, "supersecret", "password");
+	assert_int_equal(ret, LDB_SUCCESS);
+	ret = ldb_msg_add_string(msg, "binary", "\xff\xff\0");
+	assert_int_equal(ret, LDB_SUCCESS);
+	return msg;
+}
+
+static void test_ldif_message(void **state)
+{
+	struct ldbtest_ctx *test_ctx = talloc_get_type_abort(*state,
+							struct ldbtest_ctx);
+	char *got_ldif;
+	const char *expected_ldif =
+		"dn: dc=samba,dc=org\n"
+		"changetype: add\n"
+		"public: key\n"
+		"supersecret: password\n"
+		"binary:: //8=\n"
+		"\n";
+	
+	struct ldb_message *msg = get_test_ldb_message(test_ctx,
+						       test_ctx->ldb);
+
+	got_ldif = ldb_ldif_message_string(test_ctx->ldb,
+					   test_ctx,
+					   LDB_CHANGETYPE_ADD,
+					   msg);
+	assert_string_equal(got_ldif, expected_ldif);
+	TALLOC_FREE(got_ldif);
+}
+
+static void test_ldif_message_redacted(void **state)
+{
+	struct ldbtest_ctx *test_ctx = talloc_get_type_abort(*state,
+							struct ldbtest_ctx);
+	int ret;
+	char *got_ldif;
+	const char *expected_ldif =
+		"dn: dc=samba,dc=org\n"
+		"changetype: add\n"
+		"public: key\n"
+		"# supersecret::: REDACTED SECRET ATTRIBUTE\n"
+		"binary:: //8=\n"
+		"\n";
+
+	const char *secret_attrs[] = {
+		"supersecret",
+		NULL
+	};
+	
+	struct ldb_message *msg = ldb_msg_new(test_ctx);
+
+	ldb_set_opaque(test_ctx->ldb,
+		       LDB_SECRET_ATTRIBUTE_LIST_OPAQUE,
+		       secret_attrs);
+	
+	assert_non_null(msg);
+
+	msg->dn = ldb_dn_new(msg, test_ctx->ldb, "dc=samba,dc=org");
+	ret = ldb_msg_add_string(msg, "public", "key");
+	assert_int_equal(ret, LDB_SUCCESS);
+	ret = ldb_msg_add_string(msg, "supersecret", "password");
+	assert_int_equal(ret, LDB_SUCCESS);
+	ret = ldb_msg_add_string(msg, "binary", "\xff\xff\0");
+	assert_int_equal(ret, LDB_SUCCESS);
+	got_ldif = ldb_ldif_message_redacted_string(test_ctx->ldb,
+						    test_ctx,
+						    LDB_CHANGETYPE_ADD,
+						    msg);
+	assert_string_equal(got_ldif, expected_ldif);
+	TALLOC_FREE(got_ldif);
+	assert_int_equal(ret, 0);
+}
+
 static int ldbtest_setup(void **state)
 {
 	struct ldbtest_ctx *test_ctx;
@@ -2776,10 +2861,165 @@ static void test_ldb_rename_dn_case_change(void **state)
 	/* FIXME - test the values didn't change */
 }
 
+static int ldb_read_only_setup(void **state)
+{
+	struct ldbtest_ctx *test_ctx;
+
+	ldbtest_setup((void **) &test_ctx);
+
+	*state = test_ctx;
+	return 0;
+}
+
+static int ldb_read_only_teardown(void **state)
+{
+	struct ldbtest_ctx *test_ctx = talloc_get_type_abort(*state,
+							struct ldbtest_ctx);
+	ldbtest_teardown((void **) &test_ctx);
+	return 0;
+}
+
+static void test_read_only(void **state)
+{
+	struct ldb_context *ro_ldb = NULL;
+	struct ldb_context *rw_ldb = NULL;
+	int ret;
+	TALLOC_CTX *tmp_ctx = NULL;
+
+	struct ldbtest_ctx *test_ctx = talloc_get_type_abort(*state,
+							struct ldbtest_ctx);
+	/*
+	 * Close the ldb context freeing it this will ensure it exists on
+	 * disk and can be opened in read only mode
+	 */
+	TALLOC_FREE(test_ctx->ldb);
+
+	/*
+	 * Open the database in read only and read write mode,
+	 * ensure it's opend in read only mode first
+	 */
+	ro_ldb = ldb_init(test_ctx, test_ctx->ev);
+	ret = ldb_connect(ro_ldb, test_ctx->dbpath, LDB_FLG_RDONLY, NULL);
+	assert_int_equal(ret, 0);
+
+	rw_ldb = ldb_init(test_ctx, test_ctx->ev);
+	ret = ldb_connect(rw_ldb, test_ctx->dbpath, 0, NULL);
+	assert_int_equal(ret, 0);
+
+
+	/*
+	 * Set up a context for the temporary variables
+	 */
+	tmp_ctx = talloc_new(test_ctx);
+	assert_non_null(tmp_ctx);
+
+	/*
+	 * Ensure that we can search the read write database
+	 */
+	{
+		struct ldb_result *result = NULL;
+		struct ldb_dn *dn = ldb_dn_new_fmt(tmp_ctx, rw_ldb,
+						       "dc=test");
+		assert_non_null(dn);
+
+		ret = ldb_search(rw_ldb, tmp_ctx, &result, dn,
+				 LDB_SCOPE_BASE, NULL, NULL);
+		assert_int_equal(ret, LDB_SUCCESS);
+		TALLOC_FREE(result);
+		TALLOC_FREE(dn);
+	}
+
+	/*
+	 * Ensure that we can search the read only database
+	 */
+	{
+		struct ldb_result *result = NULL;
+		struct ldb_dn *dn = ldb_dn_new_fmt(tmp_ctx, ro_ldb,
+						       "dc=test");
+		assert_non_null(dn);
+
+		ret = ldb_search(ro_ldb, tmp_ctx, &result, dn,
+				 LDB_SCOPE_BASE, NULL, NULL);
+		assert_int_equal(ret, LDB_SUCCESS);
+		TALLOC_FREE(result);
+		TALLOC_FREE(dn);
+	}
+	/*
+	 * Ensure that a write to the read only database fails
+	 */
+	{
+		struct ldb_message *msg = NULL;
+		msg = ldb_msg_new(tmp_ctx);
+		assert_non_null(msg);
+
+		msg->dn = ldb_dn_new_fmt(msg, ro_ldb, "dc=test");
+		assert_non_null(msg->dn);
+
+		ret = ldb_msg_add_string(msg, "cn", "test_cn_val");
+		assert_int_equal(ret, 0);
+
+		ret = ldb_add(ro_ldb, msg);
+		assert_int_equal(ret, LDB_ERR_UNWILLING_TO_PERFORM);
+		TALLOC_FREE(msg);
+	}
+
+	/*
+	 * Ensure that a write to the read write database succeeds
+	 */
+	{
+		struct ldb_message *msg = NULL;
+		msg = ldb_msg_new(tmp_ctx);
+		assert_non_null(msg);
+
+		msg->dn = ldb_dn_new_fmt(msg, ro_ldb, "dc=test");
+		assert_non_null(msg->dn);
+
+		ret = ldb_msg_add_string(msg, "cn", "test_cn_val");
+		assert_int_equal(ret, 0);
+
+		ret = ldb_add(rw_ldb, msg);
+		assert_int_equal(ret, LDB_SUCCESS);
+		TALLOC_FREE(msg);
+	}
+
+	/*
+	 * Ensure that a delete from a read only database fails
+	 */
+	{
+		struct ldb_dn *dn = ldb_dn_new_fmt(tmp_ctx, ro_ldb, "dc=test");
+		assert_non_null(dn);
+
+		ret = ldb_delete(ro_ldb, dn);
+		assert_int_equal(ret, LDB_ERR_UNWILLING_TO_PERFORM);
+		TALLOC_FREE(dn);
+	}
+
+
+	/*
+	 * Ensure that a delete from a read write succeeds
+	 */
+	{
+		struct ldb_dn *dn = ldb_dn_new_fmt(tmp_ctx, rw_ldb, "dc=test");
+		assert_non_null(dn);
+
+		ret = ldb_delete(rw_ldb, dn);
+		assert_int_equal(ret, LDB_SUCCESS);
+		TALLOC_FREE(dn);
+	}
+	TALLOC_FREE(tmp_ctx);
+}
+
+
 int main(int argc, const char **argv)
 {
 	const struct CMUnitTest tests[] = {
 		cmocka_unit_test_setup_teardown(test_connect,
+						ldbtest_noconn_setup,
+						ldbtest_noconn_teardown),
+		cmocka_unit_test_setup_teardown(test_ldif_message,
+						ldbtest_noconn_setup,
+						ldbtest_noconn_teardown),
+		cmocka_unit_test_setup_teardown(test_ldif_message_redacted,
 						ldbtest_noconn_setup,
 						ldbtest_noconn_teardown),
 		cmocka_unit_test_setup_teardown(test_ldb_add,
@@ -2890,6 +3130,9 @@ int main(int argc, const char **argv)
 		cmocka_unit_test_setup_teardown(test_ldb_rename_dn_case_change,
 						ldb_rename_test_setup,
 						ldb_rename_test_teardown),
+		cmocka_unit_test_setup_teardown(test_read_only,
+						ldb_read_only_setup,
+						ldb_read_only_teardown),
 	};
 
 	return cmocka_run_group_tests(tests, NULL, NULL);

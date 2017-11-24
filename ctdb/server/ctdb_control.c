@@ -311,7 +311,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return daemon_deregister_message_handler(ctdb, client_id, srvid);
 
 	case CTDB_CONTROL_CHECK_SRVIDS:
-		return daemon_check_srvids(ctdb, indata, outdata);
+		return control_not_implemented("CHECK_SRVIDS", NULL);
 
 	case CTDB_CONTROL_ENABLE_SEQNUM:
 		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));
@@ -332,22 +332,17 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));		
 		return ctdb_control_set_recmode(ctdb, c, indata, async_reply, errormsg);
 
-	case CTDB_CONTROL_GET_MONMODE: 
-		CHECK_CONTROL_DATA_SIZE(0);
-		return ctdb_monitoring_mode(ctdb);
-		
-	case CTDB_CONTROL_ENABLE_MONITOR: 
-		CHECK_CONTROL_DATA_SIZE(0);
-		ctdb_enable_monitoring(ctdb);
-		return 0;
+	case CTDB_CONTROL_GET_MONMODE:
+		return control_not_implemented("GET_MONMODE", NULL);
+
+	case CTDB_CONTROL_ENABLE_MONITOR:
+		return control_not_implemented("ENABLE_MONITOR", NULL);
 
 	case CTDB_CONTROL_RUN_EVENTSCRIPTS:
 		return control_not_implemented("RUN_EVENTSCRIPTS", NULL);
 
-	case CTDB_CONTROL_DISABLE_MONITOR: 
-		CHECK_CONTROL_DATA_SIZE(0);
-		ctdb_disable_monitoring(ctdb);
-		return 0;
+	case CTDB_CONTROL_DISABLE_MONITOR:
+		return control_not_implemented("DISABLE_MONITOR", NULL);
 
 	case CTDB_CONTROL_SHUTDOWN:
 		DEBUG(DEBUG_NOTICE,("Received SHUTDOWN command.\n"));
@@ -700,6 +695,16 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		memcpy(outdata->dptr, &tdb_flags, outdata->dsize);
 		return 0;
 	}
+
+	case CTDB_CONTROL_CHECK_PID_SRVID:
+		CHECK_CONTROL_DATA_SIZE((sizeof(pid_t) + sizeof(uint64_t)));
+		return ctdb_control_check_pid_srvid(ctdb, indata);
+
+	case CTDB_CONTROL_TUNNEL_REGISTER:
+		return ctdb_control_tunnel_register(ctdb, client_id, srvid);
+
+	case CTDB_CONTROL_TUNNEL_DEREGISTER:
+		return ctdb_control_tunnel_deregister(ctdb, client_id, srvid);
 
 	default:
 		DEBUG(DEBUG_CRIT,(__location__ " Unknown CTDB control opcode %u\n", opcode));

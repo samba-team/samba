@@ -48,19 +48,37 @@ static bool test_codepoint_cmpi(struct torture_context *tctx)
 	return true;
 }
 
+static bool test_strcasecmp(struct torture_context *tctx)
+{
+	torture_assert_int_equal(tctx, strcasecmp("foo", "bar"), 4, "different strings both lower");
+	torture_assert_int_equal(tctx, strcasecmp("foo", "Bar"), 4, "different strings lower/upper");
+	torture_assert_int_equal(tctx, strcasecmp("Foo", "bar"), 4, "different strings upper/lower");
+	torture_assert_int_equal(tctx, strcasecmp("AFoo", "_bar"), 2, "different strings upper/lower");
+	torture_assert_int_equal(tctx, strcasecmp("foo", "foo"), 0, "same case strings");
+	torture_assert_int_equal(tctx, strcasecmp("foo", "Foo"), 0, "different case strings");
+
+	/*
+	 * Note that strcasecmp() doesn't allow NULL arguments
+	 */
+	return true;
+}
+
 static bool test_strcasecmp_m(struct torture_context *tctx)
 {
 	/* file.{accented e} in iso8859-1 */
 	const char file_iso8859_1[7] = { 0x66, 0x69, 0x6c, 0x65, 0x2d, 0xe9, 0 };
 	/* file.{accented e} in utf8 */
 	const char file_utf8[8] =      { 0x66, 0x69, 0x6c, 0x65, 0x2d, 0xc3, 0xa9, 0 };
-	torture_assert(tctx, strcasecmp_m("foo", "bar") != 0, "different strings");
-	torture_assert(tctx, strcasecmp_m("foo", "foo") == 0, "same case strings");
-	torture_assert(tctx, strcasecmp_m("foo", "Foo") == 0, "different case strings");
-	torture_assert(tctx, strcasecmp_m(NULL, "Foo") != 0, "one NULL");
-	torture_assert(tctx, strcasecmp_m("foo", NULL) != 0, "other NULL");
-	torture_assert(tctx, strcasecmp_m(NULL, NULL) == 0, "both NULL");
-	torture_assert(tctx, strcasecmp_m(file_iso8859_1, file_utf8) != 0,
+	torture_assert_int_equal(tctx, strcasecmp_m("foo", "bar"), 4, "different strings both lower");
+	torture_assert_int_equal(tctx, strcasecmp_m("foo", "Bar"), 4, "different strings lower/upper");
+	torture_assert_int_equal(tctx, strcasecmp_m("Foo", "bar"), 4, "different strings upper/lower");
+	torture_assert_int_equal(tctx, strcasecmp_m("AFoo", "_bar"), 2, "different strings upper/lower");
+	torture_assert_int_equal(tctx, strcasecmp_m("foo", "foo"), 0, "same case strings");
+	torture_assert_int_equal(tctx, strcasecmp_m("foo", "Foo"), 0, "different case strings");
+	torture_assert_int_equal(tctx, strcasecmp_m(NULL, "Foo"),  -1, "one NULL");
+	torture_assert_int_equal(tctx, strcasecmp_m("foo", NULL),  1, "other NULL");
+	torture_assert_int_equal(tctx, strcasecmp_m(NULL, NULL),   0, "both NULL");
+	torture_assert_int_equal(tctx, strcasecmp_m(file_iso8859_1, file_utf8), 38,
 		"file.{accented e} should differ");
 	return true;
 }
@@ -106,22 +124,43 @@ static bool test_string_replace_m(struct torture_context *tctx)
 	return true;
 }
 
+static bool test_strncasecmp(struct torture_context *tctx)
+{
+	torture_assert_int_equal(tctx, strncasecmp("foo", "bar", 3), 4, "different strings both lower");
+	torture_assert_int_equal(tctx, strncasecmp("foo", "Bar", 3), 4, "different strings lower/upper");
+	torture_assert_int_equal(tctx, strncasecmp("Foo", "bar", 3), 4, "different strings upper/lower");
+	torture_assert_int_equal(tctx, strncasecmp("AFoo", "_bar", 4), 2, "different strings upper/lower");
+	torture_assert_int_equal(tctx, strncasecmp("foo", "foo", 3), 0, "same case strings");
+	torture_assert_int_equal(tctx, strncasecmp("foo", "Foo", 3), 0, "different case strings");
+	torture_assert_int_equal(tctx, strncasecmp("fool", "Foo", 3),0, "different case strings");
+	torture_assert_int_equal(tctx, strncasecmp("fool", "Fool", 40), 0, "over size");
+	torture_assert_int_equal(tctx, strncasecmp("BLA", "Fool", 0),0, "empty");
+
+	/*
+	 * Note that strncasecmp() doesn't allow NULL arguments
+	 */
+	return true;
+}
+
 static bool test_strncasecmp_m(struct torture_context *tctx)
 {
 	/* file.{accented e} in iso8859-1 */
 	const char file_iso8859_1[7] = { 0x66, 0x69, 0x6c, 0x65, 0x2d, 0xe9, 0 };
 	/* file.{accented e} in utf8 */
 	const char file_utf8[8] =      { 0x66, 0x69, 0x6c, 0x65, 0x2d, 0xc3, 0xa9, 0 };
-	torture_assert(tctx, strncasecmp_m("foo", "bar", 3) != 0, "different strings");
-	torture_assert(tctx, strncasecmp_m("foo", "foo", 3) == 0, "same case strings");
-	torture_assert(tctx, strncasecmp_m("foo", "Foo", 3) == 0, "different case strings");
-	torture_assert(tctx, strncasecmp_m("fool", "Foo", 3) == 0, "different case strings");
-	torture_assert(tctx, strncasecmp_m("fool", "Fool", 40) == 0, "over size");
-	torture_assert(tctx, strncasecmp_m("BLA", "Fool", 0) == 0, "empty");
-	torture_assert(tctx, strncasecmp_m(NULL, "Foo", 3) != 0, "one NULL");
-	torture_assert(tctx, strncasecmp_m("foo", NULL, 3) != 0, "other NULL");
-	torture_assert(tctx, strncasecmp_m(NULL, NULL, 3) == 0, "both NULL");
-	torture_assert(tctx, strncasecmp_m(file_iso8859_1, file_utf8, 6) != 0,
+	torture_assert_int_equal(tctx, strncasecmp_m("foo", "bar", 3), 4, "different strings both lower");
+	torture_assert_int_equal(tctx, strncasecmp_m("foo", "Bar", 3), 4, "different strings lower/upper");
+	torture_assert_int_equal(tctx, strncasecmp_m("Foo", "bar", 3), 4, "different strings upper/lower");
+	torture_assert_int_equal(tctx, strncasecmp_m("AFoo", "_bar", 4), 2, "different strings upper/lower");
+	torture_assert_int_equal(tctx, strncasecmp_m("foo", "foo", 3), 0, "same case strings");
+	torture_assert_int_equal(tctx, strncasecmp_m("foo", "Foo", 3), 0, "different case strings");
+	torture_assert_int_equal(tctx, strncasecmp_m("fool", "Foo", 3),0, "different case strings");
+	torture_assert_int_equal(tctx, strncasecmp_m("fool", "Fool", 40), 0, "over size");
+	torture_assert_int_equal(tctx, strncasecmp_m("BLA", "Fool", 0),0, "empty");
+	torture_assert_int_equal(tctx, strncasecmp_m(NULL, "Foo", 3),  -1, "one NULL");
+	torture_assert_int_equal(tctx, strncasecmp_m("foo", NULL, 3),  1, "other NULL");
+	torture_assert_int_equal(tctx, strncasecmp_m(NULL, NULL, 3),   0, "both NULL");
+	torture_assert_int_equal(tctx, strncasecmp_m(file_iso8859_1, file_utf8, 6), 38,
 		"file.{accented e} should differ");
 	return true;
 }
@@ -276,10 +315,12 @@ struct torture_suite *torture_local_charset(TALLOC_CTX *mem_ctx)
 	torture_suite_add_simple_test(suite, "toupper_m", test_toupper_m);
 	torture_suite_add_simple_test(suite, "tolower_m", test_tolower_m);
 	torture_suite_add_simple_test(suite, "codepoint_cmpi", test_codepoint_cmpi);
+	torture_suite_add_simple_test(suite, "strcasecmp", test_strcasecmp);
 	torture_suite_add_simple_test(suite, "strcasecmp_m", test_strcasecmp_m);
 	torture_suite_add_simple_test(suite, "strequal_m", test_strequal_m);
 	torture_suite_add_simple_test(suite, "strcsequal", test_strcsequal);
 	torture_suite_add_simple_test(suite, "string_replace_m", test_string_replace_m);
+	torture_suite_add_simple_test(suite, "strncasecmp", test_strncasecmp);
 	torture_suite_add_simple_test(suite, "strncasecmp_m", test_strncasecmp_m);
 	torture_suite_add_simple_test(suite, "next_token", test_next_token);
 	torture_suite_add_simple_test(suite, "next_token_null", test_next_token_null);

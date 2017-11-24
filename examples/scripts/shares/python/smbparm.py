@@ -173,7 +173,6 @@ parm_table = {
 	"PASSWDCHATDEBUG"        : ("passwd chat debug", SambaParmBool, P_GLOBAL, "No"),
 	"SMBPASSWDFILE"          : ("smb passwd file", SambaParmString, P_GLOBAL, "/etc/samba/private/smbpasswd"),
 	"GETQUOTACOMMAND"        : ("get quota command", SambaParmString, P_GLOBAL, ""),
-	"OPLOCKCONTENTIONLIMIT"  : ("oplock contention limit", SambaParmString, P_LOCAL, "2"),
 	"DOMAINMASTER"           : ("domain master", SambaParmString, P_GLOBAL, "Auto"),
 	"DELETESHARECOMMAND"     : ("delete share command", SambaParmString, P_GLOBAL, ""),
 	"INVALIDUSERS"           : ("invalid users", SambaParmString, P_LOCAL, ""),

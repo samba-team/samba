@@ -126,6 +126,22 @@ void tdb_trace_2rec_retrec(struct tdb_context *tdb, const char *op,
 #define SAFE_FREE(x) do { if ((x) != NULL) {free(x); (x)=NULL;} } while(0)
 #endif
 
+/*
+ * Note: the BUCKET macro is broken as it returns an unexpected result when
+ * called as BUCKET(-1) for the freelist:
+ *
+ * -1 is sign converted to an unsigned int 4294967295 and then the modulo
+ * tdb->hashtable_size is computed. So with a hashtable_size of 10 the result
+ * is
+ *
+ *   4294967295 % hashtable_size = 5.
+ *
+ * where it should be -1 (C uses symmetric modulo).
+ *
+ * As all callers will lock the same wrong list consistently locking is still
+ * consistent. We can not change this without an incompatible on-disk format
+ * change, otherwise different tdb versions would use incompatible locking.
+ */
 #define BUCKET(hash) ((hash) % tdb->hash_size)
 
 #define DOCONV() (tdb->flags & TDB_CONVERT)
@@ -178,7 +194,7 @@ struct tdb_lock_type {
 struct tdb_traverse_lock {
 	struct tdb_traverse_lock *next;
 	uint32_t off;
-	uint32_t hash;
+	uint32_t list;
 	int lock_rw;
 };
 

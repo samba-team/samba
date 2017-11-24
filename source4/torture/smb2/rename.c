@@ -22,7 +22,7 @@
 #include "includes.h"
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
-#include "lib/tevent/tevent.h"
+#include <tevent.h>
 #include "lib/util/tevent_ntstatus.h"
 
 #include "torture/torture.h"

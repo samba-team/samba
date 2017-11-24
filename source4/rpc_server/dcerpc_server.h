@@ -467,7 +467,8 @@ NTSTATUS dcesrv_add_ep(struct dcesrv_context *dce_ctx,
 		       struct loadparm_context *lp_ctx,
 		       struct dcesrv_endpoint *e,
 		       struct tevent_context *event_ctx,
-		       const struct model_ops *model_ops);
+		       const struct model_ops *model_ops,
+		       void *process_context);
 
 /**
  * retrieve credentials from a dce_call

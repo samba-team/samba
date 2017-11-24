@@ -44,8 +44,10 @@ static void single_accept_connection(struct tevent_context *ev,
 				     void (*new_conn)(struct tevent_context *, 
 						      struct loadparm_context *,
 						      struct socket_context *, 
-						      struct server_id , void *), 
-				     void *private_data)
+						      struct server_id, void *,
+						      void *),
+				     void *private_data,
+				     void *process_context)
 {
 	NTSTATUS status;
 	struct socket_context *connected_socket;
@@ -54,7 +56,8 @@ static void single_accept_connection(struct tevent_context *ev,
 	/* accept an incoming connection. */
 	status = socket_accept(listen_socket, &connected_socket);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("single_accept_connection: accept: %s\n", nt_errstr(status)));
+		DBG_ERR("single_accept_connection: accept: %s\n",
+			nt_errstr(status));
 		/* this looks strange, but is correct. 
 
 		   We can only be here if woken up from select, due to
@@ -79,17 +82,22 @@ static void single_accept_connection(struct tevent_context *ev,
 	 * combination of pid/fd should be unique system-wide
 	 */
 	new_conn(ev, lp_ctx, connected_socket,
-		 cluster_id(pid, socket_get_fd(connected_socket)), private_data);
+		 cluster_id(pid, socket_get_fd(connected_socket)), private_data,
+			    process_context);
 }
 
 /*
   called to startup a new task
 */
-static void single_new_task(struct tevent_context *ev, 
+static void single_new_task(struct tevent_context *ev,
 			    struct loadparm_context *lp_ctx,
 			    const char *service_name,
-			    void (*new_task)(struct tevent_context *, struct loadparm_context *, struct server_id, void *), 
-			    void *private_data)
+			    void (*new_task)(struct tevent_context *,
+				             struct loadparm_context *,
+					     struct server_id, void *, void *),
+			    void *private_data,
+			    const struct service_details *service_details,
+			    int from_parent_fd)
 {
 	pid_t pid = getpid();
 	/* start our taskids at MAX_INT32, the first 2^31 tasks are is reserved for fd numbers */
@@ -104,14 +112,17 @@ static void single_new_task(struct tevent_context *ev,
 	 * Using the pid unaltered makes debugging of which process
 	 * owns the messaging socket easier.
 	 */
-	new_task(ev, lp_ctx, cluster_id(pid, taskid++), private_data);
+	new_task(ev, lp_ctx, cluster_id(pid, taskid++), private_data, NULL);
 }
 
 
 /* called when a task goes down */
-static void single_terminate(struct tevent_context *ev, struct loadparm_context *lp_ctx, const char *reason)
+static void single_terminate(struct tevent_context *ev,
+			     struct loadparm_context *lp_ctx,
+			     const char *reason,
+			     void *process_context)
 {
-	DEBUG(3,("single_terminate: reason[%s]\n",reason));
+	DBG_NOTICE("single_terminate: reason[%s]\n",reason);
 }
 
 /* called to set a title of a task or connection */

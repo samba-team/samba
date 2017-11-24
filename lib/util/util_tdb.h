@@ -22,6 +22,8 @@
 #ifndef _____LIB_UTIL_UTIL_TDB_H__
 #define _____LIB_UTIL_UTIL_TDB_H__
 
+#include <tdb.h>
+
 /***************************************************************
  Make a TDB_DATA and keep the const warning in one place
 ****************************************************************/
@@ -53,22 +55,10 @@ int tdb_read_lock_bystring(struct tdb_context *tdb, const char *keyval);
 void tdb_read_unlock_bystring(struct tdb_context *tdb, const char *keyval);
 
 /****************************************************************************
- Fetch a int32_t value by a arbitrary blob key, return -1 if not found.
- Output is int32_t in native byte order.
-****************************************************************************/
-int32_t tdb_fetch_int32_byblob(struct tdb_context *tdb, TDB_DATA key);
-
-/****************************************************************************
  Fetch a int32_t value by string key, return -1 if not found.
  Output is int32_t in native byte order.
 ****************************************************************************/
 int32_t tdb_fetch_int32(struct tdb_context *tdb, const char *keystr);
-
-/****************************************************************************
- Store a int32_t value by an arbitrary blob key, return 0 on success, -ve on failure.
- Input is int32_t in native byte order. Output in tdb is in little-endian.
-****************************************************************************/
-int tdb_store_int32_byblob(struct tdb_context *tdb, TDB_DATA key, int32_t v);
 
 /****************************************************************************
  Store a int32_t value by string key, return 0 on success, -ve on failure.
@@ -77,22 +67,10 @@ int tdb_store_int32_byblob(struct tdb_context *tdb, TDB_DATA key, int32_t v);
 int tdb_store_int32(struct tdb_context *tdb, const char *keystr, int32_t v);
 
 /****************************************************************************
- Fetch a uint32_t value by a arbitrary blob key, return -1 if not found.
- Output is uint32_t in native byte order.
-****************************************************************************/
-bool tdb_fetch_uint32_byblob(struct tdb_context *tdb, TDB_DATA key, uint32_t *value);
-
-/****************************************************************************
  Fetch a uint32_t value by string key, return -1 if not found.
  Output is uint32_t in native byte order.
 ****************************************************************************/
 bool tdb_fetch_uint32(struct tdb_context *tdb, const char *keystr, uint32_t *value);
-
-/****************************************************************************
- Store a uint32_t value by an arbitrary blob key, return true on success, false on failure.
- Input is uint32_t in native byte order. Output in tdb is in little-endian.
-****************************************************************************/
-bool tdb_store_uint32_byblob(struct tdb_context *tdb, TDB_DATA key, uint32_t value);
 
 /****************************************************************************
  Store a uint32_t value by string key, return true on success, false on failure.

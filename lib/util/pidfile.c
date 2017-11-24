@@ -1,9 +1,8 @@
-/* this code is broken - there is a race condition with the unlink (tridge) */
-
 /*
    Unix SMB/CIFS implementation.
    pidfile handling
    Copyright (C) Andrew Tridgell 1998
+   Copyright (C) Amitay Isaccs  2016
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -19,14 +18,112 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
+#include "replace.h"
 #include "system/filesys.h"
+
+#include "lib/util/blocking.h"
+#include "lib/util/debug.h"
+#include "lib/util/samba_util.h"  /* For process_exists_by_pid() */
+
 #include "lib/util/pidfile.h"
 
-/**
- * @file
- * @brief Pid file handling
- */
+int pidfile_path_create(const char *path, int *outfd)
+{
+	struct flock lck;
+	char tmp[64] = { 0 };
+	pid_t pid;
+	int fd, ret = 0;
+	int len;
+	ssize_t nwritten;
+
+	pid = getpid();
+
+	fd = open(path, O_CREAT|O_WRONLY|O_NONBLOCK, 0644);
+	if (fd == -1) {
+		return errno;
+	}
+
+	if (! set_close_on_exec(fd)) {
+		close(fd);
+		return EIO;
+	}
+
+	lck = (struct flock) {
+		.l_type = F_WRLCK,
+		.l_whence = SEEK_SET,
+	};
+
+	do {
+		ret = fcntl(fd, F_SETLK, &lck);
+	} while ((ret == -1) && (errno == EINTR));
+
+	if (ret != 0) {
+		ret = errno;
+		close(fd);
+		return ret;
+	}
+
+	/*
+	 * PID file is locked by us so from here on we should unlink
+	 * on failure
+	 */
+
+	do {
+		ret = ftruncate(fd, 0);
+	} while ((ret == -1) && (errno == EINTR));
+
+	if (ret == -1) {
+		ret = EIO;
+		goto fail_unlink;
+	}
+
+	len = snprintf(tmp, sizeof(tmp), "%u\n", pid);
+	if (len < 0) {
+		ret = errno;
+		goto fail_unlink;
+	}
+	if (len >= sizeof(tmp)) {
+		ret = ENOSPC;
+		goto fail_unlink;
+	}
+
+	do {
+		nwritten = write(fd, tmp, len);
+	} while ((nwritten == -1) && (errno == EINTR));
+
+	if ((nwritten == -1) || (nwritten != len)) {
+		ret = EIO;
+		goto fail_unlink;
+	}
+
+	if (outfd != NULL) {
+		*outfd = fd;
+	}
+	return 0;
+
+fail_unlink:
+	unlink(path);
+	close(fd);
+	return ret;
+}
+
+void pidfile_fd_close(int fd)
+{
+	struct flock lck = {
+		.l_type = F_UNLCK,
+		.l_whence = SEEK_SET,
+	};
+	int ret;
+
+	do {
+		ret = fcntl(fd, F_SETLK, &lck);
+	} while ((ret == -1) && (errno == EINTR));
+
+	do {
+		ret = close(fd);
+	} while ((ret == -1) && (errno == EINTR));
+}
+
 
 /**
  * return the pid in a pidfile. return 0 if the process (or pidfile)
@@ -79,9 +176,6 @@ pid_t pidfile_pid(const char *piddir, const char *name)
 
  noproc:
 	close(fd);
-	DEBUG(10, ("Deleting %s, since %d is not a Samba process.\n", pidFile,
-		(int)ret));
-	unlink(pidFile);
 	return 0;
 }
 
@@ -92,9 +186,8 @@ void pidfile_create(const char *piddir, const char *name)
 {
 	size_t len = strlen(piddir) + strlen(name) + 6;
 	char pidFile[len];
-	int     fd;
-	char    buf[20];
 	pid_t pid;
+	int ret;
 
 	snprintf(pidFile, sizeof(pidFile), "%s/%s.pid", piddir, name);
 
@@ -105,26 +198,10 @@ void pidfile_create(const char *piddir, const char *name)
 		exit(1);
 	}
 
-	fd = open(pidFile, O_NONBLOCK | O_CREAT | O_WRONLY | O_EXCL, 0644);
-	if (fd == -1) {
-		DEBUG(0,("ERROR: can't open %s: Error was %s\n", pidFile,
-			 strerror(errno)));
-		exit(1);
-	}
-
-	smb_set_close_on_exec(fd);
-
-	if (fcntl_lock(fd,F_SETLK,0,1,F_WRLCK)==false) {
-		DEBUG(0,("ERROR: %s : fcntl lock of file %s failed. Error was %s\n",
-              name, pidFile, strerror(errno)));
-		exit(1);
-	}
-
-	memset(buf, 0, sizeof(buf));
-	slprintf(buf, sizeof(buf) - 1, "%u\n", (unsigned int) getpid());
-	if (write(fd, buf, strlen(buf)) != (ssize_t)strlen(buf)) {
-		DEBUG(0,("ERROR: can't write to file %s: %s\n",
-			 pidFile, strerror(errno)));
+	ret = pidfile_path_create(pidFile, NULL);
+	if (ret != 0) {
+		DBG_ERR("ERROR: Failed to create PID file %s (%s)\n",
+			pidFile, strerror(ret));
 		exit(1);
 	}
 

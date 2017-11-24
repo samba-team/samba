@@ -1896,23 +1896,6 @@ static bool delay_for_oplock(files_struct *fsp,
 	return delay;
 }
 
-/**
- * Return lease or oplock state from a share mode
- **/
-static uint32_t get_lease_type_from_share_mode(const struct share_mode_data *d)
-{
-	uint32_t e_lease_type = 0;
-	uint32_t i;
-
-	for (i=0; i < d->num_share_modes; i++) {
-		struct share_mode_entry *e = &d->share_modes[i];
-
-		e_lease_type |= get_lease_type(d, e);
-	}
-
-	return e_lease_type;
-}
-
 static bool file_has_brlocks(files_struct *fsp)
 {
 	struct byte_range_lock *br_lck;
@@ -2325,11 +2308,6 @@ static struct deferred_open_record *deferred_open_record_create(
 struct defer_open_state {
 	struct smbXsrv_connection *xconn;
 	uint64_t mid;
-	struct file_id file_id;
-	struct timeval request_time;
-	struct timeval timeout;
-	bool kernel_oplock;
-	uint32_t lease_type;
 };
 
 static void defer_open_done(struct tevent_req *req);
@@ -2348,7 +2326,6 @@ static void defer_open(struct share_mode_lock *lck,
 		       struct timeval timeout,
 		       struct smb_request *req,
 		       bool delayed_for_oplocks,
-		       bool kernel_oplock,
 		       struct file_id id)
 {
 	struct deferred_open_record *open_rec = NULL;
@@ -2360,12 +2337,11 @@ static void defer_open(struct share_mode_lock *lck,
 	abs_timeout = timeval_sum(&request_time, &timeout);
 
 	DBG_DEBUG("request time [%s] timeout [%s] mid [%" PRIu64 "] "
-		  "delayed_for_oplocks [%s] kernel_oplock [%s] file_id [%s]\n",
+		  "delayed_for_oplocks [%s] file_id [%s]\n",
 		  timeval_string(talloc_tos(), &request_time, false),
 		  timeval_string(talloc_tos(), &abs_timeout, false),
 		  req->mid,
 		  delayed_for_oplocks ? "yes" : "no",
-		  kernel_oplock ? "yes" : "no",
 		  file_id_string_tos(&id));
 
 	open_rec = deferred_open_record_create(delayed_for_oplocks,
@@ -2382,11 +2358,6 @@ static void defer_open(struct share_mode_lock *lck,
 	}
 	watch_state->xconn = req->xconn;
 	watch_state->mid = req->mid;
-	watch_state->file_id = lck->data->id;
-	watch_state->request_time = request_time;
-	watch_state->timeout = timeout;
-	watch_state->kernel_oplock = kernel_oplock;
-	watch_state->lease_type = get_lease_type_from_share_mode(lck->data);
 
 	DBG_DEBUG("defering mid %" PRIu64 "\n", req->mid);
 
@@ -2416,12 +2387,8 @@ static void defer_open_done(struct tevent_req *req)
 {
 	struct defer_open_state *state = tevent_req_callback_data(
 		req, struct defer_open_state);
-	struct tevent_req *watch_req = NULL;
-	struct share_mode_lock *lck = NULL;
-	bool schedule_req = true;
-	struct timeval timeout;
 	NTSTATUS status;
-	bool ok;
+	bool ret;
 
 	status = dbwrap_watched_watch_recv(req, talloc_tos(), NULL, NULL,
 					  NULL);
@@ -2433,88 +2400,50 @@ static void defer_open_done(struct tevent_req *req)
 		 * Even if it failed, retry anyway. TODO: We need a way to
 		 * tell a re-scheduled open about that error.
 		 */
-		if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT) &&
-		    state->kernel_oplock)
-		{
-			/*
-			 * If we reschedule but the kernel oplock is still hold
-			 * we would block in the second open as that will be a
-			 * blocking open attempt.
-			 */
-			exit_server("Kernel oplock holder didn't "
-				    "respond to break message");
-		}
 	}
 
-	if (state->kernel_oplock) {
-		lck = get_existing_share_mode_lock(talloc_tos(), state->file_id);
-		if (lck != NULL) {
-			uint32_t lease_type;
+	DEBUG(10, ("scheduling mid %llu\n", (unsigned long long)state->mid));
 
-			lease_type = get_lease_type_from_share_mode(lck->data);
-
-			if ((lease_type != 0) &&
-			    (lease_type == state->lease_type))
-			{
-				DBG_DEBUG("Unchanged lease: %" PRIu32 "\n",
-					  lease_type);
-				schedule_req = false;
-			}
-		}
-	}
-
-	if (schedule_req) {
-		DBG_DEBUG("scheduling mid %" PRIu64 "\n", state->mid);
-
-		ok = schedule_deferred_open_message_smb(state->xconn,
-							state->mid);
-		if (!ok) {
-			exit_server("schedule_deferred_open_message_smb failed");
-		}
-		TALLOC_FREE(lck);
-		TALLOC_FREE(state);
-		return;
-	}
-
-	DBG_DEBUG("Keep waiting for oplock release for [%s/%s%s] "
-		  "mid: %" PRIu64 "\n",
-		  lck->data->servicepath,
-		  lck->data->base_name,
-		  lck->data->stream_name ? lck->data->stream_name : "",
-		  state->mid);
-
-	watch_req = dbwrap_watched_watch_send(state,
-					      state->xconn->ev_ctx,
-					      lck->data->record,
-					      (struct server_id){0});
-	if (watch_req == NULL) {
-		exit_server("Could not watch share mode record");
-	}
-	tevent_req_set_callback(watch_req, defer_open_done, state);
-
-	timeout = timeval_sum(&state->request_time, &state->timeout);
-	ok = tevent_req_set_endtime(watch_req, state->xconn->ev_ctx, timeout);
-	if (!ok) {
-		exit_server("tevent_req_set_endtime failed");
-	}
-
-	TALLOC_FREE(lck);
+	ret = schedule_deferred_open_message_smb(state->xconn, state->mid);
+	SMB_ASSERT(ret);
+	TALLOC_FREE(state);
 }
 
 /**
- * Reschedule an open for immediate execution
+ * Actually attempt the kernel oplock polling open.
+ */
+
+static void kernel_oplock_poll_open_timer(struct tevent_context *ev,
+				      struct tevent_timer *te,
+				      struct timeval current_time,
+				      void *private_data)
+{
+	bool ok;
+	struct smb_request *req = (struct smb_request *)private_data;
+
+	ok = schedule_deferred_open_message_smb(req->xconn, req->mid);
+	if (!ok) {
+		exit_server("schedule_deferred_open_message_smb failed");
+	}
+	DBG_DEBUG("kernel_oplock_poll_open_timer fired. Retying open !\n");
+}
+
+/**
+ * Reschedule an open for 1 second from now, if not timed out.
  **/
-static void retry_open(struct timeval request_time,
+static void setup_kernel_oplock_poll_open(struct timeval request_time,
 		       struct smb_request *req,
 		       struct file_id id)
 {
-	struct deferred_open_record *open_rec = NULL;
-	bool ok;
 
-	DBG_DEBUG("request time [%s] mid [%" PRIu64 "] file_id [%s]\n",
-		  timeval_string(talloc_tos(), &request_time, false),
-		  req->mid,
-		  file_id_string_tos(&id));
+	bool ok;
+	struct deferred_open_record *open_rec = NULL;
+	/* Maximum wait time. */
+	struct timeval timeout = timeval_set(OPLOCK_BREAK_TIMEOUT*2, 0);
+
+	if (request_timed_out(request_time, timeout)) {
+		return;
+	}
 
 	open_rec = deferred_open_record_create(false, false, id);
 	if (open_rec == NULL) {
@@ -2523,17 +2452,30 @@ static void retry_open(struct timeval request_time,
 
 	ok = push_deferred_open_message_smb(req,
 					    request_time,
-					    timeval_set(0, 0),
+					    timeout,
 					    id,
 					    open_rec);
 	if (!ok) {
 		exit_server("push_deferred_open_message_smb failed");
 	}
 
-	ok = schedule_deferred_open_message_smb(req->xconn, req->mid);
-	if (!ok) {
-		exit_server("schedule_deferred_open_message_smb failed");
+	/*
+	 * As this timer event is owned by req, it will
+	 * disappear if req it talloc_freed.
+	 */
+	open_rec->te = tevent_add_timer(req->sconn->ev_ctx,
+					req,
+					timeval_current_ofs(1, 0),
+					kernel_oplock_poll_open_timer,
+					req);
+	if (open_rec->te == NULL) {
+		exit_server("tevent_add_timer failed");
 	}
+
+	DBG_DEBUG("poll request time [%s] mid [%" PRIu64 "] file_id [%s]\n",
+		  timeval_string(talloc_tos(), &request_time, false),
+		  req->mid,
+		  file_id_string_tos(&id));
 }
 
 /****************************************************************************
@@ -2649,8 +2591,7 @@ static NTSTATUS fcb_or_dos_open(struct smb_request *req,
 static void schedule_defer_open(struct share_mode_lock *lck,
 				struct file_id id,
 				struct timeval request_time,
-				struct smb_request *req,
-				bool kernel_oplock)
+				struct smb_request *req)
 {
 	/* This is a relative time, added to the absolute
 	   request_time value to get the absolute timeout time.
@@ -2674,7 +2615,7 @@ static void schedule_defer_open(struct share_mode_lock *lck,
 		return;
 	}
 
-	defer_open(lck, request_time, timeout, req, true, kernel_oplock, id);
+	defer_open(lck, request_time, timeout, req, true, id);
 }
 
 /****************************************************************************
@@ -3253,20 +3194,18 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		flags2 &= ~(O_CREAT|O_TRUNC);
 	}
 
-	if (first_open_attempt && lp_kernel_oplocks(SNUM(conn))) {
+	if (lp_kernel_oplocks(SNUM(conn))) {
 		/*
 		 * With kernel oplocks the open breaking an oplock
 		 * blocks until the oplock holder has given up the
-		 * oplock or closed the file. We prevent this by first
+		 * oplock or closed the file. We prevent this by always
 		 * trying to open the file with O_NONBLOCK (see "man
-		 * fcntl" on Linux). For the second try, triggered by
-		 * an oplock break response, we do not need this
-		 * anymore.
+		 * fcntl" on Linux).
 		 *
-		 * This is true under the assumption that only Samba
-		 * requests kernel oplocks. Once someone else like
-		 * NFSv4 starts to use that API, we will have to
-		 * modify this by communicating with the NFSv4 server.
+		 * If a process that doesn't use the smbd open files
+		 * database or communication methods holds a kernel
+		 * oplock we must periodically poll for available open
+		 * using O_NONBLOCK.
 		 */
 		flags2 |= O_NONBLOCK;
 	}
@@ -3345,9 +3284,16 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 		lck = get_existing_share_mode_lock(talloc_tos(), fsp->file_id);
 		if (lck == NULL) {
-			retry_open(request_time, req, fsp->file_id);
-			DEBUG(10, ("No share mode lock found after "
-				   "EWOULDBLOCK, retrying sync\n"));
+			/*
+			 * No oplock from Samba around. Set up a poll every 1
+			 * second to retry a non-blocking open until the time
+			 * expires.
+			 */
+			setup_kernel_oplock_poll_open(request_time,
+						req,
+						fsp->file_id);
+			DBG_DEBUG("No Samba oplock around after EWOULDBLOCK. "
+				"Retrying with poll\n");
 			return NT_STATUS_SHARING_VIOLATION;
 		}
 
@@ -3360,7 +3306,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 					 first_open_attempt);
 		if (delay) {
 			schedule_defer_open(lck, fsp->file_id, request_time,
-					    req, true);
+					    req);
 			TALLOC_FREE(lck);
 			DEBUG(10, ("Sent oplock break request to kernel "
 				   "oplock holder\n"));
@@ -3368,14 +3314,15 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		}
 
 		/*
-		 * No oplock from Samba around. Immediately retry with
-		 * a blocking open.
+		 * No oplock from Samba around. Set up a poll every 1
+		 * second to retry a non-blocking open until the time
+		 * expires.
 		 */
-		retry_open(request_time, req, fsp->file_id);
+		setup_kernel_oplock_poll_open(request_time, req, fsp->file_id);
 
 		TALLOC_FREE(lck);
-		DEBUG(10, ("No Samba oplock around after EWOULDBLOCK. "
-			   "Retrying sync\n"));
+		DBG_DEBUG("No Samba oplock around after EWOULDBLOCK. "
+			"Retrying with poll\n");
 		return NT_STATUS_SHARING_VIOLATION;
 	}
 
@@ -3493,7 +3440,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 					 first_open_attempt);
 		if (delay) {
 			schedule_defer_open(lck, fsp->file_id,
-					    request_time, req, false);
+					    request_time, req);
 			TALLOC_FREE(lck);
 			fd_close(fsp);
 			return NT_STATUS_SHARING_VIOLATION;
@@ -3597,7 +3544,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 			if (!request_timed_out(request_time, timeout)) {
 				defer_open(lck, request_time, timeout, req,
-					   false, false, id);
+					   false, id);
 			}
 		}
 

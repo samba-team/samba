@@ -22,6 +22,8 @@
 */
 
 #include "includes.h"
+#include <tevent.h>
+#include "../lib/util/tevent_ntstatus.h"
 #include "auth/auth.h"
 #include "auth/ntlm/auth_proto.h"
 #include "librpc/gen_ndr/ndr_winbind_c.h"
@@ -90,57 +92,84 @@ static NTSTATUS winbind_rodc_want_check(struct auth_method_context *ctx,
 }
 
 struct winbind_check_password_state {
+	struct auth_method_context *ctx;
+	const struct auth_usersupplied_info *user_info;
 	struct winbind_SamLogon req;
+	struct auth_user_info_dc *user_info_dc;
+	bool authoritative;
 };
+
+static void winbind_check_password_done(struct tevent_req *subreq);
 
 /*
  Authenticate a user with a challenge/response
  using IRPC to the winbind task
 */
-static NTSTATUS winbind_check_password(struct auth_method_context *ctx,
-				       TALLOC_CTX *mem_ctx,
-				       const struct auth_usersupplied_info *user_info, 
-				       struct auth_user_info_dc **user_info_dc,
-				       bool *authoritative)
+static struct tevent_req *winbind_check_password_send(TALLOC_CTX *mem_ctx,
+				struct tevent_context *ev,
+				struct auth_method_context *ctx,
+				const struct auth_usersupplied_info *user_info)
 {
+	struct tevent_req *req = NULL;
 	struct winbind_check_password_state *state = NULL;
 	NTSTATUS status;
 	struct dcerpc_binding_handle *irpc_handle;
 	const struct auth_usersupplied_info *user_info_new;
 	struct netr_IdentityInfo *identity_info;
-	struct ldb_dn *domain_dn;
-	struct ldb_message *msg;
-	const char *account_name = user_info->mapped.account_name;
-	const char *p = NULL;
+	struct imessaging_context *msg_ctx;
+	struct tevent_req *subreq = NULL;
 
-	if (!ctx->auth_ctx->msg_ctx) {
-		DEBUG(0,("winbind_check_password: auth_context_create was called with out messaging context\n"));
-		return NT_STATUS_INTERNAL_ERROR;
+	req = tevent_req_create(mem_ctx, &state,
+				struct winbind_check_password_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->ctx = ctx;
+	state->user_info = user_info;
+	state->authoritative = true;
+
+	msg_ctx = imessaging_client_init(state, ctx->auth_ctx->lp_ctx, ev);
+	if (msg_ctx == NULL) {
+		DEBUG(1, ("imessaging_init failed\n"));
+		tevent_req_nterror(req, NT_STATUS_INVALID_SERVER_STATE);
+		return tevent_req_post(req, ev);
 	}
 
-	state = talloc(mem_ctx, struct winbind_check_password_state);
-	NT_STATUS_HAVE_NO_MEMORY(state);
-
-	irpc_handle = irpc_binding_handle_by_name(state, ctx->auth_ctx->msg_ctx,
+	irpc_handle = irpc_binding_handle_by_name(state, msg_ctx,
 						  "winbind_server",
 						  &ndr_table_winbind);
 	if (irpc_handle == NULL) {
 		DEBUG(0, ("Winbind authentication for [%s]\\[%s] failed, " 
 			  "no winbind_server running!\n",
 			  user_info->client.domain_name, user_info->client.account_name));
-		return NT_STATUS_NO_LOGON_SERVERS;
+		tevent_req_nterror(req, NT_STATUS_NO_LOGON_SERVERS);
+		return tevent_req_post(req, ev);
 	}
+
+	/*
+	 * 120 seconds should be enough even for trusted domains.
+	 *
+	 * Currently winbindd has a much lower limit.
+	 * And tests with Windows RODCs show that it
+	 * returns NO_LOGON_SERVERS after 90-100 seconds
+	 * if it can't reach any RWDC.
+	 */
+	dcerpc_binding_handle_set_timeout(irpc_handle, 120);
 
 	if (user_info->flags & USER_INFO_INTERACTIVE_LOGON) {
 		struct netr_PasswordInfo *password_info;
 
 		status = encrypt_user_info(state, ctx->auth_ctx, AUTH_PASSWORD_HASH,
 					   user_info, &user_info_new);
-		NT_STATUS_NOT_OK_RETURN(status);
+		if (tevent_req_nterror(req, status)) {
+			return tevent_req_post(req, ev);
+		}
 		user_info = user_info_new;
 
 		password_info = talloc_zero(state, struct netr_PasswordInfo);
-		NT_STATUS_HAVE_NO_MEMORY(password_info);
+		if (tevent_req_nomem(password_info, req)) {
+			return tevent_req_post(req, ev);
+		}
 
 		password_info->lmpassword = *user_info->password.hash.lanman;
 		password_info->ntpassword = *user_info->password.hash.nt;
@@ -154,14 +183,20 @@ static NTSTATUS winbind_check_password(struct auth_method_context *ctx,
 
 		status = encrypt_user_info(state, ctx->auth_ctx, AUTH_PASSWORD_RESPONSE,
 					   user_info, &user_info_new);
-		NT_STATUS_NOT_OK_RETURN(status);
+		if (tevent_req_nterror(req, status)) {
+			return tevent_req_post(req, ev);
+		}
 		user_info = user_info_new;
 
 		network_info = talloc_zero(state, struct netr_NetworkInfo);
-		NT_STATUS_HAVE_NO_MEMORY(network_info);
+		if (tevent_req_nomem(network_info, req)) {
+			return tevent_req_post(req, ev);
+		}
 
 		status = auth_get_challenge(ctx->auth_ctx, chal);
-		NT_STATUS_NOT_OK_RETURN(status);
+		if (tevent_req_nterror(req, status)) {
+			return tevent_req_post(req, ev);
+		}
 
 		memcpy(network_info->challenge, chal, sizeof(network_info->challenge));
 
@@ -185,16 +220,50 @@ static NTSTATUS winbind_check_password(struct auth_method_context *ctx,
 
 	state->req.in.validation_level = 3;
 
-	/* Note: this makes use of nested event loops... */
-	dcerpc_binding_handle_set_sync_ev(irpc_handle, ctx->auth_ctx->event_ctx);
-	status = dcerpc_winbind_SamLogon_r(irpc_handle, state, &state->req);
-	NT_STATUS_NOT_OK_RETURN(status);
+	subreq = dcerpc_winbind_SamLogon_r_send(state, ev, irpc_handle,
+						&state->req);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq,
+				winbind_check_password_done,
+				req);
 
-	if (!NT_STATUS_IS_OK(state->req.out.result)) {
+	return req;
+}
+
+static void winbind_check_password_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
+	struct winbind_check_password_state *state =
+		tevent_req_data(req,
+		struct winbind_check_password_state);
+	struct auth_method_context *ctx = state->ctx;
+	const struct auth_usersupplied_info *user_info = state->user_info;
+	const char *account_name = user_info->mapped.account_name;
+	struct ldb_dn *domain_dn = NULL;
+	struct ldb_message *msg = NULL;
+	const char *p = NULL;
+	NTSTATUS status;
+
+	status = dcerpc_winbind_SamLogon_r_recv(subreq, state);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+		status = NT_STATUS_NO_LOGON_SERVERS;
+	}
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	status = state->req.out.result;
+	if (!NT_STATUS_IS_OK(status)) {
 		if (!state->req.out.authoritative) {
-			*authoritative = false;
+			state->authoritative = false;
 		}
-		return state->req.out.result;
+		tevent_req_nterror(req, status);
+		return;
 	}
 
 	/*
@@ -207,7 +276,7 @@ static NTSTATUS winbind_check_password(struct auth_method_context *ctx,
 		const char *nt4_domain = NULL;
 		const char *nt4_account = NULL;
 
-		status = crack_name_to_nt4_name(mem_ctx,
+		status = crack_name_to_nt4_name(state,
 						ctx->auth_ctx->sam_ctx,
 						DRSUAPI_DS_NAME_FORMAT_USER_PRINCIPAL,
 						account_name,
@@ -221,7 +290,7 @@ static NTSTATUS winbind_check_password(struct auth_method_context *ctx,
 
 	domain_dn = ldb_get_default_basedn(ctx->auth_ctx->sam_ctx);
 	if (domain_dn != NULL) {
-		status = authsam_search_account(mem_ctx, ctx->auth_ctx->sam_ctx,
+		status = authsam_search_account(state, ctx->auth_ctx->sam_ctx,
 						account_name, domain_dn, &msg);
 		if (NT_STATUS_IS_OK(status)) {
 			authsam_logon_success_accounting(
@@ -232,14 +301,39 @@ static NTSTATUS winbind_check_password(struct auth_method_context *ctx,
 		}
 	}
 
-	status = make_user_info_dc_netlogon_validation(mem_ctx,
+	status = make_user_info_dc_netlogon_validation(state,
 						      user_info->client.account_name,
 						      state->req.in.validation_level,
 						      &state->req.out.validation,
-						       true, /* This user was authenticated */
-						      user_info_dc);
-	NT_STATUS_NOT_OK_RETURN(status);
+						      true, /* This user was authenticated */
+						      &state->user_info_dc);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
 
+	tevent_req_done(req);
+}
+
+static NTSTATUS winbind_check_password_recv(struct tevent_req *req,
+					    TALLOC_CTX *mem_ctx,
+					    struct auth_user_info_dc **user_info_dc,
+					    bool *pauthoritative)
+{
+	struct winbind_check_password_state *state =
+		tevent_req_data(req,
+		struct winbind_check_password_state);
+	NTSTATUS status = NT_STATUS_OK;
+
+	*pauthoritative = state->authoritative;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	*user_info_dc = talloc_move(mem_ctx, &state->user_info_dc);
+
+	tevent_req_received(req);
 	return NT_STATUS_OK;
 }
 
@@ -340,15 +434,17 @@ static NTSTATUS winbind_check_password_wbclient(struct auth_method_context *ctx,
 }
 
 static const struct auth_operations winbind_ops = {
-	.name		= "winbind",
-	.want_check	= winbind_want_check,
-	.check_password	= winbind_check_password
+	.name			= "winbind",
+	.want_check		= winbind_want_check,
+	.check_password_send	= winbind_check_password_send,
+	.check_password_recv	= winbind_check_password_recv
 };
 
 static const struct auth_operations winbind_rodc_ops = {
-	.name		= "winbind_rodc",
-	.want_check	= winbind_rodc_want_check,
-	.check_password	= winbind_check_password
+	.name			= "winbind_rodc",
+	.want_check		= winbind_rodc_want_check,
+	.check_password_send	= winbind_check_password_send,
+	.check_password_recv	= winbind_check_password_recv
 };
 
 static const struct auth_operations winbind_wbclient_ops = {

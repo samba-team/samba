@@ -887,14 +887,6 @@ bool dptr_SearchDir(struct dptr_struct *dptr, const char *name, long *poffset, S
 }
 
 /****************************************************************************
- Initialize variables & state data at the beginning of all search SMB requests.
-****************************************************************************/
-void dptr_init_search_op(struct dptr_struct *dptr)
-{
-	SMB_VFS_INIT_SEARCH_OP(dptr->conn, dptr->dir_hnd->dir);
-}
-
-/****************************************************************************
  Map a native directory offset to a 32-bit cookie.
 ****************************************************************************/
 
@@ -2128,9 +2120,9 @@ NTSTATUS can_delete_directory_fsp(files_struct *fsp)
 	char *talloced = NULL;
 	SMB_STRUCT_STAT st;
 	struct connection_struct *conn = fsp->conn;
-	struct smb_Dir *dir_hnd = OpenDir_fsp(talloc_tos(),
+	struct smb_Dir *dir_hnd = OpenDir(talloc_tos(),
 					conn,
-					fsp,
+					fsp->fsp_name,
 					NULL,
 					0);
 

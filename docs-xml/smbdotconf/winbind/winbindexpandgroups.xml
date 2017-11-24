@@ -12,16 +12,23 @@
               parameter specifically applies to the membership of 
 	      domain groups.</para>
 
+	 <para>This option also affects the return of non nested
+	 group memberships of Windows domain users. With the
+	 new default "winbind expand groups = 0" winbind does
+	 not query group memberships at all.</para>
+
 	 <para>Be aware that a high value for this parameter can
 	 result in system slowdown as the main parent winbindd daemon
 	 must perform the group unrolling and will be unable to answer
 	 incoming NSS or authentication requests during this time.</para>
 
 	<para>The default value was changed from 1 to 0 with Samba 4.2.
-	Some broken applications calculate the group memberships of
+	Some broken applications (including some implementations of
+	newgrp and sg) calculate the group memberships of
 	users by traversing groups, such applications will require
-	"winbind expand groups = 1". But the new default makes winbindd more reliable
-	as it doesn't require SAMR access to domain controllers of trusted domains.</para>
+	"winbind expand groups = 1". But the new default makes winbindd
+	more reliable as it doesn't require SAMR access to domain
+	controllers of trusted domains.</para>
 </description>
 
 <value type="default">0</value>

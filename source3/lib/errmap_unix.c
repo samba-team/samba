@@ -71,7 +71,7 @@ static const struct {
 	{ EXDEV,        NT_STATUS_NOT_SAME_DEVICE },
 #endif
 #ifdef EROFS
-	{ EROFS,        NT_STATUS_ACCESS_DENIED },
+	{ EROFS,        NT_STATUS_MEDIA_WRITE_PROTECTED },
 #endif
 #ifdef ENAMETOOLONG
 	{ ENAMETOOLONG, NT_STATUS_OBJECT_NAME_INVALID },

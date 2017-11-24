@@ -432,29 +432,89 @@ static int partition_copy_all(struct ldb_module *module,
 		return search_ret;
 	}
 
-	/* now delete the object in the other partitions. Once that is
-	   done we will re-add the object, if search_ret was not
-	   LDB_ERR_NO_SUCH_OBJECT
+	/* now delete the object in the other partitions, if requried
 	*/
-	for (i=0; data->partitions && data->partitions[i]; i++) {
-		int pret;
-		pret = dsdb_module_del(data->partitions[i]->module, dn, DSDB_FLAG_NEXT_MODULE, req);
-		if (pret != LDB_SUCCESS && pret != LDB_ERR_NO_SUCH_OBJECT) {
-			/* we should only get success or no
-			   such object from the other partitions */
-			return pret;
-		}
-	}
-
-
-	if (search_ret != LDB_ERR_NO_SUCH_OBJECT) {
-		/* now re-add in the other partitions */
+	if (search_ret == LDB_ERR_NO_SUCH_OBJECT) {
 		for (i=0; data->partitions && data->partitions[i]; i++) {
 			int pret;
-			pret = dsdb_module_add(data->partitions[i]->module, res->msgs[0], DSDB_FLAG_NEXT_MODULE, req);
-			if (pret != LDB_SUCCESS) {
+			pret = dsdb_module_del(data->partitions[i]->module,
+					       dn,
+					       DSDB_FLAG_NEXT_MODULE,
+					       req);
+			if (pret != LDB_SUCCESS && pret != LDB_ERR_NO_SUCH_OBJECT) {
+				/* we should only get success or no
+				   such object from the other partitions */
 				return pret;
 			}
+		}
+
+		return ldb_module_done(req, NULL, NULL, LDB_SUCCESS);
+	}
+
+	/* now add/modify in the other partitions */
+	for (i=0; data->partitions && data->partitions[i]; i++) {
+		struct ldb_message *modify_msg = NULL;
+		int pret;
+		unsigned int el_idx;
+
+		pret = dsdb_module_add(data->partitions[i]->module,
+				       res->msgs[0],
+				       DSDB_FLAG_NEXT_MODULE,
+				       req);
+		if (pret == LDB_SUCCESS) {
+			continue;
+		}
+
+		if (pret != LDB_ERR_ENTRY_ALREADY_EXISTS) {
+			return pret;
+		}
+
+		modify_msg = ldb_msg_copy(req, res->msgs[0]);
+		if (modify_msg == NULL) {
+			return ldb_module_oom(module);
+		}
+
+		/*
+		 * mark all the message elements as
+		 * LDB_FLAG_MOD_REPLACE
+		 */
+		for (el_idx=0;
+		     el_idx < modify_msg->num_elements;
+		     el_idx++) {
+			modify_msg->elements[el_idx].flags
+				= LDB_FLAG_MOD_REPLACE;
+		}
+
+		if (req->operation == LDB_MODIFY) {
+			const struct ldb_message *req_msg = req->op.mod.message;
+			/*
+			 * mark elements to be removed, if there were
+			 * deleted entirely above we need to delete
+			 * them here too
+			 */
+			for (el_idx=0; el_idx < req_msg->num_elements; el_idx++) {
+				if (req_msg->elements[el_idx].flags & LDB_FLAG_MOD_DELETE
+				    || ((req_msg->elements[el_idx].flags & LDB_FLAG_MOD_REPLACE) &&
+					req_msg->elements[el_idx].num_values == 0)) {
+					if (ldb_msg_find_element(modify_msg,
+								 req_msg->elements[el_idx].name) != NULL) {
+						continue;
+					}
+					ldb_msg_add_empty(modify_msg,
+							  req_msg->elements[el_idx].name,
+							  LDB_FLAG_MOD_REPLACE,
+							  NULL);
+				}
+			}
+		}
+
+		pret = dsdb_module_modify(data->partitions[i]->module,
+					  modify_msg,
+					  DSDB_FLAG_NEXT_MODULE,
+					  req);
+
+		if (pret != LDB_SUCCESS) {
+			return pret;
 		}
 	}
 

@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "smb_krb5.h"
 #include "secrets.h"
+#include "librpc/gen_ndr/secrets.h"
 #include "gse_krb5.h"
 #include "lib/param/loadparm.h"
 #include "libads/kerberos_proto.h"
@@ -85,45 +86,15 @@ out:
 	return ret;
 }
 
-static krb5_error_code get_host_principal(krb5_context krbctx,
-					  krb5_principal *host_princ)
-{
-	krb5_error_code ret;
-	char *host_princ_s = NULL;
-	int err;
-
-	err = asprintf(&host_princ_s, "%s$@%s", lp_netbios_name(), lp_realm());
-	if (err == -1) {
-		return -1;
-	}
-
-	if (!strlower_m(host_princ_s)) {
-		SAFE_FREE(host_princ_s);
-		return -1;
-	}
-	ret = smb_krb5_parse_name(krbctx, host_princ_s, host_princ);
-	if (ret) {
-		DEBUG(1, (__location__ ": smb_krb5_parse_name(%s) "
-			  "failed (%s)\n",
-			  host_princ_s, error_message(ret)));
-	}
-
-	SAFE_FREE(host_princ_s);
-	return ret;
-}
-
 static krb5_error_code fill_keytab_from_password(krb5_context krbctx,
 						 krb5_keytab keytab,
 						 krb5_principal princ,
 						 krb5_kvno vno,
-						 krb5_data *password)
+						 struct secrets_domain_info1_password *pw)
 {
 	krb5_error_code ret;
 	krb5_enctype *enctypes;
-	krb5_keytab_entry kt_entry;
-	unsigned int i;
-	krb5_principal salt_princ = NULL;
-	char *salt_princ_s = NULL;
+	uint16_t i;
 
 	ret = smb_krb5_get_allowed_etypes(krbctx, &enctypes);
 	if (ret) {
@@ -132,61 +103,47 @@ static krb5_error_code fill_keytab_from_password(krb5_context krbctx,
 		return ret;
 	}
 
-	salt_princ_s = kerberos_secrets_fetch_salt_princ();
-	if (salt_princ_s == NULL) {
-		ret = ENOMEM;
-		goto out;
-	}
-	ret = krb5_parse_name(krbctx, salt_princ_s, &salt_princ);
-	SAFE_FREE(salt_princ_s);
-	if (ret != 0) {
-		goto out;
-	}
-
-	for (i = 0; enctypes[i]; i++) {
+	for (i = 0; i < pw->num_keys; i++) {
+		krb5_keytab_entry kt_entry;
 		krb5_keyblock *key = NULL;
-		int rc;
+		unsigned int ei;
+		bool found_etype = false;
 
-		if (!(key = SMB_MALLOC_P(krb5_keyblock))) {
-			ret = ENOMEM;
-			goto out;
+		for (ei=0; enctypes[ei] != 0; ei++) {
+			if ((uint32_t)enctypes[ei] != pw->keys[i].keytype) {
+				continue;
+			}
+
+			found_etype = true;
+			break;
 		}
 
-		rc = create_kerberos_key_from_string(krbctx,
-						     princ,
-						     salt_princ,
-						     password,
-						     key,
-						     enctypes[i],
-						     false);
-		if (rc != 0) {
-			DEBUG(10, ("Failed to create key for enctype %d "
-				   "(error: %s)\n",
-				   enctypes[i], error_message(ret)));
-			SAFE_FREE(key);
+		if (!found_etype) {
 			continue;
 		}
 
+		ZERO_STRUCT(kt_entry);
 		kt_entry.principal = princ;
 		kt_entry.vno = vno;
-		*(KRB5_KT_KEY(&kt_entry)) = *key;
+
+		key = KRB5_KT_KEY(&kt_entry);
+		KRB5_KEY_TYPE(key) = pw->keys[i].keytype;
+		KRB5_KEY_DATA(key) = pw->keys[i].value.data;
+		KRB5_KEY_LENGTH(key) = pw->keys[i].value.length;
 
 		ret = krb5_kt_add_entry(krbctx, keytab, &kt_entry);
 		if (ret) {
 			DEBUG(1, (__location__ ": Failed to add entry to "
 				  "keytab for enctype %d (error: %s)\n",
-				   enctypes[i], error_message(ret)));
-			krb5_free_keyblock(krbctx, key);
+				  (unsigned)pw->keys[i].keytype,
+				  error_message(ret)));
 			goto out;
 		}
-
-		krb5_free_keyblock(krbctx, key);
 	}
 
 	ret = 0;
 
 out:
-	krb5_free_principal(krbctx, salt_princ);
 	SAFE_FREE(enctypes);
 	return ret;
 }
@@ -197,27 +154,43 @@ out:
 static krb5_error_code fill_mem_keytab_from_secrets(krb5_context krbctx,
 						    krb5_keytab *keytab)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	krb5_error_code ret;
-	char *pwd = NULL;
-	size_t pwd_len;
+	const char *domain = lp_workgroup();
+	struct secrets_domain_info1 *info = NULL;
+	const char *realm = NULL;
+	const DATA_BLOB *ct = NULL;
 	krb5_kt_cursor kt_cursor;
 	krb5_keytab_entry kt_entry;
-	krb5_data password;
 	krb5_principal princ = NULL;
 	krb5_kvno kvno = 0; /* FIXME: fetch current vno from KDC ? */
-	char *pwd_old = NULL;
+	NTSTATUS status;
 
 	if (!secrets_init()) {
 		DEBUG(1, (__location__ ": secrets_init failed\n"));
+		TALLOC_FREE(frame);
 		return KRB5_CONFIG_CANTOPEN;
 	}
 
-	pwd = secrets_fetch_machine_password(lp_workgroup(), NULL, NULL);
-	if (!pwd) {
-		DEBUG(2, (__location__ ": failed to fetch machine password\n"));
+	status = secrets_fetch_or_upgrade_domain_info(domain,
+						      frame,
+						      &info);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("secrets_fetch_or_upgrade_domain_info(%s) - %s\n",
+			    domain, nt_errstr(status));
+		TALLOC_FREE(frame);
 		return KRB5_LIBOS_CANTREADPWD;
 	}
-	pwd_len = strlen(pwd);
+	ct = &info->password->cleartext_blob;
+
+	if (info->domain_info.dns_domain.string != NULL) {
+		realm = strupper_talloc(frame,
+				info->domain_info.dns_domain.string);
+		if (realm == NULL) {
+			TALLOC_FREE(frame);
+			return ENOMEM;
+		}
+	}
 
 	ZERO_STRUCT(kt_entry);
 	ZERO_STRUCT(kt_cursor);
@@ -249,9 +222,9 @@ static krb5_error_code fill_mem_keytab_from_secrets(krb5_context krbctx,
 			/* found private entry,
 			 * check if keytab is up to date */
 
-			if ((pwd_len == KRB5_KEY_LENGTH(KRB5_KT_KEY(&kt_entry))) &&
+			if ((ct->length == KRB5_KEY_LENGTH(KRB5_KT_KEY(&kt_entry))) &&
 			    (memcmp(KRB5_KEY_DATA(KRB5_KT_KEY(&kt_entry)),
-						pwd, pwd_len) == 0)) {
+						ct->data, ct->length) == 0)) {
 				/* keytab is already up to date, return */
 				smb_krb5_kt_free_entry(krbctx, &kt_entry);
 				goto out;
@@ -277,32 +250,51 @@ static krb5_error_code fill_mem_keytab_from_secrets(krb5_context krbctx,
 
 	/* keytab is not up to date, fill it up */
 
-	ret = get_host_principal(krbctx, &princ);
+	ret = smb_krb5_make_principal(krbctx, &princ, realm,
+				      info->account_name, NULL);
 	if (ret) {
 		DEBUG(1, (__location__ ": Failed to get host principal!\n"));
 		goto out;
 	}
 
-	password.data = pwd;
-	password.length = pwd_len;
 	ret = fill_keytab_from_password(krbctx, *keytab,
-					princ, kvno, &password);
+					princ, kvno,
+					info->password);
 	if (ret) {
-		DEBUG(1, (__location__ ": Failed to fill memory keytab!\n"));
+		DBG_WARNING("fill_keytab_from_password() failed for "
+			    "info->password.\n.");
 		goto out;
 	}
 
-	pwd_old = secrets_fetch_prev_machine_password(lp_workgroup());
-	if (!pwd_old) {
-		DEBUG(10, (__location__ ": no prev machine password\n"));
-	} else {
-		password.data = pwd_old;
-		password.length = strlen(pwd_old);
+	if (info->old_password != NULL) {
 		ret = fill_keytab_from_password(krbctx, *keytab,
-						princ, kvno -1, &password);
+						princ, kvno - 1,
+						info->old_password);
 		if (ret) {
-			DEBUG(1, (__location__
-				  ": Failed to fill memory keytab!\n"));
+			DBG_WARNING("fill_keytab_from_password() failed for "
+				    "info->old_password.\n.");
+			goto out;
+		}
+	}
+
+	if (info->older_password != NULL) {
+		ret = fill_keytab_from_password(krbctx, *keytab,
+						princ, kvno - 2,
+						info->older_password);
+		if (ret) {
+			DBG_WARNING("fill_keytab_from_password() failed for "
+				    "info->older_password.\n.");
+			goto out;
+		}
+	}
+
+	if (info->next_change != NULL) {
+		ret = fill_keytab_from_password(krbctx, *keytab,
+						princ, kvno - 3,
+						info->next_change->password);
+		if (ret) {
+			DBG_WARNING("fill_keytab_from_password() failed for "
+				    "info->next_change->password.\n.");
 			goto out;
 		}
 	}
@@ -314,8 +306,8 @@ static krb5_error_code fill_mem_keytab_from_secrets(krb5_context krbctx,
 	kt_entry.vno = 0;
 
 	KRB5_KEY_TYPE(KRB5_KT_KEY(&kt_entry)) = CLEARTEXT_PRIV_ENCTYPE;
-	KRB5_KEY_LENGTH(KRB5_KT_KEY(&kt_entry)) = pwd_len;
-	KRB5_KEY_DATA(KRB5_KT_KEY(&kt_entry)) = (uint8_t *)pwd;
+	KRB5_KEY_LENGTH(KRB5_KT_KEY(&kt_entry)) = ct->length;
+	KRB5_KEY_DATA(KRB5_KT_KEY(&kt_entry)) = ct->data;
 
 	ret = krb5_kt_add_entry(krbctx, *keytab, &kt_entry);
 	if (ret) {
@@ -328,9 +320,6 @@ static krb5_error_code fill_mem_keytab_from_secrets(krb5_context krbctx,
 	ret = 0;
 
 out:
-	SAFE_FREE(pwd);
-	SAFE_FREE(pwd_old);
-
 	if (!all_zero((uint8_t *)&kt_cursor, sizeof(kt_cursor)) && *keytab) {
 		krb5_kt_end_seq_get(krbctx, *keytab, &kt_cursor);
 	}
@@ -339,6 +328,7 @@ out:
 		krb5_free_principal(krbctx, princ);
 	}
 
+	TALLOC_FREE(frame);
 	return ret;
 }
 

@@ -42,15 +42,27 @@
 #include "lib/dbwrap/dbwrap_rbt.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 
-/* state of a partially completed getncchanges call */
+#undef DBGC_CLASS
+#define DBGC_CLASS            DBGC_DRS_REPL
+
+#define DRS_GUID_SIZE       16
+#define DEFAULT_MAX_OBJECTS 1000
+#define DEFAULT_MAX_LINKS   1500
+
+/*
+ * state of a partially-completed replication cycle. This state persists
+ * over multiple calls to dcesrv_drsuapi_DsGetNCChanges()
+ */
 struct drsuapi_getncchanges_state {
-	struct db_context *anc_cache;
+	struct db_context *obj_cache;
 	struct GUID *guids;
 	uint32_t num_records;
 	uint32_t num_processed;
 	struct ldb_dn *ncRoot_dn;
 	struct GUID ncRoot_guid;
 	bool is_schema_nc;
+	bool is_get_anc;
+	bool is_get_tgt;
 	uint64_t min_usn;
 	uint64_t max_usn;
 	struct drsuapi_DsReplicaHighWaterMark last_hwm;
@@ -59,15 +71,38 @@ struct drsuapi_getncchanges_state {
 	struct drsuapi_DsReplicaCursor2CtrEx *final_udv;
 	struct drsuapi_DsReplicaLinkedAttribute *la_list;
 	uint32_t la_count;
-	struct la_for_sorting *la_sorted;
 	uint32_t la_idx;
+
+	/* these are just used for debugging the replication's progress */
+	uint32_t links_given;
+	uint32_t total_links;
 };
 
 /* We must keep the GUIDs in NDR form for sorting */
 struct la_for_sorting {
-	struct drsuapi_DsReplicaLinkedAttribute *link;
-	uint8_t target_guid[16];
-        uint8_t source_guid[16];
+	const struct drsuapi_DsReplicaLinkedAttribute *link;
+	uint8_t target_guid[DRS_GUID_SIZE];
+	uint8_t source_guid[DRS_GUID_SIZE];
+};
+
+/*
+ * stores the state for a chunk of replication data. This state information
+ * only exists for a single call to dcesrv_drsuapi_DsGetNCChanges()
+ */
+struct getncchanges_repl_chunk {
+	uint32_t max_objects;
+	uint32_t max_links;
+	uint32_t tgt_la_count;
+	bool immediate_link_sync;
+	time_t max_wait;
+	time_t start;
+
+	/* stores the objects to be sent in this chunk */
+	uint32_t object_count;
+	struct drsuapi_DsReplicaObjectListItemEx *object_list;
+
+	/* the last object added to this replication chunk */
+	struct drsuapi_DsReplicaObjectListItemEx *last_object;
 };
 
 static int drsuapi_DsReplicaHighWaterMark_cmp(const struct drsuapi_DsReplicaHighWaterMark *h1,
@@ -437,15 +472,10 @@ static WERROR get_nc_changes_filter_attrs(struct drsuapi_DsReplicaObjectListItem
 static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItemEx *obj,
 					  const struct ldb_message *msg,
 					  struct ldb_context *sam_ctx,
-					  struct ldb_dn *ncRoot_dn,
-					  bool   is_schema_nc,
+					  struct drsuapi_getncchanges_state *getnc_state,
 					  struct dsdb_schema *schema,
 					  DATA_BLOB *session_key,
-					  uint64_t highest_usn,
-					  uint32_t replica_flags,
-					  struct drsuapi_DsPartialAttributeSet *partial_attribute_set,
-					  struct drsuapi_DsReplicaCursorCtrEx *uptodateness_vector,
-					  enum drsuapi_DsExtendedOperation extended_op,
+					  struct drsuapi_DsGetNCChangesRequest10 *req10,
 					  bool force_object_return,
 					  uint32_t *local_pas,
 					  struct ldb_dn *machine_dn,
@@ -466,6 +496,14 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 	struct ldb_result *res = NULL;
 	WERROR werr;
 	int ret;
+	uint32_t replica_flags = req10->replica_flags;
+	struct drsuapi_DsPartialAttributeSet *partial_attribute_set =
+			req10->partial_attribute_set;
+	struct drsuapi_DsReplicaCursorCtrEx *uptodateness_vector =
+			req10->uptodateness_vector;
+	enum drsuapi_DsExtendedOperation extended_op = req10->extended_op;
+	bool is_schema_nc = getnc_state->is_schema_nc;
+	uint64_t highest_usn = getnc_state->min_usn;
 
 	/* make dsdb sytanx context for conversions */
 	dsdb_syntax_ctx_init(&syntax_ctx, sam_ctx, schema);
@@ -839,7 +877,6 @@ static WERROR get_nc_changes_add_la(TALLOC_CTX *mem_ctx,
  */
 static WERROR get_nc_changes_add_links(struct ldb_context *sam_ctx,
 				       TALLOC_CTX *mem_ctx,
-				       struct ldb_dn *ncRoot_dn,
 				       bool is_schema_nc,
 				       struct dsdb_schema *schema,
 				       uint64_t highest_usn,
@@ -1178,7 +1215,7 @@ static WERROR getncchanges_repl_secret(struct drsuapi_bind_state *b_state,
 	if (b_state->sam_ctx_system == NULL) {
 		/* this operation needs system level access */
 		ctr6->extended_ret = DRSUAPI_EXOP_ERR_ACCESS_DENIED;
-		return WERR_DS_DRA_SOURCE_DISABLED;
+		return WERR_DS_DRA_ACCESS_DENIED;
 	}
 
 	/*
@@ -1932,11 +1969,16 @@ static void dcesrv_drsuapi_update_highwatermark(const struct ldb_message *msg,
 	hwm->reserved_usn = 0;
 }
 
-static WERROR dcesrv_drsuapi_anc_cache_add(struct db_context *anc_cache,
+/**
+ * Adds an object's GUID to the cache of objects already sent.
+ * This avoids us sending the same object multiple times when
+ * the GetNCChanges request uses a flag like GET_ANC.
+ */
+static WERROR dcesrv_drsuapi_obj_cache_add(struct db_context *obj_cache,
 					   const struct GUID *guid)
 {
 	enum ndr_err_code ndr_err;
-	uint8_t guid_buf[16] = { 0, };
+	uint8_t guid_buf[DRS_GUID_SIZE] = { 0, };
 	DATA_BLOB b = {
 		.data = guid_buf,
 		.length = sizeof(guid_buf),
@@ -1957,7 +1999,7 @@ static WERROR dcesrv_drsuapi_anc_cache_add(struct db_context *anc_cache,
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
 
-	status = dbwrap_store(anc_cache, key, val, TDB_REPLACE);
+	status = dbwrap_store(obj_cache, key, val, TDB_REPLACE);
 	if (!NT_STATUS_IS_OK(status)) {
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
@@ -1965,11 +2007,15 @@ static WERROR dcesrv_drsuapi_anc_cache_add(struct db_context *anc_cache,
 	return WERR_OK;
 }
 
-static WERROR dcesrv_drsuapi_anc_cache_exists(struct db_context *anc_cache,
+/**
+ * Checks if the object with the GUID specified already exists in the
+ * object cache, i.e. it's already been sent in a GetNCChanges response.
+ */
+static WERROR dcesrv_drsuapi_obj_cache_exists(struct db_context *obj_cache,
 					      const struct GUID *guid)
 {
 	enum ndr_err_code ndr_err;
-	uint8_t guid_buf[16] = { 0, };
+	uint8_t guid_buf[DRS_GUID_SIZE] = { 0, };
 	DATA_BLOB b = {
 		.data = guid_buf,
 		.length = sizeof(guid_buf),
@@ -1986,7 +2032,7 @@ static WERROR dcesrv_drsuapi_anc_cache_exists(struct db_context *anc_cache,
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
 
-	exists = dbwrap_exists(anc_cache, key);
+	exists = dbwrap_exists(obj_cache, key);
 	if (!exists) {
 		return WERR_OBJECT_NOT_FOUND;
 	}
@@ -1994,7 +2040,657 @@ static WERROR dcesrv_drsuapi_anc_cache_exists(struct db_context *anc_cache,
 	return WERR_OBJECT_NAME_EXISTS;
 }
 
-/* 
+/**
+ * Copies the la_list specified into a sorted array, ready to be sent in a
+ * GetNCChanges response.
+ */
+static WERROR getncchanges_get_sorted_array(const struct drsuapi_DsReplicaLinkedAttribute *la_list,
+					    const uint32_t link_count,
+					    struct ldb_context *sam_ctx,
+					    TALLOC_CTX *mem_ctx,
+					    const struct dsdb_schema *schema,
+					    struct la_for_sorting **ret_array)
+{
+	int j;
+	struct la_for_sorting *guid_array;
+	WERROR werr = WERR_OK;
+
+	*ret_array = NULL;
+	guid_array = talloc_array(mem_ctx, struct la_for_sorting, link_count);
+	if (guid_array == NULL) {
+		DEBUG(0, ("Out of memory allocating %u linked attributes for sorting", link_count));
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
+
+	for (j = 0; j < link_count; j++) {
+
+		/* we need to get the target GUIDs to compare */
+		struct dsdb_dn *dn;
+		const struct drsuapi_DsReplicaLinkedAttribute *la = &la_list[j];
+		const struct dsdb_attribute *schema_attrib;
+		const struct ldb_val *target_guid;
+		DATA_BLOB source_guid;
+		TALLOC_CTX *frame = talloc_stackframe();
+		NTSTATUS status;
+
+		schema_attrib = dsdb_attribute_by_attributeID_id(schema, la->attid);
+
+		werr = dsdb_dn_la_from_blob(sam_ctx, schema_attrib, schema, frame, la->value.blob, &dn);
+		if (!W_ERROR_IS_OK(werr)) {
+			DEBUG(0,(__location__ ": Bad la blob in sort\n"));
+			TALLOC_FREE(frame);
+			return werr;
+		}
+
+		/* Extract the target GUID in NDR form */
+		target_guid = ldb_dn_get_extended_component(dn->dn, "GUID");
+		if (target_guid == NULL
+				|| target_guid->length != sizeof(guid_array[0].target_guid)) {
+			status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		} else {
+			/* Repack the source GUID as NDR for sorting */
+			status = GUID_to_ndr_blob(&la->identifier->guid,
+						  frame,
+						  &source_guid);
+		}
+
+		if (!NT_STATUS_IS_OK(status)
+				|| source_guid.length != sizeof(guid_array[0].source_guid)) {
+			DEBUG(0,(__location__ ": Bad la guid in sort\n"));
+			TALLOC_FREE(frame);
+			return ntstatus_to_werror(status);
+		}
+
+		guid_array[j].link = &la_list[j];
+		memcpy(guid_array[j].target_guid, target_guid->data,
+		       sizeof(guid_array[j].target_guid));
+		memcpy(guid_array[j].source_guid, source_guid.data,
+		       sizeof(guid_array[j].source_guid));
+		TALLOC_FREE(frame);
+	}
+
+	LDB_TYPESAFE_QSORT(guid_array, link_count, NULL, linked_attribute_compare);
+
+	*ret_array = guid_array;
+
+	return werr;
+}
+
+
+/**
+ * Adds any ancestor/parent objects of the child_obj specified.
+ * This is needed when the GET_ANC flag is specified in the request.
+ * @param new_objs if parents are added, this gets updated to point to a chain
+ * of parent objects (with the parents first and the child last)
+ */
+static WERROR getncchanges_add_ancestors(struct drsuapi_DsReplicaObjectListItemEx *child_obj,
+					 struct ldb_dn *child_dn,
+					 TALLOC_CTX *mem_ctx,
+					 struct ldb_context *sam_ctx,
+					 struct drsuapi_getncchanges_state *getnc_state,
+					 struct dsdb_schema *schema,
+					 DATA_BLOB *session_key,
+					 struct drsuapi_DsGetNCChangesRequest10 *req10,
+					 uint32_t *local_pas,
+					 struct ldb_dn *machine_dn,
+					 struct drsuapi_DsReplicaObjectListItemEx **new_objs)
+{
+	int ret;
+	const struct GUID *next_anc_guid = NULL;
+	WERROR werr = WERR_OK;
+	static const char * const msg_attrs[] = {
+					    "*",
+					    "nTSecurityDescriptor",
+					    "parentGUID",
+					    "replPropertyMetaData",
+					    DSDB_SECRET_ATTRIBUTES,
+					    NULL };
+
+	next_anc_guid = child_obj->parent_object_guid;
+
+	while (next_anc_guid != NULL) {
+		struct drsuapi_DsReplicaObjectListItemEx *anc_obj = NULL;
+		struct ldb_message *anc_msg = NULL;
+		struct ldb_result *anc_res = NULL;
+		struct ldb_dn *anc_dn = NULL;
+
+		/*
+		 * Don't send an object twice. (If we've sent the object, then
+		 * we've also sent all its parents as well)
+		 */
+		werr = dcesrv_drsuapi_obj_cache_exists(getnc_state->obj_cache,
+						       next_anc_guid);
+		if (W_ERROR_EQUAL(werr, WERR_OBJECT_NAME_EXISTS)) {
+			return WERR_OK;
+		}
+		if (W_ERROR_IS_OK(werr)) {
+			return WERR_INTERNAL_ERROR;
+		}
+		if (!W_ERROR_EQUAL(werr, WERR_OBJECT_NOT_FOUND)) {
+			return werr;
+		}
+
+		anc_obj = talloc_zero(mem_ctx,
+				      struct drsuapi_DsReplicaObjectListItemEx);
+		if (anc_obj == NULL) {
+			return WERR_NOT_ENOUGH_MEMORY;
+		}
+
+		anc_dn = ldb_dn_new_fmt(anc_obj, sam_ctx, "<GUID=%s>",
+					GUID_string(anc_obj, next_anc_guid));
+		if (anc_dn == NULL) {
+			return WERR_NOT_ENOUGH_MEMORY;
+		}
+
+		ret = drsuapi_search_with_extended_dn(sam_ctx, anc_obj,
+						      &anc_res, anc_dn,
+						      LDB_SCOPE_BASE,
+						      msg_attrs, NULL);
+		if (ret != LDB_SUCCESS) {
+			const char *anc_str = NULL;
+			const char *obj_str = NULL;
+
+			anc_str = ldb_dn_get_extended_linearized(anc_obj,
+								 anc_dn,
+								 1);
+			obj_str = ldb_dn_get_extended_linearized(anc_obj,
+								 child_dn,
+								 1);
+
+			DBG_ERR("getncchanges: failed to fetch ANC "
+				"DN %s for DN %s - %s\n",
+				anc_str, obj_str, ldb_errstring(sam_ctx));
+			return WERR_DS_DRA_INCONSISTENT_DIT;
+		}
+
+		anc_msg = anc_res->msgs[0];
+
+		werr = get_nc_changes_build_object(anc_obj, anc_msg,
+						   sam_ctx,
+						   getnc_state,
+						   schema, session_key,
+						   req10,
+						   false, /* force_object_return */
+						   local_pas,
+						   machine_dn,
+						   next_anc_guid);
+		if (!W_ERROR_IS_OK(werr)) {
+			return werr;
+		}
+
+		/*
+		 * Regardless of whether we actually use it or not,
+		 * we add it to the cache so we don't look at it again
+		 */
+		werr = dcesrv_drsuapi_obj_cache_add(getnc_state->obj_cache,
+						    next_anc_guid);
+		if (!W_ERROR_IS_OK(werr)) {
+			return werr;
+		}
+
+		/*
+		 * Any ancestors which are below the highwatermark
+		 * or uptodateness_vector shouldn't be added,
+		 * but we still look further up the
+		 * tree for ones which have been changed recently.
+		 */
+		if (anc_obj->meta_data_ctr != NULL) {
+
+			/*
+			 * prepend the parent to the list so that the client-side
+			 * adds the parent object before it adds the children
+			 */
+			anc_obj->next_object = *new_objs;
+			*new_objs = anc_obj;
+		}
+
+		anc_msg = NULL;
+		TALLOC_FREE(anc_res);
+		TALLOC_FREE(anc_dn);
+
+		/*
+		 * We may need to resolve more parents...
+		 */
+		next_anc_guid = anc_obj->parent_object_guid;
+	}
+	return werr;
+}
+
+/**
+ * Adds a list of new objects into the current chunk of replication data to send
+ */
+static void getncchanges_chunk_add_objects(struct getncchanges_repl_chunk *repl_chunk,
+					   struct drsuapi_DsReplicaObjectListItemEx *obj_list)
+{
+	struct drsuapi_DsReplicaObjectListItemEx *obj;
+
+	/*
+	 * We track the last object added to the replication chunk, so just add
+	 * the new object-list onto the end
+	 */
+	if (repl_chunk->object_list == NULL) {
+		repl_chunk->object_list = obj_list;
+	} else {
+		repl_chunk->last_object->next_object = obj_list;
+	}
+
+	for (obj = obj_list; obj != NULL; obj = obj->next_object) {
+		repl_chunk->object_count += 1;
+
+		/*
+		 * Remember the last object in the response - we'll use this to
+		 * link the next object(s) processed onto the existing list
+		 */
+		if (obj->next_object == NULL) {
+			repl_chunk->last_object = obj;
+		}
+	}
+}
+
+/**
+ * Gets the object to send, packed into an RPC struct ready to send. This also
+ * adds the object to the object cache, and adds any ancestors (if needed).
+ * @param msg - DB search result for the object to add
+ * @param guid - GUID of the object to add
+ * @param ret_obj_list - returns the object ready to be sent (in a list, along
+ * with any ancestors that might be needed). NULL if nothing to send.
+ */
+static WERROR getncchanges_get_obj_to_send(const struct ldb_message *msg,
+					   TALLOC_CTX *mem_ctx,
+					   struct ldb_context *sam_ctx,
+					   struct drsuapi_getncchanges_state *getnc_state,
+					   struct dsdb_schema *schema,
+					   DATA_BLOB *session_key,
+					   struct drsuapi_DsGetNCChangesRequest10 *req10,
+					   bool force_object_return,
+					   uint32_t *local_pas,
+					   struct ldb_dn *machine_dn,
+					   const struct GUID *guid,
+					   struct drsuapi_DsReplicaObjectListItemEx **ret_obj_list)
+{
+	struct drsuapi_DsReplicaObjectListItemEx *obj;
+	WERROR werr;
+
+	*ret_obj_list = NULL;
+
+	obj = talloc_zero(mem_ctx, struct drsuapi_DsReplicaObjectListItemEx);
+	W_ERROR_HAVE_NO_MEMORY(obj);
+
+	werr = get_nc_changes_build_object(obj, msg, sam_ctx, getnc_state,
+					   schema, session_key, req10,
+					   force_object_return,
+					   local_pas, machine_dn, guid);
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
+	}
+
+	/*
+	 * The object may get filtered out by the UTDV's USN and not actually
+	 * sent, in which case there's nothing more to do here
+	 */
+	if (obj->meta_data_ctr == NULL) {
+		TALLOC_FREE(obj);
+		return WERR_OK;
+	}
+
+	if (getnc_state->obj_cache != NULL) {
+		werr = dcesrv_drsuapi_obj_cache_add(getnc_state->obj_cache,
+						    guid);
+		if (!W_ERROR_IS_OK(werr)) {
+			return werr;
+		}
+	}
+
+	*ret_obj_list = obj;
+
+	/*
+	 * If required, also add any ancestors that the client may need to know
+	 * about before it can resolve this object. These get prepended to the
+	 * ret_obj_list so the client adds them first.
+	 */
+	if (getnc_state->is_get_anc) {
+		werr = getncchanges_add_ancestors(obj, msg->dn, mem_ctx,
+						  sam_ctx, getnc_state,
+						  schema, session_key,
+						  req10, local_pas,
+						  machine_dn, ret_obj_list);
+	}
+
+	return werr;
+}
+
+/**
+ * Returns the number of links that are waiting to be sent
+ */
+static uint32_t getncchanges_chunk_links_pending(struct getncchanges_repl_chunk *repl_chunk,
+						 struct drsuapi_getncchanges_state *getnc_state)
+{
+	uint32_t links_to_send = 0;
+
+	if (getnc_state->is_get_tgt) {
+
+		/*
+		 * when the GET_TGT flag is set, only include the linked
+		 * attributes whose target object has already been checked
+		 * (i.e. they're ready to send).
+		 */
+		if (repl_chunk->tgt_la_count > getnc_state->la_idx) {
+			links_to_send = (repl_chunk->tgt_la_count -
+					 getnc_state->la_idx);
+		}
+	} else {
+		links_to_send = getnc_state->la_count - getnc_state->la_idx;
+	}
+
+	return links_to_send;
+}
+
+/**
+ * Returns the max number of links that will fit in the current replication chunk
+ */
+static uint32_t getncchanges_chunk_max_links(struct getncchanges_repl_chunk *repl_chunk)
+{
+	uint32_t max_links = 0;
+
+	if (repl_chunk->max_links != DEFAULT_MAX_LINKS ||
+	    repl_chunk->max_objects != DEFAULT_MAX_OBJECTS) {
+
+		/*
+		 * We're using non-default settings, so don't try to adjust
+		 * them, just trust the user has configured decent values
+		 */
+		max_links = repl_chunk->max_links;
+
+	} else if (repl_chunk->max_links > repl_chunk->object_count) {
+
+		/*
+		 * This is just an approximate guess to avoid overfilling the
+		 * replication chunk. It's the logic we've used historically.
+		 * E.g. if we've already sent 1000 objects, then send 1000 fewer
+		 * links. For comparison, the max that Windows seems to send is
+		 * ~2700 links and ~250 objects (although this may vary based
+		 * on timeouts)
+		 */
+		max_links = repl_chunk->max_links - repl_chunk->object_count;
+	}
+
+	return max_links;
+}
+
+/**
+ * Returns true if the current GetNCChanges() call has taken longer than its
+ * allotted time. This prevents the client from timing out.
+ */
+static bool getncchanges_chunk_timed_out(struct getncchanges_repl_chunk *repl_chunk)
+{
+	return (time(NULL) - repl_chunk->start > repl_chunk->max_wait);
+}
+
+/**
+ * Returns true if the current chunk of replication data has reached the
+ * max_objects and/or max_links thresholds.
+ */
+static bool getncchanges_chunk_is_full(struct getncchanges_repl_chunk *repl_chunk,
+				       struct drsuapi_getncchanges_state *getnc_state)
+{
+	bool chunk_full = false;
+	uint32_t links_to_send;
+	uint32_t chunk_limit;
+
+	/* check if the current chunk is already full with objects */
+	if (repl_chunk->object_count >= repl_chunk->max_objects) {
+		chunk_full = true;
+
+	} else if (repl_chunk->object_count > 0 &&
+		   getncchanges_chunk_timed_out(repl_chunk)) {
+
+		/*
+		 * We've exceeded our allotted time building this chunk,
+		 * and we have at least one object to send back to the client
+		 */
+		chunk_full = true;
+
+	} else if (repl_chunk->immediate_link_sync) {
+
+		/* check if the chunk is already full with links */
+		links_to_send = getncchanges_chunk_links_pending(repl_chunk,
+								 getnc_state);
+
+		chunk_limit = getncchanges_chunk_max_links(repl_chunk);
+
+		/*
+		 * The chunk is full if we've got more links to send than will
+		 * fit in one chunk
+		 */
+		if (links_to_send > 0 && chunk_limit <= links_to_send) {
+			chunk_full = true;
+		}
+	}
+
+	return chunk_full;
+}
+
+/**
+ * Goes through any new linked attributes and checks that the target object
+ * will be known to the client, i.e. we've already sent it in an replication
+ * chunk. If not, then it adds the target object to the current replication
+ * chunk. This is only done when the client specifies DRS_GET_TGT.
+ */
+static WERROR getncchanges_chunk_add_la_targets(struct getncchanges_repl_chunk *repl_chunk,
+						struct drsuapi_getncchanges_state *getnc_state,
+						uint32_t start_la_index,
+						TALLOC_CTX *mem_ctx,
+						struct ldb_context *sam_ctx,
+						struct dsdb_schema *schema,
+						DATA_BLOB *session_key,
+						struct drsuapi_DsGetNCChangesRequest10 *req10,
+						uint32_t *local_pas,
+						struct ldb_dn *machine_dn)
+{
+	int ret;
+	uint32_t i;
+	uint32_t max_la_index;
+	uint32_t max_links;
+	uint32_t target_count = 0;
+	WERROR werr = WERR_OK;
+	static const char * const msg_attrs[] = {
+					    "*",
+					    "nTSecurityDescriptor",
+					    "parentGUID",
+					    "replPropertyMetaData",
+					    DSDB_SECRET_ATTRIBUTES,
+					    NULL };
+
+	/*
+	 * A object can potentially link to thousands of targets. Only bother
+	 * checking as many targets as will fit into the current response
+	 */
+	max_links = getncchanges_chunk_max_links(repl_chunk);
+	max_la_index = MIN(getnc_state->la_count,
+			   start_la_index + max_links);
+
+	/* loop through any linked attributes to check */
+	for (i = start_la_index;
+	     (i < max_la_index &&
+	      !getncchanges_chunk_is_full(repl_chunk, getnc_state));
+	     i++) {
+
+		struct GUID target_guid;
+		struct drsuapi_DsReplicaObjectListItemEx *new_objs = NULL;
+		const struct drsuapi_DsReplicaLinkedAttribute *la;
+		struct ldb_result *msg_res;
+		struct ldb_dn *search_dn;
+		TALLOC_CTX *tmp_ctx;
+		struct dsdb_dn *dn;
+		const struct dsdb_attribute *schema_attrib;
+		NTSTATUS status;
+		bool same_nc;
+
+		la = &getnc_state->la_list[i];
+		tmp_ctx = talloc_new(mem_ctx);
+
+		/*
+		 * Track what linked attribute targets we've checked. We might
+		 * not have time to check them all, so we should only send back
+		 * the ones we've actually checked.
+		 */
+		repl_chunk->tgt_la_count = i + 1;
+
+		/* get the GUID of the linked attribute's target object */
+		schema_attrib = dsdb_attribute_by_attributeID_id(schema,
+								 la->attid);
+
+		werr = dsdb_dn_la_from_blob(sam_ctx, schema_attrib, schema,
+					    tmp_ctx, la->value.blob, &dn);
+
+		if (!W_ERROR_IS_OK(werr)) {
+			DEBUG(0,(__location__ ": Bad la blob\n"));
+			return werr;
+		}
+
+		status = dsdb_get_extended_dn_guid(dn->dn, &target_guid, "GUID");
+
+		if (!NT_STATUS_IS_OK(status)) {
+			return ntstatus_to_werror(status);
+		}
+
+		/*
+		 * if the target isn't in the cache, then the client
+		 * might not know about it, so send the target now
+		 */
+		werr = dcesrv_drsuapi_obj_cache_exists(getnc_state->obj_cache,
+						       &target_guid);
+
+		if (W_ERROR_EQUAL(werr, WERR_OBJECT_NAME_EXISTS)) {
+
+			/* target already sent, nothing to do */
+			TALLOC_FREE(tmp_ctx);
+			continue;
+		}
+
+		same_nc = dsdb_objects_have_same_nc(sam_ctx, tmp_ctx, dn->dn,
+						    getnc_state->ncRoot_dn);
+
+		/* don't try to fetch target objects from another partition */
+		if (!same_nc) {
+			TALLOC_FREE(tmp_ctx);
+			continue;
+		}
+
+		search_dn = ldb_dn_new_fmt(tmp_ctx, sam_ctx, "<GUID=%s>",
+					   GUID_string(tmp_ctx, &target_guid));
+		W_ERROR_HAVE_NO_MEMORY(search_dn);
+
+		ret = drsuapi_search_with_extended_dn(sam_ctx, tmp_ctx,
+						      &msg_res, search_dn,
+						      LDB_SCOPE_BASE,
+						      msg_attrs, NULL);
+
+		/*
+		 * Don't fail the replication if we can't find the target.
+		 * This could happen for a one-way linked attribute, if the
+		 * target is deleted and then later expunged (thus, the source
+		 * object can be left with a hanging link). Continue to send
+		 * the the link (the client-side has already tried once with
+		 * GET_TGT, so it should just end up ignoring it).
+		 */
+		if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+			DBG_WARNING("Encountered unknown link target DN %s\n",
+				    ldb_dn_get_extended_linearized(tmp_ctx, dn->dn, 1));
+			TALLOC_FREE(tmp_ctx);
+			continue;
+
+		} else if (ret != LDB_SUCCESS) {
+			DBG_ERR("Failed to fetch link target DN %s - %s\n",
+				ldb_dn_get_extended_linearized(tmp_ctx, dn->dn, 1),
+				ldb_errstring(sam_ctx));
+			return WERR_DS_DRA_INCONSISTENT_DIT;
+		}
+
+		/*
+		 * Construct an object, ready to send (this will include
+		 * the object's ancestors as well, if GET_ANC is set)
+		 */
+		werr = getncchanges_get_obj_to_send(msg_res->msgs[0], mem_ctx,
+						    sam_ctx, getnc_state,
+						    schema, session_key, req10,
+						    false, local_pas,
+						    machine_dn, &target_guid,
+						    &new_objs);
+		if (!W_ERROR_IS_OK(werr)) {
+			return werr;
+		}
+
+		if (new_objs != NULL) {
+			target_count++;
+			getncchanges_chunk_add_objects(repl_chunk, new_objs);
+		}
+		TALLOC_FREE(tmp_ctx);
+	}
+
+	if (target_count > 0) {
+		DEBUG(3, ("GET_TGT: checked %u link-attrs, added %u target objs\n",
+			  i - start_la_index, target_count));
+	}
+
+	return WERR_OK;
+}
+
+/**
+ * Creates a helper struct used for building a chunk of replication data,
+ * i.e. used over a single call to dcesrv_drsuapi_DsGetNCChanges().
+ */
+static struct getncchanges_repl_chunk * getncchanges_chunk_new(TALLOC_CTX *mem_ctx,
+							       struct dcesrv_call_state *dce_call,
+							       struct drsuapi_DsGetNCChangesRequest10 *req10)
+{
+	struct getncchanges_repl_chunk *repl_chunk;
+
+	repl_chunk = talloc_zero(mem_ctx, struct getncchanges_repl_chunk);
+
+	repl_chunk->start = time(NULL);
+
+	repl_chunk->max_objects = lpcfg_parm_int(dce_call->conn->dce_ctx->lp_ctx, NULL,
+						 "drs", "max object sync",
+						 DEFAULT_MAX_OBJECTS);
+
+	/*
+	 * The client control here only applies in normal replication, not extended
+	 * operations, which return a fixed set, even if the caller
+	 * sets max_object_count == 0
+	 */
+	if (req10->extended_op == DRSUAPI_EXOP_NONE) {
+
+		/*
+		 * use this to force single objects at a time, which is useful
+		 * for working out what object is giving problems
+		 */
+		if (req10->max_object_count < repl_chunk->max_objects) {
+			repl_chunk->max_objects = req10->max_object_count;
+		}
+	}
+
+	repl_chunk->max_links =
+			lpcfg_parm_int(dce_call->conn->dce_ctx->lp_ctx, NULL,
+				       "drs", "max link sync",
+					DEFAULT_MAX_LINKS);
+
+	repl_chunk->immediate_link_sync =
+			lpcfg_parm_bool(dce_call->conn->dce_ctx->lp_ctx, NULL,
+					"drs", "immediate link sync", false);
+
+	/*
+	 * Maximum time that we can spend in a getncchanges
+	 * in order to avoid timeout of the other part.
+	 * 10 seconds by default.
+	 */
+	repl_chunk->max_wait = lpcfg_parm_int(dce_call->conn->dce_ctx->lp_ctx,
+					      NULL, "drs", "max work time", 10);
+
+	return repl_chunk;
+}
+
+/*
   drsuapi_DsGetNCChanges
 
   see MS-DRSR 4.1.10.5.2 for basic logic of this function
@@ -2007,7 +2703,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	uint32_t i, k;
 	struct dsdb_schema *schema;
 	struct drsuapi_DsReplicaOIDMapping_Ctr *ctr;
-	struct drsuapi_DsReplicaObjectListItemEx **currentObject;
+	struct getncchanges_repl_chunk *repl_chunk;
 	NTSTATUS status;
 	DATA_BLOB session_key;
 	WERROR werr;
@@ -2016,11 +2712,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	struct drsuapi_getncchanges_state *getnc_state;
 	struct drsuapi_DsGetNCChangesRequest10 *req10;
 	uint32_t options;
-	uint32_t max_objects;
-	uint32_t max_links;
 	uint32_t link_count = 0;
-	uint32_t link_total = 0;
-	uint32_t link_given = 0;
 	struct ldb_dn *search_dn = NULL;
 	bool am_rodc;
 	enum security_user_level security_level;
@@ -2029,9 +2721,6 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	bool is_secret_request;
 	bool is_gc_pas_request;
 	struct drsuapi_changed_objects *changes;
-	time_t max_wait;
-	time_t start = time(NULL);
-	bool max_wait_reached = false;
 	bool has_get_all_changes = false;
 	struct GUID invocation_id;
 	static const struct drsuapi_DsReplicaLinkedAttribute no_linked_attr;
@@ -2043,12 +2732,13 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	DCESRV_PULL_HANDLE_WERR(h, r->in.bind_handle, DRSUAPI_BIND_HANDLE);
 	b_state = h->data;
 
+	/* sam_ctx_system is not present for non-administrator users */
 	sam_ctx = b_state->sam_ctx_system?b_state->sam_ctx_system:b_state->sam_ctx;
 
 	invocation_id = *(samdb_ntds_invocation_id(sam_ctx));
 
 	*r->out.level_out = 6;
-	/* TODO: linked attributes*/
+
 	r->out.ctr->ctr6.linked_attributes_count = 0;
 	r->out.ctr->ctr6.linked_attributes = discard_const_p(struct drsuapi_DsReplicaLinkedAttribute, &no_linked_attr);
 
@@ -2059,13 +2749,6 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	r->out.ctr->ctr6.source_dsa_guid = *(samdb_ntds_objectGUID(sam_ctx));
 	r->out.ctr->ctr6.source_dsa_invocation_id = *(samdb_ntds_invocation_id(sam_ctx));
 	r->out.ctr->ctr6.first_object = NULL;
-
-	/* a RODC doesn't allow for any replication */
-	ret = samdb_rodc(sam_ctx, &am_rodc);
-	if (ret == LDB_SUCCESS && am_rodc) {
-		DEBUG(0,(__location__ ": DsGetNCChanges attempt on RODC\n"));
-		return WERR_DS_DRA_SOURCE_DISABLED;
-	}
 
 	/* Check request revision. 
 	 */
@@ -2085,6 +2768,18 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		return WERR_REVISION_MISMATCH;
 	}
 
+	repl_chunk = getncchanges_chunk_new(mem_ctx, dce_call, req10);
+
+	if (repl_chunk == NULL) {
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
+
+	/* a RODC doesn't allow for any replication */
+	ret = samdb_rodc(sam_ctx, &am_rodc);
+	if (ret == LDB_SUCCESS && am_rodc) {
+		DEBUG(0,(__location__ ": DsGetNCChanges attempt on RODC\n"));
+		return WERR_DS_DRA_SOURCE_DISABLED;
+	}
 
         /* Perform access checks. */
 	/* TODO: we need to support a sync on a specific non-root
@@ -2107,7 +2802,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	user_sid = &dce_call->conn->auth_state.session_info->security_token->sids[PRIMARY_USER_SID_INDEX];
 
 	/* all clients must have GUID_DRS_GET_CHANGES */
-	werr = drs_security_access_check_nc_root(b_state->sam_ctx,
+	werr = drs_security_access_check_nc_root(sam_ctx,
 						 mem_ctx,
 						 dce_call->conn->auth_state.session_info->security_token,
 						 req10->naming_context,
@@ -2149,7 +2844,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		return werr;
 	}
 	if (is_gc_pas_request) {
-		werr = drs_security_access_check_nc_root(b_state->sam_ctx,
+		werr = drs_security_access_check_nc_root(sam_ctx,
 							 mem_ctx,
 							 dce_call->conn->auth_state.session_info->security_token,
 							 req10->naming_context,
@@ -2166,7 +2861,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		return werr;
 	}
 	if (is_secret_request) {
-		werr = drs_security_access_check_nc_root(b_state->sam_ctx,
+		werr = drs_security_access_check_nc_root(sam_ctx,
 							 mem_ctx,
 							 dce_call->conn->auth_state.session_info->security_token,
 							 req10->naming_context,
@@ -2220,8 +2915,8 @@ allowed:
 				 ldb_dn_get_linearized(new_dn),
 				 ldb_dn_get_linearized(getnc_state->ncRoot_dn),
 				 ldb_dn_get_linearized(getnc_state->last_dn)));
-			talloc_free(getnc_state);
-			getnc_state = NULL;
+			TALLOC_FREE(getnc_state);
+			b_state->getncchanges_state = NULL;
 		}
 	}
 
@@ -2234,37 +2929,38 @@ allowed:
 				 ldb_dn_get_linearized(getnc_state->ncRoot_dn),
 				 (ret > 0) ? "older" : "newer",
 				 ldb_dn_get_linearized(getnc_state->last_dn)));
-			talloc_free(getnc_state);
-			getnc_state = NULL;
+			TALLOC_FREE(getnc_state);
+			b_state->getncchanges_state = NULL;
 		}
 	}
 
 	if (getnc_state == NULL) {
-		getnc_state = talloc_zero(b_state, struct drsuapi_getncchanges_state);
-		if (getnc_state == NULL) {
-			return WERR_NOT_ENOUGH_MEMORY;
-		}
-		b_state->getncchanges_state = getnc_state;
-		getnc_state->ncRoot_dn = drs_ObjectIdentifier_to_dn(getnc_state, sam_ctx, ncRoot);
-		if (getnc_state->ncRoot_dn == NULL) {
+		struct ldb_result *res = NULL;
+		const char *attrs[] = {
+			"instanceType",
+			"objectGuID",
+			NULL
+		};
+		uint32_t nc_instanceType;
+		struct ldb_dn *ncRoot_dn;
+
+		ncRoot_dn = drs_ObjectIdentifier_to_dn(mem_ctx, sam_ctx, ncRoot);
+		if (ncRoot_dn == NULL) {
 			return WERR_NOT_ENOUGH_MEMORY;
 		}
 
-		ret = dsdb_find_guid_by_dn(b_state->sam_ctx_system,
-					   getnc_state->ncRoot_dn,
-					   &getnc_state->ncRoot_guid);
+		ret = dsdb_search_dn(sam_ctx, mem_ctx, &res,
+				     ncRoot_dn, attrs,
+				     DSDB_SEARCH_SHOW_DELETED |
+				     DSDB_SEARCH_SHOW_RECYCLED);
 		if (ret != LDB_SUCCESS) {
-			DEBUG(0,(__location__ ": Failed to find GUID of ncRoot_dn %s\n",
-				 ldb_dn_get_linearized(getnc_state->ncRoot_dn)));
-			return WERR_DS_DRA_INTERNAL_ERROR;
+			DBG_WARNING("Failed to find ncRoot_dn %s\n",
+				    ldb_dn_get_linearized(ncRoot_dn));
+			return WERR_DS_DRA_BAD_DN;
 		}
-		ncRoot->guid = getnc_state->ncRoot_guid;
-
-		/* find out if we are to replicate Schema NC */
-		ret = ldb_dn_compare_base(ldb_get_schema_basedn(b_state->sam_ctx),
-					  getnc_state->ncRoot_dn);
-
-		getnc_state->is_schema_nc = (0 == ret);
+		nc_instanceType = ldb_msg_find_attr_as_int(res->msgs[0],
+							   "instanceType",
+							   0);
 
 		if (req10->extended_op != DRSUAPI_EXOP_NONE) {
 			r->out.ctr->ctr6.extended_ret = DRSUAPI_EXOP_ERR_SUCCESS;
@@ -2278,6 +2974,16 @@ allowed:
 		 */
 		switch (req10->extended_op) {
 		case DRSUAPI_EXOP_NONE:
+			if ((nc_instanceType & INSTANCE_TYPE_IS_NC_HEAD) == 0) {
+				const char *dn_str
+					= ldb_dn_get_linearized(ncRoot_dn);
+
+				DBG_NOTICE("Rejecting full replication on "
+					   "not NC %s", dn_str);
+
+				return WERR_DS_CANT_FIND_EXPECTED_NC;
+			}
+
 			break;
 		case DRSUAPI_EXOP_FSMO_RID_ALLOC:
 			werr = getncchanges_rid_alloc(b_state, mem_ctx, req10, &r->out.ctr->ctr6, &search_dn);
@@ -2328,6 +3034,27 @@ allowed:
 				 (unsigned)req10->extended_op));
 			return WERR_DS_DRA_NOT_SUPPORTED;
 		}
+
+		/* Initialize the state we'll store over the replication cycle */
+		getnc_state = talloc_zero(b_state, struct drsuapi_getncchanges_state);
+		if (getnc_state == NULL) {
+			return WERR_NOT_ENOUGH_MEMORY;
+		}
+		b_state->getncchanges_state = getnc_state;
+
+		getnc_state->ncRoot_dn = ncRoot_dn;
+		talloc_steal(getnc_state, ncRoot_dn);
+
+		getnc_state->ncRoot_guid = samdb_result_guid(res->msgs[0],
+							     "objectGUID");
+		ncRoot->guid = getnc_state->ncRoot_guid;
+
+		/* find out if we are to replicate Schema NC */
+		ret = ldb_dn_compare_base(ldb_get_schema_basedn(sam_ctx),
+					  ncRoot_dn);
+		getnc_state->is_schema_nc = (0 == ret);
+
+		TALLOC_FREE(res);
 	}
 
 	if (!ldb_dn_validate(getnc_state->ncRoot_dn) ||
@@ -2458,11 +3185,24 @@ allowed:
 		talloc_free(search_res);
 		talloc_free(changes);
 
-		if (req10->extended_op != DRSUAPI_EXOP_NONE) {
-			/* Do nothing */
-		} else if (req10->replica_flags & DRSUAPI_DRS_GET_ANC) {
-			getnc_state->anc_cache = db_open_rbt(getnc_state);
-			if (getnc_state->anc_cache == NULL) {
+		if (req10->extended_op == DRSUAPI_EXOP_NONE) {
+			getnc_state->is_get_anc =
+				((req10->replica_flags & DRSUAPI_DRS_GET_ANC) != 0);
+			getnc_state->is_get_tgt =
+				((req10->more_flags & DRSUAPI_DRS_GET_TGT) != 0);
+		}
+
+		/*
+		 * when using GET_ANC or GET_TGT, cache the objects that have
+		 * been already sent, to avoid sending them multiple times
+		 */
+		if (getnc_state->is_get_anc || getnc_state->is_get_tgt) {
+			DEBUG(3,("Using object cache, GET_ANC %u, GET_TGT %u\n",
+				 getnc_state->is_get_anc,
+				 getnc_state->is_get_tgt));
+
+			getnc_state->obj_cache = db_open_rbt(getnc_state);
+			if (getnc_state->obj_cache == NULL) {
 				return WERR_NOT_ENOUGH_MEMORY;
 			}
 		}
@@ -2500,39 +3240,19 @@ allowed:
 	r->out.ctr->ctr6.old_highwatermark = req10->highwatermark;
 	r->out.ctr->ctr6.new_highwatermark = req10->highwatermark;
 
-	currentObject = &r->out.ctr->ctr6.first_object;
-
-	max_objects = lpcfg_parm_int(dce_call->conn->dce_ctx->lp_ctx, NULL, "drs", "max object sync", 1000);
 	/*
-	 * The client control here only applies in normal replication, not extended
-	 * operations, which return a fixed set, even if the caller
-	 * sets max_object_count == 0
+	 * If the client has already set GET_TGT then we know they can handle
+	 * receiving the linked attributes interleaved with the source objects
 	 */
-	if (req10->extended_op == DRSUAPI_EXOP_NONE) {
-		/* use this to force single objects at a time, which is useful
-		 * for working out what object is giving problems
-		 */
-		if (req10->max_object_count < max_objects) {
-			max_objects = req10->max_object_count;
-		}
+	if (getnc_state->is_get_tgt) {
+		repl_chunk->immediate_link_sync = true;
 	}
-	/*
-	 * TODO: work out how the maximum should be calculated
-	 */
-	max_links = lpcfg_parm_int(dce_call->conn->dce_ctx->lp_ctx, NULL, "drs", "max link sync", 1500);
-
-	/*
-	 * Maximum time that we can spend in a getncchanges
-	 * in order to avoid timeout of the other part.
-	 * 10 seconds by default.
-	 */
-	max_wait = lpcfg_parm_int(dce_call->conn->dce_ctx->lp_ctx, NULL, "drs", "max work time", 10);
 
 	if (req10->partial_attribute_set != NULL) {
 		struct dsdb_syntax_ctx syntax_ctx;
 		uint32_t j = 0;
 
-		dsdb_syntax_ctx_init(&syntax_ctx, b_state->sam_ctx, schema);
+		dsdb_syntax_ctx_init(&syntax_ctx, sam_ctx, schema);
 		syntax_ctx.pfm_remote = pfm_remote;
 
 		local_pas = talloc_array(b_state, uint32_t, req10->partial_attribute_set->num_attids);
@@ -2551,13 +3271,30 @@ allowed:
 				   uint32_t_ptr_cmp);
 	}
 
+	/*
+	 * Check in case we're still processing the links from an object in the
+	 * previous chunk. We want to send the links (and any targets needed)
+	 * before moving on to the next object.
+	 */
+	if (getnc_state->is_get_tgt) {
+		werr = getncchanges_chunk_add_la_targets(repl_chunk,
+							 getnc_state,
+							 getnc_state->la_idx,
+							 mem_ctx, sam_ctx,
+							 schema, &session_key,
+							 req10, local_pas,
+							 machine_dn);
+
+		if (!W_ERROR_IS_OK(werr)) {
+			return werr;
+		}
+	}
+
 	for (i=getnc_state->num_processed;
 	     i<getnc_state->num_records &&
-		     (r->out.ctr->ctr6.object_count < max_objects)
-		     && !max_wait_reached;
+		     !getncchanges_chunk_is_full(repl_chunk, getnc_state);
 	    i++) {
 		struct drsuapi_DsReplicaObjectListItemEx *new_objs = NULL;
-		struct drsuapi_DsReplicaObjectListItemEx *obj;
 		struct ldb_message *msg;
 		static const char * const msg_attrs[] = {
 					    "*",
@@ -2568,14 +3305,13 @@ allowed:
 					    NULL };
 		struct ldb_result *msg_res;
 		struct ldb_dn *msg_dn;
-		const struct GUID *next_anc_guid = NULL;
+		bool obj_already_sent = false;
+		TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+		uint32_t old_la_index;
 
-		obj = talloc_zero(mem_ctx, struct drsuapi_DsReplicaObjectListItemEx);
-		W_ERROR_HAVE_NO_MEMORY(obj);
-
-		msg_dn = ldb_dn_new_fmt(obj, sam_ctx, "<GUID=%s>", GUID_string(obj, &getnc_state->guids[i]));
+		msg_dn = ldb_dn_new_fmt(tmp_ctx, sam_ctx, "<GUID=%s>",
+					GUID_string(tmp_ctx, &getnc_state->guids[i]));
 		W_ERROR_HAVE_NO_MEMORY(msg_dn);
-
 
 		/*
 		 * by re-searching here we avoid having a lot of full
@@ -2585,15 +3321,16 @@ allowed:
 		 * (tombstone expunge) between the first and second
 		 * check.
 		 */
-		ret = drsuapi_search_with_extended_dn(sam_ctx, obj, &msg_res,
+		ret = drsuapi_search_with_extended_dn(sam_ctx, tmp_ctx, &msg_res,
 						      msg_dn,
 						      LDB_SCOPE_BASE, msg_attrs, NULL);
 		if (ret != LDB_SUCCESS) {
 			if (ret != LDB_ERR_NO_SUCH_OBJECT) {
 				DEBUG(1,("getncchanges: failed to fetch DN %s - %s\n",
-					 ldb_dn_get_extended_linearized(obj, msg_dn, 1), ldb_errstring(sam_ctx)));
+					 ldb_dn_get_extended_linearized(tmp_ctx, msg_dn, 1),
+					 ldb_errstring(sam_ctx)));
 			}
-			talloc_free(obj);
+			TALLOC_FREE(tmp_ctx);
 			continue;
 		}
 
@@ -2601,51 +3338,55 @@ allowed:
 			DEBUG(1,("getncchanges: got LDB_SUCCESS but failed"
 				 "to get any results in fetch of DN "
 				 "%s (race with tombstone expunge?)\n",
-				 ldb_dn_get_extended_linearized(obj,
+				 ldb_dn_get_extended_linearized(tmp_ctx,
 								msg_dn, 1)));
-			talloc_free(obj);
+			TALLOC_FREE(tmp_ctx);
 			continue;
 		}
 
 		msg = msg_res->msgs[0];
 
 		/*
-		 * If it has already been added as an ancestor of
-		 * an object, we don't need to do anything more,
-		 * as we've already added the links.
+		 * Check if we've already sent the object as an ancestor of
+		 * another object. If so, we don't need to send it again
 		 */
-		if (getnc_state->anc_cache != NULL) {
-			werr = dcesrv_drsuapi_anc_cache_exists(getnc_state->anc_cache,
+		if (getnc_state->obj_cache != NULL) {
+			werr = dcesrv_drsuapi_obj_cache_exists(getnc_state->obj_cache,
 							       &getnc_state->guids[i]);
 			if (W_ERROR_EQUAL(werr, WERR_OBJECT_NAME_EXISTS)) {
-				dcesrv_drsuapi_update_highwatermark(msg,
-						getnc_state->max_usn,
-						&r->out.ctr->ctr6.new_highwatermark);
-				/* no attributes to send */
-				talloc_free(obj);
-				continue;
+				obj_already_sent = true;
 			}
 		}
 
-		max_wait_reached = (time(NULL) - start > max_wait);
+		if (!obj_already_sent) {
+			bool max_wait_reached;
 
-		werr = get_nc_changes_build_object(obj, msg,
-						   sam_ctx, getnc_state->ncRoot_dn,
-						   getnc_state->is_schema_nc,
-						   schema, &session_key, getnc_state->min_usn,
-						   req10->replica_flags,
-						   req10->partial_attribute_set,
-						   req10->uptodateness_vector,
-						   req10->extended_op,
-						   max_wait_reached,
-						   local_pas, machine_dn,
-						   &getnc_state->guids[i]);
-		if (!W_ERROR_IS_OK(werr)) {
-			return werr;
+			max_wait_reached = getncchanges_chunk_timed_out(repl_chunk);
+
+			/*
+			 * Construct an object, ready to send (this will include
+			 * the object's ancestors as well, if needed)
+			 */
+			werr = getncchanges_get_obj_to_send(msg, mem_ctx, sam_ctx,
+							    getnc_state, schema,
+							    &session_key, req10,
+							    max_wait_reached,
+							    local_pas, machine_dn,
+							    &getnc_state->guids[i],
+							    &new_objs);
+			if (!W_ERROR_IS_OK(werr)) {
+				return werr;
+			}
 		}
 
+		old_la_index = getnc_state->la_count;
+
+		/*
+		 * We've reached the USN where this object naturally occurs.
+		 * Regardless of whether we've already sent the object (as an
+		 * ancestor), we add its links and update the HWM at this point
+		 */
 		werr = get_nc_changes_add_links(sam_ctx, getnc_state,
-						getnc_state->ncRoot_dn,
 						getnc_state->is_schema_nc,
 						schema, getnc_state->min_usn,
 						req10->replica_flags,
@@ -2661,168 +3402,54 @@ allowed:
 					getnc_state->max_usn,
 					&r->out.ctr->ctr6.new_highwatermark);
 
-		if (obj->meta_data_ctr == NULL) {
-			DEBUG(8,(__location__ ": getncchanges skipping send of object %s\n",
-				 ldb_dn_get_linearized(msg->dn)));
-			/* no attributes to send */
-			talloc_free(obj);
-			continue;
-		}
-
-		new_objs = obj;
-
-		if (getnc_state->anc_cache != NULL) {
-			werr = dcesrv_drsuapi_anc_cache_add(getnc_state->anc_cache,
-							    &getnc_state->guids[i]);
-			if (!W_ERROR_IS_OK(werr)) {
-				return werr;
-			}
-
-			next_anc_guid = obj->parent_object_guid;
-		}
-
-		while (next_anc_guid != NULL) {
-			struct drsuapi_DsReplicaObjectListItemEx *anc_obj = NULL;
-			struct ldb_message *anc_msg = NULL;
-			struct ldb_result *anc_res = NULL;
-			struct ldb_dn *anc_dn = NULL;
-
-			werr = dcesrv_drsuapi_anc_cache_exists(getnc_state->anc_cache,
-							       next_anc_guid);
-			if (W_ERROR_EQUAL(werr, WERR_OBJECT_NAME_EXISTS)) {
-				/*
-				 * We don't need to send it twice.
-				 */
-				break;
-			}
-			if (W_ERROR_IS_OK(werr)) {
-				return WERR_INTERNAL_ERROR;
-			}
-			if (!W_ERROR_EQUAL(werr, WERR_OBJECT_NOT_FOUND)) {
-				return werr;
-			}
-			werr = WERR_OK;
-
-			anc_obj = talloc_zero(mem_ctx,
-					struct drsuapi_DsReplicaObjectListItemEx);
-			if (anc_obj == NULL) {
-				return WERR_NOT_ENOUGH_MEMORY;
-			}
-
-			anc_dn = ldb_dn_new_fmt(anc_obj, sam_ctx, "<GUID=%s>",
-					GUID_string(anc_obj, next_anc_guid));
-			if (anc_dn == NULL) {
-				return WERR_NOT_ENOUGH_MEMORY;
-			}
-
-			ret = drsuapi_search_with_extended_dn(sam_ctx, anc_obj,
-							      &anc_res, anc_dn,
-							      LDB_SCOPE_BASE,
-							      msg_attrs, NULL);
-			if (ret != LDB_SUCCESS) {
-				const char *anc_str = NULL;
-				const char *obj_str = NULL;
-
-				anc_str = ldb_dn_get_extended_linearized(anc_obj,
-									 anc_dn,
-									 1);
-				obj_str = ldb_dn_get_extended_linearized(anc_obj,
-									 msg->dn,
-									 1),
-
-				DBG_ERR("getncchanges: failed to fetch ANC "
-					"DN %s for DN %s - %s\n",
-					anc_str, obj_str,
-					ldb_errstring(sam_ctx));
-				return WERR_DS_DRA_INCONSISTENT_DIT;
-			}
-
-			anc_msg = anc_res->msgs[0];
-
-			werr = get_nc_changes_build_object(anc_obj, anc_msg,
-							   sam_ctx,
-							   getnc_state->ncRoot_dn,
-							   getnc_state->is_schema_nc,
-							   schema, &session_key,
-							   getnc_state->min_usn,
-							   req10->replica_flags,
-							   req10->partial_attribute_set,
-							   req10->uptodateness_vector,
-							   req10->extended_op,
-							   false, /* force_object_return */
-							   local_pas,
-							   machine_dn,
-							   next_anc_guid);
-			if (!W_ERROR_IS_OK(werr)) {
-				return werr;
-			}
-
-			werr = get_nc_changes_add_links(sam_ctx, getnc_state,
-							getnc_state->ncRoot_dn,
-							getnc_state->is_schema_nc,
-							schema, getnc_state->min_usn,
-							req10->replica_flags,
-							anc_msg,
-							&getnc_state->la_list,
-							&getnc_state->la_count,
-							req10->uptodateness_vector);
-			if (!W_ERROR_IS_OK(werr)) {
-				return werr;
-			}
+		if (new_objs != NULL) {
 
 			/*
-			 * Regardless of if we actually use it or not,
-			 * we add it to the cache so we don't look at it again
+			 * Add the object (and, if GET_ANC, any parents it may
+			 * have) into the current chunk of replication data
 			 */
-			werr = dcesrv_drsuapi_anc_cache_add(getnc_state->anc_cache,
-							    next_anc_guid);
+			getncchanges_chunk_add_objects(repl_chunk, new_objs);
+
+			talloc_free(getnc_state->last_dn);
+			getnc_state->last_dn = talloc_move(getnc_state, &msg->dn);
+		}
+
+		DEBUG(8,(__location__ ": %s object %s\n",
+			 new_objs ? "replicating" : "skipping send of",
+			 ldb_dn_get_linearized(msg->dn)));
+
+		getnc_state->total_links += (getnc_state->la_count - old_la_index);
+
+		/*
+		 * If the GET_TGT flag was set, check any new links added to
+		 * make sure the client knows about the link target object
+		 */
+		if (getnc_state->is_get_tgt) {
+			werr = getncchanges_chunk_add_la_targets(repl_chunk,
+								 getnc_state,
+								 old_la_index,
+								 mem_ctx, sam_ctx,
+								 schema, &session_key,
+								 req10, local_pas,
+								 machine_dn);
+
 			if (!W_ERROR_IS_OK(werr)) {
 				return werr;
 			}
-
-			/*
-			 * Any ancestors which are below the highwatermark
-			 * or uptodateness_vector shouldn't be added,
-			 * but we still look further up the
-			 * tree for ones which have been changed recently.
-			 */
-			if (anc_obj->meta_data_ctr != NULL) {
-				/*
-				 * prepend it to the list
-				 */
-				anc_obj->next_object = new_objs;
-				new_objs = anc_obj;
-			}
-
-			anc_msg = NULL;
-			TALLOC_FREE(anc_res);
-			TALLOC_FREE(anc_dn);
-
-			/*
-			 * We may need to resolve more...
-			 */
-			next_anc_guid = anc_obj->parent_object_guid;
 		}
 
-		*currentObject = new_objs;
-		while (new_objs != NULL) {
-			r->out.ctr->ctr6.object_count += 1;
-			if (new_objs->next_object == NULL) {
-				currentObject = &new_objs->next_object;
-			}
-			new_objs = new_objs->next_object;
-		}
-
-		DEBUG(8,(__location__ ": replicating object %s\n", ldb_dn_get_linearized(msg->dn)));
-
-		talloc_free(getnc_state->last_dn);
-		getnc_state->last_dn = talloc_move(getnc_state, &msg->dn);
-
-		talloc_free(msg_res);
-		talloc_free(msg_dn);
+		TALLOC_FREE(tmp_ctx);
 	}
 
+	/* copy the constructed object list into the response message */
+	r->out.ctr->ctr6.object_count = repl_chunk->object_count;
+	r->out.ctr->ctr6.first_object = repl_chunk->object_list;
+
 	getnc_state->num_processed = i;
+
+	if (i < getnc_state->num_records) {
+		r->out.ctr->ctr6.more_data = true;
+	}
 
 	/* the client can us to call UpdateRefs on its behalf to
 	   re-establish monitoring of the NC */
@@ -2832,7 +3459,7 @@ allowed:
 		DEBUG(3,("UpdateRefs on getncchanges for %s\n",
 			 GUID_string(mem_ctx, &req10->destination_dsa_guid)));
 		ureq.naming_context = ncRoot;
-		ureq.dest_dsa_dns_name = samdb_ntds_msdcs_dns_name(b_state->sam_ctx, mem_ctx,
+		ureq.dest_dsa_dns_name = samdb_ntds_msdcs_dns_name(sam_ctx, mem_ctx,
 								   &req10->destination_dsa_guid);
 		if (!ureq.dest_dsa_dns_name) {
 			return WERR_NOT_ENOUGH_MEMORY;
@@ -2858,81 +3485,33 @@ allowed:
 	}
 
 	/*
-	 * TODO:
-	 * This is just a guess, how to calculate the
-	 * number of linked attributes to send, we need to
-	 * find out how to do this right.
+	 * Work out how many links we can send in this chunk. The default is to
+	 * send all the links last, but there is a config option to send them
+	 * immediately, in the same chunk as their source object
 	 */
-	if (r->out.ctr->ctr6.object_count >= max_links) {
-		max_links = 0;
-	} else {
-		max_links -= r->out.ctr->ctr6.object_count;
+	if (!r->out.ctr->ctr6.more_data || repl_chunk->immediate_link_sync) {
+		link_count = getncchanges_chunk_links_pending(repl_chunk,
+							      getnc_state);
+		link_count = MIN(link_count,
+				 getncchanges_chunk_max_links(repl_chunk));
 	}
 
-	link_total = getnc_state->la_count;
+	/* If we've got linked attributes to send, add them now */
+	if (link_count > 0) {
+		struct la_for_sorting *la_sorted;
 
-	if (i < getnc_state->num_records) {
-		r->out.ctr->ctr6.more_data = true;
-	} else {
-		/* sort the whole array the first time */
-		if (getnc_state->la_sorted == NULL) {
-			int j;
-			struct la_for_sorting *guid_array = talloc_array(getnc_state, struct la_for_sorting, getnc_state->la_count);
-			if (guid_array == NULL) {
-				DEBUG(0, ("Out of memory allocating %u linked attributes for sorting", getnc_state->la_count));
-				return WERR_NOT_ENOUGH_MEMORY;
-			}
-			for (j = 0; j < getnc_state->la_count; j++) {
-				/* we need to get the target GUIDs to compare */
-				struct dsdb_dn *dn;
-				const struct drsuapi_DsReplicaLinkedAttribute *la = &getnc_state->la_list[j];
-				const struct dsdb_attribute *schema_attrib;
-				const struct ldb_val *target_guid;
-				DATA_BLOB source_guid;
-				TALLOC_CTX *frame = talloc_stackframe();
-
-				schema_attrib = dsdb_attribute_by_attributeID_id(schema, la->attid);
-
-				werr = dsdb_dn_la_from_blob(sam_ctx, schema_attrib, schema, frame, la->value.blob, &dn);
-				if (!W_ERROR_IS_OK(werr)) {
-					DEBUG(0,(__location__ ": Bad la blob in sort\n"));
-					TALLOC_FREE(frame);
-					return werr;
-				}
-
-				/* Extract the target GUID in NDR form */
-				target_guid = ldb_dn_get_extended_component(dn->dn, "GUID");
-				if (target_guid == NULL
-				    || target_guid->length != sizeof(guid_array[0].target_guid)) {
-					status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
-				} else {
-					/* Repack the source GUID as NDR for sorting */
-					status = GUID_to_ndr_blob(&la->identifier->guid,
-								  frame,
-								  &source_guid);
-				}
-
-				if (!NT_STATUS_IS_OK(status)
-				    || source_guid.length != sizeof(guid_array[0].source_guid)) {
-					DEBUG(0,(__location__ ": Bad la guid in sort\n"));
-					TALLOC_FREE(frame);
-					return ntstatus_to_werror(status);
-				}
-
-				guid_array[j].link = &getnc_state->la_list[j];
-				memcpy(guid_array[j].target_guid, target_guid->data,
-				       sizeof(guid_array[j].target_guid));
-				memcpy(guid_array[j].source_guid, source_guid.data,
-				       sizeof(guid_array[j].source_guid));
-				TALLOC_FREE(frame);
-			}
-
-			LDB_TYPESAFE_QSORT(guid_array, getnc_state->la_count, NULL, linked_attribute_compare);
-			getnc_state->la_sorted = guid_array;
+		/*
+		 * Grab a chunk of linked attributes off the list and put them
+		 * in sorted array, ready to send
+		 */
+		werr = getncchanges_get_sorted_array(&getnc_state->la_list[getnc_state->la_idx],
+						     link_count,
+						     sam_ctx, getnc_state,
+						     schema,
+						     &la_sorted);
+		if (!W_ERROR_IS_OK(werr)) {
+			return werr;
 		}
-
-		link_count = getnc_state->la_count - getnc_state->la_idx;
-		link_count = MIN(max_links, link_count);
 
 		r->out.ctr->ctr6.linked_attributes_count = link_count;
 		r->out.ctr->ctr6.linked_attributes = talloc_array(r->out.ctr, struct drsuapi_DsReplicaLinkedAttribute, link_count);
@@ -2942,16 +3521,29 @@ allowed:
 		}
 
 		for (k = 0; k < link_count; k++) {
-			r->out.ctr->ctr6.linked_attributes[k]
-				= *getnc_state->la_sorted[getnc_state->la_idx + k].link;
+			r->out.ctr->ctr6.linked_attributes[k] = *la_sorted[k].link;
 		}
 
 		getnc_state->la_idx += link_count;
-		link_given = getnc_state->la_idx;
+		getnc_state->links_given += link_count;
 
 		if (getnc_state->la_idx < getnc_state->la_count) {
 			r->out.ctr->ctr6.more_data = true;
+		} else {
+
+			/*
+			 * We've now sent all the links seen so far, so we can
+			 * reset la_list back to an empty list again. Note that
+			 * the steal means the linked attribute memory gets
+			 * freed after this RPC message is sent on the wire.
+			 */
+			talloc_steal(mem_ctx, getnc_state->la_list);
+			getnc_state->la_list = NULL;
+			getnc_state->la_idx = 0;
+			getnc_state->la_count = 0;
 		}
+
+		TALLOC_FREE(la_sorted);
 	}
 
 	if (req10->replica_flags & DRSUAPI_DRS_GET_NC_SIZE) {
@@ -2967,17 +3559,23 @@ allowed:
 		 * of links we found so far during the cycle.
 		 */
 		r->out.ctr->ctr6.nc_object_count = getnc_state->num_records;
-		r->out.ctr->ctr6.nc_linked_attributes_count = getnc_state->la_count;
+		r->out.ctr->ctr6.nc_linked_attributes_count = getnc_state->total_links;
 	}
 
 	if (!r->out.ctr->ctr6.more_data) {
-		talloc_steal(mem_ctx, getnc_state->la_list);
 
+		/* this is the last response in the replication cycle */
 		r->out.ctr->ctr6.new_highwatermark = getnc_state->final_hwm;
 		r->out.ctr->ctr6.uptodateness_vector = talloc_move(mem_ctx,
 							&getnc_state->final_udv);
 
-		talloc_free(getnc_state);
+		/*
+		 * Free the state info stored for the replication cycle. Note
+		 * that the RPC message we're sending contains links stored in
+		 * getnc_state. mem_ctx is local to this RPC call, so the memory
+		 * will get freed after the RPC message is sent on the wire.
+		 */
+		talloc_steal(mem_ctx, getnc_state);
 		b_state->getncchanges_state = NULL;
 	} else {
 		ret = drsuapi_DsReplicaHighWaterMark_cmp(&r->out.ctr->ctr6.old_highwatermark,
@@ -3006,6 +3604,8 @@ allowed:
 		ZERO_STRUCT(r->out.ctr->ctr6.new_highwatermark);
 	}
 
+	TALLOC_FREE(repl_chunk);
+
 	DEBUG(r->out.ctr->ctr6.more_data?4:2,
 	      ("DsGetNCChanges with uSNChanged >= %llu flags 0x%08x on %s gave %u objects (done %u/%u) %u links (done %u/%u (as %s))\n",
 	       (unsigned long long)(req10->highwatermark.highest_usn+1),
@@ -3013,7 +3613,7 @@ allowed:
 	       r->out.ctr->ctr6.object_count,
 	       i, r->out.ctr->ctr6.more_data?getnc_state->num_records:i,
 	       r->out.ctr->ctr6.linked_attributes_count,
-	       link_given, link_total,
+	       getnc_state->links_given, getnc_state->total_links,
 	       dom_sid_string(mem_ctx, user_sid)));
 
 #if 0
@@ -3024,3 +3624,4 @@ allowed:
 
 	return WERR_OK;
 }
+

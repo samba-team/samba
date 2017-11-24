@@ -182,11 +182,6 @@ static int skel_closedir(vfs_handle_struct *handle, DIR *dir)
 	return SMB_VFS_NEXT_CLOSEDIR(handle, dir);
 }
 
-static void skel_init_search_op(struct vfs_handle_struct *handle, DIR *dirp)
-{
-	SMB_VFS_NEXT_INIT_SEARCH_OP(handle, dirp);
-}
-
 static int skel_open(vfs_handle_struct *handle, struct smb_filename *smb_fname,
 		     files_struct *fsp, int flags, mode_t mode)
 {
@@ -1127,7 +1122,6 @@ struct vfs_fn_pointers skel_transparent_fns = {
 	.mkdir_fn = skel_mkdir,
 	.rmdir_fn = skel_rmdir,
 	.closedir_fn = skel_closedir,
-	.init_search_op_fn = skel_init_search_op,
 
 	/* File operations */
 

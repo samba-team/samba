@@ -38,6 +38,7 @@
 #include "source3/include/g_lock.h"
 #include "libds/common/roles.h"
 #include "lib/crypto/crypto.h"
+#include "auth/credentials/credentials.h"
 
 struct netlogon_creds_cli_locked_state;
 
@@ -54,6 +55,7 @@ struct netlogon_creds_cli_context {
 	struct {
 		const char *computer;
 		const char *netbios_domain;
+		const char *dns_domain;
 		uint32_t cached_flags;
 		bool try_validation6;
 		bool try_logon_ex;
@@ -66,6 +68,7 @@ struct netlogon_creds_cli_context {
 		struct db_context *ctx;
 		struct g_lock_ctx *g_ctx;
 		struct netlogon_creds_cli_locked_state *locked_state;
+		enum netlogon_creds_cli_lck_type lock;
 	} db;
 };
 
@@ -105,34 +108,31 @@ static NTSTATUS netlogon_creds_cli_context_common(
 				uint32_t required_flags,
 				const char *server_computer,
 				const char *server_netbios_domain,
+				const char *server_dns_domain,
 				TALLOC_CTX *mem_ctx,
 				struct netlogon_creds_cli_context **_context)
 {
 	struct netlogon_creds_cli_context *context = NULL;
-	TALLOC_CTX *frame = talloc_stackframe();
 	char *_key_name = NULL;
-	char *server_netbios_name = NULL;
+	size_t server_netbios_name_len;
 	char *p = NULL;
 
 	*_context = NULL;
 
 	context = talloc_zero(mem_ctx, struct netlogon_creds_cli_context);
 	if (context == NULL) {
-		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	context->client.computer = talloc_strdup(context, client_computer);
 	if (context->client.computer == NULL) {
 		TALLOC_FREE(context);
-		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	context->client.account = talloc_strdup(context, client_account);
 	if (context->client.account == NULL) {
 		TALLOC_FREE(context);
-		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -144,14 +144,18 @@ static NTSTATUS netlogon_creds_cli_context_common(
 	context->server.computer = talloc_strdup(context, server_computer);
 	if (context->server.computer == NULL) {
 		TALLOC_FREE(context);
-		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	context->server.netbios_domain = talloc_strdup(context, server_netbios_domain);
 	if (context->server.netbios_domain == NULL) {
 		TALLOC_FREE(context);
-		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	context->server.dns_domain = talloc_strdup(context, server_dns_domain);
+	if (context->server.dns_domain == NULL) {
+		TALLOC_FREE(context);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -163,40 +167,35 @@ static NTSTATUS netlogon_creds_cli_context_common(
 	 * For now we have to deal with
 	 * "HOSTNAME" vs. "hostname.example.com".
 	 */
-	server_netbios_name = talloc_strdup(frame, server_computer);
-	if (server_netbios_name == NULL) {
-		TALLOC_FREE(context);
-		TALLOC_FREE(frame);
-		return NT_STATUS_NO_MEMORY;
-	}
 
-	p = strchr(server_netbios_name, '.');
+	p = strchr(server_computer, '.');
 	if (p != NULL) {
-		p[0] = '\0';
+		server_netbios_name_len = p-server_computer;
+	} else {
+		server_netbios_name_len = strlen(server_computer);
 	}
 
-	_key_name = talloc_asprintf(frame, "CLI[%s/%s]/SRV[%s/%s]",
+	_key_name = talloc_asprintf(context, "CLI[%s/%s]/SRV[%.*s/%s]",
 				    client_computer,
 				    client_account,
-				    server_netbios_name,
+				    (int)server_netbios_name_len,
+				    server_computer,
 				    server_netbios_domain);
 	if (_key_name == NULL) {
 		TALLOC_FREE(context);
-		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	context->db.key_name = talloc_strdup_upper(context, _key_name);
+	TALLOC_FREE(_key_name);
 	if (context->db.key_name == NULL) {
 		TALLOC_FREE(context);
-		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	context->db.key_data = string_term_tdb_data(context->db.key_name);
 
 	*_context = context;
-	TALLOC_FREE(frame);
 	return NT_STATUS_OK;
 }
 
@@ -255,6 +254,7 @@ NTSTATUS netlogon_creds_cli_context_global(struct loadparm_context *lp_ctx,
 				enum netr_SchannelType type,
 				const char *server_computer,
 				const char *server_netbios_domain,
+				const char *server_dns_domain,
 				TALLOC_CTX *mem_ctx,
 				struct netlogon_creds_cli_context **_context)
 {
@@ -273,8 +273,14 @@ NTSTATUS netlogon_creds_cli_context_global(struct loadparm_context *lp_ctx,
 
 	*_context = NULL;
 
+	if (msg_ctx == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_INVALID_PARAMETER_MIX;
+	}
+
 	client_computer = lpcfg_netbios_name(lp_ctx);
 	if (strlen(client_computer) > 15) {
+		TALLOC_FREE(frame);
 		return NT_STATUS_INVALID_PARAMETER_MIX;
 	}
 
@@ -379,11 +385,11 @@ NTSTATUS netlogon_creds_cli_context_global(struct loadparm_context *lp_ctx,
 		proposed_flags |= NETLOGON_NEG_NEUTRALIZE_NT4_EMULATION;
 	}
 
-	if (require_sign_or_seal == false) {
-		proposed_flags &= ~NETLOGON_NEG_AUTHENTICATED_RPC;
-	} else {
+	if (require_sign_or_seal) {
 		required_flags |= NETLOGON_NEG_ARCFOUR;
 		required_flags |= NETLOGON_NEG_AUTHENTICATED_RPC;
+	} else {
+		proposed_flags &= ~NETLOGON_NEG_AUTHENTICATED_RPC;
 	}
 
 	if (reject_md5_servers) {
@@ -415,6 +421,7 @@ NTSTATUS netlogon_creds_cli_context_global(struct loadparm_context *lp_ctx,
 						   required_flags,
 						   server_computer,
 						   server_netbios_domain,
+						   "",
 						   mem_ctx,
 						   &context);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -422,20 +429,11 @@ NTSTATUS netlogon_creds_cli_context_global(struct loadparm_context *lp_ctx,
 		return status;
 	}
 
-	if (msg_ctx != NULL) {
-		context->db.g_ctx = g_lock_ctx_init(context, msg_ctx);
-		if (context->db.g_ctx == NULL) {
-			TALLOC_FREE(context);
-			TALLOC_FREE(frame);
-			return NT_STATUS_NO_MEMORY;
-		}
-	}
-
-	if (netlogon_creds_cli_global_db != NULL) {
-		context->db.ctx = netlogon_creds_cli_global_db;
-		*_context = context;
+	context->db.g_ctx = g_lock_ctx_init(context, msg_ctx);
+	if (context->db.g_ctx == NULL) {
+		TALLOC_FREE(context);
 		TALLOC_FREE(frame);
-		return NT_STATUS_OK;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	status = netlogon_creds_cli_open_global_db(lp_ctx);
@@ -451,43 +449,35 @@ NTSTATUS netlogon_creds_cli_context_global(struct loadparm_context *lp_ctx,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS netlogon_creds_cli_context_tmp(const char *client_computer,
-				const char *client_account,
-				enum netr_SchannelType type,
-				uint32_t proposed_flags,
-				uint32_t required_flags,
-				enum dcerpc_AuthLevel auth_level,
-				const char *server_computer,
-				const char *server_netbios_domain,
-				TALLOC_CTX *mem_ctx,
-				struct netlogon_creds_cli_context **_context)
+NTSTATUS netlogon_creds_bind_cli_credentials(
+	struct netlogon_creds_cli_context *context, TALLOC_CTX *mem_ctx,
+	struct cli_credentials **pcli_creds)
 {
+	struct cli_credentials *cli_creds;
+	struct netlogon_creds_CredentialState *ncreds;
 	NTSTATUS status;
-	struct netlogon_creds_cli_context *context = NULL;
 
-	*_context = NULL;
-
-	status = netlogon_creds_cli_context_common(client_computer,
-						   client_account,
-						   type,
-						   auth_level,
-						   proposed_flags,
-						   required_flags,
-						   server_computer,
-						   server_netbios_domain,
-						   mem_ctx,
-						   &context);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	context->db.ctx = db_open_rbt(context);
-	if (context->db.ctx == NULL) {
-		talloc_free(context);
+	cli_creds = cli_credentials_init(mem_ctx);
+	if (cli_creds == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
+	cli_credentials_set_secure_channel_type(cli_creds,
+						context->client.type);
+	cli_credentials_set_username(cli_creds, context->client.account,
+				     CRED_SPECIFIED);
+	cli_credentials_set_domain(cli_creds, context->server.netbios_domain,
+				   CRED_SPECIFIED);
+	cli_credentials_set_realm(cli_creds, context->server.dns_domain,
+				  CRED_SPECIFIED);
 
-	*_context = context;
+	status = netlogon_creds_cli_get(context, cli_creds, &ncreds);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(cli_creds);
+		return status;
+	}
+	cli_credentials_set_netlogon_creds(cli_creds, ncreds);
+
+	*pcli_creds = cli_creds;
 	return NT_STATUS_OK;
 }
 
@@ -539,6 +529,10 @@ static void netlogon_creds_cli_fetch_parser(TDB_DATA key, TDB_DATA data,
 		return;
 	}
 
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_DEBUG(netlogon_creds_CredentialState, state->creds);
+	}
+
 	tmp_flags = state->creds->negotiate_flags;
 	tmp_flags &= state->required_flags;
 	if (tmp_flags != state->required_flags) {
@@ -550,28 +544,20 @@ static void netlogon_creds_cli_fetch_parser(TDB_DATA key, TDB_DATA data,
 	state->status = NT_STATUS_OK;
 }
 
+static NTSTATUS netlogon_creds_cli_get_internal(
+	struct netlogon_creds_cli_context *context,
+	TALLOC_CTX *mem_ctx, struct netlogon_creds_CredentialState **pcreds);
+
 NTSTATUS netlogon_creds_cli_get(struct netlogon_creds_cli_context *context,
 				TALLOC_CTX *mem_ctx,
 				struct netlogon_creds_CredentialState **_creds)
 {
 	NTSTATUS status;
-	struct netlogon_creds_cli_fetch_state fstate = {
-		.mem_ctx = mem_ctx,
-		.status = NT_STATUS_INTERNAL_ERROR,
-		.required_flags = context->client.required_flags,
-	};
-	static const struct netr_Credential zero_creds;
+	struct netlogon_creds_CredentialState *creds;
 
 	*_creds = NULL;
 
-	status = dbwrap_parse_record(context->db.ctx,
-				     context->db.key_data,
-				     netlogon_creds_cli_fetch_parser,
-				     &fstate);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-	status = fstate.status;
+	status = netlogon_creds_cli_get_internal(context, mem_ctx, &creds);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -579,64 +565,12 @@ NTSTATUS netlogon_creds_cli_get(struct netlogon_creds_cli_context *context,
 	/*
 	 * mark it as invalid for step operations.
 	 */
-	fstate.creds->sequence = 0;
-	fstate.creds->seed = zero_creds;
-	fstate.creds->client = zero_creds;
-	fstate.creds->server = zero_creds;
+	creds->sequence = 0;
+	creds->seed = (struct netr_Credential) {{0}};
+	creds->client = (struct netr_Credential) {{0}};
+	creds->server = (struct netr_Credential) {{0}};
 
-	if (context->server.cached_flags == fstate.creds->negotiate_flags) {
-		*_creds = fstate.creds;
-		return NT_STATUS_OK;
-	}
-
-	/*
-	 * It is really important to try SamLogonEx here,
-	 * because multiple processes can talk to the same
-	 * domain controller, without using the credential
-	 * chain.
-	 *
-	 * With a normal SamLogon call, we must keep the
-	 * credentials chain updated and intact between all
-	 * users of the machine account (which would imply
-	 * cross-node communication for every NTLM logon).
-	 *
-	 * The credentials chain is not per NETLOGON pipe
-	 * connection, but globally on the server/client pair
-	 * by computer name, while the client is free to use
-	 * any computer name. We include the cluster node number
-	 * in our computer name in order to avoid cross node
-	 * coordination of the credential chain.
-	 *
-	 * It's also important to use NetlogonValidationSamInfo4 (6),
-	 * because it relies on the rpc transport encryption
-	 * and avoids using the global netlogon schannel
-	 * session key to en/decrypt secret information
-	 * like the user_session_key for network logons.
-	 *
-	 * [MS-APDS] 3.1.5.2 NTLM Network Logon
-	 * says NETLOGON_NEG_CROSS_FOREST_TRUSTS and
-	 * NETLOGON_NEG_AUTHENTICATED_RPC set together
-	 * are the indication that the server supports
-	 * NetlogonValidationSamInfo4 (6). And it must only
-	 * be used if "SealSecureChannel" is used.
-	 *
-	 * The "SealSecureChannel" AUTH_TYPE_SCHANNEL/AUTH_LEVEL_PRIVACY
-	 * check is done in netlogon_creds_cli_LogonSamLogon*().
-	 */
-	context->server.cached_flags = fstate.creds->negotiate_flags;
-	context->server.try_validation6 = true;
-	context->server.try_logon_ex = true;
-	context->server.try_logon_with = true;
-
-	if (!(context->server.cached_flags & NETLOGON_NEG_AUTHENTICATED_RPC)) {
-		context->server.try_validation6 = false;
-		context->server.try_logon_ex = false;
-	}
-	if (!(context->server.cached_flags & NETLOGON_NEG_CROSS_FOREST_TRUSTS)) {
-		context->server.try_validation6 = false;
-	}
-
-	*_creds = fstate.creds;
+	*_creds = creds;
 	return NT_STATUS_OK;
 }
 
@@ -671,52 +605,29 @@ bool netlogon_creds_cli_validate(struct netlogon_creds_cli_context *context,
 		return false;
 	}
 
-	if (blob1.length != blob2.length) {
-		TALLOC_FREE(frame);
-		return false;
-	}
-
-	cmp = memcmp(blob1.data, blob2.data, blob1.length);
-	if (cmp != 0) {
-		TALLOC_FREE(frame);
-		return false;
-	}
+	cmp = data_blob_cmp(&blob1, &blob2);
 
 	TALLOC_FREE(frame);
-	return true;
+
+	return (cmp == 0);
 }
 
-NTSTATUS netlogon_creds_cli_store(struct netlogon_creds_cli_context *context,
-				  struct netlogon_creds_CredentialState **_creds)
+static NTSTATUS netlogon_creds_cli_store_internal(
+	struct netlogon_creds_cli_context *context,
+	struct netlogon_creds_CredentialState *creds)
 {
-	struct netlogon_creds_CredentialState *creds = *_creds;
 	NTSTATUS status;
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	TDB_DATA data;
 
-	*_creds = NULL;
-
-	if (context->db.locked_state == NULL) {
-		/*
-		 * this was not the result of netlogon_creds_cli_lock*()
-		 */
-		TALLOC_FREE(creds);
-		return NT_STATUS_INVALID_PAGE_PROTECTION;
-	}
-
-	if (context->db.locked_state->creds != creds) {
-		/*
-		 * this was not the result of netlogon_creds_cli_lock*()
-		 */
-		TALLOC_FREE(creds);
-		return NT_STATUS_INVALID_PAGE_PROTECTION;
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_DEBUG(netlogon_creds_CredentialState, creds);
 	}
 
 	ndr_err = ndr_push_struct_blob(&blob, creds, creds,
 		(ndr_push_flags_fn_t)ndr_push_netlogon_creds_CredentialState);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		TALLOC_FREE(creds);
 		status = ndr_map_error2ntstatus(ndr_err);
 		return status;
 	}
@@ -727,7 +638,7 @@ NTSTATUS netlogon_creds_cli_store(struct netlogon_creds_cli_context *context,
 	status = dbwrap_store(context->db.ctx,
 			      context->db.key_data,
 			      data, TDB_REPLACE);
-	TALLOC_FREE(creds);
+	TALLOC_FREE(data.dptr);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -735,19 +646,15 @@ NTSTATUS netlogon_creds_cli_store(struct netlogon_creds_cli_context *context,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS netlogon_creds_cli_delete(struct netlogon_creds_cli_context *context,
-				   struct netlogon_creds_CredentialState **_creds)
+NTSTATUS netlogon_creds_cli_store(struct netlogon_creds_cli_context *context,
+				  struct netlogon_creds_CredentialState *creds)
 {
-	struct netlogon_creds_CredentialState *creds = *_creds;
 	NTSTATUS status;
-
-	*_creds = NULL;
 
 	if (context->db.locked_state == NULL) {
 		/*
 		 * this was not the result of netlogon_creds_cli_lock*()
 		 */
-		TALLOC_FREE(creds);
 		return NT_STATUS_INVALID_PAGE_PROTECTION;
 	}
 
@@ -755,18 +662,55 @@ NTSTATUS netlogon_creds_cli_delete(struct netlogon_creds_cli_context *context,
 		/*
 		 * this was not the result of netlogon_creds_cli_lock*()
 		 */
-		TALLOC_FREE(creds);
 		return NT_STATUS_INVALID_PAGE_PROTECTION;
 	}
 
-	status = dbwrap_delete(context->db.ctx,
-			       context->db.key_data);
-	TALLOC_FREE(creds);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	status = netlogon_creds_cli_store_internal(context, creds);
+	return status;
+}
+
+static NTSTATUS netlogon_creds_cli_delete_internal(
+	struct netlogon_creds_cli_context *context)
+{
+	NTSTATUS status;
+	status = dbwrap_delete(context->db.ctx, context->db.key_data);
+	return status;
+}
+
+NTSTATUS netlogon_creds_cli_delete_lck(
+	struct netlogon_creds_cli_context *context)
+{
+	NTSTATUS status;
+
+	if (context->db.lock != NETLOGON_CREDS_CLI_LCK_EXCLUSIVE) {
+		return NT_STATUS_NOT_LOCKED;
 	}
 
-	return NT_STATUS_OK;
+	status = netlogon_creds_cli_delete_internal(context);
+	return status;
+}
+
+NTSTATUS netlogon_creds_cli_delete(struct netlogon_creds_cli_context *context,
+				   struct netlogon_creds_CredentialState *creds)
+{
+	NTSTATUS status;
+
+	if (context->db.locked_state == NULL) {
+		/*
+		 * this was not the result of netlogon_creds_cli_lock*()
+		 */
+		return NT_STATUS_INVALID_PAGE_PROTECTION;
+	}
+
+	if (context->db.locked_state->creds != creds) {
+		/*
+		 * this was not the result of netlogon_creds_cli_lock*()
+		 */
+		return NT_STATUS_INVALID_PAGE_PROTECTION;
+	}
+
+	status = netlogon_creds_cli_delete_internal(context);
+	return status;
 }
 
 struct netlogon_creds_cli_lock_state {
@@ -775,7 +719,6 @@ struct netlogon_creds_cli_lock_state {
 };
 
 static void netlogon_creds_cli_lock_done(struct tevent_req *subreq);
-static void netlogon_creds_cli_lock_fetch(struct tevent_req *req);
 
 struct tevent_req *netlogon_creds_cli_lock_send(TALLOC_CTX *mem_ctx,
 				struct tevent_context *ev,
@@ -809,8 +752,11 @@ struct tevent_req *netlogon_creds_cli_lock_send(TALLOC_CTX *mem_ctx,
 	state->locked_state = locked_state;
 
 	if (context->db.g_ctx == NULL) {
-		netlogon_creds_cli_lock_fetch(req);
-		if (!tevent_req_is_in_progress(req)) {
+		NTSTATUS status;
+
+		status = netlogon_creds_cli_get_internal(
+			context, state, &state->creds);
+		if (tevent_req_nterror(req, status)) {
 			return tevent_req_post(req, ev);
 		}
 
@@ -846,39 +792,72 @@ static void netlogon_creds_cli_lock_done(struct tevent_req *subreq)
 	}
 	state->locked_state->is_glocked = true;
 
-	netlogon_creds_cli_lock_fetch(req);
+	status = netlogon_creds_cli_get_internal(state->locked_state->context,
+					       state, &state->creds);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	tevent_req_done(req);
 }
 
-static void netlogon_creds_cli_lock_fetch(struct tevent_req *req)
+static NTSTATUS netlogon_creds_cli_get_internal(
+	struct netlogon_creds_cli_context *context,
+	TALLOC_CTX *mem_ctx, struct netlogon_creds_CredentialState **pcreds)
 {
-	struct netlogon_creds_cli_lock_state *state =
-		tevent_req_data(req,
-		struct netlogon_creds_cli_lock_state);
-	struct netlogon_creds_cli_context *context = state->locked_state->context;
 	struct netlogon_creds_cli_fetch_state fstate = {
 		.status = NT_STATUS_INTERNAL_ERROR,
 		.required_flags = context->client.required_flags,
 	};
 	NTSTATUS status;
 
-	fstate.mem_ctx = state;
+	fstate.mem_ctx = mem_ctx;
 	status = dbwrap_parse_record(context->db.ctx,
 				     context->db.key_data,
 				     netlogon_creds_cli_fetch_parser,
 				     &fstate);
-	if (tevent_req_nterror(req, status)) {
-		return;
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
-	status = fstate.status;
-	if (tevent_req_nterror(req, status)) {
-		return;
+	if (!NT_STATUS_IS_OK(fstate.status)) {
+		return fstate.status;
 	}
 
 	if (context->server.cached_flags == fstate.creds->negotiate_flags) {
-		state->creds = fstate.creds;
-		tevent_req_done(req);
-		return;
+		*pcreds = fstate.creds;
+		return NT_STATUS_OK;
 	}
+
+	/*
+	 * It is really important to try SamLogonEx here,
+	 * because multiple processes can talk to the same
+	 * domain controller, without using the credential
+	 * chain.
+	 *
+	 * With a normal SamLogon call, we must keep the
+	 * credentials chain updated and intact between all
+	 * users of the machine account (which would imply
+	 * cross-node communication for every NTLM logon).
+	 *
+	 * The credentials chain is not per NETLOGON pipe
+	 * connection, but globally on the server/client pair
+	 * by computer name.
+	 *
+	 * It's also important to use NetlogonValidationSamInfo4 (6),
+	 * because it relies on the rpc transport encryption
+	 * and avoids using the global netlogon schannel
+	 * session key to en/decrypt secret information
+	 * like the user_session_key for network logons.
+	 *
+	 * [MS-APDS] 3.1.5.2 NTLM Network Logon
+	 * says NETLOGON_NEG_CROSS_FOREST_TRUSTS and
+	 * NETLOGON_NEG_AUTHENTICATED_RPC set together
+	 * are the indication that the server supports
+	 * NetlogonValidationSamInfo4 (6). And it must only
+	 * be used if "SealSecureChannel" is used.
+	 *
+	 * The "SealSecureChannel" AUTH_TYPE_SCHANNEL/AUTH_LEVEL_PRIVACY
+	 * check is done in netlogon_creds_cli_LogonSamLogon*().
+	 */
 
 	context->server.cached_flags = fstate.creds->negotiate_flags;
 	context->server.try_validation6 = true;
@@ -893,9 +872,8 @@ static void netlogon_creds_cli_lock_fetch(struct tevent_req *req)
 		context->server.try_validation6 = false;
 	}
 
-	state->creds = fstate.creds;
-	tevent_req_done(req);
-	return;
+	*pcreds = fstate.creds;
+	return NT_STATUS_OK;
 }
 
 NTSTATUS netlogon_creds_cli_lock_recv(struct tevent_req *req,
@@ -945,6 +923,148 @@ NTSTATUS netlogon_creds_cli_lock(struct netlogon_creds_cli_context *context,
 	return status;
 }
 
+struct netlogon_creds_cli_lck {
+	struct netlogon_creds_cli_context *context;
+};
+
+struct netlogon_creds_cli_lck_state {
+	struct netlogon_creds_cli_lck *lck;
+	enum netlogon_creds_cli_lck_type type;
+};
+
+static void netlogon_creds_cli_lck_locked(struct tevent_req *subreq);
+static int netlogon_creds_cli_lck_destructor(
+	struct netlogon_creds_cli_lck *lck);
+
+struct tevent_req *netlogon_creds_cli_lck_send(
+	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+	struct netlogon_creds_cli_context *context,
+	enum netlogon_creds_cli_lck_type type)
+{
+	struct tevent_req *req, *subreq;
+	struct netlogon_creds_cli_lck_state *state;
+	enum g_lock_type gtype;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct netlogon_creds_cli_lck_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	if (context->db.lock != NETLOGON_CREDS_CLI_LCK_NONE) {
+		DBG_DEBUG("context already locked\n");
+		tevent_req_nterror(req, NT_STATUS_INVALID_LOCK_SEQUENCE);
+		return tevent_req_post(req, ev);
+	}
+
+	switch (type) {
+	    case NETLOGON_CREDS_CLI_LCK_SHARED:
+		    gtype = G_LOCK_READ;
+		    break;
+	    case NETLOGON_CREDS_CLI_LCK_EXCLUSIVE:
+		    gtype = G_LOCK_WRITE;
+		    break;
+	    default:
+		    tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		    return tevent_req_post(req, ev);
+	}
+
+	state->lck = talloc(state, struct netlogon_creds_cli_lck);
+	if (tevent_req_nomem(state->lck, req)) {
+		return tevent_req_post(req, ev);
+	}
+	state->lck->context = context;
+	state->type = type;
+
+	subreq = g_lock_lock_send(state, ev,
+				  context->db.g_ctx,
+				  context->db.key_name,
+				  gtype);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, netlogon_creds_cli_lck_locked, req);
+
+	return req;
+}
+
+static void netlogon_creds_cli_lck_locked(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct netlogon_creds_cli_lck_state *state = tevent_req_data(
+		req, struct netlogon_creds_cli_lck_state);
+	NTSTATUS status;
+
+	status = g_lock_lock_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	state->lck->context->db.lock = state->type;
+	talloc_set_destructor(state->lck, netlogon_creds_cli_lck_destructor);
+
+	tevent_req_done(req);
+}
+
+static int netlogon_creds_cli_lck_destructor(
+	struct netlogon_creds_cli_lck *lck)
+{
+	struct netlogon_creds_cli_context *ctx = lck->context;
+	NTSTATUS status;
+
+	status = g_lock_unlock(ctx->db.g_ctx, ctx->db.key_name);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("g_lock_unlock failed: %s\n", nt_errstr(status));
+		smb_panic("g_lock_unlock failed");
+	}
+	ctx->db.lock = NETLOGON_CREDS_CLI_LCK_NONE;
+	return 0;
+}
+
+NTSTATUS netlogon_creds_cli_lck_recv(
+	struct tevent_req *req, TALLOC_CTX *mem_ctx,
+	struct netlogon_creds_cli_lck **lck)
+{
+	struct netlogon_creds_cli_lck_state *state = tevent_req_data(
+		req, struct netlogon_creds_cli_lck_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+	*lck = talloc_move(mem_ctx, &state->lck);
+	return NT_STATUS_OK;
+}
+
+NTSTATUS netlogon_creds_cli_lck(
+	struct netlogon_creds_cli_context *context,
+	enum netlogon_creds_cli_lck_type type,
+	TALLOC_CTX *mem_ctx, struct netlogon_creds_cli_lck **lck)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct tevent_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	ev = samba_tevent_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = netlogon_creds_cli_lck_send(frame, ev, context, type);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
+	}
+	status = netlogon_creds_cli_lck_recv(req, mem_ctx, lck);
+ fail:
+	TALLOC_FREE(frame);
+	return status;
+}
+
 struct netlogon_creds_cli_auth_state {
 	struct tevent_context *ev;
 	struct netlogon_creds_cli_context *context;
@@ -964,10 +1084,8 @@ struct netlogon_creds_cli_auth_state {
 	bool try_auth3;
 	bool try_auth2;
 	bool require_auth2;
-	struct netlogon_creds_cli_locked_state *locked_state;
 };
 
-static void netlogon_creds_cli_auth_locked(struct tevent_req *subreq);
 static void netlogon_creds_cli_auth_challenge_start(struct tevent_req *req);
 
 struct tevent_req *netlogon_creds_cli_auth_send(TALLOC_CTX *mem_ctx,
@@ -979,7 +1097,6 @@ struct tevent_req *netlogon_creds_cli_auth_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req;
 	struct netlogon_creds_cli_auth_state *state;
-	struct netlogon_creds_cli_locked_state *locked_state;
 	NTSTATUS status;
 
 	req = tevent_req_create(mem_ctx, &state,
@@ -1004,21 +1121,10 @@ struct tevent_req *netlogon_creds_cli_auth_send(TALLOC_CTX *mem_ctx,
 	state->idx_nt_hashes = 0;
 	state->nt_hashes = nt_hashes;
 
-	if (context->db.locked_state != NULL) {
-		tevent_req_nterror(req, NT_STATUS_LOCK_NOT_GRANTED);
+	if (context->db.lock != NETLOGON_CREDS_CLI_LCK_EXCLUSIVE) {
+		tevent_req_nterror(req, NT_STATUS_NOT_LOCKED);
 		return tevent_req_post(req, ev);
 	}
-
-	locked_state = talloc_zero(state, struct netlogon_creds_cli_locked_state);
-	if (tevent_req_nomem(locked_state, req)) {
-		return tevent_req_post(req, ev);
-	}
-	talloc_set_destructor(locked_state,
-			      netlogon_creds_cli_locked_state_destructor);
-	locked_state->context = context;
-
-	context->db.locked_state = locked_state;
-	state->locked_state = locked_state;
 
 	state->srv_name_slash = talloc_asprintf(state, "\\\\%s",
 						context->server.computer);
@@ -1036,23 +1142,6 @@ struct tevent_req *netlogon_creds_cli_auth_send(TALLOC_CTX *mem_ctx,
 	state->used_nt_hash = state->nt_hashes[state->idx_nt_hashes];
 	state->current_flags = context->client.proposed_flags;
 
-	if (context->db.g_ctx != NULL) {
-		struct tevent_req *subreq;
-
-		subreq = g_lock_lock_send(state, ev,
-					  context->db.g_ctx,
-					  context->db.key_name,
-					  G_LOCK_WRITE);
-		if (tevent_req_nomem(subreq, req)) {
-			return tevent_req_post(req, ev);
-		}
-		tevent_req_set_callback(subreq,
-					netlogon_creds_cli_auth_locked,
-					req);
-
-		return req;
-	}
-
 	status = dbwrap_purge(state->context->db.ctx,
 			      state->context->db.key_data);
 	if (tevent_req_nterror(req, status)) {
@@ -1065,32 +1154,6 @@ struct tevent_req *netlogon_creds_cli_auth_send(TALLOC_CTX *mem_ctx,
 	}
 
 	return req;
-}
-
-static void netlogon_creds_cli_auth_locked(struct tevent_req *subreq)
-{
-	struct tevent_req *req =
-		tevent_req_callback_data(subreq,
-		struct tevent_req);
-	struct netlogon_creds_cli_auth_state *state =
-		tevent_req_data(req,
-		struct netlogon_creds_cli_auth_state);
-	NTSTATUS status;
-
-	status = g_lock_lock_recv(subreq);
-	TALLOC_FREE(subreq);
-	if (tevent_req_nterror(req, status)) {
-		return;
-	}
-	state->locked_state->is_glocked = true;
-
-	status = dbwrap_purge(state->context->db.ctx,
-			      state->context->db.key_data);
-	if (tevent_req_nterror(req, status)) {
-		return;
-	}
-
-	netlogon_creds_cli_auth_challenge_start(req);
 }
 
 static void netlogon_creds_cli_auth_challenge_done(struct tevent_req *subreq);
@@ -1336,7 +1399,6 @@ static void netlogon_creds_cli_auth_srvauth_done(struct tevent_req *subreq)
 	status = dbwrap_store(state->context->db.ctx,
 			      state->context->db.key_data,
 			      data, TDB_REPLACE);
-	TALLOC_FREE(state->locked_state);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
@@ -1405,14 +1467,13 @@ struct netlogon_creds_cli_check_state {
 	union netr_Capabilities caps;
 
 	struct netlogon_creds_CredentialState *creds;
-	struct netlogon_creds_CredentialState tmp_creds;
 	struct netr_Authenticator req_auth;
 	struct netr_Authenticator rep_auth;
 };
 
 static void netlogon_creds_cli_check_cleanup(struct tevent_req *req,
 					     NTSTATUS status);
-static void netlogon_creds_cli_check_locked(struct tevent_req *subreq);
+static void netlogon_creds_cli_check_caps(struct tevent_req *subreq);
 
 struct tevent_req *netlogon_creds_cli_check_send(TALLOC_CTX *mem_ctx,
 				struct tevent_context *ev,
@@ -1424,6 +1485,7 @@ struct tevent_req *netlogon_creds_cli_check_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *subreq;
 	enum dcerpc_AuthType auth_type;
 	enum dcerpc_AuthLevel auth_level;
+	NTSTATUS status;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct netlogon_creds_cli_check_state);
@@ -1434,6 +1496,17 @@ struct tevent_req *netlogon_creds_cli_check_send(TALLOC_CTX *mem_ctx,
 	state->ev = ev;
 	state->context = context;
 	state->binding_handle = b;
+
+	if (context->db.lock != NETLOGON_CREDS_CLI_LCK_EXCLUSIVE) {
+		tevent_req_nterror(req, NT_STATUS_NOT_LOCKED);
+		return tevent_req_post(req, ev);
+	}
+
+	status = netlogon_creds_cli_get_internal(context, state,
+						 &state->creds);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
 
 	state->srv_name_slash = talloc_asprintf(state, "\\\\%s",
 						context->server.computer);
@@ -1458,14 +1531,29 @@ struct tevent_req *netlogon_creds_cli_check_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	subreq = netlogon_creds_cli_lock_send(state, state->ev,
-					      state->context);
+	/*
+	 * we defer all callbacks in order to cleanup
+	 * the database record.
+	 */
+	tevent_req_defer_callback(req, state->ev);
+
+	netlogon_creds_client_authenticator(state->creds, &state->req_auth);
+	ZERO_STRUCT(state->rep_auth);
+
+	subreq = dcerpc_netr_LogonGetCapabilities_send(state, state->ev,
+						state->binding_handle,
+						state->srv_name_slash,
+						state->context->client.computer,
+						&state->req_auth,
+						&state->rep_auth,
+						1,
+						&state->caps);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
 
 	tevent_req_set_callback(subreq,
-				netlogon_creds_cli_check_locked,
+				netlogon_creds_cli_check_caps,
 				req);
 
 	return req;
@@ -1491,55 +1579,8 @@ static void netlogon_creds_cli_check_cleanup(struct tevent_req *req,
 		return;
 	}
 
-	netlogon_creds_cli_delete(state->context, &state->creds);
-}
-
-static void netlogon_creds_cli_check_caps(struct tevent_req *subreq);
-
-static void netlogon_creds_cli_check_locked(struct tevent_req *subreq)
-{
-	struct tevent_req *req =
-		tevent_req_callback_data(subreq,
-		struct tevent_req);
-	struct netlogon_creds_cli_check_state *state =
-		tevent_req_data(req,
-		struct netlogon_creds_cli_check_state);
-	NTSTATUS status;
-
-	status = netlogon_creds_cli_lock_recv(subreq, state,
-					      &state->creds);
-	TALLOC_FREE(subreq);
-	if (tevent_req_nterror(req, status)) {
-		return;
-	}
-
-	/*
-	 * we defer all callbacks in order to cleanup
-	 * the database record.
-	 */
-	tevent_req_defer_callback(req, state->ev);
-
-	state->tmp_creds = *state->creds;
-	netlogon_creds_client_authenticator(&state->tmp_creds,
-					    &state->req_auth);
-	ZERO_STRUCT(state->rep_auth);
-
-	subreq = dcerpc_netr_LogonGetCapabilities_send(state, state->ev,
-						state->binding_handle,
-						state->srv_name_slash,
-						state->context->client.computer,
-						&state->req_auth,
-						&state->rep_auth,
-						1,
-						&state->caps);
-	if (tevent_req_nomem(subreq, req)) {
-		status = NT_STATUS_NO_MEMORY;
-		netlogon_creds_cli_check_cleanup(req, status);
-		return;
-	}
-	tevent_req_set_callback(subreq,
-				netlogon_creds_cli_check_caps,
-				req);
+	netlogon_creds_cli_delete_lck(state->context);
+	TALLOC_FREE(state->creds);
 }
 
 static void netlogon_creds_cli_check_caps(struct tevent_req *subreq)
@@ -1562,7 +1603,7 @@ static void netlogon_creds_cli_check_caps(struct tevent_req *subreq)
 		 * Note that the negotiated flags are already checked
 		 * for our required flags after the ServerAuthenticate3/2 call.
 		 */
-		uint32_t negotiated = state->tmp_creds.negotiate_flags;
+		uint32_t negotiated = state->creds->negotiate_flags;
 
 		if (negotiated & NETLOGON_NEG_SUPPORTS_AES) {
 			/*
@@ -1617,7 +1658,7 @@ static void netlogon_creds_cli_check_caps(struct tevent_req *subreq)
 		 * Note that the negotiated flags are already checked
 		 * for our required flags after the ServerAuthenticate3/2 call.
 		 */
-		uint32_t negotiated = state->tmp_creds.negotiate_flags;
+		uint32_t negotiated = state->creds->negotiate_flags;
 
 		if (negotiated & NETLOGON_NEG_SUPPORTS_AES) {
 			/*
@@ -1643,8 +1684,7 @@ static void netlogon_creds_cli_check_caps(struct tevent_req *subreq)
 		return;
 	}
 
-	ok = netlogon_creds_client_check(&state->tmp_creds,
-					 &state->rep_auth.cred);
+	ok = netlogon_creds_client_check(state->creds, &state->rep_auth.cred);
 	if (!ok) {
 		status = NT_STATUS_ACCESS_DENIED;
 		tevent_req_nterror(req, status);
@@ -1657,7 +1697,7 @@ static void netlogon_creds_cli_check_caps(struct tevent_req *subreq)
 		return;
 	}
 
-	if (state->caps.server_capabilities != state->tmp_creds.negotiate_flags) {
+	if (state->caps.server_capabilities != state->creds->negotiate_flags) {
 		status = NT_STATUS_DOWNGRADE_DETECTED;
 		tevent_req_nterror(req, status);
 		netlogon_creds_cli_check_cleanup(req, status);
@@ -1679,10 +1719,8 @@ static void netlogon_creds_cli_check_caps(struct tevent_req *subreq)
 		return;
 	}
 
-	*state->creds = state->tmp_creds;
-	status = netlogon_creds_cli_store(state->context,
-					  &state->creds);
-	netlogon_creds_cli_check_cleanup(req, status);
+	status = netlogon_creds_cli_store_internal(state->context,
+						   state->creds);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
@@ -1690,8 +1728,11 @@ static void netlogon_creds_cli_check_caps(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
-NTSTATUS netlogon_creds_cli_check_recv(struct tevent_req *req)
+NTSTATUS netlogon_creds_cli_check_recv(struct tevent_req *req,
+				       union netr_Capabilities *capabilities)
 {
+	struct netlogon_creds_cli_check_state *state = tevent_req_data(
+		req, struct netlogon_creds_cli_check_state);
 	NTSTATUS status;
 
 	if (tevent_req_is_nterror(req, &status)) {
@@ -1700,12 +1741,17 @@ NTSTATUS netlogon_creds_cli_check_recv(struct tevent_req *req)
 		return status;
 	}
 
+	if (capabilities != NULL) {
+		*capabilities = state->caps;
+	}
+
 	tevent_req_received(req);
 	return NT_STATUS_OK;
 }
 
 NTSTATUS netlogon_creds_cli_check(struct netlogon_creds_cli_context *context,
-				  struct dcerpc_binding_handle *b)
+				  struct dcerpc_binding_handle *b,
+				  union netr_Capabilities *capabilities)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct tevent_context *ev;
@@ -1723,7 +1769,7 @@ NTSTATUS netlogon_creds_cli_check(struct netlogon_creds_cli_context *context,
 	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
 		goto fail;
 	}
-	status = netlogon_creds_cli_check_recv(req);
+	status = netlogon_creds_cli_check_recv(req, capabilities);
  fail:
 	TALLOC_FREE(frame);
 	return status;
@@ -1864,7 +1910,8 @@ static void netlogon_creds_cli_ServerPasswordSet_cleanup(struct tevent_req *req,
 		return;
 	}
 
-	netlogon_creds_cli_delete(state->context, &state->creds);
+	netlogon_creds_cli_delete(state->context, state->creds);
+	TALLOC_FREE(state->creds);
 }
 
 static void netlogon_creds_cli_ServerPasswordSet_done(struct tevent_req *subreq);
@@ -2033,7 +2080,8 @@ static void netlogon_creds_cli_ServerPasswordSet_done(struct tevent_req *subreq)
 
 	*state->creds = state->tmp_creds;
 	status = netlogon_creds_cli_store(state->context,
-					  &state->creds);
+					  state->creds);
+	TALLOC_FREE(state->creds);
 	if (tevent_req_nterror(req, status)) {
 		netlogon_creds_cli_ServerPasswordSet_cleanup(req, status);
 		return;
@@ -2245,7 +2293,8 @@ static void netlogon_creds_cli_LogonSamLogon_cleanup(struct tevent_req *req,
 		return;
 	}
 
-	netlogon_creds_cli_delete(state->context, &state->lk_creds);
+	netlogon_creds_cli_delete(state->context, state->lk_creds);
+	TALLOC_FREE(state->lk_creds);
 }
 
 static void netlogon_creds_cli_LogonSamLogon_done(struct tevent_req *subreq);
@@ -2529,7 +2578,9 @@ static void netlogon_creds_cli_LogonSamLogon_done(struct tevent_req *subreq)
 
 	*state->lk_creds = state->tmp_creds;
 	status = netlogon_creds_cli_store(state->context,
-					  &state->lk_creds);
+					  state->lk_creds);
+	TALLOC_FREE(state->lk_creds);
+
 	if (tevent_req_nterror(req, status)) {
 		netlogon_creds_cli_LogonSamLogon_cleanup(req, status);
 		return;
@@ -2707,7 +2758,8 @@ static void netlogon_creds_cli_DsrUpdateReadOnlyServerDnsRecords_cleanup(struct 
 		return;
 	}
 
-	netlogon_creds_cli_delete(state->context, &state->creds);
+	netlogon_creds_cli_delete(state->context, state->creds);
+	TALLOC_FREE(state->creds);
 }
 
 static void netlogon_creds_cli_DsrUpdateReadOnlyServerDnsRecords_done(struct tevent_req *subreq);
@@ -2826,7 +2878,8 @@ static void netlogon_creds_cli_DsrUpdateReadOnlyServerDnsRecords_done(struct tev
 
 	*state->creds = state->tmp_creds;
 	status = netlogon_creds_cli_store(state->context,
-					  &state->creds);
+					  state->creds);
+	TALLOC_FREE(state->creds);
 
 	if (tevent_req_nterror(req, status)) {
 		netlogon_creds_cli_DsrUpdateReadOnlyServerDnsRecords_cleanup(req, status);
@@ -2972,7 +3025,8 @@ static void netlogon_creds_cli_ServerGetTrustInfo_cleanup(struct tevent_req *req
 		return;
 	}
 
-	netlogon_creds_cli_delete(state->context, &state->creds);
+	netlogon_creds_cli_delete(state->context, state->creds);
+	TALLOC_FREE(state->creds);
 }
 
 static void netlogon_creds_cli_ServerGetTrustInfo_done(struct tevent_req *subreq);
@@ -3092,7 +3146,8 @@ static void netlogon_creds_cli_ServerGetTrustInfo_done(struct tevent_req *subreq
 
 	*state->creds = state->tmp_creds;
 	status = netlogon_creds_cli_store(state->context,
-					  &state->creds);
+					  state->creds);
+	TALLOC_FREE(state->creds);
 	if (tevent_req_nterror(req, status)) {
 		netlogon_creds_cli_ServerGetTrustInfo_cleanup(req, status);
 		return;
@@ -3257,7 +3312,8 @@ static void netlogon_creds_cli_GetForestTrustInformation_cleanup(struct tevent_r
 		return;
 	}
 
-	netlogon_creds_cli_delete(state->context, &state->creds);
+	netlogon_creds_cli_delete(state->context, state->creds);
+	TALLOC_FREE(state->creds);
 }
 
 static void netlogon_creds_cli_GetForestTrustInformation_done(struct tevent_req *subreq);
@@ -3374,7 +3430,8 @@ static void netlogon_creds_cli_GetForestTrustInformation_done(struct tevent_req 
 
 	*state->creds = state->tmp_creds;
 	status = netlogon_creds_cli_store(state->context,
-					  &state->creds);
+					  state->creds);
+	TALLOC_FREE(state->creds);
 
 	if (tevent_req_nterror(req, status)) {
 		netlogon_creds_cli_GetForestTrustInformation_cleanup(req, status);
@@ -3533,7 +3590,8 @@ static void netlogon_creds_cli_SendToSam_cleanup(struct tevent_req *req,
 		return;
 	}
 
-	netlogon_creds_cli_delete(state->context, &state->creds);
+	netlogon_creds_cli_delete(state->context, state->creds);
+	TALLOC_FREE(state->creds);
 }
 
 static void netlogon_creds_cli_SendToSam_done(struct tevent_req *subreq);
@@ -3653,7 +3711,8 @@ static void netlogon_creds_cli_SendToSam_done(struct tevent_req *subreq)
 
 	*state->creds = state->tmp_creds;
 	status = netlogon_creds_cli_store(state->context,
-					  &state->creds);
+					  state->creds);
+	TALLOC_FREE(state->creds);
 
 	if (tevent_req_nterror(req, status)) {
 		netlogon_creds_cli_SendToSam_cleanup(req, status);

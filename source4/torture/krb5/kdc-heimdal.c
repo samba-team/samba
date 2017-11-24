@@ -45,6 +45,14 @@ enum torture_krb5_test {
 	TORTURE_KRB5_TEST_AES,
 	TORTURE_KRB5_TEST_RC4,
 	TORTURE_KRB5_TEST_AES_RC4,
+
+	/* 
+	 * This is in and out of the client. 
+	 * Out refers to requests, in refers to replies
+	 */
+	TORTURE_KRB5_TEST_CHANGE_SERVER_OUT,
+	TORTURE_KRB5_TEST_CHANGE_SERVER_IN,
+	TORTURE_KRB5_TEST_CHANGE_SERVER_BOTH,
 };
 
 struct torture_krb5_context {
@@ -54,6 +62,8 @@ struct torture_krb5_context {
 	int packet_count;
 	AS_REQ as_req;
 	AS_REP as_rep;
+	const char *krb5_service;
+	const char *krb5_hostname;
 };
 
 /*
@@ -64,7 +74,7 @@ struct torture_krb5_context {
  *
  */
 
-static bool torture_krb5_pre_send_test(struct torture_krb5_context *test_context, const krb5_data *send_buf)
+static bool torture_krb5_pre_send_test(struct torture_krb5_context *test_context, krb5_data *send_buf)
 {
 	size_t used;
 	switch (test_context->test)
@@ -76,12 +86,49 @@ static bool torture_krb5_pre_send_test(struct torture_krb5_context *test_context
 	case TORTURE_KRB5_TEST_AES:
 	case TORTURE_KRB5_TEST_RC4:
 	case TORTURE_KRB5_TEST_AES_RC4:
+	case TORTURE_KRB5_TEST_CHANGE_SERVER_IN:
 		torture_assert_int_equal(test_context->tctx,
 					 decode_AS_REQ(send_buf->data, send_buf->length, &test_context->as_req, &used), 0,
 					 "decode_AS_REQ failed");
 		torture_assert_int_equal(test_context->tctx, used, send_buf->length, "length mismatch");
 		torture_assert_int_equal(test_context->tctx, test_context->as_req.pvno, 5, "Got wrong as_req->pvno");
 		break;
+	case TORTURE_KRB5_TEST_CHANGE_SERVER_OUT:
+	case TORTURE_KRB5_TEST_CHANGE_SERVER_BOTH:
+	{
+		AS_REQ mod_as_req;
+		krb5_error_code k5ret;
+		krb5_data modified_send_buf;
+		torture_assert_int_equal(test_context->tctx,
+					 decode_AS_REQ(send_buf->data, send_buf->length, &test_context->as_req, &used), 0,
+					 "decode_AS_REQ failed");
+		torture_assert_int_equal(test_context->tctx, used, send_buf->length, "length mismatch");
+		torture_assert_int_equal(test_context->tctx, test_context->as_req.pvno, 5, "Got wrong as_req->pvno");
+
+		/* Only change it if configured with --option=torture:krb5-hostname= */
+		if (test_context->krb5_hostname[0] == '\0') {
+			break;
+		}
+
+		mod_as_req = test_context->as_req;
+
+		torture_assert_int_equal(test_context->tctx,
+					 mod_as_req.req_body.sname->name_string.len, 2,
+					 "Sending wrong mod_as_req.req_body->sname.name_string.len");
+		free(mod_as_req.req_body.sname->name_string.val[0]);
+		free(mod_as_req.req_body.sname->name_string.val[1]);
+		mod_as_req.req_body.sname->name_string.val[0] = strdup(test_context->krb5_service);
+		mod_as_req.req_body.sname->name_string.val[1] = strdup(test_context->krb5_hostname);
+
+		ASN1_MALLOC_ENCODE(AS_REQ, modified_send_buf.data, modified_send_buf.length,
+				   &mod_as_req, &used, k5ret);
+		torture_assert_int_equal(test_context->tctx,
+					 k5ret, 0,
+					 "encode_AS_REQ failed");
+
+		*send_buf = modified_send_buf;
+		break;
+	}
 	}
 	return true;
 }
@@ -191,7 +238,7 @@ static bool torture_check_krb5_as_rep_enctype(struct torture_krb5_context *test_
  *
  */
 
-static bool torture_krb5_post_recv_test(struct torture_krb5_context *test_context, const krb5_data *recv_buf)
+static bool torture_krb5_post_recv_test(struct torture_krb5_context *test_context, krb5_data *recv_buf)
 {
 	KRB_ERROR error;
 	size_t used;
@@ -199,6 +246,7 @@ static bool torture_krb5_post_recv_test(struct torture_krb5_context *test_contex
 
 	switch (test_context->test)
 	{
+	case TORTURE_KRB5_TEST_CHANGE_SERVER_OUT:
 	case TORTURE_KRB5_TEST_PLAIN:
 		if (test_context->packet_count == 0) {
 			ok = torture_check_krb5_error(test_context,
@@ -229,14 +277,16 @@ static bool torture_krb5_post_recv_test(struct torture_krb5_context *test_contex
 			torture_assert(test_context->tctx,
 				       test_context->as_rep.ticket.enc_part.kvno,
 				       "Did not get a KVNO in test_context->as_rep.ticket.enc_part.kvno");
-			if (torture_setting_bool(test_context->tctx, "expect_cached_at_rodc", false)) {
-				torture_assert_int_not_equal(test_context->tctx,
-							     *test_context->as_rep.ticket.enc_part.kvno & 0xFFFF0000,
-							     0, "Did not get a RODC number in the KVNO");
-			} else {
-				torture_assert_int_equal(test_context->tctx,
-							 *test_context->as_rep.ticket.enc_part.kvno & 0xFFFF0000,
+			if (test_context->test == TORTURE_KRB5_TEST_PLAIN) {
+				if (torture_setting_bool(test_context->tctx, "expect_cached_at_rodc", false)) {
+					torture_assert_int_not_equal(test_context->tctx,
+								     *test_context->as_rep.ticket.enc_part.kvno & 0xFFFF0000,
+								     0, "Did not get a RODC number in the KVNO");
+				} else {
+					torture_assert_int_equal(test_context->tctx,
+								 *test_context->as_rep.ticket.enc_part.kvno & 0xFFFF0000,
 							 0, "Unexpecedly got a RODC number in the KVNO");
+				}
 			}
 			free_AS_REP(&test_context->as_rep);
 		}
@@ -428,7 +478,65 @@ static bool torture_krb5_post_recv_test(struct torture_krb5_context *test_contex
 			       test_context->packet_count < 3,
 			       "Too many packets");
 		break;
+	case TORTURE_KRB5_TEST_CHANGE_SERVER_IN:
+	case TORTURE_KRB5_TEST_CHANGE_SERVER_BOTH:
+	{
+		AS_REP mod_as_rep;
+		krb5_error_code k5ret;
+		krb5_data modified_recv_buf;
+		if (test_context->packet_count == 0) {
+			ok = torture_check_krb5_error(test_context,
+						      recv_buf,
+						      KRB5KDC_ERR_PREAUTH_REQUIRED,
+						      false);
+			torture_assert(test_context->tctx,
+				       ok,
+				       "torture_check_krb5_error failed");
+		} else if ((decode_KRB_ERROR(recv_buf->data, recv_buf->length, &error, &used) == 0)
+			   && (test_context->packet_count == 1)) {
+			torture_assert_int_equal(test_context->tctx, used, recv_buf->length, "length mismatch");
+			torture_assert_int_equal(test_context->tctx, error.pvno, 5, "Got wrong error.pvno");
+			torture_assert_int_equal(test_context->tctx, error.error_code, KRB5KRB_ERR_RESPONSE_TOO_BIG - KRB5KDC_ERR_NONE,
+						 "Got wrong error.error_code");
+			free_KRB_ERROR(&error);
+		} else {
+			torture_assert_int_equal(test_context->tctx,
+						 decode_AS_REP(recv_buf->data, recv_buf->length, &test_context->as_rep, &used), 0,
+						 "decode_AS_REP failed");
+			torture_assert_int_equal(test_context->tctx, used, recv_buf->length, "length mismatch");
+			torture_assert_int_equal(test_context->tctx,
+						 test_context->as_rep.pvno, 5,
+						 "Got wrong as_rep->pvno");
+			torture_assert_int_equal(test_context->tctx,
+						 test_context->as_rep.ticket.tkt_vno, 5,
+						 "Got wrong as_rep->ticket.tkt_vno");
+			torture_assert_int_equal(test_context->tctx,
+						 test_context->as_rep.ticket.sname.name_string.len, 2,
+						 "Got wrong as_rep->ticket.sname.name_string.len");
+			free(test_context->as_rep.ticket.sname.name_string.val[0]);
+			free(test_context->as_rep.ticket.sname.name_string.val[1]);
+			test_context->as_rep.ticket.sname.name_string.val[0] = strdup("bad");
+			test_context->as_rep.ticket.sname.name_string.val[1] = strdup("mallory");
+
+			mod_as_rep = test_context->as_rep;
+
+			ASN1_MALLOC_ENCODE(AS_REP, modified_recv_buf.data, modified_recv_buf.length,
+					   &mod_as_rep, &used, k5ret);
+			torture_assert_int_equal(test_context->tctx,
+						 k5ret, 0,
+						 "encode_AS_REQ failed");
+			krb5_data_free(recv_buf);
+
+			*recv_buf = modified_recv_buf;
+			free_AS_REQ(&test_context->as_req);
+		}
+		torture_assert(test_context->tctx, test_context->packet_count < 3, "too many packets");
+
+		break;
 	}
+	}
+
+
 	return true;
 }
 
@@ -456,17 +564,18 @@ static krb5_error_code smb_krb5_send_and_recv_func_override(krb5_context context
 {
 	krb5_error_code k5ret;
 	bool ok;
+	krb5_data modified_send_buf = *send_buf;
 
 	struct torture_krb5_context *test_context
 		= talloc_get_type_abort(data, struct torture_krb5_context);
 
-	ok = torture_krb5_pre_send_test(test_context, send_buf);
+	ok = torture_krb5_pre_send_test(test_context, &modified_send_buf);
 	if (ok == false) {
 		return EINVAL;
 	}
 
 	k5ret = smb_krb5_send_and_recv_func_forced(context, test_context->server,
-						    hi, timeout, send_buf, recv_buf);
+						    hi, timeout, &modified_send_buf, recv_buf);
 	if (k5ret != 0) {
 		return k5ret;
 	}
@@ -501,6 +610,9 @@ static bool torture_krb5_init_context(struct torture_context *tctx,
 	test_context->test = test;
 	test_context->tctx = tctx;
 
+	test_context->krb5_service = torture_setting_string(tctx, "krb5-service", "host");
+	test_context->krb5_hostname = torture_setting_string(tctx, "krb5-hostname", "");
+
 	k5ret = smb_krb5_init_context(tctx, tctx->lp_ctx, smb_krb5_context);
 	torture_assert_int_equal(tctx, k5ret, 0, "smb_krb5_init_context failed");
 
@@ -527,14 +639,26 @@ static bool torture_krb5_as_req_creds(struct torture_context *tctx,
 	krb5_creds my_creds;
 	krb5_principal principal;
 	struct smb_krb5_context *smb_krb5_context;
+	krb5_context k5_context;
 	enum credentials_obtained obtained;
 	const char *error_string;
 	const char *password = cli_credentials_get_password(credentials);
+	const char *expected_principal_string;
 	krb5_get_init_creds_opt *krb_options = NULL;
+	const char *realm;
+	const char *krb5_service = torture_setting_string(tctx, "krb5-service", "host");
+	const char *krb5_hostname = torture_setting_string(tctx, "krb5-hostname", "");
+
 
 	ok = torture_krb5_init_context(tctx, test, &smb_krb5_context);
 	torture_assert(tctx, ok, "torture_krb5_init_context failed");
+	k5_context = smb_krb5_context->krb5_context;
 
+	expected_principal_string
+		= cli_credentials_get_principal(credentials,
+						tctx);
+
+	realm = strupper_talloc(tctx, cli_credentials_get_realm(credentials));
 	k5ret = principal_from_credentials(tctx, credentials, smb_krb5_context,
 					   &principal, &obtained,  &error_string);
 	torture_assert_int_equal(tctx, k5ret, 0, error_string);
@@ -542,6 +666,9 @@ static bool torture_krb5_as_req_creds(struct torture_context *tctx,
 	switch (test)
 	{
 	case TORTURE_KRB5_TEST_PLAIN:
+	case TORTURE_KRB5_TEST_CHANGE_SERVER_OUT:
+	case TORTURE_KRB5_TEST_CHANGE_SERVER_IN:
+	case TORTURE_KRB5_TEST_CHANGE_SERVER_BOTH:
 		break;
 
 	case TORTURE_KRB5_TEST_PAC_REQUEST:
@@ -618,13 +745,55 @@ static bool torture_krb5_as_req_creds(struct torture_context *tctx,
 	switch (test)
 	{
 	case TORTURE_KRB5_TEST_PLAIN:
+	case TORTURE_KRB5_TEST_CHANGE_SERVER_IN:
 	case TORTURE_KRB5_TEST_PAC_REQUEST:
 	case TORTURE_KRB5_TEST_AES:
 	case TORTURE_KRB5_TEST_RC4:
 	case TORTURE_KRB5_TEST_AES_RC4:
+	{
+		char *got_principal_string;
+		char *assertion_message;
 		torture_assert_int_equal(tctx, k5ret, 0, "krb5_get_init_creds_password failed");
-		break;
 
+		torture_assert_int_equal(tctx,
+					 krb5_principal_get_type(k5_context,
+								 my_creds.client),
+					 KRB5_NT_PRINCIPAL,
+					 "smb_krb5_init_context gave incorrect client->name.name_type");
+
+		torture_assert_int_equal(tctx,
+					 krb5_unparse_name(k5_context,
+							   my_creds.client,
+							   &got_principal_string), 0,
+					 "krb5_unparse_name failed");
+
+		assertion_message = talloc_asprintf(tctx,
+						    "krb5_get_init_creds_password returned a different principal %s to what was expected %s",
+						    got_principal_string, expected_principal_string);
+		krb5_free_unparsed_name(k5_context, got_principal_string);
+
+		torture_assert(tctx, krb5_principal_compare(k5_context,
+							    my_creds.client,
+							    principal),
+			       assertion_message);
+
+
+		torture_assert_str_equal(tctx,
+					 my_creds.server->name.name_string.val[0],
+					 "krbtgt",
+					 "Mismatch in name between AS_REP and expected response, expected krbtgt");
+		torture_assert_str_equal(tctx,
+					 my_creds.server->name.name_string.val[1],
+					 realm,
+					 "Mismatch in realm part of krbtgt/ in AS_REP, expected krbtgt/REALM@REALM");
+
+		torture_assert_str_equal(tctx,
+					 my_creds.server->realm,
+					 realm,
+					 "Mismatch in server realm in AS_REP, expected krbtgt/REALM@REALM");
+
+		break;
+	}
 	case TORTURE_KRB5_TEST_BREAK_PW:
 		torture_assert_int_equal(tctx, k5ret, KRB5KDC_ERR_PREAUTH_FAILED, "krb5_get_init_creds_password should have failed");
 		return true;
@@ -633,6 +802,55 @@ static bool torture_krb5_as_req_creds(struct torture_context *tctx,
 		torture_assert_int_equal(tctx, k5ret, KRB5KRB_AP_ERR_SKEW, "krb5_get_init_creds_password should have failed");
 		return true;
 
+	case TORTURE_KRB5_TEST_CHANGE_SERVER_OUT:
+	case TORTURE_KRB5_TEST_CHANGE_SERVER_BOTH:
+	{
+		char *got_principal_string;
+		char *assertion_message;
+		torture_assert_int_equal(tctx, k5ret, 0, "krb5_get_init_creds_password failed");
+
+		torture_assert_int_equal(tctx,
+					 krb5_principal_get_type(k5_context,
+								 my_creds.client),
+					 KRB5_NT_PRINCIPAL,
+					 "smb_krb5_init_context gave incorrect client->name.name_type");
+
+		torture_assert_int_equal(tctx,
+					 krb5_unparse_name(k5_context,
+							   my_creds.client,
+							   &got_principal_string), 0,
+					 "krb5_unparse_name failed");
+
+		assertion_message = talloc_asprintf(tctx,
+						    "krb5_get_init_creds_password returned a different principal %s to what was expected %s",
+						    got_principal_string, expected_principal_string);
+		krb5_free_unparsed_name(k5_context, got_principal_string);
+
+		torture_assert(tctx, krb5_principal_compare(k5_context,
+							    my_creds.client,
+							    principal),
+			       assertion_message);
+
+		if (krb5_hostname[0] == '\0') {
+			break;
+		}
+
+		torture_assert_str_equal(tctx,
+					 my_creds.server->name.name_string.val[0],
+					 krb5_service,
+					 "Mismatch in name[0] between AS_REP and expected response");
+		torture_assert_str_equal(tctx,
+					 my_creds.server->name.name_string.val[1],
+					 krb5_hostname,
+					 "Mismatch in name[1] between AS_REP and expected response");
+
+		torture_assert_str_equal(tctx,
+					 my_creds.server->realm,
+					 realm,
+					 "Mismatch in server realm in AS_REP, expected krbtgt/REALM@REALM");
+
+		break;
+	}
 	}
 
 	k5ret = krb5_free_cred_contents(smb_krb5_context->krb5_context, &my_creds);
@@ -689,6 +907,28 @@ static bool torture_krb5_as_req_aes_rc4(struct torture_context *tctx)
 					 TORTURE_KRB5_TEST_AES_RC4);
 }
 
+/* Checking for the "Orpheus' Lyre" attack */
+static bool torture_krb5_as_req_change_server_out(struct torture_context *tctx)
+{
+	return torture_krb5_as_req_creds(tctx,
+					 popt_get_cmdline_credentials(),
+					 TORTURE_KRB5_TEST_CHANGE_SERVER_OUT);
+}
+
+static bool torture_krb5_as_req_change_server_in(struct torture_context *tctx)
+{
+	return torture_krb5_as_req_creds(tctx,
+					 popt_get_cmdline_credentials(),
+					 TORTURE_KRB5_TEST_CHANGE_SERVER_IN);
+}
+
+static bool torture_krb5_as_req_change_server_both(struct torture_context *tctx)
+{
+	return torture_krb5_as_req_creds(tctx,
+					 popt_get_cmdline_credentials(),
+					 TORTURE_KRB5_TEST_CHANGE_SERVER_BOTH);
+}
+
 NTSTATUS torture_krb5_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(ctx, "krb5");
@@ -719,6 +959,22 @@ NTSTATUS torture_krb5_init(TALLOC_CTX *ctx)
 	torture_suite_add_simple_test(kdc_suite,
 				      "as-req-aes-rc4",
 				      torture_krb5_as_req_aes_rc4);
+
+	/* 
+	 * This is in and out of the client. 
+	 * Out refers to requests, in refers to replies
+	 */
+	torture_suite_add_simple_test(kdc_suite,
+				      "as-req-change-server-in",
+				      torture_krb5_as_req_change_server_in);
+
+	torture_suite_add_simple_test(kdc_suite,
+				      "as-req-change-server-out",
+				      torture_krb5_as_req_change_server_out);
+
+	torture_suite_add_simple_test(kdc_suite,
+				      "as-req-change-server-both",
+				      torture_krb5_as_req_change_server_both);
 
 	torture_suite_add_suite(kdc_suite, torture_krb5_canon(kdc_suite));
 	torture_suite_add_suite(suite, kdc_suite);

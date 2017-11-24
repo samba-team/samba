@@ -455,7 +455,7 @@ static NTSTATUS idmap_ldap_db_init(struct idmap_domain *dom)
 
 	/* get_credentials deals with setting up creds */
 
-	ret = smbldap_init(ctx, winbind_event_context(), ctx->url,
+	ret = smbldap_init(ctx, server_event_context(), ctx->url,
 			   false, NULL, NULL, &ctx->smbldap_state);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(1, ("ERROR: smbldap_init (%s) failed!\n", ctx->url));

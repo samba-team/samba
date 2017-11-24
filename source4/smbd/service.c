@@ -30,6 +30,7 @@
 static struct registered_server {
 	struct registered_server *next, *prev;
 	const char *service_name;
+	struct service_details *service_details;
 	void (*task_init)(struct task_server *);
 } *registered_servers;
 
@@ -38,13 +39,17 @@ static struct registered_server {
 */
 NTSTATUS register_server_service(TALLOC_CTX *ctx,
 				const char *name,
-				void (*task_init)(struct task_server *))
+				void (*task_init) (struct task_server *),
+				struct service_details *details)
 {
 	struct registered_server *srv;
 	srv = talloc(ctx, struct registered_server);
 	NT_STATUS_HAVE_NO_MEMORY(srv);
 	srv->service_name = name;
 	srv->task_init = task_init;
+	srv->service_details =
+		talloc_memdup(ctx, details, sizeof(struct service_details));
+	NT_STATUS_HAVE_NO_MEMORY(srv->service_details);
 	DLIST_ADD_END(registered_servers, srv);
 	return NT_STATUS_OK;
 }
@@ -56,13 +61,18 @@ NTSTATUS register_server_service(TALLOC_CTX *ctx,
 static NTSTATUS server_service_init(const char *name,
 				    struct tevent_context *event_context,
 				    struct loadparm_context *lp_ctx,
-				    const struct model_ops *model_ops)
+				    const struct model_ops *model_ops,
+				    int from_parent_fd)
 {
 	struct registered_server *srv;
 	for (srv=registered_servers; srv; srv=srv->next) {
 		if (strcasecmp(name, srv->service_name) == 0) {
-			return task_server_startup(event_context, lp_ctx, srv->service_name,
-						   model_ops, srv->task_init);
+			return task_server_startup(event_context, lp_ctx,
+						   srv->service_name,
+						   model_ops,
+						   srv->task_init,
+						   srv->service_details,
+						   from_parent_fd);
 		}
 	}
 	return NT_STATUS_INVALID_SYSTEM_SERVICE;
@@ -72,31 +82,34 @@ static NTSTATUS server_service_init(const char *name,
 /*
   startup all of our server services
 */
-NTSTATUS server_service_startup(struct tevent_context *event_ctx, 
+NTSTATUS server_service_startup(struct tevent_context *event_ctx,
 				struct loadparm_context *lp_ctx,
-				const char *model, const char **server_services)
+				const char *model, const char **server_services,
+				int from_parent_fd)
 {
 	int i;
 	const struct model_ops *model_ops;
 
 	if (!server_services) {
-		DEBUG(0,("server_service_startup: no endpoint servers configured\n"));
+		DBG_ERR("server_service_startup: "
+			"no endpoint servers configured\n");
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	model_ops = process_model_startup(model);
 	if (!model_ops) {
-		DEBUG(0,("process_model_startup('%s') failed\n", model));
+		DBG_ERR("process_model_startup('%s') failed\n", model);
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
 	for (i=0;server_services[i];i++) {
 		NTSTATUS status;
 
-		status = server_service_init(server_services[i], event_ctx, lp_ctx, model_ops);
+		status = server_service_init(server_services[i], event_ctx,
+					     lp_ctx, model_ops, from_parent_fd);
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0,("Failed to start service '%s' - %s\n", 
-				 server_services[i], nt_errstr(status)));
+			DBG_ERR("Failed to start service '%s' - %s\n",
+				 server_services[i], nt_errstr(status));
 		}
 		NT_STATUS_NOT_OK_RETURN(status);
 	}

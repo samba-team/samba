@@ -227,22 +227,8 @@ start()
     _timeout="${CTDB_STARTUP_TIMEOUT:-10}"
     _count=0
     while [ "$_count" -lt "$_timeout" ] ; do
-	# If we don't have the PID then try to read it.
-	[ -n "$_pid" ] || read _pid 2>/dev/null <"$pidfile"
-
-	# If we got the PID but the PID file has gone or the process
-	# is no longer running then stop waiting... CTDB is dead.
-	if [ -n "$_pid" ] ; then
-	    if [ ! -e "$pidfile" ] || ! kill -0 "$_pid" 2>/dev/null ; then
-		echo "CTDB exited during initialisation - check logs."
-		kill_ctdbd "$_pid"
-		drop_all_public_ips >/dev/null 2>&1
-		return 1
-	    fi
-
-	    if $CTDB runstate first_recovery startup running >/dev/null 2>&1 ; then
-		return 0
-	    fi
+	if $CTDB runstate first_recovery startup running >/dev/null 2>&1 ; then
+	    return 0
 	fi
 
 	_count=$((_count + 1))

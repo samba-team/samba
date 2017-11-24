@@ -832,7 +832,8 @@ static NTSTATUS secrets_store_domain_info1_by_key(const char *key,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS secrets_store_domain_info(const struct secrets_domain_info1 *info)
+static NTSTATUS secrets_store_domain_info(const struct secrets_domain_info1 *info,
+					  bool upgrade)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	const char *domain = info->domain_info.name.string;
@@ -853,7 +854,7 @@ static NTSTATUS secrets_store_domain_info(const struct secrets_domain_info1 *inf
 	switch (info->secure_channel_type) {
 	case SEC_CHAN_WKSTA:
 	case SEC_CHAN_BDC:
-		if (role >= ROLE_ACTIVE_DIRECTORY_DC) {
+		if (!upgrade && role >= ROLE_ACTIVE_DIRECTORY_DC) {
 			DBG_ERR("AD_DC not supported for %s\n",
 				domain);
 			TALLOC_FREE(frame);
@@ -1089,8 +1090,10 @@ static int secrets_domain_info_kerberos_keys(struct secrets_domain_info1_passwor
 		return krb5_ret;
 	}
 
-	salt.data = discard_const(salt_data);
-	salt.length = strlen(salt_data);
+	salt = (krb5_data) {
+		.data = discard_const(salt_data),
+		.length = strlen(salt_data),
+	};
 
 	ok = convert_string_talloc(keys, CH_UTF16MUNGED, CH_UTF8,
 				   p->cleartext_blob.data,
@@ -1366,6 +1369,8 @@ NTSTATUS secrets_fetch_or_upgrade_domain_info(const char *domain,
 		DBG_ERR("secrets_fetch_domain_sid(%s) failed\n",
 			domain);
 		dbwrap_transaction_cancel(db);
+		SAFE_FREE(old_pw);
+		SAFE_FREE(pw);
 		TALLOC_FREE(frame);
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
@@ -1380,6 +1385,8 @@ NTSTATUS secrets_fetch_or_upgrade_domain_info(const char *domain,
 	if (info->account_name == NULL) {
 		DBG_ERR("talloc_asprintf(%s$) failed\n", info->computer_name);
 		dbwrap_transaction_cancel(db);
+		SAFE_FREE(old_pw);
+		SAFE_FREE(pw);
 		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1417,6 +1424,8 @@ NTSTATUS secrets_fetch_or_upgrade_domain_info(const char *domain,
 			DBG_ERR("talloc_asprintf(%s#%02X) failed\n",
 				domain, NBT_NAME_PDC);
 			dbwrap_transaction_cancel(db);
+			SAFE_FREE(pw);
+			SAFE_FREE(old_pw);
 			TALLOC_FREE(frame);
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -1437,6 +1446,8 @@ NTSTATUS secrets_fetch_or_upgrade_domain_info(const char *domain,
 		p = kerberos_secrets_fetch_salt_princ();
 		if (p == NULL) {
 			dbwrap_transaction_cancel(db);
+			SAFE_FREE(old_pw);
+			SAFE_FREE(pw);
 			TALLOC_FREE(frame);
 			return NT_STATUS_INTERNAL_ERROR;
 		}
@@ -1444,6 +1455,8 @@ NTSTATUS secrets_fetch_or_upgrade_domain_info(const char *domain,
 		SAFE_FREE(p);
 		if (info->salt_principal == NULL) {
 			dbwrap_transaction_cancel(db);
+			SAFE_FREE(pw);
+			SAFE_FREE(old_pw);
 			TALLOC_FREE(frame);
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -1458,10 +1471,12 @@ NTSTATUS secrets_fetch_or_upgrade_domain_info(const char *domain,
 						     info->salt_principal,
 						     last_set_nt, server,
 						     &info->password);
+	SAFE_FREE(pw);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("secrets_domain_info_password_create(pw) failed "
 			"for %s - %s\n", domain, nt_errstr(status));
 		dbwrap_transaction_cancel(db);
+		SAFE_FREE(old_pw);
 		TALLOC_FREE(frame);
 		return status;
 	}
@@ -1475,6 +1490,7 @@ NTSTATUS secrets_fetch_or_upgrade_domain_info(const char *domain,
 							     info->salt_principal,
 							     0, server,
 							     &info->old_password);
+		SAFE_FREE(old_pw);
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_ERR("secrets_domain_info_password_create(old) failed "
 				"for %s - %s\n", domain, nt_errstr(status));
@@ -1490,7 +1506,7 @@ NTSTATUS secrets_fetch_or_upgrade_domain_info(const char *domain,
 
 	secrets_debug_domain_info(DBGLVL_INFO, info, "upgrade");
 
-	status = secrets_store_domain_info(info);
+	status = secrets_store_domain_info(info, true /* upgrade */);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("secrets_store_domain_info() failed "
 			"for %s - %s\n", domain, nt_errstr(status));
@@ -1647,7 +1663,7 @@ NTSTATUS secrets_store_JoinCtx(const struct libnet_JoinCtx *r)
 
 	secrets_debug_domain_info(DBGLVL_INFO, info, "join");
 
-	status = secrets_store_domain_info(info);
+	status = secrets_store_domain_info(info, false /* upgrade */);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("secrets_store_domain_info() failed "
 			"for %s - %s\n", domain, nt_errstr(status));
@@ -1739,7 +1755,7 @@ NTSTATUS secrets_prepare_password_change(const char *domain, const char *dcname,
 
 	secrets_debug_domain_info(DBGLVL_INFO, info, "prepare_change");
 
-	status = secrets_store_domain_info(info);
+	status = secrets_store_domain_info(info, false /* upgrade */);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("secrets_store_domain_info() failed "
 			"for %s - %s\n", domain, nt_errstr(status));
@@ -1963,7 +1979,7 @@ static NTSTATUS secrets_abort_password_change(const char *change_server,
 
 	secrets_debug_domain_info(DBGLVL_WARNING, info, reason);
 
-	status = secrets_store_domain_info(info);
+	status = secrets_store_domain_info(info, false /* upgrade */);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("secrets_store_domain_info() failed "
 			"for %s - %s\n", domain, nt_errstr(status));
@@ -2057,7 +2073,7 @@ NTSTATUS secrets_finish_password_change(const char *change_server,
 
 	secrets_debug_domain_info(DBGLVL_WARNING, info, "finish_change");
 
-	status = secrets_store_domain_info(info);
+	status = secrets_store_domain_info(info, false /* upgrade */);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("secrets_store_domain_info() failed "
 			"for %s - %s\n", domain, nt_errstr(status));

@@ -131,6 +131,16 @@ struct auth4_context {
 					uint8_t *pauthoritative,
 					void **server_returned_info,
 					DATA_BLOB *nt_session_key, DATA_BLOB *lm_session_key);
+	struct tevent_req *(*check_ntlm_password_send)(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct auth4_context *auth_ctx,
+					const struct auth_usersupplied_info *user_info);
+	NTSTATUS (*check_ntlm_password_recv)(struct tevent_req *req,
+					TALLOC_CTX *mem_ctx,
+					uint8_t *pauthoritative,
+					void **server_returned_info,
+					DATA_BLOB *nt_session_key,
+					DATA_BLOB *lm_session_key);
 
 	NTSTATUS (*get_ntlm_challenge)(struct auth4_context *auth_ctx, uint8_t chal[8]);
 

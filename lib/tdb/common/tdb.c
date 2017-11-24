@@ -541,6 +541,11 @@ static int _tdb_storev(struct tdb_context *tdb, TDB_DATA key,
 	for (i=0; i<num_dbufs; i++) {
 		size_t dsize = dbufs[i].dsize;
 
+		if ((dsize != 0) && (dbufs[i].dptr == NULL)) {
+			tdb->ecode = TDB_ERR_EINVAL;
+			goto fail;
+		}
+
 		dbufs_len += dsize;
 		if (dbufs_len < dsize) {
 			tdb->ecode = TDB_ERR_OOM;
@@ -614,6 +619,10 @@ static int _tdb_storev(struct tdb_context *tdb, TDB_DATA key,
 	ofs += key.dsize;
 
 	for (i=0; i<num_dbufs; i++) {
+		if (dbufs[i].dsize == 0) {
+			continue;
+		}
+
 		ret = tdb->methods->tdb_write(tdb, ofs, dbufs[i].dptr,
 					      dbufs[i].dsize);
 		if (ret == -1) {

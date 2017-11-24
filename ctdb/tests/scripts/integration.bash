@@ -259,50 +259,6 @@ delete_ip_from_all_nodes ()
 
 #######################################
 
-# Wait until either timeout expires or command succeeds.  The command
-# will be tried once per second, unless timeout has format T/I, where
-# I is the recheck interval.
-wait_until ()
-{
-    local timeout="$1" ; shift # "$@" is the command...
-
-    local interval=1
-    case "$timeout" in
-	*/*)
-	    interval="${timeout#*/}"
-	    timeout="${timeout%/*}"
-    esac
-
-    local negate=false
-    if [ "$1" = "!" ] ; then
-	negate=true
-	shift
-    fi
-
-    echo -n "<${timeout}|"
-    local t=$timeout
-    while [ $t -gt 0 ] ; do
-	local rc=0
-	"$@" || rc=$?
-	if { ! $negate && [ $rc -eq 0 ] ; } || \
-	    { $negate && [ $rc -ne 0 ] ; } ; then
-	    echo "|$(($timeout - $t))|"
-	    echo "OK"
-	    return 0
-	fi
-	local i
-	for i in $(seq 1 $interval) ; do
-	    echo -n .
-	done
-	t=$(($t - $interval))
-	sleep $interval
-    done
-
-    echo "*TIMEOUT*"
-
-    return 1
-}
-
 sleep_for ()
 {
     echo -n "=${1}|"
@@ -379,8 +335,6 @@ node_has_status ()
 	(notstopped)   bits="?|?|?|?|0|*" ;;
 	(frozen)       fpat='^[[:space:]]+frozen[[:space:]]+1$' ;;
 	(unfrozen)     fpat='^[[:space:]]+frozen[[:space:]]+0$' ;;
-	(monon)        mpat='^Monitoring mode:ACTIVE \(0\)$' ;;
-	(monoff)       mpat='^Monitoring mode:DISABLED \(1\)$' ;;
 	(recovered)    rpat='^Recovery mode:RECOVERY \(1\)$' ;;
 	*)
 	    echo "node_has_status: unknown status \"$status\""
@@ -404,8 +358,6 @@ node_has_status ()
 	} <<<"$out" # Yay bash!
     elif [ -n "$fpat" ] ; then
 	$CTDB statistics -n "$pnn" | egrep -q "$fpat"
-    elif [ -n "$mpat" ] ; then
-	$CTDB getmonmode -n "$pnn" | egrep -q "$mpat"
     elif [ -n "$rpat" ] ; then
         ! $CTDB status -n "$pnn" | egrep -q "$rpat"
     else
@@ -524,25 +476,42 @@ wait_until_node_has_some_ips ()
 
 #######################################
 
-restart_ctdb_1 ()
+_service_ctdb ()
 {
+    cmd="$1"
+
     if [ -e /etc/redhat-release ] ; then
-	service ctdb restart
+	service ctdb "$cmd"
     else
-	/etc/init.d/ctdb restart
+	/etc/init.d/ctdb "$cmd"
     fi
 }
 
 # Restart CTDB on all nodes.  Override for local daemons.
 _restart_ctdb_all ()
 {
-    onnode -p all $CTDB_TEST_WRAPPER restart_ctdb_1
+    onnode -p all $CTDB_TEST_WRAPPER _service_ctdb restart
 }
 
 # Nothing needed for a cluster.  Override for local daemons.
 setup_ctdb ()
 {
     :
+}
+
+start_ctdb_1 ()
+{
+    onnode "$1" $CTDB_TEST_WRAPPER _service_ctdb start
+}
+
+stop_ctdb_1 ()
+{
+    onnode "$1" $CTDB_TEST_WRAPPER _service_ctdb stop
+}
+
+restart_ctdb_1 ()
+{
+    onnode "$1" $CTDB_TEST_WRAPPER _service_ctdb restart
 }
 
 restart_ctdb ()

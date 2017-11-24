@@ -11,6 +11,7 @@ echo "<!DOCTYPE section [
 <!ENTITY pathconfig.PIDDIR               '\${prefix}/var/run'>
 <!ENTITY pathconfig.STATEDIR             '\${prefix}/var/locks'>
 <!ENTITY pathconfig.PRIVATE_DIR          '\${prefix}/private'>
+<!ENTITY pathconfig.BINDDNS_DIR          '\${prefix}/bind-dns'>
 <!ENTITY pathconfig.SMB_PASSWD_FILE      '\${prefix}/private/smbpasswd'>
 <!ENTITY pathconfig.WINBINDD_SOCKET_DIR  '\${prefix}/var/run/winbindd'>
 <!ENTITY pathconfig.CACHEDIR             '\${prefix}/var/cache'>

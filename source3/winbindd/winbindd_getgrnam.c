@@ -27,7 +27,7 @@ struct winbindd_getgrnam_state {
 	const char *domname;
 	const char *name;
 	gid_t gid;
-	struct talloc_dict *members;
+	struct db_context *members;
 };
 
 static void winbindd_getgrnam_lookupname_done(struct tevent_req *subreq);

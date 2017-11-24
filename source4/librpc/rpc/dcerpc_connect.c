@@ -35,6 +35,7 @@
 #include "auth/credentials/credentials.h"
 #include "param/param.h"
 #include "libcli/resolve/resolve.h"
+#include "lib/http/http.h"
 
 struct dcerpc_pipe_connect {
 	struct dcecli_connection *conn;
@@ -422,6 +423,7 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_ip_tcp_recv(struct composite_context *
 struct pipe_http_state {
 	struct dcerpc_pipe_connect io;
 	const char *localaddr;
+	const char *target_hostname;
 	const char *rpc_server;
 	uint32_t rpc_server_port;
 	char *rpc_proxy;
@@ -430,7 +432,7 @@ struct pipe_http_state {
 	uint32_t http_proxy_port;
 	bool use_tls;
 	bool use_proxy;
-	bool use_ntlm;
+	enum http_auth_method http_auth;
 	struct loadparm_context *lp_ctx;
 };
 
@@ -457,6 +459,8 @@ static void continue_pipe_open_ncacn_http(struct tevent_req *subreq)
 	s->io.conn->transport.stream = stream;
 	s->io.conn->transport.write_queue = queue;
 	s->io.conn->transport.pending_reads = 0;
+	s->io.conn->server_name = strupper_talloc(s->io.conn,
+						  s->target_hostname);
 
 	composite_done(c);
 }
@@ -493,6 +497,8 @@ static struct composite_context* dcerpc_pipe_connect_ncacn_http_send(
 							"localaddress");
 	/* RPC server and port (the endpoint) */
 	s->rpc_server = dcerpc_binding_get_string_option(io->binding, "host");
+	s->target_hostname = dcerpc_binding_get_string_option(io->binding,
+							      "target_hostname");
 	endpoint = dcerpc_binding_get_string_option(io->binding, "endpoint");
 	if (endpoint == NULL) {
 		composite_error(c, NT_STATUS_INVALID_PARAMETER_MIX);
@@ -560,15 +566,17 @@ static struct composite_context* dcerpc_pipe_connect_ncacn_http_send(
 	opt = dcerpc_binding_get_string_option(io->binding, "HttpAuthOption");
 	if (opt) {
 		if (strcasecmp(opt, "basic") == 0) {
-			s->use_ntlm = false;
+			s->http_auth = HTTP_AUTH_BASIC;
 		} else if (strcasecmp(opt, "ntlm") == 0) {
-			s->use_ntlm = true;
+			s->http_auth = HTTP_AUTH_NTLM;
+		} else if (strcasecmp(opt, "negotiate") == 0) {
+			s->http_auth = HTTP_AUTH_NEGOTIATE;
 		} else {
 			composite_error(c, NT_STATUS_INVALID_PARAMETER_MIX);
 			return c;
 		}
 	} else {
-		s->use_ntlm = true;
+		s->http_auth = HTTP_AUTH_NTLM;
 	}
 
 	subreq = dcerpc_pipe_open_roh_send(s->io.conn, s->localaddr,
@@ -577,7 +585,7 @@ static struct composite_context* dcerpc_pipe_connect_ncacn_http_send(
 	                                   s->http_proxy, s->http_proxy_port,
 	                                   s->use_tls, s->use_proxy,
 	                                   s->io.creds, io->resolve_ctx,
-	                                   s->lp_ctx, s->use_ntlm);
+	                                   s->lp_ctx, s->http_auth);
 	if (composite_nomem(subreq, c)) return c;
 
 	tevent_req_set_callback(subreq, continue_pipe_open_ncacn_http, c);

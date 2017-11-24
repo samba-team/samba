@@ -31,6 +31,9 @@
 #include "dsdb/repl/drepl_service.h"
 #include "param/param.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS            DBGC_DRS_REPL
+
 
 /*
   create the role owner source dsa structure

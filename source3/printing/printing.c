@@ -38,7 +38,6 @@
 #include "lib/param/loadparm.h"
 #include "lib/util/sys_rw_data.h"
 
-extern struct current_user current_user;
 extern userdom_struct current_user_info;
 
 /* Current printer interface */
@@ -1722,7 +1721,7 @@ static void print_queue_update(struct messaging_context *msg_ctx,
 			lp_servicename(talloc_tos(), snum),
 			current_user_info.unix_name,
 			"",
-			current_user.ut.gid,
+			get_current_gid(NULL),
 			get_current_username(),
 			current_user_info.domain,
 			lpqcommand);
@@ -1742,7 +1741,7 @@ static void print_queue_update(struct messaging_context *msg_ctx,
 			lp_servicename(talloc_tos(), snum),
 			current_user_info.unix_name,
 			"",
-			current_user.ut.gid,
+			get_current_gid(NULL),
 			get_current_username(),
 			current_user_info.domain,
 			lprmcommand);
@@ -3026,7 +3025,7 @@ NTSTATUS print_job_end(struct messaging_context *msg_ctx, int snum,
 				      lp_servicename(talloc_tos(), snum),
 				      current_user_info.unix_name,
 				      "",
-				      current_user.ut.gid,
+				      get_current_gid(NULL),
 				      get_current_username(),
 				      current_user_info.domain,
 				      lpq_cmd);

@@ -117,18 +117,14 @@ NTSTATUS gensec_ntlmssp_server_negotiate(struct gensec_security *gensec_security
 					 TALLOC_CTX *out_mem_ctx,
 					 const DATA_BLOB request, DATA_BLOB *reply);
 
-/**
- * Next state function for the Authenticate packet (GENSEC wrapper)
- *
- * @param gensec_security GENSEC state
- * @param out_mem_ctx Memory context for *out
- * @param in The request, as a DATA_BLOB.  reply.data must be NULL
- * @param out The reply, as an allocated DATA_BLOB, caller to free.
- * @return Errors or NT_STATUS_OK if authentication sucessful
- */
-NTSTATUS gensec_ntlmssp_server_auth(struct gensec_security *gensec_security,
-				    TALLOC_CTX *out_mem_ctx,
-				    const DATA_BLOB in, DATA_BLOB *out);
+struct tevent_req *ntlmssp_server_auth_send(TALLOC_CTX *mem_ctx,
+					    struct tevent_context *ev,
+					    struct gensec_security *gensec_security,
+					    const DATA_BLOB in);
+NTSTATUS ntlmssp_server_auth_recv(struct tevent_req *req,
+				  TALLOC_CTX *out_mem_ctx,
+				  DATA_BLOB *out);
+
 
 /**
  * Start NTLMSSP on the server side

@@ -42,6 +42,11 @@
 struct ctdb_client_context;
 
 /**
+ * @brief The abstract context that holds a tunnel endpoint
+ */
+struct ctdb_tunnel_context;
+
+/**
  * @brief The abstract context that represents a clustered database
  */
 struct ctdb_db_context;
@@ -65,6 +70,17 @@ struct ctdb_transaction_handle;
  * away.
  */
 typedef void (*ctdb_client_callback_func_t)(void *private_data);
+
+/**
+ * @brief Tunnel callback function
+ *
+ * This function is registered when a tunnel endpoint is set up.  When the
+ * tunnel endpoint receives a message, this function is invoked.
+ */
+typedef void (*ctdb_tunnel_callback_func_t)(struct ctdb_tunnel_context *tctx,
+					    uint32_t srcnode, uint32_t reqid,
+					    uint8_t *buf, size_t buflen,
+					    void *private_data);
 
 /**
  * @brief Initialize and connect to ctdb daemon
@@ -543,6 +559,196 @@ int ctdb_client_control_multi(TALLOC_CTX *mem_ctx,
  */
 int ctdb_client_control_multi_error(uint32_t *pnn_list, int count,
 				    int *err_list, uint32_t *pnn);
+
+/**
+ * @brief Async computation start to setup a tunnel endpoint
+ *
+ * This computation sets up a tunnel endpoint corresponding to a tunnel_id.
+ * A tunnel is a ctdb transport to deliver new protocol between endpoints.
+ *
+ * For two endpoints to communicate using new protocol,
+ * 1. Set up tunnel endpoints
+ * 2. Send requests
+ * 3. Send replies
+ * 4. Destroy tunnel endpoints
+ *
+ * @param[in] mem_ctx Talloc memory context
+ * @param[in] ev Tevent context
+ * @param[in] client Client connection context
+ * @param[in] tunnel_id Unique tunnel id
+ * @param[in] callback Callback function to call when a message is received
+ * @param[in] private_data Private data for callback
+ * @return a new tevent req on success, NULL on failure
+ */
+struct tevent_req *ctdb_tunnel_setup_send(TALLOC_CTX *mem_ctx,
+					  struct tevent_context *ev,
+					  struct ctdb_client_context *client,
+					  uint64_t tunnel_id,
+					  ctdb_tunnel_callback_func_t callback,
+					  void *private_data);
+
+/**
+ * @brief Async computation end to setup a tunnel
+ *
+ * @param[in] req Tevent request
+ * @param[in] perr errno in case of failure
+ * @param[out] result A new tunnel context
+ * @return true on success, false on failure
+ *
+ * Tunnel context should never be freed by user.
+ */
+bool ctdb_tunnel_setup_recv(struct tevent_req *req, int *perr,
+			    struct ctdb_tunnel_context **result);
+
+/**
+ * @brief Sync wrapper for ctdb_tunnel_setup computation
+ *
+ * @param[in] mem_ctx Talloc memory context
+ * @param[in] ev Tevent context
+ * @param[in] client Client connection context
+ * @param[in] tunnel_id Unique tunnel id
+ * @param[in] callback Callback function to call when a message is received
+ * @param[in] private_data Private data for callback
+ * @param[out] result A new tunnel context
+ * @return 0 on success, errno on failure
+ */
+int ctdb_tunnel_setup(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+		      struct ctdb_client_context *client, uint64_t tunnel_id,
+		      ctdb_tunnel_callback_func_t callback, void *private_data,
+		      struct ctdb_tunnel_context **result);
+
+/**
+ * @brief Async computation start to destroy a tunnel endpoint
+ *
+ * This computation destroys the tunnel endpoint.
+ *
+ * @param[in] mem_ctx Talloc memory context
+ * @param[in] ev Tevent context
+ * @param[in] tctx Tunnel context
+ * @return a new tevent req on success, NULL on failure
+ */
+struct tevent_req *ctdb_tunnel_destroy_send(TALLOC_CTX *mem_ctx,
+					    struct tevent_context *ev,
+					    struct ctdb_tunnel_context *tctx);
+
+/**
+ * @brief Async computation end to destroy a tunnel endpoint
+ *
+ * @param[in] req Tevent request
+ * @param[out] perr errno in case of failure
+ * @return true on success, false on failure
+ */
+bool ctdb_tunnel_destroy_recv(struct tevent_req *req, int *perr);
+
+/**
+ * @brief Sync wrapper for ctdb_tunnel_destroy computation
+ *
+ * @param[in] ev Tevent context
+ * @param[in] tctx Tunnel context
+ * @return 0 on success, errno on failure
+ */
+int ctdb_tunnel_destroy(struct tevent_context *ev,
+			struct ctdb_tunnel_context *tctx);
+
+/**
+ * @brief Async computation start to send a request via a tunnel
+ *
+ * @param[in] mem_ctx Talloc memory context
+ * @param[in] ev Tevent context
+ * @param[in] tctx Tunnel context
+ * @param[in] destnode PNN of destination
+ * @param[in] timeout How long to wait
+ * @param[in] buf Message to send
+ * @param[in] buflen Size of the message to send
+ * @param[in] wait_for_reply Whether to wait for reply
+ * @return a new tevent req on success, NULL on failure
+ */
+struct tevent_req *ctdb_tunnel_request_send(TALLOC_CTX *mem_ctx,
+					    struct tevent_context *ev,
+					    struct ctdb_tunnel_context *tctx,
+					    int destnode,
+					    struct timeval timeout,
+					    uint8_t *buf, size_t buflen,
+					    bool wait_for_reply);
+
+/**
+ * @brief Async computation end to send a request via a tunnel
+ *
+ * @param[in] req Tevent request
+ * @param[out] perr errno in case of failure
+ * @param[in] mem_ctx Talloc context
+ * @param[out] buf Reply data if expected
+ * @param[out] buflen Size of reply data if expected
+ * @return true on success, false on failure
+ */
+bool ctdb_tunnel_request_recv(struct tevent_req *req, int *perr,
+			      TALLOC_CTX *mem_ctx, uint8_t **buf,
+			      size_t *buflen);
+
+/**
+ * @brief Sync wrapper for ctdb_tunnel_request computation
+ *
+ * @param[in] mem_ctx Talloc memory context
+ * @param[in] ev Tevent context
+ * @param[in] tctx Tunnel context
+ * @param[in] destnode PNN of destination
+ * @param[in] timeout How long to wait
+ * @param[in] buf Message to send
+ * @param[in] buflen Size of the message to send
+ * @param[in] wait_for_reply Whether to wait for reply
+ * @return 0 on success, errno on failure
+ */
+int ctdb_tunnel_request(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+			struct ctdb_tunnel_context *tctx, int destnode,
+			struct timeval timeout, uint8_t *buf, size_t buflen,
+			bool wait_for_reply);
+
+/**
+ * @brief Async computation start to send a reply via a tunnel
+ *
+ * @param[in] mem_ctx Talloc memory context
+ * @param[in] ev Tevent context
+ * @param[in] tctx Tunnel context
+ * @param[in] destnode PNN of destination
+ * @param[in] reqid Request id
+ * @param[in] timeout How long to wait
+ * @param[in] buf Reply data
+ * @param[in] buflen Size of reply data
+ * @return a new tevent req on success, NULL on failure
+ */
+struct tevent_req *ctdb_tunnel_reply_send(TALLOC_CTX *mem_ctx,
+					  struct tevent_context *ev,
+					  struct ctdb_tunnel_context *tctx,
+					  int destnode, uint32_t reqid,
+					  struct timeval timeout,
+					  uint8_t *buf, size_t buflen);
+
+/**
+ * @brief Async computation end to send a reply via a tunnel
+ *
+ * @param[in] req Tevent request
+ * @param[out] perr errno in case of failure
+ * @return true on success, false on failure
+ */
+bool ctdb_tunnel_reply_recv(struct tevent_req *req, int *perr);
+
+/**
+ * @brief Sync wrapper for ctdb_tunnel_reply computation
+ *
+ * @param[in] mem_ctx Talloc memory context
+ * @param[in] ev Tevent context
+ * @param[in] tctx Tunnel context
+ * @param[in] destnode PNN of destination
+ * @param[in] reqid Request id
+ * @param[in] timeout How long to wait
+ * @param[in] buf Reply data
+ * @param[in] buflen Size of reply data
+ * @return 0 on success, errno on failure
+ */
+int ctdb_tunnel_reply(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+		      struct ctdb_tunnel_context *tctx, int destnode,
+		      uint32_t reqid, struct timeval timeout,
+		      uint8_t *buf, size_t buflen);
 
 /**
  * @brief Async computation start to attach a database

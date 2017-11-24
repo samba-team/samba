@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "../libcli/auth/netlogon_creds_cli.h"
 #include "popt_common.h"
 #include "rpcclient.h"
 #include "../libcli/auth/libcli_auth.h"
@@ -802,7 +803,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 				return ntresult;
 			}
 
-			ntresult = rpccli_create_netlogon_creds_with_creds(creds,
+			ntresult = rpccli_create_netlogon_creds_ctx(creds,
 							dc_name,
 							rpcclient_msg_ctx,
 							rpcclient_msg_ctx,
@@ -815,11 +816,12 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 				return ntresult;
 			}
 
-			ntresult = rpccli_setup_netlogon_creds_with_creds(cli,
-							NCACN_NP,
-							rpcclient_netlogon_creds,
-							false, /* force_reauth */
-							creds);
+			ntresult = rpccli_setup_netlogon_creds(
+				cli,
+				NCACN_NP,
+				rpcclient_netlogon_creds,
+				false, /* force_reauth */
+				creds);
 			TALLOC_FREE(creds);
 			if (!NT_STATUS_IS_OK(ntresult)) {
 				DEBUG(0, ("Could not initialise credentials for %s.\n",

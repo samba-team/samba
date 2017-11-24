@@ -72,6 +72,13 @@ int ctdb_client_init(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 		return ret;
 	}
 
+	ret = srvid_init(client, &client->tunnels);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("srvid_init() failed, ret=%d\n", ret));
+		talloc_free(client);
+		return ret;
+	}
+
 	client->fd = -1;
 	client->pnn = CTDB_UNKNOWN_PNN;
 
@@ -165,9 +172,10 @@ static void client_read_handler(uint8_t *buf, size_t buflen,
 	struct ctdb_client_context *client = talloc_get_type_abort(
 		private_data, struct ctdb_client_context);
 	struct ctdb_req_header hdr;
+	size_t np;
 	int ret;
 
-	ret = ctdb_req_header_pull(buf, buflen, &hdr);
+	ret = ctdb_req_header_pull(buf, buflen, &hdr, &np);
 	if (ret != 0) {
 		DEBUG(DEBUG_WARNING, ("invalid header, ret=%d\n", ret));
 		return;
@@ -196,6 +204,10 @@ static void client_read_handler(uint8_t *buf, size_t buflen,
 
 	case CTDB_REPLY_CONTROL:
 		ctdb_client_reply_control(client, buf, buflen, hdr.reqid);
+		break;
+
+	case CTDB_REQ_TUNNEL:
+		ctdb_client_req_tunnel(client, buf, buflen, hdr.reqid);
 		break;
 
 	default:

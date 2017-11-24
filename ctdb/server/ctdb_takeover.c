@@ -576,7 +576,6 @@ static void ctdb_do_updateip_callback(struct ctdb_context *ctdb, int status,
 {
 	struct ctdb_do_updateip_state *state =
 		talloc_get_type(private_data, struct ctdb_do_updateip_state);
-	int32_t ret;
 
 	if (status != 0) {
 		if (status == -ETIME) {
@@ -599,17 +598,6 @@ static void ctdb_do_updateip_callback(struct ctdb_context *ctdb, int status,
 		ctdb_request_control_reply(ctdb, state->c, NULL, status, NULL);
 		talloc_free(state);
 		return;
-	}
-
-	if (ctdb->do_checkpublicip) {
-
-	ret = ctdb_announce_vnn_iface(ctdb, state->vnn);
-	if (ret != 0) {
-		ctdb_request_control_reply(ctdb, state->c, NULL, -1, NULL);
-		talloc_free(state);
-		return;
-	}
-
 	}
 
 	/* the control succeeded */

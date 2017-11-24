@@ -25,8 +25,8 @@
 #include "lib/util/debug.h"
 
 #include "protocol/protocol.h"
+#include "protocol/protocol_util.h"
 #include "common/logging.h"
-#include "common/system.h"
 
 #include "ipalloc_read_known_ips.h"
 
@@ -69,6 +69,7 @@ static bool read_ctdb_public_ip_info_node(bool multi,
 	}
 
 	while (fgets(line, sizeof(line), stdin) != NULL) {
+		int ret;
 
 		/* Get rid of pesky newline */
 		if ((t = strchr(line, '\n')) != NULL) {
@@ -87,7 +88,8 @@ static bool read_ctdb_public_ip_info_node(bool multi,
 			continue;
 		}
 
-		if (!parse_ip(tok, NULL, 0, &addr)) {
+		ret = ctdb_sock_addr_from_string(tok, &addr, false);
+		if (ret != 0) {
 			D_ERR("ERROR, bad address :%s\n", tok);
 			continue;
 		}

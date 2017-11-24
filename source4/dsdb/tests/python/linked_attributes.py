@@ -165,6 +165,26 @@ class LATests(samba.tests.TestCase):
                                 attrs=['objectGUID'])
         return str(misc.GUID(res[0]['objectGUID'][0]))
 
+    def assertRaisesLdbError(self, errcode, msg, f, *args, **kwargs):
+        """Assert a function raises a particular LdbError."""
+        try:
+            f(*args, **kwargs)
+        except ldb.LdbError as (num, msg):
+            if num != errcode:
+                lut = {v: k for k, v in vars(ldb).iteritems()
+                       if k.startswith('ERR_') and isinstance(v, int)}
+                self.fail("%s, expected "
+                          "LdbError %s, (%d) "
+                          "got %s (%d)" % (msg,
+                                           lut.get(errcode), errcode,
+                                           lut.get(num), num))
+        else:
+            lut = {v: k for k, v in vars(ldb).iteritems()
+                   if k.startswith('ERR_') and isinstance(v, int)}
+            self.fail("%s, expected "
+                      "LdbError %s, (%d) "
+                      "but we got success" % (msg, lut.get(errcode), errcode))
+
     def _test_la_backlinks(self, reveal=False):
         tag = 'backlinks'
         kwargs = {}
@@ -306,6 +326,11 @@ class LATests(samba.tests.TestCase):
         self.remove_linked_attribute(g1, [])
         self.assert_forward_links(g1, [])
 
+        # removing a duplicate link in the same message should fail
+        self.add_linked_attribute(g2, [u1, u2])
+        self.assertRaises(ldb.LdbError,
+                          self.remove_linked_attribute,g2, [u1, u1])
+
     def _test_la_links_delete_link_reveal(self):
         u1, u2 = self.add_objects(2, 'user', 'u_del_link_reveal')
         g1, g2 = self.add_objects(2, 'group', 'g_del_link_reveal')
@@ -388,14 +413,10 @@ class LATests(samba.tests.TestCase):
         self.add_linked_attribute(g2, [u3, u1])
         self.add_linked_attribute(g3, u2)
 
-        try:
-            # adding u2 twice should be an error
-            self.add_linked_attribute(g2, [u1, u2, u3, u2])
-        except ldb.LdbError as (num, msg):
-            if num != ldb.ERR_ENTRY_ALREADY_EXISTS:
-                self.fail("adding duplicate values, expected "
-                          "ERR_ENTRY_ALREADY_EXISTS, (%d) "
-                          "got %d" % (ldb.ERR_ENTRY_ALREADY_EXISTS, num))
+        self.assertRaisesLdbError(ldb.ERR_ENTRY_ALREADY_EXISTS,
+                                  "adding duplicate values",
+                                  self.add_linked_attribute, g2,
+                                  [u1, u2, u3, u2])
 
         self.assert_forward_links(g1, [u1, u2, u3, u4])
         self.assert_forward_links(g2, [u3, u1])
@@ -463,6 +484,11 @@ class LATests(samba.tests.TestCase):
         self.assert_back_links(u2, [g1, g3])
         self.assert_back_links(u3, [g1])
         self.assert_back_links(u4, [])
+
+        self.assertRaisesLdbError(ldb.ERR_ENTRY_ALREADY_EXISTS,
+                                  "replacing duplicate values",
+                                  self.replace_linked_attribute, g2,
+                                  [u1, u2, u3, u2])
 
 
     def test_la_links_replace2(self):
@@ -590,14 +616,11 @@ class LATests(samba.tests.TestCase):
         (g2,) = self.add_objects(1, 'group', 'g_all_at_once2',
                                  more_attrs={'member': users[:5]})
 
-        try:
-            self.add_objects(1, 'group', 'g_with_duplicate_links',
-                             more_attrs={'member': users[:5] + users[1:2]})
-        except ldb.LdbError as (num, msg):
-            if num != ldb.ERR_ENTRY_ALREADY_EXISTS:
-                self.fail("adding duplicate values, expected "
-                          "ERR_ENTRY_ALREADY_EXISTS, (%d) "
-                          "got %d" % (ldb.ERR_ENTRY_ALREADY_EXISTS, num))
+        self.assertRaisesLdbError(ldb.ERR_ENTRY_ALREADY_EXISTS,
+                                  "adding multiple duplicate values",
+                                  self.add_objects, 1, 'group',
+                                  'g_with_duplicate_links',
+                                  more_attrs={'member': users[:5] + users[1:2]})
 
         self.assert_forward_links(g1, users)
         self.assert_forward_links(g2, users[:5])

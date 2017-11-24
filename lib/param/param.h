@@ -56,6 +56,7 @@ const char **lpcfg_interfaces(struct loadparm_context *);
 const char *lpcfg_realm(struct loadparm_context *);
 const char *lpcfg_netbios_name(struct loadparm_context *);
 const char *lpcfg_private_dir(struct loadparm_context *);
+const char *lpcfg_binddns_dir(struct loadparm_context *);
 int lpcfg_server_role(struct loadparm_context *);
 int lpcfg_allow_dns_updates(struct loadparm_context *);
 
@@ -288,7 +289,8 @@ const char *lpcfg_imessaging_path(TALLOC_CTX *mem_ctx,
 const char *lpcfg_sam_name(struct loadparm_context *lp_ctx);
 const char *lpcfg_sam_dnsname(struct loadparm_context *lp_ctx);
 
-void lpcfg_default_kdc_policy(struct loadparm_context *lp_ctx,
+void lpcfg_default_kdc_policy(TALLOC_CTX *mem_ctx,
+				struct loadparm_context *lp_ctx,
 				time_t *svc_tkt_lifetime,
 				time_t *usr_tkt_lifetime,
 				time_t *renewal_lifetime);

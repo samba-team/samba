@@ -29,6 +29,7 @@
 #include "system/dir.h"
 #include "param/param.h"
 #include "libds/common/roles.h"
+#include "tdb.h"
 
 /**
  * @file
@@ -270,22 +271,56 @@ const char *lpcfg_sam_dnsname(struct loadparm_context *lp_ctx)
 	}
 }
 
-void lpcfg_default_kdc_policy(struct loadparm_context *lp_ctx,
+static long tdb_fetch_lifetime(TALLOC_CTX *mem_ctx, struct tdb_context *tdb, const char *keystr)
+{
+	TDB_DATA key;
+	TDB_DATA ret;
+	char *tmp = NULL;
+	long result;
+
+	key.dptr = discard_const_p(unsigned char, keystr);
+	key.dsize = strlen(keystr);
+
+	if (!key.dptr)
+		return -1;
+
+	ret = tdb_fetch(tdb, key);
+	if (ret.dsize == 0)
+		return -1;
+
+	tmp = talloc_realloc(mem_ctx, tmp, char, ret.dsize+1);
+	memset(tmp, 0, ret.dsize+1);
+	memcpy(tmp, ret.dptr, ret.dsize);
+	free(ret.dptr);
+
+	result = atol(tmp);
+	talloc_free(tmp);
+	return result;
+}
+
+void lpcfg_default_kdc_policy(TALLOC_CTX *mem_ctx,
+				struct loadparm_context *lp_ctx,
 				time_t *svc_tkt_lifetime,
 				time_t *usr_tkt_lifetime,
 				time_t *renewal_lifetime)
 {
 	long val;
+	TDB_CONTEXT *ctx = NULL;
+	const char *kdc_tdb = NULL;
 
-	val = lpcfg_parm_long(lp_ctx, NULL,
-				"kdc", "service ticket lifetime", 10);
+	kdc_tdb = lpcfg_cache_path(mem_ctx, lp_ctx, "gpo.tdb");
+	if (kdc_tdb)
+		ctx = tdb_open(kdc_tdb, 0, TDB_DEFAULT, O_RDWR, 0600);
+
+	if (!ctx || ( val = tdb_fetch_lifetime(mem_ctx, ctx, "kdc:service_ticket_lifetime") ) == -1 )
+		val = lpcfg_parm_long(lp_ctx, NULL, "kdc", "service ticket lifetime", 10);
 	*svc_tkt_lifetime = val * 60 * 60;
 
-	val = lpcfg_parm_long(lp_ctx, NULL,
-				"kdc", "user ticket lifetime", 10);
+	if (!ctx || ( val = tdb_fetch_lifetime(mem_ctx, ctx, "kdc:user_ticket_lifetime") ) == -1 )
+		val = lpcfg_parm_long(lp_ctx, NULL, "kdc", "user ticket lifetime", 10);
 	*usr_tkt_lifetime = val * 60 * 60;
 
-	val = lpcfg_parm_long(lp_ctx, NULL,
-				"kdc", "renewal lifetime", 24 * 7);
+	if (!ctx || ( val = tdb_fetch_lifetime(mem_ctx, ctx, "kdc:renewal_lifetime") ) == -1 )
+		val = lpcfg_parm_long(lp_ctx, NULL, "kdc", "renewal lifetime", 24 * 7);
 	*renewal_lifetime = val * 60 * 60;
 }

@@ -52,6 +52,8 @@ extern struct winbindd_methods reconnect_ads_methods;
 extern struct winbindd_methods builtin_passdb_methods;
 extern struct winbindd_methods sam_passdb_methods;
 
+static void wcache_flush_cache(void);
+
 /*
  * JRA. KEEP THIS LIST UP TO DATE IF YOU ADD CACHE ENTRIES.
  * Here are the list of entry types that are *not* stored
@@ -144,24 +146,6 @@ static struct winbind_cache *get_cache(struct winbindd_domain *domain)
 		/* We do not need a connection to an RW DC for cache operation */
 		init_dc_connection(domain, false);
 	}
-
-	/*
-	   OK.  Listen up because I'm only going to say this once.
-	   We have the following scenarios to consider
-	   (a) trusted AD domains on a Samba DC,
-	   (b) trusted AD domains and we are joined to a non-kerberos domain
-	   (c) trusted AD domains and we are joined to a kerberos (AD) domain
-
-	   For (a) we can always contact the trusted domain using krb5
-	   since we have the domain trust account password
-
-	   For (b) we can only use RPC since we have no way of
-	   getting a krb5 ticket in our own domain
-
-	   For (c) we can always use krb5 since we have a kerberos trust
-
-	   --jerry
-	 */
 
 #ifdef HAVE_ADS
 	if (domain->backend == NULL) {
@@ -468,7 +452,7 @@ static NTSTATUS fetch_cache_seqnum( struct winbindd_domain *domain, time_t now )
 	/* have we expired? */
 
 	time_diff = now - domain->last_seq_check;
-	if ( time_diff > lp_winbind_cache_time() ) {
+	if ((int)time_diff > lp_winbind_cache_time()) {
 		DEBUG(10,("fetch_cache_seqnum: timeout [%s][%u @ %u]\n",
 			domain->name, domain->sequence_number,
 			(uint32_t)domain->last_seq_check));
@@ -635,7 +619,7 @@ static bool centry_expired(struct winbindd_domain *domain, const char *keystr, s
 	   current sequence number or it did not timeout then it is OK */
 	if (wcache_server_down(domain)
 	    || ((centry->sequence_number == domain->sequence_number)
-		&& (centry->timeout > time(NULL)))) {
+		&& ((time_t)centry->timeout > time(NULL)))) {
 		DEBUG(10,("centry_expired: Key %s for domain %s is good.\n",
 			keystr, domain->name ));
 		return false;
@@ -1267,7 +1251,7 @@ do_query:
 NTSTATUS wcache_cached_creds_exist(struct winbindd_domain *domain, const struct dom_sid *sid)
 {
 	struct winbind_cache *cache = get_cache(domain);
-	TDB_DATA data;
+	int ret;
 	fstring key_str, tmp;
 	uint32_t rid;
 
@@ -1285,12 +1269,11 @@ NTSTATUS wcache_cached_creds_exist(struct winbindd_domain *domain, const struct 
 
 	fstr_sprintf(key_str, "CRED/%s", sid_to_fstring(tmp, sid));
 
-	data = tdb_fetch(cache->tdb, string_tdb_data(key_str));
-	if (!data.dptr) {
+	ret = tdb_exists(cache->tdb, string_tdb_data(key_str));
+	if (ret != 1) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
-	SAFE_FREE(data.dptr);
 	return NT_STATUS_OK;
 }
 
@@ -1762,11 +1745,11 @@ skip_save:
 	return status;
 }
 
-NTSTATUS wcache_name_to_sid(struct winbindd_domain *domain,
-			    const char *domain_name,
-			    const char *name,
-			    struct dom_sid *sid,
-			    enum lsa_SidType *type)
+static NTSTATUS wcache_name_to_sid(struct winbindd_domain *domain,
+				   const char *domain_name,
+				   const char *name,
+				   struct dom_sid *sid,
+				   enum lsa_SidType *type)
 {
 	struct winbind_cache *cache = get_cache(domain);
 	struct cache_entry *centry;
@@ -2222,10 +2205,10 @@ NTSTATUS wb_cache_rids_to_names(struct winbindd_domain *domain,
 	return result;
 }
 
-NTSTATUS wcache_query_user(struct winbindd_domain *domain,
-			   TALLOC_CTX *mem_ctx,
-			   const struct dom_sid *user_sid,
-			   struct wbint_userinfo *info)
+static NTSTATUS wcache_query_user(struct winbindd_domain *domain,
+				  TALLOC_CTX *mem_ctx,
+				  const struct dom_sid *user_sid,
+				  struct wbint_userinfo *info)
 {
 	struct winbind_cache *cache = get_cache(domain);
 	struct cache_entry *centry = NULL;
@@ -2319,11 +2302,11 @@ NTSTATUS wcache_query_user_fullname(struct winbindd_domain *domain,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS wcache_lookup_usergroups(struct winbindd_domain *domain,
-				  TALLOC_CTX *mem_ctx,
-				  const struct dom_sid *user_sid,
-				  uint32_t *pnum_sids,
-				  struct dom_sid **psids)
+static NTSTATUS wcache_lookup_usergroups(struct winbindd_domain *domain,
+					 TALLOC_CTX *mem_ctx,
+					 const struct dom_sid *user_sid,
+					 uint32_t *pnum_sids,
+					 struct dom_sid **psids)
 {
 	struct winbind_cache *cache = get_cache(domain);
 	struct cache_entry *centry = NULL;
@@ -2470,18 +2453,19 @@ static char *wcache_make_sidlist(TALLOC_CTX *mem_ctx, uint32_t num_sids,
 	return sidlist;
 }
 
-NTSTATUS wcache_lookup_useraliases(struct winbindd_domain *domain,
-				   TALLOC_CTX *mem_ctx, uint32_t num_sids,
-				   const struct dom_sid *sids,
-				   uint32_t *pnum_aliases, uint32_t **paliases)
+static NTSTATUS wcache_lookup_useraliases(struct winbindd_domain *domain,
+					  TALLOC_CTX *mem_ctx,
+					  uint32_t num_sids,
+					  const struct dom_sid *sids,
+					  uint32_t *pnum_aliases,
+					  uint32_t **paliases)
 {
 	struct winbind_cache *cache = get_cache(domain);
 	struct cache_entry *centry = NULL;
-	uint32_t num_aliases;
+	uint32_t i, num_aliases;
 	uint32_t *aliases;
 	NTSTATUS status;
 	char *sidlist;
-	int i;
 
 	if (cache->tdb == NULL) {
 		return NT_STATUS_NOT_FOUND;
@@ -2541,7 +2525,7 @@ NTSTATUS wb_cache_lookup_useraliases(struct winbindd_domain *domain,
 	struct cache_entry *centry = NULL;
 	NTSTATUS status;
 	char *sidlist;
-	int i;
+	uint32_t i;
 	bool old_status;
 
 	old_status = domain->online;
@@ -2601,12 +2585,12 @@ NTSTATUS wb_cache_lookup_useraliases(struct winbindd_domain *domain,
 	return status;
 }
 
-NTSTATUS wcache_lookup_groupmem(struct winbindd_domain *domain,
-				TALLOC_CTX *mem_ctx,
-				const struct dom_sid *group_sid,
-				uint32_t *num_names,
-				struct dom_sid **sid_mem, char ***names,
-				uint32_t **name_types)
+static NTSTATUS wcache_lookup_groupmem(struct winbindd_domain *domain,
+				       TALLOC_CTX *mem_ctx,
+				       const struct dom_sid *group_sid,
+				       uint32_t *num_names,
+				       struct dom_sid **sid_mem, char ***names,
+				       uint32_t **name_types)
 {
 	struct winbind_cache *cache = get_cache(domain);
 	struct cache_entry *centry = NULL;
@@ -2764,7 +2748,7 @@ NTSTATUS wb_cache_trusted_domains(struct winbindd_domain *domain,
 	struct winbindd_tdc_domain *dom_list = NULL;
 	size_t num_domains = 0;
 	bool retval = false;
-	int i;
+	size_t i;
 	bool old_status;
 
 	old_status = domain->online;
@@ -3108,7 +3092,7 @@ bool wcache_invalidate_cache_noinit(void)
 	return true;
 }
 
-bool init_wcache(void)
+static bool init_wcache(void)
 {
 	char *db_path;
 
@@ -3320,7 +3304,7 @@ static int traverse_fn_cleanup(TDB_CONTEXT *the_tdb, TDB_DATA kbuf,
 }
 
 /* flush the cache */
-void wcache_flush_cache(void)
+static void wcache_flush_cache(void)
 {
 	char *db_path;
 
@@ -4321,8 +4305,7 @@ static bool add_wbdomain_to_tdc_array( struct winbindd_domain *new_dom,
 				       size_t *num_domains )
 {
 	struct winbindd_tdc_domain *list = NULL;
-	size_t idx;
-	int i;
+	size_t i, idx;
 	bool set_only = false;
 
 	/* don't allow duplicates */
@@ -4423,7 +4406,7 @@ static int pack_tdc_domains( struct winbindd_tdc_domain *domains,
         unsigned char *buffer = NULL;
 	int len = 0;
 	int buflen = 0;
-	int i = 0;
+	size_t i = 0;
 
 	DEBUG(10,("pack_tdc_domains: Packing %d trusted domains\n",
 		  (int)num_domains));
@@ -4693,7 +4676,7 @@ struct winbindd_tdc_domain * wcache_tdc_fetch_domain( TALLOC_CTX *ctx, const cha
 {
 	struct winbindd_tdc_domain *dom_list = NULL;
 	size_t num_domains = 0;
-	int i;
+	size_t i;
 	struct winbindd_tdc_domain *d = NULL;	
 
 	DEBUG(10,("wcache_tdc_fetch_domain: Searching for domain %s\n", name));
@@ -4804,7 +4787,7 @@ bool wcache_fetch_ndr(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
 		goto fail;
 	}
 
-	if (!is_domain_offline(domain)) {
+	if (is_domain_online(domain)) {
 		uint32_t entry_seqnum, dom_seqnum, last_check;
 		uint64_t entry_timeout;
 
@@ -4819,7 +4802,7 @@ bool wcache_fetch_ndr(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
 			goto fail;
 		}
 		entry_timeout = BVAL(data.dptr, 4);
-		if (time(NULL) > entry_timeout) {
+		if (time(NULL) > (time_t)entry_timeout) {
 			DEBUG(10, ("Entry has timed out\n"));
 			goto fail;
 		}

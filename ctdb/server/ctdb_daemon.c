@@ -32,10 +32,11 @@
 #include "lib/tdb_wrap/tdb_wrap.h"
 #include "lib/util/dlinklist.h"
 #include "lib/util/debug.h"
-#include "lib/util/samba_util.h"
+#include "lib/util/time.h"
 #include "lib/util/blocking.h"
+#include "lib/util/become_daemon.h"
 
-#include "ctdb_version.h"
+#include "common/version.h"
 #include "ctdb_private.h"
 #include "ctdb_client.h"
 
@@ -208,35 +209,34 @@ int daemon_deregister_message_handler(struct ctdb_context *ctdb, uint32_t client
 	return srvid_deregister(ctdb->srv, srvid, client);
 }
 
-int daemon_check_srvids(struct ctdb_context *ctdb, TDB_DATA indata,
-			TDB_DATA *outdata)
+void daemon_tunnel_handler(uint64_t tunnel_id, TDB_DATA data,
+			   void *private_data)
 {
-	uint64_t *ids;
-	int i, num_ids;
-	uint8_t *results;
+	struct ctdb_client *client =
+		talloc_get_type_abort(private_data, struct ctdb_client);
+	struct ctdb_req_tunnel_old *c, *pkt;
+	size_t len;
 
-	if ((indata.dsize % sizeof(uint64_t)) != 0) {
-		DEBUG(DEBUG_ERR, ("Bad indata in daemon_check_srvids, "
-				  "size=%d\n", (int)indata.dsize));
-		return -1;
+	pkt = (struct ctdb_req_tunnel_old *)data.dptr;
+
+	len = offsetof(struct ctdb_req_tunnel_old, data) + pkt->datalen;
+	c = ctdbd_allocate_pkt(client->ctdb, client->ctdb, CTDB_REQ_TUNNEL,
+			       len, struct ctdb_req_tunnel_old);
+	if (c == NULL) {
+		DEBUG(DEBUG_ERR, ("Memory error in daemon_tunnel_handler\n"));
+		return;
 	}
 
-	ids = (uint64_t *)indata.dptr;
-	num_ids = indata.dsize / 8;
+	talloc_set_name_const(c, "req_tunnel packet");
 
-	results = talloc_zero_array(outdata, uint8_t, (num_ids+7)/8);
-	if (results == NULL) {
-		DEBUG(DEBUG_ERR, ("talloc failed in daemon_check_srvids\n"));
-		return -1;
-	}
-	for (i=0; i<num_ids; i++) {
-		if (srvid_exists(ctdb->srv, ids[i]) == 0) {
-			results[i/8] |= (1 << (i%8));
-		}
-	}
-	outdata->dptr = (uint8_t *)results;
-	outdata->dsize = talloc_get_size(results);
-	return 0;
+	c->tunnel_id = tunnel_id;
+	c->flags = pkt->flags;
+	c->datalen = pkt->datalen;
+	memcpy(c->data, pkt->data, pkt->datalen);
+
+	daemon_queue_send(client, &c->hdr);
+
+	talloc_free(c);
 }
 
 /*
@@ -676,6 +676,7 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 				DEBUG(DEBUG_ERR,(__location__ " ctdb_ltdb_unlock() failed with error %d\n", ret));
 			}
 			CTDB_DECREMENT_STAT(ctdb, pending_calls);
+			talloc_free(data.dptr);
 			return;
 		}
 	}
@@ -816,6 +817,8 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 
 static void daemon_request_control_from_client(struct ctdb_client *client, 
 					       struct ctdb_req_control_old *c);
+static void daemon_request_tunnel_from_client(struct ctdb_client *client,
+					      struct ctdb_req_tunnel_old *c);
 
 /* data contains a packet from the client */
 static void daemon_incoming_packet(void *p, struct ctdb_req_header *hdr)
@@ -855,6 +858,11 @@ static void daemon_incoming_packet(void *p, struct ctdb_req_header *hdr)
 	case CTDB_REQ_CONTROL:
 		CTDB_INCREMENT_STAT(ctdb, client.req_control);
 		daemon_request_control_from_client(client, (struct ctdb_req_control_old *)hdr);
+		break;
+
+	case CTDB_REQ_TUNNEL:
+		CTDB_INCREMENT_STAT(ctdb, client.req_tunnel);
+		daemon_request_tunnel_from_client(client, (struct ctdb_req_tunnel_old *)hdr);
 		break;
 
 	default:
@@ -1158,8 +1166,8 @@ static void ctdb_remove_pidfile(void)
 static void ctdb_create_pidfile(TALLOC_CTX *mem_ctx)
 {
 	if (ctdbd_pidfile != NULL) {
-		int ret = pidfile_create(mem_ctx, ctdbd_pidfile,
-					 &ctdbd_pidfile_ctx);
+		int ret = pidfile_context_create(mem_ctx, ctdbd_pidfile,
+						 &ctdbd_pidfile_ctx);
 		if (ret != 0) {
 			DEBUG(DEBUG_ERR,
 			      ("Failed to create PID file %s\n",
@@ -1228,26 +1236,14 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 	int res, ret = -1;
 	struct tevent_fd *fde;
 
-	if (do_fork && fork()) {
-		return 0;
-	}
+	become_daemon(do_fork, false, false);
 
-	if (do_fork) {
-		if (setsid() == -1) {
-			ctdb_die(ctdb, "Failed to setsid()\n");
-		}
-		close(0);
-		if (open("/dev/null", O_RDONLY) != 0) {
-			DEBUG(DEBUG_ALERT,(__location__ " Failed to setup stdin on /dev/null\n"));
-			exit(11);
-		}
-	}
 	ignore_signal(SIGPIPE);
 	ignore_signal(SIGUSR1);
 
 	ctdb->ctdbd_pid = getpid();
 	DEBUG(DEBUG_ERR, ("Starting CTDBD (Version %s) as PID: %u\n",
-			  CTDB_VERSION_STRING, ctdb->ctdbd_pid));
+			  ctdb_version_string, ctdb->ctdbd_pid));
 	ctdb_create_pidfile(ctdb);
 
 	/* create a unix domain stream socket to listen to */
@@ -1294,6 +1290,12 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 	TALLOC_FREE(ctdb->srv);
 	if (srvid_init(ctdb, &ctdb->srv) != 0) {
 		DEBUG(DEBUG_CRIT,("Failed to setup message srvid context\n"));
+		exit(1);
+	}
+
+	TALLOC_FREE(ctdb->tunnels);
+	if (srvid_init(ctdb, &ctdb->tunnels) != 0) {
+		DEBUG(DEBUG_ERR, ("Failed to setup tunnels context\n"));
 		exit(1);
 	}
 
@@ -1564,6 +1566,39 @@ static void daemon_request_control_from_client(struct ctdb_client *client,
 	talloc_free(tmp_ctx);
 }
 
+static void daemon_request_tunnel_from_client(struct ctdb_client *client,
+					      struct ctdb_req_tunnel_old *c)
+{
+	TDB_DATA data;
+	int ret;
+
+	if (! ctdb_validate_pnn(client->ctdb, c->hdr.destnode)) {
+		DEBUG(DEBUG_ERR, ("Invalid destination 0x%x\n",
+				  c->hdr.destnode));
+		return;
+	}
+
+	ret = srvid_exists(client->ctdb->tunnels, c->tunnel_id, NULL);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,
+		      ("tunnel id 0x%"PRIx64" not registered, dropping pkt\n",
+		       c->tunnel_id));
+		return;
+	}
+
+	data = (TDB_DATA) {
+		.dsize = c->datalen,
+		.dptr = &c->data[0],
+	};
+
+	ret = ctdb_daemon_send_tunnel(client->ctdb, c->hdr.destnode,
+				      c->tunnel_id, c->flags, data);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Failed to set tunnel to remote note %u\n",
+				  c->hdr.destnode));
+	}
+}
+
 /*
   register a call function
 */
@@ -1785,9 +1820,9 @@ struct ctdb_client *ctdb_find_client_by_pid(struct ctdb_context *ctdb, pid_t pid
 /* This control is used by samba when probing if a process (of a samba daemon)
    exists on the node.
    Samba does this when it needs/wants to check if a subrecord in one of the
-   databases is still valied, or if it is stale and can be removed.
+   databases is still valid, or if it is stale and can be removed.
    If the node is in unhealthy or stopped state we just kill of the samba
-   process holding htis sub-record and return to the calling samba that
+   process holding this sub-record and return to the calling samba that
    the process does not exist.
    This allows us to forcefully recall subrecords registered by samba processes
    on banned and stopped nodes.
@@ -1796,16 +1831,46 @@ int32_t ctdb_control_process_exists(struct ctdb_context *ctdb, pid_t pid)
 {
         struct ctdb_client *client;
 
-	if (ctdb->nodes[ctdb->pnn]->flags & (NODE_FLAGS_BANNED|NODE_FLAGS_STOPPED)) {
-		client = ctdb_find_client_by_pid(ctdb, pid);
-		if (client != NULL) {
-			DEBUG(DEBUG_NOTICE,(__location__ " Killing client with pid:%d on banned/stopped node\n", (int)pid));
-			talloc_free(client);
-		}
+	client = ctdb_find_client_by_pid(ctdb, pid);
+	if (client == NULL) {
+		return -1;
+	}
+
+	if (ctdb->nodes[ctdb->pnn]->flags & NODE_FLAGS_INACTIVE) {
+		DEBUG(DEBUG_NOTICE,
+		      ("Killing client with pid:%d on banned/stopped node\n",
+		       (int)pid));
+		talloc_free(client);
 		return -1;
 	}
 
 	return kill(pid, 0);
+}
+
+int32_t ctdb_control_check_pid_srvid(struct ctdb_context *ctdb,
+				     TDB_DATA indata)
+{
+	struct ctdb_client_pid_list *client_pid;
+	pid_t pid;
+	uint64_t srvid;
+	int ret;
+
+	pid = *(pid_t *)indata.dptr;
+	srvid = *(uint64_t *)(indata.dptr + sizeof(pid_t));
+
+	for (client_pid = ctdb->client_pids;
+	     client_pid != NULL;
+	     client_pid = client_pid->next) {
+		if (client_pid->pid == pid) {
+			ret = srvid_exists(ctdb->srv, srvid,
+					   client_pid->client);
+			if (ret == 0) {
+				return 0;
+			}
+		}
+	}
+
+	return -1;
 }
 
 int ctdb_control_getnodesfile(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata)

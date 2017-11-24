@@ -84,6 +84,9 @@ def configure(conf):
     if conf.CHECK_CFLAGS('-Wno-format-truncation'):
         conf.define('HAVE_WNO_FORMAT_TRUNCATION', '1')
 
+    if conf.CHECK_CFLAGS('-Wno-unused-function'):
+        conf.define('HAVE_WNO_UNUSED_FUNCTION', '1')
+
     # Check for process set name support
     conf.CHECK_CODE('''
                     #include <sys/prctl.h>
@@ -249,16 +252,33 @@ def configure(conf):
     if conf.CONFIG_SET('HAVE_MEMALIGN'):
         conf.CHECK_DECLS('memalign', headers='malloc.h')
 
+    # glibc up to 2.3.6 had dangerously broken posix_fallocate(). DON'T USE IT.
+    if conf.CHECK_CODE('''
+#define _XOPEN_SOURCE 600
+#include <stdlib.h>
+#if defined(__GLIBC__) && ((__GLIBC__ < 2) || (__GLIBC__ == 2 && __GLIBC_MINOR__ < 4))
+#error probably broken posix_fallocate
+#endif
+''',
+                       '_POSIX_FALLOCATE_CAPABLE_LIBC',
+                       msg='Checking for posix_fallocate-capable libc'):
+        conf.CHECK_FUNCS('posix_fallocate')
+
     conf.CHECK_FUNCS('prctl dirname basename')
+
+    strlcpy_in_bsd = False
 
     # libbsd on some platforms provides strlcpy and strlcat
     if not conf.CHECK_FUNCS('strlcpy strlcat'):
-        conf.CHECK_FUNCS_IN('strlcpy strlcat', 'bsd', headers='bsd/string.h',
-                checklibc=True)
+        if conf.CHECK_FUNCS_IN('strlcpy strlcat', 'bsd', headers='bsd/string.h',
+                               checklibc=True):
+            strlcpy_in_bsd = True
     if not conf.CHECK_FUNCS('getpeereid'):
         conf.CHECK_FUNCS_IN('getpeereid', 'bsd', headers='sys/types.h bsd/unistd.h')
     if not conf.CHECK_FUNCS_IN('setproctitle', 'setproctitle', headers='setproctitle.h'):
         conf.CHECK_FUNCS_IN('setproctitle', 'bsd', headers='sys/types.h bsd/unistd.h')
+    if not conf.CHECK_FUNCS('setproctitle_init'):
+        conf.CHECK_FUNCS_IN('setproctitle_init', 'bsd', headers='sys/types.h bsd/unistd.h')
 
     if not conf.CHECK_FUNCS('closefrom'):
         conf.CHECK_FUNCS_IN('closefrom', 'bsd', headers='bsd/unistd.h')
@@ -611,6 +631,9 @@ removeea setea
 
     # look for a method of finding the list of network interfaces
     for method in ['HAVE_IFACE_GETIFADDRS', 'HAVE_IFACE_AIX', 'HAVE_IFACE_IFCONF', 'HAVE_IFACE_IFREQ']:
+        bsd_for_strlcpy = ''
+        if strlcpy_in_bsd:
+            bsd_for_strlcpy = ' bsd'
         if conf.CHECK_CODE('''
                            #define %s 1
                            #define NO_CONFIG_H 1
@@ -623,7 +646,7 @@ removeea setea
                            #include "test/getifaddrs.c"
                            ''' % method,
                            method,
-                           lib='nsl socket',
+                           lib='nsl socket' + bsd_for_strlcpy,
                            addmain=False,
                            execute=True):
             break

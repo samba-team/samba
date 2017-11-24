@@ -155,6 +155,7 @@ NTSTATUS torture_smb2_init(TALLOC_CTX *ctx)
 	torture_suite_add_suite(suite, torture_smb2_create_init(suite));
 	torture_suite_add_suite(suite, torture_smb2_acls_init(suite));
 	torture_suite_add_suite(suite, torture_smb2_notify_init(suite));
+	torture_suite_add_suite(suite, torture_smb2_notify_inotify_init(suite));
 	torture_suite_add_suite(suite,
 		torture_smb2_notify_disabled_init(suite));
 	torture_suite_add_suite(suite, torture_smb2_durable_open_init(suite));

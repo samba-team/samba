@@ -32,6 +32,82 @@
 #include "common/sock_daemon.c"
 #include "common/sock_io.c"
 
+struct dummy_wait_state {
+};
+
+static struct tevent_req *dummy_wait_send(TALLOC_CTX *mem_ctx,
+					  struct tevent_context *ev,
+					  void *private_data)
+{
+	struct tevent_req *req;
+	struct dummy_wait_state *state;
+	const char *sockpath = (const char *)private_data;
+	struct stat st;
+	int ret;
+
+	ret = stat(sockpath, &st);
+	assert(ret == 0);
+	assert(S_ISSOCK(st.st_mode));
+
+	req = tevent_req_create(mem_ctx, &state, struct dummy_wait_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	tevent_req_done(req);
+	return tevent_req_post(req, ev);
+}
+
+static bool dummy_wait_recv(struct tevent_req *req, int *perr)
+{
+	return true;
+}
+
+static int test1_startup_fail(void *private_data)
+{
+	return 1;
+}
+
+static int test1_startup(void *private_data)
+{
+	const char *sockpath = (const char *)private_data;
+	struct stat st;
+	int ret;
+
+	ret = stat(sockpath, &st);
+	assert(ret == -1);
+
+	return 0;
+}
+
+struct test1_startup_state {
+};
+
+static struct tevent_req *test1_startup_send(TALLOC_CTX *mem_ctx,
+					     struct tevent_context *ev,
+					     void *private_data)
+{
+	struct tevent_req *req;
+	struct test1_startup_state *state;
+
+	req = tevent_req_create(mem_ctx, &state, struct test1_startup_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	tevent_req_error(req, 2);
+	return tevent_req_post(req, ev);
+}
+
+static bool test1_startup_recv(struct tevent_req *req, int *perr)
+{
+	if (tevent_req_is_unix_error(req, perr)) {
+		return false;
+	}
+
+	return true;
+}
+
 static struct tevent_req *dummy_read_send(TALLOC_CTX *mem_ctx,
 					  struct tevent_context *ev,
 					  struct sock_client_context *client,
@@ -54,39 +130,88 @@ static struct sock_socket_funcs dummy_socket_funcs = {
 	.read_recv = dummy_read_recv,
 };
 
+/*
+ * test1
+ *
+ * Check setup without actually running daemon
+ */
+
 static void test1(TALLOC_CTX *mem_ctx, const char *pidfile,
 		  const char *sockpath)
 {
+	struct tevent_context *ev;
 	struct sock_daemon_context *sockd;
+	struct sock_daemon_funcs test1_funcs;
 	struct stat st;
 	int ret;
 
-	ret = sock_daemon_setup(mem_ctx, "test1", "file:", "NOTICE", pidfile,
-				NULL, NULL, &sockd);
+	ev = tevent_context_init(mem_ctx);
+	assert(ev != NULL);
+
+	test1_funcs = (struct sock_daemon_funcs){
+		.startup = test1_startup_fail,
+	};
+
+	ret = sock_daemon_setup(mem_ctx, "test1", "file:", "NOTICE",
+				&test1_funcs, NULL, &sockd);
 	assert(ret == 0);
 	assert(sockd != NULL);
 
 	ret = stat(pidfile, &st);
+	assert(ret == -1);
+
+	ret = sock_daemon_run(ev, sockd, NULL, false, false, -1);
+	assert(ret == EIO);
+	talloc_free(sockd);
+
+	test1_funcs = (struct sock_daemon_funcs){
+		.startup_send = test1_startup_send,
+		.startup_recv = test1_startup_recv,
+	};
+
+	ret = sock_daemon_setup(mem_ctx, "test1", "file:", "NOTICE",
+				&test1_funcs, NULL, &sockd);
 	assert(ret == 0);
-	assert(S_ISREG(st.st_mode));
+	assert(sockd != NULL);
+
+	ret = stat(pidfile, &st);
+	assert(ret == -1);
+
+	ret = sock_daemon_run(ev, sockd, NULL, false, false, -1);
+	assert(ret == EIO);
+	talloc_free(sockd);
+
+	test1_funcs = (struct sock_daemon_funcs){
+		.startup = test1_startup,
+		.wait_send = dummy_wait_send,
+		.wait_recv = dummy_wait_recv,
+	};
+
+	ret = sock_daemon_setup(mem_ctx, "test1", "file:", "NOTICE",
+				&test1_funcs, discard_const(sockpath), &sockd);
+	assert(ret == 0);
+	assert(sockd != NULL);
 
 	ret = sock_daemon_add_unix(sockd, sockpath, &dummy_socket_funcs, NULL);
 	assert(ret == 0);
 
 	ret = stat(sockpath, &st);
+	assert(ret == -1);
+
+	ret = sock_daemon_run(ev, sockd, NULL, false, false, -1);
 	assert(ret == 0);
-	assert(S_ISSOCK(st.st_mode));
 
-	talloc_free(sockd);
-
-	ret = stat(pidfile, &st);
-	assert(ret == -1);
-
-	ret = stat(sockpath, &st);
-	assert(ret == -1);
+	talloc_free(mem_ctx);
 }
 
-static void test2_startup(void *private_data)
+/*
+ * test2
+ *
+ * Start daemon, check PID file, sock daemon functions, termination,
+ * exit code
+ */
+
+static int test2_startup(void *private_data)
 {
 	int fd = *(int *)private_data;
 	int ret = 1;
@@ -94,16 +219,72 @@ static void test2_startup(void *private_data)
 
 	nwritten = write(fd, &ret, sizeof(ret));
 	assert(nwritten == sizeof(ret));
+	return 0;
 }
 
-static void test2_reconfigure(void *private_data)
+static int test2_reconfigure(void *private_data)
 {
+	static bool first_time = true;
 	int fd = *(int *)private_data;
 	int ret = 2;
 	ssize_t nwritten;
 
 	nwritten = write(fd, &ret, sizeof(ret));
 	assert(nwritten == sizeof(ret));
+
+	if (first_time) {
+		first_time = false;
+		return 1;
+	}
+
+	return 0;
+}
+
+struct test2_reconfigure_state {
+	int fd;
+};
+
+static struct tevent_req *test2_reconfigure_send(TALLOC_CTX *mem_ctx,
+						 struct tevent_context *ev,
+						 void *private_data)
+{
+	struct tevent_req *req;
+	struct test2_reconfigure_state *state;
+	static bool first_time = true;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct test2_reconfigure_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	state->fd = *(int *)private_data;
+
+	if (first_time) {
+		first_time = false;
+		tevent_req_error(req, 2);
+	} else {
+		tevent_req_done(req);
+	}
+
+	return tevent_req_post(req, ev);
+}
+
+static bool test2_reconfigure_recv(struct tevent_req *req, int *perr)
+{
+	struct test2_reconfigure_state *state = tevent_req_data(
+		req, struct test2_reconfigure_state);
+	int ret = 2;
+	ssize_t nwritten;
+
+	nwritten = write(state->fd, &ret, sizeof(ret));
+	assert(nwritten == sizeof(ret));
+
+	if (tevent_req_is_unix_error(req, perr)) {
+		return false;
+	}
+
+	return true;
 }
 
 static void test2_shutdown(void *private_data)
@@ -116,11 +297,39 @@ static void test2_shutdown(void *private_data)
 	assert(nwritten == sizeof(ret));
 }
 
-static struct sock_daemon_funcs test2_funcs = {
-	.startup = test2_startup,
-	.reconfigure = test2_reconfigure,
-	.shutdown = test2_shutdown,
+struct test2_shutdown_state {
+	int fd;
 };
+
+static struct tevent_req *test2_shutdown_send(TALLOC_CTX *mem_ctx,
+					      struct tevent_context *ev,
+					      void *private_data)
+{
+	struct tevent_req *req;
+	struct test2_shutdown_state *state;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct test2_shutdown_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	state->fd = *(int *)private_data;
+
+	tevent_req_done(req);
+	return tevent_req_post(req, ev);
+}
+
+static void test2_shutdown_recv(struct tevent_req *req)
+{
+	struct test2_shutdown_state *state = tevent_req_data(
+		req, struct test2_shutdown_state);
+	int ret = 3;
+	ssize_t nwritten;
+
+	nwritten = write(state->fd, &ret, sizeof(ret));
+	assert(nwritten == sizeof(ret));
+}
 
 static void test2(TALLOC_CTX *mem_ctx, const char *pidfile,
 		  const char *sockpath)
@@ -130,6 +339,8 @@ static void test2(TALLOC_CTX *mem_ctx, const char *pidfile,
 	pid_t pid, pid2;
 	int ret;
 	ssize_t n;
+	int pidfile_fd;
+	char pidstr[20] = { 0 };
 
 	ret = pipe(fd);
 	assert(ret == 0);
@@ -140,6 +351,11 @@ static void test2(TALLOC_CTX *mem_ctx, const char *pidfile,
 	if (pid == 0) {
 		struct tevent_context *ev;
 		struct sock_daemon_context *sockd;
+		struct sock_daemon_funcs test2_funcs = {
+			.startup = test2_startup,
+			.reconfigure = test2_reconfigure,
+			.shutdown = test2_shutdown,
+		};
 
 		close(fd[0]);
 
@@ -147,14 +363,14 @@ static void test2(TALLOC_CTX *mem_ctx, const char *pidfile,
 		assert(ev != NULL);
 
 		ret = sock_daemon_setup(mem_ctx, "test2", "file:", "NOTICE",
-					pidfile, &test2_funcs, &fd[1], &sockd);
+					&test2_funcs, &fd[1], &sockd);
 		assert(ret == 0);
 
 		ret = sock_daemon_add_unix(sockd, sockpath,
 					   &dummy_socket_funcs, NULL);
 		assert(ret == 0);
 
-		ret = sock_daemon_run(ev, sockd, -1);
+		ret = sock_daemon_run(ev, sockd, pidfile, false, false, -1);
 		assert(ret == EINTR);
 
 		exit(0);
@@ -165,6 +381,17 @@ static void test2(TALLOC_CTX *mem_ctx, const char *pidfile,
 	n = read(fd[0], &ret, sizeof(ret));
 	assert(n == sizeof(ret));
 	assert(ret == 1);
+
+	pidfile_fd = open(pidfile, O_RDONLY, 0644);
+	assert(pidfile_fd != -1);
+	ret = fstat(pidfile_fd, &st);
+	assert(ret == 0);
+	assert(S_ISREG(st.st_mode));
+	n = read(pidfile_fd, pidstr, sizeof(pidstr)-1);
+	assert(n != -1);
+	pid2 = (pid_t)atoi(pidstr);
+	assert(pid == pid2);
+	close(pidfile_fd);
 
 	ret = kill(pid, SIGHUP);
 	assert(ret == 0);
@@ -198,7 +425,82 @@ static void test2(TALLOC_CTX *mem_ctx, const char *pidfile,
 
 	ret = stat(sockpath, &st);
 	assert(ret == -1);
+
+	ret = pipe(fd);
+	assert(ret == 0);
+
+	pid = fork();
+	assert(pid != -1);
+
+	if (pid == 0) {
+		struct tevent_context *ev;
+		struct sock_daemon_context *sockd;
+		struct sock_daemon_funcs test2_funcs = {
+			.startup = test2_startup,
+			.reconfigure_send = test2_reconfigure_send,
+			.reconfigure_recv = test2_reconfigure_recv,
+			.shutdown_send = test2_shutdown_send,
+			.shutdown_recv = test2_shutdown_recv,
+		};
+
+		close(fd[0]);
+
+		ev = tevent_context_init(mem_ctx);
+		assert(ev != NULL);
+
+		ret = sock_daemon_setup(mem_ctx, "test2", "file:", "NOTICE",
+					&test2_funcs, &fd[1], &sockd);
+		assert(ret == 0);
+
+		ret = sock_daemon_add_unix(sockd, sockpath,
+					   &dummy_socket_funcs, NULL);
+		assert(ret == 0);
+
+		ret = sock_daemon_run(ev, sockd, pidfile, false, false, -1);
+		assert(ret == EINTR);
+
+		exit(0);
+	}
+
+	close(fd[1]);
+
+	n = read(fd[0], &ret, sizeof(ret));
+	assert(n == sizeof(ret));
+	assert(ret == 1);
+
+	ret = kill(pid, SIGUSR1);
+	assert(ret == 0);
+
+	n = read(fd[0], &ret, sizeof(ret));
+	assert(n == sizeof(ret));
+	assert(ret == 2);
+
+	ret = kill(pid, SIGHUP);
+	assert(ret == 0);
+
+	n = read(fd[0], &ret, sizeof(ret));
+	assert(n == sizeof(ret));
+	assert(ret == 2);
+
+	ret = kill(pid, SIGTERM);
+	assert(ret == 0);
+
+	n = read(fd[0], &ret, sizeof(ret));
+	assert(n == sizeof(ret));
+	assert(ret == 3);
+
+	pid2 = waitpid(pid, &ret, 0);
+	assert(pid2 == pid);
+	assert(WEXITSTATUS(ret) == 0);
+
+	close(fd[0]);
 }
+
+/*
+ * test3
+ *
+ * Start daemon, test watching of (parent) PID
+ */
 
 static void test3(TALLOC_CTX *mem_ctx, const char *pidfile,
 		  const char *sockpath)
@@ -226,14 +528,14 @@ static void test3(TALLOC_CTX *mem_ctx, const char *pidfile,
 		assert(ev != NULL);
 
 		ret = sock_daemon_setup(mem_ctx, "test3", "file:", "NOTICE",
-					NULL, NULL, NULL, &sockd);
+					NULL, NULL, &sockd);
 		assert(ret == 0);
 
 		ret = sock_daemon_add_unix(sockd, sockpath,
 					   &dummy_socket_funcs, NULL);
 		assert(ret == 0);
 
-		ret = sock_daemon_run(ev, sockd, pid_watch);
+		ret = sock_daemon_run(ev, sockd, NULL, false, false, pid_watch);
 		assert(ret == ESRCH);
 
 		exit(0);
@@ -253,6 +555,12 @@ static void test3(TALLOC_CTX *mem_ctx, const char *pidfile,
 	ret = stat(sockpath, &st);
 	assert(ret == -1);
 }
+
+/*
+ * test4
+ *
+ * Start daemon, test termination via wait_send function
+ */
 
 struct test4_wait_state {
 };
@@ -334,10 +642,10 @@ static void test4(TALLOC_CTX *mem_ctx, const char *pidfile,
 		assert(ev != NULL);
 
 		ret = sock_daemon_setup(mem_ctx, "test4", "file:", "NOTICE",
-					pidfile, &test4_funcs, NULL, &sockd);
+					&test4_funcs, NULL, &sockd);
 		assert(ret == 0);
 
-		ret = sock_daemon_run(ev, sockd, -1);
+		ret = sock_daemon_run(ev, sockd, pidfile, false, false, -1);
 		assert(ret == 0);
 
 		exit(0);
@@ -353,6 +661,12 @@ static void test4(TALLOC_CTX *mem_ctx, const char *pidfile,
 	ret = stat(sockpath, &st);
 	assert(ret == -1);
 }
+
+/*
+ * test5
+ *
+ * Start daemon, multiple client connects, requests, disconnects
+ */
 
 #define TEST5_MAX_CLIENTS	10
 
@@ -570,8 +884,15 @@ static struct sock_socket_funcs test5_client_funcs = {
 	.read_recv = test5_read_recv,
 };
 
-static void test5_startup(void *private_data)
+struct test5_wait_state {
+};
+
+static struct tevent_req *test5_wait_send(TALLOC_CTX *mem_ctx,
+					  struct tevent_context *ev,
+					  void *private_data)
 {
+	struct tevent_req *req;
+	struct test5_wait_state *state;
 	int fd = *(int *)private_data;
 	int ret = 1;
 	ssize_t nwritten;
@@ -579,10 +900,23 @@ static void test5_startup(void *private_data)
 	nwritten = write(fd, &ret, sizeof(ret));
 	assert(nwritten == sizeof(ret));
 	close(fd);
+
+	req = tevent_req_create(mem_ctx, &state, struct test5_wait_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	return req;
+}
+
+static bool test5_wait_recv(struct tevent_req *req, int *perr)
+{
+	return true;
 }
 
 static struct sock_daemon_funcs test5_funcs = {
-	.startup = test5_startup,
+	.wait_send = test5_wait_send,
+	.wait_recv = test5_wait_recv,
 };
 
 static void test5(TALLOC_CTX *mem_ctx, const char *pidfile,
@@ -611,7 +945,7 @@ static void test5(TALLOC_CTX *mem_ctx, const char *pidfile,
 		assert(ev != NULL);
 
 		ret = sock_daemon_setup(mem_ctx, "test5", "file:", "NOTICE",
-					pidfile, &test5_funcs, &fd[1], &sockd);
+					&test5_funcs, &fd[1], &sockd);
 		assert(ret == 0);
 
 		state.num_clients = 0;
@@ -620,7 +954,7 @@ static void test5(TALLOC_CTX *mem_ctx, const char *pidfile,
 					   &test5_client_funcs, &state);
 		assert(ret == 0);
 
-		ret = sock_daemon_run(ev, sockd, pid);
+		ret = sock_daemon_run(ev, sockd, pidfile, false, false, pid);
 		assert(ret == EINTR);
 
 		exit(0);
@@ -651,6 +985,12 @@ static void test5(TALLOC_CTX *mem_ctx, const char *pidfile,
 	ret = kill(pid_server, SIGTERM);
 	assert(ret == 0);
 }
+
+/*
+ * test6
+ *
+ * Start daemon, test client connects, requests, replies, disconnects
+ */
 
 struct test6_pkt {
 	uint32_t len;
@@ -796,19 +1136,6 @@ static struct sock_socket_funcs test6_client_funcs = {
 	.read_recv = test6_read_recv,
 };
 
-static void test6_startup(void *private_data)
-{
-	struct test6_server_state *server_state =
-		(struct test6_server_state *)private_data;
-	int ret = 1;
-	ssize_t nwritten;
-
-	nwritten = write(server_state->fd, &ret, sizeof(ret));
-	assert(nwritten == sizeof(ret));
-	close(server_state->fd);
-	server_state->fd = -1;
-}
-
 struct test6_wait_state {
 	struct test6_server_state *server_state;
 };
@@ -819,8 +1146,17 @@ static struct tevent_req *test6_wait_send(TALLOC_CTX *mem_ctx,
 					  struct tevent_context *ev,
 					  void *private_data)
 {
+	struct test6_server_state *server_state =
+		(struct test6_server_state *)private_data;
 	struct tevent_req *req, *subreq;
 	struct test6_wait_state *state;
+	ssize_t nwritten;
+	int ret = 1;
+
+	nwritten = write(server_state->fd, &ret, sizeof(ret));
+	assert(nwritten == sizeof(ret));
+	close(server_state->fd);
+	server_state->fd = -1;
 
 	req = tevent_req_create(mem_ctx, &state, struct test6_wait_state);
 	if (req == NULL) {
@@ -877,7 +1213,6 @@ static bool test6_wait_recv(struct tevent_req *req, int *perr)
 }
 
 static struct sock_daemon_funcs test6_funcs = {
-	.startup = test6_startup,
 	.wait_send = test6_wait_send,
 	.wait_recv = test6_wait_recv,
 };
@@ -910,7 +1245,7 @@ static void test6(TALLOC_CTX *mem_ctx, const char *pidfile,
 		server_state.fd = fd[1];
 
 		ret = sock_daemon_setup(mem_ctx, "test6", "file:", "NOTICE",
-					pidfile, &test6_funcs, &server_state,
+					&test6_funcs, &server_state,
 					&sockd);
 		assert(ret == 0);
 
@@ -921,7 +1256,7 @@ static void test6(TALLOC_CTX *mem_ctx, const char *pidfile,
 					   &test6_client_funcs, &server_state);
 		assert(ret == 0);
 
-		ret = sock_daemon_run(ev, sockd, pid);
+		ret = sock_daemon_run(ev, sockd, pidfile, false, false, pid);
 		assert(ret == 0);
 
 		exit(0);
@@ -939,6 +1274,529 @@ static void test6(TALLOC_CTX *mem_ctx, const char *pidfile,
 
 	pid = wait(&ret);
 	assert(pid != -1);
+}
+
+/*
+ * test7
+ *
+ * Start daemon twice, confirm PID file contention
+ */
+
+static void test7(TALLOC_CTX *mem_ctx, const char *pidfile,
+		  const char *sockpath)
+{
+	struct sock_daemon_funcs test7_funcs;
+	struct stat st;
+	int fd[2];
+	pid_t pid, pid2;
+	int ret;
+	struct tevent_context *ev;
+	struct sock_daemon_context *sockd;
+	ssize_t n;
+
+	/* Reuse test2 funcs for the startup synchronisation */
+	test7_funcs = (struct sock_daemon_funcs) {
+		.startup = test2_startup,
+		.reconfigure = test2_reconfigure,
+		.shutdown = test2_shutdown,
+	};
+
+	ret = pipe(fd);
+	assert(ret == 0);
+
+	pid = fork();
+	assert(pid != -1);
+
+	if (pid == 0) {
+		close(fd[0]);
+
+		ev = tevent_context_init(mem_ctx);
+		assert(ev != NULL);
+
+		ret = sock_daemon_setup(mem_ctx, "test7", "file:", "NOTICE",
+					&test7_funcs, &fd[1], &sockd);
+		assert(ret == 0);
+
+		ret = sock_daemon_run(ev, sockd, pidfile, false, false, -1);
+		assert(ret == EINTR);
+
+		exit(0);
+	}
+
+	close(fd[1]);
+
+	n = read(fd[0], &ret, sizeof(ret));
+	assert(n == sizeof(ret));
+	assert(ret == 1);
+
+	ret = stat(pidfile, &st);
+	assert(ret == 0);
+	assert(S_ISREG(st.st_mode));
+
+	ev = tevent_context_init(mem_ctx);
+	assert(ev != NULL);
+
+	ret = sock_daemon_setup(mem_ctx, "test7-parent", "file:", "NOTICE",
+				&test7_funcs, &fd[1], &sockd);
+	assert(ret == 0);
+
+	ret = sock_daemon_run(ev, sockd, pidfile, false, false, -1);
+	assert(ret == EEXIST);
+
+	ret = kill(pid, SIGTERM);
+	assert(ret == 0);
+
+	n = read(fd[0], &ret, sizeof(ret));
+	assert(n == sizeof(ret));
+	assert(ret == 3);
+
+	pid2 = waitpid(pid, &ret, 0);
+	assert(pid2 == pid);
+	assert(WEXITSTATUS(ret) == 0);
+
+	close(fd[0]);
+}
+
+/*
+ * test8
+ *
+ * Start daemon, confirm that create_session argument works as expected
+ */
+
+static void test8(TALLOC_CTX *mem_ctx, const char *pidfile,
+		  const char *sockpath)
+{
+	int fd[2];
+	pid_t pid, pid2, sid;
+	int ret;
+	struct tevent_context *ev;
+	struct sock_daemon_context *sockd;
+	ssize_t n;
+
+	ret = pipe(fd);
+	assert(ret == 0);
+
+	pid = fork();
+	assert(pid != -1);
+
+	if (pid == 0) {
+		/* Reuse test2 funcs for the startup synchronisation */
+		struct sock_daemon_funcs test8_funcs = {
+			.startup = test2_startup,
+		};
+
+		close(fd[0]);
+
+		ev = tevent_context_init(mem_ctx);
+		assert(ev != NULL);
+
+		ret = sock_daemon_setup(mem_ctx, "test8", "file:", "NOTICE",
+					&test8_funcs, &fd[1], &sockd);
+		assert(ret == 0);
+
+		ret = sock_daemon_run(ev, sockd, pidfile, false, false, -1);
+		assert(ret == EINTR);
+
+		exit(0);
+	}
+
+	close(fd[1]);
+
+	n = read(fd[0], &ret, sizeof(ret));
+	assert(n == sizeof(ret));
+	assert(ret == 1);
+
+	/* create_session false above, so pid != sid */
+	sid = getsid(pid);
+	assert(pid != sid);
+
+	ret = kill(pid, SIGTERM);
+	assert(ret == 0);
+
+	pid2 = waitpid(pid, &ret, 0);
+	assert(pid2 == pid);
+	assert(WEXITSTATUS(ret) == 0);
+
+	close(fd[0]);
+
+	ret = pipe(fd);
+	assert(ret == 0);
+
+	pid = fork();
+	assert(pid != -1);
+
+	if (pid == 0) {
+		/* Reuse test2 funcs for the startup synchronisation */
+		struct sock_daemon_funcs test8_funcs = {
+			.startup = test2_startup,
+		};
+
+		close(fd[0]);
+
+		ev = tevent_context_init(mem_ctx);
+		assert(ev != NULL);
+
+		ret = sock_daemon_setup(mem_ctx, "test8", "file:", "NOTICE",
+					&test8_funcs, &fd[1], &sockd);
+		assert(ret == 0);
+
+		ret = sock_daemon_run(ev, sockd, pidfile, false, true, -1);
+		assert(ret == EINTR);
+
+		exit(0);
+	}
+
+	close(fd[1]);
+
+	n = read(fd[0], &ret, sizeof(ret));
+	assert(n == sizeof(ret));
+	assert(ret == 1);
+
+	/* create_session true above, so pid == sid */
+	sid = getsid(pid);
+	assert(pid == sid);
+
+	ret = kill(pid, SIGTERM);
+	assert(ret == 0);
+
+	pid2 = waitpid(pid, &ret, 0);
+	assert(pid2 == pid);
+	assert(WEXITSTATUS(ret) == 0);
+
+	close(fd[0]);
+}
+
+/*
+ * test9
+ *
+ * Confirm that do_fork causes the daemon to be forked as a separate child
+ */
+
+static void test9(TALLOC_CTX *mem_ctx, const char *pidfile,
+		  const char *sockpath)
+{
+	int fd[2];
+	pid_t pid, pid2;
+	int ret;
+	struct tevent_context *ev;
+	struct sock_daemon_context *sockd;
+	ssize_t n;
+	int pidfile_fd;
+	char pidstr[20] = { 0 };
+	struct stat st;
+
+	ret = pipe(fd);
+	assert(ret == 0);
+
+	pid = fork();
+	assert(pid != -1);
+
+	if (pid == 0) {
+		/* Reuse test2 funcs for the startup synchronisation */
+		struct sock_daemon_funcs test9_funcs = {
+			.startup = test2_startup,
+		};
+
+		close(fd[0]);
+
+		ev = tevent_context_init(mem_ctx);
+		assert(ev != NULL);
+
+		ret = sock_daemon_setup(mem_ctx, "test9", "file:", "NOTICE",
+					&test9_funcs, &fd[1], &sockd);
+		assert(ret == 0);
+
+		ret = sock_daemon_run(ev, sockd, pidfile, false, false, -1);
+		assert(ret == EINTR);
+
+		exit(0);
+	}
+
+	close(fd[1]);
+
+	n = read(fd[0], &ret, sizeof(ret));
+	assert(n == sizeof(ret));
+	assert(ret == 1);
+
+	/* do_fork false above, so pid should be active */
+	ret = kill(pid, 0);
+	assert(ret == 0);
+
+	ret = kill(pid, SIGTERM);
+	assert(ret == 0);
+
+	pid2 = waitpid(pid, &ret, 0);
+	assert(pid2 == pid);
+	assert(WEXITSTATUS(ret) == 0);
+
+	close(fd[0]);
+
+	ret = pipe(fd);
+	assert(ret == 0);
+
+	pid = fork();
+	assert(pid != -1);
+
+	if (pid == 0) {
+		/* Reuse test2 funcs for the startup synchronisation */
+		struct sock_daemon_funcs test9_funcs = {
+			.startup = test2_startup,
+			.shutdown = test2_shutdown,
+		};
+
+		close(fd[0]);
+
+		ev = tevent_context_init(mem_ctx);
+		assert(ev != NULL);
+
+		ret = sock_daemon_setup(mem_ctx, "test9", "file:", "NOTICE",
+					&test9_funcs, &fd[1], &sockd);
+		assert(ret == 0);
+
+		ret = sock_daemon_run(ev, sockd, pidfile, true, false, -1);
+		assert(ret == EINTR);
+
+		exit(0);
+	}
+
+	close(fd[1]);
+
+	n = read(fd[0], &ret, sizeof(ret));
+	assert(n == sizeof(ret));
+	assert(ret == 1);
+
+	/* do_fork true above, so pid should have exited */
+	pid2 = waitpid(pid, &ret, 0);
+	assert(pid2 == pid);
+	assert(WEXITSTATUS(ret) == 0);
+
+	pidfile_fd = open(pidfile, O_RDONLY, 0644);
+	assert(pidfile_fd != -1);
+	n = read(pidfile_fd, pidstr, sizeof(pidstr)-1);
+	assert(n != -1);
+	pid2 = (pid_t)atoi(pidstr);
+	assert(pid != pid2);
+	close(pidfile_fd);
+
+	ret = kill(pid2, SIGTERM);
+	assert(ret == 0);
+
+	n = read(fd[0], &ret, sizeof(ret));
+	assert(n == sizeof(ret));
+	assert(ret == 3);
+
+	/*
+	 * pid2 isn't our child, so can't call waitpid().  kill(pid2, 0)
+	 * is unreliable - pid2 may have been recycled.  Above indicates
+	 * that the shutdown function was called, so just do 1 final
+	 * check to see if pidfile has been removed.
+	 */
+	ret = stat(sockpath, &st);
+	assert(ret == -1);
+
+	close(fd[0]);
+}
+
+static void test10_shutdown(void *private_data)
+{
+	int fd = *(int *)private_data;
+	int ret = 3;
+	ssize_t nwritten;
+
+	nwritten = write(fd, &ret, sizeof(ret));
+	assert(nwritten == sizeof(ret));
+}
+
+struct test10_wait_state {
+};
+
+static void test10_wait_done(struct tevent_req *subreq);
+
+static struct tevent_req *test10_wait_send(TALLOC_CTX *mem_ctx,
+					   struct tevent_context *ev,
+					   void *private_data)
+{
+	int fd = *(int *)private_data;
+	struct tevent_req *req, *subreq;
+	struct test10_wait_state *state;
+	size_t nwritten;
+	int ret = 1;
+
+	req = tevent_req_create(mem_ctx, &state, struct test10_wait_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	subreq = tevent_wakeup_send(state, ev,
+				    tevent_timeval_current_ofs(10, 0));
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, test10_wait_done, req);
+
+	nwritten = write(fd, &ret, sizeof(ret));
+	assert(nwritten == sizeof(ret));
+
+	return req;
+}
+
+static void test10_wait_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	bool status;
+
+	status = tevent_wakeup_recv(subreq);
+	if (! status) {
+		tevent_req_error(req, EIO);
+		return;
+	}
+
+	tevent_req_done(req);
+}
+
+static bool test10_wait_recv(struct tevent_req *req, int *perr)
+{
+	int ret;
+
+	if (tevent_req_is_unix_error(req, &ret)) {
+		if (perr != NULL) {
+			*perr = ret;
+		}
+		return false;
+	}
+
+	return true;
+}
+
+static struct sock_daemon_funcs test10_funcs = {
+	.shutdown = test10_shutdown,
+	.wait_send = test10_wait_send,
+	.wait_recv = test10_wait_recv,
+};
+
+/*
+ * test10
+ *
+ * Confirm that the daemon starts successfully if there is a stale socket
+ */
+
+static void test10(TALLOC_CTX *mem_ctx, const char *pidfile,
+		  const char *sockpath)
+{
+	struct stat st;
+	int fd[2];
+	pid_t pid, pid2;
+	int ret;
+	ssize_t n;
+	int pidfile_fd;
+	char pidstr[20] = { 0 };
+
+	ret = pipe(fd);
+	assert(ret == 0);
+
+	pid = fork();
+	assert(pid != -1);
+
+	if (pid == 0) {
+		struct tevent_context *ev;
+		struct sock_daemon_context *sockd;
+
+		close(fd[0]);
+
+		ev = tevent_context_init(mem_ctx);
+		assert(ev != NULL);
+
+		ret = sock_daemon_setup(mem_ctx, "test10", "file:", "NOTICE",
+					&test10_funcs, &fd[1], &sockd);
+		assert(ret == 0);
+
+		ret = sock_daemon_add_unix(sockd, sockpath,
+					   &dummy_socket_funcs, NULL);
+		assert(ret == 0);
+
+		ret = sock_daemon_run(ev, sockd, pidfile, false, false, -1);
+		assert(ret == EINTR);
+
+		exit(0);
+	}
+
+	close(fd[1]);
+
+	n = read(fd[0], &ret, sizeof(ret));
+	assert(n == sizeof(ret));
+	assert(ret == 1);
+
+	/* KILL will leave PID file and socket behind */
+	ret = kill (pid, SIGKILL);
+	assert(ret == 0);
+
+	ret = stat(sockpath, &st);
+	assert(ret == 0);
+
+	close(fd[0]);
+
+	ret = pipe(fd);
+	assert(ret == 0);
+
+	pid = fork();
+	assert(pid != -1);
+
+	if (pid == 0) {
+		struct tevent_context *ev;
+		struct sock_daemon_context *sockd;
+
+		close(fd[0]);
+
+		ev = tevent_context_init(mem_ctx);
+		assert(ev != NULL);
+
+		ret = sock_daemon_setup(mem_ctx, "test10", "file:", "NOTICE",
+					&test10_funcs, &fd[1], &sockd);
+		assert(ret == 0);
+
+		ret = sock_daemon_add_unix(sockd, sockpath,
+					   &dummy_socket_funcs, NULL);
+		assert(ret == 0);
+
+		ret = sock_daemon_run(ev, sockd, pidfile, false, false, -1);
+		assert(ret == EINTR);
+
+		exit(0);
+	}
+
+	close(fd[1]);
+
+	n = read(fd[0], &ret, sizeof(ret));
+	assert(n == sizeof(ret));
+	assert(ret == 1);
+
+	pidfile_fd = open(pidfile, O_RDONLY, 0644);
+	assert(pidfile_fd != -1);
+	n = read(pidfile_fd, pidstr, sizeof(pidstr)-1);
+	assert(n != -1);
+	pid2 = (pid_t)atoi(pidstr);
+	assert(pid == pid2);
+	close(pidfile_fd);
+
+	ret = kill(pid, SIGTERM);
+	assert(ret == 0);
+
+	n = read(fd[0], &ret, sizeof(ret));
+	assert(n == sizeof(ret));
+	assert(ret == 3);
+
+	pid2 = waitpid(pid, &ret, 0);
+	assert(pid2 == pid);
+	assert(WEXITSTATUS(ret) == 0);
+
+	close(fd[0]);
+
+	ret = stat(pidfile, &st);
+	assert(ret == -1);
+
+	ret = stat(sockpath, &st);
+	assert(ret == -1);
 }
 
 int main(int argc, const char **argv)
@@ -982,6 +1840,22 @@ int main(int argc, const char **argv)
 
 	case 6:
 		test6(mem_ctx, pidfile, sockpath);
+		break;
+
+	case 7:
+		test7(mem_ctx, pidfile, sockpath);
+		break;
+
+	case 8:
+		test8(mem_ctx, pidfile, sockpath);
+		break;
+
+	case 9:
+		test9(mem_ctx, pidfile, sockpath);
+		break;
+
+	case 10:
+		test10(mem_ctx, pidfile, sockpath);
 		break;
 
 	default:

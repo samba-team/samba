@@ -361,7 +361,7 @@ get_dh_param(krb5_context context,
     }
 
     ret = _krb5_dh_group_ok(context, config->pkinit_dh_min_bits,
-			    &dhparam.p, &dhparam.g, &dhparam.q, moduli,
+			    &dhparam.p, &dhparam.g, dhparam.q, moduli,
 			    &client_params->dh_group_name);
     if (ret) {
 	/* XXX send back proposal of better group */
@@ -381,9 +381,12 @@ get_dh_param(krb5_context context,
     dh->g = integer_to_BN(context, "DH base", &dhparam.g);
     if (dh->g == NULL)
 	goto out;
-    dh->q = integer_to_BN(context, "DH p-1 factor", &dhparam.q);
-    if (dh->g == NULL)
-	goto out;
+
+    if (dhparam.q) {
+	dh->q = integer_to_BN(context, "DH p-1 factor", dhparam.q);
+	if (dh->g == NULL)
+	    goto out;
+    }
 
     {
 	heim_integer glue;

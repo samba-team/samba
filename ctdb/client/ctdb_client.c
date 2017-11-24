@@ -559,43 +559,6 @@ int ctdb_client_remove_message_handler(struct ctdb_context *ctdb,
 }
 
 /*
- * check server ids
- */
-int ctdb_client_check_message_handlers(struct ctdb_context *ctdb, uint64_t *ids, uint32_t num,
-				       uint8_t *result)
-{
-	TDB_DATA indata, outdata;
-	int res;
-	int32_t status;
-	int i;
-
-	indata.dptr = (uint8_t *)ids;
-	indata.dsize = num * sizeof(*ids);
-
-	res = ctdb_control(ctdb, CTDB_CURRENT_NODE, 0, CTDB_CONTROL_CHECK_SRVIDS, 0,
-			   indata, ctdb, &outdata, &status, NULL, NULL);
-	if (res != 0 || status != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " failed to check srvids\n"));
-		return -1;
-	}
-
-	if (outdata.dsize != num*sizeof(uint8_t)) {
-		DEBUG(DEBUG_ERR, (__location__ " expected %lu bytes, received %zi bytes\n",
-				  (long unsigned int)num*sizeof(uint8_t),
-				  outdata.dsize));
-		talloc_free(outdata.dptr);
-		return -1;
-	}
-
-	for (i=0; i<num; i++) {
-		result[i] = outdata.dptr[i];
-	}
-
-	talloc_free(outdata.dptr);
-	return 0;
-}
-
-/*
   send a message - from client context
  */
 int ctdb_client_send_message(struct ctdb_context *ctdb, uint32_t pnn,
@@ -1919,9 +1882,11 @@ int ctdb_ctrl_getdbseqnum(struct ctdb_context *ctdb, struct timeval timeout,
 	int ret;
 	int32_t res;
 	TDB_DATA data, outdata;
+	uint8_t buf[sizeof(uint64_t)] = { 0 };
 
-	data.dptr = (uint8_t *)&dbid;
-	data.dsize = sizeof(uint64_t);	/* This is just wrong */
+	*(uint32_t *)buf = dbid;
+	data.dptr = buf;
+	data.dsize = sizeof(uint64_t);
 
 	ret = ctdb_control(ctdb, destnode, 0, CTDB_CONTROL_GET_DB_SEQNUM,
 			   0, data, ctdb, &outdata, &res, &timeout, NULL);
@@ -1947,36 +1912,41 @@ int ctdb_ctrl_getdbseqnum(struct ctdb_context *ctdb, struct timeval timeout,
 /*
   create a database
  */
-int ctdb_ctrl_createdb(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, 
-		       TALLOC_CTX *mem_ctx, const char *name, bool persistent)
+int ctdb_ctrl_createdb(struct ctdb_context *ctdb, struct timeval timeout,
+		       uint32_t destnode, TALLOC_CTX *mem_ctx,
+		       const char *name, uint8_t db_flags, uint32_t *db_id)
 {
 	int ret;
 	int32_t res;
 	TDB_DATA data;
-	uint64_t tdb_flags = 0;
+	uint32_t opcode;
 
 	data.dptr = discard_const(name);
 	data.dsize = strlen(name)+1;
 
-	/* Make sure that volatile databases use jenkins hash */
-	if (!persistent) {
-		tdb_flags = TDB_INCOMPATIBLE_HASH;
+	if (db_flags & CTDB_DB_FLAGS_PERSISTENT) {
+		opcode = CTDB_CONTROL_DB_ATTACH_PERSISTENT;
+	} else if (db_flags & CTDB_DB_FLAGS_REPLICATED) {
+		opcode = CTDB_CONTROL_DB_ATTACH_REPLICATED;
+	} else {
+		opcode = CTDB_CONTROL_DB_ATTACH;
 	}
 
-#ifdef TDB_MUTEX_LOCKING
-	if (!persistent && ctdb->tunable.mutex_enabled == 1) {
-		tdb_flags |= (TDB_MUTEX_LOCKING | TDB_CLEAR_IF_FIRST);
-	}
-#endif
-
-	ret = ctdb_control(ctdb, destnode, tdb_flags,
-			   persistent?CTDB_CONTROL_DB_ATTACH_PERSISTENT:CTDB_CONTROL_DB_ATTACH, 
-			   0, data, 
+	ret = ctdb_control(ctdb, destnode, 0, opcode, 0, data,
 			   mem_ctx, &data, &res, &timeout, NULL);
 
 	if (ret != 0 || res != 0) {
 		return -1;
 	}
+
+	if (data.dsize != sizeof(uint32_t)) {
+		TALLOC_FREE(data.dptr);
+		return -1;
+	}
+	if (db_id != NULL) {
+		*db_id = *(uint32_t *)data.dptr;
+	}
+	talloc_free(data.dptr);
 
 	return 0;
 }
@@ -2118,12 +2088,10 @@ int ctdb_ctrl_db_open_flags(struct ctdb_context *ctdb, uint32_t db_id,
 struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb,
 				    struct timeval timeout,
 				    const char *name,
-				    bool persistent)
+				    uint8_t db_flags)
 {
 	struct ctdb_db_context *ctdb_db;
-	TDB_DATA data;
 	int ret;
-	int32_t res;
 	int tdb_flags;
 
 	ctdb_db = ctdb_db_handle(ctdb, name);
@@ -2138,21 +2106,14 @@ struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb,
 	ctdb_db->db_name = talloc_strdup(ctdb_db, name);
 	CTDB_NO_MEMORY_NULL(ctdb, ctdb_db->db_name);
 
-	data.dptr = discard_const(name);
-	data.dsize = strlen(name)+1;
-
 	/* tell ctdb daemon to attach */
-	ret = ctdb_control(ctdb, CTDB_CURRENT_NODE, 0,
-			   persistent?CTDB_CONTROL_DB_ATTACH_PERSISTENT:CTDB_CONTROL_DB_ATTACH,
-			   0, data, ctdb_db, &data, &res, NULL, NULL);
-	if (ret != 0 || res != 0 || data.dsize != sizeof(uint32_t)) {
+	ret = ctdb_ctrl_createdb(ctdb, timeout, CTDB_CURRENT_NODE,
+				 ctdb_db, name, db_flags, &ctdb_db->db_id);
+	if (ret != 0) {
 		DEBUG(DEBUG_ERR,("Failed to attach to database '%s'\n", name));
 		talloc_free(ctdb_db);
 		return NULL;
 	}
-
-	ctdb_db->db_id = *(uint32_t *)data.dptr;
-	talloc_free(data.dptr);
 
 	ret = ctdb_ctrl_getdbpath(ctdb, timeout, CTDB_CURRENT_NODE, ctdb_db->db_id, ctdb_db, &ctdb_db->db_path);
 	if (ret != 0) {
@@ -2176,9 +2137,7 @@ struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb,
 		return NULL;
 	}
 
-	if (persistent) {
-		ctdb_db->db_flags = CTDB_DB_FLAGS_PERSISTENT;
-	}
+	ctdb_db->db_flags = db_flags;
 
 	DLIST_ADD(ctdb->db_list, ctdb_db);
 
@@ -2478,71 +2437,6 @@ int ctdb_ctrl_getpnn(struct ctdb_context *ctdb, struct timeval timeout, uint32_t
 
 	return res;
 }
-
-/*
-  get the monitoring mode of a remote node
- */
-int ctdb_ctrl_getmonmode(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t *monmode)
-{
-	int ret;
-	int32_t res;
-
-	ret = ctdb_control(ctdb, destnode, 0, 
-			   CTDB_CONTROL_GET_MONMODE, 0, tdb_null, 
-			   NULL, NULL, &res, &timeout, NULL);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for getmonmode failed\n"));
-		return -1;
-	}
-
-	*monmode = res;
-
-	return 0;
-}
-
-
-/*
- set the monitoring mode of a remote node to active
- */
-int ctdb_ctrl_enable_monmode(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode)
-{
-	int ret;
-	
-
-	ret = ctdb_control(ctdb, destnode, 0, 
-			   CTDB_CONTROL_ENABLE_MONITOR, 0, tdb_null, 
-			   NULL, NULL,NULL, &timeout, NULL);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for enable_monitor failed\n"));
-		return -1;
-	}
-
-	
-
-	return 0;
-}
-
-/*
-  set the monitoring mode of a remote node to disable
- */
-int ctdb_ctrl_disable_monmode(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode)
-{
-	int ret;
-	
-
-	ret = ctdb_control(ctdb, destnode, 0, 
-			   CTDB_CONTROL_DISABLE_MONITOR, 0, tdb_null, 
-			   NULL, NULL, NULL, &timeout, NULL);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for disable_monitor failed\n"));
-		return -1;
-	}
-
-	
-
-	return 0;
-}
-
 
 
 /*
@@ -3925,7 +3819,7 @@ struct ctdb_transaction_handle *ctdb_transaction_start(struct ctdb_db_context *c
 	}
 
 	h->g_lock_db = ctdb_attach(h->ctdb_db->ctdb, timeval_current_ofs(3,0),
-				   "g_lock.tdb", false);
+				   "g_lock.tdb", 0);
 	if (!h->g_lock_db) {
 		DEBUG(DEBUG_ERR, (__location__ " unable to attach to g_lock.tdb\n"));
 		talloc_free(h);

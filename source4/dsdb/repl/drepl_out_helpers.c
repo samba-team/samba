@@ -36,6 +36,9 @@
 #include "../lib/util/tevent_ntstatus.h"
 #include "libcli/security/security.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS            DBGC_DRS_REPL
+
 struct dreplsrv_out_drsuapi_state {
 	struct tevent_context *ev;
 
@@ -555,7 +558,28 @@ static void dreplsrv_op_pull_source_get_changes_trigger(struct tevent_req *req)
 	}
 
 	r->in.bind_handle	= &drsuapi->bind_handle;
-	if (drsuapi->remote_info28.supported_extensions & DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V8) {
+
+	if (drsuapi->remote_info28.supported_extensions & DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V10) {
+		r->in.level				= 10;
+		r->in.req->req10.destination_dsa_guid	= service->ntds_guid;
+		r->in.req->req10.source_dsa_invocation_id= rf1->source_dsa_invocation_id;
+		r->in.req->req10.naming_context		= &partition->nc;
+		r->in.req->req10.highwatermark		= highwatermark;
+		r->in.req->req10.uptodateness_vector	= uptodateness_vector;
+		r->in.req->req10.replica_flags		= replica_flags;
+		r->in.req->req10.max_object_count	= 133;
+		r->in.req->req10.max_ndr_size		= 1336811;
+		r->in.req->req10.extended_op		= state->op->extended_op;
+		r->in.req->req10.fsmo_info		= state->op->fsmo_info;
+		r->in.req->req10.partial_attribute_set	= pas;
+		r->in.req->req10.partial_attribute_set_ex= NULL;
+		r->in.req->req10.mapping_ctr.num_mappings= mappings == NULL ? 0 : mappings->num_mappings;
+		r->in.req->req10.mapping_ctr.mappings	= mappings == NULL ? NULL : mappings->mappings;
+
+		/* the only difference to v8 is the more_flags */
+		r->in.req->req10.more_flags = state->op->more_flags;
+
+	} else if (drsuapi->remote_info28.supported_extensions & DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V8) {
 		r->in.level				= 8;
 		r->in.req->req8.destination_dsa_guid	= service->ntds_guid;
 		r->in.req->req8.source_dsa_invocation_id= rf1->source_dsa_invocation_id;
@@ -693,6 +717,53 @@ static void dreplsrv_op_pull_source_get_changes_done(struct tevent_req *subreq)
 	dreplsrv_op_pull_source_apply_changes_trigger(req, r, ctr_level, ctr1, ctr6);
 }
 
+/**
+ * If processing a chunk of replication data fails, check if it is due to a
+ * problem that can be fixed by setting extra flags in the GetNCChanges request,
+ * i.e. GET_ANC or GET_TGT.
+ * @returns NT_STATUS_OK if the request was retried, and an error code if not
+ */
+static NTSTATUS dreplsrv_op_pull_retry_with_flags(struct tevent_req *req,
+						  WERROR error_code)
+{
+	struct dreplsrv_op_pull_source_state *state;
+	NTSTATUS nt_status = NT_STATUS_OK;
+
+	state = tevent_req_data(req, struct dreplsrv_op_pull_source_state);
+
+	/*
+	 * Check if we failed to apply the records due to a missing parent or
+	 * target object. If so, try again and ask for any mising parent/target
+	 * objects to be included this time.
+	 */
+	if (W_ERROR_EQUAL(error_code, WERR_DS_DRA_RECYCLED_TARGET)) {
+
+		if (state->op->more_flags & DRSUAPI_DRS_GET_TGT) {
+			DEBUG(1,("Missing target object despite setting DRSUAPI_DRS_GET_TGT flag\n"));
+			nt_status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+		} else {
+			state->op->more_flags |= DRSUAPI_DRS_GET_TGT;
+			DEBUG(1,("Missing target object when we didn't set the DRSUAPI_DRS_GET_TGT flag, retrying\n"));
+			dreplsrv_op_pull_source_get_changes_trigger(req);
+		}
+	} else if (W_ERROR_EQUAL(error_code, WERR_DS_DRA_MISSING_PARENT)) {
+
+		if (state->op->options & DRSUAPI_DRS_GET_ANC) {
+			DEBUG(1,("Missing parent object despite setting DRSUAPI_DRS_GET_ANC flag\n"));
+			nt_status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+		} else {
+			state->op->options |= DRSUAPI_DRS_GET_ANC;
+			DEBUG(4,("Missing parent object when we didn't set the DRSUAPI_DRS_GET_ANC flag, retrying\n"));
+			dreplsrv_op_pull_source_get_changes_trigger(req);
+		}
+	} else {
+		nt_status = werror_to_ntstatus(WERR_BAD_NET_RESP);
+	}
+
+	return nt_status;
+}
+
+
 static void dreplsrv_update_refs_trigger(struct tevent_req *req);
 
 static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req,
@@ -794,6 +865,14 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 	}
 	if (state->op->options & DRSUAPI_DRS_SPECIAL_SECRET_PROCESSING) {
 		dsdb_repl_flags |= DSDB_REPL_FLAG_EXPECT_NO_SECRETS;
+	}
+	if (state->op->options & DRSUAPI_DRS_CRITICAL_ONLY ||
+	    state->op->extended_op != DRSUAPI_EXOP_NONE) {
+		dsdb_repl_flags |= DSDB_REPL_FLAG_OBJECT_SUBSET;
+	}
+
+	if (state->op->more_flags & DRSUAPI_DRS_GET_TGT) {
+		dsdb_repl_flags |= DSDB_REPL_FLAG_TARGETS_UPTODATE;
 	}
 
 	if (state->op->extended_op != DRSUAPI_EXOP_NONE) {
@@ -933,25 +1012,20 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 	if (!W_ERROR_IS_OK(status)) {
 
 		/*
-		 * If we failed to apply the records due to a missing
-		 * parent, try again after asking for the parent
-		 * records first.  Because we don't update the
-		 * highwatermark, we start this part of the cycle
-		 * again.
+		 * Check if this error can be fixed by resending the GetNCChanges
+		 * request with extra flags set (i.e. GET_ANC/GET_TGT)
 		 */
-		if (((state->op->options & DRSUAPI_DRS_GET_ANC) == 0)
-		    && W_ERROR_EQUAL(status, WERR_DS_DRA_MISSING_PARENT)) {
-			state->op->options |= DRSUAPI_DRS_GET_ANC;
-			DEBUG(4,("Missing parent object when we didn't set the DRSUAPI_DRS_GET_ANC flag, retrying\n"));
-			dreplsrv_op_pull_source_get_changes_trigger(req);
+		nt_status = dreplsrv_op_pull_retry_with_flags(req, status);
+
+		if (NT_STATUS_IS_OK(nt_status)) {
+
+			/*
+			 * We resent the request. Don't update the highwatermark,
+			 * we'll start this part of the cycle again.
+			 */
 			return;
-		} else if (((state->op->options & DRSUAPI_DRS_GET_ANC))
-			   && W_ERROR_EQUAL(status, WERR_DS_DRA_MISSING_PARENT)) {
-			DEBUG(1,("Missing parent object despite setting DRSUAPI_DRS_GET_ANC flag\n"));
-			nt_status = NT_STATUS_INVALID_NETWORK_RESPONSE;
-		} else {
-			nt_status = werror_to_ntstatus(WERR_BAD_NET_RESP);
 		}
+
 		DEBUG(0,("Failed to commit objects: %s/%s\n",
 			  win_errstr(status), nt_errstr(nt_status)));
 		tevent_req_nterror(req, nt_status);

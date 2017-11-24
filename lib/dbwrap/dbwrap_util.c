@@ -77,23 +77,14 @@ NTSTATUS dbwrap_fetch_int32_bystring(struct db_context *db, const char *keystr,
 NTSTATUS dbwrap_store_int32_bystring(struct db_context *db, const char *keystr,
 				     int32_t v)
 {
-	struct db_record *rec;
-	int32_t v_store;
+	uint8_t v_store[sizeof(int32_t)];
+	TDB_DATA data = { .dptr = v_store, .dsize = sizeof(v_store) };
 	NTSTATUS status;
 
-	rec = dbwrap_fetch_locked(db, talloc_tos(),
-				  string_term_tdb_data(keystr));
-	if (rec == NULL) {
-		return NT_STATUS_UNSUCCESSFUL;
-	}
+	SIVAL(v_store, 0, v);
 
-	SIVAL(&v_store, 0, v);
-
-	status = dbwrap_record_store(rec,
-				     make_tdb_data((const uint8_t *)&v_store,
-						   sizeof(v_store)),
-				     TDB_REPLACE);
-	TALLOC_FREE(rec);
+	status = dbwrap_store(db, string_term_tdb_data(keystr), data,
+			      TDB_REPLACE);
 	return status;
 }
 
@@ -142,23 +133,14 @@ NTSTATUS dbwrap_fetch_uint32_bystring(struct db_context *db,
 NTSTATUS dbwrap_store_uint32_bystring(struct db_context *db,
 				      const char *keystr, uint32_t v)
 {
-	struct db_record *rec;
-	uint32_t v_store;
+	uint8_t v_store[sizeof(uint32_t)];
+	TDB_DATA data = { .dptr = v_store, .dsize = sizeof(v_store) };
 	NTSTATUS status;
 
-	rec = dbwrap_fetch_locked(db, talloc_tos(),
-				  string_term_tdb_data(keystr));
-	if (rec == NULL) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
+	SIVAL(v_store, 0, v);
 
-	SIVAL(&v_store, 0, v);
-
-	status = dbwrap_record_store(rec,
-				     make_tdb_data((const uint8_t *)&v_store,
-						   sizeof(v_store)),
-				     TDB_REPLACE);
-	TALLOC_FREE(rec);
+	status = dbwrap_store(db, string_term_tdb_data(keystr), data,
+			      TDB_REPLACE);
 	return status;
 }
 
@@ -362,24 +344,17 @@ struct dbwrap_store_context {
 
 static NTSTATUS dbwrap_store_action(struct db_context *db, void *private_data)
 {
-	struct db_record *rec = NULL;
 	NTSTATUS status;
 	struct dbwrap_store_context *store_ctx;
 
 	store_ctx = (struct dbwrap_store_context *)private_data;
 
-	rec = dbwrap_fetch_locked(db, talloc_tos(), *(store_ctx->key));
-	if (rec == NULL) {
-		DEBUG(5, ("fetch_locked failed\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	status = dbwrap_record_store(rec, *(store_ctx->dbuf), store_ctx->flag);
+	status = dbwrap_store(db, *(store_ctx->key), *(store_ctx->dbuf),
+			      store_ctx->flag);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5, ("store returned %s\n", nt_errstr(status)));
 	}
 
-	TALLOC_FREE(rec);
 	return status;
 }
 
@@ -401,22 +376,13 @@ NTSTATUS dbwrap_trans_store(struct db_context *db, TDB_DATA key, TDB_DATA dbuf,
 static NTSTATUS dbwrap_delete_action(struct db_context * db, void *private_data)
 {
 	NTSTATUS status;
-	struct db_record *rec;
 	TDB_DATA *key = (TDB_DATA *)private_data;
 
-	rec = dbwrap_fetch_locked(db, talloc_tos(), *key);
-	if (rec == NULL) {
-		DEBUG(5, ("fetch_locked failed\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	status = dbwrap_record_delete(rec);
+	status = dbwrap_delete(db, *key);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_INFO("dbwrap_record_delete returned %s\n",
 			 nt_errstr(status));
 	}
-
-	talloc_free(rec);
 	return  status;
 }
 
@@ -743,22 +709,12 @@ static bool dbwrap_unmarshall_fn(TDB_DATA key, TDB_DATA value,
 				 void *private_data)
 {
 	struct dbwrap_unmarshall_state *state = private_data;
-	struct db_record *rec;
 	NTSTATUS status;
 
-	rec = dbwrap_fetch_locked(state->db, state->db, key);
-	if (rec == NULL) {
-		DEBUG(10, ("%s: dbwrap_fetch_locked failed\n",
-			   __func__));
-		state->ret = NT_STATUS_NO_MEMORY;
-		return false;
-	}
-
-	status = dbwrap_record_store(rec, value, 0);
-	TALLOC_FREE(rec);
+	status = dbwrap_store(state->db, key, value, 0);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("%s: dbwrap_record_store failed: %s\n",
-			   __func__, nt_errstr(status)));
+		DBG_DEBUG("dbwrap_record_store failed: %s\n",
+			  nt_errstr(status));
 		state->ret = status;
 		return false;
 	}

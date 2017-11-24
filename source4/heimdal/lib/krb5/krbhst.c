@@ -326,13 +326,13 @@ krb5_krbhst_format_string(krb5_context context, const krb5_krbhst_info *host,
 			  char *hostname, size_t hostlen)
 {
     const char *proto = "";
-    char portstr[7] = "";
+    char portstr[7] = {0};
     if(host->proto == KRB5_KRBHST_TCP)
 	proto = "tcp/";
     else if(host->proto == KRB5_KRBHST_HTTP)
 	proto = "http://";
     if(host->port != host->def_port)
-	snprintf(portstr, sizeof(portstr), ":%d", host->port);
+	snprintf(portstr, sizeof(portstr), ":%hd", host->port);
     snprintf(hostname, hostlen, "%s%s%s", proto, host->hostname, portstr);
     return 0;
 }

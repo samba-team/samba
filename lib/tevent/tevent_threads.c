@@ -424,7 +424,6 @@ struct tevent_threaded_context *tevent_threaded_context_create(
 		return NULL;
 	}
 	tctx->event_ctx = ev;
-	tctx->wakeup_fd = ev->wakeup_fd;
 
 	ret = pthread_mutex_init(&tctx->event_ctx_mutex, NULL);
 	if (ret != 0) {
@@ -451,7 +450,7 @@ void _tevent_threaded_schedule_immediate(struct tevent_threaded_context *tctx,
 {
 #ifdef HAVE_PTHREAD
 	struct tevent_context *ev;
-	int ret;
+	int ret, wakeup_fd;
 
 	ret = pthread_mutex_lock(&tctx->event_ctx_mutex);
 	if (ret != 0) {
@@ -489,6 +488,7 @@ void _tevent_threaded_schedule_immediate(struct tevent_threaded_context *tctx,
 	}
 
 	DLIST_ADD_END(ev->scheduled_immediates, im);
+	wakeup_fd = ev->wakeup_fd;
 
 	ret = pthread_mutex_unlock(&ev->scheduled_mutex);
 	if (ret != 0) {
@@ -510,7 +510,7 @@ void _tevent_threaded_schedule_immediate(struct tevent_threaded_context *tctx,
 	 * than a noncontended one. So I'd opt for the lower footprint
 	 * initially. Maybe we have to change that later.
 	 */
-	tevent_common_wakeup_fd(tctx->wakeup_fd);
+	tevent_common_wakeup_fd(wakeup_fd);
 #else
 	/*
 	 * tevent_threaded_context_create() returned NULL with ENOSYS...

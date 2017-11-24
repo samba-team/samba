@@ -32,18 +32,21 @@
 #include "../lib/util/tfork.h"
 #include "../lib/util/sys_rw.h"
 
-static int samba_runcmd_state_destructor(struct samba_runcmd_state *state)
+static void samba_runcmd_cleanup_fn(struct tevent_req *req,
+				    enum tevent_req_state req_state)
 {
-	if (state->pid > 0) {
-		kill(state->pid, SIGKILL);
-		waitpid(state->pid, NULL, 0);
-		state->pid = -1;
+	struct samba_runcmd_state *state = tevent_req_data(
+		req, struct samba_runcmd_state);
+
+	if (state->tfork != NULL) {
+		tfork_destroy(&state->tfork);
 	}
+	state->pid = -1;
 
 	if (state->fd_stdin != -1) {
 		close(state->fd_stdin);
+		state->fd_stdin = -1;
 	}
-	return 0;
 }
 
 static void samba_runcmd_io_handler(struct tevent_context *ev,
@@ -110,7 +113,6 @@ struct tevent_req *samba_runcmd_send(TALLOC_CTX *mem_ctx,
 
 	state->tfork = tfork_create();
 	if (state->tfork == NULL) {
-		printf("state->tfork == NULL\n");
 		close(p1[0]);
 		close(p1[1]);
 		close(p2[0]);
@@ -141,7 +143,7 @@ struct tevent_req *samba_runcmd_send(TALLOC_CTX *mem_ctx,
 		smb_set_close_on_exec(state->fd_stderr);
 		smb_set_close_on_exec(state->fd_status);
 
-		talloc_set_destructor(state, samba_runcmd_state_destructor);
+		tevent_req_set_cleanup_fn(req, samba_runcmd_cleanup_fn);
 
 		state->fde_stdout = tevent_add_fd(ev, state,
 						  state->fd_stdout,
@@ -275,6 +277,8 @@ static void samba_runcmd_io_handler(struct tevent_context *ev,
 			tevent_req_error(req, errno);
 			return;
 		}
+		state->pid = -1;
+		TALLOC_FREE(fde);
 
 		if (WIFEXITED(status)) {
 			status = WEXITSTATUS(status);

@@ -298,6 +298,9 @@ int ctdb_sys_read_tcp_packet(int s, void *private_data,
 		return -1;
 	}
 
+	ZERO_STRUCTP(src);
+	ZERO_STRUCTP(dst);
+
 	/* Ethernet */
 	eth = (struct ether_header *)pkt;
 

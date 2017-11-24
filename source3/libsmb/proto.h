@@ -30,6 +30,9 @@
 
 struct smb_trans_enc_state;
 struct cli_credentials;
+struct cli_state;
+struct file_info;
+struct print_job_info;
 
 /* The following definitions come from libsmb/cliconnect.c  */
 
@@ -197,6 +200,7 @@ void cli_shutdown(struct cli_state *cli);
 uint16_t cli_state_get_vc_num(struct cli_state *cli);
 uint32_t cli_setpid(struct cli_state *cli, uint32_t pid);
 uint32_t cli_getpid(struct cli_state *cli);
+bool cli_state_is_encryption_on(struct cli_state *cli);
 bool cli_state_has_tcon(struct cli_state *cli);
 uint32_t cli_state_get_tid(struct cli_state *cli);
 uint32_t cli_state_set_tid(struct cli_state *cli, uint32_t tid);
@@ -969,5 +973,12 @@ NTSTATUS cli_readlink_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 NTSTATUS cli_readlink(struct cli_state *cli, const char *fname,
 		       TALLOC_CTX *mem_ctx, char **psubstitute_name,
 		      char **pprint_name, uint32_t *pflags);
+
+/* The following definitions come from libsmb/passchange.c  */
+
+NTSTATUS remote_password_change(const char *remote_machine,
+				const char *domain, const char *user_name,
+				const char *old_passwd, const char *new_passwd,
+				char **err_str);
 
 #endif /* _LIBSMB_PROTO_H_ */

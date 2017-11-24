@@ -86,13 +86,15 @@ NTSTATUS rpccli_pre_open_netlogon_creds(void)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS rpccli_create_netlogon_creds(const char *server_computer,
-				      const char *server_netbios_domain,
-				      const char *client_account,
-				      enum netr_SchannelType sec_chan_type,
-				      struct messaging_context *msg_ctx,
-				      TALLOC_CTX *mem_ctx,
-				      struct netlogon_creds_cli_context **netlogon_creds)
+static NTSTATUS rpccli_create_netlogon_creds(
+	const char *server_computer,
+	const char *server_netbios_domain,
+	const char *server_dns_domain,
+	const char *client_account,
+	enum netr_SchannelType sec_chan_type,
+	struct messaging_context *msg_ctx,
+	TALLOC_CTX *mem_ctx,
+	struct netlogon_creds_cli_context **netlogon_creds)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct loadparm_context *lp_ctx;
@@ -115,6 +117,7 @@ NTSTATUS rpccli_create_netlogon_creds(const char *server_computer,
 						   sec_chan_type,
 						   server_computer,
 						   server_netbios_domain,
+						   server_dns_domain,
 						   mem_ctx, netlogon_creds);
 	TALLOC_FREE(frame);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -124,38 +127,39 @@ NTSTATUS rpccli_create_netlogon_creds(const char *server_computer,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS rpccli_create_netlogon_creds_with_creds(struct cli_credentials *creds,
-						 const char *server_computer,
-						 struct messaging_context *msg_ctx,
-						 TALLOC_CTX *mem_ctx,
-						 struct netlogon_creds_cli_context **netlogon_creds)
+NTSTATUS rpccli_create_netlogon_creds_ctx(
+	struct cli_credentials *creds,
+	const char *server_computer,
+	struct messaging_context *msg_ctx,
+	TALLOC_CTX *mem_ctx,
+	struct netlogon_creds_cli_context **creds_ctx)
 {
 	enum netr_SchannelType sec_chan_type;
 	const char *server_netbios_domain;
+	const char *server_dns_domain;
 	const char *client_account;
 
 	sec_chan_type = cli_credentials_get_secure_channel_type(creds);
-	if (sec_chan_type == SEC_CHAN_NULL) {
-		return NT_STATUS_INVALID_PARAMETER_MIX;
-	}
-
 	client_account = cli_credentials_get_username(creds);
 	server_netbios_domain = cli_credentials_get_domain(creds);
+	server_dns_domain = cli_credentials_get_realm(creds);
 
 	return rpccli_create_netlogon_creds(server_computer,
 					    server_netbios_domain,
+					    server_dns_domain,
 					    client_account,
 					    sec_chan_type,
 					    msg_ctx, mem_ctx,
-					    netlogon_creds);
+					    creds_ctx);
 }
 
-NTSTATUS rpccli_setup_netlogon_creds(struct cli_state *cli,
-				     enum dcerpc_transport_t transport,
-				     struct netlogon_creds_cli_context *netlogon_creds,
-				     bool force_reauth,
-				     struct samr_Password current_nt_hash,
-				     const struct samr_Password *previous_nt_hash)
+NTSTATUS rpccli_setup_netlogon_creds_locked(
+	struct cli_state *cli,
+	enum dcerpc_transport_t transport,
+	struct netlogon_creds_cli_context *creds_ctx,
+	bool force_reauth,
+	struct cli_credentials *cli_creds,
+	uint32_t *negotiate_flags)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct rpc_pipe_client *netlogon_pipe = NULL;
@@ -165,8 +169,7 @@ NTSTATUS rpccli_setup_netlogon_creds(struct cli_state *cli,
 	uint8_t idx_nt_hashes = 0;
 	NTSTATUS status;
 
-	status = netlogon_creds_cli_get(netlogon_creds,
-					frame, &creds);
+	status = netlogon_creds_cli_get(creds_ctx, frame, &creds);
 	if (NT_STATUS_IS_OK(status)) {
 		const char *action = "using";
 
@@ -179,10 +182,22 @@ NTSTATUS rpccli_setup_netlogon_creds(struct cli_state *cli,
 			 creds->account_name, creds->computer_name,
 			 smbXcli_conn_remote_name(cli->conn)));
 		if (!force_reauth) {
-			TALLOC_FREE(frame);
-			return NT_STATUS_OK;
+			goto done;
 		}
 		TALLOC_FREE(creds);
+	}
+
+	nt_hashes[0] = cli_credentials_get_nt_hash(cli_creds, talloc_tos());
+	if (nt_hashes[0] == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+	num_nt_hashes = 1;
+
+	nt_hashes[1] = cli_credentials_get_old_nt_hash(cli_creds,
+						       talloc_tos());
+	if (nt_hashes[1] != NULL) {
+		num_nt_hashes = 2;
 	}
 
 	status = cli_rpc_pipe_open_noauth_transport(cli,
@@ -199,14 +214,7 @@ NTSTATUS rpccli_setup_netlogon_creds(struct cli_state *cli,
 	}
 	talloc_steal(frame, netlogon_pipe);
 
-	nt_hashes[0] = &current_nt_hash;
-	num_nt_hashes = 1;
-	if (previous_nt_hash != NULL) {
-		nt_hashes[1] = previous_nt_hash;
-		num_nt_hashes = 2;
-	}
-
-	status = netlogon_creds_cli_auth(netlogon_creds,
+	status = netlogon_creds_cli_auth(creds_ctx,
 					 netlogon_pipe->binding_handle,
 					 num_nt_hashes,
 					 nt_hashes,
@@ -216,8 +224,7 @@ NTSTATUS rpccli_setup_netlogon_creds(struct cli_state *cli,
 		return status;
 	}
 
-	status = netlogon_creds_cli_get(netlogon_creds,
-					frame, &creds);
+	status = netlogon_creds_cli_get(creds_ctx, frame, &creds);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
 		return NT_STATUS_INTERNAL_ERROR;
@@ -228,39 +235,238 @@ NTSTATUS rpccli_setup_netlogon_creds(struct cli_state *cli,
 		 creds->account_name, creds->computer_name,
 		 smbXcli_conn_remote_name(cli->conn)));
 
+done:
+	if (negotiate_flags != NULL) {
+		*negotiate_flags = creds->negotiate_flags;
+	}
+
 	TALLOC_FREE(frame);
 	return NT_STATUS_OK;
 }
 
-NTSTATUS rpccli_setup_netlogon_creds_with_creds(struct cli_state *cli,
-						enum dcerpc_transport_t transport,
-						struct netlogon_creds_cli_context *netlogon_creds,
-						bool force_reauth,
-						struct cli_credentials *creds)
+NTSTATUS rpccli_setup_netlogon_creds(
+	struct cli_state *cli,
+	enum dcerpc_transport_t transport,
+	struct netlogon_creds_cli_context *creds_ctx,
+	bool force_reauth,
+	struct cli_credentials *cli_creds)
 {
-	struct samr_Password *current_nt_hash = NULL;
-	struct samr_Password *previous_nt_hash = NULL;
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct netlogon_creds_cli_lck *lck;
 	NTSTATUS status;
 
-	current_nt_hash = cli_credentials_get_nt_hash(creds, talloc_tos());
-	if (current_nt_hash == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	previous_nt_hash = cli_credentials_get_old_nt_hash(creds, talloc_tos());
-
-	status = rpccli_setup_netlogon_creds(cli, transport,
-					     netlogon_creds,
-					     force_reauth,
-					     *current_nt_hash,
-					     previous_nt_hash);
-	TALLOC_FREE(current_nt_hash);
-	TALLOC_FREE(previous_nt_hash);
+	status = netlogon_creds_cli_lck(
+		creds_ctx, NETLOGON_CREDS_CLI_LCK_EXCLUSIVE,
+		frame, &lck);
 	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("netlogon_creds_cli_lck failed: %s\n",
+			    nt_errstr(status));
+		TALLOC_FREE(frame);
 		return status;
 	}
 
-	return NT_STATUS_OK;
+	status = rpccli_setup_netlogon_creds_locked(
+		cli, transport, creds_ctx, force_reauth, cli_creds, NULL);
+
+	TALLOC_FREE(frame);
+
+	return status;
+}
+
+NTSTATUS rpccli_connect_netlogon(
+	struct cli_state *cli,
+	enum dcerpc_transport_t transport,
+	struct netlogon_creds_cli_context *creds_ctx,
+	bool force_reauth,
+	struct cli_credentials *trust_creds,
+	struct rpc_pipe_client **_rpccli)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct netlogon_creds_CredentialState *creds = NULL;
+	enum netlogon_creds_cli_lck_type lck_type;
+	enum netr_SchannelType sec_chan_type;
+	struct netlogon_creds_cli_lck *lck;
+	uint32_t negotiate_flags;
+	uint8_t found_session_key[16] = {0};
+	bool found_existing_creds = false;
+	bool do_serverauth;
+	struct rpc_pipe_client *rpccli;
+	NTSTATUS status;
+	bool retry = false;
+
+again:
+
+	/*
+	 * See whether we can use existing netlogon_creds or
+	 * whether we have to serverauthenticate.
+	 */
+	status = netlogon_creds_cli_get(creds_ctx, frame, &creds);
+
+	if (NT_STATUS_IS_OK(status)) {
+		int cmp = memcmp(found_session_key,
+				 creds->session_key,
+				 sizeof(found_session_key));
+		found_existing_creds = (cmp != 0);
+
+		memcpy(found_session_key,
+		       creds->session_key,
+		       sizeof(found_session_key));
+
+		TALLOC_FREE(creds);
+	}
+
+	lck_type = (force_reauth || !found_existing_creds) ?
+		NETLOGON_CREDS_CLI_LCK_EXCLUSIVE :
+		NETLOGON_CREDS_CLI_LCK_SHARED;
+
+	status = netlogon_creds_cli_lck(creds_ctx, lck_type, frame, &lck);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("netlogon_creds_cli_lck failed: %s\n",
+			  nt_errstr(status));
+		goto fail;
+	}
+
+	if (!found_existing_creds) {
+		/*
+		 * Try to find creds under the lock again. Someone
+		 * else might have done it for us.
+		 */
+		status = netlogon_creds_cli_get(creds_ctx, frame, &creds);
+
+		if (NT_STATUS_IS_OK(status)) {
+			int cmp = memcmp(found_session_key,
+					 creds->session_key,
+					 sizeof(found_session_key));
+			found_existing_creds = (cmp != 0);
+
+			memcpy(found_session_key, creds->session_key,
+			       sizeof(found_session_key));
+
+			TALLOC_FREE(creds);
+		}
+	}
+
+	do_serverauth = force_reauth || !found_existing_creds;
+
+	if (!do_serverauth) {
+		/*
+		 * Do the quick schannel bind without a reauth
+		 */
+		status = cli_rpc_pipe_open_bind_schannel(
+			cli, &ndr_table_netlogon, transport, creds_ctx,
+			&rpccli);
+		if (!retry && NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_ACCESS_DENIED)) {
+			DBG_DEBUG("Retrying with serverauthenticate\n");
+			TALLOC_FREE(lck);
+			retry = true;
+			goto again;
+		}
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_DEBUG("cli_rpc_pipe_open_bind_schannel "
+				  "failed: %s\n", nt_errstr(status));
+			goto fail;
+		}
+		goto done;
+	}
+
+	if (cli_credentials_is_anonymous(trust_creds)) {
+		DBG_WARNING("get_trust_credential for %s only gave anonymous,"
+			    "unable to negotiate NETLOGON credentials\n",
+			    netlogon_creds_cli_debug_string(
+				    creds_ctx, frame));
+		status = NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+		goto fail;
+	}
+
+	sec_chan_type = cli_credentials_get_secure_channel_type(trust_creds);
+	if (sec_chan_type == SEC_CHAN_NULL) {
+		if (transport == NCACN_IP_TCP) {
+			DBG_NOTICE("secure_channel_type gave SEC_CHAN_NULL "
+				   "for %s, deny NCACN_IP_TCP and let the "
+				   "caller fallback to NCACN_NP.\n",
+				   netlogon_creds_cli_debug_string(
+					   creds_ctx, frame));
+			status = NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+			goto fail;
+		}
+
+		DBG_NOTICE("get_secure_channel_type gave SEC_CHAN_NULL "
+			   "for %s, fallback to noauth on NCACN_NP.\n",
+			   netlogon_creds_cli_debug_string(
+				   creds_ctx, frame));
+
+		TALLOC_FREE(lck);
+
+		status = cli_rpc_pipe_open_noauth_transport(
+			cli, transport, &ndr_table_netlogon, &rpccli);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_DEBUG("cli_rpc_pipe_open_noauth_transport "
+				  "failed: %s\n", nt_errstr(status));
+			goto fail;
+		}
+		goto done;
+	}
+
+	status = rpccli_setup_netlogon_creds_locked(
+		cli, transport, creds_ctx, true, trust_creds,
+		&negotiate_flags);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("rpccli_setup_netlogon_creds failed for %s, "
+			  "unable to setup NETLOGON credentials: %s\n",
+			  netlogon_creds_cli_debug_string(
+				  creds_ctx, frame),
+			  nt_errstr(status));
+		goto fail;
+	}
+
+	if (!(negotiate_flags & NETLOGON_NEG_AUTHENTICATED_RPC)) {
+		if (lp_winbind_sealed_pipes() || lp_require_strong_key()) {
+			status = NT_STATUS_DOWNGRADE_DETECTED;
+			DBG_WARNING("Unwilling to make connection to %s"
+				    "without connection level security, "
+				    "must set 'winbind sealed pipes = false'"
+				    " and 'require strong key = false' "
+				    "to proceed: %s\n",
+				    netlogon_creds_cli_debug_string(
+					    creds_ctx, frame),
+				    nt_errstr(status));
+			goto fail;
+		}
+
+		status = cli_rpc_pipe_open_noauth_transport(
+			cli, transport, &ndr_table_netlogon, &rpccli);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_DEBUG("cli_rpc_pipe_open_noauth_transport "
+				  "failed: %s\n", nt_errstr(status));
+			goto fail;
+		}
+		goto done;
+	}
+
+	status = cli_rpc_pipe_open_bind_schannel(
+		cli, &ndr_table_netlogon, transport, creds_ctx, &rpccli);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("cli_rpc_pipe_open_bind_schannel "
+			  "failed: %s\n", nt_errstr(status));
+		goto fail;
+	}
+
+	status = netlogon_creds_cli_check(creds_ctx, rpccli->binding_handle,
+					  NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("netlogon_creds_cli_check failed: %s\n",
+			    nt_errstr(status));
+		goto fail;
+	}
+
+done:
+	*_rpccli = rpccli;
+	status = NT_STATUS_OK;
+fail:
+	ZERO_STRUCT(found_session_key);
+	TALLOC_FREE(lck);
+	TALLOC_FREE(frame);
+	return status;
 }
 
 static NTSTATUS map_validation_to_info3(TALLOC_CTX *mem_ctx,
@@ -312,18 +518,19 @@ static NTSTATUS map_validation_to_info3(TALLOC_CTX *mem_ctx,
 
 /* Logon domain user */
 
-NTSTATUS rpccli_netlogon_password_logon(struct netlogon_creds_cli_context *creds,
-					struct dcerpc_binding_handle *binding_handle,
-					TALLOC_CTX *mem_ctx,
-					uint32_t logon_parameters,
-					const char *domain,
-					const char *username,
-					const char *password,
-					const char *workstation,
-					enum netr_LogonInfoClass logon_type,
-					uint8_t *authoritative,
-					uint32_t *flags,
-					struct netr_SamInfo3 **info3)
+NTSTATUS rpccli_netlogon_password_logon(
+	struct netlogon_creds_cli_context *creds_ctx,
+	struct dcerpc_binding_handle *binding_handle,
+	TALLOC_CTX *mem_ctx,
+	uint32_t logon_parameters,
+	const char *domain,
+	const char *username,
+	const char *password,
+	const char *workstation,
+	enum netr_LogonInfoClass logon_type,
+	uint8_t *authoritative,
+	uint32_t *flags,
+	struct netr_SamInfo3 **info3)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
@@ -430,7 +637,7 @@ NTSTATUS rpccli_netlogon_password_logon(struct netlogon_creds_cli_context *creds
 		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
-	status = netlogon_creds_cli_LogonSamLogon(creds,
+	status = netlogon_creds_cli_LogonSamLogon(creds_ctx,
 						  binding_handle,
 						  logon_type,
 						  logon,
@@ -463,19 +670,20 @@ NTSTATUS rpccli_netlogon_password_logon(struct netlogon_creds_cli_context *creds
  **/
 
 
-NTSTATUS rpccli_netlogon_network_logon(struct netlogon_creds_cli_context *creds,
-				       struct dcerpc_binding_handle *binding_handle,
-				       TALLOC_CTX *mem_ctx,
-				       uint32_t logon_parameters,
-				       const char *username,
-				       const char *domain,
-				       const char *workstation,
-				       const uint8_t chal[8],
-				       DATA_BLOB lm_response,
-				       DATA_BLOB nt_response,
-				       uint8_t *authoritative,
-				       uint32_t *flags,
-				       struct netr_SamInfo3 **info3)
+NTSTATUS rpccli_netlogon_network_logon(
+	struct netlogon_creds_cli_context *creds_ctx,
+	struct dcerpc_binding_handle *binding_handle,
+	TALLOC_CTX *mem_ctx,
+	uint32_t logon_parameters,
+	const char *username,
+	const char *domain,
+	const char *workstation,
+	const uint8_t chal[8],
+	DATA_BLOB lm_response,
+	DATA_BLOB nt_response,
+	uint8_t *authoritative,
+	uint32_t *flags,
+	struct netr_SamInfo3 **info3)
 {
 	NTSTATUS status;
 	const char *workstation_name_slash;
@@ -534,7 +742,7 @@ NTSTATUS rpccli_netlogon_network_logon(struct netlogon_creds_cli_context *creds,
 
 	/* Marshall data and send request */
 
-	status = netlogon_creds_cli_LogonSamLogon(creds,
+	status = netlogon_creds_cli_LogonSamLogon(creds_ctx,
 						  binding_handle,
 						  NetlogonNetworkInformation,
 						  logon,

@@ -376,16 +376,22 @@ ctdb_check_tcp_ports()
 
 ######################################################
 # check a unix socket
-# usage: ctdb_check_unix_socket SERVICE_NAME <socket_path>
+# usage: ctdb_check_unix_socket SOCKPATH
 ######################################################
-ctdb_check_unix_socket() {
-    socket_path="$1"
-    [ -z "$socket_path" ] && return
+ctdb_check_unix_socket()
+{
+	_sockpath="$1"
 
-    if ! netstat --unix -a -n | grep -q "^unix.*LISTEN.*${socket_path}$"; then
-        echo "ERROR: $service_name socket $socket_path not found"
-        return 1
-    fi
+	if [ -z "$_sockpath" ] ; then
+		echo "ERROR: ctdb_check_unix_socket() requires socket path"
+		return 1
+	fi
+
+	_out=$(ss -l -x "src ${_sockpath}" | tail -n +2)
+	if [ -z "$_out" ] ; then
+		echo "ERROR: ${service_name} not listening on ${_sockpath}"
+		return 1
+	fi
 }
 
 ################################################
@@ -701,7 +707,7 @@ _ctdb_counter_common () {
 ctdb_counter_init () {
     _ctdb_counter_common "$1"
 
-    >"$_counter_file"
+    : >"$_counter_file"
 }
 ctdb_counter_incr () {
     _ctdb_counter_common "$1"
@@ -747,7 +753,7 @@ ctdb_service_needs_reconfigure ()
 ctdb_service_set_reconfigure ()
 {
     _ctdb_service_reconfigure_common
-    >"$_ctdb_service_reconfigure_flag"
+    : >"$_ctdb_service_reconfigure_flag"
 }
 
 ctdb_service_unset_reconfigure ()
@@ -868,7 +874,7 @@ if ! type mktemp >/dev/null 2>&1 ; then
 	    if $_dir ; then
 		mkdir "$_t"
 	    else
-		>"$_t"
+		: >"$_t"
 	    fi
 	)
 	echo "$_t"

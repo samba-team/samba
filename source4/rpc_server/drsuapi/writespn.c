@@ -32,6 +32,9 @@
 #include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "auth/session.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS            DBGC_DRS_REPL
+
 /*
   check that the SPN update should be allowed as an override
   via sam_ctx_system

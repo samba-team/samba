@@ -473,10 +473,13 @@ def CHECK_STRUCTURE_MEMBER(conf, structname, member,
 def CHECK_CFLAGS(conf, cflags, fragment='int main(void) { return 0; }\n'):
     '''check if the given cflags are accepted by the compiler
     '''
+    check_cflags = TO_LIST(cflags)
+    if 'WERROR_CFLAGS' in conf.env:
+        check_cflags.extend(conf.env['WERROR_CFLAGS'])
     return conf.check(fragment=fragment,
                       execute=0,
                       type='nolink',
-                      ccflags=cflags,
+                      ccflags=check_cflags,
                       msg="Checking compiler accepts %s" % cflags)
 
 @conf
@@ -708,7 +711,9 @@ def SAMBA_CONFIG_H(conf, path=None):
                         testflags=True)
 
         conf.ADD_CFLAGS('-Wformat=2 -Wno-format-y2k', testflags=True)
-        conf.ADD_CFLAGS('-Werror=format-security -Wformat-security', testflags=True)
+        conf.ADD_CFLAGS('-Wno-format-zero-length', testflags=True)
+        conf.ADD_CFLAGS('-Werror=format-security -Wformat-security',
+                        testflags=True, prereq_flags='-Wformat')
         # This check is because for ldb_search(), a NULL format string
         # is not an error, but some compilers complain about that.
         if CHECK_CFLAGS(conf, ["-Werror=format", "-Wformat=2"], '''
@@ -769,14 +774,15 @@ def CONFIG_PATH(conf, name, default):
             conf.env[name] = conf.env['PREFIX'] + default
 
 @conf
-def ADD_NAMED_CFLAGS(conf, name, flags, testflags=False):
+def ADD_NAMED_CFLAGS(conf, name, flags, testflags=False, prereq_flags=[]):
     '''add some CFLAGS to the command line
        optionally set testflags to ensure all the flags work
     '''
+    prereq_flags = TO_LIST(prereq_flags)
     if testflags:
         ok_flags=[]
         for f in flags.split():
-            if CHECK_CFLAGS(conf, f):
+            if CHECK_CFLAGS(conf, [f] + prereq_flags):
                 ok_flags.append(f)
         flags = ok_flags
     if not name in conf.env:
@@ -784,11 +790,12 @@ def ADD_NAMED_CFLAGS(conf, name, flags, testflags=False):
     conf.env[name].extend(TO_LIST(flags))
 
 @conf
-def ADD_CFLAGS(conf, flags, testflags=False):
+def ADD_CFLAGS(conf, flags, testflags=False, prereq_flags=[]):
     '''add some CFLAGS to the command line
        optionally set testflags to ensure all the flags work
     '''
-    ADD_NAMED_CFLAGS(conf, 'EXTRA_CFLAGS', flags, testflags=testflags)
+    ADD_NAMED_CFLAGS(conf, 'EXTRA_CFLAGS', flags, testflags=testflags,
+                     prereq_flags=prereq_flags)
 
 @conf
 def ADD_LDFLAGS(conf, flags, testflags=False):

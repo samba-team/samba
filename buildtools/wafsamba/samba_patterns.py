@@ -108,6 +108,7 @@ def write_build_options_header(fp):
     fp.write("       output(screen,\"   PIDDIR: %s\\n\", get_dyn_PIDDIR());\n")
     fp.write("       output(screen,\"   SMB_PASSWD_FILE: %s\\n\",get_dyn_SMB_PASSWD_FILE());\n")
     fp.write("       output(screen,\"   PRIVATE_DIR: %s\\n\",get_dyn_PRIVATE_DIR());\n")
+    fp.write("       output(screen,\"   BINDDNS_DIR: %s\\n\",get_dyn_BINDDNS_DIR());\n")
     fp.write("\n")
 
 def write_build_options_footer(fp):

@@ -253,7 +253,7 @@ static struct security_acl *process_user_acl(TALLOC_CTX *mem_ctx,
 		return NULL;
 
 	tmp_acl->revision = acl->revision;
-	DEBUG(6,(__location__ ": acl revision %d\n", acl->revision));
+	DBG_DEBUG("acl revision %d\n", acl->revision);
 
 	for (i=0; i < acl->num_aces; i++){
 		struct security_ace *ace = &acl->aces[i];

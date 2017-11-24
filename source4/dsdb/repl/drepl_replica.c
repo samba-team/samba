@@ -28,6 +28,9 @@
 #include "param/param.h"
 #include "librpc/gen_ndr/ndr_drsuapi.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS            DBGC_DRS_REPL
+
 /*
   implement DsReplicaAdd (forwarded from DRS server)
  */

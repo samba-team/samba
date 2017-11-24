@@ -328,7 +328,6 @@ static WERROR cmd_drsuapi_getncchanges(struct rpc_pipe_client *cli,
 	union drsuapi_DsGetNCChangesRequest req;
 	union drsuapi_DsGetNCChangesCtr ctr;
 	struct drsuapi_DsReplicaObjectIdentifier nc;
-	struct dom_sid null_sid;
 
 	struct drsuapi_DsGetNCChangesCtr1 *ctr1 = NULL;
 	struct drsuapi_DsGetNCChangesCtr6 *ctr6 = NULL;
@@ -362,7 +361,6 @@ static WERROR cmd_drsuapi_getncchanges(struct rpc_pipe_client *cli,
 
 	ZERO_STRUCT(info28);
 
-	ZERO_STRUCT(null_sid);
 	ZERO_STRUCT(req);
 
 	GUID_from_string(DRSUAPI_DS_BIND_GUID, &bind_guid);
@@ -463,7 +461,7 @@ static WERROR cmd_drsuapi_getncchanges(struct rpc_pipe_client *cli,
 
 	nc.dn = nc_dn;
 	nc.guid = GUID_zero();
-	nc.sid = null_sid;
+	nc.sid = (struct dom_sid) {0};
 
 	if (supported_extensions & DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V8) {
 		level = 8;

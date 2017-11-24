@@ -25,6 +25,7 @@
 #include "librpc/gen_ndr/samr.h" /* for struct samrPassword */
 #include "auth/credentials/credentials.h"
 #include "auth/credentials/credentials_internal.h"
+#include "auth/gensec/gensec.h"
 #include "libcli/auth/libcli_auth.h"
 #include "tevent.h"
 #include "param/param.h"
@@ -300,6 +301,8 @@ _PUBLIC_ bool cli_credentials_set_principal_callback(struct cli_credentials *cre
 
 _PUBLIC_ bool cli_credentials_authentication_requested(struct cli_credentials *cred) 
 {
+	uint32_t gensec_features = 0;
+
 	if (cred->bind_dn) {
 		return true;
 	}
@@ -324,6 +327,19 @@ _PUBLIC_ bool cli_credentials_authentication_requested(struct cli_credentials *c
 	}
 
 	if (cli_credentials_get_kerberos_state(cred) == CRED_MUST_USE_KERBEROS) {
+		return true;
+	}
+
+	gensec_features = cli_credentials_get_gensec_features(cred);
+	if (gensec_features & GENSEC_FEATURE_NTLM_CCACHE) {
+		return true;
+	}
+
+	if (gensec_features & GENSEC_FEATURE_SIGN) {
+		return true;
+	}
+
+	if (gensec_features & GENSEC_FEATURE_SEAL) {
 		return true;
 	}
 
@@ -534,7 +550,7 @@ _PUBLIC_ struct samr_Password *cli_credentials_get_nt_hash(struct cli_credential
 					  password, password_len);
 		if (converted != sizeof(nt_hash->hash)) {
 			TALLOC_FREE(nt_hash);
-			return false;
+			return NULL;
 		}
 	} else {
 		E_md4hash(password, nt_hash->hash);
@@ -684,7 +700,7 @@ _PUBLIC_ const char *cli_credentials_get_realm(struct cli_credentials *cred)
 
 /**
  * Set the realm for this credentials context, and force it to
- * uppercase for the sainity of our local kerberos libraries 
+ * uppercase for the sanity of our local kerberos libraries
  */
 _PUBLIC_ bool cli_credentials_set_realm(struct cli_credentials *cred, 
 			       const char *val, 
@@ -959,8 +975,9 @@ _PUBLIC_ void cli_credentials_guess(struct cli_credentials *cred,
  * Attach NETLOGON credentials for use with SCHANNEL
  */
 
-_PUBLIC_ void cli_credentials_set_netlogon_creds(struct cli_credentials *cred, 
-						 struct netlogon_creds_CredentialState *netlogon_creds)
+_PUBLIC_ void cli_credentials_set_netlogon_creds(
+	struct cli_credentials *cred,
+	const struct netlogon_creds_CredentialState *netlogon_creds)
 {
 	TALLOC_FREE(cred->netlogon_creds);
 	if (netlogon_creds == NULL) {

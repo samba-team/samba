@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 APPNAME = 'tdb'
-VERSION = '1.3.14'
+VERSION = '1.3.15'
 
 blddir = 'bin'
 

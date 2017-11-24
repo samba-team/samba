@@ -180,15 +180,17 @@ static int map_ldb_error(TALLOC_CTX *mem_ctx, int ldb_err,
 /*
   connect to the sam database
 */
-NTSTATUS ldapsrv_backend_Init(struct ldapsrv_connection *conn) 
+int ldapsrv_backend_Init(struct ldapsrv_connection *conn,
+			      char **errstring)
 {
-	conn->ldb = samdb_connect(conn, 
-				     conn->connection->event.ctx,
-				     conn->lp_ctx,
-				     conn->session_info,
-				     conn->global_catalog ? LDB_FLG_RDONLY : 0);
-	if (conn->ldb == NULL) {
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	int ret = samdb_connect_url(conn,
+				    conn->connection->event.ctx,
+				    conn->lp_ctx,
+				    conn->session_info,
+				    conn->global_catalog ? LDB_FLG_RDONLY : 0,
+				    "sam.ldb", &conn->ldb, errstring);
+	if (ret != LDB_SUCCESS) {
+		return ret;
 	}
 
 	if (conn->server_credentials) {
@@ -205,11 +207,11 @@ NTSTATUS ldapsrv_backend_Init(struct ldapsrv_connection *conn)
 				char *sasl_name = talloc_strdup(conn, ops[i]->sasl_name);
 
 				if (!sasl_name) {
-					return NT_STATUS_NO_MEMORY;
+					return LDB_ERR_OPERATIONS_ERROR;
 				}
 				sasl_mechs = talloc_realloc(conn, sasl_mechs, char *, j + 2);
 				if (!sasl_mechs) {
-					return NT_STATUS_NO_MEMORY;
+					return LDB_ERR_OPERATIONS_ERROR;
 				}
 				sasl_mechs[j] = sasl_name;
 				talloc_steal(sasl_mechs, sasl_name);
@@ -230,7 +232,7 @@ NTSTATUS ldapsrv_backend_Init(struct ldapsrv_connection *conn)
 	ldb_set_opaque(conn->ldb, "remoteAddress",
 		       conn->connection->remote_address);
 
-	return NT_STATUS_OK;
+	return LDB_SUCCESS;
 }
 
 struct ldapsrv_reply *ldapsrv_init_reply(struct ldapsrv_call *call, uint8_t type)

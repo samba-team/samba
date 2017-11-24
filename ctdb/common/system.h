@@ -48,21 +48,13 @@ int ctdb_get_peer_pid(const int fd, pid_t *peer_pid);
 bool set_scheduler(void);
 void reset_scheduler(void);
 
-bool parse_ipv4(const char *s, unsigned port, struct sockaddr_in *sin);
-bool parse_ip(const char *addr, const char *ifaces, unsigned port,
-	      ctdb_sock_addr *saddr);
 bool parse_ip_mask(const char *str, const char *ifaces, ctdb_sock_addr *addr,
 		   unsigned *mask);
-bool parse_ip_port(const char *addr, ctdb_sock_addr *saddr);
 
 void lockdown_memory(bool valgrinding);
 
-int mkdir_p(const char *dir, int mode);
 void mkdir_p_or_die(const char *dir, int mode);
 
 void ctdb_wait_for_process_to_exit(pid_t pid);
-
-int ctdb_parse_connections(FILE *fp, TALLOC_CTX *mem_ctx,
-			   int *num_conn, struct ctdb_connection **out);
 
 #endif /* __CTDB_SYSTEM_H__ */

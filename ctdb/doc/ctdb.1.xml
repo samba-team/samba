@@ -1681,9 +1681,13 @@ RUNNING
     </refsect2>
 
     <refsect2>
-      <title>process-exists <parameter>PID</parameter></title>
+      <title>process-exists <parameter>PID</parameter> <parameter>[SRVID]</parameter></title>
       <para>
-	This command checks if a specific process exists on the CTDB host. This is mainly used by Samba to check if remote instances of samba are still running or not.
+	This command checks if a specific process exists on the CTDB
+	host. This is mainly used by Samba to check if remote instances
+	of samba are still running or not.  When the optional SRVID
+	argument is specified, the command check if a specific process
+	exists on the CTDB host and has registered for specified SRVID.
       </para>
     </refsect2>
 
@@ -1757,15 +1761,6 @@ HEALTH: NO-HEALTHY-NODES - ERROR - Backup of corrupted TDB in '/usr/local/var/li
     </refsect2>
 
     <refsect2>
-      <title>getmonmode</title>
-      <para>
-	This command prints the monitoring mode of a node.  This
-	indicates when CTDB is monitoring services on the node. The
-	monitoring mode is either ENABLED or DISABLED.
-      </para>
-    </refsect2>
-
-    <refsect2>
       <title>attach <parameter>DBNAME</parameter> [persistent|replicated]</title>
       <para>
 	Create a new CTDB database called DBNAME and attach to it on
@@ -1834,30 +1829,10 @@ HEALTH: NO-HEALTHY-NODES - ERROR - Backup of corrupted TDB in '/usr/local/var/li
       </para>
     </refsect2>
 
-    <refsect2>
-      <title>check_srvids <parameter>SRVID</parameter> ...</title>
-      <para>
-	This command checks whether a set of srvid message ports are
-	registered on the node or not. The command takes a list of
-	values to check.
-      </para>
-      <refsect3>
-	<title>Example</title>
-	<screen>
-# ctdb check_srvids 1 2 3 14765
-Server id 0:1 does not exist
-Server id 0:2 does not exist
-Server id 0:3 does not exist
-Server id 0:14765 exists
-	</screen>
-      </refsect3>
-    </refsect2>
-
   </refsect1>
 
-  <!-- UNDOCUMENTED: showban stats disablemonitor enablemonitor
+  <!-- UNDOCUMENTED: stats
        isnotrecmaster addtickle deltickle
-       msglisten msgsend
        tfetch tstore readkey writekey
        checktcpport getdbseqnum ipiface
   -->

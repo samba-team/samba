@@ -293,6 +293,7 @@ static void ldapsrv_accept(struct stream_connection *c,
 	int ret;
 	struct tevent_req *subreq;
 	struct timeval endtime;
+	char *errstring = NULL;
 
 	conn = talloc_zero(c, struct ldapsrv_connection);
 	if (!conn) {
@@ -361,8 +362,13 @@ static void ldapsrv_accept(struct stream_connection *c,
 		conn->require_strong_auth = lpcfg_ldap_server_require_strong_auth(conn->lp_ctx);
 	}
 
-	if (!NT_STATUS_IS_OK(ldapsrv_backend_Init(conn))) {
-		ldapsrv_terminate_connection(conn, "backend Init failed");
+	ret = ldapsrv_backend_Init(conn, &errstring);
+	if (ret != LDB_SUCCESS) {
+		char *reason = talloc_asprintf(conn,
+					       "LDB backend for LDAP Init "
+					       "failed: %s: %s",
+					       errstring, ldb_strerror(ret));
+		ldapsrv_terminate_connection(conn, reason);
 		return;
 	}
 
@@ -1024,7 +1030,7 @@ static NTSTATUS add_socket(struct task_server *task,
 				     model_ops, &ldap_stream_nonpriv_ops,
 				     "ip", address, &port,
 				     lpcfg_socket_options(lp_ctx),
-				     ldap_service);
+				     ldap_service, task->process_context);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("ldapsrv failed to bind to %s:%u - %s\n",
 			 address, port, nt_errstr(status)));
@@ -1039,7 +1045,8 @@ static NTSTATUS add_socket(struct task_server *task,
 					     &ldap_stream_nonpriv_ops,
 					     "ip", address, &port,
 					     lpcfg_socket_options(lp_ctx),
-					     ldap_service);
+					     ldap_service,
+					     task->process_context);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("ldapsrv failed to bind to %s:%u - %s\n",
 				 address, port, nt_errstr(status)));
@@ -1061,7 +1068,8 @@ static NTSTATUS add_socket(struct task_server *task,
 					     &ldap_stream_nonpriv_ops,
 					     "ip", address, &port,
 					     lpcfg_socket_options(lp_ctx),
-					     ldap_service);
+					     ldap_service,
+					     task->process_context);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("ldapsrv failed to bind to %s:%u - %s\n",
 				 address, port, nt_errstr(status)));
@@ -1075,7 +1083,8 @@ static NTSTATUS add_socket(struct task_server *task,
 						     &ldap_stream_nonpriv_ops,
 						     "ip", address, &port,
 						     lpcfg_socket_options(lp_ctx),
-						     ldap_service);
+						     ldap_service,
+						     task->process_context);
 			if (!NT_STATUS_IS_OK(status)) {
 				DEBUG(0,("ldapsrv failed to bind to %s:%u - %s\n",
 					 address, port, nt_errstr(status)));
@@ -1103,7 +1112,6 @@ static void ldapsrv_task_init(struct task_server *task)
 	const char *dns_host_name;
 	struct ldapsrv_service *ldap_service;
 	NTSTATUS status;
-	const struct model_ops *model_ops;
 
 	switch (lpcfg_server_role(task->lp_ctx)) {
 	case ROLE_STANDALONE:
@@ -1120,13 +1128,6 @@ static void ldapsrv_task_init(struct task_server *task)
 	}
 
 	task_server_set_title(task, "task[ldapsrv]");
-
-	/*
-	 * Here we used to run the ldap server as a single process,
-	 * but we don't want transaction locks for one task in a write
-	 * blocking all other reads, so we go multi-process.
-	 */
-	model_ops = task->model_ops;
 
 	ldap_service = talloc_zero(task, struct ldapsrv_service);
 	if (ldap_service == NULL) goto failed;
@@ -1171,7 +1172,8 @@ static void ldapsrv_task_init(struct task_server *task)
 		*/
 		for(i = 0; i < num_interfaces; i++) {
 			const char *address = iface_list_n_ip(ifaces, i);
-			status = add_socket(task, task->lp_ctx, model_ops, address, ldap_service);
+			status = add_socket(task, task->lp_ctx, task->model_ops,
+					    address, ldap_service);
 			if (!NT_STATUS_IS_OK(status)) goto failed;
 		}
 	} else {
@@ -1184,7 +1186,8 @@ static void ldapsrv_task_init(struct task_server *task)
 			goto failed;
 		}
 		for (i=0; wcard[i]; i++) {
-			status = add_socket(task, task->lp_ctx, model_ops, wcard[i], ldap_service);
+			status = add_socket(task, task->lp_ctx, task->model_ops,
+					    wcard[i], ldap_service);
 			if (NT_STATUS_IS_OK(status)) {
 				num_binds++;
 			}
@@ -1201,10 +1204,10 @@ static void ldapsrv_task_init(struct task_server *task)
 	}
 
 	status = stream_setup_socket(task, task->event_ctx, task->lp_ctx,
-				     model_ops, &ldap_stream_nonpriv_ops,
+				     task->model_ops, &ldap_stream_nonpriv_ops,
 				     "unix", ldapi_path, NULL, 
 				     lpcfg_socket_options(task->lp_ctx),
-				     ldap_service);
+				     ldap_service, task->process_context);
 	talloc_free(ldapi_path);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("ldapsrv failed to bind to %s - %s\n",
@@ -1232,10 +1235,11 @@ static void ldapsrv_task_init(struct task_server *task)
 	}
 
 	status = stream_setup_socket(task, task->event_ctx, task->lp_ctx,
-				     model_ops, &ldap_stream_priv_ops,
+				     task->model_ops, &ldap_stream_priv_ops,
 				     "unix", ldapi_path, NULL,
 				     lpcfg_socket_options(task->lp_ctx),
-				     ldap_service);
+				     ldap_service,
+				     task->process_context);
 	talloc_free(ldapi_path);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("ldapsrv failed to bind to %s - %s\n",
@@ -1255,5 +1259,10 @@ failed:
 
 NTSTATUS server_service_ldap_init(TALLOC_CTX *ctx)
 {
-	return register_server_service(ctx, "ldap", ldapsrv_task_init);
+	struct service_details details = {
+		.inhibit_fork_on_accept = false,
+		.inhibit_pre_fork = false
+	};
+	return register_server_service(ctx, "ldap", ldapsrv_task_init,
+				       &details);
 }

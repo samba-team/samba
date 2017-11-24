@@ -26,6 +26,7 @@
 #include "system/filesys.h"
 #include "../lib/crypto/md5.h"
 #include "lib/util/tevent_unix.h"
+#include "librpc/gen_ndr/ioctl.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
@@ -78,7 +79,6 @@ static SMB_INO_T stream_inode(const SMB_STRUCT_STAT *sbuf, const char *sname)
 }
 
 static ssize_t get_xattr_size(connection_struct *conn,
-				files_struct *fsp,
 				const struct smb_filename *smb_fname,
 				const char *xattr_name)
 {
@@ -86,7 +86,7 @@ static ssize_t get_xattr_size(connection_struct *conn,
 	struct ea_struct ea;
 	ssize_t result;
 
-	status = get_ea_value(talloc_tos(), conn, fsp, smb_fname,
+	status = get_ea_value(talloc_tos(), conn, NULL, smb_fname,
 			      xattr_name, &ea);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -232,11 +232,11 @@ static int streams_xattr_fstat(vfs_handle_struct *handle, files_struct *fsp,
 	struct stream_io *io = (struct stream_io *)
 		VFS_FETCH_FSP_EXTENSION(handle, fsp);
 
-	DEBUG(10, ("streams_xattr_fstat called for %d\n", fsp->fh->fd));
-
 	if (io == NULL || fsp->base_fsp == NULL) {
 		return SMB_VFS_NEXT_FSTAT(handle, fsp, sbuf);
 	}
+
+	DBG_DEBUG("streams_xattr_fstat called for %s\n", fsp_str_dbg(io->fsp));
 
 	if (!streams_xattr_recheck(io)) {
 		return -1;
@@ -265,10 +265,11 @@ static int streams_xattr_fstat(vfs_handle_struct *handle, files_struct *fsp,
 		return -1;
 	}
 
-	sbuf->st_ex_size = get_xattr_size(handle->conn, fsp,
+	sbuf->st_ex_size = get_xattr_size(handle->conn,
 					smb_fname_base, io->xattr_name);
 	if (sbuf->st_ex_size == -1) {
 		TALLOC_FREE(smb_fname_base);
+		SET_STAT_INVALID(*sbuf);
 		return -1;
 	}
 
@@ -318,10 +319,11 @@ static int streams_xattr_stat(vfs_handle_struct *handle,
 	}
 
 	/* Augment the base file's stat information before returning. */
-	smb_fname->st.st_ex_size = get_xattr_size(handle->conn, NULL,
+	smb_fname->st.st_ex_size = get_xattr_size(handle->conn,
 						  smb_fname,
 						  xattr_name);
 	if (smb_fname->st.st_ex_size == -1) {
+		SET_STAT_INVALID(smb_fname->st);
 		errno = ENOENT;
 		result = -1;
 		goto fail;
@@ -369,10 +371,11 @@ static int streams_xattr_lstat(vfs_handle_struct *handle,
 	}
 
 	/* Augment the base file's stat information before returning. */
-	smb_fname->st.st_ex_size = get_xattr_size(handle->conn, NULL,
+	smb_fname->st.st_ex_size = get_xattr_size(handle->conn,
 						  smb_fname,
 						  xattr_name);
 	if (smb_fname->st.st_ex_size == -1) {
+		SET_STAT_INVALID(smb_fname->st);
 		errno = ENOENT;
 		result = -1;
 		goto fail;
@@ -396,13 +399,16 @@ static int streams_xattr_open(vfs_handle_struct *handle,
 			      files_struct *fsp, int flags, mode_t mode)
 {
 	NTSTATUS status;
-	struct smb_filename *smb_fname_base = NULL;
-	struct stream_io *sio;
+	struct streams_xattr_config *config = NULL;
+	struct stream_io *sio = NULL;
 	struct ea_struct ea;
 	char *xattr_name = NULL;
-	int baseflags;
-	int hostfd = -1;
+	int pipe_fds[2];
+	int fakefd = -1;
 	int ret;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config, struct streams_xattr_config,
+				return -1);
 
 	DEBUG(10, ("streams_xattr_open called for %s with flags 0x%x\n",
 		   smb_fname_str_dbg(smb_fname), flags));
@@ -432,44 +438,18 @@ static int streams_xattr_open(vfs_handle_struct *handle,
 		goto fail;
 	}
 
-	/* Create an smb_filename with stream_name == NULL. */
-	smb_fname_base = synthetic_smb_fname(talloc_tos(),
-				smb_fname->base_name,
-				NULL,
-				NULL,
-				smb_fname->flags);
-	if (smb_fname_base == NULL) {
-		errno = ENOMEM;
+	/*
+	 * Return a valid fd, but ensure any attempt to use it returns an error
+	 * (EPIPE).
+	 */
+	ret = pipe(pipe_fds);
+	if (ret != 0) {
 		goto fail;
 	}
 
-	/*
-	 * We use baseflags to turn off nasty side-effects when opening the
-	 * underlying file.
-         */
-        baseflags = flags;
-        baseflags &= ~O_TRUNC;
-        baseflags &= ~O_EXCL;
-        baseflags &= ~O_CREAT;
-
-        hostfd = SMB_VFS_NEXT_OPEN(handle, smb_fname_base, fsp,
-				   baseflags, mode);
-
-        /* It is legit to open a stream on a directory, but the base
-         * fd has to be read-only.
-         */
-        if ((hostfd == -1) && (errno == EISDIR)) {
-                baseflags &= ~O_ACCMODE;
-                baseflags |= O_RDONLY;
-                hostfd = SMB_VFS_NEXT_OPEN(handle, smb_fname_base, fsp, baseflags,
-					   mode);
-        }
-
-	TALLOC_FREE(smb_fname_base);
-
-        if (hostfd == -1) {
-		goto fail;
-        }
+	close(pipe_fds[1]);
+	pipe_fds[1] = -1;
+	fakefd = pipe_fds[0];
 
 	status = get_ea_value(talloc_tos(), handle->conn, NULL,
 			      smb_fname, xattr_name, &ea);
@@ -503,11 +483,11 @@ static int streams_xattr_open(vfs_handle_struct *handle,
 		DEBUG(10, ("creating or truncating attribute %s on file %s\n",
 			   xattr_name, smb_fname->base_name));
 
-		fsp->fh->fd = hostfd;
-		ret = SMB_VFS_FSETXATTR(fsp, xattr_name,
-					&null, sizeof(null),
-					flags & O_EXCL ? XATTR_CREATE : 0);
-		fsp->fh->fd = -1;
+		ret = SMB_VFS_SETXATTR(fsp->conn,
+				       smb_fname,
+				       xattr_name,
+				       &null, sizeof(null),
+				       flags & O_EXCL ? XATTR_CREATE : 0);
 		if (ret != 0) {
 			goto fail;
 		}
@@ -541,16 +521,12 @@ static int streams_xattr_open(vfs_handle_struct *handle,
 		goto fail;
 	}
 
-	return hostfd;
+	return fakefd;
 
  fail:
-	if (hostfd >= 0) {
-		/*
-		 * BUGBUGBUG -- we would need to call fd_close_posix here, but
-		 * we don't have a full fsp yet
-		 */
-		fsp->fh->fd = hostfd;
-		SMB_VFS_NEXT_CLOSE(handle, fsp);
+	if (fakefd >= 0) {
+		close(fakefd);
+		fakefd = -1;
 	}
 
 	return -1;
@@ -745,7 +721,7 @@ static NTSTATUS walk_xattr_streams(vfs_handle_struct *handle,
 
 		status = get_ea_value(names,
 					handle->conn,
-					fsp,
+					NULL,
 					smb_fname,
 					names[i],
 					&ea);
@@ -841,14 +817,7 @@ static NTSTATUS streams_xattr_streaminfo(vfs_handle_struct *handle,
 	NTSTATUS status;
 	struct streaminfo_state state;
 
-	if ((fsp != NULL) && (fsp->fh->fd != -1)) {
-		ret = SMB_VFS_FSTAT(fsp, &sbuf);
-	} else {
-		ret = vfs_stat_smb_basename(handle->conn,
-				smb_fname,
-				&sbuf);
-	}
-
+	ret = vfs_stat_smb_basename(handle->conn, smb_fname, &sbuf);
 	if (ret == -1) {
 		return map_nt_error_from_unix(errno);
 	}
@@ -976,7 +945,7 @@ static ssize_t streams_xattr_pwrite(vfs_handle_struct *handle,
 		return -1;
 	}
 
-	status = get_ea_value(talloc_tos(), handle->conn, fsp,
+	status = get_ea_value(talloc_tos(), handle->conn, NULL,
 			      smb_fname_base, sio->xattr_name, &ea);
 	if (!NT_STATUS_IS_OK(status)) {
 		return -1;
@@ -1000,16 +969,10 @@ static ssize_t streams_xattr_pwrite(vfs_handle_struct *handle,
 
         memcpy(ea.value.data + offset, data, n);
 
-	if (fsp->fh->fd != -1) {
-		ret = SMB_VFS_FSETXATTR(fsp,
-				sio->xattr_name,
-				ea.value.data, ea.value.length, 0);
-	} else {
-		ret = SMB_VFS_SETXATTR(fsp->conn,
-				       fsp->fsp_name,
-				sio->xattr_name,
-				ea.value.data, ea.value.length, 0);
-	}
+	ret = SMB_VFS_SETXATTR(fsp->conn,
+			       fsp->fsp_name,
+			       sio->xattr_name,
+			       ea.value.data, ea.value.length, 0);
 	TALLOC_FREE(ea.value.data);
 
 	if (ret == -1) {
@@ -1052,7 +1015,7 @@ static ssize_t streams_xattr_pread(vfs_handle_struct *handle,
 		return -1;
 	}
 
-	status = get_ea_value(talloc_tos(), handle->conn, fsp,
+	status = get_ea_value(talloc_tos(), handle->conn, NULL,
 			      smb_fname_base, sio->xattr_name, &ea);
 	if (!NT_STATUS_IS_OK(status)) {
 		return -1;
@@ -1269,7 +1232,7 @@ static int streams_xattr_ftruncate(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
-	status = get_ea_value(talloc_tos(), handle->conn, fsp,
+	status = get_ea_value(talloc_tos(), handle->conn, NULL,
 			      smb_fname_base, sio->xattr_name, &ea);
 	if (!NT_STATUS_IS_OK(status)) {
 		return -1;
@@ -1294,17 +1257,10 @@ static int streams_xattr_ftruncate(struct vfs_handle_struct *handle,
 	ea.value.length = offset + 1;
 	ea.value.data[offset] = 0;
 
-	if (fsp->fh->fd != -1) {
-		ret = SMB_VFS_FSETXATTR(fsp,
-				sio->xattr_name,
-				ea.value.data, ea.value.length, 0);
-	} else {
-		ret = SMB_VFS_SETXATTR(fsp->conn,
-				fsp->fsp_name,
-				sio->xattr_name,
-				ea.value.data, ea.value.length, 0);
-	}
-
+	ret = SMB_VFS_SETXATTR(fsp->conn,
+			       fsp->fsp_name,
+			       sio->xattr_name,
+			       ea.value.data, ea.value.length, 0);
 	TALLOC_FREE(ea.value.data);
 
 	if (ret == -1) {
@@ -1340,6 +1296,362 @@ static int streams_xattr_fallocate(struct vfs_handle_struct *handle,
 	return -1;
 }
 
+static int streams_xattr_fchown(vfs_handle_struct *handle, files_struct *fsp,
+				uid_t uid, gid_t gid)
+{
+	struct stream_io *sio =
+		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+
+	if (sio == NULL) {
+		return SMB_VFS_NEXT_FCHOWN(handle, fsp, uid, gid);
+	}
+
+	return 0;
+}
+
+static int streams_xattr_fchmod(vfs_handle_struct *handle,
+				files_struct *fsp,
+				mode_t mode)
+{
+	struct stream_io *sio =
+		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+
+	if (sio == NULL) {
+		return SMB_VFS_NEXT_FCHMOD(handle, fsp, mode);
+	}
+
+	return 0;
+}
+
+static int streams_xattr_fsync(vfs_handle_struct *handle, files_struct *fsp)
+{
+	struct stream_io *sio =
+		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+
+	if (sio == NULL) {
+		return SMB_VFS_NEXT_FSYNC(handle, fsp);
+	}
+
+	return 0;
+}
+
+static ssize_t streams_xattr_fgetxattr(struct vfs_handle_struct *handle,
+				       struct files_struct *fsp,
+				       const char *name,
+				       void *value,
+				       size_t size)
+{
+	struct stream_io *sio =
+		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+
+	if (sio == NULL) {
+		return SMB_VFS_NEXT_FGETXATTR(handle, fsp, name, value, size);
+	}
+
+	errno = ENOTSUP;
+	return -1;
+}
+
+static ssize_t streams_xattr_flistxattr(struct vfs_handle_struct *handle,
+					struct files_struct *fsp,
+					char *list,
+					size_t size)
+{
+	struct stream_io *sio =
+		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+
+	if (sio == NULL) {
+		return SMB_VFS_NEXT_FLISTXATTR(handle, fsp, list, size);
+	}
+
+	errno = ENOTSUP;
+	return -1;
+}
+
+static int streams_xattr_fremovexattr(struct vfs_handle_struct *handle,
+				      struct files_struct *fsp,
+				      const char *name)
+{
+	struct stream_io *sio =
+		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+
+	if (sio == NULL) {
+		return SMB_VFS_NEXT_FREMOVEXATTR(handle, fsp, name);
+	}
+
+	errno = ENOTSUP;
+	return -1;
+}
+
+static int streams_xattr_fsetxattr(struct vfs_handle_struct *handle,
+				   struct files_struct *fsp,
+				   const char *name,
+				   const void *value,
+				   size_t size,
+				   int flags)
+{
+	struct stream_io *sio =
+		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+
+	if (sio == NULL) {
+		return SMB_VFS_NEXT_FSETXATTR(handle, fsp, name, value,
+					      size, flags);
+	}
+
+	errno = ENOTSUP;
+	return -1;
+}
+
+static int streams_xattr_fchmod_acl(vfs_handle_struct *handle,
+				    files_struct *fsp,
+				    mode_t mode)
+{
+	struct stream_io *sio =
+		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+
+	if (sio == NULL) {
+		return SMB_VFS_NEXT_FCHMOD_ACL(handle, fsp, mode);
+	}
+
+	return 0;
+}
+
+static SMB_ACL_T streams_xattr_sys_acl_get_fd(vfs_handle_struct *handle,
+					      files_struct *fsp,
+					      TALLOC_CTX *mem_ctx)
+{
+	struct stream_io *sio =
+		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+
+	if (sio == NULL) {
+		return SMB_VFS_NEXT_SYS_ACL_GET_FD(handle, fsp, mem_ctx);
+	}
+
+	return SMB_VFS_NEXT_SYS_ACL_GET_FILE(
+		handle, fsp->base_fsp->fsp_name,
+		SMB_ACL_TYPE_ACCESS, mem_ctx);
+}
+
+static int streams_xattr_sys_acl_set_fd(vfs_handle_struct *handle,
+					files_struct *fsp,
+					SMB_ACL_T theacl)
+{
+	struct stream_io *sio =
+		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+
+	if (sio == NULL) {
+		return SMB_VFS_NEXT_SYS_ACL_SET_FD(handle, fsp, theacl);
+	}
+
+	return 0;
+}
+
+static int streams_xattr_sys_acl_blob_get_fd(vfs_handle_struct *handle,
+					     files_struct *fsp,
+					     TALLOC_CTX *mem_ctx,
+					     char **blob_description,
+					     DATA_BLOB *blob)
+{
+	struct stream_io *sio =
+		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+
+	if (sio == NULL) {
+		return SMB_VFS_NEXT_SYS_ACL_BLOB_GET_FD(handle, fsp, mem_ctx,
+							blob_description, blob);
+	}
+
+	return SMB_VFS_NEXT_SYS_ACL_BLOB_GET_FILE(
+		handle, fsp->base_fsp->fsp_name, mem_ctx,
+		blob_description, blob);
+}
+
+static NTSTATUS streams_xattr_fget_nt_acl(vfs_handle_struct *handle,
+					  files_struct *fsp,
+					  uint32_t security_info,
+					  TALLOC_CTX *mem_ctx,
+					  struct security_descriptor **ppdesc)
+{
+	struct stream_io *sio =
+		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+
+	if (sio == NULL) {
+		return SMB_VFS_NEXT_FGET_NT_ACL(handle, fsp, security_info,
+						mem_ctx, ppdesc);
+	}
+
+	return SMB_VFS_NEXT_GET_NT_ACL(handle, fsp->base_fsp->fsp_name,
+				       security_info, mem_ctx, ppdesc);
+}
+
+static NTSTATUS streams_xattr_fset_nt_acl(vfs_handle_struct *handle,
+					  files_struct *fsp,
+					  uint32_t security_info_sent,
+					  const struct security_descriptor *psd)
+{
+	struct stream_io *sio =
+		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+
+	if (sio == NULL) {
+		return SMB_VFS_NEXT_FSET_NT_ACL(handle, fsp,
+						security_info_sent, psd);
+	}
+
+	return NT_STATUS_OK;
+}
+
+struct streams_xattr_fsync_state {
+	int ret;
+	struct vfs_aio_state vfs_aio_state;
+};
+
+static void streams_xattr_fsync_done(struct tevent_req *subreq);
+
+static struct tevent_req *streams_xattr_fsync_send(
+	struct vfs_handle_struct *handle,
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct files_struct *fsp)
+{
+	struct tevent_req *req = NULL;
+	struct tevent_req *subreq = NULL;
+	struct streams_xattr_fsync_state *state = NULL;
+	struct stream_io *sio =
+		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct streams_xattr_fsync_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	if (sio == NULL) {
+		subreq = SMB_VFS_NEXT_FSYNC_SEND(state, ev, handle, fsp);
+		if (tevent_req_nomem(req, subreq)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(subreq, streams_xattr_fsync_done, req);
+		return req;
+	}
+
+	/*
+	 * There's no pathname based sync variant and we don't have access to
+	 * the basefile handle, so we can't do anything here.
+	 */
+
+	tevent_req_done(req);
+	return tevent_req_post(req, ev);
+}
+
+static void streams_xattr_fsync_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct streams_xattr_fsync_state *state = tevent_req_data(
+		req, struct streams_xattr_fsync_state);
+
+	state->ret = SMB_VFS_FSYNC_RECV(subreq, &state->vfs_aio_state);
+	TALLOC_FREE(subreq);
+	if (state->ret != 0) {
+		tevent_req_error(req, errno);
+		return;
+	}
+
+	tevent_req_done(req);
+}
+
+static int streams_xattr_fsync_recv(struct tevent_req *req,
+				    struct vfs_aio_state *vfs_aio_state)
+{
+	struct streams_xattr_fsync_state *state = tevent_req_data(
+		req, struct streams_xattr_fsync_state);
+
+	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
+		return -1;
+	}
+
+	*vfs_aio_state = state->vfs_aio_state;
+	return state->ret;
+}
+
+static bool streams_xattr_lock(vfs_handle_struct *handle,
+			       files_struct *fsp,
+			       int op,
+			       off_t offset,
+			       off_t count,
+			       int type)
+{
+	struct stream_io *sio =
+		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+
+	if (sio == NULL) {
+		return SMB_VFS_NEXT_LOCK(handle, fsp, op, offset, count, type);
+	}
+
+	return true;
+}
+
+static bool streams_xattr_getlock(vfs_handle_struct *handle,
+				  files_struct *fsp,
+				  off_t *poffset,
+				  off_t *pcount,
+				  int *ptype,
+				  pid_t *ppid)
+{
+	struct stream_io *sio =
+		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+
+	if (sio == NULL) {
+		return SMB_VFS_NEXT_GETLOCK(handle, fsp, poffset,
+					    pcount, ptype, ppid);
+	}
+
+	errno = ENOTSUP;
+	return false;
+}
+
+static int streams_xattr_kernel_flock(vfs_handle_struct *handle,
+				      files_struct *fsp,
+				      uint32_t share_mode,
+				      uint32_t access_mask)
+{
+	struct stream_io *sio =
+		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+
+	if (sio == NULL) {
+		return SMB_VFS_NEXT_KERNEL_FLOCK(handle, fsp,
+						 share_mode, access_mask);
+	}
+
+	return 0;
+}
+
+static int streams_xattr_linux_setlease(vfs_handle_struct *handle,
+					files_struct *fsp,
+					int leasetype)
+{
+	struct stream_io *sio =
+		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+
+	if (sio == NULL) {
+		return SMB_VFS_NEXT_LINUX_SETLEASE(handle, fsp, leasetype);
+	}
+
+	return 0;
+}
+
+static bool streams_xattr_strict_lock_check(struct vfs_handle_struct *handle,
+					    files_struct *fsp,
+					    struct lock_struct *plock)
+{
+	struct stream_io *sio =
+		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+
+	if (sio == NULL) {
+		return SMB_VFS_NEXT_STRICT_LOCK_CHECK(handle, fsp, plock);
+	}
+
+	return true;
+}
 
 static struct vfs_fn_pointers vfs_streams_xattr_fns = {
 	.fs_capabilities_fn = streams_xattr_fs_capabilities,
@@ -1359,6 +1671,33 @@ static struct vfs_fn_pointers vfs_streams_xattr_fns = {
 	.ftruncate_fn = streams_xattr_ftruncate,
 	.fallocate_fn = streams_xattr_fallocate,
 	.streaminfo_fn = streams_xattr_streaminfo,
+
+	.fsync_send_fn = streams_xattr_fsync_send,
+	.fsync_recv_fn = streams_xattr_fsync_recv,
+
+	.lock_fn = streams_xattr_lock,
+	.getlock_fn = streams_xattr_getlock,
+	.kernel_flock_fn = streams_xattr_kernel_flock,
+	.linux_setlease_fn = streams_xattr_linux_setlease,
+	.strict_lock_check_fn = streams_xattr_strict_lock_check,
+
+	.fchown_fn = streams_xattr_fchown,
+	.fchmod_fn = streams_xattr_fchmod,
+	.fsync_fn = streams_xattr_fsync,
+
+	.fgetxattr_fn = streams_xattr_fgetxattr,
+	.flistxattr_fn = streams_xattr_flistxattr,
+	.fremovexattr_fn = streams_xattr_fremovexattr,
+	.fsetxattr_fn = streams_xattr_fsetxattr,
+
+	.fchmod_acl_fn = streams_xattr_fchmod_acl,
+
+	.sys_acl_get_fd_fn = streams_xattr_sys_acl_get_fd,
+	.sys_acl_blob_get_fd_fn = streams_xattr_sys_acl_blob_get_fd,
+	.sys_acl_set_fd_fn = streams_xattr_sys_acl_set_fd,
+
+	.fget_nt_acl_fn = streams_xattr_fget_nt_acl,
+	.fset_nt_acl_fn = streams_xattr_fset_nt_acl,
 };
 
 NTSTATUS vfs_streams_xattr_init(TALLOC_CTX *);

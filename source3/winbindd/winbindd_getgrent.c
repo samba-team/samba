@@ -26,7 +26,7 @@ struct winbindd_getgrent_state {
 	int max_groups;
 	int num_groups;
 	struct winbindd_gr *groups;
-	struct talloc_dict **members;
+	struct db_context **members;
 };
 
 static void winbindd_getgrent_done(struct tevent_req *subreq);
@@ -72,7 +72,7 @@ struct tevent_req *winbindd_getgrent_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	state->members = talloc_array(state, struct talloc_dict *,
+	state->members = talloc_array(state, struct db_context *,
 				      state->max_groups);
 	if (tevent_req_nomem(state->members, req)) {
 		TALLOC_FREE(state->groups);

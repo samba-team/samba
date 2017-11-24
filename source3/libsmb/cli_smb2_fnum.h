@@ -79,6 +79,8 @@ NTSTATUS cli_smb2_qpathinfo_basic(struct cli_state *cli,
 NTSTATUS cli_smb2_qpathinfo_alt_name(struct cli_state *cli,
 			const char *name,
 			fstring alt_name);
+NTSTATUS cli_smb2_chkpath(struct cli_state *cli,
+			const char *name);
 NTSTATUS cli_smb2_qfileinfo_basic(struct cli_state *cli,
 			uint16_t fnum,
 			uint16_t *mode,
@@ -134,6 +136,17 @@ NTSTATUS cli_smb2_dskattr(struct cli_state *cli,
 			uint64_t *total,
 			uint64_t *avail);
 NTSTATUS cli_smb2_get_fs_attr_info(struct cli_state *cli, uint32_t *fs_attr);
+NTSTATUS cli_smb2_get_fs_full_size_info(struct cli_state *cli,
+			uint64_t *total_allocation_units,
+			uint64_t *caller_allocation_units,
+			uint64_t *actual_allocation_units,
+			uint64_t *sectors_per_allocation_unit,
+			uint64_t *bytes_per_sector);
+NTSTATUS cli_smb2_get_fs_volume_info(struct cli_state *cli,
+			TALLOC_CTX *mem_ctx,
+			char **_volume_name,
+			uint32_t *pserial_number,
+			time_t *pdate);
 NTSTATUS cli_smb2_query_security_descriptor(struct cli_state *cli,
 			uint16_t fnum,
 			uint32_t sec_info,

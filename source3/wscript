@@ -106,7 +106,7 @@ def configure(conf):
     conf.CHECK_FUNCS('innetgr')
     conf.CHECK_FUNCS('initgroups select poll rdchk getgrnam getgrent pathconf')
     conf.CHECK_FUNCS('setpriv setgidx setuidx setgroups syscall sysconf')
-    conf.CHECK_FUNCS('atexit grantpt posix_openpt fallocate posix_fallocate')
+    conf.CHECK_FUNCS('atexit grantpt posix_openpt fallocate')
     conf.CHECK_FUNCS('fseeko setluid')
     conf.CHECK_FUNCS('getpwnam', headers='sys/types.h pwd.h')
     conf.CHECK_FUNCS('fdopendir')
@@ -397,7 +397,7 @@ llseek _llseek __llseek _lseek __lseek
 _lstat __lstat lutimes
 __lxstat memalign mknod mlock mlockall munlock munlockall
 _open __open _opendir __opendir
-pathconf poll posix_fallocate
+pathconf poll
 posix_memalign pread _pread __pread
 pwrite _pwrite __pwrite
 rdchk _read __read _readdir __readdir
@@ -550,29 +550,6 @@ return acl_get_perm_np(permset_d, perm);
                 'HAVE_OPENAT',
                 msg='Checking for openat',
                 headers='fcntl.h')
-
-    if host_os.rfind('linux') > -1:
-        conf.CHECK_FUNCS_IN('io_submit', 'aio')
-        conf.CHECK_CODE('''
-struct io_event ioev;
-struct iocb *ioc;
-io_context_t ctx;
-struct timespec ts;
-int fd;
-char *buf;
-fd = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
-io_queue_init(128,&ctx);
-io_prep_pwrite(ioc, 1, buf, 1, 0);
-io_prep_pread(ioc, 1, buf, 1, 0);
-io_set_eventfd(ioc, fd);
-io_set_callback(ioc, (io_callback_t)(0));
-io_submit(ctx, 1, &ioc);
-io_getevents(ctx, 1, 1, &ioev, &ts);
-''',
-            'HAVE_LINUX_KERNEL_AIO',
-            msg='Checking for linux kernel asynchronous io support',
-            headers='unistd.h stdlib.h sys/types.h fcntl.h sys/eventfd.h libaio.h',
-            lib='aio')
 
     conf.CHECK_CODE('''
 struct msghdr msg;
@@ -1154,19 +1131,6 @@ err:
             execute=True,
             msg="Checking whether fcntl lock supports open file description locks")
 
-# glibc up to 2.3.6 had dangerously broken posix_fallocate(). DON'T USE IT.
-    if not conf.CHECK_CODE('''
-#define _XOPEN_SOURCE 600
-#include <stdlib.h>
-#if defined(__GLIBC__) && ((__GLIBC__ < 2) || (__GLIBC__ == 2 && __GLIBC_MINOR__ < 4))
-#error probably broken posix_fallocate
-#endif
-''',
-                           '_HAVE_UNBROKEN_POSIX_FALLOCATE',
-                           msg='Checking for broken posix_fallocate'):
-        conf.DEFINE('HAVE_BROKEN_POSIX_FALLOCATE', '1')
-
-
     conf.CHECK_STRUCTURE_MEMBER('struct stat', 'st_mtim.tv_nsec',
                                 define='HAVE_STRUCT_STAT_ST_MTIM_TV_NSEC') # Linux, Solaris
     conf.CHECK_STRUCTURE_MEMBER('struct stat', 'st_mtimensec',
@@ -1593,10 +1557,10 @@ main() {
     if Options.options.with_glusterfs:
         conf.CHECK_CFG(package='glusterfs-api', args='"glusterfs-api >= 4" --cflags --libs',
                        msg='Checking for glusterfs-api >= 4', uselib_store="GFAPI")
-        conf.CHECK_HEADERS('api/glfs.h', lib='gfapi')
+        conf.CHECK_HEADERS('glusterfs/api/glfs.h', lib='gfapi')
         conf.CHECK_LIB('gfapi', shlib=True)
 
-        if conf.CONFIG_SET('HAVE_API_GLFS_H'):
+        if conf.CONFIG_SET('HAVE_GLUSTERFS_API_GLFS_H'):
             if Options.options.with_acl_support:
                  conf.DEFINE('HAVE_GLUSTERFS', '1')
             else:
@@ -1677,7 +1641,9 @@ main() {
         Logs.info("building with Spotlight support")
         default_static_modules.extend(TO_LIST('rpc_mdssvc_module'))
 
-    forced_static_modules.extend(TO_LIST('auth_domain auth_builtin auth_sam auth_winbind'))
+    conf.CHECK_HEADERS('rpc/xdr.h')
+
+    forced_static_modules.extend(TO_LIST('auth_builtin auth_sam auth_winbind'))
     default_static_modules.extend(TO_LIST('''pdb_smbpasswd pdb_tdbsam
                                       auth_unix
                                       nss_info_template idmap_tdb idmap_passdb
@@ -1727,9 +1693,6 @@ main() {
 
     if Options.options.with_pthreadpool:
         default_shared_modules.extend(TO_LIST('vfs_aio_pthread'))
-
-    if conf.CONFIG_SET('HAVE_LINUX_KERNEL_AIO'):
-        default_shared_modules.extend(TO_LIST('vfs_aio_linux'))
 
     if conf.CONFIG_SET('HAVE_LDAP'):
         default_static_modules.extend(TO_LIST('pdb_ldapsam idmap_ldap'))

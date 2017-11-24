@@ -27,6 +27,13 @@ dbcheck_fix_stale_links() {
 	$BINDIR/samba-tool dbcheck --quiet --fix --yes remove_plausible_deleted_DN_links --attrs="member msDS-NC-Replica-Locations msDS-NC-RO-Replica-Locations" --cross-ncs $ARGS
 }
 
+# This list of attributes can be freely extended
+dbcheck_fix_crosspartition_backlinks() {
+	# we may not know the target yet when we receive a cross-partition link,
+	# which can result in a missing backlink
+	$BINDIR/samba-tool dbcheck --quiet --fix --yes fix_all_missing_backlinks --attrs="serverReference" --cross-ncs $ARGS
+}
+
 # This test shows that this does not do anything to a current
 # provision (that would be a bug)
 dbcheck_reset_well_known_acls() {
@@ -47,6 +54,7 @@ force_modules() {
 
 dbcheck_fix_one_way_links
 dbcheck_fix_stale_links
+dbcheck_fix_crosspartition_backlinks
 testit "dbcheck" dbcheck
 testit "reindex" reindex
 testit "fixed_attrs" fixed_attrs

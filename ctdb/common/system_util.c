@@ -41,6 +41,8 @@
 #include <procinfo.h>
 #endif
 
+#include "lib/util/mkdir_p.h"
+
 /*
   if possible, make this task real time
  */
@@ -114,7 +116,7 @@ void reset_scheduler(void)
 #endif
 }
 
-bool parse_ipv4(const char *s, unsigned port, struct sockaddr_in *sin)
+static bool parse_ipv4(const char *s, unsigned port, struct sockaddr_in *sin)
 {
 	sin->sin_family = AF_INET;
 	sin->sin_port   = htons(port);
@@ -161,19 +163,43 @@ static bool parse_ipv6(const char *s, const char *ifaces, unsigned port, ctdb_so
 /*
   parse an ip
  */
-bool parse_ip(const char *addr, const char *ifaces, unsigned port, ctdb_sock_addr *saddr)
+static bool parse_ip(const char *addr, const char *ifaces, unsigned port,
+		     ctdb_sock_addr *saddr)
 {
 	char *p;
 	bool ret;
 
 	ZERO_STRUCTP(saddr); /* valgrind :-) */
 
-	/* now is this a ipv4 or ipv6 address ?*/
-	p = index(addr, ':');
+	/* IPv4 or IPv6 address?
+	 *
+	 * Use rindex() because we need the right-most ':' below for
+	 * IPv4-mapped IPv6 addresses anyway...
+	 */
+	p = rindex(addr, ':');
 	if (p == NULL) {
 		ret = parse_ipv4(addr, port, &saddr->ip);
 	} else {
+		uint8_t ipv4_mapped_prefix[12] = {
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff
+		};
+
 		ret = parse_ipv6(addr, ifaces, port, saddr);
+		if (! ret) {
+			return ret;
+		}
+
+		/*
+		 * Check for IPv4-mapped IPv6 address
+		 * (e.g. ::ffff:192.0.2.128) - reparse as IPv4 if
+		 * necessary
+		 */
+		if (memcmp(&saddr->ip6.sin6_addr.s6_addr[0],
+			   ipv4_mapped_prefix,
+			   sizeof(ipv4_mapped_prefix)) == 0) {
+			/* Reparse as IPv4 */
+			ret = parse_ipv4(p+1, port, &saddr->ip);
+		}
 	}
 
 	return ret;
@@ -221,46 +247,6 @@ bool parse_ip_mask(const char *str, const char *ifaces, ctdb_sock_addr *addr, un
 	return ret;
 }
 
-/*
-  parse a ip:port pair
- */
-bool parse_ip_port(const char *addr, ctdb_sock_addr *saddr)
-{
-	char *p;
-	char s[64]; /* Much longer than INET6_ADDRSTRLEN */
-	unsigned port;
-	char *endp = NULL;
-	ssize_t len;
-	bool ret;
-
-	len = strlen(addr);
-	if (len >= sizeof(s)) {
-		DEBUG(DEBUG_ERR, ("Address %s is unreasonably long\n", addr));
-		return false;
-	}
-
-	strncpy(s, addr, len+1);
-
-	p = rindex(s, ':');
-	if (p == NULL) {
-		DEBUG(DEBUG_ERR, (__location__ " This addr: %s does not contain a port number\n", s));
-		return false;
-	}
-
-	port = strtoul(p+1, &endp, 10);
-	if (endp == NULL || *endp != 0) {
-		/* trailing garbage */
-		DEBUG(DEBUG_ERR, (__location__ " Trailing garbage after the port in %s\n", s));
-		return false;
-	}
-	*p = 0;
-
-	/* now is this a ipv4 or ipv6 address ?*/
-	ret = parse_ip(s, NULL, port, saddr);
-
-	return ret;
-}
-
 /* we don't lock future pages here; it would increase the chance that
  * we'd fail to mmap later on. */
 void lockdown_memory(bool valgrinding)
@@ -288,53 +274,6 @@ void lockdown_memory(bool valgrinding)
 #endif
 }
 
-int mkdir_p(const char *dir, int mode)
-{
-	char t[PATH_MAX];
-	ssize_t len;
-	int ret;
-
-	if (strcmp(dir, "/") == 0) {
-		return 0;
-	}
-
-	if (strcmp(dir, ".") == 0) {
-		return 0;
-	}
-
-	/* Try to create directory */
-	ret = mkdir(dir, mode);
-	/* Succeed if that worked or if it already existed */
-	if (ret == 0 || errno == EEXIST) {
-		return 0;
-	}
-	/* Fail on anything else except ENOENT */
-	if (errno != ENOENT) {
-		return ret;
-	}
-
-	/* Create ancestors */
-	len = strlen(dir);
-	if (len >= PATH_MAX) {
-		errno = ENAMETOOLONG;
-		return -1;
-	}
-	strncpy(t, dir, len+1);
-
-	ret = mkdir_p(dirname(t), mode);
-	if (ret != 0) {
-		return ret;
-	}
-
-	/* Create directory */
-	ret = mkdir(dir, mode);
-	if ((ret == -1) && (errno == EEXIST)) {
-		ret = 0;
-	}
-
-	return ret;
-}
-
 void mkdir_p_or_die(const char *dir, int mode)
 {
 	int ret;
@@ -354,61 +293,4 @@ void ctdb_wait_for_process_to_exit(pid_t pid)
 	while (kill(pid, 0) == 0 || errno != ESRCH) {
 		sleep(5);
 	}
-}
-
-int ctdb_parse_connections(FILE *fp, TALLOC_CTX *mem_ctx,
-			   int *num_conn, struct ctdb_connection **out)
-{
-	struct ctdb_connection *conn = NULL;
-	char line[128], src[128], dst[128]; /* long enough for IPv6 */
-	int line_num, ret;
-	int num = 0, max = 0;
-
-	line_num = 0;
-	while (! feof(fp)) {
-		if (fgets(line, sizeof(line), fp) == NULL) {
-			break;
-		}
-		line_num += 1;
-
-		/* Skip empty lines */
-		if (line[0] == '\n') {
-			continue;
-		}
-
-		ret = sscanf(line, "%s %s\n", src, dst);
-		if (ret != 2) {
-			DEBUG(DEBUG_ERR, ("Bad line [%d]: %s\n",
-					  line_num, line));
-			talloc_free(conn);
-			return EINVAL;
-		}
-
-		if (num >= max) {
-			max += 1024;
-			conn = talloc_realloc(mem_ctx, conn,
-					      struct ctdb_connection, max);
-			if (conn == NULL) {
-				return ENOMEM;
-			}
-		}
-
-		if (! parse_ip_port(src, &conn[num].src)) {
-			DEBUG(DEBUG_ERR, ("Invalid IP address %s\n", src));
-			talloc_free(conn);
-			return EINVAL;
-		}
-
-		if (! parse_ip_port(dst, &conn[num].dst)) {
-			DEBUG(DEBUG_ERR, ("Invalid IP address %s\n", dst));
-			talloc_free(conn);
-			return EINVAL;
-		}
-
-		num += 1;
-	}
-
-	*num_conn = num;
-	*out = conn;
-	return 0;
 }

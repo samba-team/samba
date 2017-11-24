@@ -1997,7 +1997,7 @@ static bool test_EnumValue(struct dcerpc_binding_handle *b,
 
 		data = NULL;
 		if (size) {
-			data = (uint8_t *) talloc_array(tctx, uint8_t *, size);
+			data = talloc_array(tctx, uint8_t, size);
 		}
 		r.in.value = data;
 

@@ -104,6 +104,36 @@ char *trust_pw_new_value(TALLOC_CTX *mem_ctx,
 	return generate_random_machine_password(mem_ctx, min, max);
 }
 
+/*
+ * Temporary function to wrap cli_auth in a lck
+ */
+
+static NTSTATUS netlogon_creds_cli_lck_auth(
+	struct netlogon_creds_cli_context *context,
+	struct dcerpc_binding_handle *b,
+	uint8_t num_nt_hashes,
+	const struct samr_Password * const *nt_hashes,
+	uint8_t *idx_nt_hashes)
+{
+	struct netlogon_creds_cli_lck *lck;
+	NTSTATUS status;
+
+	status = netlogon_creds_cli_lck(
+		context, NETLOGON_CREDS_CLI_LCK_EXCLUSIVE,
+		talloc_tos(), &lck);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("netlogon_creds_cli_lck failed: %s\n",
+			    nt_errstr(status));
+		return status;
+	}
+
+	status = netlogon_creds_cli_auth(context, b, num_nt_hashes, nt_hashes,
+					 idx_nt_hashes);
+	TALLOC_FREE(lck);
+
+	return status;
+}
+
 NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 			 struct messaging_context *msg_ctx,
 			 struct dcerpc_binding_handle *b,
@@ -358,10 +388,10 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 	 * ServerTrustPasswordsGet() or netr_ServerGetTrustInfo() to fix our
 	 * local secrets before doing the change.
 	 */
-	status = netlogon_creds_cli_auth(context, b,
-					 num_nt_hashes,
-					 nt_hashes,
-					 &idx_nt_hashes);
+	status = netlogon_creds_cli_lck_auth(context, b,
+					     num_nt_hashes,
+					     nt_hashes,
+					     &idx_nt_hashes);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("netlogon_creds_cli_auth(%s) failed for old passwords (%u) - %s!\n",
 			  context_name, num_nt_hashes, nt_errstr(status)));
@@ -571,10 +601,10 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 	idx_current = idx;
 	nt_hashes[idx++] = current_nt_hash;
 	num_nt_hashes = idx;
-	status = netlogon_creds_cli_auth(context, b,
-					 num_nt_hashes,
-					 nt_hashes,
-					 &idx_nt_hashes);
+	status = netlogon_creds_cli_lck_auth(context, b,
+					     num_nt_hashes,
+					     nt_hashes,
+					     &idx_nt_hashes);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("netlogon_creds_cli_auth(%s) failed for new password - %s!\n",
 			  context_name, nt_errstr(status)));

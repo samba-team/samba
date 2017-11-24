@@ -27,12 +27,6 @@
 #include "protocol_api.h"
 #include "protocol_private.h"
 
-struct ctdb_req_message_wire {
-	struct ctdb_req_header hdr;
-	uint64_t srvid;
-	uint32_t datalen;
-	uint8_t data[1];
-};
 
 static size_t ctdb_message_data_len(union ctdb_message_data *mdata,
 				    uint64_t srvid)
@@ -41,7 +35,7 @@ static size_t ctdb_message_data_len(union ctdb_message_data *mdata,
 
 	switch (srvid) {
 	case CTDB_SRVID_BANNING:
-		len = ctdb_uint32_len(mdata->pnn);
+		len = ctdb_uint32_len(&mdata->pnn);
 		break;
 
 	case CTDB_SRVID_ELECTION:
@@ -52,11 +46,11 @@ static size_t ctdb_message_data_len(union ctdb_message_data *mdata,
 		break;
 
 	case CTDB_SRVID_RELEASE_IP:
-		len = ctdb_string_len(mdata->ipaddr);
+		len = ctdb_string_len(&mdata->ipaddr);
 		break;
 
 	case CTDB_SRVID_TAKE_IP:
-		len = ctdb_string_len(mdata->ipaddr);
+		len = ctdb_string_len(&mdata->ipaddr);
 		break;
 
 	case CTDB_SRVID_SET_NODE_FLAGS:
@@ -72,11 +66,17 @@ static size_t ctdb_message_data_len(union ctdb_message_data *mdata,
 		break;
 
 	case CTDB_SRVID_DETACH_DATABASE:
-		len = ctdb_uint32_len(mdata->db_id);
+		len = ctdb_uint32_len(&mdata->db_id);
 		break;
 
 	case CTDB_SRVID_MEM_DUMP:
 		len = ctdb_srvid_message_len(mdata->msg);
+		break;
+
+	case CTDB_SRVID_GETLOG:
+		break;
+
+	case CTDB_SRVID_CLEARLOG:
 		break;
 
 	case CTDB_SRVID_PUSH_NODE_FLAGS:
@@ -91,7 +91,7 @@ static size_t ctdb_message_data_len(union ctdb_message_data *mdata,
 		break;
 
 	case CTDB_SRVID_REBALANCE_NODE:
-		len = ctdb_uint32_len(mdata->pnn);
+		len = ctdb_uint32_len(&mdata->pnn);
 		break;
 
 	case CTDB_SRVID_DISABLE_TAKEOVER_RUNS:
@@ -103,11 +103,11 @@ static size_t ctdb_message_data_len(union ctdb_message_data *mdata,
 		break;
 
 	case CTDB_SRVID_DISABLE_IP_CHECK:
-		len = ctdb_uint32_len(mdata->timeout);
+		len = ctdb_uint32_len(&mdata->timeout);
 		break;
 
 	default:
-		len = ctdb_tdb_data_len(mdata->data);
+		len = ctdb_tdb_data_len(&mdata->data);
 		break;
 	}
 
@@ -115,135 +115,156 @@ static size_t ctdb_message_data_len(union ctdb_message_data *mdata,
 }
 
 static void ctdb_message_data_push(union ctdb_message_data *mdata,
-				   uint64_t srvid, uint8_t *buf)
+				   uint64_t srvid, uint8_t *buf,
+				   size_t *npush)
 {
+	size_t np = 0;
+
 	switch (srvid) {
 	case CTDB_SRVID_BANNING:
-		ctdb_uint32_push(mdata->pnn, buf);
+		ctdb_uint32_push(&mdata->pnn, buf, &np);
 		break;
 
 	case CTDB_SRVID_ELECTION:
-		ctdb_election_message_push(mdata->election, buf);
+		ctdb_election_message_push(mdata->election, buf, &np);
 		break;
 
 	case CTDB_SRVID_RECONFIGURE:
 		break;
 
 	case CTDB_SRVID_RELEASE_IP:
-		ctdb_string_push(mdata->ipaddr, buf);
+		ctdb_string_push(&mdata->ipaddr, buf, &np);
 		break;
 
 	case CTDB_SRVID_TAKE_IP:
-		ctdb_string_push(mdata->ipaddr, buf);
+		ctdb_string_push(&mdata->ipaddr, buf, &np);
 		break;
 
 	case CTDB_SRVID_SET_NODE_FLAGS:
-		ctdb_node_flag_change_push(mdata->flag_change, buf);
+		ctdb_node_flag_change_push(mdata->flag_change, buf, &np);
 		break;
 
 	case CTDB_SRVID_RECD_UPDATE_IP:
-		ctdb_public_ip_push(mdata->pubip, buf);
+		ctdb_public_ip_push(mdata->pubip, buf, &np);
 		break;
 
 	case CTDB_SRVID_VACUUM_FETCH:
-		ctdb_rec_buffer_push(mdata->recbuf, buf);
+		ctdb_rec_buffer_push(mdata->recbuf, buf, &np);
 		break;
 
 	case CTDB_SRVID_DETACH_DATABASE:
-		ctdb_uint32_push(mdata->db_id, buf);
+		ctdb_uint32_push(&mdata->db_id, buf, &np);
 		break;
 
 	case CTDB_SRVID_MEM_DUMP:
-		ctdb_srvid_message_push(mdata->msg, buf);
+		ctdb_srvid_message_push(mdata->msg, buf, &np);
+		break;
+
+	case CTDB_SRVID_GETLOG:
+		break;
+
+	case CTDB_SRVID_CLEARLOG:
 		break;
 
 	case CTDB_SRVID_PUSH_NODE_FLAGS:
-		ctdb_node_flag_change_push(mdata->flag_change, buf);
+		ctdb_node_flag_change_push(mdata->flag_change, buf, &np);
 		break;
 
 	case CTDB_SRVID_RELOAD_NODES:
 		break;
 
 	case CTDB_SRVID_TAKEOVER_RUN:
-		ctdb_srvid_message_push(mdata->msg, buf);
+		ctdb_srvid_message_push(mdata->msg, buf, &np);
 		break;
 
 	case CTDB_SRVID_REBALANCE_NODE:
-		ctdb_uint32_push(mdata->pnn, buf);
+		ctdb_uint32_push(&mdata->pnn, buf, &np);
 		break;
 
 	case CTDB_SRVID_DISABLE_TAKEOVER_RUNS:
-		ctdb_disable_message_push(mdata->disable, buf);
+		ctdb_disable_message_push(mdata->disable, buf, &np);
 		break;
 
 	case CTDB_SRVID_DISABLE_RECOVERIES:
-		ctdb_disable_message_push(mdata->disable, buf);
+		ctdb_disable_message_push(mdata->disable, buf, &np);
 		break;
 
 	case CTDB_SRVID_DISABLE_IP_CHECK:
-		ctdb_uint32_push(mdata->timeout, buf);
+		ctdb_uint32_push(&mdata->timeout, buf, &np);
 		break;
 
 	default:
-		ctdb_tdb_data_push(mdata->data, buf);
+		ctdb_tdb_data_push(&mdata->data, buf, &np);
 		break;
 	}
+
+	*npush = np;
 }
 
 static int ctdb_message_data_pull(uint8_t *buf, size_t buflen,
 				  uint64_t srvid, TALLOC_CTX *mem_ctx,
-				  union ctdb_message_data *mdata)
+				  union ctdb_message_data *mdata,
+				  size_t *npull)
 {
 	int ret = 0;
+	size_t np = 0;
 
 	switch (srvid) {
 	case CTDB_SRVID_BANNING:
-		ret = ctdb_uint32_pull(buf, buflen, mem_ctx, &mdata->pnn);
+		ret = ctdb_uint32_pull(buf, buflen, &mdata->pnn, &np);
 		break;
 
 	case CTDB_SRVID_ELECTION:
 		ret = ctdb_election_message_pull(buf, buflen, mem_ctx,
-						 &mdata->election);
+						 &mdata->election, &np);
 		break;
 
 	case CTDB_SRVID_RECONFIGURE:
 		break;
 
 	case CTDB_SRVID_RELEASE_IP:
-		ret = ctdb_string_pull(buf, buflen, mem_ctx, &mdata->ipaddr);
+		ret = ctdb_string_pull(buf, buflen, mem_ctx, &mdata->ipaddr,
+				       &np);
 		break;
 
 	case CTDB_SRVID_TAKE_IP:
-		ret = ctdb_string_pull(buf, buflen, mem_ctx, &mdata->ipaddr);
+		ret = ctdb_string_pull(buf, buflen, mem_ctx, &mdata->ipaddr,
+				       &np);
 		break;
 
 	case CTDB_SRVID_SET_NODE_FLAGS:
 		ret = ctdb_node_flag_change_pull(buf, buflen, mem_ctx,
-						 &mdata->flag_change);
+						 &mdata->flag_change, &np);
 		break;
 
 	case CTDB_SRVID_RECD_UPDATE_IP:
 		ret = ctdb_public_ip_pull(buf, buflen, mem_ctx,
-					  &mdata->pubip);
+					  &mdata->pubip, &np);
 		break;
 
 	case CTDB_SRVID_VACUUM_FETCH:
 		ret = ctdb_rec_buffer_pull(buf, buflen, mem_ctx,
-					   &mdata->recbuf);
+					   &mdata->recbuf, &np);
 		break;
 
 	case CTDB_SRVID_DETACH_DATABASE:
-		ret = ctdb_uint32_pull(buf, buflen, mem_ctx, &mdata->db_id);
+		ret = ctdb_uint32_pull(buf, buflen, &mdata->db_id, &np);
 		break;
 
 	case CTDB_SRVID_MEM_DUMP:
 		ret = ctdb_srvid_message_pull(buf, buflen, mem_ctx,
-					      &mdata->msg);
+					      &mdata->msg, &np);
+		break;
+
+	case CTDB_SRVID_GETLOG:
+		break;
+
+	case CTDB_SRVID_CLEARLOG:
 		break;
 
 	case CTDB_SRVID_PUSH_NODE_FLAGS:
 		ret = ctdb_node_flag_change_pull(buf, buflen, mem_ctx,
-						 &mdata->flag_change);
+						 &mdata->flag_change, &np);
 		break;
 
 	case CTDB_SRVID_RELOAD_NODES:
@@ -251,62 +272,78 @@ static int ctdb_message_data_pull(uint8_t *buf, size_t buflen,
 
 	case CTDB_SRVID_TAKEOVER_RUN:
 		ret = ctdb_srvid_message_pull(buf, buflen, mem_ctx,
-					      &mdata->msg);
+					      &mdata->msg, &np);
 		break;
 
 	case CTDB_SRVID_REBALANCE_NODE:
-		ret = ctdb_uint32_pull(buf, buflen, mem_ctx, &mdata->pnn);
+		ret = ctdb_uint32_pull(buf, buflen, &mdata->pnn, &np);
 		break;
 
 	case CTDB_SRVID_DISABLE_TAKEOVER_RUNS:
 		ret = ctdb_disable_message_pull(buf, buflen, mem_ctx,
-						&mdata->disable);
+						&mdata->disable, &np);
 		break;
 
 	case CTDB_SRVID_DISABLE_RECOVERIES:
 		ret = ctdb_disable_message_pull(buf, buflen, mem_ctx,
-						&mdata->disable);
+						&mdata->disable, &np);
 		break;
 
 	case CTDB_SRVID_DISABLE_IP_CHECK:
-		ret = ctdb_uint32_pull(buf, buflen, mem_ctx, &mdata->timeout);
+		ret = ctdb_uint32_pull(buf, buflen, &mdata->timeout, &np);
 		break;
 
 	default:
-		ret = ctdb_tdb_data_pull(buf, buflen, mem_ctx, &mdata->data);
+		ret = ctdb_tdb_data_pull(buf, buflen, mem_ctx, &mdata->data,
+					 &np);
 		break;
 	}
 
-	return ret;
+	if (ret != 0) {
+		return ret;
+	}
+
+	*npull = np;
+	return 0;
 }
 
 size_t ctdb_req_message_len(struct ctdb_req_header *h,
 			    struct ctdb_req_message *c)
 {
-	return offsetof(struct ctdb_req_message_wire, data) +
-		ctdb_message_data_len(&c->data, c->srvid);
+	uint32_t u32 = ctdb_message_data_len(&c->data, c->srvid);
+
+	return ctdb_req_header_len(h) +
+		ctdb_uint64_len(&c->srvid) +
+		ctdb_uint32_len(&u32) + u32;
 }
 
 int ctdb_req_message_push(struct ctdb_req_header *h,
-			  struct ctdb_req_message *message,
+			  struct ctdb_req_message *c,
 			  uint8_t *buf, size_t *buflen)
 {
-	struct ctdb_req_message_wire *wire =
-		(struct ctdb_req_message_wire *)buf;
+	size_t offset = 0, np;
 	size_t length;
+	uint32_t u32;
 
-	length = ctdb_req_message_len(h, message);
+	length = ctdb_req_message_len(h, c);
 	if (*buflen < length) {
 		*buflen = length;
 		return EMSGSIZE;
 	}
 
 	h->length = *buflen;
-	ctdb_req_header_push(h, (uint8_t *)&wire->hdr);
+	ctdb_req_header_push(h, buf+offset, &np);
+	offset += np;
 
-	wire->srvid = message->srvid;
-	wire->datalen = ctdb_message_data_len(&message->data, message->srvid);
-	ctdb_message_data_push(&message->data, message->srvid, wire->data);
+	ctdb_uint64_push(&c->srvid, buf+offset, &np);
+	offset += np;
+
+	u32 = ctdb_message_data_len(&c->data, c->srvid);
+	ctdb_uint32_push(&u32, buf+offset, &np);
+	offset += np;
+
+	ctdb_message_data_push(&c->data, c->srvid, buf+offset, &np);
+	offset += np;
 
 	return 0;
 }
@@ -316,65 +353,77 @@ int ctdb_req_message_pull(uint8_t *buf, size_t buflen,
 			  TALLOC_CTX *mem_ctx,
 			  struct ctdb_req_message *c)
 {
-	struct ctdb_req_message_wire *wire =
-		(struct ctdb_req_message_wire *)buf;
-	size_t length;
+	struct ctdb_req_header header;
+	size_t offset = 0, np;
+	uint32_t u32;
 	int ret;
 
-	length = offsetof(struct ctdb_req_message_wire, data);
-	if (buflen < length) {
-		return EMSGSIZE;
+	ret = ctdb_req_header_pull(buf+offset, buflen-offset, &header, &np);
+	if (ret != 0) {
+		return ret;
 	}
-	if (wire->datalen > buflen) {
-		return EMSGSIZE;
-	}
-	if (length + wire->datalen < length) {
-		return EMSGSIZE;
-	}
-	if (buflen < length + wire->datalen) {
-		return EMSGSIZE;
-	}
+	offset += np;
 
 	if (h != NULL) {
-		ret = ctdb_req_header_pull((uint8_t *)&wire->hdr, buflen, h);
-		if (ret != 0) {
-			return ret;
-		}
+		*h = header;
 	}
 
-	c->srvid = wire->srvid;
-	ret = ctdb_message_data_pull(wire->data, wire->datalen, wire->srvid,
-				     mem_ctx, &c->data);
+	ret = ctdb_uint64_pull(buf+offset, buflen-offset, &c->srvid, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &u32, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	if (buflen-offset < u32) {
+		return EMSGSIZE;
+	}
+
+	ret = ctdb_message_data_pull(buf+offset, u32, c->srvid,
+				     mem_ctx, &c->data, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
 	return ret;
 }
 
 size_t ctdb_req_message_data_len(struct ctdb_req_header *h,
 				 struct ctdb_req_message_data *c)
 {
-	return offsetof(struct ctdb_req_message_wire, data) +
-		ctdb_tdb_data_len(c->data);
+	return ctdb_req_header_len(h) +
+		ctdb_uint64_len(&c->srvid) +
+		ctdb_tdb_datan_len(&c->data);
 }
 
 int ctdb_req_message_data_push(struct ctdb_req_header *h,
-			       struct ctdb_req_message_data *message,
+			       struct ctdb_req_message_data *c,
 			       uint8_t *buf, size_t *buflen)
 {
-	struct ctdb_req_message_wire *wire =
-		(struct ctdb_req_message_wire *)buf;
+	size_t offset = 0, np;
 	size_t length;
 
-	length = ctdb_req_message_data_len(h, message);
+	length = ctdb_req_message_data_len(h, c);
 	if (*buflen < length) {
 		*buflen = length;
 		return EMSGSIZE;
 	}
 
 	h->length = *buflen;
-	ctdb_req_header_push(h, (uint8_t *)&wire->hdr);
+	ctdb_req_header_push(h, buf+offset, &np);
+	offset += np;
 
-	wire->srvid = message->srvid;
-	wire->datalen = ctdb_tdb_data_len(message->data);
-	ctdb_tdb_data_push(message->data, wire->data);
+	ctdb_uint64_push(&c->srvid, buf+offset, &np);
+	offset += np;
+
+	ctdb_tdb_datan_push(&c->data, buf+offset, &np);
+	offset += np;
 
 	return 0;
 }
@@ -384,39 +433,32 @@ int ctdb_req_message_data_pull(uint8_t *buf, size_t buflen,
 			       TALLOC_CTX *mem_ctx,
 			       struct ctdb_req_message_data *c)
 {
-	struct ctdb_req_message_wire *wire =
-		(struct ctdb_req_message_wire *)buf;
-	size_t length;
+	struct ctdb_req_header header;
+	size_t offset = 0, np;
 	int ret;
 
-	length = offsetof(struct ctdb_req_message_wire, data);
-	if (buflen < length) {
-		return EMSGSIZE;
-	}
-	if (wire->datalen > buflen) {
-		return EMSGSIZE;
-	}
-	if (length + wire->datalen < length) {
-		return EMSGSIZE;
-	}
-	if (buflen < length + wire->datalen) {
-		return EMSGSIZE;
-	}
-
-	if (h != NULL) {
-		ret = ctdb_req_header_pull((uint8_t *)&wire->hdr, buflen, h);
-		if (ret != 0) {
-			return ret;
-		}
-	}
-
-	c->srvid = wire->srvid;
-
-	ret = ctdb_tdb_data_pull(wire->data, wire->datalen,
-				 mem_ctx, &c->data);
+	ret = ctdb_req_header_pull(buf+offset, buflen-offset, &header, &np);
 	if (ret != 0) {
 		return ret;
 	}
+	offset += np;
+
+	if (h != NULL) {
+		*h = header;
+	}
+
+	ret = ctdb_uint64_pull(buf+offset, buflen-offset, &c->srvid, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
+
+	ret = ctdb_tdb_datan_pull(buf+offset, buflen-offset,
+				  mem_ctx, &c->data, &np);
+	if (ret != 0) {
+		return ret;
+	}
+	offset += np;
 
 	return 0;
 }

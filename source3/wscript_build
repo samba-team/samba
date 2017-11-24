@@ -76,25 +76,6 @@ bld.SAMBA3_LIBRARY('msrpc3',
                    ''',
                    private_library=True)
 
-bld.SAMBA3_LIBRARY('gpo',
-                   source='''
-                          ../libgpo/gpo_ldap.c
-                          ../libgpo/gpo_ini.c
-                          ../libgpo/gpo_util.c
-                          ../libgpo/gpo_fetch.c
-                          libgpo/gpo_filesync.c
-                          ../libgpo/gpo_sec.c
-                          libgpo/gpo_reg.c
-                          ''',
-                   deps='''
-                        talloc
-                        ads
-                        TOKEN_UTIL
-                        gpext
-                        auth
-                        ''',
-                   private_library=True)
-
 bld.SAMBA3_SUBSYSTEM('AVAHI',
                     source='''
                            lib/avahi.c
@@ -304,7 +285,6 @@ bld.SAMBA3_SUBSYSTEM('samba3util',
                           lib/util_tsock.c
                           lib/util_transfer_file.c
                           lib/sys_popen.c
-                          lib/sock_exec.c
                           ''',
                    deps='''
                         CHARSET3
@@ -382,7 +362,6 @@ bld.SAMBA3_SUBSYSTEM('samba3core',
                           lib/messages.c
                           lib/util_cluster.c
                           lib/id_cache.c
-                          lib/talloc_dict.c
                           lib/serverid.c
                           lib/server_id_watch.c
                           lib/server_id_db_util.c
@@ -405,7 +384,6 @@ bld.SAMBA3_SUBSYSTEM('samba3core',
                           lib/server_prefork.c
                           lib/server_prefork_util.c
                           lib/ldap_escape.c
-                          lib/fncall.c
                           libads/krb5_errs.c
                           lib/system_smbd.c
                           lib/audit.c
@@ -413,7 +391,6 @@ bld.SAMBA3_SUBSYSTEM('samba3core',
                           lib/idmap_cache.c
                           lib/util_ea.c
                           lib/background.c
-                          lib/cleanupdb.c
                           ''',
                    deps='''
                         samba3util
@@ -671,6 +648,7 @@ bld.SAMBA3_LIBRARY('smbd_base',
                           printing/printspoolss.c
                           lib/sessionid_tdb.c
                           lib/conn_tdb.c
+                          lib/cleanupdb.c
                           smbd/fake_file.c
                           smbd/quotas.c
                           smbd/ntquotas.c
@@ -748,6 +726,7 @@ bld.SAMBA3_LIBRARY('smbd_base',
                         netapi
                         NDR_IOCTL
                         notifyd
+                        vfs_acl_common
                    ''' +
                    bld.env['dmapi_lib'] +
                    bld.env['legacy_quota_libs'] +
@@ -871,19 +850,6 @@ bld.SAMBA3_SUBSYSTEM('LIBNET_DSSYNC',
                     deps='''
                          LIBNET
                          RPC_NDR_DRSUAPI
-                         ''')
-
-bld.SAMBA3_SUBSYSTEM('LIBNET_SAMSYNC',
-                    source='''
-                           libnet/libnet_samsync.c
-                           libnet/libnet_samsync_ldif.c
-                           libnet/libnet_samsync_passdb.c
-                           libnet/libnet_samsync_display.c
-                           libnet/libnet_samsync_keytab.c
-                           ''',
-                    deps='''
-                         LIBNET
-                         LIBCLI_SAMSYNC
                          ''')
 
 bld.SAMBA3_SUBSYSTEM('LIBEVENTLOG',
