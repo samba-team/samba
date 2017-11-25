@@ -1138,6 +1138,88 @@ static int messaging_dgm_context_destructor(struct messaging_dgm_context *c)
 	return 0;
 }
 
+static void messaging_dgm_validate(struct messaging_dgm_context *ctx)
+{
+#ifdef DEVELOPER
+	pid_t pid = getpid();
+	struct sockaddr_storage addr;
+	socklen_t addrlen = sizeof(addr);
+	struct sockaddr_un *un_addr;
+	struct sun_path_buf pathbuf;
+	struct stat st1, st2;
+	int ret;
+
+	/*
+	 * Protect against using the wrong messaging context after a
+	 * fork without reinit_after_fork.
+	 */
+
+	ret = getsockname(ctx->sock, (struct sockaddr *)&addr, &addrlen);
+	if (ret == -1) {
+		DBG_ERR("getsockname failed: %s\n", strerror(errno));
+		goto fail;
+	}
+	if (addr.ss_family != AF_UNIX) {
+		DBG_ERR("getsockname returned family %d\n",
+			(int)addr.ss_family);
+		goto fail;
+	}
+	un_addr = (struct sockaddr_un *)&addr;
+
+	ret = snprintf(pathbuf.buf, sizeof(pathbuf.buf),
+		       "%s/%u", ctx->socket_dir.buf, (unsigned)pid);
+	if (ret < 0) {
+		DBG_ERR("snprintf failed: %s\n", strerror(errno));
+		goto fail;
+	}
+	if ((size_t)ret >= sizeof(pathbuf.buf)) {
+		DBG_ERR("snprintf returned %d chars\n", (int)ret);
+		goto fail;
+	}
+
+	if (strcmp(pathbuf.buf, un_addr->sun_path) != 0) {
+		DBG_ERR("sockname wrong: Expected %s, got %s\n",
+			pathbuf.buf, un_addr->sun_path);
+		goto fail;
+	}
+
+	ret = snprintf(pathbuf.buf, sizeof(pathbuf.buf),
+		       "%s/%u", ctx->lockfile_dir.buf, (unsigned)pid);
+	if (ret < 0) {
+		DBG_ERR("snprintf failed: %s\n", strerror(errno));
+		goto fail;
+	}
+	if ((size_t)ret >= sizeof(pathbuf.buf)) {
+		DBG_ERR("snprintf returned %d chars\n", (int)ret);
+		goto fail;
+	}
+
+	ret = stat(pathbuf.buf, &st1);
+	if (ret == -1) {
+		DBG_ERR("stat failed: %s\n", strerror(errno));
+		goto fail;
+	}
+	ret = fstat(ctx->lockfile_fd, &st2);
+	if (ret == -1) {
+		DBG_ERR("fstat failed: %s\n", strerror(errno));
+		goto fail;
+	}
+
+	if ((st1.st_dev != st2.st_dev) || (st1.st_ino != st2.st_ino)) {
+		DBG_ERR("lockfile differs, expected (%d/%d), got (%d/%d)\n",
+			(int)st2.st_dev, (int)st2.st_ino,
+			(int)st1.st_dev, (int)st1.st_ino);
+		goto fail;
+	}
+
+	return;
+fail:
+	abort();
+#else
+	return;
+#endif
+}
+
 static void messaging_dgm_recv(struct messaging_dgm_context *ctx,
 			       struct tevent_context *ev,
 			       uint8_t *msg, size_t msg_len,
@@ -1161,6 +1243,8 @@ static void messaging_dgm_read_handler(struct tevent_context *ev,
 	size_t msgbufsize = msghdr_prep_recv_fds(NULL, NULL, 0, INT8_MAX);
 	uint8_t msgbuf[msgbufsize];
 	uint8_t buf[MESSAGING_DGM_FRAGMENT_LENGTH];
+
+	messaging_dgm_validate(ctx);
 
 	if ((flags & TEVENT_FD_READ) == 0) {
 		return;
@@ -1336,6 +1420,8 @@ int messaging_dgm_send(pid_t pid,
 		return ENOTCONN;
 	}
 
+	messaging_dgm_validate(ctx);
+
 	ret = messaging_dgm_out_get(ctx, pid, &out);
 	if (ret != 0) {
 		return ret;
@@ -1384,6 +1470,8 @@ int messaging_dgm_get_unique(pid_t pid, uint64_t *unique)
 	if (ctx == NULL) {
 		return EBADF;
 	}
+
+	messaging_dgm_validate(ctx);
 
 	if (pid == getpid()) {
 		/*
@@ -1485,6 +1573,8 @@ int messaging_dgm_wipe(void)
 	if (ctx == NULL) {
 		return ENOTCONN;
 	}
+
+	messaging_dgm_validate(ctx);
 
 	/*
 	 * We scan the socket directory and not the lock directory. Otherwise
