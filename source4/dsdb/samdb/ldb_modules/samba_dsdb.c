@@ -295,6 +295,7 @@ static int samba_dsdb_init(struct ldb_module *module)
 		"subtree_delete",
 		"repl_meta_data",
 		"operational",
+		"unique_object_sids",
 		"subtree_rename",
 		"linked_attributes",
 		NULL};
