@@ -1,0 +1,19 @@
+<samba:parameter name="mdns name"
+                 type="enum"
+                 context="G"
+                 enumlist="enum_mdns_name_values"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+
+<description>
+	<para>This parameter controls the name that multicast DNS
+	support advertises as its' hostname.</para>
+
+	<para>The default is to use the NETBIOS name which is typically
+	the hostname in all capital letters. </para>
+
+	<para>A setting of mdns will defer the hostname configuration
+	to the MDNS library that is used.</para>
+
+</description>
+<value type="default">netbios</value>
+</samba:parameter>

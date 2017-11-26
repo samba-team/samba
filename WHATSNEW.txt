@@ -29,6 +29,29 @@ policy. Can be applied automatically by setting
 
  'server services = +gpoupdate'.
 
+Time Machine Support with vfs_fruit
+===================================
+Samba can be configured as a Time Machine target for Apple Mac devices
+through the vfs_fruit module. When enabling a share for Time Machine
+support the relevant Avahi records to support discovery will be published
+for installations that have been built against the Avahi client library.
+
+Shares can be designated as a Time Machine share with the following setting:
+
+  'fruit:time machine = yes'
+
+Support for lower casing the MDNS Name
+======================================
+Allows the server name that is advertised through MDNS to be set to the
+hostname rather than the Samba NETBIOS name. This allows an administrator
+to make Samba registered MDNS records match the case of the hostname
+rather than being in all capitals.
+
+This can be set with the following settings:
+
+  'mdns name = mdns'
+
+
 smb.conf changes
 ================
 
@@ -38,7 +61,8 @@ smb.conf changes
   gpo update command		     New
   oplock contention limit            Removed
   prefork children		     New		     1
-
+  mdns name                          Added                   netbios
+  fruit:time machine                 Added                   false
 
 NT4-style replication based net commands removed
 ================================================

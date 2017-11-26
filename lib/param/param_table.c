@@ -127,6 +127,12 @@ static const struct enum_list enum_smb_signing_vals[] = {
 	{-1, NULL}
 };
 
+static const struct enum_list enum_mdns_name_values[] = {
+	{MDNS_NAME_NETBIOS, "netbios"},
+	{MDNS_NAME_MDNS, "mdns"},
+	{-1, NULL}
+};
+
 static const struct enum_list enum_tls_verify_peer_vals[] = {
 	{TLS_VERIFY_PEER_NO_CHECK,
 	 TLS_VERIFY_PEER_NO_CHECK_STRING},

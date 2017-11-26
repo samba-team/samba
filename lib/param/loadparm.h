@@ -223,6 +223,9 @@ enum ldap_server_require_strong_auth {
 /* DNS update settings */
 enum dns_update_settings {DNS_UPDATE_OFF, DNS_UPDATE_ON, DNS_UPDATE_SIGNED};
 
+/* MDNS name sources */
+enum mdns_name_values {MDNS_NAME_NETBIOS, MDNS_NAME_MDNS};
+
 /* LDAP SSL options */
 enum ldap_ssl_types {LDAP_SSL_OFF, LDAP_SSL_START_TLS};
 

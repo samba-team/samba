@@ -111,8 +111,22 @@ static void avahi_client_callback(AvahiClient *c, AvahiClientState status,
 		int dk = 0;
 		AvahiStringList *adisk = NULL;
 		AvahiStringList *adisk2 = NULL;
+		const char *hostname = NULL;
+		enum mdns_name_values mdns_name = lp_mdns_name();
 
 		DBG_DEBUG("AVAHI_CLIENT_S_RUNNING\n");
+
+		switch (mdns_name) {
+		case MDNS_NAME_MDNS:
+			hostname = avahi_client_get_host_name(c);
+			break;
+		case MDNS_NAME_NETBIOS:
+			hostname = lp_netbios_name();
+			break;
+		default:
+			DBG_ERR("Unhandled mdns_name %d\n", mdns_name);
+			return;
+		}
 
 		state->entry_group = avahi_entry_group_new(
 			c, avahi_entry_group_callback, state);
@@ -125,7 +139,7 @@ static void avahi_client_callback(AvahiClient *c, AvahiClientState status,
 
 		error = avahi_entry_group_add_service(
 			    state->entry_group, AVAHI_IF_UNSPEC,
-			    AVAHI_PROTO_UNSPEC, 0, lp_netbios_name(),
+			    AVAHI_PROTO_UNSPEC, 0, hostname,
 			    "_smb._tcp", NULL, NULL, state->port, NULL);
 		if (error != AVAHI_OK) {
 			DBG_DEBUG("avahi_entry_group_add_service failed: %s\n",
@@ -169,7 +183,7 @@ static void avahi_client_callback(AvahiClient *c, AvahiClientState status,
 
 			error = avahi_entry_group_add_service_strlst(
 				    state->entry_group, AVAHI_IF_UNSPEC,
-				    AVAHI_PROTO_UNSPEC, 0, lp_netbios_name(),
+				    AVAHI_PROTO_UNSPEC, 0, hostname,
 				    "_adisk._tcp", NULL, NULL, 0, adisk);
 			avahi_string_list_free(adisk);
 			adisk = NULL;
