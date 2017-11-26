@@ -285,7 +285,7 @@ NTSTATUS rpccli_connect_netlogon(
 	struct netlogon_creds_CredentialState *creds = NULL;
 	enum netlogon_creds_cli_lck_type lck_type;
 	enum netr_SchannelType sec_chan_type;
-	struct netlogon_creds_cli_lck *lck;
+	struct netlogon_creds_cli_lck *lck = NULL;
 	uint32_t negotiate_flags;
 	uint8_t found_session_key[16] = {0};
 	bool found_existing_creds = false;
@@ -293,6 +293,13 @@ NTSTATUS rpccli_connect_netlogon(
 	struct rpc_pipe_client *rpccli;
 	NTSTATUS status;
 	bool retry = false;
+
+	sec_chan_type = cli_credentials_get_secure_channel_type(trust_creds);
+	if (sec_chan_type == SEC_CHAN_NULL) {
+		DBG_ERR("secure_channel_type gave SEC_CHAN_NULL\n");
+		status = NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+		goto fail;
+	}
 
 again:
 
@@ -376,35 +383,6 @@ again:
 				    creds_ctx, frame));
 		status = NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 		goto fail;
-	}
-
-	sec_chan_type = cli_credentials_get_secure_channel_type(trust_creds);
-	if (sec_chan_type == SEC_CHAN_NULL) {
-		if (transport == NCACN_IP_TCP) {
-			DBG_NOTICE("secure_channel_type gave SEC_CHAN_NULL "
-				   "for %s, deny NCACN_IP_TCP and let the "
-				   "caller fallback to NCACN_NP.\n",
-				   netlogon_creds_cli_debug_string(
-					   creds_ctx, frame));
-			status = NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
-			goto fail;
-		}
-
-		DBG_NOTICE("get_secure_channel_type gave SEC_CHAN_NULL "
-			   "for %s, fallback to noauth on NCACN_NP.\n",
-			   netlogon_creds_cli_debug_string(
-				   creds_ctx, frame));
-
-		TALLOC_FREE(lck);
-
-		status = cli_rpc_pipe_open_noauth_transport(
-			cli, transport, &ndr_table_netlogon, &rpccli);
-		if (!NT_STATUS_IS_OK(status)) {
-			DBG_DEBUG("cli_rpc_pipe_open_noauth_transport "
-				  "failed: %s\n", nt_errstr(status));
-			goto fail;
-		}
-		goto done;
 	}
 
 	status = rpccli_setup_netlogon_creds_locked(
