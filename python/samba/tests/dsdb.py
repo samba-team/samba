@@ -23,7 +23,7 @@ from samba.auth import system_session
 from samba.tests import TestCase
 from samba.tests import delete_force
 from samba.ndr import ndr_unpack, ndr_pack
-from samba.dcerpc import drsblobs
+from samba.dcerpc import drsblobs, security
 from samba import dsdb
 import ldb
 import samba
@@ -184,3 +184,81 @@ class DsdbTests(TestCase):
             if e[0] != ldb.ERR_UNSUPPORTED_CRITICAL_EXTENSION:
                 self.fail("Got %s should have got ERR_UNSUPPORTED_CRITICAL_EXTENSION"
                           % e[1])
+
+    # Allocate a unique RID for use in the objectSID tests.
+    #
+    def allocate_rid(self):
+        self.samdb.transaction_start()
+        try:
+            rid = self.samdb.allocate_rid()
+        except:
+            self.samdb.transaction_cancel()
+            raise
+        self.samdb.transaction_commit()
+        return str(rid)
+
+    # Ensure that duplicate objectSID's are permitted for foreign security
+    # principals.
+    #
+    def test_duplicate_objectSIDs_allowed_on_foreign_security_principals(self):
+
+        #
+        # We need to build a foreign security principal SID
+        # i.e a  SID not in the current domain.
+        #
+        dom_sid = self.samdb.get_domain_sid()
+        if str(dom_sid)[:-1] == "0":
+            c = "9"
+        else:
+            c = "0"
+        sid     = str(dom_sid)[:-1] + c + "-1000"
+        basedn  = self.samdb.get_default_basedn()
+        dn      = "CN=%s,CN=ForeignSecurityPrincipals,%s" % (sid, basedn)
+        self.samdb.add({
+            "dn": dn,
+            "objectClass": "foreignSecurityPrincipal"})
+
+        self.samdb.delete(dn)
+
+        try:
+            self.samdb.add({
+                "dn": dn,
+                "objectClass": "foreignSecurityPrincipal"})
+        except ldb.LdbError as e:
+            (code, msg) = e
+            self.fail("Got unexpected exception %d - %s "
+                      % (code, msg))
+
+    #
+    # Duplicate objectSID's should not be permitted for sids in the local
+    # domain. The test sequence is add an object, delete it, then attempt to
+    # re-add it, this should fail with a constraint violation
+    #
+    def test_duplicate_objectSIDs_not_allowed_on_local_objects(self):
+
+        dom_sid = self.samdb.get_domain_sid()
+        rid     = self.allocate_rid()
+        sid_str = str(dom_sid) + "-" + rid
+        sid     = ndr_pack(security.dom_sid(sid_str))
+        basedn  = self.samdb.get_default_basedn()
+        cn       = "dsdb_test_01"
+        dn      = "cn=%s,cn=Users,%s" % (cn, basedn)
+
+        self.samdb.add({
+            "dn": dn,
+            "objectClass": "user",
+            "objectSID": sid})
+        self.samdb.delete(dn)
+
+        try:
+            self.samdb.add({
+                "dn": dn,
+                "objectClass": "user",
+                "objectSID": sid})
+            self.fail("No exception should get LDB_ERR_CONSTRAINT_VIOLATION")
+        except ldb.LdbError as e:
+            (code, msg) = e
+            if code != ldb.ERR_CONSTRAINT_VIOLATION:
+                self.fail("Got %d - %s should have got "
+                          "LDB_ERR_CONSTRAINT_VIOLATION"
+                          % (code, msg))
