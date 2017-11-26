@@ -990,3 +990,8 @@ for env in ['vampire_dc', 'promoted_dc', 'rodc']:
 # check the databases are all OK. PLEASE LEAVE THIS AS THE LAST TEST
 for env in ["ad_dc_ntvfs", "ad_dc", "fl2000dc", "fl2003dc", "fl2008r2dc", 'vampire_dc', 'promoted_dc']:
     plantestsuite("samba4.blackbox.dbcheck(%s)" % env, env + ":local" , ["PYTHON=%s" % python, os.path.join(bbdir, "dbcheck.sh"), '$PREFIX/provision', configuration])
+
+# cmocka tests not requiring a specific encironment
+#
+plantestsuite("samba4.dsdb.samdb.ldb_modules.unique_object_sids" , "none",
+              [os.path.join(bindir(), "test_unique_object_sids")])

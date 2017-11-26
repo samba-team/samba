@@ -400,3 +400,12 @@ bld.SAMBA_MODULE('ldb_vlv',
 	deps='samdb-common',
 	subsystem='ldb'
 	)
+
+bld.SAMBA_MODULE('ldb_unique_object_sids',
+	'unique_object_sids.c',
+	init_function='ldb_unique_object_sids_init',
+	module_init_name='ldb_init_module',
+	internal_module=False,
+	deps='samdb-common DSDB_MODULE_HELPERS',
+	subsystem='ldb'
+	)

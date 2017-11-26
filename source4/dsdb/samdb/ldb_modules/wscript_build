@@ -18,5 +18,16 @@ bld.SAMBA_SUBSYSTEM('DSDB_MODULE_HELPER_RIDALLOC',
 	deps='MESSAGING',
 	)
 
+# Build the cmocka unit tests
+bld.SAMBA_BINARY('test_unique_object_sids',
+        source='tests/test_unique_object_sids.c',
+        deps='''
+            talloc
+            samdb
+            cmocka
+            DSDB_MODULE_HELPERS
+        ''',
+        install=False)
+
 if bld.AD_DC_BUILD_IS_ENABLED():
     bld.PROCESS_SEPARATE_RULE("server")
