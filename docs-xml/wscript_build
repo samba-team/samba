@@ -6,9 +6,6 @@ manpages='''
          manpages/dbwrap_tool.1
          manpages/eventlogadm.8
          manpages/findsmb.1
-         manpages/libsmbclient.7
-         manpages/lmhosts.5
-         manpages/log2pcap.1
          manpages/idmap_ad.8
          manpages/idmap_autorid.8
          manpages/idmap_hash.8
@@ -19,6 +16,9 @@ manpages='''
          manpages/idmap_script.8
          manpages/idmap_tdb.8
          manpages/idmap_tdb2.8
+         manpages/libsmbclient.7
+         manpages/lmhosts.5
+         manpages/log2pcap.1
          manpages/mvxattr.1
          manpages/net.8
          manpages/nmbd.8
@@ -27,10 +27,10 @@ manpages='''
          manpages/pdbedit.8
          manpages/profiles.1
          manpages/rpcclient.1
+         manpages/samba-regedit.8
+         manpages/samba-tool.8
          manpages/samba.7
          manpages/samba.8
-         manpages/samba-tool.8
-         manpages/samba-regedit.8
          manpages/sharesec.1
          manpages/smbcacls.1
          manpages/smbclient.1
@@ -41,8 +41,8 @@ manpages='''
          manpages/smbgetrc.5
          manpages/smbpasswd.5
          manpages/smbpasswd.8
-         manpages/smbspool.8
          manpages/smbspool_krb5_wrapper.8
+         manpages/smbspool.8
          manpages/smbstatus.1
          manpages/smbtar.1
          manpages/smbtree.1
@@ -54,7 +54,7 @@ manpages='''
          manpages/vfs_aio_fork.8
          manpages/vfs_aio_pthread.8
          manpages/vfs_audit.8
-	 manpages/vfs_btrfs.8
+         manpages/vfs_btrfs.8
          manpages/vfs_cacheprime.8
          manpages/vfs_cap.8
          manpages/vfs_catia.8
@@ -82,8 +82,8 @@ manpages='''
          manpages/vfs_recycle.8
          manpages/vfs_shadow_copy.8
          manpages/vfs_shadow_copy2.8
-	 manpages/vfs_shell_snap.8
-	 manpages/vfs_snapper.8
+         manpages/vfs_shell_snap.8
+         manpages/vfs_snapper.8
          manpages/vfs_streams_depot.8
          manpages/vfs_streams_xattr.8
          manpages/vfs_syncops.8
@@ -92,6 +92,7 @@ manpages='''
          manpages/vfs_unityed_media.8
          manpages/vfs_worm.8
          manpages/vfs_xattr_tdb.8
+         manpages/vfs_zfsacl.8
          manpages/vfstest.1
          manpages/wbinfo.1
          manpages/winbindd.8
