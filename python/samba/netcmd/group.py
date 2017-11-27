@@ -421,6 +421,84 @@ samba-tool group listmembers \"Domain Users\" -H ldap://samba.samdom.example.com
         except Exception, e:
             raise CommandError('Failed to list members of "%s" group ' % groupname, e)
 
+class cmd_group_move(Command):
+    """Move a group to an organizational unit/container.
+
+    This command moves a group object into the specified organizational unit
+    or container.
+    The groupname specified on the command is the sAMAccountName.
+    The name of the organizational unit or container can be specified as a
+    full DN or without the domainDN component.
+
+    The command may be run from the root userid or another authorized userid.
+
+    The -H or --URL= option can be used to execute the command against a remote
+    server.
+
+    Example1:
+    samba-tool group move Group1 'OU=OrgUnit,DC=samdom.DC=example,DC=com' \
+        -H ldap://samba.samdom.example.com -U administrator
+
+    Example1 shows how to move a group Group1 into the 'OrgUnit' organizational
+    unit on a remote LDAP server.
+
+    The -H parameter is used to specify the remote target server.
+
+    Example2:
+    samba-tool group move Group1 CN=Users
+
+    Example2 shows how to move a group Group1 back into the CN=Users container
+    on the local server.
+    """
+
+    synopsis = "%prog <groupname> <new_parent_dn> [options]"
+
+    takes_options = [
+        Option("-H", "--URL", help="LDB URL for database or target server",
+               type=str, metavar="URL", dest="H"),
+    ]
+
+    takes_args = [ "groupname", "new_parent_dn" ]
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "credopts": options.CredentialsOptions,
+        "versionopts": options.VersionOptions,
+        }
+
+    def run(self, groupname, new_parent_dn, credopts=None, sambaopts=None,
+            versionopts=None, H=None):
+        lp = sambaopts.get_loadparm()
+        creds = credopts.get_credentials(lp, fallback_machine=True)
+        samdb = SamDB(url=H, session_info=system_session(),
+                      credentials=creds, lp=lp)
+        domain_dn = ldb.Dn(samdb, samdb.domain_dn())
+
+        filter = ("(&(sAMAccountName=%s)(objectClass=group))" %
+                  groupname)
+        try:
+            res = samdb.search(base=domain_dn,
+                               expression=filter,
+                               scope=ldb.SCOPE_SUBTREE)
+            group_dn = res[0].dn
+        except IndexError:
+            raise CommandError('Unable to find group "%s"' % (groupname))
+
+        try:
+            full_new_parent_dn = samdb.normalize_dn_in_domain(new_parent_dn)
+        except Exception, e:
+            raise CommandError('Invalid new_parent_dn "%s": %s' %
+                               (new_parent_dn, e.message))
+
+        full_new_group_dn = ldb.Dn(samdb, str(group_dn))
+        full_new_group_dn.remove_base_components(len(group_dn)-1)
+        full_new_group_dn.add_base(full_new_parent_dn)
+
+        try:
+            samdb.rename(group_dn, full_new_group_dn)
+        except Exception, e:
+            raise CommandError('Failed to move group "%s"' % groupname, e)
+        self.outf.write('Moved group "%s" into "%s"\n' %
+                        (groupname, full_new_parent_dn))
 
 class cmd_group(SuperCommand):
     """Group management."""
@@ -432,3 +510,4 @@ class cmd_group(SuperCommand):
     subcommands["removemembers"] = cmd_group_remove_members()
     subcommands["list"] = cmd_group_list()
     subcommands["listmembers"] = cmd_group_list_members()
+    subcommands["move"] = cmd_group_move()
