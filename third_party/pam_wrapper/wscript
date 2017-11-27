@@ -109,9 +109,13 @@ def build(bld):
                           install=False,
                           realname='libpam-wrapper.so')
 
+        bld.SAMBA_SUBSYSTEM('libpamtest',
+                            source='libpamtest.c',
+                            deps='dl pam')
+
         # Can be used to write pam tests in python
         for env in bld.gen_python_environments():
             bld.SAMBA_PYTHON('pypamtest',
-                             source='python/pypamtest.c libpamtest.c',
-                             deps='dl pam',
+                             source='python/pypamtest.c',
+                             deps='libpamtest',
                              install=False)
