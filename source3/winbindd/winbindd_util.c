@@ -1339,10 +1339,11 @@ NTSTATUS lookup_usergroups_cached(TALLOC_CTX *mem_ctx,
 ********************************************************************/
 
 NTSTATUS normalize_name_map(TALLOC_CTX *mem_ctx,
-			     struct winbindd_domain *domain,
+			     const char *domain_name,
 			     const char *name,
 			     char **normalized)
 {
+	struct winbindd_domain *domain = NULL;
 	NTSTATUS nt_status;
 
 	if (!name || !normalized) {
@@ -1351,6 +1352,12 @@ NTSTATUS normalize_name_map(TALLOC_CTX *mem_ctx,
 
 	if (!lp_winbind_normalize_names()) {
 		return NT_STATUS_PROCEDURE_NOT_FOUND;
+	}
+
+	domain = find_domain_from_name_noinit(domain_name);
+	if (domain == NULL) {
+		DBG_ERR("Failed to find domain '%s'\n",	domain_name);
+		return NT_STATUS_NO_SUCH_DOMAIN;
 	}
 
 	/* Alias support and whitespace replacement are mutually

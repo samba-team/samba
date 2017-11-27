@@ -332,7 +332,7 @@ NTSTATUS rpc_sid_to_name(TALLOC_CTX *mem_ctx,
 	*ptype = (enum lsa_SidType) types[0];
 
 	map_status = normalize_name_map(mem_ctx,
-					domain,
+					domain->name,
 					names[0],
 					&mapped_name);
 	if (NT_STATUS_IS_OK(map_status) ||
@@ -410,7 +410,7 @@ NTSTATUS rpc_rids_to_names(TALLOC_CTX *mem_ctx,
 
 		if (types[i] != SID_NAME_UNKNOWN) {
 			map_status = normalize_name_map(mem_ctx,
-							domain,
+							domain->name,
 							names[i],
 							&mapped_name);
 			if (NT_STATUS_IS_OK(map_status) ||

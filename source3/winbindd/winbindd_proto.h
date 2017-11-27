@@ -471,7 +471,7 @@ NTSTATUS lookup_usergroups_cached(TALLOC_CTX *mem_ctx,
 				  uint32_t *p_num_groups, struct dom_sid **user_sids);
 
 NTSTATUS normalize_name_map(TALLOC_CTX *mem_ctx,
-			     struct winbindd_domain *domain,
+			     const char *domain_name,
 			     const char *name,
 			     char **normalized);
 NTSTATUS normalize_name_unmap(TALLOC_CTX *mem_ctx,
