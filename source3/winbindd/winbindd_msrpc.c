@@ -313,7 +313,7 @@ static NTSTATUS msrpc_sid_to_name(struct winbindd_domain *domain,
 
 	DEBUG(5,("Mapped sid to [%s]\\[%s]\n", domains[0], *name));
 
-	name_map_status = normalize_name_map(mem_ctx, domain, *name,
+	name_map_status = normalize_name_map(mem_ctx, domain->name, *name,
 					     &mapped_name);
 	if (NT_STATUS_IS_OK(name_map_status) ||
 	    NT_STATUS_EQUAL(name_map_status, NT_STATUS_FILE_RENAMED))
@@ -377,7 +377,7 @@ static NTSTATUS msrpc_rids_to_names(struct winbindd_domain *domain,
 
 		if ((*types)[i] != SID_NAME_UNKNOWN) {
 			name_map_status = normalize_name_map(mem_ctx,
-							     domain,
+							     domain->name,
 							     ret_names[i],
 							     &mapped_name);
 			if (NT_STATUS_IS_OK(name_map_status) ||
