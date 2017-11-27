@@ -2818,24 +2818,63 @@ static void cli_smb1_close_done(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
+struct cli_close_state {
+	int dummy;
+};
+
+static void cli_close_done(struct tevent_req *subreq);
+
 struct tevent_req *cli_close_send(TALLOC_CTX *mem_ctx,
 				struct tevent_context *ev,
 				struct cli_state *cli,
 				uint16_t fnum)
 {
 	struct tevent_req *req, *subreq;
+	struct cli_close_state *state;
 	NTSTATUS status;
 
-	req = cli_smb1_close_create(mem_ctx, ev, cli, fnum, &subreq);
+	req = tevent_req_create(mem_ctx, &state, struct cli_close_state);
 	if (req == NULL) {
 		return NULL;
 	}
 
-	status = smb1cli_req_chain_submit(&subreq, 1);
-	if (tevent_req_nterror(req, status)) {
-		return tevent_req_post(req, ev);
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+		subreq = cli_smb2_close_fnum_send(state,
+						ev,
+						cli,
+						fnum);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+	} else {
+		struct tevent_req *ch_req = NULL;
+		subreq = cli_smb1_close_create(state, ev, cli, fnum, &ch_req);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		status = smb1cli_req_chain_submit(&ch_req, 1);
+		if (tevent_req_nterror(req, status)) {
+			return tevent_req_post(req, ev);
+		}
 	}
+
+	tevent_req_set_callback(subreq, cli_close_done, req);
 	return req;
+}
+
+static void cli_close_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	NTSTATUS status = NT_STATUS_OK;
+	bool err = tevent_req_is_nterror(subreq, &status);
+
+	TALLOC_FREE(subreq);
+	if (err) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+	tevent_req_done(req);
 }
 
 NTSTATUS cli_close_recv(struct tevent_req *req)
@@ -2849,10 +2888,6 @@ NTSTATUS cli_close(struct cli_state *cli, uint16_t fnum)
 	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_OK;
-
-	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
-		return cli_smb2_close_fnum(cli, fnum);
-	}
 
 	frame = talloc_stackframe();
 
