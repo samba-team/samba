@@ -3214,6 +3214,7 @@ static NTSTATUS cm_connect_netlogon_transport(struct winbindd_domain *domain,
 	struct messaging_context *msg_ctx = server_messaging_context();
 	struct winbindd_cm_conn *conn;
 	NTSTATUS result;
+	enum netr_SchannelType sec_chan_type;
 	struct cli_credentials *creds = NULL;
 
 	*cli = NULL;
@@ -3239,6 +3240,41 @@ static NTSTATUS cm_connect_netlogon_transport(struct winbindd_domain *domain,
 		DBG_DEBUG("No user available for domain %s when trying "
 			  "schannel\n", domain->name);
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+	}
+
+	if (cli_credentials_is_anonymous(creds)) {
+		DBG_WARNING("get_trust_credential only gave anonymous for %s, "
+			    "unable to make get NETLOGON credentials\n",
+			    domain->name);
+		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+	}
+
+	sec_chan_type = cli_credentials_get_secure_channel_type(creds);
+	if (sec_chan_type == SEC_CHAN_NULL) {
+		if (transport == NCACN_IP_TCP) {
+			DBG_NOTICE("get_secure_channel_type gave SEC_CHAN_NULL "
+				   "for %s, deny NCACN_IP_TCP and let the "
+				   "caller fallback to NCACN_NP.\n",
+				   domain->name);
+			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+		}
+
+		DBG_NOTICE("get_secure_channel_type gave SEC_CHAN_NULL for %s, "
+			   "fallback to noauth on NCACN_NP.\n",
+			   domain->name);
+
+		result = cli_rpc_pipe_open_noauth_transport(
+			conn->cli,
+			transport,
+			&ndr_table_netlogon,
+			&conn->netlogon_pipe);
+		if (!NT_STATUS_IS_OK(result)) {
+			invalidate_cm_connection(domain);
+			return result;
+		}
+
+		*cli = conn->netlogon_pipe;
+		return NT_STATUS_OK;
 	}
 
 	result = rpccli_create_netlogon_creds_ctx(creds,
