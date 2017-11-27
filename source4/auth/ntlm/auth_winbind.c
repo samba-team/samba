@@ -295,113 +295,11 @@ static NTSTATUS winbind_check_password_recv(struct tevent_req *req,
 	return NT_STATUS_OK;
 }
 
-/*
- Authenticate a user with a challenge/response
- using the samba3 winbind protocol via libwbclient
-*/
-static NTSTATUS winbind_check_password_wbclient(struct auth_method_context *ctx,
-						TALLOC_CTX *mem_ctx,
-						const struct auth_usersupplied_info *user_info,
-						struct auth_user_info_dc **user_info_dc,
-						bool *authoritative)
-{
-	struct wbcAuthUserParams params;
-	struct wbcAuthUserInfo *info = NULL;
-	struct wbcAuthErrorInfo *err = NULL;
-	wbcErr wbc_status;
-	NTSTATUS nt_status;
-	struct netr_SamInfo6 *info6 = NULL;
-	union netr_Validation validation;
-
-	/* Send off request */
-	const struct auth_usersupplied_info *user_info_temp;
-	nt_status = encrypt_user_info(mem_ctx, ctx->auth_ctx,
-				      AUTH_PASSWORD_RESPONSE,
-				      user_info, &user_info_temp);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		return nt_status;
-	}
-	user_info = user_info_temp;
-
-	ZERO_STRUCT(params);
-	ZERO_STRUCT(validation);
-	/*params.flags = WBFLAG_PAM_INFO3_NDR;*/
-
-	params.parameter_control = user_info->logon_parameters;
-	params.parameter_control |= WBC_MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT |
-				    WBC_MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT;
-	params.level = WBC_AUTH_USER_LEVEL_RESPONSE;
-
-	params.account_name     = user_info->client.account_name;
-	params.domain_name      = user_info->client.domain_name;
-	params.workstation_name = user_info->workstation_name;
-
-	DEBUG(5,("looking up %s@%s logging in from %s\n",
-		  params.account_name, params.domain_name,
-		  params.workstation_name));
-
-	memcpy(params.password.response.challenge,
-	       ctx->auth_ctx->challenge.data.data,
-	       sizeof(params.password.response.challenge));
-
-	params.password.response.lm_length =
-		user_info->password.response.lanman.length;
-	params.password.response.nt_length =
-		user_info->password.response.nt.length;
-
-	params.password.response.lm_data =
-		user_info->password.response.lanman.data;
-	params.password.response.nt_data =
-		user_info->password.response.nt.data;
-
-	wbc_status = wbcAuthenticateUserEx(&params, &info, &err);
-	if (wbc_status == WBC_ERR_AUTH_ERROR) {
-		if (err) {
-			DEBUG(1, ("error was %s (0x%08x)\nerror message was '%s'\n",
-			      err->nt_string, err->nt_status, err->display_string));
-			nt_status = NT_STATUS(err->nt_status);
-			wbcFreeMemory(err);
-		} else {
-			nt_status = NT_STATUS_LOGON_FAILURE;
-		}
-		NT_STATUS_NOT_OK_RETURN(nt_status);
-	} else if (!WBC_ERROR_IS_OK(wbc_status)) {
-		DEBUG(1, ("wbcAuthenticateUserEx: failed with %u - %s\n",
-			wbc_status, wbcErrorString(wbc_status)));
-		if (err) {
-			DEBUG(1, ("error was %s (0x%08x)\nerror message was '%s'\n",
-			      err->nt_string, err->nt_status, err->display_string));
-		}
-		return NT_STATUS_LOGON_FAILURE;
-	}
-	info6 = wbcAuthUserInfo_to_netr_SamInfo6(mem_ctx, info);
-	wbcFreeMemory(info);
-	if (!info6) {
-		DEBUG(1, ("wbcAuthUserInfo_to_netr_SamInfo6 failed\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	validation.sam6 = info6;
-	nt_status = make_user_info_dc_netlogon_validation(mem_ctx,
-							  user_info->client.account_name,
-							  6, &validation,
-							  true, /* This user was authenticated */
-							  user_info_dc);
-	return nt_status;
-
-}
-
 static const struct auth_operations winbind_ops = {
 	.name			= "winbind",
 	.want_check		= winbind_want_check,
 	.check_password_send	= winbind_check_password_send,
 	.check_password_recv	= winbind_check_password_recv
-};
-
-static const struct auth_operations winbind_wbclient_ops = {
-	.name		= "winbind_wbclient",
-	.want_check	= winbind_want_check,
-	.check_password	= winbind_check_password_wbclient
 };
 
 _PUBLIC_ NTSTATUS auth4_winbind_init(TALLOC_CTX *ctx)
@@ -411,12 +309,6 @@ _PUBLIC_ NTSTATUS auth4_winbind_init(TALLOC_CTX *ctx)
 	ret = auth_register(ctx, &winbind_ops);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("Failed to register 'winbind' auth backend!\n"));
-		return ret;
-	}
-
-	ret = auth_register(ctx, &winbind_wbclient_ops);
-	if (!NT_STATUS_IS_OK(ret)) {
-		DEBUG(0,("Failed to register 'winbind_wbclient' auth backend!\n"));
 		return ret;
 	}
 
