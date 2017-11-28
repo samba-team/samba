@@ -39,7 +39,7 @@ replace: minPwdAge
 minPwdAge: -864000000000
 -
 replace: minPwdLength
-minPwdLength: 7
+minPwdLength: ${MIN_PWD_LENGTH}
 -
 replace: modifiedCount
 modifiedCount: 1

@@ -609,6 +609,7 @@ planpythontestsuite("ad_dc:local", "samba.tests.samba_tool.user_virtualCryptSHA"
 planpythontestsuite("chgdcpass:local", "samba.tests.samba_tool.user_check_password_script")
 planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.samba_tool.group")
 planpythontestsuite("ad_dc:local", "samba.tests.samba_tool.ntacl")
+planpythontestsuite("none", "samba.tests.samba_tool.provision_password_check")
 
 planpythontestsuite("ad_dc:local", "samba.tests.samba_tool.sites")
 planpythontestsuite("ad_dc:local", "samba.tests.samba_tool.dnscmd")

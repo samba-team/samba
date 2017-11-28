@@ -78,6 +78,17 @@ static PyObject *py_generate_random_machine_password(PyObject *self, PyObject *a
 	return ret;
 }
 
+static PyObject *py_check_password_quality(PyObject *self, PyObject *args)
+{
+	char *pass;
+
+	if (!PyArg_ParseTuple(args, "s", &pass)) {
+		return NULL;
+	}
+
+	return PyBool_FromLong(check_password_quality(pass));
+}
+
 static PyObject *py_unix2nttime(PyObject *self, PyObject *args)
 {
 	time_t t;
@@ -296,6 +307,12 @@ static PyMethodDef py_misc_methods[] = {
 		"(based on random utf16 characters converted to utf8 or "
 		"random ascii characters if 'unix charset' is not 'utf8')"
 		"with a length >= min (at least 14) and <= max (at most 255)." },
+	{ "check_password_quality", (PyCFunction)py_check_password_quality,
+		METH_VARARGS, "check_password_quality(pass) -> bool\n"
+		"Check password quality against Samba's check_password_quality,"
+		"the implementation of Microsoft's rules:"
+		"http://msdn.microsoft.com/en-us/subscriptions/cc786468%28v=ws.10%29.aspx"
+	},
 	{ "unix2nttime", (PyCFunction)py_unix2nttime, METH_VARARGS,
 		"unix2nttime(timestamp) -> nttime" },
 	{ "nttime2unix", (PyCFunction)py_nttime2unix, METH_VARARGS,

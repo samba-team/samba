@@ -127,6 +127,8 @@ DEFAULT_DC_POLICY_GUID = "6AC1786C-016F-11D2-945F-00C04FB984F9"
 DEFAULTSITE = "Default-First-Site-Name"
 LAST_PROVISION_USN_ATTRIBUTE = "lastProvisionUSN"
 
+DEFAULT_MIN_PWD_LENGTH = 7
+
 
 class ProvisionPaths(object):
 
@@ -1309,7 +1311,8 @@ def fill_samdb(samdb, lp, names, logger, policyguid,
         "CONFIGDN": names.configdn,
         "POLICYGUID": policyguid,
         "DOMAIN_FUNCTIONALITY": str(domainFunctionality),
-        "SAMBA_VERSION_STRING": version
+        "SAMBA_VERSION_STRING": version,
+        "MIN_PWD_LENGTH": str(DEFAULT_MIN_PWD_LENGTH)
         })
 
     # If we are setting up a subdomain, then this has been replicated in, so we don't need to add it

@@ -388,6 +388,7 @@ nttime2unix = _glue.nttime2unix
 unix2nttime = _glue.unix2nttime
 generate_random_password = _glue.generate_random_password
 generate_random_machine_password = _glue.generate_random_machine_password
+check_password_quality = _glue.check_password_quality
 strcasecmp_m = _glue.strcasecmp_m
 strstr_m = _glue.strstr_m
 is_ntvfs_fileserver_built = _glue.is_ntvfs_fileserver_built

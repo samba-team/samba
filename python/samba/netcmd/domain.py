@@ -84,7 +84,8 @@ from samba.dsdb import (
 
 from samba.provision import (
     provision,
-    ProvisioningError
+    ProvisioningError,
+    DEFAULT_MIN_PWD_LENGTH
     )
 
 from samba.provision.common import (
@@ -370,8 +371,9 @@ class cmd_domain_provision(Command):
 
             while True:
                 adminpassplain = getpass("Administrator password: ")
-                if not adminpassplain:
-                    self.errf.write("Invalid administrator password.\n")
+                issue = self._adminpass_issue(adminpassplain)
+                if issue:
+                    self.errf.write("%s.\n" % issue)
                 else:
                     adminpassverify = getpass("Retype password: ")
                     if not adminpassplain == adminpassverify:
@@ -387,7 +389,11 @@ class cmd_domain_provision(Command):
             if domain is None:
                 raise CommandError("No domain set!")
 
-        if not adminpass:
+        if adminpass:
+            issue = self._adminpass_issue(adminpass)
+            if issue:
+                raise CommandError(issue)
+        else:
             self.logger.info("Administrator password will be set randomly!")
 
         if function_level == "2000":
@@ -500,6 +506,20 @@ class cmd_domain_provision(Command):
                 handle.close()
 
         self.logger.warning("No nameserver found in %s" % RESOLV_CONF)
+
+    def _adminpass_issue(self, adminpass):
+        """Returns error string for a bad administrator password,
+        or None if acceptable"""
+
+        if len(adminpass.decode('utf-8')) < DEFAULT_MIN_PWD_LENGTH:
+            return "Administrator password does not meet the default minimum" \
+                " password length requirement (%d characters)" \
+                % DEFAULT_MIN_PWD_LENGTH
+        elif not samba.check_password_quality(adminpass):
+            return "Administrator password does not meet the default" \
+                " quality standards"
+        else:
+            return None
 
 
 class cmd_domain_dcpromo(Command):
