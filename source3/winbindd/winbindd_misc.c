@@ -68,11 +68,10 @@ static bool trust_is_inbound(struct winbindd_tdc_domain *domain)
 
 static bool trust_is_outbound(struct winbindd_tdc_domain *domain)
 {
-	return (domain->trust_flags == 0x0) ||
-	    ((domain->trust_flags & NETR_TRUST_FLAG_IN_FOREST) ==
-            NETR_TRUST_FLAG_IN_FOREST) ||           		
-	    ((domain->trust_flags & NETR_TRUST_FLAG_OUTBOUND) ==
-	    NETR_TRUST_FLAG_OUTBOUND);      	
+	if (domain->trust_flags & NETR_TRUST_FLAG_OUTBOUND) {
+		return true;
+	}
+	return false;
 }
 
 static bool trust_is_transitive(struct winbindd_tdc_domain *domain)
