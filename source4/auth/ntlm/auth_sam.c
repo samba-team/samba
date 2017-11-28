@@ -847,90 +847,6 @@ static NTSTATUS authsam_want_check(struct auth_method_context *ctx,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS authsam_failtrusts_want_check(struct auth_method_context *ctx,
-					      TALLOC_CTX *mem_ctx,
-					      const struct auth_usersupplied_info *user_info)
-{
-	const char *effective_domain = user_info->mapped.domain_name;
-	struct dsdb_trust_routing_table *trt = NULL;
-	const struct lsa_TrustDomainInfoInfoEx *tdo = NULL;
-	NTSTATUS status;
-
-	/* check whether or not we service this domain/workgroup name */
-	switch (lpcfg_server_role(ctx->auth_ctx->lp_ctx)) {
-	case ROLE_ACTIVE_DIRECTORY_DC:
-		/* handled later */
-		break;
-
-	default:
-		DBG_ERR("lpcfg_server_role() has an undefined value\n");
-		return NT_STATUS_NOT_IMPLEMENTED;
-	}
-
-	/*
-	 * Now we handle the AD DC case...
-	 */
-	if (!user_info->mapped.account_name || !*user_info->mapped.account_name) {
-		return NT_STATUS_NOT_IMPLEMENTED;
-	}
-
-	if (effective_domain == NULL || strequal(effective_domain, "")) {
-		const char *p = NULL;
-
-		p = strchr_m(user_info->mapped.account_name, '@');
-		if (p != NULL) {
-			effective_domain = p + 1;
-		}
-	}
-
-	if (effective_domain == NULL || strequal(effective_domain, "")) {
-		DBG_DEBUG("%s is not a trusted domain\n",
-			  effective_domain);
-		return NT_STATUS_NOT_IMPLEMENTED;
-	}
-
-	/*
-	 * as last option we check the routing table if the
-	 * domain is within our forest.
-	 */
-	status = dsdb_trust_routing_table_load(ctx->auth_ctx->sam_ctx,
-					       mem_ctx, &trt);
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG_ERR("authsam_check_password: dsdb_trust_routing_table_load() %s\n",
-			 nt_errstr(status));
-		return status;
-	}
-
-	tdo = dsdb_trust_routing_by_name(trt, effective_domain);
-	if (tdo == NULL) {
-		DBG_DEBUG("%s is not a known TLN (DC)\n",
-			  effective_domain);
-		TALLOC_FREE(trt);
-		return NT_STATUS_NOT_IMPLEMENTED;
-	}
-
-	/*
-	 * We now about the domain...
-	 */
-	TALLOC_FREE(trt);
-	return NT_STATUS_OK;
-}
-
-static NTSTATUS authsam_failtrusts_check_password(struct auth_method_context *ctx,
-						  TALLOC_CTX *mem_ctx,
-						  const struct auth_usersupplied_info *user_info,
-						  struct auth_user_info_dc **user_info_dc,
-						  bool *authoritative)
-{
-	/*
-	 * This should a good error for now,
-	 * until this module gets removed
-	 * and we have a full async path
-	 * to winbind.
-	 */
-	return NT_STATUS_NO_TRUST_LSA_SECRET;
-}
-
 /* Wrapper for the auth subsystem pointer */
 static NTSTATUS authsam_get_user_info_dc_principal_wrapper(TALLOC_CTX *mem_ctx,
 							  struct auth4_context *auth_context,
@@ -955,12 +871,6 @@ static const struct auth_operations sam_ops = {
 	.get_user_info_dc_principal = authsam_get_user_info_dc_principal_wrapper,
 };
 
-static const struct auth_operations sam_failtrusts_ops = {
-	.name		           = "sam_failtrusts",
-	.want_check	           = authsam_failtrusts_want_check,
-	.check_password	           = authsam_failtrusts_check_password,
-};
-
 _PUBLIC_ NTSTATUS auth4_sam_init(TALLOC_CTX *);
 _PUBLIC_ NTSTATUS auth4_sam_init(TALLOC_CTX *ctx)
 {
@@ -975,12 +885,6 @@ _PUBLIC_ NTSTATUS auth4_sam_init(TALLOC_CTX *ctx)
 	ret = auth_register(ctx, &sam_ignoredomain_ops);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("Failed to register 'sam_ignoredomain' auth backend!\n"));
-		return ret;
-	}
-
-	ret = auth_register(ctx, &sam_failtrusts_ops);
-	if (!NT_STATUS_IS_OK(ret)) {
-		DEBUG(0,("Failed to register 'sam_failtrusts' auth backend!\n"));
 		return ret;
 	}
 
