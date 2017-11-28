@@ -179,8 +179,8 @@ int list_sessions(TALLOC_CTX *mem_ctx, struct sessionid **session_list)
 
 	status = sessionid_traverse_read(gather_sessioninfo, (void *) &sesslist);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(3, ("Session traverse failed\n"));
-		SAFE_FREE(sesslist.sessions);
+		DBG_ERR("Session traverse failed: %s\n", nt_errstr(status));
+		TALLOC_FREE(sesslist.sessions);
 		*session_list = NULL;
 		return 0;
 	}
