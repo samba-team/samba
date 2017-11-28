@@ -78,11 +78,33 @@ static bool trust_is_outbound(struct winbindd_tdc_domain *domain)
 
 static bool trust_is_transitive(struct winbindd_tdc_domain *domain)
 {
-	if ((domain->trust_attribs == LSA_TRUST_ATTRIBUTE_NON_TRANSITIVE) ||
-	    (domain->trust_attribs == LSA_TRUST_ATTRIBUTE_QUARANTINED_DOMAIN) ||
-	    (domain->trust_attribs == LSA_TRUST_ATTRIBUTE_TREAT_AS_EXTERNAL))
-		return False;
-	return True;
+	bool transitive = false;
+
+	/*
+	 * Beware: order matters
+	 */
+
+	if (domain->trust_attribs & LSA_TRUST_ATTRIBUTE_WITHIN_FOREST) {
+		transitive = true;
+	}
+
+	if (domain->trust_attribs & LSA_TRUST_ATTRIBUTE_FOREST_TRANSITIVE) {
+		transitive = true;
+	}
+
+	if (domain->trust_attribs & LSA_TRUST_ATTRIBUTE_NON_TRANSITIVE) {
+		transitive = false;
+	}
+
+	if (domain->trust_attribs & LSA_TRUST_ATTRIBUTE_QUARANTINED_DOMAIN) {
+		transitive = false;
+	}
+
+	if (domain->trust_flags & NETR_TRUST_FLAG_PRIMARY) {
+		transitive = true;
+	}
+
+	return transitive;
 }
 
 void winbindd_list_trusted_domains(struct winbindd_cli_state *state)
