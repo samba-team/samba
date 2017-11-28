@@ -521,13 +521,55 @@ static void *pthreadpool_server(void *arg)
 	}
 }
 
-int pthreadpool_add_job(struct pthreadpool *pool, int job_id,
-			void (*fn)(void *private_data), void *private_data)
+static int pthreadpool_create_thread(struct pthreadpool *pool)
 {
 	pthread_attr_t thread_attr;
 	pthread_t thread_id;
 	int res;
 	sigset_t mask, omask;
+
+	/*
+	 * Create a new worker thread. It should not receive any signals.
+	 */
+
+	sigfillset(&mask);
+
+	res = pthread_attr_init(&thread_attr);
+	if (res != 0) {
+		return res;
+	}
+
+	res = pthread_attr_setdetachstate(
+		&thread_attr, PTHREAD_CREATE_DETACHED);
+	if (res != 0) {
+		pthread_attr_destroy(&thread_attr);
+		return res;
+	}
+
+	res = pthread_sigmask(SIG_BLOCK, &mask, &omask);
+	if (res != 0) {
+		pthread_attr_destroy(&thread_attr);
+		return res;
+	}
+
+	res = pthread_create(&thread_id, &thread_attr, pthreadpool_server,
+			     (void *)pool);
+
+	assert(pthread_sigmask(SIG_SETMASK, &omask, NULL) == 0);
+
+	pthread_attr_destroy(&thread_attr);
+
+	if (res == 0) {
+		pool->num_threads += 1;
+	}
+
+	return res;
+}
+
+int pthreadpool_add_job(struct pthreadpool *pool, int job_id,
+			void (*fn)(void *private_data), void *private_data)
+{
+	int res;
 
 	res = pthread_mutex_lock(&pool->mutex);
 	if (res != 0) {
@@ -570,42 +612,11 @@ int pthreadpool_add_job(struct pthreadpool *pool, int job_id,
 		return 0;
 	}
 
-	/*
-	 * Create a new worker thread. It should not receive any signals.
-	 */
-
-	sigfillset(&mask);
-
-	res = pthread_attr_init(&thread_attr);
+	res = pthreadpool_create_thread(pool);
 	if (res != 0) {
 		pthread_mutex_unlock(&pool->mutex);
 		return res;
 	}
-
-	res = pthread_attr_setdetachstate(
-		&thread_attr, PTHREAD_CREATE_DETACHED);
-	if (res != 0) {
-		pthread_attr_destroy(&thread_attr);
-		pthread_mutex_unlock(&pool->mutex);
-		return res;
-	}
-
-        res = pthread_sigmask(SIG_BLOCK, &mask, &omask);
-	if (res != 0) {
-		pthread_attr_destroy(&thread_attr);
-		pthread_mutex_unlock(&pool->mutex);
-		return res;
-	}
-
-	res = pthread_create(&thread_id, &thread_attr, pthreadpool_server,
-			     (void *)pool);
-	if (res == 0) {
-		pool->num_threads += 1;
-	}
-
-        assert(pthread_sigmask(SIG_SETMASK, &omask, NULL) == 0);
-
-	pthread_attr_destroy(&thread_attr);
 
 	pthread_mutex_unlock(&pool->mutex);
 	return res;
