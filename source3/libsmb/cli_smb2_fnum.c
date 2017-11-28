@@ -686,6 +686,27 @@ NTSTATUS cli_smb2_rmdir(struct cli_state *cli, const char *dname)
 			&fnum,
 			NULL);
 
+	if (NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK)) {
+		/*
+		 * Naive option to match our SMB1 code. Assume the
+		 * symlink path that tripped us up was the last
+		 * component and try again. Eventually we will have to
+		 * deal with the returned path unprocessed component. JRA.
+		 */
+		status = cli_smb2_create_fnum(cli,
+			dname,
+			0,			/* create_flags */
+			DELETE_ACCESS,		/* desired_access */
+			FILE_ATTRIBUTE_DIRECTORY, /* file attributes */
+			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, /* share_access */
+			FILE_OPEN,		/* create_disposition */
+			FILE_DIRECTORY_FILE|
+				FILE_DELETE_ON_CLOSE|
+				FILE_OPEN_REPARSE_POINT, /* create_options */
+			&fnum,
+			NULL);
+	}
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -723,6 +744,26 @@ NTSTATUS cli_smb2_unlink(struct cli_state *cli, const char *fname)
 			FILE_DELETE_ON_CLOSE,	/* create_options */
 			&fnum,
 			NULL);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK)) {
+		/*
+		 * Naive option to match our SMB1 code. Assume the
+		 * symlink path that tripped us up was the last
+		 * component and try again. Eventually we will have to
+		 * deal with the returned path unprocessed component. JRA.
+		 */
+		status = cli_smb2_create_fnum(cli,
+			fname,
+			0,			/* create_flags */
+			DELETE_ACCESS,		/* desired_access */
+			FILE_ATTRIBUTE_NORMAL, /* file attributes */
+			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, /* share_access */
+			FILE_OPEN,		/* create_disposition */
+			FILE_DELETE_ON_CLOSE|
+				FILE_OPEN_REPARSE_POINT, /* create_options */
+			&fnum,
+			NULL);
+	}
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -1157,6 +1198,7 @@ static NTSTATUS get_fnum_from_path(struct cli_state *cli,
 	NTSTATUS status;
 	size_t namelen = strlen(name);
 	TALLOC_CTX *frame = talloc_stackframe();
+	uint32_t create_options = 0;
 
 	/* SMB2 is pickier about pathnames. Ensure it doesn't
 	   end in a '\' */
@@ -1178,11 +1220,32 @@ static NTSTATUS get_fnum_from_path(struct cli_state *cli,
 			0, /* file attributes */
 			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, /* share_access */
 			FILE_OPEN,		/* create_disposition */
-			0,	/* create_options */
+			create_options,
 			pfnum,
 			NULL);
 
+	if (NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK)) {
+		/*
+		 * Naive option to match our SMB1 code. Assume the
+		 * symlink path that tripped us up was the last
+		 * component and try again. Eventually we will have to
+		 * deal with the returned path unprocessed component. JRA.
+		 */
+		create_options |= FILE_OPEN_REPARSE_POINT;
+		status = cli_smb2_create_fnum(cli,
+			name,
+			0,			/* create_flags */
+			desired_access,
+			0, /* file attributes */
+			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, /* share_access */
+			FILE_OPEN,		/* create_disposition */
+			create_options,
+			pfnum,
+			NULL);
+	}
+
 	if (NT_STATUS_EQUAL(status, NT_STATUS_FILE_IS_A_DIRECTORY)) {
+		create_options |= FILE_DIRECTORY_FILE;
 		status = cli_smb2_create_fnum(cli,
 			name,
 			0,			/* create_flags */
