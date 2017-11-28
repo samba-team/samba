@@ -429,6 +429,11 @@ static bool pthreadpool_put_job(struct pthreadpool *p,
 	return true;
 }
 
+static void pthreadpool_undo_put_job(struct pthreadpool *p)
+{
+	p->num_jobs -= 1;
+}
+
 static void *pthreadpool_server(void *arg)
 {
 	struct pthreadpool *pool = (struct pthreadpool *)arg;
@@ -599,6 +604,9 @@ int pthreadpool_add_job(struct pthreadpool *pool, int job_id,
 		 * We have idle threads, wake one.
 		 */
 		res = pthread_cond_signal(&pool->condvar);
+		if (res != 0) {
+			pthreadpool_undo_put_job(pool);
+		}
 		pthread_mutex_unlock(&pool->mutex);
 		return res;
 	}
@@ -614,8 +622,24 @@ int pthreadpool_add_job(struct pthreadpool *pool, int job_id,
 
 	res = pthreadpool_create_thread(pool);
 	if (res != 0) {
-		pthread_mutex_unlock(&pool->mutex);
-		return res;
+		if (pool->num_threads == 0) {
+			/*
+			 * No thread could be created to run job,
+			 * fallback to sync call.
+			 */
+			pthreadpool_undo_put_job(pool);
+			pthread_mutex_unlock(&pool->mutex);
+
+			fn(private_data);
+			return pool->signal_fn(job_id, fn, private_data,
+					       pool->signal_fn_private_data);
+		}
+
+		/*
+		 * At least one thread is still available, let
+		 * that one run the queued job.
+		 */
+		res = 0;
 	}
 
 	pthread_mutex_unlock(&pool->mutex);
