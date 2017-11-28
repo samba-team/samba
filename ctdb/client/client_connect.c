@@ -40,58 +40,127 @@
 #include "client/client.h"
 #include "client/client_sync.h"
 
-static int ctdb_client_connect(struct ctdb_client_context *client,
-			       struct tevent_context *ev,
-			       const char *sockpath);
+static void client_read_handler(uint8_t *buf, size_t buflen,
+				void *private_data);
+static void client_dead_handler(void *private_data);
+
+struct ctdb_client_init_state {
+	struct ctdb_client_context *client;
+};
 
 static int ctdb_client_context_destructor(struct ctdb_client_context *client);
+static void ctdb_client_init_done(struct tevent_req *subreq);
 
-int ctdb_client_init(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-		     const char *sockpath, struct ctdb_client_context **out)
+struct tevent_req *ctdb_client_init_send(TALLOC_CTX *mem_ctx,
+					 struct tevent_context *ev,
+					 const char *sockpath)
 {
+	struct tevent_req *req, *subreq;
+	struct ctdb_client_init_state *state;
 	struct ctdb_client_context *client;
+	struct ctdb_req_control request;
+	struct sockaddr_un addr;
+	size_t len;
 	int ret;
 
-	client = talloc_zero(mem_ctx, struct ctdb_client_context);
-	if (client == NULL) {
-		DEBUG(DEBUG_ERR, (__location__ " memory allocation error\n"));
-		return ENOMEM;
+	req = tevent_req_create(mem_ctx, &state,
+				struct ctdb_client_init_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	if (sockpath == NULL) {
+		D_ERR("socket path cannot be NULL\n");
+		tevent_req_error(req, EINVAL);
+		return tevent_req_post(req, ev);
+	}
+
+	client = talloc_zero(state, struct ctdb_client_context);
+	if (tevent_req_nomem(client, req)) {
+		return tevent_req_post(req, ev);
 	}
 
 	ret = reqid_init(client, INT_MAX-200, &client->idr);
 	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("reqid_init() failed, ret=%d\n", ret));
+		D_ERR("reqid_init() failed, ret=%d\n", ret);
 		talloc_free(client);
-		return ret;
+		tevent_req_error(req, ret);
+		return tevent_req_post(req, ev);
 	}
 
 	ret = srvid_init(client, &client->srv);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, ("srvid_init() failed, ret=%d\n", ret));
 		talloc_free(client);
-		return ret;
+		tevent_req_error(req, ret);
+		return tevent_req_post(req, ev);
 	}
 
 	ret = srvid_init(client, &client->tunnels);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, ("srvid_init() failed, ret=%d\n", ret));
 		talloc_free(client);
-		return ret;
+		tevent_req_error(req, ret);
+		return tevent_req_post(req, ev);
 	}
 
-	client->fd = -1;
-	client->pnn = CTDB_UNKNOWN_PNN;
-
-	ret = ctdb_client_connect(client, ev, sockpath);
-	if (ret != 0) {
+	memset(&addr, 0, sizeof(addr));
+	addr.sun_family = AF_UNIX;
+	len = strlcpy(addr.sun_path, sockpath, sizeof(addr.sun_path));
+	if (len != strlen(sockpath)) {
+		D_ERR("socket path too long, len=%zu\n", strlen(sockpath));
 		talloc_free(client);
-		return ret;
+		tevent_req_error(req, ENAMETOOLONG);
+		return tevent_req_post(req, ev);
 	}
+
+	client->fd = socket(AF_UNIX, SOCK_STREAM, 0);
+	if (client->fd == -1) {
+		ret = errno;
+		D_ERR("socket() failed, errno=%d\n", ret);
+		talloc_free(client);
+		tevent_req_error(req, ret);
+		return tevent_req_post(req, ev);
+	}
+
+	ret = connect(client->fd, (struct sockaddr *)&addr, sizeof(addr));
+	if (ret == -1) {
+		ret = errno;
+		DEBUG(DEBUG_ERR, ("connect() failed, errno=%d\n", ret));
+		close(client->fd);
+		talloc_free(client);
+		tevent_req_error(req, ret);
+		return tevent_req_post(req, ev);
+	}
+
+	ret = comm_setup(client, ev, client->fd, client_read_handler, client,
+			 client_dead_handler, client, &client->comm);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("comm_setup() failed, ret=%d\n", ret));
+		close(client->fd);
+		talloc_free(client);
+		tevent_req_error(req, ret);
+		return tevent_req_post(req, ev);
+	}
+
+	client->pnn = CTDB_UNKNOWN_PNN;
 
 	talloc_set_destructor(client, ctdb_client_context_destructor);
 
-	*out = client;
-	return 0;
+	state->client = client;
+
+	ctdb_req_control_get_pnn(&request);
+	subreq = ctdb_client_control_send(state, ev, client,
+					  CTDB_CURRENT_NODE,
+					  tevent_timeval_zero(),
+					  &request);
+	if (tevent_req_nomem(subreq, req)) {
+		TALLOC_FREE(state->client);
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, ctdb_client_init_done, req);
+
+	return req;
 }
 
 static int ctdb_client_context_destructor(struct ctdb_client_context *client)
@@ -103,63 +172,69 @@ static int ctdb_client_context_destructor(struct ctdb_client_context *client)
 	return 0;
 }
 
-static void client_read_handler(uint8_t *buf, size_t buflen,
-				void *private_data);
-static void client_dead_handler(void *private_data);
-
-static int ctdb_client_connect(struct ctdb_client_context *client,
-			       struct tevent_context *ev, const char *sockpath)
+static void ctdb_client_init_done(struct tevent_req *subreq)
 {
-	struct sockaddr_un addr;
-	size_t len;
-	int fd, ret;
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct ctdb_client_init_state *state = tevent_req_data(
+		req, struct ctdb_client_init_state);
+	struct ctdb_reply_control *reply;
+	int ret;
+	bool status;
 
-	if (sockpath == NULL) {
-		DEBUG(DEBUG_ERR, ("socket path cannot be NULL\n"));
-		return EINVAL;
+	status = ctdb_client_control_recv(subreq, &ret, state, &reply);
+	TALLOC_FREE(subreq);
+	if (! status) {
+		tevent_req_error(req, ret);
+		return;
 	}
 
-	memset(&addr, 0, sizeof(addr));
-	addr.sun_family = AF_UNIX;
-	len = strlcpy(addr.sun_path, sockpath, sizeof(addr.sun_path));
-	if (len != strlen(sockpath)) {
-		DEBUG(DEBUG_ERR, ("socket path too long, len=%zu\n",
-				  strlen(sockpath)));
-		return ENAMETOOLONG;
-	}
-
-	fd = socket(AF_UNIX, SOCK_STREAM, 0);
-	if (fd == -1) {
-		ret = errno;
-		DEBUG(DEBUG_ERR, ("socket() failed, errno=%d\n", ret));
-		return ret;
-	}
-
-	ret = connect(fd, (struct sockaddr *)&addr, sizeof(addr));
-	if (ret == -1) {
-		ret = errno;
-		DEBUG(DEBUG_ERR, ("connect() failed, errno=%d\n", ret));
-		close(fd);
-		return ret;
-	}
-	client->fd = fd;
-
-	ret = comm_setup(client, ev, fd, client_read_handler, client,
-			 client_dead_handler, client, &client->comm);
+	ret = ctdb_reply_control_get_pnn(reply, &state->client->pnn);
 	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("comm_setup() failed, ret=%d\n", ret));
-		close(fd);
-		client->fd = -1;
-		return ret;
+		tevent_req_error(req, ret);
+		return;
 	}
 
-	ret = ctdb_ctrl_get_pnn(client, ev, client, CTDB_CURRENT_NODE,
-				tevent_timeval_zero(), &client->pnn);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("failed to get current node pnn\n"));
-		close(fd);
-		client->fd = -1;
-		TALLOC_FREE(client->comm);
+	tevent_req_done(req);
+}
+
+bool ctdb_client_init_recv(struct tevent_req *req, int *perr,
+			   TALLOC_CTX *mem_ctx,
+			   struct ctdb_client_context **result)
+{
+	struct ctdb_client_init_state *state = tevent_req_data(
+		req, struct ctdb_client_init_state);
+	int ret;
+
+	if (tevent_req_is_unix_error(req, &ret)) {
+		if (perr != NULL) {
+			*perr = ret;
+		}
+		return false;
+	}
+
+	*result = talloc_steal(mem_ctx, state->client);
+	return true;
+}
+
+
+int ctdb_client_init(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+		     const char *sockpath, struct ctdb_client_context **out)
+{
+	struct tevent_req *req;
+	int ret;
+	bool status;
+
+	req = ctdb_client_init_send(mem_ctx, ev, sockpath);
+	if (req == NULL) {
+		return ENOMEM;
+	}
+
+	tevent_req_poll(req, ev);
+
+	status = ctdb_client_init_recv(req, &ret, mem_ctx, out);
+	TALLOC_FREE(req);
+	if (! status) {
 		return ret;
 	}
 

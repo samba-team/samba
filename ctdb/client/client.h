@@ -83,7 +83,7 @@ typedef void (*ctdb_tunnel_callback_func_t)(struct ctdb_tunnel_context *tctx,
 					    void *private_data);
 
 /**
- * @brief Initialize and connect to ctdb daemon
+ * @brief Async computation start to initialize a connection to ctdb daemon
  *
  * This returns a ctdb client context.  Freeing this context will free the
  * connection to ctdb daemon and any memory associated with it.
@@ -98,6 +98,31 @@ typedef void (*ctdb_tunnel_callback_func_t)(struct ctdb_tunnel_context *tctx,
  * When a disconnect callback function is registered, client library will
  * not call exit().  It is the responsibility of the client code to take
  * appropriate action.
+ *
+ * @param[in] mem_ctx Talloc memory context
+ * @param[in] ev Tevent context
+ * @param[in] sockpath Path to ctdb daemon unix domain socket
+ * @return new tevent request, NULL on failure
+ */
+struct tevent_req *ctdb_client_init_send(TALLOC_CTX *mem_ctx,
+					 struct tevent_context *ev,
+					 const char *sockpath);
+
+/**
+ * @brief Async computation end to initialize a connection to ctdb daemon
+ *
+ * @param[in] req Tevent request
+ * @param[out] perr errno in case of failure
+ * @param[in] mem_ctx Talloc memory context
+ * @param[out] result The new ctdb client context
+ * @return true on success, false on failure
+ */
+bool ctdb_client_init_recv(struct tevent_req *req, int *perr,
+			   TALLOC_CTX *mem_ctx,
+			   struct ctdb_client_context **result);
+
+/**
+ * @brief Sync wrapper to initialize ctdb connection
  *
  * @param[in] mem_ctx Talloc memory context
  * @param[in] ev Tevent context
