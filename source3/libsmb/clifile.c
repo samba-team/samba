@@ -151,7 +151,7 @@ NTSTATUS cli_setpathinfo(struct cli_state *cli,
 
 /****************************************************************************
  Hard/Symlink a file (UNIX extensions).
- Creates new name (sym)linked to oldname.
+ Creates new name (sym)linked to link_target.
 ****************************************************************************/
 
 struct cli_posix_link_internal_state {
@@ -164,7 +164,7 @@ static struct tevent_req *cli_posix_link_internal_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
 					struct cli_state *cli,
 					uint16_t level,
-					const char *oldname,
+					const char *link_target,
 					const char *newname)
 {
 	struct tevent_req *req = NULL, *subreq = NULL;
@@ -182,7 +182,8 @@ static struct tevent_req *cli_posix_link_internal_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 	state->data = trans2_bytes_push_str(
-		state->data, smbXcli_conn_use_unicode(cli->conn), oldname, strlen(oldname)+1, NULL);
+		state->data, smbXcli_conn_use_unicode(cli->conn),
+		link_target, strlen(link_target)+1, NULL);
 
 	subreq = cli_setpathinfo_send(
 		state, ev, cli, level, newname,
@@ -207,11 +208,11 @@ static void cli_posix_link_internal_done(struct tevent_req *subreq)
 struct tevent_req *cli_posix_symlink_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
 					struct cli_state *cli,
-					const char *oldname,
+					const char *link_target,
 					const char *newname)
 {
 	return cli_posix_link_internal_send(
-		mem_ctx, ev, cli, SMB_SET_FILE_UNIX_LINK, oldname, newname);
+		mem_ctx, ev, cli, SMB_SET_FILE_UNIX_LINK, link_target, newname);
 }
 
 NTSTATUS cli_posix_symlink_recv(struct tevent_req *req)
@@ -220,7 +221,7 @@ NTSTATUS cli_posix_symlink_recv(struct tevent_req *req)
 }
 
 NTSTATUS cli_posix_symlink(struct cli_state *cli,
-			const char *oldname,
+			const char *link_target,
 			const char *newname)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -245,7 +246,7 @@ NTSTATUS cli_posix_symlink(struct cli_state *cli,
 	req = cli_posix_symlink_send(frame,
 				ev,
 				cli,
-				oldname,
+				link_target,
 				newname);
 	if (req == NULL) {
 		status = NT_STATUS_NO_MEMORY;

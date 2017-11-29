@@ -3331,7 +3331,7 @@ static int cmd_readlink(void)
 static int cmd_symlink(void)
 {
 	TALLOC_CTX *ctx = talloc_tos();
-	char *oldname = NULL;
+	char *link_target = NULL;
 	char *newname = NULL;
 	char *buf = NULL;
 	char *buf2 = NULL;
@@ -3340,11 +3340,11 @@ static int cmd_symlink(void)
 
 	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL) ||
 	    !next_token_talloc(ctx, &cmd_ptr,&buf2,NULL)) {
-		d_printf("symlink <oldname> <newname>\n");
+		d_printf("symlink <link_target> <newname>\n");
 		return 1;
 	}
 	/* Oldname (link target) must be an untouched blob. */
-	oldname = buf;
+	link_target = buf;
 
 	if (SERVER_HAS_UNIX_CIFS(cli)) {
 		newname = talloc_asprintf(ctx, "%s%s", client_get_cur_dir(),
@@ -3360,19 +3360,20 @@ static int cmd_symlink(void)
 		status = cli_resolve_path(ctx, "", auth_info, cli, newname,
 					  &newcli, &newname);
 		if (!NT_STATUS_IS_OK(status)) {
-			d_printf("link %s: %s\n", oldname, nt_errstr(status));
+			d_printf("link %s: %s\n", newname,
+				nt_errstr(status));
 			return 1;
 		}
-		status = cli_posix_symlink(newcli, oldname, newname);
+		status = cli_posix_symlink(newcli, link_target, newname);
 	} else {
 		status = cli_symlink(
-			cli, oldname, buf2,
+			cli, link_target, buf2,
 			buf2[0] == '\\' ? 0 : SYMLINK_FLAG_RELATIVE);
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("%s symlinking files (%s -> %s)\n",
-			 nt_errstr(status), oldname, newname);
+			 nt_errstr(status), newname, link_target);
 		return 1;
 	}
 
