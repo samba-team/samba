@@ -97,7 +97,7 @@ class KCC(object):
     :param readonly: Don't write to the database.
     :param verify: Check topological invariants for the generated graphs
     :param debug: Write verbosely to stderr.
-    "param dot_file_dir: write diagnostic Graphviz files in this directory
+    :param dot_file_dir: write diagnostic Graphviz files in this directory
     """
     def __init__(self, unix_now, readonly=False, verify=False, debug=False,
                  dot_file_dir=None):
