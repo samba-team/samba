@@ -449,8 +449,12 @@ NTSTATUS cli_smb2_close_fnum_recv(struct tevent_req *req)
 {
 	struct cli_smb2_close_fnum_state *state = tevent_req_data(
 		req, struct cli_smb2_close_fnum_state);
-	NTSTATUS status = tevent_req_simple_recv_ntstatus(req);
-	state->cli->raw_status = status;
+	NTSTATUS status = NT_STATUS_OK;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		state->cli->raw_status = status;
+	}
+	tevent_req_received(req);
 	return status;
 }
 
