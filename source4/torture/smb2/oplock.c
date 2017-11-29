@@ -5040,7 +5040,8 @@ static bool test_smb2_kernel_oplocks8(struct torture_context *tctx,
 	io.in.fname = fname;
 
 	req = smb2_create_send(tree, &io);
-	torture_assert(tctx, req != NULL, "smb2_create_send");
+	torture_assert_goto(tctx, req != NULL,
+			    ret, done, "smb2_create_send");
 
 	/* Ensure while the open is blocked the smbd is
 	   still serving other requests. */
@@ -5058,7 +5059,8 @@ static bool test_smb2_kernel_oplocks8(struct torture_context *tctx,
 	h1 = io.out.file.handle;
 
 	/* in less than 2 seconds. Otherwise the server blocks. */
-	torture_assert(tctx, end - start < 2, "server was blocked !");
+	torture_assert_goto(tctx, end - start < 2,
+			    ret, done, "server was blocked !");
 
 	/* Pick up the return for the initial blocking open. */
 	status = smb2_create_recv(req, tctx, &io);
@@ -5071,14 +5073,12 @@ static bool test_smb2_kernel_oplocks8(struct torture_context *tctx,
 	/* Wait for the exit code from the child. */
 	while (child_exit_code == -1) {
 		int rval = tevent_loop_once(tctx->ev);
-		torture_assert(tctx, rval == 0, "tevent_loop_once error\n");
+		torture_assert_goto(tctx, rval == 0, ret,
+				    done, "tevent_loop_once error\n");
 	}
 
-	if (child_exit_code != 0) {
-		torture_comment(tctx, "Bad child exit code %d\n",
-			child_exit_code);
-		ret = false;
-	}
+	torture_assert_int_equal_goto(tctx, child_exit_code, 0,
+				      ret, done, "Bad child exit code");
 
 done:
 	if (!smb2_util_handle_empty(h1)) {
