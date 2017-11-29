@@ -34,7 +34,10 @@ smb.conf changes
 
   Parameter Name                     Description             Default
   --------------                     -----------             -------
+  binddns dir			     New
+  gpo update command		     New
   oplock contention limit            Removed
+  prefork children		     New		     1
 
 
 NT4-style replication based net commands removed
