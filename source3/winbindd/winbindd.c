@@ -1363,6 +1363,10 @@ static void winbindd_register_handlers(struct messaging_context *msg_ctx,
 	smb_nscd_flush_user_cache();
 	smb_nscd_flush_group_cache();
 
+	if (!lp_winbind_scan_trusted_domains()) {
+		scan_trusts = false;
+	}
+
 	if (!lp_allow_trusted_domains()) {
 		scan_trusts = false;
 	}

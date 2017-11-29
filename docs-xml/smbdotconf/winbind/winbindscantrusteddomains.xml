@@ -1,0 +1,29 @@
+<samba:parameter name="winbind scan trusted domains"
+                 context="G"
+                 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+    <para>
+    This option only takes effect when the <smbconfoption name="security"/> option is set to
+    <constant>domain</constant> or <constant>ads</constant>.
+    If it is set to yes (the default), winbindd periodically tries to scan for new
+    trusted domains and adds them to a global list inside of winbindd.
+    The list can be extracted with <command>wbinfo --trusted-domains --verbose</command>.
+    This matches the behaviour of Samba 4.7 and older.</para>
+
+    <para>The construction of that global list is not reliable and often
+    incomplete in complex trust setups. In most situations the list is
+    not needed any more for winbindd to operate correctly.
+    E.g. for plain file serving via SMB using a simple idmap setup
+    with <constant>autorid</constant>, <constant>tdb</constant> or <constant>ad</constant>.
+    However some more complex setups require the list, e.g.
+    if you specify idmap backends for specific domains.
+    Some pam_winbind setups may also require the global list.</para>
+
+    <para>If you have a setup that doesn't require the global list, you should set
+    <smbconfoption name="winbind scan trusted domains">no</smbconfoption>.
+    </para>
+</description>
+
+<value type="default">yes</value>
+</samba:parameter>
