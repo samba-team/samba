@@ -31,7 +31,7 @@
 struct cli_symlink_state {
 	struct tevent_context *ev;
 	struct cli_state *cli;
-	const char *oldpath;
+	const char *link_target;
 	const char *newpath;
 	uint32_t flags;
 
@@ -49,7 +49,7 @@ static void cli_symlink_close_done(struct tevent_req *subreq);
 struct tevent_req *cli_symlink_send(TALLOC_CTX *mem_ctx,
 				    struct tevent_context *ev,
 				    struct cli_state *cli,
-				    const char *oldpath,
+				    const char *link_target,
 				    const char *newpath,
 				    uint32_t flags)
 {
@@ -62,12 +62,12 @@ struct tevent_req *cli_symlink_send(TALLOC_CTX *mem_ctx,
 	}
 	state->ev = ev;
 	state->cli = cli;
-	state->oldpath = oldpath;
+	state->link_target = link_target;
 	state->newpath = newpath;
 	state->flags = flags;
 
 	subreq = cli_ntcreate_send(
-		state, ev, cli, state->oldpath, 0,
+		state, ev, cli, state->newpath, 0,
 		SYNCHRONIZE_ACCESS|DELETE_ACCESS|
 		FILE_READ_ATTRIBUTES|FILE_WRITE_ATTRIBUTES,
 		FILE_ATTRIBUTE_NORMAL, FILE_SHARE_NONE, FILE_CREATE,
@@ -102,7 +102,7 @@ static void cli_symlink_create_done(struct tevent_req *subreq)
 	SCVAL(state->setup, 7, 0); /* IsFlags */
 
 	if (!symlink_reparse_buffer_marshall(
-		    state->newpath, NULL, state->flags, state,
+		    state->link_target, NULL, state->flags, state,
 		    &data, &data_len)) {
 		tevent_req_oom(req);
 		return;
@@ -197,7 +197,7 @@ NTSTATUS cli_symlink_recv(struct tevent_req *req)
 	return tevent_req_simple_recv_ntstatus(req);
 }
 
-NTSTATUS cli_symlink(struct cli_state *cli, const char *oldname,
+NTSTATUS cli_symlink(struct cli_state *cli, const char *link_target,
 		     const char *newname, uint32_t flags)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -213,7 +213,7 @@ NTSTATUS cli_symlink(struct cli_state *cli, const char *oldname,
 	if (ev == NULL) {
 		goto fail;
 	}
-	req = cli_symlink_send(frame, ev, cli, oldname, newname, flags);
+	req = cli_symlink_send(frame, ev, cli, link_target, newname, flags);
 	if (req == NULL) {
 		goto fail;
 	}
