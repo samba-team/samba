@@ -445,8 +445,10 @@ enum winbindd_result winbindd_dual_init_connection(struct winbindd_domain *domai
 						   struct winbindd_cli_state *state);
 bool init_domain_list(void);
 struct winbindd_domain *find_domain_from_name_noinit(const char *domain_name);
+struct winbindd_domain *find_trust_from_name_noinit(const char *domain_name);
 struct winbindd_domain *find_domain_from_name(const char *domain_name);
 struct winbindd_domain *find_domain_from_sid_noinit(const struct dom_sid *sid);
+struct winbindd_domain *find_trust_from_sid_noinit(const struct dom_sid *sid);
 struct winbindd_domain *find_domain_from_sid(const struct dom_sid *sid);
 struct winbindd_domain *find_our_domain(void);
 struct winbindd_domain *find_lookup_domain_from_sid(const struct dom_sid *sid);

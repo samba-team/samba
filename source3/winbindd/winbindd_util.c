@@ -1082,6 +1082,28 @@ struct winbindd_domain *find_domain_from_name_noinit(const char *domain_name)
 	return NULL;
 }
 
+/**
+ * Given a domain name, return the struct winbindd domain if it's a direct
+ * outgoing trust
+ *
+ * @return The domain structure for the named domain, if it is a direct outgoing trust
+ */
+struct winbindd_domain *find_trust_from_name_noinit(const char *domain_name)
+{
+	struct winbindd_domain *domain = NULL;
+
+	domain = find_domain_from_name_noinit(domain_name);
+	if (domain == NULL) {
+		return NULL;
+	}
+
+	if (domain->secure_channel_type != SEC_CHAN_NULL) {
+		return domain;
+	}
+
+	return NULL;
+}
+
 struct winbindd_domain *find_domain_from_name(const char *domain_name)
 {
 	struct winbindd_domain *domain;
@@ -1111,6 +1133,28 @@ struct winbindd_domain *find_domain_from_sid_noinit(const struct dom_sid *sid)
 	}
 
 	/* Not found */
+
+	return NULL;
+}
+
+/**
+ * Given a domain sid, return the struct winbindd domain if it's a direct
+ * outgoing trust
+ *
+ * @return The domain structure for the specified domain, if it is a direct outgoing trust
+ */
+struct winbindd_domain *find_trust_from_sid_noinit(const struct dom_sid *sid)
+{
+	struct winbindd_domain *domain = NULL;
+
+	domain = find_domain_from_sid_noinit(sid);
+	if (domain == NULL) {
+		return NULL;
+	}
+
+	if (domain->secure_channel_type != SEC_CHAN_NULL) {
+		return domain;
+	}
 
 	return NULL;
 }
