@@ -1280,6 +1280,7 @@ bool winbindd_use_cache(void)
 static void winbindd_register_handlers(struct messaging_context *msg_ctx,
 				       bool foreground)
 {
+	bool scan_trusts = true;
 	NTSTATUS status;
 	/* Setup signal handlers */
 
@@ -1362,7 +1363,15 @@ static void winbindd_register_handlers(struct messaging_context *msg_ctx,
 	smb_nscd_flush_user_cache();
 	smb_nscd_flush_group_cache();
 
-	if (lp_allow_trusted_domains()) {
+	if (!lp_allow_trusted_domains()) {
+		scan_trusts = false;
+	}
+
+	if (IS_DC) {
+		scan_trusts = false;
+	}
+
+	if (scan_trusts) {
 		if (tevent_add_timer(server_event_context(), NULL, timeval_zero(),
 			      rescan_trusted_domains, NULL) == NULL) {
 			DEBUG(0, ("Could not trigger rescan_trusted_domains()\n"));
