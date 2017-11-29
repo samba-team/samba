@@ -98,6 +98,13 @@ smbc_setDebug(SMBCCTX *c, int debug)
 	TALLOC_FREE(frame);
 }
 
+/** set callback function which will be called for logging */
+void
+smbc_setLogCallback(SMBCCTX *c, void *private_ptr, debug_callback_fn fn)
+{
+	debug_set_callback(private_ptr, fn);
+}
+
 /**
  * Get the timeout used for waiting on connections and response data
  * (in milliseconds)

@@ -24,6 +24,19 @@
 #include <libsmbclient.h>
 #include "torture/libsmbclient/proto.h"
 
+/* test string to compare with when debug_callback is called */
+#define TEST_STRING "smbc_setLogCallback test"
+
+/* Dummy log callback function */
+static void debug_callback(void *private_ptr, int level, const char *msg)
+{
+	bool *found = private_ptr;
+	if(strstr(msg, TEST_STRING) != NULL) {
+		*found = true;
+	}
+	return;
+}
+
 bool torture_libsmbclient_init_context(struct torture_context *tctx,
 				       SMBCCTX **ctx_p)
 {
@@ -56,6 +69,7 @@ static bool torture_libsmbclient_version(struct torture_context *tctx)
 static bool torture_libsmbclient_initialize(struct torture_context *tctx)
 {
 	SMBCCTX *ctx;
+	bool ret = false;
 
 	torture_comment(tctx, "Testing smbc_new_context\n");
 
@@ -65,6 +79,14 @@ static bool torture_libsmbclient_initialize(struct torture_context *tctx)
 	torture_comment(tctx, "Testing smbc_init_context\n");
 
 	torture_assert(tctx, smbc_init_context(ctx), "failed to init context");
+
+	smbc_setLogCallback(ctx, &ret, debug_callback);
+	DEBUG(0, (TEST_STRING"\n"));
+	torture_assert(tctx, ret, "Failed debug_callback not called");
+	ret = false;
+	smbc_setLogCallback(ctx, NULL, NULL);
+	DEBUG(0, (TEST_STRING"\n"));
+	torture_assert(tctx, !ret, "Failed debug_callback called");
 
 	smbc_free_context(ctx, 1);
 
