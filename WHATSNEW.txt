@@ -87,6 +87,17 @@ assumptions. Samba implements async I/O based on threads by default,
 there is no special module required to see benefits of read and write
 request being sent do the disk in parallel.
 
+smbclient reparse point symlink parameters reversed
+===================================================
+
+A bug in smbclient caused the 'symlink' command to reverse the
+meaning of the new name and link target parameters when creating a
+reparse point symlink against a Windows server. As this is a
+little used feature the ordering of these parameters has been
+reversed to match the parameter ordering of the UNIX extensions
+'symlink' command. The usage message for this command has also
+been improved to remove confusion.
+
 KNOWN ISSUES
 ============
 
