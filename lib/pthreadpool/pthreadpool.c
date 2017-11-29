@@ -91,11 +91,19 @@ struct pthreadpool {
 	int num_idle;
 
 	/*
-	 * Condition variable indicating that we should quickly go
-	 * away making way for fork() without anybody waiting on
-	 * pool->condvar.
+	 * Condition variable indicating that helper threads should
+	 * quickly go away making way for fork() without anybody
+	 * waiting on pool->condvar.
 	 */
 	pthread_cond_t *prefork_cond;
+
+	/*
+	 * Waiting position for helper threads while fork is
+	 * running. The forking thread will have locked it, and all
+	 * idle helper threads will sit here until after the fork,
+	 * where the forking thread will unlock it again.
+	 */
+	pthread_mutex_t fork_mutex;
 };
 
 static pthread_mutex_t pthreadpools_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -151,6 +159,15 @@ int pthreadpool_init(unsigned max_threads, struct pthreadpool **presult,
 		return ret;
 	}
 
+	ret = pthread_mutex_init(&pool->fork_mutex, NULL);
+	if (ret != 0) {
+		pthread_cond_destroy(&pool->condvar);
+		pthread_mutex_destroy(&pool->mutex);
+		free(pool->jobs);
+		free(pool);
+		return ret;
+	}
+
 	pool->shutdown = false;
 	pool->num_threads = 0;
 	pool->max_threads = max_threads;
@@ -159,6 +176,7 @@ int pthreadpool_init(unsigned max_threads, struct pthreadpool **presult,
 
 	ret = pthread_mutex_lock(&pthreadpools_mutex);
 	if (ret != 0) {
+		pthread_mutex_destroy(&pool->fork_mutex);
 		pthread_cond_destroy(&pool->condvar);
 		pthread_mutex_destroy(&pool->mutex);
 		free(pool->jobs);
@@ -179,18 +197,26 @@ int pthreadpool_init(unsigned max_threads, struct pthreadpool **presult,
 
 static void pthreadpool_prepare_pool(struct pthreadpool *pool)
 {
-	pthread_cond_t prefork_cond = PTHREAD_COND_INITIALIZER;
 	int ret;
+
+	ret = pthread_mutex_lock(&pool->fork_mutex);
+	assert(ret == 0);
 
 	ret = pthread_mutex_lock(&pool->mutex);
 	assert(ret == 0);
 
 	while (pool->num_idle != 0) {
+		int num_idle = pool->num_idle;
+		pthread_cond_t prefork_cond;
+
+		ret = pthread_cond_init(&prefork_cond, NULL);
+		assert(ret == 0);
+
 		/*
-		 * Exit all idle threads, which are all blocked in
-		 * pool->condvar. In the child we can destroy the
-		 * pool, which would result in undefined behaviour in
-		 * the pthread_cond_destroy(pool->condvar). glibc just
+		 * Push all idle threads off pool->condvar. In the
+		 * child we can destroy the pool, which would result
+		 * in undefined behaviour in the
+		 * pthread_cond_destroy(pool->condvar). glibc just
 		 * blocks here.
 		 */
 		pool->prefork_cond = &prefork_cond;
@@ -198,14 +224,16 @@ static void pthreadpool_prepare_pool(struct pthreadpool *pool)
 		ret = pthread_cond_signal(&pool->condvar);
 		assert(ret == 0);
 
-		ret = pthread_cond_wait(&prefork_cond, &pool->mutex);
-		assert(ret == 0);
+		while (pool->num_idle == num_idle) {
+			ret = pthread_cond_wait(&prefork_cond, &pool->mutex);
+			assert(ret == 0);
+		}
 
 		pool->prefork_cond = NULL;
-	}
 
-	ret = pthread_cond_destroy(&prefork_cond);
-	assert(ret == 0);
+		ret = pthread_cond_destroy(&prefork_cond);
+		assert(ret == 0);
+	}
 
 	/*
 	 * Probably it's well-defined somewhere: What happens to
@@ -246,6 +274,8 @@ static void pthreadpool_parent(void)
 		assert(ret == 0);
 		ret = pthread_mutex_unlock(&pool->mutex);
 		assert(ret == 0);
+		ret = pthread_mutex_unlock(&pool->fork_mutex);
+		assert(ret == 0);
 	}
 
 	ret = pthread_mutex_unlock(&pthreadpools_mutex);
@@ -268,7 +298,11 @@ static void pthreadpool_child(void)
 
 		ret = pthread_cond_init(&pool->condvar, NULL);
 		assert(ret == 0);
+
 		ret = pthread_mutex_unlock(&pool->mutex);
+		assert(ret == 0);
+
+		ret = pthread_mutex_unlock(&pool->fork_mutex);
 		assert(ret == 0);
 	}
 
@@ -284,7 +318,7 @@ static void pthreadpool_prep_atfork(void)
 
 static int pthreadpool_free(struct pthreadpool *pool)
 {
-	int ret, ret1;
+	int ret, ret1, ret2;
 
 	ret = pthread_mutex_lock(&pthreadpools_mutex);
 	if (ret != 0) {
@@ -296,12 +330,16 @@ static int pthreadpool_free(struct pthreadpool *pool)
 
 	ret = pthread_mutex_destroy(&pool->mutex);
 	ret1 = pthread_cond_destroy(&pool->condvar);
+	ret2 = pthread_mutex_destroy(&pool->fork_mutex);
 
 	if (ret != 0) {
 		return ret;
 	}
 	if (ret1 != 0) {
 		return ret1;
+	}
+	if (ret2 != 0) {
+		return ret2;
 	}
 
 	free(pool->jobs);
@@ -467,11 +505,30 @@ static void *pthreadpool_server(void *arg)
 				/*
 				 * Me must allow fork() to continue
 				 * without anybody waiting on
-				 * &pool->condvar.
+				 * &pool->condvar. Tell
+				 * pthreadpool_prepare_pool that we
+				 * got that message.
 				 */
-				pthread_cond_signal(pool->prefork_cond);
-				pthreadpool_server_exit(pool);
-				return NULL;
+
+				res = pthread_cond_signal(pool->prefork_cond);
+				assert(res == 0);
+
+				res = pthread_mutex_unlock(&pool->mutex);
+				assert(res == 0);
+
+				/*
+				 * pthreadpool_prepare_pool has
+				 * already locked this mutex across
+				 * the fork. This makes us wait
+				 * without sitting in a condvar.
+				 */
+				res = pthread_mutex_lock(&pool->fork_mutex);
+				assert(res == 0);
+				res = pthread_mutex_unlock(&pool->fork_mutex);
+				assert(res == 0);
+
+				res = pthread_mutex_lock(&pool->mutex);
+				assert(res == 0);
 			}
 
 			if (res == ETIMEDOUT) {
