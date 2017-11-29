@@ -366,6 +366,28 @@ class UserCmdTestCase(SambaToolCmdTest):
             name = userobj.get("samaccountname", idx=0)
             found = self.assertMatch(out, name,
                                      "user '%s' not found" % name)
+
+    def test_show(self):
+        for user in self.users:
+            (result, out, err) = self.runsubcmd(
+                "user", "show", user["name"],
+                "--attributes=sAMAccountName,company",
+                "-H", "ldap://%s" % os.environ["DC_SERVER"],
+                "-U%s%%%s" % (os.environ["DC_USERNAME"],
+                os.environ["DC_PASSWORD"]))
+            self.assertCmdSuccess(result, out, err, "Error running show")
+
+            expected_out = """dn: CN=%s %s,CN=Users,%s
+company: %s
+sAMAccountName: %s
+
+""" % (user["given-name"], user["surname"], self.samdb.domain_dn(),
+       user["company"], user["name"])
+
+            self.assertEqual(out, expected_out,
+                             "Unexpected show output for user '%s'" %
+                             user["name"])
+
     def test_getpwent(self):
         try:
             import pwd
