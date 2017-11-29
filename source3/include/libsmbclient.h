@@ -7,7 +7,6 @@
   Copyright (C) Tom Jansen (Ninja ISD) 2002
   Copyright (C) Derrell Lipman 2003-2008
 
-
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation; either version 3 of the License, or
@@ -128,6 +127,8 @@ struct smbc_dirent
 	 */
 	char name[1];
 };
+
+typedef void (*debug_callback_fn)(void *private_ptr, int level, const char *msg);
 
 /*
  * Flags for smbc_setxattr()
@@ -469,6 +470,14 @@ smbc_getDebug(SMBCCTX *c);
 /** Set the debug level */
 void
 smbc_setDebug(SMBCCTX *c, int debug);
+
+/** set log callback function to capture logs from libsmbclient, this is applied at global level */
+void
+smbc_setLogCallback(SMBCCTX *c, void *private_ptr, debug_callback_fn fn);
+
+/** set configuration file, this is applied at global level */
+void
+smbc_setConfiguration(SMBCCTX *c, const char* file);
 
 /** Get the netbios name used for making connections */
 char *
