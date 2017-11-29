@@ -300,6 +300,82 @@ static int test_busyfork(void)
 	return 0;
 }
 
+static int test_busyfork2(void)
+{
+	struct pthreadpool_pipe *p;
+	pid_t child;
+	int ret, jobnum;
+	struct pollfd pfd;
+
+	ret = pthreadpool_pipe_init(1, &p);
+	if (ret != 0) {
+		fprintf(stderr, "pthreadpool_pipe_init failed: %s\n",
+			strerror(ret));
+		return -1;
+	}
+
+	ret = pthreadpool_pipe_add_job(p, 1, busyfork_job, NULL);
+	if (ret != 0) {
+		fprintf(stderr, "pthreadpool_add_job failed: %s\n",
+			strerror(ret));
+		return -1;
+	}
+
+	ret = pthreadpool_pipe_finished_jobs(p, &jobnum, 1);
+	if (ret != 1) {
+		fprintf(stderr, "pthreadpool_pipe_finished_jobs failed\n");
+		return -1;
+	}
+
+	ret = poll(NULL, 0, 10);
+	if (ret == -1) {
+		perror("poll failed");
+		return -1;
+	}
+
+	ret = pthreadpool_pipe_add_job(p, 1, busyfork_job, NULL);
+	if (ret != 0) {
+		fprintf(stderr, "pthreadpool_add_job failed: %s\n",
+			strerror(ret));
+		return -1;
+	}
+
+	/*
+	 * Do the fork right after the add_job. This tests a race
+	 * where the atfork prepare handler gets all idle threads off
+	 * the condvar. If we are faster doing the fork than the
+	 * existing idle thread could get out of idle and take the
+	 * job, after the fork we end up with no threads to take care
+	 * of the job.
+	 */
+
+	child = fork();
+	if (child < 0) {
+		perror("fork failed");
+		return -1;
+	}
+
+	if (child == 0) {
+		exit(0);
+	}
+
+	pfd = (struct pollfd) {
+		.fd = pthreadpool_pipe_signal_fd(p),
+		.events = POLLIN|POLLERR
+	};
+
+	do {
+		ret = poll(&pfd, 1, 5000);
+	} while ((ret == -1) && (errno == EINTR));
+
+	if (ret == 0) {
+		fprintf(stderr, "job unfinished after 5 seconds\n");
+		return -1;
+	}
+
+	return 0;
+}
+
 static void test_tevent_wait(void *private_data)
 {
 	int *timeout = private_data;
@@ -412,6 +488,12 @@ int main(void)
 	ret = test_busyfork();
 	if (ret != 0) {
 		fprintf(stderr, "test_busyfork failed\n");
+		return 1;
+	}
+
+	ret = test_busyfork2();
+	if (ret != 0) {
+		fprintf(stderr, "test_busyfork2 failed\n");
 		return 1;
 	}
 
