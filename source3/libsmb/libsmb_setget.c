@@ -98,6 +98,19 @@ smbc_setDebug(SMBCCTX *c, int debug)
 	TALLOC_FREE(frame);
 }
 
+/** set configuration file */
+void smbc_setConfiguration(SMBCCTX *c, const char* file)
+{
+	if (lp_load_client(file))
+	{
+		DBG_DEBUG("Configuration loaded succesfully: %s\n", file);
+	}
+	else
+	{
+		DBG_ERR("Could not load config file: %s\n", file);
+	}
+}
+
 /**
  * Get the timeout used for waiting on connections and response data
  * (in milliseconds)
