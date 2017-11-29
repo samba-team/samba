@@ -440,6 +440,9 @@ struct winbindd_domain *domain_list(void);
 struct winbindd_domain *wb_next_domain(struct winbindd_domain *domain);
 bool set_routing_domain(struct winbindd_domain *domain,
 			const struct winbindd_domain *routing_domain);
+bool add_trusted_domain_from_auth(uint16_t validation_level,
+				  struct info3_text *info3,
+				  struct info6_text *info6);
 bool domain_is_forest_root(const struct winbindd_domain *domain);
 void rescan_trusted_domains(struct tevent_context *ev, struct tevent_timer *te,
 			    struct timeval now, void *private_data);

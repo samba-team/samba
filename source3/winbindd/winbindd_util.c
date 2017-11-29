@@ -303,6 +303,61 @@ bool set_routing_domain(struct winbindd_domain *domain,
 	return true;
 }
 
+bool add_trusted_domain_from_auth(uint16_t validation_level,
+				  struct info3_text *info3,
+				  struct info6_text *info6)
+{
+	struct winbindd_domain *domain = NULL;
+	struct dom_sid domain_sid;
+	const char *dns_domainname = NULL;
+	NTSTATUS status;
+	bool ok;
+
+	/*
+	 * We got a successfull auth from a domain that might not yet be in our
+	 * domain list. If we're a member we trust our DC who authenticated the
+	 * user from that domain and add the domain to our list on-the-fly. If
+	 * we're a DC we rely on configured trusts and don't add on-the-fly.
+	 */
+
+	if (IS_DC) {
+		return true;
+	}
+
+	ok = dom_sid_parse(info3->dom_sid, &domain_sid);
+	if (!ok) {
+		DBG_NOTICE("dom_sid_parse [%s] failed\n", info3->dom_sid);
+		return false;
+	}
+
+	if (validation_level == 6) {
+		dns_domainname = &info6->dns_domainname[0];
+	}
+
+	status = add_trusted_domain(info3->logon_dom,
+				    dns_domainname,
+				    &domain_sid,
+				    0,
+				    NETR_TRUST_FLAG_OUTBOUND,
+				    0,
+				    SEC_CHAN_NULL,
+				    &domain);
+	if (!NT_STATUS_IS_OK(status) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_DOMAIN))
+	{
+		DBG_DEBUG("Adding domain [%s] with sid [%s] failed\n",
+			  info3->logon_dom, info3->dom_sid);
+		return false;
+	}
+
+	ok = set_routing_domain(domain, find_default_route_domain());
+	if (!ok) {
+		return false;
+	}
+
+	return true;
+}
+
 bool domain_is_forest_root(const struct winbindd_domain *domain)
 {
 	const uint32_t fr_flags =
