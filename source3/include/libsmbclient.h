@@ -130,6 +130,11 @@ struct smbc_dirent
 };
 
 /*
+ * Logging callback function
+ */
+typedef void (*smbc_debug_callback_fn)(void *private_ptr, int level, const char *msg);
+
+/*
  * Flags for smbc_setxattr()
  *   Specify a bitwise OR of these, or 0 to add or replace as necessary
  */
@@ -469,6 +474,14 @@ smbc_getDebug(SMBCCTX *c);
 /** Set the debug level */
 void
 smbc_setDebug(SMBCCTX *c, int debug);
+
+/**
+ * set log callback function to capture logs from libsmbclient, this
+ * is applied at global level
+ */
+void
+smbc_setLogCallback(SMBCCTX *c, void *private_ptr,
+		    smbc_debug_callback_fn fn);
 
 /** Get the netbios name used for making connections */
 char *
