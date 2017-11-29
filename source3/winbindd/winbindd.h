@@ -139,6 +139,7 @@ struct winbindd_domain {
 	char *alt_name;                        /* alt Domain name, if any (FQDN for ADS) */
 	char *forest_name;                     /* Name of the AD forest we're in */
 	struct dom_sid sid;                           /* SID for this domain */
+	enum netr_SchannelType secure_channel_type;
 	uint32_t domain_flags;                   /* Domain flags from netlogon.h */
 	uint32_t domain_type;                    /* Domain type from netlogon.h */
 	uint32_t domain_trust_attribs;           /* Trust attribs from netlogon.h */

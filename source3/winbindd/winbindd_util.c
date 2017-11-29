@@ -125,6 +125,7 @@ static NTSTATUS add_trusted_domain(const char *domain_name,
 				   uint32_t trust_type,
 				   uint32_t trust_flags,
 				   uint32_t trust_attribs,
+				   enum netr_SchannelType secure_channel_type,
 				   struct winbindd_domain **_d)
 {
 	struct winbindd_domain *domain = NULL;
@@ -240,6 +241,7 @@ static NTSTATUS add_trusted_domain(const char *domain_name,
 
 	domain->backend = NULL;
 	domain->internal = is_internal_domain(sid);
+	domain->secure_channel_type = secure_channel_type;
 	domain->sequence_number = DOM_SEQUENCE_NONE;
 	domain->last_seq_check = 0;
 	domain->initialized = false;
@@ -249,6 +251,7 @@ static NTSTATUS add_trusted_domain(const char *domain_name,
 	domain->domain_flags = trust_flags;
 	domain->domain_type = trust_type;
 	domain->domain_trust_attribs = trust_attribs;
+	domain->secure_channel_type = secure_channel_type;
 	sid_copy(&domain->sid, sid);
 
 	/* Is this our primary domain ? */
@@ -464,6 +467,7 @@ static void trustdom_list_done(struct tevent_req *req)
 					    trust_type,
 					    trust_flags,
 					    trust_attribs,
+					    SEC_CHAN_NULL,
 					    &domain);
 		if (!NT_STATUS_IS_OK(status) &&
 		    !NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_DOMAIN))
@@ -546,6 +550,7 @@ static void rescan_forest_root_trusts( void )
 						    dom_list[i].trust_type,
 						    dom_list[i].trust_flags,
 						    dom_list[i].trust_attribs,
+						    SEC_CHAN_NULL,
 						    &d);
 
 			if (!NT_STATUS_IS_OK(status) &&
@@ -627,6 +632,7 @@ static void rescan_forest_trusts( void )
 					type,
 					flags,
 					attribs,
+					SEC_CHAN_NULL,
 					&d);
 				if (!NT_STATUS_IS_OK(status) &&
 				    NT_STATUS_EQUAL(status,
@@ -736,6 +742,7 @@ static void wb_imsg_new_trusted_domain(struct imessaging_context *msg,
 				       DATA_BLOB *data)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
+	enum netr_SchannelType secure_channel_type = SEC_CHAN_DOMAIN;
 	struct lsa_TrustDomainInfoInfoEx info;
 	enum ndr_err_code ndr_err;
 	struct winbindd_domain *d = NULL;
@@ -762,6 +769,9 @@ static void wb_imsg_new_trusted_domain(struct imessaging_context *msg,
 		return;
 	}
 
+	if (info.trust_type == LSA_TRUST_TYPE_UPLEVEL) {
+		secure_channel_type = SEC_CHAN_DNS_DOMAIN;
+	}
 	if (info.trust_direction & LSA_TRUST_DIRECTION_INBOUND) {
 		trust_flags |= NETR_TRUST_FLAG_INBOUND;
 	}
@@ -778,6 +788,7 @@ static void wb_imsg_new_trusted_domain(struct imessaging_context *msg,
 				    info.trust_type,
 				    trust_flags,
 				    info.trust_attributes,
+				    secure_channel_type,
 				    &d);
 	if (!NT_STATUS_IS_OK(status) &&
 	    !NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_DOMAIN))
@@ -852,6 +863,7 @@ bool init_domain_list(void)
 				    LSA_TRUST_TYPE_DOWNLEVEL,
 				    0, /* trust_flags */
 				    0, /* trust_attribs */
+				    SEC_CHAN_LOCAL,
 				    &domain);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("add_trusted_domain BUILTIN returned %s\n",
@@ -903,6 +915,7 @@ bool init_domain_list(void)
 					    LSA_TRUST_TYPE_UPLEVEL,
 					    trust_flags,
 					    LSA_TRUST_ATTRIBUTE_WITHIN_FOREST,
+					    SEC_CHAN_BDC,
 					    &domain);
 		TALLOC_FREE(pdb_domain_info);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -946,16 +959,25 @@ bool init_domain_list(void)
 				return false;
 			}
 		}
+
+		domain->secure_channel_type = sec_chan_type;
 		if (sec_chan_type == SEC_CHAN_RODC) {
 			domain->rodc = true;
 		}
 
 	} else {
 		uint32_t trust_flags;
+		enum netr_SchannelType secure_channel_type;
 
 		trust_flags = NETR_TRUST_FLAG_OUTBOUND;
 		if (role != ROLE_DOMAIN_MEMBER) {
 			trust_flags |= NETR_TRUST_FLAG_PRIMARY;
+		}
+
+		if (role > ROLE_DOMAIN_MEMBER) {
+			secure_channel_type = SEC_CHAN_BDC;
+		} else {
+			secure_channel_type = SEC_CHAN_LOCAL;
 		}
 
 		status = add_trusted_domain(get_global_sam_name(),
@@ -964,6 +986,7 @@ bool init_domain_list(void)
 					    LSA_TRUST_TYPE_DOWNLEVEL,
 					    trust_flags,
 					    0, /* trust_attribs */
+					    secure_channel_type,
 					    &domain);
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_ERR("Failed to add local SAM to "
@@ -995,6 +1018,7 @@ bool init_domain_list(void)
 					    NETR_TRUST_FLAG_PRIMARY|
 					    NETR_TRUST_FLAG_OUTBOUND,
 					    0, /* trust_attribs */
+					    SEC_CHAN_WKSTA,
 					    &domain);
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_ERR("Failed to add local SAM to "
