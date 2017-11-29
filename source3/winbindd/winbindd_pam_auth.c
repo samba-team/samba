@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "winbindd.h"
+#include "libcli/security/dom_sid.h"
 
 struct winbindd_pam_auth_state {
 	struct winbindd_request *request;
@@ -125,6 +126,20 @@ NTSTATUS winbindd_pam_auth_recv(struct tevent_req *req,
 	status = NT_STATUS(response->data.auth.nt_status);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
+	}
+
+	if (state->request->flags & WBFLAG_PAM_INFO3_TEXT) {
+		bool ok;
+
+		ok = add_trusted_domain_from_auth(
+			state->response->data.auth.validation_level,
+			&state->response->data.auth.info3,
+			&state->response->data.auth.info6);
+		if (!ok) {
+			DBG_ERR("add_trusted_domain_from_auth failed\n");
+			set_auth_errors(response, NT_STATUS_LOGON_FAILURE);
+			return NT_STATUS_LOGON_FAILURE;
+		}
 	}
 
 	if (state->request->flags & WBFLAG_PAM_CACHED_LOGIN) {

@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "winbindd.h"
 #include "rpc_client/util_netlogon.h"
+#include "libcli/security/dom_sid.h"
 
 struct winbindd_pam_auth_crap_state {
 	struct winbindd_response *response;
@@ -46,10 +47,11 @@ struct tevent_req *winbindd_pam_auth_crap_send(
 		return NULL;
 	}
 
-	if (request->flags & WBFLAG_PAM_AUTH_PAC) {
+	state->flags = request->flags;
+
+	if (state->flags & WBFLAG_PAM_AUTH_PAC) {
 		NTSTATUS status;
 
-		state->flags = request->flags;
 		status = winbindd_pam_auth_pac_send(cli, &state->info3);
 		if (NT_STATUS_IS_OK(status)) {
 			/* Defer filling out response to recv */
@@ -132,7 +134,7 @@ NTSTATUS winbindd_pam_auth_crap_recv(struct tevent_req *req,
 		return status;
 	}
 
-	if (state->flags & WBFLAG_PAM_AUTH_PAC) {
+	if (state->flags & WBFLAG_PAM_AUTH_PAC)	{
 		uint16_t validation_level;
 		union netr_Validation *validation = NULL;
 
@@ -153,6 +155,22 @@ NTSTATUS winbindd_pam_auth_crap_recv(struct tevent_req *req,
 		TALLOC_FREE(validation);
 		return status;
 
+	}
+
+ 	if (NT_STATUS_IS_OK(NT_STATUS(state->response->data.auth.nt_status)) &&
+	    (state->flags & WBFLAG_PAM_INFO3_TEXT))
+	{
+		bool ok;
+
+		ok = add_trusted_domain_from_auth(
+			state->response->data.auth.validation_level,
+			&state->response->data.auth.info3,
+			&state->response->data.auth.info6);
+		if (!ok) {
+			DBG_ERR("add_trusted_domain_from_auth failed\n");
+			set_auth_errors(response, NT_STATUS_LOGON_FAILURE);
+			return NT_STATUS_LOGON_FAILURE;
+		}
 	}
 
 	*response = *state->response;
