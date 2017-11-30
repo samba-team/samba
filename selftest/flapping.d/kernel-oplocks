@@ -1,4 +1,0 @@
-# The smb2.kernel-oplocks tests fails often on Ubuntu 14.04 on the
-# Catalyst Cloud but failures have been seen on normal workstations
-# and sn-devel.
-^samba3.smb2.kernel-oplocks.kernel_oplocks8
