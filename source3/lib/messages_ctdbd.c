@@ -223,6 +223,19 @@ static int messaging_ctdbd_init_internal(struct messaging_context *msg_ctx,
 		return ret;
 	}
 
+	{
+		struct server_id self = messaging_server_id(msg_ctx);
+
+		ret = register_with_ctdbd(ctx->conn, self.unique_id,
+					  NULL, NULL);
+		if (ret != 0) {
+			DBG_DEBUG("register_with_ctdbd failed: %s\n",
+				  strerror(ret));
+			return ret;
+		}
+
+	}
+
 	ctdb_fd = ctdbd_conn_get_fd(ctx->conn);
 	ev = messaging_tevent_context(msg_ctx);
 
