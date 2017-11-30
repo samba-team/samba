@@ -47,7 +47,7 @@ struct tevent_req *winbindd_ping_dc_send(TALLOC_CTX *mem_ctx,
 		/* preserve old behavior, when no domain name is given */
 		domain = find_our_domain();
 	} else {
-		domain = find_domain_from_name_noinit(request->domain_name);
+		domain = find_trust_from_name_noinit(request->domain_name);
 	}
 	if (domain == NULL) {
 		tevent_req_nterror(req, NT_STATUS_NO_SUCH_DOMAIN);

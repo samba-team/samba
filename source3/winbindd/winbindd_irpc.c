@@ -282,7 +282,7 @@ static NTSTATUS wb_irpc_GetForestTrustInformation(struct irpc_message *msg,
 		return NT_STATUS_OK;
 	}
 
-	domain = find_domain_from_name_noinit(req->in.trusted_domain_name);
+	domain = find_trust_from_name_noinit(req->in.trusted_domain_name);
 	if (domain == NULL) {
 		req->out.result = WERR_NO_SUCH_DOMAIN;
 		return NT_STATUS_OK;

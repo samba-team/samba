@@ -336,7 +336,7 @@ void winbindd_dc_info(struct winbindd_cli_state *cli)
 		  cli->request->domain_name));
 
 	if (cli->request->domain_name[0] != '\0') {
-		domain = find_domain_from_name_noinit(
+		domain = find_trust_from_name_noinit(
 			cli->request->domain_name);
 		if (domain == NULL) {
 			DEBUG(10, ("Could not find domain %s\n",
