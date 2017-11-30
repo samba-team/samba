@@ -27,5 +27,9 @@ NTSTATUS copy_netr_SamBaseInfo(TALLOC_CTX *mem_ctx,
 			       struct netr_SamBaseInfo *out);
 struct netr_SamInfo3 *copy_netr_SamInfo3(TALLOC_CTX *mem_ctx,
 					 const struct netr_SamInfo3 *orig);
+NTSTATUS map_validation_to_info3(TALLOC_CTX *mem_ctx,
+				 uint16_t validation_level,
+				 union netr_Validation *validation,
+				 struct netr_SamInfo3 **info3_p);
 
 #endif /* _RPC_CLIENT_UTIL_NETLOGON_H_ */
