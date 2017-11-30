@@ -1379,6 +1379,8 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 	int netr_attempts = 0;
 	bool retry = false;
 	NTSTATUS result;
+	uint16_t validation_level;
+	union netr_Validation *validation = NULL;
 
 	do {
 		struct rpc_pipe_client *netlogon_pipe;
@@ -1456,7 +1458,8 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 				NetlogonInteractiveInformation,
 				authoritative,
 				flags,
-				info3);
+				&validation_level,
+				&validation);
 		} else {
 			result = rpccli_netlogon_network_logon(
 				domain->conn.netlogon_creds_ctx,
@@ -1471,7 +1474,8 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 				nt_response,
 				authoritative,
 				flags,
-				info3);
+				&validation_level,
+				&validation);
 		}
 
 		/*
@@ -1538,7 +1542,21 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 			domainname));
 		invalidate_cm_connection(domain);
 	}
-	return result;
+
+	if (!NT_STATUS_IS_OK(result)) {
+		return result;
+	}
+
+	result = map_validation_to_info3(mem_ctx,
+					 validation_level,
+					 validation,
+					 info3);
+	TALLOC_FREE(validation);
+	if (!NT_STATUS_IS_OK(result)) {
+		return result;
+	}
+
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS winbindd_dual_pam_auth_samlogon(

@@ -27,6 +27,7 @@
 #include "rpc_client/cli_netlogon.h"
 #include "secrets.h"
 #include "../libcli/auth/netlogon_creds_cli.h"
+#include "rpc_client/util_netlogon.h"
 
 static WERROR cmd_netlogon_logon_ctrl2(struct rpc_pipe_client *cli,
 				       TALLOC_CTX *mem_ctx, int argc,
@@ -497,6 +498,8 @@ static NTSTATUS cmd_netlogon_sam_logon(struct rpc_pipe_client *cli,
 	struct netr_SamInfo3 *info3 = NULL;
 	uint8_t authoritative = 0;
 	uint32_t flags = 0;
+	uint16_t validation_level;
+	union netr_Validation *validation = NULL;
 
 	/* Check arguments */
 
@@ -536,9 +539,18 @@ static NTSTATUS cmd_netlogon_sam_logon(struct rpc_pipe_client *cli,
 						logon_type,
 						&authoritative,
 						&flags,
-						&info3);
+						&validation_level,
+						&validation);
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
+
+	result = map_validation_to_info3(mem_ctx,
+					 validation_level,
+					 validation,
+					 &info3);
+	if (!NT_STATUS_IS_OK(result)) {
+		return result;
+	}
 
  done:
 	return result;

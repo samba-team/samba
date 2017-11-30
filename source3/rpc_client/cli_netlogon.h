@@ -71,9 +71,10 @@ NTSTATUS rpccli_netlogon_password_logon(
 	enum netr_LogonInfoClass logon_type,
 	uint8_t *authoritative,
 	uint32_t *flags,
-	struct netr_SamInfo3 **info3);
+	uint16_t *_validation_level,
+	union netr_Validation **_validation);
 NTSTATUS rpccli_netlogon_network_logon(
-	struct netlogon_creds_cli_context *creds,
+	struct netlogon_creds_cli_context *creds_ctx,
 	struct dcerpc_binding_handle *binding_handle,
 	TALLOC_CTX *mem_ctx,
 	uint32_t logon_parameters,
@@ -85,6 +86,7 @@ NTSTATUS rpccli_netlogon_network_logon(
 	DATA_BLOB nt_response,
 	uint8_t *authoritative,
 	uint32_t *flags,
-	struct netr_SamInfo3 **info3);
+	uint16_t *_validation_level,
+	union netr_Validation **_validation);
 
 #endif /* _RPC_CLIENT_CLI_NETLOGON_H_ */

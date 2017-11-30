@@ -461,7 +461,8 @@ NTSTATUS rpccli_netlogon_password_logon(
 	enum netr_LogonInfoClass logon_type,
 	uint8_t *authoritative,
 	uint32_t *flags,
-	struct netr_SamInfo3 **info3)
+	uint16_t *_validation_level,
+	union netr_Validation **_validation)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
@@ -572,7 +573,7 @@ NTSTATUS rpccli_netlogon_password_logon(
 						  binding_handle,
 						  logon_type,
 						  logon,
-						  frame,
+						  mem_ctx,
 						  &validation_level,
 						  &validation,
 						  authoritative,
@@ -582,14 +583,9 @@ NTSTATUS rpccli_netlogon_password_logon(
 		return status;
 	}
 
-	status = map_validation_to_info3(mem_ctx,
-					 validation_level, validation,
-					 info3);
 	TALLOC_FREE(frame);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
+	*_validation_level = validation_level;
+	*_validation = validation;
 
 	return NT_STATUS_OK;
 }
@@ -614,7 +610,8 @@ NTSTATUS rpccli_netlogon_network_logon(
 	DATA_BLOB nt_response,
 	uint8_t *authoritative,
 	uint32_t *flags,
-	struct netr_SamInfo3 **info3)
+	uint16_t *_validation_level,
+	union netr_Validation **_validation)
 {
 	NTSTATUS status;
 	const char *workstation_name_slash;
@@ -625,7 +622,7 @@ NTSTATUS rpccli_netlogon_network_logon(
 	struct netr_ChallengeResponse lm;
 	struct netr_ChallengeResponse nt;
 
-	*info3 = NULL;
+	*_validation = NULL;
 
 	ZERO_STRUCT(lm);
 	ZERO_STRUCT(nt);
@@ -686,12 +683,8 @@ NTSTATUS rpccli_netlogon_network_logon(
 		return status;
 	}
 
-	status = map_validation_to_info3(mem_ctx,
-					 validation_level, validation,
-					 info3);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
+	*_validation_level = validation_level;
+	*_validation = validation;
 
 	return NT_STATUS_OK;
 }
