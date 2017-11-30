@@ -4838,6 +4838,18 @@ static int do_child_process(int pipefd, const char *name)
 	int fd = -1;
 	char c = 0;
 	struct sigaction act;
+	sigset_t set;
+	sigset_t empty_set;
+
+	/* Block RT_SIGNAL_LEASE and SIGALRM. */
+	sigemptyset(&set);
+	sigemptyset(&empty_set);
+	sigaddset(&set, RT_SIGNAL_LEASE);
+	sigaddset(&set, SIGALRM);
+	ret = sigprocmask(SIG_SETMASK, &set, NULL);
+	if (ret == -1) {
+		return 11;
+	}
 
 	/* Set up a signal handler for RT_SIGNAL_LEASE. */
 	ZERO_STRUCT(act);
@@ -4878,8 +4890,8 @@ static int do_child_process(int pipefd, const char *name)
 	/* Ensure the pause doesn't hang forever. */
 	alarm(5);
 
-	/* Wait for RT_SIGNAL_LEASE. */
-	ret = pause();
+	/* Wait for RT_SIGNAL_LEASE or SIGALRM. */
+	ret = sigsuspend(&empty_set);
 	if (ret != -1 || errno != EINTR) {
 		return 6;
 	}
