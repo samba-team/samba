@@ -936,9 +936,13 @@ struct winbindd_domain *find_domain_from_name_noinit(const char *domain_name)
 	/* Search through list */
 
 	for (domain = domain_list(); domain != NULL; domain = domain->next) {
-		if (strequal(domain_name, domain->name) ||
-		    (domain->alt_name != NULL &&
-		     strequal(domain_name, domain->alt_name))) {
+		if (strequal(domain_name, domain->name)) {
+			return domain;
+		}
+		if (domain->alt_name == NULL) {
+			continue;
+		}
+		if (strequal(domain_name, domain->alt_name)) {
 			return domain;
 		}
 	}
