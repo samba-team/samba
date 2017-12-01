@@ -2878,11 +2878,89 @@ static bool pdb_samba_dsdb_del_trusteddom_pw(struct pdb_methods *m,
 
 static NTSTATUS pdb_samba_dsdb_enum_trusteddoms(struct pdb_methods *m,
 					 TALLOC_CTX *mem_ctx,
-					 uint32_t *num_domains,
-					 struct trustdom_info ***domains)
+					 uint32_t *_num_domains,
+					 struct trustdom_info ***_domains)
 {
-	*num_domains = 0;
-	*domains = NULL;
+	struct pdb_samba_dsdb_state *state = talloc_get_type_abort(
+		m->private_data, struct pdb_samba_dsdb_state);
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	const char * const attrs[] = {
+		"securityIdentifier",
+		"flatName",
+		"trustDirection",
+		NULL
+	};
+	struct ldb_result *res = NULL;
+	unsigned int i;
+	struct trustdom_info **domains = NULL;
+	NTSTATUS status;
+	uint32_t di = 0;
+
+	*_num_domains = 0;
+	*_domains = NULL;
+
+	status = dsdb_trust_search_tdos(state->ldb, NULL,
+					attrs, tmp_ctx, &res);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("dsdb_trust_search_tdos() - %s ", nt_errstr(status));
+		TALLOC_FREE(tmp_ctx);
+		return status;
+	}
+
+	if (res->count == 0) {
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_OK;
+	}
+
+	domains = talloc_zero_array(tmp_ctx, struct trustdom_info *,
+				    res->count);
+	if (domains == NULL) {
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i = 0; i < res->count; i++) {
+		struct ldb_message *msg = res->msgs[i];
+		struct trustdom_info *d = NULL;
+		const char *name = NULL;
+		struct dom_sid *sid = NULL;
+		uint32_t direction;
+
+		d = talloc_zero(domains, struct trustdom_info);
+		if (d == NULL) {
+			TALLOC_FREE(tmp_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		name = ldb_msg_find_attr_as_string(msg, "flatName", NULL);
+		if (name == NULL) {
+			TALLOC_FREE(tmp_ctx);
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+		sid = samdb_result_dom_sid(msg, msg, "securityIdentifier");
+		if (sid == NULL) {
+			continue;
+		}
+
+		direction = ldb_msg_find_attr_as_uint(msg, "trustDirection", 0);
+		if (!(direction & LSA_TRUST_DIRECTION_OUTBOUND)) {
+			continue;
+		}
+
+		d->name = talloc_strdup(d, name);
+		if (d->name == NULL) {
+			TALLOC_FREE(tmp_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
+		d->sid = *sid;
+
+		domains[di++] = d;
+	}
+
+	talloc_realloc(domains, domains, struct trustdom_info *, di);
+	*_domains = talloc_move(mem_ctx, &domains);
+	*_num_domains = di;
+	TALLOC_FREE(tmp_ctx);
 	return NT_STATUS_OK;
 }
 
