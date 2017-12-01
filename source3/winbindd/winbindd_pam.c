@@ -1797,9 +1797,10 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 		if (NT_STATUS_IS_OK(result)) {
 			DEBUG(10,("winbindd_dual_pam_auth_kerberos succeeded\n"));
 			goto process_result;
-		} else {
-			DEBUG(10,("winbindd_dual_pam_auth_kerberos failed: %s\n", nt_errstr(result)));
 		}
+
+		DBG_DEBUG("winbindd_dual_pam_auth_kerberos failed: %s\n",
+			  nt_errstr(result));
 
 		if (NT_STATUS_EQUAL(result, NT_STATUS_NO_LOGON_SERVERS) ||
 		    NT_STATUS_EQUAL(result, NT_STATUS_IO_TIMEOUT) ||
