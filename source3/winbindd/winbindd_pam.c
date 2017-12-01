@@ -1443,32 +1443,34 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 				  "domain [%s]\n", domainname);
 			result = NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 		} else if (interactive) {
-			result = rpccli_netlogon_password_logon(domain->conn.netlogon_creds_ctx,
-								netlogon_pipe->binding_handle,
-								mem_ctx,
-								logon_parameters,
-								domainname,
-								username,
-								password,
-								workstation,
-								NetlogonInteractiveInformation,
-								authoritative,
-								flags,
-								info3);
+			result = rpccli_netlogon_password_logon(
+				domain->conn.netlogon_creds_ctx,
+				netlogon_pipe->binding_handle,
+				mem_ctx,
+				logon_parameters,
+				domainname,
+				username,
+				password,
+				workstation,
+				NetlogonInteractiveInformation,
+				authoritative,
+				flags,
+				info3);
 		} else {
-			result = rpccli_netlogon_network_logon(domain->conn.netlogon_creds_ctx,
-							netlogon_pipe->binding_handle,
-							mem_ctx,
-							logon_parameters,
-							username,
-							domainname,
-							workstation,
-							chal,
-							lm_response,
-							nt_response,
-							authoritative,
-							flags,
-							info3);
+			result = rpccli_netlogon_network_logon(
+				domain->conn.netlogon_creds_ctx,
+				netlogon_pipe->binding_handle,
+				mem_ctx,
+				logon_parameters,
+				username,
+				domainname,
+				workstation,
+				chal,
+				lm_response,
+				nt_response,
+				authoritative,
+				flags,
+				info3);
 		}
 
 		/*
