@@ -180,7 +180,7 @@ class gp_log:
         if attr is None:
             attr = etree.SubElement(ext, 'attribute')
             attr.attrib['name'] = attribute
-        attr.text = old_val
+            attr.text = old_val
 
     def retrieve(self, gp_ext_name, attribute):
         ''' Retrieve a stored attribute from the gp_log
