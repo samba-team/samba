@@ -1620,7 +1620,7 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(TALLOC_CTX *mem_ctx,
 			&authoritative,
 			info3);
 
-		/* 
+		/*
 		 * We need to try the remote NETLOGON server if this is
 		 * not authoritative (for example on the RODC).
 		 */
