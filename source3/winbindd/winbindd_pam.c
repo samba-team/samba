@@ -1540,12 +1540,13 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 	return result;
 }
 
-static NTSTATUS winbindd_dual_pam_auth_samlogon(TALLOC_CTX *mem_ctx,
-						struct winbindd_domain *domain,
-						const char *user,
-						const char *pass,
-						uint32_t request_flags,
-						struct netr_SamInfo3 **info3)
+static NTSTATUS winbindd_dual_pam_auth_samlogon(
+	TALLOC_CTX *mem_ctx,
+	struct winbindd_domain *domain,
+	const char *user,
+	const char *pass,
+	uint32_t request_flags,
+	struct netr_SamInfo3 **info3)
 {
 
 	uchar chal[8];
