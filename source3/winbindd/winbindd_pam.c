@@ -2106,7 +2106,7 @@ NTSTATUS winbind_dual_SamLogon(struct winbindd_domain *domain,
 			authoritative,
 			info3);
 
-		/* 
+		/*
 		 * We need to try the remote NETLOGON server if this is
 		 * not authoritative.
 		 */
