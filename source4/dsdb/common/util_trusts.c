@@ -33,6 +33,7 @@
 #include "libds/common/flag_mapping.h"
 #include "../lib/util/dlinklist.h"
 #include "../lib/crypto/crypto.h"
+#include "libcli/ldap/ldap_ndr.h"
 
 NTSTATUS dsdb_trust_forest_info_from_lsa(TALLOC_CTX *mem_ctx,
 				const struct lsa_ForestTrustInformation *lfti,
@@ -2559,6 +2560,70 @@ NTSTATUS dsdb_trust_search_tdo_by_type(struct ldb_context *sam_ctx,
 	status = dsdb_trust_search_tdo(sam_ctx, netbios, dns,
 				       attrs, mem_ctx, msg);
 	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return status;
+	}
+
+	TALLOC_FREE(frame);
+	return NT_STATUS_OK;
+}
+
+NTSTATUS dsdb_trust_search_tdo_by_sid(struct ldb_context *sam_ctx,
+				      const struct dom_sid *sid,
+				      const char * const *attrs,
+				      TALLOC_CTX *mem_ctx,
+				      struct ldb_message **msg)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	int ret;
+	struct ldb_dn *system_dn = NULL;
+	char *encoded_sid = NULL;
+	char *filter = NULL;
+
+	*msg = NULL;
+
+	if (sid == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_INVALID_PARAMETER_MIX;
+	}
+
+	encoded_sid = ldap_encode_ndr_dom_sid(frame, sid);
+	if (encoded_sid == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	system_dn = ldb_dn_copy(frame, ldb_get_default_basedn(sam_ctx));
+	if (system_dn == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (!ldb_dn_add_child_fmt(system_dn, "CN=System")) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	filter = talloc_asprintf(frame,
+				"(&"
+				  "(objectClass=trustedDomain)"
+				  "(securityIdentifier=%s)"
+				")",
+				encoded_sid);
+	if (filter == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ret = dsdb_search_one(sam_ctx, mem_ctx, msg,
+			      system_dn,
+			      LDB_SCOPE_ONELEVEL, attrs,
+			      DSDB_SEARCH_NO_GLOBAL_CATALOG,
+			      "%s", filter);
+	if (ret != LDB_SUCCESS) {
+		NTSTATUS status = dsdb_ldb_err_to_ntstatus(ret);
+		DEBUG(3, ("Failed to search for %s: %s - %s\n",
+			  filter, nt_errstr(status), ldb_errstring(sam_ctx)));
 		TALLOC_FREE(frame);
 		return status;
 	}
