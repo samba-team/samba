@@ -25,5 +25,7 @@
 NTSTATUS copy_netr_SamBaseInfo(TALLOC_CTX *mem_ctx,
 			       const struct netr_SamBaseInfo *in,
 			       struct netr_SamBaseInfo *out);
+struct netr_SamInfo3 *copy_netr_SamInfo3(TALLOC_CTX *mem_ctx,
+					 const struct netr_SamInfo3 *orig);
 
 #endif /* _RPC_CLIENT_UTIL_NETLOGON_H_ */

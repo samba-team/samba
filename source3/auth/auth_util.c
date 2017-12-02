@@ -36,6 +36,7 @@
 #include "../librpc/gen_ndr/idmap.h"
 #include "lib/param/loadparm.h"
 #include "../lib/tsocket/tsocket.h"
+#include "rpc_client/util_netlogon.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH

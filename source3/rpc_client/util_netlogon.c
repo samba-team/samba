@@ -61,3 +61,44 @@ NTSTATUS copy_netr_SamBaseInfo(TALLOC_CTX *mem_ctx,
 
 	return NT_STATUS_OK;
 }
+
+#undef RET_NOMEM
+
+#define RET_NOMEM(ptr) do { \
+	if (!ptr) { \
+		TALLOC_FREE(info3); \
+		return NULL; \
+	} } while(0)
+
+struct netr_SamInfo3 *copy_netr_SamInfo3(TALLOC_CTX *mem_ctx,
+					 const struct netr_SamInfo3 *orig)
+{
+	struct netr_SamInfo3 *info3;
+	unsigned int i;
+	NTSTATUS status;
+
+	info3 = talloc_zero(mem_ctx, struct netr_SamInfo3);
+	if (!info3) return NULL;
+
+	status = copy_netr_SamBaseInfo(info3, &orig->base, &info3->base);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(info3);
+		return NULL;
+	}
+
+	if (orig->sidcount) {
+		info3->sidcount = orig->sidcount;
+		info3->sids = talloc_array(info3, struct netr_SidAttr,
+					   orig->sidcount);
+		RET_NOMEM(info3->sids);
+		for (i = 0; i < orig->sidcount; i++) {
+			info3->sids[i].sid = dom_sid_dup(info3->sids,
+							    orig->sids[i].sid);
+			RET_NOMEM(info3->sids[i].sid);
+			info3->sids[i].attributes =
+				orig->sids[i].attributes;
+		}
+	}
+
+	return info3;
+}

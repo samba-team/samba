@@ -322,8 +322,6 @@ NTSTATUS passwd_to_SamInfo3(TALLOC_CTX *mem_ctx,
 			    const struct passwd *pwd,
 			    struct netr_SamInfo3 **pinfo3,
 			    struct extra_auth_info *extra);
-struct netr_SamInfo3 *copy_netr_SamInfo3(TALLOC_CTX *mem_ctx,
-					 const struct netr_SamInfo3 *orig);
 
 /* The following definitions come from auth/pampass.c  */
 

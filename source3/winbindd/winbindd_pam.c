@@ -43,6 +43,7 @@
 #include "librpc/crypto/gse_krb5.h"
 #include "lib/afs/afs_funcs.h"
 #include "libsmb/samlogon_cache.h"
+#include "rpc_client/util_netlogon.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
