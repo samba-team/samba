@@ -12,6 +12,19 @@
 
 . "${CTDB_BASE}/functions"
 
+# type is at least mentioned in POSIX and more is portable than which(1)
+# shellcheck disable=SC2039
+if ! type gstack >/dev/null 2>&1 ; then
+	gstack ()
+	{
+		_pid="$1"
+
+		gdb -batch --quiet -nx "/proc/${_pid}/exe" "$_pid" \
+		    -ex "thread apply all bt" 2>/dev/null |
+			grep '^\(#\|Thread \)'
+	}
+fi
+
 # Load/cache database options from configuration file
 ctdb_get_db_options
 
@@ -72,7 +85,6 @@ ctdb_get_db_options
 		cat "/proc/${pid}/stack"
 	    else
 		gstack "$pid"
-		# gcore -o /var/log/core-deadlock-ctdb $pid
 	    fi
 	done
     fi
