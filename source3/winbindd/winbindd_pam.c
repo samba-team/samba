@@ -52,10 +52,21 @@
 
 static NTSTATUS append_info3_as_txt(TALLOC_CTX *mem_ctx,
 				    struct winbindd_response *resp,
-				    struct netr_SamInfo3 *info3)
+				    uint16_t validation_level,
+				    union netr_Validation *validation)
 {
+	struct netr_SamInfo3 *info3 = NULL;
 	char *ex;
 	uint32_t i;
+	NTSTATUS status;
+
+	status = map_validation_to_info3(talloc_tos(),
+					 validation_level,
+					 validation,
+					 &info3);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	resp->data.auth.info3.logon_time =
 		nt_time_to_unix(info3->base.logon_time);
@@ -102,25 +113,37 @@ static NTSTATUS append_info3_as_txt(TALLOC_CTX *mem_ctx,
 		info3->base.logon_domain.string);
 
 	ex = talloc_strdup(mem_ctx, "");
-	NT_STATUS_HAVE_NO_MEMORY(ex);
+	if (ex == NULL) {
+		TALLOC_FREE(info3);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	for (i=0; i < info3->base.groups.count; i++) {
 		ex = talloc_asprintf_append_buffer(ex, "0x%08X:0x%08X\n",
 						   info3->base.groups.rids[i].rid,
 						   info3->base.groups.rids[i].attributes);
-		NT_STATUS_HAVE_NO_MEMORY(ex);
+		if (ex == NULL) {
+			TALLOC_FREE(info3);
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 
 	for (i=0; i < info3->sidcount; i++) {
 		char *sid;
 
 		sid = dom_sid_string(mem_ctx, info3->sids[i].sid);
-		NT_STATUS_HAVE_NO_MEMORY(sid);
+		if (sid == NULL) {
+			TALLOC_FREE(info3);
+			return NT_STATUS_NO_MEMORY;
+		}
 
 		ex = talloc_asprintf_append_buffer(ex, "%s:0x%08X\n",
 						   sid,
 						   info3->sids[i].attributes);
-		NT_STATUS_HAVE_NO_MEMORY(ex);
+		if (ex == NULL) {
+			TALLOC_FREE(info3);
+			return NT_STATUS_NO_MEMORY;
+		}
 
 		talloc_free(sid);
 	}
@@ -128,6 +151,7 @@ static NTSTATUS append_info3_as_txt(TALLOC_CTX *mem_ctx,
 	resp->extra_data.data = ex;
 	resp->length += talloc_get_size(ex);
 
+	TALLOC_FREE(info3);
 	return NT_STATUS_OK;
 }
 
@@ -905,7 +929,9 @@ NTSTATUS append_auth_data(TALLOC_CTX *mem_ctx,
 	}
 
 	if (request_flags & WBFLAG_PAM_INFO3_TEXT) {
-		result = append_info3_as_txt(mem_ctx, resp, info3);
+		result = append_info3_as_txt(mem_ctx, resp,
+					     validation_level,
+					     validation);
 		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(10,("Failed to append INFO3 (TXT): %s\n",
 				nt_errstr(result)));
