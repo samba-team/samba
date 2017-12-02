@@ -453,6 +453,7 @@ static NTSTATUS map_validation_to_info3(TALLOC_CTX *mem_ctx,
 					struct netr_SamInfo3 **info3_p)
 {
 	struct netr_SamInfo3 *info3;
+	struct netr_SamInfo6 *info6 = NULL;
 	NTSTATUS status;
 
 	if (validation == NULL) {
@@ -465,25 +466,54 @@ static NTSTATUS map_validation_to_info3(TALLOC_CTX *mem_ctx,
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
-		info3 = talloc_move(mem_ctx, &validation->sam3);
+		info3 = copy_netr_SamInfo3(mem_ctx, validation->sam3);
+		if (info3 == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
 		break;
 	case 6:
 		if (validation->sam6 == NULL) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
+		info6 = validation->sam6;
 
 		info3 = talloc_zero(mem_ctx, struct netr_SamInfo3);
 		if (info3 == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		status = copy_netr_SamBaseInfo(info3, &validation->sam6->base, &info3->base);
+
+		status = copy_netr_SamBaseInfo(info3,
+					       &info6->base,
+					       &info3->base);
 		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(info3);
 			return status;
 		}
 
-		info3->sidcount = validation->sam6->sidcount;
-		info3->sids = talloc_move(info3, &validation->sam6->sids);
+		if (validation->sam6->sidcount > 0) {
+			int i;
+
+			info3->sidcount = info6->sidcount;
+
+			info3->sids = talloc_array(info3,
+						   struct netr_SidAttr,
+						   info3->sidcount);
+			if (info3->sids == NULL) {
+				TALLOC_FREE(info3);
+				return NT_STATUS_NO_MEMORY;
+			}
+
+			for (i = 0; i < info3->sidcount; i++) {
+				info3->sids[i].sid = dom_sid_dup(
+					info3->sids, info6->sids[i].sid);
+				if (info3->sids[i].sid == NULL) {
+					TALLOC_FREE(info3);
+					return NT_STATUS_NO_MEMORY;
+				}
+				info3->sids[i].attributes =
+					info6->sids[i].attributes;
+			}
+		}
 		break;
 	default:
 		return NT_STATUS_BAD_VALIDATION_CLASS;
