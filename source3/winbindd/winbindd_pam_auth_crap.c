@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "winbindd.h"
+#include "rpc_client/util_netlogon.h"
 
 struct winbindd_pam_auth_crap_state {
 	struct winbindd_response *response;
@@ -132,8 +133,26 @@ NTSTATUS winbindd_pam_auth_crap_recv(struct tevent_req *req,
 	}
 
 	if (state->flags & WBFLAG_PAM_AUTH_PAC) {
-		return append_auth_data(response, response, state->flags,
-					state->info3, NULL, NULL);
+		uint16_t validation_level;
+		union netr_Validation *validation = NULL;
+
+		status = map_info3_to_validation(talloc_tos(),
+						 state->info3,
+						 &validation_level,
+						 &validation);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		status = append_auth_data(response,
+					response,
+					state->flags,
+					validation_level,
+					validation,
+					NULL, NULL);
+		TALLOC_FREE(validation);
+		return status;
+
 	}
 
 	*response = *state->response;

@@ -851,11 +851,21 @@ bool check_request_flags(uint32_t flags)
 NTSTATUS append_auth_data(TALLOC_CTX *mem_ctx,
 			  struct winbindd_response *resp,
 			  uint32_t request_flags,
-			  struct netr_SamInfo3 *info3,
+			  uint16_t validation_level,
+			  union netr_Validation *validation,
 			  const char *name_domain,
 			  const char *name_user)
 {
+	struct netr_SamInfo3 *info3 = NULL;
 	NTSTATUS result;
+
+	result = map_validation_to_info3(talloc_tos(),
+					 validation_level,
+					 validation,
+					 &info3);
+	if (!NT_STATUS_IS_OK(result)) {
+		return result;
+	}
 
 	if (request_flags & WBFLAG_PAM_USER_SESSION_KEY) {
 		memcpy(resp->data.auth.user_session_key,
@@ -877,6 +887,7 @@ NTSTATUS append_auth_data(TALLOC_CTX *mem_ctx,
 		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(10,("Failed to append Unix Username: %s\n",
 				nt_errstr(result)));
+			TALLOC_FREE(info3);
 			return result;
 		}
 	}
@@ -888,6 +899,7 @@ NTSTATUS append_auth_data(TALLOC_CTX *mem_ctx,
 		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(10,("Failed to append INFO3 (NDR): %s\n",
 				nt_errstr(result)));
+			TALLOC_FREE(info3);
 			return result;
 		}
 	}
@@ -897,6 +909,7 @@ NTSTATUS append_auth_data(TALLOC_CTX *mem_ctx,
 		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(10,("Failed to append INFO3 (TXT): %s\n",
 				nt_errstr(result)));
+			TALLOC_FREE(info3);
 			return result;
 		}
 	}
@@ -907,10 +920,12 @@ NTSTATUS append_auth_data(TALLOC_CTX *mem_ctx,
 		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(10,("Failed to append AFS token: %s\n",
 				nt_errstr(result)));
+			TALLOC_FREE(info3);
 			return result;
 		}
 	}
 
+	TALLOC_FREE(info3);
 	return NT_STATUS_OK;
 }
 
@@ -1773,7 +1788,8 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 	fstring name_domain, name_user;
 	char *mapped_user;
 	fstring domain_user;
-	struct netr_SamInfo3 *info3 = NULL;
+	uint16_t validation_level;
+	union netr_Validation *validation = NULL;
 	NTSTATUS name_map_status = NT_STATUS_UNSUCCESSFUL;
 
 	/* Ensure null termination */
@@ -1829,6 +1845,7 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 
 	/* Check for Kerberos authentication */
 	if (domain->online && (state->request->flags & WBFLAG_PAM_KRB5)) {
+		struct netr_SamInfo3 *info3 = NULL;
 
 		result = winbindd_dual_pam_auth_kerberos(domain, state, &info3);
 		/* save for later */
@@ -1837,6 +1854,16 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 
 		if (NT_STATUS_IS_OK(result)) {
 			DEBUG(10,("winbindd_dual_pam_auth_kerberos succeeded\n"));
+
+			result = map_info3_to_validation(state->mem_ctx,
+							 info3,
+							 &validation_level,
+							 &validation);
+			TALLOC_FREE(info3);
+			if (!NT_STATUS_IS_OK(result)) {
+				DBG_ERR("map_info3_to_validation failed\n");
+				goto done;
+			}
 			goto process_result;
 		}
 
@@ -1879,8 +1906,6 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 sam_logon:
 	/* Check for Samlogon authentication */
 	if (domain->online) {
-		uint16_t validation_level;
-		union netr_Validation *validation = NULL;
 		struct netr_SamBaseInfo *base_info = NULL;
 
 		result = winbindd_dual_pam_auth_samlogon(
@@ -1913,14 +1938,6 @@ sam_logon:
 				base_info->user_flags |= LOGON_KRB5_FAIL_CLOCK_SKEW;
 			}
 
-			result = map_validation_to_info3(state->mem_ctx,
-							 validation_level,
-							 validation,
-							 &info3);
-			TALLOC_FREE(validation);
-			if (!NT_STATUS_IS_OK(result)) {
-				goto done;
-			}
 			goto process_result;
 		}
 
@@ -1946,6 +1963,7 @@ cached_logon:
 	/* Check for Cached logons */
 	if (!domain->online && (state->request->flags & WBFLAG_PAM_CACHED_LOGIN) &&
 	    lp_winbind_offline_logon()) {
+		struct netr_SamInfo3 *info3 = NULL;
 
 		result = winbindd_dual_pam_auth_cached(domain, state, &info3);
 
@@ -1954,42 +1972,72 @@ cached_logon:
 			goto done;
 		}
 		DEBUG(10,("winbindd_dual_pam_auth_cached succeeded\n"));
+
+		result = map_info3_to_validation(state->mem_ctx,
+						 info3,
+						 &validation_level,
+						 &validation);
+		TALLOC_FREE(info3);
+		if (!NT_STATUS_IS_OK(result)) {
+			DBG_ERR("map_info3_to_validation failed\n");
+			goto done;
+		}
 	}
 
 process_result:
 
 	if (NT_STATUS_IS_OK(result)) {
-
 		struct dom_sid user_sid;
+		TALLOC_CTX *base_ctx = NULL;
+		struct netr_SamBaseInfo *base_info = NULL;
+		struct netr_SamInfo3 *info3 = NULL;
 
-		/* In all codepaths where result == NT_STATUS_OK info3 must have
-		   been initialized. */
-		if (!info3) {
+		switch (validation_level) {
+		case 3:
+			base_ctx = validation->sam3;
+			base_info = &validation->sam3->base;
+			break;
+		case 6:
+			base_ctx = validation->sam6;
+			base_info = &validation->sam6->base;
+			break;
+		default:
 			result = NT_STATUS_INTERNAL_ERROR;
 			goto done;
 		}
 
-		sid_compose(&user_sid, info3->base.domain_sid,
-			    info3->base.rid);
+		sid_compose(&user_sid, base_info->domain_sid, base_info->rid);
 
-		if (info3->base.full_name.string == NULL) {
+		if (base_info->full_name.string == NULL) {
 			struct netr_SamInfo3 *cached_info3;
 
 			cached_info3 = netsamlogon_cache_get(state->mem_ctx,
 							     &user_sid);
 			if (cached_info3 != NULL &&
 			    cached_info3->base.full_name.string != NULL) {
-				info3->base.full_name.string =
-					talloc_strdup(info3,
-						      cached_info3->base.full_name.string);
+				base_info->full_name.string = talloc_strdup(
+					base_ctx,
+					cached_info3->base.full_name.string);
+				if (base_info->full_name.string == NULL) {
+					result = NT_STATUS_NO_MEMORY;
+					goto done;
+				}
 			} else {
 
 				/* this might fail so we don't check the return code */
 				wcache_query_user_fullname(domain,
-						info3,
+						base_ctx,
 						&user_sid,
-						&info3->base.full_name.string);
+						&base_info->full_name.string);
 			}
+		}
+
+		result = map_validation_to_info3(talloc_tos(),
+						 validation_level,
+						 validation,
+						 &info3);
+		if (!NT_STATUS_IS_OK(result)) {
+			goto done;
 		}
 
 		wcache_invalidate_samlogon(find_domain_from_name(name_domain),
@@ -2018,7 +2066,9 @@ process_result:
 		}
 
 		result = append_auth_data(state->mem_ctx, state->response,
-					  state->request->flags, info3,
+					  state->request->flags,
+					  validation_level,
+					  validation,
 					  name_domain, name_user);
 		if (!NT_STATUS_IS_OK(result)) {
 			goto done;
@@ -2306,7 +2356,6 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 						 validation_level,
 						 validation,
 						 &info3);
-		TALLOC_FREE(validation);
 		if (!NT_STATUS_IS_OK(result)) {
 			goto done;
 		}
@@ -2324,7 +2373,9 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 		}
 
 		result = append_auth_data(state->mem_ctx, state->response,
-					  state->request->flags, info3,
+					  state->request->flags,
+					  validation_level,
+					  validation,
 					  name_domain, name_user);
 		if (!NT_STATUS_IS_OK(result)) {
 			goto done;

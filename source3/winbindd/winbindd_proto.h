@@ -400,7 +400,8 @@ bool check_request_flags(uint32_t flags);
 NTSTATUS append_auth_data(TALLOC_CTX *mem_ctx,
 			  struct winbindd_response *resp,
 			  uint32_t request_flags,
-			  struct netr_SamInfo3 *info3,
+			  uint16_t validation_level,
+			  union netr_Validation *validation,
 			  const char *name_domain,
 			  const char *name_user);
 uid_t get_uid_from_request(struct winbindd_request *request);
