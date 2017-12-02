@@ -112,6 +112,14 @@ static NTSTATUS append_info3_as_txt(TALLOC_CTX *mem_ctx,
 	fstrcpy(resp->data.auth.info3.logon_dom,
 		info3->base.logon_domain.string);
 
+	resp->data.auth.validation_level = validation_level;
+	if (validation_level == 6) {
+		fstrcpy(resp->data.auth.info6.dns_domainname,
+			validation->sam6->dns_domainname.string);
+		fstrcpy(resp->data.auth.info6.principal_name,
+			validation->sam6->principal_name.string);
+	}
+
 	ex = talloc_strdup(mem_ctx, "");
 	if (ex == NULL) {
 		TALLOC_FREE(info3);
