@@ -93,7 +93,7 @@ static int netlogon_creds_cli_locked_state_destructor(
 
 	if (state->is_glocked) {
 		g_lock_unlock(context->db.g_ctx,
-			      context->db.key_name);
+			      string_term_tdb_data(context->db.key_name));
 	}
 
 	return 0;
@@ -1014,7 +1014,8 @@ static int netlogon_creds_cli_lck_destructor(
 	struct netlogon_creds_cli_context *ctx = lck->context;
 	NTSTATUS status;
 
-	status = g_lock_unlock(ctx->db.g_ctx, ctx->db.key_name);
+	status = g_lock_unlock(ctx->db.g_ctx,
+			       string_term_tdb_data(ctx->db.key_name));
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_WARNING("g_lock_unlock failed: %s\n", nt_errstr(status));
 		smb_panic("g_lock_unlock failed");

@@ -84,14 +84,14 @@ bool run_g_lock1(int dummy)
 		goto fail;
 	}
 
-	status = g_lock_unlock(ctx, lockname);
+	status = g_lock_unlock(ctx, string_term_tdb_data(lockname));
 	if (!NT_STATUS_IS_OK(status)) {
 		fprintf(stderr, "g_lock_unlock failed: %s\n",
 			nt_errstr(status));
 		goto fail;
 	}
 
-	status = g_lock_unlock(ctx, lockname);
+	status = g_lock_unlock(ctx, string_term_tdb_data(lockname));
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
 		fprintf(stderr, "g_lock_unlock returned: %s\n",
 			nt_errstr(status));
@@ -170,7 +170,7 @@ bool run_g_lock2(int dummy)
 		goto fail;
 	}
 
-	status = g_lock_unlock(ctx, lockname);
+	status = g_lock_unlock(ctx, string_term_tdb_data(lockname));
 	if (!NT_STATUS_IS_OK(status)) {
 		fprintf(stderr, "g_lock_unlock failed: %s\n",
 			nt_errstr(status));
@@ -688,7 +688,7 @@ bool run_g_lock5(int dummy)
 				nt_errstr(status));
 			return false;
 		}
-		status = g_lock_unlock(ctx, lockname);
+		status = g_lock_unlock(ctx, string_term_tdb_data(lockname));
 		if (!NT_STATUS_IS_OK(status)) {
 			fprintf(stderr, "g_lock_unlock failed %s\n",
 				nt_errstr(status));
@@ -922,7 +922,7 @@ bool run_g_lock_ping_pong(int dummy)
 
 		name[10] = '0' + ((i) % torture_nprocs);
 
-		status = g_lock_unlock(ctx, name);
+		status = g_lock_unlock(ctx, string_term_tdb_data(name));
 		if (!NT_STATUS_IS_OK(status)) {
 			fprintf(stderr, "g_lock_unlock failed: %s\n",
 				nt_errstr(status));

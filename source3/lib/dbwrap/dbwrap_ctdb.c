@@ -328,7 +328,8 @@ static int db_ctdb_transaction_destructor(struct db_ctdb_transaction_handle *h)
 {
 	NTSTATUS status;
 
-	status = g_lock_unlock(h->ctx->lock_ctx, h->lock_name);
+	status = g_lock_unlock(h->ctx->lock_ctx,
+			       string_term_tdb_data(h->lock_name));
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("g_lock_unlock failed for %s: %s\n", h->lock_name,
 			  nt_errstr(status)));

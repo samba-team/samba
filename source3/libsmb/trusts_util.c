@@ -45,7 +45,8 @@ struct trust_pw_change_state {
 
 static int trust_pw_change_state_destructor(struct trust_pw_change_state *state)
 {
-	g_lock_unlock(state->g_ctx, state->g_lock_key);
+	g_lock_unlock(state->g_ctx,
+		      string_term_tdb_data(state->g_lock_key));
 	return 0;
 }
 

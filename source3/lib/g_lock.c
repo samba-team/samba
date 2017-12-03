@@ -483,7 +483,7 @@ NTSTATUS g_lock_lock(struct g_lock_ctx *ctx, TDB_DATA key,
 }
 
 struct g_lock_unlock_state {
-	const char *name;
+	TDB_DATA key;
 	struct server_id self;
 	NTSTATUS status;
 };
@@ -501,7 +501,10 @@ static void g_lock_unlock_fn(struct db_record *rec,
 
 	ok = g_lock_parse(value.dptr, value.dsize, &lck);
 	if (!ok) {
-		DBG_DEBUG("g_lock_get for %s failed\n", state->name);
+		DBG_DEBUG("g_lock_get for %s failed\n",
+			  hex_encode_talloc(talloc_tos(),
+					    state->key.dptr,
+					    state->key.dsize));
 		state->status = NT_STATUS_FILE_INVALID;
 		return;
 	}
@@ -527,15 +530,14 @@ static void g_lock_unlock_fn(struct db_record *rec,
 	state->status = g_lock_store(rec, &lck, NULL);
 }
 
-NTSTATUS g_lock_unlock(struct g_lock_ctx *ctx, const char *name)
+NTSTATUS g_lock_unlock(struct g_lock_ctx *ctx, TDB_DATA key)
 {
 	struct g_lock_unlock_state state = {
-		.self = messaging_server_id(ctx->msg), .name = name
+		.self = messaging_server_id(ctx->msg), .key = key
 	};
 	NTSTATUS status;
 
-	status = dbwrap_do_locked(ctx->db, string_term_tdb_data(name),
-				  g_lock_unlock_fn, &state);
+	status = dbwrap_do_locked(ctx->db, key, g_lock_unlock_fn, &state);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_WARNING("dbwrap_do_locked failed: %s\n",
 			    nt_errstr(status));
@@ -788,7 +790,7 @@ NTSTATUS g_lock_do(const char *name, enum g_lock_type lock_type,
 		goto done;
 	}
 	fn(private_data);
-	g_lock_unlock(g_ctx, name);
+	g_lock_unlock(g_ctx, string_term_tdb_data(name));
 
 done:
 	TALLOC_FREE(g_ctx);
