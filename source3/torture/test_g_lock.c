@@ -24,6 +24,7 @@
 #include "messages.h"
 #include "lib/util/server_id.h"
 #include "lib/util/sys_rw.h"
+#include "lib/util/util_tdb.h"
 
 static bool get_g_lock_ctx(TALLOC_CTX *mem_ctx,
 			   struct tevent_context **ev,
@@ -504,7 +505,8 @@ bool run_g_lock4(int dummy)
 		goto fail;
 	}
 
-	req = g_lock_lock_send(ev, ev, ctx, lockname, G_LOCK_WRITE);
+	req = g_lock_lock_send(ev, ev, ctx, string_term_tdb_data(lockname),
+			       G_LOCK_WRITE);
 	if (req == NULL) {
 		fprintf(stderr, "g_lock_lock send failed\n");
 		goto fail;

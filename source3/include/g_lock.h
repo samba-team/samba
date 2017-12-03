@@ -41,7 +41,7 @@ struct g_lock_ctx *g_lock_ctx_init(TALLOC_CTX *mem_ctx,
 struct tevent_req *g_lock_lock_send(TALLOC_CTX *mem_ctx,
 				    struct tevent_context *ev,
 				    struct g_lock_ctx *ctx,
-				    const char *name,
+				    TDB_DATA key,
 				    enum g_lock_type type);
 NTSTATUS g_lock_lock_recv(struct tevent_req *req);
 NTSTATUS g_lock_lock(struct g_lock_ctx *ctx, const char *name,

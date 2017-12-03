@@ -311,7 +311,7 @@ done:
 struct g_lock_lock_state {
 	struct tevent_context *ev;
 	struct g_lock_ctx *ctx;
-	const char *name;
+	TDB_DATA key;
 	enum g_lock_type type;
 };
 
@@ -343,7 +343,7 @@ static void g_lock_lock_fn(struct db_record *rec, void *private_data)
 struct tevent_req *g_lock_lock_send(TALLOC_CTX *mem_ctx,
 				    struct tevent_context *ev,
 				    struct g_lock_ctx *ctx,
-				    const char *name,
+				    TDB_DATA key,
 				    enum g_lock_type type)
 {
 	struct tevent_req *req;
@@ -357,15 +357,14 @@ struct tevent_req *g_lock_lock_send(TALLOC_CTX *mem_ctx,
 	}
 	state->ev = ev;
 	state->ctx = ctx;
-	state->name = name;
+	state->key = key;
 	state->type = type;
 
 	fn_state = (struct g_lock_lock_fn_state) {
 		.state = state, .self = messaging_server_id(ctx->msg)
 	};
 
-	status = dbwrap_do_locked(ctx->db, string_term_tdb_data(name),
-				  g_lock_lock_fn, &fn_state);
+	status = dbwrap_do_locked(ctx->db, key, g_lock_lock_fn, &fn_state);
 	if (tevent_req_nterror(req, status)) {
 		DBG_DEBUG("dbwrap_do_locked failed: %s\n",
 			  nt_errstr(status));
@@ -418,8 +417,7 @@ static void g_lock_lock_retry(struct tevent_req *subreq)
 		.state = state, .self = messaging_server_id(state->ctx->msg)
 	};
 
-	status = dbwrap_do_locked(state->ctx->db,
-				  string_term_tdb_data(state->name),
+	status = dbwrap_do_locked(state->ctx->db, state->key,
 				  g_lock_lock_fn, &fn_state);
 	if (tevent_req_nterror(req, status)) {
 		DBG_DEBUG("dbwrap_do_locked failed: %s\n",
@@ -467,7 +465,8 @@ NTSTATUS g_lock_lock(struct g_lock_ctx *ctx, const char *name,
 	if (ev == NULL) {
 		goto fail;
 	}
-	req = g_lock_lock_send(frame, ev, ctx, name, type);
+	req = g_lock_lock_send(frame, ev, ctx, string_term_tdb_data(name),
+			       type);
 	if (req == NULL) {
 		goto fail;
 	}
