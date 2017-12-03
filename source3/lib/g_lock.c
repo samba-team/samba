@@ -773,7 +773,7 @@ fail:
 	return false;
 }
 
-NTSTATUS g_lock_do(const char *name, enum g_lock_type lock_type,
+NTSTATUS g_lock_do(TDB_DATA key, enum g_lock_type lock_type,
 		   struct timeval timeout,
 		   void (*fn)(void *private_data), void *private_data)
 {
@@ -787,13 +787,12 @@ NTSTATUS g_lock_do(const char *name, enum g_lock_type lock_type,
 		goto done;
 	}
 
-	status = g_lock_lock(g_ctx, string_term_tdb_data(name), lock_type,
-			     timeout);
+	status = g_lock_lock(g_ctx, key, lock_type, timeout);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 	fn(private_data);
-	g_lock_unlock(g_ctx, string_term_tdb_data(name));
+	g_lock_unlock(g_ctx, key);
 
 done:
 	TALLOC_FREE(g_ctx);

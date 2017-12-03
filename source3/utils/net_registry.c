@@ -37,6 +37,7 @@
 #include "../libcli/registry/util_reg.h"
 #include "passdb/machine_sid.h"
 #include "net_registry_check.h"
+#include "lib/util/util_tdb.h"
 
 /*
  *
@@ -643,8 +644,8 @@ static int net_registry_increment(struct net_context *c, int argc,
 		state.increment = strtoul(argv[2], NULL, 10);
 	}
 
-	status = g_lock_do("registry_increment_lock", G_LOCK_WRITE,
-			   timeval_set(600, 0),
+	status = g_lock_do(string_term_tdb_data("registry_increment_lock"),
+			   G_LOCK_WRITE, timeval_set(600, 0),
 			   net_registry_increment_fn, &state);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, _("g_lock_do failed: %s\n"),
