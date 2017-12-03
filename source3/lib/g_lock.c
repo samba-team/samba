@@ -625,7 +625,7 @@ NTSTATUS g_lock_write_data(struct g_lock_ctx *ctx, TDB_DATA key,
 }
 
 struct g_lock_locks_state {
-	int (*fn)(const char *name, void *private_data);
+	int (*fn)(TDB_DATA key, void *private_data);
 	void *private_data;
 };
 
@@ -635,15 +635,11 @@ static int g_lock_locks_fn(struct db_record *rec, void *priv)
 	struct g_lock_locks_state *state = (struct g_lock_locks_state *)priv;
 
 	key = dbwrap_record_get_key(rec);
-	if ((key.dsize == 0) || (key.dptr[key.dsize-1] != 0)) {
-		DEBUG(1, ("invalid key in g_lock.tdb, ignoring\n"));
-		return 0;
-	}
-	return state->fn((char *)key.dptr, state->private_data);
+	return state->fn(key, state->private_data);
 }
 
 int g_lock_locks(struct g_lock_ctx *ctx,
-		 int (*fn)(const char *name, void *private_data),
+		 int (*fn)(TDB_DATA key, void *private_data),
 		 void *private_data)
 {
 	struct g_lock_locks_state state;

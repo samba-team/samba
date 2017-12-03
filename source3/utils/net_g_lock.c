@@ -154,9 +154,13 @@ done:
 	return ret;
 }
 
-static int net_g_lock_locks_fn(const char *name, void *private_data)
+static int net_g_lock_locks_fn(TDB_DATA key, void *private_data)
 {
-	d_printf("%s\n", name);
+	if ((key.dsize == 0) || (key.dptr[key.dsize-1] != 0)) {
+		DEBUG(1, ("invalid key in g_lock.tdb, ignoring\n"));
+		return 0;
+	}
+	d_printf("%s\n", (const char *)key.dptr);
 	return 0;
 }
 
