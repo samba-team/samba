@@ -1491,7 +1491,8 @@ static NTSTATUS smbd_claim_version(struct messaging_context *msg,
 
 	state = (struct smbd_claim_version_state) { .mem_ctx = ctx };
 
-	status = g_lock_dump(ctx, name, smbd_claim_version_parser, &state);
+	status = g_lock_dump(ctx, string_term_tdb_data(name),
+			     smbd_claim_version_parser, &state);
 	if (!NT_STATUS_IS_OK(status) &&
 	    !NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
 		DBG_ERR("Could not read samba_version_string\n");

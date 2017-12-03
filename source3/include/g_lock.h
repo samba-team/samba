@@ -58,7 +58,7 @@ NTSTATUS g_lock_do(TDB_DATA key, enum g_lock_type lock_type,
 int g_lock_locks(struct g_lock_ctx *ctx,
 		 int (*fn)(const char *name, void *private_data),
 		 void *private_data);
-NTSTATUS g_lock_dump(struct g_lock_ctx *ctx, const char *name,
+NTSTATUS g_lock_dump(struct g_lock_ctx *ctx, TDB_DATA key,
 		     void (*fn)(const struct g_lock_rec *locks,
 				size_t num_locks,
 				const uint8_t *data,

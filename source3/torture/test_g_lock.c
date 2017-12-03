@@ -179,7 +179,8 @@ bool run_g_lock2(int dummy)
 		goto fail;
 	}
 
-	status = g_lock_dump(ctx, lockname, lock2_parser, &state);
+	status = g_lock_dump(ctx, string_term_tdb_data(lockname),
+			     lock2_parser, &state);
 	if (!NT_STATUS_IS_OK(status)) {
 		fprintf(stderr, "g_lock_dump failed: %s\n",
 			nt_errstr(status));
@@ -283,7 +284,8 @@ bool run_g_lock3(int dummy)
 	state.lock_type = G_LOCK_READ;
 	state.ok = false;
 
-	status = g_lock_dump(ctx, lockname, lock3_parser, &state);
+	status = g_lock_dump(ctx, string_term_tdb_data(lockname),
+			     lock3_parser, &state);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_OK)) {
 		fprintf(stderr, "g_lock_dump returned %s\n",
 			nt_errstr(status));
@@ -304,7 +306,8 @@ bool run_g_lock3(int dummy)
 	state.lock_type = G_LOCK_WRITE;
 	state.ok = false;
 
-	status = g_lock_dump(ctx, lockname, lock3_parser, &state);
+	status = g_lock_dump(ctx, string_term_tdb_data(lockname),
+			     lock3_parser, &state);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_OK)) {
 		fprintf(stderr, "g_lock_dump returned %s\n",
 			nt_errstr(status));
@@ -537,7 +540,8 @@ bool run_g_lock4(int dummy)
 			.me = messaging_server_id(msg)
 		};
 
-		status = g_lock_dump(ctx, lockname, lock4_check, &state);
+		status = g_lock_dump(ctx, string_term_tdb_data(lockname),
+				     lock4_check, &state);
 		if (!NT_STATUS_IS_OK(status)) {
 			fprintf(stderr, "g_lock_dump failed: %s\n",
 				nt_errstr(status));
@@ -669,7 +673,8 @@ bool run_g_lock5(int dummy)
 	for (i=0; i<nprocs; i++) {
 		struct lock5_parser_state state;
 
-		status = g_lock_dump(ctx, lockname, lock5_parser, &state);
+		status = g_lock_dump(ctx, string_term_tdb_data(lockname),
+				     lock5_parser, &state);
 		if (!NT_STATUS_IS_OK(status)) {
 			fprintf(stderr, "g_lock_dump returned %s\n",
 				nt_errstr(status));
@@ -819,7 +824,8 @@ bool run_g_lock6(int dummy)
 	{
 		struct lock6_parser_state state;
 
-		status = g_lock_dump(ctx, lockname, lock6_parser, &state);
+		status = g_lock_dump(ctx, string_term_tdb_data(lockname),
+				     lock6_parser, &state);
 		if (!NT_STATUS_IS_OK(status)) {
 			fprintf(stderr, "g_lock_dump returned %s\n",
 				nt_errstr(status));

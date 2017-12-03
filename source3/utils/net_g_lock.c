@@ -143,7 +143,8 @@ static int net_g_lock_dump(struct net_context *c, int argc, const char **argv)
 		goto done;
 	}
 
-	(void)g_lock_dump(g_ctx, argv[0], net_g_lock_dump_fn, NULL);
+	(void)g_lock_dump(g_ctx, string_term_tdb_data(argv[0]),
+			  net_g_lock_dump_fn, NULL);
 
 	ret = 0;
 done:
