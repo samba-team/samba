@@ -148,7 +148,8 @@ bool run_g_lock2(int dummy)
 		goto fail;
 	}
 
-	status = g_lock_write_data(ctx, lockname, &data, sizeof(data));
+	status = g_lock_write_data(ctx, string_term_tdb_data(lockname),
+				   &data, sizeof(data));
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_LOCKED)) {
 		fprintf(stderr, "unlocked g_lock_write_data returned %s\n",
 			nt_errstr(status));
@@ -163,7 +164,8 @@ bool run_g_lock2(int dummy)
 		goto fail;
 	}
 
-	status = g_lock_write_data(ctx, lockname, &data, sizeof(data));
+	status = g_lock_write_data(ctx, string_term_tdb_data(lockname),
+				   &data, sizeof(data));
 	if (!NT_STATUS_IS_OK(status)) {
 		fprintf(stderr, "g_lock_write_data failed: %s\n",
 			nt_errstr(status));

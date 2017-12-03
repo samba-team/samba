@@ -553,7 +553,7 @@ NTSTATUS g_lock_unlock(struct g_lock_ctx *ctx, TDB_DATA key)
 }
 
 struct g_lock_write_data_state {
-	const char *name;
+	TDB_DATA key;
 	struct server_id self;
 	const uint8_t *data;
 	size_t datalen;
@@ -573,7 +573,10 @@ static void g_lock_write_data_fn(struct db_record *rec,
 
 	ok = g_lock_parse(value.dptr, value.dsize, &lck);
 	if (!ok) {
-		DBG_DEBUG("g_lock_parse for %s failed\n", state->name);
+		DBG_DEBUG("g_lock_parse for %s failed\n",
+			  hex_encode_talloc(talloc_tos(),
+					    state->key.dptr,
+					    state->key.dsize));
 		state->status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 		return;
 	}
@@ -596,16 +599,16 @@ static void g_lock_write_data_fn(struct db_record *rec,
 	state->status = g_lock_store(rec, &lck, NULL);
 }
 
-NTSTATUS g_lock_write_data(struct g_lock_ctx *ctx, const char *name,
+NTSTATUS g_lock_write_data(struct g_lock_ctx *ctx, TDB_DATA key,
 			   const uint8_t *buf, size_t buflen)
 {
 	struct g_lock_write_data_state state = {
-		.name = name, .self = messaging_server_id(ctx->msg),
+		.key = key, .self = messaging_server_id(ctx->msg),
 		.data = buf, .datalen = buflen
 	};
 	NTSTATUS status;
 
-	status = dbwrap_do_locked(ctx->db, string_term_tdb_data(name),
+	status = dbwrap_do_locked(ctx->db, key,
 				  g_lock_write_data_fn, &state);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_WARNING("dbwrap_do_locked failed: %s\n",

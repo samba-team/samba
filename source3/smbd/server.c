@@ -1520,7 +1520,8 @@ static NTSTATUS smbd_claim_version(struct messaging_context *msg,
 		return NT_STATUS_SXS_VERSION_CONFLICT;
 	}
 
-	status = g_lock_write_data(ctx, name, (const uint8_t *)version,
+	status = g_lock_write_data(ctx, string_term_tdb_data(name),
+				   (const uint8_t *)version,
 				   strlen(version)+1);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_WARNING("g_lock_write_data failed: %s\n",
