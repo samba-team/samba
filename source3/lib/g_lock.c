@@ -452,7 +452,7 @@ NTSTATUS g_lock_lock_recv(struct tevent_req *req)
 	return tevent_req_simple_recv_ntstatus(req);
 }
 
-NTSTATUS g_lock_lock(struct g_lock_ctx *ctx, const char *name,
+NTSTATUS g_lock_lock(struct g_lock_ctx *ctx, TDB_DATA key,
 		     enum g_lock_type type, struct timeval timeout)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -465,8 +465,7 @@ NTSTATUS g_lock_lock(struct g_lock_ctx *ctx, const char *name,
 	if (ev == NULL) {
 		goto fail;
 	}
-	req = g_lock_lock_send(frame, ev, ctx, string_term_tdb_data(name),
-			       type);
+	req = g_lock_lock_send(frame, ev, ctx, key, type);
 	if (req == NULL) {
 		goto fail;
 	}
@@ -783,7 +782,8 @@ NTSTATUS g_lock_do(const char *name, enum g_lock_type lock_type,
 		goto done;
 	}
 
-	status = g_lock_lock(g_ctx, name, lock_type, timeout);
+	status = g_lock_lock(g_ctx, string_term_tdb_data(name), lock_type,
+			     timeout);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}

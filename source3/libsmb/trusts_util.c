@@ -30,6 +30,7 @@
 #include "libsmb/libsmb.h"
 #include "source3/include/messages.h"
 #include "source3/include/g_lock.h"
+#include "lib/util/util_tdb.h"
 
 /*********************************************************
  Change the domain password on the PDC.
@@ -191,7 +192,7 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 
 	g_timeout = timeval_current_ofs(10, 0);
 	status = g_lock_lock(state->g_ctx,
-			     state->g_lock_key,
+			     string_term_tdb_data(state->g_lock_key),
 			     G_LOCK_WRITE, g_timeout);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("could not get g_lock on [%s]!\n",
