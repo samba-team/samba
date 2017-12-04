@@ -9,11 +9,11 @@ def configure(conf):
                 print("Compiling with Intel AES instructions")
                 conf.DEFINE('HAVE_AESNI_INTEL', 1)
             else:
-                raise Utils.WafError('--aes-accel=intelaesni selected and non x86_64 CPU')
+                raise Utils.WafError('--accel-aes=intelaesni selected and non x86_64 CPU')
         else:
-            raise Utils.WafError('--aes-accel=intelaesni selected and compiler rejects -Wp,-E,-lang-asm')
+            raise Utils.WafError('--accel-aes=intelaesni selected and compiler rejects -Wp,-E,-lang-asm')
         if not conf.CHECK_LDFLAGS('-Wl,-z,noexecstack'):
-            raise Utils.WafError('--aes-accel=intelaesni selected and linker rejects -z noexecstack')
+            raise Utils.WafError('--accel-aes=intelaesni selected and linker rejects -z noexecstack')
 
 def build(bld):
     if not bld.CONFIG_SET('HAVE_AESNI_INTEL'):
