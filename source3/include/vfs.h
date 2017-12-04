@@ -1474,11 +1474,6 @@ int smb_vfs_call_fsetxattr(struct vfs_handle_struct *handle,
 			   const void *value, size_t size, int flags);
 bool smb_vfs_call_aio_force(struct vfs_handle_struct *handle,
 			    struct files_struct *fsp);
-bool smb_vfs_call_is_offline(struct vfs_handle_struct *handle,
-			     const struct smb_filename *fname,
-			     SMB_STRUCT_STAT *sbuf);
-int smb_vfs_call_set_offline(struct vfs_handle_struct *handle,
-			     const struct smb_filename *fname);
 NTSTATUS smb_vfs_call_durable_cookie(struct vfs_handle_struct *handle,
 				     struct files_struct *fsp,
 				     TALLOC_CTX *mem_ctx,
