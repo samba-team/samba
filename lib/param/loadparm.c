@@ -2590,6 +2590,8 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lp_ctx->sDefault->force_create_mode = 0000;
 	lp_ctx->sDefault->directory_mask = 0755;
 	lp_ctx->sDefault->force_directory_mode = 0000;
+	lp_ctx->sDefault->aio_read_size = 1;
+	lp_ctx->sDefault->aio_write_size = 1;
 
 	DEBUG(3, ("Initialising global parameters\n"));
 
