@@ -13,7 +13,7 @@ shift 1
 . `dirname $0`/../../../testprogs/blackbox/subunit.sh
 
 testit "openldap-backend" $PYTHON $BINDIR/samba-tool domain provision --domain=FOO --realm=foo.example.com --ldap-backend-type=openldap --targetdir=$PREFIX/openldap-backend --slapd-path=/dev/null --use-ntvfs --ldap-dryrun-mode
-testit "openldap-mmr-backend" $PYTHON $BINDIR/samba-tool domain provision --domain=FOO --realm=foo.example.com --ldap-backend-type=openldap --targetdir=$PREFIX/openldap-mmr-backend --ol-mmr-urls="ldap://s4dc1.test:9000,ldap://s4dc2.test:9000" --adminpass=linux --ldapadminpass=linux --slapd-path=/dev/null --use-ntvfs --ldap-dryrun-mode
+testit "openldap-mmr-backend" $PYTHON $BINDIR/samba-tool domain provision --domain=FOO --realm=foo.example.com --ldap-backend-type=openldap --targetdir=$PREFIX/openldap-mmr-backend --ol-mmr-urls="ldap://s4dc1.test:9000,ldap://s4dc2.test:9000" --adminpass=Linux123 --ldapadminpass=linux --slapd-path=/dev/null --use-ntvfs --ldap-dryrun-mode
 testit "fedora-ds-backend" $PYTHON $BINDIR/samba-tool domain provision --domain=FOO --realm=foo.example.com --ldap-backend-type=openldap --targetdir=$PREFIX/openldap-backend --slapd-path=/dev/null --use-ntvfs --ldap-dryrun-mode
 
 reprovision() {
