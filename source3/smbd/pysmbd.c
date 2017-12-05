@@ -234,6 +234,39 @@ static NTSTATUS get_nt_acl_conn(TALLOC_CTX *mem_ctx,
 	return status;
 }
 
+static int set_acl_entry_perms(SMB_ACL_ENTRY_T entry, mode_t perm_mask)
+{
+	SMB_ACL_PERMSET_T perms = NULL;
+
+	if (sys_acl_get_permset(entry, &perms) != 0) {
+		return -1;
+	}
+
+	if (sys_acl_clear_perms(perms) != 0) {
+		return -1;
+	}
+
+	if ((perm_mask & SMB_ACL_READ) != 0 &&
+	    sys_acl_add_perm(perms, SMB_ACL_READ) != 0) {
+		return -1;
+	}
+
+	if ((perm_mask & SMB_ACL_WRITE) != 0 &&
+	    sys_acl_add_perm(perms, SMB_ACL_WRITE) != 0) {
+		return -1;
+	}
+
+	if ((perm_mask & SMB_ACL_EXECUTE) != 0 &&
+	    sys_acl_add_perm(perms, SMB_ACL_EXECUTE) != 0) {
+		return -1;
+	}
+
+	if (sys_acl_set_permset(entry, perms) != 0) {
+		return -1;
+	}
+
+	return 0;
+}
 
 static SMB_ACL_T make_simple_acl(gid_t gid, mode_t chmod_mode)
 {
@@ -261,7 +294,7 @@ static SMB_ACL_T make_simple_acl(gid_t gid, mode_t chmod_mode)
 		return NULL;
 	}
 
-	if (sys_acl_set_permset(entry, &mode_user) != 0) {
+	if (set_acl_entry_perms(entry, mode_user) != 0) {
 		TALLOC_FREE(frame);
 		return NULL;
 	}
@@ -276,7 +309,7 @@ static SMB_ACL_T make_simple_acl(gid_t gid, mode_t chmod_mode)
 		return NULL;
 	}
 
-	if (sys_acl_set_permset(entry, &mode_group) != 0) {
+	if (set_acl_entry_perms(entry, mode_group) != 0) {
 		TALLOC_FREE(frame);
 		return NULL;
 	}
@@ -291,7 +324,7 @@ static SMB_ACL_T make_simple_acl(gid_t gid, mode_t chmod_mode)
 		return NULL;
 	}
 
-	if (sys_acl_set_permset(entry, &mode_other) != 0) {
+	if (set_acl_entry_perms(entry, mode_other) != 0) {
 		TALLOC_FREE(frame);
 		return NULL;
 	}
@@ -312,7 +345,7 @@ static SMB_ACL_T make_simple_acl(gid_t gid, mode_t chmod_mode)
 			return NULL;
 		}
 
-		if (sys_acl_set_permset(entry, &mode_group) != 0) {
+		if (set_acl_entry_perms(entry, mode_group) != 0) {
 			TALLOC_FREE(frame);
 			return NULL;
 		}
@@ -328,7 +361,7 @@ static SMB_ACL_T make_simple_acl(gid_t gid, mode_t chmod_mode)
 		return NULL;
 	}
 
-	if (sys_acl_set_permset(entry, &mode) != 0) {
+	if (set_acl_entry_perms(entry, mode) != 0) {
 		TALLOC_FREE(frame);
 		return NULL;
 	}
