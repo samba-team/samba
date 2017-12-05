@@ -238,7 +238,20 @@ static NTSTATUS zfsacl_fget_nt_acl(struct vfs_handle_struct *handle,
 				       fsp->fsp_name, &pacl);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
-		return status;
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
+			return status;
+		}
+
+		status = make_default_filesystem_acl(mem_ctx,
+						     DEFAULT_ACL_POSIX,
+						     fsp->fsp_name->base_name,
+						     &fsp->fsp_name->st,
+						     ppdesc);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		(*ppdesc)->type |= SEC_DESC_DACL_PROTECTED;
+		return NT_STATUS_OK;
 	}
 
 	status = smb_fget_nt_acl_nfs4(fsp, NULL, security_info, mem_ctx,
@@ -260,7 +273,26 @@ static NTSTATUS zfsacl_get_nt_acl(struct vfs_handle_struct *handle,
 	status = zfs_get_nt_acl_common(handle->conn, frame, smb_fname, &pacl);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
-		return status;
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
+			return status;
+		}
+
+		if (!VALID_STAT(smb_fname->st)) {
+			DBG_ERR("No stat info for [%s]\n",
+				smb_fname_str_dbg(smb_fname));
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+
+		status = make_default_filesystem_acl(mem_ctx,
+						     DEFAULT_ACL_POSIX,
+						     smb_fname->base_name,
+						     &smb_fname->st,
+						     ppdesc);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		(*ppdesc)->type |= SEC_DESC_DACL_PROTECTED;
+		return NT_STATUS_OK;
 	}
 
 	status = smb_get_nt_acl_nfs4(handle->conn,
