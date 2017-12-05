@@ -1437,8 +1437,8 @@ EOF
     out=`eval $cmd`
     ret=$?
 
-    if [ -n "$SAVED_TZ" ] ; then
-	export TZ="$SAVED_TZ"
+    if [ -n "$saved_TZ" ] ; then
+	export TZ="$saved_TZ"
     else
 	unset TZ
     fi
