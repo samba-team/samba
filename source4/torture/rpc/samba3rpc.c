@@ -1373,9 +1373,7 @@ static bool torture_netlogon_samba3(struct torture_context *torture)
 	struct smbcli_session_options session_options;
 
 	wks_name = torture_setting_string(torture, "wksname", NULL);
-	if (wks_name == NULL) {
-		wks_name = get_myname(torture);
-	}
+	torture_assert(torture, wks_name != NULL, "wksname not set");
 
 	lpcfg_smbcli_options(torture->lp_ctx, &options);
 	lpcfg_smbcli_session_options(torture->lp_ctx, &session_options);
@@ -1513,7 +1511,9 @@ static bool torture_samba3_sessionkey(struct torture_context *torture)
 	struct cli_credentials *anon_creds;
 	const char *wks_name;
 
-	wks_name = torture_setting_string(torture, "wksname", get_myname(torture));
+
+	wks_name = torture_setting_string(torture, "wksname", NULL);
+	torture_assert(torture, wks_name != NULL, "wksname not set");
 
 	if (!(anon_creds = cli_credentials_init_anon(torture))) {
 		torture_fail(torture, "create_anon_creds failed\n");
