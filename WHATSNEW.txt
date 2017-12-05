@@ -83,6 +83,23 @@ reversed to match the parameter ordering of the UNIX extensions
 'symlink' command. The usage message for this command has also
 been improved to remove confusion.
 
+REMOVED FEATURES
+================
+
+The two commands "net serverid list" and "net serverid wipe" have been
+removed, because the file serverid.tdb is not used anymore.
+
+"net serverid list" can be replaced by listing all files in the
+subdirectory "msg.lock" of Samba's "lock directory". The unique id
+listed by "net serverid list" is stored in every process' lockfile in
+"msg.lock".
+
+"net serverid wipe" is not necessary anymore. It was meant primarily
+for clustered environments, where the serverid.tdb file was not
+properly cleaned up after single node crashes. Nowadays smbd and
+winbind take care of cleaning up the msg.lock and msg.sock directories
+automatically.
+
 KNOWN ISSUES
 ============
 
