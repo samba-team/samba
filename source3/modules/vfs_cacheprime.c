@@ -56,7 +56,7 @@ static bool prime_cache(
         off_t * last;
         ssize_t nread;
 
-        last = (off_t *)VFS_ADD_FSP_EXTENSION(handle, fsp, off_t, NULL);
+        last = VFS_ADD_FSP_EXTENSION(handle, fsp, off_t, NULL);
         if (!last) {
                 return False;
         }

@@ -3211,7 +3211,7 @@ static int fruit_open_meta(vfs_handle_struct *handle,
 		return -1;
 	}
 
-	fio = (struct fio *)VFS_ADD_FSP_EXTENSION(handle, fsp, struct fio, NULL);
+	fio = VFS_ADD_FSP_EXTENSION(handle, fsp, struct fio, NULL);
 	fio->type = ADOUBLE_META;
 	fio->config = config;
 
@@ -3378,7 +3378,7 @@ static int fruit_open_rsrc(vfs_handle_struct *handle,
 		return -1;
 	}
 
-	fio = (struct fio *)VFS_ADD_FSP_EXTENSION(handle, fsp, struct fio, NULL);
+	fio = VFS_ADD_FSP_EXTENSION(handle, fsp, struct fio, NULL);
 	fio->type = ADOUBLE_RSRC;
 	fio->config = config;
 

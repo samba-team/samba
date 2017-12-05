@@ -573,8 +573,7 @@ static int vfs_gluster_open(struct vfs_handle_struct *handle,
 	if (glfd == NULL) {
 		return -1;
 	}
-	p_tmp = (glfs_fd_t **)VFS_ADD_FSP_EXTENSION(handle, fsp,
-							  glfs_fd_t *, NULL);
+	p_tmp = VFS_ADD_FSP_EXTENSION(handle, fsp, glfs_fd_t *, NULL);
 	*p_tmp = glfd;
 	/* An arbitrary value for error reporting, so you know its us. */
 	return 13371337;

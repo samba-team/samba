@@ -397,7 +397,7 @@ static int catia_fetch_fsp_pre_next(TALLOC_CTX *mem_ctx,
 	}
 
 	if (!make_tmp_cache) {
-		cc = (struct catia_cache *)VFS_ADD_FSP_EXTENSION(
+		cc = VFS_ADD_FSP_EXTENSION(
 			handle, fsp, struct catia_cache, NULL);
 		if (cc == NULL) {
 			return -1;
