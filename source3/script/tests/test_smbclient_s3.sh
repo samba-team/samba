@@ -1419,6 +1419,10 @@ test_utimes()
 {
     tmpfile=$PREFIX/smbclient_interactive_prompt_commands
 
+    saved_TZ="$TZ"
+    TZ=UTC
+    export TZ
+
     cat > $tmpfile <<EOF
 del utimes_test
 put ${SMBCLIENT} utimes_test
@@ -1432,6 +1436,12 @@ EOF
     eval echo "$cmd"
     out=`eval $cmd`
     ret=$?
+
+    if [ -n "$SAVED_TZ" ] ; then
+	export TZ="$SAVED_TZ"
+    else
+	unset TZ
+    fi
 
     if [ $ret != 0 ] ; then
 	echo "$out"
