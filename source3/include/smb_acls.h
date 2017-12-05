@@ -26,8 +26,14 @@ struct vfs_handle_struct;
 struct files_struct;
 
 typedef int			SMB_ACL_TYPE_T;
-typedef mode_t			*SMB_ACL_PERMSET_T;
-typedef mode_t			SMB_ACL_PERM_T;
+/*
+ * struct smb_acl_entry is defined in IDL as
+ * using mode_t values, pidl always converts these
+ * to uint32_t. Ensure the external type definitions
+ * match.
+ */
+typedef uint32_t		*SMB_ACL_PERMSET_T;
+typedef uint32_t		SMB_ACL_PERM_T;
 
 typedef enum smb_acl_tag_t SMB_ACL_TAG_T;
 typedef struct smb_acl_t *SMB_ACL_T;
