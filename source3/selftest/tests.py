@@ -57,6 +57,9 @@ finally:
 have_libarchive = ("HAVE_LIBARCHIVE" in config_hash)
 have_linux_kernel_oplocks = ("HAVE_KERNEL_OPLOCKS_LINUX" in config_hash)
 have_inotify = ("HAVE_INOTIFY" in config_hash)
+have_ldwrap = ("HAVE_LDWRAP" in config_hash)
+with_pthreadpool = ("WITH_PTHREADPOOL" in config_hash)
+
 
 plantestsuite("samba3.blackbox.success", "nt4_dc:local", [os.path.join(samba3srcdir, "script/tests/test_success.sh")])
 plantestsuite("samba3.blackbox.failure", "nt4_dc:local", [os.path.join(samba3srcdir, "script/tests/test_failure.sh")])
@@ -324,6 +327,10 @@ plantestsuite("samba3.blackbox.testparm", "nt4_dc:local",
 plantestsuite(
     "samba3.pthreadpool", "nt4_dc",
     [os.path.join(samba3srcdir, "script/tests/test_pthreadpool.sh")])
+
+if with_pthreadpool and have_ldwrap:
+    plantestsuite("samba3.pthreadpool_cmocka", "nt4_dc",
+                  [os.path.join(bindir(), "pthreadpooltest_cmocka")])
 
 plantestsuite("samba3.async_req", "nt4_dc",
               [os.path.join(samba3srcdir, "script/tests/test_async_req.sh")])
