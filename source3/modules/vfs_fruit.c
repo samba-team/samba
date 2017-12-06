@@ -4065,26 +4065,35 @@ static ssize_t fruit_pwrite_meta_stream(vfs_handle_struct *handle,
 					size_t n, off_t offset)
 {
 	AfpInfo *ai = NULL;
-	int ret;
+	size_t nwritten;
+	bool ok;
 
 	ai = afpinfo_unpack(talloc_tos(), data);
 	if (ai == NULL) {
 		return -1;
 	}
 
-	if (ai_empty_finderinfo(ai)) {
-		ret = SMB_VFS_NEXT_UNLINK(handle, fsp->fsp_name);
-		if (ret != 0 && errno != ENOENT && errno != ENOATTR) {
-			DBG_ERR("Can't delete metadata for %s: %s\n",
-				fsp_str_dbg(fsp), strerror(errno));
-			TALLOC_FREE(ai);
-			return -1;
-		}
+	nwritten = SMB_VFS_NEXT_PWRITE(handle, fsp, data, n, offset);
+	if (nwritten != n) {
+		return -1;
+	}
 
+	if (!ai_empty_finderinfo(ai)) {
 		return n;
 	}
 
-	return SMB_VFS_NEXT_PWRITE(handle, fsp, data, n, offset);
+	ok = set_delete_on_close(
+			fsp,
+			true,
+			handle->conn->session_info->security_token,
+			handle->conn->session_info->unix_token);
+	if (!ok) {
+		DBG_ERR("set_delete_on_close on [%s] failed\n",
+			fsp_str_dbg(fsp));
+		return -1;
+	}
+
+	return n;
 }
 
 static ssize_t fruit_pwrite_meta_netatalk(vfs_handle_struct *handle,
@@ -4095,24 +4104,11 @@ static ssize_t fruit_pwrite_meta_netatalk(vfs_handle_struct *handle,
 	AfpInfo *ai = NULL;
 	char *p = NULL;
 	int ret;
+	bool ok;
 
 	ai = afpinfo_unpack(talloc_tos(), data);
 	if (ai == NULL) {
 		return -1;
-	}
-
-	if (ai_empty_finderinfo(ai)) {
-		ret = SMB_VFS_REMOVEXATTR(handle->conn,
-					  fsp->fsp_name->base_name,
-					  AFPINFO_EA_NETATALK);
-
-		if (ret != 0 && errno != ENOENT && errno != ENOATTR) {
-			DBG_ERR("Can't delete metadata for %s: %s\n",
-				fsp_str_dbg(fsp), strerror(errno));
-			return -1;
-		}
-
-		return n;
 	}
 
 	ad = ad_fget(talloc_tos(), handle, fsp, ADOUBLE_META);
@@ -4139,6 +4135,22 @@ static ssize_t fruit_pwrite_meta_netatalk(vfs_handle_struct *handle,
 	}
 
 	TALLOC_FREE(ad);
+
+	if (!ai_empty_finderinfo(ai)) {
+		return n;
+	}
+
+	ok = set_delete_on_close(
+		fsp,
+		true,
+		handle->conn->session_info->security_token,
+		handle->conn->session_info->unix_token);
+	if (!ok) {
+		DBG_ERR("set_delete_on_close on [%s] failed\n",
+			fsp_str_dbg(fsp));
+		return -1;
+	}
+
 	return n;
 }
 
