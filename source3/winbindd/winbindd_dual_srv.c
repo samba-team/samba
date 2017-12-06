@@ -380,6 +380,7 @@ NTSTATUS _wbint_LookupGroupMembers(struct pipes_struct *p,
 NTSTATUS _wbint_QueryGroupList(struct pipes_struct *p,
 			       struct wbint_QueryGroupList *r)
 {
+	TALLOC_CTX *frame = NULL;
 	struct winbindd_domain *domain = wb_child_domain();
 	uint32_t i;
 	uint32_t num_local_groups = 0;
@@ -389,12 +390,14 @@ NTSTATUS _wbint_QueryGroupList(struct pipes_struct *p,
 	uint32_t ti = 0;
 	uint64_t num_total = 0;
 	struct wbint_Principal *result;
-	NTSTATUS status;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	bool include_local_groups = false;
 
 	if (domain == NULL) {
 		return NT_STATUS_REQUEST_NOT_ACCEPTED;
 	}
+
+	frame = talloc_stackframe();
 
 	switch (lp_server_role()) {
 	case ROLE_ACTIVE_DIRECTORY_DC:
@@ -416,32 +419,33 @@ NTSTATUS _wbint_QueryGroupList(struct pipes_struct *p,
 	}
 
 	if (include_local_groups) {
-		status = wb_cache_enum_local_groups(domain, talloc_tos(),
+		status = wb_cache_enum_local_groups(domain, frame,
 						    &num_local_groups,
 						    &local_groups);
 		reset_cm_connection_on_error(domain, status);
 		if (!NT_STATUS_IS_OK(status)) {
-			return status;
+			goto out;
 		}
 	}
 
-	status = wb_cache_enum_dom_groups(domain, talloc_tos(),
+	status = wb_cache_enum_dom_groups(domain, frame,
 					  &num_dom_groups,
 					  &dom_groups);
 	reset_cm_connection_on_error(domain, status);
 	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+		goto out;
 	}
 
 	num_total = num_local_groups + num_dom_groups;
 	if (num_total > UINT32_MAX) {
-		return NT_STATUS_INTERNAL_ERROR;
+		status = NT_STATUS_INTERNAL_ERROR;
+		goto out;
 	}
 
-	result = talloc_array(r->out.groups, struct wbint_Principal,
-			      num_total);
+	result = talloc_array(frame, struct wbint_Principal, num_total);
 	if (result == NULL) {
-		return NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
 	}
 
 	for (i = 0; i < num_local_groups; i++) {
@@ -452,14 +456,11 @@ NTSTATUS _wbint_QueryGroupList(struct pipes_struct *p,
 		rg->type = SID_NAME_ALIAS;
 		rg->name = talloc_strdup(result, lg->acct_name);
 		if (rg->name == NULL) {
-			TALLOC_FREE(result);
-			TALLOC_FREE(dom_groups);
-			TALLOC_FREE(local_groups);
-			return NT_STATUS_NO_MEMORY;
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
 		}
 	}
 	num_local_groups = 0;
-	TALLOC_FREE(local_groups);
 
 	for (i = 0; i < num_dom_groups; i++) {
 		struct wb_acct_info *dg = &dom_groups[i];
@@ -469,19 +470,19 @@ NTSTATUS _wbint_QueryGroupList(struct pipes_struct *p,
 		rg->type = SID_NAME_DOM_GRP;
 		rg->name = talloc_strdup(result, dg->acct_name);
 		if (rg->name == NULL) {
-			TALLOC_FREE(result);
-			TALLOC_FREE(dom_groups);
-			TALLOC_FREE(local_groups);
-			return NT_STATUS_NO_MEMORY;
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
 		}
 	}
 	num_dom_groups = 0;
-	TALLOC_FREE(dom_groups);
 
 	r->out.groups->num_principals = ti;
-	r->out.groups->principals = result;
+	r->out.groups->principals = talloc_move(r->out.groups, &result);
 
-	return NT_STATUS_OK;
+	status = NT_STATUS_OK;
+out:
+	TALLOC_FREE(frame);
+	return status;
 }
 
 NTSTATUS _wbint_QueryUserRidList(struct pipes_struct *p,
