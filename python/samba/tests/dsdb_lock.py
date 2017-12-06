@@ -1,5 +1,5 @@
-# Unix SMB/CIFS implementation. Tests for SamDB
-# Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2008
+# Unix SMB/CIFS implementation. Tests for DSDB locking
+# Copyright (C) Andrew Bartlett <abartlet@samba.org> 2017
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
