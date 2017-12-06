@@ -20,16 +20,12 @@
 import logging
 import os
 import uuid
+import shutil
 
 from samba.auth import system_session
-from samba.provision import (setup_samdb, guess_names, make_smbconf,
-    provision_paths_from_lp)
-from samba.provision import DEFAULT_POLICY_GUID, DEFAULT_DC_POLICY_GUID
-from samba.provision.backend import ProvisionBackend
+from samba.provision import provision
 from samba.tests import TestCaseInTempDir
-from samba.dcerpc import security
-from samba.schema import Schema
-from samba import param
+from samba.dsdb import DS_DOMAIN_FUNCTION_2008_R2
 
 
 class SamDBTestCase(TestCaseInTempDir):
@@ -41,56 +37,29 @@ class SamDBTestCase(TestCaseInTempDir):
 
     def setUp(self):
         super(SamDBTestCase, self).setUp()
-        invocationid = str(uuid.uuid4())
-        domaindn = "DC=COM,DC=EXAMPLE"
-        self.domaindn = domaindn
-        configdn = "CN=Configuration," + domaindn
-        schemadn = "CN=Schema," + configdn
-        domainguid = str(uuid.uuid4())
-        policyguid = DEFAULT_POLICY_GUID
-        domainsid = security.random_sid()
-        path = os.path.join(self.tempdir, "samdb.ldb")
-        session_info = system_session()
-
-        hostname="foo"
-        domain="EXAMPLE"
-        dnsdomain="example.com"
-        serverrole="domain controller"
-        policyguid_dc = DEFAULT_DC_POLICY_GUID
-
-        smbconf = os.path.join(self.tempdir, "smb.conf")
-        make_smbconf(smbconf, hostname, domain, dnsdomain,
-                     self.tempdir, serverrole=serverrole)
-
-        self.lp = param.LoadParm()
-        self.lp.load(smbconf)
-
-        names = guess_names(lp=self.lp, hostname=hostname,
-                            domain=domain, dnsdomain=dnsdomain,
-                            serverrole=serverrole,
-                            domaindn=self.domaindn, configdn=configdn,
-                            schemadn=schemadn)
-
-        paths = provision_paths_from_lp(self.lp, names.dnsdomain)
-
-        logger = logging.getLogger("provision")
-
-        provision_backend = ProvisionBackend("ldb", paths=paths,
-                lp=self.lp, credentials=None,
-                names=names, logger=logger)
-
-        schema = Schema(domainsid, invocationid=invocationid,
-                schemadn=names.schemadn, serverdn=names.serverdn,
-                am_rodc=False)
-
-        self.samdb = setup_samdb(path, session_info,
-                provision_backend, self.lp, names, logger,
-                domainsid, domainguid, policyguid, policyguid_dc, False,
-                "secret", "secret", "secret", invocationid, "secret",
-                None, "domain controller", schema=schema)
+        self.session = system_session()
+        logger = logging.getLogger("selftest")
+        domain = "dsdb"
+        realm = "dsdb.samba.example.com"
+        host_name = "test"
+        server_role = "active directory domain controller"
+        dns_backend = "SAMBA_INTERNAL"
+        self.result = provision(logger,
+                                self.session, targetdir=self.tempdir,
+                                realm=realm, domain=domain,
+                                hostname=host_name,
+                                use_ntvfs=True,
+                                serverrole=server_role,
+                                dns_backend="SAMBA_INTERNAL",
+                                dom_for_fun_level=DS_DOMAIN_FUNCTION_2008_R2)
+        self.samdb = self.result.samdb
+        self.lp = self.result.lp
 
     def tearDown(self):
-        for f in ['schema.ldb', 'configuration.ldb',
-                  'users.ldb', 'samdb.ldb', 'smb.conf']:
+        for f in ['names.tdb']:
             os.remove(os.path.join(self.tempdir, f))
+
+        for d in ['etc', 'msg.lock', 'private', 'state']:
+            shutil.rmtree(os.path.join(self.tempdir, d))
+
         super(SamDBTestCase, self).tearDown()

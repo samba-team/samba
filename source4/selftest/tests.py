@@ -580,6 +580,7 @@ planoldpythontestsuite("ad_dc_ntvfs:local", "samba.tests.gensec", extra_args=['-
 planoldpythontestsuite("none", "simple", extra_path=["%s/lib/tdb/python/tests" % srcdir()], name="tdb.python")
 planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.dcerpc.sam")
 planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.dsdb")
+planpythontestsuite("none", "samba.tests.dsdb_lock")
 planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.dcerpc.bare")
 planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.dcerpc.unix")
 planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.dcerpc.srvsvc")
