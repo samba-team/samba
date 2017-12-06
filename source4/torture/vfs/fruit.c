@@ -909,7 +909,7 @@ static char *torture_afpinfo_pack(TALLOC_CTX *mem_ctx,
 {
 	char *buf;
 
-	buf = talloc_array(mem_ctx, char, AFP_INFO_SIZE);
+	buf = talloc_zero_array(mem_ctx, char, AFP_INFO_SIZE);
 	if (buf == NULL) {
 		return NULL;
 	}
