@@ -256,10 +256,6 @@
 ^samba4.winbind.struct.lookup_name_sid\(ad_member:local\)
 ^samba4.winbind.struct.getdcname\(nt4_member:local\) # Works in other modes, just not against the classic/NT4 DC
 #
-# This test is no longer valid given s4winbind needs a live NETLOGON server
-#
-^samba.blackbox.pdbtest.s4winbind\(ad_dc_ntvfs\).pdbtest
-#
 # Differences in our KDC compared to windows
 #
 ^samba4.krb5.kdc .*.as-req-pac-request # We should reply to a request for a PAC over UDP with KRB5KRB_ERR_RESPONSE_TOO_BIG unconditionally
