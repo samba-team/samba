@@ -97,6 +97,11 @@ from samba.provision.common import (
     FILL_DRS
 )
 
+string_version_to_constant = {
+    "2012": DS_DOMAIN_FUNCTION_2012,
+    "2012_R2": DS_DOMAIN_FUNCTION_2012_R2,
+}
+
 def get_testparm_var(testparm, smbconf, varname):
     errfile = open(os.devnull, 'w')
     p = subprocess.Popen([testparm, '-s', '-l',
@@ -4173,6 +4178,112 @@ class cmd_domain_schema_upgrade(Command):
         if error_encountered:
             raise CommandError('Failed to upgrade schema')
 
+class cmd_domain_functional_prep(Command):
+    """Domain functional level preparation"""
+
+    synopsis = "%prog [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
+
+    takes_options = [
+        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
+               metavar="URL", dest="H"),
+        Option("--quiet", help="Be quiet", action="store_true"),
+        Option("--verbose", help="Be verbose", action="store_true"),
+        Option("--function-level", type="choice", metavar="FUNCTION_LEVEL",
+               choices=["2012", "2012_R2"],
+               help="The schema file to upgrade to. Default is (Windows) 2012_R2.",
+               default="2012_R2"),
+        Option("--forest-prep", action="store_true",
+               help="Run the forest prep (by default, both the domain and forest prep are run)."),
+        Option("--domain-prep", action="store_true",
+               help="Run the domain prep (by default, both the domain and forest prep are run).")
+    ]
+
+    def run(self, **kwargs):
+        updates_allowed_overriden = False
+        sambaopts = kwargs.get("sambaopts")
+        credopts = kwargs.get("credopts")
+        versionpts = kwargs.get("versionopts")
+        lp = sambaopts.get_loadparm()
+        creds = credopts.get_credentials(lp)
+        H = kwargs.get("H")
+        target_level = string_version_to_constant[kwargs.get("function_level")]
+        forest_prep = kwargs.get("forest_prep")
+        domain_prep = kwargs.get("domain_prep")
+
+        samdb = SamDB(url=H, session_info=system_session(), credentials=creds, lp=lp)
+
+        # we're not going to get far if the config doesn't allow schema updates
+        if lp.get("dsdb:schema update allowed") is None:
+            lp.set("dsdb:schema update allowed", "yes")
+            print("Temporarily overriding 'dsdb:schema update allowed' setting")
+            updates_allowed_overriden = True
+
+        if forest_prep is None and domain_prep is None:
+            forest_prep = True
+            domain_prep = True
+
+        own_dn = ldb.Dn(samdb, samdb.get_dsServiceName())
+        if forest_prep:
+            master = get_fsmo_roleowner(samdb, str(samdb.get_schema_basedn()),
+                                        'schema')
+            if own_dn != master:
+                raise CommandError("This server is not the schema master.")
+
+        if domain_prep:
+            domain_dn = samdb.domain_dn()
+            infrastructure_dn = "CN=Infrastructure," + domain_dn
+            master = get_fsmo_roleowner(samdb, infrastructure_dn,
+                                       'infrastructure')
+            if own_dn != master:
+                raise CommandError("This server is not the infrastructure master.")
+
+        if forest_prep:
+            samdb.transaction_start()
+            error_encountered = False
+            try:
+                from samba.forest_update import ForestUpdate
+                forest = ForestUpdate(samdb, fix=True)
+
+                forest.check_updates_iterator([53, 79, 80, 81, 82, 83])
+                forest.check_updates_functional_level(target_level,
+                                                      DS_DOMAIN_FUNCTION_2008_R2,
+                                                      update_revision=True)
+
+                samdb.transaction_commit()
+            except Exception as e:
+                print("Exception: %s" % e)
+                samdb.transaction_cancel()
+                error_encountered = True
+
+        if domain_prep:
+            samdb.transaction_start()
+            error_encountered = False
+            try:
+                from samba.domain_update import DomainUpdate
+
+                domain = DomainUpdate(samdb, fix=True)
+                domain.check_updates_functional_level(target_level,
+                                                      DS_DOMAIN_FUNCTION_2008,
+                                                      update_revision=True)
+
+                samdb.transaction_commit()
+            except Exception as e:
+                print("Exception: %s" % e)
+                samdb.transaction_cancel()
+                error_encountered = True
+
+        if updates_allowed_overriden:
+            lp.set("dsdb:schema update allowed", "no")
+
+        if error_encountered:
+            raise CommandError('Failed to perform functional prep')
+
 class cmd_domain(SuperCommand):
     """Domain management."""
 
@@ -4191,3 +4302,4 @@ class cmd_domain(SuperCommand):
     subcommands["trust"] = cmd_domain_trust()
     subcommands["tombstones"] = cmd_domain_tombstones()
     subcommands["schemaupgrade"] = cmd_domain_schema_upgrade()
+    subcommands["functionalprep"] = cmd_domain_functional_prep()
