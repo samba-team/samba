@@ -40,13 +40,13 @@ struct torture_suite *gpo_apply_suite(TALLOC_CTX *ctx)
 	return suite;
 }
 
-static int exec_wait(const char **cmd)
+static int exec_wait(char **cmd)
 {
 	int ret;
 	pid_t pid = fork();
 	switch (pid) {
 		case 0:
-			execv(cmd[0], discard_const_p(char *, &(cmd[1])));
+			execv(cmd[0], &(cmd[1]));
 			ret = -1;
 			break;
 		case -1:
@@ -60,7 +60,7 @@ static int exec_wait(const char **cmd)
 	return ret;
 }
 
-static int unix2nttime(char *sval)
+static int unix2nttime(const char *sval)
 {
 	return (strtoll(sval, NULL, 10) * -1 / 60 / 60 / 24 / 10000000);
 }
@@ -80,6 +80,7 @@ PasswordComplexity = %d\n\
 
 bool torture_gpo_system_access_policies(struct torture_context *tctx)
 {
+	TALLOC_CTX *ctx = talloc_new(tctx);
 	int ret, vers = 0, i;
 	const char *sysvol_path = NULL, *gpo_dir = NULL;
 	const char *gpo_file = NULL, *gpt_file = NULL;
@@ -92,23 +93,25 @@ bool torture_gpo_system_access_policies(struct torture_context *tctx)
 		"pwdProperties",
 		NULL
 	};
-	const struct ldb_val *val;
 	FILE *fp = NULL;
 	const char **gpo_update_cmd;
+	char **gpo_unapply_cmd;
 	int minpwdcases[] = { 0, 1, 998 };
 	int maxpwdcases[] = { 0, 1, 999 };
 	int pwdlencases[] = { 0, 1, 14 };
 	int pwdpropcases[] = { 0, 1, 1 };
 	struct ldb_message *old_message = NULL;
+	const char **itr;
+	int gpo_update_len = 0;
 
 	sysvol_path = lpcfg_path(lpcfg_service(tctx->lp_ctx, "sysvol"),
 				 lpcfg_default_service(tctx->lp_ctx), tctx);
 	torture_assert(tctx, sysvol_path, "Failed to fetch the sysvol path");
 
 	/* Ensure the sysvol path exists */
-	gpo_dir = talloc_asprintf(tctx, "%s/%s", sysvol_path, GPODIR);
+	gpo_dir = talloc_asprintf(ctx, "%s/%s", sysvol_path, GPODIR);
 	mkdir_p(gpo_dir, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-	gpo_file = talloc_asprintf(tctx, "%s/%s", gpo_dir, GPOFILE);
+	gpo_file = talloc_asprintf(ctx, "%s/%s", gpo_dir, GPOFILE);
 
 	/* Get the gpo update command */
 	gpo_update_cmd = lpcfg_gpo_update_command(tctx->lp_ctx);
@@ -116,11 +119,11 @@ bool torture_gpo_system_access_policies(struct torture_context *tctx)
 		       "Failed to fetch the gpo update command");
 
 	/* Open and read the samba db and store the initial password settings */
-	samdb = samdb_connect(tctx, tctx->ev, tctx->lp_ctx,
+	samdb = samdb_connect(ctx, tctx->ev, tctx->lp_ctx,
 			      system_session(tctx->lp_ctx), 0);
 	torture_assert(tctx, samdb, "Failed to connect to the samdb");
 
-	ret = ldb_search(samdb, tctx, &result, ldb_get_default_basedn(samdb),
+	ret = ldb_search(samdb, ctx, &result, ldb_get_default_basedn(samdb),
 			 LDB_SCOPE_BASE, attrs, NULL);
 	torture_assert(tctx, ret == LDB_SUCCESS && result->count == 1,
 		       "Searching the samdb failed");
@@ -130,14 +133,14 @@ bool torture_gpo_system_access_policies(struct torture_context *tctx)
 	for (i = 0; i < 3; i++) {
 		/* Write out the sysvol */
 		if ( (fp = fopen(gpo_file, "w")) ) {
-			fputs(talloc_asprintf(tctx, GPTTMPL, minpwdcases[i],
+			fputs(talloc_asprintf(ctx, GPTTMPL, minpwdcases[i],
 					      maxpwdcases[i], pwdlencases[i],
 					      pwdpropcases[i]), fp);
 			fclose(fp);
 		}
 
 		/* Update the version in the GPT.INI */
-		gpt_file = talloc_asprintf(tctx, "%s/%s", sysvol_path, GPTINI);
+		gpt_file = talloc_asprintf(ctx, "%s/%s", sysvol_path, GPTINI);
 		if ( (fp = fopen(gpt_file, "r")) ) {
 			char line[256];
 			while (fgets(line, 256, fp)) {
@@ -149,49 +152,116 @@ bool torture_gpo_system_access_policies(struct torture_context *tctx)
 			fclose(fp);
 		}
 		if ( (fp = fopen(gpt_file, "w")) ) {
-			char *data = talloc_asprintf(tctx, "[General]\nVersion=%d\n",
+			char *data = talloc_asprintf(ctx,
+						     "[General]\nVersion=%d\n",
 						     ++vers);
 			fputs(data, fp);
 			fclose(fp);
 		}
 
 		/* Run the gpo update command */
-		ret = exec_wait(gpo_update_cmd);
+		ret = exec_wait(discard_const_p(char *, gpo_update_cmd));
 		torture_assert(tctx, ret == 0,
 			       "Failed to execute the gpo update command");
 
-		ret = ldb_search(samdb, tctx, &result, ldb_get_default_basedn(samdb),
+		ret = ldb_search(samdb, ctx, &result,
+				 ldb_get_default_basedn(samdb),
 				 LDB_SCOPE_BASE, attrs, NULL);
 		torture_assert(tctx, ret == LDB_SUCCESS && result->count == 1,
 			       "Searching the samdb failed");
 
 		/* minPwdAge */
-		val = ldb_msg_find_ldb_val(result->msgs[0], attrs[0]);
-		torture_assert(tctx, unix2nttime((char*)val->data) == minpwdcases[i],
+		torture_assert_int_equal(tctx, unix2nttime(
+						ldb_msg_find_attr_as_string(
+							result->msgs[0],
+							attrs[0],
+							"")), minpwdcases[i],
 			       "The minPwdAge was not applied");
 
 		/* maxPwdAge */
-		val = ldb_msg_find_ldb_val(result->msgs[0], attrs[1]);
-		torture_assert(tctx, unix2nttime((char*)val->data) == maxpwdcases[i],
+		torture_assert_int_equal(tctx, unix2nttime(
+						ldb_msg_find_attr_as_string(
+							result->msgs[0],
+							attrs[1],
+							"")), maxpwdcases[i],
 			       "The maxPwdAge was not applied");
 
 		/* minPwdLength */
-		val = ldb_msg_find_ldb_val(result->msgs[0], attrs[2]);
-		torture_assert(tctx, atoi((char*)val->data) == pwdlencases[i],
-			       "The minPwdLength was not applied");
+		torture_assert_int_equal(tctx, ldb_msg_find_attr_as_int(
+							result->msgs[0],
+							attrs[2],
+							-1),
+					       pwdlencases[i],
+				"The minPwdLength was not applied");
 
 		/* pwdProperties */
-		val = ldb_msg_find_ldb_val(result->msgs[0], attrs[3]);
-		torture_assert(tctx, atoi((char*)val->data) == pwdpropcases[i],
+		torture_assert_int_equal(tctx, ldb_msg_find_attr_as_int(
+							result->msgs[0],
+							attrs[3],
+							-1),
+					       pwdpropcases[i],
 			       "The pwdProperties were not applied");
 	}
 
-	for (i = 0; i < old_message->num_elements; i++) {
-		old_message->elements[i].flags = LDB_FLAG_MOD_REPLACE;
+	/* Unapply the settings and verify they are removed */
+	for (itr = gpo_update_cmd; *itr != NULL; itr++) {
+		gpo_update_len++;
 	}
+	gpo_unapply_cmd = talloc_array(ctx, char*, gpo_update_len+2);
+	for (i = 0; i < gpo_update_len; i++) {
+		gpo_unapply_cmd[i] = talloc_strdup(gpo_unapply_cmd,
+						   gpo_update_cmd[i]);
+	}
+	gpo_unapply_cmd[i] = talloc_asprintf(gpo_unapply_cmd, "--unapply");
+	gpo_unapply_cmd[i+1] = NULL;
+	ret = exec_wait(gpo_unapply_cmd);
+	torture_assert(tctx, ret == 0,
+		       "Failed to execute the gpo unapply command");
+	ret = ldb_search(samdb, ctx, &result, ldb_get_default_basedn(samdb),
+			 LDB_SCOPE_BASE, attrs, NULL);
+	torture_assert(tctx, ret == LDB_SUCCESS && result->count == 1,
+		       "Searching the samdb failed");
+	/* minPwdAge */
+	torture_assert_int_equal(tctx, unix2nttime(ldb_msg_find_attr_as_string(
+						result->msgs[0],
+						attrs[0],
+						"")),
+		       unix2nttime(ldb_msg_find_attr_as_string(old_message,
+							       attrs[0],
+							       "")
+				  ),
+		       "The minPwdAge was not unapplied");
+	/* maxPwdAge */
+	torture_assert_int_equal(tctx, unix2nttime(ldb_msg_find_attr_as_string(
+						result->msgs[0],
+						attrs[1],
+						"")),
+		       unix2nttime(ldb_msg_find_attr_as_string(old_message,
+							       attrs[1],
+							       "")
+				  ),
+		       "The maxPwdAge was not unapplied");
+	/* minPwdLength */
+	torture_assert_int_equal(tctx, ldb_msg_find_attr_as_int(
+						result->msgs[0],
+						attrs[2],
+						-1),
+				       ldb_msg_find_attr_as_int(
+						old_message,
+						attrs[2],
+						-2),
+			"The minPwdLength was not unapplied");
+	/* pwdProperties */
+	torture_assert_int_equal(tctx, ldb_msg_find_attr_as_int(
+						result->msgs[0],
+						attrs[3],
+						-1),
+					ldb_msg_find_attr_as_int(
+						old_message,
+						attrs[3],
+						-2),
+			"The pwdProperties were not unapplied");
 
-	ret = ldb_modify(samdb, old_message);
-	torture_assert(tctx, ret == 0, "Failed to reset password settings.");
-
+	talloc_free(ctx);
 	return true;
 }

@@ -36,7 +36,7 @@ from samba import smb
 import logging
 
 ''' Fetch the hostname of a writable DC '''
-def get_dc_hostname():
+def get_dc_hostname(creds, lp):
     net = Net(creds=creds, lp=lp)
     cldap_ret = net.finddc(domain=lp.get('realm'), flags=(nbt.NBT_SERVER_LDAP |
         nbt.NBT_SERVER_DS))
@@ -52,7 +52,7 @@ def get_gpo_list(dc_hostname, creds, lp):
 
 def apply_gp(lp, creds, test_ldb, logger, store, gp_extensions):
     gp_db = store.get_gplog(creds.get_username())
-    dc_hostname = get_dc_hostname()
+    dc_hostname = get_dc_hostname(creds, lp)
     try:
         conn =  smb.SMB(dc_hostname, 'sysvol', lp=lp, creds=creds)
     except:
