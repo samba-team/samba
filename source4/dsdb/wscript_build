@@ -62,15 +62,6 @@ bld.SAMBA_MODULE('service_dns_update',
 	enabled=bld.AD_DC_BUILD_IS_ENABLED()
 	)
 
-bld.SAMBA_MODULE('service_gpo_update',
-	source='gpo/gpo_update.c',
-	subsystem='service',
-	init_function='server_service_gpoupdate_init',
-	deps='samdb UTIL_RUNCMD samba-util ldb samdb-common samba-errors talloc auth_system_session samba-hostconfig',
-	internal_module=False,
-	enabled=bld.AD_DC_BUILD_IS_ENABLED()
-	)
-
 bld.SAMBA_PYTHON('python_dsdb',
 	source='pydsdb.c',
 	# the dependency on dcerpc here is because gensec
