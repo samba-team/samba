@@ -1223,9 +1223,9 @@ static WERROR dnsserver_complex_operate_server(struct dnsserver_state *dsstate,
 {
 	int valid_operation = 0;
 	struct dnsserver_zone *z, **zlist;
-	int zcount;
+	size_t zcount;
 	bool found1, found2, found3, found4;
-	int i;
+	size_t i;
 
 	if (strcasecmp(operation, "QueryDwordProperty") == 0) {
 		if (typeid_in == DNSSRV_TYPEID_LPSTR) {

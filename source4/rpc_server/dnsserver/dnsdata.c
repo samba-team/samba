@@ -96,7 +96,7 @@ struct IP4_ARRAY *dns_addr_array_to_ip4_array(TALLOC_CTX *mem_ctx,
 					      struct DNS_ADDR_ARRAY *ip)
 {
 	struct IP4_ARRAY *ret;
-	int i, count, curr;
+	size_t i, count, curr;
 
 	if (ip == NULL) {
 		return NULL;
