@@ -629,7 +629,7 @@ void sync_all_dmbs(time_t t)
 {
 	static time_t lastrun = 0;
 	struct work_record *work;
-	int count=0;
+	size_t count=0;
 
 	/* Only do this if we are using a WINS server. */
 	if(we_are_a_wins_client() == False)
