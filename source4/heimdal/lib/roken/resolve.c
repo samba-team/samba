@@ -626,7 +626,7 @@ rk_dns_srv_order(struct rk_dns_reply *r)
 {
     struct rk_resource_record **srvs, **ss, **headp;
     struct rk_resource_record *rr;
-    int num_srv = 0;
+    size_t num_srv = 0;
 
 #if defined(HAVE_INITSTATE) && defined(HAVE_SETSTATE)
     int state[256 / sizeof(int)];

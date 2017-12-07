@@ -925,7 +925,7 @@ krb5_config_vget_strings(krb5_context context,
 			 va_list args)
 {
     char **strings = NULL;
-    int nstr = 0;
+    size_t nstr = 0;
     const krb5_config_binding *b = NULL;
     const char *p;
 

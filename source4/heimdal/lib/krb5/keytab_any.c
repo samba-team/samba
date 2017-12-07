@@ -225,7 +225,7 @@ any_remove_entry(krb5_context context,
 {
     struct any_data *a = id->data;
     krb5_error_code ret;
-    int found = 0;
+    size_t found = 0;
     while(a != NULL) {
 	ret = krb5_kt_remove_entry(context, a->kt, entry);
 	if(ret == 0)

@@ -1977,7 +1977,8 @@ hx509_verify_path(hx509_context context,
 {
     hx509_name_constraints nc;
     hx509_path path;
-    int ret, proxy_cert_depth, selfsigned_depth, diff;
+    int ret, diff;
+    size_t proxy_cert_depth, selfsigned_depth;
     size_t i, k;
     enum certtype type;
     Name proxy_issuer;
