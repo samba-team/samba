@@ -62,10 +62,10 @@ static NTSTATUS pvfs_case_search(struct pvfs_state *pvfs,
 				 unsigned int flags)
 {
 	/* break into a series of components */
-	int num_components;
+	size_t num_components;
 	char **components;
 	char *p, *partial_name;
-	int i;
+	size_t i;
 
 	/* break up the full name info pathname components */
 	num_components=2;
@@ -389,7 +389,7 @@ static NTSTATUS pvfs_reduce_name(TALLOC_CTX *mem_ctx,
 {
 	codepoint_t c;
 	size_t c_size, len;
-	int i, num_components, err_count;
+	size_t i, num_components, err_count;
 	char **components;
 	char *p, *s, *ret;
 
@@ -432,7 +432,7 @@ static NTSTATUS pvfs_reduce_name(TALLOC_CTX *mem_ctx,
 			err_count++;
 		}
 	}
-	if (err_count) {
+	if (err_count > 0) {
 		if (flags & PVFS_RESOLVE_WILDCARD) err_count--;
 
 		if (err_count==1) {
