@@ -307,7 +307,7 @@ NTSTATUS idmap_tdb_common_unixids_to_sids(struct idmap_domain * dom,
 					  struct id_map ** ids)
 {
 	NTSTATUS ret;
-	int i, num_mapped = 0;
+	size_t i, num_mapped = 0;
 	struct idmap_tdb_common_context *ctx;
 
 	NTSTATUS(*unixid_to_sid_fn) (struct idmap_domain * dom,
@@ -543,7 +543,7 @@ static NTSTATUS idmap_tdb_common_sids_to_unixids_action(struct db_context *db,
 							void *private_data)
 {
 	struct idmap_tdb_common_sids_to_unixids_context *state = private_data;
-	int i, num_mapped = 0;
+	size_t i, num_mapped = 0;
 	NTSTATUS ret = NT_STATUS_OK;
 
 	DEBUG(10, ("idmap_tdb_common_sids_to_unixids: "
