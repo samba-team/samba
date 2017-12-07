@@ -282,7 +282,6 @@ static void reply_nt1(struct smb_request *req, uint16_t choice)
 	   supports it and we can do encrypted passwords */
 
 	if (xconn->smb1.negprot.encrypted_passwords &&
-	    lp_use_spnego() &&
 	    (req->flags2 & FLAGS2_EXTENDED_SECURITY)) {
 		negotiate_spnego = True;
 		capabilities |= CAP_EXTENDED_SECURITY;
