@@ -54,16 +54,17 @@ static void cstr_unescape(char* val)
  * @see srprs_val_name
  */
 static int cbuf_print_value_assign(cbuf* ost, const char* name) {
-	int ret, n;
+	size_t ret = 0;
+	int n;
 	if (*name == '\0') {
-		ret = cbuf_putc(ost, '@');
+		n = cbuf_putc(ost, '@');
 	} else {
-		ret = cbuf_print_quoted_string(ost, name);
+		n = cbuf_print_quoted_string(ost, name);
 	}
-
-	if (ret<0) {
-		return ret;
+	if (n < 0) {
+		return n;
 	}
+	ret += n;
 
 	n = cbuf_putc(ost, '=');
 	if (n < 0) {
@@ -120,7 +121,8 @@ cbuf_print_hive(cbuf* ost, const char* hive, int len, const struct fmt_key* fmt)
 static int
 cbuf_print_keyname(cbuf* ost, const char* key[], int n, const struct fmt_key* fmt)
 {
-	int r, ret=0;
+	int r;
+	size_t ret = 0;
 	size_t pos = cbuf_getpos(ost);
 	bool hive = true;
 
