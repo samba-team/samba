@@ -288,8 +288,10 @@ void announce_my_server_names(time_t t)
 			}
 
 			/* Announce every minute at first then progress to every 12 mins */
-			if ((t - work->lastannounce_time) < work->announce_interval)
+			if (t > work->lastannounce_time &&
+			    (t - work->lastannounce_time) < work->announce_interval) {
 				continue;
+			}
 
 			if (work->announce_interval < (CHECK_TIME_MAX_HOST_ANNCE * 60))
 				work->announce_interval += 60;
