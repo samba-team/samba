@@ -2849,10 +2849,10 @@ static struct
   ******************************************************************/
 static int process_tok(const char *tok)
 {
-	int i = 0, matches = 0;
-	int cmd=0;
-	int tok_len = strlen(tok);
-	
+	size_t i = 0, matches = 0;
+	size_t cmd=0;
+	size_t tok_len = strlen(tok);
+
 	while (commands[i].fn != NULL) {
 		if (strequal(commands[i].name,tok)) {
 			matches = 1;
