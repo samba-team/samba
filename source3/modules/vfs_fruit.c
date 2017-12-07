@@ -4940,7 +4940,16 @@ static NTSTATUS fruit_streaminfo_meta_stream(
 {
 	struct stream_struct *stream = *pstreams;
 	unsigned int num_streams = *pnum_streams;
+	struct smb_filename *sname = NULL;
+	char *full_name = NULL;
+	uint32_t name_hash;
+	struct share_mode_lock *lck = NULL;
+	struct file_id id = {0};
+	bool delete_on_close_set;
 	int i;
+	int ret;
+	NTSTATUS status;
+	bool ok;
 
 	for (i = 0; i < num_streams; i++) {
 		if (strequal_m(stream[i].name, AFPINFO_STREAM)) {
@@ -4960,7 +4969,68 @@ static NTSTATUS fruit_streaminfo_meta_stream(
 						  pnum_streams, pstreams);
 	}
 
-	return NT_STATUS_OK;
+	/*
+	 * Now check if there's a delete-on-close pending on the stream. If so,
+	 * hide the stream. This behaviour was verified against a macOS 10.12
+	 * SMB server.
+	 */
+
+	sname = synthetic_smb_fname(talloc_tos(),
+				    smb_fname->base_name,
+				    AFPINFO_STREAM_NAME,
+				    NULL, 0);
+	if (sname == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
+	}
+
+	ret = SMB_VFS_NEXT_STAT(handle, sname);
+	if (ret != 0) {
+		status = map_nt_error_from_unix(errno);
+		goto out;
+	}
+
+	id = SMB_VFS_NEXT_FILE_ID_CREATE(handle, &sname->st);
+
+	lck = get_existing_share_mode_lock(talloc_tos(), id);
+	if (lck == NULL) {
+		status = NT_STATUS_OK;
+		goto out;
+	}
+
+	full_name = talloc_asprintf(talloc_tos(),
+				    "%s%s",
+				    sname->base_name,
+				    AFPINFO_STREAM);
+	if (full_name == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
+	}
+
+	status = file_name_hash(handle->conn, full_name, &name_hash);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
+	delete_on_close_set = is_delete_on_close_set(lck, name_hash);
+	if (delete_on_close_set) {
+		ok = del_fruit_stream(mem_ctx,
+				      pnum_streams,
+				      pstreams,
+				      AFPINFO_STREAM);
+		if (!ok) {
+			status = NT_STATUS_INTERNAL_ERROR;
+			goto out;
+		}
+	}
+
+	status  = NT_STATUS_OK;
+
+out:
+	TALLOC_FREE(sname);
+	TALLOC_FREE(lck);
+	TALLOC_FREE(full_name);
+	return status;
 }
 
 static NTSTATUS fruit_streaminfo_meta_netatalk(
