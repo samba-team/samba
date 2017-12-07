@@ -1833,8 +1833,8 @@ static bool is_synonym_of(int parm1, int parm2, bool *inverse)
 
 static void show_parameter(int parmIndex)
 {
-	int enumIndex, flagIndex;
-	int parmIndex2;
+	size_t enumIndex, flagIndex;
+	size_t parmIndex2;
 	bool hadFlag;
 	bool hadSyn;
 	bool inverse;
