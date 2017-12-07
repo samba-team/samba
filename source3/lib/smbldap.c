@@ -604,7 +604,7 @@ static void smbldap_store_state(LDAP *ld, struct smbldap_state *smbldap_state)
 int smbldap_start_tls(LDAP *ldap_struct, int version)
 { 
 #ifdef LDAP_OPT_X_TLS
-	int rc;
+	int rc,tls;
 #endif
 
 	if (lp_ldap_ssl() != LDAP_SSL_START_TLS) {
@@ -612,6 +612,12 @@ int smbldap_start_tls(LDAP *ldap_struct, int version)
 	}
 
 #ifdef LDAP_OPT_X_TLS
+	/* check if we use ldaps already */
+	ldap_get_option(ldap_struct, LDAP_OPT_X_TLS, &tls);
+	if (tls == LDAP_OPT_X_TLS_HARD) {
+		return LDAP_SUCCESS;
+	}
+
 	if (version != LDAP_VERSION3) {
 		DEBUG(0, ("Need LDAPv3 for Start TLS\n"));
 		return LDAP_OPERATIONS_ERROR;
