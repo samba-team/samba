@@ -157,6 +157,10 @@ def configure(conf):
 
     conf.RECURSE('lib/ldb')
 
+    if conf.CHECK_LDFLAGS(['-Wl,--wrap=test']):
+        conf.env['HAVE_LDWRAP'] = True
+        conf.define('HAVE_LDWRAP', 1)
+
     if not (Options.options.without_ad_dc):
         conf.DEFINE('AD_DC_BUILD_IS_ENABLED', 1)
 
