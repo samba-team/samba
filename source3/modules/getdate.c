@@ -2492,7 +2492,7 @@ static int
 yylex (YYSTYPE *lvalp, parser_control *pc)
 {
   unsigned char c;
-  int count;
+  size_t count;
 
   for (;;)
     {
