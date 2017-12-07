@@ -367,7 +367,10 @@ int get_interfaces(TALLOC_CTX *mem_ctx, struct iface_struct **pifaces)
 	int total, i, j;
 
 	total = _get_interfaces(mem_ctx, &ifaces);
-	if (total <= 0) return total;
+	/* If we have an error, no interface or just one we can leave */
+	if (total <= 1) {
+		return total;
+	}
 
 	/* now we need to remove duplicates */
 	TYPESAFE_QSORT(ifaces, total, iface_comp);
