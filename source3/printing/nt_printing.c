@@ -485,19 +485,31 @@ static int get_file_version(files_struct *fsp, char *fname,uint32_t *major, uint
 				/* Potential match data crosses buf boundry, move it to beginning
 				 * of buf, and fill the buf with as much as it will hold. */
 				if (i>byte_count-VS_VERSION_INFO_SIZE) {
-					int bc;
+					ssize_t amount_read;
+					ssize_t amount_unused = byte_count-i;
 
-					memcpy(buf, &buf[i], byte_count-i);
-					if ((bc = vfs_read_data(fsp, &buf[byte_count-i], VS_NE_BUF_SIZE-
-								   (byte_count-i))) < 0) {
+					memmove(buf, &buf[i], amount_unused);
+					amount_read = vfs_read_data(fsp,
+						&buf[amount_unused],
+						VS_NE_BUF_SIZE- amount_unused);
+					if (amount_read < 0) {
 
 						DEBUG(0,("get_file_version: NE file [%s] Read error, errno=%d\n",
 								 fname, errno));
 						goto error_exit;
 					}
 
-					byte_count = bc + (byte_count - i);
-					if (byte_count<VS_VERSION_INFO_SIZE) break;
+					if (amount_read + amount_unused <
+							amount_read) {
+						/* Check for integer wrap. */
+						break;
+					}
+
+					byte_count = amount_read +
+						     amount_unused;
+					if (byte_count < VS_VERSION_INFO_SIZE) {
+						break;
+					}
 
 					i = 0;
 				}
