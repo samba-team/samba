@@ -27,6 +27,7 @@ import ldb
 import time
 import base64
 import os
+import re
 from samba import dsdb, dsdb_dns
 from samba.ndr import ndr_unpack, ndr_pack
 from samba.dcerpc import drsblobs, misc
@@ -489,6 +490,57 @@ member: %s
         else:
             self.transaction_commit()
 
+    def newcomputer(self, computername, computerou=None, description=None,
+        prepare_oldjoin=False):
+        """Adds a new user with additional parameters
+
+        :param computername: Name of the new computer
+        :param computerou: Object container for new computer
+        :param description: Description of the new computer
+        :param prepare_oldjoin: Preset computer password for oldjoin mechanism
+        """
+
+        cn = re.sub(r"\$$", "", computername)
+        if cn.count('$'):
+            raise Exception('Illegal computername "%s"' % computername)
+        samaccountname = "%s$" % cn
+
+        computercontainer_dn = "CN=Users,%s" % self.domain_dn()
+        if computerou:
+            computercontainer_dn = self.normalize_dn_in_domain(computerou)
+
+        computer_dn = "CN=%s,%s" % (cn, computercontainer_dn)
+
+        dnsdomain = ldb.Dn(self,
+                           self.domain_dn()).canonical_str().replace("/", "")
+        ldbmessage = {"dn": computer_dn,
+                      "sAMAccountName": samaccountname,
+                      "objectClass": "computer",
+                      }
+
+        if description is not None:
+            ldbmessage["description"] = description
+
+        accountcontrol = str(dsdb.UF_WORKSTATION_TRUST_ACCOUNT |
+                             dsdb.UF_ACCOUNTDISABLE)
+        if prepare_oldjoin:
+            accountcontrol = str(dsdb.UF_WORKSTATION_TRUST_ACCOUNT)
+        ldbmessage["userAccountControl"] = accountcontrol
+
+        self.transaction_start()
+        try:
+            self.add(ldbmessage)
+
+            if prepare_oldjoin:
+                password = cn.lower()
+                self.setpassword(("(distinguishedName=%s)" %
+                                  ldb.binary_encode(computer_dn)),
+                                 password, False)
+        except:
+            self.transaction_cancel()
+            raise
+        else:
+            self.transaction_commit()
 
     def deleteuser(self, username):
         """Deletes a user
