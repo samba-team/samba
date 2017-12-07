@@ -4103,7 +4103,8 @@ static NTSTATUS ldapsam_lookup_rids(struct pdb_methods *methods,
 	LDAPMessage *msg = NULL;
 	LDAPMessage *entry;
 	char *allsids = NULL;
-	int i, rc, num_mapped;
+	size_t i, num_mapped;
+	int rc;
 	NTSTATUS result = NT_STATUS_NO_MEMORY;
 	TALLOC_CTX *mem_ctx;
 	LDAP *ld;
