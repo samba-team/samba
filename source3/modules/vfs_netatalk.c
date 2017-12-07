@@ -118,7 +118,7 @@ static int atalk_unlink_file(const char *path)
 
 static void atalk_add_to_list(name_compare_entry **list)
 {
-	int i, count = 0;
+	size_t i, count = 0;
 	name_compare_entry *new_list = 0;
 	name_compare_entry *cur_list = 0;
 
