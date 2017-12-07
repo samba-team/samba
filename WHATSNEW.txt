@@ -99,6 +99,7 @@ smb.conf changes
   mdns name                          Added                   netbios
   fruit:time machine                 Added                   false
   profile acls                       Removed
+  winbind trusted domains only       Removed
 
 
 NT4-style replication based net commands removed
