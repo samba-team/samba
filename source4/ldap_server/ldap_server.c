@@ -1178,8 +1178,8 @@ static void ldapsrv_task_init(struct task_server *task)
 		}
 	} else {
 		char **wcard;
-		int i;
-		int num_binds = 0;
+		size_t i;
+		size_t num_binds = 0;
 		wcard = iface_list_wildcard(task);
 		if (wcard == NULL) {
 			DEBUG(0,("No wildcard addresses available\n"));
