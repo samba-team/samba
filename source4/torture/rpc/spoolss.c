@@ -5630,7 +5630,7 @@ static bool test_SetPrinterDataEx_matrix(struct torture_context *tctx,
 		REG_BINARY
 	};
 	const char *str = "abcdefghi";
-	int t, s;
+	size_t t, s;
 
 	for (t=0; t < ARRAY_SIZE(types); t++) {
 	for (s=0; s < strlen(str); s++) {
