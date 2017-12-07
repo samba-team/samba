@@ -229,9 +229,9 @@ static bool torture_raw_qfileinfo_internals(struct torture_context *torture,
 					    int fnum, const char *fname,
 					    bool is_ipc)
 {
-	int i;
+	size_t i;
 	bool ret = true;
-	int count;
+	size_t count;
 	union smb_fileinfo *s1, *s2;	
 	NTTIME correct_time;
 	uint64_t correct_size;
@@ -333,7 +333,7 @@ static bool torture_raw_qfileinfo_internals(struct torture_context *torture,
 
 	if (count != 0) {
 		ret = false;
-		printf("%d levels failed\n", count);
+		printf("%zu levels failed\n", count);
 		if (count > 35) {
 			torture_fail(torture, "too many level failures - giving up");
 		}
