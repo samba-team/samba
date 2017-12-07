@@ -1090,13 +1090,13 @@ static int build_notify2_messages(TALLOC_CTX *mem_ctx,
 				  SPOOLSS_NOTIFY_MSG *messages,
 				  uint32_t num_msgs,
 				  struct spoolss_Notify **_notifies,
-				  int *_count)
+				  size_t *_count)
 {
 	struct spoolss_Notify *notifies;
 	SPOOLSS_NOTIFY_MSG *msg;
-	int count = 0;
+	size_t count = 0;
 	uint32_t id;
-	int i;
+	uint32_t i;
 
 	notifies = talloc_zero_array(mem_ctx,
 				     struct spoolss_Notify, num_msgs);
@@ -1189,7 +1189,7 @@ static int send_notify2_printer(TALLOC_CTX *mem_ctx,
 				SPOOLSS_NOTIFY_MSG_GROUP *msg_group)
 {
 	struct spoolss_Notify *notifies;
-	int count = 0;
+	size_t count = 0;
 	union spoolss_ReplyPrinterInfo info;
 	struct spoolss_NotifyInfo info0;
 	uint32_t reply_result;
