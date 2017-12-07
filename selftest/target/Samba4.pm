@@ -1031,6 +1031,7 @@ winbindd:use external pipes = true
 
 # the source4 smb server doesn't allow signing by default
 server signing = enabled
+raw NTLMv2 auth = yes
 
 rpc_server:default = external
 rpc_server:svcctl = embedded
@@ -1461,6 +1462,7 @@ sub provision_ad_dc_ntvfs($$)
         server services = +winbind -winbindd
 	ldap server require strong auth = allow_sasl_over_tls
 	allow nt4 crypto = yes
+	raw NTLMv2 auth = yes
 	lsa over netlogon = yes
         rpc server port = 1027
         auth event notification = true

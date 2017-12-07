@@ -219,18 +219,18 @@ for t in net_tests:
 transport = "ncacn_np"
 for env in ["ad_dc_ntvfs", "nt4_dc"]:
     for ntlmoptions in [
-        "-k no --option=usespnego=yes",
-        "-k no --option=usespnego=yes --option=ntlmssp_client:128bit=no",
-        "-k no --option=usespnego=yes --option=ntlmssp_client:56bit=yes",
-        "-k no --option=usespnego=yes --option=ntlmssp_client:56bit=no",
-        "-k no --option=usespnego=yes --option=ntlmssp_client:128bit=no --option=ntlmssp_client:56bit=yes",
-        "-k no --option=usespnego=yes --option=ntlmssp_client:128bit=no --option=ntlmssp_client:56bit=no",
-        "-k no --option=usespnego=yes --option=clientntlmv2auth=yes",
-        "-k no --option=usespnego=yes --option=clientntlmv2auth=yes --option=ntlmssp_client:128bit=no",
-        "-k no --option=usespnego=yes --option=clientntlmv2auth=yes --option=ntlmssp_client:128bit=no --option=ntlmssp_client:56bit=yes",
-        "-k no --option=usespnego=no --option=clientntlmv2auth=yes",
+        "-k no --option=clientusespnego=yes",
+        "-k no --option=clientusespnego=yes --option=ntlmssp_client:128bit=no",
+        "-k no --option=clientusespnego=yes --option=ntlmssp_client:56bit=yes",
+        "-k no --option=clientusespnego=yes --option=ntlmssp_client:56bit=no",
+        "-k no --option=clientusespnego=yes --option=ntlmssp_client:128bit=no --option=ntlmssp_client:56bit=yes",
+        "-k no --option=clientusespnego=yes --option=ntlmssp_client:128bit=no --option=ntlmssp_client:56bit=no",
+        "-k no --option=clientusespnego=yes --option=clientntlmv2auth=yes",
+        "-k no --option=clientusespnego=yes --option=clientntlmv2auth=yes --option=ntlmssp_client:128bit=no",
+        "-k no --option=clientusespnego=yes --option=clientntlmv2auth=yes --option=ntlmssp_client:128bit=no --option=ntlmssp_client:56bit=yes",
+        "-k no --option=clientusespnego=no --option=clientntlmv2auth=yes",
         "-k no --option=gensec:spnego=no --option=clientntlmv2auth=yes",
-        "-k no --option=usespnego=no"]:
+        "-k no --option=clientusespnego=no"]:
         name = "rpc.lsa.secrets on %s with with %s" % (transport, ntlmoptions)
         plansmbtorture4testsuite('rpc.lsa.secrets', env, ["%s:$SERVER[]" % (transport), ntlmoptions, '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN', '--option=gensec:target_hostname=$NETBIOSNAME'], "samba4.%s" % name)
     plantestsuite("samba.blackbox.pdbtest(%s)" % env, "%s:local" % env, [os.path.join(bbdir, "test_pdbtest.sh"), '$SERVER', "$PREFIX", "pdbtest", smbclient4, '$SMB_CONF_PATH', configuration])
@@ -452,7 +452,7 @@ plansmbtorture4testsuite("rpc.echo", "rpc_proxy", ['ncacn_ip_tcp:$NETBIOSNAME', 
 # Tests SMB signing
 for mech in [
     "-k no",
-    "-k no --option=usespnego=no",
+    "-k no --option=clientusespnego=no",
     "-k no --option=gensec:spengo=no",
     "-k yes",
     "-k yes --option=gensec:fake_gssapi_krb5=yes --option=gensec:gssapi_krb5=no"]:
@@ -463,7 +463,7 @@ for mech in [
 
 for mech in [
     "-k no",
-    "-k no --option=usespnego=no",
+    "-k no --option=clientusespnego=no",
     "-k no --option=gensec:spengo=no",
     "-k yes"]:
     signoptions = "%s --signing=off" % mech
@@ -477,7 +477,7 @@ for mech in [
 plantestsuite("samba4.blackbox.bogusdomain", "ad_member", ["testprogs/blackbox/bogus.sh", "$NETBIOSNAME", "xcopy_share", '$USERNAME', '$PASSWORD', '$DC_USERNAME', '$DC_PASSWORD', smbclient4])
 for mech in [
     "-k no",
-    "-k no --option=usespnego=no",
+    "-k no --option=clientusespnego=no",
     "-k no --option=gensec:spengo=no"]:
     signoptions = "%s --signing=off" % mech
     plansmbtorture4testsuite('base.xcopy', "s4member", ['//$NETBIOSNAME/xcopy_share', signoptions, '-U$NETBIOSNAME/$USERNAME%$PASSWORD'], modname="samba4.smb.signing on with %s local-creds" % signoptions)

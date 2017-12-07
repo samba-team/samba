@@ -1,0 +1,2 @@
+# 'raw NTLMv2 auth' is not enabled on ad_member
+^samba4.smb.signing.disabled.on.with.-k.no.--option=clientusespnego=no.--signing=off.domain-creds.xcopy\(ad_member\)
