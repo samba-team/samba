@@ -156,7 +156,7 @@ static bool preopen_helper_open_one(int sock_fd, char **pnamebuf,
 
 	nread = 0;
 
-	while ((nread == 0) || (namebuf[nread-1] != '\0')) {
+	do {
 		ssize_t thistime;
 
 		thistime = read(sock_fd, namebuf + nread,
@@ -176,7 +176,7 @@ static bool preopen_helper_open_one(int sock_fd, char **pnamebuf,
 			}
 			*pnamebuf = namebuf;
 		}
-	}
+	} while (namebuf[nread - 1] != '\0');
 
 	fd = open(namebuf, O_RDONLY);
 	if (fd == -1) {
