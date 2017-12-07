@@ -41,8 +41,11 @@
 #define MAP_FILE 0
 #endif
 
+struct aio_child_list;
+
 struct aio_fork_config {
 	bool erratic_testing_mode;
+	struct aio_child_list *children;
 };
 
 struct mmap_area {
@@ -148,11 +151,6 @@ struct aio_child_list {
 	struct aio_child *children;
 	struct tevent_timer *cleanup_event;
 };
-
-static void free_aio_children(void **p)
-{
-	TALLOC_FREE(*p);
-}
 
 static ssize_t read_fd(int fd, void *ptr, size_t nbytes, int *recvfd)
 {
@@ -267,19 +265,19 @@ static void aio_child_cleanup(struct tevent_context *event_ctx,
 
 static struct aio_child_list *init_aio_children(struct vfs_handle_struct *handle)
 {
-	struct aio_child_list *data = NULL;
+	struct aio_fork_config *config;
+	struct aio_child_list *children;
 
-	if (SMB_VFS_HANDLE_TEST_DATA(handle)) {
-		SMB_VFS_HANDLE_GET_DATA(handle, data, struct aio_child_list,
-					return NULL);
-	}
+	SMB_VFS_HANDLE_GET_DATA(handle, config, struct aio_fork_config,
+				return NULL);
 
-	if (data == NULL) {
-		data = talloc_zero(NULL, struct aio_child_list);
-		if (data == NULL) {
+	if (config->children == NULL) {
+		config->children = talloc_zero(config, struct aio_child_list);
+		if (config->children == NULL) {
 			return NULL;
 		}
 	}
+	children = config->children;
 
 	/*
 	 * Regardless of whether the child_list had been around or not, make
@@ -287,22 +285,18 @@ static struct aio_child_list *init_aio_children(struct vfs_handle_struct *handle
 	 * delete itself when it finds that no children are around anymore.
 	 */
 
-	if (data->cleanup_event == NULL) {
-		data->cleanup_event = tevent_add_timer(server_event_context(), data,
-						      timeval_current_ofs(30, 0),
-						      aio_child_cleanup, data);
-		if (data->cleanup_event == NULL) {
-			TALLOC_FREE(data);
+	if (children->cleanup_event == NULL) {
+		children->cleanup_event =
+			tevent_add_timer(server_event_context(), children,
+					 timeval_current_ofs(30, 0),
+					 aio_child_cleanup, children);
+		if (children->cleanup_event == NULL) {
+			TALLOC_FREE(config->children);
 			return NULL;
 		}
 	}
 
-	if (!SMB_VFS_HANDLE_TEST_DATA(handle)) {
-		SMB_VFS_HANDLE_SET_DATA(handle, data, free_aio_children,
-					struct aio_child_list, return False);
-	}
-
-	return data;
+	return children;
 }
 
 static void aio_child_loop(int sockfd, struct mmap_area *map)
