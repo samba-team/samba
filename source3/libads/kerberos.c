@@ -336,10 +336,10 @@ int kerberos_kinit_password(const char *principal,
 
 ************************************************************************/
 
-static void add_sockaddr_unique(struct sockaddr_storage *addrs, int *num_addrs,
+static void add_sockaddr_unique(struct sockaddr_storage *addrs, size_t *num_addrs,
 				const struct sockaddr_storage *addr)
 {
-	int i;
+	size_t i;
 
 	for (i=0; i<*num_addrs; i++) {
 		if (sockaddr_equal((const struct sockaddr *)&addrs[i],
@@ -382,12 +382,12 @@ static char *get_kdc_ip_string(char *mem_ctx,
 		const struct sockaddr_storage *pss)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	int i;
+	size_t i;
 	struct ip_service *ip_srv_site = NULL;
 	struct ip_service *ip_srv_nonsite = NULL;
 	int count_site = 0;
 	int count_nonsite;
-	int num_dcs;
+	size_t num_dcs;
 	struct sockaddr_storage *dc_addrs;
 	struct tsocket_address **dc_addrs2 = NULL;
 	const struct tsocket_address * const *dc_addrs3 = NULL;
@@ -448,7 +448,7 @@ static char *get_kdc_ip_string(char *mem_ctx,
 				      struct tsocket_address *,
 				      num_dcs);
 
-	DEBUG(10, ("%d additional KDCs to test\n", num_dcs));
+	DBG_DEBUG("%zu additional KDCs to test\n", num_dcs);
 	if (num_dcs == 0) {
 		goto out;
 	}
