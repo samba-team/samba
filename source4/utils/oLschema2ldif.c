@@ -68,7 +68,7 @@ struct ldb_dn *basedn;
 
 static int check_braces(const char *string)
 {
-	int b;
+	size_t b;
 	char *c;
 
 	b = 0;
