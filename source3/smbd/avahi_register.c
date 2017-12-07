@@ -108,7 +108,7 @@ static void avahi_client_callback(AvahiClient *c, AvahiClientState status,
 	case AVAHI_CLIENT_S_RUNNING: {
 		int snum;
 		int num_services = lp_numservices();
-		int dk = 0;
+		size_t dk = 0;
 		AvahiStringList *adisk = NULL;
 		AvahiStringList *adisk2 = NULL;
 		const char *hostname = NULL;
@@ -154,7 +154,7 @@ static void avahi_client_callback(AvahiClient *c, AvahiClientState status,
 			    lp_parm_bool(snum, "fruit", "time machine", false))
 			{
 				adisk2 = avahi_string_list_add_printf(
-					    adisk, "dk%d=adVN=%s,adVF=0x82",
+					    adisk, "dk%zu=adVN=%s,adVF=0x82",
 					    dk++, lp_const_servicename(snum));
 				if (adisk2 == NULL) {
 					DBG_DEBUG("avahi_string_list_add_printf"
