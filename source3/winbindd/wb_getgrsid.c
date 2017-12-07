@@ -60,17 +60,6 @@ struct tevent_req *wb_getgrsid_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	if (lp_winbind_trusted_domains_only()) {
-		struct winbindd_domain *our_domain = find_our_domain();
-
-		if (dom_sid_compare_domain(group_sid, &our_domain->sid) == 0) {
-			DEBUG(7, ("winbindd_getgrsid: My domain -- rejecting "
-				  "getgrsid() for %s\n", sid_string_tos(group_sid)));
-			tevent_req_nterror(req, NT_STATUS_NO_SUCH_GROUP);
-			return tevent_req_post(req, ev);
-		}
-	}
-
 	subreq = wb_lookupsid_send(state, ev, &state->sid);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);

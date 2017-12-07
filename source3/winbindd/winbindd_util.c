@@ -1085,7 +1085,7 @@ static bool assume_domain(const char *domain)
 		if ( !strequal(lp_workgroup(), domain) )
 			return False;
 
-		if ( lp_winbind_use_default_domain() || lp_winbind_trusted_domains_only() )
+		if ( lp_winbind_use_default_domain() )
 			return True;
 	}
 
@@ -1165,9 +1165,6 @@ bool canonicalize_username(fstring username_inout, fstring domain, fstring user)
 	lp_workgroup()
 
     If we are a PDC or BDC, and this is for our domain, do likewise.
-
-    Also, if omit DOMAIN if 'winbind trusted domains only = true', as the
-    username is then unqualified in unix
 
     On an AD DC we always fill DOMAIN\\USERNAME.
 

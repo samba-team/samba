@@ -50,18 +50,6 @@ struct tevent_req *wb_queryuser_send(TALLOC_CTX *mem_ctx,
 	}
 	state->ev = ev;
 
-	if (lp_winbind_trusted_domains_only()) {
-		struct winbindd_domain *our_domain = find_our_domain();
-
-		if (dom_sid_compare_domain(user_sid, &our_domain->sid) == 0) {
-			char buf[DOM_SID_STR_BUFLEN];
-			dom_sid_string_buf(user_sid, buf, sizeof(buf));
-			DBG_NOTICE("My domain -- rejecting %s\n", buf);
-			tevent_req_nterror(req, NT_STATUS_NO_SUCH_USER);
-			return tevent_req_post(req, ev);
-		}
-	}
-
 	state->info = talloc_zero(state, struct wbint_userinfo);
 	if (tevent_req_nomem(state->info, req)) {
 		return tevent_req_post(req, ev);

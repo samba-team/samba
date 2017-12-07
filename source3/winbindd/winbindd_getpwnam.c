@@ -71,15 +71,6 @@ struct tevent_req *winbindd_getpwnam_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	if (lp_winbind_trusted_domains_only()
-	    && strequal(state->domname, lp_workgroup())) {
-		DEBUG(7,("winbindd_getpwnam: My domain -- "
-			 "rejecting getpwnam() for %s\\%s.\n",
-			 state->domname, state->username));
-		tevent_req_nterror(req, NT_STATUS_NO_SUCH_USER);
-		return tevent_req_post(req, ev);
-	}
-
 	subreq = wb_lookupname_send(state, ev, state->domname, state->username,
 				    LOOKUP_NAME_NO_NSS);
 	if (tevent_req_nomem(subreq, req)) {
