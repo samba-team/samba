@@ -817,7 +817,6 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 	Globals.winbind_enum_users = false;
 	Globals.winbind_enum_groups = false;
 	Globals.winbind_use_default_domain = false;
-	Globals.winbind_trusted_domains_only = false;
 	Globals.winbind_nested_groups = true;
 	Globals.winbind_expand_groups = 0;
 	Globals.winbind_nss_info = str_list_make_v3_const(NULL, "template", NULL);
