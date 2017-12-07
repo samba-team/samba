@@ -305,7 +305,7 @@ static void aio_pread_smb1_done(struct tevent_req *req)
 			   (int)aio_ex->nbyte, (int)nread ) );
 
 	}
-	smb_setlen(outbuf, outsize - 4);
+	_smb_setlen_large(outbuf, outsize - 4);
 	show_msg(outbuf);
 	if (!srv_send_smb(aio_ex->smbreq->xconn, outbuf,
 			  true, aio_ex->smbreq->seqnum+1,
