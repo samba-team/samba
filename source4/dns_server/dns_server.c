@@ -687,7 +687,7 @@ static NTSTATUS dns_startup_interfaces(struct dns_server *dns,
 				       struct interface *ifaces,
 				       const struct model_ops *model_ops)
 {
-	int num_interfaces;
+	size_t num_interfaces;
 	TALLOC_CTX *tmp_ctx = talloc_new(dns);
 	NTSTATUS status;
 	int i;
@@ -704,7 +704,7 @@ static NTSTATUS dns_startup_interfaces(struct dns_server *dns,
 			NT_STATUS_NOT_OK_RETURN(status);
 		}
 	} else {
-		int num_binds = 0;
+		size_t num_binds = 0;
 		char **wcard;
 		wcard = iface_list_wildcard(tmp_ctx);
 		if (wcard == NULL) {
