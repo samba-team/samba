@@ -176,11 +176,11 @@ static bool handle_name_ptrs(unsigned char *ubuf,int *offset,int length,
 
 static int parse_nmb_name(char *inbuf,int ofs,int length, struct nmb_name *name)
 {
-	int m,n=0;
+	size_t m,n=0;
 	unsigned char *ubuf = (unsigned char *)inbuf;
 	int ret = 0;
 	bool got_pointer=False;
-	int loop_count=0;
+	size_t loop_count=0;
 	int offset = ofs;
 
 	if (length - offset < 2)
@@ -483,7 +483,7 @@ static int put_compressed_name_ptr(unsigned char *buf,
 
 static bool parse_dgram(char *inbuf,int length,struct dgram_packet *dgram)
 {
-	int offset;
+	size_t offset;
 	int flags;
 
 	memset((char *)dgram,'\0',sizeof(*dgram));
