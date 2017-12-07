@@ -899,7 +899,7 @@ static bool test_reentrant_enumeration_crosschecks(struct torture_context *tctx)
 
 static bool test_passwd_duplicates(struct torture_context *tctx)
 {
-	int i, d;
+	size_t i, d;
 	struct passwd *pwd;
 	size_t num_pwd;
 	int duplicates = 0;
@@ -934,7 +934,7 @@ static bool test_passwd_duplicates(struct torture_context *tctx)
 
 static bool test_group_duplicates(struct torture_context *tctx)
 {
-	int i, d;
+	size_t i, d;
 	struct group *grp;
 	size_t num_grp;
 	int duplicates = 0;
