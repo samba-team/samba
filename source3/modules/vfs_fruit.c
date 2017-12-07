@@ -4864,38 +4864,16 @@ static int fruit_fstat(vfs_handle_struct *handle, files_struct *fsp,
 	return rc;
 }
 
-static NTSTATUS fruit_streaminfo_meta_stream(
+static NTSTATUS delete_invalid_meta_stream(
 	vfs_handle_struct *handle,
-	struct files_struct *fsp,
 	const struct smb_filename *smb_fname,
 	TALLOC_CTX *mem_ctx,
 	unsigned int *pnum_streams,
 	struct stream_struct **pstreams)
 {
-	struct stream_struct *stream = *pstreams;
-	unsigned int num_streams = *pnum_streams;
 	struct smb_filename *sname = NULL;
-	int i;
 	int ret;
 	bool ok;
-
-	for (i = 0; i < num_streams; i++) {
-		if (strequal_m(stream[i].name, AFPINFO_STREAM)) {
-			break;
-		}
-	}
-
-	if (i == num_streams) {
-		return NT_STATUS_OK;
-	}
-
-	if (stream[i].size == AFP_INFO_SIZE) {
-		return NT_STATUS_OK;
-	}
-
-	DBG_ERR("Removing invalid AFPINFO_STREAM size [%"PRIdMAX"] "
-		"from [%s]\n", (intmax_t)stream[i].size,
-		smb_fname_str_dbg(smb_fname));
 
 	ok = del_fruit_stream(mem_ctx, pnum_streams, pstreams, AFPINFO_STREAM);
 	if (!ok) {
@@ -4915,6 +4893,39 @@ static NTSTATUS fruit_streaminfo_meta_stream(
 	if (ret != 0) {
 		DBG_ERR("Removing [%s] failed\n", smb_fname_str_dbg(sname));
 		return map_nt_error_from_unix(errno);
+	}
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS fruit_streaminfo_meta_stream(
+	vfs_handle_struct *handle,
+	struct files_struct *fsp,
+	const struct smb_filename *smb_fname,
+	TALLOC_CTX *mem_ctx,
+	unsigned int *pnum_streams,
+	struct stream_struct **pstreams)
+{
+	struct stream_struct *stream = *pstreams;
+	unsigned int num_streams = *pnum_streams;
+	int i;
+
+	for (i = 0; i < num_streams; i++) {
+		if (strequal_m(stream[i].name, AFPINFO_STREAM)) {
+			break;
+		}
+	}
+
+	if (i == num_streams) {
+		return NT_STATUS_OK;
+	}
+
+	if (stream[i].size != AFP_INFO_SIZE) {
+		DBG_ERR("Removing invalid AFPINFO_STREAM size [%jd] from [%s]\n",
+			(intmax_t)stream[i].size, smb_fname_str_dbg(smb_fname));
+
+		return delete_invalid_meta_stream(handle, smb_fname, mem_ctx,
+						  pnum_streams, pstreams);
 	}
 
 	return NT_STATUS_OK;
