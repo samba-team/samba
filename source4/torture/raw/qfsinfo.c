@@ -124,9 +124,9 @@ static union smb_fsinfo *find(const char *name)
 bool torture_raw_qfsinfo(struct torture_context *torture, 
 			 struct smbcli_state *cli)
 {
-	int i;
+	size_t i;
 	bool ret = true;
-	int count;
+	size_t count;
 	union smb_fsinfo *s1, *s2;	
 
 	/* scan all the levels, pulling the results */
@@ -152,7 +152,7 @@ bool torture_raw_qfsinfo(struct torture_context *torture,
 	}
 
 	if (count != 0) {
-		torture_comment(torture, "%d levels failed\n", count);
+		torture_comment(torture, "%zu levels failed\n", count);
 		torture_assert(torture, count > 13, "too many level failures - giving up");
 	}
 
