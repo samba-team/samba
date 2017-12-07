@@ -651,7 +651,7 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 	Globals._client_ipc_min_protocol = PROTOCOL_DEFAULT;
 	Globals._security = SEC_AUTO;
 	Globals.encrypt_passwords = true;
-	Globals.client_schannel = Auto;
+	Globals.client_schannel = true;
 	Globals.winbind_sealed_pipes = true;
 	Globals.require_strong_key = true;
 	Globals.server_schannel = Auto;

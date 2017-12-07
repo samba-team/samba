@@ -2,8 +2,15 @@
                  context="G"
                  type="enum"
                  enumlist="enum_bool_auto"
+                 deprecated="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
+
+    <para>
+	This option is deprecated with Samba 4.8 and will be removed in future.
+	At the same time the default changed to yes, which will be the
+	hardcoded behavior in future.
+    </para>
 
     <para>
     This controls whether the client offers or even demands the use of the netlogon schannel.
@@ -18,6 +25,6 @@
 
     <para>This option yields precedence to the <smbconfoption name="require strong key"/> option.</para>
 </description>
-<value type="default">auto</value>
-<value type="example">yes</value>
+<value type="default">yes</value>
+<value type="example">auto</value>
 </samba:parameter>
