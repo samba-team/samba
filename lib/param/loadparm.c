@@ -2749,8 +2749,6 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lpcfg_do_global_parameter(lp_ctx, "client ipc signing", "default");
 	lpcfg_do_global_parameter(lp_ctx, "server signing", "default");
 
-	lpcfg_do_global_parameter(lp_ctx, "use spnego", "True");
-
 	lpcfg_do_global_parameter(lp_ctx, "use mmap", "True");
 
 	lpcfg_do_global_parameter(lp_ctx, "smb ports", "445 139");
