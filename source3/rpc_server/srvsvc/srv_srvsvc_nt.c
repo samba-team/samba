@@ -548,13 +548,13 @@ static WERROR init_srv_share_info_ctr(struct pipes_struct *p,
 				      uint32_t *total_entries,
 				      bool all_shares)
 {
-	int num_entries = 0;
-	int alloc_entries = 0;
+	uint32_t num_entries = 0;
+	uint32_t alloc_entries = 0;
 	int num_services = 0;
 	int snum;
 	TALLOC_CTX *ctx = p->mem_ctx;
-	int i = 0;
-	int valid_share_count = 0;
+	uint32_t i = 0;
+	uint32_t valid_share_count = 0;
 	bool *allowed = 0;
 	union srvsvc_NetShareCtr ctr;
 	uint32_t resume_handle = resume_handle_p ? *resume_handle_p : 0;
