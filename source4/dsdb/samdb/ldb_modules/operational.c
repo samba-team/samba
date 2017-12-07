@@ -699,7 +699,7 @@ static NTTIME get_msds_user_password_expiry_time_computed(struct ldb_module *mod
 		return 0x7FFFFFFFFFFFFFFFULL;
 	}
 
-	if (pwdLastSet >= 0x7FFFFFFFFFFFFFFFULL) {
+	if (pwdLastSet >= 0x7FFFFFFFFFFFFFFFLL) {
 		/*
 		 * Somethings wrong with the clock...
 		 */
@@ -725,7 +725,7 @@ static NTTIME get_msds_user_password_expiry_time_computed(struct ldb_module *mod
 		return 0x7FFFFFFFFFFFFFFFULL;
 	}
 
-	if (maxPwdAge == -0x8000000000000000ULL) {
+	if (maxPwdAge == -0x8000000000000000LL) {
 		return 0x7FFFFFFFFFFFFFFFULL;
 	}
 
@@ -740,7 +740,7 @@ static NTTIME get_msds_user_password_expiry_time_computed(struct ldb_module *mod
 	 * =
 	 * 0xFFFFFFFFFFFFFFFFULL
 	 */
-	ret = pwdLastSet - maxPwdAge;
+	ret = (NTTIME)pwdLastSet - (NTTIME)maxPwdAge;
 	if (ret >= 0x7FFFFFFFFFFFFFFFULL) {
 		return 0x7FFFFFFFFFFFFFFFULL;
 	}
