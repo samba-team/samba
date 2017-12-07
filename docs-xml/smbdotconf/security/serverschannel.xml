@@ -2,8 +2,17 @@
                  context="G"
                  type="enum"
                  enumlist="enum_bool_auto"
+                 deprecated="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
+
+    <para>
+	This option is deprecated with Samba 4.8 and will be removed in future.
+	At the same time the default changed to yes, which will be the
+	hardcoded behavior in future. If you have the need for the behavior of "auto"
+	to be kept, please file a bug at https://bugzilla.samba.org.
+    </para>
+
     <para>
 	This controls whether the server offers or even demands the use of the netlogon schannel.
 	<smbconfoption name="server schannel">no</smbconfoption> does not offer the schannel, <smbconfoption
@@ -18,6 +27,6 @@
 	</para>
 </description>
 
-<value type="default">auto</value>
-<value type="example">yes</value>
+<value type="default">yes</value>
+<value type="example">auto</value>
 </samba:parameter>
