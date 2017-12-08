@@ -1694,6 +1694,7 @@ main() {
 
     if Options.options.enable_selftest or Options.options.developer:
         default_shared_modules.extend(TO_LIST('vfs_fake_acls vfs_nfs4acl_xattr'))
+        default_shared_modules.extend(TO_LIST('vfs_error_inject'))
 
     if conf.CONFIG_SET('AD_DC_BUILD_IS_ENABLED'):
         default_static_modules.extend(TO_LIST('pdb_samba_dsdb auth_samba4 vfs_dfs_samba4'))
