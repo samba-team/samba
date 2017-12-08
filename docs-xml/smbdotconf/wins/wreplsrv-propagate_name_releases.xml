@@ -1,0 +1,23 @@
+<samba:parameter name="wreplsrv:propagate name releases"
+                 context="G"
+                 type="string"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>If this parameter is enabled, then
+	explicit (from the client) and implicit (via the scavenging) name releases
+	are propagated to the other servers directly, even if there are still other
+	addresses active, this applies to SPECIAL GROUP (2) and MULTIHOMED (3) entries.
+	Also the replication conflict merge algorithm for SPECIAL GROUP (2) entries
+	discards replica addresses where the address owner is the local server,
+	if the address was not stored locally before. The merge result is
+	propagated directly in case an address was discarded.
+	A Windows servers doesn't propagate name releases of SPECIAL GROUP (2)
+	and MULTIHOMED (3) entries directly, which means that Windows servers may
+	return different results to name queries for SPECIAL GROUP (2) and MULTIHOMED (3)
+	names. The option doesn't have much negative impact if Windows servers are
+	around, but be aware that they might return unexpected results.
+	</para>
+</description>
+
+<value type="default">no</value>
+</samba:parameter>

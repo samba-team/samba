@@ -1,0 +1,13 @@
+<samba:parameter name="wreplsrv:verify_interval"
+                 context="G"
+                 type="string"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>This is the interval in s till we verify active replica records
+	with the owning WINS server. Unfortunately not implemented yet.
+	Defaults to 24 days.
+	</para>
+</description>
+
+<value type="default">2073600</value>
+</samba:parameter>

@@ -1,0 +1,11 @@
+<samba:parameter name="wreplsrv:scavenging_interval"
+                 context="G"
+                 type="string"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>This is the interval in s between 2 scavenging runs which
+	clean up the WINS database and changes the states of expired name records.
+	Defaults to half of the value of wreplsrv:renew_interval.
+	</para>
+</description>
+</samba:parameter>

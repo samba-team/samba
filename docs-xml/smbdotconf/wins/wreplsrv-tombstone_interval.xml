@@ -1,0 +1,12 @@
+<samba:parameter name="wreplsrv:tombstone_interval"
+                 context="G"
+                 type="string"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>This is the interval in s till released records of the WINS
+	server become tombstone. Defaults to 6 days.
+	</para>
+</description>
+
+<value type="default">518400</value>
+</samba:parameter>

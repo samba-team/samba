@@ -1,0 +1,16 @@
+<samba:parameter name="nbtd:wins_prepend1Bto1Cqueries"
+                 context="G"
+                 type="string"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>Normally queries for 0x1C names (all logon servers for a domain)
+	will return the first address of the 0x1B names (domain master browser
+	and PDC) as first address in the result list. As many client only use
+	the first address in the list by default, all clients will use the same
+	server (the PDC). Windows servers have an option to disable this
+	behavior (since Windows 2000 Service Pack 2).
+	</para>
+</description>
+
+<value type="default">yes</value>
+</samba:parameter>

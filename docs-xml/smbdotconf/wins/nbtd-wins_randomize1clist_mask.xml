@@ -1,0 +1,16 @@
+<samba:parameter name="nbtd:wins_randomize1Clist_mask"
+                 context="G"
+                 type="string"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>If the "nbtd:wins_randomize1Clist" parameter is set to "yes",
+	then randomizing of the first returned address is based on the
+	specified netmask. If there are addresses which are in the same subnet
+	as the client address, the first returned address is randomly chosen
+	out them.  Otherwise the first returned address is randomly chosen out
+	of all addresses.
+	</para>
+</description>
+
+<value type="default">255.255.255.0</value>
+</samba:parameter>

@@ -1,0 +1,19 @@
+<samba:parameter name="nbtd:wins_wins_randomize1Clist"
+                 context="G"
+                 type="string"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>Normally queries for 0x1C names will return the addresses in the
+	same order as they're stored in the database, that means first all
+	addresses which have been directly registered at the local wins server
+	and then all addresses registered at other servers. Windows servers
+	have an option to change this behavior and randomize the returned
+	addresses. Set this parameter to "yes" and Samba will sort the
+	address list depending on the client address and the matching bits of
+	the addresses, the first address is randomized based on depending on
+	the "nbtd:wins_randomize1Clist_mask" parameter.
+	</para>
+</description>
+
+<value type="default">no</value>
+</samba:parameter>

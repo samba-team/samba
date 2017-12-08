@@ -1,0 +1,11 @@
+<samba:parameter name="winsdb:dbnosync"
+                 context="G"
+                 type="string"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>This parameter disables fsync() after changes of the WINS database.
+	</para>
+</description>
+
+<value type="default">no</value>
+</samba:parameter>

@@ -1,0 +1,12 @@
+<samba:parameter name="winsdb:local_owner"
+                 context="G"
+                 type="string"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>This specifies the address that is stored in the winsOwner attribute, of
+	locally registered winsRecord-objects.
+	The default is to use the ip-address of the first network interface.
+	</para>
+</description>
+
+</samba:parameter>

@@ -1,0 +1,12 @@
+<samba:parameter name="wreplsrv:tombstone_extra_timeout"
+                 context="G"
+                 type="string"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>This is the time in s the server needs to be up till we'll remove
+	tombstone records from our database. Defaults to 3 days.
+	</para>
+</description>
+
+<value type="default">259200</value>
+</samba:parameter>
