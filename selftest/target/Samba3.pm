@@ -1374,10 +1374,16 @@ sub check_or_start($$$$$) {
 	return $self->wait_for_start($env_vars, $nmbd, $winbindd, $smbd);
 }
 
-sub createuser($$$$)
+sub createuser($$$$$)
 {
-	my ($self, $username, $password, $conffile) = @_;
+	my ($self, $username, $password, $conffile, $env) = @_;
 	my $cmd = "UID_WRAPPER_ROOT=1 " . Samba::bindir_path($self, "smbpasswd")." -c $conffile -L -s -a $username > /dev/null";
+
+	keys %$env;
+	while(my($var, $val) = each %$env) {
+		$cmd = "$var=\"$val\" $cmd";
+	}
+
 	unless (open(PWD, "|$cmd")) {
 	    warn("Unable to set password for $username account\n$cmd");
 	    return undef;
@@ -1399,6 +1405,7 @@ sub provision($$$$$$$$$)
 
 	my $swiface = Samba::get_interface($server);
 	my %ret = ();
+	my %createuser_env = ();
 	my $server_ip = "127.0.0.$swiface";
 	my $server_ipv6 = sprintf("fd00:0000:0000:0000:0000:0000:5357:5f%02x", $swiface);
 
@@ -2242,21 +2249,21 @@ force_user:x:$gid_force_user:
 		close(EVENTLOG);
 	}
 
-	$ENV{NSS_WRAPPER_PASSWD} = $nss_wrapper_passwd;
-	$ENV{NSS_WRAPPER_GROUP} = $nss_wrapper_group;
-	$ENV{NSS_WRAPPER_HOSTS} = $nss_wrapper_hosts;
-	$ENV{NSS_WRAPPER_HOSTNAME} = "${hostname}.samba.example.com";
+	$createuser_env{NSS_WRAPPER_PASSWD} = $nss_wrapper_passwd;
+	$createuser_env{NSS_WRAPPER_GROUP} = $nss_wrapper_group;
+	$createuser_env{NSS_WRAPPER_HOSTS} = $nss_wrapper_hosts;
+	$createuser_env{NSS_WRAPPER_HOSTNAME} = "${hostname}.samba.example.com";
 	if ($ENV{SAMBA_DNS_FAKING}) {
-		$ENV{RESOLV_WRAPPER_CONF} = $resolv_conf;
+		$createuser_env{RESOLV_WRAPPER_CONF} = $resolv_conf;
 	} else {
-		$ENV{RESOLV_WRAPPER_HOSTS} = $dns_host_file;
+		$createuser_env{RESOLV_WRAPPER_HOSTS} = $dns_host_file;
 	}
 
-	createuser($self, $unix_name, $password, $conffile) || die("Unable to create user");
-	createuser($self, "force_user", $password, $conffile) || die("Unable to create force_user");
-	createuser($self, "smbget_user", $password, $conffile) || die("Unable to create smbget_user");
-	createuser($self, "user1", $password, $conffile) || die("Unable to create user1");
-	createuser($self, "user2", $password, $conffile) || die("Unable to create user2");
+	createuser($self, $unix_name, $password, $conffile, \%createuser_env) || die("Unable to create user");
+	createuser($self, "force_user", $password, $conffile, \%createuser_env) || die("Unable to create force_user");
+	createuser($self, "smbget_user", $password, $conffile, \%createuser_env) || die("Unable to create smbget_user");
+	createuser($self, "user1", $password, $conffile, \%createuser_env) || die("Unable to create user1");
+	createuser($self, "user2", $password, $conffile, \%createuser_env) || die("Unable to create user2");
 
 	open(DNS_UPDATE_LIST, ">$prefix/dns_update_list") or die("Unable to open $$prefix/dns_update_list");
 	print DNS_UPDATE_LIST "A $server. $server_ip\n";
@@ -2350,9 +2357,15 @@ sub wait_for_start($$$$$)
 	if ($winbindd eq "yes") {
 	    print "checking for winbindd\n";
 	    my $count = 0;
+	    my $cmd = "";
+	    $cmd .= "SELFTEST_WINBINDD_SOCKET_DIR='$envvars->{SELFTEST_WINBINDD_SOCKET_DIR}' ";
+	    $cmd .= "NSS_WRAPPER_PASSWD='$envvars->{NSS_WRAPPER_PASSWD}' ";
+	    $cmd .= "NSS_WRAPPER_GROUP='$envvars->{NSS_WRAPPER_GROUP}' ";
+	    $cmd .= Samba::bindir_path($self, "wbinfo") . " --ping-dc";
+
 	    do {
-		$ret = system("SELFTEST_WINBINDD_SOCKET_DIR=" . $envvars->{SELFTEST_WINBINDD_SOCKET_DIR} . " " . Samba::bindir_path($self, "wbinfo") . " --ping-dc");
 		if ($ret != 0) {
+		    $ret = system($cmd);
 		    sleep(1);
 		}
 		$count++;
