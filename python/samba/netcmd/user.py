@@ -494,7 +494,7 @@ class cmd_user_list(Command):
 
 
 class cmd_user_enable(Command):
-    """Enable an user.
+    """Enable a user.
 
 This command enables a user account for logon to an Active Directory domain.  The username specified on the command is the sAMAccountName.  The username may also be specified using the --filter option.
 
@@ -563,7 +563,7 @@ Example3 shows how to enable a user in the domain against a local LDAP server.  
 
 
 class cmd_user_disable(Command):
-    """Disable an user."""
+    """Disable a user."""
 
     synopsis = "%prog (<username>|--filter <filter>) [options]"
 
@@ -1572,7 +1572,7 @@ If the script processed the object successfully it has to respond with a
 single line starting with 'DONE-EXIT: ' followed by an optional message.
 
 Note that the script might be called without any password change, e.g. if
-the account was disabled (an userAccountControl change) or the
+the account was disabled (a userAccountControl change) or the
 sAMAccountName was changed. The objectGUID,isDeleted,isRecycled attributes
 are always returned as unique identifier of the account. It might be useful
 to also ask for non-password attributes like: objectSid, sAMAccountName,
