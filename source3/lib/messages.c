@@ -399,6 +399,11 @@ static void messaging_recv_cb(struct tevent_context *ev,
 		  (unsigned)rec.msg_type, rec.buf.length, num_fds,
 		  server_id_str_buf(rec.src, &idbuf));
 
+	if (server_id_same_process(&rec.src, &msg_ctx->id)) {
+		DBG_DEBUG("Ignoring self-send\n");
+		goto close_fail;
+	}
+
 	messaging_dispatch_rec(msg_ctx, ev, &rec);
 	return;
 
