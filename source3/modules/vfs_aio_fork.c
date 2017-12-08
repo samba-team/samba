@@ -47,7 +47,7 @@ struct aio_fork_config {
 
 struct mmap_area {
 	size_t size;
-	volatile void *ptr;
+	void *ptr;
 };
 
 static int mmap_area_destructor(struct mmap_area *area)
