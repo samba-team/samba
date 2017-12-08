@@ -534,6 +534,8 @@ static int get_idle_child(struct vfs_handle_struct *handle,
 
 struct aio_fork_pread_state {
 	struct aio_child *child;
+	size_t n;
+	void *data;
 	ssize_t ret;
 	struct vfs_aio_state vfs_aio_state;
 };
@@ -562,6 +564,8 @@ static struct tevent_req *aio_fork_pread_send(struct vfs_handle_struct *handle,
 	if (req == NULL) {
 		return NULL;
 	}
+	state->n = n;
+	state->data = data;
 
 	if (n > 128*1024) {
 		/* TODO: support variable buffers */
@@ -629,12 +633,20 @@ static void aio_fork_pread_done(struct tevent_req *subreq)
 		return;
 	}
 
-	state->child->busy = false;
-
 	retbuf = (struct rw_ret *)buf;
 	state->ret = retbuf->size;
 	state->vfs_aio_state.error = retbuf->ret_errno;
 	state->vfs_aio_state.duration = retbuf->duration;
+
+	if ((size_t)state->ret > state->n) {
+		tevent_req_error(req, EIO);
+		state->child->busy = false;
+		return;
+	}
+	memcpy(state->data, state->child->map->ptr, state->ret);
+
+	state->child->busy = false;
+
 	tevent_req_done(req);
 }
 
