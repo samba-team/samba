@@ -703,6 +703,8 @@ static struct tevent_req *aio_fork_pwrite_send(
 		return tevent_req_post(req, ev);
 	}
 
+	memcpy(state->child->map->ptr, data, n);
+
 	ZERO_STRUCT(cmd);
 	cmd.n = n;
 	cmd.offset = offset;
