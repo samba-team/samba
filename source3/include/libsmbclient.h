@@ -470,6 +470,10 @@ smbc_getDebug(SMBCCTX *c);
 void
 smbc_setDebug(SMBCCTX *c, int debug);
 
+/** set configuration file, this is applied at global level */
+void
+smbc_setConfiguration(SMBCCTX *c, const char* file);
+
 /** Get the netbios name used for making connections */
 char *
 smbc_getNetbiosName(SMBCCTX *c);
