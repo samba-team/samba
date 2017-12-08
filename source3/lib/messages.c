@@ -857,6 +857,11 @@ static int send_all_fn(pid_t pid, void *private_data)
 	struct send_all_state *state = private_data;
 	NTSTATUS status;
 
+	if (pid == getpid()) {
+		DBG_DEBUG("Skip ourselves in messaging_send_all\n");
+		return 0;
+	}
+
 	status = messaging_send_buf(state->msg_ctx, pid_to_procid(pid),
 				    state->msg_type, state->buf, state->len);
 	if (!NT_STATUS_IS_OK(status)) {
