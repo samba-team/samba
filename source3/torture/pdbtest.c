@@ -501,7 +501,7 @@ static bool test_trusted_domains(TALLOC_CTX *ctx,
 
 	rv = pdb->get_trusted_domain(pdb, ctx, TRUST_DOM, &new_td);
 	if (!NT_STATUS_IS_OK(rv)) {
-		fprintf(stderr, "Error in set_trusted_domain %s\n",
+		fprintf(stderr, "Error in get_trusted_domain %s\n",
 				get_friendly_nt_error_msg(rv));
 		*error = true;
 	}
