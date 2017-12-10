@@ -874,6 +874,7 @@ static void new_connection(int listen_sock, bool privileged)
 		}
 		return;
 	}
+	smb_set_close_on_exec(sock);
 
 	DEBUG(6,("accepted socket %d\n", sock));
 
