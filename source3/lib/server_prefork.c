@@ -620,6 +620,7 @@ static void prefork_listen_accept_handler(struct tevent_context *ev,
 			  state->error, strerror(state->error)));
 		goto done;
 	}
+	smb_set_close_on_exec(sd);
 
 	state->accept_fd = sd;
 
