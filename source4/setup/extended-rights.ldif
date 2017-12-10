@@ -139,12 +139,11 @@ objectClass: top
 objectClass: controlAccessRight
 displayName: Public-Information
 rightsGuid: e48d0154-bcf8-11d1-8702-00c04fb96050
-appliesTo:
-4828CC14-1437-45bc-9B07-AD6F015E5F28
-bf967a86-0de6-11d0-a285-00aa003049e2
-bf967aba-0de6-11d0-a285-00aa003049e2
-ce206244-5827-4a86-ba1c-1c0c386c1b64 (for AD DS only)
-7b8b558a-93a5-4af7-adca-c017e67f1057 (only in AD DS schema version 87 and greater)
+appliesTo: 4828CC14-1437-45bc-9B07-AD6F015E5F28
+appliesTo: bf967a86-0de6-11d0-a285-00aa003049e2
+appliesTo: bf967aba-0de6-11d0-a285-00aa003049e2
+appliesTo: ce206244-5827-4a86-ba1c-1c0c386c1b64
+appliesTo: 7b8b558a-93a5-4af7-adca-c017e67f1057 (only in AD DS schema version 87 and greater)
 
 dn: CN=msmq-Receive-Dead-Letter,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
@@ -193,9 +192,8 @@ objectClass: top
 objectClass: controlAccessRight
 displayName: msmq-Send
 rightsGuid: 06bd3202-df3e-11d1-9c86-006008764d0e
-appliesTo:
-9a0dc343-c100-11d1-bbc5-0080c76670c0
-46b27aac-aafa-4ffb-b773-e5bf621ee87b (only in schema version 30 and greater)
+appliesTo: 9a0dc343-c100-11d1-bbc5-0080c76670c0
+appliesTo: 46b27aac-aafa-4ffb-b773-e5bf621ee87b
 
 dn: CN=msmq-Receive-journal,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
@@ -223,9 +221,8 @@ objectClass: top
 objectClass: controlAccessRight
 displayName: RAS-Information
 rightsGuid: 037088f8-0ae1-11d2-b422-00a0c968f939
-appliesTo:
-4828CC14-1437-45bc-9B07-AD6F015E5F28
-bf967aba-0de6-11d0-a285-00aa003049e2
+appliesTo: 4828CC14-1437-45bc-9B07-AD6F015E5F28
+appliesTo: bf967aba-0de6-11d0-a285-00aa003049e2
 
 dn: CN=DS-Install-Replica,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
@@ -281,29 +278,26 @@ objectClass: top
 objectClass: controlAccessRight
 displayName: Validated-DNS-Host-Name
 rightsGuid: 72e39547-7b18-11d1-adef-00c04fd8d5cd
-appliesTo:
-bf967a86-0de6-11d0-a285-00aa003049e2
-ce206244-5827-4a86-ba1c-1c0c386c1b64 (only in schema version 45 and greater)
-7b8b558a-93a5-4af7-adca-c017e67f1057 (only in schema version 55 and greater)
+appliesTo: bf967a86-0de6-11d0-a285-00aa003049e2
+appliesTo: ce206244-5827-4a86-ba1c-1c0c386c1b64
+appliesTo: 7b8b558a-93a5-4af7-adca-c017e67f1057 (only in schema version 55 and greater)
 
 dn: CN=Validated-SPN,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 displayName: Validated-SPN
 rightsGuid: f3a64788-5306-11d1-a9c5-0000f80367c1
-appliesTo:
-bf967a86-0de6-11d0-a285-00aa003049e2
-ce206244-5827-4a86-ba1c-1c0c386c1b64 (only in schema version 45 and greater)
-7b8b558a-93a5-4af7-adca-c017e67f1057 (only in schema version 87 and greater)
+appliesTo: bf967a86-0de6-11d0-a285-00aa003049e2
+appliesTo: ce206244-5827-4a86-ba1c-1c0c386c1b64 (only in schema version 45 and greater)
+appliesTo: 7b8b558a-93a5-4af7-adca-c017e67f1057 (only in schema version 87 and greater)
 
 dn: CN=Generate-RSoP-Planning,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 displayName: Generate-RSoP-Planning
 rightsGuid: b7b1b3dd-ab09-4242-9e30-9980e5d322f7
-appliesTo:
-19195a5b-6da0-11d0-afd3-00c04fd930c9
-bf967aa5-0de6-11d0-a285-00aa003049e2
+appliesTo: 19195a5b-6da0-11d0-afd3-00c04fd930c9
+appliesTo: bf967aa5-0de6-11d0-a285-00aa003049e2
 
 dn: CN=Refresh-Group-Cache,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
@@ -331,9 +325,8 @@ objectClass: top
 objectClass: controlAccessRight
 displayName: Generate-RSoP-Logging
 rightsGuid: b7b1b3de-ab09-4242-9e30-9980e5d322f7
-appliesTo:
-19195a5b-6da0-11d0-afd3-00c04fd930c9
-bf967aa5-0de6-11d0-a285-00aa003049e2
+appliesTo: 19195a5b-6da0-11d0-afd3-00c04fd930c9
+appliesTo: bf967aa5-0de6-11d0-a285-00aa003049e2
 
 dn: CN=Domain-Other-Parameters,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
@@ -347,10 +340,9 @@ objectClass: top
 objectClass: controlAccessRight
 displayName: DNS-Host-Name-Attributes
 rightsGuid: 72e39547-7b18-11d1-adef-00c04fd8d5cd
-appliesTo:
-bf967a86-0de6-11d0-a285-00aa003049e2
-ce206244-5827-4a86-ba1c-1c0c386c1b64
-7b8b558a-93a5-4af7-adca-c017e67f1057 (only in schema version 55 and greater)
+appliesTo: bf967a86-0de6-11d0-a285-00aa003049e2
+appliesTo: ce206244-5827-4a86-ba1c-1c0c386c1b64
+appliesTo: 7b8b558a-93a5-4af7-adca-c017e67f1057 (only in schema version 55 and greater)
 
 dn: CN=Create-Inbound-Forest-Trust,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
@@ -364,10 +356,9 @@ objectClass: top
 objectClass: controlAccessRight
 displayName: DS-Replication-Get-Changes-All
 rightsGuid: 1131f6ad-9c07-11d1-f79f-00c04fc2dcd2
-appliesTo:
-bf967a8f-0de6-11d0-a285-00aa003049e2
-bf967a87-0de6-11d0-a285-00aa003049e2
-19195a5b-6da0-11d0-afd3-00c04fd930c9
+appliesTo: bf967a8f-0de6-11d0-a285-00aa003049e2
+appliesTo: bf967a87-0de6-11d0-a285-00aa003049e2
+appliesTo: 19195a5b-6da0-11d0-afd3-00c04fd930c9
 
 dn: CN=Migrate-SID-History,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
@@ -381,22 +372,20 @@ objectClass: top
 objectClass: controlAccessRight
 displayName: Reanimate-Tombstones
 rightsGuid: 45EC5156-DB7E-47bb-B53F-DBEB2D03C40F
-appliesTo:
-bf967a8f-0de6-11d0-a285-00aa003049e2
-bf967a87-0de6-11d0-a285-00aa003049e2
-19195a5b-6da0-11d0-afd3-00c04fd930c9
+appliesTo: bf967a8f-0de6-11d0-a285-00aa003049e2
+appliesTo: bf967a87-0de6-11d0-a285-00aa003049e2
+appliesTo: 19195a5b-6da0-11d0-afd3-00c04fd930c9
 
 dn: CN=Allowed-To-Authenticate,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 displayName: Allowed-To-Authenticate
 rightsGuid: 68B1D179-0D15-4d4f-AB71-46152E79A7BC
-appliesTo:
-4828cc14-1437-45bc-9b07-ad6f015e5f28
-bf967aba-0de6-11d0-a285-00aa003049e2
-bf967a86-0de6-11d0-a285-00aa003049e2
-ce206244-5827-4a86-ba1c-1c0c386c1b64 (only in schema version 45 and greater)
-7b8b558a-93a5-4af7-adca-c017e67f1057 (only in schema version 87 and greater)
+appliesTo: 4828cc14-1437-45bc-9b07-ad6f015e5f28
+appliesTo: bf967aba-0de6-11d0-a285-00aa003049e2
+appliesTo: bf967a86-0de6-11d0-a285-00aa003049e2
+appliesTo: ce206244-5827-4a86-ba1c-1c0c386c1b64
+appliesTo: 7b8b558a-93a5-4af7-adca-c017e67f1057 (only in schema version 87 and greater)
 
 dn: CN=DS-Execute-Intentions-Script,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
@@ -410,10 +399,9 @@ objectClass: top
 objectClass: controlAccessRight
 displayName: DS-Replication-Monitor-Topology
 rightsGuid: f98340fb-7c5b-4cdb-a00b-2ebdfa115a96
-appliesTo:
-bf967a8f-0de6-11d0-a285-00aa003049e2
-bf967a87-0de6-11d0-a285-00aa003049e2
-19195a5b-6da0-11d0-afd3-00c04fd930c9
+appliesTo: bf967a8f-0de6-11d0-a285-00aa003049e2
+appliesTo: bf967a87-0de6-11d0-a285-00aa003049e2
+appliesTo: 19195a5b-6da0-11d0-afd3-00c04fd930c9
 
 dn: CN=Update-Password-Not-Required-Bit,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
@@ -448,28 +436,25 @@ objectClass: top
 objectClass: controlAccessRight
 displayName: Private-Information
 rightsGuid: 91e647de-d96f-4b70-9557-d63ff4f3ccd8
-appliesTo:
-bf967aba-0de6-11d0-a285-00aa003049e2
-4828cc14-1437-45bc-9b07-ad6f015e5f28
+appliesTo: bf967aba-0de6-11d0-a285-00aa003049e2
+appliesTo: 4828cc14-1437-45bc-9b07-ad6f015e5f28
 
 dn: CN=MS-TS-GatewayAccess,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 displayName: MS-TS-GatewayAccess
 rightsGuid: ffa6f046-ca4b-4feb-b40d-04dfee722543
-appliesTo:
-bf967a86-0de6-11d0-a285-00aa003049e2
-ce206244-5827-4a86-ba1c-1c0c386c1b64
-7b8b558a-93a5-4af7-adca-c017e67f1057 (only in schema version 87 and greater)
+appliesTo: bf967a86-0de6-11d0-a285-00aa003049e2
+appliesTo: ce206244-5827-4a86-ba1c-1c0c386c1b64
+appliesTo: 7b8b558a-93a5-4af7-adca-c017e67f1057 (only in schema version 87 and greater)
 
 dn: CN=Terminal-Server-License-Server,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 displayName: Terminal-Server-License-Server
 rightsGuid: 5805bc62-bdc9-4428-a5e2-856a0f4c185e
-appliesTo:
-bf967aba-0de6-11d0-a285-00aa003049e2
-4828cc14-1437-45bc-9b07-ad6f015e5f28
+appliesTo: bf967aba-0de6-11d0-a285-00aa003049e2
+appliesTo: 4828cc14-1437-45bc-9b07-ad6f015e5f28
 
 dn: CN=Domain-Administer-Server,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
@@ -483,46 +468,42 @@ objectClass: top
 objectClass: controlAccessRight
 displayName: User-Change-Password
 rightsGuid: ab721a53-1e2f-11d0-9819-00aa0040529b
-appliesTo:
-bf967a86-0de6-11d0-a285-00aa003049e2
-bf967aba-0de6-11d0-a285-00aa003049e2
-4828CC14-1437-45bc-9B07-AD6F015E5F28 (only in schema version 30 and greater)
-ce206244-5827-4a86-ba1c-1c0c386c1b64 (only in schema version 45 and greater, for AD DS only)
+appliesTo: bf967a86-0de6-11d0-a285-00aa003049e2
+appliesTo: bf967aba-0de6-11d0-a285-00aa003049e2
+appliesTo: 4828CC14-1437-45bc-9B07-AD6F015E5F28
+appliesTo: ce206244-5827-4a86-ba1c-1c0c386c1b64
 
 dn: CN=User-Force-Change-Password,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 displayName: User-Force-Change-Password
 rightsGuid: 00299570-246d-11d0-a768-00aa006e0529
-appliesTo:
-bf967a86-0de6-11d0-a285-00aa003049e2
-bf967aba-0de6-11d0-a285-00aa003049e2
-4828CC14-1437-45bc-9B07-AD6F015E5F28 (only in schema version 30 and greater)
-ce206244-5827-4a86-ba1c-1c0c386c1b64 (only in schema version 45 and greater, for AD DS only)
+appliesTo: bf967a86-0de6-11d0-a285-00aa003049e2
+appliesTo: bf967aba-0de6-11d0-a285-00aa003049e2
+appliesTo: 4828CC14-1437-45bc-9B07-AD6F015E5F28
+appliesTo: ce206244-5827-4a86-ba1c-1c0c386c1b64
 
 dn: CN=Send-As,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 displayName: Send-As
 rightsGuid: ab721a54-1e2f-11d0-9819-00aa0040529b
-appliesTo:
-bf967a86-0de6-11d0-a285-00aa003049e2
-bf967aba-0de6-11d0-a285-00aa003049e2
-4828CC14-1437-45bc-9B07-AD6F015E5F28 (only in schema version 30 and greater)
-ce206244-5827-4a86-ba1c-1c0c386c1b64 (only in schema version 45 and greater)
-7b8b558a-93a5-4af7-adca-c017e67f1057 (only in schema version 87 and greater)
+appliesTo: bf967a86-0de6-11d0-a285-00aa003049e2
+appliesTo: bf967aba-0de6-11d0-a285-00aa003049e2
+appliesTo: 4828CC14-1437-45bc-9B07-AD6F015E5F28
+appliesTo: ce206244-5827-4a86-ba1c-1c0c386c1b64
+appliesTo: 7b8b558a-93a5-4af7-adca-c017e67f1057 (only in schema version 87 and greater)
 
 dn: CN=Receive-As,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 displayName: Receive-As
 rightsGuid: ab721a56-1e2f-11d0-9819-00aa0040529b
-appliesTo:
-bf967a86-0de6-11d0-a285-00aa003049e2
-bf967aba-0de6-11d0-a285-00aa003049e2
-4828CC14-1437-45bc-9B07-AD6F015E5F28 (only in schema version 30 and greater)
-ce206244-5827-4a86-ba1c-1c0c386c1b64 (only in schema version 45 and greater)
-7b8b558a-93a5-4af7-adca-c017e67f1057 (only in schema version 87 and greater)
+appliesTo: bf967a86-0de6-11d0-a285-00aa003049e2
+appliesTo: bf967aba-0de6-11d0-a285-00aa003049e2
+appliesTo: 4828CC14-1437-45bc-9B07-AD6F015E5F28
+appliesTo: ce206244-5827-4a86-ba1c-1c0c386c1b64
+appliesTo: 7b8b558a-93a5-4af7-adca-c017e67f1057 (only in schema version 87 and greater)
 
 dn: CN=Send-To,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
@@ -536,48 +517,43 @@ objectClass: top
 objectClass: controlAccessRight
 displayName: Domain-Password
 rightsGuid: c7407360-20bf-11d0-a768-00aa006e0529
-appliesTo:
-19195a5b-6da0-11d0-afd3-00c04fd930c9
-19195a5a-6da0-11d0-afd3-00c04fd930c9
+appliesTo: 19195a5b-6da0-11d0-afd3-00c04fd930c9
+appliesTo: 19195a5a-6da0-11d0-afd3-00c04fd930c9
 
 dn: CN=General-Information,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 displayName: General-Information
 rightsGuid: 59ba2f42-79a2-11d0-9020-00c04fc2d3cf
-appliesTo:
-4828CC14-1437-45bc-9B07-AD6F015E5F28
-bf967aba-0de6-11d0-a285-00aa003049e2
+appliesTo: 4828CC14-1437-45bc-9B07-AD6F015E5F28
+appliesTo: bf967aba-0de6-11d0-a285-00aa003049e2
 
 dn: CN=User-Account-Restrictions,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 displayName: User-Account-Restrictions
 rightsGuid: 4c164200-20c0-11d0-a768-00aa006e0529
-appliesTo:
-4828CC14-1437-45bc-9B07-AD6F015E5F28
-bf967a86-0de6-11d0-a285-00aa003049e2
-bf967aba-0de6-11d0-a285-00aa003049e2
-ce206244-5827-4a86-ba1c-1c0c386c1b64 (for AD DS only)
-7b8b558a-93a5-4af7-adca-c017e67f1057 (only in schema version 54 and greater, for AD DS only)
+appliesTo: 4828CC14-1437-45bc-9B07-AD6F015E5F28
+appliesTo: bf967a86-0de6-11d0-a285-00aa003049e2
+appliesTo: bf967aba-0de6-11d0-a285-00aa003049e2
+appliesTo: ce206244-5827-4a86-ba1c-1c0c386c1b64
+appliesTo: 7b8b558a-93a5-4af7-adca-c017e67f1057 (only in schema version 54 and greater, for AD DS only)
 
 dn: CN=User-Logon,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 displayName: User-Logon
 rightsGuid: 5f202010-79a5-11d0-9020-00c04fc2d4cf
-appliesTo:
-4828CC14-1437-45bc-9B07-AD6F015E5F28
-bf967aba-0de6-11d0-a285-00aa003049e2
+appliesTo: 4828CC14-1437-45bc-9B07-AD6F015E5F28
+appliesTo: bf967aba-0de6-11d0-a285-00aa003049e2
 
 dn: CN=Membership,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 displayName: Membership
 rightsGuid: bc0ac240-79a9-11d0-9020-00c04fc2d4cf
-appliesTo:
-4828CC14-1437-45bc-9B07-AD6F015E5F28
-bf967aba-0de6-11d0-a285-00aa003049e2
+appliesTo: 4828CC14-1437-45bc-9B07-AD6F015E5F28
+appliesTo: bf967aba-0de6-11d0-a285-00aa003049e2
 
 dn: CN=Open-Address-Book,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
@@ -591,64 +567,58 @@ objectClass: top
 objectClass: controlAccessRight
 displayName: Personal-Information
 rightsGuid: 77B5B886-944A-11d1-AEBD-0000F80367C1
-appliesTo:
-4828CC14-1437-45bc-9B07-AD6F015E5F28
-bf967a86-0de6-11d0-a285-00aa003049e2
-5cb41ed0-0e4c-11d0-a286-00aa003049e2
-bf967aba-0de6-11d0-a285-00aa003049e2
-ce206244-5827-4a86-ba1c-1c0c386c1b64 (for AD DS only)
-641e87a4-8326-4771-ba2d-c706df35e35a (only in AD DS schema version 52 and greater)
-7b8b558a-93a5-4af7-adca-c017e67f1057 (only in AD DS schema version 87 and greater)
+appliesTo: 4828CC14-1437-45bc-9B07-AD6F015E5F28
+appliesTo: bf967a86-0de6-11d0-a285-00aa003049e2
+appliesTo: 5cb41ed0-0e4c-11d0-a286-00aa003049e2
+appliesTo: bf967aba-0de6-11d0-a285-00aa003049e2
+appliesTo: ce206244-5827-4a86-ba1c-1c0c386c1b64
+appliesTo: 641e87a4-8326-4771-ba2d-c706df35e35a (only in AD DS schema version 52 and greater)
+appliesTo: 7b8b558a-93a5-4af7-adca-c017e67f1057 (only in AD DS schema version 87 and greater)
 
 dn: CN=Email-Information,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 displayName: Email-Information
 rightsGuid: E45795B2-9455-11d1-AEBD-0000F80367C1
-appliesTo:
-4828CC14-1437-45bc-9B07-AD6F015E5F28
-bf967a9c-0de6-11d0-a285-00aa003049e2
-bf967aba-0de6-11d0-a285-00aa003049e2
+appliesTo: 4828CC14-1437-45bc-9B07-AD6F015E5F28
+appliesTo: bf967a9c-0de6-11d0-a285-00aa003049e2
+appliesTo: bf967aba-0de6-11d0-a285-00aa003049e2
 
 dn: CN=Web-Information,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 displayName: Web-Information
 rightsGuid: E45795B3-9455-11d1-AEBD-0000F80367C1
-appliesTo:
-4828CC14-1437-45bc-9B07-AD6F015E5F28
-5cb41ed0-0e4c-11d0-a286-00aa003049e2
-bf967aba-0de6-11d0-a285-00aa003049e2
+appliesTo: 4828CC14-1437-45bc-9B07-AD6F015E5F28
+appliesTo: 5cb41ed0-0e4c-11d0-a286-00aa003049e2
+appliesTo: bf967aba-0de6-11d0-a285-00aa003049e2
 
 dn: CN=DS-Replication-Get-Changes,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 displayName: DS-Replication-Get-Changes
 rightsGuid: 1131f6aa-9c07-11d1-f79f-00c04fc2dcd2
-appliesTo:
-bf967a8f-0de6-11d0-a285-00aa003049e2
-bf967a87-0de6-11d0-a285-00aa003049e2
-19195a5b-6da0-11d0-afd3-00c04fd930c9
+appliesTo: bf967a8f-0de6-11d0-a285-00aa003049e2
+appliesTo: bf967a87-0de6-11d0-a285-00aa003049e2
+appliesTo: 19195a5b-6da0-11d0-afd3-00c04fd930c9
 
 dn: CN=DS-Replication-Synchronize,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 displayName: DS-Replication-Synchronize
 rightsGuid: 1131f6ab-9c07-11d1-f79f-00c04fc2dcd2
-appliesTo:
-bf967a8f-0de6-11d0-a285-00aa003049e2
-bf967a87-0de6-11d0-a285-00aa003049e2
-19195a5b-6da0-11d0-afd3-00c04fd930c9
+appliesTo: bf967a8f-0de6-11d0-a285-00aa003049e2
+appliesTo: bf967a87-0de6-11d0-a285-00aa003049e2
+appliesTo: 19195a5b-6da0-11d0-afd3-00c04fd930c9
 
 dn: CN=DS-Replication-Manage-Topology,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
 objectClass: controlAccessRight
 displayName: DS-Replication-Manage-Topology
 rightsGuid: 1131f6ac-9c07-11d1-f79f-00c04fc2dcd2
-appliesTo:
-bf967a8f-0de6-11d0-a285-00aa003049e2
-bf967a87-0de6-11d0-a285-00aa003049e2
-19195a5b-6da0-11d0-afd3-00c04fd930c9
+appliesTo: bf967a8f-0de6-11d0-a285-00aa003049e2
+appliesTo: bf967a87-0de6-11d0-a285-00aa003049e2
+appliesTo: 19195a5b-6da0-11d0-afd3-00c04fd930c9
 
 dn: CN=Change-Schema-Master,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
@@ -662,10 +632,9 @@ objectClass: top
 objectClass: controlAccessRight
 displayName: DS-Replication-Get-Changes-In-Filtered-Set
 rightsGuid: 89e95b76-444d-4c62-991a-0facbeda640c
-appliesTo:
-19195a5b-6da0-11d0-afd3-00c04fd930c9
-bf967a87-0de6-11d0-a285-00aa003049e2
-bf967a8f-0de6-11d0-a285-00aa003049e2
+appliesTo: 19195a5b-6da0-11d0-afd3-00c04fd930c9
+appliesTo: bf967a87-0de6-11d0-a285-00aa003049e2
+appliesTo: bf967a8f-0de6-11d0-a285-00aa003049e2
 
 dn: CN=Run-Protect-Admin-Groups-Task,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
@@ -686,10 +655,9 @@ objectClass: top
 objectClass: controlAccessRight
 displayName: Read-Only-Replication-Secret-Synchronization
 rightsGuid: 1131f6ae-9c07-11d1-f79f-00c04fc2dcd2
-appliesTo
-bf967a8f-0de6-11d0-a285-00aa003049e2
-bf967a87-0de6-11d0-a285-00aa003049e2
-19195a5b-6da0-11d0-afd3-00c04fd930c9
+appliesTo: bf967a8f-0de6-11d0-a285-00aa003049e2
+appliesTo: bf967a87-0de6-11d0-a285-00aa003049e2
+appliesTo: 19195a5b-6da0-11d0-afd3-00c04fd930c9
 
 dn: CN=Validated-MS-DS-Additional-DNS-Host-Name,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
