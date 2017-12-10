@@ -157,6 +157,7 @@ static void nb_packet_server_listener(struct tevent_context *ev,
 	if (sock == -1) {
 		return;
 	}
+	smb_set_close_on_exec(sock);
 	DEBUG(6,("accepted socket %d\n", sock));
 
 	client = talloc_zero(server, struct nb_packet_client);
