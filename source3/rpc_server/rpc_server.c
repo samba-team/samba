@@ -216,6 +216,7 @@ static void named_pipe_listener(struct tevent_context *ev,
 		}
 		return;
 	}
+	smb_set_close_on_exec(sd);
 
 	DEBUG(6, ("Accepted socket %d\n", sd));
 
@@ -722,6 +723,7 @@ static void dcerpc_ncacn_tcpip_listener(struct tevent_context *ev,
 		}
 		return;
 	}
+	smb_set_close_on_exec(s);
 
 	rc = tsocket_address_bsd_from_sockaddr(state,
 					       (struct sockaddr *)(void *) &addr,
@@ -892,6 +894,7 @@ static void dcerpc_ncalrpc_listener(struct tevent_context *ev,
 		}
 		return;
 	}
+	smb_set_close_on_exec(sd);
 
 	rc = tsocket_address_bsd_from_sockaddr(state,
 					       addr, len,
