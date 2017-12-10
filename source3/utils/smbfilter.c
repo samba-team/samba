@@ -308,6 +308,7 @@ static void start_filter(char *desthost)
 		if ((num > 0) && (revents & (POLLIN|POLLHUP|POLLERR))) {
 			c = accept(s, (struct sockaddr *)&ss, &in_addrlen);
 			if (c != -1) {
+				smb_set_close_on_exec(c);
 				if (fork() == 0) {
 					close(s);
 					filter_child(c, &dest_ss);
