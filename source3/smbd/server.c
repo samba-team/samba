@@ -975,6 +975,7 @@ static void smbd_accept_connection(struct tevent_context *ev,
 			 strerror(errno)));
 		return;
 	}
+	smb_set_close_on_exec(fd);
 
 	if (s->parent->interactive) {
 		reinit_after_fork(msg_ctx, ev, true, NULL);
