@@ -949,6 +949,7 @@ static void ctdb_accept_client(struct tevent_context *ev,
 	if (fd == -1) {
 		return;
 	}
+	smb_set_close_on_exec(fd);
 
 	ret = set_blocking(fd, false);
 	if (ret != 0) {
