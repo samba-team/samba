@@ -326,6 +326,7 @@ objectClass: controlAccessRight
 displayName: Self-Membership
 rightsGuid: bf9679c0-0de6-11d0-a285-00aa003049e2
 appliesTo: bf967a9c-0de6-11d0-a285-00aa003049e2
+validAccesses: 8
 
 dn: CN=Validated-DNS-Host-Name,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
@@ -335,6 +336,7 @@ rightsGuid: 72e39547-7b18-11d1-adef-00c04fd8d5cd
 appliesTo: bf967a86-0de6-11d0-a285-00aa003049e2
 appliesTo: ce206244-5827-4a86-ba1c-1c0c386c1b64
 ${INC2012}appliesTo: 7b8b558a-93a5-4af7-adca-c017e67f1057
+validAccesses: 8
 
 dn: CN=Validated-SPN,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
@@ -343,6 +345,7 @@ displayName: Validated-SPN
 rightsGuid: f3a64788-5306-11d1-a9c5-0000f80367c1
 appliesTo: bf967a86-0de6-11d0-a285-00aa003049e2
 appliesTo: ce206244-5827-4a86-ba1c-1c0c386c1b64
+validAccesses: 8
 
 dn: CN=Generate-RSoP-Planning,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
