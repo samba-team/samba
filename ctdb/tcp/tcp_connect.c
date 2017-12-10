@@ -249,6 +249,7 @@ static void ctdb_listen_event(struct tevent_context *ev, struct tevent_fd *fde,
 	len = sizeof(addr);
 	fd = accept(ctcp->listen_fd, (struct sockaddr *)&addr, &len);
 	if (fd == -1) return;
+	smb_set_close_on_exec(fd);
 
 	nodeid = ctdb_ip_to_nodeid(ctdb, &addr);
 
