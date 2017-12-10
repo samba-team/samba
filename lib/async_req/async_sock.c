@@ -738,6 +738,7 @@ static void accept_handler(struct tevent_context *ev, struct tevent_fd *fde,
 		tevent_req_error(req, errno);
 		return;
 	}
+	smb_set_close_on_exec(ret);
 	state->sock = ret;
 	tevent_req_done(req);
 }
