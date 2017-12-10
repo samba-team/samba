@@ -182,6 +182,7 @@ appliesTo: 4828CC14-1437-45bc-9B07-AD6F015E5F28
 appliesTo: bf967a86-0de6-11d0-a285-00aa003049e2
 appliesTo: bf967aba-0de6-11d0-a285-00aa003049e2
 appliesTo: ce206244-5827-4a86-ba1c-1c0c386c1b64
+validAccesses: 48
 
 dn: CN=msmq-Receive-Dead-Letter,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
@@ -271,6 +272,7 @@ displayName: RAS-Information
 rightsGuid: 037088f8-0ae1-11d2-b422-00a0c968f939
 appliesTo: 4828CC14-1437-45bc-9B07-AD6F015E5F28
 appliesTo: bf967aba-0de6-11d0-a285-00aa003049e2
+validAccesses: 48
 
 dn: CN=DS-Install-Replica,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
@@ -395,6 +397,7 @@ objectClass: controlAccessRight
 displayName: Domain-Other-Parameters
 rightsGuid: b8119fd0-04f6-4762-ab7a-4986c76b3f9a
 appliesTo: 19195a5b-6da0-11d0-afd3-00c04fd930c9
+validAccesses: 48
 
 dn: CN=DNS-Host-Name-Attributes,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
@@ -404,6 +407,7 @@ rightsGuid: 72e39547-7b18-11d1-adef-00c04fd8d5cd
 appliesTo: bf967a86-0de6-11d0-a285-00aa003049e2
 appliesTo: ce206244-5827-4a86-ba1c-1c0c386c1b64
 ${INC2012}appliesTo: 7b8b558a-93a5-4af7-adca-c017e67f1057
+validAccesses: 48
 
 dn: CN=Create-Inbound-Forest-Trust,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
@@ -509,6 +513,7 @@ displayName: Private-Information
 rightsGuid: 91e647de-d96f-4b70-9557-d63ff4f3ccd8
 appliesTo: bf967aba-0de6-11d0-a285-00aa003049e2
 appliesTo: 4828cc14-1437-45bc-9b07-ad6f015e5f28
+validAccesses: 48
 
 dn: CN=MS-TS-GatewayAccess,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
@@ -517,6 +522,7 @@ displayName: MS-TS-GatewayAccess
 rightsGuid: ffa6f046-ca4b-4feb-b40d-04dfee722543
 appliesTo: bf967a86-0de6-11d0-a285-00aa003049e2
 appliesTo: ce206244-5827-4a86-ba1c-1c0c386c1b64
+validAccesses: 48
 
 dn: CN=Terminal-Server-License-Server,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
@@ -525,6 +531,7 @@ displayName: Terminal-Server-License-Server
 rightsGuid: 5805bc62-bdc9-4428-a5e2-856a0f4c185e
 appliesTo: bf967aba-0de6-11d0-a285-00aa003049e2
 appliesTo: 4828cc14-1437-45bc-9b07-ad6f015e5f28
+validAccesses: 48
 
 dn: CN=Domain-Administer-Server,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
@@ -593,6 +600,7 @@ displayName: Domain-Password
 rightsGuid: c7407360-20bf-11d0-a768-00aa006e0529
 appliesTo: 19195a5b-6da0-11d0-afd3-00c04fd930c9
 appliesTo: 19195a5a-6da0-11d0-afd3-00c04fd930c9
+validAccesses: 48
 
 dn: CN=General-Information,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
@@ -601,6 +609,7 @@ displayName: General-Information
 rightsGuid: 59ba2f42-79a2-11d0-9020-00c04fc2d3cf
 appliesTo: 4828CC14-1437-45bc-9B07-AD6F015E5F28
 appliesTo: bf967aba-0de6-11d0-a285-00aa003049e2
+validAccesses: 48
 
 dn: CN=User-Account-Restrictions,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
@@ -612,6 +621,7 @@ appliesTo: bf967a86-0de6-11d0-a285-00aa003049e2
 appliesTo: bf967aba-0de6-11d0-a285-00aa003049e2
 appliesTo: ce206244-5827-4a86-ba1c-1c0c386c1b64
 ${INC2012}appliesTo: 7b8b558a-93a5-4af7-adca-c017e67f1057
+validAccesses: 48
 
 dn: CN=User-Logon,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
@@ -620,6 +630,7 @@ displayName: User-Logon
 rightsGuid: 5f202010-79a5-11d0-9020-00c04fc2d4cf
 appliesTo: 4828CC14-1437-45bc-9B07-AD6F015E5F28
 appliesTo: bf967aba-0de6-11d0-a285-00aa003049e2
+validAccesses: 48
 
 dn: CN=Membership,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
@@ -628,6 +639,7 @@ displayName: Membership
 rightsGuid: bc0ac240-79a9-11d0-9020-00c04fc2d4cf
 appliesTo: 4828CC14-1437-45bc-9B07-AD6F015E5F28
 appliesTo: bf967aba-0de6-11d0-a285-00aa003049e2
+validAccesses: 48
 
 dn: CN=Open-Address-Book,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
@@ -648,6 +660,7 @@ appliesTo: 5cb41ed0-0e4c-11d0-a286-00aa003049e2
 appliesTo: bf967aba-0de6-11d0-a285-00aa003049e2
 appliesTo: ce206244-5827-4a86-ba1c-1c0c386c1b64
 ${INC2012}appliesTo: 641E87A4-8326-4771-BA2D-C706DF35E35A
+validAccesses: 48
 
 dn: CN=Email-Information,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
@@ -657,6 +670,7 @@ rightsGuid: E45795B2-9455-11d1-AEBD-0000F80367C1
 appliesTo: 4828CC14-1437-45bc-9B07-AD6F015E5F28
 appliesTo: bf967a9c-0de6-11d0-a285-00aa003049e2
 appliesTo: bf967aba-0de6-11d0-a285-00aa003049e2
+validAccesses: 48
 
 dn: CN=Web-Information,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
@@ -666,6 +680,7 @@ rightsGuid: E45795B3-9455-11d1-AEBD-0000F80367C1
 appliesTo: 4828CC14-1437-45bc-9B07-AD6F015E5F28
 appliesTo: 5cb41ed0-0e4c-11d0-a286-00aa003049e2
 appliesTo: bf967aba-0de6-11d0-a285-00aa003049e2
+validAccesses: 48
 
 dn: CN=DS-Replication-Get-Changes,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
