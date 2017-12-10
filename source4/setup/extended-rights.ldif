@@ -77,6 +77,38 @@
 
 # Support. For questions and support, please contact dochelp@microsoft.com.
 
+#
+# Additionally, changes for Windows 2012 and above are sourced from
+#
+# https://github.com/MicrosoftDocs/windowsserverdocs/blob/master/WindowsServerDocs/identity/ad-ds/deploy/Schema-Updates.md
+#
+# in this repoo this is kept in
+# source4/setup/adprep/WindowsServerDocs/Schema-Updates.md
+# and is licenced under the MIT licence
+#
+# The MIT License (MIT)
+#  Copyright (c) Microsoft Corporation
+
+# Permission is hereby granted, free of charge, to any person
+# obtaining a copy of this software and associated documentation files
+# (the "Software"), to deal in the Software without restriction,
+# including without limitation the rights to use, copy, modify, merge,
+# publish, distribute, sublicense, and/or sell copies of the Software,
+# and to permit persons to whom the Software is furnished to do so,
+# subject to the following conditions:
+
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
+
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+# IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+# CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+# SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+#
+
 6.1.1.2.7.1 controlAccessRight objects
 All controlAccessRight objects have:
 objectClass: controlAccessRight
@@ -143,7 +175,6 @@ appliesTo: 4828CC14-1437-45bc-9B07-AD6F015E5F28
 appliesTo: bf967a86-0de6-11d0-a285-00aa003049e2
 appliesTo: bf967aba-0de6-11d0-a285-00aa003049e2
 appliesTo: ce206244-5827-4a86-ba1c-1c0c386c1b64
-appliesTo: 7b8b558a-93a5-4af7-adca-c017e67f1057 (only in AD DS schema version 87 and greater)
 
 dn: CN=msmq-Receive-Dead-Letter,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
@@ -280,7 +311,7 @@ displayName: Validated-DNS-Host-Name
 rightsGuid: 72e39547-7b18-11d1-adef-00c04fd8d5cd
 appliesTo: bf967a86-0de6-11d0-a285-00aa003049e2
 appliesTo: ce206244-5827-4a86-ba1c-1c0c386c1b64
-appliesTo: 7b8b558a-93a5-4af7-adca-c017e67f1057 (only in schema version 55 and greater)
+${INC2012}appliesTo: 7b8b558a-93a5-4af7-adca-c017e67f1057
 
 dn: CN=Validated-SPN,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
@@ -288,8 +319,7 @@ objectClass: controlAccessRight
 displayName: Validated-SPN
 rightsGuid: f3a64788-5306-11d1-a9c5-0000f80367c1
 appliesTo: bf967a86-0de6-11d0-a285-00aa003049e2
-appliesTo: ce206244-5827-4a86-ba1c-1c0c386c1b64 (only in schema version 45 and greater)
-appliesTo: 7b8b558a-93a5-4af7-adca-c017e67f1057 (only in schema version 87 and greater)
+appliesTo: ce206244-5827-4a86-ba1c-1c0c386c1b64
 
 dn: CN=Generate-RSoP-Planning,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
@@ -342,7 +372,7 @@ displayName: DNS-Host-Name-Attributes
 rightsGuid: 72e39547-7b18-11d1-adef-00c04fd8d5cd
 appliesTo: bf967a86-0de6-11d0-a285-00aa003049e2
 appliesTo: ce206244-5827-4a86-ba1c-1c0c386c1b64
-appliesTo: 7b8b558a-93a5-4af7-adca-c017e67f1057 (only in schema version 55 and greater)
+${INC2012}appliesTo: 7b8b558a-93a5-4af7-adca-c017e67f1057
 
 dn: CN=Create-Inbound-Forest-Trust,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
@@ -385,7 +415,6 @@ appliesTo: 4828cc14-1437-45bc-9b07-ad6f015e5f28
 appliesTo: bf967aba-0de6-11d0-a285-00aa003049e2
 appliesTo: bf967a86-0de6-11d0-a285-00aa003049e2
 appliesTo: ce206244-5827-4a86-ba1c-1c0c386c1b64
-appliesTo: 7b8b558a-93a5-4af7-adca-c017e67f1057 (only in schema version 87 and greater)
 
 dn: CN=DS-Execute-Intentions-Script,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
@@ -446,7 +475,6 @@ displayName: MS-TS-GatewayAccess
 rightsGuid: ffa6f046-ca4b-4feb-b40d-04dfee722543
 appliesTo: bf967a86-0de6-11d0-a285-00aa003049e2
 appliesTo: ce206244-5827-4a86-ba1c-1c0c386c1b64
-appliesTo: 7b8b558a-93a5-4af7-adca-c017e67f1057 (only in schema version 87 and greater)
 
 dn: CN=Terminal-Server-License-Server,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
@@ -492,7 +520,6 @@ appliesTo: bf967a86-0de6-11d0-a285-00aa003049e2
 appliesTo: bf967aba-0de6-11d0-a285-00aa003049e2
 appliesTo: 4828CC14-1437-45bc-9B07-AD6F015E5F28
 appliesTo: ce206244-5827-4a86-ba1c-1c0c386c1b64
-appliesTo: 7b8b558a-93a5-4af7-adca-c017e67f1057 (only in schema version 87 and greater)
 
 dn: CN=Receive-As,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
@@ -503,7 +530,6 @@ appliesTo: bf967a86-0de6-11d0-a285-00aa003049e2
 appliesTo: bf967aba-0de6-11d0-a285-00aa003049e2
 appliesTo: 4828CC14-1437-45bc-9B07-AD6F015E5F28
 appliesTo: ce206244-5827-4a86-ba1c-1c0c386c1b64
-appliesTo: 7b8b558a-93a5-4af7-adca-c017e67f1057 (only in schema version 87 and greater)
 
 dn: CN=Send-To,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
@@ -537,7 +563,7 @@ appliesTo: 4828CC14-1437-45bc-9B07-AD6F015E5F28
 appliesTo: bf967a86-0de6-11d0-a285-00aa003049e2
 appliesTo: bf967aba-0de6-11d0-a285-00aa003049e2
 appliesTo: ce206244-5827-4a86-ba1c-1c0c386c1b64
-appliesTo: 7b8b558a-93a5-4af7-adca-c017e67f1057 (only in schema version 54 and greater, for AD DS only)
+${INC2012}appliesTo: 7b8b558a-93a5-4af7-adca-c017e67f1057
 
 dn: CN=User-Logon,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
@@ -572,8 +598,7 @@ appliesTo: bf967a86-0de6-11d0-a285-00aa003049e2
 appliesTo: 5cb41ed0-0e4c-11d0-a286-00aa003049e2
 appliesTo: bf967aba-0de6-11d0-a285-00aa003049e2
 appliesTo: ce206244-5827-4a86-ba1c-1c0c386c1b64
-appliesTo: 641e87a4-8326-4771-ba2d-c706df35e35a (only in AD DS schema version 52 and greater)
-appliesTo: 7b8b558a-93a5-4af7-adca-c017e67f1057 (only in AD DS schema version 87 and greater)
+${INC2012}appliesTo: 641E87A4-8326-4771-BA2D-C706DF35E35A
 
 dn: CN=Email-Information,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
@@ -658,67 +683,67 @@ rightsGuid: 1131f6ae-9c07-11d1-f79f-00c04fc2dcd2
 appliesTo: bf967a8f-0de6-11d0-a285-00aa003049e2
 appliesTo: bf967a87-0de6-11d0-a285-00aa003049e2
 appliesTo: 19195a5b-6da0-11d0-afd3-00c04fd930c9
-
-dn: CN=Validated-MS-DS-Additional-DNS-Host-Name,CN=Extended-Rights,${CONFIGDN}
-objectClass: top
-objectClass: controlAccessRight
-displayName: Validated-MS-DS-Additional-DNS-Host-Name
-rightsGuid: 80863791-dbe9-4eb8-837e-7f0ab55d9ac7
-appliesTo: bf967a86-0de6-11d0-a285-00aa003049e2
-
-dn: CN=Validated-MS-DS-Behavior-Version,CN=Extended-Rights,${CONFIGDN}
-objectClass: top
-objectClass: controlAccessRight
-displayName: Validated-MS-DS-Behavior-Version
-rightsGuid: d31a8757-2447-4545-8081-3bb610cacbf2
-appliesTo: f0f8ffab-1191-11d0-a060-00aa006c33ed
-
-dn: CN=DS-Clone-Domain-Controller,CN=Extended-Rights,${CONFIGDN}
-objectClass: top
-objectClass: controlAccessRight
-displayName: DS-Clone-Domain-Controller
-rightsGuid: 3e0f7e18-2c7a-4c10-ba82-4d926db99a3e
-appliesTo: 19195a5b-6da0-11d0-afd3-00c04fd930c9
-
-dn: CN=Certificate-AutoEnrollment,CN=Extended-Rights,${CONFIGDN}
-objectClass: top
-objectClass: controlAccessRight
-displayName: Certificate-AutoEnrollment
-rightsGuid: a05b8cc2-17bc-4802-a710-e7c15ab866a2
-appliesTo: e5209ca2-3bba-11d2-90cc-00c04fd91ab1
-
-dn: CN=DS-Read-Partition-Secrets,CN=Extended-Rights,${CONFIGDN}
-objectClass: top
-objectClass: controlAccessRight
-displayName: DS-Read-Partition-Secrets
-rightsGuid: 084c93a2-620d-4879-a836-f0ae47de0e89
-appliesTo: 26f11b08-a29d-4869-99bb-ef0b99fd883e
-
-dn: CN=DS-Write-Partition-Secrets,CN=Extended-Rights,${CONFIGDN}
-objectClass: top
-objectClass: controlAccessRight
-displayName: DS-Write-Partition-Secrets
-rightsGuid: 94825a8d-b171-4116-8146-1e34d8f54401
-appliesTo: 26f11b08-a29d-4869-99bb-ef0b99fd883e
-
-dn: CN=DS-Set-Owner,CN=Extended-Rights,${CONFIGDN}
-objectClass: top
-objectClass: controlAccessRight
-displayName: DS-Set-Owner
-rightsGuid: 4125c71f-7fac-4ff0-bcb7-f09a41325286
-appliesTo: 26f11b08-a29d-4869-99bb-ef0b99fd883e
-
-dn: CN=DS-Bypass-Quota,CN=Extended-Rights,${CONFIGDN}
-objectClass: top
-objectClass: controlAccessRight
-displayName: DS-Bypass-Quota
-rightsGuid: 88a9933e-e5c8-4f2a-9dd7-2527416b8092
-appliesTo: 26f11b08-a29d-4869-99bb-ef0b99fd883e
-
-dn: CN=DS-Validated-Write-Computer,CN=Extended-Rights,${CONFIGDN}
-objectClass: top
-objectClass: controlAccessRight
-displayName: DS-Validated-Write-Computer
-rightsGuid: 9b026da6-0d3c-465c-8bee-5199d7165cba
-appliesTo: bf967a86-0de6-11d0-a285-00aa003049e2
+${INC2012}
+${INC2012}dn: CN=Validated-MS-DS-Behavior-Version,CN=Extended-Rights,${CONFIGDN}
+${INC2012}objectClass: controlAccessRight
+${INC2012}rightsGuid: d31a8757-2447-4545-8081-3bb610cacbf2
+${INC2012}appliesTo: f0f8ffab-1191-11d0-a060-00aa006c33ed
+${INC2012}displayName: Validated write to MS DS behavior version
+${INC2012}localizationDisplayId: 81
+${INC2012}validAccesses: 8
+${INC2012}showInAdvancedViewOnly: TRUE
+${INC2012}
+${INC2012}dn: CN=Validated-MS-DS-Additional-DNS-Host-Name,CN=Extended-Rights,${CONFIGDN}
+${INC2012}objectClass: controlAccessRight
+${INC2012}rightsGuid: 80863791-dbe9-4eb8-837e-7f0ab55d9ac7
+${INC2012}appliesTo: bf967a86-0de6-11d0-a285-00aa003049e2
+${INC2012}displayName: Validated write to MS DS Additional DNS Host Name
+${INC2012}localizationDisplayId: 82
+${INC2012}validAccesses: 8
+${INC2012}showInAdvancedViewOnly: TRUE
+${INC2012}
+${INC2012}dn: CN=DS-Clone-Domain-Controller,CN=Extended-Rights,${CONFIGDN}
+${INC2012}objectClass: controlAccessRight
+${INC2012}displayName: Allow a DC to create a clone of itself
+${INC2012}rightsGuid: 3e0f7e18-2c7a-4c10-ba82-4d926db99a3e
+${INC2012}appliesTo: 19195a5b-6da0-11d0-afd3-00c04fd930c9
+${INC2012}validAccesses: 256
+${INC2012}localizationDisplayId: 80
+${INC2012}
+${INC2012}dn: CN=Certificate-AutoEnrollment,CN=Extended-Rights,${CONFIGDN}
+${INC2012}objectClass: controlAccessRight
+${INC2012}showInAdvancedViewOnly: TRUE
+${INC2012}appliesTo: e5209ca2-3bba-11d2-90cc-00c04fd91ab1
+${INC2012}displayname: AutoEnrollment
+${INC2012}localizationDisplayId: 83
+${INC2012}rightsGuid: a05b8cc2-17bc-4802-a710-e7c15ab866a2
+${INC2012}validAccesses: 256
+${INC2012}
+${INC2012}dn: CN=DS-Set-Owner,CN=Extended-Rights,${CONFIGDN}
+${INC2012}objectClass: controlAccessRight
+${INC2012}displayName: Set Owner of an object during creation.
+${INC2012}rightsGuid: 4125c71f-7fac-4ff0-bcb7-f09a41325286
+${INC2012}appliesTo: 26f11b08-a29d-4869-99bb-ef0b99fd883e
+${INC2012}validAccesses: 256
+${INC2012}
+${INC2012}dn: CN=DS-Bypass-Quota,CN=Extended-Rights,${CONFIGDN}
+${INC2012}objectClass: controlAccessRight
+${INC2012}displayName: Bypass the quota restrictions during creation.
+${INC2012}rightsGuid: 88a9933e-e5c8-4f2a-9dd7-2527416b8092
+${INC2012}appliesTo: 26f11b08-a29d-4869-99bb-ef0b99fd883e
+${INC2012}validAccesses: 256
+${INC2012}
+${INC2012}dn: CN=DS-Read-Partition-Secrets,CN=Extended-Rights,${CONFIGDN}
+${INC2012}objectClass: controlAccessRight
+${INC2012}displayName: Read secret attributes of objects in a Partition
+${INC2012}rightsGuid: 084c93a2-620d-4879-a836-f0ae47de0e89
+${INC2012}appliesTo: 26f11b08-a29d-4869-99bb-ef0b99fd883e
+${INC2012}validAccesses: 256
+${INC2012}
+${INC2012}dn: CN=DS-Write-Partition-Secrets,CN=Extended-Rights,${CONFIGDN}
+${INC2012}objectClass: controlAccessRight
+${INC2012}displayName: Write secret attributes of objects in a Partition
+${INC2012}rightsGuid: 94825A8D-B171-4116-8146-1E34D8F54401
+${INC2012}appliesTo: 26f11b08-a29d-4869-99bb-ef0b99fd883e
+${INC2012}validAccesses: 256
 
