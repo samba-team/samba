@@ -51,6 +51,39 @@ This can be set with the following settings:
 
   'mdns name = mdns'
 
+Encrypted secrets
+=================
+Attributes deemed to be sensitive are now encrypted on disk. The sensitive
+values are currently:
+	pekList
+	msDS-ExecuteScriptPassword
+	currentValue
+	dBCSPwd
+	initialAuthIncoming
+	initialAuthOutgoing
+	lmPwdHistory
+	ntPwdHistory
+	priorValue
+	supplementalCredentials
+	trustAuthIncoming
+	trustAuthOutgoing
+	unicodePwd
+	clearTextPassword
+
+This encryption is enabled by default on a new provision or join, it
+can be disabled at provision or join time with the new option
+--plaintext-secrets.
+
+However, an in-place upgrade will not encrypt the database.
+
+Once encrypted, it is not possible to do an in-place downgrade (eg to
+4.7) of the database. To obtain an unencrypted copy of the database a
+new DC join should be performed, specifying the --plaintext-secrets
+option.
+
+The key file "encrypted_secrets.key" is created in the same directory
+as the database and should NEVER be disclosed.  It is included by the
+samba_backup script.
 
 smb.conf changes
 ================
