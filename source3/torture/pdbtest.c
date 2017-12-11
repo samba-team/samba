@@ -450,6 +450,7 @@ static bool test_trusted_domains(TALLOC_CTX *ctx,
 	struct trustAuthInOutBlob taiob;
 	struct AuthenticationInformation aia;
 	enum ndr_err_code ndr_err;
+	bool ok;
 
 	td = talloc_zero(ctx ,struct pdb_trusted_domain);
 	if (!td) {
@@ -461,6 +462,11 @@ static bool test_trusted_domains(TALLOC_CTX *ctx,
 	td->netbios_name = talloc_strdup(td, TRUST_DOM);
 	if (!td->domain_name || !td->netbios_name) {
 		fprintf(stderr, "talloc failed\n");
+		return false;
+	}
+	ok = dom_sid_parse("S-1-5-21-123-456-789", &td->security_identifier);
+	if (!ok) {
+		fprintf(stderr, "dom_sid_parse S-1-5-21-123-456-789 failed\n");
 		return false;
 	}
 
