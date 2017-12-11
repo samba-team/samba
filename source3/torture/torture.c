@@ -11559,6 +11559,7 @@ static struct {
 	{ "LOCAL-MESSAGING-FDPASS2", run_messaging_fdpass2, 0 },
 	{ "LOCAL-MESSAGING-FDPASS2a", run_messaging_fdpass2a, 0 },
 	{ "LOCAL-MESSAGING-FDPASS2b", run_messaging_fdpass2b, 0 },
+	{ "LOCAL-MESSAGING-SEND-ALL", run_messaging_send_all, 0 },
 	{ "LOCAL-BASE64", run_local_base64, 0},
 	{ "LOCAL-RBTREE", run_local_rbtree, 0},
 	{ "LOCAL-MEMCACHE", run_local_memcache, 0},

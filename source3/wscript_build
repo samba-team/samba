@@ -1169,6 +1169,7 @@ bld.SAMBA3_BINARY('smbtorture' + bld.env.suffix3,
                         torture/test_buffersize.c
                         torture/test_messaging_read.c
                         torture/test_messaging_fd_passing.c
+                        torture/test_messaging_send_all.c
                         torture/test_oplock_cancel.c
                         torture/test_pthreadpool_tevent.c
                         torture/bench_pthreadpool.c
