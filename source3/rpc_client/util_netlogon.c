@@ -179,3 +179,26 @@ NTSTATUS map_validation_to_info3(TALLOC_CTX *mem_ctx,
 
 	return NT_STATUS_OK;
 }
+
+NTSTATUS map_info3_to_validation(TALLOC_CTX *mem_ctx,
+				 struct netr_SamInfo3 *info3,
+				 uint16_t *_validation_level,
+				 union netr_Validation **_validation)
+{
+	union netr_Validation *validation = NULL;
+
+	validation = talloc_zero(mem_ctx, union netr_Validation);
+	if (validation == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	validation->sam3 = copy_netr_SamInfo3(mem_ctx, info3);
+	if (validation->sam3 == NULL) {
+		TALLOC_FREE(validation);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	* _validation_level = 3;
+	*_validation = validation;
+	return NT_STATUS_OK;
+}
