@@ -41,6 +41,7 @@
 #include "auth/credentials/credentials.h"
 #include "lib/util/base64.h"
 #include "libcli/ldap/ldap_ndr.h"
+#include "lib/util/util_ldb.h"
 
 struct pdb_samba_dsdb_state {
 	struct tevent_context *ev;
@@ -3552,10 +3553,126 @@ out:
 	return status;
 }
 
+static NTSTATUS delete_trust_user(TALLOC_CTX *mem_ctx,
+				  struct pdb_samba_dsdb_state *state,
+				  const char *trust_user)
+{
+	const char *attrs[] = { "userAccountControl", NULL };
+	struct ldb_message **msgs;
+	uint32_t uac;
+	int ret;
+
+	ret = gendb_search(state->ldb,
+			   mem_ctx,
+			   ldb_get_default_basedn(state->ldb),
+			   &msgs,
+			   attrs,
+			   "samAccountName=%s$",
+			   trust_user);
+	if (ret > 1) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	if (ret == 0) {
+		return NT_STATUS_OK;
+	}
+
+	uac = ldb_msg_find_attr_as_uint(msgs[0],
+					"userAccountControl",
+					0);
+	if (!(uac & UF_INTERDOMAIN_TRUST_ACCOUNT)) {
+		return NT_STATUS_OBJECT_NAME_COLLISION;
+	}
+
+	ret = ldb_delete(state->ldb, msgs[0]->dn);
+	switch (ret) {
+	case LDB_SUCCESS:
+		break;
+	case LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS:
+		return NT_STATUS_ACCESS_DENIED;
+	default:
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS pdb_samba_dsdb_del_trusted_domain(struct pdb_methods *methods,
 						  const char *domain)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	struct pdb_samba_dsdb_state *state = talloc_get_type_abort(
+		methods->private_data, struct pdb_samba_dsdb_state);
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	struct pdb_trusted_domain *td = NULL;
+	struct ldb_dn *tdo_dn = NULL;
+	bool in_txn = false;
+	NTSTATUS status;
+	int ret;
+	bool ok;
+
+	status = pdb_samba_dsdb_get_trusted_domain(methods,
+						   tmp_ctx,
+						   domain,
+						   &td);
+	if (!NT_STATUS_IS_OK(status)) {
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+			DBG_ERR("Searching TDO for %s returned %s\n",
+				domain, nt_errstr(status));
+			return status;
+		}
+		DBG_NOTICE("No TDO object for %s\n", domain);
+		return NT_STATUS_OK;
+	}
+
+	tdo_dn = ldb_dn_copy(tmp_ctx, ldb_get_default_basedn(state->ldb));
+	if (tdo_dn == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
+	}
+
+	ok = ldb_dn_add_child_fmt(tdo_dn, "cn=%s,cn=System", domain);
+	if (!ok) {
+		TALLOC_FREE(tmp_ctx);
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
+	}
+
+	ret = ldb_transaction_start(state->ldb);
+	if (ret != LDB_SUCCESS) {
+		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		goto out;
+	}
+	in_txn = true;
+
+	ret = ldb_delete(state->ldb, tdo_dn);
+	if (ret != LDB_SUCCESS) {
+		status = NT_STATUS_INVALID_HANDLE;
+		goto out;
+	}
+
+	if (td->trust_direction == LSA_TRUST_DIRECTION_INBOUND) {
+		status = delete_trust_user(tmp_ctx, state, domain);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto out;
+		}
+	}
+
+	ret = ldb_transaction_commit(state->ldb);
+	if (ret != LDB_SUCCESS) {
+		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		goto out;
+	}
+	in_txn = false;
+
+	status = NT_STATUS_OK;
+
+out:
+	if (in_txn) {
+		ldb_transaction_cancel(state->ldb);
+	}
+	TALLOC_FREE(tmp_ctx);
+
+	return status;
 }
 
 static NTSTATUS pdb_samba_dsdb_enum_trusted_domains(struct pdb_methods *m,
