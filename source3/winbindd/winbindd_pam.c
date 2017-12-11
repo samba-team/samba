@@ -1558,7 +1558,8 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(
 	const char *user,
 	const char *pass,
 	uint32_t request_flags,
-	struct netr_SamInfo3 **info3)
+	uint16_t *_validation_level,
+	union netr_Validation **_validation)
 {
 
 	uchar chal[8];
@@ -1567,13 +1568,11 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(
 	unsigned char local_nt_response[24];
 	fstring name_domain, name_user;
 	NTSTATUS result;
-	struct netr_SamInfo3 *my_info3 = NULL;
 	uint8_t authoritative = 0;
 	uint32_t flags = 0;
 	uint16_t validation_level;
 	union netr_Validation *validation = NULL;
-
-	*info3 = NULL;
+	struct netr_SamBaseInfo *base_info = NULL;
 
 	DEBUG(10,("winbindd_dual_pam_auth_samlogon\n"));
 
@@ -1592,6 +1591,7 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(
 	 */
 	if (strequal(domain->name, get_global_sam_name())) {
 		DATA_BLOB chal_blob = data_blob_const(chal, sizeof(chal));
+		struct netr_SamInfo3 *info3 = NULL;
 
 		/* do password magic */
 
@@ -1629,11 +1629,21 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(
 		}
 
 		result = winbindd_dual_auth_passdb(
-			mem_ctx, 0, name_domain, name_user,
+			talloc_tos(), 0, name_domain, name_user,
 			&chal_blob, &lm_resp, &nt_resp,
 			true, /* interactive */
 			&authoritative,
-			info3);
+			&info3);
+		if (NT_STATUS_IS_OK(result)) {
+			result = map_info3_to_validation(mem_ctx,
+							 info3,
+							 &validation_level,
+							 &validation);
+			TALLOC_FREE(info3);
+			if (!NT_STATUS_IS_OK(result)) {
+				goto done;
+			}
+		}
 
 		/*
 		 * We need to try the remote NETLOGON server if this is
@@ -1664,23 +1674,25 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(
 		goto done;
 	}
 
-	result = map_validation_to_info3(mem_ctx,
-                                        validation_level,
-                                        validation,
-                                        &my_info3);
-	TALLOC_FREE(validation);
-	if (!NT_STATUS_IS_OK(result)) {
-		return result;
-	}
-
 	/* handle the case where a NT4 DC does not fill in the acct_flags in
 	 * the samlogon reply info3. When accurate info3 is required by the
 	 * caller, we look up the account flags ourselves - gd */
 
+	switch (validation_level) {
+	case 3:
+		base_info = &validation->sam3->base;
+		break;
+	case 6:
+		base_info = &validation->sam6->base;
+		break;
+	default:
+		DBG_ERR("Bad validation level %d", (int)validation_level);
+		result = NT_STATUS_INTERNAL_ERROR;
+		goto done;
+	}
 	if ((request_flags & WBFLAG_PAM_INFO3_TEXT) &&
-	    (my_info3->base.acct_flags == 0))
+	    (base_info->acct_flags == 0))
 	{
-
 		struct rpc_pipe_client *samr_pipe;
 		struct policy_handle samr_domain_handle, user_pol;
 		union samr_UserInfo *info = NULL;
@@ -1702,7 +1714,7 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(
 		status_tmp = dcerpc_samr_OpenUser(b, mem_ctx,
 						  &samr_domain_handle,
 						  MAXIMUM_ALLOWED_ACCESS,
-						  my_info3->base.rid,
+						  base_info->rid,
 						  &user_pol,
 						  &result_tmp);
 
@@ -1738,15 +1750,18 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(
 			goto done;
 		}
 
-		my_info3->base.acct_flags = acct_flags;
+		base_info->acct_flags = acct_flags;
 
 		DEBUG(10,("successfully retrieved acct_flags 0x%x\n", acct_flags));
 
 		dcerpc_samr_Close(b, mem_ctx, &user_pol, &result_tmp);
 	}
 
-	*info3 = my_info3;
 done:
+	if (NT_STATUS_IS_OK(result)) {
+		*_validation_level = validation_level;
+		*_validation = validation;
+	}
 	return result;
 }
 
@@ -1864,18 +1879,47 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 sam_logon:
 	/* Check for Samlogon authentication */
 	if (domain->online) {
+		uint16_t validation_level;
+		union netr_Validation *validation = NULL;
+		struct netr_SamBaseInfo *base_info = NULL;
+
 		result = winbindd_dual_pam_auth_samlogon(
 			state->mem_ctx, domain,
 			state->request->data.auth.user,
 			state->request->data.auth.pass,
 			state->request->flags,
-			&info3);
+			&validation_level,
+			&validation);
 
 		if (NT_STATUS_IS_OK(result)) {
 			DEBUG(10,("winbindd_dual_pam_auth_samlogon succeeded\n"));
+
+			switch (validation_level) {
+			case 3:
+				base_info = &validation->sam3->base;
+				break;
+			case 6:
+				base_info = &validation->sam6->base;
+				break;
+			default:
+				DBG_ERR("Bad validation level %d\n",
+					validation_level);
+				result = NT_STATUS_INTERNAL_ERROR;
+				goto done;
+			}
+
 			/* add the Krb5 err if we have one */
 			if ( NT_STATUS_EQUAL(krb5_result, NT_STATUS_TIME_DIFFERENCE_AT_DC ) ) {
-				info3->base.user_flags |= LOGON_KRB5_FAIL_CLOCK_SKEW;
+				base_info->user_flags |= LOGON_KRB5_FAIL_CLOCK_SKEW;
+			}
+
+			result = map_validation_to_info3(state->mem_ctx,
+							 validation_level,
+							 validation,
+							 &info3);
+			TALLOC_FREE(validation);
+			if (!NT_STATUS_IS_OK(result)) {
+				goto done;
 			}
 			goto process_result;
 		}
