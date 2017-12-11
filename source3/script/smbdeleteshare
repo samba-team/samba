@@ -15,7 +15,7 @@ SHARENAME="$2"
 NETCONF="$BINDIR/net --configfile=$CONF conf"
 $NETCONF delshare "$SHARENAME"
 RC=$?
-if [[ $RC -ne 0 ]]; then
+if [ $RC -ne 0 ]; then
 	echo Failure during delshare command: rc=$RC
 	exit $RC
 fi

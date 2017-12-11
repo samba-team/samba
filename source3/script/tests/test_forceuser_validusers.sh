@@ -29,7 +29,7 @@ incdir=`dirname $0`/../../../testprogs/blackbox
 run_cmd_nooutput() {
 	CMD="$1"
 
-	out=`eval ${CMD} &> TESTOUT`
+	out=`eval ${CMD} > TESTOUT 2>&1`
 	if [ $? != 0 ] ; then
 		cat TESTOUT
 		rm -f TESTOUT

@@ -26,8 +26,7 @@ if [ -z "$WINTEST_CONF_DIR" ]; then
 exit 0;
 fi
 
-SOCKET_WRAPPER_DIR=
-export -n SOCKET_WRAPPER_DIR
+unset SOCKET_WRAPPER_DIR
 
 failed=0
 

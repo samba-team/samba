@@ -835,7 +835,7 @@ EOF
 
     echo "$out" | grep 'NT_STATUS'
     ret=$?
-    if [ $ret == 0 ] ; then
+    if [ $ret = 0 ] ; then
 	echo "$out"
 	echo "failed - NT_STATUS_XXXX listing \\manglenames_share\\FF4GBY~Q"
 	return 1
@@ -971,7 +971,7 @@ EOF
 
     echo "$out" | grep 'NT_STATUS'
     ret=$?
-    if [ $ret == 0 ] ; then
+    if [ $ret = 0 ] ; then
 	echo "$out"
 	echo "failed - NT_STATUS_XXXX listing \\widelinks_share\\dot"
 	return 1

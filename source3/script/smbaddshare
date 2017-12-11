@@ -19,14 +19,14 @@ NETCONF="$BINDIR/net --configfile=$CONF conf"
 
 $NETCONF addshare "$SHARENAME" "$SHAREPATH" writeable=no guest_ok=no "$COMMENT"
 RC=$?
-if [[ $RC -ne 0 ]]; then
+if [ $RC -ne 0 ]; then
 	echo Failure during addshare: rc=$RC
 	exit $RC
 fi
 
 $NETCONF setparm "$SHARENAME" 'max connections' "$MAX_CONN"
 RC=$?
-if [[ $RC -ne 0 ]]; then
+if [ $RC -ne 0 ]; then
 	echo Failure during setparm for max connections: rc=$RC
 	exit $RC
 fi
