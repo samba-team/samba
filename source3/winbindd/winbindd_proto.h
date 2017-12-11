@@ -430,7 +430,8 @@ NTSTATUS winbind_dual_SamLogon(struct winbindd_domain *domain,
 			       uint8_t *authoritative,
 			       bool skip_sam,
 			       uint32_t *flags,
-			       struct netr_SamInfo3 **info3);
+			       uint16_t *_validation_level,
+			       union netr_Validation **_validation);
 
 /* The following definitions come from winbindd/winbindd_util.c  */
 

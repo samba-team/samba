@@ -33,6 +33,8 @@
 #include "../libcli/auth/netlogon_creds_cli.h"
 #include "passdb.h"
 #include "../source4/dsdb/samdb/samdb.h"
+#include "rpc_client/cli_netlogon.h"
+#include "rpc_client/util_netlogon.h"
 
 void _wbint_Ping(struct pipes_struct *p, struct wbint_Ping *r)
 {
@@ -868,6 +870,8 @@ NTSTATUS _winbind_SamLogon(struct pipes_struct *p,
 	NTSTATUS status;
 	DATA_BLOB lm_response, nt_response;
 	uint32_t flags = 0;
+	uint16_t validation_level;
+	union netr_Validation *validation = NULL;
 
 	domain = wb_child_domain();
 	if (domain == NULL) {
@@ -896,8 +900,20 @@ NTSTATUS _winbind_SamLogon(struct pipes_struct *p,
 				       &r->out.authoritative,
 				       true,
 				       &flags,
-				       &r->out.validation.sam3);
-	return status;
+				       &validation_level,
+				       &validation);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	status = map_validation_to_info3(p->mem_ctx,
+					 validation_level,
+					 validation,
+					 &r->out.validation.sam3);
+	TALLOC_FREE(validation);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	return NT_STATUS_OK;
 }
 
 static WERROR _winbind_LogonControl_REDISCOVER(struct pipes_struct *p,

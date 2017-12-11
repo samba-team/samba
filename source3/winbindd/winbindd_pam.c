@@ -2078,7 +2078,8 @@ NTSTATUS winbind_dual_SamLogon(struct winbindd_domain *domain,
 			       uint8_t *authoritative,
 			       bool skip_sam,
 			       uint32_t *flags,
-			       struct netr_SamInfo3 **info3)
+			       uint16_t *_validation_level,
+			       union netr_Validation **_validation)
 {
 	uint16_t validation_level;
 	union netr_Validation *validation = NULL;
@@ -2096,15 +2097,26 @@ NTSTATUS winbind_dual_SamLogon(struct winbindd_domain *domain,
 	if (!skip_sam && strequal(domain->name, get_global_sam_name())) {
 		DATA_BLOB chal_blob = data_blob_const(
 			chal, 8);
+		struct netr_SamInfo3 *info3 = NULL;
 
 		result = winbindd_dual_auth_passdb(
-			mem_ctx,
+			talloc_tos(),
 			logon_parameters,
 			name_domain, name_user,
 			&chal_blob, &lm_response, &nt_response,
 			false, /* interactive */
 			authoritative,
-			info3);
+			&info3);
+		if (NT_STATUS_IS_OK(result)) {
+			result = map_info3_to_validation(mem_ctx,
+							 info3,
+							 &validation_level,
+							 &validation);
+			TALLOC_FREE(info3);
+			if (!NT_STATUS_IS_OK(result)) {
+				goto done;
+			}
+		}
 
 		/*
 		 * We need to try the remote NETLOGON server if this is
@@ -2136,46 +2148,62 @@ NTSTATUS winbind_dual_SamLogon(struct winbindd_domain *domain,
 		goto done;
 	}
 
-	result = map_validation_to_info3(mem_ctx,
-					 validation_level,
-					 validation,
-					 info3);
-	TALLOC_FREE(validation);
-	if (!NT_STATUS_IS_OK(result)) {
-		return result;
-	}
-
 process_result:
 
 	if (NT_STATUS_IS_OK(result)) {
 		struct dom_sid user_sid;
+		TALLOC_CTX *base_ctx = NULL;
+		struct netr_SamBaseInfo *base_info = NULL;
+		struct netr_SamInfo3 *info3 = NULL;
 
-		sid_compose(&user_sid, (*info3)->base.domain_sid,
-			    (*info3)->base.rid);
+		switch (validation_level) {
+		case 3:
+			base_ctx = validation->sam3;
+			base_info = &validation->sam3->base;
+			break;
+		case 6:
+			base_ctx = validation->sam6;
+			base_info = &validation->sam6->base;
+			break;
+		default:
+			result = NT_STATUS_INTERNAL_ERROR;
+			goto done;
+		}
 
-		if ((*info3)->base.full_name.string == NULL) {
+		sid_compose(&user_sid, base_info->domain_sid, base_info->rid);
+
+		if (base_info->full_name.string == NULL) {
 			struct netr_SamInfo3 *cached_info3;
 
 			cached_info3 = netsamlogon_cache_get(mem_ctx,
 							     &user_sid);
 			if (cached_info3 != NULL &&
-			    cached_info3->base.full_name.string != NULL) {
-				(*info3)->base.full_name.string =
-					talloc_strdup(*info3,
-						      cached_info3->base.full_name.string);
+			    cached_info3->base.full_name.string != NULL)
+			{
+				base_info->full_name.string = talloc_strdup(
+					base_ctx,
+					cached_info3->base.full_name.string);
 			} else {
 
 				/* this might fail so we don't check the return code */
 				wcache_query_user_fullname(domain,
-						*info3,
+						base_ctx,
 						&user_sid,
-						&(*info3)->base.full_name.string);
+						&base_info->full_name.string);
 			}
 		}
 
+		result = map_validation_to_info3(talloc_tos(),
+						 validation_level,
+						 validation,
+						 &info3);
+		if (!NT_STATUS_IS_OK(result)) {
+			goto done;
+		}
 		wcache_invalidate_samlogon(find_domain_from_name(name_domain),
 					   &user_sid);
-		netsamlogon_cache_store(name_user, *info3);
+		netsamlogon_cache_store(name_user, info3);
+		TALLOC_FREE(info3);
 	}
 
 done:
@@ -2192,20 +2220,26 @@ done:
 	       name_user,
 	       nt_errstr(result)));
 
-	return result;
+	if (!NT_STATUS_IS_OK(result)) {
+		return result;
+	}
+
+	*_validation_level = validation_level;
+	*_validation = validation;
+	return NT_STATUS_OK;
 }
 
 enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 						 struct winbindd_cli_state *state)
 {
 	NTSTATUS result;
-	struct netr_SamInfo3 *info3 = NULL;
 	const char *name_user = NULL;
 	const char *name_domain = NULL;
 	const char *workstation;
 	uint8_t authoritative = 0;
 	uint32_t flags = 0;
-
+	uint16_t validation_level;
+	union netr_Validation *validation = NULL;
 	DATA_BLOB lm_resp, nt_resp;
 
 	/* This is child-only, so no check for privileged access is needed
@@ -2260,15 +2294,26 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 				       &authoritative,
 				       false,
 				       &flags,
-				       &info3);
+				       &validation_level,
+				       &validation);
 	if (!NT_STATUS_IS_OK(result)) {
 		state->response->data.auth.authoritative = authoritative;
 		goto done;
 	}
 
 	if (NT_STATUS_IS_OK(result)) {
-		/* Check if the user is in the right group */
+		struct netr_SamInfo3 *info3 = NULL;
 
+		result = map_validation_to_info3(state->mem_ctx,
+						 validation_level,
+						 validation,
+						 &info3);
+		TALLOC_FREE(validation);
+		if (!NT_STATUS_IS_OK(result)) {
+			goto done;
+		}
+
+		/* Check if the user is in the right group */
 		result = check_info3_in_group(
 			info3,
 			state->request->data.auth_crap.require_membership_of_sid);
