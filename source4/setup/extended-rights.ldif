@@ -109,13 +109,27 @@
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
-6.1.1.2.7.1 controlAccessRight objects
-All controlAccessRight objects have:
-objectClass: controlAccessRight
-rightsGuid: This value is the identifier of the control access right used for security descriptors and SDDL.
-appliesTo: Each value in this attribute is a GUID, with each GUID equaling an attribute schemaIDGUID on a schema object defining a class in the schema NC. This class defines the objects in which the control access right can be a security descriptor for. The appliesTo values on the controlAccessRight are not enforced by the directory server; that is, the controlAccessRight can be included in security descriptors of objects of classes not specified in the appliesTo attribute.
-localizationDisplayId: This is implementation-specific information for the administrative application.
-validAccesses: This is implementation-specific information for the administrative application.
+# 6.1.1.2.7.1 controlAccessRight objects
+# All controlAccessRight objects have:
+# objectClass: controlAccessRight
+# rightsGuid: This value is the identifier of the control access right
+#             used for security descriptors and SDDL.
+# appliesTo: Each value in this attribute is a GUID, with each GUID
+#            equaling an attribute schemaIDGUID on a schema object
+#            defining a class in the schema NC. This class defines the
+#            objects in which the control access right can be a
+#            security descriptor for. The appliesTo values on the
+#            controlAccessRight are not enforced by the directory
+#            server; that is, the controlAccessRight can be included
+#            in security descriptors of objects of classes not
+#            specified in the appliesTo attribute.
+# localizationDisplayId: This is implementation-specific information
+#                        for the administrative application.
+# validAccesses: This is implementation-specific information for the
+#                administrative application.
+#
+# NOTE: while it is claimed that validAccesses is implementation-specfic
+# it can be determined by careful reading of other parts of MS-ADTS
 
 dn: CN=Change-Rid-Master,CN=Extended-Rights,${CONFIGDN}
 objectClass: top
