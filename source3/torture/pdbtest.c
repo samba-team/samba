@@ -526,6 +526,13 @@ static bool test_trusted_domains(TALLOC_CTX *ctx,
 		*error = true;
 	}
 
+	rv = pdb->del_trusted_domain(pdb, TRUST_DOM);
+	if (!NT_STATUS_IS_OK(rv)) {
+		fprintf(stderr, "Error in del_trusted_domain %s\n",
+				get_friendly_nt_error_msg(rv));
+		*error = true;
+	}
+
 	return true;
 }
 
