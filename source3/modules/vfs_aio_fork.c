@@ -331,7 +331,7 @@ static void aio_child_loop(int sockfd, struct mmap_area *map)
 			 * common parent state
 			 */
 			generate_random_buffer(&randval, sizeof(randval));
-			msecs = randval + 20;
+			msecs = (randval%20)+1;
 			DEBUG(10, ("delaying for %u msecs\n", msecs));
 			smb_msleep(msecs);
 		}
