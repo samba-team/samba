@@ -1373,7 +1373,8 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 					    bool interactive,
 					    uint8_t *authoritative,
 					    uint32_t *flags,
-					    struct netr_SamInfo3 **info3)
+					    uint16_t *_validation_level,
+					    union netr_Validation **_validation)
 {
 	int attempts = 0;
 	int netr_attempts = 0;
@@ -1385,7 +1386,6 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 	do {
 		struct rpc_pipe_client *netlogon_pipe;
 
-		ZERO_STRUCTP(info3);
 		retry = false;
 
 		result = cm_connect_netlogon(domain, &netlogon_pipe);
@@ -1547,15 +1547,8 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 		return result;
 	}
 
-	result = map_validation_to_info3(mem_ctx,
-					 validation_level,
-					 validation,
-					 info3);
-	TALLOC_FREE(validation);
-	if (!NT_STATUS_IS_OK(result)) {
-		return result;
-	}
-
+	*_validation_level = validation_level;
+	*_validation = validation;
 	return NT_STATUS_OK;
 }
 
@@ -1577,6 +1570,8 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(
 	struct netr_SamInfo3 *my_info3 = NULL;
 	uint8_t authoritative = 0;
 	uint32_t flags = 0;
+	uint16_t validation_level;
+	union netr_Validation *validation = NULL;
 
 	*info3 = NULL;
 
@@ -1663,9 +1658,19 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(
 					     true, /* interactive */
 					     &authoritative,
 					     &flags,
-					     &my_info3);
+					     &validation_level,
+					     &validation);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
+	}
+
+	result = map_validation_to_info3(mem_ctx,
+                                        validation_level,
+                                        validation,
+                                        &my_info3);
+	TALLOC_FREE(validation);
+	if (!NT_STATUS_IS_OK(result)) {
+		return result;
 	}
 
 	/* handle the case where a NT4 DC does not fill in the acct_flags in
@@ -2031,6 +2036,8 @@ NTSTATUS winbind_dual_SamLogon(struct winbindd_domain *domain,
 			       uint32_t *flags,
 			       struct netr_SamInfo3 **info3)
 {
+	uint16_t validation_level;
+	union netr_Validation *validation = NULL;
 	NTSTATUS result;
 
 	/*
@@ -2079,9 +2086,19 @@ NTSTATUS winbind_dual_SamLogon(struct winbindd_domain *domain,
 					     false, /* interactive */
 					     authoritative,
 					     flags,
-					     info3);
+					     &validation_level,
+					     &validation);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
+	}
+
+	result = map_validation_to_info3(mem_ctx,
+					 validation_level,
+					 validation,
+					 info3);
+	TALLOC_FREE(validation);
+	if (!NT_STATUS_IS_OK(result)) {
+		return result;
 	}
 
 process_result:
