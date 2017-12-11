@@ -4,3 +4,506 @@ changetype: modify
 replace: nTSecurityDescriptor
 nTSecurityDescriptor:: ${DISPLAYSPECIFIERS_DESCRIPTOR}
 -
+
+dn: CN=Change-Rid-Master,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 29
+
+dn: CN=Do-Garbage-Collection,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 31
+-
+
+dn: CN=Recalculate-Hierarchy,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 32
+-
+
+dn: CN=Allocate-Rids,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 33
+-
+
+dn: CN=Change-PDC,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 34
+-
+
+dn: CN=Add-GUID,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 35
+-
+
+dn: CN=Change-Domain-Master,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 36
+-
+
+dn: CN=Public-Information,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 37
+-
+
+dn: CN=msmq-Receive-Dead-Letter,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 38
+-
+
+dn: CN=msmq-Peek-Dead-Letter,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 39
+-
+
+dn: CN=msmq-Receive-computer-Journal,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 40
+-
+
+dn: CN=msmq-Peek-computer-Journal,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 41
+-
+
+dn: CN=msmq-Receive,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 42
+-
+
+dn: CN=msmq-Peek,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 43
+-
+
+dn: CN=msmq-Send,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 44
+-
+
+dn: CN=msmq-Receive-journal,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 45
+-
+
+dn: CN=msmq-Open-Connector,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 46
+-
+
+dn: CN=Apply-Group-Policy,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 47
+-
+
+dn: CN=RAS-Information,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 48
+-
+
+dn: CN=DS-Install-Replica,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 49
+-
+
+dn: CN=Change-Infrastructure-Master,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 50
+-
+
+dn: CN=Update-Schema-Cache,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 51
+-
+
+dn: CN=Recalculate-Security-Inheritance,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 52
+-
+
+dn: CN=DS-Check-Stale-Phantoms,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 53
+-
+
+dn: CN=Certificate-Enrollment,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 54
+-
+
+dn: CN=Self-Membership,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 12
+-
+
+dn: CN=Validated-DNS-Host-Name,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 13
+-
+
+dn: CN=Validated-SPN,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 14
+-
+
+dn: CN=Generate-RSoP-Planning,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 55
+-
+
+dn: CN=Refresh-Group-Cache,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 56
+-
+
+dn: CN=SAM-Enumerate-Entire-Domain,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 57
+-
+
+dn: CN=Generate-RSoP-Logging,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 58
+-
+
+dn: CN=Domain-Other-Parameters,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 59
+-
+
+dn: CN=DNS-Host-Name-Attributes,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 60
+-
+
+dn: CN=Create-Inbound-Forest-Trust,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 61
+-
+
+dn: CN=DS-Replication-Get-Changes-All,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 62
+-
+
+dn: CN=Migrate-SID-History,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 63
+-
+
+dn: CN=Reanimate-Tombstones,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 64
+-
+
+dn: CN=Allowed-To-Authenticate,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 65
+-
+
+dn: CN=DS-Execute-Intentions-Script,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 66
+-
+
+dn: CN=DS-Replication-Monitor-Topology,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 67
+-
+
+dn: CN=Update-Password-Not-Required-Bit,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 68
+-
+
+dn: CN=Unexpire-Password,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 69
+-
+
+dn: CN=Enable-Per-User-Reversibly-Encrypted-Password,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 70
+-
+
+dn: CN=DS-Query-Self-Quota,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 71
+-
+
+dn: CN=Domain-Administer-Server,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 1
+-
+
+dn: CN=User-Change-Password,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 2
+-
+
+dn: CN=User-Force-Change-Password,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 3
+-
+
+dn: CN=Send-As,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 4
+-
+
+dn: CN=Receive-As,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 5
+-
+
+dn: CN=Send-To,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 6
+-
+
+dn: CN=Domain-Password,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 7
+-
+
+dn: CN=General-Information,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 8
+-
+
+dn: CN=User-Account-Restrictions,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 9
+-
+
+dn: CN=User-Logon,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 10
+-
+
+dn: CN=Membership,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 11
+-
+
+dn: CN=Open-Address-Book,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 21
+-
+
+dn: CN=Personal-Information,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 23
+-
+
+dn: CN=Email-Information,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 22
+-
+
+dn: CN=Web-Information,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 24
+-
+
+dn: CN=DS-Replication-Get-Changes,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 25
+-
+
+dn: CN=DS-Replication-Synchronize,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 26
+-
+
+dn: CN=DS-Replication-Manage-Topology,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 27
+-
+
+dn: CN=Change-Schema-Master,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 28
+-
+
+dn: CN=DS-Replication-Get-Changes-In-Filtered-Set,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 77
+-
+
+dn: CN=MS-TS-GatewayAccess,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 74
+-
+
+dn: CN=Private-Information,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 72
+-
+
+dn: CN=Read-Only-Replication-Secret-Synchronization,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 73
+-
+
+dn: CN=Reload-SSL-Certificate,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 76
+-
+
+dn: CN=Terminal-Server-License-Server,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 75
+-
+
+dn: CN=Manage-Optional-Features,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 79
+-
+
+dn: CN=Run-Protect-Admin-Groups-Task,CN=Extended-Rights,${CONFIGDN}
+changetype: modify
+-
+replace: localizationDisplayId
+localizationDisplayId: 78
+-

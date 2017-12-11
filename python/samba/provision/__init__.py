@@ -1376,6 +1376,11 @@ def fill_samdb(samdb, lp, names, logger, policyguid,
                 "SITES_DESCRIPTOR": sites_descr,
                 })
 
+        setup_add_ldif(samdb, setup_path("extended-rights.ldif"), {
+                "CONFIGDN": names.configdn,
+                "INC2012" : "#",
+                })
+
         logger.info("Setting up display specifiers")
         display_specifiers_ldif = read_ms_ldif(
             setup_path('display-specifiers/DisplaySpecifiers-Win2k8R2.txt'))
@@ -1384,7 +1389,7 @@ def fill_samdb(samdb, lp, names, logger, policyguid,
         check_all_substituted(display_specifiers_ldif)
         samdb.add_ldif(display_specifiers_ldif)
 
-        logger.info("Modifying display specifiers")
+        logger.info("Modifying display specifiers and extended rights")
         setup_modify_ldif(samdb,
             setup_path("provision_configuration_modify.ldif"), {
             "CONFIGDN": names.configdn,
