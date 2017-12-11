@@ -240,7 +240,7 @@ check_expected_after_values() {
     elif [ x$RELEASE = x"release-4-5-0-pre1" ]; then
         echo  $RELEASE  checking after values
 	tmpldif=$PREFIX_ABS/$RELEASE/expected-links-after-dbcheck.ldif.tmp
-        $BINDIR/ldbsearch -H  tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb --show-recycled --show-deleted  --show-deactivated-link --reveal member memberOf lastKnownParent objectCategory lastKnownParent wellKnownObjects legacyExchangeDN  sAMAccountType uSNChanged --sorted > $tmpldif
+        $ldbsearch -H  tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb --show-recycled --show-deleted  --show-deactivated-link --reveal member memberOf lastKnownParent objectCategory lastKnownParent wellKnownObjects legacyExchangeDN  sAMAccountType uSNChanged --sorted > $tmpldif
 	diff $tmpldif $release_dir/expected-links-after-dbcheck.ldif
 	if [ "$?" != "0" ]; then
 	    return 1
