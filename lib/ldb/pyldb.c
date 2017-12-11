@@ -1669,6 +1669,7 @@ static PyObject *py_ldb_parse_ldif(PyLdbObject *self, PyObject *args)
 	PyObject *list, *ret;
 	struct ldb_ldif *ldif;
 	const char *s;
+	struct ldb_dn *last_dn = NULL;
 
 	TALLOC_CTX *mem_ctx;
 
@@ -1686,8 +1687,29 @@ static PyObject *py_ldb_parse_ldif(PyLdbObject *self, PyObject *args)
 		talloc_steal(mem_ctx, ldif);
 		if (ldif) {
 			PyList_Append(list, ldb_ldif_to_pyobject(ldif));
+			last_dn = ldif->msg->dn;
 		} else {
-			PyErr_SetString(PyExc_ValueError, "unable to parse ldif string");
+			const char *last_dn_str = NULL;
+			const char *err_string = NULL;
+			if (last_dn == NULL) {
+				PyErr_SetString(PyExc_ValueError,
+						"unable to parse LDIF "
+						"string at first chunk");
+				talloc_free(mem_ctx);
+				return NULL;
+			}
+
+			last_dn_str
+				= ldb_dn_get_linearized(last_dn);
+
+			err_string
+				= talloc_asprintf(mem_ctx,
+						  "unable to parse ldif "
+						  "string AFTER %s",
+						  last_dn_str);
+
+			PyErr_SetString(PyExc_ValueError,
+					err_string);
 			talloc_free(mem_ctx);
 			return NULL;
 		}
