@@ -55,4 +55,12 @@ fi
 
 AC_SUBST(TARGETS)
 
-AC_OUTPUT( Makefile.settings build/catalog.xml)
+if test x"$DOC_VERSION" = x; then
+	AC_MSG_ERROR([Please export DOC_VERSION variable])
+else
+	AC_MSG_RESULT([DOC_VERSION: ${DOC_VERSION}])
+fi
+
+doc_version="${DOC_VERSION}"
+AC_SUBST(doc_version)
+AC_OUTPUT( Makefile.settings build/catalog.xml build/DTD/samba.build.version)

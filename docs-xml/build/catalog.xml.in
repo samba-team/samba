@@ -9,6 +9,10 @@
 			rewritePrefix="file://@abs_top_srcdir@/build/DTD/"/>
 
     <rewriteURI
+			uriStartString="http://www.samba.org/samba/LOCAL.BUILDDIR.DTD/"
+			rewritePrefix="file://@abs_top_builddir@/build/DTD/"/>
+
+    <rewriteURI
 			uriStartString="http://www.gnu.org/licenses/"
 			rewritePrefix="file://@abs_top_srcdir@/Samba3-ByExample/"/>
     <rewriteURI

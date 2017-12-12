@@ -23,7 +23,7 @@ bld.env.build_public_headers = 'include/public'
 # compilation, so they are safe
 bld.env.public_headers_skip = ['lib/param/param_proto.h', 'lib/param/param_functions.h']
 
-samba_version.load_version(bld.env, is_install=bld.is_install)
+version=samba_version.load_version(bld.env, is_install=bld.is_install)
 bld.SAMBA_MKVERSION('version.h')
 
 # bld.ENABLE_MAGIC_ORDERING()
@@ -33,6 +33,9 @@ bld.env.ABS_TOP_BUILDDIR = bld.srcnode.abspath() + '/bin/default/docs-xml'
 bld.CONFIGURE_FILE('docs-xml/build/catalog.xml',
                    ABS_TOP_BUILDDIR = bld.env.ABS_TOP_BUILDDIR,
                    ABS_TOP_SRCDIR=bld.env.ABS_TOP_SRCDIR)
+bld.env.DOC_VERSION=version.STRING
+bld.CONFIGURE_FILE('docs-xml/build/DTD/samba.build.version',
+                   DOC_VERSION=bld.env.DOC_VERSION)
 bld.RECURSE('docs-xml')
 
 bld.RECURSE('lib/replace')

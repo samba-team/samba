@@ -363,7 +363,7 @@ def dist():
     os.system("make -C ctdb manpages")
     samba_dist.DIST_FILES('ctdb/doc:ctdb/doc', extend=True)
 
-    os.system(srcdir + "/release-scripts/build-manpages-nogit")
+    os.system("DOC_VERSION='" + sambaversion.STRING + "' " + srcdir + "/release-scripts/build-manpages-nogit")
     samba_dist.DIST_FILES('bin/docs:docs', extend=True)
 
     if sambaversion.IS_SNAPSHOT:

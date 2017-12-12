@@ -23,6 +23,11 @@
 	"samba.entities">
 %samba.entities;
 
+<!ENTITY % samba.build.version PUBLIC
+	"-//Samba-Team//VERSION Samba Build Version//EN"
+	"http://www.samba.org/samba/LOCAL.BUILDDIR.DTD/samba.build.version">
+%samba.build.version;
+
 <!-- smb.conf options -->
 
 <!ELEMENT smbconfblock ((smbconfoption|smbconfsection|smbconfcomment)*)>
