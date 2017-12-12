@@ -2,6 +2,10 @@
 
 image: registry.gitlab.com/samba-team/samba:latest
 
+variables:
+  GIT_STRATEGY: fetch
+  GIT_DEPTH: "3"
+
 before_script:
   - echo "Build starting (preparing swap)..."
   - if [ $(df -m / --output=avail | tail -n1) -gt 10240 ]; then
