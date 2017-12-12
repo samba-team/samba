@@ -100,3 +100,13 @@ changetype: modify
 add: appliesTo
 appliesTo: ce206244-5827-4a86-ba1c-1c0c386c1b64
 -
+
+#
+# systemFlags was also changed in schema 45 but not Samba.
+#
+dn: CN=Optional Features,CN=Directory Service,CN=Windows NT,CN=Services,CN=Configuration,DC=X
+changetype: modify
+replace: systemFlags
+systemFlags: -1946157056
+-
+
