@@ -2,6 +2,10 @@
 
 image: registry.gitlab.com/catalyst-samba/samba:latest
 
+variables:
+  GIT_STRATEGY: fetch
+  GIT_DEPTH: "3"
+
 before_script:
   - echo "Build starting (preparing swap)..."
   - sudo dd if=/dev/zero of=/samba-swap bs=1M count=10240 
