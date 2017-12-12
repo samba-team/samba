@@ -1,3 +1,0 @@
-# This has a full set of extended rights for schema 45 in the
-# new provision code, but not in the upgrade path
-^samba4.blackbox.upgradeprovision.release-4-0-0.ldapcmp
