@@ -7,7 +7,7 @@
 	<manvolnum>1</manvolnum>
 	<refmiscinfo class="source">Samba</refmiscinfo>
 	<refmiscinfo class="manual">User Commands</refmiscinfo>
-	<refmiscinfo class="version">4.7</refmiscinfo>
+	<refmiscinfo class="version">&doc.version;</refmiscinfo>
 </refmeta>
 
 
@@ -287,7 +287,7 @@ ACL:&lt;sid or name&gt;:&lt;type&gt;/&lt;flags&gt;/&lt;mask&gt;
 <refsect1>
 	<title>VERSION</title>
 
-	<para>This man page is correct for version 4 of the Samba suite.</para>
+	<para>This man page is correct for version &doc.version; of the Samba suite.</para>
 </refsect1>
 
 <refsect1>

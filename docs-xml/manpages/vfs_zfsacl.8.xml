@@ -7,7 +7,7 @@
 	<manvolnum>8</manvolnum>
 	<refmiscinfo class="source">Samba</refmiscinfo>
 	<refmiscinfo class="manual">System Administration tools</refmiscinfo>
-	<refmiscinfo class="version">4.7</refmiscinfo>
+	<refmiscinfo class="version">&doc.version;</refmiscinfo>
 </refmeta>
 
 
@@ -144,7 +144,7 @@
 
 <refsect1>
 	<title>VERSION</title>
-	<para>This man page is correct for version 4.0.x of the Samba suite.
+	<para>This man page is correct for version &doc.version;.0.x of the Samba suite.
 	</para>
 </refsect1>
 

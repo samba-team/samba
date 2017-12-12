@@ -1,3 +1,5 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE refentry PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
 <refentry id="smb.conf.5" xmlns:xi="http://www.w3.org/2003/XInclude"
 	                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 	
@@ -6,7 +8,7 @@
 	<manvolnum>5</manvolnum>
 	<refmiscinfo class="source">Samba</refmiscinfo>
 	<refmiscinfo class="manual">File Formats and Conventions</refmiscinfo>
-	<refmiscinfo class="version">4.7</refmiscinfo>
+	<refmiscinfo class="version">&doc.version;</refmiscinfo>
 </refmeta>
 
 
@@ -853,7 +855,7 @@ chmod 1770 /usr/local/samba/lib/usershares
 <refsect1>
 	<title>VERSION</title>
 
-	<para>This man page is correct for version 4 of the Samba suite.</para>
+	<para>This man page is correct for version &doc.version; of the Samba suite.</para>
 </refsect1>
 
 <refsect1>

@@ -7,7 +7,7 @@
 	<manvolnum>1</manvolnum>
 	<refmiscinfo class="source">Samba</refmiscinfo>
 	<refmiscinfo class="manual">User Commands</refmiscinfo>
-	<refmiscinfo class="version">4.7</refmiscinfo>
+	<refmiscinfo class="version">&doc.version;</refmiscinfo>
 </refmeta>
 
 
@@ -450,7 +450,7 @@ auth_param basic program ntlm_auth --helper-protocol=squid-2.5-basic --require-m
 <refsect1>
 	<title>VERSION</title>
 
-	<para>This man page is correct for version 3 of the Samba 
+	<para>This man page is correct for version &doc.version; of the Samba
 	suite.</para>
 </refsect1>
 
