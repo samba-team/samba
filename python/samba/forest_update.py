@@ -48,6 +48,13 @@ MIN_UPDATE = 45
 MAX_UPDATE = 135
 
 update_map = {
+    # Missing updates from 2008 + 2008 R2
+    53: "134428a8-0043-48a6-bcda-63310d9ec4dd",
+    79: "21ae657c-6649-43c4-bbb3-7f184fdf58c1",
+    80: "dca8f425-baae-47cd-b424-e3f6c76ed08b",
+    81: "a662b036-dbbe-4166-b4ba-21abea17f9cc",
+    82: "9d17b863-18c3-497d-9bde-45ddb95fcb65",
+    83: "11c39bed-4bee-45f5-b195-8da0e05b573a",
     # Windows Server 2012 - version 11
     84: "4664e973-cb20-4def-b3d5-559d6fe123e0",
     85: "2972d92d-a07a-44ac-9cb0-bf243356f345",
@@ -509,3 +516,30 @@ msDS-ClaimIsValueSpaceRestricted: FALSE
         if self.add_update_container:
             self.update_add(op)
 
+    #
+    # THE FOLLOWING ARE MISSING UPDATES FROM 2008 + 2008 R2
+    #
+
+    def operation_53(self, op):
+        if self.add_update_container and not self.update_exists(op):
+            self.update_add(op)
+
+    def operation_79(self, op):
+        if self.add_update_container and not self.update_exists(op):
+            self.update_add(op)
+
+    def operation_80(self, op):
+        if self.add_update_container and not self.update_exists(op):
+            self.update_add(op)
+
+    def operation_81(self, op):
+        if self.add_update_container and not self.update_exists(op):
+            self.update_add(op)
+
+    def operation_82(self, op):
+        if self.add_update_container and not self.update_exists(op):
+            self.update_add(op)
+
+    def operation_83(self, op):
+        if self.add_update_container and not self.update_exists(op):
+            self.update_add(op)
