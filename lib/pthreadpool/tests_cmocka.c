@@ -28,6 +28,7 @@
 #include <pthreadpool_tevent.h>
 
 #include <cmocka.h>
+#include <poll.h>
 
 struct pthreadpool_tevent_test {
 	struct tevent_context *ev;
@@ -151,6 +152,8 @@ static void test_create(void **state)
 	ret = test_create_do(t->ev, t->pool, &in_main_thread);
 	assert_return_code(ret, 0);
 	assert_false(in_main_thread);
+
+	poll(NULL, 0, 10);
 
 	/*
 	 * Workerthread will still be active for a second; immediately
