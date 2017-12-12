@@ -1,6 +1,7 @@
 [Unit]
 Description=Samba NMB Daemon
-After=syslog.target network.target
+Wants=network-online.target
+After=syslog.target network.target network-online.target
 
 [Service]
 Type=notify
