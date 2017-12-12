@@ -678,27 +678,33 @@ int pthreadpool_add_job(struct pthreadpool *pool, int job_id,
 	}
 
 	res = pthreadpool_create_thread(pool);
-	if (res != 0) {
-		if (pool->num_threads == 0) {
-			/*
-			 * No thread could be created to run job,
-			 * fallback to sync call.
-			 */
-			pthreadpool_undo_put_job(pool);
-			pthread_mutex_unlock(&pool->mutex);
+	if (res == 0) {
+		res = pthread_mutex_unlock(&pool->mutex);
+		assert(res == 0);
+		return 0;
+	}
 
-			fn(private_data);
-			return pool->signal_fn(job_id, fn, private_data,
-					       pool->signal_fn_private_data);
-		}
-
+	if (pool->num_threads != 0) {
 		/*
 		 * At least one thread is still available, let
 		 * that one run the queued job.
 		 */
-		res = 0;
+		res = pthread_mutex_unlock(&pool->mutex);
+		assert(res == 0);
+		return 0;
 	}
 
-	pthread_mutex_unlock(&pool->mutex);
+	/*
+	 * No thread could be created to run job, fallback to sync
+	 * call.
+	 */
+	pthreadpool_undo_put_job(pool);
+
+	res = pthread_mutex_unlock(&pool->mutex);
+	assert(res == 0);
+
+	fn(private_data);
+	res = pool->signal_fn(job_id, fn, private_data,
+			      pool->signal_fn_private_data);
 	return res;
 }
