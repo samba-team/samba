@@ -150,8 +150,6 @@ static void exit_server_common(enum server_exit_reason how,
 			DEBUG(0, ("exit_server_common: "
 				  "smb1srv_tcon_disconnect_all() failed (%s) - "
 				  "triggering cleanup\n", nt_errstr(status)));
-			how = SERVER_EXIT_ABNORMAL;
-			reason = "smb1srv_tcon_disconnect_all failed";
 		}
 
 		status = smbXsrv_session_logoff_all(xconn);
@@ -161,8 +159,6 @@ static void exit_server_common(enum server_exit_reason how,
 			DEBUG(0, ("exit_server_common: "
 				  "smbXsrv_session_logoff_all() failed (%s) - "
 				  "triggering cleanup\n", nt_errstr(status)));
-			how = SERVER_EXIT_ABNORMAL;
-			reason = "smbXsrv_session_logoff_all failed";
 		}
 	}
 
