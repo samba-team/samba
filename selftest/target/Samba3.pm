@@ -2010,6 +2010,10 @@ sub provision($$$$$$$$)
 	copy = tmp
 	kernel oplocks = yes
 	vfs objects = streams_xattr xattr_tdb
+[error_inject]
+	copy = tmp
+	vfs objects = error_inject
+	include = $libdir/error_inject.conf
 	";
 	close(CONF);
 
