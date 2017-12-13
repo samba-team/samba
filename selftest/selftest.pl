@@ -870,6 +870,7 @@ my @exported_envvars = (
 	"RESOLV_CONF",
 	"UNACCEPTABLE_PASSWORD",
 	"LOCK_DIR",
+	"SMBD_TEST_LOG",
 
 	# nss_wrapper
 	"NSS_WRAPPER_PASSWD",
