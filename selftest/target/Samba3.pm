@@ -2033,6 +2033,10 @@ sub provision($$$$$$$$$)
 [compound_find]
 	copy = tmp
 	smbd:find async delay usec = 10000
+[error_inject]
+	copy = tmp
+	vfs objects = error_inject
+	include = $libdir/error_inject.conf
 	";
 	close(CONF);
 
