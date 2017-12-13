@@ -201,7 +201,7 @@
 <refsect1>
 	<title>VERSION</title>
 
-	<para>This man page is correct for version &doc.version; of Samba.</para>
+	<para>This man page is part of version &doc.version; of Samba.</para>
 </refsect1>
 
 <refsect1>

@@ -537,7 +537,7 @@ account policy value for bad lockout attempt is now 3
 <refsect1>
 	<title>VERSION</title>
 
-	<para>This man page is correct for version &doc.version; of
+	<para>This man page is part of version &doc.version; of
 	the Samba suite.</para>
 </refsect1>
 
