@@ -513,6 +513,9 @@ plantestsuite("samba3.blackbox.sharesec", "simpleserver:local",
               [os.path.join(samba3srcdir, "script/tests/test_sharesec.sh"),
                configuration, os.path.join(bindir(), "sharesec"), "tmp"])
 
+plantestsuite("samba3.blackbox.smbd_error", "simpleserver:local",
+              [ os.path.join(samba3srcdir, "script/tests/test_smbd_error.sh") ])
+
 plantestsuite("samba3.blackbox.net_dom_join_fail_dc", "nt4_dc",
               [os.path.join(samba3srcdir, "script/tests/test_net_dom_join_fail_dc.sh"),
                "$USERNAME", "$PASSWORD", "$SERVER", "$PREFIX/net_dom_join_fail_dc",
