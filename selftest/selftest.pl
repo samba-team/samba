@@ -843,6 +843,7 @@ my @exported_envvars = (
 	"DNS_FORWARDER2",
 	"RESOLV_CONF",
 	"UNACCEPTABLE_PASSWORD",
+	"SMBD_TEST_LOG",
 
 	# nss_wrapper
 	"NSS_WRAPPER_PASSWD",
