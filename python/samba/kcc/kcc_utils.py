@@ -418,9 +418,6 @@ class NCReplica(NamingContext):
     def dumpstr_to_be_modified(self):
         return '\n'.join(str(x) for x in self.rep_repsFrom if x.is_modified())
 
-    def dumpstr_reps_to(self):
-        return '\n'.join(str(x) for x in self.rep_repsTo if x.to_be_deleted)
-
     def load_fsmo_roles(self, samdb):
         """Given an NC replica which has been discovered thru the nTDSDSA
         database object, load the fSMORoleOwner attribute.

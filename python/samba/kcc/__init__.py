@@ -1095,9 +1095,9 @@ class KCC(object):
 
             if self.readonly:
                 # Display any to be deleted or modified repsTo
-                text = n_rep.dumpstr_reps_to()
-                if text:
-                    logger.info("REMOVING REPS-TO:\n%s" % text)
+                for rt in n_rep.rep_repsTo:
+                    if rt.to_be_deleted:
+                        logger.info("REMOVING REPS-TO: %s" % rt)
 
                 # Peform deletion from our tables but perform
                 # no database modification
