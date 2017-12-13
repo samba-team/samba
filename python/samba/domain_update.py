@@ -137,7 +137,12 @@ class DomainUpdate(object):
         self.check_updates_range(min_update, expected_update)
 
         expected_version = functional_level_to_version[functional_level]
-        if update_revision and int(res[0]['revision'][0]) < expected_version:
+        found_version = int(res[0]['revision'][0])
+        if update_revision and found_version < expected_version:
+            if not self.fix:
+                raise DomainUpdateException("Revision is not high enough. Fix is set to False."
+                                            "\nExpected: %dGot: %d" % (expected_version,
+                                                                       found_version))
             self.samdb.modify_ldif("""dn: %s
 changetype: modify
 replace: revision
