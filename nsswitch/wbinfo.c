@@ -536,7 +536,26 @@ static bool wbinfo_list_domains(bool list_all_domains, bool verbose)
 
 		switch(domain_list[i].trust_type) {
 		case WBC_DOMINFO_TRUSTTYPE_NONE:
-			d_printf("None        ");
+			if (domain_list[i].trust_routing != NULL) {
+				d_printf("%s\n", domain_list[i].trust_routing);
+			} else {
+				d_printf("None\n");
+			}
+			continue;
+		case WBC_DOMINFO_TRUSTTYPE_LOCAL:
+			d_printf("Local\n");
+			continue;
+		case WBC_DOMINFO_TRUSTTYPE_RWDC:
+			d_printf("RWDC\n");
+			continue;
+		case WBC_DOMINFO_TRUSTTYPE_RODC:
+			d_printf("RODC\n");
+			continue;
+		case WBC_DOMINFO_TRUSTTYPE_PDC:
+			d_printf("PDC\n");
+			continue;
+		case WBC_DOMINFO_TRUSTTYPE_WKSTA:
+			d_printf("Workstation ");
 			break;
 		case WBC_DOMINFO_TRUSTTYPE_FOREST:
 			d_printf("Forest      ");
