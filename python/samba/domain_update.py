@@ -121,7 +121,8 @@ class DomainUpdate(object):
             raise DomainUpdateException("Failed to add revision object child")
 
     def check_updates_functional_level(self, functional_level,
-                                       old_functional_level=None):
+                                       old_functional_level=None,
+                                       update_revision=False):
         res = self.samdb.search(base=self.revision_object,
                                 attrs=["revision"], scope=ldb.SCOPE_BASE)
 
@@ -136,8 +137,12 @@ class DomainUpdate(object):
         self.check_updates_range(min_update, expected_update)
 
         expected_version = functional_level_to_version[functional_level]
-        if int(res[0]['revision'][0]) < expected_version:
-            pass
+        if update_revision and int(res[0]['revision'][0]) < expected_version:
+            self.samdb.modify_ldif("""dn: %s
+changetype: modify
+replace: revision
+revision: %d
+""" % (str(self.revision_object), expected_version))
 
     def check_updates_iterator(self, iterator):
         """
