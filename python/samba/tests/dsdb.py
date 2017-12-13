@@ -229,6 +229,9 @@ class DsdbTests(TestCase):
             self.fail("Got unexpected exception %d - %s "
                       % (code, msg))
 
+        # cleanup
+        self.samdb.delete(dn)
+
     #
     # Duplicate objectSID's should not be permitted for sids in the local
     # domain. The test sequence is add an object, delete it, then attempt to
