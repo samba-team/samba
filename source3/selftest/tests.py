@@ -585,6 +585,9 @@ plantestsuite("samba3.blackbox.net_tdb", "simpleserver:local",
                 smbclient3, '$SERVER', 'tmp', '$USERNAME', '$PASSWORD',
                 configuration, '$LOCAL_PATH', '$LOCK_DIR' ])
 
+plantestsuite("samba3.blackbox.smbd_error", "simpleserver:local",
+              [ os.path.join(samba3srcdir, "script/tests/test_smbd_error.sh") ])
+
 plantestsuite("samba3.blackbox.net_cache_samlogon", "ad_member:local",
               [ os.path.join(samba3srcdir, "script/tests/test_net_cache_samlogon.sh"),
                 '$SERVER', 'tmp', '$DC_USERNAME', '$DC_PASSWORD'])
