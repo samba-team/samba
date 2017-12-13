@@ -207,7 +207,7 @@ class DsdbTests(TestCase):
         # i.e a  SID not in the current domain.
         #
         dom_sid = self.samdb.get_domain_sid()
-        if str(dom_sid)[:-1] == "0":
+        if str(dom_sid).endswith("0"):
             c = "9"
         else:
             c = "0"
