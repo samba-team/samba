@@ -123,6 +123,13 @@ class DomainUpdate(object):
     def check_updates_functional_level(self, functional_level,
                                        old_functional_level=None,
                                        update_revision=False):
+        """
+        Apply all updates for a given old and new functional level
+        :param functional_level: constant
+        :param old_functional_level: constant
+        :param update_revision: modify the stored version
+        :raise DomainUpdateException:
+        """
         res = self.samdb.search(base=self.revision_object,
                                 attrs=["revision"], scope=ldb.SCOPE_BASE)
 
