@@ -1366,6 +1366,15 @@ struct winbindd_domain *find_our_domain(void)
 	return NULL;
 }
 
+struct winbindd_domain *find_default_route_domain(void)
+{
+	if (!IS_DC) {
+		return find_our_domain();
+	}
+	DBG_ERR("Routing logic not yet implemented on a DC");
+	return NULL;
+}
+
 /* Find the appropriate domain to lookup a name or SID */
 
 struct winbindd_domain *find_lookup_domain_from_sid(const struct dom_sid *sid)
