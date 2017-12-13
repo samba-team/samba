@@ -1,0 +1,102 @@
+# Missing objects and values that should be in Samba 4.7 to honour the
+# claimed schema 45
+#
+# Extracted from 'samba-tool ldapcmp' and ldbsearch on two Samba
+# installs before and after the schema 2012 patch set landed.
+#
+#
+dn: CN=Manage-Optional-Features,CN=Extended-Rights,CN=Configuration,DC=X
+changetype: add
+objectClass: controlAccessRight
+displayName: Manage Optional Features
+rightsGuid: 7c0e2a7c-a419-48e4-a995-10180aad54dd
+appliesTo: ef9e60e0-56f7-11d1-a9c6-0000f80367c1
+validAccesses: 256
+localizationDisplayId: 79
+-
+
+dn: CN=Run-Protect-Admin-Groups-Task,CN=Extended-Rights,CN=Configuration,DC=X
+changetype: add
+objectClass: controlAccessRight
+displayName: Run Protect Admin Groups Task
+rightsGuid: 7726b9d5-a4b4-4288-a6b2-dce952e80a7f
+appliesTo: 19195a5b-6da0-11d0-afd3-00c04fd930c9
+validAccesses: 256
+localizationDisplayId: 78
+-
+
+#
+# These appliesTo values are also documented in MS-ADTS
+# (as 'only in schema version 45 and greater')
+#
+dn: CN=Allowed-To-Authenticate,CN=Extended-Rights,CN=Configuration,DC=X
+changetype: modify
+add: appliesTo
+appliesTo: ce206244-5827-4a86-ba1c-1c0c386c1b64
+-
+
+dn: CN=DNS-Host-Name-Attributes,CN=Extended-Rights,CN=Configuration,DC=X
+changetype: modify
+add: appliesTo
+appliesTo: ce206244-5827-4a86-ba1c-1c0c386c1b64
+-
+
+dn: CN=MS-TS-GatewayAccess,CN=Extended-Rights,CN=Configuration,DC=X
+changetype: modify
+add: appliesTo
+appliesTo: ce206244-5827-4a86-ba1c-1c0c386c1b64
+-
+
+dn: CN=Personal-Information,CN=Extended-Rights,CN=Configuration,DC=X
+changetype: modify
+add: appliesTo
+appliesTo: ce206244-5827-4a86-ba1c-1c0c386c1b64
+-
+
+dn: CN=Public-Information,CN=Extended-Rights,CN=Configuration,DC=X
+changetype: modify
+add: appliesTo
+appliesTo: ce206244-5827-4a86-ba1c-1c0c386c1b64
+-
+
+dn: CN=Receive-As,CN=Extended-Rights,CN=Configuration,DC=X
+changetype: modify
+add: appliesTo
+appliesTo: ce206244-5827-4a86-ba1c-1c0c386c1b64
+-
+
+dn: CN=Send-As,CN=Extended-Rights,CN=Configuration,DC=X
+changetype: modify
+add: appliesTo
+appliesTo: ce206244-5827-4a86-ba1c-1c0c386c1b64
+-
+
+dn: CN=User-Account-Restrictions,CN=Extended-Rights,CN=Configuration,DC=X
+changetype: modify
+add: appliesTo
+appliesTo: ce206244-5827-4a86-ba1c-1c0c386c1b64
+-
+
+dn: CN=User-Change-Password,CN=Extended-Rights,CN=Configuration,DC=X
+changetype: modify
+add: appliesTo
+appliesTo: ce206244-5827-4a86-ba1c-1c0c386c1b64
+-
+
+dn: CN=User-Force-Change-Password,CN=Extended-Rights,CN=Configuration,DC=X
+changetype: modify
+add: appliesTo
+appliesTo: ce206244-5827-4a86-ba1c-1c0c386c1b64
+-
+
+dn: CN=Validated-DNS-Host-Name,CN=Extended-Rights,CN=Configuration,DC=X
+changetype: modify
+add: appliesTo
+appliesTo: ce206244-5827-4a86-ba1c-1c0c386c1b64
+-
+
+dn: CN=Validated-SPN,CN=Extended-Rights,CN=Configuration,DC=X
+changetype: modify
+add: appliesTo
+appliesTo: ce206244-5827-4a86-ba1c-1c0c386c1b64
+-

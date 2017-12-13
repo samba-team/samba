@@ -484,6 +484,7 @@ tombstoneLifetime: 180
 dn: CN=Optional Features,CN=Directory Service,CN=Windows NT,CN=Services,${CONFIGDN}
 objectClass: top
 objectClass: container
+systemFlags: -1946157056
 
 dn: CN=Recycle Bin Feature,CN=Optional Features,CN=Directory Service,CN=Windows NT,CN=Services,${CONFIGDN}
 objectClass: top
