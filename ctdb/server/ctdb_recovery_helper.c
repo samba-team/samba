@@ -397,6 +397,7 @@ struct pull_database_state {
 	uint32_t pnn;
 	uint64_t srvid;
 	int num_records;
+	int result;
 };
 
 static void pull_database_handler(uint64_t srvid, TDB_DATA data,
@@ -594,8 +595,8 @@ static void pull_database_new_done(struct tevent_req *subreq)
 	if (! status) {
 		D_ERR("control DB_PULL failed for %s on node %u, ret=%d\n",
 		      recdb_name(state->recdb), state->pnn, ret);
-		tevent_req_error(req, ret);
-		return;
+		state->result = ret;
+		goto unregister;
 	}
 
 	ret = ctdb_reply_control_db_pull(reply, &num_records);
@@ -604,12 +605,14 @@ static void pull_database_new_done(struct tevent_req *subreq)
 		D_ERR("mismatch (%u != %u) in DB_PULL records for db %s\n",
 		      num_records, state->num_records,
 		      recdb_name(state->recdb));
-		tevent_req_error(req, EIO);
-		return;
+		state->result = EIO;
+		goto unregister;
 	}
 
 	D_INFO("Pulled %d records for db %s from node %d\n",
 	       state->num_records, recdb_name(state->recdb), state->pnn);
+
+unregister:
 
 	subreq = ctdb_client_remove_message_handler_send(
 					state, state->ev, state->client,
@@ -635,6 +638,11 @@ static void pull_database_unregister_done(struct tevent_req *subreq)
 		D_ERR("failed to remove message handler for DB_PULL for db %s\n",
 		      recdb_name(state->recdb));
 		tevent_req_error(req, ret);
+		return;
+	}
+
+	if (state->result != 0) {
+		tevent_req_error(req, state->result);
 		return;
 	}
 
