@@ -95,21 +95,6 @@ class NamingContext(object):
 
         assert self.nc_guid is not None
 
-    def is_schema(self):
-        '''Return True if NC is schema'''
-        assert self.nc_type != NCType.unknown
-        return self.nc_type == NCType.schema
-
-    def is_domain(self):
-        '''Return True if NC is domain'''
-        assert self.nc_type != NCType.unknown
-        return self.nc_type == NCType.domain
-
-    def is_application(self):
-        '''Return True if NC is application'''
-        assert self.nc_type != NCType.unknown
-        return self.nc_type == NCType.application
-
     def is_config(self):
         '''Return True if NC is config'''
         assert self.nc_type != NCType.unknown
