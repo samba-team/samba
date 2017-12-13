@@ -455,8 +455,22 @@ static wbcErr process_domain_info_string(struct wbcDomainInfo *info,
 	*s = '\0';
 	s++;
 
-	if (strcmp(r, "None") == 0) {
+	if (strcmp(r, "Local") == 0) {
 		info->trust_type = WBC_DOMINFO_TRUSTTYPE_NONE;
+	} else if (strncmp(r, "Routed", strlen("Routed")) == 0) {
+		info->trust_type = WBC_DOMINFO_TRUSTTYPE_NONE;
+		info->trust_routing = strdup(r);
+		BAIL_ON_PTR_ERROR(info->trust_routing, wbc_status);
+	} else if (strcmp(r, "Local") == 0) {
+		info->trust_type = WBC_DOMINFO_TRUSTTYPE_LOCAL;
+	} else if (strcmp(r, "Workstation") == 0) {
+		info->trust_type = WBC_DOMINFO_TRUSTTYPE_WKSTA;
+	} else if (strcmp(r, "RWDC") == 0) {
+		info->trust_type = WBC_DOMINFO_TRUSTTYPE_RWDC;
+	} else if (strcmp(r, "RODC") == 0) {
+		info->trust_type = WBC_DOMINFO_TRUSTTYPE_RODC;
+	} else if (strcmp(r, "PDC") == 0) {
+		info->trust_type = WBC_DOMINFO_TRUSTTYPE_PDC;
 	} else if (strcmp(r, "External") == 0) {
 		info->trust_type = WBC_DOMINFO_TRUSTTYPE_EXTERNAL;
 	} else if (strcmp(r, "Forest") == 0) {
