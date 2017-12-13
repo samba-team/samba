@@ -2021,8 +2021,7 @@ class KCC(object):
 
         # Create a NCReplica that matches what the local replica
         # should say.  We'll use this below in our r_list
-        l_of_x = NCReplica(dc_local.dsa_dnstr, dc_local.dsa_guid,
-                           nc_x.nc_dnstr)
+        l_of_x = NCReplica(dc_local, nc_x.nc_dnstr)
 
         l_of_x.identify_by_basedn(self.samdb)
 

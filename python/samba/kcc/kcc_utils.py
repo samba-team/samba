@@ -163,14 +163,14 @@ class NCReplica(NamingContext):
     class) and it identifies unique attributes of the DSA's replica for a NC.
     """
 
-    def __init__(self, dsa_dnstr, dsa_guid, nc_dnstr):
+    def __init__(self, dsa, nc_dnstr):
         """Instantiate a Naming Context Replica
 
         :param dsa_guid: GUID of DSA where replica appears
         :param nc_dnstr: NC dn string
         """
-        self.rep_dsa_dnstr = dsa_dnstr
-        self.rep_dsa_guid = dsa_guid
+        self.rep_dsa_dnstr = dsa.dsa_dnstr
+        self.rep_dsa_guid = dsa.dsa_guid
         self.rep_default = False  # replica for DSA's default domain
         self.rep_partial = False
         self.rep_ro = False
@@ -739,7 +739,7 @@ class DirectoryServiceAgent(object):
                     dnstr = str(dsdn.dn)
 
                     if not dnstr in tmp_table:
-                        rep = NCReplica(self.dsa_dnstr, self.dsa_guid, dnstr)
+                        rep = NCReplica(self, dnstr)
                         tmp_table[dnstr] = rep
                     else:
                         rep = tmp_table[dnstr]
