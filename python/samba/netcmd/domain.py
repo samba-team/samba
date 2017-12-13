@@ -58,6 +58,7 @@ from samba.netcmd import (
     SuperCommand,
     Option
     )
+from samba.netcmd.fsmo import get_fsmo_roleowner
 from samba.netcmd.common import netcmd_get_domain_infos_via_cldap
 from samba.samba3 import Samba3
 from samba.samba3 import param as s3param
@@ -4080,6 +4081,12 @@ class cmd_domain_schema_upgrade(Command):
             lp.set("dsdb:schema update allowed", "yes")
             print("Temporarily overriding 'dsdb:schema update allowed' setting")
             updates_allowed_overriden = True
+
+        own_dn = ldb.Dn(samdb, samdb.get_dsServiceName())
+        master = get_fsmo_roleowner(samdb, str(samdb.get_schema_basedn()),
+                                    'schema')
+        if own_dn != master:
+            raise CommandError("This server is not the schema master.")
 
         # if specific LDIF files were specified, just apply them
         if ldf_files:
