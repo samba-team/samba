@@ -216,6 +216,7 @@ sub setup_nt4_dc($$)
 	lanman auth = yes
 	ntlm auth = yes
 	raw NTLMv2 auth = yes
+	server schannel = auto
 
 	rpc_server:epmapper = external
 	rpc_server:spoolss = external

@@ -1466,6 +1466,7 @@ sub provision_ad_dc_ntvfs($$)
 	lsa over netlogon = yes
         rpc server port = 1027
         auth event notification = true
+	server schannel = auto
 	";
 	my $ret = $self->provision($prefix,
 				   "domain controller",
@@ -1833,6 +1834,7 @@ sub provision_ad_dc($$$$$$)
 	lpq cache time = 0
 	print notify backchannel = yes
 
+	server schannel = auto
         auth event notification = true
         $smbconf_args
 ";
