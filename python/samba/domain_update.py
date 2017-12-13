@@ -250,10 +250,20 @@ objectClass: container
 
         return True
 
+    def raise_if_not_fix(self, op):
+        """
+        Raises an exception if not set to fix.
+        :param op: Integer operation
+        :raise DomainUpdateException:
+        """
+        if not self.fix:
+            raise DomainUpdateException("Missing operation %d. Fix is currently set to False" % op)
+
     # Create a new object CN=TPM Devices in the Domain partition.
     def operation_78(self, op):
         if self.update_exists(op):
             return
+        self.raise_if_not_fix(op)
 
         self.samdb.add_ldif("""dn: CN=TPM Devices,%s
 objectClass: top
@@ -268,6 +278,7 @@ objectClass: msTPM-InformationObjectsContainer
     def operation_79(self, op):
         if self.update_exists(op):
             return
+        self.raise_if_not_fix(op)
 
         ace = "(OA;CIIO;WP;ea1b7b93-5e48-46d5-bc6c-4df4fda78a35;bf967a86-0de6-11d0-a285-00aa003049e2;PS)"
 
@@ -298,6 +309,7 @@ objectClass: msTPM-InformationObjectsContainer
     def operation_80(self, op):
         if self.update_exists(op):
             return
+        self.raise_if_not_fix(op)
 
         ace = "(OA;;CR;3e0f7e18-2c7a-4c10-ba82-4d926db99a3e;;%s-522)" % str(self.domain_sid)
 
@@ -322,6 +334,7 @@ objectClass: msTPM-InformationObjectsContainer
     def operation_81(self, op):
         if self.update_exists(op):
             return
+        self.raise_if_not_fix(op)
 
         ace = "(OA;CIOI;RPWP;3f78c3e5-f79a-46bd-a0b8-9d18116ddc79;;PS)"
 
@@ -357,6 +370,7 @@ objectClass: msTPM-InformationObjectsContainer
     def operation_75(self, op):
         if self.update_exists(op):
             return
+        self.raise_if_not_fix(op)
 
         descriptor = get_managed_service_accounts_descriptor(self.domain_sid)
         managedservice_descr = b64encode(descriptor)
@@ -378,6 +392,7 @@ nTSecurityDescriptor:: %s""" % (managed_service_dn, managedservice_descr),
     def operation_76(self, op):
         if self.update_exists(op):
             return
+        self.raise_if_not_fix(op)
 
         managed_service_dn = "CN=Managed Service Accounts,%s" % \
             str(self.domain_dn)
@@ -396,6 +411,7 @@ otherWellKnownObjects: B:32:1EB93889E40C45DF9F0C64D23BBB6237:%s
     def operation_77(self, op):
         if self.update_exists(op):
             return
+        self.raise_if_not_fix(op)
 
         self.samdb.add_ldif("""dn: CN=PSPs,CN=System,%s
 objectClass: top
