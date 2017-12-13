@@ -290,6 +290,19 @@ static NTSTATUS add_trusted_domain(const char *domain_name,
 	return NT_STATUS_OK;
 }
 
+bool set_routing_domain(struct winbindd_domain *domain,
+			const struct winbindd_domain *routing_domain)
+{
+	if (domain->routing_domain == NULL) {
+		domain->routing_domain = routing_domain;
+		return true;
+	}
+	if (domain->routing_domain != routing_domain) {
+		return false;
+	}
+	return true;
+}
+
 bool domain_is_forest_root(const struct winbindd_domain *domain)
 {
 	const uint32_t fr_flags =
@@ -1105,6 +1118,8 @@ bool init_domain_list(void)
 			struct ForestTrustInfo fti;
 			uint32_t fi;
 			enum ndr_err_code ndr_err;
+			struct winbindd_domain *routing_domain = NULL;
+			bool ok;
 
 			if (domains[i]->trust_type != LSA_TRUST_TYPE_UPLEVEL) {
 				continue;
@@ -1116,6 +1131,14 @@ bool init_domain_list(void)
 
 			if (domains[i]->trust_forest_trust_info.length == 0) {
 				continue;
+			}
+
+			routing_domain = find_domain_from_name_noinit(
+				domains[i]->netbios_name);
+			if (routing_domain == NULL) {
+				DBG_ERR("Can't find winbindd domain [%s]\n",
+					domains[i]->netbios_name);
+				return false;
 			}
 
 			ndr_err = ndr_pull_struct_blob_all(
@@ -1169,6 +1192,17 @@ bool init_domain_list(void)
 				if (!NT_STATUS_IS_OK(status)) {
 					DBG_NOTICE("add_trusted_domain returned %s\n",
 						   nt_errstr(status));
+					return false;
+				}
+				if (domain == NULL) {
+					continue;
+				}
+				ok = set_routing_domain(domain, routing_domain);
+				if (!ok) {
+					DBG_ERR("set_routing_domain on [%s] to "
+						"[%s] failed\n",
+						domain->name,
+						routing_domain->name);
 					return false;
 				}
 			}
