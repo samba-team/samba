@@ -563,6 +563,20 @@ WERROR dns_common_wildcard_lookup(struct ldb_context *samdb,
 		return werr;
 	}
 
+	/*
+	 * Do a point search first, then fall back to a wildcard
+	 * lookup if it does not exist
+	 */
+	werr = dns_common_lookup(samdb,
+				 mem_ctx,
+				 dn,
+				 records,
+				 num_records,
+				 NULL);
+	if (!W_ERROR_EQUAL(werr, WERR_DNS_ERROR_NAME_DOES_NOT_EXIST)) {
+		return werr;
+	}
+
 	ret = dns_wildcard_lookup(samdb, mem_ctx, dn, &msg);
 	if (ret == LDB_ERR_OPERATIONS_ERROR) {
 		return DNS_ERR(SERVER_FAILURE);
