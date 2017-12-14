@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <crack.h>
+#include <unistd.h>
 
 void usage(char *command) {
 	char *c, *comm;
