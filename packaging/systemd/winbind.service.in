@@ -5,11 +5,12 @@ After=syslog.target network.target nmb.service
 [Service]
 Type=notify
 NotifyAccess=all
-PIDFile=/run/winbindd.pid
-EnvironmentFile=-/etc/sysconfig/samba
-ExecStart=/usr/sbin/winbindd --foreground --no-process-group "$WINBINDOPTIONS"
+PIDFile=@PIDDIR@/winbindd.pid
+EnvironmentFile=-@SYSCONFDIR@/sysconfig/samba
+ExecStart=@SBINDIR@/winbindd --foreground --no-process-group "$WINBINDOPTIONS"
 ExecReload=/usr/bin/kill -HUP $MAINPID
 LimitCORE=infinity
+@systemd_winbind_extra@
 
 [Install]
 WantedBy=multi-user.target

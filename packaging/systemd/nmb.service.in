@@ -6,11 +6,12 @@ After=syslog.target network.target network-online.target
 [Service]
 Type=notify
 NotifyAccess=all
-PIDFile=/run/nmbd.pid
-EnvironmentFile=-/etc/sysconfig/samba
-ExecStart=/usr/sbin/nmbd --foreground --no-process-group $NMBDOPTIONS
+PIDFile=@PIDDIR@/nmbd.pid
+EnvironmentFile=-@SYSCONFDIR@/sysconfig/samba
+ExecStart=@SBINDIR@/nmbd --foreground --no-process-group $NMBDOPTIONS
 ExecReload=/usr/bin/kill -HUP $MAINPID
 LimitCORE=infinity
+@systemd_nmb_extra@
 
 [Install]
 WantedBy=multi-user.target

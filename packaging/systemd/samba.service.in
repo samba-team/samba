@@ -6,11 +6,12 @@ After=syslog.target network.target network-online.target
 [Service]
 Type=notify
 NotifyAccess=all
-PIDFile=/run/samba.pid
+PIDFile=@PIDDIR@/samba.pid
 LimitNOFILE=16384
-EnvironmentFile=-/etc/sysconfig/samba
-ExecStart=/usr/sbin/samba --foreground --no-process-group $SAMBAOPTIONS
+EnvironmentFile=-@SYSCONFDIR@/sysconfig/samba
+ExecStart=@SBINDIR@/samba --foreground --no-process-group $SAMBAOPTIONS
 ExecReload=/usr/bin/kill -HUP $MAINPID
+@systemd_samba_extra@
 
 [Install]
 WantedBy=multi-user.target

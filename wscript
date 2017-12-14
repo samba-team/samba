@@ -37,6 +37,7 @@ def set_options(opt):
     opt.PRIVATE_EXTENSION_DEFAULT('samba4')
     opt.RECURSE('lib/replace')
     opt.RECURSE('dynconfig')
+    opt.RECURSE('packaging')
     opt.RECURSE('lib/ldb')
     opt.RECURSE('selftest')
     opt.RECURSE('source4/lib/tls')
@@ -46,6 +47,8 @@ def set_options(opt):
     opt.RECURSE('lib/util')
     opt.RECURSE('lib/crypto')
     opt.RECURSE('ctdb')
+
+
     opt.samba_add_onoff_option('pthreadpool', with_name="enable", without_name="disable", default=True)
 
     opt.add_option('--with-system-mitkrb5',
@@ -240,6 +243,7 @@ def configure(conf):
         conf.RECURSE('ctdb')
     conf.RECURSE('lib/socket')
     conf.RECURSE('auth')
+    conf.RECURSE('packaging')
 
     conf.SAMBA_CHECK_UNDEFINED_SYMBOL_FLAGS()
 

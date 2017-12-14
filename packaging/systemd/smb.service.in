@@ -5,12 +5,13 @@ After=syslog.target network.target nmb.service winbind.service
 [Service]
 Type=notify
 NotifyAccess=all
-PIDFile=/run/smbd.pid
+PIDFile=@PIDDIR@/smbd.pid
 LimitNOFILE=16384
-EnvironmentFile=-/etc/sysconfig/samba
-ExecStart=/usr/sbin/smbd --foreground --no-process-group $SMBDOPTIONS
+EnvironmentFile=-@SYSCONFDIR@/sysconfig/samba
+ExecStart=@SBINDIR@/smbd --foreground --no-process-group $SMBDOPTIONS
 ExecReload=/usr/bin/kill -HUP $MAINPID
 LimitCORE=infinity
+@systemd_smb_extra@
 
 [Install]
 WantedBy=multi-user.target

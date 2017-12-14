@@ -147,6 +147,7 @@ bld.RECURSE('source3')
 bld.RECURSE('dfs_server')
 bld.RECURSE('file_server')
 bld.RECURSE('lib/krb5_wrap')
+bld.RECURSE('packaging')
 
 bld.RECURSE('testsuite/headers')
 

@@ -1,0 +1,50 @@
+#!/usr/bin/env python
+
+import Options
+
+def set_options(opt):
+    gr = opt.option_group('systemd installation options')
+
+    gr.add_option('--systemd-install-services',
+                  help=("install systemd service files to manage daemons (default=no)"),
+                  action="store_true", dest="systemd_install_services", default=False)
+
+    gr.add_option('--with-systemddir',
+                  help=("systemd service directory [PREFIX/usr/lib/systemd/system]"),
+                  action="store", dest="SYSTEMDDIR",
+                  default="${PREFIX}/usr/lib/systemd/system")
+    #
+    # extra service directives
+    #
+
+    gr.add_option('--systemd-smb-extra',
+                  metavar="Option=Value",
+                  help=("Extra directives added to the smb service file."
+                        +" Can be given multiple times."),
+                  action="append", dest="systemd_smb_extra", default=[])
+
+    gr.add_option('--systemd-nmb-extra',
+                  metavar="Option=Value",
+                  help=("Extra directives added to the nmb service file."
+                        +" Can be used multiple times."),
+                  action="append", dest="systemd_nmb_extra", default=[])
+
+    gr.add_option('--systemd-winbind-extra',
+                  metavar="Option=Value",
+                  help=("Extra directives added to the winbind service file."
+                        +" Can be used multiple times."),
+                  action="append", dest="systemd_winbind_extra", default=[])
+
+    gr.add_option('--systemd-samba-extra',
+                  metavar="Option=Value",
+                  help=("Extra directives added to the samba service file."
+                        +" Can be used multiple times."),
+                  action="append", dest="systemd_samba_extra", default=[])
+
+def configure(conf):
+    conf.env.systemd_install_services = Options.options.systemd_install_services
+    conf.env.systemd_smb_extra = '\n'.join(Options.options.systemd_smb_extra)
+    conf.env.systemd_nmb_extra = '\n'.join(Options.options.systemd_nmb_extra)
+    conf.env.systemd_winbind_extra = '\n'.join(Options.options.systemd_winbind_extra)
+    conf.env.systemd_samba_extra = '\n'.join(Options.options.systemd_samba_extra)
+    conf.env.SYSTEMDDIR = Options.options.SYSTEMDDIR
