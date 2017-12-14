@@ -4243,6 +4243,54 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			break;
 		}
 
+		/*
+		 * SMB2 UNIX Extensions.
+		 */
+		case SMB2_FILE_POSIX_INFORMATION_INTERNAL:
+		{
+			uint8_t *buf = NULL;
+			ssize_t plen = 0;
+
+			if (!(conn->sconn->using_smb2)) {
+				return NT_STATUS_INVALID_LEVEL;
+			}
+			if (!lp_smb3_unix_extensions()) {
+				return NT_STATUS_INVALID_LEVEL;
+			}
+			if (fsp == NULL) {
+				return NT_STATUS_INVALID_HANDLE;
+			}
+			if (!(fsp->posix_flags & FSP_POSIX_FLAGS_OPEN)) {
+				return NT_STATUS_INVALID_LEVEL;
+			}
+
+			/* Determine the size of the posix info context */
+			plen = store_smb2_posix_info(conn,
+						     &smb_fname->st,
+						     0,
+						     mode,
+						     NULL,
+						     0);
+			if (plen == -1 || data_size < plen) {
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+			buf = talloc_zero_size(mem_ctx, plen);
+			if (buf == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
+
+			/* Store the context in buf */
+			store_smb2_posix_info(conn,
+					      &smb_fname->st,
+					      0,
+					      mode,
+					      buf,
+					      plen);
+			memcpy(pdata, buf, plen);
+			data_size = plen;
+			break;
+		}
+
 		default:
 			return NT_STATUS_INVALID_LEVEL;
 	}

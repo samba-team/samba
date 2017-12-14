@@ -33,8 +33,6 @@
 #define MIN_UNIX_INFO_LEVEL 0x200
 #define MAX_UNIX_INFO_LEVEL 0x2FF
 
-#define INFO_LEVEL_IS_UNIX(level) (((level) >= MIN_UNIX_INFO_LEVEL) && ((level) <= MAX_UNIX_INFO_LEVEL))
-
 #define SMB_QUERY_FILE_UNIX_BASIC      0x200   /* UNIX File Info*/
 #define SMB_SET_FILE_UNIX_BASIC        0x200
 #define SMB_SET_FILE_UNIX_INFO2        0x20B   /* UNIX File Info2 */
@@ -452,5 +450,9 @@ enum smb_whoami_flags {
 
 #define SMB_POSIX_UNLINK_FILE_TARGET 0
 #define SMB_POSIX_UNLINK_DIRECTORY_TARGET 1
+
+#define INFO_LEVEL_IS_UNIX(level) ((((level) >= MIN_UNIX_INFO_LEVEL) && \
+			((level) <= MAX_UNIX_INFO_LEVEL)) || \
+			((level) == SMB2_FILE_POSIX_INFORMATION_INTERNAL))
 
 #endif /* __SMB_UNIX_EXT_H__ */
