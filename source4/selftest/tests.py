@@ -682,6 +682,21 @@ planoldpythontestsuite("fl2003dc:local",
 planoldpythontestsuite("ad_dc",
                        "samba.tests.password_hash_ldap",
                        extra_args=['-U"$USERNAME%$PASSWORD"'])
+# Encrypted secrets
+# ensure default provision (ad_dc) and join (vampire_dc)
+# encrypt secret values on disk.
+planoldpythontestsuite("ad_dc:local",
+                       "samba.tests.encrypted_secrets",
+                       extra_args=['-U"$USERNAME%$PASSWORD"'])
+planoldpythontestsuite("vampire_dc:local",
+                       "samba.tests.encrypted_secrets",
+                       extra_args=['-U"$USERNAME%$PASSWORD"'])
+# The fl2000dc environment is provisioned with the --plaintext_secrets option
+# so this test will fail, which proves the secrets are not being encrypted.
+# There is an entry in known_fail.d.
+planoldpythontestsuite("fl2000dc:local",
+                       "samba.tests.encrypted_secrets",
+                       extra_args=['-U"$USERNAME%$PASSWORD"'])
 
 planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.lsa_string")
 planoldpythontestsuite("ad_dc_ntvfs",
