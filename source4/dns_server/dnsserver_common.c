@@ -545,6 +545,16 @@ WERROR dns_common_wildcard_lookup(struct ldb_context *samdb,
 		return DNS_ERR(NAME_ERROR);
 	}
 
+	/* Don't look for a wildcard for @ */
+	if (name->length == 1 && name->data[0] == '@') {
+		return dns_common_lookup(samdb,
+					 mem_ctx,
+					 dn,
+					 records,
+					 num_records,
+					 NULL);
+	}
+
 	werr =  dns_name_check(
 			mem_ctx,
 			strlen((const char*)name->data),
