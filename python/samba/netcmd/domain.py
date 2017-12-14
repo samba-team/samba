@@ -247,6 +247,9 @@ class cmd_domain_provision(Command):
          Option("--ol-mmr-urls", type="string", metavar="LDAPSERVER",
                 help="List of LDAP-URLS [ ldap://<FQHN>:<PORT>/  (where <PORT> has to be different than 389!) ] separated with comma (\",\") for use with OpenLDAP-MMR (Multi-Master-Replication), e.g.: \"ldap://s4dc1:9000,ldap://s4dc2:9000\""),
          Option("--use-rfc2307", action="store_true", help="Use AD to store posix attributes (default = no)"),
+         Option("--plaintext-secrets", action="store_true",
+                help="Store secret/sensitive values as plain text on disk" +
+                     "(default is to encrypt secret/ensitive values)"),
         ]
 
     openldap_options = [
@@ -316,7 +319,8 @@ class cmd_domain_provision(Command):
             ldap_backend_extra_port=None,
             ldap_backend_forced_uri=None,
             ldap_dryrun_mode=None,
-            base_schema=None):
+            base_schema=None,
+            plaintext_secrets=False):
 
         self.logger = self.get_logger("provision")
         if quiet:
@@ -485,7 +489,8 @@ class cmd_domain_provision(Command):
                   ldap_backend_extra_port=ldap_backend_extra_port,
                   ldap_backend_forced_uri=ldap_backend_forced_uri,
                   nosync=ldap_backend_nosync, ldap_dryrun_mode=ldap_dryrun_mode,
-                  base_schema=base_schema)
+                  base_schema=base_schema,
+                  plaintext_secrets=plaintext_secrets)
 
         except ProvisioningError, e:
             raise CommandError("Provision failed", e)
@@ -638,6 +643,9 @@ class cmd_domain_join(Command):
                    "BIND9_DLZ uses samba4 AD to store zone information, "
                    "NONE skips the DNS setup entirely (this DC will not be a DNS server)",
                default="SAMBA_INTERNAL"),
+        Option("--plaintext-secrets", action="store_true",
+               help="Store secret/sensitive values as plain text on disk" +
+                    "(default is to encrypt secret/ensitive values)"),
         Option("--quiet", help="Be quiet", action="store_true"),
         Option("--verbose", help="Be verbose", action="store_true")
        ]
@@ -655,7 +663,7 @@ class cmd_domain_join(Command):
             versionopts=None, server=None, site=None, targetdir=None,
             domain_critical_only=False, parent_domain=None, machinepass=None,
             use_ntvfs=False, dns_backend=None, adminpass=None,
-            quiet=False, verbose=False):
+            quiet=False, verbose=False, plaintext_secrets=False):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
         net = Net(creds, lp, server=credopts.ipaddress)
@@ -686,13 +694,16 @@ class cmd_domain_join(Command):
             join_DC(logger=logger, server=server, creds=creds, lp=lp, domain=domain,
                     site=site, netbios_name=netbios_name, targetdir=targetdir,
                     domain_critical_only=domain_critical_only,
-                    machinepass=machinepass, use_ntvfs=use_ntvfs, dns_backend=dns_backend)
+                    machinepass=machinepass, use_ntvfs=use_ntvfs,
+                    dns_backend=dns_backend,
+                    plaintext_secrets=plaintext_secrets)
         elif role == "RODC":
             join_RODC(logger=logger, server=server, creds=creds, lp=lp, domain=domain,
                       site=site, netbios_name=netbios_name, targetdir=targetdir,
                       domain_critical_only=domain_critical_only,
                       machinepass=machinepass, use_ntvfs=use_ntvfs,
-                      dns_backend=dns_backend)
+                      dns_backend=dns_backend,
+                      plaintext_secrets=plaintext_secrets)
         elif role == "SUBDOMAIN":
             if not adminpass:
                 logger.info("Administrator password will be set randomly!")
@@ -705,7 +716,8 @@ class cmd_domain_join(Command):
                            netbios_name=netbios_name, netbios_domain=netbios_domain,
                            targetdir=targetdir, machinepass=machinepass,
                            use_ntvfs=use_ntvfs, dns_backend=dns_backend,
-                           adminpass=adminpass)
+                           adminpass=adminpass,
+                           plaintext_secrets=plaintext_secrets)
         else:
             raise CommandError("Invalid role '%s' (possible values: MEMBER, DC, RODC, SUBDOMAIN)" % role)
 

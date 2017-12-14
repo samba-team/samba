@@ -228,6 +228,21 @@ static int set_ldap_credentials(struct ldb_context *ldb, bool use_external)
 	return LDB_SUCCESS;
 }
 
+static bool check_required_features(struct ldb_message_element *el)
+{
+	if (el != NULL) {
+		int k;
+		DATA_BLOB esf = data_blob_string_const(
+			SAMBA_ENCRYPTED_SECRETS_FEATURE);
+		for (k = 0; k < el->num_values; k++) {
+			if (data_blob_cmp(&esf, &el->values[k]) != 0) {
+				return false;
+			}
+		}
+	}
+	return true;
+}
+
 static int samba_dsdb_init(struct ldb_module *module)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
@@ -294,6 +309,7 @@ static int samba_dsdb_init(struct ldb_module *module)
 		"rdn_name",
 		"subtree_delete",
 		"repl_meta_data",
+		"encrypted_secrets",
 		"operational",
 		"unique_object_sids",
 		"subtree_rename",
@@ -375,11 +391,14 @@ static int samba_dsdb_init(struct ldb_module *module)
 		backendType = ldb_msg_find_attr_as_string(res->msgs[0], "backendType", "ldb");
 
 		requiredFeatures = ldb_msg_find_element(res->msgs[0], SAMBA_REQUIRED_FEATURES_ATTR);
-		if (requiredFeatures != NULL) {
-			ldb_set_errstring(ldb, "This Samba database was created with "
-					  "a newer Samba version and is marked with "
-					  "requiredFeatures in @SAMBA_DSDB.  "
-					  "This database can not safely be read by this Samba version");
+		if (!check_required_features(requiredFeatures)) {
+			ldb_set_errstring(
+				ldb,
+				"This Samba database was created with "
+				"a newer Samba version and is marked "
+				"with extra requiredFeatures in "
+				"@SAMBA_DSDB. This database can not "
+				"safely be read by this Samba version");
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 

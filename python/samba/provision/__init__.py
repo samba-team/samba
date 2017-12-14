@@ -29,6 +29,7 @@ __docformat__ = "restructuredText"
 from base64 import b64encode
 import errno
 import os
+import stat
 import re
 import pwd
 import grp
@@ -554,6 +555,9 @@ def provision_paths_from_lp(lp, dnsdomain):
     paths.kdcconf = os.path.join(paths.private_dir, "kdc.conf")
     paths.winsdb = os.path.join(paths.private_dir, "wins.ldb")
     paths.s4_ldapi_path = os.path.join(paths.private_dir, "ldapi")
+    paths.encrypted_secrets_key_path = os.path.join(
+        paths.private_dir,
+        "encrypted_secrets.key")
 
     paths.dns = os.path.join(paths.binddns_dir, "dns", dnsdomain + ".zone")
     paths.namedconf = os.path.join(paths.binddns_dir, "named.conf")
@@ -792,7 +796,7 @@ def setup_name_mappings(idmap, sid, root_uid, nobody_uid,
 
 def setup_samdb_partitions(samdb_path, logger, lp, session_info,
                            provision_backend, names, serverrole,
-                           erase=False):
+                           erase=False, plaintext_secrets=False):
     """Setup the partitions for the SAM database.
 
     Alternatively, provision() may call this, and then populate the database.
@@ -821,6 +825,10 @@ def setup_samdb_partitions(samdb_path, logger, lp, session_info,
     if provision_backend.type != "ldb":
         ldap_backend_line = "ldapBackend: %s" % provision_backend.ldap_uri
 
+    required_features = "# No required features"
+    if not plaintext_secrets:
+        required_features = "requiredFeatures: encryptedSecrets"
+
     samdb.transaction_start()
     try:
         logger.info("Setting up sam.ldb partitions and settings")
@@ -831,7 +839,8 @@ def setup_samdb_partitions(samdb_path, logger, lp, session_info,
 
         setup_add_ldif(samdb, setup_path("provision_init.ldif"), {
                 "BACKEND_TYPE": provision_backend.type,
-                "SERVER_ROLE": serverrole
+                "SERVER_ROLE": serverrole,
+                "REQUIRED_FEATURES": required_features
                 })
 
         logger.info("Setting up sam.ldb rootDSE")
@@ -1005,6 +1014,30 @@ def setup_privileges(path, session_info, lp):
     privilege_ldb = Ldb(path, session_info=session_info, lp=lp)
     privilege_ldb.erase()
     privilege_ldb.load_ldif_file_add(setup_path("provision_privilege.ldif"))
+
+def setup_encrypted_secrets_key(path):
+    """Setup the encrypted secrets key file.
+
+    Any existing key file will be deleted and a new random key generated.
+
+    :param path: Path to the secrets key file.
+
+    """
+    if os.path.exists(path):
+        os.unlink(path)
+
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
+    mode = stat.S_IRUSR | stat.S_IWUSR
+
+    umask_original = os.umask(0)
+    try:
+        fd = os.open(path, flags, mode)
+    finally:
+        os.umask(umask_original)
+
+    with os.fdopen(fd, 'w') as f:
+        key = samba.generate_random_bytes(16)
+        f.write(key)
 
 
 def setup_registry(path, session_info, lp):
@@ -1193,7 +1226,8 @@ def create_default_gpo(sysvolpath, dnsdomain, policyguid, policyguid_dc):
 
 
 def setup_samdb(path, session_info, provision_backend, lp, names,
-        logger, fill, serverrole, schema, am_rodc=False):
+        logger, fill, serverrole, schema, am_rodc=False,
+        plaintext_secrets=False):
     """Setup a complete SAM Database.
 
     :note: This will wipe the main SAM database file!
@@ -1202,7 +1236,7 @@ def setup_samdb(path, session_info, provision_backend, lp, names,
     # Also wipes the database
     setup_samdb_partitions(path, logger=logger, lp=lp,
         provision_backend=provision_backend, session_info=session_info,
-        names=names, serverrole=serverrole)
+        names=names, serverrole=serverrole, plaintext_secrets=plaintext_secrets)
 
     # Load the database, but don's load the global schema and don't connect
     # quite yet
@@ -1975,7 +2009,8 @@ def provision(logger, session_info, smbconf=None,
         useeadb=False, am_rodc=False, lp=None, use_ntvfs=False,
         use_rfc2307=False, maxuid=None, maxgid=None, skip_sysvolacl=True,
         ldap_backend_forced_uri=None, nosync=False, ldap_dryrun_mode=False,
-        ldap_backend_extra_port=None, base_schema=None):
+        ldap_backend_extra_port=None, base_schema=None,
+        plaintext_secrets=False):
     """Provision samba4
 
     :note: caution, this wipes all existing data!
@@ -2101,6 +2136,8 @@ def provision(logger, session_info, smbconf=None,
     directory_create_or_exists(paths.binddns_dir, 0o770)
     directory_create_or_exists(os.path.join(paths.private_dir, "tls"))
     directory_create_or_exists(paths.state_dir)
+    if not plaintext_secrets:
+        setup_encrypted_secrets_key(paths.encrypted_secrets_key_path)
 
     if paths.sysvol and not os.path.exists(paths.sysvol):
         os.makedirs(paths.sysvol, 0775)
@@ -2172,7 +2209,8 @@ def provision(logger, session_info, smbconf=None,
         samdb = setup_samdb(paths.samdb, session_info,
                             provision_backend, lp, names, logger=logger,
                             serverrole=serverrole,
-                            schema=schema, fill=samdb_fill, am_rodc=am_rodc)
+                            schema=schema, fill=samdb_fill, am_rodc=am_rodc,
+                            plaintext_secrets=plaintext_secrets)
 
         if serverrole == "active directory domain controller":
             if paths.netlogon is None:

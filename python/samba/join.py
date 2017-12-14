@@ -55,7 +55,8 @@ class dc_join(object):
     def __init__(ctx, logger=None, server=None, creds=None, lp=None, site=None,
                  netbios_name=None, targetdir=None, domain=None,
                  machinepass=None, use_ntvfs=False, dns_backend=None,
-                 promote_existing=False, clone_only=False):
+                 promote_existing=False, clone_only=False,
+                 plaintext_secrets=False):
         if site is None:
             site = "Default-First-Site-Name"
 
@@ -67,6 +68,7 @@ class dc_join(object):
         ctx.site = site
         ctx.targetdir = targetdir
         ctx.use_ntvfs = use_ntvfs
+        ctx.plaintext_secrets = plaintext_secrets
 
         ctx.promote_existing = promote_existing
         ctx.promote_from_dn = None
@@ -837,7 +839,8 @@ class dc_join(object):
                 hostname=ctx.myname, domainsid=ctx.domsid,
                 machinepass=ctx.acct_pass, serverrole="active directory domain controller",
                 sitename=ctx.site, lp=ctx.lp, ntdsguid=ctx.ntds_guid,
-                use_ntvfs=ctx.use_ntvfs, dns_backend=ctx.dns_backend)
+                use_ntvfs=ctx.use_ntvfs, dns_backend=ctx.dns_backend,
+                plaintext_secrets=ctx.plaintext_secrets)
         print "Provision OK for domain DN %s" % presult.domaindn
         ctx.local_samdb = presult.samdb
         ctx.lp          = presult.lp
@@ -1398,11 +1401,12 @@ class dc_join(object):
 def join_RODC(logger=None, server=None, creds=None, lp=None, site=None, netbios_name=None,
               targetdir=None, domain=None, domain_critical_only=False,
               machinepass=None, use_ntvfs=False, dns_backend=None,
-              promote_existing=False):
+              promote_existing=False, plaintext_secrets=False):
     """Join as a RODC."""
 
     ctx = dc_join(logger, server, creds, lp, site, netbios_name, targetdir, domain,
-                  machinepass, use_ntvfs, dns_backend, promote_existing)
+                  machinepass, use_ntvfs, dns_backend, promote_existing,
+                  plaintext_secrets)
 
     lp.set("workgroup", ctx.domain_name)
     logger.info("workgroup is %s" % ctx.domain_name)
@@ -1449,10 +1453,11 @@ def join_RODC(logger=None, server=None, creds=None, lp=None, site=None, netbios_
 def join_DC(logger=None, server=None, creds=None, lp=None, site=None, netbios_name=None,
             targetdir=None, domain=None, domain_critical_only=False,
             machinepass=None, use_ntvfs=False, dns_backend=None,
-            promote_existing=False):
+            promote_existing=False, plaintext_secrets=False):
     """Join as a DC."""
     ctx = dc_join(logger, server, creds, lp, site, netbios_name, targetdir, domain,
-                  machinepass, use_ntvfs, dns_backend, promote_existing)
+                  machinepass, use_ntvfs, dns_backend, promote_existing,
+                  plaintext_secrets)
 
     lp.set("workgroup", ctx.domain_name)
     logger.info("workgroup is %s" % ctx.domain_name)
@@ -1498,10 +1503,10 @@ def join_clone(logger=None, server=None, creds=None, lp=None,
 def join_subdomain(logger=None, server=None, creds=None, lp=None, site=None,
         netbios_name=None, targetdir=None, parent_domain=None, dnsdomain=None,
         netbios_domain=None, machinepass=None, adminpass=None, use_ntvfs=False,
-        dns_backend=None):
+        dns_backend=None, plaintext_secrets=False):
     """Join as a DC."""
     ctx = dc_join(logger, server, creds, lp, site, netbios_name, targetdir, parent_domain,
-                  machinepass, use_ntvfs, dns_backend)
+                  machinepass, use_ntvfs, dns_backend, plaintext_secrets)
     ctx.subdomain = True
     if adminpass is None:
         ctx.adminpass = samba.generate_random_password(12, 32)

@@ -28,6 +28,7 @@ dn: @SAMBA_DSDB
 backendType: ${BACKEND_TYPE}
 serverRole: ${SERVER_ROLE}
 compatibleFeatures: sortedLinks
+${REQUIRED_FEATURES}
 
 dn: @MODULES
 @LIST: samba_dsdb
