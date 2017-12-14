@@ -28,6 +28,19 @@ bld.SAMBA_BINARY('test_unique_object_sids',
             DSDB_MODULE_HELPERS
         ''',
         install=False)
+bld.SAMBA_BINARY('test_encrypted_secrets',
+        source='tests/test_encrypted_secrets.c',
+        deps='''
+            talloc
+            samba-util
+            samdb-common
+            samdb
+            cmocka
+            nettle
+            gnutls
+            DSDB_MODULE_HELPERS
+        ''',
+        install=False)
 
 if bld.AD_DC_BUILD_IS_ENABLED():
     bld.PROCESS_SEPARATE_RULE("server")

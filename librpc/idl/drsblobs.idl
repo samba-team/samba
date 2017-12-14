@@ -721,4 +721,34 @@ interface drsblobs {
 	[nopython] void decode_ForestTrustInfo(
 		[in] ForestTrustInfo blob
 		);
+
+	typedef enum {
+		ENC_SECRET_AES_128_AEAD = 1
+	} EncryptedSecretAlgorithm;
+
+	const uint32 ENCRYPTED_SECRET_MAGIC_VALUE = 0xCA5CADED;
+
+	typedef [public] struct {
+		DATA_BLOB cleartext;
+	} PlaintextSecret;
+
+	/* The AEAD routines uses this as the additional authenticated data */
+	typedef [public] struct {
+		uint32 magic;
+		uint32 version;
+		uint32 algorithm;
+		uint32 flags;
+	} EncryptedSecretHeader;
+
+	typedef [public] struct {
+		/*
+		 * The iv is before the header to ensure that the first bytes of
+		 * the encrypted values are not predictable.
+		 * We do this so that if the decryption gets disabled, we don't
+		 * end up with predictable unicodePasswords.
+		 */
+		DATA_BLOB iv;
+		EncryptedSecretHeader header;
+		[flag(NDR_REMAINING)] DATA_BLOB encrypted;
+	} EncryptedSecret;
 }

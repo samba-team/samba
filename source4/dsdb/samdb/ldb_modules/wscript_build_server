@@ -409,3 +409,20 @@ bld.SAMBA_MODULE('ldb_unique_object_sids',
 	deps='samdb-common DSDB_MODULE_HELPERS',
 	subsystem='ldb'
 	)
+
+bld.SAMBA_MODULE('ldb_encrypted_secrets',
+	source='encrypted_secrets.c',
+	subsystem='ldb',
+	init_function='ldb_encrypted_secrets_module_init',
+	module_init_name='ldb_init_module',
+	internal_module=False,
+	deps='''
+            talloc
+            samba-util
+            samdb-common
+            DSDB_MODULE_HELPERS
+            samdb
+            nettle
+            gnutls
+        '''
+	)

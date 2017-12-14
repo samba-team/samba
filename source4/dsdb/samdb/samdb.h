@@ -332,5 +332,6 @@ struct dsdb_extended_sec_desc_propagation_op {
 #define SAMBA_FEATURES_SUPPORTED_FLAG "@SAMBA_FEATURES_SUPPORTED"
 
 #define SAMBA_SORTED_LINKS_FEATURE "sortedLinks"
+#define SAMBA_ENCRYPTED_SECRETS_FEATURE "encryptedSecrets"
 
 #endif /* __SAMDB_H__ */

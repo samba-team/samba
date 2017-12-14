@@ -1008,3 +1008,5 @@ for env in ["ad_dc_ntvfs", "ad_dc", "fl2000dc", "fl2003dc", "fl2008r2dc", 'vampi
 #
 plantestsuite("samba4.dsdb.samdb.ldb_modules.unique_object_sids" , "none",
               [os.path.join(bindir(), "test_unique_object_sids")])
+plantestsuite("samba4.dsdb.samdb.ldb_modules.encrypted_secrets", "none",
+                  [os.path.join(bindir(), "test_encrypted_secrets")])
