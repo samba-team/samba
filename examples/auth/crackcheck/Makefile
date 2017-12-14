@@ -15,7 +15,7 @@ OBJS = crackcheck.o
 LIBS = -lcrack
 
 crackcheck: $(OBJS)
-	$(CC) $(CFLAGS) $(LIBS) -o crackcheck $(OBJS)
+	$(CC) $(CFLAGS) -o crackcheck $(OBJS) $(LIBS)
 
 clean:
 	rm -f core *.o crackcheck
