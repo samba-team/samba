@@ -18,6 +18,7 @@
 */
 
 #include <Python.h>
+#include "python/py3compat.h"
 #include <tevent.h>
 #include <pytalloc.h>
 #include "includes.h"
@@ -115,7 +116,7 @@ static PyObject * py_smb_loadfile(PyObject *self, PyObject *args)
 	status = smb_composite_loadfile(spdata->tree, pytalloc_get_mem_ctx(self), &io);
 	PyErr_NTSTATUS_IS_ERR_RAISE(status);
 
-	return Py_BuildValue("s#", io.out.data, io.out.size);
+	return Py_BuildValue(PYARG_BYTES_LEN, io.out.data, io.out.size);
 }
 
 /*
@@ -125,17 +126,18 @@ static PyObject * py_smb_savefile(PyObject *self, PyObject *args)
 {
 	struct smb_composite_savefile io;
 	const char *filename;
-	char *data;
+	char *data = NULL;
+	Py_ssize_t size = 0;
 	NTSTATUS status;
 	struct smb_private_data *spdata;
 
-	if (!PyArg_ParseTuple(args, "ss:savefile", &filename, &data)) {
+	if (!PyArg_ParseTuple(args, "s"PYARG_BYTES_LEN":savefile", &filename, &data, &size )) {
 		return NULL;
 	}
 
 	io.in.fname = filename;
 	io.in.data = (unsigned char *)data;
-	io.in.size = strlen(data);
+	io.in.size = size;
 
 	spdata = pytalloc_get_ptr(self);
 	status = smb_composite_savefile(spdata->tree, &io);
@@ -157,11 +159,11 @@ static void py_smb_list_callback(struct clilist_file_info *f, const char *mask, 
 
 		dict = PyDict_New();
 		if(dict) {
-			PyDict_SetItemString(dict, "name", PyString_FromString(f->name));
+			PyDict_SetItemString(dict, "name", PyStr_FromString(f->name));
 			
 			/* Windows does not always return short_name */
 			if (f->short_name) {
-				PyDict_SetItemString(dict, "short_name", PyString_FromString(f->short_name));
+				PyDict_SetItemString(dict, "short_name", PyStr_FromString(f->short_name));
 			} else {
 				PyDict_SetItemString(dict, "short_name", Py_None);
 			}
@@ -524,11 +526,13 @@ static PyObject *py_close_file(PyObject *self, PyObject *args, PyObject *kwargs)
 
 static PyMethodDef py_smb_methods[] = {
 	{ "loadfile", py_smb_loadfile, METH_VARARGS,
-		"loadfile(path) -> file contents as a string\n\n \
-		Read contents of a file." },
+		"loadfile(path) -> file contents as a "
+		PY_DESC_PY3_BYTES
+		"\n\n Read contents of a file." },
 	{ "savefile", py_smb_savefile, METH_VARARGS,
-		"savefile(path, str) -> None\n\n \
-		Write string str to file." },
+		"savefile(path, str) -> None\n\n Write "
+		PY_DESC_PY3_BYTES
+		" str to file." },
 	{ "list", (PyCFunction)py_smb_list, METH_VARARGS|METH_KEYWORDS,
 		"list(path) -> directory contents as a dictionary\n\n \
 		List contents of a directory. The keys are, \n \
@@ -651,17 +655,27 @@ static PyTypeObject PySMB = {
 
 };
 
-void initsmb(void)
+static struct PyModuleDef moduledef = {
+    PyModuleDef_HEAD_INIT,
+    .m_name = "smb",
+    .m_doc = "SMB File I/O support",
+    .m_size = -1,
+    .m_methods = NULL,
+};
+
+void initsmb(void);
+
+MODULE_INIT_FUNC(smb)
 {
-	PyObject *m;
+	PyObject *m = NULL;
 
 	if (pytalloc_BaseObject_PyType_Ready(&PySMB) < 0) {
-		return;
+		return m;
 	}
 
-	m = Py_InitModule3("smb", NULL, "SMB File I/O support");
+	m = PyModule_Create(&moduledef);
 	if (m == NULL) {
-	    return;
+	    return m;
 	}
 
 	Py_INCREF(&PySMB);
@@ -685,4 +699,5 @@ void initsmb(void)
 	ADD_FLAGS(FILE_ATTRIBUTE_NONINDEXED);
 	ADD_FLAGS(FILE_ATTRIBUTE_ENCRYPTED);
 	ADD_FLAGS(FILE_ATTRIBUTE_ALL_MASK);
+	return m;
 }
