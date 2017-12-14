@@ -1506,6 +1506,12 @@ sub provision_fl2000dc($$)
 	spnego:simulate_w2k=yes
 	ntlmssp_server:force_old_spnego=yes
 ";
+	my $extra_provision_options = undef;
+	# This environment uses plain text secrets
+	# i.e. secret attributes are not encrypted on disk.
+	# This allows testing of the --plaintext-secrets option for
+	# provision
+	push (@{$extra_provision_options}, "--plaintext-secrets");
 	my $ret = $self->provision($prefix,
 				   "domain controller",
 				   "dc5",
@@ -1517,7 +1523,7 @@ sub provision_fl2000dc($$)
 				   undef,
 				   $extra_conf_options,
 				   "",
-				   undef);
+				   $extra_provision_options);
 	unless ($ret) {
 		return undef;
 	}
