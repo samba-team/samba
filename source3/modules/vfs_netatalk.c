@@ -483,7 +483,7 @@ static struct vfs_fn_pointers vfs_netatalk_fns = {
 	.lchown_fn = atalk_lchown,
 };
 
-NTSTATUS vfs_netatalk_init(TALLOC_CTX *);
+static_decl_vfs;
 NTSTATUS vfs_netatalk_init(TALLOC_CTX *ctx)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "netatalk",

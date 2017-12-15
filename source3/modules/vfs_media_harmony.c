@@ -2353,7 +2353,7 @@ static struct vfs_fn_pointers vfs_mh_fns = {
 	/* aio operations */
 };
 
-NTSTATUS vfs_media_harmony_init(TALLOC_CTX *);
+static_decl_vfs;
 NTSTATUS vfs_media_harmony_init(TALLOC_CTX *ctx)
 {
 	NTSTATUS ret = smb_register_vfs(SMB_VFS_INTERFACE_VERSION,

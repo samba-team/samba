@@ -52,7 +52,5 @@ int hpuxacl_sys_acl_set_fd(vfs_handle_struct *handle,
 int hpuxacl_sys_acl_delete_def_file(vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname);
 
-NTSTATUS vfs_hpuxacl_init(void);
-
 #endif
 

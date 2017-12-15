@@ -382,7 +382,7 @@ static struct vfs_fn_pointers posixacl_fns = {
 	.sys_acl_delete_def_file_fn = posixacl_sys_acl_delete_def_file,
 };
 
-NTSTATUS vfs_posixacl_init(TALLOC_CTX *);
+static_decl_vfs;
 NTSTATUS vfs_posixacl_init(TALLOC_CTX *ctx)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "posixacl",

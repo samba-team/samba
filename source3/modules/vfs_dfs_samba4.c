@@ -135,7 +135,7 @@ static struct vfs_fn_pointers vfs_dfs_samba4_fns = {
 	.get_dfs_referrals_fn = dfs_samba4_get_referrals,
 };
 
-NTSTATUS vfs_dfs_samba4_init(TALLOC_CTX *);
+static_decl_vfs;
 NTSTATUS vfs_dfs_samba4_init(TALLOC_CTX *ctx)
 {
 	NTSTATUS ret;

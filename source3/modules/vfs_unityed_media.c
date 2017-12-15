@@ -1941,7 +1941,7 @@ static struct vfs_fn_pointers vfs_um_fns = {
 	.setxattr_fn = um_setxattr,
 };
 
-NTSTATUS vfs_unityed_media_init(TALLOC_CTX *);
+static_decl_vfs;
 NTSTATUS vfs_unityed_media_init(TALLOC_CTX *ctx)
 {
 	NTSTATUS ret = smb_register_vfs(SMB_VFS_INTERFACE_VERSION,

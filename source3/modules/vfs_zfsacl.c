@@ -378,7 +378,7 @@ static struct vfs_fn_pointers zfsacl_fns = {
 	.fset_nt_acl_fn = zfsacl_fset_nt_acl,
 };
 
-NTSTATUS vfs_zfsacl_init(TALLOC_CTX *);
+static_decl_vfs;
 NTSTATUS vfs_zfsacl_init(TALLOC_CTX *ctx)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "zfsacl",

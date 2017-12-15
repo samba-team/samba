@@ -1474,7 +1474,7 @@ static struct vfs_fn_pointers ceph_fns = {
 	.aio_force_fn = cephwrap_aio_force,
 };
 
-NTSTATUS vfs_ceph_init(TALLOC_CTX *);
+static_decl_vfs;
 NTSTATUS vfs_ceph_init(TALLOC_CTX *ctx)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION,

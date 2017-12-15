@@ -450,7 +450,7 @@ static struct vfs_fn_pointers vfs_preopen_fns = {
 	.open_fn = preopen_open
 };
 
-NTSTATUS vfs_preopen_init(TALLOC_CTX *);
+static_decl_vfs;
 NTSTATUS vfs_preopen_init(TALLOC_CTX *ctx)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION,

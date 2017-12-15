@@ -403,7 +403,7 @@ static struct vfs_fn_pointers vfs_commit_fns = {
         .ftruncate_fn = commit_ftruncate
 };
 
-NTSTATUS vfs_commit_init(TALLOC_CTX *);
+static_decl_vfs;
 NTSTATUS vfs_commit_init(TALLOC_CTX *ctx)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, MODULE,

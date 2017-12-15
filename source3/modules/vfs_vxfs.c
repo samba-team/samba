@@ -951,7 +951,7 @@ static struct vfs_fn_pointers vfs_vxfs_fns = {
 	.fsetxattr_fn = vxfs_fset_xattr,
 };
 
-NTSTATUS vfs_vxfs_init(TALLOC_CTX *);
+static_decl_vfs;
 NTSTATUS vfs_vxfs_init(TALLOC_CTX *ctx)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "vxfs",

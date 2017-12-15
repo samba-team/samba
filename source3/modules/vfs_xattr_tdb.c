@@ -616,7 +616,7 @@ static struct vfs_fn_pointers vfs_xattr_tdb_fns = {
 	.connect_fn = xattr_tdb_connect,
 };
 
-NTSTATUS vfs_xattr_tdb_init(TALLOC_CTX *);
+static_decl_vfs;
 NTSTATUS vfs_xattr_tdb_init(TALLOC_CTX *ctx)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "xattr_tdb",

@@ -3177,7 +3177,7 @@ static struct vfs_fn_pointers snapper_fns = {
 	.get_real_filename_fn = snapper_gmt_get_real_filename,
 };
 
-NTSTATUS vfs_snapper_init(TALLOC_CTX *);
+static_decl_vfs;
 NTSTATUS vfs_snapper_init(TALLOC_CTX *ctx)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION,

@@ -1061,7 +1061,7 @@ static struct vfs_fn_pointers vfs_streams_depot_fns = {
 	.streaminfo_fn = streams_depot_streaminfo,
 };
 
-NTSTATUS vfs_streams_depot_init(TALLOC_CTX *);
+static_decl_vfs;
 NTSTATUS vfs_streams_depot_init(TALLOC_CTX *ctx)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "streams_depot",

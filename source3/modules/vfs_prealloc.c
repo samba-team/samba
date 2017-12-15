@@ -213,7 +213,7 @@ static struct vfs_fn_pointers prealloc_fns = {
 	.connect_fn = prealloc_connect,
 };
 
-NTSTATUS vfs_prealloc_init(TALLOC_CTX *);
+static_decl_vfs;
 NTSTATUS vfs_prealloc_init(TALLOC_CTX *ctx)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION,
