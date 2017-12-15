@@ -405,6 +405,10 @@ def build(bld):
                         deps='''samba-util sys_rw tevent-util
                                 replace talloc tevent tdb popt''')
 
+    bld.SAMBA_SUBSYSTEM('ctdb-logging-conf',
+                        source='common/logging_conf.c',
+                        deps='ctdb-util talloc')
+
     bld.SAMBA_SUBSYSTEM('ctdb-protocol',
                         source=bld.SUBDIR('protocol',
                                           '''protocol_header.c protocol_packet.c
