@@ -174,22 +174,58 @@ add_trusted_domain_from_tdc(const struct winbindd_tdc_domain *tdc)
 	/* We can't call domain_list() as this function is called from
 	   init_domain_list() and we'll get stuck in a loop. */
 	for (domain = _domain_list; domain; domain = domain->next) {
-		if (strequal(domain_name, domain->name) ||
-		    strequal(domain_name, domain->alt_name))
-		{
+		if (strequal(domain_name, domain->name)) {
 			break;
 		}
+	}
 
-		if (alternative_name) {
-			if (strequal(alternative_name, domain->name) ||
-			    strequal(alternative_name, domain->alt_name))
-			{
+	if (domain != NULL) {
+		struct winbindd_domain *check_domain = NULL;
+
+		for (check_domain = _domain_list;
+		     check_domain != NULL;
+		     check_domain = check_domain->next)
+		{
+			if (check_domain == domain) {
+				continue;
+			}
+
+			if (dom_sid_equal(&check_domain->sid, sid)) {
 				break;
 			}
 		}
 
-		if (dom_sid_equal(sid, &domain->sid)) {
-			break;
+		if (check_domain != NULL) {
+			DBG_ERR("SID [%s] already used by domain [%s], "
+				"expected [%s]\n",
+				sid_string_dbg(sid), check_domain->name,
+				domain->name);
+			return NULL;
+		}
+	}
+
+	if ((domain != NULL) && (alternative_name != NULL)) {
+		struct winbindd_domain *check_domain = NULL;
+
+		for (check_domain = _domain_list;
+		     check_domain != NULL;
+		     check_domain = check_domain->next)
+		{
+			if (check_domain == domain) {
+				continue;
+			}
+
+			if (strequal(check_domain->alt_name, alternative_name)) {
+				break;
+			}
+		}
+
+		if (check_domain != NULL) {
+			DBG_ERR("DNS name [%s] used by domain [%s], "
+				"expected [%s]\n",
+				alternative_name, check_domain->name,
+				domain->name);
+			return NULL;
 		}
 	}
 
