@@ -153,7 +153,8 @@ add_trusted_domain_from_tdc(const struct winbindd_tdc_domain *tdc)
 	const struct dom_sid *sid = &tdc->sid;
 
 	if (is_null_sid(sid)) {
-		sid = NULL;
+		DBG_ERR("Got null SID for domain [%s]\n", domain_name);
+		return NULL;
 	}
 
 	ignored_domains = lp_parm_string_list(-1, "winbind", "ignore domains", NULL);
@@ -187,24 +188,12 @@ add_trusted_domain_from_tdc(const struct winbindd_tdc_domain *tdc)
 			}
 		}
 
-		if (sid != NULL) {
-			if (dom_sid_equal(sid, &domain->sid)) {
-				break;
-			}
+		if (dom_sid_equal(sid, &domain->sid)) {
+			break;
 		}
 	}
 
 	if (domain != NULL) {
-		/*
-		 * We found a match on domain->name or
-		 * domain->alt_name. Possibly update the SID
-		 * if the stored SID was the NULL SID
-		 * and return the matching entry.
-		 */
-		if ((sid != NULL)
-		    && dom_sid_equal(&domain->sid, &global_sid_NULL)) {
-			sid_copy( &domain->sid, sid );
-		}
 		return domain;
 	}
 
@@ -244,12 +233,10 @@ add_trusted_domain_from_tdc(const struct winbindd_tdc_domain *tdc)
 	domain->online = is_internal_domain(sid);
 	domain->check_online_timeout = 0;
 	domain->dc_probe_pid = (pid_t)-1;
-	if (sid != NULL) {
-		sid_copy(&domain->sid, sid);
-	}
 	domain->domain_flags = tdc->trust_flags;
 	domain->domain_type = tdc->trust_type;
 	domain->domain_trust_attribs = tdc->trust_attribs;
+	sid_copy(&domain->sid, sid);
 
 	/* Is this our primary domain ? */
 	if (role == ROLE_DOMAIN_MEMBER) {
