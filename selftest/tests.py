@@ -136,6 +136,11 @@ plantestsuite(
     ["PYTHON=%s" % python,
      os.path.join(bbdir, "schemaupgrade.sh"),
      '$PREFIX_ABS/provision', configuration])
+plantestsuite(
+    "samba4.blackbox.functionalprep", "none",
+    ["PYTHON=%s" % python,
+     os.path.join(bbdir, "functionalprep.sh"),
+     '$PREFIX_ABS/provision', configuration])
 planpythontestsuite("none", "samba.tests.upgradeprovision")
 planpythontestsuite("none", "samba.tests.xattr", py3_compatible=True)
 planpythontestsuite("none", "samba.tests.ntacls")
