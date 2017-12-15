@@ -213,12 +213,9 @@ class NCReplica(NamingContext):
 
         return "%s\n%s" % (NamingContext.__str__(self), text)
 
-    def set_instantiated_flags(self, flags=None):
+    def set_instantiated_flags(self, flags=0):
         '''Set or clear NC replica instantiated flags'''
-        if flags is None:
-            self.rep_instantiated_flags = 0
-        else:
-            self.rep_instantiated_flags = flags
+        self.rep_instantiated_flags = flags
 
     def identify_by_dsa_attr(self, samdb, attr):
         """Given an NC which has been discovered thru the
