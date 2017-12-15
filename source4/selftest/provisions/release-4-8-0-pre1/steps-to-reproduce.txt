@@ -1,0 +1,13 @@
+# This environment is just a simple provision with functional prep applied.
+
+# First we create the environment
+
+samba-tool domain provision --targetdir=/tmp/release-4-8-0-pre1 --base-schema=2012_R2 --use-ntvfs --realm=REALM.COM --domain=REALM -s /dev/null --host-ip=127.0.0.1 --host-ip6=::1
+
+# Then we prepare it at the 2012 R2 preparation level
+
+samba-tool domain functionalprep -s /tmp/release-4-8-0-pre1/etc/smb.conf
+
+# Then we dump the database
+
+$SRC_DIR/source4/selftest/provisions/dump.sh /tmp/release-4-8-0-pre1/ $SRC_DIR/source4/selftest/provisions/release-4-8-0-pre1
