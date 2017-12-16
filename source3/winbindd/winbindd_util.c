@@ -36,9 +36,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
-static struct winbindd_domain *
-add_trusted_domain_from_tdc(const struct winbindd_tdc_domain *tdc);
-
 /**
  * @file winbindd_util.c
  *
@@ -122,58 +119,36 @@ static bool is_in_internal_domain(const struct dom_sid *sid)
    If the domain already exists in the list,
    return it and don't re-initialize.  */
 
-static struct winbindd_domain *
-add_trusted_domain(const char *domain_name, const char *alt_name,
-		   const struct dom_sid *sid)
-{
-	struct winbindd_tdc_domain tdc;
-
-	ZERO_STRUCT(tdc);
-
-	tdc.domain_name = domain_name;
-	tdc.dns_name = alt_name;
-	if (sid) {
-		sid_copy(&tdc.sid, sid);
-	}
-
-	return add_trusted_domain_from_tdc(&tdc);
-}
-
-/* Add a trusted domain out of a trusted domain cache
-   entry
-*/
-static struct winbindd_domain *
-add_trusted_domain_from_tdc(const struct winbindd_tdc_domain *tdc)
+static NTSTATUS add_trusted_domain(const char *domain_name,
+				   const char *dns_name,
+				   const struct dom_sid *sid,
+				   uint32_t trust_type,
+				   uint32_t trust_flags,
+				   uint32_t trust_attribs,
+				   struct winbindd_domain **_d)
 {
 	struct winbindd_domain *domain = NULL;
-	const char *dns_name = NULL;
 	const char **ignored_domains = NULL;
 	const char **dom = NULL;
 	int role = lp_server_role();
-	const char *domain_name = tdc->domain_name;
-	const struct dom_sid *sid = &tdc->sid;
 
 	if (is_null_sid(sid)) {
 		DBG_ERR("Got null SID for domain [%s]\n", domain_name);
-		return NULL;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	ignored_domains = lp_parm_string_list(-1, "winbind", "ignore domains", NULL);
 	for (dom=ignored_domains; dom && *dom; dom++) {
 		if (gen_fnmatch(*dom, domain_name) == 0) {
 			DEBUG(2,("Ignoring domain '%s'\n", domain_name));
-			return NULL;
+			return NT_STATUS_NO_SUCH_DOMAIN;
 		}
 	}
 
-	/* use alt_name if available to allow DNS lookups */
-
-	if (tdc->dns_name && *tdc->dns_name) {
-		dns_name = tdc->dns_name;
-	}
-
-	/* We can't call domain_list() as this function is called from
-	   init_domain_list() and we'll get stuck in a loop. */
+	/*
+	 * We can't call domain_list() as this function is called from
+	 * init_domain_list() and we'll get stuck in a loop.
+	 */
 	for (domain = _domain_list; domain; domain = domain->next) {
 		if (strequal(domain_name, domain->name)) {
 			break;
@@ -201,7 +176,7 @@ add_trusted_domain_from_tdc(const struct winbindd_tdc_domain *tdc)
 				"expected [%s]\n",
 				sid_string_dbg(sid), check_domain->name,
 				domain->name);
-			return NULL;
+			return NT_STATUS_INVALID_PARAMETER;
 		}
 	}
 
@@ -226,18 +201,19 @@ add_trusted_domain_from_tdc(const struct winbindd_tdc_domain *tdc)
 				"expected [%s]\n",
 				dns_name, check_domain->name,
 				domain->name);
-			return NULL;
+			return NT_STATUS_INVALID_PARAMETER;
 		}
 	}
 
 	if (domain != NULL) {
-		return domain;
+		*_d = domain;
+		return NT_STATUS_OK;
 	}
 
 	/* Create new domain entry */
 	domain = talloc_zero(NULL, struct winbindd_domain);
 	if (domain == NULL) {
-		return NULL;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	domain->children = talloc_zero_array(domain,
@@ -245,20 +221,20 @@ add_trusted_domain_from_tdc(const struct winbindd_tdc_domain *tdc)
 					     lp_winbind_max_domain_connections());
 	if (domain->children == NULL) {
 		TALLOC_FREE(domain);
-		return NULL;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	domain->name = talloc_strdup(domain, domain_name);
 	if (domain->name == NULL) {
 		TALLOC_FREE(domain);
-		return NULL;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	if (dns_name != NULL) {
 		domain->alt_name = talloc_strdup(domain, dns_name);
 		if (domain->alt_name == NULL) {
 			TALLOC_FREE(domain);
-			return NULL;
+			return NT_STATUS_NO_MEMORY;
 		}
 	}
 
@@ -270,9 +246,9 @@ add_trusted_domain_from_tdc(const struct winbindd_tdc_domain *tdc)
 	domain->online = is_internal_domain(sid);
 	domain->check_online_timeout = 0;
 	domain->dc_probe_pid = (pid_t)-1;
-	domain->domain_flags = tdc->trust_flags;
-	domain->domain_type = tdc->trust_type;
-	domain->domain_trust_attribs = tdc->trust_attribs;
+	domain->domain_flags = trust_flags;
+	domain->domain_type = trust_type;
+	domain->domain_trust_attribs = trust_attribs;
 	sid_copy(&domain->sid, sid);
 
 	/* Is this our primary domain ? */
@@ -302,11 +278,12 @@ add_trusted_domain_from_tdc(const struct winbindd_tdc_domain *tdc)
 
 	setup_domain_child(domain);
 
-	DEBUG(2,
-	      ("Added domain %s %s %s\n", domain->name, domain->alt_name,
-	       !is_null_sid(&domain->sid) ? sid_string_dbg(&domain->sid) : ""));
+	DBG_NOTICE("Added domain [%s] [%s] [%s]\n",
+		   domain->name, domain->alt_name,
+		   sid_string_dbg(&domain->sid));
 
-	return domain;
+	*_d = domain;
+	return NT_STATUS_OK;
 }
 
 bool domain_is_forest_root(const struct winbindd_domain *domain)
@@ -362,9 +339,9 @@ static void trustdom_list_done(struct tevent_req *req)
 	struct winbindd_response *response;
 	int res, err;
 	char *p;
-	struct winbindd_tdc_domain trust_params = {0};
 	ptrdiff_t extra_len;
 	bool within_forest = false;
+	NTSTATUS status;
 
 	/*
 	 * Only when we enumerate our primary domain
@@ -398,12 +375,16 @@ static void trustdom_list_done(struct tevent_req *req)
 	p = (char *)response->extra_data.data;
 
 	while ((p - (char *)response->extra_data.data) < extra_len) {
-		char *q, *sidstr, *alt_name;
+		struct winbindd_domain *domain = NULL;
+		char *name, *q, *sidstr, *alt_name;
+		struct dom_sid sid;
+		uint32_t trust_type;
+		uint32_t trust_attribs;
+		uint32_t trust_flags;
 
 		DBG_DEBUG("parsing response line '%s'\n", p);
 
-		ZERO_STRUCT(trust_params);
-		trust_params.domain_name = p;
+		name = p;
 
 		alt_name = strchr(p, '\\');
 		if (alt_name == NULL) {
@@ -424,8 +405,8 @@ static void trustdom_list_done(struct tevent_req *req)
 		sidstr += 1;
 
 		/* use the real alt_name if we have one, else pass in NULL */
-		if (!strequal(alt_name, "(null)")) {
-			trust_params.dns_name = alt_name;
+		if (strequal(alt_name, "(null)")) {
+			alt_name = NULL;
 		}
 
 		q = strtok(sidstr, "\\");
@@ -434,7 +415,7 @@ static void trustdom_list_done(struct tevent_req *req)
 			break;
 		}
 
-		if (!string_to_sid(&trust_params.sid, sidstr)) {
+		if (!string_to_sid(&sid, sidstr)) {
 			DEBUG(0, ("Got invalid trustdom response\n"));
 			break;
 		}
@@ -445,7 +426,7 @@ static void trustdom_list_done(struct tevent_req *req)
 			break;
 		}
 
-		trust_params.trust_flags = (uint32_t)strtoul(q, NULL, 10);
+		trust_flags = (uint32_t)strtoul(q, NULL, 10);
 
 		q = strtok(NULL, "\\");
 		if (q == NULL) {
@@ -453,7 +434,7 @@ static void trustdom_list_done(struct tevent_req *req)
 			break;
 		}
 
-		trust_params.trust_type = (uint32_t)strtoul(q, NULL, 10);
+		trust_type = (uint32_t)strtoul(q, NULL, 10);
 
 		q = strtok(NULL, "\n");
 		if (q == NULL) {
@@ -461,14 +442,14 @@ static void trustdom_list_done(struct tevent_req *req)
 			break;
 		}
 
-		trust_params.trust_attribs = (uint32_t)strtoul(q, NULL, 10);
+		trust_attribs = (uint32_t)strtoul(q, NULL, 10);
 
 		if (!within_forest) {
-			trust_params.trust_flags &= ~NETR_TRUST_FLAG_IN_FOREST;
+			trust_flags &= ~NETR_TRUST_FLAG_IN_FOREST;
 		}
 
 		if (!state->domain->primary) {
-			trust_params.trust_flags &= ~NETR_TRUST_FLAG_PRIMARY;
+			trust_flags &= ~NETR_TRUST_FLAG_PRIMARY;
 		}
 
 		/*
@@ -477,7 +458,20 @@ static void trustdom_list_done(struct tevent_req *req)
 		 * This is important because we need the SID for sibling
 		 * domains.
 		 */
-		(void)add_trusted_domain_from_tdc(&trust_params);
+		status = add_trusted_domain(name,
+					    alt_name,
+					    &sid,
+					    trust_type,
+					    trust_flags,
+					    trust_attribs,
+					    &domain);
+		if (!NT_STATUS_IS_OK(status) &&
+		    !NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_DOMAIN))
+		{
+			DBG_NOTICE("add_trusted_domain returned %s\n",
+				   nt_errstr(status));
+			return;
+		}
 
 		p = q + strlen(q) + 1;
 	}
@@ -520,6 +514,7 @@ static void rescan_forest_root_trusts( void )
 	struct winbindd_tdc_domain *dom_list = NULL;
         size_t num_trusts = 0;
 	int i;
+	NTSTATUS status;
 
 	/* The only transitive trusts supported by Windows 2003 AD are
 	   (a) Parent-Child, (b) Tree-Root, and (c) Forest.   The
@@ -544,11 +539,23 @@ static void rescan_forest_root_trusts( void )
 		/* Here's the forest root */
 
 		d = find_domain_from_name_noinit( dom_list[i].domain_name );
+		if (d == NULL) {
+			status = add_trusted_domain(dom_list[i].domain_name,
+						    dom_list[i].dns_name,
+						    &dom_list[i].sid,
+						    dom_list[i].trust_type,
+						    dom_list[i].trust_flags,
+						    dom_list[i].trust_attribs,
+						    &d);
 
-		if ( !d ) {
-			d = add_trusted_domain_from_tdc(&dom_list[i]);
+			if (!NT_STATUS_IS_OK(status) &&
+			    NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_DOMAIN))
+			{
+				DBG_ERR("add_trusted_domain returned %s\n",
+					nt_errstr(status));
+				return;
+			}
 		}
-
 		if (d == NULL) {
 			continue;
 		}
@@ -582,6 +589,7 @@ static void rescan_forest_trusts( void )
 	struct winbindd_tdc_domain *dom_list = NULL;
         size_t num_trusts = 0;
 	int i;
+	NTSTATUS status;
 
 	/* The only transitive trusts supported by Windows 2003 AD are
 	   (a) Parent-Child, (b) Tree-Root, and (c) Forest.   The
@@ -611,8 +619,23 @@ static void rescan_forest_trusts( void )
 			/* add the trusted domain if we don't know
 			   about it */
 
-			if ( !d ) {
-				d = add_trusted_domain_from_tdc(&dom_list[i]);
+			if (d == NULL) {
+				status = add_trusted_domain(
+					dom_list[i].domain_name,
+					dom_list[i].dns_name,
+					&dom_list[i].sid,
+					type,
+					flags,
+					attribs,
+					&d);
+				if (!NT_STATUS_IS_OK(status) &&
+				    NT_STATUS_EQUAL(status,
+						    NT_STATUS_NO_SUCH_DOMAIN))
+				{
+					DBG_ERR("add_trusted_domain: %s\n",
+						nt_errstr(status));
+					return;
+				}
 			}
 
 			if (d == NULL) {
@@ -716,6 +739,8 @@ static void wb_imsg_new_trusted_domain(struct imessaging_context *msg,
 	struct lsa_TrustDomainInfoInfoEx info;
 	enum ndr_err_code ndr_err;
 	struct winbindd_domain *d = NULL;
+	uint32_t trust_flags = 0;
+	NTSTATUS status;
 
 	DEBUG(5, ("wb_imsg_new_trusted_domain\n"));
 
@@ -737,36 +762,31 @@ static void wb_imsg_new_trusted_domain(struct imessaging_context *msg,
 		return;
 	}
 
-	d = add_trusted_domain(info.netbios_name.string,
-			       info.domain_name.string,
-			       info.sid);
-	if (d == NULL) {
-		TALLOC_FREE(frame);
-		return;
-	}
-
-	if (d->internal) {
-		TALLOC_FREE(frame);
-		return;
-	}
-
-	if (d->primary) {
-		TALLOC_FREE(frame);
-		return;
-	}
-
 	if (info.trust_direction & LSA_TRUST_DIRECTION_INBOUND) {
-		d->domain_flags |= NETR_TRUST_FLAG_INBOUND;
+		trust_flags |= NETR_TRUST_FLAG_INBOUND;
 	}
 	if (info.trust_direction & LSA_TRUST_DIRECTION_OUTBOUND) {
-		d->domain_flags |= NETR_TRUST_FLAG_OUTBOUND;
+		trust_flags |= NETR_TRUST_FLAG_OUTBOUND;
 	}
 	if (info.trust_attributes & LSA_TRUST_ATTRIBUTE_WITHIN_FOREST) {
-		d->domain_flags |= NETR_TRUST_FLAG_IN_FOREST;
+		trust_flags |= NETR_TRUST_FLAG_IN_FOREST;
 	}
-	d->domain_type = info.trust_type;
-	d->domain_trust_attribs = info.trust_attributes;
 
+	status = add_trusted_domain(info.netbios_name.string,
+				    info.domain_name.string,
+				    info.sid,
+				    info.trust_type,
+				    trust_flags,
+				    info.trust_attributes,
+				    &d);
+	if (!NT_STATUS_IS_OK(status) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_DOMAIN))
+	{
+		DBG_NOTICE("add_trusted_domain returned %s\n",
+			   nt_errstr(status));
+		TALLOC_FREE(frame);
+		return;
+	}
 	TALLOC_FREE(frame);
 }
 
@@ -818,6 +838,7 @@ bool init_domain_list(void)
 {
 	int role = lp_server_role();
 	struct pdb_domain_info *pdb_domain_info = NULL;
+	struct winbindd_domain *domain =  NULL;
 	NTSTATUS status;
 
 	/* Free existing list */
@@ -825,7 +846,18 @@ bool init_domain_list(void)
 
 	/* BUILTIN domain */
 
-	(void)add_trusted_domain("BUILTIN", NULL, &global_sid_Builtin);
+	status = add_trusted_domain("BUILTIN",
+				    NULL,
+				    &global_sid_Builtin,
+				    LSA_TRUST_TYPE_DOWNLEVEL,
+				    0, /* trust_flags */
+				    0, /* trust_attribs */
+				    &domain);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("add_trusted_domain BUILTIN returned %s\n",
+			nt_errstr(status));
+		return false;
+	}
 
 	/* Local SAM */
 
@@ -841,7 +873,8 @@ bool init_domain_list(void)
 	pdb_domain_info = pdb_get_domain_info(talloc_tos());
 
 	if ( role == ROLE_ACTIVE_DIRECTORY_DC ) {
-		struct winbindd_domain *domain;
+		uint32_t trust_flags;
+		bool is_root;
 		enum netr_SchannelType sec_chan_type;
 		const char *account_name;
 		struct samr_Password current_nt_hash;
@@ -852,13 +885,29 @@ bool init_domain_list(void)
 				"domain info from sam.ldb\n"));
 			return false;
 		}
-		domain = add_trusted_domain(pdb_domain_info->name,
-					pdb_domain_info->dns_domain,
-					&pdb_domain_info->sid);
+
+		trust_flags = NETR_TRUST_FLAG_PRIMARY;
+		trust_flags |= NETR_TRUST_FLAG_IN_FOREST;
+		trust_flags |= NETR_TRUST_FLAG_NATIVE;
+		trust_flags |= NETR_TRUST_FLAG_OUTBOUND;
+
+		is_root = strequal(pdb_domain_info->dns_domain,
+				   pdb_domain_info->dns_forest);
+		if (is_root) {
+			trust_flags |= NETR_TRUST_FLAG_TREEROOT;
+		}
+
+		status = add_trusted_domain(pdb_domain_info->name,
+					    pdb_domain_info->dns_domain,
+					    &pdb_domain_info->sid,
+					    LSA_TRUST_TYPE_UPLEVEL,
+					    trust_flags,
+					    LSA_TRUST_ATTRIBUTE_WITHIN_FOREST,
+					    &domain);
 		TALLOC_FREE(pdb_domain_info);
-		if (domain == NULL) {
-			DEBUG(0, ("Failed to add our own, local AD "
-				"domain to winbindd's internal list\n"));
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_ERR("Failed to add our own, local AD "
+				"domain to winbindd's internal list\n");
 			return false;
 		}
 
@@ -902,31 +951,64 @@ bool init_domain_list(void)
 		}
 
 	} else {
-		(void)add_trusted_domain(get_global_sam_name(), NULL,
-					 get_global_sam_sid());
+		uint32_t trust_flags;
+
+		trust_flags = NETR_TRUST_FLAG_OUTBOUND;
+		if (role != ROLE_DOMAIN_MEMBER) {
+			trust_flags |= NETR_TRUST_FLAG_PRIMARY;
+		}
+
+		status = add_trusted_domain(get_global_sam_name(),
+					    NULL,
+					    get_global_sam_sid(),
+					    LSA_TRUST_TYPE_DOWNLEVEL,
+					    trust_flags,
+					    0, /* trust_attribs */
+					    &domain);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_ERR("Failed to add local SAM to "
+				"domain to winbindd's internal list\n");
+			return false;
+		}
 	}
 	/* Add ourselves as the first entry. */
 
 	if ( role == ROLE_DOMAIN_MEMBER ) {
-		struct winbindd_domain *domain;
 		struct dom_sid our_sid;
+		uint32_t trust_type;
 
 		if (!secrets_fetch_domain_sid(lp_workgroup(), &our_sid)) {
 			DEBUG(0, ("Could not fetch our SID - did we join?\n"));
 			return False;
 		}
 
-		domain = add_trusted_domain(lp_workgroup(), lp_realm(),
-					    &our_sid);
-		if (domain) {
-			/* Even in the parent winbindd we'll need to
-			   talk to the DC, so try and see if we can
-			   contact it. Theoretically this isn't neccessary
-			   as the init_dc_connection() in init_child_recv()
-			   will do this, but we can start detecting the DC
-			   early here. */
-			set_domain_online_request(domain);
+		if (lp_realm() != NULL) {
+			trust_type = LSA_TRUST_TYPE_UPLEVEL;
+		} else {
+			trust_type = LSA_TRUST_TYPE_DOWNLEVEL;
 		}
+
+		status = add_trusted_domain(lp_workgroup(),
+					    lp_realm(),
+					    &our_sid,
+					    trust_type,
+					    NETR_TRUST_FLAG_PRIMARY|
+					    NETR_TRUST_FLAG_OUTBOUND,
+					    0, /* trust_attribs */
+					    &domain);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_ERR("Failed to add local SAM to "
+				"domain to winbindd's internal list\n");
+			return false;
+		}
+		/* Even in the parent winbindd we'll need to
+		   talk to the DC, so try and see if we can
+		   contact it. Theoretically this isn't neccessary
+		   as the init_dc_connection() in init_child_recv()
+		   will do this, but we can start detecting the DC
+		   early here. */
+		set_domain_online_request(domain);
+
 	}
 
 	status = imessaging_register(winbind_imessaging_context(), NULL,
