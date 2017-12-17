@@ -15,6 +15,9 @@ shift 1
 RELEASE="release-4-8-0-pre1"
 release_dir=`dirname $0`/../../source4/selftest/provisions/$RELEASE
 
+OLD_RELEASE="release-4-1-0rc3"
+old_release_dir=`dirname $0`/../../source4/selftest/provisions/$OLD_RELEASE
+
 cleanup_output_directories()
 {
     if [ -d $PREFIX_ABS/2012R2_schema ]; then
@@ -23,6 +26,10 @@ cleanup_output_directories()
 
     if [ -d $PREFIX_ABS/$RELEASE ]; then
         rm -fr $PREFIX_ABS/$RELEASE
+    fi
+
+    if [ -d $PREFIX_ABS/$OLD_RELEASE ]; then
+        rm -fr $PREFIX_ABS/$OLD_RELEASE
     fi
 }
 
@@ -34,6 +41,16 @@ undump() {
        `dirname $0`/../../source4/selftest/provisions/undump.sh $release_dir $PREFIX_ABS/$RELEASE
    fi
 }
+
+undump_old() {
+   if test -x $BINDIR/tdbrestore;
+   then
+       `dirname $0`/../../source4/selftest/provisions/undump.sh $old_release_dir $PREFIX_ABS/$OLD_RELEASE $BINDIR/tdbrestore
+   else
+       `dirname $0`/../../source4/selftest/provisions/undump.sh $old_release_dir $PREFIX_ABS/$OLD_RELEASE
+   fi
+}
+
 
 PROVISION_OPTS="--use-ntvfs --host-ip6=::1 --host-ip=127.0.0.1"
 
@@ -57,6 +74,20 @@ functional_prep() {
     $BINDIR/samba-tool domain functionalprep -H tdb://$PREFIX_ABS/2012R2_schema/private/sam.ldb --function-level=2012_R2
 }
 
+functional_prep_old() {
+    $BINDIR/samba-tool domain functionalprep -H tdb://$PREFIX_ABS/$OLD_RELEASE/private/sam.ldb --function-level=2012_R2
+}
+
+steal_roles() {
+    # Must steal schema master and infrastructure roles first
+    $BINDIR/samba-tool fsmo seize --role=schema -H tdb://$PREFIX_ABS/$OLD_RELEASE/private/sam.ldb --force
+    $BINDIR/samba-tool fsmo seize --role=infrastructure -H tdb://$PREFIX_ABS/$OLD_RELEASE/private/sam.ldb --force
+}
+
+schema_upgrade() {
+    $BINDIR/samba-tool domain schemaupgrade -H tdb://$PREFIX_ABS/$OLD_RELEASE/private/sam.ldb --schema=2012_R2
+}
+
 # double-check we cleaned up from the last test run
 cleanup_output_directories
 
@@ -70,6 +101,14 @@ testit "functional_prep" functional_prep
 
 # check that the databases are now the same
 testit "check_databases_same" ldapcmp
+
+testit $OLD_RELEASE undump_old
+
+testit "steal_roles" steal_roles
+
+testit "schema_upgrade" schema_upgrade
+
+testit "functional_prep_old" functional_prep_old
 
 cleanup_output_directories
 
