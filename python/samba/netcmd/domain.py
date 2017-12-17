@@ -98,6 +98,7 @@ from samba.provision.common import (
 )
 
 string_version_to_constant = {
+    "2008_R2" : DS_DOMAIN_FUNCTION_2008_R2,
     "2012": DS_DOMAIN_FUNCTION_2012,
     "2012_R2": DS_DOMAIN_FUNCTION_2012_R2,
 }
@@ -4195,7 +4196,7 @@ class cmd_domain_functional_prep(Command):
         Option("--quiet", help="Be quiet", action="store_true"),
         Option("--verbose", help="Be verbose", action="store_true"),
         Option("--function-level", type="choice", metavar="FUNCTION_LEVEL",
-               choices=["2012", "2012_R2"],
+               choices=["2008_R2", "2012", "2012_R2"],
                help="The schema file to upgrade to. Default is (Windows) 2012_R2.",
                default="2012_R2"),
         Option("--forest-prep", action="store_true",

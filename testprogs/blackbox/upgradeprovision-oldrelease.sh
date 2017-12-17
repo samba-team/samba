@@ -84,9 +84,15 @@ upgradeprovision() {
 
 	# on top of this, also apply 2008R2 changes we accidentally missed in the past
 	$BINDIR/samba-tool domain schemaupgrade -H tdb://$PREFIX_ABS/${RELEASE}_upgrade/private/sam.ldb --ldf-file=samba-4.7-missing-for-schema45.ldif,fix-forest-rev.ldf
+
+	# add missing domain prep for 2008R2
+	$BINDIR/samba-tool domain functionalprep -H tdb://$PREFIX_ABS/${RELEASE}_upgrade/private/sam.ldb --domain --function-level 2008_R2
 }
 
 upgradeprovision_full() {
+	# add missing domain prep for 2008R2
+	$BINDIR/samba-tool domain functionalprep -H tdb://$PREFIX_ABS/${RELEASE}_upgrade_full/private/sam.ldb --domain --function-level 2008_R2
+
 	$PYTHON $BINDIR/samba_upgradeprovision -s "$PREFIX_ABS/${RELEASE}_upgrade_full/etc/smb.conf" --full --debugchange
 }
 
