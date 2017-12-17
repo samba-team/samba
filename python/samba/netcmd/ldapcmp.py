@@ -454,12 +454,17 @@ class LDAPObject(object):
 
         if self.two_domains:
             self.ignore_attributes +=  [
-                "objectCategory", "objectGUID", "objectSid", "whenCreated", "whenChanged", "pwdLastSet", "uSNCreated", "creationTime",
-                "modifiedCount", "priorSetTime", "rIDManagerReference", "gPLink", "ipsecNFAReference",
-                "fRSPrimaryMember", "fSMORoleOwner", "masteredBy", "ipsecOwnersReference", "wellKnownObjects",
-                "badPwdCount", "ipsecISAKMPReference", "ipsecFilterReference", "msDs-masteredBy", "lastSetTime",
-                "ipsecNegotiationPolicyReference", "subRefs", "gPCFileSysPath", "accountExpires", "invocationId",
-                "operatingSystemVersion", "oEMInformation",
+                "objectCategory", "objectGUID", "objectSid", "whenCreated",
+                "whenChanged", "pwdLastSet", "uSNCreated", "creationTime",
+                "modifiedCount", "priorSetTime", "rIDManagerReference",
+                "gPLink", "ipsecNFAReference", "fRSPrimaryMember",
+                "fSMORoleOwner", "masteredBy", "ipsecOwnersReference",
+                "wellKnownObjects", "otherWellKnownObjects", "badPwdCount",
+                "ipsecISAKMPReference", "ipsecFilterReference",
+                "msDs-masteredBy", "lastSetTime",
+                "ipsecNegotiationPolicyReference", "subRefs", "gPCFileSysPath",
+                "accountExpires", "invocationId", "operatingSystemVersion",
+                "oEMInformation",
                 # After Exchange preps
                 "targetAddress", "msExchMailboxGuid", "siteFolderGUID"]
             #
