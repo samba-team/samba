@@ -478,7 +478,14 @@ class LDAPObject(object):
                 "msExchHomeRoutingGroup", "msExchResponsibleMTAServer", "siteFolderServer", "msExchRoutingMasterDN",
                 "msExchRoutingGroupMembersBL", "homeMDBBL", "msExchHomePublicMDB", "msExchOwningServer", "templateRoots",
                 "addressBookRoots", "msExchPolicyRoots", "globalAddressList", "msExchOwningPFTree",
-                "msExchResponsibleMTAServerBL", "msExchOwningPFTreeBL",]
+                "msExchResponsibleMTAServerBL", "msExchOwningPFTreeBL",
+                # After 2012 R2 functional preparation
+                "msDS-MembersOfResourcePropertyListBL",
+                "msDS-ValueTypeReference",
+                "msDS-MembersOfResourcePropertyList",
+                "msDS-ValueTypeReferenceBL",
+                "msDS-ClaimTypeAppliesToClass",
+            ]
             self.dn_attributes = [x.upper() for x in self.dn_attributes]
             #
             # Attributes that contain the Domain name e.g. 'samba.org'
