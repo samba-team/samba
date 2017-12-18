@@ -23,7 +23,7 @@ from samba.tests import BlackboxProcessError
 
 
 class HelpTestCase(SambaToolCmdTest):
-    """Tests for samba-tool --help
+    """Tests for samba-tool help and --help
 
     We test for consistency and lack of crashes."""
 
@@ -48,11 +48,21 @@ class HelpTestCase(SambaToolCmdTest):
                     output = e.stdout
                     failed_commands.append(c)
 
-                output = output.partition('Available subcommands:')[2]
-                subcommands = re.findall(r'^\s*([\w-]+)\s+-', output,
+                tail = output.partition('Available subcommands:')[2]
+                subcommands = re.findall(r'^\s*([\w-]+)\s+-', tail,
                                          re.MULTILINE)
                 for s in subcommands:
                     new_commands.append(c + [s])
+
+                # check that `samba-tool help X Y` == `samba-tool X Y --help`
+                line = ' '.join(['samba-tool', 'help'] + c)
+                try:
+                    output2 = self.check_output(line)
+                except BlackboxProcessError as e:
+                    output2 = e.stdout
+                    failed_commands.append(c)
+
+                self.assertEqual(output, output2)
 
             if not new_commands:
                 break
