@@ -5353,10 +5353,10 @@ NTSTATUS dsdb_update_bad_pwd_count(TALLOC_CTX *mem_ctx,
 			TALLOC_FREE(mod_msg);
 			return NT_STATUS_NO_MEMORY;
 		}
-		DEBUG(5, ("Locked out user %s after %d wrong passwords\n",
+		DEBUGC( DBGC_AUTH, 1, ("Locked out user %s after %d wrong passwords\n",
 			  ldb_dn_get_linearized(user_msg->dn), badPwdCount));
 	} else {
-		DEBUG(5, ("Updated badPwdCount on %s after %d wrong passwords\n",
+		DEBUGC( DBGC_AUTH, 5, ("Updated badPwdCount on %s after %d wrong passwords\n",
 			  ldb_dn_get_linearized(user_msg->dn), badPwdCount));
 	}
 
