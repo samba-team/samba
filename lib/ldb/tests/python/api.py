@@ -794,7 +794,16 @@ class SearchTests(TestCase):
 
     def test_check_base_error(self):
         """Testing a search"""
-        self.l.add({"dn": "@OPTIONS", "checkBaseOnSearch": b"TRUE"})
+        checkbaseonsearch = {"dn": "@OPTIONS",
+                             "checkBaseOnSearch": b"TRUE"}
+        try:
+            self.l.add(checkbaseonsearch)
+        except ldb.LdbError as err:
+            enum = err.args[0]
+            self.assertEqual(enum, ldb.ERR_ENTRY_ALREADY_EXISTS)
+            m = ldb.Message.from_dict(self.l,
+                                      checkbaseonsearch)
+            self.l.modify(m)
 
         try:
             res11 = self.l.search(base="OU=OU11x,DC=SAMBA,DC=ORG",
@@ -973,6 +982,54 @@ class SearchTests(TestCase):
                               expression="(@IDXONE=DC=SAMBA,DC=ORG)")
         self.assertEqual(len(res11), 0)
 
+    def test_dn_filter_one(self):
+        """Testing that a dn= filter succeeds
+        (or fails with disallowDNFilter
+        set and IDXGUID or (IDX and not IDXONE) mode)
+        when the scope is SCOPE_ONELEVEL.
+
+        This should be made more consistent, but for now lock in
+        the behaviour
+
+        """
+
+        res11 = self.l.search(base="DC=SAMBA,DC=ORG",
+                              scope=ldb.SCOPE_ONELEVEL,
+                              expression="(dn=OU=OU1,DC=SAMBA,DC=ORG)")
+        if hasattr(self, 'disallowDNFilter') and \
+           hasattr(self, 'IDX') and \
+           (hasattr(self, 'IDXGUID') or \
+            ((hasattr(self, 'IDXONE') == False and hasattr(self, 'IDX')))):
+            self.assertEqual(len(res11), 0)
+        else:
+            self.assertEqual(len(res11), 1)
+
+    def test_dn_filter_subtree(self):
+        """Testing that a dn= filter succeeds
+        (or fails with disallowDNFilter set)
+        when the scope is SCOPE_SUBTREE"""
+
+        res11 = self.l.search(base="DC=SAMBA,DC=ORG",
+                              scope=ldb.SCOPE_SUBTREE,
+                              expression="(dn=OU=OU1,DC=SAMBA,DC=ORG)")
+        if hasattr(self, 'disallowDNFilter') \
+           and hasattr(self, 'IDX'):
+            self.assertEqual(len(res11), 0)
+        else:
+            self.assertEqual(len(res11), 1)
+
+    def test_dn_filter_base(self):
+        """Testing that (incorrectly) a dn= filter works
+        when the scope is SCOPE_BASE"""
+
+        res11 = self.l.search(base="OU=OU1,DC=SAMBA,DC=ORG",
+                              scope=ldb.SCOPE_BASE,
+                              expression="(dn=OU=OU1,DC=SAMBA,DC=ORG)")
+
+        # At some point we should fix this, but it isn't trivial
+        self.assertEqual(len(res11), 1)
+
+
 
 class IndexedSearchTests(SearchTests):
     """Test searches using the index, to ensure the index doesn't
@@ -980,19 +1037,94 @@ class IndexedSearchTests(SearchTests):
     def setUp(self):
         super(IndexedSearchTests, self).setUp()
         self.l.add({"dn": "@INDEXLIST",
+                    "@IDXATTR": [b"x", b"y", b"ou"]})
+        self.IDX = True
+
+class IndexedSearchDnFilterTests(SearchTests):
+    """Test searches using the index, to ensure the index doesn't
+       break things"""
+    def setUp(self):
+        super(IndexedSearchDnFilterTests, self).setUp()
+        self.l.add({"dn": "@OPTIONS",
+                    "disallowDNFilter": "TRUE"})
+        self.disallowDNFilter = True
+
+        self.l.add({"dn": "@INDEXLIST",
+                    "@IDXATTR": [b"x", b"y", b"ou"]})
+        self.IDX = True
+
+class IndexedAndOneLevelSearchTests(SearchTests):
+    """Test searches using the index including @IDXONE, to ensure
+       the index doesn't break things"""
+    def setUp(self):
+        super(IndexedAndOneLevelSearchTests, self).setUp()
+        self.l.add({"dn": "@INDEXLIST",
                     "@IDXATTR": [b"x", b"y", b"ou"],
                     "@IDXONE": [b"1"]})
+        self.IDX = True
+
+class IndexedAndOneLevelDNFilterSearchTests(SearchTests):
+    """Test searches using the index including @IDXONE, to ensure
+       the index doesn't break things"""
+    def setUp(self):
+        super(IndexedAndOneLevelDNFilterSearchTests, self).setUp()
+        self.l.add({"dn": "@OPTIONS",
+                    "disallowDNFilter": "TRUE"})
+        self.disallowDNFilter = True
+
+        self.l.add({"dn": "@INDEXLIST",
+                    "@IDXATTR": [b"x", b"y", b"ou"],
+                    "@IDXONE": [b"1"]})
+        self.IDX = True
+        self.IDXONE = True
 
 class GUIDIndexedSearchTests(SearchTests):
     """Test searches using the index, to ensure the index doesn't
        break things"""
     def setUp(self):
         super(GUIDIndexedSearchTests, self).setUp()
+
+        self.l.add({"dn": "@INDEXLIST",
+                    "@IDXATTR": [b"x", b"y", b"ou"],
+                    "@IDXGUID": [b"objectUUID"],
+                    "@IDX_DN_GUID": [b"GUID"]})
+        self.IDXGUID = True
+        self.IDXONE = True
+
+class GUIDIndexedDNFilterSearchTests(SearchTests):
+    """Test searches using the index, to ensure the index doesn't
+       break things"""
+    def setUp(self):
+        super(GUIDIndexedDNFilterSearchTests, self).setUp()
+        self.l.add({"dn": "@OPTIONS",
+                    "disallowDNFilter": "TRUE"})
+        self.disallowDNFilter = True
+
+        self.l.add({"dn": "@INDEXLIST",
+                    "@IDXATTR": [b"x", b"y", b"ou"],
+                    "@IDXGUID": [b"objectUUID"],
+                    "@IDX_DN_GUID": [b"GUID"]})
+        self.IDX = True
+        self.IDXGUID = True
+
+class GUIDAndOneLevelIndexedSearchTests(SearchTests):
+    """Test searches using the index including @IDXONE, to ensure
+       the index doesn't break things"""
+    def setUp(self):
+        super(GUIDAndOneLevelIndexedSearchTests, self).setUp()
+        self.l.add({"dn": "@OPTIONS",
+                    "disallowDNFilter": "TRUE"})
+        self.disallowDNFilter = True
+
         self.l.add({"dn": "@INDEXLIST",
                     "@IDXATTR": [b"x", b"y", b"ou"],
                     "@IDXONE": [b"1"],
                     "@IDXGUID": [b"objectUUID"],
                     "@IDX_DN_GUID": [b"GUID"]})
+        self.IDX = True
+        self.IDXGUID = True
+        self.IDXONE = True
+
 
 class AddModifyTests(TestCase):
     def tearDown(self):

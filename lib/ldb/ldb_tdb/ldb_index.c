@@ -151,6 +151,13 @@ ldb_schema_set_override_GUID_index() must be called.
 struct dn_list {
 	unsigned int count;
 	struct ldb_val *dn;
+	/*
+	 * Do not optimise the intersection of this list,
+	 * we must never return an entry not in this
+	 * list.  This allows the index for
+	 * SCOPE_ONELEVEL to be trusted.
+	 */
+	bool strict;
 };
 
 struct ltdb_idxptr {
@@ -1029,10 +1036,10 @@ static bool list_intersect(struct ldb_context *ldb,
 	   what really matches, as all results are filtered by the
 	   full expression at the end - this shortcut avoids a lot of
 	   work in some cases */
-	if (list->count < 2 && list2->count > 10) {
+	if (list->count < 2 && list2->count > 10 && list2->strict == false) {
 		return true;
 	}
-	if (list2->count < 2 && list->count > 10) {
+	if (list2->count < 2 && list->count > 10 && list->strict == false) {
 		list->count = list2->count;
 		list->dn = list2->dn;
 		/* note that list2 may not be the parent of list2->dn,
@@ -1073,6 +1080,7 @@ static bool list_intersect(struct ldb_context *ldb,
 		}
 	}
 
+	list->strict |= list2->strict;
 	list->dn = talloc_steal(list, list3->dn);
 	list->count = list3->count;
 	talloc_free(list3);
@@ -1411,6 +1419,8 @@ static int ltdb_index_dn_one(struct ldb_module *module,
 			     struct ldb_dn *parent_dn,
 			     struct dn_list *list)
 {
+	/* Ensure we do not shortcut on intersection for this list */
+	list->strict = true;
 	return ltdb_index_dn_attr(module, ltdb,
 				  LTDB_IDXONE, parent_dn, list);
 }
@@ -1630,9 +1640,11 @@ static void ltdb_dn_list_sort(struct ltdb_private *ltdb,
 */
 int ltdb_search_indexed(struct ltdb_context *ac, uint32_t *match_count)
 {
+	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
 	struct ltdb_private *ltdb = talloc_get_type(ldb_module_get_private(ac->module), struct ltdb_private);
 	struct dn_list *dn_list;
 	int ret;
+	enum ldb_scope index_scope;
 
 	/* see if indexing is enabled */
 	if (!ltdb->cache->attribute_indexes &&
@@ -1647,7 +1659,19 @@ int ltdb_search_indexed(struct ltdb_context *ac, uint32_t *match_count)
 		return ldb_module_oom(ac->module);
 	}
 
-	switch (ac->scope) {
+	/*
+	 * For the purposes of selecting the switch arm below, if we
+	 * don't have a one-level index then treat it like a subtree
+	 * search
+	 */
+	if (ac->scope == LDB_SCOPE_ONELEVEL &&
+	    !ltdb->cache->one_level_indexes) {
+		index_scope = LDB_SCOPE_SUBTREE;
+	} else {
+		index_scope = ac->scope;
+	}
+
+	switch (index_scope) {
 	case LDB_SCOPE_BASE:
 		/*
 		 * If we ever start to also load the index values for
@@ -1663,10 +1687,6 @@ int ltdb_search_indexed(struct ltdb_context *ac, uint32_t *match_count)
 		break;
 
 	case LDB_SCOPE_ONELEVEL:
-		if (!ltdb->cache->one_level_indexes) {
-			talloc_free(dn_list);
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
 		/*
 		 * If we ever start to also load the index values for
 		 * the tree, we must ensure we strictly intersect with
@@ -1676,6 +1696,50 @@ int ltdb_search_indexed(struct ltdb_context *ac, uint32_t *match_count)
 		if (ret != LDB_SUCCESS) {
 			talloc_free(dn_list);
 			return ret;
+		}
+
+		/*
+		 * If we have too many matches, running the filter
+		 * tree over the SCOPE_ONELEVEL can be quite expensive
+		 * so we now check the filter tree index as well.
+		 *
+		 * We only do this in the GUID index mode, which is
+		 * O(n*log(m)) otherwise the intersection below will
+		 * be too costly at O(n*m).
+		 *
+		 * We don't set a heuristic for 'too many' but instead
+		 * do it always and rely on the index lookup being
+		 * fast enough in the small case.
+		 */
+		if (ltdb->cache->GUID_index_attribute != NULL) {
+			struct dn_list *idx_one_tree_list
+				= talloc_zero(ac, struct dn_list);
+			if (idx_one_tree_list == NULL) {
+				return ldb_module_oom(ac->module);
+			}
+
+			if (!ltdb->cache->attribute_indexes) {
+				talloc_free(idx_one_tree_list);
+				talloc_free(dn_list);
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
+			/*
+			 * Here we load the index for the tree.
+			 */
+			ret = ltdb_index_dn(ac->module, ltdb, ac->tree,
+					    idx_one_tree_list);
+			if (ret != LDB_SUCCESS) {
+				talloc_free(idx_one_tree_list);
+				talloc_free(dn_list);
+				return ret;
+			}
+
+			if (!list_intersect(ldb, ltdb,
+					    dn_list, idx_one_tree_list)) {
+				talloc_free(idx_one_tree_list);
+				talloc_free(dn_list);
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
 		}
 		break;
 
