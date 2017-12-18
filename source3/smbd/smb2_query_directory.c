@@ -366,6 +366,13 @@ static struct tevent_req *smbd_smb2_query_directory_send(TALLOC_CTX *mem_ctx,
 		state->info_level = SMB_FIND_ID_FULL_DIRECTORY_INFO;
 		break;
 
+	case SMB2_FIND_POSIX_INFORMATION:
+		if (!(fsp->posix_flags & FSP_POSIX_FLAGS_OPEN)) {
+			tevent_req_nterror(req, NT_STATUS_INVALID_LEVEL);
+			return tevent_req_post(req, ev);
+		}
+		state->info_level = SMB2_FILE_POSIX_INFORMATION;
+		break;
 	default:
 		tevent_req_nterror(req, NT_STATUS_INVALID_INFO_CLASS);
 		return tevent_req_post(req, ev);
