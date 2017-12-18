@@ -2679,7 +2679,7 @@ NTSTATUS winbindd_pam_auth_pac_send(struct winbindd_cli_state *state,
 				SID_NAME_USER,
 				&user_sid);
 
-			DBG_INFO("PAC for user %s\%s SID %s primed cache\n",
+			DBG_INFO("PAC for user %s\\%s SID %s primed cache\n",
 				info3_copy->base.logon_domain.string,
 				info3_copy->base.account_name.string,
 				sid_string_dbg(&user_sid));
