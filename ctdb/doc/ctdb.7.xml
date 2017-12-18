@@ -501,7 +501,7 @@ Node 3:/usr/local/etc/ctdb/public_addresses
       the internal network to one of the nodes that LVS is using.
       When responding to the client, that node will send the data back
       directly to the client, bypassing the LVS master node.  The
-      command <command>ctdb lvsmaster</command> will show which node
+      command <command>ctdb lvs master</command> will show which node
       is the current LVS master.
     </para>
 
@@ -539,7 +539,7 @@ Node 3:/usr/local/etc/ctdb/public_addresses
       multiplex. This means that you should not use LVS if your I/O
       pattern is write-intensive since you will be limited in the
       available network bandwidth that node can handle.  LVS does work
-      wery well for read-intensive workloads where only smallish READ
+      very well for read-intensive workloads where only smallish READ
       requests are going through the LVSMASTER bottleneck and the
       majority of the traffic volume (the data in the read replies)
       goes straight from the processing node back to the clients. For
