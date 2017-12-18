@@ -305,6 +305,10 @@ static unsigned int number_of_labels(const struct ldb_val *name) {
  *
  * x.y.z -> (|(name=x.y.z)(name=\2a.y.z)(name=\2a.z)(name=\2a))
  *
+ * The attribute 'name' is used as this is what the LDB index is on
+ * (the RDN, being 'dc' in this use case, does not have an index in
+ * the AD schema).
+ *
  * Returns NULL if unable to build the query.
  *
  * The first component of the DN is assumed to be the name being looked up
@@ -318,19 +322,13 @@ static struct ldb_parse_tree *build_wildcard_query(
 {
 	const struct ldb_val *name = NULL;            /* The DNS name being
 							 queried */
-	const char *attr = NULL;                      /* The attribute name */
+	const char *attr = "name";                    /* The attribute name */
 	struct ldb_parse_tree *query = NULL;          /* The constructed query
 							 parse tree*/
 	struct ldb_parse_tree *wildcard_query = NULL; /* The parse tree for the
 							 name and wild card
 							 entries */
 	int labels = 0;         /* The number of labels in the name */
-
-	attr = ldb_dn_get_rdn_name(dn);
-	if (attr == NULL) {
-		DBG_ERR("Unable to get rdn_name\n");
-		return NULL;
-	}
 
 	name = ldb_dn_get_rdn_val(dn);
 	if (name == NULL) {
