@@ -388,6 +388,38 @@ sAMAccountName: %s
                              "Unexpected show output for user '%s'" %
                              user["name"])
 
+    def test_move(self):
+        full_ou_dn = str(self.samdb.normalize_dn_in_domain("OU=movetest"))
+        (result, out, err) =  self.runsubcmd("ou", "create", full_ou_dn)
+        self.assertCmdSuccess(result, out, err)
+        self.assertEquals(err, "", "There shouldn't be any error message")
+        self.assertIn('Created ou "%s"' % full_ou_dn, out)
+
+        for user in self.users:
+            (result, out, err) = self.runsubcmd(
+                "user", "move", user["name"], full_ou_dn)
+            self.assertCmdSuccess(result, out, err, "Error running move")
+            self.assertIn('Moved user "%s" into "%s"' %
+                          (user["name"], full_ou_dn), out)
+
+        # Should fail as users objects are in OU
+        (result, out, err) =  self.runsubcmd("ou", "delete", full_ou_dn)
+        self.assertCmdFail(result)
+        self.assertIn(("subtree_delete: Unable to delete a non-leaf node "
+                       "(it has %d children)!") % len(self.users), err)
+
+        for user in self.users:
+            new_dn = "CN=Users,%s" % self.samdb.domain_dn()
+            (result, out, err) = self.runsubcmd(
+                "user", "move", user["name"], new_dn)
+            self.assertCmdSuccess(result, out, err, "Error running move")
+            self.assertIn('Moved user "%s" into "%s"' %
+                          (user["name"], new_dn), out)
+
+        (result, out, err) = self.runsubcmd("ou", "delete", full_ou_dn)
+        self.assertCmdSuccess(result, out, err,
+                              "Failed to delete ou '%s'" % full_ou_dn)
+
     def test_getpwent(self):
         try:
             import pwd
