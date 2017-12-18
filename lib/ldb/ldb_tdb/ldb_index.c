@@ -1075,6 +1075,7 @@ static void ltdb_dn_list_remove_duplicates(struct dn_list *list)
 */
 int ltdb_search_indexed(struct ltdb_context *ac, uint32_t *match_count)
 {
+	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
 	struct ltdb_private *ltdb = talloc_get_type(ldb_module_get_private(ac->module), struct ltdb_private);
 	struct dn_list *dn_list;
 	int ret;
@@ -1109,6 +1110,8 @@ int ltdb_search_indexed(struct ltdb_context *ac, uint32_t *match_count)
 		break;
 
 	case LDB_SCOPE_ONELEVEL:
+	{
+		struct dn_list *idx_one_tree_list = NULL;
 		if (!ltdb->cache->one_level_indexes) {
 			talloc_free(dn_list);
 			return LDB_ERR_OPERATIONS_ERROR;
@@ -1118,8 +1121,54 @@ int ltdb_search_indexed(struct ltdb_context *ac, uint32_t *match_count)
 			talloc_free(dn_list);
 			return ret;
 		}
-		break;
 
+		/*
+		 * If we have too many matches, also try the filter
+		 * tree and do index work there
+		 *
+		 * We only do this in the GUID index mode, which is
+		 * O(n*log(m)) otherwise the intersection below will
+		 * be too costly at O(n*m).
+		 */
+		idx_one_tree_list
+			= talloc_zero(ac, struct dn_list);
+		if (idx_one_tree_list == NULL) {
+			return ldb_module_oom(ac->module);
+		}
+		
+		if (!ltdb->cache->attribute_indexes) {
+			talloc_free(idx_one_tree_list);
+			talloc_free(dn_list);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		/*
+		 * Here we load the index for the tree.
+		 */
+		ret = ltdb_index_dn(ac->module, ltdb, ac->tree,
+				    idx_one_tree_list);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(idx_one_tree_list);
+			talloc_free(dn_list);
+			return ret;
+		}
+
+		/* 
+		 * We have to avoid the O(n*m) behaviour here blowing
+		 * up, so we only intersect the lists if it will
+		 * really help
+		 */
+		if (idx_one_tree_list->count < 10) {
+			if (!list_intersect(ldb, ltdb,
+					    dn_list, idx_one_tree_list)) {
+				talloc_free(idx_one_tree_list);
+				talloc_free(dn_list);
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
+		} else {
+			talloc_free(idx_one_tree_list);
+		}
+		break;
+	}
 	case LDB_SCOPE_SUBTREE:
 	case LDB_SCOPE_DEFAULT:
 		if (!ltdb->cache->attribute_indexes) {
