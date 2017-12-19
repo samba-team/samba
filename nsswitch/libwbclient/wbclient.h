@@ -187,6 +187,7 @@ struct wbcDomainInfo {
 	uint32_t domain_flags;
 	uint32_t trust_flags;
 	uint32_t trust_type;
+	char *trust_routing;
 };
 
 /* wbcDomainInfo->domain_flags */
@@ -209,6 +210,12 @@ struct wbcDomainInfo {
 #define WBC_DOMINFO_TRUSTTYPE_FOREST     0x00000001
 #define WBC_DOMINFO_TRUSTTYPE_IN_FOREST  0x00000002
 #define WBC_DOMINFO_TRUSTTYPE_EXTERNAL   0x00000003
+#define WBC_DOMINFO_TRUSTTYPE_LOCAL      0x00000004
+#define WBC_DOMINFO_TRUSTTYPE_WKSTA      0x00000005
+#define WBC_DOMINFO_TRUSTTYPE_RWDC       0x00000006
+#define WBC_DOMINFO_TRUSTTYPE_RODC       0x00000007
+#define WBC_DOMINFO_TRUSTTYPE_PDC        0x00000008
+
 
 /**
  * @brief Generic Blob
