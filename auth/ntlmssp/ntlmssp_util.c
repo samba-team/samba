@@ -25,6 +25,9 @@
 #include "../auth/ntlmssp/ntlmssp.h"
 #include "../auth/ntlmssp/ntlmssp_private.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_AUTH
+
 static void debug_ntlmssp_flags_raw(int level, uint32_t flags)
 {
 #define _PRINT_FLAG_LINE(v) do { \

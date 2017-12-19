@@ -41,6 +41,9 @@
 #include "lib/util/util_tdb.h"
 #include "libds/common/roles.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_AUTH
+
 /**
  * Fill in credentials for the machine trust account, from the secrets database.
  *

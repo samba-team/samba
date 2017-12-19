@@ -37,6 +37,9 @@
 #include "param/loadparm.h"
 #include "libcli/security/session.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_AUTH
+
 /**
  * Determine correct target name flags for reply, given server role
  * and negotiated flags

@@ -37,6 +37,9 @@
 #include "param/loadparm.h"
 #include "libds/common/roles.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_AUTH
+
 /**
  * Return the credentials of a logged on user, including session keys
  * etc.

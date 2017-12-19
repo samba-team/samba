@@ -26,6 +26,9 @@
 #include "../lib/crypto/crc32.h"
 #include "../auth/ntlmssp/ntlmssp_private.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_AUTH
+
 #define CLI_SIGN "session key to client-to-server signing key magic constant"
 #define CLI_SEAL "session key to client-to-server sealing key magic constant"
 #define SRV_SIGN "session key to server-to-client signing key magic constant"

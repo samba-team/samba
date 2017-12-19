@@ -34,6 +34,9 @@
 #include "lib/util/asn1.h"
 #include "lib/util/base64.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_AUTH
+
 #undef strcasecmp
 
 _PUBLIC_ NTSTATUS gensec_spnego_init(TALLOC_CTX *ctx);

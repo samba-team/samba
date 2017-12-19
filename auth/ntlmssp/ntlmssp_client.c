@@ -36,6 +36,9 @@ struct auth_session_info;
 #include "../auth/ntlmssp/ntlmssp_ndr.h"
 #include "../nsswitch/libwbclient/wbclient.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_AUTH
+
 /*********************************************************************
  Client side NTLMSSP
 *********************************************************************/

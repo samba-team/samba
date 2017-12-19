@@ -28,6 +28,9 @@
 #include "auth/credentials/credentials.h"
 #include "auth/credentials/credentials_internal.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_AUTH
+
 _PUBLIC_ NTSTATUS cli_credentials_get_ntlm_response(struct cli_credentials *cred, TALLOC_CTX *mem_ctx, 
 					   int *flags,
 					   DATA_BLOB challenge,

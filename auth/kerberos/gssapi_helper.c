@@ -23,6 +23,9 @@
 #include "auth/kerberos/pac_utils.h"
 #include "auth/kerberos/gssapi_helper.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_AUTH
+
 size_t gssapi_get_sig_size(gss_ctx_id_t gssapi_context,
 			   const gss_OID mech,
 			   uint32_t gss_want_flags,

@@ -33,6 +33,9 @@ struct auth_session_info;
 #include "auth/gensec/gensec.h"
 #include "auth/gensec/gensec_internal.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_AUTH
+
 /**
  * Callbacks for NTLMSSP - for both client and server operating modes
  *
