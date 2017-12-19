@@ -450,7 +450,7 @@ static int binary_smbd_main(const char *binary_name,
 			"not allowed together with -D|--daemon\n\n");
 		poptPrintUsage(pc, stderr, 0);
 		return 1;
-	} else if (!opt_interactive && !opt_fork) {
+	} else if (!opt_interactive && opt_fork) {
 		/* default is --daemon */
 		opt_daemon = true;
 	}
