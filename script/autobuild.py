@@ -83,7 +83,7 @@ tasks = {
 
     "samba-test-only" : [ ("configure", "./configure.developer --with-selftest-prefix=./bin/ab  --abi-check-disable" + samba_configure_params, "text/plain"),
                           ("make", "make -j", "text/plain"),
-                          ("test", "make test FAIL_IMMEDIATELY=1 TESTS=${TESTS}", "text/plain") ],
+                          ("test", 'make test FAIL_IMMEDIATELY=1 TESTS="${TESTS}"',"text/plain") ],
 
     # Test cross-compile infrastructure
     "samba-xc" : [ ("configure-native", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
