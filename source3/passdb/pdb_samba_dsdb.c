@@ -2134,7 +2134,7 @@ static bool pdb_samba_dsdb_sid_to_id(struct pdb_methods *m, const struct dom_sid
 
 static uint32_t pdb_samba_dsdb_capabilities(struct pdb_methods *m)
 {
-	return PDB_CAP_STORE_RIDS | PDB_CAP_ADS;
+	return PDB_CAP_STORE_RIDS | PDB_CAP_ADS | PDB_CAP_TRUSTED_DOMAINS_EX;
 }
 
 static bool pdb_samba_dsdb_new_rid(struct pdb_methods *m, uint32_t *rid)
