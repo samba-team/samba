@@ -313,6 +313,8 @@ static int load_keys(struct ldb_module *module, struct es_data *data)
 
 	read = fread(key.data, 1, key.length, fp);
 	if (read == 0) {
+		TALLOC_FREE(frame);
+		fclose(fp);
 		ldb_debug(ldb,
 			  LDB_DEBUG_WARNING,
 			  "Zero length encrypted secrets key file. "
