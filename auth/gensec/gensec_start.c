@@ -33,6 +33,9 @@
 #include "lib/util/samba_modules.h"
 #include "lib/util/base64.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_AUTH
+
 /* the list of currently registered GENSEC backends */
 static const struct gensec_security_ops **generic_security_ops;
 static int gensec_num_backends;

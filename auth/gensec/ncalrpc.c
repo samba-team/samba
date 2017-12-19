@@ -30,6 +30,9 @@
 #include "lib/param/param.h"
 #include "tsocket.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_AUTH
+
 _PUBLIC_ NTSTATUS gensec_ncalrpc_as_system_init(TALLOC_CTX *ctx);
 
 struct gensec_ncalrpc_state {

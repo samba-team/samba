@@ -36,6 +36,9 @@
 #include "lib/crypto/crypto.h"
 #include "libds/common/roles.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_AUTH
+
 struct schannel_state {
 	struct gensec_security *gensec;
 	uint64_t seq_num;

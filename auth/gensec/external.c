@@ -28,6 +28,9 @@
 #include "auth/gensec/gensec_proto.h"
 #include "auth/gensec/gensec_toplevel_proto.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_AUTH
+
 /* SASL/EXTERNAL is essentially a no-op; it is only usable when the transport
  * layer is already mutually authenticated.
  */

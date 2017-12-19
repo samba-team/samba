@@ -19,6 +19,10 @@
 */
 
 #include "includes.h"
+
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_AUTH
+
 #ifdef HAVE_KRB5
 
 #include "auth/kerberos/pac_utils.h"

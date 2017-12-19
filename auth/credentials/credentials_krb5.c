@@ -35,6 +35,9 @@
 #include "auth/kerberos/pac_utils.h"
 #include "param/param.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_AUTH
+
 static void cli_credentials_invalidate_client_gss_creds(
 					struct cli_credentials *cred,
 					enum credentials_obtained obtained);

@@ -26,6 +26,9 @@
 #include "auth/common_auth.h"
 #include "../lib/util/asn1.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_AUTH
+
 NTSTATUS gensec_generate_session_info_pac(TALLOC_CTX *mem_ctx,
 					  struct gensec_security *gensec_security,
 					  struct smb_krb5_context *smb_krb5_context,

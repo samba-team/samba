@@ -31,6 +31,9 @@
 #include "librpc/gen_ndr/dcerpc.h"
 #include "auth/common_auth.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_AUTH
+
 _PRIVATE_ NTSTATUS gensec_may_reset_crypto(struct gensec_security *gensec_security,
 					   bool full_reset)
 {
