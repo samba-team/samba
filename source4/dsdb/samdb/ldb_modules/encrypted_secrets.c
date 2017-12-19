@@ -1668,8 +1668,6 @@ static int es_modify(struct ldb_module *module, struct ldb_request *req)
 		}
 		return ldb_next_request(module, new_req);
 	}
-	req->op.add.message = encrypted_msg;
-	return ldb_next_request(module, req);
 }
 
 static int es_delete(struct ldb_module *module, struct ldb_request *req)
