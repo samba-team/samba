@@ -312,9 +312,9 @@ static int load_keys(struct ldb_module *module, struct es_data *data)
 	}
 
 	read = fread(key.data, 1, key.length, fp);
+	fclose(fp);
 	if (read == 0) {
 		TALLOC_FREE(frame);
-		fclose(fp);
 		ldb_debug(ldb,
 			  LDB_DEBUG_WARNING,
 			  "Zero length encrypted secrets key file. "
@@ -325,7 +325,6 @@ static int load_keys(struct ldb_module *module, struct es_data *data)
 	}
 	if (read != key.length) {
 		TALLOC_FREE(frame);
-		fclose(fp);
 		if (errno) {
 			log_error(ldb,
 				  errno,
@@ -340,8 +339,6 @@ static int load_keys(struct ldb_module *module, struct es_data *data)
 		}
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	fclose(fp);
-
 
 	data->keys[0] = key;
 	data->encrypt_secrets = true;
