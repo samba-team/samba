@@ -36,6 +36,12 @@ class cache_loader(dict):
                                  'cmd_%s' % attr)()
         return dict.__getitem__(self, attr)
 
+    def get(self, attr, default=None):
+        try:
+            return self[attr]
+        except KeyError:
+            return default
+
     def iteritems(self):
         for key in self:
             yield (key, self[key])
