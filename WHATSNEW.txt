@@ -1,4 +1,99 @@
                    ==============================
+                   Release Notes for Samba 4.6.12
+                          December 20, 2017
+                   =============================
+
+
+This is the latest stable release of the Samba 4.6 release series.
+
+
+smbclient reparse point symlink parameters reversed
+===================================================
+
+A bug in smbclient caused the 'symlink' command to reverse the
+meaning of the new name and link target parameters when creating a
+reparse point symlink against a Windows server.
+
+This only affects using the smbclient 'symlink' command against
+a Windows server, not a Samba server using the UNIX extensions
+(the parameter order is correct in that case) so no existing
+user scripts that depend on creating symlinks on Samba servers
+need to change.
+
+As this is a little used feature the ordering of these parameters
+has been reversed to match the parameter ordering of the UNIX
+extensions 'symlink' command. This means running 'symlink' against
+both Windows and Samba now uses the same paramter ordering in both
+cases. 
+
+The usage message for this command has also been improved to remove confusion.
+
+
+Changes since 4.6.11:
+---------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 13140: s3: smbclient: Implement 'volume' command over SMB2.
+   * BUG 13171: s3: libsmb: Fix valgrind read-after-free error in
+     cli_smb2_close_fnum_recv().
+   * BUG 13172: s3: libsmb: Fix reversing of oldname/newname paths when creating
+     a reparse point symlink on Windows from smbclient.
+
+o  Timur I. Bakeyev <timur@iXsystems.com>
+   * BUG 12934: Build man page for vfs_zfsacl.8 with Samba.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 6133: vfs_zfsacl: Fix compilation error.
+   * BUG 13051: "smb encrypt" setting changes are not fully applied until full
+     smbd restart.
+   * BUG 13052: winbindd: Fix idmap_rid dependency on trusted domain list.
+   * BUG 13155: vfs_fruit: Proper VFS-stackable conversion of FinderInfo.
+
+o  Amitay Isaacs <amitay@gmail.com>
+   * BUG 13153: ctdb: sock_daemon leaks memory.
+   * BUG 13154: TCP tickles not getting synchronised on CTDB restart.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 13150: winbindd: Parent and child share a ctdb connection.
+   * BUG 13179: pthreadpool: Fix starvation after fork.
+   * BUG 13180: ctdb: Messaging initialisation for CTDB does not register
+     unique ID.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 13149: libnet_join: Fix 'net rpc oldjoin'.
+
+o  Noel Power <noel.power@suse.com>
+   * BUG 13166: s3:libads: net ads keytab list fails with "Key table name
+     malformed".
+
+o  Christof Schmitt <cs@samba.org>
+   * BUG 13170: pthreadpool: Undo put_job when returning error.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ==============================
                    Release Notes for Samba 4.6.11
                           November 21, 2017
                    =============================
@@ -66,8 +161,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    ==============================
                    Release Notes for Samba 4.6.10
