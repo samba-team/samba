@@ -230,7 +230,9 @@ static NTSTATUS g_lock_trylock(struct db_record *rec, struct server_id self,
 		}
 	}
 
-	for (i=0; i<lck.num_recs; i++) {
+	i = 0;
+
+	while (i < lck.num_recs) {
 		struct g_lock_rec lock;
 
 		g_lock_get_rec(&lck, i, &lock);
@@ -269,7 +271,9 @@ static NTSTATUS g_lock_trylock(struct db_record *rec, struct server_id self,
 			 */
 			g_lock_rec_del(&lck, i);
 			modified = true;
+			continue;
 		}
+		i++;
 	}
 
 	modified = true;
