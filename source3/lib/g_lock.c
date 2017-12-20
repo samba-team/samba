@@ -200,6 +200,8 @@ static NTSTATUS g_lock_trylock(struct db_record *rec, struct server_id self,
 	TDB_DATA data;
 	size_t i;
 	struct g_lock lck;
+	struct g_lock_rec _mylock;
+	struct g_lock_rec *mylock = NULL;
 	NTSTATUS status;
 	bool modified = false;
 	bool ok;
@@ -242,11 +244,18 @@ static NTSTATUS g_lock_trylock(struct db_record *rec, struct server_id self,
 				status = NT_STATUS_WAS_LOCKED;
 				goto done;
 			}
+			if (mylock != NULL) {
+				status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+				goto done;
+			}
+			_mylock = lock;
+			mylock = &_mylock;
 			/*
 			 * Remove "our" lock entry. Re-add it later
 			 * with our new lock type.
 			 */
 			g_lock_rec_del(&lck, i);
+			modified = true;
 			continue;
 		}
 
@@ -278,12 +287,18 @@ static NTSTATUS g_lock_trylock(struct db_record *rec, struct server_id self,
 
 	modified = true;
 
+	_mylock = (struct g_lock_rec) {
+		.pid = self,
+		.lock_type = type
+	};
+	mylock = &_mylock;
+
 	status = NT_STATUS_OK;
 done:
 	if (modified) {
-		struct g_lock_rec mylock = { .pid = self, .lock_type = type };
 		NTSTATUS store_status;
-		store_status = g_lock_store(rec, &lck, &mylock);
+
+		store_status = g_lock_store(rec, &lck, mylock);
 		if (!NT_STATUS_IS_OK(store_status)) {
 			DBG_WARNING("g_lock_record_store failed: %s\n",
 				    nt_errstr(store_status));
