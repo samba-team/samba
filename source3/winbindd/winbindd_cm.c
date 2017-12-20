@@ -256,6 +256,8 @@ static bool fork_child_dc_connect(struct winbindd_domain *domain)
 	}
 	SAFE_FREE(lfile);
 
+	setproctitle("dc-connect child");
+
 	mem_ctx = talloc_init("fork_child_dc_connect");
 	if (!mem_ctx) {
 		DEBUG(0,("talloc_init failed.\n"));

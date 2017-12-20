@@ -1491,6 +1491,12 @@ static bool fork_domain_child(struct winbindd_child *child)
 		_exit(0);
 	}
 
+	if (child_domain != NULL) {
+		setproctitle("domain child [%s]", child_domain->name);
+	} else if (child == idmap_child()) {
+		setproctitle("idmap child");
+	}
+
 	/* Handle online/offline messages. */
 	messaging_register(server_messaging_context(), NULL,
 			   MSG_WINBIND_OFFLINE, child_msg_offline);
