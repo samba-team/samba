@@ -50,7 +50,7 @@ class SitesCmdTestCase(BaseSitesCmdTestCase):
         dnsite = ldb.Dn(self.samdb, "CN=%s,%s" % (sitename, dnsites))
 
         ret = self.samdb.search(base=dnsites, scope=ldb.SCOPE_ONELEVEL,
-                                expression='(dn=%s)' % str(dnsite))
+                                expression='(cn=%s)' % sitename)
         self.assertEquals(len(ret), 1)
 
         # now delete it
@@ -106,7 +106,7 @@ class SitesSubnetCmdTestCase(BaseSitesCmdTestCase):
                                            (cidr, self.config_dn)))
 
             ret = self.samdb.search(base=dnsubnets, scope=ldb.SCOPE_ONELEVEL,
-                                    expression='(dn=%s)' % dnsubnet)
+                                    expression='(CN=%s)' % cidr)
             self.assertIsNotNone(ret)
             self.assertEqual(len(ret), 1)
             self.samdb.delete(dnsubnet, ["tree_delete:0"])
