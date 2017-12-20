@@ -11585,6 +11585,7 @@ static struct {
 	{ "LOCAL-G-LOCK3", run_g_lock3, 0 },
 	{ "LOCAL-G-LOCK4", run_g_lock4, 0 },
 	{ "LOCAL-G-LOCK5", run_g_lock5, 0 },
+	{ "LOCAL-G-LOCK6", run_g_lock6, 0 },
 	{ "LOCAL-G-LOCK-PING-PONG", run_g_lock_ping_pong, 0 },
 	{ "LOCAL-CANONICALIZE-PATH", run_local_canonicalize_path, 0 },
 	{ "LOCAL-NAMEMAP-CACHE1", run_local_namemap_cache1, 0 },

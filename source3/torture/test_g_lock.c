@@ -695,6 +695,158 @@ bool run_g_lock5(int dummy)
 	return true;
 }
 
+struct lock6_parser_state {
+	size_t num_locks;
+};
+
+static void lock6_parser(const struct g_lock_rec *locks,
+			 size_t num_locks,
+			 const uint8_t *data,
+			 size_t datalen,
+			 void *private_data)
+{
+	struct lock6_parser_state *state = private_data;
+	state->num_locks = num_locks;
+}
+
+/*
+ * Test cleanup with contention and stale locks
+ */
+
+bool run_g_lock6(int dummy)
+{
+	struct tevent_context *ev = NULL;
+	struct messaging_context *msg = NULL;
+	struct g_lock_ctx *ctx = NULL;
+	const char *lockname = "lock6";
+	pid_t child;
+	int exit_pipe[2], ready_pipe[2];
+	NTSTATUS status;
+	size_t i, nprocs;
+	int ret;
+	bool ok;
+	ssize_t nread;
+	char c;
+
+	if ((pipe(exit_pipe) != 0) || (pipe(ready_pipe) != 0)) {
+		perror("pipe failed");
+		return false;
+	}
+
+	ok = get_g_lock_ctx(talloc_tos(), &ev, &msg, &ctx);
+	if (!ok) {
+		fprintf(stderr, "get_g_lock_ctx failed");
+		return false;
+	}
+
+	nprocs = 2;
+	for (i=0; i<nprocs; i++) {
+
+		child = fork();
+
+		if (child == -1) {
+			perror("fork failed");
+			return false;
+		}
+
+		if (child == 0) {
+			TALLOC_FREE(ctx);
+
+			status = reinit_after_fork(msg, ev, false, "");
+			if (!NT_STATUS_IS_OK(status)) {
+				fprintf(stderr, "reinit_after_fork failed: %s\n",
+					nt_errstr(status));
+				exit(1);
+			}
+
+			close(ready_pipe[0]);
+			close(exit_pipe[1]);
+
+			ok = get_g_lock_ctx(talloc_tos(), &ev, &msg, &ctx);
+			if (!ok) {
+				fprintf(stderr, "get_g_lock_ctx failed");
+				exit(1);
+			}
+			status = g_lock_lock(ctx, lockname, G_LOCK_READ,
+					     (struct timeval) { .tv_sec = 1 });
+			if (!NT_STATUS_IS_OK(status)) {
+				fprintf(stderr,
+					"child g_lock_lock failed %s\n",
+					nt_errstr(status));
+				exit(1);
+			}
+			if (i == 0) {
+				exit(0);
+			}
+			close(ready_pipe[1]);
+			nread = sys_read(exit_pipe[0], &c, sizeof(c));
+			if (nread != 0) {
+				fprintf(stderr, "sys_read returned %zu (%s)\n",
+					nread, strerror(errno));
+				exit(1);
+			}
+			exit(0);
+		}
+	}
+
+	close(ready_pipe[1]);
+
+	nread = sys_read(ready_pipe[0], &c, sizeof(c));
+	if (nread != 0) {
+		fprintf(stderr, "sys_read returned %zd (%s)\n",
+			nread, strerror(errno));
+		return false;
+	}
+
+	{
+		int child_status;
+		ret = waitpid(-1, &child_status, 0);
+		if (ret == -1) {
+			perror("waitpid failed");
+			return false;
+		}
+	}
+
+	{
+		struct lock6_parser_state state;
+
+		status = g_lock_dump(ctx, lockname, lock6_parser, &state);
+		if (!NT_STATUS_IS_OK(status)) {
+			fprintf(stderr, "g_lock_dump returned %s\n",
+				nt_errstr(status));
+			return false;
+		}
+
+		if (state.num_locks != nprocs) {
+			fprintf(stderr, "nlocks=%zu, expected %zu\n",
+				state.num_locks, nprocs);
+			return false;
+		}
+
+		status = g_lock_lock(ctx, lockname, G_LOCK_WRITE,
+				     (struct timeval) { .tv_sec = 1 });
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+			fprintf(stderr, "g_lock_lock should have failed with %s - %s\n",
+				nt_errstr(NT_STATUS_IO_TIMEOUT),
+				nt_errstr(status));
+			return false;
+		}
+	}
+
+	close(exit_pipe[1]);
+
+	{
+		int child_status;
+		ret = waitpid(-1, &child_status, 0);
+		if (ret == -1) {
+			perror("waitpid failed");
+			return false;
+		}
+	}
+
+	return true;
+}
+
 extern int torture_numops;
 extern int torture_nprocs;
 
