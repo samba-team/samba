@@ -3915,7 +3915,21 @@ schemaUpdateNow: 1
         """Applies a single LDIF update to the schema"""
 
         try:
-            samdb.modify_ldif(self.ldif, controls=['relax:0'])
+            try:
+                samdb.modify_ldif(self.ldif, controls=['relax:0'])
+            except ldb.LdbError as e:
+                if e.args[0] == ldb.ERR_INVALID_ATTRIBUTE_SYNTAX:
+
+                    # REFRESH after a failed change
+
+                    # Otherwise the OID-to-attribute mapping in
+                    # _apply_updates_in_file() won't work, because it
+                    # can't lookup the new OID in the schema
+                    self._ldap_schemaUpdateNow(samdb)
+
+                    samdb.modify_ldif(self.ldif, controls=['relax:0'])
+                else:
+                    raise
         except ldb.LdbError as e:
             if self.can_ignore_failure(e):
                 return 0
@@ -3926,11 +3940,6 @@ schemaUpdateNow: 1
                 print("%s" % self.ldif)
 
                 raise
-
-        # REFRESH AFTER EVERY CHANGE
-        # Otherwise the OID-to-attribute mapping in _apply_updates_in_file()
-        # won't work, because it can't lookup the new OID in the schema
-        self._ldap_schemaUpdateNow(samdb)
 
         return 1
 
