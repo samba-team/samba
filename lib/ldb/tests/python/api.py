@@ -1512,9 +1512,11 @@ class DnTests(TestCase):
         dn3 = ldb.Dn(self.ldb, "cn=bar,dc=base")
         dn4 = ldb.Dn(self.ldb, "cn=baz,cn=bar,dc=base")
 
+        self.assertTrue(dn1.is_child_of(dn1))
         self.assertTrue(dn2.is_child_of(dn1))
         self.assertTrue(dn4.is_child_of(dn1))
         self.assertTrue(dn4.is_child_of(dn3))
+        self.assertTrue(dn4.is_child_of(dn4))
         self.assertFalse(dn3.is_child_of(dn2))
         self.assertFalse(dn1.is_child_of(dn4))
 
@@ -1530,9 +1532,11 @@ class DnTests(TestCase):
         dn3 = ldb.Dn(self.ldb, dn3_str)
         dn4 = ldb.Dn(self.ldb, dn4_str)
 
+        self.assertTrue(dn1.is_child_of(dn1_str))
         self.assertTrue(dn2.is_child_of(dn1_str))
         self.assertTrue(dn4.is_child_of(dn1_str))
         self.assertTrue(dn4.is_child_of(dn3_str))
+        self.assertTrue(dn4.is_child_of(dn4_str))
         self.assertFalse(dn3.is_child_of(dn2_str))
         self.assertFalse(dn1.is_child_of(dn4_str))
 
