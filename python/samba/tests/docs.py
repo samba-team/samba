@@ -99,15 +99,13 @@ def get_documented_tuples(sourcedir, omit_no_default=True):
 class SmbDotConfTests(TestCase):
 
     # defines the cases where the defaults may differ from the documentation
-    special_cases = set(['log level', 'path', 'ldapsam:trusted', 'spoolss: architecture',
-                         'share:fake_fscaps', 'ldapsam:editposix', 'rpc_daemon:DAEMON',
-                         'rpc_server:SERVER', 'panic action', 'homedir map', 'NIS homedir',
+    special_cases = set(['log level', 'path',
+                         'panic action', 'homedir map', 'NIS homedir',
                          'server string', 'netbios name', 'socket options', 'use mmap',
                          'ctdbd socket', 'printing', 'printcap name', 'queueresume command',
                          'queuepause command','lpresume command', 'lppause command',
                          'lprm command', 'lpq command', 'print command', 'template homedir',
-                         'spoolss: os_major', 'spoolss: os_minor', 'spoolss: os_build',
-                         'max open files', 'fss: prune stale', 'fss: sequence timeout',
+                         'max open files',
                          'include system krb5 conf', 'rpc server dynamic port range',
                          'mit kdc command'])
 
