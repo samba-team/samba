@@ -133,7 +133,9 @@ static NTSTATUS g_lock_trylock(struct db_record *rec, struct server_id self,
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	for (i=0; i<num_locks; i++) {
+	i=0;
+
+	while (i < num_locks) {
 		if (serverid_equal(&self, &locks[i].pid)) {
 			status = NT_STATUS_INTERNAL_ERROR;
 			goto done;
@@ -160,7 +162,9 @@ static NTSTATUS g_lock_trylock(struct db_record *rec, struct server_id self,
 			locks[i] = locks[num_locks-1];
 			num_locks -= 1;
 			modified = true;
+			continue;
 		}
+		i++;
 	}
 
 	tmp = talloc_realloc(talloc_tos(), locks, struct g_lock_rec,
