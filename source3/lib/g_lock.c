@@ -301,9 +301,11 @@ static NTSTATUS g_lock_trylock(struct db_record *rec, struct server_id self,
 		}
 	}
 
-	for (i=0; i<num_locks; i++) {
+	i=0;
 
+	while (i < num_locks) {
 		if (i == my_lock) {
+			i++;
 			continue;
 		}
 
@@ -329,7 +331,9 @@ static NTSTATUS g_lock_trylock(struct db_record *rec, struct server_id self,
 			locks[i] = locks[num_locks-1];
 			num_locks -= 1;
 			modified = true;
+			continue;
 		}
+		i++;
 	}
 
 	if (my_lock >= num_locks) {
