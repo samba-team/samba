@@ -186,6 +186,9 @@ class SmbDotConfTests(TestCase):
 
             if param in self.special_cases:
                 continue
+            # bad, bad parametric options - we don't have their default values
+            if ':' in param:
+                continue
             section = None
             if context == "G":
                 section = "global"
