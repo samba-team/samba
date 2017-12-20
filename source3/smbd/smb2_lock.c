@@ -98,6 +98,23 @@ NTSTATUS smbd_smb2_request_process_lock(struct smbd_smb2_request *req)
 	in_locks[l].flags	= IVAL(lock_buffer, 0x10);
 	/* 0x14 - 4 reserved bytes */
 
+	status = req->session->status;
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_SESSION_EXPIRED)) {
+		/*
+		 * We need to catch NT_STATUS_NETWORK_SESSION_EXPIRED
+		 * for lock requests only.
+		 *
+		 * Unlock requests still need to be processed!
+		 *
+		 * This means smbd_smb2_request_check_session()
+		 * can't handle the difference and always
+		 * allows SMB2_OP_LOCK.
+		 */
+		if (in_locks[0].flags != SMB2_LOCK_FLAG_UNLOCK) {
+			return smbd_smb2_request_error(req, status);
+		}
+	}
+
 	lock_buffer = SMBD_SMB2_IN_DYN_PTR(req);
 
 	for (l=1; l < in_lock_count; l++) {
