@@ -391,12 +391,21 @@ static void smbd_notify_cancel_by_map(struct notify_mid_map *map)
 	NTSTATUS notify_status = NT_STATUS_CANCELLED;
 
 	if (smb2req != NULL) {
+		NTSTATUS sstatus;
+
 		if (smb2req->session == NULL) {
-			notify_status = STATUS_NOTIFY_CLEANUP;
-		} else if (!NT_STATUS_IS_OK(smb2req->session->status)) {
-			notify_status = STATUS_NOTIFY_CLEANUP;
+			sstatus = NT_STATUS_USER_SESSION_DELETED;
+		} else {
+			sstatus = smb2req->session->status;
 		}
-		if (smb2req->tcon == NULL) {
+
+		if (NT_STATUS_EQUAL(sstatus, NT_STATUS_NETWORK_SESSION_EXPIRED)) {
+			sstatus = NT_STATUS_OK;
+		}
+
+		if (!NT_STATUS_IS_OK(sstatus)) {
+			notify_status = STATUS_NOTIFY_CLEANUP;
+		} else if (smb2req->tcon == NULL) {
 			notify_status = STATUS_NOTIFY_CLEANUP;
 		} else if (!NT_STATUS_IS_OK(smb2req->tcon->status)) {
 			notify_status = STATUS_NOTIFY_CLEANUP;
