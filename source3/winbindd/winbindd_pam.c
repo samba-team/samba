@@ -1487,7 +1487,7 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 		}
 
 		/* if we get access denied, a possible cause was that we had
-		   and open connection to the DC, but someone changed our
+		   an open connection to the DC, but someone changed our
 		   machine account password out from underneath us using 'net
 		   rpc changetrustpw' */
 
