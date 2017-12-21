@@ -1148,7 +1148,7 @@ static bool test_session_expire1(struct torture_context *tctx)
 						   credentials,
 						   0 /* previous_session_id */);
 		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
-					"smb2_session_seutup_spnego failed");
+					"smb2_session_setup_spnego failed");
 	}
 
 	ZERO_STRUCT(qfinfo.access_information.out);
