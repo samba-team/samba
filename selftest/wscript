@@ -202,6 +202,9 @@ def cmd_testonly(opt):
     # tell build system where to find config.h
     os.environ['CONFIG_H'] = 'bin/default/include/config.h'
 
+    # tell the test system where perl is
+    os.environ['PERL'] = env.PERL
+
     st_done = os.path.join(env.SELFTEST_PREFIX, 'st_done')
     if os.path.exists(st_done):
         os.unlink(st_done)
