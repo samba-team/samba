@@ -92,6 +92,9 @@ for t in tests:
         plantestsuite("samba3.smbtorture_s3.crypt_server(nt4_dc).%s" % t, "nt4_dc", [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER_IP/tmpenc', '$USERNAME', '$PASSWORD', smbtorture3, "", "-l $LOCAL_PATH"])
     plantestsuite("samba3.smbtorture_s3.plain(ad_dc_ntvfs).%s" % t, "ad_dc_ntvfs", [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER_IP/tmp', '$USERNAME', '$PASSWORD', smbtorture3, "", "-l $LOCAL_PATH"])
 
+t = "TLDAP"
+plantestsuite("samba3.smbtorture_s3.plain.%s(ad_dc)" % t, "ad_dc", [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER/tmp', '$DC_USERNAME', '$DC_PASSWORD', smbtorture3, "", "-l $LOCAL_PATH"])
+
 #
 # RENAME-ACCESS needs to run against a special share - acl_xattr_ign_sysacl_windows
 #
