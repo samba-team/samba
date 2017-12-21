@@ -31,6 +31,7 @@
 #include "libcli/security/security.h"
 #include "libcli/resolve/resolve.h"
 #include "lib/param/param.h"
+#include "lib/util/tevent_ntstatus.h"
 
 #define CHECK_CREATED(tctx, __io, __created, __attribute)			\
 	do {									\
@@ -1167,6 +1168,366 @@ done:
 	return ret;
 }
 
+static bool test_session_expire2(struct torture_context *tctx)
+{
+	NTSTATUS status;
+	bool ret = false;
+	struct smbcli_options options;
+	const char *host = torture_setting_string(tctx, "host", NULL);
+	const char *share = torture_setting_string(tctx, "share", NULL);
+	struct cli_credentials *credentials = popt_get_cmdline_credentials();
+	struct smb2_tree *tree = NULL;
+	const char *unc = NULL;
+	struct smb2_tree *tree2 = NULL;
+	struct tevent_req *subreq = NULL;
+	uint32_t timeout_msec;
+	enum credentials_use_kerberos use_kerberos;
+	uint32_t caps;
+	char fname[256];
+	struct smb2_handle dh;
+	struct smb2_handle dh2;
+	struct smb2_handle _h1;
+	struct smb2_handle *h1 = NULL;
+	struct smb2_create io1;
+	union smb_fileinfo qfinfo;
+	union smb_setfileinfo sfinfo;
+	struct smb2_flush flsh;
+	struct smb2_read rd;
+	const uint8_t wd = 0;
+	struct smb2_lock lck;
+	struct smb2_lock_element el;
+	struct smb2_ioctl ctl;
+	struct smb2_break oack;
+	struct smb2_lease_break_ack lack;
+	struct smb2_find fnd;
+	union smb_search_data *d = NULL;
+	unsigned int count;
+	struct smb2_request *req = NULL;
+	struct smb2_notify ntf1;
+	struct smb2_notify ntf2;
+
+	use_kerberos = cli_credentials_get_kerberos_state(credentials);
+	if (use_kerberos != CRED_MUST_USE_KERBEROS) {
+		torture_warning(tctx, "smb2.session.expire2 requires -k yes!");
+		torture_skip(tctx, "smb2.session.expire2 requires -k yes!");
+	}
+
+	torture_assert_int_equal(tctx, use_kerberos, CRED_MUST_USE_KERBEROS,
+				 "please use -k yes");
+
+	lpcfg_set_option(tctx->lp_ctx, "gensec_gssapi:requested_life_time=4");
+
+	lpcfg_smbcli_options(tctx->lp_ctx, &options);
+
+	unc = talloc_asprintf(tctx, "\\\\%s\\%s", host, share);
+	torture_assert(tctx, unc != NULL, "talloc_asprintf");
+
+	status = smb2_connect(tctx,
+			      host,
+			      lpcfg_smb_ports(tctx->lp_ctx),
+			      share,
+			      lpcfg_resolve_context(tctx->lp_ctx),
+			      credentials,
+			      &tree,
+			      tctx->ev,
+			      &options,
+			      lpcfg_socket_options(tctx->lp_ctx),
+			      lpcfg_gensec_settings(tctx, tctx->lp_ctx)
+			      );
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_connect failed");
+
+	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
+
+	/* Add some random component to the file name. */
+	snprintf(fname, sizeof(fname), "session_expire2_%s.dat",
+		 generate_random_str(tctx, 8));
+
+	smb2_util_unlink(tree, fname);
+
+	status = smb2_util_roothandle(tree, &dh);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_roothandle failed");
+
+	smb2_oplock_create_share(&io1, fname,
+				 smb2_util_share_access(""),
+				 smb2_util_oplock_level("b"));
+	io1.in.create_options |= NTCREATEX_OPTIONS_DELETE_ON_CLOSE;
+
+	status = smb2_create(tree, tctx, &io1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed");
+	_h1 = io1.out.file.handle;
+	h1 = &_h1;
+	CHECK_CREATED(tctx, &io1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	torture_assert_int_equal(tctx, io1.out.oplock_level,
+					smb2_util_oplock_level("b"),
+					"oplock_level incorrect");
+
+	/* get the security descriptor */
+
+	ZERO_STRUCT(qfinfo);
+
+	qfinfo.access_information.level = RAW_FILEINFO_ACCESS_INFORMATION;
+	qfinfo.access_information.in.file.handle = _h1;
+
+	torture_comment(tctx, "query info => OK\n");
+
+	ZERO_STRUCT(qfinfo.access_information.out);
+	status = smb2_getinfo_file(tree, tctx, &qfinfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_getinfo_file failed");
+
+	torture_comment(tctx, "lock => OK\n");
+	ZERO_STRUCT(lck);
+	lck.in.locks		= &el;
+	lck.in.lock_count	= 0x0001;
+	lck.in.lock_sequence	= 0x00000000;
+	lck.in.file.handle	= *h1;
+	ZERO_STRUCT(el);
+	el.flags		= SMB2_LOCK_FLAG_EXCLUSIVE |
+				  SMB2_LOCK_FLAG_FAIL_IMMEDIATELY;
+	el.offset		= 0x0000000000000000;
+	el.length		= 0x0000000000000001;
+	status = smb2_lock(tree, &lck);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_lock lock failed");
+
+	torture_comment(tctx, "1st notify => PENDING\n");
+	ZERO_STRUCT(ntf1);
+	ntf1.in.file.handle	= dh;
+	ntf1.in.recursive	= 0x0000;
+	ntf1.in.buffer_size	= 128;
+	ntf1.in.completion_filter= FILE_NOTIFY_CHANGE_ATTRIBUTES;
+	ntf1.in.unknown		= 0x00000000;
+	req = smb2_notify_send(tree, &ntf1);
+
+	while (!req->cancel.can_cancel && req->state <= SMB2_REQUEST_RECV) {
+		if (tevent_loop_once(tctx->ev) != 0) {
+			break;
+		}
+	}
+
+	torture_assert_goto(tctx, req->state <= SMB2_REQUEST_RECV, ret, done,
+			    "smb2_notify finished");
+
+	torture_comment(tctx, "sleep 10 seconds\n");
+	smb_msleep(10*1000);
+
+	torture_comment(tctx, "query info => EXPIRED\n");
+	ZERO_STRUCT(qfinfo.access_information.out);
+	status = smb2_getinfo_file(tree, tctx, &qfinfo);
+	torture_assert_ntstatus_equal_goto(tctx, status,
+				NT_STATUS_NETWORK_SESSION_EXPIRED,
+				ret, done, "smb2_getinfo_file "
+				"returned unexpected status");
+
+
+	torture_comment(tctx, "set info => EXPIRED\n");
+	ZERO_STRUCT(sfinfo);
+	sfinfo.end_of_file_info.level = RAW_SFILEINFO_END_OF_FILE_INFORMATION;
+	sfinfo.end_of_file_info.in.file.handle = *h1;
+	sfinfo.end_of_file_info.in.size = 1;
+	status = smb2_setinfo_file(tree, &sfinfo);
+	torture_assert_ntstatus_equal_goto(tctx, status,
+				NT_STATUS_NETWORK_SESSION_EXPIRED,
+				ret, done, "smb2_setinfo_file "
+				"returned unexpected status");
+
+	torture_comment(tctx, "flush => EXPIRED\n");
+	ZERO_STRUCT(flsh);
+	flsh.in.file.handle = *h1;
+	status = smb2_flush(tree, &flsh);
+	torture_assert_ntstatus_equal_goto(tctx, status,
+				NT_STATUS_NETWORK_SESSION_EXPIRED,
+				ret, done, "smb2_flush "
+				"returned unexpected status");
+
+	torture_comment(tctx, "read => EXPIRED\n");
+	ZERO_STRUCT(rd);
+	rd.in.file.handle = *h1;
+	rd.in.length      = 5;
+	rd.in.offset      = 0;
+	status = smb2_read(tree, tctx, &rd);
+	torture_assert_ntstatus_equal_goto(tctx, status,
+				NT_STATUS_NETWORK_SESSION_EXPIRED,
+				ret, done, "smb2_read "
+				"returned unexpected status");
+
+	torture_comment(tctx, "write => EXPIRED\n");
+	status = smb2_util_write(tree, *h1, &wd, 0, 1);
+	torture_assert_ntstatus_equal_goto(tctx, status,
+				NT_STATUS_NETWORK_SESSION_EXPIRED,
+				ret, done, "smb2_util_write "
+				"returned unexpected status");
+
+	torture_comment(tctx, "ioctl => EXPIRED\n");
+	ZERO_STRUCT(ctl);
+	ctl.in.file.handle = *h1;
+	ctl.in.function = FSCTL_SRV_ENUM_SNAPS;
+	ctl.in.max_response_size = 16;
+	ctl.in.flags = SMB2_IOCTL_FLAG_IS_FSCTL;
+	status = smb2_ioctl(tree, tctx, &ctl);
+	torture_assert_ntstatus_equal_goto(tctx, status,
+				NT_STATUS_NETWORK_SESSION_EXPIRED,
+				ret, done, "smb2_ioctl "
+				"returned unexpected status");
+
+	torture_comment(tctx, "oplock ack => EXPIRED\n");
+	ZERO_STRUCT(oack);
+	oack.in.file.handle = *h1;
+	status = smb2_break(tree, &oack);
+	torture_assert_ntstatus_equal_goto(tctx, status,
+				NT_STATUS_NETWORK_SESSION_EXPIRED,
+				ret, done, "smb2_break "
+				"returned unexpected status");
+
+	if (caps & SMB2_CAP_LEASING) {
+		torture_comment(tctx, "lease ack => EXPIRED\n");
+		ZERO_STRUCT(lack);
+		lack.in.lease.lease_version = 1;
+		lack.in.lease.lease_key.data[0] = 1;
+		lack.in.lease.lease_key.data[0] = 2;
+		status = smb2_lease_break_ack(tree, &lack);
+		torture_assert_ntstatus_equal_goto(tctx, status,
+					NT_STATUS_NETWORK_SESSION_EXPIRED,
+					ret, done, "smb2_break "
+					"returned unexpected status");
+	}
+
+	torture_comment(tctx, "query directory => EXPIRED\n");
+	ZERO_STRUCT(fnd);
+	fnd.in.file.handle	= dh;
+	fnd.in.pattern		= "*";
+	fnd.in.continue_flags	= SMB2_CONTINUE_FLAG_SINGLE;
+	fnd.in.max_response_size= 0x100;
+	fnd.in.level		= SMB2_FIND_BOTH_DIRECTORY_INFO;
+	status = smb2_find_level(tree, tree, &fnd, &count, &d);
+	torture_assert_ntstatus_equal_goto(tctx, status,
+				NT_STATUS_NETWORK_SESSION_EXPIRED,
+				ret, done, "smb2_find_level "
+				"returned unexpected status");
+
+	torture_comment(tctx, "1st notify => CANCEL\n");
+	smb2_cancel(req);
+
+	torture_comment(tctx, "2nd notify => EXPIRED\n");
+	ZERO_STRUCT(ntf2);
+	ntf2.in.file.handle	= dh;
+	ntf2.in.recursive	= 0x0000;
+	ntf2.in.buffer_size	= 128;
+	ntf2.in.completion_filter= FILE_NOTIFY_CHANGE_ATTRIBUTES;
+	ntf2.in.unknown		= 0x00000000;
+	status = smb2_notify(tree, tctx, &ntf2);
+	torture_assert_ntstatus_equal_goto(tctx, status,
+				NT_STATUS_NETWORK_SESSION_EXPIRED,
+				ret, done, "smb2_notify "
+				"returned unexpected status");
+
+	torture_assert_goto(tctx, req->state > SMB2_REQUEST_RECV, ret, done,
+			    "smb2_notify (1st) not finished");
+
+	status = smb2_notify_recv(req, tctx, &ntf1);
+	torture_assert_ntstatus_equal_goto(tctx, status,
+				NT_STATUS_CANCELLED,
+				ret, done, "smb2_notify cancelled"
+				"returned unexpected status");
+
+	torture_comment(tctx, "tcon => EXPIRED\n");
+	tree2 = smb2_tree_init(tree->session, tctx, false);
+	torture_assert(tctx, tree2 != NULL, "smb2_tree_init");
+	timeout_msec = tree->session->transport->options.request_timeout * 1000;
+	subreq = smb2cli_tcon_send(tree2, tctx->ev,
+				   tree2->session->transport->conn,
+				   timeout_msec,
+				   tree2->session->smbXcli,
+				   tree2->smbXcli,
+				   0, /* flags */
+				   unc);
+	torture_assert(tctx, subreq != NULL, "smb2cli_tcon_send");
+	torture_assert(tctx,
+		       tevent_req_poll_ntstatus(subreq, tctx->ev, &status),
+		       "tevent_req_poll_ntstatus");
+	status = smb2cli_tcon_recv(subreq);
+	TALLOC_FREE(subreq);
+	torture_assert_ntstatus_equal_goto(tctx, status,
+				NT_STATUS_NETWORK_SESSION_EXPIRED,
+				ret, done, "smb2cli_tcon"
+				"returned unexpected status");
+
+	torture_comment(tctx, "create => EXPIRED\n");
+	status = smb2_util_roothandle(tree, &dh2);
+	torture_assert_ntstatus_equal_goto(tctx, status,
+				NT_STATUS_NETWORK_SESSION_EXPIRED,
+				ret, done, "smb2_util_roothandle"
+				"returned unexpected status");
+
+	torture_comment(tctx, "tdis => EXPIRED\n");
+	status = smb2_tdis(tree);
+	torture_assert_ntstatus_equal_goto(tctx, status,
+				NT_STATUS_NETWORK_SESSION_EXPIRED,
+				ret, done, "smb2cli_tdis"
+				"returned unexpected status");
+
+	/*
+	 * (Un)Lock, Close and Logoff are still possible
+	 */
+
+	torture_comment(tctx, "1st unlock => OK\n");
+	el.flags		= SMB2_LOCK_FLAG_UNLOCK;
+	status = smb2_lock(tree, &lck);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_lock unlock failed");
+
+	torture_comment(tctx, "2nd unlock => RANGE_NOT_LOCKED\n");
+	status = smb2_lock(tree, &lck);
+	torture_assert_ntstatus_equal_goto(tctx, status,
+				NT_STATUS_RANGE_NOT_LOCKED,
+				ret, done, "smb2_lock 2nd unlock"
+				"returned unexpected status");
+
+	torture_comment(tctx, "lock => EXPIRED\n");
+	el.flags		= SMB2_LOCK_FLAG_EXCLUSIVE |
+				  SMB2_LOCK_FLAG_FAIL_IMMEDIATELY;
+	status = smb2_lock(tree, &lck);
+	torture_assert_ntstatus_equal_goto(tctx, status,
+				NT_STATUS_NETWORK_SESSION_EXPIRED,
+				ret, done, "smb2_util_roothandle"
+				"returned unexpected status");
+
+	torture_comment(tctx, "close => OK\n");
+	status = smb2_util_close(tree, *h1);
+	h1 = NULL;
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_close failed");
+
+	torture_comment(tctx, "echo without session => OK\n");
+	status = smb2_keepalive(tree->session->transport);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_keepalive without session failed");
+
+	torture_comment(tctx, "echo with session => OK\n");
+	req = smb2_keepalive_send(tree->session->transport, tree->session);
+	status = smb2_keepalive_recv(req);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_keepalive with session failed");
+
+	torture_comment(tctx, "logoff => OK\n");
+	status = smb2_logoff(tree->session);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_logoff failed");
+
+	ret = true;
+done:
+	if (h1 != NULL) {
+		smb2_util_close(tree, *h1);
+	}
+
+	talloc_free(tree);
+	lpcfg_set_option(tctx->lp_ctx, "gensec_gssapi:requested_life_time=0");
+	return ret;
+}
+
 bool test_session_bind1(struct torture_context *tctx, struct smb2_tree *tree1)
 {
 	const char *host = torture_setting_string(tctx, "host", NULL);
@@ -1321,6 +1682,7 @@ struct torture_suite *torture_smb2_session_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "reauth5", test_session_reauth5);
 	torture_suite_add_1smb2_test(suite, "reauth6", test_session_reauth6);
 	torture_suite_add_simple_test(suite, "expire1", test_session_expire1);
+	torture_suite_add_simple_test(suite, "expire2", test_session_expire2);
 	torture_suite_add_1smb2_test(suite, "bind1", test_session_bind1);
 
 	suite->description = talloc_strdup(suite, "SMB2-SESSION tests");
