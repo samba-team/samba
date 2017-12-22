@@ -1,4 +1,128 @@
                    =============================
+                   Release Notes for Samba 4.7.4
+                          December 22, 2017
+                   =============================
+
+
+This is the latest stable release of the Samba 4.7 release series.
+
+
+smbclient reparse point symlink parameters reversed
+===================================================
+
+A bug in smbclient caused the 'symlink' command to reverse the
+meaning of the new name and link target parameters when creating a
+reparse point symlink against a Windows server.
+
+This only affects using the smbclient 'symlink' command against
+a Windows server, not a Samba server using the UNIX extensions
+(the parameter order is correct in that case) so no existing
+user scripts that depend on creating symlinks on Samba servers
+need to change.
+
+As this is a little used feature the ordering of these parameters
+has been reversed to match the parameter ordering of the UNIX
+extensions 'symlink' command. This means running 'symlink' against
+both Windows and Samba now uses the same paramter ordering in both
+cases.
+
+The usage message for this command has also been improved to remove confusion.
+
+
+Changes since 4.7.3:
+--------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 13140: s3: smbclient: Implement 'volume' command over SMB2.
+   * BUG 13171: s3: libsmb: Fix valgrind read-after-free error in
+     cli_smb2_close_fnum_recv().
+   * BUG 13172: s3: libsmb: Fix reversing of oldname/newname paths when creating
+     a reparse point symlink on Windows from smbclient.
+
+o  Timur I. Bakeyev <timur@iXsystems.com>
+   * BUG 12934: Build man page for vfs_zfsacl.8 with Samba.
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 13095: repl_meta_data: Allow delete of an object with dangling
+     backlinks.
+   * BUG 13129: s4:samba: Fix default to be running samba as a deamon.
+   * BUG 13191: Performance regression in DNS server with introduction of
+     DNS wildcard, ldb: Release 1.2.3
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 6133: vfs_zfsacl: Fix compilation error.
+   * BUG 13051: "smb encrypt" setting changes are not fully applied until full
+     smbd restart.
+   * BUG 13052: winbindd: Fix idmap_rid dependency on trusted domain list.
+   * BUG 13155: vfs_fruit: Proper VFS-stackable conversion of FinderInfo.
+   * BUG 13173: winbindd: Dependency on trusted-domain list in winbindd in
+     critical auth codepath.
+
+o  Andrej Gessel <Andrej.Gessel@janztec.com>
+   * BUG 13120: repl_meta_data: Fix removing of backlink on deleted objects.
+
+o  Amitay Isaacs <amitay@gmail.com>
+   "* BUG 13153: ctdb: sock_daemon leaks memory.
+   * BUG 13154: TCP tickles not getting synchronised on CTDB restart.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 13150: winbindd: winbind parent and child share a ctdb connection.
+   * BUG 13170: pthreadpool: Fix deadlock.
+   * BUG 13179: pthreadpool: Fix starvation after fork.
+   * BUG 13180: messaging: Always register the unique id.
+
+o  Gary Lockyer <gary@catalyst.net.nz>
+   * 13129: s4/smbd: set the process group.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 13095: Fix broken linked attribute handling.
+   * BUG 13132: The KDC on an RWDC doesn't send error replies in some
+     situations.
+   * BUG 13149: libnet_join: Fix 'net rpc oldjoin'.
+   * BUG 13195: g_lock conflict detection broken when processing stale entries.
+   * BUG 13197: s3:smb2_server: allow logoff, close, unlock, cancel and echo
+     on expired sessions.
+
+o  Noel Power <noel.power@suse.com>
+   * BUG 13166: s3:libads: net ads keytab list fails with "Key table name
+     malformed".
+
+o  Christof Schmitt <cs@samba.org>
+   * BUG 13170: Fix crash in pthreadpool thread after failure from pthread_create.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 13129: s4:samba: Allow samba daemon to run in foreground.
+   * BUG 13174: third_party: Link the aesni-intel library with "-z noexecstack".
+
+o  Niels de Vos <ndevos@redhat.com>
+   * BUG 13125: vfs_glusterfs: include glusterfs/api/glfs.h without relying on
+     "-I" options.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   =============================
                    Release Notes for Samba 4.7.3
                          November 21, 2017
                    =============================
@@ -66,8 +190,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    =============================
                    Release Notes for Samba 4.7.2
