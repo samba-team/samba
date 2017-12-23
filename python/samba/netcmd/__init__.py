@@ -202,6 +202,19 @@ class SuperCommand(Command):
             return self.subcommands[subcommand]._run(
                 "%s %s" % (myname, subcommand), *args)
 
+        if subcommand == 'help':
+            # pass the request down
+            if len(args) > 0:
+                sub = self.subcommands.get(args[0])
+                if isinstance(sub, SuperCommand):
+                    return sub._run("%s %s" % (myname, args[0]), 'help',
+                                    *args[1:])
+                elif sub is not None:
+                    return sub._run("%s %s" % (myname, args[0]), '--help',
+                                    *args[1:])
+
+            subcommand = '--help'
+
         epilog = "\nAvailable subcommands:\n"
         subcmds = self.subcommands.keys()
         subcmds.sort()

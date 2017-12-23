@@ -26,7 +26,8 @@
 /*
   send a keepalive request
 */
-struct smb2_request *smb2_keepalive_send(struct smb2_transport *transport)
+struct smb2_request *smb2_keepalive_send(struct smb2_transport *transport,
+					 struct smb2_session *session)
 {
 	struct smb2_request *req;
 
@@ -34,6 +35,8 @@ struct smb2_request *smb2_keepalive_send(struct smb2_transport *transport)
 	if (req == NULL) return NULL;
 
 	SSVAL(req->out.body, 0x02, 0);
+
+	req->session = session;
 
 	smb2_transport_send(req);
 
@@ -60,6 +63,6 @@ NTSTATUS smb2_keepalive_recv(struct smb2_request *req)
 */
 NTSTATUS smb2_keepalive(struct smb2_transport *transport)
 {
-	struct smb2_request *req = smb2_keepalive_send(transport);
+	struct smb2_request *req = smb2_keepalive_send(transport, NULL);
 	return smb2_keepalive_recv(req);
 }

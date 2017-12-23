@@ -1902,6 +1902,25 @@ static NTSTATUS smbd_smb2_request_check_session(struct smbd_smb2_request *req)
 		case SMB2_OP_SESSSETUP:
 			status = NT_STATUS_OK;
 			break;
+		case SMB2_OP_LOGOFF:
+		case SMB2_OP_CLOSE:
+		case SMB2_OP_LOCK:
+		case SMB2_OP_CANCEL:
+		case SMB2_OP_KEEPALIVE:
+			/*
+			 * [MS-SMB2] 3.3.5.2.9 Verifying the Session
+			 * specifies that LOGOFF, CLOSE and (UN)LOCK
+			 * should always be processed even on expired sessions.
+			 *
+			 * Also see the logic in
+			 * smbd_smb2_request_process_lock().
+			 *
+			 * The smb2.session.expire2 test shows that
+			 * CANCEL and KEEPALIVE/ECHO should also
+			 * be processed.
+			 */
+			status = NT_STATUS_OK;
+			break;
 		default:
 			break;
 		}
