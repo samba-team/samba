@@ -1387,7 +1387,7 @@ static bool test_session_expire2(struct torture_context *tctx)
 		ZERO_STRUCT(lack);
 		lack.in.lease.lease_version = 1;
 		lack.in.lease.lease_key.data[0] = 1;
-		lack.in.lease.lease_key.data[0] = 2;
+		lack.in.lease.lease_key.data[1] = 2;
 		status = smb2_lease_break_ack(tree, &lack);
 		torture_assert_ntstatus_equal_goto(tctx, status,
 					NT_STATUS_NETWORK_SESSION_EXPIRED,
