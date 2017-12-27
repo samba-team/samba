@@ -514,7 +514,7 @@ static struct ldb_val nettle_encrypt_aead(int *err,
 	if (key_blob.length != ntl->key_size) {
 		ldb_asprintf_errstring(ldb,
 				       "Invalid EncryptedSecrets key size, "
-				       "expected %ld bytes and is %ld bytes\n",
+				       "expected %zu bytes and is %zu bytes\n",
 				       ntl->key_size,
 				       key_blob.length);
 		goto error_exit;
@@ -637,7 +637,7 @@ static void nettle_decrypt_aead(int *err,
 	if (key_blob.length != ntl->key_size) {
 		ldb_asprintf_errstring(ldb,
 				       "Invalid EncryptedSecrets key size, "
-				       "expected %ld bytes and is %ld bytes\n",
+				       "expected %zu bytes and is %zu bytes\n",
 				       ntl->key_size,
 				       key_blob.length);
 		goto error_exit;
@@ -795,8 +795,8 @@ static struct ldb_val gnutls_encrypt_aead(int *err,
 		if (key_blob.length != key_size) {
 			ldb_asprintf_errstring(ldb,
 					       "Invalid EncryptedSecrets key "
-					       "size, expected %ld bytes and "
-					       "it is %ld bytes\n",
+					       "size, expected %zu bytes and "
+					       "it is %zu bytes\n",
 					       key_size,
 					       key_blob.length);
 			goto error_exit;
@@ -961,8 +961,8 @@ static void gnutls_decrypt_aead(int *err,
 		if (key_blob.length != key_size) {
 			ldb_asprintf_errstring(ldb,
 					       "Invalid EncryptedSecrets key "
-					       "size, expected %ld bytes and "
-					       "it is %ld bytes\n",
+					       "size, expected %zu bytes and "
+					       "it is %zu bytes\n",
 					       key_size,
 					       key_blob.length);
 			goto error_exit;
