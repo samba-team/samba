@@ -805,7 +805,7 @@ bool tstream_bsd_optimize_readv(struct tstream_context *stream,
  * @brief Connect async to a TCP endpoint and create a tstream_context for the
  * stream based communication.
  *
- * Use this function to connenct asynchronously to a remote ipv4 or ipv6 TCP
+ * Use this function to connect asynchronously to a remote ipv4 or ipv6 TCP
  * endpoint and create a tstream_context for the stream based communication.
  *
  * @param[in]  mem_ctx  The talloc memory context to use.
@@ -961,7 +961,7 @@ struct sockaddr;
  *
  * @param[in]  sa       The sockaddr structure to convert.
  *
- * @param[in]  sa_socklen   The lenth of the sockaddr sturucte.
+ * @param[in]  sa_socklen   The length of the sockaddr structure.
  *
  * @param[out] addr     The tsocket pointer to allocate and fill.
  *
