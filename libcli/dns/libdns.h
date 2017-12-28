@@ -50,4 +50,14 @@ int dns_udp_request_recv(struct tevent_req *req,
 			 uint8_t **reply,
 			 size_t *reply_len);
 
+struct tevent_req *dns_tcp_request_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					const char *server_addr_string,
+					const uint8_t *query,
+					size_t query_len);
+int dns_tcp_request_recv(struct tevent_req *req,
+			 TALLOC_CTX *mem_ctx,
+			 uint8_t **reply,
+			 size_t *reply_len);
+
 #endif /*__LIBDNS_H__*/
