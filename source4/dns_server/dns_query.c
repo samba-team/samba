@@ -270,9 +270,7 @@ static WERROR add_dns_res_rec(struct dns_res_rec **pdst,
 }
 
 struct ask_forwarder_state {
-	struct tevent_context *ev;
-	uint16_t id;
-	struct dns_name_packet in_packet;
+	struct dns_name_packet *reply;
 };
 
 static void ask_forwarder_done(struct tevent_req *subreq);
@@ -284,49 +282,15 @@ static struct tevent_req *ask_forwarder_send(
 {
 	struct tevent_req *req, *subreq;
 	struct ask_forwarder_state *state;
-	struct dns_res_rec *options;
-	struct dns_name_packet out_packet = { 0, };
-	DATA_BLOB out_blob;
-	enum ndr_err_code ndr_err;
-	WERROR werr;
 
 	req = tevent_req_create(mem_ctx, &state, struct ask_forwarder_state);
 	if (req == NULL) {
 		return NULL;
 	}
-	state->ev = ev;
-	generate_random_buffer((uint8_t *)&state->id, sizeof(state->id));
 
-	if (!is_ipaddress(forwarder)) {
-		DEBUG(0, ("Invalid 'dns forwarder' setting '%s', needs to be "
-			  "an IP address\n", forwarder));
-		tevent_req_werror(req, DNS_ERR(NAME_ERROR));
-		return tevent_req_post(req, ev);
-	}
-
-	out_packet.id = state->id;
-	out_packet.operation |= DNS_OPCODE_QUERY | DNS_FLAG_RECURSION_DESIRED;
-	out_packet.qdcount = 1;
-	out_packet.questions = question;
-
-	werr = dns_generate_options(dns, state, &options);
-	if (!W_ERROR_IS_OK(werr)) {
-		tevent_req_werror(req, werr);
-		return tevent_req_post(req, ev);
-	}
-
-	out_packet.arcount = 1;
-	out_packet.additional = options;
-
-	ndr_err = ndr_push_struct_blob(
-		&out_blob, state, &out_packet,
-		(ndr_push_flags_fn_t)ndr_push_dns_name_packet);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		tevent_req_werror(req, DNS_ERR(SERVER_FAILURE));
-		return tevent_req_post(req, ev);
-	}
-	subreq = dns_udp_request_send(state, ev, forwarder, out_blob.data,
-				      out_blob.length);
+	subreq = dns_cli_request_send(state, ev, forwarder,
+				      question->name, question->question_class,
+				      question->question_type);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -340,12 +304,9 @@ static void ask_forwarder_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct ask_forwarder_state *state = tevent_req_data(
 		req, struct ask_forwarder_state);
-	DATA_BLOB in_blob;
-	enum ndr_err_code ndr_err;
 	int ret;
 
-	ret = dns_udp_request_recv(subreq, state,
-				   &in_blob.data, &in_blob.length);
+	ret = dns_cli_request_recv(subreq, state, &state->reply);
 	TALLOC_FREE(subreq);
 
 	if (ret != 0) {
@@ -353,17 +314,6 @@ static void ask_forwarder_done(struct tevent_req *subreq)
 		return;
 	}
 
-	ndr_err = ndr_pull_struct_blob(
-		&in_blob, state, &state->in_packet,
-		(ndr_pull_flags_fn_t)ndr_pull_dns_name_packet);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		tevent_req_werror(req, DNS_ERR(SERVER_FAILURE));
-		return;
-	}
-	if (state->in_packet.id != state->id) {
-		tevent_req_werror(req, DNS_ERR(NAME_ERROR));
-		return;
-	}
 	tevent_req_done(req);
 }
 
@@ -375,7 +325,7 @@ static WERROR ask_forwarder_recv(
 {
 	struct ask_forwarder_state *state = tevent_req_data(
 		req, struct ask_forwarder_state);
-	struct dns_name_packet *in_packet = &state->in_packet;
+	struct dns_name_packet *in_packet = state->reply;
 	WERROR err;
 
 	if (tevent_req_is_werror(req, &err)) {
