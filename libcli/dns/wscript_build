@@ -2,4 +2,4 @@
 
 bld.SAMBA_SUBSYSTEM('clidns',
         source='dns.c',
-        public_deps='LIBTSOCKET tevent-util')
+        public_deps='LIBTSOCKET tevent-util NDR_DNS')

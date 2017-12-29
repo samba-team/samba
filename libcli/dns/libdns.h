@@ -22,6 +22,10 @@
 #ifndef __LIBDNS_H__
 #define __LIBDNS_H__
 
+#include "lib/util/data_blob.h"
+#include "lib/util/time.h"
+#include "librpc/gen_ndr/dns.h"
+
 /** Send an dns request to a dns server using UDP
  *
  *@param mem_ctx        talloc memory context to use
@@ -59,5 +63,19 @@ int dns_tcp_request_recv(struct tevent_req *req,
 			 TALLOC_CTX *mem_ctx,
 			 uint8_t **reply,
 			 size_t *reply_len);
+
+/*
+ * DNS request with fallback to TCP on truncation
+ */
+
+struct tevent_req *dns_cli_request_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					const char *nameserver,
+					const char *name,
+					enum dns_qclass qclass,
+					enum dns_qtype qtype);
+int dns_cli_request_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+			 struct dns_name_packet **reply);
+
 
 #endif /*__LIBDNS_H__*/
