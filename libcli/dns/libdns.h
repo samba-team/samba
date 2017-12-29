@@ -39,7 +39,7 @@ struct tevent_req *dns_udp_request_send(TALLOC_CTX *mem_ctx,
 
 /** Get the dns response from a dns server via UDP
  *
- *@param req       tevent_req struct returned from dns_request_send
+ *@param req       tevent_req struct returned from dns_udp_request_send
  *@param mem_ctx   talloc memory context to use for the reply string
  *@param reply     buffer that will be allocated and filled with the dns reply
  *@param reply_len length of the reply buffer
