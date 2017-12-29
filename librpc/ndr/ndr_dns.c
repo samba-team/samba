@@ -289,11 +289,20 @@ _PUBLIC_ enum ndr_err_code ndr_push_dns_res_rec(struct ndr_push *ndr,
 		_saved_offset1 = ndr->offset;
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, 0));
 		if (r->length > 0) {
+			uint32_t _saved_offset3;
+
 			NDR_CHECK(ndr_push_set_switch_value(ndr, &r->rdata,
 							    r->rr_type));
+			_saved_offset3 = ndr->offset;
 			NDR_CHECK(ndr_push_dns_rdata(ndr, NDR_SCALARS,
 						     &r->rdata));
-			if (r->unexpected.length > 0) {
+			if ((ndr->offset != _saved_offset3) &&
+			    (r->unexpected.length > 0)) {
+				/*
+				 * ndr_push_dns_rdata pushed a known
+				 * record, but we have something
+				 * unexpected. That's invalid.
+				 */
 				return ndr_push_error(ndr,
 						      NDR_ERR_LENGTH,
 						      "Invalid...Unexpected " \
