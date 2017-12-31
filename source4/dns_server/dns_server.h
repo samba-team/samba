@@ -110,9 +110,6 @@ WERROR dns_name2dn(struct dns_server *dns,
 		   TALLOC_CTX *mem_ctx,
 		   const char *name,
 		   struct ldb_dn **_dn);
-WERROR dns_generate_options(struct dns_server *dns,
-			    TALLOC_CTX *mem_ctx,
-			    struct dns_res_rec **options);
 struct dns_server_tkey *dns_find_tkey(struct dns_server_tkey_store *store,
 				      const char *name);
 WERROR dns_verify_tsig(struct dns_server *dns,

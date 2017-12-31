@@ -201,23 +201,3 @@ WERROR dns_name2dn(struct dns_server *dns,
 				  mem_ctx, name, dn);
 }
 
-WERROR dns_generate_options(struct dns_server *dns,
-			    TALLOC_CTX *mem_ctx,
-			    struct dns_res_rec **options)
-{
-	struct dns_res_rec *o;
-
-	o = talloc_zero(mem_ctx, struct dns_res_rec);
-	if (o == NULL) {
-		return WERR_NOT_ENOUGH_MEMORY;
-	}
-	o->name = NULL;
-	o->rr_type = DNS_QTYPE_OPT;
-	/* This is ugly, but RFC2671 wants the payload size in this field */
-	o->rr_class = (enum dns_qclass) dns->max_payload;
-	o->ttl = 0;
-	o->length = 0;
-
-	*options = o;
-	return WERR_OK;
-}
