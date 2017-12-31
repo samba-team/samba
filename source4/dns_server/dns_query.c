@@ -277,7 +277,6 @@ static void ask_forwarder_done(struct tevent_req *subreq);
 
 static struct tevent_req *ask_forwarder_send(
 	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-	struct dns_server *dns,
 	const char *forwarder, struct dns_name_question *question)
 {
 	struct tevent_req *req, *subreq;
@@ -468,7 +467,7 @@ static struct tevent_req *handle_dnsrpcrec_send(
 		return req;
 	}
 
-	subreq = ask_forwarder_send(state, ev, dns, forwarder, new_q);
+	subreq = ask_forwarder_send(state, ev, forwarder, new_q);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -1008,7 +1007,7 @@ struct tevent_req *dns_server_process_query_send(
 		DEBUG(5, ("Not authoritative for '%s', forwarding\n",
 			  in->questions[0].name));
 
-		subreq = ask_forwarder_send(state, ev, dns,
+		subreq = ask_forwarder_send(state, ev,
 					    (forwarders == NULL ? NULL : forwarders[0]),
 					    &in->questions[0]);
 		if (tevent_req_nomem(subreq, req)) {
@@ -1051,7 +1050,7 @@ static void dns_server_process_query_got_response(struct tevent_req *subreq)
 
 		DEBUG(5, ("DNS query returned %s, trying another forwarder.\n",
 			  win_errstr(werr)));
-		subreq = ask_forwarder_send(state, state->ev, state->dns,
+		subreq = ask_forwarder_send(state, state->ev,
 					    state->forwarders->forwarder,
 					    state->question);
 
