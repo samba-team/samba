@@ -50,7 +50,6 @@ struct dns_server {
 	struct dns_server_zone *zones;
 	struct dns_server_tkey_store *tkeys;
 	struct cli_credentials *server_credentials;
-	uint16_t max_payload;
 };
 
 struct dns_request_state {
