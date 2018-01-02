@@ -4481,3 +4481,105 @@ struct torture_suite *torture_vfs_fruit_file_id(TALLOC_CTX *ctx)
 
 	return suite;
 }
+
+static bool test_timemachine_volsize(struct torture_context *tctx,
+				     struct smb2_tree *tree)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	struct smb2_handle h = {{0}};
+	union smb_fsinfo fsinfo;
+	NTSTATUS status;
+	bool ok = true;
+	const char *info_plist =
+		"<dict>\n"
+		"        <key>band-size</key>\n"
+		"        <integer>8192</integer>\n"
+		"</dict>\n";
+
+	smb2_deltree(tree, "test.sparsebundle");
+
+	ok = enable_aapl(tctx, tree);
+	torture_assert_goto(tctx, ok, ok, done, "enable_aapl failed");
+
+	status = smb2_util_mkdir(tree, "test.sparsebundle");
+	torture_assert_ntstatus_ok_goto(tctx, status, ok, done,
+					"smb2_util_mkdir\n");
+
+	ok = write_stream(tree, __location__, tctx, mem_ctx,
+			  "test.sparsebundle/Info.plist", NULL,
+			   0, strlen(info_plist), info_plist);
+	torture_assert_goto(tctx, ok, ok, done, "write_stream failed\n");
+
+	status = smb2_util_mkdir(tree, "test.sparsebundle/bands");
+	torture_assert_ntstatus_ok_goto(tctx, status, ok, done,
+					"smb2_util_mkdir\n");
+
+	ok = torture_setup_file(tctx, tree, "test.sparsebundle/bands/1", false);
+	torture_assert_goto(tctx, ok, ok, done, "torture_setup_file failed\n");
+
+	ok = torture_setup_file(tctx, tree, "test.sparsebundle/bands/2", false);
+	torture_assert_goto(tctx, ok, ok, done, "torture_setup_file failed\n");
+
+	status = smb2_util_roothandle(tree, &h);
+	torture_assert_ntstatus_ok(tctx, status, "Unable to create root handle");
+
+	ZERO_STRUCT(fsinfo);
+	fsinfo.generic.level = RAW_QFS_SIZE_INFORMATION;
+	fsinfo.generic.handle = h;
+
+	status = smb2_getinfo_fs(tree, tree, &fsinfo);
+	torture_assert_ntstatus_ok(tctx, status, "smb2_getinfo_fs failed");
+
+	torture_comment(tctx, "sectors_per_unit: %" PRIu32"\n"
+			"bytes_per_sector: %" PRIu32"\n"
+			"total_alloc_units: %" PRIu64"\n"
+			"avail_alloc_units: %" PRIu64"\n",
+			fsinfo.size_info.out.sectors_per_unit,
+			fsinfo.size_info.out.bytes_per_sector,
+			fsinfo.size_info.out.total_alloc_units,
+			fsinfo.size_info.out.avail_alloc_units);
+
+	/*
+	 * Let me explain the numbers:
+	 *
+	 * - the share is set to "fruit:time machine max size = 32K"
+	 * - we've faked a bandsize of 8 K in the Info.plist file
+	 * - we've created two bands files
+	 * - one allocation unit is made of two sectors with 512 B each
+	 * => we've consumed 16 allocation units, there should be 16 free
+	 */
+
+	torture_assert_goto(tctx, fsinfo.size_info.out.sectors_per_unit == 2,
+			    ok, done, "Bad sectors_per_unit");
+
+	torture_assert_goto(tctx, fsinfo.size_info.out.bytes_per_sector == 512,
+			    ok, done, "Bad bytes_per_sector");
+
+	torture_assert_goto(tctx, fsinfo.size_info.out.total_alloc_units == 32,
+			    ok, done, "Bad total_alloc_units");
+
+	torture_assert_goto(tctx, fsinfo.size_info.out.avail_alloc_units == 16,
+			    ok, done, "Bad avail_alloc_units");
+
+done:
+	if (!smb2_util_handle_empty(h)) {
+		smb2_util_close(tree, h);
+	}
+	smb2_deltree(tree, "test.sparsebundle");
+	talloc_free(mem_ctx);
+	return ok;
+}
+
+struct torture_suite *torture_vfs_fruit_timemachine(TALLOC_CTX *ctx)
+{
+	struct torture_suite *suite = torture_suite_create(
+		ctx, "fruit_timemachine");
+
+	suite->description = talloc_strdup(
+		suite, "vfs_fruit tests for TimeMachine");
+
+	torture_suite_add_1smb2_test(suite, "Timemachine-volsize",
+				     test_timemachine_volsize);
+
+	return suite;
+}

@@ -1957,6 +1957,14 @@ sub provision($$$$$$$$$)
 	path = $shrdir
 	vfs objects = streams_depot acl_xattr
 
+[vfs_fruit_timemachine]
+	path = $shrdir
+	vfs objects = fruit streams_xattr acl_xattr
+	fruit:resource = file
+	fruit:metadata = stream
+	fruit:time machine = yes
+	fruit:time machine max size = 32K
+
 [badname-tmp]
 	path = $badnames_shrdir
 	guest ok = yes
