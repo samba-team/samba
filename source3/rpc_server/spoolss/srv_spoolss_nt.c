@@ -142,6 +142,11 @@ static void prune_printername_cache(void);
 static const char *canon_servername(const char *servername)
 {
 	const char *pservername = servername;
+
+	if (servername == NULL) {
+		return "";
+	}
+
 	while (*pservername == '\\') {
 		pservername++;
 	}
@@ -2042,6 +2047,10 @@ WERROR _spoolss_DeletePrinterDriver(struct pipes_struct *p,
 		return WERR_ACCESS_DENIED;
 	}
 
+	if (r->in.architecture == NULL || r->in.driver == NULL) {
+		return WERR_INVALID_ENVIRONMENT;
+	}
+
 	/* check that we have a valid driver name first */
 
 	if ((version = get_version_id(r->in.architecture)) == -1) {
@@ -2179,6 +2188,10 @@ WERROR _spoolss_DeletePrinterDriverEx(struct pipes_struct *p,
 	    !security_token_has_privilege(p->session_info->security_token,
 					  SEC_PRIV_PRINT_OPERATOR)) {
 		return WERR_ACCESS_DENIED;
+	}
+
+	if (r->in.architecture == NULL || r->in.driver == NULL) {
+		return WERR_INVALID_ENVIRONMENT;
 	}
 
 	/* check that we have a valid driver name first */
