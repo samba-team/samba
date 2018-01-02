@@ -39,6 +39,9 @@ def _gen_ansi_colours():
 
 _gen_ansi_colours()
 
+# kcc.debug uses these aliases (which make visual sense)
+PURPLE = DARK_MAGENTA
+GREY = DARK_WHITE
 
 def xterm_256_colour(n, bg=False, bold=False):
     weight = '01;' if bold else ''

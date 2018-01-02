@@ -30,22 +30,14 @@ WARN = logger.warning
 
 
 #colours for prettier logs
-C_NORMAL = "\033[00m"
-DARK_RED = "\033[00;31m"
-RED = "\033[01;31m"
-DARK_GREEN = "\033[00;32m"
-GREEN = "\033[01;32m"
-YELLOW = "\033[01;33m"
-DARK_YELLOW = "\033[00;33m"
-DARK_BLUE = "\033[00;34m"
-BLUE = "\033[01;34m"
-PURPLE = "\033[00;35m"
-MAGENTA = "\033[01;35m"
-DARK_CYAN = "\033[00;36m"
-CYAN = "\033[01;36m"
-GREY = "\033[00;37m"
-WHITE = "\033[01;37m"
-REV_RED = "\033[01;41m"
+from samba.colour import C_NORMAL, REV_RED
+from samba.colour import DARK_RED, RED
+from samba.colour import DARK_GREEN, GREEN
+from samba.colour import DARK_YELLOW, YELLOW
+from samba.colour import DARK_BLUE, BLUE
+from samba.colour import PURPLE, MAGENTA
+from samba.colour import DARK_CYAN, CYAN
+from samba.colour import GREY, WHITE
 
 
 def _color_debug(*args, **kwargs):
