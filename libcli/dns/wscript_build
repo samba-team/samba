@@ -8,3 +8,12 @@ bld.SAMBA_BINARY('resolvconftest',
                   source='resolvconftest.c',
                   deps='clidns',
                   install=False)
+
+bld.SAMBA_SUBSYSTEM('dns_lookup',
+                    source='dns_lookup.c',
+                    public_deps='clidns')
+
+bld.SAMBA_BINARY('dns_lookuptest',
+                  source='dns_lookuptest.c',
+                  deps='dns_lookup',
+                  install=False)
