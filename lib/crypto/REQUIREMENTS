@@ -4,14 +4,21 @@ This list is to allow research into using external crypto libraries.
 Those possibly supported in the git version of GnuTLS are indicated as '# GNUTLS'
 Those possibly supported in the git version of nettle are indicated as '# NETTLE'
 
+For Samba AD with Heimdal gnutls >= 3.0.0 is required
+For Samba AD with MIT kerberos gnutls >= 3.4.7 is required
+Samba FS with MS Catalog support will require gnutls >= 3.5.6
+
+GnuTLS Milestone for Samba support:
+ - https://gitlab.com/gnutls/gnutls/milestones/14
+
 ARCFOUR (RC4)
  - the old SamOEMHash
  - Password encryption on SAMR for password set/get
  - NETLOGON SamLogon session keys
  - Schannel
- - genrate_random_data()
+ - generate_random_data()
 
- # GNUTLS
+ # GNUTLS >= 3.0.0
  # NETTLE
 
 DES
@@ -21,49 +28,60 @@ DES
  - ServerGetTrustInfo returned passwords
  - RID encryption of passwords
 
- # NETTLE
+ # No support in gnutls, it cannot be a certified use of crypto
+ # NETTLE (any version)
 
 3DES
- - NETLOGON Credentials
+ - NETLOGON Credentials (can't find any use in Samba)
 
+3DES-CBC
+ - backupkey (uses heimdal lib or gnutls with mit krb5)
+
+ # gnutls >= 3.4.7 (3des cbc with 192 bit key is supported); can no longer be a certified use of crypto
  # NETTLE
 
 CRC32
  - DRSUAPI replication replicated secrets
 
-AES CFB8
+This is no crypto
+
+AES 128 in 8-bit CFB mode
  - SCHANNEL
  - NETLOGON SamLogon session keys
 
- # NETTLE (AES-NI available)
+ # Missing in GNUTLS -> Bug opened
+ # NETTLE 3.4 contains CFB - possibly 128-bit mode (AES-NI available)
 
 AES128 CCM
  - SMB2 2.24 SMB encryption
 
- # GNUTLS
+ # GNUTLS >= 3.4.0
  # NETTLE (AES-NI available)
 
 AES128 GCM
  - SMB2 3.10 SMB encryption
 
- # GNUTLS
+ # GNUTLS >= 3.0.0
  # NETTLE (AES-NI available)
 
 AES128 CMAC
  - SMB2 0x224 SMB Signing
 
+ # Missing in GNUTLS - > Bug opened
+ # Missing in NETTLE -> Bug opened
+
 MD4
  - NTLM password hash
- - genrate_random_number()
 
+ # Cannot be certified; considered non-crypto
  # NETTLE
 
 MD5
- - NTLM2
- - SCHANNEL
- - NTLMSSP
- - NETLOGON computer credentials
- - DRSUAPI blob encryption
+ - NTLM2 (can be considered non-crypto use of MD5)
+ - SCHANNEL (it's ok to fail in FIPS140 mode, as there are alternatives)
+ - NTLMSSP (it's ok to fail in FIPS140 mode, replaced by kerberos)
+ - NETLOGON computer credentials (it's ok to fail in FIPS140 mode, as there are alternatives)
+ - DRSUAPI blob encryption (can be considered non-crypto use as it is over DC-RPC which is encrypted)
  - SAMR/wkssvc password change/set encryption
  - vfs_fruit
  - vfs_streams_xattr
@@ -72,44 +90,50 @@ MD5
  - SMB1 SMB signing
  - NTP ntp_signd
 
- # GNUTLS
+maybe use gnutls_fips140_mode_enabled() and enable only SMB2/3 when in fips mode?
+
+ # GNUTLS >= 3.0.0 (Will fail in FIPS mode, for non-crypto -> https://gitlab.com/gnutls/gnutls/merge_requests/572 , open bug for RC4, MD5 being available for non-crypto use )
  # NETTLE
 
 HMAC-MD5
  - NTLMv2
 
- # GNUTLS
+ # GNUTLS >= 3.0.0 (non-crypto)
  # NETTLE
 
-HMACSHA256
+HMAC-SHA256
  - SMB2 < 2.24 SMB signing
  - SMB2 Key derivation
 
- # GNUTLS
+ # GNUTLS (>= 3.0.0)
  # NETTLE
 
-HMACSHA1
+HMAC-SHA1
  - BackupKey ServerWrap
 
- # GNUTLS
+ # GNUTLS (>= 3.0.0)
  # NETTLE
 
 SHA256
  - Security Descriptor hash for vfs_acl_xattr
  - oLschema2ldif
 
- # GNUTLS
+ # GNUTLS (>= 3.0.0)
  # NETTLE
 
 SHA512
  - SMB2 Pre-auth integrity verification
  - BackupKey ClientWrap
 
- # GNUTLS
+ # GNUTLS (>= 3.0.0)
  # NETTLE
 
 RSA
  - BackupKey ClientWrap
 
- # GNUTLS
+ # GNUTLS (>= 3.0.0)
  # NETTLE
+
+
+GNUTLS
+Use gnutls_rnd() in generate_random_buffer() to increase speed
