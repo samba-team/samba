@@ -20,10 +20,19 @@
 #ifndef _ADS_DNS_H
 #define _ADS_DNS_H
 
+#include "replace.h"
+#include <tevent.h>
 #include "libcli/dns/dns.h"
 
 /* The following definitions come from libads/dns.c  */
 
+struct tevent_req *ads_dns_lookup_srv_send(TALLOC_CTX *mem_ctx,
+					   struct tevent_context *ev,
+					   const char *name);
+NTSTATUS ads_dns_lookup_srv_recv(struct tevent_req *req,
+				 TALLOC_CTX *mem_ctx,
+				 struct dns_rr_srv **srvs,
+				 size_t *num_srvs);
 NTSTATUS ads_dns_lookup_srv(TALLOC_CTX *ctx,
 				const char *name,
 				struct dns_rr_srv **dclist,

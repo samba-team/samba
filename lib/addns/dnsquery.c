@@ -21,6 +21,9 @@
 #include "includes.h"
 #include "lib/util/util_net.h"
 #include "lib/util/tsort.h"
+#include "librpc/gen_ndr/dns.h"
+#include "libcli/dns/dns_lookup.h"
+#include "lib/util/tevent_ntstatus.h"
 #include "dnsquery.h"
 
 /* AIX resolv.h uses 'class' in struct ns_rr */
@@ -161,59 +164,6 @@ static bool ads_dns_parse_rr( TALLOC_CTX *ctx, uint8_t *start, uint8_t *end,
 	p += rr->rdatalen;
 
 	*ptr = p;
-
-	return true;
-}
-
-/*********************************************************************
-*********************************************************************/
-
-static bool ads_dns_parse_rr_srv( TALLOC_CTX *ctx, uint8_t *start, uint8_t *end,
-                       uint8_t **ptr, struct dns_rr_srv *srv )
-{
-	struct dns_rr rr;
-	uint8_t *p;
-	char dcname[MAX_DNS_NAME_LENGTH];
-	int namelen;
-
-	if ( !start || !end || !srv || !*ptr)
-		return -1;
-
-	/* Parse the RR entry.  Coming out of the this, ptr is at the beginning
-	   of the next record */
-
-	if ( !ads_dns_parse_rr( ctx, start, end, ptr, &rr ) ) {
-		DEBUG(1,("ads_dns_parse_rr_srv: Failed to parse RR record\n"));
-		return false;
-	}
-
-	if ( rr.type != T_SRV ) {
-		DEBUG(1,("ads_dns_parse_rr_srv: Bad answer type (%d)\n",
-					rr.type));
-		return false;
-	}
-
-	p = rr.rdata;
-
-	srv->priority = RSVAL(p, 0);
-	srv->weight   = RSVAL(p, 2);
-	srv->port     = RSVAL(p, 4);
-
-	p += 6;
-
-	namelen = dn_expand( start, end, p, dcname, sizeof(dcname) );
-	if ( namelen < 0 ) {
-		DEBUG(1,("ads_dns_parse_rr_srv: Failed to uncompress name!\n"));
-		return false;
-	}
-
-	srv->hostname = talloc_strdup( ctx, dcname );
-
-	DEBUG(10,("ads_dns_parse_rr_srv: Parsed %s [%u, %u, %u]\n",
-		  srv->hostname,
-		  srv->priority,
-		  srv->weight,
-		  srv->port));
 
 	return true;
 }
@@ -385,6 +335,148 @@ static NTSTATUS dns_send_req( TALLOC_CTX *ctx, const char *name, int q_type,
 	return last_dns_status;
 }
 
+struct ads_dns_lookup_srv_state {
+	struct dns_rr_srv *srvs;
+	size_t num_srvs;
+};
+
+static void ads_dns_lookup_srv_done(struct tevent_req *subreq);
+
+struct tevent_req *ads_dns_lookup_srv_send(TALLOC_CTX *mem_ctx,
+					   struct tevent_context *ev,
+					   const char *name)
+{
+	struct tevent_req *req, *subreq;
+	struct ads_dns_lookup_srv_state *state;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct ads_dns_lookup_srv_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	subreq = dns_lookup_send(
+		state,
+		ev,
+		NULL,
+		name,
+		DNS_QCLASS_IN,
+		DNS_QTYPE_SRV);
+
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, ads_dns_lookup_srv_done, req);
+	return req;
+}
+
+static void ads_dns_lookup_srv_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct ads_dns_lookup_srv_state *state = tevent_req_data(
+		req, struct ads_dns_lookup_srv_state);
+	int ret;
+	struct dns_name_packet *reply;
+	uint16_t i, idx;
+
+	ret = dns_lookup_recv(subreq, state, &reply);
+	TALLOC_FREE(subreq);
+	if (ret != 0) {
+		tevent_req_nterror(req, map_nt_error_from_unix_common(ret));
+		return;
+	}
+
+	for (i=0; i<reply->ancount; i++) {
+		if (reply->answers[i].rr_type == DNS_QTYPE_SRV) {
+			state->num_srvs += 1;
+		}
+	}
+
+	state->srvs = talloc_array(state, struct dns_rr_srv, state->num_srvs);
+	if (tevent_req_nomem(state->srvs, req)) {
+		return;
+	}
+
+	idx = 0;
+
+	for (i=0; i<reply->ancount; i++) {
+		struct dns_res_rec *an = &reply->answers[i];
+		struct dns_rr_srv *dst = &state->srvs[idx];
+		struct dns_srv_record *src;
+
+		if (an->rr_type != DNS_QTYPE_SRV) {
+			continue;
+		}
+		src = &an->rdata.srv_record;
+
+		*dst = (struct dns_rr_srv) {
+			.hostname = talloc_move(state->srvs, &src->target),
+			.priority = src->priority,
+			.weight = src->weight,
+			.port = src->port,
+		};
+		idx += 1;
+	}
+
+	for (i=0; i<reply->arcount; i++) {
+		struct dns_res_rec *ar = &reply->additional[i];
+		struct sockaddr_storage addr;
+		bool ok;
+		size_t j;
+
+		ok = dns_res_rec_get_sockaddr(ar, &addr);
+		if (!ok) {
+			continue;
+		}
+
+		for (j=0; j<state->num_srvs; j++) {
+			struct dns_rr_srv *srv = &state->srvs[j];
+			struct sockaddr_storage *tmp;
+
+			if (strcmp(srv->hostname, ar->name) != 0) {
+				continue;
+			}
+
+			tmp = talloc_realloc(
+				state->srvs,
+				srv->ss_s,
+				struct sockaddr_storage,
+				srv->num_ips+1);
+
+			if (tevent_req_nomem(tmp, req)) {
+				return;
+			}
+			srv->ss_s = tmp;
+
+			srv->ss_s[srv->num_ips] = addr;
+			srv->num_ips += 1;
+		}
+	}
+
+	TYPESAFE_QSORT(state->srvs, state->num_srvs, dnssrvcmp);
+
+	tevent_req_done(req);
+}
+
+NTSTATUS ads_dns_lookup_srv_recv(struct tevent_req *req,
+				 TALLOC_CTX *mem_ctx,
+				 struct dns_rr_srv **srvs,
+				 size_t *num_srvs)
+{
+	struct ads_dns_lookup_srv_state *state = tevent_req_data(
+		req, struct ads_dns_lookup_srv_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+	*srvs = talloc_move(mem_ctx, &state->srvs);
+	*num_srvs = state->num_srvs;
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
 /*********************************************************************
  Simple wrapper for a DNS SRV query
 *********************************************************************/
@@ -394,184 +486,27 @@ NTSTATUS ads_dns_lookup_srv(TALLOC_CTX *ctx,
 				struct dns_rr_srv **dclist,
 				int *numdcs)
 {
-	uint8_t *buffer = NULL;
-	int resp_len = 0;
-	struct dns_rr_srv *dcs = NULL;
-	int query_count, answer_count, auth_count, additional_count;
-	uint8_t *p = buffer;
-	int rrnum;
-	int idx = 0;
-	NTSTATUS status;
+	struct tevent_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+	size_t num_srvs;
 
-	if ( !ctx || !name || !dclist ) {
-		return NT_STATUS_INVALID_PARAMETER;
+	ev = samba_tevent_context_init(ctx);
+	if (ev == NULL) {
+		goto fail;
 	}
-
-	/* Send the request.  May have to loop several times in case
-	   of large replies */
-
-	status = dns_send_req( ctx, name, T_SRV, &buffer, &resp_len );
-	if ( !NT_STATUS_IS_OK(status) ) {
-		DEBUG(3,("ads_dns_lookup_srv: Failed to send DNS query (%s)\n",
-			nt_errstr(status)));
-		return status;
+	req = ads_dns_lookup_srv_send(ev, ev, name);
+	if (req == NULL) {
+		goto fail;
 	}
-	p = buffer;
-
-	/* For some insane reason, the ns_initparse() et. al. routines are only
-	   available in libresolv.a, and not the shared lib.  Who knows why....
-	   So we have to parse the DNS reply ourselves */
-
-	/* Pull the answer RR's count from the header.
-	 * Use the NMB ordering macros */
-
-	query_count      = RSVAL( p, 4 );
-	answer_count     = RSVAL( p, 6 );
-	auth_count       = RSVAL( p, 8 );
-	additional_count = RSVAL( p, 10 );
-
-	DEBUG(4,("ads_dns_lookup_srv: "
-		"%d records returned in the answer section.\n",
-		answer_count));
-
-	if (answer_count) {
-		if ((dcs = talloc_zero_array(ctx, struct dns_rr_srv,
-						answer_count)) == NULL ) {
-			DEBUG(0,("ads_dns_lookup_srv: "
-				"talloc() failure for %d char*'s\n",
-				answer_count));
-			return NT_STATUS_NO_MEMORY;
-		}
-	} else {
-		dcs = NULL;
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
 	}
-
-	/* now skip the header */
-
-	p += NS_HFIXEDSZ;
-
-	/* parse the query section */
-
-	for ( rrnum=0; rrnum<query_count; rrnum++ ) {
-		struct dns_query q;
-
-		if (!ads_dns_parse_query(ctx, buffer,
-					buffer+resp_len, &p, &q)) {
-			DEBUG(1,("ads_dns_lookup_srv: "
-				 "Failed to parse query record [%d]!\n", rrnum));
-			return NT_STATUS_UNSUCCESSFUL;
-		}
-	}
-
-	/* now we are at the answer section */
-
-	for ( rrnum=0; rrnum<answer_count; rrnum++ ) {
-		if (!ads_dns_parse_rr_srv(ctx, buffer, buffer+resp_len,
-					&p, &dcs[rrnum])) {
-			DEBUG(1,("ads_dns_lookup_srv: "
-				 "Failed to parse answer recordi [%d]!\n", rrnum));
-			return NT_STATUS_UNSUCCESSFUL;
-		}
-	}
-	idx = rrnum;
-
-	/* Parse the authority section */
-	/* just skip these for now */
-
-	for ( rrnum=0; rrnum<auth_count; rrnum++ ) {
-		struct dns_rr rr;
-
-		if (!ads_dns_parse_rr( ctx, buffer,
-					buffer+resp_len, &p, &rr)) {
-			DEBUG(1,("ads_dns_lookup_srv: "
-				 "Failed to parse authority record! [%d]\n", rrnum));
-			return NT_STATUS_UNSUCCESSFUL;
-		}
-	}
-
-	/* Parse the additional records section */
-
-	for ( rrnum=0; rrnum<additional_count; rrnum++ ) {
-		struct dns_rr rr;
-		int i;
-
-		if (!ads_dns_parse_rr(ctx, buffer, buffer+resp_len,
-					&p, &rr)) {
-			DEBUG(1,("ads_dns_lookup_srv: Failed "
-				 "to parse additional records section! [%d]\n", rrnum));
-			return NT_STATUS_UNSUCCESSFUL;
-		}
-
-		/* Only interested in A or AAAA records as a shortcut for having
-		 * to come back later and lookup the name. For multi-homed
-		 * hosts, the number of additional records and exceed the
-		 * number of answer records. */
-
-		if (rr.type != T_A || rr.rdatalen != 4) {
-#if defined(HAVE_IPV6)
-			/* RFC2874 defines A6 records. This
-			 * requires recusive and horribly complex lookups.
-			 * Bastards. Ignore this for now.... JRA.
-			 * Luckily RFC3363 reprecates A6 records.
-			 */
-			if (rr.type != T_AAAA || rr.rdatalen != 16)
-#endif
-				continue;
-		}
-
-		for ( i=0; i<idx; i++ ) {
-			if ( strcmp( rr.hostname, dcs[i].hostname ) == 0 ) {
-				int num_ips = dcs[i].num_ips;
-				struct sockaddr_storage *tmp_ss_s;
-
-				/* allocate new memory */
-
-				if (dcs[i].num_ips == 0) {
-					if ((dcs[i].ss_s = talloc_array(dcs,
-						struct sockaddr_storage, 1 ))
-							== NULL ) {
-						return NT_STATUS_NO_MEMORY;
-					}
-				} else {
-					if ((tmp_ss_s = talloc_realloc(dcs,
-							dcs[i].ss_s,
-							struct sockaddr_storage,
-							dcs[i].num_ips+1))
-								== NULL ) {
-						return NT_STATUS_NO_MEMORY;
-					}
-
-					dcs[i].ss_s = tmp_ss_s;
-				}
-				dcs[i].num_ips++;
-
-				/* copy the new IP address */
-				if (rr.type == T_A) {
-					struct in_addr ip;
-					memcpy(&ip, rr.rdata, 4);
-					in_addr_to_sockaddr_storage(
-							&dcs[i].ss_s[num_ips],
-							ip);
-				}
-#if defined(HAVE_IPV6)
-				if (rr.type == T_AAAA) {
-					struct in6_addr ip6;
-					memcpy(&ip6, rr.rdata, rr.rdatalen);
-					in6_addr_to_sockaddr_storage(
-							&dcs[i].ss_s[num_ips],
-							ip6);
-				}
-#endif
-			}
-		}
-	}
-
-	TYPESAFE_QSORT(dcs, idx, dnssrvcmp );
-
-	*dclist = dcs;
-	*numdcs = idx;
-
-	return NT_STATUS_OK;
+	status = ads_dns_lookup_srv_recv(req, ctx, dclist, &num_srvs);
+	*numdcs = num_srvs;	/* size_t->int */
+fail:
+	TALLOC_FREE(ev);
+	return status;
 }
 
 /*********************************************************************
