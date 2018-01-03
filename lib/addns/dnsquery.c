@@ -26,56 +26,6 @@
 #include "lib/util/tevent_ntstatus.h"
 #include "dnsquery.h"
 
-/* AIX resolv.h uses 'class' in struct ns_rr */
-
-#if defined(AIX)
-#  if defined(class)
-#    undef class
-#  endif
-#endif	/* AIX */
-
-/* resolver headers */
-
-#include <sys/types.h>
-#include <netinet/in.h>
-#include <arpa/nameser.h>
-#include <resolv.h>
-#include <netdb.h>
-
-#define MAX_DNS_PACKET_SIZE 0xffff
-
-#ifdef NS_HFIXEDSZ	/* Bind 8/9 interface */
-#if !defined(C_IN)	/* AIX 5.3 already defines C_IN */
-#  define C_IN		ns_c_in
-#endif
-#if !defined(T_A)	/* AIX 5.3 already defines T_A */
-#  define T_A   	ns_t_a
-#endif
-
-#if defined(HAVE_IPV6)
-#if !defined(T_AAAA)
-#  define T_AAAA	ns_t_aaaa
-#endif
-#endif
-
-#  define T_SRV 	ns_t_srv
-#if !defined(T_NS)	/* AIX 5.3 already defines T_NS */
-#  define T_NS 		ns_t_ns
-#endif
-#else
-#  ifdef HFIXEDSZ
-#    define NS_HFIXEDSZ HFIXEDSZ
-#  else
-#    define NS_HFIXEDSZ sizeof(HEADER)
-#  endif	/* HFIXEDSZ */
-#  ifdef PACKETSZ
-#    define NS_PACKETSZ	PACKETSZ
-#  else	/* 512 is usually the default */
-#    define NS_PACKETSZ	512
-#  endif	/* PACKETSZ */
-#  define T_SRV 	33
-#endif
-
 /*********************************************************************
  Sort SRV record list based on weight and priority.  See RFC 2782.
 *********************************************************************/
