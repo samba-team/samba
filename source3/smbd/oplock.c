@@ -56,7 +56,8 @@ NTSTATUS set_file_oplock(files_struct *fsp)
 {
 	struct smbd_server_connection *sconn = fsp->conn->sconn;
 	struct kernel_oplocks *koplocks = sconn->oplocks.kernel_ops;
-	bool use_kernel = lp_kernel_oplocks(SNUM(fsp->conn)) && koplocks;
+	bool use_kernel = lp_kernel_oplocks(SNUM(fsp->conn)) &&
+			(koplocks != NULL);
 
 	if (fsp->oplock_type == LEVEL_II_OPLOCK) {
 		if (use_kernel &&
@@ -98,7 +99,8 @@ static void release_file_oplock(files_struct *fsp)
 {
 	struct smbd_server_connection *sconn = fsp->conn->sconn;
 	struct kernel_oplocks *koplocks = sconn->oplocks.kernel_ops;
-	bool use_kernel = lp_kernel_oplocks(SNUM(fsp->conn)) && koplocks;
+	bool use_kernel = lp_kernel_oplocks(SNUM(fsp->conn)) &&
+			(koplocks != NULL);
 
 	if ((fsp->oplock_type != NO_OPLOCK) &&
 	    use_kernel) {
@@ -131,13 +133,15 @@ static void downgrade_file_oplock(files_struct *fsp)
 {
 	struct smbd_server_connection *sconn = fsp->conn->sconn;
 	struct kernel_oplocks *koplocks = sconn->oplocks.kernel_ops;
+	bool use_kernel = lp_kernel_oplocks(SNUM(fsp->conn)) &&
+			(koplocks != NULL);
 
 	if (!EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
 		DEBUG(0, ("trying to downgrade an already-downgraded oplock!\n"));
 		return;
 	}
 
-	if (koplocks) {
+	if (use_kernel) {
 		koplocks->ops->release_oplock(koplocks, fsp, LEVEL_II_OPLOCK);
 	}
 	fsp->oplock_type = LEVEL_II_OPLOCK;
@@ -729,12 +733,14 @@ static void add_oplock_timeout_handler(files_struct *fsp)
 {
 	struct smbd_server_connection *sconn = fsp->conn->sconn;
 	struct kernel_oplocks *koplocks = sconn->oplocks.kernel_ops;
+	bool use_kernel = lp_kernel_oplocks(SNUM(fsp->conn)) &&
+			(koplocks != NULL);
 
 	/*
 	 * If kernel oplocks already notifies smbds when an oplock break times
 	 * out, just return.
 	 */
-	if (koplocks &&
+	if (use_kernel &&
 	    (koplocks->flags & KOPLOCKS_TIMEOUT_NOTIFICATION)) {
 		return;
 	}
@@ -845,7 +851,8 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 		break_to &= ~SMB2_LEASE_READ;
 	}
 
-	use_kernel = lp_kernel_oplocks(SNUM(fsp->conn)) && koplocks;
+	use_kernel = lp_kernel_oplocks(SNUM(fsp->conn)) &&
+			(koplocks != NULL);
 	if (use_kernel && !(koplocks->flags & KOPLOCKS_LEVEL2_SUPPORTED)) {
 		DEBUG(10, ("Kernel oplocks don't allow level2\n"));
 		break_to &= ~SMB2_LEASE_READ;
@@ -1255,8 +1262,10 @@ void smbd_contend_level2_oplocks_begin(files_struct *fsp,
 {
 	struct smbd_server_connection *sconn = fsp->conn->sconn;
 	struct kernel_oplocks *koplocks = sconn->oplocks.kernel_ops;
+	bool use_kernel = lp_kernel_oplocks(SNUM(fsp->conn)) &&
+			(koplocks != NULL);
 
-	if (koplocks && koplocks->ops->contend_level2_oplocks_begin) {
+	if (use_kernel && koplocks->ops->contend_level2_oplocks_begin) {
 		koplocks->ops->contend_level2_oplocks_begin(fsp, type);
 		return;
 	}
@@ -1269,9 +1278,11 @@ void smbd_contend_level2_oplocks_end(files_struct *fsp,
 {
 	struct smbd_server_connection *sconn = fsp->conn->sconn;
 	struct kernel_oplocks *koplocks = sconn->oplocks.kernel_ops;
+	bool use_kernel = lp_kernel_oplocks(SNUM(fsp->conn)) &&
+			(koplocks != NULL);
 
 	/* Only kernel oplocks implement this so far */
-	if (koplocks && koplocks->ops->contend_level2_oplocks_end) {
+	if (use_kernel && koplocks->ops->contend_level2_oplocks_end) {
 		koplocks->ops->contend_level2_oplocks_end(fsp, type);
 	}
 }
