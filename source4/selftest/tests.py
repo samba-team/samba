@@ -726,7 +726,7 @@ planoldpythontestsuite("ad_dc_ntvfs",
 # Want a selection of environments across the process models
 #
 for env in ["ad_dc_ntvfs:local", "ad_dc:local",
-            "fl2003dc:local", "fl2008rdc:local",
+            "fl2003dc:local", "fl2008r2dc:local",
             "promoted_dc:local"]:
     planoldpythontestsuite(env, "samba.tests.blackbox.smbcontrol")
 
