@@ -209,6 +209,35 @@ static uint64_t fileid_device_mapping_fsname(struct fileid_handle_data *data,
 	return m->devid;
 }
 
+/* a device mapping using a hostname */
+static uint64_t fileid_device_mapping_hostname(struct fileid_handle_data *data,
+					       const SMB_STRUCT_STAT *sbuf)
+{
+	char hostname[HOST_NAME_MAX+1];
+	char *devname = NULL;
+	uint64_t id;
+	size_t devname_len;
+	int rc;
+
+	rc = gethostname(hostname, HOST_NAME_MAX+1);
+	if (rc != 0) {
+		DBG_ERR("gethostname failed\n");
+		return UINT64_MAX;
+	}
+
+	devname = talloc_asprintf(talloc_tos(), "%s%lu",
+				  hostname, sbuf->st_ex_dev);
+	if (devname == NULL) {
+		DBG_ERR("talloc_asprintf failed\n");
+		return UINT64_MAX;
+	}
+	devname_len = talloc_array_length(devname) - 1;
+	TALLOC_FREE(devname);
+
+	id = fileid_uint64_hash((uint8_t *)devname, devname_len);
+	return id;
+}
+
 /* device mapping functions using a fsid */
 static uint64_t fileid_device_mapping_fsid(struct fileid_handle_data *data,
 					   const SMB_STRUCT_STAT *sbuf)
@@ -275,6 +304,8 @@ static int fileid_connect(struct vfs_handle_struct *handle,
 		data->device_mapping_fn	= fileid_device_mapping_fsname;
 	} else if (strcmp("fsid", algorithm) == 0) {
 		data->device_mapping_fn	= fileid_device_mapping_fsid;
+	} else if (strcmp("hostname", algorithm) == 0) {
+		data->device_mapping_fn = fileid_device_mapping_hostname;
 	} else {
 		SMB_VFS_NEXT_DISCONNECT(handle);
 		DEBUG(0,("fileid_connect(): unknown algorithm[%s]\n", algorithm));

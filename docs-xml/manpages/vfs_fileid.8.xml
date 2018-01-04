@@ -60,9 +60,9 @@
 		<varlistentry>
 		<term>fileid:algorithm = ALGORITHM</term>
 		<listitem>
-		<para>Available algorithms are <command>fsname</command>
-		and <command>fsid</command>. The default value is
-		<command>fsname</command>.
+		<para>Available algorithms are <command>fsname</command>,
+		<command>fsid</command> and <command>hostname</command>. The
+		default value is <command>fsname</command>.
 		</para>
 		<para>The <command>fsname</command> algorithm generates
 		device id by hashing the kernel device name.
@@ -70,6 +70,10 @@
 		<para>The <command>fsid</command> algorithm generates
 		the device id from the <command>f_fsid</command> returned
 		from the <command>statfs()</command> syscall.
+		</para>
+		<para>The <command>hostname</command> algorithm generates device
+		id by hashing the hostname. This can be used to deliberately
+		break lock coherency in a cluster.
 		</para>
 		</listitem>
 		</varlistentry>
