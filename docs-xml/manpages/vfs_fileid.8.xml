@@ -132,6 +132,16 @@
 		</listitem>
 		</varlistentry>
 
+		<varlistentry>
+		<term>fileid:nolockinode</term>
+		<listitem>
+		<para>This option triggers use of the fileid hostname algorithm
+		for the configured inode which can be used to deliberately break
+		lock coherency for the corresponding file or directory in a
+		cluster.
+		</para>
+		</listitem>
+		</varlistentry>
 	</variablelist>
 </refsect1>
 

@@ -44,6 +44,7 @@ struct fileid_handle_data {
 	char **mntdir_allow_list;
 	unsigned num_mount_entries;
 	struct fileid_mount_entry *mount_entries;
+	ino_t nolockinode;
 };
 
 /* check if a mount entry is allowed based on fstype and mount directory */
@@ -378,6 +379,9 @@ static int fileid_connect(struct vfs_handle_struct *handle,
 		}
 	}
 
+	data->nolockinode = lp_parm_ulong(SNUM(handle->conn), "fileid",
+					  "nolockinode", 0);
+
 	SMB_VFS_HANDLE_SET_DATA(handle, data, NULL,
 				struct fileid_handle_data,
 				return -1);
@@ -401,6 +405,7 @@ static struct file_id fileid_file_id_create(struct vfs_handle_struct *handle,
 {
 	struct fileid_handle_data *data;
 	struct file_id id;
+	uint64_t devid;
 
 	ZERO_STRUCT(id);
 
@@ -408,8 +413,14 @@ static struct file_id fileid_file_id_create(struct vfs_handle_struct *handle,
 				struct fileid_handle_data,
 				return id);
 
-	id.devid	= data->device_mapping_fn(data, sbuf);
+	if ((data->nolockinode != 0) && (id.inode == data->nolockinode)) {
+		devid = fileid_device_mapping_hostname(data, sbuf);
+	} else {
+		devid = data->device_mapping_fn(data, sbuf);
+	}
+
 	id.inode	= sbuf->st_ex_ino;
+	id.devid        = devid;
 
 	DBG_DEBUG("Returning dev [%jx] inode [%jx]\n",
 		  (uintmax_t)id.devid, (uintmax_t)id.inode);
