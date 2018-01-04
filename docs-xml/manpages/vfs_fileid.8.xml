@@ -81,6 +81,12 @@
 		id by hashing the hostname. This can be used to deliberately
 		break lock coherency in a cluster.
 		</para>
+		<para>The <command>fsname_norootdir</command> algorithm
+		generates device ids by hashing the kernel device name, except
+		for the root directory of shares where it will use the hostname
+		algorithm. This can be used to deliberately break lock coherency
+		in a cluster for the root directory of a share.
+		</para>
 		</listitem>
 		</varlistentry>
 

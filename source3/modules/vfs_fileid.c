@@ -278,6 +278,33 @@ static uint64_t fileid_device_mapping_fsid(struct fileid_handle_data *data,
 	return m->devid;
 }
 
+static int get_connectpath_ino(struct vfs_handle_struct *handle,
+			       ino_t *ino)
+{
+	struct smb_filename *fname = NULL;
+	int ret;
+
+	fname = synthetic_smb_fname(talloc_tos(),
+				    handle->conn->connectpath,
+				    NULL,
+				    NULL,
+				    0);
+	if (fname == NULL) {
+		DBG_ERR("synthetic_smb_fname failed\n");
+		return -1;
+	}
+
+	ret = SMB_VFS_NEXT_STAT(handle, fname);
+	TALLOC_FREE(fname);
+	if (ret != 0) {
+		DBG_ERR("stat failed for %s with %s\n",
+			handle->conn->connectpath, strerror(errno));
+		return -1;
+	}
+
+	return 0;
+}
+
 static int fileid_connect(struct vfs_handle_struct *handle,
 			  const char *service, const char *user)
 {
@@ -303,6 +330,8 @@ static int fileid_connect(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
+	data->nolockinode = 0;
+
 	/*
 	 * "fileid:mapping" is only here as fallback for old setups
 	 * "fileid:algorithm" is the option new setups should use
@@ -321,6 +350,16 @@ static int fileid_connect(struct vfs_handle_struct *handle,
 		data->device_mapping_fn	= fileid_device_mapping_fsid;
 	} else if (strcmp("hostname", algorithm) == 0) {
 		data->device_mapping_fn = fileid_device_mapping_hostname;
+	} else if (strcmp("fsname_norootdir", algorithm) == 0) {
+		data->device_mapping_fn	= fileid_device_mapping_fsname;
+
+		ret = get_connectpath_ino(handle, &data->nolockinode);
+		if (ret != 0) {
+			saved_errno = errno;
+			SMB_VFS_NEXT_DISCONNECT(handle);
+			errno = saved_errno;
+			return -1;
+		}
 	} else {
 		SMB_VFS_NEXT_DISCONNECT(handle);
 		DEBUG(0,("fileid_connect(): unknown algorithm[%s]\n", algorithm));
@@ -380,14 +419,14 @@ static int fileid_connect(struct vfs_handle_struct *handle,
 	}
 
 	data->nolockinode = lp_parm_ulong(SNUM(handle->conn), "fileid",
-					  "nolockinode", 0);
+					  "nolockinode", data->nolockinode);
 
 	SMB_VFS_HANDLE_SET_DATA(handle, data, NULL,
 				struct fileid_handle_data,
 				return -1);
 
-	DEBUG(10, ("fileid_connect(): connect to service[%s] with algorithm[%s]\n",
-		service, algorithm));
+	DBG_DEBUG("connect to service[%s] with algorithm[%s] nolockinode %lli\n",
+		  service, algorithm, (long long) data->nolockinode);
 
 	return 0;
 }
