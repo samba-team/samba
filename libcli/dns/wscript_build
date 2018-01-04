@@ -2,7 +2,7 @@
 
 bld.SAMBA_LIBRARY('clidns',
         source='dns.c resolvconf.c',
-        public_deps='LIBTSOCKET tevent-util NDR_DNS',
+        public_deps='LIBTSOCKET tevent-util ndr-standard',
         private_library=True)
 
 bld.SAMBA_BINARY('resolvconftest',
