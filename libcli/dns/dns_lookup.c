@@ -68,7 +68,18 @@ struct tevent_req *dns_lookup_send(TALLOC_CTX *mem_ctx,
 	state->qtype = qtype;
 
 	if (resolv_conf_fp == NULL) {
-		fp = fopen("/etc/resolv.conf", "r");
+		const char *resolvconf = "/etc/resolv.conf";
+
+#ifdef DEVELOPER
+		{
+			const char *envvar = getenv("RESOLV_CONF");
+			if (envvar != NULL) {
+				resolvconf = envvar;
+			}
+		}
+#endif
+
+		fp = fopen(resolvconf, "r");
 		if (fp == NULL) {
 			tevent_req_error(req, errno);
 			return tevent_req_post(req, ev);
