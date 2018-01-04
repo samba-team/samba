@@ -26,44 +26,6 @@
 #include "lib/util/time.h"
 #include "librpc/gen_ndr/dns.h"
 
-/** Send an dns request to a dns server using UDP
- *
- *@param mem_ctx        talloc memory context to use
- *@param ev             tevent context to use
- *@param server_address address of the server as a string
- *@param query          dns query to send
- *@param query_len      length of the query
- *@return tevent_req with the active request or NULL on out-of-memory
- */
-struct tevent_req *dns_udp_request_send(TALLOC_CTX *mem_ctx,
-					struct tevent_context *ev,
-					const char *server_address,
-					const uint8_t *query,
-					size_t query_len);
-
-/** Get the dns response from a dns server via UDP
- *
- *@param req       tevent_req struct returned from dns_udp_request_send
- *@param mem_ctx   talloc memory context to use for the reply string
- *@param reply     buffer that will be allocated and filled with the dns reply
- *@param reply_len length of the reply buffer
- *@return 0/errno
- */
-int dns_udp_request_recv(struct tevent_req *req,
-			 TALLOC_CTX *mem_ctx,
-			 uint8_t **reply,
-			 size_t *reply_len);
-
-struct tevent_req *dns_tcp_request_send(TALLOC_CTX *mem_ctx,
-					struct tevent_context *ev,
-					const char *server_addr_string,
-					const uint8_t *query,
-					size_t query_len);
-int dns_tcp_request_recv(struct tevent_req *req,
-			 TALLOC_CTX *mem_ctx,
-			 uint8_t **reply,
-			 size_t *reply_len);
-
 /*
  * DNS request with fallback to TCP on truncation
  */

@@ -45,11 +45,11 @@ struct dns_udp_request_state {
 static void dns_udp_request_get_reply(struct tevent_req *subreq);
 static void dns_udp_request_done(struct tevent_req *subreq);
 
-struct tevent_req *dns_udp_request_send(TALLOC_CTX *mem_ctx,
-					struct tevent_context *ev,
-					const char *server_addr_string,
-					const uint8_t *query,
-					size_t query_len)
+static struct tevent_req *dns_udp_request_send(TALLOC_CTX *mem_ctx,
+					       struct tevent_context *ev,
+					       const char *server_addr_string,
+					       const uint8_t *query,
+					       size_t query_len)
 {
 	struct tevent_req *req, *subreq;
 	struct dns_udp_request_state *state;
@@ -158,10 +158,10 @@ static void dns_udp_request_done(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
-int dns_udp_request_recv(struct tevent_req *req,
-			 TALLOC_CTX *mem_ctx,
-			 uint8_t **reply,
-			 size_t *reply_len)
+static int dns_udp_request_recv(struct tevent_req *req,
+				TALLOC_CTX *mem_ctx,
+				uint8_t **reply,
+				size_t *reply_len)
 {
 	struct dns_udp_request_state *state = tevent_req_data(req,
 			struct dns_udp_request_state);
@@ -201,11 +201,11 @@ static int dns_tcp_request_next_vector(struct tstream_context *stream,
 				       size_t *_count);
 static void dns_tcp_request_received(struct tevent_req *subreq);
 
-struct tevent_req *dns_tcp_request_send(TALLOC_CTX *mem_ctx,
-					struct tevent_context *ev,
-					const char *server_addr_string,
-					const uint8_t *query,
-					size_t query_len)
+static struct tevent_req *dns_tcp_request_send(TALLOC_CTX *mem_ctx,
+					       struct tevent_context *ev,
+					       const char *server_addr_string,
+					       const uint8_t *query,
+					       size_t query_len)
 {
 	struct tevent_req *req, *subreq;
 	struct dns_tcp_request_state *state;
@@ -377,10 +377,10 @@ static void dns_tcp_request_received(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
-int dns_tcp_request_recv(struct tevent_req *req,
-			 TALLOC_CTX *mem_ctx,
-			 uint8_t **reply,
-			 size_t *reply_len)
+static int dns_tcp_request_recv(struct tevent_req *req,
+				TALLOC_CTX *mem_ctx,
+				uint8_t **reply,
+				size_t *reply_len)
 {
 	struct dns_tcp_request_state *state = tevent_req_data(
 		req, struct dns_tcp_request_state);
