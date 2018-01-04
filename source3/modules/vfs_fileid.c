@@ -249,6 +249,9 @@ static struct file_id fileid_file_id_create(struct vfs_handle_struct *handle,
 	id.devid	= data->device_mapping_fn(data, sbuf->st_ex_dev);
 	id.inode	= sbuf->st_ex_ino;
 
+	DBG_DEBUG("Returning dev [%jx] inode [%jx]\n",
+		  (uintmax_t)id.devid, (uintmax_t)id.inode);
+
 	return id;
 }
 
