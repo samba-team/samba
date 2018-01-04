@@ -238,6 +238,18 @@ static uint64_t fileid_device_mapping_hostname(struct fileid_handle_data *data,
 	return id;
 }
 
+/* a device mapping using a fsname for files and hostname for dirs */
+static uint64_t fileid_device_mapping_fsname_nodirs(
+	struct fileid_handle_data *data,
+	const SMB_STRUCT_STAT *sbuf)
+{
+	if (S_ISDIR(sbuf->st_ex_mode)) {
+		return fileid_device_mapping_hostname(data, sbuf);
+	}
+
+	return fileid_device_mapping_fsname(data, sbuf);
+}
+
 /* device mapping functions using a fsid */
 static uint64_t fileid_device_mapping_fsid(struct fileid_handle_data *data,
 					   const SMB_STRUCT_STAT *sbuf)
@@ -302,6 +314,8 @@ static int fileid_connect(struct vfs_handle_struct *handle,
 					 algorithm);
 	if (strcmp("fsname", algorithm) == 0) {
 		data->device_mapping_fn	= fileid_device_mapping_fsname;
+	} else if (strcmp("fsname_nodirs", algorithm) == 0) {
+		data->device_mapping_fn = fileid_device_mapping_fsname_nodirs;
 	} else if (strcmp("fsid", algorithm) == 0) {
 		data->device_mapping_fn	= fileid_device_mapping_fsid;
 	} else if (strcmp("hostname", algorithm) == 0) {

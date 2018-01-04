@@ -61,11 +61,17 @@
 		<term>fileid:algorithm = ALGORITHM</term>
 		<listitem>
 		<para>Available algorithms are <command>fsname</command>,
-		<command>fsid</command> and <command>hostname</command>. The
-		default value is <command>fsname</command>.
+		<command>fsname_nodirs</command>, <command>fsid</command> and
+		<command>hostname</command>. The default value is
+		<command>fsname</command>.
 		</para>
 		<para>The <command>fsname</command> algorithm generates
 		device id by hashing the kernel device name.
+		</para>
+		<para>The <command>fsname_nodirs</command> algorithm generates
+		device id by hashing the kernel device name for files and by hashing
+		the hostname for directories. This can be used to deliberately
+		break lock coherency for directories in a cluster.
 		</para>
 		<para>The <command>fsid</command> algorithm generates
 		the device id from the <command>f_fsid</command> returned
