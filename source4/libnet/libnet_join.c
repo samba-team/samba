@@ -982,14 +982,14 @@ NTSTATUS libnet_Join_member(struct libnet_context *ctx,
 		return status;
 	}
 
-	set_secrets = talloc(tmp_mem, struct provision_store_self_join_settings);
+	set_secrets = talloc_zero(tmp_mem,
+				  struct provision_store_self_join_settings);
 	if (!set_secrets) {
 		r->out.error_string = NULL;
 		talloc_free(tmp_mem);
 		return NT_STATUS_NO_MEMORY;
 	}
-	
-	ZERO_STRUCTP(set_secrets);
+
 	set_secrets->domain_name = r2->out.domain_name;
 	set_secrets->realm = r2->out.realm;
 	set_secrets->netbios_name = netbios_name;
