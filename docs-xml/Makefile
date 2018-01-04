@@ -253,6 +253,9 @@ $(PEARSONDIR)/%.report.html: $(PEARSONDIR)/%.xml
 %-validate: %/index.xml
 	cd $(<D) && $(XMLLINT) --xinclude --noent --postvalid --noout $(<F)
 
+build/catalog.xml: build/catalog.xml.in
+	sed -e "s|@abs_top_srcdir@|`pwd`|g;s|@abs_top_builddir@|`pwd`|g" < build/catalog.xml.in > build/catalog.xml
+
 samples: $(DOCBOOKDIR)/Samba3-HOWTO.xml xslt/extract-examples.xsl scripts/indent-smb.conf.pl
 	@mkdir -p examples
 	$(XSLTPROC) --xinclude xslt/extract-examples.xsl $< > /dev/null 2> examples/README
