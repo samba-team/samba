@@ -6,6 +6,8 @@
 # 		Jelmer Vernooij <jelmer@samba.org>
 include Makefile.settings
 
+export XML_CATALOG_FILES := $(XML_CATALOG_FILES) /etc/xml/catalog  $(shell pwd)/build/catalog.xml
+
 # Docs to build
 MAIN_DOCS = $(patsubst %/index.xml,%,$(wildcard */index.xml))
 MANPAGES = $(sort $(wildcard $(MANPAGEDIR)/*.?.xml))
