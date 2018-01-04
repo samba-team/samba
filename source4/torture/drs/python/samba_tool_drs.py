@@ -282,7 +282,7 @@ class SambaToolDrsTests(drs_base.DrsBaseTestCase):
                                    self.dc1,
                                    self.cmdline_creds,
                                    self.tempdir))
-        ldb_rootdse = self._get_rootDSE("tdb://" + os.path.join(self.tempdir, "private", "sam.ldb"), ldap_only=False)
+        ldb_rootdse = self._get_rootDSE("ldb://" + os.path.join(self.tempdir, "private", "sam.ldb"), ldap_only=False)
         nc_name = ldb_rootdse["defaultNamingContext"]
         ds_name = ldb_rootdse["dsServiceName"]
         ldap_service_name = str(server_rootdse["ldapServiceName"][0])
@@ -291,7 +291,7 @@ class SambaToolDrsTests(drs_base.DrsBaseTestCase):
         self.assertEqual(ds_name, server_ds_name)
         self.assertEqual(ldap_service_name, server_ldap_service_name)
 
-        samdb = samba.tests.connect_samdb("tdb://" + os.path.join(self.tempdir, "private", "sam.ldb"),
+        samdb = samba.tests.connect_samdb("ldb://" + os.path.join(self.tempdir, "private", "sam.ldb"),
                                           ldap_only=False, lp=self.get_loadparm())
         def get_krbtgt_pw():
             krbtgt_pw = samdb.searchone("unicodePwd", "cn=krbtgt,CN=users,%s" % nc_name)
@@ -346,13 +346,13 @@ class SambaToolDrsTests(drs_base.DrsBaseTestCase):
                                    self.dc1,
                                    self.cmdline_creds,
                                    self.tempdir))
-        ldb_rootdse = self._get_rootDSE("tdb://" + os.path.join(self.tempdir, "private", "sam.ldb"), ldap_only=False)
+        ldb_rootdse = self._get_rootDSE("ldb://" + os.path.join(self.tempdir, "private", "sam.ldb"), ldap_only=False)
         nc_name = ldb_rootdse["defaultNamingContext"]
         config_nc_name = ldb_rootdse["configurationNamingContext"]
         ds_name = ldb_rootdse["dsServiceName"]
         ldap_service_name = str(server_rootdse["ldapServiceName"][0])
 
-        samdb = samba.tests.connect_samdb("tdb://" + os.path.join(self.tempdir, "private", "sam.ldb"),
+        samdb = samba.tests.connect_samdb("ldb://" + os.path.join(self.tempdir, "private", "sam.ldb"),
                                           ldap_only=False, lp=self.get_loadparm())
         krbtgt_pw = samdb.searchone("unicodePwd", "cn=krbtgt,CN=users,%s" % nc_name)
         self.assertIsNotNone(krbtgt_pw)
@@ -381,7 +381,7 @@ class SambaToolDrsTests(drs_base.DrsBaseTestCase):
         self.assertRaises(samba.tests.BlackboxProcessError, demote_self)
 
         # While we have this cloned, try demoting the other server on the clone
-        out = self.check_output("samba-tool domain demote --remove-other-dead-server=%s -H %s/private/sam.ldb"
+        out = self.check_output("samba-tool domain demote --remove-other-dead-server=%s -H ldb://%s/private/sam.ldb"
                                 % (self.dc2,
                                    self.tempdir))
 

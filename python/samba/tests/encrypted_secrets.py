@@ -54,7 +54,7 @@ class EncryptedSecretsTests(TestCase):
         backend_subpath = os.path.join("sam.ldb.d",
                                        backend_filename)
         backend_path = self.lp.private_path(backend_subpath)
-        backenddb = ldb.Ldb(backend_path)
+        backenddb = ldb.Ldb("ldb://" + backend_path, flags=ldb.FLG_DONT_CREATE_DB)
 
         dn = "CN=Administrator,CN=Users,%s" % basedn
 
