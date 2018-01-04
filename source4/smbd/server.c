@@ -112,13 +112,11 @@ static void sig_term(int sig)
 #if HAVE_GETPGRP
 	static int done_sigterm;
 	if (done_sigterm == 0 && getpgrp() == getpid()) {
-		DEBUG(0,("SIGTERM: killing children\n"));
 		done_sigterm = 1;
 		kill(-getpgrp(), SIGTERM);
 	}
 #endif
-	DEBUG(0,("Exiting pid %d on SIGTERM\n", (int)getpid()));
-	exit(127);
+	_exit(127);
 }
 
 /*
