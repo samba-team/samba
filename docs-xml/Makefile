@@ -18,6 +18,8 @@ DBLATEX_OPTIONS = -p xslt/latex.xsl -i xslt/latex
 
 DATETIME := $(shell date +%Y%m%d%H%M%S)
 
+XSLTPROC_DEPS = build/catalog.xml build/DTD/samba.build.version
+
 ifeq ($(PROFILE), Y)
 XSLTPROC += --profile --load-trace --timing
 endif
@@ -89,16 +91,16 @@ check:: validate
 
 # Intermediate docbook docs
 #
-$(DOCBOOKDIR)/%.xml: %/index.xml xslt/expand-sambadoc.xsl
+$(DOCBOOKDIR)/%.xml: %/index.xml xslt/expand-sambadoc.xsl $(XSLTPROC_DEPS)
 	@echo "Converting Samba-specific tags for $*..."
 	@mkdir -p $(@D)
 	@$(XSLTPROC) --stringparam latex.imagebasedir "$*/"  --stringparam noreference 0  --xinclude --output $@ xslt/expand-sambadoc.xsl $<
 
-$(DOCBOOKDIR)/manpages/%.xml: $(MANPAGEDIR)/%.xml xslt/expand-sambadoc.xsl Makefile.settings
+$(DOCBOOKDIR)/manpages/%.xml: $(MANPAGEDIR)/%.xml xslt/expand-sambadoc.xsl Makefile.settings $(XSLTPROC_DEPS)
 	@mkdir -p $(@D)
 	$(XSLTPROC) --xinclude --stringparam noreference 0 --output $@ xslt/expand-sambadoc.xsl $<
 
-$(DOCBOOKDIR)/manpages/index.xml: $(MANPAGES) xslt/manpage-summary.xsl
+$(DOCBOOKDIR)/manpages/index.xml: $(MANPAGES) xslt/manpage-summary.xsl $(XSLTPROC_DEPS)
 	@mkdir -p $(@D)
 	echo "<article><variablelist>" > $@
 	$(XSLTPROC) xslt/manpage-summary.xsl $(MANPAGES) >> $@
@@ -109,22 +111,22 @@ $(HTMLDIR)/index.html: htmldocs.html
 	@mkdir -p $(@D)
 	cp $< $@
 
-$(HTMLDIR)/%/index.html: $(DOCBOOKDIR)/%.xml $(HTMLDIR)/%/samba.css xslt/html-chunk.xsl %-images-html-chunks
+$(HTMLDIR)/%/index.html: $(DOCBOOKDIR)/%.xml $(HTMLDIR)/%/samba.css xslt/html-chunk.xsl %-images-html-chunks $(XSLTPROC_DEPS)
 	@mkdir -p $(@D)
 	$(XSLTPROC) --stringparam base.dir "$(HTMLDIR)/$*/" xslt/html-chunk.xsl $<
 
 # Single large HTML files
-$(OUTPUTDIR)/%/samba.css: xslt/html/samba.css
+$(OUTPUTDIR)/%/samba.css: xslt/html/samba.css $(XSLTPROC_DEPS)
 	@mkdir -p $(@D)
 	cp $< $@
 
 $(patsubst %,$(HTMLDIR)/%.html,$(MAIN_DOCS)): $(HTMLDIR)/%.html: %-images-html-single
 
-$(HTMLDIR)/%.html: $(DOCBOOKDIR)/%.xml $(HTMLDIR)/samba.css xslt/html.xsl 
+$(HTMLDIR)/%.html: $(DOCBOOKDIR)/%.xml $(HTMLDIR)/samba.css xslt/html.xsl $(XSLTPROC_DEPS)
 	$(XSLTPROC) --output $@ xslt/html.xsl $<
 
 # Attributions
-%-attributions.xml: 
+%-attributions.xml: $(XSLTPROC_DEPS)
 	@echo "Generating attributions file $@ from $*/"
 	@cp -f templates/attributions.xml $@
 	@$(XSLTPROC) --xinclude -o $@ xslt/generate-attributions.xsl $*/index.xml 
@@ -141,7 +143,7 @@ $(TXTDIR)/%.txt: $(HTMLDIR)/%.html
 	@$(DBLATEX) $(DBLATEX_OPTIONS) -t tex -o $@ $<
 
 # Dependency files
-%.d: $(DOCBOOKDIR)/%.xml xslt/generate-dependencies.xsl
+%.d: $(DOCBOOKDIR)/%.xml xslt/generate-dependencies.xsl $(XSLTPROC_DEPS)
 	@echo "Generating dependency file for $*" 
 	@$(XSLTPROC) --novalid \
 		--stringparam txtbasedir "$(TXTDIR)/$*/" \
@@ -195,7 +197,7 @@ $(PSDIR)/%.ps: %/index.xml $(PSDIR) xslt/latex.xsl %-images-latex-eps
 %.pdf: %.svg
 	$(INKSCAPE) -z -f $(abspath $<) --export-pdf=$(abspath $@)
 
-$(HTMLHELPDIR)/%: $(DOCBOOKDIR)/%.xml %-images-htmlhelp
+$(HTMLHELPDIR)/%: $(DOCBOOKDIR)/%.xml %-images-htmlhelp $(XSLTPROC_DEPS)
 	$(XSLTPROC) --stringparam htmlhelp.chm $*.chm \
 				--stringparam manifest.in.base.dir "$@/" \
 				--stringparam base.dir "$@/" \
