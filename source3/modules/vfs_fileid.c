@@ -37,7 +37,7 @@ struct fileid_mount_entry {
 
 struct fileid_handle_data {
 	uint64_t (*device_mapping_fn)(struct fileid_handle_data *data,
-				      SMB_DEV_T dev);
+				      const SMB_STRUCT_STAT *sbuf);
 	char **fstype_deny_list;
 	char **fstype_allow_list;
 	char **mntdir_deny_list;
@@ -194,12 +194,12 @@ static uint64_t fileid_uint64_hash(const uint8_t *s, size_t len)
 
 /* a device mapping using a fsname */
 static uint64_t fileid_device_mapping_fsname(struct fileid_handle_data *data,
-					     SMB_DEV_T dev)
+					     const SMB_STRUCT_STAT *sbuf)
 {
 	struct fileid_mount_entry *m;
 
-	m = fileid_find_mount_entry(data, dev);
-	if (!m) return dev;
+	m = fileid_find_mount_entry(data, sbuf->st_ex_dev);
+	if (!m) return sbuf->st_ex_dev;
 
 	if (m->devid == (uint64_t)-1) {
 		m->devid = fileid_uint64_hash((const uint8_t *)m->mnt_fsname,
@@ -211,12 +211,12 @@ static uint64_t fileid_device_mapping_fsname(struct fileid_handle_data *data,
 
 /* device mapping functions using a fsid */
 static uint64_t fileid_device_mapping_fsid(struct fileid_handle_data *data,
-					   SMB_DEV_T dev)
+					   const SMB_STRUCT_STAT *sbuf)
 {
 	struct fileid_mount_entry *m;
 
-	m = fileid_find_mount_entry(data, dev);
-	if (!m) return dev;
+	m = fileid_find_mount_entry(data, sbuf->st_ex_dev);
+	if (!m) return sbuf->st_ex_dev;
 
 	if (m->devid == (uint64_t)-1) {
 		if (sizeof(fsid_t) > sizeof(uint64_t)) {
@@ -363,7 +363,7 @@ static struct file_id fileid_file_id_create(struct vfs_handle_struct *handle,
 				struct fileid_handle_data,
 				return id);
 
-	id.devid	= data->device_mapping_fn(data, sbuf->st_ex_dev);
+	id.devid	= data->device_mapping_fn(data, sbuf);
 	id.inode	= sbuf->st_ex_ino;
 
 	DBG_DEBUG("Returning dev [%jx] inode [%jx]\n",
