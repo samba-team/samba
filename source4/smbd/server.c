@@ -133,12 +133,10 @@ static void sig_term(int sig)
 		 * We're the process group leader, send
 		 * SIGTERM to our process group.
 		 */
-		DBG_ERR("SIGTERM: killing children\n");
 		kill(-getpgrp(), SIGTERM);
 	}
 #endif
-	DBG_ERR("Exiting pid %d on SIGTERM\n", (int)getpid());
-	exit(127);
+	_exit(127);
 }
 
 static void sigterm_signal_handler(struct tevent_context *ev,
