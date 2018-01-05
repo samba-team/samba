@@ -183,6 +183,7 @@ static int fileid_connect(struct vfs_handle_struct *handle,
 {
 	struct fileid_handle_data *data;
 	const char *algorithm;
+	int saved_errno;
 	int ret = SMB_VFS_NEXT_CONNECT(handle, service, user);
 
 	if (ret < 0) {
@@ -191,8 +192,10 @@ static int fileid_connect(struct vfs_handle_struct *handle,
 
 	data = talloc_zero(handle->conn, struct fileid_handle_data);
 	if (!data) {
+		saved_errno = errno;
 		SMB_VFS_NEXT_DISCONNECT(handle);
 		DEBUG(0, ("talloc_zero() failed\n"));
+		errno = saved_errno;
 		return -1;
 	}
 
