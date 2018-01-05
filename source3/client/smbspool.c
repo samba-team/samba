@@ -100,6 +100,8 @@ main(int argc,			/* I - Number of command-line arguments */
 	const char     *dev_uri;
 	const char     *config_file = NULL;
 	TALLOC_CTX     *frame = talloc_stackframe();
+	int cmp;
+	int len;
 
 	if (argc == 1) {
 		/*
@@ -153,20 +155,25 @@ main(int argc,			/* I - Number of command-line arguments */
 	}
 
 	/*
-         * Find the URI...
-         */
-
+	 * Find the URI ...
+	 */
 	dev_uri = getenv("DEVICE_URI");
-	if (dev_uri) {
-		strncpy(uri, dev_uri, sizeof(uri) - 1);
-	} else if (strncmp(argv[1], "smb://", 6) == 0) {
-		strncpy(uri, argv[1], sizeof(uri) - 1);
-	} else {
-		fputs("ERROR: No device URI found in DEVICE_URI environment variable or arg1 !\n", stderr);
-		goto done;
+	if (dev_uri == NULL || strlen(dev_uri) == 0) {
+		dev_uri = argv[1];
 	}
 
-	uri[sizeof(uri) - 1] = '\0';
+	cmp = strncmp(dev_uri, "smb://", 6);
+	if (cmp != 0) {
+		fprintf(stderr,
+			"ERROR: No valid device URI has been specified\n");
+		goto done;
+	}
+	len = snprintf(uri, sizeof(uri), "%s", dev_uri);
+	if (len >= sizeof(uri)) {
+		fprintf(stderr,
+			"ERROR: The URI is too long.\n");
+		goto done;
+	}
 
 	/*
          * Extract the destination from the URI...
