@@ -94,14 +94,12 @@ main(int argc,			/* I - Number of command-line arguments */
 	FILE           *fp;	/* File to print */
 	int             status = 1;	/* Status of LPD job */
 	struct cli_state *cli;	/* SMB interface */
-	char            null_str[1];
+	char            empty_str[] = "";
 	int             tries = 0;
 	bool		need_auth = true;
 	const char     *dev_uri;
 	const char     *config_file = NULL;
 	TALLOC_CTX     *frame = talloc_stackframe();
-
-	null_str[0] = '\0';
 
 	if (argc == 1) {
 		/*
@@ -190,16 +188,16 @@ main(int argc,			/* I - Number of command-line arguments */
 			*tmp2++ = '\0';
 			password = uri_unescape_alloc(tmp2);
 		} else {
-			password = null_str;
+			password = empty_str;
 		}
 		username = uri_unescape_alloc(tmp);
 	} else {
 		if ((username = getenv("AUTH_USERNAME")) == NULL) {
-			username = null_str;
+			username = empty_str;
 		}
 
 		if ((password = getenv("AUTH_PASSWORD")) == NULL) {
-			password = null_str;
+			password = empty_str;
 		}
 
 		server = uri + 6;
