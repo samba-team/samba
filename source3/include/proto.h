@@ -676,18 +676,6 @@ NTSTATUS check_negative_conn_cache( const char *domain, const char *server);
 void add_failed_connection_entry(const char *domain, const char *server, NTSTATUS result) ;
 void flush_negative_conn_cache_for_domain(const char *domain);
 
-/* The following definitions come from libsmb/dsgetdcname.c  */
-
-struct netr_DsRGetDCNameInfo;
-
-NTSTATUS dsgetdcname(TALLOC_CTX *mem_ctx,
-		     struct messaging_context *msg_ctx,
-		     const char *domain_name,
-		     const struct GUID *domain_guid,
-		     const char *site_name,
-		     uint32_t flags,
-		     struct netr_DsRGetDCNameInfo **info);
-
 /* The following definitions come from libsmb/errormap.c  */
 
 NTSTATUS dos_to_ntstatus(uint8_t eclass, uint32_t ecode);

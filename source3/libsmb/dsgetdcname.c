@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "libsmb/dsgetdcname.h"
 #include "libsmb/namequery.h"
 #include "libads/sitename_cache.h"
 #include "../librpc/gen_ndr/ndr_netlogon.h"

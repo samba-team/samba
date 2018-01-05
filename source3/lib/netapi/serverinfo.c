@@ -26,6 +26,7 @@
 #include "../librpc/gen_ndr/ndr_srvsvc_c.h"
 #include "lib/smbconf/smbconf.h"
 #include "lib/smbconf/smbconf_reg.h"
+#include "libsmb/dsgetdcname.h"
 
 /****************************************************************
 ****************************************************************/

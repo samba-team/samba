@@ -44,6 +44,7 @@
 #include "libcli/auth/netlogon_creds_cli.h"
 #include "auth/credentials/credentials.h"
 #include "krb5_env.h"
+#include "libsmb/dsgetdcname.h"
 
 /****************************************************************
 ****************************************************************/

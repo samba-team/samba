@@ -47,6 +47,7 @@
 #include "messages.h"
 #include "../lib/tsocket/tsocket.h"
 #include "lib/param/param.h"
+#include "libsmb/dsgetdcname.h"
 
 extern userdom_struct current_user_info;
 

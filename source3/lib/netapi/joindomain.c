@@ -29,6 +29,7 @@
 #include "../librpc/gen_ndr/ndr_wkssvc_c.h"
 #include "rpc_client/cli_pipe.h"
 #include "secrets.h"
+#include "libsmb/dsgetdcname.h"
 
 /****************************************************************
 ****************************************************************/
