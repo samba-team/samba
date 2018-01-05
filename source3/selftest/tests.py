@@ -334,11 +334,11 @@ plantestsuite("samba3.blackbox.testparm", "nt4_dc:local",
                "$LOCAL_PATH"])
 
 plantestsuite(
-    "samba3.pthreadpool", "nt4_dc",
+    "samba3.pthreadpool", "none",
     [os.path.join(samba3srcdir, "script/tests/test_pthreadpool.sh")])
 
 if with_pthreadpool and have_ldwrap:
-    plantestsuite("samba3.pthreadpool_cmocka", "nt4_dc",
+    plantestsuite("samba3.pthreadpool_cmocka", "none",
                   [os.path.join(bindir(), "pthreadpooltest_cmocka")])
 
 plantestsuite("samba3.async_req", "nt4_dc",
