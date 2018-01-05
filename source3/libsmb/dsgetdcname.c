@@ -500,7 +500,8 @@ static NTSTATUS discover_dc_dns(TALLOC_CTX *mem_ctx,
 				struct ip_service_name **returned_dclist,
 				int *return_count)
 {
-	int i, j;
+	int i;
+	size_t j;
 	NTSTATUS status;
 	struct dns_rr_srv *dcs = NULL;
 	int numdcs = 0;
