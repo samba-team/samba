@@ -233,9 +233,11 @@ static uint64_t fileid_device_mapping_hostname(struct fileid_handle_data *data,
 		return UINT64_MAX;
 	}
 	devname_len = talloc_array_length(devname) - 1;
-	TALLOC_FREE(devname);
 
 	id = fileid_uint64_hash((uint8_t *)devname, devname_len);
+
+	TALLOC_FREE(devname);
+
 	return id;
 }
 
