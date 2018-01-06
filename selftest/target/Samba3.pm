@@ -347,7 +347,7 @@ sub setup_nt4_member($$$)
 	my $cmd = "";
 	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$ret->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
 	$cmd .= "SELFTEST_WINBINDD_SOCKET_DIR=\"$ret->{SELFTEST_WINBINDD_SOCKET_DIR}\" ";
-	$cmd .= "$net join $ret->{CONFIGURATION} $nt4_dc_vars->{DOMAIN} member";
+	$cmd .= "$net rpc join $ret->{CONFIGURATION} $nt4_dc_vars->{DOMAIN} member";
 	$cmd .= " -U$nt4_dc_vars->{USERNAME}\%$nt4_dc_vars->{PASSWORD}";
 
 	if (system($cmd) != 0) {
