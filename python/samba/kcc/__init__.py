@@ -2583,15 +2583,20 @@ class KCC(object):
                                dot_file_dir=self.dot_file_dir)
 
                 dot_edges = []
+                dot_colours = []
                 for link in self.sitelink_table.values():
+                    from hashlib import md5
+                    colour = '#' + md5(link.dnstr).hexdigest()[:6]
                     for a, b in itertools.combinations(link.site_list, 2):
-                        dot_edges.append((str(a), str(b)))
+                        dot_edges.append((a[1], b[1]))
+                        dot_colours.append(colour)
                 properties = ('connected',)
                 verify_and_dot('dsa_sitelink_initial', dot_edges,
                                directed=False,
                                label=self.my_dsa_dnstr, properties=properties,
                                debug=DEBUG, verify=self.verify,
-                               dot_file_dir=self.dot_file_dir)
+                               dot_file_dir=self.dot_file_dir,
+                               edge_colors=dot_colours)
 
             if forget_local_links:
                 for dsa in self.my_site.dsa_table.values():

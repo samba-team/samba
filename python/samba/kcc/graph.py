@@ -293,7 +293,7 @@ def create_edge(con_type, site_link, guid_to_vertex):
     e = MultiEdge()
     e.site_link = site_link
     e.vertices = []
-    for site_guid in site_link.site_list:
+    for site_guid, site_dn in site_link.site_list:
         if str(site_guid) in guid_to_vertex:
             e.vertices.extend(guid_to_vertex.get(str(site_guid)))
     e.repl_info.cost = site_link.cost

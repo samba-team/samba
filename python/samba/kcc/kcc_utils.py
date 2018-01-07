@@ -2148,8 +2148,8 @@ class SiteLink(object):
                     text = text + "0x%X " % slot
                 text = text + "]"
 
-        for dnstr in self.site_list:
-            text = text + "\n\tsite_list=%s" % dnstr
+        for guid, dn in self.site_list:
+            text = text + "\n\tsite_list=%s (%s)" % (guid, dn)
         return text
 
     def load_sitelink(self, samdb):
@@ -2190,8 +2190,9 @@ class SiteLink(object):
             for value in msg["siteList"]:
                 dsdn = dsdb_Dn(samdb, value.decode('utf8'))
                 guid = misc.GUID(dsdn.dn.get_extended_component('GUID'))
-                if guid not in self.site_list:
-                    self.site_list.append(guid)
+                dnstr = str(dsdn.dn)
+                if (guid, dnstr) not in self.site_list:
+                    self.site_list.append((guid, dnstr))
 
         if "schedule" in msg:
             self.schedule = ndr_unpack(drsblobs.schedule, value)
