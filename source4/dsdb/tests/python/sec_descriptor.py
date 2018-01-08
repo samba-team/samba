@@ -150,7 +150,12 @@ showInAdvancedViewOnly: TRUE
         self.schema_dn = self.ldb_admin.get_schema_basedn().get_linearized()
         self.domain_sid = security.dom_sid(self.ldb_admin.get_domain_sid())
         self.sd_utils = sd_utils.SDUtils(self.ldb_admin)
+        self.addCleanup(self.delete_admin_connection)
         print "baseDN: %s" % self.base_dn
+
+    def delete_admin_connection(self):
+        del self.sd_utils
+        del self.ldb_admin
 
     ################################################################################################
 
