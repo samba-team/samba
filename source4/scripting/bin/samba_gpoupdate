@@ -74,13 +74,15 @@ def apply_gp(lp, creds, test_ldb, logger, store, gp_extensions):
             gp_db.state(GPOSTATE.ENFORCE)
         gp_db.set_guid(guid)
         store.start()
-        try:
-            for ext in gp_extensions:
+        for ext in gp_extensions:
+            try:
                 ext.parse(ext.list(path), test_ldb, conn, gp_db, lp)
-        except:
-            logger.error('Failed to parse gpo %s' % guid)
-            store.cancel()
-            continue
+            except Exception as e:
+                logger.error('Failed to parse gpo %s for extension %s' % \
+                    (guid, str(ext)))
+                logger.error('Message was: ' + str(e))
+                store.cancel()
+                continue
         store.store(guid, '%i' % version)
         store.commit()
 
