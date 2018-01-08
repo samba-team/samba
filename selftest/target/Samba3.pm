@@ -2444,19 +2444,13 @@ sub wait_for_start($$$$$)
 	    $ret = system("SELFTEST_WINBINDD_SOCKET_DIR=" . $envvars->{SELFTEST_WINBINDD_SOCKET_DIR} . " " . Samba::bindir_path($self, "net") ." $envvars->{CONFIGURATION} sam createbuiltingroup Users");
 	    if ($ret != 0) {
 	        print "Failed to create BUILTIN\\Users group\n";
+		teardown_env($self, $envvars);
 	        return 0;
 	    }
-	    my $count = 0;
-	    do {
-		system(Samba::bindir_path($self, "net") . " $envvars->{CONFIGURATION} cache del IDMAP/SID2XID/S-1-5-32-545");
-		$ret = system("SELFTEST_WINBINDD_SOCKET_DIR=" . $envvars->{SELFTEST_WINBINDD_SOCKET_DIR} . " " . Samba::bindir_path($self, "wbinfo") . " --sid-to-gid=S-1-5-32-545");
-		if ($ret != 0) {
-		    sleep(2);
-		}
-		$count++;
-	    } while ($ret != 0 && $count < 10);
-	    if ($count == 10) {
-		print "WINBINDD not reachable after 20 seconds\n";
+	    system(Samba::bindir_path($self, "net") . " $envvars->{CONFIGURATION} cache del IDMAP/SID2XID/S-1-5-32-545");
+	    $ret = system("SELFTEST_WINBINDD_SOCKET_DIR=" . $envvars->{SELFTEST_WINBINDD_SOCKET_DIR} . " " . Samba::bindir_path($self, "wbinfo") . " --sid-to-gid=S-1-5-32-545");
+	    if ($ret != 0) {
+		print "Missing \"BUILTIN\\Users\", did net sam createbuiltingroup Users fail?\n";
 		teardown_env($self, $envvars);
 		return 0;
 	    }
