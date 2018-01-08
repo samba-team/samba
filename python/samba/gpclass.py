@@ -17,6 +17,7 @@
 
 import sys
 import os
+import errno
 import tdb
 sys.path.insert(0, "bin/python")
 from samba import NTSTATUSError
@@ -29,6 +30,7 @@ from samba.net import Net
 from samba.dcerpc import nbt
 from samba import smb
 import samba.gpo as gpo
+from tempfile import NamedTemporaryFile
 
 try:
     from enum import Enum
@@ -423,6 +425,49 @@ def get_gpo_list(dc_hostname, creds, lp):
         gpos = ads.get_gpo_list(creds.get_username())
     return gpos
 
+
+def cache_gpo_dir(conn, cache, sub_dir):
+    loc_sub_dir = sub_dir.upper()
+    local_dir = os.path.join(cache, loc_sub_dir)
+    try:
+        os.makedirs(local_dir, mode=0o755)
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            raise
+    for fdata in conn.list(sub_dir):
+        if fdata['attrib'] & smb.FILE_ATTRIBUTE_DIRECTORY:
+            cache_gpo_dir(conn, cache, os.path.join(sub_dir, fdata['name']))
+        else:
+            local_name = fdata['name'].upper()
+            f = NamedTemporaryFile(delete=False, dir=local_dir)
+            fname = os.path.join(sub_dir, fdata['name']).replace('/', '\\')
+            f.write(conn.loadfile(fname))
+            f.close()
+            os.rename(f.name, os.path.join(local_dir, local_name))
+
+
+def check_safe_path(path):
+    dirs = re.split('/|\\\\', path)
+    if 'sysvol' in path:
+        dirs = dirs[dirs.index('sysvol')+1:]
+    if not '..' in dirs:
+        return os.path.join(*dirs)
+    raise OSError(path)
+
+def check_refresh_gpo_list(dc_hostname, lp, creds, gpos):
+    conn = smb.SMB(dc_hostname, 'sysvol', lp=lp, creds=creds, sign=True)
+    cache_path = lp.cache_path('gpo_cache')
+    for gpo in gpos:
+        if not gpo.file_sys_path:
+            continue
+        cache_gpo_dir(conn, cache_path, check_safe_path(gpo.file_sys_path))
+
+def gpo_version(lp, path):
+    # gpo.gpo_get_sysvol_gpt_version() reads the GPT.INI from a local file,
+    # read from the gpo client cache.
+    gpt_path = lp.cache_path(os.path.join('gpo_cache', path))
+    return int(gpo.gpo_get_sysvol_gpt_version(gpt_path)[1])
+
 def apply_gp(lp, creds, test_ldb, logger, store, gp_extensions):
     gp_db = store.get_gplog(creds.get_username())
     dc_hostname = get_dc_hostname(creds, lp)
@@ -432,14 +477,19 @@ def apply_gp(lp, creds, test_ldb, logger, store, gp_extensions):
         logger.error('Error connecting to \'%s\' using SMB' % dc_hostname)
         raise
     gpos = get_gpo_list(dc_hostname, creds, lp)
+    try:
+        check_refresh_gpo_list(dc_hostname, lp, creds, gpos)
+    except:
+        logger.error('Failed downloading gpt cache from \'%s\' using SMB' \
+            % dc_hostname)
+        return
 
     for gpo_obj in gpos:
         guid = gpo_obj.name
         if guid == 'Local Policy':
             continue
-        path = os.path.join(lp.get('realm').lower(), 'Policies', guid)
-        local_path = os.path.join(lp.get("path", "sysvol"), path)
-        version = int(gpo.gpo_get_sysvol_gpt_version(local_path)[1])
+        path = os.path.join(lp.get('realm'), 'Policies', guid).upper()
+        version = gpo_version(lp, path)
         if version != store.get_int(guid):
             logger.info('GPO %s has changed' % guid)
             gp_db.state(GPOSTATE.APPLY)

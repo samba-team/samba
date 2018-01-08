@@ -17,6 +17,7 @@
 import os
 from samba import gpo, tests
 from samba.param import LoadParm
+from samba.gpclass import check_refresh_gpo_list, check_safe_path
 
 poldir = r'\\addom.samba.example.com\sysvol\addom.samba.example.com\Policies'
 dspath = 'CN=Policies,CN=System,DC=addom,DC=samba,DC=example,DC=com'
@@ -59,8 +60,8 @@ class GPOTests(tests.TestCase):
 
     def test_gpt_version(self):
         global gpt_data
-        local_path = self.lp.get("path", "sysvol")
-        policies = 'addom.samba.example.com/Policies'
+        local_path = self.lp.cache_path('gpo_cache')
+        policies = 'ADDOM.SAMBA.EXAMPLE.COM/POLICIES'
         guid = '{31B2F340-016D-11D2-945F-00C04FB984F9}'
         gpo_path = os.path.join(local_path, policies, guid)
         old_vers = gpo.gpo_get_sysvol_gpt_version(gpo_path)[1]
@@ -74,4 +75,37 @@ class GPOTests(tests.TestCase):
             gpt.write(gpt_data % old_vers)
         self.assertEquals(gpo.gpo_get_sysvol_gpt_version(gpo_path)[1], old_vers,
           'gpo_get_sysvol_gpt_version() did not return the expected version')
+
+    def test_check_refresh_gpo_list(self):
+        cache = self.lp.cache_path('gpo_cache')
+        ads = gpo.ADS_STRUCT(self.server, self.lp, self.creds)
+        if ads.connect():
+            gpos = ads.get_gpo_list(self.creds.get_username())
+        check_refresh_gpo_list(self.server, self.lp, self.creds, gpos)
+
+        self.assertTrue(os.path.exists(cache),
+                        'GPO cache %s was not created' % cache)
+
+        guid = '{31B2F340-016D-11D2-945F-00C04FB984F9}'
+        gpt_ini = os.path.join(cache, 'ADDOM.SAMBA.EXAMPLE.COM/POLICIES',
+                               guid, 'GPT.INI')
+        self.assertTrue(os.path.exists(gpt_ini),
+                        'GPT.INI was not cached for %s' % guid)
+
+    def test_check_refresh_gpo_list_malicious_paths(self):
+        # the path cannot contain ..
+        path = '/usr/local/samba/var/locks/sysvol/../../../../../../root/'
+        self.assertRaises(OSError, check_safe_path, path)
+
+        self.assertEqual(check_safe_path('/etc/passwd'), 'etc/passwd')
+        self.assertEqual(check_safe_path('\\\\etc/\\passwd'), 'etc/passwd')
+
+        # there should be no backslashes used to delineate paths
+        before = 'sysvol/addom.samba.example.com\\Policies/' \
+            '{31B2F340-016D-11D2-945F-00C04FB984F9}\\GPT.INI'
+        after = 'addom.samba.example.com/Policies/' \
+            '{31B2F340-016D-11D2-945F-00C04FB984F9}/GPT.INI'
+        result = check_safe_path(before)
+        self.assertEquals(result, after, 'check_safe_path() didn\'t' \
+            ' correctly convert \\ to /')
 
