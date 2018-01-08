@@ -95,7 +95,6 @@ struct sock_queue {
 };
 
 static bool sock_queue_set_fd(struct sock_queue *queue, int fd);
-static int sock_queue_destructor(struct sock_queue *queue);
 static void sock_queue_handler(struct tevent_context *ev,
 			       struct tevent_fd *fde, uint16_t flags,
 			       void *private_data);
@@ -138,8 +137,6 @@ struct sock_queue *sock_queue_setup(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	talloc_set_destructor(queue, sock_queue_destructor);
-
 	return queue;
 }
 
@@ -166,14 +163,6 @@ static bool sock_queue_set_fd(struct sock_queue *queue, int fd)
 	}
 
 	return true;
-}
-
-static int sock_queue_destructor(struct sock_queue *queue)
-{
-	TALLOC_FREE(queue->fde);
-	queue->fd = -1;
-
-	return 0;
 }
 
 static void sock_queue_handler(struct tevent_context *ev,
