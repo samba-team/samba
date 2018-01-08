@@ -75,12 +75,13 @@
 #define TALLOC_MAGIC_REFERENCE ((const char *)1)
 
 #define TALLOC_MAGIC_BASE 0xe814ec70
-static unsigned int talloc_magic = (
-	~TALLOC_FLAG_MASK & (
-		TALLOC_MAGIC_BASE +
-		(TALLOC_BUILD_VERSION_MAJOR << 24) +
-		(TALLOC_BUILD_VERSION_MINOR << 16) +
-		(TALLOC_BUILD_VERSION_RELEASE << 8)));
+#define TALLOC_MAGIC_NON_RANDOM ( \
+	~TALLOC_FLAG_MASK & ( \
+		TALLOC_MAGIC_BASE + \
+		(TALLOC_BUILD_VERSION_MAJOR << 24) + \
+		(TALLOC_BUILD_VERSION_MINOR << 16) + \
+		(TALLOC_BUILD_VERSION_RELEASE << 8)))
+static unsigned int talloc_magic = TALLOC_MAGIC_NON_RANDOM;
 
 /* by default we abort when given a bad pointer (such as when talloc_free() is called
    on a pointer that came from malloc() */
@@ -332,6 +333,48 @@ _PUBLIC_ int talloc_test_get_magic(void)
 	return talloc_magic;
 }
 
+static inline void _talloc_chunk_set_free(struct talloc_chunk *tc,
+			      const char *location)
+{
+	/*
+	 * Mark this memory as free, and also over-stamp the talloc
+	 * magic with the old-style magic.
+	 *
+	 * Why?  This tries to avoid a memory read use-after-free from
+	 * disclosing our talloc magic, which would then allow an
+	 * attacker to prepare a valid header and so run a destructor.
+	 *
+	 */
+	tc->flags = TALLOC_MAGIC_NON_RANDOM | TALLOC_FLAG_FREE
+		| (tc->flags & TALLOC_FLAG_MASK);
+
+	/* we mark the freed memory with where we called the free
+	 * from. This means on a double free error we can report where
+	 * the first free came from
+	 */
+	if (location) {
+		tc->name = location;
+	}
+}
+
+static inline void _talloc_chunk_set_not_free(struct talloc_chunk *tc)
+{
+	/*
+	 * Mark this memory as not free.
+	 *
+	 * Why? This is memory either in a pool (and so available for
+	 * talloc's re-use or after the realloc().  We need to mark
+	 * the memory as free() before any realloc() call as we can't
+	 * write to the memory after that.
+	 *
+	 * We put back the normal magic instead of the 'not random'
+	 * magic.
+	 */
+
+	tc->flags = talloc_magic |
+		((tc->flags & TALLOC_FLAG_MASK) & ~TALLOC_FLAG_FREE);
+}
+
 static void (*talloc_log_fn)(const char *message);
 
 _PUBLIC_ void talloc_set_log_fn(void (*log_fn)(const char *message))
@@ -445,13 +488,14 @@ static inline struct talloc_chunk *talloc_chunk_from_ptr(const void *ptr)
 	const char *pp = (const char *)ptr;
 	struct talloc_chunk *tc = discard_const_p(struct talloc_chunk, pp - TC_HDR_SIZE);
 	if (unlikely((tc->flags & (TALLOC_FLAG_FREE | ~TALLOC_FLAG_MASK)) != talloc_magic)) {
-		if ((tc->flags & (~TALLOC_FLAG_MASK)) != talloc_magic) {
-			talloc_abort_unknown_value();
+		if ((tc->flags & (TALLOC_FLAG_FREE | ~TALLOC_FLAG_MASK))
+		    == (TALLOC_MAGIC_NON_RANDOM | TALLOC_FLAG_FREE)) {
+			talloc_log("talloc: access after free error - first free may be at %s\n", tc->name);
+			talloc_abort_access_after_free();
 			return NULL;
 		}
 
-		talloc_log("talloc: access after free error - first free may be at %s\n", tc->name);
-		talloc_abort_access_after_free();
+		talloc_abort_unknown_value();
 		return NULL;
 	}
 	return tc;
@@ -937,13 +981,7 @@ static inline void _tc_free_poolmem(struct talloc_chunk *tc,
 	pool_tc = talloc_chunk_from_pool(pool);
 	next_tc = tc_next_chunk(tc);
 
-	tc->flags |= TALLOC_FLAG_FREE;
-
-	/* we mark the freed memory with where we called the free
-	 * from. This means on a double free error we can report where
-	 * the first free came from
-	 */
-	tc->name = location;
+	_talloc_chunk_set_free(tc, location);
 
 	TC_INVALIDATE_FULL_CHUNK(tc);
 
@@ -1093,13 +1131,7 @@ static inline int _tc_free_internal(struct talloc_chunk *tc,
 
 	_tc_free_children_internal(tc, ptr, location);
 
-	tc->flags |= TALLOC_FLAG_FREE;
-
-	/* we mark the freed memory with where we called the free
-	 * from. This means on a double free error we can report where
-	 * the first free came from
-	 */
-	tc->name = location;
+	_talloc_chunk_set_free(tc, location);
 
 	if (tc->flags & TALLOC_FLAG_POOL) {
 		struct talloc_pool_hdr *pool;
@@ -1796,8 +1828,22 @@ _PUBLIC_ void *_talloc_realloc(const void *context, void *ptr, size_t size, cons
 	}
 #endif
 
-	/* by resetting magic we catch users of the old memory */
-	tc->flags |= TALLOC_FLAG_FREE;
+	/*
+	 * by resetting magic we catch users of the old memory
+	 *
+	 * We mark this memory as free, and also over-stamp the talloc
+	 * magic with the old-style magic.
+	 *
+	 * Why?  This tries to avoid a memory read use-after-free from
+	 * disclosing our talloc magic, which would then allow an
+	 * attacker to prepare a valid header and so run a destructor.
+	 *
+	 * What else?  We have to re-stamp back a valid normal magic
+	 * on this memory once realloc() is done, as it will have done
+	 * a memcpy() into the new valid memory.  We can't do this in
+	 * reverse as that would be a real use-after-free.
+	 */
+	_talloc_chunk_set_free(tc, NULL);
 
 #if ALWAYS_REALLOC
 	if (pool_hdr) {
@@ -1896,7 +1942,7 @@ _PUBLIC_ void *_talloc_realloc(const void *context, void *ptr, size_t size, cons
 
 		if (new_chunk_size == old_chunk_size) {
 			TC_UNDEFINE_GROW_CHUNK(tc, size);
-			tc->flags &= ~TALLOC_FLAG_FREE;
+			_talloc_chunk_set_not_free(tc);
 			tc->size = size;
 			return ptr;
 		}
@@ -1911,7 +1957,7 @@ _PUBLIC_ void *_talloc_realloc(const void *context, void *ptr, size_t size, cons
 
 			if (space_left >= space_needed) {
 				TC_UNDEFINE_GROW_CHUNK(tc, size);
-				tc->flags &= ~TALLOC_FLAG_FREE;
+				_talloc_chunk_set_not_free(tc);
 				tc->size = size;
 				pool_hdr->end = tc_next_chunk(tc);
 				return ptr;
@@ -1941,12 +1987,24 @@ _PUBLIC_ void *_talloc_realloc(const void *context, void *ptr, size_t size, cons
 got_new_ptr:
 #endif
 	if (unlikely(!new_ptr)) {
-		tc->flags &= ~TALLOC_FLAG_FREE;
+		/*
+		 * Ok, this is a strange spot.  We have to put back
+		 * the old talloc_magic and any flags, except the
+		 * TALLOC_FLAG_FREE as this was not free'ed by the
+		 * realloc() call after all
+		 */
+		_talloc_chunk_set_not_free(tc);
 		return NULL;
 	}
 
+	/*
+	 * tc is now the new value from realloc(), the old memory we
+	 * can't access any more and was preemptively marked as
+	 * TALLOC_FLAG_FREE before the call.  Now we mark it as not
+	 * free again
+	 */
 	tc = (struct talloc_chunk *)new_ptr;
-	tc->flags &= ~TALLOC_FLAG_FREE;
+	_talloc_chunk_set_not_free(tc);
 	if (malloced) {
 		tc->flags &= ~TALLOC_FLAG_POOLMEM;
 	}
