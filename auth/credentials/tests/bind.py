@@ -43,6 +43,7 @@ creds_machine = copy.deepcopy(creds)
 creds_user1 = copy.deepcopy(creds)
 creds_user2 = copy.deepcopy(creds)
 creds_user3 = copy.deepcopy(creds)
+creds_user4 = copy.deepcopy(creds)
 
 class BindTests(samba.tests.TestCase):
 
@@ -64,7 +65,7 @@ class BindTests(samba.tests.TestCase):
         self.config_dn = self.info_dc["configurationNamingContext"][0]
         self.computer_dn = "CN=centos53,CN=Computers,%s" % self.domain_dn
         self.password = "P@ssw0rd"
-        self.username = "BindTestUser_" + time.strftime("%s", time.gmtime())
+        self.username = "BindTestUser"
 
     def tearDown(self):
         super(BindTests, self).tearDown()
@@ -113,6 +114,7 @@ unicodePwd:: """ + base64.b64encode("\"P@ssw0rd\"".encode('utf-16-le')) + """
                                       expression="(samAccountName=%s)" % self.username)
         self.assertEquals(len(ldb_res), 1)
         user_dn = ldb_res[0]["dn"]
+        self.addCleanup(delete_force, self.ldb, user_dn)
 
         # do a simple bind and search with the user account in format user@realm
         creds_user1.set_bind_dn(self.username + "@" + creds.get_realm())
@@ -138,5 +140,27 @@ unicodePwd:: """ + base64.b64encode("\"P@ssw0rd\"".encode('utf-16-le')) + """
                                               lp=lp, ldap_only=True)
         res = ldb_user3.search(base="", expression="", scope=SCOPE_BASE, attrs=["*"])
 
+    def test_user_account_bind_no_domain(self):
+        # create user
+        self.ldb.newuser(username=self.username, password=self.password)
+        ldb_res = self.ldb.search(base=self.domain_dn,
+                                      scope=SCOPE_SUBTREE,
+                                      expression="(samAccountName=%s)" % self.username)
+        self.assertEquals(len(ldb_res), 1)
+        user_dn = ldb_res[0]["dn"]
+        self.addCleanup(delete_force, self.ldb, user_dn)
+
+        creds_user4.set_username(self.username)
+        creds_user4.set_password(self.password)
+        creds_user4.set_domain('')
+        creds_user4.set_workstation('')
+        print "BindTest (no domain) with: " + self.username
+        try:
+            ldb_user4 = samba.tests.connect_samdb(host, credentials=creds_user4,
+                                              lp=lp, ldap_only=True)
+        except:
+            self.fail("Failed to connect without the domain set")
+
+        res = ldb_user4.search(base="", expression="", scope=SCOPE_BASE, attrs=["*"])
 
 TestProgram(module=__name__, opts=subunitopts)
