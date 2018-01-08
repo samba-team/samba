@@ -2333,6 +2333,7 @@ force_user:x:$gid_force_user:
 sub wait_for_start($$$$$)
 {
 	my ($self, $envvars, $nmbd, $winbindd, $smbd) = @_;
+	my $cmd;
 	my $ret;
 
 	if ($nmbd eq "yes") {
@@ -2366,8 +2367,7 @@ sub wait_for_start($$$$$)
 	if ($winbindd eq "yes") {
 	    print "checking for winbindd\n";
 	    my $count = 0;
-	    my $cmd = "";
-	    $cmd .= "SELFTEST_WINBINDD_SOCKET_DIR='$envvars->{SELFTEST_WINBINDD_SOCKET_DIR}' ";
+	    $cmd = "SELFTEST_WINBINDD_SOCKET_DIR='$envvars->{SELFTEST_WINBINDD_SOCKET_DIR}' ";
 	    $cmd .= "NSS_WRAPPER_PASSWD='$envvars->{NSS_WRAPPER_PASSWD}' ";
 	    $cmd .= "NSS_WRAPPER_GROUP='$envvars->{NSS_WRAPPER_GROUP}' ";
 	    $cmd .= Samba::bindir_path($self, "wbinfo") . " --ping-dc";
@@ -2419,9 +2419,28 @@ sub wait_for_start($$$$$)
 	    return 1;
 	}
 
+	# note: creating builtin groups requires winbindd for the
+	# unix id allocator
+	my $create_builtin_users = "no";
 	if ($winbindd eq "yes") {
-	    # note: creating builtin groups requires winbindd for the
-	    # unix id allocator
+		$cmd = "SELFTEST_WINBINDD_SOCKET_DIR='$envvars->{SELFTEST_WINBINDD_SOCKET_DIR}' ";
+		$cmd .= "NSS_WRAPPER_PASSWD='$envvars->{NSS_WRAPPER_PASSWD}' ";
+		$cmd .= "NSS_WRAPPER_GROUP='$envvars->{NSS_WRAPPER_GROUP}' ";
+		$cmd .= Samba::bindir_path($self, "wbinfo") . " --sid-to-gid=S-1-5-32-545";
+		my $wbinfo_out = qx($cmd 2>&1);
+		if ($? != 0) {
+			# wbinfo doesn't give us a better error code then
+			# WBC_ERR_DOMAIN_NOT_FOUND, but at least that's
+			# different then WBC_ERR_WINBIND_NOT_AVAILABLE
+			if ($wbinfo_out !~ /WBC_ERR_DOMAIN_NOT_FOUND/) {
+				print("Failed to run \"wbinfo --sid-to-gid=S-1-5-32-545\": $wbinfo_out");
+				teardown_env($self, $envvars);
+				return 0;
+			}
+			$create_builtin_users = "yes";
+		}
+	}
+	if ($create_builtin_users eq "yes") {
 	    $ret = system("SELFTEST_WINBINDD_SOCKET_DIR=" . $envvars->{SELFTEST_WINBINDD_SOCKET_DIR} . " " . Samba::bindir_path($self, "net") ." $envvars->{CONFIGURATION} sam createbuiltingroup Users");
 	    if ($ret != 0) {
 	        print "Failed to create BUILTIN\\Users group\n";
