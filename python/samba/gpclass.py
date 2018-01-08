@@ -217,12 +217,19 @@ class gp_log:
         exts = guid_obj.findall('gp_ext')
         if exts is not None:
             for ext in exts:
-                ext_map = {val[0]: val[1] for (key, val) in \
-                    data_maps[ext.attrib['name']].items()}
                 attrs = ext.findall('attribute')
                 for attr in attrs:
-                    ret.append((attr.attrib['name'], attr.text,
-                                ext_map[attr.attrib['name']]))
+                    func = None
+                    if attr.attrib['name'] in data_maps[ext.attrib['name']]:
+                        func = data_maps[ext.attrib['name']]\
+                               [attr.attrib['name']][-1]
+                    else:
+                        for dmap in data_maps[ext.attrib['name']].keys():
+                            if data_maps[ext.attrib['name']][dmap][0] == \
+                               attr.attrib['name']:
+                                func = data_maps[ext.attrib['name']][dmap][-1]
+                                break
+                    ret.append((attr.attrib['name'], attr.text, func))
         return ret
 
     def delete(self, gp_ext_name, attribute):
