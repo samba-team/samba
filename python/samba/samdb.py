@@ -42,7 +42,8 @@ class SamDB(samba.Ldb):
     hash_well_known = {}
 
     def __init__(self, url=None, lp=None, modules_dir=None, session_info=None,
-                 credentials=None, flags=0, options=None, global_schema=True,
+                 credentials=None, flags=ldb.FLG_DONT_CREATE_DB,
+                 options=None, global_schema=True,
                  auto_connect=True, am_rodc=None):
         self.lp = lp
         if not auto_connect:

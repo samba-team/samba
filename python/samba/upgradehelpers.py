@@ -138,7 +138,12 @@ def get_ldbs(paths, creds, session, lp):
 
     ldbs = ProvisionLDB()
 
-    ldbs.sam = SamDB(paths.samdb, session_info=session, credentials=creds, lp=lp, options=["modules:samba_dsdb"])
+    ldbs.sam = SamDB(paths.samdb,
+                     session_info=session,
+                     credentials=creds,
+                     lp=lp,
+                     options=["modules:samba_dsdb"],
+                     flags=0)
     ldbs.secrets = Ldb(paths.secrets, session_info=session, credentials=creds, lp=lp)
     ldbs.idmap = Ldb(paths.idmapdb, session_info=session, credentials=creds, lp=lp)
     ldbs.privilege = Ldb(paths.privilege, session_info=session, credentials=creds, lp=lp)
