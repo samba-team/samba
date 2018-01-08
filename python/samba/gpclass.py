@@ -424,6 +424,23 @@ def get_gpo_list(dc_hostname, creds, lp):
         gpos = ads.get_gpo_list(creds.get_username())
     return gpos
 
+def gpo_version(lp, conn, path):
+    # gpo.gpo_get_sysvol_gpt_version() reads the GPT.INI from a local file.
+    # If we don't have a sysvol path locally (if we're not a kdc), then
+    # store the file locally here so it can be read on a client.
+    sysvol = lp.get("path", "sysvol")
+    if sysvol:
+        local_path = os.path.join(sysvol, path, 'GPT.INI')
+    else:
+        gpt_path = lp.cache_path(os.path.join('gpt', path))
+        local_path = os.path.join(gpt_path, 'GPT.INI')
+        if not os.path.exists(os.path.dirname(local_path)):
+            os.makedirs(os.path.dirname(local_path), 0o700)
+        data = conn.loadfile(os.path.join(path, 'GPT.INI').replace('/', '\\'))
+        encoding = chardet.detect(data)
+        open(local_path, 'w').write(data.decode(encoding['encoding']))
+    return int(gpo.gpo_get_sysvol_gpt_version(os.path.dirname(local_path))[1])
+
 def apply_gp(lp, creds, test_ldb, logger, store, gp_extensions):
     gp_db = store.get_gplog(creds.get_username())
     dc_hostname = get_dc_hostname(creds, lp)
@@ -439,8 +456,7 @@ def apply_gp(lp, creds, test_ldb, logger, store, gp_extensions):
         if guid == 'Local Policy':
             continue
         path = os.path.join(lp.get('realm').lower(), 'Policies', guid)
-        local_path = os.path.join(lp.get("path", "sysvol"), path)
-        version = int(gpo.gpo_get_sysvol_gpt_version(local_path)[1])
+        version = gpo_version(lp, conn, path)
         if version != store.get_int(guid):
             logger.info('GPO %s has changed' % guid)
             gp_db.state(GPOSTATE.APPLY)

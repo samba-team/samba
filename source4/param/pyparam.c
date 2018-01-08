@@ -358,6 +358,22 @@ static PyObject *py_samdb_url(PyObject *self, PyObject *unused)
 	return PyStr_FromFormat("tdb://%s/sam.ldb", lpcfg_private_dir(lp_ctx));
 }
 
+static PyObject *py_cache_path(PyObject *self, PyObject *args)
+{
+	struct loadparm_context *lp_ctx = PyLoadparmContext_AsLoadparmContext(self);
+	char *name, *path;
+	PyObject *ret;
+
+	if (!PyArg_ParseTuple(args, "s", &name)) {
+		return NULL;
+	}
+
+	path = lpcfg_cache_path(NULL, lp_ctx, name);
+	ret = PyStr_FromString(path);
+	talloc_free(path);
+
+	return ret;
+}
 
 static PyMethodDef py_lp_ctx_methods[] = {
 	{ "load", py_lp_ctx_load, METH_VARARGS,
@@ -394,6 +410,9 @@ static PyMethodDef py_lp_ctx_methods[] = {
 	{ "samdb_url", py_samdb_url, METH_NOARGS,
 	        "S.samdb_url() -> string\n"
 	        "Returns the current URL for sam.ldb." },
+	{ "cache_path", py_cache_path, METH_VARARGS,
+		"S.cache_path(name) -> string\n"
+		"Returns a path in the Samba cache directory." },
 	{ NULL }
 };
 
