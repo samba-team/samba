@@ -421,7 +421,18 @@ def get_gpo_list(dc_hostname, creds, lp):
     ads = gpo.ADS_STRUCT(dc_hostname, lp, creds)
     if ads.connect():
         gpos = ads.get_gpo_list(creds.get_username())
-    return gpos
+    return (ads, gpos)
+
+def gpo_version(lp, path, sysvol):
+    # gpo.gpo_get_sysvol_gpt_version() reads the GPT.INI from a local file.
+    # If we don't have a sysvol path locally (if we're not a kdc), then
+    # read from the gpo client cache.
+    if sysvol:
+        local_path = os.path.join(sysvol, path, 'GPT.INI')
+    else:
+        gpt_path = lp.cache_path(os.path.join('gpo_cache', path))
+        local_path = os.path.join(gpt_path, 'GPT.INI')
+    return int(gpo.gpo_get_sysvol_gpt_version(os.path.dirname(local_path))[1])
 
 def apply_gp(lp, creds, test_ldb, logger, store, gp_extensions):
     gp_db = store.get_gplog(creds.get_username())
@@ -431,15 +442,17 @@ def apply_gp(lp, creds, test_ldb, logger, store, gp_extensions):
     except:
         logger.error('Error connecting to \'%s\' using SMB' % dc_hostname)
         raise
-    gpos = get_gpo_list(dc_hostname, creds, lp)
+    ads, gpos = get_gpo_list(dc_hostname, creds, lp)
+    sysvol = lp.get("path", "sysvol")
+    if not sysvol:
+        gpo.check_refresh_gpo_list(ads, gpos)
 
     for gpo_obj in gpos:
         guid = gpo_obj.name
         if guid == 'Local Policy':
             continue
         path = os.path.join(lp.get('realm').lower(), 'Policies', guid)
-        local_path = os.path.join(lp.get("path", "sysvol"), path)
-        version = int(gpo.gpo_get_sysvol_gpt_version(local_path)[1])
+        version = gpo_version(lp, path, sysvol)
         if version != store.get_int(guid):
             logger.info('GPO %s has changed' % guid)
             gp_db.state(GPOSTATE.APPLY)
