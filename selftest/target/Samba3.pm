@@ -2334,6 +2334,7 @@ sub wait_for_start($$$$$)
 {
 	my ($self, $envvars, $nmbd, $winbindd, $smbd) = @_;
 	my $cmd;
+	my $netcmd;
 	my $ret;
 
 	if ($nmbd eq "yes") {
@@ -2406,17 +2407,29 @@ sub wait_for_start($$$$$)
 	}
 
 	# Ensure we have domain users mapped.
-	$ret = system(Samba::bindir_path($self, "net") ." $envvars->{CONFIGURATION} groupmap add rid=513 unixgroup=domusers type=domain");
+	$netcmd = "NSS_WRAPPER_PASSWD='$envvars->{NSS_WRAPPER_PASSWD}' ";
+	$netcmd .= "NSS_WRAPPER_GROUP='$envvars->{NSS_WRAPPER_GROUP}' ";
+	$netcmd .= Samba::bindir_path($self, "net") ." $envvars->{CONFIGURATION} ";
+
+	$cmd = $netcmd . "groupmap add rid=513 unixgroup=domusers type=domain";
+	$ret = system($cmd);
 	if ($ret != 0) {
-	    return 1;
+		print("\"$cmd\" failed\n");
+		return 1;
 	}
-	$ret = system(Samba::bindir_path($self, "net") ." $envvars->{CONFIGURATION} groupmap add rid=512 unixgroup=domadmins type=domain");
+
+	$cmd = $netcmd . "groupmap add rid=512 unixgroup=domadmins type=domain";
+	$ret = system($cmd);
 	if ($ret != 0) {
-	    return 1;
+		print("\"$cmd\" failed\n");
+		return 1;
 	}
-	$ret = system(Samba::bindir_path($self, "net") ." $envvars->{CONFIGURATION} groupmap add sid=S-1-1-0 unixgroup=everyone type=builtin");
+
+	$cmd = $netcmd . "groupmap add sid=S-1-1-0 unixgroup=everyone type=builtin";
+	$ret = system($cmd);
 	if ($ret != 0) {
-	    return 1;
+		print("\"$cmd\" failed\n");
+		return 1;
 	}
 
 	# note: creating builtin groups requires winbindd for the
