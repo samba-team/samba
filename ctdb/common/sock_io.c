@@ -231,6 +231,7 @@ static void sock_queue_process(struct sock_queue *queue)
 	if (pkt_size == 0) {
 		D_ERR("Invalid packet of length 0\n");
 		queue->callback(NULL, 0, queue->private_data);
+		return;
 	}
 
 	if ((queue->end - queue->begin) < pkt_size) {
