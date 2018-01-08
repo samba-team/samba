@@ -224,6 +224,11 @@ class RodcRwdcCachedTests(password_lockout_base.BasePasswordTestCase):
         # make sure DCs are synchronized before the test
         self.force_replication()
 
+    def delete_ldb_connections(self):
+        super(RodcRwdcCachedTests, self).delete_ldb_connections()
+        del self.rwdc_db
+        del self.rodc_db
+
     def test_cache_and_flush_password(self):
         username = self.lockout1krb5_creds.get_username()
         userpass = self.lockout1krb5_creds.get_password()
@@ -766,6 +771,11 @@ class RodcRwdcTests(password_lockout_base.BasePasswordTestCase):
         self.force_replication()
         self.rwdc_dn = get_server_ref_from_samdb(self.rwdc_db)
         self.rodc_dn = get_server_ref_from_samdb(self.rodc_db)
+
+    def delete_ldb_connections(self):
+        super(RodcRwdcTests, self).delete_ldb_connections()
+        del self.rwdc_db
+        del self.rodc_db
 
     def assertReferral(self, fn, *args, **kwargs):
         try:

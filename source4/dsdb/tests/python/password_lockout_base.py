@@ -351,6 +351,8 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
         self.samr_handle = self.samr.Connect2(None, security.SEC_FLAG_MAXIMUM_ALLOWED)
         self.samr_domain = self.samr.OpenDomain(self.samr_handle, security.SEC_FLAG_MAXIMUM_ALLOWED, self.domain_sid)
 
+        self.addCleanup(self.delete_ldb_connections)
+
         # (Re)adds the test user accounts
         self.lockout1krb5_creds = self.insta_creds(self.template_creds,
                                                    username="lockout1krb5",
@@ -362,6 +364,11 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
                                                    userpass="thatsAcomplPASS0",
                                                    kerberos_state=DONT_USE_KERBEROS)
         self.lockout1ntlm_ldb = self._readd_user(self.lockout1ntlm_creds)
+
+    def delete_ldb_connections(self):
+        del self.lockout1krb5_ldb
+        del self.lockout1ntlm_ldb
+        del self.ldb
 
     def tearDown(self):
         super(BasePasswordTestCase, self).tearDown()
