@@ -134,3 +134,14 @@ class gp_sec_ext(gp_inf_ext):
                                    }
                }
 
+    @classmethod
+    def enabled(cls):
+        lp = LoadParm()
+        lp.load_default()
+        if lp.get('server role') == 'active directory domain controller':
+            disabled_file = \
+              os.path.splitext(os.path.abspath(__file__))[0] + '.py.disabled'
+            if not os.path.exists(disabled_file):
+                return True
+        return False
+
