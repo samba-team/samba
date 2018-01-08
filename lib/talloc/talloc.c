@@ -429,11 +429,6 @@ static void talloc_abort(const char *reason)
 	talloc_abort_fn(reason);
 }
 
-static void talloc_abort_magic(unsigned magic)
-{
-	talloc_abort("Bad talloc magic value - wrong talloc version used/mixed");
-}
-
 static void talloc_abort_access_after_free(void)
 {
 	talloc_abort("Bad talloc magic value - access after free");
@@ -450,19 +445,14 @@ static inline struct talloc_chunk *talloc_chunk_from_ptr(const void *ptr)
 	const char *pp = (const char *)ptr;
 	struct talloc_chunk *tc = discard_const_p(struct talloc_chunk, pp - TC_HDR_SIZE);
 	if (unlikely((tc->flags & (TALLOC_FLAG_FREE | ~TALLOC_FLAG_MASK)) != talloc_magic)) {
-		if ((tc->flags & (~TALLOC_FLAG_MASK)) == talloc_magic) {
-			talloc_abort_magic(tc->flags & (~TALLOC_FLAG_MASK));
-			return NULL;
-		}
-
-		if (tc->flags & TALLOC_FLAG_FREE) {
-			talloc_log("talloc: access after free error - first free may be at %s\n", tc->name);
-			talloc_abort_access_after_free();
-			return NULL;
-		} else {
+		if ((tc->flags & (~TALLOC_FLAG_MASK)) != talloc_magic) {
 			talloc_abort_unknown_value();
 			return NULL;
 		}
+
+		talloc_log("talloc: access after free error - first free may be at %s\n", tc->name);
+		talloc_abort_access_after_free();
+		return NULL;
 	}
 	return tc;
 }
