@@ -74,6 +74,7 @@ class AclTests(samba.tests.TestCase):
         self.user_pass = "samba123@"
         self.configuration_dn = self.ldb_admin.get_config_basedn().get_linearized()
         self.sd_utils = sd_utils.SDUtils(self.ldb_admin)
+        self.addCleanup(self.delete_admin_connection)
         #used for anonymous login
         self.creds_tmp = Credentials()
         self.creds_tmp.set_username("")
@@ -108,6 +109,10 @@ class AclTests(samba.tests.TestCase):
             pass
         else:
             self.fail()
+
+    def delete_admin_connection(self):
+        del self.sd_utils
+        del self.ldb_admin
 
 #tests on ldap add operations
 class AclAddTests(AclTests):
@@ -150,6 +155,10 @@ class AclAddTests(AclTests):
         delete_force(self.ldb_admin, self.get_user_dn(self.usr_admin_not_owner))
         delete_force(self.ldb_admin, self.get_user_dn(self.regular_user))
         delete_force(self.ldb_admin, self.get_user_dn("test_add_anonymous"))
+
+        del self.ldb_notowner
+        del self.ldb_owner
+        del self.ldb_user
 
     # Make sure top OU is deleted (and so everything under it)
     def assert_top_ou_deleted(self):
@@ -286,6 +295,10 @@ class AclModifyTests(AclTests):
         delete_force(self.ldb_admin, self.get_user_dn(self.user_with_group_sm))
         delete_force(self.ldb_admin, self.get_user_dn("test_modify_user2"))
         delete_force(self.ldb_admin, self.get_user_dn("test_anonymous"))
+
+        del self.ldb_user
+        del self.ldb_user2
+        del self.ldb_user3
 
     def test_modify_u1(self):
         """5 Modify one attribute if you have DS_WRITE_PROPERTY for it"""
@@ -696,6 +709,10 @@ class AclSearchTests(AclTests):
         delete_force(self.ldb_admin, self.get_user_dn("search_u3"))
         delete_force(self.ldb_admin, self.get_user_dn("group1"))
 
+        del self.ldb_user
+        del self.ldb_user2
+        del self.ldb_user3
+
     def test_search_anonymous1(self):
         """Verify access of rootDSE with the correct request"""
         anonymous = SamDB(url=ldaphost, credentials=self.creds_tmp, lp=lp)
@@ -997,6 +1014,8 @@ class AclDeleteTests(AclTests):
         delete_force(self.ldb_admin, self.get_user_dn(self.regular_user))
         delete_force(self.ldb_admin, self.get_user_dn("test_anonymous"))
 
+        del self.ldb_user
+
     def test_delete_u1(self):
         """User is prohibited by default to delete another User object"""
         # Create user that we try to delete
@@ -1084,6 +1103,8 @@ class AclRenameTests(AclTests):
         delete_force(self.ldb_admin, "OU=test_rename_ou3,%s,%s" % (self.ou1, self.base_dn))
         delete_force(self.ldb_admin, "%s,%s" % (self.ou1, self.base_dn))
         delete_force(self.ldb_admin, self.get_user_dn(self.regular_user))
+
+        del self.ldb_user
 
     def test_rename_u1(self):
         """Regular user fails to rename 'User object' within single OU"""
@@ -1320,6 +1341,9 @@ class AclCARTests(AclTests):
         super(AclCARTests, self).tearDown()
         delete_force(self.ldb_admin, self.get_user_dn(self.user_with_wp))
         delete_force(self.ldb_admin, self.get_user_dn(self.user_with_pc))
+
+        del self.ldb_user
+        del self.ldb_user2
 
     def test_change_password1(self):
         """Try a password change operation without any CARs given"""
@@ -1606,6 +1630,10 @@ class AclExtendedTests(AclTests):
         delete_force(self.ldb_admin, "CN=ext_group1,OU=ext_ou1," + self.base_dn)
         delete_force(self.ldb_admin, "ou=ext_ou1," + self.base_dn)
 
+        del self.ldb_user1
+        del self.ldb_user2
+        del self.ldb_user3
+
     def test_ntSecurityDescriptor(self):
         #create empty ou
         self.ldb_admin.create_ou("ou=ext_ou1," + self.base_dn)
@@ -1682,6 +1710,8 @@ class AclUndeleteTests(AclTests):
         delete_force(self.ldb_admin, self.get_user_dn(self.testuser5))
         delete_force(self.ldb_admin, self.new_dn_ou)
         delete_force(self.ldb_admin, self.ou1 + self.base_dn)
+
+        del self.ldb_user
 
     def GUID_string(self, guid):
         return ldb.schema_format_value("objectGUID", guid)
@@ -1797,6 +1827,8 @@ class AclSPNTests(AclTests):
         self.dcctx.cleanup_old_join()
         delete_force(self.ldb_admin, "cn=%s,cn=computers,%s" % (self.computername, self.base_dn))
         delete_force(self.ldb_admin, self.get_user_dn(self.test_user))
+
+        del self.ldb_user1
 
     def replace_spn(self, _ldb, dn, spn):
         print "Setting spn %s on %s" % (spn, dn)
