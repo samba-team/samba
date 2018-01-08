@@ -129,6 +129,33 @@ class PyCredentialsTests(TestCase):
             else:
                 raise
 
+    def test_SamLogonEx_no_domain(self):
+        c = self.get_netlogon_connection()
+
+        self.user_creds.set_domain('')
+
+        logon = samlogon_logon_info(self.domain,
+                                    self.machine_name,
+                                    self.user_creds)
+
+        logon_level = netlogon.NetlogonNetworkTransitiveInformation
+        validation_level = netlogon.NetlogonValidationSamInfo4
+        netr_flags = 0
+
+        try:
+            c.netr_LogonSamLogonEx(self.server,
+                                   self.user_creds.get_workstation(),
+                                   logon_level,
+                                   logon,
+                                   validation_level,
+                                   netr_flags)
+        except NTSTATUSError as e:
+            enum = ctypes.c_uint32(e[0]).value
+            if enum == ntstatus.NT_STATUS_WRONG_PASSWORD:
+                self.fail("got wrong password error")
+            else:
+                self.fail("got unexpected error" + str(e))
+
     def test_SamLogonExNTLM(self):
         c = self.get_netlogon_connection()
 
