@@ -8541,6 +8541,11 @@ NTSTATUS smbd_do_setfilepathinfo(connection_struct *conn,
 			break;
 		}
 
+		/* [MS-SMB2] 3.3.5.21.1 states we MUST fail with STATUS_NOT_SUPPORTED. */
+		case SMB_FILE_VALID_DATA_LENGTH_INFORMATION:
+		case SMB_FILE_SHORT_NAME_INFORMATION:
+			return NT_STATUS_NOT_SUPPORTED;
+
 		/*
 		 * CIFS UNIX extensions.
 		 */
