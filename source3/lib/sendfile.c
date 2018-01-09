@@ -106,7 +106,7 @@ ssize_t sys_sendfile_native(int tofd, int fromfd, off_t offset, size_t count, st
 
 	if (hv->iov_len > 0) {
 		if((nwritten = send(tofd, hv->iov_base, hv->iov_len, MSG_MORE)) == -1) {
-			if(errno != EINTR || errno != EAGAIN || errno != EWOULDBLOCK) {
+			if(errno != EINTR && errno != EAGAIN && errno != EWOULDBLOCK) {
 				return -1;
 			} else {
 				return 0;
@@ -132,7 +132,7 @@ ssize_t sys_sendfile_native(int tofd, int fromfd, off_t offset, size_t count, st
 				*/
 			errno = EINTR; /* Normally we can never return this. */
 		}
-		if (errno != EINTR || errno != EAGAIN || errno != EWOULDBLOCK) {
+		if (errno != EINTR && errno != EAGAIN && errno != EWOULDBLOCK) {
 			return -1;
 		}
 		nwritten = 0;
