@@ -1289,7 +1289,7 @@ static struct tevent_req *cli_session_setup_spnego_send(
 
 	status = cli_session_creds_prepare_krb5(cli, creds);
 	if (tevent_req_nterror(req, status)) {
-		return tevent_req_post(req, ev);;
+		return tevent_req_post(req, ev);
 	}
 
 	subreq = cli_session_setup_gensec_send(state, ev, cli, creds,
