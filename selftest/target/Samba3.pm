@@ -2454,7 +2454,10 @@ sub wait_for_start($$$$$)
 		}
 	}
 	if ($create_builtin_users eq "yes") {
-	    $ret = system("SELFTEST_WINBINDD_SOCKET_DIR=" . $envvars->{SELFTEST_WINBINDD_SOCKET_DIR} . " " . Samba::bindir_path($self, "net") ." $envvars->{CONFIGURATION} sam createbuiltingroup Users");
+	    $cmd = "SELFTEST_WINBINDD_SOCKET_DIR='$envvars->{SELFTEST_WINBINDD_SOCKET_DIR}' ";
+	    $cmd .= Samba::bindir_path($self, "net") . " $envvars->{CONFIGURATION} ";
+	    $cmd .= "sam createbuiltingroup Users";
+	    $ret = system($cmd);
 	    if ($ret != 0) {
 	        print "Failed to create BUILTIN\\Users group\n";
 		teardown_env($self, $envvars);
