@@ -697,8 +697,18 @@ static PyObject *py_net_finddc(py_net_Object *self, PyObject *args, PyObject *kw
 	}
 
 	mem_ctx = talloc_new(self->mem_ctx);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
 
 	io = talloc_zero(mem_ctx, struct finddcs);
+	if (io == NULL) {
+		TALLOC_FREE(mem_ctx);
+		PyErr_NoMemory();
+		return NULL;
+	}
+
 	if (domain != NULL) {
 		io->in.domain_name = domain;
 	}
