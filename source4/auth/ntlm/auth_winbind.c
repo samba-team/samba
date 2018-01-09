@@ -200,10 +200,10 @@ static void winbind_check_password_done(struct tevent_req *subreq)
 		struct winbind_check_password_state);
 	struct auth_method_context *ctx = state->ctx;
 	const struct auth_usersupplied_info *user_info = state->user_info;
-	const char *account_name = user_info->mapped.account_name;
 	struct ldb_dn *domain_dn = NULL;
+	const char *nt4_domain = NULL;
+	const char *nt4_account = NULL;
 	struct ldb_message *msg = NULL;
-	const char *p = NULL;
 	NTSTATUS status;
 
 	status = dcerpc_winbind_SamLogon_r_recv(subreq, state);
@@ -224,41 +224,6 @@ static void winbind_check_password_done(struct tevent_req *subreq)
 		return;
 	}
 
-	/*
-	 * At best, reset the badPwdCount to 0 if the account exists.
-	 * This means that lockouts happen at a badPwdCount earlier than
-	 * normal, but makes it more fault tolerant.
-	 */
-	p = strchr_m(account_name, '@');
-	if (p != NULL) {
-		const char *nt4_domain = NULL;
-		const char *nt4_account = NULL;
-
-		status = crack_name_to_nt4_name(state,
-						ctx->auth_ctx->sam_ctx,
-						DRSUAPI_DS_NAME_FORMAT_USER_PRINCIPAL,
-						account_name,
-						&nt4_domain, &nt4_account);
-		if (NT_STATUS_IS_OK(status) &&
-		    lpcfg_is_mydomain(ctx->auth_ctx->lp_ctx, nt4_domain))
-		{
-			account_name = nt4_account;
-		}
-	}
-
-	domain_dn = ldb_get_default_basedn(ctx->auth_ctx->sam_ctx);
-	if (domain_dn != NULL) {
-		status = authsam_search_account(state, ctx->auth_ctx->sam_ctx,
-						account_name, domain_dn, &msg);
-		if (NT_STATUS_IS_OK(status)) {
-			authsam_logon_success_accounting(
-				ctx->auth_ctx->sam_ctx, msg,
-				domain_dn,
-				user_info->flags & USER_INFO_INTERACTIVE_LOGON,
-				NULL);
-		}
-	}
-
 	status = make_user_info_dc_netlogon_validation(state,
 						      user_info->client.account_name,
 						      state->req.in.validation_level,
@@ -267,6 +232,30 @@ static void winbind_check_password_done(struct tevent_req *subreq)
 						      &state->user_info_dc);
 	if (tevent_req_nterror(req, status)) {
 		return;
+	}
+
+	nt4_domain = state->user_info_dc->info->domain_name;
+	nt4_account = state->user_info_dc->info->account_name;
+
+	if (lpcfg_is_mydomain(ctx->auth_ctx->lp_ctx, nt4_domain)) {
+		domain_dn = ldb_get_default_basedn(ctx->auth_ctx->sam_ctx);
+	}
+
+	if (domain_dn != NULL) {
+		/*
+		 * At best, reset the badPwdCount to 0 if the account exists.
+		 * This means that lockouts happen at a badPwdCount earlier than
+		 * normal, but makes it more fault tolerant.
+		 */
+		status = authsam_search_account(state, ctx->auth_ctx->sam_ctx,
+						nt4_account, domain_dn, &msg);
+		if (NT_STATUS_IS_OK(status)) {
+			authsam_logon_success_accounting(
+				ctx->auth_ctx->sam_ctx, msg,
+				domain_dn,
+				user_info->flags & USER_INFO_INTERACTIVE_LOGON,
+				NULL);
+		}
 	}
 
 	tevent_req_done(req);
