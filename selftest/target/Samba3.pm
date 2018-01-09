@@ -2468,7 +2468,9 @@ sub wait_for_start($$$$$)
 	    $cmd .= "cache del IDMAP/SID2XID/S-1-5-32-545";
 	    system($cmd);
 
-	    $ret = system("SELFTEST_WINBINDD_SOCKET_DIR=" . $envvars->{SELFTEST_WINBINDD_SOCKET_DIR} . " " . Samba::bindir_path($self, "wbinfo") . " --sid-to-gid=S-1-5-32-545");
+	    $cmd = "SELFTEST_WINBINDD_SOCKET_DIR='$envvars->{SELFTEST_WINBINDD_SOCKET_DIR}' ";
+	    $cmd .= Samba::bindir_path($self, "wbinfo") . " --sid-to-gid=S-1-5-32-545";
+	    $ret = system($cmd);
 	    if ($ret != 0) {
 		print "Missing \"BUILTIN\\Users\", did net sam createbuiltingroup Users fail?\n";
 		teardown_env($self, $envvars);
