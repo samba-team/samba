@@ -336,6 +336,9 @@ class dc_join(object):
         """find a writeable DC for the given domain"""
         try:
             ctx.cldap_ret = ctx.net.finddc(domain=domain, flags=nbt.NBT_SERVER_LDAP | nbt.NBT_SERVER_DS | nbt.NBT_SERVER_WRITABLE)
+        except NTSTATUSError as error:
+            raise Exception("Failed to find a writeable DC for domain '%s': %s" %
+                            (domain, error[1]))
         except Exception:
             raise Exception("Failed to find a writeable DC for domain '%s'" % domain)
         if ctx.cldap_ret.client_site is not None and ctx.cldap_ret.client_site != "":

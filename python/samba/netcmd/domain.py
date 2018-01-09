@@ -1771,6 +1771,9 @@ class DomainTrustCommand(Command):
             if require_pdc:
                 remote_flags |= nbt.NBT_SERVER_PDC
             remote_info = remote_net.finddc(flags=remote_flags, domain=domain, address=remote_server)
+        except NTSTATUSError as error:
+            raise CommandError("Failed to find a writeable DC for domain '%s': %s" %
+                               (domain, error[1]))
         except Exception:
             raise CommandError("Failed to find a writeable DC for domain '%s'" % domain)
         flag_map = {
