@@ -10,8 +10,7 @@
 	Access policies set minPwdAge, maxPwdAge, minPwdLength, and
 	pwdProperties in the samdb. Kerberos Policies set kdc:service ticket
 	lifetime, kdc:user ticket lifetime, and kdc:renewal lifetime in
-	smb.conf. Environment Variable policies apply environment variables,
-	such as PATH, to /etc/profile.
+	smb.conf.
 	</para>
 </description>
 
