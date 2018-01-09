@@ -283,8 +283,9 @@ NTSTATUS cli_session_creds_prepare_krb5(struct cli_state *cli,
 
 	auth_requested = cli_credentials_authentication_requested(creds);
 	if (auth_requested) {
+		errno = 0;
 		user_principal = cli_credentials_get_principal(creds, frame);
-		if (user_principal == NULL) {
+		if (errno != 0) {
 			TALLOC_FREE(frame);
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -297,6 +298,10 @@ NTSTATUS cli_session_creds_prepare_krb5(struct cli_state *cli,
 
 	if (krb5_state != CRED_DONT_USE_KERBEROS) {
 		try_kerberos = true;
+	}
+
+	if (user_principal == NULL) {
+		try_kerberos = false;
 	}
 
 	if (target_hostname == NULL) {
