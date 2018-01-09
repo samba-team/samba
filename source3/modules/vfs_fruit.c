@@ -6392,7 +6392,7 @@ static bool fruit_tmsize_do_dirent(vfs_handle_struct *handle,
 	bool ok;
 	char *p = NULL;
 	size_t sparsebundle_strlen = strlen("sparsebundle");
-	size_t bandsize;
+	size_t bandsize = 0;
 	size_t nbands;
 	double tm_size;
 
