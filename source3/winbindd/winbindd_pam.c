@@ -1949,13 +1949,11 @@ cached_logon:
 
 		result = winbindd_dual_pam_auth_cached(domain, state, &info3);
 
-		if (NT_STATUS_IS_OK(result)) {
-			DEBUG(10,("winbindd_dual_pam_auth_cached succeeded\n"));
-			goto process_result;
-		} else {
+		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(10,("winbindd_dual_pam_auth_cached failed: %s\n", nt_errstr(result)));
 			goto done;
 		}
+		DEBUG(10,("winbindd_dual_pam_auth_cached succeeded\n"));
 	}
 
 process_result:
