@@ -145,9 +145,10 @@ add_trusted_domain(const char *domain_name, const char *alt_name,
 static struct winbindd_domain *
 add_trusted_domain_from_tdc(const struct winbindd_tdc_domain *tdc)
 {
-	struct winbindd_domain *domain;
+	struct winbindd_domain *domain = NULL;
 	const char *dns_name = NULL;
-	const char **ignored_domains, **dom;
+	const char **ignored_domains = NULL;
+	const char **dom = NULL;
 	int role = lp_server_role();
 	const char *domain_name = tdc->domain_name;
 	const struct dom_sid *sid = &tdc->sid;
