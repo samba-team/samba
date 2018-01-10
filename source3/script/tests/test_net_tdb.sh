@@ -27,6 +27,11 @@ LOCKDIR=$8
 
 FILENAME=net_tdb_testfile
 
+samba_tdbtool=tdbtool
+if test -x $BINDIR/tdbtool; then
+	samba_tdbtool=$BINDIR/tdbtool
+fi
+
 failed=0
 
 incdir=`dirname $0`/../../../testprogs/blackbox
@@ -42,7 +47,7 @@ SMBCLIENTPID=$!
 sleep 1
 
 testit "Looking for record key of open file" \
-       $BINDIR/tdbtool $LOCKDIR/locking.tdb hexkeys || \
+	$samba_tdbtool $LOCKDIR/locking.tdb hexkeys || \
 	failed=$(expr $failed + 1)
 
 # The assumption here is that only one file is open, so only one
@@ -52,7 +57,7 @@ testit "Looking for record key of open file" \
 #[000] 01 FD 00 00 00 00 00 00  56 02 5C 00 00 00 00 00  ....... V.\....
 #[010] 00 00 00 00 00 00 00 00                           .......
 # Select only the hex data, remove space and join every thing together
-key=0x$($BINDIR/tdbtool $LOCKDIR/locking.tdb hexkeys | \
+key=0x$($samba_tdbtool $LOCKDIR/locking.tdb hexkeys | \
 	grep '\[' | cut -c 7-56 | sed -e 's/ //g' | tr -d '\n')
 
 testit "Looking for open file in locking.tdb" \
