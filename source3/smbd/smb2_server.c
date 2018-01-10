@@ -2231,11 +2231,11 @@ static NTSTATUS smbd_smb2_request_dispatch_update_counts(
 		cmp *= -1;
 	}
 
-	if (!(flags & SMB2_HDR_FLAG_REPLAY_OPERATION)) {
-		if (cmp == 0) {
+	if (flags & SMB2_HDR_FLAG_REPLAY_OPERATION) {
+		if (cmp == 0 && op->pre_request_count == 0) {
 			op->request_count += 1;
 			req->request_counters_updated = true;
-		} else if (cmp > 0) {
+		} else if (cmp > 0 && op->pre_request_count == 0) {
 			op->pre_request_count += op->request_count;
 			op->request_count = 1;
 			op->global->channel_sequence = channel_sequence;
@@ -2245,10 +2245,10 @@ static NTSTATUS smbd_smb2_request_dispatch_update_counts(
 			return NT_STATUS_FILE_NOT_AVAILABLE;
 		}
 	} else {
-		if (cmp == 0 && op->pre_request_count == 0) {
+		if (cmp == 0) {
 			op->request_count += 1;
 			req->request_counters_updated = true;
-		} else if (cmp > 0 && op->pre_request_count == 0) {
+		} else if (cmp > 0) {
 			op->pre_request_count += op->request_count;
 			op->request_count = 1;
 			op->global->channel_sequence = channel_sequence;
