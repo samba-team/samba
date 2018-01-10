@@ -473,7 +473,7 @@ done:
 }
 
 /**
- * Test Durablity V2 Create Replay Detection on Single Channel.
+ * Test Durability V2 Create Replay Detection on Single Channel.
  */
 static bool test_replay_dhv2_oplock1(struct torture_context *tctx,
 				     struct smb2_tree *tree)
@@ -560,7 +560,7 @@ done:
 }
 
 /**
- * Test Durablity V2 Create Replay Detection on Single Channel.
+ * Test Durability V2 Create Replay Detection on Single Channel.
  * Hand in a different oplock level in the replay.
  * Server responds with the handed in oplock level and
  * corresponding durable status, but does not change the
@@ -697,7 +697,7 @@ done:
 }
 
 /**
- * Test Durablity V2 Create Replay Detection on Single Channel.
+ * Test Durability V2 Create Replay Detection on Single Channel.
  * Replay with a different share mode. The share mode of
  * the opened file is not changed by this.
  */
@@ -823,7 +823,7 @@ done:
 }
 
 /**
- * Test Durablity V2 Create Replay Detection on Single Channel.
+ * Test Durability V2 Create Replay Detection on Single Channel.
  * Create with an oplock, and replay with a lease.
  */
 static bool test_replay_dhv2_oplock_lease(struct torture_context *tctx,
@@ -927,7 +927,7 @@ done:
 
 
 /**
- * Test durablity v2 create replay detection on single channel.
+ * Test durability v2 create replay detection on single channel.
  * Variant with leases instead of oplocks:
  * - open a file with a rh lease
  * - upgrade to a rwh lease with a second create
@@ -1065,7 +1065,7 @@ done:
 }
 
 /**
- * Test durablity v2 create replay detection on single channel.
+ * Test durability v2 create replay detection on single channel.
  * Variant with leases instead of oplocks, where the
  * replay does not specify the original lease level but
  * just a "R" lease. This still gives the upgraded lease
@@ -1216,7 +1216,7 @@ done:
 }
 
 /**
- * Test durablity v2 create replay detection on single channel.
+ * Test durability v2 create replay detection on single channel.
  * create with a lease, and replay with a different lease key
  */
 static bool test_replay_dhv2_lease3(struct torture_context *tctx,
@@ -1349,7 +1349,7 @@ done:
 }
 
 /**
- * Test durablity v2 create replay detection on single channel.
+ * Test durability v2 create replay detection on single channel.
  * Do the original create with a lease, and do the replay
  * with an oplock.
  */
@@ -1758,7 +1758,7 @@ done:
 }
 
 /**
- * Test Durablity V2 Create Replay Detection on Multi Channel
+ * Test Durability V2 Create Replay Detection on Multi Channel
  */
 static bool test_replay3(struct torture_context *tctx, struct smb2_tree *tree1)
 {
@@ -2162,7 +2162,7 @@ done:
 }
 
 /**
- * Test Durablity V2 Persistent Create Replay on a Single Channel
+ * Test Durability V2 Persistent Create Replay on a Single Channel
  */
 static bool test_replay5(struct torture_context *tctx, struct smb2_tree *tree)
 {
