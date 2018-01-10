@@ -23,6 +23,9 @@
 #include "lib/cmdline/popt_common.h"
 #include <libsmbclient.h>
 #include "torture/libsmbclient/proto.h"
+#include "lib/param/loadparm.h"
+#include "lib/param/param_global.h"
+#include "dynconfig.h"
 
 /* test string to compare with when debug_callback is called */
 #define TEST_STRING "smbc_setLogCallback test"
@@ -87,6 +90,67 @@ static bool torture_libsmbclient_initialize(struct torture_context *tctx)
 	smbc_setLogCallback(ctx, NULL, NULL);
 	DEBUG(0, (TEST_STRING"\n"));
 	torture_assert(tctx, !ret, "Failed debug_callback called");
+
+	smbc_free_context(ctx, 1);
+
+	return true;
+}
+
+static bool torture_libsmbclient_setConfiguration(struct torture_context *tctx)
+{
+	SMBCCTX *ctx;
+	struct loadparm_global *global_config = NULL;
+	const char *new_smb_conf = torture_setting_string(tctx,
+				"replace_smbconf",
+				"");
+
+	ctx = smbc_new_context();
+	torture_assert(tctx, ctx, "failed to get new context");
+
+	torture_assert(tctx, smbc_init_context(ctx), "failed to init context");
+
+	torture_comment(tctx, "Testing smbc_setConfiguration - new file %s\n",
+		new_smb_conf);
+
+	global_config = get_globals();
+	torture_assert(tctx, global_config, "Global Config is NULL");
+
+	/* check configuration before smbc_setConfiguration call */
+	torture_comment(tctx, "'workgroup' before setConfiguration %s\n",
+			global_config->workgroup);
+	torture_comment(tctx, "'client min protocol' before "
+			"setConfiguration %d\n",
+			global_config->client_min_protocol);
+	torture_comment(tctx, "'client max protocol' before "
+			"setConfiguration %d\n",
+			global_config->_client_max_protocol);
+	torture_comment(tctx, "'client signing' before setConfiguration %d\n",
+			global_config->client_signing);
+	torture_comment(tctx, "'deadtime' before setConfiguration %d\n",
+			global_config->deadtime);
+
+	torture_assert_int_equal(tctx, smbc_setConfiguration(ctx, new_smb_conf),
+			0, "setConfiguration conf file not found");
+
+	/* verify configuration */
+	torture_assert_str_equal(tctx, global_config->workgroup,
+			"NEW_WORKGROUP",
+			"smbc_setConfiguration failed, "
+			"'workgroup' not updated");
+	torture_assert_int_equal(tctx, global_config->client_min_protocol, 7,
+			"smbc_setConfiguration failed, 'client min protocol' "
+			"not updated");
+	torture_assert_int_equal(tctx, global_config->_client_max_protocol, 13,
+			"smbc_setConfiguration failed, 'client max protocol' "
+			"not updated");
+	torture_assert_int_equal(tctx, global_config->client_signing, 1,
+			"smbc_setConfiguration failed, 'client signing' "
+			"not updated");
+	torture_assert_int_equal(tctx, global_config->deadtime, 5,
+			"smbc_setConfiguration failed, 'deadtime' not updated");
+
+	/* Restore configuration to default */
+	smbc_setConfiguration(ctx, get_dyn_CONFIGFILE());
 
 	smbc_free_context(ctx, 1);
 
@@ -231,6 +295,7 @@ NTSTATUS torture_libsmbclient_init(TALLOC_CTX *ctx)
 	torture_suite_add_simple_test(suite, "version", torture_libsmbclient_version);
 	torture_suite_add_simple_test(suite, "initialize", torture_libsmbclient_initialize);
 	torture_suite_add_simple_test(suite, "configuration", torture_libsmbclient_configuration);
+	torture_suite_add_simple_test(suite, "setConfiguration", torture_libsmbclient_setConfiguration);
 	torture_suite_add_simple_test(suite, "options", torture_libsmbclient_options);
 	torture_suite_add_simple_test(suite, "opendir", torture_libsmbclient_opendir);
 
