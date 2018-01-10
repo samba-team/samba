@@ -2220,7 +2220,7 @@ static NTSTATUS smbd_smb2_request_dispatch_update_counts(
 		 * a 16 bit overflow of the client-submitted sequence
 		 * number:
 		 *
-		 * If the stored channel squence number is more than
+		 * If the stored channel sequence number is more than
 		 * 0x7FFF larger than the one from the request, then
 		 * the client-provided sequence number has likely
 		 * overflown. We treat this case as valid instead
