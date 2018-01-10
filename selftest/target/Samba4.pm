@@ -215,14 +215,6 @@ sub wait_for_start($$)
 
 	# Ensure we have the first RID Set before we start tests.  This makes the tests more reliable.
 	if ($testenv_vars->{SERVER_ROLE} eq "domain controller") {
-		# Add hosts file for name lookups
-		$ENV{NSS_WRAPPER_HOSTS} = $testenv_vars->{NSS_WRAPPER_HOSTS};
-		if (defined($testenv_vars->{RESOLV_WRAPPER_CONF})) {
-			$ENV{RESOLV_WRAPPER_CONF} = $testenv_vars->{RESOLV_WRAPPER_CONF};
-		} else {
-			$ENV{RESOLV_WRAPPER_HOSTS} = $testenv_vars->{RESOLV_WRAPPER_HOSTS};
-		}
-
 		print "waiting for working LDAP and a RID Set to be allocated\n";
 		my $ldbsearch = Samba::bindir_path($self, "ldbsearch");
 		my $count = 0;
@@ -234,7 +226,21 @@ sub wait_for_start($$)
 			$search_dn = "cn=RID Set,cn=$testenv_vars->{NETBIOSNAME},ou=domain controllers,$base_dn";
 		}
 		my $max_wait = 60;
-		my $cmd = "$ldbsearch $testenv_vars->{CONFIGURATION} -H ldap://$testenv_vars->{SERVER} -U$testenv_vars->{USERNAME}%$testenv_vars->{PASSWORD} -s base -b \"$search_dn\"";
+
+		# Add hosts file for name lookups
+		my $cmd = "NSS_WRAPPER_HOSTS='$testenv_vars->{NSS_WRAPPER_HOSTS}' ";
+		if (defined($testenv_vars->{RESOLV_WRAPPER_CONF})) {
+			$cmd .= "RESOLV_WRAPPER_CONF='$testenv_vars->{RESOLV_WRAPPER_CONF}' ";
+		} else {
+			$cmd .= "RESOLV_WRAPPER_HOSTS='$testenv_vars->{RESOLV_WRAPPER_HOSTS}' ";
+		}
+
+		$cmd .= "$ldbsearch ";
+		$cmd .= "$testenv_vars->{CONFIGURATION} ";
+		$cmd .= "-H ldap://$testenv_vars->{SERVER} ";
+		$cmd .= "-U$testenv_vars->{USERNAME}%$testenv_vars->{PASSWORD} ";
+		$cmd .= "-s base ";
+		$cmd .= "-b '$search_dn' ";
 		while (system("$cmd >/dev/null") != 0) {
 			$count++;
 			if ($count > $max_wait) {
