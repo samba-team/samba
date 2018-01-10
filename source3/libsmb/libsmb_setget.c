@@ -106,6 +106,21 @@ smbc_setLogCallback(SMBCCTX *c, void *private_ptr,
 	debug_set_callback(private_ptr, fn);
 }
 
+/** set configuration file */
+int smbc_setConfiguration(SMBCCTX *c, const char *file)
+{
+        bool ok;
+
+        ok = lp_load_client_no_reinit(file);
+        if (!ok) {
+                DBG_WARNING("Could not load config file: %s\n", file);
+                errno = ENOENT;
+                return -1;
+        }
+
+        DBG_NOTICE("Configuration loaded successfully: %s\n", file);
+        return 0;
+}
 /**
  * Get the timeout used for waiting on connections and response data
  * (in milliseconds)

@@ -315,9 +315,10 @@ base = smbtorture4_testsuites("base.")
 netapi = smbtorture4_testsuites("netapi.")
 
 libsmbclient = smbtorture4_testsuites("libsmbclient.")
+libsmbclient_testargs = ["--option=torture:replace_smbconf=%s/testdata/samba3/smb_new.conf" % srcdir()]
 
 for t in base + raw + smb2 + netapi + libsmbclient:
-    plansmbtorture4testsuite(t, "ad_dc_ntvfs", ['//$SERVER/tmp', '-U$USERNAME%$PASSWORD'] + ntvfsargs)
+    plansmbtorture4testsuite(t, "ad_dc_ntvfs", ['//$SERVER/tmp', '-U$USERNAME%$PASSWORD'] + ntvfsargs + libsmbclient_testargs)
 
 plansmbtorture4testsuite("raw.qfileinfo.ipc", "ad_dc_ntvfs", '//$SERVER/ipc\$ -U$USERNAME%$PASSWORD')
 
