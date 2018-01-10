@@ -146,7 +146,7 @@ static struct winbindd_domain *
 add_trusted_domain_from_tdc(const struct winbindd_tdc_domain *tdc)
 {
 	struct winbindd_domain *domain;
-	const char *alternative_name = NULL;
+	const char *dns_name = NULL;
 	const char **ignored_domains, **dom;
 	int role = lp_server_role();
 	const char *domain_name = tdc->domain_name;
@@ -168,7 +168,7 @@ add_trusted_domain_from_tdc(const struct winbindd_tdc_domain *tdc)
 	/* use alt_name if available to allow DNS lookups */
 
 	if (tdc->dns_name && *tdc->dns_name) {
-		alternative_name = tdc->dns_name;
+		dns_name = tdc->dns_name;
 	}
 
 	/* We can't call domain_list() as this function is called from
@@ -204,7 +204,7 @@ add_trusted_domain_from_tdc(const struct winbindd_tdc_domain *tdc)
 		}
 	}
 
-	if ((domain != NULL) && (alternative_name != NULL)) {
+	if ((domain != NULL) && (dns_name != NULL)) {
 		struct winbindd_domain *check_domain = NULL;
 
 		for (check_domain = _domain_list;
@@ -215,7 +215,7 @@ add_trusted_domain_from_tdc(const struct winbindd_tdc_domain *tdc)
 				continue;
 			}
 
-			if (strequal(check_domain->alt_name, alternative_name)) {
+			if (strequal(check_domain->alt_name, dns_name)) {
 				break;
 			}
 		}
@@ -223,7 +223,7 @@ add_trusted_domain_from_tdc(const struct winbindd_tdc_domain *tdc)
 		if (check_domain != NULL) {
 			DBG_ERR("DNS name [%s] used by domain [%s], "
 				"expected [%s]\n",
-				alternative_name, check_domain->name,
+				dns_name, check_domain->name,
 				domain->name);
 			return NULL;
 		}
@@ -253,8 +253,8 @@ add_trusted_domain_from_tdc(const struct winbindd_tdc_domain *tdc)
 		return NULL;
 	}
 
-	if (alternative_name) {
-		domain->alt_name = talloc_strdup(domain, alternative_name);
+	if (dns_name != NULL) {
+		domain->alt_name = talloc_strdup(domain, dns_name);
 		if (domain->alt_name == NULL) {
 			TALLOC_FREE(domain);
 			return NULL;
