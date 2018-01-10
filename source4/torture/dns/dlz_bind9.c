@@ -58,7 +58,7 @@ static char *test_dlz_bind9_binddns_dir(struct torture_context *tctx,
 					const char *file)
 {
 	return talloc_asprintf(tctx,
-			       "%s/%s",
+			       "ldb://%s/%s",
 			       lpcfg_binddns_dir(tctx->lp_ctx),
 			       file);
 }
