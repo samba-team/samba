@@ -446,6 +446,22 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 		}
 	}
 
+	if (fsp->kernel_share_modes_taken) {
+		int ret_flock;
+
+		/*
+		 * A file system sharemode could block the unlink;
+		 * remove filesystem sharemodes first.
+		 */
+		ret_flock = SMB_VFS_KERNEL_FLOCK(fsp, 0, 0);
+		if (ret_flock == -1) {
+			DBG_INFO("removing kernel flock for %s failed: %s\n",
+				  fsp_str_dbg(fsp), strerror(errno));
+		}
+
+		fsp->kernel_share_modes_taken = false;
+	}
+
 
 	if (SMB_VFS_UNLINK(conn, fsp->fsp_name) != 0) {
 		/*
