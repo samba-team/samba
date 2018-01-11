@@ -1,7 +1,7 @@
 [Unit]
 Description=Samba AD Daemon
 Wants=network-online.target
-After=syslog.target network.target network-online.target
+After=network.target network-online.target
 
 [Service]
 Type=notify
