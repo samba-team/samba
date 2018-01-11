@@ -2916,10 +2916,11 @@ NTSTATUS winbindd_pam_auth_pac_send(struct winbindd_cli_state *state,
 			 * returning a copy talloc'ed off
 			 * the state->mem_ctx.
 			 */
-			info3_copy = copy_netr_SamInfo3(state->mem_ctx,
-					&logon_info->info3);
-			if (info3_copy == NULL) {
-				return NT_STATUS_NO_MEMORY;
+			result = copy_netr_SamInfo3(state->mem_ctx,
+						    &logon_info->info3,
+						    &info3_copy);
+			if (!NT_STATUS_IS_OK(result)) {
+				return result;
 			}
 		}
 	}
