@@ -1008,6 +1008,7 @@ static struct auth_serversupplied_info *copy_session_info_serverinfo_guest(TALLO
 									   struct auth_serversupplied_info *server_info)
 {
 	struct auth_serversupplied_info *dst;
+	NTSTATUS status;
 
 	dst = make_server_info(mem_ctx);
 	if (dst == NULL) {
@@ -1055,8 +1056,10 @@ static struct auth_serversupplied_info *copy_session_info_serverinfo_guest(TALLO
 	dst->lm_session_key = data_blob_talloc(dst, src->session_key.data,
 						src->session_key.length);
 
-	dst->info3 = copy_netr_SamInfo3(dst, server_info->info3);
-	if (!dst->info3) {
+	status = copy_netr_SamInfo3(dst,
+				    server_info->info3,
+				    &dst->info3);
+	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(dst);
 		return NULL;
 	}
@@ -1433,9 +1436,10 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	result->unix_name = talloc_strdup(result, found_username);
 
 	/* copy in the info3 */
-	result->info3 = copy_netr_SamInfo3(result, info3);
-	if (result->info3 == NULL) {
-		nt_status = NT_STATUS_NO_MEMORY;
+	nt_status = copy_netr_SamInfo3(result,
+				       info3,
+				       &result->info3);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		goto out;
 	}
 

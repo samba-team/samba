@@ -63,11 +63,14 @@ struct auth_serversupplied_info *make_server_info(TALLOC_CTX *mem_ctx)
 NTSTATUS serverinfo_to_SamInfo2(struct auth_serversupplied_info *server_info,
 				struct netr_SamInfo2 *sam2)
 {
-	struct netr_SamInfo3 *info3;
+	struct netr_SamInfo3 *info3 = NULL;
+	NTSTATUS status;
 
-	info3 = copy_netr_SamInfo3(sam2, server_info->info3);
-	if (!info3) {
-		return NT_STATUS_NO_MEMORY;
+	status = copy_netr_SamInfo3(sam2,
+				    server_info->info3,
+				    &info3);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	if (server_info->session_key.length) {
@@ -96,11 +99,14 @@ NTSTATUS serverinfo_to_SamInfo2(struct auth_serversupplied_info *server_info,
 NTSTATUS serverinfo_to_SamInfo3(const struct auth_serversupplied_info *server_info,
 				struct netr_SamInfo3 *sam3)
 {
-	struct netr_SamInfo3 *info3;
+	struct netr_SamInfo3 *info3 = NULL;
+	NTSTATUS status;
 
-	info3 = copy_netr_SamInfo3(sam3, server_info->info3);
-	if (!info3) {
-		return NT_STATUS_NO_MEMORY;
+	status = copy_netr_SamInfo3(sam3,
+				    server_info->info3,
+				    &info3);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	if (server_info->session_key.length) {
@@ -133,7 +139,8 @@ NTSTATUS serverinfo_to_SamInfo6(struct auth_serversupplied_info *server_info,
 				struct netr_SamInfo6 *sam6)
 {
 	struct pdb_domain_info *dominfo;
-	struct netr_SamInfo3 *info3;
+	struct netr_SamInfo3 *info3 = NULL;
+	NTSTATUS status;
 
 	if ((pdb_capabilities() & PDB_CAP_ADS) == 0) {
 		DEBUG(10,("Not adding validation info level 6 "
@@ -146,9 +153,11 @@ NTSTATUS serverinfo_to_SamInfo6(struct auth_serversupplied_info *server_info,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	info3 = copy_netr_SamInfo3(sam6, server_info->info3);
-	if (!info3) {
-		return NT_STATUS_NO_MEMORY;
+	status = copy_netr_SamInfo3(sam6,
+				    server_info->info3,
+				    &info3);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	if (server_info->session_key.length) {
@@ -335,11 +344,15 @@ NTSTATUS create_info3_from_pac_logon_info(TALLOC_CTX *mem_ctx,
 					struct netr_SamInfo3 **pp_info3)
 {
 	NTSTATUS status;
-	struct netr_SamInfo3 *info3 = copy_netr_SamInfo3(mem_ctx,
-					&logon_info->info3);
-	if (info3 == NULL) {
-		return NT_STATUS_NO_MEMORY;
+	struct netr_SamInfo3 *info3 = NULL;
+
+	status = copy_netr_SamInfo3(mem_ctx,
+				    &logon_info->info3,
+				    &info3);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
+
 	status = merge_resource_sids(logon_info, info3);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(info3);
