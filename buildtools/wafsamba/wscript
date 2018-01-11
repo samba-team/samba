@@ -313,10 +313,6 @@ def configure(conf):
 
     conf.env.GIT_LOCAL_CHANGES = Options.options.GIT_LOCAL_CHANGES
 
-    conf.CHECK_COMMAND(['uname', '-a'],
-                       msg='Checking build system',
-                       define='BUILD_SYSTEM',
-                       on_target=False)
     conf.CHECK_UNAME()
 
     # see if we can compile and run a simple C program
