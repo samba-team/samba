@@ -531,10 +531,7 @@ static void setup_new_vc_session(struct smbd_server_connection *sconn)
 {
 	DEBUG(2,("setup_new_vc_session: New VC == 0, if NT4.x "
 		"compatible we would close all old resources.\n"));
-#if 0
-	conn_close_all();
-	invalidate_all_vuids();
-#endif
+
 	if (lp_reset_on_zero_vc()) {
 		char *addr;
 		struct shutdown_state state;
