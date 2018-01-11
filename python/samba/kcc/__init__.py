@@ -913,7 +913,7 @@ class KCC(object):
                                      drsuapi.DRSUAPI_DRS_NONGC_RO_REP)
                     if t_repsFrom.replica_flags != replica_flags:
                         t_repsFrom.replica_flags = replica_flags
-                c_rep.commit_repsFrom(self.samdb)
+                c_rep.commit_repsFrom(self.samdb, ro=self.readonly)
             else:
                 if dnstr not in needed_rep_table:
                     delete_reps.add(dnstr)
