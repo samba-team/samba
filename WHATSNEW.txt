@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the first preview release of Samba 4.8.  This is *not*
+This is the first release candidate of Samba 4.8.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -19,7 +19,7 @@ NEW FEATURES/CHANGES
 KDC GPO application
 -------------------
 
-Adds Group Policy support for the samba kdc. Applies password policies
+Adds Group Policy support for the Samba kdc. Applies password policies
 (minimum/maximum password age, minimum password length, and password
 complexity) and kerberos policies (user/service ticket lifetime and
 renew lifetime).
@@ -30,7 +30,8 @@ policy. Can be applied automatically by setting
  'server services = +gpoupdate'.
 
 Time Machine Support with vfs_fruit
-===================================
+-----------------------------------
+
 Samba can be configured as a Time Machine target for Apple Mac devices
 through the vfs_fruit module. When enabling a share for Time Machine
 support the relevant Avahi records to support discovery will be published
@@ -41,7 +42,8 @@ Shares can be designated as a Time Machine share with the following setting:
   'fruit:time machine = yes'
 
 Support for lower casing the MDNS Name
-======================================
+--------------------------------------
+
 Allows the server name that is advertised through MDNS to be set to the
 hostname rather than the Samba NETBIOS name. This allows an administrator
 to make Samba registered MDNS records match the case of the hostname
@@ -52,7 +54,8 @@ This can be set with the following settings:
   'mdns name = mdns'
 
 Encrypted secrets
-=================
+-----------------
+
 Attributes deemed to be sensitive are now encrypted on disk. The sensitive
 values are currently:
 	pekList
@@ -72,46 +75,21 @@ values are currently:
 
 This encryption is enabled by default on a new provision or join, it
 can be disabled at provision or join time with the new option
---plaintext-secrets.
+'--plaintext-secrets'.
 
 However, an in-place upgrade will not encrypt the database.
 
 Once encrypted, it is not possible to do an in-place downgrade (eg to
 4.7) of the database. To obtain an unencrypted copy of the database a
-new DC join should be performed, specifying the --plaintext-secrets
+new DC join should be performed, specifying the '--plaintext-secrets'
 option.
 
 The key file "encrypted_secrets.key" is created in the same directory
 as the database and should NEVER be disclosed.  It is included by the
 samba_backup script.
 
-smb.conf changes
-================
-
-  Parameter Name                     Description             Default
-  --------------                     -----------             -------
-  auth methods                       Removed
-  binddns dir                        New
-  client schannel                    Default changed/        yes
-                                     Deprecated
-  gpo update command                 New
-  ldap ssl ads                       Deprecated
-  map untrusted to domain            Removed
-  oplock contention limit            Removed
-  prefork children                   New                     1
-  mdns name                          Added                   netbios
-  fruit:time machine                 Added                   false
-  profile acls                       Removed
-  use spnego                         Removed
-  server schannel                    Default changed/        yes
-                                     Deprecated
-  unicode                            Deprecated
-  winbind scan trusted domains       New                     yes
-  winbind trusted domains only       Removed
-
-
 NT4-style replication based net commands removed
-================================================
+------------------------------------------------
 
 The following commands and sub-commands have been removed from the
 "net" utility:
@@ -134,7 +112,7 @@ commands have been removed from rpcclient.
 supported.
 
 vfs_aio_linux module removed
-============================
+----------------------------
 
 The current Linux kernel aio does not match what Samba would
 do. Shipping code that uses it leads people to false
@@ -143,7 +121,7 @@ there is no special module required to see benefits of read and write
 request being sent do the disk in parallel.
 
 smbclient reparse point symlink parameters reversed
-===================================================
+---------------------------------------------------
 
 A bug in smbclient caused the 'symlink' command to reverse the
 meaning of the new name and link target parameters when creating a
@@ -169,22 +147,49 @@ domains. Some pam_winbind setups may also require the global list.
 If you have a setup that doesn't require the global list, you should set
 "winbind scan trusted domains = no".
 
+
 REMOVED FEATURES
 ================
 
-The two commands "net serverid list" and "net serverid wipe" have been
+The two commands 'net serverid list' and 'net serverid wipe' have been
 removed, because the file serverid.tdb is not used anymore.
 
-"net serverid list" can be replaced by listing all files in the
+'net serverid list' can be replaced by listing all files in the
 subdirectory "msg.lock" of Samba's "lock directory". The unique id
-listed by "net serverid list" is stored in every process' lockfile in
+listed by 'net serverid list' is stored in every process' lockfile in
 "msg.lock".
 
-"net serverid wipe" is not necessary anymore. It was meant primarily
+'net serverid wipe' is not necessary anymore. It was meant primarily
 for clustered environments, where the serverid.tdb file was not
 properly cleaned up after single node crashes. Nowadays smbd and
 winbind take care of cleaning up the msg.lock and msg.sock directories
 automatically.
+
+
+smb.conf changes
+================
+
+  Parameter Name                     Description             Default
+  --------------                     -----------             -------
+  auth methods                       Removed
+  binddns dir                        New
+  client schannel                    Default changed/        yes
+                                     Deprecated
+  gpo update command                 New
+  ldap ssl ads                       Deprecated
+  map untrusted to domain            Removed
+  oplock contention limit            Removed
+  prefork children                   New                     1
+  mdns name                          Added                   netbios
+  fruit:time machine                 Added                   false
+  profile acls                       Removed
+  use spnego                         Removed
+  server schannel                    Default changed/        yes
+                                     Deprecated
+  unicode                            Deprecated
+  winbind scan trusted domains       New                     yes
+  winbind trusted domains only       Removed
+
 
 KNOWN ISSUES
 ============
