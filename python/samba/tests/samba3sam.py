@@ -73,7 +73,7 @@ class MapBaseTestCase(TestCaseInTempDir):
         def make_s4dn(basedn, rdn):
             return "%s,%s" % (rdn, basedn)
 
-        self.ldbfile = os.path.join(self.tempdir, "test.ldb")
+        self.ldbfile = os.path.join(self.tempdir, "sam.ldb")
         self.ldburl = "tdb://" + self.ldbfile
 
         tempdir = self.tempdir
