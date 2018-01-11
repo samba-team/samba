@@ -94,7 +94,7 @@ class KCC(object):
     Service can then utilize to replicate naming contexts
 
     :param unix_now: The putative current time in seconds since 1970.
-    :param read_only: Don't write to the database.
+    :param readonly: Don't write to the database.
     :param verify: Check topological invariants for the generated graphs
     :param debug: Write verbosely to stderr.
     "param dot_file_dir: write diagnostic Graphviz files in this directory
