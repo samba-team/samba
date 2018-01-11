@@ -2301,6 +2301,7 @@ static bool test_aapl(struct torture_context *tctx,
 	unsigned int count;
 	union smb_search_data *d;
 	uint64_t rfork_len;
+	bool is_osx_server = torture_setting_bool(tctx, "osx", false);
 
 	smb2_deltree(tree, BASEDIR);
 
@@ -2357,7 +2358,10 @@ static bool test_aapl(struct torture_context *tctx,
 		goto done;
 	}
 
-	if (aapl->data.length != 50) {
+	if (!is_osx_server) {
+		size_t expected_aapl_ctx_size;
+		bool size_ok;
+
 		/*
 		 * uint32_t CommandCode = kAAPL_SERVER_QUERY
 		 * uint32_t Reserved = 0;
@@ -2370,11 +2374,12 @@ static bool test_aapl(struct torture_context *tctx,
 		 *                       kAAPL_CASE_SENSITIVE;
 		 * uint32_t Pad2 = 0;
 		 * uint32_t ModelStringLen = 10;
-		 * ucs2_t ModelString[5] = "Samba";
+		 * ucs2_t ModelString[5] = "MacSamba";
 		 */
-		torture_warning(tctx,
-				"(%s) unexpected AAPL context length: %zd, expected 50",
-				__location__, aapl->data.length);
+		expected_aapl_ctx_size = strlen("MacSamba") * 2 + 40;
+
+		size_ok = aapl->data.length == expected_aapl_ctx_size;
+		torture_assert_goto(tctx, size_ok, ret, done, "bad AAPL size");
 	}
 
 	aapl_cmd = IVAL(aapl->data.data, 0);
