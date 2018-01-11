@@ -1,6 +1,6 @@
 [Unit]
 Description=Samba Winbind Daemon
-After=syslog.target network.target nmb.service
+After=network.target nmb.service
 
 [Service]
 Type=notify
