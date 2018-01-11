@@ -59,6 +59,10 @@ uint16_t smbXcli_conn_max_requests(struct smbXcli_conn *conn);
 NTTIME smbXcli_conn_server_system_time(struct smbXcli_conn *conn);
 const DATA_BLOB *smbXcli_conn_server_gss_blob(struct smbXcli_conn *conn);
 const struct GUID *smbXcli_conn_server_guid(struct smbXcli_conn *conn);
+bool smbXcli_conn_get_force_channel_sequence(struct smbXcli_conn *conn);
+void smbXcli_conn_set_force_channel_sequence(struct smbXcli_conn *conn,
+					     bool v);
+
 
 struct tevent_req *smbXcli_conn_samba_suicide_send(TALLOC_CTX *mem_ctx,
 						   struct tevent_context *ev,
