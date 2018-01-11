@@ -56,16 +56,17 @@ static NTSTATUS append_info3_as_txt(TALLOC_CTX *mem_ctx,
 				    union netr_Validation *validation)
 {
 	struct netr_SamInfo3 *info3 = NULL;
-	char *ex;
+	char *ex = NULL;
 	uint32_t i;
-	NTSTATUS status;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	TALLOC_CTX *frame = talloc_stackframe();
 
-	status = map_validation_to_info3(talloc_tos(),
+	status = map_validation_to_info3(frame,
 					 validation_level,
 					 validation,
 					 &info3);
 	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+		goto out;
 	}
 
 	resp->data.auth.info3.logon_time =
@@ -120,10 +121,10 @@ static NTSTATUS append_info3_as_txt(TALLOC_CTX *mem_ctx,
 			validation->sam6->principal_name.string);
 	}
 
-	ex = talloc_strdup(mem_ctx, "");
+	ex = talloc_strdup(frame, "");
 	if (ex == NULL) {
-		TALLOC_FREE(info3);
-		return NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
 	}
 
 	for (i=0; i < info3->base.groups.count; i++) {
@@ -131,36 +132,36 @@ static NTSTATUS append_info3_as_txt(TALLOC_CTX *mem_ctx,
 						   info3->base.groups.rids[i].rid,
 						   info3->base.groups.rids[i].attributes);
 		if (ex == NULL) {
-			TALLOC_FREE(info3);
-			return NT_STATUS_NO_MEMORY;
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
 		}
 	}
 
 	for (i=0; i < info3->sidcount; i++) {
 		char *sid;
 
-		sid = dom_sid_string(mem_ctx, info3->sids[i].sid);
+		sid = dom_sid_string(frame, info3->sids[i].sid);
 		if (sid == NULL) {
-			TALLOC_FREE(info3);
-			return NT_STATUS_NO_MEMORY;
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
 		}
 
 		ex = talloc_asprintf_append_buffer(ex, "%s:0x%08X\n",
 						   sid,
 						   info3->sids[i].attributes);
 		if (ex == NULL) {
-			TALLOC_FREE(info3);
-			return NT_STATUS_NO_MEMORY;
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
 		}
-
-		talloc_free(sid);
 	}
 
-	resp->extra_data.data = ex;
 	resp->length += talloc_get_size(ex);
+	resp->extra_data.data = talloc_move(mem_ctx, &ex);
 
-	TALLOC_FREE(info3);
-	return NT_STATUS_OK;
+	status = NT_STATUS_OK;
+out:
+	TALLOC_FREE(frame);
+	return status;
 }
 
 static NTSTATUS append_info3_as_ndr(TALLOC_CTX *mem_ctx,
