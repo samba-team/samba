@@ -2006,6 +2006,72 @@ static bool test_magic_protection(void)
 	return true;
 }
 
+static void test_magic_free_protection_abort(const char *reason)
+{
+	/* exit with errcode 42 to communicate successful test to the parent process */
+	if (strcmp(reason, "Bad talloc magic value - access after free") == 0) {
+		_exit(42);
+	}
+	/* not 42 */
+	_exit(404);
+}
+
+static bool test_magic_free_protection(void)
+{
+	void *pool = talloc_pool(NULL, 1024);
+	int *p1, *p2, *p3;
+	pid_t pid;
+	int exit_status;
+
+	printf("test: magic_free_protection\n");
+	p1 = talloc(pool, int);
+	p2 = talloc(pool, int);
+
+	/* To avoid complaints from the compiler assign values to the p1 & p2. */
+	*p1 = 6;
+	*p2 = 9;
+
+	p3 = talloc_realloc(pool, p2, int, 2048);
+	torture_assert("pool realloc 2048",
+		       p3 != p2,
+		       "failed: pointer not changed");
+
+	/*
+	 * Now access the memory in the pool after the realloc().  It
+	 * should be marked as free, so use of the old pointer should
+	 * trigger the abort function
+	 */
+	pid = fork();
+	if (pid == 0) {
+		talloc_set_abort_fn(test_magic_free_protection_abort);
+
+		talloc_get_name(p2);
+
+		/* Never reached. Make compilers happy */
+		return true;
+	}
+
+	while (wait(&exit_status) != pid);
+
+	if (!WIFEXITED(exit_status)) {
+		printf("Child exited through unexpected abnormal means\n");
+		return false;
+	}
+	if (WEXITSTATUS(exit_status) != 42) {
+		printf("Child exited with wrong exit status\n");
+		return false;
+	}
+	if (WIFSIGNALED(exit_status)) {
+		printf("Child recieved unexpected signal\n");
+		return false;
+	}
+
+	talloc_free(pool);
+
+	printf("success: magic_free_protection\n");
+	return true;
+}
+
 static void test_reset(void)
 {
 	talloc_set_log_fn(test_log_stdout);
@@ -2092,6 +2158,8 @@ bool torture_local_talloc(struct torture_context *tctx)
 	ret &= test_autofree();
 	test_reset();
 	ret &= test_magic_protection();
+	test_reset();
+	ret &= test_magic_free_protection();
 
 	test_reset();
 	talloc_disable_null_tracking();
