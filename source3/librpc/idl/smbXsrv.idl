@@ -430,7 +430,8 @@ interface smbXsrv
 		uint32					durable_timeout_msec;
 		boolean8				durable;
 		DATA_BLOB				backend_cookie;
-		hyper					channel_sequence;
+		uint16					channel_sequence;
+		hyper					channel_generation;
 	} smbXsrv_open_global0;
 
 	typedef union {

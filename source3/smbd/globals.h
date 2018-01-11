@@ -744,6 +744,7 @@ struct smbd_smb2_request {
 	 * adapted again in reply.
 	 */
 	bool request_counters_updated;
+	uint64_t channel_generation;
 
 	/*
 	 * The sub request for async backend calls.
