@@ -889,14 +889,14 @@ NTSTATUS append_auth_data(TALLOC_CTX *mem_ctx,
 			  const char *name_user)
 {
 	struct netr_SamInfo3 *info3 = NULL;
-	NTSTATUS result;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
 	result = map_validation_to_info3(talloc_tos(),
 					 validation_level,
 					 validation,
 					 &info3);
 	if (!NT_STATUS_IS_OK(result)) {
-		return result;
+		goto out;
 	}
 
 	if (request_flags & WBFLAG_PAM_USER_SESSION_KEY) {
@@ -919,8 +919,7 @@ NTSTATUS append_auth_data(TALLOC_CTX *mem_ctx,
 		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(10,("Failed to append Unix Username: %s\n",
 				nt_errstr(result)));
-			TALLOC_FREE(info3);
-			return result;
+			goto out;
 		}
 	}
 
@@ -931,8 +930,7 @@ NTSTATUS append_auth_data(TALLOC_CTX *mem_ctx,
 		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(10,("Failed to append INFO3 (NDR): %s\n",
 				nt_errstr(result)));
-			TALLOC_FREE(info3);
-			return result;
+			goto out;
 		}
 	}
 
@@ -943,8 +941,7 @@ NTSTATUS append_auth_data(TALLOC_CTX *mem_ctx,
 		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(10,("Failed to append INFO3 (TXT): %s\n",
 				nt_errstr(result)));
-			TALLOC_FREE(info3);
-			return result;
+			goto out;
 		}
 	}
 
@@ -954,13 +951,14 @@ NTSTATUS append_auth_data(TALLOC_CTX *mem_ctx,
 		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(10,("Failed to append AFS token: %s\n",
 				nt_errstr(result)));
-			TALLOC_FREE(info3);
-			return result;
+			goto out;
 		}
 	}
 
+	result = NT_STATUS_OK;
+out:
 	TALLOC_FREE(info3);
-	return NT_STATUS_OK;
+	return result;
 }
 
 static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
