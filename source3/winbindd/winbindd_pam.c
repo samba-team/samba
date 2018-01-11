@@ -1683,22 +1683,24 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(
 			true, /* interactive */
 			&authoritative,
 			&info3);
-		if (NT_STATUS_IS_OK(result)) {
-			result = map_info3_to_validation(mem_ctx,
-							 info3,
-							 &validation_level,
-							 &validation);
-			TALLOC_FREE(info3);
-			if (!NT_STATUS_IS_OK(result)) {
-				goto done;
-			}
-		}
 
 		/*
 		 * We need to try the remote NETLOGON server if this is
 		 * not authoritative (for example on the RODC).
 		 */
 		if (authoritative != 0) {
+			if (NT_STATUS_IS_OK(result)) {
+				result = map_info3_to_validation(
+						mem_ctx,
+						info3,
+						&validation_level,
+						&validation);
+				TALLOC_FREE(info3);
+				if (!NT_STATUS_IS_OK(result)) {
+					goto done;
+				}
+			}
+
 			goto done;
 		}
 	}
