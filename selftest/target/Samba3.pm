@@ -231,6 +231,7 @@ sub setup_nt4_dc($$)
 	rpc_daemon:lsasd = fork
 	rpc_daemon:fssd = fork
 	fss: sequence timeout = 1
+	check parent directory delete on close = yes
 ";
 
 	my $vars = $self->provision($path, "SAMBA-TEST",

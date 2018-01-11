@@ -244,6 +244,7 @@ static const struct loadparm_service _sDefault =
 	.smb_encrypt = SMB_SIGNING_DEFAULT,
 	.kernel_share_modes = true,
 	.durable_handles = true,
+	.check_parent_directory_delete_on_close = false,
 	.param_opt = NULL,
 	.dummy = ""
 };

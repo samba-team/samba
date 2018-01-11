@@ -1,0 +1,13 @@
+<samba:parameter name="check parent directory delete on close"
+                 context="S"
+		 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+    <para>A Windows SMB server prevents the client from creating files in a
+    directory that has the delete-on-close flag set. By default Samba doesn't
+    perform this check as this check is a quite expensive operation in Samba.
+    </para>
+</description>
+
+<value type="default">no</value>
+</samba:parameter>

@@ -253,6 +253,11 @@ NTSTATUS check_parent_access(struct connection_struct *conn,
 	struct security_descriptor *parent_sd = NULL;
 	uint32_t access_granted = 0;
 	struct smb_filename *parent_smb_fname = NULL;
+	struct share_mode_lock *lck = NULL;
+	struct file_id id = {0};
+	uint32_t name_hash;
+	bool delete_on_close_set;
+	int ret;
 
 	if (!parent_dirname(talloc_tos(),
 				smb_fname->base_name,
@@ -320,7 +325,45 @@ NTSTATUS check_parent_access(struct connection_struct *conn,
 		return status;
 	}
 
-	return NT_STATUS_OK;
+	if (!(access_mask & (SEC_DIR_ADD_FILE | SEC_DIR_ADD_SUBDIR))) {
+		return NT_STATUS_OK;
+	}
+	if (!lp_check_parent_directory_delete_on_close(SNUM(conn))) {
+		return NT_STATUS_OK;
+	}
+
+	/* Check if the directory has delete-on-close set */
+	ret = SMB_VFS_STAT(conn, parent_smb_fname);
+	if (ret != 0) {
+		status = map_nt_error_from_unix(errno);
+		goto out;
+	}
+
+	id = SMB_VFS_FILE_ID_CREATE(conn, &parent_smb_fname->st);
+
+	status = file_name_hash(conn, parent_smb_fname->base_name, &name_hash);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
+	lck = get_existing_share_mode_lock(talloc_tos(), id);
+	if (lck == NULL) {
+		status = NT_STATUS_OK;
+		goto out;
+	}
+
+	delete_on_close_set = is_delete_on_close_set(lck, name_hash);
+	if (delete_on_close_set) {
+		status = NT_STATUS_DELETE_PENDING;
+		goto out;
+	}
+
+	status = NT_STATUS_OK;
+
+out:
+	TALLOC_FREE(lck);
+	TALLOC_FREE(parent_smb_fname);
+	return status;
 }
 
 /****************************************************************************

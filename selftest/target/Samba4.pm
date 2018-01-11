@@ -1815,6 +1815,7 @@ sub provision_ad_dc($$$$$$)
 	smbd:writetimeupdatedelay = 500000
 	create mask = 755
 	dos filemode = yes
+	check parent directory delete on close = yes
 
         dcerpc endpoint servers = -winreg -srvsvc
 
