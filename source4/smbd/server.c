@@ -323,9 +323,6 @@ static void show_build(void)
 
 	printf("Samba version: %s\n", SAMBA_VERSION_STRING);
 	printf("Build environment:\n");
-#ifdef BUILD_SYSTEM
-	printf("   Build host:  %s\n", BUILD_SYSTEM);
-#endif
 
 	printf("Paths:\n");
 	for (i=0; config_options[i].name; i++) {
