@@ -95,15 +95,18 @@ smb.conf changes
   client schannel                    Default changed/        yes
                                      Deprecated
   gpo update command                 New
+  ldap ssl ads                       Deprecated
   map untrusted to domain            Removed
   oplock contention limit            Removed
-  prefork children		     New		     1
+  prefork children                   New                     1
   mdns name                          Added                   netbios
   fruit:time machine                 Added                   false
   profile acls                       Removed
   use spnego                         Removed
   server schannel                    Default changed/        yes
                                      Deprecated
+  unicode                            Deprecated
+  winbind scan trusted domains       New                     yes
   winbind trusted domains only       Removed
 
 
@@ -149,6 +152,22 @@ little used feature the ordering of these parameters has been
 reversed to match the parameter ordering of the UNIX extensions
 'symlink' command. The usage message for this command has also
 been improved to remove confusion.
+
+Winbind changes
+---------------
+
+The dependency to global list of trusted domains within
+the winbindd processes has been reduced a lot.
+
+The construction of that global list is not reliable and often
+incomplete in complex trust setups. In most situations the list is not needed
+any more for winbindd to operate correctly. E.g. for plain file serving via SMB
+using a simple idmap setup with autorid, tdb or ad. However some more complex
+setups require the list, e.g. if you specify idmap backends for specific
+domains. Some pam_winbind setups may also require the global list.
+
+If you have a setup that doesn't require the global list, you should set
+"winbind scan trusted domains = no".
 
 REMOVED FEATURES
 ================
