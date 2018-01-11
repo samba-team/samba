@@ -138,6 +138,8 @@ struct smbXcli_conn {
 
 		uint8_t io_priority;
 
+		bool force_channel_sequence;
+
 		uint8_t preauth_sha512[64];
 	} smb2;
 
@@ -547,6 +549,17 @@ const struct GUID *smbXcli_conn_server_guid(struct smbXcli_conn *conn)
 	}
 
 	return &conn->smb1.server.guid;
+}
+
+bool smbXcli_conn_get_force_channel_sequence(struct smbXcli_conn *conn)
+{
+	return conn->smb2.force_channel_sequence;
+}
+
+void smbXcli_conn_set_force_channel_sequence(struct smbXcli_conn *conn,
+					     bool v)
+{
+	conn->smb2.force_channel_sequence = v;
 }
 
 struct smbXcli_conn_samba_suicide_state {
@@ -2899,7 +2912,7 @@ struct tevent_req *smb2cli_req_create(TALLOC_CTX *mem_ctx,
 	uint32_t flags = 0;
 	uint32_t tid = 0;
 	uint64_t uid = 0;
-	bool use_channel_sequence = false;
+	bool use_channel_sequence = conn->smb2.force_channel_sequence;
 	uint16_t channel_sequence = 0;
 	bool use_replay_flag = false;
 
