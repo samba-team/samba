@@ -29,6 +29,12 @@ die ()
     echo "$1" >&2 ; exit ${2:-1}
 }
 
+# Print a message and return failure
+fail ()
+{
+    echo "$1" >&2 ; return ${2:-1}
+}
+
 ######################################################################
 
 with_summary=true
@@ -186,10 +192,13 @@ run_one_test ()
 {
     local f="$1"
 
-    [ -x "$f" ] || die "test \"$f\" is not executable"
     tests_total=$(($tests_total + 1))
 
-    ctdb_test_run "$f" | tee "$tf" | show_progress
+    if [ -x "$f" ] ; then
+	ctdb_test_run "$f" | tee "$tf" | show_progress
+    else
+	ctdb_test_run "$f" fail "TEST NOT EXECUTABLE"
+    fi
     status=$?
     if [ $status -eq 0 ] ; then
 	tests_passed=$(($tests_passed + 1))
