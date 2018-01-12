@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+import logging
 
 import samba.getopt as options
 from samba import WERRORError
@@ -25,6 +26,10 @@ from socket import inet_ntop
 from socket import AF_INET
 from socket import AF_INET6
 import shlex
+
+from samba import remove_dc
+from samba.samdb import SamDB
+from samba.auth import system_session
 
 from samba.netcmd import (
     Command,
@@ -1068,6 +1073,47 @@ class cmd_delete_record(Command):
         self.outf.write('Record deleted successfully\n')
 
 
+class cmd_cleanup_record(Command):
+    """Cleanup DNS records for a DNS host.
+
+    example:
+
+        samba-tool dns cleanup dc1 dc1.samdom.test.site -U USER%PASSWORD
+
+    NOTE: This command doesn't delete the DNS records,
+    it only mark the `dNSTombstoned` attr as `TRUE`.
+    """
+
+    synopsis = '%prog <server> <dnshostname>'
+
+    takes_args = ['server', 'dnshostname']
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
+
+    def run(self, server, dnshostname, sambaopts=None, credopts=None,
+            versionopts=None, verbose=False, quiet=False):
+        lp = sambaopts.get_loadparm()
+        creds = credopts.get_credentials(lp)
+
+        logger = self.get_logger()
+        if verbose:
+            logger.setLevel(logging.DEBUG)
+        elif quiet:
+            logger.setLevel(logging.WARNING)
+        else:
+            logger.setLevel(logging.INFO)
+
+        samdb = SamDB(url="ldap://%s" % server,
+                      session_info=system_session(),
+                      credentials=creds, lp=lp)
+
+        remove_dc.remove_dns_references(samdb, logger, dnshostname)
+
+
 class cmd_dns(SuperCommand):
     """Domain Name Service (DNS) management."""
 
@@ -1082,3 +1128,4 @@ class cmd_dns(SuperCommand):
     subcommands['add'] = cmd_add_record()
     subcommands['update'] = cmd_update_record()
     subcommands['delete'] = cmd_delete_record()
+    subcommands['cleanup'] = cmd_cleanup_record()

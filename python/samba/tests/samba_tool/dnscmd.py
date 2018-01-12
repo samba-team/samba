@@ -660,6 +660,109 @@ class DnsCmdTestCase(SambaToolCmdTest):
                                           "A", self.testip, self.creds_string)
         self.assertCmdFail(result)
 
+    def test_cleanup_record(self):
+        """
+        Test dns cleanup command is working fine.
+        """
+
+        # add a A record
+        self.runsubcmd("dns", "add", os.environ["SERVER"], self.zone,
+                       'testa', "A", self.testip, self.creds_string)
+
+        # the above A record points to this host
+        dnshostname = '{}.{}'.format('testa', self.zone.lower())
+
+        # add a CNAME record points to above host
+        self.runsubcmd("dns", "add", os.environ["SERVER"], self.zone,
+                       'testcname', "CNAME", dnshostname, self.creds_string)
+
+        # add a NS record
+        self.runsubcmd("dns", "add", os.environ["SERVER"], self.zone,
+                       'testns', "NS", dnshostname, self.creds_string)
+
+        # add a PTR record points to above host
+        self.runsubcmd("dns", "add", os.environ["SERVER"], self.zone,
+                       'testptr', "PTR", dnshostname, self.creds_string)
+
+        # add a SRV record points to above host
+        srv_record = "{} 65530 65530 65530".format(dnshostname)
+        self.runsubcmd("dns", "add", os.environ["SERVER"], self.zone,
+                       'testsrv', "SRV", srv_record, self.creds_string)
+
+        # cleanup record for this dns host
+        self.runsubcmd("dns", "cleanup", os.environ["SERVER"],
+                       dnshostname, self.creds_string)
+
+        # all records should be marked as dNSTombstoned
+        for record_name in ['testa', 'testcname', 'testns', 'testptr', 'testsrv']:
+
+            records = self.samdb.search(
+                base="DC=DomainDnsZones,{}".format(self.samdb.get_default_basedn()),
+                scope=ldb.SCOPE_SUBTREE,
+                expression="(&(objectClass=dnsNode)(name={}))".format(record_name),
+                attrs=["dNSTombstoned"])
+
+            self.assertEqual(len(records), 1)
+            for record in records:
+                self.assertEqual(str(record['dNSTombstoned']), 'TRUE')
+
+    def test_cleanup_multi_srv_record(self):
+        """
+        Test dns cleanup command for multi-valued SRV record.
+
+        Steps:
+        - Add 2 A records host1 and host2
+        - Add a SRV record srv1 and points to both host1 and host2
+        - Run cleanup command for host1
+        - Check records for srv1, data for host1 should be gone and host2 is kept.
+        """
+
+        hosts = ['host1', 'host2']  # A record names
+        srv_name = 'srv1'
+
+        # add A records
+        for host in hosts:
+            self.runsubcmd("dns", "add", os.environ["SERVER"], self.zone,
+                           host, "A", self.testip, self.creds_string)
+
+            # the above A record points to this host
+            dnshostname = '{}.{}'.format(host, self.zone.lower())
+
+            # add a SRV record points to above host
+            srv_record = "{} 65530 65530 65530".format(dnshostname)
+            self.runsubcmd("dns", "add", os.environ["SERVER"], self.zone,
+                           srv_name, "SRV", srv_record, self.creds_string)
+
+        records = self.samdb.search(
+            base="DC=DomainDnsZones,{}".format(self.samdb.get_default_basedn()),
+            scope=ldb.SCOPE_SUBTREE,
+            expression="(&(objectClass=dnsNode)(name={}))".format(srv_name),
+            attrs=['dnsRecord'])
+        # should have 2 records here
+        self.assertEqual(len(records[0]['dnsRecord']), 2)
+
+        # cleanup record for dns host1
+        dnshostname1 = 'host1.{}'.format(self.zone.lower())
+        self.runsubcmd("dns", "cleanup", os.environ["SERVER"],
+                       dnshostname1, self.creds_string)
+
+        records = self.samdb.search(
+            base="DC=DomainDnsZones,{}".format(self.samdb.get_default_basedn()),
+            scope=ldb.SCOPE_SUBTREE,
+            expression="(&(objectClass=dnsNode)(name={}))".format(srv_name),
+            attrs=['dnsRecord'])
+
+        # dnsRecord for host1 should be deleted
+        self.assertEqual(len(records[0]['dnsRecord']), 1)
+
+        # unpack data
+        dns_record_bin = records[0]['dnsRecord'][0]
+        dns_record_obj = ndr_unpack(dnsp.DnssrvRpcRecord, dns_record_bin)
+
+        # dnsRecord for host2 is still there and is the only one
+        dnshostname2 = 'host2.{}'.format(self.zone.lower())
+        self.assertEqual(dns_record_obj.data.nameTarget, dnshostname2)
+
     def test_dns_wildcards(self):
         """
         Ensure that DNS wild card entries can be added deleted and queried
