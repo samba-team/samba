@@ -114,7 +114,6 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc)
 	char *password_s = NULL;
 	char *my_fqdn;
 	TALLOC_CTX *tmpctx = NULL;
-	char *machine_name;
 	ADS_STATUS aderr;
 	int i;
 
@@ -163,15 +162,13 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc)
 		goto out;
 	}
 
-	machine_name = ads_get_samaccountname(ads, tmpctx, lp_netbios_name());
-	if (!machine_name) {
+	/* make sure we have a single instance of a the computer account */
+	if (!ads_has_samaccountname(ads, tmpctx, lp_netbios_name())) {
 		DEBUG(0, (__location__ ": unable to determine machine "
 			  "account's short name in AD!\n"));
 		ret = -1;
 		goto out;
 	}
-	/*strip the trailing '$' */
-	machine_name[strlen(machine_name)-1] = '\0';
 
 	/* Construct our principal */
 	if (strchr_m(srvPrinc, '@')) {
@@ -201,7 +198,7 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc)
 			goto out;
 		}
 		short_princ_s = talloc_asprintf(tmpctx, "%s/%s@%s",
-						srvPrinc, machine_name,
+						srvPrinc, lp_netbios_name(),
 						lp_realm());
 		if (short_princ_s == NULL) {
 			ret = -1;
@@ -375,6 +372,7 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 	char **spn_array;
 	size_t num_spns;
 	size_t i;
+	bool ok = false;
 	ADS_STATUS status;
 
 	ZERO_STRUCT(kt_entry);
@@ -451,14 +449,23 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 	}
 
 	/* now add the userPrincipalName and sAMAccountName entries */
-	sam_account_name = ads_get_samaccountname(ads, frame, machine_name);
-	if (!sam_account_name) {
+	ok = ads_has_samaccountname(ads, frame, machine_name);
+	if (!ok) {
 		DEBUG(0, (__location__ ": unable to determine machine "
 			  "account's name in AD!\n"));
 		ret = -1;
 		goto done;
 	}
 
+	/*
+	 * append '$' to netbios name so 'ads_keytab_add_entry' recognises
+	 * it as a machine account rather than a service or Windows SPN.
+	 */
+	sam_account_name = talloc_asprintf(frame, "%s$",machine_name);
+	if (sam_account_name == NULL) {
+		ret = -1;
+		goto done;
+	}
 	/* upper case the sAMAccountName to make it easier for apps to
 	   know what case to use in the keytab file */
 	if (!strupper_m(sam_account_name)) {

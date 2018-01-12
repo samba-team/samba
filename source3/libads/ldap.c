@@ -3463,12 +3463,13 @@ out:
 /********************************************************************
 ********************************************************************/
 
-char* ads_get_samaccountname( ADS_STRUCT *ads, TALLOC_CTX *ctx, const char *machine_name )
+bool ads_has_samaccountname( ADS_STRUCT *ads, TALLOC_CTX *ctx, const char *machine_name )
 {
 	LDAPMessage *res = NULL;
 	ADS_STATUS status;
 	int count = 0;
 	char *name = NULL;
+	bool ok = false;
 
 	status = ads_find_machine_acct(ads, &res, machine_name);
 	if (!ADS_ERR_OK(status)) {
@@ -3488,8 +3489,10 @@ char* ads_get_samaccountname( ADS_STRUCT *ads, TALLOC_CTX *ctx, const char *mach
 
 out:
 	ads_msgfree(ads, res);
-
-	return name;
+	if (name != NULL) {
+		ok = (strlen(name) > 0);
+	}
+	return ok;
 }
 
 #if 0
