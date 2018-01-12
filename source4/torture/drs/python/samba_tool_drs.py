@@ -264,6 +264,9 @@ class SambaToolDrsTests(drs_base.DrsBaseTestCase):
         self.assertEqual(obj_2, 0)
         self.assertEqual(link_2, 0)
 
+        self.check_output("samba-tool domain demote --remove-other-dead-server=%s -H ldap://%s %s -s %s"
+                          % (netbiosname, self.dc1, self.cmdline_creds, new_dc_config_file))
+
     def test_samba_tool_replicate_machine_creds_P(self):
         """Tests 'samba-tool drs replicate -P' command with machine creds."""
 
