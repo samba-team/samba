@@ -91,8 +91,13 @@ static struct smbcli_state *connect_to_server(struct torture_context *tctx,
 					lpcfg_gensec_settings(tctx, tctx->lp_ctx));
 
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("failed to connect to //%s/%s: %s\n",
-			host, share, nt_errstr(status));
+		torture_comment(tctx,
+				"FATAL: Failed to connect to //%s/%s "
+				"with %s - %s\n",
+				host,
+				share,
+				cli_credentials_get_username(creds),
+				nt_errstr(status));
 		return NULL;
 	}
 
