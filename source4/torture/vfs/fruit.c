@@ -1264,7 +1264,7 @@ static bool enable_aapl(struct torture_context *tctx,
 	DATA_BLOB data;
 	struct smb2_create_blob *aapl = NULL;
 	uint32_t aapl_server_caps;
-	uint32_t expexted_scaps = (SMB2_CRTCTX_AAPL_UNIX_BASED |
+	uint32_t expected_scaps = (SMB2_CRTCTX_AAPL_UNIX_BASED |
 				   SMB2_CRTCTX_AAPL_SUPPORTS_READ_DIR_ATTR |
 				   SMB2_CRTCTX_AAPL_SUPPORTS_NFS_ACE |
 				   SMB2_CRTCTX_AAPL_SUPPORTS_OSX_COPYFILE);
@@ -1323,7 +1323,7 @@ static bool enable_aapl(struct torture_context *tctx,
 	}
 
 	aapl_server_caps = BVAL(aapl->data.data, 16);
-	torture_assert_goto(tctx, aapl_server_caps == expexted_scaps,
+	torture_assert_goto(tctx, aapl_server_caps == expected_scaps,
 			    ret, done, "bad AAPL caps");
 
 done:
