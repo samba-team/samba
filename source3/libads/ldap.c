@@ -3406,7 +3406,7 @@ char* ads_get_dnshostname( ADS_STRUCT *ads, TALLOC_CTX *ctx, const char *machine
 	int count = 0;
 	char *name = NULL;
 
-	status = ads_find_machine_acct(ads, &res, lp_netbios_name());
+	status = ads_find_machine_acct(ads, &res, machine_name);
 	if (!ADS_ERR_OK(status)) {
 		DEBUG(0,("ads_get_dnshostname: Failed to find account for %s\n",
 			lp_netbios_name()));
@@ -3470,7 +3470,7 @@ char* ads_get_samaccountname( ADS_STRUCT *ads, TALLOC_CTX *ctx, const char *mach
 	int count = 0;
 	char *name = NULL;
 
-	status = ads_find_machine_acct(ads, &res, lp_netbios_name());
+	status = ads_find_machine_acct(ads, &res, machine_name);
 	if (!ADS_ERR_OK(status)) {
 		DEBUG(0,("ads_get_dnshostname: Failed to find account for %s\n",
 			lp_netbios_name()));
