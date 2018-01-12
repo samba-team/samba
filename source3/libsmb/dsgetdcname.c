@@ -35,11 +35,12 @@ struct ip_service_name {
 	const char *hostname;
 };
 
-static NTSTATUS make_dc_info_from_cldap_reply(TALLOC_CTX *mem_ctx,
-					      uint32_t flags,
-					      struct sockaddr_storage *ss,
-					      struct NETLOGON_SAM_LOGON_RESPONSE_EX *r,
-					      struct netr_DsRGetDCNameInfo **info);
+static NTSTATUS make_dc_info_from_cldap_reply(
+	TALLOC_CTX *mem_ctx,
+	uint32_t flags,
+	const struct sockaddr_storage *ss,
+	struct NETLOGON_SAM_LOGON_RESPONSE_EX *r,
+	struct netr_DsRGetDCNameInfo **info);
 
 /****************************************************************
 ****************************************************************/
@@ -735,11 +736,12 @@ static void map_dc_and_domain_names(uint32_t flags,
 /****************************************************************
 ****************************************************************/
 
-static NTSTATUS make_dc_info_from_cldap_reply(TALLOC_CTX *mem_ctx,
-					      uint32_t flags,
-					      struct sockaddr_storage *ss,
-					      struct NETLOGON_SAM_LOGON_RESPONSE_EX *r,
-					      struct netr_DsRGetDCNameInfo **info)
+static NTSTATUS make_dc_info_from_cldap_reply(
+	TALLOC_CTX *mem_ctx,
+	uint32_t flags,
+	const struct sockaddr_storage *ss,
+	struct NETLOGON_SAM_LOGON_RESPONSE_EX *r,
+	struct netr_DsRGetDCNameInfo **info)
 {
 	const char *dc_hostname = NULL;
 	const char *dc_domain_name = NULL;
