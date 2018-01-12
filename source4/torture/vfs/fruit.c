@@ -1313,12 +1313,12 @@ static bool enable_aapl(struct torture_context *tctx,
 	torture_assert_goto(tctx, aapl != NULL, ret, done, "missing AAPL context");
 
 	if (!is_osx_server) {
-		size_t exptected_aapl_ctx_size;
+		size_t expected_aapl_ctx_size;
 
-		exptected_aapl_ctx_size = strlen("MacSamba") * 2 + 40;
+		expected_aapl_ctx_size = strlen("MacSamba") * 2 + 40;
 
 		torture_assert_goto(
-			tctx, aapl->data.length == exptected_aapl_ctx_size,
+			tctx, aapl->data.length == expected_aapl_ctx_size,
 			ret, done, "bad AAPL size");
 	}
 
