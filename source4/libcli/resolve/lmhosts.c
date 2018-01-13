@@ -1,7 +1,7 @@
 /*
    Unix SMB/CIFS implementation.
 
-   broadcast name resolution module
+   lmhosts name resolution module
 
    Copyright (C) Andrew Tridgell 1994-1998,2005
    Copyright (C) Jeremy Allison 2007
@@ -38,7 +38,7 @@ struct resolve_lmhosts_state {
 };
 
 /**
-  broadcast name resolution method - async send
+  lmhosts name resolution method - async send
  */
 /*
   general name resolution - async send
