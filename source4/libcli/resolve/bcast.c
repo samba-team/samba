@@ -35,11 +35,12 @@ struct resolve_bcast_data {
 /**
   broadcast name resolution method - async send
  */
-struct composite_context *resolve_name_bcast_send(TALLOC_CTX *mem_ctx, 
-						  struct tevent_context *event_ctx,
-						  void *userdata, uint32_t flags,
-						  uint16_t port,
-						  struct nbt_name *name)
+static struct composite_context *resolve_name_bcast_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *event_ctx,
+	void *userdata, uint32_t flags,
+	uint16_t port,
+	struct nbt_name *name)
 {
 	int num_interfaces;
 	const char **address_list;
@@ -85,10 +86,10 @@ struct composite_context *resolve_name_bcast_send(TALLOC_CTX *mem_ctx,
 /*
   broadcast name resolution method - recv side
  */
-NTSTATUS resolve_name_bcast_recv(struct composite_context *c, 
-				 TALLOC_CTX *mem_ctx,
-				 struct socket_address ***addrs,
-				 char ***names)
+static NTSTATUS resolve_name_bcast_recv(struct composite_context *c,
+					TALLOC_CTX *mem_ctx,
+					struct socket_address ***addrs,
+					char ***names)
 {
 	NTSTATUS status = resolve_name_nbtlist_recv(c, mem_ctx, addrs, names);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
