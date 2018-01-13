@@ -43,11 +43,12 @@ struct resolve_lmhosts_state {
 /*
   general name resolution - async send
  */
-struct composite_context *resolve_name_lmhosts_send(TALLOC_CTX *mem_ctx,
-						  struct tevent_context *event_ctx,
-						  void *userdata, uint32_t flags,
-						  uint16_t port,
-						  struct nbt_name *name)
+static struct composite_context *resolve_name_lmhosts_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *event_ctx,
+	void *userdata, uint32_t flags,
+	uint16_t port,
+	struct nbt_name *name)
 {
 	struct composite_context *c;
 	struct resolve_lmhosts_state *state;
@@ -101,10 +102,10 @@ struct composite_context *resolve_name_lmhosts_send(TALLOC_CTX *mem_ctx,
 /*
   general name resolution method - recv side
  */
-NTSTATUS resolve_name_lmhosts_recv(struct composite_context *c,
-				 TALLOC_CTX *mem_ctx,
-				 struct socket_address ***addrs,
-				 char ***names)
+static NTSTATUS resolve_name_lmhosts_recv(struct composite_context *c,
+					  TALLOC_CTX *mem_ctx,
+					  struct socket_address ***addrs,
+					  char ***names)
 {
 	NTSTATUS status;
 
