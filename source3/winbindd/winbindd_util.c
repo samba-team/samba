@@ -414,6 +414,7 @@ static void trustdom_list_done(struct tevent_req *req)
 	ptrdiff_t extra_len;
 	bool within_forest = false;
 	NTSTATUS status;
+	bool ok;
 
 	/*
 	 * Only when we enumerate our primary domain
@@ -546,6 +547,12 @@ static void trustdom_list_done(struct tevent_req *req)
 			return;
 		}
 
+		ok = set_routing_domain(domain, find_default_route_domain());
+		if (!ok) {
+			DBG_ERR("set_routing_domain failed\n");
+			return;
+		}
+
 		p = q + strlen(q) + 1;
 	}
 
@@ -588,6 +595,7 @@ static void rescan_forest_root_trusts( void )
         size_t num_trusts = 0;
 	int i;
 	NTSTATUS status;
+	bool ok;
 
 	/* The only transitive trusts supported by Windows 2003 AD are
 	   (a) Parent-Child, (b) Tree-Root, and (c) Forest.   The
@@ -629,6 +637,11 @@ static void rescan_forest_root_trusts( void )
 					nt_errstr(status));
 				return;
 			}
+			ok = set_routing_domain(d, find_default_route_domain());
+			if (!ok) {
+				DBG_ERR("set_routing_domain failed\n");
+				return;
+			}
 		}
 		if (d == NULL) {
 			continue;
@@ -664,6 +677,7 @@ static void rescan_forest_trusts( void )
         size_t num_trusts = 0;
 	int i;
 	NTSTATUS status;
+	bool ok;
 
 	/* The only transitive trusts supported by Windows 2003 AD are
 	   (a) Parent-Child, (b) Tree-Root, and (c) Forest.   The
@@ -709,6 +723,12 @@ static void rescan_forest_trusts( void )
 				{
 					DBG_ERR("add_trusted_domain: %s\n",
 						nt_errstr(status));
+					return;
+				}
+				ok = set_routing_domain(
+					d, find_default_route_domain());
+				if (!ok) {
+					DBG_ERR("set_routing_domain failed\n");
 					return;
 				}
 			}
@@ -817,6 +837,7 @@ static void wb_imsg_new_trusted_domain(struct imessaging_context *msg,
 	struct winbindd_domain *d = NULL;
 	uint32_t trust_flags = 0;
 	NTSTATUS status;
+	bool ok;
 
 	DEBUG(5, ("wb_imsg_new_trusted_domain\n"));
 
@@ -864,6 +885,11 @@ static void wb_imsg_new_trusted_domain(struct imessaging_context *msg,
 	{
 		DBG_NOTICE("add_trusted_domain returned %s\n",
 			   nt_errstr(status));
+		TALLOC_FREE(frame);
+		return;
+	}
+	ok = set_routing_domain(d, find_default_route_domain());
+	if (!ok) {
 		TALLOC_FREE(frame);
 		return;
 	}
