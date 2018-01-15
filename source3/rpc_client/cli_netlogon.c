@@ -490,7 +490,8 @@ NTSTATUS rpccli_netlogon_password_logon(
 	/* Initialise input parameters */
 
 	switch (logon_type) {
-	case NetlogonInteractiveInformation: {
+	case NetlogonInteractiveInformation:
+	case NetlogonInteractiveTransitiveInformation: {
 
 		struct netr_PasswordInfo *password_info;
 
@@ -519,7 +520,8 @@ NTSTATUS rpccli_netlogon_password_logon(
 
 		break;
 	}
-	case NetlogonNetworkInformation: {
+	case NetlogonNetworkInformation:
+	case NetlogonNetworkTransitiveInformation: {
 		struct netr_NetworkInfo *network_info;
 		uint8_t chal[8];
 		unsigned char local_lm_response[24];
