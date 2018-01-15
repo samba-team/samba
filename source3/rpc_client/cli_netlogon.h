@@ -84,6 +84,7 @@ NTSTATUS rpccli_netlogon_network_logon(
 	const uint8_t chal[8],
 	DATA_BLOB lm_response,
 	DATA_BLOB nt_response,
+	enum netr_LogonInfoClass logon_type,
 	uint8_t *authoritative,
 	uint32_t *flags,
 	uint16_t *_validation_level,
