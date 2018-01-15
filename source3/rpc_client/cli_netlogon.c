@@ -610,6 +610,7 @@ NTSTATUS rpccli_netlogon_network_logon(
 	const uint8_t chal[8],
 	DATA_BLOB lm_response,
 	DATA_BLOB nt_response,
+	enum netr_LogonInfoClass logon_type,
 	uint8_t *authoritative,
 	uint32_t *flags,
 	uint16_t *_validation_level,
@@ -628,6 +629,16 @@ NTSTATUS rpccli_netlogon_network_logon(
 
 	ZERO_STRUCT(lm);
 	ZERO_STRUCT(nt);
+
+	switch (logon_type) {
+	case NetlogonNetworkInformation:
+	case NetlogonNetworkTransitiveInformation:
+		break;
+	default:
+		DEBUG(0, ("switch value %d not supported\n",
+			logon_type));
+		return NT_STATUS_INVALID_INFO_CLASS;
+	}
 
 	logon = talloc_zero(mem_ctx, union netr_LogonLevel);
 	if (!logon) {
@@ -674,7 +685,7 @@ NTSTATUS rpccli_netlogon_network_logon(
 
 	status = netlogon_creds_cli_LogonSamLogon(creds_ctx,
 						  binding_handle,
-						  NetlogonNetworkInformation,
+						  logon_type,
 						  logon,
 						  mem_ctx,
 						  &validation_level,
