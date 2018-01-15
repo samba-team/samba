@@ -738,7 +738,10 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 
 	table = ndr_table_by_uuid(&id.uuid);
 	if (table == NULL) {
-		DEBUG(0,("unknown interface\n"));
+		char *iface = ndr_syntax_id_to_string(talloc_tos(), &id);
+		DBG_NOTICE("unknown interface %s\n",
+			   iface ? iface : "<null>");
+		TALLOC_FREE(iface);
 		return false;
 	}
 
