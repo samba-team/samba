@@ -983,6 +983,60 @@ static NTSTATUS msrpc_password_policy(struct winbindd_domain *domain,
 	return status;
 }
 
+static enum lsa_LookupNamesLevel winbindd_lookup_level(
+	struct winbindd_domain *domain)
+{
+	enum lsa_LookupNamesLevel level = LSA_LOOKUP_NAMES_DOMAINS_ONLY;
+
+	if (domain->internal) {
+		level = LSA_LOOKUP_NAMES_ALL;
+	} else if (domain->secure_channel_type == SEC_CHAN_DNS_DOMAIN) {
+		if (domain->domain_flags & NETR_TRUST_FLAG_IN_FOREST) {
+			/*
+			 * TODO:
+			 *
+			 * Depending on what we want to resolve. We need to use:
+			 * 1. LsapLookupXForestReferral(5)/LSA_LOOKUP_NAMES_FOREST_TRUSTS_ONLY
+			 *    if we want to pass the request into the direction of the forest
+			 *    root domain. The forest root domain uses
+			 *    LsapLookupXForestResolve(6)/LSA_LOOKUP_NAMES_UPLEVEL_TRUSTS_ONLY2
+			 *    when passing the request to trusted forests.
+			 * 2. LsapLookupGC(4)/LSA_LOOKUP_NAMES_UPLEVEL_TRUSTS_ONLY
+			 *    if we're not a GC and want to resolve a name within our own forest.
+			 *
+			 * As we don't support more than one domain in our own forest
+			 * and always try to be a GC for now, we just set
+			 * LSA_LOOKUP_NAMES_FOREST_TRUSTS_ONLY.
+			 */
+			level = LSA_LOOKUP_NAMES_FOREST_TRUSTS_ONLY;
+		} else if (domain->domain_trust_attribs & LSA_TRUST_ATTRIBUTE_FOREST_TRANSITIVE) {
+			/*
+			 * This is LsapLookupXForestResolve(6)/LSA_LOOKUP_NAMES_UPLEVEL_TRUSTS_ONLY2
+			 */
+			level = LSA_LOOKUP_NAMES_UPLEVEL_TRUSTS_ONLY2;
+		} else {
+			/*
+			 * This is LsapLookupTDL(3)/LSA_LOOKUP_NAMES_PRIMARY_DOMAIN_ONLY
+			 */
+			level = LSA_LOOKUP_NAMES_PRIMARY_DOMAIN_ONLY;
+		}
+	} else if (domain->secure_channel_type == SEC_CHAN_DOMAIN) {
+		/*
+		 * This is LsapLookupTDL(3)/LSA_LOOKUP_NAMES_PRIMARY_DOMAIN_ONLY
+		 */
+		level = LSA_LOOKUP_NAMES_PRIMARY_DOMAIN_ONLY;
+	} else if (domain->rodc) {
+		level = LSA_LOOKUP_NAMES_RODC_REFERRAL_TO_FULL_DC;
+	} else {
+		/*
+		 * This is LsapLookupPDC(2)/LSA_LOOKUP_NAMES_DOMAINS_ONLY
+		 */
+		level = LSA_LOOKUP_NAMES_DOMAINS_ONLY;
+	}
+
+	return level;
+}
+
 NTSTATUS winbindd_lookup_sids(TALLOC_CTX *mem_ctx,
 			      struct winbindd_domain *domain,
 			      uint32_t num_sids,
@@ -1012,6 +1066,8 @@ NTSTATUS winbindd_lookup_sids(TALLOC_CTX *mem_ctx,
 	if (cli->transport->transport == NCACN_IP_TCP) {
 		use_lookupsids3 = true;
 	}
+
+	level = winbindd_lookup_level(domain);
 
 	/*
 	 * This call can take a long time
@@ -1076,6 +1132,7 @@ static NTSTATUS winbindd_lookup_names(TALLOC_CTX *mem_ctx,
 	unsigned int orig_timeout = 0;
 	bool use_lookupnames4 = false;
 	bool retried = false;
+	enum lsa_LookupNamesLevel level = LSA_LOOKUP_NAMES_ALL;
 
  connect:
 	status = cm_connect_lsat(domain, mem_ctx, &cli, &lsa_policy);
@@ -1088,6 +1145,8 @@ static NTSTATUS winbindd_lookup_names(TALLOC_CTX *mem_ctx,
 	if (cli->transport->transport == NCACN_IP_TCP) {
 		use_lookupnames4 = true;
 	}
+
+	level = winbindd_lookup_level(domain);
 
 	/*
 	 * This call can take a long time
@@ -1102,7 +1161,7 @@ static NTSTATUS winbindd_lookup_names(TALLOC_CTX *mem_ctx,
 						 num_names,
 						 (const char **) names,
 						 domains,
-						 1,
+						 level,
 						 sids,
 						 types,
 						 use_lookupnames4,
