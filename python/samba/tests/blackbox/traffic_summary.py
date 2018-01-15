@@ -59,7 +59,7 @@ class TrafficSummaryTests(BlackboxTestCase):
 
         with temp_file(self.tempdir) as output:
             command  = "%s %s >%s" % (SCRIPT, INPUT, output)
-            print command
+            print(command)
             self.check_run(command)
             expected = open(EXPECTED_FN).readlines()
             actual = open(output).readlines()

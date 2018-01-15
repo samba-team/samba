@@ -84,7 +84,7 @@ name_formats = [
 
 
 def warning(message):
-    print "\033[37;41;1m" "Warning: %s" "\033[00m" % (message)
+    print("\033[37;41;1m" "Warning: %s" "\033[00m" % (message))
 
 ###############################################################################
 #
