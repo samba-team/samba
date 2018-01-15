@@ -1488,13 +1488,29 @@ struct winbindd_domain *find_lookup_domain_from_sid(const struct dom_sid *sid)
 		return find_domain_from_sid(get_global_sam_sid());
 	}
 
-	/* A DC can't ask the local smbd for remote SIDs, here winbindd is the
-	 * one to contact the external DC's. On member servers the internal
-	 * domains are different: These are part of the local SAM. */
+	/*
+	 * On member servers the internal domains are different: These are part
+	 * of the local SAM.
+	 */
 
-	if (IS_DC || is_internal_domain(sid) || is_in_internal_domain(sid)) {
+	if (is_internal_domain(sid) || is_in_internal_domain(sid)) {
 		DEBUG(10, ("calling find_domain_from_sid\n"));
 		return find_domain_from_sid(sid);
+	}
+
+	if (IS_DC) {
+		struct winbindd_domain *domain = NULL;
+
+		domain = find_domain_from_sid_noinit(sid);
+		if (domain == NULL) {
+			return NULL;
+		}
+
+		if (domain->secure_channel_type != SEC_CHAN_NULL) {
+			return domain;
+		}
+
+		return domain->routing_domain;
 	}
 
 	/* On a member server a query for SID or name can always go to our
@@ -1516,10 +1532,24 @@ struct winbindd_domain *find_lookup_domain_from_name(const char *domain_name)
 		return find_domain_from_name_noinit( get_global_sam_name() );
 	}
 
-	if (IS_DC || strequal(domain_name, "BUILTIN") ||
+	if (strequal(domain_name, "BUILTIN") ||
 	    strequal(domain_name, get_global_sam_name()))
 		return find_domain_from_name_noinit(domain_name);
 
+	if (IS_DC) {
+		struct winbindd_domain *domain = NULL;
+
+		domain = find_domain_from_name_noinit(domain_name);
+		if (domain == NULL) {
+			return NULL;
+		}
+
+		if (domain->secure_channel_type != SEC_CHAN_NULL) {
+			return domain;
+		}
+
+		return domain->routing_domain;
+	}
 
 	return find_our_domain();
 }
