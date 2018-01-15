@@ -2039,7 +2039,6 @@ void invalidate_cm_connection(struct winbindd_domain *domain)
 
 	conn->auth_level = DCERPC_AUTH_LEVEL_PRIVACY;
 	conn->netlogon_force_reauth = false;
-	conn->netlogon_flags = 0;
 	TALLOC_FREE(conn->netlogon_creds_ctx);
 
 	if (conn->cli) {
@@ -2620,9 +2619,6 @@ static NTSTATUS cm_get_schannel_creds(struct winbindd_domain *domain,
 	}
 
 	if (domain->conn.netlogon_creds_ctx != NULL) {
-		if (!(domain->conn.netlogon_flags & NETLOGON_NEG_AUTHENTICATED_RPC)) {
-			return NT_STATUS_TRUSTED_DOMAIN_FAILURE;
-		}
 		*ppdc = domain->conn.netlogon_creds_ctx;
 		return NT_STATUS_OK;
 	}
@@ -2633,10 +2629,6 @@ static NTSTATUS cm_get_schannel_creds(struct winbindd_domain *domain,
 	}
 
 	if (domain->conn.netlogon_creds_ctx == NULL) {
-		return NT_STATUS_TRUSTED_DOMAIN_FAILURE;
-	}
-
-	if (!(domain->conn.netlogon_flags & NETLOGON_NEG_AUTHENTICATED_RPC)) {
 		return NT_STATUS_TRUSTED_DOMAIN_FAILURE;
 	}
 
@@ -3234,7 +3226,6 @@ static NTSTATUS cm_connect_netlogon_transport(struct winbindd_domain *domain,
 	}
 
 	TALLOC_FREE(conn->netlogon_pipe);
-	conn->netlogon_flags = 0;
 	TALLOC_FREE(conn->netlogon_creds_ctx);
 
 	result = get_trust_credentials(domain, talloc_tos(), true, &creds);
