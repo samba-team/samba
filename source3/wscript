@@ -1526,11 +1526,13 @@ main() {
         conf.env['CPPPATH_CEPHFS'] = Options.options.libcephfs_dir + '/include'
         conf.env['LIBPATH_CEPHFS'] = Options.options.libcephfs_dir + '/lib'
         conf.env['LIBPATH_CEPH-COMMON'] = Options.options.libcephfs_dir + '/lib/ceph'
+    else:
+        conf.env['LIBPATH_CEPH-COMMON'] = Options.options.LIBDIR + '/ceph'
 
     if (Options.options.with_cephfs and
         conf.CHECK_HEADERS('cephfs/libcephfs.h', False, False, 'cephfs') and
-        conf.CHECK_LIB('cephfs', shlib=True) and
-        conf.CHECK_LIB('ceph-common', shlib=True)):
+        conf.CHECK_LIB('cephfs', shlib=True)):
+        conf.CHECK_LIB('ceph-common', shlib=True)
         if Options.options.with_acl_support:
             conf.DEFINE('HAVE_CEPH', '1')
             if conf.CHECK_FUNCS_IN('ceph_statx', 'cephfs ceph-common',
