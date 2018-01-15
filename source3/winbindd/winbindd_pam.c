@@ -1428,6 +1428,8 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 	int netr_attempts = 0;
 	bool retry = false;
 	NTSTATUS result;
+	enum netr_LogonInfoClass logon_type_i;
+	enum netr_LogonInfoClass logon_type_n;
 	uint16_t validation_level = UINT16_MAX;
 	union netr_Validation *validation = NULL;
 
@@ -1488,6 +1490,29 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 			}
 			return result;
 		}
+
+		logon_type_i = NetlogonInteractiveInformation;
+		logon_type_n = NetlogonNetworkInformation;
+		if (domain->domain_trust_attribs & LSA_TRUST_ATTRIBUTE_WITHIN_FOREST) {
+			logon_type_i = NetlogonInteractiveTransitiveInformation;
+			logon_type_n = NetlogonNetworkTransitiveInformation;
+		}
+
+		if (domain->domain_trust_attribs & LSA_TRUST_ATTRIBUTE_FOREST_TRANSITIVE) {
+			logon_type_i = NetlogonInteractiveTransitiveInformation;
+			logon_type_n = NetlogonNetworkTransitiveInformation;
+		}
+
+		if (domain->domain_trust_attribs & LSA_TRUST_ATTRIBUTE_NON_TRANSITIVE) {
+			logon_type_i = NetlogonInteractiveInformation;
+			logon_type_n = NetlogonNetworkInformation;
+		}
+
+		if (domain->domain_trust_attribs & LSA_TRUST_ATTRIBUTE_QUARANTINED_DOMAIN) {
+			logon_type_i = NetlogonInteractiveInformation;
+			logon_type_n = NetlogonNetworkInformation;
+		}
+
 		netr_attempts = 0;
 		if (domain->conn.netlogon_creds_ctx == NULL) {
 			DBG_NOTICE("No security credentials available for "
@@ -1503,7 +1528,7 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 				username,
 				password,
 				workstation,
-				NetlogonInteractiveInformation,
+				logon_type_i,
 				authoritative,
 				flags,
 				&validation_level,
@@ -1520,7 +1545,7 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 				chal,
 				lm_response,
 				nt_response,
-				NetlogonNetworkInformation,
+				logon_type_n,
 				authoritative,
 				flags,
 				&validation_level,
