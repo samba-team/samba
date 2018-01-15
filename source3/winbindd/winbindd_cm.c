@@ -2758,13 +2758,6 @@ retry:
 		goto anonymous;
 	}
 	TALLOC_FREE(creds);
-	result = get_trust_credentials(domain, talloc_tos(), true, &creds);
-	if (!NT_STATUS_IS_OK(result)) {
-		DEBUG(10, ("cm_connect_sam: No user available for "
-			   "domain %s (error %s), trying anon\n", domain->name,
-			   nt_errstr(result)));
-		goto anonymous;
-	}
 	status = cli_rpc_pipe_open_schannel_with_creds(
 		conn->cli, &ndr_table_samr, NCACN_NP, p_creds,
 		&conn->samr_pipe);
@@ -2908,7 +2901,6 @@ static NTSTATUS cm_connect_lsa_tcp(struct winbindd_domain *domain,
 {
 	struct winbindd_cm_conn *conn;
 	struct netlogon_creds_cli_context *p_creds = NULL;
-	struct cli_credentials *creds = NULL;
 	NTSTATUS status;
 
 	DEBUG(10,("cm_connect_lsa_tcp\n"));
@@ -2932,11 +2924,6 @@ static NTSTATUS cm_connect_lsa_tcp(struct winbindd_domain *domain,
 	TALLOC_FREE(conn->lsa_pipe_tcp);
 
 	status = cm_get_schannel_creds(domain, &p_creds);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
-	}
-
-	status = get_trust_credentials(domain, talloc_tos(), true, &creds);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
@@ -3063,13 +3050,6 @@ retry:
 	}
 
 	TALLOC_FREE(creds);
-	result = get_trust_credentials(domain, talloc_tos(), true, &creds);
-	if (!NT_STATUS_IS_OK(result)) {
-		DEBUG(10, ("cm_connect_lsa: No user available for "
-			   "domain %s (error %s), trying anon\n", domain->name,
-			   nt_errstr(result)));
-		goto anonymous;
-	}
 	result = cli_rpc_pipe_open_schannel_with_creds(
 		conn->cli, &ndr_table_lsarpc, NCACN_NP, p_creds,
 		&conn->lsa_pipe);
