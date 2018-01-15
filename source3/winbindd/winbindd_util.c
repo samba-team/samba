@@ -275,6 +275,8 @@ static NTSTATUS add_trusted_domain(const char *domain_name,
 		}
 	}
 
+	domain->can_do_ncacn_ip_tcp = domain->active_directory;
+
 	/* Link to domain list */
 	DLIST_ADD_END(_domain_list, domain);
 
