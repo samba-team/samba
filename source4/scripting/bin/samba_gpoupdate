@@ -26,7 +26,9 @@ import os
 import sys
 
 sys.path.insert(0, "bin/python")
+sys.path.insert(0, "bin/py_gp")
 
+import gp_exts
 import optparse
 from samba import getopt as options
 from samba.auth import system_session
@@ -35,7 +37,6 @@ try:
 except:
     SamDB = None
 from samba.gpclass import apply_gp, unapply_gp, GPOStorage
-from samba.gp_sec_ext import gp_sec_ext
 import logging
 
 if __name__ == "__main__":
@@ -86,8 +87,9 @@ if __name__ == "__main__":
 
     gp_extensions = []
     if opts.machine:
-        if gp_sec_ext.enabled():
-            gp_extensions.append(gp_sec_ext(logger))
+        for ext in gp_exts.machine_gp_exts:
+            if ext.enabled():
+                gp_extensions.append(ext(logger))
     else:
         pass # User extensions
 

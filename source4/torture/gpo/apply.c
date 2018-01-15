@@ -325,7 +325,7 @@ bool torture_gpo_disable_policies(struct torture_context *tctx)
 	int pwdlencases[] = { 0, 1, 14 };
 	int pwdpropcases[] = { 0, 1, 1 };
 	struct ldb_message *old_message = NULL;
-	const char *disable_file = "bin/python/samba/gp_sec_ext.py.disabled";
+	const char *disable_file = "bin/py_gp/gp_exts/machine/gp_sec_ext.py.disabled";
 
 	sysvol_path = lpcfg_path(lpcfg_service(tctx->lp_ctx, "sysvol"),
 				 lpcfg_default_service(tctx->lp_ctx), tctx);

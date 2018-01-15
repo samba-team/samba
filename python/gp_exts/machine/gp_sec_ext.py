@@ -1,5 +1,6 @@
 import os.path
-from gpclass import file_to, gp_inf_ext
+from samba.gpclass import file_to, gp_inf_ext
+from samba.param import LoadParm
 
 class inf_to_kdc_tdb(file_to):
     def mins_to_hours(self):
