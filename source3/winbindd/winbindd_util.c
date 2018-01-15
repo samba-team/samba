@@ -295,7 +295,7 @@ static NTSTATUS add_trusted_domain(const char *domain_name,
 }
 
 bool set_routing_domain(struct winbindd_domain *domain,
-			const struct winbindd_domain *routing_domain)
+			struct winbindd_domain *routing_domain)
 {
 	if (domain->routing_domain == NULL) {
 		domain->routing_domain = routing_domain;
