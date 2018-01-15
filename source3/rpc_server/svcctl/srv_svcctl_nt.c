@@ -301,6 +301,7 @@ WERROR _svcctl_OpenServiceW(struct pipes_struct *p,
 	uint32_t access_granted = 0;
 	NTSTATUS status;
 	const char *service = NULL;
+	WERROR err;
 
 	service = r->in.ServiceName;
 	if (!service) {
@@ -317,14 +318,19 @@ WERROR _svcctl_OpenServiceW(struct pipes_struct *p,
 	 * Perform access checks. Use the system session_info in order to ensure
 	 * that we retrieve the security descriptor
 	 */
-	sec_desc = svcctl_get_secdesc(p->mem_ctx,
-				      p->msg_ctx,
-				      get_session_info_system(),
-				      service);
-	if (sec_desc == NULL) {
-		DEBUG(0, ("_svcctl_OpenServiceW: Failed to get a valid security "
-			  "descriptor"));
-		return WERR_NOT_ENOUGH_MEMORY;
+	err = svcctl_get_secdesc(p->msg_ctx,
+				 get_session_info_system(),
+				 service,
+				 p->mem_ctx,
+				 &sec_desc);
+	if (W_ERROR_EQUAL(err, WERR_FILE_NOT_FOUND)) {
+		DBG_NOTICE("service %s does not exist\n", service);
+		return WERR_SERVICE_DOES_NOT_EXIST;
+	}
+	if (!W_ERROR_IS_OK(err)) {
+		DBG_NOTICE("Failed to get a valid secdesc for %s: %s\n",
+			   service, win_errstr(err));
+		return err;
 	}
 
 	se_map_generic( &r->in.access_mask, &svc_generic_map );
@@ -899,6 +905,7 @@ WERROR _svcctl_QueryServiceObjectSecurity(struct pipes_struct *p,
 	NTSTATUS status;
 	uint8_t *buffer = NULL;
 	size_t len = 0;
+	WERROR err;
 
 
 	/* only support the SCM and individual services */
@@ -917,12 +924,19 @@ WERROR _svcctl_QueryServiceObjectSecurity(struct pipes_struct *p,
 		return WERR_INVALID_PARAMETER;
 
 	/* Lookup the security descriptor and marshall it up for a reply */
-	sec_desc = svcctl_get_secdesc(p->mem_ctx,
-				      p->msg_ctx,
-				      get_session_info_system(),
-				      info->name);
-	if (sec_desc == NULL) {
-		return WERR_NOT_ENOUGH_MEMORY;
+	err = svcctl_get_secdesc(p->msg_ctx,
+				 get_session_info_system(),
+				 info->name,
+				 p->mem_ctx,
+				 &sec_desc);
+	if (W_ERROR_EQUAL(err, WERR_FILE_NOT_FOUND)) {
+		DBG_NOTICE("service %s does not exist\n", info->name);
+		return WERR_SERVICE_DOES_NOT_EXIST;
+	}
+	if (!W_ERROR_IS_OK(err)) {
+		DBG_NOTICE("Failed to get a valid secdesc for %s: %s\n",
+			   info->name, win_errstr(err));
+		return err;
 	}
 
 	*r->out.needed = ndr_size_security_descriptor(sec_desc, 0);

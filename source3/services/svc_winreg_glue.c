@@ -75,10 +75,11 @@ struct security_descriptor* svcctl_gen_service_sd(TALLOC_CTX *mem_ctx)
 	return sd;
 }
 
-struct security_descriptor *svcctl_get_secdesc(TALLOC_CTX *mem_ctx,
-					       struct messaging_context *msg_ctx,
-					       const struct auth_session_info *session_info,
-					       const char *name)
+WERROR svcctl_get_secdesc(struct messaging_context *msg_ctx,
+			  const struct auth_session_info *session_info,
+			  const char *name,
+			  TALLOC_CTX *mem_ctx,
+			  struct security_descriptor **psd)
 {
 	struct dcerpc_binding_handle *h = NULL;
 	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
@@ -92,7 +93,7 @@ struct security_descriptor *svcctl_get_secdesc(TALLOC_CTX *mem_ctx,
 			      "%s\\%s\\Security",
 			      TOP_LEVEL_SERVICES_KEY, name);
 	if (key == NULL) {
-		return NULL;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	status = dcerpc_winreg_int_hklm_openkey(mem_ctx,
@@ -108,12 +109,12 @@ struct security_descriptor *svcctl_get_secdesc(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(2, ("svcctl_set_secdesc: Could not open %s - %s\n",
 			  key, nt_errstr(status)));
-		return NULL;
+		return WERR_INTERNAL_ERROR;
 	}
 	if (!W_ERROR_IS_OK(result)) {
 		DEBUG(2, ("svcctl_set_secdesc: Could not open %s - %s\n",
 			  key, win_errstr(result)));
-		return NULL;
+		return result;
 	}
 
 	status = dcerpc_winreg_query_sd(mem_ctx,
@@ -125,14 +126,14 @@ struct security_descriptor *svcctl_get_secdesc(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(2, ("svcctl_get_secdesc: error getting value 'Security': "
 			  "%s\n", nt_errstr(status)));
-		return NULL;
+		return WERR_INTERNAL_ERROR;
 	}
 	if (W_ERROR_EQUAL(result, WERR_FILE_NOT_FOUND)) {
 		goto fallback_to_default_sd;
 	} else if (!W_ERROR_IS_OK(result)) {
 		DEBUG(2, ("svcctl_get_secdesc: error getting value 'Security': "
 			  "%s\n", win_errstr(result)));
-		return NULL;
+		return result;
 	}
 
 	goto done;
@@ -141,9 +142,13 @@ fallback_to_default_sd:
 	DEBUG(6, ("svcctl_get_secdesc: constructing default secdesc for "
 		  "service [%s]\n", name));
 	sd = svcctl_gen_service_sd(mem_ctx);
+	if (sd == NULL) {
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
 
 done:
-	return sd;
+	*psd = sd;
+	return WERR_OK;
 }
 
 bool svcctl_set_secdesc(struct messaging_context *msg_ctx,

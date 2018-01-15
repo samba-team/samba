@@ -28,10 +28,11 @@ struct auth_session_info;
 
 struct security_descriptor* svcctl_gen_service_sd(TALLOC_CTX *mem_ctx);
 
-struct security_descriptor *svcctl_get_secdesc(TALLOC_CTX *mem_ctx,
-					       struct messaging_context *msg_ctx,
-					       const struct auth_session_info *session_info,
-					       const char *name);
+WERROR svcctl_get_secdesc(struct messaging_context *msg_ctx,
+			  const struct auth_session_info *session_info,
+			  const char *name,
+			  TALLOC_CTX *mem_ctx,
+			  struct security_descriptor **result);
 
 bool svcctl_set_secdesc(struct messaging_context *msg_ctx,
 			const struct auth_session_info *session_info,
