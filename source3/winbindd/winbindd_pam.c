@@ -395,8 +395,14 @@ struct winbindd_domain *find_auth_domain(uint8_t flags,
 			DEBUG(3, ("Authentication for domain [%s] refused "
 				  "as it is not a trusted domain\n",
 				  domain_name));
+			return NULL;
 		}
-		return domain;
+
+		if (domain->secure_channel_type != SEC_CHAN_NULL) {
+			return domain;
+		}
+
+		return domain->routing_domain;
 	}
 
 	if (strequal(domain_name, get_global_sam_name())) {
