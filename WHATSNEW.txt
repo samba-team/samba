@@ -27,7 +27,7 @@ renew lifetime).
 Adds the samba_gpoupdate script for applying and unapplying
 policy. Can be applied automatically by setting
 
- 'server services = +gpoupdate'.
+ 'apply group policies = yes'.
 
 Time Machine Support with vfs_fruit
 -----------------------------------
