@@ -172,6 +172,7 @@ static NTSTATUS dcerpc_lsa_lookup_sids_noalloc(struct dcerpc_binding_handle *h,
 					       struct policy_handle *pol,
 					       int num_sids,
 					       const struct dom_sid *sids,
+					       enum lsa_LookupNamesLevel level,
 					       char **domains,
 					       char **names,
 					       enum lsa_SidType *types,
@@ -183,7 +184,6 @@ static NTSTATUS dcerpc_lsa_lookup_sids_noalloc(struct dcerpc_binding_handle *h,
 	struct lsa_SidArray sid_array;
 	struct lsa_RefDomainList *ref_domains = NULL;
 	struct lsa_TransNameArray lsa_names;
-	enum lsa_LookupNamesLevel level = LSA_LOOKUP_NAMES_ALL;
 	uint32_t count = 0;
 	int i;
 
@@ -348,6 +348,7 @@ NTSTATUS dcerpc_lsa_lookup_sids_generic(struct dcerpc_binding_handle *h,
 					struct policy_handle *pol,
 					int num_sids,
 					const struct dom_sid *sids,
+					enum lsa_LookupNamesLevel level,
 					char ***pdomains,
 					char ***pnames,
 					enum lsa_SidType **ptypes,
@@ -414,6 +415,7 @@ NTSTATUS dcerpc_lsa_lookup_sids_generic(struct dcerpc_binding_handle *h,
 							pol,
 							hunk_num_sids,
 							hunk_sids,
+							level,
 							hunk_domains,
 							hunk_names,
 							hunk_types,
@@ -489,11 +491,13 @@ NTSTATUS dcerpc_lsa_lookup_sids(struct dcerpc_binding_handle *h,
 				enum lsa_SidType **ptypes,
 				NTSTATUS *result)
 {
+	enum lsa_LookupNamesLevel level = LSA_LOOKUP_NAMES_ALL;
 	return dcerpc_lsa_lookup_sids_generic(h,
 					      mem_ctx,
 					      pol,
 					      num_sids,
 					      sids,
+					      level,
 					      pdomains,
 					      pnames,
 					      ptypes,
@@ -512,12 +516,14 @@ NTSTATUS rpccli_lsa_lookup_sids(struct rpc_pipe_client *cli,
 {
 	NTSTATUS status;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	enum lsa_LookupNamesLevel level = LSA_LOOKUP_NAMES_ALL;
 
 	status = dcerpc_lsa_lookup_sids_generic(cli->binding_handle,
 						mem_ctx,
 						pol,
 						num_sids,
 						sids,
+						level,
 						pdomains,
 						pnames,
 						ptypes,
@@ -540,11 +546,13 @@ NTSTATUS dcerpc_lsa_lookup_sids3(struct dcerpc_binding_handle *h,
 				 enum lsa_SidType **ptypes,
 				 NTSTATUS *result)
 {
+	enum lsa_LookupNamesLevel level = LSA_LOOKUP_NAMES_ALL;
 	return dcerpc_lsa_lookup_sids_generic(h,
 					      mem_ctx,
 					      pol,
 					      num_sids,
 					      sids,
+					      level,
 					      pdomains,
 					      pnames,
 					      ptypes,
