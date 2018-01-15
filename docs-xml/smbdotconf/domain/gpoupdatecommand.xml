@@ -6,11 +6,10 @@
 <description>
 	<para>This option sets the command that is called to apply GPO policies.
         The samba_gpoupdate script applies System Access and Kerberos Policies
-	to the KDC, or Environment Variable policies to client machines. System
-	Access policies set minPwdAge, maxPwdAge, minPwdLength, and
-	pwdProperties in the samdb. Kerberos Policies set kdc:service ticket
-	lifetime, kdc:user ticket lifetime, and kdc:renewal lifetime in
-	smb.conf.
+	to the KDC. System Access policies set minPwdAge, maxPwdAge,
+	minPwdLength, and pwdProperties in the samdb. Kerberos Policies set
+	kdc:service ticket lifetime, kdc:user ticket lifetime, and kdc:renewal
+	lifetime in smb.conf.
 	</para>
 </description>
 
