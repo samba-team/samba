@@ -999,6 +999,7 @@ NTSTATUS winbindd_lookup_sids(TALLOC_CTX *mem_ctx,
 	unsigned int orig_timeout;
 	bool use_lookupsids3 = false;
 	bool retried = false;
+	enum lsa_LookupNamesLevel level = LSA_LOOKUP_NAMES_ALL;
 
  connect:
 	status = cm_connect_lsat(domain, mem_ctx, &cli, &lsa_policy);
@@ -1024,6 +1025,7 @@ NTSTATUS winbindd_lookup_sids(TALLOC_CTX *mem_ctx,
 						&lsa_policy,
 						num_sids,
 						sids,
+						level,
 						domains,
 						names,
 						types,
