@@ -24,6 +24,7 @@
 #include "../lib/util/select.h"
 #include "system/select.h"
 #include "libsmb/libsmb.h"
+#include "libsmb/unexpected.h"
 
 extern int ClientNMB;
 extern int ClientDGRAM;

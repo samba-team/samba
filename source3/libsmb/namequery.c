@@ -26,6 +26,7 @@
 #include "lib/async_req/async_sock.h"
 #include "lib/tsocket/tsocket.h"
 #include "libsmb/nmblib.h"
+#include "libsmb/unexpected.h"
 #include "../libcli/nbt/libnbt.h"
 #include "libads/kerberos_proto.h"
 

@@ -24,6 +24,7 @@
 #include "../lib/util/tevent_ntstatus.h"
 #include "libsmb/clidgram.h"
 #include "libsmb/nmblib.h"
+#include "libsmb/unexpected.h"
 #include "messages.h"
 #include "librpc/gen_ndr/samr.h"
 #include "../lib/util/pidfile.h"
