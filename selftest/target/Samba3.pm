@@ -2455,6 +2455,8 @@ sub wait_for_start($$$$$)
 	}
 	if ($create_builtin_users eq "yes") {
 	    $cmd = "SELFTEST_WINBINDD_SOCKET_DIR='$envvars->{SELFTEST_WINBINDD_SOCKET_DIR}' ";
+	    $cmd .= "NSS_WRAPPER_PASSWD='$envvars->{NSS_WRAPPER_PASSWD}' ";
+	    $cmd .= "NSS_WRAPPER_GROUP='$envvars->{NSS_WRAPPER_GROUP}' ";
 	    $cmd .= Samba::bindir_path($self, "net") . " $envvars->{CONFIGURATION} ";
 	    $cmd .= "sam createbuiltingroup Users";
 	    $ret = system($cmd);
@@ -2469,6 +2471,8 @@ sub wait_for_start($$$$$)
 	    system($cmd);
 
 	    $cmd = "SELFTEST_WINBINDD_SOCKET_DIR='$envvars->{SELFTEST_WINBINDD_SOCKET_DIR}' ";
+	    $cmd .= "NSS_WRAPPER_PASSWD='$envvars->{NSS_WRAPPER_PASSWD}' ";
+	    $cmd .= "NSS_WRAPPER_GROUP='$envvars->{NSS_WRAPPER_GROUP}' ";
 	    $cmd .= Samba::bindir_path($self, "wbinfo") . " --sid-to-gid=S-1-5-32-545";
 	    $ret = system($cmd);
 	    if ($ret != 0) {
