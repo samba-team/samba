@@ -520,7 +520,7 @@ struct tevent_req *nb_packet_reader_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	ret = tsocket_address_unix_from_path(state, "", &laddr);
+	ret = tsocket_address_unix_from_path(state, NULL, &laddr);
 	if (ret != 0) {
 		tevent_req_nterror(req, map_nt_error_from_unix(errno));
 		return tevent_req_post(req, ev);
