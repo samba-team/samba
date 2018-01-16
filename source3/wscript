@@ -119,7 +119,6 @@ def configure(conf):
     conf.CHECK_FUNCS('memalign posix_memalign hstrerror')
     conf.CHECK_FUNCS('shmget')
     conf.CHECK_FUNCS_IN('shm_open', 'rt', checklibc=True)
-    #FIXME: for some reason this one still fails
     conf.CHECK_FUNCS_IN('yp_get_default_domain', 'nsl')
     conf.CHECK_FUNCS_IN('dn_expand _dn_expand __dn_expand', 'resolv')
     conf.CHECK_FUNCS_IN('dn_expand', 'inet')
@@ -1446,7 +1445,7 @@ main() {
         #darwin style quota bytecount
         conf.CHECK_STRUCTURE_MEMBER('struct dqblk', 'dqb_curbytes', define='HAVE_STRUCT_DQBLK_DQB_CURBYTES',
                                 headers='sys/quota.h')
-        if conf.CHECK_HEADERS('rpcsvc/rquota.h'):
+        if conf.CHECK_HEADERS('rpcsvc/rquota.h', lib='tirpc'):
             conf.DEFINE('HAVE_NFS_QUOTAS', '1')
             conf.CHECK_STRUCTURE_MEMBER('struct getquota_rslt', 'getquota_rslt_u',
                                         define='HAVE_GETQUOTA_RSLT_GETQUOTA_RSLT_U',
@@ -1484,7 +1483,8 @@ main() {
                         define='HAVE_NFS_QUOTAS',
                         msg='for NFS QUOTAS',
                         execute=True,
-                        local_include=False)
+                        local_include=False,
+                        lib='tirpc')
 
         if conf.CONFIG_SET('HAVE_QUOTACTL_LINUX') or \
            conf.CONFIG_SET('HAVE_QUOTACTL_4A') or \
@@ -1650,7 +1650,7 @@ main() {
         Logs.info("building with Spotlight support")
         default_static_modules.extend(TO_LIST('rpc_mdssvc_module'))
 
-    conf.CHECK_HEADERS('rpc/xdr.h')
+    conf.CHECK_HEADERS('rpc/xdr.h', lib='tirpc')
 
     forced_static_modules.extend(TO_LIST('auth_builtin auth_sam auth_winbind'))
     default_static_modules.extend(TO_LIST('''pdb_smbpasswd pdb_tdbsam
