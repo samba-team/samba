@@ -6,7 +6,7 @@ bld.SAMBA3_SUBSYSTEM('TOKEN_UTIL',
 
 bld.SAMBA3_SUBSYSTEM('USER_UTIL',
                      source='user_util.c',
-                     deps='TOKEN_UTIL')
+                     deps='TOKEN_UTIL tirpc nsl')
 
 bld.SAMBA3_SUBSYSTEM('AUTH_COMMON',
                     source='''auth_util.c

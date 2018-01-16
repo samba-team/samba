@@ -5,7 +5,7 @@ VERSION = '1.2.1'
 
 blddir = 'bin'
 
-import sys, os
+import Logs, sys, os
 
 # find the buildtools directory
 srcdir = '.'
@@ -65,13 +65,41 @@ def configure(conf):
                         headers='sys/inotify.h')
 
     conf.CHECK_HEADERS('security/pam_appl.h zlib.h asm/unistd.h')
-    conf.CHECK_HEADERS('aio.h sys/unistd.h rpc/rpc.h rpc/nettype.h alloca.h float.h')
+    conf.CHECK_HEADERS('aio.h sys/unistd.h alloca.h float.h')
 
-    conf.CHECK_HEADERS('rpcsvc/nis.h rpcsvc/ypclnt.h sys/sysctl.h')
+    conf.SET_TARGET_TYPE('tirpc', 'EMPTY')
+    conf.CHECK_HEADERS('rpc/rpc.h rpc/nettype.h')
+    if not conf.CONFIG_SET('HAVE_RPC_RPC_H'):
+        if conf.CHECK_CFG(package='libtirpc', args='--cflags',
+                       msg='Checking for libtirpc headers',
+                       uselib_store='TIRPC'):
+            conf.CHECK_HEADERS('rpc/rpc.h rpc/nettype.h', lib='tirpc', together=True)
+            conf.SET_TARGET_TYPE('tirpc', 'SYSLIB')
+    if not conf.CONFIG_SET('HAVE_RPC_RPC_H'):
+        if conf.CHECK_CFG(package='libntirpc', args='--cflags',
+                       msg='Checking for libntirpc headers',
+                       uselib_store='TIRPC'):
+            conf.CHECK_HEADERS('rpc/rpc.h rpc/nettype.h', lib='tirpc', together=True)
+            conf.SET_TARGET_TYPE('tirpc', 'SYSLIB')
+    if not conf.CONFIG_SET('HAVE_RPC_RPC_H'):
+            Logs.error('ERROR: No rpc/rpc.h header found, tirpc or libntirpc missing?')
+            sys.exit(1)
+
+    conf.SET_TARGET_TYPE('nsl', 'EMPTY')
+    conf.CHECK_HEADERS('rpc/rpc.h rpcsvc/yp_prot.h', lib='tirpc')
+    if not conf.CONFIG_SET('HAVE_RPCSVC_YP_PROT_H'):
+        if conf.CHECK_CFG(package='libnsl', args='--cflags --libs',
+                          msg='Checking for libnsl',
+                          uselib_store='NSL'):
+            conf.SET_TARGET_TYPE('nsl', 'SYSLIB')
+            conf.CHECK_HEADERS('rpc/rpc.h rpcsvc/yp_prot.h', lib='tirpc nsl')
+        else:
+            conf.SET_TARGET_TYPE('nsl', 'SYSLIB')
+    conf.CHECK_HEADERS('rpcsvc/nis.h rpcsvc/ypclnt.h', lib='tirpc nsl')
+
+    conf.CHECK_HEADERS('sys/sysctl.h')
     conf.CHECK_HEADERS('sys/fileio.h sys/filesys.h sys/dustat.h sys/sysmacros.h')
     conf.CHECK_HEADERS('xfs/libxfs.h netgroup.h')
-
-    conf.CHECK_CODE('', headers='rpc/rpc.h rpcsvc/yp_prot.h', define='HAVE_RPCSVC_YP_PROT_H')
 
     conf.CHECK_HEADERS('valgrind.h valgrind/valgrind.h valgrind/memcheck.h')
     conf.CHECK_HEADERS('nss_common.h nsswitch.h ns_api.h')

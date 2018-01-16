@@ -540,7 +540,7 @@ def build(bld):
     bld.SAMBA_BINARY('smnotify',
                      source=bld.SUBDIR('utils/smnotify',
                                        'smnotify.c gen_smnotify.c gen_xdr.c'),
-                     deps='ctdb-smnotify-h ctdb-smnotify-c ctdb-smnotify-x popt',
+                     deps='ctdb-smnotify-h ctdb-smnotify-c ctdb-smnotify-x popt tirpc',
                      includes='utils utils/smnotify',
                      install_path='${CTDB_HELPER_BINDIR}')
 
