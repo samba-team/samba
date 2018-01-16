@@ -397,7 +397,7 @@ static void nbt_getdc_got_response(struct tevent_req *subreq)
 	NTSTATUS status;
 	bool ret;
 
-	status = nb_packet_read_recv(subreq, &p);
+	status = nb_packet_read_recv(subreq, state, &p);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
@@ -406,7 +406,6 @@ static void nbt_getdc_got_response(struct tevent_req *subreq)
 	ret = parse_getdc_response(p, state, state->domain_name,
 				   &state->nt_version, &state->dc_name,
 				   &state->samlogon_response);
-	free_packet(p);
 	if (!ret) {
 		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
 		return;

@@ -715,7 +715,7 @@ static void nb_packet_read_done(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
-NTSTATUS nb_packet_read_recv(struct tevent_req *req,
+NTSTATUS nb_packet_read_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			     struct packet_struct **ppacket)
 {
 	struct nb_packet_read_state *state = tevent_req_data(
@@ -731,7 +731,8 @@ NTSTATUS nb_packet_read_recv(struct tevent_req *req,
 
 	memcpy(&hdr, state->buf, sizeof(hdr));
 
-	packet = parse_packet(
+	packet = parse_packet_talloc(
+		mem_ctx,
 		(char *)state->buf + sizeof(struct nb_packet_client_header),
 		state->buflen - sizeof(struct nb_packet_client_header),
 		state->hdr.type, state->hdr.ip, state->hdr.port);
@@ -739,6 +740,7 @@ NTSTATUS nb_packet_read_recv(struct tevent_req *req,
 		tevent_req_received(req);
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
+
 	*ppacket = packet;
 	tevent_req_received(req);
 	return NT_STATUS_OK;

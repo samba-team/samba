@@ -43,7 +43,7 @@ NTSTATUS nb_packet_reader_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 struct tevent_req *nb_packet_read_send(TALLOC_CTX *mem_ctx,
 				       struct tevent_context *ev,
 				       struct nb_packet_reader *reader);
-NTSTATUS nb_packet_read_recv(struct tevent_req *req,
+NTSTATUS nb_packet_read_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			     struct packet_struct **ppacket);
 
 #endif
