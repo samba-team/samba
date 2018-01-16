@@ -10,9 +10,9 @@ def set_options(opt):
                   action="store_true", dest="systemd_install_services", default=False)
 
     gr.add_option('--with-systemddir',
-                  help=("systemd service directory [PREFIX/usr/lib/systemd/system]"),
+                  help=("systemd service directory [PREFIX/lib/systemd/system]"),
                   action="store", dest="SYSTEMDDIR",
-                  default="${PREFIX}/usr/lib/systemd/system")
+                  default="${PREFIX}/lib/systemd/system")
     #
     # extra service directives
     #
