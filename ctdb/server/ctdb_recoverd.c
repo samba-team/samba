@@ -1104,11 +1104,10 @@ static int db_recovery_parallel(struct ctdb_recoverd *rec, TALLOC_CTX *mem_ctx)
 /*
   we are the recmaster, and recovery is needed - start a recovery run
  */
-static int do_recovery(struct ctdb_recoverd *rec,
-		       TALLOC_CTX *mem_ctx, uint32_t pnn,
-		       struct ctdb_node_map_old *nodemap, struct ctdb_vnn_map *vnnmap)
+static int do_recovery(struct ctdb_recoverd *rec, TALLOC_CTX *mem_ctx)
 {
 	struct ctdb_context *ctdb = rec->ctdb;
+	struct ctdb_node_map_old *nodemap = rec->nodemap;
 	unsigned int i;
 	int ret;
 	bool self_ban;
@@ -1180,7 +1179,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 				      "ban this node for %u seconds\n",
 				      ctdb->tunable.recovery_ban_period);
 				ctdb_ban_node(rec,
-					      pnn,
+					      rec->pnn,
 					      ctdb->tunable.recovery_ban_period);
 				goto fail;
 			}
@@ -2598,7 +2597,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 
 	if (rec->need_recovery) {
 		/* a previous recovery didn't finish */
-		do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap);
+		do_recovery(rec, mem_ctx);
 		return;
 	}
 
@@ -2607,7 +2606,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 	*/
 	switch (verify_recmode(ctdb, nodemap)) {
 	case MONITOR_RECOVERY_NEEDED:
-		do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap);
+		do_recovery(rec, mem_ctx);
 		return;
 	case MONITOR_FAILED:
 		return;
@@ -2623,7 +2622,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 		if (!ctdb_recovery_have_lock(rec)) {
 			DEBUG(DEBUG_ERR,("Failed recovery lock sanity check.  Force a recovery\n"));
 			ctdb_set_culprit(rec, ctdb->pnn);
-			do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap);
+			do_recovery(rec, mem_ctx);
 			return;
 		}
 	}
@@ -2654,7 +2653,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 			DEBUG(DEBUG_ERR, (__location__ " Remote node:%u has different node count. %u vs %u of the local node\n",
 				  nodemap->nodes[j].pnn, remote_nodemaps[j]->num, nodemap->num));
 			ctdb_set_culprit(rec, nodemap->nodes[j].pnn);
-			do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap);
+			do_recovery(rec, mem_ctx);
 			return;
 		}
 
@@ -2667,8 +2666,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 					  nodemap->nodes[j].pnn, i, 
 					  remote_nodemaps[j]->nodes[i].pnn, nodemap->nodes[i].pnn));
 				ctdb_set_culprit(rec, nodemap->nodes[j].pnn);
-				do_recovery(rec, mem_ctx, pnn, nodemap, 
-					    vnnmap);
+				do_recovery(rec, mem_ctx);
 				return;
 			}
 		}
@@ -2695,7 +2693,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 		DEBUG(DEBUG_ERR, (__location__ " The vnnmap count is different from the number of active lmaster nodes: %u vs %u\n",
 			  vnnmap->size, num_lmasters));
 		ctdb_set_culprit(rec, ctdb->pnn);
-		do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap);
+		do_recovery(rec, mem_ctx);
 		return;
 	}
 
@@ -2725,7 +2723,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 			D_ERR("Active LMASTER node %u is not in the vnnmap\n",
 			      nodemap->nodes[j].pnn);
 			ctdb_set_culprit(rec, nodemap->nodes[j].pnn);
-			do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap);
+			do_recovery(rec, mem_ctx);
 			return;
 		}
 	}
@@ -2755,7 +2753,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 			DEBUG(DEBUG_ERR, (__location__ " Remote node %u has different generation of vnnmap. %u vs %u (ours)\n", 
 				  nodemap->nodes[j].pnn, remote_vnnmap->generation, vnnmap->generation));
 			ctdb_set_culprit(rec, nodemap->nodes[j].pnn);
-			do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap);
+			do_recovery(rec, mem_ctx);
 			return;
 		}
 
@@ -2764,7 +2762,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 			DEBUG(DEBUG_ERR, (__location__ " Remote node %u has different size of vnnmap. %u vs %u (ours)\n", 
 				  nodemap->nodes[j].pnn, remote_vnnmap->size, vnnmap->size));
 			ctdb_set_culprit(rec, nodemap->nodes[j].pnn);
-			do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap);
+			do_recovery(rec, mem_ctx);
 			return;
 		}
 
@@ -2774,8 +2772,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 				DEBUG(DEBUG_ERR, (__location__ " Remote node %u has different vnnmap.\n", 
 					  nodemap->nodes[j].pnn));
 				ctdb_set_culprit(rec, nodemap->nodes[j].pnn);
-				do_recovery(rec, mem_ctx, pnn, nodemap, 
-					    vnnmap);
+				do_recovery(rec, mem_ctx);
 				return;
 			}
 		}
