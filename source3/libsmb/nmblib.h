@@ -44,7 +44,6 @@ struct packet_struct *parse_packet_talloc(TALLOC_CTX *mem_ctx,
 					  enum packet_type packet_type,
 					  struct in_addr ip,
 					  int port);
-struct packet_struct *read_packet(int fd,enum packet_type packet_type);
 void make_nmb_name( struct nmb_name *n, const char *name, int type);
 bool nmb_name_equal(struct nmb_name *n1, struct nmb_name *n2);
 int build_packet(char *buf, size_t buflen, struct packet_struct *p);

@@ -875,41 +875,6 @@ struct packet_struct *parse_packet_talloc(TALLOC_CTX *mem_ctx,
 }
 
 /*******************************************************************
- Read a packet from a socket and parse it, returning a packet ready
- to be used or put on the queue. This assumes a UDP socket.
-******************************************************************/
-
-struct packet_struct *read_packet(int fd,enum packet_type packet_type)
-{
-	struct packet_struct *packet;
-	struct sockaddr_storage sa;
-	struct sockaddr_in *si = (struct sockaddr_in *)&sa;
-	char buf[MAX_DGRAM_SIZE];
-	int length;
-
-	length = read_udp_v4_socket(fd,buf,sizeof(buf),&sa);
-	if (length < MIN_DGRAM_SIZE || sa.ss_family != AF_INET) {
-		return NULL;
-	}
-
-	packet = parse_packet(buf,
-			length,
-			packet_type,
-			si->sin_addr,
-			ntohs(si->sin_port));
-	if (!packet)
-		return NULL;
-
-	packet->recv_fd = fd;
-	packet->send_fd = -1;
-
-	DEBUG(5,("Received a packet of len %d from (%s) port %d\n",
-		 length, inet_ntoa(packet->ip), packet->port ) );
-
-	return(packet);
-}
-
-/*******************************************************************
  Send a udp packet on a already open socket.
 ******************************************************************/
 
