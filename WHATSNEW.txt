@@ -88,6 +88,29 @@ The key file "encrypted_secrets.key" is created in the same directory
 as the database and should NEVER be disclosed.  It is included by the
 samba_backup script.
 
+Active Directory replication visualisation
+------------------------------------------
+
+To work out what is happening in a replication graph, it is sometimes
+helpful to use visualisations. We introduce a samba-tool subcommand to
+write Graphviz dot output and generate text-based heatmaps of the
+distance in hops between DCs.
+
+There are two subcommands, two graphical modes, and (roughly) two modes of
+operation with respect to the location of authority.
+
+`samba-tool visualize ntdsconn` looks at NTDS Connections.
+`samba-tool visualize reps` looks at repsTo and repsFrom objects.
+
+In '--distance' mode (default), the distances between DCs are shown in
+a matrix in the terminal. With '--color=yes', this is depicted as a
+heatmap. With '--utf8' it is a lttle prettier.
+
+In '--dot' mode, Graphviz dot output is generated. When viewed using
+dot or xdot, this shows the network as a graph with DCs as vertices
+and connections edges. Certain types of degenerate edges are shown in
+different colours or line-styles.
+
 NT4-style replication based net commands removed
 ------------------------------------------------
 
