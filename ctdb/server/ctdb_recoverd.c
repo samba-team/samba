@@ -2667,53 +2667,6 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 		}
 	}
 
-	for (j=0; j<nodemap->num; j++) {
-		if (nodemap->nodes[j].pnn == ctdb->pnn) {
-			continue;
-		}
-		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
-			continue;
-		}
-
-		/* verify the flags are consistent
-		*/
-		for (i=0; i<nodemap->num; i++) {
-			if (nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED) {
-				continue;
-			}
-			
-			if (nodemap->nodes[i].flags != remote_nodemaps[j]->nodes[i].flags) {
-				DEBUG(DEBUG_ERR, (__location__ " Remote node:%u has different flags for node %u. It has 0x%02x vs our 0x%02x\n", 
-				  nodemap->nodes[j].pnn, 
-				  nodemap->nodes[i].pnn, 
-				  remote_nodemaps[j]->nodes[i].flags,
-				  nodemap->nodes[i].flags));
-				if (i == j) {
-					DEBUG(DEBUG_ERR,("Use flags 0x%02x from remote node %d for cluster update of its own flags\n", remote_nodemaps[j]->nodes[i].flags, j));
-					update_flags_on_all_nodes(
-					    rec,
-					    nodemap->nodes[i].pnn,
-					    remote_nodemaps[j]->nodes[i].flags);
-					ctdb_set_culprit(rec, nodemap->nodes[j].pnn);
-					do_recovery(rec, mem_ctx, pnn, nodemap, 
-						    vnnmap);
-					return;
-				} else {
-					DEBUG(DEBUG_ERR,("Use flags 0x%02x from local recmaster node for cluster update of node %d flags\n", nodemap->nodes[i].flags, i));
-					update_flags_on_all_nodes(
-						rec,
-						nodemap->nodes[i].pnn,
-						nodemap->nodes[i].flags);
-					ctdb_set_culprit(rec, nodemap->nodes[j].pnn);
-					do_recovery(rec, mem_ctx, pnn, nodemap, 
-						    vnnmap);
-					return;
-				}
-			}
-		}
-	}
-
-
 	/* count how many active nodes there are */
 	num_lmasters  = 0;
 	for (i=0; i<nodemap->num; i++) {
