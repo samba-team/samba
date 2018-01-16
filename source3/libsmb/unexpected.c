@@ -481,7 +481,6 @@ struct nb_packet_reader_state {
 	struct nb_packet_query query;
 	const char *mailslot_name;
 	struct iovec iov[2];
-	char c;
 	struct nb_packet_reader *reader;
 };
 
@@ -602,7 +601,7 @@ static void nb_packet_reader_sent_query(struct tevent_req *subreq)
 	}
 	subreq = tstream_read_packet_send(state, state->ev,
 					  state->reader->sock,
-					  sizeof(state->c), NULL, NULL);
+					  1, NULL, NULL);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -627,9 +626,8 @@ static void nb_packet_reader_got_ack(struct tevent_req *subreq)
 		tevent_req_nterror(req, map_nt_error_from_unix(err));
 		return;
 	}
-	if (nread != sizeof(state->c)) {
-		DEBUG(10, ("read = %d, expected %d\n", (int)nread,
-			   (int)sizeof(state->c)));
+	if (nread != 1) {
+		DBG_DEBUG("read = %zd, expected 1\n", nread);
 		tevent_req_nterror(req, NT_STATUS_UNEXPECTED_IO_ERROR);
 		return;
 	}
