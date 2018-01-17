@@ -2837,11 +2837,23 @@ static int replmd_modify_la_delete(struct ldb_module *module,
 
 	if (vanish_links) {
 		unsigned j = 0;
+		struct ldb_val *tmp_vals = NULL;
+
+		tmp_vals = talloc_array(tmp_ctx, struct ldb_val,
+					old_el->num_values);
+		if (tmp_vals == NULL) {
+			talloc_free(tmp_ctx);
+			return ldb_module_oom(module);
+		}
 		for (i = 0; i < old_el->num_values; i++) {
-			if (old_dns[i].v != NULL) {
-				old_el->values[j] = *old_dns[i].v;
-				j++;
+			if (old_dns[i].v == NULL) {
+				continue;
 			}
+			tmp_vals[j] = *old_dns[i].v;
+			j++;
+		}
+		for (i = 0; i < j; i++) {
+			old_el->values[i] = tmp_vals[i];
 		}
 		old_el->num_values = j;
 	}
