@@ -2959,7 +2959,7 @@ static NTSTATUS pdb_samba_dsdb_enum_trusteddoms(struct pdb_methods *m,
 		domains[di++] = d;
 	}
 
-	talloc_realloc(domains, domains, struct trustdom_info *, di);
+	domains = talloc_realloc(domains, domains, struct trustdom_info *, di);
 	*_domains = talloc_move(mem_ctx, &domains);
 	*_num_domains = di;
 	TALLOC_FREE(tmp_ctx);
