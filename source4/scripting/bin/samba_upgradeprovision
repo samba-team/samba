@@ -1397,9 +1397,10 @@ def backup_provision(paths, dir, only_db):
     else:
         os.mkdir(os.path.join(dir, "sam.ldb.d"), 0700)
 
-        for ldb in os.listdir(samldbdir):
-            tdb_util.tdb_copy(os.path.join(samldbdir, ldb),
-                              os.path.join(dir, "sam.ldb.d", ldb))
+        for ldb_name in os.listdir(samldbdir):
+            if not ldb_name.endswith("-lock"):
+                tdb_util.tdb_copy(os.path.join(samldbdir, ldb_name),
+                                  os.path.join(dir, "sam.ldb.d", ldb_name))
 
 
 def sync_calculated_attributes(samdb, names):
