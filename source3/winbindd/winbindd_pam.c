@@ -1823,7 +1823,7 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 	fstring name_domain, name_user;
 	char *mapped_user;
 	fstring domain_user;
-	uint16_t validation_level;
+	uint16_t validation_level = UINT16_MAX;
 	union netr_Validation *validation = NULL;
 	NTSTATUS name_map_status = NT_STATUS_UNSUCCESSFUL;
 
