@@ -63,6 +63,84 @@ testit "join (dedicated keytab)" $VALGRIND $net_tool ads join -U$DC_USERNAME%$DC
 
 testit "testjoin (dedicated keytab)" $VALGRIND $net_tool ads testjoin -kP || failed=`expr $failed + 1`
 
+netbios=$(grep "netbios name" $BASEDIR/$WORKDIR/client.conf | cut -f2 -d= | awk '{$1=$1};1')
+uc_netbios=$(echo $netbios | tr '[:lower:]' '[:upper:]')
+lc_realm=$(echo $REALM | tr '[:upper:]' '[:lower:]')
+fqdns="$netbios.$lc_realm"
+
+krb_princ="primary/instance@$REALM"
+testit "test (dedicated keytab) add a fully qualified krb5 principal" $VALGRIND $net_tool ads keytab add $krb_princ -U$DC_USERNAME%$DC_PASSWORD --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" || failed=`expr $failed + 1`
+
+found=`$net_tool ads keytab list -U$DC_USERNAME%$DC_PASSWORD --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" | grep $krb_princ | wc -l`
+
+testit "test (dedicated keytab) at least one fully qualified krb5 principal that was added is present in keytab" test $found -gt 1 || failed=`expr $failed + 1`
+
+machinename="machine123"
+testit "test (dedicated keytab) add a kerberos prinicple created from machinename to keytab" $VALGRIND $net_tool ads keytab add $machinename'$' -U$DC_USERNAME%$DC_PASSWORD --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" || failed=`expr $failed + 1`
+search_str="$machinename\$@$REALM"
+found=`$net_tool ads keytab list -U$DC_USERNAME%$DC_PASSWORD --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" | grep $search_str | wc -l`
+testit "test (dedicated keytab) at least one krb5 principal created from $machinename added is present in keytab" test $found -gt 1 || failed=`expr $failed + 1`
+
+service="nfs"
+testit "test (dedicated keytab) add a $service service to keytab" $VALGRIND $net_tool ads keytab add $service -U$DC_USERNAME%$DC_PASSWORD --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" || failed=`expr $failed + 1`
+
+search_str="$service/$fqdns@$REALM"
+found=`$net_tool ads keytab list -U$DC_USERNAME%$DC_PASSWORD --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" | grep $search_str | wc -l`
+testit "test (dedicated keytab) at least one (long form) krb5 principal created from service added is present in keytab" test $found -gt 1 || failed=`expr $failed + 1`
+
+search_str="$service/$uc_netbios@$REALM"
+found=`$net_tool ads keytab list -U$DC_USERNAME%$DC_PASSWORD --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" | grep $search_str | wc -l`
+testit "test (dedicated keytab) at least one (shorter form) krb5 principal created from service added is present in keytab" test $found -gt 1 || failed=`expr $failed + 1`
+
+spn_service="random_srv"
+spn_host="somehost.subdomain.domain"
+spn_port="12345"
+
+windows_spn="$spn_service/$spn_host"
+testit "test (dedicated keytab) add a $windows_spn windows style SPN to keytab" $VALGRIND $net_tool ads keytab add $windows_spn -U$DC_USERNAME%$DC_PASSWORD --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" || failed=`expr $failed + 1`
+
+search_str="$spn_service/$spn_host@$REALM"
+found=`$net_tool ads keytab list -U$DC_USERNAME%$DC_PASSWORD --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" | grep $search_str | wc -l`
+testit "test (dedicated keytab) at least one krb5 principal created from windown SPN added is present in keytab" test $found -gt 1 || failed=`expr $failed + 1`
+
+windows_spn="$spn_service/$spn_host:$spn_port"
+testit "test (dedicated keytab) add a $windows_spn windows style SPN to keytab" $VALGRIND $net_tool ads keytab add $windows_spn -U$DC_USERNAME%$DC_PASSWORD --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" || failed=`expr $failed + 1`
+
+search_str="$spn_service/$spn_host@$REALM"
+found=`$net_tool ads keytab list -U$DC_USERNAME%$DC_PASSWORD --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" | grep $search_str | wc -l`
+testit "test (dedicated keytab) at least one krb5 principal created from windown SPN (with port) added is present in keytab" test $found -gt 1 || failed=`expr $failed + 1`
+
+# keytab add shouldn't have written spn to AD
+found=$($net_tool ads setspn list -U$DC_USERNAME%$DC_PASSWORD | grep $service | wc -l)
+testit_expect_failure "test (dedicated keytab) spn is not written to AD (using keytab add)" test $found -eq 0 || failed=`expr $failed + 1`
+
+ad_service="writetoad"
+testit_expected_failure "test (dedicated keytab) add a $ad_service service to keytab (using add_update_ads" $VALGRIND $net_tool ads keytab add_update_ads $ad_service -U$DC_USERNAME%$DC_PASSWORD --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" || failed=`expr $failed + 1`
+
+found=$($net_tool ads setspn list -U$DC_USERNAME%$DC_PASSWORD | grep $ad_service | wc -l)
+testit_expect_failure "test (dedicated keytab) spn is written to AD (using keytab add_update_ads)" test $found -eq 2 || failed=`expr $failed + 1`
+
+
+# test existence in keytab of service (previously added) pulled from SPN post
+# 'keytab create' is now present in keytab file
+testit "test (dedicated keytab) keytab created succeeds" $VALGRIND $net_tool ads keytab create -U$DC_USERNAME%$DC_PASSWORD --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" || failed=`expr $failed + 1`
+found=$($net_tool ads keytab list -U$DC_USERNAME%$DC_PASSWORD --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" | grep $ad_service | wc -l)
+testit_expect_failure "test (dedicated keytab) spn service that exists in AD (created via add_update_ads) is added to keytab file" test $found -gt 1 || failed=`expr $failed + 1`
+
+found_ad=$($net_tool ads setspn list -U$DC_USERNAME%$DC_PASSWORD | grep $service | wc -l)
+found_keytab=$($net_tool ads keytab list -U$DC_USERNAME%$DC_PASSWORD  --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" | grep $service | wc -l)
+# test after create that a spn that exists in the keytab but shouldn't
+# be written to the AD.
+testit_expected_failure "test spn service doensn't exist in AD but is present in keytab file after keytab create" test $found_ad -eq 0 -a $found_keytab -gt 1 || failed=`expr $failed + 1`
+
+# SPN parser is very basic but does detect some illegal combination
+
+windows_spn="$spn_service/$spn_host:"
+testit_expect_failure "test (dedicated keytab) fail to parse windows spn with missing port" $VALGRIND $net_tool ads keytab add $windows_spn -U$DC_USERNAME%$DC_PASSWORD --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" || failed=`expr $failed + 1
+
+windows_spn="$spn_service/$spn_host/"
+testit_expect_failure "test (dedicated keytab) fail to parse windows spn with missing servicename" $VALGRIND $net_tool ads keytab add $windows_spn -U$DC_USERNAME%$DC_PASSWORD --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" || failed=`expr $failed + 1
+
 testit "changetrustpw (dedicated keytab)" $VALGRIND $net_tool ads changetrustpw || failed=`expr $failed + 1`
 
 testit "leave (dedicated keytab)" $VALGRIND $net_tool ads leave -U$DC_USERNAME%$DC_PASSWORD || failed=`expr $failed + 1`
