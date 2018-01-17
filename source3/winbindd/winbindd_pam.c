@@ -1428,7 +1428,7 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 	int netr_attempts = 0;
 	bool retry = false;
 	NTSTATUS result;
-	uint16_t validation_level;
+	uint16_t validation_level = UINT16_MAX;
 	union netr_Validation *validation = NULL;
 
 	do {
