@@ -1781,54 +1781,21 @@ static void force_election(struct ctdb_recoverd *rec, uint32_t pnn,
 }
 
 
-
-/*
-  handler for when a node changes its flags
-*/
-static void monitor_handler(uint64_t srvid, TDB_DATA data, void *private_data)
+static void srvid_not_implemented(uint64_t srvid,
+				  TDB_DATA data,
+				  void *private_data)
 {
-	struct ctdb_recoverd *rec = talloc_get_type(
-		private_data, struct ctdb_recoverd);
-	struct ctdb_context *ctdb = rec->ctdb;
-	int ret;
-	struct ctdb_node_flag_change *c = (struct ctdb_node_flag_change *)data.dptr;
-	struct ctdb_node_map_old *nodemap=NULL;
-	TALLOC_CTX *tmp_ctx;
-	unsigned int i;
+	const char *s;
 
-	if (data.dsize != sizeof(*c)) {
-		DEBUG(DEBUG_ERR,(__location__ "Invalid data in ctdb_node_flag_change\n"));
-		return;
+	switch (srvid) {
+	case CTDB_SRVID_SET_NODE_FLAGS:
+		s = "CTDB_SRVID_SET_NODE_FLAGS";
+		break;
+	default:
+		s = "UNKNOWN";
 	}
 
-	tmp_ctx = talloc_new(ctdb);
-	CTDB_NO_MEMORY_VOID(ctdb, tmp_ctx);
-
-	ret = ctdb_ctrl_getnodemap(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, tmp_ctx, &nodemap);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,(__location__ "ctdb_ctrl_getnodemap failed in monitor_handler\n"));
-		talloc_free(tmp_ctx);
-		return;		
-	}
-
-
-	for (i=0;i<nodemap->num;i++) {
-		if (nodemap->nodes[i].pnn == c->pnn) break;
-	}
-
-	if (i == nodemap->num) {
-		DEBUG(DEBUG_CRIT,(__location__ "Flag change for non-existant node %u\n", c->pnn));
-		talloc_free(tmp_ctx);
-		return;
-	}
-
-	if (c->old_flags != c->new_flags) {
-		DEBUG(DEBUG_NOTICE,("Node %u has changed flags - now 0x%x  was 0x%x\n", c->pnn, c->new_flags, c->old_flags));
-	}
-
-	nodemap->nodes[i].flags = c->new_flags;
-
-	talloc_free(tmp_ctx);
+	D_WARNING("SRVID %s (0x%" PRIx64 ") is obsolete\n", s, srvid);
 }
 
 /*
@@ -2998,8 +2965,10 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 	/* register a message port for recovery elections */
 	ctdb_client_set_message_handler(ctdb, CTDB_SRVID_ELECTION, election_handler, rec);
 
-	/* when nodes are disabled/enabled */
-	ctdb_client_set_message_handler(ctdb, CTDB_SRVID_SET_NODE_FLAGS, monitor_handler, rec);
+	ctdb_client_set_message_handler(ctdb,
+					CTDB_SRVID_SET_NODE_FLAGS,
+					srvid_not_implemented,
+					rec);
 
 	/* when we are asked to puch out a flag change */
 	ctdb_client_set_message_handler(ctdb, CTDB_SRVID_PUSH_NODE_FLAGS, push_flags_handler, rec);
