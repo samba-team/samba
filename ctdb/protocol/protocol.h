@@ -137,7 +137,7 @@ struct ctdb_call {
 /* SRVID to inform clients that an IP address has been taken over */
 #define CTDB_SRVID_TAKE_IP 0xF301000000000000LL
 
-/* SRVID to inform recovery daemon of the node flags */
+/* SRVID to inform recovery daemon of the node flags - OBSOLETE */
 #define CTDB_SRVID_SET_NODE_FLAGS 0xF400000000000000LL
 
 /* SRVID to inform recovery daemon to update public ip assignment */
