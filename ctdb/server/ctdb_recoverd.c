@@ -2241,15 +2241,15 @@ static void async_getnodemap_callback(struct ctdb_context *ctdb,
 
 }
 
-static int get_remote_nodemaps(struct ctdb_context *ctdb,
+static int get_remote_nodemaps(struct ctdb_recoverd *rec,
 			       TALLOC_CTX *mem_ctx,
-			       struct ctdb_node_map_old *nodemap,
 			       struct ctdb_node_map_old **remote_nodemaps)
 {
+	struct ctdb_context *ctdb = rec->ctdb;
 	uint32_t *nodes;
 	int ret;
 
-	nodes = list_of_active_nodes(ctdb, nodemap, mem_ctx, true);
+	nodes = list_of_active_nodes(ctdb, rec->nodemap, mem_ctx, true);
 
 	ret = ctdb_client_async_control(ctdb,
 					CTDB_CONTROL_GET_NODEMAP,
@@ -2592,10 +2592,11 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 	for(i=0; i<nodemap->num; i++) {
 		remote_nodemaps[i] = NULL;
 	}
-	if (get_remote_nodemaps(ctdb, mem_ctx, nodemap, remote_nodemaps) != 0) {
-		DEBUG(DEBUG_ERR,(__location__ " Failed to read remote nodemaps\n"));
+	ret = get_remote_nodemaps(rec, mem_ctx, remote_nodemaps);
+	if (ret != 0) {
+		DBG_ERR("Failed to read remote nodemaps\n");
 		return;
-	} 
+	}
 
 	/* verify that all other nodes have the same nodemap as we have
 	*/
