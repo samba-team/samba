@@ -257,7 +257,8 @@ static void nb_packet_got_query(struct tevent_req *req)
 	/* Take care of alignment */
 	memcpy(&q, buf, sizeof(q));
 
-	if (nread != sizeof(struct nb_packet_query) + q.mailslot_namelen) {
+	if ((size_t)nread !=
+	    sizeof(struct nb_packet_query) + q.mailslot_namelen) {
 		DEBUG(10, ("nb_packet_got_query: Invalid mailslot namelength\n"));
 		TALLOC_FREE(client);
 		return;
@@ -595,7 +596,8 @@ static void nb_packet_reader_sent_query(struct tevent_req *subreq)
 		tevent_req_nterror(req, map_nt_error_from_unix(err));
 		return;
 	}
-	if (written != sizeof(state->query) + state->query.mailslot_namelen) {
+	if ((size_t)written !=
+	    sizeof(state->query) + state->query.mailslot_namelen) {
 		tevent_req_nterror(req, NT_STATUS_UNEXPECTED_IO_ERROR);
 		return;
 	}
