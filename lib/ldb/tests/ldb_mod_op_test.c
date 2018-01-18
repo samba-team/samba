@@ -626,6 +626,46 @@ static void test_transactions(void **state)
 	assert_int_equal(res->count, 0);
 }
 
+static void test_nested_transactions(void **state)
+{
+	int ret;
+	struct ldbtest_ctx *test_ctx = talloc_get_type_abort(*state,
+			struct ldbtest_ctx);
+	struct ldb_result *res;
+
+	/* start lev-0 transaction */
+	ret = ldb_transaction_start(test_ctx->ldb);
+	assert_int_equal(ret, 0);
+
+	add_keyval(test_ctx, "vegetable", "carrot");
+
+
+	/* start another lev-1 nested transaction */
+	ret = ldb_transaction_start(test_ctx->ldb);
+	assert_int_equal(ret, 0);
+
+	add_keyval(test_ctx, "fruit", "apple");
+
+	/* abort lev-1 nested transaction */
+	ret = ldb_transaction_cancel(test_ctx->ldb);
+	assert_int_equal(ret, 0);
+
+	/* commit lev-0 transaction */
+	ret = ldb_transaction_commit(test_ctx->ldb);
+	assert_int_equal(ret, 0);
+
+	res = get_keyval(test_ctx, "vegetable", "carrot");
+	assert_non_null(res);
+	assert_int_equal(res->count, 1);
+
+	/* This documents the current ldb behaviour,  i.e. nested
+	 * transactions are not supported.  And the cancellation of the nested
+	 * transaction has no effect.
+	 */
+	res = get_keyval(test_ctx, "fruit", "apple");
+	assert_non_null(res);
+	assert_int_equal(res->count, 1);
+}
 struct ldb_mod_test_ctx {
 	struct ldbtest_ctx *ldb_test_ctx;
 	const char *entry_dn;
@@ -3609,6 +3649,21 @@ static void test_ldb_guid_index_duplicate_dn_logging(void **state)
 	talloc_free(tmp_ctx);
 }
 
+static void test_ldb_talloc_destructor_transaction_cleanup(void **state)
+{
+	struct ldbtest_ctx *test_ctx = NULL;
+
+	test_ctx = talloc_get_type_abort(*state, struct ldbtest_ctx);
+	assert_non_null(test_ctx);
+
+	ldb_transaction_start(test_ctx->ldb);
+
+	/*
+	 * Trigger the destructor
+	 */
+	TALLOC_FREE(test_ctx->ldb);
+}
+
 
 int main(int argc, const char **argv)
 {
@@ -3641,6 +3696,9 @@ int main(int argc, const char **argv)
 						ldbtest_setup,
 						ldbtest_teardown),
 		cmocka_unit_test_setup_teardown(test_transactions,
+						ldbtest_setup,
+						ldbtest_teardown),
+		cmocka_unit_test_setup_teardown(test_nested_transactions,
 						ldbtest_setup,
 						ldbtest_teardown),
 		cmocka_unit_test_setup_teardown(test_ldb_modify_add_key,
@@ -3765,6 +3823,10 @@ int main(int argc, const char **argv)
 			test_ldb_unique_index_duplicate_with_guid,
 			ldb_guid_index_test_setup,
 			ldb_guid_index_test_teardown),
+		cmocka_unit_test_setup_teardown(
+			test_ldb_talloc_destructor_transaction_cleanup,
+			ldbtest_setup,
+			ldbtest_teardown),
 	};
 
 	return cmocka_run_group_tests(tests, NULL, NULL);
