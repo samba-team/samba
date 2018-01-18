@@ -4363,6 +4363,8 @@ static NTSTATUS dcesrv_lsa_lsaRSetForestTrustInformation(struct dcesrv_call_stat
 	struct lsa_ForestTrustCollisionInfo *c_info = NULL;
 	DATA_BLOB ft_blob = {};
 	struct ldb_message *msg = NULL;
+	struct server_id *server_ids = NULL;
+	uint32_t num_server_ids = 0;
 	NTSTATUS status;
 	enum ndr_err_code ndr_err;
 	int ret;
@@ -4601,6 +4603,21 @@ static NTSTATUS dcesrv_lsa_lsaRSetForestTrustInformation(struct dcesrv_call_stat
 		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 		goto done;
 	}
+
+	/*
+	 * Notify winbindd that we have a acquired forest trust info
+	 */
+	status = irpc_servers_byname(dce_call->msg_ctx,
+				     mem_ctx,
+				     "winbind_server",
+				     &num_server_ids, &server_ids);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("irpc_servers_byname failed\n");
+		goto done;
+	}
+
+	imessaging_send(dce_call->msg_ctx, server_ids[0],
+			MSG_WINBIND_RELOAD_TRUSTED_DOMAINS, NULL);
 
 	status = NT_STATUS_OK;
 
