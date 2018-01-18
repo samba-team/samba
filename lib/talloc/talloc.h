@@ -1226,7 +1226,7 @@ size_t talloc_array_length(const void *ctx);
  *
  * @code
  *     ptr = talloc_array(ctx, type, count);
- *     if (ptr) memset(ptr, sizeof(type) * count);
+ *     if (ptr) memset(ptr, 0, sizeof(type) * count);
  * @endcode
  */
 void *talloc_zero_array(const void *ctx, #type, unsigned count);
