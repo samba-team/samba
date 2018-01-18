@@ -537,18 +537,19 @@ static void ctdb_wait_election(struct ctdb_recoverd *rec)
 }
 
 /*
-  Update our local flags from all remote connected nodes. 
-  This is only run when we are or we belive we are the recovery master
+ * Update local flags from all remote connected nodes and push out
+ * flags changes to all nodes.  This is only run by the recovery
+ * master.
  */
-static int update_local_flags(struct ctdb_recoverd *rec, struct ctdb_node_map_old *nodemap)
+static int update_local_flags(struct ctdb_recoverd *rec,
+			      struct ctdb_node_map_old *nodemap,
+			      struct ctdb_node_map_old **remote_nodemaps)
 {
 	unsigned int j;
 	struct ctdb_context *ctdb = rec->ctdb;
 	TALLOC_CTX *mem_ctx = talloc_new(ctdb);
 
-	/* get the nodemap for all active remote nodes and verify
-	   they are the same as for this node
-	 */
+	/* Check flags from remote nodes */
 	for (j=0; j<nodemap->num; j++) {
 		struct ctdb_node_map_old *remote_nodemap=NULL;
 		uint32_t local_flags = nodemap->nodes[j].flags;
@@ -562,15 +563,7 @@ static int update_local_flags(struct ctdb_recoverd *rec, struct ctdb_node_map_ol
 			continue;
 		}
 
-		ret = ctdb_ctrl_getnodemap(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].pnn, 
-					   mem_ctx, &remote_nodemap);
-		if (ret != 0) {
-			DEBUG(DEBUG_ERR, (__location__ " Unable to get nodemap from remote node %u\n", 
-				  nodemap->nodes[j].pnn));
-			ctdb_set_culprit(rec, nodemap->nodes[j].pnn);
-			talloc_free(mem_ctx);
-			return -1;
-		}
+		remote_nodemap = remote_nodemaps[j];
 		remote_flags = remote_nodemap->nodes[j].flags;
 
 		if (local_flags != remote_flags) {
@@ -595,7 +588,6 @@ static int update_local_flags(struct ctdb_recoverd *rec, struct ctdb_node_map_ol
 				 local_flags);
 			nodemap->nodes[j].flags = remote_flags;
 		}
-		talloc_free(remote_nodemap);
 	}
 	talloc_free(mem_ctx);
 	return 0;
@@ -2563,7 +2555,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 	}
 
 	/* ensure our local copies of flags are right */
-	ret = update_local_flags(rec, nodemap);
+	ret = update_local_flags(rec, nodemap, remote_nodemaps);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,("Unable to update local flags\n"));
 		return;
