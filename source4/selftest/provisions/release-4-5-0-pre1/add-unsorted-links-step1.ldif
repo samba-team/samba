@@ -1,0 +1,72 @@
+dn: CN=unsorted-u1,CN=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+changetype: add
+objectclass: user
+samaccountname: unsorted-u1
+objectGUID: 9f92d30a-fc23-11e7-a5f6-37be15454801
+
+dn: CN=unsorted-u2,CN=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+changetype: add
+objectclass: user
+samaccountname: unsorted-u2
+objectGUID: 9f92d30a-fc23-11e7-a5f6-37be15454802
+
+dn: CN=unsorted-u3,CN=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+changetype: add
+objectclass: user
+samaccountname: unsorted-u3
+objectGUID: 9f92d30a-fc23-11e7-a5f6-30be15454803
+
+dn: CN=unsorted-u4,CN=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+changetype: add
+objectclass: user
+samaccountname: unsorted-u4
+objectGUID: 9f92d30a-fc23-11e7-a5f6-30be15454804
+
+dn: CN=unsorted-u5,CN=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+changetype: add
+objectclass: user
+samaccountname: unsorted-u5
+objectGUID: 9f92d30a-fc23-11e7-a5f6-30be15454805
+
+dn: CN=unsorted-u6,CN=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+changetype: add
+objectclass: user
+samaccountname: unsorted-u6
+objectGUID: 9f92d30a-fc23-11e7-a5f6-30be15454806
+
+dn: CN=unsorted-u7,CN=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+changetype: add
+objectclass: user
+samaccountname: unsorted-u7
+objectGUID: 9f92d30a-fc23-11e7-a5f6-30be15454807
+
+dn: CN=unsorted-u8,CN=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+changetype: add
+objectclass: user
+samaccountname: unsorted-u8
+objectGUID: 9f92d30a-fc23-11e4-a5f6-30be15454808
+
+dn: CN=unsorted-u9,CN=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+changetype: add
+objectclass: user
+samaccountname: unsorted-u9
+objectGUID: 9f92d30a-fc23-11e4-a5f6-30be15454809
+
+dn: cn=unsorted-g,cn=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+changetype: add
+objectclass: group
+samaccountname: unsorted-g
+member: cn=unsorted-u1,cn=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+member: cn=unsorted-u2,cn=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+member: cn=unsorted-u3,cn=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+member: cn=unsorted-u4,cn=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+member: cn=unsorted-u5,cn=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+member: cn=unsorted-u6,cn=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+member: cn=unsorted-u7,cn=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+member: cn=unsorted-u8,cn=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+member: cn=unsorted-u9,cn=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+
+dn: cn=unsorted-g,cn=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+changetype: modify
+delete: member
+member: cn=unsorted-u5,cn=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
