@@ -2223,13 +2223,19 @@ done:
 }
 
 
+struct remote_nodemaps_state {
+	struct ctdb_node_map_old **remote_nodemaps;
+};
+
 static void async_getnodemap_callback(struct ctdb_context *ctdb,
 				      uint32_t node_pnn,
 				      int32_t res,
 				      TDB_DATA outdata,
 				      void *callback_data)
 {
-	struct ctdb_node_map_old **remote_nodemaps = callback_data;
+	struct remote_nodemaps_state *state =
+		(struct remote_nodemaps_state *)callback_data;
+	struct ctdb_node_map_old **remote_nodemaps = state->remote_nodemaps;
 
 	if (node_pnn >= ctdb->num_nodes) {
 		DBG_ERR("Invalid PNN\n");
@@ -2248,6 +2254,7 @@ static int get_remote_nodemaps(struct ctdb_recoverd *rec,
 	struct ctdb_context *ctdb = rec->ctdb;
 	struct ctdb_node_map_old **t;
 	uint32_t *nodes;
+	struct remote_nodemaps_state state;
 	int ret;
 
 	t = talloc_zero_array(mem_ctx,
@@ -2260,6 +2267,8 @@ static int get_remote_nodemaps(struct ctdb_recoverd *rec,
 
 	nodes = list_of_active_nodes(ctdb, rec->nodemap, mem_ctx, true);
 
+	state.remote_nodemaps = t;
+
 	ret = ctdb_client_async_control(ctdb,
 					CTDB_CONTROL_GET_NODEMAP,
 					nodes,
@@ -2269,7 +2278,7 @@ static int get_remote_nodemaps(struct ctdb_recoverd *rec,
 					tdb_null,
 					async_getnodemap_callback,
 					NULL,
-					t);
+					&state);
 	talloc_free(nodes);
 
 	if (ret != 0) {
