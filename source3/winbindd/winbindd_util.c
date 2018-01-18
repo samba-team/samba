@@ -1267,7 +1267,7 @@ bool init_domain_list(void)
 	}
 
 	status = imessaging_register(winbind_imessaging_context(), NULL,
-				     MSG_WINBIND_NEW_TRUSTED_DOMAIN,
+				     MSG_WINBIND_RELOAD_TRUSTED_DOMAINS,
 				     wb_imsg_new_trusted_domain);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("imessaging_register failed %s\n", nt_errstr(status));
