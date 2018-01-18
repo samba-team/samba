@@ -1360,15 +1360,8 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_base(struct dcesrv_call_state *dc
 				     "winbind_server",
 				     &num_server_ids, &server_ids);
 	if (NT_STATUS_IS_OK(status) && num_server_ids >= 1) {
-		enum ndr_err_code ndr_err;
-		DATA_BLOB b = {};
-
-		ndr_err = ndr_push_struct_blob(&b, mem_ctx, r->in.info,
-			(ndr_push_flags_fn_t)ndr_push_lsa_TrustDomainInfoInfoEx);
-		if (NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			imessaging_send(dce_call->msg_ctx, server_ids[0],
-				MSG_WINBIND_NEW_TRUSTED_DOMAIN, &b);
-		}
+		imessaging_send(dce_call->msg_ctx, server_ids[0],
+				MSG_WINBIND_NEW_TRUSTED_DOMAIN, NULL);
 	}
 	TALLOC_FREE(server_ids);
 
