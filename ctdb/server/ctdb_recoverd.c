@@ -425,9 +425,11 @@ static int set_recovery_mode(struct ctdb_context *ctdb,
 }
 
 /*
-  update flags on all active nodes
+ * Update flags on all connected nodes
  */
-static int update_flags_on_all_nodes(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodemap, uint32_t pnn, uint32_t flags)
+static int update_flags_on_all_nodes(struct ctdb_context *ctdb,
+				     uint32_t pnn,
+				     uint32_t flags)
 {
 	int ret;
 
@@ -1125,7 +1127,9 @@ static int do_recovery(struct ctdb_recoverd *rec,
 			continue;
 		}
 
-		ret = update_flags_on_all_nodes(ctdb, nodemap, i, nodemap->nodes[i].flags);
+		ret = update_flags_on_all_nodes(ctdb,
+						i,
+						nodemap->nodes[i].flags);
 		if (ret != 0) {
 			if (nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE) {
 				DEBUG(DEBUG_WARNING, (__location__ "Unable to update flags on inactive node %d\n", i));
@@ -2610,14 +2614,20 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 				  nodemap->nodes[i].flags));
 				if (i == j) {
 					DEBUG(DEBUG_ERR,("Use flags 0x%02x from remote node %d for cluster update of its own flags\n", remote_nodemaps[j]->nodes[i].flags, j));
-					update_flags_on_all_nodes(ctdb, nodemap, nodemap->nodes[i].pnn, remote_nodemaps[j]->nodes[i].flags);
+					update_flags_on_all_nodes(
+					    ctdb,
+					    nodemap->nodes[i].pnn,
+					    remote_nodemaps[j]->nodes[i].flags);
 					ctdb_set_culprit(rec, nodemap->nodes[j].pnn);
 					do_recovery(rec, mem_ctx, pnn, nodemap, 
 						    vnnmap);
 					return;
 				} else {
 					DEBUG(DEBUG_ERR,("Use flags 0x%02x from local recmaster node for cluster update of node %d flags\n", nodemap->nodes[i].flags, i));
-					update_flags_on_all_nodes(ctdb, nodemap, nodemap->nodes[i].pnn, nodemap->nodes[i].flags);
+					update_flags_on_all_nodes(
+						ctdb,
+						nodemap->nodes[i].pnn,
+						nodemap->nodes[i].flags);
 					ctdb_set_culprit(rec, nodemap->nodes[j].pnn);
 					do_recovery(rec, mem_ctx, pnn, nodemap, 
 						    vnnmap);
