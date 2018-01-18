@@ -1361,7 +1361,7 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_base(struct dcesrv_call_state *dc
 				     &num_server_ids, &server_ids);
 	if (NT_STATUS_IS_OK(status) && num_server_ids >= 1) {
 		imessaging_send(dce_call->msg_ctx, server_ids[0],
-				MSG_WINBIND_NEW_TRUSTED_DOMAIN, NULL);
+				MSG_WINBIND_RELOAD_TRUSTED_DOMAINS, NULL);
 	}
 	TALLOC_FREE(server_ids);
 
