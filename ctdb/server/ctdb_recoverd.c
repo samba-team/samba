@@ -2288,7 +2288,7 @@ static int get_remote_nodemaps(struct ctdb_recoverd *rec,
 		return -1;
 	}
 
-	nodes = list_of_active_nodes(ctdb, rec->nodemap, mem_ctx, true);
+	nodes = list_of_connected_nodes(ctdb, rec->nodemap, mem_ctx, true);
 
 	state.remote_nodemaps = t;
 	state.rec = rec;
@@ -2631,8 +2631,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 		goto takeover_run_checks;
 	}
 
-	/* get the nodemap for all active remote nodes
-	 */
+	/* Get the nodemaps for all connected remote nodes */
 	ret = get_remote_nodemaps(rec, mem_ctx, &remote_nodemaps);
 	if (ret != 0) {
 		DBG_ERR("Failed to read remote nodemaps\n");
