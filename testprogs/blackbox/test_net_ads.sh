@@ -33,6 +33,26 @@ testit "join" $VALGRIND $net_tool ads join -U$DC_USERNAME%$DC_PASSWORD || failed
 
 testit "testjoin" $VALGRIND $net_tool ads testjoin -kP || failed=`expr $failed + 1`
 
+netbios=$(grep "netbios name" $BASEDIR/$WORKDIR/client.conf | cut -f2 -d= | awk '{$1=$1};1')
+
+testit "test setspn list $netbios" $VALGRIND $net_tool ads setspn list $netbios -U$DC_USERNAME%$DC_PASSWORD || failed=`expr $failed + 1`
+spn="foo"
+testit_expect_failure "test setspn add illegal windows spn ($spn)" $VALGRIND $net_tool ads setspn add $spn -U$DC_USERNAME%$DC_PASSWORD || failed=`expr $failed + 1`
+
+spn="foo/somehost.domain.com"
+testit "test setspn add ($spn)" $VALGRIND $net_tool ads setspn add $spn -U$DC_USERNAME%$DC_PASSWORD || failed=`expr $failed + 1`
+
+found=$($net_tool ads setspn list -U$DC_USERNAME%$DC_PASSWORD | grep $spn | wc -l)
+testit "test setspn list shows the newly added spn ($spn)" test $found -eq 1 || failed=`expr $failed + 1`
+
+up_spn=$(echo $spn | tr '[:lower:]' '[:upper:]')
+testit_expect_failure "test setspn add existing (case-insensitive) spn ($spn)" $VALGRIND $net_tool ads setspn add $up_spn -U$DC_USERNAME%$DC_PASSWORD || failed=`expr $failed + 1`
+
+testit "test setspn delete existing (case-insensitive) ($spn)" $VALGRIND $net_tool ads setspn delete $spn  -U$DC_USERNAME%$DC_PASSWORD || failed=`expr $failed + 1`
+
+found=$($net_tool ads setspn list  -U$DC_USERNAME%$DC_PASSWORD | grep $spn | wc -l)
+testit "test setspn list shows the newly deleted spn ($spn) is gone" test $found -eq 0 || failed=`expr $failed + 1`
+
 testit "changetrustpw" $VALGRIND $net_tool ads changetrustpw || failed=`expr $failed + 1`
 
 testit "leave" $VALGRIND $net_tool ads leave -U$DC_USERNAME%$DC_PASSWORD || failed=`expr $failed + 1`
