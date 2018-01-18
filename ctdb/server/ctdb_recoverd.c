@@ -2223,38 +2223,45 @@ done:
 }
 
 
-static void async_getnodemap_callback(struct ctdb_context *ctdb, uint32_t node_pnn, int32_t res, TDB_DATA outdata, void *callback_data)
+static void async_getnodemap_callback(struct ctdb_context *ctdb,
+				      uint32_t node_pnn,
+				      int32_t res,
+				      TDB_DATA outdata,
+				      void *callback_data)
 {
 	struct ctdb_node_map_old **remote_nodemaps = callback_data;
 
 	if (node_pnn >= ctdb->num_nodes) {
-		DEBUG(DEBUG_ERR,(__location__ " pnn from invalid node\n"));
+		DBG_ERR("Invalid PNN\n");
 		return;
 	}
 
-	remote_nodemaps[node_pnn] = (struct ctdb_node_map_old *)talloc_steal(remote_nodemaps, outdata.dptr);
+	remote_nodemaps[node_pnn] = (struct ctdb_node_map_old *)talloc_steal(
+					remote_nodemaps, outdata.dptr);
 
 }
 
-static int get_remote_nodemaps(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx,
-	struct ctdb_node_map_old *nodemap,
-	struct ctdb_node_map_old **remote_nodemaps)
+static int get_remote_nodemaps(struct ctdb_context *ctdb,
+			       TALLOC_CTX *mem_ctx,
+			       struct ctdb_node_map_old *nodemap,
+			       struct ctdb_node_map_old **remote_nodemaps)
 {
 	uint32_t *nodes;
+	int ret;
 
 	nodes = list_of_active_nodes(ctdb, nodemap, mem_ctx, true);
-	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_GET_NODEMAP,
-					nodes, 0,
-					CONTROL_TIMEOUT(), false, tdb_null,
+
+	ret = ctdb_client_async_control(ctdb,
+					CTDB_CONTROL_GET_NODEMAP,
+					nodes,
+					0,
+					CONTROL_TIMEOUT(),
+					false,
+					tdb_null,
 					async_getnodemap_callback,
 					NULL,
-					remote_nodemaps) != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to pull all remote nodemaps\n"));
-
-		return -1;
-	}
-
-	return 0;
+					remote_nodemaps);
+	return ret;
 }
 
 static bool validate_recovery_master(struct ctdb_recoverd *rec,
