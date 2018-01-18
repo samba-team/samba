@@ -918,6 +918,203 @@ static bool migrate_secrets_tdb_to_ldb(struct winbindd_domain *domain)
 	return true;
 }
 
+static bool add_trusted_domains_dc(void)
+{
+	struct winbindd_domain *domain =  NULL;
+	struct pdb_trusted_domain **domains = NULL;
+	uint32_t num_domains = 0;
+	uint32_t i;
+	NTSTATUS status;
+
+	if (!(pdb_capabilities() & PDB_CAP_TRUSTED_DOMAINS_EX)) {
+		struct trustdom_info **ti = NULL;
+
+		status = pdb_enum_trusteddoms(talloc_tos(), &num_domains, &ti);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_ERR("pdb_enum_trusteddoms() failed - %s\n",
+				nt_errstr(status));
+			return false;
+		}
+
+		for (i = 0; i < num_domains; i++) {
+			status = add_trusted_domain(ti[i]->name,
+						    NULL,
+						    &ti[i]->sid,
+						    LSA_TRUST_TYPE_DOWNLEVEL,
+						    NETR_TRUST_FLAG_OUTBOUND,
+						    0,
+						    SEC_CHAN_DOMAIN,
+						    NULL,
+						    &domain);
+			if (!NT_STATUS_IS_OK(status)) {
+				DBG_NOTICE("add_trusted_domain returned %s\n",
+					   nt_errstr(status));
+				return false;
+			}
+
+			/* Even in the parent winbindd we'll need to
+			   talk to the DC, so try and see if we can
+			   contact it. Theoretically this isn't neccessary
+			   as the init_dc_connection() in init_child_recv()
+			   will do this, but we can start detecting the DC
+			   early here. */
+			set_domain_online_request(domain);
+		}
+
+		return true;
+	}
+
+	status = pdb_enum_trusted_domains(talloc_tos(), &num_domains, &domains);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("pdb_enum_trusted_domains() failed - %s\n",
+			nt_errstr(status));
+		return false;
+	}
+
+	for (i = 0; i < num_domains; i++) {
+		enum netr_SchannelType sec_chan_type = SEC_CHAN_DOMAIN;
+		uint32_t trust_flags = 0;
+
+		if (domains[i]->trust_type == LSA_TRUST_TYPE_UPLEVEL) {
+			sec_chan_type = SEC_CHAN_DNS_DOMAIN;
+		}
+
+		if (!(domains[i]->trust_direction & LSA_TRUST_DIRECTION_OUTBOUND)) {
+			sec_chan_type = SEC_CHAN_NULL;
+		}
+
+		if (domains[i]->trust_direction & LSA_TRUST_DIRECTION_INBOUND) {
+			trust_flags |= NETR_TRUST_FLAG_INBOUND;
+		}
+		if (domains[i]->trust_direction & LSA_TRUST_DIRECTION_OUTBOUND) {
+			trust_flags |= NETR_TRUST_FLAG_OUTBOUND;
+		}
+		if (domains[i]->trust_attributes & LSA_TRUST_ATTRIBUTE_WITHIN_FOREST) {
+			trust_flags |= NETR_TRUST_FLAG_IN_FOREST;
+		}
+
+		status = add_trusted_domain(domains[i]->netbios_name,
+					    domains[i]->domain_name,
+					    &domains[i]->security_identifier,
+					    domains[i]->trust_type,
+					    trust_flags,
+					    domains[i]->trust_attributes,
+					    sec_chan_type,
+					    NULL,
+					    &domain);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_NOTICE("add_trusted_domain returned %s\n",
+				   nt_errstr(status));
+			return false;
+		}
+
+		if (domains[i]->trust_type == LSA_TRUST_TYPE_UPLEVEL) {
+			domain->active_directory = true;
+		}
+		domain->domain_type = domains[i]->trust_type;
+		domain->domain_trust_attribs = domains[i]->trust_attributes;
+
+		if (sec_chan_type != SEC_CHAN_NULL) {
+			/* Even in the parent winbindd we'll need to
+			   talk to the DC, so try and see if we can
+			   contact it. Theoretically this isn't neccessary
+			   as the init_dc_connection() in init_child_recv()
+			   will do this, but we can start detecting the DC
+			   early here. */
+			set_domain_online_request(domain);
+		}
+	}
+
+	for (i = 0; i < num_domains; i++) {
+		struct ForestTrustInfo fti;
+		uint32_t fi;
+		enum ndr_err_code ndr_err;
+		struct winbindd_domain *routing_domain = NULL;
+
+		if (domains[i]->trust_type != LSA_TRUST_TYPE_UPLEVEL) {
+			continue;
+		}
+
+		if (!(domains[i]->trust_attributes & LSA_TRUST_ATTRIBUTE_FOREST_TRANSITIVE)) {
+			continue;
+		}
+
+		if (domains[i]->trust_forest_trust_info.length == 0) {
+			continue;
+		}
+
+		routing_domain = find_domain_from_name_noinit(
+			domains[i]->netbios_name);
+		if (routing_domain == NULL) {
+			DBG_ERR("Can't find winbindd domain [%s]\n",
+				domains[i]->netbios_name);
+			return false;
+		}
+
+		ndr_err = ndr_pull_struct_blob_all(
+			&domains[i]->trust_forest_trust_info,
+			talloc_tos(), &fti,
+			(ndr_pull_flags_fn_t)ndr_pull_ForestTrustInfo);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			DBG_ERR("ndr_pull_ForestTrustInfo(%s) - %s\n",
+				domains[i]->netbios_name,
+				ndr_map_error2string(ndr_err));
+			return false;
+		}
+
+		for (fi = 0; fi < fti.count; fi++) {
+			struct ForestTrustInfoRecord *rec =
+				&fti.records[fi].record;
+			struct ForestTrustDataDomainInfo *drec = NULL;
+
+			if (rec->type != FOREST_TRUST_DOMAIN_INFO) {
+				continue;
+			}
+			drec = &rec->data.info;
+
+			if (rec->flags & LSA_NB_DISABLED_MASK) {
+				continue;
+			}
+
+			if (rec->flags & LSA_SID_DISABLED_MASK) {
+				continue;
+			}
+
+			/*
+			 * TODO:
+			 * also try to find a matching
+			 * LSA_TLN_DISABLED_MASK ???
+			 */
+
+			domain = find_domain_from_name_noinit(drec->netbios_name.string);
+			if (domain != NULL) {
+				continue;
+			}
+
+			status = add_trusted_domain(drec->netbios_name.string,
+						    drec->dns_name.string,
+						    &drec->sid,
+						    LSA_TRUST_TYPE_UPLEVEL,
+						    NETR_TRUST_FLAG_OUTBOUND,
+						    0,
+						    SEC_CHAN_NULL,
+						    routing_domain,
+						    &domain);
+			if (!NT_STATUS_IS_OK(status)) {
+				DBG_NOTICE("add_trusted_domain returned %s\n",
+					   nt_errstr(status));
+				return false;
+			}
+			if (domain == NULL) {
+				continue;
+			}
+		}
+	}
+
+	return true;
+}
+
+
 /* Look up global info for the winbind daemon */
 bool init_domain_list(void)
 {
@@ -925,6 +1122,7 @@ bool init_domain_list(void)
 	struct pdb_domain_info *pdb_domain_info = NULL;
 	struct winbindd_domain *domain =  NULL;
 	NTSTATUS status;
+	bool ok;
 
 	/* Free existing list */
 	free_domain_list();
@@ -965,7 +1163,6 @@ bool init_domain_list(void)
 		enum netr_SchannelType sec_chan_type;
 		const char *account_name;
 		struct samr_Password current_nt_hash;
-		bool ok;
 
 		if (pdb_domain_info == NULL) {
 			DEBUG(0, ("Failed to fetch our own, local AD "
@@ -1071,7 +1268,14 @@ bool init_domain_list(void)
 			return false;
 		}
 	}
-	/* Add ourselves as the first entry. */
+
+	if (IS_DC) {
+		ok = add_trusted_domains_dc();
+		if (!ok) {
+			DBG_ERR("init_domain_list_dc failed\n");
+			return false;
+		}
+	}
 
 	if ( role == ROLE_DOMAIN_MEMBER ) {
 		struct dom_sid our_sid;
@@ -1113,201 +1317,11 @@ bool init_domain_list(void)
 
 	}
 
-	if (IS_DC && (pdb_capabilities() & PDB_CAP_TRUSTED_DOMAINS_EX)) {
-		uint32_t num_domains = 0;
-		struct pdb_trusted_domain **domains = NULL;
-		uint32_t i;
-
-		status = pdb_enum_trusted_domains(talloc_tos(), &num_domains, &domains);
-		if (!NT_STATUS_IS_OK(status)) {
-			DBG_ERR("pdb_enum_trusted_domains() failed - %s\n",
-				nt_errstr(status));
-			return false;
-		}
-
-		for (i = 0; i < num_domains; i++) {
-			enum netr_SchannelType sec_chan_type = SEC_CHAN_DOMAIN;
-			uint32_t trust_flags = 0;
-
-			if (domains[i]->trust_type == LSA_TRUST_TYPE_UPLEVEL) {
-				sec_chan_type = SEC_CHAN_DNS_DOMAIN;
-			}
-
-			if (!(domains[i]->trust_direction & LSA_TRUST_DIRECTION_OUTBOUND)) {
-				sec_chan_type = SEC_CHAN_NULL;
-			}
-
-			if (domains[i]->trust_direction & LSA_TRUST_DIRECTION_INBOUND) {
-				trust_flags |= NETR_TRUST_FLAG_INBOUND;
-			}
-			if (domains[i]->trust_direction & LSA_TRUST_DIRECTION_OUTBOUND) {
-				trust_flags |= NETR_TRUST_FLAG_OUTBOUND;
-			}
-			if (domains[i]->trust_attributes & LSA_TRUST_ATTRIBUTE_WITHIN_FOREST) {
-				trust_flags |= NETR_TRUST_FLAG_IN_FOREST;
-			}
-
-			status = add_trusted_domain(domains[i]->netbios_name,
-						    domains[i]->domain_name,
-						    &domains[i]->security_identifier,
-						    domains[i]->trust_type,
-						    trust_flags,
-						    domains[i]->trust_attributes,
-						    sec_chan_type,
-						    NULL,
-						    &domain);
-			if (!NT_STATUS_IS_OK(status)) {
-				DBG_NOTICE("add_trusted_domain returned %s\n",
-					   nt_errstr(status));
-				return false;
-			}
-
-			if (domains[i]->trust_type == LSA_TRUST_TYPE_UPLEVEL) {
-				domain->active_directory = true;
-			}
-			domain->domain_type = domains[i]->trust_type;
-			domain->domain_trust_attribs = domains[i]->trust_attributes;
-
-			if (sec_chan_type != SEC_CHAN_NULL) {
-				/* Even in the parent winbindd we'll need to
-				   talk to the DC, so try and see if we can
-				   contact it. Theoretically this isn't neccessary
-				   as the init_dc_connection() in init_child_recv()
-				   will do this, but we can start detecting the DC
-				   early here. */
-				set_domain_online_request(domain);
-			}
-		}
-
-		for (i = 0; i < num_domains; i++) {
-			struct ForestTrustInfo fti;
-			uint32_t fi;
-			enum ndr_err_code ndr_err;
-			struct winbindd_domain *routing_domain = NULL;
-
-			if (domains[i]->trust_type != LSA_TRUST_TYPE_UPLEVEL) {
-				continue;
-			}
-
-			if (!(domains[i]->trust_attributes & LSA_TRUST_ATTRIBUTE_FOREST_TRANSITIVE)) {
-				continue;
-			}
-
-			if (domains[i]->trust_forest_trust_info.length == 0) {
-				continue;
-			}
-
-			routing_domain = find_domain_from_name_noinit(
-				domains[i]->netbios_name);
-			if (routing_domain == NULL) {
-				DBG_ERR("Can't find winbindd domain [%s]\n",
-					domains[i]->netbios_name);
-				return false;
-			}
-
-			ndr_err = ndr_pull_struct_blob_all(
-					&domains[i]->trust_forest_trust_info,
-					talloc_tos(), &fti,
-					(ndr_pull_flags_fn_t)ndr_pull_ForestTrustInfo);
-			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-				DBG_ERR("ndr_pull_ForestTrustInfo(%s) - %s\n",
-					domains[i]->netbios_name,
-					ndr_map_error2string(ndr_err));
-				return false;
-			}
-
-			for (fi = 0; fi < fti.count; fi++) {
-				struct ForestTrustInfoRecord *rec =
-					&fti.records[fi].record;
-				struct ForestTrustDataDomainInfo *drec = NULL;
-
-				if (rec->type != FOREST_TRUST_DOMAIN_INFO) {
-					continue;
-				}
-				drec = &rec->data.info;
-
-				if (rec->flags & LSA_NB_DISABLED_MASK) {
-					continue;
-				}
-
-				if (rec->flags & LSA_SID_DISABLED_MASK) {
-					continue;
-				}
-
-				/*
-				 * TODO:
-				 * also try to find a matching
-				 * LSA_TLN_DISABLED_MASK ???
-				 */
-
-				domain = find_domain_from_name_noinit(drec->netbios_name.string);
-				if (domain != NULL) {
-					continue;
-				}
-
-				status = add_trusted_domain(drec->netbios_name.string,
-							    drec->dns_name.string,
-							    &drec->sid,
-							    LSA_TRUST_TYPE_UPLEVEL,
-							    NETR_TRUST_FLAG_OUTBOUND,
-							    0,
-							    SEC_CHAN_NULL,
-							    routing_domain,
-							    &domain);
-				if (!NT_STATUS_IS_OK(status)) {
-					DBG_NOTICE("add_trusted_domain returned %s\n",
-						   nt_errstr(status));
-					return false;
-				}
-				if (domain == NULL) {
-					continue;
-				}
-			}
-		}
-	} else if (IS_DC) {
-		uint32_t num_domains = 0;
-		struct trustdom_info **domains = NULL;
-		uint32_t i;
-
-		status = pdb_enum_trusteddoms(talloc_tos(), &num_domains, &domains);
-		if (!NT_STATUS_IS_OK(status)) {
-			DBG_ERR("pdb_enum_trusteddoms() failed - %s\n",
-				nt_errstr(status));
-			return false;
-		}
-
-		for (i = 0; i < num_domains; i++) {
-			status = add_trusted_domain(domains[i]->name,
-						    NULL,
-						    &domains[i]->sid,
-						    LSA_TRUST_TYPE_DOWNLEVEL,
-						    NETR_TRUST_FLAG_OUTBOUND,
-						    0,
-						    SEC_CHAN_DOMAIN,
-						    NULL,
-						    &domain);
-			if (!NT_STATUS_IS_OK(status)) {
-				DBG_NOTICE("add_trusted_domain returned %s\n",
-					   nt_errstr(status));
-				return false;
-			}
-
-			/* Even in the parent winbindd we'll need to
-			   talk to the DC, so try and see if we can
-			   contact it. Theoretically this isn't neccessary
-			   as the init_dc_connection() in init_child_recv()
-			   will do this, but we can start detecting the DC
-			   early here. */
-			set_domain_online_request(domain);
-		}
-	}
-
 	status = imessaging_register(winbind_imessaging_context(), NULL,
 				     MSG_WINBIND_NEW_TRUSTED_DOMAIN,
 				     wb_imsg_new_trusted_domain);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("imessaging_register(MSG_WINBIND_NEW_TRUSTED_DOMAIN) - %s\n",
-			  nt_errstr(status)));
+		DBG_ERR("imessaging_register failed %s\n", nt_errstr(status));
 		return false;
 	}
 
