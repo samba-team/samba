@@ -127,6 +127,7 @@ static NTSTATUS add_trusted_domain(const char *domain_name,
 				   uint32_t trust_flags,
 				   uint32_t trust_attribs,
 				   enum netr_SchannelType secure_channel_type,
+				   struct winbindd_domain *routing_domain,
 				   struct winbindd_domain **_d)
 {
 	struct winbindd_domain *domain = NULL;
@@ -253,6 +254,7 @@ static NTSTATUS add_trusted_domain(const char *domain_name,
 	domain->domain_type = trust_type;
 	domain->domain_trust_attribs = trust_attribs;
 	domain->secure_channel_type = secure_channel_type;
+	domain->routing_domain = routing_domain;
 	sid_copy(&domain->sid, sid);
 
 	/* Is this our primary domain ? */
@@ -343,17 +345,13 @@ bool add_trusted_domain_from_auth(uint16_t validation_level,
 				    NETR_TRUST_FLAG_OUTBOUND,
 				    0,
 				    SEC_CHAN_NULL,
+				    find_default_route_domain(),
 				    &domain);
 	if (!NT_STATUS_IS_OK(status) &&
 	    !NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_DOMAIN))
 	{
 		DBG_DEBUG("Adding domain [%s] with sid [%s] failed\n",
 			  info3->logon_dom, info3->dom_sid);
-		return false;
-	}
-
-	ok = set_routing_domain(domain, find_default_route_domain());
-	if (!ok) {
 		return false;
 	}
 
@@ -416,7 +414,6 @@ static void trustdom_list_done(struct tevent_req *req)
 	ptrdiff_t extra_len;
 	bool within_forest = false;
 	NTSTATUS status;
-	bool ok;
 
 	/*
 	 * Only when we enumerate our primary domain
@@ -540,18 +537,13 @@ static void trustdom_list_done(struct tevent_req *req)
 					    trust_flags,
 					    trust_attribs,
 					    SEC_CHAN_NULL,
+					    find_default_route_domain(),
 					    &domain);
 		if (!NT_STATUS_IS_OK(status) &&
 		    !NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_DOMAIN))
 		{
 			DBG_NOTICE("add_trusted_domain returned %s\n",
 				   nt_errstr(status));
-			return;
-		}
-
-		ok = set_routing_domain(domain, find_default_route_domain());
-		if (!ok) {
-			DBG_ERR("set_routing_domain failed\n");
 			return;
 		}
 
@@ -597,7 +589,6 @@ static void rescan_forest_root_trusts( void )
         size_t num_trusts = 0;
 	int i;
 	NTSTATUS status;
-	bool ok;
 
 	/* The only transitive trusts supported by Windows 2003 AD are
 	   (a) Parent-Child, (b) Tree-Root, and (c) Forest.   The
@@ -630,6 +621,7 @@ static void rescan_forest_root_trusts( void )
 						    dom_list[i].trust_flags,
 						    dom_list[i].trust_attribs,
 						    SEC_CHAN_NULL,
+						    find_default_route_domain(),
 						    &d);
 
 			if (!NT_STATUS_IS_OK(status) &&
@@ -637,11 +629,6 @@ static void rescan_forest_root_trusts( void )
 			{
 				DBG_ERR("add_trusted_domain returned %s\n",
 					nt_errstr(status));
-				return;
-			}
-			ok = set_routing_domain(d, find_default_route_domain());
-			if (!ok) {
-				DBG_ERR("set_routing_domain failed\n");
 				return;
 			}
 		}
@@ -679,7 +666,6 @@ static void rescan_forest_trusts( void )
         size_t num_trusts = 0;
 	int i;
 	NTSTATUS status;
-	bool ok;
 
 	/* The only transitive trusts supported by Windows 2003 AD are
 	   (a) Parent-Child, (b) Tree-Root, and (c) Forest.   The
@@ -718,6 +704,7 @@ static void rescan_forest_trusts( void )
 					flags,
 					attribs,
 					SEC_CHAN_NULL,
+					find_default_route_domain(),
 					&d);
 				if (!NT_STATUS_IS_OK(status) &&
 				    NT_STATUS_EQUAL(status,
@@ -725,12 +712,6 @@ static void rescan_forest_trusts( void )
 				{
 					DBG_ERR("add_trusted_domain: %s\n",
 						nt_errstr(status));
-					return;
-				}
-				ok = set_routing_domain(
-					d, find_default_route_domain());
-				if (!ok) {
-					DBG_ERR("set_routing_domain failed\n");
 					return;
 				}
 			}
@@ -839,7 +820,6 @@ static void wb_imsg_new_trusted_domain(struct imessaging_context *msg,
 	struct winbindd_domain *d = NULL;
 	uint32_t trust_flags = 0;
 	NTSTATUS status;
-	bool ok;
 
 	DEBUG(5, ("wb_imsg_new_trusted_domain\n"));
 
@@ -881,6 +861,7 @@ static void wb_imsg_new_trusted_domain(struct imessaging_context *msg,
 				    trust_flags,
 				    info.trust_attributes,
 				    secure_channel_type,
+				    find_default_route_domain(),
 				    &d);
 	if (!NT_STATUS_IS_OK(status) &&
 	    !NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_DOMAIN))
@@ -890,11 +871,7 @@ static void wb_imsg_new_trusted_domain(struct imessaging_context *msg,
 		TALLOC_FREE(frame);
 		return;
 	}
-	ok = set_routing_domain(d, find_default_route_domain());
-	if (!ok) {
-		TALLOC_FREE(frame);
-		return;
-	}
+
 	TALLOC_FREE(frame);
 }
 
@@ -961,6 +938,7 @@ bool init_domain_list(void)
 				    0, /* trust_flags */
 				    0, /* trust_attribs */
 				    SEC_CHAN_LOCAL,
+				    NULL,
 				    &domain);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("add_trusted_domain BUILTIN returned %s\n",
@@ -1013,6 +991,7 @@ bool init_domain_list(void)
 					    trust_flags,
 					    LSA_TRUST_ATTRIBUTE_WITHIN_FOREST,
 					    SEC_CHAN_BDC,
+					    NULL,
 					    &domain);
 		TALLOC_FREE(pdb_domain_info);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -1084,6 +1063,7 @@ bool init_domain_list(void)
 					    trust_flags,
 					    0, /* trust_attribs */
 					    secure_channel_type,
+					    NULL,
 					    &domain);
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_ERR("Failed to add local SAM to "
@@ -1116,6 +1096,7 @@ bool init_domain_list(void)
 					    NETR_TRUST_FLAG_OUTBOUND,
 					    0, /* trust_attribs */
 					    SEC_CHAN_WKSTA,
+					    NULL,
 					    &domain);
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_ERR("Failed to add local SAM to "
@@ -1173,6 +1154,7 @@ bool init_domain_list(void)
 						    trust_flags,
 						    domains[i]->trust_attributes,
 						    sec_chan_type,
+						    NULL,
 						    &domain);
 			if (!NT_STATUS_IS_OK(status)) {
 				DBG_NOTICE("add_trusted_domain returned %s\n",
@@ -1202,7 +1184,6 @@ bool init_domain_list(void)
 			uint32_t fi;
 			enum ndr_err_code ndr_err;
 			struct winbindd_domain *routing_domain = NULL;
-			bool ok;
 
 			if (domains[i]->trust_type != LSA_TRUST_TYPE_UPLEVEL) {
 				continue;
@@ -1271,6 +1252,7 @@ bool init_domain_list(void)
 							    NETR_TRUST_FLAG_OUTBOUND,
 							    0,
 							    SEC_CHAN_NULL,
+							    routing_domain,
 							    &domain);
 				if (!NT_STATUS_IS_OK(status)) {
 					DBG_NOTICE("add_trusted_domain returned %s\n",
@@ -1279,14 +1261,6 @@ bool init_domain_list(void)
 				}
 				if (domain == NULL) {
 					continue;
-				}
-				ok = set_routing_domain(domain, routing_domain);
-				if (!ok) {
-					DBG_ERR("set_routing_domain on [%s] to "
-						"[%s] failed\n",
-						domain->name,
-						routing_domain->name);
-					return false;
 				}
 			}
 		}
@@ -1310,6 +1284,7 @@ bool init_domain_list(void)
 						    NETR_TRUST_FLAG_OUTBOUND,
 						    0,
 						    SEC_CHAN_DOMAIN,
+						    NULL,
 						    &domain);
 			if (!NT_STATUS_IS_OK(status)) {
 				DBG_NOTICE("add_trusted_domain returned %s\n",
