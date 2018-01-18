@@ -394,6 +394,7 @@ def remove_dc(samdb, logger, dc_name):
                                   % (dc_name, samdb.domain_dns_name()), estr)
 
         if (len(server_msgs) == 0):
+            samdb.transaction_cancel()
             raise DemoteException("%s is not an AD DC in %s"
                                   % (dc_name, samdb.domain_dns_name()))
         server_dn = server_msgs[0].dn
@@ -412,6 +413,7 @@ def remove_dc(samdb, logger, dc_name):
             ntds_msgs = []
             pass
         else:
+            samdb.transaction_cancel()
             raise DemoteException("Failure checking if %s is an NTDS DSA in %s: "
                                   % (ntds_dn, samdb.domain_dns_name()), estr)
 
@@ -419,6 +421,7 @@ def remove_dc(samdb, logger, dc_name):
     # object, just remove the server object located above
     if (len(ntds_msgs) == 0):
         if server_dn is None:
+            samdb.transaction_cancel()
             raise DemoteException("%s is not an AD DC in %s"
                                   % (dc_name, samdb.domain_dns_name()))
 
