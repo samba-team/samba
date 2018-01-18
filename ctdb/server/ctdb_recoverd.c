@@ -2243,11 +2243,20 @@ static void async_getnodemap_callback(struct ctdb_context *ctdb,
 
 static int get_remote_nodemaps(struct ctdb_recoverd *rec,
 			       TALLOC_CTX *mem_ctx,
-			       struct ctdb_node_map_old **remote_nodemaps)
+			       struct ctdb_node_map_old ***remote_nodemaps)
 {
 	struct ctdb_context *ctdb = rec->ctdb;
+	struct ctdb_node_map_old **t;
 	uint32_t *nodes;
 	int ret;
+
+	t = talloc_zero_array(mem_ctx,
+			      struct ctdb_node_map_old *,
+			      rec->nodemap->num);
+	if (t == NULL) {
+		DBG_ERR("Memory allocation error\n");
+		return -1;
+	}
 
 	nodes = list_of_active_nodes(ctdb, rec->nodemap, mem_ctx, true);
 
@@ -2260,9 +2269,16 @@ static int get_remote_nodemaps(struct ctdb_recoverd *rec,
 					tdb_null,
 					async_getnodemap_callback,
 					NULL,
-					remote_nodemaps);
+					t);
 	talloc_free(nodes);
-	return ret;
+
+	if (ret != 0) {
+		talloc_free(t);
+		return ret;
+	}
+
+	*remote_nodemaps = t;
+	return 0;
 }
 
 static bool validate_recovery_master(struct ctdb_recoverd *rec,
@@ -2584,15 +2600,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 
 	/* get the nodemap for all active remote nodes
 	 */
-	remote_nodemaps = talloc_array(mem_ctx, struct ctdb_node_map_old *, nodemap->num);
-	if (remote_nodemaps == NULL) {
-		DEBUG(DEBUG_ERR, (__location__ " failed to allocate remote nodemap array\n"));
-		return;
-	}
-	for(i=0; i<nodemap->num; i++) {
-		remote_nodemaps[i] = NULL;
-	}
-	ret = get_remote_nodemaps(rec, mem_ctx, remote_nodemaps);
+	ret = get_remote_nodemaps(rec, mem_ctx, &remote_nodemaps);
 	if (ret != 0) {
 		DBG_ERR("Failed to read remote nodemaps\n");
 		return;
