@@ -1,0 +1,23 @@
+# record 1
+dn: CN=unsorted-g,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+member: CN=unsorted-u8,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+member: CN=unsorted-u9,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+member: CN=unsorted-u3,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+member: CN=unsorted-u4,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+member: CN=unsorted-u6,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+member: CN=unsorted-u7,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+member: CN=unsorted-u1,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+member: CN=unsorted-u2,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+
+# Referral
+ref: ldap:///CN=Configuration,DC=release-4-5-0-pre1,DC=samba,DC=corp
+
+# Referral
+ref: ldap:///DC=DomainDnsZones,DC=release-4-5-0-pre1,DC=samba,DC=corp
+
+# Referral
+ref: ldap:///DC=ForestDnsZones,DC=release-4-5-0-pre1,DC=samba,DC=corp
+
+# returned 4 records
+# 1 entries
+# 3 referrals

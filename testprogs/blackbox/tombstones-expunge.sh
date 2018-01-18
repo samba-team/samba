@@ -92,6 +92,19 @@ add_four_more_links() {
     fi
 }
 
+add_unsorted_links() {
+    ldif=$release_dir/add-unsorted-links-step1.ldif
+    TZ=UTC $ldbmodify -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb $ldif --relax
+    if [ "$?" != "0" ]; then
+	return 1
+    fi
+    ldif=$release_dir/add-unsorted-links-step2.ldif
+    TZ=UTC $ldbmodify -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb.d/DC%3DRELEASE-4-5-0-PRE1,DC%3DSAMBA,DC%3DCORP.ldb $ldif
+    if [ "$?" != "0" ]; then
+	return 1
+    fi
+}
+
 remove_one_link() {
     ldif=$release_dir/remove-one-more-link.ldif
     TZ=UTC $ldbmodify -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb $ldif
@@ -176,6 +189,15 @@ check_expected_after_objects() {
     fi
 }
 
+check_expected_unsorted_links() {
+    tmpldif=$PREFIX_ABS/$RELEASE/expected-unsorted-links-after-expunge.ldif.tmp
+    TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb '(name=unsorted-g)' -s sub -b DC=release-4-5-0-pre1,DC=samba,DC=corp --show-deleted --reveal --sorted member > $tmpldif
+    diff $tmpldif $release_dir/expected-unsorted-links-after-expunge.ldif
+    if [ "$?" != "0" ]; then
+	return 1
+    fi
+}
+
 if [ -d $release_dir ]; then
     testit $RELEASE undump
     testit "add_two_more_users" add_two_more_users
@@ -192,10 +214,12 @@ if [ -d $release_dir ]; then
     testit_expect_failure "check_match_rule_links_decimal" check_match_rule_links_decimal
     testit_expect_failure "check_match_rule_links_backlink" check_match_rule_links_backlink
     testit_expect_failure "check_match_rule_links_notlink" check_match_rule_links_notlink
+    testit "add_unsorted_links" add_unsorted_links
     testit "tombstones_expunge" tombstones_expunge
     testit "check_expected_after_deleted_links" check_expected_after_deleted_links
     testit "check_expected_after_links" check_expected_after_links
     testit "check_expected_after_objects" check_expected_after_objects
+    testit "check_expected_unsorted_links" check_expected_unsorted_links
 else
     subunit_start_test $RELEASE
     subunit_skip_test $RELEASE <<EOF
