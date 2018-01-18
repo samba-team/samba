@@ -43,6 +43,7 @@
  * Winbind daemon for NT domain authentication nss module.
  **/
 
+static bool add_trusted_domains_dc(void);
 
 /* The list of trusted domains.  Note that the list can be deleted and
    recreated using the init_domain_list() function so pointers to
@@ -813,66 +814,14 @@ static void wb_imsg_new_trusted_domain(struct imessaging_context *msg,
 				       struct server_id server_id,
 				       DATA_BLOB *data)
 {
-	TALLOC_CTX *frame = talloc_stackframe();
-	enum netr_SchannelType secure_channel_type = SEC_CHAN_DOMAIN;
-	struct lsa_TrustDomainInfoInfoEx info;
-	enum ndr_err_code ndr_err;
-	struct winbindd_domain *d = NULL;
-	uint32_t trust_flags = 0;
-	NTSTATUS status;
+	bool ok;
 
-	DEBUG(5, ("wb_imsg_new_trusted_domain\n"));
+	DBG_NOTICE("Rescanning trusted domains\n");
 
-	if (data == NULL) {
-		TALLOC_FREE(frame);
-		return;
+	ok = add_trusted_domains_dc();
+	if (!ok) {
+		DBG_ERR("Failed to reload trusted domains\n");
 	}
-
-	ndr_err = ndr_pull_struct_blob_all(data, frame, &info,
-			(ndr_pull_flags_fn_t)ndr_pull_lsa_TrustDomainInfoInfoEx);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		TALLOC_FREE(frame);
-		return;
-	}
-
-	d = find_domain_from_name_noinit(info.netbios_name.string);
-	if (d != NULL) {
-		TALLOC_FREE(frame);
-		return;
-	}
-
-	if (info.trust_type == LSA_TRUST_TYPE_UPLEVEL) {
-		secure_channel_type = SEC_CHAN_DNS_DOMAIN;
-	}
-	if (info.trust_direction & LSA_TRUST_DIRECTION_INBOUND) {
-		trust_flags |= NETR_TRUST_FLAG_INBOUND;
-	}
-	if (info.trust_direction & LSA_TRUST_DIRECTION_OUTBOUND) {
-		trust_flags |= NETR_TRUST_FLAG_OUTBOUND;
-	}
-	if (info.trust_attributes & LSA_TRUST_ATTRIBUTE_WITHIN_FOREST) {
-		trust_flags |= NETR_TRUST_FLAG_IN_FOREST;
-	}
-
-	status = add_trusted_domain(info.netbios_name.string,
-				    info.domain_name.string,
-				    info.sid,
-				    info.trust_type,
-				    trust_flags,
-				    info.trust_attributes,
-				    secure_channel_type,
-				    find_default_route_domain(),
-				    &d);
-	if (!NT_STATUS_IS_OK(status) &&
-	    !NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_DOMAIN))
-	{
-		DBG_NOTICE("add_trusted_domain returned %s\n",
-			   nt_errstr(status));
-		TALLOC_FREE(frame);
-		return;
-	}
-
-	TALLOC_FREE(frame);
 }
 
 /*
