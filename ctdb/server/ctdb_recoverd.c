@@ -2225,6 +2225,7 @@ done:
 
 struct remote_nodemaps_state {
 	struct ctdb_node_map_old **remote_nodemaps;
+	struct ctdb_recoverd *rec;
 };
 
 static void async_getnodemap_callback(struct ctdb_context *ctdb,
@@ -2245,6 +2246,20 @@ static void async_getnodemap_callback(struct ctdb_context *ctdb,
 	remote_nodemaps[node_pnn] = (struct ctdb_node_map_old *)talloc_steal(
 					remote_nodemaps, outdata.dptr);
 
+}
+
+static void async_getnodemap_error(struct ctdb_context *ctdb,
+				   uint32_t node_pnn,
+				   int32_t res,
+				   TDB_DATA outdata,
+				   void *callback_data)
+{
+	struct remote_nodemaps_state *state =
+		(struct remote_nodemaps_state *)callback_data;
+	struct ctdb_recoverd *rec = state->rec;
+
+	DBG_ERR("Failed to retrieve nodemap from node %u\n", node_pnn);
+	ctdb_set_culprit(rec, node_pnn);
 }
 
 static int get_remote_nodemaps(struct ctdb_recoverd *rec,
@@ -2268,6 +2283,7 @@ static int get_remote_nodemaps(struct ctdb_recoverd *rec,
 	nodes = list_of_active_nodes(ctdb, rec->nodemap, mem_ctx, true);
 
 	state.remote_nodemaps = t;
+	state.rec = rec;
 
 	ret = ctdb_client_async_control(ctdb,
 					CTDB_CONTROL_GET_NODEMAP,
@@ -2277,7 +2293,7 @@ static int get_remote_nodemaps(struct ctdb_recoverd *rec,
 					false,
 					tdb_null,
 					async_getnodemap_callback,
-					NULL,
+					async_getnodemap_error,
 					&state);
 	talloc_free(nodes);
 
@@ -2620,13 +2636,6 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 	for (j=0; j<nodemap->num; j++) {
 		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
 			continue;
-		}
-
-		if (remote_nodemaps[j] == NULL) {
-			DEBUG(DEBUG_ERR,(__location__ " Did not get a remote nodemap for node %d, restarting monitoring\n", j));
-			ctdb_set_culprit(rec, j);
-
-			return;
 		}
 
  		/* if the nodes disagree on how many nodes there are
