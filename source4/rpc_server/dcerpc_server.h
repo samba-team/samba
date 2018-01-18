@@ -154,6 +154,32 @@ struct dcesrv_call_state {
 	struct dcerpc_auth *out_auth_info;
 };
 
+/*
+* DCERPC Handles
+* --------------
+* The various handles that are used in the RPC servers should be
+* created and fetch using the dcesrv_handle_* functions.
+*
+* Use
+* dcesrv_handle_new(struct dcesrv_connection \*, uint8 handle_type)
+* to obtain a new handle of the specified type. Handle types are
+* unique within each pipe.
+*
+* The handle can later be fetched again using:
+*
+* struct dcesrv_handle *dcesrv_handle_fetch(
+*         struct dcesrv_connection *dce_conn,
+*         struct policy_handle *p,
+*         uint8 handle_type)
+*
+* and destroyed by:
+*
+* 	dcesrv_handle_destroy(struct dcesrv_handle *).
+*
+* User data should be stored in the 'data' member of the dcesrv_handle
+* struct.
+*/
+
 #define DCESRV_HANDLE_ANY 255
 
 /* a dcerpc handle in internal format */
