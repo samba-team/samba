@@ -454,7 +454,8 @@ def CHECK_CODE(conf, code, define,
 
 @conf
 def CHECK_STRUCTURE_MEMBER(conf, structname, member,
-                           always=False, define=None, headers=None):
+                           always=False, define=None, headers=None,
+                           lib=None):
     '''check for a structure member'''
     if define is None:
         define = 'HAVE_%s' % member.upper()
@@ -463,6 +464,7 @@ def CHECK_STRUCTURE_MEMBER(conf, structname, member,
                       define,
                       execute=False,
                       link=False,
+                      lib=lib,
                       always=always,
                       headers=headers,
                       local_include=False,
