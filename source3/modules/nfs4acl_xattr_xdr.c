@@ -27,6 +27,15 @@
 #define DBGC_CLASS DBGC_VFS
 
 #ifdef HAVE_RPC_XDR_H
+/* <rpc/xdr.h> uses TRUE and FALSE */
+#ifdef TRUE
+#undef TRUE
+#endif
+
+#ifdef FALSE
+#undef FALSE
+#endif
+
 #include <rpc/xdr.h>
 #include "nfs41acl.h"
 #include "nfs4acl_xattr_xdr.h"
