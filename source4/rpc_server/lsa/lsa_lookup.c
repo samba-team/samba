@@ -23,6 +23,8 @@
 #include "rpc_server/lsa/lsa.h"
 #include "libds/common/roles.h"
 #include "libds/common/flag_mapping.h"
+#include "lib/messaging/irpc.h"
+#include "librpc/gen_ndr/ndr_lsa_c.h"
 
 struct dcesrv_lsa_TranslatedItem {
 	enum lsa_SidType type;
@@ -31,6 +33,7 @@ struct dcesrv_lsa_TranslatedItem {
 	const char *authority_name;
 	const struct dom_sid *authority_sid;
 	uint32_t flags;
+	uint32_t wb_idx;
 	bool done;
 	struct {
 		const char *domain; /* only $DOMAIN\ */
@@ -281,6 +284,15 @@ struct dcesrv_lsa_LookupSids_base_state {
 	struct dsdb_trust_routing_table *routing_table;
 
 	struct {
+		struct dcerpc_binding_handle *irpc_handle;
+		struct lsa_SidArray sids;
+		struct lsa_RefDomainList *domains;
+		struct lsa_TransNameArray2 names;
+		uint32_t count;
+		NTSTATUS result;
+	} wb;
+
+	struct {
 		struct lsa_LookupSids *l;
 		struct lsa_LookupSids2 *l2;
 		struct lsa_LookupSids3 *l3;
@@ -291,10 +303,12 @@ static NTSTATUS dcesrv_lsa_LookupSids_base_finish(
 	struct dcesrv_lsa_LookupSids_base_state *state);
 static void dcesrv_lsa_LookupSids_base_map(
 	struct dcesrv_lsa_LookupSids_base_state *state);
+static void dcesrv_lsa_LookupSids_base_done(struct tevent_req *subreq);
 
 static NTSTATUS dcesrv_lsa_LookupSids_base_call(struct dcesrv_lsa_LookupSids_base_state *state)
 {
 	struct lsa_LookupSids3 *r = &state->r;
+	struct tevent_req *subreq = NULL;
 	uint32_t v;
 	uint32_t i;
 
@@ -377,7 +391,47 @@ static NTSTATUS dcesrv_lsa_LookupSids_base_call(struct dcesrv_lsa_LookupSids_bas
 		}
 	}
 
-	return dcesrv_lsa_LookupSids_base_finish(state);
+	if (state->wb.irpc_handle == NULL) {
+		return dcesrv_lsa_LookupSids_base_finish(state);
+	}
+
+	state->wb.sids.sids = talloc_zero_array(state, struct lsa_SidPtr,
+						r->in.sids->num_sids);
+	if (state->wb.sids.sids == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i=0; i < r->in.sids->num_sids; i++) {
+		struct dcesrv_lsa_TranslatedItem *item = &state->items[i];
+
+		if (item->done) {
+			continue;
+		}
+
+		item->wb_idx = state->wb.sids.num_sids;
+		state->wb.sids.sids[item->wb_idx] = r->in.sids->sids[i];
+		state->wb.sids.num_sids++;
+	}
+
+	subreq = dcerpc_lsa_LookupSids3_send(state,
+					     state->dce_call->event_ctx,
+					     state->wb.irpc_handle,
+					     &state->wb.sids,
+					     &state->wb.domains,
+					     &state->wb.names,
+					     state->r.in.level,
+					     &state->wb.count,
+					     state->r.in.lookup_options,
+					     state->r.in.client_revision);
+	if (subreq == NULL) {
+		return NT_STATUS_NO_MEMORY;;
+	}
+	state->dce_call->state_flags |= DCESRV_CALL_STATE_FLAG_ASYNC;
+	tevent_req_set_callback(subreq,
+				dcesrv_lsa_LookupSids_base_done,
+				state);
+
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS dcesrv_lsa_LookupSids_base_finish(
@@ -464,6 +518,91 @@ static void dcesrv_lsa_LookupSids_base_map(
 		}
 		r->out.names->count = state->r.out.names->count;
 		return;
+	}
+}
+
+static void dcesrv_lsa_LookupSids_base_done(struct tevent_req *subreq)
+{
+	struct dcesrv_lsa_LookupSids_base_state *state =
+		tevent_req_callback_data(subreq,
+		struct dcesrv_lsa_LookupSids_base_state);
+	struct dcesrv_call_state *dce_call = state->dce_call;
+	NTSTATUS status;
+	uint32_t i;
+
+	status = dcerpc_lsa_LookupSids3_recv(subreq, state->mem_ctx,
+					     &state->wb.result);
+	TALLOC_FREE(subreq);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+		DEBUG(0,(__location__ ": IRPC callback failed %s\n",
+			 nt_errstr(status)));
+		goto finished;
+	} else if (!NT_STATUS_IS_OK(status)) {
+		state->dce_call->fault_code = DCERPC_FAULT_CANT_PERFORM;
+		DEBUG(0,(__location__ ": IRPC callback failed %s\n",
+			 nt_errstr(status)));
+		goto finished;
+	}
+
+	status = state->wb.result;
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED)) {
+		status = NT_STATUS_OK;
+	} else if (NT_STATUS_EQUAL(status, NT_STATUS_SOME_NOT_MAPPED)) {
+		status = NT_STATUS_OK;
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		goto finished;
+	}
+
+	for (i=0; i < state->r.in.sids->num_sids; i++) {
+		struct dcesrv_lsa_TranslatedItem *item = &state->items[i];
+		struct lsa_TranslatedName2 *s2 = NULL;
+		struct lsa_DomainInfo *d = NULL;
+
+		if (item->done) {
+			continue;
+		}
+
+		if (item->wb_idx >= state->wb.names.count) {
+			status = NT_STATUS_INTERNAL_ERROR;
+			goto finished;
+		}
+
+		s2 = &state->wb.names.names[item->wb_idx];
+
+		item->type = s2->sid_type;
+		item->name = s2->name.string;
+		item->flags = s2->unknown;
+
+		if (s2->sid_index == UINT32_MAX) {
+			continue;
+		}
+
+		if (state->wb.domains == NULL) {
+			status = NT_STATUS_INTERNAL_ERROR;
+			goto finished;
+		}
+
+		if (s2->sid_index >= state->wb.domains->count) {
+			status = NT_STATUS_INTERNAL_ERROR;
+			goto finished;
+		}
+
+		d = &state->wb.domains->domains[s2->sid_index];
+
+		item->authority_name = d->name.string;
+		item->authority_sid = d->sid;
+	}
+
+	status = dcesrv_lsa_LookupSids_base_finish(state);
+ finished:
+	state->r.out.result = status;
+	dcesrv_lsa_LookupSids_base_map(state);
+	TALLOC_FREE(state);
+
+	status = dcesrv_reply(dce_call);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,(__location__ ": dcesrv_reply() failed - %s\n", nt_errstr(status)));
 	}
 }
 
@@ -685,6 +824,16 @@ struct dcesrv_lsa_LookupNames_base_state {
 	struct dsdb_trust_routing_table *routing_table;
 
 	struct {
+		struct dcerpc_binding_handle *irpc_handle;
+		uint32_t num_names;
+		struct lsa_String *names;
+		struct lsa_RefDomainList *domains;
+		struct lsa_TransSidArray3 sids;
+		uint32_t count;
+		NTSTATUS result;
+	} wb;
+
+	struct {
 		struct lsa_LookupNames *l;
 		struct lsa_LookupNames2 *l2;
 		struct lsa_LookupNames3 *l3;
@@ -696,11 +845,13 @@ static NTSTATUS dcesrv_lsa_LookupNames_base_finish(
 	struct dcesrv_lsa_LookupNames_base_state *state);
 static void dcesrv_lsa_LookupNames_base_map(
 	struct dcesrv_lsa_LookupNames_base_state *state);
+static void dcesrv_lsa_LookupNames_base_done(struct tevent_req *subreq);
 
 static NTSTATUS dcesrv_lsa_LookupNames_base_call(struct dcesrv_lsa_LookupNames_base_state *state)
 {
 	struct lsa_LookupNames4 *r = &state->r;
 	enum lsa_LookupOptions invalid_lookup_options = 0;
+	struct tevent_req *subreq = NULL;
 	uint32_t v;
 	uint32_t i;
 
@@ -817,7 +968,48 @@ static NTSTATUS dcesrv_lsa_LookupNames_base_call(struct dcesrv_lsa_LookupNames_b
 		}
 	}
 
-	return dcesrv_lsa_LookupNames_base_finish(state);
+	if (state->wb.irpc_handle == NULL) {
+		return dcesrv_lsa_LookupNames_base_finish(state);
+	}
+
+	state->wb.names = talloc_zero_array(state, struct lsa_String,
+					    r->in.num_names);
+	if (state->wb.names == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i=0;i<r->in.num_names;i++) {
+		struct dcesrv_lsa_TranslatedItem *item = &state->items[i];
+
+		if (item->done) {
+			continue;
+		}
+
+		item->wb_idx = state->wb.num_names;
+		state->wb.names[item->wb_idx] = r->in.names[i];
+		state->wb.num_names++;
+	}
+
+	subreq = dcerpc_lsa_LookupNames4_send(state,
+					      state->dce_call->event_ctx,
+					      state->wb.irpc_handle,
+					      state->wb.num_names,
+					      state->wb.names,
+					      &state->wb.domains,
+					      &state->wb.sids,
+					      state->r.in.level,
+					      &state->wb.count,
+					      state->r.in.lookup_options,
+					      state->r.in.client_revision);
+	if (subreq == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	state->dce_call->state_flags |= DCESRV_CALL_STATE_FLAG_ASYNC;
+	tevent_req_set_callback(subreq,
+				dcesrv_lsa_LookupNames_base_done,
+				state);
+
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS dcesrv_lsa_LookupNames_base_finish(
@@ -949,6 +1141,91 @@ static void dcesrv_lsa_LookupNames_base_map(
 		}
 		r->out.sids->count = state->r.out.sids->count;
 		return;
+	}
+}
+
+static void dcesrv_lsa_LookupNames_base_done(struct tevent_req *subreq)
+{
+	struct dcesrv_lsa_LookupNames_base_state *state =
+		tevent_req_callback_data(subreq,
+		struct dcesrv_lsa_LookupNames_base_state);
+	struct dcesrv_call_state *dce_call = state->dce_call;
+	NTSTATUS status;
+	uint32_t i;
+
+	status = dcerpc_lsa_LookupNames4_recv(subreq, state->mem_ctx,
+					      &state->wb.result);
+	TALLOC_FREE(subreq);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+		DEBUG(0,(__location__ ": IRPC callback failed %s\n",
+			 nt_errstr(status)));
+		goto finished;
+	} else if (!NT_STATUS_IS_OK(status)) {
+		state->dce_call->fault_code = DCERPC_FAULT_CANT_PERFORM;
+		DEBUG(0,(__location__ ": IRPC callback failed %s\n",
+			 nt_errstr(status)));
+		goto finished;
+	}
+
+	status = state->wb.result;
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED)) {
+		status = NT_STATUS_OK;
+	} else if (NT_STATUS_EQUAL(status, NT_STATUS_SOME_NOT_MAPPED)) {
+		status = NT_STATUS_OK;
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		goto finished;
+	}
+
+	for (i=0; i < state->r.in.num_names;i++) {
+		struct dcesrv_lsa_TranslatedItem *item = &state->items[i];
+		struct lsa_TranslatedSid3 *s3 = NULL;
+		struct lsa_DomainInfo *d = NULL;
+
+		if (item->done) {
+			continue;
+		}
+
+		if (item->wb_idx >= state->wb.sids.count) {
+			status = NT_STATUS_INTERNAL_ERROR;
+			goto finished;
+		}
+
+		s3 = &state->wb.sids.sids[item->wb_idx];
+
+		item->type = s3->sid_type;
+		item->sid = s3->sid;
+		item->flags = s3->flags;
+
+		if (s3->sid_index == UINT32_MAX) {
+			continue;
+		}
+
+		if (state->wb.domains == NULL) {
+			status = NT_STATUS_INTERNAL_ERROR;
+			goto finished;
+		}
+
+		if (s3->sid_index >= state->wb.domains->count) {
+			status = NT_STATUS_INTERNAL_ERROR;
+			goto finished;
+		}
+
+		d = &state->wb.domains->domains[s3->sid_index];
+
+		item->authority_name = d->name.string;
+		item->authority_sid = d->sid;
+	}
+
+	status = dcesrv_lsa_LookupNames_base_finish(state);
+ finished:
+	state->r.out.result = status;
+	dcesrv_lsa_LookupNames_base_map(state);
+	TALLOC_FREE(state);
+
+	status = dcesrv_reply(dce_call);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,(__location__ ": dcesrv_reply() failed - %s\n", nt_errstr(status)));
 	}
 }
 
@@ -1599,6 +1876,142 @@ static NTSTATUS dcesrv_lsa_lookup_name_winbind(
 		struct dcesrv_lsa_LookupNames_base_state *state,
 		struct dcesrv_lsa_TranslatedItem *item)
 {
+	struct lsa_LookupNames4 *r = &state->r;
+	const struct lsa_TrustDomainInfoInfoEx *tdo = NULL;
+	const struct lsa_ForestTrustDomainInfo *di = NULL;
+	NTSTATUS status;
+	const char *check_domain_name = NULL;
+	bool expect_domain = false;
+
+	if (item->name == NULL) {
+		/*
+		 * This should not be mapped.
+		 */
+		return NT_STATUS_OK;
+	}
+
+	if (item->hints.domain != NULL && item->hints.principal == NULL) {
+		/*
+		 * This is 'DOMAIN\'.
+		 */
+		check_domain_name = item->hints.domain;
+		expect_domain = true;
+	} else if (item->hints.namespace != NULL) {
+		/*
+		 * This is 'DOMAIN\someone'
+		 * or 'someone@DOMAIN'
+		 */
+		check_domain_name = item->hints.namespace;
+	} else {
+		/*
+		 * This is just 'DOMAIN'.
+		 */
+		check_domain_name = item->name;
+		expect_domain = true;
+	}
+
+	if (state->routing_table == NULL) {
+		struct lsa_policy_state *policy_state = state->policy_state;
+
+		status = dsdb_trust_routing_table_load(policy_state->sam_ldb,
+						       state,
+						       &state->routing_table);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
+
+	tdo = dsdb_trust_domain_by_name(state->routing_table,
+					check_domain_name,
+					&di);
+	if (tdo == NULL) {
+		/*
+		 * The name is not resolvable at all...
+		 *
+		 * And for now we don't send unqualified names
+		 * to winbindd, as we don't handle them
+		 * there yet.
+		 *
+		 * TODO: how should that work within
+		 * winbindd?
+		 */
+		return NT_STATUS_OK;
+	}
+
+	if (tdo->trust_attributes & LSA_TRUST_ATTRIBUTE_WITHIN_FOREST) {
+		/*
+		 * The name should have been resolved in the account view.
+		 *
+		 * TODO: handle multiple domains in a forest...
+		 */
+		return NT_STATUS_OK;
+	}
+
+	if (expect_domain) {
+		const char *name = NULL;
+		const struct dom_sid *sid = NULL;
+
+		name = talloc_strdup(state->mem_ctx,
+				     di->netbios_domain_name.string);
+		if (name == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		sid = dom_sid_dup(state->mem_ctx,
+				  di->domain_sid);
+		if (sid == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		item->type = SID_NAME_DOMAIN;
+		item->sid = sid;
+		item->authority_name = name;
+		item->authority_sid = sid;
+		return NT_STATUS_OK;
+	}
+
+	if (r->in.lookup_options & LSA_LOOKUP_OPTION_SEARCH_ISOLATED_NAMES_LOCAL) {
+		if (item->hints.namespace == NULL) {
+			/*
+			 * We should not try to resolve isolated names
+			 * remotely.
+			 */
+			return NT_STATUS_OK;
+		}
+	}
+
+	/*
+	 * We know at least the domain part of the name exists.
+	 *
+	 * For now the rest handled within winbindd.
+	 *
+	 * In future we can optimize it based on
+	 * r->in.level.
+	 *
+	 * We can also try to resolve SID_NAME_DOMAIN
+	 * just based on the routing table.
+	 */
+
+	if (state->wb.irpc_handle != NULL) {
+		/*
+		 * already called...
+		 */
+		return NT_STATUS_NONE_MAPPED;
+	}
+
+	state->wb.irpc_handle = irpc_binding_handle_by_name(state,
+					state->dce_call->msg_ctx,
+					"winbind_server",
+					&ndr_table_lsarpc);
+	if (state->wb.irpc_handle == NULL) {
+		DEBUG(0,("Failed to get binding_handle for winbind_server task\n"));
+		state->dce_call->fault_code = DCERPC_FAULT_CANT_PERFORM;
+		return NT_STATUS_INVALID_SYSTEM_SERVICE;
+	}
+
+	/*
+	 * 60 seconds timeout should be enough
+	 */
+	dcerpc_binding_handle_set_timeout(state->wb.irpc_handle, 60);
+
 	return NT_STATUS_NONE_MAPPED;
 }
 
@@ -1606,6 +2019,116 @@ static NTSTATUS dcesrv_lsa_lookup_sid_winbind(
 		struct dcesrv_lsa_LookupSids_base_state *state,
 		struct dcesrv_lsa_TranslatedItem *item)
 {
+	const struct lsa_TrustDomainInfoInfoEx *tdo = NULL;
+	const struct lsa_ForestTrustDomainInfo *di = NULL;
+	struct dcesrv_lsa_TranslatedItem tmp;
+	struct dom_sid domain_sid = {0,};
+	NTSTATUS status;
+	bool match;
+
+	/*
+	 * Verify the sid is not INVALID.
+	 */
+	tmp = *item;
+	status = dom_sid_lookup_predefined_sid(tmp.sid,
+					       &tmp.name,
+					       &tmp.type,
+					       &tmp.authority_sid,
+					       &tmp.authority_name);
+	if (NT_STATUS_IS_OK(status)) {
+		status = NT_STATUS_NONE_MAPPED;
+	}
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED)) {
+		/*
+		 * Typically INVALID_SID
+		 */
+		return status;
+	}
+
+	if (state->routing_table == NULL) {
+		struct lsa_policy_state *policy_state = state->policy_state;
+
+		status = dsdb_trust_routing_table_load(policy_state->sam_ldb,
+						       state,
+						       &state->routing_table);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
+
+	domain_sid = *item->sid;
+	if (domain_sid.num_auths == 5) {
+		sid_split_rid(&domain_sid, NULL);
+	}
+
+	tdo = dsdb_trust_domain_by_sid(state->routing_table,
+				       &domain_sid, &di);
+	if (tdo == NULL) {
+		/*
+		 * The sid is not resolvable at all...
+		 */
+		return NT_STATUS_OK;
+	}
+
+	if (tdo->trust_attributes & LSA_TRUST_ATTRIBUTE_WITHIN_FOREST) {
+		/*
+		 * The name should have been resolved in the account view.
+		 *
+		 * TODO: handle multiple domains in a forest...
+		 */
+		return NT_STATUS_OK;
+	}
+
+	match = dom_sid_equal(di->domain_sid, item->sid);
+	if (match) {
+		const char *name = NULL;
+
+		name = talloc_strdup(state->mem_ctx,
+				     di->netbios_domain_name.string);
+		if (name == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		item->type = SID_NAME_DOMAIN;
+		item->name = name;
+		item->authority_name = name;
+		item->authority_sid = item->sid;
+		return NT_STATUS_OK;
+	}
+
+	/*
+	 * We know at least the domain part of the sid exists.
+	 *
+	 * For now the rest handled within winbindd.
+	 *
+	 * In future we can optimize it based on
+	 * r->in.level.
+	 *
+	 * We can also try to resolve SID_NAME_DOMAIN
+	 * just based on the routing table.
+	 */
+	if (state->wb.irpc_handle != NULL) {
+		/*
+		 * already called...
+		 */
+		return NT_STATUS_NONE_MAPPED;
+	}
+
+	state->wb.irpc_handle = irpc_binding_handle_by_name(state,
+					state->dce_call->msg_ctx,
+					"winbind_server",
+					&ndr_table_lsarpc);
+	if (state->wb.irpc_handle == NULL) {
+		DEBUG(0,("Failed to get binding_handle for winbind_server task\n"));
+		state->dce_call->fault_code = DCERPC_FAULT_CANT_PERFORM;
+		return NT_STATUS_INVALID_SYSTEM_SERVICE;
+	}
+
+	/*
+	 * 60 seconds timeout should be enough
+	 */
+	dcerpc_binding_handle_set_timeout(state->wb.irpc_handle, 60);
+
 	return NT_STATUS_NONE_MAPPED;
 }
 
