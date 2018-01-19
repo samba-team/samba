@@ -708,9 +708,15 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                           "Failed to fix incorrect RMD_FLAGS %u" % rmd_flags):
             self.report("Fixed incorrect RMD_FLAGS %u" % (rmd_flags))
 
-    def err_orphaned_backlink(self, obj, attrname, val, link_name, target_dn):
+    def err_orphaned_backlink(self, obj, attrname, val, link_name, target_dn, duplicate_links):
         '''handle a orphaned backlink value'''
         self.report("ERROR: orphaned backlink attribute '%s' in %s for link %s in %s" % (attrname, obj.dn, link_name, target_dn))
+        if duplicate_links:
+            self.report("ERROR: FATAL! Most likely the corresponding forward link got lost!")
+            self.report("ERROR: FATAL! See https://bugzilla.samba.org/show_bug.cgi?id=13228")
+            self.report("Recovery handling will be implemented in a future version")
+            self.report("Not removing orphaned backlink %s" % attrname)
+            return
         if not self.confirm_all('Remove orphaned backlink %s' % attrname, 'fix_all_orphaned_backlinks'):
             self.report("Not removing orphaned backlink %s" % attrname)
             return
@@ -724,6 +730,11 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
     def err_duplicate_links(self, obj, attrname, vals):
         '''handle a duplicate links value'''
 
+        self.report("ERROR: FATAL! Most likely some forward link values for attribute '%s' in '%s' got lost!" % (attrname, obj.dn))
+        self.report("ERROR: FATAL! See https://bugzilla.samba.org/show_bug.cgi?id=13228")
+        self.report("Recovery handling will be implemented in a future version")
+        self.report("Not removing duplicate links in attribute '%s'" % attrname)
+        return
         if not self.confirm_all("Remove duplicate links in attribute '%s'" % attrname, 'fix_all_duplicate_links'):
             self.report("Not removing duplicate links in attribute '%s'" % attrname)
             return
@@ -896,6 +907,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         else:
             reverse_syntax_oid = None
 
+        duplicate_links = False
         duplicate_dict = dict()
         duplicate_list = list()
         unique_dict = dict()
@@ -950,6 +962,10 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             unique_dict[keystr] = dsdb_dn
 
         if len(duplicate_list) != 0:
+            duplicate_links = True
+            self.report("ERROR: FATAL! Most likely some forward link values for attribute '%s' in '%s' got lost!" % (attrname, obj.dn))
+            self.report("ERROR: FATAL! See https://bugzilla.samba.org/show_bug.cgi?id=13228")
+
             self.report("ERROR: Duplicate link values for attribute '%s' in '%s'" % (attrname, obj.dn))
             for keystr in duplicate_list:
                 d = duplicate_dict[keystr]
@@ -1148,7 +1164,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                     error_count += 1
                     self.err_orphaned_backlink(obj, attrname,
                                                val, reverse_link_name,
-                                               dsdb_dn.dn)
+                                               dsdb_dn.dn, duplicate_links)
                     continue
                 # Only warn here and let the forward link logic fix it.
                 self.report("WARNING: Link (back) mismatch for '%s' (%d) on '%s' to '%s' (%d) on '%s'" % (
@@ -1180,7 +1196,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                 else:
                     self.err_orphaned_backlink(res[0], reverse_link_name,
                                                obj.dn.extended_str(), attrname,
-                                               obj.dn)
+                                               obj.dn, duplicate_links)
                     diff_count += 1
 
 
