@@ -22,6 +22,10 @@
 #include "lib/util/access.h"
 #include "lib/util/unix_match.h"
 
+#if defined(HAVE_NETGROUP)
+#include "system/nis.h"
+#endif
+
 #define NAME_INDEX 0
 #define ADDR_INDEX 1
 
@@ -143,11 +147,11 @@ static bool string_match(const char *tok,const char *s)
 
 		netgroup_ok = innetgr(tok + 1, hostname, (char *) 0, mydomain);
 
-		DEBUG(5,("looking for %s of domain %s in netgroup %s gave %s\n",
+		DBG_INFO("%s %s of domain %s in netgroup %s\n",
+			 netgroup_ok ? "Found" : "Could not find",
 			 hostname,
 			 mydomain?mydomain:"(ANY)",
-			 tok+1,
-			 BOOLSTR(netgroup_ok)));
+			 tok+1);
 
 		SAFE_FREE(hostname);
 

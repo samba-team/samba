@@ -45,6 +45,17 @@
 #define MAX_ALLOC_SIZE (1024*1024*256)
 
 #if (defined(HAVE_NETGROUP) && defined (WITH_AUTOMOUNT))
+/* rpc/xdr.h uses TRUE and FALSE */
+#ifdef TRUE
+#undef TRUE
+#endif
+
+#ifdef FALSE
+#undef FALSE
+#endif
+
+#include "system/nis.h"
+
 #ifdef WITH_NISPLUS_HOME
 #ifdef BROKEN_NISPLUS_INCLUDE_FILES
 /*

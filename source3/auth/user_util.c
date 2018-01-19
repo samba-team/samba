@@ -23,6 +23,19 @@
 #include "system/filesys.h"
 #include "auth.h"
 
+#ifdef HAVE_NETGROUP
+/* rpc/xdr.h uses TRUE and FALSE */
+#ifdef TRUE
+#undef TRUE
+#endif
+
+#ifdef FALSE
+#undef FALSE
+#endif
+
+#include "system/nis.h"
+#endif
+
 /*******************************************************************
  Map a username from a dos name to a unix name by looking in the username
  map. Note that this modifies the name in place.
