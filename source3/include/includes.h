@@ -68,51 +68,6 @@
 #include "system/time.h"
 #include "system/wait.h"
 
-#if defined(HAVE_RPC_RPC_H)
-/*
- * Check for AUTH_ERROR define conflict with rpc/rpc.h in prot.h.
- */
-#if defined(HAVE_SYS_SECURITY_H) && defined(HAVE_RPC_AUTH_ERROR_CONFLICT)
-#undef AUTH_ERROR
-#endif
-/*
- * HP-UX 11.X has TCP_NODELAY and TCP_MAXSEG defined in <netinet/tcp.h> which
- * was included above.  However <rpc/rpc.h> includes <sys/xti.h> which defines
- * them again without checking if they already exsist.  This generates
- * two "Redefinition of macro" warnings for every single .c file that is
- * compiled.
- */
-#if defined(HPUX) && defined(TCP_NODELAY)
-#undef TCP_NODELAY
-#endif
-#if defined(HPUX) && defined(TCP_MAXSEG)
-#undef TCP_MAXSEG
-#endif
-#include <rpc/rpc.h>
-#endif
-
-#if defined (HAVE_NETGROUP)
-#if defined(HAVE_RPCSVC_YP_PROT_H)
-/*
- * HP-UX 11.X has TCP_NODELAY and TCP_MAXSEG defined in <netinet/tcp.h> which
- * was included above.  However <rpc/rpc.h> includes <sys/xti.h> which defines
- * them again without checking if they already exsist.  This generates
- * two "Redefinition of macro" warnings for every single .c file that is
- * compiled.
- */
-#if defined(HPUX) && defined(TCP_NODELAY)
-#undef TCP_NODELAY
-#endif
-#if defined(HPUX) && defined(TCP_MAXSEG)
-#undef TCP_MAXSEG
-#endif
-#include <rpcsvc/yp_prot.h>
-#endif
-#if defined(HAVE_RPCSVC_YPCLNT_H)
-#include <rpcsvc/ypclnt.h>
-#endif
-#endif /* HAVE_NETGROUP */
-
 #ifndef HAVE_KRB5_H
 #undef HAVE_KRB5
 #endif
