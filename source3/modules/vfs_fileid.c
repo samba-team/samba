@@ -226,8 +226,8 @@ static uint64_t fileid_device_mapping_hostname(struct fileid_handle_data *data,
 		return UINT64_MAX;
 	}
 
-	devname = talloc_asprintf(talloc_tos(), "%s%lu",
-				  hostname, sbuf->st_ex_dev);
+	devname = talloc_asprintf(talloc_tos(), "%s%ju",
+				  hostname, (uintmax_t)sbuf->st_ex_dev);
 	if (devname == NULL) {
 		DBG_ERR("talloc_asprintf failed\n");
 		return UINT64_MAX;
