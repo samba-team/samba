@@ -70,7 +70,7 @@ def configure(conf):
     conf.SET_TARGET_TYPE('tirpc', 'EMPTY')
     conf.CHECK_HEADERS('rpc/rpc.h rpc/nettype.h')
     if not conf.CONFIG_SET('HAVE_RPC_RPC_H'):
-        if conf.CHECK_CFG(package='libtirpc', args='--cflags',
+        if conf.CHECK_CFG(package='libtirpc', args='--cflags --libs',
                        msg='Checking for libtirpc headers',
                        uselib_store='TIRPC'):
             conf.CHECK_HEADERS('rpc/rpc.h rpc/nettype.h', lib='tirpc', together=True)
