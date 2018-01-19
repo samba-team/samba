@@ -634,6 +634,11 @@ msg.msg_accrightslen = sizeof(fd);
                     headers='netdb.h netgroup.h',
                     cflags=netgrent_cflags)
 
+    if (conf.CONFIG_SET('HAVE_YP_GET_DEFAULT_DOMAIN') and
+        conf.CONFIG_SET('HAVE_SETNETGRENT') and
+        conf.CONFIG_SET('HAVE_ENDNETGRENT') and
+        conf.CONFIG_SET('HAVE_GETNETGRENT')):
+           conf.DEFINE('HAVE_NETGROUP', '1')
 
     # Look for CUPS
     if Options.options.with_cups:
