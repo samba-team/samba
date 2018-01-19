@@ -91,10 +91,6 @@
 #include <rpc/rpc.h>
 #endif
 
-#if defined(HAVE_YP_GET_DEFAULT_DOMAIN) && defined(HAVE_SETNETGRENT) && defined(HAVE_ENDNETGRENT) && defined(HAVE_GETNETGRENT)
-#define HAVE_NETGROUP 1
-#endif
-
 #if defined (HAVE_NETGROUP)
 #if defined(HAVE_RPCSVC_YP_PROT_H)
 /*
