@@ -1482,10 +1482,22 @@ main() {
         conf.CHECK_STRUCTURE_MEMBER('struct dqblk', 'dqb_curbytes', define='HAVE_STRUCT_DQBLK_DQB_CURBYTES',
                                 headers='sys/quota.h')
         if conf.CHECK_HEADERS('rpcsvc/rquota.h', lib='tirpc'):
-            conf.DEFINE('HAVE_NFS_QUOTAS', '1')
+            # Optional structure member
             conf.CHECK_STRUCTURE_MEMBER('struct getquota_rslt', 'getquota_rslt_u',
                                         define='HAVE_GETQUOTA_RSLT_GETQUOTA_RSLT_U',
-                                        headers='rpcsvc/rquota.h')
+                                        headers='rpcsvc/rquota.h',
+                                        lib='tirpc')
+
+            # Required fucntion for NFS quote support
+            conf.CHECK_CODE('''
+                            clnt_create("", RQUOTAPROG, RQUOTAVERS, "udp");
+                            ''',
+                            headers="rpc/rpc.h rpc/types.h rpcsvc/rquota.h rpc/nettype.h rpc/xdr.h",
+                            define='HAVE_NFS_QUOTAS',
+                            msg='checking for clnt_create()',
+                            execute=True,
+                            local_include=False,
+                            lib='tirpc')
 
         if (host_os.rfind('linux') > -1):
             conf.DEFINE('HAVE_QUOTACTL_LINUX', '1')
@@ -1511,16 +1523,6 @@ main() {
                                 msg='for QUOTACTL_4B:  int quotactl(const char *path, int cmd, int id, char *addr)',
                                 execute=True,
                                 addmain=False)
-
-        conf.CHECK_CODE('''
-                     clnt_create("", RQUOTAPROG, RQUOTAVERS, "udp");
-''',
-                        headers="rpc/rpc.h rpc/types.h rpcsvc/rquota.h rpc/nettype.h rpc/xdr.h", 
-                        define='HAVE_NFS_QUOTAS',
-                        msg='for NFS QUOTAS',
-                        execute=True,
-                        local_include=False,
-                        lib='tirpc')
 
         if conf.CONFIG_SET('HAVE_QUOTACTL_LINUX') or \
            conf.CONFIG_SET('HAVE_QUOTACTL_4A') or \

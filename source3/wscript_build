@@ -615,7 +615,7 @@ bld.SAMBA3_SUBSYSTEM('sysquotas',
                         lib/sysquotas_nfs.c
                      ''',
                      allow_warnings=True,
-                     deps='samba3-util samba-util')
+                     deps='samba3-util samba-util tirpc')
 
 NOTIFY_SOURCES=''
 NOTIFY_DEPS=''

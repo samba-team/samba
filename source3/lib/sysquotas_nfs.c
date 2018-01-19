@@ -36,13 +36,22 @@
  * This is based on the FreeBSD / SUNOS5 section of quotas.c
  */
 
+/* <rpc/xdr.h> uses TRUE and FALSE */
+#ifdef TRUE
+#undef TRUE
+#endif
+
+#ifdef FALSE
+#undef FALSE
+#endif
+
 #include <rpc/rpc.h>
 #include <rpc/types.h>
+#include <rpc/xdr.h>
 #include <rpcsvc/rquota.h>
 #ifdef HAVE_RPC_NETTYPE_H
 #include <rpc/nettype.h>
 #endif
-#include <rpc/xdr.h>
 
 #ifndef RQ_PATHLEN
 #define RQ_PATHLEN 1024
