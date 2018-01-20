@@ -483,6 +483,10 @@ void
 smbc_setLogCallback(SMBCCTX *c, void *private_ptr,
 		    smbc_debug_callback_fn fn);
 
+/** set configuration file, this is applied at global level */
+int
+smbc_setConfiguration(SMBCCTX *c, const char *file);
+
 /** Get the netbios name used for making connections */
 char *
 smbc_getNetbiosName(SMBCCTX *c);
