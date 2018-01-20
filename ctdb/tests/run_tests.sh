@@ -46,8 +46,9 @@ export TEST_LOCAL_DAEMONS
 [ -n "$TEST_LOCAL_DAEMONS" ] || TEST_LOCAL_DAEMONS=3
 export TEST_VAR_DIR=""
 export TEST_CLEANUP=false
+export TEST_TIMEOUT=600
 
-temp=$(getopt -n "$prog" -o "AcCdDehHNqSvV:xX" -l help -- "$@")
+temp=$(getopt -n "$prog" -o "AcCdDehHNqST:vV:xX" -l help -- "$@")
 
 [ $? != 0 ] && usage
 
@@ -65,6 +66,7 @@ while true ; do
 	-N) with_summary=false ; shift ;;
 	-q) quiet=true ; shift ;;
 	-S) socket_wrapper=true ; shift ;;
+	-T) TEST_TIMEOUT="$2" ; shift 2 ;;
 	-v) TEST_VERBOSE=true ; shift ;;
 	-V) TEST_VAR_DIR="$2" ; shift 2 ;;
 	-x) set -x; shift ;;
@@ -114,6 +116,9 @@ ctdb_test_end ()
 	    interp="PASSED"
 	    statstr=""
 	    echo "ALL OK: $*"
+	elif [ $status -eq 124 ] ; then
+	    interp="TIMEOUT"
+	    statstr=" (status $status)"
 	else
 	    interp="FAILED"
 	    statstr=" (status $status)"
@@ -137,7 +142,7 @@ ctdb_test_run ()
     $no_header || ctdb_test_begin "$name"
 
     local status=0
-    "$@" || status=$?
+    timeout $TEST_TIMEOUT "$@" || status=$?
 
     $no_header || ctdb_test_end "$name" "$status" "$*"
 
