@@ -14,7 +14,7 @@ Options:
   -H		No headers - for running single test with other wrapper
   -N		Don't print summary of tests results after running all tests
   -q		Quiet - don't show tests being run (hint: use with -s)
-  -S            Enable socket wrapper
+  -S <lib>      Use socket wrapper library <lib> for local integration tests
   -v		Verbose - print test output for non-failures (only some tests)
   -V <dir>	Use <dir> as TEST_VAR_DIR
   -x		Trace this script with the -x option
@@ -36,7 +36,6 @@ with_desc=false
 quiet=false
 exit_on_fail=false
 no_header=false
-socket_wrapper=false
 
 export TEST_VERBOSE=false
 export TEST_COMMAND_TRACE=false
@@ -47,8 +46,9 @@ export TEST_LOCAL_DAEMONS
 export TEST_VAR_DIR=""
 export TEST_CLEANUP=false
 export TEST_TIMEOUT=600
+export TEST_SOCKET_WRAPPER_SO_PATH=""
 
-temp=$(getopt -n "$prog" -o "AcCdDehHNqST:vV:xX" -l help -- "$@")
+temp=$(getopt -n "$prog" -o "AcCdDehHNqS:T:vV:xX" -l help -- "$@")
 
 [ $? != 0 ] && usage
 
@@ -65,7 +65,7 @@ while true ; do
 	-H) no_header=true ; shift ;;
 	-N) with_summary=false ; shift ;;
 	-q) quiet=true ; shift ;;
-	-S) socket_wrapper=true ; shift ;;
+	-S) TEST_SOCKET_WRAPPER_SO_PATH="$2" ; shift 2 ;;
 	-T) TEST_TIMEOUT="$2" ; shift 2 ;;
 	-v) TEST_VERBOSE=true ; shift ;;
 	-V) TEST_VAR_DIR="$2" ; shift 2 ;;
@@ -251,11 +251,6 @@ mkdir -p "$TEST_VAR_DIR"
 # Must be absolute
 TEST_VAR_DIR=$(cd "$TEST_VAR_DIR"; echo "$PWD")
 echo "TEST_VAR_DIR=$TEST_VAR_DIR"
-
-if $socket_wrapper ; then
-    export SOCKET_WRAPPER_DIR="${TEST_VAR_DIR}/sw"
-    mkdir -p "$SOCKET_WRAPPER_DIR"
-fi
 
 export TEST_SCRIPTS_DIR="${CTDB_TEST_DIR}/scripts"
 
