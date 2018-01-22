@@ -684,20 +684,20 @@ NTSTATUS dcesrv_lsa_LookupSids2(struct dcesrv_call_state *dce_call,
 {
 	enum dcerpc_transport_t transport =
 		dcerpc_binding_get_transport(dce_call->conn->endpoint->ep_description);
-	struct lsa_policy_state *state;
-	struct dcesrv_handle *h;
+	struct lsa_policy_state *policy_state = NULL;
+	struct dcesrv_handle *policy_handle = NULL;
 
 	if (transport != NCACN_NP && transport != NCALRPC) {
 		DCESRV_FAULT(DCERPC_FAULT_ACCESS_DENIED);
 	}
 
-	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_POLICY);
+	DCESRV_PULL_HANDLE(policy_handle, r->in.handle, LSA_HANDLE_POLICY);
 
-	state = h->data;
+	policy_state = policy_handle->data;
 
 	return dcesrv_lsa_LookupSids_common(dce_call,
 					    mem_ctx,
-					    state,
+					    policy_state,
 					    r);
 }
 
