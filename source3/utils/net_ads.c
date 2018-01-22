@@ -305,7 +305,8 @@ retry:
 		}
        }
 
-	status = ads_connect(ads);
+	status = c->opt_user_specified ? ads_connect_user_creds(ads) :
+					 ads_connect(ads);
 
 	if (!ADS_ERR_OK(status)) {
 
