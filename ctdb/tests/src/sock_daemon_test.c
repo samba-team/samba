@@ -668,7 +668,8 @@ static void test4(TALLOC_CTX *mem_ctx, const char *pidfile,
  * Start daemon, multiple client connects, requests, disconnects
  */
 
-#define TEST5_MAX_CLIENTS	10
+#define TEST5_VALID_CLIENTS	10
+#define TEST5_MAX_CLIENTS	100
 
 struct test5_pkt {
 	uint32_t len;
@@ -710,7 +711,8 @@ static void test5_client_callback(uint8_t *buf, size_t buflen,
 	state->done = true;
 }
 
-static int test5_client(const char *sockpath, int id)
+static int test5_client(const char *sockpath, int id, pid_t pid_server,
+			pid_t *client_pid)
 {
 	pid_t pid;
 	int fd[2];
@@ -760,7 +762,9 @@ static int test5_client(const char *sockpath, int id)
 		close(fd[0]);
 		state.fd = -1;
 
-		sleep(10);
+		while (kill(pid_server, 0) == 0 || errno != ESRCH) {
+			sleep(1);
+		}
 		exit(0);
 	}
 
@@ -775,6 +779,7 @@ static int test5_client(const char *sockpath, int id)
 
 	close(fd[0]);
 
+	*client_pid = pid;
 	return ret;
 }
 
@@ -788,12 +793,12 @@ static bool test5_connect(struct sock_client_context *client,
 	struct test5_server_state *state =
 		(struct test5_server_state *)private_data;
 
-	if (state->num_clients == TEST5_MAX_CLIENTS) {
+	if (state->num_clients == TEST5_VALID_CLIENTS) {
 		return false;
 	}
 
 	state->num_clients += 1;
-	assert(state->num_clients <= TEST5_MAX_CLIENTS);
+	assert(state->num_clients <= TEST5_VALID_CLIENTS);
 	return true;
 }
 
@@ -925,6 +930,7 @@ static void test5(TALLOC_CTX *mem_ctx, const char *pidfile,
 	pid_t pid_server, pid;
 	int fd[2], ret, i;
 	ssize_t n;
+	pid_t client_pid[TEST5_MAX_CLIENTS];
 
 	pid = getpid();
 
@@ -968,16 +974,18 @@ static void test5(TALLOC_CTX *mem_ctx, const char *pidfile,
 
 	close(fd[0]);
 
-	for (i=0; i<100; i++) {
-		ret = test5_client(sockpath, i);
-		if (i < TEST5_MAX_CLIENTS) {
+	for (i=0; i<TEST5_MAX_CLIENTS; i++) {
+		ret = test5_client(sockpath, i, pid_server, &client_pid[i]);
+		if (i < TEST5_VALID_CLIENTS) {
 			assert(ret == i+1);
 		} else {
 			assert(ret == 0);
 		}
 	}
 
-	for (i=0; i<100; i++) {
+	for (i=TEST5_MAX_CLIENTS-1; i>=0; i--) {
+		kill(client_pid[i], SIGKILL);
+
 		pid = wait(&ret);
 		assert(pid != -1);
 	}
