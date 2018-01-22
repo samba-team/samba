@@ -17,6 +17,12 @@ fi
 
 export CTDB_NODES="${TEST_VAR_DIR}/nodes.txt"
 
+if [ -n "$TEST_SOCKET_WRAPPER_SO_PATH" ] ; then
+	export LD_PRELOAD="$TEST_SOCKET_WRAPPER_SO_PATH"
+	export SOCKET_WRAPPER_DIR="${TEST_VAR_DIR}/sw"
+	mkdir -p "$SOCKET_WRAPPER_DIR"
+fi
+
 #######################################
 
 config_from_environment ()
