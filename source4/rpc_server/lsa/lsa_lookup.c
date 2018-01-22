@@ -1015,8 +1015,8 @@ NTSTATUS dcesrv_lsa_LookupNames2(struct dcesrv_call_state *dce_call,
 {
 	enum dcerpc_transport_t transport =
 		dcerpc_binding_get_transport(dce_call->conn->endpoint->ep_description);
-	struct lsa_policy_state *state;
-	struct dcesrv_handle *h;
+	struct lsa_policy_state *policy_state = NULL;
+	struct dcesrv_handle *policy_handle = NULL;
 	uint32_t i;
 	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
 	struct lsa_RefDomainList *domains;
@@ -1025,7 +1025,9 @@ NTSTATUS dcesrv_lsa_LookupNames2(struct dcesrv_call_state *dce_call,
 		DCESRV_FAULT(DCERPC_FAULT_ACCESS_DENIED);
 	}
 
-	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_POLICY);
+	DCESRV_PULL_HANDLE(policy_handle, r->in.handle, LSA_HANDLE_POLICY);
+
+	policy_state = policy_handle->data;
 
 	*r->out.domains = NULL;
 	r->out.sids->count = 0;
@@ -1036,8 +1038,6 @@ NTSTATUS dcesrv_lsa_LookupNames2(struct dcesrv_call_state *dce_call,
 	    r->in.level > LSA_LOOKUP_NAMES_RODC_REFERRAL_TO_FULL_DC) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-
-	state = h->data;
 
 	domains = talloc_zero(r->out.domains, struct lsa_RefDomainList);
 	if (domains == NULL) {
@@ -1069,14 +1069,17 @@ NTSTATUS dcesrv_lsa_LookupNames2(struct dcesrv_call_state *dce_call,
 		r->out.sids->sids[i].sid_index   = 0xFFFFFFFF;
 		r->out.sids->sids[i].unknown     = 0;
 
-		status2 = dcesrv_lsa_lookup_name(dce_call->event_ctx, lp_ctx, state, mem_ctx, name,
-						 &authority_name, &sid, &rtype, &rid);
+		status2 = dcesrv_lsa_lookup_name(dce_call->event_ctx, lp_ctx,
+						 policy_state, mem_ctx, name,
+						 &authority_name, &sid, &rtype,
+						 &rid);
 		if (!NT_STATUS_IS_OK(status2)) {
 			continue;
 		}
 
-		status2 = dcesrv_lsa_authority_list(state, mem_ctx, rtype, authority_name, 
-						    sid, domains, &sid_index);
+		status2 = dcesrv_lsa_authority_list(policy_state, mem_ctx,
+						    rtype, authority_name, sid,
+						    domains, &sid_index);
 		if (!NT_STATUS_IS_OK(status2)) {
 			continue;
 		}
