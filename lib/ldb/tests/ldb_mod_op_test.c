@@ -2587,6 +2587,14 @@ static void test_ldb_attrs_index_handler(void **state)
 						    syntax, &cn_attr_2);
 	assert_int_equal(ret, LDB_SUCCESS);
 
+	syntax = ldb_standard_syntax_by_name(ldb, LDB_SYNTAX_OCTET_STRING);
+	assert_non_null(syntax);
+
+	ret = ldb_schema_attribute_fill_with_syntax(ldb, ldb,
+						    "", 0,
+						    syntax, &default_attr);
+	assert_int_equal(ret, LDB_SUCCESS);
+
 	/*
 	 * Set an attribute handler
 	 */
