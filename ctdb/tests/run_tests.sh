@@ -254,13 +254,23 @@ echo "TEST_VAR_DIR=$TEST_VAR_DIR"
 
 export TEST_SCRIPTS_DIR="${CTDB_TEST_DIR}/scripts"
 
+unit_tests="
+	cunit
+	eventd
+	eventscripts
+	onnode
+	shellcheck
+	takeover
+	takeover_helper
+	tool
+"
+
 # If no tests specified then run some defaults
 if [ -z "$1" ] ; then
-    if [ -n "$TEST_LOCAL_DAEMONS" ] ; then
-	set -- onnode takeover takeover_helper tool eventscripts \
-	    cunit eventd shellcheck simple
-    else
-	set -- simple complex
+	if [ -n "$TEST_LOCAL_DAEMONS" ] ; then
+		set -- UNIT simple
+	else
+		set -- simple complex
     fi
 fi
 
@@ -287,7 +297,19 @@ cleanup_handler ()
 
 trap cleanup_handler SIGINT SIGTERM
 
+declare -a tests
+i=0
 for f ; do
+	if [ "$f" = "UNIT" ] ; then
+		for t in $unit_tests ; do
+			tests[i++]="$t"
+		done
+	else
+		tests[i++]="$f"
+	fi
+done
+
+for f in "${tests[@]}" ; do
     find_and_run_one_test "$f"
 
     if [ $status -eq 127 ] ; then
