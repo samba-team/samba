@@ -21,473 +21,160 @@
 */
 
 #include "rpc_server/lsa/lsa.h"
+#include "libds/common/roles.h"
 #include "libds/common/flag_mapping.h"
 
-static const struct {
-	const char *domain;
+struct dcesrv_lsa_TranslatedItem {
+	enum lsa_SidType type;
+	const struct dom_sid *sid;
 	const char *name;
-	const char *sid;
-	enum lsa_SidType rtype;
-} well_known[] = {
-	{
-		.name = "EVERYONE",
-		.sid = SID_WORLD,
-		.rtype = SID_NAME_WKN_GRP,
-	},
-	{
-		.name = "CREATOR OWNER",
-		.sid = SID_CREATOR_OWNER,
-		.rtype = SID_NAME_WKN_GRP,
-	},
-	{
-		.name = "CREATOR GROUP",
-		.sid = SID_CREATOR_GROUP,
-		.rtype = SID_NAME_WKN_GRP,
-	},
-	{
-		.name = "Owner Rights",
-		.sid = SID_OWNER_RIGHTS,
-		.rtype = SID_NAME_WKN_GRP,
-	},
-	{
-		.domain = "NT AUTHORITY",
-		.name = "Dialup",
-		.sid = SID_NT_DIALUP,
-		.rtype = SID_NAME_WKN_GRP,
-	},
-	{
-		.domain = "NT AUTHORITY",
-		.name = "Network",
-		.sid = SID_NT_NETWORK,
-		.rtype = SID_NAME_WKN_GRP,
-	},
-	{
-		.domain = "NT AUTHORITY",
-		.name = "Batch",
-		.sid = SID_NT_BATCH,
-		.rtype = SID_NAME_WKN_GRP,
-	},
-	{
-		.domain = "NT AUTHORITY",
-		.name = "Interactive",
-		.sid = SID_NT_INTERACTIVE,
-		.rtype = SID_NAME_WKN_GRP,
-	},
-	{
-		.domain = "NT AUTHORITY",
-		.name = "Service",
-		.sid = SID_NT_SERVICE,
-		.rtype = SID_NAME_WKN_GRP,
-	},
-	{
-		.domain = "NT AUTHORITY",
-		.name = "ANONYMOUS LOGON",
-		.sid = SID_NT_ANONYMOUS,
-		.rtype = SID_NAME_WKN_GRP,
-	},
-	{
-		.domain = "NT AUTHORITY",
-		.name = "Proxy",
-		.sid = SID_NT_PROXY,
-		.rtype = SID_NAME_WKN_GRP,
-	},
-	{
-		.domain = "NT AUTHORITY",
-		.name = "ServerLogon",
-		.sid = SID_NT_ENTERPRISE_DCS,
-		.rtype = SID_NAME_WKN_GRP,
-	},
-	{
-		.domain = "NT AUTHORITY",
-		.name = "Self",
-		.sid = SID_NT_SELF,
-		.rtype = SID_NAME_WKN_GRP,
-	},
-	{
-		.domain = "NT AUTHORITY",
-		.name = "Authenticated Users",
-		.sid = SID_NT_AUTHENTICATED_USERS,
-		.rtype = SID_NAME_WKN_GRP,
-	},
-	{
-		.domain = "NT AUTHORITY",
-		.name = "Restricted",
-		.sid = SID_NT_RESTRICTED,
-		.rtype = SID_NAME_WKN_GRP,
-	},
-	{
-		.domain = "NT AUTHORITY",
-		.name = "Terminal Server User",
-		.sid = SID_NT_TERMINAL_SERVER_USERS,
-		.rtype = SID_NAME_WKN_GRP,
-	},
-	{
-		.domain = "NT AUTHORITY",
-		.name = "Remote Interactive Logon",
-		.sid = SID_NT_REMOTE_INTERACTIVE,
-		.rtype = SID_NAME_WKN_GRP,
-	},
-	{
-		.domain = "NT AUTHORITY",
-		.name = "This Organization",
-		.sid = SID_NT_THIS_ORGANISATION,
-		.rtype = SID_NAME_WKN_GRP,
-	},
-	{
-		.domain = "NT AUTHORITY",
-		.name = "SYSTEM",
-		.sid = SID_NT_SYSTEM,
-		.rtype = SID_NAME_WKN_GRP,
-	},
-	{
-		.domain = "NT AUTHORITY",
-		.name = "Local Service",
-		.sid = SID_NT_LOCAL_SERVICE,
-		.rtype = SID_NAME_WKN_GRP,
-	},
-	{
-		.domain = "NT AUTHORITY",
-		.name = "Network Service",
-		.sid = SID_NT_NETWORK_SERVICE,
-		.rtype = SID_NAME_WKN_GRP,
-	},
-	{
-		.domain = "NT AUTHORITY",
-		.name = "Digest Authentication",
-		.sid = SID_NT_DIGEST_AUTHENTICATION,
-		.rtype = SID_NAME_WKN_GRP,
-	},
-	{
-		.domain = "NT AUTHORITY",
-		.name = "Enterprise Domain Controllers",
-		.sid = SID_NT_ENTERPRISE_DCS,
-		.rtype = SID_NAME_WKN_GRP,
-	},
-	{
-		.domain = "NT AUTHORITY",
-		.name = "NTLM Authentication",
-		.sid = SID_NT_NTLM_AUTHENTICATION,
-		.rtype = SID_NAME_WKN_GRP,
-	},
-	{
-		.domain = "NT AUTHORITY",
-		.name = "Other Organization",
-		.sid = SID_NT_OTHER_ORGANISATION,
-		.rtype = SID_NAME_WKN_GRP,
-	},
-	{
-		.domain = "NT AUTHORITY",
-		.name = "SChannel Authentication",
-		.sid = SID_NT_SCHANNEL_AUTHENTICATION,
-		.rtype = SID_NAME_WKN_GRP,
-	},
-	{
-		.domain = "NT AUTHORITY",
-		.name = "IUSR",
-		.sid = SID_NT_IUSR,
-		.rtype = SID_NAME_WKN_GRP,
-	},
-	{
-		.sid = NULL,
-	}
+	const char *authority_name;
+	const struct dom_sid *authority_sid;
+	uint32_t flags;
+	bool done;
+	struct {
+		const char *domain; /* only $DOMAIN\ */
+		const char *namespace; /* $NAMESPACE\ or @$NAMESPACE */
+		const char *principal; /* \$PRINCIPAL or $PRIN@IPAL */
+		const char *sid; /* "S-1-5-21-9000-8000-7000-6000" */
+		const char *rid; /* "00001770" */
+	} hints;
 };
 
-static NTSTATUS lookup_well_known_names(TALLOC_CTX *mem_ctx, const char *domain,
-					const char *name, const char **authority_name, 
-					struct dom_sid **sid, enum lsa_SidType *rtype)
-{
-	unsigned int i;
-	for (i=0; well_known[i].sid; i++) {
-		if (domain) {
-			if (strcasecmp_m(domain, well_known[i].domain) == 0
-			    && strcasecmp_m(name, well_known[i].name) == 0) {
-				*authority_name = well_known[i].domain;
-				*sid = dom_sid_parse_talloc(mem_ctx, well_known[i].sid);
-				*rtype = well_known[i].rtype;
-				return NT_STATUS_OK;
-			}
-		} else {
-			if (strcasecmp_m(name, well_known[i].name) == 0) {
-				*authority_name = well_known[i].domain;
-				*sid = dom_sid_parse_talloc(mem_ctx, well_known[i].sid);
-				*rtype = well_known[i].rtype;
-				return NT_STATUS_OK;
-			}
-		}
-	}
-	return NT_STATUS_NOT_FOUND;	
-}
+struct dcesrv_lsa_LookupSids_base_state;
+struct dcesrv_lsa_LookupNames_base_state;
 
-static NTSTATUS lookup_well_known_sids(TALLOC_CTX *mem_ctx, 
-				       const char *sid_str, const char **authority_name, 
-				       const char **name, enum lsa_SidType *rtype) 
-{
-	unsigned int i;
-	for (i=0; well_known[i].sid; i++) {
-		if (strcasecmp_m(sid_str, well_known[i].sid) == 0) {
-			*authority_name = well_known[i].domain;
-			*name = well_known[i].name;
-			*rtype = well_known[i].rtype;
-			return NT_STATUS_OK;
-		}
-	}
-	return NT_STATUS_NOT_FOUND;	
-}
+struct dcesrv_lsa_Lookup_view {
+	const char *name;
+	NTSTATUS (*lookup_sid)(struct dcesrv_lsa_LookupSids_base_state *state,
+			       struct dcesrv_lsa_TranslatedItem *item);
+	NTSTATUS (*lookup_name)(struct dcesrv_lsa_LookupNames_base_state *state,
+				struct dcesrv_lsa_TranslatedItem *item);
+};
+
+struct dcesrv_lsa_Lookup_view_table {
+	const char *name;
+	size_t count;
+	const struct dcesrv_lsa_Lookup_view **array;
+};
+
+static const struct dcesrv_lsa_Lookup_view_table *dcesrv_lsa_view_table(
+	enum lsa_LookupNamesLevel level);
 
 /*
   lookup a SID for 1 name
 */
-static NTSTATUS dcesrv_lsa_lookup_name(struct tevent_context *ev_ctx, 
-				       struct loadparm_context *lp_ctx,
-				       struct lsa_policy_state *state, TALLOC_CTX *mem_ctx,
-				       const char *name, const char **authority_name, 
-				       struct dom_sid **sid, enum lsa_SidType *rtype,
-				       uint32_t *rid)
+static NTSTATUS dcesrv_lsa_lookup_name(struct lsa_policy_state *state,
+				       TALLOC_CTX *mem_ctx,
+				       const char *domain_name,
+				       const struct dom_sid *domain_sid,
+				       struct ldb_dn *domain_dn,
+				       const char *principal,
+				       const struct dom_sid **p_sid,
+				       enum lsa_SidType *p_type)
 {
-	int ret, i;
-	uint32_t atype;
-	struct ldb_message **res;
 	const char * const attrs[] = { "objectSid", "sAMAccountType", NULL};
-	const char *p;
-	const char *domain;
-	const char *username;
-	struct ldb_dn *domain_dn;
-	struct dom_sid *domain_sid;
+	struct ldb_message **res = NULL;
+	const char *nt4_account = NULL;
+	char *encoded_account = NULL;
+	const char *at = NULL;
 	NTSTATUS status;
+	const struct dom_sid *sid = NULL;
+	uint32_t atype;
+	enum lsa_SidType type;
+	bool match = false;
+	int ret;
 
-	p = strchr_m(name, '\\');
-	if (p != NULL) {
-		domain = talloc_strndup(mem_ctx, name, p-name);
-		if (!domain) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		username = p + 1;
-	} else if (strchr_m(name, '@')) {
+	if (principal == NULL && principal[0] == '\0') {
+		return NT_STATUS_NONE_MAPPED;
+	}
+
+	at = strchr(principal, '@');
+	if (at != NULL) {
+		const char *nt4_domain = NULL;
+
 		status = crack_name_to_nt4_name(mem_ctx,
 						state->sam_ldb,
 						DRSUAPI_DS_NAME_FORMAT_USER_PRINCIPAL,
-						name, &domain, &username);
+						principal,
+						&nt4_domain,
+						&nt4_account);
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(3, ("Failed to crack name %s into an NT4 name: %s\n", name, nt_errstr(status)));
+			DEBUG(3, ("Failed to crack name %s into an NT4 name: %s\n",
+				  principal, nt_errstr(status)));
 			return status;
+		}
+
+		match = strequal(nt4_domain, domain_name);
+		if (!match) {
+			/*
+			 * TODO: handle multiple domains in a forest.
+			 */
+			return NT_STATUS_NONE_MAPPED;
 		}
 	} else {
-		domain = NULL;
-		username = name;
-	}
-	
-	if (!domain) {
-		/* Look up table of well known names */
-		status = lookup_well_known_names(mem_ctx, NULL, username, authority_name, sid, rtype);
-		if (NT_STATUS_IS_OK(status)) {
-			dom_sid_split_rid(NULL, *sid, NULL, rid);
-			return NT_STATUS_OK;
-		}
-
-		if (username == NULL) {
-			*authority_name = NAME_BUILTIN;
-			*sid = dom_sid_parse_talloc(mem_ctx, SID_BUILTIN);
-			if (*sid == NULL) {
-				return NT_STATUS_NO_MEMORY;
-			}
-			*rtype = SID_NAME_DOMAIN;
-			*rid = 0xFFFFFFFF;
-			return NT_STATUS_OK;
-		}
-
-		if (strcasecmp_m(username, NAME_NT_AUTHORITY) == 0) { 
-			*authority_name = NAME_NT_AUTHORITY;
-			*sid =  dom_sid_parse_talloc(mem_ctx, SID_NT_AUTHORITY);
-			if (*sid == NULL) {
-				return NT_STATUS_NO_MEMORY;
-			}
-			*rtype = SID_NAME_DOMAIN;
-			dom_sid_split_rid(NULL, *sid, NULL, rid);
-			return NT_STATUS_OK;
-		}
-		if (strcasecmp_m(username, NAME_BUILTIN) == 0) { 
-			*authority_name = NAME_BUILTIN;
-			*sid = dom_sid_parse_talloc(mem_ctx, SID_BUILTIN);
-			if (*sid == NULL) {
-				return NT_STATUS_NO_MEMORY;
-			}
-			*rtype = SID_NAME_DOMAIN;
-			*rid = 0xFFFFFFFF;
-			return NT_STATUS_OK;
-		}
-		if (strcasecmp_m(username, state->domain_dns) == 0) { 
-			*authority_name = talloc_strdup(mem_ctx,
-							state->domain_name);
-			if (*authority_name == NULL) {
-				return NT_STATUS_NO_MEMORY;
-			}
-			*sid =  dom_sid_dup(mem_ctx, state->domain_sid);
-			if (*sid == NULL) {
-				return NT_STATUS_NO_MEMORY;
-			}
-			*rtype = SID_NAME_DOMAIN;
-			*rid = 0xFFFFFFFF;
-			return NT_STATUS_OK;
-		}
-		if (strcasecmp_m(username, state->domain_name) == 0) { 
-			*authority_name = talloc_strdup(mem_ctx,
-							state->domain_name);
-			if (*authority_name == NULL) {
-				return NT_STATUS_NO_MEMORY;
-			}
-			*sid =  dom_sid_dup(mem_ctx, state->domain_sid);
-			if (*sid == NULL) {
-				return NT_STATUS_NO_MEMORY;
-			}
-			*rtype = SID_NAME_DOMAIN;
-			*rid = 0xFFFFFFFF;
-			return NT_STATUS_OK;
-		}
-
-		/* Perhaps this is a well known user? */
-		name = talloc_asprintf(mem_ctx, "%s\\%s", NAME_NT_AUTHORITY, username);
-		if (!name) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		status = dcesrv_lsa_lookup_name(ev_ctx, lp_ctx, state, mem_ctx, name, authority_name, sid, rtype, rid);
-		if (NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-
-		/* Perhaps this is a BUILTIN user? */
-		name = talloc_asprintf(mem_ctx, "%s\\%s", NAME_BUILTIN, username);
-		if (!name) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		status = dcesrv_lsa_lookup_name(ev_ctx, lp_ctx, state, mem_ctx, name, authority_name, sid, rtype, rid);
-		if (NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-
-		/* OK, I give up - perhaps we need to assume the user is in our domain? */
-		name = talloc_asprintf(mem_ctx, "%s\\%s", state->domain_name, username);
-		if (!name) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		status = dcesrv_lsa_lookup_name(ev_ctx, lp_ctx, state, mem_ctx, name, authority_name, sid, rtype, rid);
-		if (NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-
-		return STATUS_SOME_UNMAPPED;
-	} else if (strcasecmp_m(domain, NAME_NT_AUTHORITY) == 0) {
-		if (!*username) {
-			*authority_name = NAME_NT_AUTHORITY;
-			*sid = dom_sid_parse_talloc(mem_ctx, SID_NT_AUTHORITY);
-			if (*sid == NULL) {
-				return NT_STATUS_NO_MEMORY;
-			}
-			*rtype = SID_NAME_DOMAIN;
-			dom_sid_split_rid(NULL, *sid, NULL, rid);
-			return NT_STATUS_OK;
-		}
-
-		/* Look up table of well known names */
-		status = lookup_well_known_names(mem_ctx, domain, username, authority_name, 
-						 sid, rtype);
-		if (NT_STATUS_IS_OK(status)) {
-			dom_sid_split_rid(NULL, *sid, NULL, rid);
-		}
-		return status;
-	} else if (strcasecmp_m(domain, NAME_BUILTIN) == 0) {
-		*authority_name = NAME_BUILTIN;
-		domain_dn = state->builtin_dn;
-	} else if (strcasecmp_m(domain, state->domain_dns) == 0) { 
-		*authority_name = talloc_strdup(mem_ctx,
-						state->domain_name);
-		if (*authority_name == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		domain_dn = state->domain_dn;
-	} else if (strcasecmp_m(domain, state->domain_name) == 0) { 
-		*authority_name = talloc_strdup(mem_ctx,
-						state->domain_name);
-		if (*authority_name == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		domain_dn = state->domain_dn;
-	} else {
-		/* Not local, need to ask winbind in future */
-		return STATUS_SOME_UNMAPPED;
+		nt4_account = principal;
 	}
 
-	ret = gendb_search_dn(state->sam_ldb, mem_ctx, domain_dn, &res, attrs);
-	if (ret != 1) {
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
-	domain_sid = samdb_result_dom_sid(mem_ctx, res[0], "objectSid");
-	if (domain_sid == NULL) {
-		return NT_STATUS_INVALID_SID;
+	encoded_account = ldb_binary_encode_string(mem_ctx, nt4_account);
+	if (encoded_account == NULL) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (!*username) {
-		*sid = domain_sid;
-		*rtype = SID_NAME_DOMAIN;
-		*rid = 0xFFFFFFFF;
-		return NT_STATUS_OK;
-	}
-	
 	ret = gendb_search(state->sam_ldb, mem_ctx, domain_dn, &res, attrs, 
 			   "(&(sAMAccountName=%s)(objectSid=*))", 
-			   ldb_binary_encode_string(mem_ctx, username));
+			   encoded_account);
+	TALLOC_FREE(encoded_account);
 	if (ret < 0) {
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		return NT_STATUS_INTERNAL_DB_ERROR;
+	}
+	if (ret == 0) {
+		return NT_STATUS_NONE_MAPPED;
+	}
+	if (ret > 1) {
+		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		DBG_ERR("nt4_account[%s] found %d times (principal[%s]) - %s\n",
+			nt4_account, ret, principal, nt_errstr(status));
+		return status;
 	}
 
-	for (i=0; i < ret; i++) {
-		*sid = samdb_result_dom_sid(mem_ctx, res[i], "objectSid");
-		if (*sid == NULL) {
-			return NT_STATUS_INVALID_SID;
-		}
-
-		/* Check that this is in the domain */
-		if (!dom_sid_in_domain(domain_sid, *sid)) {
-			continue;
-		}
-
-		atype = ldb_msg_find_attr_as_uint(res[i], "sAMAccountType", 0);
-			
-		*rtype = ds_atype_map(atype);
-		if (*rtype == SID_NAME_UNKNOWN) {
-			return STATUS_SOME_UNMAPPED;
-		}
-
-		dom_sid_split_rid(NULL, *sid, NULL, rid);
-		return NT_STATUS_OK;
+	sid = samdb_result_dom_sid(mem_ctx, res[0], "objectSid");
+	if (sid == NULL) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
-	/* need to check for an allocated sid */
+	/* Check that this is in the domain */
+	match = dom_sid_in_domain(domain_sid, sid);
+	if (!match) {
+		return NT_STATUS_NONE_MAPPED;
+	}
 
-	return NT_STATUS_INVALID_SID;
+	atype = ldb_msg_find_attr_as_uint(res[0], "sAMAccountType", 0);
+	type = ds_atype_map(atype);
+	if (type == SID_NAME_UNKNOWN) {
+		return NT_STATUS_NONE_MAPPED;
+	}
+
+	*p_sid = sid;
+	*p_type = type;
+	return NT_STATUS_OK;
 }
 
 
 /*
   add to the lsa_RefDomainList for LookupSids and LookupNames
 */
-static NTSTATUS dcesrv_lsa_authority_list(struct lsa_policy_state *state, TALLOC_CTX *mem_ctx, 
-					  enum lsa_SidType rtype,
-					  const char *authority_name,
-					  struct dom_sid *sid, 
+static NTSTATUS dcesrv_lsa_authority_list(const char *authority_name,
+					  const struct dom_sid *authority_sid,
 					  struct lsa_RefDomainList *domains,
 					  uint32_t *sid_index)
 {
-	struct dom_sid *authority_sid;
 	uint32_t i;
 
-	if (rtype != SID_NAME_DOMAIN) {
-		authority_sid = dom_sid_dup(mem_ctx, sid);
-		if (authority_sid == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		authority_sid->num_auths--;
-	} else {
-		authority_sid = sid;
+	*sid_index = UINT32_MAX;
+
+	if (authority_name == NULL) {
+		return NT_STATUS_OK;
 	}
 
 	/* see if we've already done this authority name */
@@ -505,85 +192,77 @@ static NTSTATUS dcesrv_lsa_authority_list(struct lsa_policy_state *state, TALLOC
 	if (domains->domains == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	domains->domains[i].name.string = authority_name;
-	domains->domains[i].sid         = authority_sid;
+	domains->domains[i].name.string = talloc_strdup(domains->domains,
+							authority_name);
+	if (domains->domains[i].name.string == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	domains->domains[i].sid         = dom_sid_dup(domains->domains,
+						      authority_sid);
+	if (domains->domains[i].sid == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 	domains->count++;
 	domains->max_size = LSA_REF_DOMAIN_LIST_MULTIPLIER * domains->count;
 	*sid_index = i;
-	
+
 	return NT_STATUS_OK;
 }
 
 /*
   lookup a name for 1 SID
 */
-static NTSTATUS dcesrv_lsa_lookup_sid(struct lsa_policy_state *state, TALLOC_CTX *mem_ctx,
-				      struct dom_sid *sid, const char *sid_str,
-				      const char **authority_name, 
-				      const char **name, enum lsa_SidType *rtype)
+static NTSTATUS dcesrv_lsa_lookup_sid(struct lsa_policy_state *state,
+				      TALLOC_CTX *mem_ctx,
+				      const char *domain_name,
+				      const struct dom_sid *domain_sid,
+				      struct ldb_dn *domain_dn,
+				      const struct dom_sid *sid,
+				      const char **p_name,
+				      enum lsa_SidType *p_type)
 {
-	NTSTATUS status;
-	int ret;
+	const char * const attrs[] = { "sAMAccountName", "sAMAccountType", NULL};
+	struct ldb_message **res = NULL;
+	char *encoded_sid = NULL;
+	const char *name = NULL;
 	uint32_t atype;
-	struct ldb_message **res;
-	struct ldb_dn *domain_dn;
-	const char * const attrs[] = { "sAMAccountName", "sAMAccountType", "cn", NULL};
+	enum lsa_SidType type;
+	int ret;
 
-	status = lookup_well_known_sids(mem_ctx, sid_str, authority_name, name, rtype);
-	if (NT_STATUS_IS_OK(status)) {
+	encoded_sid = ldap_encode_ndr_dom_sid(mem_ctx, sid);
+	if (encoded_sid == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ret = gendb_search(state->sam_ldb, mem_ctx, domain_dn, &res, attrs, 
+			   "(&(objectSid=%s)(sAMAccountName=*))", encoded_sid);
+	TALLOC_FREE(encoded_sid);
+	if (ret < 0) {
+		return NT_STATUS_INTERNAL_DB_ERROR;
+	}
+	if (ret == 0) {
+		return NT_STATUS_NONE_MAPPED;
+	}
+	if (ret > 1) {
+		NTSTATUS status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		DBG_ERR("sid[%s] found %d times - %s\n",
+			dom_sid_string(mem_ctx, sid), ret, nt_errstr(status));
 		return status;
 	}
 
-	if (dom_sid_equal(state->domain_sid, sid)) {
-		*authority_name = talloc_strdup(mem_ctx, state->domain_name);
-		if (*authority_name == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		*name = NULL;
-		*rtype = SID_NAME_DOMAIN;
-		return NT_STATUS_OK;
-	}
-
-	if (dom_sid_in_domain(state->domain_sid, sid)) {
-		*authority_name = talloc_strdup(mem_ctx, state->domain_name);
-		if (*authority_name == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		domain_dn = state->domain_dn;
-	} else if (dom_sid_in_domain(state->builtin_sid, sid)) {
-		*authority_name = NAME_BUILTIN;
-		domain_dn = state->builtin_dn;
-	} else {
-		/* Not well known, our domain or built in */
-
-		/* In future, we must look at SID histories, and at trusted domains via winbind */
-
-		return NT_STATUS_NOT_FOUND;
-	}
-
-	/* need to re-add a check for an allocated sid */
-
-	ret = gendb_search(state->sam_ldb, mem_ctx, domain_dn, &res, attrs, 
-			   "objectSid=%s", ldap_encode_ndr_dom_sid(mem_ctx, sid));
-	if ((ret < 0) || (ret > 1)) {
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
-	if (ret == 0) {
-		return NT_STATUS_NOT_FOUND;
-	}
-
-	*name = ldb_msg_find_attr_as_string(res[0], "sAMAccountName", NULL);
-	if (!*name) {
-		*name = ldb_msg_find_attr_as_string(res[0], "cn", NULL);
-		if (!*name) {
-			*name = talloc_strdup(mem_ctx, sid_str);
-			NT_STATUS_HAVE_NO_MEMORY(*name);
-		}
+	name = ldb_msg_find_attr_as_string(res[0], "sAMAccountName", NULL);
+	if (name == NULL) {
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 
 	atype = ldb_msg_find_attr_as_uint(res[0], "sAMAccountType", 0);
-	*rtype = ds_atype_map(atype);
+	type = ds_atype_map(atype);
+	if (type == SID_NAME_UNKNOWN) {
+		return NT_STATUS_NONE_MAPPED;
+	}
 
+	*p_name = name;
+	*p_type = type;
 	return NT_STATUS_OK;
 }
 
@@ -596,6 +275,11 @@ struct dcesrv_lsa_LookupSids_base_state {
 
 	struct lsa_LookupSids3 r;
 
+	const struct dcesrv_lsa_Lookup_view_table *view_table;
+	struct dcesrv_lsa_TranslatedItem *items;
+
+	struct dsdb_trust_routing_table *routing_table;
+
 	struct {
 		struct lsa_LookupSids *l;
 		struct lsa_LookupSids2 *l2;
@@ -603,12 +287,15 @@ struct dcesrv_lsa_LookupSids_base_state {
 	} _r;
 };
 
+static NTSTATUS dcesrv_lsa_LookupSids_base_finish(
+	struct dcesrv_lsa_LookupSids_base_state *state);
+static void dcesrv_lsa_LookupSids_base_map(
+	struct dcesrv_lsa_LookupSids_base_state *state);
+
 static NTSTATUS dcesrv_lsa_LookupSids_base_call(struct dcesrv_lsa_LookupSids_base_state *state)
 {
-	struct lsa_policy_state *policy_state = state->policy_state;
-	TALLOC_CTX *mem_ctx = state->mem_ctx;
 	struct lsa_LookupSids3 *r = &state->r;
-	struct lsa_RefDomainList *domains = NULL;
+	uint32_t v;
 	uint32_t i;
 
 	*r->out.domains = NULL;
@@ -616,69 +303,119 @@ static NTSTATUS dcesrv_lsa_LookupSids_base_call(struct dcesrv_lsa_LookupSids_bas
 	r->out.names->names = NULL;
 	*r->out.count = 0;
 
-	if (r->in.level < LSA_LOOKUP_NAMES_ALL ||
-	    r->in.level > LSA_LOOKUP_NAMES_RODC_REFERRAL_TO_FULL_DC) {
+	state->view_table = dcesrv_lsa_view_table(r->in.level);
+	if (state->view_table == NULL) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	/* NOTE: the WSPP test suite tries SIDs with invalid revision numbers,
-	   and expects NT_STATUS_INVALID_PARAMETER back - we just treat it as 
-	   an unknown SID. We could add a SID validator here. (tridge) 
-	   MS-DTYP 2.4.2
-	*/
-
-	domains = talloc_zero(r->out.domains,  struct lsa_RefDomainList);
-	if (domains == NULL) {
+	*r->out.domains = talloc_zero(r->out.domains, struct lsa_RefDomainList);
+	if (*r->out.domains == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	*r->out.domains = domains;
 
-	r->out.names->names = talloc_array(r->out.names, struct lsa_TranslatedName2, 
-					     r->in.sids->num_sids);
+	r->out.names->names = talloc_zero_array(r->out.names,
+						struct lsa_TranslatedName2,
+						r->in.sids->num_sids);
 	if (r->out.names->names == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	state->items = talloc_zero_array(state,
+					 struct dcesrv_lsa_TranslatedItem,
+					 r->in.sids->num_sids);
+	if (state->items == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	for (i=0;i<r->in.sids->num_sids;i++) {
-		struct dom_sid *sid = r->in.sids->sids[i].sid;
-		char *sid_str = dom_sid_string(mem_ctx, sid);
-		const char *name, *authority_name;
-		enum lsa_SidType rtype;
-		uint32_t sid_index;
-		NTSTATUS status2;
+		struct dcesrv_lsa_TranslatedItem *item = &state->items[i];
+		uint32_t rid = 0;
+
+		if (r->in.sids->sids[i].sid == NULL) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		item->type = SID_NAME_UNKNOWN;
+		item->sid = r->in.sids->sids[i].sid;
+
+		item->hints.sid = dom_sid_string(state->items, item->sid);
+		if (item->hints.sid == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		dom_sid_split_rid(state->items, item->sid, NULL, &rid);
+		item->hints.rid = talloc_asprintf(state->items,
+						  "%08X", (unsigned)rid);
+		if (item->hints.rid == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	for (v=0; v < state->view_table->count; v++) {
+		const struct dcesrv_lsa_Lookup_view *view =
+			state->view_table->array[v];
+
+		for (i=0; i < r->in.sids->num_sids; i++) {
+			struct dcesrv_lsa_TranslatedItem *item = &state->items[i];
+			NTSTATUS status;
+
+			if (item->done) {
+				continue;
+			}
+
+			status = view->lookup_sid(state, item);
+			if (NT_STATUS_IS_OK(status)) {
+				item->done = true;
+			} else if (NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED)) {
+				status = NT_STATUS_OK;
+			} else if (NT_STATUS_EQUAL(status, NT_STATUS_SOME_NOT_MAPPED)) {
+				status = NT_STATUS_OK;
+			}
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
+		}
+	}
+
+	return dcesrv_lsa_LookupSids_base_finish(state);
+}
+
+static NTSTATUS dcesrv_lsa_LookupSids_base_finish(
+	struct dcesrv_lsa_LookupSids_base_state *state)
+{
+	struct lsa_LookupSids3 *r = &state->r;
+	uint32_t i;
+
+	for (i=0;i<r->in.sids->num_sids;i++) {
+		struct dcesrv_lsa_TranslatedItem *item = &state->items[i];
+		NTSTATUS status;
+		uint32_t sid_index = UINT32_MAX;
+
+		status = dcesrv_lsa_authority_list(item->authority_name,
+						   item->authority_sid,
+						   *r->out.domains,
+						   &sid_index);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		if (item->name == NULL && r->in.level == LSA_LOOKUP_NAMES_ALL) {
+			if (sid_index == UINT32_MAX) {
+				item->name = item->hints.sid;
+			} else {
+				item->name = item->hints.rid;
+			}
+		}
+
+		r->out.names->names[i].sid_type    = item->type;
+		r->out.names->names[i].name.string = item->name;
+		r->out.names->names[i].sid_index   = sid_index;
+		r->out.names->names[i].unknown     = item->flags;
 
 		r->out.names->count++;
-
-		r->out.names->names[i].sid_type    = SID_NAME_UNKNOWN;
-		r->out.names->names[i].name.string = sid_str;
-		r->out.names->names[i].sid_index   = 0xFFFFFFFF;
-		r->out.names->names[i].unknown     = 0;
-
-		if (sid_str == NULL) {
-			r->out.names->names[i].name.string = "(SIDERROR)";
-			continue;
+		if (item->type != SID_NAME_UNKNOWN) {
+			(*r->out.count)++;
 		}
-
-		status2 = dcesrv_lsa_lookup_sid(policy_state, mem_ctx, sid, sid_str,
-						&authority_name, &name, &rtype);
-		if (!NT_STATUS_IS_OK(status2)) {
-			continue;
-		}
-
-		/* set up the authority table */
-		status2 = dcesrv_lsa_authority_list(policy_state, mem_ctx, rtype,
-						    authority_name, sid,
-						    domains, &sid_index);
-		if (!NT_STATUS_IS_OK(status2)) {
-			continue;
-		}
-
-		r->out.names->names[i].sid_type    = rtype;
-		r->out.names->names[i].name.string = name;
-		r->out.names->names[i].sid_index   = sid_index;
-		r->out.names->names[i].unknown     = 0;
-
-		(*r->out.count)++;
 	}
 
 	if (*r->out.count == 0) {
@@ -942,6 +679,11 @@ struct dcesrv_lsa_LookupNames_base_state {
 
 	struct lsa_LookupNames4 r;
 
+	const struct dcesrv_lsa_Lookup_view_table *view_table;
+	struct dcesrv_lsa_TranslatedItem *items;
+
+	struct dsdb_trust_routing_table *routing_table;
+
 	struct {
 		struct lsa_LookupNames *l;
 		struct lsa_LookupNames2 *l2;
@@ -950,15 +692,16 @@ struct dcesrv_lsa_LookupNames_base_state {
 	} _r;
 };
 
+static NTSTATUS dcesrv_lsa_LookupNames_base_finish(
+	struct dcesrv_lsa_LookupNames_base_state *state);
+static void dcesrv_lsa_LookupNames_base_map(
+	struct dcesrv_lsa_LookupNames_base_state *state);
 
 static NTSTATUS dcesrv_lsa_LookupNames_base_call(struct dcesrv_lsa_LookupNames_base_state *state)
 {
-	struct loadparm_context *lp_ctx = state->dce_call->conn->dce_ctx->lp_ctx;
-	struct dcesrv_call_state *dce_call = state->dce_call;
-	struct lsa_policy_state *policy_state = state->policy_state;
-	TALLOC_CTX *mem_ctx = state->mem_ctx;
 	struct lsa_LookupNames4 *r = &state->r;
-	struct lsa_RefDomainList *domains = NULL;
+	enum lsa_LookupOptions invalid_lookup_options = 0;
+	uint32_t v;
 	uint32_t i;
 
 	*r->out.domains = NULL;
@@ -966,58 +709,148 @@ static NTSTATUS dcesrv_lsa_LookupNames_base_call(struct dcesrv_lsa_LookupNames_b
 	r->out.sids->sids = NULL;
 	*r->out.count = 0;
 
-	if (r->in.level < LSA_LOOKUP_NAMES_ALL ||
-	    r->in.level > LSA_LOOKUP_NAMES_RODC_REFERRAL_TO_FULL_DC) {
+	if (r->in.level != LSA_LOOKUP_NAMES_ALL) {
+		invalid_lookup_options |=
+			LSA_LOOKUP_OPTION_SEARCH_ISOLATED_NAMES_LOCAL;
+	}
+	if (r->in.lookup_options & invalid_lookup_options) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	domains = talloc_zero(r->out.domains, struct lsa_RefDomainList);
-	if (domains == NULL) {
+	state->view_table = dcesrv_lsa_view_table(r->in.level);
+	if (state->view_table == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	*r->out.domains = talloc_zero(r->out.domains, struct lsa_RefDomainList);
+	if (*r->out.domains == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	*r->out.domains = domains;
 
-	r->out.sids->sids = talloc_array(r->out.sids, struct lsa_TranslatedSid3, 
-					   r->in.num_names);
+	r->out.sids->sids = talloc_zero_array(r->out.sids,
+					      struct lsa_TranslatedSid3,
+					      r->in.num_names);
 	if (r->out.sids->sids == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	state->items = talloc_zero_array(state,
+					 struct dcesrv_lsa_TranslatedItem,
+					 r->in.num_names);
+	if (state->items == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	for (i=0;i<r->in.num_names;i++) {
-		const char *name = r->in.names[i].string;
-		const char *authority_name;
-		struct dom_sid *sid;
-		uint32_t sid_index, rid;
-		enum lsa_SidType rtype;
-		NTSTATUS status2;
+		struct dcesrv_lsa_TranslatedItem *item = &state->items[i];
+		char *p = NULL;
+
+		item->type = SID_NAME_UNKNOWN;
+		item->name = r->in.names[i].string;
+		/*
+		 * Note: that item->name can be NULL!
+		 *
+		 * See test_LookupNames_NULL() in
+		 * source4/torture/rpc/lsa.c
+		 *
+		 * nt4 returns NT_STATUS_NONE_MAPPED with sid_type
+		 * SID_NAME_UNKNOWN, rid 0, and sid_index -1;
+		 *
+		 * w2k3/w2k8 return NT_STATUS_OK with sid_type
+		 * SID_NAME_DOMAIN, rid -1 and sid_index 0 and BUILTIN domain
+		 */
+		if (item->name == NULL) {
+			continue;
+		}
+
+		item->hints.principal = item->name;
+		p = strchr(item->name, '\\');
+		if (p != NULL && p != item->name) {
+			item->hints.domain = talloc_strndup(state->items,
+							    item->name,
+							    p - item->name);
+			if (item->hints.domain == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
+			item->hints.namespace = item->hints.domain;
+			p++;
+			if (p[0] == '\0') {
+				/*
+				 * This is just 'BUILTIN\'.
+				 */
+				item->hints.principal = NULL;
+			} else {
+				item->hints.principal = p;
+			}
+		}
+		if (item->hints.domain == NULL) {
+			p = strchr(item->name, '@');
+			if (p != NULL && p != item->name && p[1] != '\0') {
+				item->hints.namespace = p + 1;
+			}
+		}
+	}
+
+	for (v=0; v < state->view_table->count; v++) {
+		const struct dcesrv_lsa_Lookup_view *view =
+			state->view_table->array[v];
+
+		for (i=0; i < r->in.num_names; i++) {
+			struct dcesrv_lsa_TranslatedItem *item = &state->items[i];
+			NTSTATUS status;
+
+			if (item->done) {
+				continue;
+			}
+
+			status = view->lookup_name(state, item);
+			if (NT_STATUS_IS_OK(status)) {
+				item->done = true;
+			} else if (NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED)) {
+				status = NT_STATUS_OK;
+			} else if (NT_STATUS_EQUAL(status, NT_STATUS_SOME_NOT_MAPPED)) {
+				status = NT_STATUS_OK;
+			}
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
+		}
+	}
+
+	return dcesrv_lsa_LookupNames_base_finish(state);
+}
+
+static NTSTATUS dcesrv_lsa_LookupNames_base_finish(
+	struct dcesrv_lsa_LookupNames_base_state *state)
+{
+	struct lsa_LookupNames4 *r = &state->r;
+	uint32_t i;
+
+	for (i=0;i<r->in.num_names;i++) {
+		struct dcesrv_lsa_TranslatedItem *item = &state->items[i];
+		NTSTATUS status;
+		uint32_t sid_index = UINT32_MAX;
+
+		status = dcesrv_lsa_authority_list(item->authority_name,
+						   item->authority_sid,
+						   *r->out.domains,
+						   &sid_index);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		r->out.sids->sids[i].sid_type  = item->type;
+		r->out.sids->sids[i].sid       = discard_const_p(struct dom_sid,
+								 item->sid);
+		r->out.sids->sids[i].sid_index = sid_index;
+		r->out.sids->sids[i].flags     = item->flags;
 
 		r->out.sids->count++;
-
-		r->out.sids->sids[i].sid_type    = SID_NAME_UNKNOWN;
-		r->out.sids->sids[i].sid         = NULL;
-		r->out.sids->sids[i].sid_index   = 0xFFFFFFFF;
-		r->out.sids->sids[i].flags       = 0;
-
-		status2 = dcesrv_lsa_lookup_name(dce_call->event_ctx, lp_ctx, policy_state, mem_ctx, name,
-						 &authority_name, &sid, &rtype, &rid);
-		if (!NT_STATUS_IS_OK(status2) || sid->num_auths == 0) {
-			continue;
+		if (item->type != SID_NAME_UNKNOWN) {
+			(*r->out.count)++;
 		}
-
-		status2 = dcesrv_lsa_authority_list(policy_state, mem_ctx, rtype, authority_name, 
-						    sid, domains, &sid_index);
-		if (!NT_STATUS_IS_OK(status2)) {
-			continue;
-		}
-
-		r->out.sids->sids[i].sid_type    = rtype;
-		r->out.sids->sids[i].sid         = sid;
-		r->out.sids->sids[i].sid_index   = sid_index;
-		r->out.sids->sids[i].flags       = 0;
-
-		(*r->out.count)++;
 	}
-	
+
 	if (*r->out.count == 0) {
 		return NT_STATUS_NONE_MAPPED;
 	}
@@ -1401,3 +1234,468 @@ NTSTATUS dcesrv_lsa_LookupNames(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	return status;
 }
 
+static NTSTATUS dcesrv_lsa_lookup_name_predefined(
+		struct dcesrv_lsa_LookupNames_base_state *state,
+		struct dcesrv_lsa_TranslatedItem *item)
+{
+	NTSTATUS status;
+
+	status = dom_sid_lookup_predefined_name(item->name,
+						&item->sid,
+						&item->type,
+						&item->authority_sid,
+						&item->authority_name);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED)) {
+		return status;
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS dcesrv_lsa_lookup_sid_predefined(
+		struct dcesrv_lsa_LookupSids_base_state *state,
+		struct dcesrv_lsa_TranslatedItem *item)
+{
+	NTSTATUS status;
+
+	status = dom_sid_lookup_predefined_sid(item->sid,
+					       &item->name,
+					       &item->type,
+					       &item->authority_sid,
+					       &item->authority_name);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED)) {
+		return status;
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
+
+static const struct dcesrv_lsa_Lookup_view view_predefined = {
+	.name = "Predefined",
+	.lookup_sid = dcesrv_lsa_lookup_sid_predefined,
+	.lookup_name = dcesrv_lsa_lookup_name_predefined,
+};
+
+static NTSTATUS dcesrv_lsa_lookup_name_builtin(
+		struct dcesrv_lsa_LookupNames_base_state *state,
+		struct dcesrv_lsa_TranslatedItem *item)
+{
+	struct lsa_policy_state *policy_state = state->policy_state;
+	NTSTATUS status;
+	bool is_builtin = false;
+
+	if (item->name == NULL) {
+		/*
+		 * This should not be mapped.
+		 */
+		return NT_STATUS_OK;
+	}
+
+	/*
+	 * The predefined view already handled the BUILTIN domain.
+	 *
+	 * Now we just need to find the principal.
+	 *
+	 * We only allow 'BUILTIN\something' and
+	 * not 'something@BUILTIN.
+	 *
+	 * And we try out best for just 'something'.
+	 */
+	is_builtin = strequal(item->hints.domain, NAME_BUILTIN);
+	if (!is_builtin && item->hints.domain != NULL) {
+		return NT_STATUS_NONE_MAPPED;
+	}
+
+	status = dcesrv_lsa_lookup_name(state->policy_state,
+					state->mem_ctx,
+					NAME_BUILTIN,
+					policy_state->builtin_sid,
+					policy_state->builtin_dn,
+					item->hints.principal,
+					&item->sid,
+					&item->type);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED)) {
+		if (!is_builtin) {
+			return NT_STATUS_NONE_MAPPED;
+		}
+		/*
+		 * We know we're authoritive
+		 */
+		status = NT_STATUS_OK;
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	item->authority_name = NAME_BUILTIN;
+	item->authority_sid = policy_state->builtin_sid;
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS dcesrv_lsa_lookup_sid_builtin(
+		struct dcesrv_lsa_LookupSids_base_state *state,
+		struct dcesrv_lsa_TranslatedItem *item)
+{
+	struct lsa_policy_state *policy_state = state->policy_state;
+	NTSTATUS status;
+	bool is_builtin = false;
+
+	/*
+	 * The predefined view already handled the BUILTIN domain.
+	 *
+	 * Now we just need to find the principal.
+	 */
+	is_builtin = dom_sid_in_domain(policy_state->builtin_sid, item->sid);
+	if (!is_builtin) {
+		return NT_STATUS_NONE_MAPPED;
+	}
+
+	status = dcesrv_lsa_lookup_sid(state->policy_state,
+				       state->mem_ctx,
+				       NAME_BUILTIN,
+				       policy_state->builtin_sid,
+				       policy_state->builtin_dn,
+				       item->sid,
+				       &item->name,
+				       &item->type);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED)) {
+		/*
+		 * We know we're authoritive
+		 */
+		status = NT_STATUS_OK;
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	item->authority_name = NAME_BUILTIN;
+	item->authority_sid = policy_state->builtin_sid;
+	return NT_STATUS_OK;
+}
+
+static const struct dcesrv_lsa_Lookup_view view_builtin = {
+	.name = "Builtin",
+	.lookup_sid = dcesrv_lsa_lookup_sid_builtin,
+	.lookup_name = dcesrv_lsa_lookup_name_builtin,
+};
+
+static NTSTATUS dcesrv_lsa_lookup_name_account(
+		struct dcesrv_lsa_LookupNames_base_state *state,
+		struct dcesrv_lsa_TranslatedItem *item)
+{
+	struct lsa_policy_state *policy_state = state->policy_state;
+	struct loadparm_context *lp_ctx = state->dce_call->conn->dce_ctx->lp_ctx;
+	struct lsa_LookupNames4 *r = &state->r;
+	NTSTATUS status;
+	int role;
+	bool (*is_local_match_fn)(struct loadparm_context *, const char *) = NULL;
+	bool is_domain = false;
+	bool try_lookup = false;
+	const char *check_domain_name = NULL;
+
+	role = lpcfg_server_role(lp_ctx);
+	if (role == ROLE_ACTIVE_DIRECTORY_DC) {
+		is_local_match_fn = lpcfg_is_my_domain_or_realm;
+	} else {
+		is_local_match_fn = lpcfg_is_myname;
+	}
+
+	if (item->name == NULL) {
+		/*
+		 * This should not be mapped.
+		 */
+		return NT_STATUS_OK;
+	}
+
+	if (item->hints.domain != NULL && item->hints.principal == NULL) {
+		/*
+		 * This is 'DOMAIN\'.
+		 */
+		check_domain_name = item->hints.domain;
+	} else {
+		/*
+		 * This is just 'DOMAIN'.
+		 */
+		check_domain_name = item->name;
+	}
+	is_domain = is_local_match_fn(lp_ctx, check_domain_name);
+	if (is_domain) {
+		item->type = SID_NAME_DOMAIN;
+		item->sid = policy_state->domain_sid;
+		item->authority_name = policy_state->domain_name;
+		item->authority_sid = policy_state->domain_sid;
+		return NT_STATUS_OK;
+	}
+
+	if (r->in.lookup_options & LSA_LOOKUP_OPTION_SEARCH_ISOLATED_NAMES_LOCAL) {
+		if (item->hints.domain != item->hints.namespace) {
+			/*
+			 * This means the client asked for an UPN,
+			 * and it should not be mapped.
+			 */
+			return NT_STATUS_OK;
+		}
+	}
+
+	if (item->hints.namespace != NULL) {
+		is_domain = is_local_match_fn(lp_ctx, item->hints.namespace);
+		try_lookup = is_domain;
+	} else {
+		try_lookup = true;
+	}
+
+	if (!try_lookup) {
+		struct dcesrv_lsa_TranslatedItem tmp;
+
+		tmp = *item;
+		status = dom_sid_lookup_predefined_name(item->hints.namespace,
+							&tmp.sid,
+							&tmp.type,
+							&tmp.authority_sid,
+							&tmp.authority_name);
+		if (NT_STATUS_IS_OK(status)) {
+			/*
+			 * It should not be handled by us.
+			 */
+			return NT_STATUS_NONE_MAPPED;
+		}
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED)) {
+			return status;
+		}
+	}
+
+	if (!try_lookup) {
+		const struct lsa_TrustDomainInfoInfoEx *tdo = NULL;
+		const struct lsa_ForestTrustDomainInfo *di = NULL;
+
+		if (state->routing_table == NULL) {
+			status = dsdb_trust_routing_table_load(policy_state->sam_ldb,
+							       state,
+							       &state->routing_table);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
+		}
+
+		tdo = dsdb_trust_domain_by_name(state->routing_table,
+						item->hints.namespace,
+						&di);
+		if (tdo == NULL) {
+			/*
+			 * The name is not resolvable at all...
+			 */
+			return NT_STATUS_OK;
+		}
+
+		if (!(tdo->trust_attributes & LSA_TRUST_ATTRIBUTE_WITHIN_FOREST)) {
+			/*
+			 * The name is not resolvable here
+			 */
+			return NT_STATUS_NONE_MAPPED;
+		}
+
+		/*
+		 * TODO: handle multiple domains in a forest together with
+		 * LSA_LOOKUP_NAMES_PRIMARY_DOMAIN_ONLY
+		 */
+		is_domain = true;
+		try_lookup = true;
+	}
+
+	if (!try_lookup) {
+		/*
+		 * It should not be handled by us.
+		 */
+		return NT_STATUS_NONE_MAPPED;
+	}
+
+	/*
+	 * TODO: handle multiple domains in our forest.
+	 */
+
+	status = dcesrv_lsa_lookup_name(state->policy_state,
+					state->mem_ctx,
+					policy_state->domain_name,
+					policy_state->domain_sid,
+					policy_state->domain_dn,
+					item->hints.principal,
+					&item->sid,
+					&item->type);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED)) {
+		if (!is_domain) {
+			return NT_STATUS_NONE_MAPPED;
+		}
+		/*
+		 * We know we're authoritive
+		 */
+		status = NT_STATUS_OK;
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	item->authority_name = policy_state->domain_name;
+	item->authority_sid = policy_state->domain_sid;
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS dcesrv_lsa_lookup_sid_account(
+		struct dcesrv_lsa_LookupSids_base_state *state,
+		struct dcesrv_lsa_TranslatedItem *item)
+{
+	struct lsa_policy_state *policy_state = state->policy_state;
+	NTSTATUS status;
+	bool is_domain;
+
+	is_domain = dom_sid_equal(policy_state->domain_sid, item->sid);
+	if (is_domain) {
+		item->type = SID_NAME_DOMAIN;
+		item->name = policy_state->domain_name;
+		item->authority_name = policy_state->domain_name;
+		item->authority_sid = policy_state->domain_sid;
+		return NT_STATUS_OK;
+	}
+	is_domain = dom_sid_in_domain(policy_state->domain_sid, item->sid);
+	if (!is_domain) {
+		return NT_STATUS_NONE_MAPPED;
+	}
+
+	status = dcesrv_lsa_lookup_sid(state->policy_state,
+				       state->mem_ctx,
+				       policy_state->domain_name,
+				       policy_state->domain_sid,
+				       policy_state->domain_dn,
+				       item->sid,
+				       &item->name,
+				       &item->type);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED)) {
+		/*
+		 * We know we're authoritive
+		 */
+		status = NT_STATUS_OK;
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	item->authority_name = policy_state->domain_name;
+	item->authority_sid = policy_state->domain_sid;
+	return NT_STATUS_OK;
+}
+
+static const struct dcesrv_lsa_Lookup_view view_account = {
+	.name = "Account",
+	.lookup_sid = dcesrv_lsa_lookup_sid_account,
+	.lookup_name = dcesrv_lsa_lookup_name_account,
+};
+
+static NTSTATUS dcesrv_lsa_lookup_name_winbind(
+		struct dcesrv_lsa_LookupNames_base_state *state,
+		struct dcesrv_lsa_TranslatedItem *item)
+{
+	return NT_STATUS_NONE_MAPPED;
+}
+
+static NTSTATUS dcesrv_lsa_lookup_sid_winbind(
+		struct dcesrv_lsa_LookupSids_base_state *state,
+		struct dcesrv_lsa_TranslatedItem *item)
+{
+	return NT_STATUS_NONE_MAPPED;
+}
+
+static const struct dcesrv_lsa_Lookup_view view_winbind = {
+	.name = "Winbind",
+	.lookup_sid = dcesrv_lsa_lookup_sid_winbind,
+	.lookup_name = dcesrv_lsa_lookup_name_winbind,
+};
+
+static const struct dcesrv_lsa_Lookup_view *table_all_views[] = {
+	&view_predefined,
+	&view_builtin,
+	&view_account,
+	&view_winbind,
+};
+
+static const struct dcesrv_lsa_Lookup_view_table table_all = {
+	.name = "LSA_LOOKUP_NAMES_ALL",
+	.count = ARRAY_SIZE(table_all_views),
+	.array = table_all_views,
+};
+
+static const struct dcesrv_lsa_Lookup_view *table_domains_views[] = {
+	&view_account,
+	&view_winbind,
+};
+
+static const struct dcesrv_lsa_Lookup_view_table table_domains = {
+	.name = "LSA_LOOKUP_NAMES_DOMAINS_ONLY",
+	.count = ARRAY_SIZE(table_domains_views),
+	.array = table_domains_views,
+};
+
+static const struct dcesrv_lsa_Lookup_view *table_primary_views[] = {
+	&view_account,
+};
+
+static const struct dcesrv_lsa_Lookup_view_table table_primary = {
+	.name = "LSA_LOOKUP_NAMES_PRIMARY_DOMAIN_ONLY",
+	.count = ARRAY_SIZE(table_primary_views),
+	.array = table_primary_views,
+};
+
+static const struct dcesrv_lsa_Lookup_view *table_remote_views[] = {
+	&view_winbind,
+};
+
+static const struct dcesrv_lsa_Lookup_view_table table_gc = {
+	.name = "LSA_LOOKUP_NAMES_UPLEVEL_TRUSTS_ONLY",
+	.count = ARRAY_SIZE(table_domains_views),
+	.array = table_domains_views,
+};
+
+static const struct dcesrv_lsa_Lookup_view_table table_xreferral = {
+	.name = "LSA_LOOKUP_NAMES_FOREST_TRUSTS_ONLY",
+	.count = ARRAY_SIZE(table_remote_views),
+	.array = table_remote_views,
+};
+
+static const struct dcesrv_lsa_Lookup_view_table table_xresolve = {
+	.name = "LSA_LOOKUP_NAMES_UPLEVEL_TRUSTS_ONLY2",
+	.count = ARRAY_SIZE(table_domains_views),
+	.array = table_domains_views,
+};
+
+static const struct dcesrv_lsa_Lookup_view_table table_rodc = {
+	.name = "LSA_LOOKUP_NAMES_RODC_REFERRAL_TO_FULL_DC",
+	.count = ARRAY_SIZE(table_remote_views),
+	.array = table_remote_views,
+};
+
+static const struct dcesrv_lsa_Lookup_view_table *dcesrv_lsa_view_table(
+	enum lsa_LookupNamesLevel level)
+{
+	switch (level) {
+	case LSA_LOOKUP_NAMES_ALL:
+		return &table_all;
+	case LSA_LOOKUP_NAMES_DOMAINS_ONLY:
+		return &table_domains;
+	case LSA_LOOKUP_NAMES_PRIMARY_DOMAIN_ONLY:
+		return &table_primary;
+	case LSA_LOOKUP_NAMES_UPLEVEL_TRUSTS_ONLY:
+		return &table_gc;
+	case LSA_LOOKUP_NAMES_FOREST_TRUSTS_ONLY:
+		return &table_xreferral;
+	case LSA_LOOKUP_NAMES_UPLEVEL_TRUSTS_ONLY2:
+		return &table_xresolve;
+	case LSA_LOOKUP_NAMES_RODC_REFERRAL_TO_FULL_DC:
+		return &table_rodc;
+	}
+
+	return NULL;
+}
