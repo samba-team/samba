@@ -1017,9 +1017,9 @@ NTSTATUS dcesrv_lsa_LookupNames2(struct dcesrv_call_state *dce_call,
 		dcerpc_binding_get_transport(dce_call->conn->endpoint->ep_description);
 	struct lsa_policy_state *policy_state = NULL;
 	struct dcesrv_handle *policy_handle = NULL;
+	struct lsa_LookupNames3 r2;
+	NTSTATUS status;
 	uint32_t i;
-	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
-	struct lsa_RefDomainList *domains;
 
 	if (transport != NCACN_NP && transport != NCALRPC) {
 		DCESRV_FAULT(DCERPC_FAULT_ACCESS_DENIED);
@@ -1034,72 +1034,74 @@ NTSTATUS dcesrv_lsa_LookupNames2(struct dcesrv_call_state *dce_call,
 	r->out.sids->sids = NULL;
 	*r->out.count = 0;
 
-	if (r->in.level < LSA_LOOKUP_NAMES_ALL ||
-	    r->in.level > LSA_LOOKUP_NAMES_RODC_REFERRAL_TO_FULL_DC) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	domains = talloc_zero(r->out.domains, struct lsa_RefDomainList);
-	if (domains == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	*r->out.domains = domains;
-
-	r->out.sids->sids = talloc_array(r->out.sids, struct lsa_TranslatedSid2, 
-					   r->in.num_names);
+	r->out.sids->sids = talloc_zero_array(r->out.sids,
+					      struct lsa_TranslatedSid2,
+					      r->in.num_names);
 	if (r->out.sids->sids == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	for (i=0;i<r->in.num_names;i++) {
-		const char *name = r->in.names[i].string;
-		const char *authority_name;
-		struct dom_sid *sid;
-		uint32_t sid_index, rid=0;
-		enum lsa_SidType rtype;
-		NTSTATUS status2;
+	ZERO_STRUCT(r2);
 
-		r->out.sids->count++;
+	r2.in.handle    = r->in.handle;
+	r2.in.num_names = r->in.num_names;
+	r2.in.names     = r->in.names;
+	r2.in.sids      = talloc_zero(mem_ctx, struct lsa_TransSidArray3);
+	if (r2.in.sids == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	r2.in.level     = r->in.level;
+	r2.in.count     = r->in.count;
+	/*
+	 * MS-LSAT 3.1.4.7:
+	 *
+	 * The LookupOptions and ClientRevision parameters MUST be ignored.
+	 * Message processing MUST happen as if LookupOptions is set to
+	 * 0x00000000 and ClientRevision is set to 0x00000002.
+	 */
+	r2.in.lookup_options = LSA_LOOKUP_OPTION_SEARCH_ISOLATED_NAMES;
+	r2.in.client_revision = LSA_CLIENT_REVISION_2;
+	r2.out.count    = r->out.count;
+	r2.out.sids     = talloc_zero(mem_ctx, struct lsa_TransSidArray3);
+	if (r2.out.sids == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	r2.out.domains	= r->out.domains;
 
-		r->out.sids->sids[i].sid_type    = SID_NAME_UNKNOWN;
-		/* MS-LSAT 3.1.4.7 - rid zero is considered equivalent
-		   to sid NULL - so we should return 0 rid for
-		   unmapped entries */
-		r->out.sids->sids[i].rid         = 0;
-		r->out.sids->sids[i].sid_index   = 0xFFFFFFFF;
-		r->out.sids->sids[i].unknown     = 0;
+	status = dcesrv_lsa_LookupNames_common(dce_call,
+					       mem_ctx,
+					       policy_state,
+					       &r2);
 
-		status2 = dcesrv_lsa_lookup_name(dce_call->event_ctx, lp_ctx,
-						 policy_state, mem_ctx, name,
-						 &authority_name, &sid, &rtype,
-						 &rid);
-		if (!NT_STATUS_IS_OK(status2)) {
-			continue;
+	SMB_ASSERT(r2.out.sids->count <= r->in.num_names);
+	for (i=0;i<r2.out.sids->count;i++) {
+		struct lsa_TranslatedSid3 *s3 =
+			&r2.out.sids->sids[i];
+		struct lsa_TranslatedSid2 *s2 =
+			&r->out.sids->sids[i];
+
+		s2->sid_type = s3->sid_type;
+		if (s3->sid_type == SID_NAME_DOMAIN) {
+			s2->rid = UINT32_MAX;
+		} else if (s3->flags & 0x00000004) {
+			s2->rid = UINT32_MAX;
+		} else if (s3->sid == NULL) {
+			/*
+			 * MS-LSAT 3.1.4.7 - rid zero is considered
+			 * equivalent to sid NULL - so we should return
+			 * 0 rid for unmapped entries
+			 */
+			s2->rid = 0;
+		} else {
+			s2->rid = 0;
+			dom_sid_split_rid(NULL, s3->sid,
+					  NULL, &s2->rid);
 		}
-
-		status2 = dcesrv_lsa_authority_list(policy_state, mem_ctx,
-						    rtype, authority_name, sid,
-						    domains, &sid_index);
-		if (!NT_STATUS_IS_OK(status2)) {
-			continue;
-		}
-
-		r->out.sids->sids[i].sid_type    = rtype;
-		r->out.sids->sids[i].rid         = rid;
-		r->out.sids->sids[i].sid_index   = sid_index;
-		r->out.sids->sids[i].unknown     = 0;
-
-		(*r->out.count)++;
+		s2->sid_index = s3->sid_index;
 	}
-	
-	if (*r->out.count == 0) {
-		return NT_STATUS_NONE_MAPPED;
-	}
-	if (*r->out.count != r->in.num_names) {
-		return STATUS_SOME_UNMAPPED;
-	}
+	r->out.sids->count = r2.out.sids->count;
 
-	return NT_STATUS_OK;
+	return status;
 }
 
 /* 
