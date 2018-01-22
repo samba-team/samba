@@ -589,7 +589,7 @@ static NTSTATUS dcesrv_lsa_lookup_sid(struct lsa_policy_state *state, TALLOC_CTX
 
 static NTSTATUS dcesrv_lsa_LookupSids_common(struct dcesrv_call_state *dce_call,
 					     TALLOC_CTX *mem_ctx,
-					     struct lsa_policy_state *state,
+					     struct lsa_policy_state *policy_state,
 					     struct lsa_LookupSids2 *r)
 {
 	struct lsa_RefDomainList *domains = NULL;
@@ -643,15 +643,15 @@ static NTSTATUS dcesrv_lsa_LookupSids_common(struct dcesrv_call_state *dce_call,
 			continue;
 		}
 
-		status2 = dcesrv_lsa_lookup_sid(state, mem_ctx, sid, sid_str, 
+		status2 = dcesrv_lsa_lookup_sid(policy_state, mem_ctx, sid, sid_str,
 						&authority_name, &name, &rtype);
 		if (!NT_STATUS_IS_OK(status2)) {
 			continue;
 		}
 
 		/* set up the authority table */
-		status2 = dcesrv_lsa_authority_list(state, mem_ctx, rtype, 
-						    authority_name, sid, 
+		status2 = dcesrv_lsa_authority_list(policy_state, mem_ctx, rtype,
+						    authority_name, sid,
 						    domains, &sid_index);
 		if (!NT_STATUS_IS_OK(status2)) {
 			continue;
