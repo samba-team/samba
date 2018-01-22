@@ -1110,13 +1110,19 @@ NTSTATUS dcesrv_lsa_LookupNames(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 {
 	enum dcerpc_transport_t transport =
 		dcerpc_binding_get_transport(dce_call->conn->endpoint->ep_description);
-	struct lsa_LookupNames2 r2;
+	struct lsa_policy_state *policy_state = NULL;
+	struct dcesrv_handle *policy_handle = NULL;
+	struct lsa_LookupNames3 r2;
 	NTSTATUS status;
 	uint32_t i;
 
 	if (transport != NCACN_NP && transport != NCALRPC) {
 		DCESRV_FAULT(DCERPC_FAULT_ACCESS_DENIED);
 	}
+
+	DCESRV_PULL_HANDLE(policy_handle, r->in.handle, LSA_HANDLE_POLICY);
+
+	policy_state = policy_handle->data;
 
 	*r->out.domains = NULL;
 	r->out.sids->count = 0;
@@ -1135,7 +1141,7 @@ NTSTATUS dcesrv_lsa_LookupNames(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	r2.in.handle    = r->in.handle;
 	r2.in.num_names = r->in.num_names;
 	r2.in.names     = r->in.names;
-	r2.in.sids      = talloc_zero(mem_ctx, struct lsa_TransSidArray2);
+	r2.in.sids      = talloc_zero(mem_ctx, struct lsa_TransSidArray3);
 	if (r2.in.sids == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1144,19 +1150,42 @@ NTSTATUS dcesrv_lsa_LookupNames(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	r2.in.lookup_options = LSA_LOOKUP_OPTION_SEARCH_ISOLATED_NAMES;
 	r2.in.client_revision = LSA_CLIENT_REVISION_1;
 	r2.out.count    = r->out.count;
-	r2.out.sids     = talloc_zero(mem_ctx, struct lsa_TransSidArray2);
+	r2.out.sids     = talloc_zero(mem_ctx, struct lsa_TransSidArray3);
 	if (r2.out.sids == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 	r2.out.domains	= r->out.domains;
 
-	status = dcesrv_lsa_LookupNames2(dce_call, mem_ctx, &r2);
+	status = dcesrv_lsa_LookupNames_common(dce_call,
+					       mem_ctx,
+					       policy_state,
+					       &r2);
 
 	SMB_ASSERT(r2.out.sids->count <= r->in.num_names);
 	for (i=0;i<r2.out.sids->count;i++) {
-		r->out.sids->sids[i].sid_type    = r2.out.sids->sids[i].sid_type;
-		r->out.sids->sids[i].rid         = r2.out.sids->sids[i].rid;
-		r->out.sids->sids[i].sid_index   = r2.out.sids->sids[i].sid_index;
+		struct lsa_TranslatedSid3 *s3 =
+			&r2.out.sids->sids[i];
+		struct lsa_TranslatedSid *s =
+			&r->out.sids->sids[i];
+
+		s->sid_type = s3->sid_type;
+		if (s3->sid_type == SID_NAME_DOMAIN) {
+			s->rid = UINT32_MAX;
+		} else if (s3->flags & 0x00000004) {
+			s->rid = UINT32_MAX;
+		} else if (s3->sid == NULL) {
+			/*
+			 * MS-LSAT 3.1.4.7 - rid zero is considered
+			 * equivalent to sid NULL - so we should return
+			 * 0 rid for unmapped entries
+			 */
+			s->rid = 0;
+		} else {
+			s->rid = 0;
+			dom_sid_split_rid(NULL, s3->sid,
+					  NULL, &s->rid);
+		}
+		s->sid_index = s3->sid_index;
 	}
 	r->out.sids->count = r2.out.sids->count;
 
