@@ -336,7 +336,9 @@ bool add_trusted_domain_from_auth(uint16_t validation_level,
 	}
 
 	if (validation_level == 6) {
-		dns_domainname = &info6->dns_domainname[0];
+		if (!strequal(info6->dns_domainname, "")) {
+			dns_domainname = info6->dns_domainname;
+		}
 	}
 
 	status = add_trusted_domain(info3->logon_dom,
