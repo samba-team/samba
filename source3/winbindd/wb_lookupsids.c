@@ -513,7 +513,7 @@ static void wb_lookupsids_single_done(struct tevent_req *subreq)
 		req, struct wb_lookupsids_state);
 	const char *domain_name = NULL;
 	const char *name = NULL;
-	enum lsa_SidType type;
+	enum lsa_SidType type = SID_NAME_UNKNOWN;
 	uint32_t res_sid_index;
 	uint32_t src_rid;
 
