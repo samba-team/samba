@@ -81,6 +81,20 @@ struct tevent_req *winbindd_pam_auth_crap_send(
 			return tevent_req_post(req, ev);
 		}
 
+		if (is_trusted && (state->flags & WBFLAG_PAM_INFO3_TEXT)) {
+			bool ok;
+
+			ok = add_trusted_domain_from_auth(
+				state->response->data.auth.validation_level,
+				&state->response->data.auth.info3,
+				&state->response->data.auth.info6);
+			if (!ok) {
+				DBG_ERR("add_trusted_domain_from_auth failed\n");
+				tevent_req_nterror(req, NT_STATUS_LOGON_FAILURE);
+				return tevent_req_post(req, ev);
+			}
+		}
+
 		tevent_req_done(req);
 		return tevent_req_post(req, ev);
 	}
