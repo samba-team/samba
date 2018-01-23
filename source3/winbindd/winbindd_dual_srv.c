@@ -891,6 +891,7 @@ NTSTATUS _winbind_SamLogon(struct pipes_struct *p,
 	nt_response = data_blob_talloc(p->mem_ctx, r->in.logon.network->nt.data, r->in.logon.network->nt.length);
 
 	status = winbind_dual_SamLogon(domain, p->mem_ctx,
+				       false, /* interactive */
 				       r->in.logon.network->identity_info.parameter_control,
 				       r->in.logon.network->identity_info.account_name.string,
 				       r->in.logon.network->identity_info.domain_name.string,
