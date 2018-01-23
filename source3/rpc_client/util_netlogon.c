@@ -360,3 +360,28 @@ NTSTATUS map_info3_to_validation(TALLOC_CTX *mem_ctx,
 	*_validation = validation;
 	return NT_STATUS_OK;
 }
+
+NTSTATUS map_info6_to_validation(TALLOC_CTX *mem_ctx,
+				 const struct netr_SamInfo6 *info6,
+				 uint16_t *_validation_level,
+				 union netr_Validation **_validation)
+{
+	union netr_Validation *validation = NULL;
+	NTSTATUS status;
+
+	validation = talloc_zero(mem_ctx, union netr_Validation);
+	if (validation == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = copy_netr_SamInfo6(mem_ctx,
+				    info6,
+				    &validation->sam6);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	* _validation_level = 6;
+	*_validation = validation;
+	return NT_STATUS_OK;
+}
