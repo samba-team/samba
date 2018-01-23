@@ -868,35 +868,85 @@ NTSTATUS _winbind_SamLogon(struct pipes_struct *p,
 {
 	struct winbindd_domain *domain;
 	NTSTATUS status;
+	struct netr_IdentityInfo *identity_info = NULL;
+	const uint8_t chal_zero[8] = {0, };
+	const uint8_t *challenge = chal_zero;
 	DATA_BLOB lm_response, nt_response;
 	uint32_t flags = 0;
 	uint16_t validation_level;
 	union netr_Validation *validation = NULL;
+	bool interactive = false;
 
 	domain = wb_child_domain();
 	if (domain == NULL) {
 		return NT_STATUS_REQUEST_NOT_ACCEPTED;
 	}
 
-	/* TODO: Handle interactive logons here */
-	if (r->in.validation_level != 3 ||
-	    r->in.logon.network == NULL ||
-	    (r->in.logon_level != NetlogonNetworkInformation
-	     && r->in.logon_level != NetlogonNetworkTransitiveInformation)) {
+	if (r->in.validation_level != 3) {
 		return NT_STATUS_REQUEST_NOT_ACCEPTED;
 	}
 
+	switch (r->in.logon_level) {
+	case NetlogonInteractiveInformation:
+	case NetlogonServiceInformation:
+	case NetlogonInteractiveTransitiveInformation:
+	case NetlogonServiceTransitiveInformation:
+		if (r->in.logon.password == NULL) {
+			return NT_STATUS_REQUEST_NOT_ACCEPTED;
+		}
 
-	lm_response = data_blob_talloc(p->mem_ctx, r->in.logon.network->lm.data, r->in.logon.network->lm.length);
-	nt_response = data_blob_talloc(p->mem_ctx, r->in.logon.network->nt.data, r->in.logon.network->nt.length);
+		interactive = true;
+		identity_info = &r->in.logon.password->identity_info;
+
+		challenge = chal_zero;
+		lm_response = data_blob_talloc(p->mem_ctx,
+					r->in.logon.password->lmpassword.hash,
+					sizeof(r->in.logon.password->lmpassword.hash));
+		nt_response = data_blob_talloc(p->mem_ctx,
+					r->in.logon.password->ntpassword.hash,
+					sizeof(r->in.logon.password->ntpassword.hash));
+		break;
+
+	case NetlogonNetworkInformation:
+	case NetlogonNetworkTransitiveInformation:
+		if (r->in.logon.network == NULL) {
+			return NT_STATUS_REQUEST_NOT_ACCEPTED;
+		}
+
+		interactive = false;
+		identity_info = &r->in.logon.network->identity_info;
+
+		challenge = r->in.logon.network->challenge;
+		lm_response = data_blob_talloc(p->mem_ctx,
+					r->in.logon.network->lm.data,
+					r->in.logon.network->lm.length);
+		nt_response = data_blob_talloc(p->mem_ctx,
+					r->in.logon.network->nt.data,
+					r->in.logon.network->nt.length);
+		break;
+
+	case NetlogonGenericInformation:
+		if (r->in.logon.generic == NULL) {
+			return NT_STATUS_REQUEST_NOT_ACCEPTED;
+		}
+
+		identity_info = &r->in.logon.generic->identity_info;
+		/*
+		 * Not implemented here...
+		 */
+		return NT_STATUS_REQUEST_NOT_ACCEPTED;
+
+	default:
+		return NT_STATUS_REQUEST_NOT_ACCEPTED;
+	}
 
 	status = winbind_dual_SamLogon(domain, p->mem_ctx,
-				       false, /* interactive */
-				       r->in.logon.network->identity_info.parameter_control,
-				       r->in.logon.network->identity_info.account_name.string,
-				       r->in.logon.network->identity_info.domain_name.string,
-				       r->in.logon.network->identity_info.workstation.string,
-				       r->in.logon.network->challenge,
+				       interactive,
+				       identity_info->parameter_control,
+				       identity_info->account_name.string,
+				       identity_info->domain_name.string,
+				       identity_info->workstation.string,
+				       challenge,
 				       lm_response, nt_response,
 				       &r->out.authoritative,
 				       true, /* skip_sam */
