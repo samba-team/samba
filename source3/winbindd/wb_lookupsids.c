@@ -124,7 +124,7 @@ struct tevent_req *wb_lookupsids_send(TALLOC_CTX *mem_ctx,
 	state->sids = sids;
 	state->num_sids = num_sids;
 
-	state->single_sids = talloc_array(state, uint32_t, num_sids);
+	state->single_sids = talloc_zero_array(state, uint32_t, num_sids);
 	if (tevent_req_nomem(state->single_sids, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -133,7 +133,7 @@ struct tevent_req *wb_lookupsids_send(TALLOC_CTX *mem_ctx,
 	if (tevent_req_nomem(state->res_domains, req)) {
 		return tevent_req_post(req, ev);
 	}
-	state->res_domains->domains = talloc_array(
+	state->res_domains->domains = talloc_zero_array(
 		state->res_domains, struct lsa_DomainInfo, num_sids);
 	if (tevent_req_nomem(state->res_domains->domains, req)) {
 		return tevent_req_post(req, ev);
@@ -143,7 +143,7 @@ struct tevent_req *wb_lookupsids_send(TALLOC_CTX *mem_ctx,
 	if (tevent_req_nomem(state->res_names, req)) {
 		return tevent_req_post(req, ev);
 	}
-	state->res_names->names = talloc_array(
+	state->res_names->names = talloc_zero_array(
 		state->res_names, struct lsa_TranslatedName, num_sids);
 	if (tevent_req_nomem(state->res_names->names, req)) {
 		return tevent_req_post(req, ev);
@@ -371,13 +371,13 @@ static struct wb_lookupsids_domain *wb_lookupsids_get_domain(
 	domain = &domains[num_domains];
 	domain->domain = wb_domain;
 
-	domain->sids.sids = talloc_array(domains, struct lsa_SidPtr, num_sids);
+	domain->sids.sids = talloc_zero_array(domains, struct lsa_SidPtr, num_sids);
 	if (domains->sids.sids == NULL) {
 		goto fail;
 	}
 	domain->sids.num_sids = 0;
 
-	domain->sid_indexes = talloc_array(domains, uint32_t, num_sids);
+	domain->sid_indexes = talloc_zero_array(domains, uint32_t, num_sids);
 	if (domain->sid_indexes == NULL) {
 		TALLOC_FREE(domain->sids.sids);
 		goto fail;
