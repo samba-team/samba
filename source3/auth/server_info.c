@@ -363,6 +363,62 @@ NTSTATUS create_info3_from_pac_logon_info(TALLOC_CTX *mem_ctx,
 }
 
 /*
+ * Create a copy of an info6 struct from the PAC_UPN_DNS_INFO and PAC_LOGON_INFO
+ * then merge resource SIDs, if any, into it. If successful return the created
+ * info6 struct.
+ */
+NTSTATUS create_info6_from_pac(TALLOC_CTX *mem_ctx,
+			       const struct PAC_LOGON_INFO *logon_info,
+			       const struct PAC_UPN_DNS_INFO *upn_dns_info,
+			       struct netr_SamInfo6 **pp_info6)
+{
+	NTSTATUS status;
+	struct netr_SamInfo6 *info6 = NULL;
+	struct netr_SamInfo3 *info3 = NULL;
+
+	info6 = talloc_zero(mem_ctx, struct netr_SamInfo6);
+	if (info6 == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = copy_netr_SamInfo3(info6,
+				    &logon_info->info3,
+				    &info3);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(info6);
+		return status;
+	}
+
+	status = merge_resource_sids(logon_info, info3);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(info6);
+		return status;
+	}
+
+	info6->base = info3->base;
+	info6->sids = info3->sids;
+	info6->sidcount = info3->sidcount;
+
+	if (upn_dns_info != NULL) {
+		info6->dns_domainname.string = talloc_strdup(info6,
+				upn_dns_info->dns_domain_name);
+		if (info6->dns_domainname.string == NULL) {
+			TALLOC_FREE(info6);
+			return NT_STATUS_NO_MEMORY;
+		}
+		info6->principal_name.string = talloc_strdup(info6,
+				upn_dns_info->upn_name);
+		if (info6->principal_name.string == NULL) {
+			TALLOC_FREE(info6);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	*pp_info6 = info6;
+	return NT_STATUS_OK;
+}
+
+/*
  * Check if this is a "Unix Users" domain user, or a
  * "Unix Groups" domain group, we need to handle it
  * in a special way if that's the case.
