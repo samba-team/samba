@@ -891,7 +891,11 @@ NTSTATUS _winbind_SamLogon(struct pipes_struct *p,
 		return NT_STATUS_REQUEST_NOT_ACCEPTED;
 	}
 
-	if (r->in.validation_level != 3) {
+	switch (r->in.validation_level) {
+	case 3:
+	case 6:
+		break;
+	default:
 		return NT_STATUS_REQUEST_NOT_ACCEPTED;
 	}
 
@@ -965,15 +969,31 @@ NTSTATUS _winbind_SamLogon(struct pipes_struct *p,
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	status = map_validation_to_info3(p->mem_ctx,
-					 validation_level,
-					 validation,
-					 &r->out.validation.sam3);
-	TALLOC_FREE(validation);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	switch (r->in.validation_level) {
+	case 3:
+		status = map_validation_to_info3(p->mem_ctx,
+						 validation_level,
+						 validation,
+						 &r->out.validation.sam3);
+		TALLOC_FREE(validation);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		return NT_STATUS_OK;
+	case 6:
+		status = map_validation_to_info6(p->mem_ctx,
+						 validation_level,
+						 validation,
+						 &r->out.validation.sam6);
+		TALLOC_FREE(validation);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		return NT_STATUS_OK;
 	}
-	return NT_STATUS_OK;
+
+	smb_panic(__location__);
+	return NT_STATUS_INTERNAL_ERROR;
 }
 
 static WERROR _winbind_LogonControl_REDISCOVER(struct pipes_struct *p,
