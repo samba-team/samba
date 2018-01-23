@@ -1421,6 +1421,7 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 					    const char *password,
 					    const char *domainname,
 					    const char *workstation,
+					    bool plaintext_given,
 					    const uint8_t chal[8],
 					    DATA_BLOB lm_response,
 					    DATA_BLOB nt_response,
@@ -1524,7 +1525,7 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 			DBG_NOTICE("No security credentials available for "
 				  "domain [%s]\n", domainname);
 			result = NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
-		} else if (interactive) {
+		} else if (plaintext_given) {
 			result = rpccli_netlogon_password_logon(
 				domain->conn.netlogon_creds_ctx,
 				netlogon_pipe->binding_handle,
@@ -1534,6 +1535,22 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 				username,
 				password,
 				workstation,
+				logon_type_i,
+				authoritative,
+				flags,
+				&validation_level,
+				&validation);
+		} else if (interactive) {
+			result = rpccli_netlogon_interactive_logon(
+				domain->conn.netlogon_creds_ctx,
+				netlogon_pipe->binding_handle,
+				mem_ctx,
+				logon_parameters,
+				username,
+				domainname,
+				workstation,
+				lm_response,
+				nt_response,
 				logon_type_i,
 				authoritative,
 				flags,
@@ -1745,6 +1762,7 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(
 					     pass,
 					     name_domain,
 					     lp_netbios_name(),
+					     true, /* plaintext_given */
 					     NULL,
 					     data_blob_null, data_blob_null,
 					     true, /* interactive */
@@ -2251,6 +2269,7 @@ NTSTATUS winbind_dual_SamLogon(struct winbindd_domain *domain,
 					     name_domain,
 					     /* Bug #3248 - found by Stefan Burkei. */
 					     workstation, /* We carefully set this above so use it... */
+					     false, /* plaintext_given */
 					     chal,
 					     lm_response,
 					     nt_response,
