@@ -24,7 +24,6 @@
 
 struct winbindd_pam_auth_crap_state {
 	struct winbindd_response *response;
-	struct netr_SamInfo3 *info3;
 	uint32_t flags;
 };
 
@@ -50,16 +49,44 @@ struct tevent_req *winbindd_pam_auth_crap_send(
 	state->flags = request->flags;
 
 	if (state->flags & WBFLAG_PAM_AUTH_PAC) {
+		struct netr_SamInfo3 *info3 = NULL;
+		uint16_t validation_level;
+		union netr_Validation *validation = NULL;
 		NTSTATUS status;
 
-		status = winbindd_pam_auth_pac_send(cli, &state->info3);
-		if (NT_STATUS_IS_OK(status)) {
-			/* Defer filling out response to recv */
-			tevent_req_done(req);
-		} else {
-			tevent_req_nterror(req, status);
+		status = winbindd_pam_auth_pac_send(cli, &info3);
+		if (tevent_req_nterror(req, status)) {
+			return tevent_req_post(req, ev);
 		}
 
+		state->response = talloc_zero(state,
+					      struct winbindd_response);
+		if (tevent_req_nomem(state->response, req)) {
+			return tevent_req_post(req, ev);
+		}
+		state->response->result = WINBINDD_PENDING;
+		state->response->length = sizeof(struct winbindd_response);
+
+		status = map_info3_to_validation(talloc_tos(),
+						 info3,
+						 &validation_level,
+						 &validation);
+		if (tevent_req_nterror(req, status)) {
+			return tevent_req_post(req, ev);
+		}
+
+		status = append_auth_data(state->response,
+					  state->response,
+					  state->flags,
+					  validation_level,
+					  validation,
+					  NULL, NULL);
+		TALLOC_FREE(validation);
+		if (tevent_req_nterror(req, status)) {
+			return tevent_req_post(req, ev);
+		}
+
+		tevent_req_done(req);
 		return tevent_req_post(req, ev);
 	}
 
@@ -149,29 +176,6 @@ NTSTATUS winbindd_pam_auth_crap_recv(struct tevent_req *req,
 	if (tevent_req_is_nterror(req, &status)) {
 		set_auth_errors(response, status);
 		return status;
-	}
-
-	if (state->flags & WBFLAG_PAM_AUTH_PAC)	{
-		uint16_t validation_level;
-		union netr_Validation *validation = NULL;
-
-		status = map_info3_to_validation(talloc_tos(),
-						 state->info3,
-						 &validation_level,
-						 &validation);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-
-		status = append_auth_data(response,
-					response,
-					state->flags,
-					validation_level,
-					validation,
-					NULL, NULL);
-		TALLOC_FREE(validation);
-		return status;
-
 	}
 
 	*response = *state->response;
