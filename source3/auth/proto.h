@@ -312,6 +312,10 @@ NTSTATUS serverinfo_to_SamInfo6(struct auth_serversupplied_info *server_info,
 NTSTATUS create_info3_from_pac_logon_info(TALLOC_CTX *mem_ctx,
                                         const struct PAC_LOGON_INFO *logon_info,
                                         struct netr_SamInfo3 **pp_info3);
+NTSTATUS create_info6_from_pac(TALLOC_CTX *mem_ctx,
+			       const struct PAC_LOGON_INFO *logon_info,
+			       const struct PAC_UPN_DNS_INFO *upn_dns_info,
+			       struct netr_SamInfo6 **pp_info6);
 NTSTATUS samu_to_SamInfo3(TALLOC_CTX *mem_ctx,
 			  struct samu *samu,
 			  const char *login_server,
