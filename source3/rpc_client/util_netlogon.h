@@ -32,6 +32,13 @@ NTSTATUS map_validation_to_info3(TALLOC_CTX *mem_ctx,
 				 uint16_t validation_level,
 				 union netr_Validation *validation,
 				 struct netr_SamInfo3 **info3_p);
+NTSTATUS copy_netr_SamInfo6(TALLOC_CTX *mem_ctx,
+			    const struct netr_SamInfo6 *in,
+			    struct netr_SamInfo6 **pout);
+NTSTATUS map_validation_to_info6(TALLOC_CTX *mem_ctx,
+				 uint16_t validation_level,
+				 union netr_Validation *validation,
+				 struct netr_SamInfo6 **info6_p);
 NTSTATUS map_info3_to_validation(TALLOC_CTX *mem_ctx,
 				 struct netr_SamInfo3 *info3,
 				 uint16_t *_validation_level,
