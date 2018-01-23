@@ -2201,6 +2201,7 @@ done:
 
 NTSTATUS winbind_dual_SamLogon(struct winbindd_domain *domain,
 			       TALLOC_CTX *mem_ctx,
+			       bool interactive,
 			       uint32_t logon_parameters,
 			       const char *name_user,
 			       const char *name_domain,
@@ -2237,7 +2238,7 @@ NTSTATUS winbind_dual_SamLogon(struct winbindd_domain *domain,
 			logon_parameters,
 			name_domain, name_user,
 			&chal_blob, &lm_response, &nt_response,
-			false, /* interactive */
+			interactive,
 			authoritative,
 			&info3);
 		if (NT_STATUS_IS_OK(result)) {
@@ -2273,7 +2274,7 @@ NTSTATUS winbind_dual_SamLogon(struct winbindd_domain *domain,
 					     chal,
 					     lm_response,
 					     nt_response,
-					     false, /* interactive */
+					     interactive,
 					     authoritative,
 					     flags,
 					     &validation_level,
@@ -2417,6 +2418,7 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 
 	result = winbind_dual_SamLogon(domain,
 				       state->mem_ctx,
+				       false, /* interactive */
 				       state->request->data.auth_crap.logon_parameters,
 				       name_user,
 				       name_domain,
