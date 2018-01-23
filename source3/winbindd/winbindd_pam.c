@@ -2823,7 +2823,7 @@ enum winbindd_result winbindd_dual_pam_chng_pswd_auth_crap(struct winbindd_domai
 
 #ifdef HAVE_KRB5
 static NTSTATUS extract_pac_vrfy_sigs(TALLOC_CTX *mem_ctx, DATA_BLOB pac_blob,
-				      struct PAC_LOGON_INFO **logon_info)
+				      struct PAC_DATA **p_pac_data)
 {
 	krb5_context krbctx = NULL;
 	krb5_error_code k5ret;
@@ -2861,10 +2861,14 @@ static NTSTATUS extract_pac_vrfy_sigs(TALLOC_CTX *mem_ctx, DATA_BLOB pac_blob,
 
 	k5ret = krb5_kt_next_entry(krbctx, keytab, &entry, &cursor);
 	while (k5ret == 0) {
-		status = kerberos_pac_logon_info(mem_ctx, pac_blob,
-						 krbctx, NULL,
-						 KRB5_KT_KEY(&entry), NULL, 0,
-						 logon_info);
+		status = kerberos_decode_pac(mem_ctx,
+					     pac_blob,
+					     krbctx,
+					     NULL, /* krbtgt_keyblock */
+					     KRB5_KT_KEY(&entry), /* service_keyblock */
+					     NULL, /* client_principal */
+					     0, /* tgs_authtime */
+					     p_pac_data);
 		if (NT_STATUS_IS_OK(status)) {
 			break;
 		}
@@ -2894,20 +2898,75 @@ NTSTATUS winbindd_pam_auth_pac_send(struct winbindd_cli_state *state,
 {
 	struct winbindd_request *req = state->request;
 	DATA_BLOB pac_blob;
+	struct PAC_DATA *pac_data = NULL;
 	struct PAC_LOGON_INFO *logon_info = NULL;
+	struct PAC_UPN_DNS_INFO *upn_dns_info = NULL;
+	struct netr_SamInfo6 *info6 = NULL;
+	uint16_t validation_level = 0;
+	union netr_Validation *validation = NULL;
 	struct netr_SamInfo3 *info3_copy = NULL;
 	NTSTATUS result;
+	bool is_trusted = false;
+	uint32_t i;
 
 	pac_blob = data_blob_const(req->extra_data.data, req->extra_len);
-	result = extract_pac_vrfy_sigs(state->mem_ctx, pac_blob, &logon_info);
-	if (!NT_STATUS_IS_OK(result) &&
-	    !NT_STATUS_EQUAL(result, NT_STATUS_ACCESS_DENIED)) {
+	result = extract_pac_vrfy_sigs(state->mem_ctx, pac_blob, &pac_data);
+	if (NT_STATUS_IS_OK(result)) {
+		is_trusted = true;
+	}
+	if (NT_STATUS_EQUAL(result, NT_STATUS_ACCESS_DENIED)) {
+		/* Try without signature verification */
+		result = kerberos_decode_pac(state->mem_ctx,
+					     pac_blob,
+					     NULL, /* krb5_context */
+					     NULL, /* krbtgt_keyblock */
+					     NULL, /* service_keyblock */
+					     NULL, /* client_principal */
+					     0, /* tgs_authtime */
+					     &pac_data);
+	}
+	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(1, ("Error during PAC signature verification: %s\n",
 			  nt_errstr(result)));
 		return result;
 	}
 
-	if (logon_info) {
+	for (i=0; i < pac_data->num_buffers; i++) {
+		if (pac_data->buffers[i].type == PAC_TYPE_LOGON_INFO) {
+			logon_info = pac_data->buffers[i].info->logon_info.info;
+			continue;
+		}
+		if (pac_data->buffers[i].type == PAC_TYPE_UPN_DNS_INFO) {
+			upn_dns_info = &pac_data->buffers[i].info->upn_dns_info;
+			continue;
+		}
+	}
+
+	result = create_info6_from_pac(state->mem_ctx,
+				       logon_info,
+				       upn_dns_info,
+				       &info6);
+	if (!NT_STATUS_IS_OK(result)) {
+		return result;
+	}
+
+	result = map_info6_to_validation(state->mem_ctx,
+					 info6,
+					 &validation_level,
+					 &validation);
+	if (!NT_STATUS_IS_OK(result)) {
+		return result;
+	}
+
+	result = map_validation_to_info3(state->mem_ctx,
+					 validation_level,
+					 validation,
+					 &info3_copy);
+	if (!NT_STATUS_IS_OK(result)) {
+		return result;
+	}
+
+	if (is_trusted) {
 		/*
 		 * Signature verification succeeded, we can
 		 * trust the PAC and prime the netsamlogon
@@ -2917,12 +2976,6 @@ NTSTATUS winbindd_pam_auth_pac_send(struct winbindd_cli_state *state,
 		 */
 		struct winbindd_domain *domain = NULL;
 
-		result = create_info3_from_pac_logon_info(state->mem_ctx,
-							logon_info,
-							&info3_copy);
-		if (!NT_STATUS_IS_OK(result)) {
-			return result;
-		}
 		netsamlogon_cache_store(NULL, info3_copy);
 
 		/*
@@ -2948,31 +3001,6 @@ NTSTATUS winbindd_pam_auth_pac_send(struct winbindd_cli_state *state,
 				info3_copy->base.logon_domain.string,
 				info3_copy->base.account_name.string,
 				sid_string_dbg(&user_sid));
-		}
-
-	} else {
-		/* Try without signature verification */
-		result = kerberos_pac_logon_info(state->mem_ctx, pac_blob, NULL,
-						 NULL, NULL, NULL, 0,
-						 &logon_info);
-		if (!NT_STATUS_IS_OK(result)) {
-			DEBUG(10, ("Could not extract PAC: %s\n",
-				   nt_errstr(result)));
-			return result;
-		}
-		if (logon_info) {
-			/*
-			 * Don't strictly need to copy here,
-			 * but it makes it explicit we're
-			 * returning a copy talloc'ed off
-			 * the state->mem_ctx.
-			 */
-			result = copy_netr_SamInfo3(state->mem_ctx,
-						    &logon_info->info3,
-						    &info3_copy);
-			if (!NT_STATUS_IS_OK(result)) {
-				return result;
-			}
 		}
 	}
 
