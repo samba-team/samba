@@ -176,7 +176,7 @@ static struct tevent_req *winbind_check_password_send(TALLOC_CTX *mem_ctx,
 	identity_info->account_name.string	= user_info->client.account_name;
 	identity_info->workstation.string	= user_info->workstation_name;
 
-	state->req.in.validation_level = 3;
+	state->req.in.validation_level = 6;
 
 	subreq = dcerpc_winbind_SamLogon_r_send(state, ev, irpc_handle,
 						&state->req);
