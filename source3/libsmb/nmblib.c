@@ -803,6 +803,77 @@ struct packet_struct *parse_packet(char *buf,int length,
 	return p;
 }
 
+static struct packet_struct *copy_packet_talloc(
+	TALLOC_CTX *mem_ctx, const struct packet_struct *src)
+{
+	struct packet_struct *pkt;
+
+	pkt = talloc_memdup(mem_ctx, src, sizeof(struct packet_struct));
+	if (pkt == NULL) {
+		return NULL;
+	}
+	pkt->locked = false;
+	pkt->recv_fd = -1;
+	pkt->send_fd = -1;
+
+	if (src->packet_type == NMB_PACKET) {
+		const struct nmb_packet *nsrc = &src->packet.nmb;
+		struct nmb_packet *ndst = &pkt->packet.nmb;
+
+		if (nsrc->answers != NULL) {
+			ndst->answers = talloc_memdup(
+				pkt, nsrc->answers,
+				sizeof(struct res_rec) * nsrc->header.ancount);
+			if (ndst->answers == NULL) {
+				goto fail;
+			}
+		}
+		if (nsrc->nsrecs != NULL) {
+			ndst->nsrecs = talloc_memdup(
+				pkt, nsrc->nsrecs,
+				sizeof(struct res_rec) * nsrc->header.nscount);
+			if (ndst->nsrecs == NULL) {
+				goto fail;
+			}
+		}
+		if (nsrc->additional != NULL) {
+			ndst->additional = talloc_memdup(
+				pkt, nsrc->additional,
+				sizeof(struct res_rec) * nsrc->header.arcount);
+			if (ndst->nsrecs == NULL) {
+				goto fail;
+			}
+		}
+	}
+
+	return pkt;
+
+	/*
+	 * DGRAM packets have no substructures
+	 */
+
+fail:
+	TALLOC_FREE(pkt);
+	return NULL;
+}
+
+struct packet_struct *parse_packet_talloc(TALLOC_CTX *mem_ctx,
+					  char *buf,int length,
+					  enum packet_type packet_type,
+					  struct in_addr ip,
+					  int port)
+{
+	struct packet_struct *pkt, *result;
+
+	pkt = parse_packet(buf, length, packet_type, ip, port);
+	if (pkt == NULL) {
+		return NULL;
+	}
+	result = copy_packet_talloc(mem_ctx, pkt);
+	free_packet(pkt);
+	return result;
+}
+
 /*******************************************************************
  Read a packet from a socket and parse it, returning a packet ready
  to be used or put on the queue. This assumes a UDP socket.
