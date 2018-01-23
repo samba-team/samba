@@ -43,5 +43,9 @@ NTSTATUS map_info3_to_validation(TALLOC_CTX *mem_ctx,
 				 struct netr_SamInfo3 *info3,
 				 uint16_t *_validation_level,
 				 union netr_Validation **_validation);
+NTSTATUS map_info6_to_validation(TALLOC_CTX *mem_ctx,
+				 const struct netr_SamInfo6 *info6,
+				 uint16_t *_validation_level,
+				 union netr_Validation **_validation);
 
 #endif /* _RPC_CLIENT_UTIL_NETLOGON_H_ */
