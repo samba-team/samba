@@ -541,9 +541,9 @@ static void ctdb_wait_election(struct ctdb_recoverd *rec)
  * flags changes to all nodes.  This is only run by the recovery
  * master.
  */
-static int update_local_flags(struct ctdb_recoverd *rec,
-			      struct ctdb_node_map_old *nodemap,
-			      struct ctdb_node_map_old **remote_nodemaps)
+static int update_flags(struct ctdb_recoverd *rec,
+			struct ctdb_node_map_old *nodemap,
+			struct ctdb_node_map_old **remote_nodemaps)
 {
 	unsigned int j;
 	struct ctdb_context *ctdb = rec->ctdb;
@@ -2554,10 +2554,10 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 		return;
 	}
 
-	/* ensure our local copies of flags are right */
-	ret = update_local_flags(rec, nodemap, remote_nodemaps);
+	/* Ensure our local and remote flags are correct */
+	ret = update_flags(rec, nodemap, remote_nodemaps);
 	if (ret != 0) {
-		DEBUG(DEBUG_ERR,("Unable to update local flags\n"));
+		D_ERR("Unable to update flags\n");
 		return;
 	}
 
