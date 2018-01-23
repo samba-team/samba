@@ -635,7 +635,7 @@ static NTSTATUS winbindd_raw_kerberos_login(TALLOC_CTX *mem_ctx,
 					    const char *pass,
 					    const char *krb5_cc_type,
 					    uid_t uid,
-					    struct netr_SamInfo3 **info3,
+					    struct netr_SamInfo6 **info6,
 					    fstring krb5ccname)
 {
 #ifdef HAVE_KRB5
@@ -652,13 +652,14 @@ static NTSTATUS winbindd_raw_kerberos_login(TALLOC_CTX *mem_ctx,
 	time_t time_offset = 0;
 	const char *user_ccache_file;
 	struct PAC_LOGON_INFO *logon_info = NULL;
+	struct PAC_UPN_DNS_INFO *upn_dns_info = NULL;
 	struct PAC_DATA *pac_data = NULL;
 	struct PAC_DATA_CTR *pac_data_ctr = NULL;
 	const char *local_service;
 	uint32_t i;
-	struct netr_SamInfo3 *info3_copy = NULL;
+	struct netr_SamInfo6 *info6_copy = NULL;
 
-	*info3 = NULL;
+	*info6 = NULL;
 
 	if (domain->alt_name == NULL) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -764,16 +765,15 @@ static NTSTATUS winbindd_raw_kerberos_login(TALLOC_CTX *mem_ctx,
 
 	for (i=0; i < pac_data->num_buffers; i++) {
 
-		if (pac_data->buffers[i].type != PAC_TYPE_LOGON_INFO) {
+		if (pac_data->buffers[i].type == PAC_TYPE_LOGON_INFO) {
+			logon_info = pac_data->buffers[i].info->logon_info.info;
 			continue;
 		}
 
-		logon_info = pac_data->buffers[i].info->logon_info.info;
-		if (!logon_info) {
-			return NT_STATUS_INVALID_PARAMETER;
+		if (pac_data->buffers[i].type == PAC_TYPE_UPN_DNS_INFO) {
+			upn_dns_info = &pac_data->buffers[i].info->upn_dns_info;
+			continue;
 		}
-
-		break;
 	}
 
 	if (logon_info == NULL) {
@@ -785,7 +785,8 @@ static NTSTATUS winbindd_raw_kerberos_login(TALLOC_CTX *mem_ctx,
 	DEBUG(10,("winbindd_raw_kerberos_login: winbindd validated ticket of %s\n",
 		principal_s));
 
-	result = create_info3_from_pac_logon_info(mem_ctx, logon_info, &info3_copy);
+	result = create_info6_from_pac(mem_ctx, logon_info,
+				       upn_dns_info, &info6_copy);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto failed;
 	}
@@ -825,7 +826,7 @@ static NTSTATUS winbindd_raw_kerberos_login(TALLOC_CTX *mem_ctx,
 		}
 
 	}
-	*info3 = info3_copy;
+	*info6 = info6_copy;
 	return NT_STATUS_OK;
 
 failed:
@@ -1240,7 +1241,7 @@ failed:
 
 static NTSTATUS winbindd_dual_pam_auth_kerberos(struct winbindd_domain *domain,
 						struct winbindd_cli_state *state,
-						struct netr_SamInfo3 **info3)
+						struct netr_SamInfo6 **info6)
 {
 	struct winbindd_domain *contact_domain;
 	fstring name_domain, name_user;
@@ -1299,7 +1300,7 @@ try_login:
 		state->request->data.auth.pass,
 		state->request->data.auth.krb5_cc_type,
 		get_uid_from_request(state->request),
-		info3, state->response->data.auth.krb5ccname);
+		info6, state->response->data.auth.krb5ccname);
 done:
 	return result;
 }
@@ -1928,23 +1929,22 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 
 	/* Check for Kerberos authentication */
 	if (domain->online && (state->request->flags & WBFLAG_PAM_KRB5)) {
-		struct netr_SamInfo3 *info3 = NULL;
+		struct netr_SamInfo6 *info6 = NULL;
 
-		result = winbindd_dual_pam_auth_kerberos(domain, state, &info3);
+		result = winbindd_dual_pam_auth_kerberos(domain, state, &info6);
 		/* save for later */
 		krb5_result = result;
-
 
 		if (NT_STATUS_IS_OK(result)) {
 			DEBUG(10,("winbindd_dual_pam_auth_kerberos succeeded\n"));
 
-			result = map_info3_to_validation(state->mem_ctx,
-							 info3,
+			result = map_info6_to_validation(state->mem_ctx,
+							 info6,
 							 &validation_level,
 							 &validation);
-			TALLOC_FREE(info3);
+			TALLOC_FREE(info6);
 			if (!NT_STATUS_IS_OK(result)) {
-				DBG_ERR("map_info3_to_validation failed\n");
+				DBG_ERR("map_info6_to_validation failed\n");
 				goto done;
 			}
 			goto process_result;
