@@ -1153,6 +1153,11 @@ static int virusfilter_vfs_open(
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
 				struct virusfilter_config, return -1);
 
+	if (fsp->is_directory) {
+		DBG_INFO("Not scanned: Directory: %s/\n", cwd_fname);
+		goto virusfilter_vfs_open_next;
+	}
+
 	test_prefix = strlen(config->rename_prefix);
 	test_suffix = strlen(config->rename_suffix);
 	if (test_prefix > 0) {
@@ -1338,8 +1343,7 @@ static int virusfilter_vfs_close(
 	}
 
 	if (fsp->is_directory) {
-		DBG_INFO("Not scanned: Directory: %s/%s\n", cwd_fname,
-			 fname);
+		DBG_INFO("Not scanned: Directory: %s/\n", cwd_fname);
 		return close_result;
 	}
 
