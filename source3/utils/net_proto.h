@@ -43,6 +43,7 @@ int net_ads_printer_usage(struct net_context *c, int argc, const char **argv);
 int net_ads_changetrustpw(struct net_context *c, int argc, const char **argv);
 int net_ads_keytab(struct net_context *c, int argc, const char **argv);
 int net_ads_kerberos(struct net_context *c, int argc, const char **argv);
+int net_ads_setspn(struct net_context *c, int argc, const char **argv);
 int net_ads(struct net_context *c, int argc, const char **argv);
 
 /* The following definitions come from utils/net_ads_gpo.c  */

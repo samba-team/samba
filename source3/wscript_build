@@ -522,6 +522,7 @@ bld.SAMBA3_LIBRARY('ads',
                           libads/ldap_schema.c
                           libads/util.c
                           libads/ndr.c
+                          libads/net_ads_setspn.c
                           ''',
                    deps='''
                         cli-ldap-common
