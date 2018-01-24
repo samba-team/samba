@@ -1345,7 +1345,7 @@ NTSTATUS smbXsrv_session_add_channel(struct smbXsrv_session *session,
 
 	if (global->num_channels > 31) {
 		/*
-		 * Windows 2012 and 2012R2 allow up to 32 channels
+		 * Windows allow up to 32 channels
 		 */
 		return NT_STATUS_INSUFFICIENT_RESOURCES;
 	}
