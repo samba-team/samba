@@ -997,3 +997,14 @@ accountExpires: %u
     def allocate_rid(self):
         '''return a new RID from the RID Pool on this DSA'''
         return dsdb._dsdb_allocate_rid(self)
+
+    def normalize_dn_in_domain(self, dn):
+        """return full dn of an relative dn
+
+        :param dn: relative dn
+        """
+        domain_dn = ldb.Dn(self, self.domain_dn())
+        full_dn = ldb.Dn(self, dn)
+        if not full_dn.is_child_of(domain_dn):
+            full_dn.add_base(domain_dn)
+        return full_dn
