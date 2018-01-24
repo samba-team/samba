@@ -668,6 +668,16 @@
 </refsect3>
 
 <refsect3>
+	<title>user move <replaceable>username</replaceable> <replaceable>new_parent_dn</replaceable> [options]</title>
+	<para>This command moves a user account into the specified
+	organizational unit or container.</para>
+	<para>The username specified on the command is the
+	sAMAccountName.</para>
+	<para>The name of the organizational unit or container can be
+	specified as a full DN or without the domainDN component.</para>
+</refsect3>
+
+<refsect3>
 	<title>user password [options]</title>
 	<para>Change password for an user account (the one provided in
 	authentication).</para>
