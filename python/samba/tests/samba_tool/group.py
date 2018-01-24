@@ -138,6 +138,38 @@ class GroupCmdTestCase(SambaToolCmdTest):
             name = groupobj.get("samAccountName", idx=0)
             found = self.assertMatch(out, name, "group '%s' not found" % name)
 
+    def test_move(self):
+        full_ou_dn = str(self.samdb.normalize_dn_in_domain("OU=movetest"))
+        (result, out, err) =  self.runsubcmd("ou", "create", full_ou_dn)
+        self.assertCmdSuccess(result, out, err)
+        self.assertEquals(err, "", "There shouldn't be any error message")
+        self.assertIn('Created ou "%s"' % full_ou_dn, out)
+
+        for group in self.groups:
+            (result, out, err) = self.runsubcmd(
+                "group", "move", group["name"], full_ou_dn)
+            self.assertCmdSuccess(result, out, err, "Error running move")
+            self.assertIn('Moved group "%s" into "%s"' %
+                          (group["name"], full_ou_dn), out)
+
+        # Should fail as groups objects are in OU
+        (result, out, err) =  self.runsubcmd("ou", "delete", full_ou_dn)
+        self.assertCmdFail(result)
+        self.assertIn(("subtree_delete: Unable to delete a non-leaf node "
+                       "(it has %d children)!") % len(self.groups), err)
+
+        for group in self.groups:
+            new_dn = "CN=Users,%s" % self.samdb.domain_dn()
+            (result, out, err) = self.runsubcmd(
+                "group", "move", group["name"], new_dn)
+            self.assertCmdSuccess(result, out, err, "Error running move")
+            self.assertIn('Moved group "%s" into "%s"' %
+                          (group["name"], new_dn), out)
+
+        (result, out, err) = self.runsubcmd("ou", "delete", full_ou_dn)
+        self.assertCmdSuccess(result, out, err,
+                              "Failed to delete ou '%s'" % full_ou_dn)
+
     def _randomGroup(self, base={}):
         """create a group with random attribute values, you can specify base attributes"""
         group = {
