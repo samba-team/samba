@@ -1303,7 +1303,7 @@ static int virusfilter_vfs_close(
 	const char *cwd_fname = handle->conn->connectpath;
 
 	struct virusfilter_config *config = NULL;
-	char *fname = fsp->fsp_name->base_name = NULL;
+	char *fname = fsp->fsp_name->base_name;
 	int close_result = -1;
 	int close_errno = 0;
 	virusfilter_result scan_result;
