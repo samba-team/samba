@@ -129,4 +129,101 @@ done:
 	return ret;
 }
 
+bool ads_setspn_delete(ADS_STRUCT *ads,
+		       const char *machine_name,
+		       const char * spn)
+{
+	size_t i = 0, j = 0;
+	TALLOC_CTX *frame = NULL;
+	char **spn_array = NULL;
+	const char **new_spn_array = NULL;
+	char *lc_spn = NULL;
+	size_t num_spns = 0;
+	ADS_STATUS status;
+	ADS_MODLIST mods;
+	bool ok = false;
+	LDAPMessage *res = NULL;
+
+	frame = talloc_stackframe();
+
+	lc_spn = strlower_talloc(frame, spn);
+	if (lc_spn == NULL) {
+		DBG_ERR("Out of memory, lowercasing %s.\n", spn);
+		goto done;
+	}
+
+	status = ads_find_machine_acct(ads,
+				       &res,
+				       machine_name);
+	if (!ADS_ERR_OK(status)) {
+		goto done;
+	}
+
+	status = ads_get_service_principal_names(frame,
+						 ads,
+						 machine_name,
+						 &spn_array,
+						 &num_spns);
+	if (!ADS_ERR_OK(status)) {
+		goto done;
+	}
+
+	new_spn_array = talloc_zero_array(frame, const char*, num_spns + 1);
+	if (!new_spn_array) {
+		DBG_ERR("Out of memory, failed to allocate array.\n");
+		goto done;
+	}
+
+	/*
+	 * create new spn list to write to object (excluding the spn to
+	 * be deleted).
+	 */
+	for (i = 0, j = 0; i < num_spns; i++) {
+		/*
+		 * windows setspn.exe deletes matching spn in a case
+		 * insensitive way.
+		 */
+		char *lc_spn_attr = strlower_talloc(frame, spn_array[i]);
+		if (lc_spn_attr == NULL) {
+			DBG_ERR("Out of memory, lowercasing %s.\n",
+				spn_array[i]);
+			goto done;
+		}
+
+		if (!strequal(lc_spn, lc_spn_attr)) {
+			new_spn_array[j++] = spn_array[i];
+		}
+	}
+
+	/* found and removed spn */
+	if (j < num_spns) {
+		char *dn = NULL;
+		mods = ads_init_mods(frame);
+		if (mods == NULL) {
+			goto done;
+		}
+		d_printf("Unregistering SPN %s for %s\n", spn, machine_name);
+		status = ads_mod_strlist(frame, &mods, "servicePrincipalName", new_spn_array);
+		if (!ADS_ERR_OK(status)) {
+			goto done;
+		}
+
+		dn = ads_get_dn(ads, frame, res);
+		if (dn == NULL ) {
+			goto done;
+		}
+
+		status = ads_gen_mod(ads, dn, mods);
+		if (!ADS_ERR_OK(status)) {
+			goto done;
+		}
+	}
+	d_printf("Updated object\n");
+
+	ok = true;
+done:
+	TALLOC_FREE(frame);
+	return ok;
+}
+
 #endif /* HAVE_ADS */

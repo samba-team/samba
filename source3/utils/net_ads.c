@@ -3067,6 +3067,37 @@ done:
 	return ret;
 }
 
+static int net_ads_setspn_delete(struct net_context *c, int argc, const char **argv)
+{
+	int ret = 0;
+	bool ok = false;
+	ADS_STRUCT *ads = NULL;
+	if (c->display_usage || argc < 1) {
+		d_printf("%s\n%s",
+			 _("Usage:"),
+			 _("net ads setspn delete <machinename> SPN\n"));
+		ret = 0;
+		goto done;
+	}
+	if (!ADS_ERR_OK(ads_startup(c, true, &ads))) {
+		ret = -1;
+		goto done;
+	}
+	if (argc > 1) {
+		ok = ads_setspn_delete(ads, argv[0], argv[1]);
+	} else {
+		ok = ads_setspn_delete(ads, lp_netbios_name(), argv[0]);
+	}
+	if (!ok) {
+		ret = -1;
+	}
+done:
+	if (ads) {
+		ads_destroy(&ads);
+	}
+	return ret;
+}
+
 int net_ads_setspn(struct net_context *c, int argc, const char **argv)
 {
 	struct functable func[] = {
@@ -3085,6 +3116,14 @@ int net_ads_setspn(struct net_context *c, int argc, const char **argv)
 			N_("Add Service Principal Names (SPN)"),
 			N_("net ads setspn add machine spn\n"
 			   "    Add Service Principal Names (SPN)")
+		},
+		{
+			"delete",
+			net_ads_setspn_delete,
+			NET_TRANSPORT_ADS,
+			N_("Delete Service Principal Names (SPN)"),
+			N_("net ads setspn delete machine spn\n"
+			   "    Delete Service Principal Names (SPN)")
 		},
 		{NULL, NULL, 0, NULL, NULL}
 	};
