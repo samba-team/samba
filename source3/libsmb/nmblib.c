@@ -840,7 +840,7 @@ static struct packet_struct *copy_packet_talloc(
 			ndst->additional = talloc_memdup(
 				pkt, nsrc->additional,
 				sizeof(struct res_rec) * nsrc->header.arcount);
-			if (ndst->nsrecs == NULL) {
+			if (ndst->additional == NULL) {
 				goto fail;
 			}
 		}
