@@ -889,27 +889,23 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                 return dsdb_dn
         return None
 
-    def check_dn(self, obj, attrname, syntax_oid):
-        '''check a DN attribute for correctness'''
+    def check_duplicate_links(self, obj, forward_attr, forward_syntax, forward_linkID, backlink_attr):
+        '''check a linked values for duplicate forward links'''
         error_count = 0
-        obj_guid = obj['objectGUID'][0]
-
-        linkID, reverse_link_name = self.get_attr_linkID_and_reverse_name(attrname)
-        if reverse_link_name is not None:
-            reverse_syntax_oid = self.samdb_schema.get_syntax_oid_from_lDAPDisplayName(reverse_link_name)
-        else:
-            reverse_syntax_oid = None
 
         duplicate_dict = dict()
         unique_dict = dict()
-        for val in obj[attrname]:
-            if linkID & 1:
-                #
-                # Only cleanup forward links here,
-                # back links are handled below.
-                break
 
-            dsdb_dn = dsdb_Dn(self.samdb, val, syntax_oid)
+        # Only forward links can have this problem
+        if forward_linkID & 1:
+            # If we got the reverse, skip it
+            return (error_count, duplicate_dict, unique_dict)
+
+        if backlink_attr is None:
+            return (error_count, duplicate_dict, unique_dict)
+
+        for val in obj[forward_attr]:
+            dsdb_dn = dsdb_Dn(self.samdb, val, forward_syntax)
 
             # all DNs should have a GUID component
             guid = dsdb_dn.dn.get_extended_component("GUID")
@@ -948,6 +944,23 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             duplicate_dict[keystr]["keep"] = dsdb_dn
             duplicate_dict[keystr]["delete"].append(unique_dict[keystr])
             unique_dict[keystr] = dsdb_dn
+
+
+        return (error_count, duplicate_dict, unique_dict)
+
+    def check_dn(self, obj, attrname, syntax_oid):
+        '''check a DN attribute for correctness'''
+        error_count = 0
+        obj_guid = obj['objectGUID'][0]
+
+        linkID, reverse_link_name = self.get_attr_linkID_and_reverse_name(attrname)
+        if reverse_link_name is not None:
+            reverse_syntax_oid = self.samdb_schema.get_syntax_oid_from_lDAPDisplayName(reverse_link_name)
+        else:
+            reverse_syntax_oid = None
+
+        error_count, duplicate_dict, unique_dict = \
+            self.check_duplicate_links(obj, attrname, syntax_oid, linkID, reverse_link_name)
 
         if len(duplicate_dict) != 0:
             self.report("ERROR: Duplicate forward link values for attribute '%s' in '%s'" % (attrname, obj.dn))
