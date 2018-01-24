@@ -243,3 +243,6 @@ class CommandError(Exception):
         self.message = message
         self.inner_exception = inner_exception
         self.exception_info = sys.exc_info()
+
+    def __repr__(self):
+        return "CommandError(%s)" % self.message
