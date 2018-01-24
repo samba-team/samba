@@ -56,7 +56,8 @@ int ads_keytab_list(const char *keytab_name);
 
 /* The following definitions come from libads/net_ads_setspn.c  */
 bool ads_setspn_list(ADS_STRUCT *ads, const char *machine);
-
+bool ads_setspn_add(ADS_STRUCT *ads, const char *machine_name,
+		    const char * spn);
 /* The following definitions come from libads/krb5_errs.c  */
 
 /* The following definitions come from libads/kerberos_util.c  */

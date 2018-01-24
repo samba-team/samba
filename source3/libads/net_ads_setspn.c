@@ -51,4 +51,82 @@ done:
 	return ok;
 }
 
+/* returns true if spn exists in spn_array (match is NOT case-sensitive) */
+static bool find_spn_in_spnlist(TALLOC_CTX *ctx,
+				const char *spn,
+				char **spn_array,
+				size_t num_spns)
+{
+	char *lc_spn = NULL;
+	size_t i = 0;
+
+	lc_spn = strlower_talloc(ctx, spn);
+	if (lc_spn == NULL) {
+		DBG_ERR("Out of memory, lowercasing %s.\n",
+			spn);
+		return false;
+	}
+
+	for (i = 0; i < num_spns; i++) {
+		char *lc_spn_attr = strlower_talloc(ctx, spn_array[i]);
+		if (lc_spn_attr == NULL) {
+			DBG_ERR("Out of memory, lowercasing %s.\n",
+				spn_array[i]);
+			return false;
+		}
+
+		if (strequal(lc_spn, lc_spn_attr)) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool ads_setspn_add(ADS_STRUCT *ads, const char *machine_name, const char * spn)
+{
+	bool ret = false;
+	TALLOC_CTX *frame = NULL;
+	ADS_STATUS status;
+	struct spn_struct *spn_struct = NULL;
+	const char *spns[2] = {NULL, NULL};
+	char **existing_spns = NULL;
+	size_t num_spns = 0;
+	bool found = false;
+
+	frame = talloc_stackframe();
+	spns[0] = spn;
+	spn_struct = parse_spn(frame, spn);
+	if (spn_struct == NULL) {
+		goto done;
+	}
+
+	status = ads_get_service_principal_names(frame,
+						 ads,
+						 machine_name,
+						 &existing_spns,
+						 &num_spns);
+
+	if (!ADS_ERR_OK(status)) {
+		goto done;
+	}
+
+	found = find_spn_in_spnlist(frame, spn, existing_spns, num_spns);
+	if (found) {
+		d_printf("Duplicate SPN found, aborting operation.\n");
+		goto done;
+	}
+
+	d_printf("Registering SPN %s for object %s\n", spn, machine_name);
+	status = ads_add_service_principal_names(ads, machine_name, spns);
+	if (!ADS_ERR_OK(status)) {
+		goto done;
+	}
+	ret = true;
+	d_printf("Updated object\n");
+done:
+	TALLOC_FREE(frame);
+	return ret;
+}
+
 #endif /* HAVE_ADS */
