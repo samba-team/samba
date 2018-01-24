@@ -592,28 +592,7 @@ msg.msg_accrightslen = sizeof(fd);
                                 headers='unistd.h sys/types.h dirent.h',
                                 define='HAVE_DIRENT_D_OFF')
 
-    conf.CHECK_FUNCS('setnetgrent getnetgrent endnetgrent')
-    if conf.CHECK_CFLAGS('-Werror-implicit-function-declaration'):
-        netgrent_cflags = '-Werror-implicit-function-declaration'
-    else:
-        netgrent_cflags = ''
-    conf.CHECK_CODE('setnetgrent("foo")', 'HAVE_SETNETGRENT_PROTOTYPE',
-                    msg="Checking for setnetgrent prototype",
-                    headers='netdb.h netgroup.h',
-                    cflags=netgrent_cflags)
-    conf.CHECK_CODE('getnetgrent', 'HAVE_GETNETGRENT_PROTOTYPE',
-                    msg="Checking for getnetgrent prototype",
-                    headers='netdb.h netgroup.h',
-                    cflags=netgrent_cflags)
-    conf.CHECK_CODE('endnetgrent', 'HAVE_ENDNETGRENT_PROTOTYPE',
-                    msg="Checking for endnetgrent prototype",
-                    headers='netdb.h netgroup.h',
-                    cflags=netgrent_cflags)
-
-    if (conf.CONFIG_SET('HAVE_YP_GET_DEFAULT_DOMAIN') and
-        conf.CONFIG_SET('HAVE_SETNETGRENT') and
-        conf.CONFIG_SET('HAVE_ENDNETGRENT') and
-        conf.CONFIG_SET('HAVE_GETNETGRENT')):
+    if (conf.CONFIG_SET('HAVE_YP_GET_DEFAULT_DOMAIN')):
            conf.DEFINE('HAVE_NETGROUP', '1')
 
     # Look for CUPS

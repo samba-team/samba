@@ -26,17 +26,6 @@
 #include "auth.h"
 #include "../libcli/security/security.h"
 
-/* Fix up prototypes for OSX 10.4, where they're missing */
-#ifndef HAVE_SETNETGRENT_PROTOTYPE
-extern int setnetgrent(const char* netgroup);
-#endif
-#ifndef HAVE_GETNETGRENT_PROTOTYPE
-extern int getnetgrent(char **host, char **user, char **domain);
-#endif
-#ifndef HAVE_ENDNETGRENT_PROTOTYPE
-extern void endnetgrent(void);
-#endif
-
 enum server_allocated_state { SERVER_ALLOCATED_REQUIRED_YES,
 				SERVER_ALLOCATED_REQUIRED_NO,
 				SERVER_ALLOCATED_REQUIRED_ANY};
