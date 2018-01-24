@@ -722,18 +722,18 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                           "Failed to fix orphaned backlink %s" % backlink_attr):
             self.report("Fixed orphaned backlink %s" % (backlink_attr))
 
-    def err_duplicate_links(self, obj, attrname, vals):
+    def err_duplicate_links(self, obj, forward_attr, forward_vals):
         '''handle a duplicate links value'''
 
-        if not self.confirm_all("Remove duplicate links in attribute '%s'" % attrname, 'fix_all_duplicate_links'):
-            self.report("Not removing duplicate links in attribute '%s'" % attrname)
+        if not self.confirm_all("Remove duplicate links in attribute '%s'" % forward_attr, 'fix_all_duplicate_links'):
+            self.report("Not removing duplicate links in attribute '%s'" % forward_attr)
             return
         m = ldb.Message()
         m.dn = obj.dn
-        m['value'] = ldb.MessageElement(vals, ldb.FLAG_MOD_REPLACE, attrname)
+        m['value'] = ldb.MessageElement(forward_vals, ldb.FLAG_MOD_REPLACE, forward_attr)
         if self.do_modify(m, ["local_oid:1.3.6.1.4.1.7165.4.3.19.2:1"],
-                "Failed to fix duplicate links in attribute '%s'" % attrname):
-            self.report("Fixed duplicate links in attribute '%s'" % (attrname))
+                "Failed to fix duplicate links in attribute '%s'" % forward_attr):
+            self.report("Fixed duplicate links in attribute '%s'" % (forward_attr))
 
     def err_no_fsmoRoleOwner(self, obj):
         '''handle a missing fSMORoleOwner'''
