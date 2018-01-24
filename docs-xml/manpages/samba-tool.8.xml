@@ -479,6 +479,88 @@
 	<para>Reset sysvol ACLs to defaults (including correct ACLs on GPOs).</para>
 </refsect3>
 
+<refsect3>
+	<title>ou create <replaceable>ou_dn</replaceable> [options]</title>
+	<para>Create an organizational unit.</para>
+	<para>The name of the organizational unit can be specified as a full DN
+	or without the domainDN component.</para>
+
+	<variablelist>
+	<varlistentry>
+	<term>--description=DESCRIPTION</term>
+	<listitem><para>
+	Specify OU's description.
+	</para></listitem>
+	</varlistentry>
+	</variablelist>
+</refsect3>
+
+<refsect3>
+	<title>ou delete <replaceable>ou_dn</replaceable> [options]</title>
+	<para>Delete an organizational unit.</para>
+	<para>The name of the organizational unit can be specified as a full DN
+	or without the domainDN component.</para>
+
+	<variablelist>
+	<varlistentry>
+	<term>--force-subtree-delete</term>
+	<listitem><para>
+	Delete organizational unit and all children reclusively.
+	</para></listitem>
+	</varlistentry>
+	</variablelist>
+</refsect3>
+
+<refsect3>
+	<title>ou list [options]</title>
+	<para>List all organizational units.</para>
+	<variablelist>
+	<varlistentry>
+	<term>--full-dn</term>
+	<listitem><para>
+	Display DNs including the base DN.
+	</para></listitem>
+	</varlistentry>
+	</variablelist>
+</refsect3>
+
+<refsect3>
+	<title>ou listobjects <replaceable>ou_dn</replaceable> [options]</title>
+	<para>List all objects in an organizational unit.</para>
+	<para>The name of the organizational unit can be specified as a full DN
+	or without the domainDN component.</para>
+
+	<variablelist>
+	<varlistentry>
+	<term>--full-dn</term>
+	<listitem><para>
+	Display DNs including the base DN.
+	</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+	<term>-r|--recursive</term>
+	<listitem><para>
+	List objects recursively.
+	</para></listitem>
+	</varlistentry>
+	</variablelist>
+</refsect3>
+
+<refsect3>
+	<title>ou move <replaceable>old_ou_dn</replaceable> <replaceable>new_parent_dn</replaceable> [options]</title>
+	<para>Move an organizational unit.</para>
+	<para>The name of the organizational units can be specified as a full DN
+	or without the domainDN component.</para>
+</refsect3>
+
+<refsect3>
+	<title>ou rename <replaceable>old_ou_dn</replaceable> <replaceable>new_ou_dn</replaceable> [options]</title>
+	<para>Rename an organizational unit.</para>
+	<para>The name of the organizational units can be specified as a full DN
+	or without the domainDN component.</para>
+</refsect3>
+
 <refsect2>
 	<title>rodc</title>
 	<para>Manage Read-Only Domain Controller (RODC).</para>
