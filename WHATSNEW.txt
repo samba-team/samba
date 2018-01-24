@@ -147,6 +147,12 @@ domains. Some pam_winbind setups may also require the global list.
 If you have a setup that doesn't require the global list, you should set
 "winbind scan trusted domains = no".
 
+VirusFilter VFS module
+----------------------
+
+This new module integrates with Sophos, F-Secure and ClamAV anti-virus
+software to provide scanning and filtering of files on a Samba share.
+
 
 REMOVED FEATURES
 ================
