@@ -336,6 +336,7 @@ _PUBLIC_ int tdb_check(struct tdb_context *tdb,
 	tdb_len_t dead;
 	bool locked;
 
+	memset((void *)&recovery_start, 0, sizeof(tdb_off_t));
 	/* Read-only databases use no locking at all: it's best-effort.
 	 * We may have a write lock already, so skip that case too. */
 	if (tdb->read_only || tdb->allrecord_lock.count != 0) {

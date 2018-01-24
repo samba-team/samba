@@ -225,7 +225,12 @@ def add_init_functions(self):
     sentinel = getattr(self, 'init_function_sentinel', 'NULL')
 
     targets    = LOCAL_CACHE(bld, 'TARGET_TYPE')
-    cflags = getattr(self, 'samba_cflags', [])[:]
+    tmp_cflags = getattr(self, 'samba_cflags', [])[:]
+    if tmp_cflags is None:
+        cflags = tmp_cflags
+    else:
+        cflags = []
+        cflags.extend(tmp_cflags)
 
     if modules == []:
         sname = sname.replace('-','_')

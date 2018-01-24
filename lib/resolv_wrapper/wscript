@@ -57,6 +57,10 @@ def configure(conf):
                                     headers='resolv.h',
                                     define='HAVE_RESOLV_IPV6_NSADDRS')
 
+        conf.CHECK_FUNCS_IN('res_randomid', 'resolv')
+        if conf.CONFIG_SET('HAVE_RES_RANDOMID'):
+            conf.DEFINE('HAVE_RES_RANDOMID_IN_LIBRESOLV', 1)
+
         conf.CHECK_FUNCS_IN('res_ninit', 'resolv')
         if conf.CONFIG_SET('HAVE_RES_NINIT'):
             conf.DEFINE('HAVE_RES_NINIT_IN_LIBRESOLV', 1)

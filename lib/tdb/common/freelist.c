@@ -480,6 +480,9 @@ static tdb_off_t tdb_allocate_from_freelist(
 		tdb_off_t left_ptr;
 		struct tdb_record left_rec;
 
+		memset((void*)&left_ptr, 0, sizeof(tdb_off_t));
+		memset((void*)&left_rec, 0, sizeof(struct tdb_record));
+
 		if (tdb_rec_free_read(tdb, rec_ptr, rec) == -1) {
 			return 0;
 		}

@@ -734,6 +734,8 @@ def find_cpp(conf):
 def cc_add_flags(conf):
 	conf.add_os_flags('CFLAGS', 'CCFLAGS')
 	conf.add_os_flags('CPPFLAGS')
+	conf.add_os_flags('HOST_CCFLAGS')
+	conf.add_os_flags('HOST_CPPFLAGS')
 
 @conftest
 def cxx_add_flags(conf):
@@ -744,6 +746,8 @@ def cxx_add_flags(conf):
 def link_add_flags(conf):
 	conf.add_os_flags('LINKFLAGS')
 	conf.add_os_flags('LDFLAGS', 'LINKFLAGS')
+	conf.add_os_flags('HOST_LINKFLAGS')
+	conf.add_os_flags('HOST_LDFLAGS', 'HOST_LINKFLAGS')
 
 @conftest
 def cc_load_tools(conf):

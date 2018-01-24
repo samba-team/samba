@@ -116,7 +116,7 @@ static bool test_find(struct torture_context *tctx,
 	NTSTATUS status;
 	bool ret = true;
 	unsigned int count;
-	int i, j, file_count = 0;
+	int i, j = 0, file_count = 0;
 
 	status = populate_tree(tctx, mem_ctx, tree, files, NFILES, &h);
 
@@ -1276,7 +1276,7 @@ static bool test_large_files(struct torture_context *tctx,
 	struct smb2_find f;
 	struct smb2_handle h = {{0}};
 	union smb_search_data *d;
-	int i, j, file_count = 0;
+	int i, j = 0, file_count = 0;
 	char **strs = NULL;
 	unsigned count;
 

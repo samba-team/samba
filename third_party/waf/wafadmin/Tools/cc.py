@@ -23,7 +23,7 @@ g_cc_type_vars = ['CCFLAGS', 'LINKFLAGS']
 class cc_taskgen(ccroot.ccroot_abstract):
 	pass
 
-@feature('c', 'cc')
+@feature('c', 'cc', 'hostcc')
 @before('apply_type_vars')
 @after('default_cc')
 def init_cc(self):
@@ -33,7 +33,7 @@ def init_cc(self):
 	if not self.env['CC_NAME']:
 		raise Utils.WafError("At least one compiler (gcc, ..) must be selected")
 
-@feature('c', 'cc')
+@feature('c', 'cc', 'hostcc')
 @after('apply_incpaths')
 def apply_obj_vars_cc(self):
 	"""after apply_incpaths for INC_PATHS"""
@@ -51,7 +51,7 @@ def apply_obj_vars_cc(self):
 	for i in env['CPPPATH']:
 		app('_CCINCFLAGS', cpppath_st % i)
 
-@feature('c', 'cc')
+@feature('c', 'cc', 'hostcc')
 @after('apply_lib_vars')
 def apply_defines_cc(self):
 	"""after uselib is set for CCDEFINES"""
@@ -75,17 +75,19 @@ def apply_defines_cc(self):
 
 @extension(EXT_CC)
 def c_hook(self, node):
-	# create the compilation task: cpp or cc
+	# create the compilation task: cpp, hostcc or cc
 	if getattr(self, 'obj_ext', None):
 		obj_ext = self.obj_ext
 	else:
 		obj_ext = '_%d.o' % self.idx
-
-	task = self.create_task('cc', node, node.change_ext(obj_ext))
+	if 'hostcc' in self.features:
+		task = self.create_task('hostcc', node, node.change_ext(obj_ext))
+	else:
+		task = self.create_task('cc', node, node.change_ext(obj_ext))
 	try:
 		self.compiled_tasks.append(task)
 	except AttributeError:
-		raise Utils.WafError('Have you forgotten to set the feature "cc" on %s?' % str(self))
+		raise Utils.WafError('Have you forgotten to set the feature "cc" or "hostcc" on %s?' % str(self))
 	return task
 
 cc_str = '${CC} ${CCFLAGS} ${CPPFLAGS} ${_CCINCFLAGS} ${_CCDEFFLAGS} ${CC_SRC_F}${SRC} ${CC_TGT_F}${TGT}'
@@ -93,7 +95,17 @@ cls = Task.simple_task_type('cc', cc_str, 'GREEN', ext_out='.o', ext_in='.c', sh
 cls.scan = ccroot.scan
 cls.vars.append('CCDEPS')
 
+hostcc_str = '${HOSTCC} ${HOST_CCFLAGS} ${HOST_CPPFLAGS} ${_CCINCFLAGS} ${_CCDEFFLAGS} ${CC_SRC_F}${SRC} ${CC_TGT_F}${TGT}'
+cls = Task.simple_task_type('hostcc', hostcc_str, 'GREEN', ext_out='.o', ext_in='.c', shell=False)
+cls.scan = ccroot.scan
+cls.vars.append('CCDEPS')
+
 link_str = '${LINK_CC} ${CCLNK_SRC_F}${SRC} ${CCLNK_TGT_F}${TGT[0].abspath(env)} ${LINKFLAGS}'
 cls = Task.simple_task_type('cc_link', link_str, color='YELLOW', ext_in='.o', ext_out='.bin', shell=False)
+cls.maxjobs = 1
+cls.install = Utils.nada
+
+host_link_str = '${LINK_HOSTCC} ${CCLNK_SRC_F}${SRC} ${CCLNK_TGT_F}${TGT[0].abspath(env)} ${HOST_LINKFLAGS}'
+cls = Task.simple_task_type('hostcc_link', host_link_str, color='YELLOW', ext_in='.o', ext_out='.bin', shell=False)
 cls.maxjobs = 1
 cls.install = Utils.nada
