@@ -955,6 +955,38 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
 
         return (error_count, duplicate_dict, unique_dict)
 
+    def has_duplicate_links(self, dn, forward_attr, forward_syntax):
+        '''check a linked values for duplicate forward links'''
+        error_count = 0
+
+        duplicate_cache_key = "%s:%s" % (str(dn), forward_attr)
+        if duplicate_cache_key in self.duplicate_link_cache:
+            return self.duplicate_link_cache[duplicate_cache_key]
+
+        forward_linkID, backlink_attr = self.get_attr_linkID_and_reverse_name(forward_attr)
+
+        attrs = [forward_attr]
+        controls = ["extended_dn:1:1", "reveal_internals:0"]
+
+        # check its the right GUID
+        try:
+            res = self.samdb.search(base=str(dn), scope=ldb.SCOPE_BASE,
+                                    attrs=attrs, controls=controls)
+        except ldb.LdbError, (enum, estr):
+            if enum != ldb.ERR_NO_SUCH_OBJECT:
+                raise
+
+            return False
+
+        obj = res[0]
+        error_count, duplicate_dict, unique_dict = \
+            self.check_duplicate_links(obj, forward_attr, forward_syntax, forward_linkID, backlink_attr)
+
+        if duplicate_cache_key in self.duplicate_link_cache:
+            return self.duplicate_link_cache[duplicate_cache_key]
+
+        return False
+
     def check_dn(self, obj, attrname, syntax_oid):
         '''check a DN attribute for correctness'''
         error_count = 0
