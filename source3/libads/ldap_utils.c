@@ -105,9 +105,18 @@ static ADS_STATUS ads_do_search_retry_internal(ADS_STRUCT *ads, const char *bind
 		status = ads_connect(ads);
 
 		if (!ADS_ERR_OK(status)) {
+			bool orig_is_mine = ads->is_mine;
+
 			DEBUG(1,("ads_search_retry: failed to reconnect (%s)\n",
 				 ads_errstr(status)));
+			/*
+			 * We need to keep the ads pointer
+			 * from being freed here as we don't own it and
+			 * callers depend on it being around.
+			 */
+			ads->is_mine = false;
 			ads_destroy(&ads);
+			ads->is_mine = orig_is_mine;
 			SAFE_FREE(bp);
 			return status;
 		}
