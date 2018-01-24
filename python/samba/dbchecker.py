@@ -708,18 +708,18 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                           "Failed to fix incorrect RMD_FLAGS %u" % rmd_flags):
             self.report("Fixed incorrect RMD_FLAGS %u" % (rmd_flags))
 
-    def err_orphaned_backlink(self, obj, attrname, val, link_name, target_dn):
+    def err_orphaned_backlink(self, obj, backlink_attr, backlink_val, target_dn, forward_attr):
         '''handle a orphaned backlink value'''
-        self.report("ERROR: orphaned backlink attribute '%s' in %s for link %s in %s" % (attrname, obj.dn, link_name, target_dn))
-        if not self.confirm_all('Remove orphaned backlink %s' % attrname, 'fix_all_orphaned_backlinks'):
-            self.report("Not removing orphaned backlink %s" % attrname)
+        self.report("ERROR: orphaned backlink attribute '%s' in %s for link %s in %s" % (backlink_attr, obj.dn, forward_attr, target_dn))
+        if not self.confirm_all('Remove orphaned backlink %s' % backlink_attr, 'fix_all_orphaned_backlinks'):
+            self.report("Not removing orphaned backlink %s" % backlink_attr)
             return
         m = ldb.Message()
         m.dn = obj.dn
-        m['value'] = ldb.MessageElement(val, ldb.FLAG_MOD_DELETE, attrname)
+        m['value'] = ldb.MessageElement(backlink_val, ldb.FLAG_MOD_DELETE, backlink_attr)
         if self.do_modify(m, ["show_recycled:1", "relax:0"],
-                          "Failed to fix orphaned backlink %s" % attrname):
-            self.report("Fixed orphaned backlink %s" % (attrname))
+                          "Failed to fix orphaned backlink %s" % backlink_attr):
+            self.report("Fixed orphaned backlink %s" % (backlink_attr))
 
     def err_duplicate_links(self, obj, attrname, vals):
         '''handle a duplicate links value'''
@@ -1147,8 +1147,8 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                 if match_count == 0:
                     error_count += 1
                     self.err_orphaned_backlink(obj, attrname,
-                                               val, reverse_link_name,
-                                               dsdb_dn.dn)
+                                               val, dsdb_dn.dn,
+                                               reverse_link_name)
                     continue
                 # Only warn here and let the forward link logic fix it.
                 self.report("WARNING: Link (back) mismatch for '%s' (%d) on '%s' to '%s' (%d) on '%s'" % (
@@ -1179,8 +1179,8 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                     diff_count -= 1
                 else:
                     self.err_orphaned_backlink(res[0], reverse_link_name,
-                                               obj.dn.extended_str(), attrname,
-                                               obj.dn)
+                                               obj.dn.extended_str(), obj.dn,
+                                               attrname)
                     diff_count += 1
 
 
