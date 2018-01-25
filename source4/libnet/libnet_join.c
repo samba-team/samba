@@ -940,11 +940,10 @@ NTSTATUS libnet_Join_member(struct libnet_context *ctx,
 
 	r2 = talloc_zero(tmp_mem, struct libnet_JoinDomain);
 	if (!r2) {
-		r->out.error_string = NULL;
-		talloc_free(tmp_mem);
-		return NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
 	}
-	
+
 	acct_type = ACB_WSTRUST;
 
 	if (r->in.netbios_name != NULL) {
@@ -952,19 +951,17 @@ NTSTATUS libnet_Join_member(struct libnet_context *ctx,
 	} else {
 		netbios_name = talloc_strdup(tmp_mem, lpcfg_netbios_name(ctx->lp_ctx));
 		if (!netbios_name) {
-			r->out.error_string = NULL;
-			talloc_free(tmp_mem);
-			return NT_STATUS_NO_MEMORY;
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
 		}
 	}
 
 	account_name = talloc_asprintf(tmp_mem, "%s$", netbios_name);
 	if (!account_name) {
-		r->out.error_string = NULL;
-		talloc_free(tmp_mem);
-		return NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
 	}
-	
+
 	/*
 	 * join the domain
 	 */
@@ -978,16 +975,14 @@ NTSTATUS libnet_Join_member(struct libnet_context *ctx,
 	status = libnet_JoinDomain(ctx, r2, r2);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->out.error_string = talloc_steal(mem_ctx, r2->out.error_string);
-		talloc_free(tmp_mem);
-		return status;
+		goto out;
 	}
 
 	set_secrets = talloc_zero(tmp_mem,
 				  struct provision_store_self_join_settings);
 	if (!set_secrets) {
-		r->out.error_string = NULL;
-		talloc_free(tmp_mem);
-		return NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
 	}
 
 	set_secrets->domain_name = r2->out.domain_name;
@@ -997,7 +992,7 @@ NTSTATUS libnet_Join_member(struct libnet_context *ctx,
 	set_secrets->machine_password = r2->out.join_password;
 	set_secrets->key_version_number = r2->out.kvno;
 	set_secrets->domain_sid = r2->out.domain_sid;
-	
+
 	status = provision_store_self_join(ctx, ctx->lp_ctx, ctx->event_ctx, set_secrets, &error_string);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (error_string) {
@@ -1008,19 +1003,16 @@ NTSTATUS libnet_Join_member(struct libnet_context *ctx,
 						  "provision_store_self_join failed with %s",
 						  nt_errstr(status));
 		}
-		talloc_free(tmp_mem);
-		return status;
+		goto out;
 	}
 
 	/* move all out parameter to the callers TALLOC_CTX */
-	r->out.error_string	= NULL;
-	r->out.join_password	= r2->out.join_password;
-	talloc_reparent(r2, mem_ctx, r2->out.join_password);
-	r->out.domain_sid	= r2->out.domain_sid;
-	talloc_reparent(r2, mem_ctx, r2->out.domain_sid);
-	r->out.domain_name      = r2->out.domain_name;
-	talloc_reparent(r2, mem_ctx, r2->out.domain_name);
+	r->out.join_password	= talloc_move(mem_ctx, &r2->out.join_password);
+	r->out.domain_sid	= talloc_move(mem_ctx, &r2->out.domain_sid);
+	r->out.domain_name      = talloc_move(mem_ctx, &r2->out.domain_name);
+	status = NT_STATUS_OK;
+out:
 	talloc_free(tmp_mem);
-	return NT_STATUS_OK;
+	return status;
 }
 
