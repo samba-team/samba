@@ -951,7 +951,8 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             unique_dict[keystr] = dsdb_dn
 
         if len(duplicate_list) != 0:
-            self.report("ERROR: Duplicate link values for attribute '%s' in '%s'" % (attrname, obj.dn))
+            self.report("ERROR: Duplicate forward link values for attribute '%s' in '%s'" % (attrname, obj.dn))
+
             for keystr in duplicate_list:
                 d = duplicate_dict[keystr]
                 for dd in d["delete"]:
