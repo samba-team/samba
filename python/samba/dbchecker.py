@@ -65,6 +65,7 @@ class dbcheck(object):
         self.fix_undead_linked_attributes = False
         self.fix_all_missing_backlinks = False
         self.fix_all_orphaned_backlinks = False
+        self.fix_all_missing_forward_links = False
         self.duplicate_link_cache = dict()
         self.recover_all_forward_links = False
         self.fix_rmd_flags = False
@@ -710,8 +711,14 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             self.report("Fixed incorrect RMD_FLAGS %u" % (rmd_flags))
 
     def err_orphaned_backlink(self, obj_dn, backlink_attr, backlink_val,
-                              target_dn, forward_attr, forward_syntax):
+                              target_dn, forward_attr, forward_syntax,
+                              check_duplicates=True):
         '''handle a orphaned backlink value'''
+        if check_duplicates is True and self.has_duplicate_links(target_dn, forward_attr, forward_syntax):
+            self.report("WARNING: Keep orphaned backlink attribute " + \
+                        "'%s' in '%s' for link '%s' in '%s'" % (
+                        backlink_attr, obj_dn, forward_attr, target_dn))
+            return
         self.report("ERROR: orphaned backlink attribute '%s' in %s for link %s in %s" % (backlink_attr, obj_dn, forward_attr, target_dn))
         if not self.confirm_all('Remove orphaned backlink %s' % backlink_attr, 'fix_all_orphaned_backlinks'):
             self.report("Not removing orphaned backlink %s" % backlink_attr)
@@ -726,10 +733,10 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
     def err_recover_forward_links(self, obj, forward_attr, forward_vals):
         '''handle a duplicate links value'''
 
-        self.report("RECHECK: 'Duplicate/Correct link' lines above for attribute '%s' in '%s'" % (forward_attr, obj.dn))
+        self.report("RECHECK: 'Missing/Duplicate/Correct link' lines above for attribute '%s' in '%s'" % (forward_attr, obj.dn))
 
-        if not self.confirm_all("Commit fixes for (duplicate) forward links in attribute '%s'" % forward_attr, 'recover_all_forward_links'):
-            self.report("Not fixing corrupted (duplicate) forward links in attribute '%s' of '%s'" % (
+        if not self.confirm_all("Commit fixes for (missing/duplicate) forward links in attribute '%s'" % forward_attr, 'recover_all_forward_links'):
+            self.report("Not fixing corrupted (missing/duplicate) forward links in attribute '%s' of '%s'" % (
                         forward_attr, obj.dn))
             return
         m = ldb.Message()
@@ -1098,7 +1105,31 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             self.check_duplicate_links(obj, attrname, syntax_oid, linkID, reverse_link_name)
 
         if len(duplicate_dict) != 0:
-            self.report("ERROR: Duplicate forward link values for attribute '%s' in '%s'" % (attrname, obj.dn))
+
+            missing_forward_links, missing_error_count = \
+                self.find_missing_forward_links_from_backlinks(obj,
+                                                         attrname, syntax_oid,
+                                                         reverse_link_name,
+                                                         unique_dict)
+            error_count += missing_error_count
+
+            forward_links = [dn for dn in unique_dict.values()]
+
+            if missing_error_count != 0:
+                self.report("ERROR: Missing and duplicate forward link values for attribute '%s' in '%s'" % (
+                            attrname, obj.dn))
+            else:
+                self.report("ERROR: Duplicate forward link values for attribute '%s' in '%s'" % (attrname, obj.dn))
+            for m in missing_forward_links:
+                self.report("Missing   link '%s'" % (m))
+                if not self.confirm_all("Schedule readding missing forward link for attribute %s" % attrname,
+                                        'fix_all_missing_forward_links'):
+                    self.err_orphaned_backlink(m.dn, reverse_link_name,
+                                               obj.dn.extended_str(), obj.dn,
+                                               attrname, syntax_oid,
+                                               check_duplicates=False)
+                    continue
+                forward_links += [m]
             for keystr in duplicate_dict.keys():
                 d = duplicate_dict[keystr]
                 for dd in d["delete"]:
@@ -1108,7 +1139,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             # We now construct the sorted dn values.
             # They're sorted by the objectGUID of the target
             # See dsdb_Dn.__cmp__()
-            vals = [str(dn) for dn in sorted(unique_dict.values())]
+            vals = [str(dn) for dn in sorted(forward_links)]
             self.err_recover_forward_links(obj, attrname, vals)
             # We should continue with the fixed values
             obj[attrname] = ldb.MessageElement(vals, 0, attrname)
