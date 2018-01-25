@@ -1,0 +1,24 @@
+# record 1
+dn: CN=dangling,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+memberOf: CN=Enterprise Admins,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+
+# record 2
+dn: CN=Enterprise Admins,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+member: CN=Administrator,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+member: CN=dangling,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+memberOf: CN=Administrators,CN=Builtin,DC=release-4-5-0-pre1,DC=samba,DC=corp
+memberOf: CN=Denied RODC Password Replication Group,CN=Users,DC=release-4-5-0-
+ pre1,DC=samba,DC=corp
+
+# Referral
+ref: ldap:///CN=Configuration,DC=release-4-5-0-pre1,DC=samba,DC=corp
+
+# Referral
+ref: ldap:///DC=DomainDnsZones,DC=release-4-5-0-pre1,DC=samba,DC=corp
+
+# Referral
+ref: ldap:///DC=ForestDnsZones,DC=release-4-5-0-pre1,DC=samba,DC=corp
+
+# returned 5 records
+# 2 entries
+# 3 referrals

@@ -131,6 +131,80 @@ check_expected_after_duplicate_links() {
     fi
 }
 
+forward_link_corruption() {
+    #
+    # Step1: add a duplicate forward link from
+    # "CN=Enterprise Admins" to "CN=Administrator"
+    #
+    LDIF1=$(TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb -b 'CN=Enterprise Admins,CN=users,DC=release-4-5-0-pre1,DC=samba,DC=corp' -s base --reveal --extended-dn member)
+    DN=$(echo "${LDIF1}" | grep '^dn: ')
+    MSG=$(echo "${LDIF1}" | grep -v '^dn: ' | grep -v '^#' | grep -v '^$')
+    ldif=$PREFIX_ABS/${RELEASE}/forward_link_corruption1.ldif
+    {
+	echo "${DN}"
+	echo "changetype: modify"
+	echo "replace: member"
+	echo "${MSG}"
+	echo "${MSG}" | sed -e 's!RMD_LOCAL_USN=[1-9][0-9]*!RMD_LOCAL_USN=0!'
+    } > $ldif
+
+    out=$(TZ=UTC $ldbmodify -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb.d/DC%3DRELEASE-4-5-0-PRE1,DC%3DSAMBA,DC%3DCORP.ldb $ldif)
+    if [ "$?" != "0" ]; then
+	echo "ldbmodify returned:\n$out"
+	return 1
+    fi
+
+    #
+    # Step2: add user "dangling"
+    #
+    ldif=$PREFIX_ABS/${RELEASE}/forward_link_corruption2.ldif
+    cat > $ldif <<EOF
+dn: CN=dangling,CN=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+changetype: add
+objectclass: user
+samaccountname: dangling
+objectGUID: fd8a04ac-cea0-4921-b1a6-c173e1155c22
+EOF
+
+    out=$(TZ=UTC $ldbmodify -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb --relax $ldif)
+    if [ "$?" != "0" ]; then
+	echo "ldbmodify returned:\n$out"
+	return 1
+    fi
+
+    #
+    # Step3: add a dangling backlink from
+    # "CN=dangling" to "CN=Enterprise Admins"
+    #
+    ldif=$PREFIX_ABS/${RELEASE}/forward_link_corruption3.ldif
+    {
+	echo "dn: CN=dangling,CN=users,DC=release-4-5-0-pre1,DC=samba,DC=corp"
+	echo "changetype: modify"
+	echo "add: memberOf"
+	echo "memberOf: <GUID=304ad703-468b-465e-9787-470b3dfd7d75>;<SID=S-1-5-21-4177067393-1453636373-93818738-519>;CN=Enterprise Admins,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp"
+    } > $ldif
+
+    out=$(TZ=UTC $ldbmodify -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb.d/DC%3DRELEASE-4-5-0-PRE1,DC%3DSAMBA,DC%3DCORP.ldb $ldif)
+    if [ "$?" != "0" ]; then
+	echo "ldbmodify returned:\n$out"
+	return 1
+    fi
+}
+
+dbcheck_forward_link_corruption() {
+    dbcheck "-forward-link-corruption" "1" ""
+    return $?
+}
+
+check_expected_after_dbcheck_forward_link_corruption() {
+    tmpldif=$PREFIX_ABS/$RELEASE/expected-after-dbcheck-forward-link-corruption.ldif.tmp
+    TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb '(|(cn=dangling)(cn=enterprise admins))' -s sub -b DC=release-4-5-0-pre1,DC=samba,DC=corp --show-deleted --sorted memberOf member > $tmpldif
+    diff $tmpldif $release_dir/expected-after-dbcheck-forward-link-corruption.ldif
+    if [ "$?" != "0" ]; then
+	return 1
+    fi
+}
+
 dbcheck_dangling_multi_valued() {
 
     $PYTHON $BINDIR/samba-tool dbcheck -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb --fix --yes
@@ -198,6 +272,10 @@ if [ -d $release_dir ]; then
     testit "dbcheck_duplicate_member" dbcheck_duplicate_member
     testit "check_expected_after_duplicate_links" check_expected_after_duplicate_links
     testit "duplicate_clean" dbcheck_clean
+    testit "forward_link_corruption" forward_link_corruption
+    testit "dbcheck_forward_link_corruption" dbcheck_forward_link_corruption
+    testit "check_expected_after_dbcheck_forward_link_corruption" check_expected_after_dbcheck_forward_link_corruption
+    testit "forward_link_corruption_clean" dbcheck_clean
     testit "dangling_one_way_link" dangling_one_way_link
     testit "dbcheck_one_way" dbcheck_one_way
     testit "dbcheck_clean2" dbcheck_clean
