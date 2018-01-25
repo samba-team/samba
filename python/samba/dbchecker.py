@@ -987,6 +987,102 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
 
         return False
 
+    def find_missing_forward_links_from_backlinks(self, obj,
+                                                  forward_attr,
+                                                  forward_syntax,
+                                                  backlink_attr,
+                                                  forward_unique_dict):
+        '''Find all backlinks linking to obj_guid_str not already in forward_unique_dict'''
+        missing_forward_links = []
+        error_count = 0
+
+        if backlink_attr is None:
+            return (missing_forward_links, error_count)
+
+        if forward_syntax != ldb.SYNTAX_DN:
+            self.report("Not checking for missing forward links for syntax: %s",
+                        forward_syntax)
+            return (missing_forward_links, error_count)
+
+        try:
+            obj_guid = obj['objectGUID'][0]
+            obj_guid_str = str(ndr_unpack(misc.GUID, obj_guid))
+            filter = "(%s=<GUID=%s>)" % (backlink_attr, obj_guid_str)
+
+            res = self.samdb.search(expression=filter,
+                                    scope=ldb.SCOPE_SUBTREE, attrs=["objectGUID"],
+                                    controls=["extended_dn:1:1",
+                                              "search_options:1:2",
+                                              "paged_results:1:1000"])
+        except ldb.LdbError, (enum, estr):
+            raise
+
+        for r in res:
+            target_dn = dsdb_Dn(self.samdb, r.dn.extended_str(), forward_syntax)
+
+            guid = target_dn.dn.get_extended_component("GUID")
+            guidstr = str(misc.GUID(guid))
+            if guidstr in forward_unique_dict:
+                continue
+
+            # A valid forward link looks like this:
+            #
+            #    <GUID=9f92d30a-fc23-11e4-a5f6-30be15454808>;
+            #    <RMD_ADDTIME=131607546230000000>;
+            #    <RMD_CHANGETIME=131607546230000000>;
+            #    <RMD_FLAGS=0>;
+            #    <RMD_INVOCID=4e4496a3-7fb8-4f97-8a33-d238db8b5e2d>;
+            #    <RMD_LOCAL_USN=3765>;
+            #    <RMD_ORIGINATING_USN=3765>;
+            #    <RMD_VERSION=1>;
+            #    <SID=S-1-5-21-4177067393-1453636373-93818738-1124>;
+            #    CN=unsorted-u8,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+            #
+            # Note that versions older than Samba 4.8 create
+            # links with RMD_VERSION=0.
+            #
+            # Try to get the local_usn and time from objectClass
+            # if possible and fallback to any other one.
+            repl = ndr_unpack(drsblobs.replPropertyMetaDataBlob,
+                              obj['replPropertyMetadata'][0])
+            for o in repl.ctr.array:
+                local_usn = o.local_usn
+                t = o.originating_change_time
+                if o.attid == drsuapi.DRSUAPI_ATTID_objectClass:
+                    break
+
+            # We use a magic invocationID for restoring missing
+            # forward links to recover from bug #13228.
+            # This should allow some more future magic to fix the
+            # problem.
+            #
+            # It also means it looses the conflict resolution
+            # against almost every real invocation, if the
+            # version is also 0.
+            originating_invocid = misc.GUID("ffffffff-4700-4700-4700-000000b13228")
+            originating_usn = 1
+
+            rmd_addtime = t
+            rmd_changetime = t
+            rmd_flags = 0
+            rmd_invocid = originating_invocid
+            rmd_originating_usn = originating_usn
+            rmd_local_usn = local_usn
+            rmd_version = 0
+
+            target_dn.dn.set_extended_component("RMD_ADDTIME", str(rmd_addtime))
+            target_dn.dn.set_extended_component("RMD_CHANGETIME", str(rmd_changetime))
+            target_dn.dn.set_extended_component("RMD_FLAGS", str(rmd_flags))
+            target_dn.dn.set_extended_component("RMD_INVOCID", ndr_pack(rmd_invocid))
+            target_dn.dn.set_extended_component("RMD_ORIGINATING_USN", str(rmd_originating_usn))
+            target_dn.dn.set_extended_component("RMD_LOCAL_USN", str(rmd_local_usn))
+            target_dn.dn.set_extended_component("RMD_VERSION", str(rmd_version))
+
+            error_count += 1
+            missing_forward_links.append(target_dn)
+
+        return (missing_forward_links, error_count)
+
     def check_dn(self, obj, attrname, syntax_oid):
         '''check a DN attribute for correctness'''
         error_count = 0
