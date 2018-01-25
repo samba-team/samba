@@ -358,6 +358,69 @@ bool dom_sid_in_domain(const struct dom_sid *domain_sid,
 	return dom_sid_compare_auth(domain_sid, sid) == 0;
 }
 
+bool dom_sid_is_valid_account_domain(const struct dom_sid *sid)
+{
+	/*
+	 * We expect S-1-5-21-9-8-7, but we don't
+	 * allow S-1-5-21-0-0-0 as this is used
+	 * for claims and compound identities.
+	 *
+	 * With this structure:
+	 *
+	 * struct dom_sid {
+	 *     uint8_t sid_rev_num;
+	 *     int8_t num_auths; [range(0,15)]
+	 *     uint8_t id_auth[6];
+	 *     uint32_t sub_auths[15];
+	 * }
+	 *
+	 * S-1-5-21-9-8-7 looks like this:
+	 * {1, 4, {0,0,0,0,0,5}, {21,9,8,7,0,0,0,0,0,0,0,0,0,0,0}};
+	 */
+	if (sid == NULL) {
+		return false;
+	}
+
+	if (sid->sid_rev_num != 1) {
+		return false;
+	}
+	if (sid->num_auths != 4) {
+		return false;
+	}
+	if (sid->id_auth[5] != 5) {
+		return false;
+	}
+	if (sid->id_auth[4] != 0) {
+		return false;
+	}
+	if (sid->id_auth[3] != 0) {
+		return false;
+	}
+	if (sid->id_auth[2] != 0) {
+		return false;
+	}
+	if (sid->id_auth[1] != 0) {
+		return false;
+	}
+	if (sid->id_auth[0] != 0) {
+		return false;
+	}
+	if (sid->sub_auths[0] != 21) {
+		return false;
+	}
+	if (sid->sub_auths[1] == 0) {
+		return false;
+	}
+	if (sid->sub_auths[2] == 0) {
+		return false;
+	}
+	if (sid->sub_auths[3] == 0) {
+		return false;
+	}
+
+	return true;
+}
+
 /*
   Convert a dom_sid to a string, printing into a buffer. Return the
   string length. If it overflows, return the string length that would

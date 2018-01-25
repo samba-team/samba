@@ -96,6 +96,7 @@ NTSTATUS dom_sid_split_rid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
 			   struct dom_sid **domain, uint32_t *rid);
 bool dom_sid_in_domain(const struct dom_sid *domain_sid,
 		       const struct dom_sid *sid);
+bool dom_sid_is_valid_account_domain(const struct dom_sid *sid);
 
 #define DOM_SID_STR_BUFLEN (15*11+25)
 int dom_sid_string_buf(const struct dom_sid *sid, char *buf, int buflen);
