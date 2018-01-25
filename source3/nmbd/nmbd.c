@@ -531,7 +531,7 @@ static void process(struct messaging_context *msg)
 		 * Process all incoming packets
 		 * read above. This calls the success and
 		 * failure functions registered when response
-		 * packets arrrive, and also deals with request
+		 * packets arrive, and also deals with request
 		 * packets from other sources.
 		 * (nmbd_packets.c)
 		 */
