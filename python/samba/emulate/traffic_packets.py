@@ -384,7 +384,7 @@ def packet_lsarpc_14(packet, conversation, context):
     sids  = lsa.TransSidArray()
     names = [lsa.String("This Organization"),
              lsa.String("Digest Authentication")]
-    level = 5
+    level = lsa.LSA_LOOKUP_NAMES_ALL
     count = 0
     c.LookupNames(pol_handle, names, sids, level, count)
     return True
@@ -406,7 +406,7 @@ def packet_lsarpc_15(packet, conversation, context):
     sids.sids = [sid]
     sids.num_sids = 1
     names = lsa.TransNameArray()
-    level = 5
+    level = lsa.LSA_LOOKUP_NAMES_ALL
     count = 0
 
     c.LookupSids(pol_handle, sids, names, level, count)
@@ -464,10 +464,10 @@ def packet_lsarpc_76(packet, conversation, context):
     sids.sids = [sid]
     sids.num_sids = 1
     names = lsa.TransNameArray2()
-    level = 5
+    level = lsa.LSA_LOOKUP_NAMES_ALL
     count = 0
-    lookup_options = 0
-    client_revision = 2
+    lookup_options = lsa.LSA_LOOKUP_OPTION_SEARCH_ISOLATED_NAMES
+    client_revision = lsa.LSA_CLIENT_REVISION_2
     c.LookupSids3(sids, names, level, count, lookup_options, client_revision)
     return True
 
@@ -478,10 +478,10 @@ def packet_lsarpc_77(packet, conversation, context):
     sids  = lsa.TransSidArray3()
     names = [lsa.String("This Organization"),
              lsa.String("Digest Authentication")]
-    level = 5
+    level = lsa.LSA_LOOKUP_NAMES_ALL
     count = 0
-    lookup_options = 0
-    client_revision = 2
+    lookup_options = lsa.LSA_LOOKUP_OPTION_SEARCH_ISOLATED_NAMES
+    client_revision = lsa.LSA_CLIENT_REVISION_2
     c.LookupNames4(names, sids, level, count, lookup_options, client_revision)
     return True
 
