@@ -708,7 +708,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                           "Failed to fix incorrect RMD_FLAGS %u" % rmd_flags):
             self.report("Fixed incorrect RMD_FLAGS %u" % (rmd_flags))
 
-    def err_orphaned_backlink(self, obj, backlink_attr, backlink_val, target_dn, forward_attr):
+    def err_orphaned_backlink(self, obj, backlink_attr, backlink_val, target_dn, forward_attr, forward_syntax):
         '''handle a orphaned backlink value'''
         self.report("ERROR: orphaned backlink attribute '%s' in %s for link %s in %s" % (backlink_attr, obj.dn, forward_attr, target_dn))
         if not self.confirm_all('Remove orphaned backlink %s' % backlink_attr, 'fix_all_orphaned_backlinks'):
@@ -1148,7 +1148,8 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                     error_count += 1
                     self.err_orphaned_backlink(obj, attrname,
                                                val, dsdb_dn.dn,
-                                               reverse_link_name)
+                                               reverse_link_name,
+                                               reverse_syntax_oid)
                     continue
                 # Only warn here and let the forward link logic fix it.
                 self.report("WARNING: Link (back) mismatch for '%s' (%d) on '%s' to '%s' (%d) on '%s'" % (
@@ -1180,7 +1181,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                 else:
                     self.err_orphaned_backlink(res[0], reverse_link_name,
                                                obj.dn.extended_str(), obj.dn,
-                                               attrname)
+                                               attrname, syntax_oid)
                     diff_count += 1
 
 
