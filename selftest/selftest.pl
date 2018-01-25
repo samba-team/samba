@@ -28,6 +28,7 @@ use lib "$RealBin";
 use Subunit;
 use SocketWrapper;
 use target::Samba;
+use Time::HiRes qw(time);
 
 eval {
 require Time::HiRes;
@@ -150,9 +151,9 @@ sub run_testsuite($$$$$)
 
 	Subunit::start_testsuite($name);
 	Subunit::progress_push();
-	Subunit::report_time(time());
+	Subunit::report_time();
 	system($cmd);
-	Subunit::report_time(time());
+	Subunit::report_time();
 	Subunit::progress_pop();
 
 	if ($? == -1) {
@@ -781,7 +782,7 @@ my $suitestotal = $#todo + 1;
 
 unless ($opt_list) {
 	Subunit::progress($suitestotal);
-	Subunit::report_time(time());
+	Subunit::report_time();
 }
 
 my $i = 0;

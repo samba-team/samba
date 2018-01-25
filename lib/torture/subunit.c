@@ -62,9 +62,9 @@ static void torture_subunit_report_time(struct torture_context *tctx)
 		return;
 	}
 
-	tmp = localtime(&tp.tv_sec);
+	tmp = gmtime(&tp.tv_sec);
 	if (!tmp) {
-		perror("localtime");
+		perror("gmtime");
 		return;
 	}
 

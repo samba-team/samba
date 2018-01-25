@@ -790,9 +790,9 @@ static void torture_subunit_report_time(struct torture_context *tctx)
 		return;
 	}
 
-	tmp = localtime(&tp.tv_sec);
+	tmp = gmtime(&tp.tv_sec);
 	if (!tmp) {
-		torture_comment(tctx, "failed to call localtime");
+		torture_comment(tctx, "failed to call gmtime");
 		return;
 	}
 
