@@ -454,6 +454,98 @@ static NTSTATUS cmd_lsa_lookup_sids(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	return status;
 }
 
+static NTSTATUS cmd_lsa_lookup_sids_level(struct rpc_pipe_client *cli,
+					  TALLOC_CTX *mem_ctx, int argc,
+					  const char **argv)
+{
+	struct policy_handle pol;
+	NTSTATUS status, result;
+	struct dom_sid *sids = NULL;
+	char **domains = NULL;
+	char **names = NULL;
+	enum lsa_SidType *types = NULL;
+	int i, level;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
+
+	if (argc < 3) {
+		printf("Usage: %s [level] [sid1 [sid2 [...]]]\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+
+	status = rpccli_lsa_open_policy(cli, mem_ctx, True,
+				     SEC_FLAG_MAXIMUM_ALLOWED,
+				     &pol);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	level = atoi(argv[1]);
+
+	/* Convert arguments to sids */
+
+	sids = talloc_array(mem_ctx, struct dom_sid, argc - 2);
+	if (sids == NULL) {
+		printf("could not allocate memory for %d sids\n", argc - 2);
+		goto done;
+	}
+
+	for (i = 0; i < argc - 2; i++) {
+		if (!string_to_sid(&sids[i], argv[i + 2])) {
+			status = NT_STATUS_INVALID_SID;
+			goto done;
+		}
+	}
+
+	/* Lookup the SIDs */
+
+	status = dcerpc_lsa_lookup_sids_generic(cli->binding_handle,
+						mem_ctx,
+						&pol,
+						argc - 2,
+						sids,
+						level,
+						&domains,
+						&names,
+						&types,
+						false,
+						&result);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+	status = result;
+
+	if (!NT_STATUS_IS_OK(status) && NT_STATUS_V(status) !=
+	    NT_STATUS_V(STATUS_SOME_UNMAPPED))
+	{
+		goto done;
+	}
+
+	status = NT_STATUS_OK;
+
+	/* Print results */
+
+	for (i = 0; i < (argc - 2); i++) {
+		fstring sid_str;
+
+		sid_to_fstring(sid_str, &sids[i]);
+		if (types[i] == SID_NAME_DOMAIN) {
+			printf("%s %s (%d)\n", sid_str,
+			       domains[i] ? domains[i] : "*unknown*",
+			       types[i]);
+		} else {
+			printf("%s %s\\%s (%d)\n", sid_str,
+			       domains[i] ? domains[i] : "*unknown*",
+			       names[i] ? names[i] : "*unknown*",
+			       types[i]);
+		}
+	}
+
+	dcerpc_lsa_Close(b, mem_ctx, &pol, &result);
+
+ done:
+	return status;
+}
+
 /* Resolve a list of SIDs to a list of names */
 
 static NTSTATUS cmd_lsa_lookup_sids3(struct rpc_pipe_client *cli,
@@ -2281,6 +2373,7 @@ struct cmd_set lsarpc_commands[] = {
 	{ "lsaquery", 	         RPC_RTYPE_NTSTATUS, cmd_lsa_query_info_policy,  NULL, &ndr_table_lsarpc, NULL, "Query info policy",                    "" },
 	{ "lookupsids",          RPC_RTYPE_NTSTATUS, cmd_lsa_lookup_sids,        NULL, &ndr_table_lsarpc, NULL, "Convert SIDs to names",                "" },
 	{ "lookupsids3",         RPC_RTYPE_NTSTATUS, cmd_lsa_lookup_sids3,       NULL, &ndr_table_lsarpc, NULL, "Convert SIDs to names",                "" },
+	{ "lookupsids_level",    RPC_RTYPE_NTSTATUS, cmd_lsa_lookup_sids_level,  NULL, &ndr_table_lsarpc, NULL, "Convert SIDs to names",                "" },
 	{ "lookupnames",         RPC_RTYPE_NTSTATUS, cmd_lsa_lookup_names,       NULL, &ndr_table_lsarpc, NULL, "Convert names to SIDs",                "" },
 	{ "lookupnames4",        RPC_RTYPE_NTSTATUS, cmd_lsa_lookup_names4,      NULL, &ndr_table_lsarpc, NULL, "Convert names to SIDs",                "" },
 	{ "lookupnames_level",   RPC_RTYPE_NTSTATUS, cmd_lsa_lookup_names_level, NULL, &ndr_table_lsarpc, NULL, "Convert names to SIDs",                "" },
