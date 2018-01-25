@@ -329,9 +329,9 @@ bool torture_rpc_lsa_lookup(struct torture_context *torture)
 static bool test_LookupSidsReply(struct torture_context *tctx,
 				 struct dcerpc_pipe *p)
 {
-	struct policy_handle *handle;
+	struct policy_handle *handle = NULL;
 
-	struct dom_sid **sids;
+	struct dom_sid **sids = NULL;
 	uint32_t num_sids = 1;
 
 	struct lsa_LookupSids r;
@@ -346,6 +346,10 @@ static bool test_LookupSidsReply(struct torture_context *tctx,
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	enum dcerpc_transport_t transport = dcerpc_binding_get_transport(p->binding);
 
+	ZERO_STRUCT(r);
+	ZERO_STRUCT(sidarray);
+	ZERO_STRUCT(names);
+
 	if (transport != NCACN_NP && transport != NCALRPC) {
 		torture_comment(tctx,
 				"test_LookupSidsReply is only available "
@@ -359,7 +363,7 @@ static bool test_LookupSidsReply(struct torture_context *tctx,
 
 	dom_admin_sid = talloc_asprintf(tctx, "%s-%d", dom_sid, 512);
 
-	sids = talloc_array(tctx, struct dom_sid *, num_sids);
+	sids = talloc_zero_array(tctx, struct dom_sid *, num_sids);
 
 	sids[0] = dom_sid_parse_talloc(tctx, dom_admin_sid);
 
@@ -367,7 +371,7 @@ static bool test_LookupSidsReply(struct torture_context *tctx,
 	names.names = NULL;
 
 	sidarray.num_sids = num_sids;
-	sidarray.sids = talloc_array(tctx, struct lsa_SidPtr, num_sids);
+	sidarray.sids = talloc_zero_array(tctx, struct lsa_SidPtr, num_sids);
 
 	for (i=0; i<num_sids; i++) {
 		sidarray.sids[i].sid = sids[i];
