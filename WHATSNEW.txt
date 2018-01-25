@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the first release candidate of Samba 4.8.  This is *not*
+This is the second release candidate of Samba 4.8.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -180,8 +180,8 @@ smb.conf changes
   map untrusted to domain            Removed
   oplock contention limit            Removed
   prefork children                   New                     1
-  mdns name                          Added                   netbios
-  fruit:time machine                 Added                   false
+  mdns name                          New                   netbios
+  fruit:time machine                 New                   false
   profile acls                       Removed
   use spnego                         Removed
   server schannel                    Default changed/        yes
@@ -189,6 +189,26 @@ smb.conf changes
   unicode                            Deprecated
   winbind scan trusted domains       New                     yes
   winbind trusted domains only       Removed
+
+
+CHANGES SINCE 4.8.0rc1
+======================
+
+o  Günther Deschner <gd@samba.org>
+   * BUG 13227: packaging: Fix default systemd-dir path.
+   * BUG 13238: build: Deal with recent glibc sunrpc header removal.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 13228: repl_meta_data: fix linked attribute corruption on databases
+     with unsorted links on expunge.
+
+o  Christof Schmitt <cs@samba.org>
+   * BUG 13217: s3/smbd: Remove file system sharemode before calling unlink.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 13209: Small improvements in winbindd for the resource cleanup in error
+     cases.
+   * BUG 13238: Make Samba work with tirpc and libnsl2.
 
 
 KNOWN ISSUES
