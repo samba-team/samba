@@ -338,7 +338,7 @@ static void reload_interfaces(time_t t)
 			}
 		}
 		if (n == -1) {
-			/* oops, an interface has disapeared. This is
+			/* oops, an interface has disappeared. This is
 			 tricky, we don't dare actually free the
 			 interface as it could be being used, so
 			 instead we just wear the memory leak and
