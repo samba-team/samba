@@ -1062,9 +1062,6 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_base(struct dcesrv_call_state *dc
 	struct server_id *server_ids = NULL;
 	uint32_t num_server_ids = 0;
 	NTSTATUS status;
-	struct dom_sid *tmp_sid1;
-	struct dom_sid *tmp_sid2;
-	uint32_t tmp_rid;
 	bool ok;
 	char *dns_encoded = NULL;
 	char *netbios_encoded = NULL;
@@ -1094,35 +1091,8 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_base(struct dcesrv_call_state *dc
 	 * We expect S-1-5-21-A-B-C, but we don't
 	 * allow S-1-5-21-0-0-0 as this is used
 	 * for claims and compound identities.
-	 *
-	 * So we call dom_sid_split_rid() 3 times
-	 * and compare the result to S-1-5-21
 	 */
-	status = dom_sid_split_rid(mem_ctx, r->in.info->sid, &tmp_sid1, &tmp_rid);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-	status = dom_sid_split_rid(mem_ctx, tmp_sid1, &tmp_sid2, &tmp_rid);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-	status = dom_sid_split_rid(mem_ctx, tmp_sid2, &tmp_sid1, &tmp_rid);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-	ok = dom_sid_parse("S-1-5-21", tmp_sid2);
-	if (!ok) {
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-	ok = dom_sid_equal(tmp_sid1, tmp_sid2);
-	if (!ok) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-	ok = dom_sid_parse("S-1-5-21-0-0-0", tmp_sid2);
-	if (!ok) {
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-	ok = !dom_sid_equal(r->in.info->sid, tmp_sid2);
+	ok = dom_sid_is_valid_account_domain(r->in.info->sid);
 	if (!ok) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
