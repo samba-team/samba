@@ -65,7 +65,7 @@ class dbcheck(object):
         self.fix_undead_linked_attributes = False
         self.fix_all_missing_backlinks = False
         self.fix_all_orphaned_backlinks = False
-        self.fix_all_duplicate_links = False
+        self.recover_all_forward_links = False
         self.fix_rmd_flags = False
         self.fix_ntsecuritydescriptor = False
         self.fix_ntsecuritydescriptor_owner_group = False
@@ -722,11 +722,14 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                           "Failed to fix orphaned backlink %s" % backlink_attr):
             self.report("Fixed orphaned backlink %s" % (backlink_attr))
 
-    def err_duplicate_links(self, obj, forward_attr, forward_vals):
+    def err_recover_forward_links(self, obj, forward_attr, forward_vals):
         '''handle a duplicate links value'''
 
-        if not self.confirm_all("Remove duplicate links in attribute '%s'" % forward_attr, 'fix_all_duplicate_links'):
-            self.report("Not removing duplicate links in attribute '%s'" % forward_attr)
+        self.report("RECHECK: 'Duplicate/Correct link' lines above for attribute '%s' in '%s'" % (forward_attr, obj.dn))
+
+        if not self.confirm_all("Commit fixes for (duplicate) forward links in attribute '%s'" % forward_attr, 'recover_all_forward_links'):
+            self.report("Not fixing corrupted (duplicate) forward links in attribute '%s' of '%s'" % (
+                        forward_attr, obj.dn))
             return
         m = ldb.Message()
         m.dn = obj.dn
@@ -963,7 +966,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             for keystr in unique_list:
                 dsdb_dn = unique_dict[keystr]
                 vals.append(str(dsdb_dn))
-            self.err_duplicate_links(obj, attrname, vals)
+            self.err_recover_forward_links(obj, attrname, vals)
             # We should continue with the fixed values
             obj[attrname] = ldb.MessageElement(vals, ldb.FLAG_MOD_REPLACE, attrname)
 
