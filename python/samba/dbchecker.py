@@ -65,6 +65,7 @@ class dbcheck(object):
         self.fix_undead_linked_attributes = False
         self.fix_all_missing_backlinks = False
         self.fix_all_orphaned_backlinks = False
+        self.duplicate_link_cache = dict()
         self.recover_all_forward_links = False
         self.fix_rmd_flags = False
         self.fix_ntsecuritydescriptor = False
@@ -904,6 +905,10 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         if backlink_attr is None:
             return (error_count, duplicate_dict, unique_dict)
 
+        duplicate_cache_key = "%s:%s" % (str(obj.dn), forward_attr)
+        if duplicate_cache_key not in self.duplicate_link_cache:
+            self.duplicate_link_cache[duplicate_cache_key] = False
+
         for val in obj[forward_attr]:
             dsdb_dn = dsdb_Dn(self.samdb, val, forward_syntax)
 
@@ -945,6 +950,8 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             duplicate_dict[keystr]["delete"].append(unique_dict[keystr])
             unique_dict[keystr] = dsdb_dn
 
+        if error_count != 0:
+            self.duplicate_link_cache[duplicate_cache_key] = True
 
         return (error_count, duplicate_dict, unique_dict)
 
