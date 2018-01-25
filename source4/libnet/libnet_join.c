@@ -929,7 +929,7 @@ NTSTATUS libnet_Join_member(struct libnet_context *ctx,
 	uint32_t acct_type = 0;
 	const char *account_name;
 	const char *netbios_name;
-	const char *error_string;
+	const char *error_string = NULL;
 
 	r->out.error_string = NULL;
 
@@ -1000,7 +1000,7 @@ NTSTATUS libnet_Join_member(struct libnet_context *ctx,
 	
 	status = provision_store_self_join(ctx, ctx->lp_ctx, ctx->event_ctx, set_secrets, &error_string);
 	if (!NT_STATUS_IS_OK(status)) {
-		if (r->out.error_string) {
+		if (error_string) {
 			r->out.error_string = talloc_steal(mem_ctx, error_string);
 		} else {
 			r->out.error_string
