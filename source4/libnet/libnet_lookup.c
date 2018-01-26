@@ -384,13 +384,10 @@ NTSTATUS libnet_LookupName_recv(struct composite_context *c, TALLOC_CTX *mem_ctx
 	struct lookup_name_state *s;
 
 	status = composite_wait(c);
+	ZERO_STRUCT(io->out);
 
 	if (NT_STATUS_IS_OK(status)) {
 		s = talloc_get_type(c->private_data, struct lookup_name_state);
-
-		io->out.rid = 0;
-		io->out.sid = NULL;
-		io->out.sidstr = NULL;
 
 		if (*s->lookup.out.count > 0) {
 			struct lsa_RefDomainList *domains = *s->lookup.out.domains;
