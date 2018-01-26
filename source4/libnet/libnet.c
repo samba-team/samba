@@ -33,8 +33,8 @@ struct libnet_context *libnet_context_init(struct tevent_context *ev,
 		return NULL;
 	}
 
-	/* create brand new libnet context */ 
-	ctx = talloc(ev, struct libnet_context);
+	/* create brand new libnet context */
+	ctx = talloc_zero(ev, struct libnet_context);
 	if (!ctx) {
 		return NULL;
 	}
@@ -48,14 +48,8 @@ struct libnet_context *libnet_context_init(struct tevent_context *ev,
 	/* name resolution methods */
 	ctx->resolve_ctx = lpcfg_resolve_context(lp_ctx);
 
-	/* connected services' params */
-	ZERO_STRUCT(ctx->samr);
-	ZERO_STRUCT(ctx->lsa);	
-
 	/* default buffer size for various operations requiring specifying a buffer */
 	ctx->samr.buf_size = 128;
-
-	ctx->server_address = NULL;
 
 	return ctx;
 }
