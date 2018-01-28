@@ -1,0 +1,87 @@
+#!/usr/bin/env python3
+
+import sys
+
+sys.path.insert(0, "bin/python")
+
+import os
+import argparse
+import struct
+
+from samba.ndr import ndr_unpack, ndr_print
+from samba.dcerpc import smbXsrv
+from samba.dcerpc import server_id
+import tdb
+
+def print_watchers(num_watched, blob):
+    for i in range(0,num_watched):
+        id = ndr_unpack(server_id.server_id, blob[:24])
+        print(ndr_print(id))
+        blob = blob[24:]
+
+def print_record(data, ndr_type, watched, ctdb):
+    blob = data
+
+    if ctdb:
+        (rsn, dmaster, reserved1, flags) = struct.unpack('QIII', bytes(blob[:20]))
+        blob = blob[24:]
+        print("    ctdb record header: rsn=%lu, dmaster=%u, reserved1=0x%x, flags=0x%x len=%u" %
+              (rsn, dmaster, reserved1, flags, len(blob)))
+        if len(blob) == 0:
+            return
+
+    if watched:
+        (num_watched, ) = struct.unpack('I', bytes(blob[:4]))
+        blob = blob[4:]
+
+        deleted_bit = 1<<31
+        deleted = num_watched & deleted_bit
+
+        num_watched = num_watched & ~deleted_bit
+        if num_watched > 0:
+            if deleted:
+                deleted_str = "yes"
+            else:
+                deleted_str = "no"
+            print("    num_watched: %d, deleted: %s" % (num_watched, deleted_str))
+            print_watchers(num_watched, blob)
+            blob = blob[num_watched*4:]
+
+    unpacked = ndr_unpack(ndr_type, blob, allow_remaining=True)
+    print(ndr_print(unpacked))
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('path', help='Path to the TDB file')
+    parser.add_argument('-c', '--ctdb',
+                        default=False,
+                        action="store_true",
+                        help='The TDB database is from a ctdb cluster')
+    args = parser.parse_args()
+
+    watched = False
+    if 'smbXsrv_session' in args.path:
+        ndr_type = smbXsrv.session_globalB
+        watched = True
+    elif 'smbXsrv_open' in args.path:
+        ndr_type = smbXsrv.open_globalB
+    elif 'smbXsrv_client' in args.path:
+        ndr_type = smbXsrv.client_globalB
+        watched = True
+    elif 'smbXsrv_tcon' in args.path:
+        ndr_type = smbXsrv.tcon_globalB
+    elif 'smbXsrv_version' in args.path:
+        ndr_type = smbXsrv.version_globalB
+    else:
+        raise Exception("Failed to guess NDR type")
+
+    tdb = tdb.Tdb(args.path, 0, tdb.INCOMPATIBLE_HASH, os.O_RDONLY)
+
+    i = 1
+    for k in tdb.keys():
+        data = tdb.get(k)
+        print("Record: %d" % i)
+        print_record(data, ndr_type, watched, args.ctdb)
+        i = i + 1
+
+    tdb.close()
