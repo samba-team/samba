@@ -526,6 +526,9 @@ init_sec_context_done:
 			/* Garbage input, possibly from the auto-mech detection */
 			status = NT_STATUS_INVALID_PARAMETER;
 			goto done;
+		case (OM_uint32)KRB5KDC_ERR_ETYPE_NOSUPP:
+			status = NT_STATUS_KDC_UNKNOWN_ETYPE;
+			goto done;
 		default:
 			DBG_ERR("gss_init_sec_context failed with [%s](%u)\n",
 				gse_errstr(talloc_tos(), gss_maj, gss_min),
