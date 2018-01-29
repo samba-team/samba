@@ -133,3 +133,106 @@ ADS_STATUS ads_change_trust_account_password(ADS_STRUCT *ads, char *host_princip
 	return ADS_SUCCESS;
 }
 #endif
+
+/**
+* @brief Parses windows style SPN service/host:port/servicename
+*      serviceclass - A string that identifies the general class of service
+*            e.g. 'http'
+*      host - A netbios name or fully-qualified DNS name
+*      port - An optional TCP or UDP port number
+*      servicename - An optional distinguished name, GUID, DNS name or
+*                    DNS name of an SRV or MX record. (not needed for host
+*                    based services)
+*
+* @param[in]  ctx 	- Talloc context.
+* @param[in]  srvprinc  - The service principal
+*
+* @return 		- struct spn_struct containing the fields parsed or NULL
+*			  if srvprinc could not be parsed.
+*/
+struct spn_struct *parse_spn(TALLOC_CTX *ctx, const char *srvprinc)
+{
+	struct spn_struct * result = NULL;
+	char *tmp = NULL;
+	char *port_str = NULL;
+	char *host_str = NULL;
+
+	result = talloc_zero(ctx, struct spn_struct);
+	if (result == NULL) {
+		DBG_ERR("Out of memory\n");
+		return NULL;
+	}
+
+	result->serviceclass = talloc_strdup(result, srvprinc);
+	if (result->serviceclass == NULL) {
+		DBG_ERR("Out of memory\n");
+		return NULL;
+	}
+	result->port = -1;
+
+	tmp = strchr_m(result->serviceclass, '/');
+	if (tmp == NULL) {
+		/* illegal */
+		DBG_ERR("Failed to parse spn %s, no host definition\n",
+			srvprinc);
+		TALLOC_FREE(result);
+		goto out;
+	}
+
+	/* terminate service principal */
+	*tmp = '\0';
+	tmp++;
+	host_str = tmp;
+
+	tmp = strchr_m(host_str, ':');
+	if (tmp != NULL) {
+		*tmp  = '\0';
+		tmp++;
+		port_str = tmp;
+	} else {
+		tmp = host_str;
+	}
+
+	tmp = strchr_m(tmp, '/');
+	if (tmp != NULL) {
+		*tmp  = '\0';
+		tmp++;
+		result->servicename = tmp;
+	}
+
+	if (strlen(host_str) == 0) {
+		/* illegal */
+		DBG_ERR("Failed to parse spn %s, illegal host definition\n",
+			srvprinc);
+		TALLOC_FREE(result);
+		goto out;
+	}
+	result->host = host_str;
+
+	if (result->servicename != NULL && (strlen(result->servicename) == 0)) {
+		DBG_ERR("Failed to parse spn %s, empty servicename "
+			"definition\n", srvprinc);
+		TALLOC_FREE(result);
+		goto out;
+	}
+	if (port_str != NULL) {
+		if (strlen(port_str) == 0) {
+			DBG_ERR("Failed to parse spn %s, empty port "
+				"definition\n", srvprinc);
+			TALLOC_FREE(result);
+			goto out;
+		}
+		result->port = (int32_t)strtol(port_str, NULL, 10);
+		if (result->port <= 0
+		    || result->port > 65535
+		    || errno == ERANGE) {
+			DBG_ERR("Failed to parse spn %s, port number "
+				"convertion failed\n", srvprinc);
+			errno = 0;
+			TALLOC_FREE(result);
+			goto out;
+		}
+	}
+out:
+	return result;
+}

@@ -193,4 +193,14 @@ void ndr_print_ads_saslwrap_struct(struct ndr_print *ndr,
 
 ADS_STATUS ads_change_trust_account_password(ADS_STRUCT *ads, char *host_principal);
 
+struct spn_struct {
+	const char *serviceclass;
+	const char *servicename;
+	const char *host;
+	int32_t port;
+};
+
+/* parse a windows style SPN, returns NULL if parsing fails */
+struct spn_struct *parse_spn(TALLOC_CTX *ctx, const char *srvprinc);
+
 #endif /* _LIBADS_ADS_PROTO_H_ */
