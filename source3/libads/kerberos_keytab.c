@@ -135,19 +135,35 @@ static bool ads_set_machine_account_spns(TALLOC_CTX *ctx,
 {
 	const char **spn_names = NULL;
 	ADS_STATUS aderr;
-	bool ok = false;
+	struct spn_struct* spn_struct = NULL;
+	char *tmp = NULL;
+
+	/* SPN should have '/' */
+	tmp = strchr_m(service_or_spn, '/');
+	if (tmp != NULL) {
+		spn_struct = parse_spn(ctx, service_or_spn);
+		if (spn_struct == NULL) {
+			return false;
+		}
+	}
 
 	DBG_INFO("Attempting to add/update '%s'\n", service_or_spn);
 
-	ok = fill_default_spns(ctx,
-			       lp_netbios_name(),
-			       my_fqdn,
-			       service_or_spn,
-			       &spn_names);
-	if (!ok) {
-		return false;
-	}
+	if (spn_struct != NULL) {
+		spn_names = talloc_zero_array(ctx, const char*, 2);
+		spn_names[0] = service_or_spn;
+	} else {
+		bool ok;
 
+		ok = fill_default_spns(ctx,
+				       lp_netbios_name(),
+				       my_fqdn,
+				       service_or_spn,
+				       &spn_names);
+		if (!ok) {
+			return false;
+		}
+	}
 	aderr = ads_add_service_principal_names(ads,
 						lp_netbios_name(),
 						spn_names);
