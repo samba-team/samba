@@ -708,14 +708,15 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                           "Failed to fix incorrect RMD_FLAGS %u" % rmd_flags):
             self.report("Fixed incorrect RMD_FLAGS %u" % (rmd_flags))
 
-    def err_orphaned_backlink(self, obj, backlink_attr, backlink_val, target_dn, forward_attr, forward_syntax):
+    def err_orphaned_backlink(self, obj_dn, backlink_attr, backlink_val,
+                              target_dn, forward_attr, forward_syntax):
         '''handle a orphaned backlink value'''
-        self.report("ERROR: orphaned backlink attribute '%s' in %s for link %s in %s" % (backlink_attr, obj.dn, forward_attr, target_dn))
+        self.report("ERROR: orphaned backlink attribute '%s' in %s for link %s in %s" % (backlink_attr, obj_dn, forward_attr, target_dn))
         if not self.confirm_all('Remove orphaned backlink %s' % backlink_attr, 'fix_all_orphaned_backlinks'):
             self.report("Not removing orphaned backlink %s" % backlink_attr)
             return
         m = ldb.Message()
-        m.dn = obj.dn
+        m.dn = obj_dn
         m['value'] = ldb.MessageElement(backlink_val, ldb.FLAG_MOD_DELETE, backlink_attr)
         if self.do_modify(m, ["show_recycled:1", "relax:0"],
                           "Failed to fix orphaned backlink %s" % backlink_attr):
@@ -1146,7 +1147,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                 # UNLESS, there is no forward link detected.
                 if match_count == 0:
                     error_count += 1
-                    self.err_orphaned_backlink(obj, attrname,
+                    self.err_orphaned_backlink(obj.dn, attrname,
                                                val, dsdb_dn.dn,
                                                reverse_link_name,
                                                reverse_syntax_oid)
@@ -1179,7 +1180,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                                               dsdb_dn.dn)
                     diff_count -= 1
                 else:
-                    self.err_orphaned_backlink(res[0], reverse_link_name,
+                    self.err_orphaned_backlink(res[0].dn, reverse_link_name,
                                                obj.dn.extended_str(), obj.dn,
                                                attrname, syntax_oid)
                     diff_count += 1
