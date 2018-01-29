@@ -939,6 +939,19 @@ sub setup_env($$)
 
 	$option = "client" if $option eq "";
 
+	# Initially clear out the environment for the provision, so previous envs'
+	# variables don't leak in. Provisioning steps must explicitly set their
+	# necessary variables when calling out to other executables
+	foreach (@exported_envvars) {
+		unless ($_ == "NSS_WRAPPER_HOSTS" ||
+		        $_ == "RESOLV_WRAPPER_HOSTS")
+		{
+			delete $ENV{$_};
+		}
+	}
+	delete $ENV{SOCKET_WRAPPER_DEFAULT_IFACE};
+	delete $ENV{SMB_CONF_PATH};
+
 	$ENV{KRB5CCNAME} = "FILE:${selftest_krbt_ccache_path}.${envname}/ignore";
 
 	if (defined(get_running_env($envname))) {
