@@ -159,6 +159,59 @@ static bool ads_set_machine_account_spns(TALLOC_CTX *ctx,
 	return true;
 }
 
+/*
+ * Create kerberos principal(s) from SPN or service name.
+ */
+static bool service_or_spn_to_kerberos_princ(TALLOC_CTX *ctx,
+					     const char *service_or_spn,
+					     const char *my_fqdn,
+					     char **p_princ_s,
+					     char **p_short_princ_s)
+{
+	char *princ_s = NULL;
+	char *short_princ_s = NULL;
+	const char *service = service_or_spn;
+	const char *host = my_fqdn;
+	struct spn_struct* spn_struct = NULL;
+	char *tmp = NULL;
+	bool ok = true;
+
+	/* SPN should have '/' */
+	tmp = strchr_m(service_or_spn, '/');
+	if (tmp != NULL) {
+		spn_struct = parse_spn(ctx, service_or_spn);
+		if (spn_struct == NULL) {
+			ok = false;
+			goto out;
+		}
+	}
+	if (spn_struct != NULL) {
+		service = spn_struct->serviceclass;
+		host = spn_struct->host;
+	}
+	princ_s = talloc_asprintf(ctx, "%s/%s@%s",
+				  service,
+				  host, lp_realm());
+	if (princ_s == NULL) {
+		ok = false;
+		goto out;
+	}
+
+	if (spn_struct == NULL) {
+		short_princ_s = talloc_asprintf(ctx, "%s/%s@%s",
+					service, lp_netbios_name(),
+					lp_realm());
+		if (short_princ_s == NULL) {
+			ok = false;
+			goto out;
+		}
+	}
+	*p_princ_s = princ_s;
+	*p_short_princ_s = short_princ_s;
+out:
+	return ok;
+}
+
 /**********************************************************************
  Adds a single service principal, i.e. 'host' to the system keytab
 ***********************************************************************/
@@ -264,16 +317,11 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc)
 		 * can obtain credentials for it and double-check the salt value
 		 * used to generate the service's keys. */
 
-		princ_s = talloc_asprintf(tmpctx, "%s/%s@%s",
-					  srvPrinc, my_fqdn, lp_realm());
-		if (!princ_s) {
-			ret = -1;
-			goto out;
-		}
-		short_princ_s = talloc_asprintf(tmpctx, "%s/%s@%s",
-						srvPrinc, lp_netbios_name(),
-						lp_realm());
-		if (short_princ_s == NULL) {
+		if (!service_or_spn_to_kerberos_princ(tmpctx,
+						      srvPrinc,
+						      my_fqdn,
+						      &princ_s,
+						      &short_princ_s)) {
 			ret = -1;
 			goto out;
 		}
