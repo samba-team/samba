@@ -901,9 +901,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             reverse_syntax_oid = None
 
         duplicate_dict = dict()
-        duplicate_list = list()
         unique_dict = dict()
-        unique_list = list()
         for val in obj[attrname]:
             if linkID & 1:
                 #
@@ -921,14 +919,12 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             keystr = guidstr + dsdb_dn.prefix
             if keystr not in unique_dict:
                 unique_dict[keystr] = dsdb_dn
-                unique_list.append(keystr)
                 continue
             error_count += 1
             if keystr not in duplicate_dict:
                 duplicate_dict[keystr] = dict()
                 duplicate_dict[keystr]["keep"] = None
                 duplicate_dict[keystr]["delete"] = list()
-                duplicate_list.append(keystr)
 
             # Now check for the highest RMD_VERSION
             v1 = int(unique_dict[keystr].dn.get_extended_component("RMD_VERSION"))
@@ -953,19 +949,18 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             duplicate_dict[keystr]["delete"].append(unique_dict[keystr])
             unique_dict[keystr] = dsdb_dn
 
-        if len(duplicate_list) != 0:
+        if len(duplicate_dict) != 0:
             self.report("ERROR: Duplicate forward link values for attribute '%s' in '%s'" % (attrname, obj.dn))
-
-            for keystr in duplicate_list:
+            for keystr in duplicate_dict.keys():
                 d = duplicate_dict[keystr]
                 for dd in d["delete"]:
                     self.report("Duplicate link '%s'" % dd)
                 self.report("Correct   link '%s'" % d["keep"])
 
-            vals = []
-            for keystr in unique_list:
-                dsdb_dn = unique_dict[keystr]
-                vals.append(str(dsdb_dn))
+            # We now construct the sorted dn values.
+            # They're sorted by the objectGUID of the target
+            # See dsdb_Dn.__cmp__()
+            vals = [str(dn) for dn in sorted(unique_dict.values())]
             self.err_recover_forward_links(obj, attrname, vals)
             # We should continue with the fixed values
             obj[attrname] = ldb.MessageElement(vals, 0, attrname)
