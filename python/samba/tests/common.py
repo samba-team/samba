@@ -23,7 +23,7 @@ from samba.common import *
 from samba.samdb import SamDB
 
 
-class CommonTests(samba.tests.TestCase):
+class CommonTests(samba.tests.TestCaseInTempDir):
 
     def test_normalise_int32(self):
         self.assertEquals('17', normalise_int32(17))
@@ -32,9 +32,10 @@ class CommonTests(samba.tests.TestCase):
         self.assertEquals('-1294967296', normalise_int32('3000000000'))
 
     def test_dsdb_Dn(self):
-        sam = samba.Ldb(url='dntest.ldb')
+        url = self.tempdir + "/test_dsdb_Dn.ldb"
+        sam = samba.Ldb(url=url)
         dn1 = dsdb_Dn(sam, "DC=foo,DC=bar")
         dn2 = dsdb_Dn(sam, "B:8:0000000D:<GUID=b3f0ec29-17f4-452a-b002-963e1909d101>;DC=samba,DC=example,DC=com")
         self.assertEquals(dn2.binary, "0000000D")
         self.assertEquals(13, dn2.get_binary_integer())
-        os.unlink('dntest.ldb')
+        os.unlink(url)
