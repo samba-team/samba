@@ -706,6 +706,56 @@ class DnsCmdTestCase(SambaToolCmdTest):
             for record in records:
                 self.assertEqual(str(record['dNSTombstoned']), 'TRUE')
 
+    def test_cleanup_record_no_A_record(self):
+        """
+        Test dns cleanup command works with no A record.
+        """
+
+        # add a A record
+        self.runsubcmd("dns", "add", os.environ["SERVER"], self.zone,
+                       'notesta', "A", self.testip, self.creds_string)
+
+        # the above A record points to this host
+        dnshostname = '{}.{}'.format('testa', self.zone.lower())
+
+        # add a CNAME record points to above host
+        self.runsubcmd("dns", "add", os.environ["SERVER"], self.zone,
+                       'notestcname', "CNAME", dnshostname, self.creds_string)
+
+        # add a NS record
+        self.runsubcmd("dns", "add", os.environ["SERVER"], self.zone,
+                       'notestns', "NS", dnshostname, self.creds_string)
+
+        # add a PTR record points to above host
+        self.runsubcmd("dns", "add", os.environ["SERVER"], self.zone,
+                       'notestptr', "PTR", dnshostname, self.creds_string)
+
+        # add a SRV record points to above host
+        srv_record = "{} 65530 65530 65530".format(dnshostname)
+        self.runsubcmd("dns", "add", os.environ["SERVER"], self.zone,
+                       'notestsrv', "SRV", srv_record, self.creds_string)
+
+        # Remove the initial A record (leading to hanging references)
+        self.runsubcmd("dns", "delete", os.environ["SERVER"], self.zone,
+                       'notesta', "A", self.testip, self.creds_string)
+
+        # cleanup record for this dns host
+        self.runsubcmd("dns", "cleanup", os.environ["SERVER"],
+                       dnshostname, self.creds_string)
+
+        # all records should be marked as dNSTombstoned
+        for record_name in ['notestcname', 'notestns', 'notestptr', 'notestsrv']:
+
+            records = self.samdb.search(
+                base="DC=DomainDnsZones,{}".format(self.samdb.get_default_basedn()),
+                scope=ldb.SCOPE_SUBTREE,
+                expression="(&(objectClass=dnsNode)(name={}))".format(record_name),
+                attrs=["dNSTombstoned"])
+
+            self.assertEqual(len(records), 1)
+            for record in records:
+                self.assertEqual(str(record['dNSTombstoned']), 'TRUE')
+
     def test_cleanup_multi_srv_record(self):
         """
         Test dns cleanup command for multi-valued SRV record.
