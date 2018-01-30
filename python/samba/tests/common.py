@@ -31,8 +31,8 @@ class CommonTests(samba.tests.TestCaseInTempDir):
         self.assertEquals('-123', normalise_int32('-123'))
         self.assertEquals('-1294967296', normalise_int32('3000000000'))
 
-    def test_dsdb_Dn(self):
-        url = self.tempdir + "/test_dsdb_Dn.ldb"
+    def test_dsdb_Dn_binary(self):
+        url = self.tempdir + "/test_dsdb_Dn_binary.ldb"
         sam = samba.Ldb(url=url)
         dn1 = dsdb_Dn(sam, "DC=foo,DC=bar")
         dn2 = dsdb_Dn(sam, "B:8:0000000D:<GUID=b3f0ec29-17f4-452a-b002-963e1909d101>;DC=samba,DC=example,DC=com")
