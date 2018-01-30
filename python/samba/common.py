@@ -19,6 +19,8 @@
 
 import ldb
 import dsdb
+from samba.ndr import ndr_pack
+from samba.dcerpc import misc
 import binascii
 
 
@@ -92,6 +94,21 @@ class dsdb_Dn(object):
 
     def __str__(self):
         return self.prefix + str(self.dn.extended_str(mode=1))
+
+    def __cmp__(self, other):
+        ''' compare dsdb_Dn values similar to parsed_dn_compare()'''
+        dn1 = self
+        dn2 = other
+        guid1 = dn1.dn.get_extended_component("GUID")
+        guid1b = ndr_pack(misc.GUID(guid1))
+        guid2 = dn2.dn.get_extended_component("GUID")
+        guid2b = ndr_pack(misc.GUID(guid2))
+
+        v = cmp(guid1, guid2)
+        if v != 0:
+            return v
+        v = cmp(dn1.binary, dn2.binary)
+        return v
 
     def get_binary_integer(self):
         '''return binary part of a dsdb_Dn as an integer, or None'''
