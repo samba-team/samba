@@ -40,6 +40,16 @@
 #include "dlz_minimal.h"
 #include "dns_server/dnsserver_common.h"
 
+/* 
+ * maintaining a singleton will break the 'reload' functionality
+ * triggered by 'rndc reload' and 'service reload named' which
+ * is used e.g. by logrotate.  It can be enabled by defining the following
+ * preprocessor macro
+ */
+#ifndef DLZ_BIND9_USE_SINGLETON
+#define DLS_BIND9_USE_SINGLETON 0
+#endif
+
 struct b9_options {
 	const char *url;
 	const char *debug;
@@ -72,8 +82,10 @@ struct dlz_bind9_data {
 	dns_dlz_writeablezone_t *writeable_zone;
 };
 
+#if DLZ_BIND9_USE_SINGLETON
 static struct dlz_bind9_data *dlz_bind9_state = NULL;
 static int dlz_bind9_state_ref_count = 0;
+#endif
 
 static const char *zone_prefixes[] = {
 	"CN=MicrosoftDNS,DC=DomainDnsZones",
@@ -615,11 +627,13 @@ _PUBLIC_ isc_result_t dlz_create(const char *dlzname,
 	struct ldb_dn *dn;
 	NTSTATUS nt_status;
 
+#if DLZ_BIND9_USE_SINGLETON
 	if (dlz_bind9_state != NULL) {
 		*dbdata = dlz_bind9_state;
 		dlz_bind9_state_ref_count++;
 		return ISC_R_SUCCESS;
 	}
+#endif
 
 	state = talloc_zero(NULL, struct dlz_bind9_data);
 	if (state == NULL) {
@@ -634,6 +648,8 @@ _PUBLIC_ isc_result_t dlz_create(const char *dlzname,
 		b9_add_helper(state, helper_name, va_arg(ap, void*));
 	}
 	va_end(ap);
+
+	state->log(ISC_LOG_INFO, "samba_dlz: starting for instance %p", state);
 
 	/* Do not install samba signal handlers */
 	fault_setup_disable();
@@ -715,8 +731,11 @@ _PUBLIC_ isc_result_t dlz_create(const char *dlzname,
 	state->auth_context->generate_session_info_pac = b9_generate_session_info_pac;
 
 	*dbdata = state;
+
+#if DLZ_BIND9_USE_SINGLETON
 	dlz_bind9_state = state;
 	dlz_bind9_state_ref_count++;
+#endif
 
 	return ISC_R_SUCCESS;
 
@@ -731,14 +750,18 @@ failed:
 _PUBLIC_ void dlz_destroy(void *dbdata)
 {
 	struct dlz_bind9_data *state = talloc_get_type_abort(dbdata, struct dlz_bind9_data);
-	state->log(ISC_LOG_INFO, "samba_dlz: shutting down");
 
+#if DLZ_BIND9_USE_SINGLETON
 	dlz_bind9_state_ref_count--;
 	if (dlz_bind9_state_ref_count == 0) {
-		talloc_unlink(state, state->samdb);
-		talloc_free(state);
 		dlz_bind9_state = NULL;
+	} else {
+		return;
 	}
+#endif
+	
+	state->log(ISC_LOG_INFO, "samba_dlz: shutting down instance %p", state);
+	talloc_free(state);
 }
 
 
