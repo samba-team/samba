@@ -1111,7 +1111,8 @@ class cmd_cleanup_record(Command):
                       session_info=system_session(),
                       credentials=creds, lp=lp)
 
-        remove_dc.remove_dns_references(samdb, logger, dnshostname)
+        remove_dc.remove_dns_references(samdb, logger, dnshostname,
+                                        ignore_no_name=True)
 
 
 class cmd_dns(SuperCommand):

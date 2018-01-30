@@ -84,7 +84,7 @@ def remove_sysvol_references(samdb, logger, dc_name):
                 raise
 
 
-def remove_dns_references(samdb, logger, dnsHostName):
+def remove_dns_references(samdb, logger, dnsHostName, ignore_no_name=False):
 
     # Check we are using in-database DNS
     zones = samdb.search(base="", scope=ldb.SCOPE_SUBTREE,
@@ -100,7 +100,11 @@ def remove_dns_references(samdb, logger, dnsHostName):
         (dn, primary_recs) = samdb.dns_lookup(dnsHostName)
     except RuntimeError as (enum, estr):
         if enum == werror.WERR_DNS_ERROR_NAME_DOES_NOT_EXIST:
-              return
+            if ignore_no_name:
+                remove_hanging_dns_references(samdb, logger,
+                                              dnsHostNameUpper,
+                                              zones)
+            return
         raise DemoteException("lookup of %s failed: %s" % (dnsHostName, estr))
     samdb.dns_replace(dnsHostName, [])
 
@@ -154,6 +158,11 @@ def remove_dns_references(samdb, logger, dnsHostName):
                 (a_name, len(a_recs), orig_num_recs - len(a_recs)))
             samdb.dns_replace(a_name, a_recs)
 
+    remove_hanging_dns_references(samdb, logger, dnsHostNameUpper, zones)
+
+
+def remove_hanging_dns_references(samdb, logger, dnsHostNameUpper, zones):
+
     # Find all the CNAME, NS, PTR and SRV records that point at the
     # name we are removing
 
@@ -193,6 +202,7 @@ def remove_dns_references(samdb, logger, dnsHostName):
                 # This requires the values to be unpacked, so this
                 # has been done in the list comprehension above
                 samdb.dns_replace_by_dn(record.dn, values)
+
 
 def offline_remove_server(samdb, logger,
                           server_dn,
