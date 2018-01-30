@@ -1811,7 +1811,19 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             attrs.append(dn.get_rdn_name())
             attrs.append("isDeleted")
             attrs.append("systemFlags")
+        need_replPropertyMetaData = False
         if '*' in attrs:
+            need_replPropertyMetaData = True
+        else:
+            for a in attrs:
+                linkID, _ = self.get_attr_linkID_and_reverse_name(a)
+                if linkID == 0:
+                    continue
+                if linkID & 1:
+                    continue
+                need_replPropertyMetaData = True
+                break
+        if need_replPropertyMetaData:
             attrs.append("replPropertyMetaData")
         attrs.append("objectGUID")
 
