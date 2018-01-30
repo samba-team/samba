@@ -27,6 +27,7 @@ from samba.dcerpc import drsblobs, security
 from samba import dsdb
 import ldb
 import samba
+import uuid
 
 class DsdbTests(TestCase):
 
@@ -41,17 +42,18 @@ class DsdbTests(TestCase):
                            lp=self.lp)
 
         # Create a test user
-        user_name = "samdb-testuser"
+        user_name = "dsdb-user-" + str(uuid.uuid4().hex[0:6])
         user_pass = samba.generate_random_password(32, 32)
         user_description = "Test user for dsdb test"
 
         base_dn = self.samdb.domain_dn()
 
         self.account_dn = "cn=" + user_name + ",cn=Users," + base_dn
-        delete_force(self.samdb, self.account_dn)
         self.samdb.newuser(username=user_name,
                            password=user_pass,
                            description=user_description)
+        # Cleanup (teardown)
+        self.addCleanup(delete_force, self.samdb, self.account_dn)
 
     def test_get_oid_from_attrid(self):
         oid = self.samdb.get_oid_from_attid(591614)
