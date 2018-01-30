@@ -968,7 +968,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                 vals.append(str(dsdb_dn))
             self.err_recover_forward_links(obj, attrname, vals)
             # We should continue with the fixed values
-            obj[attrname] = ldb.MessageElement(vals, ldb.FLAG_MOD_REPLACE, attrname)
+            obj[attrname] = ldb.MessageElement(vals, 0, attrname)
 
         for val in obj[attrname]:
             dsdb_dn = dsdb_Dn(self.samdb, val, syntax_oid)
