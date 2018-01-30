@@ -7,7 +7,8 @@ bld.SAMBA3_LIBRARY('gpext',
                    deps='talloc ads TOKEN_UTIL auth',
                    private_library=True)
 
-bld.SAMBA3_PYTHON('python_samba_libgpo', 'pygpo.c',
-                 deps='''pyparam_util gpext talloc ads TOKEN_UTIL
-                 auth pyrpc_util''',
-                 realname='samba/gpo.so')
+for env in bld.gen_python_environments():
+    bld.SAMBA3_PYTHON('python_samba_libgpo', 'pygpo.c',
+                     deps='''pyparam_util gpext talloc ads TOKEN_UTIL
+                     auth pyrpc_util''',
+                     realname='samba/gpo.so')
