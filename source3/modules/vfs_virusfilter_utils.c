@@ -395,7 +395,7 @@ bool virusfilter_io_writefl(
 {
 	va_list ap;
 	char data[VIRUSFILTER_IO_BUFFER_SIZE + VIRUSFILTER_IO_EOL_SIZE];
-	size_t data_size;
+	int data_size;
 
 	va_start(ap, data_fmt);
 	data_size = vsnprintf(data, VIRUSFILTER_IO_BUFFER_SIZE, data_fmt, ap);
