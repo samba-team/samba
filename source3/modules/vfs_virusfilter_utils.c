@@ -148,10 +148,16 @@ bool virusfilter_io_connect_path(
 	struct sockaddr_un addr;
 	NTSTATUS status;
 	int socket, bes_result, flags, ret;
+	size_t len;
 
 	ZERO_STRUCT(addr);
 	addr.sun_family = AF_UNIX;
-	strncpy(addr.sun_path, path, sizeof(addr.sun_path));
+
+	len = strlcpy(addr.sun_path, path, sizeof(addr.sun_path));
+	if (len >= sizeof(addr.sun_path)) {
+		io_h->stream = NULL;
+		return false;
+	}
 
 	status = open_socket_out((struct sockaddr_storage *)&addr, 0,
 				 io_h->connect_timeout,
