@@ -1813,8 +1813,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             attrs.append("systemFlags")
         if '*' in attrs:
             attrs.append("replPropertyMetaData")
-        else:
-            attrs.append("objectGUID")
+        attrs.append("objectGUID")
 
         try:
             sd_flags = 0
