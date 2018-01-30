@@ -170,6 +170,7 @@ static void nb_packet_server_listener(struct tevent_context *ev,
 	ret = tstream_bsd_existing_socket(client, sock, &client->sock);
 	if (ret != 0) {
 		DEBUG(10, ("tstream_bsd_existing_socket failed\n"));
+		TALLOC_FREE(client);
 		close(sock);
 		return;
 	}
