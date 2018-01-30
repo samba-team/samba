@@ -18,7 +18,7 @@
 
 
 import ldb
-import dsdb
+from samba import dsdb
 from samba.ndr import ndr_pack
 from samba.dcerpc import misc
 import binascii
