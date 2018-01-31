@@ -30,8 +30,7 @@ from samba import (
         )
 from samba.ndr import ndr_unpack
 from samba.dcerpc import drsblobs
-import binascii
-import md5
+from hashlib import md5
 import re
 import random
 import string
@@ -47,8 +46,7 @@ USER_PASS = ''.join(random.choice(string.ascii_uppercase +
 #
 def calc_digest(user, realm, password):
     data = "%s:%s:%s" % (user, realm, password)
-    return "%s:%s:%s" % (user, realm, binascii.hexlify(md5.new(data).digest()))
-
+    return "%s:%s:%s" % (user, realm, md5(data).hexdigest())
 
 
 class UserCmdWdigestTestCase(SambaToolCmdTest):
