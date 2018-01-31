@@ -1080,8 +1080,9 @@ class cmd_cleanup_record(Command):
 
         samba-tool dns cleanup dc1 dc1.samdom.test.site -U USER%PASSWORD
 
-    NOTE: This command doesn't delete the DNS records,
-    it only mark the `dNSTombstoned` attr as `TRUE`.
+    NOTE: This command in many cases will only mark the `dNSTombstoned` attr
+    as `TRUE` on the DNS records. Querying will no longer return results but
+    there may still be some placeholder entries in the database.
     """
 
     synopsis = '%prog <server> <dnshostname>'
