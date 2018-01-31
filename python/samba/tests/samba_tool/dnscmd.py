@@ -800,7 +800,7 @@ class DnsCmdTestCase(SambaToolCmdTest):
             base="DC=DomainDnsZones,{}".format(self.samdb.get_default_basedn()),
             scope=ldb.SCOPE_SUBTREE,
             expression="(&(objectClass=dnsNode)(name={}))".format(srv_name),
-            attrs=['dnsRecord'])
+            attrs=['dnsRecord', 'dNSTombstoned'])
 
         # dnsRecord for host1 should be deleted
         self.assertEqual(len(records[0]['dnsRecord']), 1)
@@ -812,6 +812,10 @@ class DnsCmdTestCase(SambaToolCmdTest):
         # dnsRecord for host2 is still there and is the only one
         dnshostname2 = 'host2.{}'.format(self.zone.lower())
         self.assertEqual(dns_record_obj.data.nameTarget, dnshostname2)
+
+        # assert that the record isn't spuriously tombstoned
+        self.assertTrue('dNSTombstoned' not in records[0] or
+                        str(record['dNSTombstoned']) == 'FALSE')
 
     def test_dns_wildcards(self):
         """
