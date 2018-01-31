@@ -1426,7 +1426,7 @@ struct winbindd_domain *find_default_route_domain(void)
 	if (!IS_DC) {
 		return find_our_domain();
 	}
-	DBG_ERR("Routing logic not yet implemented on a DC");
+	DBG_DEBUG("Routing logic not yet implemented on a DC\n");
 	return NULL;
 }
 
