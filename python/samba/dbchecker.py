@@ -186,6 +186,23 @@ class dbcheck(object):
         else:
             self.rid_set_dn = None
 
+        self.compatibleFeatures = []
+        self.requiredFeatures = []
+
+        try:
+            res = self.samdb.search(scope=ldb.SCOPE_BASE,
+                                    base="@SAMBA_DSDB",
+                                    attrs=["compatibleFeatures",
+                                    "requiredFeatures"])
+            if "compatibleFeatures" in res[0]:
+                self.compatibleFeatures = res[0]["compatibleFeatures"]
+            if "requiredFeatures" in res[0]:
+                self.requiredFeatures = res[0]["requiredFeatures"]
+        except ldb.LdbError as (enum, estr):
+            if enum != ldb.ERR_NO_SUCH_OBJECT:
+                raise
+            pass
+
     def check_database(self, DN=None, scope=ldb.SCOPE_SUBTREE, controls=[], attrs=['*']):
         '''perform a database check, returning the number of errors found'''
         res = self.samdb.search(base=DN, scope=scope, attrs=['dn'], controls=controls)
@@ -745,6 +762,9 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         if self.do_modify(m, ["local_oid:1.3.6.1.4.1.7165.4.3.19.2:1"],
                 "Failed to fix duplicate links in attribute '%s'" % forward_attr):
             self.report("Fixed duplicate links in attribute '%s'" % (forward_attr))
+            duplicate_cache_key = "%s:%s" % (str(obj.dn), forward_attr)
+            assert duplicate_cache_key in self.duplicate_link_cache
+            self.duplicate_link_cache[duplicate_cache_key] = False
 
     def err_no_fsmoRoleOwner(self, obj):
         '''handle a missing fSMORoleOwner'''
@@ -1009,6 +1029,11 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         if forward_syntax != ldb.SYNTAX_DN:
             self.report("Not checking for missing forward links for syntax: %s",
                         forward_syntax)
+            return (missing_forward_links, error_count)
+
+        if "sortedLinks" in self.compatibleFeatures:
+            self.report("Not checking for missing forward links because the db " + \
+                        "has the sortedLinks feature")
             return (missing_forward_links, error_count)
 
         try:
