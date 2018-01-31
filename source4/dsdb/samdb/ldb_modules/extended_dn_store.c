@@ -67,6 +67,11 @@ struct extended_dn_context {
 
 	struct extended_dn_replace_list *ops;
 	struct extended_dn_replace_list *cur;
+
+	/*
+	 * Used by the FPO-enabled attribute validation.
+	 */
+	struct dsdb_trust_routing_table *routing_table;
 };
 
 
@@ -121,6 +126,171 @@ static int extended_replace_dn(struct extended_dn_replace_list *os,
 	return LDB_SUCCESS;
 }
 
+static int extended_dn_handle_fpo_attr(struct extended_dn_replace_list *os)
+{
+	struct dom_sid target_sid = { 0, };
+	struct dom_sid target_domain = { 0, };
+	struct ldb_message *fmsg = NULL;
+	char *fsid = NULL;
+	const struct dom_sid *domain_sid = NULL;
+	struct ldb_dn *domain_dn = NULL;
+	const struct lsa_TrustDomainInfoInfoEx *tdo = NULL;
+	uint32_t trust_attributes = 0;
+	const char *no_attrs[] = { NULL, };
+	struct ldb_result *res = NULL;
+	NTSTATUS status;
+	bool match;
+	bool ok;
+	int ret;
+
+	/*
+	 * DN doesn't exist yet
+	 *
+	 * Check if a foreign SID is specified,
+	 * which would trigger the creation
+	 * of a foreignSecurityPrincipal.
+	 */
+	status = dsdb_get_extended_dn_sid(os->dsdb_dn->dn,
+					  &target_sid,
+					  "SID");
+	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+		/*
+		 * No SID specified
+		 */
+		return dsdb_module_werror(os->ac->module,
+					  LDB_ERR_NO_SUCH_OBJECT,
+					  WERR_NO_SUCH_USER,
+					  "specified dn doesn't exist");
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		return ldb_module_operr(os->ac->module);
+	}
+	if (ldb_dn_get_extended_comp_num(os->dsdb_dn->dn) != 1) {
+		return dsdb_module_werror(os->ac->module,
+					  LDB_ERR_NO_SUCH_OBJECT,
+					  WERR_NO_SUCH_USER,
+					  "specified extended component other than SID");
+	}
+	if (ldb_dn_get_comp_num(os->dsdb_dn->dn) != 0) {
+		return dsdb_module_werror(os->ac->module,
+					  LDB_ERR_NO_SUCH_OBJECT,
+					  WERR_NO_SUCH_USER,
+					  "specified more the SID");
+	}
+
+	target_domain = target_sid;
+	sid_split_rid(&target_domain, NULL);
+
+	match = dom_sid_equal(&global_sid_Builtin, &target_domain);
+	if (match) {
+		/*
+		 * Non existing BUILTIN sid
+		 */
+		return dsdb_module_werror(os->ac->module,
+				LDB_ERR_NO_SUCH_OBJECT,
+				WERR_NO_SUCH_MEMBER,
+				"specified sid doesn't exist in BUILTIN");
+	}
+
+	domain_sid = samdb_domain_sid(os->ac->ldb);
+	if (domain_sid == NULL) {
+		return ldb_module_operr(os->ac->module);
+	}
+	match = dom_sid_equal(domain_sid, &target_domain);
+	if (match) {
+		/*
+		 * Non existing SID in our domain.
+		 */
+		return dsdb_module_werror(os->ac->module,
+				LDB_ERR_UNWILLING_TO_PERFORM,
+				WERR_DS_INVALID_GROUP_TYPE,
+				"specified sid doesn't exist in domain");
+	}
+
+	if (os->ac->routing_table == NULL) {
+		status = dsdb_trust_routing_table_load(os->ac->ldb, os->ac,
+						       &os->ac->routing_table);
+		if (!NT_STATUS_IS_OK(status)) {
+			return ldb_module_operr(os->ac->module);
+		}
+	}
+
+	tdo = dsdb_trust_domain_by_sid(os->ac->routing_table,
+				       &target_domain, NULL);
+	if (tdo != NULL) {
+		trust_attributes = tdo->trust_attributes;
+	}
+
+	if (trust_attributes & LSA_TRUST_ATTRIBUTE_WITHIN_FOREST) {
+		return dsdb_module_werror(os->ac->module,
+				LDB_ERR_UNWILLING_TO_PERFORM,
+				WERR_DS_INVALID_GROUP_TYPE,
+				"specified sid doesn't exist in forest");
+	}
+
+	fmsg = ldb_msg_new(os);
+	if (fmsg == NULL) {
+		return ldb_module_oom(os->ac->module);
+	}
+
+	fsid = dom_sid_string(fmsg, &target_sid);
+	if (fsid == NULL) {
+		return ldb_module_oom(os->ac->module);
+	}
+
+	domain_dn = ldb_get_default_basedn(os->ac->ldb);
+	if (domain_dn == NULL) {
+		return ldb_module_operr(os->ac->module);
+	}
+
+	fmsg->dn = ldb_dn_copy(fmsg, domain_dn);
+	if (fmsg->dn == NULL) {
+		return ldb_module_oom(os->ac->module);
+	}
+
+	ok = ldb_dn_add_child_fmt(fmsg->dn,
+				  "CN=%s,CN=ForeignSecurityPrincipals",
+				  fsid);
+	if (!ok) {
+		return ldb_module_oom(os->ac->module);
+	}
+
+	ret = ldb_msg_add_string(fmsg, "objectClass", "foreignSecurityPrincipal");
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	ret = dsdb_module_add(os->ac->module, fmsg,
+			      DSDB_FLAG_AS_SYSTEM |
+			      DSDB_FLAG_NEXT_MODULE,
+			      os->ac->req);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	ret = dsdb_module_search_dn(os->ac->module, fmsg, &res,
+				    fmsg->dn, no_attrs,
+				    DSDB_FLAG_AS_SYSTEM |
+				    DSDB_FLAG_NEXT_MODULE |
+				    DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT,
+				    os->ac->req);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	/*
+	 * dsdb_module_search_dn() garantees exactly one result message
+	 * on success.
+	 */
+	ret = extended_replace_dn(os, res->msgs[0]->dn);
+	TALLOC_FREE(fmsg);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	return LDB_SUCCESS;
+}
+
 /* An extra layer of indirection because LDB does not allow the original request to be altered */
 
 static int extended_final_callback(struct ldb_request *req, struct ldb_reply *ares)
@@ -171,20 +341,12 @@ static int extended_replace_callback(struct ldb_request *req, struct ldb_reply *
 		if (os->require_object && os->fpo_enabled) {
 			int ret;
 
-			/*
-			 * It's an error if the target doesn't exist,
-			 * unless it's a delete.
-			 *
-			 * Note FPO-enabled attributes generate
-			 * a different error.
-			 */
-			ret = dsdb_module_werror(os->ac->module,
-						 LDB_ERR_NO_SUCH_OBJECT,
-						 WERR_NO_SUCH_USER,
-						"specified dn doesn't exist");
-
-			return ldb_module_done(os->ac->req, NULL, NULL,
-					       ret);
+			ret = extended_dn_handle_fpo_attr(os);
+			if (ret != LDB_SUCCESS) {
+				return ldb_module_done(os->ac->req, NULL, NULL,
+						       ret);
+			}
+			/* os->got_entry is true at this point... */
 		}
 
 		if (!os->got_entry && os->require_object) {
@@ -250,20 +412,12 @@ static int extended_replace_callback(struct ldb_request *req, struct ldb_reply *
 		if (!os->got_entry && os->require_object && os->fpo_enabled) {
 			int ret;
 
-			/*
-			 * It's an error if the target doesn't exist,
-			 * unless it's a delete.
-			 *
-			 * Note FPO-enabled attributes generate
-			 * a different error.
-			 */
-			ret = dsdb_module_werror(os->ac->module,
-						 LDB_ERR_NO_SUCH_OBJECT,
-						 WERR_NO_SUCH_USER,
-						"specified dn doesn't exist");
-
-			return ldb_module_done(os->ac->req, NULL, NULL,
-					       ret);
+			ret = extended_dn_handle_fpo_attr(os);
+			if (ret != LDB_SUCCESS) {
+				return ldb_module_done(os->ac->req, NULL, NULL,
+						       ret);
+			}
+			/* os->got_entry is true at this point... */
 		}
 
 		if (!os->got_entry && os->require_object) {
@@ -389,18 +543,38 @@ static int extended_store_replace(struct extended_dn_context *ac,
 	os->require_object = true;
 
 	/*
-	 * Handle FPO-enabled attributes cause a different
-	 * error.
+	 * Handle FPO-enabled attributes, see
+	 * [MS-ADTS] 3.1.1.5.2.3 Special Classes and Attributes:
+	 *
+	 *   FPO-enabled attributes: member, msDS-MembersForAzRole,
+	 *     msDS-NeverRevealGroup, msDS-NonMembers, msDS-RevealOnDemandGroup,
+	 *     msDS-ServiceAccount.
+	 *
+	 * Note there's no msDS-ServiceAccount in any schema (only
+	 * msDS-HostServiceAccount and that's not an FPO-enabled attribute
+	 * at least not in W2008R2)
+	 *
+	 * msDS-NonMembers always generates NOT_SUPPORTED against W2008R2.
+	 *
+	 * See also [MS-SAMR] 3.1.1.8.9 member.
 	 */
 	switch (schema_attr->attributeID_id) {
 	case DRSUAPI_ATTID_member:
-	case DRSUAPI_ATTID_msDS_NonMembers:
 	case DRSUAPI_ATTID_msDS_MembersForAzRole:
 	case DRSUAPI_ATTID_msDS_NeverRevealGroup:
 	case DRSUAPI_ATTID_msDS_RevealOnDemandGroup:
-	case DRSUAPI_ATTID_msDS_HostServiceAccount:
 		os->fpo_enabled = true;
 		break;
+
+	case DRSUAPI_ATTID_msDS_HostServiceAccount:
+		/* This is NOT a FPO-enabled attribute */
+		break;
+
+	case DRSUAPI_ATTID_msDS_NonMembers:
+		return dsdb_module_werror(os->ac->module,
+					  LDB_ERR_UNWILLING_TO_PERFORM,
+					  WERR_NOT_SUPPORTED,
+					  "msDS-NonMembers is not supported");
 	}
 
 	if (schema_attr->linkID == 0) {
