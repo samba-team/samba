@@ -1,3 +1,7 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# WARNING! Do not edit! https://waf.io/book/index.html#_obtaining_the_waf_file
+
 #!/usr/bin/env python
 # encoding: utf-8
 # Thomas Nagy, 2015 (ita)
@@ -66,11 +70,8 @@ def get_strace_args(self):
 @task_method
 def exec_command(self, cmd, **kw):
 	bld = self.generator.bld
-	try:
-		if not kw.get('cwd', None):
-			kw['cwd'] = bld.cwd
-	except AttributeError:
-		bld.cwd = kw['cwd'] = bld.variant_dir
+	if not 'cwd' in kw:
+		kw['cwd'] = self.get_cwd()
 
 	args = self.get_strace_args()
 	fname = self.get_strace_file()
@@ -103,6 +104,9 @@ def parse_strace_deps(self, path, cwd):
 		except OSError:
 			pass
 
+	if not isinstance(cwd, str):
+		cwd = cwd.abspath()
+
 	nodes = []
 	bld = self.generator.bld
 	try:
@@ -114,7 +118,7 @@ def parse_strace_deps(self, path, cwd):
 	pid_to_cwd = {}
 
 	global BANNED
-	done = set([])
+	done = set()
 	for m in re.finditer(re_lines, cnt):
 		# scraping the output of strace
 		pid = m.group('pid')
@@ -162,7 +166,7 @@ def parse_strace_deps(self, path, cwd):
 
 	# record the dependencies then force the task signature recalculation for next time
 	if Logs.verbose:
-		Logs.debug('deps: real scanner for %s returned %s' % (str(self), str(nodes)))
+		Logs.debug('deps: real scanner for %r returned %r', self, nodes)
 	bld = self.generator.bld
 	bld.node_deps[self.uid()] = nodes
 	bld.raw_deps[self.uid()] = []
@@ -171,3 +175,4 @@ def parse_strace_deps(self, path, cwd):
 	except AttributeError:
 		pass
 	self.signature()
+

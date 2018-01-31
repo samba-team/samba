@@ -1,9 +1,10 @@
 # a waf tool to add autoconf-like macros to the configure section
 # and for SAMBA_ macros for building libraries, binaries etc
 
-import Build, os, sys, Options, Task, Utils, cc, TaskGen, fnmatch, re, shutil, Logs, Constants
-from Configure import conf
-from Logs import debug
+import os, sys, re, shutil, fnmatch
+from waflib import Build, Options, Task, Utils, TaskGen, Logs, Context, Errors
+from waflib.Configure import conf
+from waflib.Logs import debug
 from samba_utils import SUBST_VARS_RECURSIVE
 TaskGen.task_gen.apply_verif = Utils.nada
 
@@ -43,7 +44,7 @@ LIB_PATH="shared"
 
 os.environ['PYTHONUNBUFFERED'] = '1'
 
-if Constants.HEXVERSION not in (0x105019, 0x1090a00):
+if Context.HEXVERSION not in (0x2000400,):
     Logs.error('''
 Please use the version of waf that comes with Samba, not
 a system installed version. See http://wiki.samba.org/index.php/Waf
@@ -53,26 +54,25 @@ Alternatively, please run ./configure and make as usual. That will
 call the right version of waf.''')
     sys.exit(1)
 
-
 @conf
 def SAMBA_BUILD_ENV(conf):
     '''create the samba build environment'''
-    conf.env.BUILD_DIRECTORY = conf.blddir
-    mkdir_p(os.path.join(conf.blddir, LIB_PATH))
-    mkdir_p(os.path.join(conf.blddir, LIB_PATH, "private"))
-    mkdir_p(os.path.join(conf.blddir, "modules"))
-    mkdir_p(os.path.join(conf.blddir, 'python/samba/dcerpc'))
+    conf.env.BUILD_DIRECTORY = getattr(Context.g_module, Context.OUT)
+    mkdir_p(os.path.join(conf.env.BUILD_DIRECTORY, LIB_PATH))
+    mkdir_p(os.path.join(conf.env.BUILD_DIRECTORY, LIB_PATH, "private"))
+    mkdir_p(os.path.join(conf.env.BUILD_DIRECTORY, "modules"))
+    mkdir_p(os.path.join(conf.env.BUILD_DIRECTORY, 'python/samba/dcerpc'))
     # this allows all of the bin/shared and bin/python targets
     # to be expressed in terms of build directory paths
-    mkdir_p(os.path.join(conf.blddir, 'default'))
+    mkdir_p(os.path.join(conf.env.BUILD_DIRECTORY, 'default'))
     for (source, target) in [('shared', 'shared'), ('modules', 'modules'), ('python', 'python_modules')]:
-        link_target = os.path.join(conf.blddir, 'default/' + target)
+        link_target = os.path.join(conf.env.BUILD_DIRECTORY, 'default/' + target)
         if not os.path.lexists(link_target):
             os.symlink('../' + source, link_target)
 
     # get perl to put the blib files in the build directory
-    blib_bld = os.path.join(conf.blddir, 'default/pidl/blib')
-    blib_src = os.path.join(conf.srcdir, 'pidl/blib')
+    blib_bld = os.path.join(conf.env.BUILD_DIRECTORY, 'default/pidl/blib')
+    blib_src = os.path.join(conf.srcnode.abspath(), 'pidl/blib')
     mkdir_p(blib_bld + '/man1')
     mkdir_p(blib_bld + '/man3')
     if os.path.islink(blib_src):
@@ -146,7 +146,7 @@ def SAMBA_LIBRARY(bld, libname, source,
         public_headers = None
 
     if private_library and public_headers:
-        raise Utils.WafError("private library '%s' must not have public header files" %
+        raise Errors.WafError("private library '%s' must not have public header files" %
                              libname)
 
     if LIB_MUST_BE_PRIVATE(bld, libname):
@@ -223,13 +223,13 @@ def SAMBA_LIBRARY(bld, libname, source,
     # we don't want any public libraries without version numbers
     if (not private_library and target_type != 'PYTHON' and not realname):
         if vnum is None and soname is None:
-            raise Utils.WafError("public library '%s' must have a vnum" %
+            raise Errors.WafError("public library '%s' must have a vnum" %
                     libname)
         if pc_files is None:
-            raise Utils.WafError("public library '%s' must have pkg-config file" %
+            raise Errors.WafError("public library '%s' must have pkg-config file" %
                        libname)
         if public_headers is None and not bld.env['IS_EXTRA_PYTHON']:
-            raise Utils.WafError("public library '%s' must have header files" %
+            raise Errors.WafError("public library '%s' must have header files" %
                        libname)
 
     if bundled_name is not None:
@@ -271,7 +271,7 @@ def SAMBA_LIBRARY(bld, libname, source,
     vscript = None
     if bld.env.HAVE_LD_VERSION_SCRIPT:
         if private_library:
-            version = "%s_%s" % (Utils.g_module.APPNAME, Utils.g_module.VERSION)
+            version = "%s_%s" % (Context.g_module.APPNAME, Context.g_module.VERSION)
         elif vnum:
             version = "%s_%s" % (libname, vnum)
         else:
@@ -284,9 +284,9 @@ def SAMBA_LIBRARY(bld, libname, source,
             fullpath = bld.path.find_or_declare(fullname)
             vscriptpath = bld.path.find_or_declare(vscript)
             if not fullpath:
-                raise Utils.WafError("unable to find fullpath for %s" % fullname)
+                raise Errors.WafError("unable to find fullpath for %s" % fullname)
             if not vscriptpath:
-                raise Utils.WafError("unable to find vscript path for %s" % vscript)
+                raise Errors.WafError("unable to find vscript path for %s" % vscript)
             bld.add_manual_dependency(fullpath, vscriptpath)
             if bld.is_install:
                 # also make the .inst file depend on the vscript
@@ -758,7 +758,7 @@ def SAMBA_SCRIPT(bld, name, pattern, installdir, installname=None):
         target = os.path.join(installdir, iname)
         tgtdir = os.path.dirname(os.path.join(bld.srcnode.abspath(bld.env), '..', target))
         mkdir_p(tgtdir)
-        link_src = os.path.normpath(os.path.join(bld.curdir, s))
+        link_src = os.path.normpath(os.path.join(bld.path.abspath(), s))
         link_dst = os.path.join(tgtdir, os.path.basename(iname))
         if os.path.islink(link_dst) and os.readlink(link_dst) == link_src:
             continue
@@ -900,7 +900,7 @@ def INSTALL_DIR(bld, path, chmod=0o755, env=None):
     if not path:
         return []
 
-    destpath = bld.get_install_path(path, env)
+    destpath = bld.EXPAND_VARIABLES(path)
 
     if bld.is_install > 0:
         if not os.path.isdir(destpath):
@@ -909,7 +909,7 @@ def INSTALL_DIR(bld, path, chmod=0o755, env=None):
                 os.chmod(destpath, chmod)
             except OSError as e:
                 if not os.path.isdir(destpath):
-                    raise Utils.WafError("Cannot create the folder '%s' (error: %s)" % (path, e))
+                    raise Errors.WafError("Cannot create the folder '%s' (error: %s)" % (path, e))
 Build.BuildContext.INSTALL_DIR = INSTALL_DIR
 
 def INSTALL_DIRS(bld, destdir, dirs, chmod=0o755, env=None):

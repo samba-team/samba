@@ -4,7 +4,7 @@
 
 #!/usr/bin/env python
 # encoding: utf-8
-# Thomas Nagy, 2016 (ita)
+# Thomas Nagy, 2016-2018 (ita)
 
 """
 Various configuration tests.
@@ -203,7 +203,7 @@ class grep_for_endianness(Task.Task):
 	"""
 	color = 'PINK'
 	def run(self):
-		txt = self.inputs[0].read(flags='rb').decode('iso8859-1')
+		txt = self.inputs[0].read(flags='rb').decode('latin-1')
 		if txt.find('LiTTleEnDian') > -1:
 			self.generator.tmp.append('little')
 		elif txt.find('BIGenDianSyS') > -1:
@@ -230,3 +230,4 @@ def check_endianness(self):
 	self.check(fragment=ENDIAN_FRAGMENT, features='c grep_for_endianness',
 		msg='Checking for endianness', define='ENDIANNESS', tmp=tmp, okmsg=check_msg)
 	return tmp[0]
+

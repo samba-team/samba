@@ -1,12 +1,12 @@
 # functions to support third party libraries
 
 import os
-import Utils, Build
-from Configure import conf
+from waflib import Utils, Build, Context
+from waflib.Configure import conf
 
 @conf
 def CHECK_FOR_THIRD_PARTY(conf):
-    return os.path.exists(os.path.join(Utils.g_module.srcdir, 'third_party'))
+    return os.path.exists(os.path.join(Context.g_module.srcdir, 'third_party'))
 
 Build.BuildContext.CHECK_FOR_THIRD_PARTY = CHECK_FOR_THIRD_PARTY
 

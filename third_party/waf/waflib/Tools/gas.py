@@ -4,7 +4,7 @@
 
 #!/usr/bin/env python
 # encoding: utf-8
-# Thomas Nagy, 2008-2016 (ita)
+# Thomas Nagy, 2008-2018 (ita)
 
 "Detect as/gas/gcc for compiling assembly files"
 

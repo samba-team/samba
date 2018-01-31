@@ -1,5 +1,9 @@
 #! /usr/bin/env python
 # encoding: utf-8
+# WARNING! Do not edit! https://waf.io/book/index.html#_obtaining_the_waf_file
+
+#! /usr/bin/env python
+# encoding: utf-8
 #
 # written by Sylvain Rouquette, 2011
 
@@ -9,7 +13,7 @@ $ easy_install pep8
 	or
 $ pip install pep8
 
-To add the boost tool to the waf file:
+To add the pep8 tool to the waf file:
 $ ./waf-light --tools=compat15,pep8
 	or, if you have waf >= 1.6.2
 $ ./waf update --files=pep8

@@ -5,7 +5,7 @@
 #! /usr/bin/env python
 # encoding: utf-8
 # DC 2008
-# Thomas Nagy 2016 (ita)
+# Thomas Nagy 2016-2018 (ita)
 
 import re
 from waflib import Utils
@@ -54,8 +54,10 @@ def get_gfortran_version(conf, fc):
 	version_re = re.compile(r"GNU\s*Fortran", re.I).search
 	cmd = fc + ['--version']
 	out, err = fc_config.getoutput(conf, cmd, stdin=False)
-	if out: match = version_re(out)
-	else: match = version_re(err)
+	if out:
+		match = version_re(out)
+	else:
+		match = version_re(err)
 	if not match:
 		conf.fatal('Could not determine the compiler type')
 
@@ -92,3 +94,4 @@ def configure(conf):
 	conf.fc_add_flags()
 	conf.gfortran_flags()
 	conf.gfortran_modifier_platform()
+	conf.check_gfortran_o_space()

@@ -42,7 +42,8 @@ class rc_parser(c_preproc.c_parser):
 		"""
 		code = node.read()
 		if c_preproc.use_trigraphs:
-			for (a, b) in c_preproc.trig_def: code = code.split(a).join(b)
+			for (a, b) in c_preproc.trig_def:
+				code = code.split(a).join(b)
 		code = c_preproc.re_nl.sub('', code)
 		code = c_preproc.re_cpp.sub(c_preproc.repl, code)
 		ret = []
@@ -78,3 +79,4 @@ def configure(conf):
 			conf.find_program('windres', var='WINRC', path_list=v.PATH)
 			v.WINRC_TGT_F = '-o'
 			v.WINRC_SRC_F = '-i'
+

@@ -4,7 +4,9 @@
 
 #!/usr/bin/env python
 # encoding: utf-8
-# Thomas Nagy, 2010-2016 (ita)
+# Thomas Nagy, 2010-2018 (ita)
+
+from __future__ import with_statement
 
 import os
 
@@ -12,7 +14,6 @@ all_modifs = {}
 
 def fixdir(dir):
 	"""Call all substitution functions on Waf folders"""
-	global all_modifs
 	for k in all_modifs:
 		for v in all_modifs[k]:
 			modif(os.path.join(dir, 'waflib'), k, v)
@@ -30,24 +31,17 @@ def modif(dir, name, fun):
 		return
 
 	filename = os.path.join(dir, name)
-	f = open(filename, 'r')
-	try:
+	with open(filename, 'r') as f:
 		txt = f.read()
-	finally:
-		f.close()
 
 	txt = fun(txt)
 
-	f = open(filename, 'w')
-	try:
+	with open(filename, 'w') as f:
 		f.write(txt)
-	finally:
-		f.close()
 
 def subst(*k):
 	"""register a substitution function"""
 	def do_subst(fun):
-		global all_modifs
 		for x in k:
 			try:
 				all_modifs[x].append(fun)
@@ -59,9 +53,9 @@ def subst(*k):
 @subst('*')
 def r1(code):
 	"utf-8 fixes for python < 2.6"
-	code = code.replace(',e:', ',e:')
-	code = code.replace("", '')
-	return code.replace('', '')
+	code = code.replace('as e:', ',e:')
+	code = code.replace(".decode(sys.stdout.encoding or'latin-1',errors='replace')", '')
+	return code.replace('.encode()', '')
 
 @subst('Runner.py')
 def r4(code):
@@ -71,3 +65,4 @@ def r4(code):
 @subst('Context.py')
 def r5(code):
 	return code.replace("('Execution failure: %s'%str(e),ex=e)", "('Execution failure: %s'%str(e),ex=e),None,sys.exc_info()[2]")
+

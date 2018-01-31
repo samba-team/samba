@@ -4,7 +4,7 @@
 
 #!/usr/bin/env python
 # encoding: utf-8
-# Thomas Nagy, 2005-2016 (ita)
+# Thomas Nagy, 2005-2018 (ita)
 
 """
 logging, colors, terminal width and pretty-print
@@ -143,7 +143,6 @@ class log_filter(logging.Filter):
 
 		:param rec: log entry
 		"""
-		global verbose
 		rec.zone = rec.module
 		if rec.levelno >= logging.INFO:
 			return True
@@ -257,18 +256,15 @@ def debug(*k, **kw):
 	"""
 	Wraps logging.debug and discards messages if the verbosity level :py:attr:`waflib.Logs.verbose` ≤ 0
 	"""
-	global verbose
 	if verbose:
 		k = list(k)
 		k[0] = k[0].replace('\n', ' ')
-		global log
 		log.debug(*k, **kw)
 
 def error(*k, **kw):
 	"""
 	Wrap logging.errors, adds the stack trace when the verbosity level :py:attr:`waflib.Logs.verbose` ≥ 2
 	"""
-	global log, verbose
 	log.error(*k, **kw)
 	if verbose > 2:
 		st = traceback.extract_stack()
@@ -279,20 +275,19 @@ def error(*k, **kw):
 				buf.append('  File %r, line %d, in %s' % (filename, lineno, name))
 				if line:
 					buf.append('	%s' % line.strip())
-			if buf: log.error('\n'.join(buf))
+			if buf:
+				log.error('\n'.join(buf))
 
 def warn(*k, **kw):
 	"""
 	Wraps logging.warn
 	"""
-	global log
 	log.warn(*k, **kw)
 
 def info(*k, **kw):
 	"""
 	Wraps logging.info
 	"""
-	global log
 	log.info(*k, **kw)
 
 def init_log():
@@ -331,7 +326,11 @@ def make_logger(path, name):
 	:type name: string
 	"""
 	logger = logging.getLogger(name)
-	hdlr = logging.FileHandler(path, 'w')
+	if sys.hexversion > 0x3000000:
+		encoding = sys.stdout.encoding
+	else:
+		encoding = None
+	hdlr = logging.FileHandler(path, 'w', encoding=encoding)
 	formatter = logging.Formatter('%(message)s')
 	hdlr.setFormatter(formatter)
 	logger.addHandler(hdlr)
@@ -380,5 +379,5 @@ def pprint(col, msg, label='', sep='\n'):
 	:param sep: a string to append at the end (line separator)
 	:type sep: string
 	"""
-	global info
 	info('%s%s%s %s', colors(col), msg, colors.NORMAL, label, extra={'terminator':sep})
+

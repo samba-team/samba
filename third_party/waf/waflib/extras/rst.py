@@ -1,3 +1,7 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# WARNING! Do not edit! https://waf.io/book/index.html#_obtaining_the_waf_file
+
 #!/usr/bin/env python
 # encoding: utf-8
 # Jérôme Carretero, 2013 (zougloub)
@@ -36,8 +40,11 @@ from waflib.TaskGen import feature, before_method
 
 rst_progs = "rst2html rst2xetex rst2latex rst2xml rst2pdf rst2s5 rst2man rst2odt rst2rtf".split()
 
-def parse_rst_node(node, nodes, names, seen):
+def parse_rst_node(task, node, nodes, names, seen, dirs=None):
 	# TODO add extensibility, to handle custom rst include tags...
+	if dirs is None:
+		dirs = (node.parent,node.get_bld().parent)
+
 	if node in seen:
 		return
 	seen.append(node)
@@ -46,14 +53,19 @@ def parse_rst_node(node, nodes, names, seen):
 	for match in re_rst.finditer(code):
 		ipath = match.group('file')
 		itype = match.group('type')
-		Logs.debug("rst: visiting %s: %s" % (itype, ipath))
-		found = node.parent.find_resource(ipath)
-		if found:
-			nodes.append(found)
-			if itype == 'include':
-				parse_rst_node(found, nodes, names, seen)
-		else:
-			names.append(ipath)
+		Logs.debug('rst: visiting %s: %s', itype, ipath)
+		found = False
+		for d in dirs:
+			Logs.debug('rst: looking for %s in %s', ipath, d.abspath())
+			found = d.find_node(ipath)
+			if found:
+				Logs.debug('rst: found %s as %s', ipath, found.abspath())
+				nodes.append((itype, found))
+				if itype == 'include':
+					parse_rst_node(task, found, nodes, names, seen)
+				break
+		if not found:
+			names.append((itype, ipath))
 
 class docutils(Task.Task):
 	"""
@@ -74,13 +86,13 @@ class docutils(Task.Task):
 		if not node:
 			return (nodes, names)
 
-		parse_rst_node(node, nodes, names, seen)
+		parse_rst_node(self, node, nodes, names, seen)
 
-		Logs.debug("rst: %s: found the following file deps: %s" % (repr(self), nodes))
+		Logs.debug('rst: %r: found the following file deps: %r', self, nodes)
 		if names:
-			Logs.warn("rst: %s: could not find the following file deps: %s" % (repr(self), names))
+			Logs.warn('rst: %r: could not find the following file deps: %r', self, names)
 
-		return (nodes, names)
+		return ([v for (t,v) in nodes], [v for (t,v) in names])
 
 	def check_status(self, msg, retcode):
 		"""
@@ -92,7 +104,7 @@ class docutils(Task.Task):
 		:type retcode: boolean
 		"""
 		if retcode != 0:
-			raise Errors.WafError("%r command exit status %r" % (msg, retcode))
+			raise Errors.WafError('%r command exit status %r' % (msg, retcode))
 
 	def run(self):
 		"""
@@ -116,7 +128,7 @@ class rst2html(docutils):
 			if stylesheet is not None:
 				ssnode = self.generator.to_nodes(stylesheet)[0]
 				nodes.append(ssnode)
-				Logs.debug("rst: adding dep to %s %s" % (attribute, stylesheet))
+				Logs.debug('rst: adding dep to %s %s', attribute, stylesheet)
 
 		return nodes, names
 
@@ -235,7 +247,7 @@ def apply_rst(self):
 
 	inst_to = getattr(self, 'install_path', None)
 	if inst_to:
-		self.install_task = self.bld.install_files(inst_to, task.outputs[:], env=self.env)
+		self.install_task = self.add_install_files(install_to=inst_to, install_from=task.outputs[:])
 
 	self.source = []
 
@@ -249,3 +261,4 @@ def configure(self):
 	"""
 	for p in rst_progs:
 		self.find_program(p, mandatory=False)
+

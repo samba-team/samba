@@ -4,7 +4,7 @@
 
 #!/usr/bin/env python
 # encoding: utf-8
-# Thomas Nagy 2009-2016 (ita)
+# Thomas Nagy 2009-2018 (ita)
 
 """
 Detect the Clang++ C++ compiler
@@ -31,3 +31,4 @@ def configure(conf):
 	conf.cxx_load_tools()
 	conf.cxx_add_flags()
 	conf.link_add_flags()
+

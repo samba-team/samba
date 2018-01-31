@@ -1,8 +1,8 @@
 # functions for handling cross-compilation
 
 import os, sys, re, shlex
-import Utils, Logs, Options
-from Configure import conf
+from waflib import Utils, Logs, Options, Errors
+from waflib.Configure import conf
 
 real_Popen = None
 
@@ -81,12 +81,12 @@ def cross_answer(ca_file, msg):
                     f.close()
                     return (int(m.group(1)), m.group(2))
                 else:
-                    raise Utils.WafError("Bad answer format '%s' in %s" % (line, ca_file))
+                    raise Errors.WafError("Bad answer format '%s' in %s" % (line, ca_file))
     f.close()
     return ANSWER_UNKNOWN
 
 
-class cross_Popen(Utils.pproc.Popen):
+class cross_Popen(Utils.subprocess.Popen):
     '''cross-compilation wrapper for Popen'''
     def __init__(*k, **kw):
         (obj, args) = k
@@ -154,11 +154,11 @@ def SAMBA_CROSS_ARGS(conf, msg=None):
 
     if conf.env.CROSS_ANSWERS:
         if msg is None:
-            raise Utils.WafError("Cannot have NULL msg in cross-answers")
+            raise Errors.WafError("Cannot have NULL msg in cross-answers")
         ret.extend(['--cross-answers', os.path.join(Options.launch_dir, conf.env.CROSS_ANSWERS), msg])
 
     if ret == []:
-        raise Utils.WafError("Cannot cross-compile without either --cross-execute or --cross-answers")
+        raise Errors.WafError("Cannot cross-compile without either --cross-execute or --cross-answers")
 
     return ret
 
@@ -167,5 +167,5 @@ def SAMBA_CROSS_CHECK_COMPLETE(conf):
     '''check if we have some unanswered questions'''
     global cross_answers_incomplete
     if conf.env.CROSS_COMPILE and cross_answers_incomplete:
-        raise Utils.WafError("Cross answers file %s is incomplete" % conf.env.CROSS_ANSWERS)
+        raise Errors.WafError("Cross answers file %s is incomplete" % conf.env.CROSS_ANSWERS)
     return True

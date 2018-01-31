@@ -3,10 +3,11 @@
 
 import os, sys, re, fnmatch, shlex, inspect
 from optparse import SUPPRESS_HELP
-from waflib import Build, Options, Utils, Task, Logs, Configure, Errors
-from TaskGen import feature, before, after
-from Configure import ConfigurationContext
-from Logs import debug
+from waflib import Build, Options, Utils, Task, Logs, Configure, Errors, Context
+from waflib.TaskGen import feature, before, after
+from waflib.Configure import ConfigurationContext
+from waflib.Logs import debug
+from waflib import ConfigSet
 
 # TODO: make this a --option
 LIB_PATH="shared"
@@ -45,10 +46,10 @@ def SET_TARGET_TYPE(ctx, target, value):
     '''set the target type of a target'''
     cache = LOCAL_CACHE(ctx, 'TARGET_TYPE')
     if target in cache and cache[target] != 'EMPTY':
-        Logs.error("ERROR: Target '%s' in directory %s re-defined as %s - was %s" % (target, ctx.curdir, value, cache[target]))
+        Logs.error("ERROR: Target '%s' in directory %s re-defined as %s - was %s" % (target, ctx.path.abspath(), value, cache[target]))
         sys.exit(1)
     LOCAL_CACHE_SET(ctx, 'TARGET_TYPE', target, value)
-    debug("task_gen: Target '%s' created of type '%s' in %s" % (target, value, ctx.curdir))
+    debug("task_gen: Target '%s' created of type '%s' in %s" % (target, value, ctx.path.abspath()))
     return True
 
 
@@ -125,7 +126,7 @@ def LOCAL_CACHE_SET(ctx, cachename, key, value):
 def ASSERT(ctx, expression, msg):
     '''a build assert call'''
     if not expression:
-        raise Utils.WafError("ERROR: %s\n" % msg)
+        raise Errors.WafError("ERROR: %s\n" % msg)
 Build.BuildContext.ASSERT = ASSERT
 
 
@@ -146,9 +147,9 @@ def dict_concat(d1, d2):
 
 def ADD_COMMAND(opt, name, function):
     '''add a new top level command to waf'''
-    Utils.g_module.__dict__[name] = function
+    Context.g_module.__dict__[name] = function
     opt.name = function
-Options.Handler.ADD_COMMAND = ADD_COMMAND
+Options.OptionsContext.ADD_COMMAND = ADD_COMMAND
 
 
 @feature('c', 'cc', 'cshlib', 'cprogram')
@@ -223,7 +224,7 @@ def subst_vars_error(string, env):
         if re.match('\$\{\w+\}', v):
             vname = v[2:-1]
             if not vname in env:
-                raise KeyError("Failed to find variable %s in %s" % (vname, string))
+                raise KeyError("Failed to find variable %s in %s in env %s <%s>" % (vname, string, env.__class__, str(env)))
             v = env[vname]
             if isinstance(v, list):
                 v = ' '.join(v)
@@ -338,8 +339,7 @@ def EXPAND_VARIABLES(ctx, varstr, vars=None):
     if not isinstance(varstr, str):
         return varstr
 
-    import Environment
-    env = Environment.Environment()
+    env = ConfigSet.ConfigSet()
     ret = varstr
     # substitute on user supplied dict if avaiilable
     if vars is not None:
@@ -378,7 +378,7 @@ def RUN_COMMAND(cmd,
 def RUN_PYTHON_TESTS(testfiles, pythonpath=None, extra_env=None):
     env = LOAD_ENVIRONMENT()
     if pythonpath is None:
-        pythonpath = os.path.join(Utils.g_module.blddir, 'python')
+        pythonpath = os.path.join(Context.g_module.blddir, 'python')
     result = 0
     for interp in env.python_interpreters:
         if not isinstance(interp, str):
@@ -410,8 +410,7 @@ except:
         # Try to use MD5 function. In FIPS mode this will cause an exception
         foo = md5.md5('abcd')
     except:
-        import Constants
-        Constants.SIG_NIL = hash('abcd')
+        Context.SIG_NIL = hash('abcd')
         class replace_md5(object):
             def __init__(self):
                 self.val = None
@@ -437,10 +436,10 @@ except:
 def LOAD_ENVIRONMENT():
     '''load the configuration environment, allowing access to env vars
        from new commands'''
-    import Environment
-    env = Environment.Environment()
+    env = ConfigSet.ConfigSet()
     try:
-        env.load('bin/c4che/default_cache.py')
+        p = os.path.join(Context.g_module.out, 'c4che/default_cache.py')
+        env.load(p)
     except (OSError, IOError):
         pass
     return env
@@ -448,8 +447,9 @@ def LOAD_ENVIRONMENT():
 
 def IS_NEWER(bld, file1, file2):
     '''return True if file1 is newer than file2'''
-    t1 = os.stat(os.path.join(bld.curdir, file1)).st_mtime
-    t2 = os.stat(os.path.join(bld.curdir, file2)).st_mtime
+    curdir = bld.path.abspath()
+    t1 = os.stat(os.path.join(curdir, file1)).st_mtime
+    t2 = os.stat(os.path.join(curdir, file2)).st_mtime
     return t1 > t2
 Build.BuildContext.IS_NEWER = IS_NEWER
 
@@ -459,31 +459,27 @@ def RECURSE(ctx, directory):
     '''recurse into a directory, relative to the curdir or top level'''
     try:
         visited_dirs = ctx.visited_dirs
-    except:
+    except AttributeError:
         visited_dirs = ctx.visited_dirs = set()
-    d = os.path.join(ctx.curdir, directory)
+    d = os.path.join(ctx.path.abspath(), directory)
     if os.path.exists(d):
         abspath = os.path.abspath(d)
     else:
-        abspath = os.path.abspath(os.path.join(Utils.g_module.srcdir, directory))
+        abspath = os.path.abspath(os.path.join(Context.g_module.srcdir, directory))
     ctxclass = ctx.__class__.__name__
     key = ctxclass + ':' + abspath
     if key in visited_dirs:
         # already done it
         return
     visited_dirs.add(key)
-    relpath = os_path_relpath(abspath, ctx.curdir)
+    relpath = os_path_relpath(abspath, ctx.path.abspath())
+    if ctxclass in ['tmp', 'OptionsContext', 'ConfigurationContext', 'BuildContext']:
+        return ctx.recurse(relpath)
     if 'waflib.extras.compat15' in sys.modules:
         return ctx.recurse(relpath)
-    if ctxclass == 'Handler':
-        return ctx.sub_options(relpath)
-    if ctxclass == 'ConfigurationContext':
-        return ctx.sub_config(relpath)
-    if ctxclass == 'BuildContext':
-        return ctx.add_subdirs(relpath)
-    Logs.error('Unknown RECURSE context class', ctxclass)
+    Logs.error('Unknown RECURSE context class: {}'.format(ctxclass))
     raise
-Options.Handler.RECURSE = RECURSE
+Options.OptionsContext.RECURSE = RECURSE
 Build.BuildContext.RECURSE = RECURSE
 
 
@@ -542,7 +538,7 @@ def option_group(opt, name):
     gr = opt.add_option_group(name)
     option_groups[name] = gr
     return gr
-Options.Handler.option_group = option_group
+Options.OptionsContext.option_group = option_group
 
 
 def save_file(filename, contents, create_dir=False):
@@ -571,9 +567,9 @@ def load_file(filename):
 
 def reconfigure(ctx):
     '''rerun configure if necessary'''
-    import Configure, samba_wildcard, Scripting
     if not os.path.exists(".lock-wscript"):
-        raise Utils.WafError('configure has not been run')
+        raise Errors.WafError('configure has not been run')
+    import samba_wildcard
     bld = samba_wildcard.fake_build_environment()
     Configure.autoconfig = True
     Scripting.check_configured(bld)
@@ -646,7 +642,7 @@ def get_tgt_list(bld):
         tgt_list.append(t)
     return tgt_list
 
-from Constants import WSCRIPT_FILE
+from waflib.Context import WSCRIPT_FILE
 def PROCESS_SEPARATE_RULE(self, rule):
     ''' cause waf to process additional script based on `rule'.
         You should have file named wscript_<stage>_rule in the current directory
@@ -657,15 +653,21 @@ def PROCESS_SEPARATE_RULE(self, rule):
         stage = 'configure'
     elif isinstance(self, Build.BuildContext):
         stage = 'build'
-    file_path = os.path.join(self.curdir, WSCRIPT_FILE+'_'+stage+'_'+rule)
-    txt = load_file(file_path)
-    if txt:
-        dc = {'ctx': self}
-        if getattr(self.__class__, 'pre_recurse', None):
-            dc = self.pre_recurse(txt, file_path, self.curdir)
-        exec(compile(txt, file_path, 'exec'), dc)
-        if getattr(self.__class__, 'post_recurse', None):
-            dc = self.post_recurse(txt, file_path, self.curdir)
+    file_path = os.path.join(self.path.abspath(), WSCRIPT_FILE+'_'+stage+'_'+rule)
+    node = self.root.find_node(file_path)
+    if node:
+        try:
+            cache = self.recurse_cache
+        except AttributeError:
+            cache = self.recurse_cache = {}
+        if node not in cache:
+            cache[node] = True
+            self.pre_recurse(node)
+            try:
+                function_code = node.read('rU', None)
+                exec(compile(function_code, node.abspath(), 'exec'), self.exec_dict)
+            finally:
+                self.post_recurse(node)
 
 Build.BuildContext.PROCESS_SEPARATE_RULE = PROCESS_SEPARATE_RULE
 ConfigurationContext.PROCESS_SEPARATE_RULE = PROCESS_SEPARATE_RULE
@@ -722,4 +724,4 @@ def samba_add_onoff_option(opt, option, help=(), dest=None, default=True,
                    default=default)
     opt.add_option(without_val, help=SUPPRESS_HELP, action="store_false",
                    dest=dest)
-Options.Handler.samba_add_onoff_option = samba_add_onoff_option
+Options.OptionsContext.samba_add_onoff_option = samba_add_onoff_option

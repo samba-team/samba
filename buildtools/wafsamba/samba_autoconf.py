@@ -1,9 +1,10 @@
 # a waf tool to add autoconf-like macros to the configure section
 
 import os, sys
-import Build, Options, preproc, Logs
-from Configure import conf
-from TaskGen import feature
+from waflib import Build, Options, Logs, Context
+from waflib.Configure import conf
+from waflib.TaskGen import feature
+from waflib.Tools import c_preproc as preproc
 from samba_utils import TO_LIST, GET_TARGET_TYPE, SET_TARGET_TYPE, unique_list, mkdir_p
 
 missing_headers = set()
@@ -44,11 +45,11 @@ def COMPOUND_START(conf, msg):
     if v != [] and v != 0:
         conf.env.in_compound = v + 1
         return
-    conf.check_message_1(msg)
-    conf.saved_check_message_1 = conf.check_message_1
-    conf.check_message_1 = null_check_message_1
-    conf.saved_check_message_2 = conf.check_message_2
-    conf.check_message_2 = null_check_message_2
+    conf.start_msg(msg)
+    conf.saved_check_message_1 = conf.start_msg
+    conf.start_msg = null_check_message_1
+    conf.saved_check_message_2 = conf.end_msg
+    conf.end_msg = null_check_message_2
     conf.env.in_compound = 1
 
 
@@ -58,9 +59,9 @@ def COMPOUND_END(conf, result):
     conf.env.in_compound -= 1
     if conf.env.in_compound != 0:
         return
-    conf.check_message_1 = conf.saved_check_message_1
-    conf.check_message_2 = conf.saved_check_message_2
-    p = conf.check_message_2
+    conf.start_msg = conf.saved_check_message_1
+    conf.end_msg = conf.saved_check_message_2
+    p = conf.end_msg
     if result is True:
         p('ok')
     elif not result:
@@ -404,7 +405,7 @@ def CHECK_CODE(conf, code, define,
         cflags.append(extra_cflags)
 
     if local_include:
-        cflags.append('-I%s' % conf.curdir)
+        cflags.append('-I%s' % conf.path.abspath())
 
     if not link:
         type='nolink'
@@ -663,8 +664,8 @@ def CHECK_FUNCS_IN(conf, list, library, mandatory=False, checklibc=False,
 @conf
 def IN_LAUNCH_DIR(conf):
     '''return True if this rule is being run from the launch directory'''
-    return os.path.realpath(conf.curdir) == os.path.realpath(Options.launch_dir)
-Options.Handler.IN_LAUNCH_DIR = IN_LAUNCH_DIR
+    return os.path.realpath(conf.path.abspath()) == os.path.realpath(Context.launch_dir)
+Options.OptionsContext.IN_LAUNCH_DIR = IN_LAUNCH_DIR
 
 
 @conf
@@ -899,7 +900,7 @@ def SETUP_CONFIGURE_CACHE(conf, enable):
         # when -C is chosen, we will use a private cache and will
         # not look into system includes. This roughtly matches what
         # autoconf does with -C
-        cache_path = os.path.join(conf.blddir, '.confcache')
+        cache_path = os.path.join(conf.bldnode.abspath(), '.confcache')
         mkdir_p(cache_path)
         Options.cache_global = os.environ['WAFCACHE'] = cache_path
     else:

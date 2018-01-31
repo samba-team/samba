@@ -4,8 +4,8 @@
 # library use
 
 import os
-import Utils
-from TaskGen import feature, before, after
+from waflib import Utils, Errors
+from waflib.TaskGen import feature, before, after
 from samba_utils import LIB_PATH, MODE_755, install_rpath, build_rpath
 
 @feature('install_bin')
@@ -228,7 +228,7 @@ def symlink_bin(self):
         return
 
     if not self.link_task.outputs or not self.link_task.outputs[0]:
-        raise Utils.WafError('no outputs found for %s in symlink_bin' % self.name)
+        raise Errors.WafError('no outputs found for %s in symlink_bin' % self.name)
     binpath = self.link_task.outputs[0].abspath(self.env)
     bldpath = os.path.join(self.bld.env.BUILD_DIRECTORY, self.link_task.outputs[0].name)
 

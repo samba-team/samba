@@ -1,15 +1,15 @@
 # based on playground/evil in the waf svn tree
 
 import os, datetime, fnmatch
-import Scripting, Utils, Options, Logs, Environment
-from Constants import SRCDIR, BLDDIR
+from waflib import Scripting, Utils, Options, Logs, Errors
+from waflib import ConfigSet
 from samba_utils import LOCAL_CACHE, os_path_relpath
 
 def run_task(t, k):
     '''run a single build task'''
     ret = t.run()
     if ret:
-        raise Utils.WafError("Failed to build %s: %u" % (k, ret))
+        raise Errors.WafError("Failed to build %s: %u" % (k, ret))
 
 
 def run_named_build_task(cmd):
@@ -45,7 +45,7 @@ def run_named_build_task(cmd):
 
 
     if not found:
-        raise Utils.WafError("Unable to find build target matching %s" % cmd)
+        raise Errors.WafError("Unable to find build target matching %s" % cmd)
 
 
 def rewrite_compile_targets():
@@ -125,7 +125,7 @@ def wildcard_main(missing_cmd_fn):
 def fake_build_environment(info=True, flush=False):
     """create all the tasks for the project, but do not run the build
     return the build context in use"""
-    bld = getattr(Utils.g_module, 'build_context', Utils.Context)()
+    bld = getattr(Context.g_module, 'build_context', Utils.Context)()
     bld = Scripting.check_configured(bld)
 
     Options.commands['install'] = False
@@ -134,16 +134,15 @@ def fake_build_environment(info=True, flush=False):
     bld.is_install = 0 # False
 
     try:
-        proj = Environment.Environment(Options.lockfile)
+        proj = ConfigSet.ConfigSet(Options.lockfile)
     except IOError:
-        raise Utils.WafError("Project not configured (run 'waf configure' first)")
+        raise Errors.WafError("Project not configured (run 'waf configure' first)")
 
-    bld.load_dirs(proj[SRCDIR], proj[BLDDIR])
     bld.load_envs()
 
     if info:
         Logs.info("Waf: Entering directory `%s'" % bld.bldnode.abspath())
-    bld.add_subdirs([os.path.split(Utils.g_module.root_path)[0]])
+    bld.add_subdirs([os.path.split(Context.g_module.root_path)[0]])
 
     bld.pre_build()
     if flush:

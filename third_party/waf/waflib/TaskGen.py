@@ -4,7 +4,7 @@
 
 #!/usr/bin/env python
 # encoding: utf-8
-# Thomas Nagy, 2005-2016 (ita)
+# Thomas Nagy, 2005-2018 (ita)
 
 """
 Task generators
@@ -24,7 +24,7 @@ HEADER_EXTS = ['.h', '.hpp', '.hxx', '.hh']
 
 class task_gen(object):
 	"""
-	Instances of this class create :py:class:`waflib.Task.TaskBase` when
+	Instances of this class create :py:class:`waflib.Task.Task` when
 	calling the method :py:meth:`waflib.TaskGen.task_gen.post` from the main thread.
 	A few notes:
 
@@ -38,7 +38,7 @@ class task_gen(object):
 	mappings = Utils.ordered_iter_dict()
 	"""Mappings are global file extension mappings that are retrieved in the order of definition"""
 
-	prec = Utils.defaultdict(list)
+	prec = Utils.defaultdict(set)
 	"""Dict that holds the precedence execution rules for task generator methods"""
 
 	def __init__(self, *k, **kw):
@@ -52,7 +52,7 @@ class task_gen(object):
 
 		The extra key/value elements passed in ``kw`` are set as attributes
 		"""
-		self.source = ''
+		self.source = []
 		self.target = ''
 
 		self.meths = []
@@ -80,12 +80,20 @@ class task_gen(object):
 			self.env = self.bld.env.derive()
 			self.path = self.bld.path # emulate chdir when reading scripts
 
-			# provide a unique id
+			# Provide a unique index per folder
+			# This is part of a measure to prevent output file name collisions
+			path = self.path.abspath()
 			try:
-				self.idx = self.bld.idx[self.path] = self.bld.idx.get(self.path, 0) + 1
+				self.idx = self.bld.idx[path] = self.bld.idx.get(path, 0) + 1
 			except AttributeError:
 				self.bld.idx = {}
-				self.idx = self.bld.idx[self.path] = 1
+				self.idx = self.bld.idx[path] = 1
+
+			# Record the global task generator count
+			try:
+				self.tg_idx_count = self.bld.tg_idx_count = self.bld.tg_idx_count + 1
+			except AttributeError:
+				self.tg_idx_count = self.bld.tg_idx_count = 1
 
 		for key, val in kw.items():
 			setattr(self, key, val)
@@ -190,11 +198,12 @@ class task_gen(object):
 		tmp = []
 		for a in keys:
 			for x in prec.values():
-				if a in x: break
+				if a in x:
+					break
 			else:
 				tmp.append(a)
 
-		tmp.sort()
+		tmp.sort(reverse=True)
 
 		# topological sort
 		out = []
@@ -214,13 +223,13 @@ class task_gen(object):
 							break
 					else:
 						tmp.append(x)
+						tmp.sort(reverse=True)
 
 		if prec:
 			buf = ['Cycle detected in the method execution:']
 			for k, v in prec.items():
 				buf.append('- %s after %s' % (k, [x for x in v if x in prec]))
 			raise Errors.WafError('\n'.join(buf))
-		out.reverse()
 		self.meths = out
 
 		# then we run the methods in order
@@ -268,7 +277,7 @@ class task_gen(object):
 		:param tgt: output nodes
 		:type tgt: list of :py:class:`waflib.Tools.Node.Node`
 		:return: A task object
-		:rtype: :py:class:`waflib.Task.TaskBase`
+		:rtype: :py:class:`waflib.Task.Task`
 		"""
 		task = Task.classes[name](env=self.env.derive(), generator=self)
 		if src:
@@ -434,9 +443,7 @@ def before_method(*k):
 	def deco(func):
 		setattr(task_gen, func.__name__, func)
 		for fun_name in k:
-			if not func.__name__ in task_gen.prec[fun_name]:
-				task_gen.prec[fun_name].append(func.__name__)
-				#task_gen.prec[fun_name].sort()
+			task_gen.prec[func.__name__].add(fun_name)
 		return func
 	return deco
 before = before_method
@@ -463,9 +470,7 @@ def after_method(*k):
 	def deco(func):
 		setattr(task_gen, func.__name__, func)
 		for fun_name in k:
-			if not fun_name in task_gen.prec[func.__name__]:
-				task_gen.prec[func.__name__].append(fun_name)
-				#task_gen.prec[func.__name__].sort()
+			task_gen.prec[fun_name].add(func.__name__)
 		return func
 	return deco
 after = after_method
@@ -491,14 +496,11 @@ def extension(*k):
 		return func
 	return deco
 
-# ---------------------------------------------------------------
-# The following methods are task generator methods commonly used
-# they are almost examples, the rest of waf core does not depend on them
-
 @taskgen_method
 def to_nodes(self, lst, path=None):
 	"""
-	Converts the input list into a list of nodes.
+	Flatten the input list of string/nodes/lists into a list of nodes.
+
 	It is used by :py:func:`waflib.TaskGen.process_source` and :py:func:`waflib.TaskGen.process_rule`.
 	It is designed for source files, for folders, see :py:func:`waflib.Tools.ccroot.to_incnodes`:
 
@@ -515,14 +517,16 @@ def to_nodes(self, lst, path=None):
 	if isinstance(lst, Node.Node):
 		lst = [lst]
 
-	# either a list or a string, convert to a list of nodes
 	for x in Utils.to_list(lst):
 		if isinstance(x, str):
 			node = find(x)
-		else:
+		elif hasattr(x, 'name'):
 			node = x
+		else:
+			tmp.extend(self.to_nodes(x))
+			continue
 		if not node:
-			raise Errors.WafError("source not found: %r in %r" % (x, self))
+			raise Errors.WafError('source not found: %r in %r' % (x, self))
 		tmp.append(node)
 	return tmp
 
@@ -549,6 +553,24 @@ def process_rule(self):
 
 		def build(bld):
 			bld(rule='cp ${SRC} ${TGT}', source='wscript', target='bar.txt')
+
+	Main attributes processed:
+
+	* rule: command to execute, it can be a tuple of strings for multiple commands
+	* chmod: permissions for the resulting files (integer value such as Utils.O755)
+	* shell: set to False to execute the command directly (default is True to use a shell)
+	* scan: scanner function
+	* vars: list of variables to trigger rebuilts, such as CFLAGS
+	* cls_str: string to display when executing the task
+	* cls_keyword: label to display when executing the task
+	* cache_rule: by default, try to re-use similar classes, set to False to disable
+	* source: list of Node or string objects representing the source files required by this task
+	* target: list of Node or string objects representing the files that this task creates
+	* cwd: current working directory (Node or string)
+	* stdout: standard output, set to None to prevent waf from capturing the text
+	* stderr: standard error, set to None to prevent waf from capturing the text
+	* timeout: timeout for command execution (Python 3)
+	* always: whether to always run the command (False by default)
 	"""
 	if not getattr(self, 'rule', None):
 		return
@@ -617,16 +639,20 @@ def process_rule(self):
 				return [nodes, []]
 			cls.scan = scan
 
-		# TODO use these values in the cache key if provided
-		# (may cause excessive caching)
-		for x in ('after', 'before', 'ext_in', 'ext_out'):
-			setattr(cls, x, getattr(self, x, []))
-
 		if use_cache:
 			cache[key] = cls
 
 	# now create one instance
 	tsk = self.create_task(name)
+
+	for x in ('after', 'before', 'ext_in', 'ext_out'):
+		setattr(tsk, x, getattr(self, x, []))
+
+	if hasattr(self, 'stdout'):
+		tsk.stdout = self.stdout
+
+	if hasattr(self, 'stderr'):
+		tsk.stderr = self.stderr
 
 	if getattr(self, 'timeout', None):
 		tsk.timeout = self.timeout
@@ -662,7 +688,6 @@ def process_rule(self):
 		# behave like static methods and do not transform into bound
 		# methods during instance attribute look-up."
 		tsk.run = functools.partial(tsk.run, tsk)
-
 
 @feature('seq')
 def sequence_order(self):
@@ -721,6 +746,8 @@ class subst_pc(Task.Task):
 		if getattr(self.generator, 'is_copy', None):
 			for i, x in enumerate(self.outputs):
 				x.write(self.inputs[i].read('rb'), 'wb')
+				stat = os.stat(self.inputs[i].abspath()) # Preserve mtime of the copy
+				os.utime(self.outputs[i].abspath(), (stat.st_atime, stat.st_mtime))
 			self.force_permissions()
 			return None
 
@@ -730,11 +757,11 @@ class subst_pc(Task.Task):
 				self.force_permissions()
 			return ret
 
-		code = self.inputs[0].read(encoding=getattr(self.generator, 'encoding', 'ISO8859-1'))
+		code = self.inputs[0].read(encoding=getattr(self.generator, 'encoding', 'latin-1'))
 		if getattr(self.generator, 'subst_fun', None):
 			code = self.generator.subst_fun(self, code)
 			if code is not None:
-				self.outputs[0].write(code, encoding=getattr(self.generator, 'encoding', 'ISO8859-1'))
+				self.outputs[0].write(code, encoding=getattr(self.generator, 'encoding', 'latin-1'))
 			self.force_permissions()
 			return None
 
@@ -749,7 +776,6 @@ class subst_pc(Task.Task):
 				lst.append(g(1))
 				return "%%(%s)s" % g(1)
 			return ''
-		global re_m4
 		code = getattr(self.generator, 're_m4', re_m4).sub(repl, code)
 
 		try:
@@ -765,12 +791,14 @@ class subst_pc(Task.Task):
 				d[x] = tmp
 
 		code = code % d
-		self.outputs[0].write(code, encoding=getattr(self.generator, 'encoding', 'ISO8859-1'))
+		self.outputs[0].write(code, encoding=getattr(self.generator, 'encoding', 'latin-1'))
 		self.generator.bld.raw_deps[self.uid()] = lst
 
 		# make sure the signature is updated
-		try: delattr(self, 'cache_sig')
-		except AttributeError: pass
+		try:
+			delattr(self, 'cache_sig')
+		except AttributeError:
+			pass
 
 		self.force_permissions()
 
@@ -783,9 +811,9 @@ class subst_pc(Task.Task):
 		upd = self.m.update
 
 		if getattr(self.generator, 'fun', None):
-			upd(Utils.h_fun(self.generator.fun))
+			upd(Utils.h_fun(self.generator.fun).encode())
 		if getattr(self.generator, 'subst_fun', None):
-			upd(Utils.h_fun(self.generator.subst_fun))
+			upd(Utils.h_fun(self.generator.subst_fun).encode())
 
 		# raw_deps: persistent custom values returned by the scanner
 		vars = self.generator.bld.raw_deps.get(self.uid(), [])
@@ -867,21 +895,17 @@ def process_subst(self):
 		if not a:
 			raise Errors.WafError('could not find %r for %r' % (x, self))
 
-		has_constraints = False
 		tsk = self.create_task('subst', a, b)
 		for k in ('after', 'before', 'ext_in', 'ext_out'):
 			val = getattr(self, k, None)
 			if val:
-				has_constraints = True
 				setattr(tsk, k, val)
 
 		# paranoid safety measure for the general case foo.in->foo.h with ambiguous dependencies
-		if not has_constraints:
-			global HEADER_EXTS
-			for xt in HEADER_EXTS:
-				if b.name.endswith(xt):
-					tsk.before = [k for k in ('c', 'cxx') if k in Task.classes]
-					break
+		for xt in HEADER_EXTS:
+			if b.name.endswith(xt):
+				tsk.ext_in = tsk.ext_in + ['.h']
+				break
 
 		inst_to = getattr(self, 'install_path', None)
 		if inst_to:
@@ -889,3 +913,4 @@ def process_subst(self):
 				install_from=b, chmod=getattr(self, 'chmod', Utils.O644))
 
 	self.source = []
+

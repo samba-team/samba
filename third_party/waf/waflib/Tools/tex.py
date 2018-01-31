@@ -4,7 +4,7 @@
 
 #!/usr/bin/env python
 # encoding: utf-8
-# Thomas Nagy, 2006-2016 (ita)
+# Thomas Nagy, 2006-2018 (ita)
 
 """
 TeX/LaTeX/PDFLaTeX/XeLaTeX support
@@ -52,20 +52,23 @@ def bibunitscan(self):
 	node = self.inputs[0]
 
 	nodes = []
-	if not node: return nodes
+	if not node:
+		return nodes
 
 	code = node.read()
 	for match in re_bibunit.finditer(code):
 		path = match.group('file')
 		if path:
+			found = None
 			for k in ('', '.bib'):
 				# add another loop for the tex include paths?
 				Logs.debug('tex: trying %s%s', path, k)
 				fi = node.parent.find_resource(path + k)
 				if fi:
+					found = True
 					nodes.append(fi)
-					# no break, people are crazy
-			else:
+					# no break
+			if not found:
 				Logs.debug('tex: could not find %s', path)
 
 	Logs.debug('tex: found the following bibunit files: %s', nodes)
@@ -160,14 +163,14 @@ class tex(Task.Task):
 		nodes = []
 		names = []
 		seen = []
-		if not node: return (nodes, names)
+		if not node:
+			return (nodes, names)
 
 		def parse_node(node):
 			if node in seen:
 				return
 			seen.append(node)
 			code = node.read()
-			global re_tex
 			for match in re_tex.finditer(code):
 
 				multibib = match.group('type')
@@ -541,3 +544,4 @@ def configure(self):
 		except self.errors.ConfigurationError:
 			pass
 	v.DVIPSFLAGS = '-Ppdf'
+

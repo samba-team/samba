@@ -56,3 +56,4 @@ def configure(conf):
 	conf.load('d')
 	conf.common_flags_gdc()
 	conf.d_platform_flags()
+

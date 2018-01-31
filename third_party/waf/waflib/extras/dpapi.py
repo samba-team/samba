@@ -1,5 +1,9 @@
 #! /usr/bin/env python
 # encoding: utf-8
+# WARNING! Do not edit! https://waf.io/book/index.html#_obtaining_the_waf_file
+
+#! /usr/bin/env python
+# encoding: utf-8
 # Matt Clarkson, 2012
 
 '''
@@ -35,7 +39,7 @@ def get_data(blob_out):
 	pbData = blob_out.pbData
 	buffer = c_buffer(cbData)
 	memcpy(buffer, pbData, cbData)
-	LocalFree(pbData);
+	LocalFree(pbData)
 	return buffer.raw
 
 @conf
@@ -56,7 +60,7 @@ def dpapi_encrypt_data(self, input_bytes, entropy = extra_entropy):
 	blob_entropy   = DATA_BLOB(len(entropy), buffer_entropy)
 	blob_out       = DATA_BLOB()
 
-	if CryptProtectData(byref(blob_in), 'python_data', byref(blob_entropy),
+	if CryptProtectData(byref(blob_in), 'python_data', byref(blob_entropy), 
 		None, None, CRYPTPROTECT_UI_FORBIDDEN, byref(blob_out)):
 		return get_data(blob_out)
 	else:
@@ -84,3 +88,4 @@ def dpapi_decrypt_data(self, encrypted_bytes, entropy = extra_entropy):
 		return get_data(blob_out)
 	else:
 		self.fatal('Failed to decrypt data')
+

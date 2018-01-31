@@ -2,8 +2,8 @@
 # uses git ls-files to get file lists
 
 import os, sys, tarfile
-import Utils, Scripting, Logs, Options
-from Configure import conf
+from waflib import Utils, Scripting, Logs, Options
+from waflib.Configure import conf
 from samba_utils import os_path_relpath
 from waflib import Context
 
@@ -164,12 +164,12 @@ def dist(appname='', version=''):
 
     if not isinstance(appname, str) or not appname:
         # this copes with a mismatch in the calling arguments for dist()
-        appname = Utils.g_module.APPNAME
-        version = Utils.g_module.VERSION
+        appname = Context.g_module.APPNAME
+        version = Context.g_module.VERSION
     if not version:
-        version = Utils.g_module.VERSION
+        version = Context.g_module.VERSION
 
-    srcdir = os.path.normpath(os.path.join(os.path.dirname(Utils.g_module.root_path), Utils.g_module.srcdir))
+    srcdir = os.path.normpath(os.path.join(os.path.dirname(Context.g_module.root_path), Context.g_module.srcdir))
 
     if not dist_dirs:
         Logs.error('You must use samba_dist.DIST_DIRS() to set which directories to package')

@@ -5,7 +5,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 # andersg at 0x63.nu 2007
-# Thomas Nagy 2016 (ita)
+# Thomas Nagy 2016-2018 (ita)
 
 """
 Support for Perl extensions. A C/C++ compiler is required::
@@ -28,7 +28,7 @@ Support for Perl extensions. A C/C++ compiler is required::
 """
 
 import os
-from waflib import Task, Options, Utils
+from waflib import Task, Options, Utils, Errors
 from waflib.Configure import conf
 from waflib.TaskGen import extension, feature, before_method
 
@@ -40,7 +40,8 @@ def init_perlext(self):
 	*lib* prefix from library names.
 	"""
 	self.uselib = self.to_list(getattr(self, 'uselib', []))
-	if not 'PERLEXT' in self.uselib: self.uselib.append('PERLEXT')
+	if not 'PERLEXT' in self.uselib:
+		self.uselib.append('PERLEXT')
 	self.env.cshlib_PATTERN = self.env.cxxshlib_PATTERN = self.env.perlext_PATTERN
 
 @extension('.xs')
@@ -102,7 +103,7 @@ def check_perl_module(self, module):
 	self.start_msg('perl module %s' % module)
 	try:
 		r = self.cmd_and_log(cmd)
-	except Exception:
+	except Errors.WafError:
 		self.end_msg(False)
 		return None
 	self.end_msg(r or True)
@@ -156,3 +157,4 @@ def options(opt):
 	"""
 	opt.add_option('--with-perl-binary', type='string', dest='perlbinary', help = 'Specify alternate perl binary', default=None)
 	opt.add_option('--with-perl-archdir', type='string', dest='perlarchdir', help = 'Specify directory where to install arch specific files', default=None)
+

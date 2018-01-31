@@ -3,7 +3,8 @@
 # this is a base set of waf rules that everything else pulls in first
 
 import os, sys
-import wafsamba, Configure, Logs, Options, Utils
+from waflib import Configure, Logs, Options, Utils, Context, Errors
+import wafsamba
 from samba_utils import os_path_relpath
 from optparse import SUPPRESS_HELP
 
@@ -16,10 +17,15 @@ from optparse import SUPPRESS_HELP
 if '--enable-auto-reconfigure' in sys.argv:
     Configure.autoconfig = 'clobber'
 
-def set_options(opt):
-    opt.tool_options('compiler_cc')
+def default_value(option, default=''):
+    if option in Options.options.__dict__:
+        return Options.options.__dict__[option]
+    return default
 
-    opt.tool_options('gnu_dirs')
+def options(opt):
+    opt.load('compiler_cc')
+
+    opt.load('gnu_dirs')
 
     gr = opt.option_group('library handling options')
 
@@ -31,17 +37,17 @@ def set_options(opt):
                    help=("comma separated list of normally public libraries to build instead as private libraries. May include !LIBNAME to disable making a library private. Can be 'NONE' or 'ALL' [auto]"),
                    action="store", dest='PRIVATE_LIBS', default='')
 
-    extension_default = Options.options['PRIVATE_EXTENSION_DEFAULT']
+    extension_default = default_value('PRIVATE_EXTENSION_DEFAULT')
     gr.add_option('--private-library-extension',
                    help=("name extension for private libraries [%s]" % extension_default),
                    action="store", dest='PRIVATE_EXTENSION', default=extension_default)
 
-    extension_exception = Options.options['PRIVATE_EXTENSION_EXCEPTION']
+    extension_exception = default_value('PRIVATE_EXTENSION_EXCEPTION')
     gr.add_option('--private-extension-exception',
                    help=("comma separated list of libraries to not apply extension to [%s]" % extension_exception),
                    action="store", dest='PRIVATE_EXTENSION_EXCEPTION', default=extension_exception)
 
-    builtin_default = Options.options['BUILTIN_LIBRARIES_DEFAULT']
+    builtin_default = default_value('BUILTIN_LIBRARIES_DEFAULT')
     gr.add_option('--builtin-libraries',
                    help=("command separated list of libraries to build directly into binaries [%s]" % builtin_default),
                    action="store", dest='BUILTIN_LIBRARIES', default=builtin_default)
@@ -71,7 +77,7 @@ def set_options(opt):
                    action="store", dest='MODULESDIR', default='${PREFIX}/modules')
 
     opt.add_option('--with-privatelibdir',
-                   help=("private library directory [PREFIX/lib/%s]" % Utils.g_module.APPNAME),
+                   help=("private library directory [PREFIX/lib/%s]" % Context.g_module.APPNAME),
                    action="store", dest='PRIVATELIBDIR', default=None)
 
     opt.add_option('--with-libiconv',
@@ -210,7 +216,7 @@ def set_options(opt):
 @Utils.run_once
 def configure(conf):
     conf.env.hlist = []
-    conf.env.srcdir = conf.srcdir
+    conf.env.srcdir = conf.srcnode.abspath()
 
     conf.define('SRCDIR', conf.env['srcdir'])
 
@@ -220,13 +226,12 @@ def configure(conf):
     conf.SETUP_CONFIGURE_CACHE(Options.options.enable_configure_cache)
 
     # load our local waf extensions
-    conf.check_tool('gnu_dirs')
-    conf.check_tool('wafsamba')
-    conf.check_tool('print_commands')
+    conf.load('gnu_dirs')
+    conf.load('wafsamba')
 
     conf.CHECK_CC_ENV()
 
-    conf.check_tool('compiler_cc')
+    conf.load('compiler_cc')
 
     conf.CHECK_STANDARD_LIBPATH()
 
@@ -236,7 +241,7 @@ def configure(conf):
     # older gcc versions (< 4.4) does not work with gccdeps, so we have to see if the .d file is generated
     if Options.options.enable_gccdeps:
         # stale file removal - the configuration may pick up the old .pyc file
-        p = os.path.join(conf.srcdir, 'buildtools/wafsamba/gccdeps.pyc')
+        p = os.path.join(conf.env.srcdir, 'buildtools/wafsamba/gccdeps.pyc')
         if os.path.exists(p):
             os.remove(p)
         conf.load('gccdeps')
@@ -480,7 +485,7 @@ struct foo bar = { .y = 'X', .x = 1 };
 
     # see if we need special largefile flags
     if not conf.CHECK_LARGEFILE():
-        raise Utils.WafError('Samba requires large file support support, but not available on this platform: sizeof(off_t) < 8')
+        raise Errors.WafError('Samba requires large file support support, but not available on this platform: sizeof(off_t) < 8')
 
     if conf.env.HAVE_STDDEF_H and conf.env.HAVE_STDLIB_H:
         conf.DEFINE('STDC_HEADERS', 1)
@@ -586,10 +591,12 @@ struct foo bar = { .y = 'X', .x = 1 };
 
 def build(bld):
     # give a more useful message if the source directory has moved
-    relpath = os_path_relpath(bld.curdir, bld.srcnode.abspath())
+    curdir = bld.path.abspath()
+    srcdir = bld.srcnode.abspath()
+    relpath = os_path_relpath(curdir, srcdir)
     if relpath.find('../') != -1:
-        Logs.error('bld.curdir %s is not a child of %s' % (bld.curdir, bld.srcnode.abspath()))
-        raise Utils.WafError('''The top source directory has moved. Please run distclean and reconfigure''')
+        Logs.error('bld.path %s is not a child of %s' % (curdir, srcdir))
+        raise Errors.WafError('''The top source directory has moved. Please run distclean and reconfigure''')
 
     bld.CHECK_MAKEFLAGS()
     bld.SETUP_BUILD_GROUPS()

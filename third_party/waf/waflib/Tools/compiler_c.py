@@ -81,7 +81,7 @@ def configure(conf):
 		conf.start_msg('Checking for %r (C compiler)' % compiler)
 		try:
 			conf.load(compiler)
-		except conf.errors.ConfigurationError ,e:
+		except conf.errors.ConfigurationError as e:
 			conf.env.revert()
 			conf.end_msg(False)
 			debug('compiler_c: %r', e)
@@ -111,3 +111,4 @@ def options(opt):
 
 	for x in test_for_compiler.split():
 		opt.load('%s' % x)
+

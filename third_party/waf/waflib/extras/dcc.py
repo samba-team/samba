@@ -1,3 +1,7 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# WARNING! Do not edit! https://waf.io/book/index.html#_obtaining_the_waf_file
+
 #!/usr/bin/env python
 # encoding: utf-8
 # Jérôme Carretero, 2011 (zougloub)
@@ -33,7 +37,8 @@ def dcc_common_flags(conf):
 	v['CC_TGT_F']            = ['-c', '-o']
 
 	# linker
-	if not v['LINK_CC']: v['LINK_CC'] = v['CC']
+	if not v['LINK_CC']:
+		v['LINK_CC'] = v['CC']
 	v['CCLNK_SRC_F']         = []
 	v['CCLNK_TGT_F']         = ['-o']
 	v['CPPPATH_ST']          = '-I%s'
@@ -68,3 +73,4 @@ def options(opt):
 	Add the ``--with-diab-bindir`` command-line options.
 	"""
 	opt.add_option('--with-diab-bindir', type='string', dest='diabbindir', help = 'Specify alternate diab bin folder', default="")
+

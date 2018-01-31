@@ -1,3 +1,7 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# WARNING! Do not edit! https://waf.io/book/index.html#_obtaining_the_waf_file
+
 #!/usr/bin/env python
 # encoding: utf-8
 # Remote Builds tool using rsync+ssh
@@ -76,7 +80,7 @@ Usage
 
 4. Setup the ssh server and ssh keys
 
-   The ssh key should not be protected by a password, or it will prompt for it everytime.
+   The ssh key should not be protected by a password, or it will prompt for it every time.
    Create the key on the client:
 
    .. code:: bash
@@ -324,3 +328,4 @@ def rsync_and_ssh(task):
 	ret = task.exec_command(bld.make_save_command(task))
 	if ret:
 		return ret
+

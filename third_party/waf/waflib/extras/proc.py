@@ -1,4 +1,8 @@
 #! /usr/bin/env python
+# encoding: utf-8
+# WARNING! Do not edit! https://waf.io/book/index.html#_obtaining_the_waf_file
+
+#! /usr/bin/env python
 # per rosengren 2011
 
 from os import environ, path
@@ -25,7 +29,6 @@ def proc(tsk):
 	gen = tsk.generator
 	inc_nodes = gen.to_incnodes(Utils.to_list(getattr(gen,'includes',[])) + env['INCLUDES'])
 
-	# FIXME the if-else construct will not work in python 2
 	cmd = (
 		[env.PROC] +
 		['SQLCHECK=SEMANTICS'] +
@@ -52,3 +55,4 @@ TaskGen.declare_chain(
 	ext_in = '.pc',
 	ext_out = '.c',
 )
+

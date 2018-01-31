@@ -1,8 +1,8 @@
 # waf build tool for building IDL files with pidl
 
 import os
-import Build, Utils
-from TaskGen import feature, before
+from waflib import Build, Utils
+from waflib.TaskGen import feature, before
 from samba_utils import SET_TARGET_TYPE, TO_LIST, LOCAL_CACHE
 
 def SAMBA_PIDL(bld, pname, source,
@@ -97,7 +97,7 @@ def SAMBA_PIDL(bld, pname, source,
         pidl_headers = LOCAL_CACHE(bld, 'PIDL_HEADERS')
         pidl_headers[name] = [bld.path.find_or_declare(out_files[table_header_idx])]
 
-    t.more_includes = '#' + bld.path.relpath_gen(bld.srcnode)
+    t.more_includes = '#' + bld.path.path_from(bld.srcnode)
 Build.BuildContext.SAMBA_PIDL = SAMBA_PIDL
 
 

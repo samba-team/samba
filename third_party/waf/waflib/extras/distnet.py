@@ -1,5 +1,9 @@
 #! /usr/bin/env python
 # encoding: utf-8
+# WARNING! Do not edit! https://waf.io/book/index.html#_obtaining_the_waf_file
+
+#! /usr/bin/env python
+# encoding: utf-8
 
 """
 waf-powered distributed network builds, with a network cache.
@@ -107,10 +111,10 @@ class package(Context.Context):
 					tarinfo.name = os.path.split(x)[1]
 				else:
 					tarinfo.name = endname + x # todo, if tuple, then..
-				Logs.debug("adding %r to %s" % (tarinfo.name, filename))
+				Logs.debug('distnet: adding %r to %s', tarinfo.name, filename)
 				with open(x, 'rb') as f:
 					tar.addfile(tarinfo, f)
-		Logs.info('Created %s' % filename)
+		Logs.info('Created %s', filename)
 
 class publish(Context.Context):
 	fun = 'publish'
@@ -223,7 +227,7 @@ class package_reader(Context.Context):
 			try:
 				response = urlopen(req, timeout=TIMEOUT)
 			except URLError as e:
-				Logs.warn('The package server is down! %r' % e)
+				Logs.warn('The package server is down! %r', e)
 				self.constraints = self.local_resolve(text)
 			else:
 				ret = response.read()
@@ -243,11 +247,11 @@ class package_reader(Context.Context):
 
 				reasons = c.why()
 				if len(reasons) == 1:
-					Logs.error('%s but no matching package could be found in this repository' % reasons[0])
+					Logs.error('%s but no matching package could be found in this repository', reasons[0])
 				else:
-					Logs.error('Conflicts on package %r:' % c.pkgname)
+					Logs.error('Conflicts on package %r:', c.pkgname)
 					for r in reasons:
-						Logs.error('  %s' % r)
+						Logs.error('  %s', r)
 		if errors:
 			self.fatal('The package requirements cannot be satisfied!')
 
@@ -255,7 +259,6 @@ class package_reader(Context.Context):
 		try:
 			return self.cache_constraints[(pkgname, pkgver)]
 		except KeyError:
-			#Logs.error("no key %r" % (pkgname, pkgver))
 			text = Utils.readf(os.path.join(get_distnet_cache(), pkgname, pkgver, requires))
 			ret = parse_constraints(text)
 			self.cache_constraints[(pkgname, pkgver)] = ret
@@ -329,7 +332,7 @@ class package_reader(Context.Context):
 
 	def solution_to_constraints(self, versions, constraints):
 		solution = []
-		for p in versions.keys():
+		for p in versions:
 			c = constraint()
 			solution.append(c)
 
@@ -429,3 +432,4 @@ def configure(conf):
 
 def build(bld):
 	load_tools(bld, bld.variant)
+

@@ -5,7 +5,7 @@
 #! /usr/bin/env python
 # encoding: utf-8
 # DC 2008
-# Thomas Nagy 2016 (ita)
+# Thomas Nagy 2016-2018 (ita)
 
 """
 Fortran configuration helpers
@@ -121,7 +121,7 @@ def fortran_modifier_win32(conf):
 	v.fcprogram_PATTERN = v.fcprogram_test_PATTERN  = '%s.exe'
 
 	v.fcshlib_PATTERN   = '%s.dll'
-	v.implib_PATTERN    = 'lib%s.dll.a'
+	v.implib_PATTERN    = '%s.dll.a'
 	v.IMPLIB_ST         = '-Wl,--out-implib,%s'
 
 	v.FCFLAGS_fcshlib   = []
@@ -343,10 +343,10 @@ def getoutput(conf, cmd, stdin=False):
 	else:
 		env = dict(os.environ)
 		env['LANG'] = 'C'
-	input = stdin and '\n' or None
+	input = stdin and '\n'.encode() or None
 	try:
 		out, err = conf.cmd_and_log(cmd, env=env, output=0, input=input)
-	except Errors.WafError ,e:
+	except Errors.WafError as e:
 		# An WafError might indicate an error code during the command
 		# execution, in this case we still obtain the stderr and stdout,
 		# which we can use to find the version string.
@@ -460,7 +460,7 @@ def detect_openmp(self):
 	"""
 	Detects openmp flags and sets the OPENMP ``FCFLAGS``/``LINKFLAGS``
 	"""
-	for x in ('-qopenmp', '-fopenmp','-openmp','-mp','-xopenmp','-omp','-qsmp=omp'):
+	for x in ('-fopenmp','-openmp','-mp','-xopenmp','-omp','-qsmp=omp'):
 		try:
 			self.check_fc(
 				msg          = 'Checking for OpenMP flag %s' % x,
@@ -475,3 +475,18 @@ def detect_openmp(self):
 			break
 	else:
 		self.fatal('Could not find OpenMP')
+
+@conf
+def check_gfortran_o_space(self):
+	if self.env.FC_NAME != 'GFORTRAN' or int(self.env.FC_VERSION[0]) > 4:
+		# This is for old compilers and only for gfortran.
+		# No idea how other implementations handle this. Be safe and bail out.
+		return
+	self.env.stash()
+	self.env.FCLNK_TGT_F = ['-o', '']
+	try:
+		self.check_fc(msg='Checking if the -o link must be split from arguments', fragment=FC_FRAGMENT, features='fc fcshlib')
+	except self.errors.ConfigurationError:
+		self.env.revert()
+	else:
+		self.env.commit()

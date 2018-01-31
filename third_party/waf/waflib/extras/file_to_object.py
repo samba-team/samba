@@ -1,3 +1,7 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# WARNING! Do not edit! https://waf.io/book/index.html#_obtaining_the_waf_file
+
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 # Tool to embed file into objects
@@ -39,7 +43,7 @@ def filename_c_escape(x):
 
 class file_to_object_s(Task.Task):
 	color = 'CYAN'
-	dep_vars = ('DEST_CPU', 'DEST_BINFMT')
+	vars = ['DEST_CPU', 'DEST_BINFMT']
 
 	def run(self):
 		name = []
@@ -134,3 +138,4 @@ def tg_file_to_object(self):
 def configure(conf):
 	conf.load('gas')
 	conf.env.F2O_METHOD = ["c"]
+

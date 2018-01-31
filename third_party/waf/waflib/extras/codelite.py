@@ -1,5 +1,9 @@
 #! /usr/bin/env python
 # encoding: utf-8
+# WARNING! Do not edit! https://waf.io/book/index.html#_obtaining_the_waf_file
+
+#! /usr/bin/env python
+# encoding: utf-8
 # CodeLite Project
 # Christian Klein (chrikle@berlios.de)
 # Created: Jan 2012
@@ -97,7 +101,7 @@ PROJECT_TEMPLATE = r'''<?xml version="1.0" encoding="utf-8"?>
   ${if (project.get_key(x)=="sourcefile")}
   <File Name="${x.abspath()}"/>
   ${endif}
-  ${endfor}
+  ${endfor}  
   </VirtualDirectory>
   <VirtualDirectory Name="include">
   ${for x in project.source}
@@ -139,7 +143,7 @@ PROJECT_TEMPLATE = r'''<?xml version="1.0" encoding="utf-8"?>
         $b = project.build_properties[0]}
         <RebuildCommand>${xml:project.get_rebuild_command(project.build_properties[0])}</RebuildCommand>
         <CleanCommand>${xml:project.get_clean_command(project.build_properties[0])}</CleanCommand>
-        <BuildCommand>${xml:project.get_build_command(project.build_properties[0])}</BuildCommand>
+        <BuildCommand>${xml:project.get_build_command(project.build_properties[0])}</BuildCommand> 
         <Target Name="Install">${xml:project.get_install_command(project.build_properties[0])}</Target>
         <Target Name="Build and Install">${xml:project.get_build_and_install_command(project.build_properties[0])}</Target>
         <Target Name="Build All">${xml:project.get_build_all_command(project.build_properties[0])}</Target>
@@ -244,7 +248,8 @@ def compile_template(line):
         extr = []
         def repl(match):
                 g = match.group
-                if g('dollar'): return "$"
+                if g('dollar'):
+                        return "$"
                 elif g('backslash'):
                         return "\\"
                 elif g('subst'):
@@ -269,14 +274,14 @@ def compile_template(line):
                         app("lst.append(%r)" % params[x])
 
                 f = extr[x]
-                if f.startswith('if') or f.startswith('for'):
+                if f.startswith(('if', 'for')):
                         app(f + ':')
                         indent += 1
                 elif f.startswith('py:'):
                         app(f[3:])
-                elif f.startswith('endif') or f.startswith('endfor'):
+                elif f.startswith(('endif', 'endfor')):
                         indent -= 1
-                elif f.startswith('else') or f.startswith('elif'):
+                elif f.startswith(('else', 'elif')):
                         indent -= 1
                         app(f + ':')
                         indent += 1
@@ -302,8 +307,8 @@ def rm_blank_lines(txt):
 
 BOM = '\xef\xbb\xbf'
 try:
-        BOM = bytes(BOM, 'iso8859-1') # python 3
-except NameError:
+        BOM = bytes(BOM, 'latin-1') # python 3
+except (TypeError, NameError):
         pass
 
 def stealth_write(self, data, flags='wb'):
@@ -315,7 +320,7 @@ def stealth_write(self, data, flags='wb'):
                 data = data.decode(sys.getfilesystemencoding(), 'replace')
                 data = data.encode('utf-8')
 
-        if self.name.endswith('.project') or self.name.endswith('.project'):
+        if self.name.endswith('.project'):
                 data = BOM + data
 
         try:
@@ -325,7 +330,7 @@ def stealth_write(self, data, flags='wb'):
         except (IOError, ValueError):
                 self.write(data, flags=flags)
         else:
-                Logs.debug('codelite: skipping %s' % self.abspath())
+                Logs.debug('codelite: skipping %r', self)
 Node.Node.stealth_write = stealth_write
 
 re_quote = re.compile("[^a-zA-Z0-9-]")
@@ -470,7 +475,7 @@ class vsnode_project(vsnode):
                 return lst
 
         def write(self):
-                Logs.debug('codelite: creating %r' % self.path)
+                Logs.debug('codelite: creating %r', self.path)
                 #print "self.name:",self.name
 
                 # first write the project file
@@ -491,7 +496,7 @@ class vsnode_project(vsnode):
                 required for writing the source files
                 """
                 name = node.name
-                if name.endswith('.cpp') or name.endswith('.c'):
+                if name.endswith(('.cpp', '.c')):
                         return 'sourcefile'
                 return 'headerfile'
 
@@ -527,21 +532,21 @@ class vsnode_project(vsnode):
 
         def get_rebuild_command(self, props):
                 return "%s clean build %s" % self.get_build_params(props)
-
+                
         def get_install_command(self, props):
                 return "%s install %s" % self.get_build_params(props)
         def get_build_and_install_command(self, props):
                 return "%s build install %s" % self.get_build_params(props)
-
+                
         def get_build_and_install_all_command(self, props):
                 return "%s build install" % self.get_build_params(props)[0]
-
+                
         def get_clean_all_command(self, props):
                 return "%s clean" % self.get_build_params(props)[0]
-
+        
         def get_build_all_command(self, props):
                 return "%s build" % self.get_build_params(props)[0]
-
+                
         def get_rebuild_all_command(self, props):
                 return "%s clean build" % self.get_build_params(props)[0]
 
@@ -588,10 +593,10 @@ class vsnode_project_view(vsnode_alias):
                 vsnode_alias.__init__(self, ctx, node, name)
                 self.tg = self.ctx() # fake one, cannot remove
                 self.exclude_files = Node.exclude_regs + '''
-waf-1.8.*
-waf3-1.8.*/**
-.waf-1.8.*
-.waf3-1.8.*/**
+waf-2*
+waf3-2*/**
+.waf-2*
+.waf3-2*/**
 **/*.sdf
 **/*.suo
 **/*.ncb
@@ -666,7 +671,7 @@ class vsnode_target(vsnode_project):
                                 tsk = self.tg.link_task
                         except AttributeError:
                                 pass
-                        else:
+                        else:                                
                                 x.output_file = tsk.outputs[0].abspath()
                                 x.preprocessor_definitions = ';'.join(tsk.env.DEFINES)
                                 x.includes_search_path = ';'.join(self.tg.env.INCPATHS)
@@ -738,9 +743,7 @@ class codelite_generator(BuildContext):
                         return getattr(x, 'path', None) and x.path.abspath() or x.name
                 self.all_projects.sort(key=sortfun)
 
-
         def write_files(self):
-
                 """
                 Write the project and solution files from the data collected
                 so far. It is unlikely that you will want to change this
@@ -751,7 +754,7 @@ class codelite_generator(BuildContext):
                 # and finally write the solution file
                 node = self.get_solution_node()
                 node.parent.mkdir()
-                Logs.warn('Creating %r' % node)
+                Logs.warn('Creating %r', node)
                 #a = dir(self.root)
                 #for b in a:
                 #        print b
@@ -810,7 +813,7 @@ class codelite_generator(BuildContext):
 
                                 p = self.vsnode_target(self, tg)
                                 p.collect_source() # delegate this processing
-                                p.collect_properties()
+                                p.collect_properties()                               
                                 self.all_projects.append(p)
 
         def add_aliases(self):
@@ -874,7 +877,3 @@ class codelite_generator(BuildContext):
                         p.iter_path = p.tg.path
                         make_parents(p)
 
-
-
-def options(ctx):
-        pass

@@ -5,7 +5,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 # Sebastian Schlingmann, 2008
-# Thomas Nagy, 2008-2016 (ita)
+# Thomas Nagy, 2008-2018 (ita)
 
 """
 Lua support.
@@ -39,3 +39,4 @@ def configure(conf):
 	Detect the luac compiler and set *conf.env.LUAC*
 	"""
 	conf.find_program('luac', var='LUAC')
+

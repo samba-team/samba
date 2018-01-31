@@ -71,3 +71,4 @@ def configure(conf):
 	Detects the program dbus-binding-tool and sets ``conf.env.DBUS_BINDING_TOOL``
 	"""
 	conf.find_program('dbus-binding-tool', var='DBUS_BINDING_TOOL')
+

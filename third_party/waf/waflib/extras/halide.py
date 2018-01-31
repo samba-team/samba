@@ -1,3 +1,7 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# WARNING! Do not edit! https://waf.io/book/index.html#_obtaining_the_waf_file
+
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 # Halide code generation tool
@@ -89,7 +93,8 @@ def halide(self):
 		# Return a node with a new extension, in an appropriate folder
 		name = src.name
 		xpos = src.name.rfind('.')
-		if xpos == -1: xpos = len(src.name)
+		if xpos == -1:
+			xpos = len(src.name)
 		newname = name[:xpos] + ext
 		if src.is_child_of(bld.bldnode):
 			node = src.get_src().parent.find_or_declare(newname)
@@ -147,3 +152,4 @@ def options(opt):
 	opt.add_option('--halide-root',
 	 help="path to Halide include and lib files",
 	)
+

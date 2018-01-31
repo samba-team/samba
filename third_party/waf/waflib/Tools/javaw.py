@@ -4,7 +4,7 @@
 
 #!/usr/bin/env python
 # encoding: utf-8
-# Thomas Nagy, 2006-2016 (ita)
+# Thomas Nagy, 2006-2018 (ita)
 
 """
 Java support
@@ -96,6 +96,7 @@ def apply_java(self):
 			if not y:
 				self.bld.fatal('Could not find the folder %s from %s' % (x, self.path))
 		tmp.append(y)
+
 	tsk.srcdir = tmp
 
 	if getattr(self, 'compat', None):
@@ -111,6 +112,7 @@ def apply_java(self):
 		tsk.env.append_value('JAVACFLAGS', ['-sourcepath', names])
 
 @feature('javac')
+@before_method('propagate_uselib_vars')
 @after_method('apply_java')
 def use_javac_files(self):
 	"""
@@ -141,7 +143,8 @@ def set_classpath(self):
 	"""
 	Sets the CLASSPATH value on the *javac* task previously created.
 	"""
-	self.env.append_value('CLASSPATH', getattr(self, 'classpath', []))
+	if getattr(self, 'classpath', None):
+		self.env.append_unique('CLASSPATH', getattr(self, 'classpath', []))
 	for x in self.tasks:
 		x.env.CLASSPATH = os.pathsep.join(self.env.CLASSPATH) + os.pathsep
 
@@ -169,9 +172,11 @@ def jar_files(self):
 	if manifest:
 		jarcreate = getattr(self, 'jarcreate', 'cfm')
 		if not isinstance(manifest,Node.Node):
-			node = self.path.find_or_declare(manifest)
+			node = self.path.find_resource(manifest)
 		else:
 			node = manifest
+		if not node:
+			self.bld.fatal('invalid manifest file %r for %r' % (manifest, self))
 		tsk.dep_nodes.append(node)
 		jaropts.insert(0, node.abspath())
 	else:
@@ -243,7 +248,6 @@ class jar_create(JTask):
 			if not t.hasrun:
 				return Task.ASK_LATER
 		if not self.inputs:
-			global JAR_RE
 			try:
 				self.inputs = [x for x in self.basedir.ant_glob(JAR_RE, remove=False) if id(x) != id(self.outputs[0])]
 			except Exception:
@@ -276,10 +280,10 @@ class javac(JTask):
 				return Task.ASK_LATER
 
 		if not self.inputs:
-			global SOURCE_RE
 			self.inputs  = []
 			for x in self.srcdir:
-				self.inputs.extend(x.ant_glob(SOURCE_RE, remove=False))
+				if x.exists():
+					self.inputs.extend(x.ant_glob(SOURCE_RE, remove=False))
 		return super(javac, self).runnable_status()
 
 	def post_run(self):
@@ -461,3 +465,4 @@ def check_jni_headers(conf):
 			break
 	else:
 		conf.fatal('could not find lib jvm in %r (see config.log)' % libDirs)
+

@@ -4,7 +4,7 @@
 
 #!/usr/bin/env python
 # encoding: utf-8
-# Thomas Nagy, 2005-2016 (ita)
+# Thomas Nagy, 2005-2018 (ita)
 
 "Base for c++ programs and libraries"
 
@@ -41,3 +41,4 @@ class cxxshlib(cxxprogram):
 class cxxstlib(stlink_task):
 	"Links object files into c++ static libraries"
 	pass # do not remove
+

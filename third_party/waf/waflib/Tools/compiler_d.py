@@ -5,7 +5,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 # Carlos Rafael Giani, 2007 (dv)
-# Thomas Nagy, 2016 (ita)
+# Thomas Nagy, 2016-2018 (ita)
 
 """
 Try to detect a D compiler from the list of supported compilers::
@@ -58,7 +58,7 @@ def configure(conf):
 		conf.start_msg('Checking for %r (D compiler)' % compiler)
 		try:
 			conf.load(compiler)
-		except conf.errors.ConfigurationError ,e:
+		except conf.errors.ConfigurationError as e:
 			conf.env.revert()
 			conf.end_msg(False)
 			Logs.debug('compiler_d: %r', e)
@@ -86,3 +86,4 @@ def options(opt):
 
 	for x in test_for_compiler.split():
 		opt.load('%s' % x)
+

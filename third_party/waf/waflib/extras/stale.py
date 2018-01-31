@@ -1,4 +1,8 @@
 #! /usr/bin/env python
+# encoding: utf-8
+# WARNING! Do not edit! https://waf.io/book/index.html#_obtaining_the_waf_file
+
+#! /usr/bin/env python
 # encoding: UTF-8
 # Thomas Nagy, 2006-2015 (ita)
 
@@ -13,6 +17,8 @@ a full 'waf clean'
 Of course, it will only work if there are no dynamically generated
 nodes/tasks, in which case the method will have to be modified
 to exclude some folders for example.
+
+Make sure to set bld.post_mode = waflib.Build.POST_AT_ONCE
 """
 
 from waflib import Logs, Build
@@ -59,7 +65,7 @@ def stale_rec(node, nodes):
 		else:
 			if not node in nodes:
 				if can_delete(node):
-					Logs.warn("Removing stale file -> %s" % node.abspath())
+					Logs.warn('Removing stale file -> %r', node)
 					node.delete()
 
 old = Parallel.refill_task_list
@@ -73,24 +79,24 @@ def refill_task_list(self):
 	self.stale_done = True
 
 	# this does not work in partial builds
-	if hasattr(bld, 'options') and bld.options.targets and bld.options.targets != '*':
+	if bld.targets != '*':
 		return iit
 
 	# this does not work in dynamic builds
-	if not hasattr(bld, 'post_mode') or bld.post_mode == Build.POST_LAZY:
+	if getattr(bld, 'post_mode') == Build.POST_AT_ONCE:
 		return iit
 
 	# obtain the nodes to use during the build
 	nodes = []
-	for i in range(len(bld.groups)):
-		tasks = bld.get_tasks_group(i)
+	for tasks in bld.groups:
 		for x in tasks:
 			try:
 				nodes.extend(x.outputs)
-			except:
+			except AttributeError:
 				pass
 
 	stale_rec(bld.bldnode, nodes)
 	return iit
 
 Parallel.refill_task_list = refill_task_list
+

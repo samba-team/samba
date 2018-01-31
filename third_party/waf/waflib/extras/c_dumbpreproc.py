@@ -1,3 +1,7 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# WARNING! Do not edit! https://waf.io/book/index.html#_obtaining_the_waf_file
+
 #!/usr/bin/env python
 # encoding: utf-8
 # Thomas Nagy, 2006-2010 (ita)
@@ -33,7 +37,8 @@ re_inc = re.compile(
 def lines_includes(node):
 	code = node.read()
 	if c_preproc.use_trigraphs:
-		for (a, b) in c_preproc.trig_def: code = code.split(a).join(b)
+		for (a, b) in c_preproc.trig_def:
+			code = code.split(a).join(b)
 	code = c_preproc.re_nl.sub('', code)
 	code = c_preproc.re_cpp.sub(c_preproc.repl, code)
 	return [(m.group(2), m.group(3)) for m in re.finditer(re_inc, code)]
@@ -68,3 +73,4 @@ class dumb_parser(parser):
 			self.tryfind(y)
 
 c_preproc.c_parser = dumb_parser
+

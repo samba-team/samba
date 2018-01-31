@@ -1,5 +1,9 @@
 #! /usr/bin/env python
 # encoding: utf-8
+# WARNING! Do not edit! https://waf.io/book/index.html#_obtaining_the_waf_file
+
+#! /usr/bin/env python
+# encoding: utf-8
 
 """
 Waf 1.6
@@ -81,3 +85,5 @@ def apply_incpaths(self):
 	self.includes_nodes = lst
 	bld = self.bld
 	self.env['INCPATHS'] = [x.is_child_of(bld.srcnode) and x.path_from(bld.bldnode) or x.abspath() for x in lst]
+
+

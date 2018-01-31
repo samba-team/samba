@@ -57,3 +57,4 @@ def configure(conf):
 	conf.load('d')
 	conf.common_flags_ldc2()
 	conf.d_platform_flags()
+

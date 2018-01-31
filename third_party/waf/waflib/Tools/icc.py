@@ -5,7 +5,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 # Stian Selnes 2008
-# Thomas Nagy 2009-2016 (ita)
+# Thomas Nagy 2009-2018 (ita)
 
 """
 Detects the Intel C compiler

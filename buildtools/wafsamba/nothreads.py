@@ -13,8 +13,8 @@
 import sys, random, threading
 try: from Queue import Queue
 except ImportError: from queue import Queue
-import Utils, Options
-from Constants import EXCEPTION, CRASHED, MAXJOBS, ASK_LATER, SKIPPED, SKIP_ME, SUCCESS
+from waflib import Utils, Options, Errors
+from waflib.TaskGen import EXCEPTION, CRASHED, MAXJOBS, ASK_LATER, SKIPPED, SKIP_ME, SUCCESS
 
 GAP = 15
 
@@ -58,7 +58,7 @@ def process(tsk):
     else:
         try:
             tsk.post_run()
-        except Utils.WafError:
+        except Errors.WafError:
             pass
         except Exception:
             tsk.err_msg = Utils.ex_stack()

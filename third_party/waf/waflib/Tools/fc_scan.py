@@ -5,7 +5,7 @@
 #! /usr/bin/env python
 # encoding: utf-8
 # DC 2008
-# Thomas Nagy 2016 (ita)
+# Thomas Nagy 2016-2018 (ita)
 
 import re
 
@@ -115,3 +115,4 @@ class fortran_parser(object):
 		if not found:
 			if not filename in self.names:
 				self.names.append(filename)
+

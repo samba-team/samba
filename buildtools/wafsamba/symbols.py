@@ -2,8 +2,8 @@
 # using nm, producing a set of exposed defined/undefined symbols
 
 import os, re, subprocess
-import Utils, Build, Options, Logs
-from Logs import debug
+from waflib import Utils, Build, Options, Logs, Errors
+from waflib.Logs import debug
 from samba_utils import TO_LIST, LOCAL_CACHE, get_tgt_list, os_path_relpath
 
 # these are the data structures used in symbols.py:
@@ -410,7 +410,7 @@ def check_library_deps(bld, t):
             if dep2 == name and t.in_library != t2.in_library:
                 Logs.warn("WARNING: mutual dependency %s <=> %s" % (name, real_name(t2.sname)))
                 Logs.warn("Libraries should match. %s != %s" % (t.in_library, t2.in_library))
-                # raise Utils.WafError("illegal mutual dependency")
+                # raise Errors.WafError("illegal mutual dependency")
 
 
 def check_syslib_collisions(bld, tgt_list):
@@ -430,7 +430,7 @@ def check_syslib_collisions(bld, tgt_list):
                 Logs.error("ERROR: Target '%s' has symbols '%s' which is also in syslib '%s'" % (t.sname, common, lib))
                 has_error = True
     if has_error:
-        raise Utils.WafError("symbols in common with system libraries")
+        raise Errors.WafError("symbols in common with system libraries")
 
 
 def check_dependencies(bld, t):
@@ -546,7 +546,7 @@ def symbols_whyneeded(task):
 
     why = Options.options.WHYNEEDED.split(":")
     if len(why) != 2:
-        raise Utils.WafError("usage: WHYNEEDED=TARGET:DEPENDENCY")
+        raise Errors.WafError("usage: WHYNEEDED=TARGET:DEPENDENCY")
     target = why[0]
     subsystem = why[1]
 
@@ -579,7 +579,7 @@ def report_duplicate(bld, binname, sym, libs, fail_on_error):
         else:
             libnames.append(lib)
     if fail_on_error:
-        raise Utils.WafError("%s: Symbol %s linked in multiple libraries %s" % (binname, sym, libnames))
+        raise Errors.WafError("%s: Symbol %s linked in multiple libraries %s" % (binname, sym, libnames))
     else:
         print("%s: Symbol %s linked in multiple libraries %s" % (binname, sym, libnames))
 

@@ -4,7 +4,7 @@
 
 #!/usr/bin/env python
 # encoding: utf-8
-# Thomas Nagy, 2016 (ita)
+# Thomas Nagy, 2016-2018 (ita)
 
 from waflib import Utils
 from waflib.Configure import conf
@@ -65,3 +65,4 @@ def check_dlibrary(self, execute=True):
 	ret = self.check_cc(features='d dprogram', fragment=DLIB, compile_filename='test.d', execute=execute, define_ret=True)
 	if execute:
 		self.env.DLIBRARY = ret.strip()
+

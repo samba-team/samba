@@ -1,8 +1,8 @@
 # functions to support bundled libraries
 
 import sys
-import Build, Options, Logs
-from Configure import conf
+from waflib import Build, Options, Logs
+from waflib.Configure import conf
 from samba_utils import TO_LIST
 
 def PRIVATE_NAME(bld, name, private_extension, private_library):
@@ -51,19 +51,19 @@ Build.BuildContext.BUILTIN_LIBRARY = BUILTIN_LIBRARY
 
 def BUILTIN_DEFAULT(opt, builtins):
     '''set a comma separated default list of builtin libraries for this package'''
-    if 'BUILTIN_LIBRARIES_DEFAULT' in Options.options:
+    if 'BUILTIN_LIBRARIES_DEFAULT' in Options.options.__dict__:
         return
-    Options.options['BUILTIN_LIBRARIES_DEFAULT'] = builtins
-Options.Handler.BUILTIN_DEFAULT = BUILTIN_DEFAULT
+    Options.options.__dict__['BUILTIN_LIBRARIES_DEFAULT'] = builtins
+Options.OptionsContext.BUILTIN_DEFAULT = BUILTIN_DEFAULT
 
 
 def PRIVATE_EXTENSION_DEFAULT(opt, extension, noextension=''):
     '''set a default private library extension'''
-    if 'PRIVATE_EXTENSION_DEFAULT' in Options.options:
+    if 'PRIVATE_EXTENSION_DEFAULT' in Options.options.__dict__:
         return
-    Options.options['PRIVATE_EXTENSION_DEFAULT'] = extension
-    Options.options['PRIVATE_EXTENSION_EXCEPTION'] = noextension
-Options.Handler.PRIVATE_EXTENSION_DEFAULT = PRIVATE_EXTENSION_DEFAULT
+    Options.options.__dict__['PRIVATE_EXTENSION_DEFAULT'] = extension
+    Options.options.__dict__['PRIVATE_EXTENSION_EXCEPTION'] = noextension
+Options.OptionsContext.PRIVATE_EXTENSION_DEFAULT = PRIVATE_EXTENSION_DEFAULT
 
 
 def minimum_library_version(conf, libname, default):

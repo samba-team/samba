@@ -1,3 +1,7 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# WARNING! Do not edit! https://waf.io/book/index.html#_obtaining_the_waf_file
+
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 # Tool to extend c_config.check_cfg()
@@ -107,3 +111,4 @@ def check_cfg(conf, *k, **kw):
 					conf.end_msg('%s += %s' % (k, v))
 
 		return True
+

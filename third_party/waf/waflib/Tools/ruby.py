@@ -5,7 +5,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 # daniel.svensson at purplescout.se 2008
-# Thomas Nagy 2016 (ita)
+# Thomas Nagy 2016-2018 (ita)
 
 """
 Support for Ruby extensions. A C/C++ compiler is required::
@@ -27,7 +27,7 @@ Support for Ruby extensions. A C/C++ compiler is required::
 """
 
 import os
-from waflib import Options, Utils, Task
+from waflib import Errors, Options, Task, Utils
 from waflib.TaskGen import before_method, feature, extension
 from waflib.Configure import conf
 
@@ -64,13 +64,13 @@ def check_ruby_version(self, minver=()):
 
 	try:
 		version = self.cmd_and_log(ruby + ['-e', 'puts defined?(VERSION) ? VERSION : RUBY_VERSION']).strip()
-	except Exception:
+	except Errors.WafError:
 		self.fatal('could not determine ruby version')
 	self.env.RUBY_VERSION = version
 
 	try:
-		ver = tuple(map(int, version.split(".")))
-	except Exception:
+		ver = tuple(map(int, version.split('.')))
+	except Errors.WafError:
 		self.fatal('unsupported ruby version %r' % version)
 
 	cver = ''
@@ -155,7 +155,7 @@ def check_ruby_module(self, module_name):
 	self.start_msg('Ruby module %s' % module_name)
 	try:
 		self.cmd_and_log(self.env.RUBY + ['-e', 'require \'%s\';puts 1' % module_name])
-	except Exception:
+	except Errors.WafError:
 		self.end_msg(False)
 		self.fatal('Could not find the ruby module %r' % module_name)
 	self.end_msg(True)
@@ -187,3 +187,4 @@ def options(opt):
 	opt.add_option('--with-ruby-archdir', type='string', dest='rubyarchdir', help='Specify directory where to install arch specific files')
 	opt.add_option('--with-ruby-libdir', type='string', dest='rubylibdir', help='Specify alternate ruby library path')
 	opt.add_option('--with-ruby-binary', type='string', dest='rubybinary', help='Specify alternate ruby binary')
+

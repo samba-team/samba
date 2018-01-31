@@ -1,3 +1,7 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# WARNING! Do not edit! https://waf.io/book/index.html#_obtaining_the_waf_file
+
 #!/usr/bin/env python
 # encoding: utf-8
 #
@@ -71,3 +75,4 @@ def configure(conf):
 	if platform == 'win32' and not conf.options.fi_path:
 		return
 	conf.check_freeimage(conf.options.fi_path, conf.options.fip)
+

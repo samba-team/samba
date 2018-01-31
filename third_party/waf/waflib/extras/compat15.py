@@ -71,7 +71,7 @@ def cmd_output(cmd, **kw):
 	try:
 		p = Utils.subprocess.Popen(cmd, **kw)
 		output = p.communicate()[0]
-	except OSError ,e:
+	except OSError as e:
 		raise ValueError(str(e))
 
 	if p.returncode:
@@ -126,7 +126,7 @@ Options.OptionsContext.tool_options = Context.Context.load
 Options.Handler = Options.OptionsContext
 
 Task.simple_task_type = Task.task_type_from_func = Task.task_factory
-Task.TaskBase.classes = Task.classes
+Task.Task.classes = Task.classes
 
 def setitem(self, key, value):
 	if key.startswith('CCFLAGS'):
@@ -320,10 +320,12 @@ def apply_objdeps(self):
 			lst = y.to_list(y.add_objects)
 			lst.reverse()
 			for u in lst:
-				if u in seen: continue
+				if u in seen:
+					continue
 				added = 1
 				names = [u]+names
-			if added: continue # list of names modified, loop
+			if added:
+				continue # list of names modified, loop
 
 		# safe to process the current object
 		y.post()
@@ -345,8 +347,10 @@ def add_obj_file(self, file):
 	"""Small example on how to link object files as if they were source
 	obj = bld.create_obj('cc')
 	obj.add_obj_file('foo.o')"""
-	if not hasattr(self, 'obj_files'): self.obj_files = []
-	if not 'process_obj_files' in self.meths: self.meths.append('process_obj_files')
+	if not hasattr(self, 'obj_files'):
+		self.obj_files = []
+	if not 'process_obj_files' in self.meths:
+		self.meths.append('process_obj_files')
 	self.obj_files.append(file)
 
 
@@ -403,3 +407,4 @@ def before(*k):
 	k = [repl.get(key, key) for key in k]
 	return TaskGen.before_method(*k)
 TaskGen.before = before
+

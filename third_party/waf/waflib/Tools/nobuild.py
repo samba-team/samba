@@ -25,3 +25,4 @@ def build(bld):
 			x.write('')
 	for (name, cls) in Task.classes.items():
 		cls.run = run
+

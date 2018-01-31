@@ -4,7 +4,7 @@
 
 #!/usr/bin/env python
 # encoding: utf-8
-# Thomas Nagy, 2005-2016 (ita)
+# Thomas Nagy, 2005-2018 (ita)
 
 """
 Configuration system
@@ -16,7 +16,7 @@ A :py:class:`waflib.Configure.ConfigurationContext` instance is created when ``w
 * hold configuration routines such as ``find_program``, etc
 """
 
-import os, shlex, sys, time, re, shutil
+import os, re, shlex, shutil, sys, time, traceback
 from waflib import ConfigSet, Utils, Options, Logs, Context, Build, Errors
 
 WAF_CONFIG_LOG = 'config.log'
@@ -201,17 +201,17 @@ class ConfigurationContext(Context.Context):
 		"""
 		if not env.PREFIX:
 			if Options.options.prefix or Utils.is_win32:
-				env.PREFIX = Utils.sane_path(Options.options.prefix)
+				env.PREFIX = Options.options.prefix
 			else:
-				env.PREFIX = ''
+				env.PREFIX = '/'
 		if not env.BINDIR:
 			if Options.options.bindir:
-				env.BINDIR = Utils.sane_path(Options.options.bindir)
+				env.BINDIR = Options.options.bindir
 			else:
 				env.BINDIR = Utils.subst_vars('${PREFIX}/bin', env)
 		if not env.LIBDIR:
 			if Options.options.libdir:
-				env.LIBDIR = Utils.sane_path(Options.options.libdir)
+				env.LIBDIR = Options.options.libdir
 			else:
 				env.LIBDIR = Utils.subst_vars('${PREFIX}/lib%s' % Utils.lib64(), env)
 
@@ -227,12 +227,12 @@ class ConfigurationContext(Context.Context):
 			tmpenv = self.all_envs[key]
 			tmpenv.store(os.path.join(self.cachedir.abspath(), key + Build.CACHE_SUFFIX))
 
-	def load(self, input, tooldir=None, funs=None, with_sys_path=True, cache=False):
+	def load(self, tool_list, tooldir=None, funs=None, with_sys_path=True, cache=False):
 		"""
 		Load Waf tools, which will be imported whenever a build is started.
 
-		:param input: waf tools to import
-		:type input: list of string
+		:param tool_list: waf tools to import
+		:type tool_list: list of string
 		:param tooldir: paths for the imports
 		:type tooldir: list of string
 		:param funs: functions to execute from the waf tools
@@ -241,8 +241,9 @@ class ConfigurationContext(Context.Context):
 		:type cache: bool
 		"""
 
-		tools = Utils.to_list(input)
-		if tooldir: tooldir = Utils.to_list(tooldir)
+		tools = Utils.to_list(tool_list)
+		if tooldir:
+			tooldir = Utils.to_list(tooldir)
 		for tool in tools:
 			# avoid loading the same tool more than once with the same functions
 			# used by composite projects
@@ -257,11 +258,11 @@ class ConfigurationContext(Context.Context):
 			module = None
 			try:
 				module = Context.load_tool(tool, tooldir, ctx=self, with_sys_path=with_sys_path)
-			except ImportError ,e:
-				self.fatal('Could not load the Waf tool %r from %r\n%s' % (tool, sys.path, e))
-			except Exception ,e:
+			except ImportError as e:
+				self.fatal('Could not load the Waf tool %r from %r\n%s' % (tool, getattr(e, 'waf_sys_path', sys.path), e))
+			except Exception as e:
 				self.to_log('imp %r (%r & %r)' % (tool, tooldir, funs))
-				self.to_log(Utils.ex_stack())
+				self.to_log(traceback.format_exc())
 				raise
 
 			if funs is not None:
@@ -269,8 +270,10 @@ class ConfigurationContext(Context.Context):
 			else:
 				func = getattr(module, 'configure', None)
 				if func:
-					if type(func) is type(Utils.readf): func(self)
-					else: self.eval_rules(func)
+					if type(func) is type(Utils.readf):
+						func(self)
+					else:
+						self.eval_rules(func)
 
 			self.tools.append({'tool':tool, 'tooldir':tooldir, 'funs':funs})
 
@@ -373,11 +376,11 @@ def cmd_to_list(self, cmd):
 	return cmd
 
 @conf
-def check_waf_version(self, mini='1.8.99', maxi='2.0.0', **kw):
+def check_waf_version(self, mini='1.9.99', maxi='2.1.0', **kw):
 	"""
 	Raise a Configuration error if the Waf version does not strictly match the given bounds::
 
-		conf.check_waf_version(mini='1.8.99', maxi='2.0.0')
+		conf.check_waf_version(mini='1.9.99', maxi='2.1.0')
 
 	:type  mini: number, tuple or string
 	:param mini: Minimum required version
@@ -399,7 +402,7 @@ def find_file(self, filename, path_list=[]):
 
 	:param filename: name of the file to search for
 	:param path_list: list of directories to search
-	:return: the first occurrence filename or '' if filename could not be found
+	:return: the first matching filename; else a configuration exception is raised
 	"""
 	for n in Utils.to_list(filename):
 		for d in Utils.to_list(path_list):
@@ -429,6 +432,7 @@ def find_program(self, filename, **kw):
 	:type msg: string
 	:param interpreter: interpreter for the program
 	:type interpreter: ConfigSet variable key
+	:raises: :py:class:`waflib.Errors.ConfigurationError`
 	"""
 
 	exts = kw.get('exts', Utils.is_win32 and '.exe,.com,.bat,.cmd' or ',.sh,.pl,.py')
@@ -587,7 +591,7 @@ def run_build(self, *k, **kw):
 		try:
 			bld.compile()
 		except Errors.WafError:
-			ret = 'Test does not build: %s' % Utils.ex_stack()
+			ret = 'Test does not build: %s' % traceback.format_exc()
 			self.fatal(ret)
 		else:
 			ret = getattr(bld, 'retval', 0)
@@ -639,3 +643,4 @@ def test(self, *k, **kw):
 	else:
 		self.end_msg(self.ret_msg(kw['okmsg'], kw), **kw)
 	return ret
+

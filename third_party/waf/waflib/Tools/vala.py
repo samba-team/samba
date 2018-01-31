@@ -13,7 +13,7 @@ this tool to be too stable either (apis, etc)
 """
 
 import re
-from waflib import Context, Task, Utils, Logs, Options, Errors, Node
+from waflib import Build, Context, Errors, Logs, Node, Options, Task, Utils
 from waflib.TaskGen import extension, taskgen_method
 from waflib.Configure import conf
 
@@ -149,8 +149,13 @@ def init_vala_task(self):
 				package_obj = self.bld.get_tgen_by_name(package)
 			except Errors.WafError:
 				continue
+
+			# in practice the other task is already processed
+			# but this makes it explicit
+			package_obj.post()
 			package_name = package_obj.target
-			for task in package_obj.tasks:
+			task = getattr(package_obj, 'valatask', None)
+			if task:
 				for output in task.outputs:
 					if output.name == package_name + ".vapi":
 						valatask.set_run_after(task)
@@ -185,21 +190,15 @@ def init_vala_task(self):
 
 	if self.is_lib and valatask.install_binding:
 		headers_list = [o for o in valatask.outputs if o.suffix() == ".h"]
-		try:
-			self.install_vheader.source = headers_list
-		except AttributeError:
+		if headers_list:
 			self.install_vheader = self.add_install_files(install_to=valatask.header_path, install_from=headers_list)
 
 		vapi_list = [o for o in valatask.outputs if (o.suffix() in (".vapi", ".deps"))]
-		try:
-			self.install_vapi.source = vapi_list
-		except AttributeError:
+		if vapi_list:
 			self.install_vapi = self.add_install_files(install_to=valatask.vapi_path, install_from=vapi_list)
 
 		gir_list = [o for o in valatask.outputs if o.suffix() == '.gir']
-		try:
-			self.install_gir.source = gir_list
-		except AttributeError:
+		if gir_list:
 			self.install_gir = self.add_install_files(
 				install_to=getattr(self, 'gir_path', '${DATAROOTDIR}/gir-1.0'), install_from=gir_list)
 
@@ -254,6 +253,15 @@ def vala_file(self, node):
 	valatask.outputs.append(c_node)
 	self.source.append(c_node)
 
+@extension('.vapi')
+def vapi_file(self, node):
+	try:
+		valatask = self.valatask
+	except AttributeError:
+		valatask = self.valatask = self.create_task('valac')
+		self.init_vala_task()
+	valatask.inputs.append(node)
+
 @conf
 def find_valac(self, valac_name, min_version):
 	"""
@@ -268,7 +276,7 @@ def find_valac(self, valac_name, min_version):
 	valac = self.find_program(valac_name, var='VALAC')
 	try:
 		output = self.cmd_and_log(valac + ['--version'])
-	except Exception:
+	except Errors.WafError:
 		valac_version = None
 	else:
 		ver = re.search(r'\d+.\d+.\d+', output).group().split('.')
@@ -348,3 +356,4 @@ def options(opt):
 	valaopts.add_option('--vala-target-glib', default=None,
 		dest='vala_target_glib', metavar='MAJOR.MINOR',
 		help='Target version of glib for Vala GObject code generation')
+

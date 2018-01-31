@@ -1,5 +1,9 @@
 #! /usr/bin/env python
 # encoding: utf-8
+# WARNING! Do not edit! https://waf.io/book/index.html#_obtaining_the_waf_file
+
+#! /usr/bin/env python
+# encoding: utf-8
 # Thomas Nagy, 2007-2010 (ita)
 
 """
@@ -12,13 +16,12 @@ a file named pdebug.svg in the source directory::
 		...
 """
 
-import time, sys, re
-try: from Queue import Queue
-except: from queue import Queue
-from waflib import Runner, Options, Utils, Task, Logs, Errors
-
-#import random
-#random.seed(100)
+import re, sys, threading, time, traceback
+try:
+	from Queue import Queue
+except:
+	from queue import Queue
+from waflib import Runner, Options, Task, Logs, Errors
 
 SVG_TEMPLATE = """<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN" "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
@@ -38,7 +41,7 @@ svg.addEventListener('mouseover', function(e) {
 	if (x) {
 		g.setAttribute('class', g.getAttribute('class') + ' over');
 		x.setAttribute('class', x.getAttribute('class') + ' over');
-		showInfo(e, g.id);
+		showInfo(e, g.id, e.target.attributes.tooltip.value);
 	}
 }, false);
 
@@ -52,11 +55,12 @@ svg.addEventListener('mouseout', function(e) {
 		}
 }, false);
 
-function showInfo(evt, txt) {
+function showInfo(evt, txt, details) {
+${if project.tooltip}
 	tooltip = document.getElementById('tooltip');
 
 	var t = document.getElementById('tooltiptext');
-	t.firstChild.data = txt;
+	t.firstChild.data = txt + " " + details;
 
 	var x = evt.clientX + 9;
 	if (x > 250) { x -= t.getComputedTextLength() + 16; }
@@ -66,6 +70,7 @@ function showInfo(evt, txt) {
 
 	var r = document.getElementById('tooltiprect');
 	r.setAttribute('width', t.getComputedTextLength() + 6);
+${endif}
 }
 
 function hideInfo(evt) {
@@ -77,8 +82,7 @@ function hideInfo(evt) {
 <!-- inkscape requires a big rectangle or it will not export the pictures properly -->
 <rect
    x='${project.x}' y='${project.y}' width='${project.width}' height='${project.height}'
-   style="font-size:10;fill:#ffffff;fill-opacity:0.01;fill-rule:evenodd;stroke:#ffffff;"
-   />
+   style="font-size:10;fill:#ffffff;fill-opacity:0.01;fill-rule:evenodd;stroke:#ffffff;"></rect>
 
 ${if project.title}
   <text x="${project.title_x}" y="${project.title_y}"
@@ -89,7 +93,7 @@ ${endif}
 ${for cls in project.groups}
   <g id='${cls.classname}'>
     ${for rect in cls.rects}
-    <rect x='${rect.x}' y='${rect.y}' width='${rect.width}' height='${rect.height}' style="font-size:10;fill:${rect.color};fill-rule:evenodd;stroke:#000000;stroke-width:0.4;" />
+    <rect x='${rect.x}' y='${rect.y}' width='${rect.width}' height='${rect.height}' tooltip='${rect.name}' style="font-size:10;fill:${rect.color};fill-rule:evenodd;stroke:#000000;stroke-width:0.4;" />
     ${endfor}
   </g>
 ${endfor}
@@ -103,10 +107,12 @@ ${for info in project.infos}
   </g>
 ${endfor}
 
+${if project.tooltip}
   <g transform="translate(0,0)" visibility="hidden" id="tooltip">
        <rect id="tooltiprect" y="-15" x="-3" width="1" height="20" style="stroke:black;fill:#edefc2;stroke-width:1"/>
-       <text id="tooltiptext" style="font-family:Arial; font-size:12;fill:black;" />
+       <text id="tooltiptext" style="font-family:Arial; font-size:12;fill:black;"> </text>
   </g>
+${endif}
 
 </svg>
 """
@@ -125,7 +131,8 @@ def compile_template(line):
 	extr = []
 	def repl(match):
 		g = match.group
-		if g('dollar'): return "$"
+		if g('dollar'):
+			return "$"
 		elif g('backslash'):
 			return "\\"
 		elif g('subst'):
@@ -150,14 +157,14 @@ def compile_template(line):
 			app("lst.append(%r)" % params[x])
 
 		f = extr[x]
-		if f.startswith('if') or f.startswith('for'):
+		if f.startswith(('if', 'for')):
 			app(f + ':')
 			indent += 1
 		elif f.startswith('py:'):
 			app(f[3:])
-		elif f.startswith('endif') or f.startswith('endfor'):
+		elif f.startswith(('endif', 'endfor')):
 			indent -= 1
-		elif f.startswith('else') or f.startswith('elif'):
+		elif f.startswith(('else', 'elif')):
 			indent -= 1
 			app(f + ':')
 			indent += 1
@@ -207,31 +214,23 @@ def map_to_color(name):
 	return color2code['RED']
 
 def process(self):
-	m = self.master
-	if m.stop:
-		m.out.put(self)
-		return
-
-	self.master.set_running(1, id(Utils.threading.currentThread()), self)
-
-	# remove the task signature immediately before it is executed
-	# in case of failure the task will be executed again
+	m = self.generator.bld.producer
 	try:
+		# TODO another place for this?
 		del self.generator.bld.task_sigs[self.uid()]
-	except:
+	except KeyError:
 		pass
 
+	self.generator.bld.producer.set_running(1, self)
+
 	try:
-		self.generator.bld.returned_tasks.append(self)
-		self.log_display(self.generator.bld)
 		ret = self.run()
 	except Exception:
-		self.err_msg = Utils.ex_stack()
+		self.err_msg = traceback.format_exc()
 		self.hasrun = Task.EXCEPTION
 
 		# TODO cleanup
 		m.error_handler(self)
-		m.out.put(self)
 		return
 
 	if ret:
@@ -243,17 +242,17 @@ def process(self):
 		except Errors.WafError:
 			pass
 		except Exception:
-			self.err_msg = Utils.ex_stack()
+			self.err_msg = traceback.format_exc()
 			self.hasrun = Task.EXCEPTION
 		else:
 			self.hasrun = Task.SUCCESS
 	if self.hasrun != Task.SUCCESS:
 		m.error_handler(self)
 
-	self.master.set_running(-1, id(Utils.threading.currentThread()), self)
-	m.out.put(self)
-Task.TaskBase.process_back = Task.TaskBase.process
-Task.TaskBase.process = process
+	self.generator.bld.producer.set_running(-1, self)
+
+Task.Task.process_back = Task.Task.process
+Task.Task.process = process
 
 old_start = Runner.Parallel.start
 def do_start(self):
@@ -268,8 +267,26 @@ def do_start(self):
 		make_picture(self)
 Runner.Parallel.start = do_start
 
-def set_running(self, by, i, tsk):
-	self.taskinfo.put( (i, id(tsk), time.time(), tsk.__class__.__name__, self.processed, self.count, by)  )
+lock_running = threading.Lock()
+def set_running(self, by, tsk):
+	with lock_running:
+		try:
+			cache = self.lock_cache
+		except AttributeError:
+			cache = self.lock_cache = {}
+
+		i = 0
+		if by > 0:
+			vals = cache.values()
+			for i in range(self.numjobs):
+				if i not in vals:
+					cache[tsk] = i
+					break
+		else:
+			i = cache[tsk]
+			del cache[tsk]
+
+		self.taskinfo.put( (i, id(tsk), time.time(), tsk.__class__.__name__, self.processed, self.count, by, ",".join(map(str, tsk.outputs)))  )
 Runner.Parallel.set_running = set_running
 
 def name2class(name):
@@ -309,7 +326,7 @@ def make_picture(producer):
 	acc = []
 	for x in tmp:
 		thread_count += x[6]
-		acc.append("%d %d %f %r %d %d %d" % (x[0], x[1], x[2] - ini, x[3], x[4], x[5], thread_count))
+		acc.append("%d %d %f %r %d %d %d %s" % (x[0], x[1], x[2] - ini, x[3], x[4], x[5], thread_count, x[7]))
 
 	data_node = producer.bld.path.make_node('pdebug.dat')
 	data_node.write('\n'.join(acc))
@@ -350,7 +367,7 @@ def make_picture(producer):
 				end = line[2]
 				#print id, thread_id, begin, end
 				#acc.append(  ( 10*thread_id, 10*(thread_id+1), 10*begin, 10*end ) )
-				acc.append( (BAND * begin, BAND*thread_id, BAND*end - BAND*begin, BAND, line[3]) )
+				acc.append( (BAND * begin, BAND*thread_id, BAND*end - BAND*begin, BAND, line[3], line[7]) )
 				break
 
 	if Options.options.dmaxtime < 0.1:
@@ -377,16 +394,18 @@ def make_picture(producer):
 	model.width = gwidth + 4
 	model.height = gheight + 4
 
+	model.tooltip = not Options.options.dnotooltip
+
 	model.title = Options.options.dtitle
 	model.title_x = gwidth / 2
 	model.title_y = gheight + - 5
 
 	groups = {}
-	for (x, y, w, h, clsname) in acc:
+	for (x, y, w, h, clsname, name) in acc:
 		try:
-			groups[clsname].append((x, y, w, h))
+			groups[clsname].append((x, y, w, h, name))
 		except:
-			groups[clsname] = [(x, y, w, h)]
+			groups[clsname] = [(x, y, w, h, name)]
 
 	# groups of rectangles (else js highlighting is slow)
 	model.groups = []
@@ -395,13 +414,14 @@ def make_picture(producer):
 		model.groups.append(g)
 		g.classname = name2class(cls)
 		g.rects = []
-		for (x, y, w, h) in groups[cls]:
+		for (x, y, w, h, name) in groups[cls]:
 			r = tobject()
 			g.rects.append(r)
 			r.x = 2 + x * ratio
 			r.y = 2 + y
 			r.width = w * ratio
 			r.height = h
+			r.name = name
 			r.color = map_to_color(cls)
 
 	cnt = THREAD_AMOUNT
@@ -430,7 +450,7 @@ def make_picture(producer):
 
 	node = producer.bld.path.make_node('pdebug.svg')
 	node.write(txt)
-	Logs.warn('Created the diagram %r' % node.abspath())
+	Logs.warn('Created the diagram %r', node)
 
 def options(opt):
 	opt.add_option('--dtitle', action='store', default='Parallel build representation for %r' % ' '.join(sys.argv),
@@ -439,3 +459,5 @@ def options(opt):
 	opt.add_option('--dtime', action='store', type='float', help='recording interval in seconds', default=0.009, dest='dtime')
 	opt.add_option('--dband', action='store', type='int', help='band width', default=22, dest='dband')
 	opt.add_option('--dmaxtime', action='store', type='float', help='maximum time, for drawing fair comparisons', default=0, dest='dmaxtime')
+	opt.add_option('--dnotooltip', action='store_true', help='disable tooltips', default=False, dest='dnotooltip')
+

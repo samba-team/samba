@@ -56,7 +56,7 @@ You also need to edit your sources accordingly:
         incs = set(self.to_list(getattr(self, 'includes', '')))
         for x in self.compiled_tasks:
             incs.add(x.inputs[0].parent.path_from(self.path))
-        self.includes = list(incs)
+        self.includes = sorted(incs)
 
 Note: another tool provides Qt processing that does not require
 .moc includes, see 'playground/slow_qt/'.
@@ -159,7 +159,7 @@ class qxx(Task.classes['cxx']):
 
 			# direct injection in the build phase (safe because called from the main thread)
 			gen = self.generator.bld.producer
-			gen.outstanding.insert(0, tsk)
+			gen.outstanding.append(tsk)
 			gen.total += 1
 
 			return tsk
@@ -194,7 +194,7 @@ class qxx(Task.classes['cxx']):
 		include_nodes = [node.parent] + self.generator.includes_nodes
 
 		moctasks = []
-		mocfiles = set([])
+		mocfiles = set()
 		for d in bld.raw_deps.get(self.uid(), []):
 			if not d.endswith('.moc'):
 				continue
@@ -243,7 +243,6 @@ class trans_update(Task.Task):
 	"""Update a .ts files from a list of C++ files"""
 	run_str = '${QT_LUPDATE} ${SRC} -ts ${TGT}'
 	color   = 'BLUE'
-Task.update_outputs(trans_update)
 
 class XMLHandler(ContentHandler):
 	"""
@@ -326,7 +325,8 @@ def apply_qt4(self):
 
 	lst = []
 	for flag in self.to_list(self.env['CXXFLAGS']):
-		if len(flag) < 2: continue
+		if len(flag) < 2:
+			continue
 		f = flag[0:2]
 		if f in ('-D', '-I', '/D', '/I'):
 			if (f[0] == '/'):
@@ -373,8 +373,10 @@ class rcc(Task.Task):
 		root = self.inputs[0].parent
 		for x in curHandler.files:
 			nd = root.find_resource(x)
-			if nd: nodes.append(nd)
-			else: names.append(x)
+			if nd:
+				nodes.append(nd)
+			else:
+				names.append(x)
 		return (nodes, names)
 
 class moc(Task.Task):
@@ -446,7 +448,7 @@ def find_qt4_binaries(self):
 	# the qt directory has been given from QT4_ROOT - deduce the qt binary path
 	if not qtdir:
 		qtdir = os.environ.get('QT4_ROOT', '')
-		qtbin = os.environ.get('QT4_BIN', None) or os.path.join(qtdir, 'bin')
+		qtbin = os.environ.get('QT4_BIN') or os.path.join(qtdir, 'bin')
 
 	if qtbin:
 		paths = [qtbin]
@@ -536,7 +538,7 @@ def find_qt4_binaries(self):
 
 @conf
 def find_qt4_libraries(self):
-	qtlibs = getattr(Options.options, 'qtlibs', None) or os.environ.get("QT4_LIBDIR", None)
+	qtlibs = getattr(Options.options, 'qtlibs', None) or os.environ.get("QT4_LIBDIR")
 	if not qtlibs:
 		try:
 			qtlibs = self.cmd_and_log(self.env.QMAKE + ['-query', 'QT_INSTALL_LIBS']).strip()
@@ -545,13 +547,13 @@ def find_qt4_libraries(self):
 			qtlibs = os.path.join(qtdir, 'lib')
 	self.msg('Found the Qt4 libraries in', qtlibs)
 
-	qtincludes =  os.environ.get("QT4_INCLUDES", None) or self.cmd_and_log(self.env.QMAKE + ['-query', 'QT_INSTALL_HEADERS']).strip()
+	qtincludes =  os.environ.get("QT4_INCLUDES") or self.cmd_and_log(self.env.QMAKE + ['-query', 'QT_INSTALL_HEADERS']).strip()
 	env = self.env
 	if not 'PKG_CONFIG_PATH' in os.environ:
 		os.environ['PKG_CONFIG_PATH'] = '%s:%s/pkgconfig:/usr/lib/qt4/lib/pkgconfig:/opt/qt4/lib/pkgconfig:/usr/lib/qt4/lib:/opt/qt4/lib' % (qtlibs, qtlibs)
 
 	try:
-		if os.environ.get("QT4_XCOMPILE", None):
+		if os.environ.get("QT4_XCOMPILE"):
 			raise self.errors.ConfigurationError()
 		self.check_cfg(atleast_pkgconfig_version='0.1')
 	except self.errors.ConfigurationError:
@@ -694,3 +696,4 @@ def options(opt):
 		opt.add_option('--'+i, type='string', default='', dest=i)
 
 	opt.add_option('--translate', action="store_true", help="collect translation strings", dest="trans_qt4", default=False)
+

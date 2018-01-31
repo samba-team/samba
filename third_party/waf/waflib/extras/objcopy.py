@@ -1,9 +1,13 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# WARNING! Do not edit! https://waf.io/book/index.html#_obtaining_the_waf_file
+
 #!/usr/bin/python
 # Grygoriy Fuchedzhy 2010
 
 """
 Support for converting linked targets to ihex, srec or binary files using
-objcopy. Use the 'objcopy' feature in conjuction with the 'cc' or 'cxx'
+objcopy. Use the 'objcopy' feature in conjunction with the 'cc' or 'cxx'
 feature. The 'objcopy' feature uses the following attributes:
 
 objcopy_bfdname		Target object format name (eg. ihex, srec, binary).
@@ -43,9 +47,8 @@ def map_objcopy(self):
 		pass
 
 	if self.objcopy_install_path:
-		self.bld.install_files(self.objcopy_install_path,
-							   task.outputs[0],
-							   env=task.env.derive())
+		self.add_install_files(install_to=self.objcopy_install_path, install_from=task.outputs[0])
 
 def configure(ctx):
 	ctx.find_program('objcopy', var='OBJCOPY', mandatory=True)
+

@@ -22,6 +22,7 @@ typos = {
 'importpath':'includes',
 'installpath':'install_path',
 'iscopy':'is_copy',
+'uses':'use',
 }
 
 meths_typos = ['__call__', 'program', 'shlib', 'stlib', 'objects']
@@ -73,8 +74,11 @@ def check_same_targets(self):
 		for (k, v) in uids.items():
 			if len(v) > 1:
 				Logs.error('* Several tasks use the same identifier. Please check the information on\n   https://waf.io/apidocs/Task.html?highlight=uid#waflib.Task.Task.uid')
+				tg_details = tsk.generator.name
+				if Logs.verbose > 2:
+					tg_details = tsk.generator
 				for tsk in v:
-					Logs.error('  - object %r (%r) defined in %r', tsk.__class__.__name__, tsk, tsk.generator)
+					Logs.error('  - object %r (%r) defined in %r', tsk.__class__.__name__, tsk, tg_details)
 
 def check_invalid_constraints(self):
 	feat = set()
@@ -135,15 +139,22 @@ def enhance_lib():
 					Logs.error("In ant_glob pattern %r: '..' means 'two dots', not 'parent directory'", k[0])
 				if '.' in sp:
 					Logs.error("In ant_glob pattern %r: '.' means 'one dot', not 'current directory'", k[0])
-		if kw.get('remove', True):
-			try:
-				if self.is_child_of(self.ctx.bldnode) and not kw.get('quiet', False):
-					Logs.error('Using ant_glob on the build folder (%r) is dangerous (quiet=True to disable this warning)', self)
-			except AttributeError:
-				pass
 		return self.old_ant_glob(*k, **kw)
 	Node.Node.old_ant_glob = Node.Node.ant_glob
 	Node.Node.ant_glob = ant_glob
+
+	# catch ant_glob on build folders
+	def ant_iter(self, accept=None, maxdepth=25, pats=[], dir=False, src=True, remove=True, quiet=False):
+		if remove:
+			try:
+				if self.is_child_of(self.ctx.bldnode) and not quiet:
+					quiet = True
+					Logs.error('Calling ant_glob on build folders (%r) is dangerous: add quiet=True / remove=False', self)
+			except AttributeError:
+				pass
+		return self.old_ant_iter(accept, maxdepth, pats, dir, src, remove, quiet)
+	Node.Node.old_ant_iter = Node.Node.ant_iter
+	Node.Node.ant_iter = ant_iter
 
 	# catch conflicting ext_in/ext_out/before/after declarations
 	old = Task.is_before
@@ -174,7 +185,7 @@ def enhance_lib():
 		else:
 			for x in ('before', 'after'):
 				for y in self.to_list(getattr(self, x, [])):
-					if not Task.classes.get(y, None):
+					if not Task.classes.get(y):
 						Logs.error('Erroneous order constraint %s=%r on %r (no such class)', x, y, self)
 	TaskGen.feature('*')(check_err_order)
 
@@ -216,7 +227,7 @@ def enhance_lib():
 		elif name == 'prepend':
 			raise Errors.WafError('env.prepend does not exist: use env.prepend_value')
 		if name in self.__slots__:
-			return object.__getattr__(self, name, default)
+			return super(ConfigSet.ConfigSet, self).__getattr__(name, default)
 		else:
 			return self[name]
 	ConfigSet.ConfigSet.__getattr__ = _getattr
@@ -227,3 +238,4 @@ def options(opt):
 	Error verification can be enabled by default (not just on ``waf -v``) by adding to the user script options
 	"""
 	enhance_lib()
+

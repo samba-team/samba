@@ -1,7 +1,7 @@
 #!/usr/bin/env python
-# encoding: ISO8859-1
-# Thomas Nagy, 2005-2015
-
+# encoding: latin-1
+# Thomas Nagy, 2005-2018
+#
 """
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions
@@ -32,16 +32,18 @@ POSSIBILITY OF SUCH DAMAGE.
 
 import os, sys, inspect
 
-VERSION="1.9.10"
+VERSION="2.0.4"
 REVISION="x"
 GIT="x"
-INSTALL=''
-C1='#>'
-C2='#6'
-C3='#4'
+INSTALL="x"
+C1='x'
+C2='x'
+C3='x'
 cwd = os.getcwd()
 join = os.path.join
 
+if sys.hexversion<0x206000f:
+	raise ImportError('Python >= 2.6 is required to create the waf file')
 
 WAF='waf'
 def b(x):
@@ -129,15 +131,16 @@ def test(dir):
 		pass
 
 def find_lib():
-	return os.path.abspath(os.path.join(os.path.dirname(__file__), '../../third_party/waf'))
+	path = '../../third_party/waf'
+	paths = [path, path+'/waflib']
+	return [os.path.abspath(os.path.join(os.path.dirname(__file__), x)) for x in paths]
 
 wafdir = find_lib()
-sys.path.insert(0, wafdir)
+for p in wafdir:
+	sys.path.insert(0, p)
 
 if __name__ == '__main__':
-
-	# TODO: remove these when possible
-	from waflib.extras import compat15
+	#import extras.compat15#PRELUDE
 	import sys
 
 	from waflib.Tools import ccroot, c, ar, compiler_c, gcc
@@ -147,7 +150,7 @@ if __name__ == '__main__':
 	sys.modules['compiler_cc'] = compiler_c
 	sys.modules['gcc'] = gcc
 
-        from waflib import Options
+	from waflib import Options
 	Options.lockfile = os.environ.get('WAFLOCK', '.lock-wscript')
 	if os.path.isfile(Options.lockfile) and os.stat(Options.lockfile).st_size == 0:
 		os.environ['NOCLIMB'] = "1"
@@ -160,5 +163,5 @@ if __name__ == '__main__':
 	Task.classes['cc_link'] = o
 
 	from waflib import Scripting
-	Scripting.waf_entry_point(cwd, VERSION, wafdir)
+	Scripting.waf_entry_point(cwd, VERSION, wafdir[0])
 

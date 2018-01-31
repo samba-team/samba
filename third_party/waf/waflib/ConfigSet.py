@@ -4,7 +4,7 @@
 
 #!/usr/bin/env python
 # encoding: utf-8
-# Thomas Nagy, 2005-2016 (ita)
+# Thomas Nagy, 2005-2018 (ita)
 
 """
 
@@ -48,9 +48,12 @@ class ConfigSet(object):
 			if 'foo' in env:
 				print(env['foo'])
 		"""
-		if key in self.table: return True
-		try: return self.parent.__contains__(key)
-		except AttributeError: return False # parent may not exist
+		if key in self.table:
+			return True
+		try:
+			return self.parent.__contains__(key)
+		except AttributeError:
+			return False # parent may not exist
 
 	def keys(self):
 		"""Dict interface"""
@@ -89,13 +92,13 @@ class ConfigSet(object):
 
 	def __setitem__(self, key, value):
 		"""
-		Dictionary interface: set value for key
+		Dictionary interface: set value from key
 		"""
 		self.table[key] = value
 
 	def __delitem__(self, key):
 		"""
-		Dictionary interface: mark the key as missing
+		Dictionary interface: mark the value as missing
 		"""
 		self[key] = []
 
@@ -108,7 +111,7 @@ class ConfigSet(object):
 				conf.env['value']
 		"""
 		if name in self.__slots__:
-			return object.__getattr__(self, name)
+			return object.__getattribute__(self, name)
 		else:
 			return self[name]
 
@@ -184,7 +187,8 @@ class ConfigSet(object):
 		:type key: string
 		"""
 		s = self[key]
-		if isinstance(s, str): return s
+		if isinstance(s, str):
+			return s
 		return ' '.join(s)
 
 	def _get_list_value_for_modification(self, key):
@@ -268,8 +272,10 @@ class ConfigSet(object):
 		env = self
 		while 1:
 			table_list.insert(0, env.table)
-			try: env = env.parent
-			except AttributeError: break
+			try:
+				env = env.parent
+			except AttributeError:
+				break
 		merged_table = {}
 		for table in table_list:
 			merged_table.update(table)
@@ -356,3 +362,4 @@ class ConfigSet(object):
 		Reverts the object to a previous state. See :py:meth:`ConfigSet.stash`
 		"""
 		self.table = self.undo_stack.pop(-1)
+

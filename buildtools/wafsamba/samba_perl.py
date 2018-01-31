@@ -1,5 +1,5 @@
-import Utils
-from Configure import conf
+from waflib import Utils
+from waflib.Configure import conf
 
 done = {}
 
@@ -9,7 +9,7 @@ def SAMBA_CHECK_PERL(conf, mandatory=True, version=(5,0,0)):
         return
     done["done"] = True
     conf.find_program('perl', var='PERL', mandatory=mandatory)
-    conf.check_tool('perl')
+    conf.load('perl')
     path_perl = conf.find_program('perl')
     conf.env.PERL_SPECIFIED = (conf.env.PERL != path_perl)
     conf.check_perl_version(version)

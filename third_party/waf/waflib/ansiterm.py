@@ -339,7 +339,8 @@ else:
 			return struct.unpack("HHHH", fcntl.ioctl(FD, termios.TIOCGWINSZ, struct.pack("HHHH", 0, 0, 0, 0)))[1]
 		try:
 			fun()
-		except Exception ,e:
+		except Exception as e:
 			pass
 		else:
 			get_term_cols = fun
+

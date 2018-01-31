@@ -4,7 +4,7 @@
 
 #!/usr/bin/env python
 # encoding: utf-8
-# Thomas Nagy, 2006-2016 (ita)
+# Thomas Nagy, 2006-2018 (ita)
 
 """
 Support for translation tools such as msgfmt and intltool
@@ -30,6 +30,8 @@ Usage::
 
 Usage of the :py:mod:`waflib.Tools.gnu_dirs` is recommended, but not obligatory.
 """
+
+from __future__ import with_statement
 
 import os, re
 from waflib import Context, Task, Utils, Logs
@@ -90,8 +92,10 @@ def apply_intltool_in_f(self):
 	:param install_path: installation path
 	:type install_path: string
 	"""
-	try: self.meths.remove('process_source')
-	except ValueError: pass
+	try:
+		self.meths.remove('process_source')
+	except ValueError:
+		pass
 
 	self.ensure_localedir()
 
@@ -145,8 +149,10 @@ def apply_intltool_po(self):
 
 	The file LINGUAS must be present in the directory pointed by *podir* and list the translation files to process.
 	"""
-	try: self.meths.remove('process_source')
-	except ValueError: pass
+	try:
+		self.meths.remove('process_source')
+	except ValueError:
+		pass
 
 	self.ensure_localedir()
 
@@ -157,13 +163,12 @@ def apply_intltool_po(self):
 	linguas = self.path.find_node(os.path.join(podir, 'LINGUAS'))
 	if linguas:
 		# scan LINGUAS file for locales to process
-		file = open(linguas.abspath())
-		langs = []
-		for line in file.readlines():
-			# ignore lines containing comments
-			if not line.startswith('#'):
-				langs += line.split()
-		file.close()
+		with open(linguas.abspath()) as f:
+			langs = []
+			for line in f.readlines():
+				# ignore lines containing comments
+				if not line.startswith('#'):
+					langs += line.split()
 		re_linguas = re.compile('[-a-zA-Z_@.]+')
 		for lang in langs:
 			# Make sure that we only process lines which contain locales
@@ -227,3 +232,4 @@ def configure(conf):
 	conf.find_intltool_merge()
 	if conf.env.CC or conf.env.CXX:
 		conf.check(header_name='locale.h')
+

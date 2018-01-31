@@ -1,8 +1,8 @@
 # waf build tool for building IDL files with pidl
 
 import os
-import Build, Logs, Utils, Configure
-from Configure import conf
+from waflib import Build, Logs, Utils, Configure, Errors
+from waflib.Configure import conf
 
 @conf
 def SAMBA_CHECK_PYTHON(conf, mandatory=True, version=(2,4,2)):
@@ -14,12 +14,12 @@ def SAMBA_CHECK_PYTHON(conf, mandatory=True, version=(2,4,2)):
     interpreters = []
 
     if conf.env['EXTRA_PYTHON']:
-        conf.all_envs['extrapython'] = conf.env.copy()
+        conf.all_envs['extrapython'] = conf.env.derive()
         conf.setenv('extrapython')
         conf.env['PYTHON'] = conf.env['EXTRA_PYTHON']
         conf.env['IS_EXTRA_PYTHON'] = 'yes'
         conf.find_program('python', var='PYTHON', mandatory=True)
-        conf.check_tool('python')
+        conf.load('python')
         try:
             conf.check_python_version((3, 3, 0))
         except Exception:
@@ -29,7 +29,7 @@ def SAMBA_CHECK_PYTHON(conf, mandatory=True, version=(2,4,2)):
         conf.setenv('default')
 
     conf.find_program('python', var='PYTHON', mandatory=mandatory)
-    conf.check_tool('python')
+    conf.load('python')
     path_python = conf.find_program('python')
     conf.env.PYTHON_SPECIFIED = (conf.env.PYTHON != path_python)
     conf.check_python_version(version)
@@ -42,7 +42,7 @@ def SAMBA_CHECK_PYTHON(conf, mandatory=True, version=(2,4,2)):
 def SAMBA_CHECK_PYTHON_HEADERS(conf, mandatory=True):
     if conf.env.disable_python:
         if mandatory:
-            raise Utils.WafError("Cannot check for python headers when "
+            raise Errors.WafError("Cannot check for python headers when "
                                  "--disable-python specified")
 
         conf.msg("python headers", "Check disabled due to --disable-python")
@@ -66,7 +66,7 @@ def SAMBA_CHECK_PYTHON_HEADERS(conf, mandatory=True):
         if conf.env['EXTRA_PYTHON']:
             extraversion = conf.all_envs['extrapython']['PYTHON_VERSION']
             if extraversion == conf.env['PYTHON_VERSION']:
-                raise Utils.WafError("extrapython %s is same as main python %s" % (
+                raise Errors.WafError("extrapython %s is same as main python %s" % (
                     extraversion, conf.env['PYTHON_VERSION']))
     else:
         conf.msg("python headers", "using cache")
@@ -79,9 +79,9 @@ def SAMBA_CHECK_PYTHON_HEADERS(conf, mandatory=True):
 
 def _check_python_headers(conf, mandatory):
     try:
-        Configure.ConfigurationError
+        conf.errors.ConfigurationError
         conf.check_python_headers()
-    except Configure.ConfigurationError:
+    except conf.errors.ConfigurationError:
         if mandatory:
              raise
 

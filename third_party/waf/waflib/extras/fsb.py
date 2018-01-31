@@ -1,5 +1,9 @@
 #! /usr/bin/env python
 # encoding: utf-8
+# WARNING! Do not edit! https://waf.io/book/index.html#_obtaining_the_waf_file
+
+#! /usr/bin/env python
+# encoding: utf-8
 # Thomas Nagy, 2011 (ita)
 
 """
@@ -28,3 +32,4 @@ class FSBContext(Build.BuildContext):
 
 	def compile(self):
 		pass
+

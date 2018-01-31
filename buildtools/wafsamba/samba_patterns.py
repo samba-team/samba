@@ -1,6 +1,6 @@
 # a waf tool to add extension based build patterns for Samba
 
-import Build
+from waflib import Build
 from wafsamba import samba_version_file
 
 def write_version_header(task):

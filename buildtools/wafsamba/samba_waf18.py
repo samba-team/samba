@@ -1,10 +1,10 @@
 # compatibility layer for building with more recent waf versions
 
 import os, shlex, sys
-import Build, Configure, Node, Utils, Options, Logs
+from waflib import Build, Configure, Node, Utils, Options, Logs
 from waflib import ConfigSet
-from TaskGen import feature, after
-from Configure import conf, ConfigurationContext
+from waflib.TaskGen import feature, after
+from waflib.Configure import conf, ConfigurationContext
 
 from waflib.Tools import bison, flex
 sys.modules['bison'] = bison
@@ -119,32 +119,6 @@ def find_program_samba(self, *k, **kw):
 Configure.ConfigurationContext.find_program_old = Configure.ConfigurationContext.find_program
 Configure.ConfigurationContext.find_program = find_program_samba
 
-def PROCESS_SEPARATE_RULE(self, rule):
-    ''' cause waf to process additional script based on `rule'.
-        You should have file named wscript_<stage>_rule in the current directory
-        where stage is either 'configure' or 'build'
-    '''
-    stage = ''
-    if isinstance(self, Configure.ConfigurationContext):
-        stage = 'configure'
-    elif isinstance(self, Build.BuildContext):
-        stage = 'build'
-    script = self.path.find_node('wscript_'+stage+'_'+rule)
-    if script:
-        txt = script.read()
-        bld = self
-        conf = self
-        ctx = self
-        dc = {'ctx': self, 'conf': self, 'bld': self}
-        if getattr(self.__class__, 'pre_recurse', None):
-            dc = self.pre_recurse(script)
-        exec(compile(txt, script.abspath(), 'exec'), dc)
-        if getattr(self.__class__, 'post_recurse', None):
-            dc = self.post_recurse(script)
-
-Build.BuildContext.PROCESS_SEPARATE_RULE = PROCESS_SEPARATE_RULE
-ConfigurationContext.PROCESS_SEPARATE_RULE = PROCESS_SEPARATE_RULE
-
 Build.BuildContext.ENFORCE_GROUP_ORDERING = Utils.nada
 Build.BuildContext.AUTOCLEANUP_STALE_FILES = Utils.nada
 
@@ -159,7 +133,7 @@ def check(self, *k, **kw):
     additional_dirs = []
     if 'msg' in kw:
         msg = kw['msg']
-        for x in Options.parser.parser.option_list:
+        for x in Options.OptionsContext.parser.parser.option_list:
              if getattr(x, 'match', None) and msg in x.match:
                  d = getattr(Options.options, x.dest, '')
                  if d:
@@ -265,3 +239,34 @@ def CHECK_CFG(self, *k, **kw):
         kw['mandatory'] = False
     kw['global_define'] = True
     return self.check_cfg(*k, **kw)
+
+def cmd_output(cmd, **kw):
+
+	silent = False
+	if 'silent' in kw:
+		silent = kw['silent']
+		del(kw['silent'])
+
+	if 'e' in kw:
+		tmp = kw['e']
+		del(kw['e'])
+		kw['env'] = tmp
+
+	kw['shell'] = isinstance(cmd, str)
+	kw['stdout'] = Utils.subprocess.PIPE
+	if silent:
+		kw['stderr'] = Utils.subprocess.PIPE
+
+	try:
+		p = Utils.subprocess.Popen(cmd, **kw)
+		output = p.communicate()[0]
+	except OSError as e:
+		raise ValueError(str(e))
+
+	if p.returncode:
+		if not silent:
+			msg = "command execution failed: %s -> %r" % (cmd, str(output))
+			raise ValueError(msg)
+		output = ''
+	return output
+Utils.cmd_output = cmd_output

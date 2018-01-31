@@ -1,5 +1,9 @@
 #! /usr/bin/env python
 # encoding: utf-8
+# WARNING! Do not edit! https://waf.io/book/index.html#_obtaining_the_waf_file
+
+#! /usr/bin/env python
+# encoding: utf-8
 # Avalanche Studios 2009-2011
 # Thomas Nagy 2011
 
@@ -41,33 +45,41 @@ It can be a good idea to add the sync_exec tool too.
 To generate solution files:
 $ waf configure msvs
 
-To customize the outputs, provide subclasses in your wscript files:
+To customize the outputs, provide subclasses in your wscript files::
 
-from waflib.extras import msvs
-class vsnode_target(msvs.vsnode_target):
-	def get_build_command(self, props):
-		# likely to be required
-		return "waf.bat build"
-	def collect_source(self):
-		# likely to be required
-		...
-class msvs_bar(msvs.msvs_generator):
-	def init(self):
-		msvs.msvs_generator.init(self)
-		self.vsnode_target = vsnode_target
+	from waflib.extras import msvs
+	class vsnode_target(msvs.vsnode_target):
+		def get_build_command(self, props):
+			# likely to be required
+			return "waf.bat build"
+		def collect_source(self):
+			# likely to be required
+			...
+	class msvs_bar(msvs.msvs_generator):
+		def init(self):
+			msvs.msvs_generator.init(self)
+			self.vsnode_target = vsnode_target
 
 The msvs class re-uses the same build() function for reading the targets (task generators),
-you may therefore specify msvs settings on the context object:
+you may therefore specify msvs settings on the context object::
 
-def build(bld):
-	bld.solution_name = 'foo.sln'
-	bld.waf_command = 'waf.bat'
-	bld.projects_dir = bld.srcnode.make_node('.depproj')
-	bld.projects_dir.mkdir()
+	def build(bld):
+		bld.solution_name = 'foo.sln'
+		bld.waf_command = 'waf.bat'
+		bld.projects_dir = bld.srcnode.make_node('.depproj')
+		bld.projects_dir.mkdir()
 
 For visual studio 2008, the command is called 'msvs2008', and the classes
 such as vsnode_target are wrapped by a decorator class 'wrap_2008' to
 provide special functionality.
+
+To customize platform toolsets, pass additional parameters, for example::
+
+	class msvs_2013(msvs.msvs_generator):
+		cmd = 'msvs2013'
+		numver = '13.00'
+		vsver = '2013'
+		platform_toolset_ver = 'v120'
 
 ASSUMPTIONS:
 * a project can be either a directory or a target, vcxproj files are written only for targets that have source files
@@ -105,7 +117,7 @@ PROJECT_TEMPLATE = r'''<?xml version="1.0" encoding="UTF-8"?>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='${b.configuration}|${b.platform}'" Label="Configuration">
 		<ConfigurationType>Makefile</ConfigurationType>
 		<OutDir>${b.outdir}</OutDir>
-		<PlatformToolset>v110</PlatformToolset>
+		<PlatformToolset>${project.platform_toolset_ver}</PlatformToolset>
 	</PropertyGroup>
 	${endfor}
 
@@ -293,7 +305,8 @@ def compile_template(line):
 	extr = []
 	def repl(match):
 		g = match.group
-		if g('dollar'): return "$"
+		if g('dollar'):
+			return "$"
 		elif g('backslash'):
 			return "\\"
 		elif g('subst'):
@@ -318,14 +331,14 @@ def compile_template(line):
 			app("lst.append(%r)" % params[x])
 
 		f = extr[x]
-		if f.startswith('if') or f.startswith('for'):
+		if f.startswith(('if', 'for')):
 			app(f + ':')
 			indent += 1
 		elif f.startswith('py:'):
 			app(f[3:])
-		elif f.startswith('endif') or f.startswith('endfor'):
+		elif f.startswith(('endif', 'endfor')):
 			indent -= 1
-		elif f.startswith('else') or f.startswith('elif'):
+		elif f.startswith(('else', 'elif')):
 			indent -= 1
 			app(f + ':')
 			indent += 1
@@ -351,7 +364,7 @@ def rm_blank_lines(txt):
 
 BOM = '\xef\xbb\xbf'
 try:
-	BOM = bytes(BOM, 'iso8859-1') # python 3
+	BOM = bytes(BOM, 'latin-1') # python 3
 except TypeError:
 	pass
 
@@ -364,7 +377,7 @@ def stealth_write(self, data, flags='wb'):
 		data = data.decode(sys.getfilesystemencoding(), 'replace')
 		data = data.encode('utf-8')
 
-	if self.name.endswith('.vcproj') or self.name.endswith('.vcxproj'):
+	if self.name.endswith(('.vcproj', '.vcxproj')):
 		data = BOM + data
 
 	try:
@@ -374,7 +387,7 @@ def stealth_write(self, data, flags='wb'):
 	except (IOError, ValueError):
 		self.write(data, flags=flags)
 	else:
-		Logs.debug('msvs: skipping %s' % self.win32path())
+		Logs.debug('msvs: skipping %s', self.win32path())
 Node.Node.stealth_write = stealth_write
 
 re_win32 = re.compile(r'^([/\\]cygdrive)?[/\\]([a-z])([^a-z0-9_-].*)', re.I)
@@ -509,6 +522,7 @@ class vsnode_project(vsnode):
 		self.path = node
 		self.uuid = make_uuid(node.win32path())
 		self.name = node.name
+		self.platform_toolset_ver = getattr(ctx, 'platform_toolset_ver', None)
 		self.title = self.path.win32path()
 		self.source = [] # list of node objects
 		self.build_properties = [] # list of properties (nmake commands, output dir, etc)
@@ -528,7 +542,7 @@ class vsnode_project(vsnode):
 		return lst
 
 	def write(self):
-		Logs.debug('msvs: creating %r' % self.path)
+		Logs.debug('msvs: creating %r', self.path)
 
 		# first write the project file
 		template1 = compile_template(PROJECT_TEMPLATE)
@@ -548,7 +562,7 @@ class vsnode_project(vsnode):
 		required for writing the source files
 		"""
 		name = node.name
-		if name.endswith('.cpp') or name.endswith('.c'):
+		if name.endswith(('.cpp', '.c')):
 			return 'ClCompile'
 		return 'ClInclude'
 
@@ -628,10 +642,10 @@ class vsnode_project_view(vsnode_alias):
 		vsnode_alias.__init__(self, ctx, node, name)
 		self.tg = self.ctx() # fake one, cannot remove
 		self.exclude_files = Node.exclude_regs + '''
-waf-1.8.*
-waf3-1.8.*/**
-.waf-1.8.*
-.waf3-1.8.*/**
+waf-2*
+waf3-2*/**
+.waf-2*
+.waf3-2*/**
 **/*.sdf
 **/*.suo
 **/*.ncb
@@ -715,6 +729,9 @@ class msvs_generator(BuildContext):
 	'''generates a visual studio 2010 solution'''
 	cmd = 'msvs'
 	fun = 'build'
+	numver = '11.00' # Visual Studio Version Number
+	vsver  = '2010'  # Visual Studio Version Year
+	platform_toolset_ver = 'v110' # Platform Toolset Version Number
 
 	def init(self):
 		"""
@@ -744,8 +761,9 @@ class msvs_generator(BuildContext):
 		if not getattr(self, 'vsnode_project_view', None):
 			self.vsnode_project_view = vsnode_project_view
 
-		self.numver = '11.00'
-		self.vsver  = '2010'
+		self.numver = self.__class__.numver
+		self.vsver  = self.__class__.vsver
+		self.platform_toolset_ver = self.__class__.platform_toolset_ver
 
 	def execute(self):
 		"""
@@ -789,7 +807,7 @@ class msvs_generator(BuildContext):
 		# and finally write the solution file
 		node = self.get_solution_node()
 		node.parent.mkdir()
-		Logs.warn('Creating %r' % node)
+		Logs.warn('Creating %r', node)
 		template1 = compile_template(SOLUTION_TEMPLATE)
 		sln_str = template1(self)
 		sln_str = rm_blank_lines(sln_str)
@@ -968,7 +986,7 @@ def wrap_2008(cls):
 			return ''
 
 		def write(self):
-			Logs.debug('msvs: creating %r' % self.path)
+			Logs.debug('msvs: creating %r', self.path)
 			template1 = compile_template(self.project_template)
 			proj_str = template1(self)
 			proj_str = rm_blank_lines(proj_str)
@@ -980,6 +998,8 @@ class msvs_2008_generator(msvs_generator):
 	'''generates a visual studio 2008 solution'''
 	cmd = 'msvs2008'
 	fun = msvs_generator.fun
+	numver = '10.00'
+	vsver = '2008'
 
 	def init(self):
 		if not getattr(self, 'project_extension', None):
@@ -997,8 +1017,6 @@ class msvs_2008_generator(msvs_generator):
 			self.vsnode_project_view = wrap_2008(vsnode_project_view)
 
 		msvs_generator.init(self)
-		self.numver = '10.00'
-		self.vsver  = '2008'
 
 def options(ctx):
 	"""
@@ -1031,3 +1049,4 @@ def options(ctx):
 		else:
 			old(ctx)
 	BuildContext.execute = override_build_state
+

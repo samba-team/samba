@@ -2,9 +2,10 @@
 
 import os, sys, re, time
 
-import Build, Environment, Options, Logs, Utils
-from Logs import debug
-from Configure import conf
+from waflib import Build, Options, Logs, Utils, Errors
+from waflib.Logs import debug
+from waflib.Configure import conf
+from waflib import ConfigSet
 
 from samba_bundled import BUILTIN_LIBRARY
 from samba_utils import LOCAL_CACHE, TO_LIST, get_tgt_list, unique_list, os_path_relpath
@@ -302,7 +303,7 @@ def check_duplicate_sources(bld, tgt_list):
             Logs.warn("WARNING: source %s is in more than one target: %s" % (s, subsystems[s].keys()))
         for tname in subsystems[s]:
             if len(subsystems[s][tname]) > 1:
-                raise Utils.WafError("ERROR: source %s is in more than one subsystem of target '%s': %s" % (s, tname, subsystems[s][tname]))
+                raise Errors.WafError("ERROR: source %s is in more than one subsystem of target '%s': %s" % (s, tname, subsystems[s][tname]))
 
     return True
 
@@ -963,7 +964,7 @@ savedeps_files   = ['buildtools/wafsamba/samba_deps.py']
 def save_samba_deps(bld, tgt_list):
     '''save the dependency calculations between builds, to make
        further builds faster'''
-    denv = Environment.Environment()
+    denv = ConfigSet.ConfigSet()
 
     denv.version = savedeps_version
     denv.savedeps_inputs = savedeps_inputs
@@ -1017,8 +1018,8 @@ def save_samba_deps(bld, tgt_list):
 
 def load_samba_deps(bld, tgt_list):
     '''load a previous set of build dependencies if possible'''
-    depsfile = os.path.join(bld.bdir, "sambadeps")
-    denv = Environment.Environment()
+    depsfile = os.path.join(bld.bldnode.abspath(), "sambadeps")
+    denv = ConfigSet.ConfigSet()
     try:
         debug('deps: checking saved dependencies')
         denv.load_fast(depsfile)

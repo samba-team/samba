@@ -5,7 +5,7 @@
 #! /usr/bin/env python
 # encoding: utf-8
 # KWS 2010
-# Thomas Nagy 2016 (ita)
+# Thomas Nagy 2016-2018 (ita)
 
 import re
 from waflib import Utils
@@ -67,3 +67,4 @@ def configure(conf):
 	conf.fc_add_flags()
 	conf.g95_flags()
 	conf.g95_modifier_platform()
+

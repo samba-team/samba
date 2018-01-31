@@ -4,9 +4,11 @@
 
 #!/usr/bin/env python
 # encoding: utf-8
-# Thomas Nagy, 2005-2016 (ita)
+# Thomas Nagy, 2005-2018 (ita)
 
 "Module called for configuring, compiling and installing targets"
+
+from __future__ import with_statement
 
 import os, shlex, shutil, traceback, errno, sys, stat
 from waflib import Utils, Configure, Logs, Options, ConfigSet, Context, Errors, Build, Node
@@ -28,58 +30,49 @@ def waf_entry_point(current_directory, version, wafdir):
 	:param wafdir: absolute path representing the directory of the waf library
 	:type wafdir: string
 	"""
-
 	Logs.init_log()
 
 	if Context.WAFVERSION != version:
 		Logs.error('Waf script %r and library %r do not match (directory %r)', version, Context.WAFVERSION, wafdir)
 		sys.exit(1)
 
-	if '--version' in sys.argv:
-		Context.run_dir = current_directory
-		ctx = Context.create_context('options')
-		ctx.curdir = current_directory
-		ctx.parse_args()
-		sys.exit(0)
+	# Store current directory before any chdir
+	Context.waf_dir = wafdir
+	Context.run_dir = Context.launch_dir = current_directory
+	start_dir = current_directory
+	no_climb = os.environ.get('NOCLIMB')
 
 	if len(sys.argv) > 1:
-		# os.path.join handles absolute paths in sys.argv[1] accordingly (it discards the previous ones)
+		# os.path.join handles absolute paths
 		# if sys.argv[1] is not an absolute path, then it is relative to the current working directory
 		potential_wscript = os.path.join(current_directory, sys.argv[1])
-		# maybe check if the file is executable
-		# perhaps extract 'wscript' as a constant
-		if os.path.basename(potential_wscript) == 'wscript' and os.path.isfile(potential_wscript):
+		if os.path.basename(potential_wscript) == Context.WSCRIPT_FILE and os.path.isfile(potential_wscript):
 			# need to explicitly normalize the path, as it may contain extra '/.'
-			# TODO abspath?
-			current_directory = os.path.normpath(os.path.dirname(potential_wscript))
+			path = os.path.normpath(os.path.dirname(potential_wscript))
+			start_dir = os.path.abspath(path)
+			no_climb = True
 			sys.argv.pop(1)
 
-	Context.waf_dir = wafdir
-	Context.launch_dir = current_directory
+	ctx = Context.create_context('options')
+	(options, commands, env) = ctx.parse_cmd_args(allow_unknown=True)
+	if options.top:
+		start_dir = Context.run_dir = Context.top_dir = options.top
+		no_climb = True
+	if options.out:
+		Context.out_dir = options.out
 
 	# if 'configure' is in the commands, do not search any further
-	no_climb = os.environ.get('NOCLIMB')
 	if not no_climb:
 		for k in no_climb_commands:
-			for y in sys.argv:
+			for y in commands:
 				if y.startswith(k):
 					no_climb = True
 					break
 
-	# if --top is provided assume the build started in the top directory
-	for i, x in enumerate(sys.argv):
-		# WARNING: this modifies sys.argv
-		if x.startswith('--top='):
-			Context.run_dir = Context.top_dir = Utils.sane_path(x[6:])
-			sys.argv[i] = '--top=' + Context.run_dir
-		if x.startswith('--out='):
-			Context.out_dir = Utils.sane_path(x[6:])
-			sys.argv[i] = '--out=' + Context.out_dir
-
 	# try to find a lock file (if the project was configured)
 	# at the same time, store the first wscript file seen
-	cur = current_directory
-	while cur and not Context.top_dir:
+	cur = start_dir
+	while cur:
 		try:
 			lst = os.listdir(cur)
 		except OSError:
@@ -134,14 +127,11 @@ def waf_entry_point(current_directory, version, wafdir):
 			break
 
 	if not Context.run_dir:
-		if '-h' in sys.argv or '--help' in sys.argv:
-			Logs.warn('No wscript file found: the help message may be incomplete')
-			Context.run_dir = current_directory
-			ctx = Context.create_context('options')
-			ctx.curdir = current_directory
-			ctx.parse_args()
+		if options.whelp:
+			Logs.warn('These are the generic options (no wscript/project found)')
+			ctx.parser.print_help()
 			sys.exit(0)
-		Logs.error('Waf: Run from a directory containing a file named %r', Context.WSCRIPT_FILE)
+		Logs.error('Waf: Run from a folder containing a %r file (or try -h for the generic options)', Context.WSCRIPT_FILE)
 		sys.exit(1)
 
 	try:
@@ -152,31 +142,40 @@ def waf_entry_point(current_directory, version, wafdir):
 
 	try:
 		set_main_module(os.path.normpath(os.path.join(Context.run_dir, Context.WSCRIPT_FILE)))
-	except Errors.WafError ,e:
+	except Errors.WafError as e:
 		Logs.pprint('RED', e.verbose_msg)
 		Logs.error(str(e))
 		sys.exit(1)
-	except Exception ,e:
+	except Exception as e:
 		Logs.error('Waf: The wscript in %r is unreadable', Context.run_dir)
 		traceback.print_exc(file=sys.stdout)
 		sys.exit(2)
 
-	if '--profile' in sys.argv:
+	if options.profile:
 		import cProfile, pstats
 		cProfile.runctx('from waflib import Scripting; Scripting.run_commands()', {}, {}, 'profi.txt')
 		p = pstats.Stats('profi.txt')
 		p.sort_stats('time').print_stats(75) # or 'cumulative'
 	else:
 		try:
-			run_commands()
-		except Errors.WafError ,e:
+			try:
+				run_commands()
+			except:
+				if options.pdb:
+					import pdb
+					type, value, tb = sys.exc_info()
+					traceback.print_exc()
+					pdb.post_mortem(tb)
+				else:
+					raise
+		except Errors.WafError as e:
 			if Logs.verbose > 1:
 				Logs.pprint('RED', e.verbose_msg)
 			Logs.error(e.msg)
 			sys.exit(1)
 		except SystemExit:
 			raise
-		except Exception ,e:
+		except Exception as e:
 			traceback.print_exc(file=sys.stdout)
 			sys.exit(2)
 		except KeyboardInterrupt:
@@ -217,29 +216,13 @@ def parse_options():
 	Parses the command-line options and initialize the logging system.
 	Called by :py:func:`waflib.Scripting.waf_entry_point` during the initialization.
 	"""
-	Context.create_context('options').execute()
-
-	for var in Options.envvars:
-		(name, value) = var.split('=', 1)
-		os.environ[name.strip()] = value
-
+	ctx = Context.create_context('options')
+	ctx.execute()
 	if not Options.commands:
-		Options.commands = [default_cmd]
-	Options.commands = [x for x in Options.commands if x != 'options'] # issue 1076
-
-	# process some internal Waf options
-	Logs.verbose = Options.options.verbose
-	#Logs.init_log()
-
-	if Options.options.zones:
-		Logs.zones = Options.options.zones.split(',')
-		if not Logs.verbose:
-			Logs.verbose = 1
-	elif Logs.verbose > 0:
-		Logs.zones = ['runner']
-
-	if Logs.verbose > 2:
-		Logs.zones = ['*']
+		Options.commands.append(default_cmd)
+	if Options.options.whelp:
+		ctx.parser.print_help()
+		sys.exit(0)
 
 def run_command(cmd_name):
 	"""
@@ -305,38 +288,53 @@ def distclean_dir(dirname):
 		pass
 
 def distclean(ctx):
-	'''removes the build directory'''
-	lst = os.listdir('.')
-	for f in lst:
-		if f == Options.lockfile:
-			try:
-				proj = ConfigSet.ConfigSet(f)
-			except IOError:
-				Logs.warn('Could not read %r', f)
-				continue
+	'''removes build folders and data'''
 
-			if proj['out_dir'] != proj['top_dir']:
-				try:
-					shutil.rmtree(proj['out_dir'])
-				except EnvironmentError ,e:
-					if e.errno != errno.ENOENT:
-						Logs.warn('Could not remove %r', proj['out_dir'])
-			else:
-				distclean_dir(proj['out_dir'])
+	def remove_and_log(k, fun):
+		try:
+			fun(k)
+		except EnvironmentError as e:
+			if e.errno != errno.ENOENT:
+				Logs.warn('Could not remove %r', k)
 
-			for k in (proj['out_dir'], proj['top_dir'], proj['run_dir']):
-				p = os.path.join(k, Options.lockfile)
-				try:
-					os.remove(p)
-				except OSError ,e:
-					if e.errno != errno.ENOENT:
-						Logs.warn('Could not remove %r', p)
+	# remove waf cache folders on the top-level
+	if not Options.commands:
+		for k in os.listdir('.'):
+			for x in '.waf-2 waf-2 .waf3-2 waf3-2'.split():
+				if k.startswith(x):
+					remove_and_log(k, shutil.rmtree)
 
-		# remove local waf cache folders
-		if not Options.commands:
-			for x in '.waf-1. waf-1. .waf3-1. waf3-1.'.split():
-				if f.startswith(x):
-					shutil.rmtree(f, ignore_errors=True)
+	# remove a build folder, if any
+	cur = '.'
+	if ctx.options.no_lock_in_top:
+		cur = ctx.options.out
+
+	try:
+		lst = os.listdir(cur)
+	except OSError:
+		Logs.warn('Could not read %r', cur)
+		return
+
+	if Options.lockfile in lst:
+		f = os.path.join(cur, Options.lockfile)
+		try:
+			env = ConfigSet.ConfigSet(f)
+		except EnvironmentError:
+			Logs.warn('Could not read %r', f)
+			return
+
+		if not env.out_dir or not env.top_dir:
+			Logs.warn('Invalid lock file %r', f)
+			return
+
+		if env.out_dir == env.top_dir:
+			distclean_dir(env.out_dir)
+		else:
+			remove_and_log(env.out_dir, shutil.rmtree)
+
+		for k in (env.out_dir, env.top_dir, env.run_dir):
+			p = os.path.join(k, Options.lockfile)
+			remove_and_log(p, os.remove)
 
 class Dist(Context.Context):
 	'''creates an archive containing the project source code'''
@@ -391,11 +389,11 @@ class Dist(Context.Context):
 			self.fatal('Valid algo types are tar.bz2, tar.gz, tar.xz or zip')
 
 		try:
-			from hashlib import sha1
+			from hashlib import sha256
 		except ImportError:
 			digest = ''
 		else:
-			digest = ' (sha=%r)' % sha1(node.read(flags='rb')).hexdigest()
+			digest = ' (sha256=%r)' % sha256(node.read(flags='rb')).hexdigest()
 
 		Logs.info('New archive created: %s%s', self.arch_name, digest)
 
@@ -424,11 +422,8 @@ class Dist(Context.Context):
 		tinfo.gname = 'root'
 
 		if os.path.isfile(p):
-			fu = open(p, 'rb')
-			try:
-				tar.addfile(tinfo, fileobj=fu)
-			finally:
-				fu.close()
+			with open(p, 'rb') as f:
+				tar.addfile(tinfo, fileobj=f)
 		else:
 			tar.addfile(tinfo)
 
@@ -490,7 +485,7 @@ class Dist(Context.Context):
 		try:
 			return self.excl
 		except AttributeError:
-			self.excl = Node.exclude_regs + ' **/waf-1.8.* **/.waf-1.8* **/waf3-1.8.* **/.waf3-1.8* **/*~ **/*.rej **/*.orig **/*.pyc **/*.pyo **/*.bak **/*.swp **/.lock-w*'
+			self.excl = Node.exclude_regs + ' **/waf-2.* **/.waf-2.* **/waf3-2.* **/.waf3-2.* **/*~ **/*.rej **/*.orig **/*.pyc **/*.pyo **/*.bak **/*.swp **/.lock-w*'
 			if Context.out_dir:
 				nd = self.root.find_node(Context.out_dir)
 				if nd:
@@ -523,11 +518,7 @@ def dist(ctx):
 	pass
 
 class DistCheck(Dist):
-	"""
-	Creates an archive of the project, then attempts to build the project in a temporary directory::
-
-		$ waf distcheck
-	"""
+	"""creates an archive with dist, then tries to build it"""
 	fun = 'distcheck'
 	cmd = 'distcheck'
 
@@ -554,12 +545,9 @@ class DistCheck(Dist):
 		"""
 		import tempfile, tarfile
 
-		try:
-			t = tarfile.open(self.get_arch_name())
+		with tarfile.open(self.get_arch_name()) as t:
 			for x in t:
 				t.extract(x)
-		finally:
-			t.close()
 
 		instdir = tempfile.mkdtemp('.inst', self.get_base_name())
 		cmd = self.make_distcheck_cmd(instdir)
@@ -613,7 +601,8 @@ def autoconfigure(execute_method):
 			cmd = env.config_cmd or 'configure'
 			if Configure.autoconfig == 'clobber':
 				tmp = Options.options.__dict__
-				Options.options.__dict__ = env.options
+				if env.options:
+					Options.options.__dict__ = env.options
 				try:
 					run_command(cmd)
 				finally:
@@ -625,3 +614,4 @@ def autoconfigure(execute_method):
 			return execute_method(self)
 	return execute
 Build.BuildContext.execute = autoconfigure(Build.BuildContext.execute)
+

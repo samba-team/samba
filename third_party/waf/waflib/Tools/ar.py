@@ -4,7 +4,7 @@
 
 #!/usr/bin/env python
 # encoding: utf-8
-# Thomas Nagy, 2006-2016 (ita)
+# Thomas Nagy, 2006-2018 (ita)
 # Ralf Habacker, 2006 (rh)
 
 """
@@ -25,3 +25,4 @@ def configure(conf):
 	conf.add_os_flags('ARFLAGS')
 	if not conf.env.ARFLAGS:
 		conf.env.ARFLAGS = ['rcs']
+

@@ -4,7 +4,7 @@
 
 #!/usr/bin/env python
 # encoding: utf-8
-# Thomas Nagy, 2005-2016 (ita)
+# Thomas Nagy, 2005-2018 (ita)
 
 """
 Node: filesystem structure
@@ -34,6 +34,7 @@ exclude_regs = '''
 **/.#*
 **/%*%
 **/._*
+**/*.swp
 **/CVS
 **/CVS/**
 **/.cvsignore
@@ -63,6 +64,52 @@ exclude_regs = '''
 Ant patterns for files and folders to exclude while doing the
 recursive traversal in :py:meth:`waflib.Node.Node.ant_glob`
 """
+
+def ant_matcher(s, ignorecase):
+	reflags = re.I if ignorecase else 0
+	ret = []
+	for x in Utils.to_list(s):
+		x = x.replace('\\', '/').replace('//', '/')
+		if x.endswith('/'):
+			x += '**'
+		accu = []
+		for k in x.split('/'):
+			if k == '**':
+				accu.append(k)
+			else:
+				k = k.replace('.', '[.]').replace('*','.*').replace('?', '.').replace('+', '\\+')
+				k = '^%s$' % k
+				try:
+					exp = re.compile(k, flags=reflags)
+				except Exception as e:
+					raise Errors.WafError('Invalid pattern: %s' % k, e)
+				else:
+					accu.append(exp)
+		ret.append(accu)
+	return ret
+
+def ant_sub_filter(name, nn):
+	ret = []
+	for lst in nn:
+		if not lst:
+			pass
+		elif lst[0] == '**':
+			ret.append(lst)
+			if len(lst) > 1:
+				if lst[1].match(name):
+					ret.append(lst[2:])
+			else:
+				ret.append([])
+		elif lst[0].match(name):
+			ret.append(lst[1:])
+	return ret
+
+def ant_sub_matcher(name, pats):
+	nacc = ant_sub_filter(name, pats[0])
+	nrej = ant_sub_filter(name, pats[1])
+	if [] in nrej:
+		nacc = []
+	return [nacc, nrej]
 
 class Node(object):
 	"""
@@ -125,7 +172,7 @@ class Node(object):
 		"""
 		raise Errors.WafError('nodes are not supposed to be copied')
 
-	def read(self, flags='r', encoding='ISO8859-1'):
+	def read(self, flags='r', encoding='latin-1'):
 		"""
 		Reads and returns the contents of the file represented by this node, see :py:func:`waflib.Utils.readf`::
 
@@ -141,7 +188,7 @@ class Node(object):
 		"""
 		return Utils.readf(self.abspath(), flags, encoding)
 
-	def write(self, data, flags='w', encoding='ISO8859-1'):
+	def write(self, data, flags='w', encoding='latin-1'):
 		"""
 		Writes data to the file represented by this node, see :py:func:`waflib.Utils.writef`::
 
@@ -344,6 +391,11 @@ class Node(object):
 		if isinstance(lst, str):
 			lst = [x for x in Utils.split_path(lst) if x and x != '.']
 
+		if lst and lst[0].startswith('\\\\') and not self.parent:
+			node = self.ctx.root.make_node(lst[0])
+			node.cache_isdir = True
+			return node.find_node(lst[1:])
+
 		cur = self
 		for x in lst:
 			if x == '..':
@@ -525,7 +577,7 @@ class Node(object):
 			p = p.parent
 		return p is node
 
-	def ant_iter(self, accept=None, maxdepth=25, pats=[], dir=False, src=True, remove=True):
+	def ant_iter(self, accept=None, maxdepth=25, pats=[], dir=False, src=True, remove=True, quiet=False):
 		"""
 		Recursive method used by :py:meth:`waflib.Node.ant_glob`.
 
@@ -541,6 +593,8 @@ class Node(object):
 		:type src: bool
 		:param remove: remove files/folders that do not exist (True by default)
 		:type remove: bool
+		:param quiet: disable build directory traversal warnings (verbose mode)
+		:type quiet: bool
 		:returns: A generator object to iterate from
 		:rtype: iterator
 		"""
@@ -568,14 +622,13 @@ class Node(object):
 					if isdir:
 						if dir:
 							yield node
-					else:
-						if src:
-							yield node
+					elif src:
+						yield node
 
 				if isdir:
 					node.cache_isdir = True
 					if maxdepth:
-						for k in node.ant_iter(accept=accept, maxdepth=maxdepth - 1, pats=npats, dir=dir, src=src, remove=remove):
+						for k in node.ant_iter(accept=accept, maxdepth=maxdepth - 1, pats=npats, dir=dir, src=src, remove=remove, quiet=quiet):
 							yield k
 		raise StopIteration
 
@@ -607,79 +660,41 @@ class Node(object):
 		:type dir: bool
 		:param src: return files (True by default)
 		:type src: bool
-		:param remove: remove files/folders that do not exist (True by default)
-		:type remove: bool
 		:param maxdepth: maximum depth of recursion
 		:type maxdepth: int
 		:param ignorecase: ignore case while matching (False by default)
 		:type ignorecase: bool
 		:returns: The corresponding Nodes
-		:rtype: list of :py:class:`waflib.Node.Node` instances
+		:type generator: bool
+		:param remove: remove files/folders that do not exist (True by default)
+		:type remove: bool
+		:param quiet: disable build directory traversal warnings (verbose mode)
+		:type quiet: bool
+		:returns: Whether to evaluate the Nodes lazily, alters the type of the returned value
+		:rtype: by default, list of :py:class:`waflib.Node.Node` instances
 		"""
-
 		src = kw.get('src', True)
-		dir = kw.get('dir', False)
-
+		dir = kw.get('dir')
 		excl = kw.get('excl', exclude_regs)
 		incl = k and k[0] or kw.get('incl', '**')
-		reflags = kw.get('ignorecase', 0) and re.I
+		remove = kw.get('remove', True)
+		maxdepth = kw.get('maxdepth', 25)
+		ignorecase = kw.get('ignorecase', False)
+		quiet = kw.get('quiet', False)
+		pats = (ant_matcher(incl, ignorecase), ant_matcher(excl, ignorecase))
 
-		def to_pat(s):
-			lst = Utils.to_list(s)
-			ret = []
-			for x in lst:
-				x = x.replace('\\', '/').replace('//', '/')
-				if x.endswith('/'):
-					x += '**'
-				lst2 = x.split('/')
-				accu = []
-				for k in lst2:
-					if k == '**':
-						accu.append(k)
-					else:
-						k = k.replace('.', '[.]').replace('*','.*').replace('?', '.').replace('+', '\\+')
-						k = '^%s$' % k
-						try:
-							#print "pattern", k
-							accu.append(re.compile(k, flags=reflags))
-						except Exception ,e:
-							raise Errors.WafError('Invalid pattern: %s' % k, e)
-				ret.append(accu)
-			return ret
+		if kw.get('generator'):
+			return Utils.lazy_generator(self.ant_iter, (ant_sub_matcher, maxdepth, pats, dir, src, remove, quiet))
 
-		def filtre(name, nn):
-			ret = []
-			for lst in nn:
-				if not lst:
-					pass
-				elif lst[0] == '**':
-					ret.append(lst)
-					if len(lst) > 1:
-						if lst[1].match(name):
-							ret.append(lst[2:])
-					else:
-						ret.append([])
-				elif lst[0].match(name):
-					ret.append(lst[1:])
-			return ret
+		it = self.ant_iter(ant_sub_matcher, maxdepth, pats, dir, src, remove, quiet)
+		if kw.get('flat'):
+			# returns relative paths as a space-delimited string
+			# prefer Node objects whenever possible
+			return ' '.join(x.path_from(self) for x in it)
+		return list(it)
 
-		def accept(name, pats):
-			nacc = filtre(name, pats[0])
-			nrej = filtre(name, pats[1])
-			if [] in nrej:
-				nacc = []
-			return [nacc, nrej]
-
-		ret = [x for x in self.ant_iter(accept=accept, pats=[to_pat(incl), to_pat(excl)], maxdepth=kw.get('maxdepth', 25), dir=dir, src=src, remove=kw.get('remove', True))]
-		if kw.get('flat', False):
-			return ' '.join([x.path_from(self) for x in ret])
-
-		return ret
-
-	# --------------------------------------------------------------------------------
-	# the following methods require the source/build folders (bld.srcnode/bld.bldnode)
-	# using a subclass is a possibility, but is that really necessary?
-	# --------------------------------------------------------------------------------
+	# ----------------------------------------------------------------------------
+	# the methods below require the source/build folders (bld.srcnode/bld.bldnode)
 
 	def is_src(self):
 		"""
@@ -784,29 +799,19 @@ class Node(object):
 
 	def find_or_declare(self, lst):
 		"""
-		Use this method in the build phase to declare output files.
+		Use this method in the build phase to declare output files which
+		are meant to be written in the build directory.
 
-		If 'self' is in build directory, it first tries to return an existing node object.
-		If no Node is found, it tries to find one in the source directory.
-		If no Node is found, a new Node object is created in the build directory, and the
-		intermediate folders are added.
+		This method creates the Node object and its parent folder
+		as needed.
 
 		:param lst: relative path
 		:type lst: string or list of string
 		"""
-		if isinstance(lst, str):
-			lst = [x for x in Utils.split_path(lst) if x and x != '.']
-
-		node = self.get_bld().search_node(lst)
-		if node:
-			if not os.path.isfile(node.abspath()):
-				node.parent.mkdir()
-			return node
-		self = self.get_src()
-		node = self.find_node(lst)
-		if node:
-			return node
-		node = self.get_bld().make_node(lst)
+		if isinstance(lst, str) and os.path.isabs(lst):
+			node = self.ctx.root.make_node(lst)
+		else:
+			node = self.get_bld().make_node(lst)
 		node.parent.mkdir()
 		return node
 
@@ -923,22 +928,11 @@ class Node(object):
 				raise
 		return ret
 
-	# --------------------------------------------
-	# TODO waf 2.0, remove the sig and cache_sig attributes
-	def get_sig(self):
-		return self.h_file()
-	def set_sig(self, val):
-		# clear the cache, so that past implementation should still work
-		try:
-			del self.get_bld_sig.__cache__[(self,)]
-		except (AttributeError, KeyError):
-			pass
-	sig = property(get_sig, set_sig)
-	cache_sig = property(get_sig, set_sig)
-
 pickle_lock = Utils.threading.Lock()
 """Lock mandatory for thread-safe node serialization"""
 
 class Nod3(Node):
 	"""Mandatory subclass for thread-safe node serialization"""
 	pass # do not remove
+
+

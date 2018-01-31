@@ -4,7 +4,7 @@
 
 #! /usr/bin/env python
 # encoding: utf-8
-# Thomas Nagy, 2016 (ita)
+# Thomas Nagy, 2016-2018 (ita)
 
 import os, sys, traceback, base64, signal
 try:
@@ -20,7 +20,7 @@ except ImportError:
 try:
 	TimeoutExpired = subprocess.TimeoutExpired
 except AttributeError:
-	class TimeoutExpired(object):
+	class TimeoutExpired(Exception):
 		pass
 
 def run():
@@ -47,7 +47,7 @@ def run():
 			exc.stderr = err
 			raise exc
 		ret = proc.returncode
-	except Exception ,e:
+	except Exception as e:
 		exc_type, exc_value, tb = sys.exc_info()
 		exc_lines = traceback.format_exception(exc_type, exc_value, tb)
 		trace = str(cmd) + '\n' + ''.join(exc_lines)
@@ -65,3 +65,4 @@ while 1:
 		run()
 	except KeyboardInterrupt:
 		break
+

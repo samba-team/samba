@@ -1,5 +1,5 @@
 import os
-import Utils
+from waflib import Utils, Context
 import samba_utils
 from samba_git import find_git
 
@@ -260,5 +260,5 @@ def load_version(env=None, is_install=True):
         env = samba_utils.LOAD_ENVIRONMENT()
 
     version = samba_version_file("./VERSION", ".", env, is_install=is_install)
-    Utils.g_module.VERSION = version.STRING
+    Context.g_module.VERSION = version.STRING
     return version

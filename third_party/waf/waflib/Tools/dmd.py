@@ -5,7 +5,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 # Carlos Rafael Giani, 2007 (dv)
-# Thomas Nagy, 2008-2016 (ita)
+# Thomas Nagy, 2008-2018 (ita)
 
 import sys
 from waflib.Tools import ar, d
@@ -81,3 +81,4 @@ def configure(conf):
 
 	if str(conf.env.D).find('ldc') > -1:
 		conf.common_flags_ldc()
+

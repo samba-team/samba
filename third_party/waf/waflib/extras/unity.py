@@ -1,67 +1,112 @@
 #! /usr/bin/env python
 # encoding: utf-8
+# WARNING! Do not edit! https://waf.io/book/index.html#_obtaining_the_waf_file
+
+#! /usr/bin/env python
+# encoding: utf-8
 
 """
-Compile whole groups of C/C++ files at once.
+Compile whole groups of C/C++ files at once
+(C and C++ files are processed independently though).
 
-def build(bld):
-	bld.load('compiler_cxx unity')
+To enable globally::
+
+	def options(opt):
+		opt.load('compiler_cxx')
+	def build(bld):
+		bld.load('compiler_cxx unity')
+
+To enable for specific task generators only::
+
+	def build(bld):
+		bld(features='c cprogram unity', source='main.c', ...)
+
+The file order is often significant in such builds, so it can be
+necessary to adjust the order of source files and the batch sizes.
+To control the amount of files processed in a batch per target
+(the default is 50)::
+
+	def build(bld):
+		bld(features='c cprogram', unity_size=20)
+
 """
 
-import sys
 from waflib import Task, Options
 from waflib.Tools import c_preproc
 from waflib import TaskGen
 
 MAX_BATCH = 50
 
+EXTS_C = ('.c',)
+EXTS_CXX = ('.cpp','.cc','.cxx','.C','.c++')
+
 def options(opt):
 	global MAX_BATCH
-	opt.add_option('--batchsize', action='store', dest='batchsize', type='int', default=MAX_BATCH, help='batch size (0 for no batch)')
+	opt.add_option('--batchsize', action='store', dest='batchsize', type='int', default=MAX_BATCH,
+		help='default unity batch size (0 disables unity builds)')
+
+@TaskGen.taskgen_method
+def batch_size(self):
+	default = getattr(Options.options, 'batchsize', MAX_BATCH)
+	if default < 1:
+		return 0
+	return getattr(self, 'unity_size', default)
+
 
 class unity(Task.Task):
 	color = 'BLUE'
 	scan = c_preproc.scan
+	def to_include(self, node):
+		ret = node.path_from(self.outputs[0].parent)
+		ret = ret.replace('\\', '\\\\').replace('"', '\\"')
+		return ret
 	def run(self):
-		lst = ['#include "%s"\n' % node.abspath() for node in self.inputs]
+		lst = ['#include "%s"\n' % self.to_include(node) for node in self.inputs]
 		txt = ''.join(lst)
 		self.outputs[0].write(txt)
+	def __str__(self):
+		node = self.outputs[0]
+		return node.path_from(node.ctx.launch_node())
 
-@TaskGen.taskgen_method
-def batch_size(self):
-	return getattr(Options.options, 'batchsize', MAX_BATCH)
+def bind_unity(obj, cls_name, exts):
+	if not 'mappings' in obj.__dict__:
+		obj.mappings = dict(obj.mappings)
 
-def make_batch_fun(ext):
-	# this generic code makes this quite unreadable, defining the function two times might have been better
-	def make_batch(self, node):
-		cnt = self.batch_size()
-		if cnt <= 1:
-			return self.create_compiled_task(ext, node)
-		x = getattr(self, 'master_%s' % ext, None)
-		if not x or len(x.inputs) >= cnt:
-			x = self.create_task('unity')
-			setattr(self, 'master_%s' % ext, x)
+	for j in exts:
+		fun = obj.mappings[j]
+		if fun.__name__ == 'unity_fun':
+			raise ValueError('Attempt to bind unity mappings multiple times %r' % j)
 
-			cnt_cur = getattr(self, 'cnt_%s' % ext, 0)
-			cxxnode = node.parent.find_or_declare('unity_%s_%d_%d.%s' % (self.idx, cnt_cur, cnt, ext))
-			x.outputs = [cxxnode]
-			setattr(self, 'cnt_%s' % ext, cnt_cur + 1)
-			self.create_compiled_task(ext, cxxnode)
-		x.inputs.append(node)
-	return make_batch
+		def unity_fun(self, node):
+			cnt = self.batch_size()
+			if cnt <= 1:
+				return fun(self, node)
+			x = getattr(self, 'master_%s' % cls_name, None)
+			if not x or len(x.inputs) >= cnt:
+				x = self.create_task('unity')
+				setattr(self, 'master_%s' % cls_name, x)
 
-def enable_support(cc, cxx):
-	if cxx or not cc:
-		TaskGen.extension('.cpp', '.cc', '.cxx', '.C', '.c++')(make_batch_fun('cxx'))
-	if cc:
-		TaskGen.extension('.c')(make_batch_fun('c'))
-	else:
-		TaskGen.task_gen.mappings['.c'] = TaskGen.task_gen.mappings['.cpp']
+				cnt_cur = getattr(self, 'cnt_%s' % cls_name, 0)
+				c_node = node.parent.find_or_declare('unity_%s_%d_%d.%s' % (self.idx, cnt_cur, cnt, cls_name))
+				x.outputs = [c_node]
+				setattr(self, 'cnt_%s' % cls_name, cnt_cur + 1)
+				fun(self, c_node)
+			x.inputs.append(node)
 
-has_c = '.c' in TaskGen.task_gen.mappings or 'waflib.Tools.compiler_c' in sys.modules
-has_cpp = '.cpp' in TaskGen.task_gen.mappings or 'waflib.Tools.compiler_cxx' in sys.modules
-enable_support(has_c, has_cpp) # by default
+		obj.mappings[j] = unity_fun
+
+@TaskGen.feature('unity')
+@TaskGen.before('process_source')
+def single_unity(self):
+	lst = self.to_list(self.features)
+	if 'c' in lst:
+		bind_unity(self, 'c', EXTS_C)
+	if 'cxx' in lst:
+		bind_unity(self, 'cxx', EXTS_CXX)
 
 def build(bld):
-	# it is best to do this
-	enable_support(bld.env.CC_NAME, bld.env.CXX_NAME)
+	if bld.env.CC_NAME:
+		bind_unity(TaskGen.task_gen, 'c', EXTS_C)
+	if bld.env.CXX_NAME:
+		bind_unity(TaskGen.task_gen, 'cxx', EXTS_CXX)
+

@@ -2,35 +2,35 @@
 # to test for commonly needed configuration options
 
 import os, shutil, re
-import Build, Configure, Utils, Options, Logs
-from Configure import conf
+from waflib import Build, Configure, Utils, Options, Logs, Errors
+from waflib.Configure import conf
 from samba_utils import TO_LIST, ADD_LD_LIBRARY_PATH
 
 
 def add_option(self, *k, **kw):
     '''syntax help: provide the "match" attribute to opt.add_option() so that folders can be added to specific config tests'''
-    Options.parser = self
+    Options.OptionsContext.parser = self
     match = kw.get('match', [])
     if match:
         del kw['match']
     opt = self.parser.add_option(*k, **kw)
     opt.match = match
     return opt
-Options.Handler.add_option = add_option
+Options.OptionsContext.add_option = add_option
 
 @conf
 def check(self, *k, **kw):
     '''Override the waf defaults to inject --with-directory options'''
 
     if not 'env' in kw:
-        kw['env'] = self.env.copy()
+        kw['env'] = self.env.derive()
 
     # match the configuration test with specific options, for example:
     # --with-libiconv -> Options.options.iconv_open -> "Checking for library iconv"
     additional_dirs = []
     if 'msg' in kw:
         msg = kw['msg']
-        for x in Options.Handler.parser.parser.option_list:
+        for x in Options.OptionsContext.parser.parser.option_list:
              if getattr(x, 'match', None) and msg in x.match:
                  d = getattr(Options.options, x.dest, '')
                  if d:
@@ -47,12 +47,12 @@ def check(self, *k, **kw):
     add_options_dir(additional_dirs, kw['env'])
 
     self.validate_c(kw)
-    self.check_message_1(kw['msg'])
+    self.start_msg(kw['msg'])
     ret = None
     try:
         ret = self.run_c_code(*k, **kw)
     except Configure.ConfigurationError as e:
-        self.check_message_2(kw['errmsg'], 'YELLOW')
+        self.end_msg(kw['errmsg'], 'YELLOW')
         if 'mandatory' in kw and kw['mandatory']:
             if Logs.verbose > 1:
                 raise
@@ -60,7 +60,7 @@ def check(self, *k, **kw):
                 self.fatal('the configuration failed (see %r)' % self.log.name)
     else:
         kw['success'] = ret
-        self.check_message_2(self.ret_msg(kw['okmsg'], kw))
+        self.end_msg(self.ret_msg(kw['okmsg'], kw))
 
         # success! keep the CPPPATH/LIBPATH
         add_options_dir(additional_dirs, self.env)
@@ -163,7 +163,7 @@ def find_config_dir(conf):
     '''find a directory to run tests in'''
     k = 0
     while k < 10000:
-        dir = os.path.join(conf.blddir, '.conf_check_%d' % k)
+        dir = os.path.join(conf.bldnode.abspath(), '.conf_check_%d' % k)
         try:
             shutil.rmtree(dir)
         except OSError:
@@ -338,7 +338,8 @@ def CHECK_LIBRARY_SUPPORT(conf, rpath=False, version_script=False, msg=None):
 
     # we need to run the program, try to get its result
     args = conf.SAMBA_CROSS_ARGS(msg=msg)
-    proc = Utils.pproc.Popen([lastprog] + args, stdout=Utils.pproc.PIPE, stderr=Utils.pproc.PIPE)
+    proc = Utils.subprocess.Popen([lastprog] + args,
+            stdout=Utils.subprocess.PIPE, stderr=Utils.subprocess.PIPE)
     (out, err) = proc.communicate()
     w = conf.log.write
     w(str(out))
@@ -365,7 +366,7 @@ def CHECK_PERL_MANPAGE(conf, msg=None, section=None):
         else:
             msg = "perl manpage generation"
 
-    conf.check_message_1(msg)
+    conf.start_msg(msg)
 
     dir = find_config_dir(conf)
 
@@ -382,28 +383,28 @@ WriteMakefile(
 """)
     back = os.path.abspath('.')
     os.chdir(bdir)
-    proc = Utils.pproc.Popen(['perl', 'Makefile.PL'],
-                             stdout=Utils.pproc.PIPE,
-                             stderr=Utils.pproc.PIPE)
+    proc = Utils.subprocess.Popen(['perl', 'Makefile.PL'],
+                             stdout=Utils.subprocess.PIPE,
+                             stderr=Utils.subprocess.PIPE)
     (out, err) = proc.communicate()
     os.chdir(back)
 
     ret = (proc.returncode == 0)
     if not ret:
-        conf.check_message_2('not found', color='YELLOW')
+        conf.end_msg('not found', color='YELLOW')
         return
 
     if section:
         man = Utils.readf(os.path.join(bdir,'Makefile'))
         m = re.search('MAN%sEXT\s+=\s+(\w+)' % section, man)
         if not m:
-            conf.check_message_2('not found', color='YELLOW')
+            conf.end_msg('not found', color='YELLOW')
             return
         ext = m.group(1)
-        conf.check_message_2(ext)
+        conf.end_msg(ext)
         return ext
 
-    conf.check_message_2('ok')
+    conf.end_msg('ok')
     return True
 
 
@@ -512,7 +513,7 @@ def CHECK_STANDARD_LIBPATH(conf):
         # option not supported by compiler - use a standard list of directories
         dirlist = [ '/usr/lib', '/usr/lib64' ]
     except:
-        raise Utils.WafError('Unexpected error running "%s"' % (cmd))
+        raise Errors.WafError('Unexpected error running "%s"' % (cmd))
     else:
         dirlist = []
         for line in out:

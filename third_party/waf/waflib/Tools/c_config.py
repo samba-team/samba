@@ -4,7 +4,7 @@
 
 #!/usr/bin/env python
 # encoding: utf-8
-# Thomas Nagy, 2005-2016 (ita)
+# Thomas Nagy, 2005-2018 (ita)
 
 """
 C/C++/D configuration helpers
@@ -23,45 +23,10 @@ WAF_CONFIG_H   = 'config.h'
 DEFKEYS = 'define_key'
 INCKEYS = 'include_key'
 
-cfg_ver = {
-	'atleast-version': '>=',
-	'exact-version': '==',
-	'max-version': '<=',
-}
-
-SNIP_FUNCTION = '''
-int main(int argc, char **argv) {
-	void (*p)();
-	(void)argc; (void)argv;
-	p=(void(*)())(%s);
-	return !p;
-}
-'''
-"""Code template for checking for functions"""
-
-SNIP_TYPE = '''
-int main(int argc, char **argv) {
-	(void)argc; (void)argv;
-	if ((%(type_name)s *) 0) return 0;
-	if (sizeof (%(type_name)s)) return 0;
-	return 1;
-}
-'''
-"""Code template for checking for types"""
-
 SNIP_EMPTY_PROGRAM = '''
 int main(int argc, char **argv) {
 	(void)argc; (void)argv;
 	return 0;
-}
-'''
-
-SNIP_FIELD = '''
-int main(int argc, char **argv) {
-	char *off;
-	(void)argc; (void)argv;
-	off = (char*) &((%(type_name)s*)0)->%(field_name)s;
-	return (size_t) off < sizeof(%(type_name)s);
 }
 '''
 
@@ -205,7 +170,8 @@ def parse_flags(self, line, uselib_store, env=None, force_static=False, posix=No
 			static = False
 		elif x.startswith('-Wl') or x in ('-rdynamic', '-pie'):
 			app('LINKFLAGS', x)
-		elif x.startswith(('-m', '-f', '-dynamic', '-O')):
+		elif x.startswith(('-m', '-f', '-dynamic', '-O', '-g')):
+			# Adding the -W option breaks python builds on Openindiana
 			app('CFLAGS', x)
 			app('CXXFLAGS', x)
 		elif x.startswith('-bundle'):
@@ -243,55 +209,42 @@ def validate_cfg(self, kw):
 			self.find_program('pkg-config', var='PKGCONFIG')
 		kw['path'] = self.env.PKGCONFIG
 
-	# pkg-config version
-	if 'atleast_pkgconfig_version' in kw:
-		if not 'msg' in kw:
+	# verify that exactly one action is requested
+	s = ('atleast_pkgconfig_version' in kw) + ('modversion' in kw) + ('package' in kw)
+	if s != 1:
+		raise ValueError('exactly one of atleast_pkgconfig_version, modversion and package must be set')
+	if not 'msg' in kw:
+		if 'atleast_pkgconfig_version' in kw:
 			kw['msg'] = 'Checking for pkg-config version >= %r' % kw['atleast_pkgconfig_version']
-		return
+		elif 'modversion' in kw:
+			kw['msg'] = 'Checking for %r version' % kw['modversion']
+		else:
+			kw['msg'] = 'Checking for %r' %(kw['package'])
 
-	if not 'okmsg' in kw:
+	# let the modversion check set the okmsg to the detected version
+	if not 'okmsg' in kw and not 'modversion' in kw:
 		kw['okmsg'] = 'yes'
 	if not 'errmsg' in kw:
 		kw['errmsg'] = 'not found'
 
-	if 'modversion' in kw:
-		if not 'msg' in kw:
-			kw['msg'] = 'Checking for %r version' % kw['modversion']
+	# pkg-config version
+	if 'atleast_pkgconfig_version' in kw:
+		pass
+	elif 'modversion' in kw:
 		if not 'uselib_store' in kw:
 			kw['uselib_store'] = kw['modversion']
 		if not 'define_name' in kw:
 			kw['define_name'] = '%s_VERSION' % Utils.quote_define_name(kw['uselib_store'])
-		return
-
-	if not 'package' in kw:
-		raise ValueError('a package name is required')
-
-	if not 'uselib_store' in kw:
-		kw['uselib_store'] = kw['package'].upper()
-
-	if not 'define_name' in kw:
-		kw['define_name'] = self.have_define(kw['uselib_store'])
-
-	if not 'msg' in kw:
-		kw['msg'] = 'Checking for %r' % (kw['package'] or kw['path'])
-
-	for x in cfg_ver:
-		# Gotcha: only one predicate is allowed at a time
-		# TODO remove in waf 2.0
-		y = x.replace('-', '_')
-		if y in kw:
-			package = kw['package']
-			if Logs.verbose:
-				Logs.warn('Passing %r to conf.check_cfg() is obsolete, pass parameters directly, eg:', y)
-				Logs.warn(" conf.check_cfg(package='%s', args=['--libs', '--cflags', '%s >= 1.6'])", package, package)
-			if not 'msg' in kw:
-				kw['msg'] = 'Checking for %r %s %s' % (package, cfg_ver[x], kw[y])
-			break
+	else:
+		if not 'uselib_store' in kw:
+			kw['uselib_store'] = Utils.to_list(kw['package'])[0].upper()
+		if not 'define_name' in kw:
+			kw['define_name'] = self.have_define(kw['uselib_store'])
 
 @conf
 def exec_cfg(self, kw):
 	"""
-	Executes ``pkg-config`` or other ``-config`` applications to colect configuration flags:
+	Executes ``pkg-config`` or other ``-config`` applications to collect configuration flags:
 
 	* if atleast_pkgconfig_version is given, check that pkg-config has the version n and return
 	* if modversion is given, then return the module version
@@ -335,23 +288,13 @@ def exec_cfg(self, kw):
 	if 'atleast_pkgconfig_version' in kw:
 		cmd = path + ['--atleast-pkgconfig-version=%s' % kw['atleast_pkgconfig_version']]
 		self.cmd_and_log(cmd, env=env)
-		if not 'okmsg' in kw:
-			kw['okmsg'] = 'yes'
 		return
-
-	for x in cfg_ver:
-		# TODO remove in waf 2.0
-		y = x.replace('-', '_')
-		if y in kw:
-			self.cmd_and_log(path + ['--%s=%s' % (x, kw[y]), kw['package']], env=env)
-			if not 'okmsg' in kw:
-				kw['okmsg'] = 'yes'
-			define_it()
-			break
 
 	# single version for a module
 	if 'modversion' in kw:
 		version = self.cmd_and_log(path + ['--modversion', kw['modversion']], env=env).strip()
+		if not 'okmsg' in kw:
+			kw['okmsg'] = version
 		self.define(kw['define_name'], version)
 		return version
 
@@ -381,14 +324,10 @@ def exec_cfg(self, kw):
 			val = self.cmd_and_log(lst + ['--variable=' + v], env=env).strip()
 			var = '%s_%s' % (kw['uselib_store'], v)
 			v_env[var] = val
-		if not 'okmsg' in kw:
-			kw['okmsg'] = 'yes'
 		return
 
 	# so we assume the command-line will output flags to be parsed afterwards
 	ret = self.cmd_and_log(lst, env=env)
-	if not 'okmsg' in kw:
-		kw['okmsg'] = 'yes'
 
 	define_it()
 	self.parse_flags(ret, kw['uselib_store'], kw.get('env', self.env), force_static=static, posix=kw.get('posix'))
@@ -405,8 +344,6 @@ def check_cfg(self, *k, **kw):
 		def configure(conf):
 			conf.load('compiler_c')
 			conf.check_cfg(package='glib-2.0', args='--libs --cflags')
-			conf.check_cfg(package='glib-2.0', uselib_store='GLIB', atleast_version='2.10.0',
-				args='--cflags --libs')
 			conf.check_cfg(package='pango')
 			conf.check_cfg(package='pango', uselib_store='MYPANGO', args=['--cflags', '--libs'])
 			conf.check_cfg(package='pango',
@@ -419,11 +356,6 @@ def check_cfg(self, *k, **kw):
 			conf.check_cfg(package='gtk+-2.0', variables=['includedir', 'prefix'], uselib_store='FOO')
 			print(conf.env.FOO_includedir)
 	"""
-	if k:
-		lst = k[0].split()
-		kw['package'] = lst[0]
-		kw['args'] = ' '.join(lst[1:])
-
 	self.validate_cfg(kw)
 	if 'msg' in kw:
 		self.start_msg(kw['msg'], **kw)
@@ -490,6 +422,9 @@ def validate_c(self, kw):
 	:param auto_add_header_name: if header_name was set, add the headers in env.INCKEYS so the next tests will include these headers
 	:type auto_add_header_name: bool
 	"""
+	for x in ('type_name', 'field_name', 'function_name'):
+		if x in kw:
+			Logs.warn('Invalid argument %r in test' % x)
 
 	if not 'build_fun' in kw:
 		kw['build_fun'] = build_fun
@@ -510,7 +445,7 @@ def validate_c(self, kw):
 
 	if not 'compile_mode' in kw:
 		kw['compile_mode'] = 'c'
-		if 'cxx' in Utils.to_list(kw.get('features',[])) or kw.get('compiler', '') == 'cxx':
+		if 'cxx' in Utils.to_list(kw.get('features', [])) or kw.get('compiler') == 'cxx':
 			kw['compile_mode'] = 'cxx'
 
 	if not 'type' in kw:
@@ -533,50 +468,19 @@ def validate_c(self, kw):
 			return ''.join(['#include <%s>\n' % x for x in dct])
 		return ''
 
-	#OSX
 	if 'framework_name' in kw:
+		# OSX, not sure this is used anywhere
 		fwkname = kw['framework_name']
 		if not 'uselib_store' in kw:
 			kw['uselib_store'] = fwkname.upper()
-		if not kw.get('no_header', False):
-			if not 'header_name' in kw:
-				kw['header_name'] = []
+		if not kw.get('no_header'):
 			fwk = '%s/%s.h' % (fwkname, fwkname)
 			if kw.get('remove_dot_h'):
 				fwk = fwk[:-2]
-			kw['header_name'] = Utils.to_list(kw['header_name']) + [fwk]
-
+			val = kw.get('header_name', [])
+			kw['header_name'] = Utils.to_list(val) + [fwk]
 		kw['msg'] = 'Checking for framework %s' % fwkname
 		kw['framework'] = fwkname
-		#kw['frameworkpath'] = set it yourself
-
-	if 'function_name' in kw:
-		fu = kw['function_name']
-		if not 'msg' in kw:
-			kw['msg'] = 'Checking for function %s' % fu
-		kw['code'] = to_header(kw) + SNIP_FUNCTION % fu
-		if not 'uselib_store' in kw:
-			kw['uselib_store'] = fu.upper()
-		if not 'define_name' in kw:
-			kw['define_name'] = self.have_define(fu)
-
-	elif 'type_name' in kw:
-		tu = kw['type_name']
-		if not 'header_name' in kw:
-			kw['header_name'] = 'stdint.h'
-		if 'field_name' in kw:
-			field = kw['field_name']
-			kw['code'] = to_header(kw) + SNIP_FIELD % {'type_name' : tu, 'field_name' : field}
-			if not 'msg' in kw:
-				kw['msg'] = 'Checking for field %s in %s' % (field, tu)
-			if not 'define_name' in kw:
-				kw['define_name'] = self.have_define((tu + '_' + field).upper())
-		else:
-			kw['code'] = to_header(kw) + SNIP_TYPE % {'type_name' : tu}
-			if not 'msg' in kw:
-				kw['msg'] = 'Checking for type %s' % tu
-			if not 'define_name' in kw:
-				kw['define_name'] = self.have_define(tu.upper())
 
 	elif 'header_name' in kw:
 		if not 'msg' in kw:
@@ -639,11 +543,12 @@ def validate_c(self, kw):
 		kw['code'] = '\n'.join(['#include <%s>' % x for x in self.env[INCKEYS]]) + '\n' + kw['code']
 
 	# in case defines lead to very long command-lines
-	if kw.get('merge_config_header', False) or env.merge_config_header:
+	if kw.get('merge_config_header') or env.merge_config_header:
 		kw['code'] = '%s\n\n%s' % (self.get_config_header(), kw['code'])
 		env.DEFINES = [] # modify the copy
 
-	if not kw.get('success'): kw['success'] = None
+	if not kw.get('success'):
+		kw['success'] = None
 
 	if 'define_name' in kw:
 		self.undefine(kw['define_name'])
@@ -659,7 +564,7 @@ def post_check(self, *k, **kw):
 	is_success = 0
 	if kw['execute']:
 		if kw['success'] is not None:
-			if kw.get('define_ret', False):
+			if kw.get('define_ret'):
 				is_success = kw['success']
 			else:
 				is_success = (kw['success'] == 0)
@@ -667,7 +572,6 @@ def post_check(self, *k, **kw):
 		is_success = (kw['success'] == 0)
 
 	if kw.get('define_name'):
-		# TODO this is still way too complicated
 		comment = kw.get('comment', '')
 		define_name = kw['define_name']
 		if kw['execute'] and kw.get('define_ret') and isinstance(is_success, str):
@@ -698,7 +602,7 @@ def post_check(self, *k, **kw):
 				self.env[define_name] = int(is_success)
 
 	if 'header_name' in kw:
-		if kw.get('auto_add_header_name', False):
+		if kw.get('auto_add_header_name'):
 			self.env.append_value(INCKEYS, Utils.to_list(kw['header_name']))
 
 	if is_success and 'uselib_store' in kw:
@@ -986,7 +890,8 @@ def write_config_header(self, configfile='', guard='', top=False, defines=True, 
 	:type define_prefix: string
 	:param define_prefix: prefix all the defines in the file with a particular prefix
 	"""
-	if not configfile: configfile = WAF_CONFIG_H
+	if not configfile:
+		configfile = WAF_CONFIG_H
 	waf_guard = guard or 'W_%s_WAF' % Utils.quote_define_name(configfile)
 
 	node = top and self.bldnode or self.path.get_bld()
@@ -1110,8 +1015,8 @@ def get_cc_version(conf, cc, gcc=False, icc=False, clang=False):
 	cmd = cc + ['-dM', '-E', '-']
 	env = conf.env.env or None
 	try:
-		out, err = conf.cmd_and_log(cmd, output=0, input='\n', env=env)
-	except Exception:
+		out, err = conf.cmd_and_log(cmd, output=0, input='\n'.encode(), env=env)
+	except Errors.WafError:
 		conf.fatal('Could not determine the compiler version %r' % cmd)
 
 	if gcc:
@@ -1159,6 +1064,8 @@ def get_cc_version(conf, cc, gcc=False, icc=False, clang=False):
 			conf.env.DEST_BINFMT = 'elf'
 		elif isD('__WINNT__') or isD('__CYGWIN__') or isD('_WIN32'):
 			conf.env.DEST_BINFMT = 'pe'
+			if not conf.env.IMPLIBDIR:
+				conf.env.IMPLIBDIR = conf.env.LIBDIR # for .lib or .dll.a files
 			conf.env.LIBDIR = conf.env.BINDIR
 		elif isD('__APPLE__'):
 			conf.env.DEST_BINFMT = 'mac-o'
@@ -1218,7 +1125,7 @@ def get_suncc_version(conf, cc):
 	cmd = cc + ['-V']
 	try:
 		out, err = conf.cmd_and_log(cmd, output=0)
-	except Errors.WafError ,e:
+	except Errors.WafError as e:
 		# Older versions of the compiler exit with non-zero status when reporting their version
 		if not (hasattr(e, 'returncode') and hasattr(e, 'stdout') and hasattr(e, 'stderr')):
 			conf.fatal('Could not find suncc %r' % cmd)
@@ -1252,14 +1159,14 @@ def add_as_needed(self):
 
 # ============ parallel configuration
 
-class cfgtask(Task.TaskBase):
+class cfgtask(Task.Task):
 	"""
 	A task that executes build configuration tests (calls conf.check)
 
 	Make sure to use locks if concurrent access to the same conf.env data is necessary.
 	"""
 	def __init__(self, *k, **kw):
-		Task.TaskBase.__init__(self, *k, **kw)
+		Task.Task.__init__(self, *k, **kw)
 		self.run_after = set()
 
 	def display(self):
@@ -1272,6 +1179,9 @@ class cfgtask(Task.TaskBase):
 		return Task.RUN_ME
 
 	def uid(self):
+		return Utils.SIG_NIL
+
+	def signature(self):
 		return Utils.SIG_NIL
 
 	def run(self):
@@ -1301,7 +1211,7 @@ class cfgtask(Task.TaskBase):
 			return 1
 
 	def process(self):
-		Task.TaskBase.process(self)
+		Task.Task.process(self)
 		if 'msg' in self.args:
 			with self.generator.bld.multicheck_lock:
 				self.conf.start_msg(self.args['msg'])
@@ -1357,11 +1267,12 @@ def multicheck(self, *k, **kw):
 
 	bld = par()
 	bld.keep = kw.get('run_all_tests', True)
+	bld.imp_sigs = {}
 	tasks = []
 
 	id_to_task = {}
 	for dct in k:
-		x = Task.classes['cfgtask'](bld=bld)
+		x = Task.classes['cfgtask'](bld=bld, env=None)
 		tasks.append(x)
 		x.args = dct
 		x.bld = bld
@@ -1424,3 +1335,22 @@ def multicheck(self, *k, **kw):
 		if x.hasrun != Task.SUCCESS:
 			if x.args.get('mandatory', True):
 				self.fatal(kw.get('fatalmsg') or 'One of the tests has failed, read config.log for more information')
+
+@conf
+def check_gcc_o_space(self, mode='c'):
+	if int(self.env.CC_VERSION[0]) > 4:
+		# this is for old compilers
+		return
+	self.env.stash()
+	if mode == 'c':
+		self.env.CCLNK_TGT_F = ['-o', '']
+	elif mode == 'cxx':
+		self.env.CXXLNK_TGT_F = ['-o', '']
+	features = '%s %sshlib' % (mode, mode)
+	try:
+		self.check(msg='Checking if the -o link must be split from arguments', fragment=SNIP_EMPTY_PROGRAM, features=features)
+	except self.errors.ConfigurationError:
+		self.env.revert()
+	else:
+		self.env.commit()
+

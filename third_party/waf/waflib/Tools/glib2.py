@@ -4,7 +4,7 @@
 
 #! /usr/bin/env python
 # encoding: utf-8
-# Thomas Nagy, 2006-2016 (ita)
+# Thomas Nagy, 2006-2018 (ita)
 
 """
 Support for GLib2 tools:
@@ -74,7 +74,8 @@ class glib_genmarshal(Task.Task):
 		)
 
 		ret = bld.exec_command(cmd1)
-		if ret: return ret
+		if ret:
+			return ret
 
 		#print self.outputs[1].abspath()
 		c = '''#include "%s"\n''' % self.outputs[0].name
@@ -247,7 +248,7 @@ def add_settings_enums(self, namespace, filename_list):
 		raise Errors.WafError("Tried to add gsettings enums to %r more than once" % self.name)
 	self.settings_enum_namespace = namespace
 
-	if type(filename_list) != 'list':
+	if not isinstance(filename_list, list):
 		filename_list = [filename_list]
 	self.settings_enum_files = filename_list
 
@@ -455,7 +456,6 @@ def find_glib_compile_schemas(conf):
 	def getstr(varname):
 		return getattr(Options.options, varname, getattr(conf.env,varname, ''))
 
-	# TODO make this dependent on the gnu_dirs tool?
 	gsettingsschemadir = getstr('GSETTINGSSCHEMADIR')
 	if not gsettingsschemadir:
 		datadir = getstr('DATADIR')
@@ -490,3 +490,4 @@ def options(opt):
 	"""
 	gr = opt.add_option_group('Installation directories')
 	gr.add_option('--gsettingsschemadir', help='GSettings schema location [DATADIR/glib-2.0/schemas]', default='', dest='GSETTINGSSCHEMADIR')
+

@@ -5,13 +5,13 @@
 #! /usr/bin/env python
 # encoding: utf-8
 # DC 2008
-# Thomas Nagy 2016 (ita)
+# Thomas Nagy 2016-2018 (ita)
 
 """
 Fortran support
 """
 
-from waflib import Utils, Task
+from waflib import Utils, Task, Errors
 from waflib.Tools import ccroot, fc_config, fc_scan
 from waflib.TaskGen import extension
 from waflib.Configure import conf
@@ -50,7 +50,7 @@ def get_fortran_tasks(tsk):
 
 class fc(Task.Task):
 	"""
-	Fortran tasks can only run when all fortran tasks in the current group are ready to be executed
+	Fortran tasks can only run when all fortran tasks in a current task group are ready to be executed
 	This may cause a deadlock if some fortran task is waiting for something that cannot happen (circular dependency)
 	Should this ever happen, set the 'nomod=True' on those tasks instances to break the loop
 	"""
@@ -89,12 +89,11 @@ class fc(Task.Task):
 			ret = tsk.runnable_status()
 			if ret == Task.ASK_LATER:
 				# we have to wait for one of the other fortran tasks to be ready
-				# this may deadlock if there are dependencies between the fortran tasks
+				# this may deadlock if there are dependencies between fortran tasks
 				# but this should not happen (we are setting them here!)
 				for x in lst:
 					x.mod_fortran_done = None
 
-				# TODO sort the list of tasks in bld.producer.outstanding to put all fortran tasks at the end
 				return Task.ASK_LATER
 
 		ins = Utils.defaultdict(set)
@@ -108,7 +107,7 @@ class fc(Task.Task):
 					name = bld.modfile(x.replace('MOD@', ''))
 					node = bld.srcnode.find_or_declare(name)
 					tsk.set_outputs(node)
-					outs[id(node)].add(tsk)
+					outs[node].add(tsk)
 
 		# the .mod files to use
 		for tsk in lst:
@@ -120,7 +119,7 @@ class fc(Task.Task):
 					if node and node not in tsk.outputs:
 						if not node in bld.node_deps[key]:
 							bld.node_deps[key].append(node)
-						ins[id(node)].add(tsk)
+						ins[node].add(tsk)
 
 		# if the intersection matches, set the order
 		for k in ins.keys():
@@ -182,10 +181,11 @@ class fcprogram_test(fcprogram):
 		kw['output'] = 0
 		try:
 			(bld.out, bld.err) = bld.cmd_and_log(cmd, **kw)
-		except Exception:
+		except Errors.WafError:
 			return -1
 
 		if bld.out:
 			bld.to_log('out: %s\n' % bld.out)
 		if bld.err:
 			bld.to_log('err: %s\n' % bld.err)
+

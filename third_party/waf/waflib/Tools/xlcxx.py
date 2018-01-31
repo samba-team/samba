@@ -4,7 +4,7 @@
 
 #!/usr/bin/env python
 # encoding: utf-8
-# Thomas Nagy, 2006-2016 (ita)
+# Thomas Nagy, 2006-2018 (ita)
 # Ralf Habacker, 2006 (rh)
 # Yinon Ehrlich, 2009
 # Michael Kuhn, 2009
@@ -66,3 +66,4 @@ def configure(conf):
 	conf.cxx_load_tools()
 	conf.cxx_add_flags()
 	conf.link_add_flags()
+

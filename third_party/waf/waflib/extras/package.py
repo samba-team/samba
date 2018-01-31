@@ -1,5 +1,9 @@
 #! /usr/bin/env python
 # encoding: utf-8
+# WARNING! Do not edit! https://waf.io/book/index.html#_obtaining_the_waf_file
+
+#! /usr/bin/env python
+# encoding: utf-8
 # Thomas Nagy, 2011
 
 """
@@ -64,7 +68,7 @@ def download_archive(self, src, dst):
 		else:
 			tmp = self.root.make_node(dst)
 			tmp.write(web.read())
-			Logs.warn('Downloaded %s from %s' % (tmp.abspath(), url))
+			Logs.warn('Downloaded %s from %s', tmp.abspath(), url)
 			break
 	else:
 		self.fatal('Could not get the package %s' % src)
@@ -73,3 +77,4 @@ def download_archive(self, src, dst):
 def load_packages(self):
 	self.get_package_cache_dir()
 	# read the dependencies, get the archives, ..
+

@@ -132,3 +132,4 @@ def options(opt):
 		str_default = default
 		str_help = '%s [%s]' % (help, re.sub(r'\$\{([^}]+)\}', r'\1', str_default))
 		dirs_options.add_option(option_name, help=str_help, default='', dest=name.upper())
+

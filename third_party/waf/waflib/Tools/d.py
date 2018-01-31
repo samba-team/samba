@@ -5,7 +5,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 # Carlos Rafael Giani, 2007 (dv)
-# Thomas Nagy, 2007-2016 (ita)
+# Thomas Nagy, 2007-2018 (ita)
 
 from waflib import Utils, Task, Errors
 from waflib.TaskGen import taskgen_method, feature, extension
@@ -98,3 +98,4 @@ def process_header(self):
 		if not node:
 			raise Errors.WafError('file %r not found on d obj' % i[0])
 		self.create_task('d_header', node, node.change_ext('.di'))
+

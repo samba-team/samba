@@ -1,7 +1,13 @@
 # functions for handling ABI checking of libraries
 
-import Options, Utils, os, Logs, samba_utils, sys, Task, fnmatch, re, Build
-from TaskGen import feature, before, after
+import os
+import sys
+import re
+import fnmatch
+
+from waflib import Options, Utils, Logs, Task, Build, Errors
+from waflib.TaskGen import feature, before, after
+import samba_utils
 
 # these type maps cope with platform specific names for common types
 # please add new type mappings into the list below
@@ -87,7 +93,7 @@ def abi_check_task(self):
     old_sigs = samba_utils.load_file(sig_file)
     if old_sigs is None or Options.options.ABI_UPDATE:
         if not save_sigs(sig_file, parsed_sigs):
-            raise Utils.WafError('Failed to save ABI file "%s"' % sig_file)
+            raise Errors.WafError('Failed to save ABI file "%s"' % sig_file)
         Logs.warn('Generated ABI signatures %s' % sig_file)
         return
 
@@ -112,10 +118,10 @@ def abi_check_task(self):
             got_error = True
 
     if got_error:
-        raise Utils.WafError('ABI for %s has changed - please fix library version then build with --abi-update\nSee http://wiki.samba.org/index.php/Waf#ABI_Checking for more information\nIf you have not changed any ABI, and your platform always gives this error, please configure with --abi-check-disable to skip this check' % libname)
+        raise Errors.WafError('ABI for %s has changed - please fix library version then build with --abi-update\nSee http://wiki.samba.org/index.php/Waf#ABI_Checking for more information\nIf you have not changed any ABI, and your platform always gives this error, please configure with --abi-check-disable to skip this check' % libname)
 
 
-t = Task.task_type_from_func('abi_check', abi_check_task, color='BLUE', ext_in='.bin')
+t = Task.task_factory('abi_check', abi_check_task, color='BLUE', ext_in='.bin')
 t.quiet = True
 # allow "waf --abi-check" to force re-checking the ABI
 if '--abi-check' in sys.argv:
