@@ -32,7 +32,7 @@ from samba.tests import delete_force
 import ldb
 import samba
 import binascii
-import md5
+from hashlib import md5
 import crypt
 
 
@@ -60,7 +60,7 @@ def get_package(sc, name):
 def calc_digest(user, realm, password):
 
     data = "%s:%s:%s" % (user, realm, password)
-    return binascii.hexlify(md5.new(data).digest())
+    return md5(data).hexdigest()
 
 
 class PassWordHashTests(TestCase):
