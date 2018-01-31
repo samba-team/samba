@@ -28,8 +28,6 @@ from samba.auth import system_session
 from samba.ndr import ndr_unpack
 from samba.dcerpc import drsblobs
 from samba import dsdb
-import binascii
-import md5
 import re
 import random
 import string
