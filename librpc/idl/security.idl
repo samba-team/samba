@@ -705,7 +705,7 @@ interface security
 	                                              = "05c74c5e-4deb-43b4-bd9f-86664c2a7fd5";
         const string GUID_DRS_DS_INSTALL_REPLICA      = "9923a32a-3607-11d2-b9be-0000f87a36b2";
 	const string GUID_DRS_REANIMATE_TOMBSTONE     = "45ec5156-db7e-47bb-b53f-dbeb2d03c40f";
-
+	const string GUID_DRS_ALLOWED_TO_AUTHENTICATE = "68b1d179-0d15-4D4F-ab71-46152e79a7bc";
 
 	/***************************************************************/
 	/* validated writes guids */
