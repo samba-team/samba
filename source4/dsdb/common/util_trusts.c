@@ -482,12 +482,6 @@ static NTSTATUS dsdb_trust_crossref_tdo_info(TALLOC_CTX *mem_ctx,
 		*_trust_parent_tdo = NULL;
 	}
 
-	domain_dn = ldb_get_default_basedn(sam_ctx);
-	if (domain_dn == NULL) {
-		TALLOC_FREE(frame);
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
 	partitions_dn = samdb_partitions_dn(sam_ctx, frame);
 	if (partitions_dn == NULL) {
 		TALLOC_FREE(frame);
