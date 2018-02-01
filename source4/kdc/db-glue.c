@@ -57,14 +57,17 @@ enum trust_direction {
 };
 
 static const char *trust_attrs[] = {
+	"securityIdentifier",
+	"flatName",
 	"trustPartner",
+	"trustAttributes",
+	"trustDirection",
+	"trustType",
+	"msDS-TrustForestTrustInfo",
 	"trustAuthIncoming",
 	"trustAuthOutgoing",
 	"whenCreated",
 	"msDS-SupportedEncryptionTypes",
-	"trustAttributes",
-	"trustDirection",
-	"trustType",
 	NULL
 };
 
@@ -1167,7 +1170,6 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 {
 	struct loadparm_context *lp_ctx = kdc_db_ctx->lp_ctx;
 	const char *our_realm = lpcfg_realm(lp_ctx);
-	const char *dnsdomain = NULL;
 	char *partner_realm = NULL;
 	const char *realm = NULL;
 	const char *krbtgt_realm = NULL;
@@ -1183,7 +1185,7 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 	uint32_t previous_kvno;
 	uint32_t num_keys = 0;
 	enum ndr_err_code ndr_err;
-	int ret, trust_direction_flags;
+	int ret;
 	unsigned int i;
 	struct AuthenticationInformationArray *auth_array;
 	struct timeval tv;
@@ -1191,6 +1193,8 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 	uint32_t *auth_kvno;
 	bool preferr_current = false;
 	uint32_t supported_enctypes = ENC_RC4_HMAC_MD5;
+	struct lsa_TrustDomainInfoInfoEx *tdo = NULL;
+	NTSTATUS status;
 
 	if (dsdb_functional_level(kdc_db_ctx->samdb) >= DS_DOMAIN_FUNCTION_2008) {
 		supported_enctypes = ldb_msg_find_attr_as_uint(msg,
@@ -1198,20 +1202,25 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 					supported_enctypes);
 	}
 
-	trust_direction_flags = ldb_msg_find_attr_as_int(msg, "trustDirection", 0);
-	if (!(trust_direction_flags & direction)) {
+	status = dsdb_trust_parse_tdo_info(mem_ctx, msg, &tdo);
+	if (!NT_STATUS_IS_OK(status)) {
+		krb5_clear_error_message(context);
+		ret = ENOMEM;
+		goto out;
+	}
+
+	if (!(tdo->trust_direction & direction)) {
 		krb5_clear_error_message(context);
 		ret = SDB_ERR_NOENTRY;
 		goto out;
 	}
 
-	dnsdomain = ldb_msg_find_attr_as_string(msg, "trustPartner", NULL);
-	if (dnsdomain == NULL) {
+	if (tdo->domain_name.string == NULL) {
 		krb5_clear_error_message(context);
 		ret = SDB_ERR_NOENTRY;
 		goto out;
 	}
-	partner_realm = strupper_talloc(mem_ctx, dnsdomain);
+	partner_realm = strupper_talloc(mem_ctx, tdo->domain_name.string);
 	if (partner_realm == NULL) {
 		krb5_clear_error_message(context);
 		ret = ENOMEM;
