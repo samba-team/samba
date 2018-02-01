@@ -112,13 +112,14 @@ class cmd_drs_showrepl(Command):
         self.message("\t\tLast success @ %s" % nttime2string(n.last_success))
         self.message("")
 
-    def drsuapi_ReplicaInfo(ctx, info_type):
+    def drsuapi_ReplicaInfo(self, info_type):
         '''call a DsReplicaInfo'''
 
         req1 = drsuapi.DsReplicaGetInfoRequest1()
         req1.info_type = info_type
         try:
-            (info_type, info) = ctx.drsuapi.DsReplicaGetInfo(ctx.drsuapi_handle, 1, req1)
+            (info_type, info) = self.drsuapi.DsReplicaGetInfo(
+                self.drsuapi_handle, 1, req1)
         except Exception, e:
             raise CommandError("DsReplicaGetInfo of type %u failed" % info_type, e)
         return (info_type, info)
