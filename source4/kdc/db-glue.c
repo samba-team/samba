@@ -1215,6 +1215,16 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 		goto out;
 	}
 
+	if (tdo->trust_type != LSA_TRUST_TYPE_UPLEVEL) {
+		/*
+		 * Only UPLEVEL domains support kerberos here,
+		 * as we don't support LSA_TRUST_TYPE_MIT.
+		 */
+		krb5_clear_error_message(context);
+		ret = SDB_ERR_NOENTRY;
+		goto out;
+	}
+
 	if (tdo->domain_name.string == NULL) {
 		krb5_clear_error_message(context);
 		ret = SDB_ERR_NOENTRY;
