@@ -419,9 +419,15 @@ NTSTATUS libnet_LookupName_recv(struct composite_context *c, TALLOC_CTX *mem_ctx
 	if (domains->count > 0) {
 		io->out.sid = dom_sid_add_rid(mem_ctx, domains->domains[0].sid,
 					      io->out.rid);
-		NT_STATUS_HAVE_NO_MEMORY(io->out.sid);
+		if (io->out.sid == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
 		io->out.sidstr = dom_sid_string(mem_ctx, io->out.sid);
-		NT_STATUS_HAVE_NO_MEMORY(io->out.sidstr);
+		if (io->out.sidstr == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
 	}
 
 success:
