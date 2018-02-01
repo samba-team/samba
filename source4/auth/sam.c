@@ -589,6 +589,68 @@ _PUBLIC_ NTSTATUS authsam_make_user_info_dc(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+_PUBLIC_ NTSTATUS authsam_update_user_info_dc(TALLOC_CTX *mem_ctx,
+			struct ldb_context *sam_ctx,
+			struct auth_user_info_dc *user_info_dc)
+{
+	char *filter = NULL;
+	NTSTATUS status;
+	uint32_t i;
+	uint32_t n = 0;
+
+	/*
+	 * This function exists to expand group memberships
+	 * in the local domain (forest), as the token
+	 * may come from a different domain.
+	 */
+
+	/*
+	 * Filter out builtin groups from this token. We will search
+	 * for builtin groups later.
+	 */
+	status = authsam_domain_group_filter(mem_ctx, &filter);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(user_info_dc);
+		return status;
+	}
+
+	/*
+	 * We loop only over the existing number of
+	 * sids.
+	 */
+	n = user_info_dc->num_sids;
+	for (i = 0; i < n; i++) {
+		struct dom_sid *sid = &user_info_dc->sids[i];
+		char sid_buf[DOM_SID_STR_BUFLEN] = {0,};
+		char dn_str[DOM_SID_STR_BUFLEN*2] = {0,};
+		DATA_BLOB dn_blob = data_blob_null;
+		int len;
+
+		len = dom_sid_string_buf(sid, sid_buf, sizeof(sid_buf));
+		if (len+1 > sizeof(sid_buf)) {
+			return NT_STATUS_INVALID_SID;
+		}
+		snprintf(dn_str, sizeof(dn_str), "<SID=%s>", sid_buf);
+		dn_blob = data_blob_string_const(dn_str);
+
+		/*
+		 * We already have the SID in the token, so set
+		 * 'only childs' flag to true and add all
+		 * groups which match the filter.
+		 */
+		status = dsdb_expand_nested_groups(sam_ctx, &dn_blob,
+						   true, filter,
+						   user_info_dc,
+						   &user_info_dc->sids,
+						   &user_info_dc->num_sids);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
+
+	return NT_STATUS_OK;
+}
+
 NTSTATUS sam_get_results_principal(struct ldb_context *sam_ctx,
 				   TALLOC_CTX *mem_ctx, const char *principal,
 				   const char **attrs,
