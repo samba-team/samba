@@ -861,7 +861,7 @@ static int partition_rename(struct ldb_module *module, struct ldb_request *req)
 }
 
 /* start a transaction */
-static int partition_start_trans(struct ldb_module *module)
+int partition_start_trans(struct ldb_module *module)
 {
 	int i;
 	int ret;
@@ -923,7 +923,7 @@ static int partition_start_trans(struct ldb_module *module)
 }
 
 /* prepare for a commit */
-static int partition_prepare_commit(struct ldb_module *module)
+int partition_prepare_commit(struct ldb_module *module)
 {
 	unsigned int i;
 	struct partition_private_data *data = talloc_get_type(ldb_module_get_private(module),
@@ -960,7 +960,7 @@ static int partition_prepare_commit(struct ldb_module *module)
 
 
 /* end a transaction */
-static int partition_end_trans(struct ldb_module *module)
+int partition_end_trans(struct ldb_module *module)
 {
 	int ret, ret2;
 	unsigned int i;
@@ -1006,7 +1006,7 @@ static int partition_end_trans(struct ldb_module *module)
 }
 
 /* delete a transaction */
-static int partition_del_trans(struct ldb_module *module)
+int partition_del_trans(struct ldb_module *module)
 {
 	int ret, final_ret = LDB_SUCCESS;
 	unsigned int i;
@@ -1205,7 +1205,7 @@ static int partition_sequence_number(struct ldb_module *module, struct ldb_reque
 }
 
 /* lock all the backends */
-static int partition_read_lock(struct ldb_module *module)
+int partition_read_lock(struct ldb_module *module)
 {
 	int i;
 	int ret;
@@ -1309,7 +1309,7 @@ static int partition_read_lock(struct ldb_module *module)
 }
 
 /* unlock all the backends */
-static int partition_read_unlock(struct ldb_module *module)
+int partition_read_unlock(struct ldb_module *module)
 {
 	int i;
 	int ret = LDB_SUCCESS;

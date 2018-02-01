@@ -300,7 +300,8 @@ int partition_metadata_init(struct ldb_module *module)
 
 	ret = partition_metadata_open(module, false);
 	if (ret == LDB_SUCCESS) {
-		goto end;
+		/* Great, we got the DB open */
+		return LDB_SUCCESS;
 	}
 
 	/* metadata.tdb does not exist, create it */
@@ -314,18 +315,42 @@ int partition_metadata_init(struct ldb_module *module)
 				       "Migrating partition metadata: "
 				       "create of metadata.tdb gave: %s\n",
 				       ldb_errstring(ldb_module_get_ctx(module)));
-		talloc_free(data->metadata);
-		data->metadata = NULL;
-		goto end;
+		TALLOC_FREE(data->metadata);
+		return ret;
+	}
+
+	/*
+	 * We need to fill in the sequence number from the DB, so we
+	 * need to get a lock over all the databases.  We only read
+	 * from the main partitions, but write to metadata so to avoid
+	 * lock ordering we just get a transaction over the lot.
+	 */
+	ret = partition_start_trans(module);
+	if (ret != LDB_SUCCESS) {
+		TALLOC_FREE(data->metadata);
+		return ret;
 	}
 
 	ret = partition_metadata_set_sequence_number(module);
 	if (ret != LDB_SUCCESS) {
-		talloc_free(data->metadata);
-		data->metadata = NULL;
+		TALLOC_FREE(data->metadata);
+		partition_del_trans(module);
+		return ret;
 	}
 
-end:
+	ret = partition_prepare_commit(module);
+	if (ret != LDB_SUCCESS) {
+		TALLOC_FREE(data->metadata);
+		partition_del_trans(module);
+		return ret;
+	}
+
+	ret = partition_end_trans(module);
+	if (ret != LDB_SUCCESS) {
+		/* Nothing much we can do */
+		TALLOC_FREE(data->metadata);
+	}
+
 	return ret;
 }
 
@@ -335,10 +360,28 @@ end:
  */
 int partition_metadata_sequence_number(struct ldb_module *module, uint64_t *value)
 {
-	return partition_metadata_get_uint64(module,
-					     LDB_METADATA_SEQ_NUM,
-					     value,
-					     0);
+
+	/* We have to lock all the databases as otherwise we can
+	 * return a sequence number that is higher than the DB values
+	 * that we can see, as those transactions close after the
+	 * metadata.tdb transaction closes */
+	int ret = partition_read_lock(module);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	ret = partition_metadata_get_uint64(module,
+					    LDB_METADATA_SEQ_NUM,
+					    value,
+					    0);
+	if (ret == LDB_SUCCESS) {
+		ret = partition_read_unlock(module);
+	} else {
+		/* Don't overwrite the error code */
+		partition_read_unlock(module);
+	}
+	return ret;
+
 }
 
 
