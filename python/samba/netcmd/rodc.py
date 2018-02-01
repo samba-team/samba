@@ -149,9 +149,9 @@ class cmd_rodc_preload(Command):
             local_samdb.transaction_commit()
 
         if len(errors) > 0:
-            print "\nPreload encountered problematic users:"
+            self.message("\nPreload encountered problematic users:")
             for error in errors:
-                print "    %s" % error
+                self.message("    %s" % error)
 
 
 class cmd_rodc(SuperCommand):

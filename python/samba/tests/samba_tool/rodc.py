@@ -104,7 +104,8 @@ class RodcCmdTestCase(SambaToolCmdTest):
                                             "--server", os.environ["DC_SERVER"],
                                             "--ignore-errors")
         self.assertCmdSuccess(result, out, err, "ensuring rodc prefetch ran successfully")
-        self.assertEqual(out, "Replicating DN CN=sambatool5,CN=Users,%s\n" % self.base_dn)
+        self.assertTrue(out.startswith("Replicating DN CN=sambatool5,CN=Users,%s\n"
+                                       % self.base_dn))
 
     def test_multi_with_missing_name_failure(self):
         (result, out, err) = self.runsubcmd("rodc", "preload",
@@ -119,7 +120,9 @@ class RodcCmdTestCase(SambaToolCmdTest):
                                             "--server", os.environ["DC_SERVER"],
                                             "--ignore-errors")
         self.assertCmdSuccess(result, out, err, "ensuring rodc prefetch ran successfully")
-        self.assertEqual(out, "Replicating DN CN=sambatool6,CN=Users,%s\nReplicating DN CN=sambatool5,CN=Users,%s\n" % (self.base_dn, self.base_dn))
+        self.assertTrue(out.startswith("Replicating DN CN=sambatool6,CN=Users,%s\n"
+                                       "Replicating DN CN=sambatool5,CN=Users,%s\n"
+                                       % (self.base_dn, self.base_dn)))
 
     def test_multi_without_group_failure(self):
         (result, out, err) = self.runsubcmd("rodc", "preload",
