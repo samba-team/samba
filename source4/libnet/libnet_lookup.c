@@ -381,42 +381,51 @@ NTSTATUS libnet_LookupName_recv(struct composite_context *c, TALLOC_CTX *mem_ctx
 				struct libnet_LookupName *io)
 {
 	NTSTATUS status;
-	struct lookup_name_state *s;
+	struct lookup_name_state *s = NULL;
+	struct lsa_RefDomainList *domains = NULL;
+	struct lsa_TransSidArray *sids = NULL;
 
 	status = composite_wait(c);
 	ZERO_STRUCT(io->out);
 
-	if (NT_STATUS_IS_OK(status)) {
-		s = talloc_get_type(c->private_data, struct lookup_name_state);
-
-		if (*s->lookup.out.count > 0) {
-			struct lsa_RefDomainList *domains = *s->lookup.out.domains;
-			struct lsa_TransSidArray *sids = s->lookup.out.sids;
-
-			if (domains == NULL || sids == NULL) {
-				status = NT_STATUS_UNSUCCESSFUL;
-				io->out.error_string = talloc_asprintf(mem_ctx, "Error: %s", nt_errstr(status));
-				goto done;
-			}
-
-			if (sids->count > 0) {
-				io->out.rid        = sids->sids[0].rid;
-				io->out.sid_type   = sids->sids[0].sid_type;
-				if (domains->count > 0) {
-					io->out.sid = dom_sid_add_rid(mem_ctx, domains->domains[0].sid, io->out.rid);
-					NT_STATUS_HAVE_NO_MEMORY(io->out.sid);
-					io->out.sidstr = dom_sid_string(mem_ctx, io->out.sid);
-					NT_STATUS_HAVE_NO_MEMORY(io->out.sidstr);
-				}
-			}
-		}
-
-		io->out.error_string = talloc_strdup(mem_ctx, "Success");
-
-	} else if (!NT_STATUS_IS_OK(status)) {
-		io->out.error_string = talloc_asprintf(mem_ctx, "Error: %s", nt_errstr(status));
+	if (!NT_STATUS_IS_OK(status)) {
+		io->out.error_string = talloc_asprintf(mem_ctx, "Error: %s",
+						       nt_errstr(status));
+		goto done;
 	}
 
+	s = talloc_get_type(c->private_data, struct lookup_name_state);
+
+	if (*s->lookup.out.count == 0) {
+		goto success;
+	}
+
+	domains = *s->lookup.out.domains;
+	sids = s->lookup.out.sids;
+
+	if (domains == NULL || sids == NULL) {
+		status = NT_STATUS_UNSUCCESSFUL;
+		io->out.error_string = talloc_asprintf(mem_ctx, "Error: %s",
+						       nt_errstr(status));
+		goto done;
+	}
+
+	if (sids->count == 0) {
+		goto success;
+	}
+
+	io->out.rid        = sids->sids[0].rid;
+	io->out.sid_type   = sids->sids[0].sid_type;
+	if (domains->count > 0) {
+		io->out.sid = dom_sid_add_rid(mem_ctx, domains->domains[0].sid,
+					      io->out.rid);
+		NT_STATUS_HAVE_NO_MEMORY(io->out.sid);
+		io->out.sidstr = dom_sid_string(mem_ctx, io->out.sid);
+		NT_STATUS_HAVE_NO_MEMORY(io->out.sidstr);
+	}
+
+success:
+	io->out.error_string = talloc_strdup(mem_ctx, "Success");
 done:
 	talloc_free(c);
 	return status;
