@@ -828,6 +828,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		goto out;
 	}
 
+	p->is_rodc = is_rodc;
 	p->kdc_db_ctx = kdc_db_ctx;
 	p->realm_dn = talloc_reference(p, realm_dn);
 	if (!p->realm_dn) {
@@ -874,6 +875,8 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	 */
 
 	if (ent_type == SAMBA_KDC_ENT_TYPE_KRBTGT) {
+		p->is_krbtgt = true;
+
 		if (flags & (SDB_F_CANON)) {
 			/*
 			 * When requested to do so, ensure that the
@@ -1272,12 +1275,13 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 		goto out;
 	}
 
-	p = talloc(mem_ctx, struct samba_kdc_entry);
+	p = talloc_zero(mem_ctx, struct samba_kdc_entry);
 	if (!p) {
 		ret = ENOMEM;
 		goto out;
 	}
 
+	p->is_trust = true;
 	p->kdc_db_ctx = kdc_db_ctx;
 	p->realm_dn = realm_dn;
 
