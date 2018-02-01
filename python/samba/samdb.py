@@ -459,7 +459,9 @@ member: %s
 
             # Sets the password for it
             if setpassword:
-                self.setpassword("(samAccountName=%s)" % ldb.binary_encode(username), password,
+                self.setpassword(("(distinguishedName=%s)" %
+                                  ldb.binary_encode(user_dn)),
+                                 password,
                                  force_password_change_at_next_login_req)
         except:
             self.transaction_cancel()
