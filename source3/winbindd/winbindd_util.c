@@ -961,6 +961,17 @@ static bool add_trusted_domains_dc(void)
 			trust_flags |= NETR_TRUST_FLAG_IN_FOREST;
 		}
 
+		if (domains[i]->trust_attributes & LSA_TRUST_ATTRIBUTE_CROSS_ORGANIZATION) {
+			/*
+			 * We don't support selective authentication yet.
+			 */
+			DBG_WARNING("Ignoring CROSS_ORGANIZATION trust to "
+				    "domain[%s/%s]\n",
+				    domains[i]->netbios_name,
+				    domains[i]->domain_name);
+			continue;
+		}
+
 		status = add_trusted_domain(domains[i]->netbios_name,
 					    domains[i]->domain_name,
 					    &domains[i]->security_identifier,
