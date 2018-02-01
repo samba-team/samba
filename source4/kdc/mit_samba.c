@@ -481,7 +481,8 @@ krb5_error_code mit_samba_reget_pac(struct mit_samba_context *ctx,
 	DATA_BLOB *upn_blob = NULL;
 	DATA_BLOB *deleg_blob = NULL;
 	struct samba_kdc_entry *client_skdc_entry = NULL;
-	struct samba_kdc_entry *krbtgt_skdc_entry;
+	struct samba_kdc_entry *krbtgt_skdc_entry = NULL;
+	struct samba_kdc_entry *server_skdc_entry = NULL;
 	bool is_in_db = false;
 	bool is_untrusted = false;
 	size_t num_types = 0;
@@ -508,6 +509,13 @@ krb5_error_code mit_samba_reget_pac(struct mit_samba_context *ctx,
 			return EINVAL;
 		}
 	}
+
+	if (server == NULL) {
+		return EINVAL;
+	}
+	server_skdc_entry =
+		talloc_get_type_abort(server->e_data,
+				      struct samba_kdc_entry);
 
 	if (krbtgt == NULL) {
 		return EINVAL;
@@ -567,6 +575,8 @@ krb5_error_code mit_samba_reget_pac(struct mit_samba_context *ctx,
 
 		nt_status = samba_kdc_update_pac_blob(tmp_ctx,
 						      context,
+						      krbtgt_skdc_entry,
+						      server_skdc_entry,
 						      *pac,
 						      pac_blob,
 						      pac_srv_sig,

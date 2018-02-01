@@ -51,6 +51,8 @@ NTSTATUS samba_kdc_get_pac_blob(TALLOC_CTX *mem_ctx,
 
 NTSTATUS samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
 				   krb5_context context,
+				   struct samba_kdc_entry *krbtgt,
+				   struct samba_kdc_entry *server,
 				   const krb5_pac pac, DATA_BLOB *pac_blob,
 				   struct PAC_SIGNATURE_DATA *pac_srv_sig,
 				   struct PAC_SIGNATURE_DATA *pac_kdc_sig);
