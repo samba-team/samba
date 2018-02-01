@@ -92,6 +92,12 @@ sub skip
 		return "environment $envname is disabled as this build does not include an AD DC";
 	}
 
+	if (@opt_include_env && !(grep {$_ eq $env_basename} @opt_include_env)) {
+		return "environment $envname is disabled (via --include-env command line option) in this test run - skipping";
+	} elsif (@opt_exclude_env && grep {$_ eq $env_basename} @opt_exclude_env) {
+		return "environment $envname is disabled (via --exclude-env command line option) in this test run - skipping";
+	}
+
 	return find_in_list(\@excludes, $name);
 }
 
@@ -1102,38 +1108,12 @@ $envvarstr
 		my $cmd = $$_[2];
 		my $name = $$_[0];
 		my $envname = $$_[1];
-		my ($env_basename, $env_localpart) = split(/:/, $envname);
-		my $envvars = "SKIP";
+		my $envvars = setup_env($envname, $prefix);
 
-		if (@opt_include_env) {
-		    foreach my $env (@opt_include_env) {
-			if ($env_basename eq $env) {
-			    $envvars = setup_env($envname, $prefix);
-			}
-		    }
-		} elsif (@opt_exclude_env) {
-		    my $excluded = 0;
-		    foreach my $env (@opt_exclude_env) {
-			if ($env_basename eq $env) {
-			    $excluded = 1;
-			}
-		    }
-		    if ($excluded == 0) {
-			$envvars = setup_env($envname, $prefix);
-		    }
-		} else {
-		    $envvars = setup_env($envname, $prefix);
-		}
-		
 		if (not defined($envvars)) {
 			Subunit::start_testsuite($name);
 			Subunit::end_testsuite($name, "error",
 				"unable to set up environment $envname - exiting");
-			next;
-		} elsif ($envvars eq "SKIP") {
-			Subunit::start_testsuite($name);
-			Subunit::end_testsuite($name, "skip",
-				"environment $envname is disabled (via --exclude-env / --include-env command line options) in this test run - skipping");
 			next;
 		} elsif ($envvars eq "UNKNOWN") {
 			Subunit::start_testsuite($name);
