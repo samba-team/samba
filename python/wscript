@@ -3,7 +3,7 @@
 import os
 
 def configure(conf):
-    kerberos_py = conf.srcdir + "/python/samba/provision/kerberos_implementation.py"
+    kerberos_py = conf.srcnode.abspath() + "/python/samba/provision/kerberos_implementation.py"
 
     f = open(kerberos_py, 'w')
     try:
