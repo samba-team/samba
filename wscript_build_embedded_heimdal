@@ -1,4 +1,4 @@
-import Logs
+from waflib import Logs
 
 Logs.info("\tSelected embedded Heimdal build")
 bld.RECURSE('source4/heimdal_build')
