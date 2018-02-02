@@ -3,14 +3,19 @@
 
 # selftest main code.
 
-import Scripting, os, Options, Utils, Environment, optparse, sys
+import sys
+import os
+import optparse
+from waflib import Scripting, Options, Utils
+from waflib.ConfigSet import ConfigSet as Environment
+
 from samba_utils import *
 from samba_autoconf import *
 import types
 
 DEFAULT_SELFTEST_PREFIX="./st"
 
-def set_options(opt):
+def options(opt):
 
     opt.add_option('--enable-selftest',
                    help=("enable options necessary for selftest (default=no)"),
