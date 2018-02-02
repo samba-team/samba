@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
-import Options
+from waflib import Options
 
-def set_options(opt):
+def options(opt):
     gr = opt.option_group('systemd installation options')
 
     gr.add_option('--systemd-install-services',
