@@ -2623,16 +2623,11 @@ static NTSTATUS cm_get_schannel_creds(struct winbindd_domain *domain,
 		return NT_STATUS_OK;
 	}
 
-	result = cm_connect_netlogon(domain, &netlogon_pipe);
+	result = cm_connect_netlogon_secure(domain, &netlogon_pipe, ppdc);
 	if (!NT_STATUS_IS_OK(result)) {
 		return result;
 	}
 
-	if (domain->conn.netlogon_creds_ctx == NULL) {
-		return NT_STATUS_TRUSTED_DOMAIN_FAILURE;
-	}
-
-	*ppdc = domain->conn.netlogon_creds_ctx;
 	return NT_STATUS_OK;
 }
 
@@ -3323,6 +3318,29 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 	}
 
 	return status;
+}
+
+NTSTATUS cm_connect_netlogon_secure(struct winbindd_domain *domain,
+				    struct rpc_pipe_client **cli,
+				    struct netlogon_creds_cli_context **ppdc)
+{
+	NTSTATUS status;
+
+	if (domain->secure_channel_type == SEC_CHAN_NULL) {
+		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+	}
+
+	status = cm_connect_netlogon(domain, cli);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (domain->conn.netlogon_creds_ctx == NULL) {
+		return NT_STATUS_TRUSTED_DOMAIN_FAILURE;
+	}
+
+	*ppdc = domain->conn.netlogon_creds_ctx;
+	return NT_STATUS_OK;
 }
 
 void winbind_msg_ip_dropped(struct messaging_context *msg_ctx,

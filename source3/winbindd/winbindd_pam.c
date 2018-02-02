@@ -1442,10 +1442,12 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 
 	do {
 		struct rpc_pipe_client *netlogon_pipe;
+		struct netlogon_creds_cli_context *netlogon_creds_ctx = NULL;
 
 		retry = false;
 
-		result = cm_connect_netlogon(domain, &netlogon_pipe);
+		result = cm_connect_netlogon_secure(domain, &netlogon_pipe,
+						    &netlogon_creds_ctx);
 
 		if (NT_STATUS_EQUAL(result,
 				    NT_STATUS_CANT_ACCESS_DOMAIN_INFO)) {
@@ -1521,13 +1523,9 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 		}
 
 		netr_attempts = 0;
-		if (domain->conn.netlogon_creds_ctx == NULL) {
-			DBG_NOTICE("No security credentials available for "
-				  "domain [%s]\n", domainname);
-			result = NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
-		} else if (plaintext_given) {
+		if (plaintext_given) {
 			result = rpccli_netlogon_password_logon(
-				domain->conn.netlogon_creds_ctx,
+				netlogon_creds_ctx,
 				netlogon_pipe->binding_handle,
 				mem_ctx,
 				logon_parameters,
@@ -1542,7 +1540,7 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 				&validation);
 		} else if (interactive) {
 			result = rpccli_netlogon_interactive_logon(
-				domain->conn.netlogon_creds_ctx,
+				netlogon_creds_ctx,
 				netlogon_pipe->binding_handle,
 				mem_ctx,
 				logon_parameters,
@@ -1558,7 +1556,7 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 				&validation);
 		} else {
 			result = rpccli_netlogon_network_logon(
-				domain->conn.netlogon_creds_ctx,
+				netlogon_creds_ctx,
 				netlogon_pipe->binding_handle,
 				mem_ctx,
 				logon_parameters,
