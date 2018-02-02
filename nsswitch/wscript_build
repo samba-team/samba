@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import Utils
+from waflib import Utils
 import sys
 host_os = sys.platform
 
