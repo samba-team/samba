@@ -18,9 +18,9 @@ for env in bld.gen_python_environments():
 		realname='samba/net.so'
 		)
 
-bld.SAMBA_PYTHON('python_dckeytab',
-	source='py_net_dckeytab.c libnet_export_keytab.c',
-	deps='pyrpc_util db-glue krb5 com_err',
-	realname='samba/dckeytab.so',
-        enabled=bld.CONFIG_SET('AD_DC_BUILD_IS_ENABLED')
-	)
+	bld.SAMBA_PYTHON('python_dckeytab',
+		source='py_net_dckeytab.c libnet_export_keytab.c',
+		deps='pyrpc_util db-glue krb5 com_err',
+		realname='samba/dckeytab.so',
+		enabled=bld.CONFIG_SET('AD_DC_BUILD_IS_ENABLED')
+		)
