@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 
-import string, Logs, Utils, Options, Build, os, optparse, textwrap
+import string
+import os
+import optparse
+import textwrap
+from waflib import Logs, Errors, Options, Build, Context
 from samba_utils import EXPAND_VARIABLES, os_path_relpath
 
 class SambaIndentedHelpFormatter (optparse.IndentedHelpFormatter):
@@ -261,9 +265,9 @@ dynconfig = {
     },
 }
 
-def set_options(opt):
+def options(opt):
     opt.parser.formatter = SambaIndentedHelpFormatter()
-    opt.parser.formatter.width=Utils.get_term_cols()
+    opt.parser.formatter.width=Logs.get_term_cols()
 
     for k in ('--with-privatelibdir', '--with-modulesdir'):
         option = opt.parser.get_option(k)
@@ -305,7 +309,7 @@ def configure(conf):
         flavor = 'STD-PATH'
         if conf.env.PREFIX == '/usr' or conf.env.PREFIX == '/usr/local':
            Logs.error("Don't install directly under /usr or /usr/local without using the FHS option (--enable-fhs)")
-           raise Utils.WafError("ERROR: invalid --prefix=%s value" % (conf.env.PREFIX))
+           raise Errors.WafError("ERROR: invalid --prefix=%s value" % (conf.env.PREFIX))
 
     explicit_set ={}
 
@@ -416,7 +420,7 @@ def build(bld):
     bld.SAMBA_SUBSYSTEM('DYNCONFIG',
                         'dynconfig.c',
                         deps='replace',
-                        public_headers=os_path_relpath(os.path.join(Options.launch_dir, version_header), bld.curdir),
+                        public_headers=os_path_relpath(os.path.join(Context.launch_dir, version_header), bld.path.abspath()),
                         header_path='samba',
                         cflags=cflags)
 
