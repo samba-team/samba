@@ -3,18 +3,20 @@
 APPNAME = 'ldb'
 VERSION = '1.5.1'
 
-blddir = 'bin'
-
 import sys, os
-import Logs
 
 # find the buildtools directory
-srcdir = '.'
-while not os.path.exists(srcdir+'/buildtools') and len(srcdir.split('/')) < 5:
-    srcdir = srcdir + '/..'
-sys.path.insert(0, srcdir + '/buildtools/wafsamba')
+top = '.'
+while not os.path.exists(top+'/buildtools') and len(top.split('/')) < 5:
+    top = top + '/..'
+sys.path.insert(0, top + '/buildtools/wafsamba')
 
-import wafsamba, samba_dist, Utils, Options
+out = 'bin'
+
+import wafsamba
+from wafsamba import samba_dist, samba_utils
+from waflib import Errors, Options, Logs, Context
+import shutil
 
 samba_dist.DIST_DIRS('''lib/ldb:. lib/replace:lib/replace lib/talloc:lib/talloc
                         lib/tdb:lib/tdb lib/tdb:lib/tdb lib/tevent:lib/tevent
@@ -24,13 +26,13 @@ samba_dist.DIST_DIRS('''lib/ldb:. lib/replace:lib/replace lib/talloc:lib/talloc
 
 samba_dist.DIST_FILES('''lib/util/binsearch.h:lib/util/binsearch.h''')
 
-def set_options(opt):
+def options(opt):
     opt.BUILTIN_DEFAULT('replace')
     opt.PRIVATE_EXTENSION_DEFAULT('ldb', noextension='ldb')
     opt.RECURSE('lib/tdb')
     opt.RECURSE('lib/tevent')
     opt.RECURSE('lib/replace')
-    opt.tool_options('python') # options for disabling pyc or pyo compilation
+    opt.load('python') # options for disabling pyc or pyo compilation
 
     opt.add_option('--without-ldb-lmdb',
                    help='disable new LMDB backend for LDB',
@@ -46,19 +48,19 @@ def configure(conf):
         conf.RECURSE('third_party/cmocka')
     else:
         if not conf.CHECK_POPT():
-            raise Utils.WafError('popt development packages have not been found.\nIf third_party is installed, check that it is in the proper place.')
+            raise Errors.WafError('popt development packages have not been found.\nIf third_party is installed, check that it is in the proper place.')
         else:
             conf.define('USING_SYSTEM_POPT', 1)
 
         if not conf.CHECK_CMOCKA():
-            raise Utils.WafError('cmocka development package have not been found.\nIf third_party is installed, check that it is in the proper place.')
+            raise Errors.WafError('cmocka development package have not been found.\nIf third_party is installed, check that it is in the proper place.')
         else:
             conf.define('USING_SYSTEM_CMOCKA', 1)
 
     conf.RECURSE('lib/replace')
     conf.find_program('python', var='PYTHON')
     conf.find_program('xsltproc', var='XSLTPROC')
-    conf.check_tool('python')
+    conf.load('python')
     conf.check_python_version((2,4,2))
     conf.SAMBA_CHECK_PYTHON_HEADERS(mandatory=not conf.env.disable_python)
 
@@ -136,7 +138,7 @@ def configure(conf):
             if Options.options.without_ldb_lmdb:
                 if not Options.options.without_ad_dc and \
                    conf.CONFIG_GET('ENABLE_SELFTEST'):
-                    raise Utils.WafError('--without-ldb-lmdb conflicts '
+                    raise Errors.WafError('--without-ldb-lmdb conflicts '
                                          'with --enable-selftest while '
                                          'building the AD DC')
 
@@ -184,11 +186,11 @@ def configure(conf):
                     msg='Checking for lmdb >= 0.9.16 via header check'):
 
                 if conf.env.standalone_ldb:
-                    raise Utils.WafError('ldb build (unless --without-ldb-lmdb) '
+                    raise Errors.WafError('ldb build (unless --without-ldb-lmdb) '
                                          'requires '
                                          'lmdb 0.9.16 or later')
                 elif not Options.options.without_ad_dc:
-                    raise Utils.WafError('Samba AD DC and --enable-selftest '
+                    raise Errors.WafError('Samba AD DC and --enable-selftest '
                                          'requires '
                                          'lmdb 0.9.16 or later')
 
@@ -543,23 +545,22 @@ def build(bld):
 
 def test(ctx):
     '''run ldb testsuite'''
-    import Utils, samba_utils, shutil
     env = samba_utils.LOAD_ENVIRONMENT()
     ctx.env = env
 
     if not env.HAVE_LMDB:
-        raise Utils.WafError('make test called, but ldb was built '
+        raise Errors.WafError('make test called, but ldb was built '
                              '--without-ldb-lmdb')
 
-    test_prefix = "%s/st" % (Utils.g_module.blddir)
+    test_prefix = "%s/st" % (Context.g_module.out)
     shutil.rmtree(test_prefix, ignore_errors=True)
     os.makedirs(test_prefix)
     os.environ['TEST_DATA_PREFIX'] = test_prefix
-    os.environ['LDB_MODULES_PATH'] = Utils.g_module.blddir + "/modules/ldb"
+    os.environ['LDB_MODULES_PATH'] = Context.g_module.out + "/modules/ldb"
     samba_utils.ADD_LD_LIBRARY_PATH('bin/shared')
     samba_utils.ADD_LD_LIBRARY_PATH('bin/shared/private')
 
-    cmd = 'tests/test-tdb.sh %s' % Utils.g_module.blddir
+    cmd = 'tests/test-tdb.sh %s' % Context.g_module.out
     ret = samba_utils.RUN_COMMAND(cmd)
     print("testsuite returned %d" % ret)
 
@@ -588,7 +589,7 @@ def test(ctx):
                  'ldb_mdb_kv_ops_test']
 
     for test_exe in test_exes:
-            cmd = os.path.join(Utils.g_module.blddir, test_exe)
+            cmd = os.path.join(Context.g_module.out, test_exe)
             cmocka_ret = cmocka_ret or samba_utils.RUN_COMMAND(cmd)
 
     sys.exit(ret or pyret or cmocka_ret)
