@@ -3,17 +3,20 @@
 APPNAME = 'tdb'
 VERSION = '1.3.16'
 
-blddir = 'bin'
-
 import sys, os
 
 # find the buildtools directory
-srcdir = '.'
-while not os.path.exists(srcdir+'/buildtools') and len(srcdir.split('/')) < 5:
-    srcdir = srcdir + '/..'
-sys.path.insert(0, srcdir + '/buildtools/wafsamba')
+top = '.'
+while not os.path.exists(top+'/buildtools') and len(top.split('/')) < 5:
+    top = top + '/..'
+sys.path.insert(0, top + '/buildtools/wafsamba')
 
-import wafsamba, samba_dist, Options, Logs
+out = 'bin'
+
+import wafsamba
+from wafsamba import samba_dist, samba_utils
+from waflib import Options, Logs, Context
+import shutil
 
 samba_dist.DIST_DIRS('lib/tdb:. lib/replace:lib/replace buildtools:buildtools third_party/waf:third_party/waf')
 
@@ -54,7 +57,7 @@ tdb1_unit_tests = [
     'run-mutex1',
 ]
 
-def set_options(opt):
+def options(opt):
     opt.BUILTIN_DEFAULT('replace')
     opt.PRIVATE_EXTENSION_DEFAULT('tdb', noextension='tdb')
     opt.RECURSE('lib/replace')
@@ -194,10 +197,10 @@ def build(bld):
 
 def testonly(ctx):
     '''run tdb testsuite'''
-    import Utils, samba_utils, shutil
     ecode = 0
 
-    test_prefix = "%s/st" % (Utils.g_module.blddir)
+    blddir = Context.g_module.out
+    test_prefix = "%s/st" % (blddir)
     shutil.rmtree(test_prefix, ignore_errors=True)
     os.makedirs(test_prefix)
     os.environ['TEST_DATA_PREFIX'] = test_prefix
@@ -216,7 +219,7 @@ def testonly(ctx):
         sh_tests = ["test/test_tdbbackup.sh test/jenkins-be-hash.tdb"]
 
         for sh_test in sh_tests:
-            cmd = "BINDIR={} {}".format(Utils.g_module.blddir, sh_test)
+            cmd = "BINDIR={} {}".format(blddir, sh_test)
             print("shell test: " + cmd)
             ret = samba_utils.RUN_COMMAND(cmd)
             if ret != 0:
@@ -226,7 +229,7 @@ def testonly(ctx):
 
         for t in tdb1_unit_tests:
             f = "tdb1-" + t
-            cmd = "cd " + testdir + " && " + os.path.abspath(os.path.join(Utils.g_module.blddir, f)) + " > test-output 2>&1"
+            cmd = "cd " + testdir + " && " + os.path.abspath(os.path.join(blddir, f)) + " > test-output 2>&1"
             print("..." + f)
             ret = samba_utils.RUN_COMMAND(cmd)
             if ret != 0:
@@ -236,7 +239,7 @@ def testonly(ctx):
                 break
 
     if ecode == 0:
-        cmd = os.path.join(Utils.g_module.blddir, 'tdbtorture')
+        cmd = os.path.join(blddir, 'tdbtorture')
         ret = samba_utils.RUN_COMMAND(cmd)
         print("testsuite returned %d" % ret)
         if ret != 0:
@@ -249,7 +252,6 @@ def testonly(ctx):
 # WAF doesn't build the unit tests for this, maybe because they don't link with tdb?
 # This forces it
 def test(ctx):
-    import Options
     Options.commands.append('build')
     Options.commands.append('testonly')
 
@@ -259,5 +261,4 @@ def dist():
 
 def reconfigure(ctx):
     '''reconfigure if config scripts have changed'''
-    import samba_utils
     samba_utils.reconfigure(ctx)

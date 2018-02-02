@@ -378,7 +378,7 @@ def RUN_COMMAND(cmd,
 def RUN_PYTHON_TESTS(testfiles, pythonpath=None, extra_env=None):
     env = LOAD_ENVIRONMENT()
     if pythonpath is None:
-        pythonpath = os.path.join(Context.g_module.blddir, 'python')
+        pythonpath = os.path.join(Context.g_module.out, 'python')
     result = 0
     for interp in env.python_interpreters:
         if not isinstance(interp, str):
@@ -465,7 +465,7 @@ def RECURSE(ctx, directory):
     if os.path.exists(d):
         abspath = os.path.abspath(d)
     else:
-        abspath = os.path.abspath(os.path.join(Context.g_module.srcdir, directory))
+        abspath = os.path.abspath(os.path.join(Context.g_module.top, directory))
     ctxclass = ctx.__class__.__name__
     key = ctxclass + ':' + abspath
     if key in visited_dirs:
