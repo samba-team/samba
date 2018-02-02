@@ -12,7 +12,8 @@ while not os.path.exists(srcdir+'/buildtools') and len(srcdir.split('/')) < 5:
     srcdir = srcdir + '/..'
 sys.path.insert(0, srcdir + '/buildtools/wafsamba')
 
-import wafsamba, samba_dist, Options, Logs, Utils
+from waflib import Options, Logs, Utils
+import wafsamba, samba_dist
 import samba_utils, samba_version
 
 env = samba_utils.LOAD_ENVIRONMENT()
@@ -65,7 +66,7 @@ manpages_ceph = [
 ]
 
 
-def set_options(opt):
+def options(opt):
     opt.PRIVATE_EXTENSION_DEFAULT('ctdb')
 
     opt.RECURSE('lib/replace')
