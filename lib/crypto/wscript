@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-def set_options(opt):
+def options(opt):
     opt.add_option('--accel-aes',
         help=("Should we use accelerated AES crypto functions. Options are intelaesni|none."),
         action="store", dest='accel_aes', default="none")
