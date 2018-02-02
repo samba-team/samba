@@ -1187,7 +1187,7 @@ void _tevent_req_oom(struct tevent_req *req,
 #endif
 
 /**
- * @brief Finish a request before the caller had the change to set the callback.
+ * @brief Finish a request before the caller had a chance to set the callback.
  *
  * An implementation of an async request might find that it can either finish
  * the request without waiting for an external event, or it can not even start
