@@ -97,19 +97,38 @@ class cmd_drs_showrepl(Command):
 
     takes_args = ["DC?"]
 
-    def print_neighbour(self, n):
-        '''print one set of neighbour information'''
-        self.message("%s" % n.naming_context_dn)
+    def parse_neighbour(self, n):
+        """Convert an ldb neighbour object into a python dictionary"""
+        d = {
+            'NC dn': n.naming_context_dn,
+            "DSA objectGUID": str(n.source_dsa_obj_guid),
+            "last attempt time": nttime2string(n.last_attempt),
+            "last attempt message": drs_errmsg(n.result_last_attempt),
+            "consecutive failures": n.consecutive_sync_failures,
+            "last success": nttime2string(n.last_success),
+            "NTDS DN": str(n.source_dsa_obj_dn)
+        }
+
         try:
             (site, server) = drs_parse_ntds_dn(n.source_dsa_obj_dn)
-            self.message("\t%s\%s via RPC" % (site, server))
+            d["DSA"] = "%s\%s" % (site, server)
         except RuntimeError:
-            self.message("\tNTDS DN: %s" % n.source_dsa_obj_dn)
-        self.message("\t\tDSA object GUID: %s" % n.source_dsa_obj_guid)
-        self.message("\t\tLast attempt @ %s %s" % (nttime2string(n.last_attempt),
-                                                   drs_errmsg(n.result_last_attempt)))
-        self.message("\t\t%u consecutive failure(s)." % n.consecutive_sync_failures)
-        self.message("\t\tLast success @ %s" % nttime2string(n.last_success))
+            pass
+        return d
+
+    def print_neighbour(self, d):
+        '''print one set of neighbour information'''
+        self.message("%s" % d['NC dn'])
+        if 'DSA' in d:
+            self.message("\t%s via RPC" % d['DSA'])
+        else:
+            self.message("\tNTDS DN: %s" % d['NTDS DN'])
+        self.message("\t\tDSA object GUID: %s" % d['DSA objectGUID'])
+        self.message("\t\tLast attempt @ %s %s" % (d['last attempt time'],
+                                                   d['last attempt message']))
+        self.message("\t\t%u consecutive failure(s)." %
+                     d['consecutive failures'])
+        self.message("\t\tLast success @ %s" % d['last success'])
         self.message("")
 
     def drsuapi_ReplicaInfo(self, info_type):
@@ -145,22 +164,62 @@ class cmd_drs_showrepl(Command):
             ntds = self.samdb.search(base=ntds_dn, scope=ldb.SCOPE_BASE, attrs=['options', 'objectGUID', 'invocationId'])
         except Exception, e:
             raise CommandError("Failed to search NTDS DN %s" % ntds_dn)
+
+        dsa_details = {
+            "options": int(attr_default(ntds[0], "options", 0)),
+            "objectGUID": self.samdb.schema_format_value(
+                "objectGUID", ntds[0]["objectGUID"][0]),
+            "invocationId": self.samdb.schema_format_value(
+                "objectGUID", ntds[0]["invocationId"][0])
+        }
+
         conn = self.samdb.search(base=ntds_dn, expression="(objectClass=nTDSConnection)")
+        info = self.drsuapi_ReplicaInfo(
+            drsuapi.DRSUAPI_DS_REPLICA_INFO_NEIGHBORS)[1]
+        repsfrom =  [self.parse_neighbour(n) for n in info.array]
+        info = self.drsuapi_ReplicaInfo(
+            drsuapi.DRSUAPI_DS_REPLICA_INFO_REPSTO)[1]
+        repsto = [self.parse_neighbour(n) for n in info.array]
+
+        conn_details = []
+        for c in conn:
+            c_rdn, sep, c_server_dn = c['fromServer'][0].partition(',')
+            d = {
+                'name': str(c['name']),
+                'remote DN': c['fromServer'][0],
+                'options': int(attr_default(c, 'options', 0)),
+                'enabled': (attr_default(c, 'enabledConnection',
+                                         'TRUE').upper() == 'TRUE')
+            }
+
+            conn_details.append(d)
+            try:
+                c_server_res = self.samdb.search(base=c_server_dn,
+                                                 scope=ldb.SCOPE_BASE,
+                                                 attrs=["dnsHostName"])
+                d['dns name'] = c_server_res[0]["dnsHostName"][0]
+            except ldb.LdbError, (errno, _):
+                if errno == ldb.ERR_NO_SUCH_OBJECT:
+                    d['is deleted'] = True
+            except KeyError:
+                pass
+
+            d['replicates NC'] = []
+            for r in c.get('mS-DS-ReplicatesNCReason', []):
+                a = str(r).split(':')
+                d['replicates NC'].append((a[3], int(a[2])))
 
         self.message("%s\\%s" % (site, server))
-        self.message("DSA Options: 0x%08x" % int(attr_default(ntds[0], "options", 0)))
-        self.message("DSA object GUID: %s" % self.samdb.schema_format_value("objectGUID", ntds[0]["objectGUID"][0]))
-        self.message("DSA invocationId: %s\n" % self.samdb.schema_format_value("objectGUID", ntds[0]["invocationId"][0]))
+        self.message("DSA Options: 0x%08x" % dsa_details["options"])
+        self.message("DSA object GUID: %s" % dsa_details["objectGUID"])
+        self.message("DSA invocationId: %s\n" % dsa_details["invocationId"])
 
         self.message("==== INBOUND NEIGHBORS ====\n")
-        (info_type, info) = self.drsuapi_ReplicaInfo(drsuapi.DRSUAPI_DS_REPLICA_INFO_NEIGHBORS)
-        for n in info.array:
+        for n in repsfrom:
             self.print_neighbour(n)
 
-
         self.message("==== OUTBOUND NEIGHBORS ====\n")
-        (info_type, info) = self.drsuapi_ReplicaInfo(drsuapi.DRSUAPI_DS_REPLICA_INFO_REPSTO)
-        for n in info.array:
+        for n in repsto:
             self.print_neighbour(n)
 
         reasons = ['NTDSCONN_KCC_GC_TOPOLOGY',
@@ -175,37 +234,27 @@ class cmd_drs_showrepl(Command):
                    'NTDSCONN_KCC_REDUNDANT_SERVER_TOPOLOGY']
 
         self.message("==== KCC CONNECTION OBJECTS ====\n")
-        for c in conn:
+        for d in conn_details:
             self.message("Connection --")
+            if d.get('is deleted'):
+                self.message("\tWARNING: Connection to DELETED server!")
 
-            c_rdn, sep, c_server_dn = c['fromServer'][0].partition(',')
-            try:
-                c_server_res = self.samdb.search(base=c_server_dn, scope=ldb.SCOPE_BASE, attrs=["dnsHostName"])
-                c_server_dns = c_server_res[0]["dnsHostName"][0]
-            except ldb.LdbError, (errno, _):
-                if errno == ldb.ERR_NO_SUCH_OBJECT:
-                    self.message("\tWARNING: Connection to DELETED server!")
-                c_server_dns = ""
-            except KeyError:
-                c_server_dns = ""
-
-            self.message("\tConnection name: %s" % c['name'][0])
-            self.message("\tEnabled        : %s" % attr_default(c, 'enabledConnection', 'TRUE'))
-            self.message("\tServer DNS name : %s" % c_server_dns)
-            self.message("\tServer DN name  : %s" % c['fromServer'][0])
+            self.message("\tConnection name: %s" % d['name'])
+            self.message("\tEnabled        : %s" % str(d['enabled']).upper())
+            self.message("\tServer DNS name : %s" % d['dns name'])
+            self.message("\tServer DN name  : %s" % d['remote DN'])
             self.message("\t\tTransportType: RPC")
-            self.message("\t\toptions: 0x%08X" % int(attr_default(c, 'options', 0)))
-            if not 'mS-DS-ReplicatesNCReason' in c:
-                self.message("Warning: No NC replicated for Connection!")
-                continue
-            for r in c['mS-DS-ReplicatesNCReason']:
-                a = str(r).split(':')
-                self.message("\t\tReplicatesNC: %s" % a[3])
-                self.message("\t\tReason: 0x%08x" % int(a[2]))
-                for s in reasons:
-                    if getattr(dsdb, s, 0) & int(a[2]):
-                        self.message("\t\t\t%s" % s)
+            self.message("\t\toptions: 0x%08X" % d['options'])
 
+            if d['replicates NC']:
+                for nc, reason in d['replicates NC']:
+                    self.message("\t\tReplicatesNC: %s" % nc)
+                    self.message("\t\tReason: 0x%08x" % reason)
+                    for s in reasons:
+                        if getattr(dsdb, s, 0) & reason:
+                            self.message("\t\t\t%s" % s)
+            else:
+                self.message("Warning: No NC replicated for Connection!")
 
 
 class cmd_drs_kcc(Command):
