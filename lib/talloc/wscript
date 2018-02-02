@@ -3,28 +3,27 @@
 APPNAME = 'talloc'
 VERSION = '2.1.14'
 
-
-blddir = 'bin'
-
-import Logs
-import os, sys
+import os
+import sys
 
 # find the buildtools directory
-srcdir = '.'
-while not os.path.exists(srcdir+'/buildtools') and len(srcdir.split('/')) < 5:
-    srcdir = srcdir + '/..'
-sys.path.insert(0, srcdir + '/buildtools/wafsamba')
+top = '.'
+while not os.path.exists(top+'/buildtools') and len(top.split('/')) < 5:
+    top = top + '/..'
+sys.path.insert(0, top + '/buildtools/wafsamba')
 
-import sys
-sys.path.insert(0, srcdir+"/buildtools/wafsamba")
-import wafsamba, samba_dist, Options
+out = 'bin'
+
+import wafsamba
+from wafsamba import samba_dist, samba_utils
+from waflib import Logs, Options, Context
 
 # setup what directories to put in a tarball
 samba_dist.DIST_DIRS("""lib/talloc:. lib/replace:lib/replace
 buildtools:buildtools third_party/waf:third_party/waf""")
 
 
-def set_options(opt):
+def options(opt):
     opt.BUILTIN_DEFAULT('replace')
     opt.PRIVATE_EXTENSION_DEFAULT('talloc', noextension='talloc')
     opt.RECURSE('lib/replace')
@@ -173,19 +172,19 @@ def build(bld):
 
 def test(ctx):
     '''run talloc testsuite'''
-    import Utils, samba_utils
+    import samba_utils
 
     samba_utils.ADD_LD_LIBRARY_PATH('bin/shared')
     samba_utils.ADD_LD_LIBRARY_PATH('bin/shared/private')
 
-    cmd = os.path.join(Utils.g_module.blddir, 'talloc_testsuite')
+    cmd = os.path.join(Context.g_module.out, 'talloc_testsuite')
     ret = samba_utils.RUN_COMMAND(cmd)
     print("testsuite returned %d" % ret)
-    magic_helper_cmd = os.path.join(Utils.g_module.blddir, 'talloc_test_magic_differs_helper')
-    magic_cmd = os.path.join(srcdir, 'lib', 'talloc',
+    magic_helper_cmd = os.path.join(Context.g_module.out, 'talloc_test_magic_differs_helper')
+    magic_cmd = os.path.join(Context.g_module.top, 'lib', 'talloc',
                              'test_magic_differs.sh')
     if not os.path.exists(magic_cmd):
-        magic_cmd = os.path.join(srcdir, 'test_magic_differs.sh')
+        magic_cmd = os.path.join(Context.g_module.top, 'test_magic_differs.sh')
 
     magic_ret = samba_utils.RUN_COMMAND(magic_cmd + " " +  magic_helper_cmd)
     print("magic differs test returned %d" % magic_ret)
@@ -199,7 +198,6 @@ def dist():
 
 def reconfigure(ctx):
     '''reconfigure if config scripts have changed'''
-    import samba_utils
     samba_utils.reconfigure(ctx)
 
 
