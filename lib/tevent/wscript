@@ -3,21 +3,23 @@
 APPNAME = 'tevent'
 VERSION = '0.9.37'
 
-blddir = 'bin'
-
 import sys, os
 
 # find the buildtools directory
-srcdir = '.'
-while not os.path.exists(srcdir+'/buildtools') and len(srcdir.split('/')) < 5:
-    srcdir = srcdir + '/..'
-sys.path.insert(0, srcdir + '/buildtools/wafsamba')
+top = '.'
+while not os.path.exists(top+'/buildtools') and len(top.split('/')) < 5:
+    top = top + '/..'
+sys.path.insert(0, top + '/buildtools/wafsamba')
 
-import wafsamba, samba_dist, samba_utils, Options, Logs
+out = 'bin'
+
+import wafsamba
+from wafsamba import samba_dist, samba_utils
+from waflib import Options, Logs, Context
 
 samba_dist.DIST_DIRS('lib/tevent:. lib/replace:lib/replace lib/talloc:lib/talloc buildtools:buildtools third_party/waf:third_party/waf')
 
-def set_options(opt):
+def options(opt):
     opt.BUILTIN_DEFAULT('replace')
     opt.PRIVATE_EXTENSION_DEFAULT('tevent', noextension='tevent')
     opt.RECURSE('lib/replace')
@@ -61,7 +63,7 @@ def configure(conf):
     if not conf.env.disable_python:
         # also disable if we don't have the python libs installed
         conf.find_program('python', var='PYTHON')
-        conf.check_tool('python')
+        conf.load('python')
         conf.check_python_version((2,4,2))
         conf.SAMBA_CHECK_PYTHON_HEADERS(mandatory=False)
         if not conf.env.HAVE_PYTHON_H:
@@ -145,5 +147,4 @@ def dist():
 
 def reconfigure(ctx):
     '''reconfigure if config scripts have changed'''
-    import samba_utils
     samba_utils.reconfigure(ctx)
