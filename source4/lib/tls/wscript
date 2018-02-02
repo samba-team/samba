@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
-import Options
+from waflib import Options
 from optparse import SUPPRESS_HELP
 
-def set_options(opt):
+def options(opt):
     # allow users to disable gnutls
     opt.add_option('--enable-gnutls',
                    help=("Enable use of gnutls"),
