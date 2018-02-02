@@ -419,9 +419,11 @@ enum pdb_policy_type {
  * Changed to 24, removed uid_to_sid and gid_to_sid, replaced with id_to_sid
  * Leave at 24, add optional get_trusteddom_creds()
  * Change to 25, loadable modules now have a TALLOC_CTX * parameter in init.
+ * Skip 29-17 in order to resync with the ABI version.
+ * Change to 30, add filter_hints()
  */
 
-#define PASSDB_INTERFACE_VERSION 25
+#define PASSDB_INTERFACE_VERSION 30
 
 struct pdb_methods
 {
@@ -614,6 +616,12 @@ struct pdb_methods
 					 TALLOC_CTX *mem_ctx,
 					 uint32_t *num_domains,
 					 struct pdb_trusted_domain ***domains);
+
+	NTSTATUS (*filter_hints)(struct pdb_methods *methods,
+			TALLOC_CTX *mem_ctx,
+			struct lsa_TrustDomainInfoInfoEx **p_local_tdo,
+			struct lsa_ForestTrustInformation2 **p_local_fti,
+			uint32_t *p_local_functional_level);
 
 	NTSTATUS (*get_secret)(struct pdb_methods *methods,
 			       TALLOC_CTX *mem_ctx,
@@ -937,6 +945,10 @@ NTSTATUS pdb_set_trusted_domain(const char* domain,
 NTSTATUS pdb_del_trusted_domain(const char *domain);
 NTSTATUS pdb_enum_trusted_domains(TALLOC_CTX *mem_ctx, uint32_t *num_domains,
 				  struct pdb_trusted_domain ***domains);
+NTSTATUS pdb_filter_hints(TALLOC_CTX *mem_ctx,
+			  struct lsa_TrustDomainInfoInfoEx **p_local_tdo,
+			  struct lsa_ForestTrustInformation2 **p_local_fti,
+			  uint32_t *p_local_functional_level);
 NTSTATUS make_pdb_method( struct pdb_methods **methods ) ;
 NTSTATUS pdb_get_secret(TALLOC_CTX *mem_ctx,
 			const char *secret_name,

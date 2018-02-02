@@ -3700,6 +3700,75 @@ static NTSTATUS pdb_samba_dsdb_enum_trusted_domains(struct pdb_methods *m,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS pdb_samba_dsdb_filter_hints(struct pdb_methods *m,
+			TALLOC_CTX *mem_ctx,
+			struct lsa_TrustDomainInfoInfoEx **p_local_tdo,
+			struct lsa_ForestTrustInformation2 **p_local_fti,
+			uint32_t *p_local_functional_level)
+{
+	struct pdb_samba_dsdb_state *state = talloc_get_type_abort(
+		m->private_data, struct pdb_samba_dsdb_state);
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct lsa_TrustDomainInfoInfoEx *local_tdo = NULL;
+	struct lsa_ForestTrustInformation2 *local_fti = NULL;
+	int local_functional_level = dsdb_dc_functional_level(state->ldb);
+	NTSTATUS status;
+
+	if (lp_kdc_enable_fast()) {
+		/*
+		 * With fast enabled (the default, we don't want to filter
+		 * S-1-5-21-0-0-0-* sids
+		 */
+		local_functional_level = MAX(local_functional_level,
+					     DS_DOMAIN_FUNCTION_2012);
+	}
+
+	if (p_local_tdo != NULL) {
+		*p_local_tdo = NULL;
+	}
+
+	if (p_local_fti != NULL) {
+		*p_local_fti = NULL;
+	}
+
+	if (p_local_functional_level != NULL) {
+		*p_local_functional_level = 0;
+	}
+
+	if (p_local_tdo != NULL) {
+		status = dsdb_trust_local_tdo_info(frame, state->ldb,
+						   &local_tdo);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(frame);
+			return status;
+		}
+	}
+
+	if (p_local_fti != NULL) {
+		status = dsdb_trust_xref_forest_info(frame, state->ldb,
+						     &local_fti);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(frame);
+			return status;
+		}
+	}
+
+	if (p_local_tdo != NULL) {
+		*p_local_tdo = talloc_move(mem_ctx, &local_tdo);
+	}
+
+	if (p_local_fti != NULL) {
+		*p_local_fti = talloc_move(mem_ctx, &local_fti);
+	}
+
+	if (p_local_functional_level != NULL) {
+		*p_local_functional_level = local_functional_level;
+	}
+
+	TALLOC_FREE(frame);
+	return NT_STATUS_OK;
+}
+
 static bool pdb_samba_dsdb_is_responsible_for_wellknown(struct pdb_methods *m)
 {
 	return true;
@@ -3766,6 +3835,7 @@ static void pdb_samba_dsdb_init_methods(struct pdb_methods *m)
 	m->set_trusted_domain = pdb_samba_dsdb_set_trusted_domain;
 	m->del_trusted_domain = pdb_samba_dsdb_del_trusted_domain;
 	m->enum_trusted_domains = pdb_samba_dsdb_enum_trusted_domains;
+	m->filter_hints = pdb_samba_dsdb_filter_hints;
 	m->is_responsible_for_wellknown =
 				pdb_samba_dsdb_is_responsible_for_wellknown;
 	m->is_responsible_for_everything_else =

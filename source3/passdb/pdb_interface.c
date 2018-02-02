@@ -2289,6 +2289,17 @@ NTSTATUS pdb_enum_trusted_domains(TALLOC_CTX *mem_ctx, uint32_t *num_domains,
 	return pdb->enum_trusted_domains(pdb, mem_ctx, num_domains, domains);
 }
 
+NTSTATUS pdb_filter_hints(TALLOC_CTX *mem_ctx,
+			  struct lsa_TrustDomainInfoInfoEx **p_local_tdo,
+			  struct lsa_ForestTrustInformation2 **p_local_fti,
+			  uint32_t *p_local_functional_level)
+{
+	struct pdb_methods *pdb = pdb_get_methods();
+	return pdb->filter_hints(pdb, mem_ctx,
+				 p_local_tdo, p_local_fti,
+				 p_local_functional_level);
+}
+
 static NTSTATUS pdb_default_get_trusted_domain(struct pdb_methods *methods,
 					       TALLOC_CTX *mem_ctx,
 					       const char *domain,
@@ -2430,6 +2441,58 @@ static NTSTATUS pdb_default_enum_trusted_domains(struct pdb_methods *methods,
 						 struct pdb_trusted_domain ***domains)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+static NTSTATUS pdb_default_filter_hints(struct pdb_methods *methods,
+			TALLOC_CTX *mem_ctx,
+			struct lsa_TrustDomainInfoInfoEx **p_local_tdo,
+			struct lsa_ForestTrustInformation2 **p_local_fti,
+			uint32_t *p_local_functional_level)
+{
+	struct lsa_TrustDomainInfoInfoEx *local_tdo;
+
+	if (p_local_tdo != NULL) {
+		*p_local_tdo = NULL;
+	}
+
+	if (p_local_fti != NULL) {
+		*p_local_fti = NULL;
+	}
+
+	if (p_local_functional_level != NULL) {
+		*p_local_functional_level = 0;
+	}
+
+	if (p_local_tdo == NULL) {
+		return NT_STATUS_OK;
+	}
+
+	local_tdo = talloc_zero(mem_ctx, struct lsa_TrustDomainInfoInfoEx);
+	if (local_tdo == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	local_tdo->netbios_name.string = talloc_strdup(local_tdo,
+						get_global_sam_name());
+	if (local_tdo->netbios_name.string == NULL) {
+		TALLOC_FREE(local_tdo);
+		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+	}
+	local_tdo->sid = dom_sid_dup(local_tdo, get_global_sam_sid());
+	if (local_tdo->sid == NULL) {
+		TALLOC_FREE(local_tdo);
+		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+	}
+
+	if (pdb_capabilities() & PDB_CAP_ADS) {
+		local_tdo->trust_type = LSA_TRUST_TYPE_UPLEVEL;
+		local_tdo->trust_attributes |= LSA_TRUST_ATTRIBUTE_WITHIN_FOREST;
+	} else {
+		local_tdo->trust_type = LSA_TRUST_TYPE_DOWNLEVEL;
+	}
+
+	*p_local_tdo = local_tdo;
+	return NT_STATUS_OK;
 }
 
 static struct pdb_domain_info *pdb_default_get_domain_info(
@@ -2688,6 +2751,8 @@ NTSTATUS make_pdb_method( struct pdb_methods **methods )
 	(*methods)->set_trusted_domain = pdb_default_set_trusted_domain;
 	(*methods)->del_trusted_domain = pdb_default_del_trusted_domain;
 	(*methods)->enum_trusted_domains = pdb_default_enum_trusted_domains;
+
+	(*methods)->filter_hints = pdb_default_filter_hints;
 
 	(*methods)->get_secret = pdb_default_get_secret;
 	(*methods)->set_secret = pdb_default_set_secret;
