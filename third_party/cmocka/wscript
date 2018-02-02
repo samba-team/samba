@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import Options
+from waflib import Options
 
 def configure(conf):
     conf.CHECK_FUNCS('longjmp siglongjmp')
