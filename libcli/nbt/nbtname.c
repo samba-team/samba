@@ -190,7 +190,9 @@ _PUBLIC_ enum ndr_err_code ndr_push_nbt_name(struct ndr_push *ndr, int ndr_flags
 /**
   copy a nbt name structure
 */
-_PUBLIC_ NTSTATUS nbt_name_dup(TALLOC_CTX *mem_ctx, struct nbt_name *name, struct nbt_name *newname)
+_PUBLIC_ NTSTATUS nbt_name_dup(TALLOC_CTX *mem_ctx,
+			       const struct nbt_name *name,
+			       struct nbt_name *newname)
 {
 	*newname = *name;
 	newname->name = talloc_strdup(mem_ctx, newname->name);

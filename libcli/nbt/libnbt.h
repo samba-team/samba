@@ -291,7 +291,9 @@ NTSTATUS nbt_name_status_recv(struct nbt_name_request *req,
 NTSTATUS nbt_name_status(struct nbt_name_socket *nbtsock,
 			TALLOC_CTX *mem_ctx, struct nbt_name_status *io);
 
-NTSTATUS nbt_name_dup(TALLOC_CTX *mem_ctx, struct nbt_name *name, struct nbt_name *newname);
+NTSTATUS nbt_name_dup(TALLOC_CTX *mem_ctx,
+		      const struct nbt_name *name,
+		      struct nbt_name *newname);
 NTSTATUS nbt_name_to_blob(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, struct nbt_name *name);
 NTSTATUS nbt_name_from_blob(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob, struct nbt_name *name);
 void nbt_choose_called_name(TALLOC_CTX *mem_ctx, struct nbt_name *n, const char *name, int type);
