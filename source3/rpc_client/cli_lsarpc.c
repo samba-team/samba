@@ -638,20 +638,22 @@ NTSTATUS dcerpc_lsa_lookup_names_generic(struct dcerpc_binding_handle *h,
 	}
 
 	if (num_names) {
-		if (!((*sids = talloc_array(mem_ctx, struct dom_sid, num_names)))) {
+		*sids = talloc_zero_array(mem_ctx, struct dom_sid, num_names);
+		if (*sids == NULL) {
 			DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
 			*presult = NT_STATUS_NO_MEMORY;
 			goto done;
 		}
 
-		if (!((*types = talloc_array(mem_ctx, enum lsa_SidType, num_names)))) {
+		*types = talloc_zero_array(mem_ctx, enum lsa_SidType, num_names);
+		if (*types == NULL) {
 			DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
 			*presult = NT_STATUS_NO_MEMORY;
 			goto done;
 		}
 
 		if (dom_names != NULL) {
-			*dom_names = talloc_array(mem_ctx, const char *, num_names);
+			*dom_names = talloc_zero_array(mem_ctx, const char *, num_names);
 			if (*dom_names == NULL) {
 				DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
 				*presult = NT_STATUS_NO_MEMORY;
