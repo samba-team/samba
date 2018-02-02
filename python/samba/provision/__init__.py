@@ -654,6 +654,22 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
     if domain == realm and not domain_names_forced:
         raise ProvisioningError("guess_names: Realm '%s' must not be equal to short domain name '%s'!" % (realm, domain))
 
+    if serverrole != "active directory domain controller":
+        #
+        # This is the code path for a domain member
+        # where we provision the database as if we where
+        # on a domain controller, so we should not use
+        # the same dnsdomain as the domain controllers
+        # of our primary domain.
+        #
+        # This will be important if we start doing
+        # SID/name filtering and reject the local
+        # sid and names if they come from a domain
+        # controller.
+        #
+        realm = netbiosname
+        dnsdomain = netbiosname.lower()
+
     if rootdn is None:
        rootdn = domaindn
 
