@@ -1,4 +1,5 @@
-import Logs, Options, sys
+import sys
+from waflib import Logs, Options
 
 Logs.info("Looking for ncurses features")
 
