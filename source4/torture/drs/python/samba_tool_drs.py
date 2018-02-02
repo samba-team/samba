@@ -80,26 +80,6 @@ class SambaToolDrsTests(drs_base.DrsBaseTestCase):
         self.assertTrue("Consistency check on" in out)
         self.assertTrue("successful" in out)
 
-    def test_samba_tool_showrepl(self):
-        """Tests 'samba-tool drs showrepl' command.
-        """
-        # Output should be like:
-        #      <site-name>/<domain-name>
-        #      DSA Options: <hex-options>
-        #      DSA object GUID: <DSA-object-GUID>
-        #      DSA invocationId: <DSA-invocationId>
-        #      <Inbound-connections-list>
-        #      <Outbound-connections-list>
-        #      <KCC-objects>
-        #      ...
-        #   TODO: Perhaps we should check at least for
-        #         DSA's objectGUDI and invocationId
-        out = self.check_output("samba-tool drs showrepl %s %s" % (self.dc1,
-                                                                   self.cmdline_creds))
-        self.assertTrue("DSA Options:" in out)
-        self.assertTrue("DSA object GUID:" in out)
-        self.assertTrue("DSA invocationId:" in out)
-
     def test_samba_tool_options(self):
         """Tests 'samba-tool drs options' command
         """
