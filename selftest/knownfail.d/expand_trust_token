@@ -1,2 +1,1 @@
 ^samba4.blackbox.trust_token.Test.token.with.kerberos
-^samba4.blackbox.trust_token.Test.token.with.NTLMSSP
