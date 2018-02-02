@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-import os, Utils
+import os
+from waflib import Context
 from samba_utils import SET_TARGET_TYPE
 from samba_autoconf import CURRENT_CFLAGS
 
@@ -16,7 +17,7 @@ def heimdal_path(p, absolute=False):
     hpath = os.path.join("../heimdal", p)
     if not absolute:
         return hpath
-    return os.path.normpath(os.path.join(bld.curdir, hpath))
+    return os.path.normpath(os.path.join(bld.path.abspath(), hpath))
 
 def heimdal_paths(ps):
     return [heimdal_path(p) for p in to_list(ps)]
@@ -81,7 +82,9 @@ def HEIMDAL_ASN1(name, source,
     t.env.ASN1OPTIONS  = options
     t.env.BLDBIN       = os.path.normpath(os.path.join(bld.srcnode.abspath(bld.env), '..'))
     if option_file is not None:
-        t.env.OPTION_FILE = "--option-file='%s'" % os.path.normpath(os.path.join(bld.curdir, option_file))
+        t.env.OPTION_FILE = "--option-file='{}'".format(
+                os.path.normpath(
+                    os.path.join(bld.path.abspath(), option_file)))
 
     cfile = out_files[0][0:-2] + '.c'
     hfile = out_files[1][0:-3] + '.h'
@@ -239,7 +242,7 @@ def HEIMDAL_LIBRARY(libname, source, deps, vnum, version_script, includes=''):
         bundled_name = libname + '-samba4'
     else:
         bundled_name = libname
-    version = "%s_%s" % (Utils.g_module.APPNAME, Utils.g_module.VERSION)
+    version = "%s_%s" % (Context.g_module.APPNAME, Context.g_module.VERSION)
 
     features = 'c cshlib symlink_lib install_lib'
 
@@ -310,8 +313,8 @@ def HEIMDAL_BINARY(binname, source,
 
     obj_target = binname + '.objlist'
 
-    if group == 'binaries':
-        subsystem_group = 'main'
+    if group == 'build_compilers':
+        subsystem_group = 'compiler_libraries'
     else:
         subsystem_group = group
 
@@ -319,13 +322,13 @@ def HEIMDAL_BINARY(binname, source,
     # by separating in this way, we avoid recompiling the C files
     # separately for the install binary and the build binary
     HEIMDAL_SUBSYSTEM(obj_target,
-                        source         = source,
-                        deps           = deps,
-                        includes       = includes,
-                        cflags         = cflags,
-                        group          = subsystem_group,
-                        use_hostcc     = use_hostcc,
-                        use_global_deps= use_global_deps)
+                      source         = source,
+                      deps           = deps,
+                      includes       = includes,
+                      cflags         = cflags,
+                      group          = subsystem_group,
+                      use_hostcc     = use_hostcc,
+                      use_global_deps= use_global_deps)
 
     bld.set_group(group)
 
