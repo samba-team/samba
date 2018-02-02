@@ -26,6 +26,100 @@
 #include "lib/socket/socket.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
 
+struct nbt_name_packet *nbtd_node_status_reply_packet(
+	TALLOC_CTX *mem_ctx,
+	uint16_t trn_id,
+	const struct nbt_name *name,
+	struct nbtd_interface *iface)
+{
+	struct nbtd_iface_name *iname;
+	struct nbt_name_packet *packet;
+	struct nbt_res_rec *answer;
+	struct nbt_rdata_status *stat;
+	uint32_t num_names;
+	NTSTATUS status;
+
+	num_names = 0;
+	for (iname = iface->names; iname != NULL; iname = iname->next) {
+		if ((iname->nb_flags & NBT_NM_ACTIVE) == 0) {
+			continue;
+		}
+		if (strcmp(iname->name.name, "*") == 0) {
+			continue;
+		}
+		num_names += 1;
+	}
+
+	packet = talloc_zero(mem_ctx, struct nbt_name_packet);
+	if (packet == NULL) {
+		return NULL;
+	}
+
+	packet->name_trn_id = trn_id;
+	packet->ancount = 1;
+	packet->operation =
+		NBT_OPCODE_QUERY |
+		NBT_FLAG_REPLY |
+		NBT_FLAG_AUTHORITATIVE;
+
+	packet->answers = talloc_array(packet, struct nbt_res_rec, 1);
+	if (packet->answers == NULL) {
+		goto failed;
+	}
+
+	answer = &packet->answers[0];
+
+	status = nbt_name_dup(packet->answers, name, &answer->name);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto failed;
+	}
+
+	answer->rr_type  = NBT_QTYPE_STATUS;
+	answer->rr_class = NBT_QCLASS_IP;
+	answer->ttl      = 0;
+
+	stat = &packet->answers[0].rdata.status;
+
+	stat->num_names = num_names;
+	stat->names = talloc_zero_array(
+		packet->answers,
+		struct nbt_status_name,
+		num_names);
+	if (stat->names == NULL) {
+		goto failed;
+	}
+
+	num_names = 0;
+	for (iname = iface->names; iname != NULL; iname = iname->next) {
+		struct nbt_status_name *n = &stat->names[num_names];
+
+		if ((iname->nb_flags & NBT_NM_ACTIVE) == 0) {
+			continue;
+		}
+		if (strcmp(iname->name.name, "*") == 0) {
+			continue;
+		}
+
+		n->name = talloc_asprintf(
+			stat->names,
+			"%-15s",
+			iname->name.name);
+		if (n->name == NULL) {
+			goto failed;
+		}
+		n->type = iname->name.type;
+		n->nb_flags = iname->nb_flags;
+
+		num_names += 1;
+	}
+
+	return packet;
+
+failed:
+	TALLOC_FREE(packet);
+	return NULL;
+}
+
 /*
   send a name status reply
 */
@@ -36,53 +130,16 @@ static void nbtd_node_status_reply(struct nbt_name_socket *nbtsock,
 				   struct nbtd_interface *iface)
 {
 	struct nbt_name_packet *packet;
-	uint32_t name_count;
-	struct nbtd_iface_name *iname;
 	struct nbtd_server *nbtsrv = iface->nbtsrv;
-	
-	/* work out how many names to send */
-	name_count = 0;
-	for (iname=iface->names;iname;iname=iname->next) {
-		if ((iname->nb_flags & NBT_NM_ACTIVE) && 
-		    strcmp(iname->name.name, "*") != 0) {
-			name_count++;
-		}
+
+	packet = nbtd_node_status_reply_packet(
+		nbtsock,
+		request_packet->name_trn_id,
+		name,
+		iface);
+	if (packet == NULL) {
+		return;
 	}
-
-	packet = talloc_zero(nbtsock, struct nbt_name_packet);
-	if (packet == NULL) return;
-
-	packet->name_trn_id = request_packet->name_trn_id;
-	packet->ancount = 1;
-	packet->operation = NBT_OPCODE_QUERY | NBT_FLAG_REPLY | NBT_FLAG_AUTHORITATIVE;
-
-	packet->answers = talloc_array(packet, struct nbt_res_rec, 1);
-	if (packet->answers == NULL) goto failed;
-
-	packet->answers[0].name     = *name;
-	packet->answers[0].rr_type  = NBT_QTYPE_STATUS;
-	packet->answers[0].rr_class = NBT_QCLASS_IP;
-	packet->answers[0].ttl      = 0;
-	packet->answers[0].rdata.status.num_names = name_count;
-	packet->answers[0].rdata.status.names = talloc_array(packet->answers,
-							     struct nbt_status_name, name_count);
-	if (packet->answers[0].rdata.status.names == NULL) goto failed;
-
-	name_count = 0;
-	for (iname=iface->names;iname;iname=iname->next) {
-		if ((iname->nb_flags & NBT_NM_ACTIVE) && 
-		    strcmp(iname->name.name, "*") != 0) {
-			struct nbt_status_name *n = &packet->answers[0].rdata.status.names[name_count];
-			n->name = talloc_asprintf(packet->answers, "%-15s", iname->name.name);
-			if (n->name == NULL) goto failed;
-			n->type     = iname->name.type;
-			n->nb_flags = iname->nb_flags;
-			name_count++;
-		}
-	}
-	/* we deliberately don't fill in the statistics structure as
-	   it could lead to giving attackers too much information */
-	ZERO_STRUCT(packet->answers[0].rdata.status.statistics);
 
 	DEBUG(7,("Sending node status reply for %s to %s:%d\n", 
 		 nbt_name_string(packet, name), src->addr, src->port));
@@ -90,7 +147,6 @@ static void nbtd_node_status_reply(struct nbt_name_socket *nbtsock,
 	nbtsrv->stats.total_sent++;
 	nbt_name_reply_send(nbtsock, src, packet);
 
-failed:
 	talloc_free(packet);
 }
 
