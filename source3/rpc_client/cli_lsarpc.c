@@ -370,19 +370,22 @@ NTSTATUS dcerpc_lsa_lookup_sids_generic(struct dcerpc_binding_handle *h,
 	bool have_unmapped = false;
 
 	if (num_sids) {
-		if (!(domains = talloc_array(mem_ctx, char *, num_sids))) {
+		domains = talloc_zero_array(mem_ctx, char *, num_sids);
+		if (domains == NULL) {
 			DEBUG(0, ("rpccli_lsa_lookup_sids(): out of memory\n"));
 			status = NT_STATUS_NO_MEMORY;
 			goto fail;
 		}
 
-		if (!(names = talloc_array(mem_ctx, char *, num_sids))) {
+		names = talloc_zero_array(mem_ctx, char *, num_sids);
+		if (names == NULL) {
 			DEBUG(0, ("rpccli_lsa_lookup_sids(): out of memory\n"));
 			status = NT_STATUS_NO_MEMORY;
 			goto fail;
 		}
 
-		if (!(types = talloc_array(mem_ctx, enum lsa_SidType, num_sids))) {
+		types = talloc_zero_array(mem_ctx, enum lsa_SidType, num_sids);
+		if (types == NULL) {
 			DEBUG(0, ("rpccli_lsa_lookup_sids(): out of memory\n"));
 			status = NT_STATUS_NO_MEMORY;
 			goto fail;
