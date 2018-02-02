@@ -495,6 +495,17 @@ def build(bld):
                              cflags='-DTEST_BE=\"mdb\" -DGUID_IDX=1',
                              deps='cmocka ldb',
                              install=False)
+
+            bld.SAMBA_BINARY('ldb_lmdb_test',
+                             source='tests/ldb_lmdb_test.c',
+                             deps='cmocka ldb',
+                             install=False)
+
+            bld.SAMBA_BINARY('ldb_lmdb_size_test',
+                             source='tests/ldb_lmdb_size_test.c',
+                             deps='cmocka ldb',
+                             install=False)
+
             bld.SAMBA_BINARY('ldb_mdb_kv_ops_test',
                              source='tests/ldb_kv_ops_test.c',
                              cflags='-DTEST_BE=\"mdb\"',
@@ -538,7 +549,11 @@ def test(ctx):
                  'ldb_tdb_guid_mod_op_test',
                  'ldb_msg_test',
                  'ldb_tdb_kv_ops_test',
-                 'ldb_tdb_test']
+                 'ldb_tdb_test',
+                 'ldb_lmdb_test']
+                 # we don't want to run ldb_lmdb_size_test (which proves we can
+                 # fit > 4G of data into the DB), it would fill up the disk on
+                 # many of our test instances
 
     for test_exe in test_exes:
             cmd = os.path.join(Utils.g_module.blddir, test_exe)
