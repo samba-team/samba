@@ -27,6 +27,7 @@
 #include "nsswitch/libwbclient/wbclient.h"
 #include "librpc/gen_ndr/dcerpc.h"
 #include "librpc/gen_ndr/winbind.h"
+#include "librpc/gen_ndr/drsblobs.h"
 
 #include "../lib/util/tevent_ntstatus.h"
 
@@ -155,6 +156,7 @@ struct winbindd_domain {
 	uint32_t domain_flags;                   /* Domain flags from netlogon.h */
 	uint32_t domain_type;                    /* Domain type from netlogon.h */
 	uint32_t domain_trust_attribs;           /* Trust attribs from netlogon.h */
+	struct lsa_ForestTrustInformation2 *fti;
 	struct winbindd_domain *routing_domain;
 	bool initialized;		       /* Did we already ask for the domain mode? */
 	bool active_directory;                 /* is this a win2k active directory ? */

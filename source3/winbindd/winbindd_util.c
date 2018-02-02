@@ -24,6 +24,7 @@
 #include "winbindd.h"
 #include "lib/util_unixsids.h"
 #include "secrets.h"
+#include "../libcli/lsarpc/util_lsarpc.h"
 #include "../libcli/security/security.h"
 #include "../libcli/auth/pam_errors.h"
 #include "passdb/machine_sid.h"
@@ -37,6 +38,7 @@
 #include "lib/util/string_wrappers.h"
 #include "lib/global_contexts.h"
 #include "librpc/gen_ndr/ndr_winbind_c.h"
+#include "../libcli/lsarpc/util_lsarpc.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -1200,7 +1202,9 @@ static bool add_trusted_domains_dc(void)
 
 	for (i = 0; i < num_domains; i++) {
 		enum netr_SchannelType sec_chan_type = SEC_CHAN_DOMAIN;
+		struct ForestTrustInfo fti = { .version = 0, };
 		uint32_t trust_flags = 0;
+		enum ndr_err_code ndr_err;
 
 		if (domains[i]->trust_type == LSA_TRUST_TYPE_UPLEVEL) {
 			sec_chan_type = SEC_CHAN_DNS_DOMAIN;
@@ -1263,13 +1267,6 @@ static bool add_trusted_domains_dc(void)
 				   nt_errstr(status));
 			return false;
 		}
-	}
-
-	for (i = 0; i < num_domains; i++) {
-		struct ForestTrustInfo fti;
-		uint32_t fi;
-		enum ndr_err_code ndr_err;
-		struct winbindd_domain *routing_domain = NULL;
 
 		if (domains[i]->trust_type != LSA_TRUST_TYPE_UPLEVEL) {
 			continue;
@@ -1283,14 +1280,6 @@ static bool add_trusted_domains_dc(void)
 			continue;
 		}
 
-		routing_domain = find_domain_from_name_noinit(
-			domains[i]->netbios_name);
-		if (routing_domain == NULL) {
-			DBG_ERR("Can't find winbindd domain [%s]\n",
-				domains[i]->netbios_name);
-			return false;
-		}
-
 		ndr_err = ndr_pull_struct_blob_all(
 			&domains[i]->trust_forest_trust_info,
 			talloc_tos(), &fti,
@@ -1302,15 +1291,46 @@ static bool add_trusted_domains_dc(void)
 			return false;
 		}
 
-		for (fi = 0; fi < fti.count; fi++) {
-			struct ForestTrustInfoRecord *rec =
-				&fti.records[fi].record;
-			struct ForestTrustDataDomainInfo *drec = NULL;
+		status = trust_forest_info_to_lsa2(domain,
+						   &fti,
+						   &domain->fti);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_ERR("dsdb_trust_forest_info_to_lsa(%s) - %s\n",
+				domains[i]->netbios_name,
+				nt_errstr(status));
+			return false;
+		}
+	}
 
-			if (rec->type != FOREST_TRUST_DOMAIN_INFO) {
+	for (i = 0; i < num_domains; i++) {
+		struct winbindd_domain *routing_domain = NULL;
+		uint32_t fi;
+
+		routing_domain = find_domain_from_name_noinit(
+			domains[i]->netbios_name);
+		if (routing_domain == NULL) {
+			DBG_ERR("Can't find winbindd domain [%s]\n",
+				domains[i]->netbios_name);
+			return false;
+		}
+
+		if (routing_domain->fti == NULL) {
+			continue;
+		}
+
+		for (fi = 0; fi < routing_domain->fti->count; fi++) {
+			const struct lsa_ForestTrustRecord2 *rec =
+				routing_domain->fti->entries[fi];
+			const struct lsa_ForestTrustDomainInfo *drec = NULL;
+
+			if (rec == NULL) {
 				continue;
 			}
-			drec = &rec->data.info;
+
+			if (rec->type != LSA_FOREST_TRUST_DOMAIN_INFO) {
+				continue;
+			}
+			drec = &rec->forest_trust_data.domain_info;
 
 			if (rec->flags & LSA_NB_DISABLED_MASK) {
 				continue;
@@ -1326,14 +1346,15 @@ static bool add_trusted_domains_dc(void)
 			 * LSA_TLN_DISABLED_MASK ???
 			 */
 
-			domain = find_domain_from_name_noinit(drec->netbios_name.string);
+			domain = find_domain_from_name_noinit(
+					drec->netbios_domain_name.string);
 			if (domain != NULL) {
 				continue;
 			}
 
-			status = add_trusted_domain(drec->netbios_name.string,
-						    drec->dns_name.string,
-						    &drec->sid,
+			status = add_trusted_domain(drec->netbios_domain_name.string,
+						    drec->dns_domain_name.string,
+						    drec->domain_sid,
 						    LSA_TRUST_TYPE_UPLEVEL,
 						    NETR_TRUST_FLAG_OUTBOUND,
 						    0,
@@ -1498,6 +1519,16 @@ bool init_domain_list(void)
 			domain->rodc = true;
 		}
 
+		status = pdb_filter_hints(domain,
+					  NULL,  /* p_local_tdo */
+					  &domain->fti,
+					  NULL); /* p_local_functional_level */
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_ERR("pdb_filter_hints(%s) - %s\n",
+				domain->name,
+				nt_errstr(status));
+			return false;
+		}
 	} else {
 		uint32_t trust_flags;
 		enum netr_SchannelType secure_channel_type;
