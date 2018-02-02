@@ -159,6 +159,14 @@ ADS_STATUS ads_idmap_cached_connection(ADS_STRUCT **adsp, const char *dom_name)
 	struct winbindd_domain *wb_dom;
 	ADS_STATUS status;
 
+	if (IS_AD_DC) {
+		/*
+		 * Make sure we never try to use LDAP against
+		 * a trusted domain as AD DC.
+		 */
+		return ADS_ERROR_NT(NT_STATUS_REQUEST_NOT_ACCEPTED);
+	}
+
 	ads_cached_connection_reuse(adsp);
 	if (*adsp != NULL) {
 		return ADS_SUCCESS;
@@ -230,6 +238,14 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 {
 	ADS_STATUS status;
 	char *password, *realm;
+
+	if (IS_AD_DC) {
+		/*
+		 * Make sure we never try to use LDAP against
+		 * a trusted domain as AD DC.
+		 */
+		return NULL;
+	}
 
 	DEBUG(10,("ads_cached_connection\n"));
 	ads_cached_connection_reuse((ADS_STRUCT **)&domain->private_data);
@@ -1306,6 +1322,13 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32_t *seq)
 		DEBUG(10,("sequence: No incoming trust for domain %s\n",
 			  domain->name));
 		*seq = time(NULL);		
+		return NT_STATUS_OK;
+	}
+
+	if (IS_AD_DC) {
+		DEBUG(10,("sequence: Avoid LDAP connection for domain %s\n",
+			  domain->name));
+		*seq = time(NULL);
 		return NT_STATUS_OK;
 	}
 

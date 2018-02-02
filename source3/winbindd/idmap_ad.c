@@ -532,6 +532,17 @@ static NTSTATUS idmap_ad_get_context(struct idmap_domain *dom,
 	struct idmap_ad_context *ctx = NULL;
 	NTSTATUS status;
 
+	if (IS_AD_DC) {
+		/*
+		 * Make sure we never try to use LDAP against
+		 * a trusted domain as AD_DC.
+		 *
+		 * This shouldn't be called currently,
+		 * but you never know what happens in future.
+		 */
+		return NT_STATUS_REQUEST_NOT_ACCEPTED;
+	}
+
 	if (dom->private_data != NULL) {
 		*pctx = talloc_get_type_abort(dom->private_data,
 					      struct idmap_ad_context);
