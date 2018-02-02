@@ -1,8 +1,9 @@
 
-import Logs, Options, sys
+import sys
+from waflib import Logs, Options
 import samba3
 
-def set_options(opt):
+def options(opt):
     help =  "Build with gpgme support (default=auto). "
     help += "This requires gpgme devel and python packages "
     help += "(e.g. libgpgme11-dev, python-gpgme on debian/ubuntu)."
