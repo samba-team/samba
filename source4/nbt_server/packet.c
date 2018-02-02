@@ -94,32 +94,31 @@ bool nbtd_self_packet(struct nbt_name_socket *nbtsock,
 	return false;
 }
 
-
-/*
-  send a name query reply
-*/
-void nbtd_name_query_reply(struct nbt_name_socket *nbtsock, 
-			   struct nbt_name_packet *request_packet, 
-			   struct socket_address *src,
-			   struct nbt_name *name, uint32_t ttl,
-			   uint16_t nb_flags, const char **addresses)
+struct nbt_name_packet *nbtd_name_query_reply_packet(
+	TALLOC_CTX *mem_ctx,
+	uint16_t trn_id,
+	uint32_t ttl,
+	uint16_t nb_flags,
+	const struct nbt_name *name,
+	const char **addresses,
+	size_t num_addresses)
 {
 	struct nbt_name_packet *packet;
-	size_t num_addresses = str_list_length(addresses);
-	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private_data,
-						       struct nbtd_interface);
-	struct nbtd_server *nbtsrv = iface->nbtsrv;
-	int i;
+	size_t i;
+	struct nbt_res_rec *answer;
+	struct nbt_rdata_netbios *rdata;
+	NTSTATUS status;
 
 	if (num_addresses == 0) {
-		DEBUG(3,("No addresses in name query reply - failing\n"));
-		return;
+		return NULL;
 	}
 
-	packet = talloc_zero(nbtsock, struct nbt_name_packet);
-	if (packet == NULL) return;
+	packet = talloc_zero(mem_ctx, struct nbt_name_packet);
+	if (packet == NULL) {
+		return NULL;
+	}
 
-	packet->name_trn_id = request_packet->name_trn_id;
+	packet->name_trn_id = trn_id;
 	packet->ancount = 1;
 	packet->operation =
 		NBT_FLAG_REPLY |
@@ -129,23 +128,69 @@ void nbtd_name_query_reply(struct nbt_name_socket *nbtsock,
 		NBT_FLAG_RECURSION_AVAIL;
 
 	packet->answers = talloc_array(packet, struct nbt_res_rec, 1);
-	if (packet->answers == NULL) goto failed;
+	if (packet->answers == NULL) {
+		goto failed;
+	}
+	answer = packet->answers;
 
-	packet->answers[0].name     = *name;
-	packet->answers[0].rr_type  = NBT_QTYPE_NETBIOS;
-	packet->answers[0].rr_class = NBT_QCLASS_IP;
-	packet->answers[0].ttl      = ttl;
-	packet->answers[0].rdata.netbios.length = num_addresses*6;
-	packet->answers[0].rdata.netbios.addresses = 
-		talloc_array(packet->answers, struct nbt_rdata_address, num_addresses);
-	if (packet->answers[0].rdata.netbios.addresses == NULL) goto failed;
+	status = nbt_name_dup(packet->answers, name, &answer->name);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto failed;
+	}
+	answer->rr_type  = NBT_QTYPE_NETBIOS;
+	answer->rr_class = NBT_QCLASS_IP;
+	answer->ttl      = ttl;
 
-	for (i=0;i<num_addresses;i++) {
-		struct nbt_rdata_address *addr = 
-			&packet->answers[0].rdata.netbios.addresses[i];
+	rdata = &answer->rdata.netbios;
+	rdata->length = num_addresses*6;
+	rdata->addresses = talloc_array(
+		packet->answers,
+		struct nbt_rdata_address,
+		num_addresses);
+	if (rdata->addresses == NULL) {
+		goto failed;
+	}
+
+	for (i=0; i<num_addresses; i++) {
+		struct nbt_rdata_address *addr = &rdata->addresses[i];
 		addr->nb_flags = nb_flags;
 		addr->ipaddr = talloc_strdup(packet->answers, addresses[i]);
-		if (addr->ipaddr == NULL) goto failed;
+		if (addr->ipaddr == NULL) {
+			goto failed;
+		}
+	}
+
+	return packet;
+
+failed:
+	TALLOC_FREE(packet);
+	return NULL;
+}
+
+/*
+  send a name query reply
+*/
+void nbtd_name_query_reply(struct nbt_name_socket *nbtsock,
+			   struct nbt_name_packet *request_packet,
+			   struct socket_address *src,
+			   struct nbt_name *name, uint32_t ttl,
+			   uint16_t nb_flags, const char **addresses)
+{
+	struct nbt_name_packet *packet;
+	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private_data,
+						       struct nbtd_interface);
+	struct nbtd_server *nbtsrv = iface->nbtsrv;
+
+	packet = nbtd_name_query_reply_packet(
+		nbtsock,
+		request_packet->name_trn_id,
+		ttl,
+		nb_flags,
+		name,
+		addresses,
+		str_list_length(addresses));
+	if (packet == NULL) {
+		return;
 	}
 
 	DEBUG(7,("Sending name query reply for %s at %s to %s:%d\n", 
@@ -154,7 +199,6 @@ void nbtd_name_query_reply(struct nbt_name_socket *nbtsock,
 	nbtsrv->stats.total_sent++;
 	nbt_name_reply_send(nbtsock, src, packet);
 
-failed:
 	talloc_free(packet);
 }
 
