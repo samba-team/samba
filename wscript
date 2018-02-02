@@ -8,9 +8,9 @@ VERSION=None
 
 import sys, os, tempfile
 sys.path.insert(0, srcdir+"/buildtools/wafsamba")
-import wafsamba, Options, samba_dist, samba_git, Scripting, Utils, samba_version
-import Logs, samba_utils
 import shutil
+import wafsamba, samba_dist, samba_git, samba_version, samba_utils
+from waflib import Options, Scripting, Utils, Logs, Context
 
 samba_dist.DIST_DIRS('.')
 samba_dist.DIST_BLACKLIST('.gitignore .bzrignore source4/selftest/provisions')
@@ -32,7 +32,14 @@ def system_mitkrb5_callback(option, opt, value, parser):
         del parser.rargs[:len(value)]
         setattr(parser.values, option.dest, value)
 
-def set_options(opt):
+def options(opt):
+    # A bit of 'magic' as waf 2.x changed Options.options to be
+    # a different structure than just a dict and it cannot be
+    # filled before all options parsed
+    # ConfigurationContext looks for multiple places for these
+    # settings, including Context.OUT and Context.TOP
+    setattr(Context.g_module, Context.OUT, blddir)
+    setattr(Context.g_module, Context.TOP, srcdir)
     opt.BUILTIN_DEFAULT('NONE')
     opt.PRIVATE_EXTENSION_DEFAULT('samba4')
     opt.RECURSE('lib/audit_logging')
@@ -100,7 +107,7 @@ def set_options(opt):
 
     gr = opt.option_group('developer options')
 
-    opt.tool_options('python') # options for disabling pyc or pyo compilation
+    opt.load('python') # options for disabling pyc or pyo compilation
     # enable options related to building python extensions
 
 
