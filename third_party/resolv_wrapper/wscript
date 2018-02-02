@@ -55,7 +55,7 @@ def configure(conf):
             conf.DEFINE("HAVE_NS_NAME_COMPRESS", 1)
 
         # Create full path to resolv_wrapper
-        blddir = os.path.realpath(conf.blddir)
+        blddir = os.path.realpath(conf.bldnode.abspath())
         libresolv_wrapper_so_path = blddir + '/default/third_party/resolv_wrapper/libresolv-wrapper.so'
 
     conf.DEFINE('LIBRESOLV_WRAPPER_SO_PATH', libresolv_wrapper_so_path)
