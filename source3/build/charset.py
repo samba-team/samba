@@ -1,6 +1,6 @@
 # tests for charsets for Samba3
 
-from Configure import conf
+from waflib.Configure import conf
 
 
 @conf
