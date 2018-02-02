@@ -1,4 +1,5 @@
-import Logs, Options, sys
+import sys
+from waflib import Logs, Options
 
 # Check for kerberos
 have_gssapi=False
@@ -53,12 +54,12 @@ if conf.env.KRB5_CONFIG:
     if 'gssapi_krb5' in conf.env['LIB_GSSAPI']:
         krb5_define_syslib(conf, "gssapi_krb5", conf.env['LIB_GSSAPI'])
 
-    vendor = conf.cmd_and_log("%(path)s --vendor" % dict(path=conf.env.KRB5_CONFIG)
+    vendor = conf.cmd_and_log(conf.env.KRB5_CONFIG+['--vendor'])
     conf.env.KRB5_VENDOR = vendor.strip().lower()
     if conf.env.KRB5_VENDOR != 'heimdal':
         conf.define('USING_SYSTEM_KRB5', 1)
         del conf.env.HEIMDAL_KRB5_CONFIG
-        krb5_conf_version = conf.cmd_and_log("%(path)s --version" % dict(path=conf.env.KRB5_CONFIG)).strip()
+        krb5_conf_version = conf.cmd_and_log(conf.env.KRB5_CONFIG+['--version']).strip()
 
         krb5_version = krb5_conf_version.split()[-1]
 
@@ -310,4 +311,4 @@ if conf.CONFIG_SET('AD_DC_BUILD_IS_ENABLED'):
         conf.DEFINE('MIT_KDC_PATH', '"' + Options.options.with_system_mitkdc + '"')
     else:
         conf.find_program('krb5kdc', path_list=kdc_path_list, var='MIT_KDC_BINARY', mandatory=True)
-        conf.DEFINE('MIT_KDC_PATH', '"' + conf.env.MIT_KDC_BINARY + '"')
+        conf.DEFINE('MIT_KDC_PATH', '"' + " ".join(conf.env.MIT_KDC_BINARY) + '"')
