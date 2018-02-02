@@ -1,20 +1,23 @@
 #!/usr/bin/env python
 
-srcdir=".."
+srcdir = ".."
 
 import sys, os
 from optparse import SUPPRESS_HELP
-sys.path.insert(0, srcdir+"/buildtools/wafsamba")
+sys.path.insert(0, srcdir + "/buildtools/wafsamba")
 sys.path.insert(0, "source3")
-import wafsamba, Options, Logs, Utils, Scripting
+
+from waflib import Options, Logs, Errors
+import wafsamba
 import build.charset
-import samba_utils, samba_version
+from wafsamba import samba_utils
+from samba_utils import TO_LIST
 import samba3
-import bison, flex
+from waflib.Tools import bison, flex
 
 default_prefix = Options.default_prefix = '/usr/local/samba'
 
-def set_options(opt):
+def options(opt):
 
     opt.add_option('--with-static-modules',
                    help=("Comma-separated list of names of modules to statically link in. "+
@@ -78,8 +81,6 @@ def set_options(opt):
     opt.SAMBA3_ADD_OPTION('spotlight', with_name="enable", without_name="disable", default=False)
 
 def configure(conf):
-    from samba_utils import TO_LIST
-
     default_static_modules = []
     default_shared_modules = []
     required_static_modules = []
@@ -226,7 +227,7 @@ main() {
                        "libarchive support is required for the smbclient "
                        "tar-file mode")
     elif conf.CONFIG_GET('ENABLE_SELFTEST'):
-        raise Utils.WafError('libarchive library required for '
+        raise Errors.WafError('libarchive library required for '
                              '--enable-selftest')
 
 
@@ -1769,13 +1770,13 @@ main() {
         if m.startswith('!'):
             m = m[1:]
             if m in required_static_modules:
-                raise Utils.WafError('These modules are REQUIRED as static modules: %s' %
+                raise Errors.WafError('These modules are REQUIRED as static modules: %s' %
                                      ' '.join(required_static_modules))
             if m in final_static_modules:
                 final_static_modules.remove(m)
             continue
         if m in forced_shared_modules:
-            raise Utils.WafError('These modules MUST be configured as shared modules: %s' %
+            raise Errors.WafError('These modules MUST be configured as shared modules: %s' %
                                  ' '.join(forced_shared_modules))
         if m in final_shared_modules:
             final_shared_modules.remove(m)
@@ -1790,10 +1791,10 @@ main() {
                 final_shared_modules.remove(m)
             continue
         if m in required_static_modules:
-            raise Utils.WafError('These modules are REQUIRED as static modules: %s' %
+            raise Errors.WafError('These modules are REQUIRED as static modules: %s' %
                                  ' '.join(required_static_modules))
         if m in forced_static_modules:
-            raise Utils.WafError('These module MUST be configured as static modules: %s' %
+            raise Errors.WafError('These module MUST be configured as static modules: %s' %
                                  ' '.join(forced_static_modules))
         if m in final_static_modules:
             final_static_modules.remove(m)

@@ -1,8 +1,5 @@
 #!/usr/bin/env python
 
-from samba_utils import *
-import samba_version, samba3
-
 LIBS='ICONV'
 
 config_h = "../include/config.h"

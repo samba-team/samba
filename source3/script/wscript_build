@@ -22,4 +22,4 @@ bld.SAMBA_GENERATOR('findsmb-script',
 bld.INSTALL_FILES('${BINDIR}',
                   'findsmb',
                   destname='findsmb',
-                  chmod=0755)
+                  chmod=MODE_755)
