@@ -679,8 +679,11 @@ again:
 	domain->conn.netlogon_force_reauth = true;
 
 	{
-		struct rpc_pipe_client *netlogon_pipe;
-		status = cm_connect_netlogon(domain, &netlogon_pipe);
+		struct rpc_pipe_client *netlogon_pipe = NULL;
+		struct netlogon_creds_cli_context *netlogon_creds_ctx = NULL;
+		status = cm_connect_netlogon_secure(domain,
+						    &netlogon_pipe,
+						    &netlogon_creds_ctx);
 	}
 
         /* There is a race condition between fetching the trust account
@@ -721,20 +724,23 @@ NTSTATUS _wbint_ChangeMachineAccount(struct pipes_struct *p,
 	struct messaging_context *msg_ctx = server_messaging_context();
 	struct winbindd_domain *domain;
 	NTSTATUS status;
-	struct rpc_pipe_client *netlogon_pipe;
+	struct rpc_pipe_client *netlogon_pipe = NULL;
+	struct netlogon_creds_cli_context *netlogon_creds_ctx = NULL;
 
 	domain = wb_child_domain();
 	if (domain == NULL) {
 		return NT_STATUS_REQUEST_NOT_ACCEPTED;
 	}
 
-	status = cm_connect_netlogon(domain, &netlogon_pipe);
+	status = cm_connect_netlogon_secure(domain,
+					    &netlogon_pipe,
+					    &netlogon_creds_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("could not open handle to NETLOGON pipe\n"));
 		goto done;
 	}
 
-	status = trust_pw_change(domain->conn.netlogon_creds_ctx,
+	status = trust_pw_change(netlogon_creds_ctx,
 				 msg_ctx,
 				 netlogon_pipe->binding_handle,
 				 domain->name,
@@ -830,20 +836,23 @@ NTSTATUS _winbind_DsrUpdateReadOnlyServerDnsRecords(struct pipes_struct *p,
 {
 	struct winbindd_domain *domain;
 	NTSTATUS status;
-	struct rpc_pipe_client *netlogon_pipe;
+	struct rpc_pipe_client *netlogon_pipe = NULL;
+	struct netlogon_creds_cli_context *netlogon_creds_ctx = NULL;
 
 	domain = wb_child_domain();
 	if (domain == NULL) {
 		return NT_STATUS_REQUEST_NOT_ACCEPTED;
 	}
 
-	status = cm_connect_netlogon(domain, &netlogon_pipe);
+	status = cm_connect_netlogon_secure(domain,
+					    &netlogon_pipe,
+					    &netlogon_creds_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("could not open handle to NETLOGON pipe\n"));
 		goto done;
 	}
 
-	status = netlogon_creds_cli_DsrUpdateReadOnlyServerDnsRecords(domain->conn.netlogon_creds_ctx,
+	status = netlogon_creds_cli_DsrUpdateReadOnlyServerDnsRecords(netlogon_creds_ctx,
 								      netlogon_pipe->binding_handle,
 								      r->in.site_name,
 								      r->in.dns_ttl,
@@ -973,6 +982,7 @@ static WERROR _winbind_LogonControl_REDISCOVER(struct pipes_struct *p,
 {
 	NTSTATUS status;
 	struct rpc_pipe_client *netlogon_pipe = NULL;
+	struct netlogon_creds_cli_context *netlogon_creds_ctx = NULL;
 	struct netr_NETLOGON_INFO_2 *info2 = NULL;
 	WERROR check_result = WERR_INTERNAL_ERROR;
 
@@ -993,7 +1003,9 @@ static WERROR _winbind_LogonControl_REDISCOVER(struct pipes_struct *p,
 	 */
 	invalidate_cm_connection(domain);
 	domain->conn.netlogon_force_reauth = true;
-	status = cm_connect_netlogon(domain, &netlogon_pipe);
+	status = cm_connect_netlogon_secure(domain,
+					    &netlogon_pipe,
+					    &netlogon_creds_ctx);
 	reset_cm_connection_on_error(domain, status);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND)) {
 		status = NT_STATUS_NO_LOGON_SERVERS;
@@ -1049,6 +1061,7 @@ static WERROR _winbind_LogonControl_TC_QUERY(struct pipes_struct *p,
 {
 	NTSTATUS status;
 	struct rpc_pipe_client *netlogon_pipe = NULL;
+	struct netlogon_creds_cli_context *netlogon_creds_ctx = NULL;
 	struct netr_NETLOGON_INFO_2 *info2 = NULL;
 	WERROR check_result = WERR_INTERNAL_ERROR;
 
@@ -1062,7 +1075,9 @@ static WERROR _winbind_LogonControl_TC_QUERY(struct pipes_struct *p,
 		goto check_return;
 	}
 
-	status = cm_connect_netlogon(domain, &netlogon_pipe);
+	status = cm_connect_netlogon_secure(domain,
+					    &netlogon_pipe,
+					    &netlogon_creds_ctx);
 	reset_cm_connection_on_error(domain, status);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND)) {
 		status = NT_STATUS_NO_LOGON_SERVERS;
@@ -1121,6 +1136,7 @@ static WERROR _winbind_LogonControl_TC_VERIFY(struct pipes_struct *p,
 	struct policy_handle local_lsa_policy = {};
 	struct dcerpc_binding_handle *local_lsa = NULL;
 	struct rpc_pipe_client *netlogon_pipe = NULL;
+	struct netlogon_creds_cli_context *netlogon_creds_ctx = NULL;
 	struct cli_credentials *creds = NULL;
 	struct samr_Password *cur_nt_hash = NULL;
 	uint32_t trust_attributes = 0;
@@ -1241,7 +1257,9 @@ static WERROR _winbind_LogonControl_TC_VERIFY(struct pipes_struct *p,
 	}
 
 reconnect:
-	status = cm_connect_netlogon(domain, &netlogon_pipe);
+	status = cm_connect_netlogon_secure(domain,
+					    &netlogon_pipe,
+					    &netlogon_creds_ctx);
 	reset_cm_connection_on_error(domain, status);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND)) {
 		status = NT_STATUS_NO_LOGON_SERVERS;
@@ -1261,7 +1279,7 @@ reconnect:
 	}
 
 	if (fetch_fti) {
-		status = netlogon_creds_cli_GetForestTrustInformation(domain->conn.netlogon_creds_ctx,
+		status = netlogon_creds_cli_GetForestTrustInformation(netlogon_creds_ctx,
 								      b, frame,
 								      &new_fti);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE)) {
@@ -1323,7 +1341,7 @@ reconnect:
 		}
 	}
 
-	status = netlogon_creds_cli_ServerGetTrustInfo(domain->conn.netlogon_creds_ctx,
+	status = netlogon_creds_cli_ServerGetTrustInfo(netlogon_creds_ctx,
 						       b, frame,
 						       &new_owf_password,
 						       &old_owf_password,
@@ -1434,7 +1452,8 @@ static WERROR _winbind_LogonControl_CHANGE_PASSWORD(struct pipes_struct *p,
 {
 	struct messaging_context *msg_ctx = server_messaging_context();
 	NTSTATUS status;
-	struct rpc_pipe_client *netlogon_pipe;
+	struct rpc_pipe_client *netlogon_pipe = NULL;
+	struct netlogon_creds_cli_context *netlogon_creds_ctx = NULL;
 	struct cli_credentials *creds = NULL;
 	struct samr_Password *cur_nt_hash = NULL;
 	struct netr_NETLOGON_INFO_1 *info1 = NULL;
@@ -1461,7 +1480,9 @@ static WERROR _winbind_LogonControl_CHANGE_PASSWORD(struct pipes_struct *p,
 	}
 
 reconnect:
-	status = cm_connect_netlogon(domain, &netlogon_pipe);
+	status = cm_connect_netlogon_secure(domain,
+					    &netlogon_pipe,
+					    &netlogon_creds_ctx);
 	reset_cm_connection_on_error(domain, status);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND)) {
 		status = NT_STATUS_NO_LOGON_SERVERS;
@@ -1484,7 +1505,7 @@ reconnect:
 	}
 	TALLOC_FREE(cur_nt_hash);
 
-	status = trust_pw_change(domain->conn.netlogon_creds_ctx,
+	status = trust_pw_change(netlogon_creds_ctx,
 				 msg_ctx, b, domain->name,
 				 domain->dcname,
 				 true); /* force */
@@ -1567,7 +1588,8 @@ WERROR _winbind_GetForestTrustInformation(struct pipes_struct *p,
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status, result;
 	struct winbindd_domain *domain;
-	struct rpc_pipe_client *netlogon_pipe;
+	struct rpc_pipe_client *netlogon_pipe = NULL;
+	struct netlogon_creds_cli_context *netlogon_creds_ctx = NULL;
 	struct dcerpc_binding_handle *b;
 	bool retry = false;
 	struct lsa_String trusted_domain_name = {};
@@ -1666,7 +1688,9 @@ WERROR _winbind_GetForestTrustInformation(struct pipes_struct *p,
 	}
 
 reconnect:
-	status = cm_connect_netlogon(domain, &netlogon_pipe);
+	status = cm_connect_netlogon_secure(domain,
+					    &netlogon_pipe,
+					    &netlogon_creds_ctx);
 	reset_cm_connection_on_error(domain, status);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND)) {
 		status = NT_STATUS_NO_LOGON_SERVERS;
@@ -1679,7 +1703,7 @@ reconnect:
 	}
 	b = netlogon_pipe->binding_handle;
 
-	status = netlogon_creds_cli_GetForestTrustInformation(domain->conn.netlogon_creds_ctx,
+	status = netlogon_creds_cli_GetForestTrustInformation(netlogon_creds_ctx,
 							      b, p->mem_ctx,
 							      &new_fti);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1778,6 +1802,7 @@ NTSTATUS _winbind_SendToSam(struct pipes_struct *p, struct winbind_SendToSam *r)
 	struct winbindd_domain *domain;
 	NTSTATUS status;
 	struct rpc_pipe_client *netlogon_pipe;
+	struct netlogon_creds_cli_context *netlogon_creds_ctx = NULL;
 
 	DEBUG(5, ("_winbind_SendToSam received\n"));
 	domain = wb_child_domain();
@@ -1785,13 +1810,15 @@ NTSTATUS _winbind_SendToSam(struct pipes_struct *p, struct winbind_SendToSam *r)
 		return NT_STATUS_REQUEST_NOT_ACCEPTED;
 	}
 
-	status = cm_connect_netlogon(domain, &netlogon_pipe);
+	status = cm_connect_netlogon_secure(domain,
+					    &netlogon_pipe,
+					    &netlogon_creds_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("could not open handle to NETLOGON pipe\n"));
 		return status;
 	}
 
-	status = netlogon_creds_cli_SendToSam(domain->conn.netlogon_creds_ctx,
+	status = netlogon_creds_cli_SendToSam(netlogon_creds_ctx,
 					      netlogon_pipe->binding_handle,
 					      &r->in.message);
 

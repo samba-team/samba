@@ -210,6 +210,9 @@ NTSTATUS cm_connect_lsat(struct winbindd_domain *domain,
 			 struct policy_handle *lsa_policy);
 NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 			     struct rpc_pipe_client **cli);
+NTSTATUS cm_connect_netlogon_secure(struct winbindd_domain *domain,
+				    struct rpc_pipe_client **cli,
+				    struct netlogon_creds_cli_context **ppdc);
 bool fetch_current_dc_from_gencache(TALLOC_CTX *mem_ctx,
 				    const char *domain_name,
 				    char **p_dc_name, char **p_dc_ip);
