@@ -8,7 +8,8 @@
 # enough yet to know if it is usable (some bug fix might be missing,
 # compile_et might not generate the expected code, etc).
 
-import Logs, sys
+import sys
+from waflib import Logs
 
 conf.CHECK_TYPE('u_char', 'uint8_t')
 conf.CHECK_TYPE('u_int32_t', 'uint32_t')
