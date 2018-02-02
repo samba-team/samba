@@ -68,7 +68,7 @@ def configure(conf):
         conf.DEFINE('PAM_LIBRARY', ('"%s"' % libpam_path ))
 
         # Create full path to pam_wrapper
-        blddir = os.path.realpath(conf.blddir)
+        blddir = os.path.realpath(conf.bldnode.abspath())
         libpam_wrapper_so_path = blddir + '/default/third_party/pam_wrapper/libpam-wrapper.so'
 
     conf.DEFINE('LIBPAM_WRAPPER_SO_PATH', libpam_wrapper_so_path)
