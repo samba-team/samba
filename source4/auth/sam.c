@@ -286,6 +286,41 @@ _PUBLIC_ NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS authsam_domain_group_filter(TALLOC_CTX *mem_ctx,
+					    char **_filter)
+{
+	char *filter = NULL;
+
+	*_filter = NULL;
+
+	filter = talloc_strdup(mem_ctx, "(&(objectClass=group)");
+	if (filter == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/*
+	 * Skip all builtin groups, they're added later.
+	 */
+	filter = talloc_asprintf_append_buffer(filter,
+				"(!(groupType:1.2.840.113556.1.4.803:=%u))",
+				GROUP_TYPE_BUILTIN_LOCAL_GROUP);
+	if (filter == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	/*
+	 * Only include security groups.
+	 */
+	filter = talloc_asprintf_append_buffer(filter,
+				"(groupType:1.2.840.113556.1.4.803:=%u))",
+				GROUP_TYPE_SECURITY_ENABLED);
+	if (filter == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	*_filter = filter;
+	return NT_STATUS_OK;
+}
+
 _PUBLIC_ NTSTATUS authsam_make_user_info_dc(TALLOC_CTX *mem_ctx,
 					   struct ldb_context *sam_ctx,
 					   const char *netbios_name,
@@ -300,7 +335,8 @@ _PUBLIC_ NTSTATUS authsam_make_user_info_dc(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct auth_user_info_dc *user_info_dc;
 	struct auth_user_info *info;
-	const char *str, *filter;
+	const char *str = NULL;
+	char *filter = NULL;
 	/* SIDs for the account and his primary group */
 	struct dom_sid *account_sid;
 	const char *primary_group_string;
@@ -346,13 +382,15 @@ _PUBLIC_ NTSTATUS authsam_make_user_info_dc(TALLOC_CTX *mem_ctx,
 	sids[PRIMARY_GROUP_SID_INDEX] = *domain_sid;
 	sid_append_rid(&sids[PRIMARY_GROUP_SID_INDEX], ldb_msg_find_attr_as_uint(msg, "primaryGroupID", ~0));
 
-	/* Filter out builtin groups from this token.  We will search
+	/*
+	 * Filter out builtin groups from this token. We will search
 	 * for builtin groups later, and not include them in the PAC
-	 * on SamLogon validation info */
-	filter = talloc_asprintf(tmp_ctx, "(&(objectClass=group)(!(groupType:1.2.840.113556.1.4.803:=%u))(groupType:1.2.840.113556.1.4.803:=%u))", GROUP_TYPE_BUILTIN_LOCAL_GROUP, GROUP_TYPE_SECURITY_ENABLED);
-	if (filter == NULL) {
+	 * or SamLogon validation info.
+	 */
+	status = authsam_domain_group_filter(tmp_ctx, &filter);
+	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(user_info_dc);
-		return NT_STATUS_NO_MEMORY;
+		return status;
 	}
 
 	primary_group_string = dom_sid_string(tmp_ctx, &sids[PRIMARY_GROUP_SID_INDEX]);
