@@ -45,10 +45,7 @@ static int nbt_name_request_destructor(struct nbt_name_request *req)
 		idr_remove(req->nbtsock->idr, req->name_trn_id);
 		req->name_trn_id = 0;
 	}
-	if (req->te) {
-		talloc_free(req->te);
-		req->te = NULL;
-	}
+	TALLOC_FREE(req->te);
 	if (req->nbtsock->send_queue == NULL) {
 		TEVENT_FD_NOT_WRITEABLE(req->nbtsock->fde);
 	}
