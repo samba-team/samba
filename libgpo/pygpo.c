@@ -319,6 +319,7 @@ static PyObject *py_gpo_get_sysvol_gpt_version(PyObject * self,
 	return result;
 }
 
+#ifdef HAVE_ADS
 static ADS_STATUS find_samaccount(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
 				  const char *samaccountname,
 				  uint32_t *uac_ret, const char **dn_ret)
@@ -468,11 +469,15 @@ out:
 	return ret;
 }
 
+#endif
+
 static PyMethodDef ADS_methods[] = {
 	{ "connect", (PyCFunction)py_ads_connect, METH_NOARGS,
 		"Connect to the LDAP server" },
+#ifdef HAVE_ADS
 	{ "get_gpo_list", (PyCFunction)py_ads_get_gpo_list, METH_KEYWORDS,
 		NULL },
+#endif
 	{ NULL }
 };
 
