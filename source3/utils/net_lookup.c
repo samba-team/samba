@@ -405,8 +405,9 @@ static int net_lookup_dsgetdcname(struct net_context *c, int argc, const char **
 
 	domain_name = argv[0];
 
-	if (argc >= 2)
+	if (argc >= 2) {
 		sscanf(argv[1], "%x", &flags);
+	}
 
 	if (!flags) {
 		flags |= DS_DIRECTORY_SERVICE_REQUIRED;
