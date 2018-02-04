@@ -97,7 +97,7 @@ NTSTATUS dgram_mailslot_netlogon_reply(struct nbt_dgram_socket *dgmsock,
 
 
 /*
-  parse a netlogon response. The packet must be a valid mailslot packet
+  parse a netlogon request. The packet must be a valid mailslot packet
 */
 NTSTATUS dgram_mailslot_netlogon_parse_request(struct dgram_mailslot_handler *dgmslot,
 					       TALLOC_CTX *mem_ctx,
