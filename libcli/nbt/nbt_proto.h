@@ -33,7 +33,8 @@
 
 /* The following definitions come from ../libcli/nbt/nbtsocket.c  */
 
-struct nbt_name_request *nbt_name_request_send(struct nbt_name_socket *nbtsock,
+struct nbt_name_request *nbt_name_request_send(TALLOC_CTX *mem_ctx,
+					       struct nbt_name_socket *nbtsock,
 					       struct socket_address *dest,
 					       struct nbt_name_packet *request,
 					       int timeout, int retries,

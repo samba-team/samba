@@ -80,7 +80,7 @@ struct nbt_name_request *nbt_name_register_send(struct nbt_name_socket *nbtsock,
 	dest = socket_address_from_strings(packet, nbtsock->sock->backend_name,
 					   io->in.dest_addr, io->in.dest_port);
 	if (dest == NULL) goto failed;
-	req = nbt_name_request_send(nbtsock, dest, packet,
+	req = nbt_name_request_send(nbtsock, nbtsock, dest, packet,
 				    io->in.timeout, io->in.retries, false);
 	if (req == NULL) goto failed;
 
