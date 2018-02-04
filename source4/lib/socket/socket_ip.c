@@ -316,7 +316,8 @@ static NTSTATUS ipv4_recvfrom(struct socket_context *sock, void *buf,
 	if (gotlen == 0) {
 		talloc_free(src);
 		return NT_STATUS_END_OF_FILE;
-	} else if (gotlen == -1) {
+	}
+	if (gotlen == -1) {
 		talloc_free(src);
 		return map_nt_error_from_unix_common(errno);
 	}
