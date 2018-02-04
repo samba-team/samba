@@ -409,8 +409,8 @@ static int net_lookup_dsgetdcname(struct net_context *c, int argc, const char **
 		sscanf(argv[1], "%x", &flags);
 	}
 
-	if (!flags) {
-		flags |= DS_DIRECTORY_SERVICE_REQUIRED;
+	if (flags == 0) {
+		flags = DS_DIRECTORY_SERVICE_REQUIRED;
 	}
 
 	if (argc == 3) {
