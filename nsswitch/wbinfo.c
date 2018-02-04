@@ -1798,13 +1798,22 @@ static bool wbinfo_auth_crap(char *username, bool use_ntlmv2, bool use_lanman)
 	if (use_ntlmv2) {
 		DATA_BLOB server_chal;
 		DATA_BLOB names_blob;
+		const char *netbios_name = NULL;
+		const char *domain = NULL;
+
+		netbios_name = get_winbind_netbios_name(),
+		domain = get_winbind_domain();
+		if (domain == NULL) {
+			d_fprintf(stderr, "Failed to get domain from winbindd\n");
+			return false;
+		}
 
 		server_chal = data_blob(params.password.response.challenge, 8);
 
 		/* Pretend this is a login to 'us', for blob purposes */
 		names_blob = NTLMv2_generate_names_blob(NULL,
-						get_winbind_netbios_name(),
-						get_winbind_domain());
+							netbios_name,
+							domain);
 
 		if (pass != NULL &&
 		    !SMBNTLMv2encrypt(NULL, name_user, name_domain, pass,
