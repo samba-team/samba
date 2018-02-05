@@ -19,6 +19,7 @@
 */
 
 #include <Python.h>
+#include "python/py3compat.h"
 #include <ldb.h>
 #include <pyldb.h>
 #include "includes.h"
@@ -32,7 +33,7 @@
 
 static PyObject *provision_module(void)
 {
-	PyObject *name = PyString_FromString("samba.provision");
+	PyObject *name = PyStr_FromString("samba.provision");
 	if (name == NULL)
 		return NULL;
 	return PyImport_Import(name);
@@ -40,7 +41,7 @@ static PyObject *provision_module(void)
 
 static PyObject *schema_module(void)
 {
-	PyObject *name = PyString_FromString("samba.schema");
+	PyObject *name = PyStr_FromString("samba.schema");
 	if (name == NULL)
 		return NULL;
 	return PyImport_Import(name);
@@ -48,7 +49,7 @@ static PyObject *schema_module(void)
 
 static PyObject *ldb_module(void)
 {
-	PyObject *name = PyString_FromString("ldb");
+	PyObject *name = PyStr_FromString("ldb");
 	if (name == NULL)
 		return NULL;
 	return PyImport_Import(name);
@@ -123,46 +124,46 @@ NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 	configfile = lpcfg_configfile(lp_ctx);
 	if (configfile != NULL) {
 		PyDict_SetItemString(parameters, "smbconf", 
-				     PyString_FromString(configfile));
+				     PyStr_FromString(configfile));
 	}
 
 	PyDict_SetItemString(parameters, "rootdn", 
-						 PyString_FromString(settings->root_dn_str));
+						 PyStr_FromString(settings->root_dn_str));
 	if (settings->targetdir != NULL)
 		PyDict_SetItemString(parameters, "targetdir", 
-							 PyString_FromString(settings->targetdir));
+							 PyStr_FromString(settings->targetdir));
 	PyDict_SetItemString(parameters, "hostname", 
-						 PyString_FromString(settings->netbios_name));
+						 PyStr_FromString(settings->netbios_name));
 	PyDict_SetItemString(parameters, "domain", 
-						 PyString_FromString(settings->domain));
+						 PyStr_FromString(settings->domain));
 	PyDict_SetItemString(parameters, "realm", 
-						 PyString_FromString(settings->realm));
+						 PyStr_FromString(settings->realm));
 	if (settings->root_dn_str)
 		PyDict_SetItemString(parameters, "rootdn", 
-				     PyString_FromString(settings->root_dn_str));
+				     PyStr_FromString(settings->root_dn_str));
 
 	if (settings->domain_dn_str) 
 		PyDict_SetItemString(parameters, "domaindn", 
-				     PyString_FromString(settings->domain_dn_str));
+				     PyStr_FromString(settings->domain_dn_str));
 
 	if (settings->schema_dn_str) 
 		PyDict_SetItemString(parameters, "schemadn", 
-				     PyString_FromString(settings->schema_dn_str));
+				     PyStr_FromString(settings->schema_dn_str));
 	
 	if (settings->config_dn_str) 
 		PyDict_SetItemString(parameters, "configdn", 
-				     PyString_FromString(settings->config_dn_str));
+				     PyStr_FromString(settings->config_dn_str));
 	
 	if (settings->server_dn_str) 
 		PyDict_SetItemString(parameters, "serverdn", 
-				     PyString_FromString(settings->server_dn_str));
+				     PyStr_FromString(settings->server_dn_str));
 	
 	if (settings->site_name) 
 		PyDict_SetItemString(parameters, "sitename", 
-				     PyString_FromString(settings->site_name));
+				     PyStr_FromString(settings->site_name));
 
 	PyDict_SetItemString(parameters, "machinepass", 
-			     PyString_FromString(settings->machine_password));
+			     PyStr_FromString(settings->machine_password));
 
 	
 	PyDict_SetItemString(parameters, "debuglevel", PyInt_FromLong(DEBUGLEVEL));
@@ -179,7 +180,7 @@ NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	result->domaindn = talloc_strdup(mem_ctx, PyString_AsString(PyObject_GetAttrString(py_result, "domaindn")));
+	result->domaindn = talloc_strdup(mem_ctx, PyStr_AsString(PyObject_GetAttrString(py_result, "domaindn")));
 
 	/* FIXME paths */
 	py_lp_ctx = PyObject_GetAttrString(py_result, "lp");
@@ -279,15 +280,15 @@ NTSTATUS provision_store_self_join(TALLOC_CTX *mem_ctx, struct loadparm_context 
 	PyDict_SetItemString(parameters, "secretsdb", 
 			     PyLdb_FromLdbContext(ldb));
 	PyDict_SetItemString(parameters, "domain", 
-			     PyString_FromString(settings->domain_name));
+			     PyStr_FromString(settings->domain_name));
 	if (settings->realm != NULL) {
 		PyDict_SetItemString(parameters, "realm",
-				     PyString_FromString(settings->realm));
+				     PyStr_FromString(settings->realm));
 	}
 	PyDict_SetItemString(parameters, "machinepass", 
-			     PyString_FromString(settings->machine_password));
+			     PyStr_FromString(settings->machine_password));
 	PyDict_SetItemString(parameters, "netbiosname", 
-			     PyString_FromString(settings->netbios_name));
+			     PyStr_FromString(settings->netbios_name));
 
 	py_sid = py_dom_sid_FromSid(settings->domain_sid);
 	if (py_sid == NULL) {
@@ -371,12 +372,12 @@ struct ldb_context *provision_get_schema(TALLOC_CTX *mem_ctx,
 
 	if (schema_dn) {
 		PyDict_SetItemString(parameters, "schemadn",
-				     PyString_FromString(schema_dn));
+				     PyStr_FromString(schema_dn));
 	}
 
 	if (override_prefixmap) {
 		PyDict_SetItemString(parameters, "override_prefixmap",
-				     PyString_FromStringAndSize((const char *)override_prefixmap->data,
+				     PyStr_FromStringAndSize((const char *)override_prefixmap->data,
 								override_prefixmap->length));
 	}
 
