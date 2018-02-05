@@ -25,6 +25,7 @@
 
 #include <Python.h>
 #include "includes.h"
+#include "python/py3compat.h"
 #include "smbd/smbd.h"
 #include "libcli/util/pyerrors.h"
 #include "librpc/rpc/pyrpc_util.h"
@@ -739,13 +740,19 @@ static PyMethodDef py_smbd_methods[] = {
 };
 
 void initsmbd(void);
-void initsmbd(void)
+
+static struct PyModuleDef moduledef = {
+    PyModuleDef_HEAD_INIT,
+    .m_name = "smbd",
+    .m_doc = "Python bindings for the smbd file server.",
+    .m_size = -1,
+    .m_methods = py_smbd_methods,
+};
+
+MODULE_INIT_FUNC(smbd)
 {
-	PyObject *m;
+	PyObject *m = NULL;
 
-	m = Py_InitModule3("smbd", py_smbd_methods,
-			   "Python bindings for the smbd file server.");
-	if (m == NULL)
-		return;
-
+	m = PyModule_Create(&moduledef);
+	return m;
 }
