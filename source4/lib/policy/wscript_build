@@ -10,8 +10,9 @@ bld.SAMBA_LIBRARY('samba-policy',
 	enabled=bld.PYTHON_BUILD_IS_ENABLED()
 	)
 
-bld.SAMBA_PYTHON('py_policy',
-	source='pypolicy.c',
-	public_deps='samba-policy pytalloc-util',
-	realname='samba/policy.so'
-	)
+for env in bld.gen_python_environments():
+    bld.SAMBA_PYTHON('py_policy',
+	    source='pypolicy.c',
+	    public_deps='samba-policy pytalloc-util',
+    	    realname='samba/policy.so'
+	    )
