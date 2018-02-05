@@ -20,6 +20,7 @@
 
 #include <Python.h>
 #include "includes.h"
+#include "python/py3compat.h"
 #include "libsmb/libsmb.h"
 #include "libcli/security/security.h"
 #include "system/select.h"
@@ -576,7 +577,7 @@ static void py_cli_state_dealloc(struct py_cli_state *self)
 		cli_shutdown(self->cli);
 		self->cli = NULL;
 	}
-	self->ob_type->tp_free((PyObject *)self);
+	Py_TYPE(self)->tp_free((PyObject *)self);
 }
 
 static PyObject *py_cli_create(struct py_cli_state *self, PyObject *args,
@@ -875,7 +876,7 @@ static PyMethodDef py_cli_state_methods[] = {
 };
 
 static PyTypeObject py_cli_state_type = {
-	PyObject_HEAD_INIT(NULL)
+	PyVarObject_HEAD_INIT(NULL, 0)
 	.tp_name = "libsmb_samba_internal.Conn",
 	.tp_basicsize = sizeof(struct py_cli_state),
 	.tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
@@ -891,18 +892,29 @@ static PyMethodDef py_libsmb_methods[] = {
 };
 
 void initlibsmb_samba_internal(void);
-void initlibsmb_samba_internal(void)
+
+static struct PyModuleDef moduledef = {
+    PyModuleDef_HEAD_INIT,
+    .m_name = "libsmb_samba_internal",
+    .m_doc = "libsmb wrapper",
+    .m_size = -1,
+    .m_methods = py_libsmb_methods,
+};
+
+MODULE_INIT_FUNC(libsmb_samba_internal)
 {
-	PyObject *m;
+	PyObject *m = NULL;
 
 	talloc_stackframe();
 
-	m = Py_InitModule3("libsmb_samba_internal", py_libsmb_methods,
-			   "libsmb wrapper");
-
+	m = PyModule_Create(&moduledef);
+	if (m == NULL) {
+		return m;
+	}
 	if (PyType_Ready(&py_cli_state_type) < 0) {
-		return;
+		return NULL;
 	}
 	Py_INCREF(&py_cli_state_type);
 	PyModule_AddObject(m, "Conn", (PyObject *)&py_cli_state_type);
+	return m;
 }
