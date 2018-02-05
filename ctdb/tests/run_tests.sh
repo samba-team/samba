@@ -45,7 +45,7 @@ export TEST_LOCAL_DAEMONS
 [ -n "$TEST_LOCAL_DAEMONS" ] || TEST_LOCAL_DAEMONS=3
 export TEST_VAR_DIR=""
 export TEST_CLEANUP=false
-export TEST_TIMEOUT=600
+export TEST_TIMEOUT=3600
 export TEST_SOCKET_WRAPPER_SO_PATH=""
 
 temp=$(getopt -n "$prog" -o "AcCdDehHNqS:T:vV:xX" -l help -- "$@")
