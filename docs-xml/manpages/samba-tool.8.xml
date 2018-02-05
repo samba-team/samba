@@ -607,6 +607,61 @@
 </refsect2>
 
 <refsect2>
+	<title>visualize [options] <replaceable>subcommand</replaceable></title>
+	<para>Produce graphical representations of Samba network state.
+	To work out what is happening in a replication graph, it is sometimes
+	helpful to use visualisations.</para>
+
+	<para>
+	There are two subcommands, two graphical modes, and (roughly) two modes
+	of operation with respect to the location of authority.</para>
+
+	<refsect3><title>MODES OF OPERATION</title>
+	<varlistentry>
+                <term>samba-tool visualize ntdsconn</term>
+                <listitem><para>Looks at NTDS connections.
+                </para></listitem>
+                </varlistentry>
+
+	<varlistentry>
+		<term>samba-tool visualize reps</term>
+		<listitem><para>Looks at repsTo and repsFrom objects.
+		</para></listitem>
+		</varlistentry>
+	</refsect3>
+
+	<refsect3><title>GRAPHICAL MODES</title>
+	<varlistentry>
+                <term>--distance</term>
+                <listitem><para>Distances between DCs are shown in a matrix in
+		 the terminal.
+                </para></listitem>
+                </varlistentry>
+
+	<varlistentry>
+                <term>--dot</term>
+                <listitem><para>Generate Graphviz dot output. When viewed using
+		dot or xdot, this shows the network as a graph with DCs as
+		vertices and connections edges. Certain types of degenerate
+		edges are shown in different colours or line-styles.
+                </para></listitem>
+                </varlistentry>
+	</refsect3>
+
+	<varlistentry>
+		<term>-r</term>
+		<listitem><para>Normally, <command>samba-tool</command> talks
+		to one database; with the <arg choice="opt">-r</arg> option
+		attempts are made to contact all the DCs known to the first
+		database. This is necessary to get sensible results from
+		<command>samba-tool visualize reps</command> because the
+		repsFrom/To objects are not replicated, and it can reveal
+		replication issues in other modes.
+                </para></listitem>
+                </varlistentry>
+</refsect2>
+
+<refsect2>
 <title>help</title>
 <para>Gives usage information.</para>
 </refsect2>
@@ -627,8 +682,6 @@
 	were created by Andrew Tridgell. Samba is now developed
 	by the Samba Team as an Open Source project similar
 	to the way the Linux kernel is developed.</para>
-
-	<para>The samba-tool manpage was written by Karolin Seeger.</para>
 </refsect1>
 
 </refentry>
