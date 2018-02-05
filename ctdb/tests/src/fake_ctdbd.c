@@ -843,6 +843,132 @@ fail:
 
 }
 
+static int ltdb_store(struct database *db, TDB_DATA key,
+		      struct ctdb_ltdb_header *header, TDB_DATA data)
+{
+	int ret;
+	bool db_volatile = true;
+	bool keep = false;
+
+	if (db->tdb == NULL) {
+		return EINVAL;
+	}
+
+	if ((db->flags & CTDB_DB_FLAGS_PERSISTENT) ||
+	    (db->flags & CTDB_DB_FLAGS_REPLICATED)) {
+		db_volatile = false;
+	}
+
+	if (data.dsize > 0) {
+		keep = true;
+	} else {
+		if (db_volatile && header->rsn == 0) {
+			keep = true;
+		}
+	}
+
+	if (keep) {
+		TDB_DATA rec[2];
+
+		rec[0].dsize = ctdb_ltdb_header_len(header);
+		rec[0].dptr = (uint8_t *)header;
+
+		rec[1].dsize = data.dsize;
+		rec[1].dptr = data.dptr;
+
+		ret = tdb_storev(db->tdb, key, rec, 2, TDB_REPLACE);
+	} else {
+		if (header->rsn > 0) {
+			ret = tdb_delete(db->tdb, key);
+		} else {
+			ret = 0;
+		}
+	}
+
+	return ret;
+}
+
+static int ltdb_fetch(struct database *db, TDB_DATA key,
+		      struct ctdb_ltdb_header *header,
+		      TALLOC_CTX *mem_ctx, TDB_DATA *data)
+{
+	TDB_DATA rec;
+	size_t np;
+	int ret;
+
+	if (db->tdb == NULL) {
+		return EINVAL;
+	}
+
+	rec = tdb_fetch(db->tdb, key);
+	ret = ctdb_ltdb_header_pull(rec.dptr, rec.dsize, header, &np);
+	if (ret != 0) {
+		if (rec.dptr != NULL) {
+			free(rec.dptr);
+		}
+
+		*header = (struct ctdb_ltdb_header) {
+			.rsn = 0,
+			.dmaster = 0,
+			.flags = 0,
+		};
+
+		ret = ltdb_store(db, key, header, tdb_null);
+		if (ret != 0) {
+			return ret;
+		}
+
+		*data = tdb_null;
+		return 0;
+	}
+
+	data->dsize = rec.dsize - ctdb_ltdb_header_len(header);
+	data->dptr = talloc_memdup(mem_ctx,
+				   rec.dptr + ctdb_ltdb_header_len(header),
+				   data->dsize);
+	if (data->dptr == NULL) {
+		free(rec.dptr);
+		return ENOMEM;
+	}
+
+	return 0;
+}
+
+static int database_seqnum(struct database *db, uint64_t *seqnum)
+{
+	const char *keyname = CTDB_DB_SEQNUM_KEY;
+	TDB_DATA key, data;
+	struct ctdb_ltdb_header header;
+	size_t np;
+	int ret;
+
+	if (db->tdb == NULL) {
+		*seqnum = db->seq_num;
+		return 0;
+	}
+
+	key.dptr = discard_const(keyname);
+	key.dsize = strlen(keyname) + 1;
+
+	ret = ltdb_fetch(db, key, &header, db, &data);
+	if (ret != 0) {
+		return ret;
+	}
+
+	if (data.dsize == 0) {
+		*seqnum = 0;
+		return 0;
+	}
+
+	ret = ctdb_uint64_pull(data.dptr, data.dsize, seqnum, &np);
+	talloc_free(data.dptr);
+	if (ret != 0) {
+		*seqnum = 0;
+	}
+
+	return ret;
+}
+
 static bool public_ips_parse(struct ctdbd_context *ctdb,
 			     uint32_t numnodes)
 {
@@ -2608,6 +2734,7 @@ static void control_get_db_seqnum(TALLOC_CTX *mem_ctx,
 	struct ctdbd_context *ctdb = state->ctdb;
 	struct ctdb_reply_control reply;
 	struct database *db;
+	int ret;
 
 	reply.rdata.opcode = request->opcode;
 
@@ -2616,9 +2743,17 @@ static void control_get_db_seqnum(TALLOC_CTX *mem_ctx,
 		reply.status = ENOENT;
 		reply.errmsg = "Database not found";
 	} else {
-		reply.rdata.data.seqnum = db->seq_num;
-		reply.status = 0;
-		reply.errmsg = NULL;
+		uint64_t seqnum;
+
+		ret = database_seqnum(db, &seqnum);
+		if (ret == 0) {
+			reply.rdata.data.seqnum = seqnum;
+			reply.status = 0;
+			reply.errmsg = NULL;
+		} else {
+			reply.status = ret;
+			reply.errmsg = "Failed to get seqnum";
+		}
 	}
 
 	client_send_control(req, header, &reply);
