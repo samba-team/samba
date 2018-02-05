@@ -84,6 +84,7 @@ struct vnn_map {
 };
 
 struct database {
+	struct database *prev, *next;
 	const char *name;
 	uint32_t id;
 	uint8_t flags;
@@ -91,7 +92,6 @@ struct database {
 };
 
 struct database_map {
-	int num_dbs;
 	struct database *db;
 };
 
@@ -714,20 +714,17 @@ static bool dbmap_parse(struct database_map *db_map)
 			tok = strtok(NULL, " \t");
 		}
 
-		db_map->db = talloc_realloc(db_map, db_map->db,
-					    struct database,
-					    db_map->num_dbs + 1);
-		if (db_map->db == NULL) {
+		db = talloc_zero(db_map, struct database);
+		if (db == NULL) {
 			goto fail;
 		}
-		db = &db_map->db[db_map->num_dbs];
 
 		db->id = id;
-		db->name = name;
+		db->name = talloc_steal(db, name);
 		db->flags = flags;
 		db->seq_num = seq_num;
 
-		db_map->num_dbs += 1;
+		DLIST_ADD_END(db_map->db, db);
 	}
 
 	DEBUG(DEBUG_INFO, ("Parsing dbmap done\n"));
@@ -739,20 +736,30 @@ fail:
 
 }
 
-static struct database *database_find(struct database_map *map,
+static struct database *database_find(struct database_map *db_map,
 				      uint32_t db_id)
 {
-	int i;
+	struct database *db;
 
-	for (i = 0; i < map->num_dbs; i++) {
-		struct database *db = &map->db[i];
-
+	for (db = db_map->db; db != NULL; db = db->next) {
 		if (db->id == db_id) {
 			return db;
 		}
 	}
 
 	return NULL;
+}
+
+static int database_count(struct database_map *db_map)
+{
+	struct database *db;
+	int count = 0;
+
+	for (db = db_map->db; db != NULL; db = db->next) {
+		count += 1;
+	}
+
+	return count;
 }
 
 static bool public_ips_parse(struct ctdbd_context *ctdb,
@@ -1505,6 +1512,7 @@ static void control_get_dbmap(TALLOC_CTX *mem_ctx,
 	struct ctdbd_context *ctdb = state->ctdb;
 	struct ctdb_reply_control reply;
 	struct ctdb_dbid_map *dbmap;
+	struct database *db;
 	int i;
 
 	reply.rdata.opcode = request->opcode;
@@ -1514,18 +1522,20 @@ static void control_get_dbmap(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 
-	dbmap->num = ctdb->db_map->num_dbs;
+	dbmap->num = database_count(ctdb->db_map);
 	dbmap->dbs = talloc_zero_array(dbmap, struct ctdb_dbid, dbmap->num);
 	if (dbmap->dbs == NULL) {
 		goto fail;
 	}
 
+	db = ctdb->db_map->db;
 	for (i = 0; i < dbmap->num; i++) {
-		struct database *db = &ctdb->db_map->db[i];
 		dbmap->dbs[i] = (struct ctdb_dbid) {
 			.db_id = db->id,
 			.flags = db->flags,
 		};
+
+		db = db->next;
 	}
 
 	reply.rdata.data.dbmap = dbmap;
