@@ -3188,6 +3188,120 @@ done:
 	client_send_control(req, header, &reply);
 }
 
+struct traverse_start_ext_state {
+	struct tevent_req *req;
+	struct ctdb_req_header *header;
+	uint32_t reqid;
+	uint64_t srvid;
+	bool withemptyrecords;
+	int status;
+};
+
+static int traverse_start_ext_handler(struct tdb_context *tdb,
+				      TDB_DATA key, TDB_DATA data,
+				      void *private_data)
+{
+	struct traverse_start_ext_state *state =
+		(struct traverse_start_ext_state *)private_data;
+	struct ctdb_rec_data rec;
+	struct ctdb_req_message_data message;
+	size_t np;
+
+	if (data.dsize < sizeof(struct ctdb_ltdb_header)) {
+		return 0;
+	}
+
+	if ((data.dsize == sizeof(struct ctdb_ltdb_header)) &&
+	    (!state->withemptyrecords)) {
+		return 0;
+	}
+
+	rec = (struct ctdb_rec_data) {
+		.reqid = state->reqid,
+		.header = NULL,
+		.key = key,
+		.data = data,
+	};
+
+	message.srvid = state->srvid;
+	message.data.dsize = ctdb_rec_data_len(&rec);
+	message.data.dptr = talloc_size(state->req, message.data.dsize);
+	if (message.data.dptr == NULL) {
+		state->status = ENOMEM;
+		return 1;
+	}
+
+	ctdb_rec_data_push(&rec, message.data.dptr, &np);
+	client_send_message(state->req, state->header, &message);
+
+	talloc_free(message.data.dptr);
+
+	return 0;
+}
+
+static void control_traverse_start_ext(TALLOC_CTX *mem_ctx,
+				       struct tevent_req *req,
+				       struct ctdb_req_header *header,
+				       struct ctdb_req_control *request)
+{
+	struct client_state *state = tevent_req_data(
+		req, struct client_state);
+	struct ctdbd_context *ctdb = state->ctdb;
+	struct ctdb_reply_control reply;
+	struct database *db;
+	struct ctdb_traverse_start_ext *ext;
+	struct traverse_start_ext_state t_state;
+	struct ctdb_rec_data rec;
+	struct ctdb_req_message_data message;
+	uint8_t buffer[32];
+	size_t np;
+	int ret;
+
+	reply.rdata.opcode = request->opcode;
+
+	ext = request->rdata.data.traverse_start_ext;
+
+	db = database_find(ctdb->db_map, ext->db_id);
+	if (db == NULL) {
+		reply.status = -1;
+		reply.errmsg = "Unknown database";
+		client_send_control(req, header, &reply);
+		return;
+	}
+
+	t_state = (struct traverse_start_ext_state) {
+		.req = req,
+		.header = header,
+		.reqid = ext->reqid,
+		.srvid = ext->srvid,
+		.withemptyrecords = ext->withemptyrecords,
+	};
+
+	ret = tdb_traverse_read(db->tdb, traverse_start_ext_handler, &t_state);
+	DEBUG(DEBUG_INFO, ("traversed %d records\n", ret));
+	if (t_state.status != 0) {
+		reply.status = -1;
+		reply.errmsg = "Memory error";
+		client_send_control(req, header, &reply);
+	}
+
+	reply.status = 0;
+	client_send_control(req, header, &reply);
+
+	rec = (struct ctdb_rec_data) {
+		.reqid = ext->reqid,
+		.header = NULL,
+		.key = tdb_null,
+		.data = tdb_null,
+	};
+
+	message.srvid = ext->srvid;
+	message.data.dsize = ctdb_rec_data_len(&rec);
+	ctdb_rec_data_push(&rec, buffer, &np);
+	message.data.dptr = buffer;
+	client_send_message(req, header, &message);
+}
+
 static void control_set_db_sticky(TALLOC_CTX *mem_ctx,
 				    struct tevent_req *req,
 				    struct ctdb_req_header *header,
@@ -4054,6 +4168,10 @@ static void client_process_control(struct tevent_req *req,
 
 	case CTDB_CONTROL_SET_DB_READONLY:
 		control_set_db_readonly(mem_ctx, req, &header, &request);
+		break;
+
+	case CTDB_CONTROL_TRAVERSE_START_EXT:
+		control_traverse_start_ext(mem_ctx, req, &header, &request);
 		break;
 
 	case CTDB_CONTROL_SET_DB_STICKY:
