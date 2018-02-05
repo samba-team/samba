@@ -13,6 +13,7 @@ fi
 
 ctdbd_socket="${CTDB_BASE}/ctdbd.socket"
 ctdbd_pidfile="${CTDB_BASE}/ctdbd.pid"
+ctdbd_dbdir="${CTDB_BASE}/ctdbd.db"
 
 define_test ()
 {
@@ -48,14 +49,17 @@ cleanup_ctdbd ()
 		rm -f "$ctdbd_pidfile"
 	fi
 	rm -f "$ctdbd_socket"
+	rm -rf "$ctdbd_dbdir"
 }
 
 setup_ctdbd ()
 {
 	echo "Setting up fake ctdbd"
 
+	mkdir -p "$ctdbd_dbdir"
 	$VALGRIND fake_ctdbd -d "$FAKE_CTDBD_DEBUGLEVEL" \
-		  -s "$ctdbd_socket" -p "$ctdbd_pidfile"
+		  -s "$ctdbd_socket" -p "$ctdbd_pidfile" \
+		  -D "$ctdbd_dbdir"
 	# Wait till fake_ctdbd is running
 	wait_until 10 test -S "$ctdbd_socket" || \
 		die "fake_ctdbd failed to start"

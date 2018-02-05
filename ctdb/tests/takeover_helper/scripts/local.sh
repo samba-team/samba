@@ -14,6 +14,7 @@ PATH="$PATH:$CTDB_SCRIPTS_TOOLS_HELPER_DIR"
 
 ctdbd_socket="${TEST_VAR_DIR}/ctdbd.socket.$$"
 ctdbd_pidfile="${TEST_VAR_DIR}/ctdbd.pid.$$"
+ctdbd_dbdir="${TEST_VAR_DIR}/ctdbd.db.$$"
 
 define_test ()
 {
@@ -42,14 +43,17 @@ cleanup_ctdbd ()
 		rm -f "$ctdbd_pidfile"
 	fi
 	rm -f "$ctdbd_socket"
+	rm -rf "$ctdbd_dbdir"
 }
 
 setup_ctdbd ()
 {
 	debug "Setting up fake ctdbd"
 
+	mkdir -p "$ctdbd_dbdir"
 	$VALGRIND fake_ctdbd -d "$FAKE_CTDBD_DEBUGLEVEL" \
-		  -s "$ctdbd_socket" -p "$ctdbd_pidfile"
+		  -s "$ctdbd_socket" -p "$ctdbd_pidfile" \
+		  -D "$ctdbd_dbdir"
 	export CTDB_SOCKET="$ctdbd_socket"
 	# This current translates to a 6 second timeout for the
 	# important controls

@@ -27,13 +27,13 @@ simple_test ctdb-ip.tdb
 
 ok <<EOF
 Number of databases:7
-dbid:0x7a19d84d name:locking.tdb path:/var/run/ctdb/DB_DIR/locking.tdb.0
-dbid:0x4e66c2b2 name:brlock.tdb path:/var/run/ctdb/DB_DIR/brlock.tdb.0
-dbid:0x4d2a432b name:g_lock.tdb path:/var/run/ctdb/DB_DIR/g_lock.tdb.0
-dbid:0x7132c184 name:secrets.tdb path:/var/lib/ctdb/persistent/secrets.tdb.0 PERSISTENT
-dbid:0x6cf2837d name:registry.tdb path:/var/lib/ctdb/persistent/registry.tdb.0 PERSISTENT
-dbid:0xbc57b384 name:ctdb-ip.tdb path:/var/run/ctdb/DB_DIR/ctdb-ip.tdb.0 REPLICATED
-dbid:0xbec75f0b name:ctdb-conn.tdb path:/var/run/ctdb/DB_DIR/ctdb-conn.tdb.0 REPLICATED
+dbid:0x7a19d84d name:locking.tdb path:${ctdbd_dbdir}/locking.tdb
+dbid:0x4e66c2b2 name:brlock.tdb path:${ctdbd_dbdir}/brlock.tdb
+dbid:0x4d2a432b name:g_lock.tdb path:${ctdbd_dbdir}/g_lock.tdb
+dbid:0x7132c184 name:secrets.tdb path:${ctdbd_dbdir}/secrets.tdb PERSISTENT
+dbid:0x6cf2837d name:registry.tdb path:${ctdbd_dbdir}/registry.tdb PERSISTENT
+dbid:0xbc57b384 name:ctdb-ip.tdb path:${ctdbd_dbdir}/ctdb-ip.tdb REPLICATED
+dbid:0xbec75f0b name:ctdb-conn.tdb path:${ctdbd_dbdir}/ctdb-conn.tdb REPLICATED
 EOF
 
 simple_test_other getdbmap

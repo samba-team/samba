@@ -86,6 +86,7 @@ struct vnn_map {
 struct database {
 	struct database *prev, *next;
 	const char *name;
+	const char *path;
 	uint32_t id;
 	uint8_t flags;
 	uint64_t seq_num;
@@ -93,6 +94,7 @@ struct database {
 
 struct database_map {
 	struct database *db;
+	const char *dbdir;
 };
 
 struct fake_control_failure {
@@ -629,12 +631,19 @@ fail:
 	return false;
 }
 
-static struct database_map *dbmap_init(TALLOC_CTX *mem_ctx)
+static struct database_map *dbmap_init(TALLOC_CTX *mem_ctx,
+				       const char *dbdir)
 {
 	struct database_map *db_map;
 
 	db_map = talloc_zero(mem_ctx, struct database_map);
 	if (db_map == NULL) {
+		return NULL;
+	}
+
+	db_map->dbdir = talloc_strdup(db_map, dbdir);
+	if (db_map->dbdir == NULL) {
+		talloc_free(db_map);
 		return NULL;
 	}
 
@@ -721,6 +730,11 @@ static bool dbmap_parse(struct database_map *db_map)
 
 		db->id = id;
 		db->name = talloc_steal(db, name);
+		db->path = talloc_asprintf(db, "%s/%s", db_map->dbdir, name);
+		if (db->path == NULL) {
+			talloc_free(db);
+			goto fail;
+		}
 		db->flags = flags;
 		db->seq_num = seq_num;
 
@@ -936,7 +950,8 @@ static uint32_t new_generation(uint32_t old_generation)
 	return generation;
 }
 
-static struct ctdbd_context *ctdbd_setup(TALLOC_CTX *mem_ctx)
+static struct ctdbd_context *ctdbd_setup(TALLOC_CTX *mem_ctx,
+					 const char *dbdir)
 {
 	struct ctdbd_context *ctdb;
 	char line[1024];
@@ -963,7 +978,7 @@ static struct ctdbd_context *ctdbd_setup(TALLOC_CTX *mem_ctx)
 		goto fail;
 	}
 
-	ctdb->db_map = dbmap_init(ctdb);
+	ctdb->db_map = dbmap_init(ctdb, dbdir);
 	if (ctdb->db_map == NULL) {
 		goto fail;
 	}
@@ -1414,15 +1429,8 @@ static void control_getdbpath(TALLOC_CTX *mem_ctx,
 		reply.status = ENOENT;
 		reply.errmsg = "Database not found";
 	} else {
-		const char *base;
-		if (db->flags & CTDB_DB_FLAGS_PERSISTENT) {
-			base = "/var/lib/ctdb/persistent";
-		} else {
-			base = "/var/run/ctdb/DB_DIR";
-		}
 		reply.rdata.data.db_path =
-			talloc_asprintf(mem_ctx, "%s/%s.%u",
-					base, db->name, header->destnode);
+			talloc_strdup(mem_ctx, db->path);
 		if (reply.rdata.data.db_path == NULL) {
 			reply.status = ENOMEM;
 			reply.errmsg = "Memory error";
@@ -3676,18 +3684,23 @@ fail:
 }
 
 static struct options {
+	const char *dbdir;
 	const char *sockpath;
 	const char *pidfile;
 	const char *debuglevel;
 } options;
 
 static struct poptOption cmdline_options[] = {
+	POPT_AUTOHELP
+	{ "dbdir", 'D', POPT_ARG_STRING, &options.dbdir, 0,
+		"Database directory", "directory" },
 	{ "socket", 's', POPT_ARG_STRING, &options.sockpath, 0,
 		"Unix domain socket path", "filename" },
 	{ "pidfile", 'p', POPT_ARG_STRING, &options.pidfile, 0,
 		"pid file", "filename" } ,
 	{ "debug", 'd', POPT_ARG_STRING, &options.debuglevel, 0,
 		"debug level", "ERR|WARNING|NOTICE|INFO|DEBUG" } ,
+	POPT_TABLEEND
 };
 
 static void cleanup(void)
@@ -3751,6 +3764,12 @@ int main(int argc, const char *argv[])
 		exit(1);
 	}
 
+	if (options.dbdir == NULL) {
+		fprintf(stderr, "Please specify database directory\n");
+		poptPrintHelp(pc, stdout, 0);
+		exit(1);
+	}
+
 	if (options.sockpath == NULL) {
 		fprintf(stderr, "Please specify socket path\n");
 		poptPrintHelp(pc, stdout, 0);
@@ -3776,7 +3795,7 @@ int main(int argc, const char *argv[])
 		exit(1);
 	}
 
-	ctdb = ctdbd_setup(mem_ctx);
+	ctdb = ctdbd_setup(mem_ctx, options.dbdir);
 	if (ctdb == NULL) {
 		exit(1);
 	}

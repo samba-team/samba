@@ -23,7 +23,7 @@ EOF
 ok <<EOF
 dbid: 0x7a19d84d
 name: locking.tdb
-path: /var/run/ctdb/DB_DIR/locking.tdb.0
+path: ${ctdbd_dbdir}/locking.tdb
 PERSISTENT: no
 REPLICATED: no
 STICKY: no
@@ -35,7 +35,7 @@ simple_test 0x7a19d84d
 ok <<EOF
 dbid: 0x4e66c2b2
 name: brlock.tdb
-path: /var/run/ctdb/DB_DIR/brlock.tdb.0
+path: ${ctdbd_dbdir}/brlock.tdb
 PERSISTENT: no
 REPLICATED: no
 STICKY: yes
@@ -47,7 +47,7 @@ simple_test 0x4e66c2b2
 ok <<EOF
 dbid: 0x4d2a432b
 name: g_lock.tdb
-path: /var/run/ctdb/DB_DIR/g_lock.tdb.0
+path: ${ctdbd_dbdir}/g_lock.tdb
 PERSISTENT: no
 REPLICATED: no
 STICKY: no
@@ -59,7 +59,7 @@ simple_test 0x4d2a432b
 ok <<EOF
 dbid: 0x7132c184
 name: secrets.tdb
-path: /var/lib/ctdb/persistent/secrets.tdb.0
+path: ${ctdbd_dbdir}/secrets.tdb
 PERSISTENT: yes
 REPLICATED: no
 STICKY: no
@@ -71,7 +71,7 @@ simple_test 0x7132c184
 ok <<EOF
 dbid: 0x6cf2837d
 name: registry.tdb
-path: /var/lib/ctdb/persistent/registry.tdb.0
+path: ${ctdbd_dbdir}/registry.tdb
 PERSISTENT: yes
 REPLICATED: no
 STICKY: no
@@ -83,7 +83,7 @@ simple_test 0x6cf2837d
 ok <<EOF
 dbid: 0xbc57b384
 name: ctdb-ip.tdb
-path: /var/run/ctdb/DB_DIR/ctdb-ip.tdb.0
+path: ${ctdbd_dbdir}/ctdb-ip.tdb
 PERSISTENT: no
 REPLICATED: yes
 STICKY: no
@@ -95,7 +95,7 @@ simple_test 0xbc57b384
 ok <<EOF
 dbid: 0xbec75f0b
 name: ctdb-conn.tdb
-path: /var/run/ctdb/DB_DIR/ctdb-conn.tdb.0
+path: ${ctdbd_dbdir}/ctdb-conn.tdb
 PERSISTENT: no
 REPLICATED: yes
 STICKY: no
