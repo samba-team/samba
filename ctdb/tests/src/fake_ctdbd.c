@@ -20,6 +20,7 @@
 #include "replace.h"
 #include "system/network.h"
 #include "system/time.h"
+#include "system/filesys.h"
 
 #include <popt.h>
 #include <talloc.h>
@@ -35,6 +36,7 @@
 #include "protocol/protocol.h"
 #include "protocol/protocol_api.h"
 #include "protocol/protocol_util.h"
+#include "protocol/protocol_private.h"
 
 #include "common/comm.h"
 #include "common/logging.h"
@@ -87,6 +89,7 @@ struct database {
 	struct database *prev, *next;
 	const char *name;
 	const char *path;
+	struct tdb_context *tdb;
 	uint32_t id;
 	uint8_t flags;
 	uint64_t seq_num;
@@ -774,6 +777,70 @@ static int database_count(struct database_map *db_map)
 	}
 
 	return count;
+}
+
+static int database_flags(uint8_t db_flags)
+{
+	int tdb_flags = 0;
+
+	if (db_flags & CTDB_DB_FLAGS_PERSISTENT) {
+		tdb_flags = TDB_DEFAULT;
+	} else {
+		/* volatile and replicated use the same flags */
+		tdb_flags = TDB_NOSYNC |
+			    TDB_CLEAR_IF_FIRST |
+			    TDB_INCOMPATIBLE_HASH;
+	}
+
+	tdb_flags |= TDB_DISALLOW_NESTING;
+
+	return tdb_flags;
+}
+
+static struct database *database_new(struct database_map *db_map,
+				     const char *name, uint8_t flags)
+{
+	struct database *db;
+	TDB_DATA key;
+	int tdb_flags;
+
+	db = talloc_zero(db_map, struct database);
+	if (db == NULL) {
+		return NULL;
+	}
+
+	db->name = talloc_strdup(db, name);
+	if (db->name == NULL) {
+		goto fail;
+	}
+
+	db->path = talloc_asprintf(db, "%s/%s", db_map->dbdir, name);
+	if (db->path == NULL) {
+		goto fail;
+	}
+
+	key.dsize = strlen(db->name) + 1;
+	key.dptr = discard_const(db->name);
+
+	db->id = tdb_jenkins_hash(&key);
+	db->flags = flags;
+
+	tdb_flags = database_flags(flags);
+
+	db->tdb = tdb_open(db->path, 8192, tdb_flags, O_CREAT|O_RDWR, 0644);
+	if (db->tdb == NULL) {
+		DBG_ERR("tdb_open\n");
+		goto fail;
+	}
+
+	DLIST_ADD_END(db_map->db, db);
+	return db;
+
+fail:
+	DBG_ERR("Memory error\n");
+	talloc_free(db);
+	return NULL;
+
 }
 
 static bool public_ips_parse(struct ctdbd_context *ctdb,
@@ -1650,6 +1717,40 @@ fail:
 
 }
 
+static void control_db_attach(TALLOC_CTX *mem_ctx,
+			      struct tevent_req *req,
+			      struct ctdb_req_header *header,
+			      struct ctdb_req_control *request)
+{
+	struct client_state *state = tevent_req_data(
+		req, struct client_state);
+	struct ctdbd_context *ctdb = state->ctdb;
+	struct ctdb_reply_control reply;
+	struct database *db;
+
+	reply.rdata.opcode = request->opcode;
+
+	for (db = ctdb->db_map->db; db != NULL; db = db->next) {
+		if (strcmp(db->name, request->rdata.data.db_name) == 0) {
+			goto done;
+		}
+	}
+
+	db = database_new(ctdb->db_map, request->rdata.data.db_name, 0);
+	if (db == NULL) {
+		reply.status = -1;
+		reply.errmsg = "Failed to attach database";
+		client_send_control(req, header, &reply);
+		return;
+	}
+
+done:
+	reply.rdata.data.db_id = db->id;
+	reply.status = 0;
+	reply.errmsg = NULL;
+	client_send_control(req, header, &reply);
+}
+
 static void srvid_handler(uint64_t srvid, TDB_DATA data, void *private_data)
 {
 	printf("Received a message for SRVID 0x%"PRIx64"\n", srvid);
@@ -1947,6 +2048,41 @@ static void control_get_all_tunables(TALLOC_CTX *mem_ctx,
 	reply.status = 0;
 	reply.errmsg = NULL;
 
+	client_send_control(req, header, &reply);
+}
+
+static void control_db_attach_persistent(TALLOC_CTX *mem_ctx,
+					 struct tevent_req *req,
+					 struct ctdb_req_header *header,
+					 struct ctdb_req_control *request)
+{
+	struct client_state *state = tevent_req_data(
+		req, struct client_state);
+	struct ctdbd_context *ctdb = state->ctdb;
+	struct ctdb_reply_control reply;
+	struct database *db;
+
+	reply.rdata.opcode = request->opcode;
+
+	for (db = ctdb->db_map->db; db != NULL; db = db->next) {
+		if (strcmp(db->name, request->rdata.data.db_name) == 0) {
+			goto done;
+		}
+	}
+
+	db = database_new(ctdb->db_map, request->rdata.data.db_name,
+			  CTDB_DB_FLAGS_PERSISTENT);
+	if (db == NULL) {
+		reply.status = -1;
+		reply.errmsg = "Failed to attach database";
+		client_send_control(req, header, &reply);
+		return;
+	}
+
+done:
+	reply.rdata.data.db_id = db->id;
+	reply.status = 0;
+	reply.errmsg = NULL;
 	client_send_control(req, header, &reply);
 }
 
@@ -2850,6 +2986,67 @@ fail:
 	client_send_control(req, header, &reply);
 }
 
+static void control_db_open_flags(TALLOC_CTX *mem_ctx,
+				  struct tevent_req *req,
+				  struct ctdb_req_header *header,
+				  struct ctdb_req_control *request)
+{
+	struct client_state *state = tevent_req_data(
+		req, struct client_state);
+	struct ctdbd_context *ctdb = state->ctdb;
+	struct ctdb_reply_control reply;
+	struct database *db;
+
+	reply.rdata.opcode = request->opcode;
+
+	db = database_find(ctdb->db_map, request->rdata.data.db_id);
+	if (db == NULL) {
+		reply.status = ENOENT;
+		reply.errmsg = "Database not found";
+	} else {
+		reply.rdata.data.tdb_flags = database_flags(db->flags);
+		reply.status = 0;
+		reply.errmsg = NULL;
+	}
+
+	client_send_control(req, header, &reply);
+}
+
+static void control_db_attach_replicated(TALLOC_CTX *mem_ctx,
+					 struct tevent_req *req,
+					 struct ctdb_req_header *header,
+					 struct ctdb_req_control *request)
+{
+	struct client_state *state = tevent_req_data(
+		req, struct client_state);
+	struct ctdbd_context *ctdb = state->ctdb;
+	struct ctdb_reply_control reply;
+	struct database *db;
+
+	reply.rdata.opcode = request->opcode;
+
+	for (db = ctdb->db_map->db; db != NULL; db = db->next) {
+		if (strcmp(db->name, request->rdata.data.db_name) == 0) {
+			goto done;
+		}
+	}
+
+	db = database_new(ctdb->db_map, request->rdata.data.db_name,
+			  CTDB_DB_FLAGS_REPLICATED);
+	if (db == NULL) {
+		reply.status = -1;
+		reply.errmsg = "Failed to attach database";
+		client_send_control(req, header, &reply);
+		return;
+	}
+
+done:
+	reply.rdata.data.db_id = db->id;
+	reply.status = 0;
+	reply.errmsg = NULL;
+	client_send_control(req, header, &reply);
+}
+
 static void control_check_pid_srvid(TALLOC_CTX *mem_ctx,
 				    struct tevent_req *req,
 				    struct ctdb_req_header *header,
@@ -3358,6 +3555,10 @@ static void client_process_control(struct tevent_req *req,
 		control_set_recmode(mem_ctx, req, &header, &request);
 		break;
 
+	case CTDB_CONTROL_DB_ATTACH:
+		control_db_attach(mem_ctx, req, &header, &request);
+		break;
+
 	case CTDB_CONTROL_REGISTER_SRVID:
 		control_register_srvid(mem_ctx, req, &header, &request);
 		break;
@@ -3404,6 +3605,10 @@ static void client_process_control(struct tevent_req *req,
 
 	case CTDB_CONTROL_GET_ALL_TUNABLES:
 		control_get_all_tunables(mem_ctx, req, &header, &request);
+		break;
+
+	case CTDB_CONTROL_DB_ATTACH_PERSISTENT:
+		control_db_attach_persistent(mem_ctx, req, &header, &request);
 		break;
 
 	case CTDB_CONTROL_UPTIME:
@@ -3488,6 +3693,14 @@ static void client_process_control(struct tevent_req *req,
 
 	case CTDB_CONTROL_GET_NODES_FILE:
 		control_get_nodes_file(mem_ctx, req, &header, &request);
+		break;
+
+	case CTDB_CONTROL_DB_OPEN_FLAGS:
+		control_db_open_flags(mem_ctx, req, &header, &request);
+		break;
+
+	case CTDB_CONTROL_DB_ATTACH_REPLICATED:
+		control_db_attach_replicated(mem_ctx, req, &header, &request);
 		break;
 
 	case CTDB_CONTROL_CHECK_PID_SRVID:
