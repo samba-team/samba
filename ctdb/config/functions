@@ -18,7 +18,7 @@ CTDB="${CTDB:-/usr/local/bin/ctdb}"
 # Only (and always) override these variables in test code
 
 if [ -z "$CTDB_SCRIPT_VARDIR" ] ; then
-    CTDB_SCRIPT_VARDIR="/usr/local/var/lib/ctdb/state"
+    CTDB_SCRIPT_VARDIR="/usr/local/var/lib/ctdb/scripts"
 fi
 
 if [ -z "$CTDB_SYS_ETCDIR" ] ; then
