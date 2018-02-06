@@ -1,24 +1,23 @@
 # Hey Emacs, this is a -*- shell-script -*- !!!  :-)
 
-# Augment PATH with relevant stubs/ directories.  We do this by actually
-# setting PATH, and also by setting $EVENTSCRIPTS_PATH and then
-# prepending that to $PATH in rc.local to avoid the PATH reset in
-# functions.
+#
+# Augment PATH with relevant stubs/ directories.
+#
 
-EVENTSCRIPTS_PATH=""
+stubs_dir="${TEST_SUBDIR}/stubs"
+[ -d "${stubs_dir}" ] || die "Failed to locate stubs/ subdirectory"
 
-if [ -d "${TEST_SUBDIR}/stubs" ] ; then
-    EVENTSCRIPTS_PATH="${TEST_SUBDIR}/stubs"
-    case "$EVENTSCRIPTS_PATH" in
-	/*) : ;;
-	*) EVENTSCRIPTS_PATH="${PWD}/${EVENTSCRIPTS_PATH}" ;;
-    esac
-    export CTDB_HELPER_BINDIR="$EVENTSCRIPTS_PATH"
-fi
+# Make the path absolute for tests that change directory
+case "$stubs_dir" in
+/*) : ;;
+*) stubs_dir="${PWD}/${stubs_dir}" ;;
+esac
 
-export EVENTSCRIPTS_PATH
+# Use stubs as helpers
+export CTDB_HELPER_BINDIR="$stubs_dir"
 
-PATH="${EVENTSCRIPTS_PATH}:${PATH}"
+PATH="${stubs_dir}:${PATH}"
+
 
 export CTDB="ctdb"
 
