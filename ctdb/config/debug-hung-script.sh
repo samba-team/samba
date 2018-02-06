@@ -8,7 +8,7 @@
 
 . "${CTDB_BASE}/functions"
 
-loadconfig ctdb
+loadconfig
 
 # Testing hook
 if [ -n "$CTDB_DEBUG_HUNG_SCRIPT_LOGFILE" ] ; then

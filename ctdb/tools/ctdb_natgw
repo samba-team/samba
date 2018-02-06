@@ -5,7 +5,8 @@ if [ -z "$CTDB_BASE" ] ; then
 fi
 
 . "${CTDB_BASE}/functions"
-loadconfig "ctdb"
+
+loadconfig
 
 # Default NAT gateway nodes file location
 [ -n "$CTDB_NATGW_NODES" ] || CTDB_NATGW_NODES="${CTDB_BASE}/natgw_nodes"

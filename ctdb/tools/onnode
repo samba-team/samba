@@ -71,7 +71,8 @@ if [ -z "$CTDB_BASE" ] ; then
 fi
 
 . "${CTDB_BASE}/functions"
-loadconfig "ctdb"
+
+loadconfig
 
 parse_options ()
 {

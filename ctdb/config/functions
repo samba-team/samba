@@ -56,43 +56,28 @@ rewrite_ctdb_options ()
     esac
 }
 
-_loadconfig() {
-
-    if [ -z "$1" ] ; then
-	foo="${service_config:-${service_name}}"
-	if [ -n "$foo" ] ; then
-	    loadconfig "$foo"
-	    return
+load_system_config ()
+{
+	if [ -z "$1" ] ; then
+		return
 	fi
-    fi
 
-    if [ "$1" != "ctdb" ] ; then
-	loadconfig "ctdb"
-    fi
-
-    if [ -z "$1" ] ; then
-	return
-    fi
-
-    if [ -f "${CTDB_SYS_ETCDIR}/sysconfig/$1" ]; then
-	. "${CTDB_SYS_ETCDIR}/sysconfig/$1"
-    elif [ -f "${CTDB_SYS_ETCDIR}/default/$1" ]; then
-	. "${CTDB_SYS_ETCDIR}/default/$1"
-    elif [ -f "${CTDB_BASE}/sysconfig/$1" ]; then
-	. "${CTDB_BASE}/sysconfig/$1"
-    fi
-
-    if [ "$1" = "ctdb" ] ; then
-	_config="${CTDB_BASE}/ctdbd.conf"
-	if [ -r "$_config" ] ; then
-	    . "$_config"
+	if [ -f "${CTDB_SYS_ETCDIR}/sysconfig/$1" ]; then
+		. "${CTDB_SYS_ETCDIR}/sysconfig/$1"
+	elif [ -f "${CTDB_SYS_ETCDIR}/default/$1" ]; then
+		. "${CTDB_SYS_ETCDIR}/default/$1"
 	fi
-	rewrite_ctdb_options
-    fi
 }
 
-loadconfig () {
-    _loadconfig "$@"
+loadconfig() {
+
+	load_system_config "ctdb"
+
+	_config="${CTDB_BASE}/ctdbd.conf"
+	if [ -r "$_config" ] ; then
+		. "$_config"
+	fi
+	rewrite_ctdb_options
 }
 
 ##############################################################
@@ -302,7 +287,9 @@ program_stack_traces ()
 # Ensure $service_name is set
 assert_service_name ()
 {
-    [ -n "$service_name" ] || die "INTERNAL ERROR: \$service_name not set"
+	# service_name is set by the event script
+	# shellcheck disable=SC2154
+	[ -n "$service_name" ] || die "INTERNAL ERROR: \$service_name not set"
 }
 
 ######################################################

@@ -6,7 +6,7 @@
 
 . "${CTDB_BASE}/functions"
 
-loadconfig ctdb
+loadconfig
 
 [ -n "$CTDB_LVS_NODES" ] || exit 0
 export CTDB_LVS_NODES

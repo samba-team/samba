@@ -14,7 +14,7 @@ if service ctdb status >/dev/null 2>&1 ; then
     exit 0
 fi
 
-loadconfig ctdb
+loadconfig
 
 if [ ! -f "$CTDB_BASE/public_addresses" ] ; then
 	die "No public addresses file found. Can't clean up."

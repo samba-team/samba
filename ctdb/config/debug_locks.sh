@@ -17,7 +17,7 @@
 CTDB_DBDIR="${CTDB_VARDIR}"
 CTDB_DBDIR_PERSISTENT="${CTDB_VARDIR}/persistent"
 
-loadconfig ctdb
+loadconfig
 
 (
     flock -n 9 || exit 1

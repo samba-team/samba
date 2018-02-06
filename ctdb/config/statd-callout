@@ -20,8 +20,9 @@ die ()
     exit 1
 }
 
-loadconfig ctdb
-loadconfig nfs
+load_system_config "nfs"
+
+loadconfig
 
 [ -n "$NFS_HOSTNAME" ] || \
     die "NFS_HOSTNAME is not configured. statd-callout failed"

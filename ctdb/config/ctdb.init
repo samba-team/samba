@@ -41,13 +41,15 @@ unset TMPDIR
 [ -n "$CTDB_BASE" ] || export CTDB_BASE="/etc/ctdb"
 
 . "${CTDB_BASE}/functions"
-loadconfig "network"
-loadconfig "ctdb"
+
+load_system_config "network"
 
 # check networking is up (for redhat)
 if [ "$NETWORKING" = "no" ] ; then
     exit 0
 fi
+
+load_system_config "ctdb"
 
 detect_init_style
 export CTDB_INIT_STYLE
