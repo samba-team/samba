@@ -450,7 +450,7 @@ def build(bld):
     bld.SAMBA_SUBSYSTEM('ctdb-server-util',
                         source=bld.SUBDIR('common',
                                           '''sock_daemon.c'''),
-                        deps='''samba-util ctdb-util tevent-util
+                        deps='''samba-util ctdb-util ctdb-system tevent-util
                                 LIBASYNC_REQ replace talloc tevent''')
 
     bld.SAMBA_SUBSYSTEM('ctdb-ipalloc',
@@ -800,7 +800,6 @@ def build(bld):
         'comm_client_test',
         'pidfile_test',
         'run_proc_test',
-        'sock_daemon_test',
         'sock_io_test',
         'hash_count_test',
         'run_event_test',
@@ -835,6 +834,12 @@ def build(bld):
     bld.SAMBA_BINARY('porting_tests',
                      source='tests/src/porting_tests.c',
                      deps='samba-util ctdb-system popt',
+                     install_path='${CTDB_TEST_LIBEXECDIR}')
+
+    bld.SAMBA_BINARY('sock_daemon_test',
+                     source='tests/src/sock_daemon_test.c',
+                     deps='''ctdb-system talloc tevent tevent-util
+                             LIBASYNC_REQ samba-util sys_rw''',
                      install_path='${CTDB_TEST_LIBEXECDIR}')
 
     bld.SAMBA_SUBSYSTEM('ctdb-protocol-tests-basic',

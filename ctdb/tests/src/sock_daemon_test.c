@@ -788,6 +788,7 @@ struct test5_server_state {
 };
 
 static bool test5_connect(struct sock_client_context *client,
+			  pid_t pid,
 			  void *private_data)
 {
 	struct test5_server_state *state =

@@ -109,6 +109,7 @@ struct sock_daemon_funcs {
  * connect() is called when there is a new connection
  *
  * @param[in] client The new socket client context
+ * @param[in] pid The pid of the new client process, or -1 if unknown
  * @param[in] private_data Private data set with the socket
  * @return true if connection should be accepted, false otherwise
  *
@@ -139,6 +140,7 @@ struct sock_daemon_funcs {
  */
 struct sock_socket_funcs {
 	bool (*connect)(struct sock_client_context *client,
+			pid_t pid,
 			void *private_data);
 	void (*disconnect)(struct sock_client_context *client,
 			   void *private_data);

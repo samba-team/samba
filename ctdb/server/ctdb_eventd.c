@@ -625,6 +625,7 @@ static struct eventd_client *client_find(struct eventd_context *ectx,
 }
 
 static bool client_connect(struct sock_client_context *client_ctx,
+			   pid_t pid,
 			   void *private_data)
 {
 	struct eventd_context *ectx = talloc_get_type_abort(

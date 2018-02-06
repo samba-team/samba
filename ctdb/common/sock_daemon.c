@@ -36,6 +36,7 @@
 #include "common/reqid.h"
 #include "common/comm.h"
 #include "common/pidfile.h"
+#include "common/system.h"
 #include "common/sock_daemon.h"
 
 struct sock_socket {
@@ -114,9 +115,14 @@ static int sock_client_context_init(TALLOC_CTX *mem_ctx,
 	}
 
 	if (sock->funcs->connect != NULL) {
+		pid_t pid;
 		bool status;
 
-		status = sock->funcs->connect(client_ctx, sock->private_data);
+		(void) ctdb_get_peer_pid(client_fd, &pid);
+
+		status = sock->funcs->connect(client_ctx,
+					      pid,
+					      sock->private_data);
 		if (! status) {
 			talloc_free(client_ctx);
 			close(client_fd);
