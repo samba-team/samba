@@ -743,9 +743,11 @@ ctdb_setup_state_dir ()
 
 _ctdb_service_reconfigure_common ()
 {
-    _d="${CTDB_SCRIPT_VARDIR}/service_status/${service_name}"
-    mkdir -p "$_d"
-    _ctdb_service_reconfigure_flag="$_d/reconfigure"
+	if [ -z "$script_state_dir" ] ; then
+		die "ctdb_service_*_reconfigure() needs ctdb_setup_state_dir()"
+	fi
+
+	_ctdb_service_reconfigure_flag="${script_state_dir}/need_reconfigure"
 }
 
 ctdb_service_needs_reconfigure ()
