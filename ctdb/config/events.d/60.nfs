@@ -119,8 +119,6 @@ nfs_check_service ()
 	    esac
 	done
 
-	_service_name="nfs_${_progname}"
-
 	_ok=false
 	if [ -n "$service_check_cmd" ] ; then
 	    # Using eval means variables can contain semicolon separated commands
@@ -140,13 +138,13 @@ nfs_check_service ()
 
 	if $_ok ; then
 	    if [ $unhealthy_after -ne 1 -o $restart_every -ne 0 ] ; then
-		ctdb_counter_init "$_service_name"
+		ctdb_counter_init "$_progname"
 	    fi
 	    exit 0
 	fi
 
-	ctdb_counter_incr "$_service_name"
-	_failcount=$(ctdb_counter_get "$_service_name")
+	ctdb_counter_incr "$_progname"
+	_failcount=$(ctdb_counter_get "$_progname")
 
 	_unhealthy=false
 	if [ "$unhealthy_after" -gt 0 ] ; then
