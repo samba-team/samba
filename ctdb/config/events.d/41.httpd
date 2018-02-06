@@ -23,6 +23,8 @@ suse|debian|*)
 	;;
 esac
 
+ctdb_setup_state_dir "service" "$service_name"
+
 # RHEL5 sometimes use a SIGKILL to terminate httpd, which then leaks
 # semaphores.  This is a hack to clean them up.
 cleanup_httpd_semaphore_leak() {

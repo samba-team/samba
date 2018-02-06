@@ -8,6 +8,8 @@
 
 loadconfig
 
+ctdb_setup_state_dir "service" "reclock"
+
 # If CTDB_RECOVERY_LOCK specifies a helper then exit because this
 # script can't do anything useful.
 case "$CTDB_RECOVERY_LOCK" in

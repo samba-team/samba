@@ -697,10 +697,21 @@ interface_monitor ()
 
 ########################################################
 # Simple counters
-_ctdb_counter_common () {
-    _service_name="${1:-${service_name:-${script_name}}}"
-    _counter_file="${CTDB_SCRIPT_VARDIR}/failcount/${_service_name}"
-    mkdir -p "${_counter_file%/*}" # dirname
+_ctdb_counter_common ()
+{
+	[ $# -le 1 ] || die "usage: _ctdb_counter_common [name]"
+
+	if [ $# -eq 1 ] ; then
+		_counter_name="${1}.failcount"
+	else
+		_counter_name="failcount"
+	fi
+
+	if [ -z "$script_state_dir" ] ; then
+		die "ctdb_counter_* functions need ctdb_setup_state_dir()"
+	fi
+
+	_counter_file="${script_state_dir}/${_counter_name}"
 }
 # Some code passes an argument
 # shellcheck disable=SC2120
