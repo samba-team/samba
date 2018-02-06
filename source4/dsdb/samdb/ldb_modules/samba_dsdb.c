@@ -234,8 +234,11 @@ static bool check_required_features(struct ldb_message_element *el)
 		int k;
 		DATA_BLOB esf = data_blob_string_const(
 			SAMBA_ENCRYPTED_SECRETS_FEATURE);
+		DATA_BLOB lmdbl1 = data_blob_string_const(
+			SAMBA_LMDB_LEVEL_ONE_FEATURE);
 		for (k = 0; k < el->num_values; k++) {
-			if (data_blob_cmp(&esf, &el->values[k]) != 0) {
+			if ((data_blob_cmp(&esf, &el->values[k]) != 0) &&
+			    (data_blob_cmp(&lmdbl1, &el->values[k]) != 0)) {
 				return false;
 			}
 		}

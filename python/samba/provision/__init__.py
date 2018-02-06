@@ -845,13 +845,23 @@ def setup_samdb_partitions(samdb_path, logger, lp, session_info,
     if provision_backend.type != "ldb":
         ldap_backend_line = "ldapBackend: %s" % provision_backend.ldap_uri
 
-    required_features = "# No required features"
+    required_features = None
     if not plaintext_secrets:
         required_features = "requiredFeatures: encryptedSecrets"
 
     if backend_store is None:
         backend_store = get_default_backend_store()
     backend_store_line = "backendStore: %s" % backend_store
+
+    if backend_store == "mdb":
+        if required_features is not None:
+            required_features += "\n"
+        else:
+            required_features = ""
+        required_features += "requiredFeatures: lmdbLevelOne"
+
+    if required_features is None:
+        required_features = "# No required features"
 
     samdb.transaction_start()
     try:

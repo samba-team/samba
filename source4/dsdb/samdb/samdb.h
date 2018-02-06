@@ -342,5 +342,14 @@ struct dsdb_extended_sec_desc_propagation_op {
 
 #define SAMBA_SORTED_LINKS_FEATURE "sortedLinks"
 #define SAMBA_ENCRYPTED_SECRETS_FEATURE "encryptedSecrets"
+/*
+ * lmdb level one feature is an experimental release with basic support
+ * for lmdb database files, instead of tdb.
+ * - Keys are limited to 511 bytes long so GUID indexes are required
+ * - Currently only the:
+ *     partition data files
+ *   are in lmdb format.
+ */
+#define SAMBA_LMDB_LEVEL_ONE_FEATURE "lmdbLevelOne"
 
 #endif /* __SAMDB_H__ */
