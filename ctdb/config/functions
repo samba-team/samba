@@ -723,15 +723,32 @@ ctdb_counter_get () {
 
 ########################################################
 
+# ctdb_setup_state_dir <type> <name>
+#   Sets/creates script_state_dir)
+ctdb_setup_state_dir ()
+{
+	[ $# -eq 2 ] || die "usage: ctdb_setup_state_dir <type> <name>"
+
+	_type="$1"
+	_name="$2"
+
+	script_state_dir="${CTDB_SCRIPT_VARDIR}/${_type}/${_name}"
+
+	mkdir -p "$script_state_dir" || \
+		die "Error creating script state dir \"${script_state_dir}\""
+}
+
+# ctdb_setup_service_state_dir [name]
+#   Sets/creates/prints script_state_dir)
 ctdb_setup_service_state_dir ()
 {
+	# Some code passes an argument
+	# shellcheck disable=SC2120
 	_s="${1:-${service_name}}"
 
-	_service_state_dir="${CTDB_SCRIPT_VARDIR}/service_state/${_s}"
-	mkdir -p "$_service_state_dir" ||
-		die "Error creating state dir \"${_service_state_dir}\""
+	ctdb_setup_state_dir "service" "$_s"
 
-	echo "$_service_state_dir"
+	echo "$script_state_dir"
 }
 
 ##################################################################
