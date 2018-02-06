@@ -427,6 +427,8 @@ sub get_interface($)
     $interfaces{"prockilldc"} = 46;
     $interfaces{"proclimitdc"} = 47;
 
+    $interfaces{"rootdnsforwarder"} = 64;
+
     # update lib/socket_wrapper/socket_wrapper.c
     #  #define MAX_WRAPPED_INTERFACES 64
     # if you wish to have more than 64 interfaces

@@ -16,6 +16,7 @@ use SocketWrapper;
 use target::Samba;
 use target::Samba3;
 use Archive::Tar;
+use File::Path 'make_path';
 
 sub new($$$$$) {
 	my ($classname, $bindir, $ldap, $srcdir, $server_maxtime) = @_;
@@ -327,6 +328,114 @@ sub mk_openldap($$)
 	my $pidfile = "$ctx->{ldapdir}/slapd.pid";
 
 	return ($slapd_conf_d, $pidfile);
+}
+
+sub setup_dns_hub_internal($$$)
+{
+	my ($self, $hostname, $prefix) = @_;
+	my $STDIN_READER;
+
+	unless(-d $prefix or make_path($prefix, 0777)) {
+		warn("Unable to create $prefix");
+		return undef;
+	}
+	my $prefix_abs = abs_path($prefix);
+
+	die ("prefix=''") if $prefix_abs eq "";
+	die ("prefix='/'") if $prefix_abs eq "/";
+
+	unless (system("rm -rf $prefix_abs/*") == 0) {
+		warn("Unable to clean up");
+	}
+
+	my $swiface = Samba::get_interface($hostname);
+
+	my $env = undef;
+	$env->{prefix} = $prefix;
+	$env->{prefix_abs} = $prefix_abs;
+
+	$env->{hostname} = $hostname;
+	$env->{swiface} = $swiface;
+
+	$env->{ipv4} = "127.0.0.$swiface";
+	$env->{ipv6} = sprintf("fd00:0000:0000:0000:0000:0000:5357:5f%02x", $swiface);
+
+	$env->{DNS_HUB_LOG} = "$prefix_abs/dns_hub.log";
+
+	$env->{RESOLV_CONF} = "$prefix_abs/resolv.conf";
+
+	open(RESOLV_CONF, ">$env->{RESOLV_CONF}");
+	print RESOLV_CONF "nameserver $env->{ipv4}\n";
+	print RESOLV_CONF "nameserver $env->{ipv6}\n";
+	close(RESOLV_CONF);
+
+	# use a pipe for stdin in the child processes. This allows
+	# those processes to monitor the pipe for EOF to ensure they
+	# exit when the test script exits
+	pipe($STDIN_READER, $env->{STDIN_PIPE});
+
+	print "STARTING rootdnsforwarder...\n";
+	my $pid = fork();
+	if ($pid == 0) {
+		# we want out from samba to go to the log file, but also
+		# to the users terminal when running 'make test' on the command
+		# line. This puts it on stderr on the terminal
+		open STDOUT, "| tee $env->{DNS_HUB_LOG} 1>&2";
+		open STDERR, '>&STDOUT';
+
+		SocketWrapper::set_default_iface($swiface);
+		my $pcap_file = "$ENV{SOCKET_WRAPPER_PCAP_DIR}/env-$hostname$.pcap";
+		SocketWrapper::setup_pcap($pcap_file);
+
+		my @preargs = ();
+		my @args = ();
+		my @optargs = ();
+		if (!defined($ENV{PYTHON})) {
+		    push (@preargs, "env");
+		    push (@preargs, "python");
+		} else {
+		    push (@preargs, $ENV{PYTHON});
+		}
+		$ENV{MAKE_TEST_BINARY} = Samba::bindir_path($self, "python/samba/tests/dns_forwarder_helpers/dns_hub.py");
+		push (@args, "$self->{server_maxtime}");
+		push (@args, "$env->{ipv4}");
+		close($env->{STDIN_PIPE});
+		open STDIN, ">&", $STDIN_READER or die "can't dup STDIN_READER to STDIN: $!";
+
+		exec(@preargs, $ENV{MAKE_TEST_BINARY}, @args, @optargs)
+			or die("Unable to start $ENV{MAKE_TEST_BINARY}: $!");
+	}
+	$env->{SAMBA_PID} = $pid;
+	$env->{KRB5_CONFIG} = "${prefix_abs}/no_krb5.conf";
+	close($STDIN_READER);
+
+	print "DONE\n";
+	return $env;
+}
+
+sub setup_dns_hub
+{
+	my ($self, $prefix) = @_;
+
+	my $hostname = "rootdnsforwarder";
+
+	my $env = $self->setup_dns_hub_internal("$hostname", "$prefix/$hostname");
+
+	$self->{dns_hub_env} = $env;
+
+	return $env;
+}
+
+sub get_dns_hub_env($)
+{
+	my ($self, $prefix) = @_;
+
+	if (defined($self->{dns_hub_env})) {
+	        return $self->{dns_hub_env};
+	}
+
+	die("get_dns_hub_env() not setup 'dns_hub_env'");
+	return undef;
 }
 
 sub setup_namespaces($$:$$)
