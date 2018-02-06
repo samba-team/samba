@@ -354,17 +354,6 @@ remove_bogus_routes ()
 
 ######################################################################
 
-service_reconfigure ()
-{
-    add_missing_routes "force"
-    remove_bogus_routes
-
-    # flush our route cache
-    set_proc sys/net/ipv4/route/flush 1
-}
-
-######################################################################
-
 ctdb_check_args "$@"
 
 case "$1" in
@@ -435,7 +424,13 @@ ipreallocated)
 	;;
 
 reconfigure)
-	ctdb_service_reconfigure
+	echo "Reconfiguring service \"${service_name}\"..."
+
+	add_missing_routes "force"
+	remove_bogus_routes
+
+	# flush our route cache
+	set_proc sys/net/ipv4/route/flush 1
 	;;
 esac
 
