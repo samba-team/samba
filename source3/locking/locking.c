@@ -847,7 +847,6 @@ bool set_share_mode(struct share_mode_lock *lck, struct files_struct *fsp,
 	e->lease = lease;
 	e->time.tv_sec = fsp->open_time.tv_sec;
 	e->time.tv_usec = fsp->open_time.tv_usec;
-	e->id = fsp->file_id;
 	e->share_file_id = fsp->fh->gen_id;
 	e->uid = (uint32_t)uid;
 	e->flags = (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN) ?

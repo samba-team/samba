@@ -51,7 +51,6 @@ interface open_files
 		uint32		share_access;
 		uint32		private_options;
 		timeval		time;
-		file_id		id;
 		udlong		share_file_id;
 		uint32		uid;
 		uint16		flags;
