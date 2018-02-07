@@ -875,9 +875,6 @@ struct share_mode_entry *find_share_mode_entry(
 		if (!serverid_equal(&pid, &e->pid)) {
 			continue;
 		}
-		if (!file_id_equal(&fsp->file_id, &e->id)) {
-			continue;
-		}
 		if (fsp->fh->gen_id != e->share_file_id) {
 			continue;
 		}
