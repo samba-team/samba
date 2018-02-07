@@ -792,6 +792,7 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 					 struct server_id src,
 					 DATA_BLOB *data)
 {
+	struct file_id id;
 	struct share_mode_entry msg;
 	files_struct *fsp;
 	bool use_kernel;
@@ -816,15 +817,15 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 	}
 
 	/* De-linearize incoming message. */
-	message_to_share_mode_entry(&msg.id, &msg, (char *)data->data);
+	message_to_share_mode_entry(&id, &msg, (char *)data->data);
 	break_to = msg.op_type;
 
 	DEBUG(10, ("Got oplock break to %u message from pid %s: %s/%llu\n",
 		   (unsigned)break_to, server_id_str_buf(src, &tmp),
-		   file_id_string_tos(&msg.id),
+		   file_id_string_tos(&id),
 		   (unsigned long long)msg.share_file_id));
 
-	fsp = initial_break_processing(sconn, msg.id, msg.share_file_id);
+	fsp = initial_break_processing(sconn, id, msg.share_file_id);
 
 	if (fsp == NULL) {
 		/* We hit a race here. Break messages are sent, and before we
