@@ -860,7 +860,7 @@ struct share_mode_entry *find_share_mode_entry(
 {
 	struct share_mode_data *d = lck->data;
 	struct server_id pid;
-	int i;
+	uint32_t i;
 
 	pid = messaging_server_id(fsp->conn->sconn->msg_ctx);
 
