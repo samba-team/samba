@@ -4,7 +4,7 @@
 
 define_test "TDB check, tdbtool does no support check"
 
-setup_ctdb
+setup
 
 FAKE_TDBTOOL_SUPPORTS_CHECK="no"
 

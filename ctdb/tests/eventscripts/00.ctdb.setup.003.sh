@@ -4,7 +4,7 @@
 
 define_test "setup, known and unknown tunables in config"
 
-setup_ctdb
+setup
 
 setup_config <<EOF
 CTDB_SET_MonitorInterval=5

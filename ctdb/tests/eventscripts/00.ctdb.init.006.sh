@@ -4,18 +4,9 @@
 
 define_test "TDB check, tdbtool does not support check, bad TDB"
 
-setup_ctdb
+setup
 
 FAKE_TDBTOOL_SUPPORTS_CHECK="no"
-
-result_filter ()
-{
-	_date="[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]"
-	_time="[0-9][0-9][0-9][0-9][0-9][0-9]"
-	_nanos="[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]"
-	_date_time="${_date}\.${_time}\.${_nanos}"
-	sed -e "s|\.${_date_time}\.|.DATE.TIME.|"
-}
 
 db="${CTDB_DBDIR}/foo.tdb.0"
 touch "$db"

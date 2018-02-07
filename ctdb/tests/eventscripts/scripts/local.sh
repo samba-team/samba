@@ -93,9 +93,6 @@ setup_generic ()
     mkdir -p "$FAKE_PROC_NET_BONDING"
     rm -f "$FAKE_PROC_NET_BONDING"/*
 
-    export FAKE_TDBTOOL_SUPPORTS_CHECK="yes"
-    export FAKE_TDB_IS_OK
-
     setup_dbdir
     setup_date
 
@@ -290,13 +287,7 @@ setup_ctdb ()
 
     setup_public_addresses
 
-    export FAKE_CTDB_EXTRA_CONFIG="$EVENTSCRIPTS_TESTS_VAR_DIR/fake-config.sh"
-    rm -f "$FAKE_CTDB_EXTRA_CONFIG"
-
     export CTDB_PARTIALLY_ONLINE_INTERFACES
-
-    export FAKE_CTDB_TUNABLES_OK="MonitorInterval TDBMutexEnabled DatabaseHashSize"
-    export FAKE_CTDB_TUNABLES_OBSOLETE="EventScriptUnhealthyOnTimeout"
 }
 
 validate_percentage ()

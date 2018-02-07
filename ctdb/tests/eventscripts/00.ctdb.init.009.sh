@@ -4,19 +4,10 @@
 
 define_test "TDB check, bad TDB multiple times"
 
-setup_ctdb
+setup
 
 db="${CTDB_DBDIR}/foo.tdb.0"
 FAKE_TDB_IS_OK="no"
-
-result_filter ()
-{
-	_date="[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]"
-	_time="[0-9][0-9][0-9][0-9][0-9][0-9]"
-	_nanos="[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]"
-	_date_time="${_date}\.${_time}\.${_nanos}"
-	sed -e "s|\.${_date_time}\.|.DATE.TIME.|"
-}
 
 required_result_tdbcheck ()
 {

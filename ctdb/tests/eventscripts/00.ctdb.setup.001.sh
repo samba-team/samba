@@ -4,7 +4,7 @@
 
 define_test "setup, no tunables in config"
 
-setup_ctdb
+setup
 
 ok_null
 
