@@ -1,8 +1,5 @@
 # Hey Emacs, this is a -*- shell-script -*- !!!  :-)
 
-# Set indirectly by run_tests at top level.
-unset CTDB_NODES_SOCKETS
-
 # Default to just "onnode".
 : ${ONNODE:=onnode}
 
