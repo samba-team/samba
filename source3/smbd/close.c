@@ -1288,7 +1288,7 @@ void msg_close_file(struct messaging_context *msg_ctx,
 	message_to_share_mode_entry(&e, (char *)data->data);
 
 	if(DEBUGLVL(10)) {
-		char *sm_str = share_mode_str(NULL, 0, &e);
+		char *sm_str = share_mode_str(NULL, 0, &e.id, &e);
 		if (!sm_str) {
 			smb_panic("talloc failed");
 		}

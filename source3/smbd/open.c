@@ -1566,8 +1566,9 @@ static void validate_my_share_entries(struct smbd_server_connection *sconn,
 	fsp = file_find_dif(sconn, share_entry->id,
 			    share_entry->share_file_id);
 	if (!fsp) {
-		DEBUG(0,("validate_my_share_entries: PANIC : %s\n",
-			 share_mode_str(talloc_tos(), num, share_entry) ));
+		DBG_ERR("PANIC : %s\n",
+			share_mode_str(talloc_tos(), num, &share_entry->id,
+				       share_entry));
 		smb_panic("validate_my_share_entries: Cannot match a "
 			  "share entry with an open file\n");
 	}
@@ -1581,8 +1582,9 @@ static void validate_my_share_entries(struct smbd_server_connection *sconn,
  panic:
 	{
 		char *str;
-		DEBUG(0,("validate_my_share_entries: PANIC : %s\n",
-			 share_mode_str(talloc_tos(), num, share_entry) ));
+		DBG_ERR("validate_my_share_entries: PANIC : %s\n",
+			share_mode_str(talloc_tos(), num, &share_entry->id,
+				       share_entry));
 		str = talloc_asprintf(talloc_tos(),
 			"validate_my_share_entries: "
 			"file %s, oplock_type = 0x%x, op_type = 0x%x\n",

@@ -2722,9 +2722,8 @@ static int enum_file_close_fn(const struct share_mode_entry *e,
 	}
 
 	/* Ok - send the close message. */
-	DEBUG(10,("enum_file_close_fn: request to close file %s, %s\n",
-		sharepath,
-		share_mode_str(talloc_tos(), 0, e) ));
+	DBG_DEBUG("request to close file %s, %s\n", sharepath,
+		  share_mode_str(talloc_tos(), 0, &e->id, e));
 
 	share_mode_entry_to_message(msg, e);
 

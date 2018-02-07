@@ -140,7 +140,9 @@ void locking_close_file(struct messaging_context *msg_ctx,
 bool locking_init(void);
 bool locking_init_readonly(void);
 bool locking_end(void);
-char *share_mode_str(TALLOC_CTX *ctx, int num, const struct share_mode_entry *e);
+char *share_mode_str(TALLOC_CTX *ctx, int num,
+		     const struct file_id *id,
+		     const struct share_mode_entry *e);
 struct share_mode_lock *get_existing_share_mode_lock(TALLOC_CTX *mem_ctx,
 						     struct file_id id);
 struct share_mode_lock *get_share_mode_lock(
