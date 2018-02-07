@@ -1,0 +1,2 @@
+^samba.tests.samdb_api.samba.tests.samdb_api.SamDBApiTestCase.test_dont_create_db_existing_non_tdb_file\(none\)
+^samba.tests.samdb_api.samba.tests.samdb_api.SamDBApiTestCase.test_dont_create_db_new_file\(none\)
