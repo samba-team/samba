@@ -447,6 +447,14 @@ EOF
 
 # Result and test functions
 
+
+############################################################
+
+setup ()
+{
+	die "setup() is not defined"
+}
+
 # Set some globals and print the summary.
 define_test ()
 {
