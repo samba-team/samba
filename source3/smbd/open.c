@@ -1701,7 +1701,7 @@ NTSTATUS send_break_message(struct messaging_context *msg_ctx,
 		   server_id_str_buf(exclusive->pid, &tmp)));
 
 	/* Create the message. */
-	share_mode_entry_to_message(msg, exclusive);
+	share_mode_entry_to_message(msg, &exclusive->id, exclusive);
 
 	/* Overload entry->op_type */
 	/*

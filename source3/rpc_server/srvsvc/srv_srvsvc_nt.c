@@ -2725,7 +2725,7 @@ static int enum_file_close_fn(const struct share_mode_entry *e,
 	DBG_DEBUG("request to close file %s, %s\n", sharepath,
 		  share_mode_str(talloc_tos(), 0, id, e));
 
-	share_mode_entry_to_message(msg, e);
+	share_mode_entry_to_message(msg, &e->id, e);
 
 	state->r->out.result = ntstatus_to_werror(
 		messaging_send_buf(state->msg_ctx,

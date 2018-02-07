@@ -1134,7 +1134,7 @@ static void send_break_to_none(struct messaging_context *msg_ctx,
 {
 	char msg[MSG_SMB_SHARE_MODE_ENTRY_SIZE];
 
-	share_mode_entry_to_message(msg, e);
+	share_mode_entry_to_message(msg, &e->id, e);
 	/* Overload entry->op_type */
 	SSVAL(msg, OP_BREAK_MSG_OP_TYPE_OFFSET, NO_OPLOCK);
 
@@ -1291,7 +1291,8 @@ void smbd_contend_level2_oplocks_end(files_struct *fsp,
  Linearize a share mode entry struct to an internal oplock break message.
 ****************************************************************************/
 
-void share_mode_entry_to_message(char *msg, const struct share_mode_entry *e)
+void share_mode_entry_to_message(char *msg, const struct file_id *id,
+				 const struct share_mode_entry *e)
 {
 	SIVAL(msg,OP_BREAK_MSG_PID_OFFSET,(uint32_t)e->pid.pid);
 	SBVAL(msg,OP_BREAK_MSG_MID_OFFSET,e->op_mid);
@@ -1301,7 +1302,11 @@ void share_mode_entry_to_message(char *msg, const struct share_mode_entry *e)
 	SIVAL(msg,OP_BREAK_MSG_PRIV_OFFSET,e->private_options);
 	SIVAL(msg,OP_BREAK_MSG_TIME_SEC_OFFSET,(uint32_t)e->time.tv_sec);
 	SIVAL(msg,OP_BREAK_MSG_TIME_USEC_OFFSET,(uint32_t)e->time.tv_usec);
-	push_file_id_24(msg+OP_BREAK_MSG_DEV_OFFSET, &e->id);
+	/*
+	 * "id" used to be part of share_mode_entry, thus the strange
+	 * place to put this. Feel free to move somewhere else :-)
+	 */
+	push_file_id_24(msg+OP_BREAK_MSG_DEV_OFFSET, id);
 	SIVAL(msg,OP_BREAK_MSG_FILE_ID_OFFSET,e->share_file_id);
 	SIVAL(msg,OP_BREAK_MSG_UID_OFFSET,e->uid);
 	SSVAL(msg,OP_BREAK_MSG_FLAGS_OFFSET,e->flags);
