@@ -4,9 +4,10 @@
 
 define_test "Filesystem use check, warn situation, only error check enabled"
 
-setup_memcheck
+setup
 
 CTDB_MONITOR_FILESYSTEM_USAGE="/var::80"
-setup_fscheck 70
+
+set_fs_usage 70
 ok_null
 simple_test

@@ -1,9 +1,7 @@
-setup_memcheck ()
+set_mem_usage ()
 {
 	_mem_usage="${1:-10}" # Default is 10%
 	_swap_usage="${2:-0}" # Default is  0%
-
-	setup_ctdb
 
 	_swap_total=5857276
 	_swap_free=$(( (100 - $_swap_usage) * $_swap_total / 100 ))
@@ -31,17 +29,22 @@ Mlocked:            4844 kB
 SwapTotal:       ${_swap_total} kB
 SwapFree:        ${_swap_free} kB
 ..."
-
-	export CTDB_MONITOR_MEMORY_USAGE
-	export CTDB_MONITOR_SWAP_USAGE
 }
 
-setup_fscheck ()
+set_fs_usage ()
 {
 	export FAKE_FS_USE="${1:-10}"  # Default is 10% usage
+}
 
-	# Causes some variables to be exported
-	setup_ctdb
+setup ()
+{
+	setup_dbdir
 
-	export CTDB_MONITOR_FILESYSTEM_USAGE
+	export CTDB_MONITOR_MEMORY_USAGE=""
+	export CTDB_MONITOR_SWAP_USAGE=""
+	export CTDB_MONITOR_FILESYSTEM_USAGE=""
+
+	# Tests use default unless explicitly set
+	set_mem_usage
+	set_fs_usage
 }

@@ -2,12 +2,11 @@
 
 . "${TEST_SCRIPTS_DIR}/unit.sh"
 
-define_test "Filesystem use check, error situation, no checks enabled"
+define_test "Filesystem use check, error situation, default checks enabled"
 
-setup_memcheck
+setup
 
-CTDB_MONITOR_FILESYSTEM_USAGE=""
-setup_fscheck 100
+set_fs_usage 100
 ok <<EOF
 WARNING: Filesystem ${CTDB_DBDIR} utilization 100% >= threshold 90%
 EOF

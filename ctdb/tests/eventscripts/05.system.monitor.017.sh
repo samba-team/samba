@@ -4,11 +4,11 @@
 
 define_test "Memory check, bad situation, both custom memory checks, causes unhealthy"
 
-setup_memcheck 87 0
+setup
 
 CTDB_MONITOR_MEMORY_USAGE="70:80"
-CTDB_MONITOR_SWAP_USAGE=""
 
+set_mem_usage 87 0
 required_result 1 <<EOF
 ERROR: System memory utilization 87% >= threshold 80%
 MemTotal:        3940712 kB

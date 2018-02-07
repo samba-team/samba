@@ -4,37 +4,39 @@
 
 define_test "Check throttling of warnings"
 
+setup
+
 CTDB_MONITOR_MEMORY_USAGE="70:80"
 CTDB_MONITOR_SWAP_USAGE=""
 
 # Below threshold, nothing logged
-setup_memcheck 67 0
+set_mem_usage 67 0
 ok_null
 simple_test
 
-setup_memcheck 71 0
+set_mem_usage 71 0
 ok "WARNING: System memory utilization 71% >= threshold 70%"
 simple_test
 
 # 2nd time at same level, nothing logged
-setup_memcheck 71 0
+set_mem_usage 71 0
 ok_null
 simple_test
 
-setup_memcheck 73 0
+set_mem_usage 73 0
 ok "WARNING: System memory utilization 73% >= threshold 70%"
 simple_test
 
 # 2nd time at same level, nothing logged
-setup_memcheck 73 0
+set_mem_usage 73 0
 ok_null
 simple_test
 
-setup_memcheck 79 0
+set_mem_usage 79 0
 ok "WARNING: System memory utilization 79% >= threshold 70%"
 simple_test
 
-setup_memcheck 80 0
+set_mem_usage 80 0
 required_result 1 <<EOF
 ERROR: System memory utilization 80% >= threshold 80%
 MemTotal:        3940712 kB
@@ -65,29 +67,29 @@ EOF
 simple_test
 
 # Fall back into warning at same level as last warning... should log
-setup_memcheck 79 0
+set_mem_usage 79 0
 ok "WARNING: System memory utilization 79% >= threshold 70%"
 simple_test
 
 # Below threshold, notice
-setup_memcheck 69 0
+set_mem_usage 69 0
 ok <<EOF
 NOTICE: System memory utilization 69% < threshold 70%
 EOF
 simple_test
 
 # Further reduction, nothing logged
-setup_memcheck 68 0
+set_mem_usage 68 0
 ok_null
 simple_test
 
 # Back up into warning at same level as last warning... should log
-setup_memcheck 79 0
+set_mem_usage 79 0
 ok "WARNING: System memory utilization 79% >= threshold 70%"
 simple_test
 
 # Back up above critical threshold... unhealthy
-setup_memcheck 81 0
+set_mem_usage 81 0
 required_result 1 <<EOF
 ERROR: System memory utilization 81% >= threshold 80%
 MemTotal:        3940712 kB
@@ -118,6 +120,6 @@ EOF
 simple_test
 
 # Straight back down to a good level... notice
-setup_memcheck 65 0
+set_mem_usage 65 0
 ok "NOTICE: System memory utilization 65% < threshold 70%"
 simple_test

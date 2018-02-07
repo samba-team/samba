@@ -4,11 +4,9 @@
 
 define_test "Memory check, bad situation, default checks enabled"
 
-setup_memcheck 100 100
+setup
 
-CTDB_MONITOR_MEMORY_USAGE=""
-CTDB_MONITOR_SWAP_USAGE=""
-
+set_mem_usage 100 100
 ok <<EOF
 WARNING: System memory utilization 100% >= threshold 80%
 WARNING: System swap utilization 100% >= threshold 25%

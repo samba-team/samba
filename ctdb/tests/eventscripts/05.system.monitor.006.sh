@@ -4,10 +4,11 @@
 
 define_test "Filesystem use check, error situation, both checks enabled"
 
-setup_memcheck
+setup
 
 CTDB_MONITOR_FILESYSTEM_USAGE="/var:80:90"
-setup_fscheck 95
+
+set_fs_usage 95
 required_result 1 <<EOF
 ERROR: Filesystem /var utilization 95% >= threshold 90%
 EOF
