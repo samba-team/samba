@@ -1280,15 +1280,16 @@ void msg_close_file(struct messaging_context *msg_ctx,
 			DATA_BLOB *data)
 {
 	files_struct *fsp = NULL;
+	struct file_id id;
 	struct share_mode_entry e;
 	struct smbd_server_connection *sconn =
 		talloc_get_type_abort(private_data,
 		struct smbd_server_connection);
 
-	message_to_share_mode_entry(&e.id, &e, (char *)data->data);
+	message_to_share_mode_entry(&id, &e, (char *)data->data);
 
 	if(DEBUGLVL(10)) {
-		char *sm_str = share_mode_str(NULL, 0, &e.id, &e);
+		char *sm_str = share_mode_str(NULL, 0, &id, &e);
 		if (!sm_str) {
 			smb_panic("talloc failed");
 		}
@@ -1297,7 +1298,7 @@ void msg_close_file(struct messaging_context *msg_ctx,
 		TALLOC_FREE(sm_str);
 	}
 
-	fsp = file_find_dif(sconn, e.id, e.share_file_id);
+	fsp = file_find_dif(sconn, id, e.share_file_id);
 	if (!fsp) {
 		DEBUG(10,("msg_close_file: failed to find file.\n"));
 		return;
