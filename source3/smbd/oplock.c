@@ -1131,11 +1131,12 @@ static void contend_level2_oplocks_begin_default(files_struct *fsp,
 }
 
 static void send_break_to_none(struct messaging_context *msg_ctx,
+			       const struct file_id *id,
 			       const struct share_mode_entry *e)
 {
 	char msg[MSG_SMB_SHARE_MODE_ENTRY_SIZE];
 
-	share_mode_entry_to_message(msg, &e->id, e);
+	share_mode_entry_to_message(msg, id, e);
 	/* Overload entry->op_type */
 	SSVAL(msg, OP_BREAK_MSG_OP_TYPE_OFFSET, NO_OPLOCK);
 
@@ -1203,7 +1204,7 @@ static void do_break_to_none(struct tevent_context *ctx,
 		DEBUG(10, ("Breaking lease# %"PRIu32" with share_entry# "
 			   "%"PRIu32"\n", i, j));
 
-		send_break_to_none(state->sconn->msg_ctx, e);
+		send_break_to_none(state->sconn->msg_ctx, &state->id, e);
 	}
 
 	for(i = 0; i < d->num_share_modes; i++) {
@@ -1246,7 +1247,7 @@ static void do_break_to_none(struct tevent_context *ctx,
 			abort();
 		}
 
-		send_break_to_none(state->sconn->msg_ctx, e);
+		send_break_to_none(state->sconn->msg_ctx, &state->id, e);
 	}
 
 	/* We let the message receivers handle removing the oplock state
