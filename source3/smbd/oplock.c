@@ -816,7 +816,7 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 	}
 
 	/* De-linearize incoming message. */
-	message_to_share_mode_entry(&msg, (char *)data->data);
+	message_to_share_mode_entry(&msg.id, &msg, (char *)data->data);
 	break_to = msg.op_type;
 
 	DEBUG(10, ("Got oplock break to %u message from pid %s: %s/%llu\n",
@@ -1318,7 +1318,9 @@ void share_mode_entry_to_message(char *msg, const struct file_id *id,
  De-linearize an internal oplock break message to a share mode entry struct.
 ****************************************************************************/
 
-void message_to_share_mode_entry(struct share_mode_entry *e, const char *msg)
+void message_to_share_mode_entry(struct file_id *id,
+				 struct share_mode_entry *e,
+				 const char *msg)
 {
 	e->pid.pid = (pid_t)IVAL(msg,OP_BREAK_MSG_PID_OFFSET);
 	e->op_mid = BVAL(msg,OP_BREAK_MSG_MID_OFFSET);
@@ -1328,7 +1330,11 @@ void message_to_share_mode_entry(struct share_mode_entry *e, const char *msg)
 	e->private_options = IVAL(msg,OP_BREAK_MSG_PRIV_OFFSET);
 	e->time.tv_sec = (time_t)IVAL(msg,OP_BREAK_MSG_TIME_SEC_OFFSET);
 	e->time.tv_usec = (int)IVAL(msg,OP_BREAK_MSG_TIME_USEC_OFFSET);
-	pull_file_id_24(msg+OP_BREAK_MSG_DEV_OFFSET, &e->id);
+	/*
+	 * "id" used to be part of share_mode_entry, thus the strange
+	 * place to put this. Feel free to move somewhere else :-)
+	 */
+	pull_file_id_24(msg+OP_BREAK_MSG_DEV_OFFSET, id);
 	e->share_file_id = (unsigned long)IVAL(msg,OP_BREAK_MSG_FILE_ID_OFFSET);
 	e->uid = (uint32_t)IVAL(msg,OP_BREAK_MSG_UID_OFFSET);
 	e->flags = (uint16_t)SVAL(msg,OP_BREAK_MSG_FLAGS_OFFSET);

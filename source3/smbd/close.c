@@ -1285,7 +1285,7 @@ void msg_close_file(struct messaging_context *msg_ctx,
 		talloc_get_type_abort(private_data,
 		struct smbd_server_connection);
 
-	message_to_share_mode_entry(&e, (char *)data->data);
+	message_to_share_mode_entry(&e.id, &e, (char *)data->data);
 
 	if(DEBUGLVL(10)) {
 		char *sm_str = share_mode_str(NULL, 0, &e.id, &e);
