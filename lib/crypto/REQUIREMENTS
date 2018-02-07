@@ -16,7 +16,6 @@ ARCFOUR (RC4)
  - Password encryption on SAMR for password set/get
  - NETLOGON SamLogon session keys
  - Schannel
- - generate_random_data()
 
  # GNUTLS >= 3.0.0
  # NETTLE
@@ -60,6 +59,7 @@ AES128 CCM
 
 AES128 GCM
  - SMB2 3.10 SMB encryption
+ - encrypted_secrets ldb module (encrypt secrets within sam.ldb)
 
  # GNUTLS >= 3.0.0
  # NETTLE (AES-NI available)
