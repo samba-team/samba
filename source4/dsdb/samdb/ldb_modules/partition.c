@@ -976,10 +976,6 @@ int partition_end_trans(struct ldb_module *module)
 		data->in_transaction--;
 	}
 
-	ret2 = partition_metadata_end_trans(module);
-	if (ret2 != LDB_SUCCESS) {
-		ret = ret2;
-	}
 
 	for (i=0; data && data->partitions && data->partitions[i]; i++) {
 		if ((module && ldb_module_flags(ldb_module_get_ctx(module)) & LDB_FLG_ENABLE_TRACING)) {
@@ -1002,6 +998,12 @@ int partition_end_trans(struct ldb_module *module)
 	if (ret2 != LDB_SUCCESS) {
 		ret = ret2;
 	}
+
+	ret2 = partition_metadata_end_trans(module);
+	if (ret2 != LDB_SUCCESS) {
+		ret = ret2;
+	}
+
 	return ret;
 }
 
@@ -1012,10 +1014,6 @@ int partition_del_trans(struct ldb_module *module)
 	unsigned int i;
 	struct partition_private_data *data = talloc_get_type(ldb_module_get_private(module),
 							      struct partition_private_data);
-	ret = partition_metadata_del_trans(module);
-	if (ret != LDB_SUCCESS) {
-		final_ret = ret;
-	}
 
 	for (i=0; data && data->partitions && data->partitions[i]; i++) {
 		if ((module && ldb_module_flags(ldb_module_get_ctx(module)) & LDB_FLG_ENABLE_TRACING)) {
@@ -1044,6 +1042,12 @@ int partition_del_trans(struct ldb_module *module)
 	if (ret != LDB_SUCCESS) {
 		final_ret = ret;
 	}
+
+	ret = partition_metadata_del_trans(module);
+	if (ret != LDB_SUCCESS) {
+		final_ret = ret;
+	}
+
 	return final_ret;
 }
 
