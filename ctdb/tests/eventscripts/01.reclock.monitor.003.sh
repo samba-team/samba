@@ -4,7 +4,7 @@
 
 define_test "set, exists"
 
-setup_reclock
+setup
 
 ok_null
 simple_test

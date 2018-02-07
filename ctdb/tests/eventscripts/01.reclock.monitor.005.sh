@@ -4,7 +4,7 @@
 
 define_test "set, doesn't exist, 4 times"
 
-setup_reclock
+setup
 rm -f "$CTDB_RECOVERY_LOCK"
 
 ok_null

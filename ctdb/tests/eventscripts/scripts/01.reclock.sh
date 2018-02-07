@@ -7,10 +7,9 @@ cleanup_reclock ()
 	done
 }
 
-setup_reclock ()
+setup ()
 {
-	CTDB_RECOVERY_LOCK=$(mktemp --tmpdir="$EVENTSCRIPTS_TESTS_VAR_DIR")
-	export CTDB_RECOVERY_LOCK
+	export CTDB_RECOVERY_LOCK="${EVENTSCRIPTS_TESTS_VAR_DIR}/rec.lock"
 
 	test_cleanup cleanup_reclock
 }
