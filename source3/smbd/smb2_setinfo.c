@@ -226,7 +226,8 @@ static struct tevent_req *delay_rename_for_lease_break(struct tevent_req *req,
 		delay = true;
 		break_to = (e_lease_type & ~SMB2_LEASE_HANDLE);
 
-		send_break_message(fsp->conn->sconn->msg_ctx, e, break_to);
+		send_break_message(fsp->conn->sconn->msg_ctx, &fsp->file_id,
+				   e, break_to);
 	}
 
 	if (!delay) {

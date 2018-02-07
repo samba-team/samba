@@ -1690,8 +1690,9 @@ static NTSTATUS open_mode_check(connection_struct *conn,
  */
 
 NTSTATUS send_break_message(struct messaging_context *msg_ctx,
-				   const struct share_mode_entry *exclusive,
-				   uint16_t break_to)
+			    const struct file_id *id,
+			    const struct share_mode_entry *exclusive,
+			    uint16_t break_to)
 {
 	NTSTATUS status;
 	char msg[MSG_SMB_SHARE_MODE_ENTRY_SIZE];
@@ -1701,7 +1702,7 @@ NTSTATUS send_break_message(struct messaging_context *msg_ctx,
 		   server_id_str_buf(exclusive->pid, &tmp)));
 
 	/* Create the message. */
-	share_mode_entry_to_message(msg, &exclusive->id, exclusive);
+	share_mode_entry_to_message(msg, id, exclusive);
 
 	/* Overload entry->op_type */
 	/*
@@ -1927,8 +1928,8 @@ static bool delay_for_oplock(files_struct *fsp,
 
 		DEBUG(10, ("breaking from %d to %d\n",
 			   (int)e_lease_type, (int)break_to));
-		send_break_message(fsp->conn->sconn->msg_ctx, e,
-				   break_to);
+		send_break_message(fsp->conn->sconn->msg_ctx, &fsp->file_id,
+				   e, break_to);
 		if (e_lease_type & delay_mask) {
 			delay = true;
 		}
@@ -4983,7 +4984,7 @@ static NTSTATUS lease_match(connection_struct *conn,
 				continue;
 			}
 
-			send_break_message(conn->sconn->msg_ctx, e,
+			send_break_message(conn->sconn->msg_ctx, &d->id, e,
 					   SMB2_LEASE_NONE);
 
 			/*

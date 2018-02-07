@@ -651,8 +651,9 @@ void change_file_owner_to_parent(connection_struct *conn,
 				 files_struct *fsp);
 bool is_stat_open(uint32_t access_mask);
 NTSTATUS send_break_message(struct messaging_context *msg_ctx,
-				const struct share_mode_entry *exclusive,
-				uint16_t break_to);
+			    const struct file_id *id,
+			    const struct share_mode_entry *exclusive,
+			    uint16_t break_to);
 struct deferred_open_record;
 bool is_deferred_open_async(const struct deferred_open_record *rec);
 NTSTATUS create_directory(connection_struct *conn, struct smb_request *req,
