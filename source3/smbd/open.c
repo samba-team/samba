@@ -1544,6 +1544,7 @@ sa = 0x%x, share = 0x%x\n", (num), (unsigned int)(am), (unsigned int)(right), (u
 
 #if defined(DEVELOPER)
 static void validate_my_share_entries(struct smbd_server_connection *sconn,
+				      const struct file_id id,
 				      int num,
 				      struct share_mode_entry *share_entry)
 {
@@ -1563,11 +1564,10 @@ static void validate_my_share_entries(struct smbd_server_connection *sconn,
 		return;
 	}
 
-	fsp = file_find_dif(sconn, share_entry->id,
-			    share_entry->share_file_id);
+	fsp = file_find_dif(sconn, id, share_entry->share_file_id);
 	if (!fsp) {
 		DBG_ERR("PANIC : %s\n",
-			share_mode_str(talloc_tos(), num, &share_entry->id,
+			share_mode_str(talloc_tos(), num, &id,
 				       share_entry));
 		smb_panic("validate_my_share_entries: Cannot match a "
 			  "share entry with an open file\n");
@@ -1583,7 +1583,7 @@ static void validate_my_share_entries(struct smbd_server_connection *sconn,
 	{
 		char *str;
 		DBG_ERR("validate_my_share_entries: PANIC : %s\n",
-			share_mode_str(talloc_tos(), num, &share_entry->id,
+			share_mode_str(talloc_tos(), num, &id,
 				       share_entry));
 		str = talloc_asprintf(talloc_tos(),
 			"validate_my_share_entries: "
@@ -1656,7 +1656,7 @@ static NTSTATUS open_mode_check(connection_struct *conn,
 
 #if defined(DEVELOPER)
 	for(i = 0; i < lck->data->num_share_modes; i++) {
-		validate_my_share_entries(conn->sconn, i,
+		validate_my_share_entries(conn->sconn, lck->data->id, i,
 					  &lck->data->share_modes[i]);
 	}
 #endif
