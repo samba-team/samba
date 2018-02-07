@@ -944,20 +944,6 @@ def build(bld):
     bld.symlink_as(os.path.join(bld.env.BINDIR, 'ctdb_run_cluster_tests'),
                    'ctdb_run_tests')
 
-    test_eventscript_links = [
-        'events.d',
-        'functions',
-        'nfs-checks.d',
-        'nfs-linux-kernel-callout',
-        'statd-callout'
-    ]
-
-    test_link_dir = os.path.join(bld.env.CTDB_TEST_DATADIR,
-                                 'eventscripts/etc-ctdb')
-    for t in test_eventscript_links:
-        bld.symlink_as(os.path.join(test_link_dir, t),
-                       os.path.join(bld.env.CTDB_ETCDIR, t))
-
     # Tests that use onnode need to overwrite link to in-tree
     # functions file when installed
     bld.symlink_as(os.path.join(bld.env.CTDB_TEST_DATADIR, 'onnode/functions'),

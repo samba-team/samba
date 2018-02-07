@@ -21,12 +21,13 @@ PATH="${stubs_dir}:${PATH}"
 
 export CTDB="ctdb"
 
+[ -n "$TEST_VAR_DIR" ] || die "TEST_VAR_DIR unset"
 export EVENTSCRIPTS_TESTS_VAR_DIR="${TEST_VAR_DIR}/unit_eventscripts"
-if [ -d "$EVENTSCRIPTS_TESTS_VAR_DIR" -a \
-    "$EVENTSCRIPTS_TESTS_VAR_DIR" != "/unit_eventscripts" ] ; then
-    rm -r "$EVENTSCRIPTS_TESTS_VAR_DIR"
+if [ -d "$EVENTSCRIPTS_TESTS_VAR_DIR" ] ; then
+	rm -r "$EVENTSCRIPTS_TESTS_VAR_DIR"
 fi
 mkdir -p "$EVENTSCRIPTS_TESTS_VAR_DIR"
+
 export CTDB_SCRIPT_VARDIR="$EVENTSCRIPTS_TESTS_VAR_DIR/scripts"
 
 export CTDB_LOGGING="file:${EVENTSCRIPTS_TESTS_VAR_DIR}/log.ctdb"
@@ -40,38 +41,12 @@ else
     die "Unable to setup \$CTDB_SYS_ETCDIR"
 fi
 
-if [ -d "${TEST_SUBDIR}/etc-ctdb" ] ; then
-    cp -prL "${TEST_SUBDIR}/etc-ctdb" "$EVENTSCRIPTS_TESTS_VAR_DIR"
-    export CTDB_BASE="${EVENTSCRIPTS_TESTS_VAR_DIR}/etc-ctdb"
-else
-    die "Unable to set \$CTDB_BASE"
-fi
-export CTDB_BASE
-
-if [ ! -d "${CTDB_BASE}/events.d" ] ; then
-    cat <<EOF
-ERROR: Directory ${CTDB_BASE}/events.d does not exist.
-
-That means that no eventscripts can be tested.
-
-One possible explanation:
-
-  You have CTDB installed via RPMs (or similar), so the regular
-  CTDB_BASE directory is in /etc/ctdb/
-
-  BUT
-
-  You have done a regular "configure" and "make install" so the tests
-  are installed under /usr/local/.
-
-If so, one possible hack to fix this is to create a symlink:
-
-  ln -s /etc/ctdb /usr/local/etc/ctdb
-
-This is nasty but it works...  :-)
-EOF
-    exit 1
-fi
+setup_ctdb_base "$EVENTSCRIPTS_TESTS_VAR_DIR" "etc-ctdb" \
+		events.d \
+		functions \
+		nfs-checks.d \
+		nfs-linux-kernel-callout \
+		statd-callout
 
 ######################################################################
 
