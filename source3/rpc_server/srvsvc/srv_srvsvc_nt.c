@@ -82,6 +82,7 @@ struct share_conn_stat {
 ********************************************************************/
 
 static int enum_file_fn(const struct share_mode_entry *e,
+			const struct file_id *id,
 			const char *sharepath,
 			const char *fname,
 			const char *sname,
@@ -173,7 +174,7 @@ static WERROR net_enum_files(TALLOC_CTX *ctx,
 	f_enum_cnt.username = username;
 	f_enum_cnt.ctr3 = *ctr3;
 
-	share_entry_forall( enum_file_fn, (void *)&f_enum_cnt );
+	share_entry_forall(enum_file_fn, (void *)&f_enum_cnt );
 
 	*ctr3 = f_enum_cnt.ctr3;
 
@@ -841,6 +842,7 @@ static WERROR init_srv_sess_info_0(struct pipes_struct *p,
  **********************************************************************/
 
 static int count_sess_files_fn(const struct share_mode_entry *e,
+			       const struct file_id *id,
 			       const char *sharepath,
 			       const char *fname,
 			       const char *sname,
@@ -968,6 +970,7 @@ static WERROR init_srv_sess_info_1(struct pipes_struct *p,
  ********************************************************************/
 
 static int share_file_fn(const struct share_mode_entry *e,
+			 const struct file_id *id,
 			 const char *sharepath,
 			 const char *fname,
 			 const char *sname,
@@ -2699,6 +2702,7 @@ struct enum_file_close_state {
 };
 
 static int enum_file_close_fn(const struct share_mode_entry *e,
+			      const struct file_id *id,
 			      const char *sharepath,
 			      const char *fname,
 			      const char *sname,

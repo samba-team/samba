@@ -117,6 +117,7 @@ static bool Ucrit_addPid( struct server_id pid )
 }
 
 static int print_share_mode(const struct share_mode_entry *e,
+			    const struct file_id *id,
 			    const char *sharepath,
 			    const char *fname,
 			    const char *sname,
