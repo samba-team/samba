@@ -48,6 +48,8 @@ if [ -d "$_test_bin_dir" ] ; then
 	PATH="${_test_bin_dir}:$PATH"
 fi
 
+. "${TEST_SCRIPTS_DIR}/script_install_paths.sh"
+
 # Wait until either timeout expires or command succeeds.  The command
 # will be tried once per second, unless timeout has format T/I, where
 # I is the recheck interval.
@@ -90,4 +92,37 @@ wait_until ()
     echo "*TIMEOUT*"
 
     return 1
+}
+
+# setup_ctdb_base <parent> <subdir> [item-to-copy]...
+setup_ctdb_base ()
+{
+	[ $# -ge 2 ] || die "usage: setup_ctdb_base <parent> <subdir> [item]..."
+	# If empty arguments are passed then we attempt to remove /
+	# (i.e. the root directory) below
+	[ -n "$1" -a -n "$2" ] || \
+		die "usage: setup_ctdb_base <parent> <subdir> [item]..."
+
+	_parent="$1"
+	_subdir="$2"
+
+	# Other arguments are files/directories to copy
+	shift 2
+
+	export CTDB_BASE="${_parent}/${_subdir}"
+	if [ -d "$CTDB_BASE" ] ; then
+		rm -r "$CTDB_BASE"
+	fi
+	mkdir -p  "$CTDB_BASE" || die "Failed to create CTDB_BASE=$CTDB_BASE"
+
+	for _i ; do
+		cp -pr "${CTDB_SCRIPTS_BASE}/${_i}" "${CTDB_BASE}/"
+	done
+
+	for _i in "${TEST_SUBDIR}/etc-ctdb/"* ; do
+		# No/empty etc-ctdb directory
+		[ -e "$_i" ] || break
+
+		cp -pr "$_i" "${CTDB_BASE}/"
+	done
 }
