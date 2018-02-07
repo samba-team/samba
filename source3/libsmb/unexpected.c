@@ -175,7 +175,6 @@ static void nb_packet_server_listener(struct tevent_context *ev,
 	}
 
 	client->server = server;
-	talloc_set_destructor(client, nb_packet_client_destructor);
 
 	client->out_queue = tevent_queue_create(
 		client, "unexpected packet output");
@@ -197,6 +196,8 @@ static void nb_packet_server_listener(struct tevent_context *ev,
 
 	DLIST_ADD(server->clients, client);
 	server->num_clients += 1;
+
+	talloc_set_destructor(client, nb_packet_client_destructor);
 
 	if (server->num_clients > server->max_clients) {
 		DEBUG(10, ("Too many clients, dropping oldest\n"));
