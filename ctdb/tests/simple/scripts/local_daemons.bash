@@ -159,7 +159,13 @@ setup_ctdb ()
 	local pnn
 	for pnn in $(seq 0 $(($TEST_LOCAL_DAEMONS - 1))) ; do
 		local node_dir=$(node_dir "$pnn")
-		mkdir -p "$node_dir"
+
+		setup_ctdb_base "$SIMPLE_TESTS_VAR_DIR" "node.${pnn}" \
+				functions
+
+		if [ "$node_dir" != "$CTDB_BASE" ] ; then
+			die "Inconsistent CTDB_BASE"
+		fi
 
 		local public_addresses="${node_dir}/public_addresses"
 
@@ -202,6 +208,7 @@ EOF
 start_ctdb_1 ()
 {
 	local pnn="$1"
+	local node_dir=$(node_dir "$pnn")
 	local pidfile=$(node_pidfile "$pnn")
 	local conf=$(node_conf "$pnn")
 
@@ -218,6 +225,7 @@ start_ctdb_1 ()
 	fi
 
 	CTDBD="${VALGRIND} ctdbd --sloppy-start --nopublicipcheck" \
+	     CTDB_BASE="$node_dir" \
 	     CTDBD_CONF="$conf" \
 	     CTDB_PIDFILE="$pidfile" \
 	     ctdbd_wrapper start
@@ -240,12 +248,14 @@ daemons_start ()
 stop_ctdb_1 ()
 {
 	local pnn="$1"
+	local node_dir=$(node_dir "$pnn")
 	local pidfile=$(node_pidfile "$pnn")
 	local conf=$(node_conf "$pnn")
 
-	CTDBD_CONF="$conf" \
-		  CTDB_PIDFILE="$pidfile" \
-		  ctdbd_wrapper stop
+	CTDB_BASE="$node_dir" \
+		 CTDBD_CONF="$conf" \
+		 CTDB_PIDFILE="$pidfile" \
+		 ctdbd_wrapper stop
 }
 
 daemons_stop ()
@@ -298,3 +308,7 @@ for i in $(seq 0 $(($TEST_LOCAL_DAEMONS - 1))) ; do
     socket=$(node_socket "$i")
     CTDB_NODES_SOCKETS="${CTDB_NODES_SOCKETS}${CTDB_NODES_SOCKETS:+ }${socket}"
 done
+
+# Need a default CTDB_BASE for onnode (to find the functions file).
+# Any node will do, so pick the 1st...
+export CTDB_BASE=$(node_dir 0)
