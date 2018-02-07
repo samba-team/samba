@@ -1,12 +1,12 @@
 Release Announcements
 =====================
 
-This is the first release candidate of Samba 4.8.  This is *not*
+This is the first preview release of Samba 4.9.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
 
-Samba 4.8 will be the next version of the Samba suite.
+Samba 4.9 will be the next version of the Samba suite.
 
 
 UPGRADING
@@ -16,177 +16,10 @@ UPGRADING
 NEW FEATURES/CHANGES
 ====================
 
-KDC GPO application
--------------------
-
-Adds Group Policy support for the Samba kdc. Applies password policies
-(minimum/maximum password age, minimum password length, and password
-complexity) and kerberos policies (user/service ticket lifetime and
-renew lifetime).
-
-Adds the samba_gpoupdate script for applying and unapplying
-policy. Can be applied automatically by setting
-
- 'apply group policies = yes'.
-
-Time Machine Support with vfs_fruit
------------------------------------
-
-Samba can be configured as a Time Machine target for Apple Mac devices
-through the vfs_fruit module. When enabling a share for Time Machine
-support the relevant Avahi records to support discovery will be published
-for installations that have been built against the Avahi client library.
-
-Shares can be designated as a Time Machine share with the following setting:
-
-  'fruit:time machine = yes'
-
-Support for lower casing the MDNS Name
---------------------------------------
-
-Allows the server name that is advertised through MDNS to be set to the
-hostname rather than the Samba NETBIOS name. This allows an administrator
-to make Samba registered MDNS records match the case of the hostname
-rather than being in all capitals.
-
-This can be set with the following settings:
-
-  'mdns name = mdns'
-
-Encrypted secrets
------------------
-
-Attributes deemed to be sensitive are now encrypted on disk. The sensitive
-values are currently:
-	pekList
-	msDS-ExecuteScriptPassword
-	currentValue
-	dBCSPwd
-	initialAuthIncoming
-	initialAuthOutgoing
-	lmPwdHistory
-	ntPwdHistory
-	priorValue
-	supplementalCredentials
-	trustAuthIncoming
-	trustAuthOutgoing
-	unicodePwd
-	clearTextPassword
-
-This encryption is enabled by default on a new provision or join, it
-can be disabled at provision or join time with the new option
-'--plaintext-secrets'.
-
-However, an in-place upgrade will not encrypt the database.
-
-Once encrypted, it is not possible to do an in-place downgrade (eg to
-4.7) of the database. To obtain an unencrypted copy of the database a
-new DC join should be performed, specifying the '--plaintext-secrets'
-option.
-
-The key file "encrypted_secrets.key" is created in the same directory
-as the database and should NEVER be disclosed.  It is included by the
-samba_backup script.
-
-Active Directory replication visualisation
-------------------------------------------
-
-To work out what is happening in a replication graph, it is sometimes
-helpful to use visualisations. We introduce a samba-tool subcommand to
-write Graphviz dot output and generate text-based heatmaps of the
-distance in hops between DCs.
-
-There are two subcommands, two graphical modes, and (roughly) two modes of
-operation with respect to the location of authority.
-
-`samba-tool visualize ntdsconn` looks at NTDS Connections.
-`samba-tool visualize reps` looks at repsTo and repsFrom objects.
-
-In '--distance' mode (default), the distances between DCs are shown in
-a matrix in the terminal. With '--color=yes', this is depicted as a
-heatmap. With '--utf8' it is a lttle prettier.
-
-In '--dot' mode, Graphviz dot output is generated. When viewed using
-dot or xdot, this shows the network as a graph with DCs as vertices
-and connections edges. Certain types of degenerate edges are shown in
-different colours or line-styles.
-
-NT4-style replication based net commands removed
-------------------------------------------------
-
-The following commands and sub-commands have been removed from the
-"net" utility:
-
-net rpc samdump
-net rpc vampire ldif
-
-Also, replicating from a real NT4 domain with "net rpc vampire" and
-"net rpc vampire keytab" has been removed.
-
-The NT4-based commands were accidentially broken in 2013, and nobody
-noticed the breakage. So instead of fixing them including tests (which
-would have meant writing a server for the protocols, which we don't
-have) we decided to remove them.
-
-For the same reason, the "samsync", "samdeltas" and "database_redo"
-commands have been removed from rpcclient.
-
-"net rpc vampire keytab" from Active Directory domains continues to be
-supported.
-
-vfs_aio_linux module removed
-----------------------------
-
-The current Linux kernel aio does not match what Samba would
-do. Shipping code that uses it leads people to false
-assumptions. Samba implements async I/O based on threads by default,
-there is no special module required to see benefits of read and write
-request being sent do the disk in parallel.
-
-smbclient reparse point symlink parameters reversed
----------------------------------------------------
-
-A bug in smbclient caused the 'symlink' command to reverse the
-meaning of the new name and link target parameters when creating a
-reparse point symlink against a Windows server. As this is a
-little used feature the ordering of these parameters has been
-reversed to match the parameter ordering of the UNIX extensions
-'symlink' command. The usage message for this command has also
-been improved to remove confusion.
-
-Winbind changes
----------------
-
-The dependency to global list of trusted domains within
-the winbindd processes has been reduced a lot.
-
-The construction of that global list is not reliable and often
-incomplete in complex trust setups. In most situations the list is not needed
-any more for winbindd to operate correctly. E.g. for plain file serving via SMB
-using a simple idmap setup with autorid, tdb or ad. However some more complex
-setups require the list, e.g. if you specify idmap backends for specific
-domains. Some pam_winbind setups may also require the global list.
-
-If you have a setup that doesn't require the global list, you should set
-"winbind scan trusted domains = no".
-
 
 REMOVED FEATURES
 ================
 
-The two commands 'net serverid list' and 'net serverid wipe' have been
-removed, because the file serverid.tdb is not used anymore.
-
-'net serverid list' can be replaced by listing all files in the
-subdirectory "msg.lock" of Samba's "lock directory". The unique id
-listed by 'net serverid list' is stored in every process' lockfile in
-"msg.lock".
-
-'net serverid wipe' is not necessary anymore. It was meant primarily
-for clustered environments, where the serverid.tdb file was not
-properly cleaned up after single node crashes. Nowadays smbd and
-winbind take care of cleaning up the msg.lock and msg.sock directories
-automatically.
 
 
 smb.conf changes
@@ -194,31 +27,12 @@ smb.conf changes
 
   Parameter Name                     Description             Default
   --------------                     -----------             -------
-  apply group policies               New                     no
-  auth methods                       Removed
-  binddns dir                        New
-  client schannel                    Default changed/        yes
-                                     Deprecated
-  gpo update command                 New
-  ldap ssl ads                       Deprecated
-  map untrusted to domain            Removed
-  oplock contention limit            Removed
-  prefork children                   New                     1
-  mdns name                          Added                   netbios
-  fruit:time machine                 Added                   false
-  profile acls                       Removed
-  use spnego                         Removed
-  server schannel                    Default changed/        yes
-                                     Deprecated
-  unicode                            Deprecated
-  winbind scan trusted domains       New                     yes
-  winbind trusted domains only       Removed
 
 
 KNOWN ISSUES
 ============
 
-https://wiki.samba.org/index.php/Release_Planning_for_Samba_4.8#Release_blocking_bugs
+https://wiki.samba.org/index.php/Release_Planning_for_Samba_4.9#Release_blocking_bugs
 
 
 #######################################
