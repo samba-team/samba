@@ -1283,6 +1283,11 @@ define_test ()
 
     printf "%-17s %-10s %-4s - %s\n\n" "$script" "$event" "$_num" "$desc"
 
+    _f="${TEST_SUBDIR}/scripts/${script}.sh"
+    if [ -r "$_f" ] ; then
+	    . "$_f"
+    fi
+
     ctdb_set_pnn 0
 }
 
