@@ -8,23 +8,15 @@ stubs_dir="${TEST_SUBDIR}/stubs"
 [ -d "${stubs_dir}" ] || die "Failed to locate stubs/ subdirectory"
 PATH="${stubs_dir}:${PATH}"
 
-# Find CTDB nodes file.
-if [ -z "$CTDB_NODES_FILE" ] ; then
-    if [ -r "${TEST_SUBDIR}/nodes" ] ; then
-	CTDB_NODES_FILE="${TEST_SUBDIR}/nodes"
-    else
-	CTDB_NODES_FILE="${CTDB_BASE:-/etc/ctdb}/nodes"
-    fi
-fi
-
-export CTDB_NODES_FILE
-
+[ -n "$TEST_VAR_DIR" ] || die "TEST_VAR_DIR unset"
 export ONNODE_TESTS_VAR_DIR="${TEST_VAR_DIR}/unit_onnode"
+if [ -d "$ONNODE_TESTS_VAR_DIR" ] ; then
+	rm -r "$ONNODE_TESTS_VAR_DIR"
+fi
 mkdir -p "$ONNODE_TESTS_VAR_DIR"
 
-if [ -z "$CTDB_BASE" ] ; then
-    export CTDB_BASE=$(dirname "$CTDB_NODES_FILE")
-fi
+setup_ctdb_base "$ONNODE_TESTS_VAR_DIR" "etc-ctdb" \
+		functions
 
 define_test ()
 {
