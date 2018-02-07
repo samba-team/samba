@@ -1,4 +1,91 @@
                    =============================
+                   Release Notes for Samba 4.7.5
+                          February 7, 2018
+                   =============================
+
+
+This is the latest stable release of the Samba 4.7 release series.
+
+Major enhancements include:
+
+o  BUG 13228: This is a major issue in Samba's ActiveDirectory domain
+   controller code. It might happen that AD objects have missing or broken
+   linked attributes. This could lead to broken group memberships e.g.
+   All Samba AD domain controllers set up with Samba 4.6 or lower and then
+   upgraded to 4.7 are affected. The corrupt database can be fixed with
+   'samba-tool dbcheck --cross-ncs --fix'.
+
+
+Changes since 4.7.4:
+--------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 13193: smbd tries to release not leased oplock during oplock II
+     downgrade.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 13181: Fix copying file with empty FinderInfo from Windows client
+     to Samba share with fruit.
+
+o  Günther Deschner <gd@samba.org>
+   * BUG 10976: build: Deal with recent glibc sunrpc header removal.
+   * BUG 13238: Make Samba work with tirpc and libnsl2.
+
+o  David Disseldorp <ddiss@samba.org>
+   * BUG 13208: vfs_ceph: Add fs_capabilities hook to avoid local statvfs.
+
+o  Love Hornquist Astrand <lha@h5l.org>
+   * BUG 12986: Kerberos: PKINIT: Can't decode algorithm parameters in
+     clientPublicValue.
+
+o  Amitay Isaacs <amitay@gmail.com>
+   * BUG 13188: ctdb-recovery-helper: Deregister message handler in error
+     paths.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 13240: samba: Only use async signal-safe functions in signal handler.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 12986: Kerberos: PKINIT: Can't decode algorithm parameters in
+     clientPublicValue.
+   * BUG 13228: repl_meta_data: Fix linked attribute corruption on databases
+     with unsorted links on expunge. dbcheck: Add functionality to fix the
+     corrupt database.
+
+o  Christof Schmitt <cs@samba.org>
+   * BUG 13189: Fix smbd panic when chdir returns error during exit.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 13238: Make Samba work with tirpc and libnsl2.
+
+o  Uri Simchoni <uri@samba.org>
+   * BUG 13176: Fix POSIX ACL support on HPUX and possibly other big-endian OSs.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   =============================
                    Release Notes for Samba 4.7.4
                           December 22, 2017
                    =============================
@@ -119,8 +206,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    =============================
                    Release Notes for Samba 4.7.3
