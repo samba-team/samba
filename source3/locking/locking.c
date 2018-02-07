@@ -722,7 +722,7 @@ static void remove_share_mode_lease(struct share_mode_data *d,
 
 		status = leases_db_del(&client_guid,
 					&lease_key,
-					&e->id);
+					&d->id);
 
 		DEBUG(10, ("%s: leases_db_del returned %s\n", __func__,
 			   nt_errstr(status)));
