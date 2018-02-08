@@ -4,7 +4,7 @@
 
 define_test "VLAN on bond, active slaves, link down"
 
-setup_ctdb
+setup
 
 iface=$(ctdb_get_1_interface)
 

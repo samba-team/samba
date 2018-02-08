@@ -88,11 +88,6 @@ setup_date ()
 setup_generic ()
 {
     setup_shares
-
-    export FAKE_PROC_NET_BONDING="$EVENTSCRIPTS_TESTS_VAR_DIR/proc-net-bonding"
-    mkdir -p "$FAKE_PROC_NET_BONDING"
-    rm -f "$FAKE_PROC_NET_BONDING"/*
-
     setup_dbdir
     setup_date
 
@@ -286,8 +281,6 @@ setup_ctdb ()
     setup_generic
 
     setup_public_addresses
-
-    export CTDB_PARTIALLY_ONLINE_INTERFACES
 }
 
 validate_percentage ()

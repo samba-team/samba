@@ -4,7 +4,7 @@
 
 define_test "add an ip"
 
-setup_ctdb
+setup
 
 public_address=$(ctdb_get_1_public_address)
 

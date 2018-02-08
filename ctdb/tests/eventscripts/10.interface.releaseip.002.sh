@@ -4,7 +4,7 @@
 
 define_test "error - remove a non-existent ip"
 
-setup_ctdb
+setup
 
 public_address=$(ctdb_get_1_public_address)
 ip="${public_address% *}" ; ip="${ip#* }"

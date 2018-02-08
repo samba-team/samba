@@ -4,13 +4,13 @@
 
 define_test "CTDB_PARTIALLY_ONLINE_INTERFACES, 1 bond down"
 
-setup_ctdb
+setup
 
 iface=$(ctdb_get_1_interface)
 
 setup_bond $iface "None"
 
-export CTDB_PARTIALLY_ONLINE_INTERFACES="yes"
+CTDB_PARTIALLY_ONLINE_INTERFACES=yes
 
 ethtool_interfaces_down "$iface"
 

@@ -4,7 +4,7 @@
 
 define_test "1 bond, no active slaves"
 
-setup_ctdb
+setup
 
 iface=$(ctdb_get_1_interface)
 

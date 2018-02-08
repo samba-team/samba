@@ -4,7 +4,7 @@
 
 define_test "all interfaces up, 1 is a bond"
 
-setup_ctdb
+setup
 
 iface=$(ctdb_get_1_interface)
 

@@ -4,7 +4,7 @@
 
 define_test "1 VLAN, link down"
 
-setup_ctdb
+setup
 
 iface=$(ctdb_get_1_interface)
 

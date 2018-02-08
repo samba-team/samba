@@ -4,7 +4,7 @@
 
 define_test "no public addresses"
 
-setup_ctdb
+setup
 
 rm -f "${CTDB_BASE}/public_addresses"
 

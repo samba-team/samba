@@ -4,7 +4,7 @@
 
 define_test "error - no args given"
 
-setup_ctdb
+setup
 
 iface=$(ctdb_get_1_interface)
 

@@ -4,7 +4,7 @@
 
 define_test "Release 1 IP, all 10 connections kills fail"
 
-setup_ctdb
+setup
 
 ctdb_get_1_public_address |
 while read dev ip bits ; do

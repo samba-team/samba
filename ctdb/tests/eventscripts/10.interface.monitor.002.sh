@@ -4,7 +4,7 @@
 
 define_test "all interfaces up"
 
-setup_ctdb
+setup
 
 ok_null
 

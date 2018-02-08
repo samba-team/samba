@@ -4,7 +4,7 @@
 
 define_test "Missing interface, fail"
 
-setup_ctdb
+setup
 
 iface=$(ctdb_get_1_interface)
 ip link delete "$iface"

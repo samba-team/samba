@@ -4,7 +4,7 @@
 
 define_test "spurious addresses on interface, no action"
 
-setup_ctdb
+setup
 
 iface=$(ctdb_get_1_interface)
 

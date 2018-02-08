@@ -1,3 +1,10 @@
+setup ()
+{
+	setup_public_addresses
+
+	export CTDB_PARTIALLY_ONLINE_INTERFACES=""
+}
+
 _tcp_connections ()
 {
 	_count="$1"
@@ -19,7 +26,7 @@ _tcp_connections ()
 
 setup_tcp_connections ()
 {
-	_t=$(mktemp --tmpdir="$EVENTSCRIPTS_TESTS_VAR_DIR")
+	_t="${FAKE_NETWORK_STATE}/tcp-established"
 	export FAKE_NETSTAT_TCP_ESTABLISHED_FILE="$_t"
 	_tcp_connections "$@" >"$FAKE_NETSTAT_TCP_ESTABLISHED_FILE"
 }
@@ -49,6 +56,11 @@ setup_bond ()
 	cat <<EOF
 Setting $_iface to be a bond with active slave $_slave and MII status $_mii_s
 EOF
+
+	_t="${FAKE_NETWORK_STATE}/proc-net-bonding"
+	export FAKE_PROC_NET_BONDING="$_t"
+	mkdir -p "$FAKE_PROC_NET_BONDING"
+
 	cat >"${FAKE_PROC_NET_BONDING}/$_iface" <<EOF
 Bonding Mode: IEEE 802.3ad Dynamic link aggregation
 Currently Active Slave: $_slave

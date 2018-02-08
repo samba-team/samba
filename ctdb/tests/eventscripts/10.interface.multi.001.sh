@@ -4,7 +4,7 @@
 
 define_test "takeip, removeip"
 
-setup_ctdb
+setup
 
 public_address=$(ctdb_get_1_public_address)
 

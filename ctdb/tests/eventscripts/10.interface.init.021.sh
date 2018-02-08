@@ -4,7 +4,7 @@
 
 define_test "Check public IP dropping, none assigned"
 
-setup_ctdb
+setup
 
 ok_null
 

@@ -4,7 +4,7 @@
 
 define_test "Check public IP dropping, 1 assigned"
 
-setup_ctdb
+setup
 
 ctdb_get_1_public_address |
 while read dev ip bits ; do

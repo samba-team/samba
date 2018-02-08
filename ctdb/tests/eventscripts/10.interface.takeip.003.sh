@@ -4,7 +4,7 @@
 
 define_test "error - add same IP twice"
 
-setup_ctdb
+setup
 
 public_address=$(ctdb_get_1_public_address)
 dev="${public_address%% *}"
