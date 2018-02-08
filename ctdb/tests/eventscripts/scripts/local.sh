@@ -71,6 +71,18 @@ fi
 
 # General setup fakery
 
+# The current implementation just assumes each non-comment line of
+# input is a variable assignment and evals it with export prepended.
+setup_script_options ()
+{
+	while read line ; do
+		case "$line" in
+		\#*|"") : ;;
+		*) eval "export $line"
+		esac
+	done
+}
+
 setup_dbdir ()
 {
 	export CTDB_DBDIR="${EVENTSCRIPTS_TESTS_VAR_DIR}/db"
