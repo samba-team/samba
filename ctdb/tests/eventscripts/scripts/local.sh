@@ -28,8 +28,6 @@ if [ -d "$EVENTSCRIPTS_TESTS_VAR_DIR" ] ; then
 fi
 mkdir -p "$EVENTSCRIPTS_TESTS_VAR_DIR"
 
-export CTDB_SCRIPT_VARDIR="$EVENTSCRIPTS_TESTS_VAR_DIR/scripts"
-
 export CTDB_LOGGING="file:${EVENTSCRIPTS_TESTS_VAR_DIR}/log.ctdb"
 touch "${CTDB_LOGGING#file:}" || \
     die "Unable to setup logging for \"$CTDB_LOGGING\""
@@ -341,15 +339,14 @@ ctdb_set_pnn ()
     export FAKE_CTDB_PNN="$1"
     echo "Setting up PNN ${FAKE_CTDB_PNN}"
 
-    export CTDB_SCRIPT_VARDIR="$EVENTSCRIPTS_TESTS_VAR_DIR/script-state/${FAKE_CTDB_PNN}"
+    CTDB_SCRIPT_VARDIR="${EVENTSCRIPTS_TESTS_VAR_DIR}/scripts/${FAKE_CTDB_PNN}"
+    export CTDB_SCRIPT_VARDIR
     mkdir -p "$CTDB_SCRIPT_VARDIR"
 }
 
 setup_ctdb ()
 {
     setup_generic
-
-    ctdb_set_pnn "${2:-0}"
 
     setup_public_addresses
 
@@ -1285,6 +1282,8 @@ define_test ()
 	die "Internal error - unable to find script \"${script_dir}/${script}\""
 
     printf "%-17s %-10s %-4s - %s\n\n" "$script" "$event" "$_num" "$desc"
+
+    ctdb_set_pnn 0
 }
 
 # Run an eventscript once.  The test passes if the return code and
