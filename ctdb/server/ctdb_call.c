@@ -1464,6 +1464,7 @@ struct ctdb_call_state *ctdb_daemon_call_send_remote(struct ctdb_db_context *ctd
 	uint32_t len;
 	struct ctdb_call_state *state;
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
+	struct ctdb_req_call_old *c;
 
 	if (ctdb->methods == NULL) {
 		DEBUG(DEBUG_INFO,(__location__ " Failed send packet. Transport is down\n"));
@@ -1479,30 +1480,39 @@ struct ctdb_call_state *ctdb_daemon_call_send_remote(struct ctdb_db_context *ctd
 	state->ctdb_db = ctdb_db;
 	talloc_set_destructor(state, ctdb_call_destructor);
 
-	len = offsetof(struct ctdb_req_call_old, data) + call->key.dsize + call->call_data.dsize;
-	state->c = ctdb_transport_allocate(ctdb, state, CTDB_REQ_CALL, len, 
-					   struct ctdb_req_call_old);
-	CTDB_NO_MEMORY_NULL(ctdb, state->c);
-	state->c->hdr.destnode  = header->dmaster;
-
-	/* this limits us to 16k outstanding messages - not unreasonable */
-	state->c->hdr.reqid     = state->reqid;
-	state->c->hdr.generation = ctdb_db->generation;
-	state->c->flags         = call->flags;
-	state->c->db_id         = ctdb_db->db_id;
-	state->c->callid        = call->call_id;
-	state->c->hopcount      = 0;
-	state->c->keylen        = call->key.dsize;
-	state->c->calldatalen   = call->call_data.dsize;
-	memcpy(&state->c->data[0], call->key.dptr, call->key.dsize);
-	memcpy(&state->c->data[call->key.dsize], 
-	       call->call_data.dptr, call->call_data.dsize);
-	*(state->call)              = *call;
-	state->call->call_data.dptr = &state->c->data[call->key.dsize];
-	state->call->key.dptr       = &state->c->data[0];
-
 	state->state  = CTDB_CALL_WAIT;
 	state->generation = ctdb_db->generation;
+
+	len = offsetof(struct ctdb_req_call_old, data) + call->key.dsize +
+		       call->call_data.dsize;
+
+	c = ctdb_transport_allocate(ctdb,
+				    state,
+				    CTDB_REQ_CALL,
+				    len,
+				    struct ctdb_req_call_old);
+
+	CTDB_NO_MEMORY_NULL(ctdb, c);
+	state->c = c;
+
+	c->hdr.destnode  = header->dmaster;
+	c->hdr.reqid     = state->reqid;
+	c->hdr.generation = ctdb_db->generation;
+	c->flags         = call->flags;
+	c->db_id         = ctdb_db->db_id;
+	c->callid        = call->call_id;
+	c->hopcount      = 0;
+	c->keylen        = call->key.dsize;
+	c->calldatalen   = call->call_data.dsize;
+
+	memcpy(&c->data[0], call->key.dptr, call->key.dsize);
+	memcpy(&c->data[call->key.dsize],
+	       call->call_data.dptr,
+	       call->call_data.dsize);
+
+	*(state->call) = *call;
+	state->call->call_data.dptr = &c->data[call->key.dsize];
+	state->call->key.dptr       = &c->data[0];
 
 	DLIST_ADD(ctdb_db->pending_calls, state);
 
