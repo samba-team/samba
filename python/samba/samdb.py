@@ -999,10 +999,13 @@ accountExpires: %u
         return dsdb._dsdb_allocate_rid(self)
 
     def normalize_dn_in_domain(self, dn):
-        """return full dn of an relative dn
+        '''return a new DN expanded by adding the domain DN
+
+        If the dn is already a child of the domain DN, just
+        return it as-is.
 
         :param dn: relative dn
-        """
+        '''
         domain_dn = ldb.Dn(self, self.domain_dn())
 
         if isinstance(dn, ldb.Dn):
