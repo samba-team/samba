@@ -265,3 +265,52 @@ class DsdbTests(TestCase):
                 self.fail("Got %d - %s should have got "
                           "LDB_ERR_CONSTRAINT_VIOLATION"
                           % (code, msg))
+
+    def test_normalize_dn_in_domain_full(self):
+        domain_dn = self.samdb.domain_dn()
+
+        part_dn = ldb.Dn(self.samdb, "CN=Users")
+
+        full_dn = part_dn
+        full_dn.add_base(domain_dn)
+
+        full_str = str(full_dn)
+
+        # That is, no change
+        self.assertEqual(full_dn,
+                         self.samdb.normalize_dn_in_domain(full_str))
+
+    def test_normalize_dn_in_domain_part(self):
+        domain_dn = self.samdb.domain_dn()
+
+        part_str = "CN=Users"
+
+        full_dn = ldb.Dn(self.samdb, part_str)
+        full_dn.add_base(domain_dn)
+
+        # That is, the domain DN appended
+        self.assertEqual(full_dn,
+                         self.samdb.normalize_dn_in_domain(part_str))
+
+    def test_normalize_dn_in_domain_full_dn(self):
+        domain_dn = self.samdb.domain_dn()
+
+        part_dn = ldb.Dn(self.samdb, "CN=Users")
+
+        full_dn = part_dn
+        full_dn.add_base(domain_dn)
+
+        # That is, no change
+        self.assertEqual(full_dn,
+                         self.samdb.normalize_dn_in_domain(full_dn))
+
+    def test_normalize_dn_in_domain_part_dn(self):
+        domain_dn = self.samdb.domain_dn()
+
+        part_dn = ldb.Dn(self.samdb, "CN=Users")
+
+        # That is, the domain DN appended
+        self.assertEqual(ldb.Dn(self.samdb,
+                                str(part_dn) + "," + str(domain_dn)),
+                         self.samdb.normalize_dn_in_domain(part_dn))
+
