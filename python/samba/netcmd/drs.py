@@ -95,6 +95,10 @@ class cmd_drs_showrepl(Command):
         "credopts": options.CredentialsOptions,
     }
 
+    takes_options = [
+        Option("--json", help="output in JSON format", action='store_true'),
+    ]
+
     takes_args = ["DC?"]
 
     def parse_neighbour(self, n):
@@ -144,7 +148,7 @@ class cmd_drs_showrepl(Command):
         return (info_type, info)
 
     def run(self, DC=None, sambaopts=None,
-            credopts=None, versionopts=None, server=None):
+            credopts=None, versionopts=None, server=None, json=False):
 
         self.lp = sambaopts.get_loadparm()
         if DC is None:
@@ -208,6 +212,17 @@ class cmd_drs_showrepl(Command):
             for r in c.get('mS-DS-ReplicatesNCReason', []):
                 a = str(r).split(':')
                 d['replicates NC'].append((a[3], int(a[2])))
+
+        if json:
+            import json as json_mod
+            data = {
+                'dsa': dsa_details,
+                'repsFrom': repsfrom,
+                'repsTo': repsto,
+                'NTDSConnections': conn_details
+            }
+            json_mod.dump(data, self.outf, indent=2)
+            return
 
         self.message("%s\\%s" % (site, server))
         self.message("DSA Options: 0x%08x" % dsa_details["options"])
