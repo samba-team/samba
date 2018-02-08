@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the second release candidate of Samba 4.8.  This is *not*
+This is the third release candidate of Samba 4.8.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -219,6 +219,22 @@ smb.conf changes
   unicode                            Deprecated
   winbind scan trusted domains       New                     yes
   winbind trusted domains only       Removed
+
+
+CHANGES SINCE 4.8.0rc2
+======================
+
+o  Trever L. Adams <trever.adams@gmail.com>
+   * BUG 13246: Backport Samba VirusFilter.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 13228: dbcheck: Add support for restoring missing forward links.
+
+o  Günther Deschner <gd@samba.org>
+   * BUG 13221: python: fix the build with python3.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 13228: dbcheck: Add support for restoring missing forward links.
 
 
 CHANGES SINCE 4.8.0rc1
