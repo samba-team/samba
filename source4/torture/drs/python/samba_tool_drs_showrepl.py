@@ -20,9 +20,21 @@
 from __future__ import print_function
 import samba.tests
 import drs_base
+import re
+
+GUID_RE = r'[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}'
+HEX8_RE = r'0x[\da-f]{8}'
+DN_RE = r'(?:(?:CN|DC)=[\\:\w -]+,)+DC=com'
+
 
 class SambaToolDrsShowReplTests(drs_base.DrsBaseTestCase):
     """Blackbox test case for samba-tool drs."""
+
+    def assertRegex(self, exp, s, flags=0):
+        m = re.search(exp, s, flags=flags)
+        if m is None:
+            self.fail("%r did not match /%s/" % (s, exp))
+        return m
 
     def setUp(self):
         super(SambaToolDrsShowReplTests, self).setUp()
@@ -52,6 +64,49 @@ class SambaToolDrsShowReplTests(drs_base.DrsBaseTestCase):
         out = self.check_output("samba-tool drs showrepl "
                                 "%s %s" % (self.dc1, self.cmdline_creds))
 
-        self.assertTrue("DSA Options:" in out)
-        self.assertTrue("DSA object GUID:" in out)
-        self.assertTrue("DSA invocationId:" in out)
+        # We want to assert that we are getting the same results, but
+        # dates and GUIDs change randomly.
+        #
+        # There are sections with headers like ==== THIS ===="
+        (header,
+         _inbound, inbound,
+         _outbound, outbound,
+         _conn, conn) = out.split("====")
+
+        self.assertEqual(_inbound, ' INBOUND NEIGHBORS ')
+        self.assertEqual(_outbound, ' OUTBOUND NEIGHBORS ')
+        self.assertEqual(_conn, ' KCC CONNECTION OBJECTS ')
+
+        self.assertRegex(r'^Default-First-Site-Name\\LOCALDC\s+'
+                         r"DSA Options: %s\s+"
+                         r"DSA object GUID: %s\s+"
+                         r"DSA invocationId: %s" %
+                         (HEX8_RE, GUID_RE, GUID_RE), header)
+
+        for p in ['DC=DomainDnsZones,DC=samba,DC=example,DC=com',
+                  'CN=Configuration,DC=samba,DC=example,DC=com',
+                  'DC=samba,DC=example,DC=com',
+                  'CN=Schema,CN=Configuration,DC=samba,DC=example,DC=com',
+                  'DC=ForestDnsZones,DC=samba,DC=example,DC=com']:
+            self.assertRegex(r'%s\n'
+                             r'\tDefault-First-Site-Name\\[A-Z]+ via RPC\n'
+                             r'\t\tDSA object GUID: %s\n'
+                             r'\t\tLast attempt @ [^\n]+\n'
+                             r'\t\t\d+ consecutive failure\(s\).\n'
+                             r'\t\tLast success @ [^\n]+\n'
+                             r'\n' % (p, GUID_RE), inbound)
+
+            self.assertRegex(r'%s\n'
+                             r'\tDefault-First-Site-Name\\[A-Z]+ via RPC\n'
+                             r'\t\tDSA object GUID: %s\n'
+                             r'\t\tLast attempt @ [^\n]+\n'
+                             r'\t\t\d+ consecutive failure\(s\).\n'
+                             r'\t\tLast success @ [^\n]+\n'
+                             r'\n' % (p, GUID_RE), outbound)
+
+        self.assertRegex(r'Connection --\n'
+                         r'\tConnection name: %s\n'
+                         r'\tEnabled        : TRUE\n'
+                         r'\tServer DNS name : \w+.samba.example.com\n'
+                         r'\tServer DN name  : %s'
+                         r'\n' % (GUID_RE, DN_RE), conn)
