@@ -94,6 +94,10 @@ class TestProtocolClient(unittest.TestResult):
     def __init__(self, stream):
         unittest.TestResult.__init__(self)
         self._stream = stream
+        self.failed = False
+
+    def wasSuccessful(self):
+        return not self.failed
 
     def addError(self, test, error=None):
         """Report an error in test test.
@@ -102,6 +106,7 @@ class TestProtocolClient(unittest.TestResult):
             exc_info tuple.
         """
         self._addOutcome("error", test, error=error)
+        self.failed = True
 
     def addExpectedFailure(self, test, error=None):
         """Report an expected failure in test test.
@@ -118,6 +123,7 @@ class TestProtocolClient(unittest.TestResult):
             exc_info tuple.
         """
         self._addOutcome("failure", test, error=error)
+        self.failed = True
 
     def _addOutcome(self, outcome, test, error=None, error_permitted=True):
         """Report a failure in test test.
@@ -161,6 +167,7 @@ class TestProtocolClient(unittest.TestResult):
         """Report an unexpected success in test test.
         """
         self._addOutcome("uxsuccess", test, error_permitted=False)
+        self.failed = True
 
     def startTest(self, test):
         """Mark a test as starting its test run."""
