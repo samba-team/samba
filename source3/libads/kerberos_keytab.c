@@ -232,7 +232,7 @@ out:
  Adds a single service principal, i.e. 'host' to the system keytab
 ***********************************************************************/
 
-int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc)
+int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc, bool update_ads)
 {
 	krb5_error_code ret = 0;
 	krb5_context context = NULL;
@@ -347,7 +347,7 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc)
 		   host/... principal in the AD account.
 		   So only create these in the keytab, not in AD.  --jerry */
 
-		if (!strequal(srvPrinc, "cifs") &&
+		if (update_ads && !strequal(srvPrinc, "cifs") &&
 		    !strequal(srvPrinc, "host")) {
 			if (!ads_set_machine_account_spns(tmpctx,
 							  ads,
@@ -545,7 +545,7 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 		p[0] = '\0';
 
 		/* Add the SPNs found on the DC */
-		ret = ads_keytab_add_entry(ads, srv_princ);
+		ret = ads_keytab_add_entry(ads, srv_princ, true);
 		if (ret != 0) {
 			DEBUG(1, ("ads_keytab_add_entry failed while "
 				  "adding '%s' principal.\n",
@@ -558,7 +558,7 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 	   really needs them and we will fall back to verifying against
 	   secrets.tdb */
 
-	ret = ads_keytab_add_entry(ads, "cifs"));
+	ret = ads_keytab_add_entry(ads, "cifs", true));
 	if (ret != 0 ) {
 		DEBUG(1, (__location__ ": ads_keytab_add_entry failed while "
 			  "adding 'cifs'.\n"));
@@ -607,7 +607,7 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 		goto done;
 	}
 
-	ret = ads_keytab_add_entry(ads, sam_account_name);
+	ret = ads_keytab_add_entry(ads, sam_account_name, true);
 	if (ret != 0) {
 		DEBUG(1, (__location__ ": ads_keytab_add_entry() failed "
 			  "while adding sAMAccountName (%s)\n",
@@ -618,7 +618,7 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 	/* remember that not every machine account will have a upn */
 	upn = ads_get_upn(ads, frame, machine_name);
 	if (upn) {
-		ret = ads_keytab_add_entry(ads, upn);
+		ret = ads_keytab_add_entry(ads, upn, true);
 		if (ret != 0) {
 			DEBUG(1, (__location__ ": ads_keytab_add_entry() "
 				  "failed while adding UPN (%s)\n", upn));
@@ -732,7 +732,7 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 
 	ret = 0;
 	for (i = 0; oldEntries[i]; i++) {
-		ret |= ads_keytab_add_entry(ads, oldEntries[i]);
+		ret |= ads_keytab_add_entry(ads, oldEntries[i], true);
 		TALLOC_FREE(oldEntries[i]);
 	}
 

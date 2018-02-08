@@ -2626,7 +2626,7 @@ static int net_ads_keytab_add(struct net_context *c, int argc, const char **argv
 		return -1;
 	}
 	for (i = 0; i < argc; i++) {
-		ret |= ads_keytab_add_entry(ads, argv[i]);
+		ret |= ads_keytab_add_entry(ads, argv[i], false);
 	}
 	ads_destroy(&ads);
 	return ret;
