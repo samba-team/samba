@@ -19,9 +19,6 @@
 """Blackbox tests for samba-tool drs showrepl."""
 from __future__ import print_function
 import samba.tests
-import shutil
-import os
-import ldb
 import drs_base
 
 class SambaToolDrsShowReplTests(drs_base.DrsBaseTestCase):
@@ -35,7 +32,8 @@ class SambaToolDrsShowReplTests(drs_base.DrsBaseTestCase):
 
         creds = self.get_credentials()
         self.cmdline_creds = "-U%s/%s%%%s" % (creds.get_domain(),
-                                              creds.get_username(), creds.get_password())
+                                              creds.get_username(),
+                                              creds.get_password())
 
     def test_samba_tool_showrepl(self):
         """Tests 'samba-tool drs showrepl' command.
@@ -51,8 +49,8 @@ class SambaToolDrsShowReplTests(drs_base.DrsBaseTestCase):
         #      ...
         #   TODO: Perhaps we should check at least for
         #         DSA's objectGUDI and invocationId
-        out = self.check_output("samba-tool drs showrepl %s %s" % (self.dc1,
-                                                                   self.cmdline_creds))
+        out = self.check_output("samba-tool drs showrepl "
+                                "%s %s" % (self.dc1, self.cmdline_creds))
 
         self.assertTrue("DSA Options:" in out)
         self.assertTrue("DSA object GUID:" in out)
