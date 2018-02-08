@@ -1869,23 +1869,20 @@ int ctdb_start_revoke_ro_record(struct ctdb_context *ctdb,
 	rev_hdl->key.dptr  = talloc_memdup(rev_hdl, key.dptr, key.dsize);
 	if (rev_hdl->key.dptr == NULL) {
 		D_ERR("Failed to allocate key for revokechild_handle\n");
-		talloc_free(rev_hdl);
-		return -1;
+		goto err_out;
 	}
 
 	ret = pipe(rev_hdl->fd);
 	if (ret != 0) {
 		D_ERR("Failed to allocate key for revokechild_handle\n");
-		talloc_free(rev_hdl);
-		return -1;
+		goto err_out;
 	}
 
 
 	rev_hdl->child = ctdb_fork(ctdb);
 	if (rev_hdl->child == (pid_t)-1) {
 		D_ERR("Failed to fork child for revokechild\n");
-		talloc_free(rev_hdl);
-		return -1;
+		goto err_out;
 	}
 
 	if (rev_hdl->child == 0) {
@@ -1934,6 +1931,9 @@ child_finished:
 	tevent_fd_set_auto_close(rev_hdl->fde);
 
 	return 0;
+err_out:
+	talloc_free(rev_hdl);
+	return -1;
 }
 
 int ctdb_add_revoke_deferred_call(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_db, TDB_DATA key, struct ctdb_req_header *hdr, deferred_requeue_fn fn, void *call_context)
