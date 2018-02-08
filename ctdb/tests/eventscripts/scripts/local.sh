@@ -331,10 +331,6 @@ setup_ctdb ()
     mkdir -p "$FAKE_CTDB_IFACES_DOWN"
     rm -f "$FAKE_CTDB_IFACES_DOWN"/*
 
-    export FAKE_CTDB_SCRIPTSTATUS="$FAKE_CTDB_STATE/scriptstatus"
-    mkdir -p "$FAKE_CTDB_SCRIPTSTATUS"
-    rm -f "$FAKE_CTDB_SCRIPTSTATUS"/*
-
     export CTDB_PARTIALLY_ONLINE_INTERFACES
 
     export FAKE_CTDB_TUNABLES_OK="MonitorInterval TDBMutexEnabled DatabaseHashSize"
@@ -455,18 +451,6 @@ ctdb_not_implemented ()
     export CTDB_NOT_IMPLEMENTED="$1"
     ctdb_not_implemented="\
 DEBUG: ctdb: command \"$1\" not implemented in stub"
-}
-
-ctdb_fake_scriptstatus ()
-{
-    _code="$1"
-    _status="$2"
-    _err_out="$3"
-
-    _d1=$(date '+%s.%N')
-    _d2=$(date '+%s.%N')
-
-    echo "$_code $_status $_err_out" >"$FAKE_CTDB_SCRIPTSTATUS/$script"
 }
 
 ######################################################################
