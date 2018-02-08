@@ -1004,6 +1004,10 @@ accountExpires: %u
         :param dn: relative dn
         """
         domain_dn = ldb.Dn(self, self.domain_dn())
+
+        if isinstance(dn, ldb.Dn):
+            dn = str(dn)
+
         full_dn = ldb.Dn(self, dn)
         if not full_dn.is_child_of(domain_dn):
             full_dn.add_base(domain_dn)
