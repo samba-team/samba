@@ -1824,19 +1824,27 @@ static int ctdb_revoke_all_delegations(struct ctdb_context *ctdb, struct ctdb_db
 }
 
 
-int ctdb_start_revoke_ro_record(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_db, TDB_DATA key, struct ctdb_ltdb_header *header, TDB_DATA data)
+int ctdb_start_revoke_ro_record(struct ctdb_context *ctdb,
+				struct ctdb_db_context *ctdb_db,
+				TDB_DATA key,
+				struct ctdb_ltdb_header *header,
+				TDB_DATA data)
 {
 	TDB_DATA tdata;
 	struct revokechild_handle *rev_hdl;
 	pid_t parent = getpid();
 	int ret;
 
-	header->flags &= ~(CTDB_REC_RO_REVOKING_READONLY|CTDB_REC_RO_HAVE_DELEGATIONS|CTDB_REC_RO_HAVE_READONLY);
+	header->flags &= ~(CTDB_REC_RO_REVOKING_READONLY |
+			   CTDB_REC_RO_HAVE_DELEGATIONS |
+			   CTDB_REC_RO_HAVE_READONLY);
+
 	header->flags |= CTDB_REC_FLAG_MIGRATED_WITH_DATA;
 	header->rsn   -= 1;
 
-	if ((rev_hdl = talloc_zero(ctdb_db, struct revokechild_handle)) == NULL) {
-		DEBUG(DEBUG_ERR,("Failed to allocate revokechild_handle\n"));
+	rev_hdl = talloc_zero(ctdb_db, struct revokechild_handle);
+	if (rev_hdl == NULL) {
+		D_ERR("Failed to allocate revokechild_handle\n");
 		return -1;
 	}
 
@@ -1860,14 +1868,14 @@ int ctdb_start_revoke_ro_record(struct ctdb_context *ctdb, struct ctdb_db_contex
 	rev_hdl->key.dsize = key.dsize;
 	rev_hdl->key.dptr  = talloc_memdup(rev_hdl, key.dptr, key.dsize);
 	if (rev_hdl->key.dptr == NULL) {
-		DEBUG(DEBUG_ERR,("Failed to allocate key for revokechild_handle\n"));
+		D_ERR("Failed to allocate key for revokechild_handle\n");
 		talloc_free(rev_hdl);
 		return -1;
 	}
 
 	ret = pipe(rev_hdl->fd);
 	if (ret != 0) {
-		DEBUG(DEBUG_ERR,("Failed to allocate key for revokechild_handle\n"));
+		D_ERR("Failed to allocate key for revokechild_handle\n");
 		talloc_free(rev_hdl);
 		return -1;
 	}
@@ -1875,7 +1883,7 @@ int ctdb_start_revoke_ro_record(struct ctdb_context *ctdb, struct ctdb_db_contex
 
 	rev_hdl->child = ctdb_fork(ctdb);
 	if (rev_hdl->child == (pid_t)-1) {
-		DEBUG(DEBUG_ERR,("Failed to fork child for revokechild\n"));
+		D_ERR("Failed to fork child for revokechild\n");
 		talloc_free(rev_hdl);
 		return -1;
 	}
@@ -1886,12 +1894,18 @@ int ctdb_start_revoke_ro_record(struct ctdb_context *ctdb, struct ctdb_db_contex
 
 		prctl_set_comment("ctdb_revokechild");
 		if (switch_from_server_to_client(ctdb) != 0) {
-			DEBUG(DEBUG_ERR,("Failed to switch from server to client for revokechild process\n"));
+			D_ERR("Failed to switch from server to client "
+			      "for revokechild process\n");
 			c = 1;
 			goto child_finished;
 		}
 
-		c = ctdb_revoke_all_delegations(ctdb, ctdb_db, tdata, key, header, data);
+		c = ctdb_revoke_all_delegations(ctdb,
+						ctdb_db,
+						tdata,
+						key,
+						header,
+						data);
 
 child_finished:
 		sys_write(rev_hdl->fd[1], &c, 1);
@@ -1914,7 +1928,7 @@ child_finished:
 				     (void *)rev_hdl);
 
 	if (rev_hdl->fde == NULL) {
-		DEBUG(DEBUG_ERR,("Failed to set up fd event for revokechild process\n"));
+		D_ERR("Failed to set up fd event for revokechild process\n");
 		talloc_free(rev_hdl);
 	}
 	tevent_fd_set_auto_close(rev_hdl->fde);
