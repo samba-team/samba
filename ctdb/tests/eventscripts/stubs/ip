@@ -1,5 +1,8 @@
 #!/bin/sh
 
+FAKE_IP_STATE="${FAKE_NETWORK_STATE}/ip-state"
+mkdir -p "$FAKE_IP_STATE"
+
 promote_secondaries=true
 
 not_implemented ()

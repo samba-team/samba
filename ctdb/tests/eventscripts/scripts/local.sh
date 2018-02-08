@@ -85,15 +85,6 @@ setup_generic ()
     mkdir -p "$FAKE_ETHTOOL_LINK_DOWN"
     rm -f "$FAKE_ETHTOOL_LINK_DOWN"/*
 
-    # This can only have 2 levels.  We don't want to resort to usings
-    # something dangerous like "rm -r" setup time.
-    export FAKE_IP_STATE="$EVENTSCRIPTS_TESTS_VAR_DIR/fake-ip-state"
-    mkdir -p "$FAKE_IP_STATE"
-    rm -f "$FAKE_IP_STATE"/*/*
-    rm -f "$FAKE_IP_STATE"/* 2>/dev/null || true
-    rmdir "$FAKE_IP_STATE"/* 2>/dev/null || true
-
-
     export CTDB_DBDIR="${EVENTSCRIPTS_TESTS_VAR_DIR}/db"
     export CTDB_DBDIR_PERSISTENT="${CTDB_DBDIR}/persistent"
     export CTDB_DBDIR_STATE="${CTDB_DBDIR}/state"
