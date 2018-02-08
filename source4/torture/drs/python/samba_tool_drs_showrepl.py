@@ -21,6 +21,13 @@ from __future__ import print_function
 import samba.tests
 import drs_base
 import re
+import json
+from samba.compat import PY3
+
+if PY3:
+    json_str = str
+else:
+    json_str = unicode
 
 GUID_RE = r'[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}'
 HEX8_RE = r'0x[\da-f]{8}'
@@ -110,3 +117,43 @@ class SambaToolDrsShowReplTests(drs_base.DrsBaseTestCase):
                          r'\tServer DNS name : \w+.samba.example.com\n'
                          r'\tServer DN name  : %s'
                          r'\n' % (GUID_RE, DN_RE), conn)
+
+    def test_samba_tool_showrepl_json(self):
+        """Tests 'samba-tool drs showrepl --json' command.
+        """
+        out = self.check_output("samba-tool drs showrepl %s %s --json" %
+                                (self.dc1, self.cmdline_creds))
+
+        print(out)
+
+        d = json.loads(out)
+        self.assertEqual(set(d), set(['repsFrom',
+                                      'repsTo',
+                                      "NTDSConnections",
+                                      "dsa"]))
+
+        # dsa
+        for k in ["objectGUID", "invocationId"]:
+            self.assertRegex('^%s$' % GUID_RE, d['dsa'][k])
+        self.assertTrue(isinstance(d['dsa']["options"], int))
+
+        # repsfrom and repsto
+        for reps in (d['repsFrom'], d['repsTo']):
+            for r in reps:
+                for k in ('NC dn', "NTDS DN"):
+                    self.assertRegex('^%s$' % DN_RE, r[k])
+                for k in ("last attempt time",
+                          "last attempt message",
+                          "last success"):
+                    self.assertTrue(isinstance(r[k], json_str))
+                self.assertRegex('^%s$' % GUID_RE, r["DSA objectGUID"])
+                self.assertTrue(isinstance(r["consecutive failures"], int))
+
+        # ntdsconnection
+        for n in d["NTDSConnections"]:
+            self.assertRegex(r'^[\w]+\.samba\.example\.com$', n["dns name"])
+            self.assertRegex("^%s$" % GUID_RE, n["name"])
+            self.assertTrue(isinstance(n['enabled'], bool))
+            self.assertTrue(isinstance(n['options'], int))
+            self.assertTrue(isinstance(n['replicates NC'], list))
+            self.assertRegex("^%s$" % DN_RE, n["remote DN"])
