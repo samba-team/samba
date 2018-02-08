@@ -81,10 +81,6 @@ setup_generic ()
     mkdir -p "$FAKE_PROC_NET_BONDING"
     rm -f "$FAKE_PROC_NET_BONDING"/*
 
-    export FAKE_ETHTOOL_LINK_DOWN="$EVENTSCRIPTS_TESTS_VAR_DIR/ethtool-link-down"
-    mkdir -p "$FAKE_ETHTOOL_LINK_DOWN"
-    rm -f "$FAKE_ETHTOOL_LINK_DOWN"/*
-
     export CTDB_DBDIR="${EVENTSCRIPTS_TESTS_VAR_DIR}/db"
     export CTDB_DBDIR_PERSISTENT="${CTDB_DBDIR}/persistent"
     export CTDB_DBDIR_STATE="${CTDB_DBDIR}/state"
@@ -197,20 +193,31 @@ MII Status: $_mii_subs
 EOF
 }
 
+_ethtool_setup ()
+{
+	FAKE_ETHTOOL_LINK_DOWN="${FAKE_NETWORK_STATE}/ethtool-link-down"
+	export FAKE_ETHTOOL_LINK_DOWN
+	mkdir -p "$FAKE_ETHTOOL_LINK_DOWN"
+}
+
 ethtool_interfaces_down ()
 {
-    for _i ; do
-	echo "Marking interface $_i DOWN for ethtool"
-	touch "${FAKE_ETHTOOL_LINK_DOWN}/${_i}"
-    done
+	_ethtool_setup
+
+	for _i ; do
+		echo "Marking interface $_i DOWN for ethtool"
+		touch "${FAKE_ETHTOOL_LINK_DOWN}/${_i}"
+	done
 }
 
 ethtool_interfaces_up ()
 {
-    for _i ; do
-	echo "Marking interface $_i UP for ethtool"
-	rm -f "${FAKE_ETHTOOL_LINK_DOWN}/${_i}"
-    done
+	_ethtool_setup
+
+	for _i ; do
+		echo "Marking interface $_i UP for ethtool"
+		rm -f "${FAKE_ETHTOOL_LINK_DOWN}/${_i}"
+	done
 }
 
 dump_routes ()
