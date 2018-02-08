@@ -2169,7 +2169,7 @@ sub setup_env($$$)
 	}
 }
 
-sub setup_s4member($$$)
+sub setup_s4member
 {
 	my ($self, $path, $dc_vars) = @_;
 
@@ -2186,7 +2186,7 @@ sub setup_s4member($$$)
 	return $env;
 }
 
-sub setup_s4member_dflt_domain($$$)
+sub setup_s4member_dflt_domain
 {
 	my ($self, $path, $dc_vars) = @_;
 
@@ -2204,7 +2204,7 @@ sub setup_s4member_dflt_domain($$$)
 	return $env;
 }
 
-sub setup_rpc_proxy($$$)
+sub setup_rpc_proxy
 {
 	my ($self, $path, $dc_vars) = @_;
 
@@ -2220,7 +2220,7 @@ sub setup_rpc_proxy($$$)
 	return $env;
 }
 
-sub setup_ad_dc_ntvfs($$)
+sub setup_ad_dc_ntvfs
 {
 	my ($self, $path) = @_;
 
@@ -2236,7 +2236,7 @@ sub setup_ad_dc_ntvfs($$)
 	return $env;
 }
 
-sub setup_chgdcpass($$)
+sub setup_chgdcpass
 {
 	my ($self, $path) = @_;
 
@@ -2251,7 +2251,7 @@ sub setup_chgdcpass($$)
 	return $env;
 }
 
-sub setup_fl2000dc($$)
+sub setup_fl2000dc
 {
 	my ($self, $path) = @_;
 
@@ -2267,7 +2267,7 @@ sub setup_fl2000dc($$)
 	return $env;
 }
 
-sub setup_fl2003dc($$$)
+sub setup_fl2003dc
 {
 	my ($self, $path, $dc_vars) = @_;
 
@@ -2285,7 +2285,7 @@ sub setup_fl2003dc($$$)
 	return $env;
 }
 
-sub setup_fl2008r2dc($$$)
+sub setup_fl2008r2dc
 {
 	my ($self, $path, $dc_vars) = @_;
 
@@ -2309,7 +2309,7 @@ sub setup_fl2008r2dc($$$)
 	return $env;
 }
 
-sub setup_vampire_dc($$$$)
+sub setup_vampire_dc
 {
 	my ($self, $path, $dc_vars, $fl) = @_;
 
@@ -2385,7 +2385,7 @@ sub setup_vampire_dc($$$$)
 	return $env;
 }
 
-sub setup_promoted_dc($$$)
+sub setup_promoted_dc
 {
 	my ($self, $path, $dc_vars) = @_;
 
@@ -2428,7 +2428,7 @@ sub setup_promoted_dc($$$)
 	return $env;
 }
 
-sub setup_subdom_dc($$$)
+sub setup_subdom_dc
 {
 	my ($self, $path, $dc_vars) = @_;
 
@@ -2472,7 +2472,7 @@ sub setup_subdom_dc($$$)
 	return $env;
 }
 
-sub setup_rodc($$$)
+sub setup_rodc
 {
 	my ($self, $path, $dc_vars) = @_;
 
@@ -2514,7 +2514,7 @@ sub setup_rodc($$$)
 	return $env;
 }
 
-sub setup_ad_dc($$)
+sub setup_ad_dc
 {
 	my ($self, $path) = @_;
 
@@ -2542,7 +2542,7 @@ sub setup_ad_dc($$)
 	return $env;
 }
 
-sub setup_ad_dc_no_nss($$)
+sub setup_ad_dc_no_nss
 {
 	my ($self, $path) = @_;
 
@@ -2573,7 +2573,7 @@ sub setup_ad_dc_no_nss($$)
 	return $env;
 }
 
-sub setup_ad_dc_no_ntlm($$)
+sub setup_ad_dc_no_ntlm
 {
 	my ($self, $path) = @_;
 
@@ -2602,7 +2602,7 @@ sub setup_ad_dc_no_ntlm($$)
 	return $env;
 }
 
-sub setup_none($$)
+sub setup_none
 {
 	my ($self, $path) = @_;
 

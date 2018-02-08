@@ -83,7 +83,7 @@ sub find_in_list($$)
 	return undef;
 }
 
-sub skip($)
+sub skip
 {
 	my ($name) = @_;
 

@@ -204,7 +204,7 @@ sub setup_env($$$)
 	}
 }
 
-sub setup_nt4_dc($$)
+sub setup_nt4_dc
 {
 	my ($self, $path) = @_;
 
@@ -257,7 +257,7 @@ sub setup_nt4_dc($$)
 	return $vars;
 }
 
-sub setup_nt4_dc_schannel($$)
+sub setup_nt4_dc_schannel
 {
 	my ($self, $path) = @_;
 
@@ -307,7 +307,7 @@ sub setup_nt4_dc_schannel($$)
 	return $vars;
 }
 
-sub setup_nt4_member($$$)
+sub setup_nt4_member
 {
 	my ($self, $prefix, $nt4_dc_vars) = @_;
 	my $count = 0;
@@ -381,7 +381,7 @@ sub setup_nt4_member($$$)
 	return $ret;
 }
 
-sub setup_admember($$$$)
+sub setup_admember
 {
 	my ($self, $prefix, $dcvars) = @_;
 
@@ -507,7 +507,7 @@ sub setup_admember($$$$)
 	return $ret;
 }
 
-sub setup_admember_rfc2307($$$$)
+sub setup_admember_rfc2307
 {
 	my ($self, $prefix, $dcvars) = @_;
 
@@ -603,7 +603,7 @@ sub setup_admember_rfc2307($$$$)
 	return $ret;
 }
 
-sub setup_ad_member_idmap_rid($$$$)
+sub setup_ad_member_idmap_rid
 {
 	my ($self, $prefix, $dcvars) = @_;
 
@@ -691,7 +691,7 @@ sub setup_ad_member_idmap_rid($$$$)
 	return $ret;
 }
 
-sub setup_ad_member_idmap_ad($$$$)
+sub setup_ad_member_idmap_ad
 {
 	my ($self, $prefix, $dcvars) = @_;
 
@@ -780,7 +780,7 @@ sub setup_ad_member_idmap_ad($$$$)
 	return $ret;
 }
 
-sub setup_simpleserver($$)
+sub setup_simpleserver
 {
 	my ($self, $path) = @_;
 
@@ -834,7 +834,7 @@ sub setup_simpleserver($$)
 	return $vars;
 }
 
-sub setup_fileserver($$)
+sub setup_fileserver
 {
 	my ($self, $path) = @_;
 	my $prefix_abs = abs_path($path);
@@ -1013,7 +1013,7 @@ sub setup_fileserver($$)
 	return $vars;
 }
 
-sub setup_ktest($$$)
+sub setup_ktest
 {
 	my ($self, $prefix) = @_;
 
@@ -1117,7 +1117,7 @@ $ret->{USERNAME} = KTEST\\Administrator
 	return $ret;
 }
 
-sub setup_maptoguest($$)
+sub setup_maptoguest
 {
 	my ($self, $path) = @_;
 
