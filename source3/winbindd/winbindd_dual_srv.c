@@ -898,7 +898,7 @@ NTSTATUS _winbind_SamLogon(struct pipes_struct *p,
 				       r->in.logon.network->challenge,
 				       lm_response, nt_response,
 				       &r->out.authoritative,
-				       true,
+				       true, /* skip_sam */
 				       &flags,
 				       &validation_level,
 				       &validation);
