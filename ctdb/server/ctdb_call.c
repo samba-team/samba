@@ -1863,8 +1863,6 @@ int ctdb_start_revoke_ro_record(struct ctdb_context *ctdb,
 	rev_hdl->fd[0]     = -1;
 	rev_hdl->fd[1]     = -1;
 
-	talloc_set_destructor(rev_hdl, revokechild_destructor);
-
 	rev_hdl->key.dsize = key.dsize;
 	rev_hdl->key.dptr  = talloc_memdup(rev_hdl, key.dptr, key.dsize);
 	if (rev_hdl->key.dptr == NULL) {
@@ -1914,9 +1912,6 @@ child_finished:
 	rev_hdl->fd[1] = -1;
 	set_close_on_exec(rev_hdl->fd[0]);
 
-	/* This is an active revokechild child process */
-	DLIST_ADD_END(ctdb_db->revokechild_active, rev_hdl);
-
 	rev_hdl->fde = tevent_add_fd(ctdb->ev,
 				     rev_hdl,
 				     rev_hdl->fd[0],
@@ -1929,6 +1924,10 @@ child_finished:
 		talloc_free(rev_hdl);
 	}
 	tevent_fd_set_auto_close(rev_hdl->fde);
+
+	/* This is an active revokechild child process */
+	DLIST_ADD_END(ctdb_db->revokechild_active, rev_hdl);
+	talloc_set_destructor(rev_hdl, revokechild_destructor);
 
 	return 0;
 err_out:
