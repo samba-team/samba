@@ -48,6 +48,9 @@ setup_ctdb_base "$EVENTSCRIPTS_TESTS_VAR_DIR" "etc-ctdb" \
 		nfs-linux-kernel-callout \
 		statd-callout
 
+export FAKE_CTDB_STATE="$EVENTSCRIPTS_TESTS_VAR_DIR/fake-ctdb"
+mkdir -p "$FAKE_CTDB_STATE"
+
 ######################################################################
 
 if "$TEST_VERBOSE" ; then
@@ -317,8 +320,6 @@ setup_ctdb ()
     ctdb_set_pnn "${2:-0}"
 
     setup_public_addresses
-
-    export FAKE_CTDB_STATE="$EVENTSCRIPTS_TESTS_VAR_DIR/fake-ctdb"
 
     export FAKE_CTDB_EXTRA_CONFIG="$EVENTSCRIPTS_TESTS_VAR_DIR/fake-config.sh"
     rm -f "$FAKE_CTDB_EXTRA_CONFIG"
