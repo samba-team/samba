@@ -51,6 +51,9 @@ setup_ctdb_base "$EVENTSCRIPTS_TESTS_VAR_DIR" "etc-ctdb" \
 export FAKE_CTDB_STATE="$EVENTSCRIPTS_TESTS_VAR_DIR/fake-ctdb"
 mkdir -p "$FAKE_CTDB_STATE"
 
+export FAKE_NETWORK_STATE="$EVENTSCRIPTS_TESTS_VAR_DIR/fake-network-state"
+mkdir -p "$FAKE_NETWORK_STATE"
+
 ######################################################################
 
 if "$TEST_VERBOSE" ; then
