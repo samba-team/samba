@@ -233,11 +233,14 @@ static void winbindd_sig_term_handler(struct tevent_context *ev,
 				      void *siginfo,
 				      void *private_data)
 {
-	bool *is_parent = talloc_get_type_abort(private_data, bool);
+	bool *p = talloc_get_type_abort(private_data, bool);
+	bool is_parent = *p;
+
+	TALLOC_FREE(p);
 
 	DEBUG(0,("Got sig[%d] terminate (is_parent=%d)\n",
-		 signum, (int)*is_parent));
-	terminate(*is_parent);
+		 signum, is_parent));
+	terminate(is_parent);
 }
 
 /*
