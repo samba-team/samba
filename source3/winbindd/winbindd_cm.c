@@ -199,6 +199,7 @@ static bool fork_child_dc_connect(struct winbindd_domain *domain)
 	pid_t parent_pid = getpid();
 	char *lfile = NULL;
 	NTSTATUS status;
+	bool ok;
 
 	if (domain->dc_probe_pid != (pid_t)-1) {
 		/*
@@ -269,7 +270,9 @@ static bool fork_child_dc_connect(struct winbindd_domain *domain)
 		_exit(1);
 	}
 
-	if ((!get_dcs(mem_ctx, domain, &dcs, &num_dcs, 0)) || (num_dcs == 0)) {
+	ok = get_dcs(mem_ctx, domain, &dcs, &num_dcs, 0);
+	TALLOC_FREE(mem_ctx);
+	if (!ok || (num_dcs == 0)) {
 		/* Still offline ? Can't find DC's. */
 		messaging_send_buf(server_messaging_context(),
 				   pid_to_procid(parent_pid),
