@@ -359,11 +359,6 @@ setup_ctdb ()
     export FAKE_CTDB_TUNABLES_OBSOLETE="EventScriptUnhealthyOnTimeout"
 }
 
-setup_config ()
-{
-    cat >"$FAKE_CTDB_EXTRA_CONFIG"
-}
-
 validate_percentage ()
 {
     case "$1" in
