@@ -66,6 +66,20 @@ fi
 
 # General setup fakery
 
+setup_dbdir ()
+{
+	export CTDB_DBDIR="${EVENTSCRIPTS_TESTS_VAR_DIR}/db"
+	export CTDB_DBDIR_PERSISTENT="${CTDB_DBDIR}/persistent"
+	export CTDB_DBDIR_STATE="${CTDB_DBDIR}/state"
+	mkdir -p "$CTDB_DBDIR_PERSISTENT"
+	mkdir -p "$CTDB_DBDIR_STATE"
+}
+
+setup_date ()
+{
+	export FAKE_DATE_OUTPUT="$1"
+}
+
 setup_generic ()
 {
     debug "Setting up shares (3 existing shares)"
@@ -81,15 +95,11 @@ setup_generic ()
     mkdir -p "$FAKE_PROC_NET_BONDING"
     rm -f "$FAKE_PROC_NET_BONDING"/*
 
-    export CTDB_DBDIR="${EVENTSCRIPTS_TESTS_VAR_DIR}/db"
-    export CTDB_DBDIR_PERSISTENT="${CTDB_DBDIR}/persistent"
-    export CTDB_DBDIR_STATE="${CTDB_DBDIR}/state"
-    mkdir -p "$CTDB_DBDIR_PERSISTENT"
-    mkdir -p "$CTDB_DBDIR_STATE"
-
     export FAKE_TDBTOOL_SUPPORTS_CHECK="yes"
     export FAKE_TDB_IS_OK
-    export FAKE_DATE_OUTPUT
+
+    setup_dbdir
+    setup_date
 
     export FAKE_TCP_LISTEN FAKE_NETSTAT_UNIX_LISTEN
 }
