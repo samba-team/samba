@@ -31,7 +31,6 @@ from samba import (
 from samba.ndr import ndr_unpack
 from samba.dcerpc import drsblobs
 from hashlib import md5
-import re
 import random
 import string
 
@@ -105,8 +104,8 @@ class UserCmdWdigestTestCase(SambaToolCmdTest):
         if missing:
             self.assertTrue(attribute not in out)
         else:
-            result = re.sub(r"\n\s*", '', out)
-            self.assertMatch(result, "%s: %s" % (attribute, expected))
+            self.assertMatch(out.replace('\n ', ''),
+                             "%s: %s" % (attribute, expected))
 
     def test_Wdigest_no_suffix(self):
         attribute = "virtualWDigest"
