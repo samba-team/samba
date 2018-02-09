@@ -2605,7 +2605,10 @@ static int net_ads_keytab_flush(struct net_context *c, int argc, const char **ar
 	return ret;
 }
 
-static int net_ads_keytab_add(struct net_context *c, int argc, const char **argv)
+static int net_ads_keytab_add(struct net_context *c,
+			      int argc,
+			      const char **argv,
+			      bool update_ads)
 {
 	int i;
 	int ret = 0;
@@ -2626,10 +2629,24 @@ static int net_ads_keytab_add(struct net_context *c, int argc, const char **argv
 		return -1;
 	}
 	for (i = 0; i < argc; i++) {
-		ret |= ads_keytab_add_entry(ads, argv[i], false);
+		ret |= ads_keytab_add_entry(ads, argv[i], update_ads);
 	}
 	ads_destroy(&ads);
 	return ret;
+}
+
+static int net_ads_keytab_add_default(struct net_context *c,
+				      int argc,
+				      const char **argv)
+{
+	return net_ads_keytab_add(c, argc, argv, false);
+}
+
+static int net_ads_keytab_add_update_ads(struct net_context *c,
+					 int argc,
+					 const char **argv)
+{
+	return net_ads_keytab_add(c, argc, argv, true);
 }
 
 static int net_ads_keytab_create(struct net_context *c, int argc, const char **argv)
@@ -2680,11 +2697,19 @@ int net_ads_keytab(struct net_context *c, int argc, const char **argv)
 	struct functable func[] = {
 		{
 			"add",
-			net_ads_keytab_add,
+			net_ads_keytab_add_default,
 			NET_TRANSPORT_ADS,
 			N_("Add a service principal"),
 			N_("net ads keytab add\n"
-			   "    Add a service principal")
+			   "    Add a service principal, updates keytab file only.")
+		},
+		{
+			"add_update_ads",
+			net_ads_keytab_add_update_ads,
+			NET_TRANSPORT_ADS,
+			N_("Add a service principal"),
+			N_("net ads keytab add_update_ads\n"
+			   "    Add a service principal, depending on the param passed may update ADS computer object in addition to the keytab file.")
 		},
 		{
 			"create",
