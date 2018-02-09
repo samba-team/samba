@@ -2893,8 +2893,10 @@ out:
 	return status;
 }
 
-NTSTATUS winbindd_pam_auth_pac_send(struct winbindd_cli_state *state,
-				    struct netr_SamInfo3 **info3)
+NTSTATUS winbindd_pam_auth_pac_verify(struct winbindd_cli_state *state,
+				      bool *p_is_trusted,
+				      uint16_t *p_validation_level,
+				      union netr_Validation **p_validation)
 {
 	struct winbindd_request *req = state->request;
 	DATA_BLOB pac_blob;
@@ -2908,6 +2910,10 @@ NTSTATUS winbindd_pam_auth_pac_send(struct winbindd_cli_state *state,
 	NTSTATUS result;
 	bool is_trusted = false;
 	uint32_t i;
+
+	*p_is_trusted = false;
+	*p_validation_level = 0;
+	*p_validation = NULL;
 
 	pac_blob = data_blob_const(req->extra_data.data, req->extra_len);
 	result = extract_pac_vrfy_sigs(state->mem_ctx, pac_blob, &pac_data);
@@ -3004,14 +3010,21 @@ NTSTATUS winbindd_pam_auth_pac_send(struct winbindd_cli_state *state,
 		}
 	}
 
-	*info3 = info3_copy;
-
+	*p_is_trusted = is_trusted;
+	*p_validation_level = validation_level;
+	*p_validation = validation;
 	return NT_STATUS_OK;
 }
 #else /* HAVE_KRB5 */
-NTSTATUS winbindd_pam_auth_pac_send(struct winbindd_cli_state *state,
-				    struct netr_SamInfo3 **info3)
+NTSTATUS winbindd_pam_auth_pac_verify(struct winbindd_cli_state *state,
+				      bool *p_is_trusted,
+				      uint16_t *p_validation_level,
+				      union netr_Validation **p_validation);
 {
+
+	*p_is_trusted = false;
+	*p_validation_level = 0;
+	*p_validation = NULL;
 	return NT_STATUS_NO_SUCH_USER;
 }
 #endif /* HAVE_KRB5 */
