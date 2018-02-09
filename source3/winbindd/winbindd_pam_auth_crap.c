@@ -49,12 +49,15 @@ struct tevent_req *winbindd_pam_auth_crap_send(
 	state->flags = request->flags;
 
 	if (state->flags & WBFLAG_PAM_AUTH_PAC) {
-		struct netr_SamInfo3 *info3 = NULL;
+		bool is_trusted = false;
 		uint16_t validation_level;
 		union netr_Validation *validation = NULL;
 		NTSTATUS status;
 
-		status = winbindd_pam_auth_pac_send(cli, &info3);
+		status = winbindd_pam_auth_pac_verify(cli,
+						      &is_trusted,
+						      &validation_level,
+						      &validation);
 		if (tevent_req_nterror(req, status)) {
 			return tevent_req_post(req, ev);
 		}
@@ -66,14 +69,6 @@ struct tevent_req *winbindd_pam_auth_crap_send(
 		}
 		state->response->result = WINBINDD_PENDING;
 		state->response->length = sizeof(struct winbindd_response);
-
-		status = map_info3_to_validation(talloc_tos(),
-						 info3,
-						 &validation_level,
-						 &validation);
-		if (tevent_req_nterror(req, status)) {
-			return tevent_req_post(req, ev);
-		}
 
 		status = append_auth_data(state->response,
 					  state->response,
