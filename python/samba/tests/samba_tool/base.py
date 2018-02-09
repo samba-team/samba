@@ -29,6 +29,13 @@ from cStringIO import StringIO
 from samba.netcmd.main import cmd_sambatool
 import samba.tests
 
+
+def truncate_string(s, cutoff=100):
+    if len(s) < cutoff + 15:
+        return s
+    return s[:cutoff] + '[%d more characters]' % (len(s) - cutoff)
+
+
 class SambaToolCmdTest(samba.tests.BlackboxTestCase):
 
     def getSamDB(self, *argv):
@@ -88,7 +95,10 @@ class SambaToolCmdTest(samba.tests.BlackboxTestCase):
     def assertCmdFail(self, val, msg=""):
         self.assertIsNotNone(val, msg)
 
-    def assertMatch(self, base, string, msg=""):
+    def assertMatch(self, base, string, msg=None):
+        if msg is None:
+            msg = "%r is not in %r" % (truncate_string(string),
+                                       truncate_string(base))
         self.assertTrue(string in base, msg)
 
     def randomName(self, count=8):
