@@ -74,6 +74,8 @@ struct tevent_req *winbindd_list_groups_send(TALLOC_CTX *mem_ctx,
 	}
 
 	if (request->domain_name[0] != '\0') {
+		ZERO_STRUCT(state->domains[0].groups);
+
 		state->domains[0].domain = find_domain_from_name_noinit(
 			request->domain_name);
 		if (state->domains[0].domain == NULL) {
@@ -83,7 +85,10 @@ struct tevent_req *winbindd_list_groups_send(TALLOC_CTX *mem_ctx,
 	} else {
 		i = 0;
 		for (domain = domain_list(); domain; domain = domain->next) {
-			state->domains[i++].domain = domain;
+			ZERO_STRUCT(state->domains[i].groups);
+
+			state->domains[i].domain = domain;
+			i++;
 		}
 	}
 
