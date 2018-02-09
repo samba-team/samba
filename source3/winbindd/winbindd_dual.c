@@ -248,33 +248,31 @@ static void wb_child_request_cleanup(struct tevent_req *req,
 	DLIST_REMOVE(winbindd_children, state->child);
 }
 
-static bool winbindd_child_busy(struct winbindd_child *child)
+struct winbindd_child *choose_domain_child(struct winbindd_domain *domain)
 {
-	return tevent_queue_length(child->queue) > 0;
-}
-
-static struct winbindd_child *find_idle_child(struct winbindd_domain *domain)
-{
+	struct winbindd_child *shortest = &domain->children[0];
+	struct winbindd_child *current;
 	int i;
 
 	for (i=0; i<lp_winbind_max_domain_connections(); i++) {
-		if (!winbindd_child_busy(&domain->children[i])) {
-			return &domain->children[i];
+		size_t shortest_len, current_len;
+
+		current = &domain->children[i];
+		current_len = tevent_queue_length(current->queue);
+
+		if (current_len == 0) {
+			/* idle child */
+			return current;
+		}
+
+		shortest_len = tevent_queue_length(shortest->queue);
+
+		if (current_len < shortest_len) {
+			shortest = current;
 		}
 	}
 
-	return NULL;
-}
-
-struct winbindd_child *choose_domain_child(struct winbindd_domain *domain)
-{
-	struct winbindd_child *result;
-
-	result = find_idle_child(domain);
-	if (result != NULL) {
-		return result;
-	}
-	return &domain->children[rand() % lp_winbind_max_domain_connections()];
+	return shortest;
 }
 
 struct dcerpc_binding_handle *dom_child_handle(struct winbindd_domain *domain)
