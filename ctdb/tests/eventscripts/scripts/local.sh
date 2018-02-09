@@ -163,8 +163,8 @@ _tcp_connections ()
 
 setup_tcp_connections ()
 {
-	_t==$(mktemp --tmpdir="$EVENTSCRIPTS_TESTS_VAR_DIR")
-	export FAKE_NETSTAT_TCP_ESTABLISHED_FILE"$_t"
+	_t=$(mktemp --tmpdir="$EVENTSCRIPTS_TESTS_VAR_DIR")
+	export FAKE_NETSTAT_TCP_ESTABLISHED_FILE="$_t"
 	_tcp_connections "$@" >"$FAKE_NETSTAT_TCP_ESTABLISHED_FILE"
 }
 
