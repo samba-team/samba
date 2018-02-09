@@ -2717,7 +2717,7 @@ int net_ads_keytab(struct net_context *c, int argc, const char **argv)
 			NET_TRANSPORT_ADS,
 			N_("Create a fresh keytab"),
 			N_("net ads keytab create\n"
-			   "    Create a fresh keytab")
+			   "    Create a fresh keytab or update exising one.")
 		},
 		{
 			"flush",

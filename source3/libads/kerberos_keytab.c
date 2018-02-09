@@ -545,7 +545,7 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 		p[0] = '\0';
 
 		/* Add the SPNs found on the DC */
-		ret = ads_keytab_add_entry(ads, srv_princ, true);
+		ret = ads_keytab_add_entry(ads, srv_princ, false);
 		if (ret != 0) {
 			DEBUG(1, ("ads_keytab_add_entry failed while "
 				  "adding '%s' principal.\n",
@@ -558,7 +558,7 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 	   really needs them and we will fall back to verifying against
 	   secrets.tdb */
 
-	ret = ads_keytab_add_entry(ads, "cifs", true));
+	ret = ads_keytab_add_entry(ads, "cifs", false));
 	if (ret != 0 ) {
 		DEBUG(1, (__location__ ": ads_keytab_add_entry failed while "
 			  "adding 'cifs'.\n"));
@@ -607,7 +607,7 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 		goto done;
 	}
 
-	ret = ads_keytab_add_entry(ads, sam_account_name, true);
+	ret = ads_keytab_add_entry(ads, sam_account_name, false);
 	if (ret != 0) {
 		DEBUG(1, (__location__ ": ads_keytab_add_entry() failed "
 			  "while adding sAMAccountName (%s)\n",
@@ -618,7 +618,7 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 	/* remember that not every machine account will have a upn */
 	upn = ads_get_upn(ads, frame, machine_name);
 	if (upn) {
-		ret = ads_keytab_add_entry(ads, upn, true);
+		ret = ads_keytab_add_entry(ads, upn, false);
 		if (ret != 0) {
 			DEBUG(1, (__location__ ": ads_keytab_add_entry() "
 				  "failed while adding UPN (%s)\n", upn));
@@ -732,7 +732,7 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 
 	ret = 0;
 	for (i = 0; oldEntries[i]; i++) {
-		ret |= ads_keytab_add_entry(ads, oldEntries[i], true);
+		ret |= ads_keytab_add_entry(ads, oldEntries[i], false);
 		TALLOC_FREE(oldEntries[i]);
 	}
 
