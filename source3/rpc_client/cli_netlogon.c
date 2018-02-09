@@ -701,3 +701,115 @@ NTSTATUS rpccli_netlogon_network_logon(
 
 	return NT_STATUS_OK;
 }
+
+NTSTATUS rpccli_netlogon_interactive_logon(
+	struct netlogon_creds_cli_context *creds_ctx,
+	struct dcerpc_binding_handle *binding_handle,
+	TALLOC_CTX *mem_ctx,
+	uint32_t logon_parameters,
+	const char *username,
+	const char *domain,
+	const char *workstation,
+	DATA_BLOB lm_hash,
+	DATA_BLOB nt_hash,
+	enum netr_LogonInfoClass logon_type,
+	uint8_t *authoritative,
+	uint32_t *flags,
+	uint16_t *_validation_level,
+	union netr_Validation **_validation)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	NTSTATUS status;
+	const char *workstation_name_slash;
+	union netr_LogonLevel *logon = NULL;
+	struct netr_PasswordInfo *password_info = NULL;
+	uint16_t validation_level = 0;
+	union netr_Validation *validation = NULL;
+	struct netr_ChallengeResponse lm;
+	struct netr_ChallengeResponse nt;
+
+	*_validation = NULL;
+
+	ZERO_STRUCT(lm);
+	ZERO_STRUCT(nt);
+
+	switch (logon_type) {
+	case NetlogonInteractiveInformation:
+	case NetlogonInteractiveTransitiveInformation:
+		break;
+	default:
+		DEBUG(0, ("switch value %d not supported\n",
+			logon_type));
+		TALLOC_FREE(frame);
+		return NT_STATUS_INVALID_INFO_CLASS;
+	}
+
+	logon = talloc_zero(mem_ctx, union netr_LogonLevel);
+	if (logon == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	password_info = talloc_zero(logon, struct netr_PasswordInfo);
+	if (password_info == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (workstation[0] != '\\' && workstation[1] != '\\') {
+		workstation_name_slash = talloc_asprintf(frame, "\\\\%s", workstation);
+	} else {
+		workstation_name_slash = workstation;
+	}
+
+	if (workstation_name_slash == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* Initialise input parameters */
+
+	password_info->identity_info.domain_name.string		= domain;
+	password_info->identity_info.parameter_control		= logon_parameters;
+	password_info->identity_info.logon_id_low		= 0xdead;
+	password_info->identity_info.logon_id_high		= 0xbeef;
+	password_info->identity_info.account_name.string	= username;
+	password_info->identity_info.workstation.string		= workstation_name_slash;
+
+	if (nt_hash.length != sizeof(password_info->ntpassword.hash)) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	memcpy(password_info->ntpassword.hash, nt_hash.data, nt_hash.length);
+	if (lm_hash.length != 0) {
+		if (lm_hash.length != sizeof(password_info->lmpassword.hash)) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		memcpy(password_info->lmpassword.hash, lm_hash.data, lm_hash.length);
+	}
+
+	logon->password = password_info;
+
+	/* Marshall data and send request */
+
+	status = netlogon_creds_cli_LogonSamLogon(creds_ctx,
+						  binding_handle,
+						  logon_type,
+						  logon,
+						  mem_ctx,
+						  &validation_level,
+						  &validation,
+						  authoritative,
+						  flags);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return status;
+	}
+
+	*_validation_level = validation_level;
+	*_validation = validation;
+
+	TALLOC_FREE(frame);
+	return NT_STATUS_OK;
+}

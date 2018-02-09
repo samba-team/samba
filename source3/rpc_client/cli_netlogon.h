@@ -89,5 +89,20 @@ NTSTATUS rpccli_netlogon_network_logon(
 	uint32_t *flags,
 	uint16_t *_validation_level,
 	union netr_Validation **_validation);
+NTSTATUS rpccli_netlogon_interactive_logon(
+	struct netlogon_creds_cli_context *creds_ctx,
+	struct dcerpc_binding_handle *binding_handle,
+	TALLOC_CTX *mem_ctx,
+	uint32_t logon_parameters,
+	const char *username,
+	const char *domain,
+	const char *workstation,
+	DATA_BLOB lm_hash,
+	DATA_BLOB nt_hash,
+	enum netr_LogonInfoClass logon_type,
+	uint8_t *authoritative,
+	uint32_t *flags,
+	uint16_t *_validation_level,
+	union netr_Validation **_validation);
 
 #endif /* _RPC_CLIENT_CLI_NETLOGON_H_ */
