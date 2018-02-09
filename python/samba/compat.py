@@ -23,5 +23,7 @@ PY3 = sys.version_info[0] == 3
 
 if PY3:
     integer_types = int,
+    text_type = str
 else:
     integer_types = (int, long)
+    text_type = unicode
