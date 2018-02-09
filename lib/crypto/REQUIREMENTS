@@ -16,6 +16,7 @@ ARCFOUR (RC4)
  - Password encryption on SAMR for password set/get
  - NETLOGON SamLogon session keys
  - Schannel
+ - DRSUAPI replication replicated secrets
 
  # GNUTLS >= 3.0.0
  # NETTLE
