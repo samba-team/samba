@@ -21,6 +21,8 @@
 #include "replace.h"
 #include "nsswitch/nsstest.h"
 
+#define SAFE_FREE(x) do { if ((x) != NULL) {free(x); (x)=NULL;} } while(0)
+
 static const char *so_path = "/lib/libnss_winbind.so";
 static const char *nss_name = "winbind";
 static int nss_errno;
@@ -48,10 +50,10 @@ static void *find_fn(const char *name)
 	if (!res) {
 		printf("Can't find function %s\n", s);
 		total_errors++;
-		free(s);
+		SAFE_FREE(s);
 		return NULL;
 	}
-	free(s);
+	SAFE_FREE(s);
 	return res;
 }
 
@@ -194,12 +196,12 @@ again:
 		goto again;
 	}
 	if (status == NSS_STATUS_NOTFOUND) {
-		free(buf);
+		SAFE_FREE(buf);
 		return NULL;
 	}
 	if (status != NSS_STATUS_SUCCESS) {
 		report_nss_error("getgrent", status);
-		free(buf);
+		SAFE_FREE(buf);
 		return NULL;
 	}
 	return &grp;
@@ -232,12 +234,12 @@ again:
 		goto again;
 	}
 	if (status == NSS_STATUS_NOTFOUND) {
-		free(buf);
+		SAFE_FREE(buf);
 		return NULL;
 	}
 	if (status != NSS_STATUS_SUCCESS) {
 		report_nss_error("getgrnam", status);
-		free(buf);
+		SAFE_FREE(buf);
 		return NULL;
 	}
 	return &grp;
@@ -271,12 +273,12 @@ again:
 		goto again;
 	}
 	if (status == NSS_STATUS_NOTFOUND) {
-		free(buf);
+		SAFE_FREE(buf);
 		return NULL;
 	}
 	if (status != NSS_STATUS_SUCCESS) {
 		report_nss_error("getgrgid", status);
-		free(buf);
+		SAFE_FREE(buf);
 		return NULL;
 	}
 	return &grp;
