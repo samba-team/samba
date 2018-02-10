@@ -31,9 +31,10 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import re
 import samba.auth
 import samba.dcerpc.base
-from samba.compat import PY3
+from samba.compat import PY3, text_type
 if not PY3:
     # Py2 only
     from samba.samdb import SamDB
@@ -160,6 +161,14 @@ class TestCase(unittest.TestCase):
         def addCleanup(self, fn, *args, **kwargs):
             self._cleanups = getattr(self, "_cleanups", []) + [
                 (fn, args, kwargs)]
+
+        def assertRegexpMatches(self, text, regex, msg=None):
+            # PY3 note: Python 3 will never see this, but we use
+            # text_type for the benefit of linters.
+            if isinstance(regex, (str, text_type)):
+                regex = re.compile(regex)
+            if not regex.search(text):
+                self.fail(msg)
 
         def _addSkip(self, result, reason):
             addSkip = getattr(result, 'addSkip', None)
