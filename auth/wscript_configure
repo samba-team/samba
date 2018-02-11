@@ -1,7 +1,16 @@
 #!/usr/bin/env python
 
+import Options, Utils
+
 conf.SET_TARGET_TYPE('jansson', 'EMPTY')
 
 if conf.CHECK_CFG(package='jansson', args='--cflags --libs',
 		  msg='Checking for jansson'):
     conf.CHECK_FUNCS_IN('json_object', 'jansson')
+
+if not conf.CONFIG_GET('HAVE_JSON_OBJECT') and \
+   conf.CONFIG_GET('ENABLE_SELFTEST') and \
+   (not Options.options.without_ad_dc):
+    raise Utils.WafError('jansson JSON library required for '
+                         '--enable-selftest '
+                         'when building the AD DC')

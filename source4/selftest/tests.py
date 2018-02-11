@@ -68,7 +68,6 @@ finally:
 
 have_tls_support = ("ENABLE_GNUTLS" in config_hash)
 have_heimdal_support = ("SAMBA4_USES_HEIMDAL" in config_hash)
-have_jansson_support = ("HAVE_JANSSON" in config_hash)
 
 if have_tls_support:
     for options in ['-U"$USERNAME%$PASSWORD"']:
@@ -622,7 +621,7 @@ planoldpythontestsuite("ad_dc_ntvfs:local", "samba.tests.dcerpc.registry", extra
 planoldpythontestsuite("ad_dc_ntvfs", "samba.tests.dcerpc.dnsserver", extra_args=['-U"$USERNAME%$PASSWORD"'])
 planoldpythontestsuite("ad_dc", "samba.tests.dcerpc.dnsserver", extra_args=['-U"$USERNAME%$PASSWORD"'])
 planoldpythontestsuite("ad_dc", "samba.tests.dcerpc.raw_protocol", extra_args=['-U"$USERNAME%$PASSWORD"'])
-if have_jansson_support and have_heimdal_support:
+if have_heimdal_support:
     planoldpythontestsuite("ad_dc:local", "samba.tests.auth_log", extra_args=['-U"$USERNAME%$PASSWORD"'],
                            environ={'CLIENT_IP': '127.0.0.11',
                                     'SOCKET_WRAPPER_DEFAULT_IFACE': 11})
