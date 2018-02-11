@@ -1,0 +1,92 @@
+<samba:parameter name="persistent handles"
+                 context="G"
+                 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+    <para>
+      This boolean parameter controls whether Samba supports Persistent Handles.
+    </para>
+
+    <para>
+      The <smbconfoption name="persistent handles"/> option enables Samba's
+      support for SMB3 Persistent Handles, a mechanism that allows SMB clients
+      to retain valid file handles across server restarts or outages. When
+      enabled, Samba stores all relevant filehandle state in a durable, on-disk
+      database so that the handle can be reconstructed when the client
+      reconnects.
+    </para>
+    <para>
+      Note that persistent handles are only enabled if
+      <smbconfoption name="kernel oplocks">no</smbconfoption>,
+      <smbconfoption name="kernel share modes">no</smbconfoption>, and
+      <smbconfoption name="posix locking">no</smbconfoption>,
+      i.e. if the share is configured for CIFS/SMB2 only access,
+      not supporting interoperability features with local UNIX processes
+      or NFS operations.
+    </para>
+    <para>
+      Persistent Handles are a fundamental building block for Continuous
+      Availability (CA) workloads where an application expects I/O operations to
+      remain valid even in the presence of server-side failures.
+    </para>
+    <para>
+      This option controls whether Samba announces the global server capability
+      <constant>SMB2_CAP_PERSISTENT_HANDLES</constant> and Persistent Handles
+      are internally active. For clients to actually use Persistent Handles on a
+      given share, the per-share option <smbconfoption name="continuous
+      availability"/> must also be set.
+    </para>
+    <para>
+      Typical use cases include:
+    </para>
+    <itemizedlist>
+      <listitem>
+	<para>Host and access VM disks over SMB3</para>
+      </listitem>
+      <listitem>
+	<para>Database or clustered application storage</para>
+      </listitem>
+    </itemizedlist>
+    <para>
+      Enabling this feature has significant performance implications:
+    </para>
+    <itemizedlist>
+      <listitem>
+	<para>All filehandle state must be persisted on disk, not just stored in
+	volatile memory or clustered databases.  This results in increased
+	synchronous I/O for every handle creation, update, and close
+	event.</para>
+      </listitem>
+      <listitem>
+	<para>Much higher latency for open, lease, and handle update operations,
+	especially under heavy load.</para>
+      </listitem>
+    </itemizedlist>
+    <para>
+      Environments that do not require Continuous Availability benefit from
+      leaving this option disabled.
+    </para>
+    <para>
+      Recommended Configuration:
+    </para>
+    <itemizedlist>
+      <listitem>
+	<para>Enable <smbconfoption name="persistent handles"/> only if your
+	deployment requires SMB3 Continuous Availability semantics.</para>
+      </listitem>
+      <listitem>
+	<para>Then enable <smbconfoption name="continuous availability"/> on
+	specific shares that should support Persistent Handles.</para>
+      </listitem>
+      <listitem>
+	<para>Leave the option disabled in general-purpose file server workloads
+	where performance is preferred over CA semantics.</para>
+      </listitem>
+    </itemizedlist>
+    <para>
+    Warning: Note that this feature is still considered experimental.
+    </para>
+</description>
+
+<value type="default">no</value>
+</samba:parameter>

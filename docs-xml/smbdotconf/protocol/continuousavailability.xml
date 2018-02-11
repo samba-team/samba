@@ -1,0 +1,20 @@
+<samba:parameter name="continuous availability"
+                 context="S"
+                 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+    <para>
+      This boolean parameter controls whether a share is Continuously Available
+      and enables Transparent Failover.
+    </para>
+    <para>
+      Check the description for <smbconfoption name="persistent handles"/> for
+      further details describing this option and how to use it.
+    </para>
+    <para>
+      Warning: Note that this feature is still considered experimental.
+    </para>
+</description>
+
+<value type="default">no</value>
+</samba:parameter>
