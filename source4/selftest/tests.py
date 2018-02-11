@@ -66,50 +66,47 @@ try:
 finally:
     f.close()
 
-have_tls_support = ("ENABLE_GNUTLS" in config_hash)
 have_heimdal_support = ("SAMBA4_USES_HEIMDAL" in config_hash)
 
-if have_tls_support:
-    for options in ['-U"$USERNAME%$PASSWORD"']:
-        plantestsuite("samba4.ldb.ldaps with options %s(ad_dc_ntvfs)" % options, "ad_dc_ntvfs",
-                "%s/test_ldb.sh ldaps $SERVER_IP %s" % (bbdir, options))
+for options in ['-U"$USERNAME%$PASSWORD"']:
+    plantestsuite("samba4.ldb.ldaps with options %s(ad_dc_ntvfs)" % options, "ad_dc_ntvfs",
+            "%s/test_ldb.sh ldaps $SERVER_IP %s" % (bbdir, options))
 
-    creds_options = [
-        '--simple-bind-dn=$USERNAME@$REALM --password=$PASSWORD',
-    ]
-    peer_options = {
-        'SERVER_IP': '$SERVER_IP',
-        'SERVER_NAME': '$SERVER',
-        'SERVER.REALM': '$SERVER.$REALM',
-    }
-    tls_verify_options = [
-        '--option="tlsverifypeer=no_check"',
-        '--option="tlsverifypeer=ca_only"',
-        '--option="tlsverifypeer=ca_and_name_if_available"',
-        '--option="tlsverifypeer=ca_and_name"',
-        '--option="tlsverifypeer=as_strict_as_possible"',
-    ]
+creds_options = [
+    '--simple-bind-dn=$USERNAME@$REALM --password=$PASSWORD',
+]
+peer_options = {
+    'SERVER_IP': '$SERVER_IP',
+    'SERVER_NAME': '$SERVER',
+    'SERVER.REALM': '$SERVER.$REALM',
+}
+tls_verify_options = [
+    '--option="tlsverifypeer=no_check"',
+    '--option="tlsverifypeer=ca_only"',
+    '--option="tlsverifypeer=ca_and_name_if_available"',
+    '--option="tlsverifypeer=ca_and_name"',
+    '--option="tlsverifypeer=as_strict_as_possible"',
+]
 
-    # we use :local for fl2008r2dc because of the self-signed certificate
-    for env in ["ad_dc_ntvfs", "fl2008r2dc:local"]:
-        for peer_key in peer_options.keys():
-            peer_val = peer_options[peer_key]
-            for creds in creds_options:
-                for tls_verify in tls_verify_options:
-                    options = creds + ' ' + tls_verify
-                    plantestsuite("samba4.ldb.simple.ldaps with options %s %s(%s)" % (
-                                  peer_key, options, env), env,
-                                  "%s/test_ldb_simple.sh ldaps %s %s" % (bbdir, peer_val, options))
+# we use :local for fl2008r2dc because of the self-signed certificate
+for env in ["ad_dc_ntvfs", "fl2008r2dc:local"]:
+    for peer_key in peer_options.keys():
+        peer_val = peer_options[peer_key]
+        for creds in creds_options:
+            for tls_verify in tls_verify_options:
+                options = creds + ' ' + tls_verify
+                plantestsuite("samba4.ldb.simple.ldaps with options %s %s(%s)" % (
+                              peer_key, options, env), env,
+                              "%s/test_ldb_simple.sh ldaps %s %s" % (bbdir, peer_val, options))
 
 # test all "ldap server require strong auth" combinations
 for env in ["ad_dc_ntvfs", "fl2008r2dc", "fl2003dc"]:
     options = '--simple-bind-dn="$USERNAME@$REALM" --password="$PASSWORD"'
     plantestsuite("samba4.ldb.simple.ldap with SIMPLE-BIND %s(%s)" % (options, env),
                   env, "%s/test_ldb_simple.sh ldap $SERVER %s" % (bbdir, options))
-    if have_tls_support:
-        options += ' --option="tlsverifypeer=no_check"'
-        plantestsuite("samba4.ldb.simple.ldaps with SIMPLE-BIND %s(%s)" % (options, env),
-                      env, "%s/test_ldb_simple.sh ldaps $SERVER %s" % (bbdir, options))
+    options += ' --option="tlsverifypeer=no_check"'
+    plantestsuite("samba4.ldb.simple.ldaps with SIMPLE-BIND %s(%s)" % (options, env),
+                  env, "%s/test_ldb_simple.sh ldaps $SERVER %s" % (bbdir, options))
 
     auth_options = [
         '--option=clientldapsaslwrapping=plain',
@@ -121,10 +118,9 @@ for env in ["ad_dc_ntvfs", "fl2008r2dc", "fl2003dc"]:
         options = '-U"$USERNAME%$PASSWORD"' + ' ' + auth_option
         plantestsuite("samba4.ldb.simple.ldap with SASL-BIND %s(%s)" % (options, env),
                       env, "%s/test_ldb_simple.sh ldap $SERVER %s" % (bbdir, options))
-    if have_tls_support:
-        options = '-U"$USERNAME%$PASSWORD" --option="tlsverifypeer=no_check"'
-        plantestsuite("samba4.ldb.simple.ldaps with SASL-BIND %s(%s)" % (options, env),
-                      env, "%s/test_ldb_simple.sh ldaps $SERVER %s" % (bbdir, options))
+    options = '-U"$USERNAME%$PASSWORD" --option="tlsverifypeer=no_check"'
+    plantestsuite("samba4.ldb.simple.ldaps with SASL-BIND %s(%s)" % (options, env),
+                  env, "%s/test_ldb_simple.sh ldaps $SERVER %s" % (bbdir, options))
 
 for options in ['-U"$USERNAME%$PASSWORD"']:
     plantestsuite("samba4.ldb.ldapi with options %s(ad_dc_ntvfs:local)" % options, "ad_dc_ntvfs:local",
