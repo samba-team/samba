@@ -1,4 +1,4 @@
-setup_httpd ()
+setup ()
 {
 	debug "Setting up HTTPD environment: service $1, not managed by CTDB"
 

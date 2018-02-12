@@ -4,8 +4,9 @@
 
 define_test "managed"
 
-setup_httpd "up"
-export CTDB_MANAGES_HTTPD="yes"
+setup "up"
+
+CTDB_MANAGES_HTTPD="yes"
 
 ok <<EOF
 Stopping httpd: OK
