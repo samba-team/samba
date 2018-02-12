@@ -4,7 +4,7 @@
 
 define_test "takeip, monitor -> no reconfigure"
 
-setup_nfs
+setup
 
 public_address=$(ctdb_get_1_public_address)
 

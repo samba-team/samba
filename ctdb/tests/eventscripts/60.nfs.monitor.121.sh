@@ -8,7 +8,8 @@ define_test "lockd down, 7 iterations"
 # attempts to restart the service.  That is, the eventscript is unable
 # to restart the service.
 
-setup_nfs
+setup
+
 rpc_services_down "nlockmgr"
 
 nfs_iterate_test 7 "nlockmgr"

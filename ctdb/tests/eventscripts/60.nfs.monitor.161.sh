@@ -4,7 +4,7 @@
 
 define_test "2nd share missing"
 
-setup_nfs
+setup
 
 out=$(shares_missing "ERROR: nfs directory \"%s\" not available" 2)
 

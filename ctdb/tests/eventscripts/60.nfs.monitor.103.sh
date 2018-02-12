@@ -2,9 +2,9 @@
 
 . "${TEST_SCRIPTS_DIR}/unit.sh"
 
-define_test "all services available, check nfsd thread count, not enough threads"
+define_test "all services available, not enough nfsd threads"
 
-setup_nfs
+setup
 
 RPCNFSDCOUNT=8
 nfs_setup_fake_threads "nfsd" 1 2 3 4 5

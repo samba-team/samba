@@ -4,9 +4,9 @@
 
 define_test "callout is 'false', causes takeip to fail"
 
-setup_nfs
+setup
 
-export CTDB_NFS_CALLOUT="echo takeip ; false"
+CTDB_NFS_CALLOUT="echo takeip ; false"
 
 required_result 1 "takeip"
 simple_test

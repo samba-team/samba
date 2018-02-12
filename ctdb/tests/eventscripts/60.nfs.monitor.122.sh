@@ -7,7 +7,8 @@ define_test "lockd down, 7 iterations, back up after 2"
 # This simulates a success the eventscript's automated attempts to
 # restart the service.
 
-setup_nfs
+setup
+
 rpc_services_down "nlockmgr"
 
 # Iteration 2 should try to restart rpc.lockd.  However, our test

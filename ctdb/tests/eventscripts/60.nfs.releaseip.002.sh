@@ -4,9 +4,9 @@
 
 define_test "callout is 'false', causes releaseip to fail"
 
-setup_nfs
+setup
 
-export CTDB_NFS_CALLOUT="echo releaseip ; false"
+CTDB_NFS_CALLOUT="echo releaseip ; false"
 
 required_result 1 "releaseip"
 simple_test

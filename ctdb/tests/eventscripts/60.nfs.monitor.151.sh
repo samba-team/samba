@@ -4,7 +4,8 @@
 
 define_test "mountd down, 1 iteration"
 
-setup_nfs
+setup
+
 rpc_services_down "mountd"
 
 ok_null

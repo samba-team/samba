@@ -4,7 +4,7 @@
 
 define_test "takeip, ipreallocated -> reconfigure"
 
-setup_nfs
+setup
 
 public_address=$(ctdb_get_1_public_address)
 

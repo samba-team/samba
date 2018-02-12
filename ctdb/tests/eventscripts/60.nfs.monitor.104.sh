@@ -7,7 +7,7 @@
 # consciously removed.
 define_test "all services available, check nfsd thread count, too many threads"
 
-setup_nfs
+setup
 
 RPCNFSDCOUNT=4
 nfs_setup_fake_threads "nfsd" 1 2 3 4 5 6

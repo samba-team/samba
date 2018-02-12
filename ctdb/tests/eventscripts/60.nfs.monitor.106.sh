@@ -4,7 +4,8 @@
 
 define_test "portmapper down, 2 iterations"
 
-setup_nfs
+setup
+
 rpc_services_down "portmapper"
 
 nfs_iterate_test 2 "portmapper"

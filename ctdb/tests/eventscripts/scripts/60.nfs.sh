@@ -1,6 +1,6 @@
-setup_nfs ()
+setup ()
 {
-	setup_ctdb
+	setup_shares
 
 	service_name="nfs"
 
@@ -13,11 +13,10 @@ setup_nfs ()
 	# This doesn't even need to exist
 	export CTDB_NFS_EXPORTS_FILE="$EVENTSCRIPTS_TESTS_VAR_DIR/etc-exports"
 
-	# Reset the failcounts for nfs services.
-	eventscript_call eval rm -f '$ctdb_fail_dir/nfs_*'
-
 	if [ "$1" != "down" ] ; then
-		debug "Setting up NFS environment: all RPC services up, NFS managed by CTDB"
+		debug <<EOF
+Setting up NFS environment: all RPC services up, NFS managed by CTDB
+EOF
 
 		service "nfs" force-started
 		service "nfslock" force-started
@@ -29,15 +28,19 @@ setup_nfs ()
 			"nlockmgr" "status"
 
 		nfs_setup_fake_threads "nfsd"
-		nfs_setup_fake_threads "rpc.foobar"  # Just set the variable to empty
+		nfs_setup_fake_threads "rpc.foobar"  # Set the variable to empty
 	else
-		debug "Setting up NFS environment: all RPC services down, NFS not managed by CTDB"
+		debug <<EOF
+Setting up NFS environment: all RPC services down, NFS not managed by CTDB
+EOF
 
 		service "nfs" force-stopped
 		service "nfslock" force-stopped
 
 		export CTDB_MANAGES_NFS=""
 	fi
+
+	export CTDB_NFS_CALLOUT=""
 
 	# This is really nasty.  However, when we test NFS we don't
 	# actually test statd-callout. If we leave it there then left
@@ -49,14 +52,22 @@ setup_nfs ()
 
 rpc_services_down ()
 {
-	for _i ; do
-	    debug "Marking RPC service \"${_i}\" as unavailable"
-	    FAKE_RPCINFO_SERVICES=$(echo "$FAKE_RPCINFO_SERVICES" | sed -r -e "s@[[:space:]]*${_i}:[0-9]+:[0-9]+@@g")
+	_out=""
+	for _s in $FAKE_RPCINFO_SERVICES ; do
+		for _i ; do
+			if [ "$_i" = "${_s%%:*}" ] ; then
+			    debug "Marking RPC service \"${_i}\" as UNAVAILABLE"
+			    continue 2
+			fi
+		done
+		_out="${_out}${_out:+ }${_s}"
 	done
+	FAKE_RPCINFO_SERVICES="$_out"
 }
 
 rpc_services_up ()
 {
+	_out="$FAKE_RPCINFO_SERVICES"
 	for _i ; do
 		debug "Marking RPC service \"${_i}\" as available"
 		case "$_i" in
@@ -69,8 +80,9 @@ rpc_services_up ()
 		*) die "Internal error - unsupported RPC service \"${_i}\"" ;;
 		esac
 
-		FAKE_RPCINFO_SERVICES="${FAKE_RPCINFO_SERVICES}${FAKE_RPCINFO_SERVICES:+ }${_i}:${_t}"
+		_out="${_out}${_out:+ }${_i}:${_t}"
 	done
+	export FAKE_RPCINFO_SERVICES="$_out"
 }
 
 nfs_setup_fake_threads ()
@@ -79,7 +91,7 @@ nfs_setup_fake_threads ()
 
 	case "$_prog" in
 	nfsd)
-		export PROCFS_PATH=$(mktemp -d --tmpdir="$EVENTSCRIPTS_TESTS_VAR_DIR")
+		export PROCFS_PATH="${EVENTSCRIPTS_TESTS_VAR_DIR}/proc"
 		_threads="${PROCFS_PATH}/fs/nfsd/threads"
 		mkdir -p $(dirname "$_threads")
 		echo $# >"$_threads"
@@ -136,10 +148,12 @@ rpc_set_service_failure_response ()
 	_dir="${CTDB_NFS_CHECKS_DIR:-${CTDB_BASE}/nfs-checks.d}"
 
 	_file=$(ls "$_dir"/[0-9][0-9]."${_rpc_service}.check")
-	[ -r "$_file" ] || die "RPC check file \"$_file\" does not exist or is not unique"
+	[ -r "$_file" ] || \
+		die "RPC check file \"$_file\" does not exist or is not unique"
 
-	_out=$(mktemp --tmpdir="$EVENTSCRIPTS_TESTS_VAR_DIR")
-	_rc_file=$(mktemp --tmpdir="$EVENTSCRIPTS_TESTS_VAR_DIR")
+	_out="${EVENTSCRIPTS_TESTS_VAR_DIR}/rpc_failure_output"
+	: >"$_out"
+	_rc_file="${EVENTSCRIPTS_TESTS_VAR_DIR}/rpc_result"
 
 	(
 		# Subshell to restrict scope variables...
@@ -173,7 +187,8 @@ $_rpc_service failed RPC check:
 rpcinfo: RPC: Program not registered
 program $_rpc_service${_ver:+ version }${_ver} is not available"
 
-		if [ $unhealthy_after -gt 0 -a $_numfails -ge $unhealthy_after ] ; then
+		if [ $unhealthy_after -gt 0 -a \
+		     $_numfails -ge $unhealthy_after ] ; then
 			_unhealthy=true
 			echo 1 >"$_rc_file"
 			echo "ERROR: ${_rpc_check_out}" >>"$_out"
@@ -188,7 +203,8 @@ program $_rpc_service${_ver:+ version }${_ver} is not available"
 				echo "WARNING: ${_rpc_check_out}" >>"$_out"
 			fi
 
-			echo "Trying to restart service \"${_rpc_service}\"..." >>"$_out"
+			echo "Trying to restart service \"${_rpc_service}\"..."\
+			     >>"$_out"
 
 			if [ -n "$service_debug_cmd" ] ; then
 				$service_debug_cmd 2>&1 >>"$_out"
@@ -258,9 +274,13 @@ nfs_iterate_test ()
 		# This is not a numerical comparison because $1 will
 		# often not be set.
 		if [ "$_iteration" = "$1" ] ; then
-			debug "##################################################"
+			debug <<EOF
+##################################################
+EOF
 			eval "$2"
-			debug "##################################################"
+			debug <<EOF
+##################################################
+EOF
 			shift 2
 		fi
 		if [ -n "$_rpc_service" ] ; then
@@ -270,7 +290,8 @@ nfs_iterate_test ()
 					_ok=true
 				fi
 			else
-				if rpcinfo -T tcp localhost "$_rpc_service" >/dev/null 2>&1 ; then
+				if rpcinfo -T tcp localhost "$_rpc_service" \
+					   >/dev/null 2>&1 ; then
 					_ok=true
 				fi
 			fi
@@ -280,14 +301,17 @@ nfs_iterate_test ()
 			else
 				_iterate_failcount=$(($_iterate_failcount + 1))
 			fi
-			rpc_set_service_failure_response "$_rpc_service" $_iterate_failcount
+			rpc_set_service_failure_response \
+				"$_rpc_service" $_iterate_failcount
 		fi
 		_out=$(simple_test 2>&1)
 		_ret=$?
 		if "$TEST_VERBOSE" || [ $_ret -ne 0 ] ; then
-			echo "##################################################"
-			echo "Iteration ${_iteration}:"
-			echo "$_out"
+			cat <<EOF
+##################################################
+Iteration ${_iteration}:
+$_out
+EOF
 		fi
 		if [ $_ret -ne 0 ] ; then
 			exit $_ret

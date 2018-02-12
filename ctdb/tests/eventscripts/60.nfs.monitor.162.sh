@@ -4,8 +4,9 @@
 
 define_test "2nd share missing, skipping share checks"
 
-setup_nfs
-export CTDB_NFS_SKIP_SHARE_CHECK="yes"
+setup
+
+CTDB_NFS_SKIP_SHARE_CHECK="yes"
 
 ok_null
 

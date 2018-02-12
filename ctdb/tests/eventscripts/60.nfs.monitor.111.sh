@@ -4,7 +4,8 @@
 
 define_test "knfsd down, 1 iteration"
 
-setup_nfs
+setup
+
 rpc_services_down "nfs"
 
 ok_null

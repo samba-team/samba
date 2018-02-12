@@ -4,7 +4,8 @@
 
 define_test "mountd down, 7 iterations, back up after 2"
 
-setup_nfs
+setup
+
 rpc_services_down "mountd"
 
 # Iteration 2 should try to restart rpc.mountd.  However, our test

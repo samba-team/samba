@@ -4,7 +4,7 @@
 
 define_test "all services available"
 
-setup_nfs
+setup
 
 ok_null
 

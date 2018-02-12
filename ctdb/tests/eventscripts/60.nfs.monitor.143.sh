@@ -6,7 +6,8 @@ define_test "statd down, 2 iterations, stuck process"
 
 # statd fails and the first attempt to restart it succeeds.
 
-setup_nfs
+setup
+
 rpc_services_down "status"
 nfs_setup_fake_threads "rpc.status" 1001
 

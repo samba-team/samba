@@ -4,9 +4,9 @@
 
 define_test "callout is 'true'"
 
-setup_nfs
+setup
 
-export CTDB_NFS_CALLOUT="true"
+CTDB_NFS_CALLOUT="true"
 
 ok_null
 simple_test
