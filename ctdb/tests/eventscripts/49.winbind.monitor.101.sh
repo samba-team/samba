@@ -4,7 +4,7 @@
 
 define_test "all OK"
 
-setup_winbind
+setup
 
 ok_null
 

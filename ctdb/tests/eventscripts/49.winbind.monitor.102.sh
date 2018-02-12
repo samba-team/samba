@@ -4,7 +4,8 @@
 
 define_test "winbind down"
 
-setup_winbind
+setup
+
 wbinfo_down
 
 required_result 1 "ERROR: wbinfo -p returned error"

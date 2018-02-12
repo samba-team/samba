@@ -4,7 +4,7 @@
 
 define_test "not managed"
 
-setup_winbind "down"
+setup "down"
 
 ok_null
 simple_test

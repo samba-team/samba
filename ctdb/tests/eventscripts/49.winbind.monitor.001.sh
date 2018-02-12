@@ -4,7 +4,7 @@
 
 define_test "not managed, check no-op"
 
-setup_winbind "down"
+setup "down"
 
 ok_null
 

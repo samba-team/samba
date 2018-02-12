@@ -1,7 +1,5 @@
-setup_winbind ()
+setup ()
 {
-	setup_ctdb
-
 	service_name="winbind"
 
 	if [ "$1" != "down" ] ; then
