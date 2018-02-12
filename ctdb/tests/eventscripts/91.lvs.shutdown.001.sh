@@ -4,8 +4,7 @@
 
 define_test "not configured"
 
-setup_ctdb
-setup_ctdb_lvs <<EOF
+setup <<EOF
 EOF
 
 ok_null

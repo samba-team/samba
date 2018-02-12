@@ -4,8 +4,7 @@
 
 define_test "configured"
 
-setup_ctdb
-setup_ctdb_lvs "10.1.1.201" "eth0" <<EOF
+setup "10.1.1.201" "eth0" <<EOF
 EOF
 
 ipvsadm -A -t "$CTDB_LVS_PUBLIC_IP" -s lc -p 1999999

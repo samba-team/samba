@@ -1,20 +1,20 @@
-setup_ctdb_lvs ()
+setup ()
 {
-	lvs_state_dir="${EVENTSCRIPTS_TESTS_VAR_DIR}/lvs"
-	mkdir -p "$lvs_state_dir"
+	_ip="$1"
+	_iface="$2"
 
-	export FAKE_LVS_STATE_DIR="${lvs_state_dir}/state"
-	mkdir "$FAKE_LVS_STATE_DIR"
+	export FAKE_LVS_STATE_DIR="${FAKE_NETWORK_STATE}/lvs"
+	mkdir -p "$FAKE_LVS_STATE_DIR"
 
 	lvs_header=$(ipvsadm -l -n)
 
-	export CTDB_LVS_PUBLIC_IP="$1"
-	export CTDB_LVS_PUBLIC_IFACE="$2"
+	[ -n "$_ip" ] || return 0
+	[ -n "$_iface" ] || return 0
 
-	[ -n "$CTDB_LVS_PUBLIC_IP" ] || return 0
-	[ -n "$CTDB_LVS_PUBLIC_IFACE" ] || return 0
+	export CTDB_LVS_NODES="${CTDB_BASE}/lvs_nodes"
+	export CTDB_LVS_PUBLIC_IP="$_ip"
+	export CTDB_LVS_PUBLIC_IFACE="$_iface"
 
-	export CTDB_LVS_NODES=$(mktemp --tmpdir="$lvs_state_dir")
 	export FAKE_CTDB_LVS_MASTER=""
 
 	# Read from stdin

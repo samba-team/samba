@@ -4,8 +4,7 @@
 
 define_test "configured, no nodes in config"
 
-setup_ctdb
-setup_ctdb_lvs "10.1.1.201" "eth0" <<EOF
+setup "10.1.1.201" "eth0" <<EOF
 EOF
 
 ok_null

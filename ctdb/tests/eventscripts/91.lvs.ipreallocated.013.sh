@@ -4,8 +4,7 @@
 
 define_test "nodes in config, other node is master"
 
-setup_ctdb
-setup_ctdb_lvs "10.1.1.201" "eth0" <<EOF
+setup "10.1.1.201" "eth0" <<EOF
 192.168.1.1
 192.168.1.2	master
 192.168.1.3

@@ -4,8 +4,7 @@
 
 define_test "sanity check ipvsadm stub"
 
-setup_ctdb
-setup_ctdb_lvs<<EOF
+setup<<EOF
 EOF
 
 check_ipvsadm NULL

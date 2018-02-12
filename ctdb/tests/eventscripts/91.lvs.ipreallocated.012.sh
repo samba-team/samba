@@ -4,8 +4,7 @@
 
 define_test "nodes in config, no master (e.g. all inactive)"
 
-setup_ctdb
-setup_ctdb_lvs "10.1.1.201" "eth0" <<EOF
+setup "10.1.1.201" "eth0" <<EOF
 192.168.1.1
 192.168.1.2
 192.168.1.3
