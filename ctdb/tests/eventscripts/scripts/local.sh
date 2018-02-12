@@ -85,13 +85,6 @@ setup_date ()
 	export FAKE_DATE_OUTPUT="$1"
 }
 
-setup_generic ()
-{
-    setup_shares
-    setup_dbdir
-    setup_date
-}
-
 setup_tcp_listen ()
 {
 	export FAKE_TCP_LISTEN="$*"
@@ -246,17 +239,6 @@ ipv4_host_addr_to_net ()
 
 # CTDB fakery
 
-# Evaluate an expression that probably calls functions or uses
-# variables from the CTDB functions file.  This is used for test
-# initialisation.
-eventscript_call ()
-{
-    (
-	. "$CTDB_BASE/functions"
-	"$@"
-    )
-}
-
 setup_numnodes ()
 {
 	export FAKE_CTDB_NUMNODES="${1:-3}"
@@ -297,22 +279,6 @@ ctdb_set_pnn ()
     CTDB_SCRIPT_VARDIR="${EVENTSCRIPTS_TESTS_VAR_DIR}/scripts/${FAKE_CTDB_PNN}"
     export CTDB_SCRIPT_VARDIR
     mkdir -p "$CTDB_SCRIPT_VARDIR"
-}
-
-setup_ctdb ()
-{
-    setup_generic
-
-    setup_public_addresses
-}
-
-validate_percentage ()
-{
-    case "$1" in
-	[0-9]|[0-9][0-9]|100) return 0 ;;
-	*) echo "WARNING: ${1} is an invalid percentage${2:+\" in }${2}${2:+\"}"
-	   return 1
-    esac
 }
 
 ctdb_get_interfaces ()
@@ -363,13 +329,6 @@ ctdb_get_1_public_address ()
     ctdb_get_my_public_addresses | { head -n 1 ; cat >/dev/null ; }
 }
 
-ctdb_not_implemented ()
-{
-    export CTDB_NOT_IMPLEMENTED="$1"
-    ctdb_not_implemented="\
-DEBUG: ctdb: command \"$1\" not implemented in stub"
-}
-
 # Check the routes against those that are expected.  $1 is the number
 # of assigned IPs to use (<num>, all), defaulting to 1.  If $2 is
 # "default" then expect default routes to have been added.
@@ -415,17 +374,6 @@ EOF
 }
 
 ######################################################################
-
-setup_nfs_ganesha ()
-{
-    setup_nfs "$@"
-    export CTDB_NFS_CALLOUT="${CTDB_BASE}/nfs-ganesha-callout"
-    if [ "$1" != "down" ] ; then
-	export CTDB_MANAGES_NFS="yes"
-    fi
-
-    export CTDB_NFS_SKIP_SHARE_CHECK="yes"
-}
 
 
 nfs_load_config ()
