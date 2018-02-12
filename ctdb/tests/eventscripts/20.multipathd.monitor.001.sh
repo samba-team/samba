@@ -4,7 +4,7 @@
 
 define_test "No multipath devices configure to check"
 
-setup_multipathd
+setup
 
 ok_null
 

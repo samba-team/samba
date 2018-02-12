@@ -1,4 +1,4 @@
-setup_multipathd ()
+setup ()
 {
 	_failures=""
 	_devices=""
