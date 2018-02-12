@@ -89,14 +89,7 @@ setup_date ()
 
 setup_generic ()
 {
-    debug "Setting up shares (3 existing shares)"
-    # Create 3 fake shares/exports.
-    export FAKE_SHARES=""
-    for i in $(seq 1 3) ; do
-	_s="${EVENTSCRIPTS_TESTS_VAR_DIR}/shares/${i}_existing"
-	mkdir -p "$_s"
-	FAKE_SHARES="${FAKE_SHARES}${FAKE_SHARES:+ }${_s}"
-    done
+    setup_shares
 
     export FAKE_PROC_NET_BONDING="$EVENTSCRIPTS_TESTS_VAR_DIR/proc-net-bonding"
     mkdir -p "$FAKE_PROC_NET_BONDING"
@@ -162,28 +155,43 @@ setup_tcp_connections_unkillable ()
 	export FAKE_NETSTAT_TCP_ESTABLISHED="$_t"
 }
 
+setup_shares ()
+{
+	debug "Setting up shares (3 existing shares)"
+	# Create 3 fake shares/exports.
+	export FAKE_SHARES=""
+	for i in $(seq 1 3) ; do
+		_s="${EVENTSCRIPTS_TESTS_VAR_DIR}/shares/share${i}"
+		mkdir -p "$_s"
+		FAKE_SHARES="${FAKE_SHARES}${FAKE_SHARES:+ }${_s}"
+	done
+}
+
 shares_missing ()
 {
-    _fmt="$1" ; shift
+	# Mark some shares as non-existent
+	_fmt="$1" ; shift
 
-    # Replace some shares with non-existent ones.
-    _t=""
-    _n=1
-    _nl="
+	_out=""
+	_nl="
 "
-    export MISSING_SHARES_TEXT=""
-    for _i in $FAKE_SHARES ; do
-	if [ $_n = "$1" ] ; then
-	    shift
-	    _i="${_i%_existing}_missing"
-	    debug "Replacing share $_n with missing share \"$_i\""
-	    rmdir "$_i" 2>/dev/null || true
-	    MISSING_SHARES_TEXT="${MISSING_SHARES_TEXT}${MISSING_SHARES_TEXT:+${_nl}}"$(printf "$_fmt" "${_i}")
-	fi
-	_t="${_t}${_t:+ }${_i}"
-	_n=$(($_n + 1))
-    done
-    FAKE_SHARES="$_t"
+
+	_n=1
+	for _i in $FAKE_SHARES ; do
+		for _j ; do
+			if [ $_n -ne "$_j" ] ; then
+				continue
+			fi
+
+			debug "Mark share $_n as missing share \"$_i\""
+			rmdir "$_i"
+			_t=$(printf "$_fmt" "${_i}")
+			_out="${_out}${_out:+${_nl}}${_t}"
+		done
+		_n=$(($_n + 1))
+	done
+
+	echo "$_out"
 }
 
 # Setup some fake /proc/net/bonding files with just enough info for
