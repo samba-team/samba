@@ -1422,6 +1422,39 @@ the following entry types;
 </refsect2>
 
 <refsect2>
+<title>ADS setspn <replaceable>SETSPN LIST [machine]</replaceable></title>
+
+<para>
+   Lists the Windows SPNs stored in the 'machine' Windows AD Computer object.
+   If 'machine' is not specified then computer account for this client is used
+   instead.
+</para>
+</refsect2>
+
+<refsect2>
+<title>ADS setspn <replaceable>SETSPN ADD SPN [machine]</replaceable></title>
+
+<para>
+   Adds the specified Windows SPN to the 'machine' Windows AD Computer object.
+   If 'machine' is not specified then computer account for this client is used
+   instead.
+</para>
+</refsect2>
+
+
+<refsect2>
+<title>ADS setspn <replaceable>SETSPN DELETE SPN [machine]</replaceable></title>
+
+<para>
+   DELETE the specified Window SPN from the 'machine' Windows AD Computer
+   object. If 'machine' is not specified then computer account for this
+   client is used
+   instead.
+</para>
+
+</refsect2>
+
+<refsect2>
 <title>ADS WORKGROUP</title>
 
 <para>Print out workgroup name for specified kerberos realm.</para>
