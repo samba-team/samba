@@ -4,7 +4,8 @@
 
 define_test "CTDB_NATGW_PUBLIC_IFACE unset, not slave-only"
 
-setup_ctdb
+setup
+
 setup_ctdb_natgw <<EOF
 192.168.1.21 master
 192.168.1.22

@@ -4,7 +4,7 @@
 
 define_test "master node, basic configuration"
 
-setup_ctdb
+setup
 
 setup_ctdb_natgw <<EOF
 192.168.1.21 master

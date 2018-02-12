@@ -4,9 +4,9 @@
 
 define_test "static routes, custom gateway, multiple transitions"
 
-setup_ctdb
+setup
 
-export CTDB_NATGW_STATIC_ROUTES="10.1.1.0/24 10.1.2.0/24@10.1.1.253"
+CTDB_NATGW_STATIC_ROUTES="10.1.1.0/24 10.1.2.0/24@10.1.1.253"
 
 echo "*** Master node..."
 
@@ -61,4 +61,3 @@ simple_test_command ip route show
 
 ok_natgw_master_ip_addr_show
 simple_test_command ip addr show "$CTDB_NATGW_PUBLIC_IFACE"
-

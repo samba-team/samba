@@ -4,7 +4,8 @@
 
 define_test "missing config file"
 
-setup_ctdb
+setup
+
 setup_ctdb_natgw <<EOF
 192.168.1.21 master
 192.168.1.22
@@ -21,4 +22,3 @@ EOF
 for i in "startup" "ipreallocated" ; do
     simple_test_event "$i"
 done
-

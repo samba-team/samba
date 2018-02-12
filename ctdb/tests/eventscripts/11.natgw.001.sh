@@ -4,7 +4,7 @@
 
 define_test "not configured"
 
-setup_ctdb
+setup
 
 ok_null
 simple_test_event "ipreallocate"

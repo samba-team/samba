@@ -4,7 +4,7 @@
 
 define_test "basic configuration, multiple transitions"
 
-setup_ctdb
+setup
 
 echo "*** Master node..."
 

@@ -4,7 +4,7 @@
 
 define_test "master node, static routes"
 
-setup_ctdb
+setup
 
 setup_ctdb_natgw <<EOF
 192.168.1.21 master
@@ -13,7 +13,7 @@ setup_ctdb_natgw <<EOF
 192.168.1.24
 EOF
 
-export CTDB_NATGW_STATIC_ROUTES="10.1.1.0/24 10.1.2.0/24"
+CTDB_NATGW_STATIC_ROUTES="10.1.1.0/24 10.1.2.0/24"
 
 ok_null
 simple_test_event "ipreallocated"

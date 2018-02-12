@@ -1,12 +1,23 @@
-setup_ctdb_natgw ()
+setup ()
 {
 	debug "Setting up NAT gateway"
 
-	natgw_config_dir="${TEST_VAR_DIR}/natgw_config"
-	mkdir -p "$natgw_config_dir"
+	natgw_nodes="${CTDB_BASE}/natgw_nodes"
 
-	export CTDB_NATGW_NODES="${natgw_config_dir}/natgw_nodes"
+	ctdb_set_pnn
 
+	export CTDB_NATGW_NODES=""
+	export CTDB_NATGW_PRIVATE_NETWORK=""
+	export CTDB_NATGW_PUBLIC_IP=""
+	export CTDB_NATGW_PUBLIC_IFACE=""
+	export CTDB_NATGW_DEFAULT_GATEWAY=""
+	export CTDB_NATGW_STATIC_ROUTES=""
+}
+
+# A separate function for this makes sense because it can be done
+# multiple times per test
+setup_ctdb_natgw ()
+{
 	# Read from stdin
 	while read _ip _opts ; do
 		case "$_opts" in
@@ -21,20 +32,20 @@ setup_ctdb_natgw ()
 			echo "$_ip"
 			;;
 		esac
-	done >"$CTDB_NATGW_NODES"
+	done >"$natgw_nodes"
 
 	# Assume all of the nodes are on a /24 network and have IPv4
 	# addresses:
-	read _ip <"$CTDB_NATGW_NODES"
-	export CTDB_NATGW_PRIVATE_NETWORK="${_ip%.*}.0/24"
+	read _ip <"$natgw_nodes"
 
+	CTDB_NATGW_NODES="$natgw_nodes"
+	CTDB_NATGW_PRIVATE_NETWORK="${_ip%.*}.0/24"
 	# These are fixed.  Probably don't use the same network for the
 	# private node IPs.  To unset the default gateway just set it to
 	# "".  :-)
-	export CTDB_NATGW_PUBLIC_IP="10.1.1.121/24"
-	export CTDB_NATGW_PUBLIC_IFACE="eth1"
-	export CTDB_NATGW_DEFAULT_GATEWAY="10.1.1.254"
-	export CTDB_NATGW_SLAVE_ONLY=""
+	CTDB_NATGW_PUBLIC_IP="10.1.1.121/24"
+	CTDB_NATGW_PUBLIC_IFACE="eth1"
+	CTDB_NATGW_DEFAULT_GATEWAY="10.1.1.254"
 }
 
 ok_natgw_master_ip_addr_show ()
