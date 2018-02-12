@@ -728,9 +728,7 @@ setup_ctdb_natgw ()
 	natgw_config_dir="${TEST_VAR_DIR}/natgw_config"
 	mkdir -p "$natgw_config_dir"
 
-	# These will accumulate, 1 per test... but will be cleaned up at
-	# the end.
-	export CTDB_NATGW_NODES=$(mktemp --tmpdir="$natgw_config_dir")
+	export CTDB_NATGW_NODES="${natgw_config_dir}/natgw_nodes"
 
 	# Read from stdin
 	while read _ip _opts ; do
