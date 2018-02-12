@@ -4,7 +4,9 @@
 
 define_test "not configured"
 
-setup_ctdb
+setup
+
+CTDB_PER_IP_ROUTING_CONF=""
 
 ok_null
 simple_test_event "takeip"

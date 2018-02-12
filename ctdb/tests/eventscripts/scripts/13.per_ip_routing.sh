@@ -1,8 +1,10 @@
-setup_ctdb_policy_routing ()
+setup ()
 {
+	setup_public_addresses
+
 	service_name="per_ip_routing"
 
-	export CTDB_PER_IP_ROUTING_CONF="$CTDB_BASE/policy_routing"
+	export CTDB_PER_IP_ROUTING_CONF="${CTDB_BASE}/policy_routing"
 	export CTDB_PER_IP_ROUTING_RULE_PREF=100
 	export CTDB_PER_IP_ROUTING_TABLE_ID_LOW=1000
 	export CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=2000

@@ -7,8 +7,7 @@ define_test "1 IP configured, takeip, moveip, ipreallocated"
 # We move the IP to another node but don't run releaseip.
 # ipreallocated should remove the bogus routes.
 
-setup_ctdb
-setup_ctdb_policy_routing
+setup
 
 create_policy_routing_config 1 default
 

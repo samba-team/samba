@@ -8,8 +8,7 @@ define_test "1 IP configured, takeip, releaseip, ipreallocated"
 # moveip" doesn't do anything then the IP being released will still be
 # on the node and the ipreallocated event will add the routes back.
 
-setup_ctdb
-setup_ctdb_policy_routing
+setup
 
 create_policy_routing_config 1 default
 

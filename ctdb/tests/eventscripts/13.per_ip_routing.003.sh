@@ -4,8 +4,7 @@
 
 define_test "empty config, ipreallocated"
 
-setup_ctdb
-setup_ctdb_policy_routing
+setup
 
 create_policy_routing_config 0
 

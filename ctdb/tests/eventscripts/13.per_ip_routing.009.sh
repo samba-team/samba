@@ -4,8 +4,7 @@
 
 define_test "All IPs configured, takeip 1 address"
 
-setup_ctdb
-setup_ctdb_policy_routing
+setup
 
 # configure all addresses
 create_policy_routing_config all default

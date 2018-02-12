@@ -4,8 +4,7 @@
 
 define_test "Invalid table ID range - includes system tables"
 
-setup_ctdb
-setup_ctdb_policy_routing
+setup
 
 CTDB_PER_IP_ROUTING_TABLE_ID_LOW=100
 CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=500

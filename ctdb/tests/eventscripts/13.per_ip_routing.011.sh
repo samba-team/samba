@@ -4,11 +4,10 @@
 
 define_test "__auto_link_local__, takeip all on node"
 
-setup_ctdb
-setup_ctdb_policy_routing
+setup
 
 # do link local fu instead of creating configuration
-export CTDB_PER_IP_ROUTING_CONF="__auto_link_local__"
+CTDB_PER_IP_ROUTING_CONF="__auto_link_local__"
 
 # add routes for all addresses
 ctdb_get_my_public_addresses |

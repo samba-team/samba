@@ -4,8 +4,7 @@
 
 define_test "All IPs configured, takeip on all nodes"
 
-setup_ctdb
-setup_ctdb_policy_routing
+setup
 
 # create config for all IPs
 create_policy_routing_config all default

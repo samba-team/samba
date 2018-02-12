@@ -4,8 +4,7 @@
 
 define_test "missing config file"
 
-setup_ctdb
-setup_ctdb_policy_routing
+setup
 
 # Error because policy routing is configured but the configuration
 # file is missing.

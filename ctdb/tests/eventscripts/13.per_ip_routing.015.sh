@@ -4,8 +4,7 @@
 
 define_test "1 IP configured, releaseip of unassigned"
 
-setup_ctdb
-setup_ctdb_policy_routing
+setup
 
 export IP_ROUTE_BAD_TABLE_ID=true
 

@@ -4,8 +4,7 @@
 
 define_test "1 IP configured, releaseip of unassigned"
 
-setup_ctdb
-setup_ctdb_policy_routing
+setup
 
 create_policy_routing_config 1 default
 
