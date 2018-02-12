@@ -62,8 +62,7 @@
 	<manvolnum>8</manvolnum></citerefentry>. As a consequence in order for this to 
 	succeed the smbd daemon must be running on the local machine. On a 
 	UNIX machine the encrypted SMB passwords are usually stored in 
-	the <citerefentry><refentrytitle>smbpasswd</refentrytitle>
-	<manvolnum>5</manvolnum></citerefentry> file. </para>
+	the default passdb backend.</para>
 
 	<para>When run by an ordinary user with no options, smbpasswd 
 	will prompt them for their old SMB password and then ask them 
