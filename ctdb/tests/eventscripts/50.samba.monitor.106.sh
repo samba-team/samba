@@ -4,9 +4,9 @@
 
 define_test "non-existent share - not checked"
 
-setup_samba
+setup
 
-export CTDB_SAMBA_SKIP_SHARE_CHECK="yes"
+CTDB_SAMBA_SKIP_SHARE_CHECK="yes"
 
 ok_null
 

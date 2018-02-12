@@ -1,7 +1,5 @@
-setup_samba ()
+setup ()
 {
-	setup_ctdb
-
 	service_name="samba"
 
 	if [ "$1" != "down" ] ; then
@@ -13,11 +11,9 @@ setup_samba ()
 			service "$i" force-started
 		done
 
-		export CTDB_SAMBA_SKIP_SHARE_CHECK="no"
 		export CTDB_MANAGES_SAMBA="yes"
 
-		export FAKE_TCP_LISTEN="0.0.0.0:445 0.0.0.0:139"
-		export FAKE_WBINFO_FAIL="no"
+		setup_tcp_listen 445 139
 
 		# Some things in 50.samba are backgrounded and waited
 		# for.  If we don't sleep at all then timeouts can
@@ -31,12 +27,15 @@ setup_samba ()
 			service "$i" force-stopped
 		done
 
-		export CTDB_SAMBA_SKIP_SHARE_CHECK="no"
 		export CTDB_MANAGES_SAMBA=""
 
-		export FAKE_TCP_LISTEN=""
-		export FAKE_WBINFO_FAIL="yes"
+		setup_tcp_listen
 	fi
+
+	export CTDB_SAMBA_SKIP_SHARE_CHECK="no"
+
+	setup_shares
+
 }
 
 samba_setup_fake_threads ()

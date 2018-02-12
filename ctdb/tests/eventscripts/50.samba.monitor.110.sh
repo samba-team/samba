@@ -4,7 +4,7 @@
 
 define_test "testparm fails"
 
-setup_samba
+setup
 
 export FAKE_TESTPARM_FAIL="yes"
 required_result 1 <<EOF

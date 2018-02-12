@@ -4,7 +4,7 @@
 
 define_test "all OK"
 
-setup_samba
+setup
 
 ok_null
 

@@ -4,7 +4,7 @@
 
 define_test "shutdown, simple"
 
-setup_samba
+setup
 
 samba_setup_fake_threads 1 2 3 4 5 6
 

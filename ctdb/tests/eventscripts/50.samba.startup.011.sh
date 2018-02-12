@@ -4,7 +4,7 @@
 
 define_test "shutdown, Debian init style"
 
-setup_samba
+setup
 
 export EVENTSCRIPT_TESTS_INIT_STYLE="debian"
 

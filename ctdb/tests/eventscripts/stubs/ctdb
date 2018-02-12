@@ -458,7 +458,7 @@ ctdb_checktcpport ()
 	_port="$1"
 
 	for _i in $FAKE_TCP_LISTEN ; do
-		if [ "$_port" = "${_i##*:}" ] ; then
+		if [ "$_port" = "$_i" ] ; then
 			exit 98
 		fi
 	done

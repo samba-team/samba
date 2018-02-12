@@ -4,7 +4,7 @@
 
 define_test "testparm times out on 2nd time through"
 
-setup_samba
+setup
 
 ok_null
 simple_test

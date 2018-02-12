@@ -90,16 +90,34 @@ setup_generic ()
     setup_shares
     setup_dbdir
     setup_date
+}
 
-    export FAKE_TCP_LISTEN
+setup_tcp_listen ()
+{
+	export FAKE_TCP_LISTEN="$*"
+}
+
+tcp_port_listening ()
+{
+	for _i ; do
+		   FAKE_TCP_LISTEN="${FAKE_TCP_LISTEN} ${_i}"
+	done
 }
 
 tcp_port_down ()
 {
-    for _i ; do
-	debug "Marking TCP port \"${_i}\" as not listening"
-	FAKE_TCP_LISTEN=$(echo "$FAKE_TCP_LISTEN" | sed -r -e "s@[[:space:]]*[\.0-9]+:${_i}@@g")
-    done
+	_port="$1"
+	debug "Marking TCP port \"${_port}\" as not listening"
+
+	_t=""
+	for _i in $FAKE_TCP_LISTEN ; do
+		if [ "$_i" = "$_port" ] ; then
+			continue
+		fi
+		_t="${_t} ${_i}"
+	done
+
+	FAKE_TCP_LISTEN="$_t"
 }
 
 setup_unix_listen ()

@@ -4,7 +4,7 @@
 
 define_test "shutdown, simple"
 
-setup_samba
+setup
 
 ok <<EOF
 Stopping smb: OK

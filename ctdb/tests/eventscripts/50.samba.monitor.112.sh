@@ -4,7 +4,7 @@
 
 define_test "testparm times out"
 
-setup_samba
+setup
 
 export FAKE_TIMEOUT="yes"
 required_result 1 <<EOF
