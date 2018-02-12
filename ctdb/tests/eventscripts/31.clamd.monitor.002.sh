@@ -4,10 +4,10 @@
 
 define_test "Managed, clamd not listening"
 
-export CTDB_MANAGES_CLAMD=yes
-export CTDB_CLAMD_SOCKET="/var/run/clamd.sock"
+setup
 
-setup_generic
+CTDB_MANAGES_CLAMD=yes
+CTDB_CLAMD_SOCKET="/var/run/clamd.sock"
 
 required_result 1 <<EOF
 ERROR: clamd not listening on $CTDB_CLAMD_SOCKET

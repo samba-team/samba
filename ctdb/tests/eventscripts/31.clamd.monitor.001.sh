@@ -4,10 +4,10 @@
 
 define_test "Not managed, clamd not listening"
 
-export CTDB_MANAGES_CLAMD=no
-export CTDB_CLAMD_SOCKET="/var/run/clamd.sock"
+setup
 
-setup_generic
+CTDB_MANAGES_CLAMD=no
+CTDB_CLAMD_SOCKET="/var/run/clamd.sock"
 
 ok_null
 simple_test

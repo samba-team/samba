@@ -91,7 +91,7 @@ setup_generic ()
     setup_dbdir
     setup_date
 
-    export FAKE_TCP_LISTEN FAKE_NETSTAT_UNIX_LISTEN
+    export FAKE_TCP_LISTEN
 }
 
 tcp_port_down ()
@@ -100,6 +100,11 @@ tcp_port_down ()
 	debug "Marking TCP port \"${_i}\" as not listening"
 	FAKE_TCP_LISTEN=$(echo "$FAKE_TCP_LISTEN" | sed -r -e "s@[[:space:]]*[\.0-9]+:${_i}@@g")
     done
+}
+
+setup_unix_listen ()
+{
+	export FAKE_NETSTAT_UNIX_LISTEN="$*"
 }
 
 unix_socket_listening ()
