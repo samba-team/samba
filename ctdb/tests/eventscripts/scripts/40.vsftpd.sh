@@ -1,4 +1,4 @@
-setup_vsftpd ()
+setup ()
 {
 	debug "Setting up VSFTPD environment: service $1, not managed by CTDB"
 

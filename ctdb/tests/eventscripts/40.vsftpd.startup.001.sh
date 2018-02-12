@@ -4,7 +4,7 @@
 
 define_test "not managed"
 
-setup_vsftpd "down"
+setup "down"
 
 ok_null
 simple_test

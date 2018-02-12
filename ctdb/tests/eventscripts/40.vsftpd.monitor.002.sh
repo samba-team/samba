@@ -4,8 +4,9 @@
 
 define_test "managed, down - once, twice"
 
-setup_vsftpd "down"
-export CTDB_MANAGES_VSFTPD="yes"
+setup "down"
+
+CTDB_MANAGES_VSFTPD="yes"
 
 ok <<EOF
 vsftpd not listening on TCP port 21
