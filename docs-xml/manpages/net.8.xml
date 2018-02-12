@@ -1339,6 +1339,89 @@ to show in the result.
 </refsect2>
 
 <refsect2>
+<title>ADS KEYTAB <replaceable>CREATE</replaceable></title>
+
+<para>
+Creates a new keytab file if one doesn't exist with default entries. Default
+entries are kerberos principals created from the machinename of the
+client, the UPN (if it exists) and any Windows SPN(s) associated with the
+computer AD account for the client. If a keytab file already exists then only
+missing kerberos principals from the default entries are added. No changes
+are made to the computer AD account.
+</para>
+</refsect2>
+
+<refsect2>
+<title>ADS KEYTAB <replaceable>ADD</replaceable> <replaceable>(principal | machine | serviceclass | windows SPN</replaceable></title>
+
+<para>
+Adds a new keytab entry, the entry can be either;
+  <variablelist>
+    <varlistentry><term>kerberos principal</term>
+    <listitem><para>
+      A kerberos principal (identified by the presence of '@') is just
+      added to the keytab file.
+    </para></listitem>
+    </varlistentry>
+    <varlistentry><term>machinename</term>
+    <listitem><para>
+      A machinename (identified by the trailing '$') is used to create a
+      a kerberos principal 'machinename@realm' which is added to the
+      keytab file.
+    </para></listitem>
+    </varlistentry>
+    <varlistentry><term>serviceclass</term>
+    <listitem><para>
+    A serviceclass (such as 'cifs', 'html' etc.) is used to create a pair
+    of kerberos principals 'serviceclass/fully_qualified_dns_name@realm' &amp;
+    'serviceclass/netbios_name@realm' which are added to the keytab file.
+    </para></listitem>
+    </varlistentry>
+    <varlistentry><term>Windows SPN</term>
+    <listitem><para>
+    A Windows SPN is of the format 'serviceclass/host:port', it is used to
+    create a kerberos principal 'serviceclass/host@realm' which will
+    be written to the keytab file.
+    </para></listitem>
+    </varlistentry>
+  </variablelist>
+</para>
+<para>
+Unlike old versions no computer AD objects are modified by this command. To
+preserve the bevhaviour of older clients 'net ads keytab ad_update_ads' is
+available.
+</para>
+</refsect2>
+
+<refsect2>
+<title>ADS KEYTAB <replaceable>ADD_UPDATE_ADS</replaceable> <replaceable>(principal | machine | serviceclass | windows SPN</replaceable></title>
+
+<para>
+Adds a new keytab entry (see section for net ads keytab add). In addition to
+adding entries to the keytab file corrosponding Windows SPNs are created
+from the entry passed to this command. These SPN(s) added to the AD computer
+account object associated with the client machine running this command for
+the following entry types;
+  <variablelist>
+    <varlistentry><term>serviceclass</term>
+    <listitem><para>
+    A serviceclass (such as 'cifs', 'html' etc.) is used to create a
+    pair of Windows SPN(s) 'param/full_qualified_dns' &amp;
+    'param/netbios_name' which are added to the AD computer account object
+   for this client.
+    </para></listitem>
+    </varlistentry>
+    <varlistentry><term>Windows SPN</term>
+    <listitem><para>
+    A Windows SPN is of the format 'serviceclass/host:port', it is
+    added as passed to the AD computer account object for this client.
+    </para></listitem>
+    </varlistentry>
+  </variablelist>
+</para>
+</refsect2>
+
+<refsect2>
 <title>ADS WORKGROUP</title>
 
 <para>Print out workgroup name for specified kerberos realm.</para>
