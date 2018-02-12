@@ -17,6 +17,42 @@ NEW FEATURES/CHANGES
 ====================
 
 
+net ads setspn
+---------------
+
+There is a new 'net ads setspn' sub command for managing Windows SPN(s)
+on the AD. This command aims to give the basic functionaility that is
+provided on windows by 'setspn.exe' e.g. ability to add, delete and list
+Windows SPN(s) stored in a Windows AD Computer object.
+
+The format of the command is:
+
+net ads setspn list [machine]
+net ads setspn [add | delete ] SPN [machine]
+
+'machine' is the name of the computer account on the AD that is to be managed.
+If 'machine' is not specified the name of the 'client' running the command
+is used instead.
+
+The format of a Windows SPN is
+  'serviceclass/host:port/servicename' (servicename and port are optional)
+
+serviceclass/host is generally sufficient to specify a host based service.
+
+net ads keytab changes
+----------------------
+net ads keytab add no longer attempts to convert the passed serviceclass
+(e.g. nfs, html etc.) into a Windows SPN which is added to the Windows AD
+computer object. By default just the keytab file is modified.
+
+A new keytab subcommand 'add_update_ads' has been added to preserve the
+legacy behaviour. However the new 'net ads setspn add' subcommand should
+really be used instead.
+
+net ads keytab create no longer tries to generate SPN(s) from existing
+entries in a keytab file. If it is required to add Windows SPN(s) then
+'net ads setspn add' should be used instead.
+
 REMOVED FEATURES
 ================
 
