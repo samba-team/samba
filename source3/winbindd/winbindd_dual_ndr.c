@@ -42,7 +42,7 @@ static bool wbint_bh_is_connected(struct dcerpc_binding_handle *h)
 	struct wbint_bh_state *hs = dcerpc_binding_handle_data(h,
 				     struct wbint_bh_state);
 
-	if (!hs->child) {
+	if ((hs->domain == NULL) && (hs->child == NULL)) {
 		return false;
 	}
 
@@ -65,7 +65,8 @@ struct wbint_bh_raw_call_state {
 	DATA_BLOB out_data;
 };
 
-static void wbint_bh_raw_call_done(struct tevent_req *subreq);
+static void wbint_bh_raw_call_child_done(struct tevent_req *subreq);
+static void wbint_bh_raw_call_domain_done(struct tevent_req *subreq);
 
 static struct tevent_req *wbint_bh_raw_call_send(TALLOC_CTX *mem_ctx,
 						  struct tevent_context *ev,
@@ -112,17 +113,28 @@ static struct tevent_req *wbint_bh_raw_call_send(TALLOC_CTX *mem_ctx,
 	state->request.extra_data.data = (char *)state->in_data.data;
 	state->request.extra_len = state->in_data.length;
 
-	subreq = wb_child_request_send(state, ev, hs->child,
-				       &state->request);
+	if (hs->child != NULL) {
+		subreq = wb_child_request_send(state, ev, hs->child,
+					       &state->request);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(
+			subreq, wbint_bh_raw_call_child_done, req);
+		return req;
+	}
+
+	subreq = wb_domain_request_send(state, ev, hs->domain,
+					&state->request);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
-	tevent_req_set_callback(subreq, wbint_bh_raw_call_done, req);
+	tevent_req_set_callback(subreq, wbint_bh_raw_call_domain_done, req);
 
 	return req;
 }
 
-static void wbint_bh_raw_call_done(struct tevent_req *subreq)
+static void wbint_bh_raw_call_child_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req =
 		tevent_req_callback_data(subreq,
@@ -133,6 +145,40 @@ static void wbint_bh_raw_call_done(struct tevent_req *subreq)
 	int ret, err;
 
 	ret = wb_child_request_recv(subreq, state, &state->response, &err);
+	TALLOC_FREE(subreq);
+	if (ret == -1) {
+		NTSTATUS status = map_nt_error_from_unix(err);
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	state->out_data = data_blob_talloc(state,
+		state->response->extra_data.data,
+		state->response->length - sizeof(struct winbindd_response));
+	if (state->response->extra_data.data && !state->out_data.data) {
+		tevent_req_oom(req);
+		return;
+	}
+
+	if (state->domain != NULL) {
+		wcache_store_ndr(state->domain, state->opnum,
+				 &state->in_data, &state->out_data);
+	}
+
+	tevent_req_done(req);
+}
+
+static void wbint_bh_raw_call_domain_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
+	struct wbint_bh_raw_call_state *state =
+		tevent_req_data(req,
+		struct wbint_bh_raw_call_state);
+	int ret, err;
+
+	ret = wb_domain_request_recv(subreq, state, &state->response, &err);
 	TALLOC_FREE(subreq);
 	if (ret == -1) {
 		NTSTATUS status = map_nt_error_from_unix(err);
@@ -207,9 +253,8 @@ static struct tevent_req *wbint_bh_disconnect_send(TALLOC_CTX *mem_ctx,
 
 	/*
 	 * TODO: do a real async disconnect ...
-	 *
-	 * For now the caller needs to free rpc_cli
 	 */
+	hs->domain = NULL;
 	hs->child = NULL;
 
 	tevent_req_done(req);
