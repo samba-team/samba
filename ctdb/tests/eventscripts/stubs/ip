@@ -485,7 +485,8 @@ ip_rule_del ()
     touch "$_f"
     (
 	flock 0
-	_tmp="$(mktemp)"
+	_tmp="${_f}.new"
+	: >"$_tmp"
 	_found=false
 	while read _p _t _s ; do
 	    if ! $_found && \
