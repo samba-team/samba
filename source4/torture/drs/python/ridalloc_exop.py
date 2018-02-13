@@ -231,7 +231,7 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
             # 3. Make sure the allocation succeeds
             try:
                 (level, ctr) = drs.DsGetNCChanges(drs_handle, 8, req8)
-            except RuntimeError, e:
+            except RuntimeError as e:
                 self.fail("RID allocation failed: " + str(e))
 
             fsmo_dn = ldb.Dn(self.ldb_dc1, "CN=RID Manager$,CN=System," + self.ldb_dc1.domain_dn())

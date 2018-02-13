@@ -43,7 +43,7 @@ class LATests(drs_base.DrsBaseTestCase):
         if True:
             try:
                 self.samdb.delete(self.ou, ['tree_delete:1'])
-            except ldb.LdbError, e:
+            except ldb.LdbError as e:
                 pass
         self.samdb.add({'objectclass': 'organizationalUnit',
                         'dn': self.ou})
@@ -55,7 +55,7 @@ class LATests(drs_base.DrsBaseTestCase):
         super(LATests, self).tearDown()
         try:
             self.samdb.delete(self.ou, ['tree_delete:1'])
-        except ldb.LdbError, e:
+        except ldb.LdbError as e:
             pass
 
     def delete_user(self, user):
