@@ -55,7 +55,7 @@ def iterate_all(path):
 
     try:
         p = open(path, 'r')
-    except IOError, e:
+    except IOError as e:
         raise Exception("Error opening parameters file")
     out = p.read()
 

@@ -86,7 +86,7 @@ try:
 except KeyboardInterrupt:
     print("Cleaning up")
     cleanup()
-except Exception, reason:
+except Exception as reason:
     print("Failed bisect: %s" % reason)
     cleanup()
 
