@@ -1991,7 +1991,7 @@ extern void build_options(bool screen);
 		return -1;
 	}
 
-	if (!init_guest_info()) {
+	if (!init_guest_session_info(NULL)) {
 		DEBUG(0,("ERROR: failed to setup guest info.\n"));
 		return -1;
 	}

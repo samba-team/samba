@@ -525,7 +525,7 @@ int main(int argc, const char *argv[])
 
 	/* some basic initialization stuff */
 	sec_init();
-	init_guest_info();
+	init_guest_session_info(frame);
 	locking_init();
 	vfs = talloc_zero(NULL, struct vfs_state);
 	if (vfs == NULL) {

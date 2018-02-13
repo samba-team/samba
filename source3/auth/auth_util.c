@@ -1136,12 +1136,17 @@ static struct auth_session_info *guest_info = NULL;
 
 static struct auth_serversupplied_info *guest_server_info = NULL;
 
-bool init_guest_info(void)
+bool init_guest_session_info(TALLOC_CTX *mem_ctx)
 {
+	NTSTATUS status;
+
 	if (guest_info != NULL)
 		return true;
 
-	return NT_STATUS_IS_OK(make_new_session_info_guest(NULL, &guest_info, &guest_server_info));
+	status = make_new_session_info_guest(mem_ctx,
+					     &guest_info,
+					     &guest_server_info);
+	return NT_STATUS_IS_OK(status);
 }
 
 NTSTATUS make_server_info_guest(TALLOC_CTX *mem_ctx,
