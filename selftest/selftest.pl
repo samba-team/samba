@@ -1117,8 +1117,8 @@ $envvarstr
 			next;
 		} elsif ($envvars eq "UNKNOWN") {
 			Subunit::start_testsuite($name);
-			Subunit::end_testsuite($name, "skip",
-				"environment $envname is unknown in this test backend - skipping");
+			Subunit::end_testsuite($name, "error",
+				"environment $envname is unknown - exiting");
 			next;
 		}
 
