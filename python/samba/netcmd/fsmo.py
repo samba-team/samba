@@ -126,7 +126,7 @@ def transfer_dns_role(outf, sambaopts, credopts, role, samdb):
         try:
             connection = samba.drs_utils.drsuapi_connect(samdb.host_dns_name(),
                                                          lp, creds)
-        except samba.drs_utils.drsException, e:
+        except samba.drs_utils.drsException as e:
             raise CommandError("Drsuapi Connect failed", e)
 
         try:
@@ -138,7 +138,7 @@ def transfer_dns_role(outf, sambaopts, credopts, role, samdb):
                                               drsuapi_handle,
                                               master_guid,
                                               NC, req_options)
-        except samba.drs_utils.drsException, estr:
+        except samba.drs_utils.drsException as estr:
             raise CommandError("Replication failed", estr)
 
         outf.write("FSMO transfer of '%s' role successful\n" % role)
@@ -463,7 +463,7 @@ class cmd_fsmo_show(Command):
                     self.message("%s owner: %s" % (long_name, str(master)))
                 else:
                     self.message("%s has no current owner" % (long_name))
-            except CommandError, e:
+            except CommandError as e:
                 self.message("%s: * %s" % (long_name, e.message))
 
 class cmd_fsmo_transfer(Command):

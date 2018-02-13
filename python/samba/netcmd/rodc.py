@@ -127,7 +127,7 @@ class cmd_rodc_preload(Command):
 
             try:
                 dn = self.get_dn(samdb, account)
-            except RODCException, e:
+            except RODCException as e:
                 if not ignore_errors:
                     raise CommandError(str(e))
                 errors.append(e)
@@ -139,7 +139,7 @@ class cmd_rodc_preload(Command):
             try:
                 repl.replicate(dn, source_dsa_invocation_id, destination_dsa_guid,
                                exop=drsuapi.DRSUAPI_EXOP_REPL_SECRET, rodc=True)
-            except Exception, e:
+            except Exception as e:
                 local_samdb.transaction_cancel()
                 if not ignore_errors:
                     raise CommandError("Error replicating DN %s" % dn)

@@ -84,7 +84,7 @@ class cmd_testparm(Command):
 
         try:
             lp = sambaopts.get_loadparm()
-        except RuntimeError, err:
+        except RuntimeError as err:
             raise CommandError(err)
 
         # We need this to force the output

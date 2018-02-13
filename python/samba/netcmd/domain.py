@@ -499,7 +499,7 @@ class cmd_domain_provision(Command):
                   base_schema=base_schema,
                   plaintext_secrets=plaintext_secrets)
 
-        except ProvisioningError, e:
+        except ProvisioningError as e:
             raise CommandError("Provision failed", e)
 
         result.report_logger(self.logger)
@@ -865,7 +865,7 @@ class cmd_domain_demote(Command):
             dc_dn = res[0].dn
             uac = int(str(res[0]["userAccountControl"]))
 
-        except Exception, e:
+        except Exception as e:
             if not (dsa_options & DS_NTDSDSA_OPT_DISABLE_OUTBOUND_REPL) and not samdb.am_rodc():
                 self.errf.write(
                     "Error while demoting, re-enabling inbound replication\n")
@@ -897,7 +897,7 @@ class cmd_domain_demote(Command):
                                                         "userAccountControl")
         try:
             remote_samdb.modify(msg)
-        except Exception, e:
+        except Exception as e:
             if not (dsa_options & DS_NTDSDSA_OPT_DISABLE_OUTBOUND_REPL) and not samdb.am_rodc():
                 self.errf.write(
                     "Error while demoting, re-enabling inbound replication")
@@ -952,7 +952,7 @@ class cmd_domain_demote(Command):
         try:
             newdn = ldb.Dn(remote_samdb, "%s,%s" % (newrdn, str(computer_dn)))
             remote_samdb.rename(dc_dn, newdn)
-        except Exception, e:
+        except Exception as e:
             if not (dsa_options & DS_NTDSDSA_OPT_DISABLE_OUTBOUND_REPL) and not samdb.am_rodc():
                 self.errf.write(
                     "Error while demoting, re-enabling inbound replication\n")
@@ -1012,7 +1012,7 @@ class cmd_domain_demote(Command):
             try:
                 remote_samdb.delete(ldb.Dn(remote_samdb,
                                     "%s,%s" % (s, str(newdn))))
-            except ldb.LdbError, l:
+            except ldb.LdbError as l:
                 pass
 
         self.errf.write("Demote successful\n")
@@ -1328,7 +1328,7 @@ class cmd_domain_passwordsettings(Command):
             else:
                 cur_account_lockout_duration = abs(int(res[0]["lockoutDuration"][0])) / (1e7 * 60)
             cur_reset_account_lockout_after = abs(int(res[0]["lockOutObservationWindow"][0])) / (1e7 * 60)
-        except Exception, e:
+        except Exception as e:
             raise CommandError("Could not retrieve password properties!", e)
 
         if subcommand == "show":
@@ -3853,7 +3853,7 @@ This command expunges tombstones from the database."""
                                                                current_time=current_time,
                                                                tombstone_lifetime=tombstone_lifetime)
 
-        except Exception, err:
+        except Exception as err:
             if started_transaction:
                 samdb.transaction_cancel()
             raise CommandError("Failed to expunge / garbage collect tombstones", err)

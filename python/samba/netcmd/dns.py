@@ -47,7 +47,7 @@ def dns_connect(server, lp, creds):
     binding_str = "ncacn_ip_tcp:%s[sign]" % server
     try:
         dns_conn = dnsserver.dnsserver(binding_str, lp, creds)
-    except RuntimeError, e:
+    except RuntimeError as e:
         raise CommandError('Connecting to DNS RPC server %s failed with %s' % (server, e))
 
     return dns_conn

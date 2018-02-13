@@ -52,7 +52,7 @@ def samdb_connect(ctx):
         ctx.samdb = SamDB(url=ctx.url,
                           session_info=system_session(),
                           credentials=ctx.creds, lp=ctx.lp)
-    except Exception, e:
+    except Exception as e:
         raise CommandError("LDAP connection to %s failed " % ctx.url, e)
 
 
@@ -113,7 +113,7 @@ def dc_url(lp, creds, url=None, dc=None):
         if dc is None:
             try:
                 dc = netcmd_finddc(lp, creds)
-            except Exception, e:
+            except Exception as e:
                 raise RuntimeError("Could not find a DC for domain", e)
         url = 'ldap://' + dc
     return url
@@ -159,7 +159,7 @@ def get_gpo_info(samdb, gpo=None, displayname=None, dn=None,
                                     'displayName',
                                     'gPCFileSysPath'],
                             controls=['sd_flags:1:%d' % sd_flags])
-    except Exception, e:
+    except Exception as e:
         if gpo is not None:
             mesg = "Cannot get information for GPO %s" % gpo
         else:
@@ -175,7 +175,7 @@ def get_gpo_containers(samdb, gpo):
     search_expr = "(&(objectClass=*)(gPLink=*%s*))" % gpo
     try:
         msg = samdb.search(expression=search_expr, attrs=['gPLink'])
-    except Exception, e:
+    except Exception as e:
         raise CommandError("Could not find container(s) with GPO %s" % gpo, e)
 
     return msg
@@ -188,7 +188,7 @@ def del_gpo_link(samdb, container_dn, gpo):
         msg = samdb.search(base=container_dn, scope=ldb.SCOPE_BASE,
                             expression="(objectClass=*)",
                             attrs=['gPLink'])[0]
-    except Exception, e:
+    except Exception as e:
         raise CommandError("Container '%s' does not exist" % container_dn, e)
 
     found = False
@@ -215,7 +215,7 @@ def del_gpo_link(samdb, container_dn, gpo):
         m['d0'] = ldb.MessageElement(msg['gPLink'][0], ldb.FLAG_MOD_DELETE, 'gPLink')
     try:
         samdb.modify(m)
-    except Exception, e:
+    except Exception as e:
         raise CommandError("Error removing GPO from container", e)
 
 
@@ -617,7 +617,7 @@ class cmd_setlink(Command):
 
         try:
             self.samdb.modify(m)
-        except Exception, e:
+        except Exception as e:
             raise CommandError("Error adding GPO Link", e)
 
         self.outf.write("Added/Updated GPO link\n")
@@ -793,7 +793,7 @@ class cmd_setinheritance(Command):
 
         try:
             self.samdb.modify(m)
-        except Exception, e:
+        except Exception as e:
             raise CommandError("Error setting inheritance state %s" % inherit_state, e)
 
 
@@ -864,7 +864,7 @@ class cmd_fetch(Command):
         try:
             os.mkdir(gpodir)
             copy_directory_remote_to_local(conn, sharepath, gpodir)
-        except Exception, e:
+        except Exception as e:
             # FIXME: Catch more specific exception
             raise CommandError("Error copying GPO from DC", e)
         self.outf.write('GPO copied to %s\n' % gpodir)
@@ -944,14 +944,14 @@ class cmd_create(Command):
             os.mkdir(os.path.join(gpodir, "User"))
             gpt_contents = "[General]\r\nVersion=0\r\n"
             file(os.path.join(gpodir, "GPT.INI"), "w").write(gpt_contents)
-        except Exception, e:
+        except Exception as e:
             raise CommandError("Error Creating GPO files", e)
 
         # Connect to DC over SMB
         [dom_name, service, sharepath] = parse_unc(unc_path)
         try:
             conn = smb.SMB(dc_hostname, service, lp=self.lp, creds=self.creds)
-        except Exception, e:
+        except Exception as e:
             raise CommandError("Error connecting to '%s' using SMB" % dc_hostname, e)
 
         self.samdb.transaction_start()
@@ -1064,7 +1064,7 @@ class cmd_del(Command):
         [dom_name, service, sharepath] = parse_unc(unc_path)
         try:
             conn = smb.SMB(dc_hostname, service, lp=self.lp, creds=self.creds)
-        except Exception, e:
+        except Exception as e:
             raise CommandError("Error connecting to '%s' using SMB" % dc_hostname, e)
 
         self.samdb.transaction_start()

@@ -70,12 +70,12 @@ class cmd_rename(Command):
 
         try:
             full_old_ou_dn = samdb.normalize_dn_in_domain(old_ou_dn)
-        except Exception, e:
+        except Exception as e:
             raise CommandError('Invalid old_ou_dn "%s": %s' %
                                (old_ou_dn, e.message))
         try:
             full_new_ou_dn = samdb.normalize_dn_in_domain(new_ou_dn)
-        except Exception, e:
+        except Exception as e:
             raise CommandError('Invalid new_ou_dn "%s": %s' %
                                (new_ou_dn, e.message))
 
@@ -88,7 +88,7 @@ class cmd_rename(Command):
                 return
 
             samdb.rename(full_old_ou_dn, full_new_ou_dn)
-        except Exception, e:
+        except Exception as e:
             raise CommandError('Failed to rename ou "%s"' % full_old_ou_dn, e)
         self.outf.write('Renamed ou "%s" to "%s"\n' % (full_old_ou_dn,
                                                        full_new_ou_dn))
@@ -134,12 +134,12 @@ class cmd_move(Command):
         domain_dn = ldb.Dn(samdb, samdb.domain_dn())
         try:
             full_old_ou_dn = samdb.normalize_dn_in_domain(old_ou_dn)
-        except Exception, e:
+        except Exception as e:
             raise CommandError('Invalid old_ou_dn "%s": %s' %
                                (old_ou_dn, e.message))
         try:
             full_new_parent_dn = samdb.normalize_dn_in_domain(new_parent_dn)
-        except Exception, e:
+        except Exception as e:
             raise CommandError('Invalid new_parent_dn "%s": %s' %
                                (new_parent_dn, e.message))
 
@@ -155,7 +155,7 @@ class cmd_move(Command):
                 self.outf.write('Unable to find ou "%s"\n' % full_old_ou_dn)
                 return
             samdb.rename(full_old_ou_dn, full_new_ou_dn)
-        except Exception, e:
+        except Exception as e:
             raise CommandError('Failed to move ou "%s"' % full_old_ou_dn, e)
         self.outf.write('Moved ou "%s" into "%s"\n' %
                         (full_old_ou_dn, full_new_parent_dn))
@@ -199,12 +199,12 @@ class cmd_create(Command):
 
         try:
             full_ou_dn = samdb.normalize_dn_in_domain(ou_dn)
-        except Exception, e:
+        except Exception as e:
             raise CommandError('Invalid ou_dn "%s": %s' % (ou_dn, e.message))
 
         try:
             samdb.create_ou(full_ou_dn, description=description)
-        except Exception, e:
+        except Exception as e:
             raise CommandError('Failed to create ou "%s"' % full_ou_dn, e)
 
         self.outf.write('Created ou "%s"\n' % full_ou_dn)
@@ -250,7 +250,7 @@ class cmd_listobjects(Command):
 
         try:
             full_ou_dn = samdb.normalize_dn_in_domain(ou_dn)
-        except Exception, e:
+        except Exception as e:
             raise CommandError('Invalid ou_dn "%s": %s' % (ou_dn, e.message))
 
         minchilds = 0
@@ -274,7 +274,7 @@ class cmd_listobjects(Command):
                     child.dn.remove_base_components(len(domain_dn))
                 self.outf.write("%s\n" % child.dn)
 
-        except Exception, e:
+        except Exception as e:
             raise CommandError('Failed to list contents of ou "%s"' %
                                full_ou_dn, e)
 
@@ -362,7 +362,7 @@ class cmd_delete(Command):
 
         try:
             full_ou_dn = samdb.normalize_dn_in_domain(ou_dn)
-        except Exception, e:
+        except Exception as e:
             raise CommandError('Invalid ou_dn "%s": %s' % (ou_dn, e.message))
 
         controls = []
@@ -377,7 +377,7 @@ class cmd_delete(Command):
                 self.outf.write('Unable to find ou "%s"\n' % ou_dn)
                 return
             samdb.delete(full_ou_dn, controls)
-        except Exception, e:
+        except Exception as e:
             raise CommandError('Failed to delete ou "%s"' % full_ou_dn, e)
 
         self.outf.write('Deleted ou "%s"\n' % full_ou_dn)

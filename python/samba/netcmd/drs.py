@@ -42,7 +42,7 @@ def drsuapi_connect(ctx):
     '''make a DRSUAPI connection to the server'''
     try:
         (ctx.drsuapi, ctx.drsuapi_handle, ctx.bind_supported_extensions) = drs_utils.drsuapi_connect(ctx.server, ctx.lp, ctx.creds)
-    except Exception, e:
+    except Exception as e:
         raise CommandError("DRS connection to %s failed" % ctx.server, e)
 
 def samdb_connect(ctx):
@@ -51,7 +51,7 @@ def samdb_connect(ctx):
         ctx.samdb = SamDB(url="ldap://%s" % ctx.server,
                           session_info=system_session(),
                           credentials=ctx.creds, lp=ctx.lp)
-    except Exception, e:
+    except Exception as e:
         raise CommandError("LDAP connection to %s failed" % ctx.server, e)
 
 def drs_errmsg(werr):
@@ -143,7 +143,7 @@ class cmd_drs_showrepl(Command):
         try:
             (info_type, info) = self.drsuapi.DsReplicaGetInfo(
                 self.drsuapi_handle, 1, req1)
-        except Exception, e:
+        except Exception as e:
             raise CommandError("DsReplicaGetInfo of type %u failed" % info_type, e)
         return (info_type, info)
 
@@ -166,7 +166,7 @@ class cmd_drs_showrepl(Command):
         (site, server) = drs_parse_ntds_dn(ntds_dn)
         try:
             ntds = self.samdb.search(base=ntds_dn, scope=ldb.SCOPE_BASE, attrs=['options', 'objectGUID', 'invocationId'])
-        except Exception, e:
+        except Exception as e:
             raise CommandError("Failed to search NTDS DN %s" % ntds_dn)
 
         dsa_details = {
@@ -300,7 +300,7 @@ class cmd_drs_kcc(Command):
         req1 = drsuapi.DsExecuteKCC1()
         try:
             self.drsuapi.DsExecuteKCC(self.drsuapi_handle, 1, req1)
-        except Exception, e:
+        except Exception as e:
             raise CommandError("DsExecuteKCC failed", e)
         self.message("Consistency check on %s successful." % DC)
 
@@ -351,7 +351,7 @@ def drs_local_replicate(self, SOURCE_DC, NC, full_sync=False, single_object=Fals
                                                   source_dsa_invocation_id, destination_dsa_guid,
                                                   rodc=rodc, full_sync=full_sync,
                                                   exop=exop, sync_forced=sync_forced)
-    except Exception, e:
+    except Exception as e:
         raise CommandError("Error replicating DN %s" % NC, e)
     self.samdb.transaction_commit()
 
@@ -452,7 +452,7 @@ class cmd_drs_replicate(Command):
 
         try:
             drs_utils.sendDsReplicaSync(server_bind, server_bind_handle, source_dsa_guid, NC, req_options)
-        except drs_utils.drsException, estr:
+        except drs_utils.drsException as estr:
             raise CommandError("DsReplicaSync failed", estr)
         if async_op:
             self.message("Replicate from %s to %s was started." % (SOURCE_DC, DEST_DC))

@@ -378,7 +378,7 @@ Example5 shows how to create an RFC2307/NIS domain enabled user account. If
                           uidnumber=uid_number, gidnumber=gid_number,
                           gecos=gecos, loginshell=login_shell,
                           smartcard_required=smartcard_required)
-        except Exception, e:
+        except Exception as e:
             raise CommandError("Failed to add user '%s': " % username, e)
 
         self.outf.write("User '%s' created successfully\n" % username)
@@ -453,7 +453,7 @@ Example2 shows how to delete a user in the domain against the local server.   su
 
         try:
             samdb.delete(user_dn)
-        except Exception, e:
+        except Exception as e:
             raise CommandError('Failed to remove user "%s"' % username, e)
         self.outf.write("Deleted user %s\n" % username)
 
@@ -557,7 +557,7 @@ Example3 shows how to enable a user in the domain against a local LDAP server.  
             credentials=creds, lp=lp)
         try:
             samdb.enable_account(filter)
-        except Exception, msg:
+        except Exception as msg:
             raise CommandError("Failed to enable user '%s': %s" % (username or filter, msg))
         self.outf.write("Enabled user '%s'\n" % (username or filter))
 
@@ -596,7 +596,7 @@ class cmd_user_disable(Command):
             credentials=creds, lp=lp)
         try:
             samdb.disable_account(filter)
-        except Exception, msg:
+        except Exception as msg:
             raise CommandError("Failed to disable user '%s': %s" % (username or filter, msg))
 
 
@@ -663,7 +663,7 @@ Example4 shows how to set the account expiration so that it will never expire.  
 
         try:
             samdb.setexpiry(filter, days*24*3600, no_expiry_req=noexpiry)
-        except Exception, msg:
+        except Exception as msg:
             # FIXME: Catch more specific exception
             raise CommandError("Failed to set expiry for user '%s': %s" % (
                 username or filter, msg))
@@ -714,7 +714,7 @@ class cmd_user_password(Command):
 
         try:
             net.change_password(password.encode('utf-8'))
-        except Exception, msg:
+        except Exception as msg:
             # FIXME: catch more specific exception
             raise CommandError("Failed to change password : %s" % msg)
         self.outf.write("Changed password OK\n")
@@ -832,7 +832,7 @@ Example3 shows how an administrator would reset TestUser3 user's password to pas
                 samdb.toggle_userAccountFlags(filter, flags, on=True)
                 command = "Failed to enable account for user '%s'" % (username or filter)
                 samdb.enable_account(filter)
-            except Exception, msg:
+            except Exception as msg:
                 # FIXME: catch more specific exception
                 raise CommandError("%s: %s" % (command, msg))
             self.outf.write("Added UF_SMARTCARD_REQUIRED OK\n")
@@ -847,7 +847,7 @@ Example3 shows how an administrator would reset TestUser3 user's password to pas
                 samdb.setpassword(filter, password,
                                   force_change_at_next_login=must_change_at_next_login,
                                   username=username)
-            except Exception, msg:
+            except Exception as msg:
                 # FIXME: catch more specific exception
                 raise CommandError("%s: %s" % (command, msg))
             self.outf.write("Changed password OK\n")
@@ -2561,7 +2561,7 @@ class cmd_user_move(Command):
 
         try:
             full_new_parent_dn = samdb.normalize_dn_in_domain(new_parent_dn)
-        except Exception, e:
+        except Exception as e:
             raise CommandError('Invalid new_parent_dn "%s": %s' %
                                (new_parent_dn, e.message))
 
@@ -2571,7 +2571,7 @@ class cmd_user_move(Command):
 
         try:
             samdb.rename(user_dn, full_new_user_dn)
-        except Exception, e:
+        except Exception as e:
             raise CommandError('Failed to move user "%s"' % username, e)
         self.outf.write('Moved user "%s" into "%s"\n' %
                         (username, full_new_parent_dn))

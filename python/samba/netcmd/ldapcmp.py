@@ -131,7 +131,7 @@ class LDAPBase(object):
     def delete_force(self, object_dn):
         try:
             self.ldb.delete(object_dn)
-        except Ldb.LdbError, e:
+        except Ldb.LdbError as e:
             assert "No such object" in str(e)
 
     def get_attribute_name(self, key):

@@ -174,7 +174,7 @@ class Command(object):
 
         try:
             return self.run(*args, **kwargs)
-        except Exception, e:
+        except Exception as e:
             self.show_command_error(e)
             return -1
 

@@ -124,7 +124,7 @@ Example3 adds a new RFC2307 enabled group for NIS domain samdom and GID 12345 (b
             samdb.newgroup(groupname, groupou=groupou, grouptype = gtype,
                           description=description, mailaddress=mail_address, notes=notes,
                           gidnumber=gid_number, nisdomain=nis_domain)
-        except Exception, e:
+        except Exception as e:
             # FIXME: catch more specific exception
             raise CommandError('Failed to create group "%s"' % groupname, e)
         self.outf.write("Added group %s\n" % groupname)
@@ -186,7 +186,7 @@ Example2 deletes group Group2 from the local server.  The command is run under r
 
         try:
             samdb.delete(group_dn)
-        except Exception, e:
+        except Exception as e:
             # FIXME: catch more specific exception
             raise CommandError('Failed to remove group "%s"' % groupname, e)
         self.outf.write("Deleted group %s\n" % groupname)
@@ -239,7 +239,7 @@ Example2 shows how to add a single user account, User2, to the supergroup AD gro
             groupmembers = listofmembers.split(',')
             samdb.add_remove_group_members(groupname, groupmembers,
                     add_members_operation=True)
-        except Exception, e:
+        except Exception as e:
             # FIXME: catch more specific exception
             raise CommandError('Failed to add members "%s" to group "%s"' % (
                 listofmembers, groupname), e)
@@ -290,7 +290,7 @@ Example2 shows how to remove a single user account, User2, from the supergroup A
                           credentials=creds, lp=lp)
             samdb.add_remove_group_members(groupname, listofmembers.split(","),
                     add_members_operation=False)
-        except Exception, e:
+        except Exception as e:
             # FIXME: Catch more specific exception
             raise CommandError('Failed to remove members "%s" from group "%s"' % (listofmembers, groupname), e)
         self.outf.write("Removed members from group %s\n" % groupname)
@@ -418,7 +418,7 @@ samba-tool group listmembers \"Domain Users\" -H ldap://samba.samdom.example.com
                     member_name = msg.get("cn", idx=0)
                 self.outf.write("%s\n" % member_name)
 
-        except Exception, e:
+        except Exception as e:
             raise CommandError('Failed to list members of "%s" group ' % groupname, e)
 
 class cmd_group_move(Command):
@@ -485,7 +485,7 @@ class cmd_group_move(Command):
 
         try:
             full_new_parent_dn = samdb.normalize_dn_in_domain(new_parent_dn)
-        except Exception, e:
+        except Exception as e:
             raise CommandError('Invalid new_parent_dn "%s": %s' %
                                (new_parent_dn, e.message))
 
@@ -495,7 +495,7 @@ class cmd_group_move(Command):
 
         try:
             samdb.rename(group_dn, full_new_group_dn)
-        except Exception, e:
+        except Exception as e:
             raise CommandError('Failed to move group "%s"' % groupname, e)
         self.outf.write('Moved group "%s" into "%s"\n' %
                         (groupname, full_new_parent_dn))

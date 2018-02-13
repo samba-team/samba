@@ -138,7 +138,7 @@ class cmd_delegation_for_any_service(Command):
             sam.toggle_userAccountFlags(search_filter, flag,
                                         flags_str="Trusted-for-Delegation",
                                         on=on, strict=True)
-        except Exception, err:
+        except Exception as err:
             raise CommandError(err)
 
 
@@ -192,7 +192,7 @@ class cmd_delegation_for_any_protocol(Command):
             sam.toggle_userAccountFlags(search_filter, flag,
                         flags_str="Trusted-to-Authenticate-for-Delegation",
                         on=on, strict=True)
-        except Exception, err:
+        except Exception as err:
             raise CommandError(err)
 
 
@@ -246,7 +246,7 @@ class cmd_delegation_add_service(Command):
                                           "msDS-AllowedToDelegateTo")
         try:
             sam.modify(msg)
-        except Exception, err:
+        except Exception as err:
             raise CommandError(err)
 
 
@@ -300,7 +300,7 @@ class cmd_delegation_del_service(Command):
                                           "msDS-AllowedToDelegateTo")
         try:
             sam.modify(msg)
-        except Exception, err:
+        except Exception as err:
             raise CommandError(err)
 
 
