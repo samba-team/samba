@@ -50,7 +50,7 @@ def check(self, *k, **kw):
     ret = None
     try:
         ret = self.run_c_code(*k, **kw)
-    except Configure.ConfigurationError, e:
+    except Configure.ConfigurationError as e:
         self.check_message_2(kw['errmsg'], 'YELLOW')
         if 'mandatory' in kw and kw['mandatory']:
             if Logs.verbose > 1:
