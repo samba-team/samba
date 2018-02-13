@@ -184,6 +184,8 @@ struct winbindd_domain {
 
 	struct winbindd_child *children;
 
+	struct dcerpc_binding_handle *binding_handle;
+
 	/* Callback we use to try put us back online. */
 
 	uint32_t check_online_timeout;
