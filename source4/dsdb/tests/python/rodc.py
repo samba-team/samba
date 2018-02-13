@@ -83,7 +83,7 @@ class RodcTests(samba.tests.TestCase):
                                       session_info=system_session(LP), lp=LP)
                         tmpdb.add(o)
                         tmpdb.delete(o['dn'])
-                    except ldb.LdbError, e:
+                    except ldb.LdbError as e:
                         self.fail("couldn't modify referred location %s" %
                                   address)
 
@@ -117,7 +117,7 @@ class RodcTests(samba.tests.TestCase):
                         tmpdb = SamDB(address, credentials=CREDS,
                                       session_info=system_session(LP), lp=LP)
                         tmpdb.modify(msg)
-                    except ldb.LdbError, e:
+                    except ldb.LdbError as e:
                         self.fail("couldn't modify referred location %s" %
                                   address)
 

@@ -818,7 +818,7 @@ class RodcRwdcTests(password_lockout_base.BasePasswordTestCase):
                                           attrs=['dn'],
                                           controls=controls)
                 self.assertEqual(len(res), 0)
-            except ldb.LdbError, e:
+            except ldb.LdbError as e:
                 if e.args[0] != ldb.ERR_NO_SUCH_OBJECT:
                     raise
 
@@ -840,7 +840,7 @@ class RodcRwdcTests(password_lockout_base.BasePasswordTestCase):
                                           attrs=['dn'],
                                           controls=controls)
                 self.assertEqual(len(res), 1)
-            except ldb.LdbError, e:
+            except ldb.LdbError as e:
                 self.assertNotEqual(e.args[0], ldb.ERR_NO_SUCH_OBJECT,
                                     "replication seems to have failed")
 
@@ -916,7 +916,7 @@ class RodcRwdcTests(password_lockout_base.BasePasswordTestCase):
                                           attrs=[attr])
                 results = [x[attr][0] for x in res]
                 self.assertEqual(results, [value])
-            except ldb.LdbError, e:
+            except ldb.LdbError as e:
                 self.assertNotEqual(e.args[0], ldb.ERR_NO_SUCH_OBJECT,
                                     "replication seems to have failed")
 
@@ -961,7 +961,7 @@ class RodcRwdcTests(password_lockout_base.BasePasswordTestCase):
                                           attrs=[attr])
                 results = [x[attr][0] for x in res]
                 self.assertEqual(results, [value])
-            except ldb.LdbError, e:
+            except ldb.LdbError as e:
                 self.assertNotEqual(e.args[0], ldb.ERR_NO_SUCH_OBJECT,
                                     "replication seems to have failed")
 
@@ -973,7 +973,7 @@ class RodcRwdcTests(password_lockout_base.BasePasswordTestCase):
                                       attrs=[attr])
             if len(res) > 0:
                 self.fail("Failed to delete %s" % (dn))
-        except ldb.LdbError, e:
+        except ldb.LdbError as e:
             self.assertEqual(e.args[0], ldb.ERR_NO_SUCH_OBJECT,
                              "Failed to delete %s" % (dn))
 

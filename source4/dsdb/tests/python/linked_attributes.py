@@ -64,7 +64,7 @@ class LATests(samba.tests.TestCase):
         if opts.delete_in_setup:
             try:
                 self.samdb.delete(self.ou, ['tree_delete:1'])
-            except ldb.LdbError, e:
+            except ldb.LdbError as e:
                 print "tried deleting %s, got error %s" % (self.ou, e)
         self.samdb.add({'objectclass': 'organizationalUnit',
                         'dn': self.ou})

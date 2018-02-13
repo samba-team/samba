@@ -133,7 +133,7 @@ class BaseSortTests(samba.tests.TestCase):
         if False:
             try:
                 self.ldb.delete(self.ou, ['tree_delete:1'])
-            except ldb.LdbError, e:
+            except ldb.LdbError as e:
                 print "tried deleting %s, got error %s" % (self.ou, e)
 
         self.ldb.add({

@@ -154,7 +154,7 @@ class VLVTests(samba.tests.TestCase):
         if opts.delete_in_setup:
             try:
                 self.ldb.delete(self.ou, ['tree_delete:1'])
-            except ldb.LdbError, e:
+            except ldb.LdbError as e:
                 print "tried deleting %s, got error %s" % (self.ou, e)
         self.ldb.add({
             "dn": self.ou,
@@ -697,7 +697,7 @@ class VLVTests(samba.tests.TestCase):
                                                       attrs=[attr],
                                                       controls=[sort_control,
                                                                 vlv_search])
-                            except ldb.LdbError, e:
+                            except ldb.LdbError as e:
                                 if offset != 0:
                                     raise
                                 print ("offset %d denominator %d raised error "

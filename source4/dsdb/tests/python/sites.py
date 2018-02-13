@@ -481,7 +481,7 @@ class SimpleSubnetTests(SitesBaseTests):
         for cidr in cidrs:
             try:
                 subnets.create_subnet(self.ldb, basedn, cidr, self.sitename)
-            except subnets.SubnetInvalid, e:
+            except subnets.SubnetInvalid as e:
                 print e
                 failures.append(cidr)
                 continue
