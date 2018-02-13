@@ -1,4 +1,74 @@
                    ==============================
+                   Release Notes for Samba 4.6.13
+                         February 14, 2017
+                   =============================
+
+
+This is the latest stable release of the Samba 4.6 release series.
+
+
+Changes since 4.6.12:
+---------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 13193: s3: smbd: Use identical logic to test for kernel oplocks on a
+     share.
+
+o  Love Hornquist Astrand <lha@h5l.org>
+   * BUG 12986: Kerberos: PKINIT: Can't decode algorithm parameters in
+     clientPublicValue.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 13181: vfs_fruit: Fail to copy file with empty FinderInfo from Windows
+     client to Samba share with fruit.
+
+o  David Disseldorp <ddiss@suse.de>
+   * BUG 13208: vfs_default: Use VFS statvfs macro in fs_capabilities.
+   * BUG 13250: build: Fix ceph_statx check when configured with libcephfs_dir.
+
+o  Amitay Isaacs <amitay@gmail.com>
+   * BUG 13188: ctdb-recovery-helper: Deregister message handler in error
+     paths.
+
+o  Christof Schmitt <cs@samba.org>
+   * BUG 13189: smbd: Fix coredump on failing chdir during logoff.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 12986: Kerberos: PKINIT: Can't decode algorithm parameters in
+     clientPublicValue.
+   * BUG 13132: s4:kdc: Only map SDB_ERR_NOT_FOUND_HERE to
+     HDB_ERR_NOT_FOUND_HERE.
+   * BUG 13195: g_lock: fix cleanup of stale entries in g_lock_trylock().
+
+o  Uri Simchoni <uri@samba.org>
+   * BUG 13176: Fix POSIX ACL support on hpux and possibly other
+     big-endian OSs.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ==============================
                    Release Notes for Samba 4.6.12
                           December 20, 2017
                    =============================
@@ -90,8 +160,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    ==============================
                    Release Notes for Samba 4.6.11
