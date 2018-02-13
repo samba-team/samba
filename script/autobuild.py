@@ -747,7 +747,7 @@ top_commit_msg = run_cmd("git log -1", dir=gitroot, output=True)
 
 try:
     os.makedirs(testbase)
-except Exception, reason:
+except Exception as reason:
     raise Exception("Unable to create %s : %s" % (testbase, reason))
 cleanup_list.append(testbase)
 
