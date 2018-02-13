@@ -848,7 +848,6 @@ void winbind_msg_dump_domain_list(struct messaging_context *msg_ctx,
 {
 	TALLOC_CTX *mem_ctx;
 	const char *message = NULL;
-	struct server_id *sender = NULL;
 	const char *domain = NULL;
 	char *s = NULL;
 	NTSTATUS status;
@@ -856,22 +855,13 @@ void winbind_msg_dump_domain_list(struct messaging_context *msg_ctx,
 
 	DEBUG(5,("winbind_msg_dump_domain_list received.\n"));
 
-	if (!data || !data->data) {
-		return;
-	}
-
-	if (data->length < sizeof(struct server_id)) {
-		return;
-	}
-
 	mem_ctx = talloc_init("winbind_msg_dump_domain_list");
 	if (!mem_ctx) {
 		return;
 	}
 
-	sender = (struct server_id *)data->data;
-	if (data->length > sizeof(struct server_id)) {
-		domain = (const char *)data->data+sizeof(struct server_id);
+	if (data->length > 0) {
+		domain = (const char *)data->data;
 	}
 
 	if (domain) {
@@ -886,7 +876,7 @@ void winbind_msg_dump_domain_list(struct messaging_context *msg_ctx,
 			return;
 		}
 
-		messaging_send_buf(msg_ctx, *sender,
+		messaging_send_buf(msg_ctx, server_id,
 				   MSG_WINBIND_DUMP_DOMAIN_LIST,
 				   (const uint8_t *)message, strlen(message) + 1);
 
@@ -911,7 +901,7 @@ void winbind_msg_dump_domain_list(struct messaging_context *msg_ctx,
 		}
 	}
 
-	status = messaging_send_buf(msg_ctx, *sender,
+	status = messaging_send_buf(msg_ctx, server_id,
 				    MSG_WINBIND_DUMP_DOMAIN_LIST,
 				    (uint8_t *)s, strlen(s) + 1);
 	if (!NT_STATUS_IS_OK(status)) {
