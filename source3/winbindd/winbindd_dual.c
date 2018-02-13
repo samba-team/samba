@@ -321,10 +321,7 @@ static struct winbindd_child *choose_domain_child(struct winbindd_domain *domain
 
 struct dcerpc_binding_handle *dom_child_handle(struct winbindd_domain *domain)
 {
-	struct winbindd_child *child;
-
-	child = choose_domain_child(domain);
-	return child->binding_handle;
+	return domain->binding_handle;
 }
 
 struct wb_domain_request_state {
@@ -608,8 +605,10 @@ void setup_child(struct winbindd_domain *domain, struct winbindd_child *child,
 	child->table = table;
 	child->queue = tevent_queue_create(NULL, "winbind_child");
 	SMB_ASSERT(child->queue != NULL);
-	child->binding_handle = wbint_binding_handle(NULL, domain, child);
-	SMB_ASSERT(child->binding_handle != NULL);
+	if (domain == NULL) {
+		child->binding_handle = wbint_binding_handle(NULL, NULL, child);
+		SMB_ASSERT(child->binding_handle != NULL);
+	}
 }
 
 void winbind_child_died(pid_t pid)
