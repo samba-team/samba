@@ -200,7 +200,7 @@ class LDAPBackend(ProvisionBackend):
                 expression="(objectClass=OpenLDAProotDSE)")
             try:
                 f = open(self.slapd_pid, "r")
-            except IOError, err:
+            except IOError as err:
                 if err != errno.ENOENT:
                     raise
             else:

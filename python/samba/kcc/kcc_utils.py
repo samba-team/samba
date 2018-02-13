@@ -373,7 +373,7 @@ class NCReplica(NamingContext):
         try:
             samdb.modify(m)
 
-        except ldb.LdbError, estr:
+        except ldb.LdbError as estr:
             raise KCCError("Could not set repsFrom for (%s) - (%s)" %
                            (self.nc_dnstr, estr))
 
@@ -524,7 +524,7 @@ class NCReplica(NamingContext):
         try:
             samdb.modify(m)
 
-        except ldb.LdbError, estr:
+        except ldb.LdbError as estr:
             raise KCCError("Could not set repsTo for (%s) - (%s)" %
                            (self.nc_dnstr, estr))
 
@@ -1686,7 +1686,7 @@ class Site(object):
         try:
             samdb.modify(m)
 
-        except ldb.LdbError, estr:
+        except ldb.LdbError as estr:
             raise KCCError(
                 "Could not set interSiteTopologyGenerator for (%s) - (%s)" %
                 (ssdn, estr))

@@ -2718,7 +2718,7 @@ class KCC(object):
         try:
             self.samdb = ldif_import_export.ldif_to_samdb(dburl, lp, ldif_file,
                                                           forced_local_dsa)
-        except ldif_import_export.LdifError, e:
+        except ldif_import_export.LdifError as e:
             logger.critical(e)
             return 1
         return 0
@@ -2743,7 +2743,7 @@ class KCC(object):
         try:
             ldif_import_export.samdb_to_ldif_file(self.samdb, dburl, lp, creds,
                                                   ldif_file)
-        except ldif_import_export.LdifError, e:
+        except ldif_import_export.LdifError as e:
             logger.critical(e)
             return 1
         return 0

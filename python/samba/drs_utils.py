@@ -54,7 +54,7 @@ def drsuapi_connect(server, lp, creds):
     try:
         drsuapiBind = drsuapi.drsuapi(binding_string, lp, creds)
         (drsuapiHandle, bindSupportedExtensions) = drs_DsBind(drsuapiBind)
-    except Exception, e:
+    except Exception as e:
         raise drsException("DRS connection to %s failed: %s" % (server, e))
 
     return (drsuapiBind, drsuapiHandle, bindSupportedExtensions)
@@ -83,7 +83,7 @@ def sendDsReplicaSync(drsuapiBind, drsuapi_handle, source_dsa_guid,
 
     try:
         drsuapiBind.DsReplicaSync(drsuapi_handle, 1, req1)
-    except Exception, estr:
+    except Exception as estr:
         raise drsException("DsReplicaSync failed %s" % estr)
 
 
@@ -106,7 +106,7 @@ def sendRemoveDsServer(drsuapiBind, drsuapi_handle, server_dsa_dn, domain):
         req1.commit = 1
 
         drsuapiBind.DsRemoveDSServer(drsuapi_handle, 1, req1)
-    except Exception, estr:
+    except Exception as estr:
         raise drsException("DsRemoveDSServer failed %s" % estr)
 
 

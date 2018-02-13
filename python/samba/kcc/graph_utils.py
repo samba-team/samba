@@ -303,7 +303,7 @@ def verify_graph(title, edges, vertices=None, directed=False, properties=(),
         try:
             f(edges, vertices, edge_vertices)
             debug(" %s%18s:%s verified!" % (DARK_GREEN, p, C_NORMAL))
-        except GraphError, e:
+        except GraphError as e:
             errors.append((p, e))
 
     if errors:

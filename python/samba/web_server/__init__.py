@@ -47,7 +47,7 @@ def __call__(environ, start_response):
 
     try:
         import swat
-    except ImportError, e:
+    except ImportError as e:
         print "NO SWAT: %r" % e
         have_swat = False
     else:

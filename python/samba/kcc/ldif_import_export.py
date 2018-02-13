@@ -77,7 +77,7 @@ dsServiceName: CN=NTDS Settings,%s
 -
 """)
 
-    except Exception, estr:
+    except Exception as estr:
         tmpdb.transaction_cancel()
         raise LdifError("Failed to import %s: %s" % (ldif_file, estr))
 

@@ -369,7 +369,7 @@ systemFlags: -1946157056%s""" % (dn, guid_suffix),
         try:
             controls = controls + ["local_oid:%s:0" % dsdb.DSDB_CONTROL_DBCHECK]
             self.samdb.delete(dn, controls=controls)
-        except Exception, err:
+        except Exception as err:
             if self.in_transaction:
                 raise CommandError("%s : %s" % (msg, err))
             self.report("%s : %s" % (msg, err))
@@ -383,7 +383,7 @@ systemFlags: -1946157056%s""" % (dn, guid_suffix),
         try:
             controls = controls + ["local_oid:%s:0" % dsdb.DSDB_CONTROL_DBCHECK]
             self.samdb.modify(m, controls=controls, validate=validate)
-        except Exception, err:
+        except Exception as err:
             if self.in_transaction:
                 raise CommandError("%s : %s" % (msg, err))
             self.report("%s : %s" % (msg, err))
@@ -402,7 +402,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             to_dn = to_rdn + to_base
             controls = controls + ["local_oid:%s:0" % dsdb.DSDB_CONTROL_DBCHECK]
             self.samdb.rename(from_dn, to_dn, controls=controls)
-        except Exception, err:
+        except Exception as err:
             if self.in_transaction:
                 raise CommandError("%s : %s" % (msg, err))
             self.report("%s : %s" % (msg, err))
@@ -1565,7 +1565,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         cls = None
         try:
             cls = obj["objectClass"][-1]
-        except KeyError, e:
+        except KeyError as e:
             pass
 
         if cls is None:
@@ -2191,7 +2191,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             # special handling for some specific attribute types
             try:
                 syntax_oid = self.samdb_schema.get_syntax_oid_from_lDAPDisplayName(attrname)
-            except Exception, msg:
+            except Exception as msg:
                 self.err_unknown_attribute(obj, attrname)
                 error_count += 1
                 continue
