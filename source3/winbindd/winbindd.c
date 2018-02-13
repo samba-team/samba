@@ -1768,7 +1768,7 @@ int main(int argc, const char **argv)
 		exit(1);
 	}
 
-	status = init_system_session_info();
+	status = init_system_session_info(NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		exit_daemon("Winbindd failed to setup system user info", map_errno_from_nt_status(status));
 	}

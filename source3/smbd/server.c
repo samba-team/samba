@@ -1984,7 +1984,7 @@ extern void build_options(bool screen);
 		exit_daemon("ERROR: failed to load share info db.", EACCES);
 	}
 
-	status = init_system_session_info();
+	status = init_system_session_info(NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("ERROR: failed to setup system user info: %s.\n",
 			  nt_errstr(status)));

@@ -1169,12 +1169,12 @@ NTSTATUS make_session_info_guest(TALLOC_CTX *mem_ctx,
 
 static struct auth_session_info *system_info = NULL;
 
-NTSTATUS init_system_session_info(void)
+NTSTATUS init_system_session_info(TALLOC_CTX *mem_ctx)
 {
 	if (system_info != NULL)
 		return NT_STATUS_OK;
 
-	return make_new_session_info_system(NULL, &system_info);
+	return make_new_session_info_system(mem_ctx, &system_info);
 }
 
 NTSTATUS make_session_info_system(TALLOC_CTX *mem_ctx,
