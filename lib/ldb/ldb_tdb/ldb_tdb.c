@@ -423,6 +423,11 @@ static int ltdb_error(struct ltdb_private *ltdb)
 	return ltdb_err_map(tdb_error(ltdb->tdb));
 }
 
+static const char *ltdb_errorstr(struct ltdb_private *ltdb)
+{
+	return tdb_errorstr(ltdb->tdb);
+}
+
 /*
   store a record into the db
 */
@@ -1465,8 +1470,8 @@ static int ltdb_prepare_commit(struct ldb_module *module)
 		ldb_debug_set(ldb_module_get_ctx(module),
 			      LDB_DEBUG_FATAL,
 			      "Failure during "
-			      "tdb_transaction_prepare_commit(): %s -> %s",
-			      tdb_errorstr(ltdb->tdb),
+			      "prepare_write): %s -> %s",
+			      ltdb->kv_ops->errorstr(ltdb),
 			      ldb_strerror(ret));
 		return ret;
 	}
@@ -1496,7 +1501,7 @@ static int ltdb_end_trans(struct ldb_module *module)
 		ret = ltdb->kv_ops->error(ltdb);
 		ldb_asprintf_errstring(ldb_module_get_ctx(module),
 				       "Failure during tdb_transaction_commit(): %s -> %s",
-				       tdb_errorstr(ltdb->tdb),
+				       ltdb->kv_ops->errorstr(ltdb),
 				       ldb_strerror(ret));
 		return ret;
 	}
@@ -1733,6 +1738,7 @@ static const struct kv_db_ops key_value_ops = {
 	.finish_write = ltdb_tdb_transaction_commit,
 	.abort_write = ltdb_tdb_transaction_cancel,
 	.error = ltdb_error,
+	.errorstr = ltdb_errorstr,
 	.name = ltdb_tdb_name,
 	.has_changed = ltdb_tdb_changed,
 };
