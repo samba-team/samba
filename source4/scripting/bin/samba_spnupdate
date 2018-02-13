@@ -213,7 +213,7 @@ def call_rodc_update(d):
     net = Net(creds=creds, lp=lp)
     try:
         cldap_ret = net.finddc(domain=domain, flags=nbt.NBT_SERVER_DS | nbt.NBT_SERVER_WRITABLE)
-    except Exception, reason:
+    except Exception as reason:
         print("Unable to find writeable DC for domain '%s' to send DRS writeSPN to : %s" % (domain, reason))
         sys.exit(1)
     server = cldap_ret.pdc_dns_name
@@ -223,7 +223,7 @@ def call_rodc_update(d):
             binding_options += ",print"
         drs = drsuapi.drsuapi('ncacn_ip_tcp:%s[%s]' % (server, binding_options), lp, creds)
         (drs_handle, supported_extensions) = drs_utils.drs_DsBind(drs)
-    except Exception, reason:
+    except Exception as reason:
         print("Unable to connect to DC '%s' for domain '%s' : %s" % (server, domain, reason))
         sys.exit(1)
     req1 = drsuapi.DsWriteAccountSpnRequest1()

@@ -257,7 +257,7 @@ def find_objectclass_auto(ldb, o):
     ldif += "\nobjectClass: " + o.name
     try:
         ldb.add(ldif)
-    except LdbError, e:
+    except LdbError as e:
         print "error adding %s: %s" % (o.name, e)
         print "%s" % ldif
         return
@@ -316,13 +316,13 @@ def walk_dn(ldb, dn):
     attrs = ["allowedAttributes"]
     try:
         res = ldb.search("objectClass=*", dn, SCOPE_BASE, attrs)
-    except LdbError, e:
+    except LdbError as e:
         print >>sys.stderr, "Unable to fetch allowedAttributes for '%s' - %r" % (dn, e)
         return
     allattrs = res[0]["allowedAttributes"]
     try:
         res = ldb.search("objectClass=*", dn, SCOPE_BASE, allattrs)
-    except LdbError, e:
+    except LdbError as e:
         print >>sys.stderr, "Unable to fetch all attributes for '%s' - %s" % (dn, e)
         return
     msg = res[0]
@@ -335,7 +335,7 @@ def walk_naming_context(ldb, namingContext):
     try:
         res = ldb.search("objectClass=*", namingContext, SCOPE_DEFAULT, 
                          ["objectClass"])
-    except LdbError, e:
+    except LdbError as e:
         print >>sys.stderr, "Unable to fetch objectClasses for '%s' - %s" % (namingContext, e)
         return
     for msg in res:

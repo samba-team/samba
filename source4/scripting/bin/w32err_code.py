@@ -113,7 +113,7 @@ class WerrorHtmlParser(object):
             for line in fp:
                 html_str += line.strip()
             fp.close()
-        except IOError, e:
+        except IOError as e:
             print "error loading url: " + e.strerror
             pass
 

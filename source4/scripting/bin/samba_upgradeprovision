@@ -1155,7 +1155,7 @@ def update_partition(ref_samdb, samdb, basedn, names, schema, provisionUSNs, pre
         message(SIMPLE, "There are %d changed objects" % (changed))
         return 1
 
-    except StandardError, err:
+    except StandardError as err:
         message(ERROR, "Exception during upgrade of samdb:")
         (typ, val, tb) = sys.exc_info()
         traceback.print_exception(typ, val, tb)
@@ -1258,7 +1258,7 @@ def rebuild_sd(samdb, names):
             delta["nTSecurityDescriptor"] = MessageElement(descr, FLAG_MOD_REPLACE,
                                                     "nTSecurityDescriptor")
             samdb.modify(delta, ["sd_flags:1:%d" % sd_flags,"relax:0","local_oid:%s:0" % dsdb.DSDB_CONTROL_DBCHECK])
-        except LdbError, e:
+        except LdbError as e:
             samdb.transaction_cancel()
             res = samdb.search(expression="objectClass=*", base=str(delta.dn),
                                 scope=SCOPE_BASE,
@@ -1804,7 +1804,7 @@ if __name__ == '__main__':
         if opts.full:
             try:
                 update_gpo(paths, ldbs.sam, names, lp, message)
-            except ProvisioningError, e:
+            except ProvisioningError as e:
                 message(ERROR, "The policy for domain controller is missing. "
                             "You should restart upgradeprovision with --full")
 
@@ -1823,7 +1823,7 @@ if __name__ == '__main__':
         message(SIMPLE, "Reindexing finished")
 
         shutil.rmtree(provisiondir)
-    except StandardError, err:
+    except StandardError as err:
         message(ERROR, "A problem occurred while trying to upgrade your "
                    "provision. A full backup is located at %s" % backupdir)
         if opts.debugall or opts.debugchange:

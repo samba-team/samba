@@ -330,7 +330,7 @@ if __name__ == '__main__':
             zone = dns.zone.from_file(paths.dns, relativize=False)
             rrset = zone.get_rdataset("%s." % dnsdomain, dns.rdatatype.SOA)
             serial = int(rrset[0].serial)
-        except Exception, e:
+        except Exception as e:
             logger.warn("Error parsing DNS data from '%s' (%s)" % (paths.dns, str(e)))
             logger.warn("DNS records will be automatically created")
             autofill = True

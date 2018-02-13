@@ -337,6 +337,6 @@ try:
                  attempt_live_connections=opts.attempt_live_connections)
     sys.exit(rc)
 
-except GraphError, e:
+except GraphError as e:
     print e
     sys.exit(1)

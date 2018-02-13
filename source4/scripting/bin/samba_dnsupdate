@@ -539,7 +539,7 @@ def call_nsupdate(d, op="add"):
             error_count = error_count + 1
             if opts.verbose:
                 print("Failed nsupdate: %d" % ret)
-    except Exception, estr:
+    except Exception as estr:
         if opts.fail_immediately:
             sys.exit(1)
         error_count = error_count + 1
@@ -627,7 +627,7 @@ def call_samba_tool(d, op="add", zone=None):
             error_count = error_count + 1
             if opts.verbose:
                 print("Failed 'samba-tool dns' based update of %s" % (str(d)))
-    except Exception, estr:
+    except Exception as estr:
         if opts.fail_immediately:
             sys.exit(1)
         error_count = error_count + 1
@@ -678,7 +678,7 @@ def rodc_dns_update(d, t, op):
         if ret_names.names[0].status != 0:
             print("Failed to set DNS entry: %s (status %u)" % (d, ret_names.names[0].status))
             error_count = error_count + 1
-    except RuntimeError, reason:
+    except RuntimeError as reason:
         print("Error setting DNS entry of type %u: %s: %s" % (t, d, reason))
         error_count = error_count + 1
 

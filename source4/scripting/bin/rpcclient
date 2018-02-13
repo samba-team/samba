@@ -49,7 +49,7 @@ class rpcclient(Cmd):
 
         try:
             Cmd.onecmd(self, line)
-        except dcerpc.NTSTATUS, arg:
+        except dcerpc.NTSTATUS as arg:
             print 'The command returned an error: %s' % arg[1]
 
     # Command handlers

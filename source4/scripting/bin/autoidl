@@ -157,5 +157,5 @@ for i in range(num_funcs):
     data = Function(conn, i)
     try:
         data.find_idl()
-    except Exception, e:
+    except Exception as e:
         print "Error: %r" % e
