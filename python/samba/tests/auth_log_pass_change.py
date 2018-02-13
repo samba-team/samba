@@ -142,7 +142,7 @@ class AuthLogPassChangeTests(samba.tests.auth_log_base.AuthLogTestBase):
             net.change_password(newpassword=password.encode('utf-8'),
                                 oldpassword=USER_PASS,
                                 username=USER_NAME)
-        except Exception, msg:
+        except Exception as msg:
             exception_thrown = True
         self.assertEquals(True, exception_thrown,
                           "Expected exception not thrown")
@@ -173,7 +173,7 @@ class AuthLogPassChangeTests(samba.tests.auth_log_base.AuthLogTestBase):
             net.change_password(newpassword=password.encode('utf-8'),
                                 oldpassword=USER_PASS,
                                 username="badUser")
-        except Exception, msg:
+        except Exception as msg:
             exception_thrown = True
         self.assertEquals(True, exception_thrown,
                           "Expected exception not thrown")
@@ -204,7 +204,7 @@ class AuthLogPassChangeTests(samba.tests.auth_log_base.AuthLogTestBase):
             net.change_password(newpassword=password.encode('utf-8'),
                                 oldpassword="badPassword",
                                 username=USER_NAME)
-        except Exception, msg:
+        except Exception as msg:
             exception_thrown = True
         self.assertEquals(True, exception_thrown,
                           "Expected exception not thrown")

@@ -42,7 +42,7 @@ def get_documented_parameters(sourcedir):
         raise Exception("Unable to find parameters.all.xml")
     try:
         p = open(os.path.join(path, "parameters.all.xml"), 'r')
-    except IOError, e:
+    except IOError as e:
         raise Exception("Error opening parameters file")
     out = p.read()
 
@@ -65,7 +65,7 @@ def get_documented_tuples(sourcedir, omit_no_default=True):
         raise Exception("Unable to find parameters.all.xml")
     try:
         p = open(os.path.join(path, "parameters.all.xml"), 'r')
-    except IOError, e:
+    except IOError as e:
         raise Exception("Error opening parameters file")
     out = p.read()
 

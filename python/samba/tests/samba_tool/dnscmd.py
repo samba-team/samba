@@ -189,7 +189,7 @@ class DnsCmdTestCase(SambaToolCmdTest):
             self.assertTrue("testrecord" in out and record_str in out,
                             "Query for a record which had DNS_RANK_NONE" \
                             "succeeded but produced no resulting records.")
-        except AssertionError, e:
+        except AssertionError as e:
             # Windows produces no resulting records
             pass
 
@@ -200,7 +200,7 @@ class DnsCmdTestCase(SambaToolCmdTest):
         try:
             self.assertCmdFail(result, "Successfully added duplicate record" \
                                "of one which had DNS_RANK_NONE.")
-        except AssertionError, e:
+        except AssertionError as e:
             errors.append(e)
 
         # We should be able to delete it
@@ -210,7 +210,7 @@ class DnsCmdTestCase(SambaToolCmdTest):
         try:
             self.assertCmdSuccess(result, out, err, "Failed to delete record" \
                                   "which had DNS_RANK_NONE.")
-        except AssertionError, e:
+        except AssertionError as e:
             errors.append(e)
 
         # Now the record should not exist
@@ -220,7 +220,7 @@ class DnsCmdTestCase(SambaToolCmdTest):
         try:
             self.assertCmdFail(result, "Successfully queried for deleted record" \
                                "which had DNS_RANK_NONE.")
-        except AssertionError, e:
+        except AssertionError as e:
             errors.append(e)
 
         if len(errors) > 0:

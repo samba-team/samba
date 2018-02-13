@@ -190,7 +190,7 @@ class TestDnsForwarding(DNSTest):
             s.connect((host, port))
             try:
                 s.send('timeout 0', 0)
-            except socket.error, e:
+            except socket.error as e:
                 if e.errno in (errno.ECONNREFUSED, errno.EHOSTUNREACH):
                     continue
 

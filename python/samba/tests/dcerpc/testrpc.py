@@ -45,7 +45,7 @@ class RpcTests(object):
                 continue
             try:
                 value = getattr(v, n)
-            except TypeError, errstr:
+            except TypeError as errstr:
                 if str(errstr) == "unknown union level":
                     print "ERROR: Unknown union level in %s.%s" % (typename, n)
                     self.errcount += 1
@@ -68,7 +68,7 @@ class RpcTests(object):
             try:
                 print "Setting %s.%s" % (typename, n)
                 setattr(v, n, value)
-            except Exception, e:
+            except Exception as e:
                 if isinstance(e, AttributeError) and str(e).endswith("is read-only"):
                     # readonly, ignore
                     continue
@@ -82,7 +82,7 @@ class RpcTests(object):
                 if value != getattr(v, n):
                     print "ERROR: Comparison failed for %s.%s: %r != %r" % (typename, n, value, getattr(v, n))
                     continue
-            except Exception, e:
+            except Exception as e:
                 print "ERROR: compare exception for %s.%s: %r: %s" % (typename, n, e.__class__, e)
                 continue
 
@@ -104,7 +104,7 @@ class RpcTests(object):
                     initial_blocks = talloc.total_blocks(None)
                     self.check_type(interface, n, value)
                     self.check_blocks(None, initial_blocks)
-                except Exception, e:
+                except Exception as e:
                     print "ERROR: Failed to check_type %s.%s: %r: %s" % (iname, n, e.__class__, e)
                     self.errcount += 1
             elif callable(value):

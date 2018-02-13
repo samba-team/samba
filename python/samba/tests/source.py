@@ -61,7 +61,7 @@ def get_source_file_contents():
     for fname in get_python_source_files():
         try:
             f = open(fname, 'rb')
-        except IOError, e:
+        except IOError as e:
             if e.errno == errno.ENOENT:
                 warnings.warn("source file %s broken link?" % fname)
                 continue

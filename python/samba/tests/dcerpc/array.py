@@ -195,11 +195,11 @@ class ArrayTests(samba.tests.TestCase):
         try:
             del rmd1.version
             self.fail("succeeded in deleting rmd1.version")
-        except AttributeError, e:
+        except AttributeError as e:
             pass
 
         try:
             del rmd.ctr.array
             self.fail("succeeded in deleting rmd.ctr.array")
-        except AttributeError, e:
+        except AttributeError as e:
             pass
