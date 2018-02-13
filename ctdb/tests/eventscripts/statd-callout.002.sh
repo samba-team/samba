@@ -4,9 +4,7 @@
 
 define_test "2 x add-client, update"
 
-setup_ctdb
-
-FAKE_DATE_OUTPUT="1234565789"
+setup
 
 ok_null
 simple_test_event "add-client" "192.168.123.45"

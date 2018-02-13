@@ -1,3 +1,10 @@
+setup ()
+{
+	ctdb_set_pnn
+	setup_public_addresses
+	setup_date "123456789"
+}
+
 ctdb_catdb_format_pairs ()
 {
 	_count=0
@@ -24,7 +31,7 @@ check_ctdb_tdb_statd_state ()
 		while read _x _sip _x ; do
 			for _cip ; do
 				cat <<EOF
-statd-state@${_sip}@${_cip} $FAKE_DATE_OUTPUT
+statd-state@${_sip}@${_cip} $(date)
 EOF
 			done
 		done |
