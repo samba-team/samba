@@ -568,7 +568,7 @@ def planoldpythontestsuite(env, module, name=None, extra_path=[], environ={}, ex
         name = module
     plantestsuite_loadlist(name, env, args)
     if py3_compatible and extra_python is not None:
-        args[0] = subunitrun3
+        args[args.index(subunitrun)] = subunitrun3
         plantestsuite_loadlist(name, env, args)
 
 
