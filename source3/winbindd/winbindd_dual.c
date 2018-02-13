@@ -796,15 +796,8 @@ void winbind_msg_onlinestatus(struct messaging_context *msg_ctx,
 {
 	TALLOC_CTX *mem_ctx;
 	const char *message;
-	struct server_id *sender;
 
 	DEBUG(5,("winbind_msg_onlinestatus received.\n"));
-
-	if (!data->data) {
-		return;
-	}
-
-	sender = (struct server_id *)data->data;
 
 	mem_ctx = talloc_init("winbind_msg_onlinestatus");
 	if (mem_ctx == NULL) {
@@ -817,7 +810,7 @@ void winbind_msg_onlinestatus(struct messaging_context *msg_ctx,
 		return;
 	}
 
-	messaging_send_buf(msg_ctx, *sender, MSG_WINBIND_ONLINESTATUS, 
+	messaging_send_buf(msg_ctx, server_id, MSG_WINBIND_ONLINESTATUS,
 			   (const uint8_t *)message, strlen(message) + 1);
 
 	talloc_destroy(mem_ctx);

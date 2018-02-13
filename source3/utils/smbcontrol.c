@@ -1160,10 +1160,6 @@ static bool do_winbind_onlinestatus(struct tevent_context *ev_ctx,
 				    const struct server_id pid,
 				    const int argc, const char **argv)
 {
-	struct server_id myid;
-
-	myid = messaging_server_id(msg_ctx);
-
 	if (argc != 1) {
 		fprintf(stderr, "Usage: smbcontrol winbindd onlinestatus\n");
 		return False;
@@ -1172,9 +1168,9 @@ static bool do_winbind_onlinestatus(struct tevent_context *ev_ctx,
 	messaging_register(msg_ctx, NULL, MSG_WINBIND_ONLINESTATUS,
 			   print_pid_string_cb);
 
-	if (!send_message(msg_ctx, pid, MSG_WINBIND_ONLINESTATUS, &myid,
-			  sizeof(myid)))
+	if (!send_message(msg_ctx, pid, MSG_WINBIND_ONLINESTATUS, NULL, 0)) {
 		return False;
+	}
 
 	wait_replies(ev_ctx, msg_ctx, procid_to_pid(&pid) == 0);
 
