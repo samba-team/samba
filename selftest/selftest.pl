@@ -835,6 +835,12 @@ my @exported_envvars = (
 	"VAMPIRE_DC_NETBIOSNAME",
 	"VAMPIRE_DC_NETBIOSALIAS",
 
+	# domain controller stuff for RODC
+	"RODC_DC_SERVER",
+	"RODC_DC_SERVER_IP",
+	"RODC_DC_SERVER_IPV6",
+	"RODC_DC_NETBIOSNAME",
+
 	# domain controller stuff for FL 2000 Vampired DC
 	"VAMPIRE_2000_DC_SERVER",
 	"VAMPIRE_2000_DC_SERVER_IP",
