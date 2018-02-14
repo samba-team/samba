@@ -343,11 +343,14 @@ static struct tevent_req *smbd_smb2_query_directory_send(TALLOC_CTX *mem_ctx,
 	if (in_flags & SMB2_CONTINUE_FLAG_REOPEN) {
 		int flags;
 
-		dptr_CloseDir(fsp);
+		status = fd_close(fsp);
+		if (tevent_req_nterror(req, status)) {
+			return tevent_req_post(req, ev);
+		}
 
 		/*
-		 * dptr_CloseDir() will close and invalidate the fsp's file
-		 * descriptor, we have to reopen it.
+		 * fd_close() will close and invalidate the fsp's file
+		 * descriptor. So we have to reopen it.
 		 */
 
 		flags = O_RDONLY;
