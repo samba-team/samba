@@ -120,7 +120,8 @@ class DrsBaseTestCase(SambaToolCmdTest):
         # bin/samba-tool drs <drs_command> <cmdline_auth>
         return ["drs", drs_command, cmdline_auth]
 
-    def _net_drs_replicate(self, DC, fromDC, nc_dn=None, forced=True, local=False, full_sync=False):
+    def _net_drs_replicate(self, DC, fromDC, nc_dn=None, forced=True,
+                           local=False, full_sync=False, single=False):
         if nc_dn is None:
             nc_dn = self.domain_dn
         # make base command line
@@ -134,6 +135,8 @@ class DrsBaseTestCase(SambaToolCmdTest):
             samba_tool_cmdline += ["--local"]
         if full_sync:
             samba_tool_cmdline += ["--full-sync"]
+        if single:
+            samba_tool_cmdline += ["--single-object"]
 
         (result, out, err) = self.runsubcmd(*samba_tool_cmdline)
         self.assertCmdSuccess(result, out, err)
