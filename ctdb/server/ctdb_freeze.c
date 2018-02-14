@@ -140,6 +140,9 @@ static int ctdb_db_freeze_handle_destructor(struct ctdb_db_freeze_handle *h)
 	ctdb_db->freeze_mode = CTDB_FREEZE_NONE;
 	ctdb_db->freeze_handle = NULL;
 
+	/* Clear invalid records flag */
+	ctdb_db->invalid_records = false;
+
 	talloc_free(h->lreq);
 	return 0;
 }
@@ -394,6 +397,19 @@ static int db_freeze_waiter_destructor(struct ctdb_db_freeze_waiter *w)
 }
 
 /**
+ * Invalidate the records in the database.
+ * This only applies to volatile databases.
+ */
+static int db_invalidate(struct ctdb_db_context *ctdb_db, void *private_data)
+{
+	if (ctdb_db_volatile(ctdb_db)) {
+		ctdb_db->invalid_records = true;
+	}
+
+	return 0;
+}
+
+/**
  * Count the number of databases
  */
 static int db_count(struct ctdb_db_context *ctdb_db, void *private_data)
@@ -436,12 +452,16 @@ static int db_freeze(struct ctdb_db_context *ctdb_db, void *private_data)
 }
 
 /*
-  start the freeze process for a certain priority
+  start the freeze process for all databases
+  This is only called from ctdb_control_freeze(), which is called
+  only on node becoming INACTIVE.  So mark the records invalid.
  */
 static void ctdb_start_freeze(struct ctdb_context *ctdb)
 {
 	struct ctdb_freeze_handle *h;
 	int ret;
+
+	ctdb_db_iterator(ctdb, db_invalidate, NULL);
 
 	if (ctdb->freeze_mode == CTDB_FREEZE_FROZEN) {
 		int count = 0;
@@ -534,6 +554,8 @@ static int ctdb_freeze_waiter_destructor(struct ctdb_freeze_waiter *w)
 
 /*
   freeze all the databases
+  This control is only used when freezing database on node becoming INACTIVE.
+  So mark the records invalid in ctdb_start_freeze().
  */
 int32_t ctdb_control_freeze(struct ctdb_context *ctdb,
 			    struct ctdb_req_control_old *c, bool *async_reply)
