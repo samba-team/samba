@@ -5109,6 +5109,9 @@ failed:
 	 * replication will stop with an error, but there is not much
 	 * else we can do.
 	 */
+	if (ret == LDB_SUCCESS) {
+		ret = LDB_ERR_OPERATIONS_ERROR;
+	}
 	return ldb_module_done(ar->req, NULL, NULL,
 			       ret);
 }
@@ -5719,8 +5722,10 @@ static int replmd_replicated_handle_rename(struct replmd_replicated_request *ar,
 			 ldb_errstring(ldb_module_get_ctx(ar->module))));
 			goto failed;
 	}
-failed:
 
+	talloc_free(tmp_ctx);
+	return ret;
+failed:
 	/*
 	 * On failure make the caller get the error
 	 * This means replication will stop with an error,
@@ -5728,6 +5733,9 @@ failed:
 	 * LDB_ERR_ENTRY_ALREADY_EXISTS case this is exactly what is
 	 * needed.
 	 */
+	if (ret == LDB_SUCCESS) {
+		ret = LDB_ERR_OPERATIONS_ERROR;
+	}
 
 	talloc_free(tmp_ctx);
 	return ret;
