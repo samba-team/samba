@@ -387,6 +387,7 @@ struct ctdb_db_context {
 	uint32_t freeze_transaction_id;
 	uint32_t generation;
 
+	bool invalid_records;
 	bool push_started;
 	void *push_state;
 
