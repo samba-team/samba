@@ -384,10 +384,35 @@
 
 		<varlistentry>
 		<term>-r|--user-groups <replaceable>username</replaceable></term>
-		<listitem><para>Try to obtain the list of UNIX group ids
-		to which the user belongs.  This only works for users
-		defined on a Domain Controller.
-		</para></listitem>
+		<listitem>
+			<para>
+			Try to obtain the list of UNIX group ids to which the
+			user belongs.  This only works for users defined on a
+			Domain Controller.
+			</para>
+
+			<para>There are two scenaries:</para>
+			<orderedlist>
+				<listitem>
+				<para>
+				User authenticated: When the user has been
+				authenticated, the access token for the user is
+				cached. The correct group memberships are then
+				returned from the cached user token (which can
+				be outdated).
+				</para>
+				</listitem>
+
+				<listitem>
+				<para>
+				User *NOT* authenticated: The information is
+				queries from the domain controller using the
+				machine account credentials which have limited
+				permissions. The result is normally incomplete
+				and can be also incorrect.
+				</para></listitem>
+			</orderedlist>
+		</listitem>
 		</varlistentry>
 
 		<varlistentry>
