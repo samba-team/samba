@@ -34,6 +34,11 @@ struct winbindd_child *idmap_child(void)
 	return &static_idmap_child;
 }
 
+struct dcerpc_binding_handle *idmap_child_handle(void)
+{
+	return static_idmap_child.binding_handle;
+}
+
 static const struct winbindd_child_dispatch_table idmap_dispatch_table[] = {
 	{
 		.name		= "PING",

@@ -167,7 +167,7 @@ static void wb_sids2xids_lookupsids_done(struct tevent_req *subreq)
 		req, struct wb_sids2xids_state);
 	struct lsa_RefDomainList *domains = NULL;
 	struct lsa_TransNameArray *names = NULL;
-	struct winbindd_child *child;
+	struct dcerpc_binding_handle *child_binding_handle = NULL;
 	NTSTATUS status;
 	int i;
 
@@ -237,7 +237,7 @@ static void wb_sids2xids_lookupsids_done(struct tevent_req *subreq)
 	TALLOC_FREE(names);
 	TALLOC_FREE(domains);
 
-	child = idmap_child();
+	child_binding_handle = idmap_child_handle();
 
 	state->dom_ids = wb_sids2xids_extract_for_domain_index(
 		state, &state->ids, state->dom_index);
@@ -252,7 +252,7 @@ static void wb_sids2xids_lookupsids_done(struct tevent_req *subreq)
 	};
 
 	subreq = dcerpc_wbint_Sids2UnixIDs_send(
-		state, state->ev, child->binding_handle, &state->idmap_dom,
+		state, state->ev, child_binding_handle, &state->idmap_dom,
 		state->dom_ids);
 	if (tevent_req_nomem(subreq, req)) {
 		return;

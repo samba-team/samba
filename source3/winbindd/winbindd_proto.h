@@ -351,6 +351,7 @@ NTSTATUS winbindd_print_groupmembers(struct db_context *members,
 
 void init_idmap_child(void);
 struct winbindd_child *idmap_child(void);
+struct dcerpc_binding_handle *idmap_child_handle(void);
 struct idmap_domain *idmap_find_domain_with_sid(const char *domname,
 						const struct dom_sid *sid);
 const char *idmap_config_const_string(const char *domname, const char *option,
