@@ -107,6 +107,7 @@ struct delete_record_data {
 	struct ctdb_context *ctdb;
 	struct ctdb_db_context *ctdb_db;
 	struct ctdb_ltdb_header hdr;
+	uint32_t remote_fail_count;
 	TDB_DATA key;
 	uint8_t keydata[1];
 };
@@ -149,6 +150,7 @@ static int insert_delete_record_data_into_tree(struct ctdb_context *ctdb,
 	memcpy(dd->keydata, key.dptr, key.dsize);
 
 	dd->hdr = *hdr;
+	dd->remote_fail_count = 0;
 
 	hash = ctdb_hash(&key);
 
@@ -450,6 +452,13 @@ static int delete_record_traverse(void *param, void *data)
 	struct ctdb_ltdb_header header;
 	uint32_t lmaster;
 	uint32_t hash = ctdb_hash(&(dd->key));
+
+	if (dd->remote_fail_count > 0) {
+		vdata->count.delete_list.remote_error++;
+		vdata->count.delete_list.left--;
+		talloc_free(dd);
+		return 0;
+	}
 
 	res = tdb_chainlock(ctdb_db->ltdb->tdb, dd->key);
 	if (res != 0) {
@@ -828,22 +837,17 @@ static void ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
 					ctdb_hash(&reckey));
 			if (dd != NULL) {
 				/*
-				 * The other node could not delete the
-				 * record and it is the first node that
-				 * failed. So we should remove it from
-				 * the tree and update statistics.
+				 * The remote node could not delete the
+				 * record.  Since other remote nodes can
+				 * also fail, we just mark the record.
 				 */
-				talloc_free(dd);
-				vdata->count.delete_list.remote_error++;
-				vdata->count.delete_list.left--;
+				dd->remote_fail_count++;
 			} else {
 				DEBUG(DEBUG_ERR, (__location__ " Failed to "
 				      "find record with hash 0x%08x coming "
 				      "back from TRY_DELETE_RECORDS "
 				      "control in delete list.\n",
 				      ctdb_hash(&reckey)));
-				vdata->count.delete_list.local_error++;
-				vdata->count.delete_list.left--;
 			}
 
 			rec = (struct ctdb_rec_data_old *)(rec->length + (uint8_t *)rec);
