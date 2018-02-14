@@ -34,6 +34,11 @@ struct winbindd_child *locator_child(void)
 	return &static_locator_child;
 }
 
+struct dcerpc_binding_handle *locator_child_handle(void)
+{
+	return static_locator_child.binding_handle;
+}
+
 static const struct winbindd_child_dispatch_table locator_dispatch_table[] = {
 	{
 		.name		= "PING",

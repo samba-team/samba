@@ -367,6 +367,7 @@ bool lp_scan_idmap_domains(bool (*fn)(const char *domname,
 
 void init_locator_child(void);
 struct winbindd_child *locator_child(void);
+struct dcerpc_binding_handle *locator_child_handle(void);
 
 /* The following definitions come from winbindd/winbindd_misc.c  */
 
