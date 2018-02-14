@@ -5571,6 +5571,7 @@ static int replmd_replicated_handle_rename(struct replmd_replicated_request *ar,
 				       "Conflict adding object '%s' from incoming replication but we are read only for the partition.  \n"
 				       " - We must fail the operation until a master for this partition resolves the conflict",
 				       ldb_dn_get_linearized(conflict_dn));
+		ret = LDB_ERR_OPERATIONS_ERROR;
 		goto failed;
 	}
 
