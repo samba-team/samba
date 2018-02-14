@@ -4932,6 +4932,7 @@ static int replmd_op_possible_conflict_callback(struct ldb_request *req, struct 
 				       "Conflict adding object '%s' from incoming replication as we are read only for the partition.  \n"
 				       " - We must fail the operation until a master for this partition resolves the conflict",
 				       ldb_dn_get_linearized(conflict_dn));
+		ret = LDB_ERR_OPERATIONS_ERROR;
 		goto failed;
 	}
 
