@@ -279,6 +279,11 @@ int32_t ctdb_control_pull_db(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DAT
 				     ctdb_db->db_name, ctdb_db->unhealthy_reason));
 	}
 
+	/* If the records are invalid, we are done */
+	if (ctdb_db->invalid_records) {
+		goto done;
+	}
+
 	if (ctdb_lockdb_mark(ctdb_db) != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to get lock on entire db - failing\n"));
 		return -1;
@@ -293,6 +298,7 @@ int32_t ctdb_control_pull_db(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DAT
 
 	ctdb_lockdb_unmark(ctdb_db);
 
+done:
 	outdata->dptr = (uint8_t *)params.pulldata;
 	outdata->dsize = params.len;
 
@@ -388,6 +394,11 @@ int32_t ctdb_control_db_pull(struct ctdb_context *ctdb,
 	state.srvid = pulldb_ext->srvid;
 	state.num_records = 0;
 
+	/* If the records are invalid, we are done */
+	if (ctdb_db->invalid_records) {
+		goto done;
+	}
+
 	if (ctdb_lockdb_mark(ctdb_db) != 0) {
 		DEBUG(DEBUG_ERR,
 		      (__location__ " Failed to get lock on entire db - failing\n"));
@@ -422,6 +433,7 @@ int32_t ctdb_control_db_pull(struct ctdb_context *ctdb,
 
 	ctdb_lockdb_unmark(ctdb_db);
 
+done:
 	outdata->dptr = talloc_size(outdata, sizeof(uint32_t));
 	if (outdata->dptr == NULL) {
 		DEBUG(DEBUG_ERR, (__location__ " Memory allocation error\n"));
