@@ -34,7 +34,7 @@ struct tevent_req *winbindd_allocate_uid_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req, *subreq;
 	struct winbindd_allocate_uid_state *state;
-	struct winbindd_child *child;
+	struct dcerpc_binding_handle *child_binding_handle = NULL;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct winbindd_allocate_uid_state);
@@ -44,9 +44,9 @@ struct tevent_req *winbindd_allocate_uid_send(TALLOC_CTX *mem_ctx,
 
 	DEBUG(3, ("allocate_uid\n"));
 
-	child = idmap_child();
+	child_binding_handle = idmap_child_handle();
 
-	subreq = dcerpc_wbint_AllocateUid_send(state, ev, child->binding_handle,
+	subreq = dcerpc_wbint_AllocateUid_send(state, ev, child_binding_handle,
 					       &state->uid);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
