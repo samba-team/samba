@@ -42,6 +42,8 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
 
     def setUp(self):
         super(DrsReplicaSyncTestCase, self).setUp()
+        self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, forced=True)
+        self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, forced=True)
         self.ou1 = None
         self.ou2 = None
 
