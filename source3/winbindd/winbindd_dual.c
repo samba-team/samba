@@ -223,8 +223,21 @@ static void wb_child_request_done(struct tevent_req *subreq)
 
 static void wb_child_request_orphaned(struct tevent_req *subreq)
 {
+	struct winbindd_child *child =
+		(struct winbindd_child *)tevent_req_callback_data_void(subreq);
+
 	DBG_WARNING("cleanup orphaned subreq[%p]\n", subreq);
 	TALLOC_FREE(subreq);
+
+	if (child->domain != NULL) {
+		/*
+		 * If the child is attached to a domain,
+		 * we need to make sure the domain queue
+		 * can move forward, after the orphaned
+		 * request is done.
+		 */
+		tevent_queue_start(child->domain->queue);
+	}
 }
 
 int wb_child_request_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
@@ -267,7 +280,7 @@ static void wb_child_request_cleanup(struct tevent_req *req,
 		talloc_move(subreq, &state->queue_subreq);
 		tevent_req_set_callback(subreq,
 					wb_child_request_orphaned,
-					NULL);
+					state->child);
 
 		DBG_WARNING("keep orphaned subreq[%p]\n", subreq);
 		return;
@@ -275,6 +288,16 @@ static void wb_child_request_cleanup(struct tevent_req *req,
 
 	TALLOC_FREE(state->subreq);
 	TALLOC_FREE(state->queue_subreq);
+
+	if (state->child->domain != NULL) {
+		/*
+		 * If the child is attached to a domain,
+		 * we need to make sure the domain queue
+		 * can move forward, after the request
+		 * is done.
+		 */
+		tevent_queue_start(state->child->domain->queue);
+	}
 
 	if (req_state == TEVENT_REQ_DONE) {
 		/* transmitted request and got response */
@@ -326,13 +349,35 @@ struct dcerpc_binding_handle *dom_child_handle(struct winbindd_domain *domain)
 
 struct wb_domain_request_state {
 	struct tevent_context *ev;
+	struct tevent_queue_entry *queue_entry;
 	struct winbindd_domain *domain;
 	struct winbindd_child *child;
 	struct winbindd_request *request;
 	struct winbindd_request *init_req;
 	struct winbindd_response *response;
+	struct tevent_req *pending_subreq;
 };
 
+static void wb_domain_request_cleanup(struct tevent_req *req,
+				      enum tevent_req_state req_state)
+{
+	struct wb_domain_request_state *state = tevent_req_data(
+		req, struct wb_domain_request_state);
+
+	/*
+	 * If we're completely done or got a failure.
+	 * we should remove ourself from the domain queue,
+	 * after removing the child subreq from the child queue
+	 * and give the next one in the queue the chance
+	 * to check for an idle child.
+	 */
+	TALLOC_FREE(state->pending_subreq);
+	TALLOC_FREE(state->queue_entry);
+	tevent_queue_start(state->domain->queue);
+}
+
+static void wb_domain_request_trigger(struct tevent_req *req,
+				      void *private_data);
 static void wb_domain_request_gotdc(struct tevent_req *subreq);
 static void wb_domain_request_initialized(struct tevent_req *subreq);
 static void wb_domain_request_done(struct tevent_req *subreq);
@@ -342,7 +387,7 @@ struct tevent_req *wb_domain_request_send(TALLOC_CTX *mem_ctx,
 					  struct winbindd_domain *domain,
 					  struct winbindd_request *request)
 {
-	struct tevent_req *req, *subreq;
+	struct tevent_req *req;
 	struct wb_domain_request_state *state;
 
 	req = tevent_req_create(mem_ctx, &state,
@@ -355,21 +400,66 @@ struct tevent_req *wb_domain_request_send(TALLOC_CTX *mem_ctx,
 	state->ev = ev;
 	state->request = request;
 
+	tevent_req_set_cleanup_fn(req, wb_domain_request_cleanup);
+
+	state->queue_entry = tevent_queue_add_entry(
+			domain->queue, state->ev, req,
+			wb_domain_request_trigger, NULL);
+	if (tevent_req_nomem(state->queue_entry, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	return req;
+}
+
+static void wb_domain_request_trigger(struct tevent_req *req,
+				      void *private_data)
+{
+	struct wb_domain_request_state *state = tevent_req_data(
+		req, struct wb_domain_request_state);
+	struct winbindd_domain *domain = state->domain;
+	struct tevent_req *subreq = NULL;
+	size_t shortest_queue_length;
+
 	state->child = choose_domain_child(domain);
+	shortest_queue_length = tevent_queue_length(state->child->queue);
+	if (shortest_queue_length > 0) {
+		/*
+		 * All children are busy, we need to stop
+		 * the queue and untrigger our own queue
+		 * entry. Once a pending request
+		 * is done it calls tevent_queue_start
+		 * and we get retriggered.
+		 */
+		state->child = NULL;
+		tevent_queue_stop(state->domain->queue);
+		tevent_queue_entry_untrigger(state->queue_entry);
+		return;
+	}
 
 	if (domain->initialized) {
 		subreq = wb_child_request_send(state, state->ev, state->child,
 					       state->request);
 		if (tevent_req_nomem(subreq, req)) {
-			return tevent_req_post(req, ev);
+			return;
 		}
 		tevent_req_set_callback(subreq, wb_domain_request_done, req);
-		return req;
+		state->pending_subreq = subreq;
+
+		/*
+		 * Once the domain is initialized and
+		 * once we placed our real request into the child queue,
+		 * we can remove ourself from the domain queue
+		 * and give the next one in the queue the chance
+		 * to check for an idle child.
+		 */
+		TALLOC_FREE(state->queue_entry);
+		return;
 	}
 
 	state->init_req = talloc_zero(state, struct winbindd_request);
 	if (tevent_req_nomem(state->init_req, req)) {
-		return tevent_req_post(req, ev);
+		return;
 	}
 
 	if (IS_DC || domain->primary || domain->internal) {
@@ -382,11 +472,12 @@ struct tevent_req *wb_domain_request_send(TALLOC_CTX *mem_ctx,
 		subreq = wb_child_request_send(state, state->ev, state->child,
 					       state->init_req);
 		if (tevent_req_nomem(subreq, req)) {
-			return tevent_req_post(req, ev);
+			return;
 		}
 		tevent_req_set_callback(subreq, wb_domain_request_initialized,
 					req);
-		return req;
+		state->pending_subreq = subreq;
+		return;
 	}
 
 	/*
@@ -403,10 +494,11 @@ struct tevent_req *wb_domain_request_send(TALLOC_CTX *mem_ctx,
 				     NULL, /* site_name */
 				     DS_RETURN_DNS_NAME); /* flags */
 	if (tevent_req_nomem(subreq, req)) {
-		return tevent_req_post(req, ev);
+		return;
 	}
 	tevent_req_set_callback(subreq, wb_domain_request_gotdc, req);
-	return req;
+	state->pending_subreq = subreq;
+	return;
 }
 
 static void wb_domain_request_gotdc(struct tevent_req *subreq)
@@ -418,6 +510,8 @@ static void wb_domain_request_gotdc(struct tevent_req *subreq)
 	struct netr_DsRGetDCNameInfo *dcinfo = NULL;
 	NTSTATUS status;
 	const char *dcname = NULL;
+
+	state->pending_subreq = NULL;
 
 	status = wb_dsgetdcname_recv(subreq, state, &dcinfo);
 	TALLOC_FREE(subreq);
@@ -442,6 +536,7 @@ static void wb_domain_request_gotdc(struct tevent_req *subreq)
 		return;
 	}
 	tevent_req_set_callback(subreq, wb_domain_request_initialized, req);
+	state->pending_subreq = subreq;
 }
 
 static void wb_domain_request_initialized(struct tevent_req *subreq)
@@ -452,6 +547,8 @@ static void wb_domain_request_initialized(struct tevent_req *subreq)
 		req, struct wb_domain_request_state);
 	struct winbindd_response *response;
 	int ret, err;
+
+	state->pending_subreq = NULL;
 
 	ret = wb_child_request_recv(subreq, talloc_tos(), &response, &err);
 	TALLOC_FREE(subreq);
@@ -500,6 +597,16 @@ static void wb_domain_request_initialized(struct tevent_req *subreq)
 		return;
 	}
 	tevent_req_set_callback(subreq, wb_domain_request_done, req);
+	state->pending_subreq = subreq;
+
+	/*
+	 * Once the domain is initialized and
+	 * once we placed our real request into the child queue,
+	 * we can remove ourself from the domain queue
+	 * and give the next one in the queue the chance
+	 * to check for an idle child.
+	 */
+	TALLOC_FREE(state->queue_entry);
 }
 
 static void wb_domain_request_done(struct tevent_req *subreq)
@@ -509,6 +616,8 @@ static void wb_domain_request_done(struct tevent_req *subreq)
 	struct wb_domain_request_state *state = tevent_req_data(
 		req, struct wb_domain_request_state);
 	int ret, err;
+
+	state->pending_subreq = NULL;
 
 	ret = wb_child_request_recv(subreq, talloc_tos(), &state->response,
 				    &err);

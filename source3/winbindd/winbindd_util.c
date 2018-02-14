@@ -222,6 +222,12 @@ add_trusted_domain_from_tdc(const struct winbindd_tdc_domain *tdc)
 		return NULL;
 	}
 
+	domain->queue = tevent_queue_create(domain, "winbind_domain");
+	if (domain->queue == NULL) {
+		TALLOC_FREE(domain);
+		return NULL;
+	}
+
 	domain->binding_handle = wbint_binding_handle(domain, domain, NULL);
 	if (domain->binding_handle == NULL) {
 		TALLOC_FREE(domain);
