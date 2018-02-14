@@ -228,6 +228,12 @@ static NTSTATUS add_trusted_domain(const char *domain_name,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	domain->queue = tevent_queue_create(domain, "winbind_domain");
+	if (domain->queue == NULL) {
+		TALLOC_FREE(domain);
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	domain->binding_handle = wbint_binding_handle(domain, domain, NULL);
 	if (domain->binding_handle == NULL) {
 		TALLOC_FREE(domain);
