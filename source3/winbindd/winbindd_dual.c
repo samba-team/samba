@@ -393,18 +393,18 @@ struct tevent_req *wb_domain_request_send(TALLOC_CTX *mem_ctx,
 	}
 
 	/*
-	 * Ask our DC for a DC name
+	 * This is *not* the primary domain,
+	 * let's ask our DC about a DC name.
+	 *
+	 * We prefer getting a dns name in dc_unc,
+	 * which is indicated by DS_RETURN_DNS_NAME.
+	 * For NT4 domains we still get the netbios name.
 	 */
-	domain = find_our_domain();
-
-	/* This is *not* the primary domain, let's ask our DC about a DC
-	 * name */
-
-	state->init_req->cmd = WINBINDD_GETDCNAME;
-	fstrcpy(state->init_req->domain_name, domain->name);
-
-	subreq = wb_child_request_send(state, state->ev, state->child,
-				       state->request);
+	subreq = wb_dsgetdcname_send(state, state->ev,
+				     state->domain->name,
+				     NULL, /* domain_guid */
+				     NULL, /* site_name */
+				     DS_RETURN_DNS_NAME); /* flags */
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -418,22 +418,26 @@ static void wb_domain_request_gotdc(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct wb_domain_request_state *state = tevent_req_data(
 		req, struct wb_domain_request_state);
-	struct winbindd_response *response;
-	int ret, err;
+	struct netr_DsRGetDCNameInfo *dcinfo = NULL;
+	NTSTATUS status;
+	const char *dcname = NULL;
 
-	ret = wb_child_request_recv(subreq, talloc_tos(), &response, &err);
+	status = wb_dsgetdcname_recv(subreq, state, &dcinfo);
 	TALLOC_FREE(subreq);
-	if (ret == -1) {
-		tevent_req_error(req, err);
+	if (tevent_req_nterror(req, status)) {
 		return;
+	}
+	dcname = dcinfo->dc_unc;
+	while (dcname != NULL && *dcname == '\\') {
+		dcname++;
 	}
 	state->init_req->cmd = WINBINDD_INIT_CONNECTION;
 	fstrcpy(state->init_req->domain_name, state->domain->name);
 	state->init_req->data.init_conn.is_primary = False;
 	fstrcpy(state->init_req->data.init_conn.dcname,
-		response->data.dc_name);
+		dcname);
 
-	TALLOC_FREE(response);
+	TALLOC_FREE(dcinfo);
 
 	subreq = wb_child_request_send(state, state->ev, state->child,
 				       state->init_req);
