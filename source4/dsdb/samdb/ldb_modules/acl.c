@@ -1122,6 +1122,7 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_control *as_system;
 	struct ldb_control *is_undelete;
 	bool userPassword;
+	bool password_rights_checked = false;
 	TALLOC_CTX *tmp_ctx;
 	const struct ldb_message *msg = req->op.mod.message;
 	static const char *acl_attrs[] = {
@@ -1267,6 +1268,9 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 		} else if (ldb_attr_cmp("unicodePwd", el->name) == 0 ||
 			   (userPassword && ldb_attr_cmp("userPassword", el->name) == 0) ||
 			   ldb_attr_cmp("clearTextPassword", el->name) == 0) {
+			if (password_rights_checked) {
+				continue;
+			}
 			ret = acl_check_password_rights(tmp_ctx,
 							module,
 							req,
@@ -1277,6 +1281,7 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 			if (ret != LDB_SUCCESS) {
 				goto fail;
 			}
+			password_rights_checked = true;
 		} else if (ldb_attr_cmp("servicePrincipalName", el->name) == 0) {
 			ret = acl_check_spn(tmp_ctx,
 					    module,
