@@ -35,7 +35,7 @@ struct tevent_req *winbindd_dsgetdcname_send(TALLOC_CTX *mem_ctx,
 					     struct winbindd_request *request)
 {
 	struct tevent_req *req, *subreq;
-	struct winbindd_child *child;
+	struct dcerpc_binding_handle *child_binding_handle = NULL;
 	struct winbindd_dsgetdcname_state *state;
 	struct GUID *guid_ptr = NULL;
 	uint32_t ds_flags = 0;
@@ -65,10 +65,10 @@ struct tevent_req *winbindd_dsgetdcname_send(TALLOC_CTX *mem_ctx,
 		guid_ptr = &state->guid;
 	}
 
-	child = locator_child();
+	child_binding_handle = locator_child_handle();
 
 	subreq = dcerpc_wbint_DsGetDcName_send(
-		state, ev, child->binding_handle,
+		state, ev, child_binding_handle,
 		request->data.dsgetdcname.domain_name, guid_ptr,
 		request->data.dsgetdcname.site_name,
 		ds_flags, &state->dc_info);

@@ -37,7 +37,7 @@ struct tevent_req *wb_dsgetdcname_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req, *subreq;
 	struct wb_dsgetdcname_state *state;
-	struct winbindd_child *child;
+	struct dcerpc_binding_handle *child_binding_handle = NULL;
 	struct GUID guid;
 	struct GUID *guid_ptr = NULL;
 
@@ -72,10 +72,10 @@ struct tevent_req *wb_dsgetdcname_send(TALLOC_CTX *mem_ctx,
 		/*
 		 * We have to figure out the DC ourselves
 		 */
-		child = locator_child();
+		child_binding_handle = locator_child_handle();
 	} else {
 		struct winbindd_domain *domain = find_our_domain();
-		child = choose_domain_child(domain);
+		child_binding_handle = dom_child_handle(domain);
 	}
 
 	if (domain_guid != NULL) {
@@ -85,7 +85,7 @@ struct tevent_req *wb_dsgetdcname_send(TALLOC_CTX *mem_ctx,
 	}
 
 	subreq = dcerpc_wbint_DsGetDcName_send(
-		state, ev, child->binding_handle, domain_name, guid_ptr, site_name,
+		state, ev, child_binding_handle, domain_name, guid_ptr, site_name,
 		flags, &state->dcinfo);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
