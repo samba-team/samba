@@ -854,10 +854,6 @@ static void ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
 		}
 	}
 
-	if (vdata->count.delete_list.left == 0) {
-		goto success;
-	}
-
 	/*
 	 * Step 2:
 	 * Delete the remaining records locally.
@@ -872,8 +868,6 @@ static void ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
 		DEBUG(DEBUG_ERR, (__location__ " Error traversing the "
 		      "delete list for deletion.\n"));
 	}
-
-success:
 
 	if (vdata->count.delete_list.left != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Vaccum db[%s] error: "
