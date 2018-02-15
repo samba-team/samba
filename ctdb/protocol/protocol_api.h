@@ -530,12 +530,6 @@ int ctdb_reply_control_set_db_sticky(struct ctdb_reply_control *reply);
 void ctdb_req_control_reload_public_ips(struct ctdb_req_control *request);
 int ctdb_reply_control_reload_public_ips(struct ctdb_reply_control *reply);
 
-void ctdb_req_control_receive_records(struct ctdb_req_control *request,
-				      struct ctdb_rec_buffer *recbuf);
-int ctdb_reply_control_receive_records(struct ctdb_reply_control *reply,
-				       TALLOC_CTX *mem_ctx,
-				       struct ctdb_rec_buffer **recbuf);
-
 void ctdb_req_control_ipreallocated(struct ctdb_req_control *request);
 int ctdb_reply_control_ipreallocated(struct ctdb_reply_control *reply);
 

@@ -1948,35 +1948,6 @@ int ctdb_reply_control_reload_public_ips(struct ctdb_reply_control *reply)
 
 /* CTDB_CONTROL_TRAVERSE_ALL_EXT */
 
-/* CTDB_CONTROL_RECEIVE_RECORDS */
-
-void ctdb_req_control_receive_records(struct ctdb_req_control *request,
-				      struct ctdb_rec_buffer *recbuf)
-{
-	request->opcode = CTDB_CONTROL_RECEIVE_RECORDS;
-	request->pad = 0;
-	request->srvid = 0;
-	request->client_id = 0;
-	request->flags = 0;
-
-	request->rdata.opcode = CTDB_CONTROL_RECEIVE_RECORDS;
-	request->rdata.data.recbuf = recbuf;
-}
-
-int ctdb_reply_control_receive_records(struct ctdb_reply_control *reply,
-				       TALLOC_CTX *mem_ctx,
-				       struct ctdb_rec_buffer **recbuf)
-{
-	if (reply->rdata.opcode != CTDB_CONTROL_RECEIVE_RECORDS) {
-		return EPROTO;
-	}
-
-	if (reply->status == 0) {
-		*recbuf = talloc_steal(mem_ctx, reply->rdata.data.recbuf);
-	}
-	return reply->status;
-}
-
 /* CTDB_CONTROL_IPREALLOCATED */
 
 void ctdb_req_control_ipreallocated(struct ctdb_req_control *request)
