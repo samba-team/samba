@@ -781,7 +781,12 @@ enum winbindd_result winbindd_dual_init_connection(struct winbindd_domain *domai
 		[sizeof(state->request->data.init_conn.dcname)-1]='\0';
 
 	if (strlen(state->request->data.init_conn.dcname) > 0) {
-		fstrcpy(domain->dcname, state->request->data.init_conn.dcname);
+		TALLOC_FREE(domain->dcname);
+		domain->dcname = talloc_strdup(domain,
+				state->request->data.init_conn.dcname);
+		if (domain->dcname == NULL) {
+			return WINBINDD_ERROR;
+		}
 	}
 
 	init_dc_connection(domain, false);
