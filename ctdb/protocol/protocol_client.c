@@ -424,8 +424,6 @@ int ctdb_reply_control_db_attach(struct ctdb_reply_control *reply,
 	return reply->status;
 }
 
-/* CTDB_CONTROL_SET_CALL */
-
 /* CTDB_CONTROL_TRAVERSE_START */
 
 void ctdb_req_control_traverse_start(struct ctdb_req_control *request,
@@ -717,8 +715,6 @@ int ctdb_reply_control_shutdown(struct ctdb_reply_control *reply)
 {
 	return ctdb_reply_control_generic(reply, CTDB_CONTROL_SHUTDOWN);
 }
-
-/* CTDB_CONTROL_GET_MONMODE */
 
 /* CTDB_CONTROL_TCP_CLIENT */
 
@@ -1169,9 +1165,6 @@ int ctdb_reply_control_try_delete_records(struct ctdb_reply_control *reply,
 	}
 	return reply->status;
 }
-
-/* CTDB_CONTROL_ENABLE_MONITOR */
-/* CTDB_CONTROL_DISABLE_MONITOR */
 
 /* CTDB_CONTROL_ADD_PUBLIC_IP */
 
@@ -1854,8 +1847,6 @@ int ctdb_reply_control_set_db_readonly(struct ctdb_reply_control *reply)
 {
 	return ctdb_reply_control_generic(reply, CTDB_CONTROL_SET_DB_READONLY);
 }
-
-/* CTDB_CONTROL_CHECK_SRVIDS */
 
 /* CTDB_CONTROL_TRAVERSE_START_EXT */
 
