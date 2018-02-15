@@ -289,7 +289,7 @@ static PyObject *py_nbt_name_register(PyObject *self, PyObject *args, PyObject *
 		return NULL;
 	}
 
-	ret = PyTuple_New(3);
+	ret = PyTuple_New(4);
 	if (ret == NULL)
 		return NULL;
 	PyTuple_SetItem(ret, 0, PyString_FromString(io.out.reply_from));
