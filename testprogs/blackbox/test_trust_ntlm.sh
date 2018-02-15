@@ -36,19 +36,35 @@ unc="//$SERVER/tmp"
 . `dirname $0`/subunit.sh
 . `dirname $0`/common_test_fns.inc
 
-CREDS="$DOMAIN\\$USERNAME%$PASSWORD"
-WBCREDS="$DOMAIN/$USERNAME%$PASSWORD"
+DNAME="$DOMAIN"
+NAME="$DNAME\\$USERNAME"
+WBNAME="$DNAME/$USERNAME"
+CREDS="$NAME%$PASSWORD"
+WBCREDS="$WBNAME%$PASSWORD"
 EXPCREDS="Account Name: $USERNAME, Authority Name: $DOMAIN"
+EXPSID="(User: 1)"
+EXPDSID="(Domain: 3)"
 test_rpcclient_grep "Test01 rpcclient getusername with $CREDS" getusername "$SERVER" "$EXPCREDS" -U$CREDS || failed=`expr $failed + 1`
 test_smbclient "Test01 smbclient with $CREDS" 'ls' "$unc" -U$CREDS || failed=`expr $failed + 1`
 testit "Test01 wbinfo -a with $WBCREDS" $VALGRIND $wbinfo -a $WBCREDS || failed=`expr $failed + 1`
+test_rpcclient_grep "Test01 rpcclient lookupnames with $NAME" "lookupnames_level 1 '$NAME'" "$SERVER" "$EXPSID" -U$CREDS || failed=`expr $failed + 1`
+testit "Test01 wbinfo -n with $WBNAME" $VALGRIND $wbinfo -n "$WBNAME" || failed=`expr $failed + 1`
+test_rpcclient_grep "Test01 rpcclient lookupnames with $DNAME" "lookupnames_level 1 '$DNAME'" "$SERVER" "$EXPDSID" -U$CREDS || failed=`expr $failed + 1`
 
-CREDS="$REALM\\$USERNAME%$PASSWORD"
-WBCREDS="$REALM/$USERNAME%$PASSWORD"
+DNAME="$REALM"
+NAME="$DNAME\\$USERNAME"
+WBNAME="$DNAME/$USERNAME"
+CREDS="$NAME%$PASSWORD"
+WBCREDS="$WBNAME%$PASSWORD"
 EXPCREDS="Account Name: $USERNAME, Authority Name: $DOMAIN"
+EXPSID="(User: 1)"
+EXPDSID="(Domain: 3)"
 test_rpcclient_grep "Test02 rpcclient getusername with $CREDS" getusername "$SERVER" "$EXPCREDS" -U$CREDS || failed=`expr $failed + 1`
 test_smbclient "Test02 smbclient with $CREDS" 'ls' "$unc" -U$CREDS || failed=`expr $failed + 1`
 testit "Test02 wbinfo -a with $WBCREDS" $VALGRIND $wbinfo -a $WBCREDS || failed=`expr $failed + 1`
+test_rpcclient_grep "Test02 rpcclient lookupnames with $NAME" "lookupnames_level 1 '$NAME'" "$SERVER" "$EXPSID" -U$CREDS || failed=`expr $failed + 1`
+testit "Test02 wbinfo -n with $WBNAME" $VALGRIND $wbinfo -n "$WBNAME" || failed=`expr $failed + 1`
+test_rpcclient_grep "Test02 rpcclient lookupnames with $DNAME" "lookupnames_level 1 '$DNAME'" "$SERVER" "$EXPDSID" -U$CREDS || failed=`expr $failed + 1`
 
 CREDS="$USERNAME@$DOMAIN%$PASSWORD"
 WBCREDS="$USERNAME@$DOMAIN%$PASSWORD"
@@ -86,12 +102,20 @@ else
 	#testit "Test04 wbinfo -a with $WBCREDS" $VALGRIND $wbinfo -a $WBCREDS || failed=`expr $failed + 1`
 fi
 
-CREDS="UNKNOWNDOMAIN\\$USERNAME%$PASSWORD"
-WBCREDS="UNKNOWNDOMAIN/$USERNAME%$PASSWORD"
+DNAME="UNKNOWNDOMAIN"
+NAME="$DNAME\\$USERNAME"
+WBNAME="$DNAME/$USERNAME"
+CREDS="$NAME%$PASSWORD"
+WBCREDS="$WBNAME%$PASSWORD"
 EXPCREDS="Account Name: $USERNAME, Authority Name: $DOMAIN"
+EXPSID="NT_STATUS_NONE_MAPPED"
+EXPDSID="NT_STATUS_NONE_MAPPED"
 test_rpcclient_grep "Test05 rpcclient getusername with $CREDS" getusername "$SERVER" "$EXPCREDS" -U$CREDS || failed=`expr $failed + 1`
 test_smbclient "Test05 smbclient with $CREDS" 'ls' "$unc" -U$CREDS || failed=`expr $failed + 1`
 testit_expect_failure "Fail05 wbinfo -a with $WBCREDS" $VALGRIND $wbinfo -a $WBCREDS || failed=`expr $failed + 1`
+test_rpcclient_expect_failure_grep "Test05 rpcclient lookupnames with $NAME" "lookupnames_level 1 '$NAME'" "$SERVER" "$EXPSID" -U$CREDS || failed=`expr $failed + 1`
+testit_expect_failure "Test05 wbinfo -n with $WBNAME" $VALGRIND $wbinfo -n "$WBNAME" || failed=`expr $failed + 1`
+test_rpcclient_expect_failure_grep "Test05 rpcclient lookupnames with $DNAME" "lookupnames_level 1 '$DNAME'" "$SERVER" "$EXPDSID" -U$CREDS || failed=`expr $failed + 1`
 
 CREDS="$TRUST_DOMAIN\\$USERNAME%$PASSWORD"
 WBCREDS="$TRUST_DOMAIN/$USERNAME%$PASSWORD"
@@ -100,19 +124,35 @@ test_rpcclient_expect_failure_grep "Fail06 rpcclient getusername with $CREDS" ge
 test_smbclient_expect_failure "Fail06 smbclient with $CREDS" 'ls' "$unc" -U$CREDS && failed=`expr $failed + 1`
 testit_expect_failure "Fail06 wbinfo -a with $WBCREDS" $VALGRIND $wbinfo -a $WBCREDS && failed=`expr $failed + 1`
 
-CREDS="$TRUST_DOMAIN\\$TRUST_USERNAME%$TRUST_PASSWORD"
-WBCREDS="$TRUST_DOMAIN/$TRUST_USERNAME%$TRUST_PASSWORD"
+DNAME="$TRUST_DOMAIN"
+NAME="$DNAME\\$TRUST_USERNAME"
+WBNAME="$DNAME/$TRUST_USERNAME"
+CREDS="$NAME%$TRUST_PASSWORD"
+WBCREDS="$WBNAME%$TRUST_PASSWORD"
 EXPCREDS="Account Name: $TRUST_USERNAME, Authority Name: $TRUST_DOMAIN"
+EXPSID="(User: 1)"
+EXPDSID="(Domain: 3)"
 test_rpcclient_grep "Test07 rpcclient getusername with $CREDS" getusername "$SERVER" "$EXPCREDS" -U$CREDS || failed=`expr $failed + 1`
 test_smbclient "Test07 smbclient with $CREDS" 'ls' "$unc" -U$CREDS || failed=`expr $failed + 1`
 testit "Test07 wbinfo -a with $WBCREDS" $VALGRIND $wbinfo -a $WBCREDS || failed=`expr $failed + 1`
+test_rpcclient_grep "Test07 rpcclient lookupnames with $NAME" "lookupnames_level 1 '$NAME'" "$SERVER" "$EXPSID" -U$CREDS || failed=`expr $failed + 1`
+testit "Test07 wbinfo -n with $WBNAME" $VALGRIND $wbinfo -n "$WBNAME" || failed=`expr $failed + 1`
+test_rpcclient_grep "Test07 rpcclient lookupnames with $DNAME" "lookupnames_level 1 '$DNAME'" "$SERVER" "$EXPDSID" -U$CREDS || failed=`expr $failed + 1`
 
-CREDS="$TRUST_REALM\\$TRUST_USERNAME%$TRUST_PASSWORD"
-WBCREDS="$TRUST_REALM/$TRUST_USERNAME%$TRUST_PASSWORD"
+DNAME="$TRUST_REALM"
+NAME="$DNAME\\$TRUST_USERNAME"
+WBNAME="$DNAME/$TRUST_USERNAME"
+CREDS="$NAME%$TRUST_PASSWORD"
+WBCREDS="$WBNAME%$TRUST_PASSWORD"
 EXPCREDS="Account Name: $TRUST_USERNAME, Authority Name: $TRUST_DOMAIN"
+EXPSID="(User: 1)"
+EXPDSID="(Domain: 3)"
 test_rpcclient_grep "Test08 rpcclient getusername with $CREDS" getusername "$SERVER" "$EXPCREDS" -U$CREDS || failed=`expr $failed + 1`
 test_smbclient "Test08 smbclient with $CREDS" 'ls' "$unc" -U$CREDS || failed=`expr $failed + 1`
 testit "Test08 wbinfo -a with $WBCREDS" $VALGRIND $wbinfo -a $WBCREDS || failed=`expr $failed + 1`
+test_rpcclient_grep "Test08 rpcclient lookupnames with $NAME" "lookupnames_level 1 '$NAME'" "$SERVER" "$EXPSID" -U$CREDS || failed=`expr $failed + 1`
+testit "Test08 wbinfo -n with $WBNAME" $VALGRIND $wbinfo -n "$WBNAME" || failed=`expr $failed + 1`
+test_rpcclient_grep "Test08 rpcclient lookupnames with $DNAME" "lookupnames_level 1 '$DNAME'" "$SERVER" "$EXPDSID" -U$CREDS || failed=`expr $failed + 1`
 
 CREDS="$TRUST_USERNAME@$TRUST_DOMAIN%$TRUST_PASSWORD"
 WBCREDS="$TRUST_USERNAME@$TRUST_DOMAIN%$TRUST_PASSWORD"
@@ -154,11 +194,12 @@ fi
 
 lowerrealm=$(echo $TRUST_REALM | tr '[A-Z]' '[a-z]')
 
-if test x$TYPE = x"forest"; then
+#if test x$TYPE = x"forest"; then
+#
+#fi
+#
+#if test x$UNTRUSTED = x"yes"; then
+#
+#fi
 
-fi
-
-if test x$UNTRUSTED = x"yes"; then
-
-fi
 exit $failed
