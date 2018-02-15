@@ -373,6 +373,7 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_CHECK_PID_SRVID         = 151,
 		    CTDB_CONTROL_TUNNEL_REGISTER         = 152,
 		    CTDB_CONTROL_TUNNEL_DEREGISTER       = 153,
+		    CTDB_CONTROL_VACUUM_FETCH            = 154,
 };
 
 #define MAX_COUNT_BUCKETS 16
