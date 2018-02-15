@@ -497,6 +497,13 @@ def build(bld):
                              ctdb-util samba-util talloc replace popt''',
                      install_path='${CTDB_HELPER_BINDIR}')
 
+    bld.SAMBA_SUBSYSTEM('ctdb-event-protocol',
+                        source=bld.SUBDIR('event',
+                                          '''event_protocol.c
+                                             event_protocol_util.c
+                                          '''),
+                        deps='ctdb-protocol-basic')
+
     bld.SAMBA_BINARY('ctdbd',
                      source='server/ctdbd.c ' +
                                bld.SUBDIR('server',
@@ -878,6 +885,12 @@ def build(bld):
                          deps='''ctdb-protocol-tests-common
                                  samba-util talloc tdb''',
                          install_path='${CTDB_TEST_LIBEXECDIR}')
+
+    bld.SAMBA_BINARY('event_protocol_test',
+                     source='event/event_protocol_test.c',
+                     deps='''ctdb-protocol-tests-basic
+                             ctdb-protocol-basic talloc''',
+                     install_path='${CTDB_TEST_LIBEXECDIR}')
 
     bld.SAMBA_SUBSYSTEM('ctdb-tests-common',
                         source=bld.SUBDIR('tests/src',
