@@ -266,6 +266,19 @@ struct tevent_queue_entry *tevent_queue_add_optimize_empty(
 					 trigger, private_data, true);
 }
 
+void tevent_queue_entry_untrigger(struct tevent_queue_entry *entry)
+{
+	if (entry->queue->running) {
+		abort();
+	}
+
+	if (entry->queue->list != entry) {
+		abort();
+	}
+
+	entry->triggered = false;
+}
+
 void tevent_queue_start(struct tevent_queue *queue)
 {
 	if (queue->running) {
