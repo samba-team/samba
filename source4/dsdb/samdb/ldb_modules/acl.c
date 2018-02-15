@@ -995,6 +995,26 @@ static int acl_check_password_rights(TALLOC_CTX *mem_ctx,
 		goto checked;
 	}
 
+	c = ldb_request_get_control(req, DSDB_CONTROL_PASSWORD_HASH_VALUES_OID);
+	if (c != NULL) {
+		/*
+		 * The "DSDB_CONTROL_PASSWORD_HASH_VALUES_OID" control, without
+		 * "DSDB_CONTROL_PASSWORD_CHANGE_OID" control means that we
+		 * have a force password set.
+		 * This control is used by the SAMR/NETLOGON/LSA password
+		 * reset mechanisms.
+		 *
+		 * This control can't be used by real LDAP clients,
+		 * the only caller is samdb_set_password_internal(),
+		 * so we don't have to strict verification of the input.
+		 */
+		ret = acl_check_extended_right(tmp_ctx, sd, acl_user_token(module),
+					       GUID_DRS_FORCE_CHANGE_PASSWORD,
+					       SEC_ADS_CONTROL_ACCESS,
+					       sid);
+		goto checked;
+	}
+
 	msg = ldb_msg_copy_shallow(tmp_ctx, req->op.mod.message);
 	if (msg == NULL) {
 		return ldb_module_oom(module);
