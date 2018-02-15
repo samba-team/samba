@@ -968,9 +968,32 @@ static int acl_check_password_rights(TALLOC_CTX *mem_ctx,
 	unsigned int del_attr_cnt = 0, add_attr_cnt = 0, rep_attr_cnt = 0;
 	struct ldb_message_element *el;
 	struct ldb_message *msg;
+	struct ldb_control *c = NULL;
 	const char *passwordAttrs[] = { "userPassword", "clearTextPassword",
 					"unicodePwd", "dBCSPwd", NULL }, **l;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+
+	c = ldb_request_get_control(req, DSDB_CONTROL_PASSWORD_CHANGE_OID);
+	if (c != NULL) {
+		/*
+		 * The "DSDB_CONTROL_PASSWORD_CHANGE_OID" control means that we
+		 * have a user password change and not a set as the message
+		 * looks like. In it's value blob it contains the NT and/or LM
+		 * hash of the old password specified by the user.  This control
+		 * is used by the SAMR and "kpasswd" password change mechanisms.
+		 *
+		 * This control can't be used by real LDAP clients,
+		 * the only caller is samdb_set_password_internal(),
+		 * so we don't have to strict verification of the input.
+		 */
+		ret = acl_check_extended_right(tmp_ctx,
+					       sd,
+					       acl_user_token(module),
+					       GUID_DRS_USER_CHANGE_PASSWORD,
+					       SEC_ADS_CONTROL_ACCESS,
+					       sid);
+		goto checked;
+	}
 
 	msg = ldb_msg_copy_shallow(tmp_ctx, req->op.mod.message);
 	if (msg == NULL) {
@@ -1002,20 +1025,6 @@ static int acl_check_password_rights(TALLOC_CTX *mem_ctx,
 		return LDB_SUCCESS;
 	}
 
-	if (ldb_request_get_control(req,
-				    DSDB_CONTROL_PASSWORD_CHANGE_OID) != NULL) {
-		/* The "DSDB_CONTROL_PASSWORD_CHANGE_OID" control means that we
-		 * have a user password change and not a set as the message
-		 * looks like. In it's value blob it contains the NT and/or LM
-		 * hash of the old password specified by the user.
-		 * This control is used by the SAMR and "kpasswd" password
-		 * change mechanisms. */
-		ret = acl_check_extended_right(tmp_ctx, sd, acl_user_token(module),
-					       GUID_DRS_USER_CHANGE_PASSWORD,
-					       SEC_ADS_CONTROL_ACCESS,
-					       sid);
-		goto checked;
-	}
 
 	if (rep_attr_cnt > 0) {
 		ret = acl_check_extended_right(tmp_ctx, sd, acl_user_token(module),
