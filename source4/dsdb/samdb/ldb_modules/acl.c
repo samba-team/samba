@@ -1016,14 +1016,24 @@ static int acl_check_password_rights(TALLOC_CTX *mem_ctx,
 					       sid);
 		goto checked;
 	}
-	else if (rep_attr_cnt > 0 || (add_attr_cnt != del_attr_cnt)) {
+
+	if (rep_attr_cnt > 0) {
 		ret = acl_check_extended_right(tmp_ctx, sd, acl_user_token(module),
 					       GUID_DRS_FORCE_CHANGE_PASSWORD,
 					       SEC_ADS_CONTROL_ACCESS,
 					       sid);
 		goto checked;
 	}
-	else if (add_attr_cnt == 1 && del_attr_cnt == 1) {
+
+	if (add_attr_cnt != del_attr_cnt) {
+		ret = acl_check_extended_right(tmp_ctx, sd, acl_user_token(module),
+					       GUID_DRS_FORCE_CHANGE_PASSWORD,
+					       SEC_ADS_CONTROL_ACCESS,
+					       sid);
+		goto checked;
+	}
+
+	if (add_attr_cnt == 1 && del_attr_cnt == 1) {
 		ret = acl_check_extended_right(tmp_ctx, sd, acl_user_token(module),
 					       GUID_DRS_USER_CHANGE_PASSWORD,
 					       SEC_ADS_CONTROL_ACCESS,
