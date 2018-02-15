@@ -821,8 +821,6 @@ int32_t ctdb_control_start_recovery(struct ctdb_context *ctdb,
 
 int32_t ctdb_control_try_delete_records(struct ctdb_context *ctdb,
 					TDB_DATA indata, TDB_DATA *outdata);
-int32_t ctdb_control_receive_records(struct ctdb_context *ctdb,
-				     TDB_DATA indata, TDB_DATA *outdata);
 
 int32_t ctdb_control_get_capabilities(struct ctdb_context *ctdb,
 				      TDB_DATA *outdata);
