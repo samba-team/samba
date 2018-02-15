@@ -4235,6 +4235,7 @@ static int password_hash_modify(struct ldb_module *module, struct ldb_request *r
 
 		while ((passwordAttr = ldb_msg_find_element(msg, *l)) != NULL) {
 			unsigned int mtype = LDB_FLAG_MOD_TYPE(passwordAttr->flags);
+			unsigned int nvalues = passwordAttr->num_values;
 
 			if (mtype == LDB_FLAG_MOD_DELETE) {
 				++del_attr_cnt;
@@ -4245,18 +4246,14 @@ static int password_hash_modify(struct ldb_module *module, struct ldb_request *r
 			if (mtype == LDB_FLAG_MOD_REPLACE) {
 				++rep_attr_cnt;
 			}
-			if ((passwordAttr->num_values != 1) &&
-			    (mtype == LDB_FLAG_MOD_ADD))
-			{
+			if ((nvalues != 1) && (mtype == LDB_FLAG_MOD_ADD)) {
 				talloc_free(ac);
 				ldb_asprintf_errstring(ldb,
 						       "'%s' attribute must have exactly one value on add operations!",
 						       *l);
 				return LDB_ERR_CONSTRAINT_VIOLATION;
 			}
-			if ((passwordAttr->num_values > 1) &&
-			    (mtype == LDB_FLAG_MOD_DELETE))
-			{
+			if ((nvalues > 1) && (mtype == LDB_FLAG_MOD_DELETE)) {
 				talloc_free(ac);
 				ldb_asprintf_errstring(ldb,
 						       "'%s' attribute must have zero or one value(s) on delete operations!",
