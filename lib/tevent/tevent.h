@@ -1644,6 +1644,28 @@ struct tevent_queue_entry *tevent_queue_add_optimize_empty(
 					void *private_data);
 
 /**
+ * @brief Untrigger an already triggered queue entry.
+ *
+ * If a trigger function detects that it needs to remain
+ * in the queue, it needs to call tevent_queue_stop()
+ * followed by tevent_queue_entry_untrigger().
+ *
+ * @note In order to call tevent_queue_entry_untrigger()
+ * the queue must be already stopped and the given queue_entry
+ * must be the first one in the queue! Otherwise it calls abort().
+ *
+ * @note You can't use this together with tevent_queue_add_optimize_empty()
+ * because the trigger function don't have access to the quene entry
+ * in the case of an empty queue.
+ *
+ * @param[in]  queue_entry The queue entry to rearm.
+ *
+ * @see tevent_queue_add_entry()
+ * @see tevent_queue_stop()
+ */
+void tevent_queue_entry_untrigger(struct tevent_queue_entry *entry);
+
+/**
  * @brief Start a tevent queue.
  *
  * The queue is started by default.
