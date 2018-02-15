@@ -96,7 +96,8 @@ _PUBLIC_ NTSTATUS socket_create_with_ops(TALLOC_CTX *mem_ctx, const struct socke
 	return NT_STATUS_OK;
 }
 
-_PUBLIC_ NTSTATUS socket_create(const char *name, enum socket_type type, 
+_PUBLIC_ NTSTATUS socket_create(TALLOC_CTX *mem_ctx,
+				const char *name, enum socket_type type,
 			        struct socket_context **new_sock, uint32_t flags)
 {
 	const struct socket_ops *ops;
@@ -106,7 +107,7 @@ _PUBLIC_ NTSTATUS socket_create(const char *name, enum socket_type type,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	return socket_create_with_ops(NULL, ops, new_sock, type, flags);
+	return socket_create_with_ops(mem_ctx, ops, new_sock, type, flags);
 }
 
 _PUBLIC_ NTSTATUS socket_connect(struct socket_context *sock,

@@ -168,12 +168,11 @@ struct nbt_dgram_socket *nbt_dgram_socket_init(TALLOC_CTX *mem_ctx,
 	dgmsock->event_ctx = event_ctx;
 	if (dgmsock->event_ctx == NULL) goto failed;
 
-	status = socket_create("ip", SOCKET_TYPE_DGRAM, &dgmsock->sock, 0);
+	status = socket_create(dgmsock, "ip", SOCKET_TYPE_DGRAM,
+			       &dgmsock->sock, 0);
 	if (!NT_STATUS_IS_OK(status)) goto failed;
 
 	socket_set_option(dgmsock->sock, "SO_BROADCAST", "1");
-
-	talloc_steal(dgmsock, dgmsock->sock);
 
 	dgmsock->fde = tevent_add_fd(dgmsock->event_ctx, dgmsock,
 				    socket_get_fd(dgmsock->sock), 0,

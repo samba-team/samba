@@ -151,10 +151,9 @@ static struct composite_context *dcerpc_pipe_open_socket_send(TALLOC_CTX *mem_ct
 		if (composite_nomem(s->target_hostname, c)) return c;
 	}
 
-	c->status = socket_create(server->family, SOCKET_TYPE_STREAM, &s->socket_ctx, 0);
+	c->status = socket_create(s, server->family, SOCKET_TYPE_STREAM,
+				  &s->socket_ctx, 0);
 	if (!composite_is_ok(c)) return c;
-
-	talloc_steal(s, s->socket_ctx);
 
 	conn_req = socket_connect_send(s->socket_ctx, s->localaddr, s->server, 0,
 				       c->event_ctx);

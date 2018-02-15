@@ -413,11 +413,12 @@ _PUBLIC_ struct composite_context *ldap_connect_send(struct ldap_connection *con
 		struct socket_address *unix_addr;
 		char path[1025];
 		char *end = NULL;
-		NTSTATUS status = socket_create("unix", SOCKET_TYPE_STREAM, &state->sock, 0);
+		NTSTATUS status = socket_create(state, "unix",
+						SOCKET_TYPE_STREAM,
+						&state->sock, 0);
 		if (!NT_STATUS_IS_OK(status)) {
 			return NULL;
 		}
-		talloc_steal(state, state->sock);
 		SMB_ASSERT(sizeof(protocol)>10);
 		SMB_ASSERT(sizeof(path)>1024);
 	

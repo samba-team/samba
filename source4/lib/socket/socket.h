@@ -133,7 +133,8 @@ struct tsocket_address;
 NTSTATUS socket_create_with_ops(TALLOC_CTX *mem_ctx, const struct socket_ops *ops,
 				struct socket_context **new_sock, 
 				enum socket_type type, uint32_t flags);
-NTSTATUS socket_create(const char *name, enum socket_type type, 
+NTSTATUS socket_create(TALLOC_CTX *mem_ctx,
+		       const char *name, enum socket_type type,
 		       struct socket_context **new_sock, uint32_t flags);
 NTSTATUS socket_connect(struct socket_context *sock,
 			const struct socket_address *my_address, 

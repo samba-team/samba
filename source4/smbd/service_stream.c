@@ -315,10 +315,14 @@ NTSTATUS stream_setup_socket(TALLOC_CTX *mem_ctx,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		status = socket_create(socket_address->family, SOCKET_TYPE_STREAM, &stream_socket->sock, 0);
+		status = socket_create(stream_socket, socket_address->family,
+				       SOCKET_TYPE_STREAM,
+				       &stream_socket->sock, 0);
 		NT_STATUS_NOT_OK_RETURN(status);
 	} else {
-		status = socket_create(family, SOCKET_TYPE_STREAM, &stream_socket->sock, 0);
+		status = socket_create(stream_socket, family,
+				       SOCKET_TYPE_STREAM,
+				       &stream_socket->sock, 0);
 		NT_STATUS_NOT_OK_RETURN(status);
 
 		/* this is for non-IP sockets, eg. unix domain sockets */
@@ -328,8 +332,6 @@ NTSTATUS stream_setup_socket(TALLOC_CTX *mem_ctx,
 		NT_STATUS_HAVE_NO_MEMORY(socket_address);
 	}
 
-
-	talloc_steal(stream_socket, stream_socket->sock);
 
 	stream_socket->lp_ctx = talloc_reference(stream_socket, lp_ctx);
 

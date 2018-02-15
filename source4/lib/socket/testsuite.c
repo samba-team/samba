@@ -45,13 +45,11 @@ static bool test_udp(struct torture_context *tctx)
 
 	load_interface_list(tctx, tctx->lp_ctx, &ifaces);
 
-	status = socket_create("ip", SOCKET_TYPE_DGRAM, &sock1, 0);
+	status = socket_create(mem_ctx, "ip", SOCKET_TYPE_DGRAM, &sock1, 0);
 	torture_assert_ntstatus_ok(tctx, status, "creating DGRAM IP socket 1");
-	talloc_steal(mem_ctx, sock1);
 
-	status = socket_create("ip", SOCKET_TYPE_DGRAM, &sock2, 0);
+	status = socket_create(mem_ctx, "ip", SOCKET_TYPE_DGRAM, &sock2, 0);
 	torture_assert_ntstatus_ok(tctx, status, "creating DGRAM IP socket 1");
-	talloc_steal(mem_ctx, sock2);
 
 	localhost = socket_address_from_strings(sock1, sock1->backend_name, 
 						iface_list_best_ip(ifaces, "127.0.0.1"), 0);
@@ -128,13 +126,11 @@ static bool test_tcp(struct torture_context *tctx)
 	struct tevent_context *ev = tctx->ev;
 	struct interface *ifaces;
 
-	status = socket_create("ip", SOCKET_TYPE_STREAM, &sock1, 0);
+	status = socket_create(mem_ctx, "ip", SOCKET_TYPE_STREAM, &sock1, 0);
 	torture_assert_ntstatus_ok(tctx, status, "creating IP stream socket 1");
-	talloc_steal(mem_ctx, sock1);
 
-	status = socket_create("ip", SOCKET_TYPE_STREAM, &sock2, 0);
+	status = socket_create(mem_ctx, "ip", SOCKET_TYPE_STREAM, &sock2, 0);
 	torture_assert_ntstatus_ok(tctx, status, "creating IP stream socket 1");
-	talloc_steal(mem_ctx, sock2);
 
 	load_interface_list(tctx, tctx->lp_ctx, &ifaces);
 	localhost = socket_address_from_strings(sock1, sock1->backend_name, 
