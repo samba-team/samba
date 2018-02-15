@@ -971,7 +971,7 @@ static int acl_check_password_rights(TALLOC_CTX *mem_ctx,
 	struct ldb_message *msg;
 	struct ldb_control *c = NULL;
 	const char *passwordAttrs[] = { "userPassword", "clearTextPassword",
-					"unicodePwd", "dBCSPwd", NULL }, **l;
+					"unicodePwd", NULL }, **l;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	struct dsdb_control_password_acl_validation *pav = NULL;
 
@@ -1029,6 +1029,15 @@ static int acl_check_password_rights(TALLOC_CTX *mem_ctx,
 					       SEC_ADS_CONTROL_ACCESS,
 					       sid);
 		goto checked;
+	}
+
+	el = ldb_msg_find_element(req->op.mod.message, "dBCSPwd");
+	if (el != NULL) {
+		/*
+		 * dBCSPwd is only allowed with a control.
+		 */
+		talloc_free(tmp_ctx);
+		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
 	msg = ldb_msg_copy_shallow(tmp_ctx, req->op.mod.message);
