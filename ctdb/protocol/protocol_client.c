@@ -2337,3 +2337,27 @@ int ctdb_reply_control_tunnel_deregister(struct ctdb_reply_control *reply)
 
 	return reply->status;
 }
+
+/* CTDB_CONTROL_VACUUM_FETCH */
+
+void ctdb_req_control_vacuum_fetch(struct ctdb_req_control *request,
+				   struct ctdb_rec_buffer *recbuf)
+{
+	request->opcode = CTDB_CONTROL_VACUUM_FETCH;
+	request->pad = 0;
+	request->srvid = 0;
+	request->client_id = 0;
+	request->flags = 0;
+
+	request->rdata.opcode = CTDB_CONTROL_VACUUM_FETCH;
+	request->rdata.data.recbuf = recbuf;
+}
+
+int ctdb_reply_control_vacuum_fetch(struct ctdb_reply_control *reply)
+{
+	if (reply->rdata.opcode != CTDB_CONTROL_VACUUM_FETCH) {
+		return EPROTO;
+	}
+
+	return reply->status;
+}

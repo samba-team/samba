@@ -407,6 +407,10 @@ static size_t ctdb_req_control_data_len(struct ctdb_req_control_data *cd)
 
 	case CTDB_CONTROL_TUNNEL_DEREGISTER:
 		break;
+
+	case CTDB_CONTROL_VACUUM_FETCH:
+		len = ctdb_rec_buffer_len(cd->data.recbuf);
+		break;
 	}
 
 	return len;
@@ -681,6 +685,10 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 
 	case CTDB_CONTROL_CHECK_PID_SRVID:
 		ctdb_pid_srvid_push(cd->data.pid_srvid, buf, &np);
+		break;
+
+	case CTDB_CONTROL_VACUUM_FETCH:
+		ctdb_rec_buffer_push(cd->data.recbuf, buf, &np);
 		break;
 	}
 
@@ -1005,6 +1013,11 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 	case CTDB_CONTROL_CHECK_PID_SRVID:
 		ret = ctdb_pid_srvid_pull(buf, buflen, mem_ctx,
 					  &cd->data.pid_srvid, &np);
+		break;
+
+	case CTDB_CONTROL_VACUUM_FETCH:
+		ret = ctdb_rec_buffer_pull(buf, buflen, mem_ctx,
+					   &cd->data.recbuf, &np);
 		break;
 	}
 
@@ -1363,6 +1376,9 @@ static size_t ctdb_reply_control_data_len(struct ctdb_reply_control_data *cd)
 
 	case CTDB_CONTROL_TUNNEL_DEREGISTER:
 		break;
+
+	case CTDB_CONTROL_VACUUM_FETCH:
+		break;
 	}
 
 	return len;
@@ -1516,6 +1532,9 @@ static void ctdb_reply_control_data_push(struct ctdb_reply_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_CHECK_PID_SRVID:
+		break;
+
+	case CTDB_CONTROL_VACUUM_FETCH:
 		break;
 	}
 
@@ -1700,6 +1719,9 @@ static int ctdb_reply_control_data_pull(uint8_t *buf, size_t buflen,
 		break;
 
 	case CTDB_CONTROL_CHECK_PID_SRVID:
+		break;
+
+	case CTDB_CONTROL_VACUUM_FETCH:
 		break;
 	}
 

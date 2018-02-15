@@ -603,6 +603,10 @@ void ctdb_req_control_tunnel_deregister(struct ctdb_req_control *request,
 					uint64_t tunnel_id);
 int ctdb_reply_control_tunnel_deregister(struct ctdb_reply_control *reply);
 
+void ctdb_req_control_vacuum_fetch(struct ctdb_req_control *request,
+				   struct ctdb_rec_buffer *recbuf);
+int ctdb_reply_control_vacuum_fetch(struct ctdb_reply_control *reply);
+
 /* From protocol/protocol_debug.c */
 
 void ctdb_packet_print(uint8_t *buf, size_t buflen, FILE *fp);
