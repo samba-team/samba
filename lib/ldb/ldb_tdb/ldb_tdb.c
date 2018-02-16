@@ -2058,9 +2058,9 @@ int init_store(struct ltdb_private *ltdb,
 /*
   connect to the database
 */
-static int ltdb_connect(struct ldb_context *ldb, const char *url,
-			unsigned int flags, const char *options[],
-			struct ldb_module **_module)
+int ltdb_connect(struct ldb_context *ldb, const char *url,
+		 unsigned int flags, const char *options[],
+		 struct ldb_module **_module)
 {
 	const char *path;
 	int tdb_flags, open_flags;
@@ -2145,10 +2145,4 @@ static int ltdb_connect(struct ldb_context *ldb, const char *url,
 	}
 
 	return init_store(ltdb, "ldb_tdb backend", ldb, options, _module);
-}
-
-int ldb_tdb_init(const char *version)
-{
-	LDB_MODULE_CHECK_VERSION(version);
-	return ldb_register_backend("tdb", ltdb_connect, false);
 }

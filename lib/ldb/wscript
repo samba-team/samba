@@ -307,13 +307,19 @@ def build(bld):
 
         bld.SAMBA_MODULE('ldb_tdb',
                          bld.SUBDIR('ldb_tdb',
-                                    '''ldb_tdb.c ldb_search.c ldb_index.c
-                                    ldb_cache.c ldb_tdb_wrap.c'''),
+                                    '''ldb_tdb_init.c'''),
                          init_function='ldb_tdb_init',
                          module_init_name='ldb_init_module',
                          internal_module=False,
-                         deps='tdb ldb',
+                         deps='tdb ldb ldb_key_value',
                          subsystem='ldb')
+
+        bld.SAMBA_LIBRARY('ldb_key_value',
+                          bld.SUBDIR('ldb_tdb',
+                                    '''ldb_tdb.c ldb_search.c ldb_index.c
+                                    ldb_cache.c ldb_tdb_wrap.c'''),
+                          private_library=True,
+                          deps='tdb ldb')
 
         # have a separate subsystem for common/ldb.c, so it can rebuild
         # for install with a different -DLDB_MODULESDIR=

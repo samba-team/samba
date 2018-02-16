@@ -217,3 +217,7 @@ struct tdb_context *ltdb_wrap_open(TALLOC_CTX *mem_ctx,
 int init_store(struct ltdb_private *ltdb, const char *name,
 	       struct ldb_context *ldb, const char *options[],
 	       struct ldb_module **_module);
+
+int ltdb_connect(struct ldb_context *ldb, const char *url,
+		 unsigned int flags, const char *options[],
+		 struct ldb_module **_module);
