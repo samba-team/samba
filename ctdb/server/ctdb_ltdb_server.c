@@ -770,6 +770,11 @@ static int ctdb_local_attach(struct ctdb_context *ctdb, const char *db_name,
 			CTDB_NO_MEMORY(ctdb, ctdb_db->delete_queue);
 		}
 
+		ctdb_db->fetch_queue = trbt_create(ctdb_db, 0);
+		if (ctdb_db->fetch_queue == NULL) {
+			CTDB_NO_MEMORY(ctdb, ctdb_db->fetch_queue);
+		}
+
 		ctdb_db->ctdb_ltdb_store_fn = ctdb_ltdb_store_server;
 	}
 
@@ -1272,6 +1277,7 @@ int32_t ctdb_control_db_detach(struct ctdb_context *ctdb, TDB_DATA indata,
 	/* Disable vacuuming and drop all vacuuming data */
 	talloc_free(ctdb_db->vacuum_handle);
 	talloc_free(ctdb_db->delete_queue);
+	talloc_free(ctdb_db->fetch_queue);
 
 	/* Terminate any deferred fetch */
 	talloc_free(ctdb_db->deferred_fetch);

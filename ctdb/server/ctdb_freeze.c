@@ -869,10 +869,17 @@ int32_t ctdb_control_wipe_database(struct ctdb_context *ctdb, TDB_DATA indata)
 
 	if (ctdb_db_volatile(ctdb_db)) {
 		talloc_free(ctdb_db->delete_queue);
+		talloc_free(ctdb_db->fetch_queue);
 		ctdb_db->delete_queue = trbt_create(ctdb_db, 0);
 		if (ctdb_db->delete_queue == NULL) {
 			DEBUG(DEBUG_ERR, (__location__ " Failed to re-create "
-					  "the vacuum tree.\n"));
+					  "the delete queue.\n"));
+			return -1;
+		}
+		ctdb_db->fetch_queue = trbt_create(ctdb_db, 0);
+		if (ctdb_db->fetch_queue == NULL) {
+			DEBUG(DEBUG_ERR, (__location__ " Failed to re-create "
+					  "the fetch queue.\n"));
 			return -1;
 		}
 	}
