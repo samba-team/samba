@@ -130,6 +130,7 @@ static bool fork_domain_child(struct winbindd_child *child);
 
 static void wb_child_request_waited(struct tevent_req *subreq);
 static void wb_child_request_done(struct tevent_req *subreq);
+static void wb_child_request_orphaned(struct tevent_req *subreq);
 
 static void wb_child_request_cleanup(struct tevent_req *req,
 				     enum tevent_req_state req_state);
@@ -220,6 +221,12 @@ static void wb_child_request_done(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
+static void wb_child_request_orphaned(struct tevent_req *subreq)
+{
+	DBG_WARNING("cleanup orphaned subreq[%p]\n", subreq);
+	TALLOC_FREE(subreq);
+}
+
 int wb_child_request_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			  struct winbindd_response **presponse, int *err)
 {
@@ -241,6 +248,28 @@ static void wb_child_request_cleanup(struct tevent_req *req,
 
 	if (state->subreq == NULL) {
 		/* nothing to cleanup */
+		return;
+	}
+
+	if (req_state == TEVENT_REQ_RECEIVED) {
+		struct tevent_req *subreq = NULL;
+
+		/*
+		 * Our caller gave up, but we need to keep
+		 * the low level request (wb_simple_trans)
+		 * in order to maintain the parent child protocol.
+		 *
+		 * We also need to keep the child queue blocked
+		 * until we got the response from the child.
+		 */
+
+		subreq = talloc_move(state->child->queue, &state->subreq);
+		talloc_move(subreq, &state->queue_subreq);
+		tevent_req_set_callback(subreq,
+					wb_child_request_orphaned,
+					NULL);
+
+		DBG_WARNING("keep orphaned subreq[%p]\n", subreq);
 		return;
 	}
 
