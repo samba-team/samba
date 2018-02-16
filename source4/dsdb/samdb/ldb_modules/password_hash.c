@@ -3500,7 +3500,35 @@ static int setup_io(struct ph_context *ac,
 		/* On "add" we have only "password reset" */
 		ac->pwd_reset = true;
 	} else if (ac->req->operation == LDB_MODIFY) {
-		if (io->og.cleartext_utf8 || io->og.cleartext_utf16
+		struct ldb_control *pav_ctrl = NULL;
+		struct dsdb_control_password_acl_validation *pav = NULL;
+
+		pav_ctrl = ldb_request_get_control(ac->req,
+				DSDB_CONTROL_PASSWORD_ACL_VALIDATION_OID);
+		if (pav_ctrl != NULL) {
+			pav = talloc_get_type_abort(pav_ctrl->data,
+				struct dsdb_control_password_acl_validation);
+		}
+
+		if (pav == NULL && ac->update_password) {
+			bool ok;
+
+			/*
+			 * If the DSDB_CONTROL_PASSWORD_ACL_VALIDATION_OID
+			 * control is missing, we require system access!
+			 */
+			ok = dsdb_module_am_system(ac->module);
+			if (!ok) {
+				return ldb_module_operr(ac->module);
+			}
+		}
+
+		if (pav != NULL) {
+			/*
+			 * We assume what the acl module has validated.
+			 */
+			ac->pwd_reset = pav->pwd_reset;
+		} else if (io->og.cleartext_utf8 || io->og.cleartext_utf16
 		    || io->og.nt_hash || io->og.lm_hash) {
 			/* If we have an old password specified then for sure it
 			 * is a user "password change" */
