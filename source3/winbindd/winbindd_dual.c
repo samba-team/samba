@@ -119,6 +119,7 @@ static NTSTATUS child_write_response(int sock, struct winbindd_response *wrsp)
 
 struct wb_child_request_state {
 	struct tevent_context *ev;
+	struct tevent_req *queue_subreq;
 	struct tevent_req *subreq;
 	struct winbindd_child *child;
 	struct winbindd_request *request;
@@ -127,8 +128,7 @@ struct wb_child_request_state {
 
 static bool fork_domain_child(struct winbindd_child *child);
 
-static void wb_child_request_trigger(struct tevent_req *req,
-					    void *private_data);
+static void wb_child_request_waited(struct tevent_req *subreq);
 static void wb_child_request_done(struct tevent_req *subreq);
 
 static void wb_child_request_cleanup(struct tevent_req *req,
@@ -141,6 +141,7 @@ struct tevent_req *wb_child_request_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req;
 	struct wb_child_request_state *state;
+	struct tevent_req *subreq;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct wb_child_request_state);
@@ -152,23 +153,36 @@ struct tevent_req *wb_child_request_send(TALLOC_CTX *mem_ctx,
 	state->child = child;
 	state->request = request;
 
-	if (!tevent_queue_add(child->queue, ev, req,
-			      wb_child_request_trigger, NULL)) {
-		tevent_req_oom(req);
+	subreq = tevent_queue_wait_send(state, ev, child->queue);
+	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
+	tevent_req_set_callback(subreq, wb_child_request_waited, req);
+	state->queue_subreq = subreq;
 
 	tevent_req_set_cleanup_fn(req, wb_child_request_cleanup);
 
 	return req;
 }
 
-static void wb_child_request_trigger(struct tevent_req *req,
-				     void *private_data)
+static void wb_child_request_waited(struct tevent_req *subreq)
 {
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
 	struct wb_child_request_state *state = tevent_req_data(
 		req, struct wb_child_request_state);
-	struct tevent_req *subreq;
+	bool ok;
+
+	ok = tevent_queue_wait_recv(subreq);
+	if (!ok) {
+		tevent_req_oom(req);
+		return;
+	}
+	/*
+	 * We need to keep state->queue_subreq
+	 * in order to block the queue.
+	 */
+	subreq = NULL;
 
 	if ((state->child->sock == -1) && (!fork_domain_child(state->child))) {
 		tevent_req_error(req, errno);
@@ -231,6 +245,7 @@ static void wb_child_request_cleanup(struct tevent_req *req,
 	}
 
 	TALLOC_FREE(state->subreq);
+	TALLOC_FREE(state->queue_subreq);
 
 	if (req_state == TEVENT_REQ_DONE) {
 		/* transmitted request and got response */
