@@ -839,6 +839,7 @@ static void ctdb_process_vacuum_fetch_lists(struct ctdb_db_context *ctdb_db,
 {
 	unsigned int i;
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
+	int ret, res;
 
 	for (i = 0; i < ctdb->num_nodes; i++) {
 		TDB_DATA data;
@@ -857,17 +858,16 @@ static void ctdb_process_vacuum_fetch_lists(struct ctdb_db_context *ctdb_db,
 				   ctdb_db->db_name));
 
 		data = ctdb_marshall_finish(vfl);
-		if (ctdb_client_send_message(ctdb, ctdb->nodes[i]->pnn,
-					     CTDB_SRVID_VACUUM_FETCH,
-					     data) != 0)
-		{
-			DEBUG(DEBUG_ERR, (__location__ " Failed to send vacuum "
-					  "fetch message to %u\n",
+
+		ret = ctdb_control(ctdb, ctdb->nodes[i]->pnn, 0,
+				   CTDB_CONTROL_VACUUM_FETCH, 0,
+				   data, NULL, NULL, &res, NULL, NULL);
+		if (ret != 0 || res != 0) {
+			DEBUG(DEBUG_ERR, ("Failed to send vacuum "
+					  "fetch control to node %u\n",
 					  ctdb->nodes[i]->pnn));
 		}
 	}
-
-	return;
 }
 
 /**
@@ -1197,7 +1197,7 @@ fail:
  * - The vacuum_fetch lists
  *   (one for each other lmaster node):
  *   The records in this list are sent for deletion to
- *   their lmaster in a bulk VACUUM_FETCH message.
+ *   their lmaster in a bulk VACUUM_FETCH control.
  *
  *   The lmaster then migrates all these records to itelf
  *   so that they can be vacuumed there.
