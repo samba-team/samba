@@ -729,6 +729,9 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	case CTDB_CONTROL_TUNNEL_DEREGISTER:
 		return ctdb_control_tunnel_deregister(ctdb, client_id, srvid);
 
+	case CTDB_CONTROL_VACUUM_FETCH:
+		return ctdb_control_vacuum_fetch(ctdb, indata);
+
 	default:
 		DEBUG(DEBUG_CRIT,(__location__ " Unknown CTDB control opcode %u\n", opcode));
 		return -1;

@@ -359,6 +359,7 @@ struct ctdb_db_context {
 	struct revokechild_handle *revokechild_active;
 	struct ctdb_persistent_state *persistent_state;
 	struct trbt_tree *delete_queue;
+	struct trbt_tree *fetch_queue;
 	struct trbt_tree *sticky_records; 
 	int (*ctdb_ltdb_store_fn)(struct ctdb_db_context *ctdb_db,
 				  TDB_DATA key,
@@ -997,6 +998,8 @@ int32_t ctdb_local_schedule_for_deletion(struct ctdb_db_context *ctdb_db,
 void ctdb_local_remove_from_delete_queue(struct ctdb_db_context *ctdb_db,
 					 const struct ctdb_ltdb_header *hdr,
 					 const TDB_DATA key);
+
+int32_t ctdb_control_vacuum_fetch(struct ctdb_context *ctdb, TDB_DATA indata);
 
 /* from eventscript.c */
 

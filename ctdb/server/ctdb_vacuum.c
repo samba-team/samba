@@ -41,6 +41,8 @@
 #include "common/common.h"
 #include "common/logging.h"
 
+#include "protocol/protocol_api.h"
+
 #define TIMELIMIT() timeval_current_ofs(10, 0)
 
 enum vacuum_child_status { VACUUM_RUNNING, VACUUM_OK, VACUUM_ERROR, VACUUM_TIMEOUT};
@@ -115,6 +117,11 @@ struct delete_record_data {
 struct delete_records_list {
 	struct ctdb_marshall_buffer *records;
 	struct vacuum_data *vdata;
+};
+
+struct fetch_record_data {
+	TDB_DATA key;
+	uint8_t keydata[1];
 };
 
 static int insert_record_into_delete_queue(struct ctdb_db_context *ctdb_db,
@@ -1573,4 +1580,63 @@ void ctdb_local_remove_from_delete_queue(struct ctdb_db_context *ctdb_db,
 	remove_record_from_delete_queue(ctdb_db, hdr, key);
 
 	return;
+}
+
+static int vacuum_fetch_parser(uint32_t reqid,
+			       struct ctdb_ltdb_header *header,
+			       TDB_DATA key, TDB_DATA data,
+			       void *private_data)
+{
+	struct ctdb_db_context *ctdb_db = talloc_get_type_abort(
+		private_data, struct ctdb_db_context);
+	struct fetch_record_data *rd;
+	size_t len;
+	uint32_t hash;
+
+	len = offsetof(struct fetch_record_data, keydata) + key.dsize;
+
+	rd = (struct fetch_record_data *)talloc_size(ctdb_db->fetch_queue,
+						     len);
+	if (rd == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " Memory error\n"));
+		return -1;
+	}
+	talloc_set_name_const(rd, "struct fetch_record_data");
+
+	rd->key.dsize = key.dsize;
+	rd->key.dptr = rd->keydata;
+	memcpy(rd->keydata, key.dptr, key.dsize);
+
+	hash = ctdb_hash(&key);
+
+	trbt_insert32(ctdb_db->fetch_queue, hash, rd);
+
+	return 0;
+}
+
+int32_t ctdb_control_vacuum_fetch(struct ctdb_context *ctdb, TDB_DATA indata)
+{
+	struct ctdb_rec_buffer *recbuf;
+	struct ctdb_db_context *ctdb_db;
+	size_t npull;
+	int ret;
+
+	ret = ctdb_rec_buffer_pull(indata.dptr, indata.dsize, ctdb, &recbuf,
+				   &npull);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Invalid data in vacuum_fetch\n"));
+		return -1;
+	}
+
+	ctdb_db = find_ctdb_db(ctdb, recbuf->db_id);
+	if (ctdb_db == NULL) {
+		talloc_free(recbuf);
+		DEBUG(DEBUG_ERR, (__location__ " Unknown db 0x%08x\n",
+				  recbuf->db_id));
+		return -1;
+	}
+
+	ret = ctdb_rec_buffer_traverse(recbuf, vacuum_fetch_parser, ctdb_db);
+	talloc_free(recbuf);
+	return ret;
 }
