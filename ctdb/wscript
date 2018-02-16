@@ -880,7 +880,6 @@ def build(bld):
         'complex',
         'cunit',
         'eventd',
-        'events.d',
         'eventscripts',
         'onnode',
         'shellcheck',

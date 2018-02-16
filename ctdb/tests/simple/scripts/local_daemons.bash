@@ -134,16 +134,6 @@ setup_public_addresses ()
 
 setup_ctdb ()
 {
-	# When running certain tests we add and remove eventscripts, so we
-	# need to be able to modify the events.d/ directory.  Therefore,
-	# we use a temporary events.d/ directory under $TEST_VAR_DIR.  We
-	# copy the actual test eventscript(s) in there from the original
-	# events.d/ directory that sits alongside $TEST_SCRIPT_DIR.
-	local top=$(dirname "$TEST_SCRIPTS_DIR")
-	local events_d="${top}/events.d"
-	mkdir -p "${TEST_VAR_DIR}/events.d"
-	cp -p "${events_d}/"* "${TEST_VAR_DIR}/events.d/"
-
 	setup_nodes >"$CTDB_NODES" || return 1
 
 	# If there are (strictly) greater than 2 nodes then we'll
@@ -188,7 +178,6 @@ setup_ctdb ()
 CTDB_RECOVERY_LOCK="${SIMPLE_TESTS_VAR_DIR}/rec.lock"
 CTDB_NODES="$CTDB_NODES"
 CTDB_NODE_ADDRESS="${node_ip}"
-CTDB_EVENT_SCRIPT_DIR="${TEST_VAR_DIR}/events.d"
 CTDB_LOGGING="file:${node_dir}/log.ctdb"
 CTDB_DEBUGLEVEL=INFO
 CTDB_DBDIR="${db_dir}"
