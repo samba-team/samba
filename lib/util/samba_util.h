@@ -227,22 +227,6 @@ _PUBLIC_ char *hex_encode_talloc(TALLOC_CTX *mem_ctx, const unsigned char *buff_
 **/
 _PUBLIC_ char *rfc1738_unescape(char *buf);
 
-
-/**
- * rfc1738_escape
- * Returns a static buffer that contains the RFC
- * 1738 compliant, escaped version of the given url. (escapes unsafe and % characters)
- **/
-_PUBLIC_ char *rfc1738_escape(TALLOC_CTX *mem_ctx, const char *url);
-
-/**
- * rfc1738_escape_unescaped
- *
- * Returns a static buffer that contains
- * the RFC 1738 compliant, escaped version of the given url (escapes unsafe chars only)
- **/
-_PUBLIC_ char *rfc1738_escape_unescaped(TALLOC_CTX *mem_ctx, const char *url);
-
 /**
  * rfc1738_escape_part 
  * Returns a static buffer that contains the RFC

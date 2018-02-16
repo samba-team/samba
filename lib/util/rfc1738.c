@@ -159,26 +159,6 @@ rfc1738_do_escape(TALLOC_CTX *mem_ctx, const char *url, int encode_reserved)
 }
 
 /*
- * rfc1738_escape - Returns a buffer that contains the RFC
- * 1738 compliant, escaped version of the given url. (escapes unsafe and % characters)
- */
-char *
-rfc1738_escape(TALLOC_CTX *mem_ctx, const char *url)
-{
-	return rfc1738_do_escape(mem_ctx, url, 0);
-}
-
-/*
- * rfc1738_escape_unescaped - Returns a buffer that contains
- * the RFC 1738 compliant, escaped version of the given url (escapes unsafe chars only)
- */
-char *
-rfc1738_escape_unescaped(TALLOC_CTX *mem_ctx, const char *url)
-{
-	return rfc1738_do_escape(mem_ctx, url, -1);
-}
-
-/*
  * rfc1738_escape_part - Returns a buffer that contains the RFC
  * 1738 compliant, escaped version of the given url segment. (escapes
  * unsafe, reserved and % chars) It would mangle the :// in http://,
