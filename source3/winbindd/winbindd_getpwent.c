@@ -124,6 +124,7 @@ NTSTATUS winbindd_getpwent_recv(struct tevent_req *req,
 	NTSTATUS status;
 
 	if (tevent_req_is_nterror(req, &status)) {
+		TALLOC_FREE(state->cli->pwent_state);
 		DEBUG(5, ("getpwent failed: %s\n", nt_errstr(status)));
 		return status;
 	}
