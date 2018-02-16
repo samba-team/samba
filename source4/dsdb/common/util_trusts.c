@@ -2822,6 +2822,9 @@ struct dsdb_trust_routing_domain {
 	struct dsdb_trust_routing_domain *prev, *next;
 
 	struct lsa_TrustDomainInfoInfoEx *tdo;
+
+	struct lsa_ForestTrustDomainInfo di;
+
 	struct lsa_ForestTrustInformation *fti;
 };
 
@@ -2881,6 +2884,10 @@ NTSTATUS dsdb_trust_routing_table_load(struct ldb_context *sam_ctx,
 		return status;
 	}
 
+	d->di.domain_sid = d->tdo->sid;
+	d->di.netbios_domain_name.string = d->tdo->netbios_name.string;
+	d->di.dns_domain_name.string = d->tdo->domain_name.string;
+
 	if (root_trust_tdo != NULL) {
 		root_direction_tdo = root_trust_tdo;
 	} else if (trust_parent_tdo != NULL) {
@@ -2922,6 +2929,10 @@ NTSTATUS dsdb_trust_routing_table_load(struct ldb_context *sam_ctx,
 			TALLOC_FREE(frame);
 			return status;
 		}
+
+		d->di.domain_sid = d->tdo->sid;
+		d->di.netbios_domain_name.string = d->tdo->netbios_name.string;
+		d->di.dns_domain_name.string = d->tdo->domain_name.string;
 
 		DLIST_ADD_END(table->domains, d);
 
@@ -3193,6 +3204,217 @@ const struct lsa_TrustDomainInfoInfoEx *dsdb_trust_routing_by_name(
 
 	if (best_d != NULL) {
 		return best_d->tdo;
+	}
+
+	return NULL;
+}
+
+const struct lsa_TrustDomainInfoInfoEx *dsdb_trust_domain_by_sid(
+		const struct dsdb_trust_routing_table *table,
+		const struct dom_sid *sid,
+		const struct lsa_ForestTrustDomainInfo **pdi)
+{
+	const struct dsdb_trust_routing_domain *d = NULL;
+
+	if (pdi != NULL) {
+		*pdi = NULL;
+	}
+
+	if (sid == NULL) {
+		return NULL;
+	}
+
+	for (d = table->domains; d != NULL; d = d->next) {
+		bool transitive = false;
+		uint32_t i;
+
+		if (d->tdo->trust_attributes & LSA_TRUST_ATTRIBUTE_WITHIN_FOREST) {
+			transitive = true;
+		}
+
+		if (d->tdo->trust_attributes & LSA_TRUST_ATTRIBUTE_FOREST_TRANSITIVE) {
+			transitive = true;
+		}
+
+		if (d->tdo->trust_attributes & LSA_TRUST_ATTRIBUTE_NON_TRANSITIVE) {
+			transitive = false;
+		}
+
+		if (d->tdo->trust_type != LSA_TRUST_TYPE_UPLEVEL) {
+			transitive = false;
+		}
+
+		if (!transitive || d->fti == NULL) {
+			bool match = false;
+
+			match = dom_sid_equal(d->di.domain_sid, sid);
+			if (match) {
+				/*
+				 * exact match, it's the domain itself.
+				 */
+				if (pdi != NULL) {
+					*pdi = &d->di;
+				}
+				return d->tdo;
+			}
+			continue;
+		}
+
+		for (i = 0; i < d->fti->count; i++ ) {
+			const struct lsa_ForestTrustRecord *f = d->fti->entries[i];
+			const struct lsa_ForestTrustDomainInfo *di = NULL;
+			const struct dom_sid *fti_sid = NULL;
+			bool match = false;
+
+			if (f == NULL) {
+				/* broken record */
+				continue;
+			}
+
+			if (f->type != LSA_FOREST_TRUST_DOMAIN_INFO) {
+				continue;
+			}
+
+			if (f->flags & LSA_SID_DISABLED_MASK) {
+				/*
+				 * any flag disables the entry.
+				 */
+				continue;
+			}
+
+			di = &f->forest_trust_data.domain_info;
+			fti_sid = di->domain_sid;
+			if (fti_sid == NULL) {
+				/* broken record */
+				continue;
+			}
+
+			match = dom_sid_equal(fti_sid, sid);
+			if (match) {
+				/*
+				 * exact match, it's a domain in the forest.
+				 */
+				if (pdi != NULL) {
+					*pdi = di;
+				}
+				return d->tdo;
+			}
+		}
+	}
+
+	return NULL;
+}
+
+const struct lsa_TrustDomainInfoInfoEx *dsdb_trust_domain_by_name(
+		const struct dsdb_trust_routing_table *table,
+		const char *name,
+		const struct lsa_ForestTrustDomainInfo **pdi)
+{
+	const struct dsdb_trust_routing_domain *d = NULL;
+
+	if (pdi != NULL) {
+		*pdi = NULL;
+	}
+
+	if (name == NULL) {
+		return NULL;
+	}
+
+	for (d = table->domains; d != NULL; d = d->next) {
+		bool transitive = false;
+		uint32_t i;
+
+		if (d->tdo->trust_attributes & LSA_TRUST_ATTRIBUTE_WITHIN_FOREST) {
+			transitive = true;
+		}
+
+		if (d->tdo->trust_attributes & LSA_TRUST_ATTRIBUTE_FOREST_TRANSITIVE) {
+			transitive = true;
+		}
+
+		if (d->tdo->trust_attributes & LSA_TRUST_ATTRIBUTE_NON_TRANSITIVE) {
+			transitive = false;
+		}
+
+		if (d->tdo->trust_type != LSA_TRUST_TYPE_UPLEVEL) {
+			transitive = false;
+		}
+
+		if (!transitive || d->fti == NULL) {
+			bool match = false;
+
+			match = strequal_m(d->di.netbios_domain_name.string,
+					   name);
+			if (match) {
+				/*
+				 * exact match for netbios name,
+				 * it's the domain itself.
+				 */
+				if (pdi != NULL) {
+					*pdi = &d->di;
+				}
+				return d->tdo;
+			}
+			match = strequal_m(d->di.dns_domain_name.string,
+					   name);
+			if (match) {
+				/*
+				 * exact match for dns name,
+				 * it's the domain itself.
+				 */
+				if (pdi != NULL) {
+					*pdi = &d->di;
+				}
+				return d->tdo;
+			}
+			continue;
+		}
+
+		for (i = 0; i < d->fti->count; i++ ) {
+			const struct lsa_ForestTrustRecord *f = d->fti->entries[i];
+			const struct lsa_ForestTrustDomainInfo *di = NULL;
+			bool match = false;
+
+			if (f == NULL) {
+				/* broken record */
+				continue;
+			}
+
+			if (f->type != LSA_FOREST_TRUST_DOMAIN_INFO) {
+				continue;
+			}
+			di = &f->forest_trust_data.domain_info;
+
+			if (!(f->flags & LSA_NB_DISABLED_MASK)) {
+				match = strequal_m(di->netbios_domain_name.string,
+						   name);
+				if (match) {
+					/*
+					 * exact match for netbios name,
+					 * it's a domain in the forest.
+					 */
+					if (pdi != NULL) {
+						*pdi = di;
+					}
+					return d->tdo;
+				}
+			}
+
+			if (!(f->flags & LSA_TLN_DISABLED_MASK)) {
+				match = strequal_m(di->dns_domain_name.string,
+						   name);
+				if (match) {
+					/*
+					 * exact match for dns name,
+					 * it's a domain in the forest.
+					 */
+					if (pdi != NULL) {
+						*pdi = di;
+					}
+					return d->tdo;
+				}
+			}
+		}
 	}
 
 	return NULL;
