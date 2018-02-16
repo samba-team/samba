@@ -39,6 +39,11 @@ struct tevent_req *winbindd_setgrent_send(TALLOC_CTX *mem_ctx,
 	}
 	TALLOC_FREE(cli->grent_state);
 
+	if (!lp_winbind_enum_groups()) {
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+	}
+
 	cli->grent_state = talloc_zero(cli, struct getgrent_state);
 	if (tevent_req_nomem(cli->grent_state, req)) {
 		return tevent_req_post(req, ev);
