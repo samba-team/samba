@@ -2783,11 +2783,11 @@ static int re_key(struct ltdb_private *ltdb, struct ldb_val ldb_key, struct ldb_
 	}
 	if (key.dsize != key2.dsize ||
 	    (memcmp(key.dptr, key2.dptr, key.dsize) != 0)) {
-		TDB_DATA data = {
-			.dptr = val.data,
-			.dsize = val.length
+		struct ldb_val ldb_key2 = {
+			.data = key2.dptr,
+			.length = key2.dsize
 		};
-		ltdb->kv_ops->update_in_iterate(ltdb, key, key2, data, ctx);
+		ltdb->kv_ops->update_in_iterate(ltdb, ldb_key, ldb_key2, val, ctx);
 	}
 	talloc_free(key2.dptr);
 

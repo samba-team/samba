@@ -417,8 +417,17 @@ static int ltdb_modified(struct ldb_module *module, struct ldb_dn *dn)
 	return ret;
 }
 
-static int ltdb_tdb_store(struct ltdb_private *ltdb, TDB_DATA key, TDB_DATA data, int flags)
+static int ltdb_tdb_store(struct ltdb_private *ltdb, struct ldb_val ldb_key,
+			  struct ldb_val ldb_data, int flags)
 {
+	TDB_DATA key = {
+		.dptr = ldb_key.data,
+		.dsize = ldb_key.length
+	};
+	TDB_DATA data = {
+		.dptr = ldb_data.data,
+		.dsize = ldb_data.length
+	};
 	return tdb_store(ltdb->tdb, key, data, flags);
 }
 
@@ -439,7 +448,8 @@ int ltdb_store(struct ldb_module *module, const struct ldb_message *msg, int flg
 {
 	void *data = ldb_module_get_private(module);
 	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
-	TDB_DATA tdb_key, tdb_data;
+	TDB_DATA tdb_key;
+	struct ldb_val ldb_key;
 	struct ldb_val ldb_data;
 	int ret = LDB_SUCCESS;
 	TALLOC_CTX *tdb_key_ctx = talloc_new(module);
@@ -465,10 +475,10 @@ int ltdb_store(struct ldb_module *module, const struct ldb_message *msg, int flg
 		return LDB_ERR_OTHER;
 	}
 
-	tdb_data.dptr = ldb_data.data;
-	tdb_data.dsize = ldb_data.length;
+	ldb_key.data = tdb_key.dptr;
+	ldb_key.length = tdb_key.dsize;
 
-	ret = ltdb->kv_ops->store(ltdb, tdb_key, tdb_data, flgs);
+	ret = ltdb->kv_ops->store(ltdb, ldb_key, ldb_data, flgs);
 	if (ret != 0) {
 		bool is_special = ldb_dn_is_special(msg->dn);
 		ret = ltdb->kv_ops->error(ltdb);
@@ -654,8 +664,12 @@ static int ltdb_add(struct ltdb_context *ctx)
 	return ret;
 }
 
-static int ltdb_tdb_delete(struct ltdb_private *ltdb, TDB_DATA tdb_key)
+static int ltdb_tdb_delete(struct ltdb_private *ltdb, struct ldb_val ldb_key)
 {
+	TDB_DATA tdb_key = {
+		.dptr = ldb_key.data,
+		.dsize = ldb_key.length
+	};
 	return tdb_delete(ltdb->tdb, tdb_key);
 }
 
@@ -668,6 +682,7 @@ int ltdb_delete_noindex(struct ldb_module *module,
 {
 	void *data = ldb_module_get_private(module);
 	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
+	struct ldb_val ldb_key;
 	TDB_DATA tdb_key;
 	int ret;
 	TALLOC_CTX *tdb_key_ctx = talloc_new(module);
@@ -686,7 +701,10 @@ int ltdb_delete_noindex(struct ldb_module *module,
 		return LDB_ERR_OTHER;
 	}
 
-	ret = ltdb->kv_ops->delete(ltdb, tdb_key);
+	ldb_key.data = tdb_key.dptr;
+	ldb_key.length = tdb_key.dsize;
+
+	ret = ltdb->kv_ops->delete(ltdb, ldb_key);
 	TALLOC_FREE(tdb_key_ctx);
 
 	if (ret != 0) {
@@ -1777,12 +1795,27 @@ static int ltdb_tdb_traverse_fn(struct ltdb_private *ltdb, ldb_kv_traverse_fn fn
 	}
 }
 
-static int ltdb_tdb_update_in_iterate(struct ltdb_private *ltdb, TDB_DATA key, TDB_DATA key2, TDB_DATA data, void *state)
+static int ltdb_tdb_update_in_iterate(struct ltdb_private *ltdb,
+				      struct ldb_val ldb_key,
+				      struct ldb_val ldb_key2,
+				      struct ldb_val ldb_data, void *state)
 {
 	int tdb_ret;
 	struct ldb_context *ldb;
 	struct ltdb_reindex_context *ctx = (struct ltdb_reindex_context *)state;
 	struct ldb_module *module = ctx->module;
+	TDB_DATA key = {
+		.dptr = ldb_key.data,
+		.dsize = ldb_key.length
+	};
+	TDB_DATA key2 = {
+		.dptr = ldb_key2.data,
+		.dsize = ldb_key2.length
+	};
+	TDB_DATA data = {
+		.dptr = ldb_data.data,
+		.dsize = ldb_data.length
+	};
 
 	ldb = ldb_module_get_ctx(module);
 
