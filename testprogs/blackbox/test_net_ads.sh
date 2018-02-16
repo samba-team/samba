@@ -112,20 +112,20 @@ testit "test (dedicated keytab) at least one krb5 principal created from windown
 
 # keytab add shouldn't have written spn to AD
 found=$($net_tool ads setspn list -U$DC_USERNAME%$DC_PASSWORD | grep $service | wc -l)
-testit_expect_failure "test (dedicated keytab) spn is not written to AD (using keytab add)" test $found -eq 0 || failed=`expr $failed + 1`
+testit "test (dedicated keytab) spn is not written to AD (using keytab add)" test $found -eq 0 || failed=`expr $failed + 1`
 
 ad_service="writetoad"
-testit_expected_failure "test (dedicated keytab) add a $ad_service service to keytab (using add_update_ads" $VALGRIND $net_tool ads keytab add_update_ads $ad_service -U$DC_USERNAME%$DC_PASSWORD --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" || failed=`expr $failed + 1`
+testit "test (dedicated keytab) add a $ad_service service to keytab (using add_update_ads" $VALGRIND $net_tool ads keytab add_update_ads $ad_service -U$DC_USERNAME%$DC_PASSWORD --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" || failed=`expr $failed + 1`
 
 found=$($net_tool ads setspn list -U$DC_USERNAME%$DC_PASSWORD | grep $ad_service | wc -l)
-testit_expect_failure "test (dedicated keytab) spn is written to AD (using keytab add_update_ads)" test $found -eq 2 || failed=`expr $failed + 1`
+testit "test (dedicated keytab) spn is written to AD (using keytab add_update_ads)" test $found -eq 2 || failed=`expr $failed + 1`
 
 
 # test existence in keytab of service (previously added) pulled from SPN post
 # 'keytab create' is now present in keytab file
 testit "test (dedicated keytab) keytab created succeeds" $VALGRIND $net_tool ads keytab create -U$DC_USERNAME%$DC_PASSWORD --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" || failed=`expr $failed + 1`
 found=$($net_tool ads keytab list -U$DC_USERNAME%$DC_PASSWORD --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" | grep $ad_service | wc -l)
-testit_expect_failure "test (dedicated keytab) spn service that exists in AD (created via add_update_ads) is added to keytab file" test $found -gt 1 || failed=`expr $failed + 1`
+testit "test (dedicated keytab) spn service that exists in AD (created via add_update_ads) is added to keytab file" test $found -gt 1 || failed=`expr $failed + 1`
 
 found_ad=$($net_tool ads setspn list -U$DC_USERNAME%$DC_PASSWORD | grep $service | wc -l)
 found_keytab=$($net_tool ads keytab list -U$DC_USERNAME%$DC_PASSWORD  --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" | grep $service | wc -l)
