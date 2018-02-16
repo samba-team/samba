@@ -353,7 +353,7 @@ int smb_krb5_get_pw_salt(krb5_context context,
 int smb_krb5_salt_principal(const char *realm,
 			    const char *sAMAccountName,
 			    const char *userPrincipalName,
-			    bool is_computer,
+			    uint32_t uac_flags,
 			    TALLOC_CTX *mem_ctx,
 			    char **_salt_principal);
 int smb_krb5_salt_principal2data(krb5_context context,
