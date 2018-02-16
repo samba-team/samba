@@ -36,8 +36,7 @@
 /*
   reply to a GETDC request
  */
-static void nbtd_netlogon_getdc(struct dgram_mailslot_handler *dgmslot, 
-				struct nbtd_interface *iface,
+static void nbtd_netlogon_getdc(struct nbtd_interface *iface,
 				struct nbt_dgram_packet *packet, 
 				const struct socket_address *src,
 				struct nbt_netlogon_packet *netlogon)
@@ -90,8 +89,7 @@ static void nbtd_netlogon_getdc(struct dgram_mailslot_handler *dgmslot,
 /*
   reply to a ADS style GETDC request
  */
-static void nbtd_netlogon_samlogon(struct dgram_mailslot_handler *dgmslot,
-				   struct nbtd_interface *iface,
+static void nbtd_netlogon_samlogon(struct nbtd_interface *iface,
 				   struct nbt_dgram_packet *packet, 
 				   const struct socket_address *src,
 				   struct nbt_netlogon_packet *netlogon)
@@ -177,12 +175,10 @@ void nbtd_mailslot_netlogon_handler(struct dgram_mailslot_handler *dgmslot,
 
 	switch (netlogon->command) {
 	case LOGON_PRIMARY_QUERY:
-		nbtd_netlogon_getdc(dgmslot, iface, packet, 
-				    src, netlogon);
+		nbtd_netlogon_getdc(iface, packet, src, netlogon);
 		break;
 	case LOGON_SAM_LOGON_REQUEST:
-		nbtd_netlogon_samlogon(dgmslot, iface, packet, 
-				       src, netlogon);
+		nbtd_netlogon_samlogon(iface, packet, src, netlogon);
 		break;
 	default:
 		DEBUG(2,("unknown netlogon op %d from %s:%d\n", 
