@@ -123,7 +123,7 @@ else:
                     util_str.c util_str_common.c ms_fnmatch.c
                     server_id.c dprintf.c
                     tevent_debug.c memcache.c unix_match.c tfork.c''',
-                  deps='samba-util-core DYNCONFIG close-low-fd tini tiniparser genrand',
+                  deps='samba-util-core DYNCONFIG close-low-fd tini tiniparser genrand util_str_hex',
                   public_deps='talloc tevent execinfo pthread LIBCRYPTO charset util_setid systemd systemd-daemon',
                   public_headers='debug.h attr.h byteorder.h data_blob.h memory.h safe_string.h time.h talloc_stack.h string_wrappers.h idtree.h idtree_random.h blocking.h signal.h substitute.h fault.h genrand.h tfork.h',
                   header_path= [ ('dlinklist.h samba_util.h', '.'), ('*', 'util') ],
@@ -209,5 +209,10 @@ else:
 
     bld.SAMBA_SUBSYSTEM('util_str_escape',
                         source='util_str_escape.c',
+                        deps='talloc',
+                        local_include=False)
+
+    bld.SAMBA_SUBSYSTEM('util_str_hex',
+                        source='util_str_hex.c',
                         deps='talloc',
                         local_include=False)
