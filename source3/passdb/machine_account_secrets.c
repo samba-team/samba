@@ -36,6 +36,7 @@
 #include "lib/crypto/crypto.h"
 #include "lib/krb5_wrap/krb5_samba.h"
 #include "lib/util/time_basic.h"
+#include "../libds/common/flags.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_PASSDB
@@ -1601,7 +1602,7 @@ NTSTATUS secrets_store_JoinCtx(const struct libnet_JoinCtx *r)
 		ret = smb_krb5_salt_principal(info->domain_info.dns_domain.string,
 					      info->account_name,
 					      NULL /* userPrincipalName */,
-					      true /* is_computer */,
+					      UF_WORKSTATION_TRUST_ACCOUNT,
 					      info, &p);
 		if (ret != 0) {
 			status = krb5_to_nt_status(ret);
