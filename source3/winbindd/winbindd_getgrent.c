@@ -141,6 +141,7 @@ NTSTATUS winbindd_getgrent_recv(struct tevent_req *req,
 	int i;
 
 	if (tevent_req_is_nterror(req, &status)) {
+		TALLOC_FREE(state->cli->grent_state);
 		DEBUG(5, ("getgrent failed: %s\n", nt_errstr(status)));
 		return status;
 	}
@@ -151,6 +152,7 @@ NTSTATUS winbindd_getgrent_recv(struct tevent_req *req,
 
 	memberstrings = talloc_array(talloc_tos(), char *, state->num_groups);
 	if (memberstrings == NULL) {
+		TALLOC_FREE(state->cli->grent_state);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -165,6 +167,7 @@ NTSTATUS winbindd_getgrent_recv(struct tevent_req *req,
 
 		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(memberstrings);
+			TALLOC_FREE(state->cli->grent_state);
 			return status;
 		}
 		TALLOC_FREE(state->members[i]);
@@ -180,6 +183,7 @@ NTSTATUS winbindd_getgrent_recv(struct tevent_req *req,
 	result = talloc_realloc(state, state->groups, char,
 				base_memberofs + total_memberlen);
 	if (result == NULL) {
+		TALLOC_FREE(state->cli->grent_state);
 		return NT_STATUS_NO_MEMORY;
 	}
 	state->groups = (struct winbindd_gr *)result;
