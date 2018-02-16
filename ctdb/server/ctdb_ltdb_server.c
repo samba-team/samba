@@ -1266,14 +1266,6 @@ int32_t ctdb_control_db_detach(struct ctdb_context *ctdb, TDB_DATA indata,
 		return -1;
 	}
 
-	/* Detach database from recoverd */
-	if (ctdb_daemon_send_message(ctdb, ctdb->pnn,
-				     CTDB_SRVID_DETACH_DATABASE,
-				     indata) != 0) {
-		DEBUG(DEBUG_ERR, ("Unable to detach DB from recoverd\n"));
-		return -1;
-	}
-
 	/* Disable vacuuming and drop all vacuuming data */
 	talloc_free(ctdb_db->vacuum_handle);
 	talloc_free(ctdb_db->delete_queue);
