@@ -412,7 +412,7 @@ _PUBLIC_ struct composite_context *ldap_connect_send(struct ldap_connection *con
 	if (strequal(protocol, "ldapi")) {
 		struct socket_address *unix_addr;
 		char path[1025];
-	
+		char *end = NULL;
 		NTSTATUS status = socket_create("unix", SOCKET_TYPE_STREAM, &state->sock, 0);
 		if (!NT_STATUS_IS_OK(status)) {
 			return NULL;
@@ -439,14 +439,17 @@ _PUBLIC_ struct composite_context *ldap_connect_send(struct ldap_connection *con
 			return result;
 		}
 
-		rfc1738_unescape(path);
-
+		end = rfc1738_unescape(path);
+		if (end == NULL) {
+			composite_error(state->ctx,
+					NT_STATUS_INVALID_PARAMETER);
+			return result;
+		}	
 		unix_addr = socket_address_from_strings(state, state->sock->backend_name,
 							path, 0);
 		if (composite_nomem(unix_addr, result)) {
 			return result;
 		}
-
 
 		ctx = socket_connect_send(state->sock, NULL, unix_addr,
 					  0, result->event_ctx);

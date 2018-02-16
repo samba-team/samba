@@ -225,7 +225,7 @@ _PUBLIC_ char *hex_encode_talloc(TALLOC_CTX *mem_ctx, const unsigned char *buff_
 /**
  Unescape a URL encoded string, in place.
 **/
-_PUBLIC_ void rfc1738_unescape(char *buf);
+_PUBLIC_ char *rfc1738_unescape(char *buf);
 
 
 /**

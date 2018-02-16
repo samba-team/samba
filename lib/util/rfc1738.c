@@ -193,8 +193,8 @@ rfc1738_escape_part(TALLOC_CTX *mem_ctx, const char *url)
  *  rfc1738_unescape() - Converts escaped characters (%xy numbers) in
  *  given the string.  %% is a %. %ab is the 8-bit hexadecimal number "ab"
  */
-_PUBLIC_ void
-rfc1738_unescape(char *s)
+
+_PUBLIC_ char *rfc1738_unescape(char *s)
 {
     char hexnum[3];
     int i, j;			/* i is write, j is read */
@@ -222,4 +222,5 @@ rfc1738_unescape(char *s)
         }
     }
     s[i] = '\0';
+	return s + i;
 }

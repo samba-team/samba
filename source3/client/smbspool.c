@@ -698,12 +698,16 @@ static char *
 uri_unescape_alloc(const char *uritok)
 {
 	char *ret;
-
+	char *end;
 	ret = (char *) SMB_STRDUP(uritok);
 	if (!ret) {
 		return NULL;
 	}
 
-	rfc1738_unescape(ret);
+	end = rfc1738_unescape(ret);
+	if (end == NULL) {
+		free(ret);
+		return NULL;
+	}
 	return ret;
 }
