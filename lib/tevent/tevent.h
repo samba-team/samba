@@ -1611,6 +1611,9 @@ struct tevent_queue_entry *tevent_queue_add_entry(
  * already called tevent_req_notify_callback(), tevent_req_error(),
  * tevent_req_done() or a similar function.
  *
+ * The trigger function has no chance to see the returned
+ * queue_entry in the optimized case.
+ *
  * The request can be removed from the queue by calling talloc_free()
  * (or a similar function) on the returned queue entry.
  *
