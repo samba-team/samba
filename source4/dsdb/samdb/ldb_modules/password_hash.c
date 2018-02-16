@@ -128,7 +128,6 @@ struct setup_password_fields_io {
 		NTTIME pwdLastSet;
 		const char *sAMAccountName;
 		const char *user_principal_name;
-		bool is_computer;
 		bool is_krbtgt;
 		uint32_t restrictions;
 		struct dom_sid *account_sid;
@@ -676,15 +675,17 @@ static int setup_kerberos_keys(struct setup_password_fields_io *io)
 	krb5_data salt;
 	krb5_keyblock key;
 	krb5_data cleartext_data;
+	uint32_t uac_flags = 0;
 
 	ldb = ldb_module_get_ctx(io->ac->module);
 	cleartext_data.data = (char *)io->n.cleartext_utf8->data;
 	cleartext_data.length = io->n.cleartext_utf8->length;
 
+	uac_flags = io->u.userAccountControl & UF_ACCOUNT_TYPE_MASK;
 	krb5_ret = smb_krb5_salt_principal(io->ac->status->domain_data.realm,
 					   io->u.sAMAccountName,
 					   io->u.user_principal_name,
-					   io->u.is_computer,
+					   uac_flags,
 					   io->ac,
 					   &salt_principal);
 	if (krb5_ret) {
@@ -3151,7 +3152,6 @@ static int setup_io(struct ph_context *ac,
 								      "sAMAccountName", NULL);
 	io->u.user_principal_name	= ldb_msg_find_attr_as_string(info_msg,
 								      "userPrincipalName", NULL);
-	io->u.is_computer		= ldb_msg_check_string_attribute(info_msg, "objectClass", "computer");
 
 	/* Ensure it has an objectSID too */
 	io->u.account_sid = samdb_result_dom_sid(ac, info_msg, "objectSid");

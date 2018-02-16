@@ -34,6 +34,7 @@
 #include "auth/kerberos/kerberos_util.h"
 #include "auth/kerberos/pac_utils.h"
 #include "param/param.h"
+#include "../libds/common/flags.h"
 
 static void cli_credentials_invalidate_client_gss_creds(
 					struct cli_credentials *cred,
@@ -971,7 +972,7 @@ _PUBLIC_ int cli_credentials_get_keytab(struct cli_credentials *cred,
 	const char *upn = NULL;
 	const char *realm = cli_credentials_get_realm(cred);
 	char *salt_principal = NULL;
-	bool is_computer = false;
+	uint32_t uac_flags = 0;
 
 	if (cred->keytab_obtained >= (MAX(cred->principal_obtained, 
 					  cred->username_obtained))) {
@@ -996,9 +997,15 @@ _PUBLIC_ int cli_credentials_get_keytab(struct cli_credentials *cred,
 
 	switch (cred->secure_channel_type) {
 	case SEC_CHAN_WKSTA:
-	case SEC_CHAN_BDC:
 	case SEC_CHAN_RODC:
-		is_computer = true;
+		uac_flags = UF_WORKSTATION_TRUST_ACCOUNT;
+		break;
+	case SEC_CHAN_BDC:
+		uac_flags = UF_SERVER_TRUST_ACCOUNT;
+		break;
+	case SEC_CHAN_DOMAIN:
+	case SEC_CHAN_DNS_DOMAIN:
+		uac_flags = UF_INTERDOMAIN_TRUST_ACCOUNT;
 		break;
 	default:
 		upn = cli_credentials_get_principal(cred, mem_ctx);
@@ -1006,13 +1013,14 @@ _PUBLIC_ int cli_credentials_get_keytab(struct cli_credentials *cred,
 			TALLOC_FREE(mem_ctx);
 			return ENOMEM;
 		}
+		uac_flags = UF_NORMAL_ACCOUNT;
 		break;
 	}
 
 	ret = smb_krb5_salt_principal(realm,
 				      username, /* sAMAccountName */
 				      upn, /* userPrincipalName */
-				      is_computer,
+				      uac_flags,
 				      mem_ctx,
 				      &salt_principal);
 	if (ret) {
