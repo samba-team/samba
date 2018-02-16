@@ -49,11 +49,6 @@ struct tevent_req *winbindd_getpwent_send(TALLOC_CTX *mem_ctx,
 
 	DEBUG(3, ("[%5lu]: getpwent\n", (unsigned long)cli->pid));
 
-	if (!lp_winbind_enum_users()) {
-		tevent_req_nterror(req, NT_STATUS_NO_MORE_ENTRIES);
-		return tevent_req_post(req, ev);
-	}
-
 	if (cli->pwent_state == NULL) {
 		tevent_req_nterror(req, NT_STATUS_NO_MORE_ENTRIES);
 		return tevent_req_post(req, ev);
