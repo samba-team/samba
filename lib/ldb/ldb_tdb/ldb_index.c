@@ -2673,17 +2673,16 @@ int ltdb_index_delete(struct ldb_module *module, const struct ldb_message *msg)
   commit, which in turn greatly reduces DB churn as we will likely
   be able to do a direct update into the old record.
 */
-static int delete_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *state)
+static int delete_index(struct ltdb_private *ltdb, struct ldb_val key, struct ldb_val data, void *state)
 {
 	struct ldb_module *module = state;
-	struct ltdb_private *ltdb = talloc_get_type(ldb_module_get_private(module), struct ltdb_private);
 	const char *dnstr = "DN=" LTDB_INDEX ":";
 	struct dn_list list;
 	struct ldb_dn *dn;
 	struct ldb_val v;
 	int ret;
 
-	if (strncmp((char *)key.dptr, dnstr, strlen(dnstr)) != 0) {
+	if (strncmp((char *)key.data, dnstr, strlen(dnstr)) != 0) {
 		return 0;
 	}
 	/* we need to put a empty list in the internal tdb for this
@@ -2692,8 +2691,8 @@ static int delete_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, vo
 	list.count = 0;
 
 	/* the offset of 3 is to remove the DN= prefix. */
-	v.data = key.dptr + 3;
-	v.length = strnlen((char *)key.dptr, key.dsize) - 3;
+	v.data = key.data + 3;
+	v.length = strnlen((char *)key.data, key.length) - 3;
 
 	dn = ldb_dn_from_ldb_val(ltdb, ldb_module_get_ctx(module), &v);
 
@@ -2713,29 +2712,23 @@ static int delete_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, vo
 	return 0;
 }
 
-struct ltdb_reindex_context {
-	struct ldb_module *module;
-	int error;
-	uint32_t count;
-};
-
 /*
-  traversal function that adds @INDEX records during a re index
+  traversal function that adds @INDEX records during a re index TODO wrong comment
 */
-static int re_key(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *state)
+static int re_key(struct ltdb_private *ltdb, struct ldb_val ldb_key, struct ldb_val val, void *state)
 {
 	struct ldb_context *ldb;
 	struct ltdb_reindex_context *ctx = (struct ltdb_reindex_context *)state;
 	struct ldb_module *module = ctx->module;
 	struct ldb_message *msg;
 	unsigned int nb_elements_in_db;
-	const struct ldb_val val = {
-		.data = data.dptr,
-		.length = data.dsize,
-	};
 	int ret;
 	TDB_DATA key2;
 	bool is_record;
+	TDB_DATA key = {
+		.dptr = ldb_key.data,
+		.dsize = ldb_key.length
+	};
 	
 	ldb = ldb_module_get_ctx(module);
 
@@ -2790,32 +2783,11 @@ static int re_key(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *st
 	}
 	if (key.dsize != key2.dsize ||
 	    (memcmp(key.dptr, key2.dptr, key.dsize) != 0)) {
-		int tdb_ret;
-		tdb_ret = tdb_delete(tdb, key);
-		if (tdb_ret != 0) {
-			ldb_debug(ldb, LDB_DEBUG_ERROR,
-				  "Failed to delete %*.*s "
-				  "for rekey as %*.*s: %s",
-				  (int)key.dsize, (int)key.dsize,
-				  (const char *)key.dptr,
-				  (int)key2.dsize, (int)key2.dsize,
-				  (const char *)key.dptr,
-				  tdb_errorstr(tdb));
-			ctx->error = ltdb_err_map(tdb_error(tdb));
-			return -1;
-		}
-		tdb_ret = tdb_store(tdb, key2, data, 0);
-		if (tdb_ret != 0) {
-			ldb_debug(ldb, LDB_DEBUG_ERROR,
-				  "Failed to rekey %*.*s as %*.*s: %s",
-				  (int)key.dsize, (int)key.dsize,
-				  (const char *)key.dptr,
-				  (int)key2.dsize, (int)key2.dsize,
-				  (const char *)key.dptr,
-				  tdb_errorstr(tdb));
-			ctx->error = ltdb_err_map(tdb_error(tdb));
-			return -1;
-		}
+		TDB_DATA data = {
+			.dptr = val.data,
+			.dsize = val.length
+		};
+		ltdb->kv_ops->update_in_iterate(ltdb, key, key2, data, ctx);
 	}
 	talloc_free(key2.dptr);
 
@@ -2834,18 +2806,16 @@ static int re_key(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *st
 /*
   traversal function that adds @INDEX records during a re index
 */
-static int re_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *state)
+static int re_index(struct ltdb_private *ltdb, struct ldb_val ldb_key, struct ldb_val val, void *state)
 {
 	struct ldb_context *ldb;
 	struct ltdb_reindex_context *ctx = (struct ltdb_reindex_context *)state;
 	struct ldb_module *module = ctx->module;
-	struct ltdb_private *ltdb = talloc_get_type(ldb_module_get_private(module),
-						    struct ltdb_private);
 	struct ldb_message *msg;
 	unsigned int nb_elements_in_db;
-	const struct ldb_val val = {
-		.data = data.dptr,
-		.length = data.dsize,
+	TDB_DATA key = {
+		.dptr = ldb_key.data,
+		.dsize = ldb_key.length
 	};
 	int ret;
 	bool is_record;
@@ -2955,7 +2925,7 @@ int ltdb_reindex(struct ldb_module *module)
 	/* first traverse the database deleting any @INDEX records by
 	 * putting NULL entries in the in-memory tdb
 	 */
-	ret = tdb_traverse(ltdb->tdb, delete_index, module);
+	ret = ltdb->kv_ops->iterate(ltdb, delete_index, module);
 	if (ret < 0) {
 		struct ldb_context *ldb = ldb_module_get_ctx(module);
 		ldb_asprintf_errstring(ldb, "index deletion traverse failed: %s",
@@ -2967,8 +2937,7 @@ int ltdb_reindex(struct ldb_module *module)
 	ctx.error = 0;
 	ctx.count = 0;
 
-	/* now traverse adding any indexes for normal LDB records */
-	ret = tdb_traverse(ltdb->tdb, re_key, &ctx);
+	ret = ltdb->kv_ops->iterate(ltdb, re_key, &ctx);
 	if (ret < 0) {
 		struct ldb_context *ldb = ldb_module_get_ctx(module);
 		ldb_asprintf_errstring(ldb, "key correction traverse failed: %s",
@@ -2986,7 +2955,7 @@ int ltdb_reindex(struct ldb_module *module)
 	ctx.count = 0;
 
 	/* now traverse adding any indexes for normal LDB records */
-	ret = tdb_traverse(ltdb->tdb, re_index, &ctx);
+	ret = ltdb->kv_ops->iterate(ltdb, re_index, &ctx);
 	if (ret < 0) {
 		struct ldb_context *ldb = ldb_module_get_ctx(module);
 		ldb_asprintf_errstring(ldb, "reindexing traverse failed: %s",

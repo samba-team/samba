@@ -926,7 +926,6 @@ static int msg_delete_element(struct ldb_module *module,
 	return LDB_ERR_NO_SUCH_ATTRIBUTE;
 }
 
-
 /*
   modify a record - internal interface
 
@@ -1714,6 +1713,77 @@ static void ltdb_handle_extended(struct ltdb_context *ctx)
 	ltdb_request_extended_done(ctx, ext, ret);
 }
 
+struct kv_ctx {
+	ldb_kv_traverse_fn kv_traverse_fn;
+	void *ctx;
+	struct ltdb_private *ltdb;
+};
+
+static int ldb_tdb_traverse_fn_wrapper(struct tdb_context *tdb, TDB_DATA tdb_key, TDB_DATA tdb_data, void *ctx)
+{
+	struct kv_ctx *kv_ctx = ctx;
+	struct ldb_val key = {
+		.length = tdb_key.dsize,
+		.data = tdb_key.dptr,
+	};
+	struct ldb_val data = {
+		.length = tdb_data.dsize,
+		.data = tdb_data.dptr,
+	};
+	return kv_ctx->kv_traverse_fn(kv_ctx->ltdb, key, data, kv_ctx->ctx);
+}
+
+static int ltdb_tdb_traverse_fn(struct ltdb_private *ltdb, ldb_kv_traverse_fn fn, void *ctx)
+{
+	struct kv_ctx kv_ctx = {
+		.kv_traverse_fn = fn,
+		.ctx = ctx,
+		.ltdb = ltdb
+	};
+	if (ltdb->in_transaction != 0) {
+		return tdb_traverse(ltdb->tdb, ldb_tdb_traverse_fn_wrapper, &kv_ctx);
+	} else {
+		return tdb_traverse_read(ltdb->tdb, ldb_tdb_traverse_fn_wrapper, &kv_ctx);
+	}
+}
+
+static int ltdb_tdb_update_in_iterate(struct ltdb_private *ltdb, TDB_DATA key, TDB_DATA key2, TDB_DATA data, void *state)
+{
+	int tdb_ret;
+	struct ldb_context *ldb;
+	struct ltdb_reindex_context *ctx = (struct ltdb_reindex_context *)state;
+	struct ldb_module *module = ctx->module;
+
+	ldb = ldb_module_get_ctx(module);
+
+	tdb_ret = tdb_delete(ltdb->tdb, key);
+	if (tdb_ret != 0) {
+		ldb_debug(ldb, LDB_DEBUG_ERROR,
+			  "Failed to delete %*.*s "
+			  "for rekey as %*.*s: %s",
+			  (int)key.dsize, (int)key.dsize,
+			  (const char *)key.dptr,
+			  (int)key2.dsize, (int)key2.dsize,
+			  (const char *)key.dptr,
+			  tdb_errorstr(ltdb->tdb));
+		ctx->error = ltdb_err_map(tdb_error(ltdb->tdb));
+		return -1;
+	}
+	tdb_ret = tdb_store(ltdb->tdb, key2, data, 0);
+	if (tdb_ret != 0) {
+		ldb_debug(ldb, LDB_DEBUG_ERROR,
+			  "Failed to rekey %*.*s as %*.*s: %s",
+			  (int)key.dsize, (int)key.dsize,
+			  (const char *)key.dptr,
+			  (int)key2.dsize, (int)key2.dsize,
+			  (const char *)key.dptr,
+			  tdb_errorstr(ltdb->tdb));
+		ctx->error = ltdb_err_map(tdb_error(ltdb->tdb));
+		return -1;
+	}
+	return tdb_ret;
+}
+
 static int ltdb_tdb_parse_record(struct ltdb_private *ltdb, TDB_DATA key,
 				 int (*parser)(TDB_DATA key, TDB_DATA data,
 					       void *private_data),
@@ -1739,6 +1809,8 @@ static bool ltdb_tdb_changed(struct ltdb_private *ltdb)
 static const struct kv_db_ops key_value_ops = {
 	.store = ltdb_tdb_store,
 	.delete = ltdb_tdb_delete,
+	.iterate = ltdb_tdb_traverse_fn,
+	.update_in_iterate = ltdb_tdb_update_in_iterate,
 	.fetch_and_parse = ltdb_tdb_parse_record,
 	.lock_read = ltdb_lock_read,
 	.unlock_read = ltdb_unlock_read,
