@@ -973,13 +973,22 @@ static int acl_check_password_rights(TALLOC_CTX *mem_ctx,
 	const char *passwordAttrs[] = { "userPassword", "clearTextPassword",
 					"unicodePwd", "dBCSPwd", NULL }, **l;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	struct dsdb_control_password_acl_validation *pav = NULL;
 
 	if (tmp_ctx == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
+	pav = talloc_zero(req, struct dsdb_control_password_acl_validation);
+	if (pav == NULL) {
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
 	c = ldb_request_get_control(req, DSDB_CONTROL_PASSWORD_CHANGE_OID);
 	if (c != NULL) {
+		pav->pwd_reset = false;
+
 		/*
 		 * The "DSDB_CONTROL_PASSWORD_CHANGE_OID" control means that we
 		 * have a user password change and not a set as the message
@@ -1002,6 +1011,8 @@ static int acl_check_password_rights(TALLOC_CTX *mem_ctx,
 
 	c = ldb_request_get_control(req, DSDB_CONTROL_PASSWORD_HASH_VALUES_OID);
 	if (c != NULL) {
+		pav->pwd_reset = true;
+
 		/*
 		 * The "DSDB_CONTROL_PASSWORD_HASH_VALUES_OID" control, without
 		 * "DSDB_CONTROL_PASSWORD_CHANGE_OID" control means that we
@@ -1055,6 +1066,8 @@ static int acl_check_password_rights(TALLOC_CTX *mem_ctx,
 
 
 	if (rep_attr_cnt > 0) {
+		pav->pwd_reset = true;
+
 		ret = acl_check_extended_right(tmp_ctx, sd, acl_user_token(module),
 					       GUID_DRS_FORCE_CHANGE_PASSWORD,
 					       SEC_ADS_CONTROL_ACCESS,
@@ -1063,6 +1076,8 @@ static int acl_check_password_rights(TALLOC_CTX *mem_ctx,
 	}
 
 	if (add_attr_cnt != del_attr_cnt) {
+		pav->pwd_reset = true;
+
 		ret = acl_check_extended_right(tmp_ctx, sd, acl_user_token(module),
 					       GUID_DRS_FORCE_CHANGE_PASSWORD,
 					       SEC_ADS_CONTROL_ACCESS,
@@ -1071,6 +1086,8 @@ static int acl_check_password_rights(TALLOC_CTX *mem_ctx,
 	}
 
 	if (add_val_cnt == 1 && del_val_cnt == 1) {
+		pav->pwd_reset = false;
+
 		ret = acl_check_extended_right(tmp_ctx, sd, acl_user_token(module),
 					       GUID_DRS_USER_CHANGE_PASSWORD,
 					       SEC_ADS_CONTROL_ACCESS,
@@ -1083,6 +1100,8 @@ static int acl_check_password_rights(TALLOC_CTX *mem_ctx,
 	}
 
 	if (add_val_cnt == 1 && del_val_cnt == 0) {
+		pav->pwd_reset = true;
+
 		ret = acl_check_extended_right(tmp_ctx, sd, acl_user_token(module),
 					       GUID_DRS_FORCE_CHANGE_PASSWORD,
 					       SEC_ADS_CONTROL_ACCESS,
@@ -1094,6 +1113,14 @@ static int acl_check_password_rights(TALLOC_CTX *mem_ctx,
 		goto checked;
 	}
 
+	/*
+	 * Everything else is handled by the password_hash module where it will
+	 * fail, but with the correct error code when the module is again
+	 * checking the attributes. As the change request will lack the
+	 * DSDB_CONTROL_PASSWORD_ACL_VALIDATION_OID control, we can be sure that
+	 * any modification attempt that went this way will be rejected.
+	 */
+
 	talloc_free(tmp_ctx);
 	return LDB_SUCCESS;
 
@@ -1103,11 +1130,19 @@ checked:
 			       req->op.mod.message->dn,
 			       true,
 			       10);
+		talloc_free(tmp_ctx);
+		return ret;
 	}
-	talloc_free(tmp_ctx);
-	return ret;
-}
 
+	ret = ldb_request_add_control(req,
+		DSDB_CONTROL_PASSWORD_ACL_VALIDATION_OID, false, pav);
+	if (ret != LDB_SUCCESS) {
+		ldb_debug(ldb_module_get_ctx(module), LDB_DEBUG_ERROR,
+			  "Unable to register ACL validation control!\n");
+		return ret;
+	}
+	return LDB_SUCCESS;
+}
 
 static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 {
