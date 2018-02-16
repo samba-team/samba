@@ -1996,28 +1996,27 @@ done:
  * (found by hostname) in AD.
  * @param ads An initialized ADS_STRUCT
  * @param machine_name the NetBIOS name of the computer, which is used to identify the computer account.
- * @param my_fqdn The fully qualified DNS name of the machine
- * @param spn A string of the service principal to add, i.e. 'host'
+ * @param spns An array or strings for the service principals to add,
+ *        i.e. 'cifs/machine_name', 'http/machine.full.domain.com' etc.
  * @return 0 upon sucess, or non-zero if a failure occurs
  **/
 
-ADS_STATUS ads_add_service_principal_name(ADS_STRUCT *ads, const char *machine_name, 
-                                          const char *my_fqdn, const char *spn)
+ADS_STATUS ads_add_service_principal_names(ADS_STRUCT *ads,
+					   const char *machine_name,
+                                           const char **spns)
 {
 	ADS_STATUS ret;
 	TALLOC_CTX *ctx;
 	LDAPMessage *res = NULL;
-	char *psp1, *psp2;
 	ADS_MODLIST mods;
 	char *dn_string = NULL;
-	const char *servicePrincipalName[3] = {NULL, NULL, NULL};
+	const char **servicePrincipalName = spns;
 
 	ret = ads_find_machine_acct(ads, &res, machine_name);
 	if (!ADS_ERR_OK(ret) || ads_count_replies(ads, res) != 1) {
 		DEBUG(1,("ads_add_service_principal_name: WARNING: Host Account for %s not found... skipping operation.\n",
 			machine_name));
-		DEBUG(1,("ads_add_service_principal_name: WARNING: Service Principal '%s/%s@%s' has NOT been added.\n",
-			spn, machine_name, ads->config.realm));
+		DEBUG(1,("ads_add_service_principal_name: WARNING: Service Principals have NOT been added.\n"));
 		ads_msgfree(ads, res);
 		return ADS_ERROR(LDAP_NO_SUCH_OBJECT);
 	}
@@ -2028,44 +2027,24 @@ ADS_STATUS ads_add_service_principal_name(ADS_STRUCT *ads, const char *machine_n
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 
-	/* add short name spn */
-
-	if ( (psp1 = talloc_asprintf(ctx, "%s/%s", spn, machine_name)) == NULL ) {
-		talloc_destroy(ctx);
-		ads_msgfree(ads, res);
-		return ADS_ERROR(LDAP_NO_MEMORY);
-	}
-	if (!strlower_m(&psp1[strlen(spn) + 1])) {
-		ret = ADS_ERROR(LDAP_NO_MEMORY);
-		goto out;
-	}
-	servicePrincipalName[0] = psp1;
-
-	DEBUG(5,("ads_add_service_principal_name: INFO: Adding %s to host %s\n", 
-		psp1, machine_name));
+	DEBUG(5,("ads_add_service_principal_name: INFO: "
+		"Adding %s to host %s\n",
+		spns[0] ? "N/A" : spns[0], machine_name));
 
 
-	/* add fully qualified spn */
-
-	if ( (psp2 = talloc_asprintf(ctx, "%s/%s", spn, my_fqdn)) == NULL ) {
-		ret = ADS_ERROR(LDAP_NO_MEMORY);
-		goto out;
-	}
-	if (!strlower_m(&psp2[strlen(spn) + 1])) {
-		ret = ADS_ERROR(LDAP_NO_MEMORY);
-		goto out;
-	}
-	servicePrincipalName[1] = psp2;
-
-	DEBUG(5,("ads_add_service_principal_name: INFO: Adding %s to host %s\n", 
-		psp2, machine_name));
+	DEBUG(5,("ads_add_service_principal_name: INFO: "
+		"Adding %s to host %s\n",
+		spns[1] ? "N/A" : spns[1], machine_name));
 
 	if ( (mods = ads_init_mods(ctx)) == NULL ) {
 		ret = ADS_ERROR(LDAP_NO_MEMORY);
 		goto out;
 	}
 
-	ret = ads_add_strlist(ctx, &mods, "servicePrincipalName", servicePrincipalName);
+	ret = ads_add_strlist(ctx,
+			      &mods,
+			      "servicePrincipalName",
+			      servicePrincipalName);
 	if (!ADS_ERR_OK(ret)) {
 		DEBUG(1,("ads_add_service_principal_name: Error: Updating Service Principals in LDAP\n"));
 		goto out;

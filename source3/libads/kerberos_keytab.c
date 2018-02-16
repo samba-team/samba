@@ -85,6 +85,80 @@ out:
 	return ret;
 }
 
+static bool fill_default_spns(TALLOC_CTX *ctx, const char *machine_name,
+                                          const char *my_fqdn, const char *spn,
+					  const char ***spns)
+{
+	char *psp1, *psp2;
+
+	if (*spns == NULL) {
+		*spns = talloc_zero_array(ctx, const char*, 3);
+		if (spns == NULL) {
+			return false;
+		}
+	}
+
+	psp1 = talloc_asprintf(ctx,
+			       "%s/%s",
+			       spn,
+			       machine_name);
+	if (psp1 == NULL) {
+		return false;
+	}
+
+	if (!strlower_m(&psp1[strlen(spn) + 1])) {
+		return false;
+	}
+	(*spns)[0] = psp1;
+
+	psp2 = talloc_asprintf(ctx,
+			       "%s/%s",
+			       spn,
+			       my_fqdn);
+	if (psp2 == NULL) {
+		return false;
+	}
+
+	if (!strlower_m(&psp2[strlen(spn) + 1])) {
+		return false;
+	}
+
+	(*spns)[1] = psp2;
+
+	return true;
+}
+
+static bool ads_set_machine_account_spns(TALLOC_CTX *ctx,
+					 ADS_STRUCT *ads,
+					 const char *service_or_spn,
+					 const char *my_fqdn)
+{
+	const char **spn_names = NULL;
+	ADS_STATUS aderr;
+	bool ok = false;
+
+	DBG_INFO("Attempting to add/update '%s'\n", service_or_spn);
+
+	ok = fill_default_spns(ctx,
+			       lp_netbios_name(),
+			       my_fqdn,
+			       service_or_spn,
+			       &spn_names);
+	if (!ok) {
+		return false;
+	}
+
+	aderr = ads_add_service_principal_names(ads,
+						lp_netbios_name(),
+						spn_names);
+	if (!ADS_ERR_OK(aderr)) {
+		DBG_WARNING("Failed to add service principal name.\n");
+		return false;
+	}
+
+	return true;
+}
+
 /**********************************************************************
  Adds a single service principal, i.e. 'host' to the system keytab
 ***********************************************************************/
@@ -114,7 +188,6 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc)
 	char *password_s = NULL;
 	char *my_fqdn;
 	TALLOC_CTX *tmpctx = NULL;
-	ADS_STATUS aderr;
 	int i;
 
 	initialize_krb5_error_table();
@@ -212,14 +285,11 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc)
 
 		if (!strequal(srvPrinc, "cifs") &&
 		    !strequal(srvPrinc, "host")) {
-			DEBUG(3, (__location__ ": Attempting to add/update "
-				  "'%s'\n", princ_s));
-
-			aderr = ads_add_service_principal_name(ads,
-					lp_netbios_name(), my_fqdn, srvPrinc);
-			if (!ADS_ERR_OK(aderr)) {
-				DEBUG(1, (__location__ ": failed to "
-					 "ads_add_service_principal_name.\n"));
+			if (!ads_set_machine_account_spns(tmpctx,
+							  ads,
+							  srvPrinc,
+							  my_fqdn)) {
+				ret = -1;
 				goto out;
 			}
 		}
