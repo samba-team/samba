@@ -973,6 +973,10 @@ static int acl_check_password_rights(TALLOC_CTX *mem_ctx,
 					"unicodePwd", "dBCSPwd", NULL }, **l;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 
+	if (tmp_ctx == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
 	c = ldb_request_get_control(req, DSDB_CONTROL_PASSWORD_CHANGE_OID);
 	if (c != NULL) {
 		/*
