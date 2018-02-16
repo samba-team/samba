@@ -177,7 +177,9 @@ rm -rf $RPM_BUILD_ROOT
 %doc doc/*.html
 %doc doc/examples
 %{_sysconfdir}/sudoers.d/ctdb
+%dir %{_sysconfdir}/ctdb
 %{_sysconfdir}/ctdb/functions
+%dir %{_sysconfdir}/ctdb/events.d
 %{_sysconfdir}/ctdb/events.d/00.ctdb
 %{_sysconfdir}/ctdb/events.d/01.reclock
 %{_sysconfdir}/ctdb/events.d/05.system
@@ -197,6 +199,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_sysconfdir}/ctdb/events.d/70.iscsi
 %{_sysconfdir}/ctdb/events.d/91.lvs
 %{_sysconfdir}/ctdb/events.d/99.timeout
+%dir %{_sysconfdir}/ctdb/nfs-checks.d
 %config(noreplace) %{_sysconfdir}/ctdb/nfs-checks.d/00.portmapper.check
 %config(noreplace) %{_sysconfdir}/ctdb/nfs-checks.d/10.status.check
 %config(noreplace) %{_sysconfdir}/ctdb/nfs-checks.d/20.nfs.check
