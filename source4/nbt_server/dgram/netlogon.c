@@ -62,7 +62,8 @@ static NTSTATUS nbtd_netlogon_getdc(struct nbtd_server *nbtsrv,
 	}
 
 	if (strcasecmp_m(name->name, lpcfg_workgroup(nbtsrv->task->lp_ctx)) != 0) {
-		DEBUG(5,("GetDC requested for a domian %s that we don't host\n", name->name));
+		DBG_INFO("GetDC requested for a domain %s that we don't "
+			 "host\n", name->name);
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
