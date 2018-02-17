@@ -36,7 +36,7 @@
 /*
   reply to a GETDC request
  */
-static NTSTATUS nbtd_netlogon_getdc(struct nbtd_interface *iface,
+static NTSTATUS nbtd_netlogon_getdc(struct nbtd_server *nbtsrv,
 				    struct nbt_dgram_packet *packet,
 				    const struct socket_address *src,
 				    struct nbt_netlogon_packet *netlogon,
@@ -53,15 +53,15 @@ static NTSTATUS nbtd_netlogon_getdc(struct nbtd_interface *iface,
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
-	samctx = iface->nbtsrv->sam_ctx;
+	samctx = nbtsrv->sam_ctx;
 
-	if (lpcfg_server_role(iface->nbtsrv->task->lp_ctx) != ROLE_ACTIVE_DIRECTORY_DC
+	if (lpcfg_server_role(nbtsrv->task->lp_ctx) != ROLE_ACTIVE_DIRECTORY_DC
 	    || !samdb_is_pdc(samctx)) {
 		DEBUG(2, ("Not a PDC, so not processing LOGON_PRIMARY_QUERY\n"));
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
-	if (strcasecmp_m(name->name, lpcfg_workgroup(iface->nbtsrv->task->lp_ctx)) != 0) {
+	if (strcasecmp_m(name->name, lpcfg_workgroup(nbtsrv->task->lp_ctx)) != 0) {
 		DEBUG(5,("GetDC requested for a domian %s that we don't host\n", name->name));
 		return NT_STATUS_NOT_SUPPORTED;
 	}
@@ -77,7 +77,7 @@ static NTSTATUS nbtd_netlogon_getdc(struct nbtd_interface *iface,
 	pdc->command = NETLOGON_RESPONSE_FROM_PDC;
 
 	pdc->pdc_name = talloc_strdup(
-		response, lpcfg_netbios_name(iface->nbtsrv->task->lp_ctx));
+		response, lpcfg_netbios_name(nbtsrv->task->lp_ctx));
 	if (pdc->pdc_name == NULL) {
 		TALLOC_FREE(response);
 		return NT_STATUS_NO_MEMORY;
@@ -86,7 +86,7 @@ static NTSTATUS nbtd_netlogon_getdc(struct nbtd_interface *iface,
 	pdc->unicode_pdc_name = pdc->pdc_name;
 
 	pdc->domain_name = talloc_strdup(
-		response, lpcfg_workgroup(iface->nbtsrv->task->lp_ctx));
+		response, lpcfg_workgroup(nbtsrv->task->lp_ctx));
 	if (pdc->domain_name == NULL) {
 		TALLOC_FREE(response);
 		return NT_STATUS_NO_MEMORY;
@@ -198,8 +198,8 @@ void nbtd_mailslot_netlogon_handler(struct dgram_mailslot_handler *dgmslot,
 
 	switch (netlogon->command) {
 	case LOGON_PRIMARY_QUERY:
-		status = nbtd_netlogon_getdc(iface, packet, src, netlogon,
-					     netlogon, &response);
+		status = nbtd_netlogon_getdc(iface->nbtsrv, packet, src,
+					     netlogon, netlogon, &response);
 		break;
 	case LOGON_SAM_LOGON_REQUEST:
 		status = nbtd_netlogon_samlogon(iface, packet, src, netlogon,
