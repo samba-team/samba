@@ -37,19 +37,19 @@
   reply to a GETDC request
  */
 static NTSTATUS nbtd_netlogon_getdc(struct nbtd_server *nbtsrv,
-				    struct nbt_dgram_packet *packet,
+				    struct nbt_name *dst_name,
 				    const struct socket_address *src,
 				    struct nbt_netlogon_packet *netlogon,
 				    TALLOC_CTX *mem_ctx,
 				    struct nbt_netlogon_response **presponse)
 {
-	struct nbt_name *name = &packet->data.msg.dest_name;
 	struct nbt_netlogon_response_from_pdc *pdc;
 	struct ldb_context *samctx;
 	struct nbt_netlogon_response *response;
 
 	/* only answer getdc requests on the PDC or LOGON names */
-	if (name->type != NBT_NAME_PDC && name->type != NBT_NAME_LOGON) {
+	if ((dst_name->type != NBT_NAME_PDC) &&
+	    (dst_name->type != NBT_NAME_LOGON)) {
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
@@ -61,9 +61,10 @@ static NTSTATUS nbtd_netlogon_getdc(struct nbtd_server *nbtsrv,
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
-	if (strcasecmp_m(name->name, lpcfg_workgroup(nbtsrv->task->lp_ctx)) != 0) {
+	if (strcasecmp_m(dst_name->name,
+			 lpcfg_workgroup(nbtsrv->task->lp_ctx)) != 0) {
 		DBG_INFO("GetDC requested for a domain %s that we don't "
-			 "host\n", name->name);
+			 "host\n", dst_name->name);
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
@@ -199,7 +200,8 @@ void nbtd_mailslot_netlogon_handler(struct dgram_mailslot_handler *dgmslot,
 
 	switch (netlogon->command) {
 	case LOGON_PRIMARY_QUERY:
-		status = nbtd_netlogon_getdc(iface->nbtsrv, packet, src,
+		status = nbtd_netlogon_getdc(iface->nbtsrv,
+					     &packet->data.msg.dest_name, src,
 					     netlogon, netlogon, &response);
 		break;
 	case LOGON_SAM_LOGON_REQUEST:
