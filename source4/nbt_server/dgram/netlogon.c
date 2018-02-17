@@ -104,7 +104,7 @@ static NTSTATUS nbtd_netlogon_getdc(struct nbtd_server *nbtsrv,
   reply to a ADS style GETDC request
  */
 static NTSTATUS nbtd_netlogon_samlogon(
-	struct nbtd_interface *iface,
+	struct nbtd_server *nbtsrv,
 	struct nbt_dgram_packet *packet,
 	const struct socket_address *src,
 	struct nbt_netlogon_packet *netlogon,
@@ -122,7 +122,7 @@ static NTSTATUS nbtd_netlogon_samlogon(
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
-	samctx = iface->nbtsrv->sam_ctx;
+	samctx = nbtsrv->sam_ctx;
 
 	if (netlogon->req.logon.sid_size) {
 		sid = &netlogon->req.logon.sid;
@@ -140,7 +140,7 @@ static NTSTATUS nbtd_netlogon_samlogon(
 		samctx, response, NULL, name->name, sid, NULL,
 		netlogon->req.logon.user_name,
 		netlogon->req.logon.acct_control, src->addr,
-		netlogon->req.logon.nt_version, iface->nbtsrv->task->lp_ctx,
+		netlogon->req.logon.nt_version, nbtsrv->task->lp_ctx,
 		&response->data.samlogon, false);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(2,("NBT netlogon query failed domain=%s sid=%s version=%d - %s\n",
@@ -202,8 +202,8 @@ void nbtd_mailslot_netlogon_handler(struct dgram_mailslot_handler *dgmslot,
 					     netlogon, netlogon, &response);
 		break;
 	case LOGON_SAM_LOGON_REQUEST:
-		status = nbtd_netlogon_samlogon(iface, packet, src, netlogon,
-						netlogon, &response);
+		status = nbtd_netlogon_samlogon(iface->nbtsrv, packet, src,
+						netlogon, netlogon, &response);
 		break;
 	default:
 		DEBUG(2,("unknown netlogon op %d from %s:%d\n", 
