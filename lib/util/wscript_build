@@ -216,3 +216,9 @@ else:
                         source='util_str_hex.c',
                         deps='talloc',
                         local_include=False)
+
+    bld.SAMBA_BINARY('test_rfc1738',
+                     source='tests/rfc1738.c',
+                     deps='cmocka replace samba-util',
+                     local_include=False,
+                     install=False)

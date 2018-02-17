@@ -182,3 +182,5 @@ plantestsuite("samba.unittests.smb1cli_session", "none",
 
 plantestsuite("samba.unittests.tldap", "none",
               [os.path.join(bindir(), "default/source3/test_tldap")])
+plantestsuite("samba.unittests.rfc1738", "none",
+              [os.path.join(bindir(), "default/lib/util/test_rfc1738")])
