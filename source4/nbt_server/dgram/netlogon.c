@@ -131,8 +131,6 @@ static void nbtd_netlogon_samlogon(struct nbtd_interface *iface,
 
 	netlogon_response.response_type = NETLOGON_SAMLOGON;
 
-	packet->data.msg.dest_name.type = 0;
-
 	dgram_mailslot_netlogon_reply(reply_iface->dgmsock, 
 				      packet, 
 				      lpcfg_netbios_name(iface->nbtsrv->task->lp_ctx),
