@@ -107,20 +107,20 @@ static NTSTATUS nbtd_netlogon_getdc(struct nbtd_server *nbtsrv,
  */
 static NTSTATUS nbtd_netlogon_samlogon(
 	struct nbtd_server *nbtsrv,
-	struct nbt_dgram_packet *packet,
+	struct nbt_name *dst_name,
 	const struct socket_address *src,
 	struct nbt_netlogon_packet *netlogon,
 	TALLOC_CTX *mem_ctx,
 	struct nbt_netlogon_response **presponse)
 {
-	struct nbt_name *name = &packet->data.msg.dest_name;
 	struct ldb_context *samctx;
 	struct dom_sid *sid;
 	struct nbt_netlogon_response *response;
 	NTSTATUS status;
 
 	/* only answer getdc requests on the PDC or LOGON names */
-	if (name->type != NBT_NAME_PDC && name->type != NBT_NAME_LOGON) {
+	if ((dst_name->type != NBT_NAME_PDC) &&
+	    (dst_name->type != NBT_NAME_LOGON)) {
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
@@ -139,14 +139,16 @@ static NTSTATUS nbtd_netlogon_samlogon(
 	response->response_type = NETLOGON_SAMLOGON;
 
 	status = fill_netlogon_samlogon_response(
-		samctx, response, NULL, name->name, sid, NULL,
+		samctx, response, NULL, dst_name->name, sid, NULL,
 		netlogon->req.logon.user_name,
 		netlogon->req.logon.acct_control, src->addr,
 		netlogon->req.logon.nt_version, nbtsrv->task->lp_ctx,
 		&response->data.samlogon, false);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(2,("NBT netlogon query failed domain=%s sid=%s version=%d - %s\n",
-			 name->name, dom_sid_string(packet, sid), netlogon->req.logon.nt_version, nt_errstr(status)));
+		DBG_NOTICE("NBT netlogon query failed domain=%s sid=%s "
+			   "version=%d - %s\n", dst_name->name,
+			   dom_sid_string(response, sid),
+			   netlogon->req.logon.nt_version, nt_errstr(status));
 		TALLOC_FREE(response);
 		return status;
 	}
@@ -205,8 +207,9 @@ void nbtd_mailslot_netlogon_handler(struct dgram_mailslot_handler *dgmslot,
 					     netlogon, netlogon, &response);
 		break;
 	case LOGON_SAM_LOGON_REQUEST:
-		status = nbtd_netlogon_samlogon(iface->nbtsrv, packet, src,
-						netlogon, netlogon, &response);
+		status = nbtd_netlogon_samlogon(
+			iface->nbtsrv, &packet->data.msg.dest_name, src,
+			netlogon, netlogon, &response);
 		break;
 	default:
 		DEBUG(2,("unknown netlogon op %d from %s:%d\n", 
