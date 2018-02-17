@@ -38,7 +38,6 @@
  */
 static NTSTATUS nbtd_netlogon_getdc(struct nbtd_server *nbtsrv,
 				    struct nbt_name *dst_name,
-				    const struct socket_address *src,
 				    struct nbt_netlogon_packet *netlogon,
 				    TALLOC_CTX *mem_ctx,
 				    struct nbt_netlogon_response **presponse)
@@ -203,7 +202,7 @@ void nbtd_mailslot_netlogon_handler(struct dgram_mailslot_handler *dgmslot,
 	switch (netlogon->command) {
 	case LOGON_PRIMARY_QUERY:
 		status = nbtd_netlogon_getdc(iface->nbtsrv,
-					     &packet->data.msg.dest_name, src,
+					     &packet->data.msg.dest_name,
 					     netlogon, netlogon, &response);
 		break;
 	case LOGON_SAM_LOGON_REQUEST:
