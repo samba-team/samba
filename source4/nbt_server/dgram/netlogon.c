@@ -114,7 +114,7 @@ static NTSTATUS nbtd_netlogon_samlogon(
 	struct nbt_netlogon_response **presponse)
 {
 	struct ldb_context *samctx;
-	struct dom_sid *sid;
+	struct dom_sid *sid = NULL;
 	struct nbt_netlogon_response *response;
 	NTSTATUS status;
 
@@ -126,10 +126,8 @@ static NTSTATUS nbtd_netlogon_samlogon(
 
 	samctx = nbtsrv->sam_ctx;
 
-	if (netlogon->req.logon.sid_size) {
+	if (netlogon->req.logon.sid_size != 0) {
 		sid = &netlogon->req.logon.sid;
-	} else {
-		sid = NULL;
 	}
 
 	response = talloc_zero(mem_ctx, struct nbt_netlogon_response);
