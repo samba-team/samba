@@ -170,15 +170,17 @@ void nbtd_mailslot_netlogon_handler(struct dgram_mailslot_handler *dgmslot,
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 	struct nbtd_interface *iface = 
 		talloc_get_type(dgmslot->private_data, struct nbtd_interface);
-	struct nbt_netlogon_packet *netlogon = 
-		talloc(dgmslot, struct nbt_netlogon_packet);
+	struct nbt_netlogon_packet *netlogon;
 	struct nbtd_interface *reply_iface = nbtd_find_reply_iface(
 		iface, src->addr, false);
 	struct nbtd_iface_name *iname;
 	struct nbt_name *name = &packet->data.msg.dest_name;
 	struct nbt_netlogon_response *response;
 
-	if (netlogon == NULL) goto failed;
+	netlogon = talloc(dgmslot, struct nbt_netlogon_packet);
+	if (netlogon == NULL) {
+		goto failed;
+	}
 
 	/*
 	  see if the we are listening on the destination netbios name
