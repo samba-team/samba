@@ -123,10 +123,9 @@ NTSTATUS dgram_mailslot_netlogon_parse_request(TALLOC_CTX *mem_ctx,
 /*
   parse a netlogon response. The packet must be a valid mailslot packet
 */
-NTSTATUS dgram_mailslot_netlogon_parse_response(struct dgram_mailslot_handler *dgmslot,
-				       TALLOC_CTX *mem_ctx,
-				       struct nbt_dgram_packet *dgram,
-				       struct nbt_netlogon_response *netlogon)
+NTSTATUS dgram_mailslot_netlogon_parse_response(TALLOC_CTX *mem_ctx,
+						struct nbt_dgram_packet *dgram,
+						struct nbt_netlogon_response *netlogon)
 {
 	NTSTATUS status;
 	DATA_BLOB data = dgram_mailslot_data(dgram);

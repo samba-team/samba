@@ -51,7 +51,8 @@ static void netlogon_handler(struct dgram_mailslot_handler *dgmslot,
 	printf("netlogon reply from %s:%d\n", src->addr, src->port);
 
 	/* Fills in the netlogon pointer */
-	status = dgram_mailslot_netlogon_parse_response(dgmslot, netlogon, packet, netlogon);
+	status = dgram_mailslot_netlogon_parse_response(netlogon, packet,
+							netlogon);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to parse netlogon packet from %s:%d\n",
 		       src->addr, src->port);

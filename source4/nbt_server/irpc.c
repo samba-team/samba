@@ -70,7 +70,7 @@ static void getdc_recv_netlogon_reply(struct dgram_mailslot_handler *dgmslot,
 	struct nbt_netlogon_response netlogon;
 	NTSTATUS status;
 
-	status = dgram_mailslot_netlogon_parse_response(dgmslot, packet, packet,
+	status = dgram_mailslot_netlogon_parse_response(packet, packet,
 							&netlogon);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5, ("dgram_mailslot_ntlogon_parse failed: %s\n",

@@ -131,8 +131,7 @@ NTSTATUS dgram_mailslot_netlogon_parse_request(TALLOC_CTX *mem_ctx,
 					       struct nbt_dgram_packet *dgram,
 					       struct nbt_netlogon_packet *netlogon);
 
-NTSTATUS dgram_mailslot_netlogon_parse_response(struct dgram_mailslot_handler *dgmslot,
-						TALLOC_CTX *mem_ctx,
+NTSTATUS dgram_mailslot_netlogon_parse_response(TALLOC_CTX *mem_ctx,
 						struct nbt_dgram_packet *dgram,
 						struct nbt_netlogon_response *netlogon);
 
