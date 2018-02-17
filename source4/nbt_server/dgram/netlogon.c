@@ -113,16 +113,9 @@ static NTSTATUS nbtd_netlogon_samlogon(
 {
 	struct nbt_name *name = &packet->data.msg.dest_name;
 	struct ldb_context *samctx;
-	struct nbtd_interface *reply_iface = nbtd_find_reply_iface(iface, src->addr, false);
-	const char *my_ip = reply_iface->ip_address; 
 	struct dom_sid *sid;
 	struct nbt_netlogon_response *response;
 	NTSTATUS status;
-
-	if (!my_ip) {
-		DEBUG(0, ("Could not obtain own IP address for datagram socket\n"));
-		return NT_STATUS_NOT_SUPPORTED;
-	}
 
 	/* only answer getdc requests on the PDC or LOGON names */
 	if (name->type != NBT_NAME_PDC && name->type != NBT_NAME_LOGON) {
@@ -170,12 +163,18 @@ void nbtd_mailslot_netlogon_handler(struct dgram_mailslot_handler *dgmslot,
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 	struct nbtd_interface *iface = 
 		talloc_get_type(dgmslot->private_data, struct nbtd_interface);
-	struct nbt_netlogon_packet *netlogon;
+	struct nbt_netlogon_packet *netlogon = NULL;
 	struct nbtd_interface *reply_iface = nbtd_find_reply_iface(
 		iface, src->addr, false);
 	struct nbtd_iface_name *iname;
 	struct nbt_name *name = &packet->data.msg.dest_name;
 	struct nbt_netlogon_response *response;
+
+	if (reply_iface->ip_address == NULL) {
+		DBG_WARNING("Could not obtain own IP address for datagram "
+			    "socket\n");
+		goto failed;
+	}
 
 	netlogon = talloc(dgmslot, struct nbt_netlogon_packet);
 	if (netlogon == NULL) {
