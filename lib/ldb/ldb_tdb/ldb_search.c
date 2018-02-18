@@ -180,17 +180,15 @@ struct ltdb_parse_data_unpack_ctx {
 	unsigned int unpack_flags;
 };
 
-static int ltdb_parse_data_unpack(TDB_DATA key, TDB_DATA data,
+static int ltdb_parse_data_unpack(struct ldb_val key,
+				  struct ldb_val data,
 				  void *private_data)
 {
 	struct ltdb_parse_data_unpack_ctx *ctx = private_data;
 	unsigned int nb_elements_in_db;
 	int ret;
 	struct ldb_context *ldb = ldb_module_get_ctx(ctx->module);
-	struct ldb_val data_parse = {
-		.data = data.dptr,
-		.length = data.dsize
-	};
+	struct ldb_val data_parse = data;
 
 	if (ctx->unpack_flags & LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC) {
 		/*
@@ -200,13 +198,13 @@ static int ltdb_parse_data_unpack(TDB_DATA key, TDB_DATA data,
 		 * and the caller needs a stable result.
 		 */
 		data_parse.data = talloc_memdup(ctx->msg,
-						data.dptr,
-						data.dsize);
+						data.data,
+						data.length);
 		if (data_parse.data == NULL) {
 			ldb_debug(ldb, LDB_DEBUG_ERROR,
 				  "Unable to allocate data(%d) for %*.*s\n",
-				  (int)data.dsize,
-				  (int)key.dsize, (int)key.dsize, key.dptr);
+				  (int)data.length,
+				  (int)key.length, (int)key.length, key.data);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 	}
@@ -217,13 +215,13 @@ static int ltdb_parse_data_unpack(TDB_DATA key, TDB_DATA data,
 						   ctx->unpack_flags,
 						   &nb_elements_in_db);
 	if (ret == -1) {
-		if (data_parse.data != data.dptr) {
+		if (data_parse.data != data.data) {
 			talloc_free(data_parse.data);
 		}
 
 		ldb_debug(ldb, LDB_DEBUG_ERROR, "Invalid data for index %*.*s\n",
-			  (int)key.dsize, (int)key.dsize, key.dptr);
-		return LDB_ERR_OPERATIONS_ERROR;		
+			  (int)key.length, (int)key.length, key.data);
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	return ret;
 }
@@ -246,13 +244,17 @@ int ltdb_search_key(struct ldb_module *module, struct ltdb_private *ltdb,
 		.module = module,
 		.unpack_flags = unpack_flags
 	};
+	struct ldb_val ldb_key = {
+		.data = tdb_key.dptr,
+		.length = tdb_key.dsize
+	};
 
 	memset(msg, 0, sizeof(*msg));
 
 	msg->num_elements = 0;
 	msg->elements = NULL;
 
-	ret = ltdb->kv_ops->fetch_and_parse(ltdb, tdb_key,
+	ret = ltdb->kv_ops->fetch_and_parse(ltdb, ldb_key,
 					    ltdb_parse_data_unpack, &ctx);
 
 	if (ret == -1) {

@@ -15,8 +15,8 @@ struct kv_db_ops {
 	int (*iterate)(struct ltdb_private *ltdb, ldb_kv_traverse_fn fn, void *ctx);
 	int (*update_in_iterate)(struct ltdb_private *ltdb, struct ldb_val key,
 				 struct ldb_val key2, struct ldb_val data, void *ctx);
-	int (*fetch_and_parse)(struct ltdb_private *ltdb, TDB_DATA key,
-                               int (*parser)(TDB_DATA key, TDB_DATA data,
+	int (*fetch_and_parse)(struct ltdb_private *ltdb, struct ldb_val key,
+                               int (*parser)(struct ldb_val key, struct ldb_val data,
                                              void *private_data),
                                void *ctx);
 	int (*lock_read)(struct ldb_module *);
