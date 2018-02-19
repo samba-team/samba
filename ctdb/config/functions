@@ -171,16 +171,18 @@ ctdb_check_args ()
 # determine on what type of system (init style) we are running
 detect_init_style()
 {
-    # only do detection if not already set:
-    [ -z "$CTDB_INIT_STYLE" ] || return
+	# only do detection if not already set:
+	if [ -n "$CTDB_INIT_STYLE" ] ; then
+		return
+	fi
 
-    if [ -x /sbin/startproc ]; then
-        CTDB_INIT_STYLE="suse"
-    elif [ -x /sbin/start-stop-daemon ]; then
-        CTDB_INIT_STYLE="debian"
-    else
-        CTDB_INIT_STYLE="redhat"
-    fi
+	if [ -x /sbin/startproc ]; then
+		CTDB_INIT_STYLE="suse"
+	elif [ -x /sbin/start-stop-daemon ]; then
+		CTDB_INIT_STYLE="debian"
+	else
+		CTDB_INIT_STYLE="redhat"
+	fi
 }
 
 ######################################################
