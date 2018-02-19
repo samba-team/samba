@@ -61,7 +61,7 @@ class cmd_dbcheck(Command):
         Option("--fix", dest="fix", default=False, action='store_true',
                help='Fix any errors found'),
         Option("--yes", action='callback', callback=process_yes,
-               help="don't confirm changes, just do them all as a single transaction"),
+               help="don't confirm changes, applies all in a single transaction (requires all changes to succeed)"),
         Option("--cross-ncs", dest="cross_ncs", default=False, action='store_true',
                help="cross naming context boundaries"),
         Option("-v", "--verbose", dest="verbose", action="store_true", default=False,
