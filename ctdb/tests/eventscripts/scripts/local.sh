@@ -75,12 +75,12 @@ fi
 # input is a variable assignment and evals it with export prepended.
 setup_script_options ()
 {
-	while read line ; do
-		case "$line" in
-		\#*|"") : ;;
-		*) eval "export $line"
-		esac
-	done
+	_options="${script_dir}/${script%.script}.options"
+
+	cat >>"$_options"
+
+	# Source the options so that tests can use the variables
+	. "$_options"
 }
 
 setup_dbdir ()
