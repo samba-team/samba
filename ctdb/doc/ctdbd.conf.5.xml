@@ -57,7 +57,10 @@
 
     <para>
       These options may be used in the initscripts, daemon and
-      scripts.
+      scripts.  If any of these options are required then they should
+      be set in the distribution-specific initscript configuration,
+      such as <filename>/etc/sysconfig/ctdb</filename> or
+      <filename>/etc/default/ctdb</filename>.
     </para>
 
     <variablelist>
@@ -67,6 +70,31 @@
 	<listitem>
 	  <para>
 	    DIRECTORY containing CTDB scripts and configuration files.
+	  </para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>CTDB_INIT_STYLE=debian|redhat|suse</term>
+	<listitem>
+	  <para>
+	    This is the init style used by the Linux distribution (or
+	    other operating system) being used.  This is usually
+	    determined dynamically by checking the system.  This
+	    variable is used by the initscript to determine which init
+	    system primitives to use.  It is also used by some
+	    eventscripts to choose the name of initscripts for certain
+	    services, since these can vary between distributions.
+	  </para>
+	  <para>
+	    No fixed default.
+	  </para>
+	  <para>
+	    If this option needs to be changed from the calculated
+	    default for the initscript to function properly, then it
+	    must be set in the distribution-specific initscript
+	    configuration, such as
+	    <filename>/etc/sysconfig/ctdb</filename>
 	  </para>
 	</listitem>
       </varlistentry>
@@ -1506,31 +1534,6 @@ CTDB_SET_MonitorInterval=20
 	  </para>
 	  <para>
 	    Default is <filename>/etc</filename>.
-	  </para>
-	</listitem>
-      </varlistentry>
-
-      <varlistentry>
-	<term>CTDB_INIT_STYLE=debian|redhat|suse</term>
-	<listitem>
-	  <para>
-	    This is the init style used by the Linux distribution (or
-	    other operating system) being used.  This is usually
-	    determined dynamically by checking the system.  This
-	    variable is used by the initscript to determine which init
-	    system primitives to use.  It is also used by some
-	    eventscripts to choose the name of initscripts for certain
-	    services, since these can vary between distributions.
-	  </para>
-	  <para>
-	    No fixed default.
-	  </para>
-	  <para>
-	    If this option needs to be changed from the calculated
-	    default for the initscript to function properly, then it
-	    must be set in the distribution-specific initscript
-	    configuration, such as
-	    <filename>/etc/sysconfig/ctdb</filename>
 	  </para>
 	</listitem>
       </varlistentry>
