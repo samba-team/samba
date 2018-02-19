@@ -80,6 +80,17 @@ loadconfig() {
 	rewrite_ctdb_options
 }
 
+load_script_options ()
+{
+	loadconfig
+
+	_options="${0%.script}.options"
+
+	if [ -r "$_options" ] ; then
+		. "$_options"
+	fi
+}
+
 ##############################################################
 
 die ()
