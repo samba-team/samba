@@ -1,18 +1,13 @@
 /*
- * NOTE:  
+ * Functions for RFC 3986 percent-encoding.
  *
- * This file imported from the Squid project.  The licence below is
- * reproduced intact, but refers to files in Squid's repository, not
- * in Samba.  See COPYING for the GPLv3 notice (being the later
- * version mentioned below).
+ * NOTE:
  *
- * This file has also been modified, in particular to use talloc to
- * allocate in rfc1738_escape()
- *
- * - Andrew Bartlett Oct-2009
- *
+ * This file was originally imported from the Squid project but has been
+ * significantly altered. The licence below is reproduced intact, but refers
+ * to files in Squid's repository, not in Samba. See COPYING for the GPLv3
+ * notice (being the later version mentioned below).
  */
-
 
 /*
  * $Id$
