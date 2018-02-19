@@ -1280,6 +1280,7 @@ static bool tldap_unescape_inplace(char *value, size_t *val_len)
 			}
 			i++;
 
+			/* LDAPv3 escaped */
 			c = tldap_hex2char(&value[i]);
 			if (c >= 0 && c < 256) {
 				value[p] = c;
@@ -1288,6 +1289,7 @@ static bool tldap_unescape_inplace(char *value, size_t *val_len)
 				break;
 			}
 
+			/* LDAPv2 escaped */
 			switch (value[i]) {
 			case '(':
 			case ')':
