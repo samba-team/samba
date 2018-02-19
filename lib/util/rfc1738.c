@@ -51,6 +51,7 @@
 #include "replace.h"
 #include <talloc.h>
 #include "lib/util/samba_util.h"
+#include "lib/util/util_str_hex.h"
 
 /*
  *  RFC 1738 defines that these characters should be escaped, as well
@@ -190,37 +191,41 @@ rfc1738_escape_part(TALLOC_CTX *mem_ctx, const char *url)
 }
 
 /*
- *  rfc1738_unescape() - Converts escaped characters (%xy numbers) in
- *  given the string.  %% is a %. %ab is the 8-bit hexadecimal number "ab"
+ * rfc1738_unescape() - Converts url-escaped characters in the string.
+ *
+ * The two characters following a '%' in a string should be hex digits that
+ * describe an encoded byte. For example, "%25" is hex 0x25 or '%' in ASCII;
+ * this is the only way to include a % in the unescaped string. Any character
+ * can be escaped, including plain letters (e.g. "%61" for "a"). Anything
+ * other than 2 hex characters following the % is an error.
+ *
+ * The conversion is done in-place, which is always safe as unescapes can only
+ * shorten the string.
+ *
+ * Returns a pointer to the end of the string (that is, the '\0' byte), or
+ * NULL on error, at which point s is in an undefined state.
+ *
+ * Note that after `char *e = rfc_unescape(s)`, `strlen(s)` will not equal
+ * `e - s` if s originally contained "%00". You might want to check for this.
  */
 
 _PUBLIC_ char *rfc1738_unescape(char *s)
 {
-    char hexnum[3];
-    int i, j;			/* i is write, j is read */
-    unsigned int x;
-    for (i = j = 0; s[j]; i++, j++) {
-        s[i] = s[j];
-        if (s[i] != '%')
-            continue;
-        if (s[j + 1] == '%') {	/* %% case */
-            j++;
-            continue;
-        }
-        if (s[j + 1] && s[j + 2]) {
-            if (s[j + 1] == '0' && s[j + 2] == '0') {	/* %00 case */
-                j += 2;
-                continue;
-            }
-            hexnum[0] = s[j + 1];
-            hexnum[1] = s[j + 2];
-            hexnum[2] = '\0';
-            if (1 == sscanf(hexnum, "%x", &x)) {
-                s[i] = (char) (0x0ff & x);
-                j += 2;
-            }
-        }
-    }
-    s[i] = '\0';
+	size_t i, j;	    /* i is write, j is read */
+	uint64_t x;
+	NTSTATUS status;
+	for (i = 0, j = 0; s[j] != '\0'; i++, j++) {
+		if (s[j] == '%') {
+			status = read_hex_bytes(&s[j + 1], 2, &x);
+			if (! NT_STATUS_IS_OK(status)) {
+				return NULL;
+			}
+			j += 2; /* OK; read_hex_bytes() has checked ahead */
+			s[i] = (unsigned char)x;
+		} else {
+			s[i] = s[j];
+		}
+	}
+	s[i] = '\0';
 	return s + i;
 }
