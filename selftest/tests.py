@@ -180,3 +180,6 @@ if with_cmocka:
 
     plantestsuite("samba.unittests.smb1cli_session", "none",
                   [os.path.join(bindir(), "default/libcli/smb/test_smb1cli_session")])
+
+    plantestsuite("samba.unittests.tldap", "none",
+                  [os.path.join(bindir(), "default/source3/test_tldap")])

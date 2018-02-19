@@ -106,6 +106,16 @@ bld.SAMBA3_SUBSYSTEM('TLDAP',
                          samba3util
                          ''')
 
+bld.SAMBA3_BINARY('test_tldap',
+                  source='lib/test_tldap.c',
+                  deps='''
+                       asn1util
+                       LIBTSOCKET
+                       samba3util
+                       smbconf
+                       cmocka
+                       ''')
+
 # libpdb.so should not expose internal symbols that are only usable
 # to the statically linked modules that are merged into libpdb.
 # Note that we always filter these symbols out in libpdb, even
