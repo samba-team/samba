@@ -326,16 +326,6 @@
       </varlistentry>
 
       <varlistentry>
-	<term>CTDB_PUBLIC_INTERFACE=<parameter>INTERFACE</parameter></term>
-	<listitem>
-	  <para>
-	    No default.  Corresponds to
-	    <option>--public-interface</option>.
-	  </para>
-	</listitem>
-      </varlistentry>
-
-      <varlistentry>
 	<term>CTDB_RECOVERY_LOCK=<parameter>LOCK</parameter></term>
 	<listitem>
 	  <para>

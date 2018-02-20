@@ -95,7 +95,6 @@ build_ctdb_options ()
     maybe_set "--logging"                "$CTDB_LOGGING"
     maybe_set "--nlist"                  "$CTDB_NODES"
     maybe_set "--listen"                 "$CTDB_NODE_ADDRESS"
-    maybe_set "--public-interface"       "$CTDB_PUBLIC_INTERFACE"
     maybe_set "--dbdir"                  "$CTDB_DBDIR"
     maybe_set "--dbdir-persistent"       "$CTDB_DBDIR_PERSISTENT"
     maybe_set "--dbdir-state"            "$CTDB_DBDIR_STATE"
