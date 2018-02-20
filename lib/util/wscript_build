@@ -222,3 +222,9 @@ else:
                      deps='cmocka replace samba-util',
                      local_include=False,
                      install=False)
+
+    bld.SAMBA_BINARY('test_ms_fnmatch',
+                     source='tests/test_ms_fnmatch.c',
+                     deps='cmocka replace samba-util',
+                     local_include=False,
+                     install=False)
