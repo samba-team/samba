@@ -1974,7 +1974,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
 
             # And now try a request without auth_info
             # netr_ServerReqChallenge()
-            req = self.generate_request(call_id = 2,
+            req = self.generate_request(call_id = 0x21234,
                                         pfc_flags=pfc_flags,
                                         context_id=ctx.context_id,
                                         opnum=4,
