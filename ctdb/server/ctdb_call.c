@@ -1478,8 +1478,6 @@ struct ctdb_call_state *ctdb_daemon_call_send_remote(struct ctdb_db_context *ctd
 
 	state->reqid = reqid_new(ctdb->idr, state);
 	state->ctdb_db = ctdb_db;
-	talloc_set_destructor(state, ctdb_call_destructor);
-
 	state->state  = CTDB_CALL_WAIT;
 	state->generation = ctdb_db->generation;
 
@@ -1516,6 +1514,7 @@ struct ctdb_call_state *ctdb_daemon_call_send_remote(struct ctdb_db_context *ctd
 
 	DLIST_ADD(ctdb_db->pending_calls, state);
 
+	talloc_set_destructor(state, ctdb_call_destructor);
 	ctdb_queue_packet(ctdb, &state->c->hdr);
 
 	return state;
