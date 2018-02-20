@@ -1162,18 +1162,15 @@ int ctdb_set_public_addresses(struct ctdb_context *ctdb, bool check_addresses)
 		}
 		tok = strtok(line, " \t");
 		addrstr = tok;
+
 		tok = strtok(NULL, " \t");
 		if (tok == NULL) {
-			if (NULL == ctdb->default_public_interface) {
-				DEBUG(DEBUG_CRIT,("No default public interface and no interface specified at line %u of public address list\n",
-					 i+1));
-				talloc_free(lines);
-				return -1;
-			}
-			ifaces = ctdb->default_public_interface;
-		} else {
-			ifaces = tok;
+			D_ERR("No interface specified at line %u "
+			      "of public addresses file\n", i+1);
+			talloc_free(lines);
+			return -1;
 		}
+		ifaces = tok;
 
 		if (!addrstr || !parse_ip_mask(addrstr, ifaces, &addr, &mask)) {
 			DEBUG(DEBUG_CRIT,("Badly formed line %u in public address list\n", i+1));

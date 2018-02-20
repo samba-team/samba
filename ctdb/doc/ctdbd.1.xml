@@ -299,20 +299,6 @@
       </varlistentry>
 
       <varlistentry>
-	<term>--public-interface=<parameter>INTERFACE</parameter></term>
-	<listitem>
-	  <para>
-	    Default INTERFACE on which to attach public IP addresses.
-	  </para>
-	  <para>
-	    When using public IP addresses, this is only required if
-	    interfaces are not explicitly specified in the public
-	    addresses file.
-	  </para>
-	</listitem>
-      </varlistentry>
-
-      <varlistentry>
 	<term>--reclock=<parameter>LOCK</parameter></term>
 	<listitem>
 	  <para>

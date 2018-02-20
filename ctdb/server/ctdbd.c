@@ -50,7 +50,6 @@ static struct {
 	const char *db_dir;
 	const char *db_dir_persistent;
 	const char *db_dir_state;
-	const char *public_interface;
 	int         valgrinding;
 	int         nosetsched;
 	int         start_as_disabled;
@@ -117,7 +116,6 @@ int main(int argc, const char *argv[])
 		POPT_AUTOHELP
 		{ "debug", 'd', POPT_ARG_STRING, &options.debuglevel, 0, "debug level", NULL },
 		{ "interactive", 'i', POPT_ARG_NONE, &interactive, 0, "don't fork", NULL },
-		{ "public-interface", 0, POPT_ARG_STRING, &options.public_interface, 0, "public interface", "interface"},
 		{ "logging", 0, POPT_ARG_STRING, &options.logging, 0, "logging method to be used", NULL },
 		{ "nlist", 0, POPT_ARG_STRING, &options.nlist, 0, "node list file", "filename" },
 		{ "notification-script", 0, POPT_ARG_STRING, &options.notification_script, 0, "notification script", "filename" },
@@ -307,11 +305,6 @@ int main(int argc, const char *argv[])
 
 	ctdb->db_directory_state = options.db_dir_state;
 	mkdir_p_or_die(ctdb->db_directory_state, 0700);
-
-	if (options.public_interface) {
-		ctdb->default_public_interface = talloc_strdup(ctdb, options.public_interface);
-		CTDB_NO_MEMORY(ctdb, ctdb->default_public_interface);
-	}
 
 	ctdb->event_script_dir = talloc_asprintf(ctdb,
 						 "%s/events.d",

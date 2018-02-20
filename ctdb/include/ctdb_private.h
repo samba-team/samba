@@ -303,7 +303,6 @@ struct ctdb_context {
 	bool do_setsched;
 	const char *event_script_dir;
 	const char *notification_script;
-	const char *default_public_interface;
 	pid_t ctdbd_pid;
 	pid_t recoverd_pid;
 	enum ctdb_runstate runstate;
