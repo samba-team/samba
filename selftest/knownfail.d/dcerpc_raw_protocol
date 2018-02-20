@@ -1,4 +1,0 @@
-^samba.tests.dcerpc.raw_protocol.samba.tests.dcerpc.raw_protocol.TestDCERPC_BIND.test_fragmented_requests01
-^samba.tests.dcerpc.raw_protocol.samba.tests.dcerpc.raw_protocol.TestDCERPC_BIND.test_fragmented_requests02
-^samba.tests.dcerpc.raw_protocol.samba.tests.dcerpc.raw_protocol.TestDCERPC_BIND.test_fragmented_requests03
-^samba.tests.dcerpc.raw_protocol.samba.tests.dcerpc.raw_protocol.TestDCERPC_BIND.test_fragmented_requests05
