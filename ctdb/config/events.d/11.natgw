@@ -12,7 +12,7 @@
 
 service_name="natgw"
 
-loadconfig
+load_script_options
 
 [ -n "$CTDB_NATGW_NODES" ] || exit 0
 export CTDB_NATGW_NODES

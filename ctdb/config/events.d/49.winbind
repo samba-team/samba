@@ -12,7 +12,7 @@ CTDB_SERVICE_WINBIND=${CTDB_SERVICE_WINBIND:-winbind}
 # shellcheck disable=SC2034
 service_name="winbind"
 
-loadconfig
+load_script_options
 
 service_start ()
 {

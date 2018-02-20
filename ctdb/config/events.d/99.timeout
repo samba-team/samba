@@ -9,7 +9,7 @@
 
 . "${CTDB_BASE}/functions"
 
-loadconfig
+load_script_options
 
 [ "$CTDB_RUN_TIMEOUT_MONITOR" = "yes" ] || exit 0
 

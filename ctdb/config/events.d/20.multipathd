@@ -13,7 +13,7 @@
 
 service_name="multipathd"
 
-loadconfig
+load_script_options
 
 [ -n "$CTDB_MONITOR_MPDEVICES" ] || exit 0
 

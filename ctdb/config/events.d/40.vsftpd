@@ -13,7 +13,7 @@ service_reconfigure ()
     service $service_name restart
 }
 
-loadconfig
+load_script_options
 
 ctdb_setup_state_dir "service" "$service_name"
 

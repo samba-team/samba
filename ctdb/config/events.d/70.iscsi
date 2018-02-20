@@ -11,7 +11,7 @@
 # shellcheck disable=SC2034
 service_name="iscsi"
 
-loadconfig
+load_script_options
 
 [ "$CTDB_MANAGES_ISCSI" = "yes" ] || exit 0
 

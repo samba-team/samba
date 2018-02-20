@@ -6,7 +6,7 @@
 
 . "${CTDB_BASE}/functions"
 
-loadconfig
+load_script_options
 
 ctdb_setup_state_dir "service" "system-monitoring"
 

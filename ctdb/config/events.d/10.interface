@@ -10,7 +10,7 @@
 
 . "${CTDB_BASE}/functions"
 
-loadconfig
+load_script_options
 
 ctdb_public_addresses="${CTDB_BASE}/public_addresses"
 

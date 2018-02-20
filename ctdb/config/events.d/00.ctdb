@@ -8,7 +8,7 @@
 
 . "${CTDB_BASE}/functions"
 
-loadconfig
+load_script_options
 
 ############################################################
 

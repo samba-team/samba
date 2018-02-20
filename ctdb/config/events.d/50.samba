@@ -26,7 +26,7 @@ esac
 
 service_name="samba"
 
-loadconfig
+load_script_options
 
 ctdb_setup_state_dir "service" "$service_name"
 

@@ -23,6 +23,8 @@ suse|debian|*)
 	;;
 esac
 
+load_script_options
+
 ctdb_setup_state_dir "service" "$service_name"
 
 # RHEL5 sometimes use a SIGKILL to terminate httpd, which then leaks
@@ -46,8 +48,6 @@ service_stop ()
     service $service_name stop
     killall -q -9 $service_name || true
 }
-
-loadconfig
 
 [ "$CTDB_MANAGES_HTTPD" = "yes" ] || exit 0
 

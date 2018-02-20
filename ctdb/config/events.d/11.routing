@@ -22,7 +22,7 @@
 
 . "${CTDB_BASE}/functions"
 
-loadconfig
+load_script_options
 
 [ -f "${CTDB_BASE}/static-routes" ] || {
     exit 0
