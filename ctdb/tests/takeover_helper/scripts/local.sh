@@ -50,9 +50,10 @@ setup_ctdbd ()
 
 	$VALGRIND fake_ctdbd -d "$FAKE_CTDBD_DEBUGLEVEL" \
 		  -s "$ctdbd_socket" -p "$ctdbd_pidfile"
+	export CTDB_SOCKET="$ctdbd_socket"
 	# This current translates to a 6 second timeout for the
 	# important controls
-	ctdb --socket $ctdbd_socket setvar TakeoverTimeout 2
+	ctdb setvar TakeoverTimeout 2
 	test_cleanup cleanup_ctdbd
 }
 
@@ -70,14 +71,13 @@ result_filter ()
 
 ctdb_cmd ()
 {
-	echo Running: ctdb -d "$CTDB_DEBUGLEVEL" --socket $ctdbd_socket "$@"
-	ctdb -d "$CTDB_DEBUGLEVEL" --socket $ctdbd_socket "$@"
+	echo Running: ctdb -d "$CTDB_DEBUGLEVEL" "$@"
+	ctdb -d "$CTDB_DEBUGLEVEL" "$@"
 }
 
 test_ctdb_ip_all ()
 {
-	unit_test ctdb -d "$CTDB_DEBUGLEVEL" \
-		  --socket $ctdbd_socket ip all || exit $?
+	unit_test ctdb -d "$CTDB_DEBUGLEVEL" ip all || exit $?
 }
 
 takeover_helper_out="${TEST_VAR_DIR}/takover_helper.out"

@@ -19,7 +19,8 @@ define_test ()
 	ctdb.*)
 	    _cmd="${_f#ctdb.}"
 	    _cmd="${_cmd%.*}" # Strip test number
-	    export CTDB="ctdb --socket $ctdbd_socket"
+	    export CTDB_SOCKET="$ctdbd_socket"
+	    export CTDB="ctdb"
 	    export CTDB_DEBUGLEVEL=NOTICE
 	    if [ -z "$FAKE_CTDBD_DEBUGLEVEL" ] ; then
 		    FAKE_CTDBD_DEBUGLEVEL="ERR"
