@@ -239,7 +239,7 @@ const struct dcesrv_interface *find_interface_by_uuid(const struct dcesrv_endpoi
 /*
   find the earlier parts of a fragmented call awaiting reassembily
 */
-static struct dcesrv_call_state *dcesrv_find_fragmented_call(struct dcesrv_connection *dce_conn, uint16_t call_id)
+static struct dcesrv_call_state *dcesrv_find_fragmented_call(struct dcesrv_connection *dce_conn, uint32_t call_id)
 {
 	struct dcesrv_call_state *c;
 	for (c=dce_conn->incoming_fragmented_call_list;c;c=c->next) {
