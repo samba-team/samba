@@ -292,7 +292,7 @@ static void wb_child_request_cleanup(struct tevent_req *req,
 	DLIST_REMOVE(winbindd_children, state->child);
 }
 
-struct winbindd_child *choose_domain_child(struct winbindd_domain *domain)
+static struct winbindd_child *choose_domain_child(struct winbindd_domain *domain)
 {
 	struct winbindd_child *shortest = &domain->children[0];
 	struct winbindd_child *current;
