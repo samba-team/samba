@@ -272,7 +272,6 @@ void setup_domain_child(struct winbindd_domain *domain);
 /* The following definitions come from winbindd/winbindd_dual.c  */
 
 struct dcerpc_binding_handle *dom_child_handle(struct winbindd_domain *domain);
-struct winbindd_child *choose_domain_child(struct winbindd_domain *domain);
 
 struct tevent_req *wb_child_request_send(TALLOC_CTX *mem_ctx,
 					 struct tevent_context *ev,
