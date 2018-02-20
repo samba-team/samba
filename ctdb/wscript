@@ -713,7 +713,6 @@ def build(bld):
         'ctdb-crash-cleanup.sh',
         'debug-hung-script.sh',
         'debug_locks.sh',
-        'gcore_trace.sh',
         'nfs-linux-kernel-callout',
         'notify.sh',
         'statd-callout'

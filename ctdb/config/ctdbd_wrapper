@@ -148,7 +148,6 @@ build_ctdb_options ()
 export_debug_variables ()
 {
     [ -n "$CTDB_DEBUG_HUNG_SCRIPT" ] && export CTDB_DEBUG_HUNG_SCRIPT
-    [ -n "$CTDB_EXTERNAL_TRACE" ] && export CTDB_EXTERNAL_TRACE
     [ -n "$CTDB_DEBUG_LOCKS" ] && export CTDB_DEBUG_LOCKS
 }
 
